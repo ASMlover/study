@@ -15,8 +15,7 @@
 > ### **1.1 思路** ###
     1) 指定一个固定大小的数组
     2) 使用front和rear来实现循环Queue
-    3) 使用一个flag来指定队列空(front = rear and flag = 0)以及队列满  
-       (front = rear and flag = 1)
+    3) 使用一个flag来指定队列空(front = rear and flag = 0)以及队列满(front = rear and flag = 1)
     4) 优点是实现方便, 简单
     5) 缺点是多一个变量来表示queue的空和满
 > ### **1.2 实现** ###

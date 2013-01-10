@@ -2,10 +2,10 @@
 ***
 
 ## **PHP标记** ##
-* <?php ?> - 标准标记风格
-* <script language="php"></script> - 类javascript标记风格
-* <? ?> - 短标记风格
-* <% %> - ASP标记风格
+* `<? php ?>` - 标准标记风格
+* `<script language="php"></script>` - 类javascript标记风格
+* `<? ?>` - 短标记风格
+* `<% %>` - ASP标记风格
 
 
 ## **变量** ##
