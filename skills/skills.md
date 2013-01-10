@@ -36,4 +36,18 @@
 > ### **2.2 内幕** ###
     1) MSVC下有个编译选项/Tp, 指定文件按C++编译
     2) MSVC下有个编译选项/Tc, 指定文件按C编译
-    3) GCC下有个编译选项 -x language, 可以在language指定具体文件
+    3) GCC下有个编译选项 -x language, 可以在language指定具体文件 
+
+
+
+## **3. git配置** ##
+> ### **3.1 配置颜色** ###
+    1) 常用的颜色:  
+       git config --global color.branch auto  
+       git config --global color.diff auto  
+       git config --global color.interactive auto  
+       git config --global color.status auto  
+    2) 把颜色全部都打开: 
+       git config --global color.ui true
+> ### **3.2 编辑器配置** ###
+    git config --global core.editor 'vim'
