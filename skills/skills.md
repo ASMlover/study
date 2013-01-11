@@ -51,3 +51,6 @@
        git config --global color.ui true
 > ### **3.2 编辑器配置** ###
     git config --global core.editor 'vim'
+> ### **3.3 配置用户信息** ###
+    git config --global user.name "your name"
+    git config --global user.email you@example.com
