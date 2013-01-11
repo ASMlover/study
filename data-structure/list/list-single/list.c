@@ -77,7 +77,7 @@ list_node_create(element_t e)
   new_node->next = NULL;
   new_node->e = e;
 
-  return e;
+  return new_node;
 }
 
 
