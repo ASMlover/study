@@ -6,3 +6,4 @@
 ## **实现的功能模块** ##
 * Stack
 * Queue
+* Array
