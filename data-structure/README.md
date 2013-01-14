@@ -7,3 +7,4 @@
 * Stack
 * Queue
 * Array
+* List
