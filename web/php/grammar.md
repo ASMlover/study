@@ -110,8 +110,8 @@
 
 ## **文件引用** ##
 > ### **1. include和require** ###
-> * include在执行文件时每次都要进行读取和评估; require文件之处理一次
-> * 如果可能执行多次的代码, 使用require; 如果每次执行代码读取不同的文件, 使用include
+* include在执行文件时每次都要进行读取和评估; require文件之处理一次
+* 如果可能执行多次的代码, 使用require; 如果每次执行代码读取不同的文件, 使用include  
 >> #### **1.1 require** ####
     1) require("filename.php"), 通常放在脚本最前面
     2) 执行脚本前会将它脚本的一部分
@@ -119,4 +119,4 @@
     1) include("filename.php"), 一般放在流程控制处理区段
     2) 脚本在读到include语句是才将它包含的文件读进来  
 > ### **2. include_once和require_once** ###
-> * 用法与include和require相似, 区别是如果文件已经被包含了, 则不会再次包含
+* 用法与include和require相似, 区别是如果文件已经被包含了, 则不会再次包含
