@@ -121,5 +121,5 @@
     1) include("filename.php"), 一般放在流程控制处理区段
     2) 脚本在读到include语句是才将它包含的文件读进来  
 
-> ### **2. include_once和require_once** ###
+> ### **2. `include_once`和`require_once`** ###
     用法与include和require相似, 区别是如果文件已经被包含了, 则不会再次包含
