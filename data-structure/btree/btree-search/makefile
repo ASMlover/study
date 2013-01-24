@@ -1,5 +1,5 @@
 BIN	= test 
-CC	= gcc 
+CC	= clang 
 CFLAGS	= -g -O2 -Wall 
 RM	= rm 
 OBJS	= main.o btree.o 
