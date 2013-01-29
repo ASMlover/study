@@ -54,3 +54,16 @@
 > ### **3.3 配置用户信息** ###
     git config --global user.name "your name"
     git config --global user.email you@example.com
+> ### **3.4 一个git配置例子** ###
+    [color]
+      ui = true
+    [core]
+      editor = vim
+    [user]
+      name = ASMlover
+      email = asmlover@126.com
+    [pretty]
+      graph = %Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset
+    [alias]
+      lg = log --pretty=graph --graph --abbrev-commit --
+    
