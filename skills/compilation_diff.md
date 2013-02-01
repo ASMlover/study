@@ -310,3 +310,53 @@
           _In_        LPSTARTUPINFO lpStartupInfo, 
           _Out_       LPPROCESS_INFORMATION lpProcessInformation
         );
+> ### **10.2 Linux下** ###
+        下面我们主要来讲解Linux下, 如何在程序中调用外部的程序, 同样的在linux
+    下可以使用C库中的system来调用外部的程序; 可以建立管道来调用外部的命令; 
+    也可以使用fork等创建一个子进程, 然后调用exec族的函数来调用外部程序。
+    1) 使用system函数
+        #include <stdlib.h>
+        int system(const char* command);
+> 
+            system会调用fork产生子进程, 有子进行来调用/bin/sh -c来执行参数
+        command所代表的命令, 此命令执行完成后随即返回原调用的进程, 在调用它
+        的期间SIGCHLD信号会被暂时搁置, SIGINT和SIGQUIT信号则会被忽略。
+            在编写具有SUID/SGID权限的程序时请不要使用system, 它会继承环境变
+        量, 通过环境变量可能会造成系统安全的问题。
+    2) popen(建立管道I/O)
+        #include <stdio.h>
+        FILE* popen(const char* command, const char* type);
+        int pclose(FILE* stream);
+> 
+            popen会调用fork产生子进程, 然后子进程中调用/bin/sh -c来执行参数
+        command的指令, 参数type可以使用"r"代表读取, "w"代表写入。根据type值
+        popen会建立管道连接到子进程的标准输出设备或标准输入设备, 然后返回一
+        个文件指针。随后进程就可以利用此文件指针来读取子进程的输出设备或写入
+        到子进程的标准输出设备。
+            在编写具有SUID/SGID权限的程序时请不要使用popen, popen会继承环境
+        变量, 通过环境变量可能会造成系统安全的问题。
+            例子:
+> 
+            char buf[128];
+            FILE* fp = popen("cat /etc/passwd", "r");
+            fgets(buf, sizeof(buf), fp);
+            pclose(fp);
+    3) 使用vfork创建子进程, 然后调用exec函数族
+        #include <sys/types.h>
+        #include <unistd.h>
+        pid_t vfork(void);
+> 
+        先介绍进程的4要素:
+            * 要有一段程序供该进程运行, 该程序可以被多个进程共享
+            * 要有"私有财产", 即是进程专用的系统堆栈空间
+            * 要有"户口", 即进程控制块, 具体实现是task_struct
+            * 有独立的存储空间
+            vfork与fork不同的地方在于, vfork创建出来的不是真正意义上的进程, 
+        而是一个线程, 它却上独立的存储空间。
+> 
+        例子:
+        char* argv[] = {"ls", "-la", "/home/", NULL};
+        if (0 == vfork()) 
+          execv("/bin/ls", argv);
+        else 
+          fprintf(stdout, "Parent process ...\n");
