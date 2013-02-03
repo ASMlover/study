@@ -71,4 +71,37 @@
     2) 不管是POST还是GET方法提交的数据的都可以使用$_REQUEST获取
     3) $_REQUEST速度比较慢, 不推荐使用
 > ### **3.6 HTTP文件上传变量: $_FILES** ###
-    1) 
+    1) 必须使用POST提交
+    2) $_FILES超全局数组是表单通过POST方法传递的已上传文件项目组成的数组
+> ### **3.7 HTTP Cookies: $_COOKIE** ###
+    1) 由HTTP Cookies方法提交到脚本的变量
+    2) PHP脚本从客户浏览器取了一个cookie后, 将自动把他转换成一个变量, 可以
+       通过$_COOKIE和cookie的名称来存取制定的cookie值
+> ### **3.8 Session变量: $_SESSION** ###
+    1) 会话控制是在服务端使用session跟踪用户
+    2) 在服务器页面使用session_start函数开启session后, 就可使用$_SESSION注册
+       全局变量, 用户可在整个网站中访问这些会话信息
+> ### **3.9 Global变量: $GLOBALS** ###
+    1) 在函数中使用函数外声明的全局变量是, 可以使用$GLOBALS代替global关键字
+    2) $GLOBALS数组中, 每个变量是一个元素, 键名对应变量名
+
+
+
+
+## **4. 数组的相关处理函数** ##
+> ### **4.1 键/值操作函数** ###
+    1) array_values
+       返回数组中所有元素的值, 不保留键名, 返回的数组将使用顺序数组键重新建
+       立索引, 从0递增
+    2) array_keys
+       返回数组中所有键名
+       array array_keys(array input[, mixed search_value[, bool strict]]);
+       指定search_value, 只返回指定改值的键名
+       strict=false, 则指定的search_value以来类型; 否则据类型返回指定值键名
+    3) in_array
+       检查数组中是否存在某个值, 即在数组中搜索给定的值
+       bool in_array(mixed needle, array haystack[, bool strict]);
+    4) array_flip
+       交换数组中的键和值, 如果同一个值出现多次, 则最后一个键名就是它的值
+    5) array_reverse
+       将原数组中的元素顺序翻转, 返回一个新的数组
