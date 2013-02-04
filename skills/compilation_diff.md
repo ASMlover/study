@@ -347,10 +347,10 @@
         pid_t vfork(void);
 > 
         先介绍进程的4要素:
-            * 要有一段程序供该进程运行, 该程序可以被多个进程共享
-            * 要有"私有财产", 即是进程专用的系统堆栈空间
-            * 要有"户口", 即进程控制块, 具体实现是task_struct
-            * 有独立的存储空间
+            => 要有一段程序供该进程运行, 该程序可以被多个进程共享
+            => 要有"私有财产", 即是进程专用的系统堆栈空间
+            => 要有"户口", 即进程控制块, 具体实现是task_struct
+            => 有独立的存储空间
             vfork与fork不同的地方在于, vfork创建出来的不是真正意义上的进程, 
         而是一个线程, 它却上独立的存储空间。
 > 
@@ -360,3 +360,90 @@
           execv("/bin/ls", argv);
         else 
           fprintf(stdout, "Parent process ...\n");
+
+
+
+
+## **11. STL中的erase** ##
+        // C++
+        std::map<int, std::string> map_test;
+        std::map<int, std::string>::iterator it = map_test.find(key);
+        map_test.erase(it);
+        我们知道在STL容器中, 根据erase来删除容器中的一个节点的时候, 当只是删
+    除单个节点的时候, 不会出现任何问题; 但是在一个循环中使用的时候, 往往会被
+    误用, 那是因为没有正确理解iterator的概念造成的。
+        我们经常看见会被误用成如下:
+        // C++
+        for (it = map_test.begin(); it != map_test.end(); ++it) {
+          printf("{key=>%d, val=>%s}\n", it->first, it->second.c_str());
+          map_test.erase(it);
+        }
+        这种错误的写法会导致程序的行为不可知, 对于关联容器而言, 如果一个元素
+    已经被删除了, 那么对应的迭代器就失效了, 不应该再被使用了, 否则会导致程序
+    不可知的行为。
+> ### **11.1 MSVC下** ###
+        由于MSVC是使用的是P.J.Plauger STL, 而该实现的STL关联容器中, 如set, 
+    multiset,map, multimap, hash_set, hash_multiset, hash_map, hash_multimap
+    中的erase均返回了下一个元素的迭代器。
+        因此, 在该版本的实现的STL可以使用如下方法(以上面map为例子):
+        // C++
+        for (it = map_test.begin(); it != map_test.end(); ) {
+          if (key == it->first) {
+            fprintf(stdout, "earase value: %s\n", it->second.c_str());
+            it = map_test.erase(it);
+          }
+          else 
+            ++it;
+        }
+> ### **11.2 GCC下** ###
+        GCC中的STL使用的是SGI STL, 主要由STL之父Alexandar Stepanov实现, 在该
+    实现版本中set, multiset, map, multimap, hash_set, hash_multiset, 
+    hash_map, hash_multimap中erase的实现均是返回值是void。
+        因此, 在使用该版本的STL实现的时候, 使用删除之前的迭代器定位下一个元
+    素, 例子如下(以上面的map为例子):
+        // C++
+        for (it = map_test.begin(); it != map_test.end(); ++it) {
+          if (key == it->first) {
+            fprintf(stdout, "earase value: %s\n", it->second.c_str());
+            map_test.erase(it++);
+          }
+        }
+> ### **11.3 结论** ###
+        在使用STL的时候请注意你所使用的STL实现版本, 不同的STL实现可能存在一
+    些细微的区别, 但就是这些细微的差别如果不注意却可能造成程序行为不可预知, 
+    所以我们在使用的时候应该多加注意。
+        主流的MSVC和GCC/Clang的STL实现中的erase的不同如上面介绍, 顺序容器的
+    erase都是返回了下一个元素的迭代器。
+
+
+
+## **12. `__if_exists`和`__if_not_exists`关键字** ##
+        这两个关键字主要用于判断传入模板类实现了什么方法, 包含了什么成员, 请
+    看看下面的例子:
+        // C++ 
+        template <typename _Tp>
+        class Hey : public _Tp {
+        public:
+          Hey(void) 
+          {
+            __if_exists(_Tp::sayHello) {
+              // _Tp类支持sayHello()
+              sayHello();
+            }
+          }
+        };
+        __if_exists和__if_not_exists语法意义, 只是意义相反。
+> ### **12.1 使用时需要注意** ###
+    1) 它们是条件判断语句, 不是预编译语句, 请不要把他们当中#ifdef ... #endif
+       来使用
+    2) 只能判断符号是否存在, 对于函数, 不能判断某种特定函数形式是否存在
+    3) 大括号不能省略
+    4) 程序必须使用/EHsc, 即打开C++异常处理
+    5) 只在MSVC中特有的关键字
+> ### **12.2 GCC/Clang** ###
+        由于这两个关键字在gcc/Clang并不存在代替的关键字, 所以移植到Linux平台
+    的时候, 遇到使用了这两个关键字判断的模板, 需要将模板特化, 根据使用了的类
+    行, 单独写对应的函数实现或类实现。
+> ### **12.3 结论** ###
+    1) 在开发跨平台的程序的时候, 建议不要使用类似的MSVC的特有关键字
+    2) 另一种方法是, 在Linux环境下, 将使用了这两个关键字的函数或类特化
