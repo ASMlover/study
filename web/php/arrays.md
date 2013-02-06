@@ -105,3 +105,83 @@
        交换数组中的键和值, 如果同一个值出现多次, 则最后一个键名就是它的值
     5) array_reverse
        将原数组中的元素顺序翻转, 返回一个新的数组
+> ### **4.2 统计数组元素的个数和唯一性** ###
+    1) count
+       计算数组中的元素数目或对象中的属性个数, 对于数组, 返回元素个数; 其他
+       返回1。
+    2) array_count_values
+       统计数组中所有值出现的次数, 其返回是一个数组, 键是原数组的值, 值是原
+       数组中该值出现的次数
+       array array_count_values(array input);
+    3) array_unique
+       用于删除数组中重复的值, 并返回没有重复值的新数组
+> ### **4.3 使用回调函数处理数组的函数** ###
+    1) array_filter
+       用回调函数过滤数组中的元素, 返回按用户自定义函数过滤后的新数组
+       array array_filter(array input[, callback callback]);
+       <function callback($value)>
+    2) array_walk
+       对数组中的每个元素应用回调函数处理
+       bool array_walk(array& array, callback funcname[, mixed userdata]);
+       <function callback($value, $key)>
+    3) array_map
+       相比array_walk更加灵活, 可以处理多个数组, 将回调函数作用到给定数组的
+       元素上, 返回用户自定义函数作用后的数组
+       array array_map(callback callback, array array1[, array ...]);
+       <function callback($value)>
+> ### **4.4 数组的排序函数** ###
+    1) 简单的数组排序函数
+       对一个数组元素的值进行排序, 键将被忽略, 使用0 ~ n的下标
+       bool sort(array& array[, int sort_flags]);   => 由小到大
+       bool rsort(array& array[, int sort_flags]);  => 由大到小
+       sort_flags可选值
+          SORT_REGULAR  => 默认值, 自动识别数组元素的类型进行排序
+          SORT_NUMERIC  => 数字元素排序
+          SORT_STRING   => 字符串元素排序
+          SORT_LOCALE_STRING => 根据当前locale设置把元素当作字符串比较
+    2) 根据键名对数组排序
+       bool ksort(array& array[, int sort_flags]);  => 由小到大
+       bool krsort(array& array[, int sort_flags]); => 由大到小
+       sort_flags与sort/rsort相同
+    3) 根据元素的值对数组排序
+       根据元素的值对数组排序, 结果将保留原有键名和值对应的关系;
+       bool asort(array& array[, int sort_flags]);
+       bool arsort(array& array[, int sort_flags]);
+    4) 根据"自然排序"法对数组排序
+       不是使用计算规则, 数字从1到9, 字母a到z, 短者优先。
+       bool natsort(array& array);     => 结果忽略键名
+       bool netcasesort(array& array); => 对数组不区分大小写字母的排序
+    5) 根据用户自定的规则对数组排序
+       bool usort(array& array, callback cmp_function);
+       bool uasort(array& array, callback cmp_function);
+       bool uksort(array& array, callback cmp_function);
+       这个几个函数与sort, asort, ksort对应 
+    6) 多维数组的排序
+       bool array_multisort(array a1[, mixed arg[, mixed ...[, array ...]]])
+       具体请参见PHP手册
+> ### **4.5 拆分/合并/分解/接合数组** ###
+    1) array_slice
+       在数组中根据条件取出一段值并返回
+       array array_slice(array array, int offset[, int len[, bool preserve_keys]]);
+       offset => 规定元素的开始位置
+       len    => 规定返回数组的长度
+       preserve_keys => 规定是否保留键名
+    2) array_splice
+       与array_slice相似, 选择数组中的一些列元素, 删除并用其他值替换
+       array_splice(array& input, int offset[, int len[, array replacement]]);
+       len  => 表示从offset开始的len个元素
+       replacement => 表示替换的元素数组
+    3) array_combine
+       合并两个数组, 一个数组是键名, 另一个是键值, 如果一个数组为空, 或者两
+       个数组的个数不同返回false
+       array array_combine(array keys, array values);
+    4) array_merge
+       将一个或多个数组合并为一个数组, 如果键重复, 则后面的覆盖前面的;
+       如果传入函数的只有一个数组, 且键是数字, 则返回的键名以0开始
+       array array_merge(array a1[, array a2[, array ...]]);
+    5) array_intersect
+       计算数组的交集, 键名保持不变, 仅由值进行比较
+       array array_intersect(array a1, array a2[, array ...]);
+    6) array_diff
+       返回数组的差集, 键名保持不变, 仅由值进行比较(返回1有2没有的元素)
+       array array_diff(array a1, array a2[, array ...]);
