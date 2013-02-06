@@ -447,3 +447,66 @@
 > ### **12.3 结论** ###
     1) 在开发跨平台的程序的时候, 建议不要使用类似的MSVC的特有关键字
     2) 另一种方法是, 在Linux环境下, 将使用了这两个关键字的函数或类特化
+
+
+
+## **13. 在一命名空间中访问全局函数** ##
+        现在需要在一命名空间中的函数或类中范围一个命名空间外的外部函数, 但是
+    该函数是在命名空间值后才实现的, 如下:
+        // C++
+        namespace g {
+        class GlobalFunction {
+        public:
+          void show(void) 
+          {
+            void global_show(void);
+            global_show();
+          }
+        };
+        }
+        void 
+        global_show(void) 
+        {
+          fprintf(stdout, "Testing global function ...\n");
+        }
+> ### **13.1 MSVC中** ###
+        上面的代码在MSVC中编译的时候可以安全通过, 编译器在链接的时候会先去找
+    命名空间g中有没有global_show的实现, 如果有则调用g::global_show; 如果命名
+    空间g中没有global_show的实现才会去调用外部的全局函数global_show函数。
+        而在g::GlobalFunction::show函数中的函数声明(void global_show(void))
+    也是如此, 默认其是命名空间g中的函数, 当命名空间中没有此函数的时候则表示
+    其是全局函数。
+        因此上面的代码在MSVC中是正确的。
+> ### **13.2 GCC/Clang中** ###
+        上面的代码在GCC或者Clang中编译的时候会得到一个链接警告, 编译器在链接
+    的时候会去寻找命名空间中是否有函数global_show, 结果找不到则报出一个链接
+    错误。
+        在函数g::GlobalFunction::show中的声明(void global_show(void))则是表
+    示该函数是命名空间g中函数, 所以链接的时候也只会寻找命名空间中是否有函数
+    global_show。因此上面的代码在GCC或Clang中编译的时候会得到一个链接错误。
+> ### **13.3 结论** ###
+      1) 上面的代码在GCC/Clang下, 可以先在namespace前声明一个函数原型, 这样
+         在g::GlobalFunction::show中就不需要再声明了, 那么链接的时候, 编译器
+         寻找是否有命名空间g中的函数global_show。有, 则调用g::global_show,
+         如果没有则调用全局空间的global_show函数。
+      2) 建议在编写代码的时候不要使用这种老式的C风格
+      3) 所有需要调用的函数要么都给一个声明, 要么都在调用之前实现
+> ### **13.4 修改** ###
+        上面的代码, 考虑到全局函数可能也会调用命名空间中的某些函数或使用命名
+    空间中的变量等, 我们仍旧保持函数实现在namespace后面, 其修改如下:
+        // C++
+        void global_show(void);
+        namespace g {
+        class GlobalFunction {
+        public:
+          void show(void) 
+          {
+            global_show();
+          }
+        };
+        }
+        void 
+        global_show(void) 
+        {
+          fprintf(stdout, "Testing global function ...\n");
+        }
