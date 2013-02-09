@@ -185,3 +185,30 @@
     6) array_diff
        返回数组的差集, 键名保持不变, 仅由值进行比较(返回1有2没有的元素)
        array array_diff(array a1, array a2[, array ...]);
+> ### **4.6 数组与数据结构** ###
+    1) 使用数组实现堆栈
+       array_push向第一个数组尾巴上添加一个元素, 返回新数组的长度:
+          int array_push(array& array, mixed var[, mixed ...]);
+       array_pop删除数组中的最后一个元素, 返回弹出的元素值:
+          mixed array_pop(array& array);
+    2) 使用数组实现队列
+       array_push向数组尾添加一个元素;
+       array_shift删除数组的第一个元素, 并返回被删除元素的值:
+          mixed array_shift(array& array);
+> ### **4.7 其他有用的数组处理函数** ###
+    1) array_rand
+       从数组中随机选出一个或多个元素, 并返回 
+          mixed array_rand(array input[, int num_req]);
+          第一个参数是一个输入数组; 
+          第二个参数是指定你想取出多少个元素。
+    2) shuffle
+       将数组中的元素按随机顺序重新排列, 成功返回TRUE, 否则返回FALSE 
+    3) array_sum
+       返回数组中所有值的总和, 如果所有值都是整数, 返回一个整数值, 如果其中
+       有一个或多个值是浮点数, 则返回浮点数
+    4) range
+       创建并返回一个包含指定范围的元素的数组
+          array range(mixed first, mixed second[, number step]);
+          第一个参数 => 规定数组元素的最小值
+          第二个参数 => 规定数组元素的最大值
+          第三个参数 => 规定元素之间的步进制
