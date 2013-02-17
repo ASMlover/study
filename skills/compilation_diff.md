@@ -573,3 +573,86 @@
     4) 在跨平台的项目中也不要使用MSVC的/Zp编译选项来设置字节对齐, 因为在GCC
        中不存在(或许是我自己没找到???)设置整个工程的字节对齐方式(特别是对齐
        字节大于4的情况)
+
+
+
+## **15. 获取本机IP地址** ##
+        在网络程序中, 我们有时需要获取本机的IP地址, 以便进行一些相关的测试, 
+    一般情况下获取本机IP地址的代码如下:
+        // C++
+        void 
+        get_self_address(void)
+        {
+        #if (defined(_WIN32) || defined(_WIN64))
+          WSADATA wd;
+          WSAStartup(MAKEWORD(2, 2), &wd);
+        #endif
+
+          char host_name[256];
+          struct hostent* host;
+
+          gethostname(host_name, sizeof(host_name));
+          host = gethostbyname(host_name);
+          fprintf(stdout, "self address : %d.%d.%d.%d\n", 
+            (uint8_t)host->h_addr_list[0][0], 
+            (uint8_t)host->h_addr_list[0][1], 
+            (uint8_t)host->h_addr_list[0][2], 
+            (uint8_t)host->h_addr_list[0][3]);
+
+        #if (defined(_WIN32) || defined(_WIN64))
+          WSACleanup();
+        #endif
+        }
+
+        一般情况下, 不管在Windows平台抑或是Linux平台使用上面的代码都可以获取
+    到本机的IP地址, 当然我们这里并不讲如何获取IP地址。
+        这里我们主要讲解一下通过上面的代码在不同平台下运行的结果的差异。
+> ### **15.1 差异** ###
+    1) Windows平台
+       如你预想的一样, 在Windows下会正确返回当前主机的IP地址
+    2) Linux平台
+       可能和你的预想有所出入, 在Linux平台返回的地址是`127.0.1.1`, 当然这个
+       地址也是回环地址, 你只是需要对相关判断的代码做一些修改而已; 
+       当然获取得到的这个地址不知是否是在虚拟机中运行, 而返回该地址;
+> ### **15.2 Linux下的gethostbyname** ###
+        根据gethostbyname的文档我们可以得知, 在Linux平台下, 建议不要使用该函
+    数, 因为gethostbyname是多线程不安全的, 该函数使用了一个内部的静态变量, 
+    因此在多线程中使用该函数将会导致无法预知的问题发生(如Crash或解析失败),
+    在Linux平台下推荐使用gethostbyname_r或gethostbyaddr。
+> ### **15.3 Linux下gethostbyaddr的工作原理** ###
+    该函数的实现是从bind中抽出来的, 进行了简化, 以及按照RFC标准执行;
+    1) 读取RESOLV_HOST_CONF环境变量指定的解析配置文件, 缺省是没有该环境变量
+       的, 若没有则读取/etc/host.conf配置文件为域名解析顺序配置文件, 设定解
+       析顺序方式; 该文件更改需要重启服务才会生效, 不能即时生效;
+    2) 读取/etc/resolv.conf配置文件, 该文件用于指定解析的DNS服务器, 以及DNS 
+       bind解析时的相关参数, 如重试次数, 超时时间等; 该文件的更改立即生效;
+    3) 读取/etc/nsswitch.conf, 若是先读hosts文件, 则根据名字在hosts文件中查
+       找, 若找到, 则返回, hosts文件不做Cache, 因此hosts文件中的更改是立即生
+       效的; 若找不到, 则使用DNS Bind客户端进行域名解析处理
+    4) 使用DNS Bind客户端进行域名解析时, 会采用/etc/resolv.conf配置文件进行
+       域名解析, 解析的方式由resolv.conf文件决定, 另外解析的选项参数也可以通
+       过环境变量RES_OPTIONS指定 
+> ### **15.4 Linux下使用gethostbyname_r例子** ###
+        // C++ 
+        void 
+        get_self_address_r(void) 
+        {
+          char host_name[256];
+          int  host_errno;
+          struct hostent* result;
+          struct hostent  ret;
+          char buf[512];
+>
+          gethostname(host_name, sizeof(host_name));
+          gethostbyname_r(host_name, &ret, 
+            buf, sizeof(buf), &result, &host_errno);
+          fprintf(stdout, "self address : %d.%d.%d.%d\n", 
+            (uint8_t)result->h_addr_list[0][0], 
+            (uint8_t)result->h_addr_list[0][1], 
+            (uint8_t)result->h_addr_list[0][2], 
+            (uint8_t)result->h_addr_list[0][3]);
+        }
+> ### **15.5 结论** ###
+    1) gethostbyname在不同系统下的差异, 编写跨平台的项目的时候一定要注意
+    2) 同时建议在多线程的程序中(Linux平台下), 不要使用gethostbyname, 而应该
+       使用gethostbyname_r(该函数是多线程安全的)
