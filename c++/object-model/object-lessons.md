@@ -49,3 +49,10 @@
     1) 其nonstatic data members的总和大小;
     2) 加上任何alignment的需求而填补(padding)上去的空间;
     3) 加上为了支持virtual而由内部产生的任何额外负担;
+> ### **1.7 加上多态之后** ###
+    1) 基类指针(pb)所指的object类型可以决定(虚函数-vfun)所调用的实体, 类型信
+       息的封装并非在pb之中, 而是在link之中, link在object的vptr和vptr所指的
+       virtual table之间
+    2) 当一个base class Object被直接初始化为一个derived class Object时, 
+       derived Object会被切割, 以便塞入到较小的base type内存中, derived type
+       将没有留下任何信息, 多态将失效
