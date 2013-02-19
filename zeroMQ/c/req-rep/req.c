@@ -28,7 +28,7 @@ main(int argc, char* argv[])
 
     zmq_msg_init(&rep);
     zmq_msg_recv(&rep, s, 0);
-    fprintf(stdout, "replay message : %s\n", (char*)zmq_msg_data(&rep));
+    fprintf(stdout, "reply message : %s\n", (char*)zmq_msg_data(&rep));
     zmq_msg_close(&rep);
 
     __sleep(100);

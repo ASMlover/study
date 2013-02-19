@@ -13,7 +13,7 @@ if __name__ == '__main__':
   for i in range(10):
     s.send('Hello, world! count [%d]' % i)
     msg = s.recv()
-    print 'replay message is : %s' % msg 
+    print 'reply message is : %s' % msg 
 
     time.sleep(0.1)
   s.close()

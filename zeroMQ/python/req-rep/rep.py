@@ -9,7 +9,7 @@ if __name__ == '__main__':
   s = ctx.socket(zmq.REP)
   s.bind('tcp://*:5555')
 
-  print 'replay serevr init success ...'
+  print 'reply serevr init success ...'
   while True:
     try:
       msg = s.recv()
