@@ -90,4 +90,14 @@
 > ### **5.2 命令行下打开窗口目录** ###
         在命令行下有时需要进入图形窗口目录查看, 我们可以使用explorer命令来完
     成该任务, 假设当前位置是(C:\>), 我们要进入(D:\demo):
-        C:\> explorer D:\demo
+        C:\> explorer D:\demo 
+
+
+
+## **6. 新安装的动态库在系统中找不到(Linux)** ##
+        下面的例子以libzmq为例, 系统中新安装了libzmq的动态库到/usr/local/lib
+    下, 但是在程序运行的时候却不能加载;
+        可以使用 sudo /sbin/ldconfig -v | grep libzmq来检查系统, 如果没有出
+    现下面的内容:
+        libzmq.so.1 -> libzmq.so.1.0.1
+        则需要在/etc/ls.so.conf文件的最后一行加上 /usr/local/lib/
