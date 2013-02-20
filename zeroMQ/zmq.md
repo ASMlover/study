@@ -18,3 +18,12 @@
     6) zmq_setsockopt中的option_value虽然是一个void*指针, 但是传递进去的字符
        串其只会判断第一个字节中的值(因为测试的时候当传入类sub1, sub2的时候, 
        会接收到所有的信息)
+
+## **4. PUSH-PULL模式** ##
+    1) 分为3个部分
+       任务发布 -> 任务执行 -> 工作结果采集
+       sender -> worker -> sinker
+    2) 该模式和pub/sub模式类似, 都是单向的, PUSH发送, PULL接收
+    3) 在没有worker的时候, sender的消息是不会消耗的(由发布进程维护)
+    4) 多个worker消费的是同一列信息, 如果worker1得到消息1, 那么worker2将不会
+       得到该消息了
