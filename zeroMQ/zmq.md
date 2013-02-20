@@ -20,6 +20,8 @@
     6) zmq_setsockopt中的option_value虽然是一个void*指针, 但是传递进去的字符
        串其只会判断第一个字节中的值(因为测试的时候当传入类sub1, sub2的时候, 
        会接收到所有的信息)
+    7) zmq_setsockopt的opvallen参数则表示了option_value设置的长度, 判断的时
+       候可以根据此依据来判断名字长度
 
 ## **4. PUSH-PULL模式** ##
     见图push-pull.png
