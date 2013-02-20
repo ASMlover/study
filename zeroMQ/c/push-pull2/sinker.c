@@ -8,8 +8,8 @@
  *  * Redistributions of source code must retain the above copyright
  *    notice, this list ofconditions and the following disclaimer.
  *
- *  * Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
+ *  * Redistributions in binary form must reproduce the above copyright
  *    the documentation and/or other materialsprovided with the
  *    distribution.
  *
@@ -30,50 +30,35 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
-
-static void 
-start_sender(int num_task)
-{
-  int i, task_time, total_time = 0;
-  char buf[8];
-  void* ctx = zmq_ctx_new();
-  void* sender = zmq_socket(ctx, ZMQ_PUSH);
-  void* sinker = zmq_socket(ctx, ZMQ_PUSH);
-
-  zmq_bind(sender, "tcp://*:5555");
-  zmq_connect(sinker, "tcp://localhost:6666");
-
-  fprintf(stdout, 
-    "sender server init success ...\n"
-    "press ENTER when workers are ready > ");
-  getchar();
-  sprintf(buf, "%d", num_task);
-  zmq_send(sinker, buf, strlen(buf), 0);
-
-  srand((unsigned int)time(0));
-  for (i = 0; i < num_task; ++i) {
-    task_time = rand() % 1000;
-    task_time += (0 == task_time ? 1 : 0);
-    total_time += task_time;
-    sprintf(buf, "%d", task_time);
-    zmq_send(sender, buf, strlen(buf), 0);
-  }
-  fprintf(stdout, "all tasks will use => %d ms\n", total_time);
-
-  zmq_close(sinker);
-  zmq_close(sender);
-  zmq_ctx_destroy(ctx);
-}
 
 int 
-main(int argc, char* argv[]) 
+main(int argc, char* argv[])
 {
-  if (argc < 2)
-    return fprintf(stderr, "arguments error ...\n");
- 
-  start_sender(atoi(argv[1]));
+  int i, num_task;
+  char buf[128] = {0};
+  void* ctx = zmq_ctx_new();
+  void* sinker = zmq_socket(ctx, ZMQ_PULL);
+  void* controller = zmq_socket(ctx, ZMQ_PUB);
+
+  zmq_bind(sinker, "tcp://*:6666");
+  zmq_bind(controller, "tcp://*:7777");
+
+  fprintf(stdout, "sinker server init success ...\n");
+  zmq_recv(sinker, buf, sizeof(buf), 0);
+  num_task = atoi(buf);
+
+  for (i = 0; i < num_task; ++i) {
+    memset(buf, 0, sizeof(buf));
+    zmq_recv(sinker, buf, sizeof(buf), 0);
+
+    fprintf(stdout, "%s\n", buf);
+  }
+  zmq_send(controller, "KILL", 4, 0);
+
+  zmq_close(controller);
+  zmq_close(sinker);
+  zmq_ctx_destroy(ctx);
 
   return 0;
 }
