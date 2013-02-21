@@ -76,3 +76,36 @@
         } zmq_pollitem_t;
 > ### **8.4 例子** ###
     1) 等待多个Sockets消息的处理请参见push-pull2的worker
+
+
+## **9. 处理多部分的消息(Multi-part Messages)** ##
+> ### **9.1 在发送端** ###
+        zmq_msg_send(socket, &message, ZMQ_SNDMORE);
+        ...
+        zmq_msg_send(socket, &message, ZMQ_SNDMORE); 
+        ...
+        zmq_msg_send(socket, &message, 0);
+> ### **9.2 在接收端(接收一个完整的消息)** ###
+        while (1) {
+          zmq_msg_t message;
+          zmq_msg_init(&message);
+          zmq_msg_recv(socket, &message, 0);
+          // process the message frame
+          zmq_msg_close(&message);
+          int more;
+          size_t more_size = sizeof(more);
+          zmq_getsockopt(socket, ZMQ_RCVMORE, &more, &more_size);
+          if (!more)
+            break;
+        }
+> ### **9.3 Multi-part需要知道的** ###
+    1) 在你发送multi-part消息的时候, 消息的第一部分以及后面的部分事实上只是
+       发送到了线路上知道最后一部分发送为止;
+    2) 当你使用zmq_poll的时候, 当你接收到第一部分消息, 那么所有剩下的部分都
+       到了;
+    3) 你将接收消息的所有部分, 否则一部分也接收不到;
+    4) 消息的每一部分都是一个zmq_msg_t类型的item;
+    5) 你将接收到消息的所有部分无论你是否设置RCVMORE;
+    6) 在发送的时候, 0MQ消息队列是存放在内存中的指导最后一个消息进入队列的时
+       候, 然后将所有消息发送出去;
+    7) 没有办法取消一部分已经发送的消息, 除非关闭socket;
