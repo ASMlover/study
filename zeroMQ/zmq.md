@@ -55,4 +55,24 @@
     7) ROUTER - ROUTER
     8) PUSH - PULL 
     9) PAIR - PAIR
-    10) XPUB - XSUB
+    10) XPUB - XSUB 
+
+## **8. 0MQ处理多个Sockets** ##
+> ### **8.1 传统的做法** ###
+    传统的做法是在主循环中:
+    1) 等待对应socket的消息(recv)
+    2) 处理接收到的消息
+    3) 循环
+> ### **8.2 高效优雅的做法** ###
+    1) 可以使用0MQ的zmq_poll
+    2) 有消息来的时候自动通知对应的socket 
+    3) 对应的socket接收消息并处理
+> ### **8.3 zmq_poll对应的消息结构** ###
+        typedef struct {
+          void* socket;   // 0MQ socket to poll on
+          int   fd;       // OR, native file handle to poll on
+          short events;   // Events to poll on
+          short revents;  // Events returned after poll
+        } zmq_pollitem_t;
+> ### **8.4 例子** ###
+    1) 等待多个Sockets消息的处理请参见push-pull2的worker
