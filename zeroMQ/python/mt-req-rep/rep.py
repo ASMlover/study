@@ -34,6 +34,7 @@ import time
 import sys
 
 
+
 def routine(ctx):
   rep = ctx.socket(zmq.REP)
   rep.connect('inproc://workers')
@@ -41,11 +42,14 @@ def routine(ctx):
   thread_name = threading.currentThread().getName()
   index = 0
   while True:
-    msg = rep.recv()
-    print 'recevied request : %s' % msg
+    try:
+      msg = rep.recv()
+      print 'recevied request : %s' % msg
 
-    index += 1
-    rep.send('[%s]reply request index : %d' % (thread_name, index))
+      index += 1
+      rep.send('[%s]reply request index : %d' % (thread_name, index))
+    except KeyboardInterrupt:
+      break
   rep.close()
 
 
@@ -67,7 +71,10 @@ if __name__ == '__main__':
   for i in range(int(sys.argv[1])):
     thread = threading.Thread(target=routine, args=(ctx,))
     thread.start()
-  zmq.device(zmq.QUEUE, rep, worker)
+  try:
+    zmq.device(zmq.QUEUE, rep, worker)
+  except KeyboardInterrupt:
+    pass
 
   worker.close()
   rep.close()
