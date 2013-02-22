@@ -38,3 +38,5 @@ if __name__ == '__main__':
   diff = end - beg
   print diff
   print '%d hours' % (diff.days * 24 + diff.seconds / 3600)
+  print '%d minutes' % (diff.days * 24 * 60 + diff.seconds / 60)
+  print '%d seconds' % (diff.days * 24 * 3600 + diff.seconds)
