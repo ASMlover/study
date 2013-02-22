@@ -48,11 +48,13 @@ main(int argc, char* argv[])
   zmq_send(sync, "", 0, 0);
   zmq_recv(sync, buf, sizeof(buf), 0);
 
+  fprintf(stdout, "connected to publish server success ...\n");
   while (1) {
     memset(buf, 0, sizeof(buf));
     zmq_recv(sub, buf, sizeof(buf), 0);
-    if (0 == strcmp("END", buf))
+    if (0 == strncmp("END", buf, 3))
       break;
+    fprintf(stdout, "recevied : %s\n", buf);
     ++count;
   }
   fprintf(stdout, "recevied count : %d\n", count);

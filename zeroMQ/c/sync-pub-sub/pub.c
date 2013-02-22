@@ -53,6 +53,7 @@ main(int argc, char* argv[])
     }
     num_sub = atoi(argv[1]);
     num_pub = atoi(argv[2]);
+    fprintf(stdout, "num_sub=>%d, num_pub=>%d\n", num_sub, num_pub);
 
     for (i = 0; i < num_sub; ++i) {
       zmq_recv(sync, buf, sizeof(buf), 0);
@@ -63,8 +64,10 @@ main(int argc, char* argv[])
     for (i = 0; i < num_pub; ++i) {
       sprintf(buf, "publish index : %d", i + 1);
       zmq_send(pub, buf, strlen(buf), 0);
+      fprintf(stdout, "sent : %s\n", buf);
     }
     zmq_send(pub, "END", 3, 0);
+    fprintf(stdout, "sent : END ...\n");
   } while (0);
 
   zmq_close(sync);
