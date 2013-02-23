@@ -209,3 +209,5 @@
     标示该信息的信箱...
     示意图请参见pub-sub-envelope.png
     例子请参见pub-sub-envelope/
+    当然你在发送信息的时候还可以添加上发送者的地址信息, 请参见该模式示意图:
+    pub-sub-envelope-sender.png
