@@ -211,3 +211,8 @@
     例子请参见pub-sub-envelope/
     当然你在发送信息的时候还可以添加上发送者的地址信息, 请参见该模式示意图:
     pub-sub-envelope-sender.png
+
+
+## **16. 消息丢失问题处理** ##
+    在使用0MQ的各个模型发送消息的过程中出现消息丢失的现象, 其解决方案请参见
+    图missing-msg-problem-solver.png
