@@ -294,3 +294,11 @@
         4) REP to ROUTER: 如果它能够得知REP socket已经连接并且知道在那个连接
            下的身份, ROUTER socket能够在理论上启动一个对话窗口并发送一个正确
            格式的请求; 在DEALER to ROUTER模式下是混乱的且什么也不能添加
+
+
+
+## **18. 负载平衡模式** ##
+        我们将看到怎么连接一个ROUTER socket到一个REQ socket, 再到一个DEALER
+        socket, 这是一个负载平衡模式. 这个模式是我们第一个接触到的使用一个
+        ROUTER socket来实现故意路由, 而不是简单的扮演一个应答频道.
+> ### **18.1 ROUTER broker and REQ workers** ###
