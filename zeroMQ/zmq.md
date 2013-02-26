@@ -299,6 +299,8 @@
 
 ## **18. 负载平衡模式** ##
         我们将看到怎么连接一个ROUTER socket到一个REQ socket, 再到一个DEALER
-        socket, 这是一个负载平衡模式. 这个模式是我们第一个接触到的使用一个
-        ROUTER socket来实现故意路由, 而不是简单的扮演一个应答频道.
+    socket, 这是一个负载平衡模式. 这个模式是我们第一个接触到的使用一个ROUTER
+    socket来实现故意路由, 而不是简单的扮演一个应答频道.
 > ### **18.1 ROUTER broker and REQ workers** ###
+        具体的例子请参见router-to-req/
+> ### **18.2 ROUTER broker and DEALER workers** ###
