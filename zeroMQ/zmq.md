@@ -304,3 +304,7 @@
 > ### **18.1 ROUTER broker and REQ workers** ###
         具体的例子请参见router-to-req/
 > ### **18.2 ROUTER broker and DEALER workers** ###
+        任何你可以使用REQ的地方你都可以使用DEALER, 这儿有两个具体不同的地方:
+        1) REQ总是会在发送具体的数据之前发送一个空的定界符数据帧, 但是DEALER
+           不会;
+        2) REQ在它接收到一个应答之前只会一个(请求)数据, 而DEALER是完全异步;
