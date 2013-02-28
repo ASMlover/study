@@ -37,10 +37,10 @@
 static int 
 L_Version(lua_State* L)
 {
-  fputs("This is version 1.o of the lua-console", stdout);
-  fputs(LUA_VERSION, stdout);
-  fputs(LUA_COPYRIGHT, stdout);
-  fputs(LUA_AUTHORS, stdout);
+  fputs("This is version 1.o of the lua-console\n", stdout);
+  fputs(LUA_VERSION "\n", stdout);
+  fputs(LUA_COPYRIGHT"\n", stdout);
+  fputs(LUA_AUTHORS "\n", stdout);
 
   return 0;
 }
