@@ -30,6 +30,8 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
+#include "clua.h"
+
 
 
 int 
@@ -51,4 +53,104 @@ clua_destroy(clua_t* clua)
   if (NULL != clua->L)
     lua_close(clua->L);
   clua->L = NULL;
+}
+
+int 
+clua_run_script(clua_t* clua, const char* script_file)
+{
+  if (0 != luaL_loadfile(clua->L, script_file)) {
+    if (NULL != clua->error_handler) {
+      char buf[256];
+      sprintf(buf, "Lua Error: load script-%s\nError Message-%s\n", 
+        script_file, luaL_checkstring(clua->L, -1));
+      clua->error_handler(buf);
+    }
+
+    return -1;
+  }
+
+  if (0 != lua_pcall(clua->L, 0, LUA_MULTRET, 0)) {
+    if (NULL != clua->error_handler) {
+      char buf[256];
+      sprintf(buf, "Lua Error: run script-%s\nError Message-%s\n", 
+        script_file, luaL_checkstring(clua->L, -1));
+      clua->error_handler(buf);
+    }
+
+    return -1;
+  }
+
+  return 0;
+}
+
+int 
+clua_run_string(clua_t* clua, const char* script_string)
+{
+  if (0 != luaL_loadbuffer(clua->L, 
+    script_string, strlen(script_string), NULL)) {
+    if (NULL != clua->error_handler) {
+      char buf[256];
+      sprintf(buf, "Lua Error: load script-%s\nError Message-%s\n", 
+        script_string, luaL_checkstring(clua->L, -1));
+      clua->error_handler(buf);
+    }
+    
+    return -1;
+  }
+
+  if (0 != lua_pcall(clua->L, 0, LUA_MULTRET, 0)) {
+    if (NULL != clua->error_handler) {
+      char buf[256];
+      sprintf(buf, "Lua Error: run script-%s\nError Message-%s\n", 
+        script_string, luaL_checkstring(clua->L, -1));
+      clua->error_handler(buf);
+    }
+
+    return -1;
+  }
+
+  return 0;
+}
+
+void 
+clua_register_function(clua_t* clua, 
+    const char* function_name, lua_CFunction function)
+{
+  lua_register(clua->L, function_name, function);
+}
+
+const char* 
+clua_get_string_arg(clua_t* clua, int narg, const char* def_string) 
+{
+  return luaL_optstring(clua->L, narg, def_string);
+}
+
+double 
+clua_get_number_arg(clua_t* clua, int narg, double def_number)
+{
+  return luaL_optnumber(clua->L, narg, def_number);
+}
+
+void 
+clua_push_string(clua_t* clua, const char* string)
+{
+  lua_pushstring(clua->L, string);
+}
+
+void 
+clua_push_number(clua_t* clua, double number)
+{
+  lua_pushnumber(clua->L, number);
+}
+
+const char* 
+clua_strerror(clua_t* clua)
+{
+  return luaL_checkstring(clua->L, -1);
+}
+
+lua_State* 
+clua_get_context(clua_t* clua)
+{
+  return clua->L;
 }

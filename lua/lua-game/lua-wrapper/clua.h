@@ -39,10 +39,10 @@ typedef struct clua_s {
 
 
 extern int clua_init(clua_t* clua);
-extern void* clua_destroy(clua_t* clua);
+extern void clua_destroy(clua_t* clua);
 extern int clua_run_script(clua_t* clua, const char* script_file);
 extern int clua_run_string(clua_t* clua, const char* script_string);
-extern int clua_register_function(clua_t* clua, 
+extern void clua_register_function(clua_t* clua, 
     const char* function_name, lua_CFunction function);
 extern const char* clua_get_string_arg(clua_t* clua, 
     int narg, const char* def_string);
