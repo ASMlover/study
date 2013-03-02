@@ -32,11 +32,26 @@
 
 
 
+static clua_t* s_clua;
+
+
 static int 
 l_version(lua_State* L)
 {
   fprintf(stdout, "Version 2.0 of lua-console\n");
   return 0;
+}
+
+static int 
+l_add(lua_State* L)
+{
+  int narg = 1;
+  double a = clua_get_number_arg(s_clua, narg++, 0.0);
+  double b = clua_get_number_arg(s_clua, narg++, 0.0);
+  double ret = a + b;
+
+  clua_push_number(s_clua, ret);
+  return 1;
 }
 
 static char* 
@@ -56,7 +71,9 @@ main(int argc, char* argv[])
   fprintf(stdout, "Enter lua commands at the prompt, [quit] to exit\n\n");
 
   clua_init(&clua);
+  s_clua = &clua;
   clua_register_function(&clua, "version", l_version);
+  clua_register_function(&clua, "add", l_add);
 
   cmd = get_command();
   while (0 != stricmp("quit", cmd)) {
