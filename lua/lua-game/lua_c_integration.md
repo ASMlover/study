@@ -11,3 +11,5 @@
     的是在lua5.1中luaopen_io被取消了; 我们可以使用luaL_openlibs来打开所有的
     lua标准库。。。
         void luaL_openlibs(lua_State* L);
+> ### **1.2 lua的c封装** ###
+    具体请参见lua-wrapper/
