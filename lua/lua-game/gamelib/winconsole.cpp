@@ -73,6 +73,30 @@ WinConsole::stopConsole(void)
 void 
 WinConsole::write(const char* string)
 {
+  if (NULL != g_wConsole && NULL != s_hWnd_) {
+    int str_len = (int)strlen(string);
+    char* buf = (char*)malloc(str_len + 1);
+    int index = 0;
+
+    for (int i = 0; i < (int)str_len; ++i) {
+      if (10 != string[i])
+        buf[index++] = string[i];
+      else {
+        buf[index] = 0;
+        g_wConsole->strList_.push_front(buf);
+        index = 0;
+      }
+    }
+
+    if (index > 0) {
+      buf[index] = 0;
+      g_wConsole->strList_.push_front(buf);
+    }
+    InvalidateRect(s_hWnd_, NULL, TRUE);
+    free(buf);
+  }
+
+  g_wConsole->adjustScrollBar();
 }
 
 LRESULT CALLBACK 
@@ -83,12 +107,19 @@ WinConsole::wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp)
 
   switch (msg) {
   case WM_ACTIVATEAPP:
+    s_isWinActive_ = (wp != 0);
     return 0L;
   case WM_ACTIVATE:
+    s_isWinActive_ = ((wp == WM_ACTIVATE) || (wp == WA_CLICKACTIVE));
     return 0L;
   case WM_DESTROY:
+    s_isWinActive_ = false;
+    s_hWnd_ = NULL;
     break;
   case WM_PAINT:
+    hDC = BeginPaint(s_hWnd_, &ps);
+    g_wConsole->paint(hDC);
+    EndPaint(s_hWnd_, &ps);
     break;
   case WM_CHAR:
     break;
@@ -106,24 +137,58 @@ WinConsole::wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp)
     break;
   case WM_SIZING:
   case WM_SIZE:
+    g_wConsole->resizeControls();
+    break;
+  case WM_SETCURSOR:
+    SetCursor(LoadCursor(NULL, IDC_ARROW));
+    ShowCursor(TRUE);
     break;
   case WM_VSCROLL:
     switch (wp & 0xFFFF) {
     case SB_PAGEUP:
+      g_wConsole->scrollY_ = 
+        min((int)(g_wConsole->scrollY_ + g_wConsole->textHeight_), 
+          (int)(g_wConsole->strList_.size() - g_wConsole->textHeight_) + 1);
       break;
     case SB_PAGEDOWN:
       break;
     case SB_LINEUP:
+      g_wConsole->scrollY_ = 
+        min((int)(g_wConsole->scrollY_ + 1), 
+          (int)(g_wConsole->strList_.size() - g_wConsole->textHeight_) + 1);
       break;
     case SB_LINEDOWN:
+      g_wConsole->scrollY_ = max(g_wConsole->scrollY_ - 1, 0);
       break;
     case SB_THUMBTRACK:
       break;
     default:
       break;
     }
+
+    {
+      SCROLLINFO si;
+      si.cbSize = sizeof(si);
+      si.fMask  = SIF_POS;
+      si.nPos   = g_wConsole->strList_.size() - g_wConsole->scrollY_;
+      SetScrollInfo(h, SB_VERT, &si, TRUE);
+    } 
+    InvalidateRect(s_hWnd_, NULL, TRUE);
+
     break;
   case WM_USER:
+    write(s_cmdBuf_);
+    if (0 != luaL_loadbuffer(clua_get_context(g_wConsole->clua), 
+          s_cmdBuf_, strlen(s_cmdBuf_), NULL))
+      write("Error loading command\n");
+    if (0 != lua_pcall(clua_get_context(g_wConsole->clua), 
+          0, LUA_MULTRET, 0))
+    { 
+      write("Error in command\n");
+      write(luaL_checkstring(clua_get_context(g_wConsole->clua), -1));
+    }
+    memset(s_cmdBuf_, 0, sizeof(s_cmdBuf_));
+
     break;
   }
 
@@ -135,6 +200,14 @@ WinConsole::editProc(HWND h, UINT msg, WPARAM wp, LPARAM lp)
 {
   switch (msg) {
   case WM_CHAR:
+    if ((TCHAR)wp == VK_RETURN) {
+      LONG sizeOfString = SendMessage(h, WM_GETTEXTLENGTH, 0, 0);
+      SendMessage(h, WM_GETTEXT, sizeOfString + 1, (LPARAM)s_cmdBuf_);
+      SendMessage(s_hWnd_, WM_USER, 0, sizeOfString);
+      SendMessage(h, WM_SETTEXT, 0, (LONG)TEXT(""));
+
+      return 1;
+    }
     break;
   }
   return CallWindowProc(s_EditProc, h, msg, wp, lp);
