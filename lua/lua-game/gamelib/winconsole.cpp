@@ -36,6 +36,7 @@ extern "C" {
 #include "winconsole.h"
 
 
+static WNDPROC s_EditProc;
 WinConsole* g_wConsole = NULL;
 
 volatile bool WinConsole::s_isWinActive_ = false;
@@ -132,7 +133,11 @@ WinConsole::wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp)
 LRESULT CALLBACK 
 WinConsole::editProc(HWND h, UINT msg, WPARAM wp, LPARAM lp)
 {
-  return 0;
+  switch (msg) {
+  case WM_CHAR:
+    break;
+  }
+  return CallWindowProc(s_EditProc, h, msg, wp, lp);
 }
 
 
@@ -153,19 +158,108 @@ WinConsole::~WinConsole(void)
 void 
 WinConsole::init(HINSTANCE hInst)
 {
+  hInst_ = hInst;
+  scrollY_ = 0;
+
+  WNDCLASSEX wc = {0};
+
+  wc.cbSize         = sizeof(wc);
+  wc.style          = CS_HREDRAW | CS_VREDRAW;
+  wc.lpfnWndProc    = (WNDPROC)&WinConsole::wndProc;
+  wc.hInstance      = hInst;
+  wc.hCursor        = LoadCursor(NULL, IDC_ARROW);
+  wc.hbrBackground  = (HBRUSH)GetStockObject(BLACK_BRUSH);
+  wc.lpszClassName  = TEXT("WinConsole");
+  RegisterClassEx(&wc);
+
+  s_hWnd_ = CreateWindowEx(0, 
+      TEXT("WinConsole"), 
+      TEXT("LUA WinConsole"), 
+      WS_OVERLAPPEDWINDOW, 
+      0,
+      0, 
+      640, 
+      480, 
+      NULL, 
+      NULL, 
+      hInst_, 
+      NULL);
+  ShowWindow(s_hWnd_, SW_SHOW);
+  UpdateWindow(s_hWnd_);
+  SetFocus(s_hWnd_);
+
+  s_hEditCtrl_ = CreateWindowEx(0, 
+      TEXT("Edit"), 
+      TEXT(""), 
+      ES_LEFT | WS_CHILD, 
+      2, 
+      404, 
+      228, 
+      16, 
+      s_hWnd_, 
+      (HMENU)0xa7, 
+      hInst_, 
+      NULL);
+  s_EditProc = (WNDPROC)SetWindowLong(s_hEditCtrl_, 
+      GWL_WNDPROC, (LONG)&WinConsole::editProc);
+  g_wConsole->resizeControls();
 }
 
 void 
 WinConsole::resizeControls(void)
 {
+  RECT rc;
+
+  GetClientRect(s_hWnd_, &rc);
+  textHeight_ = (rc.bottom - rc.top) / 16;
+
+  SetWindowPos(s_hEditCtrl_, 
+      HWND_TOP, 
+      rc.left + 2, 
+      rc.bottom - 18, 
+      rc.right - rc.left - 4, 
+      16, 
+      SWP_NOZORDER);
+
+  adjustScrollBar();
+  InvalidateRect(s_hWnd_, NULL, TRUE);
 }
 
 void 
 WinConsole::adjustScrollBar(void)
 {
+  SCROLLINFO si = {0};
+
+  si.cbSize = sizeof(si);
+  si.fMask  = SIF_RANGE | SIF_PAGE | SIF_POS;
+  si.nMax   = strList_.size();
+  si.nPage  = textHeight_;
+  si.nPos   = strList_.size() - scrollY_;
+  SetScrollInfo(s_hWnd_, SB_VERT, &si, NULL);
 }
 
 void 
 WinConsole::paint(HDC hDC)
 {
+  SetTextColor(hDC, RGB(255, 255, 255));
+  SetBkColor(hDC, RGB(0, 0, 0));
+
+  RECT rc;
+  GetClientRect(s_hWnd_, &rc);
+
+  int x = 2;
+  int y = rc.bottom - 40;
+
+  std::list<std::string>::iterator it = strList_.begin();
+  int skip = scrollY_;
+  while (0 != skip) {
+    ++it;
+    --skip;
+  }
+
+  while (it != strList_.end()) {
+    TextOut(hDC, x, y, it->c_str(), strlen(it->c_str()));
+    y -= 16;
+    ++it;
+  }
 }
