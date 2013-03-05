@@ -54,7 +54,7 @@ WinConsole::startConsole(HINSTANCE hInst, clua_t* clua)
 
   if (NULL != s_hWnd_)
     g_wConsole->init(hInst);
-  g_wConsole->clua = clua;
+  g_wConsole->clua_ = clua;
 
   // TODO:
   
@@ -178,14 +178,14 @@ WinConsole::wndProc(HWND h, UINT msg, WPARAM wp, LPARAM lp)
     break;
   case WM_USER:
     write(s_cmdBuf_);
-    if (0 != luaL_loadbuffer(clua_get_context(g_wConsole->clua), 
+    if (0 != luaL_loadbuffer(clua_get_context(g_wConsole->clua_), 
           s_cmdBuf_, strlen(s_cmdBuf_), NULL))
       write("Error loading command\n");
-    if (0 != lua_pcall(clua_get_context(g_wConsole->clua), 
+    if (0 != lua_pcall(clua_get_context(g_wConsole->clua_), 
           0, LUA_MULTRET, 0))
     { 
       write("Error in command\n");
-      write(luaL_checkstring(clua_get_context(g_wConsole->clua), -1));
+      write(luaL_checkstring(clua_get_context(g_wConsole->clua_), -1));
     }
     memset(s_cmdBuf_, 0, sizeof(s_cmdBuf_));
 
