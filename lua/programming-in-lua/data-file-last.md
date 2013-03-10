@@ -37,7 +37,7 @@
         else
         end
        end
-> ### ***2.1 保存无环的table* ###
+> ### **2.1 保存无环的table** ###
         -- lua
         function serialize(o)
           if type(o) == 'number' then
