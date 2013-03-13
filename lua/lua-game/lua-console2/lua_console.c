@@ -76,7 +76,11 @@ main(int argc, char* argv[])
   clua_register_function(&clua, "add", l_add);
 
   cmd = get_command();
+#if _WIN32
   while (0 != stricmp("quit", cmd)) {
+#else
+  while (0 != strcasecmp("quit", cmd)) {
+#endif
     if (0 != clua_run_string(&clua, cmd)) 
       fprintf(stderr, "Error: %s\n", clua_strerror(&clua));
 
