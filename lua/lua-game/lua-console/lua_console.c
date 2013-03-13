@@ -82,7 +82,11 @@ main(int argc, char* argv[])
     lua_register(L, s_console_glue[i].name, s_console_glue[i].func);
 
   cmd = get_command();
+#if _WIN32
   while (0 != stricmp("quit", cmd)) {
+#else
+  while (0 != strcasecmp("quit", cmd)) {
+#endif
     if (0 == luaL_loadbuffer(L, cmd, strlen(cmd), NULL)) {
       if (0 != lua_pcall(L, 0, LUA_MULTRET, 0)) 
         fprintf(stdout, "Error: %s\n", luaL_checkstring(L, -1));
