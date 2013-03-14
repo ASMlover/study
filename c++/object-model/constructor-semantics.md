@@ -42,7 +42,6 @@
         class A : public virtual X { public: int j; };
         class B : public virtual X { public: double d; };
         class C : public A, public B { public: int k; };
-
         //! 无法在编译期间决定pa->X::i的位置
         void foo(const A* pa) { pa->i = 1024; }
     1) 编译时, foo可能被改写为:
