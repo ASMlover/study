@@ -38,3 +38,28 @@
        在每一个class object中, 一个额外的pointer member(vptr)会被编译器合成
        出来, 内含相关的class vtbl的地址;
 > ### **1.4 带有一个Virtual Base Class的Class** ###
+        class X { public: int i; };
+        class A : public virtual X { public: int j; };
+        class B : public virtual X { public: double d; };
+        class C : public A, public B { public: int k; };
+
+        //! 无法在编译期间决定pa->X::i的位置
+        void foo(const A* pa) { pa->i = 1024; }
+    1) 编译时, foo可能被改写为:
+       void foo(const A* pa) { pa->__vbcX->i = 1024; }
+    2) __vbcX表示编译器所产生的指针, 指向virtual base class X
+    3) 如果class没有声明任何Constructors, 那么编译器必须为它合成一个默认的
+       Constructor 
+> ### **1.5 总结** ###
+    1) 被合成出来的Constructor只能满足编译器的需要, 是借"调用member object 
+       或base class的默认构造函数"或是"为每一个Object初始化其虚函数机制或虚
+       基类机制"而完成的
+    2) 这4种情况之外且没有声明任何构造函数的类, 则他们拥有隐式的非必要的默认
+       构造函数, 实际是不会被合成出来的
+    3) 合成的默认构造函数中, 只有base class subobjects和member class objects
+       会被初始化, 其他的非静态数据成员(函数, 函数指针, 整数数组等)都不会被
+       初始化 
+
+
+
+## **2. Copy Constructor的构建操作** ##
