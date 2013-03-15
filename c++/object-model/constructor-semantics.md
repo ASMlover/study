@@ -62,3 +62,104 @@
 
 
 ## **2. Copy Constructor的构建操作** ##
+        有3种情况, 会以一个object的内容作为另一个class object的初始值, 即是
+    要对一个object做明确的初始化操作:
+        class X { ... };
+        X x;
+
+        其中一种情况是对一个object做明确的初始化操作:
+        //! C++
+        X xx = x;
+
+        另两种情况是当object被当做参数交给某个参数时:
+        extern void foo(X x);
+        void 
+        bar(void)
+        {
+          X xx;
+          foo(xx);
+        }
+
+        还有一种是当函数传回一个class object时:
+        x 
+        foo_bar(void)
+        {
+          X xx;
+          //! ... 
+          return xx;
+        }
+> ### **2.1 缺省按成员初始化(Default Memberwise Initialization)** ###
+    1) 如果class没有提供一个显示的拷贝构造, 当class object以"相同的class的另
+       一个object"作为初值, 其内部是以缺省按成员初始化的手法来完成的, 即是把
+       每一个内建的或派生的data member的值, 从某个对象拷贝一份到另一个对象身
+       上
+    2) 默认构造函数和拷贝构造函数会在必要的时候才由编译器产生出来
+    3) 一个类对象可以从两种方式复制得到, 一种是被初始化话, 另一种是被指定, 
+       这两个操作分别是以拷贝构造函数和拷贝赋值操作完成的
+> ### **2.2 位逐次拷贝(Bitwise Copy Semantics)** ###
+        //! C++
+        Word a("book");
+        Word b = a;
+    1) 如果Word定义了一个拷贝构造, b的初始化就会去调用它; 如果Word没有定义一
+       个明确的拷贝构造, 那编译器就会视Word是否展现位逐次拷贝来决定是否合成
+       一个默认拷贝构造函数了
+    2) 如果Word的实现如下, 展现除了默认拷贝的语义就不需要合成出一个缺省拷贝
+       构造了(b的初始化操作也就不需要以一个函数调用来完成了):
+        //! C++
+        class Word {
+          int count;
+          char* str;
+        public:
+          Word(const char* s);
+          ~Word(void) { delete [] str; }
+        };
+    3) 如果Word的声明如下, 而String声明了一个确切的拷贝构造, 那么编译器就会
+       合成出一个Word的拷贝构造一边调用类成员String的拷贝构造:
+        // C++
+        class Word {
+          int count;
+          String str;
+        public:
+          Word(const String& s);
+          ~Word(void);
+        };
+        class String {
+        public:
+          String(const char* s);
+          String(const String& s);
+          ~String(void);
+          //! ...
+        };
+       编译器合成出来的拷贝构造大致如下(伪代码):
+        inline 
+        Word:Word(const Word& w)
+        {
+          str.String::String(w.str);
+          count = w.count;
+        }
+    4) 在被合成出来的拷贝构造中, (整数, 指针, 数组等的nonclass members)也都
+       会被复制
+> ### **2.3 不要位逐次拷贝** ###
+    一个class不展现位逐次拷贝的情况如下:
+    1) class内含一个对象成员, 切该对象成员的class声明有一个拷贝构造函数
+    2) 当class继承自一个有拷贝构造函数的基类
+    3) class声明了一个或多个虚函数
+    4) class继承的基类中, 有一个或多个虚基类
+        在前两种情况中, 编译器必须将成员或基类的拷贝构造的调用安插到合成的拷
+    贝构造函数当中
+> ### **2.4 重新设定Virtual Table的指针** ###
+    1) 编译期间只要有一个类声明了虚函数就会做如下扩张:
+        增加一个虚函数表(vtbl), 内含每一个有作用的虚函数地址;
+        将一个指向虚函数表的指针(vptr), 安插到每一个类对象中;
+    2) 当编译器导入一个vptr到class之中时, 该class就不再展现位逐次语义了
+> ### **2.5 处理Virtual Base Class Subobject** ###
+    1) 一个类对象如果以另一个对象作为初值, 而后者有一个虚基类的Subobject, 就
+       会使"位逐次拷贝"失效
+    2) 编译器必须让"继承的类对象"中的"虚基类subobject的位置"在执行期间准备妥
+       当; 维护"位置完整性"是编译器的责任, "位逐次拷贝"可能会破坏这个位置, 
+       所以编译器必须在它自己合成才出来的拷贝构造函数中做出仲裁
+    3) 对于所讲述的4种编译器会合成拷贝构造函数的情况, 在那些情况下class不再
+       保持"位逐次拷贝", 而且默认拷贝构造函数未被声明的话会被认为是不重要的;
+       在这4种情况下, 如果缺失一个已经声明的拷贝构造函数, 编译器为了正确处理
+       "以一个class object作为另一个class object的初值", 必须合成出一个拷贝
+       构造函数
