@@ -320,3 +320,10 @@
         4) 使用负载均衡模式将这些请求发送到工作者(workers)
         5) 从工作者接收应答
         6) 将这些应答返回到原始请求的客户
+
+
+
+
+## **19. 高级CZMQ API** ##
+        主要描述了更高层次C绑定的ZMQ API
+    1) 使用zmq_poll的例子请参见load-balance-broker-high-level/
