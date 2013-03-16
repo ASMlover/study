@@ -327,3 +327,9 @@
 ## **19. 高级CZMQ API** ##
         主要描述了更高层次C绑定的ZMQ API
     1) 使用zmq_poll的例子请参见load-balance-broker-high-level/
+    2) 同样我们可以使用CZMQ的zloop, 虽然简单但是却功能强大:
+        在任意socket上设置一个reader, 然后代码就会调用任何已经输入的socket;
+        在一个socket上断开一个reader;
+        设置一个定时器在一次或多次指定的时间点上;
+        取消一个定时器;
+        具体例子请参见load-balance-zloop/
