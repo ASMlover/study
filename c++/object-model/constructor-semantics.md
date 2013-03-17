@@ -162,4 +162,220 @@
        保持"位逐次拷贝", 而且默认拷贝构造函数未被声明的话会被认为是不重要的;
        在这4种情况下, 如果缺失一个已经声明的拷贝构造函数, 编译器为了正确处理
        "以一个class object作为另一个class object的初值", 必须合成出一个拷贝
-       构造函数
+       构造函数 
+
+
+## **3. 程序转化语意学(Program Transformation Semantics)** ##
+> ### **3.1 明确的初始化操作(Explicit Initialization)** ###
+        已知的定义如下:
+        //! C++
+        X x0;
+        void 
+        foo_bar(void)
+        {
+          X x1(x0);
+          X x2 = x0;
+          X x3 = X(x0);
+        }
+        其必要的程序转换有两个阶段
+    1) 重写每一个定义, 其中的初始化操作会被剥除
+    2) class的拷贝构造函数会被安插进去
+> ### **3.2 参数的初始化(Argument Initialization)** ###
+        已知定义如下:
+        //! C++
+        void foo(X x0);
+        X xx;
+        foo(xx);
+    1) 将会要求局部变量x0以按成员的方式将xx作为初始值, 在编译器实现中则导入
+       暂时性的object, 并调用拷贝构造将它初始化, 然后将该暂时性的object交给
+       函数;
+        //! C++(伪代码)
+        X __temp0;
+        __temp0.X::X(xx);
+        foo(__temp0);
+    2) 暂时性的object先以类X的拷贝构造正确的设定了初值, 然后再以位(bitwise)
+       的方式拷贝到x0这个函数的局部变量中;
+    3) 基于上述原因, foo的声明应该如:
+        void foo(X& x0);
+> ### **3.3 返回值的初始化(Return Value Initialization)** ###
+        已知定义如下:
+        //! C++
+        X 
+        bar(void)
+        {
+          X xx;
+          //! ...
+          return xx;
+        }
+        在cfront中的解决方案是一个双阶段转换
+    1) 首先加上一个额外参数, 类型是类对象的一个引用; 该参数用来放置被"拷贝构
+       建(copy constructed)"而得的返回值
+    2) 在return之前插入一个拷贝构造调用操作, 以便将欲传回的object的内容当做
+       上述新增参数的初值
+        //! C++ (伪码)
+        void 
+        bar(X& __result) 
+        {
+          X xx;
+          xx.X::X();
+          //! ...
+          __result.X::X(xx);
+          return;
+        }
+    3) 这样编译器就必须转换每一个bar调用以便反映其新定义
+        X xx = bar();
+        将被转换为:
+        X xx;   //!< 这里不必执行默认构造函数(Default Constructor)
+        bar(xx);
+> ### **3.4 在使用者层面做优化(Optimization at the User Level)** ###
+        例子:
+        //! C++
+        X
+        bar(const T& y, const T& z)
+        {
+          X xx;
+          //! ...
+          return xx;
+        }
+        被改写成如下:
+        X
+        bar(const T& y, const T& z)
+        {
+          return X(y, z);
+        }
+        这样在编译器中bar将会被解释为:
+        //! C++(伪码)
+        void 
+        bar(X& __result, const T& y, const T& z)
+        {
+          __result.X::X(y, z);
+          return;
+        }
+    1) __result被直接计算出来, 而不需要经由拷贝构造拷贝而得
+    2) 其缺点是怕那些特殊计算用途的构造函数可能会大量扩散
+    3) 在实际工程中(个人)不建议采取该方式来优化
+> ### **3.5 在编译器层面做优化(Optimization at the Compiler Level)** ###
+        前面的例子在编译器中优化如下:
+        //! C++(伪码)
+        void 
+        bar(X& __result)
+        {
+          //! 默认构造函数被调用
+          __result.X::X();
+          //! ... 直接处理__result
+          return;
+        }
+    1) 这样的编译器优化称为Named Return Value(NRV)优化, 所有的return指令传回
+       相同的具名数值, 这样编译器就将其中的xx以__result替换掉
+    2) 例子(虽然下面3个初始化操作在语意上相等)
+        X x0(1024);
+        X x1 = x(1024);
+        X x2 = (X)1024;
+        但是第二和第三个定义确做了两个步骤的初始化操作:
+        将一个暂时性的object设置初值为1024;
+        将暂时性的object以拷贝构造的方式作为explicit object的初值;
+        //! C++(伪码)
+        x0.X:X(1024);
+        x1和x2确调用了两个构造函数, 产生一个暂时性objec, 并对其调用析构:
+        //! C++(伪码)
+        X __temp0;
+        __temp0.X::X(1024);
+        x1.X:X(__temp0);
+        __temp0.X::~X();
+> ### **3.6 Copy Constructor: 要还是不要?** ###
+        已知一个3D坐标类如下:
+        class Point3D {
+          float x_, y_, z_;
+        public:
+          Point3D(float x, float y, float z);
+        };
+    1) 类的默认拷贝构造函数被视为不重要的, 它没有任何成员(或基类)对象带有拷
+       贝构造, 也没有任何虚基类或虚函数; 所以其对象的按成员拷贝初始化操作会
+       导致按位拷贝
+    2) 类的3个成员是以数值类存储, 按位拷贝不会导致内存泄露, 也不会产生地址对
+       齐(address aliasing)的问题, 既快捷又安全
+    3) 也不需要为该类提供一个明确的拷贝构造, 因为编译器自动实施了最好的行为;
+
+
+
+## **4. 成员们的初始化队伍(Member Initialization List)** ##
+        下列情况必须使用member initialization list才能让程序顺利编译
+    1) 当初始化一个reference member时
+    2) 当初始化一个const member时
+    3) 当调用一个base class的constructor, 而它拥有一组参数时
+    4) 当调用一个member class的constructor, 而它拥有一组参数时
+        有如下例子:
+        //! C++
+        class Word {
+          String name_;
+          int count_;
+        public:
+          //! 没有错误, 但是效率确低下...
+          Word(void)
+          {
+            name_ = 0;
+            count_ = 0;
+          }
+        };
+        在编译器中可能会被解释成:
+        //! C++ (伪码)
+        Word::Word(/* this pointer goes here */)
+        {
+          //! 调用String的默认构造函数
+          name_.String::String();
+          //! 产生暂时性对象
+          String __temp = String(0);
+          //! 按成员逐次的方式拷贝name_
+          name_.String::operator=(__temp);
+          //! 析构临时对象
+          __temp.String::~String();
+          count_ = 0;
+        }
+        而如果使用初始化列表后效率将有一个提升:
+        //! C++
+        Word::Word
+          : name_(0)
+        {
+          count_ = 0;
+        }
+        编译器扩充将如下:
+        //! C++ (伪码)
+        Word::Word(/* this pointer goes here */)
+        {
+          //! 调用String(int v)的构造函数
+          name_.String::String(0);
+          count_ = 0;
+        }
+    5) 初始化的次序是由class中的member的声明次序决定的, 不是由初始化列表中的
+       排列次序所决定的;
+       初始化次序和初始化列表中的成员排列次序之间的外观错乱有时会导致意想不
+       到的危险, 如下:
+        //! C++
+        class X {
+          int i;
+          int j;
+        public:
+          X(int val)
+            : j(val), i(j)
+          {
+          }
+        };
+       这样会导致i是一个无法预知的值
+    6) 初始化列表中的项目会被安插到确切的用户代码之前, 所有下面的代码是正确
+       的:
+        //! C++
+        X::X(int val)
+          : j(val)
+        {
+          i = j;
+        }
+    7) 还可以在初始化列表中调用一个成员函数来设定一个成员的初值
+        X::X(int val)
+          : i(xfoo(val)), j(val)
+        {}
+        但是: 请使用存在于构造函数内的一个成员而不要使用存在于成员初始化列表
+        中的成员来为另一个成员设定初值; 你并不知道xfoo对X object的依赖性有多
+        高, 如果将xfoo放在构造函数内, 那对于"到底是哪一个成员在xfoo执行时被
+        设定初值"就很明确了
+    8) 编译器会对初始化列表一一处理并可能重新排列, 它会安插一些代码到构造函
+       数内, 并放置在任何确切的用户代码之前
