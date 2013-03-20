@@ -104,3 +104,24 @@
        当Point3D是一个子类, 而在其继承结构中有一个虚基类, 并且被存取的成员是
        一个从该虚基类继承而来的成员时, pt就说不清楚指向哪个具体的类类型了, 
        所以这个存取操作必须延至执行期, 经由一个额外的间接导引才能够解决。
+
+
+## **4. "继承"与Data Members** ##
+> ### **只要继承不要多态(Inheritance without Polymorphism)** ###
+        //! C++
+        class Base1 {
+          int val;
+          char bit1;
+        };
+        class Base2 : public Base1 {
+          char bit2;
+        };
+        class Child : public Base2 {
+          char bit3;
+        };
+    1) 由上面的例子中我们可以看到在Child类的大小, MSVC下其值为16字节, 而在
+       GCC下其值为8字节 
+    2) MSVC下Base1的大小由于bit1会补齐成为8字节, 同理Base2会由于bit2补齐为12
+       字节, 同理Child则会因为bit3补齐成为16字节 
+    3) GCC下, 如果"基类字对象在子类中的原样性"收到破坏, 那么编译器会把基类对
+       象原本的填补空间让出来给子类成员使用, 那么大小将为8字节
