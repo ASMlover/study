@@ -8,3 +8,4 @@
 * Queue
 * Array
 * List
+* Binary Tree
