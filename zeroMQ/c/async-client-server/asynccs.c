@@ -95,7 +95,7 @@ server_worker(void* arg, zctx_t* ctx, void* pipe)
 
 
 static void* 
-server_contine(void* args)
+server_routine(void* args)
 {
   zctx_t* ctx = zctx_new();
   void* frontend;
@@ -124,7 +124,7 @@ main(int argc, char* argv[])
   zthread_new(client_routine, NULL);
   zthread_new(client_routine, NULL);
   zthread_new(client_routine, NULL);
-  zthread_new(server_contine, NULL);
+  zthread_new(server_routine, NULL);
 
   zclock_sleep(5000);
 
