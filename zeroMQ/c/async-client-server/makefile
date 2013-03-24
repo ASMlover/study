@@ -29,7 +29,7 @@ BIN	= asynccs
 CC	= gcc
 RM	= rm 
 CFLAGS	= -g -O2 -Wall 
-LDFLAGS	= -lczmq -lzmq -lpthread
+LDFLAGS	= -lczmq
 OBJS	= asynccs.o
 
 
