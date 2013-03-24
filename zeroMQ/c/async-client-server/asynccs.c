@@ -40,17 +40,20 @@ client_routine(void* args)
 {
   zctx_t* ctx = zctx_new();
   void* client;
-  char identity[10];
+  char identity[256];
   int i, request = 0;
+  zmq_pollitem_t items[1];
 
   client = zsocket_new(ctx, ZMQ_DEALER);
   sprintf(identity, "%p", ctx);
   zsockopt_set_identity(client, identity);
   zsocket_connect(client, "tcp://localhost:5555");
 
+  items[0].socket = client;
+  items[0].fd = 0;
+  items[0].events = ZMQ_POLLIN;
+  items[0].revents = 0;
   while (1) {
-    zmq_pollitem_t items[] = {{client, 0, ZMQ_POLLIN, 0}};
-
     for (i = 0; i < 100; ++i) {
       zmq_poll(items, 1, 10 * ZMQ_POLL_MSEC);
       if (items[0].revents & ZMQ_POLLIN) {
@@ -67,9 +70,10 @@ client_routine(void* args)
 }
 
 
-static void 
-server_worker(void* arg, zctx_t* ctx, void* pipe)
+static void* 
+server_worker(void* arg)
 {
+  zctx_t* ctx = (zctx_t*)arg;
   int i, replies;
   void* worker = zsocket_new(ctx, ZMQ_DEALER);
   zsocket_connect(worker, "inproc://backend");
@@ -91,6 +95,8 @@ server_worker(void* arg, zctx_t* ctx, void* pipe)
     zframe_destroy(&identity);
     zframe_destroy(&content);
   }
+
+  return NULL;
 }
 
 
@@ -109,7 +115,7 @@ server_routine(void* args)
   zsocket_bind(backend, "inproc://backend");
 
   for (i = 0; i < 5; ++i)
-    zthread_fork(ctx, server_worker, NULL);
+    zthread_new(server_worker, ctx);
 
   zmq_proxy(frontend, backend, NULL);
 
@@ -121,12 +127,19 @@ server_routine(void* args)
 int 
 main(int argc, char* argv[])
 {
+  int sec;
+  if (argc < 2) {
+    fprintf(stderr, "arguments error ...\n");
+    return 1;
+  }
+  sec = atoi(argv[1]);
+
   zthread_new(client_routine, NULL);
   zthread_new(client_routine, NULL);
   zthread_new(client_routine, NULL);
   zthread_new(server_routine, NULL);
 
-  zclock_sleep(5000);
+  zclock_sleep(sec * 1000);
 
   return 0;
 }
