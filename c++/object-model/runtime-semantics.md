@@ -27,4 +27,68 @@
        元素之上 
 > ### **1.4 默认构造函数和数组** ###
     1) 如果想在程序中取出一个构造函数的地址, 这是不可以的; 如果经由一个指针
-       来激活构造函数, 将无法存取默认参数值
+       来激活构造函数, 将无法存取默认参数值 
+
+
+
+## **2. new和delete运算符** ##
+    1) new运算符, 看起来像是一个单一运算:
+        //! C++
+        int* pi = new int(5);
+        但是其是通过两个步骤来完成的:
+        * 通过适当的new运算符函数实体, 配置所需的内存
+        * 给配置得来的对象设立初始值(更进一步, 初始化操作应该在内存分配成功
+          之后才执行)
+> ### **2.1 针对数组的new语意** ###
+    1) 如果写:
+        int* p_array = new int[5];
+        vec_new不会被真正调用, 因为它的主要功能是把默认构造函数施行于类对象
+        所主城的数组的每一个元素身上
+    2) 同样, 如果写:
+        struct simple_aggr {float f1, f2; };
+        simple_aggr* p_aggr = new simple_aggr[5];
+        vec_new也不会被调用, 因为simple_aggr并没有定义一个构造函数或析构函数
+        所以配置数组以及清除p_aggr数组的操作, 只是单纯地获取和释放内存
+    3) 如果类定义有一个默认构造函数, 某些版本的vec_new就会别调用, 配置并构造
+       类对象所组成的数组 
+    4) demo:
+        //! C++
+        class Point {
+        public:
+          Point(void);
+          virtual ~Point(void);
+        };
+        class Point3d : public Point {
+        public:
+          Point3d(void);
+          virtual ~Point3d(void);
+        };
+        如果我们配置一个数组, 内带10个Point3d对象, 我们会预期Point和Point3d 
+        的构造函数被调用10此, 每次作用于数组中第一个元素:
+        Point* ptr = Point3d[10];
+        但是当我们delete [] ptr;的时候, 却得不到我们所期望的结果; 施行于数组
+        上的析构是根据交给vec_delete函数指"被删除的指针类型的析构"——在这里
+        是Point析构;
+        且每个元素的大小也一并被传递过去, 这就是vec_delete如何迭代走过每一个
+        数组元素的方式;
+        当第一个元素之后, 该析构函数被施行于不正确的内存区块中;
+    5) 最好避免以一个基类的指针指向一个派生类对象所组成的数组——如果派生类
+       对象比其基类大的话(如果非要这么做, 就必须程序员自己解决) 
+> ### **2.2 Placement Operator new的语意** ###
+        Placement Operator new需要第二个参数, 类型为void*, 调用方式如下:
+        Point2w* p2w = new (ptr) Point2w;
+        其中ptr指向内存中第一个区块, 用以放置新产生出来的Point2w对象; 这个
+        Placement Operator new只要将获得的指针所指的地址传回即可; 
+    1) placement new operator所扩充的的是将Point2w构造自动实施与ptr所指地址
+    2) 然而该技巧的隐患是:
+        void 
+        foobar(void)
+        {
+          Point2w* p2w = new (ptr) Point2w;
+          // ...
+          p2w = new (ptr) Point2w;
+        }
+        当在第二个new之前执行了一个delete p2w, 我们希望释放析构的操作时, 却
+        释放了ptr的空间, 则会导致错误;
+        所以当我们需要这么处理的时候, 需要明确的调用析构函数以保留存储空间, 
+        以便再使用;
