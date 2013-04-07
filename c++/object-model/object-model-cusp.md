@@ -1,1 +1,109 @@
 # **站在对象模型的尖端** #
+
+
+## **1. Template** ##
+> ### **1.1 Template的"具现"行为** ###
+        //! C++
+        template <class Type>
+        class Point {
+        public:
+          enum Status { unallocated, normalized };
+          //! ...
+          Point(Type x = 0.0, Type y = 0.0, Type z = 0.0);
+          ~Point(void);
+          //! ...
+          void* operator new(size_t);
+          void operator delete(void*, size_t);
+        private:
+          static Point<Type>* freeList_;
+          static int chunkSize_;
+          Type x_, y_, z_;
+        };
+    1) enum Status的真正类型在所有的Point具体实现中都是一样的, 其枚举值也是,
+       但是它们每一个都只能够通过template Point类的某个实体来存取或操作;
+        Point<float>::Status s;是合法的
+        Point::Status s;则是非法(错误)的
+    2) Point<float>* ptr = 0;
+        在程序中什么也不会发生, 因为一个指向类对象的指针, 本身并不是一个类对
+        象, 编译器不需要知道与该类有关的任何成员的数据或对象布局数据
+    3) const Point<float>& ref = 0;
+        其会被内部扩展为:
+        Point<float> temporary(float(0));
+        const Point<float>& ref = temporary;
+        引用并不是没对象的代名词, 0是整数, 必须被转换为Point<float>的一个对
+        象
+    4) 一个类对象的定义, 无论是由编译器暗中做, 或是直接const Point<float> o;
+       明确定义到会导致模板类的"具现"
+    5) 理论上成员函数(至少那些未被使用过的)不应该被实体化, 只有在成员函数被
+       使用的时候, 才要求它们被具现出来;
+       但是当前的编译器并没有这么做, 原因如下:
+        * 空间和时间效率的考虑; 如果类中有100个成员函数, 但是你的程序只针对
+          某个类型使用其中两个, 针对另一个类型使用了其中五个, 那么将其他193
+          个都具现将会花大量的时间和空间
+        * 尚未实现的机能; 并非一个模板具现出来的所有的类型就一定能够完成支持
+          一组成员函数所需要的所有运算符; 如果只是具现那些真正使用到的成员函
+          数, 模板就能够支持那些原本可能会造成编译时期错误的类型 
+    6) 模板函数在什么时候具现, 其具体策略是:
+        * 在编译时, 那些函数出现于使用模板对象的那个文件中
+        * 在连接的时候, 那些编译器会被一些辅助工具重新激活; 模板实体可能被放
+          在这个文件中, 别的文件中或一个分离的储存位置上
+> ### **1.2 Template的错误报告** ###
+    1) 模板的声明被收集成一系列的"词汇标记", 而语法分析操作将延迟, 知道真正
+       有具现操作时才发生; 每当看到一个具现操作发生, 这组标记就被推到分析器,
+       然后调用类型检验
+> ### **1.3 Template中的名称决议方式** ###
+        //! C++
+        //! scope of the template definition(定义出模板的程序)
+        extern double foo(double);
+        //! ... 
+        template <class Type>
+        class ScopeRules {
+        public:
+          void invariant(void) 
+          {
+            member_ = foo(val_);
+          }
+          Type type_dependent(void)
+          {
+            return foo(member_);
+          }
+        private:
+          int val_;
+          Type member_;
+        };
+        //! ...
+        //! scope of the template instantitaion(具现出模板的程序)
+        extern int foo(int);
+        ScopeRules<int> sr0;
+        如果我们有一个操作sr0.invariant(); 那调用的是哪一个foo呢?
+    1) 这里调用sr0.invariant()中的foo是定义模板的地方声明的那个foo, 而如果我
+       们调用sr0.type_dependent()那么foo则是具现模板的那个地方声明的foo
+    2) 模板中具体调用那个函数是由"定义模板的程序"来决定的, 而不是有"具现模板
+       的程序"来决定的
+    3) 一个编译器必须保持两个上下文范围:
+        * "定义模板的程序"用以专注于一般的模板类
+        * "具现模板的程序"用以专注于特定的实体
+> ### **1.4 成员函数的具现行为** ###
+        对于模板函数的具现, 现在的策略是: 一是编译时期策略, 程序代码必须在
+    program text file中备妥可用; 另一个是链接时期策略, 一些metacompilation工
+    具可以导引编译器的具现行为
+    1) 编译器如何找到函数定义?
+        * 包含template program text file, 如同它是一个头文件一样
+        * 要求一个文件命名规则, 如在A.h文件中发现的函数的声明, 其template 
+          program text一定要放置在A.c或A.cpp中
+    2) 编译器如何只具现程序中用到的成员函数?
+        * 忽略这个要求, 把一个已经具现出来的类的所有成员函数都产生出来
+        * 仿真链接操作, 检测哪个函数真正需要, 然后只为它产生实体
+    3) 编译器如何阻止成员定义在多个.o文件中都被具现?
+        * 产生多个实体, 然后从连接器中提供支持, 只留下其中一个实体, 忽略其他
+        * 由使用者来导引"仿真链接阶段"的具现策略, 决定哪些实体才是需要的
+    4) Edison Design Group的直接具现机制的过程如下:
+        * 一个程序的代码被编译时, 最初不产生任何模板具现体, 相关信息已经被产
+          生于object files中
+        * 当object files被链接在一起时, 会有一个prelinker程序被执行; 其检查
+          object文件, 寻找模板实体的相互参考以及对应的定义 
+        * 对每个"参考到模板实体"而"该实体没有定义"的情况, prelinker将该文件
+          视为另一个文件的同类; 这样就可以将必要的程序具现操作指定给特定的文
+          件(.ii文件)
+        * prelinker重新执行编译器, 重新编译每一个".ii文件曾被改变过"的文件;
+        * 所有obj文件被链接成一个可执行文件
