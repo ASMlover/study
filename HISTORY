@@ -1,7 +1,12 @@
+
+* 2013/04/17  Added new module into study.
+  ---------------------------------------
+  + Added os information module.
+
 * 2013/03/21  Added new modules.
   -----------------------------
   + Added c++ information module.
-	+ Added zeroMQ module.
+  + Added zeroMQ module.
 
 * 2012/02/07  Finished first version.
   ----------------------------------
