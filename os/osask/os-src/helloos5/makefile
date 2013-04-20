@@ -58,4 +58,4 @@ $(IMG): $(BIN)
 		imgout:$(IMG)
 
 $(BIN): $(SRC)
-	$(NASK) $(SRC) helloos.bin helloos.lst
+	$(NASK) $(SRC) $(BIN) helloos.lst
