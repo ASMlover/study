@@ -27,13 +27,16 @@
 
 BIN	= helloos.bin
 IMG	= helloos.img
-NASK	= ../tolset/z_tools/nask.exe
-EDIMG	= ../tolset/z_tools/edimg.exe 
-FDIMG0AT = ../tolset/z_tools/fdimg0at.tek
+TOOLPATH = ../tolset/z_tools
+OSPATH	= ../tolset/z_tools/qemu
+NASK	= $(TOOLPATH)/nask.exe
+EDIMG	= $(TOOLPATH)/edimg.exe 
+FDIMG0AT = $(TOOLPATH)/fdimg0at.tek
 SRC	= helloos.asm
 RM	= rm 
-CP	= cp
-IMG_DEST = ../tolset/z_tools/qemu/fdimage0.bin
+CP	= cp 
+MAKE	= make
+IMG_DEST = $(OSPATH)/fdimage0.bin
 
 
 img: $(IMG)
@@ -47,7 +50,7 @@ uninstall:
 	$(RM) $(IMG_DEST)
 
 run:
-	make -C ../tolset/z_tools/qemu
+	$(MAKE) -C $(OSPATH)
 
 clean:
 	$(RM) $(BIN) $(IMG) helloos.lst
