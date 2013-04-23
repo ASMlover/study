@@ -57,7 +57,7 @@ clean:
 
 
 $(IMG): $(BIN)
-	$(EDIMG) imgin:$(FDIMG0AT) wbinimg src:$(BIN) len:512 from:0 to:to\
+	$(EDIMG) imgin:$(FDIMG0AT) wbinimg src:$(BIN) len:512 from:0 to:0\
 		imgout:$(IMG)
 
 $(BIN): $(SRC)
