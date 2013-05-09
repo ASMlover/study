@@ -56,7 +56,15 @@ VRAM  equ 0x0ff8    ; start address of bitmap buffer
   int 0x16          ; keyboard BIOS
   mov [LEDS], al 
 
-  cli
+
+  ; PIC close all interrupt 
+  ; must be initialize before cli 
+  mov al, 0xff 
+  out 0x21, al 
+  nop
+  out 0xa1, al
+
+  cli               ; disabled interrupts of CPU level
 
   ; CPU xxxx
   call  waitkeyboardout
