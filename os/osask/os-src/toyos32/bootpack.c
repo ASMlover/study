@@ -88,7 +88,7 @@ HariMain(void)
 
       io_sti();
       sprintf(debug_info, "%02X", data);
-      fill_box8(binfo->vram, binfo->screen_x, COLOR8_008484, 0, 16, 15, 31);
+      fill_box8(binfo->vram, binfo->screen_x, COLOR8_848484, 0, 16, 15, 31);
       draw_font8_asc(binfo->vram, binfo->screen_x, 
           0, 16, COLOR8_FFFFFF, debug_info);
     }
