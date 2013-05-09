@@ -108,19 +108,6 @@ HariMain(void)
   draw_block8_8(binfo->vram, binfo->screen_x, 16, 16, 
       mouse_x, mouse_y, mouse_cursor, 16);
 
-  draw_font8_asc(binfo->vram, binfo->screen_x, 8, 8, 
-      COLOR8_FFFFFF, "HELLO BOYS:");
-  draw_font8_asc(binfo->vram, binfo->screen_x, 9, 9, 
-      COLOR8_000000, "HELLO BOYS:");
-  draw_font8_asc(binfo->vram, binfo->screen_x, 31, 31, 
-      COLOR8_000000, "WELCOME TO THE LOVELY TOY-OS.");
-  draw_font8_asc(binfo->vram, binfo->screen_x, 30, 30, 
-      COLOR8_FFFFFF, "WELCOME TO THE LOVELY TOY-OS.");
-
-  sprintf(debug_info, "screen=>{%d, %d}", binfo->screen_x, binfo->screen_y);
-  draw_font8_asc(binfo->vram, binfo->screen_x, 16, 64, 
-      COLOR8_FF0000, debug_info);
-
   enable_mouse();   /* enabled mouse */
 
   for ( ; ; ) {
@@ -137,7 +124,7 @@ HariMain(void)
           io_sti();
           sprintf(debug_info, "%02X", data);
           fill_box8(binfo->vram, binfo->screen_x, 
-            COLOR8_008484, 0, 16, 15, 31);
+            COLOR8_848484, 0, 16, 15, 31);
           draw_font8_asc(binfo->vram, binfo->screen_x, 
             0, 16, COLOR8_FFFFFF, debug_info);
       }
@@ -147,7 +134,7 @@ HariMain(void)
         io_sti();
         sprintf(debug_info, "%02X", data);
         fill_box8(binfo->vram, binfo->screen_x, 
-          COLOR8_008484, 32, 16, 47, 31);
+          COLOR8_848484, 32, 16, 47, 31);
         draw_font8_asc(binfo->vram, binfo->screen_x, 
           32, 16, COLOR8_FFFFFF, debug_info);
       }
