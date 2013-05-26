@@ -124,7 +124,7 @@ task_sleep(task_t* task)
   char ts = 0;
 
   if (2 == task->flags) { /* the task in the wake state */
-    if (task = g_taskctrl->tasks_map[g_taskctrl->now])
+    if (task == g_taskctrl->tasks_map[g_taskctrl->now])
       ts = 1; /* allow itself to sleep, need to task switch later */
 
     /* search the position of task */
