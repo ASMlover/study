@@ -70,5 +70,6 @@ extern task_t* task_alloc(void);
 extern void task_run(task_t* task, int level, int priority);
 extern void task_switch(void);
 extern void task_sleep(task_t* task);
+extern task_t* task_now(void);
 
 #endif  /* __MULTITASK_HEADER_H__ */
