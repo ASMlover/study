@@ -49,8 +49,7 @@ RM	= rm
 CP	= cp 
 MAKE	= make
 IMG_DEST = $(OSPATH)/fdimage0.bin 
-TEMP_FILE = *.bin *.lst *.obj bootpack.map bootpack.bim\
-	bootpack.hrb toyos.sys *.toy
+TEMP_FILE = *.bin *.lst *.obj *.map *.bim bootpack.hrb toyos.sys *.toy
 APPS	= hello.toy hello2.toy
 APP	= hello.toy
 APP_SRC	= hello.s
