@@ -53,6 +53,6 @@ extern void console_putstr1(console_t* console, char* str, int len);
 extern int* toy_api(int edi, int esi, int ebp, 
     int esp, int ebx, int edx, int ecx, int eax);
 
-extern int interrupt_handler0d(int* esp);
+extern int* interrupt_handler0d(int* esp);
 
 #endif  /* __CONSOLE_HEADER_H__ */
