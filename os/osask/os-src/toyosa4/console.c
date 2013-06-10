@@ -423,7 +423,7 @@ toy_api(int edi, int esi, int ebp,
   return 0;
 }
 
-int 
+int* 
 interrupt_handler0d(int* esp)
 {
   console_t* console = (console_t*)*((int*)0x0fec);
