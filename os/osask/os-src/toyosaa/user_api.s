@@ -1,0 +1,79 @@
+; Copyright (c) 2013 ASMlover. All rights reserved.
+;
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions
+; are met:
+;
+;  * Redistributions of source code must retain the above copyright
+;    notice, this list ofconditions and the following disclaimer.
+;
+;    notice, this list of conditions and the following disclaimer in
+;  * Redistributions in binary form must reproduce the above copyright
+;    the documentation and/or other materialsprovided with the
+;    distribution.
+;
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+; FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+; COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+; BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+; CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+; LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+; ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+; POSSIBILITY OF SUCH DAMAGE.
+
+[format "WCOFF"]
+[instrset "i486p"]
+[bits 32]
+
+
+[file "api_common.s"]
+
+  global  _api_putchar
+  global  _api_putstr0
+  global  _api_end
+  global  _api_openwin
+
+[section .text]
+
+_api_putchar:           ; void api_putchar(int c);
+  mov edx, 1
+  mov al, [esp + 4]
+  int 0x40
+  ret 
+
+
+_api_putstr0:           ; void api_putstr0(const char* str);
+  push  ebx
+  mov   edx, 2
+  mov   ebx, [esp + 8]  ; str 
+  int   0x40
+  pop   ebx
+  ret
+
+
+_api_end:               ; void api_end(void);
+  mov edx, 4
+  int 0x40 
+
+
+
+_api_openwin:           ; int api_openwin(char* buf, int w, int h, 
+                        ;     int alpha, char* title);
+  push  edi
+  push  esi 
+  push  ebx
+  mov   edx, 5
+  mov   ebx, [esp + 16] ; buf
+  mov   esi, [esp + 20] ; w
+  mov   edi, [esp + 24] ; h
+  mov   eax, [esp + 28] ; alpha
+  mov   ecx, [esp + 32] ; title
+  int   0x40
+  pop   ebx
+  pop   esi
+  pop   edi
+  ret
