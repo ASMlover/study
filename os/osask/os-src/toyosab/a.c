@@ -32,6 +32,7 @@
 void 
 HariMain(void)
 {
-  api_putchar('A');
+  putc('A');
+
   api_end();
 }

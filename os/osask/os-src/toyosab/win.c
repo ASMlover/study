@@ -35,7 +35,7 @@ void
 HariMain(void)
 {
   int win;
-  win = api_openwin(buf, 150, 50, -1, "Hello-Win");
+  win = win_open(buf, 150, 50, -1, "Hello-Win");
 
   api_end();
 }

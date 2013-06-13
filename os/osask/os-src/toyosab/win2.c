@@ -34,9 +34,9 @@ char buf[150 * 50];
 void 
 HariMain(void)
 {
-  int win = api_openwin(buf, 150, 50, -1, "Window");
-  api_win_fillbox(win, 8, 26, 141, 43, 3 /* yellow */);
-  api_win_putstr(win, 28, 28, 0 /* black */, 13, "Hello, world!");
+  int win = win_open(buf, 150, 50, -1, "Window");
+  win_fill(win, 8, 26, 141, 43, 3 /* yellow */);
+  win_puts(win, 28, 28, 0 /* black */, 13, "Hello, world!");
 
   api_end();
 }

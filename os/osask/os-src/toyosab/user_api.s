@@ -32,23 +32,23 @@
 
 [file "api_common.s"]
 
-  global  _api_putchar
-  global  _api_putstr0
+  global  _putc
+  global  _puts
   global  _api_end
-  global  _api_openwin
-  global  _api_win_putstr
-  global  _api_win_fillbox
+  global  _win_open
+  global  _win_puts
+  global  _win_fill
 
 [section .text]
 
-_api_putchar:           ; void api_putchar(int c);
+_putc:                  ; void putc(int c);
   mov edx, 1
   mov al, [esp + 4]
   int 0x40
   ret 
 
 
-_api_putstr0:           ; void api_putstr0(const char* str);
+_puts:                  ; void puts(const char* str);
   push  ebx
   mov   edx, 2
   mov   ebx, [esp + 8]  ; str 
@@ -63,7 +63,7 @@ _api_end:               ; void api_end(void);
 
 
 
-_api_openwin:           ; int api_openwin(char* buf, int w, int h, 
+_win_open:              ; int win_open(char* buf, int w, int h, 
                         ;     int alpha, char* title);
   push  edi
   push  esi 
@@ -82,7 +82,7 @@ _api_openwin:           ; int api_openwin(char* buf, int w, int h,
 
 
 
-_api_win_putstr:        ; void api_win_putstr(int win, int x, int y, 
+_win_puts:              ; void win_puts(int win, int x, int y, 
                         ;     int color, int len, char* str);
   push  edi
   push  esi
@@ -104,7 +104,7 @@ _api_win_putstr:        ; void api_win_putstr(int win, int x, int y,
 
 
 
-_api_win_fillbox:       ; void api_win_fillbox(int win, int x0, int y0, 
+_win_fill:              ; void win_fill(int win, int x0, int y0, 
                         ;     int x1, int y1, int color);
   push  edi
   push  esi

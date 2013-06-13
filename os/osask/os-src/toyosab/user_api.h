@@ -29,13 +29,11 @@
 #ifndef __USER_API_HEADER_H__
 #define __USER_API_HEADER_H__
 
-extern void api_putchar(int c);
-extern void api_putstr0(const char* str);
+extern void putc(int c);
+extern void puts(const char* str);
 extern void api_end(void);
-extern int api_openwin(char* buf, int w, int h, int alpha, char* title);
-extern void api_win_putstr(int win, 
-    int x, int y, int color, int len, char* str);
-extern void api_win_fillbox(int win, 
-    int x0, int y0, int x1, int y1, int color);
+extern int win_open(char* buf, int w, int h, int alpha, char* title);
+extern void win_puts(int win, int x, int y, int color, int len, char* str);
+extern void win_fill(int win, int x0, int y0, int x1, int y1, int color);
 
 #endif  /* __USER_API_HEADER_H__ */

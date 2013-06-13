@@ -32,11 +32,11 @@
 void 
 HariMain(void)
 {
-  api_putchar('H');
-  api_putchar('e');
-  api_putchar('l');
-  api_putchar('l');
-  api_putchar('o');
+  putc('H');
+  putc('e');
+  putc('l');
+  putc('l');
+  putc('o');
 
   api_end();
 }
