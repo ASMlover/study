@@ -37,6 +37,7 @@ HariMain(void)
   char* buf;
   char str[32];
   int win, timer, sec = 0, min = 0, hour = 0;
+  int key;
 
   init_mem();
 
@@ -51,7 +52,8 @@ HariMain(void)
     
     set_timer(timer, 100);  /* 1 second */
     
-    if (128 != getkey(1))
+    key = getkey(1);
+    if (128 != key)
       break;
 
     ++sec;

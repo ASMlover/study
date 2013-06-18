@@ -39,7 +39,7 @@ typedef struct timer_t {
   unsigned int timeout;
   unsigned int flags;
   fifo32_t* fifo;
-  unsigned char data;
+  int data;
 } timer_t;
 
 typedef struct timer_ctrl_t {

@@ -620,8 +620,8 @@ toy_api(int edi, int esi, int ebp,
   case 16:
     reg[7] = (int)timer_alloc();
     break;
-  case 17:
-    timer_init((timer_t*)ebx, &task->fifo, (eax + 256));
+  case 17: 
+    timer_init((timer_t*)ebx, &task->fifo, eax + 256);
     break;
   case 18:
     timer_settimer((timer_t*)ebx, eax);
