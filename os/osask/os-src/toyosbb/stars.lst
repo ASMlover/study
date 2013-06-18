@@ -1,0 +1,70 @@
+     1 00000000                                 [FORMAT "WCOFF"]
+     2 00000000                                 [INSTRSET "i486p"]
+     3 00000000                                 [OPTIMIZE 1]
+     4 00000000                                 [OPTION 1]
+     5 00000000                                 [BITS 32]
+     6 00000000                                 	EXTERN	_init_mem
+     7 00000000                                 	EXTERN	_malloc
+     8 00000000                                 	EXTERN	_win_open
+     9 00000000                                 	EXTERN	_win_fill
+    10 00000000                                 	EXTERN	_rand
+    11 00000000                                 	EXTERN	_win_point
+    12 00000000                                 	EXTERN	_api_end
+    13 00000000                                 [FILE "stars.c"]
+    14                                          [SECTION .data]
+    15 00000000                                 LC0:
+    16 00000000 57 69 6E 2D 53 54 41 52 53 00   	DB	"Win-STARS",0x00
+    17                                          [SECTION .text]
+    18 00000000                                 	GLOBAL	_HariMain
+    19 00000000                                 _HariMain:
+    20 00000000 55                              	PUSH	EBP
+    21 00000001 89 E5                           	MOV	EBP,ESP
+    22 00000003 57                              	PUSH	EDI
+    23 00000004 56                              	PUSH	ESI
+    24 00000005 BE 00000063                     	MOV	ESI,99
+    25 0000000A 53                              	PUSH	EBX
+    26 0000000B E8 [00000000]                   	CALL	_init_mem
+    27 00000010 68 00003A98                     	PUSH	15000
+    28 00000015 E8 [00000000]                   	CALL	_malloc
+    29 0000001A 68 [00000000]                   	PUSH	LC0
+    30 0000001F 6A FF                           	PUSH	-1
+    31 00000021 6A 64                           	PUSH	100
+    32 00000023 68 00000096                     	PUSH	150
+    33 00000028 50                              	PUSH	EAX
+    34 00000029 E8 [00000000]                   	CALL	_win_open
+    35 0000002E 6A 00                           	PUSH	0
+    36 00000030 6A 5D                           	PUSH	93
+    37 00000032 89 C7                           	MOV	EDI,EAX
+    38 00000034 68 0000008F                     	PUSH	143
+    39 00000039 6A 1A                           	PUSH	26
+    40 0000003B 6A 06                           	PUSH	6
+    41 0000003D 50                              	PUSH	EAX
+    42 0000003E E8 [00000000]                   	CALL	_win_fill
+    43 00000043 83 C4 30                        	ADD	ESP,48
+    44 00000046                                 L6:
+    45 00000046 E8 [00000000]                   	CALL	_rand
+    46 0000004B BA 00000089                     	MOV	EDX,137
+    47 00000050 89 D1                           	MOV	ECX,EDX
+    48 00000052 99                              	CDQ
+    49 00000053 F7 F9                           	IDIV	ECX
+    50 00000055 8D 5A 06                        	LEA	EBX,DWORD [6+EDX]
+    51 00000058 E8 [00000000]                   	CALL	_rand
+    52 0000005D BA 00000043                     	MOV	EDX,67
+    53 00000062 6A 03                           	PUSH	3
+    54 00000064 89 D1                           	MOV	ECX,EDX
+    55 00000066 99                              	CDQ
+    56 00000067 F7 F9                           	IDIV	ECX
+    57 00000069 83 C2 1A                        	ADD	EDX,26
+    58 0000006C 52                              	PUSH	EDX
+    59 0000006D 53                              	PUSH	EBX
+    60 0000006E 57                              	PUSH	EDI
+    61 0000006F E8 [00000000]                   	CALL	_win_point
+    62 00000074 83 C4 10                        	ADD	ESP,16
+    63 00000077 4E                              	DEC	ESI
+    64 00000078 79 CC                           	JNS	L6
+    65 0000007A 8D 65 F4                        	LEA	ESP,DWORD [-12+EBP]
+    66 0000007D 5B                              	POP	EBX
+    67 0000007E 5E                              	POP	ESI
+    68 0000007F 5F                              	POP	EDI
+    69 00000080 5D                              	POP	EBP
+    70 00000081 E9 [00000000]                   	JMP	_api_end

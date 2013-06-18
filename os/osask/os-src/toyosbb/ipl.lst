@@ -1,0 +1,159 @@
+     1 00000000                                 ; Copyright (c) 2013 ASMlover. All rights reserved.
+     2 00000000                                 ;
+     3 00000000                                 ; Redistribution and use in source and binary forms, with or without
+     4 00000000                                 ; modification, are permitted provided that the following conditions
+     5 00000000                                 ; are met:
+     6 00000000                                 ;
+     7 00000000                                 ;  * Redistributions of source code must retain the above copyright
+     8 00000000                                 ;    notice, this list ofconditions and the following disclaimer.
+     9 00000000                                 ;
+    10 00000000                                 ;    notice, this list of conditions and the following disclaimer in
+    11 00000000                                 ;  * Redistributions in binary form must reproduce the above copyright
+    12 00000000                                 ;    the documentation and/or other materialsprovided with the
+    13 00000000                                 ;    distribution.
+    14 00000000                                 ;
+    15 00000000                                 ; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    16 00000000                                 ; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    17 00000000                                 ; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    18 00000000                                 ; FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    19 00000000                                 ; COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    20 00000000                                 ; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    21 00000000                                 ; BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    22 00000000                                 ; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    23 00000000                                 ; CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    24 00000000                                 ; LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    25 00000000                                 ; ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    26 00000000                                 ; POSSIBILITY OF SUCH DAMAGE.
+    27 00000000                                 
+    28  = 0000000A                                CYLS  equ   10    ; cylinders -> 10(柱面)
+    29 00000000                                 
+    30                                            org 0x7c00        ; program loading address
+    31 00007C00 EB 4E                             jmp entry
+    32 00007C02 90                                db  0x90
+    33 00007C03 68 65 6C 6C 6F 69 70 6C           db  "helloipl"    ; 启动区的名字可以是任意字符(8字节)
+    34 00007C0B 0200                              dw  512           ; size of per sector(must be 512 bytes)
+    35 00007C0D 01                                db  1             ; size of per cluster(must be 1)
+    36 00007C0E 0001                              dw  1             ; bengining address of FAT
+    37 00007C10 02                                db  2             ; number of FAT(must be 2)
+    38 00007C11 00E0                              dw  224           ; size of root directory
+    39 00007C13 0B40                              dw  2880          ; size of this disk(must be 2880 cluster)
+    40 00007C15 F0                                db  0xf0          ; kinds of disk(must be 0xf0)
+    41 00007C16 0009                              dw  9             ; length of FAT(must be 9)
+    42 00007C18 0012                              dw  18            ; clusters of per track(must be 18)
+    43 00007C1A 0002                              dw  2             ; number of track-head(must be 2)
+    44 00007C1C 00000000                          dd  0             ; donot use the partition(must be 0)
+    45 00007C20 00000B40                          dd  2880          ; rewrite the size of disk
+    46 00007C24 00 00 29                          db  0, 0, 0x29
+    47 00007C27 FFFFFFFF                          dd  0xffffffff
+    48 00007C2B 54 4F 59 2D 4F 53 20 20 20 20     db  "TOY-OS     " ; name of disk(11 bytes)
+       00007C35 20 
+    49 00007C36 46 41 54 31 32 20 20 20           db  "FAT12   "    ; format name of disk(8 bytes)
+    50 00007C3E 00 00 00 00 00 00 00 00 00 00     resb  18
+       00007C48 00 00 00 00 00 00 00 00 
+    51 00007C50                                 
+    52 00007C50                                 entry:
+    53 00007C50 B8 0000                           mov ax, 0         ; initialize the register
+    54 00007C53 8E D0                             mov ss, ax
+    55 00007C55 BC 7C00                           mov sp, 0X7C00
+    56 00007C58 8E D8                             mov ds, ax
+    57 00007C5A                                 
+    58 00007C5A                                   ; read disks
+    59 00007C5A B8 0820                           mov ax, 0X0820
+    60 00007C5D 8E C0                             mov es, ax
+    61 00007C5F B5 00                             mov ch, 0         ; 柱面0
+    62 00007C61 B6 00                             mov dh, 0         ; 磁头0 
+    63 00007C63 B1 02                             mov cl, 2         ; 扇区2 
+    64 00007C65                                 
+    65 00007C65                                   ; loop for read disks
+    66 00007C65                                 readloop:
+    67 00007C65 BE 0000                           mov si, 0         ; record error times
+    68 00007C68                                 retry:
+    69 00007C68 B4 02                             mov ah, 0x02      ; ah=0x02, read disk
+    70 00007C6A B0 01                             mov al, 1         ; 1 sector
+    71 00007C6C BB 0000                           mov bx, 0
+    72 00007C6F B2 00                             mov dl, 0x00      ; A驱动器
+    73 00007C71 CD 13                             int 0x13          ; call BIOS of disk
+    74 00007C73 73 10                             jnc next          ; if not error jump to next
+    75 00007C75 83 C6 01                          add si, 1         ; add 1 to si
+    76 00007C78 83 FE 05                          cmp si, 5
+    77 00007C7B 73 35                             jae error         ; if si >= 5, goto error
+    78 00007C7D B4 00                             mov ah, 0x00
+    79 00007C7F B2 00                             mov dl, 0x00      ; driver A
+    80 00007C81 CD 13                             int 0x13          ; reset drivers
+    81 00007C83 EB E3                             jmp retry
+    82 00007C85                                 
+    83 00007C85                                 next:
+    84 00007C85 8C C0                             mov ax, es        ; 内存地址后移0x200
+    85 00007C87 05 0020                           add ax, 0x0020
+    86 00007C8A 8E C0                             mov es, ax        ; es = es + 0x0020
+    87 00007C8C 80 C1 01                          add cl, 1
+    88 00007C8F 80 F9 12                          cmp cl, 18
+    89 00007C92 76 D1                             jbe readloop      ; if cl <= 18, goto readloop
+    90 00007C94 B1 01                             mov cl, 1
+    91 00007C96 80 C6 01                          add dh, 1
+    92 00007C99 80 FE 02                          cmp dh, 2
+    93 00007C9C 72 C7                             jb  readloop      ; if dh < 2, goto readloop
+    94 00007C9E B6 00                             mov dh, 0
+    95 00007CA0 80 C5 01                          add ch, 1
+    96 00007CA3 80 FD 0A                          cmp ch, CYLS
+    97 00007CA6 72 BD                             jb  readloop      ; if ch < CYLS, goto readloop 
+    98 00007CA8                                 
+    99 00007CA8                                 
+   100 00007CA8                                   ; begin to execute os from boot sector
+   101 00007CA8 88 2E 0FF0                        mov [0xff0], ch   ; [0xff0] = CYLS
+   102 00007CAC E9 4551                           jmp 0xc200
+   103 00007CAF                                 
+   104 00007CAF                                 finish:
+   105 00007CAF F4                                hlt               ; stop CPU, waitting for new instruction
+   106 00007CB0 EB FD                             jmp finish
+   107 00007CB2                                 
+   108 00007CB2                                 error:
+   109 00007CB2 BE 7CC7                           mov si, msg
+   110 00007CB5                                 
+   111 00007CB5                                 display:
+   112 00007CB5 8A 04                             mov al, [si]
+   113 00007CB7 83 C6 01                          add si, 1
+   114 00007CBA 3C 00                             cmp al, 0
+   115 00007CBC 74 F1                             je  finish
+   116 00007CBE B4 0E                             mov ah, 0x0e      ; display a character of the msg
+   117 00007CC0 BB 000F                           mov bx, 15        ; set color of the msg
+   118 00007CC3 CD 10                             int 0x10          ; call BIOS
+   119 00007CC5 EB EE                             jmp display
+   120 00007CC7                                 
+   121 00007CC7                                 msg:
+   122 00007CC7 0A 0A                             db  0x0a, 0x0a
+   123 00007CC9 74 6F 79 2D 6F 73 3A 20 6C 6F     db  "toy-os: load error"
+       00007CD3 61 64 20 65 72 72 6F 72 
+   124 00007CDB 0A                                db  0x0a
+   125 00007CDC 00                                db  0
+   126 00007CDD                                 
+   127 00007CDD 00 00 00 00 00 00 00 00 00 00     resb  0x7dfe-$
+       00007CE7 00 00 00 00 00 00 00 00 00 00 
+       00007CF1 00 00 00 00 00 00 00 00 00 00 
+       00007CFB 00 00 00 00 00 00 00 00 00 00 
+       00007D05 00 00 00 00 00 00 00 00 00 00 
+       00007D0F 00 00 00 00 00 00 00 00 00 00 
+       00007D19 00 00 00 00 00 00 00 00 00 00 
+       00007D23 00 00 00 00 00 00 00 00 00 00 
+       00007D2D 00 00 00 00 00 00 00 00 00 00 
+       00007D37 00 00 00 00 00 00 00 00 00 00 
+       00007D41 00 00 00 00 00 00 00 00 00 00 
+       00007D4B 00 00 00 00 00 00 00 00 00 00 
+       00007D55 00 00 00 00 00 00 00 00 00 00 
+       00007D5F 00 00 00 00 00 00 00 00 00 00 
+       00007D69 00 00 00 00 00 00 00 00 00 00 
+       00007D73 00 00 00 00 00 00 00 00 00 00 
+       00007D7D 00 00 00 00 00 00 00 00 00 00 
+       00007D87 00 00 00 00 00 00 00 00 00 00 
+       00007D91 00 00 00 00 00 00 00 00 00 00 
+       00007D9B 00 00 00 00 00 00 00 00 00 00 
+       00007DA5 00 00 00 00 00 00 00 00 00 00 
+       00007DAF 00 00 00 00 00 00 00 00 00 00 
+       00007DB9 00 00 00 00 00 00 00 00 00 00 
+       00007DC3 00 00 00 00 00 00 00 00 00 00 
+       00007DCD 00 00 00 00 00 00 00 00 00 00 
+       00007DD7 00 00 00 00 00 00 00 00 00 00 
+       00007DE1 00 00 00 00 00 00 00 00 00 00 
+       00007DEB 00 00 00 00 00 00 00 00 00 00 
+       00007DF5 00 00 00 00 00 00 00 00 00 
+   128 00007DFE 55 AA                             db  0x55, 0xaa

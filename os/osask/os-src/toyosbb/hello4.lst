@@ -1,0 +1,22 @@
+     1 00000000                                 [FORMAT "WCOFF"]
+     2 00000000                                 [INSTRSET "i486p"]
+     3 00000000                                 [OPTIMIZE 1]
+     4 00000000                                 [OPTION 1]
+     5 00000000                                 [BITS 32]
+     6 00000000                                 	EXTERN	_puts
+     7 00000000                                 	EXTERN	_api_end
+     8 00000000                                 [FILE "hello4.c"]
+     9                                          [SECTION .data]
+    10 00000000                                 LC0:
+    11 00000000 48 65 6C 6C 6F 2C 20 77 6F 72   	DB	"Hello, world!",0x0A,0x00
+       0000000A 6C 64 21 0A 00 
+    12                                          [SECTION .text]
+    13 00000000                                 	GLOBAL	_HariMain
+    14 00000000                                 _HariMain:
+    15 00000000 55                              	PUSH	EBP
+    16 00000001 89 E5                           	MOV	EBP,ESP
+    17 00000003 68 [00000000]                   	PUSH	LC0
+    18 00000008 E8 [00000000]                   	CALL	_puts
+    19 0000000D 58                              	POP	EAX
+    20 0000000E C9                              	LEAVE
+    21 0000000F E9 [00000000]                   	JMP	_api_end

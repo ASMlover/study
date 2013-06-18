@@ -1,0 +1,80 @@
+     1 00000000                                 [FORMAT "WCOFF"]
+     2 00000000                                 [INSTRSET "i486p"]
+     3 00000000                                 [OPTIMIZE 1]
+     4 00000000                                 [OPTION 1]
+     5 00000000                                 [BITS 32]
+     6 00000000                                 	EXTERN	_init_mem
+     7 00000000                                 	EXTERN	_malloc
+     8 00000000                                 	EXTERN	_win_open
+     9 00000000                                 	EXTERN	_win_fill
+    10 00000000                                 	EXTERN	_rand
+    11 00000000                                 	EXTERN	_win_point
+    12 00000000                                 	EXTERN	_win_refresh
+    13 00000000                                 	EXTERN	_api_end
+    14 00000000                                 [FILE "stars2.c"]
+    15                                          [SECTION .data]
+    16 00000000                                 LC0:
+    17 00000000 57 69 6E 2D 53 54 41 52 53 00   	DB	"Win-STARS",0x00
+    18                                          [SECTION .text]
+    19 00000000                                 	GLOBAL	_HariMain
+    20 00000000                                 _HariMain:
+    21 00000000 55                              	PUSH	EBP
+    22 00000001 89 E5                           	MOV	EBP,ESP
+    23 00000003 57                              	PUSH	EDI
+    24 00000004 56                              	PUSH	ESI
+    25 00000005 BF 00000063                     	MOV	EDI,99
+    26 0000000A 53                              	PUSH	EBX
+    27 0000000B E8 [00000000]                   	CALL	_init_mem
+    28 00000010 68 00003A98                     	PUSH	15000
+    29 00000015 E8 [00000000]                   	CALL	_malloc
+    30 0000001A 68 [00000000]                   	PUSH	LC0
+    31 0000001F 6A FF                           	PUSH	-1
+    32 00000021 6A 64                           	PUSH	100
+    33 00000023 68 00000096                     	PUSH	150
+    34 00000028 50                              	PUSH	EAX
+    35 00000029 E8 [00000000]                   	CALL	_win_open
+    36 0000002E 6A 00                           	PUSH	0
+    37 00000030 6A 5D                           	PUSH	93
+    38 00000032 89 C3                           	MOV	EBX,EAX
+    39 00000034 68 0000008F                     	PUSH	143
+    40 00000039 8D 40 01                        	LEA	EAX,DWORD [1+EAX]
+    41 0000003C 6A 1A                           	PUSH	26
+    42 0000003E 6A 06                           	PUSH	6
+    43 00000040 50                              	PUSH	EAX
+    44 00000041 E8 [00000000]                   	CALL	_win_fill
+    45 00000046 83 C4 30                        	ADD	ESP,48
+    46 00000049                                 L6:
+    47 00000049 E8 [00000000]                   	CALL	_rand
+    48 0000004E BA 00000089                     	MOV	EDX,137
+    49 00000053 89 D1                           	MOV	ECX,EDX
+    50 00000055 99                              	CDQ
+    51 00000056 F7 F9                           	IDIV	ECX
+    52 00000058 8D 72 06                        	LEA	ESI,DWORD [6+EDX]
+    53 0000005B E8 [00000000]                   	CALL	_rand
+    54 00000060 BA 00000043                     	MOV	EDX,67
+    55 00000065 6A 03                           	PUSH	3
+    56 00000067 89 D1                           	MOV	ECX,EDX
+    57 00000069 99                              	CDQ
+    58 0000006A F7 F9                           	IDIV	ECX
+    59 0000006C 83 C2 1A                        	ADD	EDX,26
+    60 0000006F 8D 43 01                        	LEA	EAX,DWORD [1+EBX]
+    61 00000072 52                              	PUSH	EDX
+    62 00000073 56                              	PUSH	ESI
+    63 00000074 50                              	PUSH	EAX
+    64 00000075 E8 [00000000]                   	CALL	_win_point
+    65 0000007A 83 C4 10                        	ADD	ESP,16
+    66 0000007D 4F                              	DEC	EDI
+    67 0000007E 79 C9                           	JNS	L6
+    68 00000080 6A 5E                           	PUSH	94
+    69 00000082 68 00000090                     	PUSH	144
+    70 00000087 6A 1A                           	PUSH	26
+    71 00000089 6A 06                           	PUSH	6
+    72 0000008B 53                              	PUSH	EBX
+    73 0000008C E8 [00000000]                   	CALL	_win_refresh
+    74 00000091 83 C4 14                        	ADD	ESP,20
+    75 00000094 8D 65 F4                        	LEA	ESP,DWORD [-12+EBP]
+    76 00000097 5B                              	POP	EBX
+    77 00000098 5E                              	POP	ESI
+    78 00000099 5F                              	POP	EDI
+    79 0000009A 5D                              	POP	EBP
+    80 0000009B E9 [00000000]                   	JMP	_api_end

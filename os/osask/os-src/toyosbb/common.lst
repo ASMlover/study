@@ -1,0 +1,361 @@
+     1 00000000                                 ; Copyright (c) 2013 ASMlover. All rights reserved.
+     2 00000000                                 ;
+     3 00000000                                 ; Redistribution and use in source and binary forms, with or without
+     4 00000000                                 ; modification, are permitted provided that the following conditions
+     5 00000000                                 ; are met:
+     6 00000000                                 ;
+     7 00000000                                 ;  * Redistributions of source code must retain the above copyright
+     8 00000000                                 ;    notice, this list ofconditions and the following disclaimer.
+     9 00000000                                 ;
+    10 00000000                                 ;    notice, this list of conditions and the following disclaimer in
+    11 00000000                                 ;  * Redistributions in binary form must reproduce the above copyright
+    12 00000000                                 ;    the documentation and/or other materialsprovided with the
+    13 00000000                                 ;    distribution.
+    14 00000000                                 ;
+    15 00000000                                 ; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    16 00000000                                 ; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    17 00000000                                 ; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    18 00000000                                 ; FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    19 00000000                                 ; COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    20 00000000                                 ; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    21 00000000                                 ; BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    22 00000000                                 ; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    23 00000000                                 ; CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    24 00000000                                 ; LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    25 00000000                                 ; ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    26 00000000                                 ; POSSIBILITY OF SUCH DAMAGE.
+    27 00000000                                 
+    28 00000000                                 ; common functions
+    29 00000000                                 
+    30 00000000                                 [format "WCOFF"]        ; making target file's mode
+    31 00000000                                 [instrset "i486p"]      ; for 486
+    32 00000000                                 [bits 32]               ; 32bits's machine language
+    33 00000000                                 
+    34 00000000                                 
+    35 00000000                                 ; making target file's information
+    36 00000000                                 [file "common.s"]       ; source file's information 
+    37 00000000                                 
+    38 00000000                                   ; export functions
+    39 00000000                                   global  _io_hlt, _io_cli, _io_sti, _io_stihlt
+    40 00000000                                   global  _io_in8, _io_in16, _io_in32
+    41 00000000                                   global  _io_out8, _io_out16, _io_out32
+    42 00000000                                   global  _io_load_eflags, _io_store_eflags
+    43 00000000                                   global  _load_gdtr, _load_idtr 
+    44 00000000                                   global  _asm_interrupt_handler20
+    45 00000000                                   global  _asm_interrupt_handler21
+    46 00000000                                   global  _asm_interrupt_handler27
+    47 00000000                                   global  _asm_interrupt_handler2c 
+    48 00000000                                   global  _asm_interrupt_handler0c
+    49 00000000                                   global  _asm_interrupt_handler0d
+    50 00000000                                   global  _asm_stop_user_app
+    51 00000000                                   global  _load_cr0, _store_cr0 
+    52 00000000                                   global  _load_tr
+    53 00000000                                   global  _memory_test_sub
+    54 00000000                                   global  _farjump, _farcall
+    55 00000000                                   global  _asm_toy_api, _start_user_app
+    56 00000000                                   extern  _interrupt_handler20
+    57 00000000                                   extern  _interrupt_handler21
+    58 00000000                                   extern  _interrupt_handler27 
+    59 00000000                                   extern  _interrupt_handler2c
+    60 00000000                                   extern  _interrupt_handler0c
+    61 00000000                                   extern  _interrupt_handler0d
+    62 00000000                                   extern  _toy_api
+    63 00000000                                 
+    64 00000000                                 
+    65                                          [section .text]
+    66 00000000                                 _io_hlt:                ; void io_hlt(void);
+    67 00000000 F4                                hlt
+    68 00000001 C3                                ret 
+    69 00000002                                 
+    70 00000002                                 _io_cli:                ; void io_cli(void);
+    71 00000002 FA                                cli
+    72 00000003 C3                                ret
+    73 00000004                                 
+    74 00000004                                 _io_sti:                ; void io_sti(void);
+    75 00000004 FB                                sti
+    76 00000005 C3                                ret 
+    77 00000006                                 
+    78 00000006                                 _io_stihlt:             ; void io_stihlt(void);
+    79 00000006 FB                                sti
+    80 00000007 F4                                hlt
+    81 00000008 C3                                ret
+    82 00000009                                 
+    83 00000009                                 _io_in8:                ; int io_in8(int port);
+    84 00000009 8B 54 24 04                       mov edx, [esp + 4]
+    85 0000000D B8 00000000                       mov eax, 0
+    86 00000012 EC                                in  al,  dx
+    87 00000013 C3                                ret
+    88 00000014                                 
+    89 00000014                                 _io_in16:               ; int io_in16(int port);
+    90 00000014 8B 54 24 04                       mov edx, [esp + 4]
+    91 00000018 B8 00000000                       mov eax, 0
+    92 0000001D 66 ED                             in  ax, dx
+    93 0000001F C3                                ret
+    94 00000020                                 
+    95 00000020                                 _io_in32:               ; int io_in32(int port);
+    96 00000020 8B 54 24 04                       mov edx, [esp + 4]
+    97 00000024 ED                                in eax, dx
+    98 00000025 C3                                ret
+    99 00000026                                 
+   100 00000026                                 _io_out8:               ; void io_out8(int port, int data);
+   101 00000026 8B 54 24 04                       mov edx, [esp + 4]
+   102 0000002A 8A 44 24 08                       mov al,  [esp + 8]
+   103 0000002E EE                                out dx, al
+   104 0000002F C3                                ret
+   105 00000030                                 
+   106 00000030                                 _io_out16:              ; void io_out16(int port, int data);
+   107 00000030 8B 54 24 04                       mov edx, [esp + 4]
+   108 00000034 8B 44 24 08                       mov eax, [esp + 8]
+   109 00000038 66 EF                             out dx, ax
+   110 0000003A C3                                ret
+   111 0000003B                                 
+   112 0000003B                                 _io_out32:              ; void io_out32(int port, int data);
+   113 0000003B 8B 54 24 04                       mov edx, [esp + 4]
+   114 0000003F 8B 44 24 08                       mov eax, [esp + 8]
+   115 00000043 EF                                out dx, eax
+   116 00000044 C3                                ret
+   117 00000045                                 
+   118 00000045                                 _io_load_eflags:        ; int io_load_eflags(void);
+   119 00000045 9C                                pushfd                ;  push eflags
+   120 00000046 58                                pop eax
+   121 00000047 C3                                ret
+   122 00000048                                 
+   123 00000048                                 _io_store_eflags:       ; void io_store_eflags(int eflags);
+   124 00000048 8B 44 24 04                       mov   eax, [esp + 4]
+   125 0000004C 50                                push  eax
+   126 0000004D 9D                                popfd                 ; pop eflags
+   127 0000004E C3                                ret 
+   128 0000004F                                 
+   129 0000004F                                 _load_gdtr:             ; void load_gdtr(int limit, int addr);
+   130 0000004F 66 8B 44 24 04                    mov   ax, [esp + 4]
+   131 00000054 66 89 44 24 06                    mov   [esp + 6], ax
+   132 00000059 0F 01 54 24 06                    lgdt  [esp + 6]
+   133 0000005E C3                                ret
+   134 0000005F                                 
+   135 0000005F                                 _load_idtr:             ; void load_idtr(int limit, int addr);
+   136 0000005F 66 8B 44 24 04                    mov   ax, [esp + 4]
+   137 00000064 66 89 44 24 06                    mov   [esp + 6], ax
+   138 00000069 0F 01 5C 24 06                    lidt  [esp + 6]
+   139 0000006E C3                                ret 
+   140 0000006F                                 
+   141 0000006F                                 _asm_interrupt_handler20: ; void asm_interrupt_handler20(void);
+   142 0000006F 06                                push    es
+   143 00000070 1E                                push    ds
+   144 00000071 60                                pushad 
+   145 00000072 89 E0                             mov     eax, esp
+   146 00000074 50                                push    eax
+   147 00000075 66 8C D0                          mov     ax, ss
+   148 00000078 8E D8                             mov     ds, ax
+   149 0000007A 8E C0                             mov     es, ax
+   150 0000007C E8 [00000000]                     call    _interrupt_handler20
+   151 00000081 58                                pop     eax
+   152 00000082 61                                popad
+   153 00000083 1F                                pop     ds
+   154 00000084 07                                pop     es 
+   155 00000085 CF                                iretd
+   156 00000086                                 
+   157 00000086                                 
+   158 00000086                                 _asm_interrupt_handler21: ; void asm_interrupt_handler21(void);
+   159 00000086 06                                push    es
+   160 00000087 1E                                push    ds
+   161 00000088 60                                pushad
+   162 00000089 89 E0                             mov     eax, esp
+   163 0000008B 50                                push    eax
+   164 0000008C 66 8C D0                          mov     ax, ss
+   165 0000008F 8E D8                             mov     ds, ax
+   166 00000091 8E C0                             mov     es, ax
+   167 00000093 E8 [00000000]                     call    _interrupt_handler21
+   168 00000098 58                                pop     eax
+   169 00000099 61                                popad
+   170 0000009A 1F                                pop     ds
+   171 0000009B 07                                pop     es 
+   172 0000009C CF                                iretd
+   173 0000009D                                 
+   174 0000009D                                 
+   175 0000009D                                 
+   176 0000009D                                 _asm_interrupt_handler27: ; void asm_interrupt_handler27(void);
+   177 0000009D 06                                push    es
+   178 0000009E 1E                                push    ds
+   179 0000009F 60                                pushad 
+   180 000000A0 89 E0                             mov     eax, esp
+   181 000000A2 50                                push    eax
+   182 000000A3 66 8C D0                          mov     ax, ss
+   183 000000A6 8E D8                             mov     ds, ax
+   184 000000A8 8E C0                             mov     es, ax
+   185 000000AA E8 [00000000]                     call    _interrupt_handler27
+   186 000000AF 58                                pop     eax
+   187 000000B0 61                                popad
+   188 000000B1 1F                                pop     ds
+   189 000000B2 07                                pop     es 
+   190 000000B3 CF                                iretd
+   191 000000B4                                 
+   192 000000B4                                 
+   193 000000B4                                 
+   194 000000B4                                 _asm_interrupt_handler2c: ; void asm_interrupt_handler2c(void);
+   195 000000B4 06                                push    es
+   196 000000B5 1E                                push    ds
+   197 000000B6 60                                pushad 
+   198 000000B7 89 E0                             mov     eax, esp
+   199 000000B9 50                                push    eax
+   200 000000BA 66 8C D0                          mov     ax, ss
+   201 000000BD 8E D8                             mov     ds, ax
+   202 000000BF 8E C0                             mov     es, ax
+   203 000000C1 E8 [00000000]                     call    _interrupt_handler2c
+   204 000000C6 58                                pop     eax
+   205 000000C7 61                                popad
+   206 000000C8 1F                                pop     ds
+   207 000000C9 07                                pop     es 
+   208 000000CA CF                                iretd
+   209 000000CB                                 
+   210 000000CB                                 
+   211 000000CB                                 
+   212 000000CB                                 _asm_interrupt_handler0c: ; void asm_interrupt_handler0c(void)
+   213 000000CB FB                                sti
+   214 000000CC 06                                push    es
+   215 000000CD 1E                                push    ds
+   216 000000CE 60                                pushad
+   217 000000CF 89 E0                             mov     eax, esp
+   218 000000D1 50                                push    eax
+   219 000000D2 66 8C D0                          mov     ax, ss
+   220 000000D5 8E D8                             mov     ds, ax
+   221 000000D7 8E C0                             mov     es, ax
+   222 000000D9 E8 [00000000]                     call    _interrupt_handler0c
+   223 000000DE 83 F8 00                          cmp     eax, 0
+   224 000000E1 0F 85 000000A7                    jne     _asm_stop_user_app
+   225 000000E7 58                                pop     eax
+   226 000000E8 61                                popad
+   227 000000E9 1F                                pop     ds
+   228 000000EA 07                                pop     es
+   229 000000EB 83 C4 04                          add     esp, 4          ; need this in int 0x0c
+   230 000000EE CF                                iretd
+   231 000000EF                                 
+   232 000000EF                                 
+   233 000000EF                                 
+   234 000000EF                                 _asm_interrupt_handler0d: ; void asm_interrupt_handler0d(void);
+   235 000000EF FB                                sti
+   236 000000F0 06                                push    es
+   237 000000F1 1E                                push    ds
+   238 000000F2 60                                pushad
+   239 000000F3 89 E0                             mov     eax, esp
+   240 000000F5 50                                push    eax
+   241 000000F6 66 8C D0                          mov     ax, ss
+   242 000000F9 8E D8                             mov     ds, ax
+   243 000000FB 8E C0                             mov     es, ax
+   244 000000FD E8 [00000000]                     call    _interrupt_handler0d
+   245 00000102 83 F8 00                          cmp     eax, 0
+   246 00000105 0F 85 00000083                    jne     _asm_stop_user_app
+   247 0000010B 58                                pop     eax
+   248 0000010C 61                                popad
+   249 0000010D 1F                                pop     ds
+   250 0000010E 07                                pop     es 
+   251 0000010F 83 C4 04                          add     esp, 4
+   252 00000112 CF                                iretd
+   253 00000113                                 
+   254 00000113                                 
+   255 00000113                                 
+   256 00000113                                 _load_cr0:                ; int load_cr0(void);
+   257 00000113 0F 20 C0                          mov eax, cr0
+   258 00000116 C3                                ret
+   259 00000117                                 
+   260 00000117                                 _store_cr0:               ; void store_cr0(int cr0);
+   261 00000117 8B 44 24 04                       mov eax, [esp + 4]
+   262 0000011B 0F 22 C0                          mov cr0, eax
+   263 0000011E C3                                ret 
+   264 0000011F                                 
+   265 0000011F                                 _load_tr:                 ; void load_tr(int tr);
+   266 0000011F 0F 00 5C 24 04                    ltr [esp + 4]           ; tr 
+   267 00000124 C3                                ret
+   268 00000125                                 
+   269 00000125                                 
+   270 00000125                                 ; unsigned int memory_test_sub(unsigned int start, unsigned int end);
+   271 00000125                                 _memory_test_sub:
+   272 00000125 57                                push    edi
+   273 00000126 56                                push    esi
+   274 00000127 53                                push    ebx
+   275 00000128 BE AA55AA55                       mov     esi,    0xaa55aa55      ; val0 = 0xaa55aa55
+   276 0000012D BF 55AA55AA                       mov     edi,    0x55aa55aa      ; val1 = 0x55aa55aa
+   277 00000132 8B 44 24 10                       mov     eax,    [esp + 12 + 4]  ; i = start
+   278 00000136                                 _mts_loop:
+   279 00000136 89 C3                             mov     ebx,    eax
+   280 00000138 81 C3 00000FFC                    add     ebx,    0xffc           ; address = i + 0xffc
+   281 0000013E 8B 13                             mov     edx,    [ebx]           ; old_val = *address
+   282 00000140 89 33                             mov     [ebx],  esi             ; *address = val0
+   283 00000142 83 33 FF                          xor     dword [ebx], 0xffffffff ; *address ^= 0xffffffff
+   284 00000145 3B 3B                             cmp     edi,    [ebx]           ; if (*address != val1) goto _mts_finish
+   285 00000147 75 18                             jne     _mts_finish
+   286 00000149 83 33 FF                          xor     dword [ebx], 0xffffffff ; *address ^= 0xffffffff
+   287 0000014C 3B 33                             cmp     esi,    [ebx]           ; if (*address != val0) goto _mts_finish
+   288 0000014E 75 11                             jne     _mts_finish
+   289 00000150 89 13                             mov     [ebx],  edx             ; *address = old_val
+   290 00000152 05 00001000                       add     eax,    0x1000          ; i += 0x1000
+   291 00000157 3B 44 24 14                       cmp     eax,    [esp + 12 + 8]  ; if (i <= end) goto _mts_loop
+   292 0000015B 76 D9                             jbe     _mts_loop
+   293 0000015D 5B                                pop     ebx
+   294 0000015E 5E                                pop     esi
+   295 0000015F 5F                                pop     edi
+   296 00000160 C3                                ret
+   297 00000161                                 _mts_finish:
+   298 00000161 89 13                             mov     [ebx],  edx             ; *address = old_val
+   299 00000163 5B                                pop     ebx
+   300 00000164 5E                                pop     esi
+   301 00000165 5F                                pop     edi
+   302 00000166 C3                                ret 
+   303 00000167                                 
+   304 00000167                                 
+   305 00000167                                 _farjump:                 ; void farjump(int eip, int cs);
+   306 00000167 FF 6C 24 04                       jmp far [esp + 4]       ; eip, cs
+   307 0000016B C3                                ret 
+   308 0000016C                                 
+   309 0000016C                                 
+   310 0000016C                                 _farcall:                 ; void farcall(int eip, int cs);
+   311 0000016C FF 5C 24 04                       call  far [esp + 4]     ; eip, cs
+   312 00000170 C3                                ret
+   313 00000171                                 
+   314 00000171                                 
+   315 00000171                                 _asm_toy_api:
+   316 00000171 FB                                sti
+   317 00000172 1E                                push  ds
+   318 00000173 06                                push  es 
+   319 00000174 60                                pushad                  ; used to storage push 
+   320 00000175 60                                pushad                  ; push used to pass to toy_api
+   321 00000176 66 8C D0                          mov   ax, ss
+   322 00000179 8E D8                             mov   ds, ax            ; storage segment address of OS to ds and ss
+   323 0000017B 8E C0                             mov   es, ax
+   324 0000017D E8 [00000000]                     call  _toy_api
+   325 00000182 83 F8 00                          cmp   eax, 0
+   326 00000185 75 07                             jne   _asm_stop_user_app
+   327 00000187 83 C4 20                          add   esp, 32
+   328 0000018A 61                                popad
+   329 0000018B 07                                pop   es 
+   330 0000018C 1F                                pop   ds
+   331 0000018D CF                                iretd
+   332 0000018E                                 _asm_stop_user_app:
+   333 0000018E                                   ; eax is the address of tss.esp0
+   334 0000018E 8B 20                             mov   esp, [eax]
+   335 00000190 C7 40 04 00000000                 mov   dword [eax + 4], 0
+   336 00000197 61                                popad
+   337 00000198 C3                                ret                     ; return to cmd_app
+   338 00000199                                 
+   339 00000199                                 
+   340 00000199                                 
+   341 00000199                                 _start_user_app:          ; void start_user_app(int eip, 
+   342 00000199                                                           ;     int cs, int esp, int ds, int* tss_esp0);
+   343 00000199 60                                pushad                  ; storage all 32bits registers
+   344 0000019A 8B 44 24 24                       mov   eax, [esp + 36]   ; eip
+   345 0000019E 8B 4C 24 28                       mov   ecx, [esp + 40]   ; cs
+   346 000001A2 8B 54 24 2C                       mov   edx, [esp + 44]   ; esp
+   347 000001A6 8B 5C 24 30                       mov   ebx, [esp + 48]   ; ds/ss
+   348 000001AA 8B 6C 24 34                       mov   ebp, [esp + 52]   ; tss.esp0
+   349 000001AE 89 65 00                          mov   [ebp], esp        ; storage the esp of OS
+   350 000001B1 8C 55 04                          mov   [ebp + 4], ss     ; storage the ss of OS
+   351 000001B4 8E C3                             mov   es, bx
+   352 000001B6 8E DB                             mov   ds, bx
+   353 000001B8 8E E3                             mov   fs, bx
+   354 000001BA 8E EB                             mov   gs, bx
+   355 000001BC 83 C9 03                          or    ecx, 3            ; (segment number of application) or 3
+   356 000001BF 83 CB 03                          or    ebx, 3            ; (segment number of application) or 3
+   357 000001C2 53                                push  ebx               ; ss of application
+   358 000001C3 52                                push  edx               ; esp of application
+   359 000001C4 51                                push  ecx               ; cs of application
+   360 000001C5 50                                push  eax               ; eip of application
+   361 000001C6 CB                                retf

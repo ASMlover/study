@@ -1,0 +1,33 @@
+text size :    510(0x001FE)
+data size :      9(0x00009)
+bss  size :      0(0x00000)
+
+0x00000024 : (.text)
+0x00000024 : _HariMain
+0x0000007B : (.text)
+0x0000007B : _putc
+0x00000087 : _puts
+0x00000095 : _api_end
+0x0000009C : _win_open
+0x000000BE : _win_close
+0x000000CC : _win_puts
+0x000000F4 : _win_fill
+0x0000011C : _init_mem
+0x0000013D : _malloc
+0x00000152 : _free
+0x0000016B : _win_point
+0x00000189 : _win_refresh
+0x000001AB : _win_line
+0x000001D3 : _getkey
+0x000001DF : _create_timer
+0x000001E7 : _init_timer
+0x000001F9 : _set_timer
+0x0000020B : _delete_timer
+0x00000219 : (.text)
+0x00000219 : _HariStartup
+0x00000000 : (.data)
+0x00000000 : (.data)
+0x00000400 : (.data)
+0x00000000 : (.bss)
+0x00000000 : (.bss)
+0x00000000 : (.bss)

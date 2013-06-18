@@ -1,0 +1,37 @@
+     1 00000000                                 ; Copyright (c) 2013 ASMlover. All rights reserved.
+     2 00000000                                 ;
+     3 00000000                                 ; Redistribution and use in source and binary forms, with or without
+     4 00000000                                 ; modification, are permitted provided that the following conditions
+     5 00000000                                 ; are met:
+     6 00000000                                 ;
+     7 00000000                                 ;  * Redistributions of source code must retain the above copyright
+     8 00000000                                 ;    notice, this list ofconditions and the following disclaimer.
+     9 00000000                                 ;
+    10 00000000                                 ;    notice, this list of conditions and the following disclaimer in
+    11 00000000                                 ;  * Redistributions in binary form must reproduce the above copyright
+    12 00000000                                 ;    the documentation and/or other materialsprovided with the
+    13 00000000                                 ;    distribution.
+    14 00000000                                 ;
+    15 00000000                                 ; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    16 00000000                                 ; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    17 00000000                                 ; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    18 00000000                                 ; FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    19 00000000                                 ; COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    20 00000000                                 ; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    21 00000000                                 ; BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    22 00000000                                 ; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    23 00000000                                 ; CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    24 00000000                                 ; LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    25 00000000                                 ; ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    26 00000000                                 ; POSSIBILITY OF SUCH DAMAGE.
+    27 00000000                                 
+    28 00000000                                 [instrset "i486p"]
+    29 00000000                                 [bits 32]
+    30 00000000 BA 00000002                       mov edx, 2
+    31 00000005 BB 00000013                       mov ebx, msg
+    32 0000000A CD 40                             int 0x40
+    33 0000000C BA 00000004                       mov edx, 4
+    34 00000011 CD 40                             int 0x40
+    35 00000013                                 msg:
+    36 00000013 48 65 6C 6C 6F 2C 20 77 6F 72     db  "Hello, world", 0
+       0000001D 6C 64 00 

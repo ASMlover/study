@@ -1,0 +1,294 @@
+     1 00000000                                 ; Copyright (c) 2013 ASMlover. All rights reserved.
+     2 00000000                                 ;
+     3 00000000                                 ; Redistribution and use in source and binary forms, with or without
+     4 00000000                                 ; modification, are permitted provided that the following conditions
+     5 00000000                                 ; are met:
+     6 00000000                                 ;
+     7 00000000                                 ;  * Redistributions of source code must retain the above copyright
+     8 00000000                                 ;    notice, this list ofconditions and the following disclaimer.
+     9 00000000                                 ;
+    10 00000000                                 ;    notice, this list of conditions and the following disclaimer in
+    11 00000000                                 ;  * Redistributions in binary form must reproduce the above copyright
+    12 00000000                                 ;    the documentation and/or other materialsprovided with the
+    13 00000000                                 ;    distribution.
+    14 00000000                                 ;
+    15 00000000                                 ; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    16 00000000                                 ; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    17 00000000                                 ; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    18 00000000                                 ; FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    19 00000000                                 ; COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    20 00000000                                 ; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    21 00000000                                 ; BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    22 00000000                                 ; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    23 00000000                                 ; CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    24 00000000                                 ; LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    25 00000000                                 ; ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    26 00000000                                 ; POSSIBILITY OF SUCH DAMAGE.
+    27 00000000                                 
+    28 00000000                                 [format "WCOFF"]
+    29 00000000                                 [instrset "i486p"]
+    30 00000000                                 [bits 32]
+    31 00000000                                 
+    32 00000000                                 
+    33 00000000                                 [file "api_common.s"]
+    34 00000000                                 
+    35 00000000                                   global  _putc
+    36 00000000                                   global  _puts
+    37 00000000                                   global  _api_end
+    38 00000000                                   global  _init_mem
+    39 00000000                                   global  _malloc
+    40 00000000                                   global  _free
+    41 00000000                                   global  _getkey
+    42 00000000                                   global  _win_open
+    43 00000000                                   global  _win_close
+    44 00000000                                   global  _win_puts
+    45 00000000                                   global  _win_fill
+    46 00000000                                   global  _win_point
+    47 00000000                                   global  _win_refresh
+    48 00000000                                   global  _win_line
+    49 00000000                                   global  _create_timer
+    50 00000000                                   global  _delete_timer
+    51 00000000                                   global  _init_timer
+    52 00000000                                   global  _set_timer
+    53 00000000                                 
+    54                                          [section .text]
+    55 00000000                                 
+    56 00000000                                 _putc:                  ; void putc(int c);
+    57 00000000 BA 00000001                       mov edx, 1
+    58 00000005 8A 44 24 04                       mov al, [esp + 4]
+    59 00000009 CD 40                             int 0x40
+    60 0000000B C3                                ret 
+    61 0000000C                                 
+    62 0000000C                                 
+    63 0000000C                                 _puts:                  ; void puts(const char* str);
+    64 0000000C 53                                push  ebx
+    65 0000000D BA 00000002                       mov   edx, 2
+    66 00000012 8B 5C 24 08                       mov   ebx, [esp + 8]  ; str 
+    67 00000016 CD 40                             int   0x40
+    68 00000018 5B                                pop   ebx
+    69 00000019 C3                                ret
+    70 0000001A                                 
+    71 0000001A                                 
+    72 0000001A                                 _api_end:               ; void api_end(void);
+    73 0000001A BA 00000004                       mov edx, 4
+    74 0000001F CD 40                             int 0x40 
+    75 00000021                                 
+    76 00000021                                 
+    77 00000021                                 
+    78 00000021                                 _win_open:              ; int win_open(char* buf, int w, int h, 
+    79 00000021                                                         ;     int alpha, char* title);
+    80 00000021 57                                push  edi
+    81 00000022 56                                push  esi 
+    82 00000023 53                                push  ebx
+    83 00000024 BA 00000005                       mov   edx, 5
+    84 00000029 8B 5C 24 10                       mov   ebx, [esp + 16] ; buf
+    85 0000002D 8B 74 24 14                       mov   esi, [esp + 20] ; w
+    86 00000031 8B 7C 24 18                       mov   edi, [esp + 24] ; h
+    87 00000035 8B 44 24 1C                       mov   eax, [esp + 28] ; alpha
+    88 00000039 8B 4C 24 20                       mov   ecx, [esp + 32] ; title
+    89 0000003D CD 40                             int   0x40
+    90 0000003F 5B                                pop   ebx
+    91 00000040 5E                                pop   esi
+    92 00000041 5F                                pop   edi
+    93 00000042 C3                                ret 
+    94 00000043                                 
+    95 00000043                                 
+    96 00000043                                 
+    97 00000043                                 
+    98 00000043                                 _win_close:             ; void win_close(int win);
+    99 00000043 53                                push  ebx
+   100 00000044 BA 0000000E                       mov   edx, 14
+   101 00000049 8B 5C 24 08                       mov   ebx, [esp + 8]  ; win
+   102 0000004D CD 40                             int   0x40
+   103 0000004F 5B                                pop   ebx
+   104 00000050 C3                                ret
+   105 00000051                                 
+   106 00000051                                 
+   107 00000051                                 
+   108 00000051                                 
+   109 00000051                                 _win_puts:              ; void win_puts(int win, int x, int y, 
+   110 00000051                                                         ;     int color, int len, char* str);
+   111 00000051 57                                push  edi
+   112 00000052 56                                push  esi
+   113 00000053 55                                push  ebp
+   114 00000054 53                                push  ebx
+   115 00000055 BA 00000006                       mov   edx, 6
+   116 0000005A 8B 5C 24 14                       mov   ebx, [esp + 20] ; win
+   117 0000005E 8B 74 24 18                       mov   esi, [esp + 24] ; x
+   118 00000062 8B 7C 24 1C                       mov   edi, [esp + 28] ; y
+   119 00000066 8B 44 24 20                       mov   eax, [esp + 32] ; color
+   120 0000006A 8B 4C 24 24                       mov   ecx, [esp + 36] ; len
+   121 0000006E 8B 6C 24 28                       mov   ebp, [esp + 40] ; str
+   122 00000072 CD 40                             int   0x40
+   123 00000074 5B                                pop   ebx
+   124 00000075 5D                                pop   ebp
+   125 00000076 5E                                pop   esi
+   126 00000077 5F                                pop   edi
+   127 00000078 C3                                ret
+   128 00000079                                 
+   129 00000079                                 
+   130 00000079                                 
+   131 00000079                                 _win_fill:              ; void win_fill(int win, int x0, int y0, 
+   132 00000079                                                         ;     int x1, int y1, int color);
+   133 00000079 57                                push  edi
+   134 0000007A 56                                push  esi
+   135 0000007B 55                                push  ebp
+   136 0000007C 53                                push  ebx
+   137 0000007D BA 00000007                       mov   edx, 7
+   138 00000082 8B 5C 24 14                       mov   ebx, [esp + 20] ; win
+   139 00000086 8B 44 24 18                       mov   eax, [esp + 24] ; x0
+   140 0000008A 8B 4C 24 1C                       mov   ecx, [esp + 28] ; y0
+   141 0000008E 8B 74 24 20                       mov   esi, [esp + 32] ; x1
+   142 00000092 8B 7C 24 24                       mov   edi, [esp + 36] ; y1
+   143 00000096 8B 6C 24 28                       mov   ebp, [esp + 40] ; color
+   144 0000009A CD 40                             int   0x40
+   145 0000009C 5B                                pop   ebx
+   146 0000009D 5D                                pop   ebp
+   147 0000009E 5E                                pop   esi
+   148 0000009F 5F                                pop   edi
+   149 000000A0 C3                                ret
+   150 000000A1                                 
+   151 000000A1                                 
+   152 000000A1                                 
+   153 000000A1                                 _init_mem:              ; void init_mem(void);
+   154 000000A1 53                                push  ebx
+   155 000000A2 BA 00000008                       mov   edx, 8
+   156 000000A7 2E 8B 1D 00000020                 mov   ebx, [cs:0x0020]    ; address of malloc memory
+   157 000000AE 89 D8                             mov   eax, ebx
+   158 000000B0 05 00008000                       add   eax, 32 * 1024
+   159 000000B5 2E 8B 0D 00000000                 mov   ecx, [cs:0x0000]    ; size of data segment 
+   160 000000BC 29 C1                             sub   ecx, eax
+   161 000000BE CD 40                             int   0x40
+   162 000000C0 5B                                pop   ebx
+   163 000000C1 C3                                ret
+   164 000000C2                                 
+   165 000000C2                                 
+   166 000000C2                                 
+   167 000000C2                                 _malloc:                ; void* malloc(int size);
+   168 000000C2 53                                push  ebx
+   169 000000C3 BA 00000009                       mov   edx, 9
+   170 000000C8 2E 8B 1D 00000020                 mov   ebx, [cs:0x0020]
+   171 000000CF 8B 4C 24 08                       mov   ecx, [esp + 8]  ; size
+   172 000000D3 CD 40                             int   0x40
+   173 000000D5 5B                                pop   ebx
+   174 000000D6 C3                                ret
+   175 000000D7                                 
+   176 000000D7                                 
+   177 000000D7                                 
+   178 000000D7                                 _free:                  ; void free(void* ptr, int size);
+   179 000000D7 53                                push  ebx
+   180 000000D8 BA 0000000A                       mov   edx, 10 
+   181 000000DD 2E 8B 1D 00000020                 mov   ebx, [cs:0x0020]
+   182 000000E4 8B 44 24 08                       mov   eax, [esp + 8]  ; ptr
+   183 000000E8 8B 4C 24 0C                       mov   ecx, [esp + 12] ; size
+   184 000000EC CD 40                             int   0x40
+   185 000000EE 5B                                pop   ebx
+   186 000000EF C3                                ret
+   187 000000F0                                 
+   188 000000F0                                 
+   189 000000F0                                 
+   190 000000F0                                 _win_point:             ; void win_point(int win, int x, int y, int color);
+   191 000000F0 57                                push  edi
+   192 000000F1 56                                push  esi
+   193 000000F2 53                                push  ebx
+   194 000000F3 BA 0000000B                       mov   edx, 11 
+   195 000000F8 8B 5C 24 10                       mov   ebx, [esp + 16] ; win
+   196 000000FC 8B 74 24 14                       mov   esi, [esp + 20] ; x
+   197 00000100 8B 7C 24 18                       mov   edi, [esp + 24] ; y
+   198 00000104 8B 44 24 1C                       mov   eax, [esp + 28] ; color
+   199 00000108 CD 40                             int   0x40
+   200 0000010A 5B                                pop   ebx
+   201 0000010B 5E                                pop   esi
+   202 0000010C 5F                                pop   edi
+   203 0000010D C3                                ret
+   204 0000010E                                 
+   205 0000010E                                 
+   206 0000010E                                 
+   207 0000010E                                 
+   208 0000010E                                 _win_refresh:           ; void win_refresh(int win, 
+   209 0000010E                                                         ;   int x0, int y0, int x1, int y1);
+   210 0000010E 57                                push  edi
+   211 0000010F 56                                push  esi
+   212 00000110 53                                push  ebx
+   213 00000111 BA 0000000C                       mov   edx, 12
+   214 00000116 8B 5C 24 10                       mov   ebx, [esp + 16] ; win 
+   215 0000011A 8B 44 24 14                       mov   eax, [esp + 20] ; x0
+   216 0000011E 8B 4C 24 18                       mov   ecx, [esp + 24] ; y0
+   217 00000122 8B 74 24 1C                       mov   esi, [esp + 28] ; x1
+   218 00000126 8B 7C 24 20                       mov   edi, [esp + 32] ; y1
+   219 0000012A CD 40                             int   0x40
+   220 0000012C 5B                                pop   ebx
+   221 0000012D 5E                                pop   esi
+   222 0000012E 5F                                pop   edi
+   223 0000012F C3                                ret 
+   224 00000130                                 
+   225 00000130                                 
+   226 00000130                                 _win_line:              ; void win_line(int win, 
+   227 00000130                                                         ;     int x0, int y0, int x1, int y1, int color);
+   228 00000130 57                                push  edi
+   229 00000131 56                                push  esi
+   230 00000132 55                                push  ebp
+   231 00000133 53                                push  ebx
+   232 00000134 BA 0000000D                       mov   edx, 13
+   233 00000139 8B 5C 24 14                       mov   ebx, [esp + 20] ; win
+   234 0000013D 8B 44 24 18                       mov   eax, [esp + 24] ; x0
+   235 00000141 8B 4C 24 1C                       mov   ecx, [esp + 28] ; y0
+   236 00000145 8B 74 24 20                       mov   esi, [esp + 32] ; x1
+   237 00000149 8B 7C 24 24                       mov   edi, [esp + 36] ; y1
+   238 0000014D 8B 6C 24 28                       mov   ebp, [esp + 40] ; color
+   239 00000151 CD 40                             int   0x40
+   240 00000153 5B                                pop   ebx
+   241 00000154 5D                                pop   ebp
+   242 00000155 5E                                pop   esi
+   243 00000156 5F                                pop   edi
+   244 00000157 C3                                ret
+   245 00000158                                 
+   246 00000158                                 
+   247 00000158                                 
+   248 00000158                                 _getkey:                ; int getkey(int mode);
+   249 00000158 BA 0000000F                       mov   edx, 15
+   250 0000015D 8B 44 24 04                       mov   eax, [esp + 4]  ; mode
+   251 00000161 CD 40                             int   0x40
+   252 00000163 C3                                ret
+   253 00000164                                 
+   254 00000164                                 
+   255 00000164                                 
+   256 00000164                                 
+   257 00000164                                 _create_timer:          ; int create_timer(void);
+   258 00000164 BA 00000010                       mov   edx, 16
+   259 00000169 CD 40                             int   0x40
+   260 0000016B C3                                ret
+   261 0000016C                                 
+   262 0000016C                                 
+   263 0000016C                                 
+   264 0000016C                                 
+   265 0000016C                                 _init_timer:            ; void init_timer(int timer, int data);
+   266 0000016C 53                                push  ebx
+   267 0000016D BA 00000011                       mov   edx, 17
+   268 00000172 8B 5C 24 08                       mov   ebx, [esp + 8]  ; timer
+   269 00000176 8B 44 24 0C                       mov   eax, [esp + 12] ; data 
+   270 0000017A CD 40                             int   0x40
+   271 0000017C 5B                                pop   ebx
+   272 0000017D C3                                ret
+   273 0000017E                                 
+   274 0000017E                                 
+   275 0000017E                                 
+   276 0000017E                                 _set_timer:             ; void set_timer(int timer, int time);
+   277 0000017E 53                                push  ebx
+   278 0000017F BA 00000012                       mov   edx, 18
+   279 00000184 8B 5C 24 08                       mov   ebx, [esp + 8]  ; timer
+   280 00000188 8B 44 24 0C                       mov   eax, [esp + 12] ; time 
+   281 0000018C CD 40                             int   0x40
+   282 0000018E 5B                                pop   ebx
+   283 0000018F C3                                ret
+   284 00000190                                 
+   285 00000190                                 
+   286 00000190                                 
+   287 00000190                                 _delete_timer:          ; void delete_timer(int timer);
+   288 00000190 53                                push  ebx
+   289 00000191 BA 00000013                       mov   edx, 19
+   290 00000196 8B 5C 24 08                       mov   ebx, [esp + 8]  ; timer
+   291 0000019A CD 40                             int   0x40
+   292 0000019C 5B                                pop   ebx
+   293 0000019D C3                                ret
+   294 0000019E                                 
