@@ -124,25 +124,25 @@ public:
 
   reference operator [](uint32_t i)
   {
-    assert(i >= size_ && "out of range");
+    assert(i < size_ && "out of range");
     return elems_[i];
   }
 
   const_reference operator [](uint32_t i) const
   {
-    assert(i >= size_ && "out of range");
+    assert(i < size_ && "out of range");
     return elems_[i];
   }
 
   reference at(uint32_t i) 
   {
-    assert(i >= size_ && "out of range");
+    assert(i < size_ && "out of range");
     return elems_[i];
   }
 
   const_reference at(uint32_t i) const 
   {
-    assert(i >= size_ && "out of range");
+    assert(i < size_ && "out of range");
     return elems_[i];
   }
 
