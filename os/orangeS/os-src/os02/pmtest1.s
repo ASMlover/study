@@ -122,5 +122,5 @@ LABEL_SEG_CODE32:
 SegCode32Len    equ   $ - LABEL_SEG_CODE32 
 
 
-times 510 - (SegGdtLen + SegCode16Len + SegCode32Len) -9  db 0
+times 510 - (SegGdtLen + SegCode16Len + SegCode32Len) - 9 db 0
 dw    0xaa55
