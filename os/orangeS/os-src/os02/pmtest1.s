@@ -69,7 +69,7 @@ LABEL_BEGIN:
   shl eax, 4
   add eax, LABEL_SEG_CODE32 
   mov word [LABEL_DESC_CODE32 + 2], ax
-  shl eax, 16
+  shr eax, 16
   mov byte [LABEL_DESC_CODE32 + 4], al 
   mov byte [LABEL_DESC_CODE32 + 7], ah 
 
