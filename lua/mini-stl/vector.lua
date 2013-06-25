@@ -51,6 +51,14 @@ end
 function Vector:push_back(x)
   self.elems[self.len + 1] = x
   self.len = self.len + 1
+end 
+
+function Vector:push_front(x) 
+  for i = 2, self.len + 1 do 
+    self.elems[i] = self.elems[i - 1]
+  end 
+  self.elems[1] = x 
+  self.len = self.len + 1
 end
 
 function Vector:pop_back()
@@ -59,6 +67,14 @@ function Vector:pop_back()
     return
   end
   self.elems[self.len] = nil
+  self.len = self.len - 1
+end 
+
+function Vector:pop_front() 
+  for i = 1, self.len - 1 do 
+    self.elems[i] = self.elems[i + 1]
+  end 
+  self.elems[self.len] = nil 
   self.len = self.len - 1
 end
 
