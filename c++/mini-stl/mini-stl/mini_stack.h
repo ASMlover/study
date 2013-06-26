@@ -60,6 +60,7 @@ public:
 
   ~Stack(void)
   {
+    clear();
   }
 public:
   bool empty(void) const 
