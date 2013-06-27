@@ -53,6 +53,8 @@ function Stack:pop()
   self.elems[#self.elems] = nil
 end 
 
-function Stack:top()
-  return self.elems[#self.elems]
+function Stack:top() 
+  if #self.elems ~= 0 then 
+    return self.elems[#self.elems] 
+  end 
 end 
