@@ -29,22 +29,50 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 class Vector(object):
+  """ Vector of mini-stl """
   def __init__(self):
-    self.elems = [] 
+    self.elems_ = []
+    self.size_ = 0
+
+  def __del__(self):
+    self.elems_ = []
+    self.size_ = 0
+
+  def clear(self):
+    self.elems_ = []
+
+  def empty(self):
+    return 0 == self.size_
 
   def size(self):
-    return len(self.elems)
+    return self.size_
 
   def push_back(self, v):
-    self.elems.append(v)
+    self.elems_.append(v)
+    self.size_ += 1
 
   def pop_back(self):
-    len = self.size()
-    if len != 0:
-      del self.elems[len - 1]
+    if self.size_ != 0:
+      del self.elems_[self.size_ - 1]
+      self.size_ -= 1
   
   def __getitem__(self, i):
-    return self.elems[i]
+    assert i >= 0 and i < self.size_
+    return self.elems_[i]
 
   def __setitem__(self, i, v):
-    self.elems[i] = v 
+    assert i >= 0 and i < self.size_
+    self.elems_[i] = v 
+
+  def front(self):
+    assert self.size_ > 0
+    return self.elems_[0]
+
+  def back(self):
+    assert self.size_ > 0
+    return self.elems_[self.size_ - 1] 
+
+  def for_each(self, visit):
+    assert visit
+    for e in self.elems_:
+      visit(e)
