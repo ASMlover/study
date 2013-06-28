@@ -34,7 +34,7 @@ function Vector.new(size)
     elems = {}, 
     len  = 0,
   }
-  obj = newObejct(obj, Vector)
+  obj = newObject(obj, Vector)
 
   return obj
 end

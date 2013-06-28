@@ -34,7 +34,7 @@ Stack = {}
 function Stack.new()
   local obj = { elems = {}, }
   
-  obj = newObejct(obj, Stack)
+  obj = newObject(obj, Stack)
 
   return obj
 end 

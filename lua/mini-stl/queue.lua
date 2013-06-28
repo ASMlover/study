@@ -34,7 +34,7 @@ Queue = {}
 function Queue.new()
   local obj = { elems = {}, }
 
-  obj = newObejct(obj, Queue)
+  obj = newObject(obj, Queue)
 
   return obj
 end 
