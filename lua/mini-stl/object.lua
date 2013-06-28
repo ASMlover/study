@@ -25,14 +25,6 @@
 -- ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 -- POSSIBILITY OF SUCH DAMAGE.
 
-local function newindex(self, key, val)
-  getmetatable(self).__object[key] = val
-end
-
-local function index(self, key)
-  return getmetatable(self).__object[key]
-end
-
 function newObejct(o, class)
   class.__index = class
   return setmetatable(o, class)
