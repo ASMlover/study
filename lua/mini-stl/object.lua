@@ -25,7 +25,7 @@
 -- ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 -- POSSIBILITY OF SUCH DAMAGE.
 
-function newObejct(o, class)
+function newObject(o, class)
   class.__index = class
   return setmetatable(o, class)
 end
