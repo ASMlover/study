@@ -2,6 +2,6 @@
 ***
 
 
-
-## **说明** ##
-    这里使用lua实现一些基本的STL容器, 主要是学习lua, 熟悉lua...
+## **What's mini-stl?** ##
+    It's a mini version of STL for studying.
+    Implmentation by lua. 
