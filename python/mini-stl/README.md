@@ -1,6 +1,9 @@
-# **README for mini-stl** #
+# **README for mini-stl(Python)** #
 ***
 
 
-## **概述** ##
-    主要使用python来实现数据结构的相关内容
+
+## **What's mini-stl(Python)?** ##
+* It's a mini version of STL, just for studying Python.
+* It's implemented by Python.
+* It's for open source and free, every one use it.
