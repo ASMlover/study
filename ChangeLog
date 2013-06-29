@@ -1,4 +1,8 @@
 
+2013/06/29  ASMlover  <asmlover@126.com>
+----------------------------------------
+  * Added mini-stl module(c++/lua/python).
+
 2013/04/17  ASMlover  <asmlover@126.com>
 ----------------------------------------
   * Added os information module.
