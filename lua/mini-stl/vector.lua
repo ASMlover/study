@@ -104,3 +104,13 @@ function Vector:get(i)
   return self.elems[i]
 end 
 
+function Vector:pairs()
+  local i = 0
+  return function()
+    i = i + 1
+    if i <= self.len then
+      return self.elems[i]
+    end
+  end
+end  
+
