@@ -33,10 +33,21 @@ class Vector(object):
   def __init__(self):
     self.elems_ = []
     self.size_ = 0
+    self.it = -1
 
   def __del__(self):
     self.elems_ = []
-    self.size_ = 0
+    self.size_ = 0 
+  
+  def __iter__(self):
+    return self
+
+  def next(self):
+    self.it += 1
+    if self.it == self.size_:
+      raise StopIteration
+    else:
+      return self.elems_[self.it]
 
   def clear(self):
     self.elems_ = []
