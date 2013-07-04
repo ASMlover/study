@@ -355,10 +355,10 @@ LABEL_SEG_CODE32:
   mov   ax, SelectorTSS
   ltr   ax 
 
-  push  SelectorStack3 
-  push  TopOfStack3
-  push  SelectorCodeRing3
-  push  0
+  push  SelectorStack3        ; push ss(ring3)
+  push  TopOfStack3           ; push sp(ring3)
+  push  SelectorCodeRing3     ; push cs(ring3)
+  push  0                     ; push eip(ring3)
   retf
 
   call  SelectorCallGateTest:0
