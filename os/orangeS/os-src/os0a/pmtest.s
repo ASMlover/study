@@ -352,6 +352,7 @@ LABEL_SEG_CODE32:
 .2:
   call  DisplayReturn 
 
+  ; load TSS before privilege level changed
   mov   ax, SelectorTSS
   ltr   ax 
 
