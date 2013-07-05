@@ -41,6 +41,11 @@ end
 
 
 function Queue:clear()
+  while self.front ~= nil do 
+    local node = self.front
+    self.front = self.front.next 
+    node = nil 
+  end 
   self.front = nil 
   self.rear = nil 
 end 
