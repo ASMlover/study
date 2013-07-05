@@ -40,7 +40,11 @@ end
 
 
 function Stack:clear()
-  self.head = nil
+  while self.head ~= nil do 
+    local node = self.head
+    self.head = self.head.next 
+    node = nil
+  end
 end 
 
 function Stack:empty()
