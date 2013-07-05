@@ -1,0 +1,12 @@
+
+
+2013/07/05  ASMlover  <asmlover@126.com>
+----------------------------------------
+  * add vector module.
+  * add stack module by list.
+  * add queue module by list.
+
+
+2013/06/29  ASMlover  <asmlover@126.com>
+----------------------------------------
+  * Starts working on mini-stl (Python version).
