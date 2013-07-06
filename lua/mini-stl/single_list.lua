@@ -77,6 +77,9 @@ end
 function SingleList:push_front(x)
   local node = { next = self.front_, data = x }
   self.front_ = node 
+  if self.rear_ == nil then
+    self.rear_ = node
+  end
   self.size_ = self.size_ + 1
 end 
 
