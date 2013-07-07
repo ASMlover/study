@@ -256,7 +256,7 @@ public:
     ++size_;
   }
 
-  void pop_back(void)
+  void pop_front(void)
   {
     assert(nullptr != front_);
 
