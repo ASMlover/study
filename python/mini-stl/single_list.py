@@ -111,4 +111,11 @@ class SingleList(object):
   def back(self):
     if self.rear_ == None:
       return None
-    return self.rear_.data 
+    return self.rear_.data  
+
+  def for_each(self, visit):
+    assert visit 
+    node = self.front_ 
+    while node != None:
+      visit(node.data)
+      node = node.next
