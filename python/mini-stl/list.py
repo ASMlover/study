@@ -124,4 +124,11 @@ class List(object):
 
   def back(self):
     assert self.begin() != self.end()
-    return self.end().prev.data 
+    return self.end().prev.data  
+
+  def for_each(self, visit):
+    assert visit
+    node = self.begin()
+    while node != self.end():
+      visit(node.data)
+      node = node.next
