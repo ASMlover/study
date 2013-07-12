@@ -29,6 +29,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 class List(object):
+  """ List module for mini-stl(python)
+      same as std::list<T> in C++ stl
+  """
   class ListNode(object):
     def __init__(self):
       self.prev = None
