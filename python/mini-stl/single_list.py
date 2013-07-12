@@ -29,6 +29,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 class SingleList(object):
+  """ single list module for mini-stl(Python)
+      it just same as std::slist<T> in C++ sgi stl
+  """
   class ListNode(object):
     def __init__(self):
       self.next = None
