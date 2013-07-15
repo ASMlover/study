@@ -299,7 +299,7 @@ LABEL_SEG_CODE32:
   mov gs, ax 
   mov ax, SelectorStack
   mov ss, ax 
-  mov sp, TopOfStack 
+  mov esp, TopOfStack 
 
   call  Init8295A 
   int   080h
