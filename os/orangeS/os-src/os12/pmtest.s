@@ -266,7 +266,7 @@ LABEL_MEM_CHK_OK:
   lgdt [GdtPtr] 
 
   ; close interrupt 
-  cli 
+  ;cli 
 
   ; load IDTR 
   lidt [IdtPtr] 
@@ -404,7 +404,7 @@ SetRealMode8259A:
 
   ; main 8259A, ICW1
   mov   al, 017h
-  out   020, al 
+  out   020h, al 
   call  io_delay
 
   ; IRQ0, 0x8, main 8259A, ICW2
