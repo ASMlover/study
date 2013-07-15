@@ -556,7 +556,7 @@ PagingDirSwitch:
   mov   eax, [PageTableNumber]
   mov   ebx, 1024
   mul   ebx 
-  mov   ecx, ecx 
+  mov   ecx, eax 
   mov   edi, PageTblBase1 
   xor   eax, eax 
   mov   eax, PG_P | PG_USU | PG_RWW
@@ -687,7 +687,7 @@ LABEL_SEG_CODE16:
   mov ss, ax 
 
   mov eax, cr0
-  and eax, 7ffffffeh
+  and al, 11111110b
   mov cr0, eax 
 
 LABEL_GO_BACK_TO_REAL:
