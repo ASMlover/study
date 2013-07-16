@@ -104,7 +104,7 @@ _ARDStruct: ; Address Range Descriptor Structure
   _dwLengthHigh:    dd  0
   _dwType:          dd  0
 _PageTableNumber    dd  0
-_MemChkBuf: times 256 dd  0 
+_MemChkBuf: times 256 db  0 
 
 ; used in Protected mode 
 szPMMessage     equ _szPMMessage      - $$
