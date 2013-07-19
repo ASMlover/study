@@ -32,4 +32,6 @@ require 'liblua'
 local user32 = liblua.open_dll('user32.dll')
 local MessageBox = liblua.get_function(user32, 'MessageBoxA')
 
-MessageBox(nil, 'test win32 api', 'hello', 0)
+MessageBox(nil, 'test win32 api', 'hello', 0) 
+
+liblua.close_dll(user32)
