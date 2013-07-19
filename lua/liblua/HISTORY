@@ -1,4 +1,8 @@
 
+* 2013/07/19  Added new Module for liblua.
+  ---------------------------------------
+  + Add module about calling window API for lua.
+
 * 2013/07/17  Created liblua project.
-  -----------------------------------
+  ----------------------------------
   + Starts working on liblua.
