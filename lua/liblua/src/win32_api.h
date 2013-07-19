@@ -26,37 +26,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
+#ifndef __WIN32_API_HEADER_H__
+#define __WIN32_API_HEADER_H__
 
-#include "win32_api.h"
+extern int ll_open_dll(lua_State* L);
+extern int ll_close_dll(lua_State* L);
+extern int ll_get_function(lua_State* L);
 
-static int 
-ll_add(lua_State* L)
-{
-  double a = luaL_checknumber(L, 1);
-  double b = luaL_checknumber(L, 2);
-
-  lua_pushnumber(L, a + b);
-  return 1;
-}
-
-
-
-int 
-luaopen_liblua(lua_State* L)
-{
-  static const struct luaL_Reg liblua[] = {
-    { "add", ll_add }, 
-    { "open_dll", ll_open_dll }, 
-    { "close_dll", ll_close_dll }, 
-    { "get_function", ll_get_function }, 
-    { NULL, NULL }, 
-  };
-
-
-  luaL_register(L, "liblua", liblua);
-
-  return 1;
-}
+#endif  /* __WIN32_API_HEADER_H__ */
