@@ -1,4 +1,8 @@
 
+2013/07/19  ASMlover  <asmlover@126.com>
+----------------------------------------
+  * add new module - call window api for lua.
+
 2013/07/17  ASMlover  <asmlover@126.com>
 ----------------------------------------
   * Starts working on liblua.
