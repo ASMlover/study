@@ -13,4 +13,5 @@
 
 ## **2. 共享库的使用** ##
     1) gcc -o $@ $^ -lxxx
-    2) 具体例子请参见./shared-demo/
+    2) 在具体运行的时候还需要设置环境变量export LD_LIBRARY_PATH=/xxx/xx/xx
+    3) 具体例子请参见./shared-demo/
