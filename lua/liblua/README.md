@@ -9,14 +9,14 @@
 
 ## **Building liblua** ##
 > ### **Windows** ###
-* \> cd .\liblua\src
-* \> nmake -f makefile.mk
-* \> nmake -f makefile.mk install 
+    \> cd .\liblua\src
+    \> nmake -f makefile.mk
+    \> nmake -f makefile.mk install 
 
 > ### **Linux** ###
-* $ cd ./liblua/src 
-* $ make 
-* $ make install 
+    $ cd ./liblua/src 
+    $ make 
+    $ make install 
 
 
 ## **Use liblua** ##
