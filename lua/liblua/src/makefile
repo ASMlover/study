@@ -35,7 +35,8 @@ RM	= rm
 RD	= rm -rf 
 MD	= mkdir -p 
 CP	= cp 
-LIBLUA_OBJS = liblua.o 
+LIBLUA_OBJS = main_linux.o \
+	liblua.o 
 
 
 
