@@ -17,3 +17,16 @@
 * $ cd ./liblua/src 
 * $ make 
 * $ make install 
+
+
+## **Use liblua** ##
+> ### **Windows** ###
+    package.cpath = 'xxx/?.dll'
+    local l = require 'liblua'
+    ...
+> ### **Linux** ###
+    package.cpath = 'xxx/?.so'
+    local l = require 'liblua'
+    ...
+> ### **Samples** ###
+    see directory ./test/
