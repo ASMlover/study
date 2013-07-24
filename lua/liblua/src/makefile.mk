@@ -41,7 +41,8 @@ RM	= del
 MD	= mkdir 
 RD	= rd /s /q
 CP	= copy 
-LIBLUA_OBJS = liblua.obj \
+LIBLUA_OBJS = main_win32.obj \
+	liblua.obj \
 	win32_api.obj
 
 
