@@ -30,7 +30,6 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
-#include "win32_api.h"
 
 static int 
 ll_add(lua_State* L)
@@ -49,9 +48,6 @@ luaopen_liblua(lua_State* L)
 {
   static const struct luaL_Reg liblua[] = {
     { "add", ll_add }, 
-    { "open_dll", ll_open_dll }, 
-    { "close_dll", ll_close_dll }, 
-    { "get_function", ll_get_function }, 
     { NULL, NULL }, 
   };
 
