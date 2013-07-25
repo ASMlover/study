@@ -26,19 +26,9 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
+#ifndef __LIB_LUA_HEADER_H__
+#define __LIB_LUA_HEADER_H__
 
-#include "liblua.h"
+extern int ll_add(lua_State* L);
 
-
-int 
-ll_add(lua_State* L)
-{
-  double a = luaL_checknumber(L, 1);
-  double b = luaL_checknumber(L, 2);
-
-  lua_pushnumber(L, a + b);
-  return 1;
-}
+#endif  /* __LIB_LUA_HEADER_H__ */

@@ -2,6 +2,7 @@
 2013/07/24  ASMlover  <asmlover@126.com>
 ----------------------------------------
   * add shared library for lua (Linux)
+  * divided liblua into two modules(Win32 and Linux)
 
 2013/07/19  ASMlover  <asmlover@126.com>
 ----------------------------------------

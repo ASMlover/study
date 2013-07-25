@@ -31,14 +31,22 @@
 #include <lauxlib.h>
 
 #include "liblua.h"
+#include "win32_api.h"
 
 
 int 
-ll_add(lua_State* L)
+luaopen_liblua(lua_State* L)
 {
-  double a = luaL_checknumber(L, 1);
-  double b = luaL_checknumber(L, 2);
+  static const struct luaL_Reg liblua[] = {
+    { "add", ll_add }, 
+    { "open_dll", ll_open_dll }, 
+    { "close_dll", ll_close_dll }, 
+    { "get_function", ll_get_function }, 
+    { NULL, NULL }, 
+  };
 
-  lua_pushnumber(L, a + b);
+
+  luaL_register(L, "liblua", liblua);
+
   return 1;
 }
