@@ -1,4 +1,12 @@
 
+* 2013/07/25  Added Lisp module.
+  -----------------------------
+  + Added knowledge about Lisp.
+
+* 2013/06/29  Added mini-stl.
+  --------------------------
+  + Added mini-stl module(C++/Lua/Python).
+
 * 2013/04/17  Added new module into study.
   ---------------------------------------
   + Added os information module.
