@@ -46,4 +46,4 @@ $(BIN_OUT): $(OBJS)
 	$(CC) $(CFLAGS) $<
 
 clean:
-	$(RM) $(BIN_OUT) $(OBJS) *.ilk *.pdb *.manifest #.exp
+	$(RM) $(BIN_OUT) $(OBJS) *.ilk *.pdb *.manifest *.exp
