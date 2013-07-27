@@ -39,6 +39,12 @@ main(int argc, char* argv[])
 {
   pEVALNEWLISP newlispEval;
   HMODULE hDll = LoadLibrary("newlisp.dll");
+  char buf[128];
+
+  if (argc < 2) {
+    fprintf(stderr, "usage: runlisp [filename]\n");
+    exit(-1);
+  }
 
   if (NULL == hDll) {
     fprintf(stderr, "cannot import library\n");
@@ -46,7 +52,8 @@ main(int argc, char* argv[])
   }
   newlispEval = (pEVALNEWLISP)GetProcAddress(hDll, "newlispEvalStr");
 
-  fprintf(stdout, "%s\n", newlispEval("(+ 34 56)"));
+  sprintf(buf, "(load \"%s\")", argv[1]);
+  fprintf(stdout, "%s\n", newlispEval(buf));
   newlispEval("(exit 0)");
 
   return 0;
