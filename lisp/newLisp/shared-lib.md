@@ -10,3 +10,4 @@
        newlisp.dylib(Mac OS X);
        其中有一个函数const char* newlispEvalStr(const char*);
     3) 具体例子请参见./src/newlisp01/
+    4) Linux版本的具体例子请参见./src/newLisp02/
