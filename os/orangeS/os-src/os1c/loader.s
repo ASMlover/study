@@ -215,8 +215,6 @@ LABEL_FILE_LOADED:
 
   jmp   $
 
-  jmp   $
-
 
 
 
