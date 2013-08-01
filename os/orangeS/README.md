@@ -21,4 +21,8 @@
         * cd bochs-2.4.5/
         * ./configure --enable-debugger --enable-disasm
         * make
-        * sudo make install
+        * sudo make install 
+    4) qemu安装以及使用
+        * sudo apt-get install qemu 
+        * sudo ln -s /usr/bin/qemu-system-i386 /usr/bin/qemu 
+        * qemu -fda xxx.img
