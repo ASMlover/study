@@ -37,14 +37,13 @@ type node_t struct {
 
 type stack_t struct {
   head  *node_t
-  size  uint
 }
 
 
 
 
 func New() *stack_t {
-  return &stack_t{nil, 0}
+  return &stack_t{nil}
 }
 
 func (s *stack_t) Empty() bool {
@@ -52,11 +51,9 @@ func (s *stack_t) Empty() bool {
 }
 
 func (s *stack_t) Push(val interface{}) {
-  n := node_t{nil, val}
+  n := node_t{s.head, val}
 
-  n.next = s.head
   s.head = &n
-  s.size++
 }
 
 func (s *stack_t) Pop() interface{} {
