@@ -26,13 +26,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 BIN_OUT	= lispbind.so 
-BIN_DIR	= ../bin 
-ENV_DIR	= /home/asmlover/projects/study/lua/lispbind/bin
-DEPENDS	= libnewlisp.so
+BIN_DIR	= ../bin
+DEPENDS	= ../../sdk/lib/libnewlisp.so
 CC	= gcc
 CFLAGS	+= -g -O2 -Wall -fPIC
-INCLUDES = -I../../liblua/sdk/include 
-LDFLAGS	= -shared -llua5.1 -L./ -lnewlisp
+INCLUDES = -I../../sdk/include 
+LDFLAGS	= -shared -llua5.1 -L../../sdk/lib -lnewlisp
 RM	= rm 
 RD	= rm -rf 
 MD	= mkdir -p 
@@ -57,8 +56,6 @@ uninstall:
 clean:
 	$(RM) $(BIN_OUT) $(LISPBIND_OBJS)
 
-env:
-	export LD_LIBRARY_PATH=$(ENV_DIR)
 
 
 
