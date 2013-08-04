@@ -33,8 +33,8 @@ CC	= cl -c -nologo
 LINK	= link -nologo -dll -def:$(TARGET).def
 MT	= mt -nologo 
 CFLAGS	= -O2 -W3 -MT -GS -Zi -Fd"vc.pdb" -DNDEBUG
-INCLUDES = -I"..\sdk\include"
-LDDIRS	= -LIBPATH:"..\sdk\lib"
+INCLUDES = -I"..\..\sdk\include"
+LDDIRS	= -LIBPATH:"..\..\sdk\lib"
 LDFLAGS	= -DEBUG -PDB:$(TARGET).pdb -manifest\
 	-manifestfile:$(BIN_OUT).manifest -manifestuac:no $(LDDIRS) lua5.1.lib 
 RM	= del 
