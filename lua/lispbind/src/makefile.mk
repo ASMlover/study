@@ -37,8 +37,8 @@ MD	= mkdir
 RD	= rd /s /q
 CP	= copy 
 CFLAGS	= -O2 -W3 -MT -GS -Zi -Fd"vc.pdb" -DNDEBUG -D_CRT_SECURE_NO_WARNINGS
-INCLUDES = -I"..\..\liblua\sdk\include"
-LDDIRS	= -LIBPATH:"..\..\liblua\sdk\lib"
+INCLUDES = -I"..\..\sdk\include"
+LDDIRS	= -LIBPATH:"..\..\sdk\lib"
 LDFLAGS	= -DEBUG -PDB:$(TARGET).pdb -manifest \
 	-manifestfile:$(BIN_OUT).manifest -manifestuac:no $(LDDIRS) lua5.1.lib 
 LISPBIND_OBJS = lispbind.obj\
