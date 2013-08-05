@@ -1,4 +1,9 @@
 
+* 2013/08/02  Added Go module.
+  ---------------------------
+  + Added information about Golang.
+  + Added a mini-stl implementation with Go.
+
 * 2013/07/25  Added Lisp module.
   -----------------------------
   + Added knowledge about Lisp.
