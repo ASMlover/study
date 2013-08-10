@@ -34,9 +34,9 @@ import (
 )
 
 type Student struct {
-  id    int
-  name  string
-  age   int
+  Id    int
+  Name  string
+  Age   int
 }
 
 func (s Student) Hello() {
@@ -56,8 +56,8 @@ func Info(o interface{}) {
   fmt.Println("o=>value: ")
   for i := 0; i < t.NumField(); i++ {
     f := t.Field(i)
-    val := v.Field(i)
-    //val := v.Field(i).Interface()
+    //val := v.Field(i)
+    val := v.Field(i).Interface()
     fmt.Printf("%s\t: %v=>%v\n", f.Name, f.Type, val)
   }
 
