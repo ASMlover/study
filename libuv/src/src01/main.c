@@ -46,13 +46,14 @@ int
 main(int argc, char* argv[])
 {
   uv_idle_t idle;
+  uv_loop_t* loop = uv_default_loop();
 
-  uv_idle_init(uv_default_loop(), &idle);
+  uv_idle_init(loop, &idle);
   uv_idle_start(&idle, idle_routine);
 
-  fprintf(stdout, "[%d]Idling begin ...\n", (int)clock());
-  uv_run(uv_default_loop(), UV_RUN_DEFAULT);
-  fprintf(stdout, "[%d]Idling finish ...\n", (int)clock());
+  fprintf(stdout, "[%lu]Idling begin ...\n", clock());
+  uv_run(loop, UV_RUN_DEFAULT);
+  fprintf(stdout, "[%lu]Idling finish ...\n", clock());
 
   return 0;
 }
