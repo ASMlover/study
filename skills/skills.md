@@ -100,4 +100,7 @@
         可以使用 sudo /sbin/ldconfig -v | grep libzmq来检查系统, 如果没有出
     现下面的内容:
         libzmq.so.1 -> libzmq.so.1.0.1
-        则需要在/etc/ld.so.conf文件的最后一行加上 /usr/local/lib/
+        则需要在/etc/ld.so.conf文件的最后一行加上 /usr/local/lib/ 
+
+        另外新安装的共享库, 找不到的情况下还需要运行sudo ldconfig来配置动态
+    库的环境
