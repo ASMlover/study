@@ -26,39 +26,61 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
 #include "type.h"
 #include "const.h"
-#include "protect.h" 
-#include "proto.h"
-#include "string.h"
+#include "protect.h"
 #include "global.h"
+#include "proto.h"
+
+
 
 
 void 
-cstart(void)
+exception_handler(int vec_no, int err_code, int eip, int cs, int eflags)
 {
-  uint16_t* p_gdt_limit;
-  uint32_t* p_gdt_base;
-  uint16_t* p_idt_limit;
-  uint32_t* p_idt_base;
+  int i;
+  int text_color = 0x74;
 
-  display_str("\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-      "=====<cstart> begins=====\n");
+  char* err_msg[] = {
+    "#DE divide error", 
+    "#DB reserved", 
+    "--  nmi interrupt", 
+    "#BP breakpoint", 
+    "#OF overflow", 
+    "#BR bound range exceeded", 
+    "#UD invalid opcode (undefined opcode)", 
+    "#NM device not available (no match coprocessor)", 
+    "#DF double fault", 
+    "    coprocessor segment overrun (reserved)", 
+    "#TS invalid tss", 
+    "#NP segment not present", 
+    "#SS stack segment fault", 
+    "#GP general protection", 
+    "#PF page fault", 
+    "--  (intel reserved. do not use)", 
+    "#MF x87 FPU floating-point error (math fault)", 
+    "#AC alignment check", 
+    "#MC machine check", 
+    "#XF SIMD floating-point exception"
+  };
 
-  /* copy GDT from LOADER to new GDT */
-  memcpy(&gdt, (void*)(*((uint32_t*)(&gdt_ptr[2]))), /* base of old GDT */
-      *((uint16_t*)(&gdt_ptr[0])) + 1); /* limit of old GDT */
-  
-  p_gdt_limit = (uint16_t*)(&gdt_ptr[0]);
-  p_gdt_base  = (uint32_t*)(&gdt_ptr[2]);
-  *p_gdt_limit  = GDT_SIZE * sizeof(descriptor_t) - 1;
-  *p_gdt_base   = (uint32_t)&gdt;
+  disp_pos = 0;
+  for (i = 0; i < 80 * 5; ++i)
+    display_str(" ");
+  disp_pos = 0;
 
-  p_idt_limit = (uint16_t*)(&idt_ptr[0]);
-  p_idt_base  = (uint32_t*)(&idt_ptr[2]);
-  *p_idt_limit  = IDT_SIZE * sizeof(gate_t) - 1;
-  *p_idt_base   = (uint32_t)&idt;
+  display_color_str("exception! --> ", text_color);
+  display_color_str(err_msg[vec_no], text_color);
+  display_color_str("\n\n", text_color);
+  display_color_str("eflags: ", text_color);
+  display_int(eflags);
+  display_color_str("cs: ", text_color);
+  display_int(cs);
+  display_color_str("eip: ", text_color);
+  display_int(eip);
 
-  display_str("=====<cstart> ends=====\n");
+  if (0xffffffff != err_code) {
+    display_color_str("error code: ", text_color);
+    display_int(err_code);
+  }
 }

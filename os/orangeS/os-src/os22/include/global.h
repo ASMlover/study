@@ -26,39 +26,13 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#ifndef __GLOBAL_HEADER_H__
+#define __GLOBAL_HEADER_H__
 
-#include "type.h"
-#include "const.h"
-#include "protect.h" 
-#include "proto.h"
-#include "string.h"
-#include "global.h"
+extern int            disp_pos;
+extern uint8_t        gdt_ptr[6]; /* 0~15:limit 16~47:base */
+extern descriptor_t   gdt[GDT_SIZE];
+extern uint8_t        idt_ptr[6]; /* 0~15:limit 16~47:base */
+extern gate_t         idt[IDT_SIZE];
 
-
-void 
-cstart(void)
-{
-  uint16_t* p_gdt_limit;
-  uint32_t* p_gdt_base;
-  uint16_t* p_idt_limit;
-  uint32_t* p_idt_base;
-
-  display_str("\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-      "=====<cstart> begins=====\n");
-
-  /* copy GDT from LOADER to new GDT */
-  memcpy(&gdt, (void*)(*((uint32_t*)(&gdt_ptr[2]))), /* base of old GDT */
-      *((uint16_t*)(&gdt_ptr[0])) + 1); /* limit of old GDT */
-  
-  p_gdt_limit = (uint16_t*)(&gdt_ptr[0]);
-  p_gdt_base  = (uint32_t*)(&gdt_ptr[2]);
-  *p_gdt_limit  = GDT_SIZE * sizeof(descriptor_t) - 1;
-  *p_gdt_base   = (uint32_t)&gdt;
-
-  p_idt_limit = (uint16_t*)(&idt_ptr[0]);
-  p_idt_base  = (uint32_t*)(&idt_ptr[2]);
-  *p_idt_limit  = IDT_SIZE * sizeof(gate_t) - 1;
-  *p_idt_base   = (uint32_t)&idt;
-
-  display_str("=====<cstart> ends=====\n");
-}
+#endif  /* __GLOBAL_HEADER_H__ */

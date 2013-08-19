@@ -26,39 +26,53 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
 #include "type.h"
 #include "const.h"
-#include "protect.h" 
+#include "protect.h"
 #include "proto.h"
 #include "string.h"
 #include "global.h"
 
 
-void 
-cstart(void)
+
+
+/* num -> 16bits num into str */
+char* 
+itoa(char* str, int num)
 {
-  uint16_t* p_gdt_limit;
-  uint32_t* p_gdt_base;
-  uint16_t* p_idt_limit;
-  uint32_t* p_idt_base;
+  char* p = str;
+  char  c;
+  int   i;
+  int   flag = 0;
 
-  display_str("\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-      "=====<cstart> begins=====\n");
+  *p++ = '0';
+  *p++ = 'x';
 
-  /* copy GDT from LOADER to new GDT */
-  memcpy(&gdt, (void*)(*((uint32_t*)(&gdt_ptr[2]))), /* base of old GDT */
-      *((uint16_t*)(&gdt_ptr[0])) + 1); /* limit of old GDT */
-  
-  p_gdt_limit = (uint16_t*)(&gdt_ptr[0]);
-  p_gdt_base  = (uint32_t*)(&gdt_ptr[2]);
-  *p_gdt_limit  = GDT_SIZE * sizeof(descriptor_t) - 1;
-  *p_gdt_base   = (uint32_t)&gdt;
+  if (0 == num)
+    *p++ = '0';
+  else {
+    for (i = 28; i >= 0; i -= 4) {
+      c = (num >> i) & 0xf;
+      if (flag || (c > 0)) {
+        flag = 1;
+        c += '0';
+        if (c > '9') {
+          c += 7;
+        }
+        *p++ = c;
+      }
+    }
+  }
 
-  p_idt_limit = (uint16_t*)(&idt_ptr[0]);
-  p_idt_base  = (uint32_t*)(&idt_ptr[2]);
-  *p_idt_limit  = IDT_SIZE * sizeof(gate_t) - 1;
-  *p_idt_base   = (uint32_t)&idt;
+  *p = 0;
+  return str;
+}
 
-  display_str("=====<cstart> ends=====\n");
+
+void 
+display_int(int num)
+{
+  char buf[16];
+  itoa(buf, num);
+  display_str(buf);
 }

@@ -32,14 +32,17 @@ BOOT_BIN = ./boot/boot.bin
 LDR_BIN	= ./boot/loader.bin 
 SBFLAGS	= -I./boot/include/
 SKFLAGS	= -I./include/ -f elf 
-CFLAGS	= -I ./include/ -c -fno-builtin 
+CFLAGS	= -I ./include/ -c -fno-builtin -fno-stack-protector
 LDFLAGS	= -s -Ttext $(ENTRYPOINT)
 KERNEL_BIN = ./kernel/kernel.bin 
 KERNEL_OBJS = ./kernel/kernel.o \
 	./kernel/start.o \
 	./lib/string.o \
 	./lib/kliba.o \
-	./kernel/i8259.o
+	./kernel/i8259.o \
+	./kernel/global.o \
+	./kernel/protect.o \
+	./lib/klib.o
 RM	= rm 
 NASM	= nasm 
 CC	= gcc
@@ -94,4 +97,13 @@ $(KERNEL_BIN): $(KERNEL_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ 
 
 ./kernel/i8259.o: ./kernel/i8259.c
+	$(CC) $(CFLAGS) -o $@ $^ 
+
+./kernel/global.o: ./kernel/global.c 
+	$(CC) $(CFLAGS) -o $@ $^ 
+
+./kernel/protect.o: ./kernel/protect.c 
+	$(CC) $(CFLAGS) -o $@ $^ 
+
+./lib/klib.o: ./lib/klib.c 
 	$(CC) $(CFLAGS) -o $@ $^
