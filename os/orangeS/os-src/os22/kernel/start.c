@@ -60,5 +60,7 @@ cstart(void)
   *p_idt_limit  = IDT_SIZE * sizeof(gate_t) - 1;
   *p_idt_base   = (uint32_t)&idt;
 
+  init_port();
+
   display_str("=====<cstart> ends=====\n");
 }

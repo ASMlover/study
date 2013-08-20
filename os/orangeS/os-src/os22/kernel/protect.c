@@ -33,6 +33,25 @@
 #include "proto.h"
 
 
+/* interrupt handler */
+extern void divide_error(void);
+extern void single_step_exception(void);
+extern void nmi(void);
+extern void breakpoint_exception(void);
+extern void overflow(void);
+extern void bounds_check(void);
+extern void inval_opcode(void);
+extern void copr_not_available(void);
+extern void double_fault(void);
+extern void copr_seg_overrun(void);
+extern void inval_tss(void);
+extern void segment_not_present(void);
+extern void stack_exception(void);
+extern void general_protection(void);
+extern void page_fault(void);
+extern void copr_error(void);
+
+
 
 
 void 
@@ -83,4 +102,62 @@ exception_handler(int vec_no, int err_code, int eip, int cs, int eflags)
     display_color_str("error code: ", text_color);
     display_int(err_code);
   }
+}
+
+
+
+
+static void 
+init_idt_desc(unsigned char vector, uint8_t desc_type, 
+    int_handler_cb handler, unsigned char privilege)
+{
+  gate_t* gate  = &idt[vector];
+  uint32_t base = (uint32_t)handler;
+
+  gate->offset_low  = base & 0xffff;
+  gate->selector    = SELECTOR_KERNEL_CS;
+  gate->dcount      = 0;
+  gate->addr        = desc_type | (privilege << 5);
+  gate->offset_high = (base >> 16) & 0xffff;
+}
+
+
+void 
+init_port(void)
+{
+  init_8259A();
+
+  /* all initialize as interrupt gate */
+  init_idt_desc(INT_VECTOR_DIVIDE, DA_386IGATE, 
+      divide_error, PRIVILEGE_KERNAL);
+  init_idt_desc(INT_VECTOR_DEBUG, DA_386IGATE, 
+      single_step_exception, PRIVILEGE_KERNAL);
+  init_idt_desc(INT_VECTOR_NMI, DA_386IGATE, 
+      nmi, PRIVILEGE_KERNAL);
+  init_idt_desc(INT_VECTOR_BREAKPOINT, DA_386IGATE, 
+      breakpoint_exception, PRIVILEGE_USER);
+  init_idt_desc(INT_VECTOR_OVERFLOW, DA_386IGATE, 
+      overflow, PRIVILEGE_USER);
+  init_idt_desc(INT_VECTOR_BOUNDS, DA_386IGATE, 
+      bounds_check, PRIVILEGE_KERNAL);
+  init_idt_desc(INT_VECTOR_INVAL_OP, DA_386IGATE, 
+      inval_opcode, PRIVILEGE_KERNAL);
+  init_idt_desc(INT_VECTOR_COPROC_NOT, DA_386IGATE, 
+      copr_not_available, PRIVILEGE_KERNAL);
+  init_idt_desc(INT_VECTOR_DOUBLE_FAULT, DA_386IGATE, 
+      double_fault, PRIVILEGE_KERNAL);
+  init_idt_desc(INT_VECTOR_COPROC_SEG, DA_386IGATE, 
+      copr_seg_overrun, PRIVILEGE_KERNAL);
+  init_idt_desc(INT_VECTOR_INVAL_TSS, DA_386IGATE, 
+      inval_tss, PRIVILEGE_KERNAL);
+  init_idt_desc(INT_VECTOR_SEG_NOT, DA_386IGATE, 
+      segment_not_present, PRIVILEGE_KERNAL);
+  init_idt_desc(INT_VECTOR_STACK_FAULT, DA_386IGATE, 
+      stack_exception, PRIVILEGE_KERNAL);
+  init_idt_desc(INT_VECTOR_PROTECTION, DA_386IGATE, 
+      general_protection, PRIVILEGE_KERNAL);
+  init_idt_desc(INT_VECTOR_PAGE_FAULT, DA_386IGATE, 
+      page_fault, PRIVILEGE_KERNAL);
+  init_idt_desc(INT_VECTOR_COPROC_ERR, DA_386IGATE, 
+      copr_error, PRIVILEGE_KERNAL);
 }

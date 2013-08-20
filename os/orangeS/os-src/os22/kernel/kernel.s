@@ -87,8 +87,11 @@ _start:
 
   jmp   SELECTOR_KERNEL_CS:csinit
 csinit:
-  push  0
-  popfd                   ; pop top of stack into EFLAGS
+  ;ud2
+  jmp 0x40:0
+
+  ; push  0
+  ; popfd                   ; pop top of stack into EFLAGS
 
   hlt 
 

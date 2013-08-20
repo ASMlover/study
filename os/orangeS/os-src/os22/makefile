@@ -69,7 +69,7 @@ run:
 	$(QEMU) -fda $(IMG)
 
 clean:
-	$(RM) $(BOOT_BIN) $(LDR_BIN) $(KERNEL_BIN) $(IMG) $(KERNEL_OBJS) *.log
+	$(RM) $(BOOT_BIN) $(LDR_BIN) $(KERNEL_BIN) $(IMG) $(KERNEL_OBJS)
 
 
 
