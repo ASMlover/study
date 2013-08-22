@@ -71,7 +71,7 @@ main(int argc, char* argv[])
     }
   }
   end = clock();
-  fprintf(stdout, "use default memory allocator: %u\n", end - beg);
+  fprintf(stdout, "use default memory allocator: %lu\n", end - beg);
   
   beg = clock();
   for (int l = 0; l < LOOP_TIMES; ++l) {
@@ -82,7 +82,7 @@ main(int argc, char* argv[])
     }
   }
   end = clock();
-  fprintf(stdout, "use special pool: %u\n", end - beg);
+  fprintf(stdout, "use special pool: %lu\n", end - beg);
 
 
   object2_t::destroy();
