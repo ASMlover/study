@@ -34,7 +34,7 @@ CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -DNDEBUG
 LDFLAGS	= -DEBUG -PDB:$(OUT).pdb -manifest -manifestfile:$(OUT).manifest\
 	-manifestuac:no 
 OBJS	= allocator.obj\
-	win32_mutex.obj\
+	win_mutex.obj\
 	allocator_test.obj 
 
 
