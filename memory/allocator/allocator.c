@@ -70,7 +70,7 @@ free_index(size_t bytes)
 }
 
 static inline size_t 
-min(size_t a, size_t b)
+_min(size_t a, size_t b)
 {
   return (a < b ? a : b);
 }
@@ -80,15 +80,16 @@ alloc_chunk(allocator_t* self, size_t index)
 {
   size_t alloc_size = (index + 1) * ALIGN;
   size_t chunk_size = 
-    min(MAX_BYTES / alloc_size * alloc_size, alloc_size * MAX_NUMBER);
+    _min(MAX_BYTES / alloc_size * alloc_size, alloc_size * MAX_NUMBER);
 
   if (NULL == self->free_list[index]) {
     size_t i;
+    memory_t* node;
 
     self->free_list[index] = (memory_t*)malloc(chunk_size);
     assert(NULL != self->free_list[index]);
 
-    memory_t* node = self->free_list[index];
+    node = self->free_list[index];
     for (i = 0; i < chunk_size - alloc_size; i += alloc_size) 
       node = node->next = node + (index + 1) * ALIGN / sizeof(memory_t);
     node->next = NULL;
