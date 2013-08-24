@@ -49,6 +49,8 @@ public:
   allocator_t(void);
   ~allocator_t(void);
 
+  static allocator_t& singleton(void);
+
   void* alloc(size_t size);
   void dealloc(void* ptr, size_t size);
 };

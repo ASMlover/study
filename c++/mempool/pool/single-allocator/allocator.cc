@@ -91,6 +91,13 @@ allocator_t::~allocator_t(void)
   }
 }
 
+allocator_t& 
+allocator_t::singleton(void)
+{
+  static allocator_t s;
+  return s;
+}
+
 void* 
 allocator_t::alloc(size_t size)
 {
