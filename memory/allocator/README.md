@@ -9,8 +9,10 @@
 
 ## **Building allocator** ##
  * linux
+
     $ cd allocator
     $ make
  * windows
+
     \> cd allocator
     \> nmake
