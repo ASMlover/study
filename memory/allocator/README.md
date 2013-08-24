@@ -15,4 +15,4 @@
  * **windows**
 
         \> cd allocator
-        \> nmake
+        \> nmake -f makefile.win
