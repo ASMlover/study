@@ -8,11 +8,11 @@
 
 
 ## **Building allocator** ##
- * linux
+ > **linux**
 
-    $ cd allocator
-    $ make
- * windows
+        $ cd allocator
+        $ make
+ > **windows**
 
-    \> cd allocator
-    \> nmake
+        \> cd allocator
+        \> nmake
