@@ -29,7 +29,7 @@
 #ifndef __MUTEX_HEADER_H__
 #define __MUTEX_HEADER_H__
 
-#if defined(_MSC_VER) && defined(_WINDOWS_)
+#if defined(_MSC_VER) || defined(_WINDOWS_)
   #include <windows.h>
 
   typedef CRITICAL_SECTION  mutex_t;
