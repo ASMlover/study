@@ -8,7 +8,7 @@
 
 
 ## **Building allocator2** ##
- * Windows 
+ * **windows**
 
         step1: Setting environment for using MSVC
         step2:
