@@ -70,15 +70,6 @@ freelist_index(size_t bytes)
   return ((bytes + (ALIGN - 1)) / ALIGN - 1);
 }
 
-static inline size_t 
-_min(size_t a, size_t b)
-{
-  return (a < b ? a : b);
-}
-
-
-
-
 static struct memory_t* 
 alloc_chunk(struct allocator_t* self, size_t index)
 {
