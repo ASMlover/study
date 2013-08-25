@@ -11,8 +11,22 @@
  * **linux**
 
         $ cd allocator
-        $ make
+        $ make 
+
  * **windows**
 
         \> cd allocator
-        \> nmake -f makefile.win
+        \> nmake -f makefile.win 
+
+
+
+## **Use allocator** ##
+ * **step**
+
+        * step1: call allocator_init() at the beginning
+        * step2: call allocator_destroy() at the ending
+        * step3: call al_malloc()/al_free where you want to use
+
+ * **Demo**
+
+        see ./allocator_test.c
