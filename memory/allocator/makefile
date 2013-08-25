@@ -28,7 +28,10 @@ OUT	= test
 CC	= gcc 
 RM	= rm 
 CFLAGS	= -g -O2 -Wall 
-OBJS	= allocator.o allocator_test.o
+LDFLAGS	= -lpthread
+OBJS	= allocator.o\
+	linux_mutex.o\
+	allocator_test.o
 
 
 
@@ -44,7 +47,7 @@ clean:
 
 
 $(OUT): $(OBJS)
-	$(CC) -o $@ $^
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(OBJS): %.o:%.c 
 	$(CC) -o  $*.o -c $(CFLAGS) $^
