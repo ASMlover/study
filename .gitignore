@@ -1,2 +1,14 @@
 *.swp
 tolset
+*.o
+*.a
+*.so
+*.exe
+*.lib
+*.dll
+*.obj
+*.pdb
+*.manifest
+*.exp
+*.ilk
+*.idb
