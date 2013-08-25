@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include "mutex.h"
 #include "allocator.h"
 
 
@@ -57,6 +58,7 @@ typedef struct chunk_t {
 typedef struct allocator_t {
   memory_t* free_list[NFREELISTS];
   chunk_t*  chunk_list;
+  mutex_t   mutex;
 } allocator_t;
 
 
@@ -106,6 +108,8 @@ allocator_init(void)
 {
   memset(_s_allocator.free_list, 0, sizeof(_s_allocator.free_list));
   _s_allocator.chunk_list = NULL;
+
+  mutex_init(&_s_allocator.mutex);
 }
 
 void 
@@ -117,6 +121,8 @@ allocator_destroy(void)
     _s_allocator.chunk_list = _s_allocator.chunk_list->next;
     free(chunk);
   }
+
+  mutex_destroy(&_s_allocator.mutex);
 }
 
 void* 
@@ -134,6 +140,7 @@ al_malloc(size_t bytes)
     allocator_t* self = &_s_allocator;
     size_t index = free_index(bytes);
     
+    mutex_lock(&self->mutex);
     if (NULL == self->free_list[index]) {
       memory_t* new_chunk = alloc_chunk(self, index);
       chunk_t*  chunk_node;
@@ -151,6 +158,7 @@ al_malloc(size_t bytes)
 
     ret = self->free_list[index];
     self->free_list[index] = self->free_list[index]->next;
+    mutex_unlock(&self->mutex);
   }
 
   return ret;
@@ -165,6 +173,9 @@ al_free(void* ptr, size_t bytes)
 
   assert(NULL != ptr && bytes > 0);
   index = free_index(bytes);
+
+  mutex_lock(&self->mutex);
   chunk->next = self->free_list[index];
   self->free_list[index] = chunk;
+  mutex_unlock(&self->mutex);
 }
