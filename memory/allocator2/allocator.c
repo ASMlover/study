@@ -32,7 +32,7 @@
 #include "mutex.h"
 #include "allocator.h"
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(_MSC_VER)
   #define inline __inline
 #endif
 
