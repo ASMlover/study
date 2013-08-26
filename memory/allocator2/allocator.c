@@ -42,6 +42,7 @@ enum allocator_size_type {
   MAX_BYTES   = 256,
   NFREELISTS  = MAX_BYTES / ALIGN, 
   MAX_NUMBER  = 64, 
+  PREFIX_SIZE = sizeof(size_t),
 };
 
 
@@ -73,7 +74,7 @@ freelist_index(size_t bytes)
 static struct memory_t* 
 alloc_chunk(struct allocator_t* self, size_t index)
 {
-  size_t alloc_size = (sizeof(size_t) + (index + 1) * ALIGN);
+  size_t alloc_size = (PREFIX_SIZE + (index + 1) * ALIGN);
   size_t chunk_size = alloc_size * MAX_NUMBER;
 
   if (NULL == self->free_list[index]) {
@@ -86,8 +87,9 @@ alloc_chunk(struct allocator_t* self, size_t index)
     node = self->free_list[index];
     for (i = 0; i < chunk_size - alloc_size; i += alloc_size) {
       node->index = index;
-      node = node->next = node + 1;
+      node = node->next = (struct memory_t*)((byte_t*)node + alloc_size);
     }
+    node->index = index;
     node->next = NULL;
   }
 
@@ -125,8 +127,11 @@ al_malloc(size_t bytes)
   void* ret;
 
   assert(bytes > 0);
-  if (bytes > MAX_BYTES)
-    ret = malloc(bytes);
+  if (bytes > MAX_BYTES) {
+    ret = malloc(bytes + PREFIX_SIZE);
+    *(size_t*)ret = NFREELISTS;
+    ret = (byte_t*)ret + PREFIX_SIZE;
+  }
   else {
     struct allocator_t* self = &_s_allocator;
     size_t index = freelist_index(bytes);
@@ -136,7 +141,7 @@ al_malloc(size_t bytes)
       struct chunk_t* chunk_node;
       if (freelist_index(sizeof(struct chunk_t)) == index) {
         chunk_node = (struct chunk_t*)((byte_t*)self->free_list[index] 
-            + sizeof(size_t));
+            + PREFIX_SIZE);
         self->free_list[index] = self->free_list[index]->next;
       }
       else
@@ -147,7 +152,7 @@ al_malloc(size_t bytes)
       self->chunk_list = chunk_node;
     }
 
-    ret = (byte_t*)self->free_list[index] + sizeof(size_t);
+    ret = (byte_t*)self->free_list[index] + PREFIX_SIZE;
     self->free_list[index] = self->free_list[index]->next;
   }
 
@@ -157,11 +162,18 @@ al_malloc(size_t bytes)
 void 
 al_free(void* ptr)
 {
-  struct memory_t* chunk;
+  void* realptr;
+  size_t index;
   struct allocator_t* self = &_s_allocator;
 
   assert(NULL != ptr);
-  chunk = (struct memory_t*)((byte_t*)ptr - sizeof(size_t));
-  chunk->next = self->free_list[chunk->index];
-  self->free_list[chunk->index] = chunk;
+  realptr = (byte_t*)ptr - PREFIX_SIZE;
+  index = *(size_t*)realptr;
+  if (NFREELISTS == index)
+    free(realptr);
+  else {
+    struct memory_t* chunk = (struct memory_t*)realptr;
+    chunk->next = self->free_list[index];
+    self->free_list[index] = chunk;
+  }
 }
