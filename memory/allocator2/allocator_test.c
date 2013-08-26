@@ -43,6 +43,8 @@ main(int argc, char* argv[])
   int i, counter;
   clock_t beg, end;
 
+  allocator_init();
+
   counter = 0;
   beg = clock();
   while (counter++ < LOOP_TIMES) {
@@ -66,6 +68,9 @@ main(int argc, char* argv[])
   }
   end = clock();
   fprintf(stdout, "allocator use : %lu\n", end - beg);
+
+
+  allocator_destroy();
 
   return 0;
 }
