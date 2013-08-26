@@ -34,7 +34,7 @@
 int 
 mutex_init(mutex_t* mutex)
 {
-  return pthread_mutex_init(mutex);
+  return pthread_mutex_init(mutex, NULL);
 }
 
 void 
