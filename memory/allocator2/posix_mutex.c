@@ -26,22 +26,44 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef __MUTEX_HEADER_H__
-#define __MUTEX_HEADER_H__
-
-#if defined(_MSC_VER) || defined(_WINDOWS_)
-  #include <windows.h>
-  typedef CRITICAL_SECTION  mutex_t;
-#elif defined(__linux__)
-  #include <pthread.h>
-  typedef pthread_mutex_t   mutex_t;
-#endif
+#include <errno.h>
+#include <stdlib.h>
+#include "mutex.h"
 
 
-extern int mutex_init(mutex_t* mutex);
-extern void mutex_destroy(mutex_t* mutex);
-extern void mutex_lock(mutex_t* mutex);
-extern int mutex_trylock(mutex_t* mutex);
-extern void mutex_unlock(mutex_t* mutex);
+int 
+mutex_init(mutex_t* mutex)
+{
+  return pthread_mutex_init(mutex);
+}
 
-#endif  /* __MUTEX_HEADER_H__ */
+void 
+mutex_destroy(mutex_t* mutex)
+{
+  if (0 != pthread_mutex_destroy(mutex))
+    abort();
+}
+
+void 
+mutex_lock(mutex_t* mutex)
+{
+  if (0 != pthread_mutex_lock(mutex))
+    abort();
+}
+
+int 
+mutex_trylock(mutex_t* mutex)
+{
+  int ret = pthread_mutex_trylock(mutex);
+  if (0 != ret && EBUSY != ret && EAGAIN != ret)
+    abort();
+  
+  return ret;
+}
+
+void 
+mutex_unlock(mutex_t* mutex)
+{
+  if (0 != pthread_mutex_unlock(mutex))
+    abort();
+}
