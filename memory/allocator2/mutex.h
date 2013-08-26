@@ -31,10 +31,10 @@
 
 #if defined(_MSC_VER) || defined(_WINDOWS_)
   #include <windows.h>
-  typedef CRITICAL_SECTION  mutex_t;
+  typedef CRITICAL_SECTION    mutex_t;
 #elif defined(__linux__)
   #include <pthread.h>
-  typedef pthread_mutex_t   mutex_t;
+  typedef pthread_spinlock_t  mutex_t;
 #endif
 
 

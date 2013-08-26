@@ -34,27 +34,27 @@
 int 
 mutex_init(mutex_t* mutex)
 {
-  return pthread_mutex_init(mutex, NULL);
+  return pthread_spin_init(mutex, 0);
 }
 
 void 
 mutex_destroy(mutex_t* mutex)
 {
-  if (0 != pthread_mutex_destroy(mutex))
+  if (0 != pthread_spin_destroy(mutex))
     abort();
 }
 
 void 
 mutex_lock(mutex_t* mutex)
 {
-  if (0 != pthread_mutex_lock(mutex))
+  if (0 != pthread_spin_lock(mutex))
     abort();
 }
 
 int 
 mutex_trylock(mutex_t* mutex)
 {
-  int ret = pthread_mutex_trylock(mutex);
+  int ret = pthread_spin_trylock(mutex);
   if (0 != ret && EBUSY != ret && EAGAIN != ret)
     abort();
   
@@ -64,6 +64,6 @@ mutex_trylock(mutex_t* mutex)
 void 
 mutex_unlock(mutex_t* mutex)
 {
-  if (0 != pthread_mutex_unlock(mutex))
+  if (0 != pthread_spin_unlock(mutex))
     abort();
 }
