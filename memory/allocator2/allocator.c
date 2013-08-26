@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include "mutex.h"
 #include "allocator.h"
 
 #if defined(_MSC_VER)
@@ -39,9 +40,9 @@
 typedef unsigned char byte_t;
 enum allocator_size_type {
   ALIGN       = 8, 
-  MAX_BYTES   = 256,
+  MAX_BYTES   = 2048,
   NFREELISTS  = MAX_BYTES / ALIGN, 
-  MAX_NUMBER  = 64, 
+  MAX_NUMBER  = 128, 
   PREFIX_SIZE = sizeof(size_t),
 };
 
@@ -59,6 +60,7 @@ struct chunk_t {
 struct allocator_t {
   struct memory_t*  free_list[NFREELISTS];
   struct chunk_t*   chunk_list;
+  mutex_t           mutex;
 }; 
 
 static struct allocator_t _s_allocator;
@@ -103,6 +105,7 @@ allocator_init(void)
 {
   memset(_s_allocator.free_list, 0, sizeof(_s_allocator.free_list));
   _s_allocator.chunk_list = NULL;
+  mutex_init(&_s_allocator.mutex);
 }
 
 void 
@@ -114,6 +117,8 @@ allocator_destroy(void)
     _s_allocator.chunk_list = _s_allocator.chunk_list->next;
     free(chunk);
   }
+
+  mutex_destroy(&_s_allocator.mutex);
 }
 
 void* 
@@ -136,6 +141,7 @@ al_malloc(size_t bytes)
     struct allocator_t* self = &_s_allocator;
     size_t index = freelist_index(bytes);
 
+    mutex_lock(&self->mutex);
     if (NULL == self->free_list[index]) {
       struct memory_t* new_chunk = alloc_chunk(self, index);
       struct chunk_t* chunk_node;
@@ -154,6 +160,7 @@ al_malloc(size_t bytes)
 
     ret = (byte_t*)self->free_list[index] + PREFIX_SIZE;
     self->free_list[index] = self->free_list[index]->next;
+    mutex_unlock(&self->mutex);
   }
 
   return ret;
@@ -173,7 +180,10 @@ al_free(void* ptr)
     free(realptr);
   else {
     struct memory_t* chunk = (struct memory_t*)realptr;
+
+    mutex_lock(&self->mutex);
     chunk->next = self->free_list[index];
     self->free_list[index] = chunk;
+    mutex_unlock(&self->mutex);
   }
 }
