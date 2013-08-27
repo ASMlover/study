@@ -26,23 +26,48 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef __MUTEX_HEADER_H__
-#define __MUTEX_HEADER_H__
+#include "spinlock.h"
 
-#if defined(_MSC_VER) || defined(_WINDOWS_)
-  #include <windows.h>
 
-  typedef CRITICAL_SECTION    mutex_t;
-#elif defined(__linux__)
-  #include <pthread.h>
-  
-  typedef pthread_spinlock_t  mutex_t;
-#endif
 
-extern int mutex_init(mutex_t* mutex);
-extern void mutex_destroy(mutex_t* mutex);
-extern void mutex_lock(mutex_t* mutex);
-extern int mutex_trylock(mutex_t* mutex);
-extern void mutex_unlock(mutex_t* mutex);
+int 
+spinlock_init(spinlock_t* spinlock)
+{
+  if (InitializeCriticalSectionAndSpinCount(spinlock, 4000))
+    return 0;
+  else
+    return -1;
+}
 
-#endif  /* __MUTEX_HEADER_H__ */
+void 
+spinlock_destroy(spinlock_t* spinlock)
+{
+  DeleteCriticalSection(spinlock);
+}
+
+void 
+spinlock_lock(spinlock_t* spinlock)
+{
+  if ((DWORD)spinlock->OwningThread == GetCurrentThreadId())
+    return;
+
+  EnterCriticalSection(spinlock);
+}
+
+int 
+spinlock_trylock(spinlock_t* spinlock)
+{
+  if ((DWORD)spinlock->OwningThread == GetCurrentThreadId())
+    return 0;
+
+  if (TryEnterCriticalSection(spinlock))
+    return 0;
+  else 
+    return -1;
+}
+
+void 
+spinlock_unlock(spinlock_t* spinlock)
+{
+  LeaveCriticalSection(spinlock);
+}

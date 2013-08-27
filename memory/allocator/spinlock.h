@@ -26,39 +26,22 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include "mutex.h"
+#ifndef __SPINLOCK_HEADER_H__
+#define __SPINLOCK_HEADER_H__
+
+#if defined(_MSC_VER) || defined(_WINDOWS_)
+  #include <windows.h>
+  typedef CRITICAL_SECTION    spinlock_t;
+#elif defined(__linux__)
+  #include <pthread.h>
+  typedef pthread_spinlock_t  spinlock_t;
+#endif
 
 
-int 
-mutex_init(mutex_t* mutex)
-{
-  InitializeCriticalSection(mutex);
-  return 0;
-}
+extern int spinlock_init(spinlock_t* spinlock);
+extern void spinlock_destroy(spinlock_t* spinlock);
+extern void spinlock_lock(spinlock_t* spinlock);
+extern int spinlock_trylock(spinlock_t* spinlock);
+extern void spinlock_unlock(spinlock_t* spinlock);
 
-void 
-mutex_destroy(mutex_t* mutex)
-{
-  DeleteCriticalSection(mutex);
-}
-
-void 
-mutex_lock(mutex_t* mutex)
-{
-  EnterCriticalSection(mutex);
-}
-
-int 
-mutex_trylock(mutex_t* mutex)
-{
-  if (TryEnterCriticalSection(mutex))
-    return 0;
-  else 
-    return -1;
-}
-
-void 
-mutex_unlock(mutex_t* mutex)
-{
-  LeaveCriticalSection(mutex);
-}
+#endif  /* __SPINLOCK_HEADER_H__ */
