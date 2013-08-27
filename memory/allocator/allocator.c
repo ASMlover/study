@@ -33,7 +33,7 @@
 #include "allocator.h"
 
 
-#if defined(_MSC_VER)
+#if defined(_WINDOWS_) || defined(_MSC_VER)
   #define inline  __inline
 #endif
 
@@ -49,15 +49,12 @@ enum allocator_size_type {
 typedef struct memory_t {
   struct memory_t* next;
 } memory_t;
-typedef struct chunk_t {
-  struct chunk_t*   next;
-  struct memory_t*  data;
-} chunk_t;
-
 
 typedef struct allocator_t {
   memory_t* free_list[NFREELISTS];
-  chunk_t*  chunk_list;
+  void**    chunk_list;
+  size_t    chunk_count;
+  size_t    chunk_storage;
   mutex_t   mutex;
 } allocator_t;
 
@@ -77,6 +74,26 @@ _min(size_t a, size_t b)
   return (a < b ? a : b);
 }
 
+static inline void 
+insert_chunk(allocator_t* self, void* chunk)
+{
+  if (self->chunk_count == self->chunk_storage) {
+    size_t new_chunk_storage = self->chunk_storage + NFREELISTS;
+    void** new_chunk_list = 
+      (void**)malloc(sizeof(void*) * new_chunk_storage);
+    assert(NULL != new_chunk_list);
+
+    memmove(new_chunk_list, 
+        self->chunk_list, 
+        sizeof(void*) * self->chunk_count);
+    free(self->chunk_list);
+    self->chunk_list = new_chunk_list;
+    self->chunk_storage = new_chunk_storage;
+  }
+
+  self->chunk_list[self->chunk_count++] = chunk;
+}
+
 static memory_t* 
 alloc_chunk(allocator_t* self, size_t index)
 {
@@ -90,6 +107,7 @@ alloc_chunk(allocator_t* self, size_t index)
 
     self->free_list[index] = (memory_t*)malloc(chunk_size);
     assert(NULL != self->free_list[index]);
+    insert_chunk(self, self->free_list[index]);
 
     node = self->free_list[index];
     for (i = 0; i < chunk_size - alloc_size; i += alloc_size) 
@@ -107,7 +125,9 @@ void
 allocator_init(void)
 {
   memset(_s_allocator.free_list, 0, sizeof(_s_allocator.free_list));
-  _s_allocator.chunk_list = NULL;
+  _s_allocator.chunk_list = (void**)malloc(sizeof(void*) * NFREELISTS);
+  _s_allocator.chunk_count = 0;
+  _s_allocator.chunk_storage = NFREELISTS;
 
   mutex_init(&_s_allocator.mutex);
 }
@@ -115,12 +135,10 @@ allocator_init(void)
 void 
 allocator_destroy(void)
 {
-  memory_t* chunk;
-  while (NULL != _s_allocator.chunk_list) {
-    chunk = _s_allocator.chunk_list->data;
-    _s_allocator.chunk_list = _s_allocator.chunk_list->next;
-    free(chunk);
-  }
+  size_t i;
+  for (i = 0; i < _s_allocator.chunk_count; ++i)
+    free(_s_allocator.chunk_list[i]);
+  free(_s_allocator.chunk_list);
 
   mutex_destroy(&_s_allocator.mutex);
 }
@@ -141,20 +159,8 @@ al_malloc(size_t bytes)
     size_t index = free_index(bytes);
     
     mutex_lock(&self->mutex);
-    if (NULL == self->free_list[index]) {
-      memory_t* new_chunk = alloc_chunk(self, index);
-      chunk_t*  chunk_node;
-      if (free_index(sizeof(chunk_t)) == index) {
-        chunk_node = (chunk_t*)self->free_list[index];
-        self->free_list[index] = self->free_list[index]->next;
-      }
-      else 
-        chunk_node = (chunk_t*)al_malloc(sizeof(chunk_t));
-
-      chunk_node->data = new_chunk;
-      chunk_node->next = self->chunk_list;
-      self->chunk_list = chunk_node;
-    }
+    if (NULL == self->free_list[index]) 
+      alloc_chunk(self, index);
 
     ret = self->free_list[index];
     self->free_list[index] = self->free_list[index]->next;
