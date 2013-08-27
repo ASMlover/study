@@ -83,12 +83,26 @@ allocator_t::allocator_t(void)
 
 allocator_t::~allocator_t(void)
 {
-  memory_t* chunk;
-  while (NULL != chunk_list_) {
-    chunk = chunk_list_->data;
-    chunk_list_ = chunk_list_->next;
-    free(chunk);
+  int count = 0;
+  chunk_t* chunk = chunk_list_;
+  while (NULL != chunk) {
+    ++count;
+    chunk = chunk->next;
   }
+
+  void** memory_list = (void**)malloc(sizeof(void*) * count);
+  assert(NULL != memory_list);
+
+  int i = 0;
+  chunk = chunk_list_;
+  while (NULL != chunk) {
+    memory_list[i] = chunk->data;
+    chunk = chunk->next;
+  }
+
+  for (i = 0; i < count; ++i)
+    free(memory_list[i]);
+  free(memory_list);
 }
 
 allocator_t& 
