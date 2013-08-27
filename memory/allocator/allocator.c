@@ -29,7 +29,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include "mutex.h"
+#include "spinlock.h"
 #include "allocator.h"
 
 
@@ -51,11 +51,11 @@ typedef struct memory_t {
 } memory_t;
 
 typedef struct allocator_t {
-  memory_t* free_list[NFREELISTS];
-  void**    chunk_list;
-  size_t    chunk_count;
-  size_t    chunk_storage;
-  mutex_t   mutex;
+  memory_t*   free_list[NFREELISTS];
+  void**      chunk_list;
+  size_t      chunk_count;
+  size_t      chunk_storage;
+  spinlock_t  spinlock;
 } allocator_t;
 
 
@@ -129,7 +129,7 @@ allocator_init(void)
   _s_allocator.chunk_count = 0;
   _s_allocator.chunk_storage = NFREELISTS;
 
-  mutex_init(&_s_allocator.mutex);
+  spinlock_init(&_s_allocator.spinlock);
 }
 
 void 
@@ -140,7 +140,7 @@ allocator_destroy(void)
     free(_s_allocator.chunk_list[i]);
   free(_s_allocator.chunk_list);
 
-  mutex_destroy(&_s_allocator.mutex);
+  spinlock_destroy(&_s_allocator.spinlock);
 }
 
 void* 
@@ -158,13 +158,13 @@ al_malloc(size_t bytes)
     allocator_t* self = &_s_allocator;
     size_t index = free_index(bytes);
     
-    mutex_lock(&self->mutex);
+    spinlock_lock(&self->spinlock);
     if (NULL == self->free_list[index]) 
       alloc_chunk(self, index);
 
     ret = self->free_list[index];
     self->free_list[index] = self->free_list[index]->next;
-    mutex_unlock(&self->mutex);
+    spinlock_unlock(&self->spinlock);
   }
 
   return ret;
@@ -180,8 +180,8 @@ al_free(void* ptr, size_t bytes)
   assert(NULL != ptr && bytes > 0);
   index = free_index(bytes);
 
-  mutex_lock(&self->mutex);
+  spinlock_lock(&self->spinlock);
   chunk->next = self->free_list[index];
   self->free_list[index] = chunk;
-  mutex_unlock(&self->mutex);
+  spinlock_unlock(&self->spinlock);
 }

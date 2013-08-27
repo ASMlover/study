@@ -30,7 +30,7 @@ RM	= rm
 CFLAGS	= -g -O2 -Wall 
 LDFLAGS	= -lpthread
 OBJS	= allocator.o\
-	linux_mutex.o\
+	posix_spinlock.o\
 	allocator_test.o
 
 
