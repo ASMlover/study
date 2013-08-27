@@ -33,7 +33,7 @@ RM	= del
 CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -DNDEBUG
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no 
-OBJS	= win_mutex.obj\
+OBJS	= win_spinlock.obj\
 	allocator.obj\
 	allocator_test.obj
 

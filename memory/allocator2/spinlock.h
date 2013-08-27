@@ -26,22 +26,22 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef __MUTEX_HEADER_H__
-#define __MUTEX_HEADER_H__
+#ifndef __SPINLOCK_HEADER_H__
+#define __SPINLOCK_HEADER_H__
 
 #if defined(_MSC_VER) || defined(_WINDOWS_)
   #include <windows.h>
-  typedef CRITICAL_SECTION    mutex_t;
+  typedef CRITICAL_SECTION    spinlock_t;
 #elif defined(__linux__)
   #include <pthread.h>
-  typedef pthread_spinlock_t  mutex_t;
+  typedef pthread_spinlock_t  spinlock_t;
 #endif
 
 
-extern int mutex_init(mutex_t* mutex);
-extern void mutex_destroy(mutex_t* mutex);
-extern void mutex_lock(mutex_t* mutex);
-extern int mutex_trylock(mutex_t* mutex);
-extern void mutex_unlock(mutex_t* mutex);
+extern int spinlock_init(spinlock_t* spinlock);
+extern void spinlock_destroy(spinlock_t* spinlock);
+extern void spinlock_lock(spinlock_t* spinlock);
+extern int spinlock_trylock(spinlock_t* spinlock);
+extern void spinlock_unlock(spinlock_t* spinlock);
 
-#endif  /* __MUTEX_HEADER_H__ */
+#endif  /* __SPINLOCK_HEADER_H__ */

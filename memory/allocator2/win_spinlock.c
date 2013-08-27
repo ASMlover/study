@@ -26,40 +26,48 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include "mutex.h"
+#include "spinlock.h"
 
 
 
 int 
-mutex_init(mutex_t* mutex)
+spinlock_init(spinlock_t* spinlock)
 {
-  InitializeCriticalSection(mutex);
-  return 0;
+  if (InitializeCriticalSectionAndSpinCount(spinlock, 4000))
+    return 0;
+  else
+    return -1;
 }
 
 void 
-mutex_destroy(mutex_t* mutex)
+spinlock_destroy(spinlock_t* spinlock)
 {
-  DeleteCriticalSection(mutex);
+  DeleteCriticalSection(spinlock);
 }
 
 void 
-mutex_lock(mutex_t* mutex)
+spinlock_lock(spinlock_t* spinlock)
 {
-  EnterCriticalSection(mutex);
+  if ((DWORD)spinlock->OwningThread == GetCurrentThreadId())
+    return;
+
+  EnterCriticalSection(spinlock);
 }
 
 int 
-mutex_trylock(mutex_t* mutex)
+spinlock_trylock(spinlock_t* spinlock)
 {
-  if (TryEnterCriticalSection(mutex))
+  if ((DWORD)spinlock->OwningThread == GetCurrentThreadId())
+    return 0;
+
+  if (TryEnterCriticalSection(spinlock))
     return 0;
   else 
     return -1;
 }
 
 void 
-mutex_unlock(mutex_t* mutex)
+spinlock_unlock(spinlock_t* spinlock)
 {
-  LeaveCriticalSection(mutex);
+  LeaveCriticalSection(spinlock);
 }

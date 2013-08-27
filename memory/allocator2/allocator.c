@@ -29,7 +29,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include "mutex.h"
+#include "spinlock.h"
 #include "allocator.h"
 
 #if defined(_WINDOWS_) || defined(_MSC_VER)
@@ -57,7 +57,7 @@ struct allocator_t {
   void**            chunk_list;
   size_t            chunk_count;
   size_t            chunk_storage;
-  mutex_t           mutex;
+  spinlock_t        spinlock;
 }; 
 
 static struct allocator_t _s_allocator;
@@ -127,7 +127,7 @@ allocator_init(void)
   _s_allocator.chunk_count = 0;
   _s_allocator.chunk_storage = NFREELISTS;
 
-  mutex_init(&_s_allocator.mutex);
+  spinlock_init(&_s_allocator.spinlock);
 }
 
 void 
@@ -138,7 +138,7 @@ allocator_destroy(void)
     free(_s_allocator.chunk_list[i]);
   free(_s_allocator.chunk_list);
 
-  mutex_destroy(&_s_allocator.mutex);
+  spinlock_destroy(&_s_allocator.spinlock);
 }
 
 void* 
@@ -161,13 +161,13 @@ al_malloc(size_t bytes)
     struct allocator_t* self = &_s_allocator;
     size_t index = freelist_index(bytes);
 
-    mutex_lock(&self->mutex);
+    spinlock_lock(&self->spinlock);
     if (NULL == self->free_list[index])
       alloc_chunk(self, index);
 
     ret = (byte_t*)self->free_list[index] + PREFIX_SIZE;
     self->free_list[index] = self->free_list[index]->next;
-    mutex_unlock(&self->mutex);
+    spinlock_unlock(&self->spinlock);
   }
 
   return ret;
@@ -188,9 +188,9 @@ al_free(void* ptr)
   else {
     struct memory_t* chunk = (struct memory_t*)realptr;
 
-    mutex_lock(&self->mutex);
+    spinlock_lock(&self->spinlock);
     chunk->next = self->free_list[index];
     self->free_list[index] = chunk;
-    mutex_unlock(&self->mutex);
+    spinlock_unlock(&self->spinlock);
   }
 }
