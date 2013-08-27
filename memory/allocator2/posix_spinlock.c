@@ -28,33 +28,33 @@
  */
 #include <errno.h>
 #include <stdlib.h>
-#include "mutex.h"
+#include "spinlock.h"
 
 
 int 
-mutex_init(mutex_t* mutex)
+spinlock_init(spinlock_t* spinlock)
 {
-  return pthread_spin_init(mutex, 0);
+  return pthread_spin_init(spinlock, 0);
 }
 
 void 
-mutex_destroy(mutex_t* mutex)
+spinlock_destroy(spinlock_t* spinlock)
 {
-  if (0 != pthread_spin_destroy(mutex))
+  if (0 != pthread_spin_destroy(spinlock))
     abort();
 }
 
 void 
-mutex_lock(mutex_t* mutex)
+spinlock_lock(spinlock_t* spinlock)
 {
-  if (0 != pthread_spin_lock(mutex))
+  if (0 != pthread_spin_lock(spinlock))
     abort();
 }
 
 int 
-mutex_trylock(mutex_t* mutex)
+spinlock_trylock(spinlock_t* spinlock)
 {
-  int ret = pthread_spin_trylock(mutex);
+  int ret = pthread_spin_trylock(spinlock);
   if (0 != ret && EBUSY != ret && EAGAIN != ret)
     abort();
   
@@ -62,8 +62,8 @@ mutex_trylock(mutex_t* mutex)
 }
 
 void 
-mutex_unlock(mutex_t* mutex)
+spinlock_unlock(spinlock_t* spinlock)
 {
-  if (0 != pthread_spin_unlock(mutex))
+  if (0 != pthread_spin_unlock(spinlock))
     abort();
 }

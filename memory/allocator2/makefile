@@ -30,7 +30,7 @@ CC	= gcc
 RM	= rm 
 CFLAGS	= -g -O2 -Wall 
 LDFLAGS	= -lpthread
-OBJS	= posix_mutex.o\
+OBJS	= posix_spinlock.o\
 	allocator.o\
 	allocator_test.o
 
