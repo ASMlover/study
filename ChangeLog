@@ -1,4 +1,8 @@
 
+2013/08/26  ASMlover  <asmlover@126.com>
+----------------------------------------
+  * Added memory pool module for C.
+
 2013/08/02  ASMlover  <asmlover@126.com>
   * Added Golang information.
   * Added a mini-stl demo implementation with Go.
