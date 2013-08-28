@@ -1,4 +1,8 @@
 
+* 2013/08/26  Added memory pool module.
+  ------------------------------------
+  + Added memory allocator module for C.
+
 * 2013/08/02  Added Go module.
   ---------------------------
   + Added information about Golang.
