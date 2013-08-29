@@ -26,13 +26,54 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include "../src/sl_allocator.h"
 
-extern void sl_test_allocator(void);
 
-int 
-main(int argc, char* argv[])
+#define ALLOC_TIMES   (10000)
+#define LOOP_TIMES    (500)
+
+
+typedef struct test_data_t {
+  int id;
+  char name[32];
+} test_data_t;
+
+
+
+void 
+sl_test_allocator(void)
 {
-  sl_test_allocator();
+  test_data_t* arr[ALLOC_TIMES];
+  int i, counter;
+  size_t size = sizeof(test_data_t);
+  clock_t beg, end;
 
-  return 0;
+
+  counter = 0;
+  beg = clock();
+  while (counter++ < LOOP_TIMES) {
+    for (i = 0; i < ALLOC_TIMES; ++i) {
+      arr[i] = (test_data_t*)malloc(size);
+
+      free(arr[i]);
+    }
+  }
+  end = clock();
+  fprintf(stdout, "default use : %lu\n", end - beg);
+  
+  
+  counter = 0;
+  beg = clock();
+  while (counter++ < LOOP_TIMES) {
+    for (i = 0; i < ALLOC_TIMES; ++i) {
+      arr[i] = (test_data_t*)sl_malloc(size);
+
+      sl_free(arr[i]);
+    }
+  }
+  end = clock();
+  fprintf(stdout, "default use : %lu\n", end - beg);
 }

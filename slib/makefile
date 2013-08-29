@@ -34,7 +34,8 @@ OBJS	= ./src/sl_posix_mutex.o\
 	./src/sl_posix_spinlock.o\
 	./src/sl_allocator.o\
 	\
-	./test/sl_test_main.o
+	./test/sl_test_main.o\
+	./test/sl_test_allocator.o
 
 
 
