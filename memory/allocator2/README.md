@@ -18,7 +18,7 @@
  * **linux**
 
           $ cd allocator2
-          $ makefile 
+          $ make 
 
 
 
