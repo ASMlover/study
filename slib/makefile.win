@@ -35,6 +35,7 @@ LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no 
 OBJS	= sl_win_mutex.obj\
 	sl_win_spinlock.obj\
+	sl_allocator.obj\
 	\
 	sl_test_main.obj 
 
