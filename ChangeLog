@@ -1,4 +1,8 @@
 
+2013/08/29  ASMlover  <asmlover@126.com>
+----------------------------------------
+  * Added a pure C library(slib) for studing.
+
 2013/08/26  ASMlover  <asmlover@126.com>
 ----------------------------------------
   * Added memory pool module for C.

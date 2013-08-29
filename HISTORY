@@ -1,4 +1,8 @@
 
+* 2013/08/29  Added slib library.
+  ------------------------------
+  + Added a pure C library(slib) just for studing.
+
 * 2013/08/26  Added memory pool module.
   ------------------------------------
   + Added memory allocator module for C.
