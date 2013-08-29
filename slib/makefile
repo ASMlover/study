@@ -31,6 +31,7 @@ RM	= rm
 CFLAGS	= -g -O2 -Wall
 LDFLAGS	= -lpthread
 OBJS	= ./src/sl_posix_mutex.o\
+	./src/sl_posix_spinlock.o\
 	\
 	./test/sl_test_main.o
 
