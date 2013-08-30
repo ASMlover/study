@@ -29,8 +29,12 @@
 #ifndef __SL_TEST_HEADER_H__
 #define __SL_TEST_HEADER_H__
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #if defined(_WINDOWS_) || defined(_MSC_VER)
-  #define inline __inline
+  #define inline    __inline
+  #define __func__  __FUNCTION__
 #endif 
 
 #if defined(_WINDOWS_) || defined(_MSC_VER)
@@ -41,7 +45,25 @@
 
 #ifndef countof
   #define countof(x)  (sizeof((x)) / sizeof(*(x)))
-#endif
+#endif 
+
+
+/*
+ * Have our own assert, so we are sure it dose not get 
+ * optomized away in a release build.
+ */
+#define ASSERT(expr)\
+do {\
+  if (!(expr)) {\
+    fprintf(stderr, \
+      "assertion failed in %s on line %d : %s\n", \
+      __FILE__, \
+      __LINE__, \
+      #expr);\
+      fflush(stderr);\
+      abort();\
+  }\
+} while (0)
 
 
 extern void sl_test_allocator(void);
