@@ -36,6 +36,7 @@ LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 OBJS	= sl_win_mutex.obj\
 	sl_win_spinlock.obj\
 	sl_allocator.obj\
+	sl_queue.obj\
 	\
 	sl_test_main.obj\
 	sl_test_allocator.obj
@@ -59,8 +60,8 @@ $(OUT): $(OBJS)
 	$(LINK) -out:$(OUT) $(OBJS) $(LDFLAGS)
 	$(MT) -manifest $(OUT).manifest -outputresource:$(OUT);1
 
-{./src}.c{}.obj:
+{.\src}.c{}.obj:
 	$(CC) $(CFLAGS) $<
 
-{./test}.c{}.obj:
+{.\test}.c{}.obj:
 	$(CC) $(CFLAGS) $<
