@@ -101,7 +101,7 @@ sl_queue_pop(sl_queue_t* queue)
 {
   void* ret;
 
-  if (NULL != queue->head)
+  if (NULL == queue->head)
     ret = NULL;
   else {
     sl_queue_item_t* item = queue->head;
