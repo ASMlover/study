@@ -27,56 +27,50 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdio.h>
-#include <string.h>
 #include "sl_test_header.h"
-
-typedef struct sl_test_t {
-  const char* cmd;
-  void (*test)(void);
-} sl_test_t;
+#include "../src/sl_queue.h"
 
 
-static inline void 
-sl_help(void)
+
+void 
+sl_test_queue(void)
 {
-  fprintf(stdout, 
-      "usage: slib-test.exe [options] ...\n\n"
-      "   help    show help for a given topic or a help overview\n"
-      "   alloc   show test result of allocator module\n"
-      "   queue   show test result of queue module\n"
-      );
+  sl_queue_t* queue = NULL;
+  void* v;
+  size_t size;
+
+  fprintf(stdout, "test sl_queue_t <%s>\n", __func__);
+
+  fprintf(stdout, "\ttest sl_queue_size\n");
+  queue = sl_queue_create();
+  ASSERT(NULL != queue);
+  size = sl_queue_size(queue);
+  ASSERT(0 == size);
+
+  fprintf(stdout, "\ttest sl_queue_push\n");
+  sl_queue_push(queue, (void*)34);
+  sl_queue_push(queue, (void*)57);
+  sl_queue_push(queue, (void*)9);
+  size = sl_queue_size(queue);
+  ASSERT(3 == size);
+
+  fprintf(stdout, "\ttest sl_queue_pop\n");
+  v = sl_queue_pop(queue);
+  ASSERT(34 == (int)v);
+  size = sl_queue_size(queue);
+  ASSERT(2 == size);
+
+  v = sl_queue_pop(queue);
+  ASSERT(57 == (int)v);
+  size = sl_queue_size(queue);
+  ASSERT(1 == size);
+
+  v = sl_queue_pop(queue);
+  ASSERT(9 == (int)v);
+  size = sl_queue_size(queue);
+  ASSERT(0 == size);
+
+  fprintf(stdout, "\ttest sl_queue_release\n");
+  sl_queue_release(queue);
+  fprintf(stdout, "test sl_queue_t : all passed\n");
 }
-
-
-static const sl_test_t _s_tests[] = {
-  {"help", sl_help}, 
-  {"alloc", sl_test_allocator}, 
-  {"queue", sl_test_queue}, 
-};
-
-
-
-int 
-main(int argc, char* argv[])
-{
-  if (argc < 2)
-    sl_help();
-  else {
-    int i, found = 0;
-    int len = countof(_s_tests);
-    for (i = 0; i < len; ++i) {
-      if (cmdeq(argv[1], _s_tests[i].cmd)) {
-        _s_tests[i].test();
-
-        found = 1;
-        break;
-      }
-    }
-
-    if (!found)
-      sl_help();
-  }
-
-  return 0;
-}
-

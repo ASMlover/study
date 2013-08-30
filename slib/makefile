@@ -36,7 +36,8 @@ OBJS	= ./src/sl_posix_mutex.o\
 	./src/sl_queue.o\
 	\
 	./test/sl_test_main.o\
-	./test/sl_test_allocator.o
+	./test/sl_test_allocator.o\
+	./test/sl_test_queue.o
 
 
 
