@@ -194,7 +194,7 @@ sl_malloc(size_t bytes)
       alloc_chunk(self, index);
 
     ret = (byte_t*)self->free_list[index] + PREFIX_SIZE;
-    self->free_list[index] = self->free_list[index];
+    self->free_list[index] = self->free_list[index]->next;
     sl_spinlock_unlock(&self->spinlock);
   }
   
