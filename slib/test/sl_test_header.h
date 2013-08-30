@@ -26,55 +26,25 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdio.h>
-#include <string.h>
-#include "sl_test_header.h"
+#ifndef __SL_TEST_HEADER_H__
+#define __SL_TEST_HEADER_H__
 
-typedef struct sl_test_t {
-  const char* cmd;
-  void (*test)(void);
-} sl_test_t;
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+  #define inline __inline
+#endif 
 
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+  #define cmdeq(c1, c2) (0 == stricmp(c1, c2))
+#elif defined(__linux__)
+  #define cmdeq(c1, c2  (0 == strcasecmp(c1, c2))
+#endif 
 
-static inline void 
-sl_help(void)
-{
-  fprintf(stdout, 
-      "usage: slib-test.exe [options] ...\n\n"
-      "   help    show help for a given topic or a help overview\n"
-      "   alloc   show test result of allocator module\n"
-      "   queue   show test result of queue module\n"
-      );
-}
+#ifndef countof
+  #define countof(x)  (sizeof((x)) / sizeof(*(x)))
+#endif
 
 
-static const sl_test_t _s_tests[] = {
-  {"help", sl_help}, 
-  {"alloc", sl_test_allocator}, 
-};
+extern void sl_test_allocator(void);
+extern void sl_test_queue(void);
 
-
-
-int 
-main(int argc, char* argv[])
-{
-  if (argc < 2)
-    sl_help();
-  else {
-    int i, found = 0;
-    int len = countof(_s_tests);
-    for (i = 0; i < len; ++i) {
-      if (cmdeq(argv[1], _s_tests[i].cmd)) {
-        _s_tests[i].test();
-
-        found = 1;
-        break;
-      }
-    }
-
-    if (!found)
-      sl_help();
-  }
-
-  return 0;
-}
+#endif  /* __SL_TEST_HEADER_H__ */

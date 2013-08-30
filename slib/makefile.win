@@ -30,7 +30,8 @@ CC	= cl -c -nologo
 LINK	= link -nologo
 MT	= mt -nologo
 RM	= del 
-CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -DNDEBUG
+CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -DNDEBUG\
+	-D_CRT_NONSTDC_NO_WARNINGS
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no 
 OBJS	= sl_win_mutex.obj\
