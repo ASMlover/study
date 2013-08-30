@@ -26,7 +26,6 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdio.h>
 #include "sl_test_header.h"
 #include "../src/sl_queue.h"
 
