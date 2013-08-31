@@ -67,6 +67,12 @@ sl_test_table(void)
   sl_table_remove(table, "1");
   ASSERT(0 == sl_table_size(table));
 
+  fprintf(stdout, "\ttest sl_table_clear\n");
+  sl_table_set(table, "100", (void*)100, NULL);
+  ASSERT(1 == sl_table_size(table));
+  sl_table_clear(table);
+  ASSERT(0 == sl_table_size(table));
+
   sl_table_release(table);
 
   fprintf(stdout, "test table module of slib : all passed\n");
