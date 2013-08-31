@@ -40,7 +40,7 @@
 #if defined(_WINDOWS_) || defined(_MSC_VER)
   #define cmdeq(c1, c2) (0 == stricmp(c1, c2))
 #elif defined(__linux__)
-  #define cmdeq(c1, c2  (0 == strcasecmp(c1, c2))
+  #define cmdeq(c1, c2) (0 == strcasecmp(c1, c2))
 #endif 
 
 #ifndef countof

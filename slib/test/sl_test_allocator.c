@@ -75,5 +75,5 @@ sl_test_allocator(void)
     }
   }
   end = clock();
-  fprintf(stdout, "default use : %lu\n", end - beg);
+  fprintf(stdout, "allocator use : %lu\n", end - beg);
 }
