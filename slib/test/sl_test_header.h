@@ -69,5 +69,6 @@ do {\
 extern void sl_test_allocator(void);
 extern void sl_test_queue(void);
 extern void sl_test_list(void);
+extern void sl_test_table(void);
 
 #endif  /* __SL_TEST_HEADER_H__ */

@@ -27,60 +27,47 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdio.h>
-#include <string.h>
 #include "sl_test_header.h"
-
-typedef struct sl_test_t {
-  const char* cmd;
-  void (*test)(void);
-} sl_test_t;
+#include "../src/sl_table.h"
 
 
-static inline void 
-sl_help(void)
+
+
+void 
+sl_test_table(void)
 {
-  fprintf(stdout, 
-      "usage: slib-test.exe [options] ...\n\n"
-      "   help    show help for a given topic or a help overview\n"
-      "   alloc   show test result of allocator module\n"
-      "   queue   show test result of queue module\n"
-      "   list    show test result of list module\n"
-      "   table   show test result of table module\n"
-      );
+  sl_table_t* table;
+  fprintf(stdout, "test table module of slib : <%s>\n", __func__);
+
+  fprintf(stdout, "\ttest sl_table_create\n");
+  table = sl_table_create(253);
+  ASSERT(NULL != table);
+  ASSERT(0 == sl_table_size(table));
+
+  fprintf(stdout, "\ttest sl_table_exsits\n");
+  ASSERT(!sl_table_exsits(table, "xxx"));
+
+  fprintf(stdout, "\ttest sl_table_set\n");
+  sl_table_set(table, "1", (void*)1, NULL);
+  sl_table_set(table, "2", (void*)2, NULL);
+  ASSERT(2 == sl_table_size(table));
+  ASSERT(sl_table_exsits(table, "1"));
+  ASSERT(sl_table_exsits(table, "2"));
+  sl_table_set(table, "1", (void*)100, NULL);
+
+
+  fprintf(stdout, "\ttest sl_table_get\n");
+  ASSERT(100 == (int)sl_table_get(table, "1"));
+  ASSERT(2 == (int)sl_table_get(table, "2"));
+
+  fprintf(stdout, "\ttest sl_table_remove\n");
+  sl_table_remove(table, "2");
+  ASSERT(1 == sl_table_size(table));
+  ASSERT(100 == (int)sl_table_get(table, "1"));
+  sl_table_remove(table, "1");
+  ASSERT(0 == sl_table_size(table));
+
+  sl_table_release(table);
+
+  fprintf(stdout, "test table module of slib : all passed\n");
 }
-
-
-static const sl_test_t _s_tests[] = {
-  {"help", sl_help}, 
-  {"alloc", sl_test_allocator}, 
-  {"queue", sl_test_queue}, 
-  {"list", sl_test_list}, 
-  {"table", sl_test_table},
-};
-
-
-
-int 
-main(int argc, char* argv[])
-{
-  if (argc < 2)
-    sl_help();
-  else {
-    int i, found = 0;
-    int len = countof(_s_tests);
-    for (i = 0; i < len; ++i) {
-      if (cmdeq(argv[1], _s_tests[i].cmd)) {
-        _s_tests[i].test();
-
-        found = 1;
-        break;
-      }
-    }
-
-    if (!found)
-      sl_help();
-  }
-
-  return 0;
-}
-
