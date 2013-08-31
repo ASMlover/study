@@ -40,6 +40,7 @@ OBJS	= sl_win_mutex.obj\
 	sl_queue.obj\
 	sl_list.obj\
 	sl_table.obj\
+	sl_array.obj\
 	\
 	sl_test_main.obj\
 	sl_test_allocator.obj\
