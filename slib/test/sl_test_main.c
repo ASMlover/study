@@ -46,6 +46,7 @@ sl_help(void)
       "   queue   show test result of queue module\n"
       "   list    show test result of list module\n"
       "   table   show test result of table module\n"
+      "   array   show test result of array module\n"
       );
 }
 
@@ -56,6 +57,7 @@ static const sl_test_t _s_tests[] = {
   {"queue", sl_test_queue}, 
   {"list", sl_test_list}, 
   {"table", sl_test_table},
+  {"array", sl_test_array}, 
 };
 
 
