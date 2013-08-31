@@ -42,6 +42,7 @@ typedef struct sl_table_t sl_table_t;
 extern sl_table_t* sl_table_create(size_t limit);
 extern void sl_table_release(sl_table_t* table);
 
+extern void sl_table_clear(sl_table_t* table);
 extern size_t sl_table_size(sl_table_t* table);
 extern int sl_table_exsits(sl_table_t* table, const char* key);
 extern void sl_table_set(sl_table_t* table, 

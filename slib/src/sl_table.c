@@ -69,7 +69,7 @@ sl_table_item_hash(const char* key, size_t limit)
   return hash_key;
 }
 
-static void 
+static inline void 
 sl_table_insert(sl_table_t* table, sl_table_item_t* pos, 
     const char* key, void* value, void (*release)(void*))
 {
@@ -87,7 +87,7 @@ sl_table_insert(sl_table_t* table, sl_table_item_t* pos,
   ++table->size;
 }
 
-static void
+static inline void
 sl_table_erase(sl_table_t* table, sl_table_item_t* pos)
 {
   sl_table_item_t* prev = pos->prev;
@@ -137,22 +137,28 @@ sl_table_create(size_t limit)
 void 
 sl_table_release(sl_table_t* table)
 {
+  sl_table_clear(table);
+  sl_free(table->items);
+  sl_free(table);
+}
+
+void 
+sl_table_clear(sl_table_t* table) 
+{
   size_t i;
   sl_table_item_t* iter;
   sl_table_item_t* item;
+  
   for (i = 0; i < table->limit; ++i) {
     iter = table->items[i].next;
+
     while (iter != &table->items[i]) {
       item = iter;
       iter = iter->next;
 
-      if (NULL != item->release)
-        item->release(item->value);
-      sl_free(item);
+      sl_table_erase(table, item);
     }
   }
-  sl_free(table->items);
-  sl_free(table);
 }
 
 size_t 
