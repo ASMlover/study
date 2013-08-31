@@ -38,6 +38,7 @@ OBJS	= sl_win_mutex.obj\
 	sl_win_spinlock.obj\
 	sl_allocator.obj\
 	sl_queue.obj\
+	sl_list.obj\
 	\
 	sl_test_main.obj\
 	sl_test_allocator.obj\
