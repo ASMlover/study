@@ -44,6 +44,7 @@ sl_help(void)
       "   help    show help for a given topic or a help overview\n"
       "   alloc   show test result of allocator module\n"
       "   queue   show test result of queue module\n"
+      "   list    show test result of list module\n"
       );
 }
 
@@ -52,6 +53,7 @@ static const sl_test_t _s_tests[] = {
   {"help", sl_help}, 
   {"alloc", sl_test_allocator}, 
   {"queue", sl_test_queue}, 
+  {"list", sl_test_list}, 
 };
 
 
