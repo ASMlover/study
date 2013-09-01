@@ -28,12 +28,12 @@
 #define __SL_WIN_MUTEX_HEADER_H__
 
 #include <windows.h>
-#include "sl_nocopyable.h"
+#include "sl_noncopyable.h"
 
 
 namespace sl {
 
-class mutex_t : public nocopyable {
+class mutex_t : noncopyable {
   CRITICAL_SECTION  mutex_;
 public:
   mutex_t(void)
@@ -52,7 +52,7 @@ public:
     if ((DWORD)mutex_.OwningThread == GetCurrentThreadId())
       return;
 
-    EnterCriticalSection(mutex_);
+    EnterCriticalSection(&mutex_);
   }
 
   int 

@@ -28,12 +28,12 @@
 #define __SL_WIN_SPINLOCK_HEADER_H__
 
 #include <windows.h>
-#include "sl_nocopyable.h"
+#include "sl_noncopyable.h"
 
 
 namespace sl {
 
-class spinlock_t : public nocopyable {
+class spinlock_t : noncopyable {
   CRITICAL_SECTION spinlock_;
 public:
   spinlock_t(void)

@@ -29,15 +29,15 @@
 
 namespace sl {
 
-class nocopyable {
+class noncopyable {
 protected:
-  nocopyable(void)
+  noncopyable(void)
   {}
-  ~nocopyable(void)
+  ~noncopyable(void)
   {}
 private:
-  nocopyable(const nocopyable&);
-  nocopyable& operator =(const nocopyable&);
+  noncopyable(const noncopyable&);
+  noncopyable& operator =(const noncopyable&);
 };
 
 };

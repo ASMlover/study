@@ -30,11 +30,11 @@
 #include <pthread.h>
 #include <errno.h>
 #include <stdlib.h>
-#include "sl_nocopyable.h"
+#include "sl_noncopyable.h"
 
 namespace sl {
 
-class mutex_t : public nocopyable {
+class mutex_t : noncopyable {
   pthread_mutex_t mutex_;
 public:
   mutex_t(void)

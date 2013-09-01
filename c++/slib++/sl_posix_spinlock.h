@@ -30,12 +30,12 @@
 #include <pthread.h>
 #include <errno.h>
 #include <stdlib.h>
-#include "sl_nocopyable.h"
+#include "sl_noncopyable.h"
 
 
 namespace sl {
 
-class spinlock_t : public nocopyable {
+class spinlock_t : noncopyable {
   pthread_spinlock_t  spinlock_;
 public:
   spinlock_t(void)
