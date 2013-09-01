@@ -30,7 +30,9 @@ RM	= rm
 CC	= g++
 CFLAGS	= -g -O2 -Wall 
 LDFLAGS	= -lpthread
-OBJS	= sl_test_main.o
+OBJS	= sl_test_main.o\
+	\
+	sl_allocator.o
 
 
 
