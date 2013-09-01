@@ -24,24 +24,48 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __GUARD_HEADER_H__
-#define __GUARD_HEADER_H__
+#ifndef __THREAD_POOL_HEADER_H__
+#define __THREAD_POOL_HEADER_H__
 
-#include "guard.h"
+#include <windows.h>
+#include <vector>
+#include <queue>
+#include "nocopyable.h"
+#include "mutex.h"
 
-class guard_t : nocopyable {
-  mutex_t& mutex_;
-public:
-  guard_t(mutex_t& mutex)
-    : mutex_(mutex)
+
+struct task_t {
+  void (*routine_)(void*);
+  void* arg_;
+
+  task_t(void (*routine)(void*) = NULL, void* arg = NULL)
+    : routine_(routine)
+    , arg_(arg)
   {
-    mutex_.lock();
-  }
-
-  ~guard_t(void)
-  {
-    mutex_.unlock();
   }
 };
 
-#endif  //! __GUARD_HEADER_H__
+class thread_t;
+class thread_pool_t : nocopyable {
+  enum {
+    DEF_THREADS_MIN = 8, 
+    DEF_THREADS_MAX = 256, 
+  };
+  std::vector<thread_t*> threads_;
+  std::queue<task_t> tasks_;
+  mutex_t mutex_;
+  HANDLE quit_event_;
+public:
+  thread_pool_t(void);
+  ~thread_pool_t(void);
+
+  void start(int thread_num = DEF_THREADS_MIN);
+  void stop(void);
+  void run_task(void (*routine)(void*), void* arg);
+private:
+  task_t pick(void);
+  static void s_routine(void* arg);
+};
+
+
+#endif  //! __THREAD_POOL_HEADER_H__

@@ -30,10 +30,10 @@ RM	= del
 CC	= cl -c -nologo 
 MT	= mt -nologo
 LINK	= link -nologo
-CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -DNDEBUG
+CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -EHsc -DNDEBUG
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no 
-OBJS	= main.obj thread.obj
+OBJS	= main.obj thread.obj thread_pool.obj
 
 
 
