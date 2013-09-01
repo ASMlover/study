@@ -24,9 +24,38 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#include <stdio.h>
+#include "thread_pool.h"
+
+
+static void 
+task_worker(void* arg)
+{
+  const char* msg = (const char*)arg;
+  DWORD tid = GetCurrentThreadId();
+
+  for (int i = 0; i < 10; ++i) {
+    fprintf(stdout, "\t[%s][%d] count value is : %d\n", msg, tid, i);
+    Sleep(100);
+  }
+}
 
 int 
 main(int argc, char* argv[])
 {
+  thread_pool_t tp;
+
+  tp.start();
+  tp.run_task(task_worker, "worker_#1");
+  tp.run_task(task_worker, "worker_#2");
+  tp.run_task(task_worker, "worker_#3");
+  tp.run_task(task_worker, "worker_#4");
+  tp.run_task(task_worker, "worker_#5");
+
+  Sleep(10 * 1000);
+  tp.stop();
+  while (true)
+    Sleep(10);
+
   return 0;
 }
