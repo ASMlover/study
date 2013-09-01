@@ -33,7 +33,7 @@ LINK	= link -nologo
 CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -DNDEBUG
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no 
-OBJS	= main.obj 
+OBJS	= main.obj thread.obj
 
 
 
