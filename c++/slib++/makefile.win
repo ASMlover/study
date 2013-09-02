@@ -33,7 +33,7 @@ LINK	= link -nologo
 CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -EHsc -DNDEBUG
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no 
-OBJS	= sl_test_main.obj\
+OBJS	= sl_test_main.obj sl_test_allocator.obj\
 	\
 	sl_allocator.obj
 
