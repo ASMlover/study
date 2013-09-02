@@ -75,7 +75,7 @@ private:
     if (thread->routine_)
       thread->routine_(thread->arg_);
 
-    thread
+    return 0;
   }
 };
 
