@@ -66,9 +66,9 @@ public:
   void dealloc(void* ptr);
 };
 
-#define malloc(s)   allocator_t::singleton().alloc((s))
-#define free(p)     allocator_t::singleton().dealloc((p))
-
 }
+
+#define sl_new(s) sl::allocator_t::singleton().alloc((s))
+#define sl_del(p) sl::allocator_t::singleton().dealloc((p))
 
 #endif  //! __SL_ALLOCATOR_HEADER_H__
