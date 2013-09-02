@@ -24,56 +24,65 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#ifndef __SL_TEST_HEADER_H__
+#define __SL_TEST_HEADER_H__
+
 #include <stdio.h>
-#include "sl_test_header.h"
+#include <stdlib.h>
+#include <vector>
 
-test_framework_t::test_framework_t(void)
-{
-}
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+  #define inline    __inline
+  #define __func__  __FUNCTION__
+#endif 
 
-test_framework_t::~test_framework_t(void)
-{
-}
+//! Have our own assert, so we are sure it dose not get 
+//! optomized away in a release build.
+#define ASSERT(expr)\
+do {\
+  if (!(expr)) {\
+    fprintf(stderr, \
+        "assertion failed in %s on line %d : %s\n", \
+        __FILE__, \
+        __LINE__, \
+        #expr);\
+    fflush(stderr);\
+    abort();\
+  }\
+} while (0)
 
-test_framework_t& 
-test_framework_t::singleton(void)
-{
-  static test_framework_t _s_test;
 
-  return _s_test;
-}
+struct test_case_t {
+  const char* name_;
+  void (*test_)(void);
 
-void 
-test_framework_t::run(void)
-{
-  fprintf(stdout, "begin testing for slib++ ...\n");
-
-  size_t size = case_list_.size();
-  for (size_t i = 0; i < size; ++i) {
-    fprintf(stdout, "\ttest %s module : ", case_list_[i].name_);
-    case_list_[i].test_();
-    fprintf(stdout, "passed !!!\n");
+  test_case_t(const char* name, void (*test)(void))
+    : name_(name)
+    , test_(test)
+  {
   }
-  
-  fprintf(stdout, "end testing for slib++ ...\n");
-}
+};
+class test_framework_t {
+  std::vector<test_case_t> case_list_;
 
-bool 
-test_framework_t::register_test(const char* name, void (*test)(void))
-{
-  if (NULL == name || NULL == test)
-    return false;
+  test_framework_t(const test_framework_t&);
+  test_framework_t& operator =(const test_framework_t&);
+public:
+  test_framework_t(void);
+  ~test_framework_t(void);
 
-  case_list_.push_back(test_case_t(name, test));
-  return true;
-}
+  static test_framework_t& singleton(void);
+
+  void run(void);
+  bool register_test(const char* name, void (*test)(void));
+};
 
 
+#define TEST_IMPL(name)\
+static void sl_test_##name(void);\
+static bool _s_##name = \
+  test_framework_t::singleton().register_test(#name, sl_test_##name);\
+static void sl_test_##name(void)
 
-int 
-main(int argc, char* argv[])
-{
-  test_framework_t::singleton().run();
 
-  return 0;
-}
+#endif  //! __SL_TEST_HEADER_H__
