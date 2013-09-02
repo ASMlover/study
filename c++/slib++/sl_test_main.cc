@@ -50,9 +50,9 @@ test_framework_t::run(void)
 
   size_t size = case_list_.size();
   for (size_t i = 0; i < size; ++i) {
-    fprintf(stdout, "\ttest %s module : ", case_list_[i].name_);
+    fprintf(stdout, "\ttesting for %s module : \n", case_list_[i].name_);
     case_list_[i].test_();
-    fprintf(stdout, "passed !!!\n");
+    fprintf(stdout, "\ttesting passed !!!\n\n");
   }
   
   fprintf(stdout, "end testing for slib++ ...\n");
