@@ -118,10 +118,13 @@ thread_pool_t::s_routine(void* arg)
   thread_pool_t* self = static_cast<thread_pool_t*>(arg);
   assert(NULL != self);
 
+  DWORD tid = GetCurrentThreadId();
+  fprintf(stdout, "thread<%lu> running ...\n", tid);
   while (self->running_) {
     task_t task = self->take();
 
     if (NULL != task.routine_)
       task.routine_(task.arg_);
   }
+  fprintf(stdout, "thread<%lu> exiting ...\n", tid);
 }
