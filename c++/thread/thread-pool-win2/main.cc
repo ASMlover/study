@@ -25,10 +25,30 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
+#include "thread_pool.h"
 
+
+static void 
+worker(void* arg)
+{
+  const char* name = static_cast<const char*>(arg);
+  DWORD tid = GetCurrentThreadId();
+
+  for (int i = 0; i < 10; ++i) {
+    fprintf(stdout, "\t[%s][%lu] - counter >> %d\n", name, tid, i);
+    Sleep(100);
+  }
+}
 
 int 
 main(int argc, char* argv[])
 {
+  thread_pool_t tp;
+
+  tp.start();
+  tp.run(worker, "worker_#1");
+
+  Sleep(1000);
+  tp.stop();
   return 0;
 }
