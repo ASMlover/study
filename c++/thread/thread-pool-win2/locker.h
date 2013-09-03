@@ -62,17 +62,19 @@ public:
 
 
 class guard_t : noncopyable {
-  mutex_t& mutex_;
+  mutex_t* mutex_;
 public:
-  guard_t(mutex_t& mutex)
+  guard_t(mutex_t* mutex)
     : mutex_(mutex)
   {
-    mutex_.lock();
+    if (NULL != mutex_)
+      mutex_->lock();
   }
 
   ~guard_t(void)
   {
-    mutex_.unlock();
+    if (NULL != mutex_)
+      mutex_->unlock();
   }
 };
 
