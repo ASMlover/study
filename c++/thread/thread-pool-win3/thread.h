@@ -29,11 +29,13 @@
 
 class thread_t : noncopyable {
   HANDLE thread_; 
+  HANDLE create_event_;
   void (*routine_)(void*);
   void* arg_;
 public:
   thread_t(void (*routine)(void*), void* arg)
     : thread_(NULL)
+    , create_event_(NULL)
     , routine_(routine)
     , arg_(arg)
   {
@@ -48,8 +50,15 @@ public:
   inline void 
   start(void)
   {
+    create_event_ = CreateEvent(NULL, TRUE, FALSE, NULL);
+    assert(NULL != create_event_);
+
     thread_ = CreateThread(NULL, 0, &thread_t::s_routine, this, 0, NULL);
     assert(NULL != thread_);
+
+    WaitForSingleObject(create_event_, INFINITE);
+    CloseHandle(create_event_);
+    create_event_ = NULL;
   }
 
   inline void 
@@ -67,6 +76,8 @@ private:
   {
     thread_t* thread = static_cast<thread_t*>(arg);
     assert(NULL != thread);
+
+    SetEvent(thread->create_event_);
 
     if (NULL != thread->routine_)
       thread->routine_(thread->arg_);

@@ -51,15 +51,13 @@ condition_t::~condition_t(void)
 void 
 condition_t::wait(void)
 {
-  thread_guard_t lock(mutex_);
   cond_wait(&cond_, &mutex_);
 }
 
 bool 
 condition_t::timedwait(unsigned int millitm)
 {
-  thread_guard_t lock(mutex_);
-  return (WAIT_TIMEOUT == cond_timedwait(&cond_, &mutex_, millitm));
+  return (0 == cond_timedwait(&cond_, &mutex_, millitm));
 }
 
 void 
@@ -133,7 +131,7 @@ condition_t::cond_signal(cond_t* cond)
 void 
 condition_t::cond_boardcast(cond_t* cond)
 {
-  bool have_waiters = 0;
+  bool have_waiters = false;
 
   EnterCriticalSection(&cond->waiters_count_lock);
   have_waiters = cond->waiters_count > 0;

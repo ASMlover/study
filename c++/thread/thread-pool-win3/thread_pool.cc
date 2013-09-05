@@ -60,8 +60,11 @@ thread_pool_t::start(int thread_num)
 void 
 thread_pool_t::stop(void)
 {
-  running_ = false;
-  cond_.notify_all();
+  {
+    thread_guard_t lock(mutex_);
+    running_ = false;
+    cond_.notify_all();
+  }
 
   int thread_num = (int)threads_.size();
   for (int i = 0; i < thread_num; ++i) {
