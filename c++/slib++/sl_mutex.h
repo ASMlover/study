@@ -31,6 +31,25 @@
   #include "sl_win_mutex.h"
 #elif defined(__linux__)
   #include "sl_posix_mutex.h"
-#endif
+#endif 
+
+namespace sl {
+
+class mutex_guard_t : noncopyable {
+  mutex_t& mutex_;
+public:
+  mutex_guard_t(mutex_t& mutex)
+    : mutex_(mutex)
+  {
+    mutex_.lock();
+  }
+
+  ~mutex_guard_t(void)
+  {
+    mutex_.unlock();
+  }
+};
+
+}
 
 #endif  //! __SL_MUTEX_HEADER_H__
