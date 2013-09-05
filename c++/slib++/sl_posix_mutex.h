@@ -72,6 +72,12 @@ public:
     if (0 != pthread_mutex_unlock(&mutex_))
       abort();
   }
+
+  pthread_mutex_t* 
+  get_mutex(void) 
+  {
+    return &mutex_;
+  }
 };
 
 }
