@@ -32,7 +32,7 @@ struct cond_t {
   size_t            waiters_count;
   CRITICAL_SECTION  waiters_count_lock;
   HANDLE            signal_event;
-  HANDLE            boardcast_event;
+  HANDLE            broadcast_event;
 };
 
 class condition_t : noncopyable {
@@ -51,7 +51,7 @@ private:
   int cond_init(cond_t* cond);
   void cond_destroy(cond_t* cond);
   void cond_signal(cond_t* cond);
-  void cond_boardcast(cond_t* cond);
+  void cond_broadcast(cond_t* cond);
   void cond_wait(cond_t* cond, mutex_t* mutex);
   int cond_timedwait(cond_t* cond, mutex_t* mutex, unsigned int timeout);
   int wait_helper(cond_t* cond, mutex_t* mutex, unsigned int timeout);

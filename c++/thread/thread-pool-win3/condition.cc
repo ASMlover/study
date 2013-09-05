@@ -69,7 +69,7 @@ condition_t::notify(void)
 void 
 condition_t::notify_all(void)
 {
-  cond_boardcast(&cond_);
+  cond_broadcast(&cond_);
 }
 
 
@@ -90,8 +90,8 @@ condition_t::cond_init(cond_t* cond)
     goto Exit2;
   }
 
-  cond->boardcast_event = CreateEvent(NULL, TRUE, FALSE, NULL);
-  if (NULL == cond->boardcast_event) {
+  cond->broadcast_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+  if (NULL == cond->broadcast_event) {
     err = GetLastError();
     goto Exit;
   }
@@ -108,7 +108,7 @@ Exit2:
 void 
 condition_t::cond_destroy(cond_t* cond)
 {
-  if (!CloseHandle(cond->boardcast_event))
+  if (!CloseHandle(cond->broadcast_event))
     abort();
   if (!CloseHandle(cond->signal_event))
     abort();
@@ -129,7 +129,7 @@ condition_t::cond_signal(cond_t* cond)
 }
 
 void 
-condition_t::cond_boardcast(cond_t* cond)
+condition_t::cond_broadcast(cond_t* cond)
 {
   bool have_waiters = false;
 
@@ -138,7 +138,7 @@ condition_t::cond_boardcast(cond_t* cond)
   LeaveCriticalSection(&cond->waiters_count_lock);
 
   if (have_waiters)
-    SetEvent(cond->boardcast_event);
+    SetEvent(cond->broadcast_event);
 }
 
 void 
@@ -159,7 +159,7 @@ condition_t::cond_timedwait(cond_t* cond,
 int 
 condition_t::wait_helper(cond_t* cond, mutex_t* mutex, unsigned int timeout)
 {
-  HANDLE handles[2] = {cond->signal_event, cond->boardcast_event};
+  HANDLE handles[2] = {cond->signal_event, cond->broadcast_event};
 
   EnterCriticalSection(&cond->waiters_count_lock);
   ++cond->waiters_count;
@@ -176,7 +176,7 @@ condition_t::wait_helper(cond_t* cond, mutex_t* mutex, unsigned int timeout)
   LeaveCriticalSection(&cond->waiters_count_lock);
 
   if (last_waiter)
-    ResetEvent(cond->boardcast_event);
+    ResetEvent(cond->broadcast_event);
 
   mutex->lock();
   if (WAIT_OBJECT_0 == ret || WAIT_OBJECT_0 + 1 == ret)
