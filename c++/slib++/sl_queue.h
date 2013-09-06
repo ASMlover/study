@@ -27,6 +27,7 @@
 #ifndef __SL_QUEUE_HEADER_H__
 #define __SL_QUEUE_HEADER_H__ 
 
+#include <assert.h>
 #include "sl_allocator.h"
 
 namespace sl {
@@ -40,17 +41,21 @@ class queue_t : noncopyable {
 
   node_t* head_;
   node_t* tail_;
-  size_t  size_;
 public:
   queue_t(void)
     : head_(NULL)
     , tail_(NULL)
-    , size_(0)
   {
   }
 
   ~queue_t(void)
   {
+    node_t* node;
+    while (NULL != head_) {
+      node = head_;
+      head_ = head_->next;
+      sl_del(node);
+    }
   }
 
   bool 
@@ -72,11 +77,9 @@ public:
       tail_->next = node;
       tail_ = node;
     }
-
-    ++size_;
   }
 
-  T& 
+  T 
   pop(void)
   {
     assert(NULL != head_);
@@ -85,7 +88,6 @@ public:
     head_ = head_->next;
     T value = node->value;
     sl_del(node);
-    --size_;
 
     return value;
   }
