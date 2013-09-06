@@ -48,7 +48,7 @@ class condition_t : noncopyable {
   mutex_t& mutex_;
   cond_t cond_;
 public:
-  condition_t(void);
+  condition_t(mutex_t& mutex);
   ~condition_t(void);
 
   void signal(void);

@@ -35,7 +35,7 @@ LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no 
 OBJS	= sl_test_main.obj sl_test_allocator.obj sl_test_queue.obj\
 	\
-	sl_allocator.obj
+	sl_allocator.obj sl_win_condition.obj
 
 
 
