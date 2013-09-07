@@ -34,7 +34,7 @@
 #include <windows.h>
 #include <process.h>
 #include <assert.h>
-#include "noncopyable.h"
+#include "sl_noncopyable.h"
 
 namespace sl {
 
