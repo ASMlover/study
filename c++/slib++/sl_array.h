@@ -98,6 +98,11 @@ public:
     return storage_;
   }
 
+  void clear(void)
+  {
+    size_ = 0;
+  }
+
   void push_back(const T& x) 
   {
     if (size_ == storage_)
