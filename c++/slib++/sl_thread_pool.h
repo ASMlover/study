@@ -28,7 +28,7 @@
 #define __SL_THREAD_POOL_HEADER_H__
 
 #include <stdlib.h>
-#include <vector>
+#include "sl_array.h"
 #include "sl_queue.h"
 #include "sl_mutex.h"
 #include "sl_condition.h"
@@ -57,7 +57,7 @@ class thread_pool_t : noncopyable {
   bool running_;
   mutex_t mutex_;
   condition_t cond_;
-  std::vector<thread_t*> threads_;
+  array_t<thread_t*> threads_;
   queue_t<task_t> tasks_;
 public:
   thread_pool_t(void);
