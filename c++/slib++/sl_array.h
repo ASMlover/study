@@ -27,7 +27,8 @@
 #ifndef __SL_ARRAY_HEADER_H__
 #define __SL_ARRAY_HEADER_H__ 
 
-#include "al_allocator.h"
+#include <assert.h>
+#include "sl_allocator.h"
 
 namespace sl {
 
