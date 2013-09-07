@@ -34,7 +34,7 @@ CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -EHsc -DNDEBUG
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no 
 OBJS	= sl_test_main.obj sl_test_allocator.obj sl_test_queue.obj\
-	sl_test_thread_pool.obj\
+	sl_test_thread_pool.obj sl_test_array.obj\
 	\
 	sl_allocator.obj sl_win_condition.obj sl_thread_pool.obj
 

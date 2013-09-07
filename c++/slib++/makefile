@@ -31,7 +31,7 @@ CC	= g++
 CFLAGS	= -g -O2 -Wall 
 LDFLAGS	= -lpthread -lrt
 OBJS	= sl_test_main.o sl_test_allocator.o sl_test_queue.o\
-	sl_test_thread_pool.o\
+	sl_test_thread_pool.o sl_test_array.o\
 	\
 	sl_allocator.o sl_posix_condition.o sl_thread_pool.o
 
