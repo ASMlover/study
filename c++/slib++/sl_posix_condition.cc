@@ -24,14 +24,16 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#include <stdint.h>
 #include <stdlib.h>
+#include <time.h>
 #include <errno.h>
 #include "sl_condition.h"
 
 
 
 #undef NANOSEC
-#define NANOSEC   (1e9)
+#define NANOSEC   ((uint64_t)1e9)
 
 
 namespace sl {
@@ -43,7 +45,7 @@ cond_init(cond_t* cond)
 
   if (0 != pthread_condattr_init(&attr))
     return -1;
-  if (0 != pthread_condattr_setlock(&attr, CLOCK_MONOTONIC))
+  if (0 != pthread_condattr_setclock(&attr, CLOCK_MONOTONIC))
     goto Exit2;
 
   if (0 != pthread_cond_init(cond, &attr))
