@@ -36,6 +36,11 @@
 #include "sl_thread.h"
 
 
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+  #define inline __inline
+#endif
+
+
 
 struct sl_thread_t {
   HANDLE thread;
