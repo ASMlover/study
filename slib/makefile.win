@@ -42,6 +42,7 @@ OBJS	= sl_win_mutex.obj\
 	sl_table.obj\
 	sl_array.obj\
 	sl_win_cond.obj\
+	sl_win_thread.obj\
 	\
 	sl_test_main.obj\
 	sl_test_allocator.obj\
