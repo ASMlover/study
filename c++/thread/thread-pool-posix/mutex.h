@@ -67,4 +67,20 @@ public:
   }
 };
 
+
+class mutex_guard_t : noncopyable {
+  mutex_t& mutex_;
+public:
+  mutex_guard_t(mutex_t& mutex)
+    : mutex_(mutex)
+  {
+    mutex_.lock();
+  }
+
+  ~mutex_guard_t(void)
+  {
+    mutex_.unlock();
+  }
+};
+
 #endif  //! __MUTEX_HEADER_H__
