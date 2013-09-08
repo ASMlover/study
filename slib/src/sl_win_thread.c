@@ -54,7 +54,7 @@ struct sl_thread_t {
 
 
 
-static UINT WINAPI 
+static inline UINT WINAPI 
 sl_thread_routine(void* arg)
 {
   sl_thread_t* thread = (sl_thread_t*)arg;
