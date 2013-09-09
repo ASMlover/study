@@ -30,7 +30,7 @@ RM	= rm
 CC	= g++
 CFLAGS	= -g -O2 -Wall 
 LDFLAGS	= -lpthread
-OBJS	= main.o condition.o thread.o
+OBJS	= main.o condition.o thread.o thread_pool.o
 
 
 
