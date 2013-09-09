@@ -40,10 +40,10 @@
   typedef pthread_cond_t cond_t;
 #endif 
 #include "sl_noncopyable.h"
-#include "sl_mutex.h"
 
 namespace sl {
 
+class mutex_t;
 class condition_t : noncopyable {
   mutex_t& mutex_;
   cond_t cond_;

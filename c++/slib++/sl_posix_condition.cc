@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <errno.h>
+#include "sl_mutex.h"
 #include "sl_condition.h"
 
 

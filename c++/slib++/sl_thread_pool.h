@@ -32,7 +32,6 @@
 #include "sl_queue.h"
 #include "sl_mutex.h"
 #include "sl_condition.h"
-#include "sl_thread.h"
 
 namespace sl {
 
@@ -48,6 +47,7 @@ struct task_t {
 };
 
 
+class thread_t;
 class thread_pool_t : noncopyable {
   enum {
     DEF_THREADS_MIN = 8, 
