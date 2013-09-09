@@ -24,38 +24,23 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include "tools.h"
-#include "mutex.h"
-#include "condition.h"
+#ifndef __TOOLS_HEADER_H__
+#define __TOOLS_HEADER_H__
+
+#include <pthread.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 
-
-
-condition_t::condition_t(mutex_t& mutex)
-  : mutex_(mutex)
+inline void 
+pthread_call(const char* label, int result)
 {
-  pthread_call("init condition", pthread_cond_init(&cond_, NULL));
+  if (0 != result) {
+    fprintf(stderr, "pthread %s : %s\n", label, strerror(result));
+    abort();
+  }
 }
 
-condition_t::~condition_t(void)
-{
-  pthread_call("destroy condition", pthread_cond_destroy(&cond_));
-}
 
-void 
-condition_t::signal(void)
-{
-  pthread_call("signal", pthread_cond_signal(&cond_));
-}
-
-void 
-condition_t::siganl_all(void)
-{
-  pthread_call("broadcast", pthread_cond_broadcast(&cond_));
-}
-
-void 
-condition_t::wait(void)
-{
-  pthread_call("wait", pthread_cond_wait(&cond_, mutex.get_mutex()));
-}
+#endif  //! __TOOLS_HEADER_H__
