@@ -32,8 +32,15 @@
 #include <vector>
 
 #if defined(_WINDOWS_) || defined(_MSC_VER)
+  #include <windows.h>
   #define inline    __inline
   #define __func__  __FUNCTION__
+
+  #define sl_sleep(x) Sleep((x))
+#elif defined(__linux__)
+  #include <unistd.h>
+  
+  #define sl_sleep(x) usleep((x) * 1000)
 #endif 
 
 //! Have our own assert, so we are sure it dose not get 
