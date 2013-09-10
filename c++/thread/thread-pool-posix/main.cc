@@ -24,9 +24,34 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#include <unistd.h>
+#include "thread_pool.h"
+
+
+static inline void 
+worker(void* arg)
+{
+  char* name = static_cast<char*>(arg);
+  pthread_t tid = pthread_self();
+
+  for (int i = 0; i < 10; ++i) {
+    fprintf(stdout, "[%s : %lu] - counter = %d\n", name, tid, i + 1);
+    usleep(100 * 1000);
+  }
+}
 
 int 
 main(int argc, char* argv[])
 {
+  thread_pool_t tp;
+  tp.start();
+
+  tp.run(worker, "worker_#1");
+  tp.run(worker, "worker_#2");
+  tp.run(worker, "worker_#3");
+
+  sleep(1);
+  tp.stop();
+
   return 0;
 }
