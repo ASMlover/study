@@ -116,7 +116,7 @@ public:
   class iterator_t : public const_iterator_t {
   protected:
     iterator_t(node_t* node)
-      : current_(node)
+      : const_iterator_t(node)
     {
     }
 
@@ -174,8 +174,8 @@ public:
   list_t(void)
     : size_(0)
   {
-    head_->prev = &head_;
-    head_->next = &head_;
+    head_.prev = &head_;
+    head_.next = &head_;
   }
 
   ~list_t(void)
@@ -186,8 +186,8 @@ public:
   list_t(const list_t& x)
     : size_(x.size_)
   {
-    head_->prev = &head_;
-    head_->next = &head_;
+    head_.prev = &head_;
+    head_.next = &head_;
 
     for (const_iterator_t it = x.begin(); it != x.end(); ++it)
       push_back(*it);
@@ -213,7 +213,7 @@ public:
   bool 
   empty(void) const 
   {
-    return (begin() == end());
+    return (0 == size_);
   }
 
   size_t 
@@ -241,7 +241,7 @@ public:
   }
 
   const_iterator_t 
-  end(void) const 
+  end(void) const
   {
     return const_iterator_t(&head_);
   }
@@ -302,10 +302,10 @@ public:
     assert(NULL != node);
 
     node->value = value;
-    node->prev = pos->prev;
-    node->next = pos;
-    pos->prev->next = node;
-    pos->prev = node;
+    node->prev = pos.current_->prev;
+    node->next = pos.current_;
+    pos.current_->prev->next = node;
+    pos.current_->prev = node;
 
     ++size_;
   }
@@ -313,8 +313,8 @@ public:
   iterator_t 
   erase(iterator_t pos)
   {
-    node_t* prev = pos->prev;
-    node_t* next = pos->next;
+    node_t* prev = pos.current_->prev;
+    node_t* next = pos.current_->next;
     prev->next = next;
     next->prev = prev;
     sl_del(pos.current_);
