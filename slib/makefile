@@ -47,7 +47,8 @@ OBJS	= ./src/sl_posix_mutex.o\
 	./test/sl_test_table.o\
 	./test/sl_test_array.o\
 	./test/sl_test_mutex.o\
-	./test/sl_test_spinlock.o
+	./test/sl_test_spinlock.o\
+	./test/sl_test_cond.o
 
 
 

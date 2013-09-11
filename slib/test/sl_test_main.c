@@ -49,6 +49,7 @@ sl_help(void)
       "   array   show test result of array module\n"
       "   mutex   show test result of mutex module\n"
       "   spin    show test result of spinlock module\n"
+      "   cond    show test result of condition module\n"
       );
 }
 
@@ -62,6 +63,7 @@ static const sl_test_t _s_tests[] = {
   {"array", sl_test_array}, 
   {"mutex", sl_test_mutex}, 
   {"spin", sl_test_spinlock},
+  {"cond", sl_test_condition},
 };
 
 
