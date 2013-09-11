@@ -49,7 +49,8 @@ OBJS	= sl_win_mutex.obj\
 	sl_test_queue.obj\
 	sl_test_list.obj\
 	sl_test_table.obj\
-	sl_test_array.obj
+	sl_test_array.obj\
+	sl_test_mutex.obj
 
 
 

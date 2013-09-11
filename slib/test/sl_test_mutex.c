@@ -26,65 +26,30 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdio.h>
-#include <string.h>
 #include "sl_test_header.h"
-
-typedef struct sl_test_t {
-  const char* cmd;
-  void (*test)(void);
-} sl_test_t;
+#include "../src/sl_mutex.h"
 
 
-static inline void 
-sl_help(void)
+
+void 
+sl_test_mutex(void)
 {
-  fprintf(stdout, 
-      "usage: slib-test.exe [options] ...\n\n"
-      "   help    show help for a given topic or a help overview\n"
-      "   alloc   show test result of allocator module\n"
-      "   queue   show test result of queue module\n"
-      "   list    show test result of list module\n"
-      "   table   show test result of table module\n"
-      "   array   show test result of array module\n"
-      "   mutex   show test result of mutex module\n"
-      );
+  sl_mutex_t mutex;
+  int r;
+
+  fprintf(stdout, "begin testing mutex module : <%s>\n", __func__);
+
+  r = sl_mutex_init(&mutex);
+  ASSERT(0 == r);
+
+  sl_mutex_lock(&mutex);
+  sl_mutex_unlock(&mutex);
+
+  r = sl_mutex_trylock(&mutex);
+  ASSERT(0 == r);
+  sl_mutex_unlock(&mutex);
+
+  sl_mutex_destroy(&mutex);
+  
+  fprintf(stdout, "end testing mutex module : all passed !!!\n");
 }
-
-
-static const sl_test_t _s_tests[] = {
-  {"help", sl_help}, 
-  {"alloc", sl_test_allocator}, 
-  {"queue", sl_test_queue}, 
-  {"list", sl_test_list}, 
-  {"table", sl_test_table},
-  {"array", sl_test_array}, 
-  {"mutex", sl_test_mutex}, 
-};
-
-
-
-int 
-main(int argc, char* argv[])
-{
-  if (argc < 2)
-    sl_help();
-  else {
-    int i, found = 0;
-    int len = countof(_s_tests);
-    for (i = 0; i < len; ++i) {
-      if (cmdeq(argv[1], _s_tests[i].cmd)) {
-        _s_tests[i].test();
-
-        found = 1;
-        break;
-      }
-    }
-
-    if (!found)
-      sl_help();
-  }
-
-  return 0;
-}
-
