@@ -33,6 +33,7 @@ LDFLAGS	= -lpthread -lrt
 OBJS	= sl_test_main.o sl_test_allocator.o sl_test_queue.o\
 	sl_test_thread_pool.o sl_test_array.o sl_test_mutex.o\
 	sl_test_condition.o sl_test_thread.o sl_test_spinlock.o\
+	sl_test_list.o\
 	\
 	sl_allocator.o sl_posix_condition.o sl_thread_pool.o
 
