@@ -60,6 +60,8 @@ sl_thread_routine(void* arg)
   sl_thread_t* thread = (sl_thread_t*)arg;
   assert(NULL != thread);
 
+  SetEvent(thread->create_event);
+
   if (NULL != thread->routine)
     thread->routine(thread->argument);
 
