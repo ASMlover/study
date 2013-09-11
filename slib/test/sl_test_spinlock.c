@@ -26,52 +26,30 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef __SL_TEST_HEADER_H__
-#define __SL_TEST_HEADER_H__
-
-#include <stdio.h>
-#include <stdlib.h>
-
-#if defined(_WINDOWS_) || defined(_MSC_VER)
-  #define inline    __inline
-  #define __func__  __FUNCTION__
-#endif 
-
-#if defined(_WINDOWS_) || defined(_MSC_VER)
-  #define cmdeq(c1, c2) (0 == stricmp(c1, c2))
-#elif defined(__linux__)
-  #define cmdeq(c1, c2) (0 == strcasecmp(c1, c2))
-#endif 
-
-#ifndef countof
-  #define countof(x)  (sizeof((x)) / sizeof(*(x)))
-#endif 
+#include "sl_test_header.h"
+#include "../src/sl_spinlock.h"
 
 
-/*
- * Have our own assert, so we are sure it dose not get 
- * optomized away in a release build.
- */
-#define ASSERT(expr)\
-do {\
-  if (!(expr)) {\
-    fprintf(stderr, \
-      "assertion failed in %s on line %d : %s\n", \
-      __FILE__, \
-      __LINE__, \
-      #expr);\
-      fflush(stderr);\
-      abort();\
-  }\
-} while (0)
 
 
-extern void sl_test_allocator(void);
-extern void sl_test_queue(void);
-extern void sl_test_list(void);
-extern void sl_test_table(void);
-extern void sl_test_array(void);
-extern void sl_test_mutex(void);
-extern void sl_test_spinlock(void);
+void 
+sl_test_spinlock(void)
+{
+  sl_spinlock_t spinlock;
+  int r;
+  fprintf(stdout, "begin testing spinlock module : <%s>\n", __func__);
 
-#endif  /* __SL_TEST_HEADER_H__ */
+  r = sl_spinlock_init(&spinlock);
+  ASSERT(0 == r);
+
+  sl_spinlock_lock(&spinlock);
+  sl_spinlock_unlock(&spinlock);
+
+  r = sl_spinlock_trylock(&spinlock);
+  ASSERT(0 == r);
+  sl_spinlock_unlock(&spinlock);
+
+  sl_spinlock_destroy(&spinlock);
+
+  fprintf(stdout, "end testing spinlock module : all passed !!!\n");
+}
