@@ -25,4 +25,20 @@
 
         android-ndk-r8是ndk的路径
         在最后添加NDK_ROOT=/cygdrive/d/android-ndk-r8
-        export NDK_ROOT
+        export NDK_ROOT 
+
+
+
+## **4. 安装android-sdk** ##
+ * [android sdk](http://developer.android.com/sdk/index.html)
+ * 运行SDK Manager.exe更新sdk 
+ * 新建环境变量ANDROID_SDK, 值为: 
+ 
+        D:\SDK-Tool\android\sdk\platforms;D:\SDK-Tool\android\sdk\tools 
+ * 在PATH环境变量中加入: %ANDROID_SDK%
+
+
+
+## **5. 安装android-ndk** ##
+ * [android-ndk](http://developer.android.com/tools/sdk/ndk/index.html)
+ * 解压到对应目录即可
