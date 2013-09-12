@@ -196,7 +196,7 @@ public:
 
   bool empty(void) const 
   {
-    return (begin() == end());
+    return (0 == size_);
   }
 
   uint32_t size(void) const 
