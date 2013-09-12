@@ -39,7 +39,7 @@ typedef struct sl_thread_t sl_thread_t;
  *    incoming parameters.
  */
 
-extern sl_thread_t* sl_thread_create(void (*routine)(void), void* arg);
+extern sl_thread_t* sl_thread_create(void (*routine)(void*), void* arg);
 extern void sl_thread_release(sl_thread_t* thread);
 extern void sl_thread_start(sl_thread_t* thread);
 extern void sl_thread_join(sl_thread_t* thread);
