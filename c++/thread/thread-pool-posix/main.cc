@@ -25,6 +25,7 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h>
+#include <stdio.h>
 #include "thread_pool.h"
 
 
@@ -46,9 +47,9 @@ main(int argc, char* argv[])
   thread_pool_t tp;
   tp.start();
 
-  tp.run(worker, "worker_#1");
-  tp.run(worker, "worker_#2");
-  tp.run(worker, "worker_#3");
+  tp.run(worker, (void*)"worker_#1");
+  tp.run(worker, (void*)"worker_#2");
+  tp.run(worker, (void*)"worker_#3");
 
   sleep(1);
   tp.stop();

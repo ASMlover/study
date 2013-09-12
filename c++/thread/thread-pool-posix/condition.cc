@@ -57,5 +57,5 @@ condition_t::siganl_all(void)
 void 
 condition_t::wait(void)
 {
-  pthread_call("wait", pthread_cond_wait(&cond_, mutex.get_mutex()));
+  pthread_call("wait", pthread_cond_wait(&cond_, mutex_.get_mutex()));
 }
