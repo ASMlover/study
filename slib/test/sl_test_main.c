@@ -50,6 +50,7 @@ sl_help(void)
       "   mutex   show test result of mutex module\n"
       "   spin    show test result of spinlock module\n"
       "   cond    show test result of condition module\n"
+      "   thread  show test result of thread module\n"
       );
 }
 
@@ -64,6 +65,7 @@ static const sl_test_t _s_tests[] = {
   {"mutex", sl_test_mutex}, 
   {"spin", sl_test_spinlock},
   {"cond", sl_test_condition},
+  {"thread", sl_test_thread},
 };
 
 

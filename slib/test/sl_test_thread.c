@@ -26,54 +26,32 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef __SL_TEST_HEADER_H__
-#define __SL_TEST_HEADER_H__
-
-#include <stdio.h>
-#include <stdlib.h>
-
-#if defined(_WINDOWS_) || defined(_MSC_VER)
-  #define inline    __inline
-  #define __func__  __FUNCTION__
-#endif 
-
-#if defined(_WINDOWS_) || defined(_MSC_VER)
-  #define cmdeq(c1, c2) (0 == stricmp(c1, c2))
-#elif defined(__linux__)
-  #define cmdeq(c1, c2) (0 == strcasecmp(c1, c2))
-#endif 
-
-#ifndef countof
-  #define countof(x)  (sizeof((x)) / sizeof(*(x)))
-#endif 
+#include "sl_test_header.h"
+#include "../src/sl_thread.h"
 
 
-/*
- * Have our own assert, so we are sure it dose not get 
- * optomized away in a release build.
- */
-#define ASSERT(expr)\
-do {\
-  if (!(expr)) {\
-    fprintf(stderr, \
-      "assertion failed in %s on line %d : %s\n", \
-      __FILE__, \
-      __LINE__, \
-      #expr);\
-      fflush(stderr);\
-      abort();\
-  }\
-} while (0)
+
+static inline void 
+worker(void* arg)
+{
+  ASSERT((void*)34 == arg);
+}
 
 
-extern void sl_test_allocator(void);
-extern void sl_test_queue(void);
-extern void sl_test_list(void);
-extern void sl_test_table(void);
-extern void sl_test_array(void);
-extern void sl_test_mutex(void);
-extern void sl_test_spinlock(void);
-extern void sl_test_condition(void);
-extern void sl_test_thread(void);
 
-#endif  /* __SL_TEST_HEADER_H__ */
+void 
+sl_test_thread(void)
+{
+  sl_thread_t* thread;
+  fprintf(stdout, "begin testing thread module : <%s>\n", __func__);
+
+  thread = sl_thread_create(worker, (void*)34);
+  ASSERT(NULL != thread);
+  sl_thread_start(thread);
+
+  sl_thread_join(thread);
+
+  sl_thread_release(thread);
+
+  fprintf(stdout, "end testing thread module : all passed!!!\n");
+}
