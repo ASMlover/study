@@ -53,6 +53,7 @@ thread_pool_t::start(int threads_count)
   else 
     threads_count_ = threads_count;
 
+  running_ = true;
   for (int i = 0; i < threads_count_; ++i) {
     threads_.push_back(new thread_t(&thread_pool_t::s_routine, this));
     threads_[i]->start();
