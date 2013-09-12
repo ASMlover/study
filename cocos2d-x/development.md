@@ -24,8 +24,9 @@
  * 执行cygwin.bat, 并修改目录下新生成的.bash_profile文件
 
         android-ndk-r8是ndk的路径
-        在最后添加NDK_ROOT=/cygdrive/d/android-ndk-r8
-        export NDK_ROOT 
+        在最后添加NDK_ROOT=/cygdrive/d/SDK-Tool/android/android-ndk-r9
+        export NDK_ROOT  
+ * 对于/home目录下什么都没有的情况, 先将windows环境的HOME删除, 重启cygwin
 
 
 
@@ -42,3 +43,16 @@
 ## **5. 安装android-ndk** ##
  * [android-ndk](http://developer.android.com/tools/sdk/ndk/index.html)
  * 解压到对应目录即可
+
+
+
+## **6. 安装android开发插件** ##
+ * 打开eclipse, help -> Install New Software
+ * 点击Add
+ * Name: Android, Location: https://dl-ssl.google.com/android/eclipse/
+ * 全部选中, Next -> Next
+ * 选择I accept the terms of the license agreements, Next
+ * 安装完成之后重启eclipse
+ * 配置ADT, window -> preferences
+
+        SDK Location: D:\SDK-Tool\android\sdk 
