@@ -129,19 +129,19 @@ public:
     reference_t 
     operator *(void)
     {
-      return current_->value;
+      return this->current_->value;
     }
 
     const_reference_t 
     operator *(void) const
     {
-      return current_->value;
+      return this->current_->value;
     }
 
     iterator_t& 
     operator ++(void)
     {
-      current_ = current_->next;
+      this->current_ = this->current_->next;
       return *this;
     }
 
@@ -157,7 +157,7 @@ public:
     iterator_t& 
     operator --(void)
     {
-      current_ = current_->prev;
+      this->current_ = this->current_->prev;
       return *this;
     }
 
