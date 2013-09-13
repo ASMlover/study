@@ -29,11 +29,13 @@ OUT	= test
 RM	= rm 
 CC	= g++
 CFLAGS	= -g -O2 -Wall 
+INCLUDES = -I../slib++/
 LDFLAGS	= -lpthread -lrt
-OBJS	= sl_test_main.o sl_test_allocator.o sl_test_queue.o\
-	sl_test_thread_pool.o sl_test_array.o sl_test_mutex.o\
-	sl_test_condition.o sl_test_thread.o sl_test_spinlock.o\
-	sl_test_list.o\
+OBJS	= ./test/sl_test_main.o ./test/sl_test_allocator.o\
+	./test/sl_test_queue.o ./test/sl_test_thread_pool.o\
+	./test/sl_test_array.o ./test/sl_test_mutex.o\
+	./test/sl_test_condition.o ./test/sl_test_thread.o\
+	./test/sl_test_spinlock.o ./test/sl_test_list.o\
 	\
 	sl_allocator.o sl_posix_condition.o sl_thread_pool.o
 
@@ -55,4 +57,4 @@ $(OUT): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(OBJS): %.o:%.cc 
-	$(CC) -o $*.o -c $(CFLAGS) $^
+	$(CC) -o $*.o -c $(CFLAGS) $(INCLUDES) $^
