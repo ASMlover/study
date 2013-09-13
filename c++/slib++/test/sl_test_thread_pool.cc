@@ -30,8 +30,8 @@
   #include <unistd.h>
 #endif
 #include <stdio.h>
+#include <sl_thread_pool.h>
 #include "sl_test_header.h"
-#include "sl_thread_pool.h"
 
 
 
