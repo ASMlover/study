@@ -56,3 +56,19 @@
  * 配置ADT, window -> preferences
 
         SDK Location: D:\SDK-Tool\android\sdk 
+
+
+
+
+
+
+
+# **linux下开发环境配置** #
+***
+
+
+## **1. 下载编译cocos2d-x** ## 
+ * 下载cocos2d-2.0-x-2.0.4
+ * [下载地址](http://cocos2d-x.googlecode.com/files/cocos2d-2.0-x-2.0.4.zip)
+ * 解压 
+ * 运行./make-all-linux-project.sh
