@@ -28,6 +28,7 @@
 #define __SL_LIST_HEADER_H__
 
 #include <assert.h>
+#include <stdio.h>
 #include "sl_allocator.h"
 
 namespace sl {
