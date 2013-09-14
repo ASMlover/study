@@ -59,6 +59,18 @@
 
 
 
+## **7. cygwin下编译错误处理** ##
+ * cc1plus.exe: fatal error: jni/hellocpp/main.cpp: Permission denied
+ * 这个是win7下权限问题造成的
+ * 以管理员身份运行cmd, 并指定到工程目录
+ * 修改文件和目录的权限: takeown /f * /a /r 
+ * 授权到everyone组: icacls * /t /grant:r everyone:f 
+ * some warnings being treated as errors
+
+        * 在proj.android/jni目录的Application.mk文件中添加一行
+        * APP_CFLAGS += -Wno-error=format-security
+
+
 
 
 
