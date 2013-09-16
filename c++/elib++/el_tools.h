@@ -24,47 +24,21 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_POSIX_MUTEX_HEADER_H__
-#define __EL_POSIX_MUTEX_HEADER_H__
+#ifndef __EL_TOOLS_HEADER_H__
+#define __EL_TOOLS_HEADER_H__
 
-#include <pthread.h>
-#include "el_tools.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+  
 
-
-namespace sl {
-
-class Mutex {
-  pthread_mutex_t mutex_;
-
-  Mutex(const Mutex&);
-  Mutex& operator =(const Mutex&);
-public:
-  Mutex(void)
-  {
-    pthreadCall("Mutex init", pthread_mutex_init(&mutex_, NULL));
+inline void 
+pthreadCall(const char* label, int result)
+{
+  if (0 != result) {
+    fprintf(stderr, "%s : %s\n", strerror(result));
+    abort();
   }
-
-  ~Mutex(void)
-  {
-    pthreadCall("Mutex destroy", pthread_mutex_destroy(&mutex_));
-  }
-
-  void lock(void)
-  {
-    pthreadCall("Mutex lock", pthread_mutex_lock(&mutex_));
-  }
-
-  void unlock(void)
-  {
-    pthreadCall("Mutex unlock", pthread_mutex_unlock(&mutex_));
-  }
-
-  pthread_mutex_t* getMutex(void)
-  {
-    return  mutex_;
-  }
-};
-
 }
 
-#endif  //! __EL_POSIX_MUTEX_HEADER_H__
+#endif  //! __EL_TOOLS_HEADER_H__
