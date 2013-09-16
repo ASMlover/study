@@ -48,6 +48,15 @@
     typedef signed __int64      int64_t;
     typedef unsigned __int64    uint64_t;
 
+    #ifndef _W64
+      #if !defined(__midl) 
+        && (defined(_X86_) || defined(_M_IX86)) && _MSC_VER >= 1300 
+        #define _W64 __w64
+      #else
+        #define _W64
+      #endif
+    #endif
+
     #ifdef _WIN64
       typedef signed __int64    intptr_t;
       typedef unsigned __int64  uintptr_t;
