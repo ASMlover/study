@@ -44,12 +44,12 @@ public:
   MutexGuard(Mutex& mutex)
     : mutex_(mutex)
   {
-    mutex_.lock();
+    mutex_.Lock();
   }
 
   ~Mutex(void)
   {
-    mutex_.unlock();
+    mutex_.Unlock();
   }
 };
 

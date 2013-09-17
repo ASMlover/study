@@ -41,27 +41,27 @@ class Mutex {
 public:
   Mutex(void)
   {
-    pthreadCall("Mutex init", pthread_mutex_init(&mutex_, NULL));
+    PthreadCall("Mutex init", pthread_mutex_init(&mutex_, NULL));
   }
 
   ~Mutex(void)
   {
-    pthreadCall("Mutex destroy", pthread_mutex_destroy(&mutex_));
+    PthreadCall("Mutex destroy", pthread_mutex_destroy(&mutex_));
   }
 
-  void lock(void)
+  void Lock(void)
   {
-    pthreadCall("Mutex lock", pthread_mutex_lock(&mutex_));
+    PthreadCall("Mutex lock", pthread_mutex_lock(&mutex_));
   }
 
-  void unlock(void)
+  void Unlock(void)
   {
-    pthreadCall("Mutex unlock", pthread_mutex_unlock(&mutex_));
+    PthreadCall("Mutex unlock", pthread_mutex_unlock(&mutex_));
   }
 
-  pthread_mutex_t* getMutex(void)
+  pthread_mutex_t* mutex(void)
   {
-    return  mutex_;
+    return &mutex_;
   }
 };
 

@@ -36,21 +36,21 @@
 
 namespace el {
 
-class SpinlockGuard {
-  Spinlock& spinlock_;
+class SpinLockGuard {
+  SpinLock& spinlock_;
 
-  SpinlockGuard(const SpinlockGuard&);
-  SpinlockGuard& operator =(const SpinlockGuard&);
+  SpinLockGuard(const SpinLockGuard&);
+  SpinLockGuard& operator =(const SpinLockGuard&);
 public:
-  SpinlockGuard(Spinlock& spinlock)
+  SpinLockGuard(Spinlock& spinlock)
     : spinlock_(spinlock)
   {
-    spinlock_.lock();
+    spinlock_.Lock();
   }
 
-  ~SpinlockGuard(void)
+  ~SpinLockGuard(void)
   {
-    spinlock_.unlock();
+    spinlock_.Unlock();
   }
 };
 

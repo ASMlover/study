@@ -33,7 +33,7 @@
   
 
 inline void 
-pthreadCall(const char* label, int result)
+PthreadCall(const char* label, int result)
 {
   if (0 != result) {
     fprintf(stderr, "%s : %s\n", strerror(result));

@@ -33,30 +33,30 @@
 
 namespace el {
 
-class Spinlock {
+class SpinLock {
   pthread_spinlock_t spinlock_;
 
-  Spinlock(const Spinlock&);
-  Spinlock& operator =(const Spinlock&);
+  SpinLock(const SpinLock&);
+  SpinLock& operator =(const SpinLock&);
 public:
-  Spinlock(void)
+  SpinLock(void)
   {
-    pthreadCall("Spinlock init", pthread_spin_init(&spinlock_, 0));
+    PthreadCall("SpinLock init", pthread_spin_init(&spinlock_, 0));
   }
 
-  ~Spinlock(void)
+  ~SpinLock(void)
   {
-    pthreadCall("Spinlock destroy", pthread_spin_destroy(&spinlock_));
+    PthreadCall("SpinLock destroy", pthread_spin_destroy(&spinlock_));
   }
 
-  void lock(void)
+  void Lock(void)
   {
-    pthreadCall("Spinlock lock", pthread_spin_lock(&spinlock_));
+    PthreadCall("SpinLock lock", pthread_spin_lock(&spinlock_));
   }
 
-  void unlock(void)
+  void Unlock(void)
   {
-    pthreadCall("Spinlock unlock", pthread_spin_unlock(&spinlock_));
+    PthreadCall("SpinLock unlock", pthread_spin_unlock(&spinlock_));
   }
 };
 

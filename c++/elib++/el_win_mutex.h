@@ -47,7 +47,7 @@ public:
     DeleteCriticalSection(&mutex_);
   }
 
-  void lock(void)
+  void Lock(void)
   {
     if ((DWORD)mutex_.OwningThread == GetCurrentThreadId())
       return;
@@ -55,7 +55,7 @@ public:
     EnterCriticalSection(&mutex_);
   }
 
-  void unlock(void)
+  void Unlock(void)
   {
     LeaveCriticalSection(&mutex_);
   }

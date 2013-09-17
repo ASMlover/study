@@ -31,23 +31,23 @@
 
 namespace el {
 
-class Spinlock {
+class SpinLock {
   CRITICAL_SECTION spinlock_;
 
-  Spinlock(const Spinlock&);
-  Spinlock& operator =(const Spinlock&);
+  SpinLock(const SpinLock&);
+  SpinLock& operator =(const SpinLock&);
 public:
-  Spinlock(void)
+  SpinLock(void)
   {
     InitializeCriticalSectionAndSpinCount(&spinlock_, 4000);
   }
 
-  ~Spinlock(void)
+  ~SpinLock(void)
   {
     DeleteCriticalSection(&spinlock_);
   }
 
-  void lock(void)
+  void Lock(void)
   {
     if ((DWORD)spinlock_.OwningThread == GetCurrentThreadId())
       return;
@@ -55,7 +55,7 @@ public:
     EnterCriticalSection(&spinlock_);
   }
 
-  void unlock(void)
+  void Unlock(void)
   {
     LeaveCriticalSection(&spinlock_);
   }
