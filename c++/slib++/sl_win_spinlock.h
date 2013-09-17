@@ -38,7 +38,7 @@ class spinlock_t : noncopyable {
 public:
   spinlock_t(void)
   {
-    InitializeCriticalSectionAndSpinCount(&spinlock_, 0);
+    InitializeCriticalSectionAndSpinCount(&spinlock_, 4000);
   }
 
   ~spinlock_t(void)
