@@ -30,7 +30,9 @@ RM	= rm
 CC	= g++
 CFLAGS	= -g -O2 -Wall 
 LDFLAGS	= -lpthread -lrt
-OBJS	= ./test/el_test_main.o
+OBJS	= ./test/el_test_main.o\
+	\
+	el_posix_condition.o
 
 
 
