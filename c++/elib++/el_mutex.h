@@ -47,7 +47,7 @@ public:
     mutex_.Lock();
   }
 
-  ~Mutex(void)
+  ~MutexGuard(void)
   {
     mutex_.Unlock();
   }
