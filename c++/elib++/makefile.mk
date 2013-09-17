@@ -33,7 +33,9 @@ LINK	= link -nologo
 CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -EHsc -DNDEBUG
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no 
-OBJS	= el_test_main.obj 
+OBJS	= el_test_main.obj\
+	\
+	el_win_condition.obj
 
 
 
@@ -50,6 +52,9 @@ clean:
 $(OUT): $(OBJS)
 	$(LINK) -out:$(OUT) $(OBJS) $(LDFLAGS)
 	$(MT) -manifest $(OUT).manifest -outputresource:$(OUT);1
+
+.cc.obj:
+	$(CC) $(CFLAGS) $<
 
 {.\test}.cc{}.obj:
 	$(CC) $(CFLAGS) $<
