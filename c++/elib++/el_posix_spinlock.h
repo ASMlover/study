@@ -28,7 +28,7 @@
 #define __EL_POSIX_SPINLOCK_HEADER_H__
 
 #include <pthread.h>
-#include "el_tools.h"
+#include "el_posix_tools.h"
 
 
 namespace el {
