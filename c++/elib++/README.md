@@ -9,3 +9,14 @@
 
 
 ## **Building elib++** ##
+ * Windows
+
+        step1: Setting enviroment for using MSVC.
+        step2:
+          \> cd elib++
+          \> nmake -f makefile.mk 
+
+ * Linux
+
+        $ cd elib++
+        $ make
