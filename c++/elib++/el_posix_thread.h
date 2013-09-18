@@ -38,7 +38,7 @@ class Thread {
   Thread(const Thread&);
   Thread& operator =(const Thread&);
 public:
-  Thread(void (*routine) = NULL, void* argument = NULL)
+  Thread(void (*routine)(void*) = NULL, void* argument = NULL)
     : thread_id_(0)
     , routine_(routine)
     , argument_(argument)
