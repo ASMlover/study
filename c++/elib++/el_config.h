@@ -67,7 +67,7 @@
 # else
 #   include <stdint.h>
 # endif
-#elif defined(__LINUX__)
+#elif defined(__linux__)
 # include <stdint.h>
 #endif
 
