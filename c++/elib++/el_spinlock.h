@@ -28,9 +28,9 @@
 #define __EL_SPINLOCK_HEADER_H__
 
 #if defined(_WINDOWS_) || defined(_MSC_VER)
-  #include "el_win_spinlock.h"
+# include "el_win_spinlock.h"
 #elif defined(__linux__)
-  #include "el_posix_spinlock.h"
+# include "el_posix_spinlock.h"
 #endif
 
 

@@ -28,9 +28,9 @@
 #define __EL_MUTEX_HEADER_H__
 
 #if defined(_WINDOWS_) || defined(_MSC_VER)
-  #include "el_win_mutex.h"
+# include "el_win_mutex.h"
 #elif defined(__linux__)
-  #include "el_posix_mutex.h"
+# include "el_posix_mutex.h"
 #endif 
 
 namespace el {

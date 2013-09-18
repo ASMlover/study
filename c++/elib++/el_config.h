@@ -29,46 +29,46 @@
 #define __EL_CONFIG_HEADER_H__
 
 #if defined(_WINDOWS_) || defined(_MSC_VER)
-  #if (_MSC_VER < 1600)
-    #if (_MSC_VER < 1300)
+# if (_MSC_VER < 1600)
+#   if (_MSC_VER < 1300)
       typedef signed char       int8_t;
       typedef unsigned char     uint8_t;
       typedef signed short      int16_t;
       typedef unsigned short    uint16_t;
       typedef signed int        int32_t;
       typedef unsigned int      uint32_t;
-    #else
+#   else
       typedef signed __int8     int8_t;
       typedef unsigned __int8   uint8_t;
       typedef signed __int16    int16_t;
       typedef unsigned __int16  uint16_t;
       typedef signed __int32    int32_t;
       typedef unsigned __int32  uint32_t;
-    #endif 
+#   endif 
     typedef signed __int64      int64_t;
     typedef unsigned __int64    uint64_t;
 
-    #ifndef _W64
-      #if !defined(__midl) 
+#   ifndef _W64
+#     if !defined(__midl) 
         && (defined(_X86_) || defined(_M_IX86)) && _MSC_VER >= 1300 
-        #define _W64 __w64
-      #else
-        #define _W64
-      #endif
-    #endif
+#       define _W64 __w64
+#     else
+#       define _W64
+#     endif
+#   endif
 
-    #ifdef _WIN64
+#   ifdef _WIN64
       typedef signed __int64    intptr_t;
       typedef unsigned __int64  uintptr_t;
-    #else
+#   else
       typedef _W64 signed int   intptr_t;
       typedef _W64 unsigned int uintptr_t;
-    #endif
-  #else
-    #include <stdint.h>
-  #endif
+#   endif
+# else
+#   include <stdint.h>
+# endif
 #elif defined(__LINUX__)
-  #include <stdint.h>
+# include <stdint.h>
 #endif
 
 #endif  //! __EL_CONFIG_HEADER_H__

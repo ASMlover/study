@@ -28,7 +28,7 @@
 #define __EL_CONDITION_HEADER_H__
 
 #if defined(_WINDOWS_) || defined(_MSC_VER)
-  #include <windows.h>
+# include <windows.h>
 
   typedef struct {
     size_t waiters_count;
@@ -37,7 +37,7 @@
     HANDLE broadcast_event;
   } CondVar;
 #elif defined(__linux__)
-  #include <pthread.h>
+# include <pthread.h>
 
   typedef pthread_cond_t CondVar;
 #endif 
