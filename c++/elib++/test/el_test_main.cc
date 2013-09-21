@@ -25,10 +25,56 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
+#include "el_test_header.h"
+
+
+
+UnitFramework::UnitFramework(void)
+{
+}
+
+UnitFramework::~UnitFramework(void)
+{
+}
+
+UnitFramework& 
+UnitFramework::sigleton(void)
+{
+  static UnitFramework _s_unit;
+  return _s_unit;
+}
+
+void 
+UnitFramework::Run(void)
+{
+  fprintf(stdout, "===============BEGIN==============\n");
+
+  size_t size = unit_list_.size();
+  for (size_t i = 0; i < size; ++i) {
+    fprintf(stdout, "\tBegin unit case : %s\n", unit_list_[i].unit_name);
+    unit_list_[i].unit_case();
+    fprintf(stdout, "\tEnd unit case : %s\n", unit_list_[i].unit_name);
+    fprintf(stdout, "==================================\n\n");
+  }
+}
+
+bool 
+UnitFramework::RegisterUnit(const char* name, void (*unit)(void))
+{
+  if (NULL == name || NULL == unit)
+    return false;
+
+  unit_list_.push_back(UnitCase(name, unit));
+  return true;
+}
+
+
 
 
 int 
 main(int argc, char* argv[])
 {
+  UNIT_RUNALL();
+
   return 0;
 }
