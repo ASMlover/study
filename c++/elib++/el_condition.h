@@ -24,56 +24,43 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __SL_WIN_SPINLOCK_HEADER_H__
-#define __SL_WIN_SPINLOCK_HEADER_H__
+#ifndef __EL_CONDITION_HEADER_H__
+#define __EL_CONDITION_HEADER_H__
 
-#include <windows.h>
-#include "sl_noncopyable.h"
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+# include <windows.h>
+
+  typedef struct {
+    size_t waiters_count;
+    CRITICAL_SECTION waiters_count_lock;
+    HANDLE signal_event;
+    HANDLE broadcast_event;
+  } CondVar;
+#elif defined(__linux__)
+# include <pthread.h>
+
+  typedef pthread_cond_t CondVar;
+#endif 
 
 
-namespace sl {
+namespace el {
 
-class spinlock_t : noncopyable {
-  CRITICAL_SECTION spinlock_;
+class Mutex;
+class Condition {
+  Mutex& mutex_;
+  CondVar cond_;
+
+  Condition(const Condition&);
+  Condition& operator =(const Condition&);
 public:
-  spinlock_t(void)
-  {
-    InitializeCriticalSectionAndSpinCount(&spinlock_, 4000);
-  }
+  Condition(Mutex& mutex);
+  ~Condition(void);
 
-  ~spinlock_t(void)
-  {
-    DeleteCriticalSection(&spinlock_);
-  }
-
-  void 
-  lock(void)
-  {
-    if ((DWORD)spinlock_.OwningThread == GetCurrentThreadId())
-      return;
-
-    EnterCriticalSection(&spinlock_);
-  }
-
-  int 
-  trylock(void)
-  {
-    if ((DWORD)spinlock_.OwningThread == GetCurrentThreadId())
-      return 0;
-
-    if (TryEnterCriticalSection(&spinlock_))
-      return 0;
-    else 
-      return -1;
-  }
-
-  void 
-  unlock(void)
-  {
-    LeaveCriticalSection(&spinlock_);
-  }
+  void Signal(void);
+  void SignalAll(void);
+  void Wait(void);
 };
 
 }
 
-#endif  //! __SL_WIN_SPINLOCK_HEADER_H__
+#endif  //! __EL_CONDITION_HEADER_H__

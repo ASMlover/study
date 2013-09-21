@@ -24,56 +24,41 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __SL_WIN_SPINLOCK_HEADER_H__
-#define __SL_WIN_SPINLOCK_HEADER_H__
-
-#include <windows.h>
-#include "sl_noncopyable.h"
+#include "el_posix_tools.h"
+#include "el_mutex.h"
+#include "el_condition.h"
 
 
-namespace sl {
 
-class spinlock_t : noncopyable {
-  CRITICAL_SECTION spinlock_;
-public:
-  spinlock_t(void)
-  {
-    InitializeCriticalSectionAndSpinCount(&spinlock_, 4000);
-  }
+namespace el {
 
-  ~spinlock_t(void)
-  {
-    DeleteCriticalSection(&spinlock_);
-  }
-
-  void 
-  lock(void)
-  {
-    if ((DWORD)spinlock_.OwningThread == GetCurrentThreadId())
-      return;
-
-    EnterCriticalSection(&spinlock_);
-  }
-
-  int 
-  trylock(void)
-  {
-    if ((DWORD)spinlock_.OwningThread == GetCurrentThreadId())
-      return 0;
-
-    if (TryEnterCriticalSection(&spinlock_))
-      return 0;
-    else 
-      return -1;
-  }
-
-  void 
-  unlock(void)
-  {
-    LeaveCriticalSection(&spinlock_);
-  }
-};
-
+Condition::Condition(Mutex& mutex)
+  : mutex_(mutex)
+{
+  PthreadCall("cv init", pthread_cond_init(&cond_, 0));
 }
 
-#endif  //! __SL_WIN_SPINLOCK_HEADER_H__
+Condition::~Condition(void)
+{
+  PthreadCall("cv destroy", pthread_cond_destroy(&cond_));
+}
+
+void 
+Condition::Signal(void)
+{
+  PthreadCall("cv signal", pthread_cond_signal(&cond_));
+}
+
+void 
+Condition::SignalAll(void)
+{
+  PthreadCall("cv broadcast", pthread_cond_broadcast(&cond_));
+}
+
+void 
+Condition::Wait(void)
+{
+  PthreadCall("cv wait", pthread_cond_wait(&cond_, mutex_.mutex()));
+}
+
+}

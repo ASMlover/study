@@ -24,56 +24,35 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __SL_WIN_SPINLOCK_HEADER_H__
-#define __SL_WIN_SPINLOCK_HEADER_H__
+#ifndef __EL_MUTEX_HEADER_H__
+#define __EL_MUTEX_HEADER_H__
 
-#include <windows.h>
-#include "sl_noncopyable.h"
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+# include "el_win_mutex.h"
+#elif defined(__linux__)
+# include "el_posix_mutex.h"
+#endif 
 
+namespace el {
 
-namespace sl {
+class MutexGuard {
+  Mutex& mutex_;
 
-class spinlock_t : noncopyable {
-  CRITICAL_SECTION spinlock_;
+  MutexGuard(const MutexGuard&);
+  MutexGuard& operator =(const MutexGuard&);
 public:
-  spinlock_t(void)
+  MutexGuard(Mutex& mutex)
+    : mutex_(mutex)
   {
-    InitializeCriticalSectionAndSpinCount(&spinlock_, 4000);
+    mutex_.Lock();
   }
 
-  ~spinlock_t(void)
+  ~MutexGuard(void)
   {
-    DeleteCriticalSection(&spinlock_);
-  }
-
-  void 
-  lock(void)
-  {
-    if ((DWORD)spinlock_.OwningThread == GetCurrentThreadId())
-      return;
-
-    EnterCriticalSection(&spinlock_);
-  }
-
-  int 
-  trylock(void)
-  {
-    if ((DWORD)spinlock_.OwningThread == GetCurrentThreadId())
-      return 0;
-
-    if (TryEnterCriticalSection(&spinlock_))
-      return 0;
-    else 
-      return -1;
-  }
-
-  void 
-  unlock(void)
-  {
-    LeaveCriticalSection(&spinlock_);
+    mutex_.Unlock();
   }
 };
 
 }
 
-#endif  //! __SL_WIN_SPINLOCK_HEADER_H__
+#endif  //! __EL_MUTEX_HEADER_H__

@@ -24,56 +24,78 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __SL_WIN_SPINLOCK_HEADER_H__
-#define __SL_WIN_SPINLOCK_HEADER_H__
+#ifndef __EL_WIN_THREAD_HEADER_H__
+#define __EL_WIN_THREAD_HEADER_H__
 
 #include <windows.h>
-#include "sl_noncopyable.h"
+#ifndef _MT
+# error "requires /MTd, /MT, /MDd or /MD compiler options"
+#endif
+#include <process.h>
 
 
-namespace sl {
+namespace el {
 
-class spinlock_t : noncopyable {
-  CRITICAL_SECTION spinlock_;
+class Thread {
+  HANDLE start_event_;
+  HANDLE thread_;
+  void (*routine_)(void*);
+  void* argument_;
+
+  Thread(const Thread&);
+  Thread& operator =(const Thread&);
 public:
-  spinlock_t(void)
+  Thread(void (*routine)(void*) = NULL, void* argument = NULL)
+    : start_event_(NULL)
+    , thread_(NULL)
+    , routine_(routine)
+    , argument_(argument)
   {
-    InitializeCriticalSectionAndSpinCount(&spinlock_, 4000);
   }
 
-  ~spinlock_t(void)
+  ~Thread(void)
   {
-    DeleteCriticalSection(&spinlock_);
+    Join();
   }
 
-  void 
-  lock(void)
+  void Start(void)
   {
-    if ((DWORD)spinlock_.OwningThread == GetCurrentThreadId())
-      return;
+    start_event_ = CreateEvent(NULL, TRUE, FALSE, NULL);
+    if (NULL != start_event_)
+      abort();
 
-    EnterCriticalSection(&spinlock_);
+    thread_ = (HANDLE)_beginthreadex(NULL, 
+        0, &Thread::Routine, this, 0, NULL);
+    if (NULL != thread_)
+      WaitForSingleObject(start_event_, INFINITE);
+
+    CloseHandle(start_event_);
   }
 
-  int 
-  trylock(void)
+  void Join(void)
   {
-    if ((DWORD)spinlock_.OwningThread == GetCurrentThreadId())
+    if (NULL != thread_) {
+      WaitForSingleObject(thread_, INFINITE);
+
+      CloseHandle(thread_);
+      thread_ = NULL;
+    }
+  }
+private:
+  static UINT WINAPI Routine(void* arg)
+  {
+    Thread* thread = static_cast<Thread*>(arg);
+    if (NULL == thread)
       return 0;
 
-    if (TryEnterCriticalSection(&spinlock_))
-      return 0;
-    else 
-      return -1;
-  }
+    SetEvent(thread->start_event_);
+    if (NULL != thread->routine_)
+      thread->routine_(thread->argument_);
 
-  void 
-  unlock(void)
-  {
-    LeaveCriticalSection(&spinlock_);
+    return 0;
   }
 };
 
 }
 
-#endif  //! __SL_WIN_SPINLOCK_HEADER_H__
+#endif  //! __EL_WIN_THREAD_HEADER_H__

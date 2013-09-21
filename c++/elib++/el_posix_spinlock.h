@@ -24,56 +24,42 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __SL_WIN_SPINLOCK_HEADER_H__
-#define __SL_WIN_SPINLOCK_HEADER_H__
+#ifndef __EL_POSIX_SPINLOCK_HEADER_H__
+#define __EL_POSIX_SPINLOCK_HEADER_H__
 
-#include <windows.h>
-#include "sl_noncopyable.h"
+#include <pthread.h>
+#include "el_posix_tools.h"
 
 
-namespace sl {
+namespace el {
 
-class spinlock_t : noncopyable {
-  CRITICAL_SECTION spinlock_;
+class SpinLock {
+  pthread_spinlock_t spinlock_;
+
+  SpinLock(const SpinLock&);
+  SpinLock& operator =(const SpinLock&);
 public:
-  spinlock_t(void)
+  SpinLock(void)
   {
-    InitializeCriticalSectionAndSpinCount(&spinlock_, 4000);
+    PthreadCall("SpinLock init", pthread_spin_init(&spinlock_, 0));
   }
 
-  ~spinlock_t(void)
+  ~SpinLock(void)
   {
-    DeleteCriticalSection(&spinlock_);
+    PthreadCall("SpinLock destroy", pthread_spin_destroy(&spinlock_));
   }
 
-  void 
-  lock(void)
+  void Lock(void)
   {
-    if ((DWORD)spinlock_.OwningThread == GetCurrentThreadId())
-      return;
-
-    EnterCriticalSection(&spinlock_);
+    PthreadCall("SpinLock lock", pthread_spin_lock(&spinlock_));
   }
 
-  int 
-  trylock(void)
+  void Unlock(void)
   {
-    if ((DWORD)spinlock_.OwningThread == GetCurrentThreadId())
-      return 0;
-
-    if (TryEnterCriticalSection(&spinlock_))
-      return 0;
-    else 
-      return -1;
-  }
-
-  void 
-  unlock(void)
-  {
-    LeaveCriticalSection(&spinlock_);
+    PthreadCall("SpinLock unlock", pthread_spin_unlock(&spinlock_));
   }
 };
 
 }
 
-#endif  //! __SL_WIN_SPINLOCK_HEADER_H__
+#endif  //! __EL_POSIX_SPINLOCK_HEADER_H__

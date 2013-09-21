@@ -24,30 +24,30 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __SL_WIN_SPINLOCK_HEADER_H__
-#define __SL_WIN_SPINLOCK_HEADER_H__
+#ifndef __EL_WIN_SPINLOCK_HEADER_H__
+#define __EL_WIN_SPINLOCK_HEADER_H__
 
 #include <windows.h>
-#include "sl_noncopyable.h"
 
+namespace el {
 
-namespace sl {
-
-class spinlock_t : noncopyable {
+class SpinLock {
   CRITICAL_SECTION spinlock_;
+
+  SpinLock(const SpinLock&);
+  SpinLock& operator =(const SpinLock&);
 public:
-  spinlock_t(void)
+  SpinLock(void)
   {
     InitializeCriticalSectionAndSpinCount(&spinlock_, 4000);
   }
 
-  ~spinlock_t(void)
+  ~SpinLock(void)
   {
     DeleteCriticalSection(&spinlock_);
   }
 
-  void 
-  lock(void)
+  void Lock(void)
   {
     if ((DWORD)spinlock_.OwningThread == GetCurrentThreadId())
       return;
@@ -55,20 +55,7 @@ public:
     EnterCriticalSection(&spinlock_);
   }
 
-  int 
-  trylock(void)
-  {
-    if ((DWORD)spinlock_.OwningThread == GetCurrentThreadId())
-      return 0;
-
-    if (TryEnterCriticalSection(&spinlock_))
-      return 0;
-    else 
-      return -1;
-  }
-
-  void 
-  unlock(void)
+  void Unlock(void)
   {
     LeaveCriticalSection(&spinlock_);
   }
@@ -76,4 +63,4 @@ public:
 
 }
 
-#endif  //! __SL_WIN_SPINLOCK_HEADER_H__
+#endif  //! __EL_WIN_SPINLOCK_HEADER_H__

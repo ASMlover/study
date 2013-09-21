@@ -24,56 +24,51 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __SL_WIN_SPINLOCK_HEADER_H__
-#define __SL_WIN_SPINLOCK_HEADER_H__
 
-#include <windows.h>
-#include "sl_noncopyable.h"
+#ifndef __EL_CONFIG_HEADER_H__
+#define __EL_CONFIG_HEADER_H__
 
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+# if (_MSC_VER < 1600)
+#   if (_MSC_VER < 1300)
+      typedef signed char       int8_t;
+      typedef unsigned char     uint8_t;
+      typedef signed short      int16_t;
+      typedef unsigned short    uint16_t;
+      typedef signed int        int32_t;
+      typedef unsigned int      uint32_t;
+#   else
+      typedef signed __int8     int8_t;
+      typedef unsigned __int8   uint8_t;
+      typedef signed __int16    int16_t;
+      typedef unsigned __int16  uint16_t;
+      typedef signed __int32    int32_t;
+      typedef unsigned __int32  uint32_t;
+#   endif 
+    typedef signed __int64      int64_t;
+    typedef unsigned __int64    uint64_t;
 
-namespace sl {
+#   ifndef _W64
+#     if !defined(__midl) 
+        && (defined(_X86_) || defined(_M_IX86)) && _MSC_VER >= 1300 
+#       define _W64 __w64
+#     else
+#       define _W64
+#     endif
+#   endif
 
-class spinlock_t : noncopyable {
-  CRITICAL_SECTION spinlock_;
-public:
-  spinlock_t(void)
-  {
-    InitializeCriticalSectionAndSpinCount(&spinlock_, 4000);
-  }
+#   ifdef _WIN64
+      typedef signed __int64    intptr_t;
+      typedef unsigned __int64  uintptr_t;
+#   else
+      typedef _W64 signed int   intptr_t;
+      typedef _W64 unsigned int uintptr_t;
+#   endif
+# else
+#   include <stdint.h>
+# endif
+#elif defined(__linux__)
+# include <stdint.h>
+#endif
 
-  ~spinlock_t(void)
-  {
-    DeleteCriticalSection(&spinlock_);
-  }
-
-  void 
-  lock(void)
-  {
-    if ((DWORD)spinlock_.OwningThread == GetCurrentThreadId())
-      return;
-
-    EnterCriticalSection(&spinlock_);
-  }
-
-  int 
-  trylock(void)
-  {
-    if ((DWORD)spinlock_.OwningThread == GetCurrentThreadId())
-      return 0;
-
-    if (TryEnterCriticalSection(&spinlock_))
-      return 0;
-    else 
-      return -1;
-  }
-
-  void 
-  unlock(void)
-  {
-    LeaveCriticalSection(&spinlock_);
-  }
-};
-
-}
-
-#endif  //! __SL_WIN_SPINLOCK_HEADER_H__
+#endif  //! __EL_CONFIG_HEADER_H__
