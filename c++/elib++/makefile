@@ -31,6 +31,7 @@ CC	= g++
 CFLAGS	= -g -O2 -Wall 
 LDFLAGS	= -lpthread -lrt
 OBJS	= ./test/el_test_main.o ./test/el_test_mutex.o\
+	./test/el_test_spinlock.o\
 	\
 	el_posix_condition.o el_allocator.o
 
