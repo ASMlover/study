@@ -42,7 +42,7 @@ class SpinLockGuard {
   SpinLockGuard(const SpinLockGuard&);
   SpinLockGuard& operator =(const SpinLockGuard&);
 public:
-  SpinLockGuard(Spinlock& spinlock)
+  SpinLockGuard(SpinLock& spinlock)
     : spinlock_(spinlock)
   {
     spinlock_.Lock();
