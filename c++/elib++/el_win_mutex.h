@@ -59,6 +59,11 @@ public:
   {
     LeaveCriticalSection(&mutex_);
   }
+
+  CRITICAL_SECTION* mutex(void)
+  {
+    return &mutex_;
+  }
 };
 
 }
