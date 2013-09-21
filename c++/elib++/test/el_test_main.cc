@@ -47,14 +47,14 @@ UnitFramework::sigleton(void)
 void 
 UnitFramework::Run(void)
 {
-  fprintf(stdout, "===============BEGIN==============\n");
+  fprintf(stdout, "==================BEGIN=================\n");
 
   size_t size = unit_list_.size();
   for (size_t i = 0; i < size; ++i) {
     fprintf(stdout, "\tBegin unit case : %s\n", unit_list_[i].unit_name);
     unit_list_[i].unit_case();
     fprintf(stdout, "\tEnd unit case : %s\n", unit_list_[i].unit_name);
-    fprintf(stdout, "==================================\n\n");
+    fprintf(stdout, "========================================\n\n");
   }
 }
 
