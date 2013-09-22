@@ -38,13 +38,13 @@ CondVarInit(CondVar* cond)
 
   int err;
   cond->signal_event = CreateEvent(NULL, FALSE, FALSE, NULL);
-  if (NULL != cond->signal_event) {
+  if (NULL == cond->signal_event) {
     err = (int)GetLastError();
     goto Exit2;
   }
 
   cond->broadcast_event = CreateEvent(NULL, TRUE, FALSE, NULL);
-  if (NULL != cond->broadcast_event) {
+  if (NULL == cond->broadcast_event) {
     err = (int)GetLastError();
     goto Exit;
   }
