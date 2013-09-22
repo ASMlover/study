@@ -38,24 +38,26 @@ UnitFramework::~UnitFramework(void)
 }
 
 UnitFramework& 
-UnitFramework::sigleton(void)
+UnitFramework::Sigleton(void)
 {
   static UnitFramework _s_unit;
   return _s_unit;
 }
 
-void 
+int 
 UnitFramework::Run(void)
 {
-  fprintf(stdout, "==================BEGIN=================\n");
+  fprintf(stdout, "=====================BEGIN====================\n");
 
   size_t size = unit_list_.size();
   for (size_t i = 0; i < size; ++i) {
-    fprintf(stdout, "\tBegin unit case : %s\n", unit_list_[i].unit_name);
+    fprintf(stdout, "\tRun UnitCase : %s\n", unit_list_[i].unit_name);
     unit_list_[i].unit_case();
-    fprintf(stdout, "\tEnd unit case : %s\n", unit_list_[i].unit_name);
-    fprintf(stdout, "========================================\n\n");
+    fprintf(stdout, "\tEnd UnitCase : %s\n", unit_list_[i].unit_name);
+    fprintf(stdout, "==============================================\n\n");
   }
+
+  return 0;
 }
 
 bool 
@@ -74,7 +76,5 @@ UnitFramework::RegisterUnit(const char* name, void (*unit)(void))
 int 
 main(int argc, char* argv[])
 {
-  UNIT_RUNALL();
-
-  return 0;
+  return UNIT_RUN_ALL();
 }

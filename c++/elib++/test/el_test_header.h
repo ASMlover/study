@@ -64,17 +64,17 @@ public:
   UnitFramework(void);
   ~UnitFramework(void);
 
-  static UnitFramework& sigleton(void);
+  static UnitFramework& Sigleton(void);
 
-  void Run(void);
+  int Run(void);
   bool RegisterUnit(const char* name, void (*unit)(void));
 };
 
-#define UNIT_RUNALL()   UnitFramework::sigleton().Run()
+#define UNIT_RUN_ALL()    UnitFramework::Sigleton().Run()
 #define UNIT_IMPL(name)\
 static void el_Unit##name(void);\
 static bool _s_##name = \
-  UnitFramework::sigleton().RegisterUnit(#name, el_Unit##name);\
+  UnitFramework::Sigleton().RegisterUnit(#name, el_Unit##name);\
 static void el_Unit##name(void)
 
 
