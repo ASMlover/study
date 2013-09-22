@@ -61,7 +61,7 @@ public:
   void Start(void)
   {
     start_event_ = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if (NULL != start_event_)
+    if (NULL == start_event_)
       abort();
 
     thread_ = (HANDLE)_beginthreadex(NULL, 
