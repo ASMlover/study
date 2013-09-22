@@ -24,66 +24,41 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include <windows.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include "el_io.h"
+#include "el_posix_tools.h"
+#include "../el_mutex.h"
+#include "../el_condition.h"
 
 
 
 namespace el {
 
-static inline int 
-ColorVfprintf(FILE* stream, int color, const char* format, va_list ap)
+Condition::Condition(Mutex& mutex)
+  : mutex_(mutex)
 {
-  HANDLE out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-  CONSOLE_SCREEN_BUFFER_INFO info;
-  GetConsoleScreenBufferInfo(out_handle, &info);
-  WORD old_color = info.wAttributes;
-
-  switch (color) {
-  case COLOR_RED:
-    color = FOREGROUND_INTENSITY | FOREGROUND_RED;
-    break;
-  case COLOR_GREEN:
-    color = FOREGROUND_INTENSITY | FOREGROUND_GREEN;
-    break;
-  default:
-    color = old_color;
-  }
-
-  SetConsoleTextAttribute(out_handle, (WORD)color);
-  int ret = vfprintf(stream, format, ap);
-  SetConsoleTextAttribute(out_handle, old_color);
-
-  return ret;
+  PthreadCall("cv init", pthread_cond_init(&cond_, 0));
 }
 
-
-
-
-int 
-ColorPrintf(int color, const char* format, ...)
+Condition::~Condition(void)
 {
-  va_list ap;
-
-  va_start(ap, format);
-  int ret = ColorVfprintf(stdout, color, format, ap);
-  va_end(ap);
-
-  return ret;
+  PthreadCall("cv destroy", pthread_cond_destroy(&cond_));
 }
 
-int 
-ColorFprintf(FILE* stream, int color, const char* format, ...)
+void 
+Condition::Signal(void)
 {
-  va_list ap;
+  PthreadCall("cv signal", pthread_cond_signal(&cond_));
+}
 
-  va_start(ap, format);
-  int ret = ColorVfprintf(stream, color, format, ap);
-  va_end(ap);
+void 
+Condition::SignalAll(void)
+{
+  PthreadCall("cv broadcast", pthread_cond_broadcast(&cond_));
+}
 
-  return ret;
+void 
+Condition::Wait(void)
+{
+  PthreadCall("cv wait", pthread_cond_wait(&cond_, mutex_.mutex()));
 }
 
 }

@@ -24,41 +24,55 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include "el_posix_tools.h"
-#include "el_mutex.h"
-#include "el_condition.h"
+#include <stdio.h>
+#include <stdarg.h>
+#include "../el_io.h"
 
 
 
 namespace el {
 
-Condition::Condition(Mutex& mutex)
-  : mutex_(mutex)
+static inline int 
+ColorVfprintf(FILE* stream, int color, const char* format, va_list ap)
 {
-  PthreadCall("cv init", pthread_cond_init(&cond_, 0));
+  switch (color) {
+  case COLOR_RED:
+    fprintf(stream, "\033[31;40;1m");
+    break;
+  case COLOR_GREEN:
+    fprintf(stream, "\033[32;40;1m");
+    break;
+  }
+  int ret = vfprintf(stream, format, ap);
+  fprintf(stream, "\033[0m");
+
+  return ret;
 }
 
-Condition::~Condition(void)
+
+
+int 
+ColorPrintf(int color, const char* format, ...)
 {
-  PthreadCall("cv destroy", pthread_cond_destroy(&cond_));
+  va_list ap;
+
+  va_start(ap, format);
+  int ret = ColorVfprintf(stdout, color, format, ap);
+  va_end(ap);
+
+  return ret;
 }
 
-void 
-Condition::Signal(void)
+int 
+ColorFprintf(FILE* stream, int color, const char* format, ...)
 {
-  PthreadCall("cv signal", pthread_cond_signal(&cond_));
-}
+  va_list ap;
 
-void 
-Condition::SignalAll(void)
-{
-  PthreadCall("cv broadcast", pthread_cond_broadcast(&cond_));
-}
+  va_start(ap, format);
+  int ret = ColorVfprintf(stream, color, format, ap);
+  va_end(ap);
 
-void 
-Condition::Wait(void)
-{
-  PthreadCall("cv wait", pthread_cond_wait(&cond_, mutex_.mutex()));
+  return ret;
 }
 
 }

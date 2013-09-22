@@ -24,9 +24,10 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#include <windows.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include "el_io.h"
+#include "../el_io.h"
 
 
 
@@ -35,19 +36,29 @@ namespace el {
 static inline int 
 ColorVfprintf(FILE* stream, int color, const char* format, va_list ap)
 {
+  HANDLE out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+  CONSOLE_SCREEN_BUFFER_INFO info;
+  GetConsoleScreenBufferInfo(out_handle, &info);
+  WORD old_color = info.wAttributes;
+
   switch (color) {
   case COLOR_RED:
-    fprintf(stream, "\033[31;40;1m");
+    color = FOREGROUND_INTENSITY | FOREGROUND_RED;
     break;
   case COLOR_GREEN:
-    fprintf(stream, "\033[32;40;1m");
+    color = FOREGROUND_INTENSITY | FOREGROUND_GREEN;
     break;
+  default:
+    color = old_color;
   }
+
+  SetConsoleTextAttribute(out_handle, (WORD)color);
   int ret = vfprintf(stream, format, ap);
-  fprintf(stream, "\033[0m");
+  SetConsoleTextAttribute(out_handle, old_color);
 
   return ret;
 }
+
 
 
 
