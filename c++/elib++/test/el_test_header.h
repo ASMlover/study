@@ -42,6 +42,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
+#include "../el_io.h"
 
 
 struct UnitCase {
@@ -83,7 +84,8 @@ static void el_Unit##name(void)
 #define UNIT_ASSERT(expr)\
 do {\
   if (!(expr)) {\
-    fprintf(stderr, \
+    el::ColorFprintf(stderr, \
+        el::COLOR_RED, \
         "assertion failed in %s on line %d : %s\n", \
         __FILE__, \
         __LINE__, \
