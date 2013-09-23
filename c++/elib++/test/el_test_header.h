@@ -33,10 +33,13 @@
 # define inline       __inline
 # define __func__     __FUNCTION__
 # define el_sleep(x)  Sleep((x))
+# define SelfThreadId GetCurrentThreadId
 #elif defined(__linux__)
 # include <unistd.h>
+# include <pthread.h>
 
 # define el_sleep(x)  usleep((x) * 1000)
+# define SelfThreadId pthread_self
 #endif
 
 #include <stdio.h>
