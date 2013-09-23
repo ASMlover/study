@@ -50,6 +50,7 @@ ColorVfprintf(FILE* stream, int color, const char* format, va_list ap)
     break;
   default:
     color = old_color;
+    break;
   }
 
   SetConsoleTextAttribute(out_handle, (WORD)color);
