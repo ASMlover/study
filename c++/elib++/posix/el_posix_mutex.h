@@ -31,7 +31,7 @@
 #include "el_posix_tools.h"
 
 
-namespace sl {
+namespace el {
 
 class Mutex {
   pthread_mutex_t mutex_;
