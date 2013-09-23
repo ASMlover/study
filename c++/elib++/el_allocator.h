@@ -61,11 +61,14 @@ public:
   Allocator(void);
   ~Allocator(void);
 
-  static Allocator& singleton(void);
+  static Allocator& Singleton(void);
 
   void* Malloc(size_t bytes);
   void Free(void* ptr);
 };
+
+#define NEW(s)  Allocator::Singleton().Malloc((s))
+#define DEL(p)  Allocator::Singleton().Free((p))
 
 }
 

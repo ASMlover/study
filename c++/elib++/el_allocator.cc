@@ -110,7 +110,7 @@ Allocator::~Allocator(void)
 }
 
 Allocator& 
-Allocator::singleton(void)
+Allocator::Singleton(void)
 {
   static Allocator _s_allocator;
 
@@ -142,7 +142,7 @@ Allocator::Malloc(size_t bytes)
     free_list_[index] = free_list_[index]->next;
   }
 
-  return NULL;
+  return ret;
 }
 
 void 
