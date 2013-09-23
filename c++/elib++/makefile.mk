@@ -34,7 +34,7 @@ CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -EHsc -DNDEBUG
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no 
 OBJS	= el_test_main.obj el_test_mutex.obj el_test_spinlock.obj\
-	el_test_condition.obj\
+	el_test_condition.obj el_test_thread.obj\
 	\
 	el_win_condition.obj el_win_io.obj\
 	\
