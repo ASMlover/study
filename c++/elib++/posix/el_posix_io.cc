@@ -37,10 +37,10 @@ ColorVfprintf(FILE* stream, int color, const char* format, va_list ap)
 {
   switch (color) {
   case COLOR_RED:
-    fprintf(stream, "\033[31;40;1m");
+    fprintf(stream, "\033[31;1m");
     break;
   case COLOR_GREEN:
-    fprintf(stream, "\033[32;40;1m");
+    fprintf(stream, "\033[32;1m");
     break;
   }
   int ret = vfprintf(stream, format, ap);
