@@ -39,7 +39,7 @@ OBJS	= el_test_main.obj el_test_mutex.obj el_test_spinlock.obj\
 	\
 	el_win_condition.obj el_win_io.obj\
 	\
-	el_allocator.obj el_thread_pool.obj
+	el_allocator.obj el_thread_pool.obj el_buffer.obj
 
 
 

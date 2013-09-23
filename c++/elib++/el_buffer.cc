@@ -1,0 +1,195 @@
+//! Copyright (c) 2013 ASMlover. All rights reserved.
+//!
+//! Redistribution and use in source and binary forms, with or without
+//! modification, are permitted provided that the following conditions
+//! are met:
+//!
+//!  * Redistributions of source code must retain the above copyright
+//!    notice, this list ofconditions and the following disclaimer.
+//!
+//!  * Redistributions in binary form must reproduce the above copyright
+//!    notice, this list of conditions and the following disclaimer in
+//!    the documentation and/or other materialsprovided with the
+//!    distribution.
+//!
+//! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+//! "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+//! LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+//! FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+//! COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+//! INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+//! BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+//! LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+//! CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+//! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+//! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+//! POSSIBILITY OF SUCH DAMAGE.
+#include <stdlib.h>
+#include <string.h>
+#include "el_buffer.h"
+
+
+namespace el {
+
+
+//! (read_pos/write_pos)
+//!     |
+//!     V
+//!    |-----------------------------------------------------|
+//!
+//!            (read_pos)                      (write_pos)
+//!               |                                |
+//!               V                                V
+//!    |----------=================================----------|
+//!
+//!            (write_pos)                     (read_pos)
+//!               |                                |
+//!               V                                V
+//!    |==========---------------------------------==========|
+//!
+//!                     (read_pos/write_pos)
+//!                             |
+//!                             V
+//!    |=====================================================|
+
+
+Buffer::Buffer(void)
+  : buffer_(NULL)
+  , length_(0)
+  , read_pos_(0)
+  , write_pos_(0)
+  , data_length_(0)
+  , free_length_(0)
+{
+}
+
+Buffer::~Buffer(void)
+{
+  Release();
+}
+
+bool 
+Buffer::Create(int length)
+{
+  length_ = (length < DEF_BUFLEN ? DEF_BUFLEN : length);
+  buffer_ = (char*)malloc(length_);
+  if (NULL == buffer_)
+    return false;
+
+  read_pos_ = write_pos_ = 0;
+  data_length_ = 0;
+  free_length_ = length_;
+
+  return true;
+}
+
+void 
+Buffer::Release(void)
+{
+  if (NULL != buffer_) {
+    free(buffer_);
+    buffer_ = NULL;
+  }
+  length_ = 0;
+  read_pos_ = write_pos_ = 0;
+  data_length_ = free_length_ = 0;
+}
+
+void 
+Buffer::Clear(void)
+{
+  if (NULL != buffer_)
+    memset(buffer_, 0, sizeof(buffer_));
+
+  read_pos_ = write_pos_ = 0;
+  data_length_ = 0;
+  free_length_ = length_;
+}
+
+int 
+Buffer::Write(const void* buffer, int length)
+{
+  //! buffer must be valid and length must > 0
+  
+  if (NULL == buffer || length <= 0)
+    return -1;
+
+  int write_length = (free_length_ > length ? length : free_length_);
+  if (read_pos_ > write_pos_) {
+    memcpy(buffer_ + write_pos_, buffer, write_length);
+    write_pos_ += write_length;
+  }
+  else {
+    int tail_len = length_ - write_pos_;
+    tail_len = (tail_len >= write_length ? write_length : tail_len);
+    int left_len = write_length - tail_len;
+
+    memcpy(buffer_ + write_pos_, buffer, tail_len);
+    write_pos_ = (write_pos_ + tail_len) % length_;
+    if (left_len > 0) {
+      memcpy(buffer_, (char*)buffer + tail_len, left_len);
+      write_pos_ += left_len;
+    }
+  }
+  data_length_ += write_length;
+  free_length_ -= write_length;
+
+  return write_length;
+}
+
+int 
+Buffer::Read(int length, void* buffer)
+{
+  //! length must > 0 and buffer must be valid 
+
+  if (length <= 0 || NULL == buffer)
+    return -1;
+
+  int read_length = (data_length_ > length ? length : data_length_);
+  if (write_pos_ > read_pos_) {
+    memcpy(buffer, buffer_ + read_pos_, read_length);
+    read_pos_ += read_length;
+  }
+  else {
+    int tail_len = length_ - read_pos_;
+    tail_len = (tail_len >= read_length ? read_length : tail_len);
+    int left_len = read_length - tail_len;
+
+    memcpy(buffer, buffer_ + read_pos_, tail_len);
+    read_pos_ = (read_pos_ + tail_len) % length_;
+    if (left_len > 0) {
+      memcpy((char*)buffer + tail_len, buffer_, left_len);
+      read_pos_ += left_len;
+    }
+  }
+  data_length_ -= read_length;
+  free_length_ += read_length;
+  
+  return read_length;
+}
+
+int 
+Buffer::Remove(int length)
+{
+  //! length must > 0
+  if (length <= 0)
+    return -1;
+
+  int remove_length = (data_length_ > length ? length : data_length_);
+  if (write_pos_ > read_pos_) {
+    read_pos_ += remove_length;
+  }
+  else {
+    int tail_len = length_ - read_pos_;
+    tail_len = (tail_len >= remove_length ? remove_length : tail_len);
+
+    read_pos_ = (read_pos_ + tail_len) % length_;
+    read_pos_ += (remove_length - tail_len);
+  }
+  data_length_ -= remove_length;
+  free_length_ += remove_length;
+
+  return remove_length;
+}
+
+}
