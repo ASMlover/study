@@ -43,7 +43,7 @@ all: $(OUT)
 rebuild: clean all 
 
 clean:
-	$(RM) $(OUT) $(OBJS) *.pdb *.manifest *.ilk 
+	$(RM) $(OUT) $(OBJS) *.pdb *.manifest *.ilk *.txt
 
 
 
