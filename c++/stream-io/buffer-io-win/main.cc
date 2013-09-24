@@ -25,11 +25,47 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
+#include "buffer_file.h"
 
+
+
+struct Data {
+  int a, b, c;
+};
+
+#define LOOP_TIMES  (1000000)
 
 
 int 
 main(int argc, char* argv[])
 {
+  int counter;
+  DWORD beg, end;
+  BufferFile bf;
+  char buffer[1024 * 16];
+
+  Data d = {1, 2, 3};
+  
+  if (bf.Open("demo.txt")) {
+    counter = 0;
+    beg = GetTickCount();
+    while (counter++ < LOOP_TIMES) 
+      bf.Write(&d, sizeof(d));
+    end = GetTickCount();
+    fprintf(stdout, "use self buffer: %lu\n", end - beg);
+  }
+  bf.Close();
+
+
+  FILE* fp = fopen("demo1.txt", "w");
+  setvbuf(fp, buffer, _IOFBF, sizeof(buffer));
+  counter = 0;
+  beg = GetTickCount();
+  while (counter++ < LOOP_TIMES)
+    fwrite(&d, sizeof(d), 1, fp);
+  end = GetTickCount();
+  fprintf(stdout, "use stdio: %lu\n", end - beg);
+  fclose(fp);
+
   return 0;
 }
