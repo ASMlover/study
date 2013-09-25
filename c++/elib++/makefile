@@ -33,7 +33,7 @@ LDFLAGS	= -lpthread -lrt
 OBJS	= ./test/el_test_main.o ./test/el_test_mutex.o\
 	./test/el_test_spinlock.o ./test/el_test_condition.o\
 	./test/el_test_thread.o ./test/el_test_thread_pool.o\
-	./test/el_allocator.o\
+	./test/el_allocator.o ./test/el_test_buffer.o\
 	\
 	./posix/el_posix_condition.o ./posix/el_posix_io.o\
 	\
