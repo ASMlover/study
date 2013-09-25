@@ -64,6 +64,14 @@ UNIT_IMPL(BufferSingle)
       buffer.Read(sizeof(read_data), read_data));
   UNIT_ASSERT(0 == buffer.data_length());
   UNIT_ASSERT(BUFFER_LEN == buffer.free_length());
+  UNIT_ASSERT(0 == memcmp(read_data, data, sizeof(data)));
+
+  UNIT_ASSERT(sizeof(data) == buffer.Write(data, sizeof(data)));
+  InitData(DATA_NUM, data);
+  UNIT_ASSERT(sizeof(data) == buffer.Write(data, sizeof(data)));
+  UNIT_ASSERT(2 * sizeof(data) == buffer.data_length());
+  UNIT_ASSERT(sizeof(data) == buffer.Remove(sizeof(data)));
+  UNIT_ASSERT(sizeof(data) == buffer.data_length());
 
   buffer.Clear();
   UNIT_ASSERT(0 == buffer.data_length());
