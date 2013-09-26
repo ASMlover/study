@@ -116,3 +116,9 @@ Condition::Wait(void)
   if (0 != CondVarWaitHelper(&cond_, &mutex_, INFINITE))
     abort();
 }
+
+int 
+Condition::TimedWait(DWORD millitm)
+{
+  return CondVarWaitHelper(&cond_, &mutex_, INFINITE);
+}

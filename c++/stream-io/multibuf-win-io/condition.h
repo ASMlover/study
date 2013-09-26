@@ -51,6 +51,7 @@ public:
   void Signal(void);
   void SignalAll(void);
   void Wait(void);
+  int TimedWait(DWORD millitm);
 };
 
 #endif  //! __CONDITION_HEADER_H__
