@@ -32,6 +32,7 @@
 
 MultiBuffer::MultiBuffer(void)
   : mutex_()
+  , cond_(mutex_)
   , file_handle_(INVALID_HANDLE_VALUE)
   , thread_(NULL)
   , start_event_(NULL)
@@ -76,6 +77,7 @@ MultiBuffer::Release(void)
 {
   if (NULL != quit_event_) {
     SetEvent(quit_event_);
+    cond_.SignalAll();
 
     WaitForSingleObject(thread_, INFINITE);
     CloseHandle(thread_);
@@ -100,6 +102,8 @@ int
 MultiBuffer::Write(const void* buffer, int length)
 {
   MutexGuard lock(mutex_);
+  if (length_ - data_length_ < length)
+    cond_.Signal();
   memcpy(buffer_ + data_length_, buffer, length);
   data_length_ += length;
 
@@ -117,13 +121,23 @@ MultiBuffer::Routine(void* arg)
     if (WAIT_OBJECT_0 == WaitForSingleObject(self->quit_event_, 5))
       break;
 
+    DWORD ret;
+
     MutexGuard lock(self->mutex_);
     if (self->data_length_ > (int)(self->length_ * 0.9)) {
-      DWORD ret;
       SetFilePointer(self->file_handle_, 0, NULL, FILE_END);
       WriteFile(self->file_handle_, self->buffer_, 
           self->data_length_, &ret, NULL);
       self->data_length_ = 0;
+    }
+    else {
+      self->cond_.TimedWait(5000);
+      if (self->data_length_ > 0) {
+        SetFilePointer(self->file_handle_, 0, NULL, FILE_END);
+        WriteFile(self->file_handle_, self->buffer_, 
+            self->data_length_, &ret, NULL);
+        self->data_length_ = 0;
+      }
     }
   }
 

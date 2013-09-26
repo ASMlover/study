@@ -28,11 +28,13 @@
 #define __MULTI_BUFFER_HEADER_H__
 
 #include "mutex.h"
+#include "condition.h"
 
 class MultiBuffer {
   enum {DEF_BUFLEN = 1024 * 16};
 
   Mutex mutex_;
+  Condition cond_;
   HANDLE file_handle_;
   HANDLE thread_;
   HANDLE start_event_;
