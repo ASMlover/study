@@ -24,11 +24,33 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include <stdio.h>
-#include "multi_buffer.h"
+#ifndef __CONDITION_HEADER_H__
+#define __CONDITION_HEADER_H__
 
-int 
-main(int argc, char* argv[])
-{
-  return 0;
-}
+#include <windows.h>
+
+typedef struct {
+  size_t waiters_count;
+  CRITICAL_SECTION waiters_count_lock;
+  HANDLE signal_event;
+  HANDLE broadcast_event;
+} CondVar;
+
+
+class Mutex;
+class Condition {
+  Mutex& mutex_;
+  CondVar cond_;
+
+  Condition(const Condition&);
+  Condition& operator =(const Condition&);
+public:
+  Condition(Mutex& mutex);
+  ~Condition(void);
+
+  void Signal(void);
+  void SignalAll(void);
+  void Wait(void);
+};
+
+#endif  //! __CONDITION_HEADER_H__

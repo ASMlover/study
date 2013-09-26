@@ -34,7 +34,7 @@ CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -EHsc -DNDEBUG\
 	-D_CRT_SECURE_NO_WARNINGS
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no 
-OBJS	= main.obj multi_buffer.obj
+OBJS	= main.obj multi_buffer.obj condition.obj
 
 
 
