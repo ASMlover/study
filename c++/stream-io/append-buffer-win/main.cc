@@ -41,6 +41,7 @@ main(int argc, char* argv[])
   int counter;
 
   FILE* fp = fopen("test1.txt", "a+");
+  setvbuf(fp, NULL, _IOFBF, 16 * 1024);
   counter = 0;
   beg = GetTickCount();
   while (counter++ < LOOP_TIMES) 
