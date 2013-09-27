@@ -29,11 +29,7 @@
 
 
 
-struct Data {
-  int a, b, c;
-};
-
-#define LOOP_TIMES  (1000000)
+#define LOOP_TIMES  (10000)
 
 
 int 
@@ -44,13 +40,14 @@ main(int argc, char* argv[])
   BufferFile bf;
   char buffer[1024 * 16];
 
-  Data d = {1, 2, 3};
+  char* s = "Hello, world! BufferFile testing ...\n";
+  int n = (int)strlen(s);
   
   if (bf.Open("demo.txt")) {
     counter = 0;
     beg = GetTickCount();
     while (counter++ < LOOP_TIMES) 
-      bf.Write(&d, sizeof(d));
+      bf.Write(s, n);
     end = GetTickCount();
     fprintf(stdout, "use self buffer: %lu\n", end - beg);
   }
@@ -62,7 +59,7 @@ main(int argc, char* argv[])
   counter = 0;
   beg = GetTickCount();
   while (counter++ < LOOP_TIMES)
-    fwrite(&d, sizeof(d), 1, fp);
+    fwrite(s, sizeof(char), n, fp);
   end = GetTickCount();
   fprintf(stdout, "use stdio: %lu\n", end - beg);
   fclose(fp);
