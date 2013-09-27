@@ -86,6 +86,12 @@ MultiBuffer::Release(void)
   }
 
   if (NULL != buffer_) {
+    if (data_length_ > 0) {
+      DWORD ret;
+      SetFilePointer(file_handle_, 0, NULL, FILE_END);
+      WriteFile(file_handle_, buffer_, data_length_, &ret, NULL);
+    }
+    
     free(buffer_);
     buffer_ = NULL;
   }
