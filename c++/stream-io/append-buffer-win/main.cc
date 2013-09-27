@@ -25,10 +25,40 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
+#include <string.h>
+#include "append_file.h"
+
+
+#define LOOP_TIMES  (100000)
 
 
 int 
 main(int argc, char* argv[])
 {
+  char* s = "Hello, world! This is AppendFile testing ...\n";
+  size_t n = strlen(s);
+  DWORD beg, end;
+  int counter;
+
+  FILE* fp = fopen("test1.txt", "a+");
+  counter = 0;
+  beg = GetTickCount();
+  while (counter++ < LOOP_TIMES) 
+    _fwrite_nolock(s, sizeof(char), n, fp);
+  end = GetTickCount();
+  fprintf(stdout, "stream io used: %lu\n", end - beg);
+  fclose(fp);
+
+
+  AppendFile f;
+  f.Open("test2.txt");
+  counter = 0;
+  beg = GetTickCount();
+  while (counter++ < LOOP_TIMES) 
+    f.Write(s, n);
+  end = GetTickCount();
+  fprintf(stdout, "AppendFile used: %lu\n", end - beg);
+  f.Close();
+
   return 0;
 }
