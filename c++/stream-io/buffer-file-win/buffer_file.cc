@@ -56,12 +56,13 @@ BufferFile::Open(const char* filename)
 void 
 BufferFile::Close(void)
 {
-  if (INVALID_HANDLE_VALUE != file_handle_) {
-    if (length_ > 0) {
-      DWORD ret;
-      WriteFile(file_handle_, buffer_, length_, &ret, NULL);
-    }
+  if (INVALID_HANDLE_VALUE != file_handle_ && length_ > 0) {
+    DWORD ret;
+    SetFilePointer(file_handle_, 0, NULL, FILE_END);
+    WriteFile(file_handle_, buffer_, length_, &ret, NULL);
+  }
 
+  if (INVALID_HANDLE_VALUE != file_handle_) {
     CloseHandle(file_handle_);
     file_handle_ = INVALID_HANDLE_VALUE;
   }
@@ -90,10 +91,9 @@ BufferFile::Write(const void* buffer, int length)
       WriteFile(file_handle_, buffer_, length_, &ret, NULL);
       length_ = 0;
     }
-    else {
-      memcpy(buffer_ + length_, buffer, length);
-      length_ += length;
-    }
+    
+    memcpy(buffer_ + length_, buffer, length);
+    length_ += length;
   }
   return length;
 }
