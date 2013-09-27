@@ -57,6 +57,11 @@ void
 BufferFile::Close(void)
 {
   if (INVALID_HANDLE_VALUE != file_handle_) {
+    if (length_ > 0) {
+      DWORD ret;
+      WriteFile(file_handle_, buffer_, length_, &ret, NULL);
+    }
+
     CloseHandle(file_handle_);
     file_handle_ = INVALID_HANDLE_VALUE;
   }
