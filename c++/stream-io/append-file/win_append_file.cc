@@ -41,6 +41,7 @@ AppendFile::AppendFile(size_t buf_size)
 
 AppendFile::~AppendFile(void)
 {
+  Close();
 }
 
 bool 
