@@ -31,6 +31,24 @@
 # include "win_filelock.h"
 #elif defined(__linux__)
 # include "posix_filelock.h"
-#endif
+#endif 
+
+class FileLockGuard {
+  FileLock& filelock_;
+
+  FileLockGuard(const FileLockGuard&);
+  FileLockGuard& operator =(const FileLockGuard&);
+public:
+  explicit FileLockGuard(FileLock& filelock)
+    : filelock_(filelock)
+  {
+    filelock_.Lock();
+  }
+
+  ~FileLockGuard(void)
+  {
+    filelock_.Unlock();
+  }
+};
 
 #endif  //! __FILE_LOCK_HEADER_H__
