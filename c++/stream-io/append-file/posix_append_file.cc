@@ -38,7 +38,8 @@
 
 
 AppendFile::AppendFile(size_t buf_size)
-  : fd_(-1)
+  : filelock_()
+  , fd_(-1)
   , buffer_(NULL)
   , buf_size_(buf_size)
   , data_size_(0)
@@ -95,7 +96,13 @@ AppendFile::Close(void)
 size_t 
 AppendFile::Write(const void* buffer, size_t size)
 {
-  return WriteUnlocked(buffer, size);
+  size_t ret;
+  {
+    FileLockGuard lock(filelock_);
+    ret = WriteUnlocked(buffer, size);
+  }
+
+  return ret;
 }
 
 size_t 
