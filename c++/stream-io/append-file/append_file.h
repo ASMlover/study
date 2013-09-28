@@ -37,8 +37,8 @@
 class AppendFile {
   enum {DEF_BUFSIZE = 4096};
 
-  FileLock filelock_;
 #if defined(_WINDOWS_) || defined(_MSC_VER)
+  FileLock filelock_;
   HANDLE  fd_;
 #elif defined(__linux__)
   int     fd_;
