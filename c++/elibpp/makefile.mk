@@ -25,7 +25,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-OUT	= elib++.exe 
+OUT	= elibpp.exe 
 RM	= rm 
 CC	= cl -c -nologo 
 MT	= mt -nologo
