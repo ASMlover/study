@@ -25,10 +25,49 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
+#include <time.h>
+#include <string.h>
+#include "append_file.h"
 
 
 int 
 main(int argc, char* argv[])
 {
+  const int LOOP_TIMES = 10000;
+  const char* s = "Hello, world! AppendFile testing ...\n";
+  size_t      n = strlen(s);
+  clock_t beg, end;
+  int counter;
+
+  FILE* fp = fopen("demo1.txt", "a+");
+  setvbuf(fp, NULL, _IOFBF, 4096);
+
+  counter = 0;
+  beg = clock();
+  while (counter++ < LOOP_TIMES) {
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+    _fwrite_nolock(s, sizeof(char), n, fp);
+#elif defined(__linux__)
+    fwrite_unlocked(s, sizeof(char), n, fp);
+#endif
+  }
+  end = clock();
+  fprintf(stdout, "Stream IO use:\t%lu\n", end - beg);
+
+  fclose(fp);
+
+
+  AppendFile f;
+  f.Open("demo2.txt");
+
+  counter = 0;
+  beg = clock();
+  while (counter++ < LOOP_TIMES)
+    f.WriteUnlocked(s, n);
+  end = clock();
+  fprintf(stdout, "AppendFile use:\t%lu\n", end - beg);
+
+  f.Close();
+
   return 0;
 }
