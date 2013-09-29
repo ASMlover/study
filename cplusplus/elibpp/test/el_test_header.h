@@ -65,7 +65,7 @@ class UnitFramework {
   UnitFramework(const UnitFramework&);
   UnitFramework& operator =(const UnitFramework&);
 public:
-  UnitFramework(void);
+  explicit UnitFramework(void);
   ~UnitFramework(void);
 
   static UnitFramework& Sigleton(void);

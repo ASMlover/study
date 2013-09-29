@@ -41,7 +41,7 @@ class MutexGuard {
   MutexGuard(const MutexGuard&);
   MutexGuard& operator =(const MutexGuard&);
 public:
-  MutexGuard(Mutex& mutex)
+  explicit MutexGuard(Mutex& mutex)
     : mutex_(mutex)
   {
     mutex_.Lock();

@@ -37,7 +37,7 @@ class Mutex {
   Mutex(const Mutex&);
   Mutex& operator =(const Mutex&);
 public:
-  Mutex(void)
+  explicit Mutex(void)
   {
     InitializeCriticalSection(&mutex_);
   }

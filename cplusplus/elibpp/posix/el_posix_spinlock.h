@@ -39,7 +39,7 @@ class SpinLock {
   SpinLock(const SpinLock&);
   SpinLock& operator =(const SpinLock&);
 public:
-  SpinLock(void)
+  explicit SpinLock(void)
   {
     PthreadCall("SpinLock init", pthread_spin_init(&spinlock_, 0));
   }

@@ -62,7 +62,7 @@ class ThreadPool {
   ThreadPool(const ThreadPool&);
   ThreadPool& operator =(const ThreadPool&);
 public:
-  ThreadPool(void);
+  explicit ThreadPool(void);
   ~ThreadPool(void);
 
   void Start(int thread_count = DEF_THREADS_MIN);

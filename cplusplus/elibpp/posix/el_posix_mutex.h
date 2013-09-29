@@ -39,7 +39,7 @@ class Mutex {
   Mutex(const Mutex&);
   Mutex& operator =(const Mutex&);
 public:
-  Mutex(void)
+  explicit Mutex(void)
   {
     PthreadCall("Mutex init", pthread_mutex_init(&mutex_, NULL));
   }

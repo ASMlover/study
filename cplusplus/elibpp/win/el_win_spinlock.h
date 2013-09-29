@@ -37,7 +37,7 @@ class SpinLock {
   SpinLock(const SpinLock&);
   SpinLock& operator =(const SpinLock&);
 public:
-  SpinLock(void)
+  explicit SpinLock(void)
   {
     InitializeCriticalSectionAndSpinCount(&spinlock_, 4000);
   }
