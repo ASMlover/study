@@ -56,8 +56,8 @@ namespace el {
 Buffer::Buffer(void)
   : buffer_(NULL)
   , length_(0)
-  , read_pos_(0)
-  , write_pos_(0)
+  , rpos_(0)
+  , wpos_(0)
   , data_length_(0)
   , free_length_(0)
 {
@@ -71,12 +71,15 @@ Buffer::~Buffer(void)
 bool 
 Buffer::Create(int length)
 {
+  if (NULL != buffer_)
+    free(buffer_);
+
   length_ = (length < DEF_BUFLEN ? DEF_BUFLEN : length);
   buffer_ = (char*)malloc(length_);
   if (NULL == buffer_)
     return false;
 
-  read_pos_ = write_pos_ = 0;
+  rpos_ = wpos_ = 0;
   data_length_ = 0;
   free_length_ = length_;
 
@@ -91,17 +94,14 @@ Buffer::Release(void)
     buffer_ = NULL;
   }
   length_ = 0;
-  read_pos_ = write_pos_ = 0;
+  rpos_ = wpos_ = 0;
   data_length_ = free_length_ = 0;
 }
 
 void 
 Buffer::Clear(void)
 {
-  if (NULL != buffer_)
-    memset(buffer_, 0, sizeof(buffer_));
-
-  read_pos_ = write_pos_ = 0;
+  rpos_ = wpos_ = 0;
   data_length_ = 0;
   free_length_ = length_;
 }
@@ -115,20 +115,20 @@ Buffer::Write(const void* buffer, int length)
     return -1;
 
   int write_length = (free_length_ > length ? length : free_length_);
-  if (read_pos_ > write_pos_) {
-    memcpy(buffer_ + write_pos_, buffer, write_length);
-    write_pos_ += write_length;
+  if (rpos_ > wpos_) {
+    memcpy(buffer_ + wpos_, buffer, write_length);
+    wpos_ += write_length;
   }
   else {
-    int tail_len = length_ - write_pos_;
+    int tail_len = length_ - wpos_;
     tail_len = (tail_len >= write_length ? write_length : tail_len);
     int left_len = write_length - tail_len;
 
-    memcpy(buffer_ + write_pos_, buffer, tail_len);
-    write_pos_ = (write_pos_ + tail_len) % length_;
+    memcpy(buffer_ + wpos_, buffer, tail_len);
+    wpos_ = (wpos_ + tail_len) % length_;
     if (left_len > 0) {
       memcpy(buffer_, (char*)buffer + tail_len, left_len);
-      write_pos_ += left_len;
+      wpos_ += left_len;
     }
   }
   data_length_ += write_length;
@@ -146,20 +146,20 @@ Buffer::Read(int length, void* buffer)
     return -1;
 
   int read_length = (data_length_ > length ? length : data_length_);
-  if (write_pos_ > read_pos_) {
-    memcpy(buffer, buffer_ + read_pos_, read_length);
-    read_pos_ += read_length;
+  if (wpos_ > rpos_) {
+    memcpy(buffer, buffer_ + rpos_, read_length);
+    rpos_ += read_length;
   }
   else {
-    int tail_len = length_ - read_pos_;
+    int tail_len = length_ - rpos_;
     tail_len = (tail_len >= read_length ? read_length : tail_len);
     int left_len = read_length - tail_len;
 
-    memcpy(buffer, buffer_ + read_pos_, tail_len);
-    read_pos_ = (read_pos_ + tail_len) % length_;
+    memcpy(buffer, buffer_ + rpos_, tail_len);
+    rpos_ = (rpos_ + tail_len) % length_;
     if (left_len > 0) {
       memcpy((char*)buffer + tail_len, buffer_, left_len);
-      read_pos_ += left_len;
+      rpos_ += left_len;
     }
   }
   data_length_ -= read_length;
@@ -176,15 +176,15 @@ Buffer::Remove(int length)
     return -1;
 
   int remove_length = (data_length_ > length ? length : data_length_);
-  if (write_pos_ > read_pos_) {
-    read_pos_ += remove_length;
+  if (wpos_ > rpos_) {
+    rpos_ += remove_length;
   }
   else {
-    int tail_len = length_ - read_pos_;
+    int tail_len = length_ - rpos_;
     tail_len = (tail_len >= remove_length ? remove_length : tail_len);
 
-    read_pos_ = (read_pos_ + tail_len) % length_;
-    read_pos_ += (remove_length - tail_len);
+    rpos_ = (rpos_ + tail_len) % length_;
+    rpos_ += (remove_length - tail_len);
   }
   data_length_ -= remove_length;
   free_length_ += remove_length;

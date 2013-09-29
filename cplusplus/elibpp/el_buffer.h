@@ -33,15 +33,15 @@ class Buffer {
   enum { DEF_BUFLEN = 1024 * 1024 };
   char* buffer_;
   int length_;
-  int read_pos_;
-  int write_pos_;
+  int rpos_;
+  int wpos_;
   int data_length_;
   int free_length_;
 
   Buffer(const Buffer&);
   Buffer& operator =(const Buffer&);
 public:
-  Buffer(void);
+  explicit Buffer(void);
   ~Buffer(void);
 
   bool Create(int length = DEF_BUFLEN);
