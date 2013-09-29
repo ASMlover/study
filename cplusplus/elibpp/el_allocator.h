@@ -58,7 +58,7 @@ class Allocator {
   Memory* AllocChunk(size_t index);
   void InsertChunk(void* chunk);
 public:
-  Allocator(void);
+  explicit Allocator(void);
   ~Allocator(void);
 
   static Allocator& Singleton(void);
