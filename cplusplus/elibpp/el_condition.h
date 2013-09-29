@@ -53,7 +53,7 @@ class Condition {
   Condition(const Condition&);
   Condition& operator =(const Condition&);
 public:
-  Condition(Mutex& mutex);
+  explicit Condition(Mutex& mutex);
   ~Condition(void);
 
   void Signal(void);
