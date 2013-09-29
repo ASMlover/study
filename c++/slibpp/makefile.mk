@@ -25,7 +25,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-OUT	= slib++.exe
+OUT	= slibpp.exe
 RM	= del 
 CC	= cl -c -nologo
 MT	= mt -nologo
