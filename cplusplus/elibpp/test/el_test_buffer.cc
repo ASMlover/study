@@ -57,7 +57,7 @@ UNIT_IMPL(BufferSingle)
 
   UNIT_ASSERT(sizeof(data) == buffer.Write(data, sizeof(data)));
   UNIT_ASSERT(sizeof(data) == buffer.data_length());
-  UNIT_ASSERT(buffer.length() - sizeof(data) == buffer.free_length());
+  UNIT_ASSERT(buffer.length() - (int)sizeof(data) == buffer.free_length());
 
   short read_data[DATA_NUM];
   UNIT_ASSERT(sizeof(read_data) == 
