@@ -30,7 +30,7 @@ RM	= del
 CC	= cl -c -nologo
 MT	= mt -nologo
 LINK	= link -nologo
-INCLUDES = -I"..\slib++"
+INCLUDES = -I"..\slibpp"
 CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -EHsc -DNDEBUG
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no 
