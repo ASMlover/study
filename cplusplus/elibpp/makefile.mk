@@ -30,12 +30,13 @@ RM	= rm
 CC	= cl -c -nologo 
 MT	= mt -nologo
 LINK	= link -nologo
-CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -EHsc -DNDEBUG
+CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -EHsc -DNDEBUG\
+	-D_CRT_SECURE_NO_WARNINGS
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no 
 OBJS	= el_test_main.obj el_test_mutex.obj el_test_spinlock.obj\
 	el_test_condition.obj el_test_thread.obj el_test_thread_pool.obj\
-	el_test_allocator.obj el_test_buffer.obj\
+	el_test_allocator.obj el_test_buffer.obj el_test_file.obj\
 	\
 	el_win_condition.obj el_win_io.obj el_win_file.obj\
 	\
@@ -48,7 +49,10 @@ all: $(OUT)
 rebuild: clean all 
 
 clean:
-	$(RM) $(OUT) $(OBJS) *.pdb *.manifest *.ilk 
+	$(RM) $(OUT) $(OBJS) *.pdb *.manifest *.ilk
+
+clean_all:
+	$(RM) $(OUT) $(OBJS) *.pdb *.manifest *.ilk *.log
 
 
 
