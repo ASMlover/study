@@ -29,7 +29,7 @@ OUT	= slibpp
 RM	= rm 
 CC	= g++
 CFLAGS	= -g -O2 -Wall 
-INCLUDES = -I../slib++/
+INCLUDES = -I../slibpp
 LDFLAGS	= -lpthread -lrt
 OBJS	= ./test/sl_test_main.o ./test/sl_test_allocator.o\
 	./test/sl_test_queue.o ./test/sl_test_thread_pool.o\
