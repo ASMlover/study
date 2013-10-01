@@ -133,7 +133,7 @@ File::Write(const void* buffer, size_t size)
     DWORD ret;
     size_t copy_size = size - free_size;
     memcpy(buffer_ + data_size_, buffer, free_size);
-    WriteFile(fd_, buffer_, data_size_, &ret, NULL);
+    WriteFile(fd_, buffer_, buf_size_, &ret, NULL);
     data_size_ = 0;
 
     if (copy_size > 0) {
