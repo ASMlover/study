@@ -26,8 +26,15 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdlib.h>
+#include <string.h>
 #include "../el_file.h"
 
+
+#if defined(UNUSED)
+# undef UNUSED
+#endif
+#define UNUSED(x) {(x) = (x);}
 
 
 namespace el {
@@ -96,7 +103,8 @@ File::Close(void)
 {
   if (NULL != buffer_) {
     if (data_size_ > 0 && -1 != fd_) {
-      write(fd_, buffer_, data_size_);
+      ssize_t ret = write(fd_, buffer_, data_size_);
+      UNUSED(ret)
     }
 
     if (allocated_) {
@@ -127,7 +135,8 @@ File::Write(const void* buffer, size_t size)
   else {
     size_t copy_size = size - free_size;
     memcpy(buffer_ + data_size_, buffer, free_size);
-    write(fd_, buffer_, DEF_BUFSIZE);
+    ssize_t ret = write(fd_, buffer_, DEF_BUFSIZE);
+    UNUSED(ret)
     data_size_ = 0;
 
     if (copy_size > 0) {
