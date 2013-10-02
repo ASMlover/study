@@ -40,7 +40,7 @@ Clock(void)
 void 
 Sleep(uint32_t millitm)
 {
-  Sleep(millitm);
+  ::Sleep(millitm);
 }
 
 }
