@@ -31,6 +31,7 @@
 #include <map>
 
 class Logging {
+  enum {DEF_BUFSIZE = 16 * 1024};
   std::map<int, FILE*> file_list_;
 
   Logging(const Logging&);
@@ -46,6 +47,7 @@ public:
   Logging(void);
   ~Logging(void);
 
+  static Logging& Singleton(void);
   int Write(int severity, const char* file, 
       const char* function, int line, const char* format, ...);
 };

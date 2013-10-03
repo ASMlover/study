@@ -24,8 +24,33 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#include <assert.h>
+#include <time.h>
+#include <stdarg.h>
+#include <string.h>
 #include "logging.h"
 
+
+
+
+static char _s_buffer[10240] = {0};
+
+static inline const char* 
+GetFname(int severity)
+{
+  switch (severity) {
+  case Logging::SEVERITY_DEBUG:
+    return "debug.log";
+  case Logging::SEVERITY_MESSAGE:
+    return "msg.log";
+  case Logging::SEVERITY_WARNING:
+    return "warn.log";
+  case Logging::SEVERITY_ERROR:
+    return "error.log";
+  }
+
+  return "???.log";
+}
 
 
 Logging::Logging(void)
@@ -34,11 +59,44 @@ Logging::Logging(void)
 
 Logging::~Logging(void)
 {
+  std::map<int, FILE*>::iterator it;
+  for (it = file_list_.begin(); it != file_list_.end(); ++it) 
+    fclose(it->second);
+  file_list_.clear();
+}
+
+Logging& 
+Logging::Singleton(void)
+{
+  static Logging s;
+  return s;
 }
 
 int 
 Logging::Write(int severity, const char* file, 
     const char* function, int line, const char* format, ...)
 {
-  return 0;
+  FILE* stream;
+
+  std::map<int, FILE*>::iterator it = file_list_.find(severity);
+  if (it == file_list_.end()) {
+    const char* fname = GetFname(severity);
+
+    stream = fopen(fname, "a+");
+    assert(NULL != stream);
+    setvbuf(stream, NULL, _IOFBF, DEF_BUFSIZE);
+
+    file_list_[severity] = stream;
+  }
+  else {
+    stream = it->second;
+  }
+
+  va_list ap;
+  va_start(ap, format);
+  vsprintf(_s_buffer, format, ap);
+  va_end(ap);
+
+  return fprintf(stream, "%s - %s (%d) : %s", 
+      file, function, line, _s_buffer);
 }
