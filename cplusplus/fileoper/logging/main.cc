@@ -25,10 +25,16 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
+#include "logging.h"
 
 
 int 
 main(int argc, char* argv[])
 {
+  LogWrite(Logging::SEVERITY_DEBUG, "Debug Information ...\n");
+  LogWrite(Logging::SEVERITY_MESSAGE, "Message Information ...\n");
+  LogWrite(Logging::SEVERITY_WARNING, "Warning Information ...\n");
+  LogWrite(Logging::SEVERITY_ERROR, "Error Information ...\n");
+
   return 0;
 }

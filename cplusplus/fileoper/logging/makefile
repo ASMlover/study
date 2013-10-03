@@ -46,6 +46,9 @@ rebuild: clean all
 clean:
 	$(RM) $(OUT) $(OBJS) *.manifest *.pdb *.ilk
 
+clean_log:
+	$(RM) *.log
+
 
 
 

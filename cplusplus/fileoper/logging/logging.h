@@ -52,5 +52,13 @@ public:
       const char* function, int line, const char* format, ...);
 };
 
+#define LogWrite(severity, format, ...)\
+  Logging::Singleton().Write((severity), \
+      __FILE__, \
+      __FUNCTION__, \
+      __LINE__, \
+      (format), \
+      __VA_ARGS__)
+
 
 #endif  //! __LOGGING_HEADER_H__
