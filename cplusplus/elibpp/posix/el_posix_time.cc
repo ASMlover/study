@@ -36,7 +36,7 @@ Clock(void)
 {
   struct timeval tv;
 
-  gettimeofday(&tv, (void*)0);
+  gettimeofday(&tv, NULL);
   return (((tv.tv_sec - 1000000000) * 1000) + (tv.tv_usec / 1000));
 }
 
