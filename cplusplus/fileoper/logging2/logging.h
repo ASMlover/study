@@ -27,6 +27,10 @@
 #ifndef __LOGGING_HEADER_H__
 #define __LOGGING_HEADER_H__
 
+#if defined(_MSC_VER) && (_MSC_VER < 1400)
+# error "You MSVC version is too low"
+#endif
+
 
 #include <map>
 #include <stdio.h>
@@ -67,5 +71,18 @@ private:
   const char* GetSeverityName(int severity);
   FILE* GetFileStream(int severity);
 };
+
+
+#define LOG_DEBUG(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_DEBUG, (fmt), __VA_ARGS__)
+#define LOG_MSG(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_MESSAGE, (fmt), __VA_ARGS__)
+#define LOG_WARN(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_WARNING, (fmt), __VA_ARGS__)
+#define LOG_ERR(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_ERROR, (fmt), __VA_ARGS__)
+#define LOG_FAIL(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_FAIL, (fmt), __VA_ARGS__)
+
 
 #endif  //! __LOGGING_HEADER_H__
