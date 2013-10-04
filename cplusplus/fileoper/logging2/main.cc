@@ -24,11 +24,17 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include <stdio.h>
+#include "logging.h"
 
 
 int 
 main(int argc, char* argv[])
 {
+  LOG_DEBUG("DEBUG INFO : %s\n", __FUNCSIG__);
+  LOG_MSG("MESSAGE INFO : argc = %d\n", argc);
+  LOG_WARN("WARNING INFO : argv[0] = %s\n", argv[0]);
+  LOG_ERR("ERROR INFO : 34 + 56 = %d\n", 89);
+  LOG_FAIL("ERROR INFO : failed information in %d\n", __LINE__);
+
   return 0;
 }
