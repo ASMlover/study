@@ -27,6 +27,7 @@
 
 OUT	= test.exe 
 RM	= del 
+RD	= rd /s /q
 CC	= cl -c -nologo
 MT	= mt -nologo
 LINK	= link -nologo
@@ -46,6 +47,9 @@ rebuild: clean all
 
 clean:
 	$(RM) $(OUT) $(OBJS) *.manifest *.ilk *.pdb 
+
+clean_test:
+	$(RD) logging
 
 
 
