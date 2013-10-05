@@ -36,6 +36,7 @@ OBJS	= ./test/el_test_main.o ./test/el_test_mutex.o\
 	./test/el_test_thread.o ./test/el_test_thread_pool.o\
 	./test/el_test_allocator.o ./test/el_test_buffer.o\
 	./test/el_test_file.o ./test/el_test_time.o\
+	./test/el_test_logging.o\
 	\
 	./posix/el_posix_condition.o ./posix/el_posix_io.o\
 	./posix/el_posix_file.o ./posix/el_posix_time.o\
