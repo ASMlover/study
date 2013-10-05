@@ -27,6 +27,11 @@
 #ifndef __EL_LOGGING_HEADER_H__
 #define __EL_LOGGING_HEADER_H__
 
+
+#if defined(_MSC_VER) && (_MSC_VER < 1400)
+# error "You compiler version is too low"
+#endif
+
 #include <stdio.h>
 #include "el_config.h"
 
@@ -70,6 +75,93 @@ public:
   void Write(int severity, const char* format, ...);
   void Write(int severity, char* file, int line, const char* format, ...);
 };
+
+
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+# define LOG_DEBUG(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_DEBUG, (fmt), __VA_ARGS__)
+# define LOG_MSG(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_MESSGAE, (fmt), __VA_ARGS__)
+# define LOG_WARN(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_WARNING, (fmt), __VA_ARGS__)
+# define LOG_ERR(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_ERROR, (fmt), __VA_ARGS__)
+# define LOG_FAIL(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_FAIL, (fmt), __VA_ARGS__)
+
+# define LOG_DEBUGX(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_DEBUG, \
+      __FILE__, \
+      __LINE__, \
+      (fmt), \
+      __VA_ARGS__)
+# define LOG_MSGX(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_MESSGAE, \
+      __FILE__, \
+      __LINE__, \
+      (fmt), \
+      __VA_ARGS__)
+# define LOG_WARNX(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_WARNING, \
+      __FILE__, \
+      __LINE__, \
+      (fmt), \
+      __VA_ARGS__)
+# define LOG_ERRX(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_ERROR, \
+      __FILE__, \
+      __LINE__, \
+      (fmt), \
+      __VA_ARGS__)
+# define LOG_FAILX(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_FAIL, \
+      __FILE__, \
+      __LINE__, \
+      (fmt), \
+      __VA_ARGS__)
+#elif defined(__linux__)
+# define LOG_DEBUG(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_DEBUG, (fmt), ##__VA_ARGS__)
+# define LOG_MSG(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_MESSGAE, (fmt), ##__VA_ARGS__)
+# define LOG_WARN(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_WARNING, (fmt), ##__VA_ARGS__)
+# define LOG_ERR(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_ERROR, (fmt), ##__VA_ARGS__)
+# define LOG_FAIL(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_FAIL, (fmt), ##__VA_ARGS__)
+
+# define LOG_DEBUGX(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_DEBUG, \
+      __FILE__, \
+      __LINE__, \
+      (fmt), \
+      ##__VA_ARGS__)
+# define LOG_MSGX(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_MESSGAE, \
+      __FILE__, \
+      __LINE__, \
+      (fmt), \
+      ##__VA_ARGS__)
+# define LOG_WARNX(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_WARNING, \
+      __FILE__, \
+      __LINE__, \
+      (fmt), \
+      ##__VA_ARGS__)
+# define LOG_ERRX(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_ERROR, \
+      __FILE__, \
+      __LINE__, \
+      (fmt), \
+      ##__VA_ARGS__)
+# define LOG_FAILX(fmt, ...)\
+  Logging::Singleton().Write(Logging::ST_FAIL, \
+      __FILE__, \
+      __LINE__, \
+      (fmt), \
+      ##__VA_ARGS__)
+#endif
 
 }
 
