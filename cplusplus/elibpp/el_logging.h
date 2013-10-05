@@ -29,7 +29,7 @@
 
 
 #if defined(_MSC_VER) && (_MSC_VER < 1400)
-# error "You compiler version is too low"
+# error "Your compiler version is too low"
 #endif
 
 #include <stdio.h>
