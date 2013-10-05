@@ -32,6 +32,9 @@
 # include <unistd.h>
 # include <sys/stat.h>
 # include <sys/types.h>
+# include <limits.h>
+
+# define MAX_PATH PATH_MAX
 #endif
 #include <string.h>
 #include <stdarg.h>
@@ -46,11 +49,14 @@ namespace el {
 static inline int 
 logging_mkdir(const char* path)
 {
+  int ret = -1;
 #if defined(_WINDOWS_) || defined(_MSC_VER)
-  return mkdir(path);
+  ret = mkdir(path);
 #elif defined(_MSC_VER)
-  return mkdir(path, S_IRWXU);
-#endif
+  ret = mkdir(path, S_IRWXU);
+#endif 
+
+  return ret;
 }
 
 static inline bool 
@@ -177,7 +183,8 @@ Logging::Write(int severity, const char* format, ...)
 }
 
 void 
-Logging::WriteX(int severity, char* file, int line, const char* format, ...)
+Logging::WriteX(int severity, 
+    const char* file, int line, const char* format, ...)
 {
   Time time;
   Localtime(&time);

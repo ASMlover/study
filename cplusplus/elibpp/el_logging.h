@@ -74,7 +74,8 @@ public:
   static Logging& Singleton(void);
 
   void Write(int severity, const char* format, ...);
-  void WriteX(int severity, char* file, int line, const char* format, ...);
+  void WriteX(int severity, 
+      const char* file, int line, const char* format, ...);
 };
 
 }
