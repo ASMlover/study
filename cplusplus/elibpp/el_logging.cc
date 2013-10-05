@@ -53,7 +53,8 @@ logging_mkdir(const char* path)
 #if defined(_WINDOWS_) || defined(_MSC_VER)
   ret = mkdir(path);
 #elif defined(__linux__)
-  ret = mkdir(path, S_IRWXU);
+  int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+  ret = mkdir(path, mode);
 #endif 
 
   return ret;
