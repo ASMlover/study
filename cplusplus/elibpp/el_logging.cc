@@ -52,7 +52,7 @@ logging_mkdir(const char* path)
   int ret = -1;
 #if defined(_WINDOWS_) || defined(_MSC_VER)
   ret = mkdir(path);
-#elif defined(_MSC_VER)
+#elif defined(__linux__)
   ret = mkdir(path, S_IRWXU);
 #endif 
 
@@ -132,7 +132,7 @@ Logging::GetFileStream(int severity, Time* time)
     CreateLogDirectory(directory);
 
     char fname[MAX_PATH];
-    sprintf(fname, "%s/%s/%04d%02d%02d.log", 
+    sprintf(fname, "./%s/%s/%04d%02d%02d.log", 
         ROOT_DIR, directory, time->year, time->mon, time->day);
     stream = fopen(fname, "a+");
     setvbuf(stream, NULL, _IOFBF, DEF_BUFSIZE);
