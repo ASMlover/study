@@ -27,6 +27,7 @@
 
 OUT	= elibpp.exe 
 RM	= rm 
+RD	= rd /s /q
 CC	= cl -c -nologo 
 MT	= mt -nologo
 LINK	= link -nologo
@@ -54,7 +55,10 @@ clean:
 	$(RM) $(OUT) $(OBJS) *.pdb *.manifest *.ilk
 
 clean_all:
-	$(RM) $(OUT) $(OBJS) *.pdb *.manifest *.ilk *.log
+	$(RM) $(OUT) $(OBJS) *.pdb *.manifest *.ilk *.log 
+
+clean_log:
+	if exist logging $(RD) logging
 
 
 

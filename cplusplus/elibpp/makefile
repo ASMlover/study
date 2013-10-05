@@ -27,6 +27,7 @@
 
 OUT	= elibpp
 RM	= rm 
+RD	= rm -rf
 CC	= g++
 CFLAGS	= -g -O2 -Wall 
 LDFLAGS	= -lpthread -lrt
@@ -52,7 +53,10 @@ clean:
 	$(RM) $(OUT) $(OBJS)
 
 clean_all:
-	$(RM) $(OUT) $(OBJS) *.log
+	$(RM) $(OUT) $(OBJS) *.log 
+
+clean_log:
+	$(RD) logging
 
 
 
