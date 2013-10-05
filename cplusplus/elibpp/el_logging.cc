@@ -126,9 +126,10 @@ Logging::GetFileStream(int severity, Time* time)
     CreateLogDirectory(directory);
 
     char fname[MAX_PATH];
-    sprintf(fname, "%04d%02d%02d.log", 
-        ROOT_DIR, time->year, time->mon, time->day);
+    sprintf(fname, "%s/%s/%04d%02d%02d.log", 
+        ROOT_DIR, directory, time->year, time->mon, time->day);
     stream = fopen(fname, "a+");
+    setvbuf(stream, NULL, _IOFBF, DEF_BUFSIZE);
 
     file_list_[severity].year = time->year;
     file_list_[severity].mon  = time->mon;
@@ -143,9 +144,10 @@ Logging::GetFileStream(int severity, Time* time)
       fclose(file_list_[severity].stream);
 
       char fname[MAX_PATH];
-      sprintf(fname, "%04d%02d%02d.log", 
-          ROOT_DIR, time->year, time->mon, time->day);
+      sprintf(fname, "%s/%s/%04d%02d%02d.log", 
+          ROOT_DIR, directory, time->year, time->mon, time->day);
       stream = fopen(fname, "a+");
+      setvbuf(stream, NULL, _IOFBF, DEF_BUFSIZE);
 
       file_list_[severity].year = time->year;
       file_list_[severity].mon  = time->mon;
@@ -175,7 +177,7 @@ Logging::Write(int severity, const char* format, ...)
 }
 
 void 
-Logging::Write(int severity, char* file, int line, const char* format, ...)
+Logging::WriteX(int severity, char* file, int line, const char* format, ...)
 {
   Time time;
   Localtime(&time);
@@ -189,7 +191,7 @@ Logging::Write(int severity, char* file, int line, const char* format, ...)
 
   char buf[1024];
   vsprintf(buf, format, ap);
-  fprintf(stream, "[%02d:%02d:%02d:%03d] %s(%d) - %s", 
+  fprintf(stream, "[%02d:%02d:%02d:%03d] [%s](%d) : %s", 
       time.hour, time.min, time.sec, time.millitm, file, line, buf);
 
   va_end(ap);
