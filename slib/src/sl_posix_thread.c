@@ -63,8 +63,8 @@ sl_thread_create(void (*routine)(void*), void* arg)
   assert(NULL != thread);
 
   thread->thread_id = 0;
-  thread->routine = NULL;
-  thread->argument = NULL;
+  thread->routine = routine;
+  thread->argument = arg;
 
   return thread;
 }
