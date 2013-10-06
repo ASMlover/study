@@ -1,0 +1,345 @@
+set nocompatible
+source $VIMRUNTIME/vimrc_example.vim
+source $VIMRUNTIME/mswin.vim
+behave mswin
+
+set diffexpr=MyDiff()
+function MyDiff()
+  let opt = '-a --binary '
+  if &diffopt =~ 'icase' | let opt = opt . '-i ' | endif
+  if &diffopt =~ 'iwhite' | let opt = opt . '-b ' | endif
+  let arg1 = v:fname_in
+  if arg1 =~ ' ' | let arg1 = '"' . arg1 . '"' | endif
+  let arg2 = v:fname_new
+  if arg2 =~ ' ' | let arg2 = '"' . arg2 . '"' | endif
+  let arg3 = v:fname_out
+  if arg3 =~ ' ' | let arg3 = '"' . arg3 . '"' | endif
+  let eq = ''
+  if $VIMRUNTIME =~ ' '
+    if &sh =~ '\<cmd'
+      let cmd = '""' . $VIMRUNTIME . '\diff"'
+      let eq = '"'
+    else
+      let cmd = substitute($VIMRUNTIME, ' ', '" ', '') . '\diff"'
+    endif
+  else
+    let cmd = $VIMRUNTIME . '\diff'
+  endif
+  silent execute '!' . cmd . ' ' . opt . arg1 . ' ' . arg2 . ' > ' . arg3 . eq
+endfunction
+
+
+
+" 设置将VIM的TAB键盘转换成SPACE
+set tabstop=2
+set expandtab
+set shiftwidth=2
+%retab
+
+set fileencoding=utf-8		" 默认文件格式为UTF-8
+set fileencodings=utf-8,ucs-bom,default,latin1
+set fileformat=unix			" 默认为UNIX风格的文件
+set fileformats=unix,dos,mac
+syntax on                   " 开启语法高亮
+colorscheme desert          " 选择一个自己喜欢的语法配色
+set nobackup                " 没有临时文件
+set guifont=Consolas:h11    " 设置VIM中的默认字体信息
+"au GUIEnter * simalt ~x     " 将窗口设置为最大化
+set number                  " VIM显示行号
+set laststatus=2            " 显示任务栏
+set autoindent              " 智能缩进
+set cursorline              " 光标所在行高亮
+
+
+
+
+" 代码的自动补全
+filetype plugin indent on
+set completeopt=longest,menu
+
+
+" 添加Pseudo Code语法高亮
+augroup filetype
+  au! BufRead,BufNewFile *.pcode setfiletype pcode
+augroup end
+
+
+
+" 隐藏VIM窗口的菜单栏和工具栏, T表示工具栏, m表示菜单栏
+" 通过F2键可以实现工具栏和菜单栏的的自由切换
+set guioptions-=T
+set guioptions-=m
+map <silent> <F2> :if &guioptions =~# 'T' <Bar>
+    \set guioptions-=T <Bar>
+    \set guioptions-=m <Bar>
+  \else <Bar>
+    \set guioptions+=T <Bar>
+    \set guioptions+=m <Bar>
+  \endif<CR>
+
+
+  
+  
+  
+map <F4> :call TitleDescription(0)<cr>'s
+map <F5> :call TitleDescription(1)<cr>'s
+map <F6> :call TitleDescription(2)<cr>'s
+function AddTitle()
+  call append(0, "/*")
+  call append(1, " * Copyright (c) ".strftime("%Y")." ASMlover. All rights reserved.")
+  call append(2, " *")
+  call append(3, " * Redistribution and use in source and binary forms, with or without")
+  call append(4, " * modification, are permitted provided that the following conditions")
+  call append(5, " * are met:")
+  call append(6, " *")
+  call append(7, " *  * Redistributions of source code must retain the above copyright")
+  call append(8, " *    notice, this list ofconditions and the following disclaimer.")
+  call append(9, " *")
+  call append(10," *  * Redistributions in binary form must reproduce the above copyright")
+  call append(11," *    notice, this list of conditions and the following disclaimer in")
+  call append(12," *    the documentation and/or other materialsprovided with the")
+  call append(13," *    distribution.")
+  call append(14," *")
+  call append(15," * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS")
+  call append(16," * \"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT")
+  call append(17," * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS")
+  call append(18," * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE")
+  call append(19," * COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,")
+  call append(20," * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,")
+  call append(21," * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;")
+  call append(22," * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER")
+  call append(23," * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT")
+  call append(24," * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN")
+  call append(25," * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE")
+  call append(26," * POSSIBILITY OF SUCH DAMAGE.")
+  call append(27," */")
+  echohl WarningMsg | echo "Successful in adding the copyright." | echohl None
+endfunction
+
+" 更新最近修改时间和文件名
+function UpdateTitle()
+  normal m'
+  execute '/# *Last modified:/s@:.*$@\=strftime(":\t%Y-%m-%d %H:%M")@'
+  normal ''
+  normal mk
+  execute '/# *Filename:/s@:.*$@\=":\t\t".expand("%:t")@'
+  execute "noh"
+  normal 'k
+  echohl WarningMsg | echo "Successful in updating the copy right." | echohl None
+endfunction
+
+" 0 -> default/C  1 -> CPP  2 -> Script
+" 判断前10行代码里面, 是否有Copyright这个单词，
+" 如果没有的话, 代表没有添加过作者信息, 需要新添加: 如果有的话, 那么只需要更新即可
+function TitleDescription(type)
+  let n=1
+  " 默认为添加
+  while n < 10
+    let line = getline(n)
+      if line =~ '^\#\s*\S*Copyright:\S*.*$'
+        call UpdateTitle()
+        return
+      endif
+      let n = n + 1
+  endwhile
+  if a:type == 0
+    call AddTitle()
+  elseif a:type == 1
+    call AddFileHeader4Cpp()
+  elseif a:type == 2
+    call AddFileHeader4Script()
+  else 
+    call AddTitle()
+  endif
+endfunction
+
+
+function AddFileHeader4Cpp()
+  call append(0, "//! Copyright (c) ".strftime("%Y")." ASMlover. All rights reserved.")
+  call append(1, "//!")
+  call append(2, "//! Redistribution and use in source and binary forms, with or without")
+  call append(3, "//! modification, are permitted provided that the following conditions")
+  call append(4, "//! are met:")
+  call append(5, "//!")
+  call append(6, "//!  * Redistributions of source code must retain the above copyright")
+  call append(7, "//!    notice, this list ofconditions and the following disclaimer.")
+  call append(8, "//!")
+  call append(9, "//!  * Redistributions in binary form must reproduce the above copyright")
+  call append(10,"//!    notice, this list of conditions and the following disclaimer in")
+  call append(11,"//!    the documentation and/or other materialsprovided with the")
+  call append(12,"//!    distribution.")
+  call append(13,"//!")
+  call append(14,"//! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS")
+  call append(15,"//! \"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT")
+  call append(16,"//! LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS")
+  call append(17,"//! FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE")
+  call append(18,"//! COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,")
+  call append(19,"//! INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,")
+  call append(20,"//! BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;")
+  call append(21,"//! LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER")
+  call append(22,"//! CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT")
+  call append(23,"//! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN")
+  call append(24,"//! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE")
+  call append(25,"//! POSSIBILITY OF SUCH DAMAGE.")
+  echohl WarningMsg | echo "Successful in adding the copyright." | echohl None
+endfunction 
+
+function AddFileHeader4Script()
+  call append(0, "# Copyright (c) ".strftime("%Y")." ASMlover. All rights reserved.")
+  call append(1, "#")
+  call append(2, "# Redistribution and use in source and binary forms, with or without")
+  call append(3, "# modification, are permitted provided that the following conditions")
+  call append(4, "# are met:")
+  call append(5, "#")
+  call append(6, "#  * Redistributions of source code must retain the above copyright")
+  call append(7, "#    notice, this list ofconditions and the following disclaimer.")
+  call append(8, "#")
+  call append(9, "#  * Redistributions in binary form must reproduce the above copyright")
+  call append(10,"#    notice, this list of conditions and the following disclaimer in")
+  call append(11,"#    the documentation and/or other materialsprovided with the")
+  call append(12,"#    distribution.")
+  call append(13,"#")
+  call append(14,"# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS")
+  call append(15,"# \"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT")
+  call append(16,"# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS")
+  call append(17,"# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE")
+  call append(18,"# COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,")
+  call append(19,"# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,")
+  call append(20,"# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;")
+  call append(21,"# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER")
+  call append(22,"# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT")
+  call append(23,"# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN")
+  call append(24,"# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE")
+  call append(25,"# POSSIBILITY OF SUCH DAMAGE.")
+  echohl WarningMsg | echo "Successful in adding the copyright." | echohl None
+endfunction 
+autocmd BufNewFile *.c call AddTitle()
+autocmd BufNewFile *.cpp call AddFileHeader4Cpp()
+autocmd BufNewFile *.cc call AddFileHeader4Cpp()
+autocmd BufNewFile *.py call AddFileHeader4Script()
+autocmd BufNewFile *.mk call AddFileHeader4Script()
+
+
+
+" --------------------------------------------------------------
+"                    自动补全括号和引号
+" 在VIM中实现各种括号(), {}, []等自动完成补全, 以及""和''补全
+" 现在感觉不适应那个引号自动补全的功能, 暂时去掉
+" --------------------------------------------------------------
+inoremap ( ()<ESC>i
+inoremap ) <c-r>=ClosePair(')')<CR>
+inoremap { {}<ESC>i
+inoremap } <c-r>=ClosePair('}')<CR>
+inoremap [ []<ESC>i
+inoremap ] <c-r>=ClosePair(']')<CR>
+inoremap < <><ESC>i
+inoremap > <c-r>=ClosePair('>')<CR>
+" inoremap " ""<ESC>i
+" inoremap ' ''<ESC>i
+
+function ClosePair(char)
+  if getline('.')[col('.') - 1] == a:char
+    return "\<Right>"
+  else
+    return a:char
+  endif
+endfunction
+
+
+
+
+
+" --------------------------------------------------------------
+"                          TagList 插件
+" 在VIM中查看一个文件中包含的函数列表, 或者一个类包含的方法列表
+" 实现该功能需要taglist.vim相关插件, 以及ctags这个软件
+" 
+" 1) 在windows平台下
+"     解压出来的taglist.vim放到./Vim/vimfiles/plugin下
+"     解压出来的taglist.txt放到./Vim/vimfiles/doc下
+" --------------------------------------------------------------
+let Tlist_Show_One_File=1
+let Tlist_Exit_OnlyWindow=1
+let Tlist_Use_Left_Window=1
+
+
+
+" --------------------------------------------------------------
+"                      autocomplpop插件
+"
+" 该插件的功能是自动补全
+"
+" 解压后直接放到VIM/VIM73/目录下即可
+" --------------------------------------------------------------
+
+
+
+" --------------------------------------------------------------
+"                         tagbar 插件
+" 与TagList功能类似, 但是更适合面向对象的语言, 功能更加强大
+" 
+" 该插件下载后是tagbar.vba, 使用VIM将其打开
+" gvim tagbar.vba
+" :so %
+" :q
+"
+" 使用的时候使用命令:TagbarToggle(当然你可以使用简单的命令映射)
+" --------------------------------------------------------------
+"nmap <silent> <F5> :TagbarToggle<CR>
+let g:tagbar_ctags_bin='ctags'
+let g:tagbar_width=30
+let g:tagbar_left=1
+
+
+
+" --------------------------------------------------------------
+"                     SuperTab插件
+"
+" 实现快速补全, 直接使用Tab键就可以了
+"
+" 将Subpertab.vim放到vim/vim73/plugin下
+" 注意:该插件目前我并没有使用
+" --------------------------------------------------------------
+"let g:SuperTabRetainCompletionType=2
+"let g:SuperTabDefaultCompletionTYpe="<C-X><C-O>"
+
+
+" --------------------------------------------------------------
+"                     echofunc插件
+"
+" 该插件的功能是当光标在函数的位置的时候会显示函数原型提示, 
+" 类似参数信息等, 同时在写函数的时候写'('时会弹出函数原型提示
+" 
+" 解压后直接将插件放到./Vim/Vim73/plugin/下即可
+" --------------------------------------------------------------
+
+
+
+" --------------------------------------------------------------
+"                       ctags 工具
+"
+" 该工具主要是为工程设置tags这样我们可以跳转到指定的函数定义
+" <CTRL-]>跳转到函数定义, <CTRL-T>回来
+"
+" ctags命令 ctags -R --c-kinds=+p --fields=+lS
+"     -R            标识是递归
+"     --c-kinds     标识是C语言类型也可以 --c++-kinds/--python-kinds
+"     --fields=+lS  在写代码时候有函数原型
+"
+" 对于本工程的源代码则需要在vim中设置 :set tags=<tags目录>
+" 并且还需要在源代码改变之后重新使用ctags生成源代码的tags
+"
+" 注意: 这里这么写这些命令, 需要预先配置ctags.exe的环境
+" --------------------------------------------------------------
+set tags+=C:\Program\\\ Files\Microsoft\\\ SDKs\Windows\v6.0A\tags
+set tags+=D:\SDK-Tool\VC9.0\VC\tags
+"set tags+=D:\SDK-Tool\MinGW\tags
+" set tags+=D:\SDK-Tool\Python3.2\tags
+
+
+
+
+" --------------------------------------------------------------
+" NERDTree 
+" 在VIM中显示目录结构 (见文档)
+" --------------------------------------------------------------
