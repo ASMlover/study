@@ -91,6 +91,6 @@ sl_thread_join(sl_thread_t* thread)
     int ret = pthread_join(thread->thread_id, NULL);
     assert(0 == ret);
 
-    thread_id = 0;
+    thread->thread_id = 0;
   }
 }
