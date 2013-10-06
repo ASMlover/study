@@ -29,7 +29,7 @@ OUT	= slib-test
 CC	= gcc 
 RM	= rm 
 CFLAGS	= -g -O2 -Wall
-LDFLAGS	= -lpthread
+LDFLAGS	= -lpthread -lrt
 OBJS	= ./src/sl_posix_mutex.o\
 	./src/sl_posix_spinlock.o\
 	./src/sl_allocator.o\
@@ -37,7 +37,7 @@ OBJS	= ./src/sl_posix_mutex.o\
 	./src/sl_list.o\
 	./src/sl_table.o\
 	./src/sl_array.o\
-	./src/sl_posix_condition.o\
+	./src/sl_posix_cond.o\
 	./src/sl_posix_thread.o\
 	\
 	./test/sl_test_main.o\
