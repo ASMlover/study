@@ -52,6 +52,8 @@ public:
 int 
 main(int argc, char* argv[])
 {
+  SockInit sock_init;
+
   SOCKET listener = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   struct sockaddr_in addr;
   addr.sin_addr.s_addr = htonl(INADDR_ANY);
