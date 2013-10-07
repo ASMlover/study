@@ -39,4 +39,8 @@ UNIT_IMPL(Time)
   uint32_t tick = el::Clock();
   el::Sleep(1000);
   UNIT_ASSERT(tick + 1000 == el::Clock());
+
+  tick = el::StdClock();
+  el::Sleep(1000);
+  UNIT_ASSERT(tick + 1000 == el::StdClock());
 }
