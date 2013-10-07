@@ -81,9 +81,9 @@ map <silent> <F2> :if &guioptions =~# 'T' <Bar>
   
   
   
+map <F3> :call TitleDescription(2)<cr>'s
 map <F4> :call TitleDescription(0)<cr>'s
 map <F5> :call TitleDescription(1)<cr>'s
-map <F6> :call TitleDescription(2)<cr>'s
 function AddTitle()
   call append(0, "/*")
   call append(1, " * Copyright (c) ".strftime("%Y")." ASMlover. All rights reserved.")
