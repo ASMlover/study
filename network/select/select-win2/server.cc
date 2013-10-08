@@ -108,3 +108,18 @@ Server::Worker(void* arg)
 {
   return 0;
 }
+
+
+
+
+
+void 
+ServerMain(const char* ip, unsigned short port)
+{
+  Server server;
+  server.Start(ip, port);
+
+  server.Run();
+
+  server.Stop();
+}
