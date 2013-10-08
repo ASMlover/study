@@ -27,6 +27,22 @@
 #include <winsock2.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
+
+
+#define LOG_ERR(fmt, ...) do {\
+  va_list ap;\
+  va_start(ap, (fmt));\
+  char buf[1024];\
+  vsprintf(buf, (fmt), ap);\
+  va_end(ap);\
+  fprintf(stderr, \
+      "[%s] [%d] : %s", \
+      __FILE__, \
+      __LINE__, \
+      buf);\
+} while (0)
+
 
 class SockInit {
   WSADATA wsaData_;
@@ -36,8 +52,10 @@ class SockInit {
 public:
   SockInit(void)
   {
-    if (0 != WSAStartup(MAKEWORD(2, 2), &wsaData_))
+    if (0 != WSAStartup(MAKEWORD(2, 2), &wsaData_)) {
+      LOG_ERR("WSAStartup failed ...\n");
       abort();
+    }
   }
 
   ~SockInit(void)
@@ -47,64 +65,99 @@ public:
 };
 
 
+static SockInit _s_si;
+
+
+static void 
+ServerMain(const char* ip, unsigned short port)
+{
+  SOCKET listener = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if (INVALID_SOCKET == listener) {
+    LOG_ERR("socket failed ...\n");
+    abort();
+  }
+
+  struct sockaddr_in host_addr;
+  host_addr.sin_addr.s_addr = inet_addr(ip);
+  host_addr.sin_family      = AF_INET;
+  host_addr.sin_port        = htons(port);
+  if (SOCKET_ERROR == bind(listener, 
+        (struct sockaddr*)&host_addr, sizeof(host_addr))) {
+    LOG_ERR("bind failed ...\n");
+    abort();
+  }
+  if (SOCKET_ERROR == listen(listener, SOMAXCONN)) {
+    LOG_ERR("listen failed ...\n");
+    abort();
+  }
+
+  fd_set rset;  //!< read set
+  fprintf(stdout, "server initialized ...\n");
+  while (true) {
+    FD_ZERO(&rset);
+    FD_SET(listener, &rset);
+    int ret = select(0, &rset, NULL, NULL, NULL);
+    if (ret <= 0) {
+      LOG_ERR("select failed ...\n");
+      abort();
+    }
+
+    if (FD_ISSET(listener, &rset)) {
+      struct sockaddr_in remote_addr;
+      int addrlen = sizeof(remote_addr);
+      SOCKET s = accept(listener, (struct sockaddr*)&remote_addr, &addrlen);
+      if (INVALID_SOCKET == s) {
+        LOG_ERR("accept failed ...\n");
+        abort();
+      }
+
+      fprintf(stdout, "address => [%s] [%d]\n", 
+          inet_ntoa(remote_addr.sin_addr), s);
+
+      closesocket(s);
+    }
+  }
+
+  closesocket(listener);
+}
+
+
+static void 
+ClientMain(const char* ip, unsigned short port) 
+{
+  SOCKET connector = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if (INVALID_SOCKET == connector) {
+    LOG_ERR("socket failed ...\n");
+    abort();
+  }
+  struct sockaddr_in host_addr;
+  host_addr.sin_addr.s_addr = inet_addr(ip);
+  host_addr.sin_family      = AF_INET;
+  host_addr.sin_port        = htons(port);
+  if (SOCKET_ERROR == connect(connector, 
+        (struct sockaddr*)&host_addr, sizeof(host_addr))) {
+    LOG_ERR("connect to server failed ...\n");
+    abort();
+  }
+
+  closesocket(connector);
+}
+
+
 
 
 int 
 main(int argc, char* argv[])
 {
-  SockInit sock_init;
-
-  SOCKET listener = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-  struct sockaddr_in addr;
-  addr.sin_addr.s_addr = htonl(INADDR_ANY);
-  addr.sin_family      = AF_INET;
-  addr.sin_port        = htons(5555);
-  bind(listener, (struct sockaddr*)&addr, sizeof(addr));
-  listen(listener, SOMAXCONN);
-
-  fd_set fds;
-  FD_ZERO(&fds);
-  FD_SET(listener, &fds);
-
-  while (true) {
-    fd_set fdread = fds;
-    int ret = select(0, &fdread, NULL, NULL, NULL);
-    if (ret <= 0) {
-      fprintf(stderr, "select failed ...\n");
-      exit(-1);
-    }
-
-    for (int i = 0; i < (int)fds.fd_count; ++i) {
-      if (FD_ISSET(fds.fd_array[i], &fdread)) {
-        if (fds.fd_array[i] == listener) {
-          if (fds.fd_count >= FD_SETSIZE) {
-            fprintf(stderr, "too much connections ...\n");
-            continue;
-          }
-
-          struct sockaddr_in addr_remote;
-          int addrlen = sizeof(addr_remote);
-          SOCKET s = accept(listener, 
-              (struct sockaddr*)&addr_remote, &addrlen);
-          FD_SET(s, &fds);
-
-          fprintf(stdout, "new connection ... s = %d\n", s);
-        }
-        else {
-          char buf[256] = {0};
-          recv(fds.fd_array[i], buf, sizeof(buf), 0);
-
-          fprintf(stdout, "recv message is : %s\n", buf);
-
-          shutdown(fds.fd_array[i], SD_BOTH);
-          closesocket(fds.fd_array[i]);
-          FD_CLR(fds.fd_array[i], &fds);
-        }
-      }
-    }
+  if (argc < 2) {
+    LOG_ERR("arguments failed ...\n");
+    abort();
   }
 
-  closesocket(listener);
+  if (0 == strcmp(argv[1], "srv")) 
+    ServerMain("127.0.0.1", 5555);
+  else if (0 == strcmp(argv[1], "clt"))
+    ClientMain("127.0.0.1", 5555);
 
   return 0;
 }
