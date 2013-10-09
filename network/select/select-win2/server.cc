@@ -169,11 +169,7 @@ Server::Worker(void* arg)
       }
     }
 
-    int ret = select(0, &self->rset_, NULL, NULL, NULL);
-    if (SOCKET_ERROR == ret || ret < 0) {
-      LOG_ERR("select failed ...\n");
-      continue;
-    }
+    select(0, &self->rset_, NULL, NULL, NULL);
 
     int size = (int)self->fds_.size();
     for (int i = 0; i < size; ++i) {
