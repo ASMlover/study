@@ -142,6 +142,8 @@ Server::Run(bool (*read_routine)(SOCKET, void*))
       continue;
     }
 
+    fprintf(stdout, "===> get connection from [%s] [%d]\n",
+        inet_ntoa(remote_addr.sin_addr), s);
     fds_.push_back(s);
   }
 }
@@ -175,6 +177,7 @@ Server::Worker(void* arg)
     for (int i = 0; i < size; ++i) {
       if (FD_ISSET(self->fds_[i], &self->rset_)) {
         if (!self->read_routine_(self->fds_[i], self)) {
+          fprintf(stdout, "===> [%d] client quit\n", self->fds_[i]);
           shutdown(self->fds_[i], SD_BOTH);
           closesocket(self->fds_[i]);
           self->fds_[i] = INVALID_SOCKET;
