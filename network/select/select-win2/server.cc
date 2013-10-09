@@ -34,6 +34,7 @@ class Server {
   bool   running_;
   HANDLE thread_;
   HANDLE start_event_;
+  bool (*read_routine_)(SOCKET, void*);
   fd_set rset_;
   std::vector<SOCKET> fds_;
 
@@ -45,7 +46,7 @@ public:
 
   void Start(const char* ip, unsigned short port);
   void Stop(void);
-  void Run(void);
+  void Run(bool (*read_routine)(SOCKET, void*));
 private:
   static DWORD WINAPI Worker(void* arg);
 };
@@ -57,6 +58,7 @@ Server::Server(void)
   , running_(false)
   , thread_(NULL)
   , start_event_(NULL)
+  , read_routine_(NULL)
 {
   FD_ZERO(&rset_);
 }
@@ -94,11 +96,54 @@ Server::Start(const char* ip, unsigned short port)
 void 
 Server::Stop(void)
 {
+  running_ = false;
+
+  std::vector<SOCKET>::iterator it;
+  for (it = fds_.begin(); it != fds_.end(); ++it) {
+    shutdown(*it, SD_BOTH);
+    closesocket(*it);
+    *it = INVALID_SOCKET;
+  }
+
+  if (NULL != thread_) {
+    WaitForSingleObject(thread_, INFINITE);
+
+    CloseHandle(thread_);
+    thread_ = NULL;
+  }
+
+  closesocket(fd_);
 }
 
 void 
-Server::Run(void)
+Server::Run(bool (*read_routine)(SOCKET, void*))
 {
+  read_routine_ = read_routine;
+
+  start_event_ = CreateEvent(NULL, TRUE, FALSE, NULL);
+  if (NULL == start_event_) {
+    LOG_ERR("CreateEvent failed ...\n");
+    abort();
+  }
+
+  running_ = true;
+  thread_ = CreateThread(NULL, 0, &Server::Worker, this, 0, NULL);
+  if (NULL != thread_)
+    WaitForSingleObject(start_event_, INFINITE);
+  CloseHandle(start_event_);
+
+  fprintf(stdout, "server running ...\n");
+  while (running_) {
+    struct sockaddr_in remote_addr;
+    int addrlen = sizeof(remote_addr);
+    SOCKET s = accept(fd_, (struct sockaddr*)&remote_addr, &addrlen);
+    if (INVALID_SOCKET == s) {
+      Sleep(1);
+      continue;
+    }
+
+    fds_.push_back(s);
+  }
 }
 
 
@@ -106,6 +151,44 @@ Server::Run(void)
 DWORD WINAPI 
 Server::Worker(void* arg)
 {
+  Server* self = static_cast<Server*>(arg);
+  if (NULL == self)
+    return 0;
+  SetEvent(self->start_event_);
+
+  while (self->running_) {
+    FD_ZERO(&self->rset_);
+    std::vector<SOCKET>::iterator it;
+    for (it = self->fds_.begin(); it != self->fds_.end(); ) {
+      if (INVALID_SOCKET == *it) {
+        it = self->fds_.erase(it);
+      }
+      else {
+        FD_SET(*it, &self->rset_);
+        ++it;
+      }
+    }
+
+    int ret = select(0, &self->rset_, NULL, NULL, NULL);
+    if (SOCKET_ERROR == ret || ret < 0) {
+      LOG_ERR("select failed ...\n");
+      continue;
+    }
+
+    int size = (int)self->fds_.size();
+    for (int i = 0; i < size; ++i) {
+      if (FD_ISSET(self->fds_[i], &self->rset_)) {
+        if (!self->read_routine_(self->fds_[i], self)) {
+          shutdown(self->fds_[i], SD_BOTH);
+          closesocket(self->fds_[i]);
+          self->fds_[i] = INVALID_SOCKET;
+        }
+      }
+
+      //! other events
+    }
+  }
+
   return 0;
 }
 
@@ -113,13 +196,28 @@ Server::Worker(void* arg)
 
 
 
+static bool 
+ReadRoutine(SOCKET s, void* arg)
+{
+  char buf[128] = {0};
+
+  int ret = recv(s, buf, sizeof(buf), 0);
+  if (SOCKET_ERROR == ret) 
+    return false;
+
+  fprintf(stdout, "recv from client : [%d] - %s\n", s, buf);
+  send(s, buf, strlen(buf), 0);
+
+  return true;
+}
+
 void 
 ServerMain(const char* ip, unsigned short port)
 {
   Server server;
   server.Start(ip, port);
 
-  server.Run();
+  server.Run(ReadRoutine);
 
   server.Stop();
 }
