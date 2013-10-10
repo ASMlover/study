@@ -35,7 +35,7 @@ class WSLib {
   WSLib(const WSLib&);
   WSLib& operator =(const WSLib&);
 public:
-  WSLib(void) {
+  explicit WSLib(void) {
     WSADATA wd;
 
     if (0 != WSAStartup(MAKEWORD(2, 2), &wd))
