@@ -27,12 +27,10 @@
 #ifndef __SOCKET_HEADER_H__
 #define __SOCKET_HEADER_H__
 
-#ifndef _WINDOWS_ 
-# include <winsock2.h>
-#endif
 
+struct sockaddr;
 class Socket {
-  SOCKET fd_;
+  int fd_;
 
   Socket(const Socket&);
   Socket& operator =(const Socket&);
@@ -40,24 +38,24 @@ public:
   explicit Socket(void);
   ~Socket(void);
 
-  inline SOCKET fd(void) const {
+  inline int fd(void) const {
     return fd_;
   }
 
-  inline void Attach(SOCKET fd) {
+  inline void Attach(int fd) {
     fd_ = fd;
   }
 
   inline int Detach(void) {
-    SOCKET fd = fd_;
-    fd_ = INVALID_SOCKET;
+    int fd = fd_;
+    fd_ = -1;
     return fd;
   }
 
   void Bind(const char* ip, unsigned short port);
   void Listen(void);
   void Close(void);
-  SOCKET Accept(struct sockaddr* addr);
+  int Accept(struct sockaddr* addr);
   bool Connect(const char* ip, unsigned short port);
 };
 

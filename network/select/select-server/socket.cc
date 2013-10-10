@@ -24,6 +24,9 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#ifndef _WINDOWS_
+# include <winsock2.h>
+#endif
 #include "global.h"
 #include "socket.h"
 
@@ -48,17 +51,15 @@ Socket::Bind(const char* ip, unsigned short port)
   host_addr.sin_port        = htons(port);
 
   if (SOCKET_ERROR == bind(fd_, 
-        (struct sockaddr*)&host_addr, sizeof(host_addr))) {
-    LOG_ERR("bind failed err-code (%d)\n", WSAGetLastError());
-  }
+        (struct sockaddr*)&host_addr, sizeof(host_addr)))
+    LOG_FAIL("bind failed err-code (%d)\n", WSAGetLastError());
 }
 
 void 
 Socket::Listen(void)
 {
-  if (SOCKET_ERROR == listen(fd_, SOMAXCONN)) {
-    LOG_ERR("listen failed err-code (%d)\n", WSAGetLastError());
-  }
+  if (SOCKET_ERROR == listen(fd_, SOMAXCONN))
+    LOG_FAIL("listen failed err-code (%d)\n", WSAGetLastError());
 }
 
 void 
@@ -68,14 +69,16 @@ Socket::Close(void)
   closesocket(fd_);
 }
 
-SOCKET 
+int 
 Socket::Accept(struct sockaddr* addr)
 {
   struct sockaddr_in remote_addr;
   int addrlen = sizeof(remote_addr);
 
-  SOCKET s = accept(fd_, 
+  int s = accept(fd_, 
       (NULL != addr ? addr : (struct sockaddr*)&remote_addr), &addrlen);
+  if (INVALID_SOCKET == s) 
+    LOG_ERR("accept failed err-code (%d)\n", WSAGetLastError());
 
   return s;
 }
@@ -89,8 +92,10 @@ Socket::Connect(const char* ip, unsigned short port)
   remote_addr.sin_port        = htons(port);
 
   if (SOCKET_ERROR == connect(fd_, 
-        (struct sockaddr*)&remote_addr, sizeof(remote_addr)))
+        (struct sockaddr*)&remote_addr, sizeof(remote_addr))) {
+    LOG_ERR("connect failed err-code (%d)\n", WSAGetLastError());
     return false;
+  }
 
   return true;
 }

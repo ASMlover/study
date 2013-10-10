@@ -27,30 +27,19 @@
 #ifndef __GLOBAL_HEADER_H__
 #define __GLOBAL_HEADER_H__
 
-#ifndef _WINDOWS_
-# include <winsock2.h>
-#endif
-
 class WSLib {
   WSLib(const WSLib&);
   WSLib& operator =(const WSLib&);
 public:
-  explicit WSLib(void) {
-    WSADATA wd;
-
-    if (0 != WSAStartup(MAKEWORD(2, 2), &wd))
-      abort();
-  }
-
-  ~WSLib(void) {
-    WSACleanup();
-  }
+  explicit WSLib(void);
+  ~WSLib(void);
 };
 
 
 enum LoggingType {
   LT_DEBUG = 0, 
   LT_ERROR = 1, 
+  LT_FAIL  = 2, 
 };
 extern void LogWrite(int severity, 
     const char* file, int line, const char* format, ...);
@@ -63,6 +52,8 @@ extern void LogWrite(int severity,
   LogWrite(LT_DEBUG, __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
 #define LOG_ERR(fmt, ...)\
   LogWrite(LT_ERROR, __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
+#define LOG_FAIL(fmt, ...)\
+  LogWrite(LT_FAIL, __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
 
 
 #endif  //! __GLOBAL_HEADER_H__

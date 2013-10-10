@@ -24,6 +24,9 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#ifndef _WINDOWS_
+# include <winsock2.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
@@ -41,11 +44,20 @@ LogWrite(int severity, const char* file, int line, const char* format, ...)
   vsprintf(buf, format, ap);
   va_end(ap);
 
-  if (LT_DEBUG == severity) {
-    fprintf(stdout, "[%s] [%d] : %s", file, line, buf);
+  FILE* stream;
+  switch (severity) {
+  case LT_DEBUG:
+    stream = stdout;
+    break;
+  case LT_ERROR:
+  case LT_FAIL:
+    stream = stderr;
+    break;
+  default:
+    stream = stdout;
   }
-  else if (LT_ERROR == severity) {
-    fprintf(stderr, "[%s] [%d] : %s", file, line, buf);
+  
+  fprintf(stream, "[%s] [%d] : %s", file, line, buf);
+  if (LT_FAIL == severity)
     abort();
-  }
 }
