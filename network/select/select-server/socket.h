@@ -56,7 +56,8 @@ public:
 
   void Bind(const char* ip, unsigned short port);
   void Listen(void);
-  SOCKET Accept(void);
+  void Close(void);
+  SOCKET Accept(struct sockaddr* addr);
   bool Connect(const char* ip, unsigned short port);
 };
 

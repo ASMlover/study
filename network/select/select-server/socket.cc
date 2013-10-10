@@ -61,16 +61,21 @@ Socket::Listen(void)
   }
 }
 
+void 
+Socket::Close(void) 
+{
+  shutdown(fd_, SD_BOTH);
+  closesocket(fd_);
+}
+
 SOCKET 
-Socket::Accept(void)
+Socket::Accept(struct sockaddr* addr)
 {
   struct sockaddr_in remote_addr;
   int addrlen = sizeof(remote_addr);
 
-  SOCKET s = accept(fd_, (struct sockaddr*)&remote_addr, &addrlen);
-  if (INVALID_SOCKET == s) {
-    LOG_ERR("accept failed err-code (%d)\n", WSAGetLastError());
-  }
+  SOCKET s = accept(fd_, 
+      (NULL != addr ? addr : (struct sockaddr*)&remote_addr), &addrlen);
 
   return s;
 }
@@ -84,10 +89,8 @@ Socket::Connect(const char* ip, unsigned short port)
   remote_addr.sin_port        = htons(port);
 
   if (SOCKET_ERROR == connect(fd_, 
-        (struct sockaddr*)&remote_addr, sizeof(remote_addr))) {
-    LOG_ERR("connect failed err-code (%d)\n", WSAGetLastError());
+        (struct sockaddr*)&remote_addr, sizeof(remote_addr)))
     return false;
-  }
 
   return true;
 }
