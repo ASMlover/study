@@ -99,3 +99,23 @@ Socket::Connect(const char* ip, unsigned short port)
 
   return true;
 }
+
+int 
+Socket::Read(int length, char* buffer)
+{
+  return recv(fd_, buffer, length, 0);
+}
+
+void 
+Socket::Write(const char* buffer, int length)
+{
+  int total = 0;
+  int ret = 0;
+  while (total < length) {
+    ret = send(fd_, buffer + total, length - total, 0);
+    if (SOCKET_ERROR == ret)
+      return;
+
+    total += ret;
+  }
+}

@@ -57,6 +57,9 @@ public:
   void Close(void);
   int Accept(struct sockaddr* addr);
   bool Connect(const char* ip, unsigned short port);
+
+  int Read(int length, char* buffer);
+  void Write(const char* buffer, int length);
 };
 
 #endif  //! __SOCKET_HEADER_H__
