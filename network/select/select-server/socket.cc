@@ -89,7 +89,8 @@ void
 Socket::Bind(const char* ip, unsigned short port)
 {
   struct sockaddr_in host_addr;
-  host_addr.sin_addr.s_addr = inet_addr(ip);
+  host_addr.sin_addr.s_addr = 
+    (NULL == ip ? htonl(INADDR_ANY) : inet_addr(ip));
   host_addr.sin_family      = AF_INET;
   host_addr.sin_port        = htons(port);
 
@@ -110,6 +111,7 @@ Socket::Close(void)
 {
   shutdown(fd_, SD_BOTH);
   closesocket(fd_);
+  fd_ = INVALID_SOCKET;
 }
 
 int 
@@ -129,6 +131,9 @@ Socket::Accept(struct sockaddr* addr)
 bool 
 Socket::Connect(const char* ip, unsigned short port)
 {
+  if (NULL == ip)
+    ip = "127.0.0.1";
+
   struct sockaddr_in remote_addr;
   remote_addr.sin_addr.s_addr = inet_addr(ip);
   remote_addr.sin_family      = AF_INET;
@@ -146,7 +151,11 @@ Socket::Connect(const char* ip, unsigned short port)
 int 
 Socket::Read(int length, char* buffer)
 {
-  return recv(fd_, buffer, length, 0);
+  int ret = recv(fd_, buffer, length, 0);
+  if (SOCKET_ERROR == ret)
+    LOG_ERR("recv error err-code (%d)\n", WSAGetLastError());
+
+  return ret;
 }
 
 void 
@@ -156,8 +165,10 @@ Socket::Write(const char* buffer, int length)
   int ret = 0;
   while (total < length) {
     ret = send(fd_, buffer + total, length - total, 0);
-    if (SOCKET_ERROR == ret)
+    if (SOCKET_ERROR == ret) {
+      LOG_ERR("send error err-code (%d)\n", WSAGetLastError());
       return;
+    }
 
     total += ret;
   }
