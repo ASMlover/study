@@ -52,6 +52,12 @@ public:
     return fd;
   }
 
+  void SetTcpNoDelay(bool nodelay);
+  void SetReuseAddr(bool reuse);
+  void SetKeepAlive(bool keep);
+  void SetSendBuffer(int size);
+  void SetRecvBuffer(int size);
+
   void Bind(const char* ip, unsigned short port);
   void Listen(void);
   void Close(void);

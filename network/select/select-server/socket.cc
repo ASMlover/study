@@ -41,6 +41,49 @@ Socket::~Socket(void)
 {
 }
 
+void 
+Socket::SetTcpNoDelay(bool nodelay)
+{
+  int optval = (nodelay ? 1 : 0);
+  if (SOCKET_ERROR == setsockopt(fd_, IPPROTO_TCP, 
+        TCP_NODELAY, (const char*)&optval, sizeof(optval)))
+    LOG_ERR("setsockopt error err-code (%d)\n", WSAGetLastError());
+}
+
+void 
+Socket::SetReuseAddr(bool reuse) 
+{
+  int optval = (reuse ? 1 : 0);
+  if (SOCKET_ERROR == setsockopt(fd_, SOL_SOCKET, 
+        SO_REUSEADDR, (const char*)&optval, sizeof(optval)))
+    LOG_ERR("setsockopt error err-code (%d)\n", WSAGetLastError());
+}
+
+void 
+Socket::SetKeepAlive(bool keep) 
+{
+  int optval = (keep ? 1 : 0);
+  if (SOCKET_ERROR == setsockopt(fd_, SOL_SOCKET, 
+        SO_KEEPALIVE, (const char*)&optval, sizeof(optval)))
+    LOG_ERR("setsockopt error err-code (%d)\n", WSAGetLastError());
+}
+
+void 
+Socket::SetSendBuffer(int size)
+{
+  if (SOCKET_ERROR == setsockopt(fd_, SOL_SOCKET, 
+        SO_SNDBUF, (const char*)&size, sizeof(size)))
+    LOG_ERR("setsockopt error err-code (%d)\n", WSAGetLastError());
+}
+
+void 
+Socket::SetRecvBuffer(int size)
+{
+  if (SOCKET_ERROR == setsockopt(fd_, SOL_SOCKET, 
+        SO_RCVBUF, (const char*)&size, sizeof(size)))
+    LOG_ERR("setsockopt error err-code (%d)\n", WSAGetLastError());
+}
+
 
 void 
 Socket::Bind(const char* ip, unsigned short port)
