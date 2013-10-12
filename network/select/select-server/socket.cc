@@ -27,6 +27,7 @@
 #ifndef _WINDOWS_
 # include <winsock2.h>
 #endif
+#include <assert.h>
 #include "global.h"
 #include "socket.h"
 
@@ -34,6 +35,7 @@
 
 Socket::Socket(void)
   : fd_(INVALID_SOCKET)
+  , blocked_(true)
 {
 }
 
@@ -84,6 +86,30 @@ Socket::SetRecvBuffer(int size)
     LOG_ERR("setsockopt error err-code (%d)\n", WSAGetLastError());
 }
 
+void 
+Socket::SetBlocking(bool blocked)
+{
+  unsigned long val;
+  if (blocked) {
+    val = 0;
+    if (SOCKET_ERROR == ioctlsocket(fd_, FIONBIO, &val)) {
+      LOG_ERR("ioctlsocket error err-code (%d)\n", WSAGetLastError());
+      return;
+    }
+
+    blocked_ = true;
+  }
+  else {
+    val = 1;
+    if (SOCKET_ERROR == ioctlsocket(fd_, FIONBIO, &val)) {
+      LOG_ERR("ioctlsocket error err-code (%d)\n", WSAGetLastError());
+      return;
+    }
+
+    blocked_ = false;
+  }
+}
+
 
 void 
 Socket::Bind(const char* ip, unsigned short port)
@@ -117,6 +143,8 @@ Socket::Close(void)
 int 
 Socket::Accept(struct sockaddr* addr)
 {
+  assert(blocked_);
+
   struct sockaddr_in remote_addr;
   int addrlen = sizeof(remote_addr);
 
@@ -151,6 +179,8 @@ Socket::Connect(const char* ip, unsigned short port)
 int 
 Socket::Read(int length, char* buffer)
 {
+  assert(blocked_);
+
   int ret = recv(fd_, buffer, length, 0);
   if (SOCKET_ERROR == ret)
     LOG_ERR("recv error err-code (%d)\n", WSAGetLastError());
@@ -161,6 +191,8 @@ Socket::Read(int length, char* buffer)
 void 
 Socket::Write(const char* buffer, int length)
 {
+  assert(blocked_);
+
   int total = 0;
   int ret = 0;
   while (total < length) {

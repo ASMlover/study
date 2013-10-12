@@ -30,7 +30,8 @@
 
 struct sockaddr;
 class Socket {
-  int fd_;
+  int  fd_;
+  bool blocked_;
 
   Socket(const Socket&);
   Socket& operator =(const Socket&);
@@ -57,6 +58,7 @@ public:
   void SetKeepAlive(bool keep);
   void SetSendBuffer(int size);
   void SetRecvBuffer(int size);
+  void SetBlocking(bool blocked = true);
 
   void Bind(const char* ip = NULL, unsigned short port = 5555);
   void Listen(void);
