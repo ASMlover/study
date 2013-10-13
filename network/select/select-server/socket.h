@@ -60,12 +60,13 @@ public:
   void SetRecvBuffer(int size);
   void SetBlocking(bool blocked = true);
 
+  void Open(void);
   void Bind(const char* ip = NULL, unsigned short port = 5555);
   void Listen(void);
   void Close(void);
+  
   int Accept(struct sockaddr* addr);
   bool Connect(const char* ip = "127.0.0.1", unsigned short port = 5555);
-
   int Read(int length, char* buffer);
   void Write(const char* buffer, int length);
 };

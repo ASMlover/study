@@ -111,6 +111,16 @@ Socket::SetBlocking(bool blocked)
 }
 
 
+
+
+void 
+Socket::Open(void)
+{
+  fd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if (INVALID_SOCKET == fd_)
+    LOG_FAIL("socket failed err-code (%d)\n", WSAGetLastError());
+}
+
 void 
 Socket::Bind(const char* ip, unsigned short port)
 {
