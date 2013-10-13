@@ -53,6 +53,9 @@ public:
   void DelEvent(EventHandler* eh, int ev);
 
   void Poll(void);
+private:
+  void InitSets(void);
+  void DispatchEvent(fd_set* fds, int ev);
 };
 
 #endif  //! __SELECT_HEADER_H__

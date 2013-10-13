@@ -80,3 +80,75 @@ Select::DelEvent(EventHandler* eh, int ev)
   if (it != handlers_.end())
     it->second->event_ &= ~ev;
 }
+
+void
+Select::Poll(void)
+{
+  InitSets();
+
+  int ret = select(0, &rset_, &wset_, NULL, NULL);
+  if (SOCKET_ERROR == ret) {
+    LOG_ERR("select error err-code (%d)\n", WSAGetLastError());
+    return;
+  }
+
+  if (0 == ret)
+    return;
+
+  DispatchEvent(&rset_, EventHandler::ET_READ);
+  DispatchEvent(&wset_, EventHandler::ET_WRITE);
+}
+
+
+
+
+void 
+Select::InitSets(void)
+{
+  FD_ZERO(&rset_);
+  FD_ZERO(&wset_);
+
+  std::map<int, EventHandler*>::iterator it;
+
+  int fd;
+  EventHandler* eh;
+  for (it = handlers_.begin(); it != handlers_.end(); ++it) {
+    eh = it->second;
+    fd = eh->fd();
+
+    if (eh->event_ & EventHandler::ET_READ)
+      FD_SET(fd, &rset_);
+
+    if (eh->event_ & EventHandler::ET_WRITE)
+      FD_SET(fd, &wset_);
+  }
+}
+
+void 
+Select::DispatchEvent(fd_set* fds, int ev)
+{
+  int fd;
+  for (int i = 0; i < (int)fds->fd_count; ++i) {
+    fd = fds->fd_array[i];
+
+    EventHandler* eh = NULL;
+    {
+      LockerGuard<SpinLock> guard(spinlock_);
+      std::map<int, EventHandler*>::iterator it = handlers_.find(fd);
+      if (it != handlers_.end())
+        eh = it->second;
+    }
+
+    if (NULL == eh)
+      continue;
+
+    switch (ev) {
+    case EventHandler::ET_READ:
+      eh->ReadEvent();
+      break;
+    case EventHandler::ET_WRITE:
+      eh->WriteEvent();
+      break;
+    }
+  }
+}
