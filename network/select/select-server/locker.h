@@ -24,10 +24,32 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __SPINLOCK_HEADER_H__
-#define __SPINLOCK_HEADER_H__
+#ifndef __LOCKER_HEADER_H__
+#define __LOCKER_HEADER_H__
 
 #include <windows.h>
+
+
+template <typename Locker> 
+class LockerGuard {
+  Locker& locker_;
+
+  LockerGuard(LockerGuard&);
+  LockerGuard& operator =(const LockerGuard&);
+public:
+  explicit LockerGuard(Locker& locker)
+    : locker_(locker)
+  {
+    locker_.Lock();
+  }
+
+  ~LockerGuard(void)
+  {
+    locker_.Unlock();
+  }
+};
+
+
 
 
 class SpinLock {
@@ -54,22 +76,4 @@ public:
 };
 
 
-class SpinLockGuard {
-  SpinLock& spinlock_;
-
-  SpinLockGuard(const SpinLockGuard&);
-  SpinLockGuard& operator =(const SpinLockGuard&);
-public:
-  explicit SpinLockGuard(SpinLock& spinlock)
-    : spinlock_(spinlock)
-  {
-    spinlock_.Lock();
-  }
-
-  ~SpinLockGuard(void) {
-    spinlock_.Unlock();
-  }
-};
-
-
-#endif  //! __SPINLOCK_HEADER_H__
+#endif  //! __LOCKER_HEADER_H__
