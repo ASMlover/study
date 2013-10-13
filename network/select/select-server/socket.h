@@ -69,6 +69,12 @@ public:
   bool Connect(const char* ip = "127.0.0.1", unsigned short port = 5555);
   int Read(int length, char* buffer);
   void Write(const char* buffer, int length);
+
+  void AcceptNonBlock(Socket* s, struct sockaddr* addr);
+  bool ConnectNonBlock(const char* ip = "127.0.0.1", 
+      unsigned short port = 5555);
+  int ReadNonBlock(int length, char* buffer);
+  int WriteNonBlock(const char* buffer, int length);
 };
 
 #endif  //! __SOCKET_HEADER_H__

@@ -215,3 +215,69 @@ Socket::Write(const char* buffer, int length)
     total += ret;
   }
 }
+
+void 
+Socket::AcceptNonBlock(Socket* s, struct sockaddr* addr)
+{
+  assert(!blocked_);
+
+  struct sockaddr_in remote_addr;
+  int addrlen = sizeof(remote_addr);
+  int tmp = accept(fd_, 
+      (NULL != addr ? addr : (struct sockaddr*)&remote_addr), 
+      &addrlen);
+  if (INVALID_SOCKET == tmp && WSAEWOULDBLOCK != WSAGetLastError()) {
+    LOG_ERR("accept error err-code (%d)\n", WSAGetLastError());
+    return;
+  }
+
+  s->Attach(tmp);
+  s->SetBlocking(false);
+}
+
+bool 
+Socket::ConnectNonBlock(const char* ip, unsigned short port)
+{
+  blocked_ = false;
+
+  if (NULL == ip)
+    ip = "127.0.0.1";
+  
+  struct sockaddr_in remote_addr;
+  remote_addr.sin_addr.s_addr = inet_addr(ip);
+  remote_addr.sin_family      = AF_INET;
+  remote_addr.sin_port        = htons(port);
+  int ret = connect(fd_, 
+      (struct sockaddr*)&remote_addr, sizeof(remote_addr));
+
+  if (SOCKET_ERROR == ret && WSAEWOULDBLOCK != WSAGetLastError()) {
+    LOG_ERR("connect error err-code (%d)\n", WSAGetLastError());
+    return false;
+  }
+
+  return true;
+}
+
+int 
+Socket::ReadNonBlock(int length, char* buffer)
+{
+  assert(!blocked_);
+
+  int ret = recv(fd_, buffer, length, 0);
+  if (SOCKET_ERROR == ret && WSAEWOULDBLOCK != WSAGetLastError())
+    LOG_ERR("recv error err-code (%d)\n", WSAGetLastError());
+
+  return ret;
+}
+
+int 
+Socket::WriteNonBlock(const char* buffer, int length)
+{
+  assert(!blocked_);
+
+  int ret = send(fd_, buffer, length, 0);
+  if (SOCKET_ERROR == ret && WSAEWOULDBLOCK != WSAGetLastError())
+    LOG_ERR("send error err-code (%d)\n", WSAGetLastError());
+
+  return ret;
+}
