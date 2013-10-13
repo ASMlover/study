@@ -50,6 +50,32 @@ public:
 };
 
 
+class Mutex {
+  CRITICAL_SECTION mutex_;
+
+  Mutex(const Mutex&);
+  Mutex& operator =(const Mutex&);
+public:
+  explicit Mutex(void)
+  {
+    InitializeCriticalSection(&mutex_);
+  }
+
+  ~Mutex(void)
+  {
+    DeleteCriticalSection(&mutex_);
+  }
+
+  inline void Lock(void)
+  {
+    EnterCriticalSection(&mutex_);
+  }
+
+  inline void Unlock(void)
+  {
+    LeaveCriticalSection(&mutex_);
+  }
+};
 
 
 class SpinLock {
@@ -58,19 +84,23 @@ class SpinLock {
   SpinLock(const SpinLock&);
   SpinLock& operator =(const SpinLock&);
 public:
-  explicit SpinLock(void) {
+  explicit SpinLock(void) 
+  {
     InitializeCriticalSectionAndSpinCount(&spinlock_, 4000);
   }
 
-  ~SpinLock(void) {
+  ~SpinLock(void) 
+  {
     DeleteCriticalSection(&spinlock_);
   }
 
-  inline void Lock(void) {
+  inline void Lock(void) 
+  {
     EnterCriticalSection(&spinlock_);
   }
 
-  inline void Unlock(void) {
+  inline void Unlock(void) 
+  {
     LeaveCriticalSection(&spinlock_);
   }
 };
