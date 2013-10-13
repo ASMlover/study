@@ -150,20 +150,20 @@ Socket::Close(void)
   fd_ = INVALID_SOCKET;
 }
 
-int 
-Socket::Accept(struct sockaddr* addr)
+void 
+Socket::Accept(Socket* s, struct sockaddr* addr)
 {
   assert(blocked_);
 
   struct sockaddr_in remote_addr;
   int addrlen = sizeof(remote_addr);
 
-  int s = accept(fd_, 
+  int tmp = accept(fd_, 
       (NULL != addr ? addr : (struct sockaddr*)&remote_addr), &addrlen);
-  if (INVALID_SOCKET == s) 
+  if (INVALID_SOCKET == tmp) 
     LOG_ERR("accept failed err-code (%d)\n", WSAGetLastError());
 
-  return s;
+  s->Attach(tmp);
 }
 
 bool 

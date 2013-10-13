@@ -65,7 +65,7 @@ public:
   void Listen(void);
   void Close(void);
   
-  int Accept(struct sockaddr* addr);
+  void Accept(Socket* s, struct sockaddr* addr);
   bool Connect(const char* ip = "127.0.0.1", unsigned short port = 5555);
   int Read(int length, char* buffer);
   void Write(const char* buffer, int length);
