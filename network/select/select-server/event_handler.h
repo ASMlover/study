@@ -42,8 +42,6 @@ struct EventHandler {
   explicit EventHandler(Socket* s);
   virtual ~EventHandler(void) {}
 
-  virtual void AcceptEvent(void) {}
-  virtual void ConnectEvent(void) {}
   virtual void ReadEvent(void) {}
   virtual void WriteEvent(void) {}
 };
