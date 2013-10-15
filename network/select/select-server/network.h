@@ -30,11 +30,13 @@
 
 class Socket;
 class Select;
-class ThreadListener;
 struct EventHandler;
+class ThreadListener;
+class ThreadWorker;
 class Network {
   Select* select_;
   ThreadListener* listener_;
+  ThreadWorker*   worker_;
 
   Network(const Network&);
   Network& operator =(const Network&);

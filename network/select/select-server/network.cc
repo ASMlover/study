@@ -30,11 +30,13 @@
 #include "select.h"
 #include "network.h"
 #include "thread_listener.h"
+#include "thread_worker.h"
 
 
 Network::Network(void)
   : select_(NULL)
   , listener_(NULL)
+  , worker_(NULL)
 {
 }
 
@@ -53,6 +55,13 @@ Network::Init(EventHandler* (*getHandler)(Socket*))
   if (NULL == listener_) 
     LOG_FAIL("new ThreadListener failed ...\n");
   listener_->Attach(select_, getHandler);
+
+  worker_ = new ThreadWorker();
+  if (NULL == worker_)
+    LOG_FAIL("new ThreadWorker failed ...\n");
+  worker_->Attach(select_);
+
+  worker_->Start();
 }
 
 void 
@@ -64,6 +73,19 @@ Network::Start(const char* ip, unsigned short port)
 void 
 Network::Stop(void)
 {
-  listener_->Stop();
+  if (NULL != worker_) {
+    worker_->Stop();
+    delete worker_;
+    worker_ = NULL;
+  }
+  if (NULL != listener_) {
+    listener_->Stop();
+    delete listener_;
+    listener_ = NULL;
+  }
+  if (NULL != select_) {
+    delete select_;
+    select_ = NULL;
+  }
 }
 
