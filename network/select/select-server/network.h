@@ -27,13 +27,14 @@
 #ifndef __NETWORK_HEADER_H__
 #define __NETWORK_HEADER_H__
 
-class Thread;
+
+class Socket;
 class Select;
+class ThreadListener;
+struct EventHandler;
 class Network {
-  bool    running_;
   Select* select_;
-  Thread* acceptor_;
-  Thread* listener_;
+  ThreadListener* listener_;
 
   Network(const Network&);
   Network& operator =(const Network&);
@@ -41,14 +42,10 @@ public:
   explicit Network(void);
   ~Network(void);
 
-  void Init(const char* ip = "127.0.0.1", unsigned short port = 5555);
-  void Destroy(void);
+  void Init(EventHandler* (*getHandler)(Socket*));
 
-  void Start(void);
+  void Start(const char* ip = "127.0.0.1", unsigned short port = 5555);
   void Stop(void);
-private:
-  static void AcceptRoutine(void* arg);
-  static void ListenRoutine(void* arg);
 };
 
 #endif  //! __NETWORK_HEADER_H__

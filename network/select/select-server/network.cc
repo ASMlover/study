@@ -29,12 +29,11 @@
 #include "thread.h"
 #include "select.h"
 #include "network.h"
+#include "thread_listener.h"
 
 
 Network::Network(void)
-  : running_(false)
-  , select_(NULL)
-  , acceptor_(NULL)
+  : select_(NULL)
   , listener_(NULL)
 {
 }
@@ -44,32 +43,27 @@ Network::~Network(void)
 }
 
 void 
-Network::Init(const char* ip, unsigned short port)
+Network::Init(EventHandler* (*getHandler)(Socket*))
 {
+  select_ = new Select();
+  if (NULL == select_)
+    LOG_FAIL("new Select failed ...\n");
+
+  listener_ = new ThreadListener();
+  if (NULL == listener_) 
+    LOG_FAIL("new ThreadListener failed ...\n");
+  listener_->Attach(select_, getHandler);
 }
 
 void 
-Network::Destroy(void)
+Network::Start(const char* ip, unsigned short port)
 {
-}
-
-void 
-Network::Start(void)
-{
+  listener_->Start(ip, port);
 }
 
 void 
 Network::Stop(void)
 {
+  listener_->Stop();
 }
 
-
-void 
-Network::AcceptRoutine(void* arg)
-{
-}
-
-void 
-Network::ListenRoutine(void* arg)
-{
-}
