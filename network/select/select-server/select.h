@@ -47,6 +47,10 @@ public:
   explicit Select(void);
   ~Select(void);
 
+  inline std::map<int, EventHandler*>* handlers(void) {
+    return &handlers_;
+  }
+
   void Insert(EventHandler* eh, int ev);
   void Remove(EventHandler* eh);
   void AddEvent(EventHandler* eh, int ev);
