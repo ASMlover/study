@@ -75,6 +75,7 @@ Thread::Routine(void* argument)
   Thread* self = static_cast<Thread*>(argument);
   if (NULL == self)
     return 0;
+  SetEvent(self->start_event_);
 
   if (NULL != self->routine_)
     self->routine_(self->argument_);
