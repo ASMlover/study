@@ -29,6 +29,7 @@
 #endif
 #include "global.h"
 #include "event_handler.h"
+#include "socket.h"
 #include "select.h"
 
 
@@ -60,8 +61,12 @@ Select::Remove(EventHandler* eh)
   LockerGuard<SpinLock> guard(spinlock_);
 
   std::map<int, EventHandler*>::iterator it = handlers_.find(eh->fd());
-  if (it != handlers_.end())
+  if (it != handlers_.end()) {
+    it->second->s_->Close();
+    delete it->second->s_;
+    delete it->second;
     handlers_.erase(it);
+  }
 }
 
 void 
@@ -150,10 +155,16 @@ Select::DispatchEvent(fd_set* fds, int ev)
 
     switch (ev) {
     case EventHandler::ET_READ:
-      eh->ReadEvent();
+      {
+        if (!eh->ReadEvent())
+          Remove(eh);
+      }
       break;
     case EventHandler::ET_WRITE:
-      eh->WriteEvent();
+      {
+        if (!eh->WriteEvent())
+          Remove(eh);
+      }
       break;
     }
   }

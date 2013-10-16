@@ -39,18 +39,23 @@ public:
   {
   }
 
-  virtual void ReadEvent(void)
+  virtual bool ReadEvent(void)
   {
     char buf[128] = {0};
-    s_->Read(128, buf);
+    if (s_->Read(128, buf) < 0) {
+      return false;
+    }
     fprintf(stdout, "recv from client : %s\n", buf);
 
     int len = strlen(buf);
     s_->Write(buf, len);
+
+    return true;
   }
 
-  virtual void WriteEvent(void)
+  virtual bool WriteEvent(void)
   {
+    return true;
   }
 };
 
