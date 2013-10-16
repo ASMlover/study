@@ -24,26 +24,43 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#ifndef _WINDOWS_
+# include <winsock2.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 #include "global.h"
 
 
-static WSLib _s_wslib;
 
-
-extern void ServerMain(void);
-extern void ClientMain(void);
-int 
-main(int argc, char* argv[])
+void 
+ClientMain(void)
 {
-  if (argc < 2)
-    return 0;
+  SOCKET fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  struct sockaddr_in remote_addr;
+  remote_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+  remote_addr.sin_family      = AF_INET;
+  remote_addr.sin_port        = htons(5555);
+  if (SOCKET_ERROR == connect(fd, 
+        (struct sockaddr*)&remote_addr, sizeof(remote_addr)))
+    LOG_FAIL("connect failed err-code (%d)\n", WSAGetLastError());
 
-  if (0 == strcmp("srv", argv[1]))
-    ServerMain();
-  else if (0 == strcmp("clt", argv[1]))
-    ClientMain();
+  char buf[128];
+  SYSTEMTIME s;
+  while (true) {
+    GetLocalTime(&s);
+    sprintf(buf, "[%04d-%02d-%02d %02d:%02d:%02d:%03d]", 
+        s.wYear, s.wMonth, s.wDay, s.wHour, 
+        s.wMinute, s.wSecond, s.wMilliseconds);
+    send(fd, buf, strlen(buf), 0);
 
-  return 0;
+    memset(buf, 0, sizeof(buf));
+    if (SOCKET_ERROR == recv(fd, buf, sizeof(buf), 0))
+      break;
+    fprintf(stdout, "from server: %s\n", buf);
+
+    Sleep(100);
+  }
+
+  closesocket(fd);
 }

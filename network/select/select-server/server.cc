@@ -24,26 +24,52 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#include <windows.h>
 #include <stdio.h>
-#include <string.h>
-#include "global.h"
+#include "socket.h"
+#include "event_handler.h"
+#include "network.h"
 
 
-static WSLib _s_wslib;
 
+class ConnHandler : public EventHandler {
+public:
+  explicit ConnHandler(Socket* s)
+    : EventHandler(s)
+  {
+  }
 
-extern void ServerMain(void);
-extern void ClientMain(void);
-int 
-main(int argc, char* argv[])
+  virtual void ReadEvent(void)
+  {
+    char buf[128] = {0};
+    s_->Read(128, buf);
+    fprintf(stdout, "recv from client : %s\n", buf);
+
+    int len = strlen(buf);
+    s_->Write(buf, len);
+  }
+
+  virtual void WriteEvent(void)
+  {
+  }
+};
+
+static EventHandler* 
+CreateConnHandler(Socket* s)
 {
-  if (argc < 2)
-    return 0;
+  s->SetBlocking(true);
+  return new ConnHandler(s);
+}
 
-  if (0 == strcmp("srv", argv[1]))
-    ServerMain();
-  else if (0 == strcmp("clt", argv[1]))
-    ClientMain();
 
-  return 0;
+
+void 
+ServerMain(void)
+{
+  Network net;
+  net.Init(CreateConnHandler);
+
+  net.Start("127.0.0.1", 5555);
+  while (true)
+    Sleep(100);
 }
