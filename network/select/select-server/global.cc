@@ -33,6 +33,20 @@
 #include "global.h"
 
 
+WSLib::WSLib(void)
+{
+  WSADATA wd;
+
+  if (0 != WSAStartup(MAKEWORD(2, 2), &wd))
+    LOG_FAIL("WSAStartup failed err-code (%d)\n", WSAGetLastError());
+}
+
+WSLib::~WSLib(void)
+{
+  WSACleanup();
+}
+
+
 
 void 
 LogWrite(int severity, const char* file, int line, const char* format, ...)
