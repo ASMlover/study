@@ -67,6 +67,7 @@ Network::Init(EventHandler* (*getHandler)(Socket*))
 void 
 Network::Start(const char* ip, unsigned short port)
 {
+  fprintf(stdout, "%s\n", __FUNCSIG__);
   listener_->Start(ip, port);
 }
 

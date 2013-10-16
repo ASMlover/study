@@ -25,6 +25,7 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
+#include "global.h"
 #include "socket.h"
 #include "event_handler.h"
 
@@ -33,6 +34,8 @@ EventHandler::EventHandler(Socket* s)
   : event_(0)
   , s_(s)
 {
+  if (NULL == s_)
+    LOG_FAIL("argument s is nil ...\n");
 }
 
 int 

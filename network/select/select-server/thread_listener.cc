@@ -91,12 +91,24 @@ ThreadListener::Routine(void* argument)
   if (NULL == self)
     return;
 
+  fprintf(stdout, "ThreadListener working ...\n");
   while (self->running_) {
     Socket* s = new Socket();
+    if (NULL == s) {
+      LOG_ERR("new Socket error ...\n");
+      continue;
+    }
     self->listener_->Accept(s, NULL);
-    s->SetBlocking(false);
 
     EventHandler* eh = self->getHandler_(s);
+    if (NULL == eh) {
+      LOG_ERR("eh is NULL ...\n");
+      s->Close();
+      delete s;
+      Sleep(1);
+      continue;
+    }
+
     self->select_->Insert(eh, 
         EventHandler::ET_READ | EventHandler::ET_WRITE);
   }

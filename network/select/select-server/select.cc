@@ -38,6 +38,8 @@ Select::Select(void)
 {
   FD_ZERO(&rset_);
   FD_ZERO(&wset_);
+
+  handlers_.clear();
 }
 
 Select::~Select(void)
@@ -47,6 +49,7 @@ Select::~Select(void)
 void 
 Select::Insert(EventHandler* eh, int ev)
 {
+  eh->event_ = ev;
   LockerGuard<SpinLock> guard(spinlock_);
   handlers_[eh->fd()] = eh;
 }
@@ -88,7 +91,7 @@ Select::Poll(void)
 
   int ret = select(0, &rset_, &wset_, NULL, NULL);
   if (SOCKET_ERROR == ret) {
-    LOG_ERR("select error err-code (%d)\n", WSAGetLastError());
+    //LOG_ERR("select error err-code (%d)\n", WSAGetLastError());
     return;
   }
 
@@ -111,9 +114,12 @@ Select::InitSets(void)
   std::map<int, EventHandler*>::iterator it;
 
   int fd;
-  EventHandler* eh;
+  EventHandler* eh = NULL;
   for (it = handlers_.begin(); it != handlers_.end(); ++it) {
     eh = it->second;
+    if (NULL == eh)
+      continue;
+
     fd = eh->fd();
 
     if (eh->event_ & EventHandler::ET_READ)
