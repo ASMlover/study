@@ -24,6 +24,7 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#include "common.h"
 #include "thread.h"
 
 
@@ -44,10 +45,13 @@ void
 Thread::Start(void)
 {
   start_event_ = CreateEvent(NULL, TRUE, FALSE, NULL);
+  if (NULL == start_event_)
+    LOG_FAIL("CreateEvent failed err-code(%d)\n", Errno());
   thread_ = CreateThread(NULL, 0, &Thread::Routine, this, 0, NULL);
-  if (NULL != thread_)
-    WaitForSingleObject(start_event_, INFINITE);
-
+  if (NULL == thread_)
+    LOG_FAIL("CreateThread failed err-code(%d)\n", Errno());
+  
+  WaitForSingleObject(start_event_, INFINITE);
   CloseHandle(start_event_);
 }
 
