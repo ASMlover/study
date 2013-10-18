@@ -29,7 +29,7 @@ OUT	= test
 RM	= rm 
 CC	= g++
 CFLAGS	= -g -O2 -Wall
-OBJS	= main.o socket.o
+OBJS	= main.o socket.o common.o
 
 
 
