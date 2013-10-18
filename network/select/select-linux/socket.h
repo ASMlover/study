@@ -28,13 +28,18 @@
 #define __SOCKET_HEADER_H__
 
 class Socket {
-  int socket_;
+  int fd_;
 
   Socket(const Socket&);
   Socket& operator =(const Socket&);
 public:
-  Socket(void);
+  explicit Socket(void);
   ~Socket(void);
+
+  inline int fd(void) const 
+  {
+    return fd_;
+  }
 
   bool Create(void);
   void Close(void);
