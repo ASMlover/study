@@ -29,7 +29,8 @@ OUT	= test
 RM	= rm 
 CC	= g++
 CFLAGS	= -g -O2 -Wall
-OBJS	= main.o socket.o common.o
+LDFLAGS	= -lpthread
+OBJS	= main.o socket.o common.o thread.o
 
 
 
@@ -46,7 +47,7 @@ clean:
 
 
 $(OUT): $(OBJS)
-	$(CC) -o $@ $^
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(OBJS): %.o:%.cc 
 	$(CC) -o $*.o -c $(CFLAGS) $^
