@@ -45,7 +45,7 @@ void
 Thread::Start(void)
 {
   if (0 != pthread_create(&thread_id_, NULL, &Thread::Routine, this))
-    LOG_FAIL("pthread_create failed\n");
+    LOG_FAIL("pthread_create failed err-code(%d)\n", Errno());
 }
 
 void 

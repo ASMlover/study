@@ -27,6 +27,10 @@
 #ifndef __COMMON_HEADER_H__
 #define __COMMON_HEADER_H__
 
+#include <errno.h>
+
+#define Errno() errno
+
 enum LoggingType {
   kLoggingTypeDebug = 0, 
   kLoggingTypeMessage, 
