@@ -116,11 +116,27 @@ Socket::Connect(const char* ip, unsigned short port)
 int 
 Socket::Read(int len, char* buf)
 {
-  return recv(fd_, buf, len, 0);
+  int ret = recv(fd_, buf, len, 0);
+  if (ret < 0)
+    LOG_ERR("recv error err-code(%d)\n", Errno());
+
+  return ret;
 }
 
 int 
 Socket::Write(const char* buf, int len)
 {
-  return send(fd_, buf, len, 0);
+  int total = 0;
+  int ret = 0;
+  while (total < len) {
+    ret = send(fd_, buf + total, len - total, 0);
+    if (ret < 0) {
+      LOG_ERR("send error err-code(%d)\n", Errno());
+      break;
+    }
+
+    total += ret;
+  }
+
+  return total;
 }
