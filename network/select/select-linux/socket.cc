@@ -80,19 +80,6 @@ Socket::Listen(void)
     LOG_FAIL("listen failed err-code(%d)\n", Errno());
 }
 
-bool 
-Socket::Connect(const char* ip, unsigned int port)
-{
-  struct sockaddr_in addr;
-
-  addr.sin_addr.s_addr = inet_addr(ip);
-  addr.sin_family      = AF_INET;
-  addr.sin_port        = htons(port);
-  if (0 != connect(fd_, (struct sockaddr*)&addr, sizeof(addr)))
-    return false;
-  return true;
-}
-
 void 
 Socket::Accept(Socket* s, struct sockaddr* addr)
 {
@@ -105,6 +92,25 @@ Socket::Accept(Socket* s, struct sockaddr* addr)
     LOG_ERR("accept error err-code(%d)\n", Errno());
 
   s->Attach(tmp);
+}
+
+bool 
+Socket::Connect(const char* ip, unsigned short port)
+{
+  if (NULL == ip)
+    ip = "127.0.0.1";
+
+  struct sockaddr_in remote_addr;
+  remote_addr.sin_addr.s_addr = inet_addr(ip);
+  remote_addr.sin_family      = AF_INET;
+  remote_addr.sin_port        = htons(port);
+  if (0 != connect(fd_, 
+        (struct sockaddr*)&remote_addr, sizeof(remote_addr))) {
+    LOG_ERR("connect error err-code(%d)\n", Errno());
+    return false;
+  }
+
+  return true;
 }
 
 int 
