@@ -24,9 +24,11 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netinet/tcp.h>
 #include <unistd.h>
 #include "common.h"
 #include "socket.h"
@@ -42,6 +44,49 @@ Socket::Socket(void)
 Socket::~Socket(void)
 {
   Close();
+}
+
+void 
+Socket::SetTcpNoDelay(bool nodelay)
+{
+  int optval = (nodelay ? 1 : 0);
+  if (0 != setsockopt(fd_, IPPROTO_TCP, 
+        TCP_NODELAY, (const void*)&optval, sizeof(optval)))
+    LOG_ERR("setsockopt error err-code(%d)\n", Errno());
+}
+
+void 
+Socket::SetReuseAddr(bool reuse)
+{
+  int optval = (reuse ? 1 : 0);
+  if (0 != setsockopt(fd_, SOL_SOCKET, 
+        SO_REUSEADDR, (const void*)&optval, sizeof(optval)))
+    LOG_ERR("setsockopt error err-code(%d)\n", Errno());
+}
+
+void 
+Socket::SetKeepAlive(bool keep)
+{
+  int optval = (keep ? 1 : 0);
+  if (0 != setsockopt(fd_, SOL_SOCKET, 
+        SO_KEEPALIVE, (const void*)&optval, sizeof(optval)))
+    LOG_ERR("setsockopt error err-code(%d)\n", Errno());
+}
+
+void 
+Socket::SetSendBuffer(int size)
+{
+  if (0 != setsockopt(fd_, SOL_SOCKET, 
+        SO_SNDBUF, (const void*)&size, sizeof(size)))
+    LOG_ERR("setsockopt error err-code(%d)\n", Errno());
+}
+
+void 
+Socket::SetRecvBuffer(int size)
+{
+  if (0 != setsockopt(fd_, SOL_SOCKET, 
+        SO_RCVBUF, (const void*)&size, sizeof(size)))
+    LOG_ERR("setsockopt error err-code(%d)\n", Errno());
 }
 
 void 
