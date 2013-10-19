@@ -93,13 +93,18 @@ Socket::Connect(const char* ip, unsigned int port)
   return true;
 }
 
-int 
-Socket::Accept(void)
+void 
+Socket::Accept(Socket* s, struct sockaddr* addr)
 {
-  struct sockaddr_in addr;
-  socklen_t len = sizeof(addr);
+  struct sockaddr_in remote_addr;
+  socklen_t addrlen = sizeof(remote_addr);
 
-  return accept(fd_, (struct sockaddr*)&addr, &len);
+  int tmp = accept(fd_, 
+      (NULL != addr ? addr : (struct sockaddr*)&remote_addr), &addrlen);
+  if (-1 == tmp)
+    LOG_ERR("accept error err-code(%d)\n", Errno());
+
+  s->Attach(tmp);
 }
 
 int 

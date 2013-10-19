@@ -27,6 +27,8 @@
 #ifndef __SOCKET_HEADER_H__
 #define __SOCKET_HEADER_H__
 
+
+struct sockaddr;
 class Socket {
   int fd_;
 
@@ -55,9 +57,9 @@ public:
   void Close(void);
   void Bind(const char* ip, unsigned short port);
   void Listen(void);
-  bool Connect(const char* ip, unsigned int port);
-  int Accept(void);
 
+  void Accept(Socket* s, struct sockaddr* addr);
+  bool Connect(const char* ip, unsigned int port);
   int Read(int len, char* buf);
   int Write(const char* buf, int len);
 };
