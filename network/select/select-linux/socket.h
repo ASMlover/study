@@ -36,14 +36,25 @@ public:
   explicit Socket(void);
   ~Socket(void);
 
+  inline void Attach(int fd)
+  {
+    fd_ = fd;
+  }
+
+  inline void Detach(void)
+  {
+    fd_ = -1;
+  }
+
   inline int fd(void) const 
   {
     return fd_;
   }
 
-  bool Create(void);
+  void Open(void);
   void Close(void);
-  bool Listen(const char* ip, unsigned int port);
+  void Bind(const char* ip, unsigned short port);
+  void Listen(void);
   bool Connect(const char* ip, unsigned int port);
   int Accept(void);
 

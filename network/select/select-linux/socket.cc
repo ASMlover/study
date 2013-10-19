@@ -28,13 +28,14 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include "common.h"
 #include "socket.h"
 
 
 
 
 Socket::Socket(void)
-  : fd_(0)
+  : fd_(-1)
 {
 }
 
@@ -43,11 +44,12 @@ Socket::~Socket(void)
   Close();
 }
 
-bool 
-Socket::Create(void)
+void 
+Socket::Open(void)
 {
   fd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-  return (-1 != fd_);
+  if (-1 == fd_)
+    LOG_FAIL("socket failed err-code(%d)\n", Errno());
 }
 
 void 
@@ -55,21 +57,27 @@ Socket::Close(void)
 {
   shutdown(fd_, SHUT_RDWR);
   close(fd_);
+  fd_ = -1;
 }
 
-bool 
-Socket::Listen(const char* ip, unsigned int port)
+void 
+Socket::Bind(const char* ip, unsigned short port)
 {
-  struct sockaddr_in addr;
-  addr.sin_addr.s_addr = inet_addr(ip);
-  addr.sin_family      = AF_INET;
-  addr.sin_port        = htons(port);
-  if (0 != bind(fd_, (struct sockaddr*)&addr, sizeof(addr)))
-    return false;
-  if (0 != listen(fd_, SOMAXCONN))
-    return false;
+  struct sockaddr_in host_addr;
+  host_addr.sin_addr.s_addr = 
+    (NULL == ip ? htonl(INADDR_ANY) : inet_addr(ip));
+  host_addr.sin_family      = AF_INET;
+  host_addr.sin_port        = htons(port);
 
-  return true;
+  if (0 != bind(fd_, (struct sockaddr*)&host_addr, sizeof(host_addr)))
+    LOG_FAIL("bind failed err-code(%d)\n", Errno());
+}
+
+void 
+Socket::Listen(void)
+{
+  if (0 != listen(fd_, SOMAXCONN))
+    LOG_FAIL("listen failed err-code(%d)\n", Errno());
 }
 
 bool 
