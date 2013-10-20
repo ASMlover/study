@@ -27,15 +27,14 @@
 #ifndef __LISTENER_HEADER_H__
 #define __LISTENER_HEADER_H__
 
-#include "socket.h"
-
 class Thread;
+class Socket;
 class ConnectorMgr;
 class Listener {
   ConnectorMgr* conn_mgr_;
   Thread* thread_;
+  Socket* socket_;
   bool    running_;
-  Socket  socket_;
 
   Listener(const Listener&);
   Listener& operator =(const Listener&);

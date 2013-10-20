@@ -29,6 +29,7 @@
 #endif
 #include "common.h"
 #include "thread.h"
+#include "socket.h"
 #include "conn_mgr.h"
 #include "listener.h"
 
@@ -36,6 +37,7 @@
 Listener::Listener(void)
   : conn_mgr_(NULL)
   , thread_(NULL)
+  , socket_(NULL)
   , running_(false)
 {
 }
@@ -57,9 +59,10 @@ Listener::Start(const char* ip, unsigned short port)
   if (NULL == thread_)
     LOG_FAIL("create Listener thread failed ...\n");
   
-  socket_.Open();
-  socket_.Bind(ip, port);
-  socket_.Listen();
+  socket_ = new Socket();
+  socket_->Open();
+  socket_->Bind(ip, port);
+  socket_->Listen();
 
   running_ = true;
   thread_->Start();
@@ -70,7 +73,7 @@ Listener::Stop(void)
 {
   running_ = false;
   thread_->Join();
-  socket_.Close();
+  socket_->Close();
 }
 
 
@@ -84,7 +87,7 @@ Listener::Routine(void* arg)
 
   while (self->running_) {
     Socket* s = new Socket();
-    self->socket_.Accept(s, NULL);
+    self->socket_->Accept(s, NULL);
 
     self->conn_mgr_->Insert(s->fd(), s);
   }
