@@ -33,7 +33,7 @@ template <typename Locker>
 class LockerGuard {
   Locker& locker_;
 
-  LockerGuard(&const LockerGuard&);
+  LockerGuard(const LockerGuard&);
   LockerGuard& operator =(const LockerGuard&);
 public:
   explicit LockerGuard(Locker& locker) 
