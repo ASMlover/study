@@ -44,6 +44,7 @@ Listener::Listener(void)
 
 Listener::~Listener(void)
 {
+  Stop();
 }
 
 void 
@@ -60,6 +61,8 @@ Listener::Start(const char* ip, unsigned short port)
     LOG_FAIL("create Listener thread failed ...\n");
   
   socket_ = new Socket();
+  if (NULL == socket_)
+    LOG_FAIL("new Socket failed ...\n");
   socket_->Open();
   socket_->Bind(ip, port);
   socket_->Listen();
@@ -72,8 +75,16 @@ void
 Listener::Stop(void)
 {
   running_ = false;
-  thread_->Join();
-  socket_->Close();
+  if (NULL != thread_) {
+    thread_->Join();
+    delete thread_;
+    thread_ = NULL;
+  }
+  if (NULL != socket_) {
+    socket_->Close();
+    delete socket_;
+    socket_ = NULL;
+  }
 }
 
 
