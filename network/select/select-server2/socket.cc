@@ -103,7 +103,7 @@ Socket::Listen(void)
     LOG_FAIL("listen failed err-code(%d)\n", NetErrno());
 }
 
-void 
+bool 
 Socket::Accept(Socket* s, struct sockaddr* addr)
 {
   struct sockaddr_in remote_addr;
@@ -113,13 +113,14 @@ Socket::Accept(Socket* s, struct sockaddr* addr)
       (NULL != addr ? addr : (struct sockaddr*)&remote_addr), &addrlen);
   if (INVALID_SOCKET == tmp) {
     LOG_ERR("accept error err-code(%d)\n", NetErrno());
-    return;
+    return false;
   }
 
   s->Attach(tmp);
+  return true;
 }
 
-void 
+bool 
 Socket::Connect(const char* ip, unsigned short port)
 {
   if (NULL == ip)
@@ -130,8 +131,12 @@ Socket::Connect(const char* ip, unsigned short port)
   remote_addr.sin_port        = htons(port);
 
   if (SOCKET_ERROR == connect(fd_, 
-        (struct sockaddr*)&remote_addr, sizeof(remote_addr)))
+        (struct sockaddr*)&remote_addr, sizeof(remote_addr))) {
     LOG_FAIL("connect failed err-code(%d)\n", NetErrno());
+    return false;
+  }
+
+  return true;
 }
 
 int 

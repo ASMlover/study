@@ -47,8 +47,8 @@ public:
   void Bind(const char* ip, unsigned short port);
   void Listen(void);
 
-  void Accept(Socket* s, struct sockaddr* addr);
-  void Connect(const char* ip, unsigned short port);
+  bool Accept(Socket* s, struct sockaddr* addr);
+  bool Connect(const char* ip, unsigned short port);
   int Read(int length, char* buffer);
   int Write(const char* buffer, int length);
 };

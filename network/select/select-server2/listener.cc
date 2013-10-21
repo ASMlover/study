@@ -87,7 +87,14 @@ Listener::Routine(void* arg)
 
   Socket s;
   while (self->running_) {
-    self->socket_->Accept(&s, NULL);
-    self->conn_mgr_->Insert(s.fd());
+    if (self->socket_->Accept(&s, NULL)) {
+      self->conn_mgr_->Insert(s.fd());
+    }
+    else {
+      Sleep(1);
+      continue;
+    }
+
+    s.Detach();
   }
 }
