@@ -24,37 +24,78 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __WORKER_HEADER_H__
-#define __WORKER_HEADER_H__
+#include "common.h"
+#include "thread.h"
+#include "conn_mgr.h"
+#include "socket_handler.h"
+#include "worker.h"
 
-#ifndef _WINDOWS_
-# include <winsock2.h>
-#endif
 
-class Thread;
-class ConnectorMgr;
-struct SocketHandler;
-class Worker {
-  bool    running_;
-  Thread* thread_;
-  ConnectorMgr* conn_mgr_;
-  SocketHandler* handler_;
-  fd_set rset_;
-  fd_set wset_;
 
-  Worker(const Worker&);
-  Worker& operator =(const Worker&);
-public:
-  explicit Worker(void);
-  ~Worker(void);
+Worker::Worker(void)
+  : running_(false)
+  , thread_(NULL)
+  , conn_mgr_(NULL)
+  , handler_(NULL)
+{
+  FD_ZERO(&rset_);
+  FD_ZERO(&wset_);
+}
 
-  void SetSocketHandler(SocketHandler* handler);
-  void Attach(ConnectorMgr* conn_mgr);
+Worker::~Worker(void)
+{
+}
 
-  void Start(void);
-  void Stop(void);
-private:
-  static void Routine(void* argument);
-};
+void 
+Worker::SetSocketHandler(SocketHandler* handler)
+{
+  handler_ = handler;
+}
 
-#endif  //! __WORKER_HEADER_H__
+void 
+Worker::Attach(ConnectorMgr* conn_mgr)
+{
+  conn_mgr_ = conn_mgr;
+}
+
+void 
+Worker::Start(void)
+{
+  thread_ = new Thread(&Worker::Routine, this);
+  if (NULL == thread_)
+    LOG_FAIL("new Thread failed ...\n");
+
+  running_ = true;
+  thread_->Start();
+}
+
+void 
+Worker::Stop(void)
+{
+  running_ = false;
+  if (NULL != thread_) {
+    thread_->Join();
+    delete thread_;
+    thread_ = NULL;
+  }
+}
+
+
+void 
+Worker::Routine(void* argument)
+{
+  Worker* self = static_cast<Worker*>(argument);
+  if (NULL == self)
+    return;
+
+  while (self->running_) {
+    self->conn_mgr_->InitSelectSets(&self->rset_, &self->wset_);
+
+    int ret = select(0, &self->rset_, &self->wset_, NULL, NULL);
+    if (SOCKET_ERROR == ret || 0 == ret)
+      continue;
+
+    //! TODO:
+    //! dispatch socket event
+  }
+}
