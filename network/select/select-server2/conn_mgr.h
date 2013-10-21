@@ -41,8 +41,10 @@ public:
   explicit ConnectorMgr(void);
   ~ConnectorMgr(void);
 
-  void Insert(int fd, Socket* s);
+  void Insert(int fd);
   void Remove(int fd);
+
+  Socket* GetConnector(int fd);
 };
 
 #endif  //! __CONNECTOR_MANAGER_HEADER_H__

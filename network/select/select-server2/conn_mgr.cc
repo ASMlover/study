@@ -24,6 +24,8 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#include "common.h"
+#include "socket.h"
 #include "conn_mgr.h"
 
 
@@ -37,8 +39,15 @@ ConnectorMgr::~ConnectorMgr(void)
 }
 
 void 
-ConnectorMgr::Insert(int fd, Socket* s)
+ConnectorMgr::Insert(int fd)
 {
+  Socket* s = new Socket();
+  if (NULL == s) {
+    LOG_ERR("new Socket error ...\n");
+    return;
+  }
+  s->Attach(fd);
+
   LockerGuard<SpinLock> guard(spinlock_);
   std::map<int, Socket*>::iterator it = socket_list_.find(fd);
   if (it == socket_list_.end())
@@ -50,6 +59,22 @@ ConnectorMgr::Remove(int fd)
 {
   LockerGuard<SpinLock> guard(spinlock_);
   std::map<int, Socket*>::iterator it = socket_list_.find(fd);
-  if (it != socket_list_.end())
+  if (it != socket_list_.end()) {
+    it->second->Close();
+    delete it->second;
     socket_list_.erase(it);
+  }
+}
+
+Socket* 
+ConnectorMgr::GetConnector(int fd)
+{
+  Socket* s = NULL;
+
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, Socket*>::iterator it = socket_list_.find(fd);
+  if (it != socket_list_.end())
+    s = it->second;
+
+  return s;
 }

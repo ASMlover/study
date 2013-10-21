@@ -85,10 +85,9 @@ Listener::Routine(void* arg)
   if (NULL == self)
     return;
 
+  Socket s;
   while (self->running_) {
-    Socket* s = new Socket();
-    self->socket_->Accept(s, NULL);
-
-    self->conn_mgr_->Insert(s->fd(), s);
+    self->socket_->Accept(&s, NULL);
+    self->conn_mgr_->Insert(s.fd());
   }
 }
