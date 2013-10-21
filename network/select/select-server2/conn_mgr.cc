@@ -71,10 +71,26 @@ ConnectorMgr::GetConnector(int fd)
 {
   Socket* s = NULL;
 
-  LockerGuard<SpinLock> guard(spinlock_);
-  std::map<int, Socket*>::iterator it = socket_list_.find(fd);
-  if (it != socket_list_.end())
-    s = it->second;
+  {
+    LockerGuard<SpinLock> guard(spinlock_);
+    std::map<int, Socket*>::iterator it = socket_list_.find(fd);
+    if (it != socket_list_.end())
+      s = it->second;
+  }
 
   return s;
+}
+
+void 
+ConnectorMgr::InitSelectSets(fd_set* rset, fd_set* wset)
+{
+  FD_ZERO(rset);
+  FD_ZERO(wset);
+
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, Socket*>::iterator it;
+  for (it = socket_list_.begin(); it != socket_list_.end(); ++it) {
+    FD_SET(it->first, rset);
+    FD_SET(it->first, wset);
+  }
 }

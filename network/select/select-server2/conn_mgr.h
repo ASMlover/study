@@ -27,6 +27,9 @@
 #ifndef __CONNECTOR_MANAGER_HEADER_H__
 #define __CONNECTOR_MANAGER_HEADER_H__
 
+#ifndef _WINDOWS_
+# include <windows.h>
+#endif
 #include <map>
 #include "locker.h"
 
@@ -45,6 +48,7 @@ public:
   void Remove(int fd);
 
   Socket* GetConnector(int fd);
+  void InitSelectSets(fd_set* rset, fd_set* wset);
 };
 
 #endif  //! __CONNECTOR_MANAGER_HEADER_H__
