@@ -36,7 +36,7 @@
 class Socket;
 class ConnectorMgr {
   SpinLock spinlock_;
-  std::map<int, Socket*> socket_list_;
+  std::map<int, std::pair<int, Socket*> > connectors_;
 
   ConnectorMgr(const ConnectorMgr&);
   ConnectorMgr& operator =(const ConnectorMgr&);
@@ -44,7 +44,7 @@ public:
   explicit ConnectorMgr(void);
   ~ConnectorMgr(void);
 
-  void Insert(int fd);
+  void Insert(int fd, int ev = 0);
   void Remove(int fd);
 
   Socket* GetConnector(int fd);

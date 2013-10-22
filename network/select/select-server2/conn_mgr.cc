@@ -30,7 +30,6 @@
 
 
 ConnectorMgr::ConnectorMgr(void)
-  : spinlock_()
 {
 }
 
@@ -39,7 +38,7 @@ ConnectorMgr::~ConnectorMgr(void)
 }
 
 void 
-ConnectorMgr::Insert(int fd)
+ConnectorMgr::Insert(int fd, int ev)
 {
   Socket* s = new Socket();
   if (NULL == s) {
@@ -49,20 +48,22 @@ ConnectorMgr::Insert(int fd)
   s->Attach(fd);
 
   LockerGuard<SpinLock> guard(spinlock_);
-  std::map<int, Socket*>::iterator it = socket_list_.find(fd);
-  if (it == socket_list_.end())
-    socket_list_[fd] = s;
+  std::map<int, std::pair<int, Socket*> >::iterator it;
+  it = connectors_.find(fd);
+  if (it == connectors_.end())
+    connectors_[fd] = std::make_pair<int, Socket*>(ev, s);
 }
 
 void 
 ConnectorMgr::Remove(int fd)
 {
   LockerGuard<SpinLock> guard(spinlock_);
-  std::map<int, Socket*>::iterator it = socket_list_.find(fd);
-  if (it != socket_list_.end()) {
-    it->second->Close();
-    delete it->second;
-    socket_list_.erase(it);
+  std::map<int, std::pair<int, Socket*> >::iterator it;
+  it = connectors_.find(fd);
+  if (it != connectors_.end()) {
+    it->second.second->Close();
+    delete it->second.second;
+    connectors_.erase(it);
   }
 }
 
@@ -73,9 +74,10 @@ ConnectorMgr::GetConnector(int fd)
 
   {
     LockerGuard<SpinLock> guard(spinlock_);
-    std::map<int, Socket*>::iterator it = socket_list_.find(fd);
-    if (it != socket_list_.end())
-      s = it->second;
+    std::map<int, std::pair<int, Socket*> >::iterator it;
+    it = connectors_.find(fd);
+    if (it != connectors_.end())
+      s = it->second.second;
   }
 
   return s;
@@ -88,8 +90,8 @@ ConnectorMgr::InitSelectSets(fd_set* rset, fd_set* wset)
   FD_ZERO(wset);
 
   LockerGuard<SpinLock> guard(spinlock_);
-  std::map<int, Socket*>::iterator it;
-  for (it = socket_list_.begin(); it != socket_list_.end(); ++it) {
+  std::map<int, std::pair<int, Socket*> >::iterator it;
+  for (it = connectors_.begin(); it != connectors_.end(); ++it) {
     FD_SET(it->first, rset);
     FD_SET(it->first, wset);
   }
