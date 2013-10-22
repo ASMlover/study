@@ -33,6 +33,9 @@ class CommonLib {
   CommonLib(const CommonLib&);
   CommonLib& operator =(const CommonLib&);
 public:
+  explicit CommonLib(void);
+  ~CommonLib(void);
+
   static CommonLib& Singleton(void);
   void Init(void);
   void Destroy(void);

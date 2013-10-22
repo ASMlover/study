@@ -35,6 +35,21 @@
 
 
 bool CommonLib::loaded_ = false;
+CommonLib::CommonLib(void)
+{
+}
+
+CommonLib::~CommonLib(void)
+{
+}
+
+CommonLib& 
+CommonLib::Singleton(void)
+{
+  static CommonLib s_comm_lib;
+
+  return s_comm_lib;
+}
 
 void 
 CommonLib::Init(void)

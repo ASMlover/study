@@ -25,6 +25,7 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
+#include "net.h"
 
 extern void ServerMain(const char* ip, unsigned short port);
 extern void ClientMain(const char* ip, unsigned short port);
@@ -35,10 +36,14 @@ main(int argc, char* argv[])
   if (argc < 2)
     return 0;
 
+  CommonLib::Singleton().Init();
+
   if (0 == strcmp("srv", argv[1]))
     ServerMain(NULL, 5555);
   else if (0 == strcmp("clt", argv[1]))
     ClientMain("127.0.0.1", 5555);
 
+
+  CommonLib::Singleton().Destroy();
   return 0;
 }
