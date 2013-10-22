@@ -27,6 +27,7 @@
 #include "common.h"
 #include "socket.h"
 #include "conn_mgr.h"
+#include "event_handler.h"
 
 
 ConnectorMgr::ConnectorMgr(void)
@@ -111,8 +112,16 @@ ConnectorMgr::InitSelectSets(fd_set* rset, fd_set* wset)
 
   LockerGuard<SpinLock> guard(spinlock_);
   std::map<int, std::pair<int, Socket*> >::iterator it;
-  for (it = connectors_.begin(); it != connectors_.end(); ++it) {
-    FD_SET(it->first, rset);
-    FD_SET(it->first, wset);
+  for (it = connectors_.begin(); it != connectors_.end();) {
+    if (INVALID_SOCKET == it->second.second->fd()) {
+      it = connectors_.erase(it);
+    }
+    else {
+      if (it->second.first & EventHandler::kEventTypeRead)
+        FD_SET(it->first, rset);
+
+      if (it->second.first & EventHandler::kEventTypeWrite)
+        FD_SET(it->first, wset);
+    }
   }
 }
