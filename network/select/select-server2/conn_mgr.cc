@@ -39,6 +39,18 @@ ConnectorMgr::~ConnectorMgr(void)
 }
 
 void 
+ConnectorMgr::CloseAll(void)
+{
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, std::pair<int, Socket*> >::iterator it;
+  for (it = connectors_.begin(); it != connectors_.end(); ++it) {
+    it->second.second->Close();
+    delete it->second.second;
+  }
+  connectors_.clear();
+}
+
+void 
 ConnectorMgr::Insert(int fd, int ev)
 {
   Socket* s = new Socket();
@@ -122,6 +134,8 @@ ConnectorMgr::InitSelectSets(fd_set* rset, fd_set* wset)
 
       if (it->second.first & EventHandler::kEventTypeWrite)
         FD_SET(it->first, wset);
+
+      ++it;
     }
   }
 }
