@@ -46,6 +46,8 @@ public:
 
   void Insert(int fd, int ev = 0x00);
   void Remove(int fd);
+  void AddEvent(int fd, int ev);
+  void DelEvent(int fd, int ev);
 
   Socket* GetConnector(int fd);
   void InitSelectSets(fd_set* rset, fd_set* wset);

@@ -67,6 +67,26 @@ ConnectorMgr::Remove(int fd)
   }
 }
 
+void 
+ConnectorMgr::AddEvent(int fd, int ev)
+{
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, std::pair<int, Socket*> >::iterator it;
+  it = connectors_.find(fd);
+  if (it != connectors_.end())
+    it->second.first |= ev;
+}
+
+void 
+ConnectorMgr::DelEvent(int fd, int ev)
+{
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, std::pair<int, Socket*> >::iterator it;
+  it = connectors_.find(fd);
+  if (it != connectors_.end())
+    it->second.first &= ~ev;
+}
+
 Socket* 
 ConnectorMgr::GetConnector(int fd)
 {
