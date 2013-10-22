@@ -24,15 +24,19 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __SOCKET_HANDLER_HEADER_H__
-#define __SOCKET_HANDLER_HEADER_H__
+#include "event_handler.h"
 
-class Socket;
-struct SocketHandler {
-  virtual ~SocketHandler(void);
 
-  virtual void ReadEvent(Socket* s);
-  virtual void WriteEvent(Socket* s);
-};
+EventHandler::~EventHandler(void)
+{
+}
 
-#endif  //! __SOCKET_HANDLER_HEADER_H__
+void 
+EventHandler::ReadEvent(Socket* s)
+{
+}
+
+void 
+EventHandler::WriteEvent(Socket* s)
+{
+}

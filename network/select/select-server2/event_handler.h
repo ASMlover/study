@@ -24,19 +24,21 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include "socket_handler.h"
+#ifndef __EVENT_HANDLER_HEADER_H__
+#define __EVENT_HANDLER_HEADER_H__
 
+class Socket;
+struct EventHandler {
+  enum EventType {
+    kEventTypeNone  = 0x00, 
+    kEventTypeRead  = 0x01, 
+    kEventTypeWrite = 0x02, 
+  };
 
-SocketHandler::~SocketHandler(void)
-{
-}
+  virtual ~EventHandler(void);
 
-void 
-SocketHandler::ReadEvent(Socket* s)
-{
-}
+  virtual void ReadEvent(Socket* s);
+  virtual void WriteEvent(Socket* s);
+};
 
-void 
-SocketHandler::WriteEvent(Socket* s)
-{
-}
+#endif  //! __EVENT_HANDLER_HEADER_H__

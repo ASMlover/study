@@ -33,12 +33,12 @@
 
 class Thread;
 class ConnectorMgr;
-struct SocketHandler;
+struct EventHandler;
 class Worker {
   bool    running_;
   Thread* thread_;
   ConnectorMgr* conn_mgr_;
-  SocketHandler* handler_;
+  EventHandler* event_handler_;
   fd_set rset_;
   fd_set wset_;
 
@@ -48,7 +48,7 @@ public:
   explicit Worker(void);
   ~Worker(void);
 
-  void SetSocketHandler(SocketHandler* handler);
+  void SetEventHandler(EventHandler* handler);
   void Attach(ConnectorMgr* conn_mgr);
 
   void Start(void);

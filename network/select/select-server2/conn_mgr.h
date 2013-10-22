@@ -44,7 +44,7 @@ public:
   explicit ConnectorMgr(void);
   ~ConnectorMgr(void);
 
-  void Insert(int fd, int ev = 0);
+  void Insert(int fd, int ev = 0x00);
   void Remove(int fd);
 
   Socket* GetConnector(int fd);

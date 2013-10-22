@@ -27,7 +27,7 @@
 #include "common.h"
 #include "thread.h"
 #include "conn_mgr.h"
-#include "socket_handler.h"
+#include "event_handler.h"
 #include "worker.h"
 
 
@@ -36,7 +36,7 @@ Worker::Worker(void)
   : running_(false)
   , thread_(NULL)
   , conn_mgr_(NULL)
-  , handler_(NULL)
+  , event_handler_(NULL)
 {
   FD_ZERO(&rset_);
   FD_ZERO(&wset_);
@@ -47,9 +47,9 @@ Worker::~Worker(void)
 }
 
 void 
-Worker::SetSocketHandler(SocketHandler* handler)
+Worker::SetEventHandler(EventHandler* handler)
 {
-  handler_ = handler;
+  event_handler_ = handler;
 }
 
 void 
