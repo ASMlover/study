@@ -112,7 +112,7 @@ Socket::Accept(Socket* s, struct sockaddr* addr)
   int tmp = accept(fd_, 
       (NULL != addr ? addr : (struct sockaddr*)&remote_addr), &addrlen);
   if (INVALID_SOCKET == tmp) {
-    LOG_ERR("accept error err-code(%d)\n", NetErrno());
+    //! LOG_ERR("accept error err-code(%d)\n", NetErrno());
     return false;
   }
 

@@ -31,6 +31,7 @@
 #include "thread.h"
 #include "socket.h"
 #include "conn_mgr.h"
+#include "event_handler.h"
 #include "listener.h"
 
 
@@ -99,7 +100,7 @@ Listener::Routine(void* arg)
   Socket s;
   while (self->running_) {
     if (self->socket_->Accept(&s, NULL)) {
-      self->conn_mgr_->Insert(s.fd());
+      self->conn_mgr_->Insert(s.fd(), EventHandler::kEventTypeRead);
     }
     else {
       Sleep(1);
