@@ -92,10 +92,32 @@ Worker::Routine(void* argument)
     self->conn_mgr_->InitSelectSets(&self->rset_, &self->wset_);
 
     int ret = select(0, &self->rset_, &self->wset_, NULL, NULL);
-    if (SOCKET_ERROR == ret || 0 == ret)
+    if (SOCKET_ERROR == ret || 0 == ret) {
+      Sleep(1);
+      continue;
+    }
+
+    self->DispatchEvent(&self->rset_, EventHandler::kEventTypeRead);
+    self->DispatchEvent(&self->wset_, EventHandler::kEventTypeWrite);
+  }
+}
+
+void 
+Worker::DispatchEvent(fd_set* set, int ev)
+{
+  for (unsigned int i = 0; i < set->fd_count; ++i) {
+    Socket* s = conn_mgr_->GetConnector(set->fd_array[i]);
+
+    if (NULL == s)
       continue;
 
-    //! TODO:
-    //! dispatch socket event
+    switch (ev) {
+    case EventHandler::kEventTypeRead:
+      event_handler_->ReadEvent(s);
+      break;
+    case EventHandler::kEventTypeWrite:
+      event_handler_->WriteEvent(s);
+      break;
+    }
   }
 }

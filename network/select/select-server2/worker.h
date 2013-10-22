@@ -55,6 +55,7 @@ public:
   void Stop(void);
 private:
   static void Routine(void* argument);
+  void DispatchEvent(fd_set* set, int ev);
 };
 
 #endif  //! __WORKER_HEADER_H__
