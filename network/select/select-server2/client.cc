@@ -24,21 +24,40 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include <string.h>
+#include <windows.h>
+#include <stdio.h>
+#include "net.h"
 
-extern void ServerMain(const char* ip, unsigned short port);
-extern void ClientMain(const char* ip, unsigned short port);
 
-int 
-main(int argc, char* argv[])
+void 
+ClientMain(const char* ip = "127.0.0.1", unsigned short port = 5555)
 {
-  if (argc < 2)
-    return 0;
+  Socket s;
+  s.Open();
+  
+  if (s.Connect(ip, port)) {
+    fprintf(stdout, "connect to server success ...\n");
+  }
+  else {
+    fprintf(stderr, "connect to server failed ...\n");
+    goto Exit;
+  }
 
-  if (0 == strcmp("srv", argv[1]))
-    ServerMain(NULL, 5555);
-  else if (0 == strcmp("clt", argv[1]))
-    ClientMain("127.0.0.1", 5555);
+  char buf[128];
+  SYSTEMTIME t;
+  while (true) {
+    GetLocalTime(&t);
+    sprintf(buf, "[%04d-%02d-%02d %02d:%02d:%02d:%03d]", 
+        t.wYear, t.wMonth, t.wDay, 
+        t.wHour, t.wMinute, t.wSecond, t.wMilliseconds);
+    s.Write(buf, strlen(buf));
 
-  return 0;
+    memset(buf, 0, sizeof(buf));
+    if (SOCKET_ERROR == s.Read(sizeof(buf), buf))
+      break;
+    fprintf(stdout, "recv from server : %s\n", buf);
+  }
+
+Exit:
+  s.Close();
 }

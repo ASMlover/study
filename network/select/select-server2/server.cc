@@ -24,21 +24,44 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include <string.h>
+#include <windows.h>
+#include <stdio.h>
+#include "net.h"
 
-extern void ServerMain(const char* ip, unsigned short port);
-extern void ClientMain(const char* ip, unsigned short port);
 
-int 
-main(int argc, char* argv[])
+
+class Connector : public EventHandler {
+public:
+  virtual void ReadEvent(Socket* s)
+  {
+    char buf[128] = {0};
+    if (SOCKET_ERROR == s->Read(sizeof(buf), buf))
+      s->Close();
+    fprintf(stdout, "recv from client : %s\n", buf);
+
+    s->Write(buf, strlen(buf));
+  }
+
+  virtual void WriteEvent(Socket* s)
+  {
+  }
+};
+
+
+void 
+ServerMain(const char* ip = NULL, unsigned short port = 5555)
 {
-  if (argc < 2)
-    return 0;
+  Connector c;
+  Network network;
 
-  if (0 == strcmp("srv", argv[1]))
-    ServerMain(NULL, 5555);
-  else if (0 == strcmp("clt", argv[1]))
-    ClientMain("127.0.0.1", 5555);
+  network.Attach(&c);
+  network.Init();
+  network.Listen(ip, port);
 
-  return 0;
+  fprintf(stdout, "server<%s, %d> starting ...\n",
+      (NULL == ip ? "INADDR_ANY" : ip), port);
+  while (true)
+    Sleep(100);
+
+  network.Destroy();
 }
