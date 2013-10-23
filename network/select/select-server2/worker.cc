@@ -25,6 +25,7 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "common.h"
+#include "socket.h"
 #include "thread.h"
 #include "conn_mgr.h"
 #include "event_handler.h"
@@ -114,7 +115,8 @@ Worker::DispatchEvent(fd_set* set, int ev)
 
     switch (ev) {
     case EventHandler::kEventTypeRead:
-      event_handler_->ReadEvent(s);
+      if (!event_handler_->ReadEvent(s))
+        conn_mgr_->Remove(s->fd());
       break;
     case EventHandler::kEventTypeWrite:
       event_handler_->WriteEvent(s);

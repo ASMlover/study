@@ -32,18 +32,16 @@
 
 class Connector : public EventHandler {
 public:
-  virtual void ReadEvent(Socket* s)
+  virtual bool ReadEvent(Socket* s)
   {
     char buf[128] = {0};
     if (SOCKET_ERROR == s->Read(sizeof(buf), buf))
-      s->Close();
+      return false;
     fprintf(stdout, "recv from client : %s\n", buf);
 
     s->Write(buf, strlen(buf));
-  }
 
-  virtual void WriteEvent(Socket* s)
-  {
+    return true;
   }
 };
 

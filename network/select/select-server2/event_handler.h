@@ -37,8 +37,8 @@ struct EventHandler {
 
   virtual ~EventHandler(void);
 
-  virtual void ReadEvent(Socket* s);
-  virtual void WriteEvent(Socket* s);
+  virtual bool ReadEvent(Socket* s);
+  virtual bool WriteEvent(Socket* s);
 };
 
 #endif  //! __EVENT_HANDLER_HEADER_H__

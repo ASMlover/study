@@ -31,12 +31,14 @@ EventHandler::~EventHandler(void)
 {
 }
 
-void 
+bool 
 EventHandler::ReadEvent(Socket* s)
 {
+  return true;
 }
 
-void 
+bool 
 EventHandler::WriteEvent(Socket* s)
 {
+  return true;
 }
