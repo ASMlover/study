@@ -64,7 +64,7 @@ public:
   void Bind(const char* ip, unsigned short port);
   void Listen(void);
 
-  void Accept(Socket* s, struct sockaddr* addr);
+  bool Accept(Socket* s, struct sockaddr* addr);
   bool Connect(const char* ip, unsigned short port);
   int Read(int len, char* buf);
   int Write(const char* buf, int len);

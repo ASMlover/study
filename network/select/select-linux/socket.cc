@@ -125,7 +125,7 @@ Socket::Listen(void)
     LOG_FAIL("listen failed err-code(%d)\n", Errno());
 }
 
-void 
+bool 
 Socket::Accept(Socket* s, struct sockaddr* addr)
 {
   struct sockaddr_in remote_addr;
@@ -134,9 +134,10 @@ Socket::Accept(Socket* s, struct sockaddr* addr)
   int tmp = accept(fd_, 
       (NULL != addr ? addr : (struct sockaddr*)&remote_addr), &addrlen);
   if (-1 == tmp)
-    LOG_ERR("accept error err-code(%d)\n", Errno());
+    return false;
 
   s->Attach(tmp);
+  return true;
 }
 
 bool 
