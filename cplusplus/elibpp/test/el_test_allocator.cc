@@ -66,3 +66,24 @@ UNIT_IMPL(Allocator)
   end = clock();
   fprintf(stdout, "\t\tAllocator use : %lu\n", end - beg);
 }
+
+
+
+class Person : public el::SmallAllocator {
+public:
+  int age_;
+  int sex_;
+public:
+  explicit Person(int age = 20, int sex = 0)
+    : age_(age)
+    , sex_(sex)
+  {
+  }
+};
+
+UNIT_IMPL(SmallAllocator)
+{
+  Person* p = new Person(22, 1);
+  UNIT_ASSERT(NULL != p);
+  delete p;
+}
