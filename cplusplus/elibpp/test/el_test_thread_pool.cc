@@ -55,3 +55,31 @@ UNIT_IMPL(ThreadPool)
 
   thread_pool.Stop();
 }
+
+
+
+
+static bool s_running = false;
+static void 
+Worker2(void* arg)
+{
+  while (s_running) 
+    el_sleep(100);
+
+  fprintf(stdout, "\t\tWorker finished ...\n");
+}
+
+UNIT_IMPL(ThreadPool2)
+{
+  el::ThreadPool thread_pool;
+  thread_pool.Start();
+
+  s_running = true;
+  thread_pool.Run(Worker2, NULL);
+
+  el_sleep(1000);
+  s_running = false;
+
+  el_sleep(2000);
+  thread_pool.Stop();
+}
