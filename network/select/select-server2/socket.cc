@@ -64,6 +64,50 @@ Socket::Detach(void)
 }
 
 void 
+Socket::SetTcpNoDelay(bool nodelay)
+{
+  int optval = (nodelay ? 1 : 0);
+  if (SOCKET_ERROR == setsockopt(fd_, IPPROTO_TCP, 
+        TCP_NODELAY, (const char*)&optval, sizeof(optval)))
+    LOG_ERR("setsockopt error err-code(%d)\n", NetErrno());
+}
+
+void 
+Socket::SetReuseAddr(bool reuse)
+{
+  int optval = (reuse ? 1 : 0);
+  if (SOCKET_ERROR == setsockopt(fd_, SOL_SOCKET, 
+        SO_REUSEADDR, (const char*)&optval, sizeof(optval)))
+    LOG_ERR("setsockopt error err-code(%d)\n", NetErrno());
+}
+
+void 
+Socket::SetKeepAlive(bool keep)
+{
+  int optval = (keep ? 1 : 0);
+  if (SOCKET_ERROR == setsockopt(fd_, SOL_SOCKET, 
+        SO_KEEPALIVE, (const char*)&optval, sizeof(optval)))
+    LOG_ERR("setsockopt error err-code(%d)\n", NetErrno());
+}
+
+void 
+Socket::SetRecvBuffer(int bytes)
+{
+  if (SOCKET_ERROR == setsockopt(fd_, SOL_SOCKET, 
+        SO_RCVBUF, (const char*)&bytes, sizeof(bytes)))
+    LOG_ERR("setsockopt error err-code(%d)\n", NetErrno());
+}
+
+void 
+Socket::SetSendBuffer(int bytes)
+{
+  if (SOCKET_ERROR == setsockopt(fd_, SOL_SOCKET, 
+        SO_SNDBUF, (const char*)&bytes, sizeof(bytes)))
+    LOG_ERR("setsockopt error err-code(%d)\n", NetErrno());
+}
+
+
+void 
 Socket::Open(void)
 {
   fd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);

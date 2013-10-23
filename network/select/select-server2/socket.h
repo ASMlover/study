@@ -42,6 +42,12 @@ public:
   void Attach(int fd);
   int Detach(void);
 
+  void SetTcpNoDelay(bool nodelay);
+  void SetReuseAddr(bool reuse);
+  void SetKeepAlive(bool keep);
+  void SetRecvBuffer(int bytes);
+  void SetSendBuffer(int bytes);
+
   void Open(void);
   void Close(void);
   void Bind(const char* ip, unsigned short port);
