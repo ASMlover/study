@@ -44,6 +44,7 @@ Worker::Worker(void)
 
 Worker::~Worker(void)
 {
+  Stop();
 }
 
 void 

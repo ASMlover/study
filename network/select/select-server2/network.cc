@@ -41,6 +41,7 @@ Network::Network(void)
 
 Network::~Network(void)
 {
+  Destroy();
 }
 
 void 
