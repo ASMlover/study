@@ -70,6 +70,21 @@ public:
 #define NEW(s)  Allocator::Singleton().Malloc((s))
 #define DEL(p)  Allocator::Singleton().Free((p))
 
+
+
+class SmallAllocator {
+public:
+  static void* operator new(size_t bytes)
+  {
+    return NEW(bytes);
+  }
+
+  static void operator delete(void* ptr, size_t bytes)
+  {
+    DEL(ptr);
+  }
+};
+
 }
 
 #endif  //! __EL_ALLOCATOR_HEADER_H__
