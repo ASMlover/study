@@ -80,111 +80,57 @@ public:
 
 }
 
-#if defined(_WINDOWS_) || defined(_MSC_VER)
-# define LOG_DEBUG(fmt, ...)\
-  el::Logging::Singleton().Write(el::Logging::ST_DEBUG, \
-      (fmt), \
-      __VA_ARGS__)
-# define LOG_MSG(fmt, ...)\
-  el::Logging::Singleton().Write(el::Logging::ST_MESSGAE, \
-      (fmt), \
-      __VA_ARGS__)
-# define LOG_WARN(fmt, ...)\
-  el::Logging::Singleton().Write(el::Logging::ST_WARNING, \
-      (fmt), \
-      __VA_ARGS__)
-# define LOG_ERR(fmt, ...)\
-  el::Logging::Singleton().Write(el::Logging::ST_ERROR, \
-      (fmt), \
-      __VA_ARGS__)
-# define LOG_FAIL(fmt, ...)\
-  el::Logging::Singleton().Write(el::Logging::ST_FAIL, \
-      (fmt), \
-      __VA_ARGS__)
-
-# define LOG_DEBUGX(fmt, ...)\
-  el::Logging::Singleton().WriteX(el::Logging::ST_DEBUG, \
-      __FILE__, \
-      __LINE__, \
-      (fmt), \
-      __VA_ARGS__)
-# define LOG_MSGX(fmt, ...)\
-  el::Logging::Singleton().WriteX(el::Logging::ST_MESSGAE, \
-      __FILE__, \
-      __LINE__, \
-      (fmt), \
-      __VA_ARGS__)
-# define LOG_WARNX(fmt, ...)\
-  el::Logging::Singleton().WriteX(el::Logging::ST_WARNING, \
-      __FILE__, \
-      __LINE__, \
-      (fmt), \
-      __VA_ARGS__)
-# define LOG_ERRX(fmt, ...)\
-  el::Logging::Singleton().WriteX(el::Logging::ST_ERROR, \
-      __FILE__, \
-      __LINE__, \
-      (fmt), \
-      __VA_ARGS__)
-# define LOG_FAILX(fmt, ...)\
-  el::Logging::Singleton().WriteX(el::Logging::ST_FAIL, \
-      __FILE__, \
-      __LINE__, \
-      (fmt), \
-      __VA_ARGS__)
-#elif defined(__linux__)
-# define LOG_DEBUG(fmt, ...)\
+#define LOG_DEBUG(fmt, ...)\
   el::Logging::Singleton().Write(el::Logging::ST_DEBUG, \
       (fmt), \
       ##__VA_ARGS__)
-# define LOG_MSG(fmt, ...)\
+#define LOG_MSG(fmt, ...)\
   el::Logging::Singleton().Write(el::Logging::ST_MESSGAE, \
       (fmt), \
       ##__VA_ARGS__)
-# define LOG_WARN(fmt, ...)\
+#define LOG_WARN(fmt, ...)\
   el::Logging::Singleton().Write(el::Logging::ST_WARNING, \
       (fmt), \
       ##__VA_ARGS__)
-# define LOG_ERR(fmt, ...)\
+#define LOG_ERR(fmt, ...)\
   el::Logging::Singleton().Write(el::Logging::ST_ERROR, \
       (fmt), \
       ##__VA_ARGS__)
-# define LOG_FAIL(fmt, ...)\
+#define LOG_FAIL(fmt, ...)\
   el::Logging::Singleton().Write(el::Logging::ST_FAIL, \
       (fmt), \
       ##__VA_ARGS__)
 
-# define LOG_DEBUGX(fmt, ...)\
+#define LOG_DEBUGX(fmt, ...)\
   el::Logging::Singleton().WriteX(el::Logging::ST_DEBUG, \
       __FILE__, \
       __LINE__, \
       (fmt), \
       ##__VA_ARGS__)
-# define LOG_MSGX(fmt, ...)\
+#define LOG_MSGX(fmt, ...)\
   el::Logging::Singleton().WriteX(el::Logging::ST_MESSGAE, \
       __FILE__, \
       __LINE__, \
       (fmt), \
       ##__VA_ARGS__)
-# define LOG_WARNX(fmt, ...)\
+#define LOG_WARNX(fmt, ...)\
   el::Logging::Singleton().WriteX(el::Logging::ST_WARNING, \
       __FILE__, \
       __LINE__, \
       (fmt), \
       ##__VA_ARGS__)
-# define LOG_ERRX(fmt, ...)\
+#define LOG_ERRX(fmt, ...)\
   el::Logging::Singleton().WriteX(el::Logging::ST_ERROR, \
       __FILE__, \
       __LINE__, \
       (fmt), \
       ##__VA_ARGS__)
-# define LOG_FAILX(fmt, ...)\
+#define LOG_FAILX(fmt, ...)\
   el::Logging::Singleton().WriteX(el::Logging::ST_FAIL, \
       __FILE__, \
       __LINE__, \
       (fmt), \
       ##__VA_ARGS__)
-#endif
 
 
 #endif  //! __EL_LOGGING_HEADER_H__
