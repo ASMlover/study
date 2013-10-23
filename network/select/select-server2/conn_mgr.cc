@@ -36,6 +36,7 @@ ConnectorMgr::ConnectorMgr(void)
 
 ConnectorMgr::~ConnectorMgr(void)
 {
+  CloseAll();
 }
 
 void 
@@ -126,6 +127,7 @@ ConnectorMgr::InitSelectSets(fd_set* rset, fd_set* wset)
   std::map<int, std::pair<int, Socket*> >::iterator it;
   for (it = connectors_.begin(); it != connectors_.end();) {
     if (INVALID_SOCKET == it->second.second->fd()) {
+      delete it->second.second;
       it = connectors_.erase(it);
     }
     else {
