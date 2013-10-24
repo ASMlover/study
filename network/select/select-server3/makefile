@@ -34,7 +34,7 @@ CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -EHsc -DNDEBUG\
 	-D_CRT_SECURE_NO_WARNINGS
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no ws2_32.lib
-OBJS	= main.obj net.obj logging.obj thread.obj
+OBJS	= main.obj net.obj logging.obj thread.obj socket.obj
 
 
 
