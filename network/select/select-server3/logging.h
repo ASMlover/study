@@ -49,6 +49,10 @@ public:
       const char* format, ...);
 };
 
+
+#define Errno()     GetLastError()
+#define NetErrno()  WSAGetLastError()
+
 #if defined(_MSC_VER) && (_MSC_VER < 1400)
 # error "Your compiler version is too low."
 #endif
