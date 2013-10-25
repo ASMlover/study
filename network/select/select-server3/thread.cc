@@ -47,12 +47,12 @@ Thread::Start(void)
 {
   start_event_ = CreateEvent(NULL, TRUE, FALSE, NULL);
   if (NULL == start_event_) {
-    LOG_FAIL("CreateEvent failed err-code(%d)\n", Errno());
+    LOG_FAILX("CreateEvent failed\n");
     return false;
   }
   thread_ = CreateThread(NULL, 0, &Thread::Routine, this, 0, NULL);
   if (NULL == thread_) {
-    LOG_FAIL("CreateThread failed err-code(%d)\n", Errno());
+    LOG_FAILX("CreateThread failed\n");
     return false;
   }
 

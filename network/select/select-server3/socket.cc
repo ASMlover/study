@@ -52,7 +52,7 @@ Socket::SetTcpNoDelay(bool nodelay)
   int optval = (nodelay ? 1 : 0);
   if (kNetTypeError == setsockopt(fd_, IPPROTO_TCP, 
         TCP_NODELAY, (const char*)&optval, sizeof(optval))) {
-    LOG_ERR("setsockopt error err-code(%d)\n", NetErrno());
+    NLOG_ERRX("setsockopt error\n");
     return false;
   }
 
@@ -68,7 +68,7 @@ Socket::SetReuseAddr(bool reuse)
   int optval = (reuse ? 1 : 0);
   if (kNetTypeError == setsockopt(fd_, SOL_SOCKET, 
         SO_REUSEADDR, (const char*)&optval, sizeof(optval))) {
-    LOG_ERR("setsockopt error err-code(%d)\n", NetErrno());
+    NLOG_ERRX("setsockopt error\n");
     return false;
   }
 
@@ -84,7 +84,7 @@ Socket::SetKeepAlive(bool keep)
   int optval = (keep ? 1 : 0);
   if (kNetTypeError == setsockopt(fd_, SOL_SOCKET, 
         SO_KEEPALIVE, (const char*)&optval, sizeof(optval))) {
-    LOG_ERR("setsockopt error err-code(%d)\n", NetErrno());
+    NLOG_ERRX("setsockopt error\n");
     return false;
   }
 
@@ -99,7 +99,7 @@ Socket::SetReadBuffer(int bytes)
 
   if (kNetTypeError == setsockopt(fd_, SOL_SOCKET, 
         SO_RCVBUF, (const char*)&bytes, sizeof(bytes))) {
-    LOG_ERR("setsockopt error err-code(%d)\n", NetErrno());
+    NLOG_ERRX("setsockopt error\n");
     return false;
   }
 
@@ -114,7 +114,7 @@ Socket::SetWriteBuffer(int bytes)
 
   if (kNetTypeError == setsockopt(fd_, SOL_SOCKET, 
         SO_SNDBUF, (const char*)&bytes, sizeof(bytes))) {
-    LOG_ERR("setsockopt error err-code(%d)\n", NetErrno());
+    NLOG_ERRX("setsockopt error\n");
     return false;
   }
 
@@ -129,7 +129,7 @@ Socket::SetNonBlock(void)
 
   u_long val = 1;
   if (kNetTypeError == ioctlsocket(fd_, FIONBIO, &val)) {
-    LOG_ERR("ioctlsocket error err-code(%d)\n", NetErrno());
+    NLOG_ERRX("ioctlsocket error\n");
     return false;
   }
 
@@ -141,7 +141,7 @@ Socket::Open(void)
 {
   fd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   if (kNetTypeInvalid == fd_) {
-    LOG_FAIL("socket failed err-code(%d)\n", NetErrno());
+    NLOG_FAILX("socket failed\n");
     return false;
   }
 
@@ -172,7 +172,7 @@ Socket::Bind(const char* ip, unsigned short port)
 
   if (kNetTypeError == bind(fd_, 
         (struct sockaddr*)&host_addr, sizeof(host_addr))) {
-    LOG_FAIL("bind failed err-code(%d)\n", NetErrno());
+    NLOG_FAILX("bind failed\n");
     return false;
   }
 
@@ -186,7 +186,7 @@ Socket::Listen(void)
     return false;
 
   if (kNetTypeError == listen(fd_, SOMAXCONN)) {
-    LOG_FAIL("listen failed err-code(%d)\n", NetErrno());
+    NLOG_FAILX("listen failed\n");
     return false;
   }
 
@@ -223,7 +223,7 @@ Socket::Connect(const char* ip, unsigned short port)
 
   if (kNetTypeError == connect(fd_, 
         (struct sockaddr*)&remote_addr, sizeof(remote_addr))) {
-    LOG_FAIL("connect failed err-code(%d)\n", NetErrno());
+    NLOG_FAILX("connect failed\n");
     return false;
   }
 
@@ -238,7 +238,7 @@ Socket::Read(int length, char* buffer)
 
   int ret = recv(fd_, buffer, length, 0);
   if (kNetTypeError == ret)
-    LOG_ERR("recv error err-code(%d)\n", NetErrno());
+    NLOG_ERRX("recv error\n");
 
   return ret;
 }
@@ -254,7 +254,7 @@ Socket::Write(const char* buffer, int length)
   while (total < length) {
     ret = send(fd_, buffer + total, length - total, 0);
     if (kNetTypeError == ret) {
-      LOG_ERR("send error err-code(%d)\n", NetErrno());
+      NLOG_ERRX("send error\n");
       return ret;
     }
 
