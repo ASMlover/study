@@ -46,4 +46,38 @@ public:
   void Destroy(void);
 };
 
+
+class Socket;
+struct sockaddr;
+struct EventHandler {
+  enum EventType {
+    kEventTypeNone  = 0x00, 
+    kEventTypeRead  = 0x01, 
+    kEventTypeWrite = 0x02, 
+  };
+
+  virtual ~EventHandler(void)
+  {
+  }
+
+  virtual bool AcceptEvent(int fd, sockaddr* addr)
+  {
+    return true;
+  }
+
+  virtual void CloseEvent(int fd)
+  {
+  }
+
+  virtual bool ReadEvent(Socket* s)
+  {
+    return true;
+  }
+
+  virtual bool WriteEvent(Socket* s)
+  {
+    return true;
+  }
+};
+
 #endif  //! __NET_HEADER_H__
