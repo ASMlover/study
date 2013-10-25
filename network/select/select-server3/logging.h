@@ -84,7 +84,7 @@ public:
       __FILE__, __LINE__, Errno(), (fmt), ##__VA_ARGS__)
 #define LOG_FAILX(fmt, ...)\
   Logging::Singleton().WriteX(Logging::kLoggingTypeFailed, \
-      __FILE__m __LINE__, Errno(), (fmt), ##__VA_ARGS__)
+      __FILE__, __LINE__, Errno(), (fmt), ##__VA_ARGS__)
 
 #define NLOG_ERRX(fmt, ...)\
   Logging::Singleton().WriteX(Logging::kLoggingTypeError, \
