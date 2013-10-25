@@ -60,11 +60,33 @@ Logging::Write(int type,
   va_end(ap);
 
   FILE* stream = stdout;
-  if (kLoggingTypeError == type 
-      || kLoggingTypeFailed == type)
+  if (type >= kLoggingTypeError)
     stream = stderr;
 
   fprintf(stream, "[%s][%d] - %s", file, line, buffer);
+  if (kLoggingTypeFailed == type)
+    abort();
+}
+
+void 
+Logging::WriteX(int type, 
+    const char* file, 
+    int line, 
+    int err, 
+    const char* format, ...)
+{
+  static char buffer[4096];
+  
+  va_list ap;
+  va_start(ap, format);
+  vsprintf(buffer, format, ap);
+  va_end(ap);
+
+  FILE* stream = stdout;
+  if (type >= kLoggingTypeError)
+    stream = stderr;
+
+  fprintf(stream, "[%s][%d]<err-code(%d)> - %s", file, line, err, buffer);
   if (kLoggingTypeFailed == type)
     abort();
 }

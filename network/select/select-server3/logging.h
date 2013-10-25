@@ -47,6 +47,12 @@ public:
       const char* file, 
       int line, 
       const char* format, ...);
+
+  void WriteX(int type, 
+      const char* file, 
+      int line, 
+      int err, 
+      const char* format, ...);
 };
 
 
@@ -59,33 +65,32 @@ public:
 
 #define LOG_DEBUG(fmt, ...)\
   Logging::Singleton().Write(Logging::kLoggingTypeDebug, \
-      __FILE__, \
-      __LINE__, \
-      (fmt), \
-      ##__VA_ARGS__)
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
 #define LOG_MSG(fmt, ...)\
   Logging::Singleton().Write(Logging::kLoggingTypeMessage, \
-      __FILE__, \
-      __LINE__, \
-      (fmt), \
-      ##__VA_ARGS__)
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
 #define LOG_WARN(fmt, ...)\
   Logging::Singleton().Write(Logging::kLoggingTypeWarning, \
-      __FILE__, \
-      __LINE__, \
-      (fmt), \
-      ##__VA_ARGS__)
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
 #define LOG_ERR(fmt, ...)\
   Logging::Singleton().Write(Logging::kLoggingTypeError, \
-      __FILE__, \
-      __LINE__, \
-      (fmt), \
-      ##__VA_ARGS__)
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
 #define LOG_FAIL(fmt, ...)\
   Logging::Singleton().Write(Logging::kLoggingTypeFailed, \
-      __FILE__, \
-      __LINE__, \
-      (fmt), \
-      ##__VA_ARGS__)
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
+
+#define LOG_ERRX(fmt, ...)\
+  Logging::Singleton().WriteX(Logging::kLoggingTypeError, \
+      __FILE__, __LINE__, Errno(), (fmt), ##__VA_ARGS__)
+#define LOG_FAILX(fmt, ...)\
+  Logging::Singleton().WriteX(Logging::kLoggingTypeFailed, \
+      __FILE__m __LINE__, Errno(), (fmt), ##__VA_ARGS__)
+
+#define NLOG_ERRX(fmt, ...)\
+  Logging::Singleton().WriteX(Logging::kLoggingTypeError, \
+      __FILE__, __LINE__, NetErrno(), (fmt), ##__VA_ARGS__)
+#define NLOG_FAILX(fmt, ...)\
+  Logging::Singleton().WriteX(Logging::kLoggingTypeFailed, \
+      __FILE__, __LINE__, NetErrno(), (fmt), ##__VA_ARGS__)
 
 #endif  //! __LOGGING_HEADER_H__
