@@ -24,10 +24,107 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#ifndef _WINDOWS_
+# include <winsock2.h>
+#endif
 #include <stdio.h>
+#include "net.h"
+
+class ConnectorHandler : public EventHandler {
+public:
+  virtual bool AcceptEvent(int fd, sockaddr* addr)
+  {
+    fprintf(stdout, "accept client from <%s> [%d]\n", addr->sa_data, fd);
+    return true;
+  }
+
+  virtual void CloseEvent(int fd) 
+  {
+    fprintf(stdout, "client[%d] closeed\n", fd);
+  }
+
+  virtual bool ReadEvent(Socket* s)
+  {
+    char buf[128] = {0};
+    if (kNetTypeError == s->Read(sizeof(buf), buf)) {
+      s->Close();
+      return false;
+    }
+
+    fprintf(stdout, "recv from client: %s\n", buf);
+
+    s->Write(buf, strlen(buf));
+    return true;
+  }
+};
+
+
+static void 
+ServerMain(const char* ip = "127.0.0.1", unsigned short port = 5555)
+{
+  ConnectorHandler ch;
+  SelectNetwork network;
+
+  network.Attach(&ch);
+  network.Init();
+  network.Listen(ip, port);
+
+  fprintf(stdout, "server <%s, %d> starting ...\n", ip, port);
+  while (true) 
+    Sleep(100);
+
+  network.Destroy();
+}
+
+static void 
+ClientMain(const char* ip = "127.0.0.1", unsigned short port = 5555)
+{
+  Socket s;
+  s.Open();
+
+  if (s.Connect(ip, port)) {
+    fprintf(stdout, "connect to server success ...\n");
+  }
+  else {
+    fprintf(stderr, "connect to server failed ...\n");
+    return;
+  }
+
+  SYSTEMTIME t;
+  char buf[128];
+  while (true) {
+    GetLocalTime(&t);
+    sprintf(buf, "[%04d-%02d-%02d %02d:%02d:%02d:%03d]", 
+        t.wYear, t.wMonth, t.wDay, 
+        t.wHour, t.wMinute, t.wSecond, t.wMilliseconds);
+    if (kNetTypeError == s.Write(buf, strlen(buf)))
+      break;
+
+    memset(buf, 0, sizeof(buf));
+    if (kNetTypeError == s.Read(sizeof(buf), buf))
+      break;
+    fprintf(stdout, "recv from server: %s\n", buf);
+
+    Sleep(100);
+  }
+
+  s.Close();
+}
 
 int 
 main(int argc, char* argv[])
 {
+  if (argc < 2)
+    return 0;
+
+  NetLibrary::Singleton().Init();
+
+  if (0 == strcmp("srv", argv[1]))
+    ServerMain();
+  else if (0 == strcmp("clt", argv[1]))
+    ClientMain();
+
+  NetLibrary::Singleton().Destroy();
+
   return 0;
 }
