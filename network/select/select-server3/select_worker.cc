@@ -40,6 +40,7 @@ SelectWorker::SelectWorker(void)
 
 SelectWorker::~SelectWorker(void)
 {
+  Stop();
 }
 
 bool 
