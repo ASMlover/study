@@ -51,7 +51,7 @@ SelectWorker::Start(void)
 
   thread_ = new Thread(&SelectWorker::Routine, this);
   if (NULL == thread_) {
-    LOG_FAILX("new Thread failed\n");
+    LOG_FAIL("new Thread failed\n");
     return false;
   }
 
