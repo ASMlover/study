@@ -39,6 +39,7 @@ NetLibrary::NetLibrary(void)
 
 NetLibrary::~NetLibrary(void)
 {
+  Destroy();
 }
 
 NetLibrary& 
