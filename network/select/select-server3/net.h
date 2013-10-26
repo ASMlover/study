@@ -80,4 +80,7 @@ struct EventHandler {
   }
 };
 
+#include "socket.h"
+#include "select_network.h"
+
 #endif  //! __NET_HEADER_H__
