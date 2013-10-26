@@ -56,7 +56,7 @@ SelectListener::Start(const char* ip, unsigned short port)
 
   listener_ = new Socket();
   if (NULL == listener_) {
-    LOG_FAILX("new Socket failed\n");
+    LOG_FAIL("new Socket failed\n");
     return false;
   }
   listener_->Open();
@@ -65,7 +65,7 @@ SelectListener::Start(const char* ip, unsigned short port)
 
   thread_ = new Thread(&SelectListener::Routine, this);
   if (NULL == thread_) {
-    LOG_FAILX("new Thread failed\n");
+    LOG_FAIL("new Thread failed\n");
     return false;
   }
 
