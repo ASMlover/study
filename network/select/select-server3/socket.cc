@@ -29,6 +29,7 @@
 #endif
 #include "net.h"
 #include "logging.h"
+#include "address.h"
 #include "socket.h"
 
 
@@ -194,17 +195,20 @@ Socket::Listen(void)
 }
 
 bool 
-Socket::Accept(Socket* s, struct sockaddr* remote_addr)
+Socket::Accept(Socket* s, Address* remote_addr)
 {
   if (kNetTypeInvalid == fd_ || NULL == s)
     return false;
 
-  int addrlen = sizeof(struct sockaddr_in);
-  int fd = accept(fd_, remote_addr, &addrlen);
+  struct sockaddr_in addr;
+  int addrlen = sizeof(addr);
+  int fd = accept(fd_, (struct sockaddr*)&addr, &addrlen);
   if (kNetTypeInvalid == fd) 
     return false;
 
   s->Attach(fd);
+  if (NULL != remote_addr)
+    remote_addr->Attach(&addr);
   return true;
 }
 

@@ -27,6 +27,7 @@
 #include "net.h"
 #include "logging.h"
 #include "thread.h"
+#include "address.h"
 #include "socket.h"
 #include "select_poll.h"
 #include "select_listener.h"
@@ -102,11 +103,11 @@ SelectListener::Routine(void* argument)
     return;
 
   Socket s;
-  struct sockaddr addr;
+  Address addr;
   while (self->running_) {
     if (self->listener_->Accept(&s, &addr)) {
       self->poll_->Insert(s.fd(), EventHandler::kEventTypeRead);
-      self->handler_->AcceptEvent(s.fd(), &addr);
+      self->handler_->AcceptEvent(s.fd(), addr.ip(), addr.port());
     }
     else {
       Sleep(1);

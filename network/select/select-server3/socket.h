@@ -27,7 +27,7 @@
 #ifndef __SOCKET_HEADER_H__
 #define __SOCKET_HEADER_H__
 
-struct sockaddr;
+class Address;
 class Socket {
   int fd_;
 
@@ -66,7 +66,7 @@ public:
   bool Bind(const char* ip, unsigned short port);
   bool Listen(void);
 
-  bool Accept(Socket* s, struct sockaddr* remote_addr);
+  bool Accept(Socket* s, Address* remote_addr);
   bool Connect(const char* ip, unsigned short port);
   int Read(int length, char* buffer);
   int Write(const char* buffer, int length);

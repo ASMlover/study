@@ -32,9 +32,9 @@
 
 class ConnectorHandler : public EventHandler {
 public:
-  virtual bool AcceptEvent(int fd, sockaddr* addr)
+  virtual bool AcceptEvent(int fd, const char* ip, unsigned short port)
   {
-    fprintf(stdout, "accept client from <%s> [%d]\n", addr->sa_data, fd);
+    fprintf(stdout, "accept client from <%s, %d> [%d]\n", ip, port, fd);
     return true;
   }
 

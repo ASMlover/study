@@ -48,7 +48,6 @@ public:
 
 
 class Socket;
-struct sockaddr;
 struct EventHandler {
   enum EventType {
     kEventTypeNone  = 0x00, 
@@ -60,7 +59,7 @@ struct EventHandler {
   {
   }
 
-  virtual bool AcceptEvent(int fd, sockaddr* addr)
+  virtual bool AcceptEvent(int fd, const char* ip, unsigned short port)
   {
     return true;
   }
