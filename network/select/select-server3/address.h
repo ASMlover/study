@@ -39,6 +39,7 @@ public:
   ~Address(void);
 
   void Attach(struct sockaddr_in* addr);
+  void Detach(void);
 
   const char* ip(void) const;
   unsigned short port(void) const;

@@ -115,5 +115,6 @@ SelectListener::Routine(void* argument)
     }
 
     s.Detach();
+    addr.Detach();
   }
 }

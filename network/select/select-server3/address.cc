@@ -51,6 +51,12 @@ Address::Attach(struct sockaddr_in* addr)
   port_ = ntohs(addr->sin_port);
 }
 
+void 
+Address::Detach(void)
+{
+  memset(this, 0, sizeof(*this));
+}
+
 const char* 
 Address::ip(void) const 
 {
