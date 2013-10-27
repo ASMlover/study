@@ -29,7 +29,7 @@
 
 struct sockaddr_in;
 class Address {
-  unsigned int ip_;
+  char ip_[16];
   unsigned short port_;
 
   Address(const Address&);
@@ -38,7 +38,7 @@ public:
   explicit Address(void);
   ~Address(void);
 
-  void Set(struct sockaddr_in* addr);
+  void Attach(struct sockaddr_in* addr);
 
   const char* ip(void) const;
   unsigned short port(void) const;

@@ -27,14 +27,14 @@
 #ifndef _WINDOWS_
 # include <winsock2.h>
 #endif
+#include <string.h>
 #include "address.h"
 
 
 
 Address::Address(void)
-  : ip_(0)
-  , port_(0)
 {
+  memset(this, 0, sizeof(*this));
 }
 
 Address::~Address(void)
@@ -42,19 +42,19 @@ Address::~Address(void)
 }
 
 void 
-Address::Set(struct sockaddr_in* addr)
+Address::Attach(struct sockaddr_in* addr)
 {
   if (NULL == addr)
     return;
 
-  ip_ = addr->sin_addr.s_addr;
+  strcpy(ip_, inet_ntoa(addr->sin_addr));
   port_ = ntohs(addr->sin_port);
 }
 
 const char* 
 Address::ip(void) const 
 {
-  return inet_ntoa(*(struct in_addr*)ip_);
+  return ip_;
 }
 
 unsigned short 
