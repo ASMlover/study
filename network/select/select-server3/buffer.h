@@ -54,7 +54,7 @@ public:
     return storage_ - pos_;
   }
 
-  inline const char* free_space(void) const 
+  inline char* free_space(void) const 
   {
     return buffer_ + pos_;
   }
