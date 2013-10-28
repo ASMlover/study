@@ -73,7 +73,7 @@ int
 Buffer::Put(const char* buffer, int length)
 {
   if (pos_ + length > storage_)
-    Regrow(storage_ + kDefaultStorage);
+    Regrow();
 
   memcpy(buffer_ + pos_, buffer, length);
   pos_ += length;
@@ -96,12 +96,31 @@ Buffer::Get(int length, char* buffer)
   return copy_bytes;
 }
 
+void 
+Buffer::Increment(int bytes)
+{
+  pos_ += bytes;
+}
+
+void 
+Buffer::Decrement(int bytes)
+{
+  if (bytes > pos_) {
+    LOG_FAIL("bytes failed\n");
+    return;
+  }
+
+  if (bytes < pos_)
+    memmove(buffer_, buffer_ + bytes, pos_ - bytes);
+
+  pos_ -= bytes;
+}
+
 
 bool 
-Buffer::Regrow(int new_storage)
+Buffer::Regrow(void)
 {
-  if (new_storage <= storage_)
-    return true;
+  int new_storage = storage_ + kDefaultStorage;
 
   buffer_ = (char*)realloc(buffer_, new_storage);
   if (NULL == buffer_) {

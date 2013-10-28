@@ -28,7 +28,6 @@
 #define __BUFFER_HEADER_H__
 
 class Buffer {
-  enum {kDefaultStorage = 16 * 1024};
   char* buffer_;
   int   storage_;
   int   pos_;
@@ -36,6 +35,7 @@ class Buffer {
   Buffer(const Buffer&);
   Buffer& operator =(const Buffer&);
 public:
+  enum {kDefaultStorage = 16 * 1024};
   explicit Buffer(void);
   ~Buffer(void);
 
@@ -44,9 +44,19 @@ public:
     return pos_;
   }
 
+  inline const char* buffer(void) const 
+  {
+    return buffer_;
+  }
+
   inline int free_length(void) const 
   {
     return storage_ - pos_;
+  }
+
+  inline const char* free_space(void) const 
+  {
+    return buffer_ + pos_;
   }
 public:
   bool Init(int storage = kDefaultStorage);
@@ -54,8 +64,11 @@ public:
 
   int Put(const char* buffer, int length);
   int Get(int length, char* buffer);
-private:
-  bool Regrow(int new_storage);
+
+  void Increment(int bytes);
+  void Decrement(int bytes);
+  
+  bool Regrow(void);
 };
 
 #endif  //! __BUFFER_HEADER_H__
