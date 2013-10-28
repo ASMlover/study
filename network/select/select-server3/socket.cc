@@ -219,6 +219,24 @@ Socket::Read(int length, char* buffer)
   if (kNetTypeInvalid == fd_)
     return kNetTypeError;
 
+  return rbuf_.Get(length, buffer);
+}
+
+int 
+Socket::Write(const char* buffer, int length)
+{
+  if (kNetTypeInvalid == fd_)
+    return kNetTypeError;
+
+  return wbuf_.Put(buffer, length);
+}
+
+int 
+Socket::ReadBlock(int length, char* buffer)
+{
+  if (kNetTypeInvalid == fd_)
+    return kNetTypeError;
+
   int ret = recv(fd_, buffer, length, 0);
   if (kNetTypeError == ret)
     NLOG_ERRX("recv error\n");
@@ -227,7 +245,7 @@ Socket::Read(int length, char* buffer)
 }
 
 int 
-Socket::Write(const char* buffer, int length)
+Socket::WriteBlock(const char* buffer, int length)
 {
   if (kNetTypeInvalid == fd_)
     return kNetTypeError;
@@ -245,4 +263,45 @@ Socket::Write(const char* buffer, int length)
   }
 
   return total;
+}
+
+int 
+Socket::DealWithRead(void)
+{
+  if (kNetTypeInvalid == fd_)
+    return kNetTypeError;
+
+  char* free_space = rbuf_.free_space();
+  int free_length = rbuf_.free_length();
+
+  if (0 == free_length) {
+    rbuf_.Regrow();
+    free_space = rbuf_.free_space();
+    free_length = rbuf_.free_length();
+  }
+
+  int ret = recv(fd_, free_space, free_length, 0);
+  if (ret > 0)
+    rbuf_.Increment(ret);
+
+  return ret;
+}
+
+int 
+Socket::DealWithWrite(void)
+{
+  if (kNetTypeInvalid == fd_)
+    return kNetTypeError;
+
+  int length = wbuf_.length();
+  if (length <= 0)
+    return 0;
+
+  const char* buffer = wbuf_.buffer();
+  int ret = send(fd_, buffer, length, 0);
+
+  if (ret > 0)
+    wbuf_.Decrement(ret);
+
+  return ret;
 }

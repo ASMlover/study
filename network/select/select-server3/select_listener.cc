@@ -61,6 +61,7 @@ SelectListener::Start(const char* ip, unsigned short port)
     return false;
   }
   listener_->Open();
+  listener_->SetReuseAddr(true);
   listener_->Bind(ip, port);
   listener_->Listen();
 
@@ -106,8 +107,9 @@ SelectListener::Routine(void* argument)
   Address addr;
   while (self->running_) {
     if (self->listener_->Accept(&s, &addr)) {
-      self->poll_->Insert(s.fd(), EventHandler::kEventTypeRead);
-      self->handler_->AcceptEvent(s.fd(), addr.ip(), addr.port());
+      self->poll_->Insert(s.fd(), 
+          EventHandler::kEventTypeRead | EventHandler::kEventTypeWrite);
+      self->handler_->AcceptEvent(&s, &addr);
     }
     else {
       Sleep(1);

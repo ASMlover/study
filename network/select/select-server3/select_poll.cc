@@ -60,8 +60,8 @@ SelectPoll::CloseAll(void)
   LockerGuard<SpinLock> guard(spinlock_);
   std::map<int, std::pair<int, Socket*> >::iterator it;
   for (it = connectors_.begin(); it != connectors_.end(); ++it) {
+    handler_->CloseEvent(it->second.second);
     it->second.second->Close();
-    handler_->CloseEvent(it->first);
     delete it->second.second;
   }
   connectors_.clear();
@@ -76,8 +76,10 @@ SelectPoll::Insert(int fd, int ev)
     return false;
   }
   s->Attach(fd);
-  s->SetReadBuffer(rbytes_);
-  s->SetWriteBuffer(wbytes_);
+  s->SetNonBlock();
+  s->SetKeepAlive(true);
+  s->SetSelfReadBuffer(rbytes_);
+  s->SetSelfWriteBuffer(wbytes_);
 
   LockerGuard<SpinLock> guard(spinlock_);
   std::map<int, std::pair<int, Socket*> >::iterator it;
@@ -98,8 +100,8 @@ SelectPoll::Remove(int fd)
   std::map<int, std::pair<int, Socket*> >::iterator it;
   it = connectors_.find(fd);
   if (it != connectors_.end()) {
+    handler_->CloseEvent(it->second.second);
     it->second.second->Close();
-    handler_->CloseEvent(it->first);
     delete it->second.second;
     connectors_.erase(it);
   }
@@ -168,7 +170,6 @@ SelectPoll::InitSets(int* max_fd)
     fd = it->first;
 
     if (kNetTypeInvalid == it->second.second->fd()) {
-      handler_->CloseEvent(fd);
       delete it->second.second;
       it = connectors_.erase(it);
     }
@@ -206,10 +207,22 @@ SelectPoll::DispatchEvent(fd_set* set, int ev)
 
     switch (ev) {
     case EventHandler::kEventTypeRead:
-      handler_->ReadEvent(s);
+      {
+        int read_bytes = s->DealWithRead();
+        if (read_bytes > 0)
+          handler_->ReadEvent(s, read_bytes);
+        else {
+          handler_->CloseEvent(s);
+          s->Close();
+        }
+      }
       break;
     case EventHandler::kEventTypeWrite:
-      handler_->WriteEvent(s);
+      {
+        int write_bytes = s->DealWithWrite();
+        if (write_bytes > 0)
+          handler_->WriteEvent(s, write_bytes);
+      }
       break;
     }
   }

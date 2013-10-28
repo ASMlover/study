@@ -32,25 +32,22 @@
 
 class ConnectorHandler : public EventHandler {
 public:
-  virtual bool AcceptEvent(int fd, const char* ip, unsigned short port)
+  virtual bool AcceptEvent(Socket* s, Address* addr)
   {
-    fprintf(stdout, "accept client from <%s, %d> [%d]\n", ip, port, fd);
+    fprintf(stdout, "accept client from <%s, %d> [%d]\n", 
+        addr->ip(), addr->port(), s->fd());
     return true;
   }
 
-  virtual void CloseEvent(int fd) 
+  virtual void CloseEvent(Socket* s) 
   {
-    fprintf(stdout, "client[%d] closeed\n", fd);
+    fprintf(stdout, "client[%d] closed\n", s->fd());
   }
 
-  virtual bool ReadEvent(Socket* s)
+  virtual bool ReadEvent(Socket* s, int bytes)
   {
     char buf[128] = {0};
-    if (kNetTypeError == s->Read(sizeof(buf), buf)) {
-      s->Close();
-      return false;
-    }
-
+    s->Read(sizeof(buf), buf);
     fprintf(stdout, "recv from client: %s\n", buf);
 
     s->Write(buf, strlen(buf));
@@ -97,15 +94,15 @@ ClientMain(const char* ip = "127.0.0.1", unsigned short port = 5555)
     sprintf(buf, "[%04d-%02d-%02d %02d:%02d:%02d:%03d]", 
         t.wYear, t.wMonth, t.wDay, 
         t.wHour, t.wMinute, t.wSecond, t.wMilliseconds);
-    if (kNetTypeError == s.Write(buf, strlen(buf)))
+    if (kNetTypeError == s.WriteBlock(buf, strlen(buf)))
       break;
 
     memset(buf, 0, sizeof(buf));
-    if (kNetTypeError == s.Read(sizeof(buf), buf))
+    if (kNetTypeError == s.ReadBlock(sizeof(buf), buf))
       break;
     fprintf(stdout, "recv from server: %s\n", buf);
 
-    Sleep(100);
+    Sleep(10);
   }
 
   s.Close();

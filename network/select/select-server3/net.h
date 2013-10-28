@@ -47,6 +47,7 @@ public:
 };
 
 
+class Address;
 class Socket;
 struct EventHandler {
   enum EventType {
@@ -59,26 +60,27 @@ struct EventHandler {
   {
   }
 
-  virtual bool AcceptEvent(int fd, const char* ip, unsigned short port)
+  virtual bool AcceptEvent(Socket* s, Address* addr)
   {
     return true;
   }
 
-  virtual void CloseEvent(int fd)
+  virtual void CloseEvent(Socket* s)
   {
   }
 
-  virtual bool ReadEvent(Socket* s)
+  virtual bool ReadEvent(Socket* s, int bytes)
   {
     return true;
   }
 
-  virtual bool WriteEvent(Socket* s)
+  virtual bool WriteEvent(Socket* s, int bytes)
   {
     return true;
   }
 };
 
+#include "address.h"
 #include "socket.h"
 #include "select_network.h"
 

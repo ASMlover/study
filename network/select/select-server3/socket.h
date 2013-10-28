@@ -79,6 +79,9 @@ public:
 
   int ReadBlock(int length, char* buffer);
   int WriteBlock(const char* buffer, int length);
+
+  int DealWithRead(void);
+  int DealWithWrite(void);
 private:
   bool SetSockOpt(int level, int optname, int optval);
 };
