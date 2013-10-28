@@ -30,12 +30,14 @@
 #include "net.h"
 #include "logging.h"
 #include "address.h"
+#include "select_poll.h"
 #include "socket.h"
 
 
 
 Socket::Socket(void)
   : fd_(kNetTypeInvalid)
+  , poll_(NULL)
 {
 }
 
@@ -225,10 +227,26 @@ Socket::Read(int length, char* buffer)
 int 
 Socket::Write(const char* buffer, int length)
 {
-  if (kNetTypeInvalid == fd_)
+  if (kNetTypeInvalid == fd_ || NULL == poll_)
     return kNetTypeError;
 
-  return wbuf_.Put(buffer, length);
+  int ret = 0;
+  if (0 == wbuf_.length()) {
+    ret = send(fd_, buffer, length, 0);
+    if (ret != length) {
+      poll_->AddEvent(fd_, EventHandler::kEventTypeWrite);
+
+      if (ret > 0)
+        ret = wbuf_.Put(buffer + ret, length - ret);
+      else 
+        ret = wbuf_.Put(buffer, length);
+    }
+  }
+  else {
+    ret = wbuf_.Put(buffer, length);
+  }
+
+  return ret;
 }
 
 int 
@@ -290,7 +308,7 @@ Socket::DealWithRead(void)
 int 
 Socket::DealWithWrite(void)
 {
-  if (kNetTypeInvalid == fd_)
+  if (kNetTypeInvalid == fd_ || NULL == poll_)
     return kNetTypeError;
 
   int length = wbuf_.length();
@@ -300,8 +318,12 @@ Socket::DealWithWrite(void)
   const char* buffer = wbuf_.buffer();
   int ret = send(fd_, buffer, length, 0);
 
-  if (ret > 0)
+  if (ret > 0) {
     wbuf_.Decrement(ret);
+
+    if (0 == wbuf_.length())
+      poll_->DelEvent(fd_, EventHandler::kEventTypeWrite);
+  }
 
   return ret;
 }

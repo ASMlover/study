@@ -107,8 +107,7 @@ SelectListener::Routine(void* argument)
   Address addr;
   while (self->running_) {
     if (self->listener_->Accept(&s, &addr)) {
-      self->poll_->Insert(s.fd(), 
-          EventHandler::kEventTypeRead | EventHandler::kEventTypeWrite);
+      self->poll_->Insert(s.fd(), EventHandler::kEventTypeRead);
       self->handler_->AcceptEvent(&s, &addr);
     }
     else {

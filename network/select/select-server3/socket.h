@@ -30,8 +30,10 @@
 #include "buffer.h"
 
 class Address;
+class SelectPoll;
 class Socket {
   int fd_;
+  SelectPoll* poll_;
   Buffer rbuf_;
   Buffer wbuf_;
 
@@ -56,6 +58,11 @@ public:
     int fd = fd_;
     fd_ = -1;
     return fd;
+  }
+
+  inline void Attach(SelectPoll* poll)
+  {
+    poll_ = poll;
   }
 public:
   bool SetTcpNoDelay(bool nodelay);

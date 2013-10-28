@@ -76,6 +76,7 @@ SelectPoll::Insert(int fd, int ev)
     return false;
   }
   s->Attach(fd);
+  s->Attach(this);
   s->SetNonBlock();
   s->SetKeepAlive(true);
   s->SetSelfReadBuffer(rbytes_);
