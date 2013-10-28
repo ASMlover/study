@@ -45,81 +45,48 @@ Socket::~Socket(void)
 }
 
 bool 
-Socket::SetTcpNoDelay(bool nodelay)
+Socket::SetSockOpt(int level, int optname, int optval) 
 {
   if (kNetTypeInvalid == fd_)
     return false;
 
-  int optval = (nodelay ? 1 : 0);
-  if (kNetTypeError == setsockopt(fd_, IPPROTO_TCP, 
-        TCP_NODELAY, (const char*)&optval, sizeof(optval))) {
+  if (kNetTypeError == setsockopt(fd_, level, 
+        optname, (const char*)&optval, sizeof(optval))) {
     NLOG_ERRX("setsockopt error\n");
     return false;
   }
 
   return true;
+}
+
+bool 
+Socket::SetTcpNoDelay(bool nodelay)
+{
+  return SetSockOpt(IPPROTO_TCP, TCP_NODELAY, (nodelay ? 1 : 0));
 }
 
 bool 
 Socket::SetReuseAddr(bool reuse) 
 {
-  if (kNetTypeInvalid == fd_)
-    return false;
-
-  int optval = (reuse ? 1 : 0);
-  if (kNetTypeError == setsockopt(fd_, SOL_SOCKET, 
-        SO_REUSEADDR, (const char*)&optval, sizeof(optval))) {
-    NLOG_ERRX("setsockopt error\n");
-    return false;
-  }
-
-  return true;
+  return SetSockOpt(SOL_SOCKET, SO_REUSEADDR, (reuse ? 1 : 0));
 }
 
 bool 
 Socket::SetKeepAlive(bool keep)
 {
-  if (kNetTypeInvalid == fd_)
-    return false;
-
-  int optval = (keep ? 1 : 0);
-  if (kNetTypeError == setsockopt(fd_, SOL_SOCKET, 
-        SO_KEEPALIVE, (const char*)&optval, sizeof(optval))) {
-    NLOG_ERRX("setsockopt error\n");
-    return false;
-  }
-
-  return true;
+  return SetSockOpt(SOL_SOCKET, SO_KEEPALIVE, (keep ? 1 : 0));
 }
 
 bool 
 Socket::SetReadBuffer(int bytes) 
 {
-  if (kNetTypeInvalid == fd_)
-    return false;
-
-  if (kNetTypeError == setsockopt(fd_, SOL_SOCKET, 
-        SO_RCVBUF, (const char*)&bytes, sizeof(bytes))) {
-    NLOG_ERRX("setsockopt error\n");
-    return false;
-  }
-
-  return true;
+  return SetSockOpt(SOL_SOCKET, SO_RCVBUF, bytes);
 }
 
 bool 
 Socket::SetWriteBuffer(int bytes) 
 {
-  if (kNetTypeInvalid == fd_)
-    return false;
-
-  if (kNetTypeError == setsockopt(fd_, SOL_SOCKET, 
-        SO_SNDBUF, (const char*)&bytes, sizeof(bytes))) {
-    NLOG_ERRX("setsockopt error\n");
-    return false;
-  }
-
-  return true;
+  return SetSockOpt(SOL_SOCKET, SO_SNDBUF, bytes);
 }
 
 bool 
@@ -135,6 +102,18 @@ Socket::SetNonBlock(void)
   }
 
   return true;
+}
+
+void 
+Socket::SetSelfReadBuffer(int bytes)
+{
+  rbuf_.Init(bytes);
+}
+
+void 
+Socket::SetSelfWriteBuffer(int bytes)
+{
+  wbuf_.Init(bytes);
 }
 
 bool 

@@ -64,6 +64,8 @@ public:
   bool SetReadBuffer(int bytes);
   bool SetWriteBuffer(int bytes);
   bool SetNonBlock(void);
+  void SetSelfReadBuffer(int bytes);
+  void SetSelfWriteBuffer(int bytes);
 
   bool Open(void);
   void Close(void);
@@ -74,6 +76,11 @@ public:
   bool Connect(const char* ip, unsigned short port);
   int Read(int length, char* buffer);
   int Write(const char* buffer, int length);
+
+  int ReadBlock(int length, char* buffer);
+  int WriteBlock(const char* buffer, int length);
+private:
+  bool SetSockOpt(int level, int optname, int optval);
 };
 
 #endif  //! __SOCKET_HEADER_H__
