@@ -27,9 +27,13 @@
 #ifndef __SOCKET_HEADER_H__
 #define __SOCKET_HEADER_H__
 
+#include "buffer.h"
+
 class Address;
 class Socket {
   int fd_;
+  Buffer rbuf_;
+  Buffer wbuf_;
 
   Socket(const Socket&);
   Socket& operator =(const Socket&);

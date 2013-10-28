@@ -37,12 +37,19 @@ class Address {
 public:
   explicit Address(void);
   ~Address(void);
+  
+  inline const char* ip(void) const 
+  {
+    return ip_;
+  }
 
+  inline unsigned short port(void) const 
+  {
+    return port_;
+  }
+public:
   void Attach(struct sockaddr_in* addr);
   void Detach(void);
-
-  const char* ip(void) const;
-  unsigned short port(void) const;
 };
 
 #endif  //! __ADDRESS_HEADER_H__

@@ -57,14 +57,3 @@ Address::Detach(void)
   memset(this, 0, sizeof(*this));
 }
 
-const char* 
-Address::ip(void) const 
-{
-  return ip_;
-}
-
-unsigned short 
-Address::port(void) const 
-{
-  return port_;
-}
