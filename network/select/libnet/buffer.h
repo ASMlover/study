@@ -54,7 +54,7 @@ public:
     return buffer_ + length_;
   }
 
-  inline int free_Length(void) const 
+  inline int free_length(void) const 
   {
     return storage_ - length_;
   }
