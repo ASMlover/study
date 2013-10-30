@@ -24,44 +24,37 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __NET_HEADER_H__
-#define __NET_HEADER_H__
-
-enum NetType {
-  kNetTypeInval = -1, 
-  kNetTypeError = -1, 
-};
-
-enum EventType {
-  kEventTypeNone  = 0x00, 
-  kEventTypeRead  = 0x01, 
-  kEventTypeWrite = 0x02, 
-};
-
-class NetLibrary {
-  static bool loaded_;
-
-  NetLibrary(const NetLibrary&);
-  NetLibrary& operator =(const NetLibrary&);
-public:
-  explicit NetLibrary(void);
-  ~NetLibrary(void);
-
-  static NetLibrary& Singleton(void);
-  bool Init(void);
-  void Destroy(void);
-};
+#include <stdio.h>
+#include "net.h"
 
 
-class Address;
-class Socket;
-struct EventHandler {
-  virtual ~EventHandler(void);
 
-  virtual bool AcceptEvent(Socket* s, Address* addr);
-  virtual void CloseEvent(Socket* s);
-  virtual bool ReadEvent(Socket* s);
-  virtual bool WriteEvent(Socket* s);
-};
+EventHandler::~EventHandler(void)
+{
+}
 
-#endif  //! __NET_HEADER_H__
+bool 
+EventHandler::AcceptEvent(Socket* s, Address* addr)
+{
+  if (NULL == s || NULL == addr)
+    return false;
+
+  return true;
+}
+
+void 
+EventHandler::CloseEvent(Socket* s)
+{
+}
+
+bool 
+EventHandler::ReadEvent(Socket* s)
+{
+  return (NULL != s);
+}
+
+bool 
+EventHandler::WriteEvent(Socket* s)
+{
+  return (NULL != s);
+}
