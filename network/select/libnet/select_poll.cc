@@ -28,6 +28,7 @@
 # ifndef _WINDOWS_
 #   include <winsock2.h>
 # endif
+# define EWOULDBLOCK  WSAEWOULDBLOCK
 #elif defined(__linux__)
 # include <sys/types.h>
 # include <sys/select.h>
@@ -240,7 +241,7 @@ SelectPoll::DispatchEvents(void)
         s->Close();
       }
       else {
-        if (WSAEWOULDBLOCK != NErrno()) {
+        if (EWOULDBLOCK != NErrno()) {
           handler_->CloseEvent(s);
           s->Close();
         }
