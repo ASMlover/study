@@ -79,11 +79,7 @@ public:
   bool Polling(int millitm = -1);
 private:
   void InitSets(int* max_fd);
-#if defined(_WINDOWS_) || defined(_MSC_VER)
-  void DispatchEvent(fd_set* set, int ev);
-#elif defined(__linux__)
   void DispatchEvents(void);
-#endif
 };
 
 #endif  //! __SELECT_POLL_HEADER_H__
