@@ -34,6 +34,8 @@
 # include <netinet/in.h>
 # include <netinet/tcp.h>
 # include <arpa/inet.h>
+# include <unistd.h>
+# include <fcntl.h>
 #endif
 #include "net.h"
 #include "logging.h"
