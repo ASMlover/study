@@ -27,6 +27,7 @@
 #include "net.h"
 #include "logging.h"
 #include "thread.h"
+#include "tools.h"
 #include "select_poll.h"
 #include "select_worker.h"
 
@@ -86,6 +87,7 @@ SelectWorker::Routine(void* argument)
 
   while (self->running_) {
     if (!self->poll_->Polling()) {
+      ToolsLib::Sleep(1);
       continue;
     }
   }
