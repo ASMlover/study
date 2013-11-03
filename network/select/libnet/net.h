@@ -64,4 +64,8 @@ struct EventHandler {
   virtual bool WriteEvent(Socket* s);
 };
 
+#include "address.h"
+#include "socket.h"
+#include "select_network.h"
+
 #endif  //! __NET_HEADER_H__
