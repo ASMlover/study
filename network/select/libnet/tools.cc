@@ -37,7 +37,7 @@ void
 ToolsLib::Sleep(int millitm)
 {
 #if defined(_WINDOWS_) || defined(_MSC_VER)
-  Sleep(millitm);
+  ::Sleep(millitm);
 #elif defined(__linux__)
   usleep(millitm * 1000);
 #endif
