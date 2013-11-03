@@ -55,7 +55,7 @@ public:
   bool Start(void)
   {
     start_event_ = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if (NULL != start_event_)
+    if (NULL == start_event_)
       return false;
 
     thread_ = (HANDLE)_beginthreadex(NULL, 
