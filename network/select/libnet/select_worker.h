@@ -29,7 +29,7 @@
 
 class Thread;
 class SelectPoll;
-class EventHandler;
+struct EventHandler;
 class SelectWorker {
   bool        running_;
   Thread*     thread_;
