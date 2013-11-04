@@ -71,7 +71,7 @@ ServerMain(const char* ip = "127.0.0.1", unsigned short port = 5555)
   network.Init();
   
   if (network.Listen(ip, port)) {
-    fprintf(stdout, "server <%s, %d> starting ...\n");
+    fprintf(stdout, "server <%s, %d> starting ...\n", ip, port);
   }
   else {
     fprintf(stderr, "server start failed ...\n");
@@ -109,11 +109,11 @@ ClientMain(const char* ip = "127.0.0.1", unsigned short port = 5555)
     sprintf(buf, "[%04d-%02d-%02d %02d:%02d:%02d:%03d]", 
         now->tm_year + 1900, now->tm_mon + 1, now->tm_mday, 
         now->tm_hour, now->tm_min, now->tm_sec, tb.millitm);
-    if (!s.WriteBlock(buf, strlen(buf)))
+    if (kNetTypeError == s.WriteBlock(buf, strlen(buf)))
       break;
 
     memset(buf, 0, sizeof(buf));
-    if (!s.ReadBlock(sizeof(buf), buf))
+    if (kNetTypeError == s.ReadBlock(sizeof(buf), buf))
       break;
     fprintf(stdout, "recv from server : %s\n", buf);
 
