@@ -88,7 +88,7 @@ SelectListener::Stop(void)
     thread_ = NULL;
   }
 
-  if (NULL == listener_) {
+  if (NULL != listener_) {
     listener_->Close();
     delete listener_;
     listener_ = NULL;
