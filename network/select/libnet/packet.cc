@@ -24,60 +24,74 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __PACKET_HEADER_H__
-#define __PACKET_HEADER_H__
+#include <stdlib.h>
+#include <string.h>
+#include "logging.h"
+#include "buffer.h"
+#include "packet.h"
 
 
-#define LIBNET_SIGNATURE  (0x07dd)
 
-struct PacketHeader {
-  unsigned short signature;
-  unsigned short code;
-  int            size;
-};
+Packet::Packet(void)
+  : alloced_(false)
+  , data_(NULL)
+{
+  memset(&header_, 0, sizeof(header_));
+  header_.signature = LIBNET_SIGNATURE;
+}
 
-class Buffer;
-class Packet {
-  bool  alloced_;
-  char* data_;
-  PacketHeader header_;
+Packet::~Packet(void)
+{
+  ReleaseData();
+}
 
-  Packet(const Packet&);
-  Packet& operator =(const Packet&);
-public:
-  explicit Packet(void);
-  ~Packet(void);
+bool 
+Packet::Encode(Buffer* dest)
+{
+  if (NULL == dest || NULL == data_ || header_.size <= 0)
+    return false;
 
-  inline void SetCode(unsigned short code)
-  {
-    header_.code = code;
+  dest->Put((const char*)&header_, sizeof(header_));
+  dest->Put((const char*)data_, header_.size);
+
+  return true;
+}
+
+bool 
+Packet::Decode(Buffer* src)
+{
+  if (NULL == src || alloced_)
+    return false;
+
+  int header_len = sizeof(PacketHeader);
+  if (src->length() < header_len)
+    return false;
+  
+  PacketHeader* header = (PacketHeader*)src->buffer();
+  if (LIBNET_SIGNATURE != header->signature)
+    return false;
+  if (src->length() < (header_len + header->size))
+    return false;
+
+  data_ = (char*)malloc(header->size);
+  if (NULL == data_)
+    return false;
+  alloced_ = true;
+
+  src->Get(header_len, (char*)&header_);
+  src->Get(header_.size, data_);
+
+  return true;
+}
+
+
+void 
+Packet::ReleaseData(void)
+{
+  if (NULL != data_ && alloced_) {
+    free(data_);
+    data_ = NULL;
+
+    alloced_ = false;
   }
-
-  inline unsigned short GetCode(void) const 
-  {
-    return header_.code;
-  }
-
-  inline void SetData(char* data, int size)
-  {
-    data_ = data;
-    header_.size = size;
-  }
-
-  inline const char* GetData(void) const 
-  {
-    return data_;
-  }
-
-  inline PacketHeader* header(void)
-  {
-    return &header_;
-  }
-public:
-  bool Encode(Buffer* dest);
-  bool Decode(Buffer* src);
-
-  void ReleaseData(void);
-};
-
-#endif  //! __PACKET_HEADER_H__
+}
