@@ -343,6 +343,4 @@ Socket::DealWithSyncWrite(void)
     wbuf_.Decrement(ret);
 
   return ret;
-
-  return 0;
 }
