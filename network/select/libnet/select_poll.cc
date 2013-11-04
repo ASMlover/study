@@ -80,22 +80,23 @@ SelectPoll::Insert(int fd, int ev)
   if (NULL == handler_)
     return false;
 
-  Socket* s = new Socket();
-  if (NULL == s) {
-    LOG_WARN("new Socket failed\n");
-    return false;
-  }
-  s->Attach(fd);
-  s->SetNonBlock();
-  s->SetKeepAlive(true);
-  s->SetSelfReadBuffer(rbytes_);
-  s->SetSelfWriteBuffer(wbytes_);
-
   LockerGuard<SpinLock> guard(spinlock_);
   std::map<int, std::pair<int, Socket*> >::iterator it;
   it = connectors_.find(fd);
-  if (it == connectors_.end())
+  if (it == connectors_.end()) {
+    Socket* s = new Socket();
+    if (NULL == s) {
+      LOG_WARN("new Socket failed\n");
+      return false;
+    }
+    s->Attach(fd);
+    s->SetNonBlock();
+    s->SetKeepAlive(true);
+    s->SetSelfReadBuffer(rbytes_);
+    s->SetSelfWriteBuffer(wbytes_);
+    
     connectors_[fd] = std::make_pair<int, Socket*>(ev, s);
+  }
 
   return true;
 }
