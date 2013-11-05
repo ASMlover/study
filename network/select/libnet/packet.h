@@ -58,9 +58,9 @@ public:
     return header_.code;
   }
 
-  inline void SetData(char* data, int size)
+  inline void SetData(const char* data, int size)
   {
-    data_ = data;
+    data_ = (char*)data;
     header_.size = size;
   }
 
