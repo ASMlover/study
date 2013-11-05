@@ -39,6 +39,7 @@
 #endif
 #include "net.h"
 #include "logging.h"
+#include "packet.h"
 #include "address.h"
 #include "socket.h"
 
@@ -302,6 +303,27 @@ Socket::WriteBlock(const char* buffer, int length)
   }
 
   return total;
+}
+
+bool 
+Socket::ReadPacket(Packet* packet)
+{
+  if (kNetTypeInval == fd_ || NULL == packet)
+    return false;
+
+  return packet->Decode(&rbuf_);
+}
+
+bool 
+Socket::WritePacket(const char* buffer, int length)
+{
+  if (kNetTypeInval == fd_)
+    return false;
+
+  Packet packet;
+  packet.SetData(buffer, length);
+  
+  return packet.Encode(&wbuf_);
 }
 
 int 

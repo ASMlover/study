@@ -30,6 +30,7 @@
 #include "buffer.h"
 
 class Address;
+class Packet;
 class Socket {
   int fd_;
   Buffer rbuf_;
@@ -78,6 +79,8 @@ public:
   int Write(const char* buffer, int length);
   int ReadBlock(int length, char* buffer);
   int WriteBlock(const char* buffer, int length);
+  bool ReadPacket(Packet* packet);
+  bool WritePacket(const char* buffer, int length);
 
   int DealWithSyncRead(void);
   int DealWithSyncWrite(void);
