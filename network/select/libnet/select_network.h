@@ -61,6 +61,7 @@ public:
   void Destroy(void);
 
   bool Listen(const char* ip = "127.0.0.1", unsigned short port = 5555);
+  Socket* Connect(const char* ip = "127.0.0.1", unsigned short port = 5555);
 };
 
 #endif  //! __SELECT_NETWORK_HEADER_H__

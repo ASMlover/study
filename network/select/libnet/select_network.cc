@@ -125,3 +125,18 @@ SelectNetwork::Listen(const char* ip, unsigned short port)
   listeners_.push_back(listener);
   return true;
 }
+
+Socket* 
+SelectNetwork::Connect(const char* ip, unsigned short port)
+{
+  Socket s;
+
+  s.Open();
+  int fd = s.fd();
+  if (!s.Connect(ip, port))
+    return false;
+  s.Detach();
+
+  poll_->Insert(fd, kEventTypeRead | kEventTypeWrite);
+  return poll_->GetConnector(fd);
+}
