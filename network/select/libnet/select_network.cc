@@ -134,7 +134,7 @@ SelectNetwork::Connect(const char* ip, unsigned short port)
   s.Open();
   int fd = s.fd();
   if (!s.Connect(ip, port))
-    return false;
+    return NULL;
   s.Detach();
 
   poll_->Insert(fd, kEventTypeRead | kEventTypeWrite);
