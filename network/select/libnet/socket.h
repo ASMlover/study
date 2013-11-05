@@ -81,6 +81,7 @@ public:
   int WriteBlock(const char* buffer, int length);
   bool ReadPacket(Packet* packet);
   bool WritePacket(const char* buffer, int length);
+  bool WritePacket(Packet* packet);
 
   int DealWithSyncRead(void);
   int DealWithSyncWrite(void);

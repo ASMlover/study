@@ -326,6 +326,15 @@ Socket::WritePacket(const char* buffer, int length)
   return packet.Encode(&wbuf_);
 }
 
+bool 
+Socket::WritePacket(Packet* packet)
+{
+  if (kNetTypeInval == fd_ || NULL == packet)
+    return false;
+
+  return packet->Encode(&wbuf_);
+}
+
 int 
 Socket::DealWithSyncRead(void)
 {
