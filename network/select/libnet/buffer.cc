@@ -72,8 +72,10 @@ Buffer::Destroy(void)
 int 
 Buffer::Put(const char* buffer, int bytes)
 {
-  if (length_ + bytes > storage_)
-    Regrow();
+  if (length_ + bytes > storage_) {
+    if (!Regrow())
+      return 0;
+  }
 
   memcpy(buffer_ + length_, buffer, bytes);
   length_ += bytes;
@@ -123,7 +125,6 @@ bool
 Buffer::Regrow(void)
 {
   int new_storage = storage_ + kDefaultStorage;
-
   buffer_ = (char*)realloc(buffer_, new_storage);
   if (NULL == buffer_) {
     LOG_FAIL("realloc failed\n");

@@ -37,7 +37,6 @@ Packet::Packet(void)
   , data_(NULL)
 {
   memset(&header_, 0, sizeof(header_));
-  header_.signature = LIBNET_SIGNATURE;
 }
 
 Packet::~Packet(void)
@@ -68,18 +67,27 @@ Packet::Decode(Buffer* src)
     return false;
   
   PacketHeader* header = (PacketHeader*)src->buffer();
-  if (LIBNET_SIGNATURE != header->signature)
-    return false;
   if (src->length() < (header_len + header->size))
     return false;
 
   data_ = (char*)malloc(header->size);
-  if (NULL == data_)
+  if (NULL == data_) {
+    LOG_FAIL("malloc failed\n");
     return false;
+  }
   alloced_ = true;
 
-  src->Get(header_len, (char*)&header_);
-  src->Get(header_.size, data_);
+  int ret;
+  ret = src->Get(header_len, (char*)&header_);
+  if (ret != header_len) {
+    LOG_WARN("decode get header error get[%d]\n", ret);
+    return false;
+  }
+  ret = src->Get(header_.size, data_);
+  if (ret != header_.size) {
+    LOG_WARN("decode get data error get[%d]\n", ret);
+    return false;
+  }
 
   return true;
 }

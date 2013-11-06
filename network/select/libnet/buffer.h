@@ -35,7 +35,10 @@ class Buffer {
   Buffer(const Buffer&);
   Buffer& operator =(const Buffer&);
 public:
-  enum { kDefaultStorage = 16 * 1024 };
+  enum { 
+    kDefaultStorage = 16 * 1024, 
+    kLimitedStorage = 1024 * 1024, 
+  };
   explicit Buffer(void);
   ~Buffer(void);
 
@@ -57,6 +60,11 @@ public:
   inline int free_length(void) const 
   {
     return storage_ - length_;
+  }
+
+  inline int storage(void) const 
+  {
+    return storage_;
   }
 public:
   bool Init(int storage = kDefaultStorage);

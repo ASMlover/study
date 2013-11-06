@@ -31,9 +31,7 @@
 #define LIBNET_SIGNATURE  (0x07dd)
 
 struct PacketHeader {
-  unsigned short signature;
-  unsigned short code;
-  int            size;
+  int size;
 };
 
 class Buffer;
@@ -47,16 +45,6 @@ class Packet {
 public:
   explicit Packet(void);
   ~Packet(void);
-
-  inline void SetCode(unsigned short code)
-  {
-    header_.code = code;
-  }
-
-  inline unsigned short GetCode(void) const 
-  {
-    return header_.code;
-  }
 
   inline void SetData(const char* data, int size)
   {
