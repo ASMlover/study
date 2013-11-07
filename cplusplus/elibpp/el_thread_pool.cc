@@ -48,10 +48,10 @@ ThreadPool::~ThreadPool(void)
 void 
 ThreadPool::Start(int thread_count)
 {
-  if (thread_count < DEF_THREADS_MIN)
-    thread_count = DEF_THREADS_MIN;
-  if (thread_count > DEF_THREADS_MAX)
-    thread_count = DEF_THREADS_MAX;
+  if (thread_count < kDefMinThreadsCount)
+    thread_count = kDefMinThreadsCount;
+  if (thread_count > kDefMaxThreadsCount)
+    thread_count = kDefMaxThreadsCount;
 
   running_ = true;
   for (int i = 0; i < thread_count; ++i) {

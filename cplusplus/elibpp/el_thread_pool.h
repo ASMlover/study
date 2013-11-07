@@ -48,8 +48,8 @@ struct Task {
 class Thread;
 class ThreadPool {
   enum {
-    DEF_THREADS_MIN = 8, 
-    DEF_THREADS_MAX = 256, 
+    kDefMinThreadsCount = 8, 
+    kDefMaxThreadsCount = 256, 
   };
 
   Mutex mutex_;
@@ -65,7 +65,7 @@ public:
   explicit ThreadPool(void);
   ~ThreadPool(void);
 
-  void Start(int thread_count = DEF_THREADS_MIN);
+  void Start(int thread_count = kDefMinThreadsCount);
   void Stop(void);
   void Run(void (*routine)(void*) = NULL, void* argument = NULL);
 private:
