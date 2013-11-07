@@ -44,7 +44,7 @@ OBJS	= el_test_main.obj el_test_mutex.obj el_test_spinlock.obj\
 	el_win_net.obj\
 	\
 	el_allocator.obj el_thread_pool.obj el_buffer.obj el_time.obj\
-	el_logging.obj el_net.obj
+	el_logging.obj el_net.obj el_net_buffer.obj
 
 
 
