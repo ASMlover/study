@@ -36,10 +36,10 @@ static inline int
 ColorVfprintf(FILE* stream, int color, const char* format, va_list ap)
 {
   switch (color) {
-  case COLOR_RED:
+  case kColorTypeRed:
     fprintf(stream, "\033[31;1m");
     break;
-  case COLOR_GREEN:
+  case kColorTypeGreen:
     fprintf(stream, "\033[32;1m");
     break;
   }

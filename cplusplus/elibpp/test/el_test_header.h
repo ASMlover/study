@@ -88,7 +88,7 @@ static void el_Unit##name(void)
 do {\
   if (!(expr)) {\
     el::ColorFprintf(stderr, \
-        el::COLOR_RED, \
+        el::kColorTypeRed, \
         "assertion failed in %s on line %d : %s\n", \
         __FILE__, \
         __LINE__, \

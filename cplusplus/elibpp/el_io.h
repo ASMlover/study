@@ -29,10 +29,10 @@
 
 namespace el {
 
-enum IOColorType {
-  COLOR_UNKNOWN = 0, 
-  COLOR_RED     = 1, 
-  COLOR_GREEN   = 2, 
+enum ColorType {
+  kColorTypeUnknown = 0, 
+  kColorTypeRed     = 1, 
+  kColorTypeGreen   = 2, 
 };
 
 extern int ColorPrintf(int color, const char* format, ...);

@@ -42,10 +42,10 @@ ColorVfprintf(FILE* stream, int color, const char* format, va_list ap)
   WORD old_color = info.wAttributes;
 
   switch (color) {
-  case COLOR_RED:
+  case kColorTypeRed:
     color = FOREGROUND_INTENSITY | FOREGROUND_RED;
     break;
-  case COLOR_GREEN:
+  case kColorTypeGreen:
     color = FOREGROUND_INTENSITY | FOREGROUND_GREEN;
     break;
   default:
