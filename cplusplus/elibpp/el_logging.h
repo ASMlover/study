@@ -48,7 +48,7 @@ struct LogFile {
 
 struct Time;
 class Logging {
-  enum {kDefaultBufferSize = 16 * 1024};
+  enum {kDefBufferSize = 16 * 1024};
 
   Logging(const Logging&);
   Logging& operator =(const Logging&);

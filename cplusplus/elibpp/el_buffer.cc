@@ -74,7 +74,7 @@ Buffer::Create(int length)
   if (NULL != buffer_)
     free(buffer_);
 
-  length_ = (length < DEF_BUFLEN ? DEF_BUFLEN : length);
+  length_ = (length < kDefBufferLength ? kDefBufferLength : length);
   buffer_ = (char*)malloc(length_);
   if (NULL == buffer_)
     return false;

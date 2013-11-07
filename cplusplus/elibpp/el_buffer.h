@@ -30,7 +30,7 @@
 namespace el {
 
 class Buffer {
-  enum { DEF_BUFLEN = 1024 * 1024 };
+  enum { kDefBufferLength = 1024 * 1024 };
   char* buffer_;
   int length_;
   int rpos_;
@@ -44,7 +44,7 @@ public:
   explicit Buffer(void);
   ~Buffer(void);
 
-  bool Create(int length = DEF_BUFLEN);
+  bool Create(int length = kDefBufferLength);
   void Release(void);
   void Clear(void);
 

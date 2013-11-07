@@ -136,7 +136,7 @@ Logging::GetFileStream(int severity, Time* time)
     sprintf(fname, "./%s/%s/%04d%02d%02d.log", 
         ROOT_DIR, directory, time->year, time->mon, time->day);
     stream = fopen(fname, "a+");
-    setvbuf(stream, NULL, _IOFBF, kDefaultBufferSize);
+    setvbuf(stream, NULL, _IOFBF, kDefBufferSize);
 
     file_list_[severity].year = time->year;
     file_list_[severity].mon  = time->mon;
@@ -154,7 +154,7 @@ Logging::GetFileStream(int severity, Time* time)
       sprintf(fname, "%s/%s/%04d%02d%02d.log", 
           ROOT_DIR, directory, time->year, time->mon, time->day);
       stream = fopen(fname, "a+");
-      setvbuf(stream, NULL, _IOFBF, kDefaultBufferSize);
+      setvbuf(stream, NULL, _IOFBF, kDefBufferSize);
 
       file_list_[severity].year = time->year;
       file_list_[severity].mon  = time->mon;
