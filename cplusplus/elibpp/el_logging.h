@@ -48,22 +48,22 @@ struct LogFile {
 
 struct Time;
 class Logging {
-  enum {DEF_BUFSIZE = 16 * 1024};
+  enum {kDefaultBufferSize = 16 * 1024};
 
   Logging(const Logging&);
   Logging& operator =(const Logging&);
 public:
   enum SeverityType {
-    ST_DEBUG = 0, 
-    ST_MESSGAE, 
-    ST_WARNING, 
-    ST_ERROR, 
-    ST_FAIL, 
+    kSeverityTypeDebug = 0, 
+    kSeverityTypeMessage, 
+    kSeverityTypeWarning, 
+    kSeverityTypeError, 
+    kSeverityTypeFail, 
 
-    ST_COUNT, 
+    kSeverityTypeCount, 
   };
 private:
-  LogFile file_list_[ST_COUNT];
+  LogFile file_list_[kSeverityTypeCount];
 
   const char* GetSeverityName(int severity);
   FILE* GetFileStream(int severity, Time* time);
@@ -81,56 +81,36 @@ public:
 }
 
 #define LOG_DEBUG(fmt, ...)\
-  el::Logging::Singleton().Write(el::Logging::ST_DEBUG, \
-      (fmt), \
-      ##__VA_ARGS__)
+  el::Logging::Singleton().Write(el::Logging::kSeverityTypeDebug, \
+      (fmt), ##__VA_ARGS__)
 #define LOG_MSG(fmt, ...)\
-  el::Logging::Singleton().Write(el::Logging::ST_MESSGAE, \
-      (fmt), \
-      ##__VA_ARGS__)
+  el::Logging::Singleton().Write(el::Logging::kSeverityTypeMessage, \
+      (fmt), ##__VA_ARGS__)
 #define LOG_WARN(fmt, ...)\
-  el::Logging::Singleton().Write(el::Logging::ST_WARNING, \
-      (fmt), \
-      ##__VA_ARGS__)
+  el::Logging::Singleton().Write(el::Logging::kSeverityTypeWarning, \
+      (fmt), ##__VA_ARGS__)
 #define LOG_ERR(fmt, ...)\
-  el::Logging::Singleton().Write(el::Logging::ST_ERROR, \
-      (fmt), \
-      ##__VA_ARGS__)
+  el::Logging::Singleton().Write(el::Logging::kSeverityTypeError, \
+      (fmt), ##__VA_ARGS__)
 #define LOG_FAIL(fmt, ...)\
-  el::Logging::Singleton().Write(el::Logging::ST_FAIL, \
-      (fmt), \
-      ##__VA_ARGS__)
+  el::Logging::Singleton().Write(el::Logging::kSeverityTypeFail, \
+      (fmt), ##__VA_ARGS__)
 
 #define LOG_DEBUGX(fmt, ...)\
-  el::Logging::Singleton().WriteX(el::Logging::ST_DEBUG, \
-      __FILE__, \
-      __LINE__, \
-      (fmt), \
-      ##__VA_ARGS__)
+  el::Logging::Singleton().WriteX(el::Logging::kSeverityTypeDebug, \
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
 #define LOG_MSGX(fmt, ...)\
-  el::Logging::Singleton().WriteX(el::Logging::ST_MESSGAE, \
-      __FILE__, \
-      __LINE__, \
-      (fmt), \
-      ##__VA_ARGS__)
+  el::Logging::Singleton().WriteX(el::Logging::kSeverityTypeMessage, \
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
 #define LOG_WARNX(fmt, ...)\
-  el::Logging::Singleton().WriteX(el::Logging::ST_WARNING, \
-      __FILE__, \
-      __LINE__, \
-      (fmt), \
-      ##__VA_ARGS__)
+  el::Logging::Singleton().WriteX(el::Logging::kSeverityTypeWarning, \
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
 #define LOG_ERRX(fmt, ...)\
-  el::Logging::Singleton().WriteX(el::Logging::ST_ERROR, \
-      __FILE__, \
-      __LINE__, \
-      (fmt), \
-      ##__VA_ARGS__)
+  el::Logging::Singleton().WriteX(el::Logging::kSeverityTypeError, \
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
 #define LOG_FAILX(fmt, ...)\
-  el::Logging::Singleton().WriteX(el::Logging::ST_FAIL, \
-      __FILE__, \
-      __LINE__, \
-      (fmt), \
-      ##__VA_ARGS__)
+  el::Logging::Singleton().WriteX(el::Logging::kSeverityTypeFail, \
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
 
 
 #endif  //! __EL_LOGGING_HEADER_H__

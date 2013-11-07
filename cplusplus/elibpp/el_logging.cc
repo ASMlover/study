@@ -89,7 +89,7 @@ Logging::Logging(void)
 
 Logging::~Logging(void)
 {
-  for (int i = 0; i < ST_COUNT; ++i) {
+  for (int i = 0; i < kSeverityTypeCount; ++i) {
     if (NULL != file_list_[i].stream)
       fclose(file_list_[i].stream);
   }
@@ -106,15 +106,15 @@ const char*
 Logging::GetSeverityName(int severity)
 {
   switch (severity) {
-  case ST_DEBUG:
+  case kSeverityTypeDebug:
     return "debug";
-  case ST_MESSGAE:
+  case kSeverityTypeMessage:
     return "message";
-  case ST_WARNING:
+  case kSeverityTypeWarning:
     return "warn";
-  case ST_ERROR:
+  case kSeverityTypeError:
     return "error";
-  case ST_FAIL:
+  case kSeverityTypeFail:
     return "fail";
   }
 
@@ -124,7 +124,7 @@ Logging::GetSeverityName(int severity)
 FILE* 
 Logging::GetFileStream(int severity, Time* time)
 {
-  if ((severity < 0 || severity >= ST_COUNT) || NULL == time)
+  if ((severity < 0 || severity >= kSeverityTypeCount) || NULL == time)
     return NULL;
 
   FILE* stream;
@@ -136,7 +136,7 @@ Logging::GetFileStream(int severity, Time* time)
     sprintf(fname, "./%s/%s/%04d%02d%02d.log", 
         ROOT_DIR, directory, time->year, time->mon, time->day);
     stream = fopen(fname, "a+");
-    setvbuf(stream, NULL, _IOFBF, DEF_BUFSIZE);
+    setvbuf(stream, NULL, _IOFBF, kDefaultBufferSize);
 
     file_list_[severity].year = time->year;
     file_list_[severity].mon  = time->mon;
@@ -154,7 +154,7 @@ Logging::GetFileStream(int severity, Time* time)
       sprintf(fname, "%s/%s/%04d%02d%02d.log", 
           ROOT_DIR, directory, time->year, time->mon, time->day);
       stream = fopen(fname, "a+");
-      setvbuf(stream, NULL, _IOFBF, DEF_BUFSIZE);
+      setvbuf(stream, NULL, _IOFBF, kDefaultBufferSize);
 
       file_list_[severity].year = time->year;
       file_list_[severity].mon  = time->mon;
@@ -194,15 +194,15 @@ Logging::WriteX(int severity,
   if (NULL == stream)
     return;
 
+  char buf[1024];
+  
   va_list ap;
   va_start(ap, format);
-
-  char buf[1024];
   vsprintf(buf, format, ap);
+  va_end(ap);
+
   fprintf(stream, "[%02d:%02d:%02d:%03d] [%s](%d) : %s", 
       time.hour, time.min, time.sec, time.millitm, file, line, buf);
-
-  va_end(ap);
 }
 
 
