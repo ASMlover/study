@@ -80,7 +80,7 @@ File::Open(const char* fname, bool append)
 
   if (append)
     SetFilePointer(fd_, 0, NULL, FILE_END);
-  buf_size_ = DEF_BUFSIZE;
+  buf_size_ = kDefBufferSize;
   buffer_ = (char*)malloc(buf_size_);
   if (NULL == buffer_)
     goto Exit;

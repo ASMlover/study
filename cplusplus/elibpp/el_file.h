@@ -34,7 +34,7 @@
 namespace el {
 
 class File {
-  enum { DEF_BUFSIZE = 16 * 1024 };
+  enum { kDefBufferSize = 16 * 1024 };
 #if defined(_WINDOWS_) || defined(_MSC_VER)
   HANDLE fd_;
 #elif defined(__linux__)

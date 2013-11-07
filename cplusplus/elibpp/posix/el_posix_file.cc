@@ -83,7 +83,7 @@ File::Open(const char* fname, bool append)
   if (-1 == fd_)
     return false;
 
-  buf_size_ = DEF_BUFSIZE;
+  buf_size_ = kDefBufferSize;
   buffer_ = (char*)malloc(buf_size_);
   if (NULL == buffer_)
     goto Exit;
@@ -135,7 +135,7 @@ File::Write(const void* buffer, size_t size)
   else {
     size_t copy_size = size - free_size;
     memcpy(buffer_ + data_size_, buffer, free_size);
-    ssize_t ret = write(fd_, buffer_, DEF_BUFSIZE);
+    ssize_t ret = write(fd_, buffer_, kDefBufferSize);
     UNUSED(ret)
     data_size_ = 0;
 
