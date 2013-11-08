@@ -29,6 +29,19 @@
 
 namespace el {
 
+
+enum NetType {
+  kNetTypeInval = -1, 
+  kNetTypeError = -1, 
+};
+
+enum EventType {
+  kEventTypeUnknown = 0, 
+  kEventTypeRead    = 1, 
+  kEventTypeWrite   = 2,
+};
+
+
 class NetLibrary {
   static bool loaded_;
 
