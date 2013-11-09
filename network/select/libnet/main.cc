@@ -50,8 +50,10 @@ public:
   virtual bool ReadEvent(Socket* s)
   {
     Packet packet;
+    fprintf(stdout, "Enter %s ===>\n", __func__);
     if (s->ReadPacket(&packet)) {
-      fprintf(stdout, "recv from client : %s\n", packet.GetData());
+      fprintf(stdout, "\trecv from client [ReadPacket]: %s\n", 
+          packet.GetData());
 
       s->WritePacket(&packet);
 
@@ -143,7 +145,7 @@ ClientMain(const char* ip = "127.0.0.1", unsigned short port = 5555)
     if (!s->WritePacket(buf, strlen(buf)))
       break;
 
-    ToolsLib::Sleep(10);
+    ToolsLib::Sleep(1);
   }
 }
 

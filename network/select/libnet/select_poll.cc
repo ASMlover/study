@@ -92,8 +92,6 @@ SelectPoll::Insert(int fd, int ev)
     s->Attach(fd);
     s->SetNonBlock();
     s->SetKeepAlive(true);
-    s->SetReadBuffer(rbytes_);
-    s->SetWriteBuffer(wbytes_);
     s->SetSelfReadBuffer(rbytes_);
     s->SetSelfWriteBuffer(wbytes_);
     
@@ -233,6 +231,9 @@ SelectPoll::DispatchEvents(void)
   for (it = connectors_.begin(); it != connectors_.end(); ++it) {
     fd = it->first;
     s = it->second.second;
+
+    if (NULL == s)
+      continue;
 
     if (FD_ISSET(fd, &rset_)) {
       int read_bytes = s->DealWithSyncRead();

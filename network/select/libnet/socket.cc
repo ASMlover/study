@@ -345,7 +345,9 @@ Socket::DealWithSyncRead(void)
   int   free_length = rbuf_.free_length();
 
   if (0 == free_length) {
-    rbuf_.Regrow();
+    if (!rbuf_.Regrow())
+      return kNetTypeError;
+
     free_buffer = rbuf_.free_buffer();
     free_length = rbuf_.free_length();
   }
