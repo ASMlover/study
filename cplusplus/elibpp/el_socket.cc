@@ -35,6 +35,7 @@
 # include <arpa/inet.h>
 # include <netinet/in.h>
 # include <netinet/tcp.h>
+# include <unistd.h>
 #endif
 #include "el_net.h"
 #include "el_address.h"
