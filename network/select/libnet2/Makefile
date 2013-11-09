@@ -30,7 +30,7 @@ RM	= rm
 CC	= g++
 CFLAGS	= -g -O2 -Wall
 LDFLAGS	= -lpthread -lrt
-OBJS	= main.o
+OBJS	= main.o net.o posix_net.o
 
 
 
