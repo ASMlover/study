@@ -46,10 +46,11 @@ extern bool Localtime(Time* time);
 extern uint32_t Clock(void);
 extern void Sleep(uint32_t millitm);
 
+
+}
+
 #include <time.h>
 #define StdClock  clock
-
-};
 
 
 #endif  //! __EL_TIME_HEADER_H__

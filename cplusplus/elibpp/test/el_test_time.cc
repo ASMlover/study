@@ -40,7 +40,7 @@ UNIT_IMPL(Time)
   el::Sleep(1000);
   UNIT_ASSERT(tick + 1000 == el::Clock());
 
-  tick = el::StdClock();
+  tick = StdClock();
   el::Sleep(1000);
-  UNIT_ASSERT(tick + 1000 == el::StdClock());
+  UNIT_ASSERT(tick + 1000 == StdClock());
 }
