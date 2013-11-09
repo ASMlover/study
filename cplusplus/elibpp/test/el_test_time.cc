@@ -42,5 +42,5 @@ UNIT_IMPL(Time)
 
   tick = StdClock();
   el::Sleep(1000);
-  UNIT_ASSERT(tick + 1000 == StdClock());
+  UNIT_ASSERT(tick + 1000 == (uint32_t)StdClock());
 }
