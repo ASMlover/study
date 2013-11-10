@@ -24,6 +24,9 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#include <stdio.h>
+#include "address.h"
+#include "socket.h"
 #include "net.h"
 
 
@@ -45,4 +48,43 @@ NetLibrary::Singleton(void)
 {
   static NetLibrary _s_netlib;
   return _s_netlib;
+}
+
+
+
+
+EventHandler::~EventHandler(void)
+{
+}
+
+bool 
+EventHandler::AcceptEvent(Socket* s, Address* addr)
+{
+  if (NULL == s || NULL == addr)
+    return false;
+
+  return true;
+}
+
+void 
+EventHandler::CloseEvent(Socket* s)
+{
+}
+
+bool 
+EventHandler::ReadEvent(Socket* s)
+{
+  if (NULL == s)
+    return false;
+
+  return true;
+}
+
+bool 
+EventHandler::WriteEvent(Socket* s)
+{
+  if (NULL == s)
+    return false;
+
+  return true;
 }

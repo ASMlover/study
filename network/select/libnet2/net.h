@@ -55,4 +55,17 @@ public:
 };
 
 
+
+class Address;
+class Socket;
+struct EventHandler {
+  virtual ~EventHandler(void);
+
+  virtual bool AcceptEvent(Socket* s, Address* addr);
+  virtual void CloseEvent(Socket* s);
+  virtual bool ReadEvent(Socket* s);
+  virtual bool WriteEvent(Socket* s);
+};
+
+
 #endif  //! __NET_HEADER_H__
