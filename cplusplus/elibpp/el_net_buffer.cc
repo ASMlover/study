@@ -136,6 +136,8 @@ NetBuffer::Regrow(void)
     return false;
   }
 
+  storage_ = new_storage;
+
   return true;
 }
 
