@@ -48,4 +48,10 @@ public:
 };
 
 
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+#elif defined(__linux__)
+# include "posix_locker.h"
+#endif
+
+
 #endif  //! __LOCKER_HEADER_H__
