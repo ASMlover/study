@@ -33,4 +33,6 @@ import datetime
 if __name__ == '__main__':
   beg = datetime.datetime(2012, 4, 21)
   now = datetime.datetime.now()
-  print (now - beg).days
+  print 'acquaintance : %d' % (now - beg).days
+  beg = datetime.datetime(2013, 10, 18)
+  print 'marry : %d' % (now - beg).days
