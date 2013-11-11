@@ -24,15 +24,72 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __THREAD_HEADER_H__
-#define __THREAD_HEADER_H__
+#ifndef __WIN_THREAD_HEADER_H__
+#define __WIN_THREAD_HEADER_H__
+
+#include <windows.h>
+#include <process.h>
 
 
-#if defined(_WINDOWS_) || defined(_MSC_VER)
-# include "win_thread.h"
-#elif 
-# include "posix_thread.h"
-#endif
+class Thread {
+  HANDLE thread_;
+  HANDLE start_event_;
+  void (*routine_)(void*);
+  void* argument_;
 
+  Thread(const Thread&);
+  Thread& operator =(const Thread&);
+public:
+  explicit Thread(void (*routine)(void*) = NULL, void* argument = NULL)
+    : thread_(NULL)
+    , start_event_(NULL)
+    , routine_(routine)
+    , argument_(argument)
+  {
+  }
 
-#endif  //! __THREAD_HEADER_H__
+  ~Thread(void)
+  {
+    Join();
+  }
+
+  inline bool Start(void)
+  {
+    start_event_ = CreateEvent(NULL, TRUE, FALSE, NULL);
+    if (NULL == start_event_)
+      return false;
+
+    thread_ = (HANDLE)_beginthreadex(NULL, 
+        0, &Thread::Routine, this, 0, NULL);
+    if (NULL != thread_)
+      WaitForSingleObject(start_event_, INFINITE);
+
+    CloseHandle(start_event_);
+    return (NULL != thread_);
+  }
+
+  inline void Join(void)
+  {
+    if (NULL != thread_) {
+      WaitForSingleObject(thread_, INFINITE);
+
+      CloseHandle(thread_);
+      thread_ = NULL;
+    }
+  }
+private:
+  static UINT WINAPI Routine(void* argument)
+  {
+    Thread* self = static_cast<Thread*>(argument);
+    if (NULL == self)
+      return 0;
+    SetEvent(self->start_event_);
+
+    if (NULL != self->routine_)
+      self->routine_(self->argument_);
+
+    return 0;
+  }
+};
+
+#endif  //! __WIN_THREAD_HEADER_H__
