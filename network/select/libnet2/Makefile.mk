@@ -26,7 +26,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 OUT	= test.exe
-RM	= rm 
+RM	= del 
 CC	= cl -c -nologo
 MT	= mt -nologo
 LINK	= link -nologo
@@ -34,8 +34,9 @@ CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -EHsc -DNDEBUG\
 	-D_CRT_SECURE_NO_WARNINGS
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no ws2_32.lib
-OBJS	= main.obj net.obj win_net.obj
-# posix_net.o address.o buffer.o socket.o posix_socket.o select_poll.o
+OBJS	= main.obj net.obj win_net.obj address.obj buffer.obj socket.obj\
+	win_socket.obj
+# socket.o posix_socket.o select_poll.o
 
 
 
