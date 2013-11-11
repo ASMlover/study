@@ -80,9 +80,8 @@ public:
   bool PollReader(int millitm = -1);
   bool PollWriter(int millitm = -1);
 private:
-  void InitReadSets(int* max_fd);
-  void InitWriteSets(int* max_fd);
-  void DispatchEvent(fd_set* set, int ev);
+  void InitSet(int ev, fd_set* set, int* max_fd);
+  void DispatchEvent(fd_set* set, int fd_count, int ev);
 };
 
 

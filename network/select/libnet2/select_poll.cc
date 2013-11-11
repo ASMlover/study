@@ -60,46 +60,163 @@ SelectPoll::~SelectPoll(void)
 void 
 SelectPoll::CloseAll(void)
 {
+  if (NULL == handler_)
+    return;
+
+  std::map<int, std::pair<int, Socket*> >::iterator it;
+  for (it = connectors_.begin(); it != connectors_.end(); ++it) {
+    if (NULL != it->second.second) {
+      handler_->CloseEvent(it->second.second);
+      delete it->second.second;
+    }
+  }
+  connectors_.clear();
 }
 
 bool 
 SelectPoll::Insert(int fd, int ev)
 {
+  if (NULL == handler_)
+    return false;
+
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, std::pair<int, Socket*> >::iterator it;
+  it = connectors_.find(fd);
+  if (it == connectors_.end()) {
+    Socket* s = new Socket();
+    if (NULL == s)
+      return false;
+
+    s->Attach(fd);
+    s->SetNonBlock();
+    s->SetKeepAlive(true);
+    s->SetReadBuffer(rbytes_);
+    s->SetWriteBuffer(wbytes_);
+
+    connectors_[fd] = std::make_pair<int, Socket*>(ev, s);
+  }
+
   return true;
 }
 
 void 
 SelectPoll::Remove(int fd)
 {
+  if (NULL == handler_)
+    return;
+
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, std::pair<int, Socket*> >::iterator it;
+  it = connectors_.find(fd);
+  if (it != connectors_.end()) {
+    if (NULL != it->second.second) {
+      handler_->CloseEvent(it->second.second);
+      delete it->second.second;
+    }
+
+    connectors_.erase(it);
+  }
 }
 
 bool 
 SelectPoll::AddEvent(int fd, int ev)
 {
+  if (NULL == handler_)
+    return false;
+
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, std::pair<int, Socket*> >::iterator it;
+  it = connectors_.find(fd);
+  if (it != connectors_.end())
+    it->second.first |= ev;
+
   return true;
 }
 
 bool 
 SelectPoll::DelEvent(int fd, int ev)
 {
+  if (NULL == handler_)
+    return false;
+
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, std::pair<int, Socket*> >::iterator it;
+  it = connectors_.find(fd);
+  if (it != connectors_.end())
+    it->second.first &= ~ev;
+
   return true;
 }
 
 Socket* 
 SelectPoll::GetConnector(int fd)
 {
-  return NULL;
+  Socket* s = NULL;
+
+  {
+    LockerGuard<SpinLock> guard(spinlock_);
+    std::map<int, std::pair<int, Socket*> >::iterator it;
+    it = connectors_.find(fd);
+    if (it != connectors_.end())
+      s = it->second.second;
+  }
+
+  return s;
 }
 
 bool 
 SelectPoll::PollReader(int millitm)
 {
+  if (NULL == handler_)
+    return false;
+
+  struct timeval timeout;
+  if (-1 == millitm) {
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 500;
+  }
+  else {
+    timeout.tv_sec = millitm / 1000;
+    timeout.tv_usec = millitm % 1000 * 1000;
+  }
+
+  int max_fd;
+  InitSet(kEventTypeRead, &rset_, &max_fd);
+
+  int ret = select(max_fd + 1, &rset_, NULL, NULL, &timeout);
+  if (kNetTypeError == ret || 0 == ret)
+    return false;
+
+  DispatchEvent(&rset_, ret, kEventTypeRead);
+
   return true;
 }
 
 bool 
 SelectPoll::PollWriter(int millitm)
 {
+  if (NULL == handler_)
+    return false;
+
+  struct timeval timeout;
+  if (-1 == millitm) {
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 500;
+  }
+  else {
+    timeout.tv_sec = millitm / 1000;
+    timeout.tv_usec = millitm % 1000 * 1000;
+  }
+
+  int max_fd;
+  InitSet(kEventTypeWrite, &wset_, &max_fd);
+
+  int ret = select(max_fd + 1, NULL, &wset_, NULL, &timeout);
+  if (kNetTypeError == ret || 0 == ret)
+    return false;
+
+  DispatchEvent(&wset_, ret, kEventTypeRead);
+
   return true;
 }
 
@@ -107,16 +224,66 @@ SelectPoll::PollWriter(int millitm)
 
 
 void 
-SelectPoll::InitReadSets(int* max_fd)
+SelectPoll::InitSet(int ev, fd_set* set, int* max_fd)
 {
+  if (NULL == set || NULL == max_fd)
+    return;
+
+  FD_ZERO(set);
+  *max_fd = 0;
+
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, std::pair<int, Socket*> >::iterator it;
+  for (it = connectors_.begin(); it != connectors_.end();) {
+    if (kNetTypeInval == it->second.second->fd()) {
+      delete it->second.second;
+      connectors_.erase(it++);
+    }
+    else {
+      if (it->second.first & ev)
+        FD_SET(it->first, set);
+
+      if (it->first > *max_fd)
+        *max_fd = it->first;
+
+      ++it;
+    }
+  }
 }
 
 void 
-SelectPoll::InitWriteSets(int* max_fd)
+SelectPoll::DispatchEvent(fd_set* set, int fd_count, int ev)
 {
-}
+  if (NULL == handler_ || NULL == set)
+    return;
 
-void 
-SelectPoll::DispatchEvent(fd_set* set, int ev)
-{
+  int fd;
+  Socket* s;
+  int i;
+
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, std::pair<int, Socket*> >::iterator it;
+  for (i = 0, it = connectors_.begin(); 
+      i < fd_count && it != connectors_.end(); 
+      ++i, ++it)
+  {
+    fd = it->first;
+    s = it->second.second;
+
+    if (NULL == s)
+      continue;
+
+    switch (ev) {
+    case kEventTypeRead:
+      if (FD_ISSET(fd, set)) {
+        //! TODO:
+        //! async read
+      }
+      break;
+    case kEventTypeWrite:
+      //! TODO:
+      //! async write
+      break;
+    }
+  }
 }
