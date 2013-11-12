@@ -210,3 +210,66 @@ Socket::WriteBlock(const char* buffer, int bytes)
 
   return write_bytes;
 }
+
+int 
+Socket::Read(int bytes, char* buffer)
+{
+  if (kNetTypeInval == fd_)
+    return kNetTypeError;
+
+  return rbuf_.Get(bytes, buffer);
+}
+
+int 
+Socket::Write(const char* buffer, int bytes)
+{
+  if (kNetTypeInval == fd_)
+    return kNetTypeError;
+
+  return wbuf_.Put(buffer, bytes);
+}
+
+
+
+int 
+Socket::DealWithAsyncRead(void)
+{
+  if (kNetTypeInval == fd_)
+    return kNetTypeError;
+
+  char* free_buffer = rbuf_.free_buffer();
+  int   free_length = rbuf_.free_length();
+
+  if (0 == free_length) {
+    if (!rbuf_.Regrow())
+      return kNetTypeError;
+
+    free_buffer = rbuf_.free_buffer();
+    free_length = rbuf_.free_length();
+  }
+
+  int ret = recv(fd_, free_buffer, free_length, 0);
+  if (ret > 0)
+    rbuf_.AddWritePosition(ret);
+
+  return ret;
+}
+
+int 
+Socket::DealWithAsyncWrite(void)
+{
+  if (kNetTypeInval == fd_)
+    return kNetTypeError;
+
+  int length = wbuf_.length();
+  if (length <= 0)
+    return 0;
+
+  const char* buffer = wbuf_.buffer();
+  int ret = send(fd_, buffer, length, 0);
+
+  if (ret > 0)
+    wbuf_.AddReadPosition(ret);
+
+  return ret;
+}
