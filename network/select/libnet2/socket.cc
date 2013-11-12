@@ -86,6 +86,18 @@ Socket::SetWriteBuffer(int bytes)
   return SetOption(SOL_SOCKET, SO_SNDBUF, bytes);
 }
 
+bool 
+Socket::SetSelfReadBuffer(int bytes)
+{
+  return rbuf_.Init(bytes);
+}
+
+bool 
+Socket::SetSelfWriteBuffer(int bytes)
+{
+  return wbuf_.Init(bytes);
+}
+
 
 
 bool 

@@ -27,10 +27,13 @@
 #ifndef __SOCKET_HEADER_H__
 #define __SOCKET_HEADER_H__
 
+#include "buffer.h"
 
 class Address;
 class Socket {
   int fd_;
+  Buffer rbuf_;
+  Buffer wbuf_;
 
   Socket(const Socket&);
   Socket& operator =(const Socket&);
@@ -61,6 +64,8 @@ public:
   bool SetKeepAlive(bool keep);
   bool SetReadBuffer(int bytes);
   bool SetWriteBuffer(int bytes);
+  bool SetSelfReadBuffer(int bytes);
+  bool SetSelfWriteBuffer(int bytes);
 
   bool Open(void);
   void Close(void);
