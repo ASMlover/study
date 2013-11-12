@@ -29,10 +29,13 @@
 #   include <winsock2.h>
 # endif
 # define EWOULDBLOCK  WSAEWOULDBLOCK
+# define NErrno()     WSAGetLastError()
 #elif defined(__linux__)
 # include <sys/types.h>
 # include <sys/select.h>
 # include <unistd.h>
+# include <errno.h>
+# define NErrno()     errno
 #endif
 #include "net.h"
 #include "socket.h"
@@ -276,13 +279,28 @@ SelectPoll::DispatchEvent(fd_set* set, int fd_count, int ev)
     switch (ev) {
     case kEventTypeRead:
       if (FD_ISSET(fd, set)) {
-        //! TODO:
-        //! async read
+        int read_bytes = s->DealWithAsyncRead();
+        if (read_bytes > 0) {
+          handler_->ReadEvent(s);
+        }
+        else if (0 == read_bytes) {
+          handler_->CloseEvent(s);
+          s->Close();
+        }
+        else {
+          if (EWOULDBLOCK != NErrno()) {
+            handler_->CloseEvent(s);
+            s->Close();
+          }
+        }
       }
       break;
     case kEventTypeWrite:
-      //! TODO:
-      //! async write
+      if (FD_ISSET(fd, set)) {
+        int write_bytes = s->DealWithAsyncWrite();
+        if (write_bytes > 0)
+          handler_->WriteEvent(s);
+      }
       break;
     }
   }
