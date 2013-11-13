@@ -30,7 +30,7 @@
 
 #if defined(_WINDOWS_) || defined(_MSC_VER)
 # include "win_thread.h"
-#elif 
+#elif defined(__linux__)
 # include "posix_thread.h"
 #endif
 
