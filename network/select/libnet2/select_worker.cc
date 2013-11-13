@@ -24,11 +24,8 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#if defined(_WINDOWS_) || defined(_MSC_VER)
-# include <windows.h>
-#elif defined(__linux__)
-#endif
 #include <stdlib.h>
+#include "os_tool.h"
 #include "net.h"
 #include "thread.h"
 #include "select_poll.h"
@@ -104,7 +101,7 @@ SelectWorker::ReadRoutine(void* argument)
 
   while (self->running_) {
     if (!self->poll_->PollReader()) {
-      Sleep(1);
+      Tools::Sleep(1);
       continue;
     }
   }
@@ -119,7 +116,7 @@ SelectWorker::WriteRoutine(void* argument)
 
   while (self->running_) {
     if (!self->poll_->PollWriter()) {
-      Sleep(1);
+      Tools::Sleep(1);
       continue;
     }
   }
