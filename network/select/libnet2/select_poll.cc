@@ -93,8 +93,8 @@ SelectPoll::Insert(int fd, int ev)
     s->Attach(fd);
     s->SetNonBlock();
     s->SetKeepAlive(true);
-    s->SetReadBuffer(rbytes_);
-    s->SetWriteBuffer(wbytes_);
+    s->SetSelfReadBuffer(rbytes_);
+    s->SetSelfWriteBuffer(wbytes_);
 
     connectors_[fd] = std::make_pair<int, Socket*>(ev, s);
   }
