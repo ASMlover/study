@@ -281,7 +281,8 @@ SelectPoll::DispatchEvent(fd_set* set, int fd_count, int ev)
       if (FD_ISSET(fd, set)) {
         int read_bytes = s->DealWithAsyncRead();
         if (read_bytes > 0) {
-          handler_->ReadEvent(s);
+          if (s->CheckValidMessage())
+            handler_->ReadEvent(s);
         }
         else if (0 == read_bytes) {
           handler_->CloseEvent(s);
