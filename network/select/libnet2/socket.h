@@ -82,6 +82,8 @@ public:
 
   int DealWithAsyncRead(void);
   int DealWithAsyncWrite(void);
+
+  bool CheckValidMessage(void);
 private:
   bool SetOption(int level, int optname, int optval);
 };

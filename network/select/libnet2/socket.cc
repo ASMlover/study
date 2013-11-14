@@ -37,6 +37,7 @@
 # include <netinet/tcp.h>
 #endif
 #include <stdio.h>
+#include "message.h"
 #include "net.h"
 #include "address.h"
 #include "socket.h"
@@ -272,4 +273,21 @@ Socket::DealWithAsyncWrite(void)
     wbuf_.AddReadPosition(ret);
 
   return ret;
+}
+
+bool 
+Socket::CheckValidMessage(void)
+{
+  if (kNetTypeInval == fd_)
+    return false;
+
+  int header_size = sizeof(MessageHeader);
+
+  if (rbuf_.length() < header_size)
+    return false;
+  MessageHeader* header = (MessageHeader*)rbuf_.buffer();
+  if (rbuf_.length() < (header_size + header->size))
+    return false;
+
+  return true;
 }
