@@ -26,6 +26,7 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <sys/timeb.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 #include "os_tool.h"
 #include "message.h"
@@ -98,7 +99,7 @@ ClientMain(const char* ip = "127.0.0.1", unsigned short port = 5555)
   s.Open();
 
   if (s.Connect(ip, port)) {
-    fprintf(stdout, "connect to server <%s, %d> success ...\n");
+    fprintf(stdout, "connect to server <%s, %d> success ...\n", ip, port);
   }
   else {
     fprintf(stderr, "connect to server failed ...\n");
