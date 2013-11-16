@@ -135,6 +135,72 @@ ClientMain(const char* ip = "127.0.0.1", unsigned short port = 5555)
 }
 
 
+
+static bool _s_connected = false;
+class ClientHandler : public EventHandler {
+public:
+  virtual void CloseEvent(Socket* s)
+  {
+    fprintf(stdout, "client [%d] closed\n", s->fd());
+    _s_connected = false;
+  }
+
+  virtual bool ReadEvent(Socket* s)
+  {
+    MessageHeader header;
+    char buf[128] = {0};
+
+    if (s->Read(sizeof(header), (char*)&header) > 0) {
+      if (s->Read(header.size, buf) > 0) {
+        fprintf(stdout, "recv from server [%d] : %s\n", 
+            s->fd(), buf);
+      }
+    }
+
+    return true;
+  }
+};
+
+
+static void 
+AsyncClientMain(const char* ip = "127.0.0.1", unsigned short port = 5555)
+{
+  ClientHandler ch;
+  SelectNetwork network;
+
+  network.Attach(&ch);
+  network.Init();
+
+  Socket* s = network.Connect(ip, port);
+  if (NULL == s) {
+    fprintf(stderr, "connect to server failed ...\n");
+    return;
+  }
+  else {
+    fprintf(stdout, "connect to server<%s, %d> success ...\n", ip, port);
+  }
+  _s_connected = true;
+
+
+  char buf[128];
+  struct timeb tb;
+  struct tm* now;
+  MessageHeader header;
+  while (_s_connected) {
+    ftime(&tb);
+    now = localtime(&tb.time);
+    sprintf(buf, "[%04d-%02d-%02d %02d:%02d:%02d:%03d]", 
+        now->tm_year + 1900, now->tm_mon + 1, now->tm_mday, 
+        now->tm_hour, now->tm_min, now->tm_sec, tb.millitm);
+    header.size = strlen(buf);
+    s->Write((const char*)&header, sizeof(header));
+    s->Write(buf, header.size);
+
+    Tools::Sleep(0);
+  }
+}
+
+
 int 
 main(int argc, char* argv[])
 {
@@ -149,6 +215,8 @@ main(int argc, char* argv[])
     ServerMain();
   else if (0 == strcmp(argv[1], "clt"))
     ClientMain();
+  else if (0 == strcmp(argv[1], "async-clt"))
+    AsyncClientMain();
 
   NetLibrary::Singleton().Destroy();
   return 0;
