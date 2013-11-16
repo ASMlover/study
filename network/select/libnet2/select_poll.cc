@@ -218,7 +218,7 @@ SelectPoll::PollWriter(int millitm)
   if (kNetTypeError == ret || 0 == ret)
     return false;
 
-  DispatchEvent(&wset_, ret, kEventTypeRead);
+  DispatchEvent(&wset_, ret, kEventTypeWrite);
 
   return true;
 }
