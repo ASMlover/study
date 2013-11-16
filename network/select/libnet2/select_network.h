@@ -29,6 +29,7 @@
 
 #include <vector>
 
+class Socket;
 class SelectPoll;
 class SelectWorker;
 class SelectListener;
@@ -61,6 +62,7 @@ public:
   void Destroy(void);
 
   bool Listen(const char* ip = "127.0.0.1", unsigned short port = 5555);
+  Socket* Connect(const char* ip = "127.0.0.1", unsigned short port = 5555);
 };
 
 #endif  //! __SELECT_NETWORK_HADER_H__

@@ -26,6 +26,7 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include "net.h"
+#include "socket.h"
 #include "select_poll.h"
 #include "select_worker.h"
 #include "select_listener.h"
@@ -128,4 +129,21 @@ SelectNetwork::Listen(const char* ip, unsigned short port)
   }
 
   return false;
+}
+
+Socket* 
+SelectNetwork::Connect(const char* ip, unsigned short port)
+{
+  Socket s;
+
+  s.Open();
+  int fd = s.fd();
+  if (!s.Connect(ip, port))
+    return NULL;
+  s.Detach();
+
+  poll_->Insert(fd, kEventTypeRead | kEventTypeWrite);
+  return poll_->GetConnector(fd);
+
+  return NULL;
 }
