@@ -81,7 +81,7 @@ public:
 
   inline void Unlock(void)
   {
-    DeleteCriticalSection(&spinlock_);
+    LeaveCriticalSection(&spinlock_);
   }
 };
 
