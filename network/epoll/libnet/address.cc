@@ -24,9 +24,15 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+# ifndef _WINDOWS_
+#   include <winsock2.h>
+# endif
+#elif defined(__linux__)
+# include <sys/socket.h>
+# include <arpa/inet.h>
+# include <netinet/in.h>
+#endif
 #include <string.h>
 #include "address.h"
 
