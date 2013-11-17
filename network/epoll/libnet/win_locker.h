@@ -24,36 +24,66 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __LOCKER_HEADER_H__
-#define __LOCKER_HEADER_H__
+#ifndef __WIN_LOCKER_HEADER_H__
+#define __WIN_LOCKER_HEADER_H__
+
+#include <windows.h>
 
 
-template <typename Locker>
-class LockerGuard {
-  Locker& locker_;
+class Mutex {
+  CRITICAL_SECTION mutex_;
 
-  LockerGuard(const LockerGuard&);
-  LockerGuard& operator =(const LockerGuard&);
+  Mutex(const Mutex&);
+  Mutex& operator =(const Mutex&);
 public:
-  explicit LockerGuard(Locker& locker)
-    : locker_(locker)
+  explicit Mutex(void)
   {
-    locker_.Lock();
+    InitializeCriticalSection(&mutex_);
   }
 
-  ~LockerGuard(void)
+  ~Mutex(void)
   {
-    locker_.Unlock();
+    DeleteCriticalSection(&mutex_);
+  }
+
+  inline void Lock(void)
+  {
+    EnterCriticalSection(&mutex_);
+  }
+
+  inline void Unlock(void)
+  {
+    LeaveCriticalSection(&mutex_);
   }
 };
 
 
+class SpinLock {
+  CRITICAL_SECTION spinlock_;
 
-#if defined(_WINDOWS_) || defined(_MSC_VER)
-# include "win_locker.h"
-#elif defined(__linux__)
-# include "posix_locker.h"
-#endif
+  SpinLock(const SpinLock&);
+  SpinLock& operator =(const SpinLock&);
+public:
+  explicit SpinLock(void)
+  {
+    InitializeCriticalSectionAndSpinCount(&spinlock_, 4000);
+  }
+
+  ~SpinLock(void)
+  {
+    DeleteCriticalSection(&spinlock_);
+  }
+
+  inline void Lock(void)
+  {
+    EnterCriticalSection(&spinlock_);
+  }
+
+  inline void Unlock(void)
+  {
+    LeaveCriticalSection(&spinlock_);
+  }
+};
 
 
-#endif  //! __LOCKER_HEADER_H__
+#endif  //! __WIN_LOCKER_HEADER_H__
