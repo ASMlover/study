@@ -27,17 +27,28 @@
 #ifndef __NET_HEADER_H__
 #define __NET_HEADER_H__
 
-#include <sys/epoll.h>
+#if defined(__linux__)
+# include <sys/epoll.h>
+#endif
 
 enum NetType {
   kNetTypeInval = -1, 
   kNetTypeError = -1,
 };
 
-enum EventType {
-  kEventTypeRead  = EPOLLIN, 
-  kEventTypeWrite = EPOLLOUT, 
-};
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+  enum EventType {
+    kEventTypeUnknown = 0x00,
+    kEventTypeRead    = 0x01, 
+    kEventTypeWrite   = 0x02, 
+  };
+#elif defined(__linux__)
+  enum EventType {
+    kEventTypeUnknown = 0x00,
+    kEventTypeRead    = EPOLLIN, 
+    kEventTypeWrite   = EPOLLOUT, 
+  };
+#endif
 
 
 

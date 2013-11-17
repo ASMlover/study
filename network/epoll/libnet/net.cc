@@ -24,6 +24,11 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+# ifndef _WINDOWS_
+#   include <winsock2.h>
+# endif
+#endif
 #include "net.h"
 
 
@@ -48,10 +53,25 @@ NetLibrary::Singleton(void)
 bool 
 NetLibrary::Init(void)
 {
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+  if (!loaded_) {
+    WSADATA wd;
+    if (0 != WSAStartup(MAKEWORD(2, 2), &wd))
+      return false;
+
+    loaded_ = true;
+  }
+#endif
   return true;
 }
 
 void 
 NetLibrary::Destroy(void)
 {
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+  if (loaded_) {
+    if (0 == WSACleanup())
+      loaded_ = false;
+  }
+#endif
 }
