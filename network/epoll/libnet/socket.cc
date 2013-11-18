@@ -260,3 +260,78 @@ Socket::WriteBlock(const char* buffer, int bytes)
 
   return write_bytes;
 }
+
+int 
+Socket::Read(int bytes, char* buffer)
+{
+  if (kNetTypeInval == fd_ || bytes <= 0 || NULL == buffer)
+    return kNetTypeError;
+
+  return rbuf_.Get(bytes, buffer);
+}
+
+int 
+Socket::Write(const char* buffer, int bytes)
+{
+  if (kNetTypeInval == fd_ || NULL == buffer || bytes <= 0)
+    return kNetTypeError;
+
+  return wbuf_.Put(buffer, bytes);
+}
+
+int 
+Socket::DealWithAsyncRead(void)
+{
+  if (kNetTypeInval == fd_)
+    return kNetTypeError;
+
+  int read_bytes = 0;
+  int ret;
+  char* free_buffer = rbuf_.free_buffer();
+  int   free_length = rbuf_.free_length();
+  while (true) {
+    if (0 == free_length) {
+      rbuf_.Regrow();
+      free_buffer = rbuf_.free_buffer();
+      free_length = rbuf_.free_length();
+    }
+
+    ret = recv(fd_, free_buffer, free_length, 0);
+    if (ret > 0) {
+      rbuf_.Increment(ret);
+      read_bytes += ret;
+      if (ret < free_length)
+        break;
+    }
+    else {
+      return ret;
+    }
+  }
+
+  return read_bytes;
+}
+
+int 
+Socket::DealWithAsyncWrite(void)
+{
+  if (kNetTypeInval == fd_)
+    return kNetTypeError;
+
+  int length = wbuf_.length();
+  if (length <= 0)
+    return 0;
+
+  const char* buffer = wbuf_.buffer();
+  int ret = send(fd_, buffer, length, 0);
+
+  if (ret > 0)
+    wbuf_.Decrement(ret);
+
+  return ret;
+}
+
+bool 
+Socket::CheckValidMessageInReadBuffer(void)
+{
+  return true;
+}

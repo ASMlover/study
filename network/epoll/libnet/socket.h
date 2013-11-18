@@ -76,6 +76,12 @@ public:
 
   int ReadBlock(int bytes, char* buffer);
   int WriteBlock(const char* buffer, int bytes);
+  int Read(int bytes, char* buffer);
+  int Write(const char* buffer, int bytes);
+
+  int DealWithAsyncRead(void);
+  int DealWithAsyncWrite(void);
+  bool CheckValidMessageInReadBuffer(void);
 private:
   bool SetOption(int level, int optname, int optval);
 };
