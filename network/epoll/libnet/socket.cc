@@ -161,3 +161,102 @@ Socket::Close(void)
     fd_ = kNetTypeInval;
   }
 }
+
+bool 
+Socket::Bind(const char* ip, unsigned short port)
+{
+  if (kNetTypeInval == fd_)
+    return false;
+
+  struct sockaddr_in host_addr;
+  host_addr.sin_addr.s_addr = 
+    (NULL == ip ? htonl(INADDR_ANY) : inet_addr(ip));
+  host_addr.sin_family      = AF_INET;
+  host_addr.sin_port        = htons(port);
+
+  if (kNetTypeError == bind(fd_, 
+        (struct sockaddr*)&host_addr, sizeof(host_addr)))
+    return false;
+
+  return true;
+}
+
+bool 
+Socket::Listen(void)
+{
+  if (kNetTypeInval == fd_)
+    return false;
+
+  if (kNetTypeError == listen(fd_, SOMAXCONN))
+    return false;
+
+  return true;
+}
+
+bool 
+Socket::Accept(Socket* s, Address* addr)
+{
+  if (kNetTypeInval == fd_ || NULL == s)
+    return false;
+
+  struct sockaddr_in remote_addr;
+  socklen_t addrlen = sizeof(remote_addr);
+  int fd = accept(fd_, (struct sockaddr*)&remote_addr, &addrlen);
+  if (kNetTypeInval == fd)
+    return false;
+
+  s->Attach(fd);
+  if (NULL != addr)
+    addr->Attach(&remote_addr);
+
+  return true;
+}
+
+bool 
+Socket::Connect(const char* ip, unsigned short port)
+{
+  if (kNetTypeInval == fd_)
+    return false;
+
+  if (NULL == ip)
+    ip = "127.0.0.1";
+  struct sockaddr_in remote_addr;
+  remote_addr.sin_addr.s_addr = inet_addr(ip);
+  remote_addr.sin_family      = AF_INET;
+  remote_addr.sin_port        = htons(port);
+  if (kNetTypeError == connect(fd_, 
+        (struct sockaddr*)&remote_addr, sizeof(remote_addr)))
+    return false;
+
+  return true;
+}
+
+int 
+Socket::ReadBlock(int bytes, char* buffer)
+{
+  if (kNetTypeInval == fd_ || bytes <= 0 || NULL == buffer)
+    return kNetTypeError;
+
+  int ret = recv(fd_, buffer, bytes, 0);
+
+  return ret;
+}
+
+int 
+Socket::WriteBlock(const char* buffer, int bytes)
+{
+  if (kNetTypeInval == fd_ || NULL == buffer || bytes <= 0)
+    return kNetTypeError;
+
+  int write_bytes = 0;
+  int ret;
+  while (write_bytes < bytes) {
+    ret = send(fd_, buffer + write_bytes, bytes - write_bytes, 0);
+    if (kNetTypeError == ret)
+      return ret;
+
+    write_bytes += ret;
+  }
+
+  return write_bytes;
+}
