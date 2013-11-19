@@ -165,17 +165,123 @@ SelectPoll::GetConnector(int fd)
 bool 
 SelectPoll::Polling(int ev, int millitm)
 {
+  if (NULL == handler_)
+    return false;
+
+  struct timeval timeout;
+  if (-1 == millitm) {
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 500;
+  }
+  else {
+    timeout.tv_sec = millitm / 1000;
+    timeout.tv_usec = (millitm % 1000 * 1000);
+  }
+
+  int max_fd = 0;
+  int ret = 0;
+  fd_set* set = NULL;
+  if (kEventTypeRead == ev) {
+    InitSet(ev, &rset_, &max_fd);
+    set = &rset_;
+    ret = select(max_fd + 1, &rset_, NULL, NULL, &timeout);
+  }
+  else if (kEventTypeWrite == ev) {
+    InitSet(ev, &wset_, &max_fd);
+    set = &wset_;
+    ret = select(max_fd + 1, NULL, &wset_, NULL, &timeout);
+  }
+  else {
+    return false;
+  }
+
+  if (kNetTypeError == ret || 0 == ret)
+    return false;
+
+  if (!DispatchEvent(ev, set))
+    return false;
+
   return true;
 }
 
 bool 
 SelectPoll::InitSet(int ev, fd_set* set, int* max_fd)
 {
+  if (NULL == set || NULL == max_fd)
+    return false;
+
+  FD_ZERO(set);
+  *max_fd = 0;
+
+  LockerGuard<SpinLock> gaurd(spinlock_);
+  std::map<int, std::pair<int, Socket*> >::iterator it;
+  for (it = connectors_.begin(); it != connectors_.end();) {
+    if (NULL == it->second.second) {
+      connectors_.erase(it++);
+    }
+    else if (kNetTypeInval == it->second.second->fd()) {
+      delete it->second.second;
+      connectors_.erase(it++);
+    }
+    else {
+      if (it->second.first & ev)
+        FD_SET(it->first, set);
+
+      if (it->first > *max_fd)
+        *max_fd = it->first;
+
+      ++it;
+    }
+  }
+
   return true;
 }
 
 bool 
 SelectPoll::DispatchEvent(int ev, fd_set* set)
 {
+  if (NULL == handler_ || NULL == set)
+    return false;
+
+  int fd;
+  Socket* s;
+
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, std::pair<int, Socket*> >::iterator it;
+  for (it = connectors_.begin(); it !=  connectors_.end(); ++it) {
+    fd = it->first;
+    s = it->second.second;
+
+    if (NULL == s)
+      continue;
+
+    if (kEventTypeRead == ev) {
+      if (FD_ISSET(fd, set)) {
+        int read_bytes = s->DealWithAsyncRead();
+        if (read_bytes > 0) {
+          if (s->CheckValidMessageInReadBuffer())
+            handler_->ReadEvent(s);
+        }
+        else if (0 == read_bytes) {
+          handler_->CloseEvent(s);
+          s->Close();
+        }
+        else {
+          if (EWOULDBLOCK != NErrno()) {
+            handler_->CloseEvent(s);
+            s->Close();
+          }
+        }
+      }
+    }
+    else if (kEventTypeWrite == ev) {
+      if (FD_ISSET(fd, set)) {
+        int write_bytes = s->DealWithAsyncWrite();
+        if (write_bytes > 0)
+          handler_->WriteEvent(s);
+      }
+    }
+  }
+
   return true;
 }
