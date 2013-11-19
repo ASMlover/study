@@ -53,10 +53,10 @@ public:
     MessageHeader header;
     char buf[128] = {0};
 
-    if (s->Read(sizeof(header), (char*)&header) > 0) {
-      if (s->Read(header.size, buf) > 0) {
-        fprintf(stdout, "recv from connector [%d] : %s\n", 
-            s->fd(), buf);
+    if (s->Read(sizeof(header), (char*)&header) == sizeof(header)) {
+      if (s->Read(header.size, buf) == header.size) {
+        fprintf(stdout, "recv from connector [%d] [%d]: %s\n", 
+            s->fd(), header.size, buf);
 
 
         s->Write((const char*)&header, sizeof(header));
@@ -150,10 +150,10 @@ public:
     MessageHeader header;
     char buf[128] = {0};
 
-    if (s->Read(sizeof(header), (char*)&header) > 0) {
-      if (s->Read(header.size, buf) > 0) {
-        fprintf(stdout, "recv from server [%d] : %s\n", 
-            s->fd(), buf);
+    if (s->Read(sizeof(header), (char*)&header) == sizeof(header)) {
+      if (s->Read(header.size, buf) == header.size) {
+        fprintf(stdout, "recv from server [%d] [%d]: %s\n", 
+            s->fd(), header.size, buf);
       }
     }
 
