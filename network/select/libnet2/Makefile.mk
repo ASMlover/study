@@ -36,7 +36,7 @@ LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no ws2_32.lib
 OBJS	= main.obj net.obj win_net.obj address.obj buffer.obj socket.obj\
 	win_socket.obj select_poll.obj select_worker.obj win_os_tool.obj\
-	select_listener.obj select_network.obj logging.obj
+	select_listener.obj select_network.obj logging.obj io.obj
 
 
 
