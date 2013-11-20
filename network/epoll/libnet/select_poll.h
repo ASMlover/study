@@ -77,7 +77,7 @@ public:
   bool Polling(int ev, int millitm = -1);
 private:
   bool InitSet(int ev, fd_set* set, int* max_fd);
-  bool DispatchEvent(int ev, fd_set* set);
+  bool DispatchEvent(int ev);
 };
 
 #endif  //! __SELECT_POLL_HEADER_H__

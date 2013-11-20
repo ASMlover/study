@@ -180,15 +180,12 @@ SelectPoll::Polling(int ev, int millitm)
 
   int max_fd = 0;
   int ret = 0;
-  fd_set* set = NULL;
   if (kEventTypeRead == ev) {
     InitSet(ev, &rset_, &max_fd);
-    set = &rset_;
     ret = select(max_fd + 1, &rset_, NULL, NULL, &timeout);
   }
   else if (kEventTypeWrite == ev) {
     InitSet(ev, &wset_, &max_fd);
-    set = &wset_;
     ret = select(max_fd + 1, NULL, &wset_, NULL, &timeout);
   }
   else {
@@ -198,7 +195,7 @@ SelectPoll::Polling(int ev, int millitm)
   if (kNetTypeError == ret || 0 == ret)
     return false;
 
-  if (!DispatchEvent(ev, set))
+  if (!DispatchEvent(ev))
     return false;
 
   return true;
@@ -238,9 +235,9 @@ SelectPoll::InitSet(int ev, fd_set* set, int* max_fd)
 }
 
 bool 
-SelectPoll::DispatchEvent(int ev, fd_set* set)
+SelectPoll::DispatchEvent(int ev)
 {
-  if (NULL == handler_ || NULL == set)
+  if (NULL == handler_)
     return false;
 
   int fd;
@@ -256,7 +253,7 @@ SelectPoll::DispatchEvent(int ev, fd_set* set)
       continue;
 
     if (kEventTypeRead == ev) {
-      if (FD_ISSET(fd, set)) {
+      if (FD_ISSET(fd, &rset_)) {
         int read_bytes = s->DealWithAsyncRead();
         if (read_bytes > 0) {
           if (s->CheckValidMessageInReadBuffer())
@@ -275,7 +272,7 @@ SelectPoll::DispatchEvent(int ev, fd_set* set)
       }
     }
     else if (kEventTypeWrite == ev) {
-      if (FD_ISSET(fd, set)) {
+      if (FD_ISSET(fd, &wset_)) {
         int write_bytes = s->DealWithAsyncWrite();
         if (write_bytes > 0)
           handler_->WriteEvent(s);
