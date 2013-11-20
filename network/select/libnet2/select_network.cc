@@ -25,6 +25,7 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
+#include "logging.h"
 #include "net.h"
 #include "socket.h"
 #include "select_poll.h"
@@ -57,7 +58,7 @@ SelectNetwork::Init(int worker_count, int rbytes, int wbytes)
 
   poll_ = new SelectPoll();
   if (NULL == poll_) {
-    abort();
+    LOG_FAIL("new SelectPoll failed ...\n");
     return false;
   }
   poll_->Attach(handler_);
@@ -67,7 +68,7 @@ SelectNetwork::Init(int worker_count, int rbytes, int wbytes)
       worker_count : kDefaultWorkerCount);
   workers_ = new SelectWorker[worker_count_];
   if (NULL == workers_) {
-    abort();
+    LOG_FAIL("new SelectWorker failed ...\n");
     return false;
   }
   for (int i = 0; i < worker_count_; ++i) {
@@ -116,7 +117,7 @@ SelectNetwork::Listen(const char* ip, unsigned short port)
 
   SelectListener* listener = new SelectListener();
   if (NULL == listener) {
-    abort();
+    LOG_FAIL("new SelectListener failed ...\n");
     return false;
   }
 

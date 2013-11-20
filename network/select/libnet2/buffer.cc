@@ -26,6 +26,7 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <string.h>
+#include "logging.h"
 #include "buffer.h"
 
 
@@ -51,7 +52,7 @@ Buffer::Init(int storage)
   length_ = 0;
   buffer_ = (char*)malloc(storage_);
   if (NULL == buffer_) {
-    abort();
+    LOG_FAIL("malloc failed ...\n");
     return false;
   }
 
@@ -114,7 +115,7 @@ int
 Buffer::AddReadPosition(int bytes)
 {
   if (bytes > length_) {
-    abort();
+    LOG_FAIL("bytes > length_ ...\n");
     return -1;
   }
 
@@ -142,7 +143,7 @@ Buffer::Regrow(void)
   int new_storage = (0 != storage_ ? 2 * storage_ : kDefaultStorage);
   buffer_ = (char*)realloc(buffer_, new_storage);
   if (NULL == buffer_) {
-    abort();
+    LOG_FAIL("realloc failed ...\n");
     return false;
   }
 

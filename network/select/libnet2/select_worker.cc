@@ -26,6 +26,7 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include "os_tool.h"
+#include "logging.h"
 #include "net.h"
 #include "thread.h"
 #include "select_poll.h"
@@ -55,13 +56,13 @@ SelectWorker::Start(void)
 
   rthread_ = new Thread(&SelectWorker::ReadRoutine, this);
   if (NULL == rthread_) {
-    abort();
+    LOG_FAIL("new Thread failed ...\n");
     return false;
   }
 
   wthread_ = new Thread(&SelectWorker::WriteRoutine, this);
   if (NULL == wthread_) {
-    abort();
+    LOG_FAIL("new Thread failed ...\n");
     return false;
   }
 

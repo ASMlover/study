@@ -37,6 +37,7 @@
 # include <errno.h>
 # define NErrno()     errno
 #endif
+#include "logging.h"
 #include "net.h"
 #include "socket.h"
 #include "select_poll.h"

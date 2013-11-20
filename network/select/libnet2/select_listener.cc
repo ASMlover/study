@@ -25,6 +25,7 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
+#include "logging.h"
 #include "net.h"
 #include "os_tool.h"
 #include "thread.h"
@@ -57,7 +58,7 @@ SelectListener::Start(const char* ip, unsigned short port)
 
   listener_ = new Socket();
   if (NULL == listener_) {
-    abort();
+    LOG_FAIL("new Socket failed ...\n");
     return false;
   }
   listener_->Open();
@@ -67,7 +68,7 @@ SelectListener::Start(const char* ip, unsigned short port)
 
   thread_ = new Thread(&SelectListener::Routine, this);
   if (NULL == thread_) {
-    abort();
+    LOG_FAIL("new Thread failed ...\n");
     return false;
   }
 
