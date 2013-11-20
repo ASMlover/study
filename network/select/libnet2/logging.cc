@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include "io.h"
 #include "logging.h"
 
 
@@ -61,10 +62,14 @@ Logging::Write(int type, const char* file,
     fprintf(stdout, "%s", buffer);
   }
   else if (kLoggingTypeError == type) {
-    fprintf(stderr, "[%s][%d] - %s", file, line, buffer);
+    ColorFprintf(stderr, 
+        kColorTypeRed, 
+        "[%s][%d] - %s", file, line, buffer);
   }
   else {
-    fprintf(stderr, "[%s][%d] - %s", file, line, buffer);
+    ColorFprintf(stderr, 
+        kColorTypeRed, 
+        "[%s][%d] - %s", file, line, buffer);
     abort();
   }
 }
