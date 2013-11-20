@@ -26,7 +26,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 OUT	= elibpp.exe 
-RM	= rm 
+RM	= del 
 RD	= rd /s /q
 CC	= cl -c -nologo 
 MT	= mt -nologo
