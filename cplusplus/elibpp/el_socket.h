@@ -27,12 +27,14 @@
 #ifndef __EL_SOCKET_HEADER_H__
 #define __EL_SOCKET_HEADER_H__
 
+#include "el_allocator.h"
+
 
 namespace el {
 
 
 class Address;
-class Socket {
+class Socket : public SmallAllocator {
   int fd_;
 
   Socket(const Socket&);
@@ -59,9 +61,9 @@ public:
   }
 public:
   bool SetNonBlock(void);
-  bool SetTcpNoDelay(bool nodelay);
-  bool SetReuseAddr(bool reuse);
-  bool SetKeepAlive(bool keep);
+  bool SetTcpNoDelay(bool nodelay = true);
+  bool SetReuseAddr(bool reuse = true);
+  bool SetKeepAlive(bool keep = true);
   bool SetReadBuffer(int bytes);
   bool SetWriteBuffer(int bytes);
 
