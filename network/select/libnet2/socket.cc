@@ -276,6 +276,34 @@ Socket::DealWithAsyncWrite(void)
 }
 
 bool 
+Socket::Read(MessagePack* msg)
+{
+  if (kNetTypeInval == fd_ || NULL == msg)
+    return false;
+
+  MessageHeader header;
+  rbuf_.Get(sizeof(header), (char*)&header);
+  msg->SetMessage(rbuf_.buffer(), header.size, true);
+  rbuf_.AddReadPosition(header.size);
+
+  return true;
+}
+
+bool 
+Socket::Write(MessagePack* msg)
+{
+  if (kNetTypeInval == fd_ || NULL == msg)
+    return false;
+
+  MessageHeader header;
+  header.size = msg->bytes();
+  wbuf_.Put((const char*)&header, sizeof(header));
+  wbuf_.Put(msg->data(), msg->bytes());
+
+  return true;
+}
+
+bool 
 Socket::CheckValidMessage(void)
 {
   if (kNetTypeInval == fd_)
