@@ -24,40 +24,57 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __MESSAGE_HEADER_H__
-#define __MESSAGE_HEADER_H__
+#include <stdlib.h>
+#include <string.h>
+#include "logging.h"
+#include "message.h"
 
-struct MessageHeader {
-  unsigned int   sequence;
-  unsigned short crc;
-  unsigned short size;
-};
 
-class MessagePack {
-  bool allocated_;
-  unsigned short bytes_;
-  char* data_;
 
-  MessagePack(const MessagePack&);
-  MessagePack& operator =(const MessagePack&);
-public:
-  explicit MessagePack(void);
-  ~MessagePack(void);
+MessagePack::MessagePack(void)
+  : allocated_(false)
+  , bytes_(0)
+  , data_(NULL)
+{
+}
 
-  inline const char* data(void) const 
-  {
-    return data_;
+MessagePack::~MessagePack(void)
+{
+  ReleaseMessage();
+}
+
+void 
+MessagePack::SetMessage(
+    const char* data, 
+    unsigned short bytes, 
+    bool allocated)
+{
+  ReleaseMessage();
+
+  if (allocated) {
+    data_ = (char*)malloc(bytes);
+    if (NULL ==  data_) {
+      LOG_FAIL("malloc failed ...\n");
+      return;
+    }
+
+    memcpy(data_, data, bytes);
+  }
+  else {
+    data_ = (char*)data;
   }
 
-  inline unsigned short bytes(void) const 
-  {
-    return bytes_;
-  }
-public:
-  void SetMessage(const char* data, 
-      unsigned short bytes, 
-      bool allocated = false);
-  void ReleaseMessage(void);
-};
+  bytes_ = bytes;
+  allocated_ = allocated;
+}
 
-#endif  //! __MESSAGE_HEADER_H__
+void 
+MessagePack::ReleaseMessage(void)
+{
+  if (allocated_ && NULL != data_) {
+    free(data_);
+    data_ = NULL;
+
+    allocated_ = false;
+  }
+}
