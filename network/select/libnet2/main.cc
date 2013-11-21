@@ -50,19 +50,28 @@ public:
 
   virtual bool ReadEvent(Socket* s)
   {
-    MessageHeader header;
+    //! MessageHeader header;
     char buf[128] = {0};
 
-    if (s->Read(sizeof(header), (char*)&header) == sizeof(header)) {
-      if (s->Read(header.size, buf) == header.size) {
-        fprintf(stdout, "recv from connector [%d] [%d]: %s\n", 
-            s->fd(), header.size, buf);
+    //! if (s->Read(sizeof(header), (char*)&header) == sizeof(header)) {
+    //!   if (s->Read(header.size, buf) == header.size) {
+    //!     fprintf(stdout, "recv from connector [%d] [%d]: %s\n", 
+    //!         s->fd(), header.size, buf);
 
 
-        s->Write((const char*)&header, sizeof(header));
-        s->Write(buf, strlen(buf));
-      }
+    //!     s->Write((const char*)&header, sizeof(header));
+    //!     s->Write(buf, strlen(buf));
+    //!   }
+    //! }
+
+    MessagePack msg;
+    if (s->Read(&msg)) {
+      fprintf(stdout, "recv from connector [%d] [%d] : %s\n",
+          s->fd(), msg.bytes(), msg.data());
+
+      s->Write(&msg);
     }
+    msg.ReleaseMessage();
 
     return true;
   }
@@ -147,15 +156,22 @@ public:
 
   virtual bool ReadEvent(Socket* s)
   {
-    MessageHeader header;
+    //! MessageHeader header;
     char buf[128] = {0};
 
-    if (s->Read(sizeof(header), (char*)&header) == sizeof(header)) {
-      if (s->Read(header.size, buf) == header.size) {
-        fprintf(stdout, "recv from server [%d] [%d]: %s\n", 
-            s->fd(), header.size, buf);
-      }
+    //! if (s->Read(sizeof(header), (char*)&header) == sizeof(header)) {
+    //!   if (s->Read(header.size, buf) == header.size) {
+    //!     fprintf(stdout, "recv from server [%d] [%d]: %s\n", 
+    //!         s->fd(), header.size, buf);
+    //!   }
+    //! }
+
+    MessagePack msg;
+    if (s->Read(&msg)) {
+      fprintf(stdout, "recv from server [%d] [%d] : %s\n", 
+          s->fd(), msg.bytes(), msg.data());
     }
+    msg.ReleaseMessage();
 
     return true;
   }
@@ -185,16 +201,20 @@ AsyncClientMain(const char* ip = "127.0.0.1", unsigned short port = 5555)
   char buf[128];
   struct timeb tb;
   struct tm* now;
-  MessageHeader header;
+  //! MessageHeader header;
   while (_s_connected) {
     ftime(&tb);
     now = localtime(&tb.time);
     sprintf(buf, "[%04d-%02d-%02d %02d:%02d:%02d:%03d]", 
         now->tm_year + 1900, now->tm_mon + 1, now->tm_mday, 
         now->tm_hour, now->tm_min, now->tm_sec, tb.millitm);
-    header.size = strlen(buf);
-    s->Write((const char*)&header, sizeof(header));
-    s->Write(buf, header.size);
+    //! header.size = strlen(buf);
+    //! s->Write((const char*)&header, sizeof(header));
+    //! s->Write(buf, header.size);
+
+    MessagePack msg;
+    msg.SetMessage(buf, strlen(buf));
+    s->Write(&msg);
 
     Tools::Sleep(0);
   }
