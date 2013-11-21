@@ -73,8 +73,8 @@ public:
   bool Accept(Socket* s, Address* addr);
   bool Connect(const char* ip, unsigned short port);
 
-  int ReadBlock(int length, char* buffer);
-  int WriteBlock(const char* buffer, int length);
+  int ReadBlock(int bytes, char* buffer);
+  int WriteBlock(const char* buffer, int bytes);
 private:
   bool SetOption(int level, int optname, int optval);
 };

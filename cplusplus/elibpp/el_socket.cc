@@ -170,32 +170,32 @@ Socket::Connect(const char* ip, unsigned short port)
 }
 
 int 
-Socket::ReadBlock(int length, char* buffer)
+Socket::ReadBlock(int bytes, char* buffer)
 {
-  if (kNetTypeInval == fd_ || length <= 0 || NULL == buffer)
+  if (kNetTypeInval == fd_ || bytes <= 0 || NULL == buffer)
     return kNetTypeError;
 
-  int ret = recv(fd_, buffer, length, 0);
+  int ret = recv(fd_, buffer, bytes, 0);
   return ret;
 }
 
 int 
-Socket::WriteBlock(const char* buffer, int length)
+Socket::WriteBlock(const char* buffer, int bytes)
 {
-  if (kNetTypeInval == fd_ || NULL == buffer || length <= 0)
+  if (kNetTypeInval == fd_ || NULL == buffer || bytes <= 0)
     return kNetTypeError;
 
-  int total = 0;
+  int write_bytes = 0;
   int ret;
-  while (total < length) {
-    ret = send(fd_, buffer + total, length - total, 0);
+  while (write_bytes < bytes) {
+    ret = send(fd_, buffer + write_bytes, bytes - write_bytes, 0);
     if (kNetTypeError == ret)
       return kNetTypeError;
 
-    total += ret;
+    write_bytes += ret;
   }
 
-  return total;
+  return write_bytes;
 }
 
 
