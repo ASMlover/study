@@ -51,7 +51,7 @@ public:
   virtual bool ReadEvent(Socket* s)
   {
     //! MessageHeader header;
-    char buf[128] = {0};
+    //! char buf[128] = {0};
 
     //! if (s->Read(sizeof(header), (char*)&header) == sizeof(header)) {
     //!   if (s->Read(header.size, buf) == header.size) {
@@ -157,7 +157,7 @@ public:
   virtual bool ReadEvent(Socket* s)
   {
     //! MessageHeader header;
-    char buf[128] = {0};
+    //! char buf[128] = {0};
 
     //! if (s->Read(sizeof(header), (char*)&header) == sizeof(header)) {
     //!   if (s->Read(header.size, buf) == header.size) {
