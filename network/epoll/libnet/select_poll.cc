@@ -274,8 +274,15 @@ SelectPoll::DispatchEvent(int ev)
     else if (kEventTypeWrite == ev) {
       if (FD_ISSET(fd, &wset_)) {
         int write_bytes = s->DealWithAsyncWrite();
-        if (write_bytes > 0)
+        if (write_bytes > 0) {
           handler_->WriteEvent(s);
+        }
+        else if (write_bytes < 0) {
+          if (EWOULDBLOCK != NErrno()) {
+            handler_->CloseEvent(s);
+            s->Close();
+          }
+        }
       }
     }
   }
