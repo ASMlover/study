@@ -37,6 +37,7 @@
 # include <netinet/tcp.h>
 #endif
 #include <stdio.h>
+#include <stdlib.h>
 #include "message.h"
 #include "net.h"
 #include "address.h"
@@ -210,6 +211,47 @@ Socket::WriteBlock(const char* buffer, int bytes)
   }
 
   return write_bytes;
+}
+
+bool 
+Socket::ReadBlock(MessagePack* msg)
+{
+  if (kNetTypeInval == fd_ || NULL == msg)
+    return false;
+
+  MessageHeader head;
+  int ret = recv(fd_, (char*)&head, sizeof(head), 0);
+  if (kNetTypeError == ret)
+    return false;
+  
+  char* buffer = (char*)malloc(head.size);
+  if (NULL == buffer)
+    return false;
+  ret = recv(fd_, buffer, head.size, 0);
+  if (kNetTypeError != ret)
+    msg->SetMessage(buffer, head.size, true);
+  free(buffer);
+
+  return (kNetTypeError != ret);
+}
+
+bool 
+Socket::WriteBlock(MessagePack* msg)
+{
+  if (kNetTypeInval == fd_ || NULL == msg)
+    return false;
+
+  MessageHeader head;
+  head.size = msg->bytes();
+  int ret = send(fd_, (const char*)&head, sizeof(head), 0);
+  if (kNetTypeError == ret)
+    return ret;
+
+  ret = send(fd_, msg->data(), msg->bytes(), 0);
+
+  return (kNetTypeError != ret);
+
+  return true;
 }
 
 int 

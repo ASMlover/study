@@ -68,6 +68,7 @@ struct EventHandler {
 };
 
 
+#include "message.h"
 #include "address.h"
 #include "socket.h"
 #include "select_network.h"

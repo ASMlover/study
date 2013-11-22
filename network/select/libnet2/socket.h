@@ -78,6 +78,8 @@ public:
 
   int ReadBlock(int bytes, char* buffer);
   int WriteBlock(const char* buffer, int bytes);
+  bool ReadBlock(MessagePack* msg);
+  bool WriteBlock(MessagePack* msg);
   int Read(int bytes, char* buffer);
   int Write(const char* buffer, int bytes);
   bool Read(MessagePack* msg);
