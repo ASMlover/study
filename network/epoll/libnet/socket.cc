@@ -303,6 +303,12 @@ Socket::DealWithAsyncRead(void)
       if (ret < free_length)
         break;
     }
+    else if (0 == ret) {
+      if (read_bytes > 0)
+        break;
+      else 
+        return ret;
+    }
     else {
       return ret;
     }
