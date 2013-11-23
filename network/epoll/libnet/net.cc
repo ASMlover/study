@@ -29,6 +29,7 @@
 #   include <winsock2.h>
 # endif
 #endif
+#include <stdlib.h>
 #include "net.h"
 
 
@@ -74,4 +75,22 @@ NetLibrary::Destroy(void)
       loaded_ = false;
   }
 #endif
+}
+
+
+
+
+
+
+void 
+ReleaseMsgPack(MsgPack* msg)
+{
+  if (NULL == msg)
+    return;
+
+  if (NULL != msg->data && MsgPack::kPackTypeData == msg->type)
+    free(msg->data);
+  msg->type = MsgPack::kPackTypeUnknown;
+  msg->size = 0;
+  msg->data = NULL;
 }

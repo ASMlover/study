@@ -132,6 +132,8 @@ struct MsgPack {
   }
 };
 
+extern void ReleaseMsgPack(MsgPack* msg);
+
 
 
 #endif  //! __NET_HEADER_H__
