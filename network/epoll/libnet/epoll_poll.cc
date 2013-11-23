@@ -25,6 +25,81 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <sys/epoll.h>
+#include <unistd.h>
+#include <stdlib.h>
 #include "net.h"
 #include "socket.h"
 #include "epoll_poll.h"
+
+
+
+
+EpollPoll::EpollPoll(void)
+  : fd_(kNetTypeInval)
+  , rbytes_(kDefaultBufferLen)
+  , wbytes_(kDefaultBufferLen)
+  , event_count_(kDefaultEventCount)
+  , events_(NULL)
+  , handler_(NULL)
+  , spinlock_()
+{
+  connectors_.clear();
+  if (!Init())
+    abort();
+}
+
+EpollPoll::~EpollPoll(void)
+{
+  CloseAll();
+  Destroy();
+}
+
+bool 
+EpollPoll::Init(void)
+{
+  fd_ = epoll_create(event_count_);
+  if (kNetTypeInval == fd_)
+    return false;
+
+  events_ = (epoll_event*)malloc(sizeof(epoll_event) * event_count_);
+  if (NULL == events_) {
+    close(fd_);
+    return false;
+  }
+
+  return true;
+}
+
+void 
+EpollPoll::Destroy(void)
+{
+  if (NULL != events_) {
+    free(events_);
+    events_ = NULL;
+  }
+
+  if (kNetTypeInval != fd_) {
+    close(fd_);
+    fd_ = kNetTypeInval;
+  }
+}
+
+void 
+EpollPoll::CloseAll(void)
+{
+  if (NULL == handler_)
+    return;
+
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, Socket*>::iterator it;
+  for (it = connectors_.begin(); it != connectors_.end(); ++it) {
+    if (NULL != it->second) {
+      //! TODO:
+      //! remove epoll event
+      handler_->CloseEvent(it->second);
+      it->second->Close();
+      delete it->second;
+    }
+  }
+  connectors_.clear();
+}

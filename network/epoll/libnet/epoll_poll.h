@@ -76,6 +76,9 @@ public:
   Socket* GetConnector(int fd);
 
   bool Polling(int ev, int millitm = -1);
+private:
+  bool Init(void);
+  void Destroy(void);
 };
 
 #endif  //! __EPOLL_POLL_HEADER_H__
