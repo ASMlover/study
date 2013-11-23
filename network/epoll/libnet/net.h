@@ -107,4 +107,31 @@ struct EventHandler {
 
 
 
+struct MsgHead {
+  uint32_t sequence;
+  uint16_t crc;
+  uint16_t size;
+};
+
+struct MsgPack { 
+  enum PackType {
+    kPackTypeUnknown = 0, 
+    kPackTypeConnected, 
+    kPackTypeDisconnected, 
+    kPackTypeData, 
+  };
+  uint16_t type;
+  uint16_t size;
+  char*    data;
+
+  MsgPack(void)
+    : type(kPackTypeUnknown)
+    , size(0)
+    , data(0)
+  {
+  }
+};
+
+
+
 #endif  //! __NET_HEADER_H__
