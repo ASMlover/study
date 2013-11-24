@@ -24,8 +24,10 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#include <sys/types.h>
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <errno.h>
 #include <stdlib.h>
 #include "net.h"
 #include "socket.h"
@@ -33,6 +35,7 @@
 
 
 
+#define NErrno()      errno
 #define OTHER_EVENTS  (EPOLLERR | EPOLLHUP | EPOLLET)
 #define ALL_EVENTS    (kEventTypeRead | kEventTypeWrite | OTHER_EVENTS)
 
@@ -226,5 +229,56 @@ EpollPoll::GetConnector(int fd)
 bool 
 EpollPoll::Polling(int ev, int millitm)
 {
+  if (kNetTypeInval == fd_)
+    return false;
+
+  if (-1 == millitm)
+    millitm = 1;
+  int ret = epoll_wait(fd_, events_, event_count_, millitm);
+  if (kNetTypeError == ret)
+    return false;
+
+  Socket* s;
+  int fd;
+  int events;
+  for (int i = 0; i < ret; ++i) {
+    events = events_[i].events;
+    s = static_cast<Socket*>(events_[i].data.ptr);
+
+    if (NULL == s)
+      continue;
+
+    fd = s->fd();
+    switch (ev) {
+    case kEventTypeRead:
+      if (events & kEventTypeRead) {
+        int read_bytes = s->DealWithAsyncRead();
+        if (read_bytes > 0) {
+          if (s->CheckValidMessageInReadBuffer())
+            handler_->ReadEvent(s);
+        }
+        else if (0 == read_bytes) {
+          Remove(fd);
+        }
+        else {
+          if (EWOULDBLOCK != NErrno())
+            Remove(fd);
+        }
+      }
+      break;
+    case kEventTypeWrite:
+      if (events & kEventTypeWrite) {
+        int write_bytes = s->DealWithAsyncWrite();
+        if (write_bytes > 0) 
+          handler_->WriteEvent(s);
+        else if (write_bytes < 0) {
+          if (EWOULDBLOCK != NErrno())
+            Remove(fd);
+        }
+      }
+      break;
+    }
+  }
+
   return true;
 }
