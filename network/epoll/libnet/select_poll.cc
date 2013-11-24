@@ -87,6 +87,7 @@ SelectPoll::Insert(int fd, int ev)
 
     s->Attach(fd);
     s->SetNonBlock();
+    s->SetTcpNoDelay();
     s->SetKeepAlive();
     s->SetSelfReadBuffer(rbytes_);
     s->SetSelfWriteBuffer(wbytes_);

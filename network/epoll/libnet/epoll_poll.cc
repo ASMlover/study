@@ -135,8 +135,8 @@ EpollPoll::Insert(int fd, int ev)
 
     s->Attach(fd);
     s->SetNonBlock();
-    s->SetTcpNoDelay(true);
-    s->SetKeepAlive(true);
+    s->SetTcpNoDelay();
+    s->SetKeepAlive();
     s->SetSelfReadBuffer(rbytes_);
     s->SetSelfWriteBuffer(wbytes_);
 
