@@ -30,6 +30,9 @@
 # endif
 # define EWOULDBLOCK  WSAEWOULDBLOCK
 # define NErrno()     WSAGetLastError()
+#elif defined(__linux__)
+# include <errno.h>
+# define NErrno()     errno
 #endif
 #include "net.h"
 #include "socket.h"
