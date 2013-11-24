@@ -79,6 +79,7 @@ public:
 private:
   bool Init(void);
   void Destroy(void);
+  bool UpdateEvent(int op, Socket* s, int ev);
 };
 
 #endif  //! __EPOLL_POLL_HEADER_H__

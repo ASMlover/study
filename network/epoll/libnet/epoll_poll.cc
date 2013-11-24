@@ -33,6 +33,11 @@
 
 
 
+#define OTHER_EVENTS  (EPOLLERR | EPOLLHUP | EPOLLET)
+#define ALL_EVENTS    (kEventTypeRead | kEventTypeWrite | OTHER_EVENTS)
+
+
+
 
 EpollPoll::EpollPoll(void)
   : fd_(kNetTypeInval)
@@ -84,6 +89,18 @@ EpollPoll::Destroy(void)
   }
 }
 
+bool 
+EpollPoll::UpdateEvent(int op, Socket* s, int ev)
+{
+  if (kNetTypeInval == fd_ || NULL == s)
+    return false;
+
+  struct epoll_event event;
+  event.data.ptr = s;
+  event.events = ev;
+  return (kNetTypeError != epoll_ctl(fd_, op, s->fd(), &event));
+}
+
 void 
 EpollPoll::CloseAll(void)
 {
@@ -94,12 +111,120 @@ EpollPoll::CloseAll(void)
   std::map<int, Socket*>::iterator it;
   for (it = connectors_.begin(); it != connectors_.end(); ++it) {
     if (NULL != it->second) {
-      //! TODO:
-      //! remove epoll event
       handler_->CloseEvent(it->second);
+      UpdateEvent(EPOLL_CTL_DEL, it->second, ALL_EVENTS);
       it->second->Close();
       delete it->second;
     }
   }
   connectors_.clear();
+}
+
+bool 
+EpollPoll::Insert(int fd, int ev)
+{
+  if (kNetTypeInval == fd_)
+    return false;
+
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, Socket*>::iterator it = connectors_.find(fd);
+  if (it == connectors_.end()) {
+    Socket* s = new Socket();
+    if (NULL == s)
+      return false;
+
+    s->Attach(fd);
+    s->SetNonBlock();
+    s->SetTcpNoDelay(true);
+    s->SetKeepAlive(true);
+    s->SetSelfReadBuffer(rbytes_);
+    s->SetSelfWriteBuffer(wbytes_);
+
+
+    int events = ev | OTHER_EVENTS;
+    if (!UpdateEvent(EPOLL_CTL_ADD, s, events)) {
+      s->Close();
+      delete s;
+      return false;
+    }
+
+    connectors_[fd] = s;
+  }
+
+  return true;
+}
+
+void 
+EpollPoll::Remove(int fd)
+{
+  if (NULL == handler_ || kNetTypeInval == fd_)
+    return;
+
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, Socket*>::iterator it = connectors_.find(fd);
+  if (it != connectors_.end()) {
+    if (NULL != it->second) {
+      handler_->CloseEvent(it->second);
+      UpdateEvent(EPOLL_CTL_DEL, it->second, ALL_EVENTS);
+      it->second->Close();
+      delete it->second;
+    }
+
+    connectors_.erase(it);
+  }
+}
+
+bool 
+EpollPoll::AddEvent(int fd, int ev)
+{
+  if (kNetTypeInval == fd_)
+    return false;
+
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, Socket*>::iterator it = connectors_.find(fd);
+  if (it != connectors_.end()) {
+    int events = kEventTypeRead | kEventTypeWrite | ev;
+    if (!UpdateEvent(EPOLL_CTL_MOD, it->second, events))
+      return false;
+  }
+
+  return true;
+}
+
+bool 
+EpollPoll::DelEvent(int fd, int ev)
+{
+  if (kNetTypeInval == fd_)
+    return false;
+
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, Socket*>::iterator it = connectors_.find(fd);
+  if (it != connectors_.end()) {
+    int events = (kEventTypeRead | kEventTypeWrite) & (~ev);
+    if (!UpdateEvent(EPOLL_CTL_MOD, it->second, events))
+      return false;
+  }
+
+  return true;
+}
+
+Socket* 
+EpollPoll::GetConnector(int fd)
+{
+  Socket* s = NULL;
+
+  {
+    LockerGuard<SpinLock> guard(spinlock_);
+    std::map<int, Socket*>::iterator it = connectors_.find(fd);
+    if (it != connectors_.end())
+      s = it->second;
+  }
+
+  return s;
+}
+
+bool 
+EpollPoll::Polling(int ev, int millitm)
+{
+  return true;
 }
