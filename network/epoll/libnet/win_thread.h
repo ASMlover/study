@@ -58,7 +58,7 @@ public:
     if (NULL == start_event_)
       return false;
 
-    thread_ = _beginthreadex(NULL, 
+    thread_ = (HANDLE)_beginthreadex(NULL, 
         0, &Thread::Routine, this, 0, NULL);
     if (NULL != thread_)
       WaitForSingleObject(start_event_, INFINITE);
