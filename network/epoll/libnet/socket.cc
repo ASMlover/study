@@ -323,17 +323,33 @@ Socket::DealWithAsyncWrite(void)
   if (kNetTypeInval == fd_)
     return kNetTypeError;
 
-  int length = wbuf_.length();
-  if (length <= 0)
-    return 0;
+  int write_bytes = 0;
+  while (true) {
+    int length = wbuf_.length();
+    if (length <= 0)
+      return 0;
 
-  const char* buffer = wbuf_.buffer();
-  int ret = send(fd_, buffer, length, 0);
+    const char* buffer = wbuf_.buffer();
+    int ret = send(fd_, buffer, length, 0);
 
-  if (ret > 0)
-    wbuf_.Decrement(ret);
+    if (ret > 0) {
+      wbuf_.Decrement(ret);
+      write_bytes += ret;
+      if (ret < length)
+        break;
+    }
+    else if (0 == ret) {
+      if (write_bytes > 0)
+        break;
+      else 
+        return ret;
+    }
+    else {
+      return ret;
+    }
+  }
 
-  return ret;
+  return write_bytes;
 }
 
 bool 
