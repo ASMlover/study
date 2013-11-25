@@ -28,8 +28,7 @@
 #define __POSIX_LOCKER_HEADER_H__
 
 #include <pthread.h>
-#include <stdlib.h>
-
+#include "logging.h"
 
 class Mutex {
   pthread_mutex_t mutex_;
@@ -40,25 +39,25 @@ public:
   explicit Mutex(void)
   {
     if (0 != pthread_mutex_init(&mutex_, NULL))
-      abort();
+      LOG_FAIL("pthread_mutex_init failed\n");
   }
 
   ~Mutex(void)
   {
     if (0 != pthread_mutex_destroy(&mutex_))
-      abort();
+      LOG_FAIL("pthread_mutex_destroy failed\n");
   }
 
   inline void Lock(void)
   {
     if (0 != pthread_mutex_lock(&mutex_))
-      abort();
+      LOG_FAIL("pthread_mutex_lock faield\n");
   }
 
   inline void Unlock(void)
   {
     if (0 != pthread_mutex_unlock(&mutex_))
-      abort();
+      LOG_FAIL("pthread_mutex_unlock failed\n");
   }
 };
 
@@ -72,25 +71,25 @@ public:
   explicit SpinLock(void)
   {
     if (0 != pthread_spin_init(&spinlock_, 0))
-      abort();
+      LOG_FAIL("pthread_spin_init failed\n");
   }
 
   ~SpinLock(void)
   {
     if (0 != pthread_spin_destroy(&spinlock_))
-      abort();
+      LOG_FAIL("pthread_spin_destroy failed\n");
   }
 
   inline void Lock(void)
   {
     if (0 != pthread_spin_lock(&spinlock_))
-      abort();
+      LOG_FAIL("pthread_spin_lock failed\n");
   }
 
   inline void Unlock(void)
   {
     if (0 != pthread_spin_unlock(&spinlock_))
-      abort();
+      LOG_FAIL("pthread_spin_unlock failed\n");
   }
 };
 
