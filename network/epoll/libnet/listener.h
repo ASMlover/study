@@ -34,6 +34,7 @@ class SelectPoll;
 #elif defined(__linux__)
 class EpollPoll;
 #endif
+struct EventHandler;
 class Listener {
   bool running_;
   Socket* listener_;
@@ -43,6 +44,7 @@ class Listener {
 #elif defined(__linux__)
   EpollPoll* poll_;
 #endif
+  EventHandler* handler_;
 
   Listener(const Listener&);
   Listener& operator =(const Listener&);
@@ -57,6 +59,11 @@ public:
 #endif
   {
     poll_ = poll;
+  }
+
+  inline void Attach(EventHandler* handler)
+  {
+    handler_ = handler;
   }
 public:
   bool Start(const char* ip, unsigned short port);

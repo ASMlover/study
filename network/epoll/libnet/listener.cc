@@ -25,8 +25,11 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "thread.h"
+#include "net.h"
+#include "address.h"
 #include "socket.h"
 #include "logging.h"
+#include "os_tool.h"
 #if defined(_WINDOWS_) || defined(_MSC_VER)
 # include "select_poll.h"
 #elif defined(__linux__)
@@ -42,6 +45,7 @@ Listener::Listener(void)
   , listener_(NULL)
   , thread_(NULL)
   , poll_(NULL)
+  , handler_(NULL)
 {
 }
 
@@ -53,16 +57,74 @@ Listener::~Listener(void)
 bool 
 Listener::Start(const char* ip, unsigned short port)
 {
+  if (NULL == poll_ || NULL == handler_)
+    return false;
+
+  listener_ = new Socket();
+  if (NULL == listener_) {
+    LOG_FAIL("new Socket failed\n");
+    return false;
+  }
+
+  listener_->Open();
+  listener_->SetNonBlock();
+  listener_->SetReuseAddr();
+  listener_->Bind(ip, port);
+  listener_->Listen();
+
+  thread_ = new Thread(&Listener::Routine, this);
+  if (NULL == thread_) {
+    LOG_FAIL("new Thread failed\n");
+    return false;
+  }
+
+  running_ = true;
+  thread_->Start();
+
   return true;
 }
 
 void 
 Listener::Stop(void)
 {
+  running_ = false;
+
+  if (NULL != thread_) {
+    thread_->Join();
+
+    delete thread_;
+    thread_ = NULL;
+  }
+
+  if (NULL != listener_) {
+    listener_->Close();
+
+    delete listener_;
+    listener_ = NULL;
+  }
 }
 
 
 void 
 Listener::Routine(void* argument)
 {
+  Listener* self = static_cast<Listener*>(argument);
+  if (NULL == self || NULL == self->poll_ || NULL == self->handler_)
+    return;
+
+  Socket s;
+  Address addr;
+  while (self->running_) {
+    if (self->listener_->Accept(&s, &addr)) {
+      self->poll_->Insert(s.fd(), kEventTypeRead | kEventTypeWrite);
+      self->handler_->AcceptEvent(&s, &addr);
+    }
+    else {
+      Tools::Sleep(1);
+      continue;
+    }
+
+    s.Detach();
+    addr.Detach();
+  }
 }
