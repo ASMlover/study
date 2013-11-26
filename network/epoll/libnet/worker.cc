@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include "net.h"
 #include "logging.h"
+#include "os_tool.h"
 #include "thread.h"
 #if defined(_WINDOWS_) || defined(_MSC_VER)
 # include "select_poll.h"
@@ -105,7 +106,7 @@ Worker::ReadRoutine(void* argument)
 
   while (self->running_) {
     if (!self->poll_->Polling(kEventTypeRead)) {
-      Sleep(1);
+      Tools::Sleep(1);
       continue;
     }
   }
@@ -120,7 +121,7 @@ Worker::WriteRoutine(void* argument)
 
   while (self->running_) {
     if (!self->poll_->Polling(kEventTypeWrite)) {
-      Sleep(1);
+      Tools::Sleep(1);
       continue;
     }
   }
