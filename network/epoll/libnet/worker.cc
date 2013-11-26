@@ -25,6 +25,7 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
+#include "net.h"
 #include "logging.h"
 #include "thread.h"
 #if defined(_WINDOWS_) || defined(_MSC_VER)
@@ -52,21 +53,75 @@ Worker::~Worker(void)
 bool 
 Worker::Start(void)
 {
+  if (NULL == poll_)
+    return false;
+
+  rthread_ = new Thread(&Worker::ReadRoutine, this);
+  if (NULL == rthread_) {
+    LOG_FAIL("new Thread failed\n");
+    return false;
+  }
+
+  wthread_ = new Thread(&Worker::WriteRoutine, this);
+  if (NULL == wthread_) {
+    LOG_FAIL("new Thread failed\n");
+    return false;
+  }
+
+  running_ = true;
+  rthread_->Start();
+  wthread_->Start();
+
   return true;
 }
 
 void 
 Worker::Stop(void)
 {
+  running_ = false;
+
+  if (NULL != rthread_) {
+    rthread_->Join();
+    delete rthread_;
+
+    rthread_ = NULL;
+  }
+
+  if (NULL != wthread_) {
+    wthread_->Join();
+    delete wthread_;
+
+    wthread_ = NULL;
+  }
 }
 
 
 void 
 Worker::ReadRoutine(void* argument)
 {
+  Worker* self = static_cast<Worker*>(argument);
+  if (NULL == self)
+    return;
+
+  while (self->running_) {
+    if (!self->poll_->Polling(kEventTypeRead)) {
+      Sleep(1);
+      continue;
+    }
+  }
 }
 
 void 
 Worker::WriteRoutine(void* argument)
 {
+  Worker* self = static_cast<Worker*>(argument);
+  if (NULL == self)
+    return;
+
+  while (self->running_) {
+    if (!self->poll_->Polling(kEventTypeWrite)) {
+      Sleep(1);
+      continue;
+    }
+  }
 }
