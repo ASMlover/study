@@ -150,7 +150,7 @@ Socket::Open(void)
 void 
 Socket::Close(void)
 {
-  if (kNetTypeInval == fd_) {
+  if (kNetTypeInval != fd_) {
 #if defined(_WINDOWS_) || defined(_MSC_VER)
     shutdown(fd_, SD_BOTH);
     closesocket(fd_);
