@@ -51,7 +51,7 @@ public:
   virtual bool ReadEvent(Socket* s)
   {
     char buf[128] = {0};
-    if (s->Read(sizeof(buf), buf)) {
+    if (s->Read(sizeof(buf), buf) > 0) {
       fprintf(stdout, "recv from connector [%d] : %s\n", s->fd(), buf);
 
       s->Write(buf, strlen(buf));
