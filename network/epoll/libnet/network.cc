@@ -54,16 +54,84 @@ Network::~Network(void)
 bool 
 Network::Init(int worker_count, int rbytes, int wbytes)
 {
+  if (NULL == handler_)
+    return false;
+
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+  poll_ = new SelectPoll();
+#elif defined(__linux__)
+  poll_ = new EpollPoll();
+#endif
+  if (NULL == poll_)
+    return false;
+
+  poll_->Attach(handler_);
+  poll_->SetBuffer(rbytes, wbytes);
+
+  worker_count_ = (worker_count > kDefaultWorkerCount 
+      ? worker_count : kDefaultWorkerCount);
+  workers_ = new Worker[worker_count_];
+  if (NULL == workers_) {
+    LOG_FAIL("new Worker failed\n");
+    return false;
+  }
+
+  for (int i = 0; i < worker_count_; ++i) {
+    workers_[i].Attach(poll_);
+    workers_[i].Start();
+  }
+
   return true;
 }
 
 void 
 Network::Destroy(void)
 {
+  std::vector<Listener*>::iterator it;
+  for (it = listeners_.begin(); it != listeners_.end(); ++it) {
+    if (NULL != *it) {
+      (*it)->Stop();
+
+      delete *it;
+    }
+  }
+  listeners_.clear();
+
+  if (NULL != workers_) {
+    for (int i = 0; i < worker_count_; ++i)
+      workers_[i].Stop();
+
+    delete [] workers_;
+    workers_ = NULL;
+  }
+
+  if (NULL != poll_) {
+    poll_->CloseAll();
+
+    delete poll_;
+    poll_ = NULL;
+  }
 }
 
 bool 
 Network::Listen(const char* ip, unsigned short port)
 {
+  if (NULL == poll_ || NULL == handler_)
+    return false;
+
+  Listener* listener = new Listener();
+  if (NULL == listener)
+    return false;
+
+  listener->Attach(poll_);
+  listener->Attach(handler_);
+
+  if (!listener->Start(ip, port)) {
+    delete listener;
+    return false;
+  }
+  
+  listeners_.push_back(listener);
+  
   return true;
 }

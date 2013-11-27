@@ -249,7 +249,7 @@ SelectPoll::DispatchEvent(int ev)
 
   LockerGuard<SpinLock> guard(spinlock_);
   std::map<int, std::pair<int, Socket*> >::iterator it;
-  for (it = connectors_.begin(); it !=  connectors_.end(); ++it) {
+  for (it = connectors_.begin(); it != connectors_.end(); ++it) {
     fd = it->first;
     s = it->second.second;
 
