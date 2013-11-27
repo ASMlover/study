@@ -81,6 +81,36 @@ NetLibrary::Destroy(void)
 
 
 
+EventHandler::~EventHandler(void)
+{
+}
+
+bool 
+EventHandler::AcceptEvent(Socket* s, Address* addr)
+{
+  return true;
+}
+
+void 
+EventHandler::CloseEvent(Socket* s)
+{
+}
+
+bool 
+EventHandler::ReadEvent(Socket* s)
+{
+  return true;
+}
+
+bool 
+EventHandler::WriteEvent(Socket* s)
+{
+  return true;
+}
+
+
+
+
 
 void 
 ReleaseMsgPack(MsgPack* msg)
