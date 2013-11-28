@@ -58,6 +58,30 @@
 # endif
 #elif defined(EV_POSIX)
 # include <stdint.h>
-#endif
+#endif 
+
+
+enum NetType {
+  kNetTypeInval = -1, 
+  kNetTypeError = -1, 
+};
+
+enum EventType {
+  kEventTypeUnknown = 0, 
+  kEventTypeRead    = 1, 
+  kEventTypeWrite   = 2, 
+};
+
+
+class Socket;
+class EventDispatcher;
+struct EventPoll {
+  virtual ~EventPoll(void) {}
+  virtual bool Insert(int fd, Socket* s) = 0;
+  virtual void Remove(int fd) = 0;
+  virtual bool AddEvent(int fd, int ev) = 0;
+  virtual bool DelEvent(int fd, int ev) = 0;
+  virtual bool Dispatch(EventDispatcher* dispatcher, int millitm) = 0;
+};
 
 #endif  //! __SELECT_EVENT_HEADER_H__
