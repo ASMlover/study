@@ -85,7 +85,7 @@ Socket::SetNonBlock(void)
     return false;
 #elif defined(__linux__)
   int opt = fcntl(fd_, F_GETFL);
-  if (kNetTypeError == fd_)
+  if (kNetTypeError == opt)
     return false;
   if (kNetTypeError == fcntl(fd_, F_SETFL, opt | O_NONBLOCK))
     return false;
