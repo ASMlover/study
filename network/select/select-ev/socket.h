@@ -61,7 +61,7 @@ public:
   bool SetNonBlock(void);
   bool SetTcpNoDelay(bool nodelay = true);
   bool SetReuseAddr(bool reuse = true);
-  bool SetKeepAlive(bool alive = true);
+  bool SetKeepAlive(bool keep = true);
   bool SetSelfReadBuffer(int bytes);
   bool SetSelfWriteBuffer(int bytes);
 

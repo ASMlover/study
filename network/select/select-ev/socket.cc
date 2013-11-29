@@ -24,11 +24,12 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#if defined(_WINDOWS_) || defined(_MSC_VER)
+#include "select_ev.h"
+#if defined(EV_WIN)
 # ifndef _WINDOWS_
-#   include <windows.h>
+#   include <winsock2.h>
 # endif
-#elif defined(__linux__)
+#elif defined(EV_POSIX)
 # include <sys/types.h>
 # include <sys/socket.h>
 # include <arpa/inet.h>
@@ -37,7 +38,6 @@
 # include <unistd.h>
 # include <fcntl.h>
 #endif
-#include "select_ev.h"
 #include "address.h"
 #include "socket.h"
 
@@ -51,4 +51,92 @@ Socket::Socket(void)
 
 Socket::~Socket(void)
 {
+  Close();
+}
+
+
+bool 
+Socket::SetOption(int level, int optname, int optval)
+{
+  if (kNetTypeInval == fd_)
+    return false;
+
+  if (kNetTypeError == setsockopt(fd_, level, 
+        optname, 
+#if defined(EV_WIN)
+        (const char*)&optval, 
+#elif defined(EV_POSIX)
+        (const void*)&optval, 
+#endif
+        sizeof(optval)))
+    return false;
+
+  return true;
+}
+
+bool 
+Socket::SetNonBlock(void)
+{
+  if (kNetTypeInval == fd_)
+    return false;
+
+#if defined(EV_WIN)
+  u_long val = 1;
+  if (kNetTypeInval == ioctlsocket(fd_, FIONBIO, &val))
+    return false;
+#elif defined(EV_POSIX)
+  int optval = fcntl(fd_, F_GETFL);
+  if (kNetTypeError == optval)
+    return false;
+  if (kNetTypeError == fcntl(fd_, F_SETFL, optval | O_NONBLOCK))
+    return false;
+#endif
+
+  return true;
+}
+
+bool 
+Socket::SetTcpNoDelay(bool nodelay)
+{
+  return SetOption(IPPROTO_TCP, TCP_NODELAY, (nodelay ? 1 : 0));
+}
+
+bool 
+Socket::SetReuseAddr(bool reuse) 
+{
+  return SetOption(SOL_SOCKET, SO_REUSEADDR, (reuse ? 1 : 0));
+}
+
+bool 
+Socket::SetKeepAlive(bool keep) 
+{
+  return SetOption(SOL_SOCKET, SO_KEEPALIVE, (keep ? 1 : 0));
+}
+
+
+
+bool 
+Socket::Open(void)
+{
+  fd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if (kNetTypeInval == fd_)
+    return false;
+
+  return true;
+}
+
+void 
+Socket::Close(void)
+{
+  if (kNetTypeInval != fd_) {
+#if defined(EV_WIN)
+    shutdown(fd_, SD_BOTH);
+    closesocket(fd_);
+#elif defined(EV_POSIX)
+    shutdown(fd_, SHUT_RDWR);
+    close(fd_);
+#endif
+
+    fd_ = kNetTypeInval;
+  }
 }
