@@ -24,11 +24,12 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#if defined(_WINDOWS_) || defined(_MSC_VER)
+#include "select_ev.h"
+#if defined(EV_WIN)
 # ifndef _WINDOWS_
 #   include <winsock2.h>
 # endif
-#elif defined(__linux__)
+#elif defined(EV_POSIX)
 # include <sys/socket.h>
 # include <arpa/inet.h>
 # include <netinet/in.h>
