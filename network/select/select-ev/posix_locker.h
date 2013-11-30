@@ -24,33 +24,75 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __LOCKER_HEADER_H__
-#define __LOCKER_HEADER_H__
+#ifndef __POSIX_LOCKER_HEADER_H__
+#define __POSIX_LOCKER_HEADER_H__
 
-template <typename Locker>
-class LockerGuard {
-  Locker& locker_;
+#include <pthread.h>
+#include <stdlib.h>
 
-  LockerGuard(const LockerGuard&);
-  LockerGuard& operator =(const LockerGuard&);
+
+class Mutex {
+  pthread_mutex_t mutex_;
+
+  Mutex(const Mutex&);
+  Mutex& operator=(const Mutex&);
 public:
-  explicit LockerGuard(Locker& locker)
-    : locker_(locker)
+  explicit Mutex(void)
   {
-    locker_.Lock();
+    if (0 != pthread_mutex_init(&mutex_, NULL))
+      abort();
   }
 
-  ~LockerGuard(void)
+  ~Mutex(void)
   {
-    locker_.Unlock();
+    if (0 != pthread_mutex_destroy(&mutex_))
+      abort();
+  }
+
+  inline void Lock(void)
+  {
+    if (0 != pthread_mutex_lock(&mutex_))
+      abort();
+  }
+
+  inline void Unlock(void)
+  {
+    if (0 != pthread_mutex_unlock(&mutex_))
+      abort();
   }
 };
 
 
-#if defined(EV_WIN)
-# include "win_locker.h"
-#elif defined(EV_POSIX)
-# include "posix_locker.h"
-#endif
 
-#endif  //! __LOCKER_HEADER_H__
+class SpinLock {
+  pthread_spinlock_t spinlock_;
+
+  SpinLock(const SpinLock&);
+  SpinLock& operator =(const SpinLock&);
+public:
+  explicit SpinLock(void)
+  {
+    if (0 != pthread_spin_init(&spinlock_, 0))
+      abort();
+  }
+
+  ~SpinLock(void)
+  {
+    if (0 != pthread_spin_destroy(&spinlock_))
+      abort();
+  }
+
+  inline void Lock(void)
+  {
+    if (0 != pthread_spin_lock(&spinlock_))
+      abort();
+  }
+
+  inline void Unlock(void)
+  {
+    if (0 != pthread_spin_unlock(&spinlock_))
+      abort();
+  }
+};
+
+#endif  //! __POSIX_LOCKER_HEADER_H__
