@@ -24,13 +24,26 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __THREAD_HEADER_H__
-#define __THREAD_HEADER_H__ 
+#ifndef __POSIX_THREAD_HEADER_H__
+#define __POSIX_THREAD_HEADER_H__
 
-#if defined(EV_WIN)
-# include "win_thread.h"
-#elif defined(EV_POSIX)
-# include "posix_thread.h"
-#endif
+#include <pthread.h>
 
-#endif  //! __THREAD_HEADER_H__
+class Thread {
+  pthread_t thread_id_;
+  void (*routine_)(void*);
+  void* argument_;
+
+  Thread(const Thread&);
+  Thread& operator =(const Thread&);
+public:
+  explicit Thread(void);
+  ~Thread(void);
+
+  bool Start(void (*routine)(void*) = NULL, void* argument = NULL);
+  void Stop(void);
+private:
+  static void* Routine(void* argument);
+};
+
+#endif  //! __POSIX_THREAD_HEADER_H__

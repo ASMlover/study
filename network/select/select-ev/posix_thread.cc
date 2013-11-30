@@ -24,13 +24,59 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __THREAD_HEADER_H__
-#define __THREAD_HEADER_H__ 
+#include <stdlib.h>
+#include "posix_thread.h"
 
-#if defined(EV_WIN)
-# include "win_thread.h"
-#elif defined(EV_POSIX)
-# include "posix_thread.h"
-#endif
 
-#endif  //! __THREAD_HEADER_H__
+
+
+Thread::Thread(void)
+  : thread_id_(0)
+  , routine_(NULL)
+  , argument_(NULL)
+{
+}
+
+Thread::~Thread(void)
+{
+  Stop();
+}
+
+bool 
+Thread::Start(void (*routine)(void*), void* argument)
+{
+  routine_ = routine;
+  argument_ = argument;
+
+  if (0 != pthread_create(&thread_id_, NULL, &Thread::Routine, this)) {
+    abort();
+    return false;
+  }
+
+  return true;
+}
+
+void 
+Thread::Stop(void)
+{
+  if (0 != thread_id_) {
+    pthread_join(thread_id_, 0);
+
+    thread_id_ = 0;
+  }
+}
+
+
+
+void* 
+Thread::Routine(void* argument)
+{
+  Thread* self = static_cast<Thread*>(argument);
+  if (NULL == self)
+    return NULL;
+
+  if (NULL != self->routine_)
+    self->routine_(self->argument_);
+
+  return NULL;
+}
