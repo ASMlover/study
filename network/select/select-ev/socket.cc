@@ -29,6 +29,7 @@
 # ifndef _WINDOWS_
 #   include <winsock2.h>
 # endif
+  typedef int socklen_t;
 #elif defined(EV_POSIX)
 # include <sys/types.h>
 # include <sys/socket.h>
@@ -113,6 +114,18 @@ Socket::SetKeepAlive(bool keep)
   return SetOption(SOL_SOCKET, SO_KEEPALIVE, (keep ? 1 : 0));
 }
 
+bool 
+Socket::SetSelfReadBuffer(int bytes)
+{
+  return rbuf_.Init(bytes);
+}
+
+bool 
+Socket::SetSelfWriteBuffer(int bytes)
+{
+  return wbuf_.Init(bytes);
+}
+
 
 
 bool 
@@ -139,4 +152,199 @@ Socket::Close(void)
 
     fd_ = kNetTypeInval;
   }
+}
+
+bool 
+Socket::Bind(const char* ip, unsigned short port)
+{
+  if (kNetTypeInval == fd_)
+    return false;
+
+  struct sockaddr_in host_addr;
+  host_addr.sin_addr.s_addr = 
+    (NULL == ip ? htonl(INADDR_ANY) : inet_addr(ip));
+  host_addr.sin_family      = AF_INET;
+  host_addr.sin_port        = htons(port);
+
+  if (kNetTypeError == bind(fd_, 
+        (struct sockaddr*)&host_addr, sizeof(host_addr)))
+    return false;
+
+  return true;
+}
+
+bool 
+Socket::Listen(void)
+{
+  if (kNetTypeInval == fd_)
+    return false;
+
+  if (kNetTypeError == listen(fd_, SOMAXCONN))
+    return false;
+
+  return true;
+}
+
+bool 
+Socket::Accept(Socket* s, Address* addr)
+{
+  if (kNetTypeInval == fd_ || NULL == s)
+    return false;
+
+  struct sockaddr_in remote_addr;
+  socklen_t addrlen = sizeof(remote_addr);
+  int fd = accept(fd_, (struct sockaddr*)&remote_addr, &addrlen);
+  if (kNetTypeInval == fd)
+    return false;
+
+  s->Attach(fd);
+  if (NULL != addr)
+    addr->Attach(&remote_addr);
+
+  return true;
+}
+
+bool 
+Socket::Connect(const char* ip, unsigned short port)
+{
+  if (kNetTypeInval == fd_)
+    return false;
+
+  if (NULL == ip)
+    ip = "127.0.0.1";
+  struct sockaddr_in remote_addr;
+  remote_addr.sin_addr.s_addr = inet_addr(ip);
+  remote_addr.sin_family      = AF_INET;
+  remote_addr.sin_port        = htons(port);
+  if (kNetTypeError == connect(fd_, 
+        (struct sockaddr*)&remote_addr, sizeof(remote_addr)))
+    return false;
+
+  return true;
+}
+
+int 
+Socket::ReadBlock(int bytes, char* buffer)
+{
+  if (kNetTypeInval == fd_ || bytes <= 0 || NULL == buffer)
+    return kNetTypeError;
+
+  int ret = recv(fd_, buffer, bytes, 0);
+  
+  return ret;
+}
+
+int 
+Socket::WriteBlock(const char* buffer, int bytes)
+{
+  if (kNetTypeInval == fd_ || NULL == buffer || bytes <= 0)
+    return kNetTypeError;
+
+  int write_bytes = 0;
+  int ret;
+  while (write_bytes < bytes) {
+    ret = send(fd_, buffer + write_bytes, bytes - write_bytes, 0);
+    if (kNetTypeError == ret)
+      return ret;
+
+    write_bytes += ret;
+  }
+
+  return write_bytes;
+}
+
+int 
+Socket::Read(int bytes, char* buffer)
+{
+  if (kNetTypeInval == fd_ || bytes <= 0 || NULL == buffer)
+    return kNetTypeError;
+
+  return rbuf_.Get(bytes, buffer);
+}
+
+int 
+Socket::Write(const char* buffer, int bytes)
+{
+  if (kNetTypeInval == fd_ || NULL == buffer || bytes <= 0)
+    return kNetTypeError;
+
+  return wbuf_.Put(buffer, bytes);
+}
+
+int 
+Socket::DealWithAsyncRead(void)
+{
+  if (kNetTypeInval == fd_)
+    return kNetTypeError;
+
+  int read_bytes = 0;
+  int ret;
+  while (true) {
+    char* free_buffer = rbuf_.free_buffer();
+    int   free_length = rbuf_.free_length();
+
+    if (0 == free_length) {
+      if (!rbuf_.Regrow())
+        return kNetTypeError;
+
+      free_buffer = rbuf_.free_buffer();
+      free_length = rbuf_.free_length();
+    }
+
+    ret = recv(fd_, free_buffer, free_length, 0);
+
+    if (ret > 0) {
+      rbuf_.Increment(ret);
+      read_bytes += ret;
+      if (ret < free_length)
+        break;
+    }
+    else if (0 == ret) {
+      if (read_bytes > 0)
+        break;
+      else 
+        return ret;
+    }
+    else {
+      return ret;
+    }
+  }
+
+  return read_bytes;
+}
+
+int 
+Socket::DealWithAsyncWrite(void)
+{
+  if (kNetTypeInval == fd_)
+    return kNetTypeError;
+
+  int write_bytes = 0;
+  int ret;
+  while (true) {
+    int length = wbuf_.length();
+    if (length <= 0)
+      return 0;
+
+    const char* buffer = wbuf_.buffer();
+    ret = send(fd_, buffer, length, 0);
+
+    if (ret > 0) {
+      wbuf_.Decrement(ret);
+      write_bytes += ret;
+      if (ret < length)
+        break;
+    }
+    else if (0 == ret) {
+      if (write_bytes > 0)
+        break;
+      else 
+        return ret;
+    }
+    else {
+      return ret;
+    }
+  }
+
+  return write_bytes;
 }
