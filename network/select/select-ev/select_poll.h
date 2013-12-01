@@ -32,6 +32,7 @@
 class Socket;
 struct SelectEntry;
 class SelectPoll : public EventPoll {
+  int max_fd_;
   bool has_removed_;
   fd_set rset_in_;
   fd_set wset_in_;
