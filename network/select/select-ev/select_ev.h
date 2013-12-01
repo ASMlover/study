@@ -106,6 +106,9 @@ public:
   {
     handler_ = handler;
   }
+public:
+  bool DispatchReader(Socket* s);
+  bool DispatchWriter(Socket* s);
 };
 
 #endif  //! __SELECT_EVENT_HEADER_H__

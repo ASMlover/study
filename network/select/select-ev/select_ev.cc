@@ -25,6 +25,18 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "select_ev.h"
+#if defined(EV_WIN)
+# ifndef _WINDOWS_
+#   include <winsock2.h>
+# endif
+# define EWOULDBLOCK  WSAWOULDBLOCK
+# define NErrno()     WSAGetLastError()
+#elif defined(EV_POSIX)
+# include <errno.h>
+# define NErrno()     errno
+#endif
+#include <stdio.h>
+#include "socket.h"
 
 
 
@@ -46,5 +58,70 @@ EventHandler::CloseEvent(Socket* s)
 bool 
 EventHandler::ReadEvent(Socket* s)
 {
+  return true;
+}
+
+
+
+
+
+
+
+EventDispatcher::EventDispatcher(void)
+  : handler_(NULL)
+{
+}
+
+EventDispatcher::~EventDispatcher(void)
+{
+}
+
+bool 
+EventDispatcher::DispatchReader(Socket* s)
+{
+  if (NULL == handler_ || NULL == s)
+    return false;
+
+  int read_bytes = s->DealWithAsyncRead();
+  if (read_bytes > 0) {
+    //! TODO:
+    //! solve full package
+    handler_->ReadEvent(s);
+  }
+  else if (0 == read_bytes) {
+    //! TODO:
+    //! remove fd in poll 
+    handler_->CloseEvent(s);
+    s->Close();
+
+    //! TODO:
+    //! remove in connector manager
+  }
+  else {
+    if (EWOULDBLOCK != NErrno()) {
+      //! TODO:
+      //! remove fd in poll 
+      handler_->CloseEvent(s);
+      s->Close();
+
+      //! TODO:
+      //! remove in connector manager
+    }
+  }
+
+  return true;
+}
+
+bool 
+EventDispatcher::DispatchWriter(Socket* s)
+{
+  if (NULL == handler_ || NULL == s)
+    return false;
+
+  int write_bytes = s->DealWithAsyncWrite();
+  if (write_bytes > 0) {
+    //! TODO:
+  }
+
   return true;
 }
