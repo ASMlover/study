@@ -74,6 +74,14 @@ enum EventType {
 
 
 class Socket;
+struct EventHandler {
+  virtual ~EventHandler(void);
+  virtual bool AcceptEvent(Socket* s);
+  virtual void CloseEvent(Socket* s);
+  virtual bool ReadEvent(Socket* s);
+};
+
+
 class EventDispatcher;
 struct EventPoll {
   virtual ~EventPoll(void) {}
@@ -82,6 +90,22 @@ struct EventPoll {
   virtual bool AddEvent(int fd, int ev) = 0;
   virtual bool DelEvent(int fd, int ev) = 0;
   virtual bool Dispatch(EventDispatcher* dispatcher, int millitm) = 0;
+};
+
+
+class EventDispatcher {
+  EventHandler* handler_;
+
+  EventDispatcher(const EventDispatcher&);
+  EventDispatcher& operator =(const EventDispatcher&);
+public:
+  explicit EventDispatcher(void);
+  ~EventDispatcher(void);
+
+  inline void Attach(EventHandler* handler)
+  {
+    handler_ = handler;
+  }
 };
 
 #endif  //! __SELECT_EVENT_HEADER_H__
