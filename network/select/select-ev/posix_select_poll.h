@@ -24,8 +24,8 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __SELECT_POLL_HEADER_H__
-#define __SELECT_POLL_HEADER_H__
+#ifndef __POSIX_SELECT_POLL_HEADER_H__
+#define __POSIX_SELECT_POLL_HEADER_H__
 
 #include <vector>
 
@@ -53,4 +53,4 @@ public:
   virtual bool Dispatch(EventDispatcher* dispatcher, int millitm);
 };
 
-#endif  //! __SELECT_POLL_HEADER_H__
+#endif  //! __POSIX_SELECT_POLL_HEADER_H__
