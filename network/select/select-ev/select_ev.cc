@@ -29,7 +29,7 @@
 # ifndef _WINDOWS_
 #   include <winsock2.h>
 # endif
-# define EWOULDBLOCK  WSAWOULDBLOCK
+# define EWOULDBLOCK  WSAEWOULDBLOCK
 # define NErrno()     WSAGetLastError()
 #elif defined(EV_POSIX)
 # include <errno.h>
@@ -69,6 +69,7 @@ EventHandler::ReadEvent(Socket* s)
 
 EventDispatcher::EventDispatcher(void)
   : handler_(NULL)
+  , poll_(NULL)
 {
 }
 
@@ -79,9 +80,11 @@ EventDispatcher::~EventDispatcher(void)
 bool 
 EventDispatcher::DispatchReader(Socket* s)
 {
-  if (NULL == handler_ || NULL == s)
+  if (NULL == handler_ || NULL == poll_ 
+      || NULL == s)
     return false;
 
+  int fd = s->fd();
   int read_bytes = s->DealWithAsyncRead();
   if (read_bytes > 0) {
     //! TODO:
@@ -89,8 +92,8 @@ EventDispatcher::DispatchReader(Socket* s)
     handler_->ReadEvent(s);
   }
   else if (0 == read_bytes) {
-    //! TODO:
-    //! remove fd in poll 
+    poll_->Remove(fd);
+
     handler_->CloseEvent(s);
     s->Close();
 
@@ -99,8 +102,8 @@ EventDispatcher::DispatchReader(Socket* s)
   }
   else {
     if (EWOULDBLOCK != NErrno()) {
-      //! TODO:
-      //! remove fd in poll 
+      poll_->Remove(fd);
+
       handler_->CloseEvent(s);
       s->Close();
 
