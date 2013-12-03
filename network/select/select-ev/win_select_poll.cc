@@ -30,6 +30,7 @@
 #endif
 #include <string.h>
 #include <algorithm>
+#include "logging.h"
 #include "socket.h"
 #include "win_select_poll.h"
 
@@ -70,18 +71,20 @@ struct SelectEntry {
 
 
 SelectPoll::SelectPoll(void)
-  : max_fd_(kNetTypeInval)
-  , has_removed_(false)
+  : has_removed_(false)
   , fd_count_(FD_SETSIZE)
   , rset_in_(NULL)
   , wset_in_(NULL)
   , rset_out_(NULL)
   , wset_out_(NULL)
 {
+  if (!Init())
+    LOG_FAIL("SelectPoll Init failed\n");
 }
 
 SelectPoll::~SelectPoll(void)
 {
+  Destroy();
 }
 
 bool 
@@ -192,9 +195,6 @@ SelectPoll::Insert(int fd, Socket* s)
   SelectEntry entry = {fd, s};
   entry_list_.push_back(entry);
 
-  if (fd > max_fd_)
-    max_fd_ = fd;
-
   return true;
 }
 
@@ -217,14 +217,6 @@ SelectPoll::Remove(int fd)
 
   WINFD_CLR(fd, rset_out_);
   WINFD_CLR(fd, wset_out_);
-
-  if (fd == max_fd_) {
-    max_fd_ = kNetTypeInval;
-    for (it = entry_list_.begin(); it != entry_list_.end(); ++it) {
-      if (it->fd > max_fd_)
-        max_fd_ = it->fd;
-    }
-  }
 }
 
 bool 
@@ -276,7 +268,7 @@ SelectPoll::Dispatch(EventDispatcher* dispatcher, int millitm)
   WINFD_COPY(rset_out_, rset_in_);
   WINFD_COPY(wset_out_, wset_in_);
 
-  int ret = select(max_fd_ + 1, 
+  int ret = select(0, 
       (struct fd_set*)rset_out_, 
       (struct fd_set*)wset_out_, NULL, &tv);
   if (kNetTypeError == ret || 0 == ret)

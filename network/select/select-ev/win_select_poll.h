@@ -33,7 +33,6 @@ class Socket;
 struct win_fd_set;
 struct SelectEntry;
 class SelectPoll {
-  int max_fd_;
   bool has_removed_;
   int fd_count_;
   win_fd_set* rset_in_;
