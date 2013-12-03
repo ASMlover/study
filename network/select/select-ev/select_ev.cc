@@ -37,6 +37,7 @@
 #endif
 #include <stdio.h>
 #include "socket.h"
+#include "connector_mgr.h"
 
 
 
@@ -70,6 +71,7 @@ EventHandler::ReadEvent(Socket* s)
 EventDispatcher::EventDispatcher(void)
   : handler_(NULL)
   , poll_(NULL)
+  , conn_mgr_(NULL)
 {
 }
 
@@ -81,7 +83,7 @@ bool
 EventDispatcher::DispatchReader(Socket* s)
 {
   if (NULL == handler_ || NULL == poll_ 
-      || NULL == s)
+      || NULL == conn_mgr_ || NULL == s)
     return false;
 
   int fd = s->fd();
@@ -95,20 +97,14 @@ EventDispatcher::DispatchReader(Socket* s)
     poll_->Remove(fd);
 
     handler_->CloseEvent(s);
-    s->Close();
-
-    //! TODO:
-    //! remove in connector manager
+    conn_mgr_->Remove(fd);
   }
   else {
     if (EWOULDBLOCK != NErrno()) {
       poll_->Remove(fd);
 
       handler_->CloseEvent(s);
-      s->Close();
-
-      //! TODO:
-      //! remove in connector manager
+      conn_mgr_->Remove(fd);
     }
   }
 
@@ -118,12 +114,19 @@ EventDispatcher::DispatchReader(Socket* s)
 bool 
 EventDispatcher::DispatchWriter(Socket* s)
 {
-  if (NULL == handler_ || NULL == s)
+  if (NULL == handler_ || NULL == poll_ 
+      || NULL == conn_mgr_ || NULL == s)
     return false;
 
+  int fd = s->fd();
   int write_bytes = s->DealWithAsyncWrite();
-  if (write_bytes > 0) {
-    //! TODO:
+  if (write_bytes < 0) {
+    if (EWOULDBLOCK != NErrno()) {
+      poll_->Remove(fd);
+
+      handler_->CloseEvent(s);
+      conn_mgr_->Remove(fd);
+    }
   }
 
   return true;

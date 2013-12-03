@@ -93,9 +93,11 @@ struct EventPoll {
 };
 
 
+class ConnectorMgr;
 class EventDispatcher {
   EventHandler* handler_;
   EventPoll* poll_;
+  ConnectorMgr* conn_mgr_;
 
   EventDispatcher(const EventDispatcher&);
   EventDispatcher& operator =(const EventDispatcher&);
@@ -111,6 +113,11 @@ public:
   inline void Attach(EventPoll* poll)
   {
     poll_ = poll;
+  }
+
+  inline void Attach(ConnectorMgr* conn_mgr)
+  {
+    conn_mgr_ = conn_mgr;
   }
 public:
   bool DispatchReader(Socket* s);
