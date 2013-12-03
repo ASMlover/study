@@ -289,17 +289,13 @@ SelectPoll::Dispatch(EventDispatcher* dispatcher, int millitm)
 
     if (kNetTypeInval == entry->fd)
       continue;
-    if (WINFD_ISSET(entry->fd, rset_out_)) {
-      //! TODO:
-      //! dispatcher reader
-    }
+    if (WINFD_ISSET(entry->fd, rset_out_))
+      dispatcher->DispatchReader(entry->s);
 
     if (kNetTypeInval == entry->fd)
       continue;
-    if (WINFD_ISSET(entry->fd, wset_out_)) {
-      //! TODO:
-      //! dispatcher writer
-    }
+    if (WINFD_ISSET(entry->fd, wset_out_)) 
+      dispatcher->DispatchWriter(entry->s);
   }
   
   if (has_removed_) {
