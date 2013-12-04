@@ -28,13 +28,17 @@
 #define __WORKER_HEADER_H__
 
 struct EventPoll;
+class EventDispatcher;
 class Thread;
+class Connector;
 class ConnectorMgr;
 class Worker {
   bool running_;
-  Thread* worker_;
+  int worker_id_;
   EventPoll* poll_;
+  Thread* thread_;
   ConnectorMgr* conn_mgr_;
+  EventDispatcher* dispatcher_;
 
   Worker(const Worker&);
   Worker& operator =(const Worker&);
@@ -42,18 +46,30 @@ public:
   explicit Worker(void);
   ~Worker(void);
 
-  inline void Attach(EventPoll* poll)
+  inline int worker_id(void) const 
   {
-    poll_ = poll;
+    return worker_id_;
+  }
+
+  inline void Attach(int worker_id) 
+  {
+    worker_id_ = worker_id;
   }
 
   inline void Attach(ConnectorMgr* conn_mgr)
   {
     conn_mgr_ = conn_mgr;
   }
+
+  inline void Attach(EventDispatcher* dispatcher)
+  {
+    dispatcher_ = dispatcher;
+  }
 public:
   bool Start(void);
   void Stop(void);
+
+  bool AddConnector(int fd, Connector* conn);
 private:
   static void Routine(void* argument);
 };

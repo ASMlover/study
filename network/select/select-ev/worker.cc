@@ -26,5 +26,89 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "select_ev.h"
 #include "thread.h"
+#include "select_poll.h"
 #include "connector_mgr.h"
 #include "worker.h"
+
+
+Worker::Worker(void)
+  : running_(false)
+  , worker_id_(-1)
+  , poll_(NULL)
+  , thread_(NULL)
+  , conn_mgr_(NULL)
+  , dispatcher_(NULL)
+{
+}
+
+Worker::~Worker(void)
+{
+}
+
+
+bool 
+Worker::Start(void)
+{
+  if (-1 == worker_id_ || NULL == conn_mgr_ || NULL == dispatcher_)
+    return false;
+
+  poll_ = new SelectPoll();
+  if (NULL == poll_)
+    return false;
+
+  do {
+    thread_ = new Thread();
+    if (NULL == thread_)
+      break;
+
+    running_ = true;
+    thread_->Start(&Worker::Routine, this);
+
+    return true;
+  } while (0);
+
+  Stop();
+  return false;
+}
+
+void 
+Worker::Stop(void)
+{
+  running_ = false;
+
+  if (NULL != thread_) {
+    thread_->Stop();
+
+    delete thread_;
+    thread_ = NULL;
+  }
+
+  if (NULL != poll_) {
+    delete poll_;
+    poll_ = NULL;
+  }
+}
+
+bool 
+Worker::AddConnector(int fd, Connector* conn)
+{
+  if (NULL == poll_ || NULL == conn)
+    return false;
+
+  return poll_->Insert(fd, conn);
+}
+
+void 
+Worker::Routine(void* argument)
+{
+  Worker* self = static_cast<Worker*>(argument);
+  if (NULL == self || NULL == self->poll_ || NULL == self->dispatcher_)
+    return;
+
+  while (self->running_) {
+    if (!self->poll_->Dispatch(self->dispatcher_, 10)) {
+      Sleep(10);
+      continue;
+    }
+  }
+}
