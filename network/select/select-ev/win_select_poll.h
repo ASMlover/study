@@ -32,7 +32,7 @@
 class Connector;
 struct win_fd_set;
 struct SelectEntry;
-class SelectPoll {
+class SelectPoll : public EventPoll {
   bool has_removed_;
   int fd_count_;
   win_fd_set* rset_in_;
