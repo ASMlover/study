@@ -30,11 +30,11 @@
 #include <map>
 #include "locker.h"
 
-class Socket;
+class Connector;
 class ConnectorMgr {
   enum {kDefaultBufferSize = 16 * 1024};
   SpinLock spinlock_;
-  std::map<int, Socket*> connectors_;
+  std::map<int, Connector*> connectors_;
 
   ConnectorMgr(const ConnectorMgr&);
   ConnectorMgr& operator =(const ConnectorMgr&);
@@ -43,7 +43,8 @@ public:
   ~ConnectorMgr(void);
 
   void CloseAll(void);
-  Socket* Insert(int fd, 
+  Connector* Insert(int fd, 
+      int worker_id = 0, 
       int rbytes = kDefaultBufferSize, 
       int wbytes = kDefaultBufferSize);
   void Remove(int fd);

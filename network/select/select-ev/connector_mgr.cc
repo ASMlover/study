@@ -26,6 +26,7 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "select_ev.h"
 #include "socket.h"
+#include "connector.h"
 #include "connector_mgr.h"
 
 
@@ -45,7 +46,7 @@ void
 ConnectorMgr::CloseAll(void)
 {
   LockerGuard<SpinLock> guard(spinlock_);
-  std::map<int, Socket*>::iterator it;
+  std::map<int, Connector*>::iterator it;
   for (it = connectors_.begin(); it != connectors_.end(); ++it) {
     if (NULL != it->second) {
       it->second->Close();
@@ -55,27 +56,28 @@ ConnectorMgr::CloseAll(void)
   connectors_.clear();
 }
 
-Socket* 
-ConnectorMgr::Insert(int fd, int rbytes, int wbytes) 
+Connector* 
+ConnectorMgr::Insert(int fd, int worker_id, int rbytes, int wbytes) 
 {
   LockerGuard<SpinLock> guard(spinlock_);
-  std::map<int, Socket*>::iterator it = connectors_.find(fd);
+  std::map<int, Connector*>::iterator it = connectors_.find(fd);
   if (it == connectors_.end()) {
-    Socket* s = new Socket();
-    if (NULL == s)
+    Connector* conn = new Connector();
+    if (NULL == conn)
       return NULL;
 
-    s->Attach(fd);
-    s->SetNonBlock();
-    s->SetTcpNoDelay();
-    s->SetReuseAddr();
-    s->SetKeepAlive();
-    s->SetSelfReadBuffer(rbytes);
-    s->SetSelfWriteBuffer(wbytes);
+    conn->Attach(fd);
+    conn->Attach(worker_id);
+    conn->SetNonBlock();
+    conn->SetTcpNoDelay();
+    conn->SetReuseAddr();
+    conn->SetKeepAlive();
+    conn->SetSelfReadBuffer(rbytes);
+    conn->SetSelfWriteBuffer(wbytes);
 
-    connectors_[fd] = s;
+    connectors_[fd] = conn;
 
-    return s;
+    return conn;
   }
 
   return NULL;
@@ -85,7 +87,7 @@ void
 ConnectorMgr::Remove(int fd)
 {
   LockerGuard<SpinLock> guard(spinlock_);
-  std::map<int, Socket*>::iterator it = connectors_.find(fd);
+  std::map<int, Connector*>::iterator it = connectors_.find(fd);
   if (it != connectors_.end()) {
     if (NULL != it->second) {
       it->second->Close();
