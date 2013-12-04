@@ -29,7 +29,7 @@
 
 #include <vector>
 
-class Socket;
+class Connector;
 struct win_fd_set;
 struct SelectEntry;
 class SelectPoll {
@@ -47,7 +47,7 @@ public:
   explicit SelectPoll(void);
   ~SelectPoll(void);
 
-  virtual bool Insert(int fd, Socket* s);
+  virtual bool Insert(int fd, Connector* conn);
   virtual void Remove(int fd);
   virtual bool AddEvent(int fd, int ev);
   virtual bool DelEvent(int fd, int ev);

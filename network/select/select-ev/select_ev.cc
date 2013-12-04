@@ -37,6 +37,7 @@
 #endif
 #include <stdio.h>
 #include "socket.h"
+#include "connector.h"
 #include "connector_mgr.h"
 
 
@@ -46,18 +47,18 @@ EventHandler::~EventHandler(void)
 }
 
 bool 
-EventHandler::AcceptEvent(Socket* s)
+EventHandler::AcceptEvent(Connector* conn)
 {
   return true;
 }
 
 void 
-EventHandler::CloseEvent(Socket* s)
+EventHandler::CloseEvent(Connector* conn)
 {
 }
 
 bool 
-EventHandler::ReadEvent(Socket* s)
+EventHandler::ReadEvent(Connector* conn)
 {
   return true;
 }
@@ -80,30 +81,30 @@ EventDispatcher::~EventDispatcher(void)
 }
 
 bool 
-EventDispatcher::DispatchReader(Socket* s)
+EventDispatcher::DispatchReader(Connector* conn)
 {
   if (NULL == handler_ || NULL == poll_ 
-      || NULL == conn_mgr_ || NULL == s)
+      || NULL == conn_mgr_ || NULL == conn)
     return false;
 
-  int fd = s->fd();
-  int read_bytes = s->DealWithAsyncRead();
+  int fd = conn->fd();
+  int read_bytes = conn->DealWithAsyncRead();
   if (read_bytes > 0) {
     //! TODO:
     //! solve full package
-    handler_->ReadEvent(s);
+    handler_->ReadEvent(conn);
   }
   else if (0 == read_bytes) {
     poll_->Remove(fd);
 
-    handler_->CloseEvent(s);
+    handler_->CloseEvent(conn);
     conn_mgr_->Remove(fd);
   }
   else {
     if (EWOULDBLOCK != NErrno()) {
       poll_->Remove(fd);
 
-      handler_->CloseEvent(s);
+      handler_->CloseEvent(conn);
       conn_mgr_->Remove(fd);
     }
   }
@@ -112,19 +113,19 @@ EventDispatcher::DispatchReader(Socket* s)
 }
 
 bool 
-EventDispatcher::DispatchWriter(Socket* s)
+EventDispatcher::DispatchWriter(Connector* conn)
 {
   if (NULL == handler_ || NULL == poll_ 
-      || NULL == conn_mgr_ || NULL == s)
+      || NULL == conn_mgr_ || NULL == conn)
     return false;
 
-  int fd = s->fd();
-  int write_bytes = s->DealWithAsyncWrite();
+  int fd = conn->fd();
+  int write_bytes = conn->DealWithAsyncWrite();
   if (write_bytes < 0) {
     if (EWOULDBLOCK != NErrno()) {
       poll_->Remove(fd);
 
-      handler_->CloseEvent(s);
+      handler_->CloseEvent(conn);
       conn_mgr_->Remove(fd);
     }
   }

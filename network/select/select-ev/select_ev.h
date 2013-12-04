@@ -73,19 +73,19 @@ enum EventType {
 };
 
 
-class Socket;
+class Connector;
 struct EventHandler {
   virtual ~EventHandler(void);
-  virtual bool AcceptEvent(Socket* s);
-  virtual void CloseEvent(Socket* s);
-  virtual bool ReadEvent(Socket* s);
+  virtual bool AcceptEvent(Connector* conn);
+  virtual void CloseEvent(Connector* conn);
+  virtual bool ReadEvent(Connector* conn);
 };
 
 
 class EventDispatcher;
 struct EventPoll {
   virtual ~EventPoll(void) {}
-  virtual bool Insert(int fd, Socket* s) = 0;
+  virtual bool Insert(int fd, Connector* conn) = 0;
   virtual void Remove(int fd) = 0;
   virtual bool AddEvent(int fd, int ev) = 0;
   virtual bool DelEvent(int fd, int ev) = 0;
@@ -120,8 +120,8 @@ public:
     conn_mgr_ = conn_mgr;
   }
 public:
-  bool DispatchReader(Socket* s);
-  bool DispatchWriter(Socket* s);
+  bool DispatchReader(Connector* conn);
+  bool DispatchWriter(Connector* conn);
 };
 
 #endif  //! __SELECT_EVENT_HEADER_H__

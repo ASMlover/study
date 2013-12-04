@@ -32,6 +32,7 @@
 #include <algorithm>
 #include "logging.h"
 #include "socket.h"
+#include "connector.h"
 #include "win_select_poll.h"
 
 
@@ -42,7 +43,7 @@ struct win_fd_set {
 
 struct SelectEntry {
   int fd;
-  Socket* s;
+  Connector* conn;
 };
 
 
@@ -185,14 +186,14 @@ SelectPoll::Regrow(void)
 
 
 bool 
-SelectPoll::Insert(int fd, Socket* s)
+SelectPoll::Insert(int fd, Connector* conn)
 {
   if (entry_list_.size() + 1 > (size_t)fd_count_) {
     if (!Regrow())
       return false;
   }
 
-  SelectEntry entry = {fd, s};
+  SelectEntry entry = {fd, conn};
   entry_list_.push_back(entry);
 
   return true;
@@ -282,12 +283,12 @@ SelectPoll::Dispatch(EventDispatcher* dispatcher, int millitm)
     if (kNetTypeInval == entry->fd)
       continue;
     if (WINFD_ISSET(entry->fd, rset_out_))
-      dispatcher->DispatchReader(entry->s);
+      dispatcher->DispatchReader(entry->conn);
 
     if (kNetTypeInval == entry->fd)
       continue;
     if (WINFD_ISSET(entry->fd, wset_out_)) 
-      dispatcher->DispatchWriter(entry->s);
+      dispatcher->DispatchWriter(entry->conn);
   }
   
   if (has_removed_) {
