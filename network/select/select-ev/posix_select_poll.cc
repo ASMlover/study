@@ -25,11 +25,7 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "select_ev.h"
-#if defined(EV_WIN)
-# ifndef _WINDOWS_
-#   include <winsock2.h>
-# endif
-#elif defined(EV_POSIX)
+#if defined(EV_POSIX)
 # include <sys/types.h>
 # include <sys/select.h>
 #endif
@@ -66,9 +62,6 @@ SelectPoll::~SelectPoll(void)
 bool 
 SelectPoll::Insert(int fd, Socket* s)
 {
-  if (kNetTypeInval == fd || NULL == s)
-    return false;
-
   if (entry_list_.size() + 1 > FD_SETSIZE)
     return false;
 
@@ -113,9 +106,6 @@ SelectPoll::Remove(int fd)
 bool 
 SelectPoll::AddEvent(int fd, int ev)
 {
-  if (kNetTypeInval == fd)
-    return false;
-
   if (ev & kEventTypeRead)
     FD_SET(fd, &rset_in_);
 
@@ -128,9 +118,6 @@ SelectPoll::AddEvent(int fd, int ev)
 bool 
 SelectPoll::DelEvent(int fd, int ev)
 {
-  if (kNetTypeInval == fd)
-    return false;
-
   if (ev & kEventTypeRead)
     FD_CLR(fd, &rset_in_);
 
@@ -176,17 +163,13 @@ SelectPoll::Dispatch(EventDispatcher* dispatcher, int millitm)
 
     if (kNetTypeInval == entry->fd)
       continue;
-    if (FD_ISSET(entry->fd, &rset_out_)) {
-      //! TODO:
-      //! dispatch reader
-    }
+    if (FD_ISSET(entry->fd, &rset_out_))
+      dispatcher->DispatchReader(entry->s);
 
     if (kNetTypeInval == entry->fd)
       continue;
-    if (FD_ISSET(entry->fd, &wset_out_)) {
-      //! TODO:
-      //! dispatch writer
-    }
+    if (FD_ISSET(entry->fd, &wset_out_))
+      dispatcher->DispatchWriter(entry->s);
   }
 
 
