@@ -32,13 +32,14 @@
 #include <string.h>
 #include <algorithm>
 #include "socket.h"
+#include "connector.h"
 #include "select_poll.h"
 
 
 
 struct SelectEntry {
   int fd;
-  Socket* s;
+  Connector* conn;
 };
 
 
@@ -60,12 +61,12 @@ SelectPoll::~SelectPoll(void)
 }
 
 bool 
-SelectPoll::Insert(int fd, Socket* s)
+SelectPoll::Insert(int fd, Connector* conn)
 {
   if (entry_list_.size() + 1 > FD_SETSIZE)
     return false;
 
-  SelectEntry entry = {fd, s};
+  SelectEntry entry = {fd, conn};
   entry_list_.push_back(entry);
 
   if (fd > max_fd_)
@@ -164,12 +165,12 @@ SelectPoll::Dispatch(EventDispatcher* dispatcher, int millitm)
     if (kNetTypeInval == entry->fd)
       continue;
     if (FD_ISSET(entry->fd, &rset_out_))
-      dispatcher->DispatchReader(entry->s);
+      dispatcher->DispatchReader(entry->conn);
 
     if (kNetTypeInval == entry->fd)
       continue;
     if (FD_ISSET(entry->fd, &wset_out_))
-      dispatcher->DispatchWriter(entry->s);
+      dispatcher->DispatchWriter(entry->conn);
   }
 
 
