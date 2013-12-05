@@ -32,7 +32,12 @@
 
 class Connector;
 class ConnectorMgr {
-  enum {kDefaultBufferSize = 16 * 1024};
+  enum {
+    kDefaultWorkerCount = 1, 
+    kDefaultBufferSize  = 16 * 1024, 
+  };
+  int worker_count_;
+  int* worker_connectors_;
   SpinLock spinlock_;
   std::map<int, Connector*> connectors_;
 
@@ -41,6 +46,10 @@ class ConnectorMgr {
 public:
   explicit ConnectorMgr(void);
   ~ConnectorMgr(void);
+public:
+  bool Init(int worker_count = kDefaultWorkerCount);
+  void Destroy(void);
+  int SuitableWorker(void);
 
   void CloseAll(void);
   Connector* Insert(int fd, 

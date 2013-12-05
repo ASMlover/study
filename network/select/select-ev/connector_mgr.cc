@@ -32,15 +32,68 @@
 
 
 ConnectorMgr::ConnectorMgr(void)
-  : spinlock_()
+  : worker_count_(kDefaultWorkerCount)
+  , worker_connectors_(NULL)
 {
   connectors_.clear();
 }
 
 ConnectorMgr::~ConnectorMgr(void)
 {
-  CloseAll();
+  Destroy();
 }
+
+
+bool 
+ConnectorMgr::Init(int worker_count)
+{
+  worker_count_ = (worker_count > kDefaultWorkerCount ? 
+      worker_count : kDefaultWorkerCount);
+
+  size_t size = sizeof(int) * worker_count_;
+  worker_connectors_ = (int*)malloc(size);
+  if (NULL == worker_connectors_)
+    return false;
+
+  memset(worker_connectors_, 0, size);
+  return true;
+}
+
+void 
+ConnectorMgr::Destroy(void)
+{
+  CloseAll();
+
+  if (NULL != worker_connectors_) {
+    free(worker_connectors_);
+    worker_connectors_ = NULL;
+  }
+  worker_count_ = kDefaultWorkerCount;
+}
+
+int 
+ConnectorMgr::SuitableWorker(void)
+{
+  if (kDefaultWorkerCount == worker_count_)
+    return 0;
+
+  int worker_id = 0;
+  int min_worker = worker_connectors_[0];
+  for (int i = 0; i < worker_count_; ++i) {
+    if (0 == worker_connectors_[i]) {
+      worker_id = i;
+      break;
+    }
+
+    if (worker_connectors_[i] < min_worker) {
+      min_worker = worker_connectors_[i];
+      worker_id = i;
+    }
+  }
+
+  return worker_id;
+}
+
 
 void 
 ConnectorMgr::CloseAll(void)
@@ -77,6 +130,8 @@ ConnectorMgr::Insert(int fd, int worker_id, int rbytes, int wbytes)
 
     connectors_[fd] = conn;
 
+    ++worker_connectors_[worker_id];
+
     return conn;
   }
 
@@ -90,6 +145,7 @@ ConnectorMgr::Remove(int fd)
   std::map<int, Connector*>::iterator it = connectors_.find(fd);
   if (it != connectors_.end()) {
     if (NULL != it->second) {
+      --worker_connectors_[it->second->worker_id()];
       it->second->Close();
       delete it->second;
     }
