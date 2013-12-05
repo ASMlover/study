@@ -105,7 +105,7 @@ void
 Listener::Routine(void* argument)
 {
   Listener* self = static_cast<Listener*>(argument);
-  if (NULL == self)
+  if (NULL == self || NULL == self->conn_mgr_)
     return;
 
   Socket s;
@@ -116,6 +116,19 @@ Listener::Routine(void* argument)
       continue;
     }
     else {
+      int fd = s.fd();
+      int worker_id = self->conn_mgr_->SuitableWorker();
+      Connector* conn = self->conn_mgr_->Insert(fd, worker_id);
+      if (NULL != conn) {
+        //! TODO:
+        //! add event 
+      }
+      else {
+        s.Close();
+      }
+
+      s.Detach();
+      addr.Detach();
     }
   }
 }
