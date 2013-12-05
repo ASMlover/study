@@ -26,6 +26,96 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "select_ev.h"
 #include "thread.h"
+#include "address.h"
 #include "socket.h"
 #include "connector_mgr.h"
 #include "listener.h"
+
+
+
+Listener::Listener(void)
+  : running_(false)
+  , listener_(NULL)
+  , thread_(NULL)
+  , conn_mgr_(NULL)
+{
+}
+
+Listener::~Listener(void)
+{
+}
+
+bool 
+Listener::Start(const char* ip, unsigned short port)
+{
+  listener_ = new Socket();
+  if (NULL == listener_)
+    return false;
+  listener_->Open();
+  listener_->SetReuseAddr();
+  listener_->Bind(ip, port);
+  listener_->Listen();
+
+  do {
+    conn_mgr_ = new ConnectorMgr();
+    if (NULL == conn_mgr_)
+      break;
+
+    thread_ = new Thread();
+    if (NULL == thread_)
+      break;
+
+    running_ = true;
+    thread_->Start(&Listener::Routine, this);
+
+    return true;
+  } while (0);
+
+  Stop();
+  return false;
+}
+
+void 
+Listener::Stop(void)
+{
+  running_ = false;
+
+  if (NULL != thread_) {
+    thread_->Stop();
+
+    delete thread_;
+    thread_ = NULL;
+  }
+  if (NULL != conn_mgr_) {
+    conn_mgr_->CloseAll();
+
+    delete conn_mgr_;
+    conn_mgr_ = NULL;
+  }
+  if (NULL != listener_) {
+    listener_->Close();
+
+    delete listener_;
+    listener_ = NULL;
+  }
+}
+
+
+void 
+Listener::Routine(void* argument)
+{
+  Listener* self = static_cast<Listener*>(argument);
+  if (NULL == self)
+    return;
+
+  Socket s;
+  Address addr;
+  while (self->running_) {
+    if (!self->listener_->Accept(&s, &addr)) {
+      Sleep(1);
+      continue;
+    }
+    else {
+    }
+  }
+}
