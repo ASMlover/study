@@ -29,8 +29,10 @@
 
 #include <vector>
 
+struct EventHandler;
 class Worker;
 class Listener;
+class ConnectorMgr;
 class Network {
   enum {
     kDefaultWorkerCount = 1, 
@@ -38,6 +40,8 @@ class Network {
   };
   int worker_count_;
   Worker* workers_;
+  ConnectorMgr* conn_mgr_;
+  EventHandler* handler_;
   std::vector<Listener*> listeners_;
 
   Network(const Network&);
@@ -45,6 +49,11 @@ class Network {
 public:
   explicit Network(void);
   ~Network(void);
+
+  inline void Attach(EventHandler* handler)
+  {
+    handler_ = handler;
+  }
 public:
   bool Init(
       int worker_count = kDefaultWorkerCount, 
