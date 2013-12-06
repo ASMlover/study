@@ -42,6 +42,10 @@ public:
   explicit Listener(void);
   ~Listener(void);
 
+  inline void Attach(ConnectorMgr* conn_mgr)
+  {
+    conn_mgr_ = conn_mgr;
+  }
 public:
   bool Start(const char* ip, unsigned short port);
   void Stop(void);

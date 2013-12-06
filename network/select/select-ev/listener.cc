@@ -43,11 +43,15 @@ Listener::Listener(void)
 
 Listener::~Listener(void)
 {
+  Stop();
 }
 
 bool 
 Listener::Start(const char* ip, unsigned short port)
 {
+  if (NULL == conn_mgr_)
+    return false;
+
   listener_ = new Socket();
   if (NULL == listener_)
     return false;
@@ -57,10 +61,6 @@ Listener::Start(const char* ip, unsigned short port)
   listener_->Listen();
 
   do {
-    conn_mgr_ = new ConnectorMgr();
-    if (NULL == conn_mgr_)
-      break;
-
     thread_ = new Thread();
     if (NULL == thread_)
       break;
@@ -86,12 +86,7 @@ Listener::Stop(void)
     delete thread_;
     thread_ = NULL;
   }
-  if (NULL != conn_mgr_) {
-    conn_mgr_->CloseAll();
-
-    delete conn_mgr_;
-    conn_mgr_ = NULL;
-  }
+  
   if (NULL != listener_) {
     listener_->Close();
 
