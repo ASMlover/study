@@ -27,6 +27,7 @@
 #ifndef __WORKER_HEADER_H__
 #define __WORKER_HEADER_H__
 
+struct EventHandler;
 struct EventPoll;
 class EventDispatcher;
 class Thread;
@@ -37,8 +38,9 @@ class Worker {
   int worker_id_;
   EventPoll* poll_;
   Thread* thread_;
-  ConnectorMgr* conn_mgr_;
   EventDispatcher* dispatcher_;
+  ConnectorMgr* conn_mgr_;
+  EventHandler* handler_;
 
   Worker(const Worker&);
   Worker& operator =(const Worker&);
@@ -61,9 +63,9 @@ public:
     conn_mgr_ = conn_mgr;
   }
 
-  inline void Attach(EventDispatcher* dispatcher)
+  inline void Attach(EventHandler* handler)
   {
-    dispatcher_ = dispatcher;
+    handler_ = handler;
   }
 public:
   bool Start(void);

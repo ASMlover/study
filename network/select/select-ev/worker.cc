@@ -36,8 +36,9 @@ Worker::Worker(void)
   , worker_id_(-1)
   , poll_(NULL)
   , thread_(NULL)
-  , conn_mgr_(NULL)
   , dispatcher_(NULL)
+  , conn_mgr_(NULL)
+  , handler_(NULL)
 {
 }
 
@@ -50,7 +51,7 @@ Worker::~Worker(void)
 bool 
 Worker::Start(void)
 {
-  if (-1 == worker_id_ || NULL == conn_mgr_ || NULL == dispatcher_)
+  if (-1 == worker_id_ || NULL == conn_mgr_ || NULL == handler_)
     return false;
 
   poll_ = new SelectPoll();
@@ -58,6 +59,13 @@ Worker::Start(void)
     return false;
 
   do {
+    dispatcher_ = new EventDispatcher();
+    if (NULL == dispatcher_)
+      break;
+    dispatcher_->Attach(handler_);
+    dispatcher_->Attach(poll_);
+    dispatcher_->Attach(conn_mgr_);
+
     thread_ = new Thread();
     if (NULL == thread_)
       break;
@@ -82,6 +90,11 @@ Worker::Stop(void)
 
     delete thread_;
     thread_ = NULL;
+  }
+
+  if (NULL != dispatcher_) {
+    delete dispatcher_;
+    dispatcher_ = NULL;
   }
 
   if (NULL != poll_) {
