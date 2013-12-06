@@ -33,6 +33,8 @@
 
 ConnectorMgr::ConnectorMgr(void)
   : worker_count_(kDefaultWorkerCount)
+  , rbytes_(kDefaultBufferSize)
+  , wbytes_(kDefaultBufferSize)
   , worker_connectors_(NULL)
 {
   connectors_.clear();
@@ -45,10 +47,13 @@ ConnectorMgr::~ConnectorMgr(void)
 
 
 bool 
-ConnectorMgr::Init(int worker_count)
+ConnectorMgr::Init(int worker_count, int rbytes, int wbytes)
 {
   worker_count_ = (worker_count > kDefaultWorkerCount ? 
       worker_count : kDefaultWorkerCount);
+
+  rbytes_ = rbytes;
+  wbytes_ = wbytes;
 
   size_t size = sizeof(int) * worker_count_;
   worker_connectors_ = (int*)malloc(size);
@@ -110,7 +115,7 @@ ConnectorMgr::CloseAll(void)
 }
 
 Connector* 
-ConnectorMgr::Insert(int fd, int worker_id, int rbytes, int wbytes) 
+ConnectorMgr::Insert(int fd, int worker_id)
 {
   LockerGuard<SpinLock> guard(spinlock_);
   std::map<int, Connector*>::iterator it = connectors_.find(fd);
@@ -125,8 +130,8 @@ ConnectorMgr::Insert(int fd, int worker_id, int rbytes, int wbytes)
     conn->SetTcpNoDelay();
     conn->SetReuseAddr();
     conn->SetKeepAlive();
-    conn->SetSelfReadBuffer(rbytes);
-    conn->SetSelfWriteBuffer(wbytes);
+    conn->SetSelfReadBuffer(rbytes_);
+    conn->SetSelfWriteBuffer(wbytes_);
 
     connectors_[fd] = conn;
 

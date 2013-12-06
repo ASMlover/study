@@ -37,6 +37,8 @@ class ConnectorMgr {
     kDefaultBufferSize  = 16 * 1024, 
   };
   int worker_count_;
+  int rbytes_;
+  int wbytes_;
   int* worker_connectors_;
   SpinLock spinlock_;
   std::map<int, Connector*> connectors_;
@@ -47,15 +49,15 @@ public:
   explicit ConnectorMgr(void);
   ~ConnectorMgr(void);
 public:
-  bool Init(int worker_count = kDefaultWorkerCount);
+  bool Init(
+      int worker_count = kDefaultWorkerCount, 
+      int rbytes = kDefaultBufferSize, 
+      int wbytes = kDefaultBufferSize);
   void Destroy(void);
   int SuitableWorker(void);
 
   void CloseAll(void);
-  Connector* Insert(int fd, 
-      int worker_id = 0, 
-      int rbytes = kDefaultBufferSize, 
-      int wbytes = kDefaultBufferSize);
+  Connector* Insert(int fd, int worker_id = 0);
   void Remove(int fd);
 };
 
