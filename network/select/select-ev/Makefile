@@ -32,7 +32,7 @@ CFLAGS	= -g -O2 -Wall
 LDFLAGS	= -lpthread -lrt
 OBJS	= main.o buffer.o posix_thread.o address.o logging.o socket.o\
 	posix_select_poll.o select_ev.o connector_mgr.o worker.o connector.o\
-	listener.o
+	listener.o network.o
 
 
 
