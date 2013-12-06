@@ -42,6 +42,7 @@ Network::Network(void)
 
 Network::~Network(void)
 {
+  Destroy();
 }
 
 bool 
@@ -108,6 +109,15 @@ Network::Destroy(void)
   worker_count_ = kDefaultWorkerCount;
 }
 
+Worker* 
+Network::GetWorker(int worker_id)
+{
+  if (NULL == workers_ || worker_id < 0 || worker_id >= worker_count_)
+    return NULL;
+
+  return &workers_[worker_id];
+}
+
 
 bool 
 Network::Listen(const char* ip, unsigned short port)
@@ -119,6 +129,7 @@ Network::Listen(const char* ip, unsigned short port)
   if (NULL == listener)
     return false;
   listener->Attach(conn_mgr_);
+  listener->Attach(this);
 
   if (!listener->Start(ip, port)) {
     delete listener;

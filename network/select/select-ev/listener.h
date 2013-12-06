@@ -30,11 +30,13 @@
 class Socket;
 class Thread;
 class ConnectorMgr;
+class Network;
 class Listener {
   bool running_;
   Socket* listener_;
   Thread* thread_;
   ConnectorMgr* conn_mgr_;
+  Network* network_;
 
   Listener(const Listener&);
   Listener& operator =(const Listener&);
@@ -45,6 +47,11 @@ public:
   inline void Attach(ConnectorMgr* conn_mgr)
   {
     conn_mgr_ = conn_mgr;
+  }
+
+  inline void Attach(Network* network)
+  {
+    network_ = network;
   }
 public:
   bool Start(const char* ip, unsigned short port);

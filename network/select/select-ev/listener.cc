@@ -29,6 +29,8 @@
 #include "address.h"
 #include "socket.h"
 #include "connector_mgr.h"
+#include "worker.h"
+#include "network.h"
 #include "listener.h"
 
 
@@ -38,6 +40,7 @@ Listener::Listener(void)
   , listener_(NULL)
   , thread_(NULL)
   , conn_mgr_(NULL)
+  , network_(NULL)
 {
 }
 
@@ -49,7 +52,7 @@ Listener::~Listener(void)
 bool 
 Listener::Start(const char* ip, unsigned short port)
 {
-  if (NULL == conn_mgr_)
+  if (NULL == conn_mgr_ || NULL == network_)
     return false;
 
   listener_ = new Socket();
@@ -100,7 +103,7 @@ void
 Listener::Routine(void* argument)
 {
   Listener* self = static_cast<Listener*>(argument);
-  if (NULL == self || NULL == self->conn_mgr_)
+  if (NULL == self || NULL == self->conn_mgr_ || NULL == self->network_)
     return;
 
   Socket s;
@@ -113,14 +116,12 @@ Listener::Routine(void* argument)
     else {
       int fd = s.fd();
       int worker_id = self->conn_mgr_->SuitableWorker();
+      Worker* worker = self->network_->GetWorker(worker_id);
       Connector* conn = self->conn_mgr_->Insert(fd, worker_id);
-      if (NULL != conn) {
-        //! TODO:
-        //! add event 
-      }
-      else {
+      if (NULL != worker && NULL != conn)
+        worker->AddConnector(fd, conn);
+      else 
         s.Close();
-      }
 
       s.Detach();
       addr.Detach();

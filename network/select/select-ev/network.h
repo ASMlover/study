@@ -61,6 +61,8 @@ public:
       int wbytes = kDefaultBufferSize);
   void Destroy(void);
 
+  Worker* GetWorker(int worker_id);
+
   bool Listen(const char* ip = "127.0.0.1", unsigned short port = 5555);
 };
 

@@ -106,10 +106,13 @@ Worker::Stop(void)
 bool 
 Worker::AddConnector(int fd, Connector* conn)
 {
-  if (NULL == poll_ || NULL == conn)
+  if (NULL == poll_ || NULL == conn || NULL == handler_)
     return false;
 
-  return poll_->Insert(fd, conn);
+  poll_->Insert(fd, conn);
+  handler_->AcceptEvent(conn);
+
+  return true;
 }
 
 void 
