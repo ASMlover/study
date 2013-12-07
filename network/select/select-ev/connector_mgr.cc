@@ -25,6 +25,7 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "select_ev.h"
+#include <string.h>
 #include "socket.h"
 #include "connector.h"
 #include "connector_mgr.h"
