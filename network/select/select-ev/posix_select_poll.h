@@ -27,6 +27,9 @@
 #ifndef __POSIX_SELECT_POLL_HEADER_H__
 #define __POSIX_SELECT_POLL_HEADER_H__
 
+#if defined(EV_POSIX)
+# include <sys/socket.h>
+#endif
 #include <vector>
 
 class Connector;
