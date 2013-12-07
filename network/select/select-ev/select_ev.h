@@ -73,6 +73,12 @@ enum EventType {
 };
 
 
+#if defined(EV_POSIX)
+# include <unistd.h>
+# define Sleep(x) usleep((x) * 1000)
+#endif
+
+
 class Connector;
 struct EventHandler {
   virtual ~EventHandler(void);
