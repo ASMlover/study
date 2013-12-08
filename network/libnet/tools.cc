@@ -24,6 +24,7 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#include "libnet.h"
 #if defined(PLATFORM_WIN)
 # include <windows.h>
 #elif defined(PLATFORM_POSIX)
@@ -40,7 +41,7 @@ Sleep(int millitm)
 #if defined(PLATFORM_WIN)
   ::Sleep(millitm);
 #elif defined(PLATFORM_POSIX)
-  usleep(millitm * 1000):
+  usleep(millitm * 1000);
 #endif
 }
 
