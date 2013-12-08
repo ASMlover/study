@@ -49,6 +49,7 @@ public:
 
 #if defined(PLATFORM_WIN)
 #elif defined(PLATFORM_POSIX)
+# include "posix_locker.h"
 #endif
 
 #endif  //! __LOCKER_HEADER_H__
