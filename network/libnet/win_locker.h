@@ -24,33 +24,36 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __LOCKER_HEADER_H__
-#define __LOCKER_HEADER_H__
+#ifndef __WIN_LOCKER_HEADER_H__
+#define __WIN_LOCKER_HEADER_H__
 
-template <typename Locker>
-class LockerGuard {
-  Locker& locker_;
+#include <windows.h>
 
-  LockerGuard(const LockerGuard&);
-  LockerGuard& operator =(const LockerGuard&);
+class SpinLock {
+  CRITICAL_SECTION spinlock_;
+
+  SpinLock(const SpinLock&);
+  SpinLock& operator =(const SpinLock&);
 public:
-  explicit LockerGuard(Locker& locker)
-    : locker_(locker)
+  explicit SpinLock(void)
   {
-    locker_.Lock();
+    InitializeCriticalSectionAndSpinCount(&spinlock_, 4000);
   }
 
-  ~LockerGuard(void)
+  ~SpinLock(void)
   {
-    locker_.Unlock();
+    DeleteCriticalSection(&spinlock_);
+  }
+
+  inline void Lock(void)
+  {
+    EnterCriticalSection(&spinlock_);
+  }
+
+  inline void Unlock(void) 
+  {
+    LeaveCriticalSection(&spinlock_);
   }
 };
 
-
-#if defined(PLATFORM_WIN)
-# include "win_locker.h"
-#elif defined(PLATFORM_POSIX)
-# include "posix_locker.h"
-#endif
-
-#endif  //! __LOCKER_HEADER_H__
+#endif  //! __WIN_LOCKER_HEADER_H__
