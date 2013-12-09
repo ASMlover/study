@@ -24,7 +24,48 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include "logging.h"
+
+
+
+
+Logging::Logging(void)
+{
+}
+
+Logging::~Logging(void)
+{
+}
+
+Logging& 
+Logging::Singleton(void)
+{
+  static Logging _s_logging;
+  return _s_logging;
+}
+
+void 
+Logging::Write(int type, 
+    const char* file, 
+    int line, 
+    const char* format, ...)
+{
+  static char buffer[1024];
+  
+  va_list ap;
+  va_start(format, ap);
+  vsprintf(buffer, format, ap);
+  va_end(ap);
+
+  if (type < kLoggingTypeError)
+    fprintf(stdout, "%s", buffer);
+  else 
+    fprintf(stderr, "[%s][%d] - %s", file, line, buffer);
+
+  if (kLoggingTypeFail == type)
+    abort();
+}
