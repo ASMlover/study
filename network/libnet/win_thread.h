@@ -28,6 +28,7 @@
 #define __WIN_THREAD_HEADER_H__
 
 #include <windows.h>
+#include <process.h>
 
 class Thread {
   HANDLE thread_;
