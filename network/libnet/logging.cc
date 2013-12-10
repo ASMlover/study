@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <string.h>
+#include "io.h"
 #include "logging.h"
 
 
@@ -62,9 +62,10 @@ Logging::Write(int type,
   va_end(ap);
 
   if (type < kLoggingTypeError)
-    fprintf(stdout, "%s", buffer);
+    ColorFprintf(stdout, kColorTypeGreen, "%s", buffer);
   else 
-    fprintf(stderr, "[%s][%d] - %s", file, line, buffer);
+    ColorFprintf(stderr, kColorTypeRed, 
+        "[%s][%d] - %s", file, line, buffer);
 
   if (kLoggingTypeFail == type)
     abort();
