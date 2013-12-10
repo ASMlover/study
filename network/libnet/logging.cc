@@ -57,7 +57,7 @@ Logging::Write(int type,
   static char buffer[1024];
   
   va_list ap;
-  va_start(format, ap);
+  va_start(ap, format);
   vsprintf(buffer, format, ap);
   va_end(ap);
 
