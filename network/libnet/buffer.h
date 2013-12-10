@@ -59,7 +59,7 @@ public:
     return (storage_ - length_);
   }
 public:
-  bool Init(int storage = kDefaultStorage);
+  bool Init(uint32_t storage = kDefaultStorage);
   void Destroy(void);
 
   uint32_t Put(const char* buffer, uint32_t bytes);

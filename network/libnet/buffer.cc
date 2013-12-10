@@ -29,3 +29,122 @@
 #include <string.h>
 #include "logging.h"
 #include "buffer.h"
+
+
+
+Buffer::Buffer(void)
+  : buffer_(NULL)
+  , length_(0)
+  , storage_(kDefaultStorage)
+{
+}
+
+Buffer::~Buffer(void)
+{
+  Destroy();
+}
+
+bool 
+Buffer::Init(uint32_t storage)
+{
+  storage_ = (storage > kDefaultStorage ? storage : kDefaultStorage);
+  buffer_ = (char*)malloc(storage_);
+  if (NULL == buffer_) {
+    LOG_FAIL("Buffer::Init failed\n");
+    return false;
+  }
+  length_ = 0;
+
+  return true;
+}
+
+void 
+Buffer::Destroy(void)
+{
+  if (NULL != buffer_) {
+    free(buffer_);
+    buffer_ = NULL;
+  }
+  length_ = 0;
+  storage_ = kDefaultStorage;
+}
+
+uint32_t 
+Buffer::Put(const char* buffer, uint32_t bytes)
+{
+  if (NULL == buffer_ || 0 == bytes)
+    return 0;
+
+  if (length_ + bytes > storage_) {
+    if (!Regrow())
+      return 0;
+  }
+
+  memcpy(buffer_ + length_, buffer, bytes);
+  length_ += bytes;
+
+  return bytes;
+}
+
+uint32_t 
+Buffer::Get(uint32_t bytes, char* buffer)
+{
+  if (0 == bytes || NULL == buffer)
+    return 0;
+
+  uint32_t copy_bytes = (bytes < length_ ? bytes : length_);
+  memcpy(buffer, buffer_, copy_bytes);
+
+  if (length_ != copy_bytes)
+    memmove(buffer_, buffer_ + copy_bytes, length_ - copy_bytes);
+  length_ -= copy_bytes;
+
+  return copy_bytes;
+}
+
+uint32_t 
+Buffer::Increment(uint32_t bytes)
+{
+  if (0 == bytes)
+    return 0;
+
+  if (length_ + bytes > storage_) {
+    if (!Regrow())
+      return 0;
+  }
+
+  length_ += bytes;
+  
+  return bytes;
+}
+
+uint32_t 
+Buffer::Decrement(uint32_t bytes)
+{
+  if (0 == bytes)
+    return 0;
+
+  if (bytes > length_) {
+    LOG_FAIL("Buffer::Decrement failed\n");
+    return 0;
+  }
+
+  length_ -= bytes;
+
+  return bytes;
+}
+
+bool 
+Buffer::Regrow(void)
+{
+  uint32_t new_storage = 
+    (0 != storage_ ? 2 * storage_ : kDefaultStorage);
+  buffer_ = (char*)realloc(buffer_, new_storage);
+  if (NULL == buffer_) {
+    LOG_FAIL("Buffer::Regrow failed\n");
+    return false;
+  }
+  storage_ = new_storage;
+
+  return true;
+}
