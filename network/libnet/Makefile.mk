@@ -34,7 +34,7 @@ CFLAGS	= -O2 -W3 -MD -Zi -GS -Fd"vc.pdb" -EHsc -DNDEBUG\
 	-D_CRT_SECURE_NO_WARNINGS
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no ws2_32.lib
-OBJS	= main.obj address.obj tools.obj logging.obj
+OBJS	= main.obj address.obj tools.obj logging.obj io.obj
 
 
 
