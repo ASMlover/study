@@ -30,7 +30,7 @@ RM	= rm
 CC	= g++
 CFLAGS	= -g -O2 -Wall 
 LDFLAGS	= -lpthread -lrt
-OBJS	= main.o address.o tools.o logging.o io.o buffer.o
+OBJS	= main.o address.o tools.o logging.o io.o buffer.o socket.o
 
 
 
