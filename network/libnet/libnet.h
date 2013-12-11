@@ -63,4 +63,34 @@
 # include <stdint.h>
 #endif
 
+
+enum NetType {
+  kNetTypeInval = -1, 
+  kNetTypeError = -1,
+};
+
+enum EventType {
+  kEventTypeUnknown = 0x00, 
+  kEventTypeRead    = 0x01, 
+  kEventTypeWrite   = 0x02, 
+};
+
+
+class Connector;
+struct Dispatcher {
+  virtual ~Dispatcher(void) {}
+  virtual bool DispatchReader(Connector* conn) = 0;
+  virtual bool DispatchWriter(Connector* conn) = 0;
+};
+
+struct Poller {
+  virtual ~Poller(void) {}
+  virtual bool Insert(int fd, Connector* conn) = 0;
+  virtual void Remove(int fd) = 0;
+  virtual bool AddEvent(int fd, int ev) = 0;
+  virtual bool DelEvent(int fd, int ev) = 0;
+  virtual bool Dispatch(Dispatcher* dispatcher, int millitm) = 0;
+};
+
+
 #endif  //! __LIBRARY_NETWORK_HEADER_H__
