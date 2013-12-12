@@ -211,18 +211,18 @@ Socket::Connect(const char* ip, uint16_t port)
 }
 
 int 
-Socket::Read(uint32_t bytes, char* buffer)
+Socket::Recv(uint32_t bytes, char* buffer)
 {
-  if (kNetTypeInval == fd_ || 0 == bytes || NULL == buffer)
+  if (kNetTypeInval == fd_)
     return kNetTypeError;
 
   return recv(fd_, buffer, bytes, 0);
 }
 
 int 
-Socket::Write(const char* buffer, uint32_t bytes)
+Socket::Send(const char* buffer, uint32_t bytes)
 {
-  if (kNetTypeInval == fd_ || NULL == buffer || 0 == bytes)
+  if (kNetTypeInval == fd_)
     return kNetTypeError;
 
   return send(fd_, buffer, bytes, 0);

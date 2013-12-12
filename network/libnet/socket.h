@@ -67,8 +67,8 @@ public:
   bool Accept(Socket* s, Address* addr);
   bool Connect(const char* ip, uint16_t port);
 
-  int Read(uint32_t bytes, char* buffer);
-  int Write(const char* buffer, uint32_t bytes);
+  int Recv(uint32_t bytes, char* buffer);
+  int Send(const char* buffer, uint32_t bytes);
 private:
   bool SetOption(int level, int optname, int optval);
 };
