@@ -24,13 +24,12 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __SELECT_HEADER_H__
-#define __SELECT_HEADER_H__
+#ifndef __POSIX_SELECT_HEADER_H__
+#define __POSIX_SELECT_HEADER_H__
 
-#if defined(PLATFORM_WIN)
-# include "win_select.h"
-#elif defined(PLATFORM_POSIX)
-# include "posix_select.h"
-#endif
+#include <sys/types.h>
 
-#endif  //! __SELECT_HEADER_H__
+class Select : public Poller {
+};
+
+#endif  //! __POSIX_SELECT_HEADER_H__
