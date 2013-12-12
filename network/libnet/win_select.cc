@@ -271,12 +271,12 @@ Select::Dispatch(Dispatcher* dispatcher, int millitm)
     if (kNetTypeInval == entry->fd)
       continue;
     if (WINFD_ISSET(entry->fd, rset_out_))
-      dispatcher->DispatchReader(entry->conn);
+      dispatcher->DispatchReader(this, entry->conn);
 
     if (kNetTypeInval == entry->fd)
       continue;
     if (WINFD_ISSET(entry->fd, wset_out_))
-      dispatcher->DispatchWriter(entry->conn);
+      dispatcher->DispatchWriter(this, entry->conn);
   }
 
   if (has_removed_) {

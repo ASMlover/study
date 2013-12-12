@@ -77,10 +77,11 @@ enum EventType {
 
 
 class Connector;
+class Poller;
 struct Dispatcher {
   virtual ~Dispatcher(void) {}
-  virtual bool DispatchReader(Connector* conn) = 0;
-  virtual bool DispatchWriter(Connector* conn) = 0;
+  virtual bool DispatchReader(Poller* poller, Connector* conn) = 0;
+  virtual bool DispatchWriter(Poller* poller, Connector* conn) = 0;
 };
 
 struct Poller {
