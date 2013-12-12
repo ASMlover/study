@@ -25,6 +25,8 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "libnet.h"
+#include <unistd.h>
+#include "logging.h"
 #include "epoll.h"
 
 
@@ -39,10 +41,22 @@ struct EpollEntry {
 
 Epoll::Epoll(void)
 {
+  fd_ = epoll_create(1);
+  if (kNetTypeInval == fd_)
+    LOG_FAIL("Epoll::Epoll failed\n");
+  entry_list_.clear();
 }
 
 Epoll::~Epoll(void)
 {
+  std::vector<EpollEntry*>::iterator it;
+  for (it = entry_list_.begin(); it != entry_list_.end(); ++it) {
+    if (NULL != *it)
+      delete *it;
+  }
+  entry_list_.clear();
+
+  close(fd_);
 }
 
 
