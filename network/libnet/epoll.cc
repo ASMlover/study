@@ -31,31 +31,18 @@
 
 
 
-struct EpollEntry {
-  int fd;
-  epoll_event ev;
-  Connector* conn;
-};
-
-
-
 Epoll::Epoll(void)
+  : fd_(kNetTypeInval)
+  , event_count_(kEventCount)
+  , events_(NULL)
 {
   fd_ = epoll_create(1);
   if (kNetTypeInval == fd_)
     LOG_FAIL("Epoll::Epoll failed\n");
-  entry_list_.clear();
 }
 
 Epoll::~Epoll(void)
 {
-  std::vector<EpollEntry*>::iterator it;
-  for (it = entry_list_.begin(); it != entry_list_.end(); ++it) {
-    if (NULL != *it)
-      delete *it;
-  }
-  entry_list_.clear();
-
   close(fd_);
 }
 

@@ -32,8 +32,10 @@
 
 struct EpollEntry;
 class Epoll : public Poller {
+  enum {kEventCount = 32000};
   int fd_;
-  std::vector<EpollEntry*> entry_list_;
+  uint32_t event_count_;
+  struct epoll_event* events_;
 
   Epoll(const Epoll&);
   Epoll& operator =(const Epoll&);
