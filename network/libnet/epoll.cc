@@ -36,7 +36,7 @@ Epoll::Epoll(void)
   , event_count_(kEventCount)
   , events_(NULL)
 {
-  fd_ = epoll_create(1);
+  fd_ = epoll_create(kEpollSize);
   if (kNetTypeInval == fd_)
     LOG_FAIL("Epoll::Epoll failed\n");
 }

@@ -32,7 +32,10 @@
 
 struct EpollEntry;
 class Epoll : public Poller {
-  enum {kEventCount = 32000};
+  enum {
+    kEpollSize  = 32000, 
+    kEventCount = 4096,
+  };
   int fd_;
   uint32_t event_count_;
   struct epoll_event* events_;
