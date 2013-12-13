@@ -26,6 +26,7 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "libnet.h"
 #include <unistd.h>
+#include <stdlib.h>
 #include "logging.h"
 #include "epoll.h"
 
@@ -36,14 +37,68 @@ Epoll::Epoll(void)
   , event_count_(kEventCount)
   , events_(NULL)
 {
-  fd_ = epoll_create(kEpollSize);
-  if (kNetTypeInval == fd_)
+  if (!Init())
     LOG_FAIL("Epoll::Epoll failed\n");
 }
 
 Epoll::~Epoll(void)
 {
-  close(fd_);
+  Destroy();
+}
+
+bool 
+Epoll::Init(void)
+{
+  fd_ = epoll_create(kEpollSize);
+  if (kNetTypeInval == fd_)
+    return false;
+
+  event_count_ = kEventCount;
+  size_t size = sizeof(struct epoll_event) * event_count_;
+
+  do {
+    events_ = (struct epoll_event*)malloc(size);
+    if (NULL == events_)
+      break;
+
+    return true;
+  } while (0);
+
+  Destroy();
+  return false;
+}
+
+void 
+Epoll::Destroy(void)
+{
+  if (NULL != events_)  {
+    free(events_);
+    events_ = NULL;
+  }
+  event_count_ = kEventCount;
+
+  if (kNetTypeInval != fd_) {
+    close(fd_);
+    fd_ = kNetTypeInval;
+  }
+}
+
+bool 
+Epoll::Regrow(void)
+{
+  uint32_t new_event_count = (0 != event_count_ ? 
+      2 * event_count_ : kEventCount);
+  size_t size = sizeof(struct epoll_event) * new_event_count;
+
+  events_ = (struct epoll_event*)realloc(events_, size);
+  if (NULL == events_) {
+    LOG_FAIL("Epoll::Regrow failed\n");
+    return false;
+  }
+
+  event_count_ = new_event_count;
+
+  return true;
 }
 
 

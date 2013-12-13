@@ -51,6 +51,10 @@ public:
   virtual bool AddEvent(int fd, int ev);
   virtual bool DelEvent(int fd, int ev);
   virtual bool Dispatch(Dispatcher* dispatcher, int millitm);
+private:
+  bool Init(void);
+  void Destroy(void);
+  bool Regrow(void);
 };
 
 #endif  //! __EPOLL_HEADER_H__
