@@ -46,10 +46,10 @@ public:
   explicit Select(void);
   ~Select(void);
 
-  virtual bool Insert(int fd, Connector* conn);
-  virtual void Remove(int fd);
-  virtual bool AddEvent(int fd, int ev);
-  virtual bool DelEvent(int fd, int ev);
+  virtual bool Insert(Connector* conn);
+  virtual void Remove(Connector* conn);
+  virtual bool AddEvent(Connector* conn);
+  virtual bool DelEvent(Connector* conn);
   virtual bool Dispatch(Dispatcher* dispatcher, int millitm);
 private:
   bool Init(void);

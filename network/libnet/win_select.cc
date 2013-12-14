@@ -34,6 +34,8 @@
 #include <string.h>
 #include <algorithm>
 #include "logging.h"
+#include "socket.h"
+#include "connector.h"
 #include "win_select.h"
 
 
@@ -180,8 +182,10 @@ Select::Regrow(void)
 
 
 bool 
-Select::Insert(int fd, Connector* conn)
+Select::Insert(Connector* conn)
 {
+  int fd = conn->fd();
+
   if (entry_list_.size() + 1 > fd_storage_) {
     if (!Regrow())
       return false;
@@ -194,8 +198,10 @@ Select::Insert(int fd, Connector* conn)
 }
 
 void 
-Select::Remove(int fd)
+Select::Remove(Connector* conn)
 {
+  int fd = conn->fd();
+
   std::vector<SelectEntry>::iterator it;
   for (it = entry_list_.begin(); it != entry_list_.end(); ++it) {
     if (fd == it->fd)
@@ -215,8 +221,10 @@ Select::Remove(int fd)
 }
 
 bool 
-Select::AddEvent(int fd, int ev)
+Select::AddEvent(Connector* conn)
 {
+  int fd = conn->fd();
+
   if (ev & kEventTypeRead) 
     WINFD_SET(fd, rset_in_);
 
@@ -227,8 +235,10 @@ Select::AddEvent(int fd, int ev)
 }
 
 bool 
-Select::DelEvent(int fd, int ev)
+Select::DelEvent(Connector* conn)
 {
+  int fd = conn->fd();
+
   if (ev & kEventTypeRead)
     WINFD_CLR(fd, rset_in_);
 
