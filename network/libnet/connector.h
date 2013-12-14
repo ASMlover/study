@@ -5,6 +5,7 @@
 #include "buffer.h"
 
 class Connector : public Socket {
+  uint32_t events_;
   SpinLock spinlock_;
   Buffer rbuf_;
   Buffer wbuf_;
@@ -23,6 +24,16 @@ public:
   inline bool SetWriteBuffer(uint32_t bytes)
   {
     return wbuf_.Init(bytes);
+  }
+
+  inline uint32_t events(void) const 
+  {
+    return events_;
+  }
+
+  inline void set_events(uint32_t events)
+  {
+    events_ = events;
   }
 };
 
