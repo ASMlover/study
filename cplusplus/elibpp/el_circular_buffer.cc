@@ -26,7 +26,7 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <string.h>
-#include "el_buffer.h"
+#include "el_circular_buffer.h"
 
 
 namespace el {
@@ -53,7 +53,7 @@ namespace el {
 //!    |=====================================================|
 
 
-Buffer::Buffer(void)
+CircularBuffer::CircularBuffer(void)
   : buffer_(NULL)
   , length_(0)
   , rpos_(0)
@@ -63,13 +63,13 @@ Buffer::Buffer(void)
 {
 }
 
-Buffer::~Buffer(void)
+CircularBuffer::~CircularBuffer(void)
 {
   Release();
 }
 
 bool 
-Buffer::Create(int length)
+CircularBuffer::Create(int length)
 {
   if (NULL != buffer_)
     free(buffer_);
@@ -87,7 +87,7 @@ Buffer::Create(int length)
 }
 
 void 
-Buffer::Release(void)
+CircularBuffer::Release(void)
 {
   if (NULL != buffer_) {
     free(buffer_);
@@ -99,7 +99,7 @@ Buffer::Release(void)
 }
 
 void 
-Buffer::Clear(void)
+CircularBuffer::Clear(void)
 {
   rpos_ = wpos_ = 0;
   data_length_ = 0;
@@ -107,7 +107,7 @@ Buffer::Clear(void)
 }
 
 int 
-Buffer::Write(const void* buffer, int length)
+CircularBuffer::Write(const void* buffer, int length)
 {
   //! buffer must be valid and length must > 0
   
@@ -138,7 +138,7 @@ Buffer::Write(const void* buffer, int length)
 }
 
 int 
-Buffer::Read(int length, void* buffer)
+CircularBuffer::Read(int length, void* buffer)
 {
   //! length must > 0 and buffer must be valid 
 
@@ -169,7 +169,7 @@ Buffer::Read(int length, void* buffer)
 }
 
 int 
-Buffer::Remove(int length)
+CircularBuffer::Remove(int length)
 {
   //! length must > 0
   if (length <= 0)

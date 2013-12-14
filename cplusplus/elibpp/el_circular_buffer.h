@@ -24,12 +24,12 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_BUFFER_HEADER_H__
-#define __EL_BUFFER_HEADER_H__
+#ifndef __EL_CIRCULAR_BUFFER_HEADER_H__
+#define __EL_CIRCULAR_BUFFER_HEADER_H__
 
 namespace el {
 
-class Buffer {
+class CircularBuffer {
   enum { kDefBufferLength = 1024 * 1024 };
   char* buffer_;
   int length_;
@@ -38,11 +38,11 @@ class Buffer {
   int data_length_;
   int free_length_;
 
-  Buffer(const Buffer&);
-  Buffer& operator =(const Buffer&);
+  CircularBuffer(const CircularBuffer&);
+  CircularBuffer& operator =(const CircularBuffer&);
 public:
-  explicit Buffer(void);
-  ~Buffer(void);
+  explicit CircularBuffer(void);
+  ~CircularBuffer(void);
 
   bool Create(int length = kDefBufferLength);
   void Release(void);
@@ -70,4 +70,4 @@ public:
 
 }
 
-#endif  //! __EL_BUFFER_HEADER_H__
+#endif  //! __EL_CIRCULAR_BUFFER_HEADER_H__

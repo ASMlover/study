@@ -34,7 +34,7 @@ LDFLAGS	= -lpthread -lrt
 OBJS	= ./test/el_test_main.o ./test/el_test_mutex.o\
 	./test/el_test_spinlock.o ./test/el_test_condition.o\
 	./test/el_test_thread.o ./test/el_test_thread_pool.o\
-	./test/el_test_allocator.o ./test/el_test_buffer.o\
+	./test/el_test_allocator.o ./test/el_test_circular_buffer.o\
 	./test/el_test_file.o ./test/el_test_time.o\
 	./test/el_test_logging.o\
 	\
@@ -42,8 +42,8 @@ OBJS	= ./test/el_test_main.o ./test/el_test_mutex.o\
 	./posix/el_posix_file.o ./posix/el_posix_time.o\
 	./posix/el_posix_net.o ./posix/el_posix_socket.o\
 	\
-	el_allocator.o el_thread_pool.o el_buffer.o el_time.o el_logging.o\
-	el_net.o el_net_buffer.o el_address.o el_socket.o
+	el_allocator.o el_thread_pool.o el_circular_buffer.o el_time.o\
+	el_logging.o el_net.o el_net_buffer.o el_address.o el_socket.o
 
 
 

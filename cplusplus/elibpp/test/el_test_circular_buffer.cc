@@ -27,7 +27,7 @@
 #include <time.h>
 #include <string.h>
 #include "el_test_header.h"
-#include "../el_buffer.h"
+#include "../el_circular_buffer.h"
 
 
 
@@ -42,13 +42,13 @@ InitData(int count, short* data)
     data[i] = rand() % 10000;
 }
 
-UNIT_IMPL(BufferSingle)
+UNIT_IMPL(CircularBufferSingle)
 {
   const int BUFFER_LEN = 1024 * 1024;
   short data[DATA_NUM];
   InitData(DATA_NUM, data);
   
-  el::Buffer buffer;
+  el::CircularBuffer buffer;
 
   UNIT_ASSERT(buffer.Create());
   UNIT_ASSERT(BUFFER_LEN == buffer.length());
