@@ -119,6 +119,8 @@ Epoll::Insert(Connector* conn)
   if (kNetTypeError == ret)
     return false;
 
+  conn->set_events(EPOLLET);
+
   return true;
 }
 
@@ -130,7 +132,7 @@ Epoll::Remove(Connector* conn)
 
   int fd = conn->fd();
   struct epoll_event ev;
-  ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
+  ev.events = conn->events();
   ev.data.ptr = conn;
 
   epoll_ctl(fd_, EPOLL_CTL_DEL, fd, &ev);
@@ -143,6 +145,19 @@ Epoll::AddEvent(Connector* conn, int ev)
     return false;
 
   int fd = conn->fd();
+  struct epoll_event event;
+  event.events = conn->events();
+  event.data.ptr = conn;
+
+  if (ev & kEventTypeRead)
+    event.events |= EPOLLIN;
+
+  if (ev & kEventTypeWrite)
+    event.events |= EPOLLOUT;
+
+  if (kNetTypeError == epoll_ctl(fd_, EPOLL_CTL_MOD, fd, &event))
+    return false;
+  conn->set_events(event.events);
 
   return true;
 }
@@ -150,11 +165,56 @@ Epoll::AddEvent(Connector* conn, int ev)
 bool 
 Epoll::DelEvent(Connector* conn, int ev)
 {
+  if (NULL == conn)
+    return false;
+
+  int fd = conn->fd();
+  struct epoll_event event;
+  event.events = conn->events();
+  event.data.ptr = conn;
+
+  if (ev & kEventTypeRead)
+    event.events &= ~EPOLLIN;
+
+  if (ev & kEventTypeWrite)
+    event.events &= ~EPOLLOUT;
+
+  if (kNetTypeError == epoll_ctl(fd_, EPOLL_CTL_MOD, fd, &event))
+    return false;
+  conn->set_events(event.events);
+
   return true;
 }
 
 bool 
 Epoll::Dispatch(Dispatcher* dispatcher, int millitm)
 {
+  if (NULL == dispatcher)
+    return false;
+
+  int n = epoll_wait(fd_, events_, event_count_, millitm);
+  if (kNetTypeError == n || 0 == n)
+    return false;
+
+  Connector* conn;
+  for (int i = 0; i < n; ++i) {
+    conn = (Connector*)events_[i].data.ptr;
+    if (NULL == conn)
+      continue;
+
+    if (kNetTypeInval == conn->fd())
+      continue;
+    if (events_[i].events & EPOLLIN)
+      dispatcher->DispatchReader(this, conn);
+
+    if (kNetTypeInval == conn->fd())
+      continue;
+    if (events_[i].events & EPOLLOUT)
+      dispatcher->DispatchWriter(this, conn);
+  }
+
+  if ((uint32_t)n == event_count_)
+    Regrow();
+
   return true;
 }
