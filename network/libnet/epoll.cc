@@ -137,18 +137,18 @@ Epoll::Remove(Connector* conn)
 }
 
 bool 
-Epoll::AddEvent(Connector* conn)
+Epoll::AddEvent(Connector* conn, int ev)
 {
   if (NULL == conn)
     return false;
 
-  int fd = conn;
+  int fd = conn->fd();
 
   return true;
 }
 
 bool 
-Epoll::DelEvent(Connector* conn)
+Epoll::DelEvent(Connector* conn, int ev)
 {
   return true;
 }
