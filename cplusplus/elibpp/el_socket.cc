@@ -77,30 +77,6 @@ Socket::SetKeepAlive(bool keep)
   return SetOption(SOL_SOCKET, SO_KEEPALIVE, (keep ? 1 : 0));
 }
 
-bool 
-Socket::SetReadBuffer(int bytes) 
-{
-  return SetOption(SOL_SOCKET, SO_RCVBUF, bytes);
-}
-
-bool 
-Socket::SetWriteBuffer(int bytes)
-{
-  return SetOption(SOL_SOCKET, SO_SNDBUF, bytes);
-}
-
-bool 
-Socket::SetSelfReadBuffer(int bytes)
-{
-  return rbuf_.Init(bytes);
-}
-
-bool 
-Socket::SetSelfWriteBuffer(int bytes)
-{
-  return wbuf_.Init(bytes);
-}
-
 
 bool 
 Socket::Open(void)
@@ -182,105 +158,21 @@ Socket::Connect(const char* ip, unsigned short port)
 }
 
 int 
-Socket::ReadBlock(int bytes, char* buffer)
+Socket::Recv(int bytes, char* buffer)
 {
   if (kNetTypeInval == fd_ || bytes <= 0 || NULL == buffer)
     return kNetTypeError;
 
-  int ret = recv(fd_, buffer, bytes, 0);
-  return ret;
+  return recv(fd_, buffer, bytes, 0);
 }
 
 int 
-Socket::WriteBlock(const char* buffer, int bytes)
+Socket::Send(const char* buffer, int bytes)
 {
   if (kNetTypeInval == fd_ || NULL == buffer || bytes <= 0)
     return kNetTypeError;
 
-  int write_bytes = 0;
-  int ret;
-  while (write_bytes < bytes) {
-    ret = send(fd_, buffer + write_bytes, bytes - write_bytes, 0);
-    if (kNetTypeError == ret)
-      return kNetTypeError;
-
-    write_bytes += ret;
-  }
-
-  return write_bytes;
-}
-
-int 
-Socket::Read(int bytes, char* buffer)
-{
-  if (kNetTypeInval == fd_ || bytes <= 0 || NULL == buffer)
-    return kNetTypeError;
-
-  return rbuf_.Get(bytes, buffer);
-}
-
-int 
-Socket::Write(const char* buffer, int bytes)
-{
-  if (kNetTypeInval == fd_ || NULL == buffer || bytes <= 0)
-    return kNetTypeError;
-
-  return wbuf_.Put(buffer, bytes);
-}
-
-int 
-Socket::DealWithAsyncRead(void)
-{
-  if (kNetTypeInval == fd_)
-    return kNetTypeError;
-
-  int read_bytes = 0;
-  int ret;
-  char* free_buffer = rbuf_.free_buffer();
-  int   free_length = rbuf_.free_length();
-  while (true) {
-    if (0 == free_length) {
-      if (!rbuf_.Regrow())
-        break;
-
-      free_buffer = rbuf_.free_buffer();
-      free_length = rbuf_.free_length();
-    }
-
-    ret = recv(fd_, free_buffer, free_length, 0);
-    if (ret > 0) {
-      rbuf_.Increment(ret);
-      read_bytes += ret;
-      if (ret < free_length)
-        break;
-    }
-    else {
-      return ret;
-    }
-  }
-
-  return read_bytes;
-}
-
-int 
-Socket::DealWithAsyncWrite(void)
-{
-  if (kNetTypeInval == fd_)
-    return kNetTypeError;
-
-  int length = wbuf_.length();
-  if (length <= 0)
-    return 0;
-
-  const char* buffer = wbuf_.buffer();
-  int ret = send(fd_, buffer, length, 0);
-
-  if (ret > 0)
-    wbuf_.Decrement(ret);
-
-  return ret;
-
-  return 0;
+  return send(fd_, buffer, bytes, 0);
 }
 
 

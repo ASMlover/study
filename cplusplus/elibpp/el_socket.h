@@ -28,7 +28,6 @@
 #define __EL_SOCKET_HEADER_H__
 
 #include "el_allocator.h"
-#include "el_net_buffer.h"
 
 
 namespace el {
@@ -37,8 +36,6 @@ namespace el {
 class Address;
 class Socket : public SmallAllocator {
   int fd_;
-  NetBuffer rbuf_;
-  NetBuffer wbuf_;
 
   Socket(const Socket&);
   Socket& operator =(const Socket&);
@@ -67,10 +64,6 @@ public:
   bool SetTcpNoDelay(bool nodelay = true);
   bool SetReuseAddr(bool reuse = true);
   bool SetKeepAlive(bool keep = true);
-  bool SetReadBuffer(int bytes);
-  bool SetWriteBuffer(int bytes);
-  bool SetSelfReadBuffer(int bytes);
-  bool SetSelfWriteBuffer(int bytes);
 
   bool Open(void);
   void Close(void);
@@ -80,13 +73,8 @@ public:
   bool Accept(Socket* s, Address* addr);
   bool Connect(const char* ip, unsigned short port);
 
-  int ReadBlock(int bytes, char* buffer);
-  int WriteBlock(const char* buffer, int bytes);
-  int Read(int bytes, char* buffer);
-  int Write(const char* buffer, int bytes);
-
-  int DealWithAsyncRead(void);
-  int DealWithAsyncWrite(void);
+  int Recv(int bytes, char* buffer);
+  int Send(const char* buffer, int bytes);
 private:
   bool SetOption(int level, int optname, int optval);
 };
