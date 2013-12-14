@@ -221,7 +221,7 @@ Select::Remove(Connector* conn)
 }
 
 bool 
-Select::AddEvent(Connector* conn)
+Select::AddEvent(Connector* conn, int ev)
 {
   int fd = conn->fd();
 
@@ -235,7 +235,7 @@ Select::AddEvent(Connector* conn)
 }
 
 bool 
-Select::DelEvent(Connector* conn)
+Select::DelEvent(Connector* conn, int ev)
 {
   int fd = conn->fd();
 

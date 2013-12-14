@@ -28,6 +28,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include "logging.h"
+#include "socket.h"
+#include "connector.h"
 #include "epoll.h"
 
 
@@ -105,17 +107,43 @@ Epoll::Regrow(void)
 bool 
 Epoll::Insert(Connector* conn)
 {
+  if (NULL == conn)
+    return false;
+
+  int fd = conn->fd();
+  struct epoll_event ev;
+  ev.events = 0;
+  ev.data.ptr = conn;
+
+  int ret = epoll_ctl(fd_, EPOLL_CTL_ADD, fd, &ev);
+  if (kNetTypeError == ret)
+    return false;
+
   return true;
 }
 
 void 
 Epoll::Remove(Connector* conn)
 {
+  if (NULL == conn)
+    return;
+
+  int fd = conn->fd();
+  struct epoll_event ev;
+  ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
+  ev.data.ptr = conn;
+
+  epoll_ctl(fd_, EPOLL_CTL_DEL, fd, &ev);
 }
 
 bool 
 Epoll::AddEvent(Connector* conn)
 {
+  if (NULL == conn)
+    return false;
+
+  int fd = conn;
+
   return true;
 }
 

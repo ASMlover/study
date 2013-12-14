@@ -48,8 +48,8 @@ public:
 
   virtual bool Insert(Connector* conn);
   virtual void Remove(Connector* conn);
-  virtual bool AddEvent(Connector* conn);
-  virtual bool DelEvent(Connector* conn);
+  virtual bool AddEvent(Connector* conn, int ev);
+  virtual bool DelEvent(Connector* conn, int ev);
   virtual bool Dispatch(Dispatcher* dispatcher, int millitm);
 private:
   bool Init(void);
