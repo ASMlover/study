@@ -103,24 +103,24 @@ Epoll::Regrow(void)
 
 
 bool 
-Epoll::Insert(int fd, Connector* conn)
+Epoll::Insert(Connector* conn)
 {
   return true;
 }
 
 void 
-Epoll::Remove(int fd)
+Epoll::Remove(Connector* conn)
 {
 }
 
 bool 
-Epoll::AddEvent(int fd, int ev)
+Epoll::AddEvent(Connector* conn)
 {
   return true;
 }
 
 bool 
-Epoll::DelEvent(int fd, int ev)
+Epoll::DelEvent(Connector* conn)
 {
   return true;
 }

@@ -30,7 +30,6 @@
 #include <sys/epoll.h>
 #include <vector>
 
-struct EpollEntry;
 class Epoll : public Poller {
   enum {
     kEpollSize  = 32000, 
@@ -46,10 +45,10 @@ public:
   explicit Epoll(void);
   ~Epoll(void);
 public:
-  virtual bool Insert(int fd, Connector* conn);
-  virtual void Remove(int fd);
-  virtual bool AddEvent(int fd, int ev);
-  virtual bool DelEvent(int fd, int ev);
+  virtual bool Insert(Connector* conn);
+  virtual void Remove(Connector* conn);
+  virtual bool AddEvent(Connector* conn);
+  virtual bool DelEvent(Connector* conn);
   virtual bool Dispatch(Dispatcher* dispatcher, int millitm);
 private:
   bool Init(void);
