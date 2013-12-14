@@ -31,7 +31,8 @@
 
 
 Connector::Connector(void)
-  : spinlock_()
+  : events_(0)
+  , spinlock_()
 {
 }
 
