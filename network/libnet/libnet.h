@@ -88,8 +88,8 @@ struct Poller {
   virtual ~Poller(void) {}
   virtual bool Insert(Connector* conn) = 0;
   virtual void Remove(Connector* conn) = 0;
-  virtual bool AddEvent(Connector* conn) = 0;
-  virtual bool DelEvent(Connector* conn) = 0;
+  virtual bool AddEvent(Connector* conn, int ev) = 0;
+  virtual bool DelEvent(Connector* conn, int ev) = 0;
   virtual bool Dispatch(Dispatcher* dispatcher, int millitm) = 0;
 };
 
