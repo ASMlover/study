@@ -56,7 +56,14 @@ Connector::Write(const char* buffer, uint32_t bytes)
 {
   if (NULL == buffer || 0 == bytes)
     return kNetTypeError;
-  return wbuf_.Put(buffer, bytes);
+
+  int ret;
+  {
+    LockerGuard<SpinLock> guard(spinlock_);
+    ret = wbuf_.Put(buffer, bytes);
+  }
+
+  return ret;
 }
 
 int 
@@ -105,6 +112,7 @@ Connector::DealWithAsyncWrite(void)
   int write_bytes = 0;
   int ret;
 
+  LockerGuard<SpinLock> guard(spinlock_);
   while (true) {
     uint32_t length = wbuf_.length();
     if (length <= 0)
