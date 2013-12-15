@@ -35,6 +35,12 @@ public:
   {
     events_ = events;
   }
+public:
+  int Read(uint32_t bytes, char* buffer);
+  int Write(const char* buffer, uint32_t bytes);
+
+  int DealWithAsyncRead(void);
+  int DealWithAsyncWrite(void);
 };
 
 #endif  //! __CONNECTOR_HEADER_H__
