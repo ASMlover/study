@@ -42,6 +42,13 @@ enum EventType {
 
 
 class Connector;
+struct EventHandler {
+  virtual ~EventHandler(void) {}
+  virtual bool AcceptEvent(Connector* conn) {return true;}
+  virtual void CloseEvent(Connector* conn) {}
+  virtual bool ReadEvent(Connector* conn) {return true;}
+};
+
 struct Poller;
 struct Dispatcher {
   virtual ~Dispatcher(void) {}
