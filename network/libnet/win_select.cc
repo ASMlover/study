@@ -184,14 +184,15 @@ Select::Regrow(void)
 bool 
 Select::Insert(Connector* conn)
 {
-  int fd = conn->fd();
+  if (NULL == conn)
+    return false;
 
   if (entry_list_.size() + 1 > fd_storage_) {
     if (!Regrow())
       return false;
   }
 
-  SelectEntry entry = {fd, conn};
+  SelectEntry entry = {conn->fd(), conn};
   entry_list_.push_back(entry);
 
   return true;
@@ -200,8 +201,10 @@ Select::Insert(Connector* conn)
 void 
 Select::Remove(Connector* conn)
 {
-  int fd = conn->fd();
+  if (NULL == conn)
+    return;
 
+  int fd = conn->fd();
   std::vector<SelectEntry>::iterator it;
   for (it = entry_list_.begin(); it != entry_list_.end(); ++it) {
     if (fd == it->fd)
@@ -223,6 +226,9 @@ Select::Remove(Connector* conn)
 bool 
 Select::AddEvent(Connector* conn, int ev)
 {
+  if (NULL == conn)
+    return false;
+
   int fd = conn->fd();
 
   if (ev & kEventTypeRead) 
@@ -237,6 +243,9 @@ Select::AddEvent(Connector* conn, int ev)
 bool 
 Select::DelEvent(Connector* conn, int ev)
 {
+  if (NULL == conn)
+    return false;
+
   int fd = conn->fd();
 
   if (ev & kEventTypeRead)
