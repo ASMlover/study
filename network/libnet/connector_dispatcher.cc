@@ -25,6 +25,16 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "libnet_internal.h"
+#if defined(PLATFORM_WIN)
+# ifndef _WINDOWS_
+#   include <winsock2.h>
+# endif
+# define EAGAIN     WSAEWOULDBLOCK
+# define NErrno()   WSAGetLastError()
+#elif defined(PLATFORM_POSIX)
+# include <errno.h>
+# define NErrno()   errno
+#endif
 #include "socket.h"
 #include "connector.h"
 #include "connector_dispatcher.h"
@@ -45,28 +55,94 @@ ConnectorDispatcher::~ConnectorDispatcher(void)
 void 
 ConnectorDispatcher::CloseAll(void)
 {
+  std::map<int, Connector*>::iterator it;
+  for (it = connectors_.begin(); it != connectors_.end(); ++it) {
+    if (NULL != it->second) {
+      it->second->Close();
+      delete it->second;
+    }
+  }
+  connectors_.clear();
 }
 
-bool 
+Connector* 
 ConnectorDispatcher::Insert(int fd)
 {
-  return true;
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, Connector*>::iterator it = connectors_.find(fd);
+  if (it == connectors_.end()) {
+    Connector* conn = new Connector();
+    if (NULL == conn)
+      return NULL;
+
+    conn->Attach(fd);
+    conn->SetNonBlock();
+    conn->SetTcpNoDelay();
+    conn->SetReuseAddr();
+    conn->SetKeepAlive();
+    conn->SetReadBuffer(rbytes_);
+    conn->SetWriteBuffer(wbytes_);
+
+    connectors_[fd] = conn;
+
+    return conn;
+  }
+
+  return NULL;
 }
 
 void 
 ConnectorDispatcher::Remove(int fd)
 {
+  LockerGuard<SpinLock> guard(spinlock_);
+  std::map<int, Connector*>::iterator it = connectors_.find(fd);
+  if (it != connectors_.end()) {
+    if (NULL != it->second) {
+      it->second->Close();
+      delete it->second;
+    }
+
+    connectors_.erase(it);
+  }
 }
 
 
 bool 
 ConnectorDispatcher::DispatchReader(Poller* poller, Connector* conn)
 {
+  if (NULL == poller || NULL == conn)
+    return false;
+
+  int read_bytes = conn->DealWithAsyncRead();
+  if (read_bytes > 0) {
+  }
+  else {
+    if (0 == read_bytes || EAGAIN != NErrno()) {
+      poller->Remove(conn);
+
+      Remove(conn->fd());
+    }
+  }
+
   return true;
 }
 
 bool 
 ConnectorDispatcher::DispatchWriter(Poller* poller, Connector* conn)
 {
+  if (NULL == poller || NULL == conn)
+    return false;
+
+  int write_bytes = conn->DealWithAsyncWrite();
+  if (write_bytes > 0) {
+  }
+  else {
+    if (0 == write_bytes || EAGAIN != NErrno()) {
+      poller->Remove(conn);
+
+      Remove(conn->fd());
+    }
+  }
+
   return true;
 }

@@ -53,7 +53,7 @@ public:
   }
 public:
   void CloseAll(void);
-  bool Insert(int fd);
+  Connector* Insert(int fd);
   void Remove(int fd);
 public:
   virtual bool DispatchReader(Poller* poller, Connector* conn);
