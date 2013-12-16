@@ -36,6 +36,7 @@ class ConnectorDispatcher : public Dispatcher {
   uint32_t rbytes_;
   uint32_t wbytes_;
   SpinLock spinlock_;
+  EventHandler* handler_;
   std::map<int, Connector*> connectors_;
 
   ConnectorDispatcher(const ConnectorDispatcher&);
@@ -43,6 +44,11 @@ class ConnectorDispatcher : public Dispatcher {
 public:
   explicit ConnectorDispatcher(void);
   ~ConnectorDispatcher(void);
+
+  inline void Attach(EventHandler* handler) 
+  {
+    handler_ = handler;
+  }
 
   inline void SetBuffer(
       uint32_t rbytes = kDefaultBufferLen, 

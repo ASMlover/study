@@ -44,6 +44,7 @@ ConnectorDispatcher::ConnectorDispatcher(void)
   : rbytes_(kDefaultBufferLen)
   , wbytes_(kDefaultBufferLen)
   , spinlock_()
+  , handler_(NULL)
 {
 }
 
@@ -110,15 +111,18 @@ ConnectorDispatcher::Remove(int fd)
 bool 
 ConnectorDispatcher::DispatchReader(Poller* poller, Connector* conn)
 {
-  if (NULL == poller || NULL == conn)
+  if (NULL == handler_ || NULL == poller || NULL == conn)
     return false;
 
   int read_bytes = conn->DealWithAsyncRead();
   if (read_bytes > 0) {
+    handler_->ReadEvent(conn);
   }
   else {
     if (0 == read_bytes || EAGAIN != NErrno()) {
       poller->Remove(conn);
+
+      handler_->CloseEvent(conn);
 
       Remove(conn->fd());
     }
@@ -139,6 +143,8 @@ ConnectorDispatcher::DispatchWriter(Poller* poller, Connector* conn)
   else {
     if (0 == write_bytes || EAGAIN != NErrno()) {
       poller->Remove(conn);
+
+      handler_->CloseEvent(conn);
 
       Remove(conn->fd());
     }
