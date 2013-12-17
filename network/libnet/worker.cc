@@ -73,7 +73,7 @@ Worker::Start(void)
   } while (0);
 
   Stop();
-  return true;
+  return false;
 }
 
 void 
@@ -100,7 +100,11 @@ Worker::AddConnector(Connector* conn)
   if (NULL == poller_)
     return false;
 
-  return poller_->Insert(conn);
+  if (!poller_->Insert(conn))
+    return false;
+
+  poller_->AddEvent(conn, kEventTypeRead);
+  return true;
 }
 
 
