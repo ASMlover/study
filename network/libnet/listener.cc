@@ -27,7 +27,107 @@
 #include "libnet_internal.h"
 #include "tools.h"
 #include "thread.h"
+#include "address.h"
 #include "socket.h"
 #include "connector_dispatcher.h"
 #include "worker.h"
 #include "listener.h"
+
+
+
+Listener::Listener(void)
+  : running_(false)
+  , listener_(NULL)
+  , thread_(NULL)
+  , dispatcher_(NULL)
+{
+}
+
+Listener::~Listener(void)
+{
+  Stop();
+}
+
+bool 
+Listener::Start(const char* ip, uint16_t port)
+{
+  if (NULL == dispatcher_)
+    return false;
+
+  listener_ = new Socket();
+  if (NULL == listener_)
+    return false;
+
+  do {
+    if (!listener_->Open() 
+        || !listener_->SetNonBlock() 
+        || !listener_->Bind(ip, port) 
+        || !listener_->Listen())
+      break;
+
+    thread_ = new Thread();
+    if (NULL == thread_)
+      break;
+
+    running_ = true;
+    thread_->Start(&Listener::Routine, this);
+
+    return true;
+  } while (0);
+
+  Stop();
+  return false;
+}
+
+void 
+Listener::Stop(void)
+{
+  running_ = false;
+
+  if (NULL != thread_) {
+    thread_->Stop();
+
+    delete thread_;
+    thread_ = NULL;
+  }
+
+  if (NULL != listener_) {
+    listener_->Close();
+
+    delete listener_;
+    listener_ = NULL;
+  }
+}
+
+
+void 
+Listener::Routine(void* argument)
+{
+  Listener* self = static_cast<Listener*>(argument);
+  if (NULL == self || NULL == self->listener_ 
+      || NULL == self->dispatcher_)
+    return;
+
+
+  Socket s;
+  Address addr;
+  while (self->running_) {
+    if (!self->listener_->Accept(&s, &addr)) {
+      tools::Sleep(1);
+      continue;
+    }
+    else {
+      Connector* conn = self->dispatcher_->Insert(s.fd());
+      if (NULL != conn) {
+        //! TODO:
+        //! worker add connector
+      }
+      else {
+        s.Close();
+      }
+
+      s.Detach();
+      addr.Detach();
+    }
+  }
+}
