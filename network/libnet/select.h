@@ -27,10 +27,34 @@
 #ifndef __SELECT_HEADER_H__
 #define __SELECT_HEADER_H__
 
-#if defined(PLATFORM_WIN)
-# include "win_select.h"
-#elif defined(PLATFORM_POSIX)
-# include "posix_select.h"
-#endif
+#include <vector>
+
+struct win_fd_set;
+struct SelectEntry;
+class Select : public Poller {
+  uint32_t fd_storage_;
+  win_fd_set* rset_in_;
+  win_fd_set* wset_in_;
+  win_fd_set* rset_out_;
+  win_fd_set* wset_out_;
+  bool has_removed_;
+  std::vector<SelectEntry> entry_list_;
+
+  Select(const Select&);
+  Select& operator =(const Select&);
+public:
+  explicit Select(void);
+  ~Select(void);
+
+  virtual bool Insert(Connector* conn);
+  virtual void Remove(Connector* conn);
+  virtual bool AddEvent(Connector* conn, int ev);
+  virtual bool DelEvent(Connector* conn, int ev);
+  virtual bool Dispatch(Dispatcher* dispatcher, int millitm);
+private:
+  bool Init(void);
+  void Destroy(void);
+  bool Regrow(void);
+};
 
 #endif  //! __SELECT_HEADER_H__
