@@ -34,7 +34,6 @@
 #endif
 #include "tools.h"
 #include "thread.h"
-#include "connector_dispatcher.h"
 #include "worker.h"
 
 

@@ -28,14 +28,11 @@
 #define __WORKER_HEADER_H__
 
 class Thread;
-struct Poller;
-class Connector;
-class ConnectorDispatcher;
 class Worker {
   bool running_;
   Poller* poller_;
   Thread* thread_;
-  ConnectorDispatcher* dispatcher_;
+  Dispatcher* dispatcher_;
 
   Worker(const Worker&);
   Worker& operator =(const Worker&);
@@ -43,7 +40,7 @@ public:
   explicit Worker(void);
   ~Worker(void);
 
-  inline void Attach(ConnectorDispatcher* dispatcher)
+  inline void Attach(Dispatcher* dispatcher)
   {
     dispatcher_ = dispatcher;
   }
