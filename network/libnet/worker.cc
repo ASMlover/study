@@ -32,5 +32,91 @@
 # include "epoll.h"
   typedef Epoll   EventPoller;
 #endif
+#include "tools.h"
 #include "thread.h"
+#include "connector_dispatcher.h"
 #include "worker.h"
+
+
+
+Worker::Worker(void)
+  : running_(false)
+  , poller_(NULL)
+  , thread_(NULL)
+  , dispatcher_(NULL)
+{
+}
+
+Worker::~Worker(void)
+{
+  Stop();
+}
+
+bool 
+Worker::Start(void)
+{
+  if (NULL == dispatcher_)
+    return false;
+
+  poller_ = new EventPoller();
+  if (NULL == poller_)
+    return false;
+
+  do {
+    thread_ = new Thread();
+    if (NULL == thread_)
+      break;
+
+    running_ = true;
+    thread_->Start(&Worker::Routine, this);
+
+    return true;
+  } while (0);
+
+  Stop();
+  return true;
+}
+
+void 
+Worker::Stop(void)
+{
+  running_ = false;
+
+  if (NULL != thread_) {
+    thread_->Stop();
+
+    delete thread_;
+    thread_ = NULL;
+  }
+
+  if (NULL == poller_) {
+    delete poller_;
+    poller_ = NULL;
+  }
+}
+
+bool 
+Worker::AddConnector(Connector* conn)
+{
+  if (NULL == poller_)
+    return false;
+
+  return poller_->Insert(conn);
+}
+
+
+
+void 
+Worker::Routine(void* argument)
+{
+  Worker* self = static_cast<Worker*>(argument);
+  if (NULL == self || NULL == self->dispatcher_ || NULL == self->poller_)
+    return;
+
+  while (self->running_) {
+    if (!self->poller_->Dispatch(self->dispatcher_, 10)) {
+      tools::Sleep(1);
+      continue;
+    }
+  }
+}
