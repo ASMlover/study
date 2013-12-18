@@ -29,17 +29,16 @@
 
 class Worker;
 class Listener;
-struct Dispatcher;
-struct EventHandler;
+class ConnectorDispatcher;
 class Network {
   enum {
     kDefaultWorkerCount = 1, 
     kDefaultBufferSize  = 16 * 1024, 
   };
-  Dispatcher*   dispatcher_;
-  uint32_t      worker_count_;
-  Worker*       workers_;
-  Listener*     listener_;
+  ConnectorDispatcher* dispatcher_;
+  int worker_count_;
+  Worker* workers_;
+  Listener* listener_;
   EventHandler* handler_;
 
   Network(const Network&);
