@@ -39,6 +39,7 @@ Listener::Listener(void)
   : running_(false)
   , listener_(NULL)
   , thread_(NULL)
+  , network_(NULL)
   , dispatcher_(NULL)
 {
 }
@@ -51,7 +52,7 @@ Listener::~Listener(void)
 bool 
 Listener::Start(const char* ip, uint16_t port)
 {
-  if (NULL == dispatcher_)
+  if (NULL == dispatcher_ || NULL == network_)
     return false;
 
   listener_ = new Socket();
@@ -105,7 +106,7 @@ Listener::Routine(void* argument)
 {
   Listener* self = static_cast<Listener*>(argument);
   if (NULL == self || NULL == self->listener_ 
-      || NULL == self->dispatcher_)
+      || NULL == self->network_ || NULL == self->dispatcher_)
     return;
 
 
@@ -119,8 +120,8 @@ Listener::Routine(void* argument)
     else {
       Connector* conn = self->dispatcher_->Insert(s.fd());
       if (NULL != conn) {
-        //! TODO:
-        //! worker add connector
+        Worker* suitable_worker = self->network_->SuitableWorker();
+        suitable_worker->AddConnector(conn);
       }
       else {
         s.Close();

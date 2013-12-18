@@ -29,11 +29,13 @@
 
 class Socket;
 class Thread;
+class Network;
 class ConnectorDispatcher;
 class Listener {
   bool running_;
   Socket* listener_;
   Thread* thread_;
+  Network* network_;
   ConnectorDispatcher* dispatcher_;
 
   Listener(const Listener&);
@@ -41,6 +43,11 @@ class Listener {
 public:
   explicit Listener(void);
   ~Listener(void);
+
+  inline void Attach(Network* network) 
+  {
+    network_ = network;
+  }
 
   inline void Attach(ConnectorDispatcher* dispatcher)
   {
