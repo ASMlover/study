@@ -31,7 +31,8 @@ CC	= g++
 CFLAGS	= -g -O2 -Wall 
 LDFLAGS	= -lpthread -lrt
 OBJS	= main.o address.o tools.o logging.o io.o buffer.o socket.o\
-	epoll.o connector.o connector_dispatcher.o worker.o listener.o
+	epoll.o connector.o connector_dispatcher.o worker.o listener.o\
+	network.o
 
 
 
