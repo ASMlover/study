@@ -31,6 +31,7 @@
 #include "socket.h"
 #include "connector_dispatcher.h"
 #include "worker.h"
+#include "network.h"
 #include "listener.h"
 
 
@@ -123,7 +124,7 @@ Listener::Routine(void* argument)
         Worker* suitable_worker = self->network_->SuitableWorker();
         suitable_worker->AddConnector(conn);
 
-        self->dispatcher_->handler()->Accept(conn);
+        self->dispatcher_->handler()->AcceptEvent(conn);
       }
       else {
         s.Close();
