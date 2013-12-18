@@ -50,6 +50,11 @@ public:
     handler_ = handler;
   }
 
+  inline EventHandler* handler(void) const 
+  {
+    return handler_;
+  }
+
   inline void SetBuffer(
       uint32_t rbytes = kDefaultBufferLen, 
       uint32_t wbytes = kDefaultBufferLen)

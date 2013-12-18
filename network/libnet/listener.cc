@@ -122,6 +122,8 @@ Listener::Routine(void* argument)
       if (NULL != conn) {
         Worker* suitable_worker = self->network_->SuitableWorker();
         suitable_worker->AddConnector(conn);
+
+        self->dispatcher_->handler()->Accept(conn);
       }
       else {
         s.Close();
