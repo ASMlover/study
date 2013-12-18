@@ -39,6 +39,7 @@ class Network {
   int worker_count_;
   Worker* workers_;
   Listener* listener_;
+  int suitable_worker_;
   EventHandler* handler_;
 
   Network(const Network&);
@@ -57,6 +58,9 @@ public:
       uint32_t rbytes = kDefaultBufferSize, 
       uint32_t wbytes = kDefaultBufferSize);
   void Destroy(void);
+
+  Worker* SuitableWorker(void);
+  void MarkNextSuitableWorker(void);
 
   bool Listen(const char* ip = "0.0.0.0", uint16_t port = 5555);
 };

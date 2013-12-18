@@ -37,6 +37,7 @@ Network::Network(void)
   , worker_count_(kDefaultWorkerCount)
   , workers_(NULL)
   , listener_(NULL)
+  , suitable_worker_(0)
   , handler_(NULL)
 {
 }
@@ -105,6 +106,18 @@ Network::Destroy(void)
     dispatcher_ = NULL;
   }
 
+}
+
+Worker* 
+Network::SuitableWorker(void)
+{
+  return &workers_[suitable_worker_];
+}
+
+void 
+Network::MarkNextSuitableWorker(void)
+{
+  suitable_worker_ = (suitable_worker_ + 1) % worker_count_;
 }
 
 bool 
