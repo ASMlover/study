@@ -139,6 +139,8 @@ ConnectorDispatcher::DispatchWriter(Poller* poller, Connector* conn)
 
   int write_bytes = conn->DealWithAsyncWrite();
   if (write_bytes > 0) {
+    if (conn->WriteBufferEmpty())
+      poller->DelEvent(conn, kEventTypeWrite);
   }
   else {
     if (0 == write_bytes || EAGAIN != NErrno()) {
@@ -147,6 +149,9 @@ ConnectorDispatcher::DispatchWriter(Poller* poller, Connector* conn)
       handler_->CloseEvent(conn);
 
       Remove(conn->fd());
+    }
+    else {
+      poller->AddEvent(conn, kEventTypeWrite);
     }
   }
 
