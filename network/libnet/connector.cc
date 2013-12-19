@@ -63,6 +63,8 @@ Connector::Write(const char* buffer, uint32_t bytes)
     ret = wbuf_.Put(buffer, bytes);
   }
 
+  DealWithAsyncWrite();
+
   return ret;
 }
 

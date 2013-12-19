@@ -118,7 +118,7 @@ ClientMain(const char* ip = "127.0.0.1", uint16_t port = 5555)
 
     fprintf(stdout, "recv from server : %s\n", buf);
 
-    tools::Sleep(10);
+    tools::Sleep(0);
   }
 
   s.Close();
