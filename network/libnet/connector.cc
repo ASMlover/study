@@ -33,6 +33,7 @@
 Connector::Connector(void)
   : events_(0)
   , spinlock_()
+  , writable_(true)
 {
 }
 
@@ -63,7 +64,8 @@ Connector::Write(const char* buffer, uint32_t bytes)
     ret = wbuf_.Put(buffer, bytes);
   }
 
-  DealWithAsyncWrite();
+  if (writable_)
+    DealWithAsyncWrite();
 
   return ret;
 }
@@ -130,8 +132,12 @@ Connector::DealWithAsyncWrite(void)
   LockerGuard<SpinLock> guard(spinlock_);
   while (true) {
     uint32_t length = wbuf_.length();
-    if (length <= 0)
-      return kNetTypeError;
+    if (0 == length) {
+      if (write_bytes > 0)
+        break;
+      else 
+        return kNetTypeError;
+    }
 
     const char* buffer = wbuf_.buffer();
     ret = Send(buffer, length);
