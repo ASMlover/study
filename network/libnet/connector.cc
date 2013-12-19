@@ -83,6 +83,12 @@ Connector::WriteBufferEmpty(void)
   return ret;
 }
 
+void 
+Connector::SetWritable(bool writable)
+{
+  writable_ = writable;
+}
+
 int 
 Connector::DealWithAsyncRead(void)
 {

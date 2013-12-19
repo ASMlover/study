@@ -7,6 +7,7 @@
 class Connector : public Socket {
   uint32_t events_;
   SpinLock spinlock_;
+  bool writable_;
   Buffer rbuf_;
   Buffer wbuf_;
 
@@ -40,6 +41,7 @@ public:
   int Write(const char* buffer, uint32_t bytes);
 
   bool WriteBufferEmpty(void);
+  void SetWritable(bool writable = true);
 
   int DealWithAsyncRead(void);
   int DealWithAsyncWrite(void);
