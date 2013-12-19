@@ -129,6 +129,7 @@ Network::Listen(const char* ip, uint16_t port)
   listener_ = new Listener();
   if (NULL == listener_)
     return false;
+  listener_->Attach(this);
   listener_->Attach(dispatcher_);
 
   if (!listener_->Start(ip, port)) {

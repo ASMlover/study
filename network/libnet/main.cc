@@ -24,12 +24,126 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#include "libnet_internal.h"
+#include <sys/timeb.h>
 #include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include "tools.h"
+#include "socket.h"
+#include "connector.h"
+#include "network.h"
+
+class ConnectorHandler : public EventHandler {
+public:
+  virtual bool AcceptEvent(Connector* conn)
+  {
+    fprintf(stdout, "accepted connector [%d]\n", conn->fd());
+    return true;
+  }
+
+  virtual void CloseEvent(Connector* conn)
+  {
+    fprintf(stdout, "connector [%d] closed\n", conn->fd());
+  }
+
+  virtual bool ReadEvent(Connector* conn)
+  {
+    char buf[128] = {0};
+    if (kNetTypeError != conn->Read(sizeof(buf), buf)) {
+      fprintf(stdout, "recv from connector [%d] : %s\n", 
+          conn->fd(), buf);
+
+      conn->Write(buf, strlen(buf));
+    }
+
+    return true;
+  }
+};
+
+static void 
+ServerMain(const char* ip = "0.0.0.0", uint16_t port = 5555)
+{
+  ConnectorHandler ch;
+  Network network;
+
+  network.Attach(&ch);
+  network.Init();
+
+  if (network.Listen(ip, port)) {
+    fprintf(stdout, "starting server <%s, %d> success\n", ip, port);
+  }
+  else {
+    fprintf(stderr, "starting server <%s, %d> failed\n", ip, port);
+    return;
+  }
+
+  while (true)
+    tools::Sleep(100);
+
+  network.Destroy();
+}
+
+static void 
+ClientMain(const char* ip = "127.0.0.1", uint16_t port = 5555)
+{
+  Socket s;
+
+  s.Open();
+
+  if (!s.Connect(ip, port)) {
+    fprintf(stderr, "connect to server <%s, %d> failed\n", ip, port);
+    return;
+  }
+  else {
+    fprintf(stdout, "connect to server <%s, %d> success\n", ip, port);
+  }
+
+  char buf[128];
+  struct timeb tb;
+  struct tm* now;
+  while (true) {
+    ftime(&tb);
+    now = localtime(&tb.time);
+
+    sprintf(buf, "[%04d-%02d-%02d %02d:%02d:%02d:%03d]", 
+        now->tm_year + 1900, now->tm_mon + 1, now->tm_mday, 
+        now->tm_hour, now->tm_min, now->tm_sec, tb.millitm);
+    if (kNetTypeError == s.Send(buf, strlen(buf)))
+      break;
+
+    memset(buf, 0, sizeof(buf));
+    if (kNetTypeError == s.Recv(sizeof(buf), buf))
+      break;
+
+    fprintf(stdout, "recv from server : %s\n", buf);
+
+    tools::Sleep(10);
+  }
+
+  s.Close();
+}
 
 int 
 main(int argc, char* argv[])
 {
-  fprintf(stdout, "Hello, libnet!!!\n");
+#if defined(PLATFORM_WIN)
+  WSADATA wd;
+  WSAStartup(MAKEWORD(2, 2), &wd);
+#endif
 
+  if (argc < 2) {
+    fprintf(stderr, "usage: test [srv|clt]\n");
+    return 0;
+  }
+
+  if (0 == strcmp("srv", argv[1]))
+    ServerMain();
+  else if (0 == strcmp("clt", argv[1]))
+    ClientMain();
+
+#if defined(PLATFORM_WIN)
+  WSACleanup();
+#endif
   return 0;
 }
