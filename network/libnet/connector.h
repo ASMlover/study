@@ -39,6 +39,8 @@ public:
   int Read(uint32_t bytes, char* buffer);
   int Write(const char* buffer, uint32_t bytes);
 
+  bool WriteBufferEmpty(void);
+
   int DealWithAsyncRead(void);
   int DealWithAsyncWrite(void);
 };

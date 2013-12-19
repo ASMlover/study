@@ -68,6 +68,19 @@ Connector::Write(const char* buffer, uint32_t bytes)
   return ret;
 }
 
+bool 
+Connector::WriteBufferEmpty(void)
+{
+  bool ret;
+
+  {
+    LockerGuard<SpinLock> gaurd(spinlock_);
+    ret = (0 == wbuf_.length());
+  }
+
+  return ret;
+}
+
 int 
 Connector::DealWithAsyncRead(void)
 {
