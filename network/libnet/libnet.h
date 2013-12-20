@@ -63,4 +63,40 @@
 # include <stdint.h>
 #endif
 
+
+struct MsgHead {
+  uint16_t crc;
+  uint16_t len;
+};
+
+struct MsgPack {
+  enum {
+    kDefMessageSize = 32,
+    kMessageConnect = 0, 
+    kMessageDisconnect, 
+    kMessageData, 
+  };
+  uint16_t type;
+  uint16_t size;
+  union {
+    char* ptr;
+    char  buf[kDefMessageSize];
+  } _;
+public:
+  explicit MsgPack(void);
+  ~MsgPack(void);
+  
+  inline const char* data(void) const 
+  {
+    if (size > kDefMessageSize)
+      return _.ptr;
+    else 
+      return _.buf;
+  }
+public:
+  void SetMessage(const char* buffer, uint16_t bytes);
+  void FreeMessage(void);
+};
+
+
 #endif  //! __LIBRARY_NETWORK_HEADER_H__
