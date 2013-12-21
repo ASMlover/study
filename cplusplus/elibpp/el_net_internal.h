@@ -33,6 +33,7 @@
 # ifndef _WINDOWS_
 #   include <winsock2.h>
 # endif
+  typedef int socklen_t;
 # define EAGAIN     WSAEWOULDBLOCK
 # define NERROR()   WSAGetLastError()
 #elif defined(USING_EPOLL)
