@@ -35,7 +35,7 @@ namespace el {
 class Address {
   enum { kDefAddressLength = 16 };
   char ip_[kDefAddressLength];
-  unsigned short port_;
+  uint16_t port_;
 
   Address(const Address&);
   Address& operator =(const Address&);
@@ -48,7 +48,7 @@ public:
     return ip_;
   }
 
-  inline unsigned short port(void) const 
+  inline uint16_t port(void) const 
   {
     return port_;
   }

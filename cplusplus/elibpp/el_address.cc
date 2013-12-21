@@ -24,15 +24,7 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#if defined(_WINDOWS_) || defined(_MSC_VER)
-# ifndef _WINDOWS_
-#   include <winsock2.h>
-# endif
-#elif defined(__linux__)
-# include <sys/types.h>
-# include <sys/socket.h>
-# include <arpa/inet.h>
-#endif
+#include "el_net_internal.h"
 #include <string.h>
 #include "el_address.h"
 
