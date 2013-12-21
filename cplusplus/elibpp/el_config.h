@@ -29,6 +29,18 @@
 #define __EL_CONFIG_HEADER_H__
 
 #if defined(_WINDOWS_) || defined(_MSC_VER)
+# ifndef PLATFORM_WIN
+#   define PLATFORM_WIN
+# endif
+#elif defined(__linux__)
+# ifndef PLATFORM_LINUX
+#   define PLATFORM_LINUX
+# endif
+#else
+# error "nonsupport this platform"
+#endif
+
+#if defined(PLATFORM_WIN)
 # if (_MSC_VER < 1600)
 #   if (_MSC_VER < 1300)
       typedef signed char       int8_t;
@@ -67,8 +79,15 @@
 # else
 #   include <stdint.h>
 # endif
-#elif defined(__linux__)
+#elif defined(PLATFORM_LINUX)
 # include <stdint.h>
+#endif
+
+
+#if defined(PLATFORM_WIN)
+# define USING_SELECT
+#elif defined(PLATFORM_LINUX)
+# define USING_EPOLL
 #endif
 
 #endif  //! __EL_CONFIG_HEADER_H__
