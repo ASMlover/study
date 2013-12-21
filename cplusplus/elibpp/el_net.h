@@ -36,9 +36,9 @@ enum NetType {
 };
 
 enum EventType {
-  kEventTypeUnknown = 0, 
-  kEventTypeRead    = 1, 
-  kEventTypeWrite   = 2,
+  kEventTypeUnknown = 0x00, 
+  kEventTypeRead    = 0x01, 
+  kEventTypeWrite   = 0x02,
 };
 
 
@@ -55,6 +55,15 @@ public:
 
   bool Init(void);
   void Destroy(void);
+};
+
+
+class Connector;
+struct EventHandler {
+  virtual ~EventHandler(void) {}
+  virtual bool AcceptEvent(Connector* conn) {return true;}
+  virtual void CloseEvent(Connector* conn) {}
+  virtual bool ReadEvent(Connector* conn) {return true;}
 };
 
 }
