@@ -27,14 +27,16 @@
 #ifndef __EL_TEST_HEADER_H__
 #define __EL_TEST_HEADER_H__
 
-#if defined(_WINDOWS_) || defined(_MSC_VER)
+#include "../el_config.h"
+
+#if defined(PLATFORM_WIN)
 # include <windows.h>
 
 # define inline       __inline
 # define __func__     __FUNCTION__
 # define el_sleep(x)  Sleep((x))
 # define SelfThreadId GetCurrentThreadId
-#elif defined(__linux__)
+#elif defined(PLATFORM_LINUX)
 # include <unistd.h>
 # include <pthread.h>
 

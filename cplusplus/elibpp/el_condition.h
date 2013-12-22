@@ -27,7 +27,7 @@
 #ifndef __EL_CONDITION_HEADER_H__
 #define __EL_CONDITION_HEADER_H__
 
-#if defined(_WINDOWS_) || defined(_MSC_VER)
+#if defined(PLATFORM_WIN)
 # include <windows.h>
 
   typedef struct {
@@ -36,7 +36,7 @@
     HANDLE signal_event;
     HANDLE broadcast_event;
   } CondVar;
-#elif defined(__linux__)
+#elif defined(PLATFORM_LINUX)
 # include <pthread.h>
 
   typedef pthread_cond_t CondVar;
