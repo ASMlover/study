@@ -24,60 +24,25 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_NET_INTERNAL_HEADER_H__
-#define __EL_NET_INTERNAL_HEADER_H__
-
-#include "el_config.h"
-
-#if defined(USING_SELECT)
-# ifndef _WINDOWS_
-#   include <winsock2.h>
-# endif
-  typedef int socklen_t;
-# define EAGAIN     WSAEWOULDBLOCK
-# define NERROR()   WSAGetLastError()
-#elif defined(USING_EPOLL)
-# include <sys/types.h>
-# include <sys/socket.h>
-# include <sys/epoll.h>
-# include <arpa/inet.h>
-# include <netinet/in.h>
-# include <netinet/tcp.h>
-# include <unistd.h>
-# include <fcntl.h>
-# include <errno.h>
-# define NERROR()   errno
-#endif 
-#include <stdlib.h>
-#include <vector>
-#include <map>
-
-#include "el_net.h"
+#include "el_net_internal.h"
 #include "el_net_buffer.h"
-#include "el_locker.h"
-#include "el_spinlock.h"
+#include "el_socket.h"
+#include "el_connector.h"
+
+
+
 
 namespace el {
 
 
-struct Poller;
-struct Dispatcher {
-  virtual ~Dispatcher(void) {}
-  virtual bool DispatchReader(Poller* poller, Connector* conn) = 0;
-  virtual bool DispatchWriter(Poller* poller, Connector* conn) = 0;
-};
+Connector::Connector(void)
+{
+}
 
+Connector::~Connector(void)
+{
+}
 
-struct Poller {
-  virtual ~Poller(void) {}
-  virtual bool Insert(Connector* conn) = 0;
-  virtual void Remove(Connector* conn) = 0;
-  virtual bool AddEvent(Connector* conn, int ev) = 0;
-  virtual bool DelEvent(Connector* conn, int ev) = 0;
-  virtual bool Dispatch(Dispatcher* dispatcher, uint32_t millitm) = 0;
-};
 
 
 }
-
-#endif  //! __EL_NET_INTERNAL_HEADER_H__
