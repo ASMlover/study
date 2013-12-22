@@ -62,6 +62,15 @@ public:
   {
     events_ = events;
   }
+public:
+  int Read(uint32_t bytes, char* buffer);
+  int Write(const char* buffer, uint32_t bytes);
+
+  bool WriteBufferEmpty(void);
+  void SetWritable(bool writable = true);
+
+  int DealWithAsyncRead(void);
+  int DealWithAsyncWrite(void);
 };
 
 
