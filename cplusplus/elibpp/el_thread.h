@@ -27,9 +27,9 @@
 #ifndef __EL_THREAD_HEADER_H__
 #define __EL_THREAD_HEADER_H__
 
-#if defined(_WINDOWS_) || defined(_MSC_VER)
+#if defined(PLATFORM_WIN)
 # include "./win/el_win_thread.h"
-#elif defined(__linux__)
+#elif defined(PLATFORM_LINUX)
 # include "./posix/el_posix_thread.h"
 #endif
 
