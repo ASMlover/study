@@ -39,6 +39,7 @@
 #elif defined(USING_EPOLL)
 # include <sys/types.h>
 # include <sys/socket.h>
+# include <sys/epoll.h>
 # include <arpa/inet.h>
 # include <netinet/in.h>
 # include <netinet/tcp.h>
@@ -47,6 +48,8 @@
 # include <errno.h>
 # define NERROR()   errno
 #endif 
+#include <vector>
+#include <map>
 
 #include "el_net.h"
 
