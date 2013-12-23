@@ -48,14 +48,15 @@
 # include <errno.h>
 # define NERROR()   errno
 #endif 
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <vector>
 #include <map>
 
+#include "elib_internal.h"
 #include "el_net.h"
 #include "el_net_buffer.h"
-#include "el_locker.h"
-#include "el_spinlock.h"
 
 namespace el {
 

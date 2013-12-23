@@ -26,6 +26,7 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 #include <time.h>
 #include "el_test_header.h"
+#include "../elib_internal.h"
 #include "../el_allocator.h"
 
 

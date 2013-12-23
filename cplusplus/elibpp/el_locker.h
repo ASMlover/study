@@ -27,14 +27,14 @@
 #ifndef __EL_LOCKER_HEADER_H__
 #define __EL_LOCKER_HEADER_H__
 
+#include "el_mutex.h"
+#include "el_spinlock.h"
+
 namespace el {
 
 template <typename Locker>
-class LockerGuard {
+class LockerGuard : private NonCopyable {
   Locker& locker_;
-
-  LockerGuard(const LockerGuard&);
-  LockerGuard& operator =(const LockerGuard&);
 public:
   explicit LockerGuard(Locker& locker)
     : locker_(locker)

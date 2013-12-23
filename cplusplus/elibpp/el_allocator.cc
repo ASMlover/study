@@ -24,11 +24,7 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
-#include "el_config.h"
-#include "el_spinlock.h"
+#include "elib_internal.h"
 #include "el_allocator.h"
 
 

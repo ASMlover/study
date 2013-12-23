@@ -31,7 +31,7 @@ namespace el {
 
 struct Memory;
 class SpinLock;
-class Allocator {
+class Allocator : private NonCopyable {
   enum {
     ALIGN       = 8, 
     MAX_BYTES   = 1024, 

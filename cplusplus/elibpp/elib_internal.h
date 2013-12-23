@@ -36,6 +36,7 @@
 # include <unistd.h>
 # include <pthread.h>
 #endif
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,6 +44,7 @@
 #include "el_noncopyable.h"
 #include "el_locker.h"
 #include "el_singleton.h"
+#include "elib_internal.h"
 #include "el_condition.h"
 #include "el_thread.h"
 
