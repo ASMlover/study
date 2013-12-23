@@ -24,9 +24,8 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include "../el_config.h"
+#include "../elib_internal.h"
 #include "el_posix_tools.h"
-#include "../el_mutex.h"
 #include "../el_condition.h"
 
 
