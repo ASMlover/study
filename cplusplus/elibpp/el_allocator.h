@@ -31,7 +31,8 @@ namespace el {
 
 struct Memory;
 class SpinLock;
-class Allocator : private NonCopyable {
+class Allocator 
+  : public Singleton<Allocator>, private NonCopyable {
   enum {
     ALIGN       = 8, 
     MAX_BYTES   = 1024, 
@@ -61,14 +62,12 @@ public:
   explicit Allocator(void);
   ~Allocator(void);
 
-  static Allocator& Singleton(void);
-
   void* Malloc(size_t bytes);
   void Free(void* ptr);
 };
 
-#define NEW(s)  Allocator::Singleton().Malloc((s))
-#define DEL(p)  Allocator::Singleton().Free((p))
+#define NEW(s)  Allocator::Instance().Malloc((s))
+#define DEL(p)  Allocator::Instance().Free((p))
 
 
 

@@ -31,8 +31,18 @@ namespace el {
 
 
 template <typename Object, typename Locker = SpinLock> 
-class Singleton : private NonCopyable {
+class Singleton {
+  Singleton(const Singleton&);
+  Singleton& operator =(const Singleton&);
 public:
+  explicit Singleton(void)
+  {
+  }
+
+  virtual ~Singleton(void)
+  {
+  }
+
   static Object& Instance(void) 
   {
     static Object* _s_instance = NULL;

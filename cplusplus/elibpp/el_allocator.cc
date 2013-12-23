@@ -105,14 +105,6 @@ Allocator::~Allocator(void)
   delete spinlock_;
 }
 
-Allocator& 
-Allocator::Singleton(void)
-{
-  static Allocator _s_allocator;
-
-  return _s_allocator;
-}
-
 void* 
 Allocator::Malloc(size_t bytes)
 {
