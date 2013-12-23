@@ -34,6 +34,7 @@
 # include <process.h>
 #elif defined(PLATFORM_LINUX)
 # include <unistd.h>
+# include <fcntl.h>
 # include <pthread.h>
 #endif
 #include <assert.h>

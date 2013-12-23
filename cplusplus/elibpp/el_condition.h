@@ -42,12 +42,9 @@
 namespace el {
 
 class Mutex;
-class Condition {
+class Condition : private NonCopyable {
   Mutex& mutex_;
   CondVar cond_;
-
-  Condition(const Condition&);
-  Condition& operator =(const Condition&);
 public:
   explicit Condition(Mutex& mutex);
   ~Condition(void);

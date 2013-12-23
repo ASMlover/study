@@ -27,13 +27,9 @@
 #ifndef __EL_FILE_HEADER_H__
 #define __EL_FILE_HEADER_H__
 
-#if defined(PLATFORM_WIN)
-# include <windows.h>
-#endif 
-
 namespace el {
 
-class File {
+class File : private NonCopyable {
   enum { kDefBufferSize = 16 * 1024 };
 #if defined(PLATFORM_WIN)
   HANDLE fd_;
@@ -44,9 +40,6 @@ class File {
   bool    allocated_;
   size_t  buf_size_;
   size_t  data_size_;
-
-  File(const File&);
-  File& operator =(const File&);
 public:
   explicit File(void);
   ~File(void);
