@@ -29,7 +29,7 @@
 
 namespace el {
 
-class CircularBuffer {
+class CircularBuffer : private NonCopyable {
   enum { kDefBufferLength = 1024 * 1024 };
   char* buffer_;
   int length_;
@@ -37,9 +37,6 @@ class CircularBuffer {
   int wpos_;
   int data_length_;
   int free_length_;
-
-  CircularBuffer(const CircularBuffer&);
-  CircularBuffer& operator =(const CircularBuffer&);
 public:
   explicit CircularBuffer(void);
   ~CircularBuffer(void);
