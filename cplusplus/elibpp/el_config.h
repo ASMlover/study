@@ -28,16 +28,16 @@
 #ifndef __EL_CONFIG_HEADER_H__
 #define __EL_CONFIG_HEADER_H__
 
-#if defined(_WINDOWS_) || defined(_MSC_VER)
-# ifndef PLATFORM_WIN
+#if !defined(PLATFORM_WIN) && !defined(PLATFORM_LINUX)
+# if defined(_WINDOWS_) || defined(_MSC_VER) || defined(__MINGW32__)
 #   define PLATFORM_WIN
-# endif
-#elif defined(__linux__)
-# ifndef PLATFORM_LINUX
+# elif defined(WIN32_LEAN_AND_MEAN)
+#   define PLATFORM_WIN
+# elif defined(__linux__) || defined(__GNUC__)
 #   define PLATFORM_LINUX
+# else
+#  error "nonsupport this platform"
 # endif
-#else
-# error "nonsupport this platform"
 #endif
 
 #if defined(PLATFORM_WIN)
@@ -79,7 +79,7 @@
 # else
 #   include <stdint.h>
 # endif
-#elif defined(PLATFORM_LINUX)
+#else
 # include <stdint.h>
 #endif
 
