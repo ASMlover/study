@@ -27,17 +27,11 @@
 #ifndef __EL_POSIX_MUTEX_HEADER_H__
 #define __EL_POSIX_MUTEX_HEADER_H__
 
-#include <pthread.h>
-#include "el_posix_tools.h"
-
 
 namespace el {
 
-class Mutex {
+class Mutex : private NonCopyable {
   pthread_mutex_t mutex_;
-
-  Mutex(const Mutex&);
-  Mutex& operator =(const Mutex&);
 public:
   explicit Mutex(void)
   {
@@ -49,17 +43,17 @@ public:
     PthreadCall("Mutex destroy", pthread_mutex_destroy(&mutex_));
   }
 
-  void Lock(void)
+  inline void Lock(void)
   {
     PthreadCall("Mutex lock", pthread_mutex_lock(&mutex_));
   }
 
-  void Unlock(void)
+  inline void Unlock(void)
   {
     PthreadCall("Mutex unlock", pthread_mutex_unlock(&mutex_));
   }
 
-  pthread_mutex_t* mutex(void)
+  inline pthread_mutex_t* mutex(void)
   {
     return &mutex_;
   }

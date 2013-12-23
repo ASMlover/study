@@ -27,23 +27,18 @@
 #ifndef __EL_WIN_THREAD_HEADER_H__
 #define __EL_WIN_THREAD_HEADER_H__
 
-#include <windows.h>
 #ifndef _MT
 # error "requires /MTd, /MT, /MDd or /MD compiler options"
 #endif
-#include <process.h>
 
 
 namespace el {
 
-class Thread {
+class Thread : private NonCopyable {
   HANDLE start_event_;
   HANDLE thread_;
   void (*routine_)(void*);
   void* argument_;
-
-  Thread(const Thread&);
-  Thread& operator =(const Thread&);
 public:
   explicit Thread(void (*routine)(void*) = NULL, void* argument = NULL)
     : start_event_(NULL)

@@ -31,21 +31,39 @@
 
 #if defined(PLATFORM_WIN)
 # include <windows.h>
+# include <mmsystem.h>
 # include <process.h>
+# include <io.h>
+# include <direct.h>
 #elif defined(PLATFORM_LINUX)
+# include <sys/time.h>
+# include <sys/types.h>
+# include <sys/stat.h>
 # include <unistd.h>
 # include <fcntl.h>
 # include <pthread.h>
+# include <limits.h>
+
+# define MAX_PATH PATH_MAX
 #endif
+#include <sys/timeb.h>
 #include <assert.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <vector>
+#include <queue>
+
+#if defined(PLATFORM_LINUX)
+# include "./posix/el_posix_tools.h"
+#endif
 
 #include "el_noncopyable.h"
 #include "el_locker.h"
 #include "el_singleton.h"
-#include "elib_internal.h"
+#include "el_allocator.h"
 #include "el_condition.h"
 #include "el_thread.h"
 

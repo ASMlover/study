@@ -27,15 +27,11 @@
 #ifndef __EL_WIN_SPINLOCK_HEADER_H__
 #define __EL_WIN_SPINLOCK_HEADER_H__
 
-#include <windows.h>
 
 namespace el {
 
-class SpinLock {
+class SpinLock : private NonCopyable {
   CRITICAL_SECTION spinlock_;
-
-  SpinLock(const SpinLock&);
-  SpinLock& operator =(const SpinLock&);
 public:
   explicit SpinLock(void)
   {
@@ -47,7 +43,7 @@ public:
     DeleteCriticalSection(&spinlock_);
   }
 
-  void Lock(void)
+  inline void Lock(void)
   {
     if ((DWORD)spinlock_.OwningThread == GetCurrentThreadId())
       return;
@@ -55,7 +51,7 @@ public:
     EnterCriticalSection(&spinlock_);
   }
 
-  void Unlock(void)
+  inline void Unlock(void)
   {
     LeaveCriticalSection(&spinlock_);
   }

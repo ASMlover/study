@@ -35,11 +35,8 @@
 
 namespace el {
 
-class MutexGuard {
+class MutexGuard : private NonCopyable {
   Mutex& mutex_;
-
-  MutexGuard(const MutexGuard&);
-  MutexGuard& operator =(const MutexGuard&);
 public:
   explicit MutexGuard(Mutex& mutex)
     : mutex_(mutex)

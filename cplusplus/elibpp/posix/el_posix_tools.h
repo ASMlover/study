@@ -27,10 +27,9 @@
 #ifndef __EL_TOOLS_HEADER_H__
 #define __EL_TOOLS_HEADER_H__
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-  
+
+namespace el {
+
 
 inline void 
 PthreadCall(const char* label, int result)
@@ -39,6 +38,9 @@ PthreadCall(const char* label, int result)
     fprintf(stderr, "%s : %s\n", label, strerror(result));
     abort();
   }
+}
+
+
 }
 
 #endif  //! __EL_TOOLS_HEADER_H__

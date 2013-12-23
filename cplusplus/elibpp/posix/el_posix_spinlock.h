@@ -27,17 +27,11 @@
 #ifndef __EL_POSIX_SPINLOCK_HEADER_H__
 #define __EL_POSIX_SPINLOCK_HEADER_H__
 
-#include <pthread.h>
-#include "el_posix_tools.h"
-
 
 namespace el {
 
-class SpinLock {
+class SpinLock : private NonCopyable {
   pthread_spinlock_t spinlock_;
-
-  SpinLock(const SpinLock&);
-  SpinLock& operator =(const SpinLock&);
 public:
   explicit SpinLock(void)
   {
@@ -49,12 +43,12 @@ public:
     PthreadCall("SpinLock destroy", pthread_spin_destroy(&spinlock_));
   }
 
-  void Lock(void)
+  inline void Lock(void)
   {
     PthreadCall("SpinLock lock", pthread_spin_lock(&spinlock_));
   }
 
-  void Unlock(void)
+  inline void Unlock(void)
   {
     PthreadCall("SpinLock unlock", pthread_spin_unlock(&spinlock_));
   }

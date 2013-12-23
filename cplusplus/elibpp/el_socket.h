@@ -27,18 +27,13 @@
 #ifndef __EL_SOCKET_HEADER_H__
 #define __EL_SOCKET_HEADER_H__
 
-#include "el_allocator.h"
-
 
 namespace el {
 
 
 class Address;
-class Socket : public SmallAllocator {
+class Socket : public SmallAllocator, private NonCopyable {
   int fd_;
-
-  Socket(const Socket&);
-  Socket& operator =(const Socket&);
 public:
   explicit Socket(void);
   ~Socket(void);

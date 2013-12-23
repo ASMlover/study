@@ -31,13 +31,10 @@
 namespace el {
 
 
-class NetBuffer {
+class NetBuffer : private NonCopyable {
   char* buffer_;
   int   length_;
   int   storage_;
-
-  NetBuffer(const NetBuffer&);
-  NetBuffer& operator =(const NetBuffer&);
 public:
   enum { kDefaultStorage = 16 * 1024 };
   explicit NetBuffer(void);

@@ -27,15 +27,11 @@
 #ifndef __EL_WIN_MUTEX_HEADER_H__
 #define __EL_WIN_MUTEX_HEADER_H__
 
-#include <windows.h>
 
 namespace el {
 
-class Mutex {
+class Mutex : private NonCopyable {
   CRITICAL_SECTION mutex_;
-
-  Mutex(const Mutex&);
-  Mutex& operator =(const Mutex&);
 public:
   explicit Mutex(void)
   {
@@ -47,7 +43,7 @@ public:
     DeleteCriticalSection(&mutex_);
   }
 
-  void Lock(void)
+  inline void Lock(void)
   {
     if ((DWORD)mutex_.OwningThread == GetCurrentThreadId())
       return;
@@ -55,12 +51,12 @@ public:
     EnterCriticalSection(&mutex_);
   }
 
-  void Unlock(void)
+  inline void Unlock(void)
   {
     LeaveCriticalSection(&mutex_);
   }
 
-  CRITICAL_SECTION* mutex(void)
+  inline CRITICAL_SECTION* mutex(void)
   {
     return &mutex_;
   }

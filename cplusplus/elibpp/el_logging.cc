@@ -24,20 +24,7 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#if defined(_WINDOWS_) || defined(_MSC_VER)
-# include <windows.h>
-# include <io.h>
-# include <direct.h>
-#elif defined(__linux__)
-# include <unistd.h>
-# include <sys/stat.h>
-# include <sys/types.h>
-# include <limits.h>
-
-# define MAX_PATH PATH_MAX
-#endif
-#include <string.h>
-#include <stdarg.h>
+#include "elib_internal.h"
 #include "el_time.h"
 #include "el_logging.h"
 
@@ -50,9 +37,9 @@ static inline int
 logging_mkdir(const char* path)
 {
   int ret = -1;
-#if defined(_WINDOWS_) || defined(_MSC_VER)
+#if defined(PLATFORM_WIN)
   ret = mkdir(path);
-#elif defined(__linux__)
+#elif defined(PLATFORM_LINUX)
   int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
   ret = mkdir(path, mode);
 #endif 
@@ -93,13 +80,6 @@ Logging::~Logging(void)
     if (NULL != file_list_[i].stream)
       fclose(file_list_[i].stream);
   }
-}
-
-Logging& 
-Logging::Singleton(void)
-{
-  static Logging _s_logging;
-  return _s_logging;
 }
 
 const char* 

@@ -27,8 +27,7 @@
 #ifndef __EL_TEST_HEADER_H__
 #define __EL_TEST_HEADER_H__
 
-#include "../el_config.h"
-#include "../el_noncopyable.h"
+#include "../elib_internal.h"
 
 #if defined(PLATFORM_WIN)
 # include <windows.h>

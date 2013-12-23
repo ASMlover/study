@@ -27,8 +27,6 @@
 #ifndef __EL_TIME_HEADER_H__
 #define __EL_TIME_HEADER_H__
 
-#include "el_config.h"
-
 namespace el {
 
 struct Time {
@@ -49,7 +47,6 @@ extern void Sleep(uint32_t millitm);
 
 }
 
-#include <time.h>
 #define StdClock  clock
 
 

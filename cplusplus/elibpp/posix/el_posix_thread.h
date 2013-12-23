@@ -24,19 +24,13 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include <pthread.h>
-#include "el_posix_tools.h"
-
 
 namespace el {
 
-class Thread {
+class Thread : private NonCopyable {
   pthread_t thread_id_;
   void (*routine_)(void*);
   void* argument_;
-
-  Thread(const Thread&);
-  Thread& operator =(const Thread&);
 public:
   explicit Thread(void (*routine)(void*) = NULL, void* argument = NULL)
     : thread_id_(0)

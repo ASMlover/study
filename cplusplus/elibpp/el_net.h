@@ -42,16 +42,11 @@ enum EventType {
 };
 
 
-class NetLibrary {
+class NetLibrary : public Singleton<NetLibrary>, private NonCopyable {
   static bool loaded_;
-
-  NetLibrary(const NetLibrary&);
-  NetLibrary& operator =(const NetLibrary&);
 public:
   explicit NetLibrary(void);
   ~NetLibrary(void);
-
-  static NetLibrary& Singleton(void);
 
   bool Init(void);
   void Destroy(void);

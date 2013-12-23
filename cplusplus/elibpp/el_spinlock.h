@@ -36,11 +36,8 @@
 
 namespace el {
 
-class SpinLockGuard {
+class SpinLockGuard : private NonCopyable {
   SpinLock& spinlock_;
-
-  SpinLockGuard(const SpinLockGuard&);
-  SpinLockGuard& operator =(const SpinLockGuard&);
 public:
   explicit SpinLockGuard(SpinLock& spinlock)
     : spinlock_(spinlock)

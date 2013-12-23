@@ -28,12 +28,11 @@
 #define __EL_LOGGING_HEADER_H__
 
 
-#if defined(_MSC_VER) && (_MSC_VER < 1400)
-# error "Your compiler version is too low"
+#if defined(PLATFORM_WIN)
+# if defined(_MSC_VER) && (_MSC_VER < 1400)
+#   error "Your compiler version is too low"
+# endif
 #endif
-
-#include <stdio.h>
-#include "el_config.h"
 
 
 namespace el {
@@ -47,11 +46,8 @@ struct LogFile {
 
 
 struct Time;
-class Logging {
+class Logging : public Singleton<Logging>, private NonCopyable {
   enum {kDefBufferSize = 16 * 1024};
-
-  Logging(const Logging&);
-  Logging& operator =(const Logging&);
 public:
   enum SeverityType {
     kSeverityTypeDebug = 0, 
@@ -71,8 +67,6 @@ public:
   explicit Logging(void);
   ~Logging(void);
 
-  static Logging& Singleton(void);
-
   void Write(int severity, const char* format, ...);
   void WriteX(int severity, 
       const char* file, int line, const char* format, ...);
@@ -81,35 +75,35 @@ public:
 }
 
 #define LOG_DEBUG(fmt, ...)\
-  el::Logging::Singleton().Write(el::Logging::kSeverityTypeDebug, \
+  el::Logging::Instance().Write(el::Logging::kSeverityTypeDebug, \
       (fmt), ##__VA_ARGS__)
 #define LOG_MSG(fmt, ...)\
-  el::Logging::Singleton().Write(el::Logging::kSeverityTypeMessage, \
+  el::Logging::Instance().Write(el::Logging::kSeverityTypeMessage, \
       (fmt), ##__VA_ARGS__)
 #define LOG_WARN(fmt, ...)\
-  el::Logging::Singleton().Write(el::Logging::kSeverityTypeWarning, \
+  el::Logging::Instance().Write(el::Logging::kSeverityTypeWarning, \
       (fmt), ##__VA_ARGS__)
 #define LOG_ERR(fmt, ...)\
-  el::Logging::Singleton().Write(el::Logging::kSeverityTypeError, \
+  el::Logging::Instance().Write(el::Logging::kSeverityTypeError, \
       (fmt), ##__VA_ARGS__)
 #define LOG_FAIL(fmt, ...)\
-  el::Logging::Singleton().Write(el::Logging::kSeverityTypeFail, \
+  el::Logging::Instance().Write(el::Logging::kSeverityTypeFail, \
       (fmt), ##__VA_ARGS__)
 
 #define LOG_DEBUGX(fmt, ...)\
-  el::Logging::Singleton().WriteX(el::Logging::kSeverityTypeDebug, \
+  el::Logging::Instance().WriteX(el::Logging::kSeverityTypeDebug, \
       __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
 #define LOG_MSGX(fmt, ...)\
-  el::Logging::Singleton().WriteX(el::Logging::kSeverityTypeMessage, \
+  el::Logging::Instance().WriteX(el::Logging::kSeverityTypeMessage, \
       __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
 #define LOG_WARNX(fmt, ...)\
-  el::Logging::Singleton().WriteX(el::Logging::kSeverityTypeWarning, \
+  el::Logging::Instance().WriteX(el::Logging::kSeverityTypeWarning, \
       __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
 #define LOG_ERRX(fmt, ...)\
-  el::Logging::Singleton().WriteX(el::Logging::kSeverityTypeError, \
+  el::Logging::Instance().WriteX(el::Logging::kSeverityTypeError, \
       __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
 #define LOG_FAILX(fmt, ...)\
-  el::Logging::Singleton().WriteX(el::Logging::kSeverityTypeFail, \
+  el::Logging::Instance().WriteX(el::Logging::kSeverityTypeFail, \
       __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
 
 

@@ -24,6 +24,7 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
+#include "elib_internal.h"
 #include "el_net.h"
 
 
@@ -40,11 +41,5 @@ NetLibrary::~NetLibrary(void)
 {
 }
 
-NetLibrary& 
-NetLibrary::Singleton(void)
-{
-  static NetLibrary _s_net_lib;
-  return _s_net_lib;
-}
 
 }

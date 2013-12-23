@@ -27,11 +27,6 @@
 #ifndef __EL_THREAD_POOL_HEADER_H__
 #define __EL_THREAD_POOL_HEADER_H__
 
-#include <vector>
-#include <queue>
-#include "el_mutex.h"
-#include "el_condition.h"
-
 namespace el {
 
 struct Task {
@@ -46,7 +41,7 @@ struct Task {
 };
 
 class Thread;
-class ThreadPool {
+class ThreadPool : private NonCopyable {
   enum {
     kDefMinThreadsCount = 8, 
     kDefMaxThreadsCount = 256, 
@@ -58,9 +53,6 @@ class ThreadPool {
 
   std::vector<Thread*> threads_;
   std::queue<Task> tasks_;
-
-  ThreadPool(const ThreadPool&);
-  ThreadPool& operator =(const ThreadPool&);
 public:
   explicit ThreadPool(void);
   ~ThreadPool(void);
