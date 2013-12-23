@@ -30,24 +30,14 @@
 #include "../elib_internal.h"
 
 #if defined(PLATFORM_WIN)
-# include <windows.h>
-
 # define inline       __inline
 # define __func__     __FUNCTION__
 # define el_sleep(x)  Sleep((x))
 # define SelfThreadId GetCurrentThreadId
 #elif defined(PLATFORM_LINUX)
-# include <unistd.h>
-# include <pthread.h>
-
 # define el_sleep(x)  usleep((x) * 1000)
 # define SelfThreadId pthread_self
 #endif
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <vector>
-#include "../el_io.h"
 
 
 struct UnitCase {
@@ -61,26 +51,22 @@ struct UnitCase {
   }
 };
 
-class UnitFramework {
+class UnitFramework 
+: public el::Singleton<UnitFramework>, private el::NonCopyable {
   std::vector<UnitCase> unit_list_;
-
-  UnitFramework(const UnitFramework&);
-  UnitFramework& operator =(const UnitFramework&);
 public:
   explicit UnitFramework(void);
   ~UnitFramework(void);
-
-  static UnitFramework& Sigleton(void);
 
   int Run(void);
   bool RegisterUnit(const char* name, void (*unit)(void));
 };
 
-#define UNIT_RUN_ALL()    UnitFramework::Sigleton().Run()
+#define UNIT_RUN_ALL()    UnitFramework::Instance().Run()
 #define UNIT_IMPL(name)\
 static void el_Unit##name(void);\
 static bool _s_##name = \
-  UnitFramework::Sigleton().RegisterUnit(#name, el_Unit##name);\
+  UnitFramework::Instance().RegisterUnit(#name, el_Unit##name);\
 static void el_Unit##name(void)
 
 

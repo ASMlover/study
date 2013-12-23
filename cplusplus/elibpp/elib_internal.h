@@ -66,5 +66,6 @@
 #include "el_allocator.h"
 #include "el_condition.h"
 #include "el_thread.h"
+#include "el_io.h"
 
 #endif  //! __ELIB_INTERNAL_HEADER_H__

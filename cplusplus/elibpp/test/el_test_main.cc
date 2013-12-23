@@ -37,13 +37,6 @@ UnitFramework::~UnitFramework(void)
 {
 }
 
-UnitFramework& 
-UnitFramework::Sigleton(void)
-{
-  static UnitFramework _s_unit;
-  return _s_unit;
-}
-
 int 
 UnitFramework::Run(void)
 {
