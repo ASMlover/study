@@ -53,6 +53,7 @@
 #include <string.h>
 #include <vector>
 #include <map>
+#include <algorithm>
 
 #include "elib_internal.h"
 #include "el_net.h"
