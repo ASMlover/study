@@ -44,13 +44,13 @@ public:
     Join();
   }
 
-  void Start(void)
+  inline void Start(void)
   {
     PthreadCall("thread create", 
       pthread_create(&thread_id_, NULL, &Thread::Routine, this));
   }
 
-  void Join(void)
+  inline void Join(void)
   {
     if (0 != thread_id_) {
       PthreadCall("thread join", pthread_join(thread_id_, NULL));

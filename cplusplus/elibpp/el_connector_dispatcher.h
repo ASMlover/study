@@ -31,16 +31,13 @@
 namespace el {
 
 
-class ConnectorDispatcher : public Dispatcher {
+class ConnectorDispatcher : public Dispatcher, private NonCopyable {
   enum { kDefBufferSize = 16 * 1024 };
   uint32_t rbytes_;
   uint32_t wbytes_;
   SpinLock spinlock_;
   EventHandler* handler_;
   std::map<int, Connector*> connectors_;
-
-  ConnectorDispatcher(const ConnectorDispatcher&);
-  ConnectorDispatcher& operator =(const ConnectorDispatcher&);
 public:
   explicit ConnectorDispatcher(void);
   ~ConnectorDispatcher(void);

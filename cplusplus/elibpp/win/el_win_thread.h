@@ -53,7 +53,7 @@ public:
     Join();
   }
 
-  void Start(void)
+  inline void Start(void)
   {
     start_event_ = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (NULL == start_event_)
@@ -67,7 +67,7 @@ public:
     CloseHandle(start_event_);
   }
 
-  void Join(void)
+  inline void Join(void)
   {
     if (NULL != thread_) {
       WaitForSingleObject(thread_, INFINITE);

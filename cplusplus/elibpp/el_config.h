@@ -36,7 +36,7 @@
 # elif defined(__linux__) || defined(__GNUC__)
 #   define PLATFORM_LINUX
 # else
-#  error "nonsupport this platform"
+#  error "nonsupport this platform !!!"
 # endif
 #endif
 
@@ -89,5 +89,6 @@
 #elif defined(PLATFORM_LINUX)
 # define USING_EPOLL
 #endif
+
 
 #endif  //! __EL_CONFIG_HEADER_H__

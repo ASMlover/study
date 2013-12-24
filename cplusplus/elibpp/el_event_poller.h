@@ -29,6 +29,7 @@
 
 
 #if defined(USING_SELECT)
+# include "win/el_win_select.h"
 #elif defined(USING_EPOLL)
 # include "posix/el_posix_epoll.h"
 #else 
@@ -39,8 +40,9 @@ namespace el {
 
 
 #if defined(USING_SELECT)
+  typedef Select  EventPoller;
 #elif defined(USING_EPOLL)
-  typedef Epoll EventPoller;
+  typedef Epoll   EventPoller;
 #endif
 
 

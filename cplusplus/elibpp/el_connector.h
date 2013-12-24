@@ -36,9 +36,6 @@ class Connector : public Socket {
   bool writable_;
   NetBuffer rbuf_;
   NetBuffer wbuf_;
-
-  Connector(const Connector&);
-  Connector& operator =(const Connector&);
 public:
   explicit Connector(void);
   ~Connector(void);
