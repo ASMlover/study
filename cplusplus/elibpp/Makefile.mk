@@ -41,7 +41,7 @@ OBJS	= el_test_main.obj el_test_mutex.obj el_test_spinlock.obj\
 	el_test_time.obj el_test_logging.obj\
 	\
 	el_win_condition.obj el_win_io.obj el_win_file.obj el_win_time.obj\
-	el_win_net.obj el_win_socket.obj\
+	el_win_net.obj el_win_socket.obj el_win_select.obj\
 	\
 	el_allocator.obj el_thread_pool.obj el_circular_buffer.obj el_time.obj\
 	el_logging.obj el_net.obj el_net_buffer.obj el_address.obj el_socket.obj\

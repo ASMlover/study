@@ -24,39 +24,90 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_WIN_SELECT_HEADER_H__
-#define __EL_WIN_SELECT_HEADER_H__
+#include "../el_net_internal.h"
+#include "../el_socket.h"
+#include "../el_connector.h"
+#include "el_win_select.h"
+
 
 
 namespace el {
 
 
-struct win_fd_set;
-struct SelectEntry;
-class Select : public Poller, private NonCopyable {
-  uint32_t fd_storage_;
-  win_fd_set* rset_in_;
-  win_fd_set* wset_in_;
-  win_fd_set* rset_out_;
-  win_fd_set* wset_out_;
-  bool has_removed_;
-  std::vector<SelectEntry> entry_list_;
-public:
-  explicit Select(void);
-  ~Select(void);
-
-  virtual bool Insert(Connector* conn);
-  virtual void Remove(Connector* conn);
-  virtual bool AddEvent(Connector* conn, int ev);
-  virtual bool DelEvent(Connector* conn, int ev);
-  virtual bool Dispatch(Dispatcher* dispatcher, uint32_t millitm);
-private:
-  bool Init(void);
-  void Destroy(void);
-  bool Regrow(void);
+struct win_fd_set {
+  u_int fd_count;
+  int fd_array[1];
 };
 
 
+
+struct SelectEntry {
+  int fd;
+  Connector* conn;
+};
+
+
+
+Select::Select(void)
+  : fd_storage_(FD_SETSIZE)
+  , rset_in_(NULL)
+  , wset_in_(NULL)
+  , rset_out_(NULL)
+  , wset_out_(NULL)
+  , has_removed_(false)
+{
 }
 
-#endif  //! __EL_WIN_SELECT_HEADER_H__
+Select::~Select(void)
+{
+}
+
+bool 
+Select::Init(void)
+{
+  return false;
+}
+
+void 
+Select::Destroy(void)
+{
+}
+
+bool 
+Select::Regrow(void)
+{
+  return true;
+}
+
+
+bool 
+Select::Insert(Connector* conn)
+{
+  return true;
+}
+
+void 
+Select::Remove(Connector* conn)
+{
+}
+
+bool 
+Select::AddEvent(Connector* conn, int ev)
+{
+  return true;
+}
+
+bool 
+Select::DelEvent(Connector* conn, int ev)
+{
+  return true;
+}
+
+bool 
+Select::Dispatch(Dispatcher* dispatcher, uint32_t millitm)
+{
+  return true;
+}
+
+
+}
