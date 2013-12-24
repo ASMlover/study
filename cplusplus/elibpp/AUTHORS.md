@@ -1,4 +1,4 @@
-# **AUTHORS for elib++** #
+# **AUTHORS for elibpp** #
 ***
 
 
