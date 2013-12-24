@@ -25,7 +25,6 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "../el_net_internal.h"
-#include "../el_allocator.h"
 #include "../el_socket.h"
 #include "../el_connector.h"
 #include "el_posix_epoll.h"

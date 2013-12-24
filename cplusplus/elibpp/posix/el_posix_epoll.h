@@ -31,7 +31,7 @@
 namespace el {
 
 
-class Epoll : public Poller {
+class Epoll : public Poller, private NonCopyable {
   enum {
     kEpollSize  = 32000, 
     kEventCount = 4096, 
@@ -40,9 +40,6 @@ class Epoll : public Poller {
   int epoll_fd_;
   uint32_t event_count_;
   struct epoll_event* events_;
-
-  Epoll(const Epoll&);
-  Epoll& operator =(const Epoll&);
 public:
   explicit Epoll(void);
   ~Epoll(void);
