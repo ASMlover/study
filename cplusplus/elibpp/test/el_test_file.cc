@@ -24,8 +24,6 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include <time.h>
-#include <string.h>
 #include "el_test_header.h"
 #include "../el_file.h"
 

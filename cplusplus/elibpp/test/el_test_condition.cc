@@ -25,8 +25,6 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "el_test_header.h"
-#include "../el_mutex.h"
-#include "../el_thread.h"
 #include "../el_condition.h"
 
 
