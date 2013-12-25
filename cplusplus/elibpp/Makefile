@@ -45,7 +45,8 @@ OBJS	= ./test/el_test_main.o ./test/el_test_mutex.o\
 	\
 	el_allocator.o el_thread_pool.o el_circular_buffer.o el_time.o\
 	el_logging.o el_net.o el_net_buffer.o el_address.o el_socket.o\
-	el_connector.o el_connector_dispatcher.o el_net_worker.o
+	el_connector.o el_connector_dispatcher.o el_net_worker.o\
+	el_net_listener.o
 
 
 
