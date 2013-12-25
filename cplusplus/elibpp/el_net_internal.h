@@ -70,6 +70,14 @@ struct Dispatcher {
 };
 
 
+struct Container {
+  virtual ~Container(void) {}
+  virtual void CloseAll(void) = 0;
+  virtual Connector* Insert(int fd) = 0;
+  virtual void Remove(int fd) = 0;
+};
+
+
 struct Poller {
   virtual ~Poller(void) {}
   virtual bool Insert(Connector* conn) = 0;
