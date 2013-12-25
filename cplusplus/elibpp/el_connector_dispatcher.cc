@@ -62,6 +62,9 @@ ConnectorDispatcher::CloseAll(void)
 Connector* 
 ConnectorDispatcher::Insert(int fd)
 {
+  if (NULL == handler_)
+    return NULL;
+
   LockerGuard<SpinLock> guard(spinlock_);
   std::map<int, Connector*>::iterator it = connectors_.find(fd);
   if (it == connectors_.end()) {
@@ -78,6 +81,8 @@ ConnectorDispatcher::Insert(int fd)
     conn->SetWriteBuffer(wbytes_);
 
     connectors_[fd] = conn;
+
+    handler_->AcceptEvent(conn);
 
     return conn;
   }
