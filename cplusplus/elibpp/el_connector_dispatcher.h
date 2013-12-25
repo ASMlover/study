@@ -31,7 +31,8 @@
 namespace el {
 
 
-class ConnectorDispatcher : public Dispatcher, private NonCopyable {
+class ConnectorDispatcher 
+  : public Container, public Dispatcher, private NonCopyable {
   enum { kDefBufferSize = 16 * 1024 };
   uint32_t rbytes_;
   uint32_t wbytes_;
@@ -60,9 +61,9 @@ public:
     wbytes_ = wbytes;
   }
 public:
-  void CloseAll(void);
-  Connector* Insert(int fd);
-  void Remove(int fd);
+  virtual void CloseAll(void);
+  virtual Connector* Insert(int fd);
+  virtual void Remove(int fd);
 public:
   virtual bool DispatchReader(Poller* poller, Connector* conn);
   virtual bool DispatchWriter(Poller* poller, Connector* conn);
