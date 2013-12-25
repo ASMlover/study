@@ -26,6 +26,7 @@
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "el_net_internal.h"
 #include "el_time.h"
+#include "el_address.h"
 #include "el_socket.h"
 #include "el_net_listener.h"
 
@@ -51,12 +52,51 @@ NetListener::~NetListener(void)
 bool 
 NetListener::Start(const char* ip, uint16_t port)
 {
-  return true;
+  if (NULL == container_)
+    return false;
+
+  if (NULL == (listener_ = new Socket()))
+    return false;
+
+  do {
+    if (!listener_->Open() 
+        || !listener_->SetNonBlock() 
+        || !listener_->SetReuseAddr() 
+        || !listener_->Bind(ip, port) 
+        || !listener_->Listen())
+      break;
+
+    if (NULL == (thread_ = new Thread(&NetListener::Routine, this)))
+      break;
+
+    running_ = true;
+    thread_->Start();
+
+    return true;
+  } while (0);
+
+  Stop();
+  return false;
 }
 
 void 
 NetListener::Stop(void)
 {
+  running_ = false;
+
+  if (NULL != thread_) {
+    thread_->Join();
+
+    delete thread_;
+    thread_ = NULL;
+  }
+
+  if (NULL != listener_) {
+    listener_->Close();
+
+    delete listener_;
+    listener_ = NULL;
+  }
 }
 
 
@@ -65,10 +105,29 @@ void
 NetListener::Routine(void* argument)
 {
   NetListener* self = static_cast<NetListener*>(argument);
-  if (NULL == self)
+  if (NULL == self || NULL == self->listener_ || NULL == self->container_)
     return;
 
+  Socket s;
+  Address addr;
   while (self->running_) {
+    if (!self->listener_->Accept(&s, &addr)) {
+      el::Sleep(1);
+      continue;
+    }
+    else {
+      Connector* conn = self->container_->Insert(s.fd());
+      if (NULL != conn) {
+        //! TODO:
+        //! call NetWorker::AddConnector
+      }
+      else {
+        s.Close();
+      }
+
+      s.Detach();
+      addr.Detach();
+    }
   }
 }
 
