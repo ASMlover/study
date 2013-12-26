@@ -39,7 +39,7 @@ NetListener::NetListener(void)
   : running_(false)
   , listener_(NULL)
   , thread_(NULL)
-  , container_(NULL)
+  , conn_holder_(NULL)
 {
 }
 
@@ -52,7 +52,7 @@ NetListener::~NetListener(void)
 bool 
 NetListener::Start(const char* ip, uint16_t port)
 {
-  if (NULL == container_)
+  if (NULL == conn_holder_)
     return false;
 
   if (NULL == (listener_ = new Socket()))
@@ -105,7 +105,8 @@ void
 NetListener::Routine(void* argument)
 {
   NetListener* self = static_cast<NetListener*>(argument);
-  if (NULL == self || NULL == self->listener_ || NULL == self->container_)
+  if (NULL == self || NULL == self->listener_ 
+      || NULL == self->conn_holder_)
     return;
 
   Socket s;
@@ -116,7 +117,7 @@ NetListener::Routine(void* argument)
       continue;
     }
     else {
-      Connector* conn = self->container_->Insert(s.fd());
+      Connector* conn = self->conn_holder_->Insert(s.fd());
       if (NULL != conn) {
         //! TODO:
         //! call NetWorker::AddConnector

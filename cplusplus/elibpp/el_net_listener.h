@@ -34,14 +34,14 @@ class NetListener : private NonCopyable {
   bool running_;
   Socket* listener_;
   Thread* thread_;
-  Container* container_;
+  ConnectorHolder* conn_holder_;
 public:
   explicit NetListener(void);
   ~NetListener(void);
 
-  inline void Attach(Container* container)
+  inline void Attach(ConnectorHolder* holder)
   {
-    container_ = container;
+    conn_holder_ = holder;
   }
 public:
   bool Start(const char* ip, uint16_t port);
