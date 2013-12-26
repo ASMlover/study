@@ -31,12 +31,13 @@ namespace el {
 
 class NetWorker;
 class NetListener;
+class ConnectorDispatcher;
 class NetworkHandler : private NonCopyable {
   enum {
     kDefaultWorkerCount = 1, 
     kDefaultBufferSize  = 16 * 1024, 
   };
-  ConnectorHolder* holder_;
+  ConnectorDispatcher* dispatcher_;
   int worker_count_;
   NetWorker* workers_;
   NetListener* listener_;
@@ -57,7 +58,7 @@ public:
       uint32_t wbuf = kDefaultBufferSize);
   void Destroy(void);
 
-  NetWorker* SuitableWorker(void);
+  NetWorker& SuitableWorker(void);
   void MarkNextSuitableWorker(void);
 
   bool Listen(const char* ip = "0.0.0.0", uint16_t port = 5555);
