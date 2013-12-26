@@ -128,6 +128,7 @@ NetworkHandler::Listen(const char* ip, uint16_t port)
 
   if (NULL == (listener_ = new NetListener()))
     return false;
+  listener_->Attach(this);
   listener_->Attach(dispatcher_);
 
   if (!listener_->Start(ip, port)) {

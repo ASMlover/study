@@ -30,14 +30,21 @@
 namespace el {
 
 
+class NetworkHandler;
 class NetListener : private NonCopyable {
   bool running_;
   Socket* listener_;
   Thread* thread_;
+  NetworkHandler* network_;
   ConnectorHolder* conn_holder_;
 public:
   explicit NetListener(void);
   ~NetListener(void);
+
+  inline void Attach(NetworkHandler* network)
+  {
+    network_ = network;
+  }
 
   inline void Attach(ConnectorHolder* holder)
   {

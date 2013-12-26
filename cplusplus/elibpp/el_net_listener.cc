@@ -28,6 +28,8 @@
 #include "el_time.h"
 #include "el_address.h"
 #include "el_socket.h"
+#include "el_net_worker.h"
+#include "el_network_handler.h"
 #include "el_net_listener.h"
 
 
@@ -39,6 +41,7 @@ NetListener::NetListener(void)
   : running_(false)
   , listener_(NULL)
   , thread_(NULL)
+  , network_(NULL)
   , conn_holder_(NULL)
 {
 }
@@ -52,7 +55,7 @@ NetListener::~NetListener(void)
 bool 
 NetListener::Start(const char* ip, uint16_t port)
 {
-  if (NULL == conn_holder_)
+  if (NULL == network_ || NULL == conn_holder_)
     return false;
 
   if (NULL == (listener_ = new Socket()))
@@ -106,7 +109,7 @@ NetListener::Routine(void* argument)
 {
   NetListener* self = static_cast<NetListener*>(argument);
   if (NULL == self || NULL == self->listener_ 
-      || NULL == self->conn_holder_)
+      || NULL == self->network_ || NULL == self->conn_holder_)
     return;
 
   Socket s;
@@ -119,8 +122,8 @@ NetListener::Routine(void* argument)
     else {
       Connector* conn = self->conn_holder_->Insert(s.fd());
       if (NULL != conn) {
-        //! TODO:
-        //! call NetWorker::AddConnector
+        self->network_->SuitableWorker().AddConnector(conn);
+        self->network_->MarkNextSuitableWorker();
       }
       else {
         s.Close();
