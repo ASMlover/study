@@ -70,8 +70,8 @@ struct Dispatcher {
 };
 
 
-struct ConnectorContainer {
-  virtual ~ConnectorContainer(void) {}
+struct ConnectorHolder {
+  virtual ~ConnectorHolder(void) {}
   virtual void CloseAll(void) = 0;
   virtual Connector* Insert(int fd) = 0;
   virtual void Remove(int fd) = 0;

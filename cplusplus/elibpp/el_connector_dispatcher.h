@@ -32,7 +32,7 @@ namespace el {
 
 
 class ConnectorDispatcher 
-  : public Container, public Dispatcher, private NonCopyable {
+  : public ConnectorHolder, public Dispatcher, private NonCopyable {
   enum { kDefBufferSize = 16 * 1024 };
   uint32_t rbytes_;
   uint32_t wbytes_;
