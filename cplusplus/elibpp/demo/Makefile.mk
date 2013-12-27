@@ -34,7 +34,14 @@ CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -EHsc -DNDEBUG\
 	-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no ws2_32.lib winmm.lib
-OBJS	= main.obj 
+OBJS	= main.obj\
+	el_win_condition.obj el_win_io.obj el_win_file.obj el_win_time.obj\
+	el_win_net.obj el_win_socket.obj el_win_select.obj\
+	\
+	el_allocator.obj el_thread_pool.obj el_circular_buffer.obj el_time.obj\
+	el_logging.obj el_net.obj el_net_buffer.obj el_address.obj el_socket.obj\
+	el_connector.obj el_connector_dispatcher.obj el_net_worker.obj\
+	el_net_listener.obj el_network_handler.obj
 
 
 
@@ -56,4 +63,10 @@ $(OUT): $(OBJS)
 	$(MT) -manifest $(OUT).manifest -outputresource:$(OUT);1
 
 .cc.obj:
+	$(CC) $(CFLAGS) $<
+
+{..\}.cc{}.obj:
+	$(CC) $(CFLAGS) $<
+
+{..\win}.cc{}.obj:
 	$(CC) $(CFLAGS) $<
