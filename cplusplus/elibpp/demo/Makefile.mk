@@ -34,7 +34,8 @@ CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -EHsc -DNDEBUG\
 	-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no ws2_32.lib winmm.lib
-OBJS	= main.obj\
+OBJS	= main.obj server.obj\
+	\
 	el_win_condition.obj el_win_io.obj el_win_file.obj el_win_time.obj\
 	el_win_net.obj el_win_socket.obj el_win_select.obj\
 	\

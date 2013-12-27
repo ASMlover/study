@@ -24,27 +24,65 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include <stdio.h>
-#include <string.h>
-#include "../el_config.h"
+#include "../el_net_internal.h"
+#include "../el_time.h"
+#include "../el_net.h"
+#include "../el_socket.h"
+#include "../el_connector.h"
+#include "../el_network_handler.h"
 
 
-extern void ServerMain(const char* ip = "0.0.0.0", uint16_t port = 5555);
-extern void ClientMain(const char* ip = "127.0.0.1", uint16_t port = 5555);
 
-int 
-main(int argc, char* argv[])
+class ConnectorHandler : public el::EventHandler {
+public:
+  virtual bool AcceptEvent(el::Connector* conn)
+  {
+    el::ColorFprintf(stdout, el::kColorTypeGreen, 
+        "accept connector [%d]\n", conn->fd());
+    return true;
+  }
+
+  virtual void CloseEvent(el::Connector* conn)
+  {
+    el::ColorFprintf(stdout, el::kColorTypeGreen, 
+        "connector [%d] closed\n", conn->fd());
+  }
+
+  virtual bool ReadEvent(el::Connector* conn)
+  {
+    char buf[128] = {0};
+    if (el::kNetTypeError != conn->Read(sizeof(buf), buf))
+      conn->Write(buf, strlen(buf));
+
+    return true;
+  }
+};
+
+
+
+void 
+ServerMain(const char* ip = "0.0.0.0", uint16_t port = 5555)
 {
-  if (argc < 2) {
-    fprintf(stderr, "Usage: demo [srv | clt] ...\n");
-    return 0;
+  ConnectorHandler ch;
+
+  el::NetworkHandler network;
+  network.Attach(&ch);
+
+  if (!network.Init())
+    return;
+
+  if (!network.Listen(ip, port)) {
+    el::ColorFprintf(stderr, el::kColorTypeRed, 
+        "starting server <%s, %d> failed ...\n", ip, port);
+    return;
+  }
+  else {
+    el::ColorFprintf(stdout, el::kColorTypeGreen, 
+        "starting server <%s, %d> success ...\n", ip, port);
   }
 
-  if (0 == strcmp("srv", argv[1]))
-    ServerMain();
-  else if (0 == strcmp("clt", argv[1])) {
-    //ClientMain(ip, port);
-  }
+  while (true)
+    el::Sleep(100);
 
-  return 0;
+  network.Destroy();
 }

@@ -30,7 +30,8 @@ RM	= rm
 CC	= g++ 
 CFLAGS	= -g -O2 -Wall 
 LDFLAGS	= -lpthread -lrt
-OBJS	= main.o\
+OBJS	= main.o server.o\
+	\
 	../posix/el_posix_condition.o ../posix/el_posix_io.o\
 	../posix/el_posix_file.o ../posix/el_posix_time.o\
 	../posix/el_posix_net.o ../posix/el_posix_socket.o\
