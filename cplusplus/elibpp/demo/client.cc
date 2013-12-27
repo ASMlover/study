@@ -25,28 +25,47 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "../el_net_internal.h"
+#include "../el_time.h"
+#include "../el_net.h"
+#include "../el_socket.h"
 
 
-extern void ServerMain(const char* ip = "0.0.0.0", uint16_t port = 5555);
-extern void ClientMain(const char* ip = "127.0.0.1", uint16_t port = 5555);
 
-int 
-main(int argc, char* argv[])
+void 
+ClientMain(const char* ip = "127.0.0.1", uint16_t port = 5555)
 {
-  if (argc < 2) {
-    fprintf(stderr, "Usage: demo [srv | clt] ...\n");
-    return 0;
+  el::Socket s;
+
+  if (!s.Open())
+    return;
+
+  if (!s.Connect(ip, port)) {
+    el::ColorFprintf(stderr, el::kColorTypeRed, 
+        "connect to server <%s, %d> failed ...\n", ip, port);
+    return;
+  }
+  else {
+    el::ColorFprintf(stdout, el::kColorTypeGreen, 
+        "connect to server <%s, %d> success ...\n", ip, port);
   }
 
-  el::NetLibrary::Instance().Init();
+  char buf[128];
+  el::Time t;
+  while (true) {
+    el::Localtime(&t);
+    sprintf(buf, "[%04d-%02d-%02d %02d:%02d:%02d:%03d]", 
+        t.year, t.mon, t.day, t.hour, t.min, t.sec, t.millitm);
 
-  if (0 == strcmp("srv", argv[1]))
-    ServerMain();
-  else if (0 == strcmp("clt", argv[1])) {
-    ClientMain();
+    if (el::kNetTypeError == s.Send(buf, strlen(buf)))
+      break;
+
+    memset(buf, 0, sizeof(buf));
+    if (el::kNetTypeError == s.Recv(sizeof(buf), buf))
+      break;
+    fprintf(stdout, "recv from server : %s\n", buf);
+
+    el::Sleep(10);
   }
 
-  el::NetLibrary::Instance().Destroy();
-
-  return 0;
+  s.Close();
 }
