@@ -60,4 +60,4 @@ $(OUT): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(OBJS): %.o: %.cc 
-	$(CC) -o %*.o -c $(CFLAGS) $^
+	$(CC) -o $*.o -c $(CFLAGS) $^
