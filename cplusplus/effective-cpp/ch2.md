@@ -15,3 +15,12 @@
     1) 为驳回编译器自动提供的机能, 可将相应的成员函数声明为private并且不予
        实现; 使用像Uncopyable这样的base class也是一种做法
     2) 使用Uncopyable这样的基类可以阻止成员函数或friend函数尝试拷贝对象
+
+
+## **07: 为多态基类声明virtual析构函数** ##
+    (Declare destructors virtual in polymorphic base class)
+    1) virtual函数的目的是允许子类的实现得以自行定制化
+    2) polymorphic(带多态性质的)基类应该声明一个virtual析构函数, 如果class
+       带有任何virtual函数, 它就应该拥有一个virtual析构函数
+    3) 类的设计目的如果不是作为基类使用, 或不是为了具备多态性, 就不应该声明
+       virtual析构函数
