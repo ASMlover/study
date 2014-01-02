@@ -28,7 +28,7 @@ OUT	= calc
 RM	= rm 
 CC	= gcc 
 CFLAGS	= -g -O2 -Wall 
-OBJS	= main.o
+OBJS	= main.o lexical.o
 
 
 

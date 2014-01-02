@@ -30,13 +30,13 @@
 #define __TOKEN_HEADER_H__
 
 enum TokenType {
-  kTokenTypeInval = 0, 
-  kTokenTypeNumber, 
-  kTokenTypeAdd, 
-  kTokenTypeSub, 
-  kTokenTypeMul, 
-  kTokenTypeDiv, 
-  kTokenTypeCR, 
+  TOKEN_TYPE_INVAL = 0, 
+  TOKEN_TYPE_NUMBER, 
+  TOKEN_TYPE_ADD, 
+  TOKEN_TYPE_SUB, 
+  TOKEN_TYPE_MUL, 
+  TOKEN_TYPE_DIV, 
+  TOKEN_TYPE_CR, 
 };
 
 #define MAX_TOKEN_SIZE  (128)

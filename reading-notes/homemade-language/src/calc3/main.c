@@ -27,9 +27,30 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdio.h>
+#include "token.h"
+
+
+static void 
+parse_line(char* buf)
+{
+  Token token;
+  set_line(buf);
+
+  for (;;) {
+    get_token(&token);
+    if (TOKEN_TYPE_CR == token.type) 
+      break;
+    else 
+      fprintf(stdout, "{type=>%d, name=>%s}\n", token.type, token.name);
+  }
+}
 
 int 
 main(int argc, char* argv[])
 {
+  char buf[1024] = {0};
+  while (NULL != fgets(buf, 1024, stdin)) 
+    parse_line(buf);
+
   return 0;
 }
