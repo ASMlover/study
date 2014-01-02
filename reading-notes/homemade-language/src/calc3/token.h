@@ -45,9 +45,9 @@ typedef struct {
   int    type;
   double value;
   char   name[MAX_TOKEN_SIZE];
-} token_t;
+} Token;
 
 extern void set_line(const char* line);
-extern void get_token(token_t* token);
+extern void get_token(Token* token);
 
 #endif  /* __TOKEN_HEADER_H__ */
