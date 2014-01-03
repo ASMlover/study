@@ -30,27 +30,19 @@
 #include "token.h"
 
 
-static void 
-parse_line(char* buf)
-{
-  Token token;
-  set_line(buf);
-
-  for (;;) {
-    get_token(&token);
-    if (TOKEN_TYPE_CR == token.type) 
-      break;
-    else 
-      fprintf(stdout, "{type=>%d, name=>%s}\n", token.type, token.name);
-  }
-}
-
 int 
 main(int argc, char* argv[])
 {
+  double value;
   char buf[1024] = {0};
-  while (NULL != fgets(buf, 1024, stdin)) 
-    parse_line(buf);
+  extern double parse_line(void);
+
+  while (NULL != fgets(buf, 1024, stdin)) {
+    set_line(buf);
+    value = parse_line();
+
+    fprintf(stdout, ">> %lf\n", value);
+  }
 
   return 0;
 }
