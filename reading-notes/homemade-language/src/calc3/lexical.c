@@ -102,6 +102,14 @@ get_token(Token* token)
     else if ('/' == c) {
       token->type = TOKEN_TYPE_DIV;
       return;
+    } 
+    else if ('(' == c) {
+      token->type = TOKEN_TYPE_LPAREN;
+      return;
+    }
+    else if (')' == c) {
+      token->type = TOKEN_TYPE_RPAREN;
+      return;
     }
     else if (isdigit(c)) {
       if (LEXICAL_STATUS_INIT == status) 

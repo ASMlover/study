@@ -37,6 +37,8 @@ enum TokenType {
   TOKEN_TYPE_MUL, 
   TOKEN_TYPE_DIV, 
   TOKEN_TYPE_CR, 
+  TOKEN_TYPE_LPAREN, 
+  TOKEN_TYPE_RPAREN, 
 };
 
 #define MAX_TOKEN_SIZE  (128)

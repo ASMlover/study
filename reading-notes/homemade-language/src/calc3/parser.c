@@ -64,8 +64,9 @@ parse_primary_expression(void)
   Token token;
 
   token_get(&token);
-  if (TOKEN_TYPE_NUMBER == token.type)
+  if (TOKEN_TYPE_NUMBER == token.type) {
     return token.value;
+  }
 
   fprintf(stderr, "syntax error.\n");
   exit(1);
