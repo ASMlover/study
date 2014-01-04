@@ -65,11 +65,18 @@ static double
 parse_primary_expression(void)
 {
   Token token;
-  double value;
+  double value = 0.0;
+  int sub_flag = 0;
+
+  token_get(&token);
+  if (TOKEN_TYPE_SUB == token.type) 
+    sub_flag = 1;
+  else 
+    token_unget(&token);
 
   token_get(&token);
   if (TOKEN_TYPE_NUMBER == token.type) {
-    return token.value;
+    value = token.value;
   }
   else if (TOKEN_TYPE_LPAREN == token.type) {
     value = parse_expression();
@@ -78,13 +85,15 @@ parse_primary_expression(void)
       fprintf(stderr, "missing ) syntax error.\n");
       exit(1);
     }
-
-    return value;
   }
   else {
     token_unget(&token);
-    return 0.0;
   }
+
+  if (sub_flag) 
+    value = -value;
+
+  return value;
 }
 
 static double 
