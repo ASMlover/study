@@ -58,20 +58,33 @@ token_unget(Token* token)
   _s_ahead_token_exist = 1;
 }
 
+
+static double parse_expression(void);
+
 static double 
 parse_primary_expression(void)
 {
   Token token;
+  double value;
 
   token_get(&token);
   if (TOKEN_TYPE_NUMBER == token.type) {
     return token.value;
   }
+  else if (TOKEN_TYPE_LPAREN == token.type) {
+    value = parse_expression();
+    token_get(&token);
+    if (TOKEN_TYPE_RPAREN != token.type) {
+      fprintf(stderr, "missing ) syntax error.\n");
+      exit(1);
+    }
 
-  fprintf(stderr, "syntax error.\n");
-  exit(1);
-
-  return 0.0;
+    return value;
+  }
+  else {
+    token_unget(&token);
+    return 0.0;
+  }
 }
 
 static double 
