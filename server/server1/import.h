@@ -64,5 +64,6 @@
 
 #include "uncopyable.h"
 #include "locker.h"
+#include "singleton.h"
 
 #endif  //! __IMPORT_HEADER_H__
