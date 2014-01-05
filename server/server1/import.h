@@ -24,56 +24,45 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __POSIX_LOCKER_HEADER_H__
-#define __POSIX_LOCKER_HEADER_H__
+#ifndef __IMPORT_HEADER_H__
+#define __IMPORT_HEADER_H__
 
-class Mutex : private UnCopyable {
-  pthread_mutex_t mutex_;
-public:
-  explicit Mutex(void)
-  {
-    PthreadCall("Mutex::Mutex", pthread_mutex_init(&mutex_, NULL));
-  }
+#include "config.h"
 
-  ~Mutex(void)
-  {
-    PthreadCall("Mutex::~Mutex", pthread_mutex_destroy(&mutex_));
-  }
+#if defined(PLATFORM_WIN)
+# include <winsock2.h>
+# include <windows.h>
+# include <process.h>
+# include <io.h>
+# include <direct.h>
 
-  inline void Lock(void)
-  {
-    PthreadCall("Mutex::Lock", pthread_mutex_lock(&mutex_));
-  }
+# define  PATH_MAX  MAX_PATH
+#elif defined(PLATFORM_POSIX)
+# include <sys/time.h>
+# include <sys/types.h>
+# include <sys/stat.h>
+# include <unistd.h>
+# include <fcntl.h>
+# include <pthread.h>
+# include <limits.h>
+#endif
+#include <sys/timeb.h>
+#include <assert.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
-  inline void Unlock(void)
-  {
-    PthreadCall("Mutex::Unlock", pthread_mutex_unlock(&mutex_));
-  }
-};
+#include <vector>
+#include <queue.h>
+
+#if defined(PLATFORM_POSIX)
+# include "posix_tools.h"
+#endif
 
 
-class SpinLock : private UnCopyable {
-  pthread_spinlock_t spinlock_;
-public:
-  explicit SpinLock(void)
-  {
-    PthreadCall("SpinLock::SpinLock", pthread_spin_init(&spinlock_, 0));
-  }
+#include "uncopyable.h"
+#include "locker.h"
 
-  ~SpinLock(void)
-  {
-    PthreadCall("SpinLock::~SpinLock", pthread_spin_destroy(&spinlock_));
-  }
-
-  inline void Lock(void)
-  {
-    PthreadCall("SpinLock::Lock", pthread_spin_lock(&spinlock_));
-  }
-
-  inline void Unlock(void)
-  {
-    PthreadCall("SpinLock::Unlock", pthread_spin_unlock(&spinlock_));
-  }
-};
-
-#endif  //! __POSIX_LOCKER_HEADER_H__
+#endif  //! __IMPORT_HEADER_H__
