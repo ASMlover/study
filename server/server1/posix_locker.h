@@ -24,28 +24,64 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __LOCKER_HEADER_H__
-#define __LOCKER_HEADER_H__
+#ifndef __POSIX_LOCKER_HEADER_H__
+#define __POSIX_LOCKER_HEADER_H__
 
-template <typename Locker>
-class LockerGuard : private UnCopyable {
-  Locker& locker_;
+class Mutex : private UnCopyable {
+  pthread_mutex_t mutex_;
 public:
-  explicit LockerGuard(Locker& locker)
-    : locker_(locker)
+  explicit Mutex(void)
   {
-    locker_.Lock();
+    if (0 != pthread_mutex_init(&mutex_,s NULL))
+      abort();
   }
 
-  ~LockerGuard(void)
+  ~Mutex(void)
   {
-    locker_.Unlock();
+    if (0 != pthread_mutex_destroy(&mutex_))
+      abort();
+  }
+
+  inline void Lock(void)
+  {
+    if (0 != pthread_mutex_lock(&mutex_))
+      abort();
+  }
+
+  inline void Unlock(void)
+  {
+    if (0 != pthread_mutex_unlock(&mutex_))
+      abort();
   }
 };
 
-#if defined(PLATFORM_WIN)
-#elif defined(PLATFORM_POSIX)
-# include "posix_locker.h"
-#endif
 
-#endif  //! __LOCKER_HEADER_H__
+class SpinLock : private UnCopyable {
+  pthread_spinlock_t spinlock_;
+public:
+  explicit SpinLock(void)
+  {
+    if (0 != pthread_spin_init(&spinlock_, 0))
+      abort();
+  }
+
+  ~SpinLock(void)
+  {
+    if (0 != pthread_spin_destroy(&spinlock_))
+      abort();
+  }
+
+  inline void Lock(void)
+  {
+    if (0 != pthread_spin_lock(&spinlock_))
+      abort();
+  }
+
+  inline void Unlock(void)
+  {
+    if (0 != pthread_spin_unlock(&spinlock_))
+      abort();
+  }
+};
+
+#endif  //! __POSIX_LOCKER_HEADER_H__
