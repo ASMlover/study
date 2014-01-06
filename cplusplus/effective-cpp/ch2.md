@@ -37,3 +37,8 @@
 ## **09: 绝不在构造和析构函数中调用virtual函数** ##
     (Never call virtual functions during constructions and destructions.)
     1) 在构造和析构期间不要调用virtual函数, 因为这类调用从不下降到子类
+
+
+## **10: 令operator =返回一个reference to *this** ##
+    (Have assignment operators return a reference to *this.)
+    1) 令赋值操作符返回一个reference to *this
