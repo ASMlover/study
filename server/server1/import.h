@@ -37,14 +37,24 @@
 # include <direct.h>
 
 # define  PATH_MAX  MAX_PATH
+# define  EAGAIN    WSAEWOULDBLOCK
+# define  NERRNO()  WSAGetLastError()
 #elif defined(PLATFORM_POSIX)
 # include <sys/time.h>
 # include <sys/types.h>
 # include <sys/stat.h>
+# include <sys/socket.h>
+# include <sys/epoll.h>
+# include <arpa/inet.h>
+# include <netinet/in.h>
+# include <netinet/tcp.h>
 # include <unistd.h>
 # include <fcntl.h>
 # include <pthread.h>
 # include <limits.h>
+# include <errno.h>
+
+# define  NERRNO()  errno
 #endif
 #include <sys/timeb.h>
 #include <assert.h>
@@ -54,8 +64,9 @@
 #include <string.h>
 #include <time.h>
 
-#include <vector>
+#include <map>
 #include <queue>
+#include <vector>
 
 #if defined(PLATFORM_POSIX)
 # include "posix_tools.h"
