@@ -30,7 +30,9 @@
 #include "config.h"
 
 #if defined(PLATFORM_WIN)
-# include <winsock2.h>
+# ifndef _WINDOWS_
+#   include <winsock2.h>
+# endif
 # include <windows.h>
 # include <process.h>
 # include <io.h>
@@ -39,6 +41,8 @@
 # define  PATH_MAX  MAX_PATH
 # define  EAGAIN    WSAEWOULDBLOCK
 # define  NERRNO()  WSAGetLastError()
+
+  typedef int socklen_t;
 #elif defined(PLATFORM_POSIX)
 # include <sys/time.h>
 # include <sys/types.h>
