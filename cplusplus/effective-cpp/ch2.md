@@ -32,3 +32,8 @@
        析构函数应该捕捉任何异常, 然后吞下它们或结束程序
     2) 如果客户需要对某个操作函数运行期间抛出的异常做出反应, 那class应该提
        供一个普通函数执行该操作
+
+
+## **09: 绝不在构造和析构函数中调用virtual函数** ##
+    (Never call virtual functions during constructions and destructions.)
+    1) 在构造和析构期间不要调用virtual函数, 因为这类调用从不下降到子类
