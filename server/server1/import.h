@@ -55,7 +55,7 @@
 #include <time.h>
 
 #include <vector>
-#include <queue.h>
+#include <queue>
 
 #if defined(PLATFORM_POSIX)
 # include "posix_tools.h"

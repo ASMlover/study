@@ -36,7 +36,7 @@ public:
     static Locker  _s_locker;
 
     if (NULL == _s_instance) {
-      LockerGuard guard(_s_locker);
+      LockerGuard<Locker> guard(_s_locker);
       if (NULL == _s_instance) {
         static Object _s_object;
         _s_instance = &_s_object;
