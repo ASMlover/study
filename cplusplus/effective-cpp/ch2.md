@@ -60,3 +60,30 @@
        和"目标对象"的地址, 精心周到的语句顺序, 以及copy-and-swap
     3) 确定任何函数如果操作一个以上的对象, 而其中多个对象是同一个对象时, 其
        行为仍然正确
+
+
+
+## **12: 复制对象时勿忘其每一个成分** ##
+    (Copy all parts of an object.)
+    1) 任何时候只要你承担起为子类编写copying函数的责任, 必须很小心的复制其
+       基类成分, 那些成分往往是私有的, 你应该让子类的copying函数调用相应的
+       基类成分
+        PriorityCustomer::PriorityCustomer(const PriorityCustomer& rhs)
+          : Customer(rhs)
+          , priority_(rhs.priority_)
+        {
+        }
+
+        PriorityCustomer& 
+        PriorityCustomer::operator=(const PriorityCustomer& rhs)
+        {
+          Customer::operator=(rhs);
+          priority_ = rhs.priority_;
+          return *this;
+        }
+    2) 当你编写一个copying函数, 请确保
+        * 复制所有local成员变量
+        * 调用所有基类的适当copying函数 
+    3) copying函数应该确保复制对象内所有成员变量和所有基类成分
+    4) 不要尝试以某个copying函数使用另一个copying函数, 应该将共同机能放到第
+       3个函数中, 由2个copying函数共同调用
