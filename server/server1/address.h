@@ -30,7 +30,7 @@
 struct sockaddr_in;
 class Address : private UnCopyable {
   enum {kAddressLen = 16};
-  char ip_[kAddressLen];
+  char     ip_[kAddressLen];
   uint16_t port_;
 public:
   explicit Address(void);
