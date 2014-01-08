@@ -24,63 +24,20 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __IMPORT_HEADER_H__
-#define __IMPORT_HEADER_H__
+#ifndef __NET_HEADER_H__
+#define __NET_HEADER_H__
 
-#include "config.h"
+enum NetType {
+  kNetTypeInval = -1, 
+  kNetTypeError = -1, 
+};
 
-#if defined(PLATFORM_WIN)
-# ifndef _WINDOWS_
-#   include <winsock2.h>
-# endif
-# include <windows.h>
-# include <process.h>
-# include <io.h>
-# include <direct.h>
+enum EventType {
+  kEventTypeUnknown = 0x00, 
+  kEventTypeRead    = 0x01, 
+  kEventTypeWrite   = 0x02, 
+};
 
-# define  PATH_MAX  MAX_PATH
-# define  EAGAIN    WSAEWOULDBLOCK
-# define  NERRNO()  WSAGetLastError()
+class Connector;
 
-  typedef int socklen_t;
-#elif defined(PLATFORM_POSIX)
-# include <sys/time.h>
-# include <sys/types.h>
-# include <sys/stat.h>
-# include <sys/socket.h>
-# include <sys/epoll.h>
-# include <arpa/inet.h>
-# include <netinet/in.h>
-# include <netinet/tcp.h>
-# include <unistd.h>
-# include <fcntl.h>
-# include <pthread.h>
-# include <limits.h>
-# include <errno.h>
-
-# define  NERRNO()  errno
-#endif
-#include <sys/timeb.h>
-#include <assert.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-#include <map>
-#include <queue>
-#include <vector>
-
-#if defined(PLATFORM_POSIX)
-# include "posix_tools.h"
-#endif
-
-
-#include "uncopyable.h"
-#include "locker.h"
-#include "singleton.h"
-#include "thread.h"
-#include "net.h"
-
-#endif  //! __IMPORT_HEADER_H__
+#endif  //! __NET_HEADER_H__
