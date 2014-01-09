@@ -23,3 +23,12 @@
     2) 复制RAII对象必须一并复制它所管理的资源, 所以资源的copying行为决定RAII
        对象的copying行为
     3) 常见的RAII class copying行为是: 抑制copying, 施行引用计数法
+
+
+
+## **15: 在资源管理类中提供对原始资源的访问** ##
+    (Provide access to raw resources in resource-managing classes.)
+    1) APIs往往要求访问原始资源, 所以每一个RAII class应该提供一个"取得其所
+       管理之资源"的方法
+    2) 对原始资源的访问可能经由显示转换或隐式转换; 一般而言显示转换比较安全,
+       但是隐式转换对客户比较方便
