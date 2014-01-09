@@ -32,3 +32,10 @@
        管理之资源"的方法
     2) 对原始资源的访问可能经由显示转换或隐式转换; 一般而言显示转换比较安全,
        但是隐式转换对客户比较方便
+
+
+
+## **16: 成对使用new和delete时要采取相同形式** ##
+    (Use the same form in corresponding uses of new and delete.)
+    1) 如果你在new表达式中使用[], 必须在相应的delete表达式中也使用[]; 如果
+       你在new表达式中不使用[], 一定不要在相应的delete表达是中使用[]
