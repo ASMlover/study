@@ -39,3 +39,9 @@
     (Use the same form in corresponding uses of new and delete.)
     1) 如果你在new表达式中使用[], 必须在相应的delete表达式中也使用[]; 如果
        你在new表达式中不使用[], 一定不要在相应的delete表达是中使用[]
+
+
+## **17: 以独立语句将newed对象置入智能指针** ##
+    (Store newed objects in smart pointers in standalone statements.)
+    1) 以独立语句将newed对象存储于智能指针内, 如果不这么做, 一旦异常被抛出, 
+       有可能导致难以觉察的资源泄露
