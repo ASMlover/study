@@ -33,4 +33,5 @@
 
 FILE* g_source_stream;
 FILE* g_scan_stream;
+int   g_line_numer = 0;
 char  g_token[MAX_TOKEN];

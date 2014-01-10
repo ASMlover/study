@@ -26,7 +26,9 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <ctype.h>
 #include <stdio.h>
+#include <string.h>
 #include "globals.h"
 #include "scan.h"
 
@@ -62,3 +64,127 @@ static const struct {
   {"real32", TOKEN_TYPE_REAL32}, 
   {"real64", TOKEN_TYPE_REAL64}, 
 };
+
+
+#define MAX_LINE_BUF    (512)
+static char s_line_buf[MAX_LINE_BUF];
+static int  s_line_pos = 0;
+static int  s_buf_size = 0;
+static int  s_eof = BOOL_NO;
+
+
+
+
+static int 
+get_char(void)
+{
+  if (s_line_pos >= s_buf_size) {
+    ++g_line_numer;
+
+    if (NULL != fgets(s_line_buf, MAX_LINE_BUF - 1, g_source_stream)) {
+      fprintf(g_scan_stream, "%4d: %s", g_line_numer, s_line_buf);
+
+      s_buf_size = (int)strlen(s_line_buf);
+      s_line_pos = 0;
+      return s_line_buf[s_line_pos++];
+    }
+    else {
+      s_eof = BOOL_YES;
+      return EOF;
+    }
+  }
+
+  return s_line_buf[s_line_pos++];
+}
+
+static void 
+unget_char(void)
+{
+  if (!s_eof)
+    --s_line_pos;
+}
+
+
+static int 
+keyword_lookup(const char* s) 
+{
+  int i;
+  int count = countof(kKeywords);
+  for (i = 0; i < count; ++i) {
+    if (0 == strcmp(s, kKeywords[i].str))
+      return kKeywords[i].tok;
+  }
+
+  return TOKEN_TYPE_ID;
+}
+
+
+int 
+get_token(void)
+{
+  int type = TOKEN_TYPE_ERR;
+  int index = 0;
+  int status = SCAN_STATUS_START;
+  int save;
+
+  int c;
+  while (status != SCAN_STATUS_DONE) {
+    c = get_char();
+    save = BOOL_YES;
+
+    switch (c) {
+    case SCAN_STATUS_START:
+      if (isdigit(c))
+        status = SCAN_STATUS_IN_NUMBER;
+      else if (isalpha(c))
+        status = SCAN_STATUS_IN_ID;
+      else if ('.' == c)
+        status = SCAN_STATUS_IN_ACCESS;
+      else if (' ' == c || '\t' == c || '\n' == c)
+        save = BOOL_NO;
+      else {
+        status = SCAN_STATUS_DONE;
+        switch (c) {
+        case EOF:
+          save = BOOL_NO;
+          type = TOKEN_TYPE_EOF;
+          break;
+        case '=':
+          type = TOKEN_TYPE_ASSIGN;
+          break;
+        case '<':
+          type = TOKEN_TYPE_INHERIT;
+          break;
+        case '{':
+          type = TOKEN_TYPE_LBRACE;
+          break;
+        case '}':
+          type = TOKEN_TYPE_RBRACE;
+          break;
+        default:
+          type = TOKEN_TYPE_ERR;
+          break;
+        }
+      }
+      break;
+    case SCAN_STATUS_IN_ACCESS:
+      if (!isalpha(c)) {
+        unget_char();
+        save = BOOL_NO;
+        status = SCAN_STATUS_DONE;
+        type = TOKEN_TYPE_ACCESS;
+      }
+      break;
+    case SCAN_STATUS_IN_NUMBER:
+      break;
+    case SCAN_STATUS_IN_ID:
+      break;
+    case SCAN_STATUS_DONE:
+    default:
+      break;
+    }
+  }
+
+
+  return type;
+}

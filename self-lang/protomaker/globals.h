@@ -87,6 +87,8 @@ enum TokenType {
   TOKEN_TYPE_ASSIGN,        /* = */
   TOKEN_TYPE_INHERIT,       /* < */
   TOKEN_TYPE_ACCESS,        /* . */
+  TOKEN_TYPE_LBRACE,        /* { */
+  TOKEN_TYPE_RBRACE,        /* } */
 
   TOKEN_TYPE_NUM,
   TOKEN_TYPE_ID, 
@@ -105,6 +107,7 @@ enum TokenType {
 
 extern FILE*  g_source_stream;
 extern FILE*  g_scan_stream;
+extern int    g_line_numer;
 extern char   g_token[MAX_TOKEN];
 
 
