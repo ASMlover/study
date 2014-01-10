@@ -97,6 +97,9 @@ enum TokenType {
 
 #define MAX_TOKEN   (256)
 
+#if !defined(countof)
+# define countof(x)     ((sizeof(x)) / (sizeof(*x)))
+#endif
 
 
 

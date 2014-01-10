@@ -29,7 +29,7 @@ OUT	= pm
 RM	= rm 
 CC	= gcc
 CFLAGS	= -g -O2 -Wall
-OBJS	= main.o globals.o
+OBJS	= main.o globals.o scan.o
 
 
 
