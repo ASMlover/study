@@ -8,8 +8,8 @@
 
 
 ## **Keywords** ##
-    default   extend    protocol
-    enum      message   type
+    default   message     type
+    enum      protocol   
 
 
 ## **Types** ##
@@ -27,6 +27,10 @@
         real64            double
 
 
+## **Operators** ##
+    = < .
+
+
 ## **Examples** ##
     protocol Message {
       enum {
@@ -38,14 +42,14 @@
       uint8 __protocol 
     }
 
-    message LoginMsg extend protocol {
-      __protocol default = kMessageLogin
+    message LoginMsg < protocol {
+      __protocol default = Message.kMessageLogin
     }
 
-    message LoginMsgC2S extend LoginMsg {
+    message LoginMsgC2S < LoginMsg {
       ...
     }
 
-    message LoginMsgS2C extend LoginMsg {
+    message LoginMsgS2C < LoginMsg {
       ...
     }
