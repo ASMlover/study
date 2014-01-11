@@ -27,10 +27,28 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdio.h>
+#include "globals.h"
+#include "scan.h"
 
 
 int 
 main(int argc, char* argv[])
 {
+  char scan_fname[256];
+  if (argc < 2) {
+    fprintf(stderr, "USAGE: pm [source file] ...\n");
+    return 1;
+  }
+
+  g_source_stream = fopen(argv[1], "r");
+  sprintf(scan_fname, "%s.scan", argv[1]);
+  g_scan_stream = fopen(scan_fname, "w");
+
+  while (TOKEN_TYPE_EOF != get_token()) {
+  }
+
+
+  fclose(g_scan_stream);
+  fclose(g_source_stream);
   return 0;
 }
