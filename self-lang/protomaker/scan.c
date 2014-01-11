@@ -28,6 +28,7 @@
  */
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "globals.h"
 #include "scan.h"
@@ -71,6 +72,65 @@ static char s_line_buf[MAX_LINE_BUF];
 static int  s_line_pos = 0;
 static int  s_buf_size = 0;
 static int  s_eof = BOOL_NO;
+
+
+
+
+static void 
+echo_scanner(FILE* stream, int lineno, int type, const char* token)
+{
+  fprintf(stream, "\t%d: ", lineno);
+
+  switch (type) {
+  case TOKEN_TYPE_DEFAULT:
+  case TOKEN_TYPE_ENUM:
+  case TOKEN_TYPE_MESSAGE:
+  case TOKEN_TYPE_PROTOCOL:
+  case TOKEN_TYPE_TYPE:
+  case TOKEN_TYPE_BYTE:
+  case TOKEN_TYPE_INT8:
+  case TOKEN_TYPE_UINT8:
+  case TOKEN_TYPE_INT16:
+  case TOKEN_TYPE_UINT16:
+  case TOKEN_TYPE_INT32:
+  case TOKEN_TYPE_UINT32:
+  case TOKEN_TYPE_INT64:
+  case TOKEN_TYPE_UINT64:
+  case TOKEN_TYPE_REAL32:
+  case TOKEN_TYPE_REAL64:
+    fprintf(stream, "keyword: %s\n", token);
+    break;
+  case TOKEN_TYPE_ASSIGN:
+    fprintf(stream, "=\n");
+    break;
+  case TOKEN_TYPE_INHERIT:
+    fprintf(stream, "<\n");
+    break;
+  case TOKEN_TYPE_ACCESS:
+    fprintf(stream, ".\n");
+    break;
+  case TOKEN_TYPE_LBRACE:
+    fprintf(stream, "{\n");
+    break;
+  case TOKEN_TYPE_RBRACE:
+    fprintf(stream, "}\n");
+    break;
+  case TOKEN_TYPE_EOF:
+    fprintf(stream, "EOF\n");
+    break;
+  case TOKEN_TYPE_NUM:
+    fprintf(stream, "NUMBER, value => %s\n", token);
+    break;
+  case TOKEN_TYPE_ID:
+    fprintf(stream, "ID, name => %s\n", token);
+    break;
+  case TOKEN_TYPE_ERR:
+    fprintf(stream, "ERROR: %s\n", token);
+    break;
+  default:
+    fprintf(stream, "Unknown token: %d\n", type);
+  }
+}
 
 
 
@@ -132,16 +192,20 @@ get_token(void)
     c = get_char();
     save = BOOL_YES;
 
-    switch (c) {
+    switch (status) {
     case SCAN_STATUS_START:
-      if (isdigit(c))
+      if (isdigit(c)) {
         status = SCAN_STATUS_IN_NUMBER;
-      else if (isalpha(c))
+      }
+      else if (isalpha(c) || '_' == c) {
         status = SCAN_STATUS_IN_ID;
-      else if ('.' == c)
+      }
+      else if ('.' == c) {
         status = SCAN_STATUS_IN_ACCESS;
-      else if (' ' == c || '\t' == c || '\n' == c)
+      }
+      else if (' ' == c || '\t' == c || '\n' == c) {
         save = BOOL_NO;
+      }
       else {
         status = SCAN_STATUS_DONE;
         switch (c) {
@@ -168,23 +232,52 @@ get_token(void)
       }
       break;
     case SCAN_STATUS_IN_ACCESS:
-      if (!isalpha(c)) {
+      if (isalpha(c) || '_' == c) {
         unget_char();
         save = BOOL_NO;
         status = SCAN_STATUS_DONE;
         type = TOKEN_TYPE_ACCESS;
       }
+      else {
+        fprintf(stderr, "Lexial error: [%d] after '.' ...\n", g_line_numer);
+        exit(1);
+      }
       break;
     case SCAN_STATUS_IN_NUMBER:
+      if (!isdigit(c)) {
+        unget_char();
+        save = BOOL_NO;
+        status = SCAN_STATUS_DONE;
+        type = TOKEN_TYPE_NUM;
+      }
       break;
     case SCAN_STATUS_IN_ID:
+      if (!isalnum(c) && '_' != c) {
+        unget_char();
+        save = BOOL_NO;
+        status = SCAN_STATUS_DONE;
+        type = TOKEN_TYPE_ID;
+      }
       break;
     case SCAN_STATUS_DONE:
     default:
+      fprintf(g_scan_stream, "Scanner bug: status = %d\n", status);
+      status = SCAN_STATUS_DONE;
+      type = TOKEN_TYPE_ERR;
       break;
+    }
+
+    if (save && index < MAX_TOKEN)
+      g_token[index++] = (char)c;
+
+    if (SCAN_STATUS_DONE == status) {
+      g_token[index] = 0;
+      if (TOKEN_TYPE_ID == type)
+        type = keyword_lookup(g_token);
     }
   }
 
+  echo_scanner(g_scan_stream, g_line_numer, type, g_token);
 
   return type;
 }
