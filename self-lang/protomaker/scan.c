@@ -109,6 +109,12 @@ echo_scanner(FILE* stream, int lineno, int type, const char* token)
   case TOKEN_TYPE_ACCESS:
     fprintf(stream, ".\n");
     break;
+  case TOKEN_TYPE_LBRACKET:
+    fprintf(stream, "[\n");
+    break;
+  case TOKEN_TYPE_RBRACKET:
+    fprintf(stream, "]\n");
+    break;
   case TOKEN_TYPE_LBRACE:
     fprintf(stream, "{\n");
     break;
@@ -218,6 +224,12 @@ get_token(void)
           break;
         case '<':
           type = TOKEN_TYPE_INHERIT;
+          break;
+        case '[':
+          type = TOKEN_TYPE_LBRACKET;
+          break;
+        case ']':
+          type = TOKEN_TYPE_RBRACKET;
           break;
         case '{':
           type = TOKEN_TYPE_LBRACE;
