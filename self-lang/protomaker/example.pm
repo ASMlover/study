@@ -13,8 +13,13 @@ message LoginMsg < protocol {
 }
 
 message LoginMsgC2S < LoginMsg {
+  byte account[36]
 }
 
 message LoginMsgS2C < LoginMsg {
-  uint32 id
+  byte   name[36]
+  uint8  photo
+  uint32 player_id
+  uint32 coins
+  uint32 scores
 }
