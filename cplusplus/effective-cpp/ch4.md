@@ -29,3 +29,12 @@
     11) 你的新type有多么一般化?
     12) 你真的需要一个新type吗? 
     * Classes的设计就是type的设计.
+
+
+
+## **20: 宁以pass-by-reference-to-const替换pass-by-value** ##
+    (Prefer pass-by-reference-to-const to pass-by-value)
+    1) 尽量以pass-by-reference-to-const替换pass-by-value; 前者通常比较高效,
+       并可避免切割问题
+    2) 以上规则并不适用与内置类型, 以及STL的迭代器和函数对象, pass-by-value
+       更合适
