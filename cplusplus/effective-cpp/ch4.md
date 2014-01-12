@@ -58,3 +58,10 @@
     1) 切记将成员变量声明为private, 这可赋予客户访问数据的一致性, 可细微划分
        访问控制, 允诺约束条件获得保证, 并提供class作者以充分的实现弹性
     2) protected并不比public更具封装性
+
+
+
+## **23: 宁以non-member, no-friend替换member函数** ##
+    (Prefer non-member non-friend functions to member functions.)
+    1) 宁可拿non-member non-friend函数替换member函数, 这样做可以增加封装性,
+       包裹弹性和技能扩充性
