@@ -72,4 +72,19 @@
     (Declare non-member functions when type conversions should apply to all 
      parameters.)
     1) 如果你需要为某个函数的所有参数(包括被this指针所指的那个隐喻参数)进行
-       类型转换, 那么这个函数必须是个non-member
+       类型转换, 那么这个函数必须是个non-member 
+
+
+
+## **25: 考虑写出一个不抛出异常的swap函数** ##
+    (Consider support for a non-throwing swap.)
+    1) 可以全特化std内的templates, 但是不可以添加新的templates(classes或者
+       functions或其他任何东西)到std里头, std的内容完全由C++标准委员会决定
+    2) 当std::swap对你的类型效率不高时, 提供一个swap成员函数, 并确定这个函数
+       不抛出异常
+    3) 如果你提供一个member swap, 也该提供一个non-member swap来调用前者; 对
+       于classes(而非templates), 也请特化std::swap
+    4) 调用swap时应针对std::swap使用using声明, 然后调用swap并且不带任何"命名
+       空间资格修饰"
+    5) 为"用户定义类型"进行std templates全特化是好的, 但千万不要尝试在std内
+       加入某些对std而言全新的东西
