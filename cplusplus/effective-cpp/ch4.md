@@ -38,3 +38,15 @@
        并可避免切割问题
     2) 以上规则并不适用与内置类型, 以及STL的迭代器和函数对象, pass-by-value
        更合适
+
+
+
+## **21: 必须返回对象时, 别妄想返回其reference** ##
+    (Do not try to return a reference when you must return an object.)
+    1) 任何函数返回一个reference指向某个local对象, 都会一败涂地
+    2) 一个"必须返回新对象"的函数的正确写法是: 就让那个函数返回一个新对象
+    3) 当你必须在"返回一个reference和返回一个object"之间抉择时, 你的工作就是
+       挑出行为正确的那个
+    4) 绝不要返回pointer或reference指向一个local stack对象, 或返回reference
+       指向一个heap-allocated对象, 或返回pointer或reference指向一个local 
+       static对象而有可能同时需要多个这样的对象
