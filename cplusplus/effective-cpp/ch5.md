@@ -25,3 +25,8 @@
     6) 如果转型是必须, 试着将它隐藏与某个函数背后; 客户随后可以调用该函数, 
        而不需将转型放进他们自己的代码内
     7) 宁可使用C++-style转型, 不要使用旧式转型
+
+
+## **28: 避免返回handles指向对象内部成分** ##
+    (Avoid returning "handles" to object internals.)
+    1) 避免返回handles(包括references, 指针, 迭代器)指向对象内部
