@@ -65,3 +65,11 @@
     (Prefer non-member non-friend functions to member functions.)
     1) 宁可拿non-member non-friend函数替换member函数, 这样做可以增加封装性,
        包裹弹性和技能扩充性
+
+
+
+## **24: 若所有参数皆需要类型转换, 请为此采用non-member函数** ##
+    (Declare non-member functions when type conversions should apply to all 
+     parameters.)
+    1) 如果你需要为某个函数的所有参数(包括被this指针所指的那个隐喻参数)进行
+       类型转换, 那么这个函数必须是个non-member
