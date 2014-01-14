@@ -51,3 +51,18 @@
        制升级更容易, 也可使潜在的代码膨胀问题最小化, 使程序的速度提升机会最
        大化
     3) 不要只因为function templates出现在头文件, 就将它们声明为inline
+
+
+
+## **31: 将文件间的编译依存关系将至最低** ##
+    (Minimize compilation dependencies between files.)
+    1) 如果使用object references或object pointers可以完成任务, 就不要使用
+       objects
+    2) 如果能够, 尽量以class声明式替换class定义式
+       当你声明一个函数而它用到某个class时, 你并不需要该class的定义; 纵使函
+       数以by value方式传递该类型的参数亦然;
+    3) 为声明式和定义式提供不同的头文件
+    4) 支持"编译依存性最小化"的一般构想是: 相依于声明式, 不要相依于定义式; 
+       基于此构想的两个手段是Handle classes和Interface classes
+    5) 程序库头文件应该以"完全且仅有声明式"的形式存在, 这种做法不论是否涉及
+       templates都适用
