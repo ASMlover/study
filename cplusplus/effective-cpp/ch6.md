@@ -39,3 +39,9 @@
        问class的non-public成员
     3) tr1::function对象的行为就像一般函数指针, 这样的对象可接纳"与给定之目
        标签名式兼容"的所有可调用物
+
+
+
+## **36: 绝不重新定义继承而来的non-virtual函数** ##
+    (Never redefine an inherited non-virtual function.)
+    1) 绝对不要重新定义继承而来的non-virtual函数
