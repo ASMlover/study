@@ -18,7 +18,7 @@
 
 ## **34: 区分接口继承和实现继承** ##
     (Differentiate between inheritance of interface and inheritance of 
-     inplementation.)
+     implementation.)
     1) 以public形式的继承
         * 成员函数的接口总是会被继承
         * 声明一个纯虚函数的目的是为了让子类只继承函数接口
@@ -28,3 +28,14 @@
     4) 纯虚函数只是具体指定接口继承
     5) 简朴(非纯)虚函数具体指定接口继承以及缺省实现继承
     6) 非虚函数具体指定接口继承以及强制性实现继承
+
+
+
+## **35: 考虑虚函数以外的其他选择** ##
+    (Consider alternatives to virtual functions.)
+    1) 虚函数的替代方案包括NVI手法以及Strategy设计模式的多种形式, NVI手法自
+       身是一个特殊形式的Template Method设计模式
+    2) 将机能从成员函数移到class外部函数, 带来的一个缺点是, 非成员函数无法访
+       问class的non-public成员
+    3) tr1::function对象的行为就像一般函数指针, 这样的对象可接纳"与给定之目
+       标签名式兼容"的所有可调用物
