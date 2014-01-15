@@ -45,3 +45,11 @@
 ## **36: 绝不重新定义继承而来的non-virtual函数** ##
     (Never redefine an inherited non-virtual function.)
     1) 绝对不要重新定义继承而来的non-virtual函数
+
+
+
+## **37: 绝不重新定义继承而来的缺省参数值** ##
+    (Never redefine a function's inherited default parameter value.)
+    1) 虚函数是动态绑定, 缺省参数值确实静态绑定, 即绑定的基类接口的缺省参数
+    2) 绝对不要重新定义一个继承而来的缺省参数值, 因为缺省参数值都是静态绑定,
+       而虚函数却是动态绑定的
