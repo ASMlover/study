@@ -61,3 +61,13 @@
     1) 复合的意义和public继承完全不同
     2) 在应用域, 复合意味has-a; 在实现域, 复合意味is-implementation-in-term-
        of
+
+
+
+## **39: 明智而审慎地使用private继承** ##
+    (Use private inheritance judiciously.)
+    1) private继承意味is-implementation-in-terms-of, 它通常比复合几级别低, 
+       但是derived class需要访问protected base class的成员, 或需要重新定义
+       继承而来的虚函数, 这么设计是合理的
+    2) 和复合不同, private继承可以造成empty base最优化, 这对致力于"对象尺寸
+       最小化"的程序库开发者而言, 可能很重要
