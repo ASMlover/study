@@ -53,3 +53,11 @@
     1) 虚函数是动态绑定, 缺省参数值确实静态绑定, 即绑定的基类接口的缺省参数
     2) 绝对不要重新定义一个继承而来的缺省参数值, 因为缺省参数值都是静态绑定,
        而虚函数却是动态绑定的
+
+
+
+## **38: 通过复合塑模出has-a或"根据某物实现出"** ##
+    (Model "has-a" or "is-implementation-in-terms-of" through composition.)
+    1) 复合的意义和public继承完全不同
+    2) 在应用域, 复合意味has-a; 在实现域, 复合意味is-implementation-in-term-
+       of
