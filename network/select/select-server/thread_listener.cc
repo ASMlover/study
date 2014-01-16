@@ -76,9 +76,9 @@ ThreadListener::Stop(void)
 {
   running_ = false;
 
+  listener_->Close();
   thread_->Join();
   delete thread_;
-  listener_->Close();
   delete listener_;
 }
 

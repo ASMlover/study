@@ -83,6 +83,9 @@ Listener::Stop(void)
 {
   running_ = false;
 
+  if (NULL != listener_)
+    listener_->Close();
+
   if (NULL != thread_) {
     thread_->Stop();
 
@@ -91,8 +94,6 @@ Listener::Stop(void)
   }
   
   if (NULL != listener_) {
-    listener_->Close();
-
     delete listener_;
     listener_ = NULL;
   }

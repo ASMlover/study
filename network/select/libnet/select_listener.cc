@@ -82,6 +82,9 @@ SelectListener::Stop(void)
 {
   running_ = false;
 
+  if (NULL != listener_)
+    listener_->Close();
+
   if (NULL != thread_) {
     thread_->Join();
     delete thread_;
@@ -89,7 +92,6 @@ SelectListener::Stop(void)
   }
 
   if (NULL != listener_) {
-    listener_->Close();
     delete listener_;
     listener_ = NULL;
   }

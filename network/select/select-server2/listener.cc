@@ -76,13 +76,14 @@ void
 Listener::Stop(void)
 {
   running_ = false;
+  if (NULL != socket_)
+    socket_->Close();
   if (NULL != thread_) {
     thread_->Join();
     delete thread_;
     thread_ = NULL;
   }
   if (NULL != socket_) {
-    socket_->Close();
     delete socket_;
     socket_ = NULL;
   }

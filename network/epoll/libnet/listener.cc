@@ -67,7 +67,6 @@ Listener::Start(const char* ip, unsigned short port)
   }
 
   listener_->Open();
-  listener_->SetNonBlock();
   listener_->SetReuseAddr();
   listener_->Bind(ip, port);
   listener_->Listen();
@@ -89,6 +88,9 @@ Listener::Stop(void)
 {
   running_ = false;
 
+  if (NULL != listener_)
+    listener_->Close();
+
   if (NULL != thread_) {
     thread_->Join();
 
@@ -97,8 +99,6 @@ Listener::Stop(void)
   }
 
   if (NULL != listener_) {
-    listener_->Close();
-
     delete listener_;
     listener_ = NULL;
   }

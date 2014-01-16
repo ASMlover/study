@@ -62,7 +62,7 @@ Listener::Start(const char* ip, uint16_t port)
 
   do {
     if (!listener_->Open() 
-        || !listener_->SetNonBlock() 
+        || !listener_->SetReuseAddr() 
         || !listener_->Bind(ip, port) 
         || !listener_->Listen())
       break;
@@ -86,6 +86,9 @@ Listener::Stop(void)
 {
   running_ = false;
 
+  if (NULL != listener_)
+    listener_->Close();
+
   if (NULL != thread_) {
     thread_->Stop();
 
@@ -94,8 +97,6 @@ Listener::Stop(void)
   }
 
   if (NULL != listener_) {
-    listener_->Close();
-
     delete listener_;
     listener_ = NULL;
   }
