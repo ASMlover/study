@@ -11,3 +11,11 @@
        期
     3) 对模板参数而言, 接口是隐式的, 奠基于有效表达式; 多态则是通过模板具现
        化和函数重载解析发生于编译期
+
+
+
+## **42: 了解typename的双重意义** ##
+    (Understand the two meanings of typename.)
+    1) 声明template参数时, 前缀关键字class和typename可互换
+    2) 请使用关键字typename标识嵌套从属类型名称; 但不得在基类列表或成员初始
+       化列表内以它作为基类的修饰符
