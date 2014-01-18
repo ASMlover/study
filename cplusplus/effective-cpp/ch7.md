@@ -19,3 +19,10 @@
     1) 声明template参数时, 前缀关键字class和typename可互换
     2) 请使用关键字typename标识嵌套从属类型名称; 但不得在基类列表或成员初始
        化列表内以它作为基类的修饰符
+
+
+
+## **43: 学习处理模板化基类内的名称** ##
+    (Know how to access names in tempatized base classes.)
+    1) 在derived class templates内通过"this->"指涉基类模板内的成员名称, 或
+       籍由一个明白写出的"子类资格修饰符"完成
