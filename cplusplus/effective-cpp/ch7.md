@@ -26,3 +26,13 @@
     (Know how to access names in tempatized base classes.)
     1) 在derived class templates内通过"this->"指涉基类模板内的成员名称, 或
        籍由一个明白写出的"子类资格修饰符"完成
+
+
+## **44: 将与参数无关的代码抽离templates** ##
+    (Factor parameter-independent code out of templates.)
+    1) templates生成多个classes和多个函数, 所以任何template代码都不该与某个
+       造成膨胀的template参数产生相依关系
+    2) 因非类型模板参数而造成的代码膨胀, 往往可以消除, 做法是以函数参数或类
+       成员变量替换template参数
+    3) 因类型参数而造成的代码膨胀, 往往可降低, 做法是让带有完全相同二进制表
+       述的具现类型共享实现码
