@@ -44,3 +44,11 @@
     1) 请使用成员函数模板生成"可接受所有兼容类型"的函数
     2) 如果你声明member templates用于"泛化copy构造"和"泛化assignment操作", 
        你还是需要声明正常的拷贝构造函数和拷贝赋值操作符
+
+
+
+## **46: 需要类型转换时请为模板定义非成员函数** ##
+    (Define non-member functions inside templates when type conversions are 
+     desired.)
+    1) 当我们编写一个类模板, 而它所提供的"与此template相关的"函数支持"所有
+       参数之隐式类型转换"时, 请将那些函数定义为"类模板内部的友元函数"
