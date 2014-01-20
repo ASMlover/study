@@ -60,3 +60,12 @@
     1) Traits classes使得"类型相关信息"在编译期可用; 它们以templates和"模板 
        特化"完成实现
     2) 整合重载技术后, traits classes有可能在编译期对类型执行if...else测试
+
+
+
+## **48: 认识template元编程** ##
+    (Be aware of template metaprogramming.)
+    1) 模板元编程可将工作由运行期移到编译期, 因而得以实现早期错误侦测和更高
+       的执行效率
+    2) TMP可被用来生成"基于政策选择组合"的客户定制代码, 也可用来避免生成对
+       某些特殊类型并不适合的代码
