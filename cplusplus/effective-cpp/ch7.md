@@ -52,3 +52,11 @@
      desired.)
     1) 当我们编写一个类模板, 而它所提供的"与此template相关的"函数支持"所有
        参数之隐式类型转换"时, 请将那些函数定义为"类模板内部的友元函数"
+
+
+
+## **47: 请使用traits classes表现类型信息** ##
+    (Use traits classes for information about types.)
+    1) Traits classes使得"类型相关信息"在编译期可用; 它们以templates和"模板 
+       特化"完成实现
+    2) 整合重载技术后, traits classes有可能在编译期对类型执行if...else测试
