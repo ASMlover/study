@@ -29,3 +29,20 @@
        版本则还应该处理"比正确大小更大的(错误)申请"
     2) operator delete应该在收到null指针时不做任何事, 类专属版本应该处理"比
        正确大小更大的(错误)申请"
+
+
+
+
+## **52: 写了placement new也要写placement delete** ##
+    (Write placement delete if you write placement new.)
+    1) 如果operator new接受的参数除了一定会有的那个size_t之外还有其他, 这个
+       就是placement new
+    2) 类似于new的placement版本, operator delete如接受额外参数, 为placement
+       delete
+    3) placement delete只有在"伴随placement new调用而触发的构造函数"出现异常
+       时才会被调用; 对一个指针施行delete绝不会导致调用placement delete
+    4) 当你写一个placement operator new, 请确定也写出了对应的placement 
+       operator delete; 如果没有这么做, 你的程序可能会发生隐微而时断时续的
+       内存泄漏
+    5) 当你声明placement new和placement delete, 请确定不要无意识地遮掩它们的
+       正常版本
