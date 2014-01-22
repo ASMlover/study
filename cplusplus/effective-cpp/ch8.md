@@ -19,3 +19,13 @@
     (Understand when it makes sense to replace new and delete.)
     1) 有许多理由需要写个自定的new和delete, 包括改善效能, 对heap运用错误进行
        调试, 搜集heap使用信息
+
+
+
+## **51: 编写new和delete时需固守常规** ##
+    (Adhere to convention when writing new and delete.)
+    1) operator new应该内含一个无穷循环, 并在其中尝试分配内存, 如果它无法满
+       足内存需求, 就该调用new-handler; 它也应该有能力处理0bytes申请; 类专属
+       版本则还应该处理"比正确大小更大的(错误)申请"
+    2) operator delete应该在收到null指针时不做任何事, 类专属版本应该处理"比
+       正确大小更大的(错误)申请"
