@@ -48,3 +48,11 @@
     4) tr1添加了智能指针(tr1::shared_ptr), 一般化函数指针(tr1::function),
        hash-based容器, 正则表达式以及另外10个组件的支持
     5) tr1自身只是一份规范, 为获得tr1提供的好处, 你需要一份实物 -> boost
+
+
+
+## **55: 让自己熟悉boost** ##
+    (Familiarize yourself with boost.)
+    1) boost是一个社群, 也是一个网站; 致力于免费, 源码开放, 同僚复审的C++程
+       序库开发, boost在C++标准化过程中扮演深具影响力的角色
+    2) boost提供许多tr1组件的实现品, 以及其他许多程序库
