@@ -26,12 +26,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdio.h>
 #include "globals.h"
 
 
 
 FILE* g_source_stream;
 FILE* g_scan_stream;
-int   g_line_numer = 0;
+int   g_line_numer = 1;
 char  g_token[MAX_TOKEN];

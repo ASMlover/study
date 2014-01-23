@@ -57,6 +57,11 @@
 #ifndef __GLOBALS_HEADER_H__
 #define __GLOBALS_HEADER_H__
 
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 enum Boolean {
   BOOL_NO = 0, 
   BOOL_YES, 
@@ -92,10 +97,11 @@ enum TokenType {
   TOKEN_TYPE_LBRACE,        /* { */
   TOKEN_TYPE_RBRACE,        /* } */
 
-  TOKEN_TYPE_NUM,
+  TOKEN_TYPE_CINT,          /* const int */
+  TOKEN_TYPE_CREAL,         /* const real */
   TOKEN_TYPE_ID, 
 
-  TOKEN_TYPE_NEWLINE,       /* \n */
+  TOKEN_TYPE_COMMENT,       /* # */
 };
 
 

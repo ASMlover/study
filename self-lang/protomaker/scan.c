@@ -26,27 +26,26 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "globals.h"
 #include "scan.h"
 
 
 enum ScanStatus {
   SCAN_STATUS_START = 0, 
-  SCAN_STATUS_IN_ACCESS, 
-  SCAN_STATUS_IN_NUMBER, 
-  SCAN_STATUS_IN_ID, 
   SCAN_STATUS_DONE, 
+
+  SCAN_STATUS_IN_ACCESS, 
+  SCAN_STATUS_IN_ID, 
+  SCAN_STATUS_IN_CINT, 
+  SCAN_STATUS_IN_CREAL, 
+  SCAN_STATUE_IN_COMMENT, 
 };
 
 
 static const struct {
   char* str;
   int   tok;
-} kKeywords[] = {
+} kReserveds[] = {
   {"default", TOKEN_TYPE_DEFAULT}, 
   {"enum", TOKEN_TYPE_ENUM}, 
   {"message", TOKEN_TYPE_MESSAGE}, 
@@ -79,7 +78,7 @@ static int  s_eof = BOOL_NO;
 static void 
 echo_scanner(FILE* stream, int lineno, int type, const char* token)
 {
-  fprintf(stream, "\t%d: ", lineno);
+  fprintf(stream, "        %d: ", lineno);
 
   switch (type) {
   case TOKEN_TYPE_DEFAULT:
@@ -124,8 +123,11 @@ echo_scanner(FILE* stream, int lineno, int type, const char* token)
   case TOKEN_TYPE_EOF:
     fprintf(stream, "EOF\n");
     break;
-  case TOKEN_TYPE_NUM:
-    fprintf(stream, "NUMBER, value => %s\n", token);
+  case TOKEN_TYPE_CINT:
+    fprintf(stream, "NUM(INT), value => %s\n", token);
+    break;
+  case TOKEN_TYPE_CREAL:
+    fprintf(stream, "NUM(REAL), value => %s\n", token);
     break;
   case TOKEN_TYPE_ID:
     fprintf(stream, "ID, name => %s\n", token);
@@ -145,8 +147,6 @@ static int
 get_char(void)
 {
   if (s_line_pos >= s_buf_size) {
-    ++g_line_numer;
-
     if (NULL != fgets(s_line_buf, MAX_LINE_BUF - 1, g_source_stream)) {
       fprintf(g_scan_stream, "%4d: %s", g_line_numer, s_line_buf);
 
@@ -172,13 +172,13 @@ unget_char(void)
 
 
 static int 
-keyword_lookup(const char* s) 
+lookup_reserved(const char* s) 
 {
   int i;
-  int count = countof(kKeywords);
+  int count = countof(kReserveds);
   for (i = 0; i < count; ++i) {
-    if (0 == strcmp(s, kKeywords[i].str))
-      return kKeywords[i].tok;
+    if (0 == strcmp(s, kReserveds[i].str))
+      return kReserveds[i].tok;
   }
 
   return TOKEN_TYPE_ID;
@@ -200,8 +200,15 @@ get_token(void)
 
     switch (status) {
     case SCAN_STATUS_START:
-      if (isdigit(c)) {
-        status = SCAN_STATUS_IN_NUMBER;
+      if (' ' == c || '\t' == c) {
+        save = BOOL_NO;
+      }
+      else if ('\n' == c) {
+        save = BOOL_NO;
+        ++g_line_numer;
+      }
+      else if (isdigit(c)) {
+        status = SCAN_STATUS_IN_CINT;
       }
       else if (isalpha(c) || '_' == c) {
         status = SCAN_STATUS_IN_ID;
@@ -209,8 +216,8 @@ get_token(void)
       else if ('.' == c) {
         status = SCAN_STATUS_IN_ACCESS;
       }
-      else if (' ' == c || '\t' == c || '\n' == c) {
-        save = BOOL_NO;
+      else if ('#' == c) {
+        status = SCAN_STATUE_IN_COMMENT;
       }
       else {
         status = SCAN_STATUS_DONE;
@@ -238,6 +245,7 @@ get_token(void)
           type = TOKEN_TYPE_RBRACE;
           break;
         default:
+          save = BOOL_NO;
           type = TOKEN_TYPE_ERR;
           break;
         }
@@ -255,20 +263,44 @@ get_token(void)
         exit(1);
       }
       break;
-    case SCAN_STATUS_IN_NUMBER:
-      if (!isdigit(c)) {
-        unget_char();
-        save = BOOL_NO;
-        status = SCAN_STATUS_DONE;
-        type = TOKEN_TYPE_NUM;
-      }
-      break;
     case SCAN_STATUS_IN_ID:
       if (!isalnum(c) && '_' != c) {
         unget_char();
         save = BOOL_NO;
         status = SCAN_STATUS_DONE;
         type = TOKEN_TYPE_ID;
+      }
+      break;
+    case SCAN_STATUS_IN_CINT:
+      if ('.' == c) {
+        status = SCAN_STATUS_IN_CREAL;
+      }
+      else {
+        if (!isdigit(c)) {
+          unget_char();
+          save = BOOL_NO;
+          status = SCAN_STATUS_DONE;
+          type = TOKEN_TYPE_CINT;
+        }
+      }
+      break;
+    case SCAN_STATUS_IN_CREAL:
+      if (!isdigit(c)) {
+        unget_char();
+        save = BOOL_NO;
+        status = SCAN_STATUS_DONE;
+        type = TOKEN_TYPE_CREAL;
+      }
+      break;
+    case SCAN_STATUE_IN_COMMENT:
+      save = BOOL_NO;
+      if (EOF == c) {
+        status = SCAN_STATUS_DONE;
+        type = TOKEN_TYPE_EOF;
+      }
+      else if ('\n' == c) {
+        ++g_line_numer;
+        status = SCAN_STATUS_START;
       }
       break;
     case SCAN_STATUS_DONE:
@@ -285,7 +317,7 @@ get_token(void)
     if (SCAN_STATUS_DONE == status) {
       g_token[index] = 0;
       if (TOKEN_TYPE_ID == type)
-        type = keyword_lookup(g_token);
+        type = lookup_reserved(g_token);
     }
   }
 
