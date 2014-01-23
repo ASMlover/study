@@ -53,6 +53,7 @@ static const struct {
   {"protocol", TOKEN_TYPE_PROTOCOL}, 
   {"type", TOKEN_TYPE_TYPE}, 
 
+  {"char", TOKEN_TYPE_CHAR}, 
   {"byte", TOKEN_TYPE_BYTE}, 
   {"int8", TOKEN_TYPE_INT8}, 
   {"uint8", TOKEN_TYPE_UINT8}, 
@@ -88,6 +89,7 @@ echo_scanner(FILE* stream, int lineno, int type, const char* token)
   case TOKEN_TYPE_MESSAGE:
   case TOKEN_TYPE_PROTOCOL:
   case TOKEN_TYPE_TYPE:
+  case TOKEN_TYPE_CHAR:
   case TOKEN_TYPE_BYTE:
   case TOKEN_TYPE_INT8:
   case TOKEN_TYPE_UINT8:
@@ -99,7 +101,7 @@ echo_scanner(FILE* stream, int lineno, int type, const char* token)
   case TOKEN_TYPE_UINT64:
   case TOKEN_TYPE_REAL32:
   case TOKEN_TYPE_REAL64:
-    fprintf(stream, "keyword: %s\n", token);
+    fprintf(stream, "reserved: %s\n", token);
     break;
   case TOKEN_TYPE_ASSIGN:
     fprintf(stream, "=\n");

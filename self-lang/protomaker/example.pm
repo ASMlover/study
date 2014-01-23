@@ -20,13 +20,17 @@ message LoginMsg < protocol {
 }
 
 message LoginMsgC2S < LoginMsg {
-  byte account[ACCOUNT_LEN]
+  char account[ACCOUNT_LEN]
+}
+
+type PlayerInfo {
+  char    name[NAME_LEN]
+  uint8   photo
+  uint32  id 
+  uint32  coins
+  uint32  scores
 }
 
 message LoginMsgS2C < LoginMsg {
-  byte   name[NAME_LEN]
-  uint8  photo
-  uint32 player_id
-  uint32 coins
-  uint32 scores
+  PlayerInfo info
 }

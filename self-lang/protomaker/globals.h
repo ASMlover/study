@@ -78,6 +78,7 @@ enum TokenType {
   TOKEN_TYPE_PROTOCOL,      /* protocol */
   TOKEN_TYPE_TYPE,          /* type */
 
+  TOKEN_TYPE_CHAR,          /* char */
   TOKEN_TYPE_BYTE,          /* byte */
   TOKEN_TYPE_INT8,          /* int8 */
   TOKEN_TYPE_UINT8,         /* uint8 */
