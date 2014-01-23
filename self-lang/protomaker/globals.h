@@ -72,6 +72,7 @@ enum TokenType {
   TOKEN_TYPE_ERR, 
 
   TOKEN_TYPE_DEFAULT,       /* default */
+  TOKEN_TYPE_DEFINE,        /* define */
   TOKEN_TYPE_ENUM,          /* enum */
   TOKEN_TYPE_MESSAGE,       /* message */
   TOKEN_TYPE_PROTOCOL,      /* protocol */

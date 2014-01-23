@@ -1,5 +1,10 @@
 # example for protomaker language
 
+
+define ACCOUNT_LEN = 36 # default length for account
+define NAME_LEN = 36    # default length for name 
+define IP = 3.1415926
+
 protocol Message {
   enum {
     kMessageBegin = 0
@@ -12,16 +17,14 @@ protocol Message {
 
 message LoginMsg < protocol {
   __protocol default = Message.kMessageLogin
-  real32 coins
 }
 
 message LoginMsgC2S < LoginMsg {
-  coins default = 100.15
-  byte account[36]
+  byte account[ACCOUNT_LEN]
 }
 
 message LoginMsgS2C < LoginMsg {
-  byte   name[36]
+  byte   name[NAME_LEN]
   uint8  photo
   uint32 player_id
   uint32 coins

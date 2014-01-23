@@ -47,6 +47,7 @@ static const struct {
   int   tok;
 } kReserveds[] = {
   {"default", TOKEN_TYPE_DEFAULT}, 
+  {"define", TOKEN_TYPE_DEFINE}, 
   {"enum", TOKEN_TYPE_ENUM}, 
   {"message", TOKEN_TYPE_MESSAGE}, 
   {"protocol", TOKEN_TYPE_PROTOCOL}, 
@@ -82,6 +83,7 @@ echo_scanner(FILE* stream, int lineno, int type, const char* token)
 
   switch (type) {
   case TOKEN_TYPE_DEFAULT:
+  case TOKEN_TYPE_DEFINE:
   case TOKEN_TYPE_ENUM:
   case TOKEN_TYPE_MESSAGE:
   case TOKEN_TYPE_PROTOCOL:
@@ -217,6 +219,7 @@ get_token(void)
         status = SCAN_STATUS_IN_ACCESS;
       }
       else if ('#' == c) {
+        save = BOOL_NO;
         status = SCAN_STATUE_IN_COMMENT;
       }
       else {
