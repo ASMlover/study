@@ -8,23 +8,18 @@
 
 
 ## **Keywords** ##
-    default   message     type
-    enum      protocol   
+    default   enum      protocol
+    define    message   type   
 
 
 ## **Types** ##
-      ProtoMaker          C++
-        byte              char
-        int8              int8_t
-        uint8             uint8_t
-        int16             int16_t
-        uint16            uint16_t
-        int32             int32_t
-        uint32            uint32_t
-        int64             int64_t
-        uint64            uint64_t
-        real32            float
-        real64            double
+        ProtoMaker          C++
+        char/byte        char/unsigned char
+        int8/uint8        int8_t/uint8_t
+        int16/uint16      int16_t/uint16_t
+        int32/uint32      int32_t/uint32_t
+        int64/uint64      int64_t/uint64_t
+        real32/real64     float/double
 
 
 ## **Operators** ##
@@ -32,6 +27,7 @@
 
 
 ## **Examples** ##
+    define NAME_LEN = 36
     protocol Message {
       enum {
         kMessageBegin = 0
