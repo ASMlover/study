@@ -30,7 +30,7 @@ RM	= rm
 CC	= gcc
 CFLAGS	= -g -O2 -Wall
 OBJS	= main.o globals.o scan.o
-
+LOGS	= *.scan
 
 
 
@@ -41,7 +41,7 @@ all: $(OUT)
 rebuild: clean all 
 
 clean:
-	$(RM) $(OUT) $(OBJS)
+	$(RM) $(OUT) $(OBJS) $(LOGS)
 
 
 

@@ -2,7 +2,7 @@
 
 
 define ACCOUNT_LEN = 36 # default length for account
-define NAME_LEN = 36    # default length for name 
+define NAME_LEN = 36    # default length for name
 define IP = 3.1415926
 
 protocol Message {
@@ -12,7 +12,7 @@ protocol Message {
     kMessageLogout
     kMessageEnd
   }
-  uint8 __protocol 
+  uint8 __protocol
 }
 
 message LoginMsg < protocol {
@@ -26,7 +26,7 @@ message LoginMsgC2S < LoginMsg {
 type PlayerInfo {
   char    name[NAME_LEN]
   uint8   photo
-  uint32  id 
+  uint32  id
   uint32  coins
   uint32  scores
 }
