@@ -13,13 +13,13 @@
 
 
 ## **Types** ##
-        ProtoMaker          C++
-        char/byte        char/unsigned char
-        int8/uint8        int8_t/uint8_t
-        int16/uint16      int16_t/uint16_t
-        int32/uint32      int32_t/uint32_t
-        int64/uint64      int64_t/uint64_t
-        real32/real64     float/double
+        ProtoMaker          C++                       Java
+        char/byte        char/unsigned char           byte
+        int8/uint8        int8_t/uint8_t              byte
+        int16/uint16      int16_t/uint16_t            short
+        int32/uint32      int32_t/uint32_t            int
+        int64/uint64      int64_t/uint64_t            long
+        real32/real64     float/double                float/double
 
 
 ## **Operators** ##
