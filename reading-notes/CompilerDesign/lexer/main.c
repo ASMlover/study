@@ -26,11 +26,76 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdio.h>
+#include "global.h"
+#include "lexer.h"
+
+
+static const char* kTokenTypes[] = {
+  "TOKEN_TYPE_ERR", 
+  "TOKEN_TYPE_EOF",         /* EOF */
+
+  "TOKEN_TYPE_CINT",        /* const int */
+  "TOKEN_TYPE_CREAL",       /* const real */
+
+  "TOKEN_TYPE_ID",          /* id */
+
+  "TOKEN_TYPE_ASSIGN",      /* = */
+  "TOKEN_TYPE_EQ",          /* == */
+  "TOKEN_TYPE_NEQ",         /* <> */
+  "TOKEN_TYPE_LT",          /* < */
+  "TOKEN_TYPE_LE",          /* <= */
+  "TOKEN_TYPE_GT",          /* > */
+  "TOKEN_TYPE_GE",          /* >= */
+  "TOKEN_TYPE_ADD",         /* + */
+  "TOKEN_TYPE_SUB",         /* - */
+  "TOKEN_TYPE_MUL",         /* * */
+  "TOKEN_TYPE_DIV",         /* / */
+  "TOKEN_TYPE_MOD",         /* % */
+
+  "TOKEN_TYPE_DOT",         /* . */
+  "TOKEN_TYPE_COMMA",       /* , */
+  "TOKEN_TYPE_SEMI",        /* ; */
+  "TOKEN_TYPE_LPAREN",      /* ( */
+  "TOKEN_TYPE_RPAREN",      /* ) */
+  "TOKEN_TYPE_LBRACKET",    /* [ */
+  "TOKEN_TYPE_RBRACKET",    /* ] */
+  "TOKEN_TYPE_LBRACE",      /* { */
+  "TOKEN_TYPE_RBRACE",      /* } */
+
+  "TOKEN_TYPE_NIL",         /* nil */
+  "TOKEN_TYPE_TRUE",        /* true */
+  "TOKEN_TYPE_FALSE",       /* false */
+  "TOKEN_TYPE_AND",         /* and */
+  "TOKEN_TYPE_OR",          /* or */
+  "TOKEN_TYPE_NOT",         /* not */
+  "TOKEN_TYPE_IF",          /* if */
+  "TOKEN_TYPE_ELSE",        /* else */
+  "TOKEN_TYPE_FOR",         /* for */
+  "TOKEN_TYPE_BREAK",       /* break */
+  "TOKEN_TYPE_FUNC",        /* func */
+  "TOKEN_TYPE_RET",         /* return */
+
+  "TOKEN_TYPE_COMMENT",     /* # */
+};
 
 
 int 
 main(int argc, char* argv[])
 {
+  struct Lexer* lex;
+  struct Token t;
+
+  if (argc < 2) {
+    fprintf(stderr, "USAGE: lexer source-file\n");
+    return 1;
+  }
+  
+  lex = lexer_create(argv[1]);
+  while (TOKEN_TYPE_EOF != lexer_token(lex, &t)) {
+    fprintf(stdout, "        %s:%4d - %s:%s\n", t.line.fname, 
+        t.line.lineno, kTokenTypes[t.type], t.name);
+  }
+  lexer_release(&lex);
+
   return 0;
 }
