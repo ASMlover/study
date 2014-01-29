@@ -35,10 +35,16 @@
 #include <string.h>
 
 
-enum KL_Boolean {
+#ifndef countof
+# define countof(x)   (sizeof(x) / sizeof(*x))
+#endif
+
+
+typedef enum KL_Boolean {
+  /* boolean type */
   BOOL_NO = 0, 
   BOOL_YES, 
-};
+} KL_Boolean;
 
 
 enum KL_ValueType {
@@ -52,16 +58,16 @@ enum KL_ValueType {
 
 typedef struct KL_String {
   /* string */
-  int   ref_count;
-  char* string;
-  int   is_literal;
+  int         ref_count;
+  char*       string;
+  KL_Boolean  is_literal;
 } KL_String;
 
 typedef struct KL_Value {
   /* value */
   int val_type;
   union {
-    int         bool_val;
+    KL_Boolean  bool_val;
     int         int_val;
     double      real_val;
     KL_String*  str_val;
@@ -126,7 +132,7 @@ struct KL_Expr {
   int expr_type;    /* type of expression */
   int lineno;       /* line number of this expression */
   union {
-    int             bool_val;
+    KL_Boolean      bool_val;
     int             int_val;
     double          real_val;
     char*           str_val;
@@ -274,5 +280,27 @@ typedef struct KL_GlobalVariableRef {
   struct KL_GlobalVariableRef*  next;
   KL_Variable*                  variable;
 } KL_GlobalVariableRef;
+
+
+typedef struct KL_LocalEnv {
+  /* local environment */
+  KL_Variable*          variable;
+  KL_GlobalVariableRef* global_variable;
+} KL_LocalEnv;
+
+
+
+
+/*
+ * KL Interpreter for KL language.
+ * It's main structure for KL language.
+ */
+struct KL_State {
+  KL_Variable*    variable;
+  KL_Function*    func_list;
+  KL_StmtList*    stmt_list;
+  int             lineno;
+};
+
 
 #endif  /* __GLOBAL_HEADER_H__ */
