@@ -78,11 +78,13 @@ extern void* KL_mem_realloc_func(KL_MemController* controller,
     const char* filename, int line, void* ptr, size_t size);
 extern char* KL_mem_strdup_func(KL_MemController* controller, 
     const char* filename, int line, const char* str);
+extern void KL_mem_free_func(KL_MemController* controller, void* ptr);
+
+
 extern KL_MemStorage* KL_mem_open_storage_func(KL_MemController* controller,
     const char* filename, int line, int page_size);
 extern void* KL_mem_storage_malloc_func(KL_MemController* controller, 
     const char* filename, int line, KL_MemStorage* storage, size_t size);
-extern void KL_mem_free_func(KL_MemController* controller, void* ptr);
 extern void KL_mem_dispose_storage_func(KL_MemController* controller,
     KL_MemStorage* storage);
 

@@ -120,4 +120,64 @@ KL_mem_malloc_func(KL_MemController* controller,
   return ptr;
 }
 
+void* 
+KL_mem_realloc_func(KL_MemController* controller, 
+    const char* filename, int line, void* ptr, size_t size)
+{
+  void* new_ptr;
+  void* real_ptr = ptr;
+
+  new_ptr = realloc(real_ptr, size);
+  if (NULL == new_ptr) {
+    if (NULL == ptr) {
+      error_handler(controller, filename, line, "realloc(malloc)");
+    }
+    else {
+      error_handler(controller, filename, line, "realloc");
+      free(real_ptr);
+    }
+  }
+
+  return new_ptr;
+}
+
+
+char* 
+KL_mem_strdup_func(KL_MemController* controller, 
+    const char* filename, int line, const char* str)
+{
+  size_t size = strlen(str) + 1;
+
+  char* dest = (char*)malloc(size);
+  if (NULL == dest)
+    error_handler(controller, filename, line, "strdup");
+
+  strcpy(dest, str);
+
+  return dest;
+}
+
+void 
+KL_mem_free_func(KL_MemController* controller, void* ptr)
+{
+  if (NULL == ptr)
+    return;
+
+  free(ptr);
+}
+
+
+
+void 
+KL_mem_set_error_handler(KL_MemController* controller, 
+    KL_MemErrorHandler hander)
+{
+  controller->err_handler = hander;
+}
+
+void 
+KL_mem_set_fail_mode(KL_MemController* controller, int fail_mode)
+{
+  controller->fail_mode = fail_mode;
+}
 
