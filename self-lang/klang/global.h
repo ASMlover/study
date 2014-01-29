@@ -39,6 +39,10 @@
 # define countof(x)   (sizeof(x) / sizeof(*x))
 #endif
 
+#ifndef larger
+# define larger(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+
 
 typedef enum KL_Boolean {
   /* boolean type */
