@@ -306,4 +306,76 @@ struct KL_State {
 };
 
 
+/* create functions */
+extern void KL_function_def(const char* identifier, 
+    KL_ParamList* param_list, KL_Block* block);
+extern KL_ParamList* KL_create_param(const char* identifier);
+extern KL_ParamList* KL_chain_param(
+    KL_ParamList* list, const char* identifier);
+extern KL_ArgList* KL_create_arg_list(KL_Expr* expr);
+extern KL_ArgList* KL_chain_arg_list(KL_ArgList* list, KL_Expr* expr);
+extern KL_StmtList* KL_create_stmt_list(KL_Stmt* stmt);
+extern KL_StmtList* KL_chain_stmt_list(KL_StmtList* list, KL_Stmt* stmt);
+extern KL_Expr* KL_alloc_expr(int expr_type);
+extern KL_Expr* KL_create_assign_expr(
+    const char* identifier, KL_Expr* oprand);
+extern KL_Expr* KL_create_bin_expr(int oper, KL_Expr* left, KL_Expr* right);
+extern KL_Expr* KL_create_minus_expr(KL_Expr* oprand);
+extern KL_Expr* KL_create_identifier_expr(const char* identifier);
+extern KL_Expr* KL_create_func_call_expr(
+    const char* func_name, KL_ArgList* argument);
+extern KL_Expr* KL_create_boolean_expr(KL_Boolean v);
+extern KL_Expr* KL_create_nil_expr(void);
+extern KL_Stmt* KL_create_global_stmt(KL_IDList* id_list);
+extern KL_IDList* KL_create_global_identifier(const char* identifier);
+extern KL_IDList* KL_chain_identifier(
+    KL_IDList* list, const char* identifier);
+extern KL_Stmt* KL_create_if_stmt( KL_Expr* cond, 
+    KL_Block* then_block, KL_Block* else_block);
+extern KL_Stmt* KL_create_while_stmt(KL_Expr* cond, KL_Block* block);
+extern KL_Block* KL_create_block(KL_StmtList* stmt_list);
+extern KL_Stmt* KL_create_expr_stmt(KL_Expr* expr);
+extern KL_Stmt* KL_create_return_stmt(KL_Expr* expr);
+extern KL_Stmt* KL_create_break_stmt(void);
+
+
+/* string */
+extern char* KL_create_identifier(const char* str);
+extern void KL_open_string_literal(void);
+extern void KL_add_string_literal(int letter);
+extern void KL_reset_string_literal_buffer(void);
+extern char* KL_close_string_literal(void);
+
+
+/* execute module */
+extern KL_StmtResult KL_exec_stmt_list(KL_State* L, 
+    KL_LocalEnv* env, KL_StmtList* list);
+
+
+/* eval module */
+extern KL_Value KL_eval_bin_expr(KL_State* L, 
+    KL_LocalEnv* env, int oper, KL_Expr* left, KL_Expr* right);
+extern KL_Value KL_eval_minus_expr(KL_State* L, 
+    KL_LocalEnv* env, KL_Expr* operand);
+extern KL_Value KL_eval_expr(KL_State* L, KL_LocalEnv* env, KL_Expr* expr);
+
+
+
+/* util module */
+extern KL_State* KL_get_state(void);
+extern void KL_set_state(KL_State* L);
+extern void* KL_util_malloc(size_t size);
+extern void* KL_util_exec_malloc(KL_State* L, size_t size);
+extern KL_Variable* KL_lookup_local_variable(
+    KL_LocalEnv* env, const char* identifier);
+extern KL_Variable* KL_lookup_global_variable(
+    KL_State* L, const char* identifier);
+extern void KL_add_local_variable(KL_LocalEnv* env, 
+    const char* identifier, KL_Value* value);
+extern KL_NativeFuncType KL_lookup_native_func(
+    KL_State* L, const char* name);
+extern KL_Function* KL_lookup_func(const char* name);
+extern char* KL_get_oper_string(int expr_type);
+
+
 #endif  /* __GLOBAL_HEADER_H__ */
