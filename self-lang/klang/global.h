@@ -33,14 +33,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "memory.h"
 
 
 #ifndef countof
 # define countof(x)   (sizeof(x) / sizeof(*x))
-#endif
-
-#ifndef larger
-# define larger(a, b) (((a) > (b)) ? (a) : (b))
 #endif
 
 
@@ -300,6 +297,8 @@ typedef struct KL_LocalEnv {
  * It's main structure for KL language.
  */
 struct KL_State {
+  KL_MemStorage*  kl_storage;
+  KL_MemStorage*  exec_storage;
   KL_Variable*    variable;
   KL_Function*    func_list;
   KL_StmtList*    stmt_list;
