@@ -57,3 +57,21 @@ KL_lookup_func(const char* name)
 
   return func;
 }
+
+
+void* 
+KL_util_malloc(size_t size)
+{
+  KL_State* L = KL_get_state();
+  void* ptr = KL_storage_malloc(L->kl_storage, size);
+
+  return ptr;
+}
+
+void* 
+KL_util_exec_malloc(KL_State* L, size_t size)
+{
+  void* ptr = KL_storage_malloc(L->exec_storage, size);
+
+  return ptr;
+}
