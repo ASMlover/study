@@ -32,6 +32,11 @@
 
 
 
+
+#ifndef larger
+# define larger(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+
 typedef union KL_Cell {
   long    l_dummy;
   double  d_dummy;
