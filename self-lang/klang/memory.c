@@ -103,7 +103,8 @@ error_handler(KL_MemController* controller,
 KL_MemController* 
 KL_mem_create_controller(void)
 {
-  KL_MemController* controller = KL_malloc(sizeof(*controller));
+  KL_MemController* controller = KL_mem_malloc_func(
+      &s_def_controller, __FILE__, __LINE__, sizeof(*controller));
   *controller = s_def_controller;
 
   return controller;
