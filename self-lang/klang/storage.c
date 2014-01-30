@@ -27,7 +27,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <assert.h>
-#include "global.h"
 #include "memory.h"
 
 
