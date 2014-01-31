@@ -50,3 +50,47 @@ KL_function_def(const char* identifier,
   func->next = L->func_list;
   L->func_list = func;
 }
+
+KL_ParamList* 
+KL_create_param(const char* identifier)
+{
+  KL_ParamList* p = (KL_ParamList*)KL_util_malloc(sizeof(*p));
+  p->name = (char*)identifier;
+  p->next = NULL;
+
+  return p;
+}
+
+KL_ParamList* 
+KL_chain_param(KL_ParamList* list, const char* identifier)
+{
+  KL_ParamList* param;
+
+  for (param = list; NULL != param->next; param = param->next) {
+  }
+  param->next = KL_create_param(identifier);
+
+  return list;
+}
+
+KL_ArgList* 
+KL_create_arg_list(KL_Expr* expr) 
+{
+  KL_ArgList* arg = (KL_ArgList*)KL_util_malloc(sizeof(*arg));
+  arg->expr = expr;
+  arg->next = NULL;
+
+  return arg;
+}
+
+KL_ArgList* 
+KL_chain_arg_list(KL_ArgList* list, KL_Expr* expr)
+{
+  KL_ArgList* arg;
+
+  for (arg = list; NULL != arg->next; arg = arg->next) {
+  }
+  arg->next = KL_create_arg_list(expr);
+
+  return list;
+}
