@@ -29,7 +29,7 @@ OUT	= klang.exe
 RM	= rm 
 CC	= gcc
 CFLAGS	= -g -O2 -Wall
-OBJS	= main.o memory.o storage.o util.o create.o
+OBJS	= main.o memory.o storage.o util.o create.o string.o
 
 
 
