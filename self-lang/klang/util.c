@@ -75,3 +75,126 @@ KL_util_exec_malloc(KL_State* L, size_t size)
 
   return ptr;
 }
+
+KL_Variable* 
+KL_lookup_local_variable(KL_LocalEnv* env, const char* identifier)
+{
+  KL_Variable* var;
+
+  if (NULL == env)
+    return NULL;
+
+  for (var = env->variable; NULL != var; var = var->next) {
+    if (0 == strcmp(var->name, identifier))
+      return var;
+  }
+
+  return NULL;
+}
+
+KL_Variable* 
+KL_lookup_global_variable(KL_State* L, const char* identifier)
+{
+  KL_Variable* var;
+
+  for (var = L->variable; NULL != var; var = var->next) {
+    if (0 == strcmp(var->name, identifier))
+      return var;
+  }
+
+  return NULL;
+}
+
+void 
+KL_add_local_variable(KL_LocalEnv* env, 
+    const char* identifier, KL_Value* value)
+{
+  KL_Variable* new_variable 
+    = (KL_Variable*)KL_malloc(sizeof(*new_variable));
+  new_variable->name = (char*)identifier;
+  new_variable->value = *value;
+  new_variable->next = env->variable;
+  env->variable = new_variable;
+}
+
+void 
+KL_add_global_variable(KL_State* L, 
+    const char* identifier, KL_Value* value)
+{
+  KL_Variable* new_variable
+    = (KL_Variable*)KL_util_exec_malloc(L, sizeof(*new_variable));
+  new_variable->name = (char*)KL_util_exec_malloc(L, 
+      strlen(identifier) + 1);
+  strcpy(new_variable->name, identifier);
+  new_variable->next = L->variable;
+  L->variable = new_variable;
+  new_variable->value = *value;
+}
+
+char* 
+KL_get_oper_string(int expr_type)
+{
+  char* str = "";
+
+  switch (expr_type) {
+  case ET_BOOL:
+  case ET_INT:
+  case ET_REAL:
+  case ET_STR:
+  case ET_ID:
+    //! bad expression type:
+    break;
+  case ET_ASSIGN:
+    str = "=";
+    break;
+  case ET_ADD:
+    str = "+";
+    break;
+  case ET_SUB:
+    str = "-";
+    break;
+  case ET_MUL:
+    str = "*";
+    break;
+  case ET_DIV:
+    str = "/";
+    break;
+  case ET_MOD:
+    str = "%";
+    break;
+  case ET_EQ:
+    str = "==";
+    break;
+  case ET_NEQ:
+    str = "<>";
+    break;
+  case ET_GT:
+    str = ">";
+    break;
+  case ET_GE:
+    str = ">=";
+    break;
+  case ET_LT:
+    str = "<";
+    break;
+  case ET_LE:
+    str = "<=";
+    break;
+  case ET_AND:
+    str = "&&";
+    break;
+  case ET_OR:
+    str = "||";
+    break;
+  case ET_MINUS:
+    str = "-";
+    break;
+  case ET_FUNC_CALL:
+  case ET_NIL:
+  default:
+    //! bad expression
+    break;
+  }
+
+  return str;
+}
