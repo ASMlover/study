@@ -372,6 +372,8 @@ extern KL_Variable* KL_lookup_global_variable(
     KL_State* L, const char* identifier);
 extern void KL_add_local_variable(KL_LocalEnv* env, 
     const char* identifier, KL_Value* value);
+extern void KL_add_global_variable(KL_State* L, 
+    const char* identifier, KL_Value* value);
 extern KL_NativeFuncType KL_lookup_native_func(
     KL_State* L, const char* name);
 extern KL_Function* KL_lookup_func(const char* name);
