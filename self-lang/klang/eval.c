@@ -65,8 +65,30 @@ eval_str_expr(KL_State* L, const char* str_val)
 {
   KL_Value v;
   v.val_type = VT_STR;
-  //v.value.str_val = KL_li
-
+  v.value.str_val = KL_literal_to_string(L, str_val);
 
   return v;
+}
+
+static KL_Value 
+eval_nil_expr(void)
+{
+  KL_Value v;
+  v.val_type = VT_NIL;
+
+  return v;
+}
+
+static void 
+refer_if_string(KL_Value* v)
+{
+  if (VT_STR == v->val_type)
+    KL_refer_string(v->value.str_val);
+}
+
+static void 
+release_if_string(KL_Value* v)
+{
+  if (VT_STR == v->val_type)
+    KL_release_string(v->value.str_val);
 }
