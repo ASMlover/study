@@ -30,6 +30,7 @@
 #define __GLOBAL_HEADER_H__
 
 #include <ctype.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
