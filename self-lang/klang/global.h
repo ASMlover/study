@@ -389,4 +389,20 @@ extern KL_Function* KL_lookup_func(const char* name);
 extern char* KL_get_oper_string(int expr_type);
 
 
+
+
+#define KL_is_math_oper(oper)\
+  (ET_ADD == (oper) || ET_SUB == (oper) \
+   || ET_MUL ==(oper) || ET_DIV == (oper) || ET_MOD == (oper))
+
+#define KL_is_compare_oper(oper)\
+  (ET_EQ == (oper) || ET_NEQ == (oper) || ET_GT == (oper) \
+   ET_GE == (oper) || ET_LT == (oper) || ET_LE == (oper))
+
+#define KL_is_logical_oper(oper)\
+  (ET_AND == (oper) || ET_OR == (oper))
+
+
+
+
 #endif  /* __GLOBAL_HEADER_H__ */
