@@ -27,3 +27,55 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include "global.h"
+#include "memory.h"
+
+
+static KL_String* 
+alloc_string(KL_State* L, const char* str, KL_Boolean is_literal)
+{
+  KL_String* ret = (KL_String*)KL_malloc(sizeof(*ret));
+  ret->ref_count = 0;
+  ret->is_literal = is_literal;
+  ret->string = (char*)str;
+
+  return ret;
+}
+
+KL_String* 
+KL_literal_to_string(KL_State* L, const char* str)
+{
+  KL_String* ret = alloc_string(L, str, BOOL_YES);
+  ret->ref_count = 1;
+
+  return ret;
+}
+
+void 
+KL_refer_string(KL_String* str)
+{
+  ++str->ref_count;
+}
+
+void 
+KL_release_string(KL_String* str)
+{
+  --str->ref_count;
+
+  if (0 == str->ref_count) {
+    if (!str->is_literal)
+      KL_free(str->string);
+
+    KL_free(str);
+  }
+}
+
+
+
+KL_String* 
+KL_create_string(KL_State* L, const char* str)
+{
+  KL_String* ret = alloc_string(L, str, BOOL_NO);
+  ret->ref_count = 1;
+
+  return ret;
+}
