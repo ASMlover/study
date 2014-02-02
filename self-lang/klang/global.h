@@ -361,6 +361,15 @@ extern KL_Value KL_eval_expr(KL_State* L, KL_LocalEnv* env, KL_Expr* expr);
 
 
 
+/* string pool module */
+extern KL_String* KL_literal_to_string(KL_State* L, const char* str);
+extern void KL_refer_string(KL_String* str);
+extern void KL_release_string(KL_String* str);
+extern KL_String* KL_lookup_string(KL_State* L, const char* str);
+extern KL_String* KL_create_string(KL_State* L, const char* str);
+
+
+
 /* util module */
 extern KL_State* KL_get_state(void);
 extern void KL_set_state(KL_State* L);
