@@ -27,6 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include "global.h"
+#include "memory.h"
 
 
 
@@ -389,6 +390,23 @@ eval_bin_nil(KL_State* L, int expr_type,
   return result;
 }
 
+
+static KL_String* 
+chain_string(KL_State* L, KL_String* left, KL_String* right)
+{
+  char* str;
+  KL_String* ret;
+
+  int len = (int)strlen(left->string) + (int)strlen(right->string);
+  str = KL_malloc(len + 1);
+  sprintf(str, "%s%s", left->string, right->string);
+  ret = KL_create_string(L, str);
+  KL_release_string(left);
+  KL_release_string(right);
+
+  return ret;
+}
+
 KL_Value 
 KL_eval_bin_expr(KL_State* L, KL_LocalEnv* env, 
     int expr_type, KL_Expr* left, KL_Expr* right)
@@ -396,4 +414,90 @@ KL_eval_bin_expr(KL_State* L, KL_LocalEnv* env,
   KL_Value left_val;
   KL_Value right_val;
   KL_Value result;
+
+  left_val = eval_expr(L, env, left);
+  right_val = eval_expr(L, env, right);
+
+  if (VT_INT == left_val.val_type && VT_INT == right_val.val_type) {
+    eval_bin_int(L, expr_type, left_val.value.int_val, 
+        right_val.value.int_val, &result, left->lineno);
+  }
+  else if (VT_REAL == left_val.val_type && VT_REAL == right_val.val_type) {
+    eval_bin_real(L, expr_type, left_val.value.real_val, 
+        right_val.value.real_val, &result, left->lineno);
+  }
+  else if (VT_INT == left_val.val_type && VT_REAL == right_val.val_type) {
+    left_val.value.real_val = left_val.value.int_val;
+    eval_bin_real(L, expr_type, left_val.value.real_val, 
+        right_val.value.real_val, &result, left->lineno);
+  }
+  else if (VT_REAL == left_val.val_type && VT_INT == right_val.val_type) {
+    right_val.value.real_val = right_val.value.int_val;
+    eval_bin_real(L, expr_type, left_val.value.real_val, 
+        right_val.value.real_val, &result, left->lineno);
+  }
+  else if (VT_BOOL == left_val.val_type && VT_BOOL == right_val.val_type) {
+    result.val_type = VT_BOOL;
+    result.value.bool_val
+      = eval_bin_boolean(L, expr_type, 
+          left_val.value.bool_val, right_val.value.bool_val, left->lineno);
+  }
+  else if (VT_STR == left_val.val_type && ET_ADD == expr_type) {
+    char buf[KL_BUFSIZ];
+    KL_String* right_str;
+
+    if (VT_INT == right_val.val_type) {
+      sprintf(buf, "%d", right_val.value.int_val);
+      right_str = KL_create_string(L, KL_strdup(buf));
+    }
+    else if (VT_REAL == right_val.val_type) {
+      sprintf(buf, "%f",right_val.value.real_val);
+      right_str = KL_create_string(L, KL_strdup(buf));
+    }
+    else if (VT_BOOL == right_val.val_type) {
+      if (right_val.value.bool_val) 
+        right_str = KL_create_string(L, KL_strdup("true"));
+      else 
+        right_str = KL_create_string(L, KL_strdup("false"));
+    }
+    else if (VT_STR == right_val.val_type) {
+      right_str = right_val.value.str_val;
+    }
+    else if (VT_NIL == right_val.val_type) {
+      right_str = KL_create_string(L, KL_strdup("nil"));
+    }
+
+    result.val_type = VT_STR;
+    result.value.str_val = chain_string(L, 
+        left_val.value.str_val, right_str);
+  }
+  else if (VT_STR == left_val.val_type && VT_STR == right_val.val_type) {
+    result.val_type = VT_BOOL;
+    result.value.bool_val 
+      = eval_compare_string(expr_type, &left_val, &right_val, left->lineno);
+  }
+  else if (VT_NIL == left_val.val_type || VT_NIL == right_val.val_type) {
+    result.val_type = VT_BOOL;
+    result.value.bool_val 
+      = eval_bin_nil(L, expr_type, &left_val, &right_val, left->lineno);
+  }
+  else {
+    //! TODO:
+    //! char* op_str = KL_get_oper_string(expr_type);
+    //! runtime error 
+  }
+
+  return result;
+}
+
+
+
+
+
+
+static KL_Value 
+eval_expr(KL_State* L, KL_LocalEnv* env, KL_Expr* expr)
+{
+  KL_Value v = {0};
+  return v;
 }
