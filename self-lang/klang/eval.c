@@ -491,6 +491,175 @@ KL_eval_bin_expr(KL_State* L, KL_LocalEnv* env,
 }
 
 
+static KL_Value 
+eval_logical_expr(KL_State* L, 
+    KL_LocalEnv* env, int expr_type, KL_Expr* left, KL_Expr* right)
+{
+  KL_Value left_val;
+  KL_Value right_val;
+  KL_Value result;
+
+  result.val_type = VT_BOOL;
+  left_val = eval_expr(L, env, left);
+
+  if (VT_BOOL != left_val.val_type) {
+    //! runtime error
+  }
+
+  if (ET_AND == expr_type) {
+    if (!left_val.value.bool_val) {
+      result.value.bool_val = BOOL_NO;
+      return result;
+    }
+  }
+  else if (ET_OR == expr_type) {
+    if (left_val.value.bool_val) {
+      result.value.bool_val = BOOL_YES;
+      return result;
+    }
+  }
+  else {
+    //! panic
+  }
+
+  right_val = eval_expr(L, env, right);
+
+  if (VT_BOOL != right_val.val_type) {
+    //! runtime error
+  }
+  result.value.bool_val = right_val.value.bool_val;
+
+  return result;
+}
+
+KL_Value 
+KL_eval_minus_expr(KL_State* L, KL_LocalEnv* env, KL_Expr* operand)
+{
+  KL_Value operand_val;
+  KL_Value result;
+
+  operand_val = eval_expr(L, env, operand);
+  if (VT_INT == operand_val.val_type) {
+    result.val_type = VT_INT;
+    result.value.int_val = -operand_val.value.int_val;
+  }
+  else if (VT_BOOL == operand_val.val_type) {
+    result.val_type = VT_REAL;
+    result.value.real_val = -operand_val.value.real_val;
+  }
+  else {
+    //! runtime error
+  }
+
+  return result;
+}
+
+
+static KL_LocalEnv* 
+alloc_local_env(void)
+{
+  KL_LocalEnv* ret = (KL_LocalEnv*)KL_malloc(sizeof(*ret));
+  ret->variable = NULL;
+  ret->global_variable = NULL;
+
+  return ret;
+}
+
+static void 
+dispose_local_env(KL_State* L, KL_LocalEnv* env)
+{
+  KL_Variable* tmp;
+  KL_GlobalVariableRef* ref;
+  while (NULL != env->variable) {
+    tmp = env->variable;
+    if (VT_STR == env->variable->value.val_type)
+      KL_release_string(env->variable->value.value.str_val);
+
+    env->variable = tmp->next;
+    KL_free(tmp);
+  }
+
+  while (NULL != env->global_variable) {
+    ref = env->global_variable;
+    env->global_variable = ref->next;
+    KL_free(ref);
+  }
+
+  KL_free(env);
+}
+
+static KL_Value 
+call_native_func(KL_State* L, 
+    KL_LocalEnv* env, KL_Expr* expr, KL_NativeFuncType proc)
+{
+  KL_Value    value;
+  int         nargs;
+  KL_ArgList* arg_list;
+  KL_Value*   args;
+  int         i;
+
+  for (nargs = 0, arg_list = expr->expr.func_call_expr.argument;
+      NULL != arg_list; arg_list = arg_list->next) 
+    ++nargs;
+
+  args = (KL_Value*)KL_malloc(sizeof(*args));
+
+  for (arg_list = expr->expr.func_call_expr.argument, i = 0; 
+      NULL != arg_list; arg_list = arg_list->next, ++i)
+    args[i] = eval_expr(L, env, arg_list->expr);
+  value = proc(L, nargs, args);
+
+  for (i = 0; i < nargs; ++i) 
+    release_if_string(&args[i]);
+  KL_free(args);
+
+  return value;
+}
+
+static KL_Value 
+call_defined_func(KL_State* L, 
+    KL_LocalEnv* env, KL_Expr* expr, KL_Function* func)
+{
+  KL_Value      value;
+  KL_StmtResult result;
+  KL_ArgList*   arg_list;
+  KL_ParamList* param_list;
+  KL_LocalEnv*  local_env;
+
+  local_env = alloc_local_env();
+
+  for (arg_list = expr->expr.func_call_expr.argument, 
+      param_list = func->func.define.param; 
+      NULL != arg_list; 
+      arg_list = arg_list->next, param_list = param_list->next) {
+    KL_Value arg_val;
+
+    if (NULL == param_list) {
+      //! TODO:
+      //! runtime error
+    }
+    arg_val = eval_expr(L, env, arg_list->expr);
+    KL_add_local_variable(local_env, param_list->name, &arg_val);
+  }
+
+  if (NULL != param_list) {
+    //! runtime error
+  }
+
+  result = KL_exec_stmt_list(L, local_env, 
+      func->func.define.block->stmt_list);
+
+  if (SRT_RETURN == result.type)
+    value = result.stmt_result.value;
+  else 
+    value.val_type = VT_NIL;
+
+  dispose_local_env(L, local_env);
+
+  return value;
+}
+
+
 
 
 
