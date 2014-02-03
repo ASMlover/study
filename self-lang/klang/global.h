@@ -42,6 +42,9 @@
 #endif
 
 
+#define KL_BUFSIZ     (1024)
+
+
 typedef enum KL_Boolean {
   /* boolean type */
   BOOL_NO = 0, 
