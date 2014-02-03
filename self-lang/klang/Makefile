@@ -29,6 +29,7 @@ OUT	= klang.exe
 RM	= rm 
 CC	= gcc
 CFLAGS	= -g -O2 -Wall
+LDFLAGS	= -lm
 OBJS	= main.o memory.o storage.o util.o create.o string.o eval.o\
 	string_pool.o
 
@@ -48,7 +49,7 @@ clean:
 
 
 $(OUT): $(OBJS)
-	$(CC) -o $@ $^
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(OBJS): %.o: %.c
 	$(CC) -o $*.o -c $(CFLAGS) $^
