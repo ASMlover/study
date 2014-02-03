@@ -398,7 +398,7 @@ chain_string(KL_State* L, KL_String* left, KL_String* right)
   KL_String* ret;
 
   int len = (int)strlen(left->string) + (int)strlen(right->string);
-  str = KL_malloc(len + 1);
+  str = (char*)KL_malloc(len + 1);
   sprintf(str, "%s%s", left->string, right->string);
   ret = KL_create_string(L, str);
   KL_release_string(left);
@@ -444,7 +444,7 @@ KL_eval_bin_expr(KL_State* L, KL_LocalEnv* env,
   }
   else if (VT_STR == left_val.val_type && ET_ADD == expr_type) {
     char buf[KL_BUFSIZ];
-    KL_String* right_str;
+    KL_String* right_str = NULL;
 
     if (VT_INT == right_val.val_type) {
       sprintf(buf, "%d", right_val.value.int_val);
@@ -659,14 +659,98 @@ call_defined_func(KL_State* L,
   return value;
 }
 
+static KL_Value 
+eval_func_call_expr(KL_State* L, KL_LocalEnv* env, KL_Expr* expr)
+{
+  KL_Value value;
+  KL_Function* func;
 
+  char* identifier = expr->expr.func_call_expr.identifier;
+  func = KL_lookup_func(identifier);
+  if (NULL == func) {
+    //! TODO:
+    //! runtime error
+  }
 
+  switch (func->func_type) {
+  case FT_DEFINE:
+    value = call_defined_func(L, env, expr, func);
+    break;
+  case FT_NATIVE:
+    value = call_native_func(L, env, expr, func->func.native.proc);
+    break;
+  default:
+    //! panic
+    break;
+  }
 
-
+  return value;
+}
 
 static KL_Value 
 eval_expr(KL_State* L, KL_LocalEnv* env, KL_Expr* expr)
 {
-  KL_Value v = {0};
+  KL_Value v;
+
+  switch (expr->expr_type) {
+  case ET_BOOL:
+    v = eval_boolean_expr(expr->expr.bool_val);
+    break;
+  case ET_INT:
+    v = eval_int_expr(expr->expr.int_val);
+    break;
+  case ET_REAL:
+    v = eval_real_expr(expr->expr.real_val);
+    break;
+  case ET_STR:
+    v = eval_str_expr(L, expr->expr.str_val);
+    break;
+  case ET_ID:
+    v = eval_identifier_expr(L, env, expr);
+    break;
+  case ET_ASSIGN:
+    v = eval_assign_expr(L, env, 
+        expr->expr.assign_expr.variable, 
+        expr->expr.assign_expr.operand);
+    break;
+  case ET_ADD:
+  case ET_SUB:
+  case ET_MUL:
+  case ET_DIV:
+  case ET_MOD:
+  case ET_EQ:
+  case ET_NEQ:
+  case ET_GT:
+  case ET_GE:
+  case ET_LT:
+  case ET_LE:
+    v = KL_eval_bin_expr(L, env, expr->expr_type, 
+        expr->expr.binary_expr.left, expr->expr.binary_expr.right);
+    break;
+  case ET_AND:
+  case ET_OR:
+    v = eval_logical_expr(L, env, expr->expr_type, 
+        expr->expr.binary_expr.left, expr->expr.binary_expr.right);
+    break;
+  case ET_MINUS:
+    v = KL_eval_minus_expr(L, env, expr->expr.minus_expr);
+    break;
+  case ET_FUNC_CALL:
+    v = eval_func_call_expr(L, env, expr);
+    break;
+  case ET_NIL:
+    v = eval_nil_expr();
+    break;
+  default:
+    //! panic
+    break;
+  }
+
   return v;
+}
+
+KL_Value 
+KL_eval_expr(KL_State* L, KL_LocalEnv* env, KL_Expr* expr)
+{
+  return eval_expr(L, env, expr);
 }
