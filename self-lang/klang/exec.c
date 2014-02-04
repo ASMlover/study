@@ -171,3 +171,54 @@ exec_break_stmt(KL_State* L, KL_LocalEnv* env, KL_Stmt* stmt)
 
   return result;
 }
+
+static KL_StmtResult 
+exec_stmt(KL_State* L, KL_LocalEnv* env, KL_Stmt* stmt)
+{
+  KL_StmtResult result;
+
+  result.type = SRT_NORMAL;
+  switch (stmt->stmt_type) {
+  case ST_EXPR:
+    result = exec_expr_stmt(L, env, stmt);
+    break;
+  case ST_GLOBAL:
+    result = exec_global_stmt(L, env, stmt);
+    break;
+  case ST_IF:
+    result = exec_if_stmt(L, env, stmt);
+    break;
+  case ST_WHILE:
+    result = exec_while_stmt(L, env, stmt);
+    break;
+  case ST_RET:
+    result = exec_return_stmt(L, env, stmt);
+    break;
+  case ST_BREAK:
+    result = exec_break_stmt(L, env, stmt);
+    break;
+  default:
+    //! panic
+    break;
+  }
+
+  return result;
+}
+
+
+
+KL_StmtResult 
+KL_exec_stmt_list(KL_State* L, KL_LocalEnv* env, KL_StmtList* list)
+{
+  KL_StmtList* stmt_list;
+  KL_StmtResult result;
+
+  result.type = SRT_NORMAL;
+  for (stmt_list = list; NULL != stmt_list; stmt_list = stmt_list->next) {
+    result = exec_stmt(L, env, stmt_list->stmt);
+    if (SRT_NORMAL != result.type)
+      break;
+  }
+
+  return result;
+}
