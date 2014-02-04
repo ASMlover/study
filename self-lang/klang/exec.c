@@ -49,3 +49,125 @@ exec_expr_stmt(KL_State* L, KL_LocalEnv* env, KL_Stmt* stmt)
 
   return result;
 }
+
+static KL_StmtResult 
+exec_global_stmt(KL_State* L, KL_LocalEnv* env, KL_Stmt* stmt)
+{
+  KL_IDList* id_list;
+  KL_StmtResult result;
+
+  result.type = SRT_NORMAL;
+
+  if (NULL == env) {
+    //! runtime error
+  }
+
+  for (id_list = stmt->stmt.global_s.id_list; 
+      NULL != id_list; id_list = id_list->next) {
+    KL_GlobalVariableRef* ref;
+    KL_GlobalVariableRef* new_ref;
+    KL_Variable* variable;
+
+    for (ref = env->global_variable; NULL != ref; ref = ref->next) {
+      if (0 == strcmp(ref->variable->name, id_list->name))
+        goto NEXT_IDENTIFIER;
+    }
+
+    variable = KL_lookup_global_variable(L, id_list->name);
+    if (NULL == variable) {
+      //! runtime error
+    }
+
+    new_ref = (KL_GlobalVariableRef*)KL_malloc(sizeof(*new_ref));
+    new_ref->variable = variable;
+    new_ref->next = env->global_variable;
+    env->global_variable = new_ref;
+
+NEXT_IDENTIFIER:
+    {
+    }
+  }
+
+  return result;
+}
+
+static KL_StmtResult 
+exec_if_stmt(KL_State* L, KL_LocalEnv* env, KL_Stmt* stmt)
+{
+  KL_StmtResult result;
+  KL_Value cond;
+
+  result.type = SRT_NORMAL;
+  cond = KL_eval_expr(L, env, stmt->stmt.if_s.cond);
+  if (VT_BOOL != cond.val_type) {
+    //! runtime error
+  }
+
+  if (cond.value.bool_val) {
+    result = KL_exec_stmt_list(L, env, 
+        stmt->stmt.if_s.then_block->stmt_list);
+  }
+  else {
+    result = KL_exec_stmt_list(L, env, 
+        stmt->stmt.if_s.else_block->stmt_list);
+  }
+
+  return result;
+}
+
+static KL_StmtResult 
+exec_while_stmt(KL_State* L, KL_LocalEnv* env, KL_Stmt* stmt)
+{
+  KL_StmtResult result;
+  KL_Value cond;
+
+  result.type = SRT_NORMAL;
+  for (;;) {
+    cond = KL_eval_expr(L, env, stmt->stmt.while_s.cond);
+    if (VT_BOOL != cond.val_type) {
+      //! runtime error
+    }
+
+    if (!cond.value.bool_val)
+      break;
+
+    result = KL_exec_stmt_list(L, env, 
+        stmt->stmt.while_s.block->stmt_list);
+
+    if (SRT_RETURN == result.type) {
+      break;
+    }
+    else if (SRT_BREAK == result.type) {
+      result.type = SRT_NORMAL;
+      break;
+    }
+  }
+
+  return result;
+}
+
+static KL_StmtResult 
+exec_return_stmt(KL_State* L, KL_LocalEnv* env, KL_Stmt* stmt)
+{
+  KL_StmtResult result;
+
+  result.type = SRT_RETURN;
+  if (stmt->stmt.ret_s.ret_expr) {
+    result.stmt_result.value 
+      = KL_eval_expr(L, env, stmt->stmt.ret_s.ret_expr);
+  }
+  else {
+    result.stmt_result.value.val_type = VT_NIL;
+  }
+
+  return result;
+}
+
+static KL_StmtResult 
+exec_break_stmt(KL_State* L, KL_LocalEnv* env, KL_Stmt* stmt)
+{
+  KL_StmtResult result;
+  result.type = SRT_BREAK;
+
+  return result;
+}
