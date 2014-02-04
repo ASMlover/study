@@ -173,7 +173,7 @@ static KL_Boolean
 eval_bin_boolean(KL_State* L, int expr_type, 
     KL_Boolean left, KL_Boolean right, int lineno)
 {
-  KL_Boolean result;
+  KL_Boolean result = BOOL_NO;
 
   if (ET_EQ == expr_type) {
     result = (left == right);
@@ -332,7 +332,8 @@ static KL_Boolean
 eval_compare_string(int expr_type, 
     KL_Value* left, KL_Value* right, int lineno)
 {
-  KL_Boolean result;
+  KL_Boolean result = BOOL_NO;
+
   int cmp = strcmp(left->value.str_val->string, 
       right->value.str_val->string);
 
@@ -370,7 +371,7 @@ static KL_Boolean
 eval_bin_nil(KL_State* L, int expr_type, 
     KL_Value* left, KL_Value* right, int lineno)
 {
-  KL_Boolean result;
+  KL_Boolean result = BOOL_NO;
 
   if (ET_EQ == expr_type) {
     result = (VT_NIL == left->val_type && VT_NIL == right->val_type);
@@ -438,8 +439,7 @@ KL_eval_bin_expr(KL_State* L, KL_LocalEnv* env,
   }
   else if (VT_BOOL == left_val.val_type && VT_BOOL == right_val.val_type) {
     result.val_type = VT_BOOL;
-    result.value.bool_val
-      = eval_bin_boolean(L, expr_type, 
+    result.value.bool_val = eval_bin_boolean(L, expr_type, 
           left_val.value.bool_val, right_val.value.bool_val, left->lineno);
   }
   else if (VT_STR == left_val.val_type && ET_ADD == expr_type) {
