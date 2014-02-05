@@ -48,6 +48,7 @@ enum KL_LexState {
 
   LEX_STATE_IN_CINT, 
   LEX_STATE_IN_CREAL, 
+  LEX_STATE_IN_CSTR, 
   LEX_STATE_IN_ID, 
   LEX_STATE_IN_ASSIGNEQ,  /* =/== */
   LEX_STATE_IN_NEGLTLE,   /* <>/</<= */
@@ -56,3 +57,266 @@ enum KL_LexState {
   LEX_STATE_IN_OR,        /* || */
   LEX_STATE_IN_COMMENT,   /* # */
 };
+
+
+static const struct {
+  const char* lexptr;
+  int         token;
+} kReserveds[] = {
+  {"nil", TT_NIL}, 
+  {"true", TT_TRUE}, 
+  {"false", TT_FALSE}, 
+  {"if", TT_IF}, 
+  {"else", TT_ELSE}, 
+  {"while", TT_WHILE}, 
+  {"break", TT_BREAK}, 
+  {"func", TT_FUNC}, 
+  {"return", TT_RET}, 
+};
+
+
+
+static int 
+get_char(KL_Lexer* lex)
+{
+  if (lex->pos >= lex->bsize) {
+    if (NULL != fgets(lex->lexbuf, sizeof(lex->lexbuf), lex->stream)) {
+      lex->pos = 0;
+      lex->bsize = (int)strlen(lex->lexbuf);
+    }
+    else {
+      lex->eof = BOOL_YES;
+      return EOF;
+    }
+  }
+
+  return lex->lexbuf[lex->pos++];
+}
+
+static void 
+unget_char(KL_Lexer* lex)
+{
+  if (!lex->eof)
+    --lex->pos;
+}
+
+static int 
+lookup_reserved(const char* s)
+{
+  int i, count = countof(kReserveds);
+  for (i = 0; i < count; ++i) {
+    if (0 == strcmp(kReserveds[i].lexptr, s))
+      return kReserveds[i].token;
+  }
+
+  return TT_ID;
+}
+
+
+
+
+
+KL_Lexer* 
+KL_lexer_create(const char* fname)
+{
+  KL_Lexer* lex = (KL_Lexer*)malloc(sizeof(*lex));
+  if (NULL == lex)
+    return NULL;
+
+  do {
+    lex->stream = fopen(fname, "r");
+    if (NULL == lex->stream)
+      break;
+
+    strcpy(lex->fname, fname);
+    lex->lineno = 1;
+    lex->bsize  = 0;
+    lex->pos    = 0;
+    lex->eof    = BOOL_NO;
+
+    return lex;
+  } while (0);
+
+  if (NULL != lex)
+    free(lex);
+
+  return NULL;
+}
+
+void 
+KL_lexer_release(KL_Lexer** lex)
+{
+  if (NULL != *lex) {
+    if (NULL != (*lex)->stream) 
+      fclose((*lex)->stream);
+
+    free(*lex);
+    *lex = NULL;
+  }
+}
+
+int 
+KL_lexer_token(KL_Lexer* lex, KL_Token* tok)
+{
+  int type        = TT_ERR;
+  int i           = 0;
+  int state       = LEX_STATE_BEGIN;
+  KL_Boolean save = BOOL_NO;
+  int c;
+
+  while (LEX_STATE_FINISH != state) {
+    c = get_char(lex);
+    save = BOOL_YES;
+
+    switch (state) {
+    case LEX_STATE_BEGIN:
+      if (' ' == c || '\t' == c) {
+        save = BOOL_NO;
+      }
+      else if ('\n' == c) {
+        save = BOOL_NO;
+        ++lex->lineno;
+      }
+      else if (isdigit(c)) {
+        state = LEX_STATE_IN_CINT;
+      }
+      else if ('\'' == c) {
+        state = LEX_STATE_IN_CSTR;
+      }
+      else if (isdigit(c) || '_' == c) {
+        state = LEX_STATE_IN_ID;
+      }
+      else if ('=' == c) {
+        state = LEX_STATE_IN_ASSIGNEQ;
+      }
+      else if ('>' == c) {
+        state = LEX_STATE_IN_GTGE;
+      }
+      else if ('<' == c) {
+        state = LEX_STATE_IN_NEGLTLE;
+      }
+      else if ('&' == c) {
+        state = LEX_STATE_IN_AND;
+      }
+      else if ('|' == c) {
+        state = LEX_STATE_IN_OR;
+      }
+      else if ('#' == c) {
+        state = LEX_STATE_IN_COMMENT;
+      }
+      else {
+        state = LEX_STATE_FINISH;
+        switch (c) {
+        case EOF:
+          save = BOOL_NO;
+          type = TT_EOF;
+          break;
+        case '+':
+          type = TT_ADD;
+          break;
+        case '-':
+          type = TT_SUB;
+          break;
+        case '*':
+          type = TT_MUL;
+          break;
+        case '/':
+          type = TT_DIV;
+          break;
+        case '%':
+          type = TT_MOD;
+          break;
+        case '.':
+          type = TT_DOT;
+          break;
+        case ',':
+          type = TT_COMMA;
+          break;
+        case ';':
+          type = TT_SEMI;
+          break;
+        case '(':
+          type = TT_LPAREN;
+          break;
+        case ')':
+          type = TT_RPAREN;
+          break;
+        case '[':
+          type = TT_LBRACKET;
+          break;
+        case ']':
+          type = TT_RBRACKET;
+          break;
+        case '{':
+          type = TT_LBRACE;
+          break;
+        case '}':
+          type = TT_RBRACE;
+          break;
+        default:
+          save = BOOL_NO;
+          type = TT_ERR;
+          break;
+        }
+      }
+      break;
+    case LEX_STATE_IN_CINT:
+      if ('.' == c) {
+        state = LEX_STATE_IN_CREAL;
+      }
+      else {
+        if (!isdigit(c)) {
+          unget_char(lex);
+          save = BOOL_NO;
+          state = LEX_STATE_FINISH;
+          type = TT_CINT;
+        }
+      }
+      break;
+    case LEX_STATE_IN_CREAL:
+      if (!isdigit(c)) {
+        unget_char(lex);
+        save = BOOL_NO;
+        state = LEX_STATE_FINISH;
+        type = TT_CREAL;
+      }
+      break;
+    case LEX_STATE_IN_CSTR:
+      break;
+    case LEX_STATE_IN_ID:
+      break;
+    case LEX_STATE_IN_ASSIGNEQ:
+      break;
+    case LEX_STATE_IN_NEGLTLE:
+      break;
+    case LEX_STATE_IN_GTGE:
+      break;
+    case LEX_STATE_IN_AND:
+      break;
+    case LEX_STATE_IN_OR:
+      break;
+    case LEX_STATE_IN_COMMENT:
+      break;
+    case LEX_STATE_FINISH:
+    default:
+      save = BOOL_NO;
+      state = LEX_STATE_FINISH;
+      type = TT_ERR;
+      break;
+    }
+
+    if (save && i < BSIZE)
+      tok->name[i++] = (char)c;
+
+    if (LEX_STATE_FINISH == state) {
+      tok->name[i] = 0;
+      tok->type = type;
+      tok->line.lineno = lex->lineno;
+      strcpy(tok->line.fname, lex->fname);
+      if (TT_ID == type)
+        tok->type = type = lookup_reserved(tok->name);
+    }
+  }
+
+  return type;
+}

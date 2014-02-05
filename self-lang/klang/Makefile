@@ -31,7 +31,7 @@ CC	= gcc
 CFLAGS	= -g -O2 -Wall
 LDFLAGS	= -lm
 OBJS	= main.o memory.o storage.o util.o create.o string.o eval.o\
-	string_pool.o exec.o klang.o
+	string_pool.o exec.o klang.o lexer.o
 
 
 
