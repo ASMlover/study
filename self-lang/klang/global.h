@@ -37,12 +37,76 @@
 #include "memory.h"
 
 
+#define BSIZE   (128)
+#define BFILE   (256)
+#define EOB     ('\0')    /* end of buffer */
+
+
 #ifndef countof
 # define countof(x)   (sizeof(x) / sizeof(*x))
 #endif
 
 
 #define KL_BUFSIZ     (1024)
+
+
+enum KL_TokenType {
+  TT_ERR = 0, 
+  TT_EOF,       /* EOF */
+
+  TT_CINT,      /* const int */
+  TT_CREAL,     /* const real */
+
+  TT_ID,        /* identifier */
+
+  TT_ASSIGN,    /* = */
+  TT_EQ,        /* == */
+  TT_NEQ,       /* <> */
+  TT_GT,        /* > */
+  TT_GE,        /* >= */
+  TT_LT,        /* < */
+  TT_LE,        /* <= */
+  TT_AND,       /* && */
+  TT_OR,        /* || */
+  TT_ADD,       /* + */
+  TT_SUB,       /* - */
+  TT_MUL,       /* * */
+  TT_DIV,       /* / */
+  TT_MOD,       /* % */
+
+  TT_DOT,       /* . */
+  TT_COMMA,     /* , */
+  TT_SEMI,      /* ; */
+  TT_LPAREN,    /* ( */
+  TT_RPAREN,    /* ) */
+  TT_LBRACKET,  /* [ */
+  TT_RBRACKET,  /* ] */
+  TT_LBRACE,    /* { */
+  TT_RBRACE,    /* } */
+
+  TT_NIL,       /* nil */
+  TT_TRUE,      /* true */
+  TT_FALSE,     /* false */
+  TT_IF,        /* if */
+  TT_ELSE,      /* else */
+  TT_WHILE,     /* while */
+  TT_BREAK,     /* break */
+  TT_FUNC,      /* func */
+  TT_RET,       /* return */
+
+  TT_COMMENT,   /* # */
+};
+
+typedef struct KL_Token {
+  /* definition of token type */
+  int type;
+  char name[BSIZE];
+
+  struct KL_Line {
+    int lineno;
+    char fname[BFILE];
+  } line;
+} KL_Token;
 
 
 typedef enum KL_Boolean {
