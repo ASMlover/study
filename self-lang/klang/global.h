@@ -56,6 +56,7 @@ enum KL_TokenType {
 
   TT_CINT,      /* const int */
   TT_CREAL,     /* const real */
+  TT_CSTR,      /* const string */
 
   TT_ID,        /* identifier */
 
