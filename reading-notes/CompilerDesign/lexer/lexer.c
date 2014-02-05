@@ -91,7 +91,7 @@ get_char(struct Lexer* lex)
       return lex->lexbuf[lex->pos++];
     }
     else {
-      lex->eof = BOOL_NO;
+      lex->eof = BOOL_YES;
       return EOF;
     }
   }
