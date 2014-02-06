@@ -181,6 +181,7 @@ KL_lexer_token(KL_Lexer* lex, KL_Token* tok)
         state = LEX_STATE_IN_CINT;
       }
       else if ('\'' == c) {
+        save = BOOL_NO;
         state = LEX_STATE_IN_CSTR;
       }
       else if (isdigit(c) || '_' == c) {
