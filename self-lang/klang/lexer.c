@@ -283,20 +283,88 @@ KL_lexer_token(KL_Lexer* lex, KL_Token* tok)
       }
       break;
     case LEX_STATE_IN_CSTR:
+      if ('\'' == c) {
+        save = BOOL_NO;
+        state = LEX_STATE_FINISH;
+        type = TT_CSTR;
+      }
       break;
     case LEX_STATE_IN_ID:
+      if (!isalnum(c) && '_' != c) {
+        unget_char(lex);
+        save = BOOL_NO;
+        state = LEX_STATE_FINISH;
+        type = TT_ID;
+      }
       break;
     case LEX_STATE_IN_ASSIGNEQ:
+      if ('=' == c) {
+        type = TT_EQ;
+      }
+      else {
+        unget_char(lex);
+        save = BOOL_NO;
+        type = TT_ASSIGN;
+      }
+      state = LEX_STATE_FINISH;
       break;
     case LEX_STATE_IN_NEGLTLE:
+      if ('>' == c) {
+        type = TT_NEQ;
+      }
+      else if ('=' == c) {
+        type = TT_LE;
+      }
+      else {
+        unget_char(lex);
+        save = BOOL_NO;
+        type = TT_LT;
+      }
+      state = LEX_STATE_FINISH;
       break;
     case LEX_STATE_IN_GTGE:
+      if ('=' == c) {
+        type = TT_GE;
+      }
+      else {
+        unget_char(lex);
+        save = BOOL_NO;
+        type = TT_GT;
+      }
+      state = LEX_STATE_FINISH;
       break;
     case LEX_STATE_IN_AND:
+      if ('&' == c) {
+        type = TT_ADD;
+      }
+      else {
+        unget_char(lex);
+        save = BOOL_NO;
+        type = TT_ERR;
+      }
+      state = LEX_STATE_FINISH;
       break;
     case LEX_STATE_IN_OR:
+      if ('|' == c) {
+        type = TT_OR;
+      }
+      else {
+        unget_char(lex);
+        save = BOOL_NO;
+        type = TT_ERR;
+      }
+      state = LEX_STATE_FINISH;
       break;
     case LEX_STATE_IN_COMMENT:
+      save = BOOL_NO;
+      if (EOF == c) {
+        state = LEX_STATE_FINISH;
+        type = TT_ERR;
+      }
+      else if ('\n' == c) {
+        ++lex->lineno;
+        state = LEX_STATE_BEGIN;
+      }
       break;
     case LEX_STATE_FINISH:
     default:
