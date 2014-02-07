@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "memory.h"
+#include "klang.h"
 
 
 #define BSIZE   (128)
@@ -298,7 +299,6 @@ enum KL_FuncType {
 };
 
 
-typedef struct KL_State KL_State;
 typedef KL_Value (*KL_NativeFuncType)(
     KL_State* L, int nargs, KL_Value* args);
 
