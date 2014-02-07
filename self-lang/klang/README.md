@@ -9,134 +9,135 @@
 
 
  * **Syntax**
-    program 
-      : definition-or-stmt
-      | program definition-or-stmt
-      ;
-    
-    definition-or-stmt
-      : function-definition
-      | stmt 
-      ;
 
-    function-definition
-      : func identifier '(' param-list ')' block 
-      | func identifier '(' ')' block
-      ;
+        program 
+          : definition-or-stmt
+          | program definition-or-stmt
+          ;
+        
+        definition-or-stmt
+          : function-definition
+          | stmt 
+          ;
 
-    param-list 
-      : identifier 
-      | param-list ',' identifier
-      ;
+        function-definition
+          : func identifier '(' param-list ')' block 
+          | func identifier '(' ')' block
+          ;
 
-    argument-list 
-      : expr 
-      | argument-list ',' expr 
-      ; 
+        param-list 
+          : identifier 
+          | param-list ',' identifier
+          ;
 
-    stmt-list 
-      : stmt 
-      | stmt-list stmt 
-      ;
+        argument-list 
+          : expr 
+          | argument-list ',' expr 
+          ; 
 
-    expr 
-      : logical-or-expr 
-      | identifier '=' expr 
-      ;
+        stmt-list 
+          : stmt 
+          | stmt-list stmt 
+          ;
 
-    logical-or-expr 
-      : logical-and-expr 
-      | logical-or-expr '||' logical-and-expr 
-      ;
+        expr 
+          : logical-or-expr 
+          | identifier '=' expr 
+          ;
 
-    logical-and-expr 
-      : equal-expr 
-      | logical-and-expr '&&' equal-expr 
-      ;
+        logical-or-expr 
+          : logical-and-expr 
+          | logical-or-expr '||' logical-and-expr 
+          ;
 
-    equal-expr 
-      : relational-expr 
-      | equal-expr '==' relational-expr 
-      | equal-expr '<>' relational-expr 
-      ;
+        logical-and-expr 
+          : equal-expr 
+          | logical-and-expr '&&' equal-expr 
+          ;
 
-    relational-expr 
-      : add-expr 
-      | relational-expr '>' add-expr 
-      | relational-expr '>=' add-expr 
-      | relational-expr '<' add-expr 
-      | relational-expr '<=' add-expr
-      ;
+        equal-expr 
+          : relational-expr 
+          | equal-expr '==' relational-expr 
+          | equal-expr '<>' relational-expr 
+          ;
 
-    add-expr 
-      : mul-exr 
-      | add-expr '+' mul-expr
-      | add-expr '-' mul-expr 
-      ;
+        relational-expr 
+          : add-expr 
+          | relational-expr '>' add-expr 
+          | relational-expr '>=' add-expr 
+          | relational-expr '<' add-expr 
+          | relational-expr '<=' add-expr
+          ;
 
-    mul-expr 
-      : unary-expr 
-      | mul-expr '*' unary-expr 
-      | mul-expr '/' unary-expr 
-      | mul-expr '%' unary-expr 
-      ;
+        add-expr 
+          : mul-exr 
+          | add-expr '+' mul-expr
+          | add-expr '-' mul-expr 
+          ;
 
-    unary-expr 
-      : primary-expr 
-      | '-' unary-expr 
-      ; 
+        mul-expr 
+          : unary-expr 
+          | mul-expr '*' unary-expr 
+          | mul-expr '/' unary-expr 
+          | mul-expr '%' unary-expr 
+          ;
 
-    primary-expr 
-      : identifier '(' argument-list ')' 
-      | identifier '(' ')'
-      | '(' expr ')'
-      | identifier 
-      | int-literal 
-      | real-literal 
-      | str-literal 
-      | true 
-      | false 
-      | nil 
-      ;
+        unary-expr 
+          : primary-expr 
+          | '-' unary-expr 
+          ; 
 
-    stmt 
-      : expr ';'
-      | global-stmt 
-      | if-stmt 
-      | while-stmt 
-      | return-stmt 
-      | break-stmt 
-      ;
+        primary-expr 
+          : identifier '(' argument-list ')' 
+          | identifier '(' ')'
+          | '(' expr ')'
+          | identifier 
+          | int-literal 
+          | real-literal 
+          | str-literal 
+          | true 
+          | false 
+          | nil 
+          ;
 
-    global-stmt 
-      : global identifier-list ';'
-      ;
+        stmt 
+          : expr ';'
+          | global-stmt 
+          | if-stmt 
+          | while-stmt 
+          | return-stmt 
+          | break-stmt 
+          ;
 
-    identifier-list 
-      : identifier 
-      | identifier-list ',' identifier
-      ;
+        global-stmt 
+          : global identifier-list ';'
+          ;
 
-    if-stmt 
-      : if expr block 
-      | if expr block else block 
-      ;
+        identifier-list 
+          : identifier 
+          | identifier-list ',' identifier
+          ;
 
-    while-stmt 
-      : while expr block 
-      ;
+        if-stmt 
+          : if expr block 
+          | if expr block else block 
+          ;
 
-    return-stmt 
-      : return expr ';'
-      | return ';'
-      ;
+        while-stmt 
+          : while expr block 
+          ;
 
-    break-stmt 
-      : break ';'
-      ;
+        return-stmt 
+          : return expr ';'
+          | return ';'
+          ;
 
-    block 
-      : '{' stmt-list '}'
-      | '{' '}'
-      ;
+        break-stmt 
+          : break ';'
+          ;
+
+        block 
+          : '{' stmt-list '}'
+          | '{' '}'
+          ;
 
