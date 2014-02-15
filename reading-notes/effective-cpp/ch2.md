@@ -56,6 +56,9 @@
 ## **09: 绝不在构造和析构函数中调用virtual函数** ##
     (Never call virtual functions during constructions and destructions.)
     1) 在构造和析构期间不要调用virtual函数, 因为这类调用从不下降到子类
+> ### **个人理解**
+    在构造和析构中调用虚函数, 这个时候有可能子类还没有构建或者子类资源已经释
+    放了, 而造成调用期错误~~~
 
 
 ## **10: 令operator =返回一个reference to *this** ##
