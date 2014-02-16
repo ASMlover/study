@@ -64,6 +64,9 @@
 ## **10: 令operator =返回一个reference to *this** ##
     (Have assignment operators return a reference to *this.)
     1) 令赋值操作符返回一个reference to *this
+> ### **个人理解**
+    因为赋值需要实现连锁赋值, 赋值操作必须返回一个引用指向操作符的左侧实参;
+    同时所有赋值相关的操作也应该遵守该准则;
 
 
 ## **11: 在operator =中处理"自我赋值"** ##
