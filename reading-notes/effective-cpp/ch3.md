@@ -13,6 +13,9 @@
     4) 两个常被使用的RAII classes分别是tr1::shared_ptr和auto_ptr; 前者是较
        好的选择, 因为其copy行为比较直观; 若选择auto_ptr, 复制动作会使它指向
        null
+> ### **个人理解**
+    对于堆上获取的资源, 应该放置在对象中管理, 也可以是shared_ptr来管理这类会
+    涉及到引用的操作;
 
 
 
