@@ -62,6 +62,10 @@
     (Use the same form in corresponding uses of new and delete.)
     1) 如果你在new表达式中使用[], 必须在相应的delete表达式中也使用[]; 如果
        你在new表达式中不使用[], 一定不要在相应的delete表达是中使用[]
+> ### **个人理解**
+    不要对数组形式做typedef动作, 这样很容易造成new和delete不一致的问题;
+    new和delete一定要一致, 以免造成资源泄露等问题... 
+
 
 
 ## **17: 以独立语句将newed对象置入智能指针** ##
