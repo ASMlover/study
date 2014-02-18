@@ -26,6 +26,22 @@
     2) 复制RAII对象必须一并复制它所管理的资源, 所以资源的copying行为决定RAII
        对象的copying行为
     3) 常见的RAII class copying行为是: 抑制copying, 施行引用计数法
+> ### **个人理解**
+    RAII就是在构造获取资源, 在析构释放;
+    如果类的复制动作对RAII类不合理, 就应该禁止;
+    如果需要保留拷贝行为, 就该内涵一个shared_ptr就可以实现引用计数拷贝行为;
+        class Lock {
+          shared_ptr<Mutex> mutex_ptr_;
+        public:
+          explicit Lock(Mutex* m)
+            : mutex_ptr_(m, unlock)
+          {
+            lock(mutex_ptr_.get());
+          }
+        };
+    shared_ptr可以指定删除器(见上);
+    如果要实现拷贝, 则应该自己实现深拷贝;
+
 
 
 
