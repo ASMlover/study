@@ -11,6 +11,16 @@
        消除客户的资源管理责任
     4) shared_ptr支持定制型删除器, 这可防范DLL问题, 可被用来自动解除互斥锁
        等等
+> ### **个人理解**
+    接口的设计应该尽量的保持一致性, 而且应该与内置类型兼容;
+    接口的一致性可以降低使用者的学习成本;
+        shared_ptr<Investment> CreateInvestment(void) {
+          shared_ptr<Investment> r(static_cast<Investment*>(0), 
+                                   ReleaseInvestment);
+          r = ...;
+          return r;
+        }
+        这样的设计可以避免DLL中返回的对象造成的资源泄露;
 
 
 
