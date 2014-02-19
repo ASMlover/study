@@ -68,6 +68,9 @@
     4) 绝不要返回pointer或reference指向一个local stack对象, 或返回reference
        指向一个heap-allocated对象, 或返回pointer或reference指向一个local 
        static对象而有可能同时需要多个这样的对象
+> ### **个人理解**
+    当看到一个引用声明式, 就应该问自己, 它的另一个名称是什么?
+    当设计一个接口在返回引用和值之间疑惑的时候, 请选择行为正确的那个设计;
 
 
 
