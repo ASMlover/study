@@ -89,6 +89,22 @@
     (Prefer non-member non-friend functions to member functions.)
     1) 宁可拿non-member non-friend函数替换member函数, 这样做可以增加封装性,
        包裹弹性和技能扩充性
+> ### **个人理解**
+    如果一个成员函数和一个非成员/非友元函数, 两者之间有相同的机能, 那导致较
+    大封装的是非成员/非友元函数, 因为它不会增加能访问class内的私有成员的函数
+    数量;
+        class WebBrowser {
+        public:
+          void ClearCache(void);
+          void ClearHistory(void);
+          void RemoveCookies(void);
+        };
+        那么提供更好封装性的函数是:
+        void ClearBrowser(WebBrowser& wb) {
+          wb.ClearCache();
+          wb.ClearHistory();
+          wb.RemoveCookies();
+        }
 
 
 
