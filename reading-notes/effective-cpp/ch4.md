@@ -113,6 +113,9 @@
      parameters.)
     1) 如果你需要为某个函数的所有参数(包括被this指针所指的那个隐喻参数)进行
        类型转换, 那么这个函数必须是个non-member 
+> ### **个人理解**
+    如果某个函数的所有参数都需要类型转换, 那么其必须是非成员函数
+      const Rational operator *(const Rational& lhs, const Rational& rhs);
 
 
 
