@@ -126,3 +126,15 @@
     1. 读优先 - 监测到读队列为空, 翻转两个队列
     2. 写优先 - 写队列满了之后再翻转两个数据队列
     3. 如果读队列中的数据没有取完, 而写队列满的情况, 后续来的数据丢掉
+
+
+
+## **9. MySQL datetime转换为time_t** ##
+> ### **在MySQL中转换**
+    SELECT UNIT_TIMESTAMP(`time`) FROM `table_name`;
+> ### **C++中转换**
+    其实就是字符串类型的time转换为time_t类型, 可以先转换成tm结构再转换成
+    time_t的数值类型;
+    struct tm tm_out;
+    strptime(src_time_str, "%Y-%m-%d %H:%M:%s", &tm_out);
+    time_t t = mktime(&tm_out);
