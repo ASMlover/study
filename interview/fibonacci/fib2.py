@@ -25,12 +25,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+
+def FibonacciIter(n, a, b, count):
+  if count == n:
+    return b
+  return FibonacciIter(n, b, a + b, count + 1)
+
 def Fibonacci(n):
-  assert n >= 0, 'invalid number n'
-  if n < 2:
-    return n
-  else:
-    return Fibonacci(n - 1) + Fibonacci(n - 2)
+  return FibonacciIter(n, 0, 1, 1)
 
 
 
