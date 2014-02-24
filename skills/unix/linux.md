@@ -12,7 +12,11 @@
 > ### **每日提示**
     在/home/.bashrc中增加如下一行内容:
     echo "Did you know that:"; whatis $(ls /bin | shuf -n 1)
-    这样每次打开终端的时候就会显示每日提醒
+    这样每次打开终端的时候就会显示每日提醒;
+    也可以使用cowsay来实现提醒
+    $ sudo apt-get install cowsay
+    然后在/home/.bashrc中添加
+    cowsay -f $(ls /usr/share/cowsay/cows | shuf -n 1 | cut -d. -f1) $(whatis $(ls /bin) 2>/dev/null | shuf -n 1)
 > ### **使用whatis命令**
     whatis会逐条解释你输入的命令
 > ### **浏览命令的所有可用选项**
