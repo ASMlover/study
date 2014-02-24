@@ -24,3 +24,12 @@
     1. 如果一个命令需要管理员权限, 就必须在它之前加上"sudo"
     2. "program"是应用程序的名字; 如没有额外配置放在/usr/bin下面
     3. 在程序名字后面, 可以使用不同的参数和标志
+
+
+
+## **查看Linux版本/系统信息**
+    $ lsb_release -a    : 查看发行版信息
+    $ uname             : 查看系统信息
+    $ uname -a
+    $ getconf LONG_BIT  : 看32位 | 64位
+    $ echo $HOSTTYPE    : 查看CPU架构
