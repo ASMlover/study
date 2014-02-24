@@ -61,3 +61,13 @@
     $ C-a n   => switch to the next window
     $ C-a p   => switch to the previous window
     $ C-a d   => detach screen from this terminal
+
+
+
+## **gdb调试core**
+    Linux系统在默认的状况下, 程序崩溃是不会产生core文件的, so我们需要打开设
+    置, 让程序崩溃的时候产生core文件以便于调试
+    $ ulimit -c unlimited
+    $ gdb xxx core.xxx
+    为了在gdb调试中尽快定位到程序崩溃了的地方, 我们需要在gdb调试中使用
+    $ where/bt
