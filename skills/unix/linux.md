@@ -80,3 +80,10 @@
     或者是重新定义exit命令, 在.bashrc文件中添加
     alias exit='history -c; exit'
     那么在每次退出之后就会自动清除当次登录运行的命令
+
+
+
+## **Linux上github的push 403错误**
+    $ vim .git/config
+    将url = https://github.com/<user_name>/<proj_name>.git修改为
+      url = https://<user_name>@github.com/<user_name>/<proj_name>.git
