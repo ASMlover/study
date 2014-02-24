@@ -23,6 +23,7 @@
         return 0;
       }
       问总共输出几个'-'?  => 8个
+      如果将printf("-")修改为printf("-\n")则是6个, 因为有行缓冲;
 
 
 
@@ -36,4 +37,4 @@
 
 
 ## **参考**
-    [fork面试](http://coolshell.cn/articles/7965.html)
+ * [fork面试](http://coolshell.cn/articles/7965.html)
