@@ -33,3 +33,19 @@
     $ uname -a
     $ getconf LONG_BIT  : 看32位 | 64位
     $ echo $HOSTTYPE    : 查看CPU架构
+
+
+## **tmux**
+    $ tmux new -s [session name] [cmd]
+    $ tmux ls                       => list all sessions
+    $ tmux attach -t [session name] => resumes a detached tmux session 
+    $ C-b "   => split the current pane into two, top and bottom
+    $ C-b %   => split the current pane into two, left and right
+    $ C-b &   => kill the current window
+    $ C-b c   => create a new window
+    $ C-b 0~9 => select windows 0 to 9
+    $ C-b d   => detach the current tmux client 
+    $ C-b o   => select the next pane in the current window 
+    $ C-b x   => kill the current pane
+    $ C-b n   => change to the next window 
+    $ C-b p   => change to the previous window 
