@@ -49,3 +49,15 @@
     $ C-b x   => kill the current pane
     $ C-b n   => change to the next window 
     $ C-b p   => change to the previous window 
+
+
+
+## **screen**
+    $ screen -S [session name]
+    $ screen -ls              => print a list of screen sessions
+    $ screen -r [screen_pid]  => resumes a detached screen session
+    $ C-a c   => create a new window
+    $ C-a w   => show a list of window 
+    $ C-a n   => switch to the next window
+    $ C-a p   => switch to the previous window
+    $ C-a d   => detach screen from this terminal
