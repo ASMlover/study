@@ -71,3 +71,12 @@
     $ gdb xxx core.xxx
     为了在gdb调试中尽快定位到程序崩溃了的地方, 我们需要在gdb调试中使用
     $ where/bt
+
+
+
+## **清除Linux运行后的记录**
+    $ history -c
+    $ rm ~/.bash_history 
+    或者是重新定义exit命令, 在.bashrc文件中添加
+    alias exit='history -c; exit'
+    那么在每次退出之后就会自动清除当次登录运行的命令
