@@ -27,11 +27,49 @@
 #include <stdio.h>
 
 
+class Base {
+public:
+  explicit Base(void) {
+    fprintf(stdout, "Base::Base\n");
+  }
+
+  virtual ~Base(void) {
+    fprintf(stdout, "Base::~Base\n");
+  }
+
+  virtual void Show(void) {
+    fprintf(stdout, "Base::Show\n");
+  }
+};
+
+class Child : public Base {
+public:
+  explicit Child(void) {
+    fprintf(stdout, "Child::Child\n");
+  }
+
+  ~Child(void) {
+    fprintf(stdout, "Child::~Child\n");
+  }
+
+  virtual void Show(void) {
+    fprintf(stdout, "Child::Show\n");
+  }
+};
+
+
 static void 
 ConstCast(const void* data)
 {
   const char* s = static_cast<const char*>(const_cast<void*>(data));
   fprintf(stdout, "%s\n", s);
+}
+
+static void 
+DynamicCast(Base& b) 
+{
+  Child& c = dynamic_cast<Child&>(b);
+  c.Show();
 }
 
 
@@ -42,6 +80,9 @@ main(int argc, char* argv[])
     return 0;
 
   ConstCast(argv[1]);
+
+  Child c;
+  DynamicCast(c);
 
   return 0;
 }
