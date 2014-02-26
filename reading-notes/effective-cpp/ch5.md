@@ -37,6 +37,9 @@
 ## **28: 避免返回handles指向对象内部成分** ##
     (Avoid returning "handles" to object internals.)
     1) 避免返回handles(包括references, 指针, 迭代器)指向对象内部 
+> ### **个人理解**
+    引用, 指针和迭代器都是所谓的handles, 而返回一个代表对象内部数据的handle,
+    那么会有降低对象封装性的风险;
 
 
 
