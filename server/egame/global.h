@@ -94,6 +94,9 @@
 
 // ANSI C++ header
 #include <memory>
+#include <string>
+
+// STL header
 #include <queue>
 #include <map>
 #include <set>

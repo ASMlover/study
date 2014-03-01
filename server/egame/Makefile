@@ -30,8 +30,8 @@ RM	= rm
 CC	= g++
 CPPFLAGS = -g -O2 -Wall -std=c++0x -I./sdk/libnet
 CFLAGS	= -g -O2 -Wall
-CPP_OBJS = main.o
 LDFLAGS	= -lpthread
+CPP_OBJS = main.o player.o
 C_OBJS	=	./sdk/libnet/libnet.o
 
 
