@@ -138,3 +138,11 @@
     struct tm tm_out;
     strptime(src_time_str, "%Y-%m-%d %H:%M:%s", &tm_out);
     time_t t = mktime(&tm_out);
+
+
+
+## **10. g++编译C++11** ##
+    需要加上编译选项-std=c++0x
+> ### **常用的C++11特性**
+    1. shared_ptr
+        在<memory>头文件中, 在命名空间std下面;
