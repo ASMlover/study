@@ -24,28 +24,52 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __LOCKER_HEADER_H__
-#define __LOCKER_HEADER_H__
+#ifndef __WIN_LOCKER_HEADER_H__
+#define __WIN_LOCKER_HEADER_H__
 
-template <typename Locker>
-class LockerGuard : UnCopyable {
-  Locker& locker_;
+class Mutex : UnCopyable {
+  CRITICAL_SECTION mutex_;
 public:
-  explicit LockerGuard(Locker& locker)
-    : locker_(locker) {
-    locker_.Lock(); 
+  explicit Mutex(void) {
+    InitializeCriticalSection(&mutex_);
   }
 
-  ~LockerGuard(void) {
-    locker_.Unlock();
+  ~Mutex(void) {
+    DeleteCriticalSection(&mutex_);
+  }
+
+  inline void Lock(void) {
+    if (static_cast<DWORD>(mutex_.OwningThread 
+          == GetCurrentThreadId())) 
+      return;
+
+    EnterCriticalSection(&mutex_);
+  }
+
+  inline void Unlock(void) {
+    LeaveCriticalSection(&mutex_);
   }
 };
 
 
-#if defined(EGAME_WIN)
-# include "win_locker.h"
-#elif defined(EGAME_LINUX)
-# include "posix_locker.h"
-#endif
+class SpinLock : UnCopyable {
+  CRITICAL_SECTION spinlock_;
+public:
+  explicit SpinLock(void) {
+    InitializeCriticalSectionAndSpinCount(&spinlock_, 4000);
+  }
 
-#endif  //! __LOCKER_HEADER_H__
+  ~SpinLock(void) {
+    DeleteCriticalSection(&spinlock_);
+  }
+
+  inline void Lock(void) {
+    EnterCriticalSection(&spinlock_);
+  }
+
+  inline void Unlock(void) {
+    LeaveCriticalSection(&spinlock_);
+  }
+};
+
+#endif  //! __WIN_LOCKER_HEADER_H__

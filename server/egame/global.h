@@ -102,4 +102,12 @@
 // user library header
 #include <libnet.h>
 
+// user common utils header
+#include "uncopyable.h"
+#if defined(EGAME_LINUX)
+# include "posix_global.h"
+#endif
+#include "locker.h"
+#include "singleton.h"
+
 #endif  //! __GLOBAL_HEADER_H__
