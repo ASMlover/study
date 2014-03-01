@@ -29,7 +29,9 @@ OUT	= egame
 RM	= rm 
 CC	= g++
 CPPFLAGS = -g -O2 -Wall -std=c++0x
-OBJS	= main.o
+CFLAGS	= -g -O2 -Wall
+CPP_OBJS = main.o
+C_OBJS	=	./sdk/libnet/libnet.o
 
 
 
@@ -40,14 +42,17 @@ all: $(OUT)
 rebuild: clean all 
 
 clean:
-	$(RM) $(OUT) $(OBJS)
+	$(RM) $(OUT) $(CPP_OBJS) $(C_OBJS)
 
 
 
 
 
-$(OUT): $(OBJS)
+$(OUT): $(CPP_OBJS) $(C_OBJS)
 	$(CC) -o $@ $^
 
-$(OBJS): %.o: %.cc 
+$(CPP_OBJS): %.o: %.cc 
 	$(CC) -o $*.o -c $(CPPFLAGS) $^
+
+$(C_OBJS): %.o: %.c
+	$(CC) -o $*.o -c $(CFLAGS) $^
