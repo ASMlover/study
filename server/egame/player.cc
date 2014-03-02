@@ -30,10 +30,33 @@
 
 
 Player::Player(void) {
+  ResetPlayer();
 }
 
 Player::~Player(void) {
 }
 
 void Player::ResetPlayer(void) {
+  state_  = PLAYERSTATE_OFFLINE;
+  connid_ = INVAL_CONNECTOR;
+
+  data_.account         = "";
+  data_.user_id         = GameData::INVAL_USERID;
+  data_.user_name       = "";
+  data_.gender          = GameData::GENDERTYPE_UNKNOWN;
+  data_.face            = GameData::DEFAULT_FACEID;
+  data_.level           = 0;
+  data_.exp             = 0;
+  data_.scores          = 0;
+  data_.coins           = 0;
+  data_.win_count       = 0;
+  data_.lost_count      = 0;
+  data_.flee_count      = 0;
+  data_.win_streak      = 0;
+  data_.play_time       = 0;
+  data_.lost_count      = 0;
+  data_.reg_time        = 0;
+  data_.reg_addr        = 0;
+  data_.last_login_time = 0;
+  data_.last_login_addr = 0;
 }

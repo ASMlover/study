@@ -27,6 +27,7 @@
 #ifndef __PLAYER_HEADER_H__
 #define __PLAYER_HEADER_H__
 
+
 // record player's game data every turn 
 // in this game; user_id is the global 
 // unique ID for every player, and account 
@@ -36,6 +37,11 @@ struct GameData {
     GENDERTYPE_UNKNOWN  = 0, 
     GENDERTYPE_MALE     = 1,    // male 
     GENDERTYPE_FEMALE   = 2,    // female
+  };
+
+  enum {
+    INVAL_USERID        = 0,    // invalidate player ID
+    DEFAULT_FACEID      = 0,    // default user face id
   };
 
   std::string account;          // player account info
@@ -73,13 +79,38 @@ enum PlayerState {
 
 class Player : UnCopyable {
   PlayerState state_;
+  uint32_t    connid_;
   GameData    data_;
 public:
   explicit Player(void);
   ~Player(void);
-
+public:
+  // get player's data information, 
+  // we can't modified the result data information
   inline const GameData& GetData(void) const {
     return data_;
+  }
+
+  inline void SetData(const GameData& data) {
+    data_ = data;
+  }
+
+  // get player's current state
+  inline const PlayerState GetState(void) const {
+    return state_;
+  }
+
+  inline void SetState(PlayerState state) {
+    state_ = state;
+  }
+
+  // get player's connector identifier
+  inline uint32_t GetConnID(void) const {
+    return connid_;
+  }
+
+  inline void SetConnID(uint32_t connid) {
+    connid_ = connid;
   }
 private:
   void ResetPlayer(void);
