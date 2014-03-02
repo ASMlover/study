@@ -114,4 +114,16 @@
 #include "singleton.h"
 #include "thread.h"
 
+
+
+// common useful untils
+#ifndef SAFE_DEL
+# define SAFE_DEL(obj) do {\
+  if (NULL != (obj)) {\
+    delete (obj);\
+    (obj) = NULL;\
+  }\
+} while (0)
+#endif
+
 #endif  //! __GLOBAL_HEADER_H__
