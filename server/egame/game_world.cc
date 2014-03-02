@@ -25,42 +25,29 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "global.h"
-#include "player.h"
-#include "player_mgr.h"
+#include "game_world.h"
 
 
 
-PlayerMgr::PlayerMgr(void) {
+GameWorld::GameWorld(void)
+  : net_hand_(NULL) 
+  , player_mgr_(NULL) {
 }
 
-PlayerMgr::~PlayerMgr(void) {
-}
-
-
-Player* PlayerMgr::GetPlayerByConnID(uint32_t connid) {
-  if (static_cast<uint32_t>(INVAL_CONNECTOR) == connid)
-    return NULL;
-
-  std::map<uint32_t, Player*>::iterator it = player_cache_.find(connid);
-  if (it != player_cache_.end())
-    return it->second;
-
-  return NULL;
-}
-
-Player* PlayerMgr::GetPlayerByID(uint32_t id) {
-  if (GameData::INVAL_USERID == id)
-    return NULL;
-
-  std::map<uint32_t, Player*>::iterator it = player_list_.find(id);
-  if (it != player_list_.end())
-    return it->second;
-
-  return NULL;
+GameWorld::~GameWorld(void) {
 }
 
 
-bool PlayerMgr::Dispatch(
-    uint32_t connid, const void* data, uint32_t size) {
-  return false;
+
+bool GameWorld::Init(void) {
+  return true;
+}
+
+void GameWorld::Destroy(void) {
+}
+
+
+
+bool GameWorld::Dispatch(void) {
+  return true;
 }

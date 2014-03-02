@@ -24,43 +24,21 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include "global.h"
-#include "player.h"
-#include "player_mgr.h"
+#ifndef __GAME_WORLD_HEADER_H__
+#define __GAME_WORLD_HEADER_H__
 
+class PlayerMgr;
+class GameWorld : public Singleton<GameWorld> {
+  NetHandler* net_hand_;
+  PlayerMgr*  player_mgr_;
+public:
+  explicit GameWorld(void);
+  ~GameWorld(void);
 
+  bool Init(void);
+  void Destroy(void);
 
-PlayerMgr::PlayerMgr(void) {
-}
+  bool Dispatch(void);
+};
 
-PlayerMgr::~PlayerMgr(void) {
-}
-
-
-Player* PlayerMgr::GetPlayerByConnID(uint32_t connid) {
-  if (static_cast<uint32_t>(INVAL_CONNECTOR) == connid)
-    return NULL;
-
-  std::map<uint32_t, Player*>::iterator it = player_cache_.find(connid);
-  if (it != player_cache_.end())
-    return it->second;
-
-  return NULL;
-}
-
-Player* PlayerMgr::GetPlayerByID(uint32_t id) {
-  if (GameData::INVAL_USERID == id)
-    return NULL;
-
-  std::map<uint32_t, Player*>::iterator it = player_list_.find(id);
-  if (it != player_list_.end())
-    return it->second;
-
-  return NULL;
-}
-
-
-bool PlayerMgr::Dispatch(
-    uint32_t connid, const void* data, uint32_t size) {
-  return false;
-}
+#endif  //! __GAME_WORLD_HEADER_H__

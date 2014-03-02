@@ -41,7 +41,7 @@ public:
   Player* GetPlayerByConnID(uint32_t connid);
   Player* GetPlayerByID(uint32_t id);
 public:
-  bool DispatchMessage(uint32_t connid, const void* data, uint32_t size);
+  bool Dispatch(uint32_t connid, const void* data, uint32_t size);
 };
 
 #endif  //! __PLAYER_MANAGER_HEADER_H__
