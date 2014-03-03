@@ -51,3 +51,13 @@ void GameWorld::Destroy(void) {
 bool GameWorld::Dispatch(void) {
   return true;
 }
+
+
+
+
+bool GameWorld::InitNetwork(void) {
+  return true;
+}
+
+void GameWorld::DestroyNetwork(void) {
+}

@@ -39,6 +39,9 @@ public:
   void Destroy(void);
 
   bool Dispatch(void);
+private:
+  bool InitNetwork(void);
+  void DestroyNetwork(void);
 };
 
 #endif  //! __GAME_WORLD_HEADER_H__
