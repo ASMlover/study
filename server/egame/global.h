@@ -95,8 +95,10 @@
 // ANSI C++ header
 #include <memory>
 #include <string>
+#include <stdexcept>
 
 // STL header
+#include <algorithm>
 #include <queue>
 #include <map>
 #include <set>
@@ -107,6 +109,7 @@
 
 // user common utils header
 #include "uncopyable.h"
+#include "object_pool.h"
 #if defined(EGAME_LINUX)
 # include "posix_global.h"
 #endif
