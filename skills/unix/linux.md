@@ -75,6 +75,11 @@
     $ gdb xxx core.xxx
     为了在gdb调试中尽快定位到程序崩溃了的地方, 我们需要在gdb调试中使用
     $ where/bt
+    如果需要让调生成的试信息对gdb更有帮助, 应该使用-ggdb编译选项;
+    如果有命令行参数, 可以进入gdb之后使用set args来设置;
+    (gdb) set args 111 222 333 444
+    (gdb) r 
+    (gdb) where/bt
 
 
 
