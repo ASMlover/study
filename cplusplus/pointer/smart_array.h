@@ -24,38 +24,38 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __SMART_POINTER_HEADER_H__
-#define __SMART_POINTER_HEADER_H__
+#ifndef __SMART_ARRAY_HEADER_H__
+#define __SMART_ARRAY_HEADER_H__
 
 template <typename T>
-class RefPtrDelete : public RefBase, private UnCopyable {
+class RefArrayDelete : public RefBase, private UnCopyable {
   T* ptr_;
 public:
-  explicit RefPtrDelete(T* p)
+  explicit RefArrayDelete(T* p)
     : ptr_(p) {
   }
 
-  ~RefPtrDelete(void) {
+  ~RefArrayDelete(void) {
   }
 
   virtual void Destroy(void) {
-    if (NULL != ptr_)
-      delete ptr_;
+    if (NULL != ptr_) 
+      delete [] ptr_;
   }
 };
 
 
-template <typename T, typename D>
-class RefPtrDestructor : public RefBase, private UnCopyable {
+template <typename T, typename D> 
+class RefArrayDestructor : public RefBase, private UnCopyable {
   T* ptr_;
   D  dtor_;
 public:
-  explicit RefPtrDestructor(T* p, D d)
+  explicit RefArrayDestructor(T* p, D d)
     : ptr_(p)
     , dtor_(d) {
   }
 
-  ~RefPtrDestructor(void) {
+  ~RefArrayDestructor(void) {
   }
 
   virtual void Destroy(void) {
@@ -66,51 +66,51 @@ public:
 
 
 template <typename T>
-class SmartPtr {
+class SmartArray {
   T*        ptr_;
-  RefBase*  ref_ptr_;
+  RefBase*  ref_array_;
   int*      ref_count_;
 public:
-  explicit SmartPtr(T* p) 
+  explicit SmartArray(T* p)
     : ptr_(p)
-    , ref_ptr_(new RefPtrDelete<T>(ptr_))
+    , ref_array_(new RefArrayDelete<T>(ptr))
     , ref_count_(new int(1)) {
   }
 
   template <typename Y, typename D>
-  explicit SmartPtr(Y* p, D d)
+  explicit SmartArray(Y* p, D d) 
     : ptr_(p)
-    , ref_ptr_(new RefPtrDestructor<Y, D>(ptr_, d))
+    , ref_array_(new RefArrayDestructor<Y, D>(ptr_, d))
     , ref_count_(new int(1)) {
   }
 
-  ~SmartPtr(void) {
+  ~SmartArray(void) {
     if (0 == --*ref_count_) {
-      ref_ptr_->Destroy();
-      delete ref_ptr_;
+      ref_array_->Destroy();
+      delete ref_array_;
 
       delete ref_count_;
     }
   }
 
-  SmartPtr(const SmartPtr& x)
+  SmartArray(const SmartArray& x) 
     : ptr_(x.ptr_)
-    , ref_ptr_(x.ref_ptr_)
+    , ref_array_(x.ref_array_)
     , ref_count_(x.ref_count_) {
     ++*ref_count_;
   }
 
-  SmartPtr& operator=(const SmartPtr& x) {
+  SmartArray& operator=(const SmartArray& x) {
     if (this != &x) {
       if (0 == --*ref_count_) {
-        ref_ptr_->Destroy();
-        delete ref_ptr_;
+        ref_array_->Destroy();
+        delete ref_array_;
 
         delete ref_count_;
       }
 
       ptr_ = x.ptr_;
-      ref_ptr_ = x.ref_ptr_;
+      ref_array_ = x.ref_array_;
       ref_count_ = x.ref_count_;
       ++*ref_count_;
     }
@@ -118,12 +118,8 @@ public:
     return *this;
   }
 public:
-  T& operator*(void) const {
-    return *ptr_;
-  }
-
-  T* operator->(void) const {
-    return ptr_;
+  T& operator[](int i) const {
+    return ptr_[i];
   }
 
   T* Get(void) const {
@@ -131,4 +127,4 @@ public:
   }
 };
 
-#endif  // __SMART_POINTER_HEADER_H__
+#endif  // __SMART_ARRAY_HEADER_H__
