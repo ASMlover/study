@@ -16,3 +16,13 @@
     OK
     redis> hget player:account01 id 
     "1"
+
+
+
+## **2. 使用hiredis**
+    hiredis是官方支持的redis C客户端
+    $ git clone https://github.com/redis/hiredis.git
+    $ cd hiredis
+    编译静态库;
+    $ make static
+    然后就可以使用了;
