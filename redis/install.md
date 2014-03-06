@@ -26,3 +26,6 @@
     编译静态库;
     $ make static
     然后就可以使用了;
+> ### **Linux下使用hiredis共享库**
+    由于最新的github仓库中Makefile做了调整, 修改输出为libhiredis.so, 然后在
+    自己的程序中直接使用就可以了;
