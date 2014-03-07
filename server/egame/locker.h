@@ -28,7 +28,7 @@
 #define __LOCKER_HEADER_H__
 
 template <typename Locker>
-class LockerGuard : UnCopyable {
+class LockerGuard : private UnCopyable {
   Locker& locker_;
 public:
   explicit LockerGuard(Locker& locker)
@@ -39,6 +39,16 @@ public:
   ~LockerGuard(void) {
     locker_.Unlock();
   }
+};
+
+
+class DummyLock : private UnCopyable {
+public:
+  explicit DummyLock(void) {}
+  ~DummyLock(void) {}
+
+  inline void Lock(void) {}
+  inline void Unlock(void) {}
 };
 
 
