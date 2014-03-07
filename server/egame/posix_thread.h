@@ -28,7 +28,7 @@
 #define __POSIX_THREAD_HEADER_H__
 
 
-class Thread : UnCopyable {
+class Thread : private UnCopyable {
   pthread_t thread_id_;
   void      (*routine_)(void*);
   void*     argument_;

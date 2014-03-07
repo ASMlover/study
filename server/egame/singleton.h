@@ -29,7 +29,7 @@
 
 
 template <typename Object, typename Locker = SpinLock> 
-class Singleton : UnCopyable {
+class Singleton : private UnCopyable {
 public:
   static Object& Instance(void) {
     static Object* s_instance = NULL;

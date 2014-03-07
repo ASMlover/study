@@ -77,7 +77,7 @@ enum PlayerState {
   PLAYERSTATE_DISCONNECT      = 7, 
 };
 
-class Player : UnCopyable {
+class Player : private UnCopyable {
   PlayerState state_;
   uint32_t    connid_;
   GameData    data_;

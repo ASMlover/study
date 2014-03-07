@@ -31,7 +31,7 @@
 # error "requires /MTd, /MT, /MDd or /MD compiler options"
 #endif
 
-class Thread : UnCopyable {
+class Thread : private UnCopyable {
   HANDLE  start_event_;
   HANDLE  thread_;
   void    (*routine_)(void*);

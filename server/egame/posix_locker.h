@@ -27,7 +27,7 @@
 #ifndef __POSIX_LOCKER_HEADER_H__
 #define __POSIX_LOCKER_HEADER_H__
 
-class Mutex : UnCopyable {
+class Mutex : private UnCopyable {
   pthread_mutex_t mutex_;
 public:
   explicit Mutex(void) {
@@ -48,7 +48,7 @@ public:
 };
 
 
-class SpinLock : UnCopyable {
+class SpinLock : private UnCopyable {
   pthread_spinlock_t spinlock_;
 public:
   explicit SpinLock(void) {

@@ -29,7 +29,7 @@
 
 
 template <typename T>
-class ObjectPool : UnCopyable {
+class ObjectPool : private UnCopyable {
   enum { DEFAULT_CHUNK_SIZE = 10 };
   uint32_t        chunk_size_;
   std::queue<T*>  free_list_;

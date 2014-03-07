@@ -27,7 +27,7 @@
 #ifndef __WIN_LOCKER_HEADER_H__
 #define __WIN_LOCKER_HEADER_H__
 
-class Mutex : UnCopyable {
+class Mutex : private UnCopyable {
   CRITICAL_SECTION mutex_;
 public:
   explicit Mutex(void) {
@@ -52,7 +52,7 @@ public:
 };
 
 
-class SpinLock : UnCopyable {
+class SpinLock : private UnCopyable {
   CRITICAL_SECTION spinlock_;
 public:
   explicit SpinLock(void) {
