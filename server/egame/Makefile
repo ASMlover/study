@@ -32,7 +32,7 @@ CPPFLAGS = -g -O2 -Wall -std=c++0x -I./sdk/libnet
 CFLAGS	= -g -O2 -Wall
 LDFLAGS	= -lpthread
 CPP_OBJS = main.o player.o player_mgr.o
-C_OBJS	=	./sdk/libnet/libnet.o
+C_OBJS	= ./sdk/libnet/libnet.o
 
 
 
