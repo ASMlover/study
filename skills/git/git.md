@@ -66,3 +66,21 @@
        E:\workspace\hello> git push origin master
 > ### **1.7 相关DEMO文件** ###
     相关的httpd.conf例子文件请参见./win-git-demo/httpd.conf
+
+
+
+
+
+## **2. 在linux上搭建基于ssh的git服务器**
+> ### **2.1 服务端操作**
+    $ cd hkr/code 
+    $ mkdir gitproj
+    $ cd gitproj
+    $ git --bare init 
+> ### **2.2 客户端操作**
+    $ git clone ssh://hkr@192.168.125.100:22/home/hkr/code/gitproj
+    输入Linux上hkr的帐号密码
+    提交流程如下:
+    $ git add .
+    $ git commit 
+    $ git push origin master
