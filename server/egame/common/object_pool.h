@@ -62,7 +62,7 @@ public:
     return *obj;
   }
 
-  void ReleaseObjecy(T& obj) {
+  void ReleaseObject(T& obj) {
     LockerGuard<Locker> guard(locker_);
 
     free_list_.push(&obj);
