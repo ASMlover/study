@@ -108,17 +108,17 @@
 #include <libnet.h>
 
 // user common utils header
-#include "uncopyable.h"
+#include <uncopyable.h>
 #if defined(EGAME_LINUX)
-# include "posix_global.h"
+# include <posix_global.h>
 #endif
-#include "locker.h"
-#include "singleton.h"
-#include "ref_counter.h"
-#include "smart_ptr.h"
-#include "smart_array.h"
-#include "object_pool.h"
-#include "thread.h"
+#include <locker.h>
+#include <singleton.h>
+#include <ref_counter.h>
+#include <smart_ptr.h>
+#include <smart_array.h>
+#include <object_pool.h>
+#include <thread.h>
 
 
 
