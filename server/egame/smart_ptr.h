@@ -74,9 +74,9 @@ public:
 
 template <typename T, typename Locker = SpinLock> 
 class SmartPtr {
-  T*          ptr_;
-  RefPointer* ref_ptr_;
-  RefCounter* ref_count_;
+  T*                  ptr_;
+  RefPointer*         ref_ptr_;
+  RefCounter<Locker>* ref_count_;
 public:
   explicit SmartPtr(T* p) 
     : ptr_(p)
