@@ -28,16 +28,19 @@
 #define __OBJECT_POOL_HEADER_H__
 
 
-template <typename T>
+template <typename T, typename Locker = DummyLock>
 class ObjectPool : private UnCopyable {
-  enum { DEFAULT_CHUNK_SIZE = 10 };
-  uint32_t        chunk_size_;
-  std::queue<T*>  free_list_;
-  std::vector<T*> all_objects_;
+  enum {DEFAULT_CHUNK_SIZE = 16};
+
+  uint32_t                    chunk_size_;
+  Locker                      locker_;
+  std::queue<T*>              free_list_;
+  std::vector<SmartArray<T> > all_objects_;
 public:
   explicit ObjectPool(uint32_t chunk_size = DEFAULT_CHUNK_SIZE)
     throw(std::invalid_argument, std::bad_alloc) 
-    : chunk_size_(chunk_size) {
+    : chunk_size_(chunk_size) 
+    , locker_() {
     if (0 != chunk_size_) 
       throw std::invalid_argument("chunk size must be positive");
 
@@ -45,11 +48,11 @@ public:
   }
 
   ~ObjectPool(void) {
-    std::for_each(all_objects_.begin(), 
-        all_objects_.end(), ArrayDeleteObject);
   }
-
+public:
   T& AcquireObject(void) {
+    LockerGuard<Locker> guard(locker_);
+
     if (free_list_.empty()) 
       AllocateChunk();
 
@@ -60,12 +63,14 @@ public:
   }
 
   void ReleaseObjecy(T& obj) {
+    LockerGuard<Locker> guard(locker_);
+
     free_list_.push(&obj);
   }
 private:
   bool AllocateChunk(void) {
-    T* new_objects = new T[chunk_size_];
-    if (NULL == new_objects)
+    SmartArray<T> new_objects(new T[chunk_size_]);
+    if (NULL == new_objects.Get())
       return false;
 
     all_objects_.push_back(new_objects);
@@ -73,11 +78,6 @@ private:
       free_list_.push(&new_objects[i]);
 
     return true;
-  }
-
-  void ArrayDeleteObject(T* object) {
-    if (NULL != object)
-      delete [] object;
   }
 };
 
