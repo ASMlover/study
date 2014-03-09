@@ -24,46 +24,24 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYPES_HEADER_H__
-#define __TYPES_HEADER_H__
+#ifndef __UTILS_HEADER_H__
+#define __UTILS_HEADER_H__
 
-#if !defined(PROTO_WIN) && !defined(PROTO_LINUX)
-# if defined(_WINDOWS_) || defined(_MSC_VER)
-#   define PROTO_WIN
-# elif defined(WIN32_LEAN_AND_MEAN)
-#   define PROTO_WIN
-# elif defined(__linux__) || defined(__GNUC__)
-#   define PROTO_LINUX
-# else 
-#   error "unsupport this platform!!!"
-# endif
+
+#ifndef PROTO_ASSERT
+# define PROTO_ASSERT(expr)\
+  do {\
+    if (!(expr)) {\
+      fprintf(stderr, \
+          "assertion failed in %s on line %d : %s\n", \
+          __FILE__, \
+          __LINE__, \
+          #expr);\
+      fflush(stderr);\
+      abort();\
+    }\
+  } while (0)
 #endif
 
 
-#if defined(PROTO_WIN)
-# if (_MSC_VER < 1600)
-#   if (_MSC_VER < 1300)
-      typedef signed char       int8_t;
-      typedef unsigned char     uint8_t;
-      typedef signed short      int16_t;
-      typedef unsigned short    uint16_t;
-      typedef signed int        int32_t;
-      typedef unsigned int      uint32_t;
-#   else
-      typedef signed __int8     int8_t;
-      typedef unsigned __int8   uint8_t;
-      typedef signed __int16    int16_t;
-      typedef unsigned __int16  uint16_t;
-      typedef signed __int32    int32_t;
-      typedef unsigned __int32  uint32_t;
-#   endif
-    typedef signed __int64      int64_t;
-    typedef unsigned __int64    uint64_t;
-# else 
-#   include <stdint.h>
-# endif
-#else
-# include <stdint.h>
-#endif
-
-#endif  //! __TYPES_HEADER_H__
+#endif  //! __UTILS_HEADER_H__
