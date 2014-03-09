@@ -24,12 +24,41 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include "global.h"
+#ifndef __LOCKER_HEADER_H__
+#define __LOCKER_HEADER_H__
+
+template <typename Locker>
+class LockerGuard : private UnCopyable {
+  Locker& locker_;
+public:
+  explicit LockerGuard(Locker& locker)
+    : locker_(locker)
+  {
+    locker_.Lock();
+  }
+
+  ~LockerGuard(void)
+  {
+    locker_.Unlock();
+  }
+};
 
 
 
-int 
-main(int argc, char* argv[]) 
-{
-  return 0;
-}
+class DummyLock : private UnCopyable {
+public:
+  explicit DummyLock(void) {}
+  ~DummyLock(void) {}
+
+  inline void Lock(void) {}
+  inline void Unlock(void) {}
+};
+
+
+#if defined(PROTO_WIN)
+# include "win_locker.h"
+#elif defined(PROTO_LINUX)
+# include "posix_locker.h"
+#endif
+
+#endif  //! __LOCKER_HEADER_H__

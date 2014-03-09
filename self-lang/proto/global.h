@@ -70,5 +70,8 @@
 
 //! User common utils header
 #include "types.h"
+#include "uncopyable.h"
+#include "utils.h"
+#include "locker.h"
 
 #endif  //! __GLOBAL_HEADER_H__

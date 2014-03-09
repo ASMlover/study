@@ -24,12 +24,58 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include "global.h"
+#ifndef __WIN_LOCKER_HEADER_H__
+#define __WIN_LOCKER_HEADER_H__
+
+
+class Mutex : private UnCopyable {
+  CRITICAL_SECTION mutex_;
+public:
+  explicit Mutex(void)
+  {
+    InitializeCriticalSection(&mutex_);
+  }
+
+  ~Mutex(void)
+  {
+    DeleteCriticalSection(&mutex_);
+  }
+
+  inline void Lock(void)
+  {
+    EnterCriticalSection(&mutex_);
+  }
+
+  inline void Unlock(void)
+  {
+    LeaveCriticalSection(&mutex_);
+  }
+};
 
 
 
-int 
-main(int argc, char* argv[]) 
-{
-  return 0;
-}
+class SpinLock : private UnCopyable {
+  CRITICAL_SECTION spinlock_;
+public:
+  explicit SpinLock(void)
+  {
+    InitializeCriticalSectionAndSpinCount(&spinlock_, 4000);
+  }
+
+  ~SpinLock(void)
+  {
+    DeleteCriticalSection(&spinlock_);
+  }
+
+  inline void Lock(void)
+  {
+    EnterCriticalSection(&spinlock_);
+  }
+
+  inline void Unlock(void)
+  {
+    LeaveCriticalSection(&spinlock_);
+  }
+};
+
+#endif  //! __WIN_LOCKER_HEADER_H__

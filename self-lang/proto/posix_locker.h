@@ -24,12 +24,57 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include "global.h"
+#ifndef __POSIX_LOCKER_HEADER_H__
+#define __POSIX_LOCKER_HEADER_H__
+
+class Mutex : private UnCopyable {
+  pthread_mutex_t mutex_;
+public:
+  explicit Mutex(void) 
+  {
+    PROTO_ASSERT(0 == pthread_mutex_init(&mutex_, NULL));
+  }
+
+  ~Mutex(void)
+  {
+    PROTO_ASSERT(0 == pthread_mutex_destroy(&mutex_));
+  }
+
+  inline void Lock(void)
+  {
+    PROTO_ASSERT(0 == pthread_mutex_lock(&mutex_));
+  }
+
+  inline void Unlock(void)
+  {
+    PROTO_ASSERT(0 == pthread_mutex_unlock(&mutex_));
+  }
+};
 
 
 
-int 
-main(int argc, char* argv[]) 
-{
-  return 0;
-}
+class SpinLock : private UnCopyable {
+  pthread_spinlock_t spinlock_;
+public:
+  explicit SpinLock(void)
+  {
+    PROTO_ASSERT(0 == pthread_spin_init(&spinlock_, 0));
+  }
+
+  ~SpinLock(void)
+  {
+    PROTO_ASSERT(0 == pthread_spin_destroy(&spinlock_));
+  }
+
+  inline void Lock(void)
+  {
+    PROTO_ASSERT(0 == pthread_spin_lock(&spinlock_));
+  }
+
+  inline void Unlock(void)
+  {
+    PROTO_ASSERT(0 == pthread_spin_unlock(&spinlock_));
+  }
+};
+
+#endif  //! __POSIX_LOCKER_HEADER_H__
