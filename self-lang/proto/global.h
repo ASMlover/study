@@ -74,5 +74,6 @@
 #include "utils.h"
 #include "locker.h"
 #include "singleton.h"
+#include "thread.h"
 
 #endif  //! __GLOBAL_HEADER_H__
