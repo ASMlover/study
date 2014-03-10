@@ -24,55 +24,28 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __GLOBAL_HEADER_H__
-#define __GLOBAL_HEADER_H__
+#ifndef __SINGLETON_HEADER_H__
+#define __SINGLETON_HEADER_H__
 
+template <typename Object, typename Locker = SpinLock>
+class Singleton : private UnCopyable {
+public:
+  static Object& Instance(void)
+  {
+    static Object* s_instance = NULL;
+    static Locker  s_locker;
 
-//! System interfaces header
-#if defined(PROTO_WIN)
-# include <windows.h>
-# include <process.h>
-#elif defined(PROTO_LINUX)
-# include <sys/types.h>
-# include <sys/stat.h>
-# include <sys/time.h>
-# include <unistd.h>
-# include <fcntl.h>
-# include <pthread.h>
+    if (NULL == s_instance) {
+      LockerGuard<Locker> guard(s_locker);
 
-# define MAX_PATH PATH_MAX
-#endif
+      if (NULL == s_instance) {
+        static Object s_object;
+        s_instance = &s_object;
+      }
+    }
 
+    return *s_instance;
+  }
+};
 
-//! ANSI C header
-#include <sys/timeb.h>
-#include <assert.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-
-//! ANSI C++ header
-#include <memory>
-#include <string>
-#include <stdexcept>
-
-
-//! STL header
-#include <algorithm>
-#include <queue>
-#include <map>
-#include <set>
-#include <vector>
-
-
-//! User common utils header
-#include "types.h"
-#include "uncopyable.h"
-#include "utils.h"
-#include "locker.h"
-#include "singleton.h"
-
-#endif  //! __GLOBAL_HEADER_H__
+#endif  //! __SINGLETON_HEADER_H__
