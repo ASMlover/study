@@ -32,7 +32,7 @@ class RefCounter : private UnCopyable {
   uint32_t counter_;
   Locker   locker_;
 public:
-  RefCounter(uint32_t counter = 0) 
+  explicit RefCounter(uint32_t counter = 0) 
     : counter_(counter)
     , locker_() {
   }
