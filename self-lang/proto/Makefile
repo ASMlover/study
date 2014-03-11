@@ -29,6 +29,7 @@ OUT	= proto
 RM	= rm 
 CC	= g++
 CPPFLAGS = -ggdb -O2 -Wall
+INCLUDES = -I./common
 OBJS	= main.o
 
 
@@ -50,4 +51,4 @@ $(OUT): $(OBJS)
 	$(CC) -o $@ $^
 
 $(OBJS): %.o: %.cc 
-	$(CC) -o $*.o -c $(CPPFLAGS) $^
+	$(CC) -o $*.o -c $(CPPFLAGS) $(INCLUDES) $^
