@@ -75,6 +75,7 @@
 #include "locker.h"
 #include "singleton.h"
 #include "ref_counter.h"
+#include "smart_ptr.h"
 #include "thread.h"
 
 #endif  //! __GLOBAL_HEADER_H__
