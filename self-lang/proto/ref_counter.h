@@ -24,57 +24,40 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __GLOBAL_HEADER_H__
-#define __GLOBAL_HEADER_H__
+#ifndef __REF_COUNTER_HEADER_H__
+#define __REF_COUNTER_HEADER_H__
 
+template <typename Locker = DummyLock>
+class RefCounter : private UnCopyable {
+  uint32_t counter_;
+  Locker   locker_;
+public:
+  explicit RefCounter(uint32_t counter = 1)
+    : counter_(counter)
+    , locker_()
+  {
+  }
 
-//! System interfaces header
-#if defined(PROTO_WIN)
-# include <windows.h>
-# include <process.h>
-#elif defined(PROTO_LINUX)
-# include <sys/types.h>
-# include <sys/stat.h>
-# include <sys/time.h>
-# include <unistd.h>
-# include <fcntl.h>
-# include <pthread.h>
+  ~RefCounter(void)
+  {
+  }
 
-# define MAX_PATH PATH_MAX
-#endif
+  operator uint32_t(void) const 
+  {
+    return counter_;
+  }
 
+  uint32_t operator++(void) 
+  {
+    LockerGuard<Locker> guard(locker_);
+    return ++counter_;
+  }
 
-//! ANSI C header
-#include <sys/timeb.h>
-#include <assert.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+  uint32_t operator--(void)
+  {
+    LockerGuard<Locker> guard(locker_);
+    return --counter_;
+  }
+};
 
-
-//! ANSI C++ header
-#include <memory>
-#include <string>
-#include <stdexcept>
-
-
-//! STL header
-#include <algorithm>
-#include <queue>
-#include <map>
-#include <set>
-#include <vector>
-
-
-//! User common utils header
-#include "types.h"
-#include "uncopyable.h"
-#include "utils.h"
-#include "locker.h"
-#include "singleton.h"
-#include "ref_counter.h"
-#include "thread.h"
-
-#endif  //! __GLOBAL_HEADER_H__
+#endif  //! __REF_COUNTER_HEADER_H__
