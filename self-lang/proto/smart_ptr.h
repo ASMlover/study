@@ -37,7 +37,7 @@ public:
 
 template <typename T>
 class RefPtrDelete : public RefPointer {
-  T* ptr_;
+  T*  ptr_;
 public:
   explicit RefPtrDelete(T* p)
     : ptr_(p)
