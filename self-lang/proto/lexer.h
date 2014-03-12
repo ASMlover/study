@@ -45,6 +45,7 @@ struct Token {
     TYPE_RBRACKET,  //!< ]
     TYPE_LBRACE,    //!< {
     TYPE_RBRACE,    //!< }
+    TYPE_COMMENT,   //!< #
 
     TYPE_PACKAGE,   //!< package
     TYPE_IMPORT,    //!< import
@@ -64,6 +65,46 @@ struct Token {
     TYPE_REAL32,    //!< real32
     TYPE_REAL64,    //!< real64
   };
+
+  Type        type;
+  std::string name;
+  struct Line {
+    std::string fname;
+    uint32_t    lineno;
+  } line;
+};
+
+
+class Lexer : private UnCopyable {
+  enum State {
+    STATE_BEGIN = 0, 
+    STATE_FINISH, 
+
+    STATE_CINT,     //!< const int number
+    STATE_CREAL,    //!< const real number
+    STATE_CSTR,     //!< const string 
+    STATE_ID,       //!< identifier
+    STATE_ASSIGN,   //!< =
+    STATE_COMMENT,  //!< #
+  };
+
+  enum {BSIZE = 128};
+
+  SmartPtr<FILE>  stream_;
+  std::string     fname_;
+  State           state_;
+  int             lineno_;
+  int             bsize_;
+  int             lexpos_;
+  char            lexbuf_[BSIZE];
+public:
+  explicit Lexer(void);
+  ~Lexer(void);
+
+  bool Open(const char* fname);
+  void Close(void);
+
+  Type GetToken(Token& token);
 };
 
 #endif  //! __LEXER_HEADER_H__
