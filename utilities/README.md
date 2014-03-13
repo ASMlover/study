@@ -8,4 +8,4 @@
 
 
 ## **Code Style**
- * See [Google C++ Style Guide](https://google-styleguide.googlecode.com/svn/trunk/cppguide.xml)
+ * See [Google C++ Style Guide](https://code.google.com/p/google-styleguide)
