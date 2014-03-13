@@ -24,75 +24,39 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __UTIL_UTILITY_HEADER_H__
-#define __UTIL_UTILITY_HEADER_H__
+#ifndef __UTIL_LOCKER_HEADER_H__
+#define __UTIL_LOCKER_HEADER_H__
 
 
-#include "types.h"
+// Helper class to Lock and Unlock a Locker automatically.
+template <typename Locker>
+class LockerGuard : private UnCopyable {
+  Locker& locker_;
+public:
+  explicit LockerGuard(Locker& locker)
+    : locker_(locker) {
+    locker_.Lock();
+  }
 
-// System interfaces header
+  ~LockerGuard(void) {
+    locker_.Unlock();
+  }
+};
+
+class DummyLock : private UnCopyable {
+public:
+  DummyLock(void) {}
+  ~DummyLock(void) {}
+
+  void Lock(void) {}
+  void Unlock(void) {}
+};
+
+
 #if defined(PLATFORM_WIN)
-# include <windows.h>
-# include <process.h>
+# include "win_locker.h"
 #elif defined(PLATFORM_LINUX)
-# include <sys/types.h>
-# include <sys/stat.h>
-# include <sys/time.h>
-# include <unistd.h>
-# include <fcntl.h>
-# include <pthread.h>
-
-# define MAX_PATH PATH_MAX
+# include "posix_locker.h"
 #endif
 
-
-// ANSI C header
-#include <sys/timeb.h>
-#include <assert.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-
-// ANSI C++ header
-#include <memory>
-#include <string>
-#include <stdexcept>
-
-
-// STL header
-#include <algorithm>
-#include <queue>
-#include <map>
-#include <set>
-#include <vector>
-
-// Have our own assert, so we are sure it dose not get 
-// optomized away in a release build.
-#ifndef UTIL_ASSERT
-# define UTIL_ASSERT(expr)\
-  do {\
-    if (!(expr)) {\
-      fprintf(stderr, \
-          "Assertion failed in %s on %d : %s\n", \
-          __FILE__, \
-          __LINE__, \
-          #expr);\
-      fflush();\
-      abort();\
-    }\
-  } while (0)
-#endif
-
-
-
-// utilities header
-#include "uncopyable.h"
-#include "locker.h"
-
-
-
-
-#endif  // __UTIL_UTILITY_HEADER_H__
+#endif  // __UTIL_LOCKER_HEADER_H__

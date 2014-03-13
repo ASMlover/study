@@ -24,75 +24,48 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __UTIL_UTILITY_HEADER_H__
-#define __UTIL_UTILITY_HEADER_H__
+#ifndef __UTIL_POSIX_LOCKER_HEADER_H__
+#define __UTIL_POSIX_LOCKER_HEADER_H__
+
+class Mutex : private UnCopyable {
+  pthread_mutex_t mutex_;
+public:
+  Mutex(void) {
+    UTIL_ASSERT(0 == pthread_mutex_init(&mutex_, NULL));
+  }
+
+  ~Mutex(void) {
+    UTIL_ASSERT(0 == pthread_mutex_destroy(&mutex_));
+  }
+
+  void Lock(void) {
+    UTIL_ASSERT(0 == pthread_mutex_lock(&mutex_));
+  }
+
+  void Unlock(void) {
+    UTIL_ASSERT(0 == pthread_mutex_unlock(&mutex_));
+  }
+};
 
 
-#include "types.h"
+class SpinLock : private UnCopyable {
+  pthread_spinlock_t spinlock_;
+public:
+  SpinLock(void) {
+    UTIL_ASSERT(0 == pthread_spin_init(&spinlock_, 0));
+  }
 
-// System interfaces header
-#if defined(PLATFORM_WIN)
-# include <windows.h>
-# include <process.h>
-#elif defined(PLATFORM_LINUX)
-# include <sys/types.h>
-# include <sys/stat.h>
-# include <sys/time.h>
-# include <unistd.h>
-# include <fcntl.h>
-# include <pthread.h>
+  ~SpinLock(void) {
+    UTIL_ASSERT(0 == pthread_spin_destroy(&spinlock_));
+  }
 
-# define MAX_PATH PATH_MAX
-#endif
+  void Lock(void) {
+    UTIL_ASSERT(0 == pthread_spin_lock(&spinlock_));
+  }
 
+  void Unlock(void) {
+    UTIL_ASSERT(0 == pthread_spin_unlock(&spinlock_));
+  }
+};
 
-// ANSI C header
-#include <sys/timeb.h>
-#include <assert.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-
-// ANSI C++ header
-#include <memory>
-#include <string>
-#include <stdexcept>
-
-
-// STL header
-#include <algorithm>
-#include <queue>
-#include <map>
-#include <set>
-#include <vector>
-
-// Have our own assert, so we are sure it dose not get 
-// optomized away in a release build.
-#ifndef UTIL_ASSERT
-# define UTIL_ASSERT(expr)\
-  do {\
-    if (!(expr)) {\
-      fprintf(stderr, \
-          "Assertion failed in %s on %d : %s\n", \
-          __FILE__, \
-          __LINE__, \
-          #expr);\
-      fflush();\
-      abort();\
-    }\
-  } while (0)
-#endif
-
-
-
-// utilities header
-#include "uncopyable.h"
-#include "locker.h"
-
-
-
-
-#endif  // __UTIL_UTILITY_HEADER_H__
+#endif  // __UTIL_POSIX_LOCKER_HEADER_H__
