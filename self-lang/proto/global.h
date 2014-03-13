@@ -28,6 +28,7 @@
 #define __GLOBAL_HEADER_H__
 
 
+#include <types.h>
 //! System interfaces header
 #if defined(PROTO_WIN)
 # include <windows.h>
@@ -69,7 +70,6 @@
 
 
 //! User common utils header
-#include <types.h>
 #include <uncopyable.h>
 #include <utils.h>
 #include <locker.h>
