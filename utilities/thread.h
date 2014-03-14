@@ -24,76 +24,38 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __UTIL_UTILITY_HEADER_H__
-#define __UTIL_UTILITY_HEADER_H__
+#ifndef __UTIL_THREAD_HEADER_H__
+#define __UTIL_THREAD_HEADER_H__
 
+class Routiner : private UnCopyable {
+public:
+  Routiner(void) {}
+  virtual ~Routiner(void) {}
 
-#include "types.h"
+  virtual void Run(void) = 0;
+};
 
-// System interfaces header
+template <typename Routine>
+class ThreadRoutiner : public Routiner {
+  Routine routine_;
+  void*   argument_;
+public:
+  explicit ThreadRoutiner(Routine routine, void* argument = NULL) 
+    : routine_(routine)
+    , argument_(argument) {
+  }
+
+  ~ThreadRoutiner(void) {
+  }
+
+  virtual void Run(void) {
+    routine_(argument_);
+  }
+};
+
 #if defined(PLATFORM_WIN)
-# include <windows.h>
-# include <process.h>
+# include "win_thread.h"
 #elif defined(PLATFORM_LINUX)
-# include <sys/types.h>
-# include <sys/stat.h>
-# include <sys/time.h>
-# include <unistd.h>
-# include <fcntl.h>
-# include <pthread.h>
-
-# define MAX_PATH PATH_MAX
 #endif
 
-
-// ANSI C header
-#include <sys/timeb.h>
-#include <assert.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-
-// ANSI C++ header
-#include <memory>
-#include <string>
-#include <stdexcept>
-
-
-// STL header
-#include <algorithm>
-#include <queue>
-#include <map>
-#include <set>
-#include <vector>
-
-// Have our own assert, so we are sure it dose not get 
-// optomized away in a release build.
-#ifndef UTIL_ASSERT
-# define UTIL_ASSERT(expr)\
-  do {\
-    if (!(expr)) {\
-      fprintf(stderr, \
-          "Assertion failed in %s on %d : %s\n", \
-          __FILE__, \
-          __LINE__, \
-          #expr);\
-      fflush();\
-      abort();\
-    }\
-  } while (0)
-#endif
-
-
-
-// utilities header
-#include "uncopyable.h"
-#include "locker.h"
-#include "singleton.h"
-
-
-
-
-#endif  // __UTIL_UTILITY_HEADER_H__
+#endif  // __UTIL_THREAD_HEADER_H__

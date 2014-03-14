@@ -24,76 +24,64 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __UTIL_UTILITY_HEADER_H__
-#define __UTIL_UTILITY_HEADER_H__
+#ifndef __UTIL_WIN_THREAD_HEADER_H__
+#define __UTIL_WIN_THREAD_HEADER_H__
 
-
-#include "types.h"
-
-// System interfaces header
-#if defined(PLATFORM_WIN)
-# include <windows.h>
-# include <process.h>
-#elif defined(PLATFORM_LINUX)
-# include <sys/types.h>
-# include <sys/stat.h>
-# include <sys/time.h>
-# include <unistd.h>
-# include <fcntl.h>
-# include <pthread.h>
-
-# define MAX_PATH PATH_MAX
+#ifndef _MT
+# error "requires /MDd, /MD, /MTd or /MT compiler options"
 #endif
 
+class Thread : private UnCopyable {
+  HANDLE              start_event_;
+  HANDLE              thread_;
+  SmartPtr<Routiner>  routine_;
+public:
+  Thread(void) 
+    : start_event_(NULL)
+    , thread_(NULL)
+    , routine_(static_cast<Routiner*>(NULL)) {
+  }
 
-// ANSI C header
-#include <sys/timeb.h>
-#include <assert.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+  ~Thread(void) {
+    Stop();
+  }
 
+  template <typename R>
+  void Start(R routine, void* argument = NULL) {
+    routine_ = SmartPtr<Routiner>(new ThreadRoutiner<R>(routine, argument));
+    UTIL_ASSERT(NULL != routine_.Get());
 
-// ANSI C++ header
-#include <memory>
-#include <string>
-#include <stdexcept>
+    start_event_ = CreateEvent(NULL, TRUE, FALSE, NULL);
+    UTIL_ASSERT(NULL != start_event_);
 
+    thread_ = (HANDLE)_beginthreadex(NULL, 
+        0, &Thread::Routine, this, 0, NULL);
+    UTIL_ASSERT(NULL != thread_);
 
-// STL header
-#include <algorithm>
-#include <queue>
-#include <map>
-#include <set>
-#include <vector>
+    WaitForSingleObject(start_event_, INFINITE);
+    CloseHandle(start_event_);
+  }
 
-// Have our own assert, so we are sure it dose not get 
-// optomized away in a release build.
-#ifndef UTIL_ASSERT
-# define UTIL_ASSERT(expr)\
-  do {\
-    if (!(expr)) {\
-      fprintf(stderr, \
-          "Assertion failed in %s on %d : %s\n", \
-          __FILE__, \
-          __LINE__, \
-          #expr);\
-      fflush();\
-      abort();\
-    }\
-  } while (0)
-#endif
+  void Stop(void) {
+    if (NULL != thread_) {
+      WaitForSingleObject(thread_, INFINITE);
 
+      CloseHandle(thread_);
+      thread_ = NULL;
+    }
+  }
+private:
+  static UINT WINAPI Routine(void* arg) {
+    Thread* self = static_cast<Thread*>(arg);
+    if (NULL == self)
+      return 0;
 
+    SetEvent(self->start_event_);
 
-// utilities header
-#include "uncopyable.h"
-#include "locker.h"
-#include "singleton.h"
+    self->routine_->Run();
 
+    return 0;
+  }
+};
 
-
-
-#endif  // __UTIL_UTILITY_HEADER_H__
+#endif  // __UTIL_WIN_THREAD_HEADER_H__
