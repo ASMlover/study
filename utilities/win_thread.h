@@ -49,7 +49,8 @@ public:
   template <typename R>
   void Start(R routine, void* argument = NULL) {
     routine_ = SmartPtr<Routiner>(new ThreadRoutiner<R>(routine, argument));
-    UTIL_ASSERT(NULL != routine_.Get());
+    if (NULL == routine_.Get())
+      return;
 
     start_event_ = CreateEvent(NULL, TRUE, FALSE, NULL);
     UTIL_ASSERT(NULL != start_event_);
