@@ -80,7 +80,7 @@
           __FILE__, \
           __LINE__, \
           #expr);\
-      fflush();\
+      fflush(stderr);\
       abort();\
     }\
   } while (0)
