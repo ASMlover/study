@@ -41,7 +41,7 @@ public:
     throw(std::invalid_argument, std::bad_alloc) 
     : chunk_size_(chunk_size) 
     , locker_() {
-    if (0 != chunk_size_) 
+    if (0 == chunk_size_) 
       throw std::invalid_argument("chunk size must be positive");
 
     AllocateChunk();
