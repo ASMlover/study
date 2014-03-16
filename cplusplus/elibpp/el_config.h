@@ -61,7 +61,7 @@
     typedef unsigned __int64    uint64_t;
 
 #   ifndef _W64
-#     if !defined(__midl) 
+#     if !defined(__midl) \
         && (defined(_X86_) || defined(_M_IX86)) && _MSC_VER >= 1300 
 #       define _W64 __w64
 #     else
