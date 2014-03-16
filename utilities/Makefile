@@ -44,6 +44,8 @@ rebuild: clean all
 clean:
 	$(RM) $(OUT) $(OBJS)
 
+clean_test:
+	$(RM) *.txt
 
 
 

@@ -26,7 +26,58 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <utility.h>
 
+class Value : private UnCopyable {
+  int val_;
+public:
+  explicit Value(int v) 
+    : val_(v) {
+    fprintf(stdout, "%s => val_ = %d\n", __func__, val_);
+  }
+
+  ~Value(void) {
+    fprintf(stdout, "%s => val_ = %d\n", __func__, val_);
+  }
+};
+
+
+class TraceLock : private UnCopyable {
+public:
+  TraceLock(void) {
+    fprintf(stdout, "%s\n", __func__);
+  }
+
+  ~TraceLock(void) {
+    fprintf(stdout, "%s\n", __func__);
+  }
+
+  void Lock(void) {
+    fprintf(stdout, "%s\n", __func__);
+  }
+
+  void Unlock(void) {
+    fprintf(stdout, "%s\n", __func__);
+  }
+};
+
+
+void CloseFile(FILE* p) {
+  fprintf(stdout, "%s\n", __func__);
+  fclose(p);
+}
 
 int main(int argc, char* argv[]) {
+  {
+    SmartPtr<Value, TraceLock> v(new Value(23));
+    v.Reset(new Value(33));
+  }
+
+  {
+    SmartPtr<FILE, TraceLock> f(fopen("demo.txt", "w"), CloseFile);
+    f.Reset(fopen("demo1.txt", "w"), CloseFile);
+    SmartPtr<FILE, TraceLock> f1(fopen("demo2.txt", "w"), CloseFile);
+    f1 = f;
+  }
+
+
   return 0;
 }
