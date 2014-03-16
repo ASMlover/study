@@ -86,6 +86,8 @@ class SmartPtr {
   T*                  ptr_;
   RefPointer*         ref_ptr_;
   RefCounter<Locker>* ref_count_;
+
+  typedef SmartPtr<T, Locker> SelfType;
 public:
   explicit SmartPtr(T* p)
     : ptr_(p)
@@ -105,7 +107,7 @@ public:
       ref_ptr_->Destroy();
       delete ref_ptr_;
 
-      delete ref_count_
+      delete ref_count_;
     }
   }
 
@@ -118,7 +120,7 @@ public:
 
   SmartPtr& operator=(const SmartPtr& x) {
     if (this != &x)
-      SmartPtr<T, Locker>(x).Swap(*this);
+      SelfType(x).Swap(*this);
 
     return *this;
   }
@@ -129,12 +131,12 @@ public:
 
   template <typename Y>
   void Reset(Y* p) {
-    SmartPtr<Y>(p).Swap(*this);
+    SelfType(p).Swap(*this);
   }
 
   template <typename Y, typename D>
   void Reset(Y* p, D d) {
-    SmartPtr<Y, D>(p, d).Swap(*this);
+    SelfType(p, d).Swap(*this);
   }
 
   T& operator*(void) const {
