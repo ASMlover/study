@@ -86,6 +86,8 @@ class SmartArray {
   T*                  ptr_;
   RefArray*           ref_array_;
   RefCounter<Locker>* ref_count_;
+
+  typedef SmartArray<T, Locker> SelfType;
 public:
   explicit SmartArray(T* p)
     : ptr_(p)
@@ -118,7 +120,7 @@ public:
 
   SmartArray& operator=(const SmartArray& x) {
     if (this != &x)
-      SmartArray<T, Locker>(x).Swap(*this);
+      SelfType(x).Swap(*this);
 
     return *this;
   }
@@ -129,12 +131,12 @@ public:
 
   template <typename Y>
   void Reset(Y* p) {
-    SmartArray<Y>(p).Swap(*this);
+    SelfType(p).Swap(*this);
   }
 
   template <typename Y, typename D>
   void Reset(Y* p, D d) {
-    SmartArray<Y, D>(p, d).Swap(*this);
+    SelfType(p, d).Swap(*this);
   }
 
   T& operator[](uint32_t i) const {
