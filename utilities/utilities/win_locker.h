@@ -52,7 +52,7 @@ class SpinLock : private UnCopyable {
   CRITICAL_SECTION spinlock_;
 public:
   SpinLock(void) {
-    InitializeCriticalSectionAndSpinCount(&spinlock_, 4000);
+    UTIL_ASSERT(InitializeCriticalSectionAndSpinCount(&spinlock_, 4000));
   }
 
   ~SpinLock(void) {
