@@ -24,81 +24,59 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __UTIL_UTILITY_HEADER_H__
-#define __UTIL_UTILITY_HEADER_H__
+#ifndef __UTIL_OBJECT_POOL_HEADER_H__
+#define __UTIL_OBJECT_POOL_HEADER_H__
 
+template <typename T, typename Locker = DummyLock> 
+class ObjectPool : private UnCopyable {
+  enum {DEFAULT_CHUNK_SIZE = 16};
 
-#include "types.h"
+  uint32_t                    chunk_size_;
+  Locker                      locker_;
+  std::queue<T*>              free_list_;
+  std::vector<SmartArray<T> > all_objects_;
+public:
+  explicit ObjectPool(uint32_t chunk_size = DEFAULT_CHUNK_SIZE) 
+    throw (std::invalid_argument, std::bad_alloc) 
+    : chunk_size_(chunk_size) {
+    if (0 == chunk_size_)
+      throw std::invalid_argument("chunk size must be positive");
 
-// System interfaces header
-#if defined(PLATFORM_WIN)
-# include <windows.h>
-# include <process.h>
-#elif defined(PLATFORM_LINUX)
-# include <sys/types.h>
-# include <sys/stat.h>
-# include <sys/time.h>
-# include <unistd.h>
-# include <fcntl.h>
-# include <pthread.h>
+    AllocateChunk();
+  }
 
-# define MAX_PATH PATH_MAX
-#endif
+  ~ObjectPool(void) {
+  }
+private:
+  T& AcquireObject(void) {
+    LockerGuard<Locker> guard(locker_);
 
+    if (free_list_.empty())
+      AllocateChunk();
 
-// ANSI C header
-#include <sys/timeb.h>
-#include <assert.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+    T* obj = free_list_.front();
+    free_list_.pop();
 
+    return *obj;
+  }
 
-// ANSI C++ header
-#include <memory>
-#include <string>
-#include <stdexcept>
+  void ReleaseObject(T& obj) {
+    LockerGuard<Locker> guard(locker_);
 
+    free_list_.push(&obj);
+  }
+private:
+  bool AllocateChunk(void) {
+    SmartArray<T> new_objects(new T[chunk_size_]);
+    if (NULL == new_objects.Get())
+      return false;
 
-// STL header
-#include <algorithm>
-#include <queue>
-#include <map>
-#include <set>
-#include <vector>
+    all_objects_.push_back(new_objects);
+    for (uint32_t i = 0; i < chunk_size_; ++i)
+      free_list_.push(&new_objects[i]);
 
-// Have our own assert, so we are sure it dose not get 
-// optomized away in a release build.
-#ifndef UTIL_ASSERT
-# define UTIL_ASSERT(expr)\
-  do {\
-    if (!(expr)) {\
-      fprintf(stderr, \
-          "Assertion failed in %s on %d : %s\n", \
-          __FILE__, \
-          __LINE__, \
-          #expr);\
-      fflush(stderr);\
-      abort();\
-    }\
-  } while (0)
-#endif
+    return true;
+  }
+};
 
-
-
-// utilities header
-#include "uncopyable.h"
-#include "locker.h"
-#include "singleton.h"
-#include "ref_counter.h"
-#include "smart_ptr.h"
-#include "smart_array.h"
-#include "object_pool.h"
-#include "thread.h"
-
-
-
-
-#endif  // __UTIL_UTILITY_HEADER_H__
+#endif  // __UTIL_OBJECT_POOL_HEADER_H__
