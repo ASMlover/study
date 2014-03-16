@@ -56,6 +56,7 @@ public:
 #if defined(PLATFORM_WIN)
 # include "win_thread.h"
 #elif defined(PLATFORM_LINUX)
+# include "posix_thread.h"
 #endif
 
 #endif  // __UTIL_THREAD_HEADER_H__
