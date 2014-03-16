@@ -80,7 +80,7 @@ public:
 // An enhanced relative of smart pointer with reference counted copy 
 // semantics.
 // This object pointed to is deleted when the last SmartPtr pointing 
-// to it is destroyed.
+// to it is destroyed or reset.
 template <typename T, typename Locker = DummyLock> 
 class SmartPtr {
   T*                  ptr_;
@@ -125,6 +125,11 @@ public:
 public:
   T* Get(void) const {
     return ptr_;
+  }
+
+  template <typename Y>
+  void Reset(Y* p) {
+    SmartPtr<Y>(p).Swap(*this);
   }
 
   template <typename Y, typename D>
