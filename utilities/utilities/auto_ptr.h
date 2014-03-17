@@ -30,7 +30,7 @@
 
 // AutoPtr
 // 
-// AutoPtr mimics a built-in pointer except that it guarantees 
+// AutoPtr mimics a built-in pointer except that it guaranteed
 // deletion of the object pointed to, either on destruction of 
 // the AutoPtr or via an explicit Reset().
 // AutoPtr it a simple solution for simple needs, use SmartPtr 
@@ -50,8 +50,8 @@ public:
       delete ptr_;
   }
 public:
-  void Reset(void) {
-    SelfType().Swap(*this);
+  void Reset(T* p = NULL) {
+    SelfType(p).Swap(*this);
   }
 
   T& operator*(void) const {
