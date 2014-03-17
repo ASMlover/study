@@ -89,6 +89,12 @@ class SmartArray {
 
   typedef SmartArray<T, Locker> SelfType;
 public:
+  SmartArray(void)
+    : ptr_(NULL)
+    , ref_array_(NULL)
+    , ref_count_(NULL) {
+  }
+
   explicit SmartArray(T* p)
     : ptr_(p)
     , ref_array_(new RefArrayDelete<T>(ptr_))
@@ -103,11 +109,16 @@ public:
   }
 
   ~SmartArray(void) {
-    if (0 == --*ref_count_) {
-      ref_array_->Destroy();
-      delete ref_array_;
+    if (NULL != ptr_) {
+      if (0 == --*ref_count_) {
+        ref_array_->Destroy();
+        ptr_ = NULL;
+        delete ref_array_;
+        ref_array_ = NULL;
 
-      delete ref_count_;
+        delete ref_count_;
+        ref_count_ = NULL;
+      }
     }
   }
 
@@ -127,6 +138,10 @@ public:
 public:
   T* Get(void) const {
     return ptr_;
+  }
+
+  void Reset(void) {
+    SelfType().Swap(*this);
   }
 
   template <typename Y>
