@@ -92,6 +92,8 @@
 #include "uncopyable.h"
 #include "locker.h"
 #include "singleton.h"
+#include "auto_ptr.h"
+#include "auto_array.h"
 #include "ref_counter.h"
 #include "smart_ptr.h"
 #include "smart_array.h"
