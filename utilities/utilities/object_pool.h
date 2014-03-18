@@ -27,6 +27,10 @@
 #ifndef __UTIL_OBJECT_POOL_HEADER_H__
 #define __UTIL_OBJECT_POOL_HEADER_H__
 
+
+namespace util {
+
+
 template <typename T, typename Locker = DummyLock> 
 class ObjectPool : private UnCopyable {
   enum {DEFAULT_CHUNK_SIZE = 16};
@@ -78,5 +82,9 @@ private:
     return true;
   }
 };
+
+
+}
+
 
 #endif  // __UTIL_OBJECT_POOL_HEADER_H__

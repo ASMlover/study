@@ -27,6 +27,8 @@
 #ifndef __UTIL_AUTO_ARRAY_HEADER_H__
 #define __UTIL_AUTO_ARRAY_HEADER_H__
 
+namespace util {
+
 
 // AutoArray 
 //
@@ -65,5 +67,8 @@ private:
     std::swap(ptr_, x.ptr_);
   }
 };
+
+
+}
 
 #endif  // __UTIL_AUTO_ARRAY_HEADER_H__

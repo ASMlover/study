@@ -27,6 +27,10 @@
 #ifndef __UTIL_POSIX_THREAD_HEADER_H__
 #define __UTIL_POSIX_THREAD_HEADER_H__
 
+
+namespace util {
+
+
 class Thread : private UnCopyable {
   pthread_t           thread_id_;
   SmartPtr<Routiner>  routine_;
@@ -67,5 +71,8 @@ private:
     return NULL;
   }
 };
+
+
+}
 
 #endif  // __UTIL_POSIX_THREAD_HEADER_H__

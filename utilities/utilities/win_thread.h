@@ -31,6 +31,10 @@
 # error "requires /MDd, /MD, /MTd or /MT compiler options"
 #endif
 
+
+namespace util {
+
+
 class Thread : private UnCopyable {
   HANDLE              start_event_;
   HANDLE              thread_;
@@ -84,5 +88,8 @@ private:
     return 0;
   }
 };
+
+
+}
 
 #endif  // __UTIL_WIN_THREAD_HEADER_H__

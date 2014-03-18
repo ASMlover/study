@@ -28,6 +28,9 @@
 #define __UTIL_AUTO_PTR_HEADER_H__
 
 
+namespace util {
+
+
 // AutoPtr
 // 
 // AutoPtr mimics a built-in pointer except that it guaranteed
@@ -70,5 +73,9 @@ private:
     std::swap(ptr_, x.ptr_);
   }
 };
+
+
+}
+
 
 #endif  // __UTIL_AUTO_PTR_HEADER_H__

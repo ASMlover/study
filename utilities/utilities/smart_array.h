@@ -27,6 +27,10 @@
 #ifndef __UTIL_SMART_ARRAY_HEADER_H__
 #define __UTIL_SMART_ARRAY_HEADER_H__
 
+
+namespace util {
+
+
 class RefArray : private UnCopyable {
 public:
   RefArray(void) {}
@@ -164,5 +168,8 @@ private:
     std::swap(ref_count_, x.ref_count_);
   }
 };
+
+
+}
 
 #endif  // __UTIL_SMART_ARRAY_HEADER_H__

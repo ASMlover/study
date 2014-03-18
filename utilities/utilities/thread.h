@@ -27,6 +27,10 @@
 #ifndef __UTIL_THREAD_HEADER_H__
 #define __UTIL_THREAD_HEADER_H__
 
+
+namespace util {
+
+
 class Routiner : private UnCopyable {
 public:
   Routiner(void) {}
@@ -52,6 +56,9 @@ public:
     routine_(argument_);
   }
 };
+
+
+}
 
 #if defined(PLATFORM_WIN)
 # include "win_thread.h"

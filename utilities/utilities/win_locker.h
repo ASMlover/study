@@ -27,6 +27,10 @@
 #ifndef __UTIL_WIN_LOCKER_HEADER_H__
 #define __UTIL_WIN_LOCKER_HEADER_H__
 
+
+namespace util {
+
+
 class Mutex : private UnCopyable {
   CRITICAL_SECTION mutex_;
 public:
@@ -67,5 +71,8 @@ public:
     LeaveCriticalSection(&spinlock_);
   }
 };
+
+
+}
 
 #endif  // __UTIL_WIN_LOCKER_HEADER_H__

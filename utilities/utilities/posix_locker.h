@@ -27,6 +27,10 @@
 #ifndef __UTIL_POSIX_LOCKER_HEADER_H__
 #define __UTIL_POSIX_LOCKER_HEADER_H__
 
+
+namespace util {
+
+
 class Mutex : private UnCopyable {
   pthread_mutex_t mutex_;
 public:
@@ -67,5 +71,8 @@ public:
     UTIL_ASSERT(0 == pthread_spin_unlock(&spinlock_));
   }
 };
+
+
+}
 
 #endif  // __UTIL_POSIX_LOCKER_HEADER_H__

@@ -27,6 +27,10 @@
 #ifndef __UTIL_UNCOPYABLE_HEADER_H__
 #define __UTIL_UNCOPYABLE_HEADER_H__
 
+
+namespace util {
+
+
 // Private copy constructor and copy assignment ensure 
 // classes derived from class un-copyable cannot be copied.
 class UnCopyable {
@@ -36,5 +40,8 @@ protected:
   UnCopyable(void) {}
   ~UnCopyable(void) {}
 };
+
+
+}
 
 #endif  // __UTIL_UNCOPYABLE_HEADER_H__

@@ -27,6 +27,10 @@
 #ifndef __UTIL_SMART_PTR_HEADER_H__
 #define __UTIL_SMART_PTR_HEADER_H__
 
+
+namespace util {
+
+
 // abstruct base class for destructor of smart pointer
 class RefPointer : private UnCopyable {
 public:
@@ -168,6 +172,9 @@ private:
     std::swap(ref_count_, x.ref_count_);
   }
 };
+
+
+}
 
 
 #endif  // __UTIL_SMART_PTR_HEADER_H__

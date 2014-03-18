@@ -27,6 +27,10 @@
 #ifndef __UTIL_SINGLETON_HEADER_H__
 #define __UTIL_SINGLETON_HEADER_H__
 
+
+namespace util {
+
+
 // Singleton class implements.
 template <typename Object, typename Locker = SpinLock>
 class Singleton : private UnCopyable {
@@ -47,5 +51,8 @@ public:
     return *s_instance;
   }
 };
+
+
+}
 
 #endif  // __UTIL_SINGLETON_HEADER_H__

@@ -28,6 +28,9 @@
 #define __UTIL_LOCKER_HEADER_H__
 
 
+namespace util {
+
+
 // Helper class to Lock and Unlock a Locker automatically.
 template <typename Locker>
 class LockerGuard : private UnCopyable {
@@ -52,6 +55,8 @@ public:
   void Unlock(void) {}
 };
 
+
+}
 
 #if defined(PLATFORM_WIN)
 # include "win_locker.h"
