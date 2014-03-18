@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <utility.h>
 
-class Value : private UnCopyable {
+class Value : private util::UnCopyable {
   int val_;
 public:
   explicit Value(int v) 
@@ -40,7 +40,7 @@ public:
 };
 
 
-class TraceLock : private UnCopyable {
+class TraceLock : private util::UnCopyable {
 public:
   TraceLock(void) {
     fprintf(stdout, "%s\n", __func__);
@@ -67,14 +67,14 @@ void CloseFile(FILE* p) {
 
 int main(int argc, char* argv[]) {
   {
-    SmartPtr<Value, TraceLock> v(new Value(23));
+    util::SmartPtr<Value, TraceLock> v(new Value(23));
     v.Reset(new Value(33));
   }
 
   {
-    SmartPtr<FILE, TraceLock> f(fopen("demo.txt", "w"), CloseFile);
+    util::SmartPtr<FILE, TraceLock> f(fopen("demo.txt", "w"), CloseFile);
     f.Reset(fopen("demo1.txt", "w"), CloseFile);
-    SmartPtr<FILE, TraceLock> f1(fopen("demo2.txt", "w"), CloseFile);
+    util::SmartPtr<FILE, TraceLock> f1(fopen("demo2.txt", "w"), CloseFile);
     f1 = f;
   }
 
