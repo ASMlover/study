@@ -73,6 +73,19 @@ Lexer::Close(void)
 Token::Type 
 Lexer::GetToken(Token& token)
 {
+  typedef Token::Type (Lexer::*LexerFunction)(int, State&, bool&);
+  static LexerFunction kLexerWorker[] = {
+    &Lexer::LexerBegin, 
+    &Lexer::LexerFinish, 
+
+    &Lexer::LexerCInt, 
+    &Lexer::LexerCReal, 
+    &Lexer::LexerCStr, 
+    &Lexer::LexerID, 
+    &Lexer::LexerAssign, 
+    &Lexer::LexerComment, 
+  };
+
   Token::Type type = Token::TYPE_ERR;
   State state = STATE_BEGIN;
   bool save;
@@ -83,25 +96,7 @@ Lexer::GetToken(Token& token)
     c = GetChar();
     save = true;
 
-    switch (state) {
-    case STATE_BEGIN:
-      break;
-    case STATE_CINT:
-      break;
-    case STATE_CREAL:
-      break;
-    case STATE_CSTR:
-      break;
-    case STATE_ID:
-      break;
-    case STATE_ASSIGN:
-      break;
-    case STATE_COMMENT:
-      break;
-    case STATE_FINISH:
-    default:
-      break;
-    };
+    type = (this->*kLexerWorker[state])(c, state, save);
     
     if (save)
       token.name += static_cast<char>(c);
@@ -240,4 +235,62 @@ Lexer::LexerBegin(int c, State& out_state, bool& out_save)
   }
 
   return type;
+}
+
+Token::Type 
+Lexer::LexerFinish(int c, State& out_state, bool& out_save)
+{
+  out_state = STATE_FINISH;
+  out_save = false;
+
+  return Token::TYPE_ERR;
+}
+
+Token::Type 
+Lexer::LexerCInt(int c, State& out_state, bool& out_save)
+{
+  if ('.' == c) {
+    out_state = STATE_CREAL;
+  }
+  else {
+    if (!isdigit(c)) {
+      UngetChar();
+      out_state = STATE_FINISH;
+      out_save = false;
+
+      return Token::TYPE_CINT;
+    }
+  }
+
+  return Token::TYPE_ERR;
+}
+
+Token::Type 
+Lexer::LexerCReal(int c, State& out_state, bool& out_save)
+{
+  return Token::TYPE_ERR;
+}
+
+Token::Type 
+Lexer::LexerCStr(int c, State& out_state, bool& out_save)
+{
+  return Token::TYPE_ERR;
+}
+
+Token::Type 
+Lexer::LexerID(int c, State& out_state, bool& out_save)
+{
+  return Token::TYPE_ERR;
+}
+
+Token::Type 
+Lexer::LexerAssign(int c, State& out_state, bool& out_save)
+{
+  return Token::TYPE_ERR;
+}
+
+Token::Type 
+Lexer::LexerComment(int c, State& out_state, bool& out_save)
+{
+  return Token::TYPE_ERR;
 }
