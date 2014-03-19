@@ -27,56 +27,6 @@
 #ifndef __GLOBAL_HEADER_H__
 #define __GLOBAL_HEADER_H__
 
-
-#include <types.h>
-//! System interfaces header
-#if defined(PROTO_WIN)
-# include <windows.h>
-# include <process.h>
-#elif defined(PROTO_LINUX)
-# include <sys/types.h>
-# include <sys/stat.h>
-# include <sys/time.h>
-# include <unistd.h>
-# include <fcntl.h>
-# include <pthread.h>
-
-# define MAX_PATH PATH_MAX
-#endif
-
-
-//! ANSI C header
-#include <sys/timeb.h>
-#include <assert.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-
-//! ANSI C++ header
-#include <memory>
-#include <string>
-#include <stdexcept>
-
-
-//! STL header
-#include <algorithm>
-#include <queue>
-#include <map>
-#include <set>
-#include <vector>
-
-
-//! User common utils header
-#include <uncopyable.h>
-#include <utils.h>
-#include <locker.h>
-#include <singleton.h>
-#include <ref_counter.h>
-#include <smart_ptr.h>
-#include <smart_array.h>
-#include <thread.h>
+#include <utility.h>
 
 #endif  //! __GLOBAL_HEADER_H__

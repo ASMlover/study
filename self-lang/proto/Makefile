@@ -29,7 +29,7 @@ OUT	= proto
 RM	= rm 
 CC	= g++
 CPPFLAGS = -ggdb -O2 -Wall
-INCLUDES = -I./common
+INCLUDES = -I./utilities
 OBJS	= main.o
 
 
