@@ -30,7 +30,8 @@
 struct Token {
   enum Type {
     TYPE_ERR = 0, 
-    TYPE_EOF,       //!< EOF
+    TYPE_EOF,       //!< EOF 
+    TYPE_COMMENT,   //!< #
 
     TYPE_CINT,      //!< const int number
     TYPE_CREAL,     //!< const real number
@@ -45,7 +46,6 @@ struct Token {
     TYPE_RBRACKET,  //!< ]
     TYPE_LBRACE,    //!< {
     TYPE_RBRACE,    //!< }
-    TYPE_COMMENT,   //!< #
 
     TYPE_PACKAGE,   //!< package
     TYPE_IMPORT,    //!< import
@@ -55,6 +55,7 @@ struct Token {
     TYPE_REQUIRED,  //!< required
     TYPE_OPTIONAL,  //!< optional
     TYPE_REPEATED,  //!< repeated
+    TYPE_DEFAULT,   //!< default
     TYPE_BOOL,      //!< bool
     TYPE_BYTES,     //!< bytes
     TYPE_STRING,    //!< string
@@ -75,7 +76,7 @@ struct Token {
 };
 
 
-class Lexer : private UnCopyable {
+class Lexer : private util::UnCopyable {
   enum State {
     STATE_BEGIN = 0, 
     STATE_FINISH, 
@@ -92,20 +93,35 @@ class Lexer : private UnCopyable {
 
   util::SmartPtr<FILE>  stream_;
   std::string           fname_;
-  State                 state_;
   int                   lineno_;
   int                   bsize_;
   int                   lexpos_;
   bool                  eof_;
   char                  lexbuf_[BSIZE];
+
+  static std::map<std::string, Token::Type> kReserveds;
 public:
-  explicit Lexer(void);
+  Lexer(void);
   ~Lexer(void);
 
   bool Open(const char* fname);
   void Close(void);
 
-  Type GetToken(Token& token);
+  Token::Type GetToken(Token& token);
+private:
+  void LoadReserveds(void);
+  int GetChar(void);
+  void UngetChar(void);
+  Token::Type Lookup(const std::string& key);
+
+  Token::Type LexerBegin(int c, State& out_state, bool& out_save);
+  Token::Type LexerFinish(int c, State& out_state, bool& out_save);
+  Token::Type LexerCInt(int c, State& out_state, bool& out_save);
+  Token::Type LexerCReal(int c, State& out_state, bool& out_save);
+  Token::Type LexerCStr(int c, State& out_state, bool& out_save);
+  Token::Type LexerID(int c, State& out_state, bool& out_save);
+  Token::Type LexerAssign(int c, State& out_state, bool& out_save);
+  Token::Type LexerComment(int c, State& out_state, bool& out_save);
 };
 
 #endif  //! __LEXER_HEADER_H__
