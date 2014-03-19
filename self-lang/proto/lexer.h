@@ -90,13 +90,14 @@ class Lexer : private UnCopyable {
 
   enum {BSIZE = 128};
 
-  SmartPtr<FILE>  stream_;
-  std::string     fname_;
-  State           state_;
-  int             lineno_;
-  int             bsize_;
-  int             lexpos_;
-  char            lexbuf_[BSIZE];
+  util::SmartPtr<FILE>  stream_;
+  std::string           fname_;
+  State                 state_;
+  int                   lineno_;
+  int                   bsize_;
+  int                   lexpos_;
+  bool                  eof_;
+  char                  lexbuf_[BSIZE];
 public:
   explicit Lexer(void);
   ~Lexer(void);
