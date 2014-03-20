@@ -268,29 +268,64 @@ Lexer::LexerCInt(int c, State& out_state, bool& out_save)
 Token::Type 
 Lexer::LexerCReal(int c, State& out_state, bool& out_save)
 {
+  if (!isdigit(c)) {
+    UngetChar();
+    out_state = STATE_FINISH;
+    out_save = false;
+
+    return Token::TYPE_CREAL;
+  }
+
   return Token::TYPE_ERR;
 }
 
 Token::Type 
 Lexer::LexerCStr(int c, State& out_state, bool& out_save)
 {
+  if ('\"' == c) {
+    out_state = STATE_FINISH;
+    out_save = false;
+
+    return Token::TYPE_CSTR;
+  }
+
   return Token::TYPE_ERR;
 }
 
 Token::Type 
 Lexer::LexerID(int c, State& out_state, bool& out_save)
 {
+  if (!isalnum(c) && '_' != c) {
+    UngetChar();
+    out_state = STATE_FINISH;
+    out_save = false;
+
+    return Token::TYPE_ID;
+  }
+
   return Token::TYPE_ERR;
 }
 
 Token::Type 
 Lexer::LexerAssign(int c, State& out_state, bool& out_save)
 {
-  return Token::TYPE_ERR;
+  out_state = STATE_FINISH;
+  out_save = false;
+
+  return Token::TYPE_ASSIGN;
 }
 
 Token::Type 
 Lexer::LexerComment(int c, State& out_state, bool& out_save)
 {
+  out_save = false;
+  if (EOF == c) {
+    out_state = STATE_FINISH;
+    return Token::TYPE_EOF;
+  }
+  else if ('\n' == c) {
+    out_state = STATE_BEGIN;
+  }
+
   return Token::TYPE_ERR;
 }
