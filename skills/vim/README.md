@@ -34,3 +34,11 @@
 
     所以解决方法就是在.vimrc文件中加入如下代码:
     set backspace=indent,eol,start
+
+## **Vim文件加入BOM头**
+    1. 查看是否有BOM头
+       : set bomb?
+       显示nobomb表示无BOM头, 
+       现实bomb表示有BOM头
+    2. 设置BOM头
+       : set bomb
