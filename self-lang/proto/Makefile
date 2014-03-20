@@ -30,7 +30,7 @@ RM	= rm
 CC	= g++
 CPPFLAGS = -ggdb -O2 -Wall
 INCLUDES = -I./utilities
-OBJS	= main.o lexer.o
+OBJS	= main.o lexer.o parser.o
 
 
 
