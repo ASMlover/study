@@ -61,6 +61,8 @@
 ## **36: 绝不重新定义继承而来的non-virtual函数** ##
     (Never redefine an inherited non-virtual function.)
     1) 绝对不要重新定义继承而来的non-virtual函数
+> ### **个人理解**
+    请记住子类类型也是基类, 所以不要覆盖继承而来的非虚接口
 
 
 
