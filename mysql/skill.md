@@ -28,4 +28,18 @@
     //! read/write
     ...
     ...
-    
+ 
+
+
+## **MyISAM和InnoDB的选择**
+    最主要的区别InnoDB支持事务处理与外键和行级锁, MyISAM不支持;
+    从稳定性和扩展性以及高可用性来说, MyISAM是首选;
+    1. 对于读多写少的需求, MyISAM的读性能比InnoDB好很多;
+    2. MyISAM的索引和数据是分开的, 并且索引是有压缩的, 内存使用率高很多, 能
+       加载更多的索引;
+       InnoDB是索引和数据捆绑在一起的, 没有压缩而从使得InnoDB比MyISAM体积大
+       很多;
+    4. 对于select count(*)和order by, 如果where不是主键的情况下也是锁全表的;
+    4. 基于索引的update, InnoDB的性能更高;
+    5. 大批量的inserts语句MyISAM会快一些, 但是updates在InnoDB会更快(尤其是并
+       发量大的时候);
