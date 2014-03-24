@@ -22,6 +22,15 @@
     1) 声明template参数时, 前缀关键字class和typename可互换
     2) 请使用关键字typename标识嵌套从属类型名称; 但不得在基类列表或成员初始
        化列表内以它作为基类的修饰符
+> ### **个人理解**
+    在模板中请使用typename来表示某个标示是一个类型;
+    template <typename C>
+    void Print2nd(const C& container) {
+      if (container.size() >= 2) {
+        typename C::const_iterator iter(container.begin());
+        ...
+      }
+    }
 
 
 
