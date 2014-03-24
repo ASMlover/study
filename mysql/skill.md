@@ -43,3 +43,19 @@
     4. 基于索引的update, InnoDB的性能更高;
     5. 大批量的inserts语句MyISAM会快一些, 但是updates在InnoDB会更快(尤其是并
        发量大的时候);
+
+
+
+## **设置定时任务**
+    1. 查看event是否开启
+       mysql> show variables like '%sche%';
+    2. 开启event_scheduler
+       mysql> set global event_scheduler = 1;
+    3. 创建事件
+       create event if not exists `ev_demo` 
+       on schedule every 1 day starts '2014-01-01 00:00:00' 
+       on completion preserve do call p_demo();
+    4. 关闭事件任务
+       alter event `ev_demo` on completion preserve disable;
+    5. 开启事件任务
+       alter event `ev_demo` on completion preserve enable;
