@@ -24,24 +24,46 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __PLAYER_MANAGER_HEADER_H__
-#define __PLAYER_MANAGER_HEADER_H__
+#include "global.h"
+#include "user_data.h"
+#include "user_cache.h"
 
 
-class Player;
-class PlayerMgr : public util::Singleton<PlayerMgr> {
-  // {player connector id => player object}
-  std::map<uint32_t, Player*> player_cache_;
-  // {player id => player object}
-  std::map<uint32_t, Player*> player_list_;
-public:
-  PlayerMgr(void);
-  ~PlayerMgr(void);
 
-  Player* GetPlayerByConnID(uint32_t connid);
-  Player* GetPlayerByID(uint32_t id);
-public:
-  bool Dispatch(uint32_t connid, const void* data, uint32_t size);
-};
 
-#endif  //! __PLAYER_MANAGER_HEADER_H__
+UserCache::UserCache(void)
+  : redis_(static_cast<redisContext*>(NULL)) {
+}
+
+UserCache::~UserCache(void) {
+}
+
+bool UserCache::Init(const char* addr, int port) {
+  struct timeval tv = {1, 500000};
+  redis_ = util::SmartPtr<redisContext>(
+      redisConnectWithTimeout(addr, port, tv), 
+      redisFree);
+
+  if (NULL == redis_.Get() || 0 != redis_->err) {
+    fprintf(stderr, "Connect to redis-server %s:%d FAILED\n", addr, port);
+    return false;
+  }
+
+  return true;
+}
+
+void UserCache::Destroy(void) {
+}
+
+
+bool UserCache::Get(const std::string& account, UserData& data) {
+  return true;
+}
+
+bool UserCache::Set(const std::string& account, const UserData& data) {
+  return true;
+}
+
+bool UserCache::Del(const std::string& account) {
+  return true;
+}

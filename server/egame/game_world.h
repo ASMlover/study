@@ -32,7 +32,7 @@ class GameWorld : public util::Singleton<GameWorld> {
   NetHandler* net_hand_;
   PlayerMgr*  player_mgr_;
 public:
-  explicit GameWorld(void);
+  GameWorld(void);
   ~GameWorld(void);
 
   bool Init(void);

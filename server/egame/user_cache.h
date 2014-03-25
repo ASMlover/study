@@ -24,24 +24,22 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __PLAYER_MANAGER_HEADER_H__
-#define __PLAYER_MANAGER_HEADER_H__
+#ifndef __USER_CACHE_HEADER_H__
+#define __USER_CACHE_HEADER_H__
 
-
-class Player;
-class PlayerMgr : public util::Singleton<PlayerMgr> {
-  // {player connector id => player object}
-  std::map<uint32_t, Player*> player_cache_;
-  // {player id => player object}
-  std::map<uint32_t, Player*> player_list_;
+struct UserData;
+class UserCache : private util::UnCopyable {
+  util::SmartPtr<redisContext> redis_;
 public:
-  PlayerMgr(void);
-  ~PlayerMgr(void);
+  UserCache(void);
+  ~UserCache(void);
 
-  Player* GetPlayerByConnID(uint32_t connid);
-  Player* GetPlayerByID(uint32_t id);
+  bool Init(const char* addr, int port);
+  void Destroy(void);
 public:
-  bool Dispatch(uint32_t connid, const void* data, uint32_t size);
+  bool Get(const std::string& account, UserData& data);
+  bool Set(const std::string& account, const UserData& data);
+  bool Del(const std::string& account);
 };
 
-#endif  //! __PLAYER_MANAGER_HEADER_H__
+#endif  //! __USER_CACHE_HEADER_H__
