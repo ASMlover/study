@@ -28,9 +28,10 @@
 OUT	= egame
 RM	= rm 
 CC	= g++
-CPPFLAGS = -g -O2 -Wall -std=c++0x -I./sdk/libnet -I./utilities
+INCLUDES = -I./sdk/libnet -I./sdk/hiredis/inc -I./utilities
+CPPFLAGS = -g -O2 -Wall -std=c++0x
 CFLAGS	= -g -O2 -Wall
-LDFLAGS	= -lpthread
+LDFLAGS	= -lpthread -L./sdk/hiredis/lib -lhiredis
 CPP_OBJS = main.o player.o player_mgr.o
 C_OBJS	= ./sdk/libnet/libnet.o
 
@@ -53,7 +54,7 @@ $(OUT): $(CPP_OBJS) $(C_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(CPP_OBJS): %.o: %.cc 
-	$(CC) -o $*.o -c $(CPPFLAGS) $^
+	$(CC) -o $*.o -c $(CPPFLAGS) $(INCLUDES) $^
 
 $(C_OBJS): %.o: %.c
 	$(CC) -o $*.o -c $(CFLAGS) $^

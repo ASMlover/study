@@ -106,6 +106,7 @@
 
 // user library header
 #include <libnet.h>
+#include <hiredis.h>
 
 // user common utils header
 #include <utility.h>
