@@ -4,7 +4,7 @@
 
 
 PlayerCache::PlayerCache(void)
-  : redis_(static_cast<redisContext*>(NULL), redisFree) {
+  : redis_(static_cast<redisContext*>(NULL)) {
 }
 
 PlayerCache::PlayerCache(void) {
