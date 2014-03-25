@@ -49,7 +49,7 @@ Player* PlayerMgr::GetPlayerByConnID(uint32_t connid) {
 }
 
 Player* PlayerMgr::GetPlayerByID(uint32_t id) {
-  if (GameData::INVAL_USERID == id)
+  if (UserData::INVAL_USERID == id)
     return NULL;
 
   std::map<uint32_t, Player*>::iterator it = player_list_.find(id);

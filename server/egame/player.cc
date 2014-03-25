@@ -29,7 +29,8 @@
 
 
 
-Player::Player(void) {
+Player::Player(uint32_t connid) 
+  : connid_(connid) {
   ResetPlayer();
 }
 
@@ -38,14 +39,13 @@ Player::~Player(void) {
 
 void Player::ResetPlayer(void) {
   state_  = PLAYERSTATE_OFFLINE;
-  connid_ = INVAL_CONNECTOR;
 
   data_.account         = "";
-  data_.user_id         = GameData::INVAL_USERID;
+  data_.user_id         = UserData::INVAL_USERID;
   data_.user_name       = "";
-  data_.gender          = GameData::GENDERTYPE_UNKNOWN;
-  data_.face            = GameData::DEFAULT_FACEID;
-  data_.level           = 0;
+  data_.gender          = UserData::GENDERTYPE_UNKNOWN;
+  data_.face            = UserData::DEFAULT_FACEID;
+  data_.level           = UserData::DEFAULT_LEVEL;
   data_.exp             = 0;
   data_.scores          = 0;
   data_.coins           = 0;
