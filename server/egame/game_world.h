@@ -28,7 +28,7 @@
 #define __GAME_WORLD_HEADER_H__
 
 class PlayerMgr;
-class GameWorld : public Singleton<GameWorld> {
+class GameWorld : public util::Singleton<GameWorld> {
   NetHandler* net_hand_;
   PlayerMgr*  player_mgr_;
 public:

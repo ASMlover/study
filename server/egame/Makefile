@@ -28,7 +28,7 @@
 OUT	= egame
 RM	= rm 
 CC	= g++
-CPPFLAGS = -g -O2 -Wall -std=c++0x -I./sdk/libnet -I./common
+CPPFLAGS = -g -O2 -Wall -std=c++0x -I./sdk/libnet -I./utilities
 CFLAGS	= -g -O2 -Wall
 LDFLAGS	= -lpthread
 CPP_OBJS = main.o player.o player_mgr.o
