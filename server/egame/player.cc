@@ -54,7 +54,7 @@ void Player::ResetPlayer(void) {
   data_.flee_count      = 0;
   data_.win_streak      = 0;
   data_.play_time       = 0;
-  data_.lost_count      = 0;
+  data_.login_count     = 0;
   data_.reg_time        = 0;
   data_.reg_addr        = 0;
   data_.last_login_time = 0;
