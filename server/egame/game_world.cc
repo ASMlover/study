@@ -25,13 +25,16 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "global.h"
+#include "player_mgr.h"
+#include "user_cache.h"
 #include "game_world.h"
 
 
 
 GameWorld::GameWorld(void)
-  : net_hand_(NULL) 
-  , player_mgr_(NULL) {
+  : net_hand_(static_cast<NetHandler*>(NULL)) 
+  , player_mgr_(static_cast<PlayerMgr*>(NULL))
+  , user_cache_(static_cast<UserCache*>(NULL)) {
 }
 
 GameWorld::~GameWorld(void) {

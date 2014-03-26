@@ -28,9 +28,11 @@
 #define __GAME_WORLD_HEADER_H__
 
 class PlayerMgr;
+class UserCache;
 class GameWorld : public util::Singleton<GameWorld> {
-  NetHandler* net_hand_;
-  PlayerMgr*  player_mgr_;
+  util::SmartPtr<NetHandler> net_hand_;
+  util::SmartPtr<PlayerMgr>  player_mgr_;
+  util::SmartPtr<UserCache>  user_cache_;
 public:
   GameWorld(void);
   ~GameWorld(void);
