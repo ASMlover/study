@@ -57,13 +57,128 @@ void UserCache::Destroy(void) {
 
 
 bool UserCache::Get(const std::string& account, UserData& data) {
+  util::SmartPtr<redisReply> reply(
+      static_cast<redisReply*>(redisCommand(
+          redis_.Get(), "exists %s", account.c_str())), 
+      freeReplyObject);
+  if (NULL == reply.Get())
+    return false;
+
+  if (REDIS_REPLY_INTEGER != reply->type)
+    return false;
+  if (0 == reply->integer)
+    return false;
+
+  reply = util::SmartPtr<redisReply>(
+      static_cast<redisReply*>(redisCommand(
+          redis_.Get(), 
+          "hmget %s " 
+          "account "
+          "user_id "
+          "user_name "
+          "gender "
+          "face "
+          "level "
+          "exp "
+          "scores "
+          "coins "
+          "win_count "
+          "lost_count "
+          "flee_count " 
+          "win_streak "
+          "play_time "
+          "login_count "
+          "reg_time "
+          "reg_addr " 
+          "last_login_time "
+          "last_login_addr", 
+          account.c_str())), 
+      freeReplyObject);
+  if (REDIS_REPLY_ARRAY != reply->type)
+    return false;
+
+  data.account          = reply->element[0]->str;
+  data.user_id          = atoi(reply->element[1]->str);
+  data.user_name        = reply->element[2]->str;
+  data.gender           = static_cast<UserData::GenderType>(
+                            atoi(reply->element[3]->str));
+  data.face             = atoi(reply->element[4]->str);
+  data.level            = atoi(reply->element[5]->str);
+  data.exp              = atoi(reply->element[6]->str);
+  data.scores           = atoi(reply->element[7]->str);
+  data.coins            = atoi(reply->element[8]->str);
+  data.win_count        = atoi(reply->element[9]->str);
+  data.lost_count       = atoi(reply->element[10]->str);
+  data.flee_count       = atoi(reply->element[11]->str);
+  data.win_streak       = atoi(reply->element[12]->str);
+  data.play_time        = atoi(reply->element[13]->str);
+  data.login_count      = atoi(reply->element[14]->str);
+  data.reg_time         = atoi(reply->element[15]->str);
+  data.reg_addr         = atoi(reply->element[16]->str);
+  data.last_login_time  = atoi(reply->element[17]->str);
+  data.last_login_addr  = atoi(reply->element[18]->str);
+
   return true;
 }
 
 bool UserCache::Set(const std::string& account, const UserData& data) {
+  util::SmartPtr<redisReply> reply(
+      static_cast<redisReply*>(redisCommand(
+          redis_.Get(), 
+          "hmset %s " 
+          "account %s "
+          "user_id %u " 
+          "user_name %s " 
+          "gender %u " 
+          "face %u " 
+          "level %u " 
+          "exp %u " 
+          "scores %u " 
+          "coins %u " 
+          "win_count %u " 
+          "lost_counta %u " 
+          "flee_count %u " 
+          "win_streak %u " 
+          "play_time %u " 
+          "login_count %u " 
+          "reg_time %u " 
+          "reg_addr %u " 
+          "last_login_time %u "
+          "last_login_addr %u", 
+          data.account.c_str(), 
+          data.user_id, 
+          data.user_name.c_str(), 
+          data.gender, 
+          data.face, 
+          data.level, 
+          data.exp, 
+          data.scores, 
+          data.coins, 
+          data.win_count, 
+          data.lost_count, 
+          data.flee_count, 
+          data.win_streak, 
+          data.play_time, 
+          data.login_count, 
+          data.reg_time, 
+          data.reg_addr, 
+          data.last_login_time, 
+          data.last_login_addr)), 
+      freeReplyObject);
+
+  if (0 == reply->len)
+    return false;
+  if (0 != strcmp("OK", reply->str))
+    return false;
+
   return true;
 }
 
 bool UserCache::Del(const std::string& account) {
-  return true;
+  util::SmartPtr<redisReply> reply(
+      static_cast<redisReply*>(redisCommand(
+          redis_.Get(), "del %s", account.c_str())), 
+      freeReplyObject);
+
+  return (1 == reply->integer);
 }
