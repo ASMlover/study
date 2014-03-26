@@ -27,7 +27,8 @@
 #ifndef __USER_CACHE_HEADER_H__
 #define __USER_CACHE_HEADER_H__
 
-struct UserData;
+#include "user_data.h"
+
 class UserCache : private util::UnCopyable {
   util::SmartPtr<redisContext> redis_;
 public:
