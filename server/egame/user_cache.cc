@@ -136,7 +136,7 @@ bool UserCache::Set(const std::string& account, const UserData& data) {
           "scores %u " 
           "coins %u " 
           "win_count %u " 
-          "lost_counta %u " 
+          "lost_count %u " 
           "flee_count %u " 
           "win_streak %u " 
           "play_time %u " 
@@ -166,7 +166,7 @@ bool UserCache::Set(const std::string& account, const UserData& data) {
           data.last_login_addr)), 
       freeReplyObject);
 
-  if (0 == reply->len)
+  if (NULL == reply.Get() || 0 == reply->len)
     return false;
   if (0 != strcmp("OK", reply->str))
     return false;
@@ -181,4 +181,122 @@ bool UserCache::Del(const std::string& account) {
       freeReplyObject);
 
   return (1 == reply->integer);
+}
+
+bool UserCache::SetUserID(
+    const std::string& account, uint32_t user_id) {
+  return Set("hset %s user_id %u", account.c_str(), user_id);
+}
+
+bool UserCache::SetUserName(
+    const std::string& account, const std::string& user_name) {
+  return Set("hset %s user_name %s", account.c_str(), user_name.c_str());
+}
+
+bool UserCache::SetGender(
+    const std::string& account, UserData::GenderType gender) {
+  return Set("hset %s gender %d", account.c_str(), gender);
+}
+
+bool UserCache::SetFace(
+    const std::string& account, uint16_t face) {
+  return Set("hset %s face %d", account.c_str(), face);
+}
+
+bool UserCache::SetLevel(
+    const std::string& account, uint16_t level) {
+  return Set("hset %s level %d", account.c_str(), level);
+}
+
+bool UserCache::SetExp(
+    const std::string& account, uint64_t exp) {
+  return Set("hset %s exp %u", account.c_str(), exp);
+}
+
+bool UserCache::SetScores(
+    const std::string& account, uint32_t scores) {
+  return Set("hset %s scores %u", account.c_str(), scores);
+}
+
+bool UserCache::SetCoins(
+    const std::string& account, uint32_t coins) {
+  return Set("hset %s coins %u", account.c_str(), coins);
+}
+
+bool UserCache::SetWinCount(
+    const std::string& account, uint32_t win_count) {
+  return Set("hset %s win_count %u", account.c_str(), win_count);
+}
+
+bool UserCache::SetLostCount(
+    const std::string& account, uint32_t lost_count) {
+  return Set("hset %s lost_count %u", account.c_str(), lost_count);
+}
+
+bool UserCache::SetFleeCount(
+    const std::string& account, uint32_t flee_count) {
+  return Set("hset %s flee_count %u", account.c_str(), flee_count);
+}
+
+bool UserCache::SetWinStreak(
+    const std::string& account, uint32_t win_streak) {
+  return Set("hset %s win_streak %u", account.c_str(), win_streak);
+}
+
+bool UserCache::SetPlayTime(
+    const std::string& account, time_t play_time) {
+  return Set("hset %s play_time %u", account.c_str(), play_time);
+}
+
+bool UserCache::SetLoginCount(
+    const std::string& account, uint32_t login_count) {
+  return Set("hset %s login_count %u", account.c_str(), login_count);
+}
+
+bool UserCache::SetRegTime(
+    const std::string& account, time_t reg_time) {
+  return Set("hset %s reg_time %u", account.c_str(), reg_time);
+}
+
+bool UserCache::SetRegAddr(
+    const std::string& account, uint32_t reg_addr) {
+  return Set("hset %s reg_addr %u", account.c_str(), reg_addr);
+}
+
+bool UserCache::SetLastLoginTime(
+    const std::string& account, time_t last_login_time) {
+  return Set("hset %s last_login_time %u", 
+      account.c_str(), last_login_time);
+}
+
+bool UserCache::SetLastLoginAddr(
+    const std::string& account, uint32_t last_login_addr) {
+  return Set("hset %s last_login_addr %u", 
+      account.c_str(), last_login_addr);
+}
+
+
+
+
+
+bool UserCache::Set(const char* format, ...) {
+  char command[1024];
+  va_list ap;
+
+  va_start(ap, format);
+  vsprintf(command, format, ap);
+  va_end(ap);
+
+  util::SmartPtr<redisReply> reply(
+      static_cast<redisReply*>(redisCommand(
+          redis_.Get(), "%s", command)), 
+      freeReplyObject);
+
+  if (NULL != reply.Get() || 0 == reply->len)
+    return false;
+
+  if (0 != strcmp("OK", reply->str))
+    return false;
+
+  return true;
 }

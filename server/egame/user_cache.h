@@ -40,6 +40,30 @@ public:
   bool Get(const std::string& account, UserData& data);
   bool Set(const std::string& account, const UserData& data);
   bool Del(const std::string& account);
+
+  bool SetUserID(const std::string& account, uint32_t user_id);
+  bool SetUserName(
+      const std::string& account, const std::string& user_name);
+  bool SetGender(const std::string& account, UserData::GenderType gender);
+  bool SetFace(const std::string& account, uint16_t face);
+  bool SetLevel(const std::string& account, uint16_t level);
+  bool SetExp(const std::string& account, uint64_t exp);
+  bool SetScores(const std::string& account, uint32_t scores);
+  bool SetCoins(const std::string& account, uint32_t coins);
+  bool SetWinCount(const std::string& account, uint32_t win_count);
+  bool SetLostCount(const std::string& account, uint32_t lost_count);
+  bool SetFleeCount(const std::string& account, uint32_t flee_count);
+  bool SetWinStreak(const std::string& account, uint32_t win_streak);
+  bool SetPlayTime(const std::string& account, time_t play_time);
+  bool SetLoginCount(const std::string& account, uint32_t lost_count);
+  bool SetRegTime(const std::string& account, time_t reg_time);
+  bool SetRegAddr(const std::string& account, uint32_t reg_addr);
+  bool SetLastLoginTime(
+      const std::string& account, time_t last_login_time);
+  bool SetLastLoginAddr(
+      const std::string& account, uint32_t last_login_addr);
+private:
+  bool Set(const char* format, ...);
 };
 
 #endif  //! __USER_CACHE_HEADER_H__
