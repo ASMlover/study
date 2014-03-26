@@ -93,13 +93,7 @@ class SmartArray {
 
   typedef SmartArray<T, Locker> SelfType;
 public:
-  SmartArray(void)
-    : ptr_(NULL)
-    , ref_array_(NULL)
-    , ref_count_(NULL) {
-  }
-
-  explicit SmartArray(T* p)
+  explicit SmartArray(T* p = NULL)
     : ptr_(p)
     , ref_array_(new RefArrayDelete<T>(ptr_))
     , ref_count_(new RefCounter<Locker>(1)) {
