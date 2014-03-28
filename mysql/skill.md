@@ -59,3 +59,9 @@
        alter event `ev_demo` on completion preserve disable;
     5. 开启事件任务
        alter event `ev_demo` on completion preserve enable;
+    
+    MySQL的服务器配置中默认是没有设置event_scheduler的, 所以我们可以修改它的
+    值; 可以设置event_scheduler的值为ON, OFF, DISABLED; ON表示开启, OFF表示
+    关闭, DISABLED表示不允许修改。
+    在my.conf/my.ini的mysqld字段添加
+    event_scheduler=ON
