@@ -33,30 +33,34 @@
 
 // player's state in game server
 enum PlayerState {
-  PLAYERSTATE_OFFLINE         = 0,
-  PLAYERSTATE_LINK            = 1, 
-  PLAYERSTATE_LOGIN           = 2, 
-  PLAYERSTATE_IN_MATCH_QUEUE  = 3, 
-  PLAYERSTATE_IN_GAME_ROOM    = 4, 
-  PLAYERSTATE_EXIT_GAME_ROOM  = 5, 
-  PLAYERSTATE_LOGOFF          = 6, 
-  PLAYERSTATE_BREAK           = 7, 
+  PLAYERSTATE_OFFLINE = 0,
+  PLAYERSTATE_LINK    = 1, 
+  PLAYERSTATE_LOGIN   = 2, 
+  PLAYERSTATE_LOGOFF  = 3, 
+  PLAYERSTATE_BREAK   = 4,  
 };
 
+class UserCache;
 class Player : private util::UnCopyable {
   uint32_t    connid_;
   PlayerState state_;
+  UserCache*  cache_;
   UserData    data_;
 public:
   explicit Player(uint32_t connid);
   ~Player(void);
 public:
+  inline void Attach(UserCache* cache) {
+    cache_ = cache;
+  }
+
   // get player's data information, 
   // we can't modified the result data information
   inline const UserData& GetData(void) const {
     return data_;
   }
 
+  // set player's data information
   inline void SetData(const UserData& data) {
     data_ = data;
   }
@@ -66,6 +70,7 @@ public:
     return state_;
   }
 
+  // set player's state 
   inline void SetState(PlayerState state) {
     state_ = state;
   }
@@ -73,6 +78,11 @@ public:
   // get player's connector identifier
   inline uint32_t GetConnID(void) const {
     return connid_;
+  }
+
+  // get player's user identifier
+  inline uint32_t GetID(void) const {
+    return data_.user_id;
   }
 private:
   void ResetPlayer(void);

@@ -24,43 +24,39 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#include "global.h"
-#include "player_mgr.h"
-#include "user_cache.h"
-#include "game_world.h"
+#ifndef __CONFIG_HEADER_H__
+#define __CONFIG_HEADER_H__
+
+struct ConfigData {
+  // network configuration
+  std::string net_addr;
+  uint16_t    net_port;
+  uint32_t    net_workers;
+  uint32_t    net_clients;
+  uint32_t    net_sndbuf;
+  uint32_t    net_rcvbuf;
+
+  // cache server configuration 
+  std::string cache_addr;
+  uint16_t    cache_port;
+};
 
 
+class Configuration : public util::Singleton<Configuration> {
+  ConfigData data_;
+public:
+  Configuration(void);
+  ~Configuration(void);
 
-GameWorld::GameWorld(void)
-  : net_hand_(static_cast<NetHandler*>(NULL)) 
-  , player_mgr_(static_cast<PlayerMgr*>(NULL))
-  , user_cache_(static_cast<UserCache*>(NULL)) {
-}
+  // load configuration from file
+  bool Load(const std::string& config_file);
 
-GameWorld::~GameWorld(void) {
-}
+  // get configuration data information
+  inline const ConfigData& GetData(void) const {
+    return data_;
+  }
+private:
+  void SetDefault(void);
+};
 
-
-
-bool GameWorld::Init(void) {
-  return true;
-}
-
-void GameWorld::Destroy(void) {
-}
-
-
-
-bool GameWorld::Dispatch(void) {
-  return true;
-}
-
-
-
-
-bool GameWorld::InitNetwork(void) {
-  return true;
-}
-
-void GameWorld::DestroyNetwork(void) {
-}
+#endif  //! __CONFIG_HEADER_H__

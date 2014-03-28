@@ -25,12 +25,15 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "global.h"
+#include "user_cache.h"
 #include "player.h"
 
 
 
 Player::Player(uint32_t connid) 
-  : connid_(connid) {
+  : connid_(connid)
+  , state_(PLAYERSTATE_OFFLINE)
+  , cache_(NULL) {
   ResetPlayer();
 }
 
@@ -38,8 +41,6 @@ Player::~Player(void) {
 }
 
 void Player::ResetPlayer(void) {
-  state_  = PLAYERSTATE_OFFLINE;
-
   data_.account         = "";
   data_.user_id         = UserData::INVAL_USERID;
   data_.user_name       = "";

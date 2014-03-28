@@ -25,42 +25,29 @@
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
 #include "global.h"
-#include "player_mgr.h"
-#include "user_cache.h"
-#include "game_world.h"
+#include "config.h"
 
 
 
-GameWorld::GameWorld(void)
-  : net_hand_(static_cast<NetHandler*>(NULL)) 
-  , player_mgr_(static_cast<PlayerMgr*>(NULL))
-  , user_cache_(static_cast<UserCache*>(NULL)) {
+Configuration::Configuration(void) {
 }
 
-GameWorld::~GameWorld(void) {
+Configuration::~Configuration(void) {
 }
 
 
-
-bool GameWorld::Init(void) {
+bool Configuration::Load(const std::string& config_file) {
   return true;
 }
 
-void GameWorld::Destroy(void) {
-}
+void Configuration::SetDefault(void) {
+  data_.net_addr    = "0.0.0.0";
+  data_.net_port    = 20149;
+  data_.net_workers = 4;
+  data_.net_clients = 10240;
+  data_.net_sndbuf  = 1024;
+  data_.net_rcvbuf  = 1024;
 
-
-
-bool GameWorld::Dispatch(void) {
-  return true;
-}
-
-
-
-
-bool GameWorld::InitNetwork(void) {
-  return true;
-}
-
-void GameWorld::DestroyNetwork(void) {
+  data_.cache_addr  = "127.0.0.1";
+  data_.cache_port  = 6379;
 }

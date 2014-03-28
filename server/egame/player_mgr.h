@@ -29,7 +29,7 @@
 
 
 class Player;
-class PlayerMgr : public util::Singleton<PlayerMgr> {
+class PlayerMgr {
   // {player connector id => player object}
   std::map<uint32_t, Player*> player_cache_;
   // {player id => player object}

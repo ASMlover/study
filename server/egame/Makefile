@@ -32,7 +32,7 @@ INCLUDES = -I./sdk/libnet -I./sdk/hiredis/inc -I./utilities
 CPPFLAGS = -g -O2 -Wall -std=c++0x
 CFLAGS	= -g -O2 -Wall
 LDFLAGS	= -lpthread -L./sdk/hiredis/lib -lhiredis
-CPP_OBJS = main.o player.o player_mgr.o user_cache.o
+CPP_OBJS = main.o player.o player_mgr.o user_cache.o config.o
 C_OBJS	= ./sdk/libnet/libnet.o
 
 
