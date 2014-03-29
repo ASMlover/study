@@ -29,7 +29,7 @@ OUT	= landlord
 RM	= rm 
 CC	= g++
 CFLAGS	= -g -O2 -Wall
-OBJS	= main.o
+OBJS	= main.o logical.o
 
 
 

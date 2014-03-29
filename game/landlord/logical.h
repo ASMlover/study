@@ -24,35 +24,22 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __GLOBAL_HEADER_H__
-#define __GLOBAL_HEADER_H__
+#ifndef __LOGICAL_HEADER_H__
+#define __LOGICAL_HEADER_H__
 
-#include <stdint.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <vector>
-#include <map>
-
-
-class UnCopyable {
-  UnCopyable(const UnCopyable&);
-  UnCopyable& operator=(const UnCopyable&);
-protected:
-  UnCopyable(void) {}
-  ~UnCopyable(void) {}
+enum CardType {
+  CARDTYPE_UNKNOWN = 0, 
+  CARDTYPE_SINGLE,    // 单牌
 };
 
+class Logical : private UnCopyable {
+  std::vector<uint8_t>& cards_;
+public:
+  explicit Logical(std::vector<uint8_t>& cards);
+  ~Logical(void);
 
-static inline uint8_t GetCardValue(uint8_t card) {
-  if (card > 53)
-    return -1;
+  bool PlayAnyCard(std::vector<uint8_t>& out_cards);
+  bool PlayCard(CardType type, std::vector<uint8_t>& out_cards);
+};
 
-  if (53 == card)
-    return 14;
-  return card % 4;
-}
-
-#endif  //! __GLOBAL_HEADER_H__
+#endif  //! __LOGICAL_HEADER_H__

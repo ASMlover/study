@@ -24,35 +24,22 @@
 //! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 //! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //! POSSIBILITY OF SUCH DAMAGE.
-#ifndef __GLOBAL_HEADER_H__
-#define __GLOBAL_HEADER_H__
-
-#include <stdint.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <vector>
-#include <map>
+#include "global.h"
+#include "logical.h"
 
 
-class UnCopyable {
-  UnCopyable(const UnCopyable&);
-  UnCopyable& operator=(const UnCopyable&);
-protected:
-  UnCopyable(void) {}
-  ~UnCopyable(void) {}
-};
 
-
-static inline uint8_t GetCardValue(uint8_t card) {
-  if (card > 53)
-    return -1;
-
-  if (53 == card)
-    return 14;
-  return card % 4;
+Logical::Logical(std::vector<uint8_t>& cards) 
+  : cards_(cards) {
 }
 
-#endif  //! __GLOBAL_HEADER_H__
+Logical::~Logical(void) {
+}
+
+bool Logical::PlayAnyCard(std::vector<uint8_t>& out_cards) {
+  return true;
+}
+
+bool Logical::PlayCard(CardType type, std::vector<uint8_t>& out_cards) {
+  return true;
+}
