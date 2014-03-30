@@ -47,6 +47,7 @@ class Logical : private UnCopyable {
   std::vector<Card> pair_;
   std::vector<Card> three_;
   std::vector<Card> bomb_;
+  std::vector<Card> rocket_;
 public:
   explicit Logical(std::vector<uint8_t>& cards);
   ~Logical(void);
@@ -55,7 +56,7 @@ public:
   bool PlayCard(CardType type, std::vector<uint8_t>& out_cards);
 private:
   bool CardsAnalysis(void);
-  bool IsContinued(const std::vector<Card>& cards, int step = 1);
+  bool IsContinued(const Card* cards, int count, int step = 1);
 
   bool PlayAnySingle(std::vector<uint8_t>& out_cards);
   bool PlayAnyPair(std::vector<uint8_t>& out_cards);
@@ -63,6 +64,28 @@ private:
   bool PlayAnyThreeWithSingle(std::vector<uint8_t>& out_cards);
   bool PlayAnyThreeWithPair(std::vector<uint8_t>& out_cards);
   bool PlayAnyBomb(std::vector<uint8_t>& out_cards);
+  bool PlayRocket(std::vector<uint8_t>& out_cards);
+
+  bool PlaySingle(uint8_t value, std::vector<uint8_t>& out_cards);
+  bool PlayPair(uint8_t value, std::vector<uint8_t>& out_cards);
+  bool PlayThree(uint8_t value, std::vector<uint8_t>& out_cards);
+  bool PlayThreeWithSingle(uint8_t value, std::vector<uint8_t>& out_cards);
+  bool PlayThreeWithPair(uint8_t value, std::vector<uint8_t>& out_cards);
+  bool PlayBomb(uint8_t value, std::vector<uint8_t>& out_cards);
+  bool PlayFourWithTwoSingle(
+      uint8_t value, std::vector<uint8_t>& out_cards);
+  bool PlayFourWithTwoPair(
+      uint8_t value, std::vector<uint8_t>& out_cards);
+  bool PlayStraightSingle(int num, 
+      uint8_t value, std::vector<uint8_t>& out_cards);
+  bool PlayStraightPair(int num, 
+      uint8_t value, std::vector<uint8_t>& out_cards);
+  bool PlayStraightThree(int num, 
+      uint8_t value, std::vector<uint8_t>& out_cards);
+  bool PlayAirplaneWithSingle(int num, 
+      uint8_t value, std::vector<uint8_t>& out_cards);
+  bool PlayAirplaneWithPair(int num, 
+      uint8_t value, std::vector<uint8_t>& out_cards);
 };
 
 #endif  //! __LOGICAL_HEADER_H__
