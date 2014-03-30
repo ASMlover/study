@@ -54,9 +54,99 @@ bool Logical::PlayAnyCard(
     || PlayRocket(out_cards);
 }
 
-bool Logical::PlayCard(CardType type, 
+bool Logical::PlayCard(CardType type, uint8_t value, 
     const std::vector<uint8_t>& cards, std::vector<uint8_t>& out_cards) {
-  return true;
+  if (!CardsAnalysis(cards))
+    return false;
+
+  out_cards.clear();
+  switch (type) {
+  case CARDTYPE_SINGLE:
+    return PlaySingle(value, out_cards) 
+      || PlayAnyBomb(out_cards) 
+      || PlayRocket(out_cards);
+  case CARDTYPE_PAIR:
+    return PlayPair(value, out_cards) 
+      || PlayAnyBomb(out_cards) 
+      || PlayRocket(out_cards);
+  case CARDTYPE_THREE:
+    return PlayThree(value, out_cards) 
+      || PlayAnyBomb(out_cards)
+      || PlayRocket(out_cards);
+  case CARDTYPE_THREE_WITH_SINGLE:
+    return PlayThreeWithSingle(value, out_cards) 
+      || PlayAnyBomb(out_cards) 
+      || PlayRocket(out_cards);
+  case CARDTYPE_THREE_WITH_PAIR:
+    return PlayThreeWithPair(value, out_cards) 
+      || PlayAnyBomb(out_cards) 
+      || PlayRocket(out_cards);
+  case CARDTYPE_BOMB:
+    return PlayBomb(value, out_cards) 
+      || PlayRocket(out_cards);
+  case CARDTYPE_FOUR_WITH_TWOSINGLE:
+    return PlayFourWithTwoSingle(value, out_cards) 
+      || PlayAnyBomb(out_cards) 
+      || PlayRocket(out_cards);
+  case CARDTYPE_FOUR_WITH_TWOPAIR:
+    return PlayFourWithTwoPair(value, out_cards) 
+      || PlayAnyBomb(out_cards) 
+      || PlayRocket(out_cards);
+  case CARDTYPE_STRAIGHT_SINGLE5:
+  case CARDTYPE_STRAIGHT_SINGLE6:
+  case CARDTYPE_STRAIGHT_SINGLE7:
+  case CARDTYPE_STRAIGHT_SINGLE8:
+  case CARDTYPE_STRAIGHT_SINGLE9:
+  case CARDTYPE_STRAIGHT_SINGLE10:
+  case CARDTYPE_STRAIGHT_SINGLE11:
+  case CARDTYPE_STRAIGHT_SINGLE12:
+    return PlayStraightSingle(
+        5 + type - CARDTYPE_STRAIGHT_SINGLE5, value, out_cards) 
+      || PlayAnyBomb(out_cards)
+      || PlayRocket(out_cards);
+  case CARDTYPE_STRAIGHT_PAIR3:
+  case CARDTYPE_STRAIGHT_PAIR4:
+  case CARDTYPE_STRAIGHT_PAIR5:
+  case CARDTYPE_STRAIGHT_PAIR6:
+  case CARDTYPE_STRAIGHT_PAIR7:
+  case CARDTYPE_STRAIGHT_PAIR8:
+  case CARDTYPE_STRAIGHT_PAIR9:
+  case CARDTYPE_STRAIGHT_PAIR10:
+    return PlayStraightPair(
+        3 + type - CARDTYPE_STRAIGHT_PAIR3, value, out_cards) 
+      || PlayAnyBomb(out_cards) 
+      || PlayRocket(out_cards);
+  case CARDTYPE_STRAIGHT_THREE2:
+  case CARDTYPE_STRAIGHT_THREE3:
+  case CARDTYPE_STRAIGHT_THREE4:
+  case CARDTYPE_STRAIGHT_THREE5:
+  case CARDTYPE_STRAIGHT_THREE6:
+  case CARDTYPE_STRAIGHT_THREE7:
+    return PlayStraightThree(
+        2 + type - CARDTYPE_STRAIGHT_THREE2, value, out_cards) 
+      || PlayAnyBomb(out_cards) 
+      || PlayRocket(out_cards);
+  case CARDTYPE_AIRPLANE_SINGLE2:
+  case CARDTYPE_AIRPLANE_SINGLE3:
+  case CARDTYPE_AIRPLANE_SINGLE4:
+  case CARDTYPE_AIRPLANE_SINGLE5:
+    return PlayAirplaneWithSingle(
+        2 + type - CARDTYPE_AIRPLANE_SINGLE2, value, out_cards) 
+      || PlayAnyBomb(out_cards) 
+      || PlayRocket(out_cards);
+  case CARDTYPE_AIRPLANE_PAIR2:
+  case CARDTYPE_AIRPLANE_PAIR3:
+  case CARDTYPE_AIRPLANE_PAIR4:
+    return PlayAirplaneWithPair(
+        2 + type - CARDTYPE_AIRPLANE_PAIR2, value, out_cards)
+      || PlayAnyBomb(out_cards) 
+      || PlayRocket(out_cards);
+  case CARDTYPE_UNKNOWN:
+  default:
+    return false;
+  }
+
+  return false;
 }
 
 
@@ -115,7 +205,8 @@ bool Logical::CardsAnalysis(const std::vector<uint8_t>& cards) {
 
 bool Logical::IsContinued(const Card* cards, int count, int step) {
   for (int i = 0; i < count - step; i += step) {
-    if (cards[i].value + 1 != cards[i + step].value)
+    if (cards[i].value + 1 != cards[i + step].value 
+        || CARDVALUE_2POINT == cards[i + step].value)
       return false;
   }
 

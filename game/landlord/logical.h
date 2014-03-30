@@ -29,9 +29,49 @@
 
 enum CardType {
   CARDTYPE_UNKNOWN = 0, 
-  CARDTYPE_SINGLE,    // 单牌
 
-  CARDTYPE_PAIR,      // 对牌
+  CARDTYPE_SINGLE,              // 单牌
+
+  CARDTYPE_PAIR,                // 对牌
+  CARDTYPE_THREE,               // 三张
+  CARDTYPE_THREE_WITH_SINGLE,   // 三带一
+  CARDTYPE_THREE_WITH_PAIR,     // 三带一对
+  CARDTYPE_BOMB,                // 炸弹
+  CARDTYPE_FOUR_WITH_TWOSINGLE, // 四带二
+  CARDTYPE_FOUR_WITH_TWOPAIR,   // 四带二对
+
+  CARDTYPE_STRAIGHT_SINGLE5,    // 单顺
+  CARDTYPE_STRAIGHT_SINGLE6,    // 
+  CARDTYPE_STRAIGHT_SINGLE7,    //
+  CARDTYPE_STRAIGHT_SINGLE8,    //
+  CARDTYPE_STRAIGHT_SINGLE9,    //
+  CARDTYPE_STRAIGHT_SINGLE10,   //
+  CARDTYPE_STRAIGHT_SINGLE11,   //
+  CARDTYPE_STRAIGHT_SINGLE12,   //
+
+  CARDTYPE_STRAIGHT_PAIR3,      // 双顺
+  CARDTYPE_STRAIGHT_PAIR4,      //
+  CARDTYPE_STRAIGHT_PAIR5,      //
+  CARDTYPE_STRAIGHT_PAIR6,      //
+  CARDTYPE_STRAIGHT_PAIR7,      //
+  CARDTYPE_STRAIGHT_PAIR8,      //
+  CARDTYPE_STRAIGHT_PAIR9,      //
+  CARDTYPE_STRAIGHT_PAIR10,     //
+
+  CARDTYPE_STRAIGHT_THREE2,     // 三顺
+  CARDTYPE_STRAIGHT_THREE3,     //
+  CARDTYPE_STRAIGHT_THREE4,     //
+  CARDTYPE_STRAIGHT_THREE5,     //
+  CARDTYPE_STRAIGHT_THREE6,     //
+  CARDTYPE_STRAIGHT_THREE7,     //
+
+  CARDTYPE_AIRPLANE_SINGLE2,    // 飞机带翅膀
+  CARDTYPE_AIRPLANE_SINGLE3,    //
+  CARDTYPE_AIRPLANE_SINGLE4,    //
+  CARDTYPE_AIRPLANE_SINGLE5,    //
+  CARDTYPE_AIRPLANE_PAIR2,      //
+  CARDTYPE_AIRPLANE_PAIR3,      //
+  CARDTYPE_AIRPLANE_PAIR4,      //
 };
 
 
@@ -54,6 +94,7 @@ public:
       const std::vector<uint8_t>& cards, 
       std::vector<uint8_t>& out_cards);
   bool PlayCard(CardType type, 
+      uint8_t value, 
       const std::vector<uint8_t>& cards, 
       std::vector<uint8_t>& out_cards);
 private:
