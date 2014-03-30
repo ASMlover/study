@@ -313,7 +313,7 @@ bool Logical::PlayStraightSingle(int num,
   for (int i = n - 1; i >= 0; --i) {
     if (single_[i].value > value && i >= (num - 1)) {
       if (IsContinued(&single_[i - num + 1], num)) {
-        for (int j = i - num + 1; j < num; ++j)
+        for (int j = i + 1 - num; j < num; ++j)
           out_cards.push_back(single_[j].card);
 
         return true;
@@ -326,20 +326,64 @@ bool Logical::PlayStraightSingle(int num,
 
 bool Logical::PlayStraightPair(int num, 
     uint8_t value, std::vector<uint8_t>& out_cards) {
+  int n = static_cast<int>(pair_.size());
+  if (n < num * 2)
+    return false;
+
+  for (int i = n - 1; i >= 0; i -= 2) {
+    if (pair_[i].value > value && ((i - 1) / 2 >= (num - 1))) {
+      if (IsContinued(&pair_[i + 1 - num * 2], num * 2, 2)) {
+        for (int j = i + 1 - num * 2; j < num * 2; ++j)
+          out_cards.push_back(pair_[j].card);
+
+        return true;
+      }
+    }
+  }
+
   return false;
 }
 
 bool Logical::PlayStraightThree(int num, 
     uint8_t value, std::vector<uint8_t>& out_cards) {
+  int n = static_cast<int>(three_.size());
+  if (n < num * 3)
+    return false;
+
+  for (int i = n - 1; i >= 0; i -= 3) {
+    if (three_[i].value > value && ((i - 1) / 3 >= (num - 1))) {
+      if (IsContinued(&three_[i + 1 - num * 3], num * 3, 3)) {
+        for (int j = i + 1 - num * 3; j < num * 3; ++j)
+          out_cards.push_back(three_[j].card);
+
+        return true;
+      }
+    }
+  }
+
   return false;
 }
 
 bool Logical::PlayAirplaneWithSingle(int num, 
     uint8_t value, std::vector<uint8_t>& out_cards) {
-  return false;
+  if (single_.size() < 2 || !PlayStraightThree(num, value, out_cards))
+    return false;
+
+  out_cards.push_back(single_[0].card);
+  out_cards.push_back(single_[1].card);
+
+  return true;
 }
 
 bool Logical::PlayAirplaneWithPair(int num, 
     uint8_t value, std::vector<uint8_t>& out_cards) {
-  return false;
+  if (pair_.size() < 4 || !PlayStraightThree(num, value, out_cards))
+    return false;
+
+  out_cards.push_back(pair_[0].card);
+  out_cards.push_back(pair_[1].card);
+  out_cards.push_back(pair_[2].card);
+  out_cards.push_back(pair_[3].card);
+
+  return true;
 }
