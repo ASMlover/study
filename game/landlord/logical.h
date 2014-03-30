@@ -30,16 +30,39 @@
 enum CardType {
   CARDTYPE_UNKNOWN = 0, 
   CARDTYPE_SINGLE,    // 单牌
+
+  CARDTYPE_PAIR,      // 对牌
+};
+
+
+struct Card {
+  uint8_t card;       // 牌
+  uint8_t value;      // 牌值
 };
 
 class Logical : private UnCopyable {
   std::vector<uint8_t>& cards_;
+
+  std::vector<Card> single_;
+  std::vector<Card> pair_;
+  std::vector<Card> three_;
+  std::vector<Card> bomb_;
 public:
   explicit Logical(std::vector<uint8_t>& cards);
   ~Logical(void);
 
   bool PlayAnyCard(std::vector<uint8_t>& out_cards);
   bool PlayCard(CardType type, std::vector<uint8_t>& out_cards);
+private:
+  bool CardsAnalysis(void);
+  bool IsContinued(const std::vector<Card>& cards, int step = 1);
+
+  bool PlayAnySingle(std::vector<uint8_t>& out_cards);
+  bool PlayAnyPair(std::vector<uint8_t>& out_cards);
+  bool PlayAnyThree(std::vector<uint8_t>& out_cards);
+  bool PlayAnyThreeWithSingle(std::vector<uint8_t>& out_cards);
+  bool PlayAnyThreeWithPair(std::vector<uint8_t>& out_cards);
+  bool PlayAnyBomb(std::vector<uint8_t>& out_cards);
 };
 
 #endif  //! __LOGICAL_HEADER_H__

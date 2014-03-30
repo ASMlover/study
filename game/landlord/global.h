@@ -46,7 +46,7 @@ protected:
 };
 
 
-static inline uint8_t GetCardValue(uint8_t card) {
+static inline uint8_t CardValue(uint8_t card) {
   if (card > 53)
     return -1;
 
