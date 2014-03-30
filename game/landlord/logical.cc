@@ -33,15 +33,15 @@
 #define CARDVALUE_2POINT      (12)
 
 
-Logical::Logical(std::vector<uint8_t>& cards) 
-  : cards_(cards) {
+Logical::Logical(void) {
 }
 
 Logical::~Logical(void) {
 }
 
-bool Logical::PlayAnyCard(std::vector<uint8_t>& out_cards) {
-  if (!CardsAnalysis())
+bool Logical::PlayAnyCard(
+    const std::vector<uint8_t>& cards, std::vector<uint8_t>& out_cards) {
+  if (!CardsAnalysis(cards))
     return false;
 
   out_cards.clear();
@@ -54,24 +54,25 @@ bool Logical::PlayAnyCard(std::vector<uint8_t>& out_cards) {
     || PlayRocket(out_cards);
 }
 
-bool Logical::PlayCard(CardType type, std::vector<uint8_t>& out_cards) {
+bool Logical::PlayCard(CardType type, 
+    const std::vector<uint8_t>& cards, std::vector<uint8_t>& out_cards) {
   return true;
 }
 
 
 
 
-bool Logical::CardsAnalysis(void) {
-  if (cards_.empty())
+bool Logical::CardsAnalysis(const std::vector<uint8_t>& cards) {
+  if (cards.empty())
     return false;
 
   // card value => cards 
   std::map<uint8_t, std::vector<Card> > src_cards;
   Card c;
-  int  n = static_cast<int>(cards_.size());
+  int  n = static_cast<int>(cards.size());
   for (int i = 0; i < n; ++i) {
-    c.card = cards_[i];
-    c.value = CardValue(cards_[i]);
+    c.card = cards[i];
+    c.value = CardValue(cards[i]);
 
     src_cards[c.value].push_back(c);
   }

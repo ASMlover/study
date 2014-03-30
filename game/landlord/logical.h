@@ -41,21 +41,23 @@ struct Card {
 };
 
 class Logical : private UnCopyable {
-  std::vector<uint8_t>& cards_;
-
   std::vector<Card> single_;
   std::vector<Card> pair_;
   std::vector<Card> three_;
   std::vector<Card> bomb_;
   std::vector<Card> rocket_;
 public:
-  explicit Logical(std::vector<uint8_t>& cards);
+  Logical(void);
   ~Logical(void);
 
-  bool PlayAnyCard(std::vector<uint8_t>& out_cards);
-  bool PlayCard(CardType type, std::vector<uint8_t>& out_cards);
+  bool PlayAnyCard(
+      const std::vector<uint8_t>& cards, 
+      std::vector<uint8_t>& out_cards);
+  bool PlayCard(CardType type, 
+      const std::vector<uint8_t>& cards, 
+      std::vector<uint8_t>& out_cards);
 private:
-  bool CardsAnalysis(void);
+  bool CardsAnalysis(const std::vector<uint8_t>& cards);
   bool IsContinued(const Card* cards, int count, int step = 1);
 
   bool PlayAnySingle(std::vector<uint8_t>& out_cards);
