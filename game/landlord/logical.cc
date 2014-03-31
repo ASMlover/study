@@ -41,11 +41,13 @@ Logical::~Logical(void) {
 
 bool Logical::PlayAnyCard(
     const std::vector<uint8_t>& cards, std::vector<uint8_t>& out_cards) {
-  if (!CardsAnalysis(cards))
+  std::map<uint8_t, std::vector<Card> > cards_map;
+  if (!CardsAnalysis(cards, cards_map))
     return false;
 
   out_cards.clear();
-  return PlayAnySingle(out_cards) 
+  return PlayStraight(cards_map, out_cards) 
+    || PlayAnySingle(out_cards) 
     || PlayAnyPair(out_cards) 
     || PlayAnyThree(out_cards) 
     || PlayAnyThreeWithSingle(out_cards) 
@@ -56,9 +58,10 @@ bool Logical::PlayAnyCard(
 
 bool Logical::PlayCard(CardType type, uint8_t value, 
     const std::vector<uint8_t>& cards, std::vector<uint8_t>& out_cards) {
-  if (!CardsAnalysis(cards))
+  std::map<uint8_t, std::vector<Card> > cards_map;
+  if (!CardsAnalysis(cards, cards_map))
     return false;
-
+  
   out_cards.clear();
   switch (type) {
   case CARDTYPE_SINGLE:
@@ -152,24 +155,26 @@ bool Logical::PlayCard(CardType type, uint8_t value,
 
 
 
-bool Logical::CardsAnalysis(const std::vector<uint8_t>& cards) {
+bool Logical::CardsAnalysis(
+    const std::vector<uint8_t>& cards, 
+    std::map<uint8_t, std::vector<Card> >& cards_map) {
   if (cards.empty())
     return false;
 
   // card value => cards 
-  std::map<uint8_t, std::vector<Card> > src_cards;
+  cards_map.clear();
   Card c;
   int  n = static_cast<int>(cards.size());
   for (int i = 0; i < n; ++i) {
     c.card = cards[i];
     c.value = CardValue(cards[i]);
 
-    src_cards[c.value].push_back(c);
+    cards_map[c.value].push_back(c);
   }
 
   std::map<uint8_t, std::vector<Card> >::iterator it;
   Card joker = {0};
-  for (it = src_cards.begin(); it != src_cards.end(); ++it) {
+  for (it = cards_map.begin(); it != cards_map.end(); ++it) {
     switch (it->second.size()) {
     case 1:
       if (CARDVALUE_SMALL_KING == it->second[0].value) {
@@ -211,6 +216,21 @@ bool Logical::IsContinued(const Card* cards, int count, int step) {
   for (int i = 0; i < count - step; i += step) {
     if (cards[i].value + 1 != cards[i + step].value 
         || CARDVALUE_2POINT == cards[i + step].value)
+      return false;
+  }
+
+  return true;
+}
+
+bool Logical:: IsContinued(
+      const std::vector<std::pair<uint8_t, std::vector<Card> > >& cards, 
+      int count) {
+  if (static_cast<int>(cards.size()) < count)
+    return false;
+
+  for (int i = 0; i < count - 1; ++i) {
+    if (cards[i].first + 1 != cards[i + 1].first
+        || CARDVALUE_2POINT == cards[i + 1].first)
       return false;
   }
 
@@ -294,6 +314,34 @@ bool Logical::PlayRocket(std::vector<uint8_t>& out_cards) {
 
   return true;
 }
+
+bool Logical::PlayStraight(
+    std::map<uint8_t, std::vector<Card> >& cards, 
+    std::vector<uint8_t>& out_cards) {
+  if (cards.size() < 5)
+    return false;
+
+  std::map<uint8_t, std::vector<Card> >::iterator it;
+  std::vector<std::pair<uint8_t, std::vector<Card> > > temp_cards;
+  for (it = cards.begin(); it != cards.end(); ++it) {
+    temp_cards.push_back(
+        std::make_pair<uint8_t, std::vector<Card> >(
+          it->first, it->second));
+  }
+
+  int n = static_cast<int>(temp_cards.size());
+  for (int i = 0; i < n && (n - 1 >= 5); ++i) {
+    if (IsContinued(temp_cards)) {
+      for (int j = i; j < 5; ++j)
+        out_cards.push_back(temp_cards[i].second[0].card);
+
+      break;
+    }
+  }
+
+  return true;
+}
+
 
 
 bool Logical::PlaySingle(

@@ -98,8 +98,13 @@ public:
       const std::vector<uint8_t>& cards, 
       std::vector<uint8_t>& out_cards);
 private:
-  bool CardsAnalysis(const std::vector<uint8_t>& cards);
+  bool CardsAnalysis(
+      const std::vector<uint8_t>& cards, 
+      std::map<uint8_t, std::vector<Card> >& cards_map);
   bool IsContinued(const Card* cards, int count, int step = 1);
+  bool IsContinued(
+      const std::vector<std::pair<uint8_t, std::vector<Card> > >& cards, 
+      int count = 5);
 
   bool PlayAnySingle(std::vector<uint8_t>& out_cards);
   bool PlayAnyPair(std::vector<uint8_t>& out_cards);
@@ -108,6 +113,9 @@ private:
   bool PlayAnyThreeWithPair(std::vector<uint8_t>& out_cards);
   bool PlayAnyBomb(std::vector<uint8_t>& out_cards);
   bool PlayRocket(std::vector<uint8_t>& out_cards);
+  bool PlayStraight(
+      std::map<uint8_t, std::vector<Card> >& cards, 
+      std::vector<uint8_t>& out_cards);
 
   bool PlaySingle(uint8_t value, std::vector<uint8_t>& out_cards);
   bool PlayPair(uint8_t value, std::vector<uint8_t>& out_cards);
