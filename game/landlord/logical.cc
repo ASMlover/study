@@ -168,21 +168,25 @@ bool Logical::CardsAnalysis(const std::vector<uint8_t>& cards) {
   }
 
   std::map<uint8_t, std::vector<Card> >::iterator it;
+  Card joker = {0};
   for (it = src_cards.begin(); it != src_cards.end(); ++it) {
     switch (it->second.size()) {
     case 1:
-      single_.push_back(it->second[0]);
-      break;
-    case 2:
-      if (CARDVALUE_SMALL_KING == it->second[0].value
-          && CARDVALUE_BIG_KING == it->second[1].value) {
+      if (CARDVALUE_SMALL_KING == it->second[0].value) {
+        joker = it->second[0];
+      }
+      else if (CARDVALUE_BIG_KING == it->second[0].value 
+          && joker.value != 0) {
+        rocket_.push_back(joker);
         rocket_.push_back(it->second[0]);
-        rocket_.push_back(it->second[1]);
       }
       else {
-        pair_.push_back(it->second[0]);
-        pair_.push_back(it->second[1]);
+        single_.push_back(it->second[0]);
       }
+      break;
+    case 2:
+      pair_.push_back(it->second[0]);
+      pair_.push_back(it->second[1]);
       break;
     case 3:
       three_.push_back(it->second[0]);
