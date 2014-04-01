@@ -43,3 +43,14 @@
     arpa/inet.h             以inet_开头的所有函数
     errno.h                 所有错误处理信息
     fcntl.h                 所有文件控制信息
+
+
+## **bind的错误代码**
+    ENETDOWN        网络已经失败并断开
+    EINPROGRESS     对此函数的调用仍在进行中, 因此不能完成新的调用
+    ENOBUFS         没有足够的内存可以使用
+    ENOTSOCK        传递过来的套接字描述符不是真正的套接字
+    EACCESS         访问被否决
+    EADDRINUSE      地址已经在使用中
+    EADDRNOTAVAIL   地址对这台机器无效
+    EFAULT          一个或多个参数无效
