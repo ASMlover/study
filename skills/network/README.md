@@ -78,3 +78,14 @@
     ENOTSOCK        ~
     EOPNOTSUPP      套接字不支持这一函数
 
+
+## **accept错误代码**
+    ENETDOWN        ~
+    EINPROGRESS     ~
+    EINVAL          ~
+    EMFILE          ~
+    ENOBUFS         ~
+    ENOTSOCK        ~
+    EOPNOTSUPP      ~
+    EFAULT          ~
+    EWOULDBLOCK     函数由于阻塞而退出
