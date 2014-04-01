@@ -31,3 +31,15 @@
     设置后, 若断开, 则在使用该socket读写时立即失败, 并返回ETIMEDOUT 
 > ### **方法5** ###
     自己实现一个心跳包
+
+
+
+## **Socket API常用头文件**
+    sys/types.h             所有需要的基本类型
+    sys/socket.h            所有套接字数据结构
+    netinet/in.h            IPv4/IPv6所需要的全部函数
+    unistd.h                查找本地机器名所需要的gethostname
+    netdb.h                 所有需要的DNS函数
+    arpa/inet.h             以inet_开头的所有函数
+    errno.h                 所有错误处理信息
+    fcntl.h                 所有文件控制信息
