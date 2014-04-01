@@ -98,6 +98,7 @@
 #include "smart_ptr.h"
 #include "smart_array.h"
 #include "object_pool.h"
+#include "object_mgr.h"
 #include "thread.h"
 
 

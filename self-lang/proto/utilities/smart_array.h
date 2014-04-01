@@ -93,7 +93,13 @@ class SmartArray {
 
   typedef SmartArray<T, Locker> SelfType;
 public:
-  explicit SmartArray(T* p = NULL)
+  SmartArray(void)
+    : ptr_(NULL) 
+    , ref_array_(NULL) 
+    , ref_count_(NULL) {
+  }
+
+  explicit SmartArray(T* p)
     : ptr_(p)
     , ref_array_(new RefArrayDelete<T>(ptr_))
     , ref_count_(new RefCounter<Locker>(1)) {
@@ -107,7 +113,7 @@ public:
   }
 
   ~SmartArray(void) {
-    if (NULL != ptr_) {
+    if (NULL != ref_count_) {
       if (0 == --*ref_count_) {
         ref_array_->Destroy();
         ptr_ = NULL;
@@ -124,7 +130,8 @@ public:
     : ptr_(x.ptr_)
     , ref_array_(x.ref_array_)
     , ref_count_(x.ref_count_) {
-    ++*ref_count_;
+    if (NULL != ref_count_)
+      ++*ref_count_;
   }
 
   SmartArray& operator=(const SmartArray& x) {

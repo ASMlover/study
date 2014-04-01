@@ -93,7 +93,13 @@ class SmartPtr {
 
   typedef SmartPtr<T, Locker> SelfType;
 public:
-  explicit SmartPtr(T* p = NULL)
+  SmartPtr(void) 
+    : ptr_(NULL)
+    , ref_ptr_(NULL) 
+    , ref_count_(NULL) {
+  }
+
+  explicit SmartPtr(T* p)
     : ptr_(p)
     , ref_ptr_(new RefPtrDelete<T>(ptr_))
     , ref_count_(new RefCounter<Locker>(1)) {
@@ -107,7 +113,7 @@ public:
   }
 
   ~SmartPtr(void) {
-    if (NULL != ptr_) {
+    if (NULL != ref_count_) {
       if (0 == --*ref_count_) {
         ref_ptr_->Destroy();
         ptr_ = NULL;
@@ -124,7 +130,8 @@ public:
     : ptr_(x.ptr_)
     , ref_ptr_(x.ref_ptr_)
     , ref_count_(x.ref_count_) {
-    ++*ref_count_;
+    if (NULL != ref_count_)
+      ++*ref_count_;
   }
 
   SmartPtr& operator=(const SmartPtr& x) {
