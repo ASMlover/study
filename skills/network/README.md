@@ -125,3 +125,19 @@
     ECONNABORTED    连接异常中止, 套接字不再可用
     ECONNRESET      连接被对方关闭
     ETIMEDOUT       连接被出乎意料的关闭
+
+
+## **recv错误代码**
+    ENETDOWN        ~
+    EFAULT          ~
+    ENOTCONN        ~
+    EINPROGRESS     ~
+    ENETRESET       ~
+    ENOTSOCK        ~
+    EOPNOTSUPP      ~
+    ESHUTDOWN       ~
+    EWOULDBLOCK     ~
+    EINVAL          ~
+    ECONNABORTED    ~
+    ETIMEDOUT       ~
+    ECONNRESET      ~
