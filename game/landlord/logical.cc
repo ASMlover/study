@@ -332,11 +332,11 @@ bool Logical::PlayStraight(
       for (int j = i; j < 5; ++j)
         out_cards.push_back(temp_cards[j].second[0].card);
 
-      break;
+      return true;
     }
   }
 
-  return true;
+  return false;
 }
 
 
