@@ -65,3 +65,16 @@
     EADDRINUSE      地址已经在使用中
     EADDRNOTAVAIL   地址对这台机器无效
     EFAULT          一个或多个参数无效
+
+
+## **listen错误代码**
+    ENETDOWN        ~
+    EADDRINUSE      ~
+    EINPROGRESS     ~
+    EINVAL          套接字无效
+    EISCONN         套接字已经被连接
+    EMFILE          ~
+    ENOBUFS         ~
+    ENOTSOCK        ~
+    EOPNOTSUPP      套接字不支持这一函数
+
