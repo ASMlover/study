@@ -106,3 +106,22 @@
     EISCONN         ~
     ENETUNREACH     目的地址不可达到
     ETIMEDOUT       由于超时, 操作未能完成
+
+
+## **send错误代码**
+    ENETDOWN        ~
+    EINPROGRESS     ~
+    EACCESS         ~
+    EFAULT          ~
+    ENETRESET       网络已经复位, 连接已经断开
+    ENOBUFS         ~
+    ENOTCONN        套接字没有被连接
+    ENOTSOCK        ~
+    EOPNOTSUPP      ~
+    ESHUTDOWN       套接字已经被关闭
+    EWOULDBLOCK     ~
+    EHOSTUNREACH    主机不可达
+    EINVAL          ~
+    ECONNABORTED    连接异常中止, 套接字不再可用
+    ECONNRESET      连接被对方关闭
+    ETIMEDOUT       连接被出乎意料的关闭
