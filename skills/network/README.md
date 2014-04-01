@@ -45,6 +45,17 @@
     fcntl.h                 所有文件控制信息
 
 
+## **socket错误代码**
+    ENETDOWN        网络已经失败并断开
+    EAFNOSUPPORT    不支持指定的地址族
+    EINPROGRESS     对此函数的调用仍在进行中, 因此不能完成新的调用
+    EMFILE          没有更多可以使用的套接字描述符
+    ENOBUFS         没有足够的内存可以使用
+    EPROTONOSUPPORT 不支持指定的协议
+    EPROTOTYPE      套接字类型不支持指定的协议
+    ESOCKTNOSUPPORT 地址族不支持指定的套接字类型
+
+
 ## **bind的错误代码**
     ENETDOWN        网络已经失败并断开
     EINPROGRESS     对此函数的调用仍在进行中, 因此不能完成新的调用
