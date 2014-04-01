@@ -103,7 +103,7 @@ private:
       std::map<uint8_t, std::vector<Card> >& cards_map);
   bool IsContinued(const Card* cards, int count, int step = 1);
   bool IsContinued(
-      const std::vector<std::pair<uint8_t, std::vector<Card> > >& cards, 
+      const std::pair<uint8_t, std::vector<Card> >* cards, 
       int count = 5);
 
   bool PlayAnySingle(std::vector<uint8_t>& out_cards);

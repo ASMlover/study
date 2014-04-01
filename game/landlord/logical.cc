@@ -223,11 +223,8 @@ bool Logical::IsContinued(const Card* cards, int count, int step) {
 }
 
 bool Logical:: IsContinued(
-      const std::vector<std::pair<uint8_t, std::vector<Card> > >& cards, 
+      const std::pair<uint8_t, std::vector<Card> >* cards, 
       int count) {
-  if (static_cast<int>(cards.size()) < count)
-    return false;
-
   for (int i = 0; i < count - 1; ++i) {
     if (cards[i].first + 1 != cards[i + 1].first
         || CARDVALUE_2POINT == cards[i + 1].first)
@@ -331,9 +328,9 @@ bool Logical::PlayStraight(
 
   int n = static_cast<int>(temp_cards.size());
   for (int i = 0; i < n && (n - 1 >= 5); ++i) {
-    if (IsContinued(temp_cards)) {
+    if (IsContinued(&temp_cards[i])) {
       for (int j = i; j < 5; ++j)
-        out_cards.push_back(temp_cards[i].second[0].card);
+        out_cards.push_back(temp_cards[j].second[0].card);
 
       break;
     }
