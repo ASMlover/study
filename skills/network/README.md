@@ -89,3 +89,20 @@
     EOPNOTSUPP      ~
     EFAULT          ~
     EWOULDBLOCK     函数由于阻塞而退出
+
+
+## **connect错误代码**
+    ENETDOWN        ~
+    EINPROGRESS     ~
+    EADDRINUSE      ~
+    EINVAL          ~
+    EADDRNOTAVAIL   ~
+    EAFNOSUPPORT    ~
+    ENOBUFS         ~
+    ENOTSOCK        ~
+    EWOULDBLOCK     ~
+    ECONNREFUSED    服务器拒绝连接
+    EFAULT          ~
+    EISCONN         ~
+    ENETUNREACH     目的地址不可达到
+    ETIMEDOUT       由于超时, 操作未能完成
