@@ -86,6 +86,13 @@
     1) Traits classes使得"类型相关信息"在编译期可用; 它们以templates和"模板 
        特化"完成实现
     2) 整合重载技术后, traits classes有可能在编译期对类型执行if...else测试
+> ### **个人理解**
+    STL的五类迭代器
+    Input   只能向前移动, 一次一步, 客户只能读取它们所指的东西, 且只能读一次
+    Output  与Input类似, 只为输出;
+    Forward 可以做Input和Output的每一件事情;
+    Bidirectional 比上一个功能更强大, 可以向前或向后;
+    RandomAccess  可以在常量时间内向前或向后跳跃任意距离;
 
 
 
