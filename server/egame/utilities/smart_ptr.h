@@ -99,7 +99,8 @@ public:
     , ref_count_(NULL) {
   }
 
-  explicit SmartPtr(T* p)
+  template <typename Y>
+  explicit SmartPtr(Y* p)
     : ptr_(p)
     , ref_ptr_(new RefPtrDelete<T>(ptr_))
     , ref_count_(new RefCounter<Locker>(1)) {
@@ -108,7 +109,7 @@ public:
   template <typename Y, typename D>
   explicit SmartPtr(Y* p, D d)
     : ptr_(p)
-    , ref_ptr_(new RefPtrDestructor<Y, D>(ptr_, d))
+    , ref_ptr_(new RefPtrDestructor<T, D>(ptr_, d))
     , ref_count_(new RefCounter<Locker>(1)) {
   }
 
@@ -117,6 +118,7 @@ public:
       if (0 == --*ref_count_) {
         ref_ptr_->Destroy();
         ptr_ = NULL;
+
         delete ref_ptr_;
         ref_ptr_ = NULL;
 
@@ -134,8 +136,25 @@ public:
       ++*ref_count_;
   }
 
+  template <typename Y>
+  SmartPtr(const SmartPtr<Y, Locker>& x) 
+    : ptr_(x.Get())
+    , ref_ptr_(x.GetRefPointer())
+    , ref_count_(x.GetRefCounter()) {
+    if (NULL != ref_count_)
+      ++*ref_count_;
+  }
+
   SmartPtr& operator=(const SmartPtr& x) {
     if (this != &x)
+      SelfType(x).Swap(*this);
+
+    return *this;
+  }
+
+  template <typename Y>
+  SmartPtr& operator=(const SmartPtr<Y, Locker>& x) {
+    if ((void*)this != (void*)&x)
       SelfType(x).Swap(*this);
 
     return *this;
@@ -143,6 +162,14 @@ public:
 public:
   T* Get(void) const {
     return ptr_;
+  }
+
+  RefPointer* GetRefPointer(void) const {
+    return ref_ptr_;
+  }
+
+  RefCounter<Locker>* GetRefCounter(void) const {
+    return ref_count_;
   }
 
   void Reset(void) {
@@ -167,12 +194,24 @@ public:
     return ptr_;
   }
 private:
-  void Swap(SmartPtr& x) {
+  void Swap(SmartPtr<T, Locker>& x) {
     std::swap(ptr_, x.ptr_);
     std::swap(ref_ptr_, x.ref_ptr_);
     std::swap(ref_count_, x.ref_count_);
   }
 };
+
+template <typename T, typename Y, typename Locker>
+inline bool operator==(
+    const SmartPtr<T, Locker>& x, const SmartPtr<Y, Locker>& y) {
+  return x.Get() == y.Get();
+}
+
+template <typename T, typename Y, typename Locker>
+inline bool operator!=(
+    const SmartPtr<T, Locker>& x, const SmartPtr<Y, Locker>& y) {
+  return x.Get() != y.Get();
+}
 
 
 }

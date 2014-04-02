@@ -99,7 +99,8 @@ public:
     , ref_count_(NULL) {
   }
 
-  explicit SmartArray(T* p)
+  template <typename Y>
+  explicit SmartArray(Y* p)
     : ptr_(p)
     , ref_array_(new RefArrayDelete<T>(ptr_))
     , ref_count_(new RefCounter<Locker>(1)) {
@@ -108,7 +109,7 @@ public:
   template <typename Y, typename D>
   explicit SmartArray(Y* p, D d) 
     : ptr_(p)
-    , ref_array_(new RefArrayDestructor<Y, D>(ptr_, d))
+    , ref_array_(new RefArrayDestructor<T, D>(ptr_, d))
     , ref_count_(new RefCounter<Locker>(1)) {
   }
 
@@ -117,6 +118,7 @@ public:
       if (0 == --*ref_count_) {
         ref_array_->Destroy();
         ptr_ = NULL;
+        
         delete ref_array_;
         ref_array_ = NULL;
 
@@ -134,15 +136,40 @@ public:
       ++*ref_count_;
   }
 
+  template <typename Y>
+  SmartArray(const SmartArray<Y, Locker>& x) 
+    : ptr_(x.Get())
+    , ref_array_(x.GetRefArray()) 
+    , ref_count_(x.GetRefCounter()) {
+    if (NULL != ref_count_)
+      ++*ref_count_;
+  }
+
   SmartArray& operator=(const SmartArray& x) {
     if (this != &x)
       SelfType(x).Swap(*this);
 
     return *this;
   }
+
+  template <typename Y> 
+  SmartArray& operator=(const SmartArray<Y, Locker>& x) {
+    if ((void*)this != (void*)&x)
+      SelfType(x).Swap(*this);
+    
+    return *this;
+  }
 public:
   T* Get(void) const {
     return ptr_;
+  }
+
+  RefArray* GetRefArray(void) const {
+    return ref_array_;
+  }
+
+  RefCounter<Locker>* GetRefCounter(void) const {
+    return ref_count_;
   }
 
   void Reset(void) {
@@ -163,12 +190,24 @@ public:
     return ptr_[i];
   }
 private:
-  void Swap(SmartArray& x) {
+  void Swap(SmartArray<T, Locker>& x) {
     std::swap(ptr_, x.ptr_);
     std::swap(ref_array_, x.ref_array_);
     std::swap(ref_count_, x.ref_count_);
   }
 };
+
+template <typename T, typename Y, typename Locker> 
+inline bool operator==(
+    const SmartArray<T, Locker>& x, const SmartArray<Y, Locker>& y) {
+  return x.Get() == y.Get();
+}
+
+template <typename T, typename Y, typename Locker> 
+inline bool operator!=(
+    const SmartArray<T, Locker>& x, const SmartArray<Y, Locker>& y) {
+  return x.Get() != y.Get();
+}
 
 
 }
