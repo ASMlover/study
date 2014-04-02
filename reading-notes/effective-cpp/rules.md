@@ -51,3 +51,10 @@
  * 46. 需要类型转换时请为模板定义非成员函数
  * 47. 使用traits classes表现类型信息
  * 48. 认识模板元编程
+ * 49. 了解new-handler的行为
+ * 50. 了解new和delete的合理替换时机
+ * 51. 编写new和delete时需要固守的常规
+ * 52. 写了placement new就要写placement delete
+ * 53. 不要轻易忽略编译器的警告
+ * 54. 熟悉标准程序库(包括即将被纳入C++标准的boost库)
+ * 55. 熟悉boost
