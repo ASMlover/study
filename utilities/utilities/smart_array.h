@@ -118,6 +118,7 @@ public:
       if (0 == --*ref_count_) {
         ref_array_->Destroy();
         ptr_ = NULL;
+        
         delete ref_array_;
         ref_array_ = NULL;
 
