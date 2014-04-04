@@ -42,3 +42,11 @@
        现实bomb表示有BOM头
     2. 设置BOM头
        : set bomb
+
+
+
+## **Vim获取文件名字及时间**
+    获取当前的文件名字:
+      expand("%:t")
+    获取当前的时间:
+      strftime("%y/%m:%d %H:%M:%S")
