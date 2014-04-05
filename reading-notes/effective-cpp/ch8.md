@@ -75,3 +75,6 @@
        内存泄漏
     5) 当你声明placement new和placement delete, 请确定不要无意识地遮掩它们的
        正常版本
+> ### **个人理解**
+    如果自己实现了placement new和placement delete, 如果在使用new的时候类的构
+    造函数发生了异常会自动调用placement delete, 而不会泄露内存;
