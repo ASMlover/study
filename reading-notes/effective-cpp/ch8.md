@@ -39,6 +39,25 @@
        版本则还应该处理"比正确大小更大的(错误)申请"
     2) operator delete应该在收到null指针时不做任何事, 类专属版本应该处理"比
        正确大小更大的(错误)申请"
+> ### **个人理解**
+    对于有继承情况的内存操作, 我们可以使用如下操作:
+    void* Base::operator new(std::size_t size) throw(std::bad_alloc) {
+      if (size != sizeof(Base))
+        return ::operator new(size);
+      ...
+    }
+    这样就实现了某个类所专属的内存分配函数;
+    C++保证删除null指针永远安全;
+    要同new一样创建某个类的专属delete函数如下:
+    void Base::operator delete(void* ptr, std::size_t size) throw() {
+      if (nullptr == ptr)
+      return;
+      if (size != sizeof(Base)) {
+        ::operator delete(ptr);
+        return;
+      }
+      ... // 其他操作
+    }
 
 
 
