@@ -205,3 +205,21 @@
       return s;
     #endif
     }
+
+
+## **14. 类型转换**
+    template <typename T>
+    inline std::string ToString(const T& v) {
+      std::stringstream s;
+      s << v;
+      return s.str();
+    }
+
+    template <typename T>
+    inline T ToType(const std::string& v) {
+      std::stringstream s;
+      s << v;
+      T t;
+      s >> t;
+      return t;
+    }
