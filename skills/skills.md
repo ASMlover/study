@@ -161,3 +161,47 @@
     4. "-print":          输出查找的文件目录名
     5. "-exec":           后面跟一个执行命令, 将find出的文件或目录执行该命令
                           然后再跟{}, 一个空格, 一个\, 最后是一个分号;
+
+
+
+## **12. 64位数据**
+    Windows下面__int64同Linux的long long有一个区别, 就是不支持位移操作;
+
+
+
+## **13. 时间**
+> ### **Windows**
+    1. 获取频率
+        BOOL QueryPerformanceFrequency(LARGE_INTEGER* lpFrequency);
+        从理论上说执行不成功返回FALSE, 但是对与Pentiums以前的机器只能是失败;
+    2. 获取时间
+        int64_t t;
+        QueryPerformanceCounter((LARGE_INTEGER*)(&t));
+        获取的是从系统启动之后的滴答数量, 用时间除以频率就是从系统其他之后过
+        去的秒数:
+        t = t / freq;
+        如果想获取毫秒数, 将每秒滴答的频率转换为每毫秒滴答即可:
+        freq =  freq / 1000;
+        QueryPerformanceCounter((LARGE_INTEGER*)(&t));
+        t = t /freq;
+> ### **Linux**
+    使用gettimeofday
+    这个函数需要使用到<sys/time.h>和timeval结构;
+    timeval结构的tv_sec是从1970年之后的秒数量, tv_usec是从当前秒数过去的微
+    秒数
+> ### **功能代码**
+    uint64_t GetTimeMS(void) {
+    #ifdef WIN_PLATFORM
+      uint64_t t;
+      QueryPerformanceCounter((LARGE_INTEGER*)(&t));
+      return t / freq;
+    #else
+      struct timeval t;
+      uint64_t s;
+      gettimeofday(&t, 0);
+      s = t.tv_sec;
+      s *= 1000;
+      s += (t.tv_usec / 1000);
+      return s;
+    #endif
+    }
