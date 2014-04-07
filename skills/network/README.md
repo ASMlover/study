@@ -141,3 +141,8 @@
     ECONNABORTED    ~
     ETIMEDOUT       ~
     ECONNRESET      ~
+
+
+
+## **关于端口**
+    Linux不允许打开1024以下的端口, 除非具有root权限
