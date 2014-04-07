@@ -49,3 +49,15 @@
 > ### **治疗用品**
     主要作用与生命点数治疗者一样, 计算一个介于最小值和最大值之间的随机数, 并
     将此数添加给玩家;
+
+
+
+## **战斗**
+    当玩家受到攻击, 随机一个0~99的数, 玩家的准确度-敌人的躲避属性, 其结果与
+    此随机数进行比较, 如果此随机数小于此计算出来的值, 则敌人被攻击;
+    if random(0,99) < (player.accuracy - enemy.dodging) then hit 
+
+    伤害计算, 首先是武器的一个范围随机数, 然后加上玩家的撞击伤害再减去敌人的
+    伤害吸收;
+    damage = random(weapon.min,weapon.max) + player.SD - enemy.DA 
+    if damage < 1 then damage = 1
