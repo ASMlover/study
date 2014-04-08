@@ -90,6 +90,7 @@
 
 // utilities header
 #include "uncopyable.h"
+#include "static_assert.h"
 #include "locker.h"
 #include "singleton.h"
 #include "auto_ptr.h"

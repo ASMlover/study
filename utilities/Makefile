@@ -28,7 +28,7 @@
 OUT	= util 
 RM	= rm 
 CC	= g++
-CFLAGS	= -g -O2 -Wall
+CFLAGS	= -g -O2 -Wall -std=c++0x -Wno-comment
 INCLUDES = -I./utilities 
 LDFLAGS	= -lpthread
 OBJS	= main.o
