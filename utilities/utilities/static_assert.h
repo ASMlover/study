@@ -67,6 +67,7 @@ namespace util {
 
 // use strongly enumerates with C++11
 //
+// attention: must use compile options -std=c++0x
 template <bool expr> struct CompileTimeChecker;
 template <> struct CompileTimeChecker<true> {
   enum class Checker : bool {
