@@ -48,7 +48,7 @@ void Ref::Release(void) {
 }
 
 Ref* Ref::Autorelease(void) {
-  PoolManager::Instance().GetCurrentPool()->AddObject(this);
+  PoolManager::GetInstance()->GetCurrentPool()->AddObject(this);
   return this;
 }
 
