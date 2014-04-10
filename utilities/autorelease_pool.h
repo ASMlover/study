@@ -30,6 +30,8 @@
 #include <vector>
 #include <deque>
 
+
+class Ref;
 class AutoreleasePool : private util::UnCopyable {
   std::string       name_;
   std::vector<Ref*> objects_array_;

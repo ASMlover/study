@@ -54,7 +54,7 @@ void AutoreleasePool::Clear(void) {
   for (const auto& obj : objects_array_) 
     obj->Release();
 
-  objects_array_.Clear();
+  objects_array_.clear();
 }
 
 bool AutoreleasePool::Contains(Ref* object) const {
@@ -70,7 +70,7 @@ bool AutoreleasePool::Contains(Ref* object) const {
 
 
 static PoolManager* s_sharedPoolManager = nullptr;
-PoolManager::GetInstance(void) {
+PoolManager* PoolManager::GetInstance(void) {
   if (nullptr == s_sharedPoolManager) {
     s_sharedPoolManager = new PoolManager();
     s_sharedPoolManager->current_pool_ 
@@ -122,7 +122,7 @@ void PoolManager::Push(AutoreleasePool* pool) {
 }
 
 void PoolManager::Pop(void) {
-  if (!pop_back.empty())
+  if (!pool_stack_.empty())
     pool_stack_.pop_back();
 
   if (pool_stack_.size() > 1)
