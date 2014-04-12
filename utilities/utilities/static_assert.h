@@ -70,9 +70,13 @@ namespace util {
 // attention: must use compile options -std=c++0x
 template <bool expr> struct CompileTimeChecker;
 template <> struct CompileTimeChecker<true> {
+#if defined(USE_CPP0X)
   enum class Checker : bool {
     CHECKER_VALUE = true, 
   };
+#else
+  enum Checker { CHECKER_VALUE = 1, };
+#endif
 };
 #define STATIC_ASSERT(expr) do {\
   (void)CompileTimeChecker<(expr)>::Checker::CHECKER_VALUE;\
