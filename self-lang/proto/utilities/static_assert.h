@@ -24,66 +24,65 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __UTIL_POSIX_THREAD_HEADER_H__
-#define __UTIL_POSIX_THREAD_HEADER_H__
-
+#ifndef __STATIC_ASSERT_HEADER_H__
+#define __STATIC_ASSERT_HEADER_H__
 
 namespace util {
 
+// use nonzero array to implement
+//
+// #define STATIC_ASSERT(expr) do {\
+//   char __assert_array[(expr) ? 1 : 0];\
+//   __assert_array;\
+// } while (0)
 
-class Thread : private UnCopyable {
-  pthread_t           thread_id_;
-  SmartPtr<Routiner>  routine_;
-public:
-  Thread(void) 
-    : thread_id_(0)
-    , routine_(static_cast<Routiner*>(NULL)) {
-  }
 
-  ~Thread(void) {
-    Join();
-  }
+// implemention with C++11
+// #define STATIC_ASSERT(expr) do {\
+//   enum class Checker {
+//     CHECKER_VALUE = 1 / static_cast<int>(expr), 
+//   };
+// } while (0)
 
-  template <typename R>
-  void Create(R routine, void* argument = NULL) {
-    routine_ = SmartPtr<Routiner>(new ThreadRoutiner<R>(routine, argument));
-    if (NULL == routine_.Get())
-      return;
 
-    UTIL_ASSERT(0 == 
-        pthread_create(&thread_id_, 0, &Thread::Routine, this));
-  }
 
-  void Join(void) {
-    if (0 != thread_id_) {
-      pthread_join(thread_id_, 0);
-      thread_id_ = 0;
-    }
-  }
+// use incomplete type to implement 
+//
+// template <bool expr> struct CompileTimeChecker;
+// template <> struct CompileTimeChecker<true> {};
+// #define STATIC_ASSERT(expr) do {\
+//   CompileTimeChecker<(expr)>();\
+// } while (0)
 
-  uint32_t GetID(void) const {
-    return pthread_self();
-  }
 
-  void Kill(void) {
-    if (0 != thread_id_) {
-      pthread_cancel(thread_id_);
-      thread_id_ = 0;
-    }
-  }
-private:
-  static void* Routine(void* arg) {
-    Thread* self = static_cast<Thread*>(arg);
-    if (NULL == self)
-      return NULL;
+// use sizeof to implement 
+//
+// template <bool expr> struct CompileTimeChecker;
+// template <> struct CompileTimeChecker<true> {};
+// #define STATIC_ASSERT(expr) do {\
+//   (void)sizeof(CompileTimeChecker<(expr)>);\
+// } while (0)
 
-    self->routine_->Run();
 
-    return NULL;
-  }
+
+// use strongly enumerates with C++11
+//
+// attention: must use compile options -std=c++0x
+template <bool expr> struct CompileTimeChecker;
+template <> struct CompileTimeChecker<true> {
+#if defined(USE_CPP0X)
+  enum class Checker : bool {
+    CHECKER_VALUE = true, 
+  };
+#else
+  enum Checker { CHECKER_VALUE = 1, };
+#endif
 };
+#define STATIC_ASSERT(expr) do {\
+  (void)CompileTimeChecker<(expr)>::Checker::CHECKER_VALUE;\
+} while (0)
 
 
 }
 
-#endif  // __UTIL_POSIX_THREAD_HEADER_H__
+#endif  // __STATIC_ASSERT_HEADER_H__

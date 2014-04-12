@@ -41,11 +41,11 @@ public:
   }
 
   ~Thread(void) {
-    Stop();
+    Join();
   }
 
   template <typename R>
-  void Start(R routine, void* argument = NULL) {
+  void Create(R routine, void* argument = NULL) {
     routine_ = SmartPtr<Routiner>(new ThreadRoutiner<R>(routine, argument));
     if (NULL == routine_.Get())
       return;
@@ -54,9 +54,20 @@ public:
         pthread_create(&thread_id_, 0, &Thread::Routine, this));
   }
 
-  void Stop(void) {
+  void Join(void) {
     if (0 != thread_id_) {
       pthread_join(thread_id_, 0);
+      thread_id_ = 0;
+    }
+  }
+
+  uint32_t GetID(void) const {
+    return pthread_self();
+  }
+
+  void Kill(void) {
+    if (0 != thread_id_) {
+      pthread_cancel(thread_id_);
       thread_id_ = 0;
     }
   }

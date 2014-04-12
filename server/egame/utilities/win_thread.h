@@ -47,11 +47,11 @@ public:
   }
 
   ~Thread(void) {
-    Stop();
+    Join();
   }
 
   template <typename R>
-  void Start(R routine, void* argument = NULL) {
+  void Create(R routine, void* argument = NULL) {
     routine_ = SmartPtr<Routiner>(new ThreadRoutiner<R>(routine, argument));
     if (NULL == routine_.Get())
       return;
@@ -67,12 +67,25 @@ public:
     CloseHandle(start_event_);
   }
 
-  void Stop(void) {
+  void Join(void) {
     if (NULL != thread_) {
       WaitForSingleObject(thread_, INFINITE);
 
       CloseHandle(thread_);
       thread_ = NULL;
+    }
+  }
+
+  uint32_t GetID(void) const {
+    GetCurrentThreadId();
+  }
+
+  void Kill(void) {
+    if (NULL != thread_) {
+      TerminateThread(thread_, 0);
+
+      CloseHandle(thread_);
+      thread_ = 0;
     }
   }
 private:
