@@ -169,3 +169,13 @@
                   MotionStreak
     实现游戏对象的运动轨迹上渐隐效果(比如子弹的运动轨迹);
 
+
+
+## **绘制图形**
+    DrawPrimitives功能集:
+    1) 绘制直线(drawLine)
+    2) 绘制点(drawPoint)
+    3) 画圆(drawCircle)
+    4) 画多边形(drawPoly)
+    5) 画贝塞尔曲线(drawCubicBezier)
+
