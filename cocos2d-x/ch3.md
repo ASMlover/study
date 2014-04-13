@@ -120,3 +120,15 @@
     2) 根据需要的新建场景的切换动画选择TransitionScene子类, 通过create将之前
        建的场景传入其中, 并设置其他参数
     3) 调用Director::getInstance()->replaceScene替换新场景
+
+
+
+## **布景层**
+        Ref
+         ^
+         |
+        Node
+         ^
+         |
+        Layer
+    Layer可以处理输入, 包括触屏和加速度传感器;
