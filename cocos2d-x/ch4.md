@@ -99,3 +99,20 @@
 > ### **过程动作**
     进入游戏之间需要载入动作, 需要一些动作来实现载入时的动画; ProgressTo和
     ProgressFromTo可以实现这个动画, 但执行这种动作的节点是ProgressTimer;
+
+
+
+## **2. 动作管理类**
+            Ref
+             ^
+             |
+        ActionManager
+    ActionManager是一个管理所有动作的单例, 当Node执行runAction时会把动作通过
+    管理类的addAction函数将对象传递给ActionManager, 然后该实例再把这个动作添
+    加到自己的动作序列中;
+    ActionManager定时刷新自己的upadte, 在upadte中调用行为序列中每个动作的
+    step, 这些方法再根据自身的完成度去update或结束行为;
+    一般使用Node的stopAction/stopActionByTag/stopAllActions就可以管理动作, 
+    但以下情况需要使用ActionManager:
+      * 动作的执行者不是同一个节点;
+      * 需要暂停/重启活动;
