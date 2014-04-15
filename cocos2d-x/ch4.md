@@ -142,3 +142,15 @@
               && s2->getGrid() != nullptr)
             s2->setGrid(nullptr);
         }
+
+
+
+
+## **4. 动画**
+> ### **与动画相关的类**
+    * AnimationCache: 是一个单例, 缓存所有的动画和动画帧
+    * AnimationFrame: 是单张的图片, 可以通过精灵帧定义
+    * Animation: 就是动画, 存储一个动画动作需要的所有帧, 可通过帧数组定义
+    * Animate就是一个动作类, 可通过Animation动画来定义Animate动画动作
+> ### **使用plist配置文件实现动画**
+    plist通常存储用户设置, 也可以存储捆绑的信息;
