@@ -116,3 +116,29 @@
     但以下情况需要使用ActionManager:
       * 动作的执行者不是同一个节点;
       * 需要暂停/重启活动;
+
+
+
+
+## **3. 网格动作**
+            Ref
+             ^
+             |
+          GridBase
+             ^
+         ____|____ 
+         |       |
+       Grid3D  TiledGrid3D
+    网格的每个子块都可以分离出来, 运行网格动作的节点好像被分成了大小相同的很
+    多矩形, 通过这些矩形的动作形成整体动作, 这些矩形就好像形成了一个矩阵;
+
+    使用网格之前需要取消OpenGL的深度检测:
+    Director::getInstance()->setDepthTest(false);
+
+    网格动作结束后需要把网格清空:
+        void TextLayer::checkAnim(float dt) {
+          Node* s2 = getChildByTag(kTagBackground);
+          if (s2->getNumberOfRunningActions() == 0 
+              && s2->getGrid() != nullptr)
+            s2->setGrid(nullptr);
+        }
