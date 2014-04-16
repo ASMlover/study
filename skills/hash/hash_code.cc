@@ -79,3 +79,20 @@ uint32_t jsHash(const String& s) {
 
   return hash;
 }
+
+// PJW HASH 
+uint32_t pjwHash(const String& s) {
+  uint32_t bitsInUint = 32;
+  uint32_t threeQuarters = (bitsInUint * 3) / 4;
+  uint32_t oneEighth = (bitsInUint / 8);
+  uint32_t highBits = (0xffffffff) << (bitsInUint - oneEighth);
+  uint32_t hash = 0, test = 0;
+
+  for (auto c : s) {
+    hash = (hash << oneEighth) + c;
+    if ((test = hash & highBits) != 0)
+      hash = ((hash ^ (test >> threeQuarters)) & (~highBits));
+  }
+
+  return hash;
+}
