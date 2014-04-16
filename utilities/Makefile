@@ -31,7 +31,7 @@ CC	= g++
 CFLAGS	= -g -O2 -Wall -Wno-comment -std=c++0x
 INCLUDES = -I./utilities 
 LDFLAGS	= -lpthread
-OBJS	= main.o ref.o autorelease_pool.o
+OBJS	= main.o ref.o autorelease_pool.o dispatcher.o
 
 
 
