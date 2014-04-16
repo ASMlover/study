@@ -58,3 +58,15 @@ uint32_t msHash(const char* s, int len) {
 
   return (num1 + (num2 * 0x5d588b65));
 }
+
+// RS(Robert Sedgwicks) HASH 
+uint32_t rsHash(const String& s) {
+  uint32_t a = 63689, b = 378551;
+  uint32_t hash = 0;
+  for (auto c : s) {
+    hash = hash * a + c;
+    a *= b;
+  }
+
+  return hash;
+}
