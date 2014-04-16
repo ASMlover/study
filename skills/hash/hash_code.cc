@@ -70,3 +70,12 @@ uint32_t rsHash(const String& s) {
 
   return hash;
 }
+
+// JS(Justin Sobel) HASH 
+uint32_t jsHash(const String& s) {
+  uint32_t hash = 1315423911;
+  for (auto c : s) 
+    hash ^= ((hash << 5) + c + (hash >> 2));
+
+  return hash;
+}
