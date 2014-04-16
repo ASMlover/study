@@ -110,3 +110,53 @@ uint32_t elfHash(const String& s) {
 
   return hash;
 }
+
+// BKDR(Brian Kernighan & Dennis Ritchie) HASH 
+uint32_t bkdrHash(const String& s) {
+  uint32_t seed = 131;  // 131 1313 13131 131313 1313131 13131313 etc
+  uint32_t hash = 0;
+  for (auto c : s) 
+    hash = (hash * seed) + c;
+
+  return hash;
+}
+
+// SDBM HASH 
+uint32_t sdbmHash(const String& s) {
+  uint32_t hash = 0;
+  for (auto c : s) 
+    hash = c + (hash << 6) + (hash << 16) - hash;
+
+  return hash;
+}
+
+// DJB(Daniel J.Bernstein) HASH 
+uint32_t djbHash(const String& s) {
+  uint32_t hash = 5381;
+  for (auto c : s) 
+    hash = ((hash << 5) + hash) + c;
+
+  return hash;
+}
+
+// DEK(Knuth) HASH 
+uint32_t dekHash(const String& s) {
+  uint32_t hash = s.length();
+  for (auto c : s) 
+    hash = ((hash << 5) ^ (hash >> 27)) ^ c;
+
+  return hash;
+}
+
+// AP(Arash Partow) HASH 
+uint32_t apHash(const String& s) {
+  uint32_t hash = 0xaaaaaaaa;
+  for (int i = 0; i < s.length(); ++i) {
+    if ((i & 1) == 0)
+      hash ^= ((hash << 7) ^ s[i] * (hash >> 3));
+    else 
+      hash ^= (~((hash << 11) + s[i] ^ (hash >> 5)));
+  }
+
+  return hash;
+}
