@@ -96,3 +96,17 @@ uint32_t pjwHash(const String& s) {
 
   return hash;
 }
+
+// ELF HASH (used in unix)
+uint32_t elfHash(const String& s) {
+  uint32_t hash = 0;
+  uint32_t x = 0;
+  for (auto c : s) {
+    hash = (hash << 4) + c;
+    if ((x = hash & 0xf0000000) != 0)
+      hash ^= (x >> 24);
+    hash &= ~x;
+  }
+
+  return hash;
+}
