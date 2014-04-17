@@ -24,55 +24,50 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TINYCLT_HEADER_H__
-#define __TINYCLT_HEADER_H__
+#ifndef __TINYCLT_POSIX_THREAD_HEADER_H__
+#define __TINYCLT_POSIX_THREAD_HEADER_H__
 
-#if !defined(USE_WINDOWS) || !defined(USE_POSIX)
-# if defined(_WINDOWS_) || defined(_MSC_VER)
-#   define USE_WINDOWS
-# elif defined(__linux__) || defined(__GNUC__)
-#   define USE_POSIX
-# else
-#   error "Unsupport this platform !"
-# endif
-#endif
+class Thread : private UnCopyable {
+  pthread_t thread_id_;
+  RoutineType routine_;
+  void* argument_;
+public:
+  Thread(void)
+    : thread_id_(0)
+    , routine_(nullptr)
+    , argument_(nullptr) {
+  }
 
-#if defined(USE_WINDOWS)
-# if !defined(_WINDOWS_)
-#   include <winsock2.h>
-# endif
-# include <process.h>
-#elif defined(USE_POSIX)
-# include <sys/types.h>
-# include <sys/socket.h>
-# include <arpa/inet.h>
-# include <netinet/in.h>
-# include <netinet/tcp.h>
-# include <unistd.h>
-# include <pthread.h>
-#endif
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
+  ~Thread(void) {
+    Join();
+  }
 
-#include <functional>
-#include <memory>
+  void Create(const RoutineType& routine, void* argument = nullptr) {
+    routine_ = routine;
+    argument_ = argument;
 
-#define TC_ASSERT(expr) do {\
-  if (!(expr)) {\
-    fprintf(stderr, \
-        "assertion failed in %s at %d : %s", \
-        __FILE__, \
-        __LINE__, \
-        #expr);\
-    fflush(stderr);\
-    abort();\
-  }\
-} while (0)
+    TC_ASSERT(0 == pthread_create(
+          &thread_id_, nullptr, &Thread::Routine, this));
+  }
 
+  void Join(void) {
+    if (0 != thread_id_) {
+      pthread_join(thread_id_, 0);
 
-#include "tc_uncopyable.h"
-#include "tc_locker.h"
-#include "tc_thread.h"
+      thread_id_ = 0;
+    }
+  }
+private:
+  static void* Routine(void* argument) {
+    Thread* self = static_cast<Thread*>(argument);
+    if (nullptr == self)
+      return nullptr;
 
-#endif  // __TINYCLT_HEADER_H__
+    if (nullptr != self->routine_)
+      self->routine_(self->argument_);
+
+    return nullptr;
+  }
+};
+
+#endif  // __TINYCLT_POSIX_THREAD_HEADER_H__

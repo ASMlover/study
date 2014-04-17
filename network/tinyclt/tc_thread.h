@@ -24,55 +24,17 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TINYCLT_HEADER_H__
-#define __TINYCLT_HEADER_H__
+#ifndef __TINYCLT_THREAD_HEADER_H__
+#define __TINYCLT_THREAD_HEADER_H__
 
-#if !defined(USE_WINDOWS) || !defined(USE_POSIX)
-# if defined(_WINDOWS_) || defined(_MSC_VER)
-#   define USE_WINDOWS
-# elif defined(__linux__) || defined(__GNUC__)
-#   define USE_POSIX
-# else
-#   error "Unsupport this platform !"
-# endif
-#endif
+typedef std::function<void (void*)> RoutineType;
+#define THREAD_CALLBACK(__selector__, __target__)\
+  std::bind(&__selector__, (__target__), std::placeholders::_1)
+
 
 #if defined(USE_WINDOWS)
-# if !defined(_WINDOWS_)
-#   include <winsock2.h>
-# endif
-# include <process.h>
 #elif defined(USE_POSIX)
-# include <sys/types.h>
-# include <sys/socket.h>
-# include <arpa/inet.h>
-# include <netinet/in.h>
-# include <netinet/tcp.h>
-# include <unistd.h>
-# include <pthread.h>
-#endif
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
+# include "tc_posix_thread.h"
+#endif 
 
-#include <functional>
-#include <memory>
-
-#define TC_ASSERT(expr) do {\
-  if (!(expr)) {\
-    fprintf(stderr, \
-        "assertion failed in %s at %d : %s", \
-        __FILE__, \
-        __LINE__, \
-        #expr);\
-    fflush(stderr);\
-    abort();\
-  }\
-} while (0)
-
-
-#include "tc_uncopyable.h"
-#include "tc_locker.h"
-#include "tc_thread.h"
-
-#endif  // __TINYCLT_HEADER_H__
+#endif  // __TINYCLT_THREAD_HEADER_H__
