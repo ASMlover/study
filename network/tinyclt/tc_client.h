@@ -24,50 +24,38 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TINYCLT_POSIX_THREAD_HEADER_H__
-#define __TINYCLT_POSIX_THREAD_HEADER_H__
+#ifndef __TINYCLT_CLIENT_HEADER_H__
+#define __TINYCLT_CLIENT_HEADER_H__
 
-class Thread : private UnCopyable {
-  pthread_t thread_id_;
-  RoutineType routine_;
-  void* argument_;
+#define CLIENT_DISP_CALLBACK(__selector__, __target__)\
+  std::bind(&__selector__, &(__target__), \
+      std::placeholders::_1, std::placeholders::_2)
+
+class Socket;
+class Thread;
+class Client : private UnCopyable {
+  typedef std::function<bool (const void*, uint32_t)> DispatcherType;
+
+  bool connected_;
+  uint32_t wsequence_;
+  DispatcherType dispatcher_;
+  std::shared_ptr<Socket> client_;
+  std::shared_ptr<Thread> thread_;
 public:
-  Thread(void)
-    : thread_id_(0)
-    , routine_(nullptr)
-    , argument_(nullptr) {
+  Client(void);
+  ~Client(void);
+
+  inline bool IsConnected(void) const {
+    return connected_;
   }
 
-  ~Thread(void) {
-    Join();
-  }
+  bool Connect(const char* address, 
+      uint16_t port, DispatcherType dispatcher);
+  void Disconnect(void);
 
-  void Create(RoutineType routine, void* argument = nullptr) {
-    routine_ = routine;
-    argument_ = argument;
-
-    TC_ASSERT(0 == pthread_create(
-          &thread_id_, nullptr, &Thread::Routine, this));
-  }
-
-  void Join(void) {
-    if (0 != thread_id_) {
-      pthread_join(thread_id_, 0);
-
-      thread_id_ = 0;
-    }
-  }
+  bool Write(const void* buffer, uint32_t bytes);
 private:
-  static void* Routine(void* argument) {
-    Thread* self = static_cast<Thread*>(argument);
-    if (nullptr == self)
-      return nullptr;
-
-    if (nullptr != self->routine_)
-      self->routine_(self->argument_);
-
-    return nullptr;
-  }
+  void ReadRoutine(void* argument);
 };
 
-#endif  // __TINYCLT_POSIX_THREAD_HEADER_H__
+#endif  // __TINYCLT_CLIENT_HEADER_H__
