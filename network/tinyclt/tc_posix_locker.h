@@ -24,54 +24,49 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TINYCLT_HEADER_H__
-#define __TINYCLT_HEADER_H__
-
-#if !defined(USE_WINDOWS) || !defined(USE_POSIX)
-# if defined(_WINDOWS_) || defined(_MSC_VER)
-#   define USE_WINDOWS
-# elif defined(__linux__) || defined(__GNUC__)
-#   define USE_POSIX
-# else
-#   error "Unsupport this platform !"
-# endif
-#endif
-
-#if defined(USE_WINDOWS)
-# if !defined(_WINDOWS_)
-#   include <winsock2.h>
-# endif
-# include <process.h>
-#elif defined(USE_POSIX)
-# include <sys/types.h>
-# include <sys/socket.h>
-# include <arpa/inet.h>
-# include <netinet/in.h>
-# include <netinet/tcp.h>
-# include <unistd.h>
-# include <pthread.h>
-#endif
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <functional>
-#include <memory>
-
-#define TC_ASSERT(expr) do {\
-  if (!(expr)) {\
-    fprintf(stderr, \
-        "assertion failed in %s at %d : %s", \
-        __FILE__, \
-        __LINE__, \
-        #expr);\
-    fflush(stderr);\
-    abort();\
-  }\
-} while (0)
+#ifndef __TNIYCLT_POSIX_LOCKER_HEADER_H__
+#define __TNIYCLT_POSIX_LOCKER_HEADER_H__
 
 
-#include "tc_uncopyable.h"
-#include "tc_locker.h"
+class Mutex : private UnCopyable {
+  pthread_mutex_t mutex_;
+public:
+  Mutex(void) {
+    TC_ASSERT(0 == pthread_mutex_init(&mutex_, nullptr));
+  }
 
-#endif  // __TINYCLT_HEADER_H__
+  ~Mutex(void) {
+    TC_ASSERT(0 == pthread_mutex_destroy(&mutex_));
+  }
+
+  inline void Lock(void) {
+    TC_ASSERT(0 == pthread_mutex_lock(&mutex_));
+  }
+
+  inline void Unlock(void) {
+    TC_ASSERT(0 == pthread_mutex_unlock(&mutex_));
+  }
+};
+
+
+class SpinLock : private UnCopyable {
+  pthread_spinlock_t spinlock_;
+public:
+  SpinLock(void) {
+    TC_ASSERT(0 == pthread_spin_init(&spinlock_, 0));
+  }
+
+  ~SpinLock(void) {
+    TC_ASSERT(0 == pthread_spin_destroy(&spinlock_));
+  }
+
+  inline void Lock(void) {
+    TC_ASSERT(0 == pthread_spin_lock(&spinlock_));
+  }
+
+  inline void Unlock(void) {
+    TC_ASSERT(0 == pthread_spin_unlock(&spinlock_));
+  }
+};
+
+#endif  // __TNIYCLT_POSIX_LOCKER_HEADER_H__

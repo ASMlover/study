@@ -24,54 +24,38 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TINYCLT_HEADER_H__
-#define __TINYCLT_HEADER_H__
+#ifndef __TINYCLT_LOCKER_HEADER_H__
+#define __TINYCLT_LOCKER_HEADER_H__
 
-#if !defined(USE_WINDOWS) || !defined(USE_POSIX)
-# if defined(_WINDOWS_) || defined(_MSC_VER)
-#   define USE_WINDOWS
-# elif defined(__linux__) || defined(__GNUC__)
-#   define USE_POSIX
-# else
-#   error "Unsupport this platform !"
-# endif
-#endif
+template <typename Locker> 
+class LockerGuard : private UnCopyable {
+  LOcker& locker_;
+public:
+  explicit LockerGuard(Locker& locker) 
+    : locker_(locker) {
+    locker_.Lock();  
+  }
+
+  ~LockerGuard(void) {
+    locker_.Unlock();
+  }
+};
+
+
+class DummyLock : private UnCopyable {
+public:
+  DummyLock(void) {}
+  ~DummyLock(void) {}
+
+  inline void Lock(void) {}
+  inline void Unlock(void) {}
+}
+
+
 
 #if defined(USE_WINDOWS)
-# if !defined(_WINDOWS_)
-#   include <winsock2.h>
-# endif
-# include <process.h>
 #elif defined(USE_POSIX)
-# include <sys/types.h>
-# include <sys/socket.h>
-# include <arpa/inet.h>
-# include <netinet/in.h>
-# include <netinet/tcp.h>
-# include <unistd.h>
-# include <pthread.h>
+# include "tc_posix_locker.h"
 #endif
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 
-#include <functional>
-#include <memory>
-
-#define TC_ASSERT(expr) do {\
-  if (!(expr)) {\
-    fprintf(stderr, \
-        "assertion failed in %s at %d : %s", \
-        __FILE__, \
-        __LINE__, \
-        #expr);\
-    fflush(stderr);\
-    abort();\
-  }\
-} while (0)
-
-
-#include "tc_uncopyable.h"
-#include "tc_locker.h"
-
-#endif  // __TINYCLT_HEADER_H__
+#endif  // __TINYCLT_LOCKER_HEADER_H__
