@@ -29,7 +29,7 @@
 
 template <typename Locker> 
 class LockerGuard : private UnCopyable {
-  LOcker& locker_;
+  Locker& locker_;
 public:
   explicit LockerGuard(Locker& locker) 
     : locker_(locker) {
@@ -49,7 +49,7 @@ public:
 
   inline void Lock(void) {}
   inline void Unlock(void) {}
-}
+};
 
 
 

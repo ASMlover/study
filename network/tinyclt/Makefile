@@ -30,7 +30,7 @@ RM	= rm
 CC	= g++
 CFLAGS	= -g -O2 -Wall -std=c++0x
 LDFLAGS	= -lpthread
-OBJS	= main.o
+OBJS	= main.o tc_socket.o
 
 
 
