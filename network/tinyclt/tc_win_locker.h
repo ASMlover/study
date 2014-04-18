@@ -24,39 +24,48 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TINYCLT_LOCKER_HEADER_H__
-#define __TINYCLT_LOCKER_HEADER_H__
+#ifndef __TINYCLT_WIN_LOCKER_HEADER_H__
+#define __TINYCLT_WIN_LOCKER_HEADER_H__
 
-template <typename Locker> 
-class LockerGuard : private UnCopyable {
-  Locker& locker_;
+class Mutex : private UnCopyable {
+  CRITICAL_SECTION mutex_;
 public:
-  explicit LockerGuard(Locker& locker) 
-    : locker_(locker) {
-    locker_.Lock();  
+  Mutex(void) {
+    InitializeCriticalSection(&mutex_);
   }
 
-  ~LockerGuard(void) {
-    locker_.Unlock();
+  ~Mutex(void) {
+    DeleteCriticalSection(&mutex_);
+  }
+
+  inline void Lock(void) {
+    EnterCriticalSection(&mutex_);
+  }
+
+  inline void Unlock(void) {
+    LeaveCriticalSection(&mutex_);
   }
 };
 
 
-class DummyLock : private UnCopyable {
+class SpinLock : private UnCopyable {
+  CRITICAL_SECTION spinlock_;
 public:
-  DummyLock(void) {}
-  ~DummyLock(void) {}
+  SpinLock(void) {
+    TC_ASSERT(InitializeCriticalSectionAndSpinCount(&spinlock_, 4000));
+  }
 
-  inline void Lock(void) {}
-  inline void Unlock(void) {}
+  ~SpinLock(void) {
+    DeleteCriticalSection(&spinlock_);
+  }
+
+  inline void Lock(void) {
+    EnterCriticalSection(&spinlock_);
+  }
+
+  void void Unlock(void) {
+    LeaveCriticalSection(&spinlock_);
+  }
 };
 
-
-
-#if defined(USE_WINDOWS)
-# include "tc_win_locker.h"
-#elif defined(USE_POSIX)
-# include "tc_posix_locker.h"
-#endif
-
-#endif  // __TINYCLT_LOCKER_HEADER_H__
+#endif  // __TINYCLT_WIN_LOCKER_HEADER_H__
