@@ -24,18 +24,62 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TINYCLT_THREAD_HEADER_H__
-#define __TINYCLT_THREAD_HEADER_H__
+#ifndef __TINYCLT_WIN_THREAD_HEADER_H__
+#define __TINYCLT_WIN_THREAD_HEADER_H__
 
-typedef std::function<void (void*)> RoutineType;
-#define THREAD_CALLBACK(__selector__, __target__)\
-  std::bind(&__selector__, (__target__), std::placeholders::_1)
+class Thread : private UnCopyable {
+  HANDLE thread_;
+  HANDLE start_event_;
+  RoutineType routine_;
+  void& argument_;
+public:
+  Thread(void) 
+    : thread_(nullptr) 
+    , start_event_(nullptr) 
+    , routine_(nullptr) 
+    , argument_(nullptr) {
+  }
 
+  ~Thread(void) {
+    Join();
+  }
 
-#if defined(USE_WINDOWS)
-# include "tc_win_thread.h"
-#elif defined(USE_POSIX)
-# include "tc_posix_thread.h"
-#endif 
+  void Create(RoutineType routine, void* argument = nullptr) {
+    routine_ = routine;
+    argument_ = argument;
 
-#endif  // __TINYCLT_THREAD_HEADER_H__
+    start_event_ = CreateEvent(nullptr, TRUE, FALSE, nullptr);
+    TC_ASSERT(nullptr != start_event_);
+
+    thread_ = (HANDLE)_beginthreadex(nullptr, 
+        0, &Thread::Routine, this, 0, nullptr);
+    TC_ASSERT(nullptr != thread_);
+
+    WaitForSingleObject(start_event_, INFINITE);
+    CloseHandle(start_event_);
+  }
+
+  void Join(void) {
+    if (nullptr != thread_) {
+      WaitForSingleObject(thread_, INFINITE);
+
+      CloseHandle(thread_); 
+      thread_ = nullptr;
+    }
+  }
+private:
+  static UINT WINAPI Routine(void* argument) {
+    Thread* self = static_cast<Thread*>(argument);
+    if (nullptr == self)
+      return 0;
+
+    SetEvent(self->start_event_);
+
+    if (nullptr != self->routine_) 
+      self->routine_(self->argument_);
+
+    return 0;
+  }
+};
+
+#endif  // __TINYCLT_WIN_THREAD_HEADER_H__
