@@ -24,63 +24,40 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TINYCLT_HEADER_H__
-#define __TINYCLT_HEADER_H__
-
-#if !defined(USE_WINDOWS) || !defined(USE_POSIX)
-# if defined(_WINDOWS_) || defined(_MSC_VER)
-#   define USE_WINDOWS
-# elif defined(__linux__) || defined(__GNUC__)
-#   define USE_POSIX
-# else
-#   error "Unsupport this platform !"
-# endif
-#endif
-
-#if defined(USE_WINDOWS)
-# if !defined(_WINDOWS_)
-#   include <winsock2.h>
-# endif
-# include <process.h>
-#elif defined(USE_POSIX)
-# include <sys/types.h>
-# include <sys/socket.h>
-# include <arpa/inet.h>
-# include <netinet/in.h>
-# include <netinet/tcp.h>
-# include <unistd.h>
-# include <pthread.h>
-#endif
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <functional>
-#include <memory>
-
-#include <queue>
-
-#define TC_ASSERT(expr) do {\
-  if (!(expr)) {\
-    fprintf(stderr, \
-        "assertion failed in %s at %d : %s", \
-        __FILE__, \
-        __LINE__, \
-        #expr);\
-    fflush(stderr);\
-    abort();\
-  }\
-} while (0)
+#include "tc_header.h"
+#include "tc_msg_queue.h"
 
 
-enum NetType {
-  NETTYPE_INVAL = -1, 
-  NETTYPE_ERR   = -1, 
-};
+
+MsgQueue::MsgQueue(void) {
+}
+
+MsgQueue::~MsgQueue(void) {
+  Clear();
+}
+
+void MsgQueue::Push(const NetMsg& msg) {
+  LockerGuard<SpinLock> guard(locker_);
+
+  msg_queue_.push(msg);
+}
+
+bool MsgQueue::Pop(NetMsg& msg) {
+  LockerGuard<SpinLock> guard(locker_);
+
+  if (msg_queue_.empty())
+    return false;
+
+  msg = msg_queue_.front();
+  msg_queue_.pop();
+
+  return true;
+}
 
 
-#include "tc_uncopyable.h"
-#include "tc_locker.h"
-#include "tc_thread.h"
-
-#endif  // __TINYCLT_HEADER_H__
+void MsgQueue::Clear(void) {
+  while (!msg_queue_.empty()) {
+    msg_queue_.front().Reset();
+    msg_queue_.pop();
+  }
+}
