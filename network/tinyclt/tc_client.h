@@ -29,18 +29,19 @@
 
 #define CLIENT_DISP_CALLBACK(__selector__, __target__)\
   std::bind(&__selector__, &(__target__), \
-      std::placeholders::_1, std::placeholders::_2)
+      std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 
 class Socket;
 class Thread;
+class MsgQueue;
 class Client : private UnCopyable {
-  typedef std::function<bool (const void*, uint32_t)> DispatcherType;
+  typedef std::function<bool (int, const void*, uint32_t)> DispatcherType;
 
   bool connected_;
   uint32_t wsequence_;
-  DispatcherType dispatcher_;
   std::shared_ptr<Socket> client_;
   std::shared_ptr<Thread> thread_;
+  std::shared_ptr<MsgQueue> msg_queue_;
 public:
   Client(void);
   ~Client(void);
@@ -49,9 +50,10 @@ public:
     return connected_;
   }
 
-  bool Connect(const char* address, 
-      uint16_t port, DispatcherType dispatcher);
+  bool Connect(const char* address, uint16_t port);
   void Disconnect(void);
+
+  bool Dispatch(DispatcherType dispatcher, uint32_t timeout = 100);
 
   bool Write(const void* buffer, uint32_t bytes);
 private:

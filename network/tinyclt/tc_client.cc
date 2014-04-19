@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include "tc_header.h"
 #include "tc_socket.h"
+#include "tc_msg_queue.h"
 #include "tc_client.h"
 
 
@@ -41,21 +42,16 @@ static char s_rbuffer[BUFFER_LEN];
 Client::Client(void)
   : connected_(false) 
   , wsequence_(0) 
-  , dispatcher_(nullptr) 
   , client_(new Socket()) 
-  , thread_(new Thread()) {
+  , thread_(new Thread()) 
+  , msg_queue_(new MsgQueue()) {
 }
 
 Client::~Client(void) {
 }
 
 
-bool Client::Connect(const char* address, 
-    uint16_t port, DispatcherType dispatcher) {
-  if (nullptr == dispatcher) 
-    return false;
-  dispatcher_ = dispatcher;
-
+bool Client::Connect(const char* address, uint16_t port) {
   if (connected_) 
     Disconnect();
 
@@ -78,6 +74,27 @@ void Client::Disconnect(void) {
 
   if (nullptr != thread_.get())
     thread_->Join();
+}
+
+bool Client::Dispatch(DispatcherType dispatcher, uint32_t timeout) {
+  if (nullptr == dispatcher)
+    return false;
+
+  uint32_t beg = GetCurrentMS();
+  uint32_t end;
+
+  NetMsg msg;
+  while (msg_queue_->Pop(msg)) {
+    dispatcher(msg.type, msg.buffer, msg.size);
+
+    msg.Reset();
+
+    end = GetCurrentMS();
+    if (end - beg >= timeout)
+      break;
+  }
+
+  return true;
 }
 
 bool Client::Write(const void* buffer, uint32_t bytes) {
@@ -112,8 +129,16 @@ void Client::ReadRoutine(void* argument) {
 
     if (NETTYPE_ERR == client_->Read(head.bytes, s_rbuffer))
       break;
-    dispatcher_(s_rbuffer, head.bytes);
 
+    NetMsg msg;
+    msg.type = NetMsg::MSGTYPE_DATA;
+    msg.buffer = new char[head.bytes];
+    if (nullptr != msg.buffer) {
+      memcpy(msg.buffer, s_rbuffer, head.bytes);
+      msg.size = head.bytes;
+
+      msg_queue_->Push(msg);
+    }
     ++rsequence;
   }
 
