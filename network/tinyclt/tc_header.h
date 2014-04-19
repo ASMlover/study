@@ -45,6 +45,7 @@
 #elif defined(USE_POSIX)
 # include <sys/types.h>
 # include <sys/socket.h>
+# include <sys/time.h>
 # include <arpa/inet.h>
 # include <netinet/in.h>
 # include <netinet/tcp.h>
@@ -54,6 +55,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <functional>
 #include <memory>
@@ -77,6 +79,18 @@ enum NetType {
   NETTYPE_INVAL = -1, 
   NETTYPE_ERR   = -1, 
 };
+
+
+#if defined(USE_WINDOWS)
+# define GetCurrentMS timeGetTime
+#elif defined(USE_POSIX)
+inline uint32_t GetCurrentMS(void) {
+  struct timeval tv;
+  if (0 == gettimeofday(&tv, 0))
+    return (tv.tv_sec - 1000000000) * 1000 + (tv.tv_usec / 1000);
+  return 0;
+}
+#endif
 
 
 #include "tc_uncopyable.h"
