@@ -57,6 +57,9 @@
 
 
 // ANSI C++ header
+#if defined(USE_CPP0X)
+# include <functional>
+#endif
 #include <memory>
 #include <string>
 #include <stdexcept>
@@ -101,6 +104,9 @@
 #include "object_pool.h"
 #include "object_mgr.h"
 #include "thread.h"
+#if defined(USE_CPP0X)
+# include "threadex.h"
+#endif
 
 
 
