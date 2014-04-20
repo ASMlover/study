@@ -50,3 +50,12 @@
        C++规则允许编译器优化不出现的临时对象;
        这就是命名返回值优化, 但是这种优化对普通的赋值运算无效, 编译器不能用
        拷贝构造函数取代赋值运算动作;
+
+
+
+## **21. 通过重载避免隐式类型转换**
+      const UPInt operator+(const UPInt& lhs, const UPInt& rhs);
+      const UPInt operator+(const UPInt& lhs, int rhs);
+      const UPInt operator+(int lhs, const UPInt& rhs);
+      没必要实现大量的重载, 除非有理由确信程序使用重载函数以后其整体效率会有
+      显著提高;
