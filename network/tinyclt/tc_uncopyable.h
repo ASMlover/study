@@ -30,7 +30,7 @@
 class UnCopyable {
   UnCopyable(const UnCopyable&);
   UnCopyable& operator=(const UnCopyable&);
-public:
+protected:
   UnCopyable(void) {}
   ~UnCopyable(void) {}
 };
