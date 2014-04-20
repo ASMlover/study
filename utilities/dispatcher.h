@@ -79,7 +79,7 @@ public:
 };
 
 #define DISPATCH_CALLBACK(__selector__, __target__)\
-  std::bind(&(__selector__), &(__target__), std::placeholders::_1)
+  std::bind(&__selector__, &(__target__), std::placeholders::_1)
 
 #define REG_DISPATCHER(__type__, __proto__, __selector__, __target__)\
   Dispatcher::GetSingleton().RegisterDispatcher(\
