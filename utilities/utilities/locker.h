@@ -59,9 +59,9 @@ public:
 }
 
 #if defined(PLATFORM_WIN)
-# include "win_locker.h"
+# include "./win/win_locker.h"
 #elif defined(PLATFORM_LINUX)
-# include "posix_locker.h"
+# include "./posix/posix_locker.h"
 #endif
 
 #endif  // __UTIL_LOCKER_HEADER_H__
