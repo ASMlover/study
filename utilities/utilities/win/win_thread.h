@@ -77,7 +77,7 @@ public:
   }
 
   uint32_t GetID(void) const {
-    GetCurrentThreadId();
+    return GetCurrentThreadId();
   }
 
   void Kill(void) {
