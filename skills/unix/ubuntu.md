@@ -22,3 +22,18 @@
     解决方法:
       $ gpg --keyserver subkeys.pgp.net --recv D45DF2E8FC91AE7E
       $ gpg --export --armor D45DF2E8FC91AE7E | sudo apt-key add -
+
+
+
+## **升级gcc**
+    1. 更新ubuntu源
+        $ sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+        $ sudo apt-get update
+        $ sudo apt-get install gcc-4.8
+        $ sudo apt-get install g++-4.8
+    2. 建立链接到gcc-4.8
+        $ cd /usr/bin/ 
+        $ sudo rm gcc 
+        $ sudo rm g++
+        $ sudo ln -s gcc-4.8 gcc 
+        $ sudo ln -s g++-4.8 g++
