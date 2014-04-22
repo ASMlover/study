@@ -95,4 +95,12 @@
 ## **Linux上github的push 403错误**
     $ vim .git/config
     将url = https://github.com/<user_name>/<proj_name>.git修改为
-      url = https://<user_name>@github.com/<user_name>/<proj_name>.git
+      url = https://<user_name>@github.com/<user_name>/<proj_name>.git 
+
+
+## **在CentOS上安装高版本的GCC**
+    $ cd /etc/yum.repos.d/ 
+    $ wget http://people.centos.org/tru/devtools/devtools.repo 
+    $ yum --enablerepo=testing-devtools-6 install devtoolset-1.0
+    在用户目录下的.bashrc文件中添加 
+    export PATH=/opt/centos/devtoolset-1.0/root/usr/bin/:$PATH
