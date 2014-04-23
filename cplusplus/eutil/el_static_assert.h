@@ -24,41 +24,24 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_UTIL_HEADER_H__
-#define __EL_UTIL_HEADER_H__
+#ifndef __EL_STATIC_ASSERT_HEADER_H__
+#define __EL_STATIC_ASSERT_HEADER_H__
 
 
-#include "el_config.h"
-#if defined(EUTIL_WIN)
-# include <windows.h>
-# include <mmsystem.h>
-# include <process.h>
-#elif defined(EUTIL_LINUX)
-# include <sys/types.h>
-# include <sys/time.h>
-# include <sys/stat.h>
-# include <unistd.h>
-# include <fcntl.h>
-# include <pthread.h>
-# include <limits.h>
+namespace el {
 
-# define MAX_PATH PATH_MAX
-#endif
-#include <sys/timeb.h>
-#include <stdint.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+template <bool expr> struct CompileTimeChecker;
+template <> struct CompileTimeChecker<true> {
+  enum class Checker : bool {
+    CHECKER_VALUE = true, 
+  };
+};
 
-#include <functional>
-#include <string>
-#include <vector>
-#include <queue>
+}
 
-#include "el_uncopyable.h"
-#include "el_static_assert.h"
+#define STATIC_ASSERT(expr) do {\
+  (void)el::CompileTimeChecker<(expr)>::Checker::CHECKER_VALUE;\
+} while (0)
 
 
-#endif  // __EL_UTIL_HEADER_H__
+#endif  // __EL_STATIC_ASSERT_HEADER_H__
