@@ -122,7 +122,7 @@ AutoreleasePool* PoolManager::GetCurrentPool(void) const {
 }
 
 bool PoolManager::IsObjectInPools(Ref* object) const {
-#if USE_CPP0X
+#if defined(USE_CPP0X)
   for (const auto& pool : pool_stack_) {
     if (pool->Contains(object))
       return true;
