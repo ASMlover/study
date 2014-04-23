@@ -12,5 +12,5 @@
 ## **Building eutil**
  * **Linux**
 
-    $ cd eutil
-    $ make
+        $ cd eutil
+        $ make
