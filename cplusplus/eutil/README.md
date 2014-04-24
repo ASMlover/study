@@ -14,3 +14,10 @@
 
         $ cd eutil
         $ make
+
+ * **Windows**
+        
+        Step1: Setting enviroment for using MSVC.
+        Step2:
+          \> cd eutil
+          \> nmake -f Makefile.mk
