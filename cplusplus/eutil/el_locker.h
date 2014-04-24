@@ -24,68 +24,44 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_UTIL_HEADER_H__
-#define __EL_UTIL_HEADER_H__
+#ifndef __EL_LOCKER_HEADER_H__
+#define __EL_LOCKER_HEADER_H__
 
 
-#include "el_config.h"
+namespace el {
 
-// System interfaces headers
+// Helper class to Lock and Unlock a Locker automatically.
+template <typename Locker> 
+class LockerGuard : private UnCopyable {
+  Locker& locker_;
+public:
+  explicit LockerGuard(Locker& locker) 
+    : locker_(locker) {
+    locker_.Lock();
+  }
+
+  ~LockerGuard(void) {
+    locker_.Unlock();
+  }
+};
+
+
+class DummyLock : private UnCopyable {
+public:
+  DummyLock(void) {}
+  ~DummyLock(void) {}
+
+  inline void Lock(void) {}
+  inline void Unlock(void) {}
+};
+
+}
+
 #if defined(EUTIL_WIN)
-# include <windows.h>
-# include <mmsystem.h>
-# include <process.h>
+# include "./win/el_win_locker.h"
 #elif defined(EUTIL_LINUX)
-# include <sys/types.h>
-# include <sys/time.h>
-# include <sys/stat.h>
-# include <unistd.h>
-# include <fcntl.h>
-# include <pthread.h>
-# include <limits.h>
-
-# define MAX_PATH PATH_MAX
+# include "./posix/el_posix_locker.h"
 #endif
 
-// ANSI C headers
-#include <sys/timeb.h>
-#include <stdint.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
-// ANSI C++ headers
-#include <functional>
-#include <memory>
-#include <string>
-#include <stdexcept>
-
-// STL headers
-#include <algorithm>
-#include <queue>
-#include <vector>
-
-// Have our own assert, so we are sure it does not get 
-// optomized away in a release build.
-#define EL_ASSERT(expr) do {\
-  if (!(expr)) {\
-    fprintf(stderr, \
-        "Assertion failed in %s on %d : %s\n", \
-        __FILE__, \
-        __LINE__, \
-        #expr);\
-    fflush(stderr);\
-    abort();\
-  }\
-} while (0)
-
-
-#include "el_uncopyable.h"
-#include "el_static_assert.h"
-#include "el_rval_ref.h"
-#include "el_locker.h"
-
-
-#endif  // __EL_UTIL_HEADER_H__
+#endif  // __EL_LOCKER_HEADER_H__
