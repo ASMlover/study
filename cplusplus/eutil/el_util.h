@@ -29,6 +29,8 @@
 
 
 #include "el_config.h"
+
+// System interfaces headers
 #if defined(EUTIL_WIN)
 # include <windows.h>
 # include <mmsystem.h>
@@ -44,6 +46,8 @@
 
 # define MAX_PATH PATH_MAX
 #endif
+
+// ANSI C headers
 #include <sys/timeb.h>
 #include <stdint.h>
 #include <stdarg.h>
@@ -52,10 +56,31 @@
 #include <string.h>
 #include <time.h>
 
+// ANSI C++ headers
 #include <functional>
+#include <memory>
 #include <string>
-#include <vector>
+#include <stdexcept>
+
+// STL headers
+#include <algorithm>
 #include <queue>
+#include <vector>
+
+// Have our own assert, so we are sure it does not get 
+// optomized away in a release build.
+#define EL_ASSERT(expr) do {\
+  if (!(expr)) {\
+    fprintf(stderr, \
+        "Assertion failed in %s on %d : %s\n", \
+        __FILE__, \
+        __LINE__, \
+        #expr);\
+    fflush(stderr);\
+    abort();\
+  }\
+} while (0)
+
 
 #include "el_uncopyable.h"
 #include "el_static_assert.h"
