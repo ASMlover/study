@@ -24,69 +24,33 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_UTIL_HEADER_H__
-#define __EL_UTIL_HEADER_H__
+#ifndef __EL_SINGLETON_HEADER_H__
+#define __EL_SINGLETON_HEADER_H__
 
 
-#include "el_config.h"
+namespace el {
 
-// System interfaces headers
-#if defined(EUTIL_WIN)
-# include <windows.h>
-# include <mmsystem.h>
-# include <process.h>
-#elif defined(EUTIL_LINUX)
-# include <sys/types.h>
-# include <sys/time.h>
-# include <sys/stat.h>
-# include <unistd.h>
-# include <fcntl.h>
-# include <pthread.h>
-# include <limits.h>
+template <typename Object, typename Locker = DummyLock>
+class Singleton : private UnCopyable {
+public:
+  static Object& Instance(void) {
+    static Object* s_instance = nullptr;
+    static Locker  s_locker;
 
-# define MAX_PATH PATH_MAX
-#endif
+    if (nullptr == s_instance) {
+      LockerGuard<Locker> guard(s_locker);
 
-// ANSI C headers
-#include <sys/timeb.h>
-#include <stdint.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+      if (nullptr == s_instance) {
+        static Object s_object;
+        s_instance = &s_object;
+      }
+    }
 
-// ANSI C++ headers
-#include <functional>
-#include <memory>
-#include <string>
-#include <stdexcept>
+    return *s_instance;
+  }
+};
 
-// STL headers
-#include <algorithm>
-#include <queue>
-#include <vector>
-
-// Have our own assert, so we are sure it does not get 
-// optomized away in a release build.
-#define EL_ASSERT(expr) do {\
-  if (!(expr)) {\
-    fprintf(stderr, \
-        "Assertion failed in %s on %d : %s\n", \
-        __FILE__, \
-        __LINE__, \
-        #expr);\
-    fflush(stderr);\
-    abort();\
-  }\
-} while (0)
+}
 
 
-#include "el_uncopyable.h"
-#include "el_static_assert.h"
-#include "el_rval_ref.h"
-#include "el_locker.h"
-#include "el_singleton.h"
-
-
-#endif  // __EL_UTIL_HEADER_H__
+#endif  // __EL_SINGLETON_HEADER_H__
