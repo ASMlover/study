@@ -24,71 +24,51 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_UTIL_HEADER_H__
-#define __EL_UTIL_HEADER_H__
+#ifndef __EL_AUTO_ARRAY_HEADER_H__
+#define __EL_AUTO_ARRAY_HEADER_H__
 
 
-#include "el_config.h"
+namespace el {
 
-// System interfaces headers
-#if defined(EUTIL_WIN)
-# include <windows.h>
-# include <mmsystem.h>
-# include <process.h>
-#elif defined(EUTIL_LINUX)
-# include <sys/types.h>
-# include <sys/time.h>
-# include <sys/stat.h>
-# include <unistd.h>
-# include <fcntl.h>
-# include <pthread.h>
-# include <limits.h>
+// AutoArray　
+//
+// AutoArray extends AutoPtr to arrays. Deletion of the array 
+// pointed to is guaranteed, either on destruction of the 
+// AutoArray or via on explicit Reset(). Use SmartArray if 
+// your needs are more complex.
+template <typename T>
+class AutoArray : private UnCopyable {
+  T* ptr_;
 
-# define MAX_PATH PATH_MAX
-#endif
+  typedef AutoArray<T> SelfType;
+public:
+  explicit AutoArray(T* p = nullptr) 
+    : ptr_(p) {
+  }
 
-// ANSI C headers
-#include <sys/timeb.h>
-#include <stdint.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+  ~AutoArray(void) {
+    if (nullptr != ptr_)
+      delete [] ptr_;
+  }
+public:
+  inline void Reset(T* p = nullptr) {
+    SelfType(p).Swap(*this);
+  }
 
-// ANSI C++ headers
-#include <functional>
-#include <memory>
-#include <string>
-#include <stdexcept>
+  inline T* Get(void) const {
+    return ptr_;
+  }
 
-// STL headers
-#include <algorithm>
-#include <queue>
-#include <vector>
+  inline T& operator[](uint32_t i) const {
+    return ptr_[i];
+  }
+private:
+  void Swap(AutoArray& x) {
+    std::swap(ptr_, x.ptr_);
+  }
+};
 
-// Have our own assert, so we are sure it does not get 
-// optomized away in a release build.
-#define EL_ASSERT(expr) do {\
-  if (!(expr)) {\
-    fprintf(stderr, \
-        "Assertion failed in %s on %d : %s\n", \
-        __FILE__, \
-        __LINE__, \
-        #expr);\
-    fflush(stderr);\
-    abort();\
-  }\
-} while (0)
+}
 
 
-#include "el_uncopyable.h"
-#include "el_static_assert.h"
-#include "el_rval_ref.h"
-#include "el_locker.h"
-#include "el_singleton.h"
-#include "el_auto_ptr.h"
-#include "el_auto_array.h"
-
-
-#endif  // __EL_UTIL_HEADER_H__
+#endif  // __EL_AUTO_ARRAY_HEADER_H__
