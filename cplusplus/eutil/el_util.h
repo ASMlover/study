@@ -89,6 +89,7 @@
 #include "el_singleton.h"
 #include "el_auto_ptr.h"
 #include "el_auto_array.h"
+#include "el_ref_counter.h"
 
 
 #endif  // __EL_UTIL_HEADER_H__
