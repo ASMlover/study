@@ -24,78 +24,24 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_UTIL_HEADER_H__
-#define __EL_UTIL_HEADER_H__
+#ifndef __EL_THREAD_HEADER_H__
+#define __EL_THREAD_HEADER_H__
 
 
-#include "el_config.h"
+#define EL_THREAD_CALLBACK(__selector__, __target__)\
+  std::bind(&__selector__, (__target__), std::placeholders::_1)
 
-// System interfaces headers
+namespace el {
+
+typedef std::function<void (void*)> RoutinerType;
+
+}
+
+
 #if defined(EUTIL_WIN)
-# include <windows.h>
-# include <mmsystem.h>
-# include <process.h>
+# include "./win/el_win_thread.h"
 #elif defined(EUTIL_LINUX)
-# include <sys/types.h>
-# include <sys/time.h>
-# include <sys/stat.h>
-# include <unistd.h>
-# include <fcntl.h>
-# include <pthread.h>
-# include <limits.h>
-
-# define MAX_PATH PATH_MAX
+# include "./posix/el_posix_thread.h"
 #endif
 
-// ANSI C headers
-#include <sys/timeb.h>
-#include <stdint.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-// ANSI C++ headers
-#include <functional>
-#include <memory>
-#include <string>
-#include <stdexcept>
-
-// STL headers
-#include <algorithm>
-#include <map>
-#include <queue>
-#include <vector>
-
-// Have our own assert, so we are sure it does not get 
-// optomized away in a release build.
-#define EL_ASSERT(expr) do {\
-  if (!(expr)) {\
-    fprintf(stderr, \
-        "Assertion failed in %s on %d : %s\n", \
-        __FILE__, \
-        __LINE__, \
-        #expr);\
-    fflush(stderr);\
-    abort();\
-  }\
-} while (0)
-
-
-#include "el_uncopyable.h"
-#include "el_static_assert.h"
-#include "el_rval_ref.h"
-#include "el_locker.h"
-#include "el_singleton.h"
-#include "el_auto_ptr.h"
-#include "el_auto_array.h"
-#include "el_ref_counter.h"
-#include "el_smart_ptr.h"
-#include "el_smart_array.h"
-#include "el_object_pool.h"
-#include "el_object_mgr.h"
-#include "el_thread.h"
-
-
-#endif  // __EL_UTIL_HEADER_H__
+#endif  // __EL_THREAD_HEADER_H__
