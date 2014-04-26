@@ -51,7 +51,7 @@ public:
 
   ~ObjectPool(void) {
   }
-private:
+public:
   T& AcquireObject(void) {
     LockerGuard<Locker> guard(locker_);
 
