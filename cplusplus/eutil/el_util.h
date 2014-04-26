@@ -64,6 +64,7 @@
 
 // STL headers
 #include <algorithm>
+#include <map>
 #include <queue>
 #include <vector>
 
@@ -93,6 +94,7 @@
 #include "el_smart_ptr.h"
 #include "el_smart_array.h"
 #include "el_object_pool.h"
+#include "el_object_mgr.h"
 
 
 #endif  // __EL_UTIL_HEADER_H__
