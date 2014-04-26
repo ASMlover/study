@@ -91,6 +91,7 @@
 #include "el_auto_array.h"
 #include "el_ref_counter.h"
 #include "el_smart_ptr.h"
+#include "el_smart_array.h"
 
 
 #endif  // __EL_UTIL_HEADER_H__
