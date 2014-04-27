@@ -59,6 +59,18 @@ private:
   void InsertChunk(void* chunk);
 };
 
+
+class SmallAllocator {
+public:
+  static void* operator new(size_t bytes) {
+    return Allocator::Instance().Alloc(bytes);
+  }
+
+  static void operator delete(void* ptr, size_t bytes) {
+    Allocator::Instance().Dealloc(ptr, bytes);
+  }
+};
+
 }
 
 
