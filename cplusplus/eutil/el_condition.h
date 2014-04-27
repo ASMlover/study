@@ -24,10 +24,36 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "el_util.h"
-#include "el_condition.h"
+#ifndef __EL_CONDITION_HEADER_H__
+#define __EL_CONDITION_HEADER_H__
 
 
-int main(int argc, char* argv[]) {
-  return 0;
+#if defined(EUTIL_WIN)
+  typedef struct {
+    size_t           waiters_count;
+    CRITICAL_SECTION waiters_count_lock;
+    HANDLE           single_event;
+    HANDLE           broadcast_event;
+  } CondVar;
+#elif defined(EUTIL_LINUX)
+  typedef pthread_cond_t CondVar;
+#endif
+
+namespace el {
+
+class Condition : private UnCopyable {
+  Mutex&  mutex_;
+  CondVar cond_;
+public:
+  explicit Condition(Mutex& mutex);
+  ~Condition(void);
+
+  void Signal(void);
+  void SignalAll(void);
+  void Wait(void);
+};
+
 }
+
+
+#endif  // __EL_CONDITION_HEADER_H__

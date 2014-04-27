@@ -24,10 +24,32 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "el_util.h"
-#include "el_condition.h"
+#include "../el_util.h"
+#include "../el_condition.h"
 
 
-int main(int argc, char* argv[]) {
-  return 0;
+
+namespace el {
+
+Condition::Condition(Mutex& mutex) 
+  : mutex_(mutex) {
+  EL_ASSERT(0 == pthread_cond_init(&cond_, 0));
+}
+
+Condition::~Condition(void) {
+  EL_ASSERT(0 == pthread_cond_destroy(&cond_));
+}
+
+void Condition::Signal(void) {
+  EL_ASSERT(0 == pthread_cond_signal(&cond_));
+}
+
+void Condition::SignalAll(void) {
+  EL_ASSERT(0 == pthread_cond_broadcast(&cond_));
+}
+
+void Condition::Wait(void) {
+  EL_ASSERT(0 == pthread_cond_wait(&cond_, mutex_.mutex()));
+}
+
 }
