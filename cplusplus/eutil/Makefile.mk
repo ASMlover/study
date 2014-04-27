@@ -34,7 +34,9 @@ CPPFLAGS = -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -EHsc -D_DEBUG\
 	-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no winmm.lib 
-OBJS	= main.obj 
+OBJS	= main.obj\
+	\
+	el_win_condition.obj el_allocator.obj
 
 
 
@@ -56,4 +58,7 @@ $(OUT): $(OBJS)
 	$(MT) -manifest $(OUT).manifest -outputresource:$(OUT);1
 
 .cc.obj:
+	$(CC) $(CPPFLAGS) $<
+
+{.\win}.cc{}.obj:
 	$(CC) $(CPPFLAGS) $<

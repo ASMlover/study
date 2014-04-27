@@ -30,7 +30,9 @@ RM	= rm
 CC	= g++
 CPPFLAGS = -g -O2 -Wall -std=c++0x
 LDFLAGS	= -lpthread -lrt
-OBJS	= main.o
+OBJS	= main.o\
+	\
+	./posix/el_posix_condition.o el_allocator.o
 
 
 
