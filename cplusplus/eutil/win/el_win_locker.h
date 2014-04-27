@@ -48,6 +48,10 @@ public:
   inline void Unlock(void) {
     LeaveCriticalSection(&mutex_);
   }
+
+  inline CRITICAL_SECTION* mutex(void) {
+    return &mutex_;
+  }
 };
 
 

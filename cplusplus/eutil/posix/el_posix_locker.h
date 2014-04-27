@@ -48,6 +48,10 @@ public:
   inline void Unlock(void) {
     EL_ASSERT(0 == pthread_mutex_unlock(&mutex_));
   }
+
+  inline pthread_mutex_t* mutex(void) {
+    return &mutex_;
+  }
 };
 
 
