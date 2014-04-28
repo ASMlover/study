@@ -24,11 +24,9 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_RIGHTVALUE_REFERENCE_HEADER_H__
-#define __EL_RIGHTVALUE_REFERENCE_HEADER_H__
+#ifndef __RIGHTVALUE_REFERENCE_HEADER_H__
+#define __RIGHTVALUE_REFERENCE_HEADER_H__
 
-
-namespace el {
 
 template <typename T>
 struct RemoveReference {
@@ -70,7 +68,5 @@ inline void Swap(T& lhs, T& rhs) {
   rhs = Move(tmp);
 }
 
-}
 
-
-#endif  // __EL_RIGHTVALUE_REFERENCE_HEADER_H__
+#endif  // __RIGHTVALUE_REFERENCE_HEADER_H__
