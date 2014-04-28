@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "el_unit.h"
+#include "el_io.h"
 
 
 namespace el {
@@ -39,9 +40,11 @@ int UnitFramework::Run(void) {
   fprintf(stdout, "====================BEGIN====================\n");
 
   for (const auto& unit : unit_list_) {
-    fprintf(stdout, "\tRun UnitCase : %s\n", unit.unit_name);
+    ColorPrintf(ColorType::COLORTYPE_GREEN, 
+        "\tRun UnitCase : %s\n", unit.unit_name);
     unit.unit_case();
-    fprintf(stdout, "\tEnd UnitCase : %s\n", unit.unit_name);
+    ColorPrintf(ColorType::COLORTYPE_GREEN, 
+        "\tEnd UnitCase : %s\n", unit.unit_name);
     fprintf(stdout, "=============================================\n\n");
   }
 
