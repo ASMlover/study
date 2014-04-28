@@ -27,6 +27,34 @@
 #include "el_unit.h"
 
 
-int main(int argc, char* argv[]) {
-  return UNIT_RUN_ALL();
+namespace el {
+
+UnitFramework::UnitFramework(void) {
+}
+
+UnitFramework::~UnitFramework(void) {
+}
+
+int UnitFramework::Run(void) {
+  fprintf(stdout, "====================BEGIN====================\n");
+
+  for (const auto& unit : unit_list_) {
+    fprintf(stdout, "\tRun UnitCase : %s\n", unit.unit_name);
+    unit.unit_case();
+    fprintf(stdout, "\tEnd UnitCase : %s\n", unit.unit_name);
+    fprintf(stdout, "=============================================\n\n");
+  }
+
+  return 0;
+}
+
+bool UnitFramework::RegisterUnit(
+    const char* name, const UnitCase::UnitType& unit) {
+  if (nullptr == name || nullptr == unit) 
+    return false;
+
+  unit_list_.push_back(UnitCase(name, unit));
+  return true;
+}
+
 }

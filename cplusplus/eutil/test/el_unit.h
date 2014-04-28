@@ -24,9 +24,45 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "el_unit.h"
+#ifndef __EL_UNIT_HEADER_H__
+#define __EL_UNIT_HEADER_H__
 
 
-int main(int argc, char* argv[]) {
-  return UNIT_RUN_ALL();
+#include "../el_util.h"
+
+namespace el {
+
+struct UnitCase {
+  typedef std::function<void (void)> UnitType;
+
+  const char*    unit_name;
+  const UnitType unit_case;
+
+  UnitCase(const char* name, const UnitType& unit) 
+    : unit_name(name) 
+    , unit_case(unit) {
+  }
+};
+
+
+class UnitFramework : public Singleton<UnitFramework> {
+  std::vector<UnitCase> unit_list_;
+public:
+  UnitFramework(void);
+  ~UnitFramework(void);
+
+  int Run(void);
+  bool RegisterUnit(const char* name, const UnitCase::UnitType& unit);
+};
+
 }
+
+#define UNIT_RUN_ALL()  el::UnitFramework::Instance().Run()
+#define UNIT_IMPL(__name__)\
+static void el_Unit##__name__(void);\
+static void s_##__name__ = \
+  el::UnitFramework::Instance().RegisterUnit(#__name__, el_Unit##__name__);\
+static void el_Unit##__name__(void)
+
+
+#endif  // __EL_UNIT_HEADER_H__
