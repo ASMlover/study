@@ -62,3 +62,6 @@ $(OUT): $(OBJS)
 
 {.\win}.cc{}.obj:
 	$(CC) $(CPPFLAGS) $<
+
+{.\test}.cc{}.obj:
+	$(CC) $(CPPFLAGS) $<

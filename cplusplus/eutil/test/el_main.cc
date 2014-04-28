@@ -24,8 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "el_util.h"
-#include "el_condition.h"
+#include "../el_util.h"
 
 
 int main(int argc, char* argv[]) {
