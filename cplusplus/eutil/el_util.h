@@ -70,17 +70,20 @@
 
 // Have our own assert, so we are sure it does not get 
 // optomized away in a release build.
-#define EL_ASSERT(expr) do {\
-  if (!(expr)) {\
-    fprintf(stderr, \
-        "Assertion failed in %s on %d : %s\n", \
-        __FILE__, \
-        __LINE__, \
-        #expr);\
-    fflush(stderr);\
-    abort();\
-  }\
-} while (0)
+#if !defined(EL_ASSERT)
+# include "el_io.h"
+# define EL_ASSERT(expr) do {\
+    if (!(expr)) {\
+      fprintf(stderr, \
+          "Assertion failed in %s on %d : %s\n", \
+          __FILE__, \
+          __LINE__, \
+          #expr);\
+      fflush(stderr);\
+      abort();\
+    }\
+  } while (0)
+#endif
 
 
 #include "el_uncopyable.h"
