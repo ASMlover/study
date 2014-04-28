@@ -41,21 +41,21 @@ class Allocator : public Singleton<Allocator, SpinLock> {
 
   Memory*  free_list_[NFREELISTS];
   void**   chunk_list_;
-  uint32_t chunk_count_;
-  uint32_t chunk_storage_;
+  size_t   chunk_count_;
+  size_t   chunk_storage_;
   SpinLock locker_;
 public:
   Allocator(void);
   ~Allocator(void);
 
-  void* Alloc(uint32_t bytes);
-  void Dealloc(void* ptr, uint32_t bytes);
+  void* Alloc(size_t bytes);
+  void Dealloc(void* ptr, size_t bytes);
 private:
-  inline uint32_t FreeListIndex(uint32_t bytes) {
+  inline uint32_t ChunkIndex(size_t bytes) {
     return ((bytes + (ALIGN - 1)) / ALIGN - 1);
   }
 
-  Memory* AllocChunk(uint32_t index);
+  Memory* AllocChunk(size_t index);
   void InsertChunk(void* chunk);
 };
 
