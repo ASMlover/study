@@ -24,40 +24,37 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "el_unit.h"
+#include "../el_util.h"
 #include "../el_io.h"
+
 
 
 namespace el {
 
-UnitFramework::UnitFramework(void) {
-}
+int ColorVfprintf(
+    FILE* stream, ColorType color, const char* format, ...) {
+  HANDLE out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+  CONSOLE_SCREEN_BUFFER_INFOR info;
+  GetConsoleScreenBufferInfo(out_handle, &info);
+  WORD old_color = info.wAttributes;
 
-UnitFramework::~UnitFramework(void) {
-}
-
-int UnitFramework::Run(void) {
-  fprintf(stdout, "====================BEGIN====================\n");
-
-  for (const auto& unit : unit_list_) {
-    ColorPrintf(ColorType::COLORTYPE_GREEN, 
-        "\tRun UnitCase : %s\n", unit.unit_name);
-    unit.unit_case();
-    ColorPrintf(ColorType::COLORTYPE_GREEN, 
-        "\tEnd UnitCase : %s\n", unit.unit_name);
-    fprintf(stdout, "=============================================\n\n");
+  switch (color) {
+  case ColorType::COLORTYPE_RED:
+    color = FOREGROUND_INTENSITY | FOREGROUND_RED;
+    break;
+  case ColorType::COLORTYPE_GREEN:
+    color = FOREGROUND_INTENSITY | FOREGROUND_GREEN;
+    break;
+  case ColorType::COLORTYPE_UNKNOWN:
+  default:
+    color = old_color;
   }
 
-  return 0;
-}
+  SetConsoleTextAttribute(out_handle, (WORD)color);
+  int ret = vfprintf(stream, format, ap);
+  SetConsoleTextAttribute(out_handle, old_color);
 
-bool UnitFramework::RegisterUnit(
-    const char* name, const UnitCase::UnitType& unit) {
-  if (nullptr == name || nullptr == unit) 
-    return false;
-
-  unit_list_.push_back(UnitCase(name, unit));
-  return true;
+  return ret;
 }
 
 }
