@@ -85,6 +85,14 @@
   } while (0)
 #endif
 
+#if !defined(MIN)
+# define MIN(x, y)  ((x) < (y) ? (x) : (y))
+#endif
+
+#if !defined(MAX)
+# define MAX(x, y)  ((x) > (y) ? (x) : (y))
+#endif
+
 
 #include "el_uncopyable.h"
 #include "el_static_assert.h"
