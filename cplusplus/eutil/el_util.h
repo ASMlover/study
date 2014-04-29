@@ -97,6 +97,7 @@
 #include "el_uncopyable.h"
 #include "el_static_assert.h"
 #include "el_locker.h"
+#include "el_condition.h"
 #include "el_singleton.h"
 #include "el_auto_ptr.h"
 #include "el_auto_array.h"

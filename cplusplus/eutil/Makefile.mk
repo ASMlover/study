@@ -37,7 +37,7 @@ LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 OBJS	= el_main.obj el_unit.obj\
 	\
 	el_win_condition.obj el_allocator.obj el_io.obj el_win_io.obj\
-	el_buffer.obj
+	el_buffer.obj el_thread_pool.obj
 
 
 
