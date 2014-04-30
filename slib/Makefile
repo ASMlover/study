@@ -30,26 +30,8 @@ CC	= gcc
 RM	= rm 
 CFLAGS	= -g -O2 -Wall
 LDFLAGS	= -lpthread -lrt
-OBJS	= ./src/sl_posix_mutex.o\
-	./src/sl_posix_spinlock.o\
-	./src/sl_allocator.o\
-	./src/sl_queue.o\
-	./src/sl_list.o\
-	./src/sl_table.o\
-	./src/sl_array.o\
-	./src/sl_posix_cond.o\
-	./src/sl_posix_thread.o\
-	\
-	./test/sl_test_main.o\
-	./test/sl_test_allocator.o\
-	./test/sl_test_queue.o\
-	./test/sl_test_list.o\
-	./test/sl_test_table.o\
-	./test/sl_test_array.o\
-	./test/sl_test_mutex.o\
-	./test/sl_test_spinlock.o\
-	./test/sl_test_cond.o\
-	./test/sl_test_thread.o
+SRCS	= $(wildcard ./src/*.c ./src/posix/*.c ./test/*.c)
+OBJS	= $(SRCS:.c=.o)
 
 
 

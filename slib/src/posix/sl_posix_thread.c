@@ -26,45 +26,71 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <errno.h>
-#include <stdlib.h>
-#include "sl_mutex.h"
+#include <pthread.h>
+#include <assert.h>
+#include "../sl_allocator.h"
+#include "../sl_thread.h"
+
+
+struct sl_thread_t {
+  pthread_t thread_id;
+  void (*routine)(void*);
+  void* argument;
+};
 
 
 
-int 
-sl_mutex_init(sl_mutex_t* mutex)
+
+static inline void* 
+sl_thread_routine(void* arg)
 {
-  return pthread_mutex_init(mutex, NULL);
+  sl_thread_t* thread = (sl_thread_t*)arg;
+  assert(NULL != thread);
+
+  if (NULL != thread->routine)
+    thread->routine(thread->argument);
+
+  return NULL;
+}
+
+
+
+
+sl_thread_t* 
+sl_thread_create(void (*routine)(void*), void* arg)
+{
+  sl_thread_t* thread = (sl_thread_t*)sl_malloc(sizeof(sl_thread_t));
+  assert(NULL != thread);
+
+  thread->thread_id = 0;
+  thread->routine = routine;
+  thread->argument = arg;
+
+  return thread;
 }
 
 void 
-sl_mutex_destroy(sl_mutex_t* mutex)
+sl_thread_release(sl_thread_t* thread)
 {
-  if (0 != pthread_mutex_destroy(mutex))
-    abort();
+  sl_thread_join(thread);
+  sl_free(thread);
 }
 
 void 
-sl_mutex_lock(sl_mutex_t* mutex)
+sl_thread_start(sl_thread_t* thread)
 {
-  if (0 != pthread_mutex_lock(mutex))
-    abort();
-}
-
-int 
-sl_mutex_trylock(sl_mutex_t* mutex)
-{
-  int ret = pthread_mutex_trylock(mutex);
-  if (0 != ret && EBUSY != ret && EAGAIN != ret)
-    abort();
-
-  return ret;
+  int ret = pthread_create(&thread->thread_id, 
+      NULL, sl_thread_routine, thread);
+  assert(0 == ret);
 }
 
 void 
-sl_mutex_unlock(sl_mutex_t* mutex)
+sl_thread_join(sl_thread_t* thread)
 {
-  if (0 != pthread_mutex_unlock(mutex))
-    abort();
+  if (0 != thread->thread_id) {
+    int ret = pthread_join(thread->thread_id, NULL);
+    assert(0 == ret);
+
+    thread->thread_id = 0;
+  }
 }

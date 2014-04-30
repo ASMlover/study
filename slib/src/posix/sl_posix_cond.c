@@ -30,7 +30,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <time.h>
-#include "sl_cond.h"
+#include "../sl_cond.h"
 
 
 #undef NANOSEC

@@ -30,10 +30,8 @@ RM	= rm
 CC	= g++
 CPPFLAGS = -g -O2 -Wall -std=c++0x
 LDFLAGS	= -lpthread -lrt
-OBJS	= ./test/el_main.o ./test/el_unit.o\
-	\
-	./posix/el_posix_condition.o el_allocator.o el_io.o\
-	./posix/el_posix_io.o el_buffer.o el_thread_pool.o
+SRCS	= $(wildcard *.cc ./posix/*.cc ./test/*.cc)
+OBJS	= $(SRCS:.cc=.o)
 
 
 

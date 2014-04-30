@@ -27,7 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <assert.h>
-#include "sl_cond.h"
+#include "../sl_cond.h"
 
 #if defined(_WINDOWS_) || defined(_MSC_VER)
   #define inline __inline

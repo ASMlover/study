@@ -26,48 +26,45 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include "sl_spinlock.h"
+#include <errno.h>
+#include <stdlib.h>
+#include "../sl_mutex.h"
 
 
 
 int 
-sl_spinlock_init(sl_spinlock_t* spinlock)
+sl_mutex_init(sl_mutex_t* mutex)
 {
-  if (InitializeCriticalSectionAndSpinCount(spinlock, 4000))
-    return 0;
-  else 
-    return -1;
+  return pthread_mutex_init(mutex, NULL);
 }
 
 void 
-sl_spinlock_destroy(sl_spinlock_t* spinlock)
+sl_mutex_destroy(sl_mutex_t* mutex)
 {
-  DeleteCriticalSection(spinlock);
+  if (0 != pthread_mutex_destroy(mutex))
+    abort();
 }
 
 void 
-sl_spinlock_lock(sl_spinlock_t* spinlock)
+sl_mutex_lock(sl_mutex_t* mutex)
 {
-  if ((DWORD)spinlock->OwningThread == GetCurrentThreadId())
-    return;
-
-  EnterCriticalSection(spinlock);
+  if (0 != pthread_mutex_lock(mutex))
+    abort();
 }
 
 int 
-sl_spinlock_trylock(sl_spinlock_t* spinlock)
+sl_mutex_trylock(sl_mutex_t* mutex)
 {
-  if ((DWORD)spinlock->OwningThread == GetCurrentThreadId())
-    return 0;
+  int ret = pthread_mutex_trylock(mutex);
+  if (0 != ret && EBUSY != ret && EAGAIN != ret)
+    abort();
 
-  if (TryEnterCriticalSection(spinlock))
-    return 0;
-  else
-    return -1;
+  return ret;
 }
 
 void 
-sl_spinlock_unlock(sl_spinlock_t* spinlock)
+sl_mutex_unlock(sl_mutex_t* mutex)
 {
-  LeaveCriticalSection(spinlock);
+  if (0 != pthread_mutex_unlock(mutex))
+    abort();
 }

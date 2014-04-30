@@ -31,22 +31,8 @@ RD	= rm -rf
 CC	= g++
 CFLAGS	= -g -O2 -Wall 
 LDFLAGS	= -lpthread -lrt
-OBJS	= ./test/el_test_main.o ./test/el_test_mutex.o\
-	./test/el_test_spinlock.o ./test/el_test_condition.o\
-	./test/el_test_thread.o ./test/el_test_thread_pool.o\
-	./test/el_test_allocator.o ./test/el_test_circular_buffer.o\
-	./test/el_test_file.o ./test/el_test_time.o\
-	./test/el_test_logging.o\
-	\
-	./posix/el_posix_condition.o ./posix/el_posix_io.o\
-	./posix/el_posix_file.o ./posix/el_posix_time.o\
-	./posix/el_posix_net.o ./posix/el_posix_socket.o\
-	./posix/el_posix_epoll.o\
-	\
-	el_allocator.o el_thread_pool.o el_circular_buffer.o el_time.o\
-	el_logging.o el_net.o el_net_buffer.o el_address.o el_socket.o\
-	el_connector.o el_connector_dispatcher.o el_net_worker.o\
-	el_net_listener.o el_network_handler.o
+SRCS	= $(wildcard ./test/*.cc ./posix/*.cc *.cc)
+OBJS	= $(SRCS:.cc=.o)
 
 
 

@@ -26,46 +26,48 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include "sl_mutex.h"
+#include "../sl_spinlock.h"
 
 
 
 int 
-sl_mutex_init(sl_mutex_t* mutex)
+sl_spinlock_init(sl_spinlock_t* spinlock)
 {
-  InitializeCriticalSection(mutex);
-  return 0;
-}
-
-void 
-sl_mutex_destroy(sl_mutex_t* mutex)
-{
-  DeleteCriticalSection(mutex);
-}
-
-void 
-sl_mutex_lock(sl_mutex_t* mutex)
-{
-  if ((DWORD)mutex->OwningThread == GetCurrentThreadId())
-    return;
-
-  EnterCriticalSection(mutex);
-}
-
-int 
-sl_mutex_trylock(sl_mutex_t* mutex)
-{
-  if ((DWORD)mutex->OwningThread == GetCurrentThreadId())
-    return 0;
-
-  if (TryEnterCriticalSection(mutex))
+  if (InitializeCriticalSectionAndSpinCount(spinlock, 4000))
     return 0;
   else 
     return -1;
 }
 
 void 
-sl_mutex_unlock(sl_mutex_t* mutex)
+sl_spinlock_destroy(sl_spinlock_t* spinlock)
 {
-  LeaveCriticalSection(mutex);
+  DeleteCriticalSection(spinlock);
+}
+
+void 
+sl_spinlock_lock(sl_spinlock_t* spinlock)
+{
+  if ((DWORD)spinlock->OwningThread == GetCurrentThreadId())
+    return;
+
+  EnterCriticalSection(spinlock);
+}
+
+int 
+sl_spinlock_trylock(sl_spinlock_t* spinlock)
+{
+  if ((DWORD)spinlock->OwningThread == GetCurrentThreadId())
+    return 0;
+
+  if (TryEnterCriticalSection(spinlock))
+    return 0;
+  else
+    return -1;
+}
+
+void 
+sl_spinlock_unlock(sl_spinlock_t* spinlock)
+{
+  LeaveCriticalSection(spinlock);
 }
