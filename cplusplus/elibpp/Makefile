@@ -31,8 +31,7 @@ RD	= rm -rf
 CC	= g++
 CFLAGS	= -g -O2 -Wall 
 LDFLAGS	= -lpthread -lrt
-SRCS	= $(wildcard ./test/*.cc ./posix/*.cc *.cc)
-OBJS	= $(SRCS:.cc=.o)
+OBJS	= $(patsubst %.cc, %.o, $(wildcard ./test/*.cc ./posix/*.cc *.cc))
 
 
 

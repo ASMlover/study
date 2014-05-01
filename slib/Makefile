@@ -30,8 +30,7 @@ CC	= gcc
 RM	= rm 
 CFLAGS	= -g -O2 -Wall
 LDFLAGS	= -lpthread -lrt
-SRCS	= $(wildcard ./src/*.c ./src/posix/*.c ./test/*.c)
-OBJS	= $(SRCS:.c=.o)
+OBJS	= $(patsubst %.c,%.o,$(wildcard ./src/*.c ./src/posix/*.c ./test/*.c))
 
 
 
