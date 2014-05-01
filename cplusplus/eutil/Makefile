@@ -28,10 +28,9 @@
 OUT	= eutil 
 RM	= rm 
 CC	= g++
-CPPFLAGS = -g -O2 -Wall -std=c++0x
+CFLAGS	= -g -O2 -Wall -std=c++0x
 LDFLAGS	= -lpthread -lrt
-SRCS	= $(wildcard *.cc ./posix/*.cc ./test/*.cc)
-OBJS	= $(SRCS:.cc=.o)
+OBJS	= $(patsubst %.cc, %.o, $(wildcard ./test/*.cc ./posix/*.cc *.cc))
 
 
 
@@ -52,4 +51,4 @@ $(OUT): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(OBJS): %.o: %.cc 
-	$(CC) -o $*.o -c $(CPPFLAGS) $^
+	$(CC) -o $*.o -c $(CFLAGS) $^
