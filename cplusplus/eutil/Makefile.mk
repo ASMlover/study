@@ -30,7 +30,7 @@ RM	= del
 CC	= cl -c -nologo
 MT	= mt -nologo
 LINK	= link -nologo
-CPPFLAGS = -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -EHsc -D_DEBUG\
+CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -EHsc -D_DEBUG\
 	-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no winmm.lib 
@@ -59,10 +59,10 @@ $(OUT): $(OBJS)
 	$(MT) -manifest $(OUT).manifest -outputresource:$(OUT);1
 
 .cc.obj:
-	$(CC) $(CPPFLAGS) $<
+	$(CC) $(CFLAGS) $<
 
 {.\win}.cc{}.obj:
-	$(CC) $(CPPFLAGS) $<
+	$(CC) $(CFLAGS) $<
 
 {.\test}.cc{}.obj:
-	$(CC) $(CPPFLAGS) $<
+	$(CC) $(CFLAGS) $<
