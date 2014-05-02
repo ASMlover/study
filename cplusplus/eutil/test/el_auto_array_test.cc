@@ -46,9 +46,11 @@ public:
 
 UNIT_IMPL(AutoArray) {
   el::AutoArray<AutoArrayItem> arr(new AutoArrayItem[5]);
+  EL_ASSERT(nullptr != arr.Get());
 
   for (int i = 0; i < 5; ++i)
     arr[i].Show(i);
 
   arr.Reset();
+  EL_ASSERT(nullptr == arr.Get());
 }
