@@ -31,15 +31,15 @@
 class AutoArrayItem : private el::UnCopyable {
 public:
   AutoArrayItem(void) {
-    UNIT_SHOW("%s", __func__);
+    UNIT_SHOW("%s\n", __func__);
   }
 
   ~AutoArrayItem(void) {
-    UNIT_SHOW("%s", __func__);
+    UNIT_SHOW("%s\n", __func__);
   }
 
   inline void Show(int index) {
-    UNIT_SHOW("[%d] : %s", index, __func__);
+    UNIT_SHOW("[%s][%d] : %s\n", CLASS_NAME(*this), index, __func__);
   }
 };
 

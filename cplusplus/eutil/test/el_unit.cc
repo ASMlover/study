@@ -70,7 +70,7 @@ int UnitShow(const char* format, ...) {
   vsprintf(buffer, format, ap);
   va_end(ap);
 
-  return fprintf(stdout, "\t\t%s\n", buffer);
+  return fprintf(stdout, "\t\t%s", buffer);
 }
 
 }

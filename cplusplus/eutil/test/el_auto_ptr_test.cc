@@ -24,55 +24,34 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_UNIT_HEADER_H__
-#define __EL_UNIT_HEADER_H__
+#include "el_unit.h"
+#include "../el_auto_ptr.h"
 
 
-#include <typeinfo>
-#include "../el_util.h"
+class AutoPtrItem : private el::UnCopyable {
+public:
+  AutoPtrItem(void) {
+    UNIT_SHOW("%s\n", __func__);
+  }
 
-#if defined(EUTIL_WIN)
-# define __func__ __FUNCTION__
-#endif
+  ~AutoPtrItem(void) {
+    UNIT_SHOW("%s\n", __func__);
+  }
 
-namespace el {
-
-struct UnitCase {
-  typedef std::function<void (void)> UnitType;
-
-  const char*    unit_name;
-  const UnitType unit_case;
-
-  UnitCase(const char* name, const UnitType& unit) 
-    : unit_name(name) 
-    , unit_case(unit) {
+  inline void Show(void) {
+    UNIT_SHOW("[%s] : %s\n", CLASS_NAME(*this), __func__);
   }
 };
 
 
-class UnitFramework : public Singleton<UnitFramework> {
-  std::vector<UnitCase> unit_list_;
-public:
-  UnitFramework(void);
-  ~UnitFramework(void);
 
-  int Run(void);
-  bool RegisterUnit(const char* name, const UnitCase::UnitType& unit);
-};
+UNIT_IMPL(AutoPtr) {
+  el::AutoPtr<AutoPtrItem> item(new AutoPtrItem());
+  EL_ASSERT(nullptr != item.Get());
 
-extern int UnitShow(const char* format, ...);
+  (*item).Show();
+  item->Show();
 
+  item.Reset();
+  EL_ASSERT(nullptr == item.Get());
 }
-
-#define UNIT_RUN_ALL()  el::UnitFramework::Instance().Run()
-#define UNIT_IMPL(__name__)\
-static void el_Unit##__name__(void);\
-static bool s_boolean_##__name__ = \
-  el::UnitFramework::Instance().RegisterUnit(#__name__, el_Unit##__name__);\
-static void el_Unit##__name__(void)
-
-#define UNIT_SHOW(fmt, ...)   el::UnitShow((fmt), __VA_ARGS__)
-#define CLASS_NAME(__class__) typeid(__class__).name()
-
-
-#endif  // __EL_UNIT_HEADER_H__
