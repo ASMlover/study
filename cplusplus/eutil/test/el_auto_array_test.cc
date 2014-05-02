@@ -24,49 +24,31 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_UNIT_HEADER_H__
-#define __EL_UNIT_HEADER_H__
+#include "el_unit.h"
+#include "../el_auto_array.h"
 
 
-#include "../el_util.h"
+class AutoArrayItem : private el::UnCopyable {
+public:
+  AutoArrayItem(void) {
+    fprintf(stdout, "\t\t%s\n", __func__);
+  }
 
-#if defined(EUTIL_WIN)
-# define __func__ __FUNCTION__
-#endif
+  ~AutoArrayItem(void) {
+    fprintf(stdout, "\t\t%s\n", __func__);
+  }
 
-namespace el {
-
-struct UnitCase {
-  typedef std::function<void (void)> UnitType;
-
-  const char*    unit_name;
-  const UnitType unit_case;
-
-  UnitCase(const char* name, const UnitType& unit) 
-    : unit_name(name) 
-    , unit_case(unit) {
+  inline void Show(int index) {
+    fprintf(stdout, "\t\t[%d] - %s\n", index, __func__);
   }
 };
 
 
-class UnitFramework : public Singleton<UnitFramework> {
-  std::vector<UnitCase> unit_list_;
-public:
-  UnitFramework(void);
-  ~UnitFramework(void);
+UNIT_IMPL(AutoArray) {
+  el::AutoArray<AutoArrayItem> arr(new AutoArrayItem[10]);
 
-  int Run(void);
-  bool RegisterUnit(const char* name, const UnitCase::UnitType& unit);
-};
+  for (int i = 0; i < 10; ++i)
+    arr[i].Show(i);
 
+  arr.Reset();
 }
-
-#define UNIT_RUN_ALL()  el::UnitFramework::Instance().Run()
-#define UNIT_IMPL(__name__)\
-static void el_Unit##__name__(void);\
-static bool s_boolean_##__name__ = \
-  el::UnitFramework::Instance().RegisterUnit(#__name__, el_Unit##__name__);\
-static void el_Unit##__name__(void)
-
-
-#endif  // __EL_UNIT_HEADER_H__
