@@ -31,23 +31,23 @@
 class AutoArrayItem : private el::UnCopyable {
 public:
   AutoArrayItem(void) {
-    fprintf(stdout, "\t\t%s\n", __func__);
+    UNIT_SHOW("%s", __func__);
   }
 
   ~AutoArrayItem(void) {
-    fprintf(stdout, "\t\t%s\n", __func__);
+    UNIT_SHOW("%s", __func__);
   }
 
   inline void Show(int index) {
-    fprintf(stdout, "\t\t[%d] - %s\n", index, __func__);
+    UNIT_SHOW("[%d] : %s", index, __func__);
   }
 };
 
 
 UNIT_IMPL(AutoArray) {
-  el::AutoArray<AutoArrayItem> arr(new AutoArrayItem[10]);
+  el::AutoArray<AutoArrayItem> arr(new AutoArrayItem[5]);
 
-  for (int i = 0; i < 10; ++i)
+  for (int i = 0; i < 5; ++i)
     arr[i].Show(i);
 
   arr.Reset();

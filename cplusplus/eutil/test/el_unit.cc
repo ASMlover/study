@@ -60,4 +60,17 @@ bool UnitFramework::RegisterUnit(
   return true;
 }
 
+
+
+int UnitShow(const char* format, ...) {
+  va_list ap;
+  char buffer[1048] = {0};
+
+  va_start(ap, format);
+  vsprintf(buffer, format, ap);
+  va_end(ap);
+
+  return fprintf(stdout, "\t\t%s\n", buffer);
+}
+
 }

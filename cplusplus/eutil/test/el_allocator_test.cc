@@ -57,5 +57,5 @@ UNIT_IMPL(Allocator) {
     delete v;
   }
   uint64_t end = el::GetTick();
-  fprintf(stdout, "\t\tuse millitm => %llu\n", end - beg);
+  UNIT_SHOW("Allocator use time : %llu millitm\n", end - beg);
 }

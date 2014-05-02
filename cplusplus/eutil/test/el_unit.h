@@ -59,6 +59,8 @@ public:
   bool RegisterUnit(const char* name, const UnitCase::UnitType& unit);
 };
 
+extern int UnitShow(const char* format, ...);
+
 }
 
 #define UNIT_RUN_ALL()  el::UnitFramework::Instance().Run()
@@ -67,6 +69,8 @@ static void el_Unit##__name__(void);\
 static bool s_boolean_##__name__ = \
   el::UnitFramework::Instance().RegisterUnit(#__name__, el_Unit##__name__);\
 static void el_Unit##__name__(void)
+
+#define UNIT_SHOW(fmt, ...) el::UnitShow((fmt), __VA_ARGS__)
 
 
 #endif  // __EL_UNIT_HEADER_H__
