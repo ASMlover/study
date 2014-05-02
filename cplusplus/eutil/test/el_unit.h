@@ -60,7 +60,7 @@ public:
 #define UNIT_RUN_ALL()  el::UnitFramework::Instance().Run()
 #define UNIT_IMPL(__name__)\
 static void el_Unit##__name__(void);\
-static void s_##__name__ = \
+static bool s_boolean_##__name__ = \
   el::UnitFramework::Instance().RegisterUnit(#__name__, el_Unit##__name__);\
 static void el_Unit##__name__(void)
 
