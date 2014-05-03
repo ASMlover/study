@@ -78,3 +78,52 @@
 ## **28. 灵巧指针**
     虽然灵巧指针不能完全替代dumb指针, 但是通常打到同样的代码效果, 使用灵巧指
     针更方便也更安全;
+
+
+## **29. 引用计数**
+    1) 使用引用计数的动机:
+        * 简化跟踪堆中的对象的过程;
+        * 如果很多对象有相同的值, 将这个值存储多次是无聊浪费的, 更好的方法是
+          让所有的对象共享这个值;
+    2) 实现引用计数(以String为例子)
+        * String值和引用计数之间是一一对应的关系, 需要创建一个类来保存引用计
+          数以及其跟踪的值;
+        * 在String内部实现一个StringValue来保存具体的String值, 并使用引用计
+          数来实现;
+          class String {
+            struct StringValue {
+              int   ref_count;
+              bool  shareable;
+              char* data;
+              StringValue(const char* init_val);
+              ~StringValue(void);
+            };
+            StringValue* value_;
+            ...
+          };
+          String::StringValue::StringValue(const char* init_val) 
+            : ref_count(1) 
+            , shareable(true) {
+            data = new char[strlen(init_val) + 1];
+            strcpy(data, init_val);
+          }
+          String::StringValue::~StringValue(void) {
+            delete [] data;
+          }
+          String::String(const String& x) {
+            if (x.value_->shareable) {
+              value_ = x.value_;
+              ++value_->ref_count;
+            }
+            else {
+              value_ = new StringValue(x.value_->data);
+            }
+          }
+          char& String::operator[](int index) {
+            if (value_->ref_count > 1) {
+              --value_->ref_count;
+              value_ = new StringValue(value_->data);
+            }
+            value_->shareable = false;
+            return value_->data[index];
+          }
