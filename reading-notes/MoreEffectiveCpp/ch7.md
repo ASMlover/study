@@ -127,3 +127,58 @@
             value_->shareable = false;
             return value_->data[index];
           }
+
+
+
+## **30. 代理类**
+    1) 可以通过代理类来实现多维数组
+        class Array2D {
+        public:
+          class Array1D {
+          public:
+            T& operator[](int i);
+            const T& operator[](int i) const;
+          };
+          Array1D& operator[](int i);
+          const Array1D& operator[](int i) const;
+        };
+    2) 使用代理区分通过operator[]进行的是读操作还是写操作;
+       proxy类上需要做的３件事
+        * 创建它, 指定它扮演哪个字符;
+        * 将它作为赋值操作的目标, 在这种情况下可以将赋值真正作用在它扮演的字
+          符上; 这样被使用时, proxy扮演的是左值;
+        * 用其他方式使用它; 这时proxy扮演的是右值;
+        class String {
+        public:
+          class CharProxy {
+          public:
+            CharProxy(String& s, int i);
+            CharProxy& operator=(const CharProxy& x);   // left value
+            CharProxy& operator=(char c);
+            operator char(void) const;                  // right value 
+          private:
+            String& _theString;
+            int     _charIndex;
+          };
+          const CharProxy operator[](int index) const {
+            return CharProxy(const_cast<String&>(*this), index);
+          }
+          CharProxy operator[](int index) {
+            return CharProxy(*this, index);
+          }
+
+          friend class CharProxy;
+        private:
+          RCPtr<StringValue> _value;
+        };
+    3) proxy类可以完成一些其他方法很难甚至不可实现的行为, 如多维数组, 左右值
+       区分, 限制隐式类型转换;
+       作为函数返回值, proxy对象是临时对象; 增加了软件的复杂度;
+
+
+
+
+## **31. 让函数根据一个以上的对象来决定怎么虚拟**
+    1) 可以使用RTTI来实现(但是会有许多if else)
+    2) 使用多个虚函数接口来判断(会导致全体编译)
+    3) 使用RTTI加构建自己的虚函数表(使用函数指针数组来替换)
