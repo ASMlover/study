@@ -30,14 +30,16 @@ RM	= del
 CC	= cl -c -nologo
 MT	= mt -nologo
 LINK	= link -nologo
-CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -EHsc -D_DEBUG\
-	-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
+CFLAGS	= -O2 -W3 -MDd -GS -Zi -Fd"vc.pdb" -EHsc -D_DEBUG\
+	-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS -wd4290
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no winmm.lib 
-OBJS	= el_main.obj el_unit.obj\
+OBJS	= el_main.obj el_unit.obj el_allocator_test.obj\
+	el_auto_array_test.obj el_auto_ptr_test.obj\
 	\
-	el_win_condition.obj el_allocator.obj el_io.obj el_win_io.obj\
-	el_buffer.obj el_thread_pool.obj
+	el_win_condition.obj el_win_io.obj\
+	\
+	el_allocator.obj el_buffer.obj el_io.obj el_thread_pool.obj el_time.obj
 
 
 

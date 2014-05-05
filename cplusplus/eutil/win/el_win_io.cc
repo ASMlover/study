@@ -32,25 +32,26 @@
 namespace el {
 
 int ColorVfprintf(
-    FILE* stream, ColorType color, const char* format, ...) {
+    FILE* stream, ColorType color, const char* format, va_list ap) {
   HANDLE out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-  CONSOLE_SCREEN_BUFFER_INFOR info;
+  CONSOLE_SCREEN_BUFFER_INFO info;
   GetConsoleScreenBufferInfo(out_handle, &info);
   WORD old_color = info.wAttributes;
+  WORD set_color;
 
   switch (color) {
   case ColorType::COLORTYPE_RED:
-    color = FOREGROUND_INTENSITY | FOREGROUND_RED;
+    set_color = FOREGROUND_INTENSITY | FOREGROUND_RED;
     break;
   case ColorType::COLORTYPE_GREEN:
-    color = FOREGROUND_INTENSITY | FOREGROUND_GREEN;
+    set_color = FOREGROUND_INTENSITY | FOREGROUND_GREEN;
     break;
   case ColorType::COLORTYPE_UNKNOWN:
   default:
-    color = old_color;
+    set_color = old_color;
   }
 
-  SetConsoleTextAttribute(out_handle, (WORD)color);
+  SetConsoleTextAttribute(out_handle, set_color);
   int ret = vfprintf(stream, format, ap);
   SetConsoleTextAttribute(out_handle, old_color);
 
