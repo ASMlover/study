@@ -101,7 +101,7 @@ Condition::Condition(Mutex& mutex)
 Condition::~Condition(void) {
   EL_ASSERT(CloseHandle(cond_.broadcast_event));
   EL_ASSERT(CloseHandle(cond_.single_event));
-  DeleteCriticalSection(&cond->waiters_count_lock);
+  DeleteCriticalSection(&cond_.waiters_count_lock);
 }
 
 void Condition::Signal(void) {
