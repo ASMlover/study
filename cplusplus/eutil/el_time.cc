@@ -35,8 +35,7 @@ bool GetTime(Time& time) {
   struct timeb tb;
   struct tm* now;
 
-  if (0 != ftime(&tb))
-    return false;
+  ftime(&tb);
   now = localtime(&tb.time);
   time.year = static_cast<uint16_t>(now->tm_year + 1900);
   time.mon  = static_cast<uint8_t>(now->tm_mon + 1);

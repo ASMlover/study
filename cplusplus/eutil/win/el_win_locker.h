@@ -59,7 +59,7 @@ class SpinLock : private UnCopyable {
   CRITICAL_SECTION spinlock_;
 public:
   SpinLock(void) {
-    EL_ASSERT(InitializeCriticalSectionAndSpinLock(&spinlock_, 4000));
+    EL_ASSERT(InitializeCriticalSectionAndSpinCount(&spinlock_, 4000));
   }
 
   ~SpinLock(void) {
