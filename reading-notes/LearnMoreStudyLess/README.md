@@ -4,4 +4,4 @@
 
 
 ## **Overview**
- * Information and skills about `Learn More Study Less'
+ * Information and skills about `Learn More Study Less`
