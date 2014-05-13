@@ -50,3 +50,9 @@
       expand("%:t")
     获取当前的时间:
       strftime("%y/%m:%d %H:%M:%S")
+
+
+
+## **Vim使用"alt + 左右键"来移动标签**
+    nn <silent> <M-left> :if tabpagenr() == 1\|exe "tabm ".tabpagenr("$")\|el\|exe "tabm ".(tabpagenr() - 2)\|en<CR>
+    nn <silent> <M-right> :if tabpagenr() == tabpagenr("$")\|tabm 0\|el\|exe "tabm ".tabpagenr()\|en<CR>
