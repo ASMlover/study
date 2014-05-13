@@ -64,3 +64,18 @@
         @echo off
         start /B gvim -p --remote-tab-silent "%~f1"
         exit
+> ### **2. Linux下面**
+    在.bashrc文件中添加
+    alias vim='gvim --remote-tab-silent'
+    alias gvim='gvim --remote-tab-silent'
+> ### **3. 修改注册表**
+    1) 双击时打开标签页
+        修改/HKEY_CLASSES_ROOT/Applications/gvim.exe/shell/edit/command的值
+        D:\Tools\gvim\vim73\gvim.exe -p --remote-tab-silent "%1"
+    2) 鼠标右键时打开标签页
+        添加注册表
+        [HKEY_CLASSES_ROOT\*\]下添加Shell项
+        [HKEY_CLASSES_ROOT\*\Shell]添加Edit with &Vim项
+        [HKEY_CLASSES_ROOT\*\Shell\Edit with &Vim]添加Command项 
+        [HKEY_CLASSES_ROOT\*\Shell\Edit with &Vim\Command]值修改为:
+        "D:\Tools\gvim\vim73\gvim.exe" -p --remote-tab-silent "%1"
