@@ -58,3 +58,20 @@
     用一个大小为1000000的数组表示积分和排名对应关系, rank[s]表示s积分所对应
     的排名;
     当积分从s变成s+n后, 只需要将rank[s]~rank[s+n-1]n个元素的值增加1即可;
+
+
+
+## **5. MySQL读写性能**
+    * 测试的是每秒的吞吐量
+    * 写性能
+      不开binlog, guid主键, 无索引: myisam(1639), innodb(971)
+      开binlog, guid主键, 无索引:   myisam(675), innodb(374)
+      开binlog, guid主键, 有索引:   myisam(599), innodb(329)
+      开binlog, 自增值主键, 有索引: myisam(595), innodb(347)
+    * 读性能
+      guid主键:       myisam(2372), innodb(2553)
+      自增值主键:     myisam(2195), innodb(2273)
+    
+    * 结论:
+      1) 开启binlog, 写性能下降60%
+      2) myisam与innodb相比, 写速度更快(快40%), 读速度差不多;
