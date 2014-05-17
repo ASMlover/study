@@ -24,57 +24,34 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_AUTO_PTR_HEADER_H__
-#define __EL_AUTO_PTR_HEADER_H__
+#include "el_unit.h"
+#include "../el_unique_ptr.h"
 
 
-namespace el {
-
-// AutoPtr 
-//
-// AutoPtr mimics a built-in pointer except that it guaranteed 
-// deletion of the object pointed to, either on destruction of 
-// the AutoPtr or via an expicit Reset().
-//
-// AutoPtr is a simple solution for simple needs, use SmartPtr 
-// if your needs are more complex.
-template <typename T>
-class AutoPtr : private UnCopyable {
-  T* ptr_;
-  
-  typedef AutoPtr<T> SelfType;
+class UniquePtrItem : private el::UnCopyable {
 public:
-  explicit AutoPtr(T* p = nullptr) 
-    : ptr_(p) {
+  UniquePtrItem(void) {
+    UNIT_SHOW("%s\n", __func__);
   }
 
-  ~AutoPtr(void) {
-    if (nullptr != ptr_) 
-      delete ptr_;
-  }
-public:
-  inline void Reset(T* p = nullptr) {
-    SelfType(p).Swap(*this);
+  ~UniquePtrItem(void) {
+    UNIT_SHOW("%s\n", __func__);
   }
 
-  inline T* Get(void) const {
-    return ptr_;
-  }
-
-  inline T& operator*(void) const {
-    return *ptr_;
-  }
-
-  inline T* operator->(void) const {
-    return ptr_;
-  }
-private:
-  void Swap(AutoPtr& x) {
-    std::swap(ptr_, x.ptr_);
+  inline void Show(void) {
+    UNIT_SHOW("[%s] : %s\n", CLASS_NAME(*this), __func__);
   }
 };
 
+
+
+UNIT_IMPL(AutoPtr) {
+  el::UniquePtr<UniquePtrItem> item(new UniquePtrItem());
+  EL_ASSERT(nullptr != item.Get());
+
+  (*item).Show();
+  item->Show();
+
+  item.Reset();
+  EL_ASSERT(nullptr == item.Get());
 }
-
-
-#endif  // __EL_AUTO_PTR_HEADER_H__
