@@ -25,16 +25,16 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "el_unit.h"
-#include "../el_auto_array.h"
+#include "../el_unique_array.h"
 
 
-class AutoArrayItem : private el::UnCopyable {
+class UniqueArrayItem : private el::UnCopyable {
 public:
-  AutoArrayItem(void) {
+  UniqueArrayItem(void) {
     UNIT_SHOW("%s\n", __func__);
   }
 
-  ~AutoArrayItem(void) {
+  ~UniqueArrayItem(void) {
     UNIT_SHOW("%s\n", __func__);
   }
 
@@ -44,8 +44,8 @@ public:
 };
 
 
-UNIT_IMPL(AutoArray) {
-  el::AutoArray<AutoArrayItem> arr(new AutoArrayItem[5]);
+UNIT_IMPL(UniqueArray) {
+  el::UniqueArray<UniqueArrayItem> arr(new UniqueArrayItem[5]);
   EL_ASSERT(nullptr != arr.Get());
 
   for (int i = 0; i < 5; ++i)

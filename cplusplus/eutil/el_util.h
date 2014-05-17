@@ -100,7 +100,7 @@
 #include "el_condition.h"
 #include "el_singleton.h"
 #include "el_unique_ptr.h"
-#include "el_auto_array.h"
+#include "el_unique_array.h"
 #include "el_ref_counter.h"
 #include "el_smart_ptr.h"
 #include "el_smart_array.h"

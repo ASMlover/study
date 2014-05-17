@@ -24,29 +24,29 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_AUTO_ARRAY_HEADER_H__
-#define __EL_AUTO_ARRAY_HEADER_H__
+#ifndef __EL_UNIQUE_ARRAY_HEADER_H__
+#define __EL_UNIQUE_ARRAY_HEADER_H__
 
 
 namespace el {
 
-// AutoArray　
+// UniqueArray　
 //
-// AutoArray extends AutoPtr to arrays. Deletion of the array 
+// UniqueArray extends AutoPtr to arrays. Deletion of the array 
 // pointed to is guaranteed, either on destruction of the 
-// AutoArray or via on explicit Reset(). Use SmartArray if 
+// UniqueArray or via on explicit Reset(). Use SmartArray if 
 // your needs are more complex.
 template <typename T>
-class AutoArray : private UnCopyable {
+class UniqueArray : private UnCopyable {
   T* ptr_;
 
-  typedef AutoArray<T> SelfType;
+  typedef UniqueArray<T> SelfType;
 public:
-  explicit AutoArray(T* p = nullptr) 
+  explicit UniqueArray(T* p = nullptr) 
     : ptr_(p) {
   }
 
-  ~AutoArray(void) {
+  ~UniqueArray(void) {
     if (nullptr != ptr_)
       delete [] ptr_;
   }
@@ -63,7 +63,7 @@ public:
     return ptr_[i];
   }
 private:
-  void Swap(AutoArray& x) {
+  void Swap(UniqueArray& x) {
     std::swap(ptr_, x.ptr_);
   }
 };
@@ -71,4 +71,4 @@ private:
 }
 
 
-#endif  // __EL_AUTO_ARRAY_HEADER_H__
+#endif  // __EL_UNIQUE_ARRAY_HEADER_H__

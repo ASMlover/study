@@ -45,7 +45,7 @@ public:
 
 
 
-UNIT_IMPL(AutoPtr) {
+UNIT_IMPL(UniquePtr) {
   el::UniquePtr<UniquePtrItem> item(new UniquePtrItem());
   EL_ASSERT(nullptr != item.Get());
 
