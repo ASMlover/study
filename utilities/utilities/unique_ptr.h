@@ -24,31 +24,31 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __UTIL_AUTO_PTR_HEADER_H__
-#define __UTIL_AUTO_PTR_HEADER_H__
+#ifndef __UTIL_UNIQUE_PTR_HEADER_H__
+#define __UTIL_UNIQUE_PTR_HEADER_H__
 
 
 namespace util {
 
 
-// AutoPtr
+// UniquePtr
 // 
-// AutoPtr mimics a built-in pointer except that it guaranteed
+// UniquePtr mimics a built-in pointer except that it guaranteed
 // deletion of the object pointed to, either on destruction of 
-// the AutoPtr or via an explicit Reset().
-// AutoPtr it a simple solution for simple needs, use SmartPtr 
+// the UniquePtr or via an explicit Reset().
+// UniquePtr it a simple solution for simple needs, use SmartPtr 
 // if your needs are more complex.
 template <typename T>
-class AutoPtr : private UnCopyable {
+class UniquePtr : private UnCopyable {
   T*  ptr_;
 
-  typedef AutoPtr<T>  SelfType;
+  typedef UniquePtr<T>  SelfType;
 public:
-  explicit AutoPtr(T* p = NULL) 
+  explicit UniquePtr(T* p = NULL) 
     : ptr_(p) {
   }
 
-  ~AutoPtr(void) {
+  ~UniquePtr(void) {
     if (NULL != ptr_)
       delete ptr_;
   }
@@ -69,7 +69,7 @@ public:
     return ptr_;
   }
 private:
-  void Swap(AutoPtr& x) {
+  void Swap(UniquePtr& x) {
     std::swap(ptr_, x.ptr_);
   }
 };
@@ -78,4 +78,4 @@ private:
 }
 
 
-#endif  // __UTIL_AUTO_PTR_HEADER_H__
+#endif  // __UTIL_UNIQUE_PTR_HEADER_H__
