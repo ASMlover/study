@@ -268,3 +268,16 @@
     C/C++语言函数的栈空间是有限制的; Windows一般默认是1M; 
     linux下查看栈空间大小:
       $ ulimit -a
+
+
+
+## **17. GCC升级到4.8**
+    $ sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+    $ sudo apt-get update
+    $ sudo apt-get install gcc-4.8
+    $ sudo apt-get install g++-4.8
+    $ cd /usr/bin/ 
+    $ sudo rm g++
+    $ sudo rm gcc 
+    $ sudo ln -s gcc-4.8 gcc 
+    $ sudo ln -s g++-4.8 g++
