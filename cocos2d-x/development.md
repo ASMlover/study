@@ -106,3 +106,13 @@
     * cocos命令在cocos2d-x-3.0/tools/cocos2d-console/bin下
     * 命令行运行: 
       cocos new [PROJ_NAME] -p com.Company.[PROJ_NAME] -l cpp -d [PROJ_DIR]
+
+
+
+## **3. 多个层之间切换**
+    可以使用LayerMultiplex来管理各个Layer;
+        auto layer1 = Layer1::create();
+        auto layer2 = Layer2::create();
+        layer_multi = LayerMultiplex::create(layer1, layer2, nullptr);
+        ...
+        layer_multi->switchTo(1);
