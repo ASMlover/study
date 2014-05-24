@@ -102,7 +102,7 @@
 
 ## **2. 安装配置**
     * 安装Python, 并加入环境变量
-    * 安装cocos2d-x-.3.0, 运行setup.py, 将COCOS_CONSOLE_ROOT加入环境变量
+    * 安装cocos2d-x3.0, 运行setup.py, 将COCOS_CONSOLE_ROOT加入环境变量
     * cocos命令在cocos2d-x-3.0/tools/cocos2d-console/bin下
     * 命令行运行: 
       cocos new [PROJ_NAME] -p com.Company.[PROJ_NAME] -l cpp -d [PROJ_DIR]
