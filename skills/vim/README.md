@@ -79,3 +79,10 @@
         [HKEY_CLASSES_ROOT\*\Shell\Edit with &Vim]添加Command项 
         [HKEY_CLASSES_ROOT\*\Shell\Edit with &Vim\Command]值修改为:
         "D:\Tools\gvim\vim73\gvim.exe" -p --remote-tab-silent "%1"
+
+
+## **VIM恢复文件关闭之前的光标位置**
+    在.vimrc文件中添加
+    if has("autocmd")
+      au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
+    endif
