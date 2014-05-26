@@ -116,3 +116,11 @@
         layer_multi = LayerMultiplex::create(layer1, layer2, nullptr);
         ...
         layer_multi->switchTo(1);
+
+
+
+## **4. cocos2dx创建滚动层**
+    使用cocostudio创建一个ScrollView层, 然后将层的大小设置为x * x, 然后将 
+    ScrollView的滚动高设置为大于x的数字, 再选中裁剪;
+    这样在显示的时候就只会显示x区域的大小, 而上下滑动就可以实现层上的东西上
+    下滚动了;
