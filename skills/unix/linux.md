@@ -104,3 +104,32 @@
     $ yum --enablerepo=testing-devtools-6 install devtoolset-1.0
     在用户目录下的.bashrc文件中添加 
     export PATH=/opt/centos/devtoolset-1.0/root/usr/bin/:$PATH
+
+
+
+## **CentOS入侵后检查**
+    1) 检查用户登录记录
+        $ more /var/log/secure 
+        $ who /var/log/wtmp 
+        $ more /var/log/messages 
+    2) 在root帐号下输入history, 看最近的1000条记录
+    3) 检查/etc/inetd/conf 
+        $ cat /etc/inetd.conf | grep -v "^#"
+        得到的信息就是这台机器所开启的远程服务
+    4) 检查网络连接和监听端口
+        $ netstat -an   => 列出本机所有连接和监听端口, 查看有无非法连接
+        $ netstat -rn   => 查看本机的路由, 王冠设置是否正确
+        $ ifconfig -a   => 查看网卡设置
+    5) 检查系统日志
+        $ last | more 查看在正常情况下登录到本机的所有用户历史记录;
+        入侵者通常会停止系统syslog, 查看系统syslog进程的情况, 判断syslog上次
+        启动的时间是否正常, syslog是以root身份执行的, 如果syslog被非法动过,
+        则说明有重大入侵事件;
+        
+        $ ls -la /var/log 
+        检查wtm, utmp, messages文件的完整性和修改时间是否正常;
+    6) 重要数据备份
+        非Linux上的原有数据, /etc/passwd, /etc/shadow, WWW网页数据, /home里
+        的用户文件备份
+    7) 重装系统
+
