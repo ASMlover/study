@@ -133,3 +133,22 @@
         的用户文件备份
     7) 重装系统
 
+
+
+## **CentOS入侵后处理**
+    1) 修改密码/限制ssh登录
+        $ passwd 
+
+        限制ssh IP登录
+        $ vim /etc/hosts.allow 
+        sshd:192.168.10.88:allow或者sshd:192.168.10.0/24:allow 
+        $ vim /etc/hosts.deny
+        sshd:ALL 
+    2) 查看登录情况
+        $ more /var/log/secure 
+        $ last -f /var/log/wtmp 
+    3)杀死陌生进程(ps -ef | grep xxx, kill)
+    4) 查看网络情况
+        安装iptraf
+        对陌生端口进行查看 $ lsof -i:端口号, 查看占用这个端口的进程
+        查询进程, 杀死进程
