@@ -124,3 +124,17 @@
     ScrollView的滚动高设置为大于x的数字, 再选中裁剪;
     这样在显示的时候就只会显示x区域的大小, 而上下滑动就可以实现层上的东西上
     下滚动了;
+
+
+
+## **5. 屏幕适配**
+  * 先设置当前窗口的大小glview->setFrameSize(442, 640);
+  * 在设置设计上的分辨率setDesignResolutionSize(640, 960, ResolutionPolicy::SHOW_ALL);
+
+    setDesignResolutionSize的第三个参数如下:
+      * ResolutionPolicy::EXACT_FIT     缩放拉伸全屏
+      * ResolutionPolicy::NO_BORDER     不显示操作面板
+      * ResolutionPolicy::SHOW_ALL      显示全部, 但保持高宽比
+      * ResolutionPolicy::FIXED_HEIGHT  保持高度不变
+      * ResolutionPolicy::FIXED_WIDTH   保持宽度不变
+      * ResolutionPolicy::UNKNOWN
