@@ -16,3 +16,8 @@
     * x = sorted(y)     对y排序, 返回排序结果, 不修改y
 > ### **1.2 元组**
     就是一个不可改变的列表, 可以作为键
+> ### **1.3 字符串**
+    * str.find(sub[, start[, end]])
+      在str中寻找子串sub, 返回sub所在位置最左端位置;
+    * str.join(iterable)将字符串连接在一起
+    * str.lower()       字符串小写
