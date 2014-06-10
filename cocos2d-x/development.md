@@ -138,3 +138,36 @@
       * ResolutionPolicy::FIXED_HEIGHT  保持高度不变
       * ResolutionPolicy::FIXED_WIDTH   保持宽度不变
       * ResolutionPolicy::UNKNOWN
+
+
+
+## **6. 坐标系**
+    1) 屏幕坐标系(UI坐标系)
+        --------------> x
+        |
+        |
+        |
+        |
+        V y
+    2) OpenGL坐标系
+        ^ y
+        |
+        |
+        |
+        |
+        --------------> x
+    3) UI坐标系和OpenGL坐标系相互转换
+        Point Director::getInstance()->convertToGL(Point& point);
+        Point Director::getInstance()->convertToUI(Point& point);
+    4) 世界坐标系
+        绝对坐标系, 原点与OpenGL坐标系一致; 世界就是游戏世界, 建立了描述其他
+        坐标系所需要的参考标准;
+    5) 节点坐标系(相对坐标系)
+        和特定的节点相关联的坐标系; 每个节点都有独立的坐标系;
+        节点移动或改变方向时, 和该节点关联的坐标系也随着移动或改变方向;
+        Node设置位置就是父节点的节点坐标系, 方向与OpenGL坐标系方向相同;
+    6) 锚点
+        指定贴图上和所在节点原点(设置位置的点)重合的点的位置, 只有Node设置了
+        贴图锚点才有意义, 默认为(0.5, 0.5);
+        相对节点而言的, 是节点的一个属性, 是节点位置的一个参基准点, 只影响节
+        点在屏幕上的渲染位置;
