@@ -21,3 +21,13 @@
       在str中寻找子串sub, 返回sub所在位置最左端位置;
     * str.join(iterable)将字符串连接在一起
     * str.lower()       字符串小写
+    * str.replace(old, new[, count])
+      返回某字符串的所有匹配项均被替换之后得到的字符串
+    * str.split([sep[, maxsplit]])
+      根据sep将字符串分割成序列
+    * str.strip([chars])
+      去除左右两边的含有chars的字符, 默认是空格, 不包含中间
+    * str.translate(table[, deletechars])
+      替换字符串的某些部分, 要求一个替换后的字符表, 和一个被替换的字符表
+      'read this short text'.translate(None, 'aeiou')
+      'rd ths shrt txt'
