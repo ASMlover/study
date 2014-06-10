@@ -75,4 +75,3 @@
     使用enumerate(seq), 返回索引和元素;
       for i, name in enumerate(names):
         print i, name
-    成
