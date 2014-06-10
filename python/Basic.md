@@ -31,3 +31,28 @@
       替换字符串的某些部分, 要求一个替换后的字符表, 和一个被替换的字符表
       'read this short text'.translate(None, 'aeiou')
       'rd ths shrt txt'
+> ### **1.4 字典**
+    * 字典格式化
+      book = {'bookname1' : 'author1', 'bookname2' : 'author2'}
+      print '<<bookname1>> author is : %(bookname1)s' % book
+    * dict.clear()      清除字典中所有项
+    * dict.copy()       拷贝一个具相同键-值对的字典(浅拷贝)值是可变的才可改
+    * dict.fromkeys(seq[, value])
+      用给定的序列元素作为key创建一个字典, 值默认为None;
+    * dict.get(key[, default])
+      如果字典中有key, 返回key对应的值, 否则返回default(默认None);
+    * dict.has_key(key) 检查字典中是否有给定的key;
+    * dict.items()/dict.iteritems()
+      items以列表形式返回字典的键值对(元组形式), 没有特殊的顺序;
+      iteritems返回一个迭代器对象, 每次迭代为键值对(元组);
+    * dict.keys()/dict.iterkeys()
+      keys以列表形式返回字典中的键; iterkeys返回针对键的迭代器;
+    * dict.pop(key[, default])
+      获取key对应的值, 并将这个键-值对删除; 如果提供default, 没有key返回默认
+    * dict.popitem()    弹出一个随机项
+    * dict.setdefault(key[, default])
+      如何key存在返回它的值, 如果不存在设置key的值为default, 默认为None;
+    * dict.update([other])
+      利用一个字典更新另一个字典, 新的项添加到dict, 旧的项被other替换;
+    * dict.values()/dict.itervalues()
+      values以列表形式返回字典中的值, itervalues返回字典中值的迭代器;
