@@ -63,15 +63,26 @@
     False, None, 0, '', (), [], {}
     标准值False和None, 所有类型的数字0(浮点数, 长整型和其他类型), 空序列(空
     字符串, 元组和列表), 空的字典为假, 其他一切都是真;
-> ### **2.1 并行迭代**
-    zip(seq1, seq2)
-    seq1, seq2可以是长度不等的序列;
-    zip合成以(seq1_item1, seq1_item2)元组组成的队列;
-      names = ['name1', 'name2', 'name3']
-      ages = [11, 22, 33]
-      for name, age in zip(names, ages):
-        print name, age 
-> ### **2.2 编号迭代**
-    使用enumerate(seq), 返回索引和元素;
-      for i, name in enumerate(names):
-        print i, name
+> ### **2.1 迭代**
+    1) 并行迭代
+        zip(seq1, seq2)
+        seq1, seq2可以是长度不等的序列;
+        zip合成以(seq1_item1, seq1_item2)元组组成的队列;
+          names = ['name1', 'name2', 'name3']
+          ages = [11, 22, 33]
+          for name, age in zip(names, ages):
+            print name, age 
+    2) 编号迭代
+        使用enumerate(seq), 返回索引和元素;
+          for i, name in enumerate(names):
+            print i, name 
+    3) 翻转和排序迭代
+        sorted方法和reserved方法, 返回原序列的副本, reserved返回一个迭代器 
+          l = [23, 45, 7, 3, 34, 89, 9, 0, 121]
+          x = sorted(l)
+          print x
+          x = reserved(l)
+          [i*1 for i in x]
+> ### **2.2 列表推导**
+    是用其他列表创建新列表的方法;
+        [x * x for x in range(10)]
