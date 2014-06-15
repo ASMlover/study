@@ -12,3 +12,4 @@ tolset
 *.exp
 *.ilk
 *.idb
+*.pyc
