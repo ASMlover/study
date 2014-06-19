@@ -86,3 +86,19 @@
 > ### **2.2 列表推导**
     是用其他列表创建新列表的方法;
         [x * x for x in range(10)]
+
+
+
+
+## **3. 抽象**
+> ### **3.1 函数**
+    1) 搜集参数(用户可以传递任意多个参数, 其实时以元组的方式传递的; 或以键值
+       对的方式传递任意多个参数, 是以字典方式实现的)
+       func(*args)  元组
+       func(**args) 字典 
+        * map(func, seq[,seq,...])    对序列中的每个元素应用函数
+        * filter(func, seq)           返回其函数为真的元素的列表
+        * reduce(func,seq[,initial])  
+          等同func(func(seq[0],seq[1],seq[2]),...)
+        * sum(seq)                    返回seq中所有元素的和
+        * apply(func[,args[,kwargs]]) 调用函数, 可以提供参数
