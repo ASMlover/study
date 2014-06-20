@@ -102,3 +102,34 @@
           等同func(func(seq[0],seq[1],seq[2]),...)
         * sum(seq)                    返回seq中所有元素的和
         * apply(func[,args[,kwargs]]) 调用函数, 可以提供参数
+> ### **3.2 类**
+    1) self参数是方法和函数的区别; 方法将它们的第一个参数绑定到所属的实例上,
+       因此可以不提供该参数; 因此可以将特性绑定到一个普通函数上, 这样就可以
+       不会有特殊self参数了;
+          class Class:
+            def method(self):
+              print 'have self'
+          def function():
+            print 'nothing'
+          ins = Class()
+          ins.method()
+          ins.method = function
+          ins.method()
+    2) 为了让方法或特性变为私有, 只要在它的名字前面加上双下划线即可;
+       所有以双下划线开始的名字都会被"翻译"成前面加单下划线和类名字的形式;
+    3) 类中没有加self限定的变量, 类似于静态成员; 但是如果以某实例重新绑定了
+       该变量的值, 那么只会影响该实例;
+    4) 面向对象的思考:
+        * 属于一类的对象放在一起; 
+        * 不要让对象过于亲密;
+        * 小心继承, 尤其是多继承;
+        * 简单就好, 让你的方法小巧;
+    5) 函数:
+        * callable(object)                  确定对象是否可被调用
+        * getattr(object, name[, default])  确定特性的值, 可选择提供默认值
+        * hasattr(object, name)             确定对象是否有给定的特性
+        * isinstance(object, class)         确定对象是否时类的实例
+        * issubclass(A, B)                  确定A是否为B的子类
+        * random.choice(sequence)           从非空序列中随机选择元素
+        * setattr(object,name,value)        设定对象的给定特性为value
+        * type(object)                      返回对应的类型
