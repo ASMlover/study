@@ -169,3 +169,22 @@
         * property(fget,fset,fdel,doc)
           返回一个属性, 所有的参数都是可选的
         * super(class,obj)    返回一个类的超类的绑定实例
+
+
+
+## **6. 模块**
+> ### **6.1 模块**
+    1) sys.path.append()添加模块需要是模块的全路径, 如希望传递一个相对路径而
+       由Pytho自动补全路径, 可以使用sys.path.expanduser()
+    2) 导入模块主要用于定义, 而只需要定义这些东西一次, 所以导入模块多次和导
+       入一次效果是一样的;
+    3) 让sys.path一开始就包含正确的目录:
+        * 将模块放在合适的位置
+          查看sys.path; (site-packages是最佳的模块目录); 一般放site-packages
+        * 告诉解释器去那里查找需要的模块
+          不适合将'模块放在正确的位置的原因'
+            a. 不希望将自己的模块填满Python解释器的目录;
+            b. 没有在Python解释器目录中存储文件的权限;
+            c. 想将模块放在其他地方;
+          设置PYTHONPATH环境变量(如):
+            export PYTHONPATH=$PYTHONPATH:~/Python
