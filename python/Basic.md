@@ -149,3 +149,7 @@
         * ValueError
           在内建操作或函数应用于正确类型的对象, 但该对象使用不合适的值时引发
         * ZeroDivisionError   在除法或取模操作的第二个参数为0时引发
+    2) 如果捕捉到了异常, 但又想重新引发它, 可以调用不带参数的raise来实现;
+    3) 除了except语句还可以使用else子句; 如果try块中没有引发异常, else子句就
+       会被执行;
+    4) warings.filterwarnings(action, ...)  用于过滤警告
