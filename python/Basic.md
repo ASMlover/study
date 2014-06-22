@@ -234,4 +234,13 @@
         * isstdin()         检查最后一行是否来自sys.stdin
         * nextfile()        关闭当前文件, 移到下一个文件
         * close()           关闭序列
-        DEMO: ./src/number_lines.py
+        DEMO: ./src/number_lines.py 
+    4) 堆是优先队列的一种, 能以任意顺序增加对象, 并能在任何时间找到最小的元
+       素;
+       heapq模块中的重要函数:
+        * heappush(heap, x)     将x入堆
+        * heappop(heap)         将堆中最小的元素弹出
+        * heapify(heap)         将heap属性强制应用到任意一个列表
+        * heapreplace(heap, x)  将堆中最小的元素弹出, 同时将x入堆
+        * nlargest(n, iter)     返回iter中第N大的元素
+        * nsmallest(n, iter)    返回iter中第n小的元素
