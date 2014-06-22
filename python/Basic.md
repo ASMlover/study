@@ -214,4 +214,13 @@
         * stdout        标准输出流——一个类文件对象
         * stderr        标准错误流——一个类文件对象
        Demo: ./src/reverse_args.py
-
+    2) os模块中一些重要函数和变量
+        * environ           对环境变量进行映射
+        * system(command)   在子shell中执行操作系统命令
+          在windows中如果路径有空格,可以使用一个更好的WIN特有函数startfile;
+          对于打开浏览器更好的方法是使用webbrowser模块;
+              webbrowser.open('http://www.baidu.com')
+        * sep               路径中的分隔符
+        * pathsep           分隔路径的分隔符
+        * linesep           行分隔符('\n', '\r', '\r\n')
+        * urandom(n)        返回n字节的加密随机数据
