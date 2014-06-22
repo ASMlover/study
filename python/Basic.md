@@ -187,4 +187,9 @@
             b. 没有在Python解释器目录中存储文件的权限;
             c. 想将模块放在其他地方;
           设置PYTHONPATH环境变量(如):
-            export PYTHONPATH=$PYTHONPATH:~/Python
+            export PYTHONPATH=$PYTHONPATH:~/Python 
+
+> ### **6.2 包**
+    1) 为了组织好模块, 可以将它们分组成包; 包是另外一类模块, 能包含其他模块,
+       包就是模块所在的目录, 为了让Python将其作为包对待, 包中必须包含一个命
+       名为__init__.py的特殊文件;
