@@ -224,3 +224,14 @@
         * pathsep           分隔路径的分隔符
         * linesep           行分隔符('\n', '\r', '\r\n')
         * urandom(n)        返回n字节的加密随机数据
+    3) fileinput模块中重要的函数
+        * input([files[, inplace[, backup]]])
+          便于遍历多个输入流中的行
+        * filename()        返回当前文件的名称
+        * lineno()          返回当前(累计)的行数
+        * filelineno()      返回当前文件的行数
+        * isfirstline()     检查当前行是否是文件的第一行
+        * isstdin()         检查最后一行是否来自sys.stdin
+        * nextfile()        关闭当前文件, 移到下一个文件
+        * close()           关闭序列
+        DEMO: ./src/number_lines.py
