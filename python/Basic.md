@@ -273,3 +273,23 @@
         * choice(seq)           从序列seq中返回随意元素
         * shuffle(seq[,random]) 原地指定序列seq
         * sample(seq,n)         从seq中选择n个随机且独立的元素
+    8) re模块中一些重要函数 
+        * compile(pattern[, flags])
+          根据包含正则表达式的字符串创建模式对象
+        * search(pattern, string[, flags])
+          在字符串中寻找模式
+        * match(pattern, string[, flags])
+          在字符串的开始处匹配模式
+        * split(pattern, string[, maxsplit=0])
+          根据模式的匹配项来分隔字符串
+        * findall(pattern, string)
+          列出字符串中模式的所有匹配项
+        * sub(pat, repl, string[, count=0])
+          将字符串中所有pat的匹配项用repl替换
+        * escape(string)
+          将字符串中所有特殊正则表达式字符转义
+       re匹配对象的重要方法
+        * group([group1, ...])  获取给定子模式的匹配项
+        * start([group])        返回给定组的匹配项的开始位置
+        * end([group])          返回给定组的匹配项的结束位置
+        * span([group])         返回一个组的开始和结束位置
