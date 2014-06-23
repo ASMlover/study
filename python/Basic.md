@@ -264,3 +264,12 @@
         * sleep(secs)               休眠secs秒
         * strptime(string[,format]) 将字符串解析为时间元组
         * time()                    当前时间(新纪元开始后的秒数, UTC为准)
+    7) random模块中的一些重要函数 
+        * random()              返回0<=n<=1之间的随机实数, 0<n<=1
+        * getrandbits(n)        以长整形形式返回n个随机位
+        * uniform(a,b)          返回随机实数n, a<=n<b
+        * randrange([start],stop,[step])
+          返回range(start,stop,step)中的随机数
+        * choice(seq)           从序列seq中返回随意元素
+        * shuffle(seq[,random]) 原地指定序列seq
+        * sample(seq,n)         从seq中选择n个随机且独立的元素
