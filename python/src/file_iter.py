@@ -77,6 +77,12 @@ def file_iter_by_lazy(filename):
     process(line)
 
 
+def file_iter(filename):
+  f = open(filename)
+  for line in f:
+    process(line)
+  f.close()
+
 
 
 if __name__ == '__main__':
@@ -96,4 +102,4 @@ if __name__ == '__main__':
   elif sys.argv[1] == 'lazy':
     file_iter_by_lazy(filename)
   else:
-    print 'error'
+    file_iter(filename)
