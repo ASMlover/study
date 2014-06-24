@@ -325,4 +325,66 @@
         * -1          表示使用默认缓冲区大小
 > ### **7.2 对文件内容进行迭代**
     1) DEMO: ./src/file_iter.py 
-    2) 使用文件迭代器: ./src/file_iter.py
+    2) 使用文件迭代器: ./src/file_iter.py 
+
+
+
+
+## **8. 数据库支持**
+    1) DB API的模块特性
+        * apilevel      所使用的Python DB API版本
+        * threadsafety  模块的线程安全等级
+        * paramstyle    在SQL查询中使用的参数风格
+    2) DB API中使用的异常
+        * StandardError                       所有异常的泛型基类
+        * Warning           StandardError     在非致命错误发生时引发
+        * Error             StandardError     所有错误条件的泛型超类
+        * InterfaceError    Error             关于接口而非数据库的错误
+        * DatabaseError     Error             与数据库相关的错误基类
+        * DataError         DatabaseError     与数据库相关的问题(值超出范围)
+        * OperationalError  DatabaseError     数据库内部操作错误
+        * IntegrityError    DatabaseError     关系完整性受影响(键检查失败)
+        * InternalError     DatabaseError     数据库内部错误(非法游标)
+        * ProgrammingError  DatabaseError     用户编程错误(未找到表)
+        * NotSupportedError DatabaseError     请求不支持的特性
+    3) connect函数的常用参数
+        connect返回连接对象(表示和数据库的会话);
+        * dsn       数据源名称, 给出该参数表示数据库依赖(不可选)
+        * user      用户名(可选)
+        * password  用户密码(可选)
+        * host      主机名(可选)
+        * database  数据库名(可选)
+    4) 连接对象方法
+        * close()           关闭连接之后, 连接对象和它的游标均不可用
+        * commit()          如果支持的话就提交挂起的事务, 否则不做任何事
+        * rollbak()         回滚挂起的事务
+        * cursor()          返回连接的游标对象
+    5) 游标对象
+       游标对象方法
+        * callproc(name[,params])   使用给定名称和参数调用已命名的数据库程序
+        * close()                   关闭游标之后, 游标不可用
+        * execute(oper[,params])    执行SQL操作,游标不可用
+        * executemany(oper,pseq)    对序列中的每个参数执行SQL操作
+        * fetchone()                查询结果集中下一行保存为序列, 或None
+        * fetchmay([size])          获取查询结果集中的多行, 默认为arraysize
+        * fetchall()                将所有的行作为序列
+        * nextset()                 跳至下一个可用的结果集
+        * setinputsizes(sizes)      为参数预先定义内存区域
+        * setouputsize(size[,col])  为获取的大数据值设定缓冲区尺寸
+       游标对象的特性
+        * description         结果列描述的序列, 只读
+        * rowcount            结果中的行数, 只读
+        * arraysize           fetchmay中返回行数, 默认为1 
+    6) DB API构造函数和特殊值
+        * Date(year,month,day)        创建保存日期值的对象
+        * Time(hour,minute,second)    创建保存时间值的对象
+        * Timestamp(y,mon,d,h,min,s)  创建保存时间戳的对象
+        * DateFromTicks(ticks)        创建保存自新纪元以来秒数的对象
+        * TimeFromTicks(ticks)        创建保存自秒数的时间值的对象
+        * TimestampFromTicks(ticks)   创建保存来自秒数的时间戳值的对象
+        * Binary(string)              创建保存二进制字符串值的对象
+        * STRING                      描述基于字符串的列类型
+        * BINARY                      描述二进制列
+        * NUMBER                      描述数字列
+        * DATETIME                    描述日期/时间列
+        * ROWID                       描述行ID列
