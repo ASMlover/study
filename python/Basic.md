@@ -387,4 +387,16 @@
         * BINARY                      描述二进制列
         * NUMBER                      描述数字列
         * DATETIME                    描述日期/时间列
-        * ROWID                       描述行ID列
+        * ROWID                       描述行ID列 
+
+
+
+## **9. 网络**
+    1) select模块中的polling事件常量
+        * POLLIN      读取来自文件描述符的数据
+        * POLLPRI     读取来自文件描述符的紧急数据
+        * POLLOUT     文件描述符已准备好数据, 写入时不会发生阻塞
+        * POLLERR     与文件描述符有关的错误情况
+        * POLLHUP     挂起, 连接丢失
+        * POLLNVAL    无效请求, 连接没有打开
+       DEMO: ./src/poll_server.py
