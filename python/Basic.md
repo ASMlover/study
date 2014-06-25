@@ -438,4 +438,8 @@
           同assertRaises
         * failIf(expr[,msg])      与assert_相反
         * fail([msg])             无条件失败——与其他方法一样, 可选择提供信息
+    3) 静态源码分析和性能分析
+        * 静态源码分析: pychecker, pylint
+        * 分析: 使用profile模块
+        * profile.run(stmt,[filename])  执行并分析语句, 结果存入filename文件
 
