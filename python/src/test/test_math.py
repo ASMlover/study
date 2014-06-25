@@ -28,38 +28,26 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
-def square(x):
-  ''' Squares a number and returns the result.
-  
-  >>> square(2)
-  4
-
-  >>> square(3)
-  9
-  '''
-  return x * x
+import unittest
+import my_math
 
 
+class ProductTestCase(unittest.TestCase):
+  def testIntegers(self):
+    for x in xrange(-10, 10):
+      for y in xrange(-10, 10):
+        p = my_math.product(x, y)
+        self.failUnless(p == x * y, 'Interger multiplication failed')
 
-def product(x, y):
-  ''' Multiplication two numbers and returns the result.
-
-  >>> product(2, 2)
-  4
-
-  >>> product(2, 3)
-  6
-
-  >>> product(2.0, 1.4)
-  2.8
-  '''
-  return x * y
-
-
+  def testFloats(self):
+    for x in xrange(-10, 10):
+      for y in xrange(-10, 10):
+        x = x / 10.0
+        y = y / 10.0
+        p = my_math.product(x, y)
+        self.failUnless(p == x * y, 'Float multiplication failed')
 
 
 
 if __name__ == '__main__':
-  import doctest, my_math
-  doctest.testmod(my_math)
+  unittest.main()
