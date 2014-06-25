@@ -443,3 +443,29 @@
         * 分析: 使用profile模块
         * profile.run(stmt,[filename])  执行并分析语句, 结果存入filename文件
 
+
+
+## **11. 扩展Python**
+    1) 处理速度的考虑
+        * 在Python中开发一个原型程序
+        * 分析程序并找出性能瓶颈
+        * 用C作为扩展来重写出现瓶颈的代码
+    2) 使用swig来编写Python扩展(确保有一些C语言代码)
+        * 为代码编写接口文件
+        * 在接口文件上运行swig(为了字典的产生C代码)
+        * 把原来的C语言代码和产生的包装代码一起编译来产生共享库
+        1. C文件 ./src/ext/palindrome.c 
+        2. 接口文件: ./src/ext/palindrome.i
+        3. 运行swig
+            $ swig -python palindrome.i
+            得到palindrome_wrap.c和palindrome.py文件 
+        4. 编译
+            Linux:
+              $ gcc -c palindrome.c
+              $ gcc -I/usr/include/python2.7 -c palindrome_wrap.c
+              $ gcc -shared palindrome.o palindrome_wrap.o -o _palindrome.so
+            Windows:
+              $ gcc -shared platform.o palindrome_wrap.o -o _palindrome.dll
+        5. 使用 
+            >>> import _palindrome
+            >>> _palindrome.is_palindrome('xxx')
