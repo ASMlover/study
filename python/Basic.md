@@ -399,4 +399,17 @@
         * POLLERR     与文件描述符有关的错误情况
         * POLLHUP     挂起, 连接丢失
         * POLLNVAL    无效请求, 连接没有打开
-       DEMO: ./src/poll_server.py
+       DEMO: ./src/poll_server.py 
+    2) HTMLParser的回调方法
+        * handle_starttag(tag, attrs)
+          找到开始标签时调用; attr是(名称, 值)对的序列
+        * handle_startendtag(tag, attrs)
+          使用空标签时调用, 默认分开处理开始和结束标签
+        * handle_endtag(tag)      找到结束标签时调用
+        * handle_data(data)       使用文本数据时调用
+        * handle_charref(ref)     使用&#ref;形式的实体引用时调用
+        * handle_entityref(name)  使用&name;形式的实体引用时调用
+        * handle_comment(data)    注释时调用, 只对注释内容调用
+        * handle_decl(decl)       声明<!...>形式时调用
+        * handle_pi(data)         处理指令时调用
+
