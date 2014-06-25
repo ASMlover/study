@@ -413,3 +413,29 @@
         * handle_decl(decl)       声明<!...>形式时调用
         * handle_pi(data)         处理指令时调用
 
+
+
+## **10. 测试**
+    1) 使用doctest
+          ./src/test/my_math.py 
+    2) unittest的一些TestCase方法
+        * assert_(expr[, msg])    如表达式为假则失败, 可选择给出信息
+        * failUnless(expr[,msg])  同assert 
+        * assertEqual(x,y[,msg])  如果两值不同则失败, 在回溯中打印两个值
+        * failUnlessEqual(x,y[,msg])    同assertEqual
+        * assertNotEqual(x,y[,msg])     和assertEqual相反
+        * failIfEqual(x,y[,msg])        同assertNotEqual
+        * assertAlmostEqual(x,y[,places[,msg]])
+          类似assertEqual, 但对float值来说, 与assertEqual不完全相同
+        * failUnlessAlmostEqual(x,y[,places[,msg]])
+          同assertAlmostEqual
+        * assertNotAlmostEqual(x,y[,places[,msg]])
+          和assertAlmostEqual相反
+        * failIfAlmostEqual(x,y[,msg])  同assertNotAlmostEqual
+        * assertRaises(exc,callable,...)
+          除非在调用时callableasm引发exc异常, 否则失败
+        * failUnlessRaises(exc,callable,...)
+          同assertRaises
+        * failIf(expr[,msg])      与assert_相反
+        * fail([msg])             无条件失败——与其他方法一样, 可选择提供信息
+
