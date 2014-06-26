@@ -480,3 +480,13 @@
         * 创建Windows安装程序
           $ python setup.py bdist --format=wininst
           可以得到一个在windows下的比较基本的安装程序;
+    2) 使用distutils编译扩展
+        在使用swig的前提下, setup.py如下:
+            from distutils.core import setup, Extension
+            setup(name='palindrome', 
+                version='1.0', 
+                ext_modules= [
+                  Extension('palindrome', ['palindrome.c', 'palindrome.i'])
+                ])
+        然后编译:
+          $ python setup.py build_ext --inplace
