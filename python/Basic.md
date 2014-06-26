@@ -497,4 +497,13 @@
             import py2exe
             setup(console=['hello.py'])
         * 编译脚本
-          $ python setup.py py2exe
+          $ python setup.py py2exe 
+
+
+
+
+## **13. 使用模块**
+    1) 读取配置文件ConfigParser
+        ./src/config_parser.py 
+    2) 日志记录模块logging
+        ./src/demo_logging.py
