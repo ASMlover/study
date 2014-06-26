@@ -469,3 +469,14 @@
         5. 使用 
             >>> import _palindrome
             >>> _palindrome.is_palindrome('xxx')
+
+
+
+## **12. 打包**
+    1) 使用distutils制作安装脚本
+        ./src/install/demo1/ 
+        * 建立存档文件
+          $ python setup.py sdist
+        * 创建Windows安装程序
+          $ python setup.py bdist --format=wininst
+          可以得到一个在windows下的比较基本的安装程序;
