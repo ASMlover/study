@@ -489,4 +489,12 @@
                   Extension('palindrome', ['palindrome.c', 'palindrome.i'])
                 ])
         然后编译:
-          $ python setup.py build_ext --inplace
+          $ python setup.py build_ext --inplace 
+    3) 使用py2exe创建windows下面的可执行程序
+        * 编写一个程序 hello.py 
+        * 在包含hello.py的目录中编写setup.py 
+            from distutils.core import setup
+            import py2exe
+            setup(console=['hello.py'])
+        * 编译脚本
+          $ python setup.py py2exe
