@@ -506,4 +506,24 @@
     1) 读取配置文件ConfigParser
         ./src/config_parser.py 
     2) 日志记录模块logging
-        ./src/demo_logging.py
+        ./src/demo_logging.py 
+
+
+
+
+
+## **14. 使用XML-RPC**
+    1) 在实例化服务器之后可以注册一个实例, 使用register_instance方法实现"远
+       程方法", 或使用register_function注册独立的函数; 当准备运行服务器时可
+       以调用serve_forever:
+       Server端:
+          from SimpleXMLRPCServer import SimpleXMLRPCServer
+          s = SimpleXMLRPCServer(('', 5555))
+          def twice(x):
+            return x * 2
+          s.register_function(twice)
+          s.serve_forever()
+       Client端:
+          from xmlrpclib import ServerProxy
+          s = ServerProxy('http://localhost:4242')
+          s.twice(2)
