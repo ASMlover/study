@@ -1,19 +1,3 @@
-# **linux下开发环境配置** #
-***
-
-
-## **1. 下载编译cocos2d-x** ##
- * 下载cocos2d-2.0-x-2.0.4
- * [下载地址](http://cocos2d-x.googlecode.com/files/cocos2d-2.0-x-2.0.4.zip)
- * 解压 
- * 运行./make-all-linux-project.sh
-
-
-
-
-
-
-
 # **WIN7下cocos2d-x3.0环境配置**
 ***
 
