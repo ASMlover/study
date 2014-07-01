@@ -60,7 +60,14 @@
 
 
 
-## **3. 多个层之间切换**
+
+
+
+
+# **开发技巧**
+***
+
+## **1. 多个层之间切换**
     可以使用LayerMultiplex来管理各个Layer;
         auto layer1 = Layer1::create();
         auto layer2 = Layer2::create();
@@ -70,7 +77,7 @@
 
 
 
-## **4. cocos2dx创建滚动层**
+## **2. cocos2dx创建滚动层**
     使用cocostudio创建一个ScrollView层, 然后将层的大小设置为x * x, 然后将 
     ScrollView的滚动高设置为大于x的数字, 再选中裁剪;
     这样在显示的时候就只会显示x区域的大小, 而上下滑动就可以实现层上的东西上
@@ -78,7 +85,7 @@
 
 
 
-## **5. 屏幕适配**
+## **3. 屏幕适配**
   * 先设置当前窗口的大小glview->setFrameSize(442, 640);
   * 在设置设计上的分辨率setDesignResolutionSize(640, 960, ResolutionPolicy::SHOW_ALL);
 
@@ -92,7 +99,7 @@
 
 
 
-## **6. 坐标系**
+## **4. 坐标系**
     1) 屏幕坐标系(UI坐标系)
         --------------> x
         |
@@ -122,3 +129,39 @@
         贴图锚点才有意义, 默认为(0.5, 0.5);
         相对节点而言的, 是节点的一个属性, 是节点位置的一个参基准点, 只影响节
         点在屏幕上的渲染位置;
+
+
+
+## **5. 开启和关闭多点触控**
+    1) 在层一创建的时候就添加触摸事件
+    2) 添加一个全局的多点触控是否开启的开关
+    3) 在多点触控响应函数中判断开关, 做不同的处理
+        this->setTouchEnabled(true);
+        auto eventDispatcher = 
+          Director::getInstance()->getEventDispatcher();
+        auto touchListener = EventListenerTouchOneByOne::create();
+        if (nullptr != touchListener) {
+          touchListener->onTouchBegan = [&](Touch* touch, Event* event) {
+            showTouchInfo(_touchLabel, touch, _canTouches);
+            return true;
+          };
+          touchListener->onTouchEnded = [&](Touch* touch, Event* event) {
+            showTouchInfo(_touchLabel, touch, true);
+          };
+          eventDispatcher->addEventListenerWithSceneGraphPriority(
+            touchListener, this);
+        }
+        auto touchesListener = EventListenerTouchAllAtOnce::create();
+        if (nullptr != touchesListener) {
+          touchesListener->onTouchesBegan 
+            = [&](const std::vector<Touch*>& touches, Event* event) {
+            showTouchesInfo(_touchesLabel, touches, !_canTouches);
+          };
+          touchesListener->onTouchesEnded 
+            = [&](const std::vector<Touch*>& touches, Event* event) {
+            showTouchesInfo(_touchesLabel, touches, true);
+          };
+          eventDispatcher->addEventListenerWithSceneGraphPriority(
+            touchesListener, this);
+        }
+        
