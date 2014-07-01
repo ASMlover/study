@@ -101,11 +101,39 @@
 
 
 ## **2. 安装配置**
-    * 安装Python, 并加入环境变量
-    * 安装cocos2d-x3.0, 运行setup.py, 将COCOS_CONSOLE_ROOT加入环境变量
-    * cocos命令在cocos2d-x-3.0/tools/cocos2d-console/bin下
-    * 命令行运行: 
-      cocos new [PROJ_NAME] -p com.Company.[PROJ_NAME] -l cpp -d [PROJ_DIR]
+  * `安装Python, 并加入环境变量`
+  * `安装cocos2d-x3.0, 运行setup.py, 将COCOS_CONSOLE_ROOT加入环境变量`
+  * `cocos命令在cocos2d-x-3.0/tools/cocos2d-console/bin下`
+  * `命令行运行:`
+    `cocos new [PROJ_NAME] -p com.Company.[PROJ_NAME] -l cpp -d [PROJ_DIR]`
+  * 安装配置[JAVA JDK](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
+    - `JAVA_HOME=D:\SDK-Tool\Java\jdk1.8.0_05`
+    - `CLASSPATH=.;%JAVA_HOME%\lib;`
+    - `Path新增%JAVA_HOME%\bin;`
+  * 下载[Android SDK](http://developer.android.com/sdk/index.html)解压
+    - `--<adt-bundle-windows-x86>`
+    - `--<eclipse>`
+    - `--<sdk>`
+    - `--SDK Manager.exe`
+  * 下载[Android NDK](http://developer.android.com/tools/sdk/ndk/index.html)解压
+    - `--<adt-bundle-windows-x86>`
+    - `--<eclipse>`
+    - `--<sdk>`
+    - `--<android-ndk-r9e>`
+    - `--SDK Manager.exe`
+  * 下载[ANT](http://ant.apache.org/bindownload.cgi)解压
+    - `--<adt-bundle-windows-x86>`
+    - `--<eclipse>`
+    - `--<sdk>`
+    - `--<android-ndk-r9e>`
+    - `--<apache-ant-1.9.4>`
+    - `--SDK Manager.exe`
+  * 环境变量
+    - `NDK_ROOT=D:\adt-bundle-windows-x86\android-ndk-r9e`
+    - `ANDROID_SDK_ROOT=D:\adt-bundle-windows-x86\sdk`
+    - `ANT_ROOT=D:\adt-bundle-windows-x86\apache-ant-1.9.4\bin`
+    - `ANDROID_SDK=.;%ANDROID_SDK_ROOT%\platforms;%ANDROID_SDK_ROOT%\tools;%ANDROID_SDK_ROOT%\platform-tools`
+    - `在Path前新增ANDROID_SDK`
 
 
 
