@@ -149,3 +149,10 @@
             touchesListener, this);
         }
         
+
+
+## **6. cocos2d-x处理ListView**
+    1) Button上有一些Label等其他UI对象, 将Button加入ListView
+    2) 在添加的时候, button->clone()然后再在button基础上载入其他UI对象, 然后
+       再添加到ListView中;
+    3) ListView的创建后需要setTouchEnabled, setBounceEnabled;
