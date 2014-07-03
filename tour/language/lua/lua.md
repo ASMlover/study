@@ -96,6 +96,15 @@
       1) __index -> 查询  
       2) __newindex -> 更新  
       3) 具有默认值的table, 通过__index来修改默认的nil  
+  * 模块和包
+    - require 加载一个模块
+    - 编写模块  
+      1) 创建一个table, 其中放入需导出的函数, 最后返回这个table  
+      2) 将table直接赋值给package.loaded来消除return
+    - 使用环境
+    - module函数
+    - 子模块与包
+  * 面向对象编程
 > ### **程序库**
 > ### **扩展(同C交互)**
 > ### **高级**
