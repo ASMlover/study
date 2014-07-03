@@ -111,6 +111,36 @@
     - 访问权限(私密性)
     - 单一方法
 > ### **程序库**
+  * 数学库
+  * table库
+    - 插入删除
+    - 排序
+    - 连接
+  * 字符串库
+    - 基础字符串函数
+    - 模式匹配函数
+      1) string.find  
+      2) string.match  
+      3) string.gsub  
+      4) string.gmatch
+    - 模式 
+    - 捕获
+    - 替换
+    - 技巧
+  * I/O库
+    - 简单I/O模型
+    - 完整I/O模型
+  * 操作系统库
+    - 日期和时间
+    - 系统调用
+  * 调试库
+    - 自省机制 debug.getinfo  
+      1) 访问局部变量debug.getlocal  
+      2) 访问非局部的变量debug.getupvalue  
+      3) 访问其他协同程序debug.traceback
+    - 钩子  
+      1) 触发钩子的事件"call", "return", "line", "count"
+    - 性能剖析(profile)
 > ### **扩展(同C交互)**
 > ### **高级**
   * 线程和状态
