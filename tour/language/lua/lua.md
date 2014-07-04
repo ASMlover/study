@@ -169,4 +169,9 @@
     - light userdata
 > ### **高级**
   * 线程和状态
+    - 多个线程  
+      1) lua_newthread  
+      2) lua_resume  
+      3) lua_yield
+    - Lua状态
   * 内存管理
