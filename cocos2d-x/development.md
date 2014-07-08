@@ -156,3 +156,5 @@
     2) 在添加的时候, button->clone()然后再在button基础上载入其他UI对象, 然后
        再添加到ListView中;
     3) ListView的创建后需要setTouchEnabled, setBounceEnabled;
+		4) ListView中的Button等Item需要使用insertCustomItem以后点击的时候才能进
+			 行相应的背景修改等。。。
