@@ -85,3 +85,8 @@
           queue.last = last - 1
           return value
         end
+
+
+## **5. 集合与无序组**
+    1) 将集合元素作为索引放入一个table之中, 只需要该值来索引table, 并查看结
+       果是否是nil;
