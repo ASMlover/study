@@ -90,3 +90,14 @@
 ## **5. 集合与无序组**
     1) 将集合元素作为索引放入一个table之中, 只需要该值来索引table, 并查看结
        果是否是nil;
+
+
+
+## **6. 字符串缓存**
+    1) 可以使用table作为字符串缓冲, 关键是使用table.concat将给定列表中的所有
+       字符串连接起来, 并返回连接的结果;
+          local t = {}
+          for line in io.lines() do
+            t[#t + 1] = line .. '\n'
+          end
+          local s = table.concat(t)
