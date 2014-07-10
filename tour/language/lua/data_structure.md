@@ -101,3 +101,9 @@
             t[#t + 1] = line .. '\n'
           end
           local s = table.concat(t)
+
+
+
+## **图**
+    1) 图的每个节点表示为一个table, 这个table有两个字段: name(节点名称), 和
+       adj(与此节点邻接的节点集合)
