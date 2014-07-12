@@ -33,3 +33,15 @@
     2) setmetatable和getmetatable会用到元表的一个字段, 用于保护元表; 
        如想要用户不能看也不能修改元表, 那就需要使用__metatable, 设置了该元方
        法后getmetatable就会返回该值, 而setmetatable会引发一个错误;
+> ### **1.4 table访问的元方法**
+    1) __index
+       * 访问table一不存在字段会让解释器查找__index元方法, 如果没这元方法, 
+         返回nil;
+       * 如不想在访问一个table时涉及__index, 使用rawget(t,i)对table进行一个
+         原始的访问;
+    2) __newindex
+       * __newindex用于table的更新, __index用于table的查询;
+       * 对一个table不存在的索引赋值时解释器会查找__newindex元方法; 如果有该
+         元方法就调用__newindex而不进行赋值; 如果__newindex是一个table, 就在
+         table中进行赋值, 而不是原来的table;
+       * 使用rawset(t,k,v)可以绕过元方法__newindex
