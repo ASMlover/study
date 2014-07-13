@@ -79,3 +79,18 @@
         ./?.so;/usr/local/lib/lua/5.1/?.so 
         .\?.dll;D:\lua\dll\?.dll
        找到C库后require会调用package.loadlib来加载;
+> ### **2.2 编写模块的方法**
+    1) 创建一个table, 并将所有需要导入的函数放入其中, 最后返回这个table;
+    2) 因为require会将模块名作为参数传递给模块, 所以可以避免写模块名:
+          local module_name = '...'
+          local M = {}
+          _G[module_name] = M
+          ...
+    3) 将模块table直接赋予package.loaded就可以避免写return语句了:
+          local module_name = '...'
+          local M = {}
+          _G[module_name] = M
+          package.loaded[module_name] = M
+          ...
+    4) 如果一个模块没有返回值的话, require就会返回package.loaded[modname]的
+       当前值;
