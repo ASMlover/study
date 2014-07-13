@@ -47,3 +47,35 @@
          元方法就调用__newindex而不进行赋值; 如果__newindex是一个table, 就在
          table中进行赋值, 而不是原来的table;
        * 使用rawset(t,k,v)可以绕过元方法__newindex
+
+
+
+
+## **2. 模块和包**
+> ### **2.1 require函数**
+    1) 调用 require '<模块名>', 返回一个由模块函数组成的table, 还会定义一些
+       包含该table的全局变量;
+    2) require行为
+          function require(name)
+            if not package.loaded[name] then
+              local loader = findloader(name)
+              if loader == nil then
+                error('unable to load module' .. name)
+              end
+              package.loaded[name] = true
+              local res = loader(name)
+              if res ~= nil then
+                package.loaded[name] = res
+              end
+            end
+
+            return package.loaded[name]
+          end
+    3) require的路径每一项以;隔开, require会以模块名来替换每个?, 路径如下:
+        ?;?.lua;/usr/local/lua/?/?.lua 
+    4) require用于搜索lua文件的路径存放在变量package.path中, lua启动后会以
+       环境变量LUA_PATH来初始化这个变量;
+    5) package.cpath用于存放C库, 如下:
+        ./?.so;/usr/local/lib/lua/5.1/?.so 
+        .\?.dll;D:\lua\dll\?.dll
+       找到C库后require会调用package.loadlib来加载;
