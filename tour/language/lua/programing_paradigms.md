@@ -94,3 +94,37 @@
           ...
     4) 如果一个模块没有返回值的话, require就会返回package.loaded[modname]的
        当前值;
+> ### **2.3 使用环境**
+    1) 思想就是让模块的主程序块有一个独占的环境, 这样它的所有函数都在这个模
+       块, 而且它的所有全局变量也都记录在这个table中;
+       模块只需要将这个table赋予模块名和package.loaded;
+          local module_name = '...'
+          local M = {}
+          _G[module_name] = M
+          package.loaded[module_name] = M
+          setfenv(1, M)
+          这样当再在这个模块中添加函数的时候就会成为<module_name>.<function>
+          function add(c1, c2)
+            ...
+          end
+          add就是模块的一个函数
+    2) 当使用环境之后就不可以再使用全局的变量了, 最简单的方法就是使用继承来
+       解决这个问题:
+          local module_name = '...'
+          local M = {}
+          _G[module_name] = M
+          package.loaded[module_name] = M
+          setmetatable(M, {__index = _G})
+          setfenv(1, M)
+    3) 另一种方法是声明一个局部变量, 用来保存对旧环境的访问:
+          ...
+          local _G = _G
+          setfenv(1, M)
+          ...
+    4) 更正规的方法就是将那些需要使用到的函数或模块声明为局部变量:
+          ...
+          local sqart = math.sqart
+          local io = io
+          ...
+          setfenv(1, M)
+          ...
