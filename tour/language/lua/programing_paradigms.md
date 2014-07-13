@@ -128,3 +128,11 @@
           ...
           setfenv(1, M)
           ...
+> ### **2.4 module函数**
+    1) 在创建模块的时候可以直接使用module函数来替换前面创建模块的代码;
+    2) module会创建一个新的table, 并将其赋予适当的全局变量和loaded table; 最
+       后还会将这个table设为主程序块的环境;
+    3) module不提供外部访问, 必须在调用之前, 为需要访问的外部函数或模块声明
+       适当的局部变量, 当然可以通过继承来实现; 
+       在调用module的时候加一个package.seeall选项就可以实现继承;
+          module(..., package.seeall)
