@@ -136,3 +136,7 @@
        适当的局部变量, 当然可以通过继承来实现; 
        在调用module的时候加一个package.seeall选项就可以实现继承;
           module(..., package.seeall)
+> ### **2.5 子模块与包**
+    1) 支持具有层级性的模块名, 可以用一个点来分隔名称中的层级;
+    2) require一个带点的模块时, 会用原始的模块名作为key来查询package.loaded
+       和package.preload; 模块名中的点在搜索中无任何意义;
