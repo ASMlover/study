@@ -147,3 +147,18 @@
 ## **3. 面向对象编程**
     Lua中使用冒号, 其作用是在一个方法定义中添加一个额外的隐藏参数, 以及在一
     个方法调用中添加一个额外的实参;
+> ### **3.1 类**
+    1) 如果要实现Basic是Child的基类, 只需要使用setmetatable来设置__index即可
+       setmetatable(Child, {__index = Basic})
+       这样Child就会在Basic中查找所有它没有的操作;
+> ### **3.2 继承**
+        Basic = {}
+        function Basic:New(o)
+          o = o or {}
+          setmetatable(o, self)
+          self.__index = self
+          return o
+        end
+        Child = Basic:New()
+        local ins = Child:New()
+        从而可以实现继承, 可以重载Basic的函数, 这样就不会查找Basic的函数了;
