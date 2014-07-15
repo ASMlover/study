@@ -195,3 +195,19 @@
             return v
           end})
        本质就是将继承的方法复制到子类中;
+> ### **3.4 私密性**
+        function NewAccount(init_balance)
+          local self = {balance = init_balance}
+          local WithDraw = function(v)
+            self.balance = self.balance - v
+          end
+          local Deposit = function(v)
+            self.balance = self.balance + v
+          end
+          local GetBalance = function()
+            return self.balance
+          end
+          return {WithDraw = WithDraw, 
+                  Deposit = Deposit, 
+                  GetBalance = GetBalance}
+        end
