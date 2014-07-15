@@ -211,3 +211,20 @@
                   Deposit = Deposit, 
                   GetBalance = GetBalance}
         end
+> ### **3.5 单一方法做法**
+    当对象只有一个方法的时候, 可以不用创建接口table, 但需要将这个单独的方法
+    作为对象来返回;
+    单一对象方法还可以使用类调度的方法来实现, 传递入参数来返回对应的值:
+        function NewObject(value)
+          return function(action, v)
+            if action == 'get' then
+              return value
+            elseif action == 'set' then
+              value = v
+            else 
+              error('invalid action')
+            end
+          end
+        end
+    使用该方法可以完全将对象实现方式隐藏在内部, 也比用传统的对象table方式更
+    加高效, 但是不能实现继承;
