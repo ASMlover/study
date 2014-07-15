@@ -162,3 +162,36 @@
         Child = Basic:New()
         local ins = Child:New()
         从而可以实现继承, 可以重载Basic的函数, 这样就不会查找Basic的函数了;
+> ### **3.3 多重继承**
+    1) 关键在于用一个函数作为__index元字段;
+        local function Search(k, plist)
+          for i = 1, #plist do
+            local v = plist[i][k]
+            if v then 
+              return v
+            end
+          end
+        end
+        -- 创建多继承的新类
+        function CreateClass(...)
+          local c = {}
+          local parents = {...}
+          setmetatable(c, {__index = function(t, k)
+            return Search(k, parents)
+          end})
+          c.__index = c
+          function c:New(o)
+            o = o or {}
+            setmetatable(o, c)
+            return o
+          end
+          return c
+        end
+    2) 由于查找的路径较长, 多重继承的性能不如单一继承, 可以使用以下方法来解
+       决:
+          setmetatable(c, {__index = function(t, k)
+            local v = Search(k, parents)
+            t[k] = v
+            return v
+          end})
+       本质就是将继承的方法复制到子类中;
