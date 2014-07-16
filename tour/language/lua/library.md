@@ -38,3 +38,16 @@
                 end
                 return table.concat(res)
               end
+
+
+
+## **3. 字符串库**
+> ### **3.1 基础字符串函数**
+    1) string.len(s) 返回字符串s的长度
+    2) string.rep(s, n) 返回字符串s重复n次的结果
+    3) string.lower(s) 返回一份s副本, 所有大写字母转换为小写形式
+    4) string.upper(s) 返回一份s副本, 所有小写字母转换为大写形式
+    5) string.sub(s, i, j) 从字符串中取第i个到第j个字符;
+       1表示第一个字符, -1表示第二个字符;
+    6) string.char/string.byte转换字符以及内部数值表示
+    7) string.format类似printf
