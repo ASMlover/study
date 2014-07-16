@@ -244,3 +244,16 @@
       包含'k' -> key是若引用
       包含'v' -> value是若引用
     * lua只会回收弱引用table中的对象, 数字/bool值/字符串是不可回收的;
+    1) 备忘录技术
+        使用table记录传递过来的命令的执行结果, 将结果设置成弱引用表, 那么在
+        一定时间后垃圾回收器会将弱引用条目删除, 从而节约内存;
+            local results = {}
+            setmetatable(results, {__mode='kv'})
+            function MemLoadString(s)
+              local res = results[s]
+              if res == nil then 
+                res = assert(loadstring(s))
+                results[s] = res
+              end
+              return res
+            end
