@@ -191,3 +191,7 @@ function class(classname, super)
 
   return cls
 end
+
+function QuickClass(classname, super)
+  return class(classname, super)
+end
