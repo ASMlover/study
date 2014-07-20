@@ -29,7 +29,7 @@
 -- Extending for standard library of Lua.
 
 
-function Printf(format, ...)
+function printf(format, ...)
   print(string.format(tostring(format), ...))
 end
 
@@ -90,4 +90,104 @@ function DeepClone(object)
   end
 
   return Copy(object)
+end
+
+
+
+-- Creating a class.
+--
+-- Defining a base class.
+--    local Shape = class('Shape')
+--
+-- Constructor function Ctor(), it will be called by Shape.New()
+--    function Shape:Ctor(shape_name)
+--      self.shape_name_ = shape_name
+--      printf('Shape:Ctor(%s)', self.shape_name_)
+--    end
+--
+--    function Shape:Draw()
+--      printf('Shape:Draw %s', self.shape_name_)
+--    end
+--
+--
+--  Circle is child of Shape.
+--    local Circle = class('Circle', Shape)
+--
+--    function Circle:Ctor()
+--      -- Must call Base's Ctor by yourself when it override base's Ctor.
+--      Circle.super.Ctor(self, 'Circle')
+--      self.radius_ = 100
+--    end
+--
+--    function Circle:SetRadius(radius)
+--      self.radius_ = radius
+--    end
+--
+--    function Circle:Draw()
+--      printf('Circle:Draw %s, radius = %f', 
+--        self.shape_name_, self.radius_)
+--    end
+function class(classname, super)
+  local super_type = type(super)
+  local cls
+
+  if super_type ~= 'function' and super_type ~= 'table' then
+    super_type = nil
+    super = nil
+  end
+
+  if super_type == 'function' or (super and super.__ctype == 1) then
+    -- inherited from native C++ object.
+    cls = {}
+
+    if super_type == 'table' then
+      -- copy fields from super
+      for key, value in pairs(super) do 
+        cls[key] = value
+      end
+      cls.__create = super.__create
+      cls.super    = super
+    else
+      cls.__create = super
+      cls.Ctor     = function() end
+    end
+
+    cls.__cname = classname
+    cls.__ctype = 1
+
+    function cls.New(...)
+      local instance = cls.__create(...)
+      -- copy fields from class to native object
+      for key, value in pairs(cls) do 
+        instance[key] = value
+      end
+      instance.class = cls
+      instance:Ctor(...)
+
+      return instance
+    end
+  else 
+    -- inherited from lua object
+    if super then
+      cls = {}
+      setmetatable(cls, {__index = super})
+      cls.super = super
+    else 
+      cls = {Ctor = function() end}
+    end
+
+    cls.__cname = classname
+    cls.__ctype = 2 -- Lua
+    cls.__index = cls
+
+    function cls.New(...)
+      local instance = setmetatable({}, cls)
+      instance.class = cls
+      instance:Ctor(...)
+
+      return instance
+    end
+  end
+
+  return cls
 end
