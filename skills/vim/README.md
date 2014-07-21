@@ -86,3 +86,12 @@
     if has("autocmd")
       au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
     endif
+
+
+
+
+## **Ubuntu Install YouCompleteMe**
+    $ sudo apt-get install build-essential cmake
+    $ sudo apt-get install python-dev
+    $ cd ~/.vim/bundle/YouCompleteMe/ 
+    $ ./install.sh --clang-completer
