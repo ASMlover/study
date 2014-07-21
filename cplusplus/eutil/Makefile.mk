@@ -35,7 +35,8 @@ CFLAGS	= -O2 -W3 -MDd -GS -Zi -Fd"vc.pdb" -EHsc -D_DEBUG\
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no winmm.lib 
 OBJS	= el_main.obj el_unit.obj el_allocator_test.obj\
-	el_auto_array_test.obj el_auto_ptr_test.obj el_buffer_test.obj\
+	el_unique_array_test.obj el_unique_ptr_test.obj el_buffer_test.obj\
+	el_condition_test.obj el_locker_test.obj\
 	\
 	el_win_condition.obj el_win_io.obj\
 	\
