@@ -190,3 +190,37 @@
         * 'numeric'控制如何格式化数字;
         * 'time'控制如何格式化日期和时间;
         * 'all'控制上述所有功能;
+
+
+
+## **6. 调试库**
+    由两类组成:
+      * 自省函数: 允许检查一个正在运行中程序的各方面;
+      * 钩子: 允许跟踪一个程序的执行;
+
+> ### **6.1 自省机制**
+    1) debug.getinfo 
+        * 第一个参数是一个函数或一个栈层;
+        * 到为某函数foo调用debug.getinfo(foo)会得到一个table, 包含了一些与该
+          函数相关的信息;
+    2) debug.getinfo返回的table有如下字段:
+        * source: 函数定义的位置
+        * short_src: source的短版本, 可用于错误信息中
+        * linedefined: 该函数定义在源代码中第一行的行号
+        * lastlinedefined: 该函数定义在源代码中最后一行的行号
+        * what: 函数的类型
+        * name: 该函数的一个适当的名称
+        * namewhat: 上一个字段的含义, 可能是'global', 'local', 'method', 
+          'field'或''
+        * nups: 该函数的upvalue的数量
+        * activelines: 一个table, 包含了该函数的所有活动行的集合
+        * func: 函数本身
+    3) debug.getinfo的第二个参数用于指定希望获取哪些信息, 可选值如下:
+        * 'n' -> 选择name或namewhat
+        * 'f' -> 选择func
+        * 'S' -> 选择source, short_src, what, linedefined和lastlinedefined
+        * 'l' -> 选择currentline
+        * 'L' -> 选择activelines
+        * 'u' -> 选择nups
+
+> ###
