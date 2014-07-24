@@ -253,3 +253,18 @@
         * 一个可选数字, 用于说明多久获得一次count事件
     3) 需要监控call, return和line事件, 需要将他们的首字母(c, r, l)放入到掩码
        字符串;
+
+> ### **6.5 性能剖析**
+    1) 如果做计时剖析, 最好使用C接口;
+    2) 但对于计数性剖析, 钩子还是很好用的:
+          local function Hook()
+            local f = debug.getinfo(2, 'f').func 
+            if counters[f] == nil then
+              counters[f] = 1
+              names[f] = debug.getinfo(2, 'Sn')
+            else
+              counters[f] = counters[f] + 1
+            end
+          end
+        运行profiler:
+          $ lua profiler xxx.lua
