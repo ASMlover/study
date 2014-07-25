@@ -28,3 +28,44 @@
     2) lua.h定义了Lua提供的基础函数(lua环境, 调用lua函数, 读写lua环境中的全
        局变量, 注册lua调用的新函数)
     3) lauxlib.h定义了辅助库提供的函数;
+
+> ### **1.2 栈**
+    1) 通过栈来交换数据
+        * 获取一个值, 只需调用一个Lua API, lua会将指定值压入栈中;
+        * 传值, 需要先将值压入栈, 然后调用Lua API, Lua会将获取该值并将其从栈
+          中弹出;
+        * 严格的LIFO操作, 调用Lua时只会改变栈的顶部;
+    2) 压入元素
+        * 常量nil => lua_pushnil
+        * 双精度浮点数 => lua_pushnumber
+        * 整数 => lua_pushinteger
+        * 布尔 => lua_pushboolean
+        * 字符串(任意字符串, char*及长度) => lua_pushlstring
+        * 零结尾的字符串 => lua_pushstring
+    3) 向栈中压入元素的时候, 应该确保栈中有足够的空间; lua启动时栈中至少有20
+       个空闲的槽; 
+       lua_checkstack(lua_State* L, int sz)可以检查栈中是否有足够空间;
+    4) 查询元素:
+        * 第一个压入元素为1, 第二个为2, 依次类推到栈顶; 正数访问从栈底开始;
+        * -1为栈顶, -2为栈顶下的元素, 依次类推到栈底, 负数访问从栈顶开始;
+        * lua_is*类函数检查元素是否为特定类型;
+        * lua_type返回元素类型:
+            - LUA_TNIL
+            - LUA_TBOOLEAN
+            - LUA_TNUMBER
+            - LUA_TSTRING
+            - LUA_TTABLE
+            - LUA_TTHREAD
+            - LUA_TUSERDATA
+            - LUA_TFUNCTION
+        * lua_to*类函数从栈中获取一个值;
+    5) 其他操作
+        * lua_gettop => 返回栈中元素个数, 也就是栈顶元素的索引;
+        * lua_settop => 将栈顶设置到一个指定位置, 修改栈中元素的数量;
+          lua_settop(L, 0)用于清空栈;
+        * lua_pushvalue => 将指定索引上值的副本压入栈;
+        * lua_remove => 删除指定索引上的元素, 并将该位置之上的所有元素下移以
+          填补空缺;
+        * lua_insert => 上移指定位置上的元素以开辟一个槽的空间, 然后将栈顶元
+          移动到该位置;
+        * lua_replace => 弹出栈顶的值, 将该值设置到指定索引上,不移动任何东西
