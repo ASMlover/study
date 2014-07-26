@@ -80,3 +80,25 @@
     4) 当一个C函数监测到一个错误应该调用lua_error;
         lua_error会清理lua中所需要清理的东西, 然后跳转回发起执行的那个
         lua_pcall, 并附上一条错误信息;
+
+
+
+## **2. 扩展应用程序**
+> ### **2.1 基础**
+    1) 获取lua中的变量:
+          -- defined in lua fil 
+          width = 200
+          height = 300
+          // in C++
+          void load(lua_State* L, const char* fname, int* w, int* h) {
+            if (luaL_loadfile(L, fname) || lua_pcall(L, 0, 0, 0))
+              error(...);
+            lua_getglobal(L, "width");
+            lua_getglobal(L, "height");
+            if (!lua_isnumber(L, -2))
+              error(...);
+            if (!lua_isnumber(L, -1))
+              error(...);
+            *w = lua_tointeger(L, -2);
+            *h = lua_tointeger(L, -1);
+          }
