@@ -102,3 +102,41 @@
             *w = lua_tointeger(L, -2);
             *h = lua_tointeger(L, -1);
           }
+
+> ### **2.2 table操作**
+    1) 获取table变量中的成员:
+          -- Lua 
+          background = {r=0.3, g=0.1, b=0.2}
+          // C++
+          lua_getglobal(L, "background")；
+          if (!lua_istable(L, -1))
+            error(...);
+          red = getfield(L, "r");
+          green = getfield(L, "g");
+          blue = getfield(L, "b");
+          // getfield 实现如下
+          int getfield(lua_State* L, const char* key) {
+            int result;
+            lua_pushstring(L, key);
+            lua_gettable(L, -2);  // get background[key];
+            if (!lua_isnumber(L, -1))
+              error(...);
+            result = (int)lua_tonumber(L, -1);
+            lua_pop(L, 1);
+            return result;
+          }
+    2) 在lua5.1中可以更简单的实现:
+          lua_getfield(L, -1, key);
+          可以替换掉
+          lua_pushstring(L, key);
+          lua_gettable(L, -2);
+    3) 写table
+          void SetTable(lua_State* L, const char* index, int value) {
+            lua_pushstring(L, index);
+            lua_pushnumber(L, value);
+            lua_settable(L, -3);
+          }
+          void SetTable(lua_State* L, const char* index, int value) {
+            lua_pushnumber(L, value);
+            lua_setfield(L, -2, index);
+          }
