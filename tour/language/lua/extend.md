@@ -196,3 +196,21 @@
         void lua_rawgeti(lua_State* L, int index, int key);
         void lua_rawseti(lua_State* L, int index, int key);
         index表示table在栈中的位置, key表示元素在table中的位置;
+
+> ### **4.2 字符串操作**
+    1) 一个C函数从Lua中收到一个字符串参数时:
+        * 不要在访问字符串时从栈中弹出它;
+        * 不要修改字符串;
+    2) 有用的函数:
+        * lua_pushfstring(lua_State* L, const char* fmt, ...);
+          类似于sprintf, 会根据一个格式字符串和一些额外的参数来创建一个新字
+          符串且无需提供这个字符串的缓冲;
+        * 只接受%%, %s, %d, %f, %c; 不接受任何例如宽度或精度选项;
+    3) 使用缓存机制的第一步是声明一个luaL_Buffer变量, 并用luaL_buffinit来初
+       始化
+        * luaL_addchar -> 将一个字符放入缓存
+        * luaL_addlstring -> 将具有显示长度的字符串放入缓存
+        * luaL_addstring -> 将0结尾的字符串放入缓存
+        * luaL_pushresult -> 更新缓存, 并将最终的字符串留在栈顶
+    4) luaL_addvalue用于将栈顶的值加入缓冲, 如果栈顶的值不是字符串或数字的话
+       那么调用这个函数会引发一个错误;
