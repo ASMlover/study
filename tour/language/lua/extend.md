@@ -167,3 +167,23 @@
     2) 在Lua使用C函数之前, 必须注册这个函数, 可以使用lua_pushcfunction来注册
         lua_pushcfunction(L, l_sin);
         lua_setglobal(L, "my_sin");
+
+> ### **3.2 C模块**
+    1) Lua调用C函数时, 并不依赖函数名, 包的位置或可见性规则, 而只依赖于注册
+       时传入的函数地址; C模块只有一个公共函数, 用于创建C模块;
+    2) 步骤:
+        * 定义模块的函数;
+        * 声明一个luaL_Reg的数组, 其中包含模块中所有的函数和名称:
+          static const struct luaL_Reg mylib[] = {
+            {"dir", l_dir}, 
+            {"sin", l_sin}, 
+            {NULL, NULL},
+          }
+          数组最后一个元素总是{NULL, NULL}用以标识结尾;
+        * 声明模块主函数:
+          int luaopen_mylib(lua_State*) {
+            luaL_register(L, "mylib", mylib);
+            return 1;
+          }
+          在luaL_register返回的时候, 会将这模块table留在栈中;
+        * 在Lua中可以使用require "mylib"加载这个模块;
