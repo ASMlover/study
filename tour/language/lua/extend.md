@@ -140,3 +140,18 @@
             lua_pushnumber(L, value);
             lua_setfield(L, -2, index);
           }
+
+> ### **2.3 调用lua函数**
+        -- Lua function
+        function f(x, y)
+        // C++
+        double x, y;
+        lua_getglobal(L, "f");
+        lua_pushnumber(L, x);
+        lua_pushnumber(L, y);
+        if (lua_pcall(L, 2, 1, 0) != 0)
+          error(...);
+        if (!lua_isnumber(L, -1))
+          error(...);
+        r = lua_tonumber(L, -1);
+        lua_pop(L, 1);
