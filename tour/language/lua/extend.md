@@ -187,3 +187,12 @@
           }
           在luaL_register返回的时候, 会将这模块table留在栈中;
         * 在Lua中可以使用require "mylib"加载这个模块;
+
+
+
+## **4. 编写C函数的技术**
+> ### **4.1 数组操作**
+    1) API
+        void lua_rawgeti(lua_State* L, int index, int key);
+        void lua_rawseti(lua_State* L, int index, int key);
+        index表示table在栈中的位置, key表示元素在table中的位置;
