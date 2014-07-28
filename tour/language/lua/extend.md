@@ -155,3 +155,15 @@
           error(...);
         r = lua_tonumber(L, -1);
         lua_pop(L, 1);
+
+
+
+
+## **3. 从Lua调用C**
+> ### **3.1 C函数**
+    1) 所有注册到Lua中的C函数都必须是如下类型:
+        typedef int (*lua_CFunction)(lua_State*);
+        返回一个整数表示压入到栈中的返回值的数量;
+    2) 在Lua使用C函数之前, 必须注册这个函数, 可以使用lua_pushcfunction来注册
+        lua_pushcfunction(L, l_sin);
+        lua_setglobal(L, "my_sin");
