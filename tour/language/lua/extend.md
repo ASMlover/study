@@ -225,3 +225,12 @@
         * 不应该使用数字类型的Key, 这种key被引用系统所保留;
         * luaL_ref(L, LUA_REGISTRYINDEX)会从栈中弹出一个值, 用一个新分配的整
           数key来将这个值保存到注册表中, 最后返回这个Key;
+        * lua_rawgeti(L, LUA_REGISTRYINDEX, r)将与引用r关联的值压入栈中;
+        * luaL_unref(L, LUA_REGISTRYINDEX, r)释放该值和引用;
+
+
+
+## **5. 用户自定义类型**
+> ### **5.1 userdata**
+    1) lua_newuserdata会根据指定大小分配一块内存, 并将对应的userdata压入栈中
+       最后返回这个内存块的地址;
