@@ -265,3 +265,22 @@
           luaL_register(L, "Array", arraylib_f);
           return 1;
         }
+
+> ### **5.4 数组访问**
+        static const struct luaL_Reg arraylib_f[] = {
+          {"New", NewArray}, 
+          {NULL, NULL},
+        };
+        static const struct luaL_Reg arraylib_m[] = {
+          {"__newindex", SetArray}, 
+          {"__index", GetArray}, 
+          {"__len", GetSize}, 
+          {"__tostring", Array2String}, 
+          {NULL, NULL}, 
+        };
+        int luaopen_array(lua_State* L) {
+          luaL_newmetatable(L, "LuaBook.Array");
+          luaL_register(L, NULL, arraylib_m);
+          luaL_register(L, "Array", arraylib_f);
+          return 1;
+        }
