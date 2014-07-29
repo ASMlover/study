@@ -214,3 +214,14 @@
         * luaL_pushresult -> 更新缓存, 并将最终的字符串留在栈顶
     4) luaL_addvalue用于将栈顶的值加入缓冲, 如果栈顶的值不是字符串或数字的话
        那么调用这个函数会引发一个错误;
+
+> ### **4.3 在C函数中保存状态**
+        在C中编写Lua库的时候最好不要使用全局变量或静态变量:
+          * 无法在一个C变量中保存普通的Lua对象;
+          * 若一个库使用全局变量或静态变量, 就无法用于多个Lua状态了;
+    1) 注册表(Registry)
+        * 位于伪索引上, 由LUA_REGISTRYINDEX定义 
+        * lua_getfield(L, LUA_REGISTRYINDEX, key)获取key对应的值;
+        * 不应该使用数字类型的Key, 这种key被引用系统所保留;
+        * luaL_ref(L, LUA_REGISTRYINDEX)会从栈中弹出一个值, 用一个新分配的整
+          数key来将这个值保存到注册表中, 最后返回这个Key;
