@@ -245,3 +245,23 @@
         * luaL_getmetatable -> 可以在注册表中检索与tname管理的元表;
         * luaL_checkudata -> 可以检查栈中指定位置上是否为一个uerdata, 并是否
           具有与给定名称相匹配的元表;
+
+> ### **5.3 面向对象的访问**
+        static const strutc luaL_Reg arraylib_f[] = {
+          {"New", NewArray}, 
+          {NULL, NULL},
+        };
+        static const struct luaL_Reg arraylib_m[] = {
+          {"Set", SetArray}, 
+          {"Get", GetArray},
+          {"Size", GetSize}, 
+          {NULL, NULL},
+        };
+        int luaopen_array(lua_State* L) {
+          luaL_newmetatable(L, "LuaBook.Array");
+          lua_pushvalue(L, -1); // 复制元表
+          lua_setfield(L, -2, "__index");
+          luaL_register(L, NULL, arraylib_m);
+          luaL_register(L, "Array", arraylib_f);
+          return 1;
+        }
