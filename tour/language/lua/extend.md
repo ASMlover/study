@@ -284,3 +284,11 @@
           luaL_register(L, "Array", arraylib_f);
           return 1;
         }
+
+> ### **5.5 轻量级userdata**
+    1) 轻量级userdata是一种表示C指针的值(void*);
+    2) lua_pushlightuserdata -> 将轻量级userdata放入栈中;
+    3) 轻量级userdata不是缓冲, 只是一个指针而已, 没有元表, 就像数字一样, 也
+       无需受垃圾收集器的管理;
+    4) 轻量级userdata的用途是相等性判断, 它与所表示同一个指针的轻量级
+       userdata相等, 可以使用轻量级userdata用于查找Lua中的C对象;
