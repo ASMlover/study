@@ -234,3 +234,14 @@
 > ### **5.1 userdata**
     1) lua_newuserdata会根据指定大小分配一块内存, 并将对应的userdata压入栈中
        最后返回这个内存块的地址;
+
+> ### **5.2 元表**
+    1) 辨别不同类型的userdata的方法是为每种类型创建一个唯一的元表;
+    2) Lua中习惯将所有新的C类型注册到注册表中, 以一个类型名作为key, 元表作为
+       value;
+    3) 辅助库函数
+        * luaL_newmetatable -> 创建一个新的table做元表, 将其压入栈顶, 然后将
+          这个table与注册表中的指定名称关联起来
+        * luaL_getmetatable -> 可以在注册表中检索与tname管理的元表;
+        * luaL_checkudata -> 可以检查栈中指定位置上是否为一个uerdata, 并是否
+          具有与给定名称相匹配的元表;
