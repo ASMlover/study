@@ -292,3 +292,45 @@
        无需受垃圾收集器的管理;
     4) 轻量级userdata的用途是相等性判断, 它与所表示同一个指针的轻量级
        userdata相等, 可以使用轻量级userdata用于查找Lua中的C对象;
+
+
+
+## **6. 管理资源**
+> ### **6.1 目录迭代器**
+        static int lua_Dir(lua_State* L) {
+          const char* path = luaL_checkstring(L, 1);
+          DIR** d = (DIR**)lua_newuserdata(L, sizeof(DIR));
+          luaL_getmetatable(L, "LuaBook.Dir");
+          lua_setmetatable(L, -2);
+          *d = opendir(path);
+          if (NULL == *d)
+            luaL_error(L, "...");
+          lua_pushcclosure(L, Dir_Iter, 1);
+          return 1;
+        }
+        static int Dir_Iter(lua_State* L) {
+          DIR* d = *(DIR**)lua_touserdata(L, lua_upvalueindex(1));
+          struct dirent* entry;
+          if (NULL != (entry = readdir(d))) {
+            lua_pushstring(L, entry->d_name);
+            return 1;
+          }
+          else {
+            return 0;
+          }
+        }
+        static int Dir_GC(lua_State* L) {
+          DIR* d = *(DIR**)lua_touserdata(L, 1);
+          if (d)
+            closedir(d);
+          return 0;
+        }
+        int luaopen_Dir(lua_State* L) {
+          luaL_newmetatable(L, "LuaBook.Dir");
+          lua_pushstring(L, "__gc");
+          lua_pushcfunction(L, Dir_GC);
+          lua_settable(L, -3);
+          lua_pushcfunction(L, lua_Dir);
+          lua_setglobal(L, "Dir");
+          return 0;
+        }
