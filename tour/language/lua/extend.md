@@ -334,3 +334,24 @@
           lua_setglobal(L, "Dir");
           return 0;
         }
+
+> ### **6.2 XML分析器**
+    1) 使用Expat来实现;
+    2) 创建和销毁一个Expat分析器的函数:
+        * XML_Parser XML_ParserCreate(const char* encoding);
+        * void XML_ParserFree(XML_Parser p);
+    3) 创建一个分析器后, 必须注册其回调处理函数:
+        * XML_SetElementHandler(XML_Parser p, 
+              XML_StartElementHandler start, XML_EndElementHandler end);
+        * XML_SetCharacterDataHandler(XML_Parser p, 
+              XML_CharacterDataHandler handler);
+          typedef void (*XML_StartElementHandler)(
+              void* uData, const char* name, const char** atts);
+          typedef void (*XML_EndElementHandler)(
+              void* uData, const char* name);
+          typedef void (*XML_CharacterDataHandler)(
+              void* uData, const char* s, int len);
+    4) 为了将数据输入Expat, 需要使用以下函数:
+        * int XML_Parse(XML_Parser p, const char*s , int len, int isLast);
+    5) 最后设置用户数据的函数, 设置的用户数据将传给所有的处理函数:
+        * void XML_SetUserData(XML_Parser p, void* uData);
