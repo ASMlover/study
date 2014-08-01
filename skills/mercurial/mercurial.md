@@ -9,23 +9,23 @@
           [ui]  
           username = asmlover  # ==> 配置HG用户的名字  
           editor = vim         # ==> 默认提交的编辑器  
-					merge = beyondcompare3  # ==> 合并工具
+          merge = beyondcompare3  # ==> 合并工具
           [web]  
           allow_push = *       # ===> 配置hg内置web服务器允许推送限制  
           encoding = UTF-8  
           port = 8000          # ===> hg内置web服务器的端口  
           push_ssl = False  
-					[extensions]
-					color =              # ===> 控制台下区分颜色
-					mq = 
-					hgext.graphlog =     # ===> 可使用hg glog查看分支结构
-					[tortoisehg]
-					authorcolor = True   # ===> UI界面中每条分支, 不同人不同颜色
-					vdiff = beyondcompare3  # ===> diff对比工具
-					[auth]
-					xxx.prefix = https://xxx   # ===> 授权项目地址xxx为目录
-					xxx.username = xxx
-					xxx.password = xxx
+          [extensions]
+          color =              # ===> 控制台下区分颜色
+          mq = 
+          hgext.graphlog =     # ===> 可使用hg glog查看分支结构
+          [tortoisehg]
+          authorcolor = True   # ===> UI界面中每条分支, 不同人不同颜色
+          vdiff = beyondcompare3  # ===> diff对比工具
+          [auth]
+          xxx.prefix = https://xxx   # ===> 授权项目地址xxx为目录
+          xxx.username = xxx
+          xxx.password = xxx
 > ### **1.2 Mercurial服务器配置** ###
     1) 配置.conf文件 
           [paths]  
