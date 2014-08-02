@@ -180,3 +180,22 @@
         lua_Alloc lua_getallocf(lua_State* L, void** ud);
     4) lua_setallocf -> 修改一个Lua状态的内存分配函数;
         void lua_setallocf(lua_State* L, lua_Alloc f, void* ud);
+
+> ### **2.2 垃圾收集器**
+    1) 采用"标记扫描"垃圾收集器;
+    2) 垃圾收集分为 标记->整理->清扫->收尾;
+    3) 垃圾收集API:
+        * int lua_gc(lua_State* L, int what, int data)
+        * collectgarbage(what[, data])
+        * what参数:
+          LUA_GCSTOP('stop'), 停止收集器;
+          LUA_GCRESTART('restart'), 重启收集器;
+          LUA_GCCOLLECT('collect'), 执行一轮完整的垃圾收集周期, 收集并释放所
+                                    有不可能到达的对象;
+          LUA_GCSTEP('step'), 执行一些垃圾收集工作;
+          LUA_GCCOUNT('count'), 返回Lua当前使用的内存量, 以KB为单位;
+          LUA_GCCOUNTB, 返回Lua当前使用的内存量的KB余量;
+          LUA_GCSETPAUSE('setpause'), 设置收集器的pause参数, 其值由data参数
+                                      指定, 表示一个百分比;
+          LUA_GCSETSTEPMUL('setstepmul'), 设置收集器stepmul参数, 其值由data
+                                          指定, 表示一个百分比;
