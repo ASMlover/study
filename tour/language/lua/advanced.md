@@ -157,3 +157,26 @@
             luaL_register(L, "lproc", funcs);
             return 1;
           }
+
+
+
+## **2. 内存管理**
+> ### **2.1 分配函数**
+    1) lua_newstate会以一个默认的分配函数来创建Lua状态;
+        lua_State* lua_newstate(lua_Alloc f, void* ud);
+        typedef void* (*lua_Alloc)(void* ud, 
+            void* ptr, size_t osize, size_t nsize);
+    2) lua_newstate使用的标准分配函数如下:
+        void* l_alloc(void* ud, void* ptr, size_t osize, size_t nsize) {
+          if (0 == nsize) {
+            free(ptr);
+            return NULL;
+          }
+          else {
+            return realloc(ptr, nsize);
+          }
+        }
+    3) 可以调用lua_getallocf来获取一个Lua状态的内存分配状态;
+        lua_Alloc lua_getallocf(lua_State* L, void** ud);
+    4) lua_setallocf -> 修改一个Lua状态的内存分配函数;
+        void lua_setallocf(lua_State* L, lua_Alloc f, void* ud);
