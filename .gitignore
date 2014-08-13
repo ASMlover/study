@@ -13,3 +13,4 @@ tolset
 *.ilk
 *.idb
 *.pyc
+*.out
