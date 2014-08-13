@@ -70,7 +70,7 @@
        个参数是一个序列(sequence), 包含了组成这个规则的所有语法符号, p[i]就
        是规则中第i个文法符号:
           def p_expression_add(p):
-            'expr : expr ADD expr'
+            'expression : expression ADD expression'
             #  |      |   |   |
             # p[0]   p[1]p[2]p[3]
             p[0] = p[1] + p[3]
@@ -98,7 +98,7 @@
               )
           USUB是虚词法单元, 还需为其定义规则:
               def p_expr_usub(p):
-                'expr : sub expr %prec USUB'
+                'expression : "-" expression %prec USUB'
                 p[0] = -p[2]
           nonassoc指定操作符不具备结合性; 如a < b < c是不合法的
               precedence = (
