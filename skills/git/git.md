@@ -84,3 +84,44 @@
     $ git add .
     $ git commit 
     $ git push origin master
+
+
+
+## **3. Git命令**
+    1) 检查出谁动了我的代码:
+       会显示文件中每一行的作者, 最后一次改动进行的提交以及该次提交的时间;
+       $ git blame [file_name]
+    2) 回顾仓库历史(git log)
+       * --oneline 把每次提交显示的信息压缩成hash值和提交信息在一行显示;
+       * --graph 会在输出界面的左手边用一种基于文本的图形表示法来显示历史;
+       * --all 显示全部分支的历史;
+    3) 绝不丢失一个提交信息(git reflog)
+       git reflog显示的是所有head移动的信息; 它是在本地的, 不是仓库的一部分,
+       不会包含在推送和合并中;
+       git reflog显示一个提交信息(b1b0ee9 - HEAD@{4}), 这是使用(hard reset)
+       时丢失的那个;
+    4) 合并多次提交
+       把多次提交合并为一个:
+       $ git rebase -i HEAD~[number_of_commits]
+       $ git rebase -i HEAD~2 => 合并最后两次提交
+    5) 保存尚未提交的修改(git stash)
+       stash的本质是保存你全部的改动以供将来使用:
+        $ git stash
+        * 查看暂存列表: $ git stash list
+        * 不想保存或恢复这些改动: $ git stash apply
+        * 只使用某些保存, 需要在apply命令后加上指明标示符:
+          $ git stash apply stash@{2}
+    6) 检查丢失的提交
+       应对大型仓库的时候reflog就不行了:
+       $ git fsck --lost-found
+       在看到丢失的提交后, 可以使用git show [commit_hash]来查看这些提交所包
+       含的改动或使用git merge [commit_hash]来恢复提交;
+       fsck在你删除一个远端分支并克隆了仓库的时候, 也可以搜索并恢复该远端的
+       分支;
+    7) cherry-pick命令
+       从不同的分支里选择某次提交并把它合并到当前的分支来;
+       一个BUG, 如果你在一个分支中修改了它, 可以使用cherry-pick把这次提交合
+       并到其他的分支而不会搞乱其他的文件或提交;
+        * 首先得到某个提交的 commit_hash
+        * 切换到想要使用该提交的分支
+        * $ git cherry-pick [commit_hash]
