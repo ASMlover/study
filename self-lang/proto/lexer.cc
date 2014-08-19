@@ -148,10 +148,10 @@ Lexer::GetChar(void)
       bsize_  = static_cast<int>(strlen(lexbuf_));
       lexpos_ = 0;
     }
-  }
-  else {
-    eof_ = true;
-    return EOF;
+    else {
+      eof_ = true;
+      return EOF;
+    }
   }
 
   return lexbuf_[lexpos_++];
