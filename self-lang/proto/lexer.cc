@@ -27,9 +27,50 @@
 #include <utility.h>
 #include "lexer.h"
 
+class ReservedMgr : public util::Singleton<ReservedMgr> {
+  std::map<std::string, Token::Type> reserveds_;
+public:
+  ReservedMgr(void) 
+  {
+    Init();
+  }
+  ~ReservedMgr(void) 
+  {
+  }
+
+  Token::Type Lookup(const std::string& key) 
+  {
+    map<std::string, Token::Type>::iterator found(reserveds_.find(key));
+    if (found != reserveds_.end())
+      return (*found).second;
+
+    return Token::Type::TYPE_ID;
+  }
+private:
+  void Init(void) 
+  {
+    reserveds_["package"]   = Token::TYPE_PACKAGE;
+    reserveds_["import"]    = Token::TYPE_IMPORT;
+    reserveds_["enum"]      = Token::TYPE_ENUM;
+    reserveds_["message"]   = Token::TYPE_MESSAGE;
+    reserveds_["extend"]    = Token::TYPE_EXTEND;
+    reserveds_["required"]  = Token::TYPE_REQUIRED;
+    reserveds_["optional"]  = Token::TYPE_OPTIONAL;
+    reserveds_["repeated"]  = Token::TYPE_REPEATED;
+    reserveds_["default"]   = Token::TYPE_DEFAULT;
+    reserveds_["bool"]      = Token::TYPE_BOOL;
+    reserveds_["bytes"]     = Token::TYPE_BYTES;
+    reserveds_["string"]    = Token::TYPE_STRING;
+    reserveds_["int32"]     = Token::TYPE_INT32;
+    reserveds_["uint32"]    = Token::TYPE_UINT32;
+    reserveds_["int64"]     = Token::TYPE_INT64;
+    reserveds_["uint64"]    = Token::TYPE_UINT64;
+    reserveds_["real32"]    = Token::TYPE_REAL32;
+    reserveds_["real64"]    = Token::TYPE_REAL64;
+  }
+}
 
 
-std::map<std::string, Token::Type> Lexer::kReserveds;
 
 Lexer::Lexer(void)
   : stream_(static_cast<FILE*>(NULL))
@@ -103,7 +144,7 @@ Lexer::GetToken(Token& token)
 
     if (STATE_FINISH == state) {
       if (Token::TYPE_ID == type)
-        type = Lookup(token.name);
+        type = ReservedMgr::Instance().Lookup(token.name);
 
       token.type = type;
       token.line.fname  = fname_;
@@ -112,32 +153,6 @@ Lexer::GetToken(Token& token)
   }
 
   return type;
-}
-
-
-
-
-void 
-Lexer::LoadReserveds(void)
-{
-  kReserveds["package"]   = Token::TYPE_PACKAGE;
-  kReserveds["import"]    = Token::TYPE_IMPORT;
-  kReserveds["enum"]      = Token::TYPE_ENUM;
-  kReserveds["message"]   = Token::TYPE_MESSAGE;
-  kReserveds["extend"]    = Token::TYPE_EXTEND;
-  kReserveds["required"]  = Token::TYPE_REQUIRED;
-  kReserveds["optional"]  = Token::TYPE_OPTIONAL;
-  kReserveds["repeated"]  = Token::TYPE_REPEATED;
-  kReserveds["default"]   = Token::TYPE_DEFAULT;
-  kReserveds["bool"]      = Token::TYPE_BOOL;
-  kReserveds["bytes"]     = Token::TYPE_BYTES;
-  kReserveds["string"]    = Token::TYPE_STRING;
-  kReserveds["int32"]     = Token::TYPE_INT32;
-  kReserveds["uint32"]    = Token::TYPE_UINT32;
-  kReserveds["int64"]     = Token::TYPE_INT64;
-  kReserveds["uint64"]    = Token::TYPE_UINT64;
-  kReserveds["real32"]    = Token::TYPE_REAL32;
-  kReserveds["real64"]    = Token::TYPE_REAL64;
 }
 
 int 
@@ -163,18 +178,6 @@ Lexer::UngetChar(void)
   if (!eof_)
     --lexpos_;
 }
-
-Token::Type 
-Lexer::Lookup(const std::string& key)
-{
-  std::map<std::string, Token::Type>::iterator it;
-  it = kReserveds.find(key);
-  if (it != kReserveds.end())
-    return it->second;
-
-  return Token::TYPE_ID;
-}
-
 
 Token::Type 
 Lexer::LexerBegin(int c, State& out_state, bool& out_save)

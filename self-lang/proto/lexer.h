@@ -98,8 +98,6 @@ class Lexer : private util::UnCopyable {
   int                   lexpos_;
   bool                  eof_;
   char                  lexbuf_[BSIZE];
-
-  static std::map<std::string, Token::Type> kReserveds;
 public:
   Lexer(void);
   ~Lexer(void);
@@ -109,10 +107,8 @@ public:
 
   Token::Type GetToken(Token& token);
 private:
-  void LoadReserveds(void);
   int GetChar(void);
   void UngetChar(void);
-  Token::Type Lookup(const std::string& key);
 
   Token::Type LexerBegin(int c, State& out_state, bool& out_save);
   Token::Type LexerFinish(int c, State& out_state, bool& out_save);
