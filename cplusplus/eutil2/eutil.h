@@ -89,12 +89,11 @@
 #include <algorithm>
 #include <map>
 #include <queue>
-#include <unorder_map>
 #include <vector>
 
 // Have our own assert, so we are sure it does not get 
 // optomized away in a release build.
-#if !defined(!EL_ASSERT)
+#if !defined(EL_ASSERT)
 # define EL_ASSERT(expr) do {\
     if (!(expr)) {\
       fprintf(stderr, \

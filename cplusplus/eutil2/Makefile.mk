@@ -34,7 +34,9 @@ CFLAGS	= -O2 -W3 -MDd -GS -Zi -Fd"vc.pdb" -EHsc -D_DEBUG\
 	-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS -wd4290
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no winmm.lib 
-OBJS	= el_main.obj 
+OBJS	= el_main.obj\
+	\
+	el_win_io.obj
 
 
 
@@ -58,8 +60,8 @@ $(OUT): $(OBJS)
 .cc.obj:
 	$(CC) $(CFLAGS) $<
 
-#{.\win}.cc{}.obj:
-#	$(CC) $(CFLAGS) $<
+{.\win}.cc{}.obj:
+	$(CC) $(CFLAGS) $<
 
 {.\test}.cc{}.obj:
 	$(CC) $(CFLAGS) $<
