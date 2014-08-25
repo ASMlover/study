@@ -36,7 +36,9 @@ LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no winmm.lib 
 OBJS	= el_main.obj\
 	\
-	el_win_io.obj
+	el_win_io.obj\
+	\
+	el_io.obj
 
 
 

@@ -29,7 +29,7 @@
 
 namespace el {
 
-inc ColorPrintf(ColorType color, const char* format, ...) {
+int ColorPrintf(ColorType color, const char* format, ...) {
   va_list ap;
 
   va_start(ap, format);

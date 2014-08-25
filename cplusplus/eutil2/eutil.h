@@ -94,9 +94,11 @@
 // Have our own assert, so we are sure it does not get 
 // optomized away in a release build.
 #if !defined(EL_ASSERT)
+# include "el_io.h"
 # define EL_ASSERT(expr) do {\
     if (!(expr)) {\
-      fprintf(stderr, \
+      el::ColorFprintf(stderr, \
+          el::ColorType::COLORTYPE_RED, \
           "Assertion failed in %s on %d : %s\n", \
           __FILE__, \
           __LINE__, \
