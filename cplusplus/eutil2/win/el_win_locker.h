@@ -24,40 +24,51 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_LOCKER_HEADER_H__
-#define __EL_LOCKER_HEADER_H__
+#ifndef __EL_WIN_LOCKER_HEADER_H__
+#define __EL_WIN_LOCKER_HEADER_H__
 
 namespace el {
 
-// Helper class to Lock and Unlock a Locker automatically.
-template <typename Locker>
-class LockerGuard : private UnCopyable {
-  Locker& locker_;
+class Mutex : private UnCopyable {
+  CRIITCAL_SECTION mutex_;
 public:
-  explicit LockerGuard(Locker& locker)
-    : locker_(locker) {
-    locker_.Lock();
+  Mutex(void) {
+    InitializeCriticalSection(&mutex_);
   }
 
-  ~LockerGuard(void) {
-    locker_.Unlock();
+  ~Mutex(void) {
+    DeleteCriticalSection(&mutex_);
+  }
+
+  inline void Lock(void) {
+    EnterCriticalSection(&mutex_);
+  }
+
+  inline void Unlock(void) {
+    LeaveCriticalSection(&mutex_);
   }
 };
 
-class DummyLock : private UnCopyable {
+class SpinLock : private UnCopyable {
+  CRIITCAL_SECTION spinlock_;
 public:
-  DummyLock(void) {}
-  ~DummyLock(void) {}
+  SpinLock(void) {
+    EL_ASSERT(InitializeCriticalSectionAndSpinCount(&spinlock_, 4000));
+  }
 
-  inline void Lock(void) {}
-  inline void Unlock(void) {}
+  ~SpinLock(void) {
+    DeleteCriticalSection(&spinlock_);
+  }
+
+  inline void Lock(void) {
+    EnterCriticalSection(&spinlock_);
+  }
+
+  inline void Unlock(void) {
+    LeaveCriticalSection(&spinlock_);
+  }
 };
 
 }
 
-#if defined(EUTIL_WIN)
-# include "./win/el_win_locker.h"
-#elif defined(EUTIL_LINUX)
-#endif
-
-#endif  // __EL_LOCKER_HEADER_H__
+#endif  // __EL_WIN_LOCKER_HEADER_H__
