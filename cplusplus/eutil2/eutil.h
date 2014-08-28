@@ -117,4 +117,8 @@
 # define MAX(x, y)  ((x) > (y) ? (x) : (y))
 #endif
 
+#include "el_uncopyable.h"
+#include "el_locker.h"
+#include "el_singleton.h"
+
 #endif  // __EUTIL_HEADER_H__
