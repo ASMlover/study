@@ -24,22 +24,54 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_THREAD_HEADER_H__
-#define __EL_THREAD_HEADER_H__
-
-#define EL_THREAD_CALLBACK(__selector__, __target__)\
-  std::bind(&__selector__, (__target__), std::placehorders::_1)
+#ifndef __EL_POSIX_THREAD_HEADER_H__
+#define __EL_POSIX_THREAD_HEADER_H__
 
 namespace el {
 
-typedef std::function<void (void*)> RoutinerType;
+class Thread : private UnCopyable {
+  pthread_t    thread_id_;
+  RoutinerType routine_;
+  void*        argument_;
+public:
+  Thread(void) 
+    : thread_id_(0)
+    , routine_(nullptr) 
+    , argument_(nullptr) {
+  }
+
+  ~Thread(void) {
+    Join();
+  }
+
+  void Create(const RoutinerType& routine, void* argument = nullptr) {
+    routine_ = routine;
+    argument_ = argument;
+
+    EL_ASSERT(0 == pthread_create(
+          &thread_id_, nullptr, &Thread::Routine, this));
+  }
+
+  void Join(void) {
+    if (0 != thread_id_) {
+      EL_ASSERT(0 == pthread_join(thread_id_, 0));
+
+      thread_id_ = 0;
+    }
+  }
+private:
+  static void* Routine(void* argument) {
+    Thread* self = static_cast<Thread*>(argument);
+    if (nullptr == self)
+      return nullptr;
+
+    if (nullptr != routine_)
+      self->routine_(self->argument_);
+
+    return nullptr;
+  }
+};
 
 }
 
-#if defined(EUTIL_WIN)
-# include "./win/el_win_thread.h"
-#elif defined(EUTIL_LINUX)
-# include "./posix/el_posix_thread.h"
-#endif
-
-#endif  // __EL_THREAD_HEADER_H__
+#endif  // __EL_POSIX_THREAD_HEADER_H__
