@@ -30,7 +30,7 @@ RM	= rm
 CC	= g++
 CFLAGS	= -g -O2 -Wall -std=c++0x
 LDFLAGS	= -lpthread -lrt
-OBJS	= $(patsubst %.cc, %.o, $(wildcard ./test/*.cc *.cc))
+OBJS	= $(patsubst %.cc, %.o, $(wildcard ./test/*.cc ./posix/*.cc *.cc))
 
 
 
