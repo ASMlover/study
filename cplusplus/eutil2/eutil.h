@@ -121,7 +121,7 @@
 #include "el_uncopyable.h"
 #include "el_locker.h"
 #include "el_singleton.h"
-//#include "el_object_pool.h"
+#include "el_object_pool.h"
 #include "el_thread.h"
 
 #endif  // __EUTIL_HEADER_H__
