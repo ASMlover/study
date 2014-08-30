@@ -30,7 +30,7 @@
 namespace el {
 
 class Mutex : private UnCopyable {
-  CRIITCAL_SECTION mutex_;
+  CRITICAL_SECTION mutex_;
 public:
   Mutex(void) {
     InitializeCriticalSection(&mutex_);
@@ -50,7 +50,7 @@ public:
 };
 
 class SpinLock : private UnCopyable {
-  CRIITCAL_SECTION spinlock_;
+  CRITICAL_SECTION spinlock_;
 public:
   SpinLock(void) {
     EL_ASSERT(InitializeCriticalSectionAndSpinCount(&spinlock_, 4000));

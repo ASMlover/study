@@ -53,7 +53,7 @@ public:
     start_event_ = CreateEvent(nullptr, TRUE, FALSE, nullptr);
     EL_ASSERT(nullptr != start_event_);
 
-    thread_ = static_cast<HANDLE>(_beginthreadex(
+    thread_ = reinterpret_cast<HANDLE>(_beginthreadex(
           nullptr, 0, &Thread::Routine, this, 0, nullptr));
     EL_ASSERT(nullptr != thread_);
 

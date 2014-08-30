@@ -38,7 +38,7 @@ OBJS	= el_main.obj\
 	\
 	el_win_io.obj\
 	\
-	el_io.obj
+	el_io.obj el_time.obj
 
 
 
