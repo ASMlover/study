@@ -70,13 +70,14 @@ public:
   }
 private:
   bool AllocateChunk(void) {
-    TArrayPtr new_objects(new T[chunk_size_]);
+    T* chunks = new T[chunk_size_];
+    TArrayPtr new_objects(chunks);
     if (!new_objects)
       return false;
 
     all_objects_.push_back(new_objects);
     for (auto i = 0; i < chunk_size_; ++i)
-      free_list_.push(new_objects[i]);
+      free_list_.push(chunks[i]);
 
     return true;
   }
