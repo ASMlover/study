@@ -47,6 +47,10 @@ public:
   inline void Unlock(void) {
     LeaveCriticalSection(&mutex_);
   }
+
+  inline CRITICAL_SECTION* mutex(void) const {
+    return const_cast<CRITICAL_SECTION*>(&mutex_);
+  }
 };
 
 class SpinLock : private UnCopyable {
