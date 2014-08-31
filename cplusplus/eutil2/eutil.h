@@ -121,6 +121,7 @@
 
 #include "el_uncopyable.h"
 #include "el_locker.h"
+#include "el_condition.h"
 #include "el_singleton.h"
 #include "el_object_pool.h"
 #include "el_object_mgr.h"
