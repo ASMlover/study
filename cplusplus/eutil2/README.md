@@ -15,6 +15,7 @@
         $ make
 
   * **Windows**
+
         Step1: Setting enviroment for using MSVC(VS2012+).
         Step2:
           \> cd eutil
