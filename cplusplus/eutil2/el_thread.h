@@ -28,7 +28,7 @@
 #define __EL_THREAD_HEADER_H__
 
 #define EL_THREAD_CALLBACK(__selector__, __target__)\
-  std::bind(&__selector__, (__target__), std::placehorders::_1)
+  std::bind(&__selector__, (__target__), std::placeholders::_1)
 
 namespace el {
 
