@@ -27,6 +27,10 @@
 #ifndef __EL_WIN_THREAD_HEADER_H__
 #define __EL_WIN_THREAD_HEADER_H__
 
+#ifndef _MT
+# error "REQUIRES /MTd, /MT, /MDd or /MD COMPILER OPTIONS"
+#endif
+
 namespace el {
 
 class Thread : private UnCopyable {
