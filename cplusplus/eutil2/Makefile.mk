@@ -38,7 +38,7 @@ OBJS	= el_main.obj\
 	\
 	el_win_io.obj el_win_condition.obj\
 	\
-	el_io.obj el_time.obj el_thread_pool.obj
+	el_io.obj el_time.obj el_thread_pool.obj el_logging.obj
 
 
 

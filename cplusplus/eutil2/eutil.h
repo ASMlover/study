@@ -59,6 +59,8 @@
 # include <windows.h>
 # include <mmsystem.h>
 # include <process.h>
+# include <io.h>
+# include <direct.h>
 #elif defined(EUTIL_LINUX)
 # include <sys/types.h>
 # include <sys/time.h>
@@ -117,6 +119,12 @@
 
 #if !defined(MAX)
 # define MAX(x, y)  ((x) > (y) ? (x) : (y))
+#endif
+
+#if defined(EUTIL_WIN)
+# ifndef snprintf
+#   define snprintf _snprintf
+# endif
 #endif
 
 #include "el_uncopyable.h"
