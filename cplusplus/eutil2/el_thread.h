@@ -27,7 +27,9 @@
 #ifndef __EL_THREAD_HEADER_H__
 #define __EL_THREAD_HEADER_H__
 
-#define EL_THREAD_CALLBACK(__selector__, __target__)\
+#define EL_THREAD_FUNCALL(__selector__)\
+  std::bind(&__selector__, std::placeholders::_1)
+#define EL_THREAD_CLSCALL(__selector__, __target__)\
   std::bind(&__selector__, (__target__), std::placeholders::_1)
 
 namespace el {

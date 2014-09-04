@@ -46,7 +46,7 @@ void ThreadPool::Start(uint32_t thread_count) {
   running_ = true;
   for (uint32_t i = 0; i < thread_count; ++i) {
     threads_.push_back(ThreadPtr(new Thread()));
-    threads_[i]->Create(EL_THREAD_CALLBACK(ThreadPool::Routine, this));
+    threads_[i]->Create(EL_THREAD_CLSCALL(ThreadPool::Routine, this));
   }
 }
 
