@@ -30,12 +30,12 @@ typedef std::shared_ptr<el::Thread> ThreadPtr;
 static int el_count1 = 0;
 static int el_count2 = 0;
 static const int kCount = 5;
-static el::Mutex el_mutex;
-static el::SpinLock el_spinlock;
 
 static void RoutineMutex(void* arg) {
+  el::Mutex* mutex = static_cast<el::Mutex*>(arg);
+
   for (int i = 0; i < 1000; ++i) {
-    el::LockerGuard<el::Mutex> guard(el_mutex);
+    el::LockerGuard<el::Mutex> guard(*mutex);
 
     ++el_count1;
     ++el_count2;
@@ -43,8 +43,10 @@ static void RoutineMutex(void* arg) {
 }
 
 static void RoutineSpinLock(void* arg) {
+  el::SpinLock* spinlock = static_cast<el::SpinLock*>(arg);
+
   for (int i = 0; i < 1000; ++i) {
-    el::LockerGuard<el::SpinLock> guard(el_spinlock);
+    el::LockerGuard<el::SpinLock> guard(*spinlock);
 
     ++el_count1;
     ++el_count2;
@@ -53,12 +55,13 @@ static void RoutineSpinLock(void* arg) {
 
 UNIT_IMPL(Mutex) {
   std::vector<ThreadPtr> threads;
+  el::Mutex mutex;
 
   el_count1 = 0;
   el_count2 = 0;
   for (int i = 0; i < kCount; ++i) {
     threads.push_back(ThreadPtr(new el::Thread()));
-    threads[i]->Create(EL_THREAD_FUNCALL(RoutineMutex));
+    threads[i]->Create(EL_THREAD_FUNCALL(RoutineMutex), &mutex);
   }
   threads.clear();
 
@@ -68,12 +71,13 @@ UNIT_IMPL(Mutex) {
 
 UNIT_IMPL(SpinLock) {
   std::vector<ThreadPtr> threads;
+  el::SpinLock spinlock;
 
   el_count1 = 0;
   el_count2 = 0;
   for (int i = 0; i < kCount; ++i) {
     threads.push_back(ThreadPtr(new el::Thread()));
-    threads[i]->Create(EL_THREAD_FUNCALL(RoutineSpinLock));
+    threads[i]->Create(EL_THREAD_FUNCALL(RoutineSpinLock), &spinlock);
   }
   threads.clear();
 
