@@ -76,7 +76,7 @@ public:
 private:
   static UINT WINAPI Routine(void* argument) {
     Thread* self = static_cast<Thread*>(argument);
-    if (nullptr != self)
+    if (nullptr == self)
       return 0;
 
     SetEvent(self->start_event_);

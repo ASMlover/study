@@ -24,76 +24,52 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#ifndef __EL_UNIT_HEADER_H__
+#define __EL_UNIT_HEADER_H__
+
+#include <typeinfo>
 #include "eutil.h"
-#include "el_thread_pool.h"
+
+#if defined(EUTIL_WIN)
+# define __func__ __FUNCTION__
+#endif
 
 namespace el {
 
-ThreadPool::ThreadPool(void)
-  : running_(false)
-  , mutex_()
-  , cond_(mutex_) {
-}
+struct UnitCase {
+  typedef std::function<void (void)> UnitType;
 
-ThreadPool::~ThreadPool(void) {
-  if (running_)
-    Stop();
-}
+  const char*    unit_name;
+  const UnitType unit_case;
 
-void ThreadPool::Start(uint32_t thread_count) {
-  thread_count = MIN(MAX_THREADS, MAX(MIN_THREADS, thread_count));
-
-  running_ = true;
-  for (uint32_t i = 0; i < thread_count; ++i) {
-    threads_.push_back(ThreadPtr(new Thread()));
-    threads_[i]->Create(EL_THREAD_CLSCALL(ThreadPool::Routine, this));
+  UnitCase(const char* name, const UnitType& unit) 
+    : unit_name(name) 
+    , unit_case(unit) {
   }
-}
+};
 
-void ThreadPool::Stop(void) {
-  {
-    LockerGuard<Mutex> guard(mutex_);
-    running_ = false;
-    cond_.SignalAll();
-  }
+class UnitFramework : public Singleton<UnitFramework> {
+  std::vector<UnitCase> unit_list_;
+public:
+  UnitFramework(void);
+  ~UnitFramework(void);
 
-  for (auto& trd : threads_)
-    trd->Join();
-  threads_.clear();
-}
+  int Run(void);
+  bool RegisterUnit(const char* name, const UnitCase::UnitType& unit);
+};
 
-void ThreadPool::Run(const RoutinerType& routine, void* argument) {
-  if (threads_.empty()) {
-    routine(argument);
-  }
-  else {
-    LockerGuard<Mutex> guard(mutex_);
-
-    workers_.push(Worker(routine, argument));
-    cond_.Signal();
-  }
-}
-
-Worker ThreadPool::GetWorker(void) {
-  LockerGuard<Mutex> guard(mutex_);
-  while (workers_.empty() && running_)
-    cond_.Wait();
-
-  Worker worker;
-  if (!workers_.empty()) {
-    worker = workers_.front();
-    workers_.pop();
-  }
-
-  return std::move(worker);
-}
-
-void ThreadPool::Routine(void* argument) {
-  while (running_) {
-    Worker worker = GetWorker();
-
-    worker.Run();
-  }
-}
+int UnitPrint(const char* format, ...);
 
 }
+
+#define UNIT_RUN_ALL()  el::UnitFramework::Instance().Run()
+#define UNIT_IMPL(__name__)\
+static void el_Unit##__name__(void);\
+static bool el_boolean_##__name__ = \
+  el::UnitFramework::Instance().RegisterUnit(#__name__, el_Unit##__name__);\
+static void el_Unit##__name__(void)
+
+#define UNIT_PRINT(fmt, ...)  el::UnitPrint((fmt), __VA_ARGS__)
+#define CLASS_NAME(__class__) typeid(__class__).name()
+
+#endif  // __EL_UNIT_HEADER_H__

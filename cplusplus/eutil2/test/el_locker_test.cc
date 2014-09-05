@@ -24,76 +24,63 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "eutil.h"
-#include "el_thread_pool.h"
+#include "../el_unit.h"
 
-namespace el {
+typedef std::shared_ptr<el::Thread> ThreadPtr;
+static int el_count1 = 0;
+static int el_count2 = 0;
+static const int kCount = 5;
 
-ThreadPool::ThreadPool(void)
-  : running_(false)
-  , mutex_()
-  , cond_(mutex_) {
-}
+static void RoutineMutex(void* arg) {
+  el::Mutex* mutex = static_cast<el::Mutex*>(arg);
 
-ThreadPool::~ThreadPool(void) {
-  if (running_)
-    Stop();
-}
+  for (int i = 0; i < 1000; ++i) {
+    el::LockerGuard<el::Mutex> guard(*mutex);
 
-void ThreadPool::Start(uint32_t thread_count) {
-  thread_count = MIN(MAX_THREADS, MAX(MIN_THREADS, thread_count));
-
-  running_ = true;
-  for (uint32_t i = 0; i < thread_count; ++i) {
-    threads_.push_back(ThreadPtr(new Thread()));
-    threads_[i]->Create(EL_THREAD_CLSCALL(ThreadPool::Routine, this));
+    ++el_count1;
+    ++el_count2;
   }
 }
 
-void ThreadPool::Stop(void) {
-  {
-    LockerGuard<Mutex> guard(mutex_);
-    running_ = false;
-    cond_.SignalAll();
-  }
+static void RoutineSpinLock(void* arg) {
+  el::SpinLock* spinlock = static_cast<el::SpinLock*>(arg);
 
-  for (auto& trd : threads_)
-    trd->Join();
-  threads_.clear();
-}
+  for (int i = 0; i < 1000; ++i) {
+    el::LockerGuard<el::SpinLock> guard(*spinlock);
 
-void ThreadPool::Run(const RoutinerType& routine, void* argument) {
-  if (threads_.empty()) {
-    routine(argument);
-  }
-  else {
-    LockerGuard<Mutex> guard(mutex_);
-
-    workers_.push(Worker(routine, argument));
-    cond_.Signal();
+    ++el_count1;
+    ++el_count2;
   }
 }
 
-Worker ThreadPool::GetWorker(void) {
-  LockerGuard<Mutex> guard(mutex_);
-  while (workers_.empty() && running_)
-    cond_.Wait();
+UNIT_IMPL(Mutex) {
+  std::vector<ThreadPtr> threads;
+  el::Mutex mutex;
 
-  Worker worker;
-  if (!workers_.empty()) {
-    worker = workers_.front();
-    workers_.pop();
+  el_count1 = 0;
+  el_count2 = 0;
+  for (int i = 0; i < kCount; ++i) {
+    threads.push_back(ThreadPtr(new el::Thread()));
+    threads[i]->Create(EL_THREAD_FUNCALL(RoutineMutex), &mutex);
   }
+  threads.clear();
 
-  return std::move(worker);
+  UNIT_PRINT("el_count1 = %d\n", el_count1);
+  UNIT_PRINT("el_count2 = %d\n", el_count2);
 }
 
-void ThreadPool::Routine(void* argument) {
-  while (running_) {
-    Worker worker = GetWorker();
+UNIT_IMPL(SpinLock) {
+  std::vector<ThreadPtr> threads;
+  el::SpinLock spinlock;
 
-    worker.Run();
+  el_count1 = 0;
+  el_count2 = 0;
+  for (int i = 0; i < kCount; ++i) {
+    threads.push_back(ThreadPtr(new el::Thread()));
+    threads[i]->Create(EL_THREAD_FUNCALL(RoutineSpinLock), &spinlock);
   }
-}
+  threads.clear();
 
+  UNIT_PRINT("el_count1 = %d\n", el_count1);
+  UNIT_PRINT("el_count2 = %d\n", el_count2);
 }

@@ -34,11 +34,11 @@ CFLAGS	= -O2 -W3 -MDd -GS -Zi -Fd"vc.pdb" -EHsc -D_DEBUG\
 	-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS -wd4290
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no winmm.lib 
-OBJS	= el_main.obj\
+OBJS	= el_main.obj el_locker_test.obj\
 	\
 	el_win_io.obj el_win_condition.obj\
 	\
-	el_io.obj el_time.obj el_thread_pool.obj el_logging.obj
+	el_io.obj el_time.obj el_thread_pool.obj el_logging.obj el_unit.obj
 
 
 
