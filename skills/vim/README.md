@@ -95,3 +95,10 @@
     $ sudo apt-get install python-dev
     $ cd ~/.vim/bundle/YouCompleteMe/ 
     $ ./install.sh --clang-completer
+
+
+## **YouCompleteMe in Windows**
+  * Python2.7+
+  * x64
+  * Vim74 (support python 2.x)
+  * Demo `Vim74.zip`
