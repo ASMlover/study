@@ -35,6 +35,7 @@ CFLAGS	= -O2 -W3 -MDd -GS -Zi -Fd"vc.pdb" -EHsc -D_DEBUG\
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no winmm.lib 
 OBJS	= el_main.obj el_locker_test.obj el_condition_test.obj\
+	el_singleton_test.obj\
 	\
 	el_win_io.obj el_win_condition.obj\
 	\
@@ -49,7 +50,7 @@ all: $(OUT)
 rebuild: clean all 
 
 clean:
-	$(RM) $(OUT) $(OBJS) *.pdb *.ilk *.manifest
+	$(RM) $(OUT) $(OBJS) *.pdb *.ilk *.manifest *.pyc
 
 
 
