@@ -48,7 +48,7 @@ public:
   }
 
   inline void RemoveObject(const Key& key) {
-    LockerGuard<Locker> guard(key);
+    LockerGuard<Locker> guard(locker_);
 
     objects_.erase(key);
   }
