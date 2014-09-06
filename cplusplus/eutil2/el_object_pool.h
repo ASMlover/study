@@ -32,12 +32,12 @@ namespace el {
 template <typename T, typename Locker = DummyLock>
 class ObjectPool : private UnCopyable {
   enum {DEFAULT_OBJCOUNT = 16};
-  typedef std::shared_ptr<T []> TArrayPtr;
+  typedef std::shared_ptr<T> TSharesPtr;
 
-  uint32_t               chunk_size_;
-  Locker                 locker_;
-  std::queue<T*>         free_list_;
-  std::vector<TArrayPtr> all_objects_;
+  uint32_t                chunk_size_;
+  Locker                  locker_;
+  std::queue<T*>          free_list_;
+  std::vector<TSharesPtr> all_objects_;
 public:
   explicit ObjectPool(uint32_t chunk_size = DEFAULT_OBJCOUNT) 
     throw(std::invalid_argument, std::bad_alloc)
@@ -70,14 +70,15 @@ public:
   }
 private:
   bool AllocateChunk(void) {
-    T* chunks = new T[chunk_size_];
-    TArrayPtr new_objects(chunks);
+    TSharesPtr new_objects(
+        new T[chunk_size_], std::default_delete<T []>());
     if (!new_objects)
       return false;
 
     all_objects_.push_back(new_objects);
-    for (auto i = 0; i < chunk_size_; ++i)
-      free_list_.push(chunks[i]);
+    T* chunks = new_objects.get();
+    for (uint32_t i = 0; i < chunk_size_; ++i)
+      free_list_.push(&chunks[i]);
 
     return true;
   }
