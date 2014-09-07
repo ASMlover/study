@@ -37,16 +37,14 @@ UNIT_IMPL(ObjectMgr) {
   el::ObjectMgr<int, ObjectMgrSample> mgr;
 
   {
-    ObjectMgrSample obj1;
-    ObjectMgrSample obj2;
-
-    mgr.InsertObject(1, obj1);
-    mgr.InsertObject(2, obj2);
+    mgr.InsertObject(1, 
+        std::shared_ptr<ObjectMgrSample>(new ObjectMgrSample()));
+    mgr.InsertObject(2, 
+        std::shared_ptr<ObjectMgrSample>(new ObjectMgrSample()));
   }
 
-  ObjectMgrSample obj;
-  mgr.GetObject(1, obj);
-  obj.Show(12);
+  auto obj = mgr.GetObject(1);
+  obj->Show(12);
 
   mgr.RemoveObject(1);
   EL_ASSERT(1 == mgr.Size());
