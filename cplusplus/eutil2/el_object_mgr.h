@@ -31,13 +31,14 @@ namespace el {
 
 template <typename Key, typename Object, typename Locker = DummyLock>
 class ObjectMgr : private UnCopyable {
-  typedef typename std::unordered_map<Key, Object> ObjectMap;
-  typedef typename ObjectMap::iterator             ObjectIter;
+  typedef typename std::shared_ptr<Object>            ObjectPtr;
+  typedef typename std::unordered_map<Key, ObjectPtr> ObjectMap;
+  typedef typename ObjectMap::iterator                ObjectIter;
 
   Locker    locker_;
   ObjectMap objects_;
 public:
-  inline bool InsertObject(const Key& key, const Object& obj) {
+  inline bool InsertObject(const Key& key, ObjectPtr obj) {
     LockerGuard<Locker> guard(locker_);
 
     if (objects_.find(key) != objects_.end())
@@ -53,15 +54,14 @@ public:
     objects_.erase(key);
   }
 
-  inline bool GetObject(const Key& key, Object& obj) {
+  inline ObjectPtr GetObject(const Key& key) {
     LockerGuard<Locker> guard(locker_);
 
     ObjectIter it(objects_.find(key));
     if (it == objects_.end())
-      return false;
+      return ObjectPtr(nullptr);
 
-    obj = (*it).second;
-    return true;
+    return (*it).second;
   }
 
   inline void Clear(void) {
