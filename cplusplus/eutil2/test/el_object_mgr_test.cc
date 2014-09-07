@@ -24,29 +24,22 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "../el_unit.h"
-
-class ObjectMgrSample {
-public:
-  inline void Show(int id) {
-    UNIT_PRINT("%s : %d\n", __func__, id);
-  }
-};
+#include "el_test.h"
 
 UNIT_IMPL(ObjectMgr) {
-  el::ObjectMgr<int, ObjectMgrSample> mgr;
+  el::ObjectMgr<int, el::UnitObject> mgr;
 
   EL_ASSERT(0 == mgr.Size());
   {
-    mgr.InsertObject(1, 
-        std::shared_ptr<ObjectMgrSample>(new ObjectMgrSample()));
-    mgr.InsertObject(2, 
-        std::shared_ptr<ObjectMgrSample>(new ObjectMgrSample()));
+    mgr.InsertObject(1, UnitObjectPtr(new el::UnitObject()));
+    mgr.InsertObject(2, UnitObjectPtr(new el::UnitObject()));
   }
   EL_ASSERT(2 == mgr.Size());
 
   auto obj = mgr.GetObject(1);
-  obj->Show(12);
+  obj->set_name("object #1");
+  obj->set_id(1);
+  obj->Show();
 
   mgr.RemoveObject(1);
   EL_ASSERT(1 == mgr.Size());

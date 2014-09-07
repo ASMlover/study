@@ -24,9 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "../el_unit.h"
-
-typedef std::shared_ptr<el::Thread> ThreadPtr;
+#include "el_test.h"
 
 static void FunctionRoutine(void* argument) {
   for (int i = 0; i < 10; ++i)

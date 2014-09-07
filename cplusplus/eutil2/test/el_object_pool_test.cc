@@ -24,40 +24,19 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "../el_unit.h"
-
-class ObjectSample : private el::UnCopyable {
-  std::string name_;
-  int         id_;
-public:
-  explicit ObjectSample(int id = 0) 
-    : name_("ObjectSample") 
-    , id_(id) {
-    UNIT_PRINT("%s\n", __func__);
-  }
-
-  ~ObjectSample(void) {
-    UNIT_PRINT("%s\n", __func__);
-  }
-
-  inline void SetID(int id) {
-    id_ = id;
-  }
-  
-  inline void Show(void) {
-    UNIT_PRINT("%s : %d\n", name_.c_str(), id_);
-  }
-};
+#include "el_test.h"
 
 UNIT_IMPL(ObjectPool) {
-  el::ObjectPool<ObjectSample> pools;
+  el::ObjectPool<el::UnitObject> pools;
 
-  ObjectSample& obj1 = pools.AcquireObject();
-  obj1.SetID(1);
+  el::UnitObject& obj1 = pools.AcquireObject();
+  obj1.set_name("object #1");
+  obj1.set_id(1);
   obj1.Show();
 
-  ObjectSample& obj2 = pools.AcquireObject();
-  obj2.SetID(2);
+  el::UnitObject& obj2 = pools.AcquireObject();
+  obj2.set_name("object #2");
+  obj2.set_id(2);
   obj2.Show();
 
   pools.ReleaseObject(obj1);

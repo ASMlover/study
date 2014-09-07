@@ -24,11 +24,10 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "../el_unit.h"
+#include "el_test.h"
 #include "../el_time.h"
 
 class CondWorker : private el::UnCopyable {
-  typedef std::shared_ptr<el::Thread> ThreadPtr;
   el::Mutex     mutex_;
   el::Condition cond_;
   bool          signal_all_;
