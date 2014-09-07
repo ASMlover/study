@@ -65,8 +65,6 @@ public:
   }
 };
 
-typedef std::shared_ptr<UnitObject> UnitObjectPtr;
-
 }
 
 #endif  // __EL_UNIT_OBJECT_HEADER_H__
