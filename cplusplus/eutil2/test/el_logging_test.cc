@@ -25,7 +25,6 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "el_test.h"
-#include "../el_time.h"
 #include "../el_logging.h"
 
 UNIT_IMPL(Logging) {

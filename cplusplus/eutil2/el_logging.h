@@ -38,6 +38,7 @@ enum class SeverityType {
 };
 
 struct LoggingFile;
+class Time;
 class Logging : public Singleton<Logging> {
   enum {DEF_BUFSIZE = 16 * 1024};
   typedef std::shared_ptr<LoggingFile>                     LoggingFilePtr;
