@@ -45,7 +45,7 @@ static inline int logging_mkdir(const char* path) {
 }
 
 static inline void CreateLogDirectory(const char* directory) {
-  if (0 == access(ROOT_DIR, 0))
+  if (0 != access(ROOT_DIR, 0))
     logging_mkdir(ROOT_DIR);
 
   char path[MAX_PATH];
