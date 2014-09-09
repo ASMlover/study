@@ -29,6 +29,18 @@
 #include "../el_logging.h"
 
 UNIT_IMPL(Logging) {
-  LOG_DEBUG("UNIT_IMPL(Logging) -> LOG_DEBUG");
-  LOG_DEBUGX("UNIT_IMPL(Logging) -> LOG_DEBUGX");
+  LOG_DEBUG("UNIT_IMPL(Logging) -> LOG_DEBUG\n");
+  LOG_DEBUGX("UNIT_IMPL(Logging) -> LOG_DEBUGX\n");
+
+  LOG_MSG("UNIT_IMPL(Logging) -> LOG_MSG\n");
+  LOG_MSGX("UNIT_IMPL(Logging) -> LOG_MSGX\n");
+
+  LOG_WARN("UNIT_IMPL(Logging) -> LOG_WARN\n");
+  LOG_WARNX("UNIT_IMPL(Logging) -> LOG_WARNX\n");
+
+  LOG_ERR("UNIT_IMPL(Logging) -> LOG_ERR\n");
+  LOG_ERRX("UNIT_IMPL(Logging) -> LOG_ERRX\n");
+
+  LOG_FAIL("UNIT_IMPL(Logging) -> LOG_FAILX\n");
+  LOG_FAILX("UNIT_IMPL(Logging) -> LOG_FAILX\n");
 }
