@@ -37,28 +37,11 @@ enum class SeverityType {
   SEVERITYTYPE_FAIL, 
 };
 
+struct LoggingFile;
 class Logging : public Singleton<Logging> {
-  struct File {
-    uint16_t year;
-    uint8_t  mon;
-    uint8_t  day;
-    FILE*    stream;
-
-    File(void) {
-      memset(this, 0, sizeof(*this));
-    }
-
-    ~File(void) {
-      if (nullptr != stream)
-        fclose(stream);
-    }
-
-    bool operator==(const Time& time) const {
-      return (year == time.year && mon == time.mon && day == time.day);
-    }
-  };
   enum {DEF_BUFSIZE = 16 * 1024};
-  typedef std::unordered_map<SeverityType, File> FileMap;
+  typedef std::shared_ptr<LoggingFile>                     LoggingFilePtr;
+  typedef std::unordered_map<SeverityType, LoggingFilePtr> FileMap;
 
   FileMap files_;
 public:

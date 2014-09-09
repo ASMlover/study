@@ -54,12 +54,37 @@ static inline void CreateLogDirectory(const char* directory) {
     logging_mkdir(path);
 }
 
+struct LoggingFile {
+  uint16_t year;
+  uint8_t  mon;
+  uint8_t  day;
+  FILE*    stream;
+
+  LoggingFile(void) {
+    memset(this, 0, sizeof(*this));
+  }
+
+  ~LoggingFile(void) {
+    if (nullptr != stream) 
+      fclose(stream);
+  }
+
+  bool Equal(const Time& time) const {
+    return (year == time.year && mon == time.mon && day == time.day);
+  }
+};
+
 Logging::Logging(void) {
-  files_[SeverityType::SEVERITYTYPE_DEBUG] = File();
-  files_[SeverityType::SEVERITYTYPE_MESSAGE] = File();
-  files_[SeverityType::SEVERITYTYPE_WARNING] = File();
-  files_[SeverityType::SEVERITYTYPE_ERROR] = File();
-  files_[SeverityType::SEVERITYTYPE_FAIL] = File();
+  files_[SeverityType::SEVERITYTYPE_DEBUG] 
+    = LoggingFilePtr(new LoggingFile());
+  files_[SeverityType::SEVERITYTYPE_MESSAGE] 
+    = LoggingFilePtr(new LoggingFile());
+  files_[SeverityType::SEVERITYTYPE_WARNING] 
+    = LoggingFilePtr(new LoggingFile());
+  files_[SeverityType::SEVERITYTYPE_ERROR] 
+    = LoggingFilePtr(new LoggingFile());
+  files_[SeverityType::SEVERITYTYPE_FAIL] 
+    = LoggingFilePtr(new LoggingFile());
 }
 
 Logging::~Logging(void) {
@@ -89,7 +114,7 @@ FILE* Logging::GetFileStream(SeverityType severity, const Time& time) {
 
   FILE* stream;
   const char* directory = GetSeverityName(severity);
-  if (nullptr == files_[severity].stream) {
+  if (nullptr == files_[severity]->stream) {
     CreateLogDirectory(directory);
 
     char fname[MAX_PATH];
@@ -98,17 +123,17 @@ FILE* Logging::GetFileStream(SeverityType severity, const Time& time) {
     stream = fopen(fname, "a+");
     setvbuf(stream, nullptr, _IOFBF, DEF_BUFSIZE);
 
-    files_[severity].year = time.year;
-    files_[severity].mon  = time.mon;
-    files_[severity].day  = time.day;
-    files_[severity].stream = stream;
+    files_[severity]->year = time.year;
+    files_[severity]->mon  = time.mon;
+    files_[severity]->day  = time.day;
+    files_[severity]->stream = stream;
   }
   else {
-    if (files_[severity] == time) {
-      stream = files_[severity].stream;
+    if (files_[severity]->Equal(time)) {
+      stream = files_[severity]->stream;
     }
     else {
-      fclose(files_[severity].stream);
+      fclose(files_[severity]->stream);
 
       char fname[MAX_PATH];
       snprintf(fname, MAX_PATH, "./%s/%s/%04d%02d%02d.log", 
@@ -116,10 +141,10 @@ FILE* Logging::GetFileStream(SeverityType severity, const Time& time) {
       stream = fopen(fname, "a+");
       setvbuf(stream, nullptr, _IOFBF, DEF_BUFSIZE);
 
-      files_[severity].year = time.year;
-      files_[severity].mon  = time.mon;
-      files_[severity].day  = time.day;
-      files_[severity].stream = stream;
+      files_[severity]->year = time.year;
+      files_[severity]->mon  = time.mon;
+      files_[severity]->day  = time.day;
+      files_[severity]->stream = stream;
     }
   }
   
