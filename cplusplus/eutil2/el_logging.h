@@ -75,4 +75,36 @@ private:
 
 }
 
+#define LOG_DEBUG(fmt, ...)\
+  el::Logging::Instance().Write(el::SeverityType::SEVERITYTYPE_DEBUG, \
+      (fmt), ##__VA_ARGS__)
+#define LOG_MSG(fmt, ...)\
+  el::Logging::Instance().Write(el::SeverityType::SEVERITYTYPE_MESSAGE, \
+      (fmt), ##__VA_ARGS__)
+#define LOG_WARN(fmt, ...)\
+  el::Logging::Instance().Write(el::SeverityType::SEVERITYTYPE_WARNING, \
+      (fmt), ##__VA_ARGS__)
+#define LOG_ERR(fmt, ...)\
+  el::Logging::Instance().Write(el::SeverityType::SEVERITYTYPE_ERROR, \
+      (fmt), ##__VA_ARGS__)
+#define LOG_FAIL(fmt, ...)\
+  el::Logging::Instance().Write(el::SeverityType::SEVERITYTYPE_FAIL, \
+      (fmt), ##__VA_ARGS__)
+
+#define LOG_DEBUGX(fmt, ...)\
+  el::Logging::Instance().WriteX(el::SeverityType::SEVERITYTYPE_DEBUG, \
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
+#define LOG_MSGX(fmt, ...)\
+  el::Logging::Instance().WriteX(el::SeverityType::SEVERITYTYPE_MESSAGE, \
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
+#define LOG_WARNX(fmt, ...)\
+  el::Logging::Instance().WriteX(el::SeverityType::SEVERITYTYPE_WARNING, \
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
+#define LOG_ERRX(fmt, ...)\
+  el::Logging::Instance().WriteX(el::SeverityType::SEVERITYTYPE_ERROR, \
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
+#define LOG_FAILX(fmt, ...)\
+  el::Logging::Instance().WriteX(el::SeverityType::SEVERITYTYPE_FAIL, \
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
+
 #endif  // __EL_LOGGING_HEADER_H__
