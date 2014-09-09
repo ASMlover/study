@@ -62,6 +62,9 @@ Logging::Logging(void) {
   files_[SeverityType::SEVERITYTYPE_FAIL] = File();
 }
 
+Logging::~Logging(void) {
+}
+
 const char* Logging::GetSeverityName(SeverityType severity) {
   switch (severity) {
   case SeverityType::SEVERITYTYPE_DEBUG:
