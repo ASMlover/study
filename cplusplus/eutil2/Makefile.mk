@@ -37,6 +37,7 @@ LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 OBJS	= el_main.obj el_locker_test.obj el_condition_test.obj\
 	el_singleton_test.obj el_object_pool_test.obj el_object_mgr_test.obj\
 	el_thread_test.obj el_thread_pool_test.obj el_logging_test.obj\
+	el_time_test.obj\
 	\
 	el_win_io.obj el_win_condition.obj\
 	\
