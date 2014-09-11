@@ -281,3 +281,7 @@
     $ sudo rm gcc 
     $ sudo ln -s gcc-4.8 gcc 
     $ sudo ln -s g++-4.8 g++
+
+
+## **18. VS恢复默认设置和默认Layout**
+		工具->导入和导出设置->重置所有设置
