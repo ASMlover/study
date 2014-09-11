@@ -30,7 +30,7 @@
 #include "../el_unit.h"
 #include "el_unit_object.h"
 
-typedef std::shared_ptr<el::Thread> ThreadPtr;
+typedef std::shared_ptr<el::Thread>     ThreadPtr;
 typedef std::shared_ptr<el::UnitObject> UnitObjectPtr;
 
 #endif  // __EL_TEST_HEADER_H__

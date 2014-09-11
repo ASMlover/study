@@ -50,6 +50,7 @@ public:
   void Signal(void);
   void SignalAll(void);
   void Wait(void);
+  void TimedWait(uint64_t timeout);
 };
 
 }

@@ -29,6 +29,15 @@
 
 namespace el {
 
+#undef NANOSEC
+#define NANOSEC ((uint64_t)1e9)
+
+static inline uint64_t hrtime(void) {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return (((uint64_t)ts.tv_sec) * NANOSEC + ts.tv_nsec);
+}
+
 Condition::Condition(Mutex& mutex) 
   : mutex_(mutex) {
   EL_ASSERT(0 == pthread_cond_init(&cond_, 0));
@@ -48,6 +57,16 @@ void Condition::SignalAll(void) {
 
 void Condition::Wait(void) {
   EL_ASSERT(0 == pthread_cond_wait(&cond_, mutex_.mutex()));
+}
+
+void Condition::TimedWait(uint64_t timeout) {
+  struct timespec ts;
+
+  timeout += hrtime();
+  ts.tv_sec = timeout / NANOSEC;
+  ts.tv_nsec = timeout % NANOSEC;
+
+  EL_ASSERT(0 == pthread_cond_timedwait(&cond_, mutex_.mutex(), &ts));
 }
 
 }

@@ -128,4 +128,8 @@ void Condition::Wait(void) {
   EL_ASSERT(0 == CondWaitHelper(cond_, mutex_, INFINITE));
 }
 
+void Condition::TimedWait(uint64_t timeout) {
+  EL_ASSERT(0 == CondWaitHelper(cond_, mutex_, timeout));
+}
+
 }
