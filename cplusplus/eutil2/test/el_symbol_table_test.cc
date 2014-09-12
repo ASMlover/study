@@ -24,13 +24,17 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_TEST_HEADER_H__
-#define __EL_TEST_HEADER_H__
+#include "el_test.h"
+#include "../el_symbol_table.h"
 
-#include "../el_unit.h"
-#include "el_unit_object.h"
+UNIT_IMPL(SymbolTable) {
+#define KEY2ID(key) el::SymbolTable::Instance().RegisterSymbol((key))
+#define ID2KEY(id)  el::SymbolTable::Instance().GetSymbol((id))
+  EL_ASSERT(1 == KEY2ID("Key1"));
+  EL_ASSERT(2 == KEY2ID("Key2"));
+  EL_ASSERT(3 == KEY2ID("Key3"));
 
-typedef std::shared_ptr<el::Thread>     ThreadPtr;
-typedef std::shared_ptr<el::UnitObject> UnitObjectPtr;
-
-#endif  // __EL_TEST_HEADER_H__
+  EL_ASSERT(ID2KEY(1) == "Key1");
+  EL_ASSERT(ID2KEY(2) == "Key2");
+  EL_ASSERT(ID2KEY(3) == "Key3");
+}
