@@ -37,14 +37,12 @@ enum class SeverityType {
   SEVERITYTYPE_FAIL, 
 };
 
-struct LoggingFile;
-struct Time;
+class LogFile;
 class Logging : public Singleton<Logging> {
-  enum {DEF_BUFSIZE = 16 * 1024};
-  typedef std::shared_ptr<LoggingFile>                     LoggingFilePtr;
-  typedef std::unordered_map<SeverityType, LoggingFilePtr> FileMap;
-
-  FileMap files_;
+  typedef std::shared_ptr<LogFile>                      LogFilePtr;
+  typedef std::unordered_map<SeverityType, LogFilePtr>  LogFileMap;
+  
+  LogFileMap files_;
 public:
   Logging(void);
   ~Logging(void);
@@ -54,7 +52,7 @@ public:
       const char* file, int line, const char* format, ...);
 private:
   const char* GetSeverityName(SeverityType severity);
-  FILE* GetFileStream(SeverityType severity, const Time& time);
+  FILE* GetStream(SeverityType severity);
 };
 
 }

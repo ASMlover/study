@@ -54,37 +54,53 @@ static inline void CreateLogDirectory(const char* directory) {
     logging_mkdir(path);
 }
 
-struct LoggingFile {
-  uint16_t year;
-  uint8_t  mon;
-  uint8_t  day;
-  FILE*    stream;
+class LogFile : private UnCopyable {
+  typedef std::shared_ptr<FILE> FilePtr;
 
-  LoggingFile(void) {
-    memset(this, 0, sizeof(*this));
+  FilePtr file_;
+  Date    date_;
+  public:
+  LogFile(void)
+    : file_(FilePtr(nullptr)) {
+    memset(&date_, 0, sizeof(date_));
   }
 
-  ~LoggingFile(void) {
-    if (nullptr != stream) 
-      fclose(stream);
+  ~LogFile(void) {
   }
 
-  bool Equal(const Time& time) const {
-    return (year == time.year && mon == time.mon && day == time.day);
+  inline bool operator==(const Date& date) const {
+    return (date_.year == date.year 
+        && date_.mon == date.mon
+        && date_.day == date.day);
+  }
+
+  inline FilePtr& file(void) {
+    return file_;
+  }
+
+  inline FILE* Set(const Date& date, const char* fname) {
+    file_.reset(fopen(fname, "a+"), fclose);
+    if (!file_)
+      return nullptr;
+
+    setvbuf(file_.get(), nullptr, _IOFBF, 16*1024);
+    date_ = date;
+
+    return file_.get();
   }
 };
 
 Logging::Logging(void) {
-  files_[SeverityType::SEVERITYTYPE_DEBUG] 
-    = LoggingFilePtr(new LoggingFile());
-  files_[SeverityType::SEVERITYTYPE_MESSAGE] 
-    = LoggingFilePtr(new LoggingFile());
-  files_[SeverityType::SEVERITYTYPE_WARNING] 
-    = LoggingFilePtr(new LoggingFile());
-  files_[SeverityType::SEVERITYTYPE_ERROR] 
-    = LoggingFilePtr(new LoggingFile());
-  files_[SeverityType::SEVERITYTYPE_FAIL] 
-    = LoggingFilePtr(new LoggingFile());
+  files_.insert(std::make_pair(
+        SeverityType::SEVERITYTYPE_DEBUG, LogFilePtr(new LogFile())));
+  files_.insert(std::make_pair(
+        SeverityType::SEVERITYTYPE_MESSAGE, LogFilePtr(new LogFile())));
+  files_.insert(std::make_pair(
+        SeverityType::SEVERITYTYPE_WARNING, LogFilePtr(new LogFile())));
+  files_.insert(std::make_pair(
+        SeverityType::SEVERITYTYPE_ERROR, LogFilePtr(new LogFile())));
+  files_.insert(std::make_pair(
+        SeverityType::SEVERITYTYPE_FAIL, LogFilePtr(new LogFile())));
 }
 
 Logging::~Logging(void) {
@@ -107,47 +123,27 @@ const char* Logging::GetSeverityName(SeverityType severity) {
   return "???";
 }
 
-FILE* Logging::GetFileStream(SeverityType severity, const Time& time) {
-  if ((severity < SeverityType::SEVERITYTYPE_DEBUG) 
-      || (severity > SeverityType::SEVERITYTYPE_FAIL))
+FILE* Logging::GetStream(SeverityType severity) {
+  auto file = files_[severity];
+  if (!file)
     return nullptr;
 
-  FILE* stream;
-  const char* directory = GetSeverityName(severity);
-  if (nullptr == files_[severity]->stream) {
+  FILE* stream = nullptr;
+  Date date;
+  GetDate(date);
+  if (file->file() && *file == date) {
+    stream = file->file().get();
+  }
+  else {
+    const char* directory = GetSeverityName(severity);
     CreateLogDirectory(directory);
 
     char fname[MAX_PATH];
     snprintf(fname, MAX_PATH, "./%s/%s/%04d%02d%02d.log", 
-        ROOT_DIR, directory, time.year, time.mon, time.day);
-    stream = fopen(fname, "a+");
-    setvbuf(stream, nullptr, _IOFBF, DEF_BUFSIZE);
-
-    files_[severity]->year = time.year;
-    files_[severity]->mon  = time.mon;
-    files_[severity]->day  = time.day;
-    files_[severity]->stream = stream;
+        ROOT_DIR, directory, date.year, date.mon, date.day);
+    stream = file->Set(date, fname);
   }
-  else {
-    if (files_[severity]->Equal(time)) {
-      stream = files_[severity]->stream;
-    }
-    else {
-      fclose(files_[severity]->stream);
 
-      char fname[MAX_PATH];
-      snprintf(fname, MAX_PATH, "./%s/%s/%04d%02d%02d.log", 
-          ROOT_DIR, directory, time.year, time.mon, time.day);
-      stream = fopen(fname, "a+");
-      setvbuf(stream, nullptr, _IOFBF, DEF_BUFSIZE);
-
-      files_[severity]->year = time.year;
-      files_[severity]->mon  = time.mon;
-      files_[severity]->day  = time.day;
-      files_[severity]->stream = stream;
-    }
-  }
-  
   return stream;
 }
 
@@ -155,9 +151,11 @@ void Logging::Write(SeverityType severity, const char* format, ...) {
   Time time;
   GetTime(time);
 
-  FILE* stream = GetFileStream(severity, time);
+  FILE* stream = GetStream(severity);
   if (nullptr == stream)
     return;
+  fprintf(stream, "[%02d:%02d:%02d.%03d] ", 
+      time.hour, time.min, time.sec, time.millitm);
 
   va_list ap;
   va_start(ap, format);
@@ -170,18 +168,16 @@ void Logging::WriteX(SeverityType severity,
   Time time;
   GetTime(time);
 
-  FILE* stream = GetFileStream(severity, time);
+  FILE* stream = GetStream(severity);
   if (nullptr == stream)
     return;
+  fprintf(stream, "[%02d:%02d:%02d.%03d] %s(%d): ", 
+      time.hour, time.min, time.sec, time.millitm, file, line);
 
-  char buf[1024];
   va_list ap;
   va_start(ap, format);
-  vsprintf(buf, format, ap);
+  vfprintf(stream, format, ap);
   va_end(ap);
-
-  fprintf(stream, "[%02d:%02d:%02d:%03d] [%s](%d) : %s", 
-      time.hour, time.min, time.sec, time.millitm, file, line, buf);
 }
 
 }
