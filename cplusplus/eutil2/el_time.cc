@@ -29,6 +29,19 @@
 
 namespace el {
 
+bool GetDate(Date& date) {
+  Time time;
+  if (GetTime(time)) {
+    date.year = time.year;
+    date.mon = time.mon;
+    date.day = time.day;
+
+    return true;
+  }
+
+  return false;
+}
+
 bool GetTime(Time& time) {
   struct timeb tb;
 

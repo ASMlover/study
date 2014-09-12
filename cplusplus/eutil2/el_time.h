@@ -29,6 +29,14 @@
 
 namespace el {
 
+struct Date {
+  uint16_t year;
+  uint8_t  mon;
+  uint8_t  day;
+};
+
+extern bool GetDate(Date& date);
+
 struct Time {
   uint16_t year;
   uint8_t  mon;
