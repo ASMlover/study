@@ -65,7 +65,7 @@ private:
     if (nullptr == self)
       return nullptr;
 
-    if (nullptr != routine_)
+    if (nullptr != self->routine_)
       self->routine_(self->argument_);
 
     return nullptr;
