@@ -71,6 +71,7 @@ bool IniParser::Parse(void) {
       break;
     case '#':
     case ' ':
+    case '\r':
     case '\t':
     case '\n':
       break;
@@ -136,31 +137,47 @@ void IniParser::ParseSection(void) {
     fprintf(stderr, "Parse Section error ...\n");
     abort();
   }
+
+  c = GetChar(); // skip ]
 }
 
 void IniParser::ParseValue(void) {
+  UngetChar();
   std::string key(section_ + ParseValueKey());
-  values_[key] = ParseValueValue();
+  std::string value(ParseValueValue());
+  values_[key] = value;
 }
 
 const std::string IniParser::ParseValueKey(void) {
   std::string key;
 
+  bool key_begin = false;
+  bool space = false;
   int c = GetChar();
   while ('=' != c) {
-    if (' ' == c || '\t' == c || '\n' == c || '#' == c || EOF == c) {
+    if (' ' == c || '\t' == c) {
+      if (key_begin)
+        space = true;
+    }
+    else if ('\n' == c || '#' == c || EOF == c) {
       error_ = true;
       break;
     }
     else {
+      if (space) {
+        error_ = true;
+        break;
+      }
+
       key += (char)c;
+      key_begin = true;
     }
 
     c = GetChar();
   }
 
   if (error_) {
-    fprintf(stderr, "Parse Key error ...\n");
+    fprintf(stderr, "Parse Key error ... c(%d)\n", c);
     abort();
   }
 
@@ -170,9 +187,14 @@ const std::string IniParser::ParseValueKey(void) {
 const std::string IniParser::ParseValueValue(void) {
   std::string value;
 
+  bool val_begin = false;
   int c = GetChar();
   while (true) {
-    if ('\n' == c || '#' == c || ' ' == c || '\t' == c) {
+    if (' ' == c || '\t' == c) {
+      if (val_begin)
+        break;
+    }
+    else if ('\n' == c || '#' == c || '\r' == c) {
       break;
     }
     else if (EOF == c) {
@@ -181,7 +203,11 @@ const std::string IniParser::ParseValueValue(void) {
     }
     else {
       value += (char)c;
+      if (!val_begin)
+        val_begin = true;
     }
+
+    c = GetChar();
   }
 
   if (error_) {
