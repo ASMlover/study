@@ -27,16 +27,21 @@
 #ifndef __INI_PARSER_HEADER_H__
 #define __INI_PARSER_HEADER_H__
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <string>
 #include <map>
 
 class IniParser {
+  enum {BSIZE = 256};
   typedef std::map<std::string, std::string> ValueMap;
 
-  int         length_;
   int         pos_;
-  int         line_;
   bool        error_;
+  FILE*       file_;
+  int         length_;
+  char        buffer_[BSIZE];
   std::string section_;
   ValueMap    values_;
 public:
@@ -47,7 +52,12 @@ public:
   void Close(void);
 
   bool Parse(void);
+
+  std::string Get(const std::string& section, const std::string& key);
 private:
+  int GetChar(void);
+  void UngetChar(void);
+
   void ParseSection(void);
   void ParseValue(void);
   const std::string ParseValueKey(void);

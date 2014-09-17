@@ -29,11 +29,12 @@
 static const std::string kNilString("");
 
 IniParser::IniParser(void)
-  : length_(0)
-  , pos_(0)
-  , line_(1)
+  : pos_(0)
   , error_(false) 
+  , file_(NULL)
+  , length_(0)
   , section_("") {
+  memset(buffer_, 0, sizeof(buffer_));
 }
 
 IniParser::~IniParser(void) {
@@ -41,26 +42,152 @@ IniParser::~IniParser(void) {
 }
 
 bool IniParser::Open(const char* fname) {
-  return false;
-}
+  if (NULL == fname)
+    return false;
 
-void IniParser::Close(void) {
-}
+  file_ = fopen(fname, "r");
+  if (NULL == file_)
+    return false;
 
-bool IniParser::Parse(void) {
+  pos_     = 0;
+  error_   = false;
+  length_  = 0;
+  section_ = "";
+
   return true;
 }
 
+void IniParser::Close(void) {
+  if (NULL != file_) 
+    fclose(file_);
+}
+
+bool IniParser::Parse(void) {
+  int c = GetChar();
+  while (EOF != c) {
+    switch (c) {
+    case '[':
+      ParseSection();
+      break;
+    case '#':
+    case ' ':
+    case '\t':
+    case '\n':
+      break;
+    default:
+      ParseValue();
+      break;
+    }
+
+    c = GetChar();
+  }
+
+  return true;
+}
+
+std::string IniParser::Get(
+    const std::string& section, const std::string& key) {
+  ValueMap::iterator found(values_.find(section + key));
+  if (found != values_.end())
+    return (*found).second;
+
+  return kNilString;
+}
+
+int IniParser::GetChar(void) {
+  if (pos_ >= length_) {
+    if (NULL != fgets(buffer_, BSIZE, file_)) {
+      length_ = (int)strlen(buffer_);
+      pos_ = 0;
+    }
+    else {
+      error_ = true;
+      return EOF;
+    }
+  }
+
+  return buffer_[pos_++];
+}
+
+void IniParser::UngetChar(void) {
+  if (!error_)
+    --pos_;
+}
+
 void IniParser::ParseSection(void) {
+  section_ = "";
+
+  int c = GetChar();
+  while (']' != c) {
+    if (' ' == c || '\t' == c) {
+    }
+    else if ('\n' == c || '#' == c || EOF == c) {
+      error_ = true;
+      break;
+    }
+    else {
+      section_ += (char)c;
+    }
+
+    c = GetChar();
+  }
+
+  if (error_) {
+    fprintf(stderr, "Parse Section error ...\n");
+    abort();
+  }
 }
 
 void IniParser::ParseValue(void) {
+  std::string key(section_ + ParseValueKey());
+  values_[key] = ParseValueValue();
 }
 
 const std::string IniParser::ParseValueKey(void) {
-  return kNilString;
+  std::string key;
+
+  int c = GetChar();
+  while ('=' != c) {
+    if (' ' == c || '\t' == c || '\n' == c || '#' == c || EOF == c) {
+      error_ = true;
+      break;
+    }
+    else {
+      key += (char)c;
+    }
+
+    c = GetChar();
+  }
+
+  if (error_) {
+    fprintf(stderr, "Parse Key error ...\n");
+    abort();
+  }
+
+  return key;
 }
 
 const std::string IniParser::ParseValueValue(void) {
-  return kNilString;
+  std::string value;
+
+  int c = GetChar();
+  while (true) {
+    if ('\n' == c || '#' == c || ' ' == c || '\t' == c) {
+      break;
+    }
+    else if (EOF == c) {
+      error_ = true;
+      break;
+    }
+    else {
+      value += (char)c;
+    }
+  }
+
+  if (error_) {
+    fprintf(stderr, "Parse Value error ...");
+    abort();
+  }
+
+  return value;
 }
