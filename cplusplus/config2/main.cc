@@ -24,8 +24,16 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <stdio.h>
+#include "ini_parser.h"
 
 int main(int argc, char* argv[]) {
+  extern void IniLexer_Test(void);
+  //IniLexer_Test();
+
+  IniParser::GetSingleton().Open("demo.ini");
+
+  std::string value = IniParser::GetSingleton().Get("DEMO", "key");
+  fprintf(stdout, "key = %s\n", value.c_str());
+
   return 0;
 }
