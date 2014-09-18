@@ -56,7 +56,6 @@ class IniLexer : private UnCopyable {
   int   lineno_;
   int   bsize_;
   bool  eof_;
-  State state_;
   FILE* file_;
   int   lexpos_;
   char  lexbuf_[BSIZE];
@@ -72,11 +71,166 @@ private:
   int GetChar(void);
   void UngetChar(void);
 
-  Token::Type LexerBegin(int c);
-  Token::Type LexerFinish(int c);
-  Token::Type LexerString(int c);
-  Token::Type LexerComment(int c);
+  Token::Type LexerBegin(int c, State& out_state, bool& out_save);
+  Token::Type LexerFinish(int c, State& out_state, bool& out_save);
+  Token::Type LexerString(int c, State& out_state, bool& out_save);
+  Token::Type LexerComment(int c, State& out_state, bool& out_save);
 };
+
+IniLexer::IniLexer(void) 
+  : lineno_(1)
+  , bsize_(0)
+  , eof_(false)
+  , file_(NULL)
+  , lexpos_(0) {
+}
+
+IniLexer::~IniLexer(void){
+  Close();
+}
+
+bool IniLexer::Open(const char* fname) {
+  if (NULL == fname)
+    return false;
+
+  if (NULL == (file_ = fopen(fname, "r")))
+    return false;
+  lineno_ = 1;
+  bsize_  = 0;
+  eof_    = false;
+  lexpos_ = 0;
+
+  return true;
+}
+
+void IniLexer::Close(void) {
+  if (NULL != file_) {
+    fclose(file_);
+    file_ = NULL;
+  }
+}
+
+Token::Type IniLexer::GetToken(Token& token) {
+  typedef Token::Type (IniLexer::*FunctionPtr)(int, State&, bool&);
+  static FunctionPtr kCallbacks[] = {
+    &IniLexer::LexerBegin, 
+    &IniLexer::LexerFinish, 
+
+    &IniLexer::LexerString, 
+    &IniLexer::LexerComment, 
+  };
+
+  Token::Type type = Token::TYPE_ERR;
+  State state = STATE_BEGIN;
+  bool  save;
+  int   c;
+
+  token.token = "";
+  while (STATE_FINISH != state) {
+    c = GetChar();
+    save = true;
+
+    type = (this->*kCallbacks[state])(c, state, save);
+
+    if (save)
+      token.token += static_cast<char>(c);
+    if (STATE_FINISH == state)
+      token.type = type;
+  }
+
+  return type;
+}
+
+int IniLexer::GetChar(void) {
+  if (lexpos_ >= bsize_) {
+    if (NULL != fgets(lexbuf_, BSIZE, file_)) {
+      bsize_ = static_cast<int>(strlen(lexbuf_));
+      lexpos_ = 0;
+    }
+    else {
+      eof_ = true;
+      return EOF;
+    }
+  }
+
+  return lexbuf_[lexpos_++];
+}
+
+void IniLexer::UngetChar(void) {
+  if (eof_)
+    --lexpos_;
+}
+
+Token::Type IniLexer::LexerBegin(
+    int c, State& out_state, bool& out_save) {
+  Token::Type type = Token::TYPE_ERR;
+
+  if (' ' == c || '\t' == c) {
+    out_save = false;
+  }
+  else if ('\n' == c) {
+    out_save = false;
+    ++lineno_;
+  }
+  else if ('#' == c) {
+    out_state = STATE_COMMENT;
+  }
+  else if ('[' == c) {
+    out_state = STATE_FINISH;
+    type = Token::TYPE_LBRACKET;
+  }
+  else if (']' == c) {
+    out_state = STATE_FINISH;
+    type = Token::TYPE_RBRACKET;
+  }
+  else if ('=' == c) {
+    out_state = STATE_FINISH;
+    type = Token::TYPE_ASSIGN;
+  }
+  else {
+    out_state = STATE_STRING;
+  }
+
+  return type;
+}
+
+Token::Type IniLexer::LexerFinish(
+    int c, State& out_state, bool& out_save) {
+  out_state = STATE_FINISH;
+  out_save = false;
+
+  return Token::TYPE_ERR;
+}
+
+Token::Type IniLexer::LexerString(
+    int c, State& out_state, bool& out_save) {
+  if (' ' == c || '\t' == c || '\n' == c || '#' == c || '=' == c) {
+    if ('\n' == c || '#' == c || '=' == c)
+      UngetChar();
+
+    out_state = STATE_FINISH;
+    out_save = false;
+
+    return Token::TYPE_STRING;
+  }
+
+  return Token::TYPE_ERR;
+}
+
+Token::Type IniLexer::LexerComment(
+    int c, State& out_state, bool& out_save) {
+  out_save = false;
+  if (EOF == c) {
+    out_state = STATE_FINISH;
+    return Token::TYPE_EOF;
+  }
+  else if ('\n' == c) {
+    ++lineno_;
+    out_state = STATE_BEGIN;
+  }
+
+  return Token::TYPE_ERR;
+}
 
 
 
