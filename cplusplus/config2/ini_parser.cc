@@ -157,7 +157,7 @@ int IniLexer::GetChar(void) {
 }
 
 void IniLexer::UngetChar(void) {
-  if (eof_)
+  if (!eof_)
     --lexpos_;
 }
 
@@ -173,6 +173,7 @@ Token::Type IniLexer::LexerBegin(
     ++lineno_;
   }
   else if ('#' == c) {
+    out_save = false;
     out_state = STATE_COMMENT;
   }
   else if ('[' == c) {
@@ -186,6 +187,10 @@ Token::Type IniLexer::LexerBegin(
   else if ('=' == c) {
     out_state = STATE_FINISH;
     type = Token::TYPE_ASSIGN;
+  }
+  else if (EOF == c) {
+    out_state = STATE_FINISH;
+    type = Token::TYPE_EOF;
   }
   else {
     out_state = STATE_STRING;
@@ -204,8 +209,9 @@ Token::Type IniLexer::LexerFinish(
 
 Token::Type IniLexer::LexerString(
     int c, State& out_state, bool& out_save) {
-  if (' ' == c || '\t' == c || '\n' == c || '#' == c || '=' == c) {
-    if ('\n' == c || '#' == c || '=' == c)
+  if (' ' == c || '\t' == c || '\n' == c 
+      || '#' == c || '=' == c || ']' == c) {
+    if ('\n' == c || '#' == c || '=' == c || ']' == c)
       UngetChar();
 
     out_state = STATE_FINISH;
@@ -246,30 +252,89 @@ IniParser& IniParser::GetSingleton(void) {
 }
 
 bool IniParser::Open(const char* fname) {
+  if (NULL == (lexer_ = new IniLexer()))
+    return false;
+
+  if (!lexer_->Open(fname))
+    return false;
+  section_ = "";
+  values_.clear();
+
+  Parse();
+
   return true;
 }
 
 void IniParser::Close(void) {
+  if (NULL != lexer_) {
+    lexer_->Close();
+
+    delete lexer_;
+    lexer_ = NULL;
+  }
 }
 
 std::string IniParser::Get(
     const std::string& section, const std::string& key) {
+  std::string name(section + key);
+
+  ValueMap::iterator found(values_.find(name));
+  if (found != values_.end())
+    return (*found).second.c_str();
+
   return "";
 }
 
 void IniParser::Parse(void) {
+  Token token;
+  Token::Type type;
+  do {
+    type = lexer_->GetToken(token);
+    if (Token::TYPE_LBRACKET == type) {
+      ParseSection();
+      ParseItem();
+    }
+  } while (Token::TYPE_EOF != type);
 }
 
 void IniParser::ParseSection(void) {
+  Token token;
+  Token::Type type = lexer_->GetToken(token);
+  if (Token::TYPE_STRING != type) {
+    fprintf(stderr, "parse section error ... %d\n", __LINE__);
+    abort();
+  }
+
+  section_ = token.token;
+  if (Token::TYPE_RBRACKET != lexer_->GetToken(token)) {
+    section_ = "";
+
+    fprintf(stderr, "parse section error ... %d\n", __LINE__);
+    abort();
+  }
 }
 
 void IniParser::ParseItem(void) {
-}
+  Token token;
+  Token::Type type = lexer_->GetToken(token);
+  if (Token::TYPE_STRING != type) {
+    fprintf(stderr, 
+        "parse item error ... %d, type = %d, token = %s\n", 
+        __LINE__, type, token.token.c_str());
+    abort();
+  }
 
-const std::string IniParser::ParseKey(void) {
-  return "";
-}
+  std::string key(section_ + token.token);
+  if (Token::TYPE_ASSIGN != lexer_->GetToken(token)) {
+    fprintf(stderr, "parse item error ... %d\n", __LINE__);
+    abort();
+  }
 
-const std::string IniParser::ParseValue(void) {
-  return "";
+  type = lexer_->GetToken(token);
+  if (Token::TYPE_STRING != type) {
+    fprintf(stderr, "parse item error ... %d\n", __LINE__);
+    abort();
+  }
+
+  values_[key] = token.token;
 }

@@ -58,8 +58,6 @@ private:
   void Parse(void);
   void ParseSection(void);
   void ParseItem(void);
-  const std::string ParseKey(void);
-  const std::string ParseValue(void);
 };
 
 #endif  // __INI_PARSER_HEADER_H__
