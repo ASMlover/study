@@ -57,7 +57,7 @@ private:
 
   void Parse(void);
   void ParseSection(void);
-  void ParseItem(void);
+  void ParseItem(const std::string& token);
 };
 
 #endif  // __INI_PARSER_HEADER_H__

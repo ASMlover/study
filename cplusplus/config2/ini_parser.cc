@@ -292,7 +292,9 @@ void IniParser::Parse(void) {
     type = lexer_->GetToken(token);
     if (Token::TYPE_LBRACKET == type) {
       ParseSection();
-      ParseItem();
+    }
+    else if (Token::TYPE_STRING == type) {
+      ParseItem(token.token);
     }
   } while (Token::TYPE_EOF != type);
 }
@@ -314,23 +316,16 @@ void IniParser::ParseSection(void) {
   }
 }
 
-void IniParser::ParseItem(void) {
+void IniParser::ParseItem(const std::string& str) {
+  std::string key(section_ + str);
+  
   Token token;
-  Token::Type type = lexer_->GetToken(token);
-  if (Token::TYPE_STRING != type) {
-    fprintf(stderr, 
-        "parse item error ... %d, type = %d, token = %s\n", 
-        __LINE__, type, token.token.c_str());
-    abort();
-  }
-
-  std::string key(section_ + token.token);
   if (Token::TYPE_ASSIGN != lexer_->GetToken(token)) {
     fprintf(stderr, "parse item error ... %d\n", __LINE__);
     abort();
   }
 
-  type = lexer_->GetToken(token);
+  Token::Type type = lexer_->GetToken(token);
   if (Token::TYPE_STRING != type) {
     fprintf(stderr, "parse item error ... %d\n", __LINE__);
     abort();
