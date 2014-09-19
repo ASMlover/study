@@ -35,5 +35,11 @@ int main(int argc, char* argv[]) {
   std::string value = IniParser::GetSingleton().Get("DEMO", "key");
   fprintf(stdout, "key = %s\n", value.c_str());
 
+  value = IniParser::GetSingleton().Get("DEMO", "key2");
+  fprintf(stdout, "key2 = %s\n", value.c_str());
+
+  value = IniParser::GetSingleton().Get("DEMO", "key3");
+  fprintf(stdout, "key3 = %s\n", value.c_str());
+
   return 0;
 }
