@@ -24,33 +24,73 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __GLOBAL_HEADER_H__
-#define __GLOBAL_HEADER_H__
+#include "global.h"
+#include "snippet.h"
+#include "expr.h"
 
-#include <assert.h>
-#include <ctype.h>
-#include <math.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+uint32_t Expr::var_index_ = 0;
+Expr::VariableMap Expr::variables_;
+Expr::BreakListStack Expr::end_;
+Expr::ContinueListStack Expr::start_;
+Expr::UintListStack Expr::scope_;
 
-#include <functional>
-#include <memory>
-#include <string>
+Expr::Expr(void)
+  : left_(ExprPtr(nullptr))
+  , right_(ExprPtr(nullptr)) {
+}
 
-#include <list>
-#include <set>
-#include <stack>
-#include <unordered_map>
-#include <vector>
+Expr::~Expr(void) {
+}
 
-class UnCopyable {
-  UnCopyable(const UnCopyable&);
-  UnCopyable& operator=(const UnCopyable&);
-protected:
-  UnCopyable(void) {}
-  ~UnCopyable(void) {}
-};
+void Expr::PushResolve(void) {
+  end_.push(std::list<BreakPtr>());
+  start_.push(std::list<ContinuePtr>());
+  scope_.push(std::list<uint32_t>());
+}
 
-#endif  // __GLOBAL_HEADER_H__
+void Expr::Resolve(FilePtr& out, uint32_t start_addr, uint32_t end_addr) {
+}
+
+void Expr::Execute(FilePtr& out) {
+}
+
+OpCode Expr::GetType(const std::string& token) {
+  OpCode code = OpCode::OPCODE_INVAL;
+
+  if (token == "true" || token == "false")
+    return OpCode::OPCODE_BOOL;
+  else if (token.empty())
+    return OpCode::OPCODE_STRING;
+
+  for (auto c : token) {
+    if (!isdigit(c) && '.' != c) {
+      code = OpCode::OPCODE_STRING;
+      break;
+    }
+    else if (code != OpCode::OPCODE_REAL) {
+      code = OpCode::OPCODE_INT;
+    }
+
+    if ('.' == c)
+      code = OpCode::OPCODE_REAL;
+  }
+
+  return code;
+}
+
+void Expr::Reset(void) {
+  var_index_ = 0;
+  variables_.clear();
+
+  while (!end_.empty())
+    end_.pop();
+
+  while (!start_.empty())
+    start_.pop();
+
+  while (!scope_.empty())
+    scope_.pop();
+}
+
+void Expr::EvalChildren(FilePtr& out) {
+}
