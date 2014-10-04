@@ -27,13 +27,13 @@
 #ifndef __EXPR_HEADER_H__
 #define __EXPR_HEADER_H__
 
-class Break;
-class Continue;
+class BreakExpr;
+class ContinueExpr;
 typedef std::shared_ptr<FILE> FilePtr;
 class Expr : private UnCopyable {
 public:
-  typedef std::shared_ptr<Break>                    BreakPtr;
-  typedef std::shared_ptr<Continue>                 ContinuePtr;
+  typedef std::shared_ptr<BreakExpr>                BreakPtr;
+  typedef std::shared_ptr<ContinueExpr>             ContinuePtr;
   typedef std::unordered_map<std::string, uint32_t> VariableMap;
   typedef std::stack<std::list<BreakPtr> >          BreakListStack;
   typedef std::stack<std::list<ContinuePtr> >       ContinueListStack;

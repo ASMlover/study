@@ -49,9 +49,18 @@ void Expr::PushResolve(void) {
 }
 
 void Expr::Resolve(FilePtr& out, uint32_t start_addr, uint32_t end_addr) {
-}
+  for (auto c : start_.top())
+    c->Resolve(out, start_addr);
+  start_.pop();
 
-void Expr::Execute(FilePtr& out) {
+  for (auto b : end_.top())
+    b->Resolve(out, end_addr);
+  end_.pop();
+
+  uint8_t cmd = static_cast<uint8_t>(OpCode::OPCODE_DEL);
+  for (auto i : scope_.top()) {
+  }
+  scope_.pop();
 }
 
 OpCode Expr::GetType(const std::string& token) {
@@ -93,4 +102,9 @@ void Expr::Reset(void) {
 }
 
 void Expr::EvalChildren(FilePtr& out) {
+  if (left_)
+    left_->Execute(out);
+
+  if (right_)
+    right_->Execute(out);
 }
