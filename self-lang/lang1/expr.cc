@@ -108,3 +108,38 @@ void Expr::EvalChildren(FilePtr& out) {
   if (right_)
     right_->Execute(out);
 }
+
+BlockExpr::~BlockExpr(void) {
+  blocks_.clear();
+}
+
+void BlockExpr::Execute(FilePtr& out) {
+  for (auto expr : blocks_)
+    expr->Execute(out);
+}
+
+void ValueExpr::Execute(FilePtr& out) {
+  EvalChildren(out);
+
+  OpCode code = GetType(value_);
+  switch (code) {
+  case OpCode::OPCODE_BOOL:
+    {
+      bool v = false;
+      if (value_ == "true")
+        v = true;
+    } break;
+  case OpCode::OPCODE_INT:
+    {
+      int v = atoi(value_.c_str());
+    } break;
+  case OpCode::OPCODE_REAL:
+    {
+      float v = static_cast<float>(atof(value_.c_str()));
+    } break;
+  case OpCode::OPCODE_STRING:
+    break;
+  default:
+    break;
+  }
+}
