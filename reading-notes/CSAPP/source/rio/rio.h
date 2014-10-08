@@ -31,11 +31,10 @@
 
 #include <stdio.h>
 
-typedef signed int ssize_t;
-
 ssize_t rio_readn(int fd, void* usrbuf, size_t n);
 ssize_t rio_writen(int fd, void* usrbuf, size_t n);
 
+struct rio_t;
 typedef struct rio_t rio_t;
 void rio_readinitb(rio_t* rp, int fd);
 ssize_t rio_readlineb(rio_t* rp, void* usrbuf, size_t maxlen);

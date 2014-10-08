@@ -26,18 +26,19 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <unistd.h>
 #include <errno.h>
 #include <string.h>
 #include "rio.h"
 
 #define RIO_BUFSIZE (8192)
 
-typedef struct rio_t {
+struct rio_t {
   int rio_fd;
   int rio_cnt;
   char* rio_bufptr;
   char rio_buf[RIO_BUFSIZE];
-} rio_t;
+};
 
 ssize_t rio_readn(int fd, void* usrbuf, size_t n) {
   size_t nleft = n;
