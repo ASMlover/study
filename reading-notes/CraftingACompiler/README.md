@@ -3,4 +3,4 @@
 
 
 ## **Summary**
- * Study notes about book <<Crafting A Compiler with C>>
+ * Study notes about book `<<`Crafting A Compiler with C`>>`
