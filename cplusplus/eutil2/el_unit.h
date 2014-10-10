@@ -69,7 +69,7 @@ static bool el_boolean_##__name__ = \
   el::UnitFramework::Instance().RegisterUnit(#__name__, el_Unit##__name__);\
 static void el_Unit##__name__(void)
 
-#define UNIT_PRINT(fmt, ...)  el::UnitPrint((fmt), __VA_ARGS__)
+#define UNIT_PRINT(fmt, ...)  el::UnitPrint((fmt), ##__VA_ARGS__)
 #define CLASS_NAME(__class__) typeid(__class__).name()
 
 #endif  // __EL_UNIT_HEADER_H__

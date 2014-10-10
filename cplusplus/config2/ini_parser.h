@@ -24,54 +24,40 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_POSIX_THREAD_HEADER_H__
-#define __EL_POSIX_THREAD_HEADER_H__
+#ifndef __INI_PARSER_HEADER_H__
+#define __INI_PARSER_HEADER_H__
 
-namespace el {
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-class Thread : private UnCopyable {
-  pthread_t    thread_id_;
-  RoutinerType routine_;
-  void*        argument_;
+#include <string>
+#include <map>
+
+#include "uncopyable.h"
+
+class IniLexer;
+class IniParser : private UnCopyable {
+  typedef std::map<std::string, std::string> ValueMap;
+
+  IniLexer*   lexer_;
+  std::string section_;
+  ValueMap    values_;
 public:
-  Thread(void) 
-    : thread_id_(0)
-    , routine_(nullptr) 
-    , argument_(nullptr) {
-  }
+  static IniParser& GetSingleton(void);
 
-  ~Thread(void) {
-    Join();
-  }
+  bool Open(const char* fname);
+  void Close(void);
 
-  void Create(const RoutinerType& routine, void* argument = nullptr) {
-    routine_ = routine;
-    argument_ = argument;
-
-    EL_ASSERT(0 == pthread_create(
-          &thread_id_, nullptr, &Thread::Routine, this));
-  }
-
-  void Join(void) {
-    if (0 != thread_id_) {
-      EL_ASSERT(0 == pthread_join(thread_id_, 0));
-
-      thread_id_ = 0;
-    }
-  }
+  std::string Get(
+      const std::string& section, const std::string& key);
 private:
-  static void* Routine(void* argument) {
-    Thread* self = static_cast<Thread*>(argument);
-    if (nullptr == self)
-      return nullptr;
+  IniParser(void);
 
-    if (nullptr != self->routine_)
-      self->routine_(self->argument_);
-
-    return nullptr;
-  }
+  void Parse(void);
+  void ParseSection(void);
+  void ParseItem(const std::string& token);
 };
 
-}
-
-#endif  // __EL_POSIX_THREAD_HEADER_H__
+#endif  // __INI_PARSER_HEADER_H__

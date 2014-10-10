@@ -24,54 +24,60 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_POSIX_THREAD_HEADER_H__
-#define __EL_POSIX_THREAD_HEADER_H__
+#ifndef __VALUE_HEADER_H__
+#define __VALUE_HEADER_H__
 
-namespace el {
-
-class Thread : private UnCopyable {
-  pthread_t    thread_id_;
-  RoutinerType routine_;
-  void*        argument_;
-public:
-  Thread(void) 
-    : thread_id_(0)
-    , routine_(nullptr) 
-    , argument_(nullptr) {
-  }
-
-  ~Thread(void) {
-    Join();
-  }
-
-  void Create(const RoutinerType& routine, void* argument = nullptr) {
-    routine_ = routine;
-    argument_ = argument;
-
-    EL_ASSERT(0 == pthread_create(
-          &thread_id_, nullptr, &Thread::Routine, this));
-  }
-
-  void Join(void) {
-    if (0 != thread_id_) {
-      EL_ASSERT(0 == pthread_join(thread_id_, 0));
-
-      thread_id_ = 0;
-    }
-  }
-private:
-  static void* Routine(void* argument) {
-    Thread* self = static_cast<Thread*>(argument);
-    if (nullptr == self)
-      return nullptr;
-
-    if (nullptr != self->routine_)
-      self->routine_(self->argument_);
-
-    return nullptr;
-  }
+enum class ValueType {
+  VALUETYPE_INVAL = 0,
+  VALUETYPE_BOOL  = 3,
+  VALUETYPE_INT   = 4,
+  VALUETYPE_REAL  = 5,
+  VALUETYPE_STR   = 6,
+  VALUETYPE_UNDEF = 7,
 };
 
-}
+class Value {
+  typedef std::string* StringPtr;
+public:
+  ValueType type_;
+  uint32_t  next_;
+  union {
+    bool  bool_;
+    int   int_;
+    float real_;
+    StringPtr string_;
+  };
+public:
+  Value(void);
+  explicit Value(const Value& v);
+  explicit Value(bool v);
+  explicit Value(int v);
+  explicit Value(float v);
+  explicit Value(const std::string& v);
 
-#endif  // __EL_POSIX_THREAD_HEADER_H__
+  virtual ~Value(void);
+
+  Value& operator=(const Value& v);
+
+  const std::string ToString(void);
+  int GetInteger(void);
+  float GetReal(void);
+
+  void Add(Value& v);
+  void Sub(Value& v);
+  void Mul(Value& v);
+  void Div(Value& v);
+  void Mod(Value& v);
+  void Pow(Value& v);
+
+  bool Is(void) const;
+  bool IsNot(void) const;
+  bool Lt(Value& v);
+  bool Gt(Value& v);
+  bool Le(Value& v);
+  bool Ge(Value& v);
+  bool Eq(Value& v);
+  bool Ne(Value& v);
+};
+
+#endif  // __VALUE_HEADER_H__
