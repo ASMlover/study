@@ -145,10 +145,27 @@ Token lexer_scanner(void) {
 }
 
 int main(int argc, char* argv[]) {
+  static const char* token_strings[] = {
+    "BEGIN",
+    "END",
+    "READ",
+    "WRITE",
+    "ID",
+    "INTLITERAL",
+    "LPAREN",
+    "RPAREN",
+    "SEMICOLON",
+    "COMMA",
+    "ASSIGNOP",
+    "ADDOP",
+    "SUBOP",
+    "SCANEOF",
+  };
   Token t;
 
   while (SCANEOF != (t = lexer_scanner())) {
-    fprintf(stdout, "Token = %d, token_buffer = %s\n", t, token_buffer);
+    fprintf(stdout, "Token = %d - %s, token_buffer = `%s`\n", 
+        t, token_strings[t], token_buffer);
   }
 
   return 0;
