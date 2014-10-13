@@ -145,5 +145,11 @@ Token lexer_scanner(void) {
 }
 
 int main(int argc, char* argv[]) {
+  Token t;
+
+  while (SCANEOF != (t = lexer_scanner())) {
+    fprintf(stdout, "Token = %d, token_buffer = %s\n", t, token_buffer);
+  }
+
   return 0;
 }
