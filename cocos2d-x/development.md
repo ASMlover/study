@@ -158,3 +158,15 @@
     3) ListView的创建后需要setTouchEnabled, setBounceEnabled;
 		4) ListView中的Button等Item需要使用insertCustomItem以后点击的时候才能进
 			 行相应的背景修改等。。。
+
+
+## **7. TextField在Google输入法无法及时显示**
+    1) 需要TextField在软键盘输入时不弹出全部的输入框
+    2) cocos自身处理字符的输入显示, 光标显示和删除的更新
+    3) 需要在cocos的platform/android下的Cocos2dxEditText.java中对于IME的模式
+       采用EditorInfo.IME_FLAG_NO_FULLSCREEN
+        public void setCocos2dxGLSurfaceView(
+            final pCocos2dxGLSurfaceView) {
+          this.mCocos2dxGLSurfaceView = pCocos2dxGLSurfaceView;
+          this.setImeOptions(EditorInfo.IME_FLAG_NO_FULLSCREEN);
+        }
