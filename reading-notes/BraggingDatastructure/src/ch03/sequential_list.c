@@ -145,6 +145,8 @@ void sequential_list(void) {
   SequentialList* list = sequential_init(10);
   int i, len;
   ElementType v;
+  
+  fprintf(stdout, "\n\n==========================================\n");
 
   fprintf(stdout, "SequentialList length = %d\n", sequential_length(list));
   for (i = 0; i < 10; ++i)
