@@ -121,14 +121,18 @@ static void list_pop(LoopList* list) {
   }
 }
 
-static void list_display(LoopList* list) {
+static void list_display(LoopList* list, int times) {
   assert(NULL != list);
 
   {
     ListNode* node = list->head.next;
+    int count = 0;
+    while (count < times) {
+      if (node == &list->head)
+        ++count;
+      else
+        fprintf(stdout, "LoopList element value is : %d\n", node->value);
 
-    while (node != &list->head) {
-      fprintf(stdout, "LoopList element value is : %d\n", node->value);
       node = node->next;
     }
     fprintf(stdout, "\n");
@@ -137,4 +141,25 @@ static void list_display(LoopList* list) {
 
 
 void loop_list(void) {
+  LoopList* list = list_init();
+  int i;
+  
+  fprintf(stdout, "\n\n==========================================\n");
+
+  fprintf(stdout, "LoopList length = %d\n", list_length(list));
+
+  for (i = 0; i < 10; ++i)
+    list_push(list, i * i);
+  fprintf(stdout, "LoopList length = %d\n", list_length(list));
+  list_display(list, 1);
+
+  list_pop(list);
+  list_pop(list);
+  list_display(list, 2);
+  fprintf(stdout, "LoopList length = %d\n", list_length(list));
+
+  list_clear(list);
+  fprintf(stdout, "LoopList length = %d\n", list_length(list));
+
+  list_destroy(&list);
 }
