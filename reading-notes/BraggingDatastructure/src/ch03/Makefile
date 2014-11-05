@@ -29,7 +29,8 @@ OUT	= ch03.exe
 RM	= rm
 CC	= gcc
 CFLAGS	= -g -O2 -Wall
-OBJS	= main.o sequential_list.o single_list.o loop_list.o static_list.o
+OBJS	= main.o sequential_list.o single_list.o loop_list.o static_list.o\
+	double_list.o
 
 
 
