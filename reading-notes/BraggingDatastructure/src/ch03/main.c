@@ -30,11 +30,13 @@
 extern void sequential_list(void);
 extern void single_list(void);
 extern void loop_list(void);
+extern void static_list(void);
 
 int main(int argc, char* argv[]) {
   sequential_list();
   single_list();
   loop_list();
+  static_list();
 
   return 0;
 }
