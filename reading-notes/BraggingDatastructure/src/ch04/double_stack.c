@@ -113,14 +113,35 @@ static void stack_pop2(DoubleStack* stack) {
 static ElementType stack_top1(DoubleStack* stack) {
   assert(NULL != stack && stack->top1 > 0);
 
-  return stack->elements[stack->top1];
+  return stack->elements[stack->top1 - 1];
 }
 
 static ElementType stack_top2(DoubleStack* stack) {
   assert(NULL != stack && stack->top2 < stack->storage - 1);
 
-  return stack->elements[stack->top2];
+  return stack->elements[stack->top2 + 1];
 }
 
 void double_stack(void) {
+  DoubleStack* stack = stack_init(128);
+  int i;
+
+  fprintf(stdout, "\n**************DoubleStack**************\n");
+  for (i = 0; i < 10; ++i)
+    stack_push1(stack, (i + 1) * 11);
+  for (i = 0; i < 10; ++i)
+    stack_push2(stack, (i + 2) * 22);
+
+  while (!stack_empty1(stack)) {
+    fprintf(stdout, "DoubleStack stack1 element value is : %d\n", 
+        stack_top1(stack));
+    stack_pop1(stack);
+  }
+  while (!stack_empty2(stack)) {
+    fprintf(stdout, "DoubleStack stack2 element value is : %d\n", 
+        stack_top2(stack));
+    stack_pop2(stack);
+  }
+
+  stack_destroy(&stack);
 }
