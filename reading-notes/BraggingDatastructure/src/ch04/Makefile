@@ -29,7 +29,7 @@ OUT	= ch04.exe
 RM	= rm
 CC	= gcc
 CFLAGS	= -g -O2 -Wall
-OBJS	= main.o sequential_stack.o
+OBJS	= main.o sequential_stack.o double_stack.o
 
 
 

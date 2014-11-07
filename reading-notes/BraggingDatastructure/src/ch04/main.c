@@ -28,9 +28,11 @@
  */
 
 extern void sequential_stack(void);
+extern void double_stack(void);
 
 int main(int argc, char* argv[]) {
   sequential_stack();
+  double_stack();
 
   return 0;
 }
