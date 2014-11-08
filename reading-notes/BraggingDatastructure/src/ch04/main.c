@@ -29,10 +29,12 @@
 
 extern void sequential_stack(void);
 extern void double_stack(void);
+extern void linked_stack(void);
 
 int main(int argc, char* argv[]) {
   sequential_stack();
   double_stack();
+  linked_stack();
 
   return 0;
 }
