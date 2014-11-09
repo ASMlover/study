@@ -101,7 +101,7 @@ void loop_queue(void) {
     queue_push(queue, i * i + 343);
 
   while (!queue_empty(queue)) {
-    fprintf(stdout, "SequentialQueue element value is : %d\n", 
+    fprintf(stdout, "LoopQueue element value is : %d\n", 
         queue_top(queue));
     queue_pop(queue);
   }
