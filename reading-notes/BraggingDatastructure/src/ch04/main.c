@@ -31,6 +31,7 @@ extern void sequential_stack(void);
 extern void double_stack(void);
 extern void linked_stack(void);
 extern void sequential_queue(void);
+extern void loop_queue(void);
 
 int main(int argc, char* argv[]) {
   sequential_stack();
@@ -38,6 +39,7 @@ int main(int argc, char* argv[]) {
   linked_stack();
 
   sequential_queue();
+  loop_queue();
 
   return 0;
 }

@@ -30,7 +30,7 @@ RM	= rm
 CC	= gcc
 CFLAGS	= -g -O2 -Wall
 OBJS	= main.o sequential_stack.o double_stack.o linked_stack.o\
-	sequential_queue.o
+	sequential_queue.o loop_queue.o
 
 
 
