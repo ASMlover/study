@@ -27,18 +27,21 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-extern void sequential_list(void);
-extern void single_list(void);
-extern void loop_list(void);
-extern void static_list(void);
-extern void double_list(void);
+extern void sequential_stack(void);
+extern void double_stack(void);
+extern void linked_stack(void);
+extern void sequential_queue(void);
+extern void loop_queue(void);
+extern void linked_queue(void);
 
 int main(int argc, char* argv[]) {
-  sequential_list();
-  single_list();
-  loop_list();
-  static_list();
-  double_list();
+  sequential_stack();
+  double_stack();
+  linked_stack();
+
+  sequential_queue();
+  loop_queue();
+  linked_queue();
 
   return 0;
 }

@@ -25,12 +25,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-OUT	= ch03.exe
+OUT	= ch04.exe
 RM	= rm
 CC	= gcc
 CFLAGS	= -g -O2 -Wall
-OBJS	= main.o sequential_list.o single_list.o loop_list.o static_list.o\
-	double_list.o
+OBJS	= main.o sequential_stack.o double_stack.o linked_stack.o\
+	sequential_queue.o loop_queue.o linked_queue.o
 
 
 
