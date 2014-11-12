@@ -34,16 +34,16 @@
 
 typedef int ElementType;
 
-typedef struct DoubleStack {
+typedef struct Stack {
   int top1;
   int top2;
   int storage;
   ElementType* elements;
-} DoubleStack;
+} Stack;
 
 
-static DoubleStack* stack_init(int storage) {
-  DoubleStack* stack = (DoubleStack*)malloc(sizeof(*stack));
+static Stack* stack_init(int storage) {
+  Stack* stack = (Stack*)malloc(sizeof(*stack));
   if (NULL == stack)
     return NULL;
 
@@ -61,7 +61,7 @@ static DoubleStack* stack_init(int storage) {
   return stack;
 }
 
-static void stack_destroy(DoubleStack** stack) {
+static void stack_destroy(Stack** stack) {
   assert(NULL != *stack);
 
   if (NULL != (*stack)->elements)
@@ -70,60 +70,60 @@ static void stack_destroy(DoubleStack** stack) {
   *stack = NULL;
 }
 
-static int stack_empty1(DoubleStack* stack) {
+static int stack_empty1(Stack* stack) {
   assert(NULL != stack);
 
   return (0 == stack->top1);
 }
 
-static int stack_empty2(DoubleStack* stack) {
+static int stack_empty2(Stack* stack) {
   assert(NULL != stack);
 
   return (stack->storage - 1 == stack->top2);
 }
 
-static void stack_push1(DoubleStack* stack, ElementType value) {
+static void stack_push1(Stack* stack, ElementType value) {
   assert(NULL != stack);
 
   if (stack->top1 + 1 < stack->top2) 
     stack->elements[stack->top1++] = value;
 }
 
-static void stack_push2(DoubleStack* stack, ElementType value) {
+static void stack_push2(Stack* stack, ElementType value) {
   assert(NULL != stack);
 
   if (stack->top1 < stack->top2 - 1)
     stack->elements[stack->top2--] = value;
 }
 
-static void stack_pop1(DoubleStack* stack) {
+static void stack_pop1(Stack* stack) {
   assert(NULL != stack);
 
   if (stack->top1 > 0)
     --stack->top1;
 }
 
-static void stack_pop2(DoubleStack* stack) {
+static void stack_pop2(Stack* stack) {
   assert(NULL != stack);
 
   if (stack->top2 < stack->storage - 1)
     ++stack->top2;
 }
 
-static ElementType stack_top1(DoubleStack* stack) {
+static ElementType stack_top1(Stack* stack) {
   assert(NULL != stack && stack->top1 > 0);
 
   return stack->elements[stack->top1 - 1];
 }
 
-static ElementType stack_top2(DoubleStack* stack) {
+static ElementType stack_top2(Stack* stack) {
   assert(NULL != stack && stack->top2 < stack->storage - 1);
 
   return stack->elements[stack->top2 + 1];
 }
 
 void double_stack(void) {
-  DoubleStack* stack = stack_init(128);
+  Stack* stack = stack_init(128);
   int i;
 
   fprintf(stdout, "\n**************DoubleStack**************\n");

@@ -34,14 +34,14 @@
 
 typedef int ElementType;
 
-typedef struct SequentialStack {
+typedef struct Stack {
   int top;
   int storage;
   ElementType* elements;
-} SequentialStack;
+} Stack;
 
-static SequentialStack* stack_init(int storage) {
-  SequentialStack* stack = (SequentialStack*)malloc(sizeof(*stack));
+static Stack* stack_init(int storage) {
+  Stack* stack = (Stack*)malloc(sizeof(*stack));
 
   if (NULL != stack) {
     stack->top = 0;
@@ -57,7 +57,7 @@ static SequentialStack* stack_init(int storage) {
   return stack;
 }
 
-static void stack_destroy(SequentialStack** stack) {
+static void stack_destroy(Stack** stack) {
   assert(NULL != *stack);
 
   free((*stack)->elements);
@@ -65,34 +65,34 @@ static void stack_destroy(SequentialStack** stack) {
   *stack = NULL;
 }
 
-static int stack_empty(SequentialStack* stack) {
+static int stack_empty(Stack* stack) {
   assert(NULL != stack);
 
   return (0 == stack->top);
 }
 
-static void stack_push(SequentialStack* stack, ElementType value) {
+static void stack_push(Stack* stack, ElementType value) {
   assert(NULL != stack);
 
   if (stack->top < stack->storage)
     stack->elements[stack->top++] = value;
 }
 
-static void stack_pop(SequentialStack* stack) {
+static void stack_pop(Stack* stack) {
   assert(NULL != stack);
 
   if (stack->top > 0)
     --stack->top;
 }
 
-static ElementType stack_top(SequentialStack* stack) {
+static ElementType stack_top(Stack* stack) {
   assert(NULL != stack && stack->top > 0);
 
   return stack->elements[stack->top - 1];
 }
 
 void sequential_stack(void) {
-  SequentialStack* stack = stack_init(DEF_STORAGE);
+  Stack* stack = stack_init(DEF_STORAGE);
   int i;
 
   fprintf(stdout, "\n**************SequentialStack**************\n");
