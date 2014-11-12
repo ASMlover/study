@@ -32,18 +32,18 @@
 
 typedef int ElementType;
 
-typedef struct ListNode {
+typedef struct Node {
   ElementType value;
-  struct ListNode* next;
-} ListNode;
+  struct Node* next;
+} Node;
 
-typedef struct SingleList {
-  ListNode* head;
+typedef struct List {
+  Node* head;
   int length;
-} SingleList;
+} List;
 
-static ListNode* node_create(ElementType value) {
-  ListNode* node = (ListNode*)malloc(sizeof(*node));
+static Node* node_create(ElementType value) {
+  Node* node = (Node*)malloc(sizeof(*node));
   if (NULL == node)
     return NULL;
 
@@ -53,11 +53,11 @@ static ListNode* node_create(ElementType value) {
   return node;
 }
 
-static void list_clear(SingleList* list) {
+static void list_clear(List* list) {
   assert(NULL != list);
 
   {
-    ListNode* node;
+    Node* node;
     while (NULL != list->head) {
       node = list->head;
       list->head = node->next;
@@ -67,8 +67,8 @@ static void list_clear(SingleList* list) {
   }
 }
 
-static SingleList* list_init(void) {
-  SingleList* list = (SingleList*)malloc(sizeof(*list));
+static List* list_init(void) {
+  List* list = (List*)malloc(sizeof(*list));
   if (NULL == list)
     return NULL;
 
@@ -78,7 +78,7 @@ static SingleList* list_init(void) {
   return list;
 }
 
-static void list_destroy(SingleList** list) {
+static void list_destroy(List** list) {
   if (NULL != *list) {
     list_clear(*list);
     free(*list);
@@ -86,17 +86,17 @@ static void list_destroy(SingleList** list) {
   }
 }
 
-static int list_length(SingleList* list) {
+static int list_length(List* list) {
   assert(NULL != list);
 
   return list->length;
 }
 
-static void list_push_front(SingleList* list, ElementType value) {
+static void list_push_front(List* list, ElementType value) {
   assert(NULL != list);
 
   {
-    ListNode* node = node_create(value);
+    Node* node = node_create(value);
     node->next = list->head;
     list->head = node;
 
@@ -104,11 +104,11 @@ static void list_push_front(SingleList* list, ElementType value) {
   }
 }
 
-static void list_pop_front(SingleList* list) {
+static void list_pop_front(List* list) {
   assert(NULL != list); 
 
   {
-    ListNode* node = list->head;
+    Node* node = list->head;
     if (NULL != node) {
       list->head = node->next;
 
@@ -118,7 +118,7 @@ static void list_pop_front(SingleList* list) {
   }
 }
 
-static void list_insert(SingleList* list, int index, ElementType value) {
+static void list_insert(List* list, int index, ElementType value) {
   assert(NULL != list);
   assert(0 <= index && index <= list->length);
 
@@ -127,8 +127,8 @@ static void list_insert(SingleList* list, int index, ElementType value) {
   }
   else {
     int i;
-    ListNode* iter;
-    ListNode* node = node_create(value);
+    Node* iter;
+    Node* node = node_create(value);
 
     iter = list->head;
     for (i = 0, iter = list->head; 
@@ -145,7 +145,7 @@ static void list_insert(SingleList* list, int index, ElementType value) {
   }
 }
 
-static void list_remove(SingleList* list, int index) {
+static void list_remove(List* list, int index) {
   assert(NULL != list);
   assert(0 <= index && index < list->length);
 
@@ -154,8 +154,8 @@ static void list_remove(SingleList* list, int index) {
   }
   else {
     int i;
-    ListNode* iter;
-    ListNode* node;
+    Node* iter;
+    Node* node;
 
     for (i = 0, iter = list->head; 
         i < index - 1 && NULL != iter->next; ++i, iter = iter->next) {
@@ -171,12 +171,12 @@ static void list_remove(SingleList* list, int index) {
   }
 }
 
-static int list_find(SingleList* list, ElementType value) {
+static int list_find(List* list, ElementType value) {
   assert(NULL != list);
 
   {
     int i;
-    ListNode* iter;
+    Node* iter;
     for (i = 0, iter = list->head; NULL != iter; ++i, iter = iter->next) {
       if (value == iter->value)
         return i;
@@ -186,14 +186,14 @@ static int list_find(SingleList* list, ElementType value) {
   return -1;
 }
 
-static void list_show(SingleList* list) {
+static void list_show(List* list) {
   assert(NULL != list);
 
   {
-    ListNode* node = list->head;
+    Node* node = list->head;
     while (NULL != node) {
       fprintf(stdout, 
-          "SingleList ListNode element value = %d\n", node->value);
+          "SingleList Node element value = %d\n", node->value);
       node = node->next;
     }
     fprintf(stdout, "\n");
@@ -203,7 +203,7 @@ static void list_show(SingleList* list) {
 
 
 void single_list(void) {
-  SingleList* list;
+  List* list;
   int i;
 
   fprintf(stdout, "\n\n==========================================\n");

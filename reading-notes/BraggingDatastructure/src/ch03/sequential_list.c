@@ -31,8 +31,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 typedef int ElementType;
+
 typedef struct SequentialList {
   int length;
   int storage;

@@ -34,27 +34,27 @@
 
 typedef int ElementType;
 
-typedef struct ListNode {
+typedef struct Node {
   ElementType value;
   int next;
-} ListNode;
+} Node;
 
-typedef struct StaticList {
+typedef struct List {
   int length;
   int storage;
   int first;
-  ListNode* elements;
-} StaticList;
+  Node* elements;
+} List;
 
-static StaticList* list_init(int storage) {
-  StaticList* list = (StaticList*)malloc(sizeof(*list));
+static List* list_init(int storage) {
+  List* list = (List*)malloc(sizeof(*list));
   if (NULL == list)
     return NULL;
 
   list->length = 0;
   list->storage = (storage < DEF_STORAGE ? DEF_STORAGE : storage);
   list->first = 0;
-  list->elements = (ListNode*)malloc(sizeof(ListNode) * list->storage);
+  list->elements = (Node*)malloc(sizeof(Node) * list->storage);
   if (NULL == list->elements) {
     free(list);
     list = NULL;
@@ -69,7 +69,7 @@ static StaticList* list_init(int storage) {
   return list;
 }
 
-static void list_destroy(StaticList** list) {
+static void list_destroy(List** list) {
   assert(NULL != *list);
 
   if (NULL != (*list)->elements) 
@@ -78,20 +78,20 @@ static void list_destroy(StaticList** list) {
   *list = NULL;
 }
 
-static void list_clear(StaticList* list) {
+static void list_clear(List* list) {
   assert(NULL != list);
 
   list->length = 0;
   list->first = 0;
 }
 
-static int list_length(StaticList* list) {
+static int list_length(List* list) {
   assert(NULL != list);
 
   return list->length;
 }
 
-static void list_push(StaticList* list, ElementType value) {
+static void list_push(List* list, ElementType value) {
   assert(NULL != list && list->length < list->storage - 1);
 
   {
@@ -104,7 +104,7 @@ static void list_push(StaticList* list, ElementType value) {
   }
 }
 
-static void list_pop(StaticList* list) {
+static void list_pop(List* list) {
   assert(NULL != list && list->length > 0);
 
   {
@@ -118,7 +118,7 @@ static void list_pop(StaticList* list) {
   }
 }
 
-static void list_display(StaticList* list) {
+static void list_display(List* list) {
   assert(NULL != list);
 
   {
@@ -135,7 +135,7 @@ static void list_display(StaticList* list) {
 
 
 void static_list(void) {
-  StaticList* list = list_init(128);
+  List* list = list_init(128);
   int i;
 
   fprintf(stdout, "\n\n==========================================\n");

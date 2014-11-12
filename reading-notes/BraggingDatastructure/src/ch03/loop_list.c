@@ -32,19 +32,19 @@
 
 typedef int ElementType;
 
-typedef struct ListNode {
+typedef struct Node {
   ElementType value;
-  struct ListNode* next;
-} ListNode;
+  struct Node* next;
+} Node;
 
-typedef struct LoopList {
-  ListNode head;
+typedef struct List {
+  Node head;
   int length;
-} LoopList;
+} List;
 
 
-static ListNode* node_create(ElementType value) {
-  ListNode* node = (ListNode*)malloc(sizeof(*node));
+static Node* node_create(ElementType value) {
+  Node* node = (Node*)malloc(sizeof(*node));
 
   if (NULL != node) {
     node->value = value;
@@ -54,11 +54,11 @@ static ListNode* node_create(ElementType value) {
   return node;
 }
 
-static void list_clear(LoopList* list) {
+static void list_clear(List* list) {
   assert(NULL != list);
 
   {
-    ListNode* node;
+    Node* node;
     while (&list->head != list->head.next) {
       node = list->head.next;
       list->head.next = list->head.next->next;
@@ -70,8 +70,8 @@ static void list_clear(LoopList* list) {
   }
 }
 
-static LoopList* list_init(void) {
-  LoopList* list = (LoopList*)malloc(sizeof(*list));
+static List* list_init(void) {
+  List* list = (List*)malloc(sizeof(*list));
 
   if (NULL != list) {
     list->head.next = &list->head;
@@ -81,7 +81,7 @@ static LoopList* list_init(void) {
   return list;
 }
 
-static void list_destroy(LoopList** list) {
+static void list_destroy(List** list) {
   assert(NULL != *list);
 
   list_clear(*list);
@@ -89,17 +89,17 @@ static void list_destroy(LoopList** list) {
   *list = NULL;
 }
 
-static int list_length(LoopList* list) {
+static int list_length(List* list) {
   assert(NULL != list);
 
   return list->length;
 }
 
-static void list_push(LoopList* list, ElementType value) {
+static void list_push(List* list, ElementType value) {
   assert(NULL != list);
 
   {
-    ListNode* node = node_create(value);
+    Node* node = node_create(value);
     node->next = list->head.next;
     list->head.next = node;
 
@@ -107,11 +107,11 @@ static void list_push(LoopList* list, ElementType value) {
   }
 }
 
-static void list_pop(LoopList* list) {
+static void list_pop(List* list) {
   assert(NULL != list);
 
   {
-    ListNode* node = list->head.next;
+    Node* node = list->head.next;
     if (node != &list->head) {
       list->head.next = list->head.next->next;
       free(node);
@@ -121,11 +121,11 @@ static void list_pop(LoopList* list) {
   }
 }
 
-static void list_display(LoopList* list, int times) {
+static void list_display(List* list, int times) {
   assert(NULL != list);
 
   {
-    ListNode* node = list->head.next;
+    Node* node = list->head.next;
     int count = 0;
     while (count < times) {
       if (node == &list->head)
@@ -141,7 +141,7 @@ static void list_display(LoopList* list, int times) {
 
 
 void loop_list(void) {
-  LoopList* list = list_init();
+  List* list = list_init();
   int i;
   
   fprintf(stdout, "\n\n==========================================\n");

@@ -32,19 +32,19 @@
 
 typedef int ElementType;
 
-typedef struct ListNode {
-  struct ListNode* prev;
-  struct ListNode* next;
+typedef struct Node {
+  struct Node* prev;
+  struct Node* next;
   ElementType value;
-} ListNode;
+} Node;
 
-typedef struct DoubleList {
+typedef struct List {
   int length;
-  ListNode node;
-} DoubleList;
+  Node node;
+} List;
 
-static ListNode* node_create(ElementType value) {
-  ListNode* node = (ListNode*)malloc(sizeof(*node));
+static Node* node_create(ElementType value) {
+  Node* node = (Node*)malloc(sizeof(*node));
   if (NULL != node) {
     node->prev = NULL;
     node->next = NULL;
@@ -55,8 +55,8 @@ static ListNode* node_create(ElementType value) {
 }
 
 static void list_insert(
-    DoubleList* list, ListNode* pos, ElementType value) {
-  ListNode* node = node_create(value);
+    List* list, Node* pos, ElementType value) {
+  Node* node = node_create(value);
 
   node->prev = pos->prev;
   node->next = pos;
@@ -66,9 +66,9 @@ static void list_insert(
   ++list->length;
 }
 
-static void list_remove(DoubleList* list, ListNode* pos) {
-  ListNode* prev;
-  ListNode* next;
+static void list_remove(List* list, Node* pos) {
+  Node* prev;
+  Node* next;
 
   prev = pos->prev;
   next = pos->next;
@@ -79,12 +79,12 @@ static void list_remove(DoubleList* list, ListNode* pos) {
   --list->length;
 }
 
-static void list_clear(DoubleList* list) {
+static void list_clear(List* list) {
   assert(NULL != list);
 
   {
-    ListNode* iter = list->node.next;
-    ListNode* node;
+    Node* iter = list->node.next;
+    Node* node;
     while (iter != &list->node) {
       node = iter;
       iter = iter->next;
@@ -94,8 +94,8 @@ static void list_clear(DoubleList* list) {
   }
 }
 
-static DoubleList* list_init(void) {
-  DoubleList* list = (DoubleList*)malloc(sizeof(*list));
+static List* list_init(void) {
+  List* list = (List*)malloc(sizeof(*list));
 
   if (NULL != list) {
     list->length = 0;
@@ -106,7 +106,7 @@ static DoubleList* list_init(void) {
   return list;
 }
 
-static void list_destroy(DoubleList** list) {
+static void list_destroy(List** list) {
   assert(NULL != *list);
 
   list_clear(*list);
@@ -114,45 +114,45 @@ static void list_destroy(DoubleList** list) {
   *list = NULL;
 }
 
-static int list_length(DoubleList* list) {
+static int list_length(List* list) {
   assert(NULL != list);
 
   return list->length;
 }
 
-static void list_push_back(DoubleList* list, ElementType value) {
+static void list_push_back(List* list, ElementType value) {
   assert(NULL != list);
 
   list_insert(list, &list->node, value);
 }
 
-static void list_push_front(DoubleList* list, ElementType value) {
+static void list_push_front(List* list, ElementType value) {
   assert(NULL != list);
 
   list_insert(list, list->node.next, value);
 }
 
-static void list_pop_back(DoubleList* list) {
+static void list_pop_back(List* list) {
   assert(NULL != list);
 
   {
-    ListNode* prev = (&list->node)->prev;
+    Node* prev = (&list->node)->prev;
     if (prev != &list->node)
       list_remove(list, prev);
   }
 }
 
-static void list_pop_front(DoubleList* list) {
+static void list_pop_front(List* list) {
   assert(NULL != list);
 
   list_remove(list, list->node.next);
 }
 
-static void list_display(DoubleList* list) {
+static void list_display(List* list) {
   assert(NULL != list);
 
   {
-    ListNode* iter = list->node.next;
+    Node* iter = list->node.next;
     while (iter != &list->node) {
       fprintf(stdout, "DoubleList element value is : %d\n", iter->value);
       iter = iter->next;
@@ -162,7 +162,7 @@ static void list_display(DoubleList* list) {
 }
 
 void double_list(void) {
-  DoubleList* list = list_init();
+  List* list = list_init();
   int i;
 
   fprintf(stdout, "\n\n==========================================\n");
