@@ -127,3 +127,12 @@
       * zk 移动值上一个折叠
       * zn 禁用折叠
       * zN 启用折叠
+
+
+## **针对NERDTree和Ag插件映射快捷键**
+    " keyboard shortcuts
+    let mapleader=','
+    nnoremap <leader>a :Ag<space>
+    nnoremap <leader>d :NERDTreeToggle<CR>
+    nnoremap <leader>f :NERDTreeFind<CR>
+    nnoremap <leader>] :TagbarToggle<CR>
