@@ -36,13 +36,13 @@ template <typename Object, typename Locker = SpinLock>
 class Singleton : private UnCopyable {
 public:
   static Object& Instance(void) {
-    static Object*  s_instance = NULL;
+    static Object*  s_instance = nullptr;
     static Locker   s_locker;
 
-    if (NULL == s_instance) {
+    if (nullptr == s_instance) {
       LockerGuard<Locker> guard(s_locker);
 
-      if (NULL == s_instance) {
+      if (nullptr == s_instance) {
         static Object s_object;
         s_instance = &s_object;
       }

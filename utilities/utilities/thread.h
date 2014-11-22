@@ -44,7 +44,7 @@ class ThreadRoutiner : public Routiner {
   Routine routine_;
   void*   argument_;
 public:
-  explicit ThreadRoutiner(Routine routine, void* argument = NULL) 
+  explicit ThreadRoutiner(Routine routine, void* argument = nullptr) 
     : routine_(routine)
     , argument_(argument) {
   }

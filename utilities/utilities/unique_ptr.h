@@ -44,16 +44,16 @@ class UniquePtr : private UnCopyable {
 
   typedef UniquePtr<T>  SelfType;
 public:
-  explicit UniquePtr(T* p = NULL) 
+  explicit UniquePtr(T* p = nullptr) 
     : ptr_(p) {
   }
 
   ~UniquePtr(void) {
-    if (NULL != ptr_)
+    if (nullptr != ptr_)
       delete ptr_;
   }
 public:
-  void Reset(T* p = NULL) {
+  void Reset(T* p = nullptr) {
     SelfType(p).Swap(*this);
   }
 
