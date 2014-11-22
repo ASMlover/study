@@ -27,13 +27,13 @@
 #ifndef __EXPR_HEADER_H__
 #define __EXPR_HEADER_H__
 
-class Break;
-class Continue;
+class BreakExpr;
+class ContinueExpr;
 typedef std::shared_ptr<FILE> FilePtr;
 class Expr : private UnCopyable {
 public:
-  typedef std::shared_ptr<Break>                    BreakPtr;
-  typedef std::shared_ptr<Continue>                 ContinuePtr;
+  typedef std::shared_ptr<BreakExpr>                BreakPtr;
+  typedef std::shared_ptr<ContinueExpr>             ContinuePtr;
   typedef std::unordered_map<std::string, uint32_t> VariableMap;
   typedef std::stack<std::list<BreakPtr> >          BreakListStack;
   typedef std::stack<std::list<ContinuePtr> >       ContinueListStack;
@@ -67,89 +67,89 @@ public:
 
 typedef std::shared_ptr<Expr> ExprPtr;
 
-class Block : public Expr {
+class BlockExpr : public Expr {
   typedef std::list<ExprPtr> ExprList;
 public:
   ExprList blocks_;
 
-  virtual ~Block(void);
+  virtual ~BlockExpr(void);
   virtual void Execute(FilePtr& out);
 };
 
-class EValue : public Expr {
+class ValueExpr : public Expr {
 public:
   std::string value_;
 
   virtual void Execute(FilePtr& out);
 };
 
-class Variable : public Expr {
+class VariableExpr : public Expr {
 public:
   std::string name_;
 
   virtual void Execute(FilePtr& out);
 };
 
-class Array : public Expr {
+class ArrayExpr : public Expr {
 public:
   std::vector<ExprPtr> values_;
 
-  virtual ~Array(void);
+  virtual ~ArrayExpr(void);
   virtual void Execute(FilePtr& out);
 };
 
-class Exit : public Expr {
+class ExitExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class Assign : public Expr {
+class AssignExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class Print : public Expr {
+class PrintExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class Read : public Expr {
+class ReadExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class If : public Expr {
+class IfExpr : public Expr {
 public:
   ExprPtr else_;
 
-  If(void);
-  virtual ~If(void);
+  IfExpr(void);
+  virtual ~IfExpr(void);
 
   virtual void Execute(FilePtr& out);
 };
 
-class While : public Expr {
+class WhileExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class Do : public Expr {
+class DoExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class For : public Expr {
+class ForExpr : public Expr {
 public:
   ExprPtr assign_;
   ExprPtr action_;
 
-  For(void);
-  virtual ~For(void);
+  ForExpr(void);
+  virtual ~ForExpr(void);
 
   virtual void Execute(FilePtr& out);
 };
 
-class Break : public Expr {
+class BreakExpr : public Expr {
 protected:
   uint32_t offset_;
 public:
@@ -157,82 +157,82 @@ public:
   void Resolve(FilePtr& out, uint32_t addr);
 };
 
-class Continue : public Expr {
+class ContinueExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class And : public Expr {
+class AndExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class Or : public Expr {
+class OrExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class Eq : public Expr {
+class EqExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class Ne : public Expr {
+class NeExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class Not : public Expr {
+class NotExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class Lt : public Expr {
+class LtExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class Gt : public Expr {
+class GtExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class Le : public Expr {
+class LeExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class Ge : public Expr {
+class GeExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class Add : public Expr {
+class AddExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class Sub : public Expr {
+class SubExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class Mul : public Expr {
+class MulExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class Div : public Expr {
+class DivExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class Mod : public Expr {
+class ModExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };
 
-class Pow : public Expr {
+class PowExpr : public Expr {
 public:
   virtual void Execute(FilePtr& out);
 };

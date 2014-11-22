@@ -80,3 +80,10 @@
         * Ctrl+K+B 开启/关闭侧边栏
         * F11 全屏模式
         * Shift+F11 免打扰模式
+
+
+## **4. 常用插件**
+    1) All Autocomplete 自动补全, 自动匹配所有打开的文件的词条;
+    2) Markdown Preview
+    3) IMESupport 修复中文输入法输入框不跟随的问题
+    4) LuaAutocompelete lua自动补全

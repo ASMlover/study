@@ -213,7 +213,7 @@ void Value::Pow(Value& v) {
       && ValueType::VALUETYPE_BOOL != type_
       && ValueType::VALUETYPE_STR != type_) {
     if (ValueType::VALUETYPE_INT == type_)
-      int_ = pow(int_, v.int_);
+      int_ = static_cast<int>(pow(int_, v.int_));
     else if (ValueType::VALUETYPE_REAL == type_)
       real_ = pow(real_, v.real_);
   }
@@ -224,9 +224,9 @@ bool Value::Is(void) const {
   case ValueType::VALUETYPE_BOOL:
     return bool_;
   case ValueType::VALUETYPE_INT:
-    return static_cast<bool>(int_);
+    return (0 != int_);
   case ValueType::VALUETYPE_REAL:
-    return static_cast<bool>(real_);
+    return (0.0f != real_);
   case ValueType::VALUETYPE_STR:
     return !string_->empty();
   default:
