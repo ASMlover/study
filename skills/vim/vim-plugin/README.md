@@ -41,3 +41,11 @@
         参见the_silver_searcher项目的README
     4) 在vim中直接使用Ag命令来进行查找
         :Ag [pattern]
+
+> ### **vimtweak**
+    1) 该插件只针对windows有效果
+    2) 安装
+        \> cp vimtweak.dll /vim/vim73/
+    3) 配置
+        nnoremap <silent> <F11> :call libcallnr("vimtweak.dll", "EnableMaximize", 1)<CR>
+        nnoremap <silent> <F12> :call libcallnr("vimtweak.dll", "SetAlpha", 240)
