@@ -136,3 +136,8 @@
     nnoremap <leader>d :NERDTreeToggle<CR>
     nnoremap <leader>f :NERDTreeFind<CR>
     nnoremap <leader>] :TagbarToggle<CR>
+
+
+## **打开文件的时切换工作目录到对应文件所在目录**
+    配置.vimrc
+        set autochdir
