@@ -72,7 +72,7 @@ public:
 private:
   bool AllocateChunk(void) {
     SmartArray<T> new_objects(new T[chunk_size_]);
-    if (NULL == new_objects.Get())
+    if (nullptr == new_objects.Get())
       return false;
 
     all_objects_.push_back(new_objects);

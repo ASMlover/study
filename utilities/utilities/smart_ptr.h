@@ -53,7 +53,7 @@ public:
   }
 
   virtual void Destroy(void) {
-    if (NULL != ptr_)
+    if (nullptr != ptr_)
       delete ptr_;
   }
 };
@@ -72,7 +72,7 @@ public:
   }
 
   virtual void Destroy(void) {
-    if (NULL != ptr_)
+    if (nullptr != ptr_)
       dtor_(ptr_);
   }
 };
@@ -94,9 +94,9 @@ class SmartPtr {
   typedef SmartPtr<T, Locker> SelfType;
 public:
   SmartPtr(void) 
-    : ptr_(NULL)
-    , ref_ptr_(NULL) 
-    , ref_count_(NULL) {
+    : ptr_(nullptr)
+    , ref_ptr_(nullptr) 
+    , ref_count_(nullptr) {
   }
 
   template <typename Y>
@@ -114,16 +114,16 @@ public:
   }
 
   ~SmartPtr(void) {
-    if (NULL != ref_count_) {
+    if (nullptr != ref_count_) {
       if (0 == --*ref_count_) {
         ref_ptr_->Destroy();
-        ptr_ = NULL;
+        ptr_ = nullptr;
 
         delete ref_ptr_;
-        ref_ptr_ = NULL;
+        ref_ptr_ = nullptr;
 
         delete ref_count_;
-        ref_count_ = NULL;
+        ref_count_ = nullptr;
       }
     }
   }
@@ -132,7 +132,7 @@ public:
     : ptr_(x.ptr_)
     , ref_ptr_(x.ref_ptr_)
     , ref_count_(x.ref_count_) {
-    if (NULL != ref_count_)
+    if (nullptr != ref_count_)
       ++*ref_count_;
   }
 
@@ -141,7 +141,7 @@ public:
     : ptr_(x.Get())
     , ref_ptr_(x.GetRefPointer())
     , ref_count_(x.GetRefCounter()) {
-    if (NULL != ref_count_)
+    if (nullptr != ref_count_)
       ++*ref_count_;
   }
 

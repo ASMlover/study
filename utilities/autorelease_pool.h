@@ -63,12 +63,9 @@ public:
 };
 
 
-class PoolManager {
+class PoolManager : private util::UnCopyable {
   AutoreleasePool*              current_pool_;
   std::deque<AutoreleasePool*>  pool_stack_;
-
-  PoolManager(const PoolManager&);
-  PoolManager& operator=(const PoolManager&);
 public:
   static PoolManager* GetInstance(void);
   static void DestroyInstance(void);

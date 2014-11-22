@@ -42,16 +42,16 @@ class UniqueArray : private UnCopyable {
 
   typedef UniqueArray<T>  SelfType;
 public:
-  explicit UniqueArray(T* p = NULL) 
+  explicit UniqueArray(T* p = nullptr) 
     : ptr_(p) {
   }
 
   ~UniqueArray(void) {
-    if (NULL != ptr_)
+    if (nullptr != ptr_)
       delete [] ptr_;
   }
 public:
-  void Reset(T* p = NULL) {
+  void Reset(T* p = nullptr) {
     SelfType(p).Swap(*this);
   }
 
