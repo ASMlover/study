@@ -1,0 +1,191 @@
+" Hide menu bar and tool bar use<F2>
+set guioptions-=T
+set guioptions-=m
+map <silent> <F2> :if &guioptions =~# 'T' <Bar>
+    \set guioptions-=T <Bar>
+    \set guioptions-=m <Bar>
+  \else <Bar>
+    \set guioptions+=T <Bar>
+    \set guioptions+=m <Bar>
+  \endif<CR>
+
+
+" auto complete
+inoremap ( ()<ESC>i
+inoremap ) <c-r>=ClosePair(')')<CR>
+inoremap { {}<ESC>i
+inoremap } <c-r>=ClosePair('}')<CR>
+inoremap [ []<ESC>i
+inoremap ] <c-r>=ClosePair(']')<CR>
+inoremap < <><ESC>i
+inoremap > <c-r>=ClosePair('>')<CR>
+" inoremap " ""<ESC>i
+" inoremap ' ''<ESC>i
+
+function ClosePair(char)
+  if getline('.')[col('.') - 1] == a:char
+    return "\<Right>"
+  else
+    return a:char
+  endif
+endfunction
+
+
+" add file header
+nnoremap <silent> <F3> :call TitleDescription(2)<CR>'s
+nnoremap <silent> <F4> :call TitleDescription(0)<CR>'s
+nnoremap <silent> <F5> :call TitleDescription(1)<CR>'s
+function AddFileHeader4C()
+  call append(0, "/*")
+  call append(1, " * Copyright (c) ".strftime("%Y")." ASMlover. All rights reserved.")
+  call append(2, " *")
+  call append(3, " * Redistribution and use in source and binary forms, with or without")
+  call append(4, " * modification, are permitted provided that the following conditions")
+  call append(5, " * are met:")
+  call append(6, " *")
+  call append(7, " *  * Redistributions of source code must retain the above copyright")
+  call append(8, " *    notice, this list ofconditions and the following disclaimer.")
+  call append(9, " *")
+  call append(10," *  * Redistributions in binary form must reproduce the above copyright")
+  call append(11," *    notice, this list of conditions and the following disclaimer in")
+  call append(12," *    the documentation and/or other materialsprovided with the")
+  call append(13," *    distribution.")
+  call append(14," *")
+  call append(15," * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS")
+  call append(16," * \"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT")
+  call append(17," * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS")
+  call append(18," * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE")
+  call append(19," * COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,")
+  call append(20," * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,")
+  call append(21," * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;")
+  call append(22," * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER")
+  call append(23," * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT")
+  call append(24," * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN")
+  call append(25," * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE")
+  call append(26," * POSSIBILITY OF SUCH DAMAGE.")
+  call append(27," */")
+  echohl WarningMsg | echo "Successful in adding the copyright." | echohl None
+endfunction
+
+" Updated modified filename and time
+function UpdateTitle()
+  normal m'
+  execute '/# *Last modified:/s@:.*$@\=strftime(":\t%Y-%m-%d %H:%M")@'
+  normal ''
+  normal mk
+  execute '/# *Filename:/s@:.*$@\=":\t\t".expand("%:t")@'
+  execute "noh"
+  normal 'k
+  echohl WarningMsg | echo "Successful in updating the copy right." | echohl None
+endfunction
+
+function AddFileHeader4CPP()
+  call append(0, "// Copyright (c) ".strftime("%Y")." ASMlover. All rights reserved.")
+  call append(1, "//")
+  call append(2, "// Redistribution and use in source and binary forms, with or without")
+  call append(3, "// modification, are permitted provided that the following conditions")
+  call append(4, "// are met:")
+  call append(5, "//")
+  call append(6, "//  * Redistributions of source code must retain the above copyright")
+  call append(7, "//    notice, this list ofconditions and the following disclaimer.")
+  call append(8, "//")
+  call append(9, "//  * Redistributions in binary form must reproduce the above copyright")
+  call append(10,"//    notice, this list of conditions and the following disclaimer in")
+  call append(11,"//    the documentation and/or other materialsprovided with the")
+  call append(12,"//    distribution.")
+  call append(13,"//")
+  call append(14,"// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS")
+  call append(15,"// \"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT")
+  call append(16,"// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS")
+  call append(17,"// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE")
+  call append(18,"// COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,")
+  call append(19,"// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,")
+  call append(20,"// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;")
+  call append(21,"// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER")
+  call append(22,"// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT")
+  call append(23,"// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN")
+  call append(24,"// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE")
+  call append(25,"// POSSIBILITY OF SUCH DAMAGE.")
+  echohl WarningMsg | echo "Successful in adding the copyright." | echohl None
+endfunction
+
+function AddFileHeader4Script()
+  call append(0, "# Copyright (c) ".strftime("%Y")." ASMlover. All rights reserved.")
+  call append(1, "#")
+  call append(2, "# Redistribution and use in source and binary forms, with or without")
+  call append(3, "# modification, are permitted provided that the following conditions")
+  call append(4, "# are met:")
+  call append(5, "#")
+  call append(6, "#  * Redistributions of source code must retain the above copyright")
+  call append(7, "#    notice, this list ofconditions and the following disclaimer.")
+  call append(8, "#")
+  call append(9, "#  * Redistributions in binary form must reproduce the above copyright")
+  call append(10,"#    notice, this list of conditions and the following disclaimer in")
+  call append(11,"#    the documentation and/or other materialsprovided with the")
+  call append(12,"#    distribution.")
+  call append(13,"#")
+  call append(14,"# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS")
+  call append(15,"# \"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT")
+  call append(16,"# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS")
+  call append(17,"# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE")
+  call append(18,"# COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,")
+  call append(19,"# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,")
+  call append(20,"# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;")
+  call append(21,"# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER")
+  call append(22,"# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT")
+  call append(23,"# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN")
+  call append(24,"# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE")
+  call append(25,"# POSSIBILITY OF SUCH DAMAGE.")
+  echohl WarningMsg | echo "Successful in adding the copyright." | echohl None
+endfunction
+
+" 0: default/C 
+" 1: cpp
+" 2: Script
+function TitleDescription(type)
+  let n=1
+  while n < 10
+    let line = getline(n)
+      if line =~ '^\#\s*\S*Copyright:\S*.*$'
+        call UpdateTitle()
+        return
+      endif
+      let n = n + 1
+  endwhile
+  
+  if a:type == 0
+    call AddFileHeader4C()
+  elseif a:type == 1
+    call AddFileHeader4CPP()
+  elseif a:type == 2
+    call AddFileHeader4Script()
+  else
+    call AddFileHeader4C()
+  endif
+endfunction
+
+autocmd BufNewFile *.c call AddFileHeader4C()
+autocmd BufNewFile *.cpp call AddFileHeader4CPP()
+autocmd BufNewFile *.cc call AddFileHeader4CPP()
+autocmd BufNewFile *.hpp call AddFileHeader4CPP()
+autocmd BufNewFile *.py call AddFileHeader4CPP()
+autocmd BufNewFile *.mk call AddFileHeader4CPP()
+
+
+" add vimtweak plugin (just for windows)
+" cp vimtweak.dll $VIM/vim74
+nnoremap <silent> <F12> :call libcallnr("vimtweak.dll", "SetAlpha", 240)<CR>
+
+" add syntax highlighting
+augroup filetype
+  " Lua
+  au! BufNewFile,BufRead *.lua,*.lum   setf lua
+  " Markdown
+  au! BufNewFile,BufRead *.md,*.mkd,*.mkdn,*.mdwn,*.mdown,*.markdown   setf markdown
+augroup end
+
+" set default tags resources
+" COMMAND:
+"   $ ctags -R --c++-kinds=+p --fields=+iaS --extra=+q --language-force=C++ .
+" set tags+=D:\Tools\dev_tags\cocos2dx_tags
+" set tags+=D:\Tools\dev_tags\cpp_tags

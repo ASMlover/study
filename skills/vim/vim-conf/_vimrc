@@ -1,0 +1,189 @@
+set nocompatible
+source $VIMRUNTIME/vimrc_example.vim
+source $VIMRUNTIME/mswin.vim
+behave mswin
+
+set diffexpr=MyDiff()
+function MyDiff()
+  let opt = '-a --binary '
+  if &diffopt =~ 'icase' | let opt = opt . '-i ' | endif
+  if &diffopt =~ 'iwhite' | let opt = opt . '-b ' | endif
+  let arg1 = v:fname_in
+  if arg1 =~ ' ' | let arg1 = '"' . arg1 . '"' | endif
+  let arg2 = v:fname_new
+  if arg2 =~ ' ' | let arg2 = '"' . arg2 . '"' | endif
+  let arg3 = v:fname_out
+  if arg3 =~ ' ' | let arg3 = '"' . arg3 . '"' | endif
+  let eq = ''
+  if $VIMRUNTIME =~ ' '
+    if &sh =~ '\<cmd'
+      let cmd = '""' . $VIMRUNTIME . '\diff"'
+      let eq = '"'
+    else
+      let cmd = substitute($VIMRUNTIME, ' ', '" ', '') . '\diff"'
+    endif
+  else
+    let cmd = $VIMRUNTIME . '\diff'
+  endif
+  silent execute '!' . cmd . ' ' . opt . arg1 . ' ' . arg2 . ' > ' . arg3 . eq
+endfunction
+
+
+" configure Vim
+function GetRunningOS()
+  " get running os platform
+  if has("win32") || has("win64")
+    return "win"
+  else
+    if has("unix")
+      if system("uname")=~"Darwin"
+        return "mac"
+      else
+        return "linux"
+      endif
+    endif
+  endif
+endfunction
+let os = GetRunningOS()
+
+
+" don't bother with vi compatibility
+set nocompatible
+" enable syntax highlighting
+syntax on
+
+" configure Vundle
+filetype on " without this vim emits a zero exit status, later, because of :ft off
+filetype off
+
+if os == "win"
+  set rtp+=$VIM/vimfiles/bundle/Vundle.vim/
+  call vundle#rc("$VIM/vimfiles/bundle/")
+else
+  set rtp+=~/.vim/bundle/Vundle.vim/
+  call vundle#rc()
+endif
+
+" install Vundle bundles
+if os == "win"
+  if filereadable(expand("$VIM/_vimrc.bundles"))
+    source $VIM/_vimrc.bundles
+    source $VIM/_vimrc.bundles.local
+  endif
+else
+  if filereadable(expand("~/.vimrc.bundles"))
+    source ~/.vimrc.bundles
+    source ~/.vimrc.bundles.local
+  endif
+endif
+
+" ensure ftdetect et al work by including this after the Vundle stuff
+filetype plugin indent on
+
+set autoindent
+set autoread                                                 " reload files when changed on disk, i.e. via `git checkout`
+set backspace=2                                              " Fix broken backspace in some setups
+set showcmd
+set expandtab                                                " expand tabs to space
+set tabstop=8                                                " actual tabs occupy 8 characters
+set shiftwidth=2                                             " normal mode indentation commands use 4 spaces
+set softtabstop=2                                            " insert mode tab and backspace use 2 spaces
+set ignorecase                                               " case-insensitive search
+set incsearch                                                " search as you type
+set smartcase                                                " case-sensitive search if any caps
+set fileencoding=utf-8                                       " default fileencoding is utf-8
+set fileencodings=utf-8,ucs-bom,default,latin1
+set fileformat=unix                                          " default fileformat is unix
+set fileformats=unix,dos,mac
+set nobackup                                                 " do not create backup file
+set noundofile                                               " do not create undo file
+set number                                                   " show line numbers
+set ruler                                                    " show where you are
+set laststatus=2                                             " always show statusline
+set cursorline                                               " show cursor of current line
+set autochdir
+
+colorscheme molokai
+set t_Co=256
+set background=dark
+set guifont=Consolas:h11
+if os == "win"
+  au GUIEnter * simalt ~x
+endif
+
+" keyboard shortcuts
+let mapleader = ','
+nnoremap <leader>l :Align
+nnoremap <leader>a :Ag<space>
+nnoremap <silent> <leader>d :NERDTreeToggle<CR>
+nnoremap <silent> <leader>f :NERDTreeFind<CR>
+nnoremap <silent> <leader>] :TagbarToggle<CR>
+" key-mapping for SingleCompile(compile or run a single source file)
+nnoremap <silent> <F9> :SCCompile<CR>
+nnoremap <silent> <F10> :SCCompileRun<CR>
+
+" configure for plugin(neocomplete)
+let g:acp_enableAtStartup = 0                                " disable autocomplpop
+let g:neocomplete#enable_at_startup = 1                      " use neocomplete
+let g:neocomplete#enable_smart_case = 1                      " use smartcase
+let g:neocomplete#enable_auto_delimiter = 1                  " enable auto delimiter
+let g:neocomplete#max_list = 15                              " max complete reminder list
+let g:neocomplete#force_overwrite_completefunc = 1
+let g:neocomplete#sources#syntax#min_keyword_length = 3      " set minimum syntax keyword length
+let g:neocomplete#lock_buffer_name_pattern = '\*ku\*'
+" define dictionary.
+let g:neocomplete#sources#dictionary#dictionaries = {
+    \ 'default' : '',
+    \ 'vimshell' : $HOME.'/.vimshell_hist',
+    \ 'scheme' : $HOME.'/.gosh_completions'
+    \ }
+
+" define keyword.
+if !exists('g:neocomplete#keyword_patterns')
+  let g:neocomplete#keyword_patterns = {}
+endif
+let g:neocomplete#keyword_patterns['default'] = '\h\w*'
+" " plugin key-mappings.
+inoremap <expr><C-g> neocomplete#undo_completion()
+inoremap <expr><C-l> neocomplete#complete_common_string()
+" recommended key-mappings.
+" <CR>: close popup and save indent.
+inoremap <silent> <CR> <C-r>=<SID>my_cr_function()<CR>
+function! s:my_cr_function()
+  return neocomplete#close_popup() . "\<CR>"
+  " for no inserting <CR> key.
+  "return pumvisible() ? neocomplete#close_popup() : "\<CR>"
+endfunction
+" <TAB>: completion.
+inoremap <expr><TAB>  pumvisible() ? "\<C-n>" : "\<TAB>"
+inoremap <expr><C-h> neocomplete#smart_close_popup()."\<C-h>"
+inoremap <expr><BS> neocomplete#smart_close_popup()."\<C-h>"
+inoremap <expr><C-y>  neocomplete#close_popup()
+inoremap <expr><C-e>  neocomplete#cancel_popup()
+" enable omni completion.
+autocmd FileType css setlocal omnifunc=csscomplete#CompleteCSS
+autocmd FileType html,markdown setlocal omnifunc=htmlcomplete#CompleteTags
+autocmd FileType javascript setlocal omnifunc=javascriptcomplete#CompleteJS
+autocmd FileType python setlocal omnifunc=pythoncomplete#Complete
+autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
+" enable heavy omni completion.
+if !exists('g:neocomplete#sources#omni#input_patterns')
+  let g:neocomplete#sources#omni#input_patterns = {}
+endif
+let g:neocomplete#sources#omni#input_patterns.php = '[^. \t]->\%(\h\w*\)\?\|\h\w*::\%(\h\w*\)\?'
+let g:neocomplete#sources#omni#input_patterns.perl = '[^. \t]->\%(\h\w*\)\?\|\h\w*::\%(\h\w*\)\?'
+let g:neocomplete#sources#omni#input_patterns.c = '[^.[:digit:] *\t]\%(\.\|->\)\%(\h\w*\)\?'
+let g:neocomplete#sources#omni#input_patterns.cpp = '[^.[:digit:] *\t]\%(\.\|->\)\%(\h\w*\)\?\|\h\w*::\%(\h\w*\)\?'
+let g:neocomplete#sources#omni#input_patterns.ruby = '[^. *\t]\.\h\w*\|\h\w*::'
+let g:neocomplete#sources#omni#input_patterns.go = '\h\w*\.\?'
+
+" source local vimrc
+if os == "win"
+  if filereadable(expand("$VIM/_vimrc.local"))
+    source $VIM/_vimrc.local
+  endif
+else
+  if filereadable(expand("~/.vimrc.local"))
+    source ~/.vimrc.local
+  endif
+endif

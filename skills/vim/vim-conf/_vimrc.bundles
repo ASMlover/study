@@ -1,0 +1,11 @@
+" Bundles here are part of the core setup.
+" Do NOT add bundles to this list, as they might get removed when you upgrade.
+" Please create ~/.vimrc.bundles.local and add any extra bundles you want.
+Bundle 'gmarik/Vundle.vim'
+Bundle 'rking/ag.vim'
+Bundle 'majutsushi/tagbar'
+Bundle 'scrooloose/nerdtree'
+Bundle 'vim-scripts/Align'
+Bundle 'ASMlover/molokai'
+Bundle 'Shougo/neocomplete.vim'
+Bundle 'xuhdev/SingleCompile'
