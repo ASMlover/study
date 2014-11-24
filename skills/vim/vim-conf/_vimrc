@@ -29,23 +29,16 @@ function MyDiff()
 endfunction
 
 
-" configure Vim
-function GetRunningOS()
-  " get running os platform
-  if has("win32") || has("win64")
-    return "win"
-  else
-    if has("unix")
-      if system("uname")=~"Darwin"
-        return "mac"
-      else
-        return "linux"
-      endif
-    endif
-  endif
+" configure vim
+silent function! OSX()
+  return has("macunix")
 endfunction
-let os = GetRunningOS()
-
+silent function! LINUX()
+  return (has("unix") && !has("macunix") && !has("win32unix"))
+endfunction
+silent function! WINDOWS()
+  return (has("win32") || has("win64"))
+endfunction
 
 " don't bother with vi compatibility
 set nocompatible
@@ -56,7 +49,7 @@ syntax on
 filetype on " without this vim emits a zero exit status, later, because of :ft off
 filetype off
 
-if os == "win"
+if WINDOWS()
   set rtp+=$VIM/vimfiles/bundle/Vundle.vim/
   call vundle#rc("$VIM/vimfiles/bundle/")
 else
@@ -65,7 +58,7 @@ else
 endif
 
 " install Vundle bundles
-if os == "win"
+if WINDOWS()
   if filereadable(expand("$VIM/_vimrc.bundles"))
     source $VIM/_vimrc.bundles
     source $VIM/_vimrc.bundles.local
@@ -107,7 +100,7 @@ colorscheme molokai
 set t_Co=256
 set background=dark
 set guifont=Consolas:h11
-if os == "win"
+if WINDOWS()
   au GUIEnter * simalt ~x
 endif
 
@@ -178,7 +171,7 @@ let g:neocomplete#sources#omni#input_patterns.ruby = '[^. *\t]\.\h\w*\|\h\w*::'
 let g:neocomplete#sources#omni#input_patterns.go = '\h\w*\.\?'
 
 " source local vimrc
-if os == "win"
+if WINDOWS()
   if filereadable(expand("$VIM/_vimrc.local"))
     source $VIM/_vimrc.local
   endif

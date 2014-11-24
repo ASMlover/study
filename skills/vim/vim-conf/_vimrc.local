@@ -22,7 +22,7 @@ inoremap > <c-r>=ClosePair('>')<CR>
 " inoremap " ""<ESC>i
 " inoremap ' ''<ESC>i
 
-function ClosePair(char)
+function! ClosePair(char)
   if getline('.')[col('.') - 1] == a:char
     return "\<Right>"
   else
@@ -35,7 +35,7 @@ endfunction
 nnoremap <silent> <F3> :call TitleDescription(2)<CR>'s
 nnoremap <silent> <F4> :call TitleDescription(0)<CR>'s
 nnoremap <silent> <F5> :call TitleDescription(1)<CR>'s
-function AddFileHeader4C()
+function! AddFileHeader4C()
   call append(0, "/*")
   call append(1, " * Copyright (c) ".strftime("%Y")." ASMlover. All rights reserved.")
   call append(2, " *")
@@ -68,7 +68,7 @@ function AddFileHeader4C()
 endfunction
 
 " Updated modified filename and time
-function UpdateTitle()
+function! UpdateTitle()
   normal m'
   execute '/# *Last modified:/s@:.*$@\=strftime(":\t%Y-%m-%d %H:%M")@'
   normal ''
@@ -79,7 +79,7 @@ function UpdateTitle()
   echohl WarningMsg | echo "Successful in updating the copy right." | echohl None
 endfunction
 
-function AddFileHeader4CPP()
+function! AddFileHeader4CPP()
   call append(0, "// Copyright (c) ".strftime("%Y")." ASMlover. All rights reserved.")
   call append(1, "//")
   call append(2, "// Redistribution and use in source and binary forms, with or without")
@@ -109,7 +109,7 @@ function AddFileHeader4CPP()
   echohl WarningMsg | echo "Successful in adding the copyright." | echohl None
 endfunction
 
-function AddFileHeader4Script()
+function! AddFileHeader4Script()
   call append(0, "# Copyright (c) ".strftime("%Y")." ASMlover. All rights reserved.")
   call append(1, "#")
   call append(2, "# Redistribution and use in source and binary forms, with or without")
@@ -142,7 +142,7 @@ endfunction
 " 0: default/C 
 " 1: cpp
 " 2: Script
-function TitleDescription(type)
+function! TitleDescription(type)
   let n=1
   while n < 10
     let line = getline(n)
