@@ -174,7 +174,9 @@ autocmd BufNewFile *.mk call AddFileHeader4CPP()
 
 " add vimtweak plugin (just for windows)
 " cp vimtweak.dll $VIM/vim74
-nnoremap <silent> <F12> :call libcallnr("vimtweak.dll", "SetAlpha", 240)<CR>
+if WINDOWS()
+  nnoremap <silent> <F12> :call libcallnr("vimtweak.dll", "SetAlpha", 240)<CR>
+endif
 
 " add syntax highlighting
 augroup filetype
