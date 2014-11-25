@@ -1,41 +1,44 @@
-" Hide menu bar and tool bar use<F2>
-set guioptions-=T
-set guioptions-=m
-map <silent> <F2> :if &guioptions =~# 'T' <Bar>
-    \set guioptions-=T <Bar>
-    \set guioptions-=m <Bar>
-  \else <Bar>
-    \set guioptions+=T <Bar>
-    \set guioptions+=m <Bar>
-  \endif<CR>
+" hide menu bar and tool bar use<F2>
+if WINDOWS()
+  set guioptions-=T
+  set guioptions-=m
+  map <silent> <F2> :if &guioptions =~# 'T' <Bar>
+      \set guioptions-=T <Bar>
+      \set guioptions-=m <Bar>
+    \else <Bar>
+      \set guioptions+=T <Bar>
+      \set guioptions+=m <Bar>
+    \endif<CR>
+endif
 
 
-" auto complete
-inoremap ( ()<ESC>i
-inoremap ) <c-r>=ClosePair(')')<CR>
-inoremap { {}<ESC>i
-inoremap } <c-r>=ClosePair('}')<CR>
-inoremap [ []<ESC>i
-inoremap ] <c-r>=ClosePair(']')<CR>
-inoremap < <><ESC>i
-inoremap > <c-r>=ClosePair('>')<CR>
-" inoremap " ""<ESC>i
-" inoremap ' ''<ESC>i
-
-function! ClosePair(char)
+" auto pair complete
+func! ClosePair(char)
   if getline('.')[col('.') - 1] == a:char
     return "\<Right>"
   else
     return a:char
   endif
 endfunction
+" auto pair complete key-mapping
+inoremap ( ()<ESC>i
+inoremap ) <c-r>=ClosePair(')')<CR>
+inoremap { {}<ESC>i
+inoremap } <c-r>=ClosePair('}')<CR>
+inoremap [ []<ESC>i
+inoremap ] <c-r>=ClosePair(']')<CR>
+" inoremap < <><ESC>i
+" inoremap > <c-r>=ClosePair('>')<CR>
+" inoremap " ""<ESC>i
+" inoremap ' ''<ESC>i
+
 
 
 " add file header
 nnoremap <silent> <F3> :call TitleDescription(2)<CR>'s
 nnoremap <silent> <F4> :call TitleDescription(0)<CR>'s
 nnoremap <silent> <F5> :call TitleDescription(1)<CR>'s
-function! AddFileHeader4C()
+func! AddFileHeader4C()
   call append(0, "/*")
   call append(1, " * Copyright (c) ".strftime("%Y")." ASMlover. All rights reserved.")
   call append(2, " *")
@@ -68,7 +71,7 @@ function! AddFileHeader4C()
 endfunction
 
 " Updated modified filename and time
-function! UpdateTitle()
+func! UpdateTitle()
   normal m'
   execute '/# *Last modified:/s@:.*$@\=strftime(":\t%Y-%m-%d %H:%M")@'
   normal ''
@@ -79,7 +82,7 @@ function! UpdateTitle()
   echohl WarningMsg | echo "Successful in updating the copy right." | echohl None
 endfunction
 
-function! AddFileHeader4CPP()
+func! AddFileHeader4CPP()
   call append(0, "// Copyright (c) ".strftime("%Y")." ASMlover. All rights reserved.")
   call append(1, "//")
   call append(2, "// Redistribution and use in source and binary forms, with or without")
@@ -109,7 +112,7 @@ function! AddFileHeader4CPP()
   echohl WarningMsg | echo "Successful in adding the copyright." | echohl None
 endfunction
 
-function! AddFileHeader4Script()
+func! AddFileHeader4Script()
   call append(0, "# Copyright (c) ".strftime("%Y")." ASMlover. All rights reserved.")
   call append(1, "#")
   call append(2, "# Redistribution and use in source and binary forms, with or without")
@@ -142,7 +145,7 @@ endfunction
 " 0: default/C 
 " 1: cpp
 " 2: Script
-function! TitleDescription(type)
+func! TitleDescription(type)
   let n=1
   while n < 10
     let line = getline(n)
@@ -185,9 +188,3 @@ augroup filetype
   " Markdown
   au! BufNewFile,BufRead *.md,*.mkd,*.mkdn,*.mdwn,*.mdown,*.markdown   setf markdown
 augroup end
-
-" set default tags resources
-" COMMAND:
-"   $ ctags -R --c++-kinds=+p --fields=+iaS --extra=+q --language-force=C++ .
-" set tags+=D:\Tools\dev_tags\cocos2dx_tags
-" set tags+=D:\Tools\dev_tags\cpp_tags

@@ -30,13 +30,13 @@ endfunction
 
 
 " configure vim
-silent function! OSX()
+silent func! OSX()
   return has("macunix")
 endfunction
-silent function! LINUX()
+silent func! LINUX()
   return (has("unix") && !has("macunix") && !has("win32unix"))
 endfunction
-silent function! WINDOWS()
+silent func! WINDOWS()
   return (has("win32") || has("win64"))
 endfunction
 
@@ -126,10 +126,10 @@ let g:neocomplete#sources#syntax#min_keyword_length = 3      " set minimum synta
 let g:neocomplete#lock_buffer_name_pattern = '\*ku\*'
 " define dictionary.
 let g:neocomplete#sources#dictionary#dictionaries = {
-    \ 'default' : '',
-    \ 'vimshell' : $HOME.'/.vimshell_hist',
-    \ 'scheme' : $HOME.'/.gosh_completions'
-    \ }
+  \ 'default' : '',
+  \ 'vimshell' : $HOME.'/.vimshell_hist',
+  \ 'scheme' : $HOME.'/.gosh_completions'
+  \ }
 
 " define keyword.
 if !exists('g:neocomplete#keyword_patterns')
@@ -142,7 +142,7 @@ inoremap <expr><C-l> neocomplete#complete_common_string()
 " recommended key-mappings.
 " <CR>: close popup and save indent.
 inoremap <silent> <CR> <C-r>=<SID>my_cr_function()<CR>
-function! s:my_cr_function()
+func! s:my_cr_function()
   return neocomplete#close_popup() . "\<CR>"
   " for no inserting <CR> key.
   "return pumvisible() ? neocomplete#close_popup() : "\<CR>"
@@ -169,6 +169,24 @@ let g:neocomplete#sources#omni#input_patterns.c = '[^.[:digit:] *\t]\%(\.\|->\)\
 let g:neocomplete#sources#omni#input_patterns.cpp = '[^.[:digit:] *\t]\%(\.\|->\)\%(\h\w*\)\?\|\h\w*::\%(\h\w*\)\?'
 let g:neocomplete#sources#omni#input_patterns.ruby = '[^. *\t]\.\h\w*\|\h\w*::'
 let g:neocomplete#sources#omni#input_patterns.go = '\h\w*\.\?'
+
+" configure for vim-marching 
+" this plugin needs vimproc.vim
+let g:marching_clang_command = "D:/Tools/LLVM/bin/clang.exe"
+let g:marching#clang_command#options = {
+  \ "cpp" : "-std=gnu++1y"
+  \}
+let g:marching_include_paths = [
+  \ "C:/MinGW/lib/gcc/mingw32/4.8.1/include/c++"
+  \]
+let g:marching_enable_neocomplete = 1
+if !exists('g:neocomplete#force_omni_input_patterns')
+  let g:neocomplete#force_omni_input_patterns = {}
+endif
+let g:neocomplete#force_omni_input_patterns.cpp = '[^.[:digit:] *\t]\%(\.\|->\)\w*\|\h\w*::\w*'
+set updatetime=200
+imap <buffer> <C-x><C-o> <Plug>(marching_start_omni_complete)
+imap <buffer> <C-x><C-x><C-o> <Plug>(marching_force_start_omni_complete)
 
 " source local vimrc
 if WINDOWS()
