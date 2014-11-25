@@ -149,3 +149,5 @@
  * 到[LLVM](https://llvm.org/builds)下载CLANG Windows Installer
  * 安装LLVM
  * 然后根据[vim-marching](https://github.com/osyo-manga/vim-marching)来配置
+ * vim-marching的运行需要[vimproc.vim](https://github.com/Shougo/vimproc.vim)
+ * 编译vimproc.vim
