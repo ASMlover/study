@@ -1,6 +1,6 @@
 " configure for vim-marching 
 " this plugin needs vimproc.vim
-let g:marching_clang_command = "D:/Tools/LLVM/bin/clang.exe"
+let g:marching_clang_command = "clang"
 let g:marching#clang_command#options = {
   \ "cpp" : "-std=gnu++1y"
   \}
