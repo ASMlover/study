@@ -141,3 +141,11 @@
 ## **打开文件的时切换工作目录到对应文件所在目录**
     配置.vimrc
         set autochdir
+
+
+## **配置vim-marching**
+ * 下载[MinGW](http://cznic.dl.sourceforge.net/project/mingw/Installer/mingw-get-setup.exe)
+ * 安装MinGW(gcc, g++, pthread-w32, make ...)
+ * 到[LLVM](https://llvm.org/builds)下载CLANG Windows Installer
+ * 安装LLVM
+ * 然后根据[vim-marching](https://github.com/osyo-manga/vim-marching)来配置
