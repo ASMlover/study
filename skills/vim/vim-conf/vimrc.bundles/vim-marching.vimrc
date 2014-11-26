@@ -5,6 +5,7 @@ let g:marching#clang_command#options = {
   \ "cpp" : "-std=gnu++1y"
   \}
 let g:marching_include_paths = [
+  \ "C:/MinGW/lib/gcc/mingw32/4.8.1/include",
   \ "C:/MinGW/lib/gcc/mingw32/4.8.1/include/c++"
   \]
 let g:marching_enable_neocomplete = 1
