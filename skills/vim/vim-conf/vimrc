@@ -59,18 +59,18 @@ endif
 
 " install Vundle bundles
 if WINDOWS()
-  if filereadable(expand("$VIM/_vimrc.bundles"))
-    source $VIM/_vimrc.bundles
+  if filereadable(expand("$VIM/vimrc.bundles"))
+    source $VIM/vimrc.bundles
   endif
-  if filereadable(expand("$VIM/_vimrc.bundles.local"))
-    source $VIM/_vimrc.bundles.local
+  if filereadable(expand("$VIM/vimrc.bundles.local"))
+    source $VIM/vimrc.bundles.local
   endif
 else
-  if filereadable(expand("~/.vimrc.bundles"))
-    source ~/.vimrc.bundles
+  if filereadable(expand("~/.vim/vimrc.bundles"))
+    source ~/.vim/vimrc.bundles
   endif
-  if filereadable(expand("~/.vimrc.bundles.local"))
-    source ~/.vimrc.bundles.local
+  if filereadable(expand("~/.vim/vimrc.bundles.local"))
+    source ~/.vim/vimrc.bundles.local
   endif
 endif
 
@@ -124,33 +124,33 @@ nnoremap <silent> <F10> :SCCompileRun<CR>
 " configure for bundles plugins
 if WINDOWS()
   " neocomplete configure
-  if filereadable(expand("$VIM/vimrc.bundles/neocomplete.vimrc"))
-    source $VIM/vimrc.bundles/neocomplete.vimrc
+  if filereadable(expand("$VIM/bundles.vimrc/neocomplete.vimrc"))
+    source $VIM/bundles.vimrc/neocomplete.vimrc
   endif
   
   " vim-marching configure
-  if filereadable(expand("$VIM/vimrc.bundles/vim-marching.vimrc"))
-    source $VIM/vimrc.bundles/vim-marching.vimrc
+  if filereadable(expand("$VIM/bundles.vimrc/vim-marching.vimrc"))
+    source $VIM/bundles.vimrc/vim-marching.vimrc
   endif
 else
   " neocomplete configure
-  if filereadable(expand("~/vimrc.bundles/neocomplete.vimrc"))
-    source ~/vimrc.bundles/neocomplete.vimrc
+  if filereadable(expand("~/.vim/bundles.vimrc/neocomplete.vimrc"))
+    source ~/.vim/bundles.vimrc/neocomplete.vimrc
   endif
   
   " vim-marching configure
-  if filereadable(expand("~/vimrc.bundles/vim-marching.vimrc"))
-    source ~/vimrc.bundles/vim-marching.vimrc
+  if filereadable(expand("~/.vim/bundles.vimrc/vim-marching.vimrc"))
+    source ~/.vim/bundles.vimrc/vim-marching.vimrc
   endif
 endif
 
 " source local vimrc
 if WINDOWS()
-  if filereadable(expand("$VIM/_vimrc.local"))
-    source $VIM/_vimrc.local
+  if filereadable(expand("$VIM/vimrc.local"))
+    source $VIM/vimrc.local
   endif
 else
-  if filereadable(expand("~/.vimrc.local"))
-    source ~/.vimrc.local
+  if filereadable(expand("~/.vim/vimrc.local"))
+    source ~/.vim/vimrc.local
   endif
 endif
