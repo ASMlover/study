@@ -133,13 +133,15 @@
     " keyboard shortcuts
     let mapleader=','
     nnoremap <leader>a :Ag<space>
-    nnoremap <leader>d :NERDTreeToggle<CR>
-    nnoremap <leader>f :NERDTreeFind<CR>
-    nnoremap <leader>] :TagbarToggle<CR>
+    nnoremap <silent> <leader>d :NERDTreeToggle<CR>
+    nnoremap <silent> <leader>f :NERDTreeFind<CR>
+    nnoremap <silent> <leader>] :TagbarToggle<CR>
 
 
-## **打开文件的时切换工作目录到对应文件所在目录**
- * set autochdir
+## **常用设置**
+ * `set autochdir` 自动转换到打开文件所在目录
+ * `set autoread` 自动读取修改了的文件
+ * `set autowrite` 自动保存文件(编译或切换文件)
 
 
 ## **配置vim-marching**
