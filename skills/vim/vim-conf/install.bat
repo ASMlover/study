@@ -66,7 +66,7 @@ REM copy my customized syntax(lua, c, python)
 if not exist "%HOME%\.vim\syntax" (
   call mkdir "%HOME%\.vim\syntax"
 )
-call copy /Y vimfiles\syntax\* "%HOME%\.vim\syntax"
+call copy /Y syntax\* "%HOME%\.vim\syntax"
 
 if not exist "%HOME%\.vim\bundle" (
   call mkdir "%HOME%\.vim\bundle"
