@@ -40,6 +40,11 @@
         \> install.bat
 
   * **Building vimproc.vim**
+    - 32bit
 
         \> cd %HOME%\.vim\bundle\vimproc.vim
         \> make -f make_mingw32.mak
+    - 64bit
+
+        \> cd %HOME%\.vim\bundle\vimproc.vim
+        \> make -f make_mingw64.mak
