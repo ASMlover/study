@@ -47,6 +47,7 @@ if not exist "%HOME%\.vim" (
   call mkdir "%HOME%\.vim"
 )
 
+REM copy configure of vim
 call copy /Y vimrc "%HOME%\_vimrc"
 call copy /Y vimrc.bundles "%HOME%\.vim\"
 call copy /Y vimrc.bundles.local "%HOME%\.vim\"
@@ -55,6 +56,17 @@ if not exist "%HOME%\.vim\bundles.vimrc" (
   call mkdir "%HOME%\.vim\bundles.vimrc"
 )
 call copy /Y bundles.vimrc "%HOME%\.vim\bundles.vimrc"
+
+REM copy useful command: ag.exe, ctags.exe and vimtweak.dll
+call copy /Y bin\ag.exe "%VIMRUNTIME%"
+call copy /Y bin\ctags.exe "%VIMRUNTIME%"
+call copy /Y bin\vimtweak.dll "%VIMRUNTIME%"
+
+REM copy my customized syntax(lua, c, python)
+if not exist "%HOME%\.vim\syntax" (
+  call mkdir "%HOME%\.vim\syntax"
+)
+call copy /Y vimfiles\syntax\* "%HOME%\.vim\syntax"
 
 if not exist "%HOME%\.vim\bundle" (
   call mkdir "%HOME%\.vim\bundle"
