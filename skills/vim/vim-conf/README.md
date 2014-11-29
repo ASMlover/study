@@ -31,8 +31,6 @@
     **Note:** The Vim build may not include the Lua DLL. In that case, [download lua](http://lua-users.org/wiki/LuaBinaries) and put the `lua52.dll` file in the same directory as `gvim.exe`.  
     **Note:** After installing Vim, you need to add it to your environment variable path. Just like:  
 
-        \> echo %VIMPATH%
-        \> D:\Vim
         \> echo %VIMRUNTIME%
         \> D:\Vim\vim74
 
@@ -43,5 +41,5 @@
 
   * **Building vimproc.vim**
 
-        \> cd %VIMPATH%\vimfiles\bundle\vimproc.vim
+        \> cd %HOME%\.vim\bundle\vimproc.vim
         \> make -f make_mingw32.mak

@@ -25,6 +25,25 @@
 " ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 " POSSIBILITY OF SUCH DAMAGE.
 
+" do not bother with vi compatibility
+set nocompatible                                             " must be first line
+
+" on windows, we also use '.vim' instead of 'vimfiles'; this makes
+" synchronization across (heterogeneous) system easier
+if has("win32") || has("win64")
+  set runtimepath=$HOME/.vim,$VIM/vimfiles,$VIMRUNTIME
+end
+
+" enable syntax highlighting
+syntax on
+
+" configure Vundle
+filetype on " without this vim emits a zero exit status, later, because of :ft off
+filetype off
+
+set rtp+=~/.vim/bundle/Vundle.vim/
+call vundle#rc()
+
 " Bundles here are part of the core setup.
 " Do NOT add bundles to this list, as they might get removed when you upgrade.
 " Please create ~/.vimrc.bundles.local and add any extra bundles you want.
@@ -40,3 +59,8 @@ Bundle 'Shougo/neocomplete.vim'
 Bundle 'osyo-manga/vim-marching'
 Bundle 'Shougo/vimproc.vim'
 Bundle 'kien/ctrlp.vim'
+
+" install local bundles configure if available
+if filereadable(expand("~/.vim/vimrc.bundles.local"))
+  source ~/.vim/vimrc.bundles.local
+endif

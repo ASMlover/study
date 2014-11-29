@@ -43,23 +43,31 @@ if not exist "%APP_DIR%" (
   call cd "%APP_DIR%"
 )
 
-call copy /Y vimrc "%VIMPATH%\_vimrc"
-call copy /Y vimrc.bundles "%VIMPATH%"
-call copy /Y vimrc.bundles.local "%VIMPATH%"
-call copy /Y vimrc.local "%VIMPATH%"
-
-if not exist "%VIMPATH%\vimfiles\bundle" (
-  call mkdir "%VIMPATH\vimfiles\bundle%"
+if not exist "%HOME%\.vim" (
+  call mkdir "%HOME%\.vim"
 )
 
-if not exist "%VIMPATH\vimfiles\bundle\Vundle.vim%" (
-  call git clone https://github.com/gmarik/Vundle.vim.git "%VIMPATH\vimfiles\bundle\Vundle.vim%"
+call copy /Y vimrc "%HOME%\_vimrc"
+call copy /Y vimrc.bundles "%HOME%\.vim\"
+call copy /Y vimrc.bundles.local "%HOME%\.vim\"
+call copy /Y vimrc.local "%HOME%\.vim\"
+if not exist "%HOME%\.vim\bundles.vimrc" (
+  call mkdir "%HOME%\.vim\bundles.vimrc"
+)
+call copy /Y bundles.vimrc "%HOME%\.vim\bundles.vimrc"
+
+if not exist "%HOME%\.vim\bundle" (
+  call mkdir "%HOME%\.vim\bundle"
+)
+
+if not exist "%HOME%\.vim\bundle\Vundle.vim" (
+  call git clone https://github.com/gmarik/Vundle.vim.git "%HOME%\.vim\bundle\Vundle.vim"
 ) else (
-  call cd "%VIMPATH\vimfiles\bundle\Vundle.vim%"
+  call cd "%HOME%\.vim\bundle\Vundle.vim"
   call git pull
-  call cd %VIMPATH%
+  call cd %HOME%
 )
 
-call gvim +BundleInstall! +BundleClean +qall
+call gvim -u "%HOME%\.vim\vimrc.bundles" +PluginInstall +qall
 
 @echo on

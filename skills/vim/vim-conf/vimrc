@@ -44,36 +44,20 @@ if !WINDOWS()
 endif
 
 " on windows, we alse use '.vim' instead of 'vimfiles'; this make
-" synchronization across (heterogeneous) system either
+" synchronization across (heterogeneous) system easier
 if WINDOWS()
   set runtimepath=$HOME/.vim,$VIM/vimfiles,$VIMRUNTIME
 endif
 
-" enable syntax highlighting
-syntax on
-
-" configure Vundle
-filetype on " without this vim emits a zero exit status, later, because of :ft off
-filetype off
-
-if WINDOWS()
-  set rtp+=$VIM/vimfiles/bundle/Vundle.vim/
-  call vundle#rc("$VIM/vimfiles/bundle/")
-else
-  set rtp+=~/.vim/bundle/Vundle.vim/
-  call vundle#rc()
-endif
-
-" install Vundle bundles
+" install vundle bundles
 if filereadable(expand("~/.vim/vimrc.bundles"))
   source ~/.vim/vimrc.bundles
-endif
-if filereadable(expand("~/.vim/vimrc.bundles.local"))
-  source ~/.vim/vimrc.bundles.local
 endif
 
 " ensure ftdetect et al work by including this after the Vundle stuff
 filetype plugin indent on
+" enable syntax highlighting
+syntax on
 
 set autoindent
 set autoread                                                 " reload files when changed on disk, i.e. via `git checkout`
@@ -104,6 +88,11 @@ set background=dark
 set guifont=Consolas:h11
 if WINDOWS()
   au GUIEnter * simalt ~x
+endif
+
+" remember the location of last time shut off
+if has("autocmd")
+  au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
 endif
 
 " keyboard shortcuts
