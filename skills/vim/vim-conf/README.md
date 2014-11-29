@@ -43,8 +43,8 @@
     - **32bit**
 
             \> cd %HOME%\.vim\bundle\vimproc.vim
-            \> make -f make_mingw32.mak
+            \> mingw32_make -f make_mingw32.mak
     - **64bit**
 
             \> cd %HOME%\.vim\bundle\vimproc.vim
-            \> make -f make_mingw64.mak
+            \> mingw32_make -f make_mingw64.mak
