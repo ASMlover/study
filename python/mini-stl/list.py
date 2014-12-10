@@ -1,4 +1,4 @@
-#!/usr/bin/python -e
+#!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 #
 # Copyright (c) 2013 ASMlover. All rights reserved.
