@@ -28,15 +28,12 @@
 #include "autorelease_pool.h"
 #include "ref.h"
 
-
-
 Ref::Ref(void) 
   : ref_count_(1) {
 }
 
 Ref::~Ref(void) {
 }
-
 
 void Ref::Retain(void) {
   ++ref_count_;

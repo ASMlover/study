@@ -27,8 +27,6 @@
 #include <utility.h>
 #include "dispatcher.h"
 
-
-
 Dispatcher::Dispatcher(void) {
 }
 
@@ -41,8 +39,6 @@ Dispatcher& Dispatcher::GetSingleton(void) {
   return s_shared_dispatcher;
 }
 
-
-
 bool Dispatcher::Dispatch(MsgType type, uint8_t proto, const void* msg) {
   KeyType key(type, proto);
   std::map<KeyType, ValueType>::iterator it = dispatchers_.find(key);
@@ -52,7 +48,6 @@ bool Dispatcher::Dispatch(MsgType type, uint8_t proto, const void* msg) {
 
   return true;
 }
-
 
 bool Dispatcher::RegisterDispatcher(
     MsgType type, uint8_t proto, const ValueType& callback) {

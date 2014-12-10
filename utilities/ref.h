@@ -61,5 +61,4 @@ public:
   uint32_t GetRefCount(void) const;
 };
 
-
 #endif  // __REF_HEADER_H__

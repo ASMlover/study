@@ -30,7 +30,6 @@
 #include <vector>
 #include <deque>
 
-
 class Ref;
 class AutoreleasePool : private util::UnCopyable {
   std::string       name_;
@@ -62,7 +61,6 @@ public:
   bool Contains(Ref* object) const;
 };
 
-
 class PoolManager : private util::UnCopyable {
   AutoreleasePool*              current_pool_;
   std::deque<AutoreleasePool*>  pool_stack_;
@@ -84,6 +82,5 @@ private:
   PoolManager(void);
   ~PoolManager(void);
 };
-
 
 #endif  // __AUTORELEASE_POOL_HEADER_H__
