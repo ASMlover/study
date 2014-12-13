@@ -41,7 +41,7 @@ def MessageHandler():
     server.bind(ADDRESS)
     server.listen(5)
     running = True
-    
+
     if server is None:
         print 'start server failed ...'
         running = False
