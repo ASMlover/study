@@ -61,10 +61,14 @@ void network_destroy(void) {
 
 int error_quit(const char* message) {
   fprintf(stderr, "%s", message);
-  abort();
+  exit(0);
+
   return 0;
 }
 
 int error_print(const char* message) {
-  return fprintf(stderr, "%s", message);
+  fprintf(stderr, "%s", message);
+  abort();
+
+  return 0;
 }
