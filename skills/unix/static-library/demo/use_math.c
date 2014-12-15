@@ -36,8 +36,8 @@ extern int mod(int, int);
 
 void use_math(void) {
   fprintf(stdout, "use add => 3 + 2 = %d\n", add(3, 2));
-  fprintf(stdout, "use add => 3 - 2 = %d\n", sub(3, 2));
-  fprintf(stdout, "use add => 3 * 2 = %d\n", mul(3, 2));
-  fprintf(stdout, "use add => 3 / 2 = %d\n", div(3, 2));
-  fprintf(stdout, "use add => 3 % 2 = %d\n", mod(3, 2));
+  fprintf(stdout, "use sub => 3 - 2 = %d\n", sub(3, 2));
+  fprintf(stdout, "use mul => 3 * 2 = %d\n", mul(3, 2));
+  fprintf(stdout, "use div => 3 / 2 = %d\n", div(3, 2));
+  fprintf(stdout, "use mod => 3 %% 2 = %d\n", mod(3, 2));
 }
