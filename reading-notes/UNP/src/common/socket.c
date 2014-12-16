@@ -35,3 +35,39 @@ int common_socket(int family, int type, int protocol) {
 
   return fd;
 }
+
+void common_bind(int fd, struct sockaddr* addr, int addrlen) {
+  if (bind(fd, addr, addrlen) < 0)
+    error_print("bind error\n");
+}
+
+void common_listen(int fd, int backlog) {
+  if (listen(fd, backlog) < 0)
+    error_print("listen error\n");
+}
+
+int common_accept(int fd, struct sockaddr* addr, int* addrlen) {
+  int s = accept(fd, addr, addrlen);
+  if (s < 0)
+    error_print("accept error\n");
+
+  return s;
+}
+
+int common_write(int fd, const char* buffer, int buflen) {
+  int write_size = send(fd, buffer, buflen, 0);
+  if (write_size < 0)
+    error_print("write error\n");
+
+  return write_size;
+}
+
+void common_close(int fd) {
+#if defined(PLATFORM_WIN)
+  shutdown(fd, SD_BOTH);
+  closesocket(fd);
+#else
+  shutdown(fd, SHUT_RDWR);
+  close(fd);
+#endif
+}

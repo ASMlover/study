@@ -72,5 +72,10 @@ extern void mutex_lock(mutex_t* mutex);
 
 /* socket network module */
 extern int common_socket(int family, int type, int protocol);
+extern void common_bind(int fd, struct sockaddr* addr, int addrlen);
+extern void common_listen(int fd, int backlog);
+extern int common_accept(int fd, struct sockaddr* addr, int* addrlen);
+extern int common_write(int fd, const char* buffer, int buflen);
+extern void common_close(int fd);
 
 #endif  /* __COMMON_HEADER_H__ */
