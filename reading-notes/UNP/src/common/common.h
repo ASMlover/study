@@ -41,12 +41,18 @@
 
 #if defined(PLATFORM_WIN)
 # include <winsock2.h>
+# include <process.h>
+
+  typedef CRITICAL_SECTION mutex_t;
 #else
 # include <sys/stat.h>
 # include <sys/socket.h>
 # include <sys/types.h>
 # include <unistd.h>
 # include <fcntl.h>
+# include <pthread.h>
+
+  typedef pthread_mutex_t mutex_t;
 #endif
 
 #include <assert.h>
@@ -59,6 +65,8 @@ extern void network_destroy(void);
 
 extern int error_quit(const char* message);
 extern int error_print(const char* message);
+
+extern void mutex_lock(mutex_t* mutex);
 
 extern int common_socket(int family, int type, int protocol);
 

@@ -26,6 +26,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <errno.h>
 #include "common.h"
 
 #if defined(PLATFORM_WIN)
@@ -72,6 +73,21 @@ int error_print(const char* message) {
 
   return 0;
 }
+
+#if defined(PLATFORM_WIN)
+void mutex_lock(mutex_t* mutex) {
+  EnterCriticalSection(mutex);
+}
+#else
+void mutex_lock(mutex_t* mutex) {
+  int n = pthread_mutex_lock(mutex);
+  if (0 == n)
+    return;
+
+  errno = n;
+  error_print("mutex_lock error\n");
+}
+#endif
 
 int common_socket(int family, int type, int protocol) {
   int fd = socket(family, type, protocol);
