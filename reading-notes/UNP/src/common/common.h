@@ -68,7 +68,10 @@ extern int error_quit(const char* message);
 extern int error_print(const char* message);
 
 /* mutex locker module */
+extern void mutex_init(mutex_t* mutex);
+extern void mutex_destroy(mutex_t* mutex);
 extern void mutex_lock(mutex_t* mutex);
+extern void mutex_unlock(mutex_t* mutex);
 
 /* socket network module */
 extern int common_socket(int family, int type, int protocol);

@@ -29,10 +29,40 @@
 #include "common.h"
 
 #if defined(PLATFORM_WIN)
+void mutex_init(mutex_t* mutex) {
+  InitializeCriticalSection(mutex);
+}
+
+void mutex_destroy(mutex_t* mutex) {
+  DeleteCriticalSection(mutex);
+}
+
 void mutex_lock(mutex_t* mutex) {
   EnterCriticalSection(mutex);
 }
+
+void mutex_unlock(mutex_t* mutex) {
+  LeaveCriticalSection(mutex);
+}
 #else
+void mutex_init(mutex_t* mutex) {
+  int n = pthread_mutex_init(mutex, NULL);
+  if (0 == n)
+    return;
+
+  errno = n;
+  error_print("mutex_init error\n");
+}
+
+void mutex_destroy(mutex_t* mutex) {
+  int n = pthread_mutex_destroy(mutex);
+  if (0 == n)
+    return;
+
+  errno = n;
+  error_print("mutex_destroy error\n");
+}
+
 void mutex_lock(mutex_t* mutex) {
   int n = pthread_mutex_lock(mutex);
   if (0 == n)
@@ -40,5 +70,14 @@ void mutex_lock(mutex_t* mutex) {
 
   errno = n;
   error_print("mutex_lock error\n");
+}
+
+void mutex_unlock(mutex_t* mutex) {
+  int n = pthread_mutex_unlock(mutex);
+  if (0 == n)
+    return;
+
+  errno = n;
+  error_print("mutex_unlock error\n");
 }
 #endif
