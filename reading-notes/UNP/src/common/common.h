@@ -60,4 +60,6 @@ extern void network_destroy(void);
 extern int error_quit(const char* message);
 extern int error_print(const char* message);
 
+extern int common_socket(int family, int type, int protocol);
+
 #endif  /* __COMMON_HEADER_H__ */

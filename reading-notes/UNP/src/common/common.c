@@ -72,3 +72,11 @@ int error_print(const char* message) {
 
   return 0;
 }
+
+int common_socket(int family, int type, int protocol) {
+  int fd = socket(family, type, protocol);
+  if (fd < 0)
+    error_print("socket error\n");
+
+  return fd;
+}
