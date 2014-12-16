@@ -28,47 +28,10 @@
  */
 #include "common.h"
 
-#if defined(PLATFORM_WIN)
-typedef enum NetState {
-  NETSTATE_CLOSED = 0, 
-  NETSTATE_INITED = 1, 
-} NetState;
-static NetState inited = NETSTATE_CLOSED;
+int common_socket(int family, int type, int protocol) {
+  int fd = socket(family, type, protocol);
+  if (fd < 0)
+    error_print("socket error\n");
 
-void network_init(void) {
-  if (NETSTATE_CLOSED == inited) {
-    WSADATA wd;
-    if (0 != WSAStartup(MAKEWORD(2, 2), &wd))
-      return;
-
-    inited = NETSTATE_INITED;
-  }
-}
-
-void network_destroy(void) {
-  if (NETSTATE_INITED == inited) {
-    if (0 == WSACleanup())
-      inited = NETSTATE_CLOSED;
-  }
-}
-#else
-void network_init(void) {
-}
-
-void network_destroy(void) {
-}
-#endif
-
-int error_quit(const char* message) {
-  fprintf(stderr, "%s", message);
-  exit(0);
-
-  return 0;
-}
-
-int error_print(const char* message) {
-  fprintf(stderr, "%s", message);
-  abort();
-
-  return 0;
+  return fd;
 }

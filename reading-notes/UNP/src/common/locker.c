@@ -29,46 +29,16 @@
 #include "common.h"
 
 #if defined(PLATFORM_WIN)
-typedef enum NetState {
-  NETSTATE_CLOSED = 0, 
-  NETSTATE_INITED = 1, 
-} NetState;
-static NetState inited = NETSTATE_CLOSED;
-
-void network_init(void) {
-  if (NETSTATE_CLOSED == inited) {
-    WSADATA wd;
-    if (0 != WSAStartup(MAKEWORD(2, 2), &wd))
-      return;
-
-    inited = NETSTATE_INITED;
-  }
-}
-
-void network_destroy(void) {
-  if (NETSTATE_INITED == inited) {
-    if (0 == WSACleanup())
-      inited = NETSTATE_CLOSED;
-  }
+void mutex_lock(mutex_t* mutex) {
+  EnterCriticalSection(mutex);
 }
 #else
-void network_init(void) {
-}
+void mutex_lock(mutex_t* mutex) {
+  int n = pthread_mutex_lock(mutex);
+  if (0 == n)
+    return;
 
-void network_destroy(void) {
+  errno = n;
+  error_print("mutex_lock error\n");
 }
 #endif
-
-int error_quit(const char* message) {
-  fprintf(stderr, "%s", message);
-  exit(0);
-
-  return 0;
-}
-
-int error_print(const char* message) {
-  fprintf(stderr, "%s", message);
-  abort();
-
-  return 0;
-}

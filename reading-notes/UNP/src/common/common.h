@@ -54,6 +54,7 @@
 
   typedef pthread_mutex_t mutex_t;
 #endif
+#include <errno.h>
 
 #include <assert.h>
 #include <stdio.h>
@@ -66,8 +67,10 @@ extern void network_destroy(void);
 extern int error_quit(const char* message);
 extern int error_print(const char* message);
 
+/* mutex locker module */
 extern void mutex_lock(mutex_t* mutex);
 
+/* socket network module */
 extern int common_socket(int family, int type, int protocol);
 
 #endif  /* __COMMON_HEADER_H__ */
