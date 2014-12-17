@@ -60,6 +60,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+
+#if defined(PLATFORM_WIN)
+# define snprintf _snprintf
+#endif
 
 extern void network_init(void);
 extern void network_destroy(void);
