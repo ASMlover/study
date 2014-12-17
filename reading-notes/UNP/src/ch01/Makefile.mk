@@ -25,21 +25,30 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-OUT	= echo_client.exe
+CLT_OUT	= echo_client.exe
+SRV_OUT	= echo_server.exe
 RM	= del
 CC	= cl -c -nologo
 MT	= mt -nologo
 LINK	= link -nologo
 CFLAGS	= -O2 -W3 -MT -GS -Zi -Fd"vc.pdb" -D_DEBUG\
 	-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
-LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
-	-manifestfile:$(OUT).manifest -manifestuac:no\
+CLT_LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(CLT_OUT).pdb -manifest\
+	-manifestfile:$(CLT_OUT).manifest -manifestuac:no\
 	-LIBPATH:..\common ws2_32.lib libcommon.lib 
-OBJS	= echo_client.obj
+SRV_LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(SRV_OUT).pdb -manifest\
+	-manifestfile:$(SRV_OUT).manifest -manifestuac:no\
+	-LIBPATH:..\common ws2_32.lib libcommon.lib 
+CLT_OBJS	= echo_client.obj
+SRV_OBJS	= echo_server.obj
 
-$(OUT): $(OBJS)
-	$(LINK) -out:$(OUT) $(OBJS) $(LDFLAGS)
-	$(MT) -manifest $(OUT).manifest -outputresource:$(OUT);1
+all: $(CLT_OUT) $(SRV_OUT)
+$(CLT_OUT): $(CLT_OBJS)
+	$(LINK) -out:$(CLT_OUT) $(CLT_OBJS) $(CLT_LDFLAGS)
+	$(MT) -manifest $(CLT_OUT).manifest -outputresource:$(CLT_OUT);1
+$(SRV_OUT): $(SRV_OBJS)
+	$(LINK) -out:$(SRV_OUT) $(SRV_OBJS) $(SRV_LDFLAGS)
+	$(MT) -manifest $(SRV_OUT).manifest -outputresource:$(SRV_OUT);1
 .c.obj:
 	$(CC) $(CFLAGS) -I"..\common" $<
 clean:
