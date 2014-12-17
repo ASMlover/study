@@ -32,7 +32,7 @@
 
 int main(int argc, char* argv[]) {
   int fd;
-  int sz;
+  int n;
   char recvline[BUFFER];
   struct sockaddr_in addr;
 
@@ -41,21 +41,19 @@ int main(int argc, char* argv[]) {
   if (argc != 2)
     error_quit("USAGE: echo <IP Address>\n");
 
-  if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    error_print("create socket error\n");
+  fd = common_socket(AF_INET, SOCK_STREAM, 0);
 
   addr.sin_addr.s_addr = inet_addr(argv[1]);
   addr.sin_family      = AF_INET;
   addr.sin_port        = htons(13);
-  if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) < 0)
-    error_print("connect error\n");
+  common_connect(fd, (struct sockaddr*)&addr, sizeof(addr));
 
-  while ((sz = recv(fd, recvline, BUFFER, 0)) > 0) {
-    recvline[sz] = 0;
+  while ((n = common_read(fd, BUFFER, recvline)) > 0) {
+    recvline[n] = 0;
     fprintf(stdout, "result time: %s\n", recvline);
   }
+  common_close(fd);
 
-  closesocket(fd);
   network_destroy();
 
   return 0;

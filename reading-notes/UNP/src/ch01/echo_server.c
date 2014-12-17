@@ -26,7 +26,6 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <time.h>
 #include <common.h>
 
 int main(int argc, char* argv[]) {
@@ -48,7 +47,7 @@ int main(int argc, char* argv[]) {
     connfd = common_accept(listenfd, NULL, NULL);
 
     tick = time(NULL);
-    sprintf(buf, "%.24s\r\n", ctime(&tick));
+    snprintf(buf, sizeof(buf), "%.24s\r\n", ctime(&tick));
     common_write(connfd, buf, strlen(buf));
 
     common_close(connfd);
