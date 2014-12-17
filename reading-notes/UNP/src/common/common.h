@@ -84,6 +84,7 @@ extern void common_bind(int fd, struct sockaddr* addr, int addrlen);
 extern void common_listen(int fd, int backlog);
 extern int common_accept(int fd, struct sockaddr* addr, int* addrlen);
 extern void common_connect(int fd, struct sockaddr* addr, int addrlen);
+extern int common_read(int fd, int buflen, char* buffer);
 extern int common_write(int fd, const char* buffer, int buflen);
 extern void common_close(int fd);
 

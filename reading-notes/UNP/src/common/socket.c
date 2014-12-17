@@ -59,6 +59,14 @@ void common_connect(int fd, struct sockaddr* addr, int addrlen) {
     error_print("connect error\n");
 }
 
+int common_read(int fd, int buflen, char* buffer) {
+  int read_size = recv(fd, buffer, buflen, 0);
+  if (read_size < 0)
+    error_print("read error\n");
+
+  return read_size;
+}
+
 int common_write(int fd, const char* buffer, int buflen) {
   int write_size = send(fd, buffer, buflen, 0);
   if (write_size < 0)
