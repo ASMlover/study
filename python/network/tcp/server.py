@@ -35,37 +35,32 @@ import threading
 ADDRESS = ('', 5555)
 RECVBUF = 1024
 
-running = None
-def MessageHandler():
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(ADDRESS)
-    server.listen(5)
-    running = True
-
-    if server is None:
-        print 'start server failed ...'
-        running = False
-        return
-    print 'start server suceess ...'
-    while running:
-        client, addr = server.accept()
-        if client is not None:
-            data = client.recv(RECVBUF)
-            if data is not None:
-                print 'recevice from client', addr, data
-                client.send(data)
-            client.close()
-    server.close()
-
 def ServerMain():
+    listenfd = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    listenfd.bind(ADDRESS)
+    listenfd.listen(socket.SOMAXCONN)
+    running = True
+    
+    def MessageHandler():
+        print 'start server suceess ...'
+        while running:
+            client, addr = listenfd.accept()
+            if client is not None:
+                data = client.recv(RECVBUF)
+                if data is not None:
+                    print 'recevice from client', addr, data
+                    client.send(data)
+                client.close()
+
     trd = threading.Thread(target=MessageHandler)
     trd.start()
 
     try:
-        while True:
-            time.sleep(0.1)
+        while running:
+            time.sleep(1)
     except KeyboardInterrupt:
         running = False
+        listenfd.close()
 
 if __name__ == '__main__':
     ServerMain()
