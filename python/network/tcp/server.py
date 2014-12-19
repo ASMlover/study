@@ -29,38 +29,47 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import socket
-import time
 import threading
 
 ADDRESS = ('', 5555)
 RECVBUF = 1024
 
-def ServerMain():
-    listenfd = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    listenfd.bind(ADDRESS)
-    listenfd.listen(socket.SOMAXCONN)
-    running = True
-    
-    def MessageHandler():
-        print 'start server suceess ...'
-        while running:
-            client, addr = listenfd.accept()
-            if client is not None:
-                data = client.recv(RECVBUF)
-                if data is not None:
-                    print 'recevice from client', addr, data
-                    client.send(data)
-                client.close()
+class TServer(object):
+    def __init__(self):
+        self.listenfd = None
+        self.running = False
 
-    trd = threading.Thread(target=MessageHandler)
-    trd.start()
+    def init(self):
+        self.listenfd = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.listenfd.bind(ADDRESS)
+        self.listenfd.listen(socket.SOMAXCONN)
+        self.running = True
 
-    try:
-        while running:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        running = False
-        listenfd.close()
+    def stop(self):
+        self.listenfd.close()
+        self.running = False
+
+    def message_handler(self):
+        print 'start server success ...'
+        while self.running:
+            clientfd, addr = self.listenfd.accept()
+            if clientfd is not None:
+                recvdata = clientfd.recv(RECVBUF)
+                if recvdata is not None:
+                    print 'recevice data from client', addr, recvdata
+                    clientfd.send(recvdata)
+                clientfd.close()
+
+    def run(self):
+        trd = threading.Thread(target=self.message_handler)
+        trd.start()
+
+        try:
+            trd.join()
+        except KeyboardInterrupt:
+            self.stop()
 
 if __name__ == '__main__':
-    ServerMain()
+    server = TServer()
+    server.init()
+    server.run()
