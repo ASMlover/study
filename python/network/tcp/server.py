@@ -28,7 +28,9 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import sys
 import socket
+import signal
 import threading
 
 ADDRESS = ('', 5555)
@@ -45,7 +47,7 @@ class TServer(object):
         self.listenfd.listen(socket.SOMAXCONN)
         self.running = True
 
-    def stop(self):
+    def stop(self, signum, frame):
         self.listenfd.close()
         self.running = False
 
@@ -61,13 +63,17 @@ class TServer(object):
                 clientfd.close()
 
     def run(self):
+        signal.signal(signal.SIGINT, self.stop)
+        signal.signal(signal.SIGTERM, self.stop)
+
         trd = threading.Thread(target=self.message_handler)
         trd.start()
 
-        try:
-            trd.join()
-        except KeyboardInterrupt:
-            self.stop()
+        while True:
+            try:
+                trd.join()
+            except KeyboardInterrupt:
+                sys.exit(0)
 
 if __name__ == '__main__':
     server = TServer()
