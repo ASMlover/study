@@ -43,6 +43,7 @@
 # include <winsock2.h>
 # include <process.h>
 
+  typedef int              socklen_t;
   typedef CRITICAL_SECTION mutex_t;
 #else
 # include <sys/stat.h>
@@ -80,10 +81,13 @@ extern void mutex_unlock(mutex_t* mutex);
 
 /* socket network module */
 extern int common_socket(int family, int type, int protocol);
-extern void common_bind(int fd, struct sockaddr* addr, int addrlen);
+extern void common_bind(int fd, 
+    struct sockaddr* addr, socklen_t addrlen);
 extern void common_listen(int fd, int backlog);
-extern int common_accept(int fd, struct sockaddr* addr, int* addrlen);
-extern void common_connect(int fd, struct sockaddr* addr, int addrlen);
+extern int common_accept(int fd, 
+    struct sockaddr* addr, socklen_t* addrlen);
+extern void common_connect(int fd, 
+    struct sockaddr* addr, socklen_t addrlen);
 extern int common_read(int fd, int buflen, char* buffer);
 extern int common_write(int fd, const char* buffer, int buflen);
 extern void common_close(int fd);

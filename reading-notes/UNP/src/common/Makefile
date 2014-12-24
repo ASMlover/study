@@ -30,7 +30,7 @@ RM	= rm
 CC	= gcc
 AR	= ar
 CFLAGS	= -g -O2 -Wall
-OBJS	= $(patsubst %.c, %.o $(wildcard ./*.c))
+OBJS	= $(patsubst %.c, %.o, $(wildcard ./*.c))
 
 all: $(OUT)
 rebuild: clean all
