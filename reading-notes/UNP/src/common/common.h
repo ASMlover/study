@@ -46,6 +46,8 @@
   typedef int              socklen_t;
   typedef CRITICAL_SECTION mutex_t;
 #else
+# include <arpa/inet.h>
+# include <netinet/in.h>
 # include <sys/stat.h>
 # include <sys/socket.h>
 # include <sys/types.h>
