@@ -36,7 +36,7 @@ int common_socket(int family, int type, int protocol) {
   return fd;
 }
 
-void common_bind(int fd, struct sockaddr* addr, int addrlen) {
+void common_bind(int fd, struct sockaddr* addr, socklen_t addrlen) {
   if (bind(fd, addr, addrlen) < 0)
     error_print("bind error\n");
 }
@@ -46,7 +46,7 @@ void common_listen(int fd, int backlog) {
     error_print("listen error\n");
 }
 
-int common_accept(int fd, struct sockaddr* addr, int* addrlen) {
+int common_accept(int fd, struct sockaddr* addr, socklen_t* addrlen) {
   int s = accept(fd, addr, addrlen);
   if (s < 0)
     error_print("accept error\n");
@@ -54,7 +54,7 @@ int common_accept(int fd, struct sockaddr* addr, int* addrlen) {
   return s;
 }
 
-void common_connect(int fd, struct sockaddr* addr, int addrlen) {
+void common_connect(int fd, struct sockaddr* addr, socklen_t addrlen) {
   if (connect(fd, addr, addrlen) < 0)
     error_print("connect error\n");
 }
