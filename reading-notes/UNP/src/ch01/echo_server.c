@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
   listenfd = common_socket(AF_INET, SOCK_STREAM, 0);
   addr.sin_addr.s_addr = htonl(INADDR_ANY);
   addr.sin_family      = AF_INET;
-  addr.sin_port        = htons(13);
+  addr.sin_port        = htons(5555);
   common_bind(listenfd, (struct sockaddr*)&addr, sizeof(addr));
   common_listen(listenfd, 5);
 

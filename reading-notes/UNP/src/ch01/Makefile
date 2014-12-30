@@ -20,24 +20,27 @@
 # INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
 # BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
 # LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON GANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-OUT	= libcommon.a
+OUT_SRV	= echo_server
+OUT_CLT	= echo_client
 RM	= rm
 CC	= gcc
-AR	= ar
-CFLAGS	= -g -O2 -Wall
+CFLAGS	= -g -O2 -Wall -I../common
+LDFLAGS	= -L../common -lcommon -lc
 OBJS	= $(patsubst %.c, %.o, $(wildcard ./*.c))
 
-all: $(OUT)
+all: $(OUT_SRV) $(OUT_CLT)
 rebuild: clean all
 clean:
-	$(RM) $(OBJS)
+	$(RM) $(OUT_SRV) $(OUT_CLT) $(OBJS)
 
-$(OUT): $(OBJS)
-	$(AR) -cru $@ $^
+$(OUT_SRV): echo_server.o
+	$(CC) -o $@ $^ $(LDFLAGS)
+$(OUT_CLT): echo_client.o
+	$(CC) -o $@ $^ $(LDFLAGS)
 $(OBJS): %.o: %.c
 	$(CC) -o $*.o -c $(CFLAGS) $^

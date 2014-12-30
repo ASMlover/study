@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
 
   addr.sin_addr.s_addr = inet_addr(argv[1]);
   addr.sin_family      = AF_INET;
-  addr.sin_port        = htons(13);
+  addr.sin_port        = htons(5555);
   common_connect(fd, (struct sockaddr*)&addr, sizeof(addr));
 
   while ((n = common_read(fd, BUFFER, recvline)) > 0) {
