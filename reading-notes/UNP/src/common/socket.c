@@ -84,3 +84,42 @@ void common_close(int fd) {
   close(fd);
 #endif
 }
+
+#if defined(PLATFORM_WIN)
+char* common_ntop(const struct sockaddr* addr, socklen_t addrlen) {
+  static char str[128];
+
+  switch (addr->sa_family) {
+  case AF_INET: 
+    {
+      struct sockaddr_in* sa = (struct sockaddr_in*)addr;
+      char* strptr = NULL;
+      if (NULL == (strptr = inet_ntoa(sa->sin_addr)))
+        return NULL;
+      if (0 != ntohs(sa->sin_port))
+        snprintf(str, sizeof(str), "%s:%d", strptr, ntohs(sa->sin_port));
+    }
+    break;
+  }
+
+  return str;
+}
+#else
+char* common_ntop(const struct sockaddr* addr, socklen_t addrlen) {
+  static char str[128];
+
+  switch (addr->sa_family) {
+  case AF_INET: 
+    {
+      struct sockaddr_in* sa = (struct sockaddr_in*)addr;
+      if (NULL == inet_ntop(AF_INET, &sa->sin_addr, str, sizeof(str)))
+        return NULL;
+      if (0 != ntohs(sa->sin_port))
+        snprintf(str, sizeof(str), "%s:%d", str, ntohs(sa->sin_port));
+    }
+    break;
+  }
+
+  return str;
+}
+#endif

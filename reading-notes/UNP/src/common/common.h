@@ -94,4 +94,7 @@ extern int common_read(int fd, int buflen, char* buffer);
 extern int common_write(int fd, const char* buffer, int buflen);
 extern void common_close(int fd);
 
+/* inet module*/
+extern char* common_ntop(const struct sockaddr* addr, socklen_t addrlen);
+
 #endif  /* __COMMON_HEADER_H__ */
