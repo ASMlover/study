@@ -39,12 +39,14 @@
 # error "Un-Support this platform!"
 #endif
 
+#include <stdint.h>
 #if defined(PLATFORM_WIN)
 # include <winsock2.h>
 # include <process.h>
 
   typedef int              socklen_t;
   typedef CRITICAL_SECTION mutex_t;
+  typedef int32_t          ssize_t;
 #else
 # include <arpa/inet.h>
 # include <netinet/in.h>
@@ -93,6 +95,9 @@ extern void common_connect(int fd,
 extern int common_read(int fd, int buflen, char* buffer);
 extern int common_write(int fd, const char* buffer, int buflen);
 extern void common_close(int fd);
+extern ssize_t common_readn(int fd, size_t nbytes, void* buff);
+extern ssize_t common_writen(int fd, const void* buff, size_t nbytes);
+extern ssize_t common_readline(int fd, size_t maxlen, void* buff);
 
 /* inet module*/
 extern char* common_ntop(const struct sockaddr* addr, socklen_t addrlen);
