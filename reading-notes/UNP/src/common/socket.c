@@ -169,6 +169,15 @@ ssize_t common_readline(int fd, size_t maxlen, void* buff) {
 
   return n;
 }
+
+int common_sockfd_family(int sockfd) {
+  struct sockaddr_in addr;
+  socklen_t addrlen = sizeof(addr);
+
+  if (getsockname(sockfd, (struct sockaddr*)&addr, &addrlen) < 0)
+    return -1;
+  return addr.sin_family;
+}
 #else
 void common_close(int fd) {
   shutdown(fd, SHUT_RDWR);
@@ -206,5 +215,10 @@ ssize_t common_writen(int fd, const void* buff, size_t nbytes) {
 ssize_t common_readline(int fd, size_t maxlen, void* buff) {
   /* body */
   return 0;
+}
+
+int common_sockfd_family(int sockfd) {
+  /* body */
+  return -1;
 }
 #endif

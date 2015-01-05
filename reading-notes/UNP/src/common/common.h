@@ -101,5 +101,6 @@ extern ssize_t common_readline(int fd, size_t maxlen, void* buff);
 
 /* inet module*/
 extern char* common_ntop(const struct sockaddr* addr, socklen_t addrlen);
+extern int common_sockfd_family(int sockfd);
 
 #endif  /* __COMMON_HEADER_H__ */
