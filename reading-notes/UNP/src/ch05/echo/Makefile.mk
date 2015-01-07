@@ -26,7 +26,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 SER_OUT	= server.exe
-OUT	= $(SER_OUT)
+CLI_OUT	= client.exe
+OUT	= $(SER_OUT) $(CLI_OUT)
 RM	= del
 CC	= cl -c -nologo
 MT	= mt -nologo
@@ -35,8 +36,12 @@ CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -D_DEBUG\
 	-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
 SER_LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(SER_OUT).pdb -manifest\
 	-manifestfile:$(SER_OUT).manifest -manifestuac:no\
-	-LIBPATH:"..\..\common" ws2_32.lib libcommon.lib 
+	-LIBPATH:"..\..\common" ws2_32.lib libcommon.lib
+CLI_LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(CLI_OUT).pdb -manifest\
+	-manifestfile:$(CLI_OUT).manifest -manifestuac:no\
+	-LIBPATH:"..\..\common" ws2_32.lib libcommon.lib
 SER_OBJS	= server.obj
+CLI_OBJS	= client.obj
 OBJS	= $(SER_OBJS)
 
 all: $(OUT)
@@ -47,5 +52,8 @@ clean:
 $(SER_OUT): $(SER_OBJS)
 	$(LINK) -out:$(SER_OUT) $(SER_OBJS) $(SER_LDFLAGS)
 	$(MT) -manifest $(SER_OUT).manifest -outputresource:$(SER_OUT);1
+$(CLI_OUT): $(CLI_OBJS)
+	$(LINK) -out:$(CLI_OUT) $(CLI_OBJS) $(CLI_LDFLAGS)
+	$(MT) -manifest $(CLI_OUT).manifest -outputresource:$(CLI_OUT);1
 .c.obj:
 	$(CC) $(CFLAGS) -I"../../common" $<
