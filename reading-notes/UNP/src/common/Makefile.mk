@@ -29,7 +29,7 @@ OUT	= libcommon.lib
 RM	= del
 CC	= cl -c -nologo
 AR	= lib -nologo
-CFLAGS	= -O2 -W3 -MT -GS -Zi -Fd"vc.pdb" -DNDEBUG\
+CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -DNDEBUG\
 	-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
 OBJS	= common.obj error.obj locker.obj socket.obj
 
