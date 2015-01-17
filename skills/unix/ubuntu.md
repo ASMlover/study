@@ -46,7 +46,4 @@
         remove Lock = Caps_Lock
         keysym Caps_Lock = Control_L
         add lock = Caps_Lock
-    3. 在.bashrc文件的尾部添加:
-        xmodmap ~/.Xmodmap
-    4. 重新启动系统或执行如下命令:
-        $ source ~/.bashrc
+    3. 重新启动系统
