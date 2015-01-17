@@ -44,6 +44,9 @@
         $ xmodmap -pm
     2. 在当前用户目录下~/添加.Xmodmap文件, 内容如下:
         remove Lock = Caps_Lock
-        keysym Caps_Lock = Control_L
+        remove Control = Control_R
+        keysym Control_R = Caps_Lock
+        keysym Caps_Lock = Control_R
         add lock = Caps_Lock
+        add control = Control_R
     3. 重新启动系统
