@@ -37,3 +37,16 @@
         $ sudo rm g++
         $ sudo ln -s gcc-4.8 gcc 
         $ sudo ln -s g++-4.8 g++
+
+
+## **Linux映射CapsLock为Control**
+    1. 请使用xmodmap查看系统的键盘映射情况:
+        $ xmodmap -pm
+    2. 在当前用户目录下~/添加.Xmodmap文件, 内容如下:
+        remove Lock = Caps_Lock
+        keysym Caps_Lock = Control_L
+        add lock = Caps_Lock
+    3. 在.bashrc文件的尾部添加:
+        xmodmap ~/.Xmodmap
+    4. 重新启动系统或执行如下命令:
+        $ source ~/.bashrc
