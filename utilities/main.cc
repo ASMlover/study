@@ -59,8 +59,7 @@ public:
   }
 };
 
-
-void CloseFile(FILE* p) {
+static inline void CloseFile(FILE* p) {
   fprintf(stdout, "%s\n", __func__);
   fclose(p);
 }

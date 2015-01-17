@@ -28,7 +28,6 @@
 #include "ref.h"
 #include "autorelease_pool.h"
 
-
 AutoreleasePool::AutoreleasePool(void) 
   : name_("") {
   objects_array_.reserve(150);
@@ -80,9 +79,6 @@ bool AutoreleasePool::Contains(Ref* object) const {
   return false;
 }
 
-
-
-
 static PoolManager* s_sharedPoolManager = nullptr;
 PoolManager* PoolManager::GetInstance(void) {
   if (nullptr == s_sharedPoolManager) {
@@ -102,7 +98,6 @@ void PoolManager::DestroyInstance(void) {
     s_sharedPoolManager = nullptr;
   }
 }
-
 
 PoolManager::PoolManager(void) 
   : current_pool_(nullptr) {

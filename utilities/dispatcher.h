@@ -27,7 +27,6 @@
 #ifndef __DISPATCHER_HEADER_H__
 #define __DISPATCHER_HEADER_H__
 
-
 #include <functional>
 
 enum class MsgType {
