@@ -75,12 +75,150 @@ int common_write(int fd, const char* buffer, int buflen) {
   return write_size;
 }
 
-void common_close(int fd) {
 #if defined(PLATFORM_WIN)
+void common_close(int fd) {
   shutdown(fd, SD_BOTH);
   closesocket(fd);
+}
+
+char* common_ntop(const struct sockaddr* addr, socklen_t addrlen) {
+  static char str[128];
+
+  switch (addr->sa_family) {
+  case AF_INET: 
+    {
+      struct sockaddr_in* sa = (struct sockaddr_in*)addr;
+      char* strptr = NULL;
+      if (NULL == (strptr = inet_ntoa(sa->sin_addr)))
+        return NULL;
+      if (0 != ntohs(sa->sin_port))
+        snprintf(str, sizeof(str), "%s:%d", strptr, ntohs(sa->sin_port));
+    }
+    break;
+  }
+
+  return str;
+}
+
+ssize_t common_readn(int fd, size_t nbytes, void* buff) {
+  size_t nleft = nbytes;
+  ssize_t nread;
+  char* ptr = (char*)buff;
+  
+  while (nleft > 0) {
+    if ((nread = recv(fd, ptr, nleft, 0)) < 0) {
+      if (EINTR == errno)
+        nread = 0;
+      else
+        return -1;
+    }
+    else if (0 == nread) {
+      break;
+    }
+
+    nleft -= nread;
+    ptr += nread;
+  }
+
+  return (nbytes - nleft);
+}
+
+ssize_t common_writen(int fd, const void* buff, size_t nbytes) {
+  size_t nleft = nbytes;
+  ssize_t nwrite;
+  const char* ptr = (const char*)buff;
+
+  while (nleft > 0) {
+    if ((nwrite = send(fd, ptr, nleft, 0)) <= 0) {
+      if (nwrite < 0 && EINTR == errno)
+        nwrite = 0;
+      else
+        return -1;
+    }
+
+    nleft -= nwrite;
+    ptr += nwrite;
+  }
+
+  return nbytes;
+}
+
+ssize_t common_readline(int fd, size_t maxlen, void* buff) {
+  ssize_t n, rc;
+  char c;
+  char* ptr = (char*)buff;
+
+  for (n = 1; n < (ssize_t)maxlen; ++n) {
+  again:
+    if (1 == (rc = recv(fd, &c, 1, 0))) {
+      *ptr++ = c;
+      if ('\n' == c)
+        break;
+    }
+    else if (0 == rc) {
+      *ptr = 0;
+      return (n - 1);
+    }
+    else {
+      if (EINTR == errno)
+        goto again;
+      return -1;
+    }
+  }
+  *ptr = 0;
+
+  return n;
+}
+
+int common_sockfd_family(int sockfd) {
+  struct sockaddr_in addr;
+  socklen_t addrlen = sizeof(addr);
+
+  if (getsockname(sockfd, (struct sockaddr*)&addr, &addrlen) < 0)
+    return -1;
+  return addr.sin_family;
+}
 #else
+void common_close(int fd) {
   shutdown(fd, SHUT_RDWR);
   close(fd);
-#endif
 }
+
+char* common_ntop(const struct sockaddr* addr, socklen_t addrlen) {
+  static char str[128];
+
+  switch (addr->sa_family) {
+  case AF_INET: 
+    {
+      struct sockaddr_in* sa = (struct sockaddr_in*)addr;
+      if (NULL == inet_ntop(AF_INET, &sa->sin_addr, str, sizeof(str)))
+        return NULL;
+      if (0 != ntohs(sa->sin_port))
+        snprintf(str, sizeof(str), "%s:%d", str, ntohs(sa->sin_port));
+    }
+    break;
+  }
+
+  return str;
+}
+
+ssize_t common_readn(int fd, size_t nbytes, void* buff) {
+  /* body */
+  return 0;
+}
+
+ssize_t common_writen(int fd, const void* buff, size_t nbytes) {
+  /* body */
+  return 0;
+}
+
+ssize_t common_readline(int fd, size_t maxlen, void* buff) {
+  /* body */
+  return 0;
+}
+
+int common_sockfd_family(int sockfd) {
+  /* body */
+  return -1;
+}
+#endif

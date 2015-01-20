@@ -1,4 +1,4 @@
-# Copyright (c) 2014 ASMlover. All rights reserved.
+# Copyright (c) 2015 ASMlover. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,35 +25,23 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-CLT_OUT	= echo_client.exe
-SRV_OUT	= echo_server.exe
-OUT	= $(CLT_OUT) $(SRV_OUT)
-RM	= del
-CC	= cl -c -nologo
-MT	= mt -nologo
-LINK	= link -nologo
-CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -D_DEBUG\
-	-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
-CLT_LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(CLT_OUT).pdb -manifest\
-	-manifestfile:$(CLT_OUT).manifest -manifestuac:no\
-	-LIBPATH:"..\common" ws2_32.lib libcommon.lib 
-SRV_LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(SRV_OUT).pdb -manifest\
-	-manifestfile:$(SRV_OUT).manifest -manifestuac:no\
-	-LIBPATH:"..\common" ws2_32.lib libcommon.lib 
-CLT_OBJS	= echo_client.obj
-SRV_OBJS	= echo_server.obj
-OBJS	= $(CLT_OBJS) $(SRV_OBJS)
+SER_OUT	= server
+CLI_OUT	= client
+OUT	= $(SER_OUT) $(CLI_OUT)
+RM	= rm
+CC	= gcc
+CFLAGS	= -g -O2 -Wall -I../../common
+LDFLAGS	= -L../../common -lcommon
+OBJS	= $(patsubst %.c, %.o, $(wildcard *.c))
 
-all: $(OUT)
+all: $(SER_OUT) $(CLI_OUT)
 rebuild: clean all
 clean:
-	$(RM) $(OUT) $(OBJS) *.pdb *.manifest *.ilk
+	$(RM) $(OUT) $(OBJS)
 
-$(CLT_OUT): $(CLT_OBJS)
-	$(LINK) -out:$(CLT_OUT) $(CLT_OBJS) $(CLT_LDFLAGS)
-	$(MT) -manifest $(CLT_OUT).manifest -outputresource:$(CLT_OUT);1
-$(SRV_OUT): $(SRV_OBJS)
-	$(LINK) -out:$(SRV_OUT) $(SRV_OBJS) $(SRV_LDFLAGS)
-	$(MT) -manifest $(SRV_OUT).manifest -outputresource:$(SRV_OUT);1
-.c.obj:
-	$(CC) $(CFLAGS) -I"..\common" $<
+$(SER_OUT): server.o
+	$(CC) -o $@ $^ $(LDFLAGS)
+$(CLI_OUT): client.o
+	$(CC) -o $@ $^ $(LDFLAGS)
+$(OBJS): %.o: %c
+	$(CC) -o $*.o -c $(CFLAGS) $^

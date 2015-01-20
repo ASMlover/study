@@ -1,4 +1,4 @@
-# Copyright (c) 2014 ASMlover. All rights reserved.
+# Copyright (c) 2015 ASMlover. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,35 +25,35 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-CLT_OUT	= echo_client.exe
-SRV_OUT	= echo_server.exe
-OUT	= $(CLT_OUT) $(SRV_OUT)
+SER_OUT	= server.exe
+CLI_OUT	= client.exe
+OUT	= $(SER_OUT) $(CLI_OUT)
 RM	= del
 CC	= cl -c -nologo
 MT	= mt -nologo
 LINK	= link -nologo
 CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -D_DEBUG\
 	-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
-CLT_LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(CLT_OUT).pdb -manifest\
-	-manifestfile:$(CLT_OUT).manifest -manifestuac:no\
-	-LIBPATH:"..\common" ws2_32.lib libcommon.lib 
-SRV_LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(SRV_OUT).pdb -manifest\
-	-manifestfile:$(SRV_OUT).manifest -manifestuac:no\
-	-LIBPATH:"..\common" ws2_32.lib libcommon.lib 
-CLT_OBJS	= echo_client.obj
-SRV_OBJS	= echo_server.obj
-OBJS	= $(CLT_OBJS) $(SRV_OBJS)
+SER_LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(SER_OUT).pdb -manifest\
+	-manifestfile:$(SER_OUT).manifest -manifestuac:no\
+	-LIBPATH:"..\..\common" ws2_32.lib libcommon.lib
+CLI_LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(CLI_OUT).pdb -manifest\
+	-manifestfile:$(CLI_OUT).manifest -manifestuac:no\
+	-LIBPATH:"..\..\common" ws2_32.lib libcommon.lib
+SER_OBJS	= server.obj
+CLI_OBJS	= client.obj
+OBJS	= $(SER_OBJS)
 
 all: $(OUT)
 rebuild: clean all
 clean:
-	$(RM) $(OUT) $(OBJS) *.pdb *.manifest *.ilk
+	$(RM) $(OUT) $(OBJS) *.manifest *.pdb *.ilk
 
-$(CLT_OUT): $(CLT_OBJS)
-	$(LINK) -out:$(CLT_OUT) $(CLT_OBJS) $(CLT_LDFLAGS)
-	$(MT) -manifest $(CLT_OUT).manifest -outputresource:$(CLT_OUT);1
-$(SRV_OUT): $(SRV_OBJS)
-	$(LINK) -out:$(SRV_OUT) $(SRV_OBJS) $(SRV_LDFLAGS)
-	$(MT) -manifest $(SRV_OUT).manifest -outputresource:$(SRV_OUT);1
+$(SER_OUT): $(SER_OBJS)
+	$(LINK) -out:$(SER_OUT) $(SER_OBJS) $(SER_LDFLAGS)
+	$(MT) -manifest $(SER_OUT).manifest -outputresource:$(SER_OUT);1
+$(CLI_OUT): $(CLI_OBJS)
+	$(LINK) -out:$(CLI_OUT) $(CLI_OBJS) $(CLI_LDFLAGS)
+	$(MT) -manifest $(CLI_OUT).manifest -outputresource:$(CLI_OUT);1
 .c.obj:
-	$(CC) $(CFLAGS) -I"..\common" $<
+	$(CC) $(CFLAGS) -I"../../common" $<
