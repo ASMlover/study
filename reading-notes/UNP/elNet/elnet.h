@@ -87,7 +87,7 @@
 # define EL_ASSERT(condition) do {\
   if (!(condition)) {\
     fprintf(stderr, \
-        "[%s:%d] Assertion failed in %s(): %s\n", \
+        "[%s:%d] Assertion failed in %s: %s\n", \
         __FILE__, \
         __LINE__, \
         __func__, \
@@ -101,7 +101,7 @@
 #define EL_ASSERTX(condition, message) do {\
   if (!(condition)) {\
     fprintf(stderr, \
-        "[%s:%d] Assertion failed in %s(): %s\n", \
+        "[%s:%d] Assertion failed in %s: %s\n", \
         __FILE__, \
         __LINE__, \
         __func__, \
