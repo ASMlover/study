@@ -66,7 +66,7 @@
 #endif
 
 #if defined(EL_WIN)
-# include <windows.h>
+# include <winsock2.h>
 # include <direct.h>
 # include <io.h>
 # include <mmsystem.h>
@@ -82,6 +82,7 @@
 # include <sys/types.h>
 # include <fcntl.h>
 # include <limits.h>
+# include <netdb.h>
 # include <pthread.h>
 # include <unistd.h>
 
@@ -101,6 +102,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+#include <map>
+#include <string>
+#include <vector>
 
 #define EL_ASSERT(condition, message) do {\
   if (!(condition)) {\
@@ -123,6 +128,20 @@
 
 #if defined(EL_WIN)
 # define snprintf _snprintf
+
+# define bzero(s, n)  memset((s), 0, (n))
 #endif
+
+namespace el {
+
+class UnCopyable {
+  UnCopyable(const UnCopyable&);
+  UnCopyable& operator=(const UnCopyable&);
+protected:
+  UnCopyable(void) {}
+  ~UnCopyable(void) {}
+};
+
+}
 
 #endif  // __EL_POLL_HEADER_H__
