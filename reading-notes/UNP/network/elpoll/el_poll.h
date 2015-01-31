@@ -132,16 +132,7 @@
 # define bzero(s, n)  memset((s), 0, (n))
 #endif
 
-namespace el {
-
-class UnCopyable {
-  UnCopyable(const UnCopyable&);
-  UnCopyable& operator=(const UnCopyable&);
-protected:
-  UnCopyable(void) {}
-  ~UnCopyable(void) {}
-};
-
-}
+#include "el_uncopyable.h"
+#include "el_locker.h"
 
 #endif  // __EL_POLL_HEADER_H__
