@@ -24,37 +24,49 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_LOCKER_HEADER_H__
-#define __EL_LOCKER_HEADER_H__
+#ifndef __EL_WIN_LOCKER_HEADER_H__
+#define __EL_WIN_LOCKER_HEADER_H__
 
 namespace el {
 
-template <typename Locker>
-class LockerGuard : private UnCopyable {
-  Locker& locker_;
+
+typedef CRITICAL_SECTION LockerType;
+class BaseLocker : private UnCopyable {
+  LockerType locker_;
 public:
-  explicit LockerGuard(Locker& locker)
-    : locker_(locker) {
-    locker_.Lock();
+  BaseLocker(void) {
+    InitLocker(locker_);
   }
 
-  ~LockerGuard(void) {
-    locker_.Unlock();
+  virtual ~BaseLocker(void) {
+    DeleteCriticalSection(&locker_);
+  }
+
+  inline void Lock(void) {
+    EnterCriticalSection(&locker_);
+  }
+
+  inline void Unlock(void) {
+    LeaveCriticalSection(&locker_);
+  }
+private:
+  virtual void InitLocker(LockerType& locker) = 0;
+};
+
+class Mutex : public BaseLocker {
+private:
+  virtual void InitLocker(LockerType& locker) {
+    InitializeCriticalSection(&locker);
   }
 };
 
-class DummyLock : private UnCopyable {
-public:
-  inline void Lock(void) {}
-  inline void Unlock(void) {}
+class SpinLock : public BaseLocker {
+private:
+  virtual void InitLocker(LockerType& locker) {
+    InitializeCriticalSectionAndSpinCount(&locker, 4000);
+  }
 };
 
 }
 
-#if defined(EL_WIN)
-# include "./win/el_win_locker.h"
-#else
-// # include "./posix/el_posix_locker.h"
-#endif
-
-#endif  // __EL_LOCKER_HEADER_H__
+#endif  // __EL_WIN_LOCKER_HEADER_H__
