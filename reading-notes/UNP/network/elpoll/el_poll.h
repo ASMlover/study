@@ -103,7 +103,9 @@
 #include <string.h>
 #include <time.h>
 
+#include <functional>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -134,5 +136,6 @@
 
 #include "el_uncopyable.h"
 #include "el_locker.h"
+#include "el_thread.h"
 
 #endif  // __EL_POLL_HEADER_H__
