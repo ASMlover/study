@@ -24,58 +24,40 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "el_poll.h"
-#include "el_address.h"
-#include "el_socket.h"
+#include "../el_poll.h"
+#include "../el_socket.h"
 
 namespace el {
 
-Socket::Socket(void)
-  : fd_(-1) {
-}
+bool Socket::SetOption(int level, int optname, int optval) {
+  if (-1 == fd_)
+    return false;
 
-Socket::~Socket(void) {
-  Close();
-}
+  if (-1 == setsockopt(fd_, level, 
+        optname, (const char*)&optval, sizeof(optval)))
+    return false;
 
-bool Socket::SetTcpNoDelay(bool nodelay) {
   return true;
 }
 
-bool Socket::SetReuseAddr(bool reuse) {
+bool Socket::SetNonBlock(void) {
+  if (-1 == fd_)
+    return false;
+
+  u_long val = 1;
+  if (-1 == ioctlsocket(fd_, FIONBIO, &val))
+    return false;
+
   return true;
 }
 
-bool Socket::SetKeepAlive(bool alive) {
-  return true;
-}
+void Socket::Close(void) {
+  if (-1 == fd_) {
+    shutdown(fd_, SD_BOTH);
+    closesocket(fd_);
 
-bool Socket::Open(void) {
-  return true;
-}
-
-bool Socket::Bind(const char* addr, uint16_t port) {
-  return true;
-}
-
-bool Socket::Listen(void) {
-  return true;
-}
-
-bool Socket::Accept(Socket& connector, Address& addr) {
-  return true;
-}
-
-bool Socket::Connect(const char* addr, uint16_t port) {
-  return true;
-}
-
-int Socket::Get(int bytes, char* buffer) {
-  return 0;
-}
-
-int Socket::Put(const char* buffer, int bytes) {
-  return 0;
+    fd_ = -1;
+  }
 }
 
 }
