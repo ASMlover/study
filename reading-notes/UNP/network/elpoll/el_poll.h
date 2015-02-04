@@ -74,6 +74,8 @@
 
 # undef __func__
 # define __func__ __FUNCSIG__
+
+  typedef int socklen_t;
 #else
 # include <sys/select.h>
 # include <sys/socket.h>
