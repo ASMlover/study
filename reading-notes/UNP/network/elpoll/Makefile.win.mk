@@ -35,7 +35,7 @@ CFLAGS	= -O2 -W3 -MDd -GS -Zi -Fd"vc.pdb" -EHsc -D_DEBUG\
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no\
 	winmm.lib ws2_32.lib
-OBJS	= main.obj el_address.obj el_socket.obj\
+OBJS	= main.obj el_address.obj el_socket.obj el_buffer.obj\
 	\
 	el_win_socket.obj
 
