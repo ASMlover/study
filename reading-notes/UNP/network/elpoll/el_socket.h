@@ -46,7 +46,7 @@ public:
 
   inline int Detach(void) {
     int fd = fd_;
-    fd_ = -1;
+    fd_ = EL_NETINVAL;
     return fd;
   }
 public:

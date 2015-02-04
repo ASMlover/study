@@ -31,7 +31,7 @@
 namespace el {
 
 Socket::Socket(void)
-  : fd_(-1) {
+  : fd_(EL_NETINVAL) {
 }
 
 Socket::~Socket(void) {
@@ -51,14 +51,14 @@ bool Socket::SetKeepAlive(bool alive) {
 }
 
 bool Socket::Open(void) {
-  if (-1 == (fd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)))
+  if (EL_NETINVAL == (fd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)))
     return false;
 
   return true;
 }
 
 bool Socket::Bind(const char* addr, uint16_t port) {
-  if (-1 == fd_)
+  if (EL_NETINVAL == fd_)
     return false;
 
   struct sockaddr_in host_addr;
@@ -67,30 +67,31 @@ bool Socket::Bind(const char* addr, uint16_t port) {
   host_addr.sin_family      = AF_INET;
   host_addr.sin_port        = htons(port);
 
-  if (-1 == bind(fd_, (struct sockaddr*)&host_addr, sizeof(host_addr)))
+  if (EL_NETINVAL == bind(fd_, 
+        (struct sockaddr*)&host_addr, sizeof(host_addr)))
     return false;
 
   return true;
 }
 
 bool Socket::Listen(void) {
-  if (-1 == fd_)
+  if (EL_NETINVAL == fd_)
     return false;
 
-  if (-1 == listen(fd_, SOMAXCONN))
+  if (EL_NETINVAL == listen(fd_, SOMAXCONN))
     return false;
 
   return true;
 }
 
 bool Socket::Accept(Socket& connector, Address& addr) {
-  if (-1 == fd_)
+  if (EL_NETINVAL == fd_)
     return false;
 
   struct sockaddr_in remote_addr;
   socklen_t addrlen = sizeof(remote_addr);
   int fd = accept(fd_, (struct sockaddr*)&remote_addr, &addrlen);
-  if (-1 == fd)
+  if (EL_NETINVAL == fd)
     return false;
 
   connector.Attach(fd);
@@ -100,7 +101,7 @@ bool Socket::Accept(Socket& connector, Address& addr) {
 }
 
 bool Socket::Connect(const char* addr, uint16_t port) {
-  if (-1 == fd_)
+  if (EL_NETINVAL == fd_)
     return false;
 
   if (nullptr == addr)
@@ -109,7 +110,7 @@ bool Socket::Connect(const char* addr, uint16_t port) {
   remote_addr.sin_addr.s_addr = inet_addr(addr);
   remote_addr.sin_family      = AF_INET;
   remote_addr.sin_port        = htons(port);
-  if (-1 == connect(fd_, 
+  if (EL_NETINVAL == connect(fd_, 
         (struct sockaddr*)&remote_addr, sizeof(remote_addr)))
     return false;
 
@@ -117,15 +118,15 @@ bool Socket::Connect(const char* addr, uint16_t port) {
 }
 
 int Socket::Get(int bytes, char* buffer) {
-  if (-1 == fd_ || bytes <= 0 || nullptr == buffer)
-    return -1;
+  if (EL_NETINVAL == fd_ || bytes <= 0 || nullptr == buffer)
+    return EL_NETERR;
 
   return recv(fd_, buffer, bytes, 0);
 }
 
 int Socket::Put(const char* buffer, int bytes) {
-  if (-1 == fd_ || nullptr == buffer || bytes <= 0)
-    return -1;
+  if (EL_NETINVAL == fd_ || nullptr == buffer || bytes <= 0)
+    return EL_NETERR;
 
   return send(fd_, buffer, bytes, 0);
 }

@@ -30,10 +30,10 @@
 namespace el {
 
 bool Socket::SetOption(int level, int optname, int optval) {
-  if (-1 == fd_)
+  if (EL_NETINVAL == fd_)
     return false;
 
-  if (-1 == setsockopt(fd_, level, 
+  if (EL_NETINVAL == setsockopt(fd_, level, 
         optname, (const char*)&optval, sizeof(optval)))
     return false;
 
@@ -41,22 +41,22 @@ bool Socket::SetOption(int level, int optname, int optval) {
 }
 
 bool Socket::SetNonBlock(void) {
-  if (-1 == fd_)
+  if (EL_NETINVAL == fd_)
     return false;
 
   u_long val = 1;
-  if (-1 == ioctlsocket(fd_, FIONBIO, &val))
+  if (EL_NETINVAL == ioctlsocket(fd_, FIONBIO, &val))
     return false;
 
   return true;
 }
 
 void Socket::Close(void) {
-  if (-1 == fd_) {
+  if (EL_NETINVAL != fd_) {
     shutdown(fd_, SD_BOTH);
     closesocket(fd_);
 
-    fd_ = -1;
+    fd_ = EL_NETINVAL;
   }
 }
 

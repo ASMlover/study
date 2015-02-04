@@ -136,6 +136,15 @@
 # define bzero(s, n)  memset((s), 0, (n))
 #endif
 
+#define EL_NETINVAL (-1)
+#define EL_NETERR   (-1)
+
+enum class EventType : int {
+  EVENTTYPE_UNKNOWN = 0x00, 
+  EVENTTYPE_READ    = 0x01, 
+  EVENTTYPE_WRITE   = 0x02,
+};
+
 #include "el_uncopyable.h"
 #include "el_locker.h"
 #include "el_thread.h"
