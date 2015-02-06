@@ -139,14 +139,25 @@
 #define EL_NETINVAL (-1)
 #define EL_NETERR   (-1)
 
-enum class EventType : int {
-  EVENTTYPE_UNKNOWN = 0x00, 
-  EVENTTYPE_READ    = 0x01, 
-  EVENTTYPE_WRITE   = 0x02,
-};
-
 #include "el_uncopyable.h"
 #include "el_locker.h"
 #include "el_thread.h"
+
+namespace el {
+
+class Address;
+class Socket;
+
+// interfaces for user
+struct EventHandler {
+  virtual ~EventHandler(void) {}
+
+  virtual bool AcceptEvent(Socket& s, const Address& addr) { return true; }
+  virtual void CloseEvent(Socket& s) {}
+  virtual bool ReadEvent(Socket& s) { return true; }
+  virtual bool WriteEvent(Socket& s) { return true; }
+};
+
+}
 
 #endif  // __EL_POLL_HEADER_H__
