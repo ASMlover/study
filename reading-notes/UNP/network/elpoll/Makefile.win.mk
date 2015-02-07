@@ -36,6 +36,7 @@ LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no\
 	winmm.lib ws2_32.lib
 OBJS	= main.obj el_address.obj el_socket.obj el_buffer.obj\
+	el_connector.obj\
 	\
 	el_win_socket.obj
 

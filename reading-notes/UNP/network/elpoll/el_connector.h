@@ -24,60 +24,34 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_WIN_LOCKER_HEADER_H__
-#define __EL_WIN_LOCKER_HEADER_H__
+#ifndef __EL_CONNECTOR_HEADER_H__
+#define __EL_CONNECTOR_HEADER_H__
 
 namespace el {
 
-class BaseLocker : private UnCopyable {
-  CRITICAL_SECTION locker_;
+class Connector : private Socket {
+  SpinLock locker_;
+  Buffer rbuf_;
+  Buffer wbuf_;
 public:
-  enum class LockType {
-    LOCKTYPE_MUTEX = 0, 
-    LOCKTYPE_SPIN  = 1,
-  };
-  BaseLocker(LockType type = LockType::LOCKTYPE_MUTEX) {
-    if (type == LockType::LOCKTYPE_MUTEX)
-      InitMutex();
-    else if (type == LockType::LOCKTYPE_SPIN)
-      InitSpin();
+  Connector(void);
+  ~Connector(void);
+
+  inline bool SetReaderBuffer(uint32_t bytes) {
+    return rbuf_.Init(bytes);
   }
 
-  virtual ~BaseLocker(void) {
-    DeleteCriticalSection(&locker_);
+  inline bool SetWriterBuffer(uint32_t bytes) {
+    return wbuf_.Init(bytes);
   }
-
-  inline void Lock(void) {
-    EnterCriticalSection(&locker_);
-  }
-
-  inline void Unlock(void) {
-    LeaveCriticalSection(&locker_);
-  }
-private:
-  inline void InitMutex(void) {
-    InitializeCriticalSection(&locker_);
-  }
-
-  inline void InitSpin(void) {
-    InitializeCriticalSectionAndSpinCount(&locker_, 4000);
-  }
-};
-
-class Mutex : public BaseLocker {
 public:
-  Mutex()
-    : BaseLocker(BaseLocker::LockType::LOCKTYPE_MUTEX) {
-  }
-};
+  int Read(uint32_t bytes, char* buffer);
+  int Write(const char* buffer, uint32_t bytes);
 
-class SpinLock : public BaseLocker {
-public:
-  SpinLock(void)
-    : BaseLocker(BaseLocker::LockType::LOCKTYPE_SPIN) {
-  }
+  int AsyncReader(void);
+  int AsyncWriter(void);
 };
 
 }
 
-#endif  // __EL_WIN_LOCKER_HEADER_H__
+#endif  // __EL_CONNECTOR_HEADER_H__

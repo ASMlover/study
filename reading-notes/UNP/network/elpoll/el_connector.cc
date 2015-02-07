@@ -24,60 +24,48 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_WIN_LOCKER_HEADER_H__
-#define __EL_WIN_LOCKER_HEADER_H__
+#include "el_poll.h"
+#include "el_buffer.h"
+#include "el_socket.h"
+#include "el_connector.h"
 
 namespace el {
 
-class BaseLocker : private UnCopyable {
-  CRITICAL_SECTION locker_;
-public:
-  enum class LockType {
-    LOCKTYPE_MUTEX = 0, 
-    LOCKTYPE_SPIN  = 1,
-  };
-  BaseLocker(LockType type = LockType::LOCKTYPE_MUTEX) {
-    if (type == LockType::LOCKTYPE_MUTEX)
-      InitMutex();
-    else if (type == LockType::LOCKTYPE_SPIN)
-      InitSpin();
-  }
-
-  virtual ~BaseLocker(void) {
-    DeleteCriticalSection(&locker_);
-  }
-
-  inline void Lock(void) {
-    EnterCriticalSection(&locker_);
-  }
-
-  inline void Unlock(void) {
-    LeaveCriticalSection(&locker_);
-  }
-private:
-  inline void InitMutex(void) {
-    InitializeCriticalSection(&locker_);
-  }
-
-  inline void InitSpin(void) {
-    InitializeCriticalSectionAndSpinCount(&locker_, 4000);
-  }
-};
-
-class Mutex : public BaseLocker {
-public:
-  Mutex()
-    : BaseLocker(BaseLocker::LockType::LOCKTYPE_MUTEX) {
-  }
-};
-
-class SpinLock : public BaseLocker {
-public:
-  SpinLock(void)
-    : BaseLocker(BaseLocker::LockType::LOCKTYPE_SPIN) {
-  }
-};
-
+Connector::Connector(void)
+  : locker_() {
 }
 
-#endif  // __EL_WIN_LOCKER_HEADER_H__
+Connector::~Connector(void) {
+  rbuf_.Destroy();
+  wbuf_.Destroy();
+}
+
+int Connector::Read(uint32_t bytes, char* buffer) {
+  if (0 == bytes || nullptr == buffer)
+    return EL_NETERR;
+
+  return static_cast<int>(rbuf_.Get(bytes, buffer));
+}
+
+int Connector::Write(const char* buffer, uint32_t bytes) {
+  if (nullptr == buffer || 0 == bytes)
+    return EL_NETERR;
+
+  int ret; 
+  {
+    LockerGuard<SpinLock> guard(locker_);
+    ret = static_cast<int>(wbuf_.Put(buffer, bytes));
+  }
+
+  return ret;
+}
+
+int Connector::AsyncReader(void) {
+  return EL_NETERR;
+}
+
+int Connector::AsyncWriter(void) {
+  return EL_NETERR;
+}
+
+}
