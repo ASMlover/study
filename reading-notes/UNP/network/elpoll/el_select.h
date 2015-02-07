@@ -27,14 +27,9 @@
 #ifndef __EL_SELECT_HEADER_H__
 #define __EL_SELECT_HEADER_H__
 
-namespace el {
-
-class Select : private UnCopyable {
-  uint32_t rbytes_;
-  uint32_t wbytes_;
-  EventHandler* handler_;
-};
-
-}
+#if defined(EL_WIN)
+# include "./win/el_win_select.h"
+#else
+#endif
 
 #endif  // __EL_SELECT_HEADER_H__

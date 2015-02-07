@@ -25,8 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "el_poll.h"
-#include "el_buffer.h"
-#include "el_socket.h"
+#include "el_internal.h"
 #include "el_connector.h"
 
 namespace el {

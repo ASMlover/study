@@ -38,7 +38,7 @@ LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 OBJS	= main.obj el_address.obj el_socket.obj el_buffer.obj\
 	el_connector.obj\
 	\
-	el_win_socket.obj
+	el_win_socket.obj el_win_select.obj
 
 
 
