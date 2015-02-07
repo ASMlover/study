@@ -31,6 +31,7 @@ namespace el {
 
 class Connector : private Socket {
   SpinLock locker_;
+  bool writable_;
   Buffer rbuf_;
   Buffer wbuf_;
 public:
@@ -44,9 +45,15 @@ public:
   inline bool SetWriterBuffer(uint32_t bytes) {
     return wbuf_.Init(bytes);
   }
+
+  inline void SetWritable(bool writable) {
+    writable_ = writable;
+  }
 public:
   int Read(uint32_t bytes, char* buffer);
   int Write(const char* buffer, uint32_t bytes);
+
+  bool IsWriteBufferEmpty(void);
 
   int AsyncReader(void);
   int AsyncWriter(void);

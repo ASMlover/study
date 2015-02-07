@@ -32,7 +32,8 @@
 namespace el {
 
 Connector::Connector(void)
-  : locker_() {
+  : locker_()
+  , writable_(true) {
 }
 
 Connector::~Connector(void) {
@@ -57,15 +58,74 @@ int Connector::Write(const char* buffer, uint32_t bytes) {
     ret = static_cast<int>(wbuf_.Put(buffer, bytes));
   }
 
+  if (writable_)
+    AsyncWriter();
+
   return ret;
 }
 
 int Connector::AsyncReader(void) {
-  return EL_NETERR;
+  int read_bytes = 0;
+
+  while (true) {
+    char* free_buffer = rbuf_.free_buffer();
+    uint32_t free_length = rbuf_.free_length();
+
+    if (0 == free_length) {
+      if (!rbuf_.Regrow())
+        return EL_NETERR;
+
+      free_buffer = rbuf_.free_buffer();
+      free_length = rbuf_.free_length();
+    }
+
+    int ret = Get(free_length, free_buffer);
+    if (ret > 0) {
+      rbuf_.Inc(ret);
+      read_bytes += ret;
+      if (static_cast<uint32_t>(ret) < free_length)
+        break;
+    }
+    else if (0 == ret && read_bytes > 0) {
+      break;
+    }
+    else {
+      return EL_NETERR;
+    }
+  }
+
+  return read_bytes;
 }
 
 int Connector::AsyncWriter(void) {
-  return EL_NETERR;
+  int write_bytes = 0;
+
+  LockerGuard<SpinLock> guard(locker_);
+  while (true) {
+    uint32_t length = wbuf_.length();
+    if (0 == length) {
+      if (write_bytes > 0)
+        break;
+      else
+        return EL_NETERR;
+    }
+
+    int ret = Put(wbuf_.buffer(), length);
+    if (ret > 0) {
+      wbuf_.Dec(ret);
+      write_bytes += ret;
+      if (static_cast<uint32_t>(ret) < length)
+        break;
+    }
+    else if (0 == ret && write_bytes > 0) {
+      break;
+    }
+    else {
+      return EL_NETERR;
+    }
+  }
+
+  return write_bytes;
 }
 
 }
