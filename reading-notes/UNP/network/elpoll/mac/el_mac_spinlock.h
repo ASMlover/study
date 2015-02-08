@@ -24,37 +24,34 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_LOCKER_HEADER_H__
-#define __EL_LOCKER_HEADER_H__
+#ifndef __EL_MAC_SPINLOCK_HEADER_H__
+#define __EL_MAC_SPINLOCK_HEADER_H__
 
 namespace el {
 
-template <typename Locker>
-class LockerGuard : private UnCopyable {
-  Locker& locker_;
+#if defined(USE_MAC_SPINLOCK)
+class SpinLock : private UnCopyable {
+  OSSpinLock spinlock_;
 public:
-  explicit LockerGuard(Locker& locker)
-    : locker_(locker) {
-    locker_.Lock();
+  SpinLock(void)
+    : spinlock_(0) {
   }
 
-  ~LockerGuard(void) {
-    locker_.Unlock();
+  ~SpinLock(void) {
+  }
+
+  inline void Lock(void) {
+    OSSpinLockLock(&spinlock_);
+  }
+
+  inline void Unlock(void) {
+    OSSpinLockUnlock(&spinlock_);
   }
 };
-
-class DummyLock : private UnCopyable {
-public:
-  inline void Lock(void) {}
-  inline void Unlock(void) {}
-};
+#else
+typedef Mutex SpinLock;
+#endif
 
 }
 
-#if defined(EL_WIN)
-# include "./win/el_win_locker.h"
-#else
-# include "./posix/el_posix_locker.h"
-#endif
-
-#endif  // __EL_LOCKER_HEADER_H__
+#endif  // __EL_MAC_SPINLOCK_HEADER_H__
