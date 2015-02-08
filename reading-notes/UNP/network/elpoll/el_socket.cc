@@ -51,10 +51,8 @@ bool Socket::SetKeepAlive(bool alive) {
 }
 
 bool Socket::Open(void) {
-  if (EL_NETINVAL == (fd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)))
-    return false;
-
-  return true;
+  return (EL_NETINVAL !=
+      (fd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)));
 }
 
 bool Socket::Bind(const char* addr, uint16_t port) {
@@ -67,11 +65,8 @@ bool Socket::Bind(const char* addr, uint16_t port) {
   host_addr.sin_family      = AF_INET;
   host_addr.sin_port        = htons(port);
 
-  if (EL_NETERR == bind(fd_,
-        (struct sockaddr*)&host_addr, sizeof(host_addr)))
-    return false;
-
-  return true;
+  return (EL_NETERR != bind(fd_,
+        (struct sockaddr*)&host_addr, sizeof(host_addr)));
 }
 
 bool Socket::Listen(void) {
@@ -107,11 +102,8 @@ bool Socket::Connect(const char* addr, uint16_t port) {
   remote_addr.sin_addr.s_addr = inet_addr(addr);
   remote_addr.sin_family      = AF_INET;
   remote_addr.sin_port        = htons(port);
-  if (EL_NETERR == connect(fd_,
-        (struct sockaddr*)&remote_addr, sizeof(remote_addr)))
-    return false;
-
-  return true;
+  return (EL_NETERR != connect(fd_,
+        (struct sockaddr*)&remote_addr, sizeof(remote_addr)));
 }
 
 int Socket::Get(int bytes, char* buffer) {

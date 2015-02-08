@@ -24,24 +24,56 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_THREAD_HEADER_H__
-#define __EL_THREAD_HEADER_H__
-
-#define EL_FUNCALL(__selector__)\
-  std::bind(&__selector__, std::placeholders::_1)
-#define EL_CLASSCALL(__selector__, __target__)\
-  std::bind(&__selector__, (__target__), std::placeholders::_1)
+#ifndef __EL_POSIX_THREAD_HEADER_H__
+#define __EL_POSIX_THREAD_HEADER_H__
 
 namespace el {
 
-typedef std::function<void (void*)> RoutinerType;
+class Thread : private UnCopyable {
+  pthread_t    thread_id_;
+  RoutinerType routiner_;
+  void*        argument_;
+public:
+  Thread(void)
+    : thread_id_(0)
+    , routiner_(nullptr)
+    , argument_(nullptr) {
+  }
+
+  ~Thread(void) {
+    Join();
+  }
+
+  void Create(const RoutinerType& routiner, void* argument = nullptr) {
+    routiner_ = routiner;
+    argument_ = argument;
+
+    EL_ASSERT(0 ==
+        pthread_create(&thread_id_, nullptr, &Thread::Routiner, this), 
+        "pthread create failed ...");
+  }
+
+  void Join(void) {
+    if (0 != thread_id_) {
+      EL_ASSERT(0 == pthread_join(thread_id_, nullptr), 
+          "pthread join failed ...");
+
+      thread_id_ = 0;
+    }
+  }
+private:
+  static void* Routiner(void* argument) {
+    Thread* self = static_cast<Thread*>(argument);
+    if (nullptr == self)
+      return nullptr;
+
+    if (nullptr != self->routiner_)
+      self->routiner_(self->argument_);
+
+    return nullptr;
+  }
+};
 
 }
 
-#if defined(EL_WIN)
-# include "./win/el_win_thread.h"
-#else
-# include "./posix/el_posix_thread.h"
-#endif
-
-#endif  // __EL_THREAD_HEADER_H__
+#endif  // __EL_POSIX_THREAD_HEADER_H__
