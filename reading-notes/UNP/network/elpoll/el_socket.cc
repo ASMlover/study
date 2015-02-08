@@ -62,12 +62,12 @@ bool Socket::Bind(const char* addr, uint16_t port) {
     return false;
 
   struct sockaddr_in host_addr;
-  host_addr.sin_addr.s_addr = 
+  host_addr.sin_addr.s_addr =
     (nullptr == addr ? htonl(INADDR_ANY) : inet_addr(addr));
   host_addr.sin_family      = AF_INET;
   host_addr.sin_port        = htons(port);
 
-  if (EL_NETINVAL == bind(fd_, 
+  if (EL_NETERR == bind(fd_,
         (struct sockaddr*)&host_addr, sizeof(host_addr)))
     return false;
 
@@ -78,10 +78,7 @@ bool Socket::Listen(void) {
   if (EL_NETINVAL == fd_)
     return false;
 
-  if (EL_NETINVAL == listen(fd_, SOMAXCONN))
-    return false;
-
-  return true;
+  return (EL_NETERR != listen(fd_, SOMAXCONN));
 }
 
 bool Socket::Accept(Socket& connector, Address& addr) {
@@ -110,7 +107,7 @@ bool Socket::Connect(const char* addr, uint16_t port) {
   remote_addr.sin_addr.s_addr = inet_addr(addr);
   remote_addr.sin_family      = AF_INET;
   remote_addr.sin_port        = htons(port);
-  if (EL_NETINVAL == connect(fd_, 
+  if (EL_NETERR == connect(fd_,
         (struct sockaddr*)&remote_addr, sizeof(remote_addr)))
     return false;
 
