@@ -24,41 +24,35 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_POSIX_LOCKER_HEADER_H__
-#define __EL_POSIX_LOCKER_HEADER_H__
+#ifndef __EL_LINUX_SPINLOCK_HEADER_H__
+#define __EL_LINUX_SPINLOCK_HEADER_H__
 
 namespace el {
 
-class Mutex : private UnCopyable {
-  pthread_mutex_t mutex_;
+class SpinLock : private UnCopyable {
+  pthread_spinlock_t spinlock_;
 public:
-  Mutex(void) {
-    EL_ASSERT(0 == pthread_mutex_init(&mutex_, nullptr),
-        "initialize mutex failed ...");
+  SpinLock(void) {
+    EL_ASSERT(0 == pthread_spin_init(&spinlock_, 0), 
+        "initialize spinlock failed ...");
   }
 
-  ~Mutex(void) {
-    EL_ASSERT(0 == pthread_mutex_destroy(&mutex_),
-        "destroy mutex failed ...");
+  ~SpinLock(void) {
+    EL_ASSERT(0 == pthread_spin_destroy(&spinlock_), 
+        "destroy spinlock failed ...");
   }
 
   inline void Lock(void) {
-    EL_ASSERT(0 == pthread_mutex_lock(&mutex_),
-        "lock mutex failed ...");
+    EL_ASSERT(0 == pthread_spin_lock(&spinlock_), 
+        "lock spinlock failed ...");
   }
 
   inline void Unlock(void) {
-    EL_ASSERT(0 == pthread_mutex_unlock(&mutex_),
-        "unlock mutex failed ...");
+    EL_ASSERT(0 == pthread_spin_unlock(&spinlock_), 
+        "unlock spinlock failed ...");
   }
 };
 
 }
 
-#if defined(EL_LINUX)
-# include "../linux/el_linux_spinlock.h"
-#elif defined(EL_MAC)
-# include "../mac/el_mac_spinlock.h"
-#endif
-
-#endif  // __EL_POSIX_LOCKER_HEADER_H__
+#endif  // __EL_LINUX_SPINLOCK_HEADER_H__
