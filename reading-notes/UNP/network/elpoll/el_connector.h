@@ -29,7 +29,7 @@
 
 namespace el {
 
-class Connector : private Socket {
+class Connector : public Socket, public Entity {
   SpinLock locker_;
   bool writable_;
   Buffer rbuf_;
@@ -50,13 +50,14 @@ public:
     writable_ = writable;
   }
 public:
-  int Read(uint32_t bytes, char* buffer);
-  int Write(const char* buffer, uint32_t bytes);
-
   bool IsWriteBufferEmpty(void);
 
   int AsyncReader(void);
   int AsyncWriter(void);
+public:
+  virtual int GetEntity(void) const;
+  virtual int Read(uint32_t bytes, char* buffer);
+  virtual int Write(const char* buffer, uint32_t bytes);
 };
 
 }

@@ -40,29 +40,6 @@ Connector::~Connector(void) {
   wbuf_.Destroy();
 }
 
-int Connector::Read(uint32_t bytes, char* buffer) {
-  if (0 == bytes || nullptr == buffer)
-    return EL_NETERR;
-
-  return static_cast<int>(rbuf_.Get(bytes, buffer));
-}
-
-int Connector::Write(const char* buffer, uint32_t bytes) {
-  if (nullptr == buffer || 0 == bytes)
-    return EL_NETERR;
-
-  int ret; 
-  {
-    LockerGuard<SpinLock> guard(locker_);
-    ret = static_cast<int>(wbuf_.Put(buffer, bytes));
-  }
-
-  if (writable_)
-    AsyncWriter();
-
-  return ret;
-}
-
 int Connector::AsyncReader(void) {
   int read_bytes = 0;
 
@@ -125,6 +102,33 @@ int Connector::AsyncWriter(void) {
   }
 
   return write_bytes;
+}
+
+int Connector::GetEntity(void) const {
+  return this->fd();
+}
+
+int Connector::Read(uint32_t bytes, char* buffer) {
+  if (0 == bytes || nullptr == buffer)
+    return EL_NETERR;
+
+  return static_cast<int>(rbuf_.Get(bytes, buffer));
+}
+
+int Connector::Write(const char* buffer, uint32_t bytes) {
+  if (nullptr == buffer || 0 == bytes)
+    return EL_NETERR;
+
+  int ret;
+  {
+    LockerGuard<SpinLock> guard(locker_);
+    ret = static_cast<int>(wbuf_.Put(buffer, bytes));
+  }
+
+  if (writable_)
+    AsyncWriter();
+
+  return ret;
 }
 
 }

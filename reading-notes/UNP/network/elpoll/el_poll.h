@@ -148,17 +148,19 @@
 
 namespace el {
 
-class Address;
-class Socket;
+struct Entity {
+  virtual ~Entity(void) {}
+  virtual int GetEntity(void) const = 0;
+  virtual int Read(uint32_t bytes, char* buffer) = 0;
+  virtual int Write(const char* buffer, uint32_t bytes) = 0;
+};
 
 // interfaces for user
 struct EventHandler {
   virtual ~EventHandler(void) {}
-
-  virtual bool AcceptEvent(Socket& s, const Address& addr) { return true; }
-  virtual void CloseEvent(Socket& s) {}
-  virtual bool ReadEvent(Socket& s) { return true; }
-  virtual bool WriteEvent(Socket& s) { return true; }
+  virtual bool AcceptEvent(Entity& entity) { return true; }
+  virtual void CloseEvent(Entity& entity) {}
+  virtual bool ReadEvent(Entity& entity) { return true; }
 };
 
 }
