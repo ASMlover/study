@@ -69,34 +69,129 @@ Select::Select(void)
   , rset_out_(nullptr)
   , wset_out_(nullptr)
   , removed_(false) {
+  EL_ASSERT(Init(), "select init failed ...");
 }
 
 Select::~Select(void) {
+  Destroy();
 }
 
 bool Select::Init(void) {
-  return true;
+  fd_storage_ = FD_SETSIZE;
+  size_t size = sizeof(win_fd_set) + (fd_storage_ - 1) * sizeof(int);
+
+  if (nullptr == (rset_in_ = (win_fd_set*)malloc(size)))
+    return false;
+  do {
+    if (nullptr == (wset_in_ = (win_fd_set*)malloc(size)))
+      break;
+
+    if (nullptr == (rset_out_ = (win_fd_set*)malloc(size)))
+      break;
+    if (nullptr == (wset_out_ = (win_fd_set*)malloc(size)))
+      break;
+
+    WINFD_ZERO(rset_in_);
+    WINFD_ZERO(wset_in_);
+    entity_list_.clear();
+
+    return true;
+  } while (0);
+
+  Destroy();
+  return false;
 }
 
 void Select::Destroy(void) {
+#define FREE_WINFD(set) do {\
+  if (nullptr != (set)) {\
+    free((set));\
+    (set) = nullptr;\
+  }\
+} while (0)
+
+  FREE_WINFD(rset_in_);
+  FREE_WINFD(wset_in_);
+  FREE_WINFD(rset_out_);
+  FREE_WINFD(wset_out_);
+
+  entity_list_.clear();
+
+#undef FREE_WINFD
 }
 
 bool Select::Regrow(void) {
-  return true;
+  uint32_t new_fd_storage = (0 != fd_storage_ ?  
+      2 * fd_storage_ : FD_SETSIZE);
+  size_t size = sizeof(win_fd_set) + (new_fd_storage - 1) * sizeof(int);
+
+  if (nullptr == (rset_in_ = (win_fd_set*)realloc(rset_in_, size)))
+    return false;
+  do {
+    if (nullptr == (wset_in_ = (win_fd_set*)realloc(wset_in_, size)))
+      break;
+
+    if (nullptr == (rset_out_ = (win_fd_set*)realloc(rset_out_, size)))
+      break;
+    if (nullptr == (wset_out_ = (win_fd_set*)realloc(wset_out_, size)))
+      break;
+
+    fd_storage_ = new_fd_storage;
+    return true;
+  } while (0);
+
+  Destroy();
+  return false;
 }
 
 bool Select::Insert(Connector& c) {
+  if (entity_list_.size() + 1 > fd_storage_) {
+    if (!Regrow())
+      return false;
+  }
+
+  int fd = c.fd();
+  entity_list_[fd] = std::make_pair(fd, &c);
+
   return true;
 }
 
 void Select::Remove(Connector& c) {
+  int fd = c.fd();
+  auto entity = entity_list_.find(fd);
+  if (entity_list_.end() == entity)
+    return;
+
+  entity->second.first = EL_NETINVAL;
+  removed_ = true;
+
+  WINFD_CLR(fd, rset_in_);
+  WINFD_CLR(fd, wset_in_);
+  WINFD_CLR(fd, rset_out_);
+  WINFD_CLR(fd, wset_out_);
 }
 
 bool Select::AddEvent(Connector& c, EventType event) {
+  int fd = c.fd();
+
+  if (event == EventType::EVENTTYPE_READ)
+    WINFD_SET(fd, rset_in_);
+
+  if (event == EventType::EVENTTYPE_WRITE)
+    WINFD_SET(fd, wset_in_);
+
   return true;
 }
 
 bool Select::DelEvent(Connector& c, EventType event) {
+  int fd = c.fd();
+  
+  if (event == EventType::EVENTTYPE_READ)
+    WINFD_CLR(fd, rset_in_);
+
+  if (event == EventType::EVENTTYPE_WRITE)
+    WINFD_CLR(fd, wset_in_);
+
   return true;
 }
 

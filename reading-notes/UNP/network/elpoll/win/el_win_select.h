@@ -38,7 +38,7 @@ class Select : public Poller, private UnCopyable {
   win_fd_set* rset_out_;
   win_fd_set* wset_out_;
   bool removed_;
-  std::vector<SelectEntity> entity_list_;
+  std::map<int, std::pair<int, Connector*> > entity_list_;
 public:
   Select(void);
   ~Select(void);
