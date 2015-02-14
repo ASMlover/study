@@ -51,7 +51,7 @@ struct win_fd_set {
 #define WINFD_ZERO  FD_ZERO
 #define WINFD_ISSET FD_ISSET
 #define WINFD_COPY(dest, src) do {\
-  ((win_fd_set*)(dest))->fd_count = ((win_fd_set*)(sec))->fd_count;\
+  ((win_fd_set*)(dest))->fd_count = ((win_fd_set*)(src))->fd_count;\
   memcpy(((win_fd_set*)(dest))->fd_array, \
       ((win_fd_set*)(src))->fd_array, \
       ((win_fd_set*)(src))->fd_count * sizeof(int));\
@@ -60,6 +60,10 @@ struct win_fd_set {
 struct SelectEntity {
   int fd;
   Connector* c;
+
+  SelectEntity(int _fd = 0, Connector* _c = nullptr)
+    : fd(_fd), c(_c) {
+  }
 };
 
 Select::Select(void)
@@ -67,8 +71,7 @@ Select::Select(void)
   , rset_in_(nullptr)
   , wset_in_(nullptr)
   , rset_out_(nullptr)
-  , wset_out_(nullptr)
-  , removed_(false) {
+  , wset_out_(nullptr) {
   EL_ASSERT(Init(), "select init failed ...");
 }
 
@@ -93,7 +96,8 @@ bool Select::Init(void) {
 
     WINFD_ZERO(rset_in_);
     WINFD_ZERO(wset_in_);
-    entity_list_.clear();
+    entities_.clear();
+    removed_entities_.clear();
 
     return true;
   } while (0);
@@ -115,7 +119,8 @@ void Select::Destroy(void) {
   FREE_WINFD(rset_out_);
   FREE_WINFD(wset_out_);
 
-  entity_list_.clear();
+  entities_.clear();
+  removed_entities_.clear();
 
 #undef FREE_WINFD
 }
@@ -145,25 +150,25 @@ bool Select::Regrow(void) {
 }
 
 bool Select::Insert(Connector& c) {
-  if (entity_list_.size() + 1 > fd_storage_) {
+  if (entities_.size() + 1 > fd_storage_) {
     if (!Regrow())
       return false;
   }
 
   int fd = c.fd();
-  entity_list_[fd] = std::make_pair(fd, &c);
+  entities_[fd] = SelectEntity(fd, &c);
 
   return true;
 }
 
 void Select::Remove(Connector& c) {
   int fd = c.fd();
-  auto entity = entity_list_.find(fd);
-  if (entity_list_.end() == entity)
+  auto entity = entities_.find(fd);
+  if (entities_.end() == entity)
     return;
 
-  entity->second.first = EL_NETINVAL;
-  removed_ = true;
+  entity->second.fd = EL_NETINVAL;
+  removed_entities_.push_back(fd);
 
   WINFD_CLR(fd, rset_in_);
   WINFD_CLR(fd, wset_in_);
@@ -196,6 +201,34 @@ bool Select::DelEvent(Connector& c, EventType event) {
 }
 
 bool Select::Dispatch(Dispatcher& dispatcher, uint32_t timeout) {
+  struct timeval tv = {timeout / 1000, (timeout % 1000) * 1000};
+  WINFD_COPY(rset_out_, rset_in_);
+  WINFD_COPY(wset_out_, wset_in_);
+
+  int ret = select(0,
+      (struct fd_set*)rset_out_,
+      (struct fd_set*)wset_out_, nullptr, &tv);
+  if (EL_NETERR == ret || 0 == ret)
+    return false;
+
+  for (auto& entity : entities_) {
+    if (EL_NETINVAL == entity.second.fd)
+      continue;
+    if (WINFD_ISSET(entity.second.fd, rset_out_))
+      dispatcher.DispatchReader(*this, *entity.second.c);
+
+    if (EL_NETINVAL == entity.second.fd)
+      continue;
+    if (WINFD_ISSET(entity.second.fd, wset_out_))
+      dispatcher.DispatchWriter(*this, *entity.second.c);
+  }
+
+  if (!removed_entities_.empty()) {
+    for (auto fd : removed_entities_)
+      entities_.erase(fd);
+    removed_entities_.clear();
+  }
+
   return true;
 }
 

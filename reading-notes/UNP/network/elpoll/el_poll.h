@@ -108,6 +108,7 @@
 #include <string.h>
 #include <time.h>
 
+#include <algorithm>
 #include <functional>
 #include <map>
 #include <memory>
