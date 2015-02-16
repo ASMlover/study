@@ -51,7 +51,7 @@ struct win_fd_set {
 #define WINFD_ZERO  FD_ZERO
 #define WINFD_ISSET FD_ISSET
 #define WINFD_COPY(dest, src) do {\
-  ((win_fd_set*)(dest))->fd_count = ((win_fd_set*)(sec))->fd_count;\
+  ((win_fd_set*)(dest))->fd_count = ((win_fd_set*)(src))->fd_count;\
   memcpy(((win_fd_set*)(dest))->fd_array, \
       ((win_fd_set*)(src))->fd_array, \
       ((win_fd_set*)(src))->fd_count * sizeof(int));\
@@ -60,6 +60,10 @@ struct win_fd_set {
 struct SelectEntity {
   int fd;
   Connector* c;
+
+  SelectEntity(int _fd = 0, Connector* _c = nullptr)
+    : fd(_fd), c(_c) {
+  }
 };
 
 Select::Select(void)
@@ -67,40 +71,164 @@ Select::Select(void)
   , rset_in_(nullptr)
   , wset_in_(nullptr)
   , rset_out_(nullptr)
-  , wset_out_(nullptr)
-  , removed_(false) {
+  , wset_out_(nullptr) {
+  EL_ASSERT(Init(), "select init failed ...");
 }
 
 Select::~Select(void) {
+  Destroy();
 }
 
 bool Select::Init(void) {
-  return true;
+  fd_storage_ = FD_SETSIZE;
+  size_t size = sizeof(win_fd_set) + (fd_storage_ - 1) * sizeof(int);
+
+  if (nullptr == (rset_in_ = (win_fd_set*)malloc(size)))
+    return false;
+  do {
+    if (nullptr == (wset_in_ = (win_fd_set*)malloc(size)))
+      break;
+
+    if (nullptr == (rset_out_ = (win_fd_set*)malloc(size)))
+      break;
+    if (nullptr == (wset_out_ = (win_fd_set*)malloc(size)))
+      break;
+
+    WINFD_ZERO(rset_in_);
+    WINFD_ZERO(wset_in_);
+    entities_.clear();
+    removed_entities_.clear();
+
+    return true;
+  } while (0);
+
+  Destroy();
+  return false;
 }
 
 void Select::Destroy(void) {
+#define FREE_WINFD(set) do {\
+  if (nullptr != (set)) {\
+    free((set));\
+    (set) = nullptr;\
+  }\
+} while (0)
+
+  FREE_WINFD(rset_in_);
+  FREE_WINFD(wset_in_);
+  FREE_WINFD(rset_out_);
+  FREE_WINFD(wset_out_);
+
+  entities_.clear();
+  removed_entities_.clear();
+
+#undef FREE_WINFD
 }
 
 bool Select::Regrow(void) {
-  return true;
+  uint32_t new_fd_storage = (0 != fd_storage_ ?  
+      2 * fd_storage_ : FD_SETSIZE);
+  size_t size = sizeof(win_fd_set) + (new_fd_storage - 1) * sizeof(int);
+
+  if (nullptr == (rset_in_ = (win_fd_set*)realloc(rset_in_, size)))
+    return false;
+  do {
+    if (nullptr == (wset_in_ = (win_fd_set*)realloc(wset_in_, size)))
+      break;
+
+    if (nullptr == (rset_out_ = (win_fd_set*)realloc(rset_out_, size)))
+      break;
+    if (nullptr == (wset_out_ = (win_fd_set*)realloc(wset_out_, size)))
+      break;
+
+    fd_storage_ = new_fd_storage;
+    return true;
+  } while (0);
+
+  Destroy();
+  return false;
 }
 
 bool Select::Insert(Connector& c) {
+  if (entities_.size() + 1 > fd_storage_) {
+    if (!Regrow())
+      return false;
+  }
+
+  int fd = c.fd();
+  entities_[fd] = SelectEntity(fd, &c);
+
   return true;
 }
 
 void Select::Remove(Connector& c) {
+  int fd = c.fd();
+  auto entity = entities_.find(fd);
+  if (entities_.end() == entity)
+    return;
+
+  entity->second.fd = EL_NETINVAL;
+  removed_entities_.push_back(fd);
+
+  WINFD_CLR(fd, rset_in_);
+  WINFD_CLR(fd, wset_in_);
+  WINFD_CLR(fd, rset_out_);
+  WINFD_CLR(fd, wset_out_);
 }
 
 bool Select::AddEvent(Connector& c, EventType event) {
+  int fd = c.fd();
+
+  if (event == EventType::EVENTTYPE_READ)
+    WINFD_SET(fd, rset_in_);
+
+  if (event == EventType::EVENTTYPE_WRITE)
+    WINFD_SET(fd, wset_in_);
+
   return true;
 }
 
 bool Select::DelEvent(Connector& c, EventType event) {
+  int fd = c.fd();
+  
+  if (event == EventType::EVENTTYPE_READ)
+    WINFD_CLR(fd, rset_in_);
+
+  if (event == EventType::EVENTTYPE_WRITE)
+    WINFD_CLR(fd, wset_in_);
+
   return true;
 }
 
 bool Select::Dispatch(Dispatcher& dispatcher, uint32_t timeout) {
+  struct timeval tv = {timeout / 1000, (timeout % 1000) * 1000};
+  WINFD_COPY(rset_out_, rset_in_);
+  WINFD_COPY(wset_out_, wset_in_);
+
+  int ret = select(0,
+      (struct fd_set*)rset_out_,
+      (struct fd_set*)wset_out_, nullptr, &tv);
+  if (EL_NETERR == ret || 0 == ret)
+    return false;
+
+  for (auto& entity : entities_) {
+    if (EL_NETINVAL == entity.second.fd)
+      continue;
+    if (WINFD_ISSET(entity.second.fd, rset_out_))
+      dispatcher.DispatchReader(*this, *entity.second.c);
+
+    if (EL_NETINVAL == entity.second.fd)
+      continue;
+    if (WINFD_ISSET(entity.second.fd, wset_out_))
+      dispatcher.DispatchWriter(*this, *entity.second.c);
+  }
+
+  if (!removed_entities_.empty()) {
+    for (auto fd : removed_entities_)
+      entities_.erase(fd);
+    removed_entities_.clear();
+  }
+
   return true;
 }
 
