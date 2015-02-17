@@ -24,45 +24,24 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_INTERNAL_HEADER_H__
-#define __EL_INTERNAL_HEADER_H__
-
-#include "el_buffer.h"
-#include "el_socket.h"
+#include "el_poll.h"
+#include "el_logging.h"
 
 namespace el {
 
-enum class EventType : int {
-  EVENTTYPE_UNKNOWN = 0x00,
-  EVENTTYPE_READ    = 0x01,
-  EVENTTYPE_WRITE   = 0x02,
-};
-
-class Connector;
-struct Poller;
-
-struct Dispatcher {
-  virtual ~Dispatcher(void) {}
-  virtual bool DispatchReader(Poller& poller, Connector& c) = 0;
-  virtual bool DispatchWriter(Poller& poller, Connector& c) = 0;
-};
-
-struct ConnectorHolder {
-  virtual ~ConnectorHolder(void) {}
-  virtual void CloseAll(void) = 0;
-  virtual Connector& Insert(int fd) = 0;
-  virtual void Remove(int fd) = 0;
-};
-
-struct Poller {
-  virtual ~Poller(void) {}
-  virtual bool Insert(Connector& c) = 0;
-  virtual void Remove(Connector& c) = 0;
-  virtual bool AddEvent(Connector& c, EventType event) = 0;
-  virtual bool DelEvent(Connector& c, EventType event) = 0;
-  virtual bool Dispatch(Dispatcher& dispatcher, uint32_t timeout) = 0;
-};
-
+Logging::Logging(void) {
 }
 
-#endif  // __EL_INTERNAL_HEADER_H__
+Logging::~Logging(void) {
+}
+
+Logging& Logging::instance(void) {
+  static Logging _instance;
+  return _instance;
+}
+
+void Logging::Write(LogType type,
+    const char* fname, int lineno, const char* format, ...) {
+}
+
+}
