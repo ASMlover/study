@@ -54,5 +54,17 @@ public:
 #define LOG_DBG(fmt, ...)\
   el::Logging::instance().Write(el::Logging::LogType::LOGTYPE_DEBUG, \
       __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
+#define LOG_MSG(fmt, ...)\
+  el::Logging::instance().Write(el::Logging::LogType::LOGTYPE_MESSAGE, \
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
+#define LOG_WARN(fmt, ...)\
+  el::Logging::instance().Write(el::Logging::LogType::LOGTYPE_WARN, \
+      __FILE__, __LINE__,  (fmt), ##__VA_ARGS__)
+#define LOG_ERROR(fmt, ...)\
+  el::Logging::instance().Write(el::Logging::LogType::LOGTYPE_ERROR, \
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
+#define LOG_FAIL(fmt, ...)\
+  el::Logging::instance().Write(el::Logging::LogType::LOGTYPE_FAIL, \
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
 
 #endif  // __EL_LOGGING_HEADER_H__

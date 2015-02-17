@@ -42,6 +42,20 @@ Logging& Logging::instance(void) {
 
 void Logging::Write(LogType type,
     const char* fname, int lineno, const char* format, ...) {
+  char buffer[1024];
+
+  va_list ap;
+  va_start(ap, format);
+  vsnprintf(buffer, sizeof(buffer), format, ap);
+  va_end(ap);
+
+  if (LogType::LOGTYPE_FAIL == type) {
+    fprintf(stderr, "%s(%d) - %s", fname, lineno, buffer);
+    abort();
+  }
+  else {
+    fprintf(stdout, "%s(%d) - %s", fname, lineno, buffer);
+  }
 }
 
 }
