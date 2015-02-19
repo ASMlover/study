@@ -85,21 +85,90 @@ bool Epoll::Regrow(void) {
 }
 
 bool Epoll::Insert(Connector& c) {
+  struct epoll_event event;
+  event.events = 0;
+  event.data.ptr = &c;
+
+  if (EL_NETERR == epoll_ctl(epoll_fd_,
+        EPOLL_CTL_ADD, c.fd(), &event))
+    return false;
+
+  // add EPOLLET into connector
+  // TODO:
   return true;
 }
 
 void Epoll::Remove(Connector& c) {
+  struct epoll_event event;
+  event.events = c.events();
+  event.data.ptr = &c;
+
+  epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, c.fd(), &event);
 }
 
 bool Epoll::AddEvent(Connector& c, EventType event) {
+  struct epoll_event add_event;
+  add_event.events = c.events();
+  add_event.data.ptr = &c;
+
+  if (event == EventType::EVENTTYPE_READ)
+    add_event.events |= EPOLLIN;
+  if (event == EventType::EVENTTYPE_WRITE)
+    add_event.events |= EPOLLOUT;
+
+  if (EL_NETERR == epoll_ctl(epoll_fd_,
+        EPOLL_CTL_MOD, c.fd(), &add_event))
+    return false;
+
+  // add add_event.events into connector
+  // TODO:
   return true;
 }
 
 bool Epoll::DelEvent(Connector& c, EventType event) {
+  struct epoll_event del_event;
+  del_event.events = c.events();
+  del_event.data.ptr = &c;
+
+  if (event == EventType::EVENTTYPE_READ)
+    del_event.events &= ~EPOLLIN;
+  if (event == EventType::EVENTTYPE_WRITE)
+    del_event.events &= ~EPOLLOUT;
+
+  if (EL_NETERR == epoll_ctl(epoll_fd_,
+        EPOLL_CTL_MOD, c.fd(), &del_event))
+    return false;
+
+  // add del_event.events into connector
+  // TODO:
   return true;
 }
 
 bool Epoll::Dispatch(Dispatcher& dispatcher, uint32_t timeout) {
+  int num = epoll_wait(epoll_fd_, events_, event_count_, timeout);
+  if (EL_NETERR == num || 0 == num)
+    return false;
+
+  Connector* c;
+  for (auto i = 0; i < num; ++i) {
+    c = static_cast<Connector*>(events_[i].data.ptr);
+    if (nullptr == c)
+      continue;
+
+    if (EL_NETINVAL == c->fd())
+      continue;
+    if (events_[i].events & EPOLLIN)
+      dispather.DispatchReader(*this, *c);
+
+    if (EL_NETINVAL == c->fd())
+      continue;
+    if (events_[i].events & EPOLLOUT)
+      dispatcher.DispatchWriter(*this, *c);
+  }
+
+  if (static_cast<uint32_t>(num) == event_count_)
+    Regrow();
+
   return true;
 }
 
