@@ -203,17 +203,4 @@
         * NI_NUMERICSERV  => 以数串格式返回服务字符串
 
 ## **2. `gethostbyname_r`和`gethostbyaddr_r`函数**
-    1) 有两种方法可以把不可重入的函数改为可重入函数：
-        * 把由不可重入函数填写并返回静态结构的做法改为由调用者分配再由可重入
-          函数填写结构；
-        * 由可重入函数调用malloc以动态分配内存空间，但是必须提供一个相应的释
-          放所分配内存空间的函数；
-    2) 函数原型：
-        #include <netdb.h>
-        struct hostent* gethostbyname_r(const char* hostname, 
-            struct hostent* result, char* buf, int buflen, int* h_errnop);
-        struct hostent* gethostbyaddr_r(const char* addr, int len, int type,
-            struct hostent* result, char* buf, int buflen, int* h_errnop);
-                => 成功返回非空指针，出错返回NULL
-    3) result指向由调用者分配并由被调用函数填写的hostent结构；
-    4) buf指向由调用者分配且大小为buflen的缓冲区
+    1) 有两种方法可以把不可重入的函数改为可重入函数
