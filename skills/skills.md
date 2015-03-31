@@ -297,3 +297,9 @@
                    |__|
     * Last    (a + b)(c + d)
                    |______|
+
+
+## **20. Python logging**
+        logger = logging.getLogger(logger_name)
+        logging.basicConfig(level=logging.INFO)
+        logger.info(logging_infomation)
