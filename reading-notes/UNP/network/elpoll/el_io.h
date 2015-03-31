@@ -24,45 +24,23 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_INTERNAL_HEADER_H__
-#define __EL_INTERNAL_HEADER_H__
-
-#include "el_buffer.h"
-#include "el_socket.h"
+#ifndef __EL_IO_HEADER_H__
+#define __EL_IO_HEADER_H__
 
 namespace el {
 
-enum class EventType : int {
-  EVENTTYPE_UNKNOWN = 0x00,
-  EVENTTYPE_READ    = 0x01,
-  EVENTTYPE_WRITE   = 0x02,
+enum class ColorType {
+  COLORTYPE_UNKNOWN = 0,
+  COLORTYPE_RED,
+  COLORTYPE_GREEN,
 };
 
-class Connector;
-struct Poller;
+int ColorPrintf(ColorType color, const char* format, ...);
+int ColorFprintf(FILE* stream, ColorType color, const char* format, ...);
 
-struct Dispatcher {
-  virtual ~Dispatcher(void) {}
-  virtual bool DispatchReader(Poller& poller, Connector& c) = 0;
-  virtual bool DispatchWriter(Poller& poller, Connector& c) = 0;
-};
-
-struct ConnectorHolder {
-  virtual ~ConnectorHolder(void) {}
-  virtual void CloseAll(void) = 0;
-  virtual Connector& Insert(int fd) = 0;
-  virtual void Remove(int fd) = 0;
-};
-
-struct Poller {
-  virtual ~Poller(void) {}
-  virtual bool Insert(Connector& c) = 0;
-  virtual void Remove(Connector& c) = 0;
-  virtual bool AddEvent(Connector& c, EventType event) = 0;
-  virtual bool DelEvent(Connector& c, EventType event) = 0;
-  virtual bool Dispatch(Dispatcher& dispatcher, uint32_t timeout) = 0;
-};
+int ColorVfprintf(FILE* stream,
+    ColorType color, const char* format, va_list ap);
 
 }
 
-#endif  // __EL_INTERNAL_HEADER_H__
+#endif  // __EL_IO_HEADER_H__

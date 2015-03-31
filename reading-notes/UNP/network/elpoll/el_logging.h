@@ -24,45 +24,47 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_INTERNAL_HEADER_H__
-#define __EL_INTERNAL_HEADER_H__
-
-#include "el_buffer.h"
-#include "el_socket.h"
+#ifndef __EL_LOGGING_HEADER_H__
+#define __EL_LOGGING_HEADER_H__
 
 namespace el {
 
-enum class EventType : int {
-  EVENTTYPE_UNKNOWN = 0x00,
-  EVENTTYPE_READ    = 0x01,
-  EVENTTYPE_WRITE   = 0x02,
-};
+class Logging : private UnCopyable {
+public:
+  Logging(void);
+  ~Logging(void);
 
-class Connector;
-struct Poller;
+  static Logging& instance(void);
 
-struct Dispatcher {
-  virtual ~Dispatcher(void) {}
-  virtual bool DispatchReader(Poller& poller, Connector& c) = 0;
-  virtual bool DispatchWriter(Poller& poller, Connector& c) = 0;
-};
-
-struct ConnectorHolder {
-  virtual ~ConnectorHolder(void) {}
-  virtual void CloseAll(void) = 0;
-  virtual Connector& Insert(int fd) = 0;
-  virtual void Remove(int fd) = 0;
-};
-
-struct Poller {
-  virtual ~Poller(void) {}
-  virtual bool Insert(Connector& c) = 0;
-  virtual void Remove(Connector& c) = 0;
-  virtual bool AddEvent(Connector& c, EventType event) = 0;
-  virtual bool DelEvent(Connector& c, EventType event) = 0;
-  virtual bool Dispatch(Dispatcher& dispatcher, uint32_t timeout) = 0;
+  enum class LogType {
+    LOGTYPE_DEBUG = 0,
+    LOGTYPE_MESSAGE,
+    LOGTYPE_WARN,
+    LOGTYPE_ERROR,
+    LOGTYPE_FAIL,
+  };
+  void Write(LogType type,
+      const char* fname,
+      int lineno,
+      const char* format, ...);
 };
 
 }
 
-#endif  // __EL_INTERNAL_HEADER_H__
+#define LOG_DBG(fmt, ...)\
+  el::Logging::instance().Write(el::Logging::LogType::LOGTYPE_DEBUG, \
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
+#define LOG_MSG(fmt, ...)\
+  el::Logging::instance().Write(el::Logging::LogType::LOGTYPE_MESSAGE, \
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
+#define LOG_WARN(fmt, ...)\
+  el::Logging::instance().Write(el::Logging::LogType::LOGTYPE_WARN, \
+      __FILE__, __LINE__,  (fmt), ##__VA_ARGS__)
+#define LOG_ERROR(fmt, ...)\
+  el::Logging::instance().Write(el::Logging::LogType::LOGTYPE_ERROR, \
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
+#define LOG_FAIL(fmt, ...)\
+  el::Logging::instance().Write(el::Logging::LogType::LOGTYPE_FAIL, \
+      __FILE__, __LINE__, (fmt), ##__VA_ARGS__)
+
+#endif  // __EL_LOGGING_HEADER_H__

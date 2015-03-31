@@ -24,45 +24,35 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __EL_INTERNAL_HEADER_H__
-#define __EL_INTERNAL_HEADER_H__
-
-#include "el_buffer.h"
-#include "el_socket.h"
+#ifndef __EL_LINUX_EPOLL_HEADER_H__
+#define __EL_LINUX_EPOLL_HEADER_H__
 
 namespace el {
 
-enum class EventType : int {
-  EVENTTYPE_UNKNOWN = 0x00,
-  EVENTTYPE_READ    = 0x01,
-  EVENTTYPE_WRITE   = 0x02,
-};
+class Epoll : public Poller, private UnCopyable {
+  enum {
+    EPOLL_COUNT = 32000,
+    EVENT_COUNT = 4096,
+  };
 
-class Connector;
-struct Poller;
-
-struct Dispatcher {
-  virtual ~Dispatcher(void) {}
-  virtual bool DispatchReader(Poller& poller, Connector& c) = 0;
-  virtual bool DispatchWriter(Poller& poller, Connector& c) = 0;
-};
-
-struct ConnectorHolder {
-  virtual ~ConnectorHolder(void) {}
-  virtual void CloseAll(void) = 0;
-  virtual Connector& Insert(int fd) = 0;
-  virtual void Remove(int fd) = 0;
-};
-
-struct Poller {
-  virtual ~Poller(void) {}
-  virtual bool Insert(Connector& c) = 0;
-  virtual void Remove(Connector& c) = 0;
-  virtual bool AddEvent(Connector& c, EventType event) = 0;
-  virtual bool DelEvent(Connector& c, EventType event) = 0;
-  virtual bool Dispatch(Dispatcher& dispatcher, uint32_t timeout) = 0;
+  int epoll_fd_;
+  uint32_t event_count_;
+  struct epoll_event* events_;
+public:
+  Epoll(void);
+  ~Epoll(void);
+public:
+  virtual bool Insert(Connector& c);
+  virtual void Remove(Connector& c);
+  virtual bool AddEvent(Connector& c, EventType event);
+  virtual bool DelEvent(Connector& c, EventType event);
+  virtual bool Dispatch(Dispatcher& dispather, uint32_t timeout);
+private:
+  bool Init(void);
+  void Destroy(void);
+  bool Regrow(void);
 };
 
 }
 
-#endif  // __EL_INTERNAL_HEADER_H__
+#endif  // __EL_LINUX_EPOLL_HEADER_H__
