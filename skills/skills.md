@@ -298,8 +298,15 @@
     * Last    (a + b)(c + d)
                    |______|
 
-
 ## **20. Python logging**
         logger = logging.getLogger(logger_name)
         logging.basicConfig(level=logging.INFO)
         logger.info(logging_infomation)
+
+## **21. lua skill**
+> ### **1) string**
+    1) 内部有一个hash table来存储字符串
+    2) 对每一个数字进行hash得到一个key
+    3) 字符串只读，修改的时候会创建一个新字符串
+    4) 频繁修改字符串会导致频繁的hash，很耗时
+    5) 尽量不要新构建字符，多个字符要构成一个大字符的时候用table.concat
