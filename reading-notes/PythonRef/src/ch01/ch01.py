@@ -50,7 +50,16 @@ def listing():
     [sys.stdout.write(line) for line in file_obj.readlines()]
     file_obj.close()
 
+def yield_func():
+    def counting(n):
+        while n > 0:
+            yield n
+            n -= 1
+    for c in counting(5):
+        print (c)
+
 if __name__ == '__main__':
     # file_reading()
     # echoing()
-    listing()
+    # listing()
+    yield_func()
