@@ -58,8 +58,23 @@ def yield_func():
     for c in counting(5):
         print (c)
 
+def coroutine_func():
+    def print_matches():
+        while True:
+            line = (yield)
+            print (line)
+    m = print_matches()
+    m.__next__()
+    while True:
+        text = input('please input lines >>> ')
+        if text == 'exit':
+            m.close()
+            break
+        m.send(text)
+
 if __name__ == '__main__':
     # file_reading()
     # echoing()
     # listing()
-    yield_func()
+    # yield_func()
+    coroutine_func()
