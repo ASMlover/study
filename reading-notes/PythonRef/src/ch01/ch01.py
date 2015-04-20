@@ -72,9 +72,30 @@ def coroutine_func():
             break
         m.send(text)
 
+def class_object():
+    class stack(list):
+        def push(self, x):
+            self.append(x)
+
+    s1 = stack()
+    s1.push(1)
+    s1.push(2)
+    s1.push(3)
+    print ('s1 => ', s1)
+
+    s2 = stack()
+    s2.push(6)
+    s2.push(7)
+    s2.push(8)
+    print ('s2 => ', s2)
+
+    s = s1 + s2
+    print ('s => ', s)
+
 if __name__ == '__main__':
     # file_reading()
     # echoing()
     # listing()
     # yield_func()
-    coroutine_func()
+    # coroutine_func()
+    class_object()
