@@ -92,10 +92,42 @@ def class_object():
     s = s1 + s2
     print ('s => ', s)
 
+def with_func():
+    import sys
+    file = open('ch01.py', 'r')
+    with file:
+        [sys.stdout.write(line) for line in file.readlines()]
+
 if __name__ == '__main__':
-    # file_reading()
-    # echoing()
-    # listing()
-    # yield_func()
-    # coroutine_func()
-    class_object()
+    import sys
+
+    def ch01_help():
+        print ('********************* Help ********************')
+        print ('1 => file reading sample')
+        print ('2 => echo sample')
+        print ('3 => list sample')
+        print ('4 => yield sample')
+        print ('5 => coroutine sample')
+        print ('6 => class sample')
+        print ('7 => with sample')
+    if len(sys.argv) < 2:
+        ch01_help()
+        sys.exit()
+
+    option = int(sys.argv[1])
+    if option == 1:
+        file_reading()
+    elif option == 2:
+        echoing()
+    elif option == 3:
+        listing()
+    elif option == 4:
+        yield_func()
+    elif option == 5:
+        coroutine_func()
+    elif option == 6:
+        class_object()
+    elif option == 7:
+        with_func()
+    else:
+        ch01_help()
