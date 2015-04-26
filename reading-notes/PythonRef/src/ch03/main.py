@@ -59,5 +59,18 @@ def object_type():
     if isinstance(a, dict):
         print (a, 'is dict type')
 
+def object_reference_count():
+    import sys
+    def add(a, b):
+        return a + b
+
+    a = 33
+    b = 44
+    print ('%d + %d = %d <a.ref_count=>%d, b.ref_count=>%d>' % 
+            (a, b, add(a, b), sys.getrefcount(a), sys.getrefcount(b)))
+    del a
+    del b
+
 if __name__ == '__main__':
-    object_type()
+    # object_type()
+    object_reference_count()
