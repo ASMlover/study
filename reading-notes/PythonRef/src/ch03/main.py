@@ -71,6 +71,14 @@ def object_reference_count():
     del a
     del b
 
+def first_type():
+    s = 'Google,100,459.54'
+    field_types = [str, int, float]
+    raw_fields = s.split(',')
+    fields = [ty(v) for ty, v in zip(field_types, raw_fields)]
+    print (fields)
+
 if __name__ == '__main__':
     # object_type()
-    object_reference_count()
+    # object_reference_count()
+    first_type()
