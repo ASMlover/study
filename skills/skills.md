@@ -315,3 +315,7 @@
     2) #取数组长度，但不是len方法
     3) #是二分法查找最后一个非nil的元素的索引
     4) 数组最好使用table.insert和table.remove
+
+## **22. svn技巧**
+    1) 删除带有@文件名的文件(在文件名尾巴加一个@即可)
+        svn rm --force "Default-568h@2x.png"@
