@@ -1,4 +1,6 @@
 # **README for tech**
 ***
 
- * a tech information of mine.
+## **What's tech**
+ * It's skills collections of mine.
+ * It's a free and open source program based FreeBSD.
