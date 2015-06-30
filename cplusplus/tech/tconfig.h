@@ -152,4 +152,6 @@
 # define TARRAY(type, name, size) type name[size]
 #endif
 
+#include "tuncopyable.h"
+
 #endif  // __TECH_CONFIG_HEADER_H__
