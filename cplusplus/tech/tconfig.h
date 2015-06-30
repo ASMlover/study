@@ -105,7 +105,7 @@
 #define TASSERT(condition) do {\
   if (!(condition)) {\
     fprintf(stderr, \
-        "[%s:%d] Assesion failed in %s(): %s\n", \
+        "[%s:%d] Assesion failed in %s(): `%s`\n", \
         __FILE__, \
         __LINE__, \
         __func__, \
@@ -118,7 +118,7 @@
 #define TASSERTEX(condition, message) do {\
   if (!(condition)) {\
     fprintf(stderr, \
-        "[%s:%d] Assesion failed in %s(): %s\n", \
+        "[%s:%d] Assesion failed in %s(): `%s`\n", \
         __FILE__, \
         __LINE__, \
         __func__, \
