@@ -53,6 +53,12 @@
 # define COMPILER_CLANG
 #endif
 
+#if defined(COMPILER_GCC)
+# define GCC_VER  (__GNUC__ * 100 + __GNUC_MINOR__ * 10)
+#elif defined(COMPILER_CLANG)
+# define GCC_VER  (__clang_major__ * 100 + __clang_minor__ * 10)
+#endif
+
 #if (defined(COMPILER_MSVC) && (_MSC_VER < 1700))\
   || (defined(COMPILER_GCC) && (GCC_VER < 470))\
   || (defined(COMPILER_CLANG) && (GCC_VER < 330))
