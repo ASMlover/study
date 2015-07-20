@@ -81,6 +81,7 @@ class Environment(dict):
 def standard_environment():
     import math
     import operator as op
+    import sys
     env = Environment()
     env.update(vars(math))
     env.update({
@@ -114,6 +115,7 @@ def standard_environment():
         'procedure?': callable, 
         'round': round, 
         'symbol?': lambda x: isinstance(x, Symbol),
+        'exit': sys.exit,
     })
     return env
 
@@ -137,7 +139,7 @@ def eval(x, env=global_env):
         return exp
     elif x[0] == 'if':
         (_, test, conseq, alt) = x
-        exp = (conseq if eval(text, env) else alt)
+        exp = (conseq if eval(test, env) else alt)
         return eval(exp, env)
     elif x[0] == 'define':
         (_, var, exp) = x
