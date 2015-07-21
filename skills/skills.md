@@ -319,3 +319,9 @@
 ## **22. svn技巧**
     1) 删除带有@文件名的文件(在文件名尾巴加一个@即可)
         svn rm --force "Default-568h@2x.png"@
+
+## **23. SecureCRT密钥转为Putty密钥**
+    1) 在SecureCRT
+        工具 -> 转换私钥为OpenSSH格式
+    2) 打开puttygen.exe
+        转换 -> 导入密钥 -> 生成 -> 保存私钥
