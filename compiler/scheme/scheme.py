@@ -28,6 +28,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import sys
+
 Symbol = str
 List = list
 Number = (int, float)
@@ -38,6 +40,13 @@ except NameError:
     def apply(f, *args, **kwargs):
         return f(*args, **kwargs)
 
+def get_input(*args, **kwargs):
+    ''' read a string from standard input '''
+    if sys.version[0] == '2':
+        return raw_input(*args, **kwargs)
+    else:
+        return input(*args, **kwargs)
+
 # parsing
 def atom(token):
     try:
@@ -46,7 +55,12 @@ def atom(token):
         try:
             return float(token)
         except ValueError:
-            return Symbol(token)
+            if token == '#t':
+                return True
+            elif token == '#f':
+                return False
+            else:
+                return Symbol(token)
 
 def read_from_tokens(tokens):
     if len(tokens) == 0:
@@ -150,6 +164,9 @@ def eval(x, env=global_env):
     elif x[0] == 'lambda':
         (_, params, body) = x
         return Procedure(params, body, env)
+    elif x[0] == 'display':
+        (_, exp) = x
+        print(eval(exp, env))
     else:
         proc = eval(x[0], env)
         args = [eval(exp, env) for exp in x[1:]]
@@ -164,10 +181,14 @@ def lispstr(exp):
 
 def repl(prompt='scheme>>>'):
     while True:
-        v = eval(parse(input(prompt)))
+        v = eval(parse(get_input(prompt)))
         if v is not None:
             print(lispstr(v))
 
+def eval_loop(program):
+    env = Environment()
+    for exp in program:
+        eval(exp, env)
 
 if __name__ == '__main__':
     repl()
