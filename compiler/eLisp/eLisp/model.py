@@ -58,35 +58,26 @@ class BaseType(object):
 
 class Number(BaseType):
     def __str__(self):
-        return str(self.value)
+        return str(self.val)
 
 class Boolean(BaseType):
     def __str__(self):
-        return '#t' if self.value else '#f'
+        return '#t' if self.val else '#f'
 
     def __nonzero__(self):
-        return self.value
+        return self.val
 
 class Character(BaseType):
     def __str__(self):
-        return '#\\%s' % str(self.value)
+        return '#\\%s' % str(self.val)
 
 class String(BaseType):
     def __str__(self):
-        return '"%s"' % str(self.value)
+        return '"%s"' % str(self.val)
 
-class Symbol(object):
-    def __init__(self, name):
-        self.name = name
-
+class Symbol(BaseType):
     def __str__(self):
-        return self.name
-
-    def __eq__(self, other):
-        return isinstance(other, Symbol) and self.name == other.name
-
-    def __nonzero__(self):
-        return True
+        return self.val
 
 class EmptyList(object):
     def __str__(self):
