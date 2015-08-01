@@ -30,8 +30,8 @@
 
 from eLisp.model import Symbol
 from eLisp.expr.lambdaexpr import make_lambda
-from eLisp.expr.util import (is_tagged_list, 
-        is_symbol, cadr, caadr, caddr, cdadr, cddr)
+from eLisp.expr.util import (
+        is_tagged_list, is_symbol, cadr, caadr, caddr, cdadr, cddr)
 
 def is_definition(expr):
     return is_tagged_list(expr, Symbol('define'))
