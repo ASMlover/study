@@ -75,6 +75,9 @@ def is_primitive_procedure(expr):
     return is_tagged_list(expr, Symbol('primitive'))
 
 def primitive_implementation(expr):
+    return cadr(expr)
+
+def primitive_procedure_names():
     return [name for name, _ in BUILTIN_PROCEDURES]
 
 def primitive_procedure_values():
