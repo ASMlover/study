@@ -49,7 +49,37 @@ class Interpreter(object):
         return self._eval(expr, self.env)
 
     def _eval(self, expr, env):
-        pass
+        if selfeval.is_self_evaluating(expr):
+            return expr
+        elif quote.is_quoted(expr):
+            return quote.text_of_quotation(expr)
+        elif definition.is_definition(expr):
+            return self._eval_definition(expr, env)
+        elif sequence.is_begin(expr):
+            return self._eval_sequence(sequence.begin_actions(expr), env)
+        elif binding.is_let_binding(expr):
+            return self._eval_binding(expr, env)
+        elif variable.is_variable(expr):
+            return lookup_variable_value(expr, env)
+        elif assignment.is_assignment(expr):
+            return self._eval_assignment(expr, env)
+        elif conditional.is_if(expr):
+            return self._eval_if(expr, env)
+        elif conditional.is_cond(expr):
+            return self._eval(conditional.cond_to_if(expr), env)
+        elif conditional.is_and(expr):
+            return self._eval_and(expr, env)
+        elif conditional.is_or(expr):
+            return self._eval_or(expr, env)
+        elif lambdaexpr.is_lambda(expr):
+            return procedure.make_procedure(
+                    lambdaexpr.lambda_parameters(expr), 
+                    lambdaexpr.lambda_body(expr), 
+                    env)
+        elif procedure.is_application(expr):
+            return self._apply(
+                    self._eval(procedure.operator(expr), env), 
+                    self._list_of_values(procedure.operands(expr), env))
 
     def _eval_definition(self, expr, env):
         define_variable(
