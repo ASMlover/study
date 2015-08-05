@@ -59,23 +59,23 @@ class Environment(object):
 
         return None
 
-    def setup_environment():
-        bindings = dict(zip(
-            primitive_procedure_names(), primitive_procedure_values()))
-        return Environment(bindings=bindings)
+def setup_environment():
+    bindings = dict(zip(
+        primitive_procedure_names(), primitive_procedure_values()))
+    return Environment(bindings=bindings)
 
-    def define_variable(var, val, env):
-        env.define_variable(var, val)
+def define_variable(var, val, env):
+    env.define_variable(var, val)
 
-    def lookup_variable_value(var, env):
-        val = env.load(var)
-        if val is None:
-            raise NameError('Unbound variable: %s' % var)
-        return val
+def lookup_variable_value(var, env):
+    val = env.load(var)
+    if val is None:
+        raise NameError('Unbound variable: %s' % var)
+    return val
 
-    def extend_environment(variables, values, env):
-        bindings = dict(zip(
-            [var.name for var in pair_to_list(variables)], 
-            pair_to_list(values)))
-        env = Environment(parent=env, bindings=bindings)
-        return env
+def extend_environment(variables, values, env):
+    bindings = dict(zip(
+        [var.name for var in pair_to_list(variables)], 
+        pair_to_list(values)))
+    env = Environment(parent=env, bindings=bindings)
+    return env
