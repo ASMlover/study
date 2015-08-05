@@ -83,12 +83,12 @@ class Lexer(object):
         while True:
             match = (IS_WHITESPACE(buffer, self.pos) or 
                     IS_COMMENT(buffer, self.pos))
-            is match is not None:
+            if match is not None:
                 self.pos = match.end()
             else:
                 break
 
-        is self.pos >= end:
+        if self.pos >= end:
             return Token(tokens.EOF, 'EOF')
 
         match = regexp.match(buffer, self.pos)
