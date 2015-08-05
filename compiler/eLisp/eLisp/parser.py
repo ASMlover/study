@@ -31,7 +31,7 @@
 import itertools
 
 from eLisp import tokens
-from eLisp import (
+from eLisp.model import (
         Number, Boolean, Character, String, Symbol, Pair, EmptyList)
 
 class ParserException(Exception):
@@ -89,7 +89,7 @@ class Parser(object):
     def _list(self):
         result = []
         if self._lookahead_type(0) == tokens.QUOTE:
-            result self._abbreviation()
+            return self._abbreviation()
         self._match(tokens.LPAREN)
 
         if self._lookahead_type(0) == tokens.RPAREN:
