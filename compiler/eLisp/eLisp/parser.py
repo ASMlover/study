@@ -149,6 +149,7 @@ class Parser(object):
         if self.pos == len(self.lookhead) and not self._is_speculating():
             self.lookhead = []
             self.pos = 0
+        self._sync(1)
 
     def _is_speculating(self):
         return bool(self.marks)
