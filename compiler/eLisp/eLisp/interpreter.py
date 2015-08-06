@@ -28,8 +28,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import readline
-
 from eLisp.lexer import Lexer
 from eLisp.parser import Parser
 from eLisp.model import Symbol, Boolean, EmptyList
@@ -158,3 +156,33 @@ class Interpreter(object):
                         procedure.procedure_parameters(proc), 
                         args, 
                         procedure.procedure_environment(proc)))
+
+
+def main():
+    interpreter = Interpreter()
+    while True:
+        try:
+            buffer = input('eLisp> ')
+        except EOFError:
+            print()
+            break
+        lexer = Lexer(buffer)
+
+        try:
+            exprs = Parser(lexer).parse()
+            if not exprs:
+                continue
+            expr = exprs[0]
+
+            if is_load(expr):
+                load(interpreter, expr)
+                continue
+
+            result_expr = interpreter.interpret(expr)
+            if procedure.is_compound_procedure(result_expr):
+                print (procedure.get_procedure_repr(result_expr))
+            else:
+                print (result_expr)
+        except Exception as e:
+            print (str(e))
+            continue
