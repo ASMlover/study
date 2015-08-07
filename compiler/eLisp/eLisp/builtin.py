@@ -28,6 +28,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import sys
 import operator as op
 import functools as ft
 
@@ -35,7 +36,7 @@ from eLisp.model import Number, Boolean, Pair, EmptyList
 from eLisp.expr.util import cdr
 
 def _preform_arithmetic_function(func, *args):
-    return Number(reduce(func, [int(arg.val) for arg in args]))
+    return Number(ft.reduce(func, [int(arg.val) for arg in args]))
 
 builtin_add = ft.partial(_preform_arithmetic_function, op.add)
 builtin_sub = ft.partial(_preform_arithmetic_function, op.sub)
@@ -120,6 +121,9 @@ def builtin_length(*args):
 def builtin_even_p(*args):
     return Boolean(args[0].val % 2 == 0)
 
+def builtin_exit_p(*args):
+    sys.exit()
+
 BUILTIN_PROCEDURES = [
     ('pair?',   builtin_pair_p),
     ('eq?',     builtin_eq_p),
@@ -135,6 +139,7 @@ BUILTIN_PROCEDURES = [
     ('exp',     builtin_exp),
     ('length',  builtin_length),
     ('even?',   builtin_even_p),
+    ('exit',    builtin_exit_p),
     ('+',       builtin_add),
     ('-',       builtin_sub),
     ('*',       builtin_mul),
