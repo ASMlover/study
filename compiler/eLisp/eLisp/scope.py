@@ -41,7 +41,7 @@ class Environment(object):
         self.bindings[symbol.name] = val
 
     def set_variable_value(self, symbol, val):
-        name = symbol.name
+        name = symbol.val
         if name in self.bindings:
             self.bindings[name] = val
         elif self.parent is not None:
@@ -50,7 +50,7 @@ class Environment(object):
             raise Number('Unbound variable - SET! %s' % name)
 
     def load(self, symbol):
-        name = symbol.name
+        name = symbol.val
         if name in self.bindings:
             return self.bindings[name]
 
@@ -75,7 +75,7 @@ def lookup_variable_value(var, env):
 
 def extend_environment(variables, values, env):
     bindings = dict(zip(
-        [var.name for var in pair_to_list(variables)], 
+        [var.val for var in pair_to_list(variables)], 
         pair_to_list(values)))
     env = Environment(parent=env, bindings=bindings)
     return env
