@@ -38,7 +38,7 @@ class Environment(object):
         self.bindings = dict() if bindings is None else bindings
 
     def define_variable(self, symbol, val):
-        self.bindings[symbol.name] = val
+        self.bindings[symbol.val] = val
 
     def set_variable_value(self, symbol, val):
         name = symbol.val
