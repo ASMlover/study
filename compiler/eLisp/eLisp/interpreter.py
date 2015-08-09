@@ -28,6 +28,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import sys
 from eLisp.lexer import Lexer
 from eLisp.parser import Parser
 from eLisp.model import Symbol, Boolean, EmptyList
@@ -157,12 +158,17 @@ class Interpreter(object):
                         args, 
                         procedure.procedure_environment(proc)))
 
+def get_input(*args):
+    if sys.version[0] == '2':
+        return raw_input(*args)
+    else:
+        return input(*args)
 
 def main():
     interpreter = Interpreter()
     while True:
         try:
-            buffer = input('eLisp> ')
+            buffer = get_input('eLisp> ')
         except EOFError:
             print()
             break
