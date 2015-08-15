@@ -74,7 +74,7 @@ class Reader(object):
                     expr.append(token)
 
                 token = self.get_token()
-            return Lisp(expr)
+            return List(expr)
         else:
             return token
 

@@ -98,6 +98,6 @@ class List(Sequence):
             return '()'
 
         result = '(%s' % self.data[0]
-        for e in selfd.data[1:]:
+        for e in self.data[1:]:
             result = '%s %s' % (result, e)
         return result + ')'
