@@ -70,8 +70,7 @@ class String(Atom, Sequence):
         return self
 
     def cons(self, e):
-        if e.__class__ != self.__class__ and 
-            e.__class__ != Symbol.__class__:
+        if e.__class__ != self.__class__ and e.__class__ != Symbol.__class__:
             raise UnimplementedFunctionError(
                     'Cannot cons a string and a ', 
                     e.__class__.__name__)

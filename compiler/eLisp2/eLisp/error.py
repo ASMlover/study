@@ -49,5 +49,4 @@ class EvaluationError(Error):
         self.message = message
 
     def __str__(self):
-        return self.message + ', ' + repr(self.args) + 
-            ' in environment ' + self.env.level
+        return self.message + ', ' + repr(self.args) + ' in environment ' + self.env.level

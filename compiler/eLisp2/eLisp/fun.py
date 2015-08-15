@@ -59,8 +59,7 @@ class Lambda(Eval):
         the input values.
         """
         for i in range(len(values)):
-            containing_env.environment.binds[self.names[i].data] = 
-                values[i].eval(containing_env.env)
+            containing_env.environment.binds[self.names[i].data] = values[i].eval(containing_env.env)
 
     def push_bindings(self, containing_env, values):
         containing_env.push()
@@ -79,7 +78,7 @@ class Lambda(Eval):
         
         result = FALSE
         for form in self.body:
-            result = form.eval(ELISP.environment)
+            result = form.eval(ELISP.env)
         
         ELISP.pop()
         return result
