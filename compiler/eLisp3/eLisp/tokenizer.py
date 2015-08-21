@@ -99,3 +99,66 @@ class State(object):
     def __repr__(self):
         return 'TokenizerState state=%s {index=%d, char=%c}' % (
                 self.state_name(self.state), self.index, self.char)
+
+def tokenize(s):
+    s.strip()
+    s = s + ' '
+
+    state = State()
+    token = ''
+
+    for i, c in enumerate(s):
+        state.index = i
+        state.char = c
+
+        logger.debug('token = `%s`, state = %r' % (token, state))
+
+        if state.is_char or state.is_string_char:
+            logger.debug('char|string_char')
+            the_char = {
+                'n': '\n',
+                'r': '\r',
+                't': '\t',
+            }.get(c, c)
+            if state.is_string_char:
+                c = the_char
+                state.set(state.STATE_STRING)
+                token += c
+            else:
+                state.set(state.STATE_NONE)
+                yield (TOKEN_CHAR, the_char)
+                token = ''
+        elif state.is_string:
+            logger.debug('string')
+            if c = '"':
+                state.set(state.STATE_NONE)
+                yield (TOKEN_STRING, token)
+                token = ''
+            elif c = '\\':
+                state.set(state.STATE_STRING_CHAR)
+            else:
+                token += c
+        elif state.is_symbol:
+            logger.debug('symbol')
+            if not REGEX_NUMBER.match(c) and not REGEX_SYMBOL.match(c):
+                if REGEX_NUMBER.match(token):
+                    yield (TOKEN_NUMBER, token)
+                elif REGEX_SYMBOL.match(token):
+                    yield (TOKEN_SYMBOL, token)
+                else:
+                    yield (TOKEN_UNKNOWN, token)
+                state.set(state.STATE_NONE)
+                token = ''
+            else:
+                token += c
+        elif c in '\t\r\n':
+            logger.debug('whitespace')
+        elif c == '(':
+            logger.debug('TOKEN_LPAREN')
+            yield (TOKEN_LPAREN, c)
+        elif c == ')':
+            yield (TOKEN_RPAREN, c)
+        elif c == '\'':
+            yield (TOKEN_QUOTE, c)
+        elif c == '\\':
+            state.set(state.STATE_CHAR)
