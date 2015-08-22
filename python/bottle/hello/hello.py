@@ -31,7 +31,7 @@
 from bottle import route, run
 
 @route('/')
-@route('/hello/<name>')
+@route('/hello/<name:re>')
 def index(name='unknown'):
     return 'Hello, Mr.%s, welcome to Bottle!' % name
 
