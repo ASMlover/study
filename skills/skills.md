@@ -325,3 +325,27 @@
         工具 -> 转换私钥为OpenSSH格式
     2) 打开puttygen.exe
         转换 -> 导入密钥 -> 生成 -> 保存私钥
+
+## **24. Boost相关**
+> ### **24.1 Boost编译**
+    1) 打开VS2013开发人员命令提示
+    2) 进入boost目录
+    3) \> bootstrap.bat
+    4) \> bjam.exe stage --toolset=msvc-12.0 --stagedir=".\stage\x86" 
+          link=static runtime-link=shared threading=multi debug release
+    5) \> bjam.exe stage --toolset=msvc-12.0 --stagedir=".\stage\x64" 
+          link=static runtime-link=shared threading=multi debug release
+          address-model=64
+    6) bjam参数说明：
+        * stage/install: stage只生成(dll/lib), install还会生成包含头文件的
+                         include目录；
+        * toolset: 指定编译器(gcc, clang, msvc-12.0)；
+        * without/with: 选择不编译/编译哪些库，默认全编译；
+        * stagedir/prefix: stage时使用stagedir，install时使用prefix，编译生
+                           成文件的路径；
+        * build-dir: 编译生成的中间文件的路径；默认是bin.v2；
+        * link: 生成动态链接库/静态链接库；动态库需要使用shared方式；
+        * runtime-link: 动态/静态链接C/C++运行时库，也有shared和static两种方
+                        式；
+        * threading: 单/多线程编译(multi/single)；
+        * debug/release: 编译debug/release版本；
