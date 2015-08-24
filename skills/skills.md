@@ -349,3 +349,9 @@
                         式；
         * threading: 单/多线程编译(multi/single)；
         * debug/release: 编译debug/release版本；
+> ### **24.2 Boost裁剪**
+    1) 进入tools\bcp目录
+    2) \> ..\..\bjam
+    3) 回到boost目录
+    4) \> .\dist\bin\bcp boost\regex.hpp literegex
+    5) 生成的是一个裁剪后的regex
