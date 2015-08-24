@@ -355,3 +355,7 @@
     3) 回到boost目录
     4) \> .\dist\bin\bcp boost\regex.hpp literegex
     5) 生成的是一个裁剪后的regex
+    6) 在拷贝的时候需要写上build，否则bjam会被砍掉，可以多个模块一次性进行
+       裁剪：
+        \> .\dist\bin\bcp system thread smart_ptr utility build .\liteboost
+    7) 注意需要先创建liteboost目录
