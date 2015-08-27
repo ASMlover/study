@@ -349,6 +349,7 @@
                         式；
         * threading: 单/多线程编译(multi/single)；
         * debug/release: 编译debug/release版本；
+    7) 运行bootstrap必须在32位编译，否则会出错；
 > ### **24.2 Boost裁剪**
     1) 进入tools\bcp目录
     2) \> ..\..\bjam
@@ -356,6 +357,8 @@
     4) \> .\dist\bin\bcp boost\regex.hpp literegex
     5) 生成的是一个裁剪后的regex
     6) 在拷贝的时候需要写上build，否则bjam会被砍掉，可以多个模块一次性进行
-       裁剪：
-        \> .\dist\bin\bcp system thread smart_ptr utility build .\liteboost
+       裁剪，同时必须写上config，否则不能编译；
+        \> .\dist\bin\bcp smart_ptr config build .\liteboost
     7) 注意需要先创建liteboost目录
+    8) 同时编译裁剪版的时候需要写上--with-regex等指定要编译的模块，否则会造
+       成编译全部的boost模块由于是裁剪的会失败；
