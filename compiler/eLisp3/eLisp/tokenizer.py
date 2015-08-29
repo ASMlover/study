@@ -162,3 +162,13 @@ def tokenize(s):
             yield (TOKEN_QUOTE, c)
         elif c == '\\':
             state.set(state.STATE_CHAR)
+        elif c == '"':
+            token = ''
+            state.set(state.STATE_STRING)
+        elif state.state == state.STATE_NONE:
+            state.set(state.STATE_SYMBOL)
+            token += c
+    
+    if state.is_string:
+        raise TokenizerException(
+                'unexpected EOF: unterminated string.', state)
