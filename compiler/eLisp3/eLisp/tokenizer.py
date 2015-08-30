@@ -172,3 +172,12 @@ def tokenize(s):
     if state.is_string:
         raise TokenizerException(
                 'unexpected EOF: unterminated string.', state)
+
+
+if __name__ == '__main__':
+    while True:
+        try:
+            s = input('>>> ')
+            print (tuple(tokenize(s)))
+        except TokenizerException, e:
+            print ('Exception: %s state: %r' % (e.message, e.state))
