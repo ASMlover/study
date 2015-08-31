@@ -130,11 +130,11 @@ def tokenize(s):
                 token = ''
         elif state.is_string:
             logger.debug('string')
-            if c = '"':
+            if c == '"':
                 state.set(state.STATE_NONE)
                 yield (TOKEN_STRING, token)
                 token = ''
-            elif c = '\\':
+            elif c == '\\':
                 state.set(state.STATE_STRING_CHAR)
             else:
                 token += c
@@ -175,9 +175,17 @@ def tokenize(s):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s %(name)s [%(levelname)s] - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+            )
     while True:
         try:
             s = input('>>> ')
+            logger.info('input `s` is %s', s)
+            if s == 'exit' or s == 'quit':
+                break
             print (tuple(tokenize(s)))
-        except TokenizerException, e:
+        except TokenizerException as e:
             print ('Exception: %s state: %r' % (e.message, e.state))
