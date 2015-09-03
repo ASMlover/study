@@ -154,4 +154,56 @@
 #include <unordered_map>
 #include <vector>
 
+// Have our own assert, so we are sure it does not get
+// optomized away in a release build.
+#define EL_ASSERT(condition) do {\
+  if (!(condition)) {\
+    fprintf(stderr, \
+        "[%s:%d] Assertion failed in %s() : %s\n", \
+        __FILE__, \
+        __LINE__, \
+        __func__, \
+        #condition);\
+    fflush(stderr);\
+    abort();\
+  }\
+} while (0)
+
+#define EL_ASSERTX(condition, message) do {\
+  if (!(condition)) {\
+    fprintf(stderr, \
+        "[%s:%d] Assertion failed in %s() : %s\n", \
+        __FILE__, \
+        __LINE__, \
+        __func__, \
+        (message));\
+    fflush(stderr);\
+    abort();\
+  }\
+} while (0)
+
+// Assertion to indicate that the given point in
+// the code should never be reached.
+#define EL_UNREACHABLE()\
+  EL_ASSERTX(false, "This line should not be reached.")
+
+#if !defined(MIN)
+# define MIN(x, y)  ((x) < (y) ? (x) : (y))
+#endif
+
+#if !defined(MAX)
+# define MAX(x, y)  ((x) > (y) ? (x) : (y))
+#endif
+
+#if defined(EUTIL_OS_WIN)
+# ifndef snprintf
+#   define snprintf _snprintf
+# endif
+
+# define EL_ARRAY(type, name, size)\
+  type* name = (type*)_alloca((size) * sizeof(type))
+#else
+# define EL_ARRAY(type, name, size) type name[size]
+#endif
+
 #endif  // __EUTIL_HEADER_H__
