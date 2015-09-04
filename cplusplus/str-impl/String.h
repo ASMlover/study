@@ -76,6 +76,9 @@ public:
   bool operator==(const char* text, uint32_t length) = const;
   bool operator==(const uint8_t* data, uint32_t length) = const;
 
+  char operator[](uint32_t index) const;
+  char& operator[](uint32_t index);
+
   void Set(const char* text);
   void Set(const char* text, uint32_t length);
   void Set(const uint8_t* data, uint32_t length);
@@ -175,6 +178,49 @@ bool String::IsEmpty(void) const {
 
 void String::Clear(void) {
   Reserve(0);
+}
+
+String& String::operator=(const String& text) {
+  if (str_record_ != text.str_record_) {
+    DecRef();
+    str_record_ = text.str_record_;
+    ++str_record_->ref_count;
+  }
+
+  return *this;
+}
+
+String& String::operator=(const char* text) {
+  DecRef();
+  str_record_ = GetNullStringRecord();
+  ++str_record_->ref_count;
+  Set(text);
+
+  return *this;
+}
+
+String& String::operator=(const char* text, uint32_t length) {
+  DecRef();
+  str_record_ = GetNullStringRecord();
+  ++str_record_->ref_count;
+  Set(text, length);
+
+  return *this;
+}
+
+String& String::operator=(const uint8_t* data, uint32_t length) {
+  DecRef();
+  str_record_ = GetNullStringRecord();
+  ++str_record_->ref_count;
+  Set(data, length);
+
+  return *this;
+}
+
+String String::operator+(const String& text) {
+  String result(*this);
+  // append
+  return std::move(result);
 }
 
 #endif  // __STRING_IMPL_HEADER_H__
