@@ -35,14 +35,6 @@
 # endif
 #endif
 
-#ifndef ESTL_DEBUGPARAMS_LEVEL
-# if ESTL_DEBUG
-#   define ESTL_DEBUGPARAMS_LEVEL 2
-# else
-#   define ESTL_DEBUGPARAMS_LEVEL 0
-# endif
-#endif
-
 #ifndef ESTL_NAME_ENABLED
 # define ESTL_NAME_ENABLED ESTL_DEBUG
 #endif
@@ -63,10 +55,6 @@
 
 #ifndef ESTL_ASSERT_ENABLED
 # define ESTL_ASSERT_ENABLED ESTL_DEBUG
-#endif
-
-#ifndef ESTL_EMPTY_REFERENCE_ASSERT_ENABLED
-# define ESTL_EMPTY_REFERENCE_ASSERT_ENABLED ESTL_ASSERT_ENABLED
 #endif
 
 #ifndef ESTL_ASSERT_FAIL_DEFINED
@@ -97,32 +85,8 @@ namespace estl {
 # endif
 #endif
 
-#if !defined(ESTL_CT_ASSERT)
-# if defined(ESTL_DEBUG)
-    template<bool>  struct ESTL_CT_ASSERT_FAIL;
-    template<>      struct ESTL_CT_ASSERT_FAIL<true> {enum {value = 1};};
-    template<int x> struct ESTL_CT_ASSERT_FAIL {};
-
-#   define ESTL_PREPROCESSOR_JOIN(a, b)   ESTL_PREPROCESSOR_JOIN1(a, b)
-#   define ESTL_PREPROCESSOR_JOIN1(a, b)  ESTL_PREPROCESSOR_JOIN2(a, b)
-#   define ESTL_PREPROCESSOR_JOIN2(a, b)  a##b
-
-// TODO:
-# else
-#   define ESTL_CT_ASSERT(expr)
-# endif
-#endif
-
-#ifndef ESTL_ALLOC_COPY_ENABLED
-# define ESTL_ALLOC_COPY_ENABLED 0
-#endif
-
-#ifndef ESTL_FIXED_SIZE_TRACKING_ENABLED
-# define ESTL_FIXED_SIZE_TRACKING_ENABLED ESTL_DEBUG
-#endif
-
 #ifndef ESTL_MAX_STACK_USAGE
-# define ESTL_MAX_STACK_USAGE 4000
+# define ESTL_MAX_STACK_USAGE (4000)
 #endif
 
 #ifndef ESTL_AddRef
@@ -133,23 +97,23 @@ namespace estl {
 #endif
 
 #ifndef ESTL_Alloc
-# define ESTL_Alloc(allocator, n) (allocator).allocate((n))
+# define ESTL_Alloc(allocator, n) (allocator).Allocate((n))
 #endif
 
 #ifndef ESTL_AllocFlags
-# define ESTL_AllocFlags(allocator, n, flags) (allocator).allocate((n), (flags))
+# define ESTL_AllocFlags(allocator, n, flags) (allocator).Allocate((n), (flags))
 #endif
 
 #ifndef ESTL_AllocAligned
-# define ESTL_AllocAligned(allocator, n, alignment, offset) (allocator).allocate((n), (alignment), (offset))
+# define ESTL_AllocAligned(allocator, n, alignment, offset) (allocator).Allocate((n), (alignment), (offset))
 #endif
 
 #ifndef ESTL_Free
-# define ESTL_Free(allocator, p, size) (allocator).deallocate((p), (size))
+# define ESTL_Free(allocator, p, size) (allocator).Deallocate((p), (size))
 #endif
 
 #ifndef ESTL_AllocatorType
-# define ESTL_AllocatorType estl::allocator
+# define ESTL_AllocatorType estl::Allocator
 #endif
 
 #ifndef ESTL_AllocatorDefault
