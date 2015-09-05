@@ -35,6 +35,22 @@
 # endif
 #endif
 
+#ifndef ESTL_DEBUGPARAMS_LEVEL
+# if ESTL_DEBUG
+#   define ESTL_DEBUGPARAMS_LEVEL 2
+# else
+#   define ESTL_DEBUGPARAMS_LEVEL 0
+# endif
+#endif
+
+#ifndef ESTL_DLL
+# if defined(EVIL_DLL)
+#   define ESTL_DLL 1
+# else
+#   define ESTL_DLL 0
+# endif
+#endif
+
 #ifndef ESTL_NAME_ENABLED
 # define ESTL_NAME_ENABLED ESTL_DEBUG
 #endif
