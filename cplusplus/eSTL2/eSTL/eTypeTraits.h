@@ -179,7 +179,7 @@ template <typename _Tp> struct TypeTraits<_Tp*> {
   typedef TrueType IsPODType;
 };
 
-#else   // ESTL_PARTIAL_SPECIALZATION
+#else  // ESTL_PARTIAL_SPECIALZATION
 
 template <> struct TypeTraits<char*> {
   typedef TrueType HasTrivialDefaultConstructor;
@@ -229,7 +229,7 @@ template <> struct TypeTraits<const unsigned char*> {
   typedef TrueType IsPODType;
 };
 
-#endif  // ESTL_PARTIAL_SPECIALZATION
+#endif // ESTL_PARTIAL_SPECIALZATION
 
 template <typename _Tp> struct IsInteger {
   typedef FalseType Integral;
