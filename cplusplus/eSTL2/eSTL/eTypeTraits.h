@@ -32,8 +32,8 @@ namespace estl {
 struct TrueType {};
 struct FalseType {};
 
-template <typename T>
-struct TypeTraits {
+template <typename _Tp> struct TypeTraits {
+  typedef TrueType  ThisDummyMemberMustBeFirst;
   typedef FalseType HasTrivialDefaultConstructor;
   typedef FalseType HasTrivialCopyConstructor;
   typedef FalseType HasTrivialAssignmentOperator;
@@ -41,8 +41,7 @@ struct TypeTraits {
   typedef FalseType IsPODType;
 };
 
-template <>
-struct TypeTraits<bool> {
+template <> struct TypeTraits<bool> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -50,8 +49,7 @@ struct TypeTraits<bool> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<char> {
+template <> struct TypeTraits<char> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -59,8 +57,7 @@ struct TypeTraits<char> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<signed char> {
+template <> struct TypeTraits<signed char> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -68,8 +65,7 @@ struct TypeTraits<signed char> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<unsigned char> {
+template <> struct TypeTraits<unsigned char> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -77,8 +73,7 @@ struct TypeTraits<unsigned char> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<wchar_t> {
+template <> struct TypeTraits<wchar_t> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -86,8 +81,7 @@ struct TypeTraits<wchar_t> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<short> {
+template <> struct TypeTraits<short> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -95,8 +89,7 @@ struct TypeTraits<short> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<unsigned short> {
+template <> struct TypeTraits<unsigned short> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -104,8 +97,7 @@ struct TypeTraits<unsigned short> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<int> {
+template <> struct TypeTraits<int> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -113,8 +105,7 @@ struct TypeTraits<int> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<unsigned int> {
+template <> struct TypeTraits<unsigned int> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -122,8 +113,7 @@ struct TypeTraits<unsigned int> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<long> {
+template <> struct TypeTraits<long> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -131,8 +121,7 @@ struct TypeTraits<long> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<unsigned long> {
+template <> struct TypeTraits<unsigned long> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -140,8 +129,7 @@ struct TypeTraits<unsigned long> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<long long> {
+template <> struct TypeTraits<long long> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -149,8 +137,7 @@ struct TypeTraits<long long> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<unsigned long long> {
+template <> struct TypeTraits<unsigned long long> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -158,8 +145,7 @@ struct TypeTraits<unsigned long long> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<float> {
+template <> struct TypeTraits<float> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -167,8 +153,7 @@ struct TypeTraits<float> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<double> {
+template <> struct TypeTraits<double> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -176,8 +161,7 @@ struct TypeTraits<double> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<long double> {
+template <> struct TypeTraits<long double> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -185,8 +169,9 @@ struct TypeTraits<long double> {
   typedef TrueType IsPODType;
 };
 
-template <typename T>
-struct TypeTraits<T*> {
+#ifdef ESTL_PARTIAL_SPECIALZATION
+
+template <typename _Tp> struct TypeTraits<_Tp*> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -194,8 +179,9 @@ struct TypeTraits<T*> {
   typedef TrueType IsPODType;
 };
 
-template <typename T>
-struct TypeTraits<const T*> {
+#else   // ESTL_PARTIAL_SPECIALZATION
+
+template <> struct TypeTraits<char*> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -203,8 +189,7 @@ struct TypeTraits<const T*> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<char*> {
+template <> struct TypeTraits<signed char*> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -212,8 +197,7 @@ struct TypeTraits<char*> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<signed char*> {
+template <> struct TypeTraits<unsigned char*> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -221,8 +205,7 @@ struct TypeTraits<signed char*> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<unsigned char*> {
+template <> struct TypeTraits<const char*> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -230,8 +213,7 @@ struct TypeTraits<unsigned char*> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<const char*> {
+template <> struct TypeTraits<const signed char*> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -239,8 +221,7 @@ struct TypeTraits<const char*> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<const signed char*> {
+template <> struct TypeTraits<const unsigned char*> {
   typedef TrueType HasTrivialDefaultConstructor;
   typedef TrueType HasTrivialCopyConstructor;
   typedef TrueType HasTrivialAssignmentOperator;
@@ -248,13 +229,62 @@ struct TypeTraits<const signed char*> {
   typedef TrueType IsPODType;
 };
 
-template <>
-struct TypeTraits<const unsigned char*> {
-  typedef TrueType HasTrivialDefaultConstructor;
-  typedef TrueType HasTrivialCopyConstructor;
-  typedef TrueType HasTrivialAssignmentOperator;
-  typedef TrueType HasTrivialDestructor;
-  typedef TrueType IsPODType;
+#endif  // ESTL_PARTIAL_SPECIALZATION
+
+template <typename _Tp> struct IsInteger {
+  typedef FalseType Integral;
+};
+
+template <> struct IsInteger<bool> {
+  typedef TrueType Integral;
+};
+
+template <> struct IsInteger<char> {
+  typedef TrueType Integral;
+};
+
+template <> struct IsInteger<signed char> {
+  typedef TrueType Integral;
+};
+
+template <> struct IsInteger<unsigned char> {
+  typedef TrueType Integral;
+};
+
+template <> struct IsInteger<wchar_t> {
+  typedef TrueType Integral;
+};
+
+template <> struct IsInteger<short> {
+  typedef TrueType Integral;
+};
+
+template <> struct IsInteger<unsigned short> {
+  typedef TrueType Integral;
+};
+
+template <> struct IsInteger<int> {
+  typedef TrueType Integral;
+};
+
+template <> struct IsInteger<unsigned int> {
+  typedef TrueType Integral;
+};
+
+template <> struct IsInteger<long> {
+  typedef TrueType Integral;
+};
+
+template <> struct IsInteger<unsigned long> {
+  typedef TrueType Integral;
+};
+
+template <> struct IsInteger<long long> {
+  typedef TrueType Integral;
+};
+
+template <> struct IsInteger<unsigned long long> {
+  typedef TrueType Integral;
 };
 
 }

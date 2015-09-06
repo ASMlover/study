@@ -31,31 +31,55 @@
 
 namespace estl {
 
-template <typename T1, typename T2>
-inline void Construct(T1* ptr1, const T2& value) {
-  new(ptr1) T1(value);
+template <typename _T1, typename _T2>
+inline void Construct(_T1* p, const _T2& value) {
+  new ((void*)p) _T1(value);
 }
 
-template <typename T>
-inline void Destroy(T* ptr) {
-  ptr->~T();
+template <typename _T1>
+inline void Construct(_T1* p) {
+  new ((void*)p) _T1();
 }
 
-template <typename ForwardIterator>
-inline void _Destroy(ForwardIterator begin, ForwardIterator end, TrueType) {
+template <typename _Tp>
+inline void Destroy(_Tp* p) {
+  p->~_Tp();
 }
 
-template <typename ForwardIterator>
-inline void _Destroy(ForwardIterator begin, ForwardIterator end, FalseType) {
+template <typename _ForwardIterator>
+inline void Destroy(_ForwardIterator begin, _ForwardIterator end) {
+  _Destroy(begin, end);
+}
+
+template <typename _ForwardIterator>
+inline void 
+_Destroy(_ForwardIterator begin, _ForwardIterator end, TrueType) {
+}
+
+template <typename _ForwardIterator>
+inline void 
+_Destroy(_ForwardIterator begin, _ForwardIterator end, FalseType) {
   for (; begin != end; ++begin)
     Destroy(&*first);
 }
 
-template <typename ForwardIterator, typename T>
-inline void _Destroy(ForwardIterator begin, ForwardIterator end) {
-  typedef typename TypeTraits<T>::IsPODType IsPODType;
-  _Destroy(begin, end, IsPODType);
+template <typename _ForwardIterator, typename _Tp>
+inline void _Destroy(_ForwardIterator begin, _ForwardIterator end, _Tp*) {
+  typedef typename TypeTraits<_Tp>::HasTrivialDestructor TrivialDestructor;
+  _Destroy(begin, end, TrivialDestructor());
 }
+
+template <typename _ForwardIterator>
+inline void _Destroy(_ForwardIterator begin, _ForwardIterator end) {
+  // _Destroy(begin, end, VALUE_TYPE(begin));
+}
+
+inline void _Destroy(char*, char*) {}
+inline void _Destroy(int*, int*) {}
+inline void _Destroy(long*, long*) {}
+inline void _Destroy(float*, float*) {}
+inline void _Destroy(double*, double*) {}
+inline void _Destroy(wchar_t*, wchar_t*) {}
 
 }
 
