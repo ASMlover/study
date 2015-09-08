@@ -34,7 +34,33 @@ size_t Alloc::heap_size_ = 0;
 Alloc::Obj* Alloc::free_list_[Alloc::FreeLists::NFREELISTS] = {0};
 
 void* Alloc::ReFill(size_t bytes) {
-  return nullptr;
+  size_t nobjs = Objs::NOBJS;
+  char*  chunk = ChunkAlloc(bytes, nobjs);
+
+  if (1 == nobjs) {
+    return chunk;
+  }
+  else {
+    Obj*  current_obj = nullptr;
+    Obj*  next_obj = nullptr;
+    Obj** free_list = free_list_ + FREELIST_INDEX(bytes);
+    Obj*  result = (Obj*)chunk;
+    *free_list = next_obj = (Obj*)(chunk + bytes);
+
+    for (auto i = 1; ; ++i) {
+      current_obj = next_obj;
+      next_obj = (Obj*)((char*)next_obj + bytes);
+      if (1 == nobjs - 1) {
+        current_obj->next = nullptr;
+        break;
+      }
+      else {
+        current_obj->next = next_obj;
+      }
+    }
+
+    return result;
+  }
 }
 
 char* Alloc::ChunkAlloc(size_t bytes, size_t& nobjs) {
