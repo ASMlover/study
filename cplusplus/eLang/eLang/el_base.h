@@ -70,5 +70,10 @@ typedef int StringId;
 #include "el_uncopyable.h"
 #include "el_ref.h"
 #include "el_array.h"
+#include "el_queue.h"
+#include "el_stack.h"
+#include "el_string.h"
+#include "el_string_table.h"
+#include "el_dictionary.h"
 
 #endif  // __EL_BASE_HEADER_H__
