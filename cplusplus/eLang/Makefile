@@ -29,7 +29,7 @@ OUT	= elang
 RM	= rm
 CC	= g++
 CFLAGS	= -g -O2 -Wall -std=c++0x
-OBJS	= $(patsubst %.cc, %.o, $(wildcard *.cc))
+OBJS	= $(patsubst %.cc, %.o, $(wildcard *.cc ./eLang/*.cc))
 
 
 all: $(OUT)
