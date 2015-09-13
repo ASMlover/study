@@ -34,7 +34,9 @@ CFLAGS	= -O2 -W3 -MDd -GS -Zi -Fd"vc.pdb" -EHsc -D_DEBUG -DEL_DEBUG\
 	-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS -wd4290
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no
-OBJS	= main.obj
+OBJS	= main.obj\
+	\
+	el_string.obj el_string_table.obj
 
 
 all: $(OUT)
@@ -50,4 +52,7 @@ $(OUT): $(OBJS)
 	$(MT) -manifest $(OUT).manifest -outputresource:$(OUT);1
 
 .cc.obj:
+	$(CC) $(CFLAGS) $<
+
+{.\eLang}.cc{}.obj:
 	$(CC) $(CFLAGS) $<

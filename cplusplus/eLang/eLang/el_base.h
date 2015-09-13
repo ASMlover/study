@@ -27,6 +27,7 @@
 #ifndef __EL_BASE_HEADER_H__
 #define __EL_BASE_HEADER_H__
 
+#include <stdarg.h>
 #include <stdlib.h>
 #include <iostream>
 #include <string>
@@ -49,7 +50,7 @@
       std::cout << "ASSERTION FAILED " << __FILE__ \
                 << ":" << __LINE__ << " - " \
                 << "Value " << (value) \
-                << " was out of range [0", << (range) \
+                << " was out of range [0, " << (range) \
                 << ")." << std::endl;\
       abort();\
     }\
