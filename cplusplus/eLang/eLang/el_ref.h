@@ -121,6 +121,11 @@ private:
 
 template <typename _Tp>
 inline std::ostream& operator<<(std::ostream& cout, const Ref<_Tp>& ref) {
+  if (!ref)
+    cout << "(nilref)";
+  else
+    cout << *ref;
+
   return cout;
 }
 
