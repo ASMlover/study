@@ -186,6 +186,10 @@ String String::SubString(int start_index, int count) const {
   return String(heap, true);
 }
 
+double String::ToNumber(void) const {
+  return atof(CString());
+}
+
 unsigned int String::Fnv1Hash(const char* text) {
   const unsigned int fnv_prime = 0x01000193;
   const unsigned char* byte = reinterpret_cast<const unsigned char*>(text);

@@ -73,6 +73,8 @@ public:
   String SubString(int start_index) const;
   String SubString(int start_index, int count) const;
 
+  double ToNumber(void) const;
+
   static unsigned int Fnv1Hash(const char* text);
   static String Format(const char* format, ...);
 private:
