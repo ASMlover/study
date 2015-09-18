@@ -68,6 +68,9 @@
 typedef int StringId;
 #define EL_NOSTRING   (-1)
 
+#undef interface
+#define interface struct
+
 #include "el_uncopyable.h"
 #include "el_ref.h"
 #include "el_array.h"
