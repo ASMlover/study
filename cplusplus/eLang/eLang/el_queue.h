@@ -82,6 +82,12 @@ public:
 
     return items_[Wrap(head_ - count_ + index)];
   }
+
+  inline const _Tp& operator[](int index) const {
+    EL_ASSERT_RANGE(index, count_);
+
+    return items_[Wrap(head_ - count_ + index)];
+  }
 private:
   inline int Wrap(int index) const {
     return (index + _N) % _N;
