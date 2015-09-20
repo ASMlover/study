@@ -36,7 +36,94 @@ bool Lexer::IsInfinite(void) const {
 }
 
 Ref<Token> Lexer::ReadToken(void) {
-  return Ref<Token>(new Token(TokenType::TOKEN_ERROR));
+  while (true) {
+    if (IsDone())
+      return Ref<Token>(new Token(TokenType::TOKEN_EOF));
+
+    if (needs_line_) {
+      Advance();
+      continue;
+    }
+
+    start_ = pos_;
+    char c = Peek();
+    switch (c) {
+    case ' ':
+    case '\t':
+      while (IsWhitespace(Peek()))
+        Advance();
+      break;
+    case '\0':
+      needs_line_ = true;
+      return Ref<Token>(new Token(TokenType::TOKEN_LINE));
+    case '(':
+      return SingleToken(TokenType::TOKEN_LEFT_PAREN);
+    case ')':
+      return SingleToken(TokenType::TOKEN_RIGHT_PAREN);
+    case '[':
+      return SingleToken(TokenType::TOKEN_LEFT_BRACKET);
+    case ']':
+      return SingleToken(TokenType::TOKEN_RIGHT_BRACKET);
+    case '{':
+      return SingleToken(TokenType::TOKEN_LEFT_BRACE);
+    case '}':
+      return SingleToken(TokenType::TOKEN_RIGHT_BRACE);
+    case '@':
+      return SingleToken(TokenType::TOKEN_AT);
+    case '.':
+      return SingleToken(TokenType::TOKEN_DOT);
+    case '#':
+      return SingleToken(TokenType::TOKEN_HASH);
+    case '|':
+      return SingleToken(TokenType::TOKEN_PIPE);
+    case ';':
+      return SingleToken(TokenType::TOKEN_SEMICOLON);
+    case ',':
+      return SingleToken(TokenType::TOKEN_LINE);
+    case '\\':
+      return SingleToken(TokenType::TOKEN_IGNORE_LINE);
+    case ':':
+      Advance();
+      if (':' == Peek())
+        return SingleToken(TokenType::TOKEN_BIND);
+      return Ref<Token>(new Token(TokenType::TOKEN_KEYWORD, ":"));
+    case '-':
+      Advance();
+      if (IsDigit(Peek()))
+        return ReadNumber();
+      return ReadOperator();
+    case '/':
+      Advance();
+      if ('/' == Peek()) {
+        needs_line_ = true;
+        return Ref<Token>(new Token(TokenType::TOKEN_LINE));
+      }
+      else if ('*' == Peek()) {
+        SkipBlockComment();
+      }
+      else {
+        return ReadOperator();
+      }
+      break;
+    case '"':
+      return ReadString();
+    default:
+      if (IsDigit(c)) {
+        return ReadNumber();
+      }
+      else if (IsAlpha(c)) {
+        return ReadName();
+      }
+      else if (IsOperator(c)) {
+        return ReadOperator();
+      }
+      else {
+        Advance();
+        return Ref<Token>(new Token(TokenType::TOKEN_ERROR,
+              String::Format("Unrecognized character \"%c\".", c)));
+      }
+    }
+  }
 }
 
 bool Lexer::IsDone(void) const {
@@ -206,9 +293,9 @@ Ref<Token> Lexer::ReadOperator(void) {
     return ReadName();
 
   String oper = line_.SubString(start_, pos_ - start_);
-  if (name == "<-")
+  if (oper == "<-")
     return Ref<Token>(new Token(TokenType::TOKEN_ARROW));
-  else if (name == "<--")
+  else if (oper == "<--")
     return Ref<Token>(new Token(TokenType::TOKEN_LONG_ARROW));
 
   return Ref<Token>(new Token(TokenType::TOKEN_OPERATOR, oper));
