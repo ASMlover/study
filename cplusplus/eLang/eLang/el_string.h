@@ -45,7 +45,7 @@ class String {
 public:
   String(void);
   explicit String(char c);
-  explicit String(const char* text);
+  String(const char* text);
   String(const String& other);
 
   bool operator<(const String& other) const;
