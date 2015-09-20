@@ -27,6 +27,7 @@
 #ifndef __EL_BASE_HEADER_H__
 #define __EL_BASE_HEADER_H__
 
+#include <ctype.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <iostream>
