@@ -32,7 +32,7 @@
 namespace el {
 
 bool Lexer::IsInfinite(void) const {
-  return true;
+  return reader_.IsInfinite();
 }
 
 Ref<Token> Lexer::ReadToken(void) {
@@ -40,57 +40,178 @@ Ref<Token> Lexer::ReadToken(void) {
 }
 
 bool Lexer::IsDone(void) const {
-  return true;
+  return needs_line_ && reader_.EndOfLines();
 }
 
 char Lexer::Peek(int ahead) const {
-  return 0;
+  if (pos_ + ahead >= line_.Length())
+    return '\0';
+  return line_[pos_ + ahead];
 }
 
 char Lexer::Advance(void) {
-  return 0;
+  char c = Peek();
+  ++pos_;
+  return c;
 }
 
 void Lexer::AdvanceLine(void) {
+  line_ = reader_.NextLine();
+  pos_ = 0;
+  start_ = 0;
+  needs_line_ = false;
 }
 
 void Lexer::SkipBlockComment(void) {
+  Advance();
+  Advance();
+
+  int nesting = 1;
+  while (nesting > 0) {
+    if (IsDone())
+      return;
+
+    if ('/' == Peek() && '*' == Peek(1)) {
+      Advance();
+      Advance();
+      ++nesting;
+    }
+    else if ('*' == Peek() && '/' == Peek(1)) {
+      Advance();
+      Advance();
+      --nesting;
+    }
+    else if ('\0' == Peek()) {
+      AdvanceLine();
+    }
+    else {
+      Advance();
+    }
+  }
 }
 
 bool Lexer::IsWhitespace(char c) const {
-  return true;
+  return (' ' == c || '\t' == c);
 }
 
 bool Lexer::IsAlpha(char c) const {
-  return true;
+  return isalpha(c) ? true : false;
 }
 
 bool Lexer::IsDigit(char c) const {
-  return true;
+  return isdigit(c) ? true : false;
 }
 
 bool Lexer::IsOperator(char c) const {
-  return true;
+  return ('\0' != c && nullptr != strchr("-+=/<>?~!$%^&*", c));
 }
 
 Ref<Token> Lexer::SingleToken(TokenType type) {
+  Advance();
   return Ref<Token>(new Token(type));
 }
 
 Ref<Token> Lexer::ReadString(void) {
-  return SingleToken(TokenType::TOKEN_ERROR);
+  Advance();
+
+  String text;
+  while (true) {
+    if (IsDone()) {
+      return Ref<Token>(new Token(
+            TokenType::TOKEN_ERROR, "Unterminated string."));
+    }
+
+    char c = Advance();
+    if ('"' == c)
+      return Ref<Token>(new Token(TokenType::TOKEN_STRING, text));
+
+    if ('\\' == c) {
+      if (IsDone()) {
+        return Ref<Token>(new Token(
+              TokenType::TOKEN_ERROR, "Unterminated string escape."));
+      }
+
+      char e = Advance();
+      switch (e) {
+      case 'n':
+        text += '\n'; break;
+      case '"':
+        text += '\"'; break;
+      case '\\':
+        text += '\\'; break;
+      case 't':
+        text += '\t'; break;
+      default:
+        return Ref<Token>(new Token(TokenType::TOKEN_ERROR, 
+              String::Format("Unrecognized escape sequence \"%c\"", e)));
+      }
+    }
+    else {
+      text += c;
+    }
+  }
 }
 
 Ref<Token> Lexer::ReadNumber(void) {
-  return SingleToken(TokenType::TOKEN_ERROR);
+  Advance();
+  while (IsDigit(Peek()))
+    Advance();
+
+  if ('.' == Peek()) {
+    Advance();
+    while (IsDigit(Peek()))
+      Advance();
+  }
+
+  String text = line_.SubString(start_, pos_ - start_);
+  return Ref<Token>(new Token(TokenType::TOKEN_NUMBER, text.ToNumber()));
 }
 
 Ref<Token> Lexer::ReadName(void) {
-  return SingleToken(TokenType::TOKEN_ERROR);
+  while (IsOperator(Peek()) || IsAlpha(Peek()) || IsDigit(Peek())) {
+    if ('/' == Peek() && '/' == Peek(1))
+      break;
+    if ('/' == Peek() && '*' == Peek(1))
+      break;
+    Advance();
+  }
+
+  TokenType type = TokenType::TOKEN_NAME;
+  if (':' == Peek()) {
+    Advance();
+    type = TokenType::TOKEN_KEYWORD;
+  }
+
+  String name = line_.SubString(start_, pos_ - start_);
+  if (name == "return")
+    return Ref<Token>(new Token(TokenType::TOKEN_RETURN));
+  else if (name == "self")
+    return Ref<Token>(new Token(TokenType::TOKEN_SELF));
+  else if (name == "undefined")
+    return Ref<Token>(new Token(TokenType::TOKEN_UNDEFINED));
+
+  return Ref<Token>(new Token(type, name));
 }
 
 Ref<Token> Lexer::ReadOperator(void) {
-  return SingleToken(TokenType::TOKEN_ERROR);
+  while (IsOperator(Peek())) {
+    if ('/' == Peek() && '*' == Peek(1))
+      break;
+    if ('/' == Peek() && '/' == Peek(1))
+      break;
+    Advance();
+  }
+
+  if (IsAlpha(Peek()))
+    return ReadName();
+
+  String oper = line_.SubString(start_, pos_ - start_);
+  if (name == "<-")
+    return Ref<Token>(new Token(TokenType::TOKEN_ARROW));
+  else if (name == "<--")
+    return Ref<Token>(new Token(TokenType::TOKEN_LONG_ARROW));
+
+  return Ref<Token>(new Token(TokenType::TOKEN_OPERATOR, oper));
 }
 
 }
