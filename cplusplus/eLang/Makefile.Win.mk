@@ -36,7 +36,8 @@ LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no
 OBJS	= main.obj\
 	\
-	el_string.obj el_string_table.obj
+	el_string.obj el_string_table.obj el_token.obj el_lexer.obj\
+	el_line_normalizer.obj el_parser_base.obj
 
 
 all: $(OUT)
