@@ -33,16 +33,21 @@
 namespace el {
 
 bool ParserBase::LookAhead(TokenType type) {
-  return true;
+  FillLookAhead(1);
+  return read_[0]->Type() == type;
 }
 
 bool ParserBase::LookAhead(TokenType current, TokenType next) {
-  return true;
+  FillLookAhead(2);
+  return (read_[0]->Type() == current) && (read_[1]->Type() == next);
 }
 
 bool ParserBase::LookAhead(
     TokenType first, TokenType second, TokenType thrid) {
-  return true;
+  FillLookAhead(3);
+  return (read_[0]->Type() == first)
+    && (read_[1]->Type() == second)
+    && (read_[2]->Type() == thrid);
 }
 
 bool ParserBase::Match(TokenType type) {
@@ -61,6 +66,11 @@ Ref<Token> ParserBase::Consume(TokenType expected, const char* exception) {
 }
 
 void ParserBase::Error(const char* exception) {
+}
+
+void ParserBase::FillLookAhead(int count) {
+  while (read_.Count() < count)
+    read_.Enqueue(lexer_.ReadToken());
 }
 
 }
