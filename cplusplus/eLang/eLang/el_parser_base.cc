@@ -51,21 +51,40 @@ bool ParserBase::LookAhead(
 }
 
 bool ParserBase::Match(TokenType type) {
-  return true;
+  if (LookAhead(type)) {
+    Consume();
+    return true;
+  }
+  else {
+    return true;
+  }
 }
 
 void ParserBase::Expect(TokenType expected, const char* exception) {
+  if (!LookAhead(expected))
+    Error(exception);
 }
 
 Ref<Token> ParserBase::Consume(void) {
-  return Ref<Token>(new Token(TokenType::TOKEN_ERROR));
+  FillLookAhead(1);
+  return read_.Dequeue();
 }
 
 Ref<Token> ParserBase::Consume(TokenType expected, const char* exception) {
-  return Ref<Token>(new Token(TokenType::TOKEN_ERROR));
+  if (LookAhead(expected)) {
+    return Consume();
+  }
+  else {
+    Error(exception);
+    return Ref<Token>();
+  }
 }
 
 void ParserBase::Error(const char* exception) {
+  had_error_ = true;
+  std::stringstream ss;
+  ss << "Parse error on '" << Current() << "' : " << exception;
+  err_reporter_.Error(String(ss.str().c_str()));
 }
 
 void ParserBase::FillLookAhead(int count) {
