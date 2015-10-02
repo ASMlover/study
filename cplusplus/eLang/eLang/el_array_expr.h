@@ -35,7 +35,7 @@ namespace el {
 class ArrayExpr : public Expr {
   Array<Ref<Expr> > elements_;
 public:
-  ArrayExpr(const Array<Ref<Expr> >& elements)
+  explicit ArrayExpr(const Array<Ref<Expr> >& elements)
     : elements_(elements) {
   }
 

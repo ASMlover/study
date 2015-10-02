@@ -68,7 +68,7 @@ class MessageExpr : public Expr {
   Ref<Expr>          receiver_;
   Array<MessageSend> messages_;
 public:
-  MessageExpr(Ref<Expr> receiver)
+  explicit MessageExpr(Ref<Expr> receiver)
     : receiver_(receiver) {
   }
 

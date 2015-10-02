@@ -36,7 +36,7 @@ namespace el {
 class BindExpr : public DefineExpr {
   Ref<Expr> target_;
 public:
-  BindExpr(Ref<Expr> target)
+  explicit BindExpr(Ref<Expr> target)
     : target_(target) {
   }
 
