@@ -25,7 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #ifndef __EL_DICTIONARY_HEADER_H__
-#define __EL_DICTIONARY_HEADER_H_
+#define __EL_DICTIONARY_HEADER_H__
 
 namespace el {
 
@@ -80,7 +80,7 @@ public:
     ++count_;
     EnsureCapacity();
 
-    int index = static_cast<int>(ket.HashCode() % 0x7fffffff) % capacity_;
+    int index = static_cast<int>(key.HashCode() % 0x7fffffff) % capacity_;
     while ((table_[index].key.Length() > 0) && (table_[index].key != key))
       index = (index + 1) % capacity_;
 
