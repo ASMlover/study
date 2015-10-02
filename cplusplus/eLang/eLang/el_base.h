@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <string>
+#include <sstream>
 
 #ifdef EL_DEBUG
 # define EL_ASSERT(condition, message) do {\

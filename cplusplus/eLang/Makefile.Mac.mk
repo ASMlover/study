@@ -27,8 +27,9 @@
 
 OUT	= el
 RM	= rm
-CC	= g++
+CC	= clang++
 CFLAGS	= -g -O2 -Wall -std=c++0x
+LDFLAGS	= -lc
 OBJS	= $(patsubst %.cc, %.o, $(wildcard *.cc ./eLang/*.cc))
 
 
@@ -41,7 +42,7 @@ clean:
 
 
 $(OUT): $(OBJS)
-	$(CC) -o $@ $^
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(OBJS): %.o: %.cc
 	$(CC) -o $*.o -c $(CFLAGS) $^
