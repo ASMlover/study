@@ -26,6 +26,14 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include "el_base.h"
 #include "el_object.h"
+#include "el_array_object.h"
+#include "el_block_object.h"
+#include "el_dynamic_object.h"
+#include "el_fiber_object.h"
+#include "el_number_object.h"
+#include "el_string_object.h"
+#include "el_interpreter.h"
+#include "el_fiber.h"
 
 namespace el {
 
@@ -36,9 +44,17 @@ Value::Value(const Value& other)
 }
 
 Value Value::GetField(int name) const {
+  DynamicObject* dynamic = AsDynamic();
+  if (nullptr == dynamic)
+    return Value();
+
+  return dynamic->GetField(name);
 }
 
 void Value::SetField(int name, const Value& value) const {
+  DynamicObject* dynamic = AsDynamic();
+  if (nullptr != dynamic)
+    dynamic->SetField(name, value);
 }
 
 void Value::SendMessage(
@@ -46,9 +62,23 @@ void Value::SendMessage(
 }
 
 Value& Value::operator=(const Value& other) {
+  if (&other != this) {
+    Clear();
+    obj_ = other.obj_;
+    if (nullptr != obj_)
+      ++obj_->ref_count_;
+  }
+
+  return *this;
 }
 
 void Value::Clear(void) {
+  if (nullptr != obj_) {
+    --obj_->ref_count_;
+    if (0 == obj_->ref_count_)
+      delete obj_;
+    obj_ = nullptr;
+  }
 }
 
 const Value& Value::Parent(void) const {
@@ -56,24 +86,34 @@ const Value& Value::Parent(void) const {
 }
 
 void Value::Trace(std::ostream& cout) const {
+  if (IsNil())
+    cout << "(nil)";
+  else
+    obj_->Trace(cout);
 }
 
 double Value::AsNumber(void) const {
+  return obj_->AsNumber();
 }
 
 String Value::AsString(void) const {
+  return obj_->AsString();
 }
 
 ArrayObject* Value::AsArray(void) const {
+  return obj_->AsArray();
 }
 
 BlockObject* Value::AsBlock(void) const {
+  return obj_->AsBlock();
 }
 
 DynamicObject* Value::AsDynamic(void) const {
+  return obj_->AsDynamic();
 }
 
 FiberObject* Value::AsFiber(void) const {
+  return obj_->AsFiber();
 }
 
 }
