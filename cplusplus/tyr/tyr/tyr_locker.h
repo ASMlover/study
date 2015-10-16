@@ -128,6 +128,12 @@ public:
   }
 };
 
+class DummyMutex : private UnCopyable {
+public:
+  void Lock(void) {}
+  void Unlock(void) {}
+};
+
 }
 
 #if defined(TYR_CPP0X)
