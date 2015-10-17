@@ -91,6 +91,12 @@
 
 #define TYR_CPP0X 1
 
+#if TYR_CPP0X != 1
+# if defined(TYR_OS_MAC)
+#   define TYR_MAC_SPINLOCK 1
+# endif
+#endif
+
 // SYSTEM INTERFACES INCLUDING HEADERS
 #if defined(TYR_OS_WIN)
 # include <Windows.h>
@@ -160,5 +166,6 @@
 
 #include "tyr_uncopyable.h"
 #include "tyr_locker.h"
+#include "tyr_atomic.h"
 
 #endif  // __TYR_HEADER_H__
