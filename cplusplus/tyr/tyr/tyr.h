@@ -167,5 +167,8 @@
 #include "tyr_uncopyable.h"
 #include "tyr_locker.h"
 #include "tyr_atomic.h"
+#include "tyr_unique_ptr.h"
+#include "tyr_smart_ptr.h"
+#include "tyr_unique_array.h"
 
 #endif  // __TYR_HEADER_H__
