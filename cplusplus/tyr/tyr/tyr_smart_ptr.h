@@ -213,7 +213,7 @@ public:
     return rc_;
   }
 
-  void __release__(void) {
+  void __release__(void) tyr_noexcept {
     ptr_ = nullptr;
     rp_  = nullptr;
     rc_  = nullptr;
