@@ -130,7 +130,7 @@ public:
   SmartPtr(const SmartPtr<U>& other) tyr_noexcept
     : ptr_(other.Get())
     , rp_(other.__rp__())
-    , rc_(other.__rc__(0)) {
+    , rc_(other.__rc__()) {
     if (nullptr != rc_)
       ++*rc_;
   }
