@@ -170,5 +170,6 @@
 #include "tyr_unique_ptr.h"
 #include "tyr_smart_ptr.h"
 #include "tyr_unique_array.h"
+#include "tyr_smart_array.h"
 
 #endif  // __TYR_HEADER_H__
