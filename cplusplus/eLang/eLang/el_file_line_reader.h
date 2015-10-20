@@ -24,47 +24,23 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "eAlloc.h"
+#ifndef __EL_FILE_LINE_READER_HEADER_H__
+#define __EL_FILE_LINE_READER_HEADER_H__
 
-namespace estl {
+#include "el_reader_base.h"
 
-char* Alloc::start_free_ = nullptr;
-char* Alloc::finish_free_ = nullptr;
-size_t Alloc::heap_size_ = 0;
-Alloc::Obj* Alloc::free_list_[Alloc::FreeLists::NFREELISTS] = {0};
+namespace el {
 
-void* Alloc::ReFill(size_t bytes) {
-  size_t nobjs = Objs::NOBJS;
-  char*  chunk = ChunkAlloc(bytes, nobjs);
+class FileLineReader : public ReaderBase {
+  std::ifstream file_;
+public:
+  FileLineReader(const String& file_name);
 
-  if (1 == nobjs) {
-    return chunk;
-  }
-  else {
-    Obj*  current_obj = nullptr;
-    Obj*  next_obj = nullptr;
-    Obj** free_list = free_list_ + FREELIST_INDEX(bytes);
-    Obj*  result = (Obj*)chunk;
-    *free_list = next_obj = (Obj*)(chunk + bytes);
-
-    for (auto i = 1; ; ++i) {
-      current_obj = next_obj;
-      next_obj = (Obj*)((char*)next_obj + bytes);
-      if (1 == nobjs - 1) {
-        current_obj->next = nullptr;
-        break;
-      }
-      else {
-        current_obj->next = next_obj;
-      }
-    }
-
-    return result;
-  }
-}
-
-char* Alloc::ChunkAlloc(size_t bytes, size_t& nobjs) {
-  return nullptr;
-}
+  virtual bool IsInfinite(void) const override;
+  virtual bool EndOfLines(void) const override;
+  virtual String NextLine(void) override;
+};
 
 }
+
+#endif  // __EL_FILE_LINE_READER_HEADER_H__

@@ -24,47 +24,72 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "eAlloc.h"
+#ifndef __EL_UNOWNED_PTR_HEADER_H__
+#define __EL_UNOWNED_PTR_HEADER_H__
 
-namespace estl {
+#include <memory>
+#include <type_traits>
 
-char* Alloc::start_free_ = nullptr;
-char* Alloc::finish_free_ = nullptr;
-size_t Alloc::heap_size_ = 0;
-Alloc::Obj* Alloc::free_list_[Alloc::FreeLists::NFREELISTS] = {0};
+namespace el {
 
-void* Alloc::ReFill(size_t bytes) {
-  size_t nobjs = Objs::NOBJS;
-  char*  chunk = ChunkAlloc(bytes, nobjs);
+template <typename T>
+class UnownedPtr {
+  T* p_ = nullptr;
+public:
+  UnownedPtr(void) = default;
 
-  if (1 == nobjs) {
-    return chunk;
+  template <typename U>
+  using IfConvertibleFrom = typename std::enable_if<std::is_convertible<U*, T*>::value>::type;
+
+  explicit UnownedPtr(T* p)
+    : p_(p) {
   }
-  else {
-    Obj*  current_obj = nullptr;
-    Obj*  next_obj = nullptr;
-    Obj** free_list = free_list_ + FREELIST_INDEX(bytes);
-    Obj*  result = (Obj*)chunk;
-    *free_list = next_obj = (Obj*)(chunk + bytes);
 
-    for (auto i = 1; ; ++i) {
-      current_obj = next_obj;
-      next_obj = (Obj*)((char*)next_obj + bytes);
-      if (1 == nobjs - 1) {
-        current_obj->next = nullptr;
-        break;
-      }
-      else {
-        current_obj->next = next_obj;
-      }
-    }
-
-    return result;
+  template <typename U, typename = IfConvertibleFrom<U> >
+  explicit UnownedPtr(U* p)
+    : p_(p) {
   }
+
+  template <typename U, typename = IfConvertibleFrom<U> >
+  UnownedPtr(const UnownedPtr<U>& p)
+    : p_(p.Get()) {
+  }
+
+  template <typename U, typename = IfConvertibleFrom<U> >
+  UnownedPtr(const std::unique_ptr<U>& p)
+    : p_(p.Get()) {
+  }
+
+  template <typename U, typename = IfConvertibleFrom<U> >
+  UnownedPtr(const std::shared_ptr<U>& p)
+    : p_(p.Get()) {
+  }
+
+  inline T* Get(void) const {
+    return p_;
+  }
+
+  inline operator T*(void) const {
+    return p_;
+  }
+
+  inline T* operator->(void) const {
+    return p_;
+  }
+
+  inline T& operator*(void) const {
+    return *p_;
+  }
+
+  inline void Reset(UnownedPtr p = nullptr) {
+    p_ = p.Get();
+  }
+
+  inline void Swap(UnownedPtr& other) {
+    std::swap(p_, other.p_);
+  }
+};
+
 }
 
-char* Alloc::ChunkAlloc(size_t bytes, size_t& nobjs) {
-  return nullptr;
-}
-
-}
+#endif  // __EL_UNOWNED_PTR_HEADER_H__

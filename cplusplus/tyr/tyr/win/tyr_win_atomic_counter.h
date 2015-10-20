@@ -24,47 +24,45 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "eAlloc.h"
+#ifndef __TYR_WIN_ATOMIC_COUNTER_HEADER_H__
+#define __TYR_WIN_ATOMIC_COUNTER_HEADER_H__
 
-namespace estl {
+namespace tyr {
 
-char* Alloc::start_free_ = nullptr;
-char* Alloc::finish_free_ = nullptr;
-size_t Alloc::heap_size_ = 0;
-Alloc::Obj* Alloc::free_list_[Alloc::FreeLists::NFREELISTS] = {0};
-
-void* Alloc::ReFill(size_t bytes) {
-  size_t nobjs = Objs::NOBJS;
-  char*  chunk = ChunkAlloc(bytes, nobjs);
-
-  if (1 == nobjs) {
-    return chunk;
+class AtomicCounter : private UnCopyable {
+  volatile long counter_;
+public:
+  explicit AtomicCounter(int counter = 0) tyr_noexcept
+    : counter_(static_cast<long>(counter)) {
   }
-  else {
-    Obj*  current_obj = nullptr;
-    Obj*  next_obj = nullptr;
-    Obj** free_list = free_list_ + FREELIST_INDEX(bytes);
-    Obj*  result = (Obj*)chunk;
-    *free_list = next_obj = (Obj*)(chunk + bytes);
 
-    for (auto i = 1; ; ++i) {
-      current_obj = next_obj;
-      next_obj = (Obj*)((char*)next_obj + bytes);
-      if (1 == nobjs - 1) {
-        current_obj->next = nullptr;
-        break;
-      }
-      else {
-        current_obj->next = next_obj;
-      }
-    }
-
-    return result;
+  int Counter(void) const tyr_noexcept {
+    return static_cast<int>(counter_);
   }
+
+  explicit operator int(void) const tyr_noexcept {
+    return static_cast<int>(counter_);
+  }
+
+  int operator++(void) {
+    return static_cast<int>(InterlockedIncrement(&counter_));
+  }
+
+  int operator++(int) {
+    int r = static_cast<int>(InterlockedIncrement(&counter_));
+    return r - 1;
+  }
+
+  int operator--(void) {
+    return static_cast<int>(InterlockedDecrement(&counter_));
+  }
+
+  int operator--(int) {
+    int r = static_cast<int>(InterlockedDecrement(&counter_));
+    return r + 1;
+  }
+};
+
 }
 
-char* Alloc::ChunkAlloc(size_t bytes, size_t& nobjs) {
-  return nullptr;
-}
-
-}
+#endif  // __TYR_WIN_ATOMIC_COUNTER_HEADER_H__

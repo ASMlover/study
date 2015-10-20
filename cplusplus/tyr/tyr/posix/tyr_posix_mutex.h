@@ -24,47 +24,51 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "eAlloc.h"
+#ifndef __TYR_POSIX_MUTEX_HEADER_H__
+#define __TYR_POSIX_MUTEX_HEADER_H__
 
-namespace estl {
+namespace tyr {
 
-char* Alloc::start_free_ = nullptr;
-char* Alloc::finish_free_ = nullptr;
-size_t Alloc::heap_size_ = 0;
-Alloc::Obj* Alloc::free_list_[Alloc::FreeLists::NFREELISTS] = {0};
-
-void* Alloc::ReFill(size_t bytes) {
-  size_t nobjs = Objs::NOBJS;
-  char*  chunk = ChunkAlloc(bytes, nobjs);
-
-  if (1 == nobjs) {
-    return chunk;
+class Mutex : private UnCopyable {
+  pthread_mutex_t mutex_;
+public:
+  Mutex(void) tyr_noexcept {
+    TYR_ASSERT(0 == pthread_mutex_init(&mutex_, nullptr));
   }
-  else {
-    Obj*  current_obj = nullptr;
-    Obj*  next_obj = nullptr;
-    Obj** free_list = free_list_ + FREELIST_INDEX(bytes);
-    Obj*  result = (Obj*)chunk;
-    *free_list = next_obj = (Obj*)(chunk + bytes);
 
-    for (auto i = 1; ; ++i) {
-      current_obj = next_obj;
-      next_obj = (Obj*)((char*)next_obj + bytes);
-      if (1 == nobjs - 1) {
-        current_obj->next = nullptr;
-        break;
-      }
-      else {
-        current_obj->next = next_obj;
-      }
-    }
-
-    return result;
+  ~Mutex(void) {
+    TYR_ASSERT(0 == pthread_mutex_destroy(&mutex_));
   }
+
+  void Lock(void) {
+    TYR_ASSERT(0 == pthread_mutex_lock(&mutex_));
+  }
+
+  void Unlock(void) {
+    TYR_ASSERT(0 == pthread_mutex_unlock(&mutex_));
+  }
+};
+
+class SpinlockMutex : private UnCopyable {
+  pthread_spinlock_t spinlock_;
+public:
+  SpinlockMutex(void) tyr_noexcept {
+    TYR_ASSERT(0 == pthread_spin_init(&spinlock_, 0));
+  }
+
+  ~SpinlockMutex(void) {
+    TYR_ASSERT(0 == pthread_spin_destroy(&spinlock_));
+  }
+
+  void Lock(void) {
+    TYR_ASSERT(0 == pthread_spin_lock(&spinlock_));
+  }
+
+  void Unlock(void) {
+    TYR_ASSERT(0 == pthread_spin_unlock(&spinlock_));
+  }
+};
+
 }
 
-char* Alloc::ChunkAlloc(size_t bytes, size_t& nobjs) {
-  return nullptr;
-}
-
-}
+#endif  // __TYR_POSIX_MUTEX_HEADER_H__

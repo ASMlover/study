@@ -24,47 +24,21 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "eAlloc.h"
+#ifndef __TYR_ATOMIC_HEADER_H__
+#define __TYR_ATOMIC_HEADER_H__
 
-namespace estl {
+#if defined(TYR_CPP0X)
+# include "tyr_atomic_counter.h"
+#else
+# if defined(TYR_OS_WIN)
+#   include "win/tyr_win_atomic_counter.h"
+# elif defined(TYR_OS_LINUX)
+#   include "posix/tyr_posix_atomic_counter.h"
+# elif defined(TYR_OS_MAC)
+#   include "mac/tyr_mac_atomic_counter.h"
+# else
+#   include "tyr_self_atomic_counter.h"
+# endif
+#endif
 
-char* Alloc::start_free_ = nullptr;
-char* Alloc::finish_free_ = nullptr;
-size_t Alloc::heap_size_ = 0;
-Alloc::Obj* Alloc::free_list_[Alloc::FreeLists::NFREELISTS] = {0};
-
-void* Alloc::ReFill(size_t bytes) {
-  size_t nobjs = Objs::NOBJS;
-  char*  chunk = ChunkAlloc(bytes, nobjs);
-
-  if (1 == nobjs) {
-    return chunk;
-  }
-  else {
-    Obj*  current_obj = nullptr;
-    Obj*  next_obj = nullptr;
-    Obj** free_list = free_list_ + FREELIST_INDEX(bytes);
-    Obj*  result = (Obj*)chunk;
-    *free_list = next_obj = (Obj*)(chunk + bytes);
-
-    for (auto i = 1; ; ++i) {
-      current_obj = next_obj;
-      next_obj = (Obj*)((char*)next_obj + bytes);
-      if (1 == nobjs - 1) {
-        current_obj->next = nullptr;
-        break;
-      }
-      else {
-        current_obj->next = next_obj;
-      }
-    }
-
-    return result;
-  }
-}
-
-char* Alloc::ChunkAlloc(size_t bytes, size_t& nobjs) {
-  return nullptr;
-}
-
-}
+#endif  // __TYR_ATOMIC_HEADER_H__

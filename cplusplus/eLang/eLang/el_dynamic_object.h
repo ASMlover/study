@@ -24,47 +24,51 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "eAlloc.h"
+#ifndef __EL_DYNAMIC_OBJECT_HEADER_H__
+#define __EL_DYNAMIC_OBJECT_HEADER_H__
 
-namespace estl {
+#include "el_object.h"
 
-char* Alloc::start_free_ = nullptr;
-char* Alloc::finish_free_ = nullptr;
-size_t Alloc::heap_size_ = 0;
-Alloc::Obj* Alloc::free_list_[Alloc::FreeLists::NFREELISTS] = {0};
+namespace el {
 
-void* Alloc::ReFill(size_t bytes) {
-  size_t nobjs = Objs::NOBJS;
-  char*  chunk = ChunkAlloc(bytes, nobjs);
+class Interpreter;
 
-  if (1 == nobjs) {
-    return chunk;
+class DynamicObject : public Object {
+  String                     name_;
+  IdDictionary<Value>        fields_;
+  IdDictionary<Value>        methods_;
+  IdDictionary<PrimitiveFun> primitives_;
+public:
+  DynamicObject(const Value& parent, const String& name)
+    : Object(parent)
+    , name_(name) {
   }
-  else {
-    Obj*  current_obj = nullptr;
-    Obj*  next_obj = nullptr;
-    Obj** free_list = free_list_ + FREELIST_INDEX(bytes);
-    Obj*  result = (Obj*)chunk;
-    *free_list = next_obj = (Obj*)(chunk + bytes);
 
-    for (auto i = 1; ; ++i) {
-      current_obj = next_obj;
-      next_obj = (Obj*)((char*)next_obj + bytes);
-      if (1 == nobjs - 1) {
-        current_obj->next = nullptr;
-        break;
-      }
-      else {
-        current_obj->next = next_obj;
-      }
-    }
-
-    return result;
+  explicit DynamicObject(const Value& parent)
+    : Object(parent)
+    , name_("object") {
   }
+
+  virtual String AsString(void) const override {
+    return name_;
+  }
+
+  virtual DynamicObject* AsDynamic(void) override {
+    return this;
+  }
+
+  virtual void Trace(std::ostream& stream) const override;
+
+  Value FindMethod(StringId message_id);
+  PrimitiveFun FindPrimitive(StringId message_id);
+  Value GetField(StringId name);
+  void SetField(StringId name, const Value& value);
+  void AddMethod(StringId message_id, const Value& method);
+  void AddPrimitive(StringId message_id, PrimitiveFun method);
+private:
+  void InitializeScope(void);
+};
+
 }
 
-char* Alloc::ChunkAlloc(size_t bytes, size_t& nobjs) {
-  return nullptr;
-}
-
-}
+#endif  // __EL_DYNAMIC_OBJECT_HEADER_H__

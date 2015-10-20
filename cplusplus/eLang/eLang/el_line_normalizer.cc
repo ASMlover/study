@@ -24,47 +24,51 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "eAlloc.h"
+#include "el_base.h"
+#include "el_token.h"
+#include "el_line_normalizer.h"
 
-namespace estl {
+namespace el {
 
-char* Alloc::start_free_ = nullptr;
-char* Alloc::finish_free_ = nullptr;
-size_t Alloc::heap_size_ = 0;
-Alloc::Obj* Alloc::free_list_[Alloc::FreeLists::NFREELISTS] = {0};
-
-void* Alloc::ReFill(size_t bytes) {
-  size_t nobjs = Objs::NOBJS;
-  char*  chunk = ChunkAlloc(bytes, nobjs);
-
-  if (1 == nobjs) {
-    return chunk;
-  }
-  else {
-    Obj*  current_obj = nullptr;
-    Obj*  next_obj = nullptr;
-    Obj** free_list = free_list_ + FREELIST_INDEX(bytes);
-    Obj*  result = (Obj*)chunk;
-    *free_list = next_obj = (Obj*)(chunk + bytes);
-
-    for (auto i = 1; ; ++i) {
-      current_obj = next_obj;
-      next_obj = (Obj*)((char*)next_obj + bytes);
-      if (1 == nobjs - 1) {
-        current_obj->next = nullptr;
-        break;
-      }
-      else {
-        current_obj->next = next_obj;
-      }
-    }
-
-    return result;
-  }
+bool LineNormalizer::IsInfinite(void) const {
+  return lexer_.IsInfinite();
 }
 
-char* Alloc::ChunkAlloc(size_t bytes, size_t& nobjs) {
-  return nullptr;
+Ref<Token> LineNormalizer::ReadToken(void) {
+  Ref<Token> r;
+
+  while (r.IsNil()) {
+    r = lexer_.ReadToken();
+
+    switch (r->Type()) {
+    case TokenType::TOKEN_LINE:
+      if (eat_new_lines_)
+        r.Clear();
+      else
+        eat_new_lines_ = true;
+      break;
+    case TokenType::TOKEN_IGNORE_LINE:
+      r.Clear();
+      eat_new_lines_ = true;
+      break;
+    case TokenType::TOKEN_LEFT_PAREN:
+    case TokenType::TOKEN_LEFT_BRACKET:
+    case TokenType::TOKEN_LEFT_BRACE:
+    case TokenType::TOKEN_PIPE:
+    case TokenType::TOKEN_SEMICOLON:
+    case TokenType::TOKEN_ARROW:
+    case TokenType::TOKEN_LONG_ARROW:
+    case TokenType::TOKEN_OPERATOR:
+    case TokenType::TOKEN_KEYWORD:
+      eat_new_lines_ = true;
+      break;
+    default:
+      eat_new_lines_ = true;
+      break;
+    }
+  }
+
+  return r;
 }
 
 }

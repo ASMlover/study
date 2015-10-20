@@ -24,47 +24,59 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "eAlloc.h"
+#include "el_base.h"
+#include "el_dynamic_object.h"
 
-namespace estl {
+namespace el {
 
-char* Alloc::start_free_ = nullptr;
-char* Alloc::finish_free_ = nullptr;
-size_t Alloc::heap_size_ = 0;
-Alloc::Obj* Alloc::free_list_[Alloc::FreeLists::NFREELISTS] = {0};
-
-void* Alloc::ReFill(size_t bytes) {
-  size_t nobjs = Objs::NOBJS;
-  char*  chunk = ChunkAlloc(bytes, nobjs);
-
-  if (1 == nobjs) {
-    return chunk;
-  }
-  else {
-    Obj*  current_obj = nullptr;
-    Obj*  next_obj = nullptr;
-    Obj** free_list = free_list_ + FREELIST_INDEX(bytes);
-    Obj*  result = (Obj*)chunk;
-    *free_list = next_obj = (Obj*)(chunk + bytes);
-
-    for (auto i = 1; ; ++i) {
-      current_obj = next_obj;
-      next_obj = (Obj*)((char*)next_obj + bytes);
-      if (1 == nobjs - 1) {
-        current_obj->next = nullptr;
-        break;
-      }
-      else {
-        current_obj->next = next_obj;
-      }
-    }
-
-    return result;
-  }
+void DynamicObject::Trace(std::ostream& stream) const {
+  stream << name_;
 }
 
-char* Alloc::ChunkAlloc(size_t bytes, size_t& nobjs) {
+Value DynamicObject::FindMethod(StringId message_id) {
+  Value method;
+  if (methods_.Find(message_id, method))
+    return method;
+
+  return Value();
+}
+
+PrimitiveFun DynamicObject::FindPrimitive(StringId message_id) {
+  PrimitiveFun primitive;
+  if (primitives_.Find(message_id, primitive))
+    return primitive;
+
   return nullptr;
+}
+
+Value DynamicObject::GetField(StringId name) {
+  DynamicObject* object = this;
+  while (true) {
+    Value field;
+    if (object->fields_.Find(name, field))
+      return field;
+
+    if (object->Parent().IsNil())
+      break;
+
+    object = object->Parent().AsDynamic();
+    if (nullptr == object)
+      break;
+  }
+
+  return Value();
+}
+
+void DynamicObject::SetField(StringId name, const Value& value) {
+  fields_.Insert(name, value);
+}
+
+void DynamicObject::AddMethod(StringId message_id, const Value& method) {
+  methods_.Insert(message_id, method);
+}
+
+void DynamicObject::AddPrimitive(StringId message_id, PrimitiveFun method) {
+  primitives_.Insert(message_id, method);
 }
 
 }

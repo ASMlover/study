@@ -24,47 +24,50 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "eAlloc.h"
+#ifndef __EL_LEXER_HEADER_H__
+#define __EL_LEXER_HEADER_H__
 
-namespace estl {
+#include "el_lexer_base.h"
 
-char* Alloc::start_free_ = nullptr;
-char* Alloc::finish_free_ = nullptr;
-size_t Alloc::heap_size_ = 0;
-Alloc::Obj* Alloc::free_list_[Alloc::FreeLists::NFREELISTS] = {0};
+namespace el {
 
-void* Alloc::ReFill(size_t bytes) {
-  size_t nobjs = Objs::NOBJS;
-  char*  chunk = ChunkAlloc(bytes, nobjs);
-
-  if (1 == nobjs) {
-    return chunk;
+interface ReaderBase;
+class Lexer : public LexerBase, private UnCopyable {
+  ReaderBase& reader_;
+  bool   needs_line_;
+  int    pos_;
+  int    start_;
+  String line_;
+public:
+  explicit Lexer(ReaderBase& reader)
+    : reader_(reader)
+    , needs_line_(true)
+    , pos_(0)
+    , start_(0)
+    , line_() {
   }
-  else {
-    Obj*  current_obj = nullptr;
-    Obj*  next_obj = nullptr;
-    Obj** free_list = free_list_ + FREELIST_INDEX(bytes);
-    Obj*  result = (Obj*)chunk;
-    *free_list = next_obj = (Obj*)(chunk + bytes);
 
-    for (auto i = 1; ; ++i) {
-      current_obj = next_obj;
-      next_obj = (Obj*)((char*)next_obj + bytes);
-      if (1 == nobjs - 1) {
-        current_obj->next = nullptr;
-        break;
-      }
-      else {
-        current_obj->next = next_obj;
-      }
-    }
+  virtual bool IsInfinite(void) const override;
+  virtual Ref<Token> ReadToken(void) override;
+private:
+  bool IsDone(void) const;
+  char Peek(int ahead = 0) const;
+  char Advance(void);
+  void AdvanceLine(void);
+  void SkipBlockComment(void);
 
-    return result;
-  }
-}
+  bool IsWhitespace(char c) const;
+  bool IsAlpha(char c) const;
+  bool IsDigit(char c) const;
+  bool IsOperator(char c) const;
 
-char* Alloc::ChunkAlloc(size_t bytes, size_t& nobjs) {
-  return nullptr;
-}
+  Ref<Token> SingleToken(TokenType type);
+  Ref<Token> ReadString(void);
+  Ref<Token> ReadNumber(void);
+  Ref<Token> ReadName(void);
+  Ref<Token> ReadOperator(void);
+};
 
 }
+
+#endif  // __EL_LEXER_HEADER_H__

@@ -24,47 +24,56 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "eAlloc.h"
+#ifndef __EL_PARSER_BASE_HEADER_H__
+#define __EL_PARSER_BASE_HEADER_H__
 
-namespace estl {
+#include "el_queue.h"
+#include "el_token.h"
 
-char* Alloc::start_free_ = nullptr;
-char* Alloc::finish_free_ = nullptr;
-size_t Alloc::heap_size_ = 0;
-Alloc::Obj* Alloc::free_list_[Alloc::FreeLists::NFREELISTS] = {0};
+namespace el {
 
-void* Alloc::ReFill(size_t bytes) {
-  size_t nobjs = Objs::NOBJS;
-  char*  chunk = ChunkAlloc(bytes, nobjs);
+interface ErrorReporterBase;
+interface LexerBase;
+interface ReaderBase;
 
-  if (1 == nobjs) {
-    return chunk;
+class ParserBase : private UnCopyable {
+  ErrorReporterBase&    err_reporter_;
+  LexerBase&            lexer_;
+  bool                  had_error_;
+  Queue<Ref<Token>, 3>  read_;
+public:
+  ParserBase(ErrorReporterBase& error, LexerBase& lexer)
+    : err_reporter_(error)
+    , lexer_(lexer)
+    , had_error_(false) {
   }
-  else {
-    Obj*  current_obj = nullptr;
-    Obj*  next_obj = nullptr;
-    Obj** free_list = free_list_ + FREELIST_INDEX(bytes);
-    Obj*  result = (Obj*)chunk;
-    *free_list = next_obj = (Obj*)(chunk + bytes);
 
-    for (auto i = 1; ; ++i) {
-      current_obj = next_obj;
-      next_obj = (Obj*)((char*)next_obj + bytes);
-      if (1 == nobjs - 1) {
-        current_obj->next = nullptr;
-        break;
-      }
-      else {
-        current_obj->next = next_obj;
-      }
-    }
+  virtual ~ParserBase(void) {}
 
-    return result;
+  inline bool IsInfinite(void) const {
+    return lexer_.IsInfinite();
   }
+
+  inline const Token& Current(void) const {
+    return *read_[0];
+  }
+
+  bool LookAhead(TokenType type);
+  bool LookAhead(TokenType current, TokenType next);
+  bool LookAhead(TokenType first, TokenType second, TokenType thrid);
+  bool Match(TokenType type);
+  void Expect(TokenType expected, const char* exception);
+  Ref<Token> Consume(void);
+  Ref<Token> Consume(TokenType expected, const char* exception);
+  void Error(const char* exception);
+
+  inline bool HadError(void) const {
+    return had_error_;
+  }
+private:
+  void FillLookAhead(int count);
+};
+
 }
 
-char* Alloc::ChunkAlloc(size_t bytes, size_t& nobjs) {
-  return nullptr;
-}
-
-}
+#endif  // __EL_PARSER_BASE_HEADER_H__

@@ -24,47 +24,70 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "eAlloc.h"
+#ifndef __EL_DEFINE_EXPR_HEADER_H__
+#define __EL_DEFINE_EXPR_HEADER_H__
 
-namespace estl {
+#include "el_expr.h"
+#include "el_expr_compiler_base.h"
 
-char* Alloc::start_free_ = nullptr;
-char* Alloc::finish_free_ = nullptr;
-size_t Alloc::heap_size_ = 0;
-Alloc::Obj* Alloc::free_list_[Alloc::FreeLists::NFREELISTS] = {0};
+namespace el {
 
-void* Alloc::ReFill(size_t bytes) {
-  size_t nobjs = Objs::NOBJS;
-  char*  chunk = ChunkAlloc(bytes, nobjs);
-
-  if (1 == nobjs) {
-    return chunk;
+class Definition {
+  bool      is_method_;
+  String    name_;
+  Ref<Expr> body_;
+public:
+  Definition(void)
+    : is_method_(false)
+    , name_()
+    , body_() {
   }
-  else {
-    Obj*  current_obj = nullptr;
-    Obj*  next_obj = nullptr;
-    Obj** free_list = free_list_ + FREELIST_INDEX(bytes);
-    Obj*  result = (Obj*)chunk;
-    *free_list = next_obj = (Obj*)(chunk + bytes);
 
-    for (auto i = 1; ; ++i) {
-      current_obj = next_obj;
-      next_obj = (Obj*)((char*)next_obj + bytes);
-      if (1 == nobjs - 1) {
-        current_obj->next = nullptr;
-        break;
-      }
-      else {
-        current_obj->next = next_obj;
-      }
+  Definition(bool is_method, const String& name, const Ref<Expr>& body)
+    : is_method_(is_method)
+    , name_(name)
+    , body_(body) {
+  }
+
+  Definition& operator=(const Definition& other) {
+    if (&other != this) {
+      is_method_ = other.is_method_;
+      name_      = other.name_;
+      body_      = other.body_;
     }
 
-    return result;
+    return *this;
   }
+
+  inline bool IsMethod(void) const {
+    return is_method_;
+  }
+
+  inline String GetName(void) const {
+    return name_;
+  }
+
+  inline const Ref<Expr>& GetBody(void) const {
+    return body_;
+  }
+};
+
+class DefineExpr : public Expr {
+  Array<Definition> definitions_;
+public:
+  DefineExpr(void) {
+  }
+
+  inline const Array<Definition>& Definitions(void) const {
+    return definitions_;
+  }
+
+  inline void Define(
+      bool is_method, const String& name, const Ref<Expr>& body) {
+    definitions_.Append(Definition(is_method, name, body));
+  }
+};
+
 }
 
-char* Alloc::ChunkAlloc(size_t bytes, size_t& nobjs) {
-  return nullptr;
-}
-
-}
+#endif  // __EL_DEFINE_EXPR_HEADER_H__

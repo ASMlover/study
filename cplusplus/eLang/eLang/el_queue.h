@@ -24,47 +24,76 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "eAlloc.h"
+#ifndef __EL_QUEUE_HEADER_H__
+#define __EL_QUEUE_HEADER_H__
 
-namespace estl {
+namespace el {
 
-char* Alloc::start_free_ = nullptr;
-char* Alloc::finish_free_ = nullptr;
-size_t Alloc::heap_size_ = 0;
-Alloc::Obj* Alloc::free_list_[Alloc::FreeLists::NFREELISTS] = {0};
-
-void* Alloc::ReFill(size_t bytes) {
-  size_t nobjs = Objs::NOBJS;
-  char*  chunk = ChunkAlloc(bytes, nobjs);
-
-  if (1 == nobjs) {
-    return chunk;
+template <typename _Tp, int _N = 1>
+class Queue : private UnCopyable {
+  int head_;
+  int count_;
+  _Tp items_[_N];
+public:
+  Queue(void)
+    : head_(0)
+    , count_(0) {
+    EL_ASSERT(_N > 0, "Queue capacity must large than zero.");
   }
-  else {
-    Obj*  current_obj = nullptr;
-    Obj*  next_obj = nullptr;
-    Obj** free_list = free_list_ + FREELIST_INDEX(bytes);
-    Obj*  result = (Obj*)chunk;
-    *free_list = next_obj = (Obj*)(chunk + bytes);
 
-    for (auto i = 1; ; ++i) {
-      current_obj = next_obj;
-      next_obj = (Obj*)((char*)next_obj + bytes);
-      if (1 == nobjs - 1) {
-        current_obj->next = nullptr;
-        break;
-      }
-      else {
-        current_obj->next = next_obj;
-      }
-    }
-
-    return result;
+  inline void Clear(void) {
+    head_ = 0;
+    count_ = 0;
   }
+
+  inline int Count(void) const {
+    return count_;
+  }
+
+  inline int Capacity(void) const {
+    return _N;
+  }
+
+  inline bool IsEmpty(void) const {
+    return (0 == count_);
+  }
+
+  inline void Enqueue(const _Tp& value) {
+    EL_ASSERT(count_ < _N, "Cannot enqueue a full queue.");
+
+    items_[head_] = value;
+    head_ = Wrap(head_ + 1);
+    ++count_;
+  }
+
+  inline _Tp Dequeue(void) {
+    EL_ASSERT(count_ > 0, "Cannot dequeue an empty queue.");
+
+    int tail = Wrap(head_ - count_);
+    _Tp dequeued = items_[tail];
+    items_[tail] = _Tp();
+
+    --count_;
+    return dequeued;
+  }
+
+  inline _Tp& operator[](int index) {
+    EL_ASSERT_RANGE(index, count_);
+
+    return items_[Wrap(head_ - count_ + index)];
+  }
+
+  inline const _Tp& operator[](int index) const {
+    EL_ASSERT_RANGE(index, count_);
+
+    return items_[Wrap(head_ - count_ + index)];
+  }
+private:
+  inline int Wrap(int index) const {
+    return (index + _N) % _N;
+  }
+};
+
 }
 
-char* Alloc::ChunkAlloc(size_t bytes, size_t& nobjs) {
-  return nullptr;
-}
-
-}
+#endif  // __EL_QUEUE_HEADER_H__
