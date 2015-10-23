@@ -95,17 +95,15 @@ public:
   }
 
   ~SmartArray(void) {
-    if (nullptr != rc_) {
-      if (0 == --*rc_) {
-        ra_->Destroy();
-        ptr_ = nullptr;
+    if (nullptr != rc_ && 0 == --*rc_) {
+      ra_->Destroy();
+      ptr_ = nullptr;
 
-        delete ra_;
-        ra_ = nullptr;
+      delete ra_;
+      ra_ = nullptr;
 
-        delete rc_;
-        rc_ = nullptr;
-      }
+      delete rc_;
+      rc_ = nullptr;
     }
   }
 
