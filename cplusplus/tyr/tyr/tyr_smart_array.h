@@ -119,9 +119,7 @@ public:
     : ptr_(other.ptr_)
     , ra_(other.ra_)
     , rc_(other.rc_) {
-    other.ptr_ = nullptr;
-    other.ra_  = nullptr;
-    other.rc_  = nullptr;
+    other.__restore_defaults__();
   }
 
   template <typename U>
@@ -138,7 +136,7 @@ public:
     : ptr_(other.Get())
     , ra_(other.__ra__())
     , rc_(other.__rc__()) {
-    other.__release__();
+    other.__restore_defaults__();
   }
 
   SmartArray& operator=(const SmartArray& other) tyr_noexcept {
@@ -208,7 +206,7 @@ public:
     return rc_;
   }
 
-  void __release__(void) tyr_noexcept {
+  void __restore_defaults__(void) tyr_noexcept {
     ptr_ = nullptr;
     ra_  = nullptr;
     rc_  = nullptr;
