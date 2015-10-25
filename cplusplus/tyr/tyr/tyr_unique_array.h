@@ -33,7 +33,7 @@ template <typename T>
 class UniqueArray : private UnCopyable {
   T* ptr_;
 
-  typedef UniqueArray<T> UniqueArrayT;
+  typedef UniqueArray<T> SelfType;
 public:
   explicit UniqueArray(T* p = nullptr) tyr_noexcept
     : ptr_(p) {
@@ -44,12 +44,12 @@ public:
       delete [] ptr_;
   }
 
-  UniqueArray(UniqueArrayT&& other) tyr_noexcept
+  UniqueArray(UniqueArray<T>&& other) tyr_noexcept
     : ptr_(other.ptr_) {
     other.ptr_ = nullptr;
   }
 
-  UniqueArrayT& operator=(UniqueArrayT&& other) tyr_noexcept {
+  UniqueArray<T>& operator=(UniqueArray<T>&& other) tyr_noexcept {
     if (&other != this) {
       if (nullptr != ptr_)
         delete [] ptr_;
@@ -60,10 +60,10 @@ public:
   }
 
   void Reset(T* p = nullptr) tyr_noexcept {
-    UniqueArrayT(p).Swap(*this);
+    SelfType(p).Swap(*this);
   }
 
-  void Swap(UniqueArrayT& other) tyr_noexcept {
+  void Swap(UniqueArray<T>& other) tyr_noexcept {
     std::swap(ptr_, other.ptr_);
   }
 

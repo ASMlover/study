@@ -33,7 +33,7 @@ template <typename T>
 class UniquePtr : private UnCopyable {
   T* ptr_;
 
-  typedef UniquePtr<T> UniquePtrT;
+  typedef UniquePtr<T> SelfType;
 public:
   explicit UniquePtr(T* p = nullptr) tyr_noexcept
     : ptr_(p) {
@@ -44,12 +44,12 @@ public:
       delete ptr_;
   }
 
-  UniquePtr(UniquePtrT&& other) tyr_noexcept
+  UniquePtr(UniquePtr<T>&& other) tyr_noexcept
     : ptr_(other.ptr_) {
     other.ptr_ = nullptr;
   }
 
-  UniquePtrT& operator=(UniquePtrT&& other) tyr_noexcept {
+  UniquePtr<T>& operator=(UniquePtr<T>&& other) tyr_noexcept {
     if (&other != this) {
       if (nullptr != ptr_)
         delete ptr_;
@@ -60,10 +60,10 @@ public:
   }
 
   void Reset(T* p = nullptr) tyr_noexcept {
-    UniquePtrT(p).Swap(*this);
+    SelfType(p).Swap(*this);
   }
 
-  void Swap(UniquePtrT& other) tyr_noexcept {
+  void Swap(UniquePtr<T>& other) tyr_noexcept {
     std::swap(ptr_, other.ptr_);
   }
 
