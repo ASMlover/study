@@ -72,7 +72,7 @@ class SmartPtr {
   RefPointer*    rp_;
   AtomicCounter* rc_;
 
-  typedef SmartPtr<T> SmartPtrT;
+  typedef SmartPtr<T> SelfType;
 public:
   SmartPtr(void) tyr_noexcept
     : ptr_(nullptr)
@@ -107,7 +107,7 @@ public:
     }
   }
 
-  SmartPtr(const SmartPtr& other) tyr_noexcept
+  SmartPtr(const SmartPtr<T>& other) tyr_noexcept
     : ptr_(other.ptr_)
     , rp_(other.rp_)
     , rc_(other.rc_) {
@@ -115,7 +115,7 @@ public:
       ++*rc_;
   }
   
-  SmartPtr(SmartPtr&& other) tyr_noexcept
+  SmartPtr(SmartPtr<T>&& other) tyr_noexcept
     : ptr_(other.ptr_)
     , rp_(other.rp_)
     , rc_(other.rc_) {
@@ -139,29 +139,29 @@ public:
     other.__restore_defaults__();
   }
 
-  SmartPtr& operator=(const SmartPtr& other) tyr_noexcept {
+  SmartPtr<T>& operator=(const SmartPtr<T>& other) tyr_noexcept {
     if (&other != this)
-      SmartPtrT(other).Swap(*this);
+      SelfType(other).Swap(*this);
     return *this;
   }
 
-  SmartPtr& operator=(SmartPtr&& other) tyr_noexcept {
+  SmartPtr<T>& operator=(SmartPtr<T>&& other) tyr_noexcept {
     if (&other != this)
-      SmartPtrT(std::move(other)).Swap(*this);
+      SelfType(std::move(other)).Swap(*this);
     return *this;
   }
 
   template <typename U>
-  SmartPtr& operator=(const SmartPtr<U>& other) tyr_noexcept {
+  SmartPtr<T>& operator=(const SmartPtr<U>& other) tyr_noexcept {
     if ((void*)&other != (void*)this)
-      SmartPtrT(other).Swap(*this);
+      SelfType(other).Swap(*this);
     return *this;
   }
 
   template <typename U>
-  SmartPtr& operator=(SmartPtr<U>&& other) tyr_noexcept {
+  SmartPtr<T>& operator=(SmartPtr<U>&& other) tyr_noexcept {
     if ((void*)&other != (void*)this)
-      SmartPtrT(std::move(other)).Swap(*this);
+      SelfType(std::move(other)).Swap(*this);
     return *this;
   }
 
@@ -176,17 +176,17 @@ public:
   }
 
   void Reset(void) tyr_noexcept {
-    SmartPtrT().Swap(*this);
+    SelfType().Swap(*this);
   }
 
   template <typename U>
   void Reset(U* p) {
-    SmartPtrT(p).Swap(*this);
+    SelfType(p).Swap(*this);
   }
 
   template <typename U, typename D>
   void Reset(U* p, D d) {
-    SmartPtrT(p, d).Swap(p, d);
+    SelfType(p, d).Swap(p, d);
   }
 
   T& operator*(void) const {
