@@ -107,7 +107,7 @@ public:
     }
   }
 
-  SmartArray(const SmartArray& other) tyr_noexcept
+  SmartArray(const SmartArray<T>& other) tyr_noexcept
     : ptr_(other.ptr_)
     , ra_(other.ra_)
     , rc_(other.rc_) {
@@ -115,7 +115,7 @@ public:
       ++*rc_;
   }
 
-  SmartArray(SmartArray&& other) tyr_noexcept
+  SmartArray(SmartArray<T>&& other) tyr_noexcept
     : ptr_(other.ptr_)
     , ra_(other.ra_)
     , rc_(other.rc_) {
@@ -139,27 +139,27 @@ public:
     other.__restore_defaults__();
   }
 
-  SmartArray& operator=(const SmartArray& other) tyr_noexcept {
+  SmartArray<T>& operator=(const SmartArray<T>& other) tyr_noexcept {
     if (&other != this)
       SelfType(other).Swap(*this);
     return *this;
   }
 
-  SmartArray& operator=(SmartArray&& other) tyr_noexcept {
+  SmartArray<T>& operator=(SmartArray<T>&& other) tyr_noexcept {
     if (&other != this)
       SelfType(std::move(other)).Swap(*this);
     return *this;
   }
 
   template <typename U>
-  SmartArray& operator=(const SmartArray<U>& other) tyr_noexcept {
+  SmartArray<T>& operator=(const SmartArray<U>& other) tyr_noexcept {
     if ((void*)&other != (void*)this)
       SelfType(other).Swap(*this);
     return *this;
   }
 
   template <typename U>
-  SmartArray& operator=(SmartArray<U>&& other) tyr_noexcept {
+  SmartArray<T>& operator=(SmartArray<U>&& other) tyr_noexcept {
     if ((void*)&other != (void*)this)
       SelfType(std::move(other)).Swap(*this);
     return *this;
