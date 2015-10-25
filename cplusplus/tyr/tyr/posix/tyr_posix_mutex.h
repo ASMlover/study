@@ -47,6 +47,10 @@ public:
   void Unlock(void) {
     TYR_ASSERT(0 == pthread_mutex_unlock(&mutex_));
   }
+
+  pthread_mutex_t* InnerMutex(void) const {
+    return &mutex_;
+  }
 };
 
 class SpinlockMutex : private UnCopyable {

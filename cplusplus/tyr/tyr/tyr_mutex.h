@@ -39,6 +39,10 @@ public:
   void Unlock(void) {
     mutex_.Unlock();
   }
+
+  std::mutex* InnerMutex(void) const {
+    return &mutex_;
+  }
 };
 
 class SpinlockMutex : private UnCopyable {
