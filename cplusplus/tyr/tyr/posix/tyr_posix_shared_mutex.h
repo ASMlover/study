@@ -24,53 +24,39 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_MAC_MUTEX_HEADER_H__
-#define __TYR_MAC_MUTEX_HEADER_H__
+#ifndef __TYR_POSIX_SHARED_MUTEX_HEADER_H__
+#define __TYR_POSIX_SHARED_MUTEX_HEADER_H__
 
 namespace tyr {
 
-class Mutex : private UnCopyable {
-  pthread_mutex_t mutex_;
+class SharedMutex : private UnCopyable {
+  pthread_rwlock_t rwlock_;
 public:
-  Mutex(void) tyr_noexcept {
-    TYR_ASSERT(0 == pthread_mutex_init(&mutex_, nullptr));
+  SharedMutex(void) tyr_noexcept {
+    TYR_ASSERT(0 == pthread_rwlock_init(&rwlock_, nullptr));
   }
 
-  ~Mutex(void) {
-    TYR_ASSERT(0 == pthread_mutex_destroy(&mutex_));
+  ~SharedMutex(void) tyr_noexcept {
+    TYR_ASSERT(0 == pthread_rwlock_destroy(&rwlock_));
   }
 
-  void Lock(void) {
-    TYR_ASSERT(0 == pthread_mutex_lock(&mutex_));
+  void LockRD(void) {
+    TYR_ASSERT(0 == pthread_rwlock_rdlock(&rwlock_));
   }
 
-  void Unlock(void) {
-    TYR_ASSERT(0 == pthread_mutex_unlock(&mutex_));
+  void UnlockRD(void) {
+    TYR_ASSERT(0 == pthread_rwlock_unlock(&rwlock_));
   }
 
-  pthread_mutex_t* InnerMutex(void) const {
-    return &mutex_;
+  void LockWR(void) {
+    TYR_ASSERT(0 == pthread_rwlock_wrlock(&rwlock_));
+  }
+
+  void UnlockWR(void) {
+    TYR_ASSERT(0 == pthread_rwlock_unlock(&rwlock_));
   }
 };
-
-class OSSpinlockMutex : private UnCopyable {
-  OSSpinLock spinlock_ = OS_SPINLOCK_INIT;
-public:
-  void Lock(void) {
-    OSSpinLockLock(&spinlock_);
-  }
-
-  void Unlock(void) {
-    OSSpinLockUnlock(&spinlock_);
-  }
-};
-
-#if TYR_MAC_SPINLOCK
-  typedef OSSpinlockMutex SpinlockMutex
-#else
-  typedef Mutex           SpinlockMutex
-#endif
 
 }
 
-#endif  // __TYR_MAC_MUTEX_HEADER_H__
+#endif  // __TYR_POSIX_SHARED_MUTEX_HEADER_H__

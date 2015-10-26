@@ -24,53 +24,20 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_MAC_MUTEX_HEADER_H__
-#define __TYR_MAC_MUTEX_HEADER_H__
+#ifndef __TYR_SINGLETON_HEADER_H__
+#define __TYR_SINGLETON_HEADER_H__
 
 namespace tyr {
 
-class Mutex : private UnCopyable {
-  pthread_mutex_t mutex_;
+template <typename Object>
+class Singleton : private UnCopyable {
 public:
-  Mutex(void) tyr_noexcept {
-    TYR_ASSERT(0 == pthread_mutex_init(&mutex_, nullptr));
-  }
-
-  ~Mutex(void) {
-    TYR_ASSERT(0 == pthread_mutex_destroy(&mutex_));
-  }
-
-  void Lock(void) {
-    TYR_ASSERT(0 == pthread_mutex_lock(&mutex_));
-  }
-
-  void Unlock(void) {
-    TYR_ASSERT(0 == pthread_mutex_unlock(&mutex_));
-  }
-
-  pthread_mutex_t* InnerMutex(void) const {
-    return &mutex_;
+  static Object& Instance(void) {
+    static SmartPtr<Object> object(new Object());
+    return *object;
   }
 };
-
-class OSSpinlockMutex : private UnCopyable {
-  OSSpinLock spinlock_ = OS_SPINLOCK_INIT;
-public:
-  void Lock(void) {
-    OSSpinLockLock(&spinlock_);
-  }
-
-  void Unlock(void) {
-    OSSpinLockUnlock(&spinlock_);
-  }
-};
-
-#if TYR_MAC_SPINLOCK
-  typedef OSSpinlockMutex SpinlockMutex
-#else
-  typedef Mutex           SpinlockMutex
-#endif
 
 }
 
-#endif  // __TYR_MAC_MUTEX_HEADER_H__
+#endif  // __TYR_SINGLETON_HEADER_H__

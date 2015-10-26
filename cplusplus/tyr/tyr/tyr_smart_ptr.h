@@ -95,21 +95,19 @@ public:
   }
 
   ~SmartPtr(void) {
-    if (nullptr != rc_) {
-      if (0 == --*rc_) {
-        rp_->Destroy();
-        ptr_ = nullptr;
+    if (nullptr != rc_ && 0 == --*rc_) {
+      rp_->Destroy();
+      ptr_ = nullptr;
 
-        delete rp_;
-        rp_ = nullptr;
+      delete rp_;
+      rp_ = nullptr;
 
-        delete rc_;
-        rc_ = nullptr;
-      }
+      delete rc_;
+      rc_ = nullptr;
     }
   }
 
-  SmartPtr(const SmartPtr& other) tyr_noexcept
+  SmartPtr(const SmartPtr<T>& other) tyr_noexcept
     : ptr_(other.ptr_)
     , rp_(other.rp_)
     , rc_(other.rc_) {
@@ -117,13 +115,11 @@ public:
       ++*rc_;
   }
   
-  SmartPtr(SmartPtr&& other) tyr_noexcept
+  SmartPtr(SmartPtr<T>&& other) tyr_noexcept
     : ptr_(other.ptr_)
     , rp_(other.rp_)
     , rc_(other.rc_) {
-    other.ptr_ = nullptr;
-    other.rp_  = nullptr;
-    other.rc_  = nullptr;
+    other.__restore_defaults__();
   }
 
   template <typename U>
@@ -140,30 +136,30 @@ public:
     : ptr_(other.Get())
     , rp_(other.__rp__())
     , rc_(other.__rc__()) {
-    other.__release__();
+    other.__restore_defaults__();
   }
 
-  SmartPtr& operator=(const SmartPtr& other) tyr_noexcept {
+  SmartPtr<T>& operator=(const SmartPtr<T>& other) tyr_noexcept {
     if (&other != this)
       SelfType(other).Swap(*this);
     return *this;
   }
 
-  SmartPtr& operator=(SmartPtr&& other) tyr_noexcept {
+  SmartPtr<T>& operator=(SmartPtr<T>&& other) tyr_noexcept {
     if (&other != this)
       SelfType(std::move(other)).Swap(*this);
     return *this;
   }
 
   template <typename U>
-  SmartPtr& operator=(const SmartPtr<U>& other) tyr_noexcept {
+  SmartPtr<T>& operator=(const SmartPtr<U>& other) tyr_noexcept {
     if ((void*)&other != (void*)this)
       SelfType(other).Swap(*this);
     return *this;
   }
 
   template <typename U>
-  SmartPtr& operator=(SmartPtr<U>&& other) tyr_noexcept {
+  SmartPtr<T>& operator=(SmartPtr<U>&& other) tyr_noexcept {
     if ((void*)&other != (void*)this)
       SelfType(std::move(other)).Swap(*this);
     return *this;
@@ -213,7 +209,7 @@ public:
     return rc_;
   }
 
-  void __release__(void) tyr_noexcept {
+  void __restore_defaults__(void) tyr_noexcept {
     ptr_ = nullptr;
     rp_  = nullptr;
     rc_  = nullptr;

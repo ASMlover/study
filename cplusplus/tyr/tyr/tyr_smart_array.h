@@ -95,21 +95,19 @@ public:
   }
 
   ~SmartArray(void) {
-    if (nullptr != rc_) {
-      if (0 == --*rc_) {
-        ra_->Destroy();
-        ptr_ = nullptr;
+    if (nullptr != rc_ && 0 == --*rc_) {
+      ra_->Destroy();
+      ptr_ = nullptr;
 
-        delete ra_;
-        ra_ = nullptr;
+      delete ra_;
+      ra_ = nullptr;
 
-        delete rc_;
-        rc_ = nullptr;
-      }
+      delete rc_;
+      rc_ = nullptr;
     }
   }
 
-  SmartArray(const SmartArray& other) tyr_noexcept
+  SmartArray(const SmartArray<T>& other) tyr_noexcept
     : ptr_(other.ptr_)
     , ra_(other.ra_)
     , rc_(other.rc_) {
@@ -117,13 +115,11 @@ public:
       ++*rc_;
   }
 
-  SmartArray(SmartArray&& other) tyr_noexcept
+  SmartArray(SmartArray<T>&& other) tyr_noexcept
     : ptr_(other.ptr_)
     , ra_(other.ra_)
     , rc_(other.rc_) {
-    other.ptr_ = nullptr;
-    other.ra_  = nullptr;
-    other.rc_  = nullptr;
+    other.__restore_defaults__();
   }
 
   template <typename U>
@@ -140,30 +136,30 @@ public:
     : ptr_(other.Get())
     , ra_(other.__ra__())
     , rc_(other.__rc__()) {
-    other.__release__();
+    other.__restore_defaults__();
   }
 
-  SmartArray& operator=(const SmartArray& other) tyr_noexcept {
+  SmartArray<T>& operator=(const SmartArray<T>& other) tyr_noexcept {
     if (&other != this)
       SelfType(other).Swap(*this);
     return *this;
   }
 
-  SmartArray& operator=(SmartArray&& other) tyr_noexcept {
+  SmartArray<T>& operator=(SmartArray<T>&& other) tyr_noexcept {
     if (&other != this)
       SelfType(std::move(other)).Swap(*this);
     return *this;
   }
 
   template <typename U>
-  SmartArray& operator=(const SmartArray<U>& other) tyr_noexcept {
+  SmartArray<T>& operator=(const SmartArray<U>& other) tyr_noexcept {
     if ((void*)&other != (void*)this)
       SelfType(other).Swap(*this);
     return *this;
   }
 
   template <typename U>
-  SmartArray& operator=(SmartArray<U>&& other) tyr_noexcept {
+  SmartArray<T>& operator=(SmartArray<U>&& other) tyr_noexcept {
     if ((void*)&other != (void*)this)
       SelfType(std::move(other)).Swap(*this);
     return *this;
@@ -210,7 +206,7 @@ public:
     return rc_;
   }
 
-  void __release__(void) tyr_noexcept {
+  void __restore_defaults__(void) tyr_noexcept {
     ptr_ = nullptr;
     ra_  = nullptr;
     rc_  = nullptr;

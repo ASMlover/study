@@ -44,12 +44,12 @@ public:
       delete [] ptr_;
   }
 
-  UniqueArray(UniqueArray&& other) tyr_noexcept
+  UniqueArray(UniqueArray<T>&& other) tyr_noexcept
     : ptr_(other.ptr_) {
     other.ptr_ = nullptr;
   }
 
-  UniqueArray& operator=(UniqueArray&& other) tyr_noexcept {
+  UniqueArray<T>& operator=(UniqueArray<T>&& other) tyr_noexcept {
     if (&other != this) {
       if (nullptr != ptr_)
         delete [] ptr_;
@@ -63,7 +63,7 @@ public:
     SelfType(p).Swap(*this);
   }
 
-  void Swap(UniqueArray& other) tyr_noexcept {
+  void Swap(UniqueArray<T>& other) tyr_noexcept {
     std::swap(ptr_, other.ptr_);
   }
 

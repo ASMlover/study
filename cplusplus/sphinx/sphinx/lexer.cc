@@ -24,53 +24,43 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_MAC_MUTEX_HEADER_H__
-#define __TYR_MAC_MUTEX_HEADER_H__
+#include <ctype.h>
+#include "lexer.h"
 
-namespace tyr {
-
-class Mutex : private UnCopyable {
-  pthread_mutex_t mutex_;
-public:
-  Mutex(void) tyr_noexcept {
-    TYR_ASSERT(0 == pthread_mutex_init(&mutex_, nullptr));
-  }
-
-  ~Mutex(void) {
-    TYR_ASSERT(0 == pthread_mutex_destroy(&mutex_));
-  }
-
-  void Lock(void) {
-    TYR_ASSERT(0 == pthread_mutex_lock(&mutex_));
-  }
-
-  void Unlock(void) {
-    TYR_ASSERT(0 == pthread_mutex_unlock(&mutex_));
-  }
-
-  pthread_mutex_t* InnerMutex(void) const {
-    return &mutex_;
-  }
-};
-
-class OSSpinlockMutex : private UnCopyable {
-  OSSpinLock spinlock_ = OS_SPINLOCK_INIT;
-public:
-  void Lock(void) {
-    OSSpinLockLock(&spinlock_);
-  }
-
-  void Unlock(void) {
-    OSSpinLockUnlock(&spinlock_);
-  }
-};
-
-#if TYR_MAC_SPINLOCK
-  typedef OSSpinlockMutex SpinlockMutex
-#else
-  typedef Mutex           SpinlockMutex
-#endif
-
+Lexer::Lexer(const std::string& text)
+  : mText(text)
+  , mState(LexState::DEFAULT)
+  , mTokenStart(0)
+  , mIndex(0)
+  , mEatLines(true) {
 }
 
-#endif  // __TYR_MAC_MUTEX_HEADER_H__
+Token Lexer::readToken(void) {
+  Token token = readRawToken();
+
+  return token;
+}
+
+Token Lexer::readRawToken(void) {
+  return Token(TokenType::TT_EOF);
+}
+
+Token Lexer::singleCharToken(TokenType type) {
+  ++mIndex;
+  return Token(type, mText.substr(mIndex - 1, mIndex));
+}
+
+void Lexer::startToken(LexState state) {
+}
+
+void Lexer::changeToken(LexState state) {
+}
+
+Token Lexer::createStringToken(TokenType type) {
+  std::string text = mText.substr(mTokenStart, mIndex);
+  return Token(type, text);
+}
+
+bool Lexer::isOperator(char c) {
+  return nullptr != strchr("`~!@#$%^&*-=+\\|/?<>", c);
+}

@@ -148,4 +148,10 @@ public:
 # endif
 #endif
 
+#if defined(TYR_OS_WIN)
+# include "win/tyr_win_shared_mutex.h"
+#else
+# include "posix/tyr_posix_shared_mutex.h"
+#endif
+
 #endif  // __TYR_LOCKER_HEADER_H__
