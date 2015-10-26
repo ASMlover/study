@@ -30,11 +30,16 @@
 
 # Just for Python3
 
+from email import encoders
 from email.header import Header
+from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
-from email.utils import parseaddr, formataddr
+from email.mime.multipart import MIMEMultipart
+from email.utils import formataddr
+from email.utils import parseaddr
 import getpass
 import smtplib
+import os
 
 SMTP_HOST = 'smtp.163.com'
 
@@ -46,19 +51,33 @@ def _get_mail_user():
     user = input('User: ')
     passwd = getpass.getpass('Password: ')
     receiver = input('To: ')
+    attachment = input('Attachment: ')
 
-    return user, passwd, receiver
+    return user, passwd, receiver, attachment
 
-def _genrate_message(sender, receiver, text='Hello, world!'):
-    msg = MIMEText(text, 'plain', 'utf-8')
+def _genrate_message(sender, receiver, attachment, text='Hello, world!'):
+    msg = MIMEMultipart()
     msg['From'] = _format_addr('Sender <%s>' % sender)
     msg['To'] = _format_addr('Receiver <%s>' % receiver)
     msg['Subject'] = Header('Sender -> Receiver', 'utf-8').encode()
+    msg.attach(MIMEText(text, 'plain', 'utf-8'))
+    with open(attachment, 'rb') as f:
+        filename = os.path.split(attachment)[-1]
+        ext = os.path.splitext(filename)[-1]
+        mime = MIMEBase('file', ext, filename=filename)
+        mime.add_header(
+                'Content-Disposition', 'attachment', filename=filename)
+        mime.add_header('Content', '<0>')
+        mime.add_header('X-Attachment-Id', '0')
+        mime.set_payload(f.read())
+        encoders.encode_base64(mime)
+        msg.attach(mime)
+
     return msg
 
 if __name__ == '__main__':
-    user, passwd, receiver = _get_mail_user()
-    msg = _genrate_message(user, receiver)
+    user, passwd, receiver, attachment = _get_mail_user()
+    msg = _genrate_message(user, receiver, attachment)
 
     server = smtplib.SMTP(SMTP_HOST, 25)
     server.set_debuglevel(1)
