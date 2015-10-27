@@ -32,11 +32,33 @@ namespace tyr {
 template <typename Object>
 class Singleton : private UnCopyable {
 public:
-  static Object& Instance(void) {
-    static SmartPtr<Object> object(new Object());
-    return *object;
+  template <typename... Args>
+  static Object& Instance(Args&&... args) {
+    static Object ins_(args...)
+    return ins_;
   }
 };
+
+template <typename Object>
+class SingletonEx : private UnCopyable {
+  static SmartPtr<Object> ins_;
+public:
+  template <typename... Args>
+  static Object& Instance(Args&&... args) {
+    std::call_once(GetOnce(), [](Args&&... args) {
+      ins_.Reset(new Object(std::forward<Args>(args)...));
+    }, std::forward<Args>(args)...);
+
+    return *ins_;
+  }
+private:
+  static std::once_flag& GetOnce(void) {
+    static std::once_flag once;
+    return once;
+  }
+};
+
+template <Object> SmartPtr<Object> SingletonEx<Object>::ins_;
 
 }
 
