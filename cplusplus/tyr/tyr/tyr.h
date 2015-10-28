@@ -120,6 +120,11 @@
 #   include <libkern/OSAtomic.h>
 #   include <mach/mach.h>
 #   include <mach/mach_time.h>
+#   include <mach/mach_traps.h>
+#   include <mach/semaphore.h>
+#   include <mach/task.h>
+# else
+#   include <semaphore.h>
 # endif
 #endif
 
@@ -171,5 +176,7 @@
 #include "tyr_smart_ptr.h"
 #include "tyr_unique_array.h"
 #include "tyr_smart_array.h"
+#include "tyr_singleton.h"
+#include "tyr_sem.h"
 
 #endif  // __TYR_HEADER_H__

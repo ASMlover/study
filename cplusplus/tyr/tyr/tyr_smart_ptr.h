@@ -80,6 +80,12 @@ public:
     , rc_(nullptr) {
   }
 
+  SmartPtr(nullptr_t) tyr_noexcept
+    : ptr_(nullptr)
+    , rp_(nullptr)
+    , rc_(nullptr) {
+  }
+
   template <typename U>
   explicit SmartPtr(U* p)
     : ptr_(p)
