@@ -140,6 +140,8 @@
 
 // ANSI C++ HEADERS
 #include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -178,5 +180,6 @@
 #include "tyr_smart_array.h"
 #include "tyr_singleton.h"
 #include "tyr_sem.h"
+#include "tyr_condition.h"
 
 #endif  // __TYR_HEADER_H__
