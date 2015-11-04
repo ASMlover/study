@@ -27,9 +27,42 @@
 #ifndef __TYR_CONDITION_HEADER_H__
 #define __TYR_CONDITION_HEADER_H__
 
-#if defined(TYR_OS_WIN)
-#elif defined(TYR_OS_LINUX)
-#elif defined(TYR_OS_MAC)
+#if defined(TYR_CPP0X)
+
+namespace tyr {
+
+class Condition : private UnCopyable {
+  std::condition_variable cond_;
+public:
+  void Singal(void) {
+    cond_.notify_one();
+  }
+
+  void Broadcast(void) {
+    cond_.notify_all();
+  }
+
+  void Wait(Mutex& mutex) {
+    std::unique_lock<std::mutex> lock(*mutex.InnerMutex());
+    cond_.wait(lock);
+  }
+
+  bool TimedWait(Mutex& mutex, uint64_t timeout) {
+    std::unique_lock<std::mutex> lock(*mutex.InnerMutex());
+    return (std::cv_status::no_timeout ==
+        cond_.wait_for(lock, std::chrono::nanoseconds(timeout)));
+  }
+};
+
+}
+
+#else
+# if defined(TYR_OS_WIN)
+#  include "win/tyr_win_condition.h"
+# elif defined(TYR_OS_LINUX)
+#  include "posix/tyr_posix_condition.h"
+# elif defined(TYR_OS_MAC)
+#  include "mac/tyr_mac_condition.h"
 #endif
 
 #endif  // __TYR_CONDITION_HEADER_H__
