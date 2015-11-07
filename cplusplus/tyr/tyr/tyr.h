@@ -171,14 +171,11 @@
   }\
 } while (0)
 
-#include "utils/tyr_uncopyable.h"
+#include "tyr_uncopyable.h"
+#include "memory/tyr_memory.h"
+#include "utils/tyr_utils.h"
 #include "tyr_locker.h"
 #include "tyr_atomic.h"
-#include "tyr_unique_ptr.h"
-#include "tyr_smart_ptr.h"
-#include "tyr_unique_array.h"
-#include "tyr_smart_array.h"
-#include "utils/tyr_singleton.h"
 #include "tyr_sem.h"
 #include "tyr_condition.h"
 
