@@ -174,9 +174,6 @@
 #include "tyr_uncopyable.h"
 #include "memory/tyr_memory.h"
 #include "utils/tyr_utils.h"
-#include "tyr_locker.h"
-#include "tyr_atomic.h"
-#include "tyr_sem.h"
-#include "tyr_condition.h"
+#include "thread/tyr_thread.h"
 
 #endif  // __TYR_HEADER_H__
