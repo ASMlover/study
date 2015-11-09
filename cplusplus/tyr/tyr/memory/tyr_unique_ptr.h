@@ -38,6 +38,10 @@ public:
   explicit UniquePtr(T* p = nullptr) tyr_noexcept
     : ptr_(p) {
   }
+  
+  UniquePtr(nullptr_t) tyr_noexcept
+    : ptr_(nullptr) {
+  }
 
   ~UniquePtr(void) {
     if (nullptr != ptr_)
@@ -47,6 +51,11 @@ public:
   UniquePtr(UniquePtr<T>&& other) tyr_noexcept
     : ptr_(other.ptr_) {
     other.ptr_ = nullptr;
+  }
+
+  UniquePtr<T>& operator=(nullptr_t) tyr_noexcept {
+    Reset();
+    return *this;
   }
 
   UniquePtr<T>& operator=(UniquePtr<T>&& other) tyr_noexcept {

@@ -80,6 +80,12 @@ public:
     , rc_(nullptr) {
   }
 
+  SmartArray(nullptr_t) tyr_noexcept
+    : ptr_(nullptr)
+    , ra_(nullptr)
+    , rc_(nullptr) {
+  }
+
   template <typename U>
   explicit SmartArray(U* p)
     : ptr_(p)

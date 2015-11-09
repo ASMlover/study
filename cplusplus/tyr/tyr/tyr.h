@@ -120,6 +120,11 @@
 #   include <libkern/OSAtomic.h>
 #   include <mach/mach.h>
 #   include <mach/mach_time.h>
+#   include <mach/mach_traps.h>
+#   include <mach/semaphore.h>
+#   include <mach/task.h>
+# else
+#   include <semaphore.h>
 # endif
 #endif
 
@@ -135,6 +140,8 @@
 
 // ANSI C++ HEADERS
 #include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -165,11 +172,11 @@
 } while (0)
 
 #include "tyr_uncopyable.h"
+#include "memory/tyr_memory.h"
+#include "utils/tyr_utils.h"
 #include "tyr_locker.h"
 #include "tyr_atomic.h"
-#include "tyr_unique_ptr.h"
-#include "tyr_smart_ptr.h"
-#include "tyr_unique_array.h"
-#include "tyr_smart_array.h"
+#include "tyr_sem.h"
+#include "tyr_condition.h"
 
 #endif  // __TYR_HEADER_H__

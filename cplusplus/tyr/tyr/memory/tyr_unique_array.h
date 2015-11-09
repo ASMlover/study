@@ -39,6 +39,10 @@ public:
     : ptr_(p) {
   }
 
+  UniqueArray(nullptr_t) tyr_noexcept
+    : ptr_(nullptr_t) {
+  }
+
   ~UniqueArray(void) {
     if (nullptr != ptr_)
       delete [] ptr_;
@@ -47,6 +51,11 @@ public:
   UniqueArray(UniqueArray<T>&& other) tyr_noexcept
     : ptr_(other.ptr_) {
     other.ptr_ = nullptr;
+  }
+
+  UniqueArray<T>& operator=(nullptr_t) tyr_noexcept {
+    Reset();
+    return *this;
   }
 
   UniqueArray<T>& operator=(UniqueArray<T>&& other) tyr_noexcept {
