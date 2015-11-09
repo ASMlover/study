@@ -154,6 +154,12 @@
         查询进程, 杀死进程
 
 
+## **关闭Linux防火墙**
+    这里以Debian为例子说明，首先以root用户进入
+    # /sbin/iptables -F
+    # /sbin/iptables -X
+
+
 ## **Terminal常用技巧**
 > ### **1. 光标移动**
     * Ctrl+a    移动到行首
