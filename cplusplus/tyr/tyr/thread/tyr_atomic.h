@@ -28,7 +28,7 @@
 #define __TYR_ATOMIC_HEADER_H__
 
 #if defined(TYR_CPP0X)
-# include "tyr_atomic_counter.h"
+# include "cpp11/tyr_cpp11_atomic_counter.h"
 #else
 # if defined(TYR_OS_WIN)
 #   include "win/tyr_win_atomic_counter.h"
@@ -37,7 +37,7 @@
 # elif defined(TYR_OS_MAC)
 #   include "mac/tyr_mac_atomic_counter.h"
 # else
-#   include "tyr_self_atomic_counter.h"
+#   include "tyr_atomic_counter.h"
 # endif
 #endif
 
