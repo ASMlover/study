@@ -32,6 +32,18 @@
 #include "tyr_sem.h"
 #include "tyr_condition.h"
 
+// CONDITION VARIABLE
+#if defined(TYR_CPP0X)
+# include "cpp11/tyr_cpp11_condition.h"
+#else
+# if defined(TYR_OS_WIN)
+#  include "win/tyr_win_condition.h"
+# elif defined(TYR_OS_LINUX)
+#  include "posix/tyr_posix_condition.h"
+# elif defined(TYR_OS_MAC)
+#  include "mac/tyr_mac_condition.h"
+#endif
+
 namespace tyr {
 
 typedef std::function<void (void*)> RoutinerType;

@@ -24,10 +24,8 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_CONDITION_HEADER_H__
-#define __TYR_CONDITION_HEADER_H__
-
-#if defined(TYR_CPP0X)
+#ifndef __TYR_CPP11_CONDITION_HEADER_H__
+#define __TYR_CPP11_CONDITION_HEADER_H__
 
 namespace tyr {
 
@@ -56,13 +54,4 @@ public:
 
 }
 
-#else
-# if defined(TYR_OS_WIN)
-#  include "win/tyr_win_condition.h"
-# elif defined(TYR_OS_LINUX)
-#  include "posix/tyr_posix_condition.h"
-# elif defined(TYR_OS_MAC)
-#  include "mac/tyr_mac_condition.h"
-#endif
-
-#endif  // __TYR_CONDITION_HEADER_H__
+#endif  // __TYR_CPP11_CONDITION_HEADER_H__
