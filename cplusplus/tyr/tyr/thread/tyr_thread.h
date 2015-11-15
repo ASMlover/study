@@ -33,6 +33,19 @@
 #include "tyr_condition.h"
 
 namespace tyr {
+
+typedef std::function<void (void*)> RoutinerType;
+
 }
+
+#if defined(TYR_CPP0X)
+# include "cpp11/tyr_cpp11_thread.h"
+#else
+# if defined(TYR_OS_WIN)
+#   include "win/tyr_win_thread.h"
+# else
+#   include "posix/tyr_posix_thread.h"
+# endif
+#endif
 
 #endif  // __TYR_THREAD_HEADER_H__
