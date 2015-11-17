@@ -137,7 +137,7 @@ public:
 }
 
 #if defined(TYR_CPP0X)
-# include "tyr_mutex.h"
+# include "cpp11/tyr_cpp11_mutex.h"
 #else
 # if defined(TYR_OS_WIN)
 #   include "win/tyr_win_mutex.h"
