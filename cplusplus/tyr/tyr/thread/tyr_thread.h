@@ -27,10 +27,30 @@
 #ifndef __TYR_THREAD_HEADER_H__
 #define __TYR_THREAD_HEADER_H__
 
-#include "tyr_atomic.h"
+// ATOMIC
+#if defined(TYR_CPP0X)
+# include "cpp11/tyr_cpp11_atomic_counter.h"
+#else
+# if defined(TYR_OS_WIN)
+#   include "win/tyr_win_atomic_counter.h"
+# elif defined(TYR_OS_LINUX)
+#   include "posix/tyr_posix_atomic_counter.h"
+# elif defined(TYR_OS_MAC)
+#   include "mac/tyr_mac_atomic_counter.h"
+# else
+#   include "tyr_atomic_counter.h"
+# endif
+#endif
 #include "tyr_locker.h"
-#include "tyr_sem.h"
-#include "tyr_condition.h"
+
+// SEMAPHORE
+#if defined(TYR_OS_WIN)
+# include "win/tyr_win_sem.h"
+#elif defined(TYR_OS_LINUX)
+# include "posix/tyr_posix_sem.h"
+#elif defined(TYR_OS_MAC)
+# include "mac/tyr_mac_sem.h"
+#endif
 
 // CONDITION VARIABLE
 #if defined(TYR_CPP0X)
