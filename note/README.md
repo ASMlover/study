@@ -1,5 +1,6 @@
-# **README for note**
+# **Note**
 ***
 
-## **Summary**
-  * 记录经验日志等
+## **目录**
+  * [Python](./Python/index.md)
+  * [Tools](./Tools/index.md)
