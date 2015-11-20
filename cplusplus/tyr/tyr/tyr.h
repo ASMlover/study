@@ -172,8 +172,8 @@
 } while (0)
 
 #include "tyr_uncopyable.h"
+#include "thread/tyr_thread.h"
 #include "memory/tyr_memory.h"
 #include "utils/tyr_utils.h"
-#include "thread/tyr_thread.h"
 
 #endif  // __TYR_HEADER_H__
