@@ -159,3 +159,33 @@ class Student(object):
       raise ValueError('score must between 0 ~ 100')
     self._score = value
 ```
+
+## **8. iter魔法**
+  * 通过yield和__iter__结合，可以把一个对象变成可迭代对象
+  * 通过重写__str__，可按自己的需求打印对象
+```python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+class MyClass(object):
+  def __init__(self):
+    self._my_value = [1, 2, 3, 4, 5]
+
+  def read(self):
+    for v in xrange(len(self._my_value)):
+      yield v
+
+  def __iter__(self):
+    return self.read()
+
+  def __str__(self):
+    return ','.join(map(str, self._my_value))
+
+  __repr__ = __str__
+
+if __name__ == '__main__':
+  c = MyClass()
+  for v in c:
+    print v
+  print c
+```
