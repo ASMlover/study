@@ -1,9 +1,18 @@
 # **Python奇技淫巧**
 ***
 
-* [9. 神奇的partial](#9)
+* **[Content]**
+  * [1. 显示有限的接口到外部](#1)
+  * [2. with关键字](#2)
+  * [3. filter的用法](#3)
+  * [4. 一行作为判断(类C语言三目运算)](#4)
+  * [5. 装饰器之单例](#5)
+  * [6. staticmethod装饰器](#6)
+  * [7. property装饰器](#7)
+  * [8. iter魔法](#8)
+  * [9. 神奇的partial](#9)
 
-## **1. 显示有限的接口到外部**
+<h2 id="1">1. 显示有限的接口到外部</h2>
   当发布Python第三方package的时候，不希望代码中所有的函数或class可以被外部import，这个时候可以在`__init__.py`中添加`__all__`属性，该list中填写可以import的类或函数名，这样就可以起到限制import的作用，放置外部import其他函数或类。
 ```python
 #!/usr/bin/env python
@@ -16,7 +25,7 @@ from utils import LogFormatter
 __all__ = ['ClientEntity', 'ServerEntity', 'LogFormatter']
 ```
 
-## **2. with关键字**
+<h2 id="2">2. with关键字</h2>
   with语句需要支持上下文管理协议的对象，上下文管理协议包含`__enter__`和`__exit__`。with语句建立运行时上下文需要通过这两个方法执行进入和退出操作。上下文表达式是跟在with之后的表达式，该表达式返回一个上下文管理对象。
 ```python
 #!/usr/bin/env python
@@ -62,7 +71,7 @@ if __name__ == '__main__':
   根据执行结果可以看见先执行`__enter__`方法，然后执行with之内的逻辑，最后执行`__exit__`做退出处理，即使出现异常也可以正常退出。
 
 
-## **3. filter的用法**
+<h2 id="3">3. filter的用法</h2>
   相对filter而言，map和reduce的使用频率更频繁一些，filter是按照某种规则过滤一些元素。
 ```python
 #!/usr/bin/env python
@@ -72,7 +81,7 @@ my_list = [1, 2, 3, 4, 5, 6]
 print filter(lambda x: x % 2 != 0, my_list) # 过滤所有偶数
 ```
 
-## **4. 一行作为判断(类C语言三目运算)**
+<h2 id="4">4. 一行作为判断(类C语言三目运算)</h2>
   当条件满足时，返回的为等号后面的变量，否则返回else后面的语句。
 ```python
 #!/usr/bin/env python
@@ -83,7 +92,7 @@ new_list = my_list[0] if my_list is not None else None
 print new_list
 ```
 
-## **5. 装饰器之单例**
+<h2 id="5">5. 装饰器之单例</h2>
   使用装饰器实现简单的单例。
 ```python
 #!/usr/bin/env python
@@ -107,7 +116,7 @@ if __name__ == '__main__':
   print c1, c2
 ```
 
-## **6. staticmethod装饰器**
+<h2 id="6">6. staticmethod装饰器</h2>
   类中两种常用的装饰，首先区分以下：
   * 普通成员函数，其中第一个隐式参数为对象；
   * classmethod装饰器，类方法(给人感觉类似与OC中的类方法)，其中第一个隐式参数为类；
@@ -137,7 +146,7 @@ if __name__ == '__main__':
   MyClass.static_fun('Hello, world')
 ```
 
-## **7. property装饰器**
+<h2 id="7">7. property装饰器</h2>
   将property与装饰器结合可以实现属性私有化(更简单安全实现get和set方法)
 ```python
 # python的内建函数
@@ -162,7 +171,7 @@ class Student(object):
     self._score = value
 ```
 
-## **8. iter魔法**
+<h2 id="8">8. iter魔法</h2>
   * 通过yield和__iter__结合，可以把一个对象变成可迭代对象
   * 通过重写__str__，可按自己的需求打印对象
 ```python
