@@ -1,6 +1,8 @@
 # **Python奇技淫巧**
 ***
 
+* [9. 神奇的partial](#9)
+
 ## **1. 显示有限的接口到外部**
   当发布Python第三方package的时候，不希望代码中所有的函数或class可以被外部import，这个时候可以在`__init__.py`中添加`__all__`属性，该list中填写可以import的类或函数名，这样就可以起到限制import的作用，放置外部import其他函数或类。
 ```python
@@ -188,4 +190,33 @@ if __name__ == '__main__':
   for v in c:
     print v
   print c
+```
+
+<h2 id="9">9. 神奇的partial</h2>
+  类似C++中的仿函数(函数对象)，类似partial的运行方式如下：
+```python
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+def partial(fun, *p_args):
+  def wrapper(*extra_args):
+    args = list(p_args)
+    args.extend(extra_args)
+    return fun(*args)
+
+  return wrapper
+```
+  利用闭包的特性绑定一些函数参数，返回一个可调用的变量，直到真正的调用执行。
+```python
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+from functools import partial
+
+def add_fun(a, b):
+  return a + b
+
+if __name__ == '__main__':
+  fun = partial(add_fun, 2)
+  print fun(3) # 实现执行的就是add_fun(2, 3)
 ```
