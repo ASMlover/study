@@ -134,3 +134,28 @@ if __name__ == '__main__':
   c.static_fun('Hello, world')
   MyClass.static_fun('Hello, world')
 ```
+
+## **7. property装饰器**
+  将property与装饰器结合可以实现属性私有化(更简单安全实现get和set方法)
+```python
+# python的内建函数
+property(fget=None, fset=None, fdel=None, doc=None)
+```
+  fget是获取属性值的函数，fset是设置属性值的函数，fdel是删除属性值的函数，doc是一个字符串，这些参数都是可选的。property有3ge方法getter()，setter()和delete()来指定fget，fset和fdel。
+```python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+class Student(object):
+  @property # 相当于property.getter(score)或property(score)
+  def score(self):
+    return self._score
+
+  @score.setter # 相当于score = property.setter(score)
+  def score(self, value):
+    if not isinstance(value, int):
+      raise ValueError('score must be an integer')
+    if value < 0 or value > 100:
+      raise ValueError('score must between 0 ~ 100')
+    self._score = value
+```
