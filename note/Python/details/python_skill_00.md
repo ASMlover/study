@@ -254,6 +254,26 @@ action = {"cond_val": 5, "do_action": action_fun}
 
 if __name__ == '__main__':
   r = eval('cond_val > 3 and do_action()', action)
-  return r
+  print r
+```
+[Back](#content)
+
+<h2 id="11">11. exec</h2>
+  * exec会忽略返回值，总是返回None，eval会返回执行代码或语句的返回值
+  * exec和eval在执行代码时，除了返回值其他都相同
+  * 传入字符串时，会使用compile(source, "<string>", mode)编译字节码，mode的取值为exec和eval
+```python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+def action_fun():
+  print 'action_fun'
+  return True
+
+action = {'cond_val': 5, 'do_action': action_fun}
+
+if __name__ == '__main__':
+  r = exec('cond_val > 3 and do_action()', action)
+  print r
 ```
 [Back](#content)
