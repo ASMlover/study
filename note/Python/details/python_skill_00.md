@@ -12,6 +12,8 @@
   * [8. iter魔法](#8)
   * [9. 神奇的partial](#9)
   * [10. eval](#10)
+  * [11. exec](#11)
+  * [12. getattr](#12)
 
 <h2 id="1">1. 显示有限的接口到外部</h2>
   当发布Python第三方package的时候，不希望代码中所有的函数或class可以被外部import，这个时候可以在`__init__.py`中添加`__all__`属性，该list中填写可以import的类或函数名，这样就可以起到限制import的作用，放置外部import其他函数或类。
@@ -275,5 +277,31 @@ action = {'cond_val': 5, 'do_action': action_fun}
 if __name__ == '__main__':
   r = exec('cond_val > 3 and do_action()', action)
   print r
+```
+[Back](#content)
+
+<h2 id="12">12. getattr</h2>
+  通过string类型的name，返回对象的name属性（方法）对应的值，如果属性不存在，则返回默认值，相当于object.name。
+```python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+class MyClass(object):
+  attr = 'MyClass.attr attribute'
+
+  def say(self):
+    print 'MyClass.say method'
+
+if __name__ == '__main__':
+  c = MyClass()
+  try:
+    print getattr(c, 'attr')
+  except AttributeError:
+    print 'Attribute Error!'
+
+  try:
+    getattr(c, 'say')()
+  except AttributeError:
+    print 'Method Error!'
 ```
 [Back](#content)
