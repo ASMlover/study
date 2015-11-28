@@ -16,6 +16,7 @@
   * [12. getattr](#12)
   * [13. 命令行处理](#13)
   * [14. 读写csv文件](#14)
+  * [15. 各种时间格式转换](#15)
 
 <h2 id="1">1. 显示有限的接口到外部</h2>
   当发布Python第三方package的时候，不希望代码中所有的函数或class可以被外部import，这个时候可以在`__init__.py`中添加`__all__`属性，该list中填写可以import的类或函数名，这样就可以起到限制import的作用，放置外部import其他函数或类。
@@ -351,5 +352,24 @@ def csv_writer():
       ('name_2', 'famale', '20'),
     ]
     writer.writerows(data)
+```
+[Back](#content)
+
+<h2 id="15">15. 各种时间格式转换</h2>
+```
+datetime -> datetime.strftime(format) -> string
+string -> datetime.strptime(str, format) -> datetime
+
+string -> time.strptime(str, format) -> timetuple
+timetuple -> time.strftime(format, tp) -> string
+
+datetime -> datetime.timetuple() -> timetuple
+timetuple -> datetime.datetime(*tp[:6]) -> datetime
+
+timetuple -> time.mktime(tp) -> timestamp
+timestamp -> time.localtime(ts)/time.gmtime(ts) -> timetuple
+
+timestamp -> datetime.fromtimestamp(ts) -> datetime
+timestamp -> datetime.utcfromtimestamp(ts) -> datetime
 ```
 [Back](#content)
