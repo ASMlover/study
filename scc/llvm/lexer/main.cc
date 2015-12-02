@@ -24,8 +24,9 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <ctypes.h>
+#include <ctype.h>
 #include <stdio.h>
+#include <iostream>
 #include <string>
 
 enum Token {
@@ -85,5 +86,10 @@ static int GetToken(void) {
 }
 
 int main(int argc, char* argv[]) {
+  while (true) {
+    std::cout << "ready> ";
+    std::cout << GetToken() << std::endl;
+  }
+
   return 0;
 }
