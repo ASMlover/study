@@ -17,10 +17,35 @@ int lines = 0;
 .         { chars++; }
 %%
 
+int yywrap(void) {
+  return 1;
+}
+
 int main(int argc, char* argv[]) {
   yylex();
   printf("lines=%d, words=%d, chars=%d\n", lines, words, lines);
 
+  return 0;
+}
+```
+
+<h2 id="2">纯Flex的程序</h2>
+简单的程序可以将所有的内容都放到Flex里面完成, 或只需要一点C代码。如从英式英语到美式英语的转换：
+```c
+%%
+"colour"  { printf("color"); }
+"flavour" { printf("flavor"); }
+"clever"  { printf("smart"); }
+"smart"   { printf("elegant"); }
+.         { printf("%s", yytext); }
+%%
+
+int yywrap(void) {
+  return 1;
+}
+
+int main(int argc, char* argv[]) {
+  yylex();
   return 0;
 }
 ```
