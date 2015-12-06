@@ -6,16 +6,16 @@ int yywrap(void) {
 }
 %}
 %%
-"+"     { return ADD; }
-"-"     { return SUB; }
-"*"     { return MUL; }
-"/"     { return DIV; }
-"|"     { return ABS; }
-"("     { return LP; }
-")"     { return RP; }
-"//".*  {}
-[0-9]+  { yylval = atoi(yytext); return NUMBER; }
-\n      { return EOL; }
-[ \t]   {}
-.       { printf("Mystery character %s\n", yytext); }
+"+"         { return ADD; }
+"-"         { return SUB; }
+"*"         { return MUL; }
+"/"         { return DIV; }
+"|"         { return ABS; }
+"("         { return LP; }
+")"         { return RP; }
+"//".*      {}
+[-+]?[0-9]+ { yylval = atoi(yytext); return NUMBER; }
+\n          { return EOL; }
+[ \t]       {}
+.           { printf("Mystery character %s\n", yytext); }
 %%
