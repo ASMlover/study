@@ -49,3 +49,16 @@ int main(int argc, char* argv[]) {
   return 0;
 }
 ```
+
+<h2 id="3">文法与语法分析</h2>
+语法分析器的任务是找出输入记号之间的关系，一种常见的关系表达方式就是语法分析树。
+
+在计算机分析程序里最常用的语言是上下文无关文法(Context-Free Grammer, CFG)，书写上下文无关文法的标准格式就是BackusNaur范式(BackusNaur Form, BNF)。例如:
+```c
+// 1 * 2 + 3 * 4 + 5的文法如下
+<expr> ::= <factor>
+    | <expr> + <factor>
+<factor> ::= NUMBER
+    | <factor> * NUMBER
+```
+在BNF中，::=被读作“是”或“变成”，|是“或者”，创建同类分支的另一种方式。规则左边的名称是语法符号(symbol)。有效的BNF总是带有递归性，规则会直接或间接指向自身。
