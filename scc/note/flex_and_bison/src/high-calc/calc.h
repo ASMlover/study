@@ -74,6 +74,7 @@ enum bifs {
   B_EXP,
   B_LOG,
   B_PRINT,
+  B_EXIT,
 };
 
 struct ast {
