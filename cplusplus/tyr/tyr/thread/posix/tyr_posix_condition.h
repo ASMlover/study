@@ -72,7 +72,7 @@ public:
 private:
   int InitCondition(void) {
     pthread_condattr_t attr;
-    
+
     int err = pthread_condattr_init(&attr);
     if (err)
       return -err;
