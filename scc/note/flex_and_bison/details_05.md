@@ -39,3 +39,4 @@ Flex提供了一对函数来管理输入缓冲区堆栈：
 void yypush_buffer_state(bp); // 切换到bp，把旧的缓冲区压入堆栈
 void yypop_buffer_state();    // 删除当前缓冲区，继续使用上一个缓冲区
 ```
+Flex通过`YY_INPUT(buf, result, max_size)`来读取输入到一个缓冲区，一旦词法分析器发现需要更多的输入而缓冲区为空的时候就会调用`YY_INPUT`，当缓冲区第一次被简历起来的时候，词法分析器将调用isatty()来确定输入源是否来自终端，如果是将每次读取一个字符而不是一大段字符。
