@@ -66,3 +66,29 @@ int main(int argc, char* argv[]) {
   yylex_destroy(scanner);
 }
 ```
+纯语法分析器的创建比纯词法分析器要简单，因为整个Bison的分析发生在一次yyparse的调用中。用来与词法分析器通信的yylval和yyloc将变成必须传递给yylex的实例数据，它们可以与应用层的实例数据放在一起。
+```c
+%define api.pure
+%parse-param { struct pureparse* pp }
+
+...
+
+// 语法分析器中生成的调用
+token = yylex(YYSTYPE* yylvalp);
+token = yylex(YYSTYPE* yylvalp, YYLTYPE* yylocp);
+
+...
+
+%code {
+#define YYLEX_PARAM pp->scaninfo
+%}
+%%
+...
+
+// 语法分析器中生成的调用
+token = yylex(YYSTYPE* yylvalp);
+token = yylex(YYSTYPE* yylvalp, YYLTYPE* yylocp);
+
+...
+%%
+```
