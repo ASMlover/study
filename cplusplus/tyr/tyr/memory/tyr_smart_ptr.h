@@ -120,7 +120,7 @@ public:
     if (nullptr != rc_)
       ++*rc_;
   }
-  
+
   SmartPtr(SmartPtr<T>&& other) tyr_noexcept
     : ptr_(other.ptr_)
     , rp_(other.rp_)

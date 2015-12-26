@@ -34,7 +34,7 @@ class Thread : private UnCopyable {
 public:
   template <typename Routine, typename Argument...>
   Thread(Routine&& routine, Argument&&... argument)
-    : thread_(std::forward<Routine>(routine), 
+    : thread_(std::forward<Routine>(routine),
         std::forward<Argument>(argument)...) {
   }
 

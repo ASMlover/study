@@ -38,7 +38,7 @@ public:
   explicit UniquePtr(T* p = nullptr) tyr_noexcept
     : ptr_(p) {
   }
-  
+
   UniquePtr(nullptr_t) tyr_noexcept
     : ptr_(nullptr) {
   }
