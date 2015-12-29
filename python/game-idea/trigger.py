@@ -35,9 +35,9 @@ class Trigger(object):
     def condition(self):
         return True
 
-class Trigger_1101(Trigger):
-    def onPlayerEnter(self, eid):
+class Trigger1101(Trigger):
+    def on_player_enter(self, eid):
         print ('%d enter' % eid)
 
-    def onPlayerLeave(self, eid):
+    def on_player_leave(self, eid):
         print ('%d leave' % eid)

@@ -31,11 +31,11 @@ import trigger
 
 if __name__ == '__main__':
     space = None
-    Type = getattr(trigger, 'Trigger_1101')
+    Type = getattr(trigger, 'Trigger1101')
     print (Type)
 
     t = Type(space)
     if not t:
         exit(1)
-    t.onPlayerEnter(1101)
-    t.onPlayerLeave(1101)
+
+    t.on_player_enter(1101)
