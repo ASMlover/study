@@ -27,17 +27,15 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+import trigger
 
-class Trigger(object):
-    def __init__(self, space):
-        self.space = space
+if __name__ == '__main__':
+    space = None
+    Type = getattr(trigger, 'Trigger_1101')
+    print (Type)
 
-    def condition(self):
-        return True
-
-class Trigger_1101(Trigger):
-    def onPlayerEnter(self, eid):
-        print ('%d enter' % eid)
-
-    def onPlayerLeave(self, eid):
-        print ('%d leave' % eid)
+    t = Type(space)
+    if not t:
+        exit(1)
+    t.onPlayerEnter(1101)
+    t.onPlayerLeave(1101)
