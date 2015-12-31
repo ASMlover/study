@@ -29,15 +29,35 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 class Trigger(object):
-    def __init__(self, space):
+    def __init__(self, space, infos=None):
         self.space = space
+        self.cond_args = None
+        self.action_args = None
+
+        self.do_init(infos)
+
+    def do_init(self, infos):
+        if infos and 'cond' in infos:
+            self.cond_args = infos['cond']
+        if infos and 'action' in infos:
+            self.action_args = infos['action']
+
+    def do_action(self):
+        if self.condition():
+            self.action_impl()
 
     def condition(self):
-        return True
+        return False
+
+    def action_impl(self):
+        pass
 
 class Trigger1101(Trigger):
-    def on_player_enter(self, eid):
-        print ('%d enter' % eid)
+    def condition(self):
+        return self.space.monster_count() == self.cond_args
 
-    def on_player_leave(self, eid):
-        print ('%d leave' % eid)
+    def action_impl(self):
+        print (self.action_args)
+
+    def on_monster_die(self):
+        self.do_action()

@@ -29,13 +29,36 @@
 # POSSIBILITY OF SUCH DAMAGE.
 import trigger
 
+class Space(object):
+    def __init__(self):
+        pass
+
+    def monster_count(self):
+        return 0
+
+class TriggerManager(object):
+    def __init__(self, space=None):
+        self.space = space
+        self.triggers = {}
+
+    def register(self, trigger_no, infos):
+        trigger_name = 'Trigger%d' % trigger_no
+        trigger_type = getattr(trigger, trigger_name)
+        if trigger_type:
+            self.triggers[trigger_no] = trigger_type(self.space, infos)
+
+    def unregister(self, trigger_no):
+        self.triggers.pop(trigger_no, None)
+
+    def on_event_notify(self, notify, *args):
+        for _, trigger in self.triggers.items():
+            on_event = getattr(trigger, notify, None)
+            if on_event:
+                on_event(*args)
+
 if __name__ == '__main__':
-    space = None
-    Type = getattr(trigger, 'Trigger1101')
-    print (Type)
+    space = Space()
+    trigger_mgr = TriggerManager(space)
+    trigger_mgr.register(1101, {'cond': 0, 'action': 'all monsters dead !!!'})
 
-    t = Type(space)
-    if not t:
-        exit(1)
-
-    t.on_player_enter(1101)
+    trigger_mgr.on_event_notify('on_monster_die')
