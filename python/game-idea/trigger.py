@@ -33,6 +33,7 @@ class Trigger(object):
         self.space = space
         self.cond_args = None
         self.action_args = None
+        self.completed = False
 
         self.do_init(infos)
 
@@ -41,6 +42,12 @@ class Trigger(object):
             self.cond_args = infos['cond']
         if infos and 'action' in infos:
             self.action_args = infos['action']
+
+    def activatiable(self):
+        return True
+
+    def is_completed(self):
+        return False
 
     def do_action(self):
         if self.condition():

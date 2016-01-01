@@ -27,7 +27,7 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-import trigger
+import trigger as tm
 
 class Space(object):
     def __init__(self):
@@ -40,21 +40,35 @@ class TriggerManager(object):
     def __init__(self, space=None):
         self.space = space
         self.triggers = {}
+        self.activate_triggers = set()
 
     def register(self, trigger_no, infos):
         trigger_name = 'Trigger%d' % trigger_no
-        trigger_type = getattr(trigger, trigger_name)
+        trigger_type = getattr(tm, trigger_name)
         if trigger_type:
-            self.triggers[trigger_no] = trigger_type(self.space, infos)
+            trigger = trigger_type(self.space, infos)
+            self.triggers[trigger_no] = trigger
+            if trigger.activatiable():
+                self.activate_triggers.add(trigger_no)
 
     def unregister(self, trigger_no):
         self.triggers.pop(trigger_no, None)
 
     def on_event_notify(self, notify, *args):
-        for _, trigger in self.triggers.items():
+        completed_triggers = []
+        for trigger_no in self.activate_triggers:
+            trigger = self.triggers.get(trigger_no, None)
+            if not trigger:
+                continue
+
             on_event = getattr(trigger, notify, None)
             if on_event:
                 on_event(*args)
+
+            if trigger.is_completed():
+                completed_triggers.append(trigger_no)
+
+        [self.activate_triggers.discard(no) for no in completed_triggers]
 
 if __name__ == '__main__':
     space = Space()
