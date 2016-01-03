@@ -27,14 +27,24 @@
 #ifndef __TOKEN_HEADER_H__
 #define __TOKEN_HEADER_H__
 
-enum Token {
-  TOKEN_EOF = -1,
+struct Token {
+  enum Type {
+    TYPE_EOF = -1,
 
-  TOKEN_DEF = -2,
-  TOKEN_EXT = -3,
+    TYPE_DEF = -2,
+    TYPE_EXT = -3,
 
-  TOKEN_ID  = -4,
-  TOKEN_NUM = -5,
+    TYPE_ID  = -4,
+    TYPE_NUM = -5,
+  };
+
+  int         type;
+  std::string name;
+  struct Position {
+    std::string fname;
+    int         lineno;
+    int         colno;
+  } pos;
 };
 
 extern int getToken(void);
