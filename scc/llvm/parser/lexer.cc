@@ -178,3 +178,15 @@ Token::Type Lexer::LexerReal(int c, State& out_state, bool& out_save) {
   }
   return Token::Type::TYPE_EOF;
 }
+
+Token::Type Lexer::LexerStr(int c, State& out_state, bool& out_save) {
+  return Token::Type::TYPE_EOF;
+}
+
+Token::Type Lexer::LexerAssign(int c, State& out_state, bool& out_save) {
+  return Token::Type::TYPE_EOF;
+}
+
+Token::Type Lexer::LexerComment(int c, State& out_state, bool& out_save) {
+  return Token::Type::TYPE_EOF;
+}
