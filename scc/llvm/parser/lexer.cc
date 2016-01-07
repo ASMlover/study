@@ -180,6 +180,16 @@ Token::Type Lexer::LexerReal(int c, State& out_state, bool& out_save) {
 }
 
 Token::Type Lexer::LexerStr(int c, State& out_state, bool& out_save) {
+  if (c == '\"') {
+    out_state = State::STATE_FINISH;
+    out_save = false;
+
+    return Token::Type::TYPE_ID;
+  }
+  return Token::Type::TYPE_EOF;
+}
+
+Token::Type Lexer::LexerID(int c, State& out_state, bool& out_save) {
   return Token::Type::TYPE_EOF;
 }
 
