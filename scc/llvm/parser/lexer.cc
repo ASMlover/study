@@ -24,7 +24,34 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <unordered_map>
 #include "lexer.h"
+
+class ReservedManager : private UnCopyable {
+  std::unordered_map<std::string, Token::Type> reservedMap_;
+public:
+  static ReservedManager& Instance(void) {
+    static ReservedManager inst;
+    return inst;
+  }
+
+  Token::Type getReserved(const std::string& reserved) {
+    Token::Type type = Token::Type::TYPE_EOF;
+    if (reservedMap_.end() != reservedMap_.find(reserved))
+      type = reservedMap_[reserved];
+
+    return type;
+  }
+private:
+  ReservedManager(void) {
+    Init();
+  }
+
+  void Init(void) {
+    reservedMap_["def"] = Token::Type::TYPE_DEF;
+    reservedMap_["extern"] = Token::Type::TYPE_EXT;
+  }
+};
 
 Lexer::Lexer(void)
   : stream_(static_cast<FILE*>(nullptr))
