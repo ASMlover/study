@@ -217,13 +217,34 @@ Token::Type Lexer::LexerStr(int c, State& out_state, bool& out_save) {
 }
 
 Token::Type Lexer::LexerID(int c, State& out_state, bool& out_save) {
+  if (!isalnum(c) && '_' != c) {
+    UngetChar();
+    out_state = State::STATE_FINISH;
+    out_save = false;
+
+    return Token::Type::TYPE_ID;
+  }
+
   return Token::Type::TYPE_EOF;
 }
 
 Token::Type Lexer::LexerAssign(int c, State& out_state, bool& out_save) {
+  out_state = State::STATE_FINISH;
+  out_save = false;
+
   return Token::Type::TYPE_EOF;
 }
 
 Token::Type Lexer::LexerComment(int c, State& out_state, bool& out_save) {
+  out_save = false;
+  if (EOF == c) {
+    out_state = State::STATE_FINISH;
+    return Token::Type::TYPE_EOF;
+  }
+  else if ('\n' == c) {
+    out_state = State::STATE_BEGIN;
+    ++lineno;
+  }
+
   return Token::Type::TYPE_EOF;
 }
