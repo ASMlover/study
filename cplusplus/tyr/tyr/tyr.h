@@ -158,6 +158,8 @@
 #include <unorderd_map>
 #include <vector>
 
+typedef unsigned char byte_t;
+
 #define TYR_ASSERT(condition) do {\
   if (!(condition)) {\
     fprintf(stderr,\
