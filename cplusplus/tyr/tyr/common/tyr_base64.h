@@ -29,9 +29,9 @@
 
 namespace tyr {
 
-class Base64 : private UnCopyable {
-  static const char* kEncode64;
-  static char        kDecode64[257];
+class Base64 : public Singleton<Base64> {
+  const char* kEncode64;
+  char        kDecode64[257];
 public:
   Base64(void);
 

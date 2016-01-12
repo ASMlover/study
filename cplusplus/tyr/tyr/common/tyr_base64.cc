@@ -29,15 +29,13 @@
 
 namespace tyr {
 
-const char* Base64::kEncode64 =
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-char Base64::kDecode64 = {0};
-
 Base64::Base64(void) {
   InitDecode64();
 }
 
 void Base64::InitDecode64(void) {
+  kEncode64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+  memset(kDecode64, 0, sizeof(kDecode64));
   for (auto i = 0; i < 64; ++i)
     kDecode64[kEncode64[i]] = i;
 }
