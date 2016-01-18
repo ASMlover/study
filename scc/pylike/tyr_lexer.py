@@ -40,12 +40,12 @@ class Token(namedtuple('Token', ['name', 'value', 'lineno', 'column'])):
 def decode_str(s):
     regex = re.compile(r'\\(r|n|t|\\|\'|")')
     chars = {
-        'r': '\r',
-        'n': '\n',
-        't': '\t',
-        '\\': '\\',
-        '"': '"'
-        '\'': '\'',
+        'r':    '\r',
+        'n':    '\n',
+        't':    '\t',
+        '\\':   '\\',
+        '"':    '"'
+        "'":    "'",
     }
     def replace(matches):
         char = matches.group(1)[0]
@@ -59,3 +59,61 @@ def decode_num(s):
         return int(s)
     except ValueError:
         return float(s)
+
+class Lexer(object):
+    rules = [
+        ('COMMENT',     r'#.*'),
+        ('STRING',      r'"((\\"|[^"])*)"'),
+        ('STRING',      r"'((\\'|[^'])*)'"),
+        ('NUMBER',      r'\d+\.\d+'),
+        ('NUMBER',      r'\d+'),
+        ('NAME',        r'[a-zA-Z_]\w*'),
+        ('WHITESPACE',  '[ \t]+'),
+        ('NEWLINE',     r'\n+'),
+        ('OPERATOR',    r'[\+\-\*\/%]'),
+        ('OPERATOR',    r'<=|>=|==|!=|<|>'),
+        ('OPERATOR',    r'\|\||&&'),
+        ('OPERATOR',    r'\.\.\.|\.\.'),
+        ('OPERATOR',    '!'),
+        ('ASSIGN',      '='),
+        ('LPARAM',      r'\('),
+        ('RPARAM',      r'\)'),
+        ('LBRACK',      r'\['),
+        ('RBRACK',      r'\]'),
+        ('LCBRACK',     r'{'),
+        ('RCBRACK',     r'}'),
+        ('COLON',       ':'),
+        ('COMMA',       ','),
+    ]
+    keywords = {
+        'func':     'FUNCTION',
+        'return':   'RETURN',
+        'else':     'ELSE',
+        'elif':     'ELIF',
+        'if':       'IF',
+        'while':    'WHILE',
+        'break':    'BREAK',
+        'continue': 'CONTINUE',
+        'for':      'FOR',
+        'in':       'IN',
+        'match':    'MATCH',
+        'when':     'WHEN',
+    }
+    ignore_tokens = ['WHITESPACE', 'COMMENT']
+    decodes = {'STRING': decode_str, 'NUMBER': decode_num}
+
+    def __init__(self):
+        self.source_lines = []
+        self.regex = self.compile_rules(self.rules)
+
+    def compile_rules(self, rules):
+        return re.compile('|'.join(self.convert_rules(rules)))
+
+    def convert_rules(self, rules):
+        grouped_rules = OrderedDict()
+        for name, pattern in rules:
+            grouped_rules.setdefault(name, [])
+            grouped_rules[name].append(pattern)
+        for name, patterns in iteritems(grouped_rules):
+            joined_patterns = '|'.join(['({})'.format(p) for p in patterns])
+            yield '(?P<{}>{})'.format(name, joined_patterns)
