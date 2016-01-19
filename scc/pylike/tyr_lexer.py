@@ -117,3 +117,21 @@ class Lexer(object):
         for name, patterns in iteritems(grouped_rules):
             joined_patterns = '|'.join(['({})'.format(p) for p in patterns])
             yield '(?P<{}>{})'.format(name, joined_patterns)
+
+    def tokenize_line(self, line, lineno):
+        pos = 0
+        while pos < len(line):
+            matches = self.regex.match(line, pos)
+            if matches is not None:
+                name = matches.lastgroup
+                pos = matches.end(name)
+                if name not in self.ignore_tokens:
+                    value = matches.group(name)
+                    if name in self.decodes:
+                        value = self.decodes[name](value)
+                    elif name == 'NAME' and value in self,.keywords:
+                        name = self.keywords[value]
+                        value = None
+                    yield Token(name, value, lineno, matches.start() + 1)
+            else:
+                raise LexerError('Unexcepted character {}'.format(line[pos]), lineno, pos + 1)
