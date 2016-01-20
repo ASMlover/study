@@ -135,3 +135,15 @@ class Lexer(object):
                     yield Token(name, value, lineno, matches.start() + 1)
             else:
                 raise LexerError('Unexcepted character {}'.format(line[pos]), lineno, pos + 1)
+
+    def count_leading_characters(self, line, char):
+        count = 0
+        for c in line:
+            if c != char:
+                break
+            count += 1
+        return count
+
+    def detect_indent(self, line):
+        if line[0] in [' ', '\t']:
+            return line[0] * self.count_leading_characters(line, line[0])
