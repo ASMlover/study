@@ -147,3 +147,43 @@ class Lexer(object):
     def detect_indent(self, line):
         if line[0] in [' ', '\t']:
             return line[0] * self.count_leading_characters(line, line[0])
+
+    def tokenize(self, s):
+        indent_symbol = None
+        tokens = []
+        last_indent_level = 0
+        lineno = 0
+        for lineno, line in enumerate(s.splitlines()):
+            lineno += 1
+            line = line.rstrip()
+
+            if not line:
+                self.source_lines.append('')
+                continue
+
+            if indent_symbol is None:
+                indent_symbol = self.detect_indent(line)
+
+            if indent_symbol is not None:
+                indent_level = line.count(indent_symbol)
+                line = line[indent_level * len(indent_symbol):]
+            else:
+                indent_level = 0
+
+            self.source_lines.append(line)
+
+            line_tokens = list(self.tokenize_line(line, lineno))
+            if line_tokens:
+                if indent_level != last_indent_level:
+                    if indent_level > last_indent_level:
+                        tokens.extend([Token('INDENT', None, lineno, 0)] * (indent_level - last_indent_level))
+                    elif indent_level < last_indent_level:
+                        tokens.extend([Token('DEDENT', None, lineno, 0)] * (last_indent_level - indent_level))
+                    last_indent_level = indent_level
+
+                tokens.extend(line_tokens)
+                tokens.append(Token('NEWLINE', None, lineno, len(line) + 1))
+
+        if last_indent_level > 0:
+            tokens.extend([Token('DEDENT', None, lineno, 0)] * last_indent_level)
+        return tokens
