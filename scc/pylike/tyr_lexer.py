@@ -187,3 +187,36 @@ class Lexer(object):
         if last_indent_level > 0:
             tokens.extend([Token('DEDENT', None, lineno, 0)] * last_indent_level)
         return tokens
+
+class TokenStream(object):
+    def __init__(self, tokens):
+        self.tokens = tokens
+        self.pos = 0
+
+    def consume_expected(self, *args):
+        token = None
+        for expected_name in args:
+            token = self.consume()
+            if token.name != expected_name:
+                raise LexerError('Expected {}, got {}'.format(expected_name, token.name), token.lineno, token.column)
+        return token
+
+    def consume(self):
+        token = self.current()
+        self.pos += 1
+        return token
+
+    def current(self):
+        try:
+            return self.tokens[self.pos]
+        except:
+            last_token = self.tokens[-1]
+            raise LexerError('Unexcepted end of input', last_token.lineno, last_token.column)
+
+    def expect_end(self):
+        if self.pos != len(self.tokens):
+            token = self.current()
+            raise LexerError('End excepted', token.lineno, token.column)
+
+    def is_end(self):
+        return self.pos == len(self.tokens)
