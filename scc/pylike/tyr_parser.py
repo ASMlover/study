@@ -48,3 +48,33 @@ def enter_scope(parser, name):
             parser.scope.pop()
 
     return State()
+
+class Subparser(object):
+    PRECEDENCE = {
+        'call': 10,
+        'subscript': 10,
+
+        'unary': 9,
+
+        '*': 7,
+        '/': 7,
+        '%': 7,
+
+        '+': 6,
+        '-': 6,
+
+        '>': 5,
+        '>= ': 5,
+        '<': 5,
+        '<=': 5,
+
+        '==': 4,
+        '!=': 4,
+
+        '&&': 3,
+
+        '||': 2,
+
+        '..': 1,
+        '...': 1,
+    }
