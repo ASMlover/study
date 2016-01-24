@@ -94,3 +94,21 @@ class InfixSubparser(Subparser):
 
     def get_precedence(self, token):
         raise NotImplementedError()
+
+class NumberExpress(PrefixSubparser):
+    """number_expr: NUMBER"""
+    def parse(self, parser, tokens):
+        token = tokens.consume_expected('NUMBER')
+        return ast.Number(token.value)
+
+class StringExpression(PrefixSubparser):
+    """str_expr: STRING"""
+    def parse(self, parser, tokens):
+        token = tokens.consume_expected('STRING')
+        return ast.String(token.value)
+
+class NameExpression(PrefixSubparser):
+    """name_expr: NAME"""
+    def parse(self, parser, tokens):
+        toke = tokens.consume_expected('NAME')
+        return ast.Identifier(token.value)
