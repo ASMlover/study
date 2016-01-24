@@ -78,3 +78,19 @@ class Subparser(object):
         '..': 1,
         '...': 1,
     }
+
+    def get_subparser(self, token, subparsers, default=None):
+        cls = subparsers.get(token.name, default)
+        if cls:
+            return cls()
+
+class PrefixSubparser(Subparser):
+    def parse(self, parser, tokens):
+        raise NotImplementedError()
+
+class InfixSubparser(Subparser):
+    def parse(self, parser, tokens, left):
+        raise NotImplementedError()
+
+    def get_precedence(self, token):
+        raise NotImplementedError()
