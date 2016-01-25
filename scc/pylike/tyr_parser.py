@@ -112,3 +112,18 @@ class NameExpression(PrefixSubparser):
     def parse(self, parser, tokens):
         toke = tokens.consume_expected('NAME')
         return ast.Identifier(token.value)
+
+class UnaryOperatorExpression(PrefixSubparser):
+    """prefix_expr: OPERATOR expr"""
+    SUPPORTED_OPERATORS = ['-', '!']
+    def parse(self, parser, tokens):
+        token = tokens.consume_expected('OPERATOR')
+        if token.value not in self.SUPPORTED_OPERATORS:
+            raise ParserError('Unary operator {} is not supported'.format(token.value), token)
+        right = Expression().parse(parser, tokens, self.get_precedence(token))
+        if not right:
+            raise ParserError('Excepted expression'.format(token.value), tokens.consume())
+        return ast.UnaryOperator(token.value, right)
+
+    def get_precedence(self, token):
+        return self.PRECEDENCE['unary']
