@@ -127,3 +127,11 @@ class UnaryOperatorExpression(PrefixSubparser):
 
     def get_precedence(self, token):
         return self.PRECEDENCE['unary']
+
+class GroupExpression(PrefixSubparser):
+    """group_expr: LPAREN expr RPAREN"""
+    def parse(self, parser, tokens):
+        tokens.consume_expected('LPAREN')
+        right = Expression().parse(parser, tokens)
+        tokens.consume_expected('RPAREN')
+        return right
