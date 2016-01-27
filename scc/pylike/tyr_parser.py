@@ -135,3 +135,11 @@ class GroupExpression(PrefixSubparser):
         right = Expression().parse(parser, tokens)
         tokens.consume_expected('RPAREN')
         return right
+
+class ArrayExpression(PrefixSubparser):
+    """array_epxr: LBRACK list_of_expr? RBRACK"""
+    def parse(self, parser, tokens):
+        tokens.consume_expected('LBRACK')
+        items = ListOfExpressions().parse(parser, tokens)
+        tokens.consume_expected('RBRACK')
+        return ast.Array(items)
