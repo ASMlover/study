@@ -143,3 +143,29 @@ class ArrayExpression(PrefixSubparser):
         items = ListOfExpressions().parse(parser, tokens)
         tokens.consume_expected('RBRACK')
         return ast.Array(items)
+
+class DictionaryExpression(PrefixSubparser):
+    """dict_expr: LCBRACK (expr COLON expr COMMA)* RCBRACK"""
+    def parse_keyvalues(self, parser, tokens):
+        items = []
+        while not tokens.is_end():
+            key = Expression().parse(parser, tokens)
+            if key:
+                tokens.consume_expected('COLON')
+                value = Expression().parse(parser, tokens)
+                if value is None:
+                    raise ParserError('Dictionary value excepted', tokens.consume())
+                items.append((key, value))
+            else:
+                break
+            if tokens.current().name == 'COMMA':
+                tokens.consume_expected('COMMA')
+            else:
+                break
+        return items
+
+    def parse(self, parser, tokens):
+        tokens.consume_expected('LCBRACK')
+        items = self.parse_keyvalues(parser, tokens)
+        tokens.consume_expected('RCBRACK')
+        return ast.Dictionary(items)
