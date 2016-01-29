@@ -110,7 +110,7 @@ class StringExpression(PrefixSubparser):
 class NameExpression(PrefixSubparser):
     """name_expr: NAME"""
     def parse(self, parser, tokens):
-        toke = tokens.consume_expected('NAME')
+        token = tokens.consume_expected('NAME')
         return ast.Identifier(token.value)
 
 class UnaryOperatorExpression(PrefixSubparser):
@@ -169,3 +169,39 @@ class DictionaryExpression(PrefixSubparser):
         items = self.parse_keyvalues(parser, tokens)
         tokens.consume_expected('RCBRACK')
         return ast.Dictionary(items)
+
+class BinaryOperatorExpression(InfixSubparser):
+    """infix_expr: expr OPERATOR expr"""
+    def parse(self, parser, tokens, left):
+        token = tokens.consume_expected('OPERATOR')
+        right = Expression().parse(parser, tokens, self.get_precedence(token))
+        if right is None:
+            raise ParserError('Excepted expression'.format(token.value), tokens.consume())
+        return ast.BinaryOperator(token.value, left, right)
+
+    def get_precedence(self, token):
+        return self.PRECEDENCE[token.value]
+
+class CallExpression(InfixSubparser):
+    """call_expr: NAME LPAREN list_of_expr? RPAREN"""
+    def parse(self, parser, tokens, left):
+        tokens.consume_expected('LPAREN')
+        arguments = ListOfExpressions().parse(parser, tokens)
+        tokens.consume_expected('RPAREN')
+        return ast.Call(left, arguments)
+
+    def get_precedence(self, token):
+        return self.PRECEDENCE['call']
+
+class SubscriptOperatorExpression(InfixSubparser):
+    """subscript_expr: NAME LBRACK expr RBRACK"""
+    def parse(self, parser, tokens, left):
+        tokens.consume_expected('LBRACK')
+        key = Expression().parse(parser, tokens)
+        if key is None:
+            raise ParserError('Subscript operator key is required', tokens.current())
+        tokens.consume_expected('RBRACK')
+        return ast.SubscriptOperator(left, key)
+
+    def get_precedence(self, token):
+        return self.PRECEDENCE['subscript']
