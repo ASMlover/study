@@ -423,3 +423,22 @@ class ContinueStatement(Subparser):
             raise ParserError('Continue outside of loop', tokens.current())
         tokens.consume_expected('CONTINUE', 'NEWLINE')
         return ast.Continue()
+
+class AssignmentStatement(Subparser):
+    """assign_stmt: expr ASSIGN expr NEWLINE"""
+    def parse(self, parser, tokens, left):
+        tokens.consume_expected('ASSIGN')
+        right = Expression().parse(parser, tokens)
+        tokens.consume_expected('NEWLINE')
+        return ast.Assignment(left, right)
+
+class ExpressionStatement(Subparser):
+    """expr_stmt: assign_stmt | expr NEWLINE"""
+    def parse(self, parser, tokens):
+        exp = Expression().parse(parser, tokens)
+        if exp != None:
+            if tokens.current().name == 'ASSIGN':
+                return AssignmentStatement().parse(parser, tokens, exp)
+            else:
+                tokens.consume_expected('NEWLINE')
+                return exp
