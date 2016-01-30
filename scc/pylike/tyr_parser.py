@@ -264,3 +264,37 @@ class ListOfExpressions(Subparser):
             else:
                 break
         return items
+
+class Block(Subparser):
+    """block: NEWLINE INDENT stmts DEDENT"""
+    def parse(self, parser, tokens):
+        tokens.consume_expected('NEWLINE', 'INDENT')
+        statements = Statements().parse(parser, tokens)
+        tokens.consume_expected('DEDENT')
+        return statements
+
+class FunctionStatement(Subparser):
+    """func_stmt: FUNCTION NAME LPAREN func_params? RPAREN COLON block"""
+    def parse_params(self, tokens):
+        params = []
+        if tokens.current().name == 'NAME':
+            while not tokens.is_end():
+                id_token = tokens.consume_expected('NAME')
+                params.append(id_token.value)
+                if tokens.current().name == 'COMMA':
+                    tokens.consume_expected('COMMA')
+                else:
+                    break
+        return params
+
+    def parse(self, parser, tokens):
+        tokens.consume_expected('FUNCTION')
+        id_token = tokens.consume_expected('NAME')
+        tokens.consume_expected('LPAREN')
+        arguments = self.parse_params(tokens)
+        tokens.consume_expected('RPAREN', 'COLON')
+        while enter_scope(parser, 'function'):
+            block = Block().parse(parser, tokens)
+        if block is None:
+            raise ParserError('Excepted function body', tokens.current())
+        return ast.Function(id_token.value, arguments, block)
