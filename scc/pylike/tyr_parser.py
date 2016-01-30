@@ -397,3 +397,29 @@ class ForLoopStatement(Subparser):
         if block is None:
             raise ParserError('Excepted loop body', tokens.current())
         return ast.ForLoop(id_token.value, collection, block)
+
+class ReturnStatement(Subparser):
+    """return_stmt: RETURN expr?"""
+    def parse(self, parser, tokens):
+        if not parser.scope or 'function' not in parser.scope:
+            raise ParserError('Return outside of function', tokens.current())
+        tokens.consume_expected('RETURN')
+        value = Expression().parse(parser, tokens)
+        tokens.consume_expected('NEWLINE')
+        return ast.Return(value)
+
+class BreakStatement(Subparser):
+    """break_stmt: BREAK"""
+    def parse(self, parser, tokens):
+        if not parser.scope or parser.scope[-1] != 'loop':
+            raise ParserError('Break outside of loop', tokens.current())
+        tokens.consume_expected('BREAK', 'NEWLINE')
+        return ast.Break()
+
+class ContinueStatement(Subparser):
+    """continue_stmt: CONTINUE"""
+    def parse(self, parser, tokens):
+        if not parser.scope or parser.scope[-1] != 'loop':
+            raise ParserError('Continue outside of loop', tokens.current())
+        tokens.consume_expected('CONTINUE', 'NEWLINE')
+        return ast.Continue()
