@@ -237,14 +237,3 @@ class Expression(Subparser):
             if parser != None:
                 return parser.get_precedence(token)
         return 0
-
-    def parse(self, parser, tokens, precedence=0):
-        subparser = self.get_prefix_subparser(tokens.current())
-        if subparser != None:
-            left = subparser.parse(parser, tokens)
-            if left != None:
-                while precedence < self.get_next_precedence(tokens):
-                    op = self.get_infix_subparser(token.current()).parse(parser, tokens, left)
-                    if op != None:
-                        left = op
-                return left
