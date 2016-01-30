@@ -293,7 +293,7 @@ class FunctionStatement(Subparser):
         tokens.consume_expected('LPAREN')
         arguments = self.parse_params(tokens)
         tokens.consume_expected('RPAREN', 'COLON')
-        while enter_scope(parser, 'function'):
+        with enter_scope(parser, 'function'):
             block = Block().parse(parser, tokens)
         if block is None:
             raise ParserError('Excepted function body', tokens.current())
@@ -369,3 +369,17 @@ class MatchStatement(Subparser):
                 raise ParserError('Excepted `else` body', tokens.current())
         tokens.consume_expected('DEDENT')
         return ast.Match(cond, patterns, else_block)
+
+class WhileLoopStatement(Subparser):
+    """loop_while_stmt: WHILE expr COLON block"""
+    def parse(self, parser, tokens):
+        tokens.consume_expected('WHILE')
+        cond = Expression().parse(parser, tokens)
+        if cond is None:
+            raise ParserError('While condition expected', tokens.current())
+        tokens.consume_expected('COLON')
+        with enter_scope(parser, 'loop'):
+            block = Block().parse(parser, tokens)
+        if block is None:
+            raise ParserError('Expected loop body', tokens.current())
+        return ast.WhieLoop(cond, block)
