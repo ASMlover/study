@@ -442,3 +442,27 @@ class ExpressionStatement(Subparser):
             else:
                 tokens.consume_expected('NEWLINE')
                 return exp
+
+class Statements(Subparser):
+    """stmts: stmt*"""
+    def get_statement_subparser(self, token):
+        return self.get_subparser(token, {
+            'FUNCTION': FunctionStatement,
+            'IF': ConditionStatement,
+            'MATCH': MatchStatement,
+            'WHILE': WhileLoopStatement,
+            'FOR': ForLoopStatement,
+            'RETURN': ReturnStatement,
+            'BREAK': BreakStatement,
+            'CONTINUE': ContinueStatement,
+        }, ExpressionStatement)
+
+    def parse(self, parser, tokens):
+        statements = []
+        while not tokens.is_end():
+            statement = self.get_statement_subparser(tokens.current()).parse(parser, tokens)
+            if statement is not None:
+                statements.append(statement)
+            else:
+                break
+        return statements
