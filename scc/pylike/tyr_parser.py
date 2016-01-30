@@ -383,3 +383,17 @@ class WhileLoopStatement(Subparser):
         if block is None:
             raise ParserError('Expected loop body', tokens.current())
         return ast.WhieLoop(cond, block)
+
+class ForLoopStatement(Subparser):
+    """loop_for_stmt: FOR NAME expr COLON block"""
+    def parse(self, parser, tokens):
+        tokens.consume_expected('FOR')
+        id_token = tokens.consume_expected('NAME')
+        tokens.consume_expected('IN')
+        collection = Expression().parse(parser, tokens)
+        tokens.consume_expected('COLON')
+        with enter_scope(parser, 'loop'):
+            block = Block().parse(parser, tokens)
+        if block is None:
+            raise ParserError('Excepted loop body', tokens.current())
+        return ast.ForLoop(id_token.value, collection, block)
