@@ -248,3 +248,19 @@ class Expression(Subparser):
                     if op != None:
                         left = op
                 return left
+
+class ListOfExpressions(Subparser):
+    """list_of_expr: (expr COMMA)*"""
+    def parse(self, parser, tokens):
+        items = []
+        while not tokens.is_end():
+            exp = Expression().parse(parser, tokens)
+            if exp != None:
+                items.append(exp)
+            else:
+                break
+            if tokens.current().name == 'COMMA':
+                tokens.consume_expected('COMMA')
+            else:
+                break
+        return items
