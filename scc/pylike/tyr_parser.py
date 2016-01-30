@@ -298,3 +298,43 @@ class FunctionStatement(Subparser):
         if block is None:
             raise ParserError('Excepted function body', tokens.current())
         return ast.Function(id_token.value, arguments, block)
+
+class ConditionStatement(Subparser):
+    """cond_stmt:
+        IF exp COLON block (ELIF exp COLON block)* (ELSE COLON block)?
+    """
+    def parse_elif_conditions(self, parser, tokens):
+        conditions = []
+        while not tokens.is_end() and tokens.current().name == 'ELIF':
+            tokens.consume_expected('ELIF')
+            cond = Expression().parse(parser, tokens)
+            if cond == None:
+                raise ParserError('Expected `elif` condition', tokens.current())
+            tokens.consume_expected('COLON')
+            block = Block().parse(parser, tokens)
+            if block == None:
+                raise ParserError('Expected `elif` body', tokens.current())
+            conditions.append(ConditionElif(cond, block))
+        return conditions
+
+    def parse_else(self, parser, tokens):
+        else_block = None
+        if not tokens.is_end() and tokens.current().name == 'ELSE':
+            tokens.consume_expected('ELSE')
+            else_block = Block().parse(parser, tokens)
+            if else_block is None:
+                raise ParserError('Excepted `else` body', tokens.current())
+        return else_block
+
+    def parse(self, parser, tokens):
+        tokens.consume_expected('IF')
+        cond = Expression().parse(parser, tokens)
+        if cond is None:
+            raise ParserError('Excepted `if` condition', tokens.current())
+        tokens.consume_expected('COLON')
+        if_block = Block().parse(parser, tokens)
+        if if_block is None:
+            raise ParserError('Excepted if body', tokens.current())
+        elif_conditions = self.parse_elif_conditions(parser, tokens)
+        else_block = self.parse_else(parser, tokens)
+        return ast.Condition(cond, if_block, elif_conditions, else_block)
