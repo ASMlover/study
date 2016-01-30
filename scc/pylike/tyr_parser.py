@@ -338,3 +338,34 @@ class ConditionStatement(Subparser):
         elif_conditions = self.parse_elif_conditions(parser, tokens)
         else_block = self.parse_else(parser, tokens)
         return ast.Condition(cond, if_block, elif_conditions, else_block)
+
+class MatchStatement(Subparser):
+    """match_stmt:
+        MATCH expr COLON NEWLINE INDENT match_when+ (ELSE COLON block)? DEDENT
+    """
+    def parse_when(self, parser, tokens):
+        tokens.consume_expected('WHEN')
+        pattern = Expression().parse(parser, tokens)
+        if pattern is None:
+            raise ParserError('pattern expression expected', tokens.current())
+        tokens.consume_expected('COLON')
+        block = Block().parse(parser, tokens)
+        return MatchPattern(pattern, block)
+
+    def parse(self, parser, tokens):
+        tokens.consume_expected('MATCH')
+        cond = Expression().parse(parser, tokens)
+        tokens.consume_expected('COLON', 'NEWLINE', 'INDENT')
+        patterns = []
+        while not tokens.is_end() and tokens.current().name == 'WHEN':
+            patterns.append(self.parse_when(parser, tokens))
+        if not patterns:
+            raise ParserError('One or more `when` pattern excepted', tokens.current())
+        else_block = None
+        if not tokens.is_end() and tokens.current().name == 'ELSE':
+            tokens.consume_expected('ELSE', 'COLON')
+            else_block = Block().parse(parser, tokens)
+            if else_block is None:
+                raise ParserError('Excepted `else` body', tokens.current())
+        tokens.consume_expected('DEDENT')
+        return ast.Match(cond, patterns, else_block)
