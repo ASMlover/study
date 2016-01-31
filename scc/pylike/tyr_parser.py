@@ -466,3 +466,18 @@ class Statements(Subparser):
             else:
                 break
         return statements
+
+class Program(Subparser):
+    """prog: stmts"""
+    def parse(self, parser, tokens):
+        statements = Statements().parse(parser, tokens)
+        tokens.expect_end()
+        return ast.Program(statements)
+
+class Parser(object):
+    def __init__(self):
+        self.scope = None
+
+    def parse(self, tokens):
+        self.scope = []
+        return Program().parse(self, tokens)
