@@ -183,3 +183,14 @@ def eval_getitem(node, env):
     collection = eval_expression(node.left, env)
     key = eval_expression(node.key, env)
     return collection[key]
+
+def eval_setitem(node, env):
+    collection = eval_expression(node.left.left, env)
+    key = eval_expression(node.left.key, env)
+    collection[key] = eval_expression(node.right, env)
+
+def eval_array(node, env):
+    return [eval_expression(item, env) for item in node.items]
+
+def eval_dict(node, env):
+    return {eval_expression(key, env): eval_expression(value, env) for key, value in node.items}
