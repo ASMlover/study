@@ -173,4 +173,13 @@ def eval_call(node, env):
             return ret.value
 
 def eval_identifier(node, env):
-    pass
+    name = node.value
+    value = env.get(name)
+    if value is None:
+        raise NameError('Name "{}" is not defined'.format(name))
+    return value
+
+def eval_getitem(node, env):
+    collection = eval_expression(node.left, env)
+    key = eval_expression(node.key, env)
+    return collection[key]
