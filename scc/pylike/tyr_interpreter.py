@@ -75,3 +75,89 @@ class Environment(object):
 
     def __repr__(self):
         return 'Environment({})'.format(str(self.values))
+
+def eval_binary_operator(node, env):
+    simple_operations = {
+        '+':    operator.add,
+        '-':    operator.sub,
+        '*':    operator.mul,
+        '/':    operator.truediv,
+        '%':    operator.mod,
+        '>':    operator.gt,
+        '>=':   operator.ge,
+        '<':    operator.lt,
+        '<=':   operator.le,
+        '==':   operator.eq,
+        '!=':   operator.ne,
+        '..':   range,
+        '...':  lambda start, end: range(start, end + 1),
+    }
+    lazy_operations = {
+        '&&': lambda n, e: bool(eval_expression(n.left, e)) and bool(eval_expression(n.right, e)),
+        '||': lambda n, e: bool(eval_expression(n.left, e)) or bool(eval_expression(n.right, e)),
+    }
+    if node.operator in simple_operations:
+        return simple_operations[node.operator](eval_expression(node.left, env), eval_expression(node.right, env))
+    elif node.operator in lazy_operations:
+        return lazy_operations[node.operator](node, env)
+    else:
+        raise Exception('Invalid operator {}'.format(node.operator))
+
+def eval_unary_operator(node, env):
+    operations = {'-': operator.neg, '!': operator.not_}
+    return operations[node.operator](eval_expression(node.right, env))
+
+def eval_assignment(node, env):
+    if isinstance(node.left, ast.SubscriptOperator):
+        return eval_setitem(node, env)
+    else:
+        return env.set(node.left.value, eval_expression(node.right, env))
+
+def eval_condition(node, env):
+    if eval_expression(node.cond, env):
+        return eval_statements(node.if_body, env)
+
+    for cond in node.elifs:
+        if eval_expression(cond.cond, env):
+            return eval_statements(cond.body, env)
+
+    if node.else_body is not None:
+        return eval_statements(node.else_body, env)
+
+def eval_match(node, env):
+    cond = eval_expression(node.cond, env)
+    for pattern in node.patterns:
+        if eval_expression(pattern.pattern, env) == cond:
+            return eval_statements(pattern.body, env)
+    if node.else_body is not None:
+        return eval_statements(node.else_body, env)
+
+def eval_while_loop(node, env):
+    while eval_expression(node.cond, env):
+        try:
+            eval_statements(node.body, env)
+        except Break:
+            break
+        except Continue:
+            pass
+
+def eval_for_loop(node, env):
+    var_name = node.var_name
+    collection = eval_expression(node.collection, env)
+    for val in collection:
+        env.set(var_name, val)
+        try:
+            eval_statements(node.body, env)
+        except Break:
+            break
+        except Continue:
+            pass
+
+def eval_function_declaration(node, env):
+    return env.set(node.name, node)
+
+def eval_call(node, env):
+    pass
+
+def eval_identifier(node, env):
+    pass
