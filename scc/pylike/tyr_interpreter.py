@@ -157,7 +157,20 @@ def eval_function_declaration(node, env):
     return env.set(node.name, node)
 
 def eval_call(node, env):
-    pass
+    function = eval_expression(node.left, env)
+    n_expected_args = len(function.params)
+    n_actual_args = len(node.arguments)
+    if n_expected_args != n_actual_args:
+        raise TypeError('Expected {} arguments, got {}'.format(n_expected_args, n_actual_args))
+    args = dict(zip(function.params, [eval_expression(node, env) for node in node.arguments]))
+    if isinstance(function, BuiltinFunction):
+        return function.body(args, env)
+    else:
+        call_env = Environment(env, args)
+        try:
+            return eval_statements(function.body, call_env)
+        except Return as ret:
+            return ret.value
 
 def eval_identifier(node, env):
     pass
