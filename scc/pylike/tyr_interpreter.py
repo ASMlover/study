@@ -194,3 +194,35 @@ def eval_array(node, env):
 
 def eval_dict(node, env):
     return {eval_expression(key, env): eval_expression(value, env) for key, value in node.items}
+
+def eval_return(node, env):
+    return eval_expression(node.value, env) if node.value != None else None
+
+evaluators = {
+    ast.Number: lambda node, env: node.value,
+    ast.String: lambda node, env: node.value,
+    ast.Array: eval_array,
+    ast.Dictionary: eval_dict,
+    ast.Identifier: eval_identifier,
+    ast.BinaryOperator: eval_binary_operator,
+    ast.UnaryOperator: eval_unary_operator,
+    ast.SubscriptOperator: eval_getitem,
+    ast.Assignment: eval_assignment,
+    ast.Condition: eval_condition,
+    ast.Match: eval_match,
+    ast.WhileLoop: eval_while_loop,
+    ast.ForLoop: eval_for_loop,
+    ast.Function: eval_function_declaration,
+    ast.Call: eval_call,
+    ast.Return: eval_return,
+}
+
+def eval_node(node, env):
+    tp = type(node)
+    if tp in evaluators:
+        return evaluators[tp](node, env)
+    else:
+        raise Exception('Unknown node {} {}'.format(tp.__name__, node))
+
+def eval_expression(node, env):
+    return eval_node(node, env)
