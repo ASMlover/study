@@ -226,3 +226,29 @@ def eval_node(node, env):
 
 def eval_expression(node, env):
     return eval_node(node, env)
+
+def eval_statement(node, env):
+    return eval_node(node, env)
+
+def eval_statements(statements, env):
+    ret = None
+    for stmt in statements:
+        if isinstance(stmt, ast.Break):
+            raise Break(ret)
+        elif isinstance(stmt, ast.Continue):
+            raise Continue(ret)
+        ret = eval_statement(stmt, env)
+        if isinstance(stmt, ast.Return):
+            raise Return(ret)
+    return ret
+
+def add_builtins(env):
+    builtins = {
+        'print': (['value'], lambda args, e: print(args['value'])),
+        'len': (['iter'], lambda args, e: len(args['iter'])),
+        'slice': (['iter', 'start', 'stop'], lambda args, e: list(args['iter'][args['start']: args['stop']])),
+        'str': (['in'], lambda args, e: str(args['in'])),
+        'int': (['in'], lambda args, e: int(args['in'])),
+    }
+    for key, (params, func) in builtins.items():
+        env.set(key, BuiltinFunction(params, func))
