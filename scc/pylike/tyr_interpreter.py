@@ -252,3 +252,8 @@ def add_builtins(env):
     }
     for key, (params, func) in builtins.items():
         env.set(key, BuiltinFunction(params, func))
+
+def create_global_env():
+    env = Environment()
+    add_builtins(env)
+    return env
