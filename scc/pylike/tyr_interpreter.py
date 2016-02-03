@@ -257,3 +257,45 @@ def create_global_env():
     env = Environment()
     add_builtins(env)
     return env
+
+def evaluate_env(s, env, verbose=False):
+    lexer = Lexer()
+    try:
+        tokens = lexer.tokenize(s)
+    except TyrSyntaxError as err:
+        report_syntax_error(lexer, err)
+        if verbose:
+            raise
+        else:
+            return
+
+    if verbose:
+        print ('Tokens')
+        print_tokens(tokens)
+        print ()
+
+    token_stream = TokenStream(tokens)
+    try:
+        program = Parser().parse(token_stream)
+    except TyrSyntaxError as err:
+        report_syntax_error(lexer, err)
+        if verbose:
+            raise
+        else:
+            return
+
+    if verbose:
+        print ('AST')
+        print_ast(program.body)
+        print ()
+
+    ret = eval_statements(program.body, env)
+    if verbose:
+        print ('Environment')
+        print_env(env)
+        print ()
+
+    return ret
+
+def evaluate(s, verbose=False):
+    return evaluate_env(s, create_global_env(), verbose)
