@@ -31,7 +31,7 @@
 import argparse
 import tyr_interpreter as interpreter
 
-tyr:
+try:
     input = raw_input
 except NameError:
     pass

@@ -29,7 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import re
-import collections import namedtuple, OrderedDict
+from collections import namedtuple, OrderedDict
 from tyr_error import TyrSyntaxError as LexerError
 from tyr_ttt import iteritems
 
