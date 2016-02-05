@@ -29,7 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 class TyrSyntaxError(Exception):
-    def __init__(self, lineno, column, message):
+    def __init__(self, message, lineno, column):
         super(TyrSyntaxError, self).__init__(message)
         self.lineno = lineno
         self.column = column
