@@ -232,7 +232,7 @@ class Expression(Subparser):
 
     def get_next_precedence(self, tokens):
         if not tokens.is_end():
-            token = token.current()
+            token = tokens.current()
             parser = self.get_infix_subparser(token)
             if parser != None:
                 return parser.get_precedence(token)

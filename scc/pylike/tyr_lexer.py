@@ -44,7 +44,7 @@ def decode_str(s):
         'n':    '\n',
         't':    '\t',
         '\\':   '\\',
-        '"':    '"'
+        '"':    '"',
         "'":    "'",
     }
     def replace(matches):
@@ -129,7 +129,7 @@ class Lexer(object):
                     value = matches.group(name)
                     if name in self.decodes:
                         value = self.decodes[name](value)
-                    elif name == 'NAME' and value in self,.keywords:
+                    elif name == 'NAME' and value in self.keywords:
                         name = self.keywords[value]
                         value = None
                     yield Token(name, value, lineno, matches.start() + 1)
