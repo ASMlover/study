@@ -244,7 +244,7 @@ class Expression(Subparser):
             left = subparser.parse(parser, tokens)
             if left != None:
                 while precedence < self.get_next_precedence(tokens):
-                    op = self.get_infix_subparser(token.current()).parse(parser, tokens, left)
+                    op = self.get_infix_subparser(tokens.current()).parse(parser, tokens, left)
                     if op != None:
                         left = op
                 return left

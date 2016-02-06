@@ -62,7 +62,6 @@ class Environment(object):
     def set(self, key, value):
         self.values[key] = value
 
-
     def get(self, key):
         value = self.values.get(key, None)
         if value is None and self.parent:
@@ -244,7 +243,7 @@ def eval_statements(statements, env):
 
 def add_builtins(env):
     builtins = {
-        'print': (['value'], lambda args, e: print(args['value'])),
+        'print': (['value'], lambda args, e: print (args['value'])),
         'len': (['iter'], lambda args, e: len(args['iter'])),
         'slice': (['iter', 'start', 'stop'], lambda args, e: list(args['iter'][args['start']: args['stop']])),
         'str': (['in'], lambda args, e: str(args['in'])),
