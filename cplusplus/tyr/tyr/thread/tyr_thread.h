@@ -62,6 +62,7 @@
 #  include "posix/tyr_posix_condition.h"
 # elif defined(TYR_OS_MAC)
 #  include "mac/tyr_mac_condition.h"
+# endif
 #endif
 
 namespace tyr {

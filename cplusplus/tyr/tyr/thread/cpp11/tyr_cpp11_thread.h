@@ -32,7 +32,7 @@ namespace tyr {
 class Thread : private UnCopyable {
   std::thread thread_;
 public:
-  template <typename Routine, typename Argument...>
+  template <typename Routine, typename... Argument>
   Thread(Routine&& routine, Argument&&... argument)
     : thread_(std::forward<Routine>(routine),
         std::forward<Argument>(argument)...) {
