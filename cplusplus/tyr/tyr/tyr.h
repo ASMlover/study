@@ -53,13 +53,13 @@
 # undef TYR_CC_VC
 # undef TYR_CC_GCC
 # undef TYR_CC_CLANG
-# if defined(_MSC_VER)
+# if defined(TYR_OS_WIN) && defined(_MSC_VER)
 #   define TYR_CC_NAME "VC"
 #   define TYR_CC_VC
-# elif defined(__GNUC__)
+# elif defined(TYR_OS_LINUX) && defined(__GNUC__)
 #   define TYR_CC_NAME "GCC"
 #   define TYR_CC_GCC
-# elif defined(__clang__)
+# elif defined(TYR_OS_MAC) && defined(__clang__)
 #   define TYR_CC_NAME "Clang"
 #   define TYR_CC_CLANG
 # else
@@ -155,7 +155,7 @@
 #include <algorithm>
 #include <map>
 #include <queue>
-#include <unorderd_map>
+#include <unordered_map>
 #include <vector>
 
 typedef unsigned char byte_t;

@@ -80,7 +80,7 @@ public:
     , rc_(nullptr) {
   }
 
-  SmartArray(nullptr_t) tyr_noexcept
+  SmartArray(std::nullptr_t) tyr_noexcept
     : ptr_(nullptr)
     , ra_(nullptr)
     , rc_(nullptr) {
@@ -97,7 +97,7 @@ public:
   SmartArray(U* p, D d)
     : ptr_(p)
     , ra_(new RefArrayDestructor<T, D>(ptr_, d))
-    , rc_(AtomicCounter(1)) {
+    , rc_(new AtomicCounter(1)) {
   }
 
   ~SmartArray(void) {
@@ -220,17 +220,17 @@ public:
 };
 
 template <typename T, typename U>
-bool operator==(const SmartArray<T>& x, const SmartArray<U>&) tyr_noexcept {
+bool operator==(const SmartArray<T>& x, const SmartArray<U>& y) tyr_noexcept {
   return x.Get() == y.Get();
 }
 
 template <typename T>
-bool operator==(const SmartArray<T>& p, nullptr_t) tyr_noexcept {
+bool operator==(const SmartArray<T>& p, std::nullptr_t) tyr_noexcept {
   return p.Get() == nullptr;
 }
 
 template <typename T>
-bool operator==(nullptr_t, const SmartArray<T>& p) tyr_noexcept {
+bool operator==(std::nullptr_t, const SmartArray<T>& p) tyr_noexcept {
   return nullptr == p.Get();
 }
 
@@ -240,12 +240,12 @@ bool operator!=(const SmartArray<T>& x, const SmartArray<U>& y) tyr_noexcept {
 }
 
 template <typename T>
-bool operator!=(const SmartArray<T>& p, nullptr_t) tyr_noexcept {
+bool operator!=(const SmartArray<T>& p, std::nullptr_t) tyr_noexcept {
   return p.Get() == nullptr;
 }
 
 template <typename T>
-bool operator!=(nullptr_t, const SmartArray<T>& p) tyr_noexcept {
+bool operator!=(std::nullptr_t, const SmartArray<T>& p) tyr_noexcept {
   return nullptr != p.Get();
 }
 

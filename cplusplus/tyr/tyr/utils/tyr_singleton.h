@@ -34,7 +34,7 @@ class Singleton : private UnCopyable {
 public:
   template <typename... Args>
   static Object& Instance(Args&&... args) {
-    static Object ins_(args...)
+    static Object ins_(args...);
     return ins_;
   }
 };
@@ -58,7 +58,7 @@ private:
   }
 };
 
-template <Object> SmartPtr<Object> SingletonEx<Object>::ins_;
+template <typename Object> SmartPtr<Object> SingletonEx<Object>::ins_;
 
 }
 

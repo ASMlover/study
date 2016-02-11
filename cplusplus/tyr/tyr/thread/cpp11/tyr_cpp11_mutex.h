@@ -37,11 +37,11 @@ public:
   }
 
   void Unlock(void) {
-    mutex_.Unlock();
+    mutex_.unlock();
   }
 
   std::mutex* InnerMutex(void) const {
-    return &mutex_;
+    return const_cast<std::mutex*>(&mutex_);
   }
 };
 

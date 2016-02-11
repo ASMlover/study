@@ -39,8 +39,8 @@ public:
     : ptr_(p) {
   }
 
-  UniqueArray(nullptr_t) tyr_noexcept
-    : ptr_(nullptr_t) {
+  UniqueArray(std::nullptr_t) tyr_noexcept
+    : ptr_(nullptr) {
   }
 
   ~UniqueArray(void) {
@@ -53,7 +53,7 @@ public:
     other.ptr_ = nullptr;
   }
 
-  UniqueArray<T>& operator=(nullptr_t) tyr_noexcept {
+  UniqueArray<T>& operator=(std::nullptr_t) tyr_noexcept {
     Reset();
     return *this;
   }
@@ -91,22 +91,22 @@ public:
 };
 
 template <typename T>
-bool operator==(const UniqueArray<T>& p, nullptr_t) tyr_noexcept {
+bool operator==(const UniqueArray<T>& p, std::nullptr_t) tyr_noexcept {
   return p.Get() == nullptr;
 }
 
 template <typename T>
-bool operator==(nullptr_t, const UniqueArray<T>& p) tyr_noexcept {
+bool operator==(std::nullptr_t, const UniqueArray<T>& p) tyr_noexcept {
   return nullptr == p.Get();
 }
 
 template <typename T>
-bool operator!=(const UniqueArray<T>& p, nullptr_t) tyr_noexcept {
+bool operator!=(const UniqueArray<T>& p, std::nullptr_t) tyr_noexcept {
   return p.Get() != nullptr;
 }
 
 template <typename T>
-bool operator!=(nullptr_t, const UniqueArray<T>& p) tyr_noexcept {
+bool operator!=(std::nullptr_t, const UniqueArray<T>& p) tyr_noexcept {
   return nullptr != p.Get();
 }
 

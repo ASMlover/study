@@ -28,7 +28,7 @@
 OUT	= tyr
 RM	= rm
 CC	= clang++
-CFLAGS	= -g -O2 - Wall -std=c++0x
+CFLAGS	= -g -O2 -Wall -std=c++0x -I../
 LDFLAGS	= -lpthread -lc
 OBJS	= $(patsubst %.cc, %.o, $(wildcard ../tyr/common/*.cc *.cc))
 

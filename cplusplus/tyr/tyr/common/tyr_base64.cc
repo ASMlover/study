@@ -37,13 +37,13 @@ void Base64::InitDecode64(void) {
   kEncode64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
   memset(kDecode64, 0, sizeof(kDecode64));
   for (auto i = 0; i < 64; ++i)
-    kDecode64[kEncode64[i]] = i;
+    kDecode64[static_cast<int>(kEncode64[i])] = i;
 }
 
 std::string Base64::Encode(const std::string& s) {
   std::string r;
 
-  const byte_t* b = static_cast<const byte_t*>(s.c_str());
+  const byte_t* b = reinterpret_cast<const byte_t*>(s.c_str());
   int n = static_cast<int>(s.size());
   for (auto i = 0; i < n; i += 3) {
     r.push_back(kEncode64[b[i] >> 2]);
@@ -72,12 +72,12 @@ std::string Base64::Encode(const std::string& s) {
 std::string Base64::Decode(const std::string& s) {
   std::string r;
 
-  const byte_t* b = static_cast<const byte_t*>(s.c_str());
+  const byte_t* b = reinterpret_cast<const byte_t*>(s.c_str());
   int n = static_cast<int>(s.size());
   for (auto i = 0; i < n; i += 4) {
-    r.push_back((kDecode64[b[i]] << 2) | (kDecode64[b[i + 1]] >> 4) & 0x03);
+    r.push_back((kDecode64[b[i]] << 2) | ((kDecode64[b[i + 1]] >> 4) & 0x03));
     if (b[i + 2] != '=')
-      r.push_back((kDecode64[b[i + 1]] << 4) | (kDecode64[b[i + 2]] >> 2) & 0x0f);
+      r.push_back((kDecode64[b[i + 1]] << 4) | ((kDecode64[b[i + 2]] >> 2) & 0x0f));
     if (b[i + 3] != '=')
       r.push_back((kDecode64[b[i + 2]] << 6) | (kDecode64[b[i + 3]] & 0x3f));
   }

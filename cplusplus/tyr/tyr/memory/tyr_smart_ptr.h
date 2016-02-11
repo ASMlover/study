@@ -80,7 +80,7 @@ public:
     , rc_(nullptr) {
   }
 
-  SmartPtr(nullptr_t) tyr_noexcept
+  SmartPtr(std::nullptr_t) tyr_noexcept
     : ptr_(nullptr)
     , rp_(nullptr)
     , rc_(nullptr) {
@@ -228,12 +228,12 @@ bool operator==(const SmartPtr<T>& x, const SmartPtr<U>& y) tyr_noexcept {
 }
 
 template <typename T>
-bool operator==(const SmartPtr<T>& p, nullptr_t) tyr_noexcept {
+bool operator==(const SmartPtr<T>& p, std::nullptr_t) tyr_noexcept {
   return p.Get() == nullptr;
 }
 
-typename <typename T>
-bool operator==(nullptr_t, const SmartPtr<T>& p) tyr_noexcept {
+template <typename T>
+bool operator==(std::nullptr_t, const SmartPtr<T>& p) tyr_noexcept {
   return nullptr == p.Get();
 }
 
@@ -243,12 +243,12 @@ bool operator!=(const SmartPtr<T>& x, const SmartPtr<T>& y) tyr_noexcept {
 }
 
 template <typename T>
-bool operator!=(const SmartPtr<T>& p, nullptr_t) tyr_noexcept {
+bool operator!=(const SmartPtr<T>& p, std::nullptr_t) tyr_noexcept {
   return p.Get() != nullptr;
 }
 
 template <typename T>
-bool operator!=(nullptr_t, const SmartPtr<T>& p) tyr_noexcept {
+bool operator!=(std::nullptr_t, const SmartPtr<T>& p) tyr_noexcept {
   return nullptr != p.Get();
 }
 
@@ -257,18 +257,18 @@ bool operator<(const SmartPtr<T>& x, const SmartPtr<U>& y) tyr_noexcept {
   return x.Get() < y.Get();
 }
 
-template <T>
+template <typename T>
 std::ostream& operator<<(std::ostream& cout, const SmartPtr<T>& p) {
   return cout << p.Get();
 }
 
-template <T>
+template <typename T>
 T* GetPointer(const SmartPtr<T>& p) tyr_noexcept {
   return p.Get();
 }
 
 template <typename T>
-void Swap(SmartPtr<T>& x, SmartPtr<U>& y) tyr_noexcept {
+void Swap(SmartPtr<T>& x, SmartPtr<T>& y) tyr_noexcept {
   x.Swap(y);
 }
 
