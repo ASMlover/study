@@ -25,3 +25,24 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+OUT	= tyr
+RM	= rm
+CC	= clang++
+CFLAGS	= -g -O2 - Wall -std=c++0x
+LDFLAGS	= -lpthread -lc
+OBJS	= $(patsubst %.cc, %.o, $(wildcard ../tyr/common/*.cc *.cc))
+
+
+all: $(OUT)
+
+rebuild: clean all
+
+clean:
+	$(RM) $(OUT) $(OBJS)
+
+
+$(OUT): $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+$(OBJS): %.o: %.cc
+	$(CC) -o $*.o -c $(CFLAGS) $^
