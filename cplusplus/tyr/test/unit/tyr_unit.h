@@ -32,9 +32,37 @@
 
 namespace tyr {
 
+template <typename Function>
 struct UnitCase {
+  typedef std::function<void (void)> CaseType;
+
+  std::string unit_name;
+  CaseType    unit_case;
+
+  UnitCase(const std::string& name, const CaseType& unit)
+    : unit_name(name)
+    , unit_case(unit) {
+  }
 };
 
+class UnitFramework : public Singleton<UnitFramework> {
+  std::vector<UnitCase> unit_list_;
+public:
+  int Run(void);
+  bool RegisterUnit(const char* name, const UnitCase::CaseType& unit);
+};
+
+int UnitPrint(const char* format, ...);
+
 }
+
+#define UNIT_RUN_ALL()  tyr::UnitFramework::Instance().Run()
+#define UNIT_IMPL(__name__)\
+static void tyr_Unit##__name__(void);\
+static bool tyr_boolean_##__name__ = tyr::UnitFramework::RegisterUnit(#__name__, tyr_Unit##__name__);\
+static void tyr_Unit##__name__(void)
+
+#define UNIT_PRINT(fmt, ...)  tyr::UnitPrint((fmt), ##__VA_ARGS__)
+#define CLASS_NAME(__class__) typeid(__class__).name()
 
 #endif  // __TYR_UNIT_HEADER_H__
