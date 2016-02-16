@@ -24,15 +24,38 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_SEM_HEADER_H__
-#define __TYR_SEM_HEADER_H__
+#ifndef __EL_FIBER_OBJECT_HEADER_H__
+#define __EL_FIBER_OBJECT_HEADER_H__
 
-#if defined(TYR_OS_WIN)
-# include "win/tyr_win_sem.h"
-#elif defined(TYR_OS_LINUX)
-# include "posix/tyr_posix_sem.h"
-#elif defined(TYR_OS_MAC)
-# include "mac/tyr_mac_sem.h"
-#endif
+#include "el_fiber.h"
+#include "el_object.h"
 
-#endif  // __TYR_SEM_HEADER_H__
+namespace el {
+
+class Interpreter;
+
+class FiberObject : public Object {
+  Fiber fiber_;
+public:
+  FiberObject(
+      const Value& parent, Interpreter& interpreter, const Value& block)
+    : Object(parent)
+    , fiber_(interpreter, block) {
+  }
+
+  inline Fiber& GetFiber(void) const {
+    return fiber_;
+  }
+
+  virtual FiberObject* AsFiber(void) override {
+    return this;
+  }
+
+  virtual void Trace(std::ostream& stream) const override {
+    stream << "fiber";
+  }
+};
+
+}
+
+#endif  // __EL_FIBER_OBJECT_HEADER_H__

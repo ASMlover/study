@@ -24,57 +24,73 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_SELF_ATOMIC_COUNTER_HEADER_H__
-#define __TYR_SELF_ATOMIC_COUNTER_HEADER_H__
+#include <memory>
+#include <string>
+#include <vector>
 
-namespace tyr {
-
-class AtomicCounter : private UnCopyable {
-  struct CounterT {
-    mutable Mutex mutex;
-    volatile int  value;
-  };
-
-  CounterT counter_;
+class Expr {
 public:
-  explicit AtomicCounter(int counter = 0) tyr_noexcept {
-    counter_.value = counter_;
-  }
+  virtual ~Expr(void) {}
+};
+typedef std::unique_ptr<Expr> ExprPtr;
+typedef std::vector<ExprPtr>  ExprVector;
+typedef std::vector<std::string> > StringVector;
 
-  int Counter(void) const tyr_noexcept {
-    int r;
-    {
-      UniqueLock<Mutex> lock(counter_.mutex);
-      r = counter_.value;
-    }
-    return r;
-  }
-
-  explicit operator int(void) const tyr_noexcept {
-    return Counter();
-  }
-
-  int operator++(void) {
-    UniqueLock<Mutex> lock(counter_.mutex);
-    return ++counter_.value;
-  }
-
-  int operator++(int) {
-    UniqueLock<Mutex> lock(counter_.mutex);
-    return counter_.value++;
-  }
-
-  int operator--(void) {
-    UniqueLock<Mutex> lock(counter_.mutex);
-    return --counter_.value;
-  }
-
-  int operator--(int) {
-    UniqueLock<Mutex> lock(counter_.mutex);
-    return counter_.value--;
+class NumberExpr : public Expr {
+  double value_;
+public:
+  explicit NumberExpr(double value)
+    : value_(value) {
   }
 };
 
-}
+class VariableExpr : public Expr {
+  std::string variable_;
+public:
+  explicit VariableExpr(const std::string& variable)
+    : variable_(variable) {
+  }
+};
 
-#endif  // __TYR_SELF_ATOMIC_COUNTER_HEADER_H__
+class BinaryExpr : public Expr {
+  char op_;
+  ExprPtr lhs_;
+  ExprPtr rhs_;
+public:
+  BinaryExpr(char op, ExprPtr lhr, ExprPtr rhs)
+    : op_(op)
+    , lhs_(std::move(lhs))
+    , rhs_(std::move(rhs)) {
+  }
+};
+
+class CallExpr : public Expr {
+  std::string callee_;
+  ExprVector  args_;
+public:
+  CallExpr(const std::string& callee, const ExprVector& args)
+    : callee_(callee)
+    , args_(args) {
+  }
+};
+
+class Prototype {
+  std::string  name_;
+  StringVector args_;
+public:
+  Prototype(const std::string& name, const StringVector& args)
+    : name_(name)
+    , args_(args) {
+  }
+};
+typedef std::unique_ptr<Prototype> PrototypePtr;
+
+class Function {
+  PrototypePtr proto_;
+  ExprPtr      body_;
+public:
+  Function(PrototypePtr proto, ExprPtr body)
+    : proto_(std::move(proto))
+    , body_(std::move(body)) {
+  }
+};

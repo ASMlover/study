@@ -24,44 +24,72 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_MUTEX_HEADER_H__
-#define __TYR_MUTEX_HEADER_H__
+#include <ctype.h>
+#include <stdio.h>
+#include <iostream>
+#include <string>
 
-namespace tyr {
+enum Token {
+  TOKEN_EOF = -1,
 
-class Mutex : private UnCopyable {
-  std::mutex mutex_;
-public:
-  void Lock(void) {
-    mutex_.lock();
-  }
+  TOKEN_DEF = -2, // def
+  TOKEN_EXT = -3, // extern
 
-  void Unlock(void) {
-    mutex_.Unlock();
-  }
-
-  std::mutex* InnerMutex(void) const {
-    return &mutex_;
-  }
+  TOKEN_ID  = -4, // identifier
+  TOKEN_NUM = -5, // number
 };
 
-class SpinlockMutex : private UnCopyable {
-  std::atomic_flag flag_;
-public:
-  SpinlockMutex(void) tyr_noexcept {
-    flag_.clear();
-  }
+static std::string gIndentifier;
+static double      gNumber;
 
-  void Lock(void) {
-    while (flag_.test_and_set(std::memory_order_acquire)) {
-    }
-  }
+static int GetToken(void) {
+  static int c = ' ';
 
-  void Unlock(void) {
-    flag_.clear(std::memory_order_release);
-  }
-};
+  while (isspace(c))
+    c = getchar();
 
+  if (isalpha(c)) {
+    gIndentifier = c;
+    while (isalnum(c = getchar()))
+      gIndentifier += c;
+
+    if (gIndentifier == "def")
+      return TOKEN_DEF;
+    if (gIndentifier == "extern")
+      return TOKEN_EXT;
+    return TOKEN_ID;
+  }
+  if (isdigit(c) || '.' == c) {
+    std::string s;
+    do {
+      s += c;
+      c = getchar();
+    } while (isdigit(c) || '.' == c);
+
+    gNumber = strtod(s.c_str(), 0);
+    return TOKEN_NUM;
+  }
+  if ('#' == c) {
+    do {
+      c = getchar();
+    } while (EOF != c && '\r' != c && '\n' != c);
+
+    if (EOF != c)
+      return GetToken();
+  }
+  if (EOF == c)
+    return TOKEN_EOF;
+
+  int this_char = c;
+  c = getchar();
+  return this_char;
 }
 
-#endif  // __TYR_MUTEX_HEADER_H__
+int main(int argc, char* argv[]) {
+  while (true) {
+    std::cout << "ready> ";
+    std::cout << GetToken() << std::endl;
+  }
+
+  return 0;
+}

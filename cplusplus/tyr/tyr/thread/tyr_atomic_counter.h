@@ -24,43 +24,57 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_ATOMIC_COUNTER_HEADER_H__
-#define __TYR_ATOMIC_COUNTER_HEADER_H__
+#ifndef __TYR_SELF_ATOMIC_COUNTER_HEADER_H__
+#define __TYR_SELF_ATOMIC_COUNTER_HEADER_H__
 
 namespace tyr {
 
 class AtomicCounter : private UnCopyable {
-  std::atomic<int> counter_;
+  struct CounterT {
+    mutable Mutex mutex;
+    volatile int  value;
+  };
+
+  CounterT counter_;
 public:
-  explicit AtomicCounter(int counter = 0) tyr_noexcept
-    : counter_(counter) {
+  explicit AtomicCounter(int counter = 0) tyr_noexcept {
+    counter_.value = counter_;
   }
 
   int Counter(void) const tyr_noexcept {
-    return counter_.load();
+    int r;
+    {
+      UniqueLock<Mutex> lock(counter_.mutex);
+      r = counter_.value;
+    }
+    return r;
   }
 
   explicit operator int(void) const tyr_noexcept {
-    return counter_.load();
+    return Counter();
   }
 
   int operator++(void) {
-    return counter_.fetch_add(1) + 1;
+    UniqueLock<Mutex> lock(counter_.mutex);
+    return ++counter_.value;
   }
 
   int operator++(int) {
-    return counter_.fetch_add(1);
+    UniqueLock<Mutex> lock(counter_.mutex);
+    return counter_.value++;
   }
 
   int operator--(void) {
-    return counter_.fetch_sub(1) - 1;
+    UniqueLock<Mutex> lock(counter_.mutex);
+    return --counter_.value;
   }
 
   int operator--(int) {
-    return counter_.fetch_sub(1);
+    UniqueLock<Mutex> lock(counter_.mutex);
+    return counter_.value--;
   }
 };
 
 }
 
-#endif  // __TYR_ATOMIC_COUNTER_HEADER_H__
+#endif  // __TYR_SELF_ATOMIC_COUNTER_HEADER_H__

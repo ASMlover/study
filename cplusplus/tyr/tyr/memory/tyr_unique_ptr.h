@@ -38,8 +38,8 @@ public:
   explicit UniquePtr(T* p = nullptr) tyr_noexcept
     : ptr_(p) {
   }
-  
-  UniquePtr(nullptr_t) tyr_noexcept
+
+  UniquePtr(std::nullptr_t) tyr_noexcept
     : ptr_(nullptr) {
   }
 
@@ -53,7 +53,7 @@ public:
     other.ptr_ = nullptr;
   }
 
-  UniquePtr<T>& operator=(nullptr_t) tyr_noexcept {
+  UniquePtr<T>& operator=(std::nullptr_t) tyr_noexcept {
     Reset();
     return *this;
   }
@@ -94,22 +94,22 @@ public:
 };
 
 template <typename T>
-bool operator==(const UniquePtr<T>& p, nullptr_t) tyr_noexcept {
+bool operator==(const UniquePtr<T>& p, std::nullptr_t) tyr_noexcept {
   return p.Get() == nullptr;
 }
 
 template <typename T>
-bool operator==(nullptr_t, const UniquePtr<T>& p) tyr_noexcept {
+bool operator==(std::nullptr_t, const UniquePtr<T>& p) tyr_noexcept {
   return nullptr == p.Get();
 }
 
 template <typename T>
-bool operator!=(const UniquePtr<T>& p, nullptr_t) tyr_noexcept {
+bool operator!=(const UniquePtr<T>& p, std::nullptr_t) tyr_noexcept {
   return p.Get() != nullptr;
 }
 
 template <typename T>
-bool operator!=(nullptr_t, const UniquePtr<T>& p) tyr_noexcept {
+bool operator!=(std::nullptr_t, const UniquePtr<T>& p) tyr_noexcept {
   return nullptr != p.Get();
 }
 
@@ -123,7 +123,7 @@ T* GetPointer(const UniquePtr<T>& p) tyr_noexcept {
   return p.Get();
 }
 
-template <T>
+template <typename T>
 void Swap(UniquePtr<T>& x, UniquePtr<T>& y) tyr_noexcept {
   x.Swap(y);
 }

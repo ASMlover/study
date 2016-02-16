@@ -1,0 +1,17 @@
+[user]
+  name = ASMlover
+  email = asmlover@126.com
+[color]
+  ui = true
+[core]
+  editor = vim
+  autocrlf = true
+[pretty]
+  graph = %Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset
+[alias]
+  lg = log --pretty=graph --graph --abbrev-commit --
+  ci = commit
+  co = clone
+  st = status
+[push]
+  default = current
