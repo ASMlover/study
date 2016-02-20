@@ -27,6 +27,7 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+from __future__ import print_function
 
 import asyncore
 import errno
@@ -65,7 +66,7 @@ def _scheduler():
         except (KeyboardInterrupt, SystemExit, asyncore.ExitNow):
             raise
         except:
-            print traceback.format_exc()
+            print(traceback.format_exc())
 
 class CallerDelay(object):
     """Calls a function later."""
@@ -79,7 +80,7 @@ class CallerDelay(object):
               called in case target function raise an exception.
         """
         assert callable(target), '%s is not callable.' % target
-        assert sys.maxint >= seconds >= 0, '%s is not >= 0' % seconds
+        assert sys.maxsize >= seconds >= 0, '%s is not >= 0' % seconds
 
         self.delayTime = seconds
         self.target = target
@@ -91,6 +92,9 @@ class CallerDelay(object):
         self.cancelled = False
         self.expired = False
         heapq.heappush(aioTasks, self)
+
+    def __lt__(self, other):
+        return self.timeout < other.timeout
 
     def __le__(self, other):
         return self.timeout <= other.timeout
@@ -173,4 +177,34 @@ class CallerCycle(CallerDelay):
                     heapq.heappush(aioTasks, self)
 
 def loop(timeout=0.1, usePoll=True, map=None, count=None):
-    pass
+    """Use this loop as replacement of the original asyncore.loop."""
+    if usePoll and hasattr(asyncore.select, 'poll'):
+        poller = asyncore.poll2
+    else:
+        poller = asyncore.poll
+
+    if map is None:
+        map = asyncore.socket_map
+
+    if count is None:
+        while (map or aioTasks):
+            poller(timeout, map)
+            _scheduler()
+    else:
+        while (map or aioTasks) and count > 0:
+            poller(timeout, map)
+            _scheduler()
+            count -= 1
+
+if __name__ == '__main__':
+    def delayFoo():
+        print('I will call after 2.5 seconds.')
+
+    CallerDelay(2.5, delayFoo)
+    # loop()
+
+    def cycleFoo():
+        print('I will call every second.')
+
+    CallerCycle(1, cycleFoo)
+    loop()
