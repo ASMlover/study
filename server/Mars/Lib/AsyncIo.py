@@ -176,6 +176,39 @@ class CallerCycle(CallerDelay):
                     self.timeout = time.time() + self.delayTime
                     heapq.heappush(asioTasks, self)
 
+def closeAll(map=None, ignoreAll=False):
+    """Close all scheduled functions and opened sockets."""
+    if map is None:
+        map = asyncore.socket_map
+    for x in map.values():
+        try:
+            x.close()
+        except OSError, x:
+            if x.args[0] == errno.EBADF:
+                pass
+            elif not ignoreAll:
+                raise
+        except (KeyboardInterrupt, SystemExit, asyncore.ExitNow):
+            raise
+        except:
+            if not ignoreAll:
+                asyncore.socket_map.clear()
+                del asioTasks[:]
+                raise
+    map.clear()
+
+    for x in asioTasks:
+        try:
+            if not x.cancelled and not x.expired:
+                x.cancel()
+        except (KeyboardInterrupt, SystemExit, asyncore.ExitNow):
+            raise
+        except:
+            if not ignoreAll:
+                del asioTasks[:]
+                raise
+    del asioTasks[:]
+
 def loop(timeout=0.1, usePoll=True, map=None, count=None):
     """Use this loop as replacement of the original asyncore.loop."""
     if usePoll and hasattr(asyncore.select, 'poll'):
