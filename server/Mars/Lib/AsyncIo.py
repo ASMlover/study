@@ -36,28 +36,28 @@ import time
 import traceback
 import sys
 
-AIO_MAX_CALLER_COUNT = 10
-AIO_MAX_CALLER_RATIO = 0.25
+ASIO_MAX_CALLER_COUNT = 10
+ASIO_MAX_CALLER_RATIO = 0.25
 
-aioTasks = []
-aioCancelledNum = 0
+asioTasks = []
+asioCancelledNum = 0
 
 def _removeCancelledTasks():
     """Remove cancelled tasks and rebuild heap."""
-    aioTasks = [t for t in aioTasks if not t.cancelled]
-    heapq.heapify(aioTasks)
-    aioCancelledNum = 0
+    asioTasks = [t for t in asioTasks if not t.cancelled]
+    heapq.heapify(asioTasks)
+    asioCancelledNum = 0
 
 def _scheduler():
     """Run the schedule function due to expire soon."""
     now = time.time()
-    while aioTasks and now >= aioTasks[0].timeout:
-        caller = heapq.heappop(aioTasks)
+    while asioTasks and now >= asioTasks[0].timeout:
+        caller = heapq.heappop(asioTasks)
         if caller.cancelled:
-            aioCancelledNum -= 1
+            asioCancelledNum -= 1
             continue
         if caller.repush:
-            heapq.heappush(aioTasks, caller)
+            heapq.heappush(asioTasks, caller)
             caller.repush = False
             continue
 
@@ -91,7 +91,7 @@ class CallerDelay(object):
         self.timeout = time.time() + self.delayTime
         self.cancelled = False
         self.expired = False
-        heapq.heappush(aioTasks, self)
+        heapq.heappush(asioTasks, self)
 
     def __lt__(self, other):
         return self.timeout < other.timeout
@@ -131,7 +131,7 @@ class CallerDelay(object):
             self.repush = True
         else:
             self.timeout = newTime
-            heapq.heapify(aioTasks)
+            heapq.heapify(asioTasks)
 
     def cancel(self):
         assert not self.cancelled, 'Already cancelled.'
@@ -140,9 +140,9 @@ class CallerDelay(object):
         self.cancelled = True
         del self.target, self.args, self.kwargs, self.errorCallback
 
-        aioCancelledNum += 1
-        if aioCancelledNum > AIO_MAX_CALLER_COUNT and float(aioCancelledNum) / len(aioTasks) > AIO_MAX_CALLER_RATIO:
-            pass
+        asioCancelledNum += 1
+        if asioCancelledNum > ASIO_MAX_CALLER_COUNT and float(asioCancelledNum) / len(asioTasks) > ASIO_MAX_CALLER_RATIO:
+            _removeCancelledTasks()
 
     def expire(self):
         assert not self.cancelled, 'Already cancelled.'
@@ -174,7 +174,7 @@ class CallerCycle(CallerDelay):
                     self.cancel()
                 else:
                     self.timeout = time.time() + self.delayTime
-                    heapq.heappush(aioTasks, self)
+                    heapq.heappush(asioTasks, self)
 
 def loop(timeout=0.1, usePoll=True, map=None, count=None):
     """Use this loop as replacement of the original asyncore.loop."""
@@ -187,11 +187,11 @@ def loop(timeout=0.1, usePoll=True, map=None, count=None):
         map = asyncore.socket_map
 
     if count is None:
-        while (map or aioTasks):
+        while (map or asioTasks):
             poller(timeout, map)
             _scheduler()
     else:
-        while (map or aioTasks) and count > 0:
+        while (map or asioTasks) and count > 0:
             poller(timeout, map)
             _scheduler()
             count -= 1
