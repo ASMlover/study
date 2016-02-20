@@ -35,20 +35,57 @@ import time
 import traceback
 import sys
 
+AIO_MAX_CALLER_COUNT = 10
+AIO_MAX_CALLER_RATIO = 0.25
+
 aioTasks = []
 aioCancelledNum = 0
 
+def _removeCancelledTasks():
+    """Remove cancelled tasks and rebuild heap."""
+    aioTasks = [t for t in aioTasks if not t.cancelled]
+    heapq.heapify(aioTasks)
+    aioCancelledNum = 0
+
+def _scheduler():
+    """Run the schedule function due to expire soon."""
+    now = time.time()
+    while aioTasks and now >= aioTasks[0].timeout:
+        caller = heapq.heappop(aioTasks)
+        if caller.cancelled:
+            aioCancelledNum -= 1
+            continue
+        if caller.repush:
+            heapq.heappush(aioTasks, caller)
+            caller.repush = False
+            continue
+
+        try:
+            caller.call()
+        except (KeyboardInterrupt, SystemExit, asyncore.ExitNow):
+            raise
+        except:
+            print traceback.format_exc()
+
 class CallerDelay(object):
-    """call a function later"""
+    """Calls a function later."""
     def __init__(self, seconds, target, *args, **kwargs):
-        assert callable(target), '%s is not callable' % target
+        """
+            * seconds(int): number of seconds to deay
+            * target(object): callable obejct
+            * args: arguments to call it with
+            * kwargs: keyword arguments to call it with; a special
+              `errCaller` parameter can be passed, it's a callable
+              called in case target function raise an exception.
+        """
+        assert callable(target), '%s is not callable.' % target
         assert sys.maxint >= seconds >= 0, '%s is not >= 0' % seconds
 
         self.delayTime = seconds
         self.target = target
         self.args = args
         self.kwargs = kwargs
-        self.errorBack = kwargs.pop('errorBack', None)
+        self.errorCallback = kwargs.pop('errCaller', None)
         self.repush = False
         self.timeout = time.time() + self.delayTime
         self.cancelled = False
@@ -59,15 +96,15 @@ class CallerDelay(object):
         return self.timeout <= other.timeout
 
     def call(self):
-        assert not self.cancelled, 'Already cancelled'
+        assert not self.cancelled, 'Already cancelled.'
         try:
             try:
                 self.target(*self.args, **self.kwargs)
             except (KeyboardInterrupt, SystemExit, asyncore.ExitNow):
                 raise
             except:
-                if self.errorBack:
-                    self.errorBack()
+                if self.errorCallback:
+                    self.errorCallback()
                 else:
                     raise
         finally:
@@ -75,12 +112,12 @@ class CallerDelay(object):
                 self.expire()
 
     def reset(self):
-        assert not self.cancelled, 'Already cancelled'
+        assert not self.cancelled, 'Already cancelled.'
         self.timeout = time.time() + self.delayTime
         self.repush = True
 
     def delay(self, seconds):
-        assert not self.cancelled, 'Already cancelled'
+        assert not self.cancelled, 'Already cancelled.'
         assert sys.maxint >= seconds >= 0, '%s is not >= 0' % seconds
 
         self.delayTime = seconds
@@ -93,10 +130,47 @@ class CallerDelay(object):
             heapq.heapify(aioTasks)
 
     def cancel(self):
-        pass
+        assert not self.cancelled, 'Already cancelled.'
+        assert not self.expired, 'Already expired.'
+
+        self.cancelled = True
+        del self.target, self.args, self.kwargs, self.errorCallback
+
+        aioCancelledNum += 1
+        if aioCancelledNum > AIO_MAX_CALLER_COUNT and float(aioCancelledNum) / len(aioTasks) > AIO_MAX_CALLER_RATIO:
+            pass
 
     def expire(self):
-        pass
+        assert not self.cancelled, 'Already cancelled.'
+        assert not self.expired, 'Already expired.'
+        self.expired = True
+        del self.target, self.args, self.kwargs, self.errorCallback
+
+class CallerCycle(CallerDelay):
+    """Calls a function every x seconds."""
+    def call(self):
+        assert not self.cancelled, 'Already cancelled.'
+        raised = False
+
+        try:
+            try:
+                self.target(*self.args, **self.kwargs)
+            except (KeyboardInterrupt, SystemExit, asyncore.ExitNow):
+                raised = True
+                raise
+            except:
+                if self.errorCallback:
+                    self.errorCallback()
+                else:
+                    raised = True
+                    raise
+        finally:
+            if not self.cancelled:
+                if raised:
+                    self.cancel()
+                else:
+                    self.timeout = time.time() + self.delayTime
+                    heapq.heappush(aioTasks, self)
 
 def loop(timeout=0.1, usePoll=True, map=None, count=None):
     pass
