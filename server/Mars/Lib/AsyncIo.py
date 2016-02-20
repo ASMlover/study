@@ -195,16 +195,3 @@ def loop(timeout=0.1, usePoll=True, map=None, count=None):
             poller(timeout, map)
             _scheduler()
             count -= 1
-
-if __name__ == '__main__':
-    def delayFoo():
-        print('I will call after 2.5 seconds.')
-
-    CallerDelay(2.5, delayFoo)
-    # loop()
-
-    def cycleFoo():
-        print('I will call every second.')
-
-    CallerCycle(1, cycleFoo)
-    loop()
