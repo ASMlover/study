@@ -30,7 +30,7 @@
 from __future__ import print_function
 import getopt
 import sys
-import AsyncIo as aio
+import AsyncIo as asio
 
 def usage():
     print("""AsyncIoTest usage:
@@ -41,14 +41,14 @@ def usage():
 def delayCaller():
     def foo():
         print('I will call after 2.5 seconds')
-    aio.CallerDelay(2.5, foo)
-    aio.loop()
+    asio.CallerDelay(2.5, foo)
+    asio.loop()
 
 def cycleCaller():
     def foo():
         print('I will call every second')
-    aio.CallerCycle(1, foo)
-    aio.loop()
+    asio.CallerCycle(1, foo)
+    asio.loop()
 
 if __name__ == '__main__':
     testMap = {
