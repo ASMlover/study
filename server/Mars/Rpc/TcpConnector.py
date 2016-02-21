@@ -34,4 +34,60 @@ PH.addPathes('../')
 import asyncore
 import socket
 import StringIO import StringIO
-from
+from MarsLog.LogManager import LogManager
+
+class TcpConnector(asyncore.dispatcher):
+    DEF_RECV_BUFFER = 4096
+    ST_INIT = 0
+    ST_ESTABLISHED = 1
+    ST_DISCONNECTED = 2
+
+    def __init__(self, sock, peerName):
+        pass
+
+    def setOption(self):
+        pass
+
+    def setChannelInterfaceObj(self, channelObj):
+        pass
+
+    def getChannelInterfaceObj(self):
+        pass
+
+    def established(self):
+        pass
+
+    def setRecvBuffer(self, size):
+        pass
+
+    def disconnect(self, flush=True):
+        pass
+
+    def getPeerName(self):
+        return
+
+    def handle_close(self):
+        """连接断开回调"""
+        pass
+
+    def handle_expt(self):
+        """连接异常回调"""
+        pass
+
+    def handle_error(self):
+        """连接出错回调"""
+        pass
+
+    def handle_read(self):
+        """读取数据回调"""
+        pass
+
+    def handle_write(self):
+        """发送数据回调"""
+        pass
+
+    def sendData(self, data):
+        pass
+
+    def writable(self):
+        pass

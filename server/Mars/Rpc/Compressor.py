@@ -32,7 +32,6 @@ import PathHelper as PH
 PH.addPathes('../')
 
 import zlib
-from Log.LogManager import LogManager
 
 class Compressor(object):
     def __init__(self):
