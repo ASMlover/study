@@ -55,3 +55,11 @@ def addPathes(*pathes):
     for path in pathes:
         addPath(path)
     return 1
+
+
+if __name__ == '__main__':
+    import sys
+    print('current sys.path >>> %s' % sys.path)
+    print()
+    addPathes('./', '../')
+    print('current sys.path >>> %s' % sys.path)
