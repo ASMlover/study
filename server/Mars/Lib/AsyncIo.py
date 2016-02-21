@@ -183,7 +183,7 @@ def closeAll(map=None, ignoreAll=False):
     for x in map.values():
         try:
             x.close()
-        except OSError, x:
+        except OSError as x:
             if x.args[0] == errno.EBADF:
                 pass
             elif not ignoreAll:
@@ -228,3 +228,16 @@ def loop(timeout=0.1, usePoll=True, map=None, count=None):
             poller(timeout, map)
             _scheduler()
             count -= 1
+
+
+if __name__ == '__main__':
+    """AsyncIo testing."""
+    def delayTask():
+        print('I will call 2.5 seconds later.')
+    CallerDelay(2.5, delayTask)
+
+    def cycleTask():
+        print('I will call every second.')
+    CallerCycle(1, cycleTask)
+
+    loop()
