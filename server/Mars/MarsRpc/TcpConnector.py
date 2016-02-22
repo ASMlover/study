@@ -37,21 +37,39 @@ import StringIO import StringIO
 from MarsLog.LogManager import LogManager
 
 class TcpConnector(asyncore.dispatcher):
+    """一条建立好的连接
+
+    来自TcpServer的accept或TcpClient的connect,
+    channelObj处理断开的连接和数据的读写
+    """
     DEF_RECV_BUFFER = 4096
     ST_INIT = 0
     ST_ESTABLISHED = 1
     ST_DISCONNECTED = 2
 
     def __init__(self, sock, peerName):
-        pass
+        super(TcpConnector, self).__init__(sock)
+
+        self.status = TcpConnector.ST_INIT
+        self.wBuffer = StringIO()
+
+        if sock:
+            self.status = TcpConnector.ST_ESTABLISHED
+
+        self.logger = LogManager.getLogger('MarsRpc.TcpConnector')
+        self.recvBuffSize = TcpConnector.DEF_RECV_BUFFER
+        self.channelObj = None
+        self.peerName = peerName
+
+        sock and self.setOption()
 
     def setOption(self):
         pass
 
-    def setChannelInterfaceObj(self, channelObj):
+    def setChannelObj(self, channelObj):
         pass
 
-    def getChannelInterfaceObj(self):
+    def getChannelObj(self):
         pass
 
     def established(self):
