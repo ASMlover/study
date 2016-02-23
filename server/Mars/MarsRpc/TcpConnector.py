@@ -33,7 +33,10 @@ PH.addPathes('../')
 
 import asyncore
 import socket
-import StringIO import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 from MarsLog.LogManager import LogManager
 
 class TcpConnector(asyncore.dispatcher):
@@ -64,48 +67,93 @@ class TcpConnector(asyncore.dispatcher):
         sock and self.setOption()
 
     def setOption(self):
-        pass
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        if hasattr(socket, 'TCP_KEEPCNT') and hasattr(socket, 'TCP_KEEPIDLE') and hasattr(socket, 'TCP_KEEPINTVL'):
+            self.socket.setsockopt(socket.SOL_TCP, socket.TCP_KEEPCNT, 3)
+            self.logger.debug('setOption TCP_KEEPCNT')
+            self.socket.setsockopt(socket.SOL_TCP, socket.TCP_KEEPIDLE, 60)
+            self.logger.debug('setOption TCP_KEEPIDLE')
+            self.socket.setsockopt(socket.SOL_TCP, socket.TCP_KEEPINTVL, 60)
+            self.logger.debug('setOption TCP_KEEPINTVL')
 
     def setChannelObj(self, channelObj):
-        pass
+        """设置channel object, 用于接收数据"""
+        self.channelObj = channelObj
+        self.logger.debug('setChannelObj')
 
     def getChannelObj(self):
-        pass
+        return self.channelObj
 
     def established(self):
-        pass
+        """判断是否建立连接"""
+        return self.status == TcpConnector.ST_ESTABLISHED
 
     def setRecvBuffer(self, size):
-        pass
+        """设置接收buffer的大小"""
+        self.recvBuffSize = size
 
     def disconnect(self, flush=True):
-        pass
+        """断开连接"""
+        if self.status == TcpConnector.ST_DISCONNECTED:
+            return
+
+        if self.channelObj:
+            self.channelObj.onDisconnected()
+        self.channelObj = None
+        if self.socket:
+            if self.writable() and flush:
+                self.handle_write()
+            super(TcpConnector, self).close()
+        self.status = TcpConnector.ST_DISCONNECTED
+        self.logger.info('disconnect with %s', self.getPeerName())
 
     def getPeerName(self):
-        return
+        """获取对端信息(ip, port)"""
+        return self.peerName
 
     def handle_close(self):
         """连接断开回调"""
-        pass
+        super(TcpConnector, self).handle_close()
+        self.disconnect(False)
 
     def handle_expt(self):
         """连接异常回调"""
-        pass
+        super(TcpConnector, self).handle_expt()
+        self.disconnect(False)
 
     def handle_error(self):
         """连接出错回调"""
-        pass
+        super(TcpConnector, self).handle_error()
+        self.disconnect(False)
 
     def handle_read(self):
         """读取数据回调"""
-        pass
+        data = self.recv(self.recvBuffSize)
+        if data:
+            if self.channelObj is None:
+                return
+
+            rc = self.channelObj.onRead(data)
+            if rc == 2:
+                return
+            elif rc == 0:
+                self.disconnect(False)
+                return
+            else:
+                self.logger.warn('handle_read return %d, close socket with %s', rc, self.getPeerName())
+                self.disconnect(False)
 
     def handle_write(self):
         """发送数据回调"""
-        pass
+        buff = self.wBuffer.getvalue()
+        if buff:
+            sentBytes = self.send(buff)
+            self.wBuffer = StringIO(buff[sentBytes:])
+            self.wBuffer.seek(0, 2)
 
-    def sendData(self, data):
-        pass
+    def writeData(self, data):
+        """发送数据"""
+        self.wBuffer.write(data)
 
     def writable(self):
-        pass
+        return (self.wBuffer and self.wBuffer.getvalue()) or (self.status != TcpConnector.ST_ESTABLISHED)
