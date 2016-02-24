@@ -38,6 +38,7 @@ try:
 except ImportError:
     from io import StringIO
 from MarsLog.LogManager import LogManager
+from Utils.Const import *
 
 class TcpConnector(asyncore.dispatcher):
     """一条建立好的连接
@@ -134,9 +135,9 @@ class TcpConnector(asyncore.dispatcher):
                 return
 
             rc = self.channelObj.onRead(data)
-            if rc == 2:
+            if rc == MARS_RC_SUCCESSED:
                 return
-            elif rc == 0:
+            elif rc == MARS_RC_FAILED:
                 self.disconnect(False)
                 return
             else:
