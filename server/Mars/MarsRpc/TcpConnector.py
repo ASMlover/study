@@ -51,7 +51,7 @@ class TcpConnector(asyncore.dispatcher):
     ST_ESTABLISHED = 1
     ST_DISCONNECTED = 2
 
-    def __init__(self, fd, peerName):
+    def __init__(self, fd, peername):
         super(TcpConnector, self).__init__(fd)
 
         self.status = TcpConnector.ST_INIT
@@ -63,7 +63,7 @@ class TcpConnector(asyncore.dispatcher):
         self.logger = LogManager.getLogger('MarsRpc.TcpConnector')
         self.recvBuffSize = TcpConnector.DEF_RECV_BUFFER
         self.channelObj = None
-        self.peerName = peerName
+        self.peername = peername
 
         fd and self.setOption()
 
@@ -106,11 +106,11 @@ class TcpConnector(asyncore.dispatcher):
                 self.handle_write()
             super(TcpConnector, self).close()
         self.status = TcpConnector.ST_DISCONNECTED
-        self.logger.info('disconnect with %s', self.getPeerName())
+        self.logger.info('disconnect with %s', self.getPeername())
 
-    def getPeerName(self):
+    def getPeername(self):
         """获取对端信息(ip, port)"""
-        return self.peerName
+        return self.peername
 
     def handle_close(self):
         """连接断开回调"""
@@ -141,7 +141,7 @@ class TcpConnector(asyncore.dispatcher):
                 self.disconnect(False)
                 return
             else:
-                self.logger.warn('handle_read return %d, close socket with %s', rc, self.getPeerName())
+                self.logger.warn('handle_read return %d, close socket with %s', rc, self.getPeername())
                 self.disconnect(False)
 
     def handle_write(self):

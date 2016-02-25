@@ -47,7 +47,7 @@ class TcpClient(TcpConnector):
     def __init__(self, ip, port, connectorHandler=None):
         super(TcpClient, self).__init__(None, (ip, port))
         self.logger = LogManager.getLogger('MarsRpc.TcpClient')
-        self.logger.info('init tcp client, connect to : %s', self.peerName)
+        self.logger.info('init tcp client, connect to : %s', self.peername)
 
     def close(self):
         """断开连接"""
@@ -59,15 +59,15 @@ class TcpClient(TcpConnector):
     def asyncConnect(self):
         self.create_socket(socket.AF_INT, socket.SOCK_STREAM)
         self.setOption()
-        self.connect(self.peerName)
+        self.connect(self.peername)
 
     def syncConnect(self):
         fd = socket.socket(socket.AF_INT, socket.SOCK_STREAM)
         try:
-            fd.connect(self.peerName)
+            fd.connect(self.peername)
         except socket.error as err:
             fd.close()
-            self.logger.warn('syncConnect failed %s with remote server %s', err, self.peerName)
+            self.logger.warn('syncConnect failed %s with remote server %s', err, self.peername)
             return False
         fd.setblocking(0)
         self.set_socket(fd)

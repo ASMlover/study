@@ -40,6 +40,6 @@ class ConnectorManager(object):
 
     def handleNewConnector(self, connector):
         """有新连接时回调"""
-        self.logger.info('handle new connector %s', connector.getPeerName())
+        self.logger.info('handle new connector %s', connector.getPeername())
         channelObj = self.channelCreator(connector)
         connector.setChannelObj(channelObj)
