@@ -51,13 +51,13 @@ class TcpConnector(asyncore.dispatcher):
     ST_ESTABLISHED = 1
     ST_DISCONNECTED = 2
 
-    def __init__(self, sock, peerName):
-        super(TcpConnector, self).__init__(sock)
+    def __init__(self, fd, peerName):
+        super(TcpConnector, self).__init__(fd)
 
         self.status = TcpConnector.ST_INIT
         self.wBuffer = StringIO()
 
-        if sock:
+        if fd:
             self.status = TcpConnector.ST_ESTABLISHED
 
         self.logger = LogManager.getLogger('MarsRpc.TcpConnector')
@@ -65,7 +65,7 @@ class TcpConnector(asyncore.dispatcher):
         self.channelObj = None
         self.peerName = peerName
 
-        sock and self.setOption()
+        fd and self.setOption()
 
     def setOption(self):
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
