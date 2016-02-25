@@ -183,8 +183,8 @@ def closeAll(map=None, ignoreAll=False):
     for x in map.values():
         try:
             x.close()
-        except OSError as x:
-            if x.args[0] == errno.EBADF:
+        except OSError as err:
+            if err.args[0] == errno.EBADF:
                 pass
             elif not ignoreAll:
                 raise
