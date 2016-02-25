@@ -31,7 +31,6 @@
 import PathHelper as PH
 PH.addPathes('../')
 
-import gflags
 import socket
 import sys
 import time
