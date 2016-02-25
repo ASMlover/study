@@ -58,15 +58,33 @@ class TcpClient(TcpConnector):
         self.connectorHandler = connectorHandler
 
     def asyncConnect(self):
-        pass
+        self.create_socket(socket.AF_INT, socket.SOCK_STREAM)
+        self.setOption()
+        self.connect(self.peerName)
 
     def syncConnect(self):
-        pass
+        fd = socket.socket(socket.AF_INT, socket.SOCK_STREAM)
+        try:
+            fd.connect(self.peerName)
+        except socket.error as err:
+            fd.close()
+            self.logger.warn('syncConnect failed %s with remote server %s', err, self.peerName)
+            return False
+        fd.setblocking(0)
+        self.set_socket(fd)
+        self.setOption()
+        self.status = TcpConnector.ST_ESTABLISHED
+        return True
 
     def handle_connect(self):
         """建立连接时回调"""
-        pass
+        if self.connectorHandler:
+            self.status = TcpConnector.ST_ESTABLISHED
+            self.connectorHandler.handleNewConnector(self)
+        else:
+            self.logger.warn('no connector manager to handler new connection')
 
     def handle_close(self):
         """断开连接时回调"""
-        pass
+        super(TcpClient, self).handle_close()
+        self.connectorHandler.handleConnectorFailed(self)
