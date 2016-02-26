@@ -66,7 +66,17 @@ class TcpServer(asyncore.dispatcher):
         self.listen(50)
 
     def tryBind(self):
-        pass
+        while True:
+            try:
+                self.bind((self.ip, self.port))
+                break
+            except:
+                self.logger.info('tryBind: server faild to bind: %s, %d, try next port', self.ip, self.port)
+                self.port += 1
+                if self.port > 65535:
+                    self.logger.error('tryBind: server faild to find a usable port: %s, %d', self.ip, self.port)
+                    raise StandardError('server faild to find a usable port')
+        self.started = True
 
     def stop(self):
         self.close()
