@@ -95,12 +95,25 @@ class TcpServer(asyncore.dispatcher):
 
     def handle_accept(self):
         """连接回调"""
-        pass
+        try:
+            fd, addr = self.accept()
+        except socket.error:
+            self.logger.warn('server accept throw exception')
+            self.logger.logLastExcept()
+            return
+        self.logger.info('handle_accept with peer: %s', fd.getpeername())
+
+        if self.connectorHandler:
+            connector = TcpConnector(fd, addr)
+            self.connectorHandler.handlerNewConnector(connector)
+        else:
+            self.logger.wran('no connector manager to handle new connector')
 
     def handle_error(self):
         """错误回调"""
-        pass
+        self.logger.error('handle_error uncaptured exception')
+        self.logger.error(str(inspect.stack()))
 
     def handle_close(self):
         """关闭连接回调"""
-        pass
+        self.logger.info('handle_close called from: %s', str(inspect.stack()))
