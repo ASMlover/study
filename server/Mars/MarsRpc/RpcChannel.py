@@ -40,3 +40,85 @@ from MarsRpc.LogManager import LogManager
 
 class ProtobufLengthError(StandardError):
     pass
+
+class RpcController(service.RpcController):
+    """为上层提供RpcChannel的对象，protobuf rpc使用"""
+    def __init__(self, channel):
+        super(RpcController, self).__init__()
+        self.rpcChannel = channel
+
+class RpcChannel(service.RpcChannel):
+    """序列化与反序列化rpc调用，内部封装一个底层连接(TcpConnector)"""
+
+    def __init__(self, rpcService, connector):
+        super(RpcChannel, self).__init__()
+
+        self.rpcService = rpcService # 将rpc请求传递给上层
+        self.rpcRequest = MarsRequest.Request() # rpc请求的解析
+        self.rpcRequestParser = MarsRequest.RequestParser()
+        self.connector = connector # 底层网络连接
+        self.connector.setChannelObj(self)
+        self.controller = RpcController(self) # 传递channel给上层
+        self.listeners = set()
+
+        self.logger = LogManager.getLogger('MarsRpc.RpcChannel')
+        self.logger.info('RpcChannel.__init__: an new connection')
+
+        # user data
+        self.userData = None
+        self.encrypted = False
+        self.compressed = False
+        self.sessionSeed = None
+
+    def setMaxDataBytes(self, maxBytes):
+        self.rpcRequestParser.setMaxDataBytes(maxBytes)
+
+    def regListener(self, listener):
+        """注册listener"""
+        self.logger.debug('RpcChannel.regListener')
+        self.listeners.add(listener)
+
+    def unregListener(self, listener):
+        self.listeners.discard(listener)
+
+    def getPeername(self):
+        """返回对端的(ip, port)"""
+        assert self.connector is not None, 'No connector attached'
+        return self.connector.getPeername()
+
+    def setCrypter(self, encrypter, decrypter):
+        pass
+
+    def setCompressor(self, compressor):
+        pass
+
+    def setUserData(self, userData):
+        self.userData = userData
+
+    def getUserData(self):
+        return self.userData
+
+    def setSessioSeed(self, seed):
+        self.sessionSeed = seed
+
+    def getSessionSeed(self):
+        return self.sessionSeed
+
+    def disconnect(self):
+        """断开连接"""
+        self.connector and self.connector.disconnect()
+
+    def CallMethod(self, methodDescriptor, rpcController, request, responseClass, done):
+        """发送rpc调用"""
+        pass
+
+    def onDisconnected(self):
+        """底层连接断开时回调"""
+        pass
+
+    def onRead(self, data):
+        pass
+
+    def onRequest(self):
+        """解析一个完整请求后的回调"""
+        pass
