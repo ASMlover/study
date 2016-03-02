@@ -87,10 +87,18 @@ class RpcChannel(service.RpcChannel):
         return self.connector.getPeername()
 
     def setCrypter(self, encrypter, decrypter):
-        pass
+        if self.encrypted or self.compressed:
+            self.connector.setCrypter(encrypter, decrypter)
+        else:
+            self.connector = CryptCompressConnector(self.connector, encrypter, decrypter)
+        self.encrypted = True
 
     def setCompressor(self, compressor):
-        pass
+        if self.encrypted or self.compressed:
+            self.connector.setCompressor(compressor)
+        else:
+            self.connector = CryptCompressConnector(self.connector, None, None, compressor)
+        self.compressed = True
 
     def setUserData(self, userData):
         self.userData = userData
@@ -110,14 +118,46 @@ class RpcChannel(service.RpcChannel):
 
     def CallMethod(self, methodDescriptor, rpcController, request, responseClass, done):
         """发送rpc调用"""
-        pass
+        cmdIndex = methodDescriptor.index
+        assert cmdIndex < 65535
+        data = request.SerializeToString()
+        totalLen = len(data) + 2
+        self.connector.writeData(''.join([pack('<I', totalLen), pack('<H', cmdIndex), data]))
 
     def onDisconnected(self):
         """底层连接断开时回调"""
-        pass
+        self.logger.info('onDisconnected')
+        for listener in self.listeners:
+            listener.onChannelDisconnected(self)
+        self.rpcRequest.reset()
+        self.rpcRequestParser.reset()
+        self.listeners = None
+        self.connector = None
+        self.userData = None
 
     def onRead(self, data):
-        pass
+        totalLen = len(data)
+        skil = 0
+        while skip < totalLen:
+            result, consumBytes = self.rpcRequestParser.parse(self.rpcRequest, data, skip)
+            assert consumBytes > 0
+
+            skip += consumBytes
+            if result == 1:
+                ok = self.onRequest()
+                self.rpcRequest.reset()
+
+                if not ok:
+                    return 0
+                continue
+            elif result == 0:
+                return 0
+            elif result == 3:
+                raise ProtobufLengthError('buffer length > MAX_DATA_BYTES')
+            else:
+                continue
+
+        return 2
 
     def onRequest(self):
         """解析一个完整请求后的回调"""
