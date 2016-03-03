@@ -54,3 +54,22 @@ class RpcChannelCreator(object):
 
     def handleConnectorFailed(self, connector):
         self.logger.info('connector failed')
+
+class RpcChannelHolder(object):
+    """管理多个RpcChannel"""
+    def __init__(self):
+        super(RpcChannelHolder, self).__init__()
+        self.logger = LogManager.getLogger('MarsRpc.RpcChannelHolder')
+        self.rpcChannel = None
+
+    def handleNewChannel(self, rpcChannel):
+        self.logger.debug('RpcChannelHolder handleNewChannel')
+        self.rpcChannel = rpcChannel
+        rpcChannel.regListener(self)
+
+    def onChannelDisconnected(self, rpcChannel):
+        self.rpcChannel = None
+
+    def getRpcChannel(self):
+        return self.rpcChannel
+
