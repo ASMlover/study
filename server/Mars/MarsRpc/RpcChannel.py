@@ -161,4 +161,30 @@ class RpcChannel(service.RpcChannel):
 
     def onRequest(self):
         """解析一个完整请求后的回调"""
-        pass
+        dataLen = len(self.rpcRequest.data)
+
+        if dataLen < 2:
+            self.logger.error('got error request size: %d', dataLen)
+            return False
+
+        indexData = self.rpcRequest.data[0:2]
+        cmdIndex = unpack('<H', indexData)[0]
+
+        rpcService = self.rpcService
+        descriptor = rpcService.GetDescriptor()
+
+        if cmdIndex > len(descriptor.methods):
+            self.logger.error('got error method inex: %d', cmdIndex)
+            return False
+
+        method = descriptor.methods[cmdIndex]
+        try:
+            request = rpcService.GetRequestClass(method)()
+            serialized = self.rpcRequest.data[2:]
+            request.ParseFromString(serialized)
+            rpcService.CallMethod(method, self.controller, request, None)
+        except:
+            self.logger.error('call rpc method failed')
+            self.logger.logLastExcept()
+
+        return True
