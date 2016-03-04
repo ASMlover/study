@@ -62,6 +62,9 @@ class RpcChannelHolder(object):
         self.logger = LogManager.getLogger('MarsRpc.RpcChannelHolder')
         self.rpcChannel = None
 
+    def getRpcChannel(self):
+        return self.rpcChannel
+
     def handleNewChannel(self, rpcChannel):
         self.logger.debug('RpcChannelHolder handleNewChannel')
         self.rpcChannel = rpcChannel
@@ -70,6 +73,28 @@ class RpcChannelHolder(object):
     def onChannelDisconnected(self, rpcChannel):
         self.rpcChannel = None
 
-    def getRpcChannel(self):
-        return self.rpcChannel
+class RpcChannelManager(object):
+    """管理所有的RpcChannel"""
+    def __init__(self):
+        super(RpcChannelManager, self).__init__()
+        self.logger = LogManager.getLogger('MarsRpc.RpcChannelManager')
+        self.rpcChannels = {}
 
+    def getRpcChannel(self, peername):
+        return self.rpcChannels.get(peername, None)
+
+    def rpcChannelCount(self):
+        return len(self.rpcChannels)
+
+    def handleNewChannel(self, rpcChannel):
+        self.logger.debug('RpcChannelManager handleNewChannel')
+        self.rpcChannels[rpcChannel.getPeername()] = rpcChannel
+        rpcChannel.regListener(self)
+
+    def onChannelDisconnected(self, rpcChannel):
+        peername = rpcChannel.getPeername()
+        if peername in self.rpcChannels:
+            self.logger.info('delete connector fro %s', peername)
+            self.rpcChannels.pop(peername, None)
+        else:
+            self.logger.info('do not find disconnected connector %s', peername)
