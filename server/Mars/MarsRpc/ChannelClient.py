@@ -86,3 +86,15 @@ class ChannelClient(object):
 
     def disconnect(self):
         self.client and self.client.disconnect()
+
+    def handleNewConnector(self, connector):
+        self.logger.info('handle new connector %s', connector.socket.getpeername())
+        rpcChannel = RpcChannel(self.rpcService, connector)
+        self.status = ChannelClient.CS_SUCCESSED
+        self.callback and self.callback(rpcChannel)
+
+    def handleConnectorFailed(self, connector):
+        self.cancelTimer()
+        self.status = ChannelClient.CS_FAILED
+        self.callback and self.callback(None)
+        self.logger.error('connector failed')
