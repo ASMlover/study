@@ -119,9 +119,6 @@ class Number(RpcArgument):
         return value
 
 class Bool(RpcArgument):
-    def __init__(self, name):
-        super(Bool, self).__init__(name)
-
     def convert(self, data):
         if not isinstance(data, bool):
             raise ConvertError(self.error(data))
@@ -184,3 +181,58 @@ class Tuple(RpcArgument):
 
     def defaultValue(self):
         return ()
+
+class List(RpcArgument):
+    def convert(self, data):
+        if not isinstance(data, list):
+            raise ConvertError(self.error(data))
+        return data
+
+    def getType(self):
+        return 'List'
+
+    def defaultValue(self):
+        return []
+
+class Dict(RpcArgument):
+    def convert(self, data):
+        if not isinstance(data, dict):
+            raise ConvertError(self.error(data))
+        return data
+
+    def getType(self):
+        return 'Dict'
+
+    def defaultValue(self):
+        return {}
+
+class Uuid(RpcArgument):
+    def convert(self, data):
+        if data is None:
+            return None
+        if IdCreator.isIdType(data):
+            return data
+        if type(data) in (str, unicode):
+            if isinstance(data, unicode):
+                data = str(data)
+            try:
+                return IdCreator.bytes2id(data)
+            except:
+                return IdCreator.str2id(data)
+        raise ConvertError(self.error(data))
+
+    def getType(self):
+        return 'Uuid'
+
+    def defaultValue(self):
+        return None
+
+class MailBox(RpcArgument):
+    def __init__(self, name='MailBox'):
+        super(MailBox, self).__init__(name)
+
+    def getType(self):
+        return 'MailBox'
+
+    def defaultValue(self):
+        return None
