@@ -58,4 +58,20 @@ class Md5Cache(object):
 
     @staticmethod
     def getStr(md5):
-        return Md5Cache.md52Str.get(md5, None)
+        return Md5Cache.md52Str.get(md5)
+
+class StaticIndexCache(object):
+    str2Index = {}
+    index2Str = {}
+
+    @staticmethod
+    def loadDict(dictFile):
+        raise StandardError('Not implemented!')
+
+    @staticmethod
+    def getString(index):
+        return StaticIndexCache.index2Str.get(index)
+
+    @staticmethod
+    def getIndex(string):
+        return StaticIndexCache.str2Index.get(string, -1)
