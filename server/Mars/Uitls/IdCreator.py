@@ -28,97 +28,32 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import PathHelper as PH
-PH.addPaths('../')
+from base64 import b64encode
+import bson.objectid as ObjectId
 
-import bson.objectid as objectid
-import uuid
-
-class IdCreatorBase(object):
+class IdCreator(object):
     @staticmethod
     def genId():
-        raise NotImplementedError
+        return b64encode(ObjectId().binary)
 
     @staticmethod
     def str2id(string):
-        raise NotImplementedError
+        return string
 
     @staticmethod
     def bytes2id(bytes):
-        raise NotImplementedError
+        return bytes
 
     @staticmethod
     def id2str(uid):
-        raise NotImplementedError
+        return uid
 
     @staticmethod
     def id2bytes(uid):
-        raise NotImplementedError
+        return uid
 
     @staticmethod
-    def getIdType():
-        raise NotImplementedError
+    def isValid(uid):
+        return isinstance(id, str) and (not uid or len(uid) == 16)
 
-    @staticmethod
-    def isIdType(obj):
-        raise NotImplementedError
 
-class IdCreatorUuid(UuidInterface):
-    @staticmethod
-    def genId():
-        return uuid.uuid1()
-
-    @staticmethod
-    def str2id(string):
-        return uuid.UUID(string)
-
-    @staticmethod
-    def bytes2id(bytes):
-        return uuid.UUID(bytes=bytes)
-
-    @staticmethod
-    def id2str(uid):
-        return str(uid)
-
-    @staticmethod
-    def id2bytes(uid):
-        return uid.bytes
-
-    @staticmethod
-    def getIdType():
-        return uuid.UUID
-
-    @staticmethod
-    def isIdType(obj):
-        return isinstance(obj, uuid.UUID)
-
-class IdCreatorObjectId(UuidInterface):
-    @staticmethod
-    def genId():
-        return objectid.ObjectId()
-
-    @staticmethod
-    def str2id(string):
-        return objectid.ObjectId(string)
-
-    @staticmethod
-    def bytes2id(bytes):
-        return objectid.ObjectId(bytes)
-
-    @staticmethod
-    def id2str(uid):
-        return str(uid)
-
-    @staticmethod
-    def id2bytes(uid):
-        return uid.binary
-
-    @staticmethod
-    def getIdType():
-        return objectid.ObjectId
-
-    @staticmethod
-    def isIdType(obj):
-        return isinstance(obj, objectid.ObjectId)
-
-IdCreator = IdCreatorObjectId
