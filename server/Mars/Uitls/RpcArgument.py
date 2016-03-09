@@ -32,7 +32,7 @@ sys.setdefaultencoding('utf-8')
 
 from IdCreator import IdCreator
 
-class ConvertError(StandardError):
+class ConvertError(ValueError):
     pass
 
 class RpcArgument(object):
@@ -42,19 +42,19 @@ class RpcArgument(object):
         self.name = name
 
     def convert(self, data):
-        raise StandardError('Not implemented!')
+        raise ConvertError('Not implemented!')
 
     def getName(self):
         return self.name
 
     def getType(self):
-        raise StandardError('Not implemented!')
+        raise ConvertError('Not implemented!')
 
     def getNameType(self):
         return '%s(%s)' % (self.getName(), self.getType())
 
     def defaultValue(self):
-        raise StandardError('Not implemented!')
+        raise ConvertError('Not implemented!')
 
     def error(self, data):
         return '%s is not valid: %s' % (data, self.getType())
@@ -64,6 +64,9 @@ class RpcArgument(object):
 
     def __str__(self):
         return self.getNameType()
+
+    def convertError(self, data):
+        return ConvertError('Cannot convert arg %s to type %s with data [%r]' % (self.getName(), self.getType(), data))
 
 class UnLimited(object):
     def isValid(self, data):
