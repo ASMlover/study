@@ -93,7 +93,14 @@ class Md5IndexDecoder(object):
 
     @staticmethod
     def decode(md5Index):
-        index = md5Index.index
+        string, r, index = Md5IndexDecoder.rawDecode(md5Index.md5, md5Index.index)
+        if r:
+            md5Index.index = index
+
+        return string, r
+
+    @staticmethod
+    def rawDecode(md5, index):
         if index > 0:
             if index <= MARS_MAX_INDEX:
                 string = StaticIndexCache.getString(index)
@@ -101,23 +108,19 @@ class Md5IndexDecoder(object):
                 string = Md5IndexDecoder.index2Str.get(index)
             if string is None:
                 _logger.error('decode: string for index %d not found', index)
-            return string, False
+            return string, False, -1
         else:
             if MARS_DEBUG:
-                string = md5Index.md5
+                string = md5
             else:
-                string = Md5Cache.getStr(md5Index.md5)
+                string = Md5Cache.getStr(md5)
             if string is None:
-                _logger.error('decode: MD5 %s for string not found', binascii.hexlify(md5Index.md5))
-                return string, False
-            md5Index.index = StaticIndexCache.getIndex(string)
-            if md5Index.index <= 0:
-                md5Index.index = Md5IndexDecoder.str2Index.get(string, 0)
-            return string, True
-
-    @staticmethod
-    def rawDecode(md5, index):
-        pass
+                _logger.error('decode: MD5 %s for string not found', binascii.hexlify(md5))
+                return string, False, -1
+            index = StaticIndexCache.getIndex(string)
+            if index <= 0:
+                index = Md5IndexDecoder.str2Index.get(string, 0)
+            return string, True, index
 
 class Md5IndexEncoder(object):
     def __init__(self):
