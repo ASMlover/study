@@ -131,10 +131,31 @@ class Md5IndexEncoder(object):
         self.str2Index = {}
 
     def addIndex(self, md5, index):
-        pass
+        if MARS_DEBUG:
+            string = md5
+        else:
+            string = Md5Cache.getStr(md5)
+        _logger.debug('addIndex: md5=%s, index=%d', string, index)
+        if string and index > 0:
+            self.str2Index[string] = index
 
     def encode(self, md5Index, string):
-        pass
+        index, md5 = self.rawEncode(string)
+        if index:
+            md5Index.index = index
+        else:
+            md5Index.md5 = md5
+        return md5Index
 
     def rawEncode(self, string):
-        pass
+        index = StaticIndexCache.getIndex(string)
+        if index <= 0:
+            index = self.str2Index.get(string, 0)
+
+        if index > 0:
+            return index, ''
+        else:
+            if MARS_DEBUG:
+                return 0, string
+            else:
+                return 0, Md5Cache.getMd5(string)
