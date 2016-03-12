@@ -51,6 +51,18 @@ class Singleton(object):
     def instanceCheck(self, inst):
         return isinstance(self, self._decorated)
 
+class ExtendableType(type):
+    def __new__(cls, name, bases, dict):
+        if name == '__extend__':
+            for cls in bases:
+                for key, value in dict.iteritems():
+                    if key == '__module__':
+                        continue
+                    setattr(cls, key, value)
+            return None
+        else:
+            return super(ExtendableType, cls).__new__(cls, name, bases, dict)
+
 
 if __name__ == '__main__':
     @Singleton
