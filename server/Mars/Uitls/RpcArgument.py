@@ -230,6 +230,16 @@ class Uuid(RpcArgument):
     def defaultValue(self):
         return None
 
+class Avatar(RpcArgument):
+    def __init__(self, name='Avatar'):
+        super(Avatar, self).__init__(name)
+
+    def getType(self):
+        return 'Avatar'
+
+    def defaultValue(self):
+        return None
+
 class MailBox(RpcArgument):
     def __init__(self, name='MailBox'):
         super(MailBox, self).__init__(name)
