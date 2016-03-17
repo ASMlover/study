@@ -42,5 +42,49 @@ class LoginKeyDecrypterNoKeyczar(object):
         key = RSA.importKey(keyContent)
         self.decrypter = PKCS1_OAEP.new(key)
 
-    def decrypt(self, encryptStr):
-        return self.decrypter.decrypt(encryptStr)
+    def decrypt(self, encryptedText):
+        return self.decrypter.decrypt(encryptedText)
+
+class LoginKeyEncrypterNoKeyczar(object):
+    def __init__(self, loginKeyPath=None, keyContent=None):
+        super(LoginKeyEncrypterNoKeyczar, self).__init__()
+        assert loginKeyPath or keyContent
+
+        if loginKeyPath:
+            keyContent = open(loginKeyPath).read()
+        key = RSA.importKey(keyContent)
+        self.encrypter = PKCS1_OAEP.new(key)
+
+    def encrypt(self, data):
+        return self.encrypter.encrypt(data)
+
+class LoginKeyDecrypter(object):
+    def __init__(self, loginKeyPath):
+        super(LoginKeyDecrypter, self).__init__()
+        self.decrypter = Crypter.Read(loginKeyPath)
+
+    def decrypt(self, encryptedText):
+        return self.decrypter.Decrypt(encryptedText, None)
+
+class LoginKeyEncrypter(object):
+    def __init__(self, loginKeyPath):
+        super(LoginKeyEncrypter, self).__init__()
+        self.encrypter = Encrypter.Read(loginKeyPath)
+
+    def encrypt(self, data):
+        return self.encrypter.Encrypt(data, None)
+
+class ARC4Crypter(object):
+    def __init__(self, key=None):
+        super(ARC4Crypter, self).__init__()
+        if key == None:
+            seed = os.urandom(256)
+            nonce = Random.new().read(256)
+            key = SHA.new(seed + nonce).digest()
+        self.cipher = ARC4.new(key)
+
+    def encrypt(self, data):
+        return self.cipher.encrypt(data)
+
+    def decrypt(self, encryptedText):
+        return self.cipher.decrypt(encryptedText)
