@@ -1,0 +1,78 @@
+
+message Null {
+}
+
+// 建立连接请求消息
+message ConnectRequest {
+  enum RequestType {
+    RT_NEWCONNECTION  = 0; // 新连接
+    RT_RECONNECTING   = 1; // 重连
+    RT_BINDAVATAR     = 2; // 绑定entity和avatar
+  }
+  optional bytes        routes    = 1;
+  required RequestType  type      = 2; // 请求类型
+  optional bytes        clientId  = 3; // 客户端标识
+  optional bytes        entityId  = 4; // avatar的entity id
+  optional bytes        auth      = 5; // 验证
+}
+
+// 连接应答消息
+message ConnectReply {
+  enum ReplyType {
+    RT_BUSY           = 0; // 服务器忙
+    RT_CONNECTED      = 1; // 连接成功
+    RT_RECONNECTOK    = 2; // 重连成功
+    RT_RECONNECTFAIL  = 3; // 重连失败
+    RT_FORBIDDEN      = 4; // 禁止连接
+    RT_MAXCONNECTION  = 5; // 连接达阀值
+  }
+  optional bytes      routes    = 1;
+  required ReplyType  type      = 2 [default RT_BUSY];
+  optional bytes      entityId  = 3; // 当前avatar的entity id
+  optional bytes      extra     = 4; // 回复的额外信息
+}
+
+message Md5Index {
+  optional bytes  md5   = 1;
+  optional sint32 index = 2 [default = -1];
+}
+
+// entity rpc
+message EntityRpc {
+  optional bytes    routes    = 1;
+  required bytes    id        = 2; // entityId
+  required Md5Index method    = 3; // rpc functon name
+  optional bytes    arguments = 4;
+  optional bool     reliable  = 5 [default = true];
+}
+
+message GlobalEntityRpc {
+  optional bytes    target    = 1;
+  required Md5Index method    = 2;
+  optional bytes    arguments = 3;
+  optional bool     reliable  = 4 [default = true];
+}
+
+message EntityData {
+  optional bytes    routes  = 1;
+  optional Md5Index type    = 2; // entity的类型
+  optional bytes    id      = 3; // 创建的entity的id
+  optional bytes    data    = 4; // entity的数据信息
+}
+
+message OutBandData {
+  optional bytes routes = 1;
+  required bytes data   = 2; // 服务端发个客户端的带外数据信息
+}
+
+message ServerData {
+  required bytes  ip        = 1;
+  required int32  port      = 2;
+  optional int32  serverId  = 3; // 服务器id
+  optional bool   banClient = 4; // 是否处理玩家逻辑
+}
+
+message Mailbox {
+  required bytes      entityId    = 1;
+  optional ServerData serverData  = 2;
+}
