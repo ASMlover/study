@@ -1,4 +1,8 @@
 
+package Mars.Server;
+
+option py_generic_services = true;
+
 message Null {
 }
 
