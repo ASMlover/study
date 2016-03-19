@@ -1,0 +1,64 @@
+// client <=> gate
+
+import "Common.proto";
+package Mars.Server;
+
+option py_generic_services = true;
+
+message EncryptText {
+  required bytes encryptText = 1; // 加密数据信息
+}
+
+message SessionSeed {
+  required int64 seed = 1; // 加密随机数
+}
+
+message SessionKey {
+  required bytes paddingHead  = 1; // padding header
+  required bytes sessionKey   = 2; // 加密的信息
+  required int64 seed         = 3; // 发给客户的随机数
+  required bytes paddingTail  = 4; // padding tail
+}
+
+service SClient2Gate {
+  // 请求随机数
+  rpc seedRequest(Null) returns(Null);
+
+  // 告诉服务器通信用的密钥
+  rpc sessionKey(EncryptText) returns(Null);
+
+  // 连接服务器
+  rpc connectRequest(ConnectRequest) returns(Null);
+
+  // entity消息
+  rpc entityRpc(EntityRpc) returns(Null);
+
+  // 字符串的md5对应索引注册到服务器
+  rpc regMd5Index(Md5Index) returns(Null);
+}
+
+service SGate2Client {
+  // 返回随机数
+  rpc seedReply(SessionSeed) returns(Null);
+
+  // 告知服务器通用密钥OK
+  rpc sessionKeyOk(Null) returns(Null);
+
+  // 客户端连接请求的回复
+  rpc connectReply(ConnectReply) returns(Null);
+
+  // 通知客户端创建entity
+  rpc createEntity(EntityData) returns(Null);
+
+  // 通知客户端销毁entity
+  rpc destroyEntity(EntityData) returns(Null);
+
+  // 响应客户端的entity rpc
+  rpc entityRpc(EntityRpc) returns(Null);
+
+  // 额外信息到客户端
+  rpc chatWithClient(OutBandData) returns(Null);
+
+  // 注册对于的md5索引到客户端
+  rpc regMd5Index(Md5Index) returns(Null);
+}
