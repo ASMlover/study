@@ -1,0 +1,139 @@
+// gate <=> game
+
+import "Common.proto";
+package Mars.Server;
+
+option py_generic_services = true;
+
+message ClientData {
+  optional bytes ip         = 1; // 客户端ip
+  optional int32 port       = 2; // 客户端端口
+  required bytes clientId   = 3; // 客户端标识
+  required bytes sessionId  = 4; // 服务器标识
+  required bytes gateId     = 5; // gate标识
+};
+
+message ClientBindMessage {
+  required ClientData clientData  = 1; // 客户端信息
+  required ServerData serverData  = 2; // 服务端信息
+  optional bytes      entityId    = 3; // entity id
+}
+
+message RegMd5IndexMessage {
+  required bytes    routes    = 1;
+  required Md5Index md5Index  = 2;
+}
+
+message GateReturnValue {
+  required ClientData clientData  = 1; // 客户端信息
+  required bool       retStatus   = 2; // 是否OK
+}
+
+message RealEntityCreateData {
+  required ServerData targetServer      = 1; // 目标服务器
+  required ServerData thisServer        = 2; // 源服务器
+  required bytes      realEntityId      = 3; // 要迁移的entity id
+  required bytes      realClassType     = 4; // 要迁移的entity class类型
+  required bytes      preTransEntityId  = 5; // 目标服务器占位entity id
+  optional bytes      content           = 6; // 初始化dict
+  optional bytes      clientDataCahce   = 7; // client信息cache
+}
+
+message Gate2GameReturnValue {
+  enum CallbackType {
+    CT_NOCALLBACK           = 0;
+    CT_GATE2GAME_ENTITYMSG  = 1;
+  }
+  required CallbackType type      = 1 [default = CT_NOCALLBACK];
+  required int32        cid       = 2 [default = -1]; // callback id
+  optional bool         retStatus = 3;
+  optional bytes        retValue  = 4;
+  optional bytes        errorMsg  = 5;
+}
+
+message GameLoad {
+  required double load = 1;
+}
+
+message GateData {
+  optional bytes gateId = 1;
+}
+
+service SGate2Game {
+  // 连接服务器
+  rpc connectRequest(ConnectRequest) returns(Null);
+
+  // entity消息
+  rpc entityRpc(EntityRpc) returns(Null);
+
+  // 通知game，断开连接
+  rpc clientDisconnected(ClientData) returns(Null);
+
+  // 通知game可以转移entity了
+  rpc preTransClientCallback(GateReturnValue) returns(Null);
+
+  // game之间的消息
+  rpc forwardEntityRpc(EntityRpc) returns(Null);
+
+  // gate转发回调
+  rpc gateCallback(Gate2GameReturnValue) returns(Null);
+
+  // 注册gate
+  rpc regGate(GateData) returns(Null);
+
+  // avatar转移成功后，通知game删除旧的client proxy
+  rpc unbindClientFromGame(ClientData) returns(Null);
+
+  // gate通知game建立entity
+  rpc createRealEntity(RealEntityCreateData) returns(Null);
+
+  // 通知迁移game后entity创建成功
+  rpc onRealEntityCreated(Mailbox) returns(Null);
+
+  // md5和index的注册信息
+  rpc regMd5Index(RegMd5IndexMessage) returns(Null);
+}
+
+service SGame2Gate {
+  // gate调用connectRequest的回复
+  rpc onConnectRequest(ConnectReply) returns(Null);
+
+  // 创建entity
+  rpc createEntity(EntityData) returns(Null);
+
+  // 销毁entity
+  rpc destroyEntity(EntityData) returns(Null);
+
+  // 切断客户端连接
+  rpc cutClientLink(ClientData) returns(Null);
+
+  // 发送entity的rpc到客户端
+  rpc entityRpc(EntityRpc) returns(Null);
+
+  // 全局rpc
+  rpc globalEntityRpc(GlobalEntityRpc) returns(Null);
+
+  // 发送带外信息
+  rpc chatWithClient(OutBandData) returns(Null);
+
+  // 客户端client迁移, gate缓存
+  rpc preTransClient(ClientBindMessage) returns(Null);
+
+  // 绑定客户到game
+  rpc bindClientToGame(ClientBindMessage) returns(Null);
+
+  // 通知gate转发消息
+  rpc forwardEntityRpc(EntityRpc) returns(Null);
+
+  // 通知game创建真的entity
+  rpc onCreateRealEntity(RealEntityCreateData) returns(Null);
+
+  // 通知game创建entity成功
+  rpc onRealEntityCreated(Mailbox) returns(Null);
+
+  // 向客户端注册md5和index
+  rpc regMd5Index(RegMd5IndexMessage) returns(Null);
+
+  // 更新服务器的负载信息
+  rpc updateGameLoad(GameLoad) returns(Null);
+}
