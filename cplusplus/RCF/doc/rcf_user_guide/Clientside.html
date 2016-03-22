@@ -1,0 +1,322 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Remote Calls - Client-side</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="../index.html" title="RCF User Guide">
+<link rel="up" href="../index.html" title="RCF User Guide">
+<link rel="prev" href="Tutorial.html" title="Tutorial">
+<link rel="next" href="Serverside.html" title="Remote Calls - Server-side">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="Tutorial.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Serverside.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.Clientside"></a><a class="link" href="Clientside.html" title="Remote Calls - Client-side"> Remote Calls - Client-side</a>
+</h2></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="Clientside.html#rcf_user_guide.Clientside.remote_call_semantics">Remote
+      call semantics</a></span></dt>
+<dt><span class="section"><a href="Clientside.html#rcf_user_guide.Clientside.pinging">Pinging</a></span></dt>
+<dt><span class="section"><a href="Clientside.html#rcf_user_guide.Clientside.Progress"> Client progress
+      callbacks</a></span></dt>
+<dt><span class="section"><a href="Clientside.html#rcf_user_guide.Clientside.UserData"> Per-request user
+      data</a></span></dt>
+<dt><span class="section"><a href="Clientside.html#rcf_user_guide.Clientside.Transports"> Access to underlying
+      transport</a></span></dt>
+<dt><span class="section"><a href="Clientside.html#rcf_user_guide.Clientside.copy_semantics">Copy semantics</a></span></dt>
+</dl></div>
+<p>
+      The client-side of a remote call is controlled through <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ClientStub</span></code>.
+      <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ClientStub</span></code> controls a single connection to
+      the server. Every <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code> instance contains a <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ClientStub</span></code>,
+      which can be accessed by calling <code class="computeroutput"><span class="identifier">getClientStub</span><span class="special">()</span></code>.
+    </p>
+<p>
+      
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ClientStub</span> <span class="special">&amp;</span> <span class="identifier">clientStub</span> <span class="special">=</span> <span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">();</span>
+</pre>
+<p>
+    </p>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Clientside.remote_call_semantics"></a><a class="link" href="Clientside.html#rcf_user_guide.Clientside.remote_call_semantics" title="Remote call semantics">Remote
+      call semantics</a>
+</h3></div></div></div>
+<p>
+        You can use <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">setRemoteCallSemantics</span><span class="special">()</span></code>
+        to set the calling semantics of a remote call.
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setRemoteCallSemantics</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Oneway</span><span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setRemoteCallSemantics</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Twoway</span><span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<div class="itemizedlist"><ul type="disc">
+<li>
+            Twoway calls (<code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Twoway</span></code>) are the default. A twoway call
+            does not complete until the client receives a reply from the server.
+          </li>
+<li>
+            A oneway call (<code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Oneway</span></code>) is complete as soon as the
+            request has been sent to the server. The server will not send any response
+            to a oneway call.
+          </li>
+</ul></div>
+<p>
+        By default a twoway call will cause the calling thread to wait until a response
+        is received from the server. It is also possible to receive the response
+        asynchronously, thus freeing the calling thread to perform other tasks -
+        see <a class="link" href="AsyncRemoteCalls.html" title="Asynchronous Remote Calls">Asynchronous Remote Calls</a>.
+        Asynchronous semantics can also be used on oneway calls, to prevent the calling
+        thread from blocking if the local network send buffers are full.
+      </p>
+<p>
+        Calling semantics can also be provided on a call-by-call basis, as the first
+        argument of the remote call:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Oneway</span><span class="special">,</span> <span class="string">"Hello World"</span><span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Twoway</span><span class="special">,</span> <span class="string">"Hello World"</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        RCF also provides batched oneway calls, as an optimization for oneway calls.
+        Normally, when a <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code> is configured to make oneway calls,
+        a network message is sent to the server for each remote call that is made.
+        If a large number of calls are being made, batched oneway calls can be configured,
+        allowing multiple oneway calls to be coalesced into a single network message,
+        and subsequently executed in sequence on the server.
+      </p>
+<p>
+        To configure batched oneway calls, use the <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">enableBatching</span><span class="special">()</span></code>, <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">disableBatching</span><span class="special">()</span></code> and <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">flushBatch</span><span class="special">()</span></code> functions:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">enableBatching</span><span class="special">();</span>
+
+<span class="comment">// Automatically send batch when message size approaches 50kb.
+</span><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setMaxBatchMessageLength</span><span class="special">(</span><span class="number">1024</span><span class="special">*</span><span class="number">50</span><span class="special">);</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <span class="identifier">i</span><span class="special">=</span><span class="number">0</span><span class="special">;</span> <span class="identifier">i</span><span class="special">&lt;</span><span class="number">100</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+<span class="special">}</span>
+
+<span class="comment">// Send final batch.
+</span><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">flushBatch</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Clientside.pinging"></a><a class="link" href="Clientside.html#rcf_user_guide.Clientside.pinging" title="Pinging">Pinging</a>
+</h3></div></div></div>
+<p>
+        The <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">ping</span><span class="special">()</span></code>
+        method can be used, to determine if the connection to the server is functional.
+        A ping behaves exactly as a remote call with no in or out parameters, and
+        is subject to the same timeouts.
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// Ping the server.
+</span><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">ping</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Clientside.Progress"></a><a class="link" href="Clientside.html#rcf_user_guide.Clientside.Progress" title="Client progress callbacks"> Client progress
+      callbacks</a>
+</h3></div></div></div>
+<p>
+        RCF can be configured to periodically report progress to a custom client
+        progress callback function during a twoway call. You can use the progress
+        callback function to display a progress bar, repaint the application window,
+        or even cancel the call itself.
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">void</span> <span class="identifier">onRemoteCallProgress</span><span class="special">()</span>
+<span class="special">{</span>
+    <span class="comment">// To cancel the call, throw an exception.
+</span>    <span class="keyword">throw</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">runtime_error</span><span class="special">(</span><span class="string">"Canceling remote call."</span><span class="special">);</span>
+<span class="special">}</span>
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint32_t</span> <span class="identifier">progressCallbackIntervalMs</span> <span class="special">=</span> <span class="number">500</span><span class="special">;</span>
+
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setRemoteCallProgressCallback</span><span class="special">(</span>
+    <span class="identifier">boost</span><span class="special">::</span><span class="identifier">bind</span><span class="special">(&amp;</span><span class="identifier">onRemoteCallProgress</span><span class="special">),</span>
+    <span class="identifier">progressCallbackIntervalMs</span><span class="special">);</span>
+
+<span class="comment">// While the call is in progress, onRemoteCallProgress() will be called every 500ms.
+</span><span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Clientside.UserData"></a><a class="link" href="Clientside.html#rcf_user_guide.Clientside.UserData" title="Per-request user data"> Per-request user
+      data</a>
+</h3></div></div></div>
+<p>
+        Normally the data transferred from the client to the server in a remote call
+        is contained in the arguments of the remote call. However, you can also supply
+        extra information in the user data field of the remote call request. Similarly,
+        the server can send extra information to the client by setting the the user
+        data field of the remote call response.
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">class</span> <span class="identifier">HelloWorldImpl</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="keyword">void</span> <span class="identifier">Print</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> <span class="identifier">s</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"I_HelloWorld service: "</span> <span class="special">&lt;&lt;</span> <span class="identifier">s</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+
+        <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfSession</span> <span class="special">&amp;</span> <span class="identifier">session</span> <span class="special">=</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">getCurrentRcfSession</span><span class="special">();</span>
+        
+        <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">customRequestData</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getRequestUserData</span><span class="special">();</span>
+        <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Custom request data: "</span> <span class="special">&lt;&lt;</span> <span class="identifier">customRequestData</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+
+        <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">customResponseData</span> <span class="special">=</span> <span class="string">"f81d4fae-7dec-11d0-a765-00a0c91e6bf6"</span><span class="special">;</span>
+        <span class="identifier">session</span><span class="special">.</span><span class="identifier">setResponseUserData</span><span class="special">(</span><span class="identifier">customResponseData</span><span class="special">);</span>
+    <span class="special">}</span>
+<span class="special">};</span>
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setRequestUserData</span><span class="special">(</span> <span class="string">"e6a9bb54-da25-102b-9a03-2db401e887ec"</span> <span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">customReponseData</span> <span class="special">=</span> <span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">getResponseUserData</span><span class="special">();</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Custom response data: "</span> <span class="special">&lt;&lt;</span> <span class="identifier">customReponseData</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+</pre>
+<p>
+      </p>
+<p>
+        The user data fields can be used to implement custom authentication schemes
+        where a token needs to be passed along as part of every remote call, but
+        you don't want to have the token to be part of your remote call interface.
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Clientside.Transports"></a><a class="link" href="Clientside.html#rcf_user_guide.Clientside.Transports" title="Access to underlying transport"> Access to underlying
+      transport</a>
+</h3></div></div></div>
+<p>
+        You can use <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">getTransport</span><span class="special">()</span></code>
+        to access the underlying transport of a ClientStub.
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ClientTransport</span> <span class="special">&amp;</span> <span class="identifier">transport</span> <span class="special">=</span> <span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">getTransport</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+<p>
+        Transport level connection and disconnection from a server is normally handled
+        automatically. However, you can also connect and disconnect manually by calling
+        <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">connect</span><span class="special">()</span></code>
+        and <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">disconnect</span><span class="special">()</span></code>.
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// Connect to server.
+</span><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">connect</span><span class="special">();</span>
+
+<span class="comment">// Disconnect from server.
+</span><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">disconnect</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+<p>
+        You can use <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">releaseTransport</span><span class="special">()</span></code>
+        and <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">setTransport</span><span class="special">()</span></code>
+        to move a transport from one client stub to another:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_AnotherInterface</span><span class="special">&gt;</span> <span class="identifier">client2</span><span class="special">(</span> <span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">releaseTransport</span><span class="special">()</span> <span class="special">);</span>
+<span class="identifier">client2</span><span class="special">.</span><span class="identifier">AnotherPrint</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setTransport</span><span class="special">(</span> <span class="identifier">client2</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">releaseTransport</span><span class="special">()</span> <span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        This is useful if you want to use the same connection to make calls on different
+        interfaces.
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Clientside.copy_semantics"></a><a class="link" href="Clientside.html#rcf_user_guide.Clientside.copy_semantics" title="Copy semantics">Copy semantics</a>
+</h3></div></div></div>
+<p>
+        <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code>
+        objects can be copied, put in containers, and so on. However, each copy of
+        a <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code>
+        object will establish its own network connection to the server. So the following
+        code will establish 3 network connections to the server:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span> <span class="identifier">client1</span><span class="special">((</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">)</span> <span class="special">));</span>
+
+<span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span> <span class="identifier">client2</span><span class="special">(</span><span class="identifier">client1</span><span class="special">);</span>
+
+<span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span> <span class="identifier">client3</span><span class="special">;</span>
+<span class="identifier">client3</span> <span class="special">=</span> <span class="identifier">client1</span><span class="special">;</span>
+
+<span class="identifier">client1</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+<span class="identifier">client2</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+<span class="identifier">client3</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2005 - 2015 Delta V Software</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="Tutorial.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Serverside.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

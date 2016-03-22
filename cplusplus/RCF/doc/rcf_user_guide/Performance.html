@@ -1,0 +1,283 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Performance</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="../index.html" title="RCF User Guide">
+<link rel="up" href="../index.html" title="RCF User Guide">
+<link rel="prev" href="Versioning.html" title="Versioning">
+<link rel="next" href="AdvancedSerialization.html" title="Advanced Serialization">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="Versioning.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="AdvancedSerialization.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.Performance"></a><a class="link" href="Performance.html" title="Performance"> Performance</a>
+</h2></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="Performance.html#rcf_user_guide.Performance.ZeroCopy"> Zero copy</a></span></dt>
+<dt><span class="section"><a href="Performance.html#rcf_user_guide.Performance.ZeroAllocation"> Zero allocation</a></span></dt>
+<dt><span class="section"><a href="Performance.html#rcf_user_guide.Performance.Caching"> Server-side object
+      caching</a></span></dt>
+<dt><span class="section"><a href="Performance.html#rcf_user_guide.Performance.Scalability"> Scalability</a></span></dt>
+</dl></div>
+<p>
+      RCF provides two basic performance guarantees for remote calls: <a class="link" href="Performance.html#rcf_user_guide.Performance.ZeroCopy" title="Zero copy">zero
+      copy</a> and <a class="link" href="Performance.html#rcf_user_guide.Performance.ZeroAllocation" title="Zero allocation">zero
+      allocation</a>.
+    </p>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Performance.ZeroCopy"></a><a class="link" href="Performance.html#rcf_user_guide.Performance.ZeroCopy" title="Zero copy"> Zero copy</a>
+</h3></div></div></div>
+<p>
+        RCF makes no internal copies of data while sending or receiving, either on
+        the server or the client. However, serialization often forces copies to be
+        made. For instance, deserializing a <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span></code>
+        can't be done without making a copy of the string contents, because <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span></code>
+        always allocates its own storage. The same goes for <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;&gt;</span></code>. RCF provides a workaround for this
+        issue, via the <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span></code> class. The contents of a <code class="computeroutput"><span class="identifier">ByteBuffer</span></code> are not copied upon serialization
+        or deserialization, instead RCF uses scatter/gather style semantics to send
+        and receive the contents directly.
+      </p>
+<p>
+        To improve performance, you should use <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span></code>
+        whenever transferring large chunks of untyped data. On typical hardware,
+        transferring multiple megabytes of data in a single call is not a problem.
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Performance.ZeroAllocation"></a><a class="link" href="Performance.html#rcf_user_guide.Performance.ZeroAllocation" title="Zero allocation"> Zero allocation</a>
+</h3></div></div></div>
+<p>
+        Zero allocation means that, whether on server or client, RCF will not make
+        any heap allocations unless processing the first call on a connection, or
+        processing a call with larger amounts of data than on the previous call of
+        the same connection. In particular, if a remote call is made twice with identical
+        parameters, on the same connection, RCF guarantees that it will not make
+        any heap allocations on the second call, either on the client or on the server:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">bool</span> <span class="identifier">gExpectAllocations</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">;</span>
+
+<span class="comment">// Override global operator new so we can intercept heap allocations.
+</span><span class="keyword">void</span> <span class="special">*</span><span class="keyword">operator</span> <span class="keyword">new</span><span class="special">(</span><span class="identifier">size_t</span> <span class="identifier">bytes</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="keyword">if</span> <span class="special">(!</span><span class="identifier">gExpectAllocations</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="keyword">throw</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">runtime_error</span><span class="special">(</span><span class="string">"Unexpected heap allocation!"</span><span class="special">);</span>
+    <span class="special">}</span>
+    <span class="keyword">return</span> <span class="identifier">malloc</span><span class="special">(</span><span class="identifier">bytes</span><span class="special">);</span>
+<span class="special">}</span>
+
+<span class="keyword">void</span> <span class="keyword">operator</span> <span class="keyword">delete</span> <span class="special">(</span><span class="keyword">void</span> <span class="special">*</span><span class="identifier">pv</span><span class="special">)</span> <span class="keyword">throw</span><span class="special">()</span>
+<span class="special">{</span>
+    <span class="identifier">free</span><span class="special">(</span><span class="identifier">pv</span><span class="special">);</span>
+<span class="special">}</span>
+
+<span class="comment">// Override global operator new[] so we can intercept heap allocations.
+</span><span class="keyword">void</span> <span class="special">*</span><span class="keyword">operator</span> <span class="keyword">new</span> <span class="special">[](</span><span class="identifier">size_t</span> <span class="identifier">bytes</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="keyword">if</span> <span class="special">(!</span><span class="identifier">gExpectAllocations</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="keyword">throw</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">runtime_error</span><span class="special">(</span><span class="string">"Unexpected heap allocation!"</span><span class="special">);</span>
+    <span class="special">}</span>
+    <span class="keyword">return</span> <span class="identifier">malloc</span><span class="special">(</span><span class="identifier">bytes</span><span class="special">);</span>
+<span class="special">}</span>
+
+<span class="keyword">void</span> <span class="keyword">operator</span> <span class="keyword">delete</span> <span class="special">[](</span><span class="keyword">void</span> <span class="special">*</span><span class="identifier">pv</span><span class="special">)</span> <span class="keyword">throw</span><span class="special">()</span>
+<span class="special">{</span>
+    <span class="identifier">free</span><span class="special">(</span><span class="identifier">pv</span><span class="special">);</span>
+<span class="special">}</span>
+
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">,</span> <span class="string">"I_Echo"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span><span class="special">,</span> <span class="identifier">echo</span><span class="special">,</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">)</span>
+
+<span class="keyword">class</span> <span class="identifier">Echo</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span> <span class="identifier">echo</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span> <span class="identifier">byteBuffer</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="keyword">return</span> <span class="identifier">byteBuffer</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">};</span>
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">((</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">)));</span>
+
+<span class="comment">// First call will trigger some heap allocations.
+</span><span class="identifier">gExpectAllocations</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">;</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">echo</span><span class="special">(</span><span class="identifier">byteBuffer</span><span class="special">);</span>
+
+<span class="comment">// These calls won't trigger any client-side or server-side heap allocations.
+</span><span class="identifier">gExpectAllocations</span> <span class="special">=</span> <span class="keyword">false</span><span class="special">;</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <span class="identifier">i</span><span class="special">=</span><span class="number">0</span><span class="special">;</span> <span class="identifier">i</span><span class="special">&lt;</span><span class="number">10</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span> <span class="identifier">byteBuffer2</span> <span class="special">=</span> <span class="identifier">client</span><span class="special">.</span><span class="identifier">echo</span><span class="special">(</span><span class="identifier">byteBuffer</span><span class="special">);</span>
+<span class="special">}</span>
+</pre>
+<p>
+      </p>
+</div>
+<p>
+      However, serialization functions of the data types involved in the remote call,
+      may make heap allocations of their own. To eliminate allocations associated
+      with deserialization, RCF provides <a class="link" href="Performance.html#rcf_user_guide.Performance.Caching" title="Server-side object caching">server-side
+      object caching</a>.
+    </p>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Performance.Caching"></a><a class="link" href="Performance.html#rcf_user_guide.Performance.Caching" title="Server-side object caching"> Server-side object
+      caching</a>
+</h3></div></div></div>
+<p>
+        Serialization and deserialization of remote call parameters can become a
+        performance bottleneck. In particular, deserialization of a complex datatype
+        involves not only creating the object to begin with, but also a number of
+        memory allocations (and CPU cycles) when deserializing all the fields and
+        subfields of the object.
+      </p>
+<p>
+        To improve performance in these circumstances, RCF provides a server-side
+        cache of objects used during remote calls. Objects used as parameters in
+        one remote call, can be transparently reused in subsequent calls. This means
+        that construction overhead and memory allocations due to deserialization,
+        can be eliminated in subsequent calls.
+      </p>
+<p>
+        For example:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">,</span> <span class="string">"I_Echo"</span><span class="special">)</span>
+<span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span><span class="special">,</span> <span class="identifier">echo</span><span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">)</span>
+
+<span class="keyword">class</span> <span class="identifier">Echo</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">echo</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> <span class="identifier">s</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="keyword">return</span> <span class="identifier">s</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">};</span>
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">Echo</span> <span class="identifier">echo</span><span class="special">;</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">0</span><span class="special">));</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">bind</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;(</span><span class="identifier">echo</span><span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="keyword">int</span> <span class="identifier">port</span> <span class="special">=</span> <span class="identifier">server</span><span class="special">.</span><span class="identifier">getIpServerTransport</span><span class="special">().</span><span class="identifier">getPort</span><span class="special">();</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ObjectPool</span> <span class="special">&amp;</span> <span class="identifier">cache</span> <span class="special">=</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">getObjectPool</span><span class="special">();</span>
+
+<span class="comment">// Enable caching for std::string.
+</span><span class="comment">// * Don't cache more than 10 std::string objects.
+</span><span class="comment">// * Call std::string::clear() before putting a string into the cache.
+</span><span class="identifier">cache</span><span class="special">.</span><span class="identifier">enableCaching</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span><span class="special">&gt;(</span><span class="number">10</span><span class="special">,</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">bind</span><span class="special">(&amp;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span><span class="special">::</span><span class="identifier">clear</span><span class="special">,</span> <span class="identifier">_1</span><span class="special">));</span>
+
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">s1</span> <span class="special">=</span> <span class="string">"123456789012345678901234567890"</span><span class="special">;</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">s2</span><span class="special">;</span>
+
+<span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">((</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">)</span> <span class="special">));</span>
+
+<span class="comment">// First call.
+</span><span class="identifier">s2</span> <span class="special">=</span> <span class="identifier">client</span><span class="special">.</span><span class="identifier">echo</span><span class="special">(</span><span class="identifier">s1</span><span class="special">);</span>
+
+<span class="comment">// Subsequent calls - no memory allocations at all, in RCF runtime, or 
+</span><span class="comment">// in std::string serialization/deserialization, on client or server.
+</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <span class="identifier">i</span><span class="special">=</span><span class="number">0</span><span class="special">;</span> <span class="identifier">i</span><span class="special">&lt;</span><span class="number">100</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="identifier">s2</span> <span class="special">=</span> <span class="identifier">client</span><span class="special">.</span><span class="identifier">echo</span><span class="special">(</span><span class="identifier">s1</span><span class="special">);</span>
+<span class="special">}</span>
+
+<span class="comment">// Disable caching for std::string.
+</span><span class="identifier">cache</span><span class="special">.</span><span class="identifier">disableCaching</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span><span class="special">&gt;();</span>
+</pre>
+<p>
+      </p>
+<p>
+        In this example, the first call to <code class="computeroutput"><span class="identifier">echo</span><span class="special">()</span></code> will cause several server-side deserialization-related
+        memory allocations - one to construct a <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span></code>,
+        and another to expand the internal buffer of the string, to fit the incoming
+        data.
+      </p>
+<p>
+        With server-side object caching enabled, after the call returns, the server-side
+        string is cleared and then held in a cache, rather than being destroyed.
+        On the next call, instead of constructing a new <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span></code>,
+        RCF reuses the <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span></code> in the cache. Upon deserialization,
+        <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span><span class="special">::</span><span class="identifier">resize</span><span class="special">()</span></code>
+        is called, to fit the incoming data. As this particular string object has
+        already held the requested amount of data earlier, the <code class="computeroutput"><span class="identifier">resize</span><span class="special">()</span></code> request does not result in any memory allocation.
+      </p>
+<p>
+        The server-side object cache is configured on a per-type basis, using the
+        <code class="computeroutput"><span class="identifier">ObjectPool</span><span class="special">::</span><span class="identifier">enableCaching</span><span class="special">&lt;&gt;()</span></code>
+        and <code class="computeroutput"><span class="identifier">ObjectPool</span><span class="special">::</span><span class="identifier">disableCaching</span><span class="special">&lt;&gt;()</span></code>
+        functions. For each cached datatype, you can specify the maximum number of
+        objects to cache, and which function to call, to put the objects in a reusable
+        state.
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Performance.Scalability"></a><a class="link" href="Performance.html#rcf_user_guide.Performance.Scalability" title="Scalability"> Scalability</a>
+</h3></div></div></div>
+<p>
+        The zero copy and zero allocation guarantees affect the execution of a single
+        remote call. Another performance factor is the maximum number of concurrent
+        clients a server can support. RCF's server transport implementation is based
+        on <a href="http://www.boost.org/libs/asio" target="_top">Boost.Asio</a>, which
+        leverages native network API's when they are avaialable (I/O completion ports
+        on Windows, <code class="computeroutput"><span class="identifier">epoll</span><span class="special">()</span></code>
+        on Linux, <code class="computeroutput"><span class="special">/</span><span class="identifier">dev</span><span class="special">/</span><span class="identifier">poll</span></code> on
+        Solaris, <code class="computeroutput"><span class="identifier">kqueue</span><span class="special">()</span></code>
+        on FreeBSD), and less performant API's when they aren't (BSD sockets). The
+        number of clients a server can support is essentially determined by how much
+        memory the server has, and the application-specific resources required by
+        each client.
+      </p>
+<p>
+        RCF has been designed to yield minimal performance overhead, with network
+        intensive, high throughput applications in mind. Keep in mind that bottlenecks
+        in distributed systems tend to be determined by the overall design of the
+        distributed system - a poorly designed distributed system will have its performance
+        cut off well before the communications layer reaches its limit.
+      </p>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2005 - 2015 Delta V Software</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="Versioning.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="AdvancedSerialization.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

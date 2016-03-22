@@ -1,0 +1,10 @@
+
+ADD_DEFINITIONS( ${RCF_DEFINES} )
+
+INCLUDE_DIRECTORIES( ${RCF_INCLUDES} )
+
+ADD_EXECUTABLE(
+    DemoClient
+    ${RCF_ROOT}/demo/Client.cpp)
+
+TARGET_LINK_LIBRARIES( DemoClient RcfLib ${RCF_LIBS} )

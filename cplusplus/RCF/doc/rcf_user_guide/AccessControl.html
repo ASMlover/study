@@ -1,0 +1,219 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Server-side Access Controls</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="../index.html" title="RCF User Guide">
+<link rel="up" href="../index.html" title="RCF User Guide">
+<link rel="prev" href="HttpTunneling.html" title="HTTP/HTTPS Tunneling">
+<link rel="next" href="AsyncRemoteCalls.html" title="Asynchronous Remote Calls">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="HttpTunneling.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="AsyncRemoteCalls.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.AccessControl"></a><a class="link" href="AccessControl.html" title="Server-side Access Controls"> Server-side Access Controls</a>
+</h2></div></div></div>
+<div class="toc"><dl><dt><span class="section"><a href="AccessControl.html#rcf_user_guide.AccessControl.servant_binding_access_controls">Servant
+      binding access controls</a></span></dt></dl></div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.AccessControl.servant_binding_access_controls"></a><a class="link" href="AccessControl.html#rcf_user_guide.AccessControl.servant_binding_access_controls" title="Servant binding access controls">Servant
+      binding access controls</a>
+</h3></div></div></div>
+<p>
+        RCF allows you to apply access controls to individual servant bindings on
+        your server. The access control is implemented as a user-defined callback
+        function, in which you can apply application-specific logic to determine
+        whether a client connection should be allowed to access a particular servant
+        binding.
+      </p>
+<p>
+        For example:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">bool</span> <span class="identifier">onHelloWorldAccess</span><span class="special">(</span><span class="keyword">int</span> <span class="identifier">dispatchId</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="comment">// Return true to allow access, and false to deny access.
+</span>    <span class="comment">// ...
+</span>
+    <span class="keyword">return</span> <span class="keyword">true</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">HelloWorldImpl</span> <span class="identifier">helloWorldImpl</span><span class="special">;</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ServerBindingPtr</span> <span class="identifier">bindingPtr</span> <span class="special">=</span> <span class="identifier">server</span><span class="special">.</span><span class="identifier">bind</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;(</span><span class="identifier">helloWorldImpl</span><span class="special">);</span>
+<span class="identifier">bindingPtr</span><span class="special">-&gt;</span><span class="identifier">setAccessControl</span><span class="special">(</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">bind</span><span class="special">(&amp;</span><span class="identifier">onHelloWorldAccess</span><span class="special">,</span> <span class="identifier">_1</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+<p>
+        The access control callback will be invoked by the <code class="computeroutput"><span class="identifier">RcfServer</span></code>
+        each time a client tries to call a method on that servant. From the access
+        control callback you can inspect the current session and determine whether
+        it should be granted access to the servant. Once authentication is granted,
+        you will probably want to store the authentication state in a session object,
+        so it can be easily reused on subsequent calls:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// App-specific authentication state.
+</span><span class="keyword">class</span> <span class="identifier">HelloWorldAuthenticationState</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">HelloWorldAuthenticationState</span><span class="special">()</span> <span class="special">:</span> <span class="identifier">mAuthenticated</span><span class="special">(</span><span class="keyword">false</span><span class="special">)</span>
+    <span class="special">{</span>
+    <span class="special">}</span>
+
+    <span class="keyword">bool</span>            <span class="identifier">mAuthenticated</span><span class="special">;</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span>     <span class="identifier">mClientUsername</span><span class="special">;</span>
+<span class="special">};</span>
+
+<span class="comment">// Servant binding access control.
+</span><span class="keyword">bool</span> <span class="identifier">onHelloWorldAccess</span><span class="special">(</span><span class="keyword">int</span> <span class="identifier">dispatchId</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfSession</span> <span class="special">&amp;</span> <span class="identifier">session</span> <span class="special">=</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">getCurrentRcfSession</span><span class="special">();</span>
+    <span class="identifier">HelloWorldAuthenticationState</span> <span class="special">&amp;</span> <span class="identifier">authState</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getSessionObject</span><span class="special">&lt;</span><span class="identifier">HelloWorldAuthenticationState</span><span class="special">&gt;(</span><span class="keyword">true</span><span class="special">);</span>
+    <span class="keyword">if</span> <span class="special">(!</span><span class="identifier">authState</span><span class="special">.</span><span class="identifier">mAuthenticated</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="comment">// Here we are checking that the client is using either NTLM or Kerberos.
+</span>        <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TransportProtocol</span> <span class="identifier">tp</span> <span class="special">=</span>  <span class="identifier">session</span><span class="special">.</span><span class="identifier">getTransportProtocol</span><span class="special">();</span>
+        <span class="keyword">if</span> <span class="special">(</span><span class="identifier">tp</span> <span class="special">==</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Tp_Ntlm</span> <span class="special">||</span> <span class="identifier">tp</span> <span class="special">==</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Tp_Kerberos</span><span class="special">)</span>
+        <span class="special">{</span>
+            <span class="identifier">authState</span><span class="special">.</span><span class="identifier">mAuthenticated</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">;</span>
+            <span class="identifier">authState</span><span class="special">.</span><span class="identifier">mClientUsername</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getClientUsername</span><span class="special">();</span>
+        <span class="special">}</span>
+    <span class="special">}</span>
+    <span class="keyword">return</span> <span class="identifier">authState</span><span class="special">.</span><span class="identifier">mAuthenticated</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+      </p>
+<p>
+        As the previous example indicates, typically you would use the access control
+        callback to inspect the transport protocol the client is using, and use that
+        to determine the identity of the client.
+      </p>
+<p>
+        In some situations you may want the client to provide extra authentication
+        information, beyond what is available though the transport protocol. This
+        typically means having the equivalent of a <code class="computeroutput"><span class="identifier">Login</span><span class="special">()</span></code> method on the interface, that needs to
+        be called before any other method on the interface. The access control callback
+        can be used to verify that <code class="computeroutput"><span class="identifier">Login</span><span class="special">()</span></code> is called before any other method:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// App-specific login info.
+</span><span class="keyword">class</span> <span class="identifier">LoginInfo</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="comment">// ...
+</span>
+    <span class="keyword">void</span> <span class="identifier">serialize</span><span class="special">(</span><span class="identifier">SF</span><span class="special">::</span><span class="identifier">Archive</span> <span class="special">&amp;</span> <span class="identifier">ar</span><span class="special">)</span> 
+    <span class="special">{}</span>
+<span class="special">};</span>
+
+<span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_HelloWorld</span><span class="special">,</span> <span class="string">"I_HelloWorld"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_V1</span><span class="special">(</span><span class="keyword">void</span><span class="special">,</span> <span class="identifier">Login</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">LoginInfo</span> <span class="special">&amp;)</span>
+    <span class="identifier">RCF_METHOD_V1</span><span class="special">(</span><span class="keyword">void</span><span class="special">,</span> <span class="identifier">Print</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_HelloWorld</span><span class="special">)</span>
+
+<span class="comment">// App-specific authentication state.
+</span><span class="keyword">class</span> <span class="identifier">HelloWorldAuthenticationState</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">HelloWorldAuthenticationState</span><span class="special">()</span> <span class="special">:</span> <span class="identifier">mAuthenticated</span><span class="special">(</span><span class="keyword">false</span><span class="special">)</span>
+    <span class="special">{</span>
+    <span class="special">}</span>
+    <span class="keyword">bool</span>            <span class="identifier">mAuthenticated</span><span class="special">;</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span>     <span class="identifier">mClientUsername</span><span class="special">;</span>
+    <span class="identifier">LoginInfo</span>       <span class="identifier">mLoginInfo</span><span class="special">;</span>
+<span class="special">};</span>
+
+<span class="comment">// Servant object.
+</span><span class="keyword">class</span> <span class="identifier">HelloWorldImpl</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+
+    <span class="keyword">void</span> <span class="identifier">Login</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">LoginInfo</span> <span class="special">&amp;</span> <span class="identifier">loginInfo</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfSession</span> <span class="special">&amp;</span> <span class="identifier">session</span> <span class="special">=</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">getCurrentRcfSession</span><span class="special">();</span>
+        <span class="identifier">HelloWorldAuthenticationState</span> <span class="special">&amp;</span> <span class="identifier">authState</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getSessionObject</span><span class="special">&lt;</span><span class="identifier">HelloWorldAuthenticationState</span><span class="special">&gt;(</span><span class="keyword">true</span><span class="special">);</span>
+        <span class="keyword">if</span> <span class="special">(!</span><span class="identifier">authState</span><span class="special">.</span><span class="identifier">mAuthenticated</span><span class="special">)</span>
+        <span class="special">{</span>
+            <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TransportProtocol</span> <span class="identifier">tp</span> <span class="special">=</span>  <span class="identifier">session</span><span class="special">.</span><span class="identifier">getTransportProtocol</span><span class="special">();</span>
+            <span class="keyword">if</span> <span class="special">(</span><span class="identifier">tp</span> <span class="special">==</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Tp_Ntlm</span> <span class="special">||</span> <span class="identifier">tp</span> <span class="special">==</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Tp_Kerberos</span><span class="special">)</span>
+            <span class="special">{</span>
+                <span class="identifier">authState</span><span class="special">.</span><span class="identifier">mAuthenticated</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">;</span>
+                <span class="identifier">authState</span><span class="special">.</span><span class="identifier">mClientUsername</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getClientUsername</span><span class="special">();</span>
+                <span class="identifier">authState</span><span class="special">.</span><span class="identifier">mLoginInfo</span> <span class="special">=</span> <span class="identifier">loginInfo</span><span class="special">;</span>
+            <span class="special">}</span>
+        <span class="special">}</span>
+    <span class="special">}</span>
+
+    <span class="keyword">void</span> <span class="identifier">Print</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> <span class="identifier">s</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"I_HelloWorld service: "</span> <span class="special">&lt;&lt;</span> <span class="identifier">s</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">};</span>
+
+<span class="comment">// Servant binding access control.
+</span><span class="keyword">bool</span> <span class="identifier">onHelloWorldAccess</span><span class="special">(</span><span class="keyword">int</span> <span class="identifier">dispatchId</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="keyword">if</span> <span class="special">(</span><span class="identifier">dispatchId</span> <span class="special">==</span> <span class="number">0</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="comment">// Calls to Login() are always allowed through.
+</span>        <span class="keyword">return</span> <span class="keyword">true</span><span class="special">;</span>
+    <span class="special">}</span>
+    <span class="keyword">else</span>
+    <span class="special">{</span>
+        <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfSession</span> <span class="special">&amp;</span> <span class="identifier">session</span> <span class="special">=</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">getCurrentRcfSession</span><span class="special">();</span>
+        <span class="identifier">HelloWorldAuthenticationState</span> <span class="special">&amp;</span> <span class="identifier">authState</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getSessionObject</span><span class="special">&lt;</span><span class="identifier">HelloWorldAuthenticationState</span><span class="special">&gt;(</span><span class="keyword">true</span><span class="special">);</span>
+        <span class="keyword">return</span> <span class="identifier">authState</span><span class="special">.</span><span class="identifier">mAuthenticated</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">}</span>
+</pre>
+<p>
+      </p>
+<p>
+        In this case, the access control callback allows calls to <code class="computeroutput"><span class="identifier">Login</span><span class="special">()</span></code> to go straight through, while for any other
+        method on the <code class="computeroutput"><span class="identifier">I_HelloWorld</span></code>
+        interface, it checks for the existence of the authentication state that the
+        <code class="computeroutput"><span class="identifier">Login</span><span class="special">()</span></code>
+        call creates.
+      </p>
+<p>
+        The <code class="computeroutput"><span class="identifier">Login</span><span class="special">()</span></code>
+        method is identified in the access control callback by its dispatch ID -
+        in this case 0, as it is the first method on the interface. Dispatch ID's
+        are assigned in incremental order, from 0, so if for example <code class="computeroutput"><span class="identifier">Login</span><span class="special">()</span></code>
+        had been the third method on the interface, it would have had a dispatch
+        ID of 2.
+      </p>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2005 - 2015 Delta V Software</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="HttpTunneling.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="AsyncRemoteCalls.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

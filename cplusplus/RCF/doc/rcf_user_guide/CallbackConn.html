@@ -1,0 +1,237 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Callback Connections</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="../index.html" title="RCF User Guide">
+<link rel="up" href="../index.html" title="RCF User Guide">
+<link rel="prev" href="PubSub.html" title="Publish/Subscribe">
+<link rel="next" href="FileTransfers.html" title="File Transfers">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="PubSub.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="FileTransfers.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.CallbackConn"></a><a class="link" href="CallbackConn.html" title="Callback Connections"> Callback Connections</a>
+</h2></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="CallbackConn.html#rcf_user_guide.CallbackConn.creating_callback_connections">Creating
+      callback connections</a></span></dt>
+<dt><span class="section"><a href="CallbackConn.html#rcf_user_guide.CallbackConn.identifying_clients">Identifying
+      clients</a></span></dt>
+<dt><span class="section"><a href="CallbackConn.html#rcf_user_guide.CallbackConn.transport_protocols">Transport
+      protocols</a></span></dt>
+</dl></div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.CallbackConn.creating_callback_connections"></a><a class="link" href="CallbackConn.html#rcf_user_guide.CallbackConn.creating_callback_connections" title="Creating callback connections">Creating
+      callback connections</a>
+</h3></div></div></div>
+<p>
+        Usually remote calls are made from a client to a server. RCF also implements
+        a callback connection concept, allowing the server to take over a connection
+        and use it to make remote calls back to the client.
+      </p>
+<p>
+        Remote calls over callback connections function just like remote calls over
+        regular connections, except that callback connections cannot be automatically
+        re-connected.
+      </p>
+<p>
+        On the client-side, to create a callback connection to receive calls on,
+        use <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">createCallbackConnection</span><span class="special">()</span></code>:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// Client-side - start a callback server.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">callbackServer</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">0</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">HelloWorldImpl</span> <span class="identifier">helloWorldImpl</span><span class="special">;</span>
+<span class="identifier">callbackServer</span><span class="special">.</span><span class="identifier">bind</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;(</span><span class="identifier">helloWorldImpl</span><span class="special">);</span>
+<span class="identifier">callbackServer</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="comment">// Client-side - create callback connection.
+</span><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">((</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">)</span> <span class="special">));</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">createCallbackConnection</span><span class="special">(</span><span class="identifier">client</span><span class="special">,</span> <span class="identifier">callbackServer</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        Note that you need a callback server to receive calls through, and a <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code>
+        instance with which to connect to the remote server.
+      </p>
+<p>
+        On the server-side, use <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">setOnCallbackConnectionCreated</span><span class="special">()</span></code> to receive notification when a callback
+        connection is created, and take control of the callback client transport:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// Server-side - taking control of callback connections.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Mutex</span> <span class="identifier">gCallbackTransportMutex</span><span class="special">;</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ClientTransportAutoPtr</span> <span class="identifier">gCallbackTransportPtr</span><span class="special">;</span>
+
+<span class="keyword">void</span> <span class="identifier">onCallbackConnectionCreated</span><span class="special">(</span>
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfSessionPtr</span> <span class="identifier">sessionPtr</span><span class="special">,</span> 
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ClientTransportAutoPtr</span> <span class="identifier">clientTransportPtr</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="comment">// Store the callback client transport in a global variable for later use.
+</span>    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Lock</span> <span class="identifier">lock</span><span class="special">(</span><span class="identifier">gCallbackTransportMutex</span><span class="special">);</span>
+    <span class="identifier">gCallbackTransportPtr</span> <span class="special">=</span> <span class="identifier">clientTransportPtr</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">0</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">setOnCallbackConnectionCreated</span><span class="special">(</span><span class="identifier">onCallbackConnectionCreated</span><span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+<p>
+        Once you have the callback client transport, you can use it to construct
+        an appropriate <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code> instance, and subsequently use that
+        to make calls back to the client:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// Server-side - wait for callback connection to be created.
+</span><span class="keyword">while</span> <span class="special">(</span><span class="keyword">true</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">sleepMs</span><span class="special">(</span><span class="number">1000</span><span class="special">);</span>
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Lock</span> <span class="identifier">lock</span><span class="special">(</span><span class="identifier">gCallbackTransportMutex</span><span class="special">);</span>
+    <span class="keyword">if</span> <span class="special">(</span><span class="identifier">gCallbackTransportPtr</span><span class="special">.</span><span class="identifier">get</span><span class="special">())</span>
+    <span class="special">{</span>
+        <span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span> <span class="identifier">callbackClient</span><span class="special">(</span> <span class="identifier">gCallbackTransportPtr</span> <span class="special">);</span>
+        <span class="identifier">callbackClient</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+        <span class="keyword">break</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">}</span>
+</pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.CallbackConn.identifying_clients"></a><a class="link" href="CallbackConn.html#rcf_user_guide.CallbackConn.identifying_clients" title="Identifying clients">Identifying
+      clients</a>
+</h3></div></div></div>
+<p>
+        Typically you will want a server to maintain a list of callback connections
+        to clients, and make calls back to specific clients. To do this, the server
+        needs a mechanism by which to identify the callback connections. The best
+        way to do this is to have the client set some session-specific data, before
+        it calls <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">createCallbackConnection</span><span class="special">()</span></code>.
+      </p>
+<p>
+        Let's assume you want to identify your clients with a string - for example
+        a name. Before the client calls <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">createCallbackConnection</span><span class="special">()</span></code>, it should call an application-defined
+        remote method on the server, to set the name of the client:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_IdentifyClient</span><span class="special">,</span> <span class="string">"I_IdentifyClient"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_V1</span><span class="special">(</span><span class="keyword">void</span><span class="special">,</span> <span class="identifier">SetClientName</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span><span class="special">&amp;)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_IdentifyClient</span><span class="special">)</span>
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// Client-side - create callback connection.
+</span><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_IdentifyClient</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">((</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">)</span> <span class="special">));</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">SetClientName</span><span class="special">(</span><span class="string">"ABC-123"</span><span class="special">);</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">createCallbackConnection</span><span class="special">(</span><span class="identifier">client</span><span class="special">,</span> <span class="identifier">callbackServer</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        The server implementation of <code class="computeroutput"><span class="identifier">SetClientName</span><span class="special">()</span></code> creates a session object in the <code class="computeroutput"><span class="identifier">RcfSession</span></code> of the connection, with the
+        client name:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">class</span> <span class="identifier">IdentifyClientImpl</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="keyword">void</span> <span class="identifier">SetClientName</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span><span class="special">&amp;</span> <span class="identifier">clientName</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfSession</span> <span class="special">&amp;</span> <span class="identifier">session</span> <span class="special">=</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">getCurrentRcfSession</span><span class="special">();</span>
+        <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> <span class="identifier">sessionClientName</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">createSessionObject</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span><span class="special">&gt;();</span>
+        <span class="identifier">sessionClientName</span> <span class="special">=</span> <span class="identifier">clientName</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">};</span>
+</pre>
+<p>
+      </p>
+<p>
+        When the client subsequently calls <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">createCallbackConnection</span><span class="special">()</span></code>, the <code class="computeroutput"><span class="identifier">RcfServer</span></code>
+        can then retrieve the name of the client and associate the callback connection
+        with that name:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// Server-side - taking control of callback connections.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Mutex</span>                                      <span class="identifier">gCallbackClientMapMutex</span><span class="special">;</span>
+
+<span class="keyword">typedef</span> <span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span>                 <span class="identifier">HelloWorldClient</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">shared_ptr</span><span class="special">&lt;</span><span class="identifier">HelloWorldClient</span><span class="special">&gt;</span>     <span class="identifier">HelloWorldClientPtr</span><span class="special">;</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">map</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span><span class="special">,</span> <span class="identifier">HelloWorldClientPtr</span><span class="special">&gt;</span>      <span class="identifier">gCallbackClientMap</span><span class="special">;</span>
+
+<span class="keyword">void</span> <span class="identifier">onCallbackConnectionCreated</span><span class="special">(</span>
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfSessionPtr</span> <span class="identifier">sessionPtr</span><span class="special">,</span> 
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ClientTransportAutoPtr</span> <span class="identifier">clientTransportPtr</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> <span class="identifier">clientName</span> <span class="special">=</span> <span class="identifier">sessionPtr</span><span class="special">-&gt;</span><span class="identifier">getSessionObject</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span><span class="special">&gt;();</span>
+    
+    <span class="comment">// Store the callback client transport in a global variable for later use.
+</span>    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Lock</span> <span class="identifier">lock</span><span class="special">(</span><span class="identifier">gCallbackClientMapMutex</span><span class="special">);</span>
+    <span class="identifier">HelloWorldClientPtr</span> <span class="identifier">hwClientPtr</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">HelloWorldClient</span><span class="special">(</span><span class="identifier">clientTransportPtr</span><span class="special">)</span> <span class="special">);</span>
+    <span class="identifier">gCallbackClientMap</span><span class="special">[</span><span class="identifier">clientName</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">hwClientPtr</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.CallbackConn.transport_protocols"></a><a class="link" href="CallbackConn.html#rcf_user_guide.CallbackConn.transport_protocols" title="Transport protocols">Transport
+      protocols</a>
+</h3></div></div></div>
+<p>
+        Transport protocols configured on the original client-to-server connection
+        are not carried over to the callback connection. If you want to use a transport
+        protocol on the callback connection, it needs to be configured explicitly:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span> <span class="identifier">callbackClient</span><span class="special">(</span> <span class="identifier">gCallbackTransportPtr</span> <span class="special">);</span>
+<span class="identifier">callbackClient</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setTransportProtocol</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Tp_Ntlm</span><span class="special">);</span>
+<span class="identifier">callbackClient</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2005 - 2015 Delta V Software</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="PubSub.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="FileTransfers.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

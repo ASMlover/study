@@ -1,0 +1,867 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Appendix - FAQ</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="../index.html" title="RCF User Guide">
+<link rel="up" href="../index.html" title="RCF User Guide">
+<link rel="prev" href="AppendixReleaseNotes.html" title="Appendix - Release Notes">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="AppendixReleaseNotes.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.AppendixFaq"></a><a class="link" href="AppendixFaq.html" title="Appendix - FAQ"> Appendix - FAQ</a>
+</h2></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building"> Building</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Platforms"> Platforms</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming"> Programming</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Misc"> Miscellaneous</a></span></dt>
+</dl></div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.AppendixFaq.Building"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building" title="Building"> Building</a>
+</h3></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.why_is_my_program_trying_to_link_to_a_boost_library_">Why
+        is my program trying to link to a Boost library?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.can_i_compile_rcf_into_a_dll_">Can
+        I compile RCF into a DLL?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.why_do_i_sometimes_get_compiler_errors_when_i_include__windows_h__before_rcf_headers_">Why
+        do I sometimes get compiler errors when I include &lt;windows.h&gt; before
+        RCF headers?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.does_rcf_compile_warning_free_on_level_4_on_visual_c___">Does
+        RCF compile warning free on level 4 on Visual C++?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.can_i_run_rcf_on_platform_xyz_">Can
+        I run RCF on platform XYZ?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.why_do_i_get_linker_errors_">Why
+        do I get linker errors?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.does_rcf_support_visual_c___6__visual_studio_98___">Does
+        RCF support Visual C++ 6 (Visual Studio 98) ?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.does_rcf_support_64_bit_compilers_">Does
+        RCF support 64 bit compilers?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.does_rcf_support_unicode_builds_on_windows_">Does
+        RCF support Unicode builds on Windows?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.why_do_i_get_duplicate_symbol_linker_errors_for_my_external_serialization_functions_">Why
+        do I get duplicate symbol linker errors for my external serialization functions?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.how_do_i_reduce_build_times_for_my_application_">How
+        do I reduce build times for my application?</a></span></dt>
+</dl></div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Building.why_is_my_program_trying_to_link_to_a_boost_library_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.why_is_my_program_trying_to_link_to_a_boost_library_" title="Why is my program trying to link to a Boost library?">Why
+        is my program trying to link to a Boost library?</a>
+</h4></div></div></div>
+<p>
+          If you have defined <code class="computeroutput"><span class="identifier">RCF_USE_BOOST_SERIALIZATION</span></code>,
+          RCF will need to link to the Boost.Serialization libraries.
+        </p>
+<p>
+          If you have defined <code class="computeroutput"><span class="identifier">RCF_USE_BOOST_FILESYSTEM</span></code>,
+          RCF will need to link to the Boost.Filesystem and Boost.System libraries.
+        </p>
+<p>
+          RCF does not link to any other Boost libraries.
+        </p>
+<p>
+          Boost libraries have an auto linking feature that may cause your linker
+          to look for the wrong file to link to. You can define <code class="computeroutput"><span class="identifier">BOOST_ALL_NO_LIB</span></code>,
+          and then explicitly tell the linker which files to link to.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Building.can_i_compile_rcf_into_a_dll_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.can_i_compile_rcf_into_a_dll_" title="Can I compile RCF into a DLL?">Can
+        I compile RCF into a DLL?</a>
+</h4></div></div></div>
+<p>
+          Yes. To export RCF functions from a DLL you will need to define <code class="computeroutput"><span class="identifier">RCF_BUILD_DLL</span></code>.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Building.why_do_i_sometimes_get_compiler_errors_when_i_include__windows_h__before_rcf_headers_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.why_do_i_sometimes_get_compiler_errors_when_i_include__windows_h__before_rcf_headers_" title="Why do I sometimes get compiler errors when I include &lt;windows.h&gt; before RCF headers?">Why
+        do I sometimes get compiler errors when I include &lt;windows.h&gt; before
+        RCF headers?</a>
+</h4></div></div></div>
+<p>
+          Because of header ordering issues with the Windows platform headers <code class="computeroutput"><span class="special">&lt;</span><span class="identifier">windows</span><span class="special">.</span><span class="identifier">h</span><span class="special">&gt;</span></code>
+          and <code class="computeroutput"><span class="special">&lt;</span><span class="identifier">winsock2</span><span class="special">.</span><span class="identifier">h</span><span class="special">&gt;</span></code>.
+          Including <code class="computeroutput"><span class="special">&lt;</span><span class="identifier">windows</span><span class="special">.</span><span class="identifier">h</span><span class="special">&gt;</span></code>
+          will by default include an older version of Winsock, and makes it impossible
+          to subsequently include <code class="computeroutput"><span class="special">&lt;</span><span class="identifier">winsock2</span><span class="special">.</span><span class="identifier">h</span><span class="special">&gt;</span></code>
+          in the same translation unit.
+        </p>
+<p>
+          The easiest workaround for this issue is to define <code class="computeroutput"><span class="identifier">WIN32_LEAN_AND_MEAN</span></code>,
+          before including <code class="computeroutput"><span class="special">&lt;</span><span class="identifier">windows</span><span class="special">.</span><span class="identifier">h</span><span class="special">&gt;</span></code>.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Building.does_rcf_compile_warning_free_on_level_4_on_visual_c___"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.does_rcf_compile_warning_free_on_level_4_on_visual_c___" title="Does RCF compile warning free on level 4 on Visual C++?">Does
+        RCF compile warning free on level 4 on Visual C++?</a>
+</h4></div></div></div>
+<p>
+          Yes, if the following warnings are disabled:
+        </p>
+<pre class="programlisting">C4510 'class' : default constructor could not be generated
+C4511 'class' : copy constructor could not be generated
+C4512 'class' : assignment operator could not be generated
+C4127 conditional expression is constant
+</pre>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Building.can_i_run_rcf_on_platform_xyz_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.can_i_run_rcf_on_platform_xyz_" title="Can I run RCF on platform XYZ?">Can
+        I run RCF on platform XYZ?</a>
+</h4></div></div></div>
+<p>
+          Probably, but you may need to make minor modifications to RCF yourself,
+          to accomodate platform specific issues, such as which platform headers
+          to include.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Building.why_do_i_get_linker_errors_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.why_do_i_get_linker_errors_" title="Why do I get linker errors?">Why
+        do I get linker errors?</a>
+</h4></div></div></div>
+<p>
+          On Windows, if you are using TCP transports, you'll need to link to ws2_32.lib.
+          On *nix platforms, you'll need to link to libraries like <code class="computeroutput"><span class="identifier">libnsl</span></code> or <code class="computeroutput"><span class="identifier">libsocket</span></code>.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Building.does_rcf_support_visual_c___6__visual_studio_98___"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.does_rcf_support_visual_c___6__visual_studio_98___" title="Does RCF support Visual C++ 6 (Visual Studio 98) ?">Does
+        RCF support Visual C++ 6 (Visual Studio 98) ?</a>
+</h4></div></div></div>
+<p>
+          No. RCF 1.3.1 is the last RCF version that supports Visual C++ 6.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Building.does_rcf_support_64_bit_compilers_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.does_rcf_support_64_bit_compilers_" title="Does RCF support 64 bit compilers?">Does
+        RCF support 64 bit compilers?</a>
+</h4></div></div></div>
+<p>
+          Yes.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Building.does_rcf_support_unicode_builds_on_windows_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.does_rcf_support_unicode_builds_on_windows_" title="Does RCF support Unicode builds on Windows?">Does
+        RCF support Unicode builds on Windows?</a>
+</h4></div></div></div>
+<p>
+          Yes.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Building.why_do_i_get_duplicate_symbol_linker_errors_for_my_external_serialization_functions_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.why_do_i_get_duplicate_symbol_linker_errors_for_my_external_serialization_functions_" title="Why do I get duplicate symbol linker errors for my external serialization functions?">Why
+        do I get duplicate symbol linker errors for my external serialization functions?</a>
+</h4></div></div></div>
+<p>
+          If you define external serialization functions in a header file, without
+          the <code class="computeroutput"><span class="keyword">inline</span></code> modifier, and include
+          them in two or more source files, you will get linker errors about duplicate
+          symbols. The solution is to either add an <code class="computeroutput"><span class="keyword">inline</span></code>
+          modifier:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// X.hpp
+</span><span class="keyword">inline</span> <span class="keyword">void</span> <span class="identifier">serialize</span><span class="special">(</span><span class="identifier">SF</span><span class="special">::</span><span class="identifier">Archive</span> <span class="special">&amp;</span> <span class="identifier">ar</span><span class="special">,</span> <span class="identifier">X</span> <span class="special">&amp;</span> <span class="identifier">x</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="special">...</span>
+<span class="special">}</span>
+</pre>
+<p>
+        </p>
+<p>
+          , or to declare the serialization function in a header and define it in
+          a source file :
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// X.hpp
+</span><span class="keyword">void</span> <span class="identifier">serialize</span><span class="special">(</span><span class="identifier">SF</span><span class="special">::</span><span class="identifier">Archive</span> <span class="special">&amp;</span> <span class="identifier">ar</span><span class="special">,</span> <span class="identifier">X</span> <span class="special">&amp;</span> <span class="identifier">x</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// X.cpp
+</span><span class="keyword">void</span> <span class="identifier">serialize</span><span class="special">(</span><span class="identifier">SF</span><span class="special">::</span><span class="identifier">Archive</span> <span class="special">&amp;</span> <span class="identifier">ar</span><span class="special">,</span> <span class="identifier">X</span> <span class="special">&amp;</span> <span class="identifier">x</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="special">...</span>
+<span class="special">}</span>
+</pre>
+<p>
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Building.how_do_i_reduce_build_times_for_my_application_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Building.how_do_i_reduce_build_times_for_my_application_" title="How do I reduce build times for my application?">How
+        do I reduce build times for my application?</a>
+</h4></div></div></div>
+<p>
+          If you include RCF headers into commonly used application headers of your
+          own, you may notice an increase in build time, as the compiler will parse
+          the RCF headers once for every source file that happens to include them.
+        </p>
+<p>
+          You should only include RCF headers when you need to - in other words,
+          only include them into source files that use RCF functionality. In your
+          application header files, you should be able to use forward declarations,
+          rather than including the corresponding header files.
+        </p>
+<p>
+          For example, if you are defining a class <code class="computeroutput"><span class="identifier">X</span></code>
+          with a <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code>
+          member, you can forward declare the <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code>, and then use a pointer for the
+          member:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// X.h
+</span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> <span class="identifier">T</span><span class="special">&gt;</span>
+<span class="keyword">class</span> <span class="identifier">RcfClient</span><span class="special">;</span>
+
+<span class="keyword">class</span> <span class="identifier">SomeInterface</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">SomeInterface</span><span class="special">&gt;</span> <span class="identifier">MyRcfClient</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">shared_ptr</span><span class="special">&lt;</span><span class="identifier">MyRcfClient</span><span class="special">&gt;</span> <span class="identifier">MyRcfClientPtr</span><span class="special">;</span>
+
+<span class="keyword">class</span> <span class="identifier">RcfServer</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">shared_ptr</span><span class="special">&lt;</span><span class="identifier">RcfServer</span><span class="special">&gt;</span> <span class="identifier">RcfServerPtr</span><span class="special">;</span>
+
+<span class="comment">// Application specific class that holds a RcfClient and a RcfServer.
+</span><span class="keyword">class</span> <span class="identifier">X</span>
+<span class="special">{</span>  
+    <span class="identifier">X</span><span class="special">();</span>
+    <span class="identifier">MyRcfClientPtr</span> <span class="identifier">mClientPtr</span><span class="special">;</span>
+    <span class="identifier">RcfServerPtr</span> <span class="identifier">mServerPtr</span><span class="special">;</span>
+<span class="special">};</span>
+</pre>
+<p>
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// X.cpp
+</span><span class="preprocessor">#include</span> <span class="string">"X.h"</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">RCF</span><span class="special">/</span><span class="identifier">RcfClient</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">RCF</span><span class="special">/</span><span class="identifier">RcfServer</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+
+<span class="identifier">X</span><span class="special">::</span><span class="identifier">X</span><span class="special">()</span> <span class="special">:</span> 
+    <span class="identifier">mClientPtr</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">SomeInterface</span><span class="special">&gt;(...)</span> <span class="special">),</span> 
+    <span class="identifier">mRcfServerPtr</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RcfServer</span><span class="special">(...)</span> <span class="special">)</span> 
+<span class="special">{}</span>
+</pre>
+<p>
+        </p>
+<p>
+          You can then include <code class="computeroutput"><span class="identifier">X</span><span class="special">.</span><span class="identifier">h</span></code> anywhere
+          in your application, without including any RCF headers.
+        </p>
+</div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.AppendixFaq.Platforms"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Platforms" title="Platforms"> Platforms</a>
+</h3></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Platforms.why_do_i_run_out_of_socket_handles_on_windows_xp_">Why
+        do I run out of socket handles on Windows XP?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Platforms.why_does_my_leak_detector_think_there_is_a_leak_in_rcf_">Why
+        does my leak detector think there is a leak in RCF?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Platforms.is_rcf_s_tcp_server_implemenation_based_on_i_o_completion_ports_">Is
+        RCF's TCP server implemenation based on I/O completion ports?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Platforms.does_rcf_support_a_shared_memory_transport_">Does
+        RCF support a shared memory transport?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Platforms.does_rcf_support_ipv6_">Does
+        RCF support IPv6?</a></span></dt>
+</dl></div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Platforms.why_do_i_run_out_of_socket_handles_on_windows_xp_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Platforms.why_do_i_run_out_of_socket_handles_on_windows_xp_" title="Why do I run out of socket handles on Windows XP?">Why
+        do I run out of socket handles on Windows XP?</a>
+</h4></div></div></div>
+<p>
+          Whenever an outgoing TCP connection is made, a local port number has to
+          be assigned to the connection. On Windows XP, those local ports (sometimes
+          referred to as ephemeral ports) are by default assigned from a range of
+          about 4000 port numbers.
+        </p>
+<p>
+          If you create many <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code> objects, with TCP endpoints, you
+          will eventually exhaust the available ports, as Windows holds on to them
+          for a short while after the connection is closed.
+        </p>
+<p>
+          You should use as few TCP connections as possible (use the same <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code>
+          object instead of creating new ones). There are also registry settings
+          on Windows XP that alleviate the issue. Locate the following key:
+        </p>
+<p>
+          HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters
+        </p>
+<p>
+          , and set
+        </p>
+<p>
+          TcpNumConnections = 0x800, MaxUserPort = 65534
+        </p>
+<p>
+          After restarting, the system will allow an expanded range of ephemeral
+          ports.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Platforms.why_does_my_leak_detector_think_there_is_a_leak_in_rcf_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Platforms.why_does_my_leak_detector_think_there_is_a_leak_in_rcf_" title="Why does my leak detector think there is a leak in RCF?">Why
+        does my leak detector think there is a leak in RCF?</a>
+</h4></div></div></div>
+<p>
+          Probably because <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">deinit</span><span class="special">()</span></code>
+          has not yet been executed.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Platforms.is_rcf_s_tcp_server_implemenation_based_on_i_o_completion_ports_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Platforms.is_rcf_s_tcp_server_implemenation_based_on_i_o_completion_ports_" title="Is RCF's TCP server implemenation based on I/O completion ports?">Is
+        RCF's TCP server implemenation based on I/O completion ports?</a>
+</h4></div></div></div>
+<p>
+          On Windows, yes. See <a class="link" href="Performance.html" title="Performance">Performance</a>.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Platforms.does_rcf_support_a_shared_memory_transport_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Platforms.does_rcf_support_a_shared_memory_transport_" title="Does RCF support a shared memory transport?">Does
+        RCF support a shared memory transport?</a>
+</h4></div></div></div>
+<p>
+          For local RPC, RCF supports named pipe transports (<code class="computeroutput"><span class="identifier">Win32NamedPipeEndpoint</span></code>),
+          which are backed by shared memory.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Platforms.does_rcf_support_ipv6_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Platforms.does_rcf_support_ipv6_" title="Does RCF support IPv6?">Does
+        RCF support IPv6?</a>
+</h4></div></div></div>
+<p>
+          Yes - see <a class="link" href="Transports.html#rcf_user_guide.Transports.Config.IPv6" title="IPv4/IPv6">Transport
+          configuration</a>.
+        </p>
+</div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming" title="Programming"> Programming</a>
+</h3></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_keep_my_user_interface_from_freezing_when_there_s_a_remote_call_in_progress_">How
+        do I keep my user interface from freezing when there's a remote call in progress?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_cancel_a_long_running_client_call_">How
+        do I cancel a long-running client call?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_stop_a_server_from_within_a_remote_call_">How
+        do I stop a server from within a remote call?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_can_i_make_remotely_accessible_functions_private_">How
+        can I make remotely accessible functions private?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_use_a_single_tcp_connection_with_several__rcfclient____instancesd_">How
+        do I use a single TCP connection with several <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code> instancesd?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.can_i_publish_subscribe_through_a_firewall_">Can
+        I publish/subscribe through a firewall?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.why_can_t_i_use_pointers_in_rcf_interfaces_">Why
+        can't I use pointers in RCF interfaces?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_start_a_tcp_server_on_the_first_available_port_on_my_machine_">How
+        do I start a TCP server on the first available port on my machine?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_forcibly_disconnect_a_client_from_the_server_">How
+        do I forcibly disconnect a client from the server?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_know_that_a_client_has_received_a_published_message_">How
+        do I know that a client has received a published message?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_expose_several_servant_objects_having_the_same_interface_">How
+        do I expose several servant objects having the same interface?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.why_is_my_server_only_accessible_from_the_local_machine__and_not_across_the_network_">Why
+        is my server only accessible from the local machine, and not across the network?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.at_what_point_does_a__rcfclient____object_connect_to_the_server_">At
+        what point does a <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code> object connect to the server?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.why_does_my_program_crash_or_assert_when_exiting_">Why
+        does my program crash or assert when exiting?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_determine_what_ip_address_a_client_is_connecting_from_">How
+        do I determine what IP address a client is connecting from?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_serialize_enums_">How
+        do I serialize enums?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.can_i_use_sf_to_serialize_objects_to_and_from_files_">Can
+        I use SF to serialize objects to and from files?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_send_a_file_using_rcf_">How
+        do I send a file using RCF?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_does_a_subscriber_know_if_a_publisher_has_stopped_publishing_">How
+        does a subscriber know if a publisher has stopped publishing?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_can_i_access_the_internal__asio__io_service__used_by_the_rcf_server_">How
+        can I access the internal <code class="computeroutput"><span class="identifier">asio</span><span class="special">::</span><span class="identifier">io_service</span></code>
+        used by the RCF server?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.ClientDisconnect">
+        How do I detect client disconnections, from server-side code?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_pass_a_security_token_from_the_client_to_the_server__without_changing_the_rcf_interface_">How
+        do I pass a security token from the client to the server, without changing
+        the RCF interface?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.can_i_send__std__wstring__objects_between_linux_and_windows_">Can
+        I send <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">wstring</span></code> objects between Linux and Windows?</a></span></dt>
+<dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.can_i_send_utf_8_encoded__std__string__objects_between_linux_and_windows_">Can
+        I send UTF-8 encoded <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span></code>
+        objects between Linux and Windows?</a></span></dt>
+</dl></div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.how_do_i_keep_my_user_interface_from_freezing_when_there_s_a_remote_call_in_progress_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_keep_my_user_interface_from_freezing_when_there_s_a_remote_call_in_progress_" title="How do I keep my user interface from freezing when there's a remote call in progress?">How
+        do I keep my user interface from freezing when there's a remote call in progress?</a>
+</h4></div></div></div>
+<p>
+          Either run remote calls on a non-UI thread, or use progress callbacks to
+          repaint the UI at short intervals. See <a class="link" href="Clientside.html#rcf_user_guide.Clientside.Progress" title="Client progress callbacks">Progress
+          callbacks</a>.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.how_do_i_cancel_a_long_running_client_call_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_cancel_a_long_running_client_call_" title="How do I cancel a long-running client call?">How
+        do I cancel a long-running client call?</a>
+</h4></div></div></div>
+<p>
+          Use a progress callback (see <a class="link" href="Clientside.html#rcf_user_guide.Clientside.Progress" title="Client progress callbacks">Progress
+          callbacks</a>). You can configure the callback to be called at any given
+          frequency, and when you want to cancel the call, throw an exception.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.how_do_i_stop_a_server_from_within_a_remote_call_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_stop_a_server_from_within_a_remote_call_" title="How do I stop a server from within a remote call?">How
+        do I stop a server from within a remote call?</a>
+</h4></div></div></div>
+<p>
+          You can't call <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">stop</span><span class="special">()</span></code> from within a remote call, because the
+          <code class="computeroutput"><span class="identifier">stop</span><span class="special">()</span></code>
+          call will wait for all worker threads to exit, including the thread calling
+          <code class="computeroutput"><span class="identifier">stop</span><span class="special">()</span></code>,
+          hence causing a deadlock. If you really need to stop the server from within
+          a remote call, you can start a new thread to do so:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">,</span> <span class="string">"I_Echo"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span><span class="special">,</span> <span class="identifier">echo</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">)</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="special">*</span><span class="identifier">gpServer</span> <span class="special">=</span> <span class="identifier">NULL</span><span class="special">;</span>
+
+<span class="keyword">class</span> <span class="identifier">Echo</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">echo</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="identifier">s</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="keyword">if</span> <span class="special">(</span><span class="identifier">s</span> <span class="special">==</span> <span class="string">"stop"</span><span class="special">)</span>
+        <span class="special">{</span>
+            <span class="comment">// Spawn a temporary thread to stop the server.
+</span>            <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Thread</span><span class="special">(</span><span class="identifier">boost</span><span class="special">::</span><span class="identifier">bind</span><span class="special">(&amp;</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">stop</span><span class="special">,</span> <span class="identifier">gpServer</span><span class="special">));</span>
+        <span class="special">}</span>
+        <span class="keyword">return</span> <span class="identifier">s</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">};</span>
+
+
+<span class="keyword">int</span> <span class="identifier">main</span><span class="special">()</span>
+<span class="special">{</span>
+    <span class="identifier">Echo</span> <span class="identifier">echo</span><span class="special">;</span>
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">0</span><span class="special">));</span>
+    <span class="identifier">server</span><span class="special">.</span><span class="identifier">bind</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;(</span><span class="identifier">echo</span><span class="special">);</span>
+    <span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+    <span class="identifier">gpServer</span> <span class="special">=</span> <span class="special">&amp;</span><span class="identifier">server</span><span class="special">;</span>
+
+    <span class="keyword">int</span> <span class="identifier">port</span> <span class="special">=</span> <span class="identifier">server</span><span class="special">.</span><span class="identifier">getIpServerTransport</span><span class="special">().</span><span class="identifier">getPort</span><span class="special">();</span>
+    <span class="comment">// This call will stop the server.
+</span>    <span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">)).</span><span class="identifier">echo</span><span class="special">(</span><span class="string">"stop"</span><span class="special">);</span>
+
+    <span class="keyword">return</span> <span class="number">0</span><span class="special">;</span>
+<span class="special">}</span>
+
+</pre>
+<p>
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.how_can_i_make_remotely_accessible_functions_private_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_can_i_make_remotely_accessible_functions_private_" title="How can I make remotely accessible functions private?">How
+        can I make remotely accessible functions private?</a>
+</h4></div></div></div>
+<p>
+          Make <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code>
+          a friend of your implementation class:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">,</span> <span class="string">"I_Echo"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span><span class="special">,</span> <span class="identifier">echo</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">)</span>
+
+<span class="keyword">class</span> <span class="identifier">Echo</span>
+<span class="special">{</span>
+<span class="keyword">private</span><span class="special">:</span>
+
+    <span class="keyword">friend</span> <span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;;</span>
+
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">echo</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="identifier">s</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="keyword">return</span> <span class="identifier">s</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">};</span>
+</pre>
+<p>
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.how_do_i_use_a_single_tcp_connection_with_several__rcfclient____instancesd_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_use_a_single_tcp_connection_with_several__rcfclient____instancesd_" title="How do I use a single TCP connection with several RcfClient&lt;&gt; instancesd?">How
+        do I use a single TCP connection with several <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code> instancesd?</a>
+</h4></div></div></div>
+<p>
+          You can move network connections from one <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code> to another. See <a class="link" href="Clientside.html#rcf_user_guide.Clientside.Transports" title="Access to underlying transport">Access
+          to underlying transport</a>.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.can_i_publish_subscribe_through_a_firewall_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.can_i_publish_subscribe_through_a_firewall_" title="Can I publish/subscribe through a firewall?">Can
+        I publish/subscribe through a firewall?</a>
+</h4></div></div></div>
+<p>
+          Yes. As long as a subscriber is able to initiate a connection to the publisher,
+          it will receive published messages.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.why_can_t_i_use_pointers_in_rcf_interfaces_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.why_can_t_i_use_pointers_in_rcf_interfaces_" title="Why can't I use pointers in RCF interfaces?">Why
+        can't I use pointers in RCF interfaces?</a>
+</h4></div></div></div>
+<p>
+          Pointers can't be used as return types in RCF interfaces, because there
+          is no safe way of marshaling them. Pointers can however be used as in parameters
+          to a remote call, and behave essentially like a reference.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.how_do_i_start_a_tcp_server_on_the_first_available_port_on_my_machine_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_start_a_tcp_server_on_the_first_available_port_on_my_machine_" title="How do I start a TCP server on the first available port on my machine?">How
+        do I start a TCP server on the first available port on my machine?</a>
+</h4></div></div></div>
+<p>
+          Specify a port number of zero in the <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span></code>
+          object passed to the <code class="computeroutput"><span class="identifier">RcfServer</span></code>
+          constructor. After the server is started, retrieve the port number by calling
+          <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">getIpServerTransport</span><span class="special">().</span><span class="identifier">getPort</span><span class="special">()</span></code>.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.how_do_i_forcibly_disconnect_a_client_from_the_server_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_forcibly_disconnect_a_client_from_the_server_" title="How do I forcibly disconnect a client from the server?">How
+        do I forcibly disconnect a client from the server?</a>
+</h4></div></div></div>
+<p>
+          Call <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">getCurrentRcfSession</span><span class="special">().</span><span class="identifier">disconnect</span><span class="special">()</span></code>
+          in your server implementation.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.how_do_i_know_that_a_client_has_received_a_published_message_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_know_that_a_client_has_received_a_published_message_" title="How do I know that a client has received a published message?">How
+        do I know that a client has received a published message?</a>
+</h4></div></div></div>
+<p>
+          The publisher won't know, because messages are published using oneway semantics.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.how_do_i_expose_several_servant_objects_having_the_same_interface_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_expose_several_servant_objects_having_the_same_interface_" title="How do I expose several servant objects having the same interface?">How
+        do I expose several servant objects having the same interface?</a>
+</h4></div></div></div>
+<p>
+          Use servant binding names. See <a class="link" href="Serverside.html#rcf_user_guide.Serverside.Configure.Binding" title="Binding servant objects">Binding
+          servant objects</a>.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.why_is_my_server_only_accessible_from_the_local_machine__and_not_across_the_network_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.why_is_my_server_only_accessible_from_the_local_machine__and_not_across_the_network_" title="Why is my server only accessible from the local machine, and not across the network?">Why
+        is my server only accessible from the local machine, and not across the network?</a>
+</h4></div></div></div>
+<p>
+          In the <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span></code> passed to your <code class="computeroutput"><span class="identifier">RcfServer</span></code>, you need to specify <code class="computeroutput"><span class="number">0.0</span><span class="special">.</span><span class="number">0.0</span></code>
+          as the IP address, to allow clients to access it through any network interface.
+          By default <code class="computeroutput"><span class="number">127.0</span><span class="special">.</span><span class="number">0.1</span></code> is used, which restricts clients to running
+          on the same machine as the server.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.at_what_point_does_a__rcfclient____object_connect_to_the_server_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.at_what_point_does_a__rcfclient____object_connect_to_the_server_" title="At what point does a RcfClient&lt;&gt; object connect to the server?">At
+        what point does a <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code> object connect to the server?</a>
+</h4></div></div></div>
+<p>
+          When <code class="computeroutput"><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">connect</span><span class="special">()</span></code>
+          is called, or a remote call is made.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.why_does_my_program_crash_or_assert_when_exiting_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.why_does_my_program_crash_or_assert_when_exiting_" title="Why does my program crash or assert when exiting?">Why
+        does my program crash or assert when exiting?</a>
+</h4></div></div></div>
+<p>
+          Probably because your program has a global static object whose destructor
+          is trying to destroy a <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code> or <code class="computeroutput"><span class="identifier">RcfServer</span></code>
+          object (or some other RCF object), after RCF has been deinitialized.
+        </p>
+<p>
+          Make sure you destroy all RCF objects before deinitializing RCF.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.how_do_i_determine_what_ip_address_a_client_is_connecting_from_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_determine_what_ip_address_a_client_is_connecting_from_" title="How do I determine what IP address a client is connecting from?">How
+        do I determine what IP address a client is connecting from?</a>
+</h4></div></div></div>
+<p>
+          Call <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">getCurrentRcfSession</span><span class="special">().</span><span class="identifier">getClientAddress</span><span class="special">()</span></code>
+          in your server implementation.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.how_do_i_serialize_enums_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_serialize_enums_" title="How do I serialize enums?">How
+        do I serialize enums?</a>
+</h4></div></div></div>
+<p>
+          SF will serialize and deserialize enums automatically, as integer representations.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.can_i_use_sf_to_serialize_objects_to_and_from_files_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.can_i_use_sf_to_serialize_objects_to_and_from_files_" title="Can I use SF to serialize objects to and from files?">Can
+        I use SF to serialize objects to and from files?</a>
+</h4></div></div></div>
+<p>
+          Yes, see <a class="link" href="Serialization.html" title="Serialization">Serialization</a>.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.how_do_i_send_a_file_using_rcf_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_send_a_file_using_rcf_" title="How do I send a file using RCF?">How
+        do I send a file using RCF?</a>
+</h4></div></div></div>
+<p>
+          See <a class="link" href="FileTransfers.html" title="File Transfers">File Transfers</a>.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.how_does_a_subscriber_know_if_a_publisher_has_stopped_publishing_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_does_a_subscriber_know_if_a_publisher_has_stopped_publishing_" title="How does a subscriber know if a publisher has stopped publishing?">How
+        does a subscriber know if a publisher has stopped publishing?</a>
+</h4></div></div></div>
+<p>
+          You can use disconnect notifications, or poll the subscriber for connectedness.
+          See <a class="link" href="PubSub.html" title="Publish/Subscribe">Publish/subscribe</a>.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.how_can_i_access_the_internal__asio__io_service__used_by_the_rcf_server_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_can_i_access_the_internal__asio__io_service__used_by_the_rcf_server_" title="How can I access the internal asio::io_service used by the RCF server?">How
+        can I access the internal <code class="computeroutput"><span class="identifier">asio</span><span class="special">::</span><span class="identifier">io_service</span></code>
+        used by the RCF server?</a>
+</h4></div></div></div>
+<p>
+          You can call <code class="computeroutput"><span class="identifier">AsioServerTransport</span><span class="special">::</span><span class="identifier">getIoService</span><span class="special">()</span></code>:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">RCF</span><span class="special">/</span><span class="identifier">AsioServerTransport</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="special">...</span> <span class="special">);</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">I_ServerTransport</span> <span class="special">&amp;</span> <span class="identifier">transport</span> <span class="special">=</span> <span class="identifier">server</span><span class="special">.</span><span class="identifier">getServerTransport</span><span class="special">();</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">AsioServerTransport</span> <span class="special">&amp;</span> <span class="identifier">asioTransport</span> <span class="special">=</span> <span class="keyword">dynamic_cast</span><span class="special">&lt;</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">AsioServerTransport</span> <span class="special">&amp;&gt;(</span><span class="identifier">transport</span><span class="special">);</span>
+<span class="identifier">boost</span><span class="special">::</span><span class="identifier">asio</span><span class="special">::</span><span class="identifier">io_service</span> <span class="special">&amp;</span> <span class="identifier">ioService</span> <span class="special">=</span> <span class="identifier">asioTransport</span><span class="special">.</span><span class="identifier">getIoService</span><span class="special">();</span>
+</pre>
+<p>
+        </p>
+<p>
+          The <code class="computeroutput"><span class="identifier">io_service</span></code> will be
+          destroyed when the <code class="computeroutput"><span class="identifier">RcfServer</span></code>
+          is stopped.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.ClientDisconnect"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.ClientDisconnect" title="How do I detect client disconnections, from server-side code?">
+        How do I detect client disconnections, from server-side code?</a>
+</h4></div></div></div>
+<p>
+          When a client disconnects, the associated <code class="computeroutput"><span class="identifier">RcfSession</span></code>
+          on the server is destroyed. You can use <code class="computeroutput"><span class="identifier">RcfSession</span><span class="special">::</span><span class="identifier">setOnDestroyCallback</span><span class="special">()</span></code>, to notify your application code when
+          this happens.
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="keyword">void</span> <span class="identifier">onClientDisconnect</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfSession</span> <span class="special">&amp;</span> <span class="identifier">session</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="comment">// ...
+</span><span class="special">}</span>
+
+<span class="keyword">class</span> <span class="identifier">ServerImpl</span>
+<span class="special">{</span>
+    <span class="keyword">void</span> <span class="identifier">SomeFunc</span><span class="special">()</span>
+    <span class="special">{</span>
+        <span class="comment">// From within a remote call, configure a callback on the current RcfSession.
+</span>        
+        <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">getCurrentRcfSession</span><span class="special">().</span><span class="identifier">setOnDestroyCallback</span><span class="special">(</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">bind</span><span class="special">(</span>
+            <span class="identifier">onClientDisconnect</span><span class="special">,</span>
+            <span class="identifier">_1</span><span class="special">));</span>
+    <span class="special">}</span>
+<span class="special">}</span>
+</pre>
+<p>
+        </p>
+<p>
+          <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">bind</span><span class="special">()</span></code>
+          can be used to pass extra arguments to the callback function.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.how_do_i_pass_a_security_token_from_the_client_to_the_server__without_changing_the_rcf_interface_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.how_do_i_pass_a_security_token_from_the_client_to_the_server__without_changing_the_rcf_interface_" title="How do I pass a security token from the client to the server, without changing the RCF interface?">How
+        do I pass a security token from the client to the server, without changing
+        the RCF interface?</a>
+</h4></div></div></div>
+<p>
+          You can use user data slots (<code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">setRequestUserData</span><span class="special">()</span></code>, <code class="computeroutput"><span class="identifier">RcfSession</span><span class="special">::</span><span class="identifier">getRequestUserData</span><span class="special">()</span></code>) , to pass application specific data
+          from the client to the server. See <a class="link" href="Clientside.html#rcf_user_guide.Clientside.UserData" title="Per-request user data">Per-request
+          user data</a>.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.can_i_send__std__wstring__objects_between_linux_and_windows_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.can_i_send__std__wstring__objects_between_linux_and_windows_" title="Can I send std::wstring objects between Linux and Windows?">Can
+        I send <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">wstring</span></code> objects between Linux and Windows?</a>
+</h4></div></div></div>
+<p>
+          In RCF 1.2 and earlier, Unicode strings stored as <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">wstring</span></code>,
+          were serialized as a sequence of <code class="computeroutput"><span class="keyword">wchar_t</span></code>
+          characters. This would cause serialization errors if the client and server
+          were running on platforms with different <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">wstring</span></code>
+          encodings, such as Linux and Windows.
+        </p>
+<p>
+          In RCF 1.3 and later, <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">wstring</span></code>
+          is serialized in UTF-8 encoding, with conversions to and from UTF-16 or
+          UTF-32, depending on the platform. See <a class="link" href="AdvancedSerialization.html#rcf_user_guide.AdvancedSerialization.Unicode" title="Unicode strings">Advanced
+          Serialization - Unicode strings</a>.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Programming.can_i_send_utf_8_encoded__std__string__objects_between_linux_and_windows_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming.can_i_send_utf_8_encoded__std__string__objects_between_linux_and_windows_" title="Can I send UTF-8 encoded std::string objects between Linux and Windows?">Can
+        I send UTF-8 encoded <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span></code>
+        objects between Linux and Windows?</a>
+</h4></div></div></div>
+<p>
+          Yes - SF serializes <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span></code>
+          a sequence of 8-bit characters, so it doesn't matter whether the encoding
+          is ASCII, ISO-8859-1, UTF-8, or anything else. Your application just needs
+          to be aware of the encoding of its own strings,
+        </p>
+</div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.AppendixFaq.Misc"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Misc" title="Miscellaneous"> Miscellaneous</a>
+</h3></div></div></div>
+<div class="toc"><dl><dt><span class="section"><a href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Misc.why_are_there_double_parentheses_in_so_many_of_the_examples_">Why
+        are there double parentheses in so many of the examples?</a></span></dt></dl></div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.AppendixFaq.Misc.why_are_there_double_parentheses_in_so_many_of_the_examples_"></a><a class="link" href="AppendixFaq.html#rcf_user_guide.AppendixFaq.Misc.why_are_there_double_parentheses_in_so_many_of_the_examples_" title="Why are there double parentheses in so many of the examples?">Why
+        are there double parentheses in so many of the examples?</a>
+</h4></div></div></div>
+<p>
+          The following code snippet will cause compiler errors:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="keyword">int</span> <span class="identifier">port</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
+<span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">));</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">));</span>
+
+<span class="comment">// Will get compiler errors on both of these lines...
+</span><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">();</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+</pre>
+<p>
+        </p>
+<p>
+          Because of a C++ language idiosyncracy, the declarations of <code class="computeroutput"><span class="identifier">client</span></code> and <code class="computeroutput"><span class="identifier">server</span></code>
+          are actually interpreted as function declarations, taking a <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span></code> parameter named <code class="computeroutput"><span class="identifier">port</span></code>. C++ compilers interpret the declarations
+          this way to maintain backwards compatibility with C.
+        </p>
+<p>
+          To clear up this ambiguity, we need to put in extra parentheses around
+          the <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span></code>:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="keyword">int</span> <span class="identifier">port</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
+<span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">((</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">)));</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">((</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">)));</span>
+
+<span class="comment">// Now its OK.
+</span><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">();</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+</pre>
+<p>
+        </p>
+<p>
+          This quirk of the C++ language is sometimes referred to as <a href="http://en.wikipedia.org/wiki/Most_vexing_parse" target="_top">"C++'s
+          most vexing parse"</a>.
+        </p>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2005 - 2015 Delta V Software</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="AppendixReleaseNotes.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a>
+</div>
+</body>
+</html>

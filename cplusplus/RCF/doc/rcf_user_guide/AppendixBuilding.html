@@ -1,0 +1,525 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Appendix - Building RCF</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="../index.html" title="RCF User Guide">
+<link rel="up" href="../index.html" title="RCF User Guide">
+<link rel="prev" href="JsonRpc.html" title="JSON-RPC">
+<link rel="next" href="AppendixLogging.html" title="Appendix - Logging">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="JsonRpc.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="AppendixLogging.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.AppendixBuilding"></a><a class="link" href="AppendixBuilding.html" title="Appendix - Building RCF"> Appendix - Building RCF</a>
+</h2></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="AppendixBuilding.html#rcf_user_guide.AppendixBuilding.Configuration"> Configuration</a></span></dt>
+<dt><span class="section"><a href="AppendixBuilding.html#rcf_user_guide.AppendixBuilding.Libraries"> Third party
+      library versions</a></span></dt>
+<dt><span class="section"><a href="AppendixBuilding.html#rcf_user_guide.AppendixBuilding.Compilers"> Compilers</a></span></dt>
+<dt><span class="section"><a href="AppendixBuilding.html#rcf_user_guide.AppendixBuilding.Platforms"> Platforms</a></span></dt>
+</dl></div>
+<p>
+      RCF is provided as source code, and is intended to be compiled along with the
+      rest of the source code that comprises your application. To compile RCF, you
+      only compile a single file - <code class="computeroutput"><span class="identifier">RCF</span><span class="special">.</span><span class="identifier">cpp</span></code>, located
+      in the distribution at <code class="computeroutput"><span class="identifier">src</span><span class="special">/</span><span class="identifier">RCF</span><span class="special">/</span><span class="identifier">RCF</span><span class="special">.</span><span class="identifier">cpp</span></code>.
+    </p>
+<p>
+      You can compile <code class="computeroutput"><span class="identifier">RCF</span><span class="special">.</span><span class="identifier">cpp</span></code> directly into the same module as your
+      own sources, or you can compile it into a static or dynamic library and subsequently
+      link it into your application.
+    </p>
+<p>
+      The <a href="http://www.boost.org" target="_top">Boost</a> header files are RCF's
+      only mandatory dependency. Other dependencies (<a href="http://www.zlib.net" target="_top">zlib</a>,
+      <a href="http://www.openssl.org" target="_top">OpenSSL</a>, <a href="http://www.codeproject.com/Articles/20027/JSON-Spirit-A-C-JSON-Parser-Generator-Implemented" target="_top">JSON-Spirit</a>,
+      <a href="http://www.boost.org/libs/filesystem/" target="_top">Boost.FileSystem</a>,
+      <a href="http://www.boost.org/libs/serialization/" target="_top">Boost.Serialization</a>,
+      <a href="http://code.google.com/p/protobuf/" target="_top">Protocol Buffers</a>) are
+      optional, and are enabled through the configuration macros listed further down.
+    </p>
+<p>
+      In summary, to build RCF, you need to:
+    </p>
+<div class="orderedlist"><ol type="1">
+<li>
+          Make sure a version of the Boost library is available.
+        </li>
+<li>
+          Make sure any relevant third party libraries are available.
+        </li>
+<li>
+          Define any relevant configuration macros.
+        </li>
+<li>
+          Compile RCF.cpp .
+        </li>
+<li>
+          Link to any relevant third party libraries.
+        </li>
+</ol></div>
+<p>
+      The actual details of compiling and linking depend on the compiler toolset
+      you are using. If you are using <a href="http://http://www.microsoft.com/visualstudio" target="_top">Visual
+      Studio</a>, you will need to set include paths, compiler defines, linker
+      paths, linker input in the project properties of your Visual C++ project. If
+      you are using command line tools (in particular <a href="http://http://gcc.gnu.org/" target="_top">gcc</a>,
+      with some flavor of makefiles), you will need to set include paths, compiler
+      defines, linker paths, and linker input on the relevant command lines.
+    </p>
+<p>
+      For a simple example of building with Visual Studio 2010 and gcc, please see
+      the <a class="link" href="Tutorial.html" title="Tutorial">Tutorial</a>.
+    </p>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.AppendixBuilding.Configuration"></a><a class="link" href="AppendixBuilding.html#rcf_user_guide.AppendixBuilding.Configuration" title="Configuration"> Configuration</a>
+</h3></div></div></div>
+<p>
+        The following table lists all RCF build configuration macros:
+      </p>
+<div class="informaltable"><table class="table">
+<colgroup>
+<col>
+<col>
+<col>
+</colgroup>
+<thead><tr>
+<th>
+                <p>
+                  Macro
+                </p>
+              </th>
+<th>
+                <p>
+                  Meaning
+                </p>
+              </th>
+<th>
+                <p>
+                  Requires linking to
+                </p>
+              </th>
+</tr></thead>
+<tbody>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">RCF_USE_OPENSSL</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  Build with OpenSSL support.
+                </p>
+              </td>
+<td>
+                <p>
+                  OpenSSL
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">RCF_OPENSSL_STATIC</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  Enable static linking to OpenSSL.
+                </p>
+              </td>
+<td>
+                <p>
+                  OpenSSL
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">RCF_USE_ZLIB</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  Build with zlib support.
+                </p>
+              </td>
+<td>
+                <p>
+                  Zlib
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">RCF_ZLIB_STATIC</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  Enable static linking to zlib.
+                </p>
+              </td>
+<td>
+                <p>
+                  Zlib
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">RCF_USE_SF_SERIALIZATION</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  Build with SF serialization support (defined by default).
+                </p>
+              </td>
+<td>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">RCF_USE_BOOST_SERIALIZATION</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  Build with Boost.Serialization support.
+                </p>
+              </td>
+<td>
+                <p>
+                  Boost.Serialization
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">RCF_USE_BOOST_FILESYSTEM</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  Build with Boost.Filesystem support (required for file transfer
+                  support).
+                </p>
+              </td>
+<td>
+                <p>
+                  Boost.Filesystem
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">RCF_USE_PROTOBUF</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  Build with Protocol Buffer support.
+                </p>
+              </td>
+<td>
+                <p>
+                  Protocol Buffers
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">RCF_USE_JSON</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  Build with JSON Spirit (required for JSON-RPC support).
+                </p>
+              </td>
+<td>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">RCF_USE_IPV6</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  Build with IPv6 support.
+                </p>
+              </td>
+<td>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">RCF_USE_CUSTOM_ALLOCATOR</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  Build with custom allocator support.
+                </p>
+              </td>
+<td>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">RCF_BUILD_DLL</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  Build a DLL exporting RCF.
+                </p>
+              </td>
+<td>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">RCF_AUTO_INIT_DEINIT</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  Enable automatic RCF initialization and deinitialization.
+                </p>
+              </td>
+<td>
+              </td>
+</tr>
+</tbody>
+</table></div>
+<p>
+        Building RCF without any of the configuration macros defined, is equivalent
+        to building RCF with the <code class="computeroutput"><span class="identifier">RCF_USE_SF_SERIALIZATION</span></code>
+        define. If you build RCF with <code class="computeroutput"><span class="identifier">RCF_USE_BOOST_SERIALIZATION</span></code>
+        defined, <code class="computeroutput"><span class="identifier">RCF_USE_SF_SERIALIZATION</span></code>
+        is automatically <span class="bold"><strong>not</strong></span> defined, and needs
+        to be manually defined if you intend to use both Boost and SF serialization
+        in the same build.
+      </p>
+<p>
+        Make sure that all modules that will be linked together are compiled with
+        the same set of RCF configuration macros, as some of the configuration macros
+        are not ABI compatible with each other.
+      </p>
+<p>
+        <code class="computeroutput"><span class="identifier">RCF_USE_CUSTOM_ALLOCATOR</span></code>
+        is used to customize memory allocation for network send and receive buffers.
+        If you define <code class="computeroutput"><span class="identifier">RCF_USE_CUSTOM_ALLOCATOR</span></code>,
+        you will need to implement the following two functions:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">namespace</span> <span class="identifier">RCF</span> <span class="special">{</span>
+    <span class="keyword">void</span> <span class="special">*</span> <span class="identifier">RCF_new</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <span class="identifier">bytes</span><span class="special">);</span>
+    <span class="keyword">void</span> <span class="identifier">RCF_delete</span><span class="special">(</span><span class="keyword">void</span> <span class="special">*</span> <span class="identifier">ptr</span><span class="special">);</span>
+<span class="special">}</span> <span class="comment">// namespace RCF
+</span>
+</pre>
+<p>
+      </p>
+<p>
+        <code class="computeroutput"><span class="identifier">RCF_new</span><span class="special">()</span></code>
+        and <code class="computeroutput"><span class="identifier">RCF_delete</span><span class="special">()</span></code>
+        will be called by RCF whenever allocating or deallocating memory for buffers
+        of data that are being sent or received.
+      </p>
+<p>
+        <code class="computeroutput"><span class="identifier">RCF_BUILD_DLL</span></code> needs to be
+        defined when building dynamic libraries, and will mark RCF classes and functions
+        as DLL exports.
+      </p>
+<p>
+        The <code class="computeroutput"><span class="identifier">RCF_AUTO_INIT_DEINIT</span></code>
+        define is provided, for users who want to preserve the automatic initialization
+        and deinitialization behavior of earlier versions of RCF. With <code class="computeroutput"><span class="identifier">RCF_AUTO_INIT_DEINIT</span></code> defined, a static
+        object in RCF will automatically call <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">init</span><span class="special">()</span></code> when RCF is loaded, and <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">deinit</span><span class="special">()</span></code> when RCF is unloaded.
+      </p>
+<p>
+        In RCF 2.0 and later, you are expected to initialize RCF explicitly, by calling
+        <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">init</span><span class="special">()</span></code>.
+      </p>
+<p>
+        RCF initialization is reference counted, which means RCF won't be deinitialized
+        until you have called <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">deinit</span><span class="special">()</span></code> as many times as you have called <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">init</span><span class="special">()</span></code>. The <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfInitDeinit</span></code>
+        class will call <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">init</span><span class="special">()</span></code>
+        from its constructor, and <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">deinit</span><span class="special">()</span></code> from its destructor, and can be used to
+        make sure all calls to <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">init</span><span class="special">()</span></code> are matched with a subsequent call to
+        <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">deinit</span><span class="special">()</span></code>.
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.AppendixBuilding.Libraries"></a><a class="link" href="AppendixBuilding.html#rcf_user_guide.AppendixBuilding.Libraries" title="Third party library versions"> Third party
+      library versions</a>
+</h3></div></div></div>
+<p>
+        For reference, these are versions of third party libaries RCF has been tested
+        against. Newer versions of these libraries should also be fine to use.
+      </p>
+<div class="informaltable"><table class="table">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead><tr>
+<th>
+                <p>
+                  Library
+                </p>
+              </th>
+<th>
+                <p>
+                  Version
+                </p>
+              </th>
+</tr></thead>
+<tbody>
+<tr>
+<td>
+                <p>
+                  Boost
+                </p>
+              </td>
+<td>
+                <p>
+                  1.35.0 - 1.50.0
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  OpenSSL
+                </p>
+              </td>
+<td>
+                <p>
+                  0.9.8d
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  Zlib
+                </p>
+              </td>
+<td>
+                <p>
+                  1.2.1
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  Protocol Buffers
+                </p>
+              </td>
+<td>
+                <p>
+                  2.1.0
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  JSON Spirit
+                </p>
+              </td>
+<td>
+                <p>
+                  4.05
+                </p>
+              </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.AppendixBuilding.Compilers"></a><a class="link" href="AppendixBuilding.html#rcf_user_guide.AppendixBuilding.Compilers" title="Compilers"> Compilers</a>
+</h3></div></div></div>
+<p>
+        RCF has been tested against the following compilers:
+      </p>
+<div class="itemizedlist"><ul type="disc">
+<li>
+            Visual C++ - any version newer than and including Visual C++ 7.1 (Visual
+            Studio 2003).
+          </li>
+<li>
+            gcc - any version newer than and including gcc 3.4.
+          </li>
+</ul></div>
+<p>
+        In addition, RCF will generally compile, possibly with minor modifications,
+        on standard compliant compilers on most platforms. However, RCF releases
+        are only tested against the compilers listed above.
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.AppendixBuilding.Platforms"></a><a class="link" href="AppendixBuilding.html#rcf_user_guide.AppendixBuilding.Platforms" title="Platforms"> Platforms</a>
+</h3></div></div></div>
+<p>
+        RCF has been tested on the following platforms:
+      </p>
+<div class="itemizedlist"><ul type="disc">
+<li>
+            Windows
+          </li>
+<li>
+            Linux
+          </li>
+<li>
+            Solaris
+          </li>
+<li>
+            FreeBSD
+          </li>
+<li>
+            OS X
+          </li>
+</ul></div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2005 - 2015 Delta V Software</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="JsonRpc.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="AppendixLogging.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

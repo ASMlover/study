@@ -1,0 +1,922 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Serialization</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="../index.html" title="RCF User Guide">
+<link rel="up" href="../index.html" title="RCF User Guide">
+<link rel="prev" href="Serverside.html" title="Remote Calls - Server-side">
+<link rel="next" href="Transports.html" title="Transports">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="Serverside.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Transports.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.Serialization"></a><a class="link" href="Serialization.html" title="Serialization"> Serialization</a>
+</h2></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="Serialization.html#rcf_user_guide.Serialization.standard_c___types">Standard
+      C++ types</a></span></dt>
+<dt><span class="section"><a href="Serialization.html#rcf_user_guide.Serialization.UserDefined"> User-defined
+      types</a></span></dt>
+<dt><span class="section"><a href="Serialization.html#rcf_user_guide.Serialization.binary_data">Binary data</a></span></dt>
+<dt><span class="section"><a href="Serialization.html#rcf_user_guide.Serialization.Portability"> Portability</a></span></dt>
+<dt><span class="section"><a href="Serialization.html#rcf_user_guide.Serialization.StandAlone"> File-based
+      serialization</a></span></dt>
+</dl></div>
+<p>
+      Serialization is a fundamental part of every remote call. Remote call arguments
+      need to be serialized into binary form so they can be transmitted across the
+      network, and once received, they need to be deserialized from binary form back
+      into regular C++ objects.
+    </p>
+<p>
+      RCF provides a serialization framework of its own, SF, which handles serialization
+      of common C++ types automatically, and can be customized to serialize arbitrary
+      user-defined C++ types.
+    </p>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Serialization.standard_c___types"></a><a class="link" href="Serialization.html#rcf_user_guide.Serialization.standard_c___types" title="Standard C++ types">Standard
+      C++ types</a>
+</h3></div></div></div>
+<p>
+        Serialization of fundamental C++ types (<code class="computeroutput"><span class="keyword">char</span></code>,
+        <code class="computeroutput"><span class="keyword">int</span></code>, <code class="computeroutput"><span class="keyword">double</span></code>,
+        etc) is handled automatically by RCF. Serialization of a number of other
+        common and standard C++ types requires inclusion of the relevant header file:
+      </p>
+<div class="informaltable"><table class="table">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead><tr>
+<th>
+                <p>
+                  Type
+                </p>
+              </th>
+<th>
+                <p>
+                  Which header to include
+                </p>
+              </th>
+</tr></thead>
+<tbody>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span><span class="special">,</span>
+                  <span class="identifier">std</span><span class="special">::</span><span class="identifier">wstring</span><span class="special">,</span>
+                  <span class="identifier">std</span><span class="special">::</span><span class="identifier">basic_string</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">string</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">vector</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">list</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">list</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">deque</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">deque</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">set</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">set</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">map</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">map</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">pair</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">utility</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">bitset</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">bitset</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">auto_ptr</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">auto_ptr</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">unique_ptr</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">unique_ptr</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">shared_ptr</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">shared_ptr</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">tr1</span><span class="special">::</span><span class="identifier">shared_ptr</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">shared_ptr_tr1</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">shared_ptr</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">shared_ptr_std</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">scoped_ptr</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">scoped_ptr</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">intrusive_ptr</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">intrusive_ptr</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">any</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">any</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">tuple</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">tr1</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">tuple_tr1</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">tuple_std</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">variant</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">variant</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">array</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">array</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">tr1</span><span class="special">::</span><span class="identifier">array</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">array_tr1</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">array</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">array_std</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">tr1</span><span class="special">::</span><span class="identifier">unordered_map</span><span class="special">&lt;&gt;,</span>
+                  <span class="identifier">std</span><span class="special">::</span><span class="identifier">tr1</span><span class="special">::</span><span class="identifier">unordered_multimap</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">unordered_map</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">tr1</span><span class="special">::</span><span class="identifier">unordered_set</span><span class="special">&lt;&gt;,</span>
+                  <span class="identifier">std</span><span class="special">::</span><span class="identifier">tr1</span><span class="special">::</span><span class="identifier">unordered_multiset</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">unordered_set</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">stdext</span><span class="special">::</span><span class="identifier">hash_map</span><span class="special">&lt;&gt;,</span>
+                  <span class="identifier">stdext</span><span class="special">::</span><span class="identifier">hash_multimap</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">hash_map</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">stdext</span><span class="special">::</span><span class="identifier">hash_set</span><span class="special">&lt;&gt;,</span>
+                  <span class="identifier">stdext</span><span class="special">::</span><span class="identifier">hash_multiset</span><span class="special">&lt;&gt;</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">hash_set</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+                </p>
+              </td>
+</tr>
+</tbody>
+</table></div>
+<p>
+        In general, for a standard C++ type defined in <code class="computeroutput"><span class="special">&lt;</span><span class="identifier">xyz</span><span class="special">&gt;</span></code>,
+        or a Boost type defined in <code class="computeroutput"><span class="special">&lt;</span><span class="identifier">boost</span><span class="special">/</span><span class="identifier">xyz</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>, the corresponding serialization definitions
+        are located in <code class="computeroutput"><span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">xyz</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+        .
+      </p>
+<p>
+        C++ enums are serialized automatically, as integers. Serialization of C++11
+        enum classes requires the use of a helper macro:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// Legacy C++ enum. Automatically serialized as 'int'.
+</span><span class="keyword">enum</span> <span class="identifier">Suit</span>
+<span class="special">{</span>
+    <span class="identifier">Heart</span> <span class="special">=</span> <span class="number">1</span><span class="special">,</span>
+    <span class="identifier">Diamond</span> <span class="special">=</span> <span class="number">2</span><span class="special">,</span>
+    <span class="identifier">Club</span> <span class="special">=</span> <span class="number">2</span><span class="special">,</span>
+    <span class="identifier">Spade</span> <span class="special">=</span> <span class="number">2</span>
+<span class="special">};</span>
+
+<span class="comment">// C++11 enum class with custom base type (8 bit integer).
+</span><span class="keyword">enum</span> <span class="keyword">class</span> <span class="identifier">Colors</span> <span class="special">:</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">int8_t</span> 
+<span class="special">{</span> 
+    <span class="identifier">Red</span> <span class="special">=</span> <span class="number">1</span><span class="special">,</span> 
+    <span class="identifier">Green</span> <span class="special">=</span> <span class="number">2</span><span class="special">,</span> 
+    <span class="identifier">Blue</span> <span class="special">=</span> <span class="number">3</span> 
+<span class="special">};</span>
+
+<span class="comment">// Use SF_SERIALIZE_ENUM_CLASS() to specify the base type of the enum class.
+</span><span class="identifier">SF_SERIALIZE_ENUM_CLASS</span><span class="special">(</span><span class="identifier">Colors</span><span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">int8_t</span><span class="special">)</span>
+
+</pre>
+<p>
+      </p>
+<p>
+        By composing containers, you can build up structures of considerable complexity
+        that can be used in RCF interfaces, without having to write any serialization
+        code at all:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">boost</span><span class="special">/</span><span class="identifier">tuple</span><span class="special">/</span><span class="identifier">tuple</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">RCF</span><span class="special">/</span><span class="identifier">Idl</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">RCF</span><span class="special">/</span><span class="identifier">IpServerTransport</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">RCF</span><span class="special">/</span><span class="identifier">RcfServer</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">RCF</span><span class="special">/</span><span class="identifier">TcpEndpoint</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">map</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">list</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">tuple</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">SF</span><span class="special">/</span><span class="identifier">vector</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+
+<span class="keyword">typedef</span> 
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">map</span><span class="special">&lt;</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span><span class="special">,</span> 
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">list</span><span class="special">&lt;</span> 
+        <span class="identifier">std</span><span class="special">::</span><span class="identifier">pair</span><span class="special">&lt;</span>
+            <span class="keyword">int</span><span class="special">,</span> 
+            <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span><span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span>    <span class="identifier">MyMap</span><span class="special">;</span>
+
+<span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span>                                             <span class="identifier">Name</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span>                                             <span class="identifier">Street</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="keyword">unsigned</span> <span class="keyword">int</span>                                            <span class="identifier">Zip</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span>                                             <span class="identifier">Suburb</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span>                                             <span class="identifier">State</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span>                                             <span class="identifier">Country</span><span class="special">;</span>
+
+<span class="keyword">typedef</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">Name</span><span class="special">,</span> <span class="identifier">Street</span><span class="special">,</span> <span class="identifier">Zip</span><span class="special">,</span> <span class="identifier">Suburb</span><span class="special">,</span> <span class="identifier">State</span><span class="special">,</span> <span class="identifier">Country</span><span class="special">&gt;</span> <span class="identifier">Address</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="identifier">Address</span><span class="special">&gt;</span>                                    <span class="identifier">Addresses</span><span class="special">;</span>
+
+
+<span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">,</span> <span class="string">"I_Echo"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">MyMap</span><span class="special">,</span> <span class="identifier">Echo</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">MyMap</span> <span class="special">&amp;)</span>
+    <span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">Addresses</span><span class="special">,</span> <span class="identifier">Echo</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Addresses</span> <span class="special">&amp;)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">)</span>
+
+<span class="keyword">class</span> <span class="identifier">EchoImpl</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">MyMap</span> <span class="identifier">Echo</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">MyMap</span> <span class="special">&amp;</span><span class="identifier">myMap</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="keyword">return</span> <span class="identifier">myMap</span><span class="special">;</span>
+    <span class="special">}</span>
+
+    <span class="identifier">Addresses</span> <span class="identifier">Echo</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Addresses</span> <span class="special">&amp;</span><span class="identifier">addresses</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="keyword">return</span> <span class="identifier">addresses</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">};</span>
+
+
+<span class="keyword">int</span> <span class="identifier">main</span><span class="special">()</span>
+<span class="special">{</span>
+    <span class="identifier">EchoImpl</span> <span class="identifier">echoImpl</span><span class="special">;</span>
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">0</span><span class="special">));</span>
+    <span class="identifier">server</span><span class="special">.</span><span class="identifier">bind</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;(</span><span class="identifier">echoImpl</span><span class="special">);</span>
+    <span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+    <span class="keyword">int</span> <span class="identifier">port</span> <span class="special">=</span> <span class="identifier">server</span><span class="special">.</span><span class="identifier">getIpServerTransport</span><span class="special">().</span><span class="identifier">getPort</span><span class="special">();</span>
+
+    <span class="identifier">MyMap</span> <span class="identifier">myMap</span><span class="special">;</span>
+    <span class="identifier">myMap</span><span class="special">[</span><span class="string">"1-3"</span><span class="special">].</span><span class="identifier">push_back</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">make_pair</span><span class="special">(</span><span class="number">1</span><span class="special">,</span> <span class="string">"one"</span><span class="special">));</span>
+    <span class="identifier">myMap</span><span class="special">[</span><span class="string">"1-3"</span><span class="special">].</span><span class="identifier">push_back</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">make_pair</span><span class="special">(</span><span class="number">2</span><span class="special">,</span> <span class="string">"two"</span><span class="special">));</span>
+    <span class="identifier">myMap</span><span class="special">[</span><span class="string">"1-3"</span><span class="special">].</span><span class="identifier">push_back</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">make_pair</span><span class="special">(</span><span class="number">3</span><span class="special">,</span> <span class="string">"three"</span><span class="special">));</span>
+    <span class="identifier">myMap</span><span class="special">[</span><span class="string">"4-6"</span><span class="special">].</span><span class="identifier">push_back</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">make_pair</span><span class="special">(</span><span class="number">4</span><span class="special">,</span> <span class="string">"four"</span><span class="special">));</span>
+    <span class="identifier">myMap</span><span class="special">[</span><span class="string">"4-6"</span><span class="special">].</span><span class="identifier">push_back</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">make_pair</span><span class="special">(</span><span class="number">5</span><span class="special">,</span> <span class="string">"five"</span><span class="special">));</span>
+    <span class="identifier">myMap</span><span class="special">[</span><span class="string">"4-6"</span><span class="special">].</span><span class="identifier">push_back</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">make_pair</span><span class="special">(</span><span class="number">6</span><span class="special">,</span> <span class="string">"six"</span><span class="special">));</span>
+
+    <span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">((</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">)</span> <span class="special">));</span>
+
+    <span class="comment">// Echo a MyMap object.
+</span>    <span class="identifier">MyMap</span> <span class="identifier">myMap2</span> <span class="special">=</span> <span class="identifier">client</span><span class="special">.</span><span class="identifier">Echo</span><span class="special">(</span><span class="identifier">myMap</span><span class="special">);</span>
+
+    <span class="identifier">Addresses</span> <span class="identifier">addresses</span><span class="special">;</span>
+    <span class="identifier">addresses</span><span class="special">.</span><span class="identifier">push_back</span><span class="special">(</span> <span class="identifier">Address</span><span class="special">(</span><span class="string">""</span><span class="special">,</span> <span class="string">""</span><span class="special">,</span> <span class="number">123</span><span class="special">,</span> <span class="string">""</span><span class="special">,</span> <span class="string">""</span><span class="special">,</span> <span class="string">""</span><span class="special">));</span>
+    <span class="identifier">addresses</span><span class="special">.</span><span class="identifier">push_back</span><span class="special">(</span> <span class="identifier">Address</span><span class="special">(</span><span class="string">""</span><span class="special">,</span> <span class="string">""</span><span class="special">,</span> <span class="number">456</span><span class="special">,</span> <span class="string">""</span><span class="special">,</span> <span class="string">""</span><span class="special">,</span> <span class="string">""</span><span class="special">));</span>
+    <span class="identifier">addresses</span><span class="special">.</span><span class="identifier">push_back</span><span class="special">(</span> <span class="identifier">Address</span><span class="special">(</span><span class="string">""</span><span class="special">,</span> <span class="string">""</span><span class="special">,</span> <span class="number">789</span><span class="special">,</span> <span class="string">""</span><span class="special">,</span> <span class="string">""</span><span class="special">,</span> <span class="string">""</span><span class="special">));</span>
+
+    <span class="comment">// Echo a Addresses object.
+</span>    <span class="identifier">Addresses</span> <span class="identifier">addresses2</span> <span class="special">=</span> <span class="identifier">client</span><span class="special">.</span><span class="identifier">Echo</span><span class="special">(</span><span class="identifier">addresses</span><span class="special">);</span>
+
+    <span class="keyword">return</span> <span class="number">0</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Serialization.UserDefined"></a><a class="link" href="Serialization.html#rcf_user_guide.Serialization.UserDefined" title="User-defined types"> User-defined
+      types</a>
+</h3></div></div></div>
+<p>
+        If you take a class of your own, and use it in an RCF interface:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">class</span> <span class="identifier">Point3D</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="keyword">double</span> <span class="identifier">mX</span><span class="special">;</span>
+    <span class="keyword">double</span> <span class="identifier">mY</span><span class="special">;</span>
+    <span class="keyword">double</span> <span class="identifier">mZ</span><span class="special">;</span>
+<span class="special">};</span>
+
+<span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">,</span> <span class="string">"I_Echo"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">Point3D</span><span class="special">,</span> <span class="identifier">Echo</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Point3D</span> <span class="special">&amp;)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">)</span>
+</pre>
+<p>
+      </p>
+<p>
+        , you'll end up with an compiler error similar to this one:
+      </p>
+<pre class="programlisting">..\..\..\..\..\include\SF\Serializer.hpp(324) : error C2039: 'serialize' : is not a member of 'Point3D'
+        C6.cpp(13) : see declaration of 'Point3D'
+        ..\..\..\..\..\include\SF\Serializer.hpp(336) : see reference to function template instantiation 'void SF::serializeInternal&lt;T&gt;(SF::Archive &amp;,T &amp;)' being compiled
+        with
+        [
+            T=U
+        ]
+        &lt;snip&gt;
+</pre>
+<p>
+        The compiler is telling us that it couldn't find any serialization code for
+        the class <code class="computeroutput"><span class="identifier">Point3D</span></code>. We need
+        to provide a <code class="computeroutput"><span class="identifier">serialize</span><span class="special">()</span></code>
+        function, either as a member function:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">class</span> <span class="identifier">Point3D</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="keyword">double</span> <span class="identifier">mX</span><span class="special">;</span>
+    <span class="keyword">double</span> <span class="identifier">mY</span><span class="special">;</span>
+    <span class="keyword">double</span> <span class="identifier">mZ</span><span class="special">;</span>
+
+    <span class="comment">// Internal serialization.
+</span>    <span class="keyword">void</span> <span class="identifier">serialize</span><span class="special">(</span><span class="identifier">SF</span><span class="special">::</span><span class="identifier">Archive</span> <span class="special">&amp;</span><span class="identifier">ar</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">ar</span> <span class="special">&amp;</span> <span class="identifier">mX</span> <span class="special">&amp;</span> <span class="identifier">mY</span> <span class="special">&amp;</span> <span class="identifier">mZ</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">};</span>
+</pre>
+<p>
+      </p>
+<p>
+        , or as a free function in either the same namespace as <code class="computeroutput"><span class="identifier">Point3D</span></code>,
+        or in the SF namespace:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// External serialization.
+</span><span class="keyword">void</span> <span class="identifier">serialize</span><span class="special">(</span><span class="identifier">SF</span><span class="special">::</span><span class="identifier">Archive</span> <span class="special">&amp;</span><span class="identifier">ar</span><span class="special">,</span> <span class="identifier">Point3D</span> <span class="special">&amp;</span><span class="identifier">point</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="identifier">ar</span> <span class="special">&amp;</span> <span class="identifier">point</span><span class="special">.</span><span class="identifier">mX</span> <span class="special">&amp;</span> <span class="identifier">point</span><span class="special">.</span><span class="identifier">mY</span> <span class="special">&amp;</span> <span class="identifier">point</span><span class="special">.</span><span class="identifier">mY</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+      </p>
+<p>
+        The code in the <code class="computeroutput"><span class="identifier">serialize</span><span class="special">()</span></code> function specifies which members to serialize.
+      </p>
+<p>
+        The <code class="computeroutput"><span class="identifier">serialize</span><span class="special">()</span></code>
+        function is used both for serialization and deserialization. In some cases,
+        you may want to use different logic, depending on whether you are serializing
+        or deserializing. For example, the following snippet implements serialization
+        of the <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">gregorian</span><span class="special">::</span><span class="identifier">date</span></code> class, by representing it as a string:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// Serialization code for boost::gregorian::date can be placed either in
+</span><span class="comment">// the boost::gregorian::date namespace (where the path class is defined), or 
+</span><span class="comment">// in the SF namespace. Here we've chosen the SF namespace.
+</span><span class="keyword">namespace</span> <span class="identifier">SF</span> <span class="special">{</span>
+
+    <span class="keyword">void</span> <span class="identifier">serialize</span><span class="special">(</span><span class="identifier">SF</span><span class="special">::</span><span class="identifier">Archive</span> <span class="special">&amp;</span> <span class="identifier">ar</span><span class="special">,</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">gregorian</span><span class="special">::</span><span class="identifier">date</span> <span class="special">&amp;</span> <span class="identifier">dt</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="keyword">if</span> <span class="special">(</span><span class="identifier">ar</span><span class="special">.</span><span class="identifier">isWrite</span><span class="special">())</span>
+        <span class="special">{</span>
+            <span class="comment">// Code for serializing.
+</span>            <span class="identifier">std</span><span class="special">::</span><span class="identifier">ostringstream</span> <span class="identifier">os</span><span class="special">;</span>
+            <span class="identifier">os</span> <span class="special">&lt;&lt;</span> <span class="identifier">dt</span><span class="special">;</span>
+            <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">s</span> <span class="special">=</span> <span class="identifier">os</span><span class="special">.</span><span class="identifier">str</span><span class="special">();</span>
+            <span class="identifier">ar</span> <span class="special">&amp;</span> <span class="identifier">s</span><span class="special">;</span>
+        <span class="special">}</span>
+        <span class="keyword">else</span>
+        <span class="special">{</span>
+            <span class="comment">// Code for deserializing.
+</span>            <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">s</span><span class="special">;</span>
+            <span class="identifier">ar</span> <span class="special">&amp;</span> <span class="identifier">s</span><span class="special">;</span>
+            <span class="identifier">std</span><span class="special">::</span><span class="identifier">istringstream</span> <span class="identifier">is</span><span class="special">(</span><span class="identifier">s</span><span class="special">);</span>
+            <span class="identifier">is</span> <span class="special">&gt;&gt;</span> <span class="identifier">dt</span><span class="special">;</span>
+        <span class="special">}</span>
+    <span class="special">}</span>
+
+<span class="special">}</span>
+
+
+<span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">,</span> <span class="string">"I_Echo"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">boost</span><span class="special">::</span><span class="identifier">gregorian</span><span class="special">::</span><span class="identifier">date</span><span class="special">,</span> <span class="identifier">Echo</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">gregorian</span><span class="special">::</span><span class="identifier">date</span> <span class="special">&amp;)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">)</span>
+
+</pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Serialization.binary_data"></a><a class="link" href="Serialization.html#rcf_user_guide.Serialization.binary_data" title="Binary data">Binary data</a>
+</h3></div></div></div>
+<p>
+        To send a chunk of binary data, you can use the <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span></code>
+        class:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">,</span> <span class="string">"I_Echo"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span><span class="special">,</span> <span class="identifier">Echo</span><span class="special">,</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">)</span>
+
+<span class="keyword">class</span> <span class="identifier">EchoImpl</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span> <span class="identifier">Echo</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span> <span class="identifier">byteBuffer</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="keyword">return</span> <span class="identifier">byteBuffer</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">};</span>
+
+
+<span class="keyword">int</span> <span class="identifier">main</span><span class="special">()</span>
+<span class="special">{</span>
+    <span class="comment">// Set max message length to 600 kb.
+</span>    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">setDefaultMaxMessageLength</span><span class="special">(</span><span class="number">600</span><span class="special">*</span><span class="number">1024</span><span class="special">);</span>
+
+    <span class="identifier">EchoImpl</span> <span class="identifier">echoImpl</span><span class="special">;</span>
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">0</span><span class="special">));</span>
+    <span class="identifier">server</span><span class="special">.</span><span class="identifier">bind</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;(</span><span class="identifier">echoImpl</span><span class="special">);</span>
+    <span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+    <span class="keyword">int</span> <span class="identifier">port</span> <span class="special">=</span> <span class="identifier">server</span><span class="special">.</span><span class="identifier">getIpServerTransport</span><span class="special">().</span><span class="identifier">getPort</span><span class="special">();</span>
+
+    <span class="comment">// Create and fill a 500 kb byte buffer.
+</span>    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span> <span class="identifier">byteBuffer</span><span class="special">(</span><span class="number">500</span><span class="special">*</span><span class="number">1024</span><span class="special">);</span>
+    <span class="keyword">for</span> <span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <span class="identifier">i</span><span class="special">=</span><span class="number">0</span><span class="special">;</span> <span class="identifier">i</span><span class="special">&lt;</span><span class="identifier">byteBuffer</span><span class="special">.</span><span class="identifier">getLength</span><span class="special">();</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">byteBuffer</span><span class="special">.</span><span class="identifier">getPtr</span><span class="special">()[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="keyword">char</span><span class="special">(</span><span class="identifier">i</span> <span class="special">%</span> <span class="number">256</span><span class="special">);</span>
+    <span class="special">}</span>
+
+    <span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">((</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">)</span> <span class="special">));</span>
+
+    <span class="comment">// Echo it.
+</span>    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span> <span class="identifier">byteBuffer2</span> <span class="special">=</span> <span class="identifier">client</span><span class="special">.</span><span class="identifier">Echo</span><span class="special">(</span><span class="identifier">byteBuffer</span><span class="special">);</span>
+
+    <span class="keyword">return</span> <span class="number">0</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+      </p>
+<p>
+        <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span></code> or <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="keyword">char</span><span class="special">&gt;</span></code>
+        could be used for the same purpose. However, serialization and marshaling
+        of <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span></code> is significantly more efficient
+        (see <a class="link" href="Performance.html" title="Performance">Performance</a>). In particular,
+        with <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span></code>, no copies at all will be made
+        of the data, on either end of the wire.
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Serialization.Portability"></a><a class="link" href="Serialization.html#rcf_user_guide.Serialization.Portability" title="Portability"> Portability</a>
+</h3></div></div></div>
+<p>
+        Because C++ does not prescribe the sizes of its fundamental types, there
+        is potential for serialization errors when servers and clients are deployed
+        on different platforms. For example, consider the following interface:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">,</span> <span class="string">"I_Echo"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">Echo</span><span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">)</span>
+</pre>
+<p>
+      </p>
+<p>
+        The <code class="computeroutput"><span class="identifier">Echo</span><span class="special">()</span></code>
+        method uses <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span></code> as a parameter and return value.
+        Unfortunately, <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span></code> has different meanings on different
+        platforms. For example, the 32 bit Visual C++ compiler considers <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span></code>
+        to be a 32 bit type, while the 64 bit Visual C++ compiler considers <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span></code>
+        to be a 64 bit type. If a remote call is made from a 32 bit client to a 64
+        bit server, with <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span></code> arguments, a runtime serialization
+        error will be raised.
+      </p>
+<p>
+        The same issue arises when using the type <code class="computeroutput"><span class="keyword">long</span></code>
+        with 32 and 64 bit versions of gcc. 32-bit gcc considers <code class="computeroutput"><span class="keyword">long</span></code>
+        to be a 32 bit type, while 64-bit gcc considers <code class="computeroutput"><span class="keyword">long</span></code>
+        to be a 64-bit type.
+      </p>
+<p>
+        The correct approach in these situations is to use typedefs for arithmetic
+        types whose bit sizes are guaranteed. In particular, <code class="computeroutput"><span class="special">&lt;</span><span class="identifier">boost</span><span class="special">/</span><span class="identifier">cstdint</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+        provides a number of useful typedefs, including the following.
+      </p>
+<div class="table">
+<a name="id960266"></a><p class="title"><b>Table&#160;1.&#160;Portable integral types</b></p>
+<div class="table-contents"><table class="table" summary="Portable integral types">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead><tr>
+<th>
+                <p>
+                  Type
+                </p>
+              </th>
+<th>
+                <p>
+                  Description
+                </p>
+              </th>
+</tr></thead>
+<tbody>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">int16_t</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  16 bit signed integer
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint16_t</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  16 bit unsigned integer
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">int32_t</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  32 bit signed integer
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint32_t</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  32 bit unsigned integer
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">int64_t</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  64 bit signed integer
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint64_t</span></code>
+                </p>
+              </td>
+<td>
+                <p>
+                  64 bit unsigned integer
+                </p>
+              </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<br class="table-break"><p>
+        To ensure portability, the example with <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span></code>,
+        above, should be rewritten as:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">,</span> <span class="string">"I_Echo"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint32_t</span><span class="special">,</span> <span class="identifier">Echo</span><span class="special">,</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint32_t</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint64_t</span><span class="special">,</span> <span class="identifier">Echo</span><span class="special">,</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint64_t</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">)</span>
+</pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Serialization.StandAlone"></a><a class="link" href="Serialization.html#rcf_user_guide.Serialization.StandAlone" title="File-based serialization"> File-based
+      serialization</a>
+</h3></div></div></div>
+<p>
+        SF can be used independently of RCF, for instance to serialize objects to
+        and from files. To do so, use <code class="computeroutput"><span class="identifier">SF</span><span class="special">::</span><span class="identifier">OBinaryStream</span></code>
+        and <code class="computeroutput"><span class="identifier">SF</span><span class="special">::</span><span class="identifier">IBinaryStream</span></code>:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">filename</span> <span class="special">=</span> <span class="string">"data.bin"</span><span class="special">;</span>
+
+<span class="identifier">X</span> <span class="identifier">x1</span><span class="special">;</span>
+<span class="identifier">X</span> <span class="identifier">x2</span><span class="special">;</span>
+
+<span class="comment">// Write x1 to a file.
+</span><span class="special">{</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">ofstream</span> <span class="identifier">fout</span><span class="special">(</span><span class="identifier">filename</span><span class="special">.</span><span class="identifier">c_str</span><span class="special">(),</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">ios</span><span class="special">::</span><span class="identifier">binary</span><span class="special">);</span>
+    <span class="identifier">SF</span><span class="special">::</span><span class="identifier">OBinaryStream</span> <span class="identifier">os</span><span class="special">(</span><span class="identifier">fout</span><span class="special">);</span>
+    <span class="identifier">os</span> <span class="special">&lt;&lt;</span> <span class="identifier">x1</span><span class="special">;</span>
+<span class="special">}</span>
+
+<span class="comment">// Read x2 from a file.
+</span><span class="special">{</span>
+    
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">ifstream</span> <span class="identifier">fin</span><span class="special">(</span><span class="identifier">filename</span><span class="special">.</span><span class="identifier">c_str</span><span class="special">(),</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">ios</span><span class="special">::</span><span class="identifier">binary</span><span class="special">);</span>
+    <span class="identifier">SF</span><span class="special">::</span><span class="identifier">IBinaryStream</span> <span class="identifier">is</span><span class="special">(</span><span class="identifier">fin</span><span class="special">);</span>
+    <span class="identifier">is</span> <span class="special">&gt;&gt;</span> <span class="identifier">x2</span><span class="special">;</span>
+<span class="special">}</span>
+
+</pre>
+<p>
+      </p>
+</div>
+<p>
+      For more advanced topics see <a class="link" href="AdvancedSerialization.html" title="Advanced Serialization">Advanced
+      Serialization</a>.
+    </p>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2005 - 2015 Delta V Software</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="Serverside.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Transports.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

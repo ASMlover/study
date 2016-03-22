@@ -1,0 +1,468 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Transport Protocols</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="../index.html" title="RCF User Guide">
+<link rel="up" href="../index.html" title="RCF User Guide">
+<link rel="prev" href="Transports.html" title="Transports">
+<link rel="next" href="HttpTunneling.html" title="HTTP/HTTPS Tunneling">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="Transports.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="HttpTunneling.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.TransportProtocols"></a><a class="link" href="TransportProtocols.html" title="Transport Protocols"> Transport Protocols</a>
+</h2></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="TransportProtocols.html#rcf_user_guide.TransportProtocols.ntlm">NTLM</a></span></dt>
+<dt><span class="section"><a href="TransportProtocols.html#rcf_user_guide.TransportProtocols.kerberos">Kerberos</a></span></dt>
+<dt><span class="section"><a href="TransportProtocols.html#rcf_user_guide.TransportProtocols.negotiate">Negotiate</a></span></dt>
+<dt><span class="section"><a href="TransportProtocols.html#rcf_user_guide.TransportProtocols.ssl">SSL</a></span></dt>
+<dt><span class="section"><a href="TransportProtocols.html#rcf_user_guide.TransportProtocols.compression">Compression</a></span></dt>
+</dl></div>
+<p>
+      Transport protocols are used to transform the data passing over a transport.
+      RCF uses transport protocols to provide authentication, encryption and compression
+      for remote calls.
+    </p>
+<p>
+      RCF currently supports NTLM, Kerberos, Negotiate and SSL transport protocols.
+      NTLM, Kerberos and Negotiate are only supported on Windows platforms, while
+      SSL is supported on all platforms.
+    </p>
+<p>
+      In addition, RCF also supports zlib-based compression of remote calls.
+    </p>
+<p>
+      Transport protocols are assigned to a client connection by calling <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">setTransportProtocol</span><span class="special">()</span></code>:
+    </p>
+<p>
+      
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">((</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">)</span> <span class="special">));</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setTransportProtocol</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Tp_Ntlm</span><span class="special">);</span>
+</pre>
+<p>
+    </p>
+<p>
+      From within the server session of a client connection, you can call <code class="computeroutput"><span class="identifier">RcfSession</span><span class="special">::</span><span class="identifier">getTransportProtocol</span><span class="special">()</span></code>
+      to determine the transport prococol the client is using:
+    </p>
+<p>
+      
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfSession</span> <span class="special">&amp;</span> <span class="identifier">session</span> <span class="special">=</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">getCurrentRcfSession</span><span class="special">();</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TransportProtocol</span> <span class="identifier">tp</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getTransportProtocol</span><span class="special">();</span>
+</pre>
+<p>
+    </p>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.TransportProtocols.ntlm"></a><a class="link" href="TransportProtocols.html#rcf_user_guide.TransportProtocols.ntlm" title="NTLM">NTLM</a>
+</h3></div></div></div>
+<p>
+        To configure NTLM on a client connection:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">((</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">)</span> <span class="special">));</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setTransportProtocol</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Tp_Ntlm</span><span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        On the server-side, you can determine the Windows username of the client,
+        and impersonate them:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">clientUsername</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getClientUsername</span><span class="special">();</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">SspiImpersonator</span> <span class="identifier">impersonator</span><span class="special">(</span><span class="identifier">session</span><span class="special">);</span>
+<span class="comment">// We are now impersonating the client, until impersonator goes out of scope.
+</span><span class="comment">// ...
+</span></pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.TransportProtocols.kerberos"></a><a class="link" href="TransportProtocols.html#rcf_user_guide.TransportProtocols.kerberos" title="Kerberos">Kerberos</a>
+</h3></div></div></div>
+<p>
+        To configure Kerberos on a client connection:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setTransportProtocol</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Tp_Kerberos</span><span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setKerberosSpn</span><span class="special">(</span><span class="string">"Domain\\ServerAccount"</span><span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        Notice that the client needs to call <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">setKerberosSpn</span><span class="special">()</span></code> to specify the username it expects the
+        server to be running under. This is known as the SPN (Service Principal Name)
+        of the server, and is used by Kerberos to implement mutual authentication.
+        If the server is not running under this account, the connection will fail.
+      </p>
+<p>
+        On the server-side, you can determine the Windows username of the client,
+        and impersonate them:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">clientUsername</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getClientUsername</span><span class="special">();</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">SspiImpersonator</span> <span class="identifier">impersonator</span><span class="special">(</span><span class="identifier">session</span><span class="special">);</span>
+<span class="comment">// We are now impersonating the client, until impersonator goes out of scope.
+</span><span class="comment">// ...
+</span></pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.TransportProtocols.negotiate"></a><a class="link" href="TransportProtocols.html#rcf_user_guide.TransportProtocols.negotiate" title="Negotiate">Negotiate</a>
+</h3></div></div></div>
+<p>
+        Negotiate is a negotiation protocol between the NTLM and Kerberos protocols.
+        It will resolve to Kerberos if possible, and otherwise fall back to NTLM.
+      </p>
+<p>
+        To configure Negotiate on a client connection:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setTransportProtocol</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Tp_Negotiate</span><span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setKerberosSpn</span><span class="special">(</span><span class="string">"Domain\\ServerAccount"</span><span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        As with the Kerberos transport protocol, you need to supply a SPN for the
+        server.
+      </p>
+<p>
+        On the server-side, you can determine the Windows username of the client,
+        and impersonate them:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">clientUsername</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getClientUsername</span><span class="special">();</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">SspiImpersonator</span> <span class="identifier">impersonator</span><span class="special">(</span><span class="identifier">session</span><span class="special">);</span>
+<span class="comment">// We are now impersonating the client, until impersonator goes out of scope.
+</span><span class="comment">// ...
+</span></pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.TransportProtocols.ssl"></a><a class="link" href="TransportProtocols.html#rcf_user_guide.TransportProtocols.ssl" title="SSL">SSL</a>
+</h3></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="TransportProtocols.html#rcf_user_guide.TransportProtocols.ssl.schannel">Schannel</a></span></dt>
+<dt><span class="section"><a href="TransportProtocols.html#rcf_user_guide.TransportProtocols.ssl.openssl">OpenSSL</a></span></dt>
+</dl></div>
+<p>
+        RCF offers two SSL transport protocol implementations. One is based on the
+        cross-platform OpenSSL library, and the other is based on the Windows-only
+        Schannel package.
+      </p>
+<p>
+        OpenSSL support is only available if <code class="computeroutput"><span class="identifier">RCF_USE_OPENSSL</span></code>
+        has been defined. Schannel support is only available in Windows builds.
+      </p>
+<p>
+        If you define <code class="computeroutput"><span class="identifier">RCF_USE_OPENSSL</span></code>
+        in a Windows build, RCF will use OpenSSL rather than Schannel. Should you
+        want to use Schannel, despite defining <code class="computeroutput"><span class="identifier">RCF_USE_OPENSSL</span></code>,
+        you can set the SSL implementation for individual servers and clients using
+        the <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">setSslImplementation</span><span class="special">()</span></code>
+        and <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">setSslImplementation</span><span class="special">()</span></code>
+        functions, or for the whole RCF runtime using the <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">setSslImplementation</span><span class="special">()</span></code> function.
+      </p>
+<p>
+        The SSL protocol uses certificates to authenticate servers to clients (and
+        optionally clients to servers). Certificate and certificate validation functionality
+        is handled differently by the two SSL transport protocol implemenations,
+        as described below.
+      </p>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.TransportProtocols.ssl.schannel"></a><a class="link" href="TransportProtocols.html#rcf_user_guide.TransportProtocols.ssl.schannel" title="Schannel">Schannel</a>
+</h4></div></div></div>
+<p>
+          To configure a server to accept SSL connections, you need to provide a
+          server certificate. RCF provides the <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">PfxCertificate</span></code>
+          class, to load certificates from .pfx and .p12 files:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">CertificatePtr</span> <span class="identifier">serverCertPtr</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">PfxCertificate</span><span class="special">(</span>
+    <span class="string">"C:\\serverCert.p12"</span><span class="special">,</span> 
+    <span class="string">"password"</span><span class="special">,</span> 
+    <span class="string">"CertificateName"</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">setCertificate</span><span class="special">(</span><span class="identifier">serverCertPtr</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          RCF also provides the <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">StoreCertificate</span></code>
+          class, to load certificates from Windows certificate stores:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">CertificatePtr</span> <span class="identifier">serverCertPtr</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">StoreCertificate</span><span class="special">(</span>
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Cl_LocalMachine</span><span class="special">,</span>
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Cs_My</span><span class="special">,</span>
+    <span class="string">"CertificateName"</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">setCertificate</span><span class="special">(</span><span class="identifier">serverCertPtr</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          On the client, you need to provide a means of validating the certificate
+          presented by the server. There are several ways of doing this. You can
+          let the Schannel package apply its own internal validation logic, which
+          will defer to the locally installed certificate authorities:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setTransportProtocol</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Tp_Ssl</span><span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setEnableSchannelCertificateValidation</span><span class="special">(</span><span class="string">"CertificateName"</span><span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          You can also provide a particular certificate authority yourself, which
+          will be used to validate the server certificate:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">CertificatePtr</span> <span class="identifier">caCertPtr</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">PfxCertificate</span><span class="special">(</span>
+    <span class="string">"C:\\clientCaCertificate.p12"</span><span class="special">,</span> 
+    <span class="string">"password"</span><span class="special">,</span> 
+    <span class="string">"CaCertificatename"</span><span class="special">));</span>
+
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setCaCertificate</span><span class="special">(</span><span class="identifier">caCertPtr</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          You can also write your own custom certificate validation logic:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="keyword">bool</span> <span class="identifier">schannelValidateCert</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Certificate</span> <span class="special">*</span> <span class="identifier">pCert</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Win32Certificate</span> <span class="special">*</span> <span class="identifier">pWin32Cert</span> <span class="special">=</span> <span class="keyword">static_cast</span><span class="special">&lt;</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Win32Certificate</span> <span class="special">*&gt;(</span><span class="identifier">pCert</span><span class="special">);</span>
+    <span class="keyword">if</span> <span class="special">(</span><span class="identifier">pWin32Cert</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">tstring</span> <span class="identifier">certName</span> <span class="special">=</span> <span class="identifier">pWin32Cert</span><span class="special">-&gt;</span><span class="identifier">getCertificateName</span><span class="special">();</span>
+        <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">tstring</span> <span class="identifier">issuerName</span> <span class="special">=</span> <span class="identifier">pWin32Cert</span><span class="special">-&gt;</span><span class="identifier">getIssuerName</span><span class="special">();</span>
+
+        <span class="identifier">PCCERT_CONTEXT</span> <span class="identifier">pContext</span> <span class="special">=</span> <span class="identifier">pWin32Cert</span><span class="special">-&gt;</span><span class="identifier">getWin32Context</span><span class="special">();</span>
+
+        <span class="comment">// Custom code to inspect and validate certificate.
+</span>        <span class="comment">// ...
+</span>    <span class="special">}</span>
+
+    <span class="comment">// Return true if the certificate is considered valid. Otherwise, return false,
+</span>    <span class="comment">// or throw an exception.
+</span>    <span class="keyword">return</span> <span class="keyword">true</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setCertificateValidationCallback</span><span class="special">(&amp;</span><span class="identifier">schannelValidateCert</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          RCF clients can also be configured to present a certificate to the server:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">CertificatePtr</span> <span class="identifier">clientCertPtr</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">PfxCertificate</span><span class="special">(</span>
+    <span class="string">"C:\\clientCert.p12"</span><span class="special">,</span> 
+    <span class="string">"password"</span><span class="special">,</span> 
+    <span class="string">"CertificateName"</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setCertificate</span><span class="special">(</span><span class="identifier">clientCertPtr</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          Server-side certificate validation is done in the same way as client-side
+          certificate validation, but using the <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">setSchannelDefaultCertificateValidation</span><span class="special">()</span></code>, <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">setSchannelCertificateValidationCb</span><span class="special">()</span></code>, and <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">setSslCaCertificate</span><span class="special">()</span></code> functions.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.TransportProtocols.ssl.openssl"></a><a class="link" href="TransportProtocols.html#rcf_user_guide.TransportProtocols.ssl.openssl" title="OpenSSL">OpenSSL</a>
+</h4></div></div></div>
+<p>
+          When using the OpenSSL-based SSL transport protocol, certificates need
+          to be loaded from .pem files, using the <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">PemCertificate</span></code>
+          class. Here is an example of providing a server certificate:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">CertificatePtr</span> <span class="identifier">serverCertPtr</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">PemCertificate</span><span class="special">(</span>
+    <span class="string">"C:\\serverCert.pem"</span><span class="special">,</span> 
+    <span class="string">"password"</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">setCertificate</span><span class="special">(</span><span class="identifier">serverCertPtr</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          The client can validate the server certificate in two ways. It can provide
+          a certificate authority certificate:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">CertificatePtr</span> <span class="identifier">caCertPtr</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">PemCertificate</span><span class="special">(</span>
+    <span class="string">"C:\\clientCaCertificate.pem"</span><span class="special">,</span> 
+    <span class="string">"password"</span><span class="special">));</span>
+
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setCaCertificate</span><span class="special">(</span><span class="identifier">caCertPtr</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          , or it can provide custom validation logic in a callback function:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="keyword">bool</span> <span class="identifier">opensslValidateCert</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Certificate</span> <span class="special">*</span> <span class="identifier">pCert</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">X509Certificate</span> <span class="special">*</span> <span class="identifier">pX509Cert</span> <span class="special">=</span> <span class="keyword">static_cast</span><span class="special">&lt;</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">X509Certificate</span> <span class="special">*&gt;(</span><span class="identifier">pCert</span><span class="special">);</span>
+
+    <span class="keyword">if</span> <span class="special">(</span><span class="identifier">pX509Cert</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">certName</span> <span class="special">=</span> <span class="identifier">pX509Cert</span><span class="special">-&gt;</span><span class="identifier">getCertificateName</span><span class="special">();</span>
+        <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">issuerName</span> <span class="special">=</span> <span class="identifier">pX509Cert</span><span class="special">-&gt;</span><span class="identifier">getIssuerName</span><span class="special">();</span>
+
+        <span class="identifier">X509</span> <span class="special">*</span> <span class="identifier">pX509</span> <span class="special">=</span> <span class="identifier">pX509Cert</span><span class="special">-&gt;</span><span class="identifier">getX509</span><span class="special">();</span>
+
+        <span class="comment">// Custom code to inspect and validate certificate.
+</span>        <span class="comment">// ...
+</span>    <span class="special">}</span>
+
+    <span class="comment">// Return true if valid, false if not.
+</span>    <span class="keyword">return</span> <span class="keyword">true</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setCertificateValidationCallback</span><span class="special">(&amp;</span><span class="identifier">opensslValidateCert</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          The client can also provide a certificate of its own, to present to the
+          server:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">CertificatePtr</span> <span class="identifier">clientCertPtr</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">PemCertificate</span><span class="special">(</span>
+    <span class="string">"C:\\clientCert.pem"</span><span class="special">,</span> 
+    <span class="string">"password"</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setCertificate</span><span class="special">(</span><span class="identifier">clientCertPtr</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          Server-side certificate validation is done in the same way as client-side
+          certificate validation, but using the <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">setOpenSslCertificateValidationCb</span><span class="special">()</span></code>, and <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">setSslCaCertificate</span><span class="special">()</span></code> functions.
+        </p>
+</div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.TransportProtocols.compression"></a><a class="link" href="TransportProtocols.html#rcf_user_guide.TransportProtocols.compression" title="Compression">Compression</a>
+</h3></div></div></div>
+<p>
+        RCF supports compression of remote calls. To build RCF with support for compression,
+        define <code class="computeroutput"><span class="identifier">RCF_USE_ZLIB</span></code> (see
+        <a class="link" href="AppendixBuilding.html" title="Appendix - Building RCF">Building</a>).
+      </p>
+<p>
+        Compression is configured independently of other transport protocols, using
+        <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">setEnableCompression</span><span class="special">()</span></code>:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">((</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">)</span> <span class="special">));</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setEnableCompression</span><span class="special">(</span><span class="keyword">true</span><span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        RCF applies the compression stage before the transport protocol stage. For
+        example, if you configure compression and NTLM on the same connection:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">((</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">)</span> <span class="special">));</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setTransportProtocol</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Tp_Ntlm</span><span class="special">);</span>      
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setEnableCompression</span><span class="special">(</span><span class="keyword">true</span><span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        , the remote call data will be compressed first, before being encrypted and
+        sent across the wire.
+      </p>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2005 - 2015 Delta V Software</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="Transports.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="HttpTunneling.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

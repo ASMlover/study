@@ -1,0 +1,404 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Remote Calls - Server-side</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="../index.html" title="RCF User Guide">
+<link rel="up" href="../index.html" title="RCF User Guide">
+<link rel="prev" href="Clientside.html" title="Remote Calls - Client-side">
+<link rel="next" href="Serialization.html" title="Serialization">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="Clientside.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Serialization.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.Serverside"></a><a class="link" href="Serverside.html" title="Remote Calls - Server-side"> Remote Calls - Server-side</a>
+</h2></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="Serverside.html#rcf_user_guide.Serverside.Configure"> Configuring a server</a></span></dt>
+<dt><span class="section"><a href="Serverside.html#rcf_user_guide.Serverside.Sessions"> Server-side sessions</a></span></dt>
+</dl></div>
+<p>
+      On the server-side, your application is responsible for dispatching remote
+      calls from clients. Typically you will create a <code class="computeroutput"><span class="identifier">RcfServer</span></code>:
+    </p>
+<p>
+      
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+</pre>
+<p>
+    </p>
+<p>
+      , bind a servant object to it:
+    </p>
+<p>
+      
+</p>
+<pre class="programlisting"><span class="identifier">HelloWorldImpl</span> <span class="identifier">helloWorldImpl</span><span class="special">;</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">bind</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;(</span><span class="identifier">helloWorldImpl</span><span class="special">);</span>
+</pre>
+<p>
+    </p>
+<p>
+      , and start the server:
+    </p>
+<p>
+      
+</p>
+<pre class="programlisting"><span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+</pre>
+<p>
+    </p>
+<p>
+      When a client makes a remote call to the <code class="computeroutput"><span class="identifier">I_HelloWorld</span></code>
+      interface, the relevant member function of the servant object is executed.
+      From within the servant object, you can access the current server side remote
+      call session through <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">getCurrentSession</span><span class="special">()</span></code>:
+    </p>
+<p>
+      
+</p>
+<pre class="programlisting"><span class="keyword">class</span> <span class="identifier">HelloWorldImpl</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="keyword">void</span> <span class="identifier">Print</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> <span class="identifier">s</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"I_HelloWorld service: "</span> <span class="special">&lt;&lt;</span> <span class="identifier">s</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+
+        <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfSession</span> <span class="special">&amp;</span> <span class="identifier">session</span> <span class="special">=</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">getCurrentRcfSession</span><span class="special">();</span>
+        <span class="comment">// ...
+</span>    <span class="special">}</span>
+<span class="special">};</span>
+</pre>
+<p>
+    </p>
+<p>
+      <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">getCurrentSession</span><span class="special">()</span></code>
+      returns a <code class="computeroutput"><span class="identifier">RcfSession</span></code> reference,
+      through which server-side per-session configuration is done. A <code class="computeroutput"><span class="identifier">RcfSession</span></code> is created for every connection
+      to a RcfServer, and it's lifetime matches that of the underlying transport
+      connection.
+    </p>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Serverside.Configure"></a><a class="link" href="Serverside.html#rcf_user_guide.Serverside.Configure" title="Configuring a server"> Configuring a server</a>
+</h3></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="Serverside.html#rcf_user_guide.Serverside.Configure.adding_transports">Adding
+        transports</a></span></dt>
+<dt><span class="section"><a href="Serverside.html#rcf_user_guide.Serverside.Configure.starting_and_stopping_a_server">Starting
+        and stopping a server</a></span></dt>
+<dt><span class="section"><a href="Serverside.html#rcf_user_guide.Serverside.Configure.Binding"> Binding
+        servant objects</a></span></dt>
+<dt><span class="section"><a href="Serverside.html#rcf_user_guide.Serverside.Configure.server_threading">Server
+        threading</a></span></dt>
+</dl></div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.Serverside.Configure.adding_transports"></a><a class="link" href="Serverside.html#rcf_user_guide.Serverside.Configure.adding_transports" title="Adding transports">Adding
+        transports</a>
+</h4></div></div></div>
+<p>
+          A <code class="computeroutput"><span class="identifier">RcfServer</span></code> listens on
+          one or more transports, for remote calls from clients. Server transports
+          can be configured by passing in an endpoint parameter to the <code class="computeroutput"><span class="identifier">RcfServer</span></code> constructor:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          Alternatively, to configure multiple transports, use <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">addEndpoint</span><span class="special">()</span></code>:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">;</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">addEndpoint</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">addEndpoint</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">UdpEndpoint</span><span class="special">(</span><span class="number">50002</span><span class="special">)</span> <span class="special">);</span>
+</pre>
+<p>
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.Serverside.Configure.starting_and_stopping_a_server"></a><a class="link" href="Serverside.html#rcf_user_guide.Serverside.Configure.starting_and_stopping_a_server" title="Starting and stopping a server">Starting
+        and stopping a server</a>
+</h4></div></div></div>
+<p>
+          A <code class="computeroutput"><span class="identifier">RcfServer</span></code> instance will
+          not start dispatching remote calls until <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">start</span><span class="special">()</span></code> is called. The server can be stopped
+          manually by calling <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">stop</span><span class="special">()</span></code>:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+<span class="comment">// ...
+</span><span class="identifier">server</span><span class="special">.</span><span class="identifier">stop</span><span class="special">();</span>
+</pre>
+<p>
+        </p>
+<p>
+          You can also simply let the <code class="computeroutput"><span class="identifier">RcfServer</span></code>
+          object go out of scope, in which case the server is stopped automatically.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.Serverside.Configure.Binding"></a><a class="link" href="Serverside.html#rcf_user_guide.Serverside.Configure.Binding" title="Binding servant objects"> Binding
+        servant objects</a>
+</h4></div></div></div>
+<p>
+          <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">bind</span><span class="special">&lt;&gt;()</span></code>
+          is used to bind servant objects to RCF interfaces. Every bound servant
+          object has a binding name which identifies it. The default servant binding
+          name is the runtime name of the interface it is exposed through. So the
+          following code:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">server</span><span class="special">.</span><span class="identifier">bind</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;(</span><span class="identifier">helloWorldImpl</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          , creates a servant binding with the servant binding name <code class="computeroutput"><span class="string">"I_HelloWorld"</span></code>, as that is the
+          runtime identifier of the <code class="computeroutput"><span class="identifier">I_HelloWorld</span></code>
+          interface:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_HelloWorld</span><span class="special">,</span> <span class="string">"I_HelloWorld"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_V1</span><span class="special">(</span><span class="keyword">void</span><span class="special">,</span> <span class="identifier">Print</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_HelloWorld</span><span class="special">)</span>
+</pre>
+<p>
+        </p>
+<p>
+          The servant binding name can also be set explicitly:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">server</span><span class="special">.</span><span class="identifier">bind</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;(</span><span class="identifier">helloWorldImpl</span><span class="special">,</span> <span class="string">"CustomBindingName"</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          Each remote call from a client specifies a servant binding name, which
+          is used by the server to dispatch the remote call. The servant binding
+          name supplied by a <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code> defaults to the runtime name of
+          the RCF interface it is using. So the following client code:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          , will make a remote call to the servant object with the servant binding
+          name <code class="computeroutput"><span class="string">"I_HelloWorld"</span></code>.
+        </p>
+<p>
+          The client can also set the servant binding name explicitly:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">),</span> <span class="string">"CustomBindingName"</span> <span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          , to get the call dispatched to the nominated servant binding.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.Serverside.Configure.server_threading"></a><a class="link" href="Serverside.html#rcf_user_guide.Serverside.Configure.server_threading" title="Server threading">Server
+        threading</a>
+</h4></div></div></div>
+<p>
+          By default, a <code class="computeroutput"><span class="identifier">RcfServer</span></code>
+          will use a single thread to dispatch calls across all its transports. This
+          behavior can be modified by explicitly assigning a thread pool to the
+          <code class="computeroutput"><span class="identifier">RcfServer</span></code>:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ThreadPoolPtr</span> <span class="identifier">threadPoolPtr</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ThreadPool</span><span class="special">(</span><span class="number">1</span><span class="special">,</span> <span class="number">5</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">setThreadPool</span><span class="special">(</span><span class="identifier">threadPoolPtr</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ThreadPool</span></code> can be configured to use a
+          fixed number of threads, or a varying number of threads depending on server
+          load:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Thread pool with a fixed number of threads (5).
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ThreadPoolPtr</span> <span class="identifier">threadPoolPtr</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ThreadPool</span><span class="special">(</span><span class="number">5</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">setThreadPool</span><span class="special">(</span><span class="identifier">threadPoolPtr</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Thread pool with a dynamically varying number of threads (1-25).
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ThreadPoolPtr</span> <span class="identifier">threadPoolPtr</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ThreadPool</span><span class="special">(</span><span class="number">1</span><span class="special">,</span> <span class="number">25</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">setThreadPool</span><span class="special">(</span><span class="identifier">threadPoolPtr</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          A thread pool assigned to the <code class="computeroutput"><span class="identifier">RcfServer</span></code>
+          will be shared by all the transports of that <code class="computeroutput"><span class="identifier">RcfServer</span></code>.
+          It is also possible to assign thread pools to specific transports:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">;</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ThreadPoolPtr</span> <span class="identifier">threadPool1</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ThreadPool</span><span class="special">(</span><span class="number">1</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">addEndpoint</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">).</span><span class="identifier">setThreadPool</span><span class="special">(</span><span class="identifier">threadPool1</span><span class="special">);</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ThreadPoolPtr</span> <span class="identifier">threadPool2</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ThreadPool</span><span class="special">(</span><span class="number">1</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">addEndpoint</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50002</span><span class="special">)</span> <span class="special">).</span><span class="identifier">setThreadPool</span><span class="special">(</span><span class="identifier">threadPool2</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+</div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Serverside.Sessions"></a><a class="link" href="Serverside.html#rcf_user_guide.Serverside.Sessions" title="Server-side sessions"> Server-side sessions</a>
+</h3></div></div></div>
+<p>
+        You can use <code class="computeroutput"><span class="identifier">RcfSession</span></code> to
+        find out a number of things about the current client connection, including:
+      </p>
+<div class="itemizedlist"><ul type="disc"><li>
+            The transport being used:
+          </li></ul></div>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfSession</span> <span class="special">&amp;</span> <span class="identifier">session</span> <span class="special">=</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">getCurrentRcfSession</span><span class="special">();</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TransportType</span> <span class="identifier">transportType</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getTransportType</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+<div class="itemizedlist"><ul type="disc"><li>
+            The network address of the client:
+          </li></ul></div>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">const</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RemoteAddress</span> <span class="special">&amp;</span> <span class="identifier">clientAddress</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getClientAddress</span><span class="special">();</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">strClientAddress</span> <span class="special">=</span> <span class="identifier">clientAddress</span><span class="special">.</span><span class="identifier">string</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+<div class="itemizedlist"><ul type="disc"><li>
+            The current request header:
+          </li></ul></div>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RemoteCallRequest</span> <span class="identifier">request</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getRemoteCallRequest</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+<div class="itemizedlist"><ul type="disc"><li>
+            Any custom request data passed in by the client:
+          </li></ul></div>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">customRequestData</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getRequestUserData</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+<div class="itemizedlist"><ul type="disc"><li>
+            You can create, retrieve and delete session objects:
+          </li></ul></div>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">session</span><span class="special">.</span><span class="identifier">createSessionObject</span><span class="special">&lt;</span><span class="identifier">MySessionObj</span><span class="special">&gt;();</span>
+<span class="identifier">MySessionObj</span> <span class="special">&amp;</span> <span class="identifier">obj</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getSessionObject</span><span class="special">&lt;</span><span class="identifier">MySessionObj</span><span class="special">&gt;();</span>
+<span class="identifier">MySessionObj</span> <span class="special">*</span> <span class="identifier">pObj</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">querySessionObject</span><span class="special">&lt;</span><span class="identifier">MySessionObj</span><span class="special">&gt;();</span>
+<span class="identifier">session</span><span class="special">.</span><span class="identifier">deleteSessionObject</span><span class="special">&lt;</span><span class="identifier">MySessionObj</span><span class="special">&gt;();</span>
+</pre>
+<p>
+      </p>
+<div class="itemizedlist"><ul type="disc"><li>
+            How long the client has been connected:
+          </li></ul></div>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// When the connection was established, as reported by CRT time() function.
+</span><span class="identifier">time_t</span> <span class="identifier">connectedAt</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getConnectedAtTime</span><span class="special">();</span>
+
+<span class="comment">// Connection duration in seconds.
+</span><span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint32_t</span> <span class="identifier">connectionDurationS</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getConnectionDuration</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+<div class="itemizedlist"><ul type="disc"><li>
+            How many calls have been made on this connection:
+          </li></ul></div>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint32_t</span> <span class="identifier">callsMade</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getRemoteCallCount</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+<div class="itemizedlist"><ul type="disc"><li>
+            How many bytes have been sent and received on this connection:
+          </li></ul></div>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint64_t</span> <span class="identifier">totalBytesReceived</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getTotalBytesReceived</span><span class="special">();</span>
+<span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint64_t</span> <span class="identifier">totalBytesSent</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getTotalBytesSent</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2005 - 2015 Delta V Software</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="Clientside.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Serialization.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

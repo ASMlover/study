@@ -1,0 +1,820 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Transports</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="../index.html" title="RCF User Guide">
+<link rel="up" href="../index.html" title="RCF User Guide">
+<link rel="prev" href="Serialization.html" title="Serialization">
+<link rel="next" href="TransportProtocols.html" title="Transport Protocols">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="Serialization.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="TransportProtocols.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.Transports"></a><a class="link" href="Transports.html" title="Transports"> Transports</a>
+</h2></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="Transports.html#rcf_user_guide.Transports.Server"> Transport access</a></span></dt>
+<dt><span class="section"><a href="Transports.html#rcf_user_guide.Transports.Config"> Transport configuration</a></span></dt>
+<dt><span class="section"><a href="Transports.html#rcf_user_guide.Transports.Implementations"> Transport
+      implementations</a></span></dt>
+</dl></div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Transports.Server"></a><a class="link" href="Transports.html#rcf_user_guide.Transports.Server" title="Transport access"> Transport access</a>
+</h3></div></div></div>
+<p>
+        Server and client transports are responsible for the actual transmission
+        and reception of network messages. A RcfServer will have one or more server
+        transports, while a client will have a single client transport.
+      </p>
+<p>
+        To access the server transports of a <code class="computeroutput"><span class="identifier">RcfServer</span></code>,
+        you need to capture the return value of <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">addEndpoint</span><span class="special">()</span></code>:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">;</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ServerTransport</span> <span class="special">&amp;</span> <span class="identifier">serverTransportTcp</span> <span class="special">=</span> <span class="identifier">server</span><span class="special">.</span><span class="identifier">addEndpoint</span><span class="special">(</span> 
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ServerTransport</span> <span class="special">&amp;</span> <span class="identifier">serverTransportUdp</span> <span class="special">=</span> <span class="identifier">server</span><span class="special">.</span><span class="identifier">addEndpoint</span><span class="special">(</span> 
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">UdpEndpoint</span><span class="special">(</span><span class="number">50002</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+<p>
+        Alternatively, if the <code class="computeroutput"><span class="identifier">RcfServer</span></code>
+        only has a single server transport, you can access it by calling <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">getServerTransport</span><span class="special">()</span></code>:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ServerTransport</span> <span class="special">&amp;</span> <span class="identifier">serverTransport</span> <span class="special">=</span> <span class="identifier">server</span><span class="special">.</span><span class="identifier">getServerTransport</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+<p>
+        On the client side, the client transport is availablable through <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">getTransport</span><span class="special">()</span></code>:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ClientTransport</span> <span class="special">&amp;</span> <span class="identifier">clientTransport</span> <span class="special">=</span> <span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">getTransport</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Transports.Config"></a><a class="link" href="Transports.html#rcf_user_guide.Transports.Config" title="Transport configuration"> Transport configuration</a>
+</h3></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="Transports.html#rcf_user_guide.Transports.Config.MaxMessageLength">
+        Maximum incoming message lengths</a></span></dt>
+<dt><span class="section"><a href="Transports.html#rcf_user_guide.Transports.Config.ConnectionLimit">
+        Connection limits</a></span></dt>
+<dt><span class="section"><a href="Transports.html#rcf_user_guide.Transports.Config.automatic_ip_port_selection">Automatic
+        IP port selection</a></span></dt>
+<dt><span class="section"><a href="Transports.html#rcf_user_guide.Transports.Config.Access"> IP-based
+        access rules</a></span></dt>
+<dt><span class="section"><a href="Transports.html#rcf_user_guide.Transports.Config.IPv6"> IPv4/IPv6</a></span></dt>
+<dt><span class="section"><a href="Transports.html#rcf_user_guide.Transports.Config.Binding"> Local address
+        bindings for clients</a></span></dt>
+<dt><span class="section"><a href="Transports.html#rcf_user_guide.Transports.Config.socket_level_access">Socket
+        level access</a></span></dt>
+</dl></div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.Transports.Config.MaxMessageLength"></a><a class="link" href="Transports.html#rcf_user_guide.Transports.Config.MaxMessageLength" title="Maximum incoming message lengths">
+        Maximum incoming message lengths</a>
+</h4></div></div></div>
+<p>
+          For server-side transports, it is generally necessary to set an upper limit
+          on the size of incoming network messages. Without an upper limit, it is
+          possible for malformed requests to cause arbitrarily sized memory allocations
+          on the server.
+        </p>
+<p>
+          The maximum incoming message length setting of a RCF server transport defaults
+          to 1 Mb, and can be changed by calling <code class="computeroutput"><span class="identifier">I_ServerTransport</span><span class="special">::</span><span class="identifier">setMaxIncomingMessageLength</span><span class="special">()</span></code> :
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">0</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="comment">// Set max message length to 5 Mb.
+</span><span class="identifier">server</span><span class="special">.</span><span class="identifier">getServerTransport</span><span class="special">().</span><span class="identifier">setMaxIncomingMessageLength</span><span class="special">(</span><span class="number">5</span><span class="special">*</span><span class="number">1024</span><span class="special">*</span><span class="number">1024</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          Similarly, there is a maximum incoming message length setting for client
+          transports. It defaults to 1 Mb and can be changed by calling <code class="computeroutput"><span class="identifier">I_ClientTransport</span><span class="special">::</span><span class="identifier">setMaxIncomingMessageLength</span><span class="special">()</span></code>
+          :
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">123</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="comment">// Set max message length to 5 Mb.
+</span><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">getTransport</span><span class="special">().</span><span class="identifier">setMaxIncomingMessageLength</span><span class="special">(</span><span class="number">5</span><span class="special">*</span><span class="number">1024</span><span class="special">*</span><span class="number">1024</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          As client transports only receive network messages from a peer they have
+          connected to, the risk of malformed packets is not as great as for server
+          transports.
+        </p>
+<p>
+          It is possible to query a <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code> for the sizes of the latest request
+          and response messages sent:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Echo</span><span class="special">(</span><span class="string">"1234"</span><span class="special">);</span>
+
+<span class="comment">// Retrieve request and response size of the previous call.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ClientTransport</span> <span class="special">&amp;</span> <span class="identifier">transport</span> <span class="special">=</span> <span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">getTransport</span><span class="special">();</span>
+
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <span class="identifier">requestSize</span> <span class="special">=</span> <span class="identifier">transport</span><span class="special">.</span><span class="identifier">getLastRequestSize</span><span class="special">();</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <span class="identifier">responseSize</span> <span class="special">=</span> <span class="identifier">transport</span><span class="special">.</span><span class="identifier">getLastResponseSize</span><span class="special">();</span>
+</pre>
+<p>
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.Transports.Config.ConnectionLimit"></a><a class="link" href="Transports.html#rcf_user_guide.Transports.Config.ConnectionLimit" title="Connection limits">
+        Connection limits</a>
+</h4></div></div></div>
+<p>
+          To set the maximum number of simultaneous connections to a RCF server transport:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">0</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="comment">// Allow at most 100 clients to be connected at any time.
+</span><span class="identifier">server</span><span class="special">.</span><span class="identifier">getServerTransport</span><span class="special">().</span><span class="identifier">setConnectionLimit</span><span class="special">(</span><span class="number">100</span><span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          This setting is not applicable to the UDP server transport, as the UDP
+          protocol doesn't support a connection concept.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.Transports.Config.automatic_ip_port_selection"></a><a class="link" href="Transports.html#rcf_user_guide.Transports.Config.automatic_ip_port_selection" title="Automatic IP port selection">Automatic
+        IP port selection</a>
+</h4></div></div></div>
+<p>
+          For IP-based server transports, you can allow the local system to assign
+          a port number automatically, by specifying 0 as the port number. When the
+          server starts, the system will find a free port and assign it to the server.
+          The port number can subseqently be retrieved through <code class="computeroutput"><span class="identifier">I_IpServerTransport</span><span class="special">::</span><span class="identifier">getPort</span><span class="special">()</span></code>:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">0</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="keyword">int</span> <span class="identifier">port</span> <span class="special">=</span> <span class="identifier">server</span><span class="special">.</span><span class="identifier">getIpServerTransport</span><span class="special">().</span><span class="identifier">getPort</span><span class="special">();</span>
+<span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">((</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">)</span> <span class="special">));</span>
+</pre>
+<p>
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.Transports.Config.Access"></a><a class="link" href="Transports.html#rcf_user_guide.Transports.Config.Access" title="IP-based access rules"> IP-based
+        access rules</a>
+</h4></div></div></div>
+<p>
+          For IP-based server transports, client access can be allowed or denied,
+          based on the IP addresses of the clients.
+        </p>
+<p>
+          To configure IP rules for allowing clients:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">0</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpServerTransport</span> <span class="special">&amp;</span> <span class="identifier">ipTransport</span> <span class="special">=</span> 
+    <span class="keyword">dynamic_cast</span><span class="special">&lt;</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpServerTransport</span> <span class="special">&amp;&gt;(</span><span class="identifier">server</span><span class="special">.</span><span class="identifier">getServerTransport</span><span class="special">());</span>
+
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpRule</span><span class="special">&gt;</span> <span class="identifier">rules</span><span class="special">;</span>
+
+<span class="comment">// Match 11.22.33.* (24 significant bits).
+</span><span class="identifier">rules</span><span class="special">.</span><span class="identifier">push_back</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpRule</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpAddress</span><span class="special">(</span><span class="string">"11.22.33.0"</span><span class="special">),</span> <span class="number">24</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">ipTransport</span><span class="special">.</span><span class="identifier">setAllowIps</span><span class="special">(</span><span class="identifier">rules</span><span class="special">);</span>
+
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="comment">// Access will be granted to clients connecting from IP addresses matching 11.22.33.* .
+</span><span class="comment">// All other clients will be denied.
+</span></pre>
+<p>
+        </p>
+<p>
+          To configure IP rules for denying clients:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">0</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpServerTransport</span> <span class="special">&amp;</span> <span class="identifier">ipTransport</span> <span class="special">=</span> 
+    <span class="keyword">dynamic_cast</span><span class="special">&lt;</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpServerTransport</span> <span class="special">&amp;&gt;(</span><span class="identifier">server</span><span class="special">.</span><span class="identifier">getServerTransport</span><span class="special">());</span>
+
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpRule</span><span class="special">&gt;</span> <span class="identifier">rules</span><span class="special">;</span>
+
+<span class="comment">// Match 11.*.*.* (8 significant bits).
+</span><span class="identifier">rules</span><span class="special">.</span><span class="identifier">push_back</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpRule</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpAddress</span><span class="special">(</span><span class="string">"11.0.0.0"</span><span class="special">),</span> <span class="number">8</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="comment">// Match 12.22.*.* (16 significant bits).
+</span><span class="identifier">rules</span><span class="special">.</span><span class="identifier">push_back</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpRule</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpAddress</span><span class="special">(</span><span class="string">"12.22.0.0"</span><span class="special">),</span> <span class="number">16</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">ipTransport</span><span class="special">.</span><span class="identifier">setDenyIps</span><span class="special">(</span><span class="identifier">rules</span><span class="special">);</span>
+
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="comment">// Access will be denied to clients connecting from IP addresses matching 11.*.*.*  and 12.22.*.* .
+</span><span class="comment">// All other clients will be allowed.
+</span></pre>
+<p>
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.Transports.Config.IPv6"></a><a class="link" href="Transports.html#rcf_user_guide.Transports.Config.IPv6" title="IPv4/IPv6"> IPv4/IPv6</a>
+</h4></div></div></div>
+<p>
+          RCF supports both IPv4 and IPv6. To enable IPv6 support in RCF, <code class="computeroutput"><span class="identifier">RCF_USE_IPV6</span></code> must be defined (see <a class="link" href="AppendixBuilding.html" title="Appendix - Building RCF">Building</a>).
+        </p>
+<p>
+          For example, to run a server and client over a loopback IPv4 connection:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Specifying an explicit IPv4 address to bind to.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="string">"127.0.0.1"</span><span class="special">,</span> <span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="comment">// Specifying an explicit IPv4 address to bind to.
+</span><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="string">"127.0.0.1"</span><span class="special">,</span> <span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          To run a server and client over a loopback IPv6 connection instead, specify
+          <code class="computeroutput"><span class="special">::</span><span class="number">1</span></code>
+          instead of <code class="computeroutput"><span class="number">127.0</span><span class="special">.</span><span class="number">0.1</span></code>:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Specifying an explicit IPv6 address to bind to.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="string">"::1"</span><span class="special">,</span> <span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="comment">// Specifying an explicit IPv6 address to bind to.
+</span><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="string">"::1"</span><span class="special">,</span> <span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          RCF uses the POSIX <code class="computeroutput"><span class="identifier">getaddrinfo</span><span class="special">()</span></code> function to resolve IP addresses. <code class="computeroutput"><span class="identifier">getaddrinfo</span><span class="special">()</span></code>
+          can return either IPv4 or IPv6 addresses, depending on the configuration
+          of the local system and network. So the following client will use either
+          IPv4 or IPv6, depending on how the local system and network have been configured:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Will resolve to either IPv4 or IPv6, depending on what the system 
+</span><span class="comment">// resolves machine.domain to.
+</span>
+<span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="string">"machine.domain"</span><span class="special">,</span> <span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          You can force IPv4 or IPv6 resolution by using the <code class="computeroutput"><span class="identifier">IpAddressV4</span></code>
+          and <code class="computeroutput"><span class="identifier">IpAddressV6</span></code> classes:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Force IPv4 address resolution.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpAddressV4</span> <span class="identifier">addr_4</span><span class="special">(</span><span class="string">"machine.domain"</span><span class="special">,</span> <span class="number">50001</span><span class="special">);</span>
+<span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client_4</span><span class="special">((</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">addr_4</span><span class="special">)</span> <span class="special">));</span>
+
+<span class="comment">// Force IPv6 address resolution.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpAddressV6</span> <span class="identifier">addr_6</span><span class="special">(</span><span class="string">"machine.domain"</span><span class="special">,</span> <span class="number">50001</span><span class="special">);</span>
+<span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client_6</span><span class="special">((</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">addr_6</span><span class="special">)</span> <span class="special">));</span>
+</pre>
+<p>
+        </p>
+<p>
+          On machines with dual IPv4/IPv6 stacks, you will probably want your server
+          to listen on both IPv4 and IPv6 addresses. You can do this portably by
+          listening on both <code class="computeroutput"><span class="number">0.0</span><span class="special">.</span><span class="number">0.0</span></code> and <code class="computeroutput"><span class="special">::</span><span class="number">0</span></code>:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Listen on port 50001, on both IPv4 and IPv6.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">;</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">addEndpoint</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="string">"0.0.0.0"</span><span class="special">,</span> <span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">addEndpoint</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="string">"::0"</span><span class="special">,</span> <span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+</pre>
+<p>
+        </p>
+<p>
+          On some platforms, it is sufficient to listen only on <code class="computeroutput"><span class="special">::</span><span class="number">0</span></code>, as the system will translate incoming
+          IPv4 connections into IPv6 connections with a special class of IPv6 addresses.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.Transports.Config.Binding"></a><a class="link" href="Transports.html#rcf_user_guide.Transports.Config.Binding" title="Local address bindings for clients"> Local address
+        bindings for clients</a>
+</h4></div></div></div>
+<p>
+          When a <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code>
+          connects to a server over an IP-based transport, the default behavior is
+          to allow the system to decide which local network interface and port to
+          use. In some circumstances, you may want to explicitly set the local network
+          interface a client should bind to. This is done by calling <code class="computeroutput"><span class="identifier">I_IpServerTransport</span><span class="special">::</span><span class="identifier">setLocalIp</span><span class="special">()</span></code>,
+          before connecting:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="string">"127.0.0.1"</span><span class="special">,</span> <span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpClientTransport</span> <span class="special">&amp;</span> <span class="identifier">ipTransport</span> <span class="special">=</span> 
+    <span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">getIpTransport</span><span class="special">();</span>
+
+<span class="comment">// Force client to bind to a particular local network interface (127.0.0.1).
+</span><span class="identifier">ipTransport</span><span class="special">.</span><span class="identifier">setLocalIp</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpAddress</span><span class="special">(</span><span class="string">"127.0.0.1"</span><span class="special">,</span> <span class="number">0</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">connect</span><span class="special">();</span>
+</pre>
+<p>
+        </p>
+<p>
+          After a <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code>
+          has connected, you can determine which local network interface and port
+          it is bound to, by calling <code class="computeroutput"><span class="identifier">I_IpServerTransport</span><span class="special">::</span><span class="identifier">getAssignedLocalIp</span><span class="special">()</span></code>:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="string">"127.0.0.1"</span><span class="special">,</span> <span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpClientTransport</span> <span class="special">&amp;</span> <span class="identifier">ipTransport</span> <span class="special">=</span> 
+    <span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">getIpTransport</span><span class="special">();</span>
+
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">connect</span><span class="special">();</span>
+
+<span class="comment">// Find out which local network interface the client is bound to.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpAddress</span> <span class="identifier">localIp</span> <span class="special">=</span> <span class="identifier">ipTransport</span><span class="special">.</span><span class="identifier">getAssignedLocalIp</span><span class="special">();</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">localInterface</span> <span class="special">=</span> <span class="identifier">localIp</span><span class="special">.</span><span class="identifier">getIp</span><span class="special">();</span>
+<span class="keyword">int</span> <span class="identifier">localPort</span> <span class="special">=</span> <span class="identifier">localIp</span><span class="special">.</span><span class="identifier">getPort</span><span class="special">();</span>
+</pre>
+<p>
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.Transports.Config.socket_level_access"></a><a class="link" href="Transports.html#rcf_user_guide.Transports.Config.socket_level_access" title="Socket level access">Socket
+        level access</a>
+</h4></div></div></div>
+<p>
+          RCF provides access to the underlying OS primitives (sockets, handles)
+          of client and server transports. For example:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Client-side.
+</span>
+<span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="string">"127.0.0.1"</span><span class="special">,</span> <span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">connect</span><span class="special">();</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpClientTransport</span> <span class="special">&amp;</span> <span class="identifier">tcpClientTransport</span> <span class="special">=</span> 
+    <span class="keyword">dynamic_cast</span><span class="special">&lt;</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpClientTransport</span> <span class="special">&amp;&gt;(</span> 
+        <span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">getTransport</span><span class="special">()</span> <span class="special">);</span>
+
+<span class="comment">// Obtain client socket handle.
+</span><span class="keyword">int</span> <span class="identifier">sock</span> <span class="special">=</span> <span class="identifier">tcpClientTransport</span><span class="special">.</span><span class="identifier">getNativeHandle</span><span class="special">();</span>
+
+</pre>
+<p>
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Server-side.
+</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">NetworkSession</span> <span class="special">&amp;</span> <span class="identifier">networkSession</span> <span class="special">=</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">getCurrentRcfSession</span><span class="special">().</span><span class="identifier">getNetworkSession</span><span class="special">();</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpNetworkSession</span> <span class="special">&amp;</span> <span class="identifier">tcpNetworkSession</span> <span class="special">=</span> 
+    <span class="keyword">dynamic_cast</span><span class="special">&lt;</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpNetworkSession</span> <span class="special">&amp;&gt;(</span><span class="identifier">networkSession</span><span class="special">);</span>
+
+<span class="comment">// Obtain server socket handle.
+</span><span class="keyword">int</span> <span class="identifier">sock</span> <span class="special">=</span> <span class="identifier">tcpNetworkSession</span><span class="special">.</span><span class="identifier">getNativeHandle</span><span class="special">();</span>
+
+</pre>
+<p>
+        </p>
+<p>
+          This can be useful if you need to set custom socket options, for instance.
+        </p>
+</div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Transports.Implementations"></a><a class="link" href="Transports.html#rcf_user_guide.Transports.Implementations" title="Transport implementations"> Transport
+      implementations</a>
+</h3></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="Transports.html#rcf_user_guide.Transports.Implementations.Tcp"> TCP</a></span></dt>
+<dt><span class="section"><a href="Transports.html#rcf_user_guide.Transports.Implementations.Udp"> UDP</a></span></dt>
+<dt><span class="section"><a href="Transports.html#rcf_user_guide.Transports.Implementations.Win32Pipes">
+        Win32 named pipes</a></span></dt>
+<dt><span class="section"><a href="Transports.html#rcf_user_guide.Transports.Implementations.LocalSockets">
+        UNIX domain sockets</a></span></dt>
+</dl></div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.Transports.Implementations.Tcp"></a><a class="link" href="Transports.html#rcf_user_guide.Transports.Implementations.Tcp" title="TCP"> TCP</a>
+</h4></div></div></div>
+<p>
+          TCP endpoints are represented in RCF by the <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span></code>
+          class, constructed from an IP address and a port number.
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="string">"0.0.0.0"</span><span class="special">,</span> <span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="string">"127.0.0.1"</span><span class="special">,</span> <span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          Server transports interpret the IP address as the local network interface
+          to listen on. So for example <code class="computeroutput"><span class="string">"0.0.0.0"</span></code>
+          should be specified in order to listen on all available IPv4 network interfaces,
+          and <code class="computeroutput"><span class="string">"127.0.0.1"</span></code> should
+          be specified to listen only on the loopback IPv4 interface. If no IP address
+          is specified, <code class="computeroutput"><span class="string">"127.0.0.1"</span></code>
+          is assumed.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.Transports.Implementations.Udp"></a><a class="link" href="Transports.html#rcf_user_guide.Transports.Implementations.Udp" title="UDP"> UDP</a>
+</h4></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="Transports.html#rcf_user_guide.Transports.Implementations.Udp.Multicast">
+          Multicasting</a></span></dt>
+<dt><span class="section"><a href="Transports.html#rcf_user_guide.Transports.Implementations.Udp.Broadcast">
+          Broadcasting</a></span></dt>
+<dt><span class="section"><a href="Transports.html#rcf_user_guide.Transports.Implementations.Udp.AddressSharing">
+          Address sharing</a></span></dt>
+<dt><span class="section"><a href="Transports.html#rcf_user_guide.Transports.Implementations.Udp.ServerDiscovery">
+          Server discovery</a></span></dt>
+</dl></div>
+<p>
+          Like <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span></code>, <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">UdpEndpoint</span></code>
+          is constructed from an IP address and a port.
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">UdpEndpoint</span><span class="special">(</span><span class="string">"0.0.0.0"</span><span class="special">,</span> <span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">UdpEndpoint</span><span class="special">(</span><span class="string">"127.0.0.1"</span><span class="special">,</span> <span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          However, <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">UdpEndpoint</span></code> also contains some extra
+          functionality, to deal with multicasting and broadcasting.
+        </p>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h5 class="title">
+<a name="rcf_user_guide.Transports.Implementations.Udp.Multicast"></a><a class="link" href="Transports.html#rcf_user_guide.Transports.Implementations.Udp.Multicast" title="Multicasting">
+          Multicasting</a>
+</h5></div></div></div>
+<p>
+            <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">UdpEndpoint</span></code> can be configured to listen
+            on a multicast IP address:
+          </p>
+<p>
+            
+</p>
+<pre class="programlisting"><span class="comment">// Listen on multicast address 232.5.5.5, on port 50001, on all network interfaces.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> 
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">UdpEndpoint</span><span class="special">(</span><span class="string">"0.0.0.0"</span><span class="special">,</span> <span class="number">50001</span><span class="special">).</span><span class="identifier">listenOnMulticast</span><span class="special">(</span><span class="string">"232.5.5.5"</span><span class="special">));</span>
+
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+</pre>
+<p>
+          </p>
+<p>
+            Note that the server still needs to specify a local network interface
+            to listen on.
+          </p>
+<p>
+            To send multicast messages, specify a multicast IP address and port when
+            creating the client:
+          </p>
+<p>
+            
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">UdpEndpoint</span><span class="special">(</span><span class="string">"232.5.5.5"</span><span class="special">,</span> <span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Echo</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Oneway</span><span class="special">,</span> <span class="string">"ping"</span><span class="special">);</span>
+</pre>
+<p>
+          </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h5 class="title">
+<a name="rcf_user_guide.Transports.Implementations.Udp.Broadcast"></a><a class="link" href="Transports.html#rcf_user_guide.Transports.Implementations.Udp.Broadcast" title="Broadcasting">
+          Broadcasting</a>
+</h5></div></div></div>
+<p>
+            To send broadcast messages, specify a broadcast IP address and port:
+          </p>
+<p>
+            
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">UdpEndpoint</span><span class="special">(</span><span class="string">"255.255.255.255"</span><span class="special">,</span> <span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Echo</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Oneway</span><span class="special">,</span> <span class="string">"ping"</span><span class="special">);</span>
+</pre>
+<p>
+          </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h5 class="title">
+<a name="rcf_user_guide.Transports.Implementations.Udp.AddressSharing"></a><a class="link" href="Transports.html#rcf_user_guide.Transports.Implementations.Udp.AddressSharing" title="Address sharing">
+          Address sharing</a>
+</h5></div></div></div>
+<p>
+            RCF's UDP server transport can be configured to share its address binding,
+            so that multiple <code class="computeroutput"><span class="identifier">RcfServer</span></code>'s
+            can listen on the same port of the same interface. This is enabled by
+            default when listening on multicast addresses, but can also be enabled
+            when listening on non-multicast addresses. This can be useful if multiple
+            processes on the same machine need to listen to the same broadcasts:
+          </p>
+<p>
+            
+</p>
+<pre class="programlisting"><span class="identifier">EchoImpl</span> <span class="identifier">echoImpl</span><span class="special">;</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server1</span><span class="special">(</span> 
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">UdpEndpoint</span><span class="special">(</span><span class="string">"0.0.0.0"</span><span class="special">,</span> <span class="number">50001</span><span class="special">).</span><span class="identifier">enableSharedAddressBinding</span><span class="special">()</span> <span class="special">);</span>
+
+<span class="identifier">server1</span><span class="special">.</span><span class="identifier">bind</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;(</span><span class="identifier">echoImpl</span><span class="special">);</span>
+<span class="identifier">server1</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server2</span><span class="special">(</span> 
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">UdpEndpoint</span><span class="special">(</span><span class="string">"0.0.0.0"</span><span class="special">,</span> <span class="number">50001</span><span class="special">).</span><span class="identifier">enableSharedAddressBinding</span><span class="special">());</span>
+
+<span class="identifier">server2</span><span class="special">.</span><span class="identifier">bind</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;(</span><span class="identifier">echoImpl</span><span class="special">);</span>
+<span class="identifier">server2</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="comment">// This broadcast message will be received by both servers.
+</span><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">UdpEndpoint</span><span class="special">(</span><span class="string">"255.255.255.255"</span><span class="special">,</span> <span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Echo</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Oneway</span><span class="special">,</span> <span class="string">"ping"</span><span class="special">);</span>
+
+</pre>
+<p>
+          </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h5 class="title">
+<a name="rcf_user_guide.Transports.Implementations.Udp.ServerDiscovery"></a><a class="link" href="Transports.html#rcf_user_guide.Transports.Implementations.Udp.ServerDiscovery" title="Server discovery">
+          Server discovery</a>
+</h5></div></div></div>
+<p>
+            In situations where servers are started on dynamically assigned ports,
+            multicasting and broadcasting can be a useful means of communicating
+            server IP addresses and ports to clients. For example:
+          </p>
+<p>
+            
+</p>
+<pre class="programlisting"><span class="comment">// Interface for broadcasting port number of a TCP server.
+</span><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Broadcast</span><span class="special">,</span> <span class="string">"I_Broadcast"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_V1</span><span class="special">(</span><span class="keyword">void</span><span class="special">,</span> <span class="identifier">ServerIsRunningOnPort</span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Broadcast</span><span class="special">)</span>
+
+<span class="comment">// Implementation class for receiving I_Broadcast messages.
+</span><span class="keyword">class</span> <span class="identifier">BroadcastImpl</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">BroadcastImpl</span><span class="special">()</span> <span class="special">:</span> <span class="identifier">mPort</span><span class="special">()</span>
+    <span class="special">{}</span>
+    <span class="keyword">void</span> <span class="identifier">ServerIsRunningOnPort</span><span class="special">(</span><span class="keyword">int</span> <span class="identifier">port</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">mPort</span> <span class="special">=</span> <span class="identifier">port</span><span class="special">;</span>
+    <span class="special">}</span>
+    <span class="keyword">int</span> <span class="identifier">mPort</span><span class="special">;</span>
+<span class="special">};</span>
+
+<span class="comment">// A server thread runs this function, to broadcast the server location once 
+</span><span class="comment">// per second.
+</span><span class="keyword">void</span> <span class="identifier">broadcastThread</span><span class="special">(</span><span class="keyword">int</span> <span class="identifier">port</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span><span class="identifier">multicastIp</span><span class="special">,</span> <span class="keyword">int</span> <span class="identifier">multicastPort</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Broadcast</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> 
+        <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">UdpEndpoint</span><span class="special">(</span><span class="identifier">multicastIp</span><span class="special">,</span> <span class="identifier">multicastPort</span><span class="special">)</span> <span class="special">);</span>
+
+    <span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setRemoteCallSemantics</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Oneway</span><span class="special">);</span>
+
+    <span class="comment">// Broadcast 1 message per second.
+</span>    <span class="keyword">while</span> <span class="special">(</span><span class="keyword">true</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">client</span><span class="special">.</span><span class="identifier">ServerIsRunningOnPort</span><span class="special">(</span><span class="identifier">port</span><span class="special">);</span>
+        <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">sleepMs</span><span class="special">(</span><span class="number">1000</span><span class="special">);</span>
+    <span class="special">}</span>
+<span class="special">}</span>
+</pre>
+<p>
+          </p>
+<p>
+            
+</p>
+<pre class="programlisting"><span class="comment">// ***** Server side ****
+</span>
+<span class="comment">// Start a server on a dynamically assigned port.
+</span><span class="identifier">EchoImpl</span> <span class="identifier">echoImpl</span><span class="special">;</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">0</span><span class="special">));</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">bind</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;(</span><span class="identifier">echoImpl</span><span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="comment">// Retrieve the port number.
+</span><span class="keyword">int</span> <span class="identifier">port</span> <span class="special">=</span> <span class="identifier">server</span><span class="special">.</span><span class="identifier">getIpServerTransport</span><span class="special">().</span><span class="identifier">getPort</span><span class="special">();</span>        
+
+<span class="comment">// Start broadcasting the port number.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ThreadPtr</span> <span class="identifier">broadcastThreadPtr</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Thread</span><span class="special">(</span> 
+    <span class="identifier">boost</span><span class="special">::</span><span class="identifier">bind</span><span class="special">(&amp;</span><span class="identifier">broadcastThread</span><span class="special">,</span> <span class="identifier">port</span><span class="special">,</span> <span class="string">"232.5.5.5"</span><span class="special">,</span> <span class="number">50001</span><span class="special">)));</span>
+
+<span class="comment">// ***** Client side ****
+</span>
+<span class="comment">// Clients will listen for the broadcasts before doing anything else.
+</span><span class="identifier">BroadcastImpl</span> <span class="identifier">broadcastImpl</span><span class="special">;</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">clientSideBroadcastListener</span><span class="special">(</span> 
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">UdpEndpoint</span><span class="special">(</span><span class="string">"0.0.0.0"</span><span class="special">,</span> <span class="number">50001</span><span class="special">).</span><span class="identifier">listenOnMulticast</span><span class="special">(</span><span class="string">"232.5.5.5"</span><span class="special">));</span>
+
+<span class="identifier">clientSideBroadcastListener</span><span class="special">.</span><span class="identifier">bind</span><span class="special">&lt;</span><span class="identifier">I_Broadcast</span><span class="special">&gt;(</span><span class="identifier">broadcastImpl</span><span class="special">);</span>
+<span class="identifier">clientSideBroadcastListener</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="comment">// Wait for a broadcast message.
+</span><span class="keyword">while</span> <span class="special">(!</span><span class="identifier">broadcastImpl</span><span class="special">.</span><span class="identifier">mPort</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">sleepMs</span><span class="special">(</span><span class="number">1000</span><span class="special">);</span>
+<span class="special">}</span>
+
+<span class="comment">// Once the clients know the port number, they can connect.
+</span><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">broadcastImpl</span><span class="special">.</span><span class="identifier">mPort</span><span class="special">));</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Echo</span><span class="special">(</span><span class="string">"asdf"</span><span class="special">);</span>
+
+</pre>
+<p>
+          </p>
+<p>
+            Note that here we are actually using a multicast address to broadcast
+            information to clients. If multicasting had been unavailable on this
+            particular network, we could also have used an IP broadcast address instead
+            of an IP multicast address.
+          </p>
+</div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.Transports.Implementations.Win32Pipes"></a><a class="link" href="Transports.html#rcf_user_guide.Transports.Implementations.Win32Pipes" title="Win32 named pipes">
+        Win32 named pipes</a>
+</h4></div></div></div>
+<p>
+          RCF supports Win32 named pipe transports. <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Win32NamedPipeEndpoint</span></code>
+          takes one constructor parameter, which is the name of the named pipe, with
+          or without the leading <code class="computeroutput"><span class="special">\\.\</span><span class="identifier">pipe</span><span class="special">\</span></code>
+          prefix.
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Win32NamedPipeEndpoint</span><span class="special">(</span><span class="string">"MyPipe"</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Win32NamedPipeEndpoint</span><span class="special">(</span><span class="string">"MyPipe"</span><span class="special">)</span> <span class="special">);</span>
+</pre>
+<p>
+        </p>
+<p>
+          An advantage of using Win32 named pipes, is that they allow easy authentication
+          of clients. A server using a Win32 named pipe server transport can authenticate
+          its clients through the <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Win32NamedPipeImpersonator</span></code>
+          class, which uses the Windows API function <code class="computeroutput"><span class="identifier">ImpersonateNamedPipeClient</span><span class="special">()</span></code> to impersonate the client:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">,</span> <span class="string">"I_Echo"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span><span class="special">,</span> <span class="identifier">Echo</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">)</span>
+
+<span class="keyword">class</span> <span class="identifier">EchoImpl</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">Echo</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> <span class="identifier">s</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="comment">// Impersonate client.
+</span>        <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Win32NamedPipeImpersonator</span> <span class="identifier">impersonator</span><span class="special">;</span>
+        <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Client user name: "</span> <span class="special">&lt;&lt;</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">getMyUserName</span><span class="special">();</span>
+        <span class="keyword">return</span> <span class="identifier">s</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">};</span>
+</pre>
+<p>
+        </p>
+<p>
+          If we had used a TCP connection to <code class="computeroutput"><span class="number">127.0</span><span class="special">.</span><span class="number">0.1</span></code> instead,
+          we would have needed to enable Kerberos or NTLM authentication to securely
+          determine the clients user name (see <a class="link" href="TransportProtocols.html" title="Transport Protocols">Transport
+          protocols</a>).
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.Transports.Implementations.LocalSockets"></a><a class="link" href="Transports.html#rcf_user_guide.Transports.Implementations.LocalSockets" title="UNIX domain sockets">
+        UNIX domain sockets</a>
+</h4></div></div></div>
+<p>
+          UNIX domain sockets are the UNIX analogue of Win32 named pipes, and allow
+          efficient communication between servers and clients on the same machine.
+          <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">UnixLocalEndpoint</span></code> takes one parameter,
+          which is the name of the UNIX domain socket. The name must be a valid filesystem
+          path. For servers, the program must have sufficient privilege to create
+          the given path, and the file must not already exist. For clients, the program
+          must have sufficient privilege to access the given path.
+        </p>
+<p>
+          Here is a simple example:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">UnixLocalEndpoint</span><span class="special">(</span><span class="string">"/home/xyz/MySocket"</span><span class="special">));</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">UnixLocalEndpoint</span><span class="special">(</span><span class="string">"/home/xyz/MySocket"</span><span class="special">));</span>
+</pre>
+<p>
+        </p>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2005 - 2015 Delta V Software</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="Serialization.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="TransportProtocols.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

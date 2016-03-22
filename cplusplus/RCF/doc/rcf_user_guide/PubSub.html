@@ -1,0 +1,250 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Publish/Subscribe</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="../index.html" title="RCF User Guide">
+<link rel="up" href="../index.html" title="RCF User Guide">
+<link rel="prev" href="AsyncRemoteCalls.html" title="Asynchronous Remote Calls">
+<link rel="next" href="CallbackConn.html" title="Callback Connections">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="AsyncRemoteCalls.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="CallbackConn.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.PubSub"></a><a class="link" href="PubSub.html" title="Publish/Subscribe"> Publish/Subscribe</a>
+</h2></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="PubSub.html#rcf_user_guide.PubSub.publishers">Publishers</a></span></dt>
+<dt><span class="section"><a href="PubSub.html#rcf_user_guide.PubSub.subscribers">Subscribers</a></span></dt>
+<dt><span class="section"><a href="PubSub.html#rcf_user_guide.PubSub.access_control">Access control</a></span></dt>
+</dl></div>
+<p>
+      RCF provides a built in publish/subscribe implementation. Publishers can publish
+      remote calls to a group of peer components (subscribers). Publishing servers
+      can publish on any number of topics, and subscribers can pick which topics
+      to subscribe to.
+    </p>
+<p>
+      Publish/subscribe can be used in the presence of firewalls and NAT's. The only
+      network topology requirement is that the subscriber must be able to initiate
+      a network connection to the publisher. Publishers will never attempt to establish
+      network connections to their subscribers.
+    </p>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.PubSub.publishers"></a><a class="link" href="PubSub.html#rcf_user_guide.PubSub.publishers" title="Publishers">Publishers</a>
+</h3></div></div></div>
+<p>
+        To create a publisher, use <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">createPublisher</span><span class="special">&lt;&gt;()</span></code>:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">pubServer</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">pubServer</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="keyword">typedef</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Publisher</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span> <span class="identifier">HelloWorldPublisher</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">shared_ptr</span><span class="special">&lt;</span> <span class="identifier">HelloWorldPublisher</span> <span class="special">&gt;</span> <span class="identifier">HelloWorldPublisherPtr</span><span class="special">;</span>
+<span class="identifier">HelloWorldPublisherPtr</span> <span class="identifier">publisherPtr</span> <span class="special">=</span> <span class="identifier">pubServer</span><span class="special">.</span><span class="identifier">createPublisher</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;();</span>
+</pre>
+<p>
+      </p>
+<p>
+        This will create a publisher with a default topic name. The default topic
+        name is the runtime name of the RCF interface passed to <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">createPublisher</span><span class="special">&lt;&gt;()</span></code> (in this case <code class="computeroutput"><span class="string">"I_HelloWorld"</span></code>).
+      </p>
+<p>
+        The topic name can also be set manually. For example, to create two distinct
+        publishers, using the same RCF interface:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">PublisherParms</span> <span class="identifier">pubParms</span><span class="special">;</span>
+<span class="identifier">pubParms</span><span class="special">.</span><span class="identifier">setTopicName</span><span class="special">(</span><span class="string">"HelloWorld_Topic_1"</span><span class="special">);</span>
+<span class="identifier">HelloWorldPublisherPtr</span> <span class="identifier">publisher1Ptr</span> <span class="special">=</span> <span class="identifier">pubServer</span><span class="special">.</span><span class="identifier">createPublisher</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;(</span><span class="identifier">pubParms</span><span class="special">);</span>
+
+<span class="identifier">pubParms</span><span class="special">.</span><span class="identifier">setTopicName</span><span class="special">(</span><span class="string">"HelloWorld_Topic_2"</span><span class="special">);</span>
+<span class="identifier">HelloWorldPublisherPtr</span> <span class="identifier">publisher2Ptr</span> <span class="special">=</span> <span class="identifier">pubServer</span><span class="special">.</span><span class="identifier">createPublisher</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;(</span><span class="identifier">pubParms</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        The <code class="computeroutput"><span class="identifier">Publisher</span><span class="special">&lt;&gt;</span></code>
+        object returned by <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">createPublisher</span><span class="special">&lt;&gt;()</span></code> is used to publish remote calls.
+        Published remote calls always have one-way semantics, and are received by
+        all subscribers currently subscribing to that publishing topic:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">publisherPtr</span><span class="special">-&gt;</span><span class="identifier">publish</span><span class="special">().</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"First published message."</span><span class="special">);</span>
+<span class="identifier">publisherPtr</span><span class="special">-&gt;</span><span class="identifier">publish</span><span class="special">().</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Second published message."</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        The publishing topic is closed, and all of its subscribers disconnected,
+        when the <code class="computeroutput"><span class="identifier">Publisher</span><span class="special">&lt;&gt;</span></code>
+        object is destroyed, or when <code class="computeroutput"><span class="identifier">Publisher</span><span class="special">&lt;&gt;::</span><span class="identifier">close</span><span class="special">()</span></code> is called.
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// Close the publishing topic. All subscribers will be disconnected.
+</span><span class="identifier">publisherPtr</span><span class="special">-&gt;</span><span class="identifier">close</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.PubSub.subscribers"></a><a class="link" href="PubSub.html#rcf_user_guide.PubSub.subscribers" title="Subscribers">Subscribers</a>
+</h3></div></div></div>
+<p>
+        To subscribe to a publisher, use <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">createSubscription</span><span class="special">&lt;&gt;()</span></code>:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">subServer</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(-</span><span class="number">1</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">subServer</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="identifier">HelloWorldImpl</span> <span class="identifier">helloWorldImpl</span><span class="special">;</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">SubscriptionParms</span> <span class="identifier">subParms</span><span class="special">;</span>
+<span class="identifier">subParms</span><span class="special">.</span><span class="identifier">setPublisherEndpoint</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">SubscriptionPtr</span> <span class="identifier">subscriptionPtr</span> <span class="special">=</span> <span class="identifier">subServer</span><span class="special">.</span><span class="identifier">createSubscription</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;(</span>
+    <span class="identifier">helloWorldImpl</span><span class="special">,</span> 
+    <span class="identifier">subParms</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        The topic name defaults to the runtime name of the RCF interface (in this
+        case <code class="computeroutput"><span class="string">"I_HelloWorld"</span></code>).
+        The topic name can also be specified manually:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">HelloWorldImpl</span> <span class="identifier">helloWorldImpl</span><span class="special">;</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">SubscriptionParms</span> <span class="identifier">subParms</span><span class="special">;</span>
+<span class="identifier">subParms</span><span class="special">.</span><span class="identifier">setPublisherEndpoint</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">subParms</span><span class="special">.</span><span class="identifier">setTopicName</span><span class="special">(</span><span class="string">"HelloWorld_Topic1"</span><span class="special">);</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">SubscriptionPtr</span> <span class="identifier">subscription1Ptr</span> <span class="special">=</span> <span class="identifier">subServer</span><span class="special">.</span><span class="identifier">createSubscription</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;(</span>
+    <span class="identifier">helloWorldImpl</span><span class="special">,</span> 
+    <span class="identifier">subParms</span><span class="special">);</span>
+
+<span class="identifier">subParms</span><span class="special">.</span><span class="identifier">setTopicName</span><span class="special">(</span><span class="string">"HelloWorld_Topic2"</span><span class="special">);</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">SubscriptionPtr</span> <span class="identifier">subscription2Ptr</span> <span class="special">=</span> <span class="identifier">subServer</span><span class="special">.</span><span class="identifier">createSubscription</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;(</span>
+    <span class="identifier">helloWorldImpl</span><span class="special">,</span>
+    <span class="identifier">subParms</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        The first parameter passed to <code class="computeroutput"><span class="identifier">createSubscription</span><span class="special">&lt;&gt;()</span></code> is the object which will receive
+        the published messages. It is the applications responsibility to make sure
+        this object is not destroyed while the subscription is still connected.
+      </p>
+<p>
+        A disconnect callback can be provided, which will be called if the subscriber
+        is disconnected:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">void</span> <span class="identifier">onSubscriptionDisconnected</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfSession</span> <span class="special">&amp;</span> <span class="identifier">session</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="comment">// Handle subscription disconnection here.
+</span>    <span class="comment">// ...
+</span><span class="special">}</span>
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">HelloWorldImpl</span> <span class="identifier">helloWorldImpl</span><span class="special">;</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">SubscriptionParms</span> <span class="identifier">subParms</span><span class="special">;</span>
+<span class="identifier">subParms</span><span class="special">.</span><span class="identifier">setPublisherEndpoint</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">subParms</span><span class="special">.</span><span class="identifier">setOnSubscriptionDisconnect</span><span class="special">(&amp;</span><span class="identifier">onSubscriptionDisconnected</span><span class="special">);</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">SubscriptionPtr</span> <span class="identifier">subscriptionPtr</span> <span class="special">=</span> <span class="identifier">subServer</span><span class="special">.</span><span class="identifier">createSubscription</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;(</span>
+    <span class="identifier">helloWorldImpl</span><span class="special">,</span> 
+    <span class="identifier">subParms</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        To terminate a subscription, destroy the <code class="computeroutput"><span class="identifier">Subscription</span></code>
+        object, or call <code class="computeroutput"><span class="identifier">Subscription</span><span class="special">::</span><span class="identifier">close</span><span class="special">()</span></code>:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">subscriptionPtr</span><span class="special">-&gt;</span><span class="identifier">close</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.PubSub.access_control"></a><a class="link" href="PubSub.html#rcf_user_guide.PubSub.access_control" title="Access control">Access control</a>
+</h3></div></div></div>
+<p>
+        Access controls can be applied to publishers, in the form of an access control
+        callback which will be called for each subscriber attempting to subscribe
+        to the publisher. Similarly to servant binding access controls, publisher
+        access controls can be used to inspect the <code class="computeroutput"><span class="identifier">RcfSession</span></code>
+        of the subscriber connections for any relevant authentication information:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">bool</span> <span class="identifier">onSubscriberConnect</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfSession</span> <span class="special">&amp;</span> <span class="identifier">session</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> <span class="identifier">topicName</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="comment">// Return true to allow access, false otherwise.
+</span>    <span class="comment">// ...
+</span>
+    <span class="keyword">return</span> <span class="keyword">true</span><span class="special">;</span>
+<span class="special">}</span>
+
+<span class="keyword">void</span> <span class="identifier">onSubscriberDisconnect</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfSession</span> <span class="special">&amp;</span> <span class="identifier">session</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> <span class="identifier">topicName</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="comment">// ...
+</span><span class="special">}</span>
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">PublisherParms</span> <span class="identifier">pubParms</span><span class="special">;</span>
+<span class="identifier">pubParms</span><span class="special">.</span><span class="identifier">setOnSubscriberConnect</span><span class="special">(</span><span class="identifier">onSubscriberConnect</span><span class="special">);</span>
+<span class="identifier">pubParms</span><span class="special">.</span><span class="identifier">setOnSubscriberDisconnect</span><span class="special">(</span><span class="identifier">onSubscriberDisconnect</span><span class="special">);</span>
+<span class="identifier">HelloWorldPublisherPtr</span> <span class="identifier">publisher1Ptr</span> <span class="special">=</span> <span class="identifier">pubServer</span><span class="special">.</span><span class="identifier">createPublisher</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;(</span><span class="identifier">pubParms</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2005 - 2015 Delta V Software</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="AsyncRemoteCalls.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="CallbackConn.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>
