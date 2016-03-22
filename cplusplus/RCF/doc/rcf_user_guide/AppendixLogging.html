@@ -1,0 +1,152 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Appendix - Logging</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="../index.html" title="RCF User Guide">
+<link rel="up" href="../index.html" title="RCF User Guide">
+<link rel="prev" href="AppendixBuilding.html" title="Appendix - Building RCF">
+<link rel="next" href="AppendixReleaseNotes.html" title="Appendix - Release Notes">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="AppendixBuilding.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="AppendixReleaseNotes.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.AppendixLogging"></a><a class="link" href="AppendixLogging.html" title="Appendix - Logging"> Appendix - Logging</a>
+</h2></div></div></div>
+<p>
+      RCF has a configurable logging subsystem which can be controlled through the
+      <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">enableLogging</span><span class="special">()</span></code>
+      and <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">disableLogging</span><span class="special">()</span></code>
+      functions. To use these functions, you will need to include the <code class="computeroutput"><span class="special">&lt;</span><span class="identifier">RCF</span><span class="special">/</span><span class="identifier">util</span><span class="special">/</span><span class="identifier">Log</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span></code>
+      header.
+    </p>
+<p>
+      By default, logging is disabled. To enable logging, call <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">enableLogging</span><span class="special">()</span></code>. <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">enableLogging</span><span class="special">()</span></code> takes two optional parameters: log level
+      and log target:
+    </p>
+<p>
+      
+</p>
+<pre class="programlisting"><span class="comment">// Using default values for log target and log level.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">enableLogging</span><span class="special">();</span>
+
+<span class="comment">// Using custom values for log target and log level.
+</span><span class="keyword">int</span> <span class="identifier">logLevel</span> <span class="special">=</span> <span class="number">2</span><span class="special">;</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">enableLogging</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">LogToDebugWindow</span><span class="special">(),</span> <span class="identifier">logLevel</span><span class="special">);</span>
+</pre>
+<p>
+    </p>
+<p>
+      The log level can range from 0 (no logging at all) to 4 (maximum logging).
+      The default log level is 2.
+    </p>
+<p>
+      The log target parameter can be one of the following:
+    </p>
+<div class="informaltable"><table class="table">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead><tr>
+<th>
+              <p>
+                Log target
+              </p>
+            </th>
+<th>
+              <p>
+                Log output location
+              </p>
+            </th>
+</tr></thead>
+<tbody>
+<tr>
+<td>
+              <p>
+                <code class="computeroutput"><span class="identifier">LogToDebugWindow</span><span class="special">()</span></code>
+              </p>
+            </td>
+<td>
+              <p>
+                Windows only. Log output appears in Visual Studio debug output window.
+              </p>
+            </td>
+</tr>
+<tr>
+<td>
+              <p>
+                <code class="computeroutput"><span class="identifier">LogToStdout</span><span class="special">()</span></code>
+              </p>
+            </td>
+<td>
+              <p>
+                Log output appears on standard output.
+              </p>
+            </td>
+</tr>
+<tr>
+<td>
+              <p>
+                <code class="computeroutput"><span class="identifier">LogToFile</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span>
+                <span class="special">&amp;</span> <span class="identifier">logFilePath</span><span class="special">)</span></code>
+              </p>
+            </td>
+<td>
+              <p>
+                Log output appears in the nominated file.
+              </p>
+            </td>
+</tr>
+<tr>
+<td>
+              <p>
+                <code class="computeroutput"><span class="identifier">LogToFunc</span><span class="special">(</span><span class="identifier">boost</span><span class="special">::</span><span class="identifier">function</span><span class="special">&lt;</span><span class="keyword">void</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span>
+                <span class="special">&amp;)&gt;)</span></code>
+              </p>
+            </td>
+<td>
+              <p>
+                Log output is passed to a user-defined function.
+              </p>
+            </td>
+</tr>
+</tbody>
+</table></div>
+<p>
+      On Windows platforms, the default log target is <code class="computeroutput"><span class="identifier">LogToDebugWindow</span></code>.
+    </p>
+<p>
+      On non-Windows platforms, the default log target is <code class="computeroutput"><span class="identifier">LogToStdout</span></code>.
+    </p>
+<p>
+      Finally, to disable logging, call <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">disableLogging</span><span class="special">()</span></code>:
+    </p>
+<p>
+      
+</p>
+<pre class="programlisting"><span class="comment">// Disable logging.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">disableLogging</span><span class="special">();</span>
+</pre>
+<p>
+    </p>
+<p>
+      <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">enableLogging</span><span class="special">()</span></code>
+      and <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">disableLogging</span><span class="special">()</span></code>
+      are internally threadsafe and can be called by multiple threads concurrently.
+    </p>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2005 - 2015 Delta V Software</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="AppendixBuilding.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="AppendixReleaseNotes.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

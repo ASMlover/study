@@ -1,0 +1,126 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>HTTP/HTTPS Tunneling</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="../index.html" title="RCF User Guide">
+<link rel="up" href="../index.html" title="RCF User Guide">
+<link rel="prev" href="TransportProtocols.html" title="Transport Protocols">
+<link rel="next" href="AccessControl.html" title="Server-side Access Controls">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="TransportProtocols.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="AccessControl.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.HttpTunneling"></a><a class="link" href="HttpTunneling.html" title="HTTP/HTTPS Tunneling"> HTTP/HTTPS Tunneling</a>
+</h2></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="HttpTunneling.html#rcf_user_guide.HttpTunneling.server_side">Server-side</a></span></dt>
+<dt><span class="section"><a href="HttpTunneling.html#rcf_user_guide.HttpTunneling.client_side">Client-side</a></span></dt>
+</dl></div>
+<p>
+      RCF supports tunneling remote calls over the <a href="http://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol" target="_top">HTTP</a>
+      and <a href="http://en.wikipedia.org/wiki/HTTP_Secure" target="_top">HTTPS</a> protocols.
+      In particular, remote calls can be directed through HTTP and HTTPS proxies.
+    </p>
+<p>
+      HTTPS is essentially the HTTP protocol layered on top of the SSL protocol.
+      As such, configuration of the SSL aspects of HTTPS, is done in the same way
+      as for the SSL transport protocol (see <a class="link" href="TransportProtocols.html" title="Transport Protocols">Transport
+      protocols</a>).
+    </p>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.HttpTunneling.server_side"></a><a class="link" href="HttpTunneling.html#rcf_user_guide.HttpTunneling.server_side" title="Server-side">Server-side</a>
+</h3></div></div></div>
+<p>
+        To setup a server with an HTTP endpoint, use <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">HttpEndpoint</span></code>:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">HttpEndpoint</span><span class="special">(</span><span class="string">"0.0.0.0"</span><span class="special">,</span> <span class="number">80</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">HelloWorldImpl</span> <span class="identifier">helloWorldImpl</span><span class="special">;</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">bind</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;(</span><span class="identifier">helloWorldImpl</span><span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+<p>
+        Similarly, for an HTTPS endpoint, use <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">HttpsEndpoint</span></code>:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">HttpsEndpoint</span><span class="special">(</span><span class="string">"0.0.0.0"</span><span class="special">,</span> <span class="number">443</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">HelloWorldImpl</span> <span class="identifier">helloWorldImpl</span><span class="special">;</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">bind</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;(</span><span class="identifier">helloWorldImpl</span><span class="special">);</span>
+
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">setCertificate</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">CertificatePtr</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">PfxCertificate</span><span class="special">(</span>
+    <span class="string">"C:\\serverCert.p12"</span><span class="special">,</span> 
+    <span class="string">"password"</span><span class="special">,</span> 
+    <span class="string">"CertificateName"</span><span class="special">)</span> <span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.HttpTunneling.client_side"></a><a class="link" href="HttpTunneling.html#rcf_user_guide.HttpTunneling.client_side" title="Client-side">Client-side</a>
+</h3></div></div></div>
+<p>
+        Client side configuration is similar, using <code class="computeroutput"><span class="identifier">HttpEndpoint</span></code>
+        for a HTTP client:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">HttpEndpoint</span><span class="special">(</span><span class="string">"server.acme.com"</span><span class="special">,</span> <span class="number">80</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        , and <code class="computeroutput"><span class="identifier">HttpsEndpoint</span></code> for a
+        HTTPS client:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">HttpsEndpoint</span><span class="special">(</span><span class="string">"server.acme.com"</span><span class="special">,</span> <span class="number">443</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setCertificateValidationCallback</span><span class="special">(&amp;</span><span class="identifier">schannelValidate</span><span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        Finally, to direct remote calls through a HTTP or HTTPS proxy, use the <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">setHttpProxy</span><span class="special">()</span></code>
+        and <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">setHttpProxyPort</span><span class="special">()</span></code>
+        functions:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setHttpProxy</span><span class="special">(</span><span class="string">"proxy.acme.com"</span><span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setHttpProxyPort</span><span class="special">(</span><span class="number">8080</span><span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">Print</span><span class="special">(</span><span class="string">"Hello World"</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2005 - 2015 Delta V Software</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="TransportProtocols.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="AccessControl.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

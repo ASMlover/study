@@ -1,0 +1,445 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>File Transfers</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="../index.html" title="RCF User Guide">
+<link rel="up" href="../index.html" title="RCF User Guide">
+<link rel="prev" href="CallbackConn.html" title="Callback Connections">
+<link rel="next" href="Versioning.html" title="Versioning">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="CallbackConn.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Versioning.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.FileTransfers"></a><a class="link" href="FileTransfers.html" title="File Transfers"> File Transfers</a>
+</h2></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="FileTransfers.html#rcf_user_guide.FileTransfers.file_uploads">File uploads</a></span></dt>
+<dt><span class="section"><a href="FileTransfers.html#rcf_user_guide.FileTransfers.file_downloads">File downloads</a></span></dt>
+<dt><span class="section"><a href="FileTransfers.html#rcf_user_guide.FileTransfers.bandwidth_limits">Bandwidth
+      limits</a></span></dt>
+</dl></div>
+<p>
+      RCF has built-in support for transferring files and directories. While smaller
+      files can be transferred easily in a single call (for example using <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span></code>
+      arguments), this technique fails once the size of the file exceeds the maximum
+      message size of the connection.
+    </p>
+<p>
+      To reliably transfer files of arbitrary size, the files need to be split into
+      chunks and transmitted in separate calls, with the recipient reassembling the
+      chunks to form the destination file. RCF automates this chunking logic in a
+      secure and efficient way, using the <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">FileUpload</span></code>
+      and <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">FileDownload</span></code> classes.
+    </p>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.FileTransfers.file_uploads"></a><a class="link" href="FileTransfers.html#rcf_user_guide.FileTransfers.file_uploads" title="File uploads">File uploads</a>
+</h3></div></div></div>
+<p>
+        RCF clients can upload files or directories to a server by including a <code class="computeroutput"><span class="identifier">FileUpload</span></code> object as a remote call parameter:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_HelloWorld</span><span class="special">,</span> <span class="string">"I_HelloWorld"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_V1</span><span class="special">(</span><span class="keyword">void</span><span class="special">,</span> <span class="identifier">Print</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;)</span>
+    <span class="identifier">RCF_METHOD_V1</span><span class="special">(</span><span class="keyword">void</span><span class="special">,</span> <span class="identifier">UploadFiles</span><span class="special">,</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">FileUpload</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_HelloWorld</span><span class="special">)</span>
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">FileUpload</span> <span class="identifier">fileUpload</span><span class="special">(</span><span class="string">"C:\\FileToUpload.zip"</span><span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">UploadFiles</span><span class="special">(</span><span class="identifier">fileUpload</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        The serialization implementation of the <code class="computeroutput"><span class="identifier">FileUpload</span></code>
+        class takes care of transferring the nominated files to the server. On the
+        server-side, the servant object that the remote call is dispatched to, uses
+        the <code class="computeroutput"><span class="identifier">FileUpload</span></code> object to
+        locate the newly uploaded files on the local system:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">class</span> <span class="identifier">HelloWorldImpl</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="keyword">void</span> <span class="identifier">Print</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> <span class="identifier">s</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"I_HelloWorld service: "</span> <span class="special">&lt;&lt;</span> <span class="identifier">s</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+    <span class="special">}</span>
+
+    <span class="keyword">void</span> <span class="identifier">UploadFiles</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">FileUpload</span> <span class="identifier">fileUpload</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="comment">// Where are the uploaded files.
+</span>        <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">uploadPath</span> <span class="special">=</span> <span class="identifier">fileUpload</span><span class="special">.</span><span class="identifier">getLocalPath</span><span class="special">();</span>
+
+        <span class="comment">// Which files have been uploaded.
+</span>        <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">FileManifest</span> <span class="special">&amp;</span> <span class="identifier">manifest</span> <span class="special">=</span> <span class="identifier">fileUpload</span><span class="special">.</span><span class="identifier">getManifest</span><span class="special">();</span>
+    <span class="special">}</span>
+<span class="special">};</span>
+</pre>
+<p>
+      </p>
+<p>
+        If the connection to the server is lost during the transfer, the upload can
+        be resumed by reusing the same <code class="computeroutput"><span class="identifier">FileUpload</span></code>
+        object:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// Call UploadFiles with the same arguments again, to resume an interrupted upload.
+</span><span class="identifier">client</span><span class="special">.</span><span class="identifier">UploadFiles</span><span class="special">(</span><span class="identifier">fileUpload</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        To monitor the progress of the upload, use <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">setFileProgressCallback</span><span class="special">()</span></code>:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">void</span> <span class="identifier">onFileTransferProgress</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">FileTransferProgress</span> <span class="special">&amp;</span> <span class="identifier">progress</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Total bytes to transfer: "</span> <span class="special">&lt;&lt;</span> <span class="identifier">progress</span><span class="special">.</span><span class="identifier">mBytesTotalToTransfer</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Bytes transferred so far: "</span> <span class="special">&lt;&lt;</span> <span class="identifier">progress</span><span class="special">.</span><span class="identifier">mBytesTransferredSoFar</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Server-side bandwidth limit (if any): "</span> <span class="special">&lt;&lt;</span> <span class="identifier">progress</span><span class="special">.</span><span class="identifier">mServerLimitBps</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setFileProgressCallback</span><span class="special">(&amp;</span><span class="identifier">onFileTransferProgress</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        To encrypt the file upload, set the transport protocol of the <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code>
+        object, before commencing the upload. For instance, to use NTLM:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setTransportProtocol</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Tp_Ntlm</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        On the server, the default upload location is a subdirectory of the current
+        working directory. You can use <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">setFileUploadDirectory</span><span class="special">()</span></code> to set a different location for file uploads:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">server</span><span class="special">.</span><span class="identifier">setFileUploadDirectory</span><span class="special">(</span><span class="string">"C:\\RCF-Uploads"</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        Once files are uploaded to the server, the lifetime of the uploaded files
+        becomes the responsibility of the server application.
+      </p>
+<p>
+        The server can also monitor the progress of all file uploads, as well as
+        cancel file uploads:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">void</span> <span class="identifier">onServerFileUpload</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfSession</span> <span class="special">&amp;</span> <span class="identifier">session</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">FileUploadInfo</span> <span class="special">&amp;</span> <span class="identifier">uploadInfo</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="comment">// Which files are being uploaded.
+</span>    <span class="keyword">const</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">FileManifest</span><span class="special">&amp;</span> <span class="identifier">manifest</span> <span class="special">=</span> <span class="identifier">uploadInfo</span><span class="special">.</span><span class="identifier">mManifest</span><span class="special">;</span>
+
+    <span class="comment">// How far has the upload progressed.
+</span>    <span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint32_t</span> <span class="identifier">currentFile</span> <span class="special">=</span> <span class="identifier">uploadInfo</span><span class="special">.</span><span class="identifier">mCurrentFile</span><span class="special">;</span>
+    <span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint64_t</span> <span class="identifier">currentFilePos</span> <span class="special">=</span> <span class="identifier">uploadInfo</span><span class="special">.</span><span class="identifier">mCurrentPos</span><span class="special">;</span>
+
+    <span class="comment">// To cancel the upload, throw an exception.
+</span>    <span class="comment">// ...
+</span><span class="special">}</span>
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">server</span><span class="special">.</span><span class="identifier">setOnFileUploadProgress</span><span class="special">(&amp;</span><span class="identifier">onServerFileUpload</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.FileTransfers.file_downloads"></a><a class="link" href="FileTransfers.html#rcf_user_guide.FileTransfers.file_downloads" title="File downloads">File downloads</a>
+</h3></div></div></div>
+<p>
+        File downloads are implemented in RCF in a similary way to file uploads.
+        RCF clients can download files or directories from a server by including
+        a <code class="computeroutput"><span class="identifier">FileDownload</span></code> object as
+        a remote call parameter:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_HelloWorld</span><span class="special">,</span> <span class="string">"I_HelloWorld"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_V1</span><span class="special">(</span><span class="keyword">void</span><span class="special">,</span> <span class="identifier">Print</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;)</span>
+    <span class="identifier">RCF_METHOD_V1</span><span class="special">(</span><span class="keyword">void</span><span class="special">,</span> <span class="identifier">DownloadFiles</span><span class="special">,</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">FileDownload</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_HelloWorld</span><span class="special">)</span>
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">FileDownload</span> <span class="identifier">fileDownload</span><span class="special">;</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">DownloadFiles</span><span class="special">(</span><span class="identifier">fileDownload</span><span class="special">);</span>
+
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">localFilePath</span> <span class="special">=</span> <span class="identifier">fileDownload</span><span class="special">.</span><span class="identifier">getLocalPath</span><span class="special">();</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">FileManifest</span> <span class="special">&amp;</span> <span class="identifier">fileManifest</span> <span class="special">=</span> <span class="identifier">fileDownload</span><span class="special">.</span><span class="identifier">getManifest</span><span class="special">();</span>
+</pre>
+<p>
+      </p>
+<p>
+        The servant object that the remote call is dispatched to, uses the <code class="computeroutput"><span class="identifier">FileDownload</span></code> object to set the files that
+        will be downloaded to the client:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">class</span> <span class="identifier">HelloWorldImpl</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="keyword">void</span> <span class="identifier">Print</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> <span class="identifier">s</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"I_HelloWorld service: "</span> <span class="special">&lt;&lt;</span> <span class="identifier">s</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+    <span class="special">}</span>
+
+    <span class="keyword">void</span> <span class="identifier">DownloadFiles</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">FileDownload</span> <span class="identifier">fileDownload</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">fileDownload</span> <span class="special">=</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">FileDownload</span><span class="special">(</span><span class="string">"C:\\FileToDownload.zip"</span><span class="special">);</span>
+    <span class="special">}</span>
+<span class="special">};</span>
+</pre>
+<p>
+      </p>
+<p>
+        Interrupted downloads can be resumed by specifying the same download location
+        as for the previous download attempt:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// Either reuse the FileDownload object from the previous call:
+</span><span class="identifier">client</span><span class="special">.</span><span class="identifier">DownloadFiles</span><span class="special">(</span><span class="identifier">fileDownload</span><span class="special">);</span>
+
+<span class="comment">// , or call FileDownload::setDownloadToPath() on a new FileDownload:
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">FileDownload</span> <span class="identifier">secondFileDownload</span><span class="special">;</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">previousDownloadToPath</span> <span class="special">=</span> <span class="identifier">fileDownload</span><span class="special">.</span><span class="identifier">getDownloadToPath</span><span class="special">();</span> 
+<span class="identifier">secondFileDownload</span><span class="special">.</span><span class="identifier">setDownloadToPath</span><span class="special">(</span><span class="identifier">previousDownloadToPath</span><span class="special">);</span>
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">DownloadFiles</span><span class="special">(</span><span class="identifier">secondFileDownload</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        To monitor the progess of a file download, use <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">setFileProgressCallback</span><span class="special">()</span></code>:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">void</span> <span class="identifier">onFileTransferProgress</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">FileTransferProgress</span> <span class="special">&amp;</span> <span class="identifier">progress</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Total bytes to transfer: "</span> <span class="special">&lt;&lt;</span> <span class="identifier">progress</span><span class="special">.</span><span class="identifier">mBytesTotalToTransfer</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Bytes transferred so far: "</span> <span class="special">&lt;&lt;</span> <span class="identifier">progress</span><span class="special">.</span><span class="identifier">mBytesTransferredSoFar</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Server-side bandwidth limit (if any): "</span> <span class="special">&lt;&lt;</span> <span class="identifier">progress</span><span class="special">.</span><span class="identifier">mServerLimitBps</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setFileProgressCallback</span><span class="special">(&amp;</span><span class="identifier">onFileTransferProgress</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        To encrypt the download, set an appropriate transport protocol on the <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code>
+        object:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setTransportProtocol</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Tp_Ntlm</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        Similarly to file uploads, the server can monitor and optionally cancel any
+        file downloads that are in progress:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">void</span> <span class="identifier">onServerFileDownload</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfSession</span> <span class="special">&amp;</span> <span class="identifier">session</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">FileDownloadInfo</span> <span class="special">&amp;</span> <span class="identifier">uploadInfo</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="comment">// Which files are being downloaded.
+</span>    <span class="keyword">const</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">FileManifest</span><span class="special">&amp;</span> <span class="identifier">manifest</span> <span class="special">=</span> <span class="identifier">uploadInfo</span><span class="special">.</span><span class="identifier">mManifest</span><span class="special">;</span>
+
+    <span class="comment">// How far has the download progressed.
+</span>    <span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint32_t</span> <span class="identifier">currentFile</span> <span class="special">=</span> <span class="identifier">uploadInfo</span><span class="special">.</span><span class="identifier">mCurrentFile</span><span class="special">;</span>
+    <span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint64_t</span> <span class="identifier">currentFilePos</span> <span class="special">=</span> <span class="identifier">uploadInfo</span><span class="special">.</span><span class="identifier">mCurrentPos</span><span class="special">;</span>
+
+    <span class="comment">// To cancel the download, throw an exception.
+</span>    <span class="comment">// ...
+</span><span class="special">}</span>
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">server</span><span class="special">.</span><span class="identifier">setOnFileDownloadProgress</span><span class="special">(&amp;</span><span class="identifier">onServerFileDownload</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.FileTransfers.bandwidth_limits"></a><a class="link" href="FileTransfers.html#rcf_user_guide.FileTransfers.bandwidth_limits" title="Bandwidth limits">Bandwidth
+      limits</a>
+</h3></div></div></div>
+<p>
+        RCF file transfers will automatically run as fast as the network allows them
+        to run. However, in some cases you may want to limit bandwidth usage and
+        run file transfers at a restricted pace. RCF allows you set the maximum bandwidth
+        consumed by all file uploads, or all file downloads, on a server:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="comment">// 1 Mbps upload limit.
+</span><span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint32_t</span> <span class="identifier">serverUploadLimitMbps</span> <span class="special">=</span> <span class="number">1</span><span class="special">;</span>
+
+<span class="comment">// Convert to bytes/second.
+</span><span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint32_t</span> <span class="identifier">serverUploadLimitBps</span> <span class="special">=</span> <span class="identifier">serverUploadLimitMbps</span><span class="special">*</span><span class="number">1000</span><span class="special">*</span><span class="number">1000</span><span class="special">/</span><span class="number">8</span><span class="special">;</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">setFileUploadBandwidthLimit</span><span class="special">(</span><span class="identifier">serverUploadLimitBps</span><span class="special">);</span>
+
+<span class="comment">// 5 Mbps upload limit.
+</span><span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint32_t</span> <span class="identifier">serverDownloadLimitMbps</span> <span class="special">=</span> <span class="number">5</span><span class="special">;</span>
+
+<span class="comment">// Convert to bytes/second.
+</span><span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint32_t</span> <span class="identifier">serverDownloadLimitBps</span> <span class="special">=</span> <span class="identifier">serverDownloadLimitMbps</span><span class="special">*</span><span class="number">1000</span><span class="special">*</span><span class="number">1000</span><span class="special">/</span><span class="number">8</span><span class="special">;</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">setFileUploadBandwidthLimit</span><span class="special">(</span><span class="identifier">serverDownloadLimitBps</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        In this example, if three clients are uploading files simultaneously, the
+        total bandwidth consumed by all three clients will not be allowed to exceed
+        1 Mbps. Similarly, if there are three clients downloading files simultaneously,
+        the total bandwidth consumed by the downloads will not be allowed to exceed
+        5 Mbps.
+      </p>
+<p>
+        RCF also supports setting bandwidth limits on a more granular level, with
+        application-defined subsets of clients sharing a particular bandwidth quota.
+        For example, on a server connected to multiple networks with varying bandwidth
+        characteristics, you may want to limit file transfer bandwidth based on which
+        network the file transfer is taking place on. To do this, use <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">setFileUploadCustomBandwidthLimit</span><span class="special">()</span></code>/<code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">setFileDownloadCustomBandwidthLimit</span><span class="special">()</span></code>
+        to provide a callback function for the <code class="computeroutput"><span class="identifier">RcfServer</span></code>
+        to call, whenever a file transfer commences. From the callback funtion you
+        can assign a relevant bandwidth quota.
+      </p>
+<p>
+        For example, imagine we want to implement the following bandwidth limits:
+      </p>
+<div class="orderedlist"><ol type="1">
+<li>
+            1 Mbps upload bandwidth for TCP connections from <code class="computeroutput"><span class="number">192.168</span><span class="special">.*.*</span></code>.
+          </li>
+<li>
+            56 Kbps upload bandwidth for TCP connections from <code class="computeroutput"><span class="number">15.146</span><span class="special">.*.*</span></code>.
+          </li>
+<li>
+            Unlimited upload bandwidth for all other connections.
+          </li>
+</ol></div>
+<p>
+        We'll need three separate <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">BandwidthQuota</span></code>
+        objects for the three bandwidth quotas described above, and then we'll use
+        <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">setFileUploadCustomBandwidthLimit</span><span class="special">()</span></code>
+        to assign bandwidth quotas based on the IP address of the client:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// 1 Mbps quota bucket.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">BandwidthQuotaPtr</span> <span class="identifier">quota_1_Mbps</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">BandwidthQuota</span><span class="special">(</span><span class="number">1</span><span class="special">*</span><span class="number">1000</span><span class="special">*</span><span class="number">1000</span><span class="special">/</span><span class="number">8</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="comment">// 56 Kbps quota bucket.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">BandwidthQuotaPtr</span> <span class="identifier">quota_56_Kbps</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">BandwidthQuota</span><span class="special">(</span><span class="number">56</span><span class="special">*</span><span class="number">1000</span><span class="special">/</span><span class="number">8</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="comment">// Unlimited quota bucket.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">BandwidthQuotaPtr</span> <span class="identifier">quota_unlimited</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">BandwidthQuota</span><span class="special">(</span><span class="number">0</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">BandwidthQuotaPtr</span> <span class="identifier">uploadBandwidthQuotaCb</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfSession</span> <span class="special">&amp;</span> <span class="identifier">session</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="comment">// Use clients IP address to determine which quota to allocate from.
+</span>
+    <span class="keyword">const</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RemoteAddress</span> <span class="special">&amp;</span> <span class="identifier">clientAddr</span> <span class="special">=</span> <span class="identifier">session</span><span class="special">.</span><span class="identifier">getClientAddress</span><span class="special">();</span>
+    <span class="keyword">const</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpAddress</span> <span class="special">&amp;</span> <span class="identifier">clientIpAddr</span> <span class="special">=</span> <span class="keyword">dynamic_cast</span><span class="special">&lt;</span><span class="keyword">const</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpAddress</span> <span class="special">&amp;&gt;(</span><span class="identifier">clientAddr</span><span class="special">);</span>
+    <span class="keyword">if</span> <span class="special">(</span> <span class="identifier">clientIpAddr</span><span class="special">.</span><span class="identifier">matches</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpAddress</span><span class="special">(</span><span class="string">"192.168.0.0"</span><span class="special">,</span> <span class="number">16</span><span class="special">)</span> <span class="special">)</span> <span class="special">)</span>
+    <span class="special">{</span>
+        <span class="keyword">return</span> <span class="identifier">quota_1_Mbps</span><span class="special">;</span>
+    <span class="special">}</span>
+    <span class="keyword">else</span> <span class="keyword">if</span> <span class="special">(</span> <span class="identifier">clientIpAddr</span><span class="special">.</span><span class="identifier">matches</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">IpAddress</span><span class="special">(</span><span class="string">"15.146.0.0"</span><span class="special">,</span> <span class="number">16</span><span class="special">)</span> <span class="special">)</span> <span class="special">)</span>
+    <span class="special">{</span>
+        <span class="keyword">return</span> <span class="identifier">quota_56_Kbps</span><span class="special">;</span>
+    <span class="special">}</span>
+    <span class="keyword">else</span>
+    <span class="special">{</span>
+        <span class="keyword">return</span> <span class="identifier">quota_unlimited</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">}</span>
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// Assign a custom file upload bandwidth limit.
+</span><span class="identifier">server</span><span class="special">.</span><span class="identifier">setFileUploadCustomBandwidthLimit</span><span class="special">(&amp;</span><span class="identifier">uploadBandwidthQuotaCb</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2005 - 2015 Delta V Software</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="CallbackConn.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Versioning.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

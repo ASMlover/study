@@ -1,0 +1,250 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>RCF User Guide</title>
+<link rel="stylesheet" href="boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="index.html" title="RCF User Guide">
+<link rel="next" href="rcf_user_guide/Intro.html" title="Introduction">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav"><a accesskey="n" href="rcf_user_guide/Intro.html"><img src="images/next.png" alt="Next"></a></div>
+<div class="article" lang="en">
+<div class="titlepage">
+<div>
+<div><h2 class="title">
+<a name="rcf_user_guide"></a>RCF User Guide</h2></div>
+<div><p class="copyright">Copyright &#169; 2005 - 2015 Delta V Software</p></div>
+</div>
+<hr>
+</div>
+<div class="toc">
+<p><b>Table of Contents</b></p>
+<dl>
+<dt><span class="section"><a href="index.html#rcf_user_guide.Version"> Version</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Intro.html"> Introduction</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/Intro.html#rcf_user_guide.Intro.WhatIsRcf"> What is RCF?</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Intro.html#rcf_user_guide.Intro.WhoShouldUseRcf"> Why should I use
+      RCF?</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/Tutorial.html"> Tutorial</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/Tutorial.html#rcf_user_guide.Tutorial.GettingStarted"> Getting started</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Tutorial.html#rcf_user_guide.Tutorial.Interfaces"> Interfaces and implementations</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Tutorial.html#rcf_user_guide.Tutorial.Errors"> Error handling</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Tutorial.html#rcf_user_guide.Tutorial.ClientStubs"> Client stubs</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Tutorial.html#rcf_user_guide.Tutorial.server_sessions">Server sessions</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Tutorial.html#rcf_user_guide.Tutorial.Transports"> Transports</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Tutorial.html#rcf_user_guide.Tutorial.TransportProtocols"> Transport
+      protocols</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Tutorial.html#rcf_user_guide.Tutorial.Threading"> Server-side threading</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Tutorial.html#rcf_user_guide.Tutorial.asynchronous_remote_calls">Asynchronous
+      remote calls</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Tutorial.html#rcf_user_guide.Tutorial.PubSub"> Publish/subscribe</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Tutorial.html#rcf_user_guide.Tutorial.callback_connections">Callback
+      connections</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Tutorial.html#rcf_user_guide.Tutorial.file_transfers">File transfers</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Tutorial.html#rcf_user_guide.Tutorial.Protobufs"> Protocol Buffers</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Tutorial.html#rcf_user_guide.Tutorial.json_rpc">JSON-RPC</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/Clientside.html"> Remote Calls - Client-side</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/Clientside.html#rcf_user_guide.Clientside.remote_call_semantics">Remote
+      call semantics</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Clientside.html#rcf_user_guide.Clientside.pinging">Pinging</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Clientside.html#rcf_user_guide.Clientside.Progress"> Client progress
+      callbacks</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Clientside.html#rcf_user_guide.Clientside.UserData"> Per-request user
+      data</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Clientside.html#rcf_user_guide.Clientside.Transports"> Access to underlying
+      transport</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Clientside.html#rcf_user_guide.Clientside.copy_semantics">Copy semantics</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/Serverside.html"> Remote Calls - Server-side</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/Serverside.html#rcf_user_guide.Serverside.Configure"> Configuring a server</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Serverside.html#rcf_user_guide.Serverside.Sessions"> Server-side sessions</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/Serialization.html"> Serialization</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/Serialization.html#rcf_user_guide.Serialization.standard_c___types">Standard
+      C++ types</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Serialization.html#rcf_user_guide.Serialization.UserDefined"> User-defined
+      types</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Serialization.html#rcf_user_guide.Serialization.binary_data">Binary data</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Serialization.html#rcf_user_guide.Serialization.Portability"> Portability</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Serialization.html#rcf_user_guide.Serialization.StandAlone"> File-based
+      serialization</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/Transports.html"> Transports</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/Transports.html#rcf_user_guide.Transports.Server"> Transport access</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Transports.html#rcf_user_guide.Transports.Config"> Transport configuration</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Transports.html#rcf_user_guide.Transports.Implementations"> Transport
+      implementations</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/TransportProtocols.html"> Transport Protocols</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/TransportProtocols.html#rcf_user_guide.TransportProtocols.ntlm">NTLM</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/TransportProtocols.html#rcf_user_guide.TransportProtocols.kerberos">Kerberos</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/TransportProtocols.html#rcf_user_guide.TransportProtocols.negotiate">Negotiate</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/TransportProtocols.html#rcf_user_guide.TransportProtocols.ssl">SSL</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/TransportProtocols.html#rcf_user_guide.TransportProtocols.compression">Compression</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/HttpTunneling.html"> HTTP/HTTPS Tunneling</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/HttpTunneling.html#rcf_user_guide.HttpTunneling.server_side">Server-side</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/HttpTunneling.html#rcf_user_guide.HttpTunneling.client_side">Client-side</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/AccessControl.html"> Server-side Access Controls</a></span></dt>
+<dd><dl><dt><span class="section"><a href="rcf_user_guide/AccessControl.html#rcf_user_guide.AccessControl.servant_binding_access_controls">Servant
+      binding access controls</a></span></dt></dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/AsyncRemoteCalls.html"> Asynchronous Remote Calls</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/AsyncRemoteCalls.html#rcf_user_guide.AsyncRemoteCalls.asynchronous_remote_call_invocation">Asynchronous
+      remote call invocation</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AsyncRemoteCalls.html#rcf_user_guide.AsyncRemoteCalls.asynchronous_remote_call_dispatching">Asynchronous
+      remote call dispatching</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/PubSub.html"> Publish/Subscribe</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/PubSub.html#rcf_user_guide.PubSub.publishers">Publishers</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/PubSub.html#rcf_user_guide.PubSub.subscribers">Subscribers</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/PubSub.html#rcf_user_guide.PubSub.access_control">Access control</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/CallbackConn.html"> Callback Connections</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/CallbackConn.html#rcf_user_guide.CallbackConn.creating_callback_connections">Creating
+      callback connections</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/CallbackConn.html#rcf_user_guide.CallbackConn.identifying_clients">Identifying
+      clients</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/CallbackConn.html#rcf_user_guide.CallbackConn.transport_protocols">Transport
+      protocols</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/FileTransfers.html"> File Transfers</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/FileTransfers.html#rcf_user_guide.FileTransfers.file_uploads">File uploads</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/FileTransfers.html#rcf_user_guide.FileTransfers.file_downloads">File downloads</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/FileTransfers.html#rcf_user_guide.FileTransfers.bandwidth_limits">Bandwidth
+      limits</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/Versioning.html"> Versioning</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/Versioning.html#rcf_user_guide.Versioning.Interfaces"> Interface versioning</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Versioning.html#rcf_user_guide.Versioning.Serialization"> Archive versioning</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Versioning.html#rcf_user_guide.Versioning.RcfRuntime"> Runtime versioning</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Versioning.html#rcf_user_guide.Versioning.custom_version_negotiation">Custom
+      version negotiation</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Versioning.html#rcf_user_guide.Versioning.protocol_buffers">Protocol
+      Buffers</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/Performance.html"> Performance</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/Performance.html#rcf_user_guide.Performance.ZeroCopy"> Zero copy</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Performance.html#rcf_user_guide.Performance.ZeroAllocation"> Zero allocation</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Performance.html#rcf_user_guide.Performance.Caching"> Server-side object
+      caching</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/Performance.html#rcf_user_guide.Performance.Scalability"> Scalability</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/AdvancedSerialization.html"> Advanced Serialization</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/AdvancedSerialization.html#rcf_user_guide.AdvancedSerialization.Polymorphic"> Polymorphic
+      serialization</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AdvancedSerialization.html#rcf_user_guide.AdvancedSerialization.Pointers"> Pointer
+      tracking</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AdvancedSerialization.html#rcf_user_guide.AdvancedSerialization.Interchangeable">
+      Interchangeable types</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AdvancedSerialization.html#rcf_user_guide.AdvancedSerialization.Unicode"> Unicode
+      strings</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/ThirdParty.html"> Third Party Serialization</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/ThirdParty.html#rcf_user_guide.ThirdParty.BSer"> Boost.Serialization</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/ThirdParty.html#rcf_user_guide.ThirdParty.Protobufs"> Protocol Buffers</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/JsonRpc.html"> JSON-RPC</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixBuilding.html"> Appendix - Building RCF</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/AppendixBuilding.html#rcf_user_guide.AppendixBuilding.Configuration"> Configuration</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixBuilding.html#rcf_user_guide.AppendixBuilding.Libraries"> Third party
+      library versions</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixBuilding.html#rcf_user_guide.AppendixBuilding.Compilers"> Compilers</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixBuilding.html#rcf_user_guide.AppendixBuilding.Platforms"> Platforms</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/AppendixLogging.html"> Appendix - Logging</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html"> Appendix - Release
+    Notes</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.2_1_0_0"> RCF 2.1.0.0
+      - 2015-06-01</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.2_0_1_101"> RCF 2.0.1.101
+      - 2014-09-06</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.2_0_1_100"> RCF 2.0.1.100
+      - 2014-04-24</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.2_0_0_2685"> RCF
+      2.0.0.2685 - 2013-07-17</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.2_0_0_2683"> RCF
+      2.0.0.2683 - 2013-06-18</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.2_0_0_2682"> RCF
+      2.0.0.2682 - 2013-06-01</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.2_0_0_2679"> RCF
+      2.0.0.2679 - 2013-03-27</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.2_0_0_2678"> RCF
+      2.0.0.2678 - 2013-03-07</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.2_0_0_2675"> RCF
+      2.0.0.2675 - 2013-01-03</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.2_0_0_2673"> RCF
+      2.0.0.2673 - 2012-10-28</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.2_0_0_2672"> RCF
+      2.0.0.2672 - 2012-10-23</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.2_0_0_2670"> RCF
+      2.0.0.2670 - 2012-10-16</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.2_0_0_2668"> RCF
+      2.0.0.2668 - 2012-10-15</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.2_0_0_2665"> RCF
+      2.0.0.2665 - 2012-09-29</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.2_0_0_2664"> RCF
+      2.0.0.2664 - 2012-09-24</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.2_0_0_2661"> RCF
+      2.0.0.2661 - 2012-09-02</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.2_0_0_2648"> RCF
+      2.0.0.2648 - 2012-08-19</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.1_3_1"> RCF 1.3.1</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.1_3"> RCF 1.3</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.1_2"> RCF 1.2</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.1_1"> RCF 1.1</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.1_0"> RCF 1.0</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.0_9d"> RCF 0.9d</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixReleaseNotes.html#rcf_user_guide.AppendixReleaseNotes.0_9c"> RCF 0.9c</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="rcf_user_guide/AppendixFaq.html"> Appendix - FAQ</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="rcf_user_guide/AppendixFaq.html#rcf_user_guide.AppendixFaq.Building"> Building</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixFaq.html#rcf_user_guide.AppendixFaq.Platforms"> Platforms</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixFaq.html#rcf_user_guide.AppendixFaq.Programming"> Programming</a></span></dt>
+<dt><span class="section"><a href="rcf_user_guide/AppendixFaq.html#rcf_user_guide.AppendixFaq.Misc"> Miscellaneous</a></span></dt>
+</dl></dd>
+</dl>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.Version"></a><a class="link" href="index.html#rcf_user_guide.Version" title="Version"> Version</a>
+</h2></div></div></div>
+<p>
+      This documentation applies to <span class="bold"><strong>RCF 2.0</strong></span>.
+    </p>
+<p>
+      Please send any questions or comments to <a href="mailto:support@deltavsoft.com" target="_top">support@deltavsoft.com
+      </a>.
+    </p>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"><p><small>Last revised: June 03, 2015 at 12:18:52 GMT</small></p></td>
+<td align="right"><div class="copyright-footer"></div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav"><a accesskey="n" href="rcf_user_guide/Intro.html"><img src="images/next.png" alt="Next"></a></div>
+</body>
+</html>

@@ -1,0 +1,10 @@
+
+Copyright (C) 2006-2014 Delta V Software. All rights reserved.
+
+RCF is distributed under a dual licensing model. For commercial licensing conditions, please see our website:
+
+http://www.deltavsoft.com/RCF_License_Agreement.pdf
+
+For open source applications, RCF is distributed under the GPL v2 license, with specific exceptions for OpenSSL. For more details, please see our website:
+
+http://www.deltavsoft.com/RCF_Open_Source_License.txt

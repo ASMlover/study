@@ -1,0 +1,659 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Versioning</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="../index.html" title="RCF User Guide">
+<link rel="up" href="../index.html" title="RCF User Guide">
+<link rel="prev" href="FileTransfers.html" title="File Transfers">
+<link rel="next" href="Performance.html" title="Performance">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="FileTransfers.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Performance.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.Versioning"></a><a class="link" href="Versioning.html" title="Versioning"> Versioning</a>
+</h2></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="Versioning.html#rcf_user_guide.Versioning.Interfaces"> Interface versioning</a></span></dt>
+<dt><span class="section"><a href="Versioning.html#rcf_user_guide.Versioning.Serialization"> Archive versioning</a></span></dt>
+<dt><span class="section"><a href="Versioning.html#rcf_user_guide.Versioning.RcfRuntime"> Runtime versioning</a></span></dt>
+<dt><span class="section"><a href="Versioning.html#rcf_user_guide.Versioning.custom_version_negotiation">Custom
+      version negotiation</a></span></dt>
+<dt><span class="section"><a href="Versioning.html#rcf_user_guide.Versioning.protocol_buffers">Protocol
+      Buffers</a></span></dt>
+</dl></div>
+<p>
+      Versioning, in this context, is the subject of upgrading distributed components
+      (clients or servers) without breaking runtime compatibility with previously
+      deployed components (clients or servers).
+    </p>
+<p>
+      If you write components which only communicate with peer components of the
+      same version, you won't need to worry about versioning. For instance, if all
+      your components are built from the same codebase and deployed together, versioning
+      won't be an issue.
+    </p>
+<p>
+      However, if you, for example, have clients which need to communicate with servers
+      that were built from an older version of the same codebase, and have already
+      been deployed, then you will need to be aware of how RCF deals with versioning.
+    </p>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Versioning.Interfaces"></a><a class="link" href="Versioning.html#rcf_user_guide.Versioning.Interfaces" title="Interface versioning"> Interface versioning</a>
+</h3></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="Versioning.html#rcf_user_guide.Versioning.Interfaces.Functions"> Adding
+        or removing functions</a></span></dt>
+<dt><span class="section"><a href="Versioning.html#rcf_user_guide.Versioning.Interfaces.Parameters"> Adding
+        or removing parameters</a></span></dt>
+<dt><span class="section"><a href="Versioning.html#rcf_user_guide.Versioning.Interfaces.Renaming"> Renaming
+        interfaces</a></span></dt>
+</dl></div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.Versioning.Interfaces.Functions"></a><a class="link" href="Versioning.html#rcf_user_guide.Versioning.Interfaces.Functions" title="Adding or removing functions"> Adding
+        or removing functions</a>
+</h4></div></div></div>
+<p>
+          Each method in an RCF interface has a dispatch ID associated with it, which
+          is used by clients to identify that particular method. The first method
+          on an interface has a dispatch ID of 0, the next one a dispatch ID of 1,
+          and so on.
+        </p>
+<p>
+          Inserting a method at the beginning, or in the middle, of an RCF interface,
+          changes the existing dispatch ID's and hence breaks compatibility with
+          existing clients and servers. To preserve compatibility, methods need to
+          be added at the end of the RCF interface:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Version 1
+</span><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Calculator</span><span class="special">,</span> <span class="string">"I_Calculator"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R2</span><span class="special">(</span><span class="keyword">double</span><span class="special">,</span> <span class="identifier">add</span><span class="special">,</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">double</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R2</span><span class="special">(</span><span class="keyword">double</span><span class="special">,</span> <span class="identifier">subtract</span><span class="special">,</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">double</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Calculator</span><span class="special">)</span>
+</pre>
+<p>
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Version 2.
+</span>
+<span class="comment">// * Clients compiled against this interface will be able to call add() and 
+</span><span class="comment">//   subtract() on servers compiled against the old interface.
+</span><span class="comment">//
+</span><span class="comment">// * Servers compiled against this interface will be able to take add() and 
+</span><span class="comment">//   subtract() calls from clients compiled against the old interface.
+</span>
+<span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Calculator</span><span class="special">,</span> <span class="string">"I_Calculator"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R2</span><span class="special">(</span><span class="keyword">double</span><span class="special">,</span> <span class="identifier">add</span><span class="special">,</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">double</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R2</span><span class="special">(</span><span class="keyword">double</span><span class="special">,</span> <span class="identifier">subtract</span><span class="special">,</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">double</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R2</span><span class="special">(</span><span class="keyword">double</span><span class="special">,</span> <span class="identifier">multiply</span><span class="special">,</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">double</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Calculator</span><span class="special">)</span>
+</pre>
+<p>
+        </p>
+<p>
+          Removing methods can be done as well, as long as a place holder is left
+          in the interface, in order to preserve the dispatch ID's of the remaining
+          methods in the interface.
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Version 1
+</span><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Calculator</span><span class="special">,</span> <span class="string">"I_Calculator"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R2</span><span class="special">(</span><span class="keyword">double</span><span class="special">,</span> <span class="identifier">add</span><span class="special">,</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">double</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R2</span><span class="special">(</span><span class="keyword">double</span><span class="special">,</span> <span class="identifier">subtract</span><span class="special">,</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">double</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Calculator</span><span class="special">)</span>
+</pre>
+<p>
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Version 2. 
+</span>
+<span class="comment">// * Clients compiled against this interface will be able to call subtract() 
+</span><span class="comment">//   on servers compiled against the old interface.
+</span><span class="comment">//
+</span><span class="comment">// * Servers compiled against this interface will be able to take subtract()
+</span><span class="comment">//   calls from clients compiled against the old interface (but not add() calls).
+</span>
+<span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Calculator</span><span class="special">,</span> <span class="string">"I_Calculator"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_PLACEHOLDER</span><span class="special">()</span>
+    <span class="identifier">RCF_METHOD_R2</span><span class="special">(</span><span class="keyword">double</span><span class="special">,</span> <span class="identifier">subtract</span><span class="special">,</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">double</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Calculator</span><span class="special">)</span>
+</pre>
+<p>
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.Versioning.Interfaces.Parameters"></a><a class="link" href="Versioning.html#rcf_user_guide.Versioning.Interfaces.Parameters" title="Adding or removing parameters"> Adding
+        or removing parameters</a>
+</h4></div></div></div>
+<p>
+          Parameters can be added to a method, or removed from a method, without
+          breaking compatibility. RCF servers and clients ignore any extra (redundant)
+          parameters that are passed in a remote call, and if an expected parameter
+          is not supplied, it is default initialized.
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Version 1
+</span><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Calculator</span><span class="special">,</span> <span class="string">"I_Calculator"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R2</span><span class="special">(</span><span class="keyword">double</span><span class="special">,</span> <span class="identifier">add</span><span class="special">,</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">double</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Calculator</span><span class="special">)</span>
+</pre>
+<p>
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Version 2
+</span>
+<span class="comment">// * Clients compiled against this interface will be able to call add() 
+</span><span class="comment">//   on servers compiled against the old interface (the server will ignore
+</span><span class="comment">//   the third parameter).
+</span><span class="comment">//
+</span><span class="comment">// * Servers compiled against this interface will be able to take add()
+</span><span class="comment">//   calls from clients compiled against the old interface (the third parameter
+</span><span class="comment">//   will be default initialized to zero).
+</span>
+<span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Calculator</span><span class="special">,</span> <span class="string">"I_Calculator"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R3</span><span class="special">(</span><span class="keyword">double</span><span class="special">,</span> <span class="identifier">add</span><span class="special">,</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">double</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Calculator</span><span class="special">)</span>
+</pre>
+<p>
+        </p>
+<p>
+          Likewise, parameters can be removed:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Version 1
+</span><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Calculator</span><span class="special">,</span> <span class="string">"I_Calculator"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R2</span><span class="special">(</span><span class="keyword">double</span><span class="special">,</span> <span class="identifier">add</span><span class="special">,</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">double</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Calculator</span><span class="special">)</span>
+</pre>
+<p>
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Version 2
+</span>
+<span class="comment">// * Clients compiled against this interface will be able to call add() 
+</span><span class="comment">//   on servers compiled against the old interface (the server will assume the
+</span><span class="comment">//   second parameter is zero).
+</span><span class="comment">//
+</span><span class="comment">// * Servers compiled against this interface will be able to take add()
+</span><span class="comment">//   calls from clients compiled against the old interface (the second parameter
+</span><span class="comment">//   from the client will be ignored).
+</span>
+<span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Calculator</span><span class="special">,</span> <span class="string">"I_Calculator"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="keyword">double</span><span class="special">,</span> <span class="identifier">add</span><span class="special">,</span> <span class="keyword">double</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Calculator</span><span class="special">)</span>
+</pre>
+<p>
+        </p>
+<p>
+          Note that RCF marshals in-parameters and out-parameters in the order that
+          they appear in the <code class="computeroutput"><span class="identifier">RCF_METHOD_XX</span><span class="special">()</span></code> declaration. Any added (or removed) parameters
+          must be the last to be marshalled, otherwise compatibility will be broken.
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.Versioning.Interfaces.Renaming"></a><a class="link" href="Versioning.html#rcf_user_guide.Versioning.Interfaces.Renaming" title="Renaming interfaces"> Renaming
+        interfaces</a>
+</h4></div></div></div>
+<p>
+          RCF interfaces are identified by their runtime name, as specified in the
+          second parameter of the <code class="computeroutput"><span class="identifier">RCF_BEGIN</span><span class="special">()</span></code> macro. As long as this name is preserved,
+          the compile time name of the interface can be changed, without breaking
+          compatibility.
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Version 1
+</span><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Calculator</span><span class="special">,</span> <span class="string">"I_Calculator"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R2</span><span class="special">(</span><span class="keyword">double</span><span class="special">,</span> <span class="identifier">add</span><span class="special">,</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">double</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Calculator</span><span class="special">)</span>
+</pre>
+<p>
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Version 2
+</span>
+<span class="comment">// * Clients compiled against this interface will be able to call add() 
+</span><span class="comment">//   on servers compiled against the old interface.
+</span><span class="comment">//
+</span><span class="comment">// * Servers compiled against this interface will be able to take add()
+</span><span class="comment">//   calls from clients compiled against the old interface.
+</span>
+<span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_CalculatorService</span><span class="special">,</span> <span class="string">"I_Calculator"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R2</span><span class="special">(</span><span class="keyword">double</span><span class="special">,</span> <span class="identifier">add</span><span class="special">,</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">double</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_CalculatorService</span><span class="special">)</span>
+</pre>
+<p>
+        </p>
+</div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Versioning.Serialization"></a><a class="link" href="Versioning.html#rcf_user_guide.Versioning.Serialization" title="Archive versioning"> Archive versioning</a>
+</h3></div></div></div>
+<p>
+        The application-specific data types passed in a remote call, are likely to
+        change over time. To assist applications in maintaining backwards compatibility,
+        RCF provides an archive version number, which is automatically passed from
+        the client to the server on each call. The archive version number is a 32
+        bit unsigned integer, and is set to zero by default. The archive version
+        number can be retrieved from any serialization function, by calling SF::Archive::getArchiveVersion():
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">void</span> <span class="identifier">serialize</span><span class="special">(</span><span class="identifier">SF</span><span class="special">::</span><span class="identifier">Archive</span> <span class="special">&amp;</span> <span class="identifier">ar</span><span class="special">,</span> <span class="identifier">MyClass</span> <span class="special">&amp;</span> <span class="identifier">m</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint32_t</span> <span class="identifier">archiveVersion</span> <span class="special">=</span> <span class="identifier">ar</span><span class="special">.</span><span class="identifier">getArchiveVersion</span><span class="special">();</span>
+    <span class="comment">// ...
+</span><span class="special">}</span>
+</pre>
+<p>
+      </p>
+<p>
+        The archive version number in use on a client-server connection is determined
+        by an automatic version negotiation step that takes place when the client
+        connects. The version negotiation step ensures that the connection uses the
+        greatest archive version number that both components support.
+      </p>
+<p>
+        When breaking changes are made to serialization functions, the archive version
+        number should be updated to reflect the change. Typically you would increment
+        the archive version number once for each release of the application. The
+        serialization functions then use the value of the archive version number,
+        to determine which members to serialize.
+      </p>
+<p>
+        For example, assume that the first version of your application contains this
+        code:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">class</span> <span class="identifier">X</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">X</span><span class="special">()</span> <span class="special">:</span> <span class="identifier">mN</span><span class="special">(</span><span class="number">0</span><span class="special">)</span>
+    <span class="special">{}</span>
+
+    <span class="keyword">int</span> <span class="identifier">mN</span><span class="special">;</span>
+
+    <span class="keyword">void</span> <span class="identifier">serialize</span><span class="special">(</span><span class="identifier">SF</span><span class="special">::</span><span class="identifier">Archive</span> <span class="special">&amp;</span> <span class="identifier">ar</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">ar</span> <span class="special">&amp;</span> <span class="identifier">mN</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">};</span>
+
+<span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">,</span> <span class="string">"I_Echo"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">X</span><span class="special">,</span> <span class="identifier">echo</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">X</span> <span class="special">&amp;)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">)</span>
+
+<span class="keyword">class</span> <span class="identifier">Echo</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">X</span> <span class="identifier">echo</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">X</span> <span class="special">&amp;</span> <span class="identifier">x</span><span class="special">)</span> <span class="special">{</span> <span class="keyword">return</span> <span class="identifier">x</span><span class="special">;</span> <span class="special">}</span>
+<span class="special">};</span>
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">//--------------------------------------------------------------------------
+</span><span class="comment">// Accepting calls from other processes...
+</span><span class="identifier">Echo</span> <span class="identifier">echo</span><span class="special">;</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">bind</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;(</span><span class="identifier">echo</span><span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="comment">//--------------------------------------------------------------------------
+</span><span class="comment">// ... or making calls to other processes.
+</span><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50002</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">X</span> <span class="identifier">x1</span><span class="special">;</span>
+<span class="identifier">X</span> <span class="identifier">x2</span><span class="special">;</span>
+<span class="identifier">x2</span> <span class="special">=</span> <span class="identifier">client</span><span class="special">.</span><span class="identifier">echo</span><span class="special">(</span><span class="identifier">x1</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        Once this version has been released, a new version is prepared, with a new
+        member added to the <code class="computeroutput"><span class="identifier">X</span></code> class:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">class</span> <span class="identifier">X</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">X</span><span class="special">()</span> <span class="special">:</span> <span class="identifier">mN</span><span class="special">(</span><span class="number">0</span><span class="special">)</span>
+    <span class="special">{}</span>
+
+    <span class="keyword">int</span> <span class="identifier">mN</span><span class="special">;</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">mS</span><span class="special">;</span>
+
+    <span class="keyword">void</span> <span class="identifier">serialize</span><span class="special">(</span><span class="identifier">SF</span><span class="special">::</span><span class="identifier">Archive</span> <span class="special">&amp;</span> <span class="identifier">ar</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="comment">// Retrieve archive version, to determine which members to serialize.
+</span>        <span class="identifier">boost</span><span class="special">::</span><span class="identifier">uint32_t</span> <span class="identifier">version</span> <span class="special">=</span> <span class="identifier">ar</span><span class="special">.</span><span class="identifier">getArchiveVersion</span><span class="special">();</span>
+
+        <span class="keyword">if</span> <span class="special">(</span><span class="identifier">version</span> <span class="special">==</span> <span class="number">0</span><span class="special">)</span>
+        <span class="special">{</span>
+            <span class="identifier">ar</span> <span class="special">&amp;</span> <span class="identifier">mN</span><span class="special">;</span>
+        <span class="special">}</span>
+        <span class="keyword">else</span> <span class="keyword">if</span> <span class="special">(</span><span class="identifier">version</span> <span class="special">==</span> <span class="number">1</span><span class="special">)</span>
+        <span class="special">{</span>
+            <span class="identifier">ar</span> <span class="special">&amp;</span> <span class="identifier">mN</span><span class="special">;</span>
+            <span class="identifier">ar</span> <span class="special">&amp;</span> <span class="identifier">mS</span><span class="special">;</span>
+        <span class="special">}</span>
+        <span class="keyword">else</span>
+        <span class="special">{</span>
+            <span class="comment">// Unsupported version
+</span>            <span class="keyword">throw</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">runtime_error</span><span class="special">(</span><span class="string">"Unsupported version."</span><span class="special">);</span>
+        <span class="special">}</span>
+    <span class="special">}</span>
+<span class="special">};</span>
+
+<span class="keyword">class</span> <span class="identifier">Echo</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">X</span> <span class="identifier">echo</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">X</span> <span class="special">&amp;</span> <span class="identifier">x</span><span class="special">)</span> <span class="special">{</span> <span class="keyword">return</span> <span class="identifier">x</span><span class="special">;</span> <span class="special">}</span>
+<span class="special">};</span>
+</pre>
+<p>
+      </p>
+<p>
+        Notice that the serialization code of <code class="computeroutput"><span class="identifier">X</span></code>
+        now uses the archive version number to determine whether it should serialize
+        the new <code class="computeroutput"><span class="identifier">mS</span></code> member.
+      </p>
+<p>
+        With these changes, new servers are able to process calls from both old and
+        new clients, and new clients are able to call either old or new servers:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// The default archive version should be the latest archive version this process supports.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">setDefaultArchiveVersion</span><span class="special">(</span><span class="number">1</span><span class="special">);</span>
+
+<span class="comment">//--------------------------------------------------------------------------
+</span><span class="comment">// Accepting calls from other processes...
+</span>
+<span class="comment">// This server can take calls from either new or old clients. Archive version
+</span><span class="comment">// will be 0 when old clients call in, and 1 when new clients call in.
+</span><span class="identifier">Echo</span> <span class="identifier">echo</span><span class="special">;</span>
+<span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">bind</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;(</span><span class="identifier">echo</span><span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="comment">//--------------------------------------------------------------------------
+</span><span class="comment">// ... or making calls to other processes.
+</span>
+<span class="comment">// This client can call either new or old servers.
+</span><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50002</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">X</span> <span class="identifier">x1</span><span class="special">;</span>
+<span class="identifier">X</span> <span class="identifier">x2</span><span class="special">;</span>
+
+<span class="comment">// If the server on port 50002 is old, this call will have archive version set to 0.
+</span><span class="comment">// If the server on port 50002 is new, this call will have archive version set to 1.
+</span><span class="identifier">x2</span> <span class="special">=</span> <span class="identifier">client</span><span class="special">.</span><span class="identifier">echo</span><span class="special">(</span><span class="identifier">x1</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Versioning.RcfRuntime"></a><a class="link" href="Versioning.html#rcf_user_guide.Versioning.RcfRuntime" title="Runtime versioning"> Runtime versioning</a>
+</h3></div></div></div>
+<p>
+        RCF maintains runtime compatibility with itself, for all releases dating
+        back to and including RCF 0.9c, released in July 2007.
+      </p>
+<p>
+        To implement runtime compatibility between RCF releases, RCF maintains a
+        runtime version number, which is incremented for each RCF release. The runtime
+        version number is passed in the request header for each remote call, and
+        allows old and new RCF releases to interoperate.
+      </p>
+<p>
+        RCF's automatic client-server version negotiation handles runtime versioning,
+        as well as archive versioning. In most circumstances, you won't need to know
+        about runtime version numbers - you can mix and match RCF releases, and at
+        runtime, an appropriate runtime version is negotiated for each client-server
+        connection.
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Versioning.custom_version_negotiation"></a><a class="link" href="Versioning.html#rcf_user_guide.Versioning.custom_version_negotiation" title="Custom version negotiation">Custom
+      version negotiation</a>
+</h3></div></div></div>
+<p>
+        RCF's automatic version negotiation does require an extra round trip between
+        the client and the server, in the case of a version mismatch. In some situations,
+        the client may already know the runtime version and archive version of the
+        server it is about to call, in which case it can disable automatic versioning
+        and set the version numbers explicitly:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="comment">// Turn off automatic version negotiation.
+</span><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setAutoVersioning</span><span class="special">(</span><span class="keyword">false</span><span class="special">);</span>
+
+<span class="comment">// Assume that the server is running RCF 1.1, with archive version 2.
+</span><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setRuntimeVersion</span><span class="special">(</span><span class="number">5</span><span class="special">);</span> <span class="comment">// RCF 1.1
+</span><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setArchiveVersion</span><span class="special">(</span><span class="number">2</span><span class="special">);</span>
+
+<span class="comment">// If the server doesn't support the requested version numbers, an exception will be thrown.
+</span><span class="identifier">X</span> <span class="identifier">x1</span><span class="special">;</span>
+<span class="identifier">X</span> <span class="identifier">x2</span> <span class="special">=</span> <span class="identifier">client</span><span class="special">.</span><span class="identifier">echo</span><span class="special">(</span><span class="identifier">x1</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        Automatic version negotiation is not supported for oneway calls. In particular,
+        the oneway calls made by a publisher to its subscribers, are not automatically
+        versioned. If you have subscribers with varying runtime and archive version
+        numbers, the publisher will need to explicitly set version numbers on the
+        publishing <code class="computeroutput"><span class="identifier">RcfClient</span><span class="special">&lt;&gt;</span></code>
+        object, to match that of the oldest subscriber:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+
+<span class="keyword">typedef</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Publisher</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;</span> <span class="identifier">HelloWorldPublisher</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">shared_ptr</span><span class="special">&lt;</span> <span class="identifier">HelloWorldPublisher</span> <span class="special">&gt;</span> <span class="identifier">HelloWorldPublisherPtr</span><span class="special">;</span>
+<span class="identifier">HelloWorldPublisherPtr</span> <span class="identifier">pubPtr</span> <span class="special">=</span> <span class="identifier">server</span><span class="special">.</span><span class="identifier">createPublisher</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;();</span>
+
+<span class="comment">// Explicitly set version numbers to support older subscribers.
+</span><span class="identifier">pubPtr</span><span class="special">-&gt;</span><span class="identifier">publish</span><span class="special">().</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setRuntimeVersion</span><span class="special">(</span><span class="number">3</span><span class="special">);</span> <span class="comment">// RCF runtime version 3 (RCF 0.9d).
+</span><span class="identifier">pubPtr</span><span class="special">-&gt;</span><span class="identifier">publish</span><span class="special">().</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setArchiveVersion</span><span class="special">(</span><span class="number">5</span><span class="special">);</span> <span class="comment">// Application archive version 5.
+</span></pre>
+<p>
+      </p>
+<p>
+        For reference, here is a table of runtime version numbers for each RCF release.
+      </p>
+<div class="informaltable"><table class="table">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead><tr>
+<th>
+                <p>
+                  RCF release
+                </p>
+              </th>
+<th>
+                <p>
+                  Runtime version number
+                </p>
+              </th>
+</tr></thead>
+<tbody>
+<tr>
+<td>
+                <p>
+                  0.9c
+                </p>
+              </td>
+<td>
+                <p>
+                  2
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  0.9d
+                </p>
+              </td>
+<td>
+                <p>
+                  3
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  1.0
+                </p>
+              </td>
+<td>
+                <p>
+                  4
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  1.1
+                </p>
+              </td>
+<td>
+                <p>
+                  5
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  1.2
+                </p>
+              </td>
+<td>
+                <p>
+                  6
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  1.3
+                </p>
+              </td>
+<td>
+                <p>
+                  8
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  1.3.1
+                </p>
+              </td>
+<td>
+                <p>
+                  9
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  2.0
+                </p>
+              </td>
+<td>
+                <p>
+                  10
+                </p>
+              </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.Versioning.protocol_buffers"></a><a class="link" href="Versioning.html#rcf_user_guide.Versioning.protocol_buffers" title="Protocol Buffers">Protocol
+      Buffers</a>
+</h3></div></div></div>
+<p>
+        For applications with backwards compatibility requirements and short or continuous
+        release cycles, archive versioning can become difficult to manage. Each increment
+        of the archive version number involves adding new execution paths to serialization
+        functions, and may lead to complicated serialization code.
+      </p>
+<p>
+        RCF also supports <a href="http://code.google.com/p/protobuf/" target="_top">Protocol
+        Buffers</a>, which provides an alternative approach to versioning. Rather
+        than manually writing serialization code for C++ objects, Protocol Buffers
+        can be used to generate C++ classes with built-in serialization code, which
+        deals automatically with versioning differences (see <a class="link" href="ThirdParty.html#rcf_user_guide.ThirdParty.Protobufs" title="Protocol Buffers">Protocol
+        Buffers</a>).
+      </p>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2005 - 2015 Delta V Software</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="FileTransfers.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Performance.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

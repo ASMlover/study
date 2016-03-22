@@ -1,0 +1,501 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Advanced Serialization</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="../index.html" title="RCF User Guide">
+<link rel="up" href="../index.html" title="RCF User Guide">
+<link rel="prev" href="Performance.html" title="Performance">
+<link rel="next" href="ThirdParty.html" title="Third Party Serialization">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="Performance.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="ThirdParty.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.AdvancedSerialization"></a><a class="link" href="AdvancedSerialization.html" title="Advanced Serialization"> Advanced Serialization</a>
+</h2></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="AdvancedSerialization.html#rcf_user_guide.AdvancedSerialization.Polymorphic"> Polymorphic
+      serialization</a></span></dt>
+<dt><span class="section"><a href="AdvancedSerialization.html#rcf_user_guide.AdvancedSerialization.Pointers"> Pointer
+      tracking</a></span></dt>
+<dt><span class="section"><a href="AdvancedSerialization.html#rcf_user_guide.AdvancedSerialization.Interchangeable">
+      Interchangeable types</a></span></dt>
+<dt><span class="section"><a href="AdvancedSerialization.html#rcf_user_guide.AdvancedSerialization.Unicode"> Unicode
+      strings</a></span></dt>
+</dl></div>
+<p>
+      User-defined C++ objects can be quite complex to serialize. This section describes
+      some of the more advanced features of RCF's internal serialization framework,
+      SF.
+    </p>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.AdvancedSerialization.Polymorphic"></a><a class="link" href="AdvancedSerialization.html#rcf_user_guide.AdvancedSerialization.Polymorphic" title="Polymorphic serialization"> Polymorphic
+      serialization</a>
+</h3></div></div></div>
+<p>
+        SF will automatically serialize polymorphic pointers and references, as fully
+        derived types. However, to do this, SF needs to be configured with two pieces
+        of information about the polymorphic type being serialized. First, SF needs
+        a runtime identifier string for the polymorphic type. Second, it needs to
+        know which base classes the polymorphic type will be serialized through.
+      </p>
+<p>
+        As an example, consider the following polymorphic class hierarchy.
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">class</span> <span class="identifier">A</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">A</span><span class="special">()</span> <span class="special">:</span> <span class="identifier">mA</span><span class="special">()</span> <span class="special">{}</span>
+    <span class="keyword">virtual</span> <span class="special">~</span><span class="identifier">A</span><span class="special">()</span> <span class="special">{}</span>
+
+    <span class="keyword">void</span> <span class="identifier">serialize</span><span class="special">(</span><span class="identifier">SF</span><span class="special">::</span><span class="identifier">Archive</span> <span class="special">&amp;</span><span class="identifier">ar</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">ar</span> <span class="special">&amp;</span> <span class="identifier">mA</span><span class="special">;</span>
+    <span class="special">}</span>
+
+    <span class="keyword">int</span> <span class="identifier">mA</span><span class="special">;</span>
+<span class="special">};</span>
+
+<span class="keyword">class</span> <span class="identifier">B</span> <span class="special">:</span> <span class="keyword">public</span> <span class="identifier">A</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">B</span><span class="special">()</span> <span class="special">:</span> <span class="identifier">mB</span><span class="special">()</span> <span class="special">{}</span>
+
+    <span class="keyword">void</span> <span class="identifier">serialize</span><span class="special">(</span><span class="identifier">SF</span><span class="special">::</span><span class="identifier">Archive</span> <span class="special">&amp;</span><span class="identifier">ar</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">SF</span><span class="special">::</span><span class="identifier">serializeParent</span><span class="special">&lt;</span><span class="identifier">A</span><span class="special">&gt;(</span><span class="identifier">ar</span><span class="special">,</span> <span class="special">*</span><span class="keyword">this</span><span class="special">);</span>
+        <span class="identifier">ar</span> <span class="special">&amp;</span> <span class="identifier">mB</span><span class="special">;</span>
+    <span class="special">}</span>
+
+    <span class="keyword">int</span> <span class="identifier">mB</span><span class="special">;</span>
+<span class="special">};</span>
+
+<span class="keyword">class</span> <span class="identifier">C</span> <span class="special">:</span> <span class="keyword">public</span> <span class="identifier">B</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">C</span><span class="special">()</span> <span class="special">:</span> <span class="identifier">mC</span><span class="special">()</span> <span class="special">{}</span>
+
+    <span class="keyword">void</span> <span class="identifier">serialize</span><span class="special">(</span><span class="identifier">SF</span><span class="special">::</span><span class="identifier">Archive</span> <span class="special">&amp;</span><span class="identifier">ar</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">SF</span><span class="special">::</span><span class="identifier">serializeParent</span><span class="special">&lt;</span><span class="identifier">B</span><span class="special">&gt;(</span><span class="identifier">ar</span><span class="special">,</span> <span class="special">*</span><span class="keyword">this</span><span class="special">);</span>
+        <span class="identifier">ar</span> <span class="special">&amp;</span> <span class="identifier">mC</span><span class="special">;</span>
+    <span class="special">}</span>
+
+    <span class="keyword">int</span> <span class="identifier">mC</span><span class="special">;</span>
+<span class="special">};</span>
+</pre>
+<p>
+      </p>
+<p>
+        Note that <code class="computeroutput"><span class="identifier">SF</span><span class="special">::</span><span class="identifier">serializeParent</span><span class="special">&lt;&gt;()</span></code>
+        is used to invoke base class serialization code. If you try to serialize
+        the parent directly, e.g. by calling <code class="computeroutput"><span class="identifier">ar</span>
+        <span class="special">&amp;</span> <span class="keyword">static_cast</span><span class="special">&lt;</span><span class="identifier">A</span><span class="special">&amp;&gt;(*</span><span class="keyword">this</span><span class="special">)</span></code>, SF
+        will detect that the parent class is actually a derived class, and will try
+        to serialize the derived class once again.
+      </p>
+<p>
+        We want to implement polymorphic serialization of <code class="computeroutput"><span class="identifier">A</span>
+        <span class="special">*</span></code> pointers, for use in the <code class="computeroutput"><span class="identifier">X</span></code> class:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">class</span> <span class="identifier">X</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">X</span><span class="special">()</span> <span class="special">:</span> <span class="identifier">mpA</span><span class="special">()</span> 
+    <span class="special">{}</span>
+    
+    <span class="keyword">void</span> <span class="identifier">serialize</span><span class="special">(</span><span class="identifier">SF</span><span class="special">::</span><span class="identifier">Archive</span> <span class="special">&amp;</span><span class="identifier">ar</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">ar</span> <span class="special">&amp;</span> <span class="identifier">mpA</span><span class="special">;</span>
+    <span class="special">}</span>
+
+    <span class="identifier">A</span> <span class="special">*</span> <span class="identifier">mpA</span><span class="special">;</span>
+<span class="special">};</span>
+
+<span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">,</span> <span class="string">"I_Echo"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">X</span><span class="special">,</span> <span class="identifier">Echo</span><span class="special">,</span> <span class="identifier">X</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">)</span>
+</pre>
+<p>
+      </p>
+<p>
+        First we need to suppply runtime identifiers for the <code class="computeroutput"><span class="identifier">B</span></code>
+        and <code class="computeroutput"><span class="identifier">C</span></code> classes.
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">SF</span><span class="special">::</span><span class="identifier">registerType</span><span class="special">&lt;</span><span class="identifier">B</span><span class="special">&gt;(</span><span class="string">"B"</span><span class="special">);</span>
+<span class="identifier">SF</span><span class="special">::</span><span class="identifier">registerType</span><span class="special">&lt;</span><span class="identifier">C</span><span class="special">&gt;(</span><span class="string">"C"</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        The runtime identifiers will be included in serialized archives when <code class="computeroutput"><span class="identifier">B</span></code> and <code class="computeroutput"><span class="identifier">C</span></code>
+        objects are serialized, and will allow the deserialization code to construct
+        objects of the appropriate type.
+      </p>
+<p>
+        We also need to specify which base types the <code class="computeroutput"><span class="identifier">B</span></code>
+        and <code class="computeroutput"><span class="identifier">C</span></code> classes will be serialized
+        through. In this case, <code class="computeroutput"><span class="identifier">B</span></code>
+        and <code class="computeroutput"><span class="identifier">C</span></code> objects will be serialized
+        through an <code class="computeroutput"><span class="identifier">A</span></code> pointer.
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">SF</span><span class="special">::</span><span class="identifier">registerBaseAndDerived</span><span class="special">&lt;</span><span class="identifier">A</span><span class="special">,</span> <span class="identifier">B</span><span class="special">&gt;();</span>
+<span class="identifier">SF</span><span class="special">::</span><span class="identifier">registerBaseAndDerived</span><span class="special">&lt;</span><span class="identifier">A</span><span class="special">,</span> <span class="identifier">C</span><span class="special">&gt;();</span>
+</pre>
+<p>
+      </p>
+<p>
+        With the SF runtime now configured, we can run this code:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">((</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">)));</span>
+
+<span class="identifier">X</span> <span class="identifier">x1</span><span class="special">;</span>
+<span class="identifier">x1</span><span class="special">.</span><span class="identifier">mpA</span> <span class="special">=</span> <span class="keyword">new</span> <span class="identifier">B</span><span class="special">();</span>
+<span class="identifier">X</span> <span class="identifier">x2</span> <span class="special">=</span> <span class="identifier">client</span><span class="special">.</span><span class="identifier">Echo</span><span class="special">(</span><span class="identifier">x1</span><span class="special">);</span>
+
+<span class="identifier">x1</span><span class="special">.</span><span class="identifier">mpA</span> <span class="special">=</span> <span class="keyword">new</span> <span class="identifier">C</span><span class="special">();</span>
+<span class="identifier">x2</span> <span class="special">=</span> <span class="identifier">client</span><span class="special">.</span><span class="identifier">Echo</span><span class="special">(</span><span class="identifier">x1</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        The polymorphic <code class="computeroutput"><span class="identifier">A</span></code> pointers
+        contained in the <code class="computeroutput"><span class="identifier">X</span></code> objects
+        will be serialized and deserialized, as fully derived polymorphic types.
+      </p>
+<p>
+        Finally, it's the applications responsiblity to delete the <code class="computeroutput"><span class="identifier">X</span><span class="special">::</span><span class="identifier">mpA</span></code>
+        pointer that SF creates upon deserialization. The easiest way to ensure this
+        happens, is to use a C++ smart pointer rather than a raw pointer. SF supports
+        a number of smart pointers, including:
+      </p>
+<div class="itemizedlist"><ul type="disc">
+<li>
+            <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">auto_ptr</span><span class="special">&lt;&gt;</span></code>
+          </li>
+<li>
+            <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">scoped_ptr</span><span class="special">&lt;&gt;</span></code>
+          </li>
+<li>
+            <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">shared_ptr</span><span class="special">&lt;&gt;</span></code>
+          </li>
+</ul></div>
+<p>
+        So for example, we can write <code class="computeroutput"><span class="identifier">X</span></code>
+        as:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">class</span> <span class="identifier">X</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">X</span><span class="special">()</span> <span class="special">:</span> <span class="identifier">mpA</span><span class="special">()</span> 
+    <span class="special">{}</span>
+
+    <span class="keyword">void</span> <span class="identifier">serialize</span><span class="special">(</span><span class="identifier">SF</span><span class="special">::</span><span class="identifier">Archive</span> <span class="special">&amp;</span><span class="identifier">ar</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">ar</span> <span class="special">&amp;</span> <span class="identifier">mpA</span><span class="special">;</span>
+    <span class="special">}</span>
+
+    <span class="keyword">typedef</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">shared_ptr</span><span class="special">&lt;</span><span class="identifier">A</span><span class="special">&gt;</span> <span class="identifier">APtr</span><span class="special">;</span>
+    <span class="identifier">APtr</span> <span class="identifier">mpA</span><span class="special">;</span>
+<span class="special">};</span>
+
+</pre>
+<p>
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.AdvancedSerialization.Pointers"></a><a class="link" href="AdvancedSerialization.html#rcf_user_guide.AdvancedSerialization.Pointers" title="Pointer tracking"> Pointer
+      tracking</a>
+</h3></div></div></div>
+<p>
+        If you serialize a pointer to the same object twice, SF will by default serialize
+        the entire object twice. This means that when the pointers are deserialized,
+        they will point to two distinct objects. In most applications this is usually
+        not an issue. However, some applications may want the deserialization code
+        to instead create two pointers to the same object.
+      </p>
+<p>
+        SF supports this through a pointer tracking concept, where an object is serialized
+        in its entirety, only once, regardless of how many pointers to it are serialized.
+        Upon deserialization, only a single object is created, and multiple pointers
+        can then be deserialized, pointing to the same object.
+      </p>
+<p>
+        To demonstrate pointer tracking, here is an an <code class="computeroutput"><span class="identifier">I_Echo</span></code>
+        interface with an <code class="computeroutput"><span class="identifier">Echo</span><span class="special">()</span></code>
+        function that takes a pair of <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">shared_ptr</span><span class="special">&lt;&gt;</span></code>'s:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">typedef</span> 
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">pair</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">shared_ptr</span><span class="special">&lt;</span><span class="keyword">int</span><span class="special">&gt;,</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">shared_ptr</span><span class="special">&lt;</span><span class="keyword">int</span><span class="special">&gt;</span> <span class="special">&gt;</span> 
+    <span class="identifier">TwoPointers</span><span class="special">;</span>
+
+<span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_Echo</span><span class="special">,</span> <span class="string">"I_Echo"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">TwoPointers</span><span class="special">,</span> <span class="identifier">Echo</span><span class="special">,</span> <span class="identifier">TwoPointers</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_Echo2</span><span class="special">)</span>
+</pre>
+<p>
+      </p>
+<p>
+        Here is the client-side code:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">shared_ptr</span><span class="special">&lt;</span><span class="keyword">int</span><span class="special">&gt;</span> <span class="identifier">spn1</span><span class="special">(</span> <span class="keyword">new</span> <span class="keyword">int</span><span class="special">(</span><span class="number">1</span><span class="special">));</span>
+<span class="identifier">boost</span><span class="special">::</span><span class="identifier">shared_ptr</span><span class="special">&lt;</span><span class="keyword">int</span><span class="special">&gt;</span> <span class="identifier">spn2</span><span class="special">(</span> <span class="identifier">spn1</span> <span class="special">);</span>
+
+<span class="identifier">TwoPointers</span> <span class="identifier">ret</span> <span class="special">=</span> <span class="identifier">client</span><span class="special">.</span><span class="identifier">Echo</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">make_pair</span><span class="special">(</span><span class="identifier">spn1</span><span class="special">,</span><span class="identifier">spn2</span><span class="special">));</span>
+</pre>
+<p>
+      </p>
+<p>
+        If we make a call to <code class="computeroutput"><span class="identifier">Echo</span><span class="special">()</span></code> with a pair of <code class="computeroutput"><span class="identifier">shared_ptr</span><span class="special">&lt;&gt;</span></code>'s pointing to the same <code class="computeroutput"><span class="keyword">int</span></code>, we'll find that the returned pair points
+        to two distinct <code class="computeroutput"><span class="keyword">int</span></code>'s. To get
+        them to point to the same <code class="computeroutput"><span class="keyword">int</span></code>,
+        we enable pointer tracking on the client-side:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_Echo</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">((</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="identifier">port</span><span class="special">)));</span>
+
+<span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setEnableSfPointerTracking</span><span class="special">(</span><span class="keyword">true</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        , and also on the server-side, since we are returning the pointers back to
+        the client:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="keyword">class</span> <span class="identifier">EchoImpl</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> <span class="identifier">T</span><span class="special">&gt;</span>
+    <span class="identifier">T</span> <span class="identifier">Echo</span><span class="special">(</span><span class="identifier">T</span> <span class="identifier">t</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">getCurrentRcfSession</span><span class="special">().</span><span class="identifier">setEnableSfPointerTracking</span><span class="special">(</span><span class="keyword">true</span><span class="special">);</span>
+        <span class="keyword">return</span> <span class="identifier">t</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">};</span>
+</pre>
+<p>
+      </p>
+<p>
+        The two returned <code class="computeroutput"><span class="identifier">shared_ptr</span><span class="special">&lt;&gt;</span></code>'s will now point to the same instance.
+      </p>
+<p>
+        It is worth keeping in mind that pointer tracking is relatively expensive.
+        It requires the serialization framework to track all pointers and values
+        that are being serialized, with significant performance overhead.
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.AdvancedSerialization.Interchangeable"></a><a class="link" href="AdvancedSerialization.html#rcf_user_guide.AdvancedSerialization.Interchangeable" title="Interchangeable types">
+      Interchangeable types</a>
+</h3></div></div></div>
+<p>
+        SF guarantees that certain types are interchangeable, as far as serialization
+        is concerned. For example, it is possible to serialize a pointer, and subsequently
+        deserialize it into a value:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// Serializing a pointer.
+</span><span class="keyword">int</span> <span class="special">*</span> <span class="identifier">pn</span> <span class="special">=</span> <span class="keyword">new</span> <span class="keyword">int</span><span class="special">(</span><span class="number">5</span><span class="special">);</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">ostringstream</span> <span class="identifier">ostr</span><span class="special">;</span>
+<span class="identifier">SF</span><span class="special">::</span><span class="identifier">OBinaryStream</span><span class="special">(</span><span class="identifier">ostr</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="identifier">pn</span><span class="special">;</span>
+<span class="keyword">delete</span> <span class="identifier">pn</span><span class="special">;</span>
+
+<span class="comment">// Deserializing a value.
+</span><span class="keyword">int</span> <span class="identifier">m</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">istringstream</span> <span class="identifier">istr</span><span class="special">(</span><span class="identifier">ostr</span><span class="special">.</span><span class="identifier">str</span><span class="special">());</span>
+<span class="identifier">SF</span><span class="special">::</span><span class="identifier">IBinaryStream</span><span class="special">(</span><span class="identifier">istr</span><span class="special">)</span> <span class="special">&gt;&gt;</span> <span class="identifier">m</span><span class="special">;</span>
+<span class="comment">// m is now 5
+</span>
+</pre>
+<p>
+      </p>
+<p>
+        Essentially, <code class="computeroutput"><span class="identifier">T</span> <span class="special">*</span></code>
+        and <code class="computeroutput"><span class="identifier">T</span></code> have compatible serialization
+        formats, for any <code class="computeroutput"><span class="identifier">T</span></code>. SF also
+        guarantees that smart pointers are interchangeable with native pointers,
+        so it is fine to serialize a <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">shared_ptr</span><span class="special">&lt;&gt;</span></code> and then deserialize it into a value.
+        Here is another example:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// Client-side implementation of X, using int.
+</span><span class="keyword">class</span> <span class="identifier">X</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="keyword">int</span> <span class="identifier">n</span><span class="special">;</span>
+
+    <span class="keyword">void</span> <span class="identifier">serialize</span><span class="special">(</span><span class="identifier">SF</span><span class="special">::</span><span class="identifier">Archive</span> <span class="special">&amp;</span> <span class="identifier">ar</span><span class="special">,</span> <span class="keyword">unsigned</span> <span class="keyword">int</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">ar</span> <span class="special">&amp;</span> <span class="identifier">n</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">};</span>
+
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// Server-side implementation of X, using shared_ptr&lt;int&gt;.
+</span><span class="keyword">class</span> <span class="identifier">X</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="identifier">boost</span><span class="special">::</span><span class="identifier">shared_ptr</span><span class="special">&lt;</span><span class="keyword">int</span><span class="special">&gt;</span> <span class="identifier">spn</span><span class="special">;</span>
+
+    <span class="keyword">void</span> <span class="identifier">serialize</span><span class="special">(</span><span class="identifier">SF</span><span class="special">::</span><span class="identifier">Archive</span> <span class="special">&amp;</span> <span class="identifier">ar</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="identifier">ar</span> <span class="special">&amp;</span> <span class="identifier">spn</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">};</span>
+
+</pre>
+<p>
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// Even with different X implementations, client and server can still 
+</span><span class="comment">// interact through this interface.
+</span>
+<span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_EchoX</span><span class="special">,</span><span class="string">"I_EchoX"</span><span class="special">)</span>
+<span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">X</span><span class="special">,</span> <span class="identifier">Echo</span><span class="special">,</span> <span class="identifier">X</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_EchoX</span><span class="special">)</span>
+</pre>
+<p>
+      </p>
+<p>
+        The following table lists the sets of types that SF guarantees to be interchangeable:
+      </p>
+<div class="informaltable"><table class="table">
+<colgroup><col></colgroup>
+<thead><tr><th>
+                <p>
+                  Sets of interchangeable types
+                </p>
+              </th></tr></thead>
+<tbody>
+<tr><td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">T</span></code>, <code class="computeroutput"><span class="identifier">T</span> <span class="special">*</span></code>,
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">auto_ptr</span><span class="special">&lt;</span><span class="identifier">T</span><span class="special">&gt;</span></code>,
+                  <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">shared_ptr</span><span class="special">&lt;</span><span class="identifier">T</span><span class="special">&gt;</span></code>,
+                  <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">scoped_ptr</span><span class="special">&lt;</span><span class="identifier">T</span><span class="special">&gt;</span></code>
+                </p>
+              </td></tr>
+<tr><td>
+                <p>
+                  Integral types of equivalent size, e.g. <code class="computeroutput"><span class="keyword">unsigned</span>
+                  <span class="keyword">int</span></code> and <code class="computeroutput"><span class="keyword">int</span></code>
+                </p>
+              </td></tr>
+<tr><td>
+                <p>
+                  32 bit integral types, enums
+                </p>
+              </td></tr>
+<tr><td>
+                <p>
+                  STL containers of <code class="computeroutput"><span class="identifier">T</span></code>
+                  (including <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;&gt;</span></code> and <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">basic_string</span><span class="special">&lt;&gt;</span></code>), where <code class="computeroutput"><span class="identifier">T</span></code>
+                  is non-primitive
+                </p>
+              </td></tr>
+<tr><td>
+                <p>
+                  STL containers of <code class="computeroutput"><span class="identifier">T</span></code>
+                  (except <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;&gt;</span></code>
+                  and <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">basic_string</span><span class="special">&lt;&gt;</span></code>),
+                  where <code class="computeroutput"><span class="identifier">T</span></code> is primitive
+                </p>
+              </td></tr>
+<tr><td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="identifier">T</span><span class="special">&gt;</span></code>
+                  and <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">basic_string</span><span class="special">&lt;</span><span class="identifier">T</span><span class="special">&gt;</span></code>,
+                  where <code class="computeroutput"><span class="identifier">T</span></code> is primitive
+                </p>
+              </td></tr>
+<tr><td>
+                <p>
+                  <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span></code>, <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="keyword">char</span><span class="special">&gt;</span></code>, <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span></code>
+                </p>
+              </td></tr>
+</tbody>
+</table></div>
+<p>
+        The reason for the exceptions concerning <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;&gt;</span></code> and <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">basic_string</span><span class="special">&lt;&gt;</span></code>, is that SF implements fast <code class="computeroutput"><span class="identifier">memcpy</span><span class="special">()</span></code>-based
+        serialization for these containers, if their elements are of primitive type.
+      </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.AdvancedSerialization.Unicode"></a><a class="link" href="AdvancedSerialization.html#rcf_user_guide.AdvancedSerialization.Unicode" title="Unicode strings"> Unicode
+      strings</a>
+</h3></div></div></div>
+<p>
+        When a <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">wstring</span></code> is serialized through SF, it is
+        serialized as a UTF-8 encoded string, in order to ensure portability. On
+        platforms with 16 bit <code class="computeroutput"><span class="keyword">wchar_t</span></code>,
+        SF assumes that any <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">wstring</span></code> passed to it, is encoded in UTF-16,
+        and converts between UTF-16 and UTF-8. On platforms with 32 bit <code class="computeroutput"><span class="keyword">wchar_t</span></code>, SF assumes that any <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">wstring</span></code>
+        passed to it is encoded in UTF-32, and converts between UTF-32 and UTF-8.
+      </p>
+<p>
+        If you have <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">wstring</span></code> objects, encoded in something other
+        than UTF-16 or UTF-32, you would need to either convert them to an 8-bit
+        represention (<code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span></code>) yourself, before serializing, or
+        write a wrapper class around <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">wstring</span></code>,
+        with a customized serialization function.
+      </p>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2005 - 2015 Delta V Software</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="Performance.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="ThirdParty.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Third Party Serialization</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="../index.html" title="RCF User Guide">
+<link rel="up" href="../index.html" title="RCF User Guide">
+<link rel="prev" href="AdvancedSerialization.html" title="Advanced Serialization">
+<link rel="next" href="JsonRpc.html" title="JSON-RPC">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="AdvancedSerialization.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="JsonRpc.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.ThirdParty"></a><a class="link" href="ThirdParty.html" title="Third Party Serialization"> Third Party Serialization</a>
+</h2></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="ThirdParty.html#rcf_user_guide.ThirdParty.BSer"> Boost.Serialization</a></span></dt>
+<dt><span class="section"><a href="ThirdParty.html#rcf_user_guide.ThirdParty.Protobufs"> Protocol Buffers</a></span></dt>
+</dl></div>
+<p>
+      RCF provides support for several third pary serialization frameworks.
+    </p>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.ThirdParty.BSer"></a><a class="link" href="ThirdParty.html#rcf_user_guide.ThirdParty.BSer" title="Boost.Serialization"> Boost.Serialization</a>
+</h3></div></div></div>
+<p>
+        <a href="http://www.boost.org/libs/serialization" target="_top">Boost.Serialization</a>
+        is a library conceptually similar to RCF's internal serialization framework,
+        providing generic serialization for C++ classes. For reference material and
+        FAQ's on Boost.Serialization itself, please refer to <a href="http://www.boost.org/doc/" target="_top">Boost
+        documentation</a> and the <a href="http://www.boost.org/community/" target="_top">Boost
+        mailing lists</a>.
+      </p>
+<p>
+        To utilize Boost.Serialization within RCF, you will need to define <code class="computeroutput"><span class="identifier">RCF_USE_BOOST_SERIALIZATION</span></code> when building
+        RCF, and then provide Boost.Serialization <code class="computeroutput"><span class="identifier">serialize</span><span class="special">()</span></code> functions for all your datatypes.
+      </p>
+<p>
+        RCF supports two archive types from Boost.Serialization - binary archives
+        and text archives. To specify which one you want to use, call <code class="computeroutput"><span class="identifier">ClientStub</span><span class="special">::</span><span class="identifier">setSerializationProtocol</span><span class="special">()</span></code>:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="identifier">RcfClient</span><span class="special">&lt;</span><span class="identifier">I_X</span><span class="special">&gt;</span> <span class="identifier">client</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="comment">// To use Boost.Serialization with binary archives.
+</span><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setSerializationProtocol</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Sp_BsBinary</span><span class="special">);</span>
+
+<span class="comment">// To use Boost.Serialization with text archives.
+</span><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setSerializationProtocol</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Sp_BsText</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        If RCF has also been built with <code class="computeroutput"><span class="identifier">RCF_USE_SF_SERIALIZATION</span></code>
+        defined, you can also specify SF serialization:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting"><span class="comment">// To use SF serialization.
+</span><span class="identifier">client</span><span class="special">.</span><span class="identifier">getClientStub</span><span class="special">().</span><span class="identifier">setSerializationProtocol</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Sp_SfBinary</span><span class="special">);</span>
+</pre>
+<p>
+      </p>
+<p>
+        Given the choice between using SF and using Boost.Serialization, which should
+        you use? The answer of course depends largely on the needs of your own application.
+        However, within the context of RCF, we feel SF is a better choice for a number
+        of reasons:
+      </p>
+<div class="itemizedlist"><ul type="disc">
+<li>
+            SF is RCF's native serialization implementation. It is updated along
+            with RCF, and tested against RCF. It's behavior and configuration are
+            not dependent on any particular version of Boost.
+          </li>
+<li>
+            SF has a robust internal versioning scheme. The SF runtime can adjusts
+            its archive formats to be compatible with any older version of SF. This
+            capability is crucial for implementing backwards compatibility in distributed
+            applications, and is lacking in Boost.Serialization.
+          </li>
+<li>
+            SF is optimized for IPC usage, where tens of thousands of archives may
+            be created and destroyed every second.
+          </li>
+<li>
+            SF intentionally makes it easy to modify the types in your application,
+            so that newer versions of an application can evolve their object models,
+            without affecting wire compatibility with older versions of the same
+            application (see <a class="link" href="AdvancedSerialization.html" title="Advanced Serialization">Interchangeable
+            types</a> ). In contrast, Boost.Serialization requires exact matches
+            on source and destination types.
+          </li>
+<li>
+            SF has a robust type registration system. Type registration with Boost.Serialization
+            involves macros, global static objects, and implicit code generation,
+            with application wide side-effects. In some versions of Boost, type registration
+            even requires including headers in a particular order. In contrast, type
+            registration with SF is as simple as calling <code class="computeroutput"><span class="identifier">SF</span><span class="special">::</span><span class="identifier">registerType</span><span class="special">()</span></code> and <code class="computeroutput"><span class="identifier">SF</span><span class="special">::</span><span class="identifier">registerBaseAndDerived</span><span class="special">()</span></code>.
+          </li>
+<li>
+            SF archives are binary and guaranteed to be portable across platforms.
+            Boost.Serialization binary archives are not portable, and hence can't
+            be used for cross-platform IPC. Boost.Serialization text archives are
+            portable, but at the cost of being much slower than binary archives.
+          </li>
+<li>
+            SF serialization functions are not templated, which means their definitions
+            can be moved to source files. Boost.Serialization serialization functions
+            are generally templated on the archive type, thus requiring their implementations
+            to be placed inline in header files, causing excessive coupling and longer
+            compile times.
+          </li>
+<li>
+            Boost.Serialization archive formats can change implicitly, depending
+            on global static code instantiations in unrelated parts of the same executable,
+            to the point where the archives produced cannot be loaded again (see
+            this <a href="https://svn.boost.org/trac/boost/ticket/3315" target="_top">bug report</a>,
+            which unfortunately was closed without a fix).
+          </li>
+</ul></div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="rcf_user_guide.ThirdParty.Protobufs"></a><a class="link" href="ThirdParty.html#rcf_user_guide.ThirdParty.Protobufs" title="Protocol Buffers"> Protocol Buffers</a>
+</h3></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="ThirdParty.html#rcf_user_guide.ThirdParty.Protobufs.Serialization">
+        Protocol Buffer classes</a></span></dt>
+<dt><span class="section"><a href="ThirdParty.html#rcf_user_guide.ThirdParty.Protobufs.Performance"> Protocol
+        Buffer caching</a></span></dt>
+</dl></div>
+<p>
+        <a href="http://code.google.com/p/protobuf/" target="_top">Protocol Buffers</a>
+        is an open source project released by <a href="http://www.google.com" target="_top">Google</a>,
+        which uses a specialized language to define serialization schemas, from which
+        actual serialization code is generated. The official Protocol Buffers compiler
+        can generate code in three languages (C++, Java and Python), and various
+        third party projects are available to provide support for other languages.
+      </p>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.ThirdParty.Protobufs.Serialization"></a><a class="link" href="ThirdParty.html#rcf_user_guide.ThirdParty.Protobufs.Serialization" title="Protocol Buffer classes">
+        Protocol Buffer classes</a>
+</h4></div></div></div>
+<p>
+          RCF provides native marshaling support for classes generated by the Protocol
+          Buffers compiler. To enable this support, define <code class="computeroutput"><span class="identifier">RCF_USE_PROTOBUF</span></code>
+          when building RCF. With <code class="computeroutput"><span class="identifier">RCF_USE_PROTOBUF</span></code>
+          defined, classes produced by the Protocol Buffers compiler, can be used
+          directly in RCF interface declarations, and will be serialized and deserialized
+          using the Protocol Buffer runtime.
+        </p>
+<p>
+          For more information on building RCF with Protocol Buffer support, see
+          <a class="link" href="AppendixBuilding.html" title="Appendix - Building RCF">Appendix - Building</a>.
+        </p>
+<p>
+          As an example, consider this .proto file.
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Person.proto
+</span>
+<span class="identifier">message</span> <span class="identifier">Person</span> <span class="special">{</span>
+  <span class="identifier">required</span> <span class="identifier">int32</span> <span class="identifier">id</span> <span class="special">=</span> <span class="number">1</span><span class="special">;</span>
+  <span class="identifier">required</span> <span class="identifier">string</span> <span class="identifier">name</span> <span class="special">=</span> <span class="number">2</span><span class="special">;</span>
+  <span class="identifier">optional</span> <span class="identifier">string</span> <span class="identifier">email</span> <span class="special">=</span> <span class="number">3</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+        </p>
+<p>
+          Running the Protocol Buffer compiler (in C++ mode) over <code class="computeroutput"><span class="identifier">Person</span><span class="special">.</span><span class="identifier">proto</span></code>
+          results in the two files <code class="computeroutput"><span class="identifier">Person</span><span class="special">.</span><span class="identifier">pb</span><span class="special">.</span><span class="identifier">h</span></code> and <code class="computeroutput"><span class="identifier">Person</span><span class="special">.</span><span class="identifier">pb</span><span class="special">.</span><span class="identifier">cc</span></code>, containing the implementation of
+          the C++ class <code class="computeroutput"><span class="identifier">Person</span></code>.
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="comment">// Person.pb.h
+</span>
+<span class="keyword">class</span> <span class="identifier">Person</span> <span class="special">:</span> <span class="keyword">public</span> <span class="special">::</span><span class="identifier">google</span><span class="special">::</span><span class="identifier">protobuf</span><span class="special">::</span><span class="identifier">Message</span> <span class="special">{</span>
+<span class="comment">// ...
+</span><span class="special">}</span>
+
+</pre>
+<p>
+        </p>
+<p>
+          To use the class <code class="computeroutput"><span class="identifier">Person</span></code>
+          in an RCF interface, simply include <code class="computeroutput"><span class="identifier">Person</span><span class="special">.</span><span class="identifier">pb</span><span class="special">.</span><span class="identifier">h</span></code> . RCF will detect that the <code class="computeroutput"><span class="identifier">Person</span></code> class is a Protocol Buffer class,
+          and will use Protocol Buffer functions to serialize and deserialize <code class="computeroutput"><span class="identifier">Person</span></code> instances.
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">RCF</span><span class="special">/../../</span><span class="identifier">test</span><span class="special">/</span><span class="identifier">protobuf</span><span class="special">/</span><span class="identifier">messages</span><span class="special">/</span><span class="identifier">cpp</span><span class="special">/</span><span class="identifier">Person</span><span class="special">.</span><span class="identifier">pb</span><span class="special">.</span><span class="identifier">h</span><span class="special">&gt;</span>
+
+
+<span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_X</span><span class="special">,</span> <span class="string">"I_X"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">Person</span><span class="special">,</span> <span class="identifier">echo</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Person</span> <span class="special">&amp;)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_X</span><span class="special">)</span>
+</pre>
+<p>
+        </p>
+<p>
+          Protocol Buffer classes can be intermingled with native C++ classes, in
+          RCF interfaces:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF_BEGIN</span><span class="special">(</span><span class="identifier">I_X</span><span class="special">,</span> <span class="string">"I_X"</span><span class="special">)</span>
+    <span class="identifier">RCF_METHOD_R1</span><span class="special">(</span><span class="identifier">Person</span><span class="special">,</span> <span class="identifier">echo</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Person</span> <span class="special">&amp;)</span>
+    <span class="identifier">RCF_METHOD_V4</span><span class="special">(</span><span class="keyword">void</span> <span class="special">,</span> <span class="identifier">func</span><span class="special">,</span> <span class="keyword">int</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span><span class="special">&gt;</span> <span class="special">&amp;,</span> <span class="identifier">Person</span> <span class="special">&amp;,</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ByteBuffer</span><span class="special">)</span>
+<span class="identifier">RCF_END</span><span class="special">(</span><span class="identifier">I_X</span><span class="special">)</span>
+</pre>
+<p>
+        </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="rcf_user_guide.ThirdParty.Protobufs.Performance"></a><a class="link" href="ThirdParty.html#rcf_user_guide.ThirdParty.Protobufs.Performance" title="Protocol Buffer caching"> Protocol
+        Buffer caching</a>
+</h4></div></div></div>
+<p>
+          The serialization and deserialization code generated by Protocol Buffers
+          is highly optimized. However, to make the most of this performance, you
+          may want to cache and reuse Protocol Buffer objects from call to call,
+          rather than creating new ones. Protocol Buffer objects will hold on to
+          any memory they allocate, and will reuse the memory in subsequent serialization
+          and deserialization operations.
+        </p>
+<p>
+          RCF provides <a class="link" href="Performance.html#rcf_user_guide.Performance.Caching" title="Server-side object caching">server-side
+          object caching</a>, for this purpose. For example, to enable server-side
+          caching of the <code class="computeroutput"><span class="identifier">Person</span></code> class:
+        </p>
+<p>
+          
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">ObjectPool</span> <span class="special">&amp;</span> <span class="identifier">cache</span> <span class="special">=</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">getObjectPool</span><span class="special">();</span>
+
+<span class="comment">// Enable server-side caching for Person.
+</span><span class="comment">// * Don't cache more than 10 Person objects.
+</span><span class="comment">// * Call Person::Clear() before putting a Person object into the cache.
+</span><span class="identifier">cache</span><span class="special">.</span><span class="identifier">enableCaching</span><span class="special">&lt;</span><span class="identifier">Person</span><span class="special">&gt;(</span><span class="number">10</span><span class="special">,</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">bind</span><span class="special">(&amp;</span><span class="identifier">Person</span><span class="special">::</span><span class="identifier">Clear</span><span class="special">,</span> <span class="identifier">_1</span><span class="special">));</span>
+</pre>
+<p>
+        </p>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2005 - 2015 Delta V Software</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="AdvancedSerialization.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="JsonRpc.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

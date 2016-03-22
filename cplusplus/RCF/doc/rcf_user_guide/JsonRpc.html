@@ -1,0 +1,174 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>JSON-RPC</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.73.2">
+<link rel="start" href="../index.html" title="RCF User Guide">
+<link rel="up" href="../index.html" title="RCF User Guide">
+<link rel="prev" href="ThirdParty.html" title="Third Party Serialization">
+<link rel="next" href="AppendixBuilding.html" title="Appendix - Building RCF">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<div class="spirit-nav">
+<a accesskey="p" href="ThirdParty.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="AppendixBuilding.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="rcf_user_guide.JsonRpc"></a><a class="link" href="JsonRpc.html" title="JSON-RPC"> JSON-RPC</a>
+</h2></div></div></div>
+<p>
+      In addition to serving RCF clients, <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span></code>
+      let's you expose C++ server functionality to <a href="http://json-rpc.org/" target="_top">JSON-RPC</a>
+      clients, by functioning as a JSON-RPC server.
+    </p>
+<p>
+      To enable JSON-RPC support, you will need to download the <a href="http://www.codeproject.com/KB/recipes/JSON_Spirit.aspx" target="_top">JSON
+      Spirit</a> library, set the relevant compiler include paths for it, and
+      define <code class="computeroutput"><span class="identifier">RCF_USE_JSON</span></code> when building
+      RCF (see <a class="link" href="AppendixBuilding.html" title="Appendix - Building RCF">Building</a>).
+    </p>
+<p>
+      To serve JSON-RPC clients, you will need a <code class="computeroutput"><span class="identifier">RcfServer</span></code>
+      with an HTTP or HTTPS endpoint, configured to receive JSON-RPC requests instead
+      of regular RCF requests:
+    </p>
+<p>
+      
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">;</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">addEndpoint</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">HttpEndpoint</span><span class="special">(</span><span class="number">80</span><span class="special">)</span> <span class="special">)</span>
+    <span class="special">.</span><span class="identifier">setRpcProtocol</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Rp_JsonRpc</span><span class="special">);</span>
+</pre>
+<p>
+    </p>
+<p>
+      For each JSON-RPC service you want to implement, you need to define a function
+      that takes a <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">JsonRpcRequest</span></code> and returns a <code class="computeroutput"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">JsonRpcResponse</span></code>:
+    </p>
+<p>
+      
+</p>
+<pre class="programlisting"><span class="keyword">void</span> <span class="identifier">JsonPrint</span><span class="special">(</span>
+    <span class="keyword">const</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">JsonRpcRequest</span> <span class="special">&amp;</span> <span class="identifier">request</span><span class="special">,</span> 
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">JsonRpcResponse</span> <span class="special">&amp;</span> <span class="identifier">response</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="comment">// ...
+</span><span class="special">}</span>
+</pre>
+<p>
+    </p>
+<p>
+      Use <code class="computeroutput"><span class="identifier">RcfServer</span><span class="special">::</span><span class="identifier">bindJsonRpc</span><span class="special">()</span></code>
+      to expose this function as a JSON-RPC service, with the given method name:
+    </p>
+<p>
+      
+</p>
+<pre class="programlisting"><span class="identifier">server</span><span class="special">.</span><span class="identifier">bindJsonRpc</span><span class="special">(</span>
+    <span class="identifier">boost</span><span class="special">::</span><span class="identifier">bind</span><span class="special">(&amp;</span><span class="identifier">JsonPrint</span><span class="special">,</span> <span class="identifier">_1</span><span class="special">,</span> <span class="identifier">_2</span><span class="special">),</span> 
+    <span class="string">"JsonPrint"</span><span class="special">);</span>
+</pre>
+<p>
+    </p>
+<p>
+      In the servant implemenation of the JSON-RPC request (in this case the <code class="computeroutput"><span class="identifier">JsonPrint</span><span class="special">()</span></code>
+      function), you can use <code class="computeroutput"><span class="identifier">JsonRpcRequest</span></code>
+      to access the JSON-RPC attributes and JSON-RPC parameters of the request. To
+      send a response back to the client, fill out the <code class="computeroutput"><span class="identifier">JsonRpcResponse</span></code>
+      object with the relevant details:
+    </p>
+<p>
+      
+</p>
+<pre class="programlisting"><span class="keyword">void</span> <span class="identifier">JsonPrint</span><span class="special">(</span>
+    <span class="keyword">const</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">JsonRpcRequest</span> <span class="special">&amp;</span> <span class="identifier">request</span><span class="special">,</span> 
+    <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">JsonRpcResponse</span> <span class="special">&amp;</span> <span class="identifier">response</span><span class="special">)</span>
+<span class="special">{</span>
+    <span class="comment">// Print out all the strings passed in, and return the number of
+</span>    <span class="comment">// characters printed.
+</span>
+    <span class="keyword">int</span> <span class="identifier">charsPrinted</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
+
+    <span class="keyword">const</span> <span class="identifier">json_spirit</span><span class="special">::</span><span class="identifier">Array</span> <span class="special">&amp;</span> <span class="identifier">params</span> <span class="special">=</span> <span class="identifier">request</span><span class="special">.</span><span class="identifier">getJsonParams</span><span class="special">();</span>
+    <span class="keyword">for</span> <span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <span class="identifier">i</span><span class="special">=</span><span class="number">0</span><span class="special">;</span> <span class="identifier">i</span><span class="special">&lt;</span><span class="identifier">params</span><span class="special">.</span><span class="identifier">size</span><span class="special">();</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span>
+    <span class="special">{</span>
+        <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="special">&amp;</span> <span class="identifier">s</span> <span class="special">=</span> <span class="identifier">params</span><span class="special">[</span><span class="identifier">i</span><span class="special">].</span><span class="identifier">get_str</span><span class="special">();</span>
+        <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"I_HelloWorld service: "</span> <span class="special">&lt;&lt;</span> <span class="identifier">s</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+        <span class="identifier">charsPrinted</span> <span class="special">+=</span> <span class="identifier">s</span><span class="special">.</span><span class="identifier">size</span><span class="special">();</span>
+    <span class="special">}</span>
+
+    <span class="comment">// Return number of characters printed.
+</span>    <span class="identifier">json_spirit</span><span class="special">::</span><span class="identifier">mObject</span> <span class="special">&amp;</span> <span class="identifier">responseObj</span> <span class="special">=</span> <span class="identifier">response</span><span class="special">.</span><span class="identifier">getJsonResponse</span><span class="special">();</span>
+    <span class="identifier">responseObj</span><span class="special">[</span><span class="string">"result"</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">charsPrinted</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+    </p>
+<p>
+      RCF supports JSON-RPC over both HTTP and HTTPS. When using JSON-RPC over HTTPS,
+      you will need to configure a certificate for the server. This is done in the
+      same way as when configuring the SSL transport protocol (see <a class="link" href="TransportProtocols.html" title="Transport Protocols">Transport
+      protocols</a>). For example:
+    </p>
+<p>
+      
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">;</span>
+
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">addEndpoint</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">HttpsEndpoint</span><span class="special">(</span><span class="number">443</span><span class="special">)</span> <span class="special">)</span>
+    <span class="special">.</span><span class="identifier">setRpcProtocol</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Rp_JsonRpc</span><span class="special">);</span>
+
+<span class="comment">// Assume we are using Schannel on Windows.
+</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">CertificatePtr</span> <span class="identifier">serverCertPtr</span><span class="special">(</span> <span class="keyword">new</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">PfxCertificate</span><span class="special">(</span>
+    <span class="string">"C:\\ServerCert.p12"</span><span class="special">,</span> 
+    <span class="string">"password"</span><span class="special">,</span> 
+    <span class="string">"CertificateName"</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">setCertificate</span><span class="special">(</span><span class="identifier">serverCertPtr</span><span class="special">);</span>
+</pre>
+<p>
+    </p>
+<p>
+      Finally, as <code class="computeroutput"><span class="identifier">RcfServer</span></code> instances
+      support multiple transports (see <a class="link" href="Transports.html" title="Transports">Transports</a>),
+      you can serve regular RCF clients as well as JSON-RPC clients, from the same
+      <code class="computeroutput"><span class="identifier">RcfServer</span></code>:
+    </p>
+<p>
+      
+</p>
+<pre class="programlisting"><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">RcfServer</span> <span class="identifier">server</span><span class="special">;</span>
+
+<span class="comment">// Serve JSON-RPC clients over HTTP on port 80.
+</span><span class="identifier">server</span><span class="special">.</span><span class="identifier">addEndpoint</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">HttpEndpoint</span><span class="special">(</span><span class="number">80</span><span class="special">)</span> <span class="special">)</span>
+    <span class="special">.</span><span class="identifier">setRpcProtocol</span><span class="special">(</span><span class="identifier">RCF</span><span class="special">::</span><span class="identifier">Rp_JsonRpc</span><span class="special">);</span>
+
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">bindJsonRpc</span><span class="special">(</span>
+    <span class="identifier">boost</span><span class="special">::</span><span class="identifier">bind</span><span class="special">(&amp;</span><span class="identifier">JsonPrint</span><span class="special">,</span> <span class="identifier">_1</span><span class="special">,</span> <span class="identifier">_2</span><span class="special">),</span> 
+    <span class="string">"JsonPrint"</span><span class="special">);</span>
+
+<span class="comment">// Serve RCF clients over TCP on port 50001.
+</span><span class="identifier">server</span><span class="special">.</span><span class="identifier">addEndpoint</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">TcpEndpoint</span><span class="special">(</span><span class="number">50001</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="comment">// Serve RCF clients over HTTP on port 50002.
+</span><span class="identifier">server</span><span class="special">.</span><span class="identifier">addEndpoint</span><span class="special">(</span> <span class="identifier">RCF</span><span class="special">::</span><span class="identifier">HttpEndpoint</span><span class="special">(</span><span class="number">50002</span><span class="special">)</span> <span class="special">);</span>
+
+<span class="identifier">HelloWorldImpl</span> <span class="identifier">helloWorldImpl</span><span class="special">;</span>
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">bind</span><span class="special">&lt;</span><span class="identifier">I_HelloWorld</span><span class="special">&gt;(</span><span class="identifier">helloWorldImpl</span><span class="special">);</span>
+
+<span class="identifier">server</span><span class="special">.</span><span class="identifier">start</span><span class="special">();</span>
+</pre>
+<p>
+    </p>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2005 - 2015 Delta V Software</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="ThirdParty.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="AppendixBuilding.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>
