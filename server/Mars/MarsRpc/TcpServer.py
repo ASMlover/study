@@ -66,7 +66,17 @@ class TcpServer(asyncore.dispatcher):
         self.listen(50)
 
     def tryBind(self):
-        pass
+        while True:
+            try:
+                self.bind((self.ip, self.port))
+                break
+            except:
+                self.logger.info('tryBind: server faild to bind: %s, %d, try next port', self.ip, self.port)
+                self.port += 1
+                if self.port > 65535:
+                    self.logger.error('tryBind: server faild to find a usable port: %s, %d', self.ip, self.port)
+                    raise StandardError('server faild to find a usable port')
+        self.started = True
 
     def stop(self):
         self.close()
@@ -85,12 +95,25 @@ class TcpServer(asyncore.dispatcher):
 
     def handle_accept(self):
         """连接回调"""
-        pass
+        try:
+            fd, addr = self.accept()
+        except socket.error:
+            self.logger.warn('server accept throw exception')
+            self.logger.logLastExcept()
+            return
+        self.logger.info('handle_accept with peer: %s', fd.getpeername())
+
+        if self.connectorHandler:
+            connector = TcpConnector(fd, addr)
+            self.connectorHandler.handlerNewConnector(connector)
+        else:
+            self.logger.wran('no connector manager to handle new connector')
 
     def handle_error(self):
         """错误回调"""
-        pass
+        self.logger.error('handle_error uncaptured exception')
+        self.logger.error(str(inspect.stack()))
 
     def handle_close(self):
         """关闭连接回调"""
-        pass
+        self.logger.info('handle_close called from: %s', str(inspect.stack()))
