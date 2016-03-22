@@ -1,0 +1,82 @@
+// mongodb读写服务器
+
+import "Common.proto"
+package Mars.Server;
+
+option py_generic_services = true;
+
+message FindRequest {
+  optional int32 cid        = 1 [default = -1]; // callback id
+  required bytes dbName     = 2; // database name
+  required bytes collection = 3; // collection name
+  required bytes query      = 4; // query
+  optional bytes fields     = 5; // a dict key
+  optional int32 limit      = 6 [default = 1]; // 需要x个返回结果
+  optional bool  seqFlag    = 7 [default = false]; // 保证序号
+  optional bytes seqKey     = 8; // 指定_id之外的key
+  optional bytes sorted     = 9;
+  optional int32 readPref   = 10;
+  optional bytes hint       = 11;
+  optional bytes skip       = 12;
+}
+
+message CountRequest {
+  optional int32 cid        = 1 [default = -1];
+  required bytes dbName     = 2;
+  required bytes collection = 3;
+  optional bytes query      = 4;
+}
+
+message UpdateRequet {
+  optional int32 cid        = 1 [default = -1];
+  required bytes dbName     = 2;
+  required bytes collection = 3;
+  required bytes query      = 4;
+  required bytes doc        = 5;
+  optional bool  upset      = 6 [default = false];
+  optional bool  multi      = 7 [default = false];
+  optional bool  seqFlag    = 8 [default = false];
+  optional bytes seqKey     = 9;
+}
+
+message InsertRequest {
+  optional int32 cid        = 1 [default = -1];
+  required bytes dbName     = 2;
+  required bytes collection = 3;
+  required bytes doc        = 4;
+  optional bool  seqFlag    = 5 [default = false];
+  optional bytes seqKey     = 6;
+}
+
+message DeleteRequest {
+  optional int32 cid        = 1 [default = -1];
+  required bytes dbName     = 2;
+  required bytes collection = 3;
+  required bytes query      = 4;
+  optional bool  seqFlag    = 5 [default = false];
+  optional bytes seqKey     = 6;
+}
+
+message FindAndModifyRequest {
+  optional int32 cid        = 1 [default = -1];
+  required bytes dbName     = 2;
+  required bytes collection = 3;
+  required bytes query      = 4;
+  optional bytes fields     = 5;
+  optional bytes update     = 6;
+  optional bool  upset      = 7 [default = false];
+  optional bool  newer      = 8 [default = false];
+  optional bool  seqFlag    = 9 [default = false];
+  optional bytes seqKey     = 10;
+  optional bool  remove     = 11;
+  optional bytes sorted     = 12;
+}
+
+message ProcedureRequest {
+  optional int32 cid        = 1 [default = -1];
+  required bytes dbName     = 2;
+  required bytes collection = 3;
+  required bytes procedure  = 4;
+  optional bytes args       = 5;
+  optional bytes kwargs     = 6;
+}
