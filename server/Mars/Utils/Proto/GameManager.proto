@@ -5,3 +5,72 @@ import "GateGame.proto"
 package Mars.Server;
 
 option py_generic_services = true;
+
+message GameServerDatas {
+  repeated ServerData gameServers = 1;
+}
+
+message CallbackId {
+  required int32 cid = 1 [default = -1];
+}
+
+message GlobalEntityRegMessage {
+  optional int32    cid       = 1 [default = -1];
+  required bytes    uniqName  = 2; // entity标识，全局唯一
+  optional Mailbox  mailbox   = 3;
+  optional bool     override  = 4;
+}
+
+message ForwardMessageHeader {
+  optional int32    cid           = 1 [default = -1];
+  optional Mailbox  sourceCaller  = 2;
+  optional Mailbox  targetCaller  = 3;
+  optional bytes    clientId      = 4;
+}
+
+message EntityDataHeader {
+  optional int32  cid           = 1 [default = -1];
+  required bool   transEntity   = 2;
+  required bool   createFromDB  = 3;
+  enum ServerType {
+    ST_ANYWHERE       = 0;
+    ST_SPECIFYTYPE    = 1;
+    ST_SPECIFYSERVER  = 2;
+  }
+  required int32      createAnywhere  = 4;
+  optional ServerData targetServer    = 5;
+  optional ClientData clientData      = 6;
+}
+
+message GlobalMessage {
+  optional bytes message = 1;
+}
+
+message GlobalData {
+  required bytes key    = 1;
+  optional bytes value  = 2;
+}
+
+message GameMgrReturnValue {
+  enum CallbackType {
+    CT_NOCALLBACK   = 0;
+    CT_REGMAILBOX   = 1; // register entity mailbox
+    CT_FORWARDMSG   = 2; // forward entity mailbox
+    CT_CREATEENTITY = 3; // create entity
+  }
+  required CallbackType type      = 1 [default = CT_NOCALLBACK];
+  required int32        cid       = 2 [default = -1];
+  optional bool         retStatus = 3;
+  optional bytes        retValue  = 4;
+  optional bytes        errorMsg  = 5;
+}
+
+message Script {
+  required bytes scriptContent = 1;
+}
+
+message ControlMessage {
+  enum ControlOper {
+    CO_NOP    = 0;
+  }
+}
