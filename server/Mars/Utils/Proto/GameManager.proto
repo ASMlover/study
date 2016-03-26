@@ -71,6 +71,24 @@ message Script {
 
 message ControlMessage {
   enum ControlOper {
-    CO_NOP    = 0;
+    CO_NOP                      = 0;
+
+    // gate
+    CO_FOBIDDEN_NEW_CONNECTION  = 1;
+    CO_IGNORE_CLIENT_ENTITY_MSG = 2;
+    CO_CUT_ALL_CONNECTIONS      = 3;
+    CO_CLOSE_GATE               = 4;
+
+    // game
+    CO_NOTIFY_SERVR_CLOSING     = 5;
+    CO_NOTIFY_SEVER_CLOSED      = 6;
+    CO_CLOSE_GAME               = 7;
+
+    // dbmgr
+    CO_CLOSE_DBMGR              = 8;
+
+    // game manager
+    CO_CLOSE_GAMEMGR            = 9;
   }
+  required ControlOper oper = 1 [default = CO_NOP];
 }
