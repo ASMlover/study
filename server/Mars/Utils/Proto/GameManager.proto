@@ -92,3 +92,23 @@ message ControlMessage {
   }
   required ControlOper oper = 1 [default = CO_NOP];
 }
+
+service SGameManager {
+  // 运行指定脚本
+  rpc runScript(Script) returns(Null);
+
+  // 控制命令
+  rpc serverControl(ControlMessage) returns(Null);
+
+  // DBMgr <=> GameMgr
+  // 注册dbmgr
+  rpc regDBManager(Null) returns(Null);
+
+  // Gate <=> GameMgr
+  // gate请求game信息
+  rpc getGameList(Null) returns(Null);
+
+  // Game <=>
+  // 注册game
+  rpc regGame(ServerData) returns(Null);
+}
