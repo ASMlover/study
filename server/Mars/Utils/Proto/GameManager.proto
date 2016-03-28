@@ -108,7 +108,57 @@ service SGameManager {
   // gate请求game信息
   rpc getGameList(Null) returns(Null);
 
-  // Game <=>
+  // Game <=> GameMgr
   // 注册game
   rpc regGame(ServerData) returns(Null);
+
+  // Game注册Entity到GameMgr
+  rpc regEntity(GlobalEntityRegMessage) returns(Null);
+  rpc unregEntity(GlobalEntityRegMessage) returns(Null);
+
+  // Game向GameMgr请求转发消息到另一个Entity
+  rpc forwardEntityRpc(EntityRpc) returns(Null);
+
+  // GameMgr调用全服所有的entity
+  rpc globalEntityRpc(GlobalEntityRpc) returns(Null);
+
+  // 只发给在线的所有game
+  rpc globalRpc(GlobalMessage) returns(Null);
+  rpc globalData(GlobalData) returns(Null);
+  // 删除全局数据
+  rpc delGlobalData(GlobalData) returns(Null);
+
+  // 通知GameMgr创建entity
+  rpc createEntity(EntityData) returns(Null);
+  // 通知GameMgr创建entity成功
+  rpc gameCallback(GameMgrReturnValue) returns(Null);
+  // game回应GameMgr的keepo-alive请求
+  rpc keepAliveReply(Null) returns(Null);
+}
+
+service SGameMgr2Client {
+  // Gate <=> GameMgr
+  rpc updateGameList(GameServerDatas) returns(Null);
+
+  // Game <=> GameMgr
+  rpc onRegEntity(GlobalEntityRegMessage) returns(Null)
+  rpc onUnregEntity(GlobalEntityRegMessage) returns(Null);
+
+  // Game, Gate都需要处理的克制消息
+  rpc serverControl(ControlMessage) returns(Null);
+
+  // Entity消息
+  rpc remoteEntityRpc(EntityRpc) returns(Null);
+
+  rpc globalEntityRpc(GlobalEntityRpc) returns(Null);
+  rpc globalRpc(GlobalMessage) returns(Null);
+  rpc globalData(GlobalData) returns(Null);
+  rpc delGlobalData(GlobalData) returns(Null);
+
+  // 通知Game创建Entity
+  rpc createEntity(EntityData) returns(Null);
+
+  rpc gameManagerCallback(GameMgrReturnValue) returns(Null);
+  rpc runScript(Script) returns(Null);
+  rpc keepAliveRequest(Null) returns(Null);
 }
