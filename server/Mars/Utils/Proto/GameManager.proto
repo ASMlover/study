@@ -1,7 +1,7 @@
 // gate/game <=> game manager
 
-import "Common.proto"
-import "GateGame.proto"
+import "Common.proto";
+import "GateGame.proto";
 package Mars.Server;
 
 option py_generic_services = true;
@@ -141,7 +141,7 @@ service SGameMgr2Client {
   rpc updateGameList(GameServerDatas) returns(Null);
 
   // Game <=> GameMgr
-  rpc onRegEntity(GlobalEntityRegMessage) returns(Null)
+  rpc onRegEntity(GlobalEntityRegMessage) returns(Null);
   rpc onUnregEntity(GlobalEntityRegMessage) returns(Null);
 
   // Game, Gate都需要处理的克制消息

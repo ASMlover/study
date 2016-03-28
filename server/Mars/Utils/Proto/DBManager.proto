@@ -1,6 +1,6 @@
 // mongodb读写服务器
 
-import "Common.proto"
+import "Common.proto";
 package Mars.Server;
 
 option py_generic_services = true;
@@ -108,7 +108,7 @@ message DBStatus {
     ST_CONNECT_FAILED = 1; // 连接失败
     ST_BUSY           = 2; // 操作队列过长, db manager忙
   }
-  required StatusType status = ST_CONNECT_FAILED;
+  required StatusType status = 1;
 }
 
 message FindReply {

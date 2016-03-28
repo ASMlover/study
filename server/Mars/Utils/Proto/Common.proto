@@ -31,7 +31,7 @@ message ConnectReply {
     RT_MAXCONNECTION  = 5; // 连接达阀值
   }
   optional bytes      routes    = 1;
-  required ReplyType  type      = 2 [default RT_BUSY];
+  required ReplyType  type      = 2 [default = RT_BUSY];
   optional bytes      entityId  = 3; // 当前avatar的entity id
   optional bytes      extra     = 4; // 回复的额外信息
 }
