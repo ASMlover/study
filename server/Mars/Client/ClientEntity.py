@@ -73,3 +73,14 @@ class ClientEntity(object):
     def onReconnected(self, extraData):
         """重连成功"""
         self.logger.info('ClientEntity.onReconnected: eid=%s, extraData=%s', self.eid, extraData)
+
+class AvatarEntity(ClientEntity):
+    def __init__(self, entityId=None):
+        super(AvatarEntity, self).__init__(entityId)
+
+    @rpcMethod(MARS_RPC_CLIENT_STUB)
+    def becomePlayer(self):
+        self.onBecomePlayer()
+
+    def onBecomePlayer(self):
+        pass
