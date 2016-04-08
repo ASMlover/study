@@ -65,6 +65,69 @@ class GateClient(ClientGate_pb2.SGate2Client):
     CB_ON_CONNECT_REPLY         = 4
     CB_ON_RELIABLE_MSG_UNSENT   = 5
 
-    def __init__(self, host, port, clientConf, proto='BSON'):
+    def __init__(self, host, port, conf, proto='BSON'):
         super(GateClient, self).__init__(self)
+        self.logger = LogManager.getLogger('Client.GateClient')
         self.client = ChannelClient(host, port, self)
+        self.status = GateClient.ST_INIT
+        self.reconnectStatus = False
+        self.reconnectData = None
+        self.gateStub = None
+        self.encoder = Md5IndexEncoder()
+
+        # traceback
+        self.tbHandler = None
+        self.proto = proto
+        enforceEncryption = bool(conf.get('enforceEncryption', False))
+        loginKeyPath = conf.get('loginKeyPath', None)
+        loginKeyContent = conf.get('loginKeyContent', None)
+        useKeyczar = bool(conf.get('useKeyczar', None))
+        self.zippedEnabled = bool(conf.get('zippedEnabled', False))
+        self.enableRegMd5Index = bool(conf.get('enableRegMd5Index', False))
+
+        self.receivedSeq = 0
+        self.useMessageCache = False
+        self.sessionPaddingMinLen = 16
+        self.sessionPaddingMaxLen = 64
+
+        self.connectStatus = Common_pb2.ConnectReply.RT_BUSY
+        self.sessionSeed = ClientGate_pb2.SessionSeed()
+        if enforceEncryption:
+            if useKeyczar:
+                from Utils.SessionEncrypter import LoginKeyEncrypter
+                self.keyEncrypter = LoginKeyEncrypter(loginKeyPath)
+            else:
+                from Utils.SessionEncrypter import LoginKeyEncrypterNoKeyczar
+                self.keyEncrypter = LoginKeyEncrypterNoKeyczar(loginKeyPath, loginKeyContent)
+        else:
+            self.keyEncrypter = None
+
+        self.onEventCallbacks = {
+            GateClient.CB_ON_CONNECT_FAILED:        set(),
+            GateClient.CB_ON_CONNECT_SUCCESSED:     set(),
+            GateClient.CB_ON_DISCONNECTED:          set(),
+            GateClient.CB_ON_CONNECT_REPLY:         set(),
+            GateClient.CB_ON_RELIABLE_MSG_UNSENT:   set(),
+        }
+
+    def enableMessageCache(self, enabled=True):
+        self.useMessageCache = enabled
+
+    def setSessionPaddingLength(self, minLen, maxLen):
+        self.sessionPaddingMinLen = minLen
+        self.sessionPaddingMaxLen = maxLen
+
+    def startGame(self, timeout):
+        pass
+
+    def resumeGame(self, timeout, entityId, binAuthMsg):
+        pass
+
+    def doConnect(self, channelCallback, timeout):
+        pass
+
+    def disconnect(self):
+        pass
+
+    def channelCallback(self, rpcChannel):
+        pass
