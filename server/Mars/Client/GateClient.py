@@ -118,7 +118,11 @@ class GateClient(ClientGate_pb2.SGate2Client):
         self.sessionPaddingMaxLen = maxLen
 
     def startGame(self, timeout):
-        pass
+        self.encoder.reset()
+        self.receivedSeq = 0
+        assert self.status in (GateClient.ST_INIT, GateClient.ST_DISCONNECTED, GateClient.ST_CONNECT_FAILED), 'startGame: status is wrong, status=%s' % self.status
+        self.status = GateClient.ST_CONNECTING
+        self.doConnect(self.channelCallback, timeout)
 
     def resumeGame(self, timeout, entityId, binAuthMsg):
         pass
