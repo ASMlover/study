@@ -125,7 +125,12 @@ class GateClient(ClientGate_pb2.SGate2Client):
         self.doConnect(self.channelCallback, timeout)
 
     def resumeGame(self, timeout, entityId, binAuthMsg):
-        pass
+        assert self.status in (GateClient.ST_INIT, GateClient.ST_DISCONNECTED, GateClient.ST_CONNECT_FAILED), 'resumeGame: status is wrong, status=%s' % self.status
+        self.encoder.reset()
+        self.status = GateClient.ST_RECONNECTING
+        self.reconnectData = {'entityId': entityId, 'binAuthMsg': binAuthMsg}
+        callback = lambda rpcChannel: self.channelCallback(rpcChannel)
+        self.doConnect(callback, timeout)
 
     def doConnect(self, channelCallback, timeout):
         pass
