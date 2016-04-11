@@ -133,10 +133,93 @@ class GateClient(ClientGate_pb2.SGate2Client):
         self.doConnect(callback, timeout)
 
     def doConnect(self, channelCallback, timeout):
-        pass
+        try:
+            self.client.connect(channelCallback, timeout)
+        except:
+            self.logger.logLastExcept()
+            channelCallback(None)
 
     def disconnect(self):
-        pass
+        self.client.disconnect()
 
     def channelCallback(self, rpcChannel):
+        pass
+
+    def onRpcChannelEstablished(self, rpcChannel):
+        pass
+
+    def registerEventCallback(self, cbType, callback):
+        pass
+
+    def unregisterEventCallback(self, cbType, callback):
+        pass
+
+    def getEventCallbackList(self, cbType):
+        return
+
+    def increaseSeq(self):
+        self.receivedSeq += 1
+
+    def sessionSeedRequest(self):
+        null = Common_pb2.Null()
+        self.gateStub.seedRequest(None, null)
+
+    def seedReply(self, controller, seed, done):
+        pass
+
+    def sendSessionKey(self, rpcChannel):
+        pass
+
+    def sessionKeyOk(self, controller, null, done):
+        pass
+
+    def onChannelDisconnected(self, rpcChannel):
+        pass
+
+    def getDeviceId(self):
+        return MARS_DEVICEID
+
+    def doConnectServer(self, rpcChannel):
+        pass
+
+    def doReconnectServer(self, rpcChannel, reconnectData):
+        pass
+
+    def onReliableMessageUnallowedSent(self, opCode):
+        pass
+
+    def getNewServerProxy(self, stub, encoder):
+        pass
+
+    def resetServerProxies(self, avatarId=None):
+        pass
+
+    def connectReply(self, controller, reply, done):
+        pass
+
+    def dealReconnectReply(self, reply):
+        pass
+
+    def chatToClient(self, controller, outbandData, done):
+        pass
+
+    def createEntity(self, controller, entityData, done):
+        pass
+
+    def entityRpc(self, controller, entityMsg, done):
+        pass
+
+    def destroyEntity(self, controller, entityData, done):
+        pass
+
+    def reset(self, host=None, port=None):
+        pass
+
+    def setTracebackHandler(self, handler):
+        pass
+
+    def handleLastTraceback(self, strError=None):
+        pass
+
+    def regMd5Index(self, controller, md5Index, done):
         pass
