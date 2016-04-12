@@ -3,7 +3,7 @@
 
 
 ## **1. Windows安装**
-		解压安装包并安装, 破解即可...
+    解压安装包并安装, 破解即可...
 
 
 ## **2. 安装格式化插件**
@@ -56,7 +56,7 @@
     3) 搜索类
         * Ctrl+F 打开底部搜索框, 查找关键字
         * Ctrl+Shift+F 在文件夹内查找
-        * Ctrl+P 打开搜索框, 
+        * Ctrl+P 打开搜索框,
           1. 输入文件名, 快速搜索文件
           2. 输入@和关键字, 快速定位到文件中函数
           3. 输入:和数字, 跳转到文件中该行
@@ -87,3 +87,16 @@
     2) Markdown Preview
     3) IMESupport 修复中文输入法输入框不跟随的问题
     4) LuaAutocompelete lua自动补全
+
+## **5. 常用配置**
+    [Preferences] -> [Setting-User]
+```json
+{
+    "bold_folder_labels": true,                 // 文件目录设置为粗体
+    "default_line_ending": "unix",              // Unix风格换行符
+    "draw_white_space": "all",                  // 显示空白符
+    "highlight_line": true,                     // 光标所在行高亮
+    "show_encoding": true,                      // 显示文件编码
+    "trim_trailing_white_space_on_save": true,  // 保存时删除行尾空白符
+}
+```
