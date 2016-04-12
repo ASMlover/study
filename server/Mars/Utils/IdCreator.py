@@ -29,7 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from base64 import b64encode
-import bson.objectid as ObjectId
+from bson.objectid import ObjectId
 
 class IdCreator(object):
     @staticmethod

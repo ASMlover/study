@@ -1,0 +1,207 @@
+// mongodb读写服务器
+
+import "Common.proto";
+package Mars.Server;
+
+option py_generic_services = true;
+
+message FindRequest {
+  optional int32 cid        = 1 [default = -1]; // callback id
+  required bytes dbName     = 2; // database name
+  required bytes collection = 3; // collection name
+  required bytes query      = 4; // query
+  optional bytes fields     = 5; // a dict key
+  optional int32 limit      = 6 [default = 1]; // 需要x个返回结果
+  optional bool  seqFlag    = 7 [default = false]; // 保证序号
+  optional bytes seqKey     = 8; // 指定_id之外的key
+  optional bytes sorted     = 9;
+  optional int32 readPref   = 10;
+  optional bytes hint       = 11;
+  optional bytes skip       = 12;
+}
+
+message CountRequest {
+  optional int32 cid        = 1 [default = -1];
+  required bytes dbName     = 2;
+  required bytes collection = 3;
+  optional bytes query      = 4;
+}
+
+message UpdateRequet {
+  optional int32 cid        = 1 [default = -1];
+  required bytes dbName     = 2;
+  required bytes collection = 3;
+  required bytes query      = 4;
+  required bytes doc        = 5;
+  optional bool  upset      = 6 [default = false];
+  optional bool  multi      = 7 [default = false];
+  optional bool  seqFlag    = 8 [default = false];
+  optional bytes seqKey     = 9;
+}
+
+message InsertRequest {
+  optional int32 cid        = 1 [default = -1];
+  required bytes dbName     = 2;
+  required bytes collection = 3;
+  required bytes doc        = 4;
+  optional bool  seqFlag    = 5 [default = false];
+  optional bytes seqKey     = 6;
+}
+
+message DeleteRequest {
+  optional int32 cid        = 1 [default = -1];
+  required bytes dbName     = 2;
+  required bytes collection = 3;
+  required bytes query      = 4;
+  optional bool  seqFlag    = 5 [default = false];
+  optional bytes seqKey     = 6;
+}
+
+message FindAndModifyRequest {
+  optional int32 cid        = 1 [default = -1];
+  required bytes dbName     = 2;
+  required bytes collection = 3;
+  required bytes query      = 4;
+  optional bytes fields     = 5;
+  optional bytes update     = 6;
+  optional bool  upset      = 7 [default = false];
+  optional bool  newer      = 8 [default = false];
+  optional bool  seqFlag    = 9 [default = false];
+  optional bytes seqKey     = 10;
+  optional bool  remove     = 11;
+  optional bytes sorted     = 12;
+}
+
+message ProcedureRequest {
+  optional int32 cid        = 1 [default = -1];
+  required bytes dbName     = 2;
+  required bytes collection = 3;
+  required bytes procedure  = 4;
+  optional bytes args       = 5;
+  optional bytes kwargs     = 6;
+}
+
+message OperIndexRequest {
+  enum OperType {
+    OT_ENSURE = 0;
+    OT_DROP   = 1;
+    OT_RESET  = 2;
+  }
+  optional int32    cid        = 1 [default = -1];
+  required bytes    dbName     = 2;
+  required bytes    collection = 3;
+  required OperType operType   = 4;
+  optional bytes    query      = 5;
+  optional bytes    desc       = 6;
+}
+
+message CreateCollectionRequest {
+  optional int32 cid        = 1 [default = -1];
+  required bytes dbName     = 2;
+  required bytes collection = 3;
+  optional bytes operations = 5;
+}
+
+message DBStatus {
+  enum StatusType {
+    ST_CONNECTED      = 0; // 连接正常
+    ST_CONNECT_FAILED = 1; // 连接失败
+    ST_BUSY           = 2; // 操作队列过长, db manager忙
+  }
+  required StatusType status = 1;
+}
+
+message FindReply {
+  required int32 cid    = 1 [default = -1];
+  required bool  status = 2; // 操作是否成功
+  repeated bytes docs   = 3; // 返回find的doc列表
+}
+
+message CountReply {
+  required int32 cid    = 1 [default = -1];
+  required bool  status = 2;
+  required int32 count  = 3;
+}
+
+message UpdateReply {
+  optional int32 cid    = 1 [default = -1];
+  required bool  status = 2;
+}
+
+message InsertReply {
+  optional int32 cid      = 1 [default = -1];
+  required bool  status   = 2;
+  optional bytes insertId = 3;
+}
+
+message DeleteReply {
+  optional int32 cid    = 1 [default = -1];
+  required bool  status = 2;
+}
+
+message FindAndModifyReply {
+  optional int32 cid    = 1 [default = -1];
+  required bool  status = 2;
+  optional bytes docs   = 3;
+}
+
+message ProcedureReply {
+  optional int32 cid    = 1 [default = -1];
+  required bool  status = 2;
+  optional bytes docs   = 3;
+}
+
+message OperIndexReply {
+  optional int32 cid    = 1 [default = -1];
+  required bool  status = 2;
+}
+
+message CreateCollectionReply {
+  enum CreateStatus {
+    CS_CREATE_SUCCESS   = 0; // 创建成功
+    CS_ALREADY_EXISTED  = 1; // collection已经存在
+    CS_CREATE_FAILED    = 2; // 创建失败
+  }
+  optional int32        cid    = 1 [default = -1];
+  required CreateStatus status = 2;
+}
+
+message CallRequest {
+  required bytes method = 1;
+  required bytes args   = 2;
+  optional int32 cid    = 3 [default = -1];
+}
+
+message CallReply {
+  required int32 cid  = 1 [default = -1];
+  required bytes args = 2;
+}
+
+service SClient2DBManager {
+  rpc regClient(ServerData) returns(Null);
+  rpc dbFind(FindRequest) returns(Null);
+  rpc dbCount(CountRequest) returns(Null);
+  rpc dbUpdate(UpdateRequet) returns(Null);
+  rpc dbInsert(InsertRequest) returns(Null);
+  rpc dbDelete(DeleteRequest) returns(Null);
+  rpc dbFindAndModify(FindAndModifyRequest) returns(Null);
+  rpc dbProcedure(ProcedureRequest) returns(Null);
+  rpc dbOperIndex(OperIndexRequest) returns(Null);
+  rpc dbCreateCollection(CreateCollectionRequest) returns(Null);
+  rpc dbReload(Null) returns(Null);
+  rpc dbCallMethod(CallRequest) returns(Null);
+}
+
+service SDBManager2Client {
+  rpc dbStatus(DBStatus) returns(Null);
+  rpc dbOnFind(FindReply) returns(Null);
+  rpc dbOnCount(CountReply) returns(Null);
+  rpc dbOnUpdate(UpdateReply) returns(Null);
+  rpc dbOnInsert(InsertReply) returns(Null);
+  rpc dbOnDelete(DeleteReply) returns(Null);
+  rpc dbOnFindAndModify(FindAndModifyReply) returns(Null);
+  rpc dbOnProcedure(ProcedureReply) returns(Null);
+  rpc dbOnOperIndex(OperIndexReply) returns(Null);
+  rpc dbOnCreateCollection(CreateCollectionReply) returns(Null);
+  rpc dbOnCallMethod(CallReply) returns(Null);
+}
