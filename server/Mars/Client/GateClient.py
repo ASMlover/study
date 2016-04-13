@@ -146,16 +146,21 @@ class GateClient(ClientGate_pb2.SGate2Client):
         pass
 
     def onRpcChannelEstablished(self, rpcChannel):
-        pass
+        if self.reconnectStatus:
+            self.doReconnectServer(rpcChannel, self.reconnectData)
+        else:
+            self.doConnectServer(rpcChannel)
 
     def registerEventCallback(self, cbType, callback):
-        pass
+        assert cbType in self.onEventCallbacks
+        self.onEventCallbacks[cbType].add(callback)
 
     def unregisterEventCallback(self, cbType, callback):
-        pass
+        assert cbType in self.onEventCallbacks
+        self.onEventCallbacks[cbType].discard(callback)
 
     def getEventCallbackList(self, cbType):
-        return
+        return list(self.onEventCallbacks[cbType])
 
     def increaseSeq(self):
         self.receivedSeq += 1
