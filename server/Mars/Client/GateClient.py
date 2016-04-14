@@ -70,7 +70,7 @@ class GateClient(ClientGate_pb2.SGate2Client):
         self.logger = LogManager.getLogger('Client.GateClient')
         self.client = ChannelClient(host, port, self)
         self.status = GateClient.ST_INIT
-        self.reconnectStatus = False
+        self.inReconnect = False
         self.reconnectData = None
         self.gateStub = None
         self.encoder = Md5IndexEncoder()
@@ -146,7 +146,7 @@ class GateClient(ClientGate_pb2.SGate2Client):
         pass
 
     def onRpcChannelEstablished(self, rpcChannel):
-        if self.reconnectStatus:
+        if self.inReconnect:
             self.doReconnectServer(rpcChannel, self.reconnectData)
         else:
             self.doConnectServer(rpcChannel)
@@ -170,16 +170,21 @@ class GateClient(ClientGate_pb2.SGate2Client):
         self.gateStub.seedRequest(None, null)
 
     def seedReply(self, controller, seed, done):
-        pass
+        self.sessionSeed = seed
+        rpcChannel = controller.rpcChannel
+        self.sendSessionKey(rpcChannel)
 
     def sendSessionKey(self, rpcChannel):
         pass
 
     def sessionKeyOk(self, controller, null, done):
-        pass
+        self.onRpcChannelEstablished(controller.rpcChannel)
 
     def onChannelDisconnected(self, rpcChannel):
-        pass
+        self.status = GateClient.ST_DISCONNECTED
+        self.inReconnect = False
+        callbackSet = self.onEventCallbacks[GateClient.CB_ON_DISCONNECTED].copy()
+        filter(lambda cb: cb(), callbackSet)
 
     def getDeviceId(self):
         return MARS_DEVICEID
