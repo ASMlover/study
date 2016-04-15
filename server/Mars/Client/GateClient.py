@@ -190,13 +190,22 @@ class GateClient(ClientGate_pb2.SGate2Client):
         return MARS_DEVICEID
 
     def doConnectServer(self, rpcChannel):
-        pass
+        request = Common_pb2.ConnectRequest()
+        request.type = Common_pb2.RT_NEWCONNECTION
+        request.clientId = self.getDeviceId()
+        self.gateStub.connectRequest(None, request)
+        self.logger.info('doConnectServer: request to %s', self.client.getPeername())
+
+        if self.zippedEnabled:
+            rpcChannel.setCompressor(Compressor())
+        self.connectStatus = Common_pb2.ConnectReply.RT_BUSY
 
     def doReconnectServer(self, rpcChannel, reconnectData):
         pass
 
     def onReliableMessageUnallowedSent(self, opCode):
-        pass
+        callbackSet = self.onEventCallbacks[GateClient.CB_ON_RELIABLE_MSG_UNSENT].copy()
+        filter(lambda cb: cb(opCode), callbackSet)
 
     def getNewServerProxy(self, stub, encoder):
         pass
