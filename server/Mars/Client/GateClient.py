@@ -208,10 +208,19 @@ class GateClient(ClientGate_pb2.SGate2Client):
         filter(lambda cb: cb(opCode), callbackSet)
 
     def getNewServerProxy(self, stub, encoder):
-        pass
+        if self.useMessageCache:
+            # TODO:
+        else:
+            return ServerProxy(stub, encoder, self.proto)
 
     def resetServerProxies(self, avatarId=None):
-        pass
+        for entity in EntityManager._entities.values():
+            if not entity.server or not entity.server.isCachable():
+                serverProxy = self.getNewServerProxy(self.gateStub, self.encoder)
+                serverProxy.setOwner(entity)
+                entity.setServer(serverProxy)
+            else:
+                entity.server.setStub(self.gateStub)
 
     def connectReply(self, controller, reply, done):
         pass
