@@ -36,4 +36,55 @@ from Utils.IdCreator import IdCreator
 from Utils.PyProto.Common_pb2 import EntityRpc
 
 class CachedServerProxy(object):
-    pass
+    OP_SEND_MSG_MD5_INDEX = 0
+    OP_CALL_SERVER_METHOD = 1
+
+    def __init__(self, stub, encoder, proto='BSON'):
+        super(CachedServerProxy, self).__init__()
+        self.logger = LogManager.getLogger('Client.CachedServerProxy')
+        self.stub = None
+        self.owner = None
+        self.encoder = encoder
+        self.reliableMsgCannotSentCB = None
+        self.proto = proto
+        self.dispatchMap = {}
+        self.setStub(stub)
+
+    def setStub(self, stub):
+        self.stub = stub
+        if stub is None:
+            self.dispatchMap = {}
+        else:
+            stub.rpcChannel.regListener(self)
+            self.dispatchMap = {
+                self.OP_SEND_MSG_MD5_INDEX: self.stub.regMd5Index,
+                self.OP_CALL_SERVER_METHOD: self.stub.entityRpc,
+            }
+
+    def setOwner(self, owner):
+        self.logger.debug('CachedServerProxy.setOwner: %s', str(owner))
+        self.owner = owner
+
+    def sendRegMd5Index(self, md5Index):
+        pass
+
+    def callServerMethod(self, methodName, parameters=None, entityId=None, reliable=True):
+        pass
+
+    def getOwnerId(self):
+        pass
+
+    def onChannelDisconnected(self, rpcChannel):
+        pass
+
+    def destroy(self):
+        pass
+
+    def flushFromSeq(self, seq):
+        pass
+
+    def regReliableMessageCannotSendCB(self, cb):
+        pass
+
+    def isCachable(self):
+        return True
