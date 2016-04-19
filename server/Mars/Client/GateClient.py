@@ -223,7 +223,16 @@ class GateClient(ClientGate_pb2.SGate2Client):
                 entity.server.setStub(self.gateStub)
 
     def connectReply(self, controller, reply, done):
-        pass
+        self.connectStatus = reply.type
+        if self.connectStatus == Common_pb2.ConnectReply.RT_RECONNECTOK:
+            r = self.dealReconnectReply(reply)
+            if not r:
+                self.connectStatus = Common_pb2.ConnectReply.RT_RECONNECTFAIL
+        callbackSet = self.onEventCallbacks[GateClient.CB_ON_CONNECT_REPLY].copy()
+        if len(callbackSet) == 0:
+            self.logger.info('GateClient.ConnectReply: connectStatus=%s', sef.connectStatus)
+            return
+        filter(lambda cb: cb(self.connectStatus), callbackSet)
 
     def dealReconnectReply(self, reply):
         pass
@@ -241,13 +250,19 @@ class GateClient(ClientGate_pb2.SGate2Client):
         pass
 
     def reset(self, host=None, port=None):
-        pass
+        self.client.reset(host, port)
+        self.gateStub = None
 
     def setTracebackHandler(self, handler):
-        pass
+        self.tbHandler = handler
 
     def handleLastTraceback(self, strError=None):
-        pass
+        if self.tbHandler is not None:
+            t, v, tb = sys.exc_info()
+            self.tbHandler(t, v, tb)
+        self.logger.logLastExcept()
+        if err is not None:
+            self.logger.error(err)
 
     def regMd5Index(self, controller, md5Index, done):
-        pass
+        self.encoder.addIndex(md5Index.md5, md5Index.index)
