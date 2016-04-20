@@ -247,7 +247,16 @@ class GateClient(ClientGate_pb2.SGate2Client):
         pass
 
     def destroyEntity(self, controller, entityData, done):
-        pass
+        self.increaseSeq()
+        entityId = IdCreator.bytes2id(entityData.id)
+        entity = EntityManager.getEntity(entityId)
+        if entity != None:
+            try:
+                entity.destroy()
+            except Exception:
+                self.handleLastTraceback('GateClient.destroyEntity: %s(%s) failed' % (entity.__class__.__name__, entityId))
+                return
+            self.logger.info('GateClient.destroyEntity: %s(%s) success', entity.__class__.__name__, entityId)
 
     def reset(self, host=None, port=None):
         self.client.reset(host, port)
