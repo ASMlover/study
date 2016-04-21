@@ -31,3 +31,11 @@
 def persistent(cls):
     cls.isPersistent = True
     return cls
+
+def persistentTime(saveTime=None):
+    def doPersistent(cls):
+        cls.isPersistent = True
+        if saveTime is not None:
+            cls.getPersistenTime = lambda s: saveTime
+        return cls
+    return doPersistent
