@@ -39,3 +39,9 @@ def persistentTime(saveTime=None):
             cls.getPersistenTime = lambda s: saveTime
         return cls
     return doPersistent
+
+def fieldsProperty(fieldList):
+    def initFromDict(func):
+        func.fieldList = fieldList
+        return func
+    return initFromDict
