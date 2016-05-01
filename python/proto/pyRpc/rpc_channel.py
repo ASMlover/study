@@ -46,11 +46,45 @@ class RpcParser(object):
         self.index_size = struct.calcsize(self.index_format)
 
         self.buf = ''
-        self.start = RpcParser.ST_HEAD
+        self.status = RpcParser.ST_HEAD
         self.data_size = 0
 
     def parse(self, data):
-        pass
+        rpc_calls = []
+        self.buf += data
+        while True:
+            if self.status == RpcParser.ST_HEAD:
+                self.logger.debug('RpcParser.parse: ST_HEAD: %d/%d', len(self.buf), self.head_size)
+                if len(self.buf) < self.head_size:
+                    break
+
+                head_data = self.buf[:self.head_size]
+                self.data_size = struct.unpack(self.head_format, head_data)[0]
+                self.buf = self.buf[self.head_size:]
+                self.status = RpcParser.ST_DATA
+            elif self.status == RpcParser.ST_DATA:
+                self.logger.debug('RpcParser.parse: ST_DATA: %d/%d', len(self.buf), self.data_size)
+                if len(self.buf) < self.data_size:
+                    break
+
+                index_data = self.buf[:self.index_size]
+                request_data = self.buf[self.index_size:self.data_size]
+
+                index = struct.unpack(self.index_format, index_data)[0]
+                service_desc = self.service.GetDescriptor()
+
+                method = service_desc.methods[index]
+                request = self.service.GetRequestClass(method)()
+
+                request.ParseFromString(request_data)
+                if not request.IsInitialized():
+                    raise AttributeError('invalid request data')
+
+                self.buf = self.buf[self.data_size:]
+                self.status = RpcParser.ST_HEAD
+
+                rpc_calls.append((method, request))
+        return rpc_calls
 
 class RpcChannel(service.RpcChannel):
     pass
