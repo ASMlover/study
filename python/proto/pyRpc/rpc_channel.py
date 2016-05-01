@@ -42,33 +42,33 @@ class RpcParser(object):
         self.service = rpc_service
         self.head_format = head_format
         self.index_format = index_format
-        self.head_size = struct.calcsize(self.head_format)
-        self.index_size = struct.calcsize(self.index_format)
+        self.head_bytes = struct.calcsize(self.head_format)
+        self.index_bytes = struct.calcsize(self.index_format)
 
         self.buf = ''
         self.status = RpcParser.ST_HEAD
-        self.data_size = 0
+        self.data_bytes = 0
 
     def parse(self, data):
         rpc_calls = []
         self.buf += data
         while True:
             if self.status == RpcParser.ST_HEAD:
-                self.logger.debug('RpcParser.parse: ST_HEAD: %d/%d', len(self.buf), self.head_size)
-                if len(self.buf) < self.head_size:
+                self.logger.debug('RpcParser.parse: ST_HEAD: %d/%d', len(self.buf), self.head_bytes)
+                if len(self.buf) < self.head_bytes:
                     break
 
-                head_data = self.buf[:self.head_size]
-                self.data_size = struct.unpack(self.head_format, head_data)[0]
-                self.buf = self.buf[self.head_size:]
+                head_data = self.buf[:self.head_bytes]
+                self.data_bytes = struct.unpack(self.head_format, head_data)[0]
+                self.buf = self.buf[self.head_bytes:]
                 self.status = RpcParser.ST_DATA
             elif self.status == RpcParser.ST_DATA:
-                self.logger.debug('RpcParser.parse: ST_DATA: %d/%d', len(self.buf), self.data_size)
-                if len(self.buf) < self.data_size:
+                self.logger.debug('RpcParser.parse: ST_DATA: %d/%d', len(self.buf), self.data_bytes)
+                if len(self.buf) < self.data_bytes:
                     break
 
-                index_data = self.buf[:self.index_size]
-                request_data = self.buf[self.index_size:self.data_size]
+                index_data = self.buf[:self.index_bytes]
+                request_data = self.buf[self.index_bytes:self.data_bytes]
 
                 index = struct.unpack(self.index_format, index_data)[0]
                 service_desc = self.service.GetDescriptor()
@@ -80,11 +80,14 @@ class RpcParser(object):
                 if not request.IsInitialized():
                     raise AttributeError('invalid request data')
 
-                self.buf = self.buf[self.data_size:]
+                self.buf = self.buf[self.data_bytes:]
                 self.status = RpcParser.ST_HEAD
 
                 rpc_calls.append((method, request))
         return rpc_calls
 
 class RpcChannel(service.RpcChannel):
-    pass
+    HEAD_FORMAT = '!I'
+    HEAD_BYTES  = struct.calcsize(HEAD_FORMAT)
+    INDEX_FORMAT= '!H'
+    INDEX_BYTES = struct.calcsize(INDEX_FORMAT)
