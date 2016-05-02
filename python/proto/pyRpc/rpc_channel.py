@@ -37,9 +37,9 @@ class RpcParser(object):
     ST_HEAD = 0
     ST_DATA = 1
 
-    def __init__(self, rpc_service, head_format, index_format):
+    def __init__(self, service, head_format, index_format):
         self.logger = LoggerMgr.get_logger('pyRpc.RpcParser')
-        self.service = rpc_service
+        self.service = service
         self.head_format = head_format
         self.index_format = index_format
         self.head_bytes = struct.calcsize(self.head_format)
@@ -87,7 +87,46 @@ class RpcParser(object):
         return rpc_calls
 
 class RpcChannel(service.RpcChannel):
-    HEAD_FORMAT = '!I'
-    HEAD_BYTES  = struct.calcsize(HEAD_FORMAT)
-    INDEX_FORMAT= '!H'
-    INDEX_BYTES = struct.calcsize(INDEX_FORMAT)
+    HEAD_FORMAT  = '!I'
+    HEAD_BYTES   = struct.calcsize(HEAD_FORMAT)
+    INDEX_FORMAT = '!H'
+    INDEX_BYTES  = struct.calcsize(INDEX_FORMAT)
+
+    def __init__(self, service, conn):
+        super(RpcChannel, self).__init__()
+        self.logger = LoggerMgr.get_logger('pyRpc.RpcChannel')
+        self.service = service
+        self.conn = conn
+
+        self.conn.set_rpc_channel(self)
+        self.rpc_controller = RpcController(self)
+        self.rpc_parser = RpcParser(self.service, RpcParser.HEAD_FORMAT, RpcParser.INDEX_FORMAT)
+
+    def get_peername(self):
+        return self.conn and self.conn.get_peername() or (None, None)
+
+    def disconnect(self):
+        self.conn and self.conn.disconnect()
+
+    def on_disconnected(self):
+        self.conn = None
+
+    def CallMethod(self, method, rpc_controller, request, response_class, done):
+        index = method.index
+        data = request.SerializeToString()
+        data_bytes = RpcChannel.INDEX_BYTES + len(data)
+
+        self.conn.write_data(struct.pack(RpcChannel.HEAD_FORMAT, data_bytes))
+        self.conn.write_data(struct.pack(RpcChannel.INDEX_FORMAT, index))
+        self.conn.write_data(data)
+
+    def read_data(self, data):
+        try:
+            rpc_calls = self.rpc_parser.parse(data)
+        except (AttributeError, IndexError) as e:
+            self.logger.error('RpcChannel.read_data: parse request error, give up and disconnect')
+            self.disconnect()
+            return
+
+        for method, request in rpc_calls:
+            self.service.CallMethod(method, self.rpc_controller, request, callback=None)
