@@ -95,7 +95,15 @@ class RpcChannel(service.RpcChannel):
             raise error.RpcIOError('Error writing data to server')
 
     def read_rpc_message(self, fd):
-        pass
+        try:
+            rfile = fd.makefile('r')
+            byte_stream = rfile.read()
+        except socket.error:
+            raise error.RpcIOError('Error reading data from server')
+        finally:
+            self.close_socket(fd)
+
+        return byte_stream
 
     def parse_reply(self, byte_stream, reply_class):
         pass
