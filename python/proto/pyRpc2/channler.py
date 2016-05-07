@@ -106,7 +106,105 @@ class RpcChannel(service.RpcChannel):
         return byte_stream
 
     def parse_reply(self, byte_stream, reply_class):
-        pass
+        reply = reply_class()
+        try:
+            reply.ParseFromString(byte_stream)
+        except Exception as e:
+            raise error.BadReplyProtoError('Invalid reply: %s' % str(e))
+
+        if not reply.IsInitialized():
+            raise error.BadReplyProtoError('Response not initialized')
+
+        return reply
 
     def CallMethod(self, method, controller, request, reply_class, done):
-        pass
+        lifecycle = _LifeCycle(controller, self)
+        lifecycle.try_to_validate_request(request)
+        lifecycle.try_to_open_socket()
+        lifecycle.try_to_write_request(method, request)
+        lifecycle.try_to_read_reply()
+        lifecycle.try_to_parse_reply()
+        lifecycle.try_to_read_service_reply(reply_class)
+        lifecycle.try_to_run_callback(done)
+
+class _LifeCycle(object):
+    def __init__(self, controller, channel):
+        self.controller = controller
+        self.channel = channel
+        self.fd = None
+        self.byte_stream = None
+        self.rpc_reply = None
+        self.service_reply = None
+
+    def try_to_validate_request(self, request):
+        if self.controller.error:
+            return
+        try:
+            self.channel.validate_request(request)
+        except error.BadRequestProtoError as e:
+            self.controller.handle_error(
+                    rpc_pb.ET_BAD_REQUEST_PROTO, e.message)
+
+    def try_to_open_socket(self):
+        if self.controller.error:
+            return
+
+        try:
+            self.fd = self.channel.open_socket(
+                    self.channel.host, self.channel.port)
+        except error.UnknownHostError as e:
+            self.controller.handle_error(rpc_pb.ET_UNKNOWN_HOST, e.message)
+        except error.RpcIOError as e:
+            self.controller.handle_error(rpc_pb.ET_IO_ERROR, e.message)
+
+    def try_to_write_request(self, method, request):
+        if self.controller.error:
+            return
+
+        rpc_request = self.channel.create_rpc_request(method, request)
+        try:
+            self.channel.write_rpc_message(self.fd, rpc_request)
+        except error.RpcIOError as e:
+            self.controller.handle_error(rpc_pb.ET_IO_ERROR, e.message)
+
+    def try_to_read_reply(self):
+        if self.controller.error:
+            return
+
+        try:
+            self.byte_stream = self.channel.read_rpc_message(self.fd)
+        except error.RpcIOError as e:
+            self.controller.handle_error(rpc_pb.ET_IO_ERROR, e.message)
+
+    def try_to_parse_reply(self):
+        if self.controller.error:
+            return
+
+        try:
+            self.rpc_reply = self.channel.parse_reply(
+                    self.byte_stream, rpc_pb.Reply)
+        except error.BadReplyProtoError as e:
+            self.controller.handle_error(
+                    rpc_pb.ET_BAD_REPLY_PROTO, e.message)
+
+    def try_to_read_service_reply(self, reply_class):
+        if self.controller.error:
+            return
+
+        try:
+            self.service_reply = self.channel.parse_reply(
+                    self.rpc_reply.reply_proto, reply_class)
+        except error.BadReplyProtoError as e:
+            self.controller.handle_error(
+                    rpc_pb.ET_BAD_REPLY_PROTO, e.message)
+
+    def try_to_run_callback(self, done):
+        if self.controller.error:
+            return
+        self.controller.success = True
+
+        if self.rpc_reply.error:
+            self.controller.handle_error(
+                    self.rpc_reply.error, self.rpc_reply.err_reason)
+
+        done and done.run(self.service_reply)
