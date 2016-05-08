@@ -50,4 +50,49 @@ class Callback(object):
 
 class SocketHandler(socketserver.StreamRequestHandler):
     def handle(self):
+        _logger.debug('SocketHandler.handle: got a request')
+
+        read_data = self.rfile.read()
+
+        rpc_reply = self.validate_and_execute_request(read_data)
+        _logger.debug('SocketHandler.handle: to client: %s', rpc_reply)
+
+        self.wfile.write(rpc_reply.SerializeToString())
+        self.request.shutdown(socket.SHUT_RDWR)
+
+    def validate_and_execute_request(self, request_data):
+        pass
+
+    def parse_service_request(self, client_byte_stream):
+        pass
+
+    def retrive_service(self, service_name):
+        pass
+
+    def retrive_method(self, service, method_name):
+        pass
+
+    def retrive_proto_request(self, service, method, request):
+        pass
+
+    def call_method(self, service, method, proto_request):
+        pass
+
+    def hanle_error(self, e):
+        pass
+
+class ThreadTcpServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    socketserver.allow_reuse_address = True
+
+class RpcServer(object):
+    service_map = {}
+
+    def __init__(self, host='localhost', port=5555):
+        self.host = host
+        self.port = port
+
+    def register_service(self, service):
+        pass
+
+    def run(self):
         pass
