@@ -69,4 +69,14 @@ class RpcService(object):
             self.__dict__[method.name] = rpc
 
     def call(self, rpc, request, timeout=None, callback=None):
-        pass
+        result = {'done': False, 'reply': None}
+        def async_callback(request, reply):
+            result['reply'] = reply
+            result['done'] = True
+            result['err_msg'] = ''
+            result['success'] = True
+
+        if callback is None:
+            rpc_callback = async_callback
+        else:
+            pass
