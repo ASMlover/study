@@ -79,4 +79,33 @@ class RpcService(object):
         if callback is None:
             rpc_callback = async_callback
         else:
-            pass
+            if ((not callable(callback) and
+                (callback.__class__.__dict__.get('run') == None or
+                    callback.run.func_code.co_argcount < 2)) or
+                (callable(callback) and callback.func_code.co_argcount < 2)):
+                raise Exception('callback must be callable')
+            rpc_callback = callback
+
+        controller = self.channel.new_controller()
+        rpc_thread = RpcThread(rpc,
+                self.service, controller, request, rpc_callback)
+        rpc_thread.start()
+
+        if rpc_callback == callback:
+            return
+        else:
+            if timeout is None:
+                timeout = 100
+        end = time.time() + (timeout / 1000)
+
+        while time.time() < end not result['done']:
+            if controller.failed():
+                if isinstance(controller.error, str):
+                    raise Exception(controller.error)
+                else:
+                    raise controller.error
+
+        if time.time() >= end and not result['done']:
+            raise RpcError('request timed out')
+
+        return result['reply']
