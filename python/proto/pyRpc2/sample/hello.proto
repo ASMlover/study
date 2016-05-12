@@ -1,0 +1,14 @@
+
+package pyRpc2.pyRpc;
+
+message HelloRequest {
+  required string name = 1;
+}
+
+message HelloReply {
+  required string hello = 1;
+}
+
+service SHello {
+  rpc hello_world(HelloRequest) returns(HelloReply);
+}
