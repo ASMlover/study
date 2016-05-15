@@ -48,6 +48,36 @@ class Callback(object):
         self.reply = reply
         self.invoked = True
 
+class SocketHandler(socketserver.StreamRequestHandler):
+    def handle(self):
+        _logger.debug('SocketHandler.handle: got a request')
+
+        recv = self.rfile.read()
+        # TODO:
+
+    def validate_execute_request(self, input_data):
+        try:
+            # TODO:
+            request = None
+
+    def parse_service_request(self, byte_stream):
+        pass
+
+    def retrieve_service(self, service_name):
+        pass
+
+    def retrieve_method(self, service, method_name):
+        pass
+
+    def retrieve_proto_request(self, service, method, request):
+        pass
+
+    def call_method(self, service, method, proto_request):
+        pass
+
+    def handle_with_error(self, e):
+        pass
+
 class RpcServer(object):
     service_map = {}
 
