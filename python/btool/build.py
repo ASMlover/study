@@ -30,15 +30,18 @@
 
 import json
 import os
+import platform
+import subprocess
+import sys
 
 try:
-    with open('build.json', 'r', encoding='utf-8') as fp:
+    with open('conf.json', 'r', encoding='utf-8') as fp:
         conf = json.load(fp)
 except Exception:
-    with open('build.template.json', 'r', encoding='utf-8') as fp:
+    with open('template.conf.json', 'r', encoding='utf-8') as fp:
         conf = json.load(fp)
 
-def get_sources_list(root):
+def get_sources_list(root='./'):
     cur_sources = os.listdir(root)
     all_sources = []
 
@@ -48,15 +51,92 @@ def get_sources_list(root):
             next_sources = get_sources_list(source_fname)
             all_sources.extend(next_sources)
         else:
-            if os.path.splitext(source_fname)[1] in conf['extensions']:
-                all_sources.append(source_fname)
+            if os.path.splitext(source)[1][1:] in conf['extensions']:
+                all_sources.append(source)
 
     return all_sources
 
+def gen_makefile_windows(target, pf):
+    # TODO: now just functional, need refactor
+    cflags_list = ['O2', 'W3', 'MDd', 'GS', 'Zi', 'Fd"vc.pdb"', 'EHsc']
+    cflags_list.extend(conf['compile_options'][pf])
+    for opt in conf['precompile_options'][pf]:
+        cflags_list.append('D%s' % opt)
+    cflags_count = len(cflags_list)
+    cflags_str = ''.join(('-%s ' % opt for opt in cflags_list))[:-1]
+
+    ldflags_list = [
+        'INCREMENTAL',
+        'DEBUG',
+        'PDB:$(TARGET).pdb',
+        'manifest',
+        'manifestfile:$(TARGET).manifest',
+        'manifestuac:no'
+    ]
+    ldflags_list.extend(conf['link_options'][pf])
+    extra_libs = conf['extra_libraries'][pf]
+    ldflags_str = '%s%s' % (
+            ''.join(('-%s ' % opt for opt in ldflags_list)),
+            ''.join(('%s ' % lib for lib in extra_libs)))
+    ldflags_str = ldflags_str[:-1]
+
+    all_sources = get_sources_list()
+    sources = ''.join(('%s ' % src for src in all_sources))[:-1]
+    objs = ''.join(('%s.obj ' % os.path.splitext(src)[0]
+                for src in all_sources))[:-1]
+
+    with open('Makefile', 'w', encoding='utf-8') as pf:
+        pf.write('TARGET = %s\n' % target)
+        pf.write('RM = del\n')
+        pf.write('CC = cl -c -nologo\n')
+        pf.write('LINK = link -nologo\n')
+        pf.write('MT = mt -nologo\n')
+        pf.write('CFLAGS = %s\n' % cflags_str)
+        pf.write('LDFLAGS = %s\n' % ldflags_str)
+        pf.write('OBJS = %s\n' % objs)
+        pf.write('SRCS = %s\n\n' % sources)
+        pf.write('all: $(TARGET)\n\n')
+        pf.write('rebuild: clean all\n\n')
+        pf.write('clean:\n\t$(RM) $(TARGET) $(OBJS) *.pdb *.ilk *.manifest\n\n')
+        pf.write('$(TARGET): $(OBJS)\n')
+        pf.write('\t$(LINK) -out:$(TARGET) $(OBJS) $(LDFLAGS)\n')
+        pf.write('\t$(MT) -manifest $(TARGET).manifest -outputresource:$(TARGET);1\n\n')
+        pf.write('$(OBJS): $(SRCS)\n\t$(CC) $(CFLAGS) $(SRCS)')
+
+def gen_makefile_linux(pf):
+    pass
+
+def gen_makefile_darwin(pf):
+    pass
+
+def gen_makefile(pf):
+    GEN_FUNCTOR = {
+        'Windows': gen_makefile_windows,
+        'Linux': gen_makefile_linux,
+        'Darwin': gen_makefile_darwin
+    }
+
+    target = conf['target']
+    GEN_FUNCTOR[pf](target, pf)
+
+def build():
+    pf = platform.system()
+    gen_makefile(pf)
+    subprocess.check_call('nmake', shell=True)
+
+def clean():
+    pf = platform.system()
+    if pf == 'Windows':
+        if os.path.exists('Makefile'):
+            subprocess.check_call('nmake clean', shell=True)
+            subprocess.check_call('del Makefile', shell=True)
+
 def main():
-    all_sources = get_sources_list('./')
-    for source_fname in all_sources:
-        print(source_fname)
+    # TODO: need use argparse
+    if len(sys.argv) > 1:
+        opt = sys.argv[1]
+        fun = getattr(sys.modules['__main__'], opt, None)
+        fun and fun()
 
 if __name__ == '__main__':
     main()
