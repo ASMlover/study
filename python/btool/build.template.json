@@ -1,3 +1,31 @@
 {
-  "extensions": ["c", "cc", "cpp"]
+  "extensions": ["c", "cc", "cpp"],
+
+  "target": "demo.exe",
+
+  "precompile_options": {
+    "Windows": [
+      "_DEBUG",
+      "_CRT_SECURE_NO_WARNINGS",
+      "_CRT_NONSTDC_NO_WARNINGS"
+    ]
+  },
+
+  "compile_options": {
+    "Windows": [],
+    "Linux": [],
+    "Darwin": []
+  },
+
+  "link_options": {
+    "Windows": [],
+    "Linux": [],
+    "Darwin": []
+  },
+
+  "extra_libraries": {
+    "Windows": ["winmm.lib"],
+    "Linux": [],
+    "Darwin": []
+  }
 }
