@@ -52,13 +52,43 @@ class SocketHandler(socketserver.StreamRequestHandler):
     def handle(self):
         _logger.debug('SocketHandler.handle: got a request')
 
-        recv = self.rfile.read()
-        # TODO:
+        recv_data = self.rfile.read()
+        rpc_reply = self.validate_execute_request(recv_data)
+        _logger.debug(
+                'SocketHandler.handle: reply to return to client: %s',
+                rpc_reply)
+
+        self.wfile.write(rpc_reply.SerializeToString())
+        self.reply.shutdown(socket.SHUT_RDWR)
 
     def validate_execute_request(self, input_data):
         try:
-            # TODO:
-            request = None
+            request = self.parse_service_request(input_data)
+        except error.BadRequestDataError as e:
+            return self.handle_with_error(e)
+
+        try:
+            service = self.retrieve_service(request.service_name)
+        except error.ServiceNotFoundError as e:
+            return self.handle_with_error(e)
+
+        try:
+            method = self.retrieve_method(service, request.method_name)
+        except error.MethodNotFoundError as e:
+            return self.handle_with_error(e)
+
+        try:
+            proto_request = self.retrieve_proto_request(
+                    service, method, request)
+        except error.BadReplyProtoError as e:
+            return self.handle_with_error(e)
+
+        try:
+            reply = self.call_method(service, method, proto_request)
+        except error.RpcError as e:
+            return self.handle_with_error(e)
+
+        return reply
 
     def parse_service_request(self, byte_stream):
         pass
@@ -78,6 +108,9 @@ class SocketHandler(socketserver.StreamRequestHandler):
     def handle_with_error(self, e):
         pass
 
+class ThreadTcpServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    socketserver.allow_reuse_address = True
+
 class RpcServer(object):
     service_map = {}
 
@@ -90,4 +123,5 @@ class RpcServer(object):
 
     def run(self):
         _logger.info('RpcServer.run: running server on port %d', self.port)
-        pass
+        server = ThreadTcpServer((self.host, self.port), SocketHandler)
+        server.serve_forever()
