@@ -56,52 +56,41 @@ def get_sources_list(root='./'):
 
     return all_sources
 
-def gen_makefile_windows(target, pf):
+def gen_makefile_windows(target):
     # TODO: now just functional, need refactor
-    cflags_list = ['O2', 'W3', 'MDd', 'GS', 'Zi', 'Fd"vc.pdb"', 'EHsc']
-    cflags_list.extend(conf['compile_options'][pf])
-    for opt in conf['precompile_options'][pf]:
-        cflags_list.append('D%s' % opt)
-    cflags_count = len(cflags_list)
-    cflags_str = ''.join(('-%s ' % opt for opt in cflags_list))[:-1]
+    cflags_list = conf.get('compile_options', [])
+    cflags = ''.join((' -%s' % flags for flags in cflags_list))
+    preprocessor_list = conf.get('precompile_options', [])
+    preprocessor = ''.join((' -D%s' % flags for flags in preprocessor_list))
+    inc_dir_list = conf.get('inc_dir', [])
+    inc_dir = ''.join((' -I"%s"' % inc for inc in inc_dir_list))
 
-    ldflags_list = [
-        'INCREMENTAL',
-        'DEBUG',
-        'PDB:$(TARGET).pdb',
-        'manifest',
-        'manifestfile:$(TARGET).manifest',
-        'manifestuac:no'
-    ]
-    ldflags_list.extend(conf['link_options'][pf])
-    extra_libs = conf['extra_libraries'][pf]
-    ldflags_str = '%s%s' % (
-            ''.join(('-%s ' % opt for opt in ldflags_list)),
-            ''.join(('%s ' % lib for lib in extra_libs)))
-    ldflags_str = ldflags_str[:-1]
+    ldflags_list = conf.get('link_options', [])
+    ldflags = ''.join((' -%s' % flags for flags in ldflags_list))
+    lib_dir_list = conf.get('lib_dir', [])
+    lib_dir = ''.join((' -LIBPATH:"%s"' % path for path in lib_dir_list))
+    dep_libs_list = conf.get('dep_libraries', [])
+    dep_libs = ''.join((' %s' % lib for lib in dep_libs_list))
 
     all_sources = get_sources_list()
-    sources = ''.join(('%s ' % src for src in all_sources))[:-1]
-    objs = ''.join(('%s.obj ' % os.path.splitext(src)[0]
-                for src in all_sources))[:-1]
+    srcs = ''.join(('%s ' % src for src in all_sources))[:-1]
+    objs = ''.join(('%s.obj ' % os.path.splitext(src)[0] for src in all_sources))[:-1]
 
-    with open('Makefile', 'w', encoding='utf-8') as pf:
-        pf.write('TARGET = %s\n' % target)
-        pf.write('RM = del\n')
-        pf.write('CC = cl -c -nologo\n')
-        pf.write('LINK = link -nologo\n')
-        pf.write('MT = mt -nologo\n')
-        pf.write('CFLAGS = %s\n' % cflags_str)
-        pf.write('LDFLAGS = %s\n' % ldflags_str)
-        pf.write('OBJS = %s\n' % objs)
-        pf.write('SRCS = %s\n\n' % sources)
-        pf.write('all: $(TARGET)\n\n')
-        pf.write('rebuild: clean all\n\n')
-        pf.write('clean:\n\t$(RM) $(TARGET) $(OBJS) *.pdb *.ilk *.manifest\n\n')
-        pf.write('$(TARGET): $(OBJS)\n')
-        pf.write('\t$(LINK) -out:$(TARGET) $(OBJS) $(LDFLAGS)\n')
-        pf.write('\t$(MT) -manifest $(TARGET).manifest -outputresource:$(TARGET);1\n\n')
-        pf.write('$(OBJS): $(SRCS)\n\t$(CC) $(CFLAGS) $(SRCS)')
+    with open('./templates/Windows/bin.mk', 'r', encoding='utf-8') as rfp:
+        mk = rfp.read().format(
+            bin=target,
+            cflags=cflags,
+            preprocessor=preprocessor,
+            inc_dir=inc_dir,
+            ldflags=ldflags,
+            lib_dir=lib_dir,
+            dep_libs=dep_libs,
+            srcs=srcs,
+            objs=objs
+        )
+        with open('Makefile', 'w', encoding='utf-8') as wfp:
+            wfp.write(mk)
+
 
 def gen_makefile_linux(pf):
     pass
@@ -116,8 +105,8 @@ def gen_makefile(pf):
         'Darwin': gen_makefile_darwin
     }
 
-    target = conf['target']
-    GEN_FUNCTOR[pf](target, pf)
+    target = conf['bin']
+    GEN_FUNCTOR[pf](target)
 
 def build():
     pf = platform.system()

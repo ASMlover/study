@@ -1,31 +1,30 @@
 {
   "extensions": ["c", "cc", "cpp"],
 
-  "target": "demo.exe",
+  "bin": "demo.exe",
 
-  "precompile_options": {
-    "Windows": [
-      "_DEBUG",
-      "_CRT_SECURE_NO_WARNINGS",
-      "_CRT_NONSTDC_NO_WARNINGS"
-    ]
-  },
+  "precompile_options": [
+    "_DEBUG",
+    "_CRT_SECURE_NO_WARNINGS",
+    "_CRT_NONSTDC_NO_WARNINGS"
+  ],
 
-  "compile_options": {
-    "Windows": [],
-    "Linux": [],
-    "Darwin": []
-  },
+  "compile_options": [
+    "O2",
+    "W3",
+    "MDd"
+  ],
 
-  "link_options": {
-    "Windows": [],
-    "Linux": [],
-    "Darwin": []
-  },
+  "inc_dir": [
+  ],
 
-  "extra_libraries": {
-    "Windows": ["winmm.lib"],
-    "Linux": [],
-    "Darwin": []
-  }
+  "link_options": [
+  ],
+
+  "lib_dir": [
+  ],
+
+  "dep_libraries": [
+    "winmm.lib"
+  ]
 }
