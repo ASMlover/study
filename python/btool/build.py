@@ -56,25 +56,38 @@ def get_sources_list(root='./'):
 
     return all_sources
 
-def gen_makefile_windows(target):
-    # TODO: now just functional, need refactor
-    cflags_list = conf.get('compile_options', [])
-    cflags = ''.join((' -%s' % flags for flags in cflags_list))
-    preprocessor_list = conf.get('precompile_options', [])
-    preprocessor = ''.join((' -D%s' % flags for flags in preprocessor_list))
-    inc_dir_list = conf.get('inc_dir', [])
-    inc_dir = ''.join((' -I"%s"' % inc for inc in inc_dir_list))
+def gen_options_string(key, options, functor=None, shave_last=False):
+    OPTS_MAP = {
+        'cflags': ' -%s',
+        'preprocessor': ' -D%s',
+        'inc_dir': ' -I"%s"',
+        'ldflags': ' -%s',
+        'lib_dir': ' -LIBPATH:"%s"',
+        'dep_libs': ' %s',
+        'srcs': '%s ',
+        'objs': '%s.obj ',
+    }
 
-    ldflags_list = conf.get('link_options', [])
-    ldflags = ''.join((' -%s' % flags for flags in ldflags_list))
-    lib_dir_list = conf.get('lib_dir', [])
-    lib_dir = ''.join((' -LIBPATH:"%s"' % path for path in lib_dir_list))
-    dep_libs_list = conf.get('dep_libraries', [])
-    dep_libs = ''.join((' %s' % lib for lib in dep_libs_list))
+    if functor:
+        options = ''.join((OPTS_MAP[key] % functor(opt) for opt in options))
+    else:
+        options = ''.join((OPTS_MAP[key] % opt for opt in options))
+    if shave_last:
+        options = options[:-1]
+
+    return options
+
+def gen_makefile_windows(target):
+    cflags = gen_options_string('cflags', conf.get('compile_options', []))
+    preprocessor = gen_options_string('preprocessor', conf.get('precompile_options', []))
+    inc_dir = gen_options_string('inc_dir', conf.get('inc_dir', []))
+    ldflags = gen_options_string('ldflags', conf.get('ldflags', []))
+    lib_dir = gen_options_string('lib_dir', conf.get('lib_dir', []))
+    dep_libs = gen_options_string('dep_libs', conf.get('dep_libraries', []))
 
     all_sources = get_sources_list()
-    srcs = ''.join(('%s ' % src for src in all_sources))[:-1]
-    objs = ''.join(('%s.obj ' % os.path.splitext(src)[0] for src in all_sources))[:-1]
+    srcs = gen_options_string('srcs', all_sources, shave_last=True)
+    objs = gen_options_string('objs', all_sources, functor=lambda x: os.path.splitext(x)[0], shave_last=True)
 
     with open('./templates/Windows/bin.mk', 'r', encoding='utf-8') as rfp:
         mk = rfp.read().format(
