@@ -28,6 +28,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import argparse
 import json
 import os
 import platform
@@ -41,7 +42,7 @@ except Exception:
     with open('template.conf.json', 'r', encoding='utf-8') as fp:
         conf = json.load(fp)
 
-def get_sources_list(root='./'):
+def get_sources_list(root='./', fullpath=True):
     cur_sources = os.listdir(root)
     all_sources = []
 
@@ -52,7 +53,10 @@ def get_sources_list(root='./'):
             all_sources.extend(next_sources)
         else:
             if os.path.splitext(source)[1][1:] in conf['extensions']:
-                all_sources.append(source)
+                if fullpath:
+                    all_sources.append(source_fname)
+                else:
+                    all_sources.append(source)
 
     return all_sources
 
@@ -85,7 +89,7 @@ def gen_makefile_windows(target):
     lib_dir = gen_options_string('lib_dir', conf.get('lib_dir', []))
     dep_libs = gen_options_string('dep_libs', conf.get('dep_libraries', []))
 
-    all_sources = get_sources_list()
+    all_sources = get_sources_list(fullpath=False)
     srcs = gen_options_string('srcs', all_sources, shave_last=True)
     objs = gen_options_string('objs', all_sources, functor=lambda x: os.path.splitext(x)[0], shave_last=True)
 
@@ -119,26 +123,49 @@ def gen_makefile(pf):
     }
 
     target = conf['bin']
-    GEN_FUNCTOR[pf](target)
+    fun = GEN_FUNCTOR.get(pf)
+    fun and fun(target)
+
+def clean_windows():
+    if os.path.exists('Makefile'):
+        subprocess.check_call('nmake clean', shell=True)
+        subprocess.check_call('del Makefile', shell=True)
+
+def clean_linux():
+    pass
+
+def clean_darwin():
+    pass
 
 def build():
     pf = platform.system()
     gen_makefile(pf)
     subprocess.check_call('nmake', shell=True)
 
+def rebuild():
+    clean()
+    build()
+
 def clean():
-    pf = platform.system()
-    if pf == 'Windows':
-        if os.path.exists('Makefile'):
-            subprocess.check_call('nmake clean', shell=True)
-            subprocess.check_call('del Makefile', shell=True)
+    GEN_FUNCTOR = {
+        'Windows': clean_windows,
+        'Linux': clean_linux,
+        'Darwin': clean_darwin
+    }
+    fun = GEN_FUNCTOR.get(platform.system())
+    fun and fun()
+
+def get_build_arguments():
+    parser = argparse.ArgumentParser(description='C/C++ building tool')
+    parser.add_argument('option', help='[build|rebuild|clean] the project')
+    args = parser.parse_args()
+    return args.option
 
 def main():
-    # TODO: need use argparse
-    if len(sys.argv) > 1:
-        opt = sys.argv[1]
-        fun = getattr(sys.modules['__main__'], opt, None)
-        fun and fun()
+    option = get_build_arguments()
+
+    fun = getattr(sys.modules['__main__'], option, None)
+    fun and fun()
 
 if __name__ == '__main__':
     main()
