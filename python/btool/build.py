@@ -121,10 +121,8 @@ def gen_makefile(pf):
         'Linux': gen_makefile_linux,
         'Darwin': gen_makefile_darwin
     }
-
-    target = conf['bin']
     fun = GEN_FUNCTOR.get(pf)
-    fun and fun(target)
+    fun and fun(conf['bin'])
 
 def clean_windows():
     if os.path.exists('Makefile'):
@@ -138,8 +136,7 @@ def clean_darwin():
     pass
 
 def build():
-    pf = platform.system()
-    gen_makefile(pf)
+    gen_makefile(platform.system())
     subprocess.check_call('nmake', shell=True)
 
 def rebuild():
