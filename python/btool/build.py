@@ -60,16 +60,16 @@ def get_sources_list(root='./', fullpath=True):
 
     return all_sources
 
-def gen_options_string(key, options, functor=None, shave_last=False):
+def gen_options_string(key, options, functor=None, shave_last=False, posix=False):
     OPTS_MAP = {
         'cflags': ' -%s',
         'preprocessor': ' -D%s',
-        'inc_dir': ' -I"%s"',
+        'inc_dir': ' -I"%s"' if not posix else ' -I%s',
         'ldflags': ' -%s',
-        'lib_dir': ' -LIBPATH:"%s"',
+        'lib_dir': ' -LIBPATH:"%s"' if not posix else ' -L%s',
         'dep_libs': ' %s',
         'srcs': '%s ',
-        'objs': '%s.obj ',
+        'objs': '%s.obj ' if not posix else '%s.o ',
     }
 
     if functor:
@@ -81,48 +81,57 @@ def gen_options_string(key, options, functor=None, shave_last=False):
 
     return options
 
-def gen_makefile_windows(target):
-    cflags = gen_options_string('cflags', conf.get('compile_options', []))
-    preprocessor = gen_options_string('preprocessor', conf.get('precompile_options', []))
-    inc_dir = gen_options_string('inc_dir', conf.get('inc_dir', []))
-    ldflags = gen_options_string('ldflags', conf.get('ldflags', []))
-    lib_dir = gen_options_string('lib_dir', conf.get('lib_dir', []))
-    dep_libs = gen_options_string('dep_libs', conf.get('dep_libraries', []))
-
+def gen_makefile_windows(pf, target):
     all_sources = get_sources_list(fullpath=False)
-    srcs = gen_options_string('srcs', all_sources, shave_last=True)
-    objs = gen_options_string('objs', all_sources, functor=lambda x: os.path.splitext(x)[0], shave_last=True)
+    mk_dict = dict(
+        bin=target,
+        cflags=gen_options_string('cflags', conf.get('compile_options', [])),
+        preprocessor=gen_options_string('preprocessor', conf.get('precompile_options', [])),
+        inc_dir=gen_options_string('inc_dir', conf.get('inc_dir', [])),
+        ldflags=gen_options_string('ldflags', conf.get('ldflags', [])),
+        lib_dir=gen_options_string('lib_dir', conf.get('lib_dir', [])),
+        dep_libs=gen_options_string('dep_libs', conf.get('dep_libraries', [])),
+        srcs=gen_options_string('srcs', all_sources, shave_last=True),
+        objs=gen_options_string('objs', all_sources, functor=lambda x: os.path.splitext(x)[0], shave_last=True)
+    )
+    return mk_dict
 
-    with open('./templates/Windows/bin.mk', 'r', encoding='utf-8') as rfp:
-        mk = rfp.read().format(
-            bin=target,
-            cflags=cflags,
-            preprocessor=preprocessor,
-            inc_dir=inc_dir,
-            ldflags=ldflags,
-            lib_dir=lib_dir,
-            dep_libs=dep_libs,
-            srcs=srcs,
-            objs=objs
-        )
-        with open('Makefile', 'w', encoding='utf-8') as wfp:
-            wfp.write(mk)
+def gen_makefile_posix(pf, target):
+    def get_posix_lib(lib):
+        if lib.endswith('.a') or lib.endswith('.so'):
+            return lib
+        else:
+            return lib.replace('lib', '-l')
 
-
-def gen_makefile_linux(pf):
-    pass
-
-def gen_makefile_darwin(pf):
-    pass
+    all_sources = get_sources_list(fullpath=True)
+    mk_dict = dict(
+        bin=target,
+        cflags=gen_options_string('cflags', conf.get('compile_options', []), posix=True),
+        inc_dir=gen_options_string('inc_dir', conf.get('inc_dir', []), posix=True),
+        ldflags=gen_options_string('ldflags', conf.get('ldflags', []), posix=True),
+        lib_dir=gen_options_string('lib_dir', conf.get('lib_dir', []), functor=get_posix_lib, posix=True),
+        dep_libs=gen_options_string('dep_libs', conf.get('dep_libraries', []), posix=True),
+        srcs=gen_options_string('srcs', all_sources, shave_last=True, posix=True),
+        objs=gen_options_string('objs', all_sources, functor=lambda x: os.path.splitext(x)[0], shave_last=True, posix=True)
+    )
+    return mk_dict
 
 def gen_makefile(pf):
     GEN_FUNCTOR = {
         'Windows': gen_makefile_windows,
-        'Linux': gen_makefile_linux,
-        'Darwin': gen_makefile_darwin
+        'Linux': gen_makefile_posix,
+        'Darwin': gen_makefile_posix
     }
     fun = GEN_FUNCTOR.get(pf)
-    fun and fun(conf['bin'])
+    if not fun:
+        return
+
+    mk_dict = fun(pf, conf['bin'])
+    mk = None
+    with open('./templates/{pf}/bin.mk'.format(pf=pf), 'r', encoding='utf-8') as rfp:
+        mk = rfp.read().format(**mk_dict)
+    with open('Makefile', 'w', encoding='utf-8') as wfp:
+        mk and wfp.write(mk)
 
 def clean_windows():
     if os.path.exists('Makefile'):
