@@ -35,12 +35,24 @@ import platform
 import subprocess
 import sys
 
-try:
-    with open('conf.json', 'r', encoding='utf-8') as fp:
-        conf = json.load(fp)
-except Exception:
-    with open('template.conf.json', 'r', encoding='utf-8') as fp:
-        conf = json.load(fp)
+if sys.version_info.major < 3:
+    raise RuntimeError('Python3 is required')
+
+def get_conf():
+    try:
+        with open('conf.json', 'r', encoding='utf-8') as fp:
+            conf = json.load(fp)
+    except Exception:
+        if platform.system() == 'Windows':
+            conf_file = 'template.win.conf.json'
+        else:
+            conf_file = 'template.posix.conf.json'
+        conf_file = 'template.posix.conf.json'
+        with open(conf_file, 'r', encoding='utf-8') as fp:
+            conf = json.load(fp)
+    return conf
+
+conf = get_conf()
 
 def get_sources_list(root='./', fullpath=True):
     cur_sources = os.listdir(root)
@@ -109,8 +121,8 @@ def gen_makefile_posix(pf, target):
         cflags=gen_options_string('cflags', conf.get('compile_options', []), posix=True),
         inc_dir=gen_options_string('inc_dir', conf.get('inc_dir', []), posix=True),
         ldflags=gen_options_string('ldflags', conf.get('ldflags', []), posix=True),
-        lib_dir=gen_options_string('lib_dir', conf.get('lib_dir', []), functor=get_posix_lib, posix=True),
-        dep_libs=gen_options_string('dep_libs', conf.get('dep_libraries', []), posix=True),
+        lib_dir=gen_options_string('lib_dir', conf.get('lib_dir', []), posix=True),
+        dep_libs=gen_options_string('dep_libs', conf.get('dep_libraries', []), functor=get_posix_lib, posix=True),
         srcs=gen_options_string('srcs', all_sources, shave_last=True, posix=True),
         objs=gen_options_string('objs', all_sources, functor=lambda x: os.path.splitext(x)[0], shave_last=True, posix=True)
     )
@@ -138,14 +150,14 @@ def clean_windows():
         subprocess.check_call('nmake clean', shell=True)
         subprocess.check_call('del Makefile', shell=True)
 
-def clean_linux():
-    pass
-
-def clean_darwin():
-    pass
+def clean_posix():
+    if os.path.exists('Makefile'):
+        subprocess.check_call('make clean', shell=True)
+        subprocess.check_call('rm Makefile', shell=True)
 
 def build():
-    gen_makefile(platform.system())
+    # gen_makefile(platform.system())
+    gen_makefile('Linux')
     subprocess.check_call('nmake', shell=True)
 
 def rebuild():
@@ -155,8 +167,8 @@ def rebuild():
 def clean():
     GEN_FUNCTOR = {
         'Windows': clean_windows,
-        'Linux': clean_linux,
-        'Darwin': clean_darwin
+        'Linux': clean_posix,
+        'Darwin': clean_posix
     }
     fun = GEN_FUNCTOR.get(platform.system())
     fun and fun()
