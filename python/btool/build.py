@@ -47,7 +47,6 @@ def get_conf():
             conf_file = 'template.win.conf.json'
         else:
             conf_file = 'template.posix.conf.json'
-        conf_file = 'template.posix.conf.json'
         with open(conf_file, 'r', encoding='utf-8') as fp:
             conf = json.load(fp)
     return conf
@@ -156,8 +155,7 @@ def clean_posix():
         subprocess.check_call('rm Makefile', shell=True)
 
 def build():
-    # gen_makefile(platform.system())
-    gen_makefile('Linux')
+    gen_makefile(platform.system())
     subprocess.check_call('nmake', shell=True)
 
 def rebuild():
