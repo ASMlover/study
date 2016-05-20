@@ -1,0 +1,23 @@
+{
+  "extensions": ["c", "cc", "cpp"],
+
+  "bin": "demo",
+
+  "compile_options": [
+    "O2",
+    "Wall"
+  ],
+
+  "inc_dir": [
+  ],
+
+  "link_options": [
+  ],
+
+  "lib_dir": [
+  ],
+
+  "dep_libraries": [
+    "libpthread"
+  ]
+}
