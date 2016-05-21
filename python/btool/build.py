@@ -95,7 +95,7 @@ def gen_options_string(key, options, functor=None, shave_last=False, posix=False
 def gen_makefile_windows(pf, target):
     all_sources = get_sources_list(fullpath=False)
     mk_dict = dict(
-        bin=target,
+        out=target,
         cflags=gen_options_string('cflags', conf.get('compile_options', [])),
         preprocessor=gen_options_string('preprocessor', conf.get('precompile_options', [])),
         inc_dir=gen_options_string('inc_dir', conf.get('inc_dir', [])),
@@ -116,7 +116,7 @@ def gen_makefile_posix(pf, target):
 
     all_sources = get_sources_list(fullpath=True)
     mk_dict = dict(
-        bin=target,
+        out=target,
         cflags=gen_options_string('cflags', conf.get('compile_options', []), posix=True),
         inc_dir=gen_options_string('inc_dir', conf.get('inc_dir', []), posix=True),
         ldflags=gen_options_string('ldflags', conf.get('ldflags', []), posix=True),
@@ -137,7 +137,7 @@ def gen_makefile(pf):
     if not fun:
         return
 
-    mk_dict = fun(pf, conf['bin'])
+    mk_dict = fun(pf, conf['out'])
     mk = None
     with open('./templates/{pf}/bin.mk'.format(pf=pf), 'r', encoding='utf-8') as rfp:
         mk = rfp.read().format(**mk_dict)

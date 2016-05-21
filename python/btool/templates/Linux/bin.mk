@@ -1,6 +1,6 @@
 # application Makefile
 
-BIN = {bin}
+OUT = {out}
 RM = rm
 CC = g++
 CFLAGS = -g{cflags}{inc_dir}
@@ -8,14 +8,14 @@ LDFLAGS = {lib_dir}{dep_libs}
 OBJS = {objs}
 SRCS = {srcs}
 
-all: $(BIN)
+all: $(OUT)
 
 rebuild: clean all
 
 clean:
-	$(RM) $(BIN) $(OBJS)
+	$(RM) $(OUT) $(OBJS)
 
-$(BIN): $(OBJS)
+$(OUT): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(OBJS): $(SRCS)

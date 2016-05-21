@@ -1,7 +1,11 @@
 {
   "extensions": ["c", "cc", "cpp"],
 
-  "bin": "demo",
+  "out": "demo",
+
+  "static_lib": false,
+
+  "shared_lib": false,
 
   "compile_options": [
     "O2",

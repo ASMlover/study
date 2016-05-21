@@ -1,7 +1,10 @@
 {
   "extensions": ["c", "cc", "cpp"],
 
-  "bin": "demo.exe",
+  "out": "demo.exe",
+
+  "static_lib": true,
+  "shared_lib": false,
 
   "precompile_options": [
     "_DEBUG",
