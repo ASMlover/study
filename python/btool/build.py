@@ -133,6 +133,15 @@ def gen_makefile_posix(pf, target, is_static=False, is_shared=False):
     )
     return mk_dict
 
+def get_template_makefile(pf, is_static=False, is_shared=False):
+    fname_format = './templates/{pf}/{mk}.mk'
+    if is_static:
+        return fname_format.format(pf=pf, mk='static_lib')
+    elif is_shared:
+        return fname_format.format(pf=pf, mk='shared_lib')
+    else:
+        return fname_format.format(pf=pf, mk='bin')
+
 def gen_makefile(pf):
     GEN_FUNCTOR = {
         'Windows': gen_makefile_windows,
@@ -143,14 +152,14 @@ def gen_makefile(pf):
     if not fun:
         return
 
-    static_lib = conf.get('static_lib', False)
-    shared_lib = conf.get('shared_lib', False)
-    if static_lib and shared_lib:
+    is_static = conf.get('static_lib', False)
+    is_shared = conf.get('shared_lib', False)
+    if is_static and is_shared:
         raise Exception('Cannot build static library and sharded library at the same time')
 
-    mk_dict = fun(pf, conf['out'], static_lib, shared_lib)
+    mk_dict = fun(pf, conf['out'], is_static, is_shared)
     mk = None
-    with open('./templates/{pf}/bin.mk'.format(pf=pf), 'r', encoding='utf-8') as rfp:
+    with open(get_template_makefile(pf, is_static, is_shared), 'r', encoding='utf-8') as rfp:
         mk = rfp.read().format(**mk_dict)
     with open('Makefile', 'w', encoding='utf-8') as wfp:
         mk and wfp.write(mk)
