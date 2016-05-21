@@ -92,22 +92,28 @@ def gen_options_string(key, options, functor=None, shave_last=False, posix=False
 
     return options
 
-def gen_makefile_windows(pf, target):
+def gen_makefile_windows(pf, target, is_static=False, is_shared=False):
     all_sources = get_sources_list(fullpath=False)
-    mk_dict = dict(
+
+    mk_dict=dict(
         out=target,
         cflags=gen_options_string('cflags', conf.get('compile_options', [])),
         preprocessor=gen_options_string('preprocessor', conf.get('precompile_options', [])),
         inc_dir=gen_options_string('inc_dir', conf.get('inc_dir', [])),
-        ldflags=gen_options_string('ldflags', conf.get('ldflags', [])),
-        lib_dir=gen_options_string('lib_dir', conf.get('lib_dir', [])),
-        dep_libs=gen_options_string('dep_libs', conf.get('dep_libraries', [])),
         srcs=gen_options_string('srcs', all_sources, shave_last=True),
         objs=gen_options_string('objs', all_sources, functor=lambda x: os.path.splitext(x)[0], shave_last=True)
     )
+    if is_static:
+        pass
+    elif is_shared:
+        pass
+    else:
+        mk_dict['ldflags'] = gen_options_string('ldflags', conf.get('ldflags', []))
+        mk_dict['lib_dir'] = gen_options_string('lib_dir', conf.get('lib_dir', []))
+        mk_dict['dep_libs'] = gen_options_string('dep_libs', conf.get('dep_libraries', []))
     return mk_dict
 
-def gen_makefile_posix(pf, target):
+def gen_makefile_posix(pf, target, is_static=False, is_shared=False):
     def get_posix_lib(lib):
         if lib.endswith('.a') or lib.endswith('.so'):
             return lib
@@ -137,7 +143,12 @@ def gen_makefile(pf):
     if not fun:
         return
 
-    mk_dict = fun(pf, conf['out'])
+    static_lib = conf.get('static_lib', False)
+    shared_lib = conf.get('shared_lib', False)
+    if static_lib and shared_lib:
+        raise Exception('Cannot build static library and sharded library at the same time')
+
+    mk_dict = fun(pf, conf['out'], static_lib, shared_lib)
     mk = None
     with open('./templates/{pf}/bin.mk'.format(pf=pf), 'r', encoding='utf-8') as rfp:
         mk = rfp.read().format(**mk_dict)

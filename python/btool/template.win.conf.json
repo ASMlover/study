@@ -3,7 +3,7 @@
 
   "out": "demo.exe",
 
-  "static_lib": true,
+  "static_lib": false,
   "shared_lib": false,
 
   "precompile_options": [
