@@ -125,12 +125,19 @@ def gen_makefile_posix(pf, target, is_static=False, is_shared=False):
         out=target,
         cflags=gen_options_string('cflags', conf.get('compile_options', []), posix=True),
         inc_dir=gen_options_string('inc_dir', conf.get('inc_dir', []), posix=True),
-        ldflags=gen_options_string('ldflags', conf.get('ldflags', []), posix=True),
-        lib_dir=gen_options_string('lib_dir', conf.get('lib_dir', []), posix=True),
-        dep_libs=gen_options_string('dep_libs', conf.get('dep_libraries', []), functor=get_posix_lib, posix=True),
         srcs=gen_options_string('srcs', all_sources, shave_last=True, posix=True),
         objs=gen_options_string('objs', all_sources, functor=lambda x: os.path.splitext(x)[0], shave_last=True, posix=True)
     )
+
+    if is_static:
+        pass
+    elif is_shared:
+        pass
+    else:
+        mk_dict['ldflags'] = gen_options_string('ldflags', conf.get('ldflags', []), posix=True)
+        mk_dict['lib_dir'] = gen_options_string('lib_dir', conf.get('lib_dir', []), posix=True)
+        mk_dict['dep_libs'] = gen_options_string('dep_libs', conf.get('dep_libraries', []), functor=get_posix_lib, posix=True)
+
     return mk_dict
 
 def get_template_makefile(pf, is_static=False, is_shared=False):

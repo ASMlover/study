@@ -1,4 +1,4 @@
-# library makefile
+# static library makefile
 
 OUT = {out}
 RM = del
