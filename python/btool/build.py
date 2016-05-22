@@ -28,6 +28,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import print_function
+
 import argparse
 import json
 import os
@@ -54,6 +56,7 @@ def get_conf():
     return conf
 
 conf = get_conf()
+root = './'
 
 def get_sources_list(root='./', fullpath=True):
     cur_sources = os.listdir(root)
@@ -62,7 +65,7 @@ def get_sources_list(root='./', fullpath=True):
     for source in cur_sources:
         source_fname = os.path.join(root, source)
         if os.path.isdir(source_fname):
-            next_sources = get_sources_list(source_fname)
+            next_sources = get_sources_list(source_fname, fullpath)
             all_sources.extend(next_sources)
         else:
             if os.path.splitext(source)[1][1:] in conf['extensions']:
@@ -95,15 +98,18 @@ def gen_options_string(key, options, functor=None, shave_last=False, posix=False
     return options
 
 def gen_makefile_windows(pf, target, is_static=False, is_shared=False):
-    all_sources = get_sources_list(fullpath=False)
+    def get_obj(x):
+        x = x.split('/')[-1].split('\\')[-1]
+        return os.path.splitext(x)[0]
 
+    all_sources = get_sources_list(root=root, fullpath=True)
     mk_dict=dict(
         out=target,
         cflags=gen_options_string('cflags', conf.get('compile_options', [])),
         preprocessor=gen_options_string('preprocessor', conf.get('precompile_options', [])),
         inc_dir=gen_options_string('inc_dir', conf.get('inc_dir', [])),
         srcs=gen_options_string('srcs', all_sources, shave_last=True),
-        objs=gen_options_string('objs', all_sources, functor=lambda x: os.path.splitext(x)[0], shave_last=True)
+        objs=gen_options_string('objs', all_sources, functor=get_obj, shave_last=True)
     )
     if is_static:
         pass
@@ -122,7 +128,7 @@ def gen_makefile_posix(pf, target, is_static=False, is_shared=False):
         else:
             return lib.replace('lib', '-l')
 
-    all_sources = get_sources_list(fullpath=True)
+    all_sources = get_sources_list(root=root, fullpath=True)
     mk_dict = dict(
         out=target,
         cflags=gen_options_string('cflags', conf.get('compile_options', []), posix=True),
@@ -205,12 +211,12 @@ def clean():
 def get_build_arguments():
     parser = argparse.ArgumentParser(description='C/C++ building tool')
     parser.add_argument('option', help='[build|rebuild|clean] the project')
+    parser.add_argument('root', help='root path of the project', nargs='?', default='./')
     args = parser.parse_args()
-    return args.option
+    return args.option, args.root
 
 def main():
-    option = get_build_arguments()
-
+    option, root = get_build_arguments()
     fun = getattr(sys.modules['__main__'], option, None)
     fun and fun()
 
