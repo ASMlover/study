@@ -71,7 +71,7 @@ def get_sources_list(root='./', fullpath=True):
     all_sources = []
 
     for source in cur_sources:
-        source_fname = os.path.join(root, source)
+        source_fname = os.path.join(root, source).replace('\\', '/')
         if os.path.isdir(source_fname):
             next_sources = get_sources_list(source_fname, fullpath)
             all_sources.extend(next_sources)
@@ -107,7 +107,7 @@ def gen_options_string(key, options, functor=None, shave_last=False, posix=False
 
 def gen_makefile_windows(pf, target, is_static=False, is_shared=False):
     def get_obj(x):
-        x = x.split('/')[-1].split('\\')[-1]
+        x = x.split('/')[-1]
         return os.path.splitext(x)[0]
 
     all_sources = get_sources_list(root=get_proj_path(), fullpath=True)
@@ -199,7 +199,8 @@ def clean_posix():
 
 def build():
     pf = platform.system()
-    gen_makefile(pf)
+    if not os.path.exists('Makefile'):
+        gen_makefile(pf)
     mk_cmd = 'nmake' if pf == 'Windows' else 'make'
     subprocess.check_call(mk_cmd, shell=True)
 
