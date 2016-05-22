@@ -36,7 +36,9 @@ import subprocess
 import sys
 
 if sys.version_info.major < 3:
-    raise RuntimeError('Python3 is required')
+    import codecs
+    def open(filename, mode='rb', encoding=None):
+        return codecs.open(filename, mode, encoding)
 
 def get_conf():
     try:
@@ -182,8 +184,10 @@ def clean_posix():
         subprocess.check_call('rm Makefile', shell=True)
 
 def build():
-    gen_makefile(platform.system())
-    subprocess.check_call('nmake', shell=True)
+    pf = platform.system()
+    gen_makefile(pf)
+    mk_cmd = 'nmake' if pf == 'Windows' else 'make'
+    subprocess.check_call(mk_cmd, shell=True)
 
 def rebuild():
     clean()
