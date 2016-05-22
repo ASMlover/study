@@ -56,7 +56,7 @@ def get_conf():
     return conf
 
 conf = get_conf()
-root = './'
+proj_dir = './'
 
 def get_sources_list(root='./', fullpath=True):
     cur_sources = os.listdir(root)
@@ -102,7 +102,7 @@ def gen_makefile_windows(pf, target, is_static=False, is_shared=False):
         x = x.split('/')[-1].split('\\')[-1]
         return os.path.splitext(x)[0]
 
-    all_sources = get_sources_list(root=root, fullpath=True)
+    all_sources = get_sources_list(root=proj_dir, fullpath=True)
     mk_dict=dict(
         out=target,
         cflags=gen_options_string('cflags', conf.get('compile_options', [])),
@@ -128,7 +128,7 @@ def gen_makefile_posix(pf, target, is_static=False, is_shared=False):
         else:
             return lib.replace('lib', '-l')
 
-    all_sources = get_sources_list(root=root, fullpath=True)
+    all_sources = get_sources_list(root=proj_dir, fullpath=True)
     mk_dict = dict(
         out=target,
         cflags=gen_options_string('cflags', conf.get('compile_options', []), posix=True),
@@ -216,7 +216,7 @@ def get_build_arguments():
     return args.option, args.root
 
 def main():
-    option, root = get_build_arguments()
+    option, proj_path = get_build_arguments()
     fun = getattr(sys.modules['__main__'], option, None)
     fun and fun()
 
