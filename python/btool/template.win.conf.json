@@ -1,7 +1,7 @@
 {
   "extensions": ["c", "cc", "cpp"],
 
-  "out": "demo.exe",
+  "out": "demo",
 
   "static_lib": false,
   "shared_lib": false,

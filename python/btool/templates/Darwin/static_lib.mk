@@ -1,6 +1,6 @@
 # static library makefile
 
-OUT = {out}
+OUT = {out}.a
 RM = rm
 CC = clang++
 AR = ar

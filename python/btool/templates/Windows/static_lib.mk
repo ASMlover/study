@@ -1,6 +1,6 @@
 # static library makefile
 
-OUT = {out}
+OUT = {out}.lib
 RM = del
 CC = cl -c -nologo
 AR = lib -nologo

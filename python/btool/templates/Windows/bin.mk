@@ -1,6 +1,6 @@
 # application Makefile
 
-OUT = {out}
+OUT = {out}.exe
 RM = del
 CC = cl -c -nologo
 MT = mt -nologo
