@@ -4,7 +4,7 @@ OUT = {out}
 RM = rm
 CC = clang++
 CFLAGS = -g{cflags}{inc_dir}
-LDFLAGS = -lc {lib_dir}{dep_libs}
+LDFLAGS = -lc{ldflags}{lib_dir}{dep_libs}
 OBJS = {objs}
 SRCS = {srcs}
 

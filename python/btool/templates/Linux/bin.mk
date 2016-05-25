@@ -4,7 +4,7 @@ OUT = {out}
 RM = rm
 CC = g++
 CFLAGS = -g{cflags}{inc_dir}
-LDFLAGS = {lib_dir}{dep_libs}
+LDFLAGS = {ldflags}{lib_dir}{dep_libs}
 OBJS = {objs}
 SRCS = {srcs}
 
