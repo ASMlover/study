@@ -119,11 +119,9 @@ def gen_makefile_windows(pf, target, is_static=False, is_shared=False):
         srcs=gen_options_string('srcs', all_sources, shave_last=True),
         objs=gen_options_string('objs', all_sources, functor=get_obj, shave_last=True)
     )
-    if is_static:
-        pass
-    elif is_shared:
-        pass
-    else:
+    if not is_static:
+        if is_shared:
+            mk_dict['proj_path'] = get_proj_path()
         mk_dict['ldflags'] = gen_options_string('ldflags', conf.get('ldflags', []))
         mk_dict['lib_dir'] = gen_options_string('lib_dir', conf.get('lib_dir', []))
         mk_dict['dep_libs'] = gen_options_string('dep_libs', conf.get('dep_libraries', []))
