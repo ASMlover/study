@@ -143,12 +143,11 @@ def gen_makefile_posix(pf, target, is_static=False, is_shared=False):
         objs=gen_options_string('objs', all_sources, functor=lambda x: os.path.splitext(x)[0], shave_last=True, posix=True)
     )
 
-    if is_static:
-        pass
-    elif is_shared:
-        pass
-    else:
-        mk_dict['ldflags'] = gen_options_string('ldflags', conf.get('ldflags', []), posix=True)
+    if not is_static:
+        ldflags = gen_options_string('ldflags', conf.get('ldflags', []), posix=True)
+        if not is_shared and pf == 'Linux' and ldflags.startswith(' '):
+            ldflags = ldflags[1:]
+        mk_dict['ldflags'] = ldflags
         mk_dict['lib_dir'] = gen_options_string('lib_dir', conf.get('lib_dir', []), posix=True)
         mk_dict['dep_libs'] = gen_options_string('dep_libs', conf.get('dep_libraries', []), functor=get_posix_lib, posix=True)
 
