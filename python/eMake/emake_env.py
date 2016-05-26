@@ -37,6 +37,7 @@ class MakeEnv(object):
     def __init__(self):
         self.emake_dir = None
         self.proj_path = './'
+        self.build_path = './build'
         self.init()
 
     def init(self):
@@ -49,5 +50,11 @@ class MakeEnv(object):
     def get_emake_dir(self):
         return self.emake_dir
 
+    def get_build_path(self):
+        return self.build_path
+
     def set_proj_path(self, proj_path='./'):
         self.proj_path = proj_path
+        self.build_path = '%s/build' % self.proj_path
+        if os.path.exists(self.build_path):
+            os.mkdir(self.build_path)

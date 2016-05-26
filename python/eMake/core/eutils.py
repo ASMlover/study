@@ -29,6 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import platform
 import sys
 
 if sys.version_info.major < 3:
@@ -45,6 +46,9 @@ def singleton(cls):
             insts[cls] = cls(*args, **kwargs)
         return insts[cls]
     return get_instance
+
+def get_platform():
+    return platform.system().lower()
 
 def get_sources_list(proj_path='./', exts=['cc', 'cpp'], fullpath=True):
     cur_sources = os.listdir(proj_path)

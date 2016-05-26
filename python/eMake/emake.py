@@ -32,7 +32,7 @@ from __future__ import print_function
 
 import argparse
 from emake_env import MakeEnv
-from core.eutils import eopen
+from core import eutils
 
 def get_arguments():
     parser = argparse.ArgumentParser(description='C/C++ building tool')
@@ -47,8 +47,12 @@ def main():
 
     print('emake_dir=%s, proj_path=%s' % (MakeEnv().get_emake_dir(), MakeEnv().get_proj_path()))
 
-    with eopen('README.md', 'r', encoding='utf-8') as fp:
+    with eutils.eopen('README.md', 'r', encoding='utf-8') as fp:
         print(fp.read())
+
+    all_sources = eutils.get_sources_list('./', exts=["py"], fullpath=True)
+    for fname in all_sources:
+        print(fname)
 
 if __name__ == '__main__':
     main()
