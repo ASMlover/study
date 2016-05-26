@@ -41,7 +41,7 @@ class MakeEnv(object):
 
     def init(self):
         emake_path = os.path.abspath(sys.argv[0])
-        self.emake_dir = os.path.dirname(emake_path)
+        self.emake_dir = os.path.dirname(emake_path).replace('\\', '/')
 
     def get_proj_path(self):
         return self.proj_path

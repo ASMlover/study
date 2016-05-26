@@ -28,6 +28,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import os
 import sys
 
 if sys.version_info.major < 3:
@@ -44,3 +45,20 @@ def singleton(cls):
             insts[cls] = cls(*args, **kwargs)
         return insts[cls]
     return get_instance
+
+def get_sources_list(proj_path='./', exts=['cc', 'cpp'], fullpath=True):
+    cur_sources = os.listdir(proj_path)
+    all_sources = []
+
+    for source_fname in cur_sources:
+        source_fullpath = os.path.join(proj_path, source_fname).replace('\\', '/')
+        if os.path.isdir(source_fullpath):
+            next_sources = get_sources_list(source_fullpath, exts=exts, fullpath=fullpath)
+            all_sources.extend(next_sources)
+        else:
+            if os.path.splitext(source_fname)[1][1:] in exts:
+                if fullpath:
+                    all_sources.append(source_fullpath)
+                else:
+                    all_sources.append(source_fname)
+    return all_sources
