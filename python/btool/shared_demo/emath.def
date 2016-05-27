@@ -1,0 +1,7 @@
+LIBRARY "emath"
+
+EXPORTS
+  emath_add @1
+  emath_sub @2
+  emath_mul @3
+  emath_div @4
