@@ -28,33 +28,24 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import os
-import sys
-from core import eutils
+from __future__ import print_function
 
-@eutils.singleton
-class MakeEnv(object):
+import eutils
+
+@eutil.singleton
+class MakeConf(object):
     def __init__(self):
-        self.emake_dir = None
-        self.proj_path = './'
-        self.build_path = './build'
-        self._init()
+        self.conf = None
 
-    def _init(self):
-        emake_path = os.path.abspath(sys.argv[0])
-        self.emake_dir = os.path.dirname(emake_path).replace('\\', '/')
+    def load_conf(self, build_path):
+        try:
+            with eutils.eopen('%s/conf.json' % build_path, 'r', encoding='utf-8') as fp:
+                self.conf = fp.read()
+        except Exception:
+            conf_fname = '%s/templates/conf.%s.json' % (build_path, eutils.get_platform())
+            with eutils.eopen(conf_fname, 'r', encoding='utf-8') as fp:
+                self.conf = fp.read()
 
-    def get_proj_path(self):
-        return self.proj_path
-
-    def get_emake_dir(self):
-        return self.emake_dir
-
-    def get_build_path(self):
-        return self.build_path
-
-    def set_proj_path(self, proj_path='./'):
-        self.proj_path = proj_path
-        self.build_path = '%s/build' % self.proj_path
-        if os.path.exists(self.build_path):
-            os.mkdir(self.build_path)
+    def get_conf(self):
+        assert self.conf is not None, 'Please load configure file first!!!'
+        return self.conf
