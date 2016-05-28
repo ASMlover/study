@@ -1,0 +1,30 @@
+{
+  "extensions": ["c", "cc", "cpp", "cxx"],
+  "target": "target",
+  "library": {
+    "static": false,
+    "shared": false
+  },
+
+  "inc_dir": [
+  ],
+  "precompile_options": [
+    "_DEBUG",
+    "_CRT_SECURE_NO_WARNINGS",
+    "_CRT_NONSTDC_NO_WARNINGS"
+  ],
+  "compile_options": [
+    "O2",
+    "W3",
+    "MDd",
+    "EHsc"
+  ],
+
+  "link_dir": [
+  ],
+  "link_options": [
+  ],
+  "link_libraries": [
+    "winmm.lib"
+  ]
+}
