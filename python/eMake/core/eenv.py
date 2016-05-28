@@ -37,7 +37,7 @@ from core import eutils
 class MakeEnv(object):
     def __init__(self):
         self.emake_dir = None
-        self.proj_path = './'
+        self.proj_path = '.'
         self.build_path = './build'
         self._init()
 
@@ -54,8 +54,18 @@ class MakeEnv(object):
     def get_build_path(self):
         return self.build_path
 
-    def set_proj_path(self, proj_path='./'):
+    def get_bin_path(self):
+        return '%s/bin' % self.build_path
+
+    def get_obj_path(self):
+        return '%s/obj' % self.build_path
+
+    def set_proj_path(self, proj_path='.'):
+        if proj_path.endswith('/'):
+            proj_path = proj_path[:-1]
         self.proj_path = proj_path
         self.build_path = '%s/build' % self.proj_path
-        if os.path.exists(self.build_path):
+        if not os.path.exists(self.build_path):
             os.mkdir(self.build_path)
+            os.mkdir('%s/bin' % self.build_path)
+            os.mkdir('%s/obj' % self.build_path)

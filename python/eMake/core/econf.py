@@ -30,22 +30,31 @@
 
 from __future__ import print_function
 
+import json
 from core import eutils
+from core.eenv import MakeEnv
 
-@eutil.singleton
+@eutils.singleton
 class MakeConf(object):
     def __init__(self):
         self.conf = None
+        self.obj_conf = None
 
     def load_conf(self, build_path):
+        emake_dir = MakeEnv().get_emake_dir()
         try:
             with eutils.eopen('%s/conf.json' % build_path, 'r', encoding='utf-8') as fp:
-                self.conf = fp.read()
+                self.conf = json.load(fp)
         except Exception:
-            conf_fname = '%s/templates/conf.%s.json' % (build_path, eutils.get_platform())
+            conf_fname = '%s/templates/conf.%s.json' % (emake_dir, eutils.get_platform())
             with eutils.eopen(conf_fname, 'r', encoding='utf-8') as fp:
-                self.conf = fp.read()
+                self.conf = json.load(fp)
+
+        obj_conf_fname = '%s/templates/obj.%s.mk' % (emake_dir, eutils.get_platform())
+        with eutils.eopen(obj_conf_fname, 'r', encoding='utf-8') as fp:
+            self.obj_conf = fp.read()
 
     def get_conf(self):
         assert self.conf is not None, 'Please load configure file first!!!'
-        return self.conf
+        assert self.obj_conf is not None, 'Please load object file first!!!'
+        return self.conf, self.obj_conf
