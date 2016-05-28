@@ -30,7 +30,7 @@
 
 from __future__ import print_function
 
-import eutils
+from core import eutils
 
 @eutil.singleton
 class MakeConf(object):

@@ -50,7 +50,7 @@ def singleton(cls):
 def get_platform():
     return platform.system().lower()
 
-def get_sources_list(proj_path='./', exts=['cc', 'cpp'], fullpath=True):
+def get_sources_list(proj_path='./', exts=['cc', 'cpp', 'cxx'], fullpath=True):
     cur_sources = os.listdir(proj_path)
     all_sources = []
 
