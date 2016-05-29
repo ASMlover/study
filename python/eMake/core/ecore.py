@@ -103,7 +103,6 @@ class MakeShell(object):
 
         all_sources = eutils.get_sources_list(MakeEnv().get_proj_path(), exts=conf['extensions'], fullpath=True)
         mk_dict = dict(
-            outdir=MakeEnv().get_build_path(),
             target=conf['target'],
             cflags=self._gen_options('cflags', conf.get('compile_options', [])),
             preprocessor=self._gen_options('preprocessor', conf.get('precompile_options', [])),

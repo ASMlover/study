@@ -40,10 +40,10 @@ class MakeConf(object):
         self.conf = None
         self.obj_conf = None
 
-    def load_conf(self, build_path):
+    def load_conf(self):
         emake_dir = MakeEnv().get_emake_dir()
         try:
-            with eutils.eopen('%s/conf.json' % build_path, 'r', encoding='utf-8') as fp:
+            with eutils.eopen('conf.json', 'r', encoding='utf-8') as fp:
                 self.conf = json.load(fp)
         except Exception:
             conf_fname = '%s/templates/conf.%s.json' % (emake_dir, eutils.get_platform())
