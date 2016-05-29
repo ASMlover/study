@@ -49,8 +49,32 @@ class MakeShell(object):
         return conf, obj_conf, static, shared
 
     def gen_sell(self):
-        functor = getattr(self, '_gen_shell_%s' % eutils.get_platform(), None)
-        return functor()
+        pf = eutils.get_platform()
+        functor = getattr(self, '_gen_shell_%s' % pf, None)
+        if not functor:
+            raise Exception('No shell functor with platform "%s"' % pf)
+
+        conf, obj_conf, static, shared = self._load_make_conf()
+        mk_dict = functor(conf, obj_conf, static, shared)
+        self._gen_makefile(pf, mk_dict, static, shared)
+
+    def _get_template_file(self, pf, static=False, shared=False):
+        fname_format = '{dir}/templates/{mk}.{pf}.mk'
+        emake_dir = MakeEnv().get_emake_dir()
+        if static:
+            return fname_format.format(dir=emake_dir, mk='static', pf=pf)
+        elif shared:
+            return fname_format.format(dir=emake_dir, mk='shared', pf=pf)
+        else:
+            return fname_format.format(dir=emake_dir, mk='executable', pf=pf)
+
+    def _gen_makefile(self, pf, mk_dict, static=False, shared=False):
+        tempfile = self._get_template_file(pf, static, shared)
+        mk = None
+        with eutils.eopen(tempfile, 'r', encoding='utf-8') as rfp:
+            mk = rfp.read().format(**mk_dict)
+        with open('Makefile', 'w', encoding='utf-8') as wfp:
+            mk and wfp.write(mk)
 
     def _gen_options(self, key, options, gen=None, shave_last=False, posix=False):
         MAPPER = {
@@ -72,12 +96,11 @@ class MakeShell(object):
 
         return options
 
-    def _gen_shell_windows(self):
+    def _gen_shell_windows(self, conf, obj_conf, static=False, shared=False):
         def gen_obj(s):
             s = s.split('/')[-1]
             return os.path.splitext(s)[0]
 
-        conf, obj_conf, static, shared = self._load_make_conf()
         all_sources = eutils.get_sources_list(MakeEnv().get_proj_path(), exts=conf['extensions'], fullpath=True)
         mk_dict = dict(
             outdir=MakeEnv().get_build_path(),
@@ -99,10 +122,10 @@ class MakeShell(object):
         mk_dict['emake_objs'] = ''.join(objs)
         return mk_dict
 
-    def _gen_shell_linux(self):
+    def _gen_shell_linux(self, conf, obj_conf, static=False, shared=False):
         pass
 
-    def _gen_shell_darwin(self):
+    def _gen_shell_darwin(self, conf, obj_conf, static=False, shared=False):
         pass
 
     def _gen_shell_posix_impl(self):
