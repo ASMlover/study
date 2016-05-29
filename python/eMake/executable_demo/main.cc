@@ -27,9 +27,15 @@
 #include <iostream>
 #include "tmath.h"
 
+extern "C" int mod(int, int);
+
 int main(int argc, char* argv[]) {
   std::cout << "Hello, world!" << std::endl;
   std::cout << "34 + 45.6 = " << tmath::add(34, 45.6) << std::endl;
+  std::cout << "34 - 45.6 = " << tmath::sub(34, 45.6) << std::endl;
+  std::cout << "34 * 45.6 = " << tmath::mul(34, 45.6) << std::endl;
+  std::cout << "34 / 45.6 = " << tmath::div(34, 45.6) << std::endl;
+  std::cout << "34 % 12 = " << mod(34, 12) << std::endl;
 
   return 0;
 }
