@@ -1,10 +1,9 @@
 # executable makefile
 
-OUTDIR = {outdir}
-OUTOBJ = $(OUTDIR)/obj
-OUTBIN = $(OUTDIR)/bin
+OUTOBJ = obj
+OUTBIN = bin
 TARGET = $(OUTBIN)/{target}.exe
-RD = rd /s /q
+RM = del /s /f /q
 CC = cl -c -nologo
 MT = mt -nologo
 LINK = link -nologo
@@ -17,7 +16,7 @@ all: $(TARGET)
 rebuild: clean all
 
 clean:
-	if exist $(OUTDIR) $(RD) $(OUTDIR)
+	$(RM) $(OUTBIN)\*.* $(OUTOBJ)\*.*
 
 $(TARGET): $(OBJS)
 	$(LINK) -out:$(TARGET) $(OBJS) $(LDFLAGS)
