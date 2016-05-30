@@ -84,7 +84,7 @@ class MakeShell(object):
             'ldflags': ' -%s',
             'link_dir': ' -LIBPATH:"%s"' if not posix else ' -L%s',
             'link_libs': ' %s',
-            'objs': '$(OUTOBJ)/%s.obj ' if not posix else '%s.o ',
+            'objs': '$(OUTOBJ)/%s.obj ' if not posix else '$(OUTOBJ)/%s.o ',
         }
 
         if gen:
@@ -96,18 +96,18 @@ class MakeShell(object):
 
         return options
 
-    def _gen_shell_windows(self, conf, obj_conf, static=False, shared=False):
-        def gen_obj(s):
-            s = s.split('/')[-1]
-            return os.path.splitext(s)[0]
+    def _gen_objname(self, s):
+        s = s.split('/')[-1]
+        return os.path.splitext(s)[0]
 
+    def _gen_shell_windows(self, conf, obj_conf, static=False, shared=False):
         all_sources = eutils.get_sources_list(MakeEnv().get_proj_path(), exts=conf['extensions'], fullpath=True)
         mk_dict = dict(
             target=conf['target'],
             cflags=self._gen_options('cflags', conf.get('compile_options', [])),
             preprocessor=self._gen_options('preprocessor', conf.get('precompile_options', [])),
             inc_dir=self._gen_options('inc_dir', conf.get('inc_dir', [])),
-            objs=self._gen_options('objs', all_sources, gen=gen_obj, shave_last=True)
+            objs=self._gen_options('objs', all_sources, gen=self._gen_objname, shave_last=True)
         )
         if not static:
             mk_dict['ldflags'] = self._gen_options('ldflags', conf.get('ldflags', []))
@@ -116,8 +116,12 @@ class MakeShell(object):
 
         objs = []
         for source in all_sources:
-            obj_name = '%s.obj' % gen_obj(source)
-            objs.append(obj_conf.format(mk_obj=obj_name, mk_src=source))
+            obj_name = self._gen_options('objs', [source], gen=self._gen_objname, shave_last=True)
+            if os.path.splitext(source)[1][1:] == 'c':
+                clang = '-EHs'
+            else:
+                clang = '-EHsc'
+            objs.append(obj_conf.format(mk_obj=obj_name, mk_src=source, clang=clang))
         mk_dict['emake_objs'] = ''.join(objs)
         return mk_dict
 
