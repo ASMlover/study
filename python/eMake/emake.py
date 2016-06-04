@@ -31,28 +31,53 @@
 from __future__ import print_function
 
 import argparse
-from emake_env import MakeEnv
+import os
+import shutil
+import subprocess
+import sys
 from core import eutils
+from core.econf import MakeConf
+from core.ecore import MakeShell
+from core.eenv import MakeEnv
 
 def get_arguments():
     parser = argparse.ArgumentParser(description='C/C++ building tool')
-    parser.add_argument('option', help='build|rebuild|clean the project')
-    parser.add_argument('path', help='root path of the project', nargs='?', default='./')
+    parser.add_argument('option', help='build|rebuild|clean|remove the project')
     args = parser.parse_args()
-    return args.option, args.path
+    return args.option
+
+def build(make):
+    MakeShell().gen_sell()
+    subprocess.check_call(make, shell=True)
+
+def rebuild(make):
+    if os.path.exists('Makefile'):
+        cmd = '%s rebuild' % make
+        subprocess.check_call(cmd, shell=True)
+
+def clean(make):
+    if os.path.exists('Makefile'):
+        cmd = '%s clean' % make
+        subprocess.check_call(cmd, shell=True)
+
+def remove():
+    build_path = MakeEnv().get_build_path()
+    if os.path.exists(build_path):
+        shutil.rmtree(build_path)
 
 def main():
-    option, proj_path = get_arguments()
-    MakeEnv().set_proj_path(proj_path)
+    option = get_arguments()
+    MakeEnv().set_env()
+    MakeConf().load_conf()
 
-    print('emake_dir=%s, proj_path=%s' % (MakeEnv().get_emake_dir(), MakeEnv().get_proj_path()))
-
-    with eutils.eopen('README.md', 'r', encoding='utf-8') as fp:
-        print(fp.read())
-
-    all_sources = eutils.get_sources_list('./', exts=["py"], fullpath=True)
-    for fname in all_sources:
-        print(fname)
+    if option == 'remove':
+        remove()
+    else:
+        mk = 'nmake' if eutils.get_platform() == 'windows' else 'make'
+        fun = getattr(sys.modules['__main__'], option, None)
+        os.chdir(MakeEnv().get_build_path())
+        fun and fun(mk)
+        os.chdir('..')
 
 if __name__ == '__main__':
     main()
