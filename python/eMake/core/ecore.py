@@ -126,10 +126,26 @@ class MakeShell(object):
         return mk_dict
 
     def _gen_shell_linux(self, conf, obj_conf, static=False, shared=False):
-        pass
+        return self._gen_shell_linux(conf, obj_conf, static, shared)
 
     def _gen_shell_darwin(self, conf, obj_conf, static=False, shared=False):
-        pass
+        return self._gen_shell_linux(conf, obj_conf, static, shared)
 
-    def _gen_shell_posix_impl(self):
-        pass
+    def _gen_shell_posix_impl(self, conf, obj_conf, static=False, shared=False):
+        def _gen_library(lib):
+            if lib.endswith('.a') or lib.endswith('.so'):
+                return lib
+            else:
+                return lib.replace('lib', '-l')
+
+        all_sources = eutils.get_sources_list(MakeEnv().get_proj_path(), exts=conf['extensions'], fullpath=True)
+        mk_dict = dict(
+            target=conf['target'],
+            cflags=self._gen_options('cflags', conf.get('compile_options', [])),
+            inc_dir=self._gen_options('inc_dir', conf.get('inc_dir', []), posix=True),
+            objs=self._gen_options('objs', all_sources, gen=self._gen_objname, shave_last=True, posix=True)
+        )
+        if not static:
+            mk_dict['ldflags'] = self._gen_options('ldflags', conf.get('ldflags', []), posix=True)
+            mk_dict['link_dir'] = self._gen_options('link_dir', conf.get('link_dir', []), posix=True)
+            mk_dict['link_libs'] = self._gen_options('link_libs', conf.get('link_libs', []), gen=_gen_library, posix=True)
