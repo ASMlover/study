@@ -1,8 +1,8 @@
-# executable makefile
+# executable makefile for linux
 
 OUTOBJ = obj
 OUTBIN = bin
-TARGET = $(OUTBIN)/{target}.exe
+TARGET = $(OUTBIN)/{target}
 RM = rm -rf
 CC = g++
 CFLAGS = -g{cflags} {inc_dir}

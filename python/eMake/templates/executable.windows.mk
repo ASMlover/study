@@ -1,4 +1,4 @@
-# executable makefile
+# executable makefile for windows
 
 OUTOBJ = obj
 OUTBIN = bin
