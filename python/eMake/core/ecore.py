@@ -32,7 +32,6 @@ from __future__ import print_function
 
 import os
 import sys
-
 from core import eutils
 from core.econf import MakeConf
 from core.eenv import MakeEnv
@@ -126,7 +125,11 @@ class MakeShell(object):
         return mk_dict
 
     def _gen_shell_linux(self, conf, obj_conf, static=False, shared=False):
-        return self._gen_shell_linux(conf, obj_conf, static, shared)
+        mk_dict = self._gen_shell_linux(conf, obj_conf, static, shared)
+        ldflags = mk_dict['ldflags']
+        if not shared and ldflags.startswith(' '):
+            mk_dict['ldflags'] = ldflags[1:]
+        return mk_dict
 
     def _gen_shell_darwin(self, conf, obj_conf, static=False, shared=False):
         return self._gen_shell_linux(conf, obj_conf, static, shared)
@@ -149,3 +152,10 @@ class MakeShell(object):
             mk_dict['ldflags'] = self._gen_options('ldflags', conf.get('ldflags', []), posix=True)
             mk_dict['link_dir'] = self._gen_options('link_dir', conf.get('link_dir', []), posix=True)
             mk_dict['link_libs'] = self._gen_options('link_libs', conf.get('link_libs', []), gen=_gen_library, posix=True)
+
+        objs = []
+        for source in all_sources:
+            obj_name = self._gen_options('objs', [source], gen=self._gen_objname, shave_last=True, posix=True)
+            objs.append(obj_conf.format(mk_obj=obj_name, mk_src=source))
+        mk_dict['emake_objs'] = ''.join(objs)
+        return mk_dict
