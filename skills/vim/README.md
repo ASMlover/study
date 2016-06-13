@@ -16,7 +16,7 @@
 
 ## **将vim中关键字设置成非粗体模式**
     需要修改colorscheme对应的主题模式中的代码;
-    比如修改desert.vim 
+    比如修改desert.vim
     在文件的最后添加上:
     hi Type gui=none
     hi Statement gui=none
@@ -33,8 +33,8 @@
 
     为了和5.4以及更早的版本兼容
     0 => :set backspace=
-    1 => :set backspace=indent,eol 
-    2 => :set backspace=indent,eol,start 
+    1 => :set backspace=indent,eol
+    2 => :set backspace=indent,eol,start
 
     所以解决方法就是在.vimrc文件中加入如下代码:
     set backspace=indent,eol,start
@@ -42,7 +42,7 @@
 ## **Vim文件加入BOM头**
     1. 查看是否有BOM头
        : set bomb?
-       显示nobomb表示无BOM头, 
+       显示nobomb表示无BOM头,
        现实bomb表示有BOM头
     2. 设置BOM头
        : set bomb
@@ -80,7 +80,7 @@
         添加注册表
         [HKEY_CLASSES_ROOT\*\]下添加Shell项
         [HKEY_CLASSES_ROOT\*\Shell]添加Edit with &Vim项
-        [HKEY_CLASSES_ROOT\*\Shell\Edit with &Vim]添加Command项 
+        [HKEY_CLASSES_ROOT\*\Shell\Edit with &Vim]添加Command项
         [HKEY_CLASSES_ROOT\*\Shell\Edit with &Vim\Command]值修改为:
         "D:\Tools\gvim\vim73\gvim.exe" -p --remote-tab-silent "%1"
 
@@ -97,7 +97,7 @@
 ## **Ubuntu Install YouCompleteMe**
     $ sudo apt-get install build-essential cmake
     $ sudo apt-get install python-dev
-    $ cd ~/.vim/bundle/YouCompleteMe/ 
+    $ cd ~/.vim/bundle/YouCompleteMe/
     $ ./install.sh --clang-completer
 
 
@@ -153,3 +153,17 @@
  * 然后根据[vim-marching](https://github.com/osyo-manga/vim-marching)来配置
  * vim-marching的运行需要[vimproc.vim](https://github.com/Shougo/vimproc.vim)
  * 编译vimproc.vim
+
+
+## **远程Terminal下Powerline Font**
+> ### **Font的安装**
+    $ git clone https://github.com/eugeneching/consolas-powerline-vim.git
+    $ cd consolas-powerline-vim
+    $ sudo cp *.ttf /usr/share/fonts/fonts
+    $ sudo fc-cache -f -v
+    * 在windows下将这些字体安装到系统Fonts中
+    * 在远程Putty中将字体设置为Powerline Consolas，编码设置为UTF-8
+> ### **Vim配置**
+    let g:airline_powerline_fonts=1
+    set guifont=PowerlineSymbols\ for\ Powerline
+    let g:Powerline_symbols='fancy'
