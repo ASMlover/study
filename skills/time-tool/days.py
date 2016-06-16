@@ -1,4 +1,4 @@
-#!/usr/bin/python 
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2013 ASMlover. All rights reserved.
@@ -28,11 +28,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import print_function
 import datetime
 
 if __name__ == '__main__':
   beg = datetime.datetime(2012, 4, 21)
   now = datetime.datetime.now()
-  print 'acquaintance : %d' % (now - beg).days
+  print ('acquaintance : %d' % (now - beg).days)
   beg = datetime.datetime(2013, 10, 18)
-  print 'marry : %d' % (now - beg).days
+  print ('marry : %d' % (now - beg).days)
