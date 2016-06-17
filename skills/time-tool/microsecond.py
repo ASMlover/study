@@ -1,7 +1,7 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
 #
-# Copyright (c) 2013 ASMlover. All rights reserved.
+# Copyright (c) 2016 ASMlover. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -10,8 +10,8 @@
 #  * Redistributions of source code must retain the above copyright
 #    notice, this list ofconditions and the following disclaimer.
 #
-#    notice, this list of conditions and the following disclaimer in
 #  * Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in
 #    the documentation and/or other materialsprovided with the
 #    distribution.
 #
@@ -29,11 +29,15 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import print_function
-import datetime
+
+from datetime import datetime
+import time
+
+def main():
+    t1 = datetime.now()
+    time.sleep(0.1)
+    t2 = datetime.now()
+    print ('step time is : %d' % int((t2 - t1).total_seconds() * 1000))
 
 if __name__ == '__main__':
-  beg = datetime.datetime(2012, 4, 21)
-  now = datetime.datetime.now()
-  print ('acquaintance : %d' % (now - beg).days)
-  beg = datetime.datetime(2013, 10, 18)
-  print ('marry : %d' % (now - beg).days)
+    main()
