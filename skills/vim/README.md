@@ -167,3 +167,27 @@
     let g:airline_powerline_fonts=1
     set guifont=PowerlineSymbols\ for\ Powerline
     let g:Powerline_symbols='fancy'
+
+
+## **Windows下编译vim**
+  * 下载最新的vim源代码(这里以vim74为例子)
+  * 进入vim目录
+    - 首先修改bigvim.bat(32位平台)或bigvim64.bat(64位平台)
+    - 这里我的例子是:
+```shell
+:: command to build big Vim with OLE, Perl, Python, Ruby and Tcl
+SET VCDIR="D:\Tools\MSVC2015\VC\bin\"
+SET TOOLDIR=D:\Tools\
+%VCDIR%nmake -f Make_mvc.mak SDK_INCLUDE_DIR="C:\Program Files\Microsoft SDKs\Windows\v7.1A\Include" GUI=yes OLE=yes PYTHON3=%TOOLDIR%python35 DYNAMIC_PYTHON3=yes PYTHON3_VER=35 %1 IME=yes CSCOPE=yes
+```
+        \> cd vim\src
+        \> bigvim.bat
+
+  * 在自己的目标安装目录创建[targetdir]\vim，[targetdir]\vim\vim74
+  * 将vim源码目录下的runtime下的所有东西拷贝到vim\vim74
+
+        \> copy src\*.exe [targetdir]\vim\vim74
+        \> copy src\GvimExt\gvimext.dll [targetdir]\vim\vim74
+        \> copy src\xxd\xxd.exe [targetdir]\vim\vim74
+
+  * 在[targetdir]\vim目录下创建默认的vimfiles目录和`_vimrc`
