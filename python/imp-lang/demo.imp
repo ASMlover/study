@@ -1,0 +1,10 @@
+# this is comment
+
+x = 3
+y = 5
+
+if x == 3 then
+  print(y * y)
+else
+  print(y)
+end
