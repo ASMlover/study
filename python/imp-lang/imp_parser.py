@@ -29,7 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from functools import reduce
-import ast
+import imp_ast as ast
 import const
 import combinator as cb
 
@@ -39,7 +39,7 @@ def parse_keyword(kw):
 id = cb.Tag(const.ID)
 num = cb.Tag(const.INT) ^ (lambda v: int(v))
 
-def parser(tokens):
+def parse(tokens):
     return do_parser()(tokens, 0)
 
 def do_parser():
