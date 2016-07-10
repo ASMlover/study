@@ -81,7 +81,7 @@ class AddParser(Parser):
         if not lresult:
             return None
 
-        rresult = self.rparser(tokens, pos)
+        rresult = self.rparser(tokens, lresult.pos)
         if rresult:
             value = (lresult.value, rresult.value)
             return Result(value, rresult.pos)
