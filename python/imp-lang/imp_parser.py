@@ -29,9 +29,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from functools import reduce
-import imp_ast as ast
 import const
 import combinator as cb
+import imp_ast as ast
 
 def parse_keyword(kw):
     return cb.Reserved(kw, const.RESERVED)

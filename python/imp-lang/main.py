@@ -30,7 +30,7 @@
 
 from __future__ import print_function
 import sys
-import lexer
+import imp_lexer as lex
 import imp_parser as ipa
 
 def usage():
@@ -42,7 +42,7 @@ def main():
         usage()
     fname = sys.argv[1]
     text = open(fname, encoding='utf-8').read()
-    tokens = lexer.get_tokens(text)
+    tokens = lex.get_tokens(text)
     result = ipa.parse(tokens)
     if not result:
         print('parser error!')
