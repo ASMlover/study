@@ -39,7 +39,7 @@ class BaseAST(object):
 class StmtAST(BaseAST):
     pass
 
-def ExprAST(BaseAST):
+class ExprAST(BaseAST):
     pass
 
 class AssignStmtAST(StmtAST):
