@@ -60,9 +60,9 @@ def assign_stmt():
 
 def if_stmt():
     def process(parsed):
-        ((((_, cond), _), true_stmt), else_parsed), _ = parsed
+        (((((_, cond), _), true_stmt), else_parsed), _) = parsed
         if else_parsed:
-            _, else_stmt = else_parsed
+            (_, else_stmt) = else_parsed
         else:
             else_stmt = None
         return ast.IfStmtAST(cond, true_stmt, else_stmt)
@@ -73,7 +73,7 @@ def if_stmt():
 
 def while_stmt():
     def process(parsed):
-        (((_, cond), _), body), _ = parsed
+        ((((_, cond), _), body), _) = parsed
         return ast.WhileStmtAST(cond, body)
     return (parse_keyword('while') + b_expr() + parse_keyword('do') +
             cb.Lazy(stmt_list) + parse_keyword('end') ^ process)
@@ -91,7 +91,7 @@ def b_expr_not():
 
 def b_expr_logic():
     ops = ['<', '<=', '>', '>=', '==', '!=']
-    return a_expr() + any_oper_in_list(ops) ^ process_logic_oper
+    return a_expr() + any_oper_in_list(ops) + a_expr() ^ process_logic_oper
 
 def b_expr_group():
     return (parse_keyword('(') + cb.Lazy(b_expr) +
@@ -124,7 +124,7 @@ def process_binary_oper(op):
     return lambda l, r: ast.BinaryOperExprAST(op, l, r)
 
 def process_logic_oper(parsed):
-    (l, op), r = parsed
+    ((l, op), r) = parsed
     return ast.LogicOperExprAST(op, l, r)
 
 def process_logic(op):
