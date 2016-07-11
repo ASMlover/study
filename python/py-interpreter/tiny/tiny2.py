@@ -29,65 +29,96 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from __future__ import print_function
+from collections import deque
+
+class Stack(deque):
+    push = deque.append
+
+    def top(self):
+        return self[-1]
 
 class Interpreter(object):
     def __init__(self):
-        self.stacks = []
+        self.stacks = Stack()
         self.env = {}
 
-    def _ir_load_val(self, number):
-        self.stacks.append(number)
+    def _push(self, value):
+        self.stacks.push(value)
 
-    def _ir_print_val(self):
-        value = self.stacks.pop()
-        print(value)
+    def _pop(self):
+        return self.stacks.pop()
 
-    def _ir_add_val(self):
-        x = self.stacks.pop()
-        y = self.stacks.pop()
-        self.stacks.append(x + y)
+    def _popn(self, n=1):
+        pops = []
+        for i in range(n):
+            pops.append(self._pop())
+        return pops
 
-    def _ir_store_var(self, name):
-        value = self.stacks.pop()
-        self.env[name] = value
+    def _ir_iprint(self):
+        print(self._pop())
 
-    def _ir_load_var(self, name):
-        value = self.env[name]
-        self.stacks.append(value)
+    def _ir_iconst(self, value):
+        self._push(value)
 
-    def parse_argument(self, inst, argument, what_to_exec):
-        numbers = ['ir_load_val']
-        names = ['ir_load_var', 'ir_store_var']
+    def _ir_istore(self, name):
+        self.env[name] = self._pop()
 
-        if inst in numbers:
-            argument = what_to_exec['numbers'][argument]
+    def _ir_iload(self, name):
+        self._push(self.env[name])
+
+    def _ir_iadd(self):
+        y, x = self._popn(2)
+        self._push(x + y)
+
+    def _ir_isub(self):
+        y, x = self._popn(2)
+        self._push(x - y)
+
+    def _ir_imul(self):
+        y, x = self._popn(2)
+        self._push(x * y)
+
+    def _ir_idiv(self):
+        y, x = self._popn(2)
+        self._push(x / y)
+
+    def _ir_imod(self):
+        y, x = self._popn(2)
+        self._push(x % y)
+
+    def parse_argument(self, inst, argument, vm_codes):
+        consts = ['iconst']
+        names = ['istore', 'iload']
+
+        if inst in consts:
+            argument = vm_codes['consts'][argument]
         elif inst in names:
-            argument = what_to_exec['names'][argument]
+            argument = vm_codes['names'][argument]
         return argument
 
-    def execute(self, what_to_exec):
-        insts = what_to_exec['insts']
+    def execute(self, vm_codes):
+        insts = vm_codes['insts']
         for inst, arg in insts:
-            arg = self.parse_argument(inst, arg, what_to_exec)
-            byte_method = getattr(self, '_%s' % inst)
+            arg = self.parse_argument(inst, arg, vm_codes)
+            method = getattr(self, '_ir_%s' % inst)
             if arg is None:
-                byte_method()
+                method()
             else:
-                byte_method(arg)
+                method(arg)
 
 def main():
     what_to_exec = {
         'insts': [
-            ('ir_load_val', 0),
-            ('ir_store_var', 0),
-            ('ir_load_val', 1),
-            ('ir_store_var', 1),
-            ('ir_load_var', 0),
-            ('ir_load_var', 1),
-            ('ir_add_val', None),
-            ('ir_print_val', None),
+            ('iconst', 0),
+            ('istore', 0),
+            ('iconst', 1),
+            ('istore', 1),
+            ('iload', 0),
+            ('iload', 1),
+            ('idiv', None),
+            ('iprint', None),
         ],
-        'numbers': [1, 34],
+        'consts': [13, 34],
         'names': ['x', 'y'],
     }
 
