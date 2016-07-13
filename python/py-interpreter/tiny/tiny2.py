@@ -28,7 +28,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import print_function
 from collections import deque
 
 class Stack(deque):
@@ -49,10 +48,13 @@ class Interpreter(object):
         return self.stacks.pop()
 
     def _popn(self, n=1):
-        pops = []
+        if n <= 1:
+            return self.stacks.pop()
+
+        values = []
         for i in range(n):
-            pops.append(self._pop())
-        return pops
+            values.append(self._pop())
+        return values
 
     def _ir_iprint(self):
         print(self._pop())
@@ -79,6 +81,10 @@ class Interpreter(object):
         self._push(x * y)
 
     def _ir_idiv(self):
+        y, x = self._popn(2)
+        self._push(x // y)
+
+    def _ir_itruediv(self):
         y, x = self._popn(2)
         self._push(x / y)
 
@@ -115,15 +121,13 @@ def main():
             ('istore', 1),
             ('iload', 0),
             ('iload', 1),
-            ('idiv', None),
+            ('itruediv', None),
             ('iprint', None),
         ],
-        'consts': [13, 34],
+        'consts': [34, 4],
         'names': ['x', 'y'],
     }
-
-    inter = Interpreter()
-    inter.execute(what_to_exec)
+    Interpreter().execute(what_to_exec)
 
 if __name__ == '__main__':
     main()
