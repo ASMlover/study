@@ -28,10 +28,17 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from collections import deque
+class Stack(list):
+    def push(self, value):
+        super(Stack, self).append(value)
 
-class Stack(deque):
-    push = deque.append
+    def popn(self, n=1):
+        if n <= 1:
+            return self.pop()
+
+        ret = self[-n:]
+        self[-n:] = []
+        return ret
 
     def top(self):
         return self[-1]
@@ -48,13 +55,7 @@ class Interpreter(object):
         return self.stacks.pop()
 
     def _popn(self, n=1):
-        if n <= 1:
-            return self.stacks.pop()
-
-        values = []
-        for i in range(n):
-            values.append(self._pop())
-        return values
+        return self.stacks.popn(n)
 
     def _ir_iprint(self):
         print(self._pop())
