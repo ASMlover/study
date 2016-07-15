@@ -28,13 +28,20 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from collections import deque
 import inspect
 import types
 
-class Stack(deque):
+class Stack(list):
     def push(self, value):
         super(Stack, self).append(value)
+
+    def popn(self, n=1):
+        if n <= 1:
+            return self.pop()
+
+        ret = self[-n:]
+        self[-n:] = []
+        return ret
 
     def top(self):
         return self[-1]
@@ -61,8 +68,17 @@ class Frame(object):
     def _code_push(self, code):
         self.code_stack.push(code)
 
+    def _code_pushn(self, *codes):
+        self.code_stack.extend(codes)
+
     def _code_pop(self):
         return self.code_stack.pop()
+
+    def _code_popn(self, n):
+        return self.code_stack.popn(n)
+
+    def _code_top(self):
+        return self.code_stack.top()
 
     def _block_push(self, block):
         self.block_stack.push(block)
@@ -125,6 +141,21 @@ class VM(object):
 
     def _top(self):
         return self.frame_stack.top()
+
+    def _frame_code_top(self):
+        return self.frame._code_top()
+
+    def _frame_code_pop(self):
+        return self.frame._code_pop()
+
+    def _frame_code_pushn(self, *vals):
+        self.frame._code_pushn(*vals)
+
+    def _frame_code_popn(self, n):
+        if n:
+            return self.frame._code_popn(n)
+        else:
+            return []
 
     def make_frame(self, code, callargs={}, global_names=None, local_names=None):
         if global_names is not None and local_names is not None:
