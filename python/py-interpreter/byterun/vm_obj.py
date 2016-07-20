@@ -37,6 +37,18 @@ def make_cell(value):
     fn = (lambda x: lambda: x)(value)
     return fn.__closure__[0]
 
+Block = collections.namedtuple('Block', 'type, handler, level')
+
+class Cell(object):
+    def __init__(self, value):
+        self.contents = value
+
+    def get(self):
+        return self.contents
+
+    def set(self, value):
+        self.contents = value
+
 class Method(object):
     def __init__(self, obj, cls, func):
         self.im_self = obj
@@ -57,7 +69,67 @@ class Method(object):
             return self.im_func(*args, **kwargs)
 
 class Generator(object):
-    pass
+    def __init__(self, frame, vm):
+        self.gi_frame = frame
+        self.vm = vm
+        self.started = False
+        self.finished = False
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        return self.send(None)
+
+    def send(self, value=None):
+        if not self.started and value is not None:
+            raise TypeError('Can not send non-None value to a just-started generator')
+        self.gi_frame.stack.append(value)
+        self.started = True
+        val = self.vm.resume_frame(self.gi_frame)
+        if self.finished:
+            raise StopIteration(val)
+        return val
+
+    __next__ = next
+
+class Frame(object):
+    def __init__(self, f_code, f_globals, f_locals, f_back):
+        self.f_code = f_code
+        self.f_globals = f_globals
+        self.f_locals = f_locals
+        self.f_back = f_back
+        self.stack = []
+        if f_back:
+            self.f_builtins = f_back.f_builtins
+        else:
+            self.f_builtins = f_locals['__builtins__']
+            if hasattr(self.f_builtins, '__dict__'):
+                self.f_builtins = self.f_builtins.__dict__
+
+        self.f_lineno = f_code.co_firstlineno
+        self.f_lasti = 0
+
+        if f_code.co_cellvars:
+            self.cells = {}
+            if not f_back.cells:
+                f_back.cells = {}
+            for var in f_code.co_cellvars:
+                cell = Cell(self.f_locals.get(var))
+                f_back.cells[var] = self.cells[var] = cell
+        else:
+            self.cells = None
+
+        if f_code.co_freevars:
+            if not self.cells:
+                self.cells = {}
+            for var in f_code.co_freevars:
+                assert self.cells is not None
+                assert f_back.cells, 'f_back.cells: %r' % f_back.cells
+                self.cells[var] = f_back.cells[var]
+
+        self.block_stack = []
+        self.generator = None
 
 class Function(object):
     __slots__ = [
