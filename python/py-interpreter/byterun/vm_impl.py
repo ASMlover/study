@@ -75,3 +75,34 @@ class VM(object):
 
     def peek(self, n):
         return self.frame.stack[-n]
+
+    def jump(self, jump):
+        self.frame.f_lasti = jump
+
+    def push_block(self, type, handler=None, level=None):
+        if level is None:
+            level = len(self.frame.stack)
+        self.frame.block_stack.append(Block(type, handler, level))
+
+    def pop_block(self):
+        return self.frame.block_stack.pop()
+
+    def make_frame(self, code, callargs={}, f_globals=None, f_locals=None):
+        _logger.info('make_frame: code=%r, callargs=%r', code, repr(callargs))
+        if f_globals is not None:
+            f_globals = f_locals
+            if f_locals is None:
+                f_locals = f_globals
+        elif self.frames:
+            f_globals = self.frame.f_globals
+            f_locals = {}
+        else:
+            f_globals = f_locals = {
+                '__builtins__': __builtins__,
+                '__name__': '__main__',
+                '__doc__': None,
+                '__package__': None,
+            }
+        f_locals.update(callargs)
+        frame = Frame(code, f_globals, f_locals, self.frame)
+        return frame
