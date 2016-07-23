@@ -106,3 +106,54 @@ class VM(object):
         f_locals.update(callargs)
         frame = Frame(code, f_globals, f_locals, self.frame)
         return frame
+
+    def push_frame(self, frame):
+        self.frames.append(frame)
+        self.frame = frame
+
+    def pop_frame(self):
+        self.frame.pop()
+        if self.frames:
+            self.frame = self.frames[-1]
+        else:
+            self.frame = None
+
+    def print_frame(self):
+        for f in self.frames:
+            fname = f.f_code.co_filename
+            lineno = f.line_number()
+            print ('\tFile "%s", line %d, in %s' % (
+                fname, lineno, f.f_code.co_name))
+            linecache.checkcache(fname)
+            line = linecache.getline(fname, lineno, f.f_globals)
+            if line:
+                print('\t%s' % line.strip())
+
+    def resume_frame(self, frame):
+        frame.f_back = self.frame
+        value = self.run_frame(frame)
+        frame.f_back = None
+        return value
+
+    def run_code(self, code, f_globals=None, f_locals=None):
+        frame = self.make_frame(code, f_globals=f_globals, f_locals=f_locals)
+        value = self.run_frame(frame)
+        if self.frames:
+            raise VMError('Frames left over')
+        if self.frame and self.frame.stack:
+            raise VMError('Data left on stack! %r' % self.frame.stack)
+
+        return value
+
+    def unwind_block(self, block):
+        if block.type == 'except-handler':
+            offset = 3
+        else:
+            offset = 0
+
+        while len(self.frame.stack) > block.level + offset:
+            self.pop()
+
+        if block.type == 'except-handler':
+            tb, value, exctype = self.popn(3)
+            self.last_exception = exctype, value, tb
