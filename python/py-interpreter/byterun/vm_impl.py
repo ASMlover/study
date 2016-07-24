@@ -157,3 +157,52 @@ class VM(object):
         if block.type == 'except-handler':
             tb, value, exctype = self.popn(3)
             self.last_exception = exctype, value, tb
+
+    def parse_ir_and_args(self):
+        f = self.frame
+        opoffset = f.f_lasti
+        byte_code = byteint(f.f_code.co_code[opoffset])
+        f.f_lasti += 1
+        byte_name = dis.opname[byte_code]
+        arg = None
+        arguments = []
+        if byte_code >= dis.HAVE_ARGUMENT:
+            arg = f.f_code.co_code[f.f_lasti:f.f_lasti+2]
+            f.f_lasti += 2
+            int_arg = byteint(arg[0]) + (byteint(arg[1]) << 8)
+            if byte_code in dis.hasconst:
+                arg = f.f_code.co_consts[int_arg]
+            elif byte_code in dis.hasfree:
+                if int_arg < len(f.f_code.co_callvars):
+                    arg = f.f_code.co_callvars[int_arg]
+                else:
+                    var_idx = int_arg - len(f.f_code.co_cellvars)
+                    arg = f.f_code.co_freevars[var_idx]
+            elif byte_code in dis.hasname:
+                arg = f.f_code.co_names[int_arg]
+            elif byte_code in dis.hasjrel:
+                arg = f.f_lasti + int_arg
+            elif byte_code in dis.hasjabs:
+                arg = int_arg
+            elif byte_code in dis.haslocal:
+                arg = f.f_code.co_varnames[int_arg]
+            else:
+                arg = int_arg
+            arguments = [arg]
+
+        return byte_name, arguments, opoffset
+
+    def log(self, byte_name, arguments, opoffset):
+        op = '%d: %s' % (opoffset, byte_name)
+        if arguments:
+            op += ' %r' % arguments[0]
+        indent = '\t' * (len(self.frames) - 1)
+        stack_rep = repper(self.frame.stack)
+        block_stack_rep = repper(self.frame.block_stack)
+
+        _logger.info('\t%sdata: %s', indent, stack_rep)
+        _logger.info('\t%sblks: %s', indent, block_stack_rep)
+        _logger.info('%s%s', indent, op)
+
+    def dispatch(self, byte_name, arguments):
+        pass
