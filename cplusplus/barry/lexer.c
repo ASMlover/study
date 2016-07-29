@@ -155,3 +155,39 @@ _LexerScanIdentifier(BarryLexer* L, unsigned char ch)
 
   return 0;
 }
+
+static int
+_LexerScanString(BarryLexer* L, unsigned char ch)
+{
+  unsigned char quote = ch;
+  unsigned char buf[BUFSIZ];
+  int size = 0;
+  int ignore = 0;
+
+  if ('"' != ch && '\'' != ch)
+    return -1;
+
+  while (1) {
+    ch = _LexerNext(L);
+    ignore = 0;
+
+    if ('\\' == ch && ('"' == _LexerPeek(L) || '\'' == _LexerPeek(L))) {
+      buf[size++] = ch;
+      ch = _LexerNext(L);
+      ignore = 1;
+    }
+
+    if (quote == ch && 0 == ignore)
+      break;
+    if ('\n' == ch || '\r' == ch)
+      return -1;
+
+    buf[size++] = ch;
+  }
+
+  buf[size] = '\0';
+  L->colno -= size;
+  _LexerToken(L, TOKEN_STR, (char*)buf);
+
+  return 0;
+}
