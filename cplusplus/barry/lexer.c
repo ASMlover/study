@@ -92,7 +92,7 @@ _LexerPrev(BarryLexer* L)
 }
 
 static void
-_LexerToken(BarryLexer* L, int type, char* buf)
+_LexerToken(BarryLexer* L, int type, const char* buf)
 {
   L->last = L->curr;
   L->curr.type = type;
@@ -205,6 +205,25 @@ SCAN:
   case ' ':
   case '\t':
     goto SCAN;
+  case '#':
+    while ('\n' != ch && '\r' != ch) {
+      ch = _LexerNext(L);
+    }
+    goto SCAN;
+  case '\r':
+  case '\n':
+    ++L->lineno;
+    L->colno = 1;
+    goto SCAN;
+  case '"':
+  case '\'':
+    return _LexerScanString(L, ch);
+  case ',':
+    return _LexerToken(L, TOKEN_COMMA, ","), 0;
+  case '(':
+    return _LexerToken(L, TOKEN_LPARAM, "("), 0;
+  case ')':
+    return _LexerToken(L, TOKEN_RPARAM, ")"), 0;
   }
 
   return 0;
