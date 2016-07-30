@@ -191,3 +191,21 @@ _LexerScanString(BarryLexer* L, unsigned char ch)
 
   return 0;
 }
+
+int
+barry_LexerScan(BarryLexer* L)
+{
+  unsigned char ch = 0;
+
+SCAN:
+  ch = _LexerNext(L);
+  switch (ch) {
+  case '\0':
+    return 1;
+  case ' ':
+  case '\t':
+    goto SCAN;
+  }
+
+  return 0;
+}
