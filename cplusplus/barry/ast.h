@@ -61,4 +61,31 @@ typedef struct {
   struct BarryScope* globals;
 } BarryDef;
 
+typedef struct BarryScope {
+  BarryDeclaration decls[BARRY_SCOPE_MAX_DECL];
+  BarryFunction functions[BARRY_SCOPE_MAX_DECL];
+  BarryDef definitions[BARRY_SCOPE_MAX_DECL];
+
+  size_t declLen;
+  size_t functionLen;
+  size_t definitionLen;
+} BarryScope;
+
+typedef struct BarryNode {
+  BarryToken token;
+  BarryScope* scope;
+  struct BarryAST* ast;
+  struct BarryNode* prev;
+  struct BarryNode* next;
+  void* value;
+} BarryNode;
+
+typedef struct BarryAST {
+  char* file;
+  size_t length;
+  int offset;
+  BarryNode* nodes[BARRY_AST_NODE_MAX];
+  BarryNode* current;
+} BarryAST;
+
 #endif  /* __BARRY_AST_HEADER_H__ */
