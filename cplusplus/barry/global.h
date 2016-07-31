@@ -29,4 +29,17 @@
 #ifndef __BARRAY_GLOBAL_HEADER_H__
 #define __BARRAY_GLOBAL_HEADER_H__
 
+#include "ast.h"
+#include "common.h"
+
+#define BARRY_BUILTIN_FUN(n, fn)\
+  BARRY_GLOBAL->functions[BARRY_GLOBAL->functionLen++] =\
+    (BarryFunction) {.name = n, .function = fn};
+
+extern BarryScope* BARRY_GLOBAL;
+
+extern void barry_InitGlobals(void);
+extern void barry_Declartion(const char* key, void* value);
+extern void barry_Definition(const char* name, const char* body);
+
 #endif  /* __BARRAY_GLOBAL_HEADER_H__ */
