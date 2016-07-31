@@ -224,6 +224,38 @@ SCAN:
     return _LexerToken(L, TOKEN_LPARAM, "("), 0;
   case ')':
     return _LexerToken(L, TOKEN_RPARAM, ")"), 0;
+  case ';':
+    return _LexerToken(L, TOKEN_SEMI, ";"), 0;
+  case '+':
+    return _LexerToken(L, TOKEN_PLUS, "+"), 0;
+  case '-':
+    return _LexerToken(L, TOKEN_MINUS, "-"), 0;
+  case '*':
+    return _LexerToken(L, TOKEN_MULTIPLY, "*"), 0;
+  case '/':
+    return _LexerToken(L, TOKEN_DIVIDE, "/"), 0;
+  case '=':
+    if ('=' == _LexerPeek(L))
+      return _LexerToken(L, TOKEN_EQ, "=="), 0;
+    else
+      return _LexerToken(L, TOKEN_ASSIGN, "="), 0;
+  case '!':
+    return _LexerToken(L, TOKEN_NE, "!"), 0;
+  case '|':
+    if ('|' == _LexerPeek(L))
+      return _LexerToken(L, TOKEN_OR, "||"), 0;
+    else
+      return _LexerToken(L, TOKEN_BITOR, "|"), 0;
+  case '{':
+    return _LexerToken(L, TOKEN_LBRACE, "{"), 0;
+  case '}':
+    return _LexerToken(L, TOKEN_RBRACE, "}"), 0;
+  case '[':
+    return _LexerToken(L, TOKEN_LBRACKET, "["), 0;
+  case ']':
+    return _LexerToken(L, TOKEN_RBRACKET, "]"), 0;
+  default:
+    return _LexerScanIdentifier(L, ch);
   }
 
   return 0;
