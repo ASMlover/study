@@ -31,7 +31,7 @@
 
 #define EQUAL(a, b)     (0 == strcmp(a, b))
 #define ECHO(fmt, ...)  fprintf(stdout, fmt, ##__VA_ARGS__)
-#define ERROR(fmr, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
+#define ERROR(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
 
 #define FOREACH(array, value, body) ({\
     int i = -1;\
