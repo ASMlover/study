@@ -1,0 +1,87 @@
+-- Update 20131112
+Note that, libbsoncpp.a had been recompiled using the source specifically tailored by Minggong.
+Thus, it now contains the same *.o with ios/win version.
+
+
+The 3rdparty static libraries for Mac OS X were compiled as follows:
+
+1. libcrypto.a & libssl.a
+	In ../../include/openssl/opensslv.h, "OpenSSL 1.0.1c" was found.
+	So download openssl-1.0.1c, ./config && make.
+
+2. libprotobuf.a
+	In ../../include/google/protobuf/stubs/common.h,
+	  GOOGLE_PROTOBUG_VERSION = 2004001.
+	So download protobuf-2.4.1, ./configure && make.
+
+3. libbsoncpp.a & libboost_system.a [& libboost_thread.a, libboost_filesystem.a]
+	This is a bit tricky.
+	In ../../include/mongo/buildinfo.cpp,
+	  gitVersion="f405c58e098a67158b004f48e121e45146a89afa".
+	Download mongo source from https://github.com/mongodb/mongo.git,
+	  checkout the specific version.
+	Install scons in your system, preferably `brew install cons'.
+	`scons all' will build all targets.
+	The generated *.a and *.o will be found in mongo/build/.
+	The tricky part is that, the generated libbson.a is NOT the expected libbsoncpp.a.
+	After analyzing using objdump/gobjdump, the ios & windows libbsoncpp.a share the same *.o files:
+	  assert_util.o
+	  base64.o
+	  bson_validate.o
+	  bsondemo.o
+	  error_codes.o
+	  jsobj.o
+	  json.o
+	  log.o
+	  oid.o
+	  parse_number.o
+	  status.o
+	  string_data.o
+	  stringutils.o
+	  tex.o
+	But archiving these compiled objects using `ar rc *.o', does not give the desired result.
+	It seems that the mongo source used for libmobileclient is tailed a little bit.
+	This is why the Mac OS X version of libbsoncpp.a includes more *.o:
+	  assert_util.o
+	  background.o
+	  base64.o
+	  bson_validate.o
+	  cmdline.o
+	  configuration_variable_manager.o
+	  debug_util.o
+	  error_codes.o
+	  fail_point.o
+	  fail_point_registry.o
+	  fail_point_service.o
+	  global_initializer.o
+	  global_initializer_registerer.o
+	  initializer.o
+	  initializer_context.o
+	  initializer_dependency_graph.o
+	  jsobj.o
+	  json.o
+	  log.o
+	  make_string_vector.o
+	  md5.o
+	  oid.o
+	  parse_number.o
+	  random.o
+	  spin_lock.o
+	  stacktrace.o
+	  startup_test.o
+	  status.o
+	  string_data.o
+	  stringutils.o
+	  text.o
+	  time_support.o
+	  timer.o
+	  util.o
+	  lasterror.o
+	The ios version libbsoncpp.a does not have md5.o, but still md5_*() is defined.
+	The ios version log.o differs from mac verions log.o,
+	  where the latter needs libboost_filesystem.a support in a single function.
+	Thus, two more libraries were added: libboost_filesystem.a, libboost_thread.a.
+
+From Xcode 5.0, the default standard cpp library is libc++ rather than libstdc++.
+So, these libraries are compiled with '-stdlib=libstdc++' compiler&linker flags.
+Further, i386 architecture is used, with either '--32=yes' or 'CC=gcc -m32, CXX=g++ -m32'.
