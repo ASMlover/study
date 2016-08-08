@@ -107,3 +107,64 @@ _IsFunctionDeclaration(BarryNode* node)
 
   return 1;
 }
+
+static int
+_IsAssignment(BarryNode* node)
+{
+  return (TOKEN_ASSIGN == node->next->token.type);
+}
+
+static int
+_IsDeclaration(BarryNode* node)
+{
+  int i = 0;
+  if (TOKEN_ID != node->token.type)
+    return 0;
+
+#define VAR SCOPE->decls[i]
+#define FIND()\
+  for (i = 0; i < SCOPE->declLen; ++i) {\
+    if (EQUAL(node->token.as.string, VAR.key))\
+      return 1;\
+  }
+
+#define SCOPE node->scope
+  FIND();
+#undef SCOPE
+
+#define SCOPE BARRY_GLOBAL
+  FIND();
+#undef SCOPE
+
+#undef VAR
+#undef FIND
+
+  return 0;
+}
+
+static BarryFunction*
+_GetFunction(BarryNode* node)
+{
+  const char* name = node->token.as.string;
+  int i = 0;
+
+#define FN SCOPE->functions[i]
+#define FIND()\
+  for (i = 0; i < SCOPE->functionLen; ++i) {\
+    if (EQUAL(name, FN.name))\
+      return &FN;\
+  }
+
+#define SCOPE node->scope
+  FIND();
+#undef SCOPE
+
+#define SCOPE BARRY_GLOBAL
+  FIND()
+#undef SCOPE
+
+#undef FN
+#undef FIND
+
+  return NULL;
+}
