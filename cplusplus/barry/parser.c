@@ -168,3 +168,83 @@ _GetFunction(BarryNode* node)
 
   return NULL;
 }
+
+static void*
+_GetDeclaration(BarryNode* node)
+{
+  const char* key = node->token.as.string;
+  int i = 0;
+
+#define VAR SCOPE->decls[i]
+#define FIND()\
+  for (i = 0; i < SCOPE->declLen; ++i) {\
+    if (EQUAL(key, VAR.key))\
+      return VAR.value;\
+  }
+
+#define SCOPE node->scope
+  FIND();
+#undef SCOPE
+
+#define SCOPE BARRY_GLOBAL
+  FIND();
+#undef SCOPE
+
+#undef VAR
+#undef FIND
+
+  return NULL;
+}
+
+static BarryDef*
+_GetDefinition(BarryNode* node)
+{
+  const char* name = node->token.as.string;
+  int i = 0;
+
+#define DEF SCOPE->definitions[i]
+#define FIND()\
+  for (i = 0; i < SCOPE->definitionLen; ++i) {\
+    if (EQUAL(name, DEF.name))\
+      return &DEF;\
+  }
+
+#define SCOPE node->scope
+  FIND();
+#undef SCOPE
+
+#define SCOPE BARRY_GLOBAL
+  FIND();
+#undef SCOPE
+
+#undef DEF
+#undef FIND
+
+  return NULL;
+}
+
+static int
+_AssignDeclaraionNode(BarryNode* node)
+{
+  BarryNode* value = node->next->next;
+  const char* key = node->token.as.string;
+  void* val = NULL;
+
+  if (NULL == value)
+    return 1;
+
+  switch (value->token.type) {
+  case TOKEN_ID:
+    val = _GetDeclaration(value);
+    barry_Declartion(key, val);
+    break;
+  case TOKEN_NUMBER:
+  case TOKEN_STR:
+    val = value->token.as.string;
+    barry_Declartion(key, val);
+    break;
+  }
+  node->ast->current = value->next;
+
+  return 0;
+}
