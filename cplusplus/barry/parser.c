@@ -248,3 +248,39 @@ _AssignDeclaraionNode(BarryNode* node)
 
   return 0;
 }
+
+static int
+_AssignFunctionDeclarationNode(BarryNode* node)
+{
+  BarryNode* next = node->next;
+  const char* name = NULL;
+  char body[BUFSIZ];
+  int rbrace = 0;
+
+  name = next->token.as.string;
+
+  next = next->next;
+  while (TOKEN_END != next->token.type || rbrace > 0) {
+    if (TOKEN_STR == next->token.type)
+      sprintf(body, "\"%s\"", next->token.as.string);
+    else
+      sprintf(body, "%s", next->token.as.string);
+
+    next = next->next;
+    if (TOKEN_LBRACE == next->token.type) {
+      ++rbrace;
+      sprintf(body, "%s", next->token.as.string);
+      next = next->next;
+    }
+    if (TOKEN_RBRACE == next->token.type && rbrace > 0) {
+      --rbrace;
+      sprintf(body, "%s", next->token.as.string);
+      next = next->next;
+    }
+  }
+
+  barry_Definition(name, strdup(body));
+  node->ast->current = next->next;
+
+  return 0;
+}
