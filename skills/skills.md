@@ -4,10 +4,10 @@
 
 
 ## **1. 函数调用约定(MSVC)**
-        int add(int a,  int b)  
-        {  
-          return a + b;  
-        }  
+        int add(int a,  int b)
+        {
+          return a + b;
+        }
 
         函数调用约定是, 主调和被调函数之间的协议, 约定函数参数以什么顺序依次
     压栈, 以及函数结束后由谁来完成对入栈参数的清理(清栈)
@@ -15,7 +15,7 @@
     1) 函数的参数从右到左依次压栈
     2) 函数的调用者在push参数, 调用add之后(add esp 8), 来平衡栈帧
     3) 由函数的调用者来平衡栈帧
-    4) 函数中只有简单的(ret 0), 将清栈的操作交由函数的调用者来完成 
+    4) 函数中只有简单的(ret 0), 将清栈的操作交由函数的调用者来完成
 
 > ### **1.2 __stdcall调用约定**
     1) 函数的参数从右到左依次压栈
@@ -26,7 +26,7 @@
 > ### **1.3 具体的流程请查看例子**
     1) 以__cdecl调用约定编译后的函数为_add
     2) 以__stdcall调用约定编译后的函数为_add@8 (_函数名@参数的总字节数)
-    3) 参见例子 ./call-convention/main.c 
+    3) 参见例子 ./call-convention/main.c
 
 
 
@@ -39,18 +39,18 @@
 > ### **2.2 内幕**
     1) MSVC下有个编译选项/Tp, 指定文件按C++编译
     2) MSVC下有个编译选项/Tc, 指定文件按C编译
-    3) GCC下有个编译选项 -x language, 可以在language指定具体文件 
+    3) GCC下有个编译选项 -x language, 可以在language指定具体文件
 
 
 
 ## **3. git配置**
 > ### **3.1 配置颜色**
-    1) 常用的颜色:  
-       git config --global color.branch auto  
-       git config --global color.diff auto  
-       git config --global color.interactive auto  
-       git config --global color.status auto  
-    2) 把颜色全部都打开: 
+    1) 常用的颜色:
+       git config --global color.branch auto
+       git config --global color.diff auto
+       git config --global color.interactive auto
+       git config --global color.status auto
+    2) 把颜色全部都打开:
        git config --global color.ui true
 > ### **3.2 编辑器配置**
     git config --global core.editor 'vim'
@@ -69,11 +69,11 @@
       graph = %Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset
     [alias]
       lg = log --pretty=graph --graph --abbrev-commit --
-   
+
 
 ## **4. 好玩儿**
 > ### **4.1 一行代码将浏览器变为记事本**
-    1) 在浏览器地址栏输入: 
+    1) 在浏览器地址栏输入:
        data:text/html, <html contenteditable>
     2) 由这一行代码引起的头脑风暴, [请查看](http://www.oschina.net/news/37360/one-line-code-online-editor)
 
@@ -84,13 +84,13 @@
         假定当前所在的位置是(C:\>), 现在需要直接转换到其他地方, 如果是在同一
     个驱动器下, 直接cd转换即可; 但是当在其他的驱动器(D:\demo\)的时候, 我们需
     要使用其他方法:
-        1) C:\> cd /d D:\demo 
-        2) pushd D:\demo 
+        1) C:\> cd /d D:\demo
+        2) pushd D:\demo
         3) 方法1是直接跳转, 在返回的时候不容易; 方法二跳转后可以使用popd返回
 > ### **5.2 命令行下打开窗口目录**
         在命令行下有时需要进入图形窗口目录查看, 我们可以使用explorer命令来完
     成该任务, 假设当前位置是(C:\>), 我们要进入(D:\demo):
-        C:\> explorer D:\demo 
+        C:\> explorer D:\demo
         另外一种方法是使用start命令(进入当前目录):
         C:\> start .
 
@@ -102,7 +102,7 @@
         可以使用 sudo /sbin/ldconfig -v | grep libzmq来检查系统, 如果没有出
     现下面的内容:
         libzmq.so.1 -> libzmq.so.1.0.1
-        则需要在/etc/ld.so.conf文件的最后一行加上 /usr/local/lib/ 
+        则需要在/etc/ld.so.conf文件的最后一行加上 /usr/local/lib/
 
         另外新安装的共享库, 找不到的情况下还需要运行sudo ldconfig来配置动态
     库的环境
@@ -123,7 +123,7 @@
     读取的数据信息可以直接设计成buffer即可, 这样每次读取数据信息的时候直接根
     据读取位置读取数据信息即可, 这样就可以避免频繁的申请释放内存了;
     两个数据队列直接采用无锁队列即可;
-    
+
     读取的队列无锁, 网络处理线程读取的数据加锁写入写队列, 两个队列互相交换;
     1. 读优先 - 监测到读队列为空, 翻转两个队列
     2. 写优先 - 写队列满了之后再翻转两个数据队列
@@ -246,9 +246,9 @@
     [37m    白色前景颜色
     [40m    黑色背景颜色
     [41m    红色背景颜色
-    [42m    绿色背景颜色 
+    [42m    绿色背景颜色
     [43m    黄色背景颜色
-    [44m    蓝色背景颜色 
+    [44m    蓝色背景颜色
     [45m    品红色背景颜色
     [46m    青色背景颜色
     [47m    白色背景颜色
@@ -258,14 +258,14 @@
     [<C>C   光标向前移动<C>个空格, 如果<C>省略, 之移动一个空格
     [K      清除当前行中光标后面的所有内容
     [1K     清除当前行中光标前面的所有内容
-    [2K     清除当前行 
+    [2K     清除当前行
     [J      清除当前行下面的每一行
     [1J     清除当前行上面的每一行
     [2J     清除整个屏幕
 
 
 ## **16. 函数栈空间的大小**
-    C/C++语言函数的栈空间是有限制的; Windows一般默认是1M; 
+    C/C++语言函数的栈空间是有限制的; Windows一般默认是1M;
     linux下查看栈空间大小:
       $ ulimit -a
 
@@ -276,10 +276,10 @@
     $ sudo apt-get update
     $ sudo apt-get install gcc-4.8
     $ sudo apt-get install g++-4.8
-    $ cd /usr/bin/ 
+    $ cd /usr/bin/
     $ sudo rm g++
-    $ sudo rm gcc 
-    $ sudo ln -s gcc-4.8 gcc 
+    $ sudo rm gcc
+    $ sudo ln -s gcc-4.8 gcc
     $ sudo ln -s g++-4.8 g++
 
 
@@ -288,7 +288,7 @@
 
 
 ## **19. FOIL二项式乘法**
-    (a + b)(c + d) => 
+    (a + b)(c + d) =>
     * First   (a + b)(c + d)
                |______|
     * Outer   (a + b)(c + d)
@@ -331,11 +331,8 @@
     1) 打开VS2013开发人员命令提示
     2) 进入boost目录
     3) \> bootstrap.bat
-    4) \> bjam.exe stage --toolset=msvc-12.0 --stagedir=".\stage\x86" 
-          link=static runtime-link=shared threading=multi debug release
-    5) \> bjam.exe stage --toolset=msvc-12.0 --stagedir=".\stage\x64" 
-          link=static runtime-link=shared threading=multi debug release
-          address-model=64
+    4) \> bjam.exe stage --toolset=msvc-12.0 --stagedir=".\stage\x86" link=static runtime-link=shared threading=multi debug release
+    5) \> bjam.exe stage --toolset=msvc-12.0 --stagedir=".\stage\x64" link=static runtime-link=shared threading=multi debug release address-model=64
     6) bjam参数说明：
         * stage/install: stage只生成(dll/lib), install还会生成包含头文件的
                          include目录；
