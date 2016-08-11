@@ -38,6 +38,8 @@
 #include "lexer.h"
 #include "parser.h"
 
+static int _ParseNode(BarryNode* node);
+
 static char*
 _Ftoa(float num)
 {
@@ -66,7 +68,7 @@ static int
 _IsFunction(BarryNode* node)
 {
   if (TOKEN_ID != node->token.type ||
-      TOKEN_LPARAM != node->next->token.type)
+      TOKEN_LPAREN != node->next->token.type)
     return 0;
 
   return 1;
@@ -281,6 +283,80 @@ _AssignFunctionDeclarationNode(BarryNode* node)
 
   barry_Definition(name, strdup(body));
   node->ast->current = next->next;
+
+  return 0;
+}
+
+static int
+_CallFunctionNode(BarryNode* node)
+{
+  BarryFunArguments arguments;
+  BarryNode* next = node->next;
+
+  arguments.length = 0;
+  if (TOKEN_LPAREN != next->token.type) {
+    ERROR("Unexpected token. Expected `(`\n");
+    return 1;
+  }
+
+  next = node->next;
+  if (NULL == next) {
+    ERROR("Unexpected end of input\n");
+    return 1;
+  }
+
+#define PUSH(v) arguments.values[arguments.length++] = v
+  while (TOKEN_RPAREN != next->token.type) {
+    node->ast->current = next;
+    next = next->next;
+    switch (next->token.type) {
+    case TOKEN_RPAREN:
+    case TOKEN_COMMA:
+      break;
+    case TOKEN_NUMBER:
+    case TOKEN_STR:
+      PUSH(next->token.as.string);
+      break;
+    case TOKEN_ID:
+      _ParseNode(next);
+      if (_IsFunction(next)) {
+        if (_CallFunctionNode(node) > 0)
+          return 1;
+        break;
+      }
+      if (_IsDeclaration(next)) {
+        PUSH(_GetDeclaration(next));
+      }
+      else {
+        ERROR("Error [%d:%d]: `%s` is not defined\n",
+            next->token.lineno,
+            (next->prev->token.colno - strlen(next->token.as.string)),
+            next->token.as.string);
+        return 1;
+      }
+      break;
+    default:
+      ERROR("Error: Unexpected token `%s`", next->token.as.string);
+      return 1;
+    }
+  }
+#undef PUSH
+
+  node->ast->current = next->next;
+  BarryFunction* fn = _GetFunction(node);
+  BarryDef* def = NULL;
+
+  if (NULL == fn) {
+    def = _GetDefinition(node);
+    if (NULL == def)
+      ERROR("%s is not a function", node->token.as.string);
+    else
+      return barry_Parse((char*)def->name, (char*)def->body, def->locals);
+    return 1;
+  }
+  else {
+    fn->function(arguments);
+  }
 
   return 0;
 }
