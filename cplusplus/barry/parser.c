@@ -360,3 +360,27 @@ _CallFunctionNode(BarryNode* node)
 
   return 0;
 }
+
+static int
+_ParseLoop(BarryNode* node)
+{
+  return 0;
+}
+
+static int
+_ParseIf(BarryNode* node)
+{
+  if (TOKEN_IF != node->token.type) {
+    ERROR("Error: Unexpected token `%s`, expected `if`",
+        node->token.as.string);
+    return 1;
+  }
+
+  if (TOKEN_RPAREN != node->token.type) {
+    ERROR("Error: Unexpected token `%s`, expected `(`",
+        node->token.as.string);
+    return 1;
+  }
+
+  return 0;
+}
