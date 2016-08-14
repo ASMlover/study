@@ -31,6 +31,7 @@
 
 #include "ast.h"
 
-extern int barry_Parse(const char* file, char* src, BarryScope* scope);
+extern int barry_Parse(
+    const char* file, const char* src, BarryScope* scope);
 
 #endif  /* __BARRY_PARSER_HEADER_H__ */
