@@ -384,3 +384,57 @@ _ParseIf(BarryNode* node)
 
   return 0;
 }
+
+static int
+_ParseNode(BarryNode* node)
+{
+  node->ast->current = node->next;
+  switch (node->token.type) {
+  case TOKEN_NONE:
+    break;
+  case TOKEN_ID:
+    if (_IsFunction(node)) {
+      if (_CallFunctionNode(node) > 0)
+        return 1;
+      break;
+    }
+    if (_IsAssignment(node)) {
+      if (_AssignDeclaraionNode(node) > 0)
+        return 1;
+      break;
+    }
+    if (_IsFunctionDeclaration(node)) {
+      if (_AssignFunctionDeclarationNode(node) > 0)
+        return 1;
+    }
+    break;
+  case TOKEN_FOR:
+    if (_ParseLoop(node) > 0)
+      return 1;
+    break;
+  case TOKEN_IF:
+    if (_ParseIf(node) > 0)
+      return 1;
+    break;
+  case TOKEN_ELSE:
+    break;
+  }
+
+  return 0;
+}
+
+int
+barry_Eval(BarryAST* ast)
+{
+  ast->current = ast->nodes[0];
+  while (ast->current) {
+    if (_ParseNode(ast->current) > 0)
+      return 1;
+  }
+  return 0;
+}
+
+int
+barry_Parse(const char* file, const char* src, BarryScope* scope)
+{
+}
