@@ -437,4 +437,55 @@ barry_Eval(BarryAST* ast)
 int
 barry_Parse(const char* file, const char* src, BarryScope* scope)
 {
+  BarryLexer* lexer = (BarryLexer*)malloc(sizeof(BarryLexer));
+  BarryNode main;
+  BarryAST* ast = (BarryAST*)malloc(sizeof(BarryAST));
+  BarryDef* def = NULL;
+  int r = 0;
+
+  if (NULL == lexer) {
+    ERROR("Error: lexer allocation error\n");
+    return 1;
+  }
+  if (NULL == ast) {
+    ERROR("Error: ast allocation error\n");
+    return 1;
+  }
+
+  lexer->src = (char*)src;
+  lexer->file = (char*)file;
+  lexer->colno = 0;
+  lexer->lineno = 1;
+  lexer->offset = 0;
+  lexer->curr.type = TOKEN_NONE;
+  lexer->curr.as.string = (char*)"";
+
+  ast->file = (char*)file;
+
+  while (0 == barry_LexerScan(lexer)) {
+    BarryNode* node = (BarryNode*)malloc(sizeof(BarryNode));
+    node->token = lexer->curr;
+    node->ast = ast;
+    node->scope = NULL == scope ? BARRY_GLOBAL : scope;
+    if (ast->length > 0)
+      node->prev = ast->nodes[ast->length - 1]->next = node;
+    ast->nodes[ast->length++] = node;
+  }
+  free(lexer);
+
+  r = barry_Eval(ast);
+  if (NULL == scope) {
+    main.ast = ast;
+    main.token.type = TOKEN_ID;
+    main.token.as.string = (char*)"main";
+    main.scope = BARRY_GLOBAL;
+
+    def = _GetDefinition(&main);
+    if (NULL != def) {
+      r = barry_Parse((const char*)def->name,
+          (const char*)def->body, def->locals);
+    }
+  }
+
+  return r;
 }
