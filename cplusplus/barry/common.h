@@ -29,6 +29,8 @@
 #ifndef __BARRY_COMMON_HEADER_H__
 #define __BARRY_COMMON_HEADER_H__
 
+#define BARRY_VERSION "0.0.1"
+
 #define EQUAL(a, b)     (0 == strcmp(a, b))
 #define ECHO(fmt, ...)  fprintf(stdout, fmt, ##__VA_ARGS__)
 #define ERROR(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
