@@ -76,9 +76,47 @@ fu_Stat(const char* path)
   return stats;
 }
 
-// extern FUStats* fu_Fstat(FILE* stream);
-// extern FUStats* fu_Lstat(const char* path);
-// extern int fu_Ftruncate(FILE* stream, int length);
+FUStats*
+fu_Fstat(FILE* stream)
+{
+  if (NULL == stream) {
+    return NULL;
+  }
+  else{
+    FUStats* stats = (FUStats*)malloc(sizeof(FUStats));
+    int fd = fileno(stream);
+    int e = fstat(fd, stats);
+    if (-1 == e) {
+      free(stats);
+      return NULL;
+    }
+    return stats;
+  }
+}
+
+FUStats*
+fu_Lstat(const char* path)
+{
+  FUStats* stats = (FUStats*)malloc(sizeof(FUStats));
+#ifdef _WIN32
+  int e = stat(path, stats);
+#else
+  int e = lstat(path, stats);
+#endif
+  if (-1 == e) {
+    free(stats);
+    return NULL;
+  }
+  return stats;
+}
+
+int
+fu_Ftruncate(FILE* stream, int length)
+{
+  int fd = fileno(stream);
+  return ftruncate(fd, (off_t)length);
+}
+
 // extern int fu_Truncate(const char* path, int length);
 // extern int fu_Chown(const char* path, int uid, int gid);
 // extern int fu_Fchown(FILE* stream, int uid, int gid);
