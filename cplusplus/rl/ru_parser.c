@@ -140,6 +140,32 @@ static int _Eval(int pos, int status) {
 }
 
 static TVariable* _DeclareVar(void) {
+  int32_t pos = gToken.pos;
+  if (isalpha(gToken.token[gToken.pos].value[0])) {
+    ++gToken.pos;
+    if (ru_Skip(":")) {
+      if (ru_Skip("int")) {
+        --gToken.pos;
+        return _AppendVar(gToken.token[pos].value, T_INT);
+      }
+      if (ru_Skip("string")) {
+        --gToken.pos;
+        return _AppendVar(gToken.token[pos].value, T_STRING);
+      }
+      if (ru_Skip("double")) {
+        --gToken.pos;
+        return _AppendVar(gToken.token[pos].value, T_DOUBLE);
+      }
+    }
+    else {
+      --gToken.pos;
+      return _AppendVar(gToken.token[pos].value, T_INT);
+    }
+  }
+  else {
+    ru_Error("%d: can't declare variable", gToken.token[gToken.pos].lineno);
+  }
+
   return NULL;
 }
 
