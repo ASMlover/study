@@ -117,20 +117,170 @@ fu_Ftruncate(FILE* stream, int length)
   return ftruncate(fd, (off_t)length);
 }
 
-// extern int fu_Truncate(const char* path, int length);
-// extern int fu_Chown(const char* path, int uid, int gid);
-// extern int fu_Fchown(FILE* stream, int uid, int gid);
-// extern int fu_Lchown(const char* path, int uid, int gid);
-// extern size_t fu_Size(const char* path);
-// extern size_t fu_Fsize(FILE* stream);
-// extern char* fu_Read(const char* path);
-// extern char* fu_Nread(const char* path, int length);
-// extern char* fu_Fread(FILE* stream);
-// extern char* fu_Fnread(FILE* stream, int length);
-// extern int fu_Write(const char* path, const char* buffer);
-// extern int fu_Nwrite(const char* path, const char* buffer, int length);
-// extern int fu_Fwrite(FILE* stream, const char* buffer);
-// extern int fu_Fnwrite(FILE* stream, const char* buffer, int length);
-// extern int fu_Mkdir(const char* path, int mode);
-// extern int fu_Rmdir(const char* path);
-// extern int fu_Exists(const char* path);
+int
+fu_Truncate(const char* path, int length)
+{
+#ifdef _WIN32
+  int ret = -1;
+  int fd = open(path, O_RDWR | O_CREAT, S_IREAD | S_IWRITE);
+  if (-1 != fd) {
+    ret = ftruncate(fd, (off_t)length);
+    close(fd);
+  }
+  return ret;
+#else
+  return truncate(path, (off_t)length);
+#endif
+}
+
+int
+fu_Chown(const char* path, int uid, int gid)
+{
+#ifdef _WIN32
+  errno = ENOSYS;
+  return -1;
+#else
+  return chown(path, (uid_t)uid, (gid_t)gid);
+#endif
+}
+
+int
+fu_Fchown(FILE* stream, int uid, int gid)
+{
+#ifdef _WIN32
+  errno = ENOSYS;
+  return -1;
+#else
+  int fd = fileno(stream);
+  return fchown(fd, (uid_t)uid, (gid_t)gid);
+#endif
+}
+
+int
+fu_Lchown(const char* path, int uid, int gid)
+{
+#ifdef _WIN32
+  errno = ENOSYS;
+  return -1;
+#else
+  return lchown(path, (uid_t)uid, (gid_t)gid);
+#endif
+}
+
+size_t
+fu_Size(const char* path)
+{
+  size_t size;
+  FILE* stream = fu_Open(path, FU_OPEN_R);
+  if (NULL == stream)
+    return -1;
+  fseek(stream, 0, SEEK_END);
+  size = ftell(stream);
+  fu_Close(stream);
+  return size;
+}
+
+size_t
+fu_Fsize(FILE* stream)
+{
+  size_t size;
+  unsigned long pos = ftell(stream);
+  rewind(stream);
+  fseek(stream, 0, SEEK_END);
+  size = ftell(stream);
+  fseek(stream, pos, SEEK_SET);
+  return size;
+}
+
+char*
+fu_Read(const char* path)
+{
+  char* buffer;
+  FILE* stream = fu_Open(path, FU_OPEN_R);
+  if (NULL == stream)
+    return NULL;
+  buffer = fu_Fread(stream);
+  fu_Close(stream);
+  return buffer;
+}
+
+char*
+fu_Nread(const char* path, int length)
+{
+  char* buffer;
+  FILE* stream = fu_Open(path, FU_OPEN_R);
+  if (NULL == stream)
+    return NULL;
+  buffer = fu_Fnread(stream, length);
+  fu_Close(stream);
+  return buffer;
+}
+
+char*
+fu_Fread(FILE* stream)
+{
+  size_t fsize = fu_Fsize(stream);
+  return fu_Fnread(stream, fsize);
+}
+
+char*
+fu_Fnread(FILE* stream, int length)
+{
+  char* buffer = (char*)malloc(sizeof(char) * (length + 1));
+  size_t n = fread(buffer, 1, length, stream);
+  buffer[n] = 0;
+  return buffer;
+}
+
+int
+fu_Write(const char* path, const char* buffer)
+{
+  return fu_Nwrite(path, buffer, strlen(buffer));
+}
+
+int
+fu_Nwrite(const char* path, const char* buffer, int length)
+{
+  int count;
+  FILE* stream = fu_Open(path, FU_OPEN_W);
+  if (NULL == stream)
+    return -1;
+  count = fu_Fnwrite(stream, buffer, length);
+  fu_Close(stream);
+  return count;
+}
+
+int
+fu_Fwrite(FILE* stream, const char* buffer)
+{
+  return fu_Fnwrite(stream, buffer, strlen(buffer));
+}
+
+int
+fu_Fnwrite(FILE* stream, const char* buffer, int length)
+{
+  return (int)fwrite(buffer, 1, length, stream);
+}
+
+int
+fu_Mkdir(const char* path, int mode)
+{
+#ifdef _WIN32
+  return mkdir(path);
+#else
+  return mkdir(path, (mode_t)mode);
+#endif
+}
+
+int
+fu_Rmdir(const char* path)
+{
+  return rmdir(path);
+}
+
+int
+fu_Exists(const char* path)
+{
+  struct stat s;
+  return stat(path, &s);
+}
