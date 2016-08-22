@@ -31,6 +31,7 @@
 #include <string.h>
 
 #include "common.h"
+#include "futil.h"
 #include "global.h"
 #include "parser.h"
 
@@ -77,5 +78,17 @@ main(int argc, char* argv[]) {
       break;
   });
 
-  return 0;
+  if (0 != fu_Exists(file)) {
+    ERROR("Error: cannot find the file `%s`\n", file);
+    return 1;
+  }
+
+  src = fu_Read(file);
+  if (NULL == src) {
+    ERROR("Error: error reading `%s`\n", file);
+    return 1;
+  }
+
+  barry_InitGlobals();
+  return barry_Parse(file, src, NULL);
 }
