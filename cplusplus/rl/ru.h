@@ -50,7 +50,7 @@ enum {T_INT, T_STRING, T_DOUBLE};
 struct {
   uint32_t* addr;
   int count;
-} gBlocks, gReturns;
+} gBreaks, gReturns;
 
 extern int ru_Error(const char* fmt, ...);
 
