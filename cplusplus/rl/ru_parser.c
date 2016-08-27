@@ -157,6 +157,45 @@ static int _IfStmt(void) {
 }
 
 static int _WhileStmt(void) {
+  uint32_t loopBg = gRuCount;
+  uint32_t end;
+  uint32_t stepBg[2];
+  uint32_t stepOn = 0;
+
+  ru_RelExpr();
+  if (ru_Skip(",")) {
+    stepOn = 1;
+    stepBg[0] = gToken.pos;
+    for (; gToken.token[gToken.pos].value[0] != ';'; ++gToken.pos) {
+    }
+  }
+  ru_Emit(0x83); ru_Emit(0xf8); ru_Emit(0x00); /* cmp eax, 0 */
+  ru_Emit(0x75); ru_Emit(0x05); /* jne 5 */
+  ru_Emit(0xe9); end = gRuCount; ru_Emit(0); /* jmp while end */
+
+  if (ru_Skip(":"))
+    ru_Expr(0, BLOCK_LOOP);
+  else
+    _Eval(0, BLOCK_LOOP);
+
+  if (stepOn) {
+    stepBg[1] = gToken.pos;
+    gToken.pos = stepBg[0];
+    if (ru_IsAssign())
+      ru_Assignment();
+    gToken.pos = stepBg[1];
+  }
+
+  ru_Emit(0xe9); ru_EmitI32(0xFFFFFFFF - gRuCount + loopBg - 4); /* jmp n */
+  ru_EmitI32Insert(gRuCount - end - 4, end);
+
+  for (--gBreaks.count; gBreaks.count >= 0; --gBreaks.count) {
+    ru_EmitI32Insert(
+        gRuCount - gBreaks.addr[gBreaks.count] - 4,
+        gBreaks.addr[gBreaks.count]);
+  }
+  gBreaks.count = 0;
+
   return 0;
 }
 
