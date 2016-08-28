@@ -200,10 +200,80 @@ static int _WhileStmt(void) {
 }
 
 static int32_t _FunctionStmt(void) {
+  int32_t escapeBg;
+  int32_t nargs = 0;
+  const char* funcName = gToken.token[gToken.pos++].value;
+  int argPos[128];
+  int i;
+
+  if (ru_Skip("(")) {
+    do {
+      _DeclareVar();
+      ++gToken.pos;
+      ++nargs;
+    } while (ru_Skip(","));
+    if (!ru_Skip(")"))
+      ru_Error("%d: expecting `)`", gToken.token[gToken.pos].lineno);
+  }
+  _AppendFunc(funcName, gRuCount, nargs);
+  ru_Emit(0x50 + RU_EBP); /* push ebp */
+  ru_Emit(0x89); ru_Emit(0xc0 + RU_ESP * 8 + RU_EBP); /* mov evp esp */
+  escapeBg = gRuCount + 2;
+  /* sub esp 0; align */
+  ru_Emit(0x81); ru_Emit(0xe8 + RU_ESP); ru_EmitI32(0);
+
+  for (i = 0; i < nargs; ++i) {
+    ru_Emit(0x8b);
+    ru_Emit(0x45);
+    ru_Emit(0x08 + (nargs - i - 1) * sizeof(int32_t));
+
+    ru_Emit(0x89);
+    ru_Emit(0x44);
+    ru_Emit(0x24);
+
+    argPos[i] = gRuCount;
+    ru_Emit(0x00);
+  }
+  _Eval(0, BLOCK_LOOP);
+
+  for (--gReturns.count; gReturns.count >= 0; --gReturns.count) {
+    ru_EmitI32Insert(
+        gRuCount - gReturns.addr[gReturns.count] - 4,
+        gReturns.addr[gReturns.count]);
+  }
+  gReturns.count = 0;
+
+  ru_Emit(0x81); ru_Emit(0xc0 + RU_ESP);
+  /* add esp nn */
+  ru_EmitI32(sizeof(int32_t) * (localVarSize[funcNumber] + 6));
+  ru_Emit(0xc9); /* leave */
+  ru_Emit(0xc3); /* ret */
+
+  ru_EmitI32Insert(
+      sizeof(int32_t) * (localVarSize[funcNumber] + 6), escapeBg);
+  for (i = 1; i <= nargs; ++i) {
+    gRuCode[argPos[i - 1]] = 256 - sizeof(int32_t) * i +
+      (((localVarSize[funcNumber] + 6) * sizeof(int32_t)) - 4);
+  }
+
   return 0;
 }
 
 static const char* _ReplaceEscape(const char* str) {
+  char escape[12][3] = {
+    "\\a", "\a", "\\r", "\r", "\\f", "\f",
+    "\\n", "\n", "\\t", "\t", "\\b", "\b",
+  };
+  int i;
+
+  for (i = 0; i < 12; i += 2) {
+    char* pos;
+    while ((pos = strstr((char*)str, escape[i])) != NULL) {
+      *pos = escape[i + 1][0];
+      memmove(pos + 1, pos + 2, strlen(pos + 2) + 1);
+    }
+  }
+
   return str;
 }
 
@@ -250,6 +320,32 @@ TFunc* ru_GetFunc(const char* name) {
 }
 
 int ru_IsAssign(void) {
+  const char* value = gToken.token[gToken.pos + 1].value;
+  if (!strcmp(value, "=") || !strcmp(value, "++") || !strcmp(value, "--"))
+    return 1;
+  if (!strcmp(value, "[")) {
+    int32_t i = gToken.pos + 2;
+    int32_t t = 1;
+    while (t) {
+      value = gToken.token[i].value;
+      if (!strcmp(value, "["))
+        ++t;
+      if (!strcmp(value, "]"))
+        --t;
+      if (!strcmp(value, ";")) {
+        ru_Error("%d: invalid expression",
+            gToken.token[gToken.pos].lineno);
+      }
+      ++i;
+    }
+    if (!strcmp(gToken.token[i].value, "="))
+      return 1;
+  }
+  else if (!strcmp(value, ":")
+      && !strcmp(gToken.token[gToken.pos + 3].value, "=")) {
+    return 1;
+  }
+
   return 0;
 }
 
@@ -258,5 +354,27 @@ int ru_Assignment(void) {
 }
 
 int ru_Parser(void) {
+  uint32_t mainAddress;
+  uint32_t addr;
+  int i;
+
+  gToken.pos = gRuCount = 0;
+  gStrings.addr = (int*)calloc(0xff, sizeof(int32_t));
+  ru_Emit(0xe9);
+  mainAddress = gRuCount;
+  ru_EmitI32(0);
+  _Eval(0, 0);
+
+  addr = ru_GetFunc("main")->address;
+  ru_EmitI32Insert(addr - 5, mainAddress);
+
+  for (gStrings.addr--; gStrings.count; --gStrings.addr) {
+    ru_EmitI32Insert((uint32_t)&gRuCode[gRuCount], *gStrings.addr);
+    _ReplaceEscape(gStrings.text[--gStrings.count]);
+    for (i = 0; gStrings.text[gStrings.count][i]; ++i)
+      ru_Emit(gStrings.text[gStrings.count][i]);
+    ru_Emit(0); /* '\0' */
+  }
+
   return 1;
 }
