@@ -376,6 +376,117 @@ int ru_IsAssign(void) {
 }
 
 int ru_Assignment(void) {
+  TVariable* v = ru_GetVar(gToken.token[gToken.pos].value);
+  int32_t inc = 0;
+  int32_t dec = 0;
+  int32_t declare = 0;
+
+  if (NULL == v) {
+    ++declare;
+    v = _DeclareVar();
+  }
+  ++gToken.pos;
+
+  if (V_LOCAL == v->loctype) {
+    if (ru_Skip("[")) {
+      ru_RelExpr();
+      ru_Emit(0x50 + RU_EAX); /* push eax */
+      if (ru_Skip("]") && ru_Skip("=")) {
+        ru_RelExpr();
+        /* mov ecx [ebp - n] */
+        ru_Emit(0x8b); ru_Emit(0x4d);
+        ru_Emit(256 - (v->type == T_INT ? sizeof(int32_t) :
+            v->type == T_STRING ? sizeof(int32_t*) :
+            v->type == T_DOUBLE ? sizeof(double) : 4) * v->id);
+
+        ru_Emit(0x58 + RU_EDX); /* pop edx */
+        if (T_INT == v->type) {
+          /* mov [ecx + edx * 4] eax */
+          ru_Emit(0x89); ru_Emit(0x04); ru_Emit(0x91);
+        }
+        else {
+          /* mov [ecx + edx] eax */
+          ru_Emit(0x89); ru_Emit(0x04); ru_Emit(0x11);
+        }
+      }
+      else if ((inc == ru_Skip("++")) || (dec == ru_Skip("--"))) {
+      }
+      else {
+        ru_Error("%d: invalid assignment", gToken.token[gToken.pos].lineno);
+      }
+    }
+    else {
+      if (ru_Skip("=")) {
+        ru_RelExpr();
+      }
+      else if ((inc == ru_Skip("++")) || (dec == ru_Skip("--"))) {
+        /* mov eax variable */
+        ru_Emit(0x8b); ru_Emit(0x45);
+        ru_Emit(256 - (v->type == T_INT ? sizeof(int32_t) :
+              v->type == T_STRING ? sizeof(int32_t*) :
+              v->type == T_DOUBLE ? sizeof(double) : 4) * v->id);
+        ru_Emit(0x50 + RU_EAX); /* push eax */
+        if (inc)
+          ru_Emit(0x40); /* inc eax */
+        else if (dec)
+          ru_Emit(0x48); /* dec eax */
+      }
+      /* mov var eax */
+      ru_Emit(0x89); ru_Emit(0x45);
+      ru_Emit(256 - (v->type == T_INT ? sizeof(int32_t) :
+            v->type == T_STRING ? sizeof(int32_t*) :
+            v->type == T_DOUBLE ? sizeof(double) : 4) * v->id);
+      if (inc || dec)
+        ru_Emit(0x58 + RU_EAX); /* pop eax */
+    }
+  }
+  else if (V_GLOBAL == v->loctype) {
+    if (declare) {
+      if (ru_Skip("=")) {
+        unsigned int* m = (unsigned int*)v->id;
+        *m = atoi(gToken.token[gToken.pos++].value);
+      }
+    }
+    else {
+      if (ru_Skip("[")) {
+        ru_RelExpr();
+        ru_Emit(0x50 + RU_EAX); /* push eax */
+        if (ru_Skip("]") && ru_Skip("=")) {
+          ru_RelExpr();
+          /* mov ecx GLOBAL_ADDR */
+          ru_Emit(0x8b); ru_Emit(0xd); ru_EmitI32(v->id);
+          ru_Emit(0x58 + RU_EDX); /* pop edx */
+          if (T_INT == v->type) {
+            /* mov [ecx + edx * 4] eax */
+            ru_Emit(0x89); ru_Emit(0x04); ru_Emit(0x91);
+          }
+          else {
+            /* mov [ecx + edx] eax */
+            ru_Emit(0x89); ru_Emit(0x04); ru_Emit(0x11);
+          }
+        }
+        else {
+          ru_Error("%d: invalid assignment", gToken.token[gToken.pos].lineno);
+        }
+      }
+      else if (ru_Skip("=")) {
+        ru_RelExpr();
+        ru_Emit(0xa3); ru_EmitI32(v->id); /* mov GLOBAL_ADDR eax */
+      }
+      else if ((inc == ru_Skip("++")) || (dec == ru_Skip("--"))) {
+        ru_Emit(0xa1); ru_EmitI32(v->id); /* mov eax GLOBAL_ADDR */
+        ru_Emit(0x50 + RU_EAX); /* push eax */
+        if (inc)
+          ru_Emit(0x40); /* inc eax */
+        else if (dec)
+          ru_Emit(0x48); /* dex eax */
+        ru_Emit(0xa3); ru_EmitI32(v->id); /* mov GLOBAL_ADDR eax */
+      }
+      if (inc || dec)
+        ru_Emit(0x58 + RU_EAX); /* pop eax */
+    }
+  }
+
   return 0;
 }
 
