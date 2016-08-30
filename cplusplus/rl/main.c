@@ -27,6 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <ctype.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,6 +39,64 @@
 #include "ru.h"
 #include "ru_asm.h"
 #include "ru_parser.h"
+
+struct {
+  uint32_t addr[0xFF];
+  int count;
+} gMem;
+
+static unsigned int w;
+static void _SetXor128(void) {
+  w = 1234 + (getpid() ^ 0xFFBA9285);
+}
+
+static void _Init(void) {
+}
+
+static void _FreeAddr(void) {
+}
+
+static void _Dispose(void) {
+}
+
+static int32_t _Lex(const char* code) {
+  return 0;
+}
+
+static void _PutI32(int32_t n) {
+  fprintf(stdout, "%d", n);
+}
+
+static void _PutStr(int32_t* n) {
+  fprintf(stdout, "%s", (const char*)n);
+}
+
+static void _PutLn(void) {
+  fprintf(stdout, "\n");
+}
+
+static void _Sleep(uint32_t t) {
+  usleep(t * CLOCKS_PER_SEC / 1000);
+}
+
+static void _AddMem(int32_t addr) {
+  gMem.addr[gMem.count++] = addr;
+}
+
+static int _Xor128(void) {
+  return 0;
+}
+
+static void* funcTable[] = {
+  _PutI32, _PutStr, _PutLn, malloc,
+  _Xor128, printf, _AddMem, _Sleep,
+  fopen, fprintf, fclose, fgets,
+  free, _FreeAddr,
+};
+
+static int _Execute(const char* code) {
+  return 0;
+}
 
 int main(int argc, char* argv[]) {
   return 0;
