@@ -175,6 +175,14 @@ public:
     return ptr_;
   }
 
+  int UseCount(void) const tyr_noexcept {
+    return nullptr != rc_ ? *rc_ : 0;
+  }
+
+  bool Unique(void) const tyr_noexcept {
+    return UseCount() == 1;
+  }
+
   void Swap(SmartArray<T>& other) tyr_noexcept {
     std::swap(ptr_, other.ptr_);
     std::swap(ra_, other.ra_);
