@@ -68,4 +68,7 @@ typedef unsigned char byte_t;
   }\
 } while (false)
 
+#include "sp_uncopyable.h"
+#include "sp_mutex.h"
+
 #endif // __SP_HEADER_H__
