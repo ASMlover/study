@@ -36,7 +36,7 @@ public:
     TYR_CHECK(0 == pthread_mutex_init(&mtx_, nullptr));
   }
 
-  ~_Mutex(void) {
+  ~Mutex(void) {
     TYR_CHECK(0 == pthread_mutex_destroy(&mtx_));
   }
 
