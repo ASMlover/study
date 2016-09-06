@@ -24,60 +24,31 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef TYR_HEADER_H
-#define TYR_HEADER_H
+#ifndef TYR_POSIX_MUTEX_HEADER_H
+#define TYR_POSIX_MUTEX_HEADER_H
 
-#if defined(_WINDOWS_) || defined(_WIN32) || defined(_WIN64)
-# define TYR_WIN
-#elif defined(__linux__)
-# define TYR_LNX
-#elif defined(__APPLE__) || defined(__MACH__)
-# define TYR_MAC
-#else
-# error "INVALID PLATFORM !!!"
-#endif
+namespace tyr {
 
-#if defined(TYR_WIN)
-# include <Windows.h>
-# include <process.h>
+class Mutex : private UnCopyable {
+  pthread_mutex_t mtx_;
+public:
+  Mutex(void) {
+    TYR_CHECK(0 == pthread_mutex_init(&mtx_, nullptr));
+  }
 
-# define __func__ __FUNCTION__
-#else
-# include <sys/stat.h>
-# include <sys/types.h>
-# include <pthread.h>
-# include <unistd.h>
-#endif
+  ~Mutex(void) {
+    TYR_CHECK(0 == pthread_mutex_destroy(&mtx_));
+  }
 
-#include <assert.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+  void Lock(void) {
+    TYR_CHECK(0 == pthread_mutex_lock(&mtx_));
+  }
 
-#include <functional>
-#include <iostream>
-#include <memory>
-#include <stdexcept>
-#include <string>
-#include <utility>
+  void Unlock(void) {
+    TYR_CHECK(0 == pthread_mutex_unlock(&mtx_));
+  }
+};
 
-#define UNUSED(x) {x = x;}
-#define TYR_CHECK(cond) do {\
-  if (!(cond)) {\
-    fprintf(stderr,\
-        "[%s:%d] Assertion failed in %s() - %s\n",\
-        __FILE__,\
-        __LINE__,\
-        __func__,\
-        #cond);\
-    fflush(stderr);\
-    abort();\
-  }\
-} while (false)
+}
 
-#include "TUnCopyable.h"
-#include "TLocker.h"
-
-#endif // TYR_HEADER_H
+#endif // TYR_POSIX_MUTEX_HEADER_H
