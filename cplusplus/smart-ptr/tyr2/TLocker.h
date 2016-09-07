@@ -29,11 +29,11 @@
 
 namespace tyr {
 
-template <typename MutexT>
+template <typename TMutex>
 class LockerGuard : private UnCopyable {
-  MutexT& mtx_;
+  TMutex& mtx_;
 public:
-  explicit LockerGuard(MutexT& mtx)
+  explicit LockerGuard(TMutex& mtx)
     : mtx_(mtx) {
     mtx_.Lock();
   }

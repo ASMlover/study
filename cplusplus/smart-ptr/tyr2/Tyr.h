@@ -79,5 +79,6 @@
 
 #include "TUnCopyable.h"
 #include "TLocker.h"
+#include "TAtomicCounter.h"
 
 #endif // TYR_HEADER_H
