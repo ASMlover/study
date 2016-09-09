@@ -28,7 +28,7 @@
 #define __SP_HEADER_H__
 
 #if defined(_WINDOWS_) || defined(_WIN32) || defined(_WIN64)
-# define SP_WIN
+# define SP_WINDOWS
 #elif defined(__linux__)
 # define SP_LINUX
 #elif defined(__APPLE__) || defined(__MACH__)
@@ -37,12 +37,14 @@
 # error "does not support unknown platform ..."
 #endif
 
-#if defined(SP_WIN)
+#if defined(SP_WINDOWS)
 # include <Windows.h>
 # include <process.h>
 
 # define __func__ __FUNCTION__
 #else
+# include <sys/stat.h>
+# include <sys/types.h>
 # include <pthread.h>
 # include <unistd.h>
 #endif
@@ -52,6 +54,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+#include <functional>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <utility>
 
 typedef unsigned char byte_t;
 

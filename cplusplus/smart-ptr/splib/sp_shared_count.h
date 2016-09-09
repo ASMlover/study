@@ -31,71 +31,176 @@
 
 namespace sp {
 
+class WeakCount;
 class SharedCount {
-  CountedBase* ptr_;
+  CountedBase* pi_;
+
+  friend class WeakCount;
 public:
   SharedCount(void)
-    : ptr_(nullptr) {
+    : pi_(nullptr) {
   }
 
   template <typename Y>
   explicit SharedCount(Y* p)
-    : ptr_(nullptr) {
-    ptr_ = new CountedImplDelete<Y>(p);
+    : pi_(nullptr) {
+    try {
+      pi_ = new CountedImplDelete<Y>(p);
+    }
+    catch (...) {
+      if (nullptr != p)
+        delete p;
+    }
   }
 
   template <typename Y, typename D>
   SharedCount(Y* p, D d)
-    : ptr_(nullptr) {
-    ptr_ = new CountedImplDestructor<Y, D>(p, d);
+    : pi_(nullptr) {
+    try {
+      pi_ = new CountedImplDestructor<Y, D>(p, d);
+    }
+    catch (...) {
+      if (nullptr != p)
+        d(p);
+    }
   }
 
   ~SharedCount(void) {
-    if (nullptr != ptr_)
-      ptr_->Release();
+    if (nullptr != pi_)
+      pi_->Release();
   }
 
-  SharedCount(const SharedCount& other)
-    : ptr_(other.ptr_) {
-    if (nullptr != ptr_)
-      ptr_->AddRefCopy();
+  explicit SharedCount(const WeakCount& r);
+
+  SharedCount(const SharedCount& r)
+    : pi_(r.pi_) {
+    if (nullptr != pi_)
+      pi_->AddRefCopy();
   }
 
-  SharedCount(SharedCount&& other)
-    : ptr_(other.ptr_) {
-    other.ptr_ = nullptr;
+  SharedCount(SharedCount&& pi_)
+    : pi_(r.pi_) {
+    r.pi_ = nullptr;
   }
 
-  SharedCount& operator=(const SharedCount& other) {
-    CountedBase* tmp = other.ptr_;
-    if (tmp != ptr_) {
+  SharedCount& operator=(const SharedCount& r) {
+    CountedBase* tmp = r.pi_;
+    if (tmp != pi_) {
       if (nullptr != tmp)
         tmp->AddRefCopy();
-      if (nullptr != ptr_)
-        ptr_->Release();
-      ptr_ = tmp;
+      if (nullptr != pi_)
+        pi_->Release();
+      pi_ = tmp;
     }
-
     return *this;
   }
 
-  void Swap(SharedCount& other) {
-    CountedBase* tmp = other.ptr_;
-    other.ptr_ = ptr_;
-    ptr_ = tmp;
+  void Swap(SharedCount& r) {
+    std::swap(pi_, r.pi_);
   }
 
-  long UseCount(void) const {
-    return nullptr != ptr_ ? ptr_->UseCount() : 0;
+  uint32_t UseCount(void) const {
+    return nullptr != pi_ ? pi_->UseCount() : 0;
   }
 
   bool Unique(void) const {
-    return UseCount() == 1;
+    return 1 == UseCount();
+  }
+
+  bool Empty(void) const {
+    return nullptr == pi_;
+  }
+
+  friend inline bool operator==(const SharedCount& a, const SharedCount& b) {
+    return a.pi_ == b.pi_;
+  }
+
+  friend inline bool operator<(const SharedCount& a, const SharedCount& b) {
+    return std::less<CountedBase*>()(a.pi_, b.pi_);
   }
 };
 
 class WeakCount {
+  CountedBase* pi_;
+
+  friend class SharedCount;
+public:
+  WeakCount(void)
+    : pi_(nullptr) {
+  }
+
+  explicit WeakCount(const SharedCount& r)
+    : pi_(r.pi_) {
+    if (nullptr != pi_)
+      pi_->WeakAddRef();
+  }
+
+  ~WeakCount(void) {
+    if (nullptr != pi_)
+      pi_->WeakRelease();
+  }
+
+  WeakCount(const WeakCount& r)
+    : pi_(r.pi_) {
+    if (nullptr != pi_)
+      pi_->WeakAddRef();
+  }
+
+  WeakCount(WeakCount&& r)
+    : pi_(r.pi_) {
+    r.pi_ = nullptr;
+  }
+
+  WeakCount& operator=(const WeakCount& r) {
+    CountedBase* tmp = r.pi_;
+    if (pi_ != tmp) {
+      if (nullptr != tmp)
+        tmp->WeakAddRef();
+      if (nullptr != pi_)
+        pi_->WeakRelease();
+      pi_ = tmp;
+    }
+    return *this;
+  }
+
+  WeakCount& operator=(const SharedCount& r) {
+    CountedBase* tmp = r.pi_;
+    if (pi_ != tmp) {
+      if (nullptr != tmp)
+        tmp->WeakAddRef();
+      if (nullptr != pi_)
+        pi_->WeakRelease();
+      pi_ = tmp;
+    }
+    return *this;
+  }
+
+  void Swap(WeakCount& r) {
+    std::swap(pi_, r.pi_);
+  }
+
+  uint32_t UseCount(void) const {
+    return nullptr != pi_ ? pi_->UseCount() : 0;
+  }
+
+  bool Empty(void) const {
+    return nullptr == pi_;
+  }
+
+  friend inline bool operator==(const WeakCount& a, const WeakCount& b) {
+    return a.pi_ == b.pi_;
+  }
+
+  friend inline bool operator<(const WeakCount& a, const WeakCount& b) {
+    return std::less<CountedBase*>()(a.pi_, b.pi_);
+  }
 };
+
+SharedCount::SharedCount(const WeakCount& r)
+  : pi_(r.pi_) {
+  if (nullptr != pi_ && !pi_->AddRefLock())
+    pi_ = nullptr;
+}
 
 }
 

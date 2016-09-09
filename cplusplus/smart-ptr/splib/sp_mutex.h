@@ -45,7 +45,7 @@ public:
 
 }
 
-#if defined(SP_WIN)
+#if defined(SP_WINDOWS)
 # include "sp_win_mutex.h"
 #else
 # include "sp_posix_mutex.h"

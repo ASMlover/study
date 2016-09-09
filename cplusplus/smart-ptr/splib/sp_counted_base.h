@@ -32,8 +32,8 @@
 namespace sp {
 
 class CountedBase : private UnCopyable {
-  long shared_count_;
-  long weak_count_;
+  uint32_t shared_count_;
+  uint32_t weak_count_;
   mutable Mutex mutex_;
 public:
   CountedBase(void)
@@ -59,13 +59,13 @@ public:
     bool r;
     {
       LockerGuard<Mutex> guard(mutex_);
-      r = shared_count_ == 0 ? false : (++shared_count_, true);
+      r = 0 == shared_count_ ? false : (++shared_count_, true);
     }
     return r;
   }
 
   void Release(void) {
-    long new_shared_count;
+    uint32_t new_shared_count;
     {
       LockerGuard<Mutex> guard(mutex_);
       new_shared_count = --shared_count_;
@@ -83,19 +83,18 @@ public:
   }
 
   void WeakRelease(void) {
-    long new_weak_count;
+    uint32_t new_weak_count;
     {
       LockerGuard<Mutex> guard(mutex_);
       new_weak_count = --weak_count_;
     }
 
-    if (0 == weak_count_) {
+    if (0 == weak_count_)
       Destroy();
-    }
   }
 
-  long UseCount(void) const {
-    long r;
+  uint32_t UseCount(void) const {
+    uint32_t r;
     {
       LockerGuard<Mutex> guard(mutex_);
       r = shared_count_;
