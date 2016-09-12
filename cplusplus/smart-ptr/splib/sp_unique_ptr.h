@@ -59,9 +59,68 @@ public:
     , del_(d) {
   }
 
+  UniquePtr(T* p, D&& d)
+    : ptr_(p)
+    , del_(std::move(d)) {
+  }
+
   ~UniquePtr(void) {
     if (nullptr != ptr_)
       del_(ptr_);
+  }
+
+  UniquePtr(UniquePtr&& r)
+    : ptr_(r.ptr_)
+    , del_(std::move(r.del_)) {
+    r.ptr_ = nullptr;
+  }
+
+  void Reset(T* p = nullptr) {
+    SelfType(p).Swap(*this);
+  }
+
+  void Swap(UniquePtr& r) {
+    std::swap(ptr_, r.ptr_);
+    std::swap(del_, r.del_);
+  }
+
+  T* Release(void) {
+    T* p = Get();
+    ptr_ = nullptr;
+    return p;
+  }
+
+  D& GetDeleter(void) const {
+    return del_;
+  }
+
+  UniquePtr& operator=(std::nullptr_t) {
+    Reset();
+    return *this;
+  }
+
+  UniquePtr& operator=(UniquePtr&& r) {
+    if (this != &r) {
+      Reset(r.Release());
+      del_ = std::forward<D>(r.del_);
+    }
+    return *this;
+  }
+
+  T* operator->(void) const {
+    return ptr_;
+  }
+
+  T& operator*(void) const {
+    return *ptr_;
+  }
+
+  T* Get(void) const {
+    return ptr_;
+  }
+
+  explicit operator bool(void) const {
+    return nullptr != ptr_;
   }
 };
 
