@@ -28,6 +28,7 @@
 #define __SP_SHARED_COUNT_HEADER_H__
 
 #include "sp_counted_impl.h"
+#include "sp_unique_ptr.h"
 
 namespace sp {
 
@@ -71,6 +72,13 @@ public:
   }
 
   explicit SharedCount(const WeakCount& r);
+
+  template <typename Y, typename D>
+  explicit SharedCount(UniquePtr<Y, D>& r)
+    : pi_(nullptr) {
+    pi_ = new CountedImplDestructor<Y, D>(r.Get(), r.GetDeleter());
+    r.Release();
+  }
 
   SharedCount(const SharedCount& r)
     : pi_(r.pi_) {
