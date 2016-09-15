@@ -76,6 +76,8 @@ typedef unsigned char byte_t;
   }\
 } while (false)
 
+#define UNUSED(x) { x = x; }
+
 #include "sp_uncopyable.h"
 #include "sp_mutex.h"
 
