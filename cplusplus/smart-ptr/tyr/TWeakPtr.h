@@ -55,7 +55,6 @@ public:
   WeakPtr& operator=(const WeakPtr& r) {
     px_ = r.px_;
     pn_ = r.pn_;
-
     return *this;
   }
 
@@ -63,7 +62,6 @@ public:
   WeakPtr& operator=(const WeakPtr<Y>& r) {
     px_ = r.Lock().Get();
     pn_ = r.pn_;
-
     return *this;
   }
 
@@ -76,12 +74,14 @@ public:
   WeakPtr(WeakPtr&& r)
     : px_(r.px_)
     , pn_(static_cast<WeakCount&&>(r.pn_)) {
+    r.px_ = nullptr;
   }
 
   template <typename Y>
   WeakPtr(WeakPtr<Y>&& r)
     : px_(r.Lock().Get())
     , pn_(static_cast<WeakCount&&>(r.pn_)) {
+    r.px_ = nullptr;
   }
 
   WeakPtr& operator=(WeakPtr&& r) {
@@ -105,7 +105,6 @@ public:
   WeakPtr& operator=(const SmartPtr<Y>& r) {
     px_ = r.px_;
     pn_ = r.pn_;
-
     return *this;
   }
 
@@ -129,11 +128,21 @@ public:
     std::swap(px_, r.px_);
     pn_.Swap(r.pn_);
   }
+
+  template <typename Y>
+  bool Less(const WeakPtr<Y>& r) const {
+    return pn_ < r.pn_;
+  }
+
+  template <typename Y>
+  bool Less(const SmartPtr<Y>& r) const {
+    return pn_ < r.pn_;
+  }
 };
 
 template <typename T, typename U>
 inline bool operator<(const WeakPtr<T>& a, const WeakPtr<U>& b) {
-  return a.pn_ < b.pn_;
+  return a.Less(b);
 }
 
 template <typename T>
