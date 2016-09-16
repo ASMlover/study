@@ -25,7 +25,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-OUT	= demo
+OUT	= tyr
 RM	= rm
 CC	= clang++
 CFLAGS	= -g -O2 -Wall -std=c++0x
