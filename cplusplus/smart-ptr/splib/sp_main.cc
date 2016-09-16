@@ -24,11 +24,45 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "sp.h"
+#include "sp_smart_ptr.h"
+
+class Person : sp::UnCopyable {
+  std::string name_;
+  int age_;
+public:
+  Person(const std::string& name, int age)
+    : name_(name)
+    , age_(age) {
+  }
+
+  void Display(void) {
+    std::cout << "{name => `" << name_ << "`, age => " << age_ << "}" << std::endl;
+  }
+
+  const char* GetName(void) const {
+    return name_.c_str();
+  }
+
+  int GetAge(void) const {
+    return age_;
+  }
+};
+
+std::ostream& operator<<(std::ostream& cout, const Person& p) {
+  return cout << "{name => `" << p.GetName() << "`, age => " << p.GetAge() << "}";
+}
+
+void sp_SmartPtrTest(void) {
+  sp::SmartPtr<Person> p(new Person("Jack.Tomy", 33));
+  p->Display();
+  std::cout << *p << std::endl;
+}
 
 int main(int argc, char* argv[]) {
   UNUSED(argc)
   UNUSED(argv)
+
+  sp_SmartPtrTest();
 
   return 0;
 }
