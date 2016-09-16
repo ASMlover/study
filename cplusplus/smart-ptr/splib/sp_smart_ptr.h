@@ -39,7 +39,7 @@ class SmartPtr {
 
   typedef SmartPtr<T> SelfType;
 
-  template <typename T> friend class WeakPtr;
+  template <typename Y> friend class WeakPtr;
 public:
   SmartPtr(void)
     : px_(nullptr)

@@ -86,7 +86,7 @@ public:
       pi_->AddRefCopy();
   }
 
-  SharedCount(SharedCount&& pi_)
+  SharedCount(SharedCount&& r)
     : pi_(r.pi_) {
     r.pi_ = nullptr;
   }
