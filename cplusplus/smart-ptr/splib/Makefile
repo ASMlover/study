@@ -29,7 +29,7 @@ OUT	= sp
 RM	= rm
 CC	= g++
 CFLAGS	= -g -O2 -Wall -std=c++0x
-LDFLAGS	= -lpthread
+LDFLAGS	= -lpthread -lc
 OBJS	= sp_main.o
 
 $(OUT): $(OBJS)
