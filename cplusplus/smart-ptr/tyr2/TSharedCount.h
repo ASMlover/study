@@ -98,9 +98,7 @@ public:
   }
 
   void Swap(SharedCount& r) {
-    CountedBase* tmp = r.pi_;
-    r.pi_ = pi_;
-    pi_ = tmp;
+    std::swap(pi_, r.pi_);
   }
 
   uint32_t UseCount(void) const {
@@ -184,9 +182,7 @@ public:
   }
 
   void Swap(WeakCount& r) {
-    CountedBase* tmp = r.pi_;
-    r.pi_ = pi_;
-    pi_ = tmp;
+    std::swap(pi_, r.pi_);
   }
 
   uint32_t UseCount(void) const {
