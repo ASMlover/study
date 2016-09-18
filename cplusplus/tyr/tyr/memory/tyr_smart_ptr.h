@@ -29,6 +29,8 @@
 
 namespace tyr {
 
+template <typename T> class WeakPtr;
+
 class RefPointer : private UnCopyable {
 public:
   virtual ~RefPointer(void) tyr_noexcept {}
@@ -91,6 +93,11 @@ public:
     : ptr_(p)
     , rp_(new RefPtrDelete<T>(ptr_))
     , rc_(new AtomicCounter(1)) {
+  }
+
+  template <typename Y>
+  explicit SmartPtr<const WeakPtr<Y>& p) {
+    // TODO:
   }
 
   template <typename U, typename D>
@@ -173,6 +180,14 @@ public:
 
   T* Get(void) const tyr_noexcept {
     return ptr_;
+  }
+
+  int UseCount(void) const tyr_noexcept {
+    return nullptr != rc_ ? *rc_ : 0;
+  }
+
+  bool Unique(void) const tyr_noexcept {
+    return UseCount() == 1;
   }
 
   void Swap(SmartPtr<T>& other) tyr_noexcept {

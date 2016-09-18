@@ -31,8 +31,8 @@
 
 enum TokenType {
   TOKEN_NONE,
-  TOKEN_LPARAM,   /* ( */
-  TOKEN_RPARAM,   /* ) */
+  TOKEN_LPAREN,   /* ( */
+  TOKEN_RPAREN,   /* ) */
   TOKEN_LBRACE,   /* { */
   TOKEN_RBRACE,   /* } */
   TOKEN_LBRACKET, /* [ */

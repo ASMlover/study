@@ -27,10 +27,68 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "common.h"
+#include "futil.h"
+#include "global.h"
+#include "parser.h"
+
+static void
+_Usage(int err)
+{
+  const char* str = "usage: barry [-hv] <file>";
+  if (err)
+    ERROR("%s\n", str);
+  else
+    ERROR("%s\n", str);
+}
 
 int
 main(int argc, char* argv[]) {
-  fprintf(stdout, "Hello, world!\n");
+  const char* file = NULL;
+  const char* src = NULL;
 
-  return 0;
+  if (argc < 2) {
+    _Usage(1);
+    return 1;
+  }
+
+  (void)*argv++;
+  FOREACH(argv, char* opt, {
+      if ('-' == opt[0]) {
+        if (EQUAL(opt, "-h") || EQUAL(opt, "--help")) {
+          _Usage(0);
+          exit(0);
+        }
+        else if (EQUAL(opt, "-v") || EQUAL(opt, "--version")) {
+          ECHO("barry v%s\n", BARRY_VERSION);
+          exit(0);
+        }
+        else {
+          ERROR("error: unknown option `%s`\n", opt);
+          _Usage(1);
+          exit(1);
+        }
+        continue;
+      }
+
+      file = opt;
+      break;
+  });
+
+  if (0 != fu_Exists(file)) {
+    ERROR("Error: cannot find the file `%s`\n", file);
+    return 1;
+  }
+
+  src = fu_Read(file);
+  if (NULL == src) {
+    ERROR("Error: error reading `%s`\n", file);
+    return 1;
+  }
+
+  barry_InitGlobals();
+  return barry_Parse(file, src, NULL);
 }
