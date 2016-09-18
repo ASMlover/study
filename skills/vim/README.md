@@ -171,7 +171,7 @@
 
 ## **Windows下编译vim**
   * 下载最新的vim源代码(这里以vim74为例子)
-  * 进入vim目录
+  * 进入vim目录(vim\src)
     - 首先修改bigvim.bat(32位平台)或bigvim64.bat(64位平台)
     - 这里我的例子(32-bit/64-bit), 然后使用`VS2015 x64 本机工具命令提示符`工具进入vim\src目录:
 ```shell
