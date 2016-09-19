@@ -32,13 +32,13 @@
 namespace tyr {
 
 template <typename T> class WeakPtr;
-
 template <typename T>
 class SmartPtr {
   T* px_;
   SharedCount pn_;
 
   typedef SmartPtr<T> SelfType;
+  template <typename Y> friend class WeakPtr;
 public:
   SmartPtr(void)
     : px_(nullptr)
@@ -53,8 +53,7 @@ public:
   template <typename Y>
   explicit SmartPtr(Y* p)
     : px_(p)
-    , pn_() {
-    SharedCount(p).Swap(pn_);
+    , pn_(p) {
   }
 
   template <typename Y, typename D>
@@ -82,8 +81,10 @@ public:
 
   template <typename Y>
   explicit SmartPtr(const WeakPtr<Y>& r)
-    : px_(r.px_)
+    : px_(nullptr)
     , pn_(r.pn_) {
+    if (!pn_.Empty())
+      px_ = r.px_;
   }
 
   SmartPtr& operator=(const SmartPtr& r) {
@@ -151,7 +152,71 @@ public:
     std::swap(px_, r.px_);
     pn_.Swap(r.pn_);
   }
+
+  T& operator*(void) const {
+    return *px_;
+  }
+
+  T& operator[](std::ptrdiff_t i) const {
+    // px_ should be a pointer of array
+    return px_[i];
+  }
+
+  T* operator->(void) const {
+    return px_;
+  }
+
+  T* Get(void) const {
+    return px_;
+  }
+
+  explicit operator bool(void) const {
+    return !pn_.Empty();
+  }
+
+  uint32_t UseCount(void) const {
+    return pn_.UseCount();
+  }
+
+  bool Unique(void) const {
+    return pn_.Unique();
+  }
 };
+
+template <typename T, typename U>
+inline bool operator==(const SmartPtr<T>& a, const SmartPtr<U>& b) {
+  return a.Get() == b.Get();
+}
+
+template <typename T, typename U>
+inline bool operator!=(const SmartPtr<T>& a, const SmartPtr<U>& b) {
+  return a.Get() != b.Get();
+}
+
+template <typename T>
+inline bool operator!=(const SmartPtr<T>& a, const SmartPtr<T>& b) {
+  return a.Get() != b.Get();
+}
+
+template <typename T>
+inline bool operator==(const SmartPtr<T>& p, std::nullptr_t) {
+  return p.Get() == nullptr;
+}
+
+template <typename T>
+inline bool operator==(std::nullptr_t, const SmartPtr<T>& p) {
+  return nullptr == p.Get();
+}
+
+template <typename T>
+inline bool operator!=(const SmartPtr<T>& p, std::nullptr_t) {
+  return p.Get() != nullptr;
+}
+
+template <typename T>
+inline bool operator!=(std::nullptr_t, const SmartPtr<T>& p) {
+  return nullptr != p.Get();
+}
 
 }
 
