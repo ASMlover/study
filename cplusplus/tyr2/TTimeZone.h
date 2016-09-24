@@ -47,8 +47,8 @@ public:
   time_t from_localtime(const struct tm& t) const;
 
   static struct tm to_utc_time(time_t sec_since_epoch, bool yday = false);
-  static time_t from_utc_time(const struct tm& t);
-  static time_t from_utc_time(int year, int month, int day, int hour, int min, int msec);
+  static time_t from_utc_time(const struct tm& utc);
+  static time_t from_utc_time(int year, int month, int day, int hour, int min, int sec);
 };
 
 }
