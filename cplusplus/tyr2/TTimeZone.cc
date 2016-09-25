@@ -240,7 +240,7 @@ struct tm TimeZone::to_localtime(time_t sec_since_epoch) const {
     gmtime_r(&local_seconds, &ltime);
     ltime.tm_isdst = local->isdst;
     ltime.tm_gmtoff = local->gmt_offset;
-    ltime.tm_zone = &data.abbreviation[local->arrb_index];
+    ltime.tm_zone = (char*)&data.abbreviation[local->arrb_index];
   }
   return ltime;
 }
@@ -256,7 +256,7 @@ time_t TimeZone::from_utc_time(const struct tm& utc) {
 time_t TimeZone::from_utc_time(int year, int month, int day, int hour, int min, int sec) {
   Date date(year, month, day);
   int sec_in_day = hour * 3600 + min * 60 + sec;
-  time_t days = date.internal_date() - Date::kUnixDay19700101;
+  time_t days = date.unix_day() - Date::kUnixDay19700101;
   return days * kSecondsPerDay + sec_in_day;
 }
 
