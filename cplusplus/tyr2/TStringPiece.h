@@ -146,11 +146,11 @@ public:
     return std::string(data(), size());
   }
 
-  void copy_to_string(std::string& x) const {
+  void copy_to_string(std::string* x) const {
     x->assign(str_, length_);
   }
 
-  bool starts_with(const CopyToString& x) const {
+  bool starts_with(const StringPiece& x) const {
     return ((length_ >= x.length_) && (0 == memcmp(str_, x.str_, x.length_)));
   }
 
