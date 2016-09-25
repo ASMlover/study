@@ -1,0 +1,16 @@
+*.swp
+*.out
+*.o
+*.a
+*.so
+*.exe
+*.lib
+*.dll
+*.obj
+*.pdb
+*.exp
+*.ilk
+*.idb
+*.manifest
+*.pyc
+*.devil
