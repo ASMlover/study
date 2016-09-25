@@ -245,8 +245,46 @@ struct tm TimeZone::to_localtime(time_t sec_since_epoch) const {
   return ltime;
 }
 
-// time_t from_localtime(const struct tm& t) const;
-// static struct tm to_utc_time(time_t sec_since_epoch, bool yday = false);
+time_t TimeZone::from_localtime(const struct tm& t) const {
+  assert(nullptr != data_);
+  const Data& data(*data_);
+
+  struct tm tmp = t;
+  time_t seconds = timegm(&tmp);
+  Transition sentry(0, seconds, 0);
+  const Localtime* local = find_localtime(data, sentry, Compare(false));
+  if (t.tm_isdst) {
+    struct tm try_tm = to_localtime(seconds - local->gmt_offset);
+    if (!try_tm.tm_isdst && try_tm.tm_hour == t.tm_hour && try_tm.tm_min == t.tm_min)
+      seconds -= 3600;
+  }
+  return seconds - local->gmt_offset;
+}
+
+struct tm TimeZone::to_utc_time(time_t sec_since_epoch, bool yday) {
+  struct tm utc;
+  memset(&utc, 0, sizeof(utc));
+  utc.tm_zone = "GMT";
+  int seconds = static_cast<int>(sec_since_epoch % kSecondsPerDay);
+  int days = static_cast<int>(sec_since_epoch / kSecondsPerDay);
+  if (seconds < 0) {
+    seconds += kSecondsPerDay;
+    --days;
+  }
+  fill_time(seconds, &utc);
+  Date date(days + Date::kUnixDay19700101);
+  Date::InternalDate ymd = date.internal_date();
+  utc.tm_year = ymd.year - 1900;
+  utc.tm_mon = ymd.month - 1;
+  utc.tm_mday = ymd.day;
+  utc.tm_wday = date.week_day();
+
+  if (yday) {
+    Date start(ymd.year, 1, 1);
+    utc.tm_yday = date.unix_day() - start.unix_day();
+  }
+  return utc;
+}
 
 time_t TimeZone::from_utc_time(const struct tm& utc) {
   return from_utc_time(
