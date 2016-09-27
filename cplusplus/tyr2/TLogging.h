@@ -102,6 +102,30 @@ public:
   static void set_timezone(const TimeZone& tz);
 };
 
+#define TL_TRACE if (tyr::Logger::log_level() <= tyr::Logger::LogLevel::TRACE)\
+  tyr::Logger(__FILE__, __LINE__, tyr::Logger::LogLevel::TRACE, __func__).stream()
+#define TL_DEBUG if (tyr::Logger::log_level() <= tyr::Logger::LogLevel::DEBUG)\
+  tyr::Logger(__FILE__, __LINE__, tyr::Logger::LogLevel::DEBUG, __func__).stream()
+#define TL_INFO if (tyr::Logger::log_level() <= tyr::Logger::LogLevel::INFO)\
+  tyr::Logger(__FILE__, __LINE__).stream()
+#define TL_WARN tyr::Logger(__FILE__, __LINE__, tyr::Logger::LogLevel::WARN).stream()
+#define TL_ERROR tyr::Logger(__FILE__, __LINE__, tyr::Logger::LogLevel::ERROR).stream()
+#define TL_FATAL tyr::Logger(__FILE__, __LINE__, tyr::Logger::LogLevel::FATAL).stream()
+#define TL_SYSERR tyr::Logger(__FILE__, __LINE__, false).stream()
+#define TL_SYSFATAL tyr::Logger(__FILE__, __LINE__, true).stream()
+
+const char* strerror_tl(int saved_errno);
+
+#define TCHECK_NOTNULL(v)\
+  tyr::check_not_null(__FILE__, __LINE__, "'" #v "' Must be not null", (val))
+
+template <typename T>
+T* check_not_null(Logger::SourceFile file, int lineno, const char* names, T* p) {
+  if (nullptr == p)
+    Logger(file, lineno, Logger::LogLevel::FATAL).stream() << names;
+  return p;
+}
+
 };
 
 #endif // __TYR_LOGGING_HEADER_H__
