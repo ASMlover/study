@@ -41,6 +41,12 @@ typedef struct tyr_context {
   const char* json;
 } tyr_context;
 
+#define TYR_PARSE_IDENTITY(c, id, n)\
+  EXPECT(c, id[0]);\
+  if (0 != strncmp(c->json, id, (n)))\
+    return TYR_INVALID_VALUE;\
+  c->json += (n) - 1
+
 static void tyr_parse_whitespace(tyr_context* c) {
   const char* p = c->json;
   while (isspace(*p))
@@ -49,37 +55,72 @@ static void tyr_parse_whitespace(tyr_context* c) {
 }
 
 static int tyr_parse_null(tyr_context* c, tyr_value* value) {
-  EXPECT(c, 'n');
-  if (0 != strncmp(c->json, "null", 4))
-    return TYR_PARSE_INVALID_VALUE;
-  c->json += 3;
+  TYR_PARSE_IDENTITY(c, "null", 4);
   value->type = TYR_NULL;
-  return TYR_PARSE_OK;
+  return TYR_OK;
+}
+
+static int tyr_parse_true(tyr_context* c, tyr_value* value) {
+  TYR_PARSE_IDENTITY(c, "true", 4);
+  value->type = TYR_TRUE;
+  return TYR_OK;
+}
+
+static int tyr_parse_false(tyr_context* c, tyr_value* value) {
+  TYR_PARSE_IDENTITY(c, "false", 5);
+  value->type = TYR_FALSE;
+  return TYR_OK;
+}
+
+static int tyr_parse_number(tyr_context* c, tyr_value* value) {
+  char* end;
+  value->number = strtod(c->json, &end);
+  if (c->json == end)
+    return TYR_INVALID_VALUE;
+  c->json = end;
+  value->type = TYR_NUMBER;
+  return TYR_OK;
 }
 
 static int tyr_parse_value(tyr_context* c, tyr_value* value) {
   switch (*c->json) {
   case 'n':
     return tyr_parse_null(c, value);
+  case 't':
+    return tyr_parse_true(c, value);
+  case 'f':
+    return tyr_parse_false(c, value);
   case '\0':
-    return TYR_PARSE_EXPECT_VALUE;
+    return TYR_EXPECT_VALUE;
   default:
-    return TYR_PARSE_INVALID_VALUE;
+    return tyr_parse_number(c, value);
   }
 }
 
 int tyr_parse(tyr_value* value, const char* json) {
   tyr_context c;
+  int r;
   assert(NULL != value);
 
   c.json = json;
   value->type = TYR_NULL;
   tyr_parse_whitespace(&c);
-
-  return tyr_parse_value(&c, value);
+  if (TYR_OK == (r = tyr_parse_value(&c, value))) {
+    tyr_parse_whitespace(&c);
+    if ('\0' != *c.json) {
+      value->type = TYR_NULL;
+      r = TYR_ROOT_NOT_SINGULAR;
+    }
+  }
+  return r;
 }
 
 tyr_type tyr_get_type(const tyr_value* value) {
   assert(NULL != value);
   return value->type;
+}
+
+double tyr_get_number(const tyr_value* value) {
+  assert(NULL != value && TYR_NUMBER == value->type);
+  return value->number;
 }

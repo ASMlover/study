@@ -40,17 +40,19 @@ typedef enum {
 } tyr_type;
 
 typedef struct tyr_value {
+  double number;
   tyr_type type;
 } tyr_value;
 
 enum {
-  TYR_PARSE_OK = 0,
-  TYR_PARSE_EXPECT_VALUE,
-  TYR_PARSE_INVALID_VALUE,
-  TYR_PARSE_ROOT_NOT_SINGULAR,
+  TYR_OK = 0,
+  TYR_EXPECT_VALUE,
+  TYR_INVALID_VALUE,
+  TYR_ROOT_NOT_SINGULAR,
 };
 
-extern int tyr_parse(tyr_value* value, const char* json);
-extern tyr_type tyr_get_type(const tyr_value* value);
+int tyr_parse(tyr_value* value, const char* json);
+tyr_type tyr_get_type(const tyr_value* value);
+double tyr_get_number(const tyr_value* value);
 
 #endif /* __TYR_JSON_HEADER_H__ */
