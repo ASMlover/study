@@ -45,10 +45,10 @@ typedef struct tyr_value {
 } tyr_value;
 
 enum {
-  TYR_OK = 0,
-  TYR_EXPECT_VALUE,
-  TYR_INVALID_VALUE,
-  TYR_ROOT_NOT_SINGULAR,
+  TYR_PARSE_OK = 0,
+  TYR_PARSE_EXPECT_VALUE,
+  TYR_PARSE_INVALID_VALUE,
+  TYR_PARSE_ROOT_NOT_SINGULAR,
 };
 
 int tyr_parse(tyr_value* value, const char* json);
