@@ -29,6 +29,8 @@
 #ifndef __TYR_JSON_HEADER_H__
 #define __TYR_JSON_HEADER_H__
 
+#include <stddef.h>
+
 typedef enum {
   TYR_NULL,
   TYR_FALSE,
@@ -40,7 +42,10 @@ typedef enum {
 } tyr_type;
 
 typedef struct tyr_value {
-  double number;
+  union {
+    struct { char* s; size_t n; } string;
+    double number;
+  } u;
   tyr_type type;
 } tyr_value;
 
@@ -49,10 +54,25 @@ enum {
   TYR_PARSE_EXPECT_VALUE,
   TYR_PARSE_INVALID_VALUE,
   TYR_PARSE_ROOT_NOT_SINGULAR,
+  TYR_PARSE_NUMBER_TO_BIG,
+  TYR_PARSE_MISS_QUOTATION_MARK,
+  TYR_PARSE_INVALID_STRING_ESCAPE,
+  TYR_PARSE_INVALID_STRING_CHAR,
 };
 
+#define tyr_init(v) do { (v)->type = TYR_NULL; } while (0)
+#define tyr_set_nil(v) tyr_free(v)
+
 int tyr_parse(tyr_value* value, const char* json);
+void tyr_free(tyr_value* value);
 tyr_type tyr_get_type(const tyr_value* value);
+
+int tyr_get_boolean(const tyr_value* value);
+void tyr_set_boolean(tyr_value* value, int b);
 double tyr_get_number(const tyr_value* value);
+void tyr_set_number(tyr_value* value, double n);
+const char* tyr_get_string(const tyr_value* value);
+size_t tyr_get_string_length(const tyr_value* value);
+void tyr_set_string(tyr_value* value, const char* s, size_t n);
 
 #endif /* __TYR_JSON_HEADER_H__ */

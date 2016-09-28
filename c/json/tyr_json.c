@@ -74,7 +74,7 @@ static int tyr_parse_false(tyr_context* c, tyr_value* value) {
 
 static int tyr_parse_number(tyr_context* c, tyr_value* value) {
   char* end;
-  value->number = strtod(c->json, &end);
+  value->u.number = strtod(c->json, &end);
   if (c->json == end)
     return TYR_PARSE_INVALID_VALUE;
   c->json = end;
@@ -115,12 +115,55 @@ int tyr_parse(tyr_value* value, const char* json) {
   return r;
 }
 
+void tyr_free(tyr_value* value) {
+  assert(NULL != value);
+  if (TYR_STRING == value->type)
+    free(value->u.string.s);
+  value->type = TYR_NULL;
+}
+
 tyr_type tyr_get_type(const tyr_value* value) {
   assert(NULL != value);
   return value->type;
 }
 
+int tyr_get_boolean(const tyr_value* value) {
+  assert(NULL != value);
+  /* TODO: */
+  return 0;
+}
+
+void tyr_set_boolean(tyr_value* value, int b) {
+  assert(NULL != value);
+  /* TODO: */
+}
+
 double tyr_get_number(const tyr_value* value) {
   assert(NULL != value && TYR_NUMBER == value->type);
-  return value->number;
+  return value->u.number;
+}
+
+void tyr_set_number(tyr_value* value, double n) {
+  assert(NULL != value);
+  /* TODO: */
+}
+
+const char* tyr_get_string(const tyr_value* value) {
+  assert(NULL != value && TYR_STRING == value->type);
+  return value->u.string.s;
+}
+
+size_t tyr_get_string_length(const tyr_value* value) {
+  assert(NULL != value && TYR_STRING == value->type);
+  return value->u.string.n;
+}
+
+void tyr_set_string(tyr_value* value, const char* s, size_t n) {
+  assert(NULL != value && (NULL != s || 0 == n));
+  tyr_free(value);
+  value->u.string.s = (char*)malloc(n + 1);
+  memcpy(value->u.string.s, s, n);
+  value->u.string.s[n] = 0;
+  value->u.string.n = n;
+  value->type = TYR_STRING;
 }
