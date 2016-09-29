@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include "../devil_cond.h"
+#include "../internal/devil_internal.h"
 
 #undef NANOSEC
 #define NANOSEC ((uint64_t)1e9)

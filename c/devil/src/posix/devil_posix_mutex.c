@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include "../devil_mutex.h"
+#include "../internal/devil_internal.h"
 
 int
 devil_mutex_init(devil_mutex_t* mutex)

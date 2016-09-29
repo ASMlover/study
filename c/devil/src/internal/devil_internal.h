@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 ASMlover. All rights reserved.
+ * Copyright (c) 2016 ASMlover. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,25 +26,41 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef DEVIL_COND_HEADER_H
-#define DEVIL_COND_HEADER_H
+#ifndef DEVIL_INTERNAL_HEADER_H
+#define DEVIL_INTERNAL_HEADER_H
 
-#include <stdint.h>
+#include "../devil_config.h"
+#include "devil_internal_mutex.h"
 
-typedef struct devil_mutex_t devil_mutex_t;
-typedef struct devil_cond_t devil_cond_t;
+#if defined(DEVIL_WINDOWS)
+# include <Windows.h>
+  /* kernal mutex type definition */
+  typedef CRITICAL_SECTION kern_mutex_t;
 
-/*
- * @attention:
- *    All interfaces of condition variable,
- *    you must ensure the validity of the
- *    incoming parameters.
- */
-int devil_cond_init(devil_cond_t* cond, devil_mutex_t* mutex);
-void devil_cond_destroy(devil_cond_t* cond);
-void devil_cond_signal(devil_cond_t* cond);
-void devil_cond_broadcast(devil_cond_t* cond);
-void devil_cond_wait(devil_cond_t* cond);
-int devil_cond_timedwait(devil_cond_t* cond, uint32_t millitm);
+  /* kernal condition variable definition */
+  typedef struct kern_cond_t {
+    size_t waiters_count;
+    CRITICAL_SECTION waiters_count_lock;
+    HANDLE signal_event;
+    HANDLE broadcast_event;
+  } kern_cond_t;
+#else
+# include <pthread.h>
+  /* kernal mutex type definition */
+  typedef pthread_mutex_t kern_mutex_t;
 
-#endif  /* DEVIL_COND_HEADER_H */
+  /* kernal condition variable definition */
+  typedef pthread_cond_t kern_cond_t;
+#endif
+
+struct devil_mutex_t {
+  kern_mutex_t mutex;
+};
+
+/* condition variable definition */
+struct devil_cond_t {
+  devil_mutex_t* mutex;
+  kern_cond_t cond;
+};
+
+#endif  /* DEVIL_INTERNAL_HEADER_H */
