@@ -1,4 +1,4 @@
-# **AUTHORS for slib** #
+# **AUTHORS for devil** #
 ***
 
 

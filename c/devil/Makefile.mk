@@ -25,15 +25,15 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-OUT	= slib-test.exe 
+OUT	= devil.exe
 CC	= cl -c -nologo
 LINK	= link -nologo
 MT	= mt -nologo
-RM	= del 
+RM	= del
 CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -DNDEBUG\
 	-D_CRT_NONSTDC_NO_WARNINGS
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
-	-manifestfile:$(OUT).manifest -manifestuac:no 
+	-manifestfile:$(OUT).manifest -manifestuac:no
 OBJS	= sl_win_mutex.obj\
 	sl_win_spinlock.obj\
 	sl_allocator.obj\
@@ -55,27 +55,15 @@ OBJS	= sl_win_mutex.obj\
 	sl_test_cond.obj\
 	sl_test_thread.obj
 
-
-
-
-
 all: $(OUT)
-
-rebuild: clean all 
-
+rebuild: clean all
 clean:
 	$(RM) $(OUT) $(OBJS) *.pdb *.manifest *.ilk
-
-
-
-
 
 $(OUT): $(OBJS)
 	$(LINK) -out:$(OUT) $(OBJS) $(LDFLAGS)
 	$(MT) -manifest $(OUT).manifest -outputresource:$(OUT);1
-
 {.\src}.c{}.obj:
 	$(CC) $(CFLAGS) $<
-
 {.\test}.c{}.obj:
 	$(CC) $(CFLAGS) $<

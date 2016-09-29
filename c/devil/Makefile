@@ -25,30 +25,19 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-OUT	= slib-test
-CC	= gcc 
-RM	= rm 
+OUT	= devil
+CC	= gcc
+RM	= rm
 CFLAGS	= -g -O2 -Wall
 LDFLAGS	= -lpthread -lrt
 OBJS	= $(patsubst %.c,%.o,$(wildcard ./src/*.c ./src/posix/*.c ./test/*.c))
 
-
-
-
-
 all: $(OUT)
-
-rebuild: clean all 
-
+rebuild: clean all
 clean:
 	$(RM) $(OUT) $(OBJS)
 
-
-
-
-
 $(OUT): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
-
 $(OBJS): %.o:%.c
 	$(CC) -o $*.o -c $(CFLAGS) $^

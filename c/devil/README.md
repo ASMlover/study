@@ -1,24 +1,21 @@
-# **README for slib** #
+# **README for devil** #
 ***
 
-
-## **What's slib?** ##
+## **What's devil?** ##
  * It's a pure C library.
  * It's the base library for C programming.
  * It's just for studing.
- * It's a free and open source program based FreeBSD, everybody can use it.
+ * It's a free and open source program based FreeBSD, everyone can use it.
 
-
-
-## **Building slib** ##
- * **windows**
+## **Building devil** ##
+ * **Windows**
 
         step1: Setting environment for using MSVC.
         step2:
-          \> cd slib
-          \> nmake -f makefile.win 
+          \> cd devil
+          \> nmake -f makefile.mk
 
- * **linux**
+ * **Linux**
 
-          $ cd slib
+          $ cd devil
           $ make
