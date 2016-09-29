@@ -26,44 +26,42 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef __SL_CONDITION_HEADER_H__
-#define __SL_CONDITION_HEADER_H__ 
+#ifndef DEVIL_COND_HEADER_H
+#define DEVIL_COND_HEADER_H
 
-#include "sl_mutex.h"
+#include "devil_config.h"
+#include "devil_types.h"
+#include "devil_mutex.h"
 
-#if defined(_WINDOWS_) || defined(_MSC_VER)
-  #include <windows.h>
-  typedef struct cond_t {
+#if defined(DEVIL_WINDOWS)
+# include <Windows.h>
+  typedef struct kern_cond_t; {
     size_t waiters_count;
     CRITICAL_SECTION waiters_count_lock;
     HANDLE signal_event;
     HANDLE broadcast_event;
-  } cond_t;
-#elif defined(__linux__)
-  #include <pthread.h>
-  typedef pthread_cond_t cond_t;
+  } kern_cond_t;
+#else
+# include <pthread.h>
+  typedef pthread_cond_t kern_cond_t;
 #endif
 
-typedef struct sl_cond_t {
-  sl_mutex_t* mutex;
-  cond_t cond;
-} sl_cond_t;
-
-
+typedef struct devil_cond_t {
+  devil_mutex_t* mutex;
+  kern_cond_t cond;
+} devil_cond_t;
 
 /*
  * @attention:
- *    All interfaces of condition module, 
- *    you must ensure the validity of the 
+ *    All interfaces of condition variable,
+ *    you must ensure the validity of the
  *    incoming parameters.
  */
+int devil_cond_init(devil_cond_t* cond, devil_mutex_t* mutex);
+void devil_cond_destroy(devil_cond_t* cond);
+void devil_cond_signal(devil_cond_t* cond);
+void devil_cond_broadcast(devil_cond_t* cond);
+void devil_cond_wait(devil_cond_t* cond);
+int devil_cond_timedwait(devil_cond_t* cond, uint32_t millitm);
 
-extern int sl_cond_init(sl_cond_t* cond, sl_mutex_t* mutex);
-extern void sl_cond_destroy(sl_cond_t* cond);
-extern void sl_cond_signal(sl_cond_t* cond);
-extern void sl_cond_broadcast(sl_cond_t* cond);
-extern void sl_cond_wait(sl_cond_t* cond);
-extern int sl_cond_timedwait(sl_cond_t* cond, unsigned int millitm);
-
-
-#endif  /* __SL_CONDITION_HEADER_H__ */
+#endif  /* DEVIL_COND_HEADER_H */
