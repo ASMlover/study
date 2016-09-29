@@ -32,7 +32,15 @@
 namespace tyr {
 namespace CurrentThread {
 
-void cache_tid(void);
+// just for internal
+namespace internal {
+
+void set_cached_tid(int cached_tid);
+void set_thread_name(const char* name);
+
+}
+
+void cached_tid(void);
 int tid(void);
 const char* tid_string(void);
 int tid_string_length(void);

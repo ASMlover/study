@@ -45,7 +45,20 @@ __thread int tTidStringLength = 6;
 __thread const char* tThreadName = "unknown";
 static_assert(std::is_same<int, pid_t>::value, "pid_t should be int");
 
-void cache_tid(void) {
+namespace internal {
+
+void set_cached_tid(int cached_tid) {
+  tyr::CurrentThread::tCachedTid = cached_tid;
+}
+
+void set_thread_name(const char* name) {
+  tyr::CurrentThread::tThreadName = name;
+}
+
+}
+
+
+void cached_tid(void) {
   if (0 == tCachedTid) {
     tCachedTid = gettid();
     tTidStringLength = snprintf(tTidString, sizeof(tTidString), "%5d ", tCachedTid);
@@ -54,7 +67,7 @@ void cache_tid(void) {
 
 int tid(void) {
   if (__builtin_expect(tCachedTid == 0, 0))
-    cache_tid();
+    cached_tid();
   return tCachedTid;
 }
 
