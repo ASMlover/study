@@ -31,6 +31,17 @@
 namespace tyr {
 
 void Exception::fill_stack_trace(void) {
+  const int LEN = 256;
+  void* buffer[LEN];
+  int nptrs = backtrace(buffer, LEN);
+  char** strings = backtrace_symbols(buffer, nptrs);
+  if (nullptr != strings) {
+    for (int i = 0; i < nptrs; ++i) {
+      stack_.append(strings[i]);
+      stack_.push_back('\n');
+    }
+    free(strings);
+  }
 }
 
 Exception::Exception(const char* what)
