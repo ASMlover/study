@@ -26,71 +26,21 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <pthread.h>
-#include <assert.h>
-#include "../sl_allocator.h"
-#include "../sl_thread.h"
+#ifndef DEVIL_THREAD_HEADER_H
+#define DEVIL_THREAD_HEADER_H
 
+typedef struct devil_thread_t devil_thread_t;
 
-struct sl_thread_t {
-  pthread_t thread_id;
-  void (*routine)(void*);
-  void* argument;
-};
+/*
+ * @attention:
+ *    All interfaces of thread module,
+ *    you must ensure the validity of the
+ *    incoming parameters.
+ */
 
+devil_thread_t* devil_thread_create(void (*routine)(void*), void* arg);
+void devil_thread_release(devil_thread_t* thread);
+void devil_thread_start(devil_thread_t* thread);
+void devil_thread_join(devil_thread_t* thread);
 
-
-
-static inline void* 
-sl_thread_routine(void* arg)
-{
-  sl_thread_t* thread = (sl_thread_t*)arg;
-  assert(NULL != thread);
-
-  if (NULL != thread->routine)
-    thread->routine(thread->argument);
-
-  return NULL;
-}
-
-
-
-
-sl_thread_t* 
-sl_thread_create(void (*routine)(void*), void* arg)
-{
-  sl_thread_t* thread = (sl_thread_t*)sl_malloc(sizeof(sl_thread_t));
-  assert(NULL != thread);
-
-  thread->thread_id = 0;
-  thread->routine = routine;
-  thread->argument = arg;
-
-  return thread;
-}
-
-void 
-sl_thread_release(sl_thread_t* thread)
-{
-  sl_thread_join(thread);
-  sl_free(thread);
-}
-
-void 
-sl_thread_start(sl_thread_t* thread)
-{
-  int ret = pthread_create(&thread->thread_id, 
-      NULL, sl_thread_routine, thread);
-  assert(0 == ret);
-}
-
-void 
-sl_thread_join(sl_thread_t* thread)
-{
-  if (0 != thread->thread_id) {
-    int ret = pthread_join(thread->thread_id, NULL);
-    assert(0 == ret);
-
-    thread->thread_id = 0;
-  }
-}
+#endif  /* DEVIL_THREAD_HEADER_H */
