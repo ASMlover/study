@@ -29,7 +29,16 @@
 #ifndef DEVIL_MUTEX_HEADER_H
 #define DEVIL_MUTEX_HEADER_H
 
-typedef struct devil_mutex_t devil_mutex_t;
+#include "devil_config.h"
+#if defined(DEVIL_WINDOWS)
+# include <Windows.h>
+  /* devil mutex type definition */
+  typedef CRITICAL_SECTION devil_mutex_t;
+#else
+# include <pthread.h>
+  /* devil mutex type definition */
+  typedef pthread_mutex_t devil_mutex_t;
+#endif
 
 int devil_mutex_init(devil_mutex_t* mutex);
 void devil_mutex_destroy(devil_mutex_t* mutex);

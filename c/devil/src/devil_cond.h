@@ -30,9 +30,28 @@
 #define DEVIL_COND_HEADER_H
 
 #include <stdint.h>
+#include "devil_mutex.h"
 
-typedef struct devil_mutex_t devil_mutex_t;
-typedef struct devil_cond_t devil_cond_t;
+#if defined(DEVIL_WINDOWS)
+# include <Windows.h>
+  /* kernal condition variable definition */
+  typedef struct kern_cond_t {
+    size_t waiters_count;
+    CRITICAL_SECTION waiters_count_lock;
+    HANDLE signal_event;
+    HANDLE broadcast_event;
+  } kern_cond_t;
+#else
+# include <pthread.h>
+  /* kernal condition variable definition */
+  typedef pthread_cond_t kern_cond_t;
+#endif
+
+/* condition variable definition */
+typedef struct devil_cond_t {
+  devil_mutex_t* mutex;
+  kern_cond_t cond;
+} devil_cond_t;
 
 /*
  * @attention:
