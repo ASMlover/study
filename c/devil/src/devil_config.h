@@ -39,4 +39,8 @@
 # error ">>>>>>>>>> invalid platform <<<<<<<<<<"
 #endif
 
+#if defined(DEVIL_WINDOWS)
+# define inline __inline
+#endif
+
 #endif  /* DEVIL_CONFIG_HEADER_H */
