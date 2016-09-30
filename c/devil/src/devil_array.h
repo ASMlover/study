@@ -26,32 +26,31 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef __SL_ARRAY_HEADER_H__
-#define __SL_ARRAY_HEADER_H__
+#ifndef DEVIL_ARRAY_HEADER_H
+#define DEVIL_ARRAY_HEADER_H
 
-typedef struct sl_array_t sl_array_t;
+typedef struct devil_array_t devil_array_t;
 
 /*
  * @attention:
- *    All interfaces of array module, 
- *    you must ensure the validity of the 
+ *    All interfaces of array module,
+ *    you must ensure the validity of the
  *    incoming parameters.
  */
 
+devil_array_t* devil_array_create(size_t capacity);
+void devil_array_release(devil_array_t* array);
 
-extern sl_array_t* sl_array_create(size_t capacity);
-extern void sl_array_release(sl_array_t* array);
+int devil_array_empty(devil_array_t* array);
+size_t devil_array_size(devil_array_t* array);
+size_t devil_array_capacity(devil_array_t* array);
+void devil_array_clear(devil_array_t* array);
+void devil_array_pushback(devil_array_t* array, void* value);
+void* devil_array_popback(devil_array_t* array);
+void* devil_array_front(devil_array_t* array);
+void* devil_array_back(devil_array_t* array);
+void devil_array_set(devil_array_t* array, size_t i, void* value);
+void* devil_array_get(devil_array_t* array, size_t i);
+void devil_array_traverse(devil_array_t* array, void (*visitor)(void*));
 
-extern int sl_array_empty(sl_array_t* array);
-extern size_t sl_array_size(sl_array_t* array);
-extern size_t sl_array_capacity(sl_array_t* array);
-extern void sl_array_clear(sl_array_t* array);
-extern void sl_array_pushback(sl_array_t* array, void* value);
-extern void* sl_array_popback(sl_array_t* array);
-extern void* sl_array_front(sl_array_t* array);
-extern void* sl_array_back(sl_array_t* array);
-extern void sl_array_set(sl_array_t* array, size_t i, void* value);
-extern void* sl_array_get(sl_array_t* array, size_t i);
-extern void sl_array_traverse(sl_array_t* array, void (*visit)(void*));
-
-#endif  /* __SL_ARRAY_HEADER_H__ */
+#endif  /* DEVIL_ARRAY_HEADER_H */

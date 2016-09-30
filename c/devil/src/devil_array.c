@@ -28,56 +28,46 @@
  */
 #include <assert.h>
 #include <string.h>
-#include "sl_allocator.h"
-#include "sl_array.h"
+#include "devil_config.h"
+#include "devil_allocator.h"
+#include "devil_array.h"
 
-
-#if defined(_WINDOWS_) || defined(_MSC_VER)
-  #define inline __inline
-#endif
-
-
-enum sl_array_size_type {
-  DEF_CAPACITY  = 128, 
+enum devil_array_size_type {
+  DEF_CAPACITY = 128,
 };
 
-struct sl_array_t {
+struct devil_array_t {
   void** elems;
   void** start;
   void** finish;
   size_t capacity;
 };
 
-
-
-static inline void 
-sl_array_regrow(sl_array_t* array)
+static inline void
+devil_array_regrow(devil_array_t* array)
 {
   size_t old_size = array->finish - array->start;
-  size_t new_capacity = array->capacity * 2;
-  void** new_elems = (void**)sl_malloc(sizeof(void*) * new_capacity);
+  size_t new_capacity = (size_t)(array->capacity * 1.5);
+  void** new_elems = (void**)devil_malloc(sizeof(void*) * new_capacity);
   assert(NULL != new_elems);
 
   memmove(new_elems, array->elems, sizeof(void*) * old_size);
-  sl_free(array->elems);
+  devil_free(array->elems);
   array->elems = new_elems;
   array->start = array->elems;
   array->finish = array->elems + old_size;
   array->capacity = new_capacity;
 }
 
-
-
-
-sl_array_t* 
-sl_array_create(size_t capacity)
+devil_array_t*
+devil_array_create(size_t capacity)
 {
-  sl_array_t* array = (sl_array_t*)sl_malloc(sizeof(sl_array_t));
+  devil_array_t* array = (devil_array_t*)devil_malloc(sizeof(devil_array_t));
   assert(NULL != array);
 
   if (capacity < DEF_CAPACITY)
     capacity = DEF_CAPACITY;
-  array->elems = (void**)sl_malloc(sizeof(void*) * capacity);
+  array->elems = (void**)devil_malloc(sizeof(void*) * capacity);
   assert(NULL != array->elems);
   array->start = array->elems;
   array->finish = array->elems;
@@ -86,62 +76,62 @@ sl_array_create(size_t capacity)
   return array;
 }
 
-void 
-sl_array_release(sl_array_t* array)
+void
+devil_array_release(devil_array_t* array)
 {
-  sl_free(array->elems);
-  sl_free(array);
+  devil_free(array->elems);
+  devil_free(array);
 }
 
-int 
-sl_array_empty(sl_array_t* array)
+int
+devil_array_empty(devil_array_t* array)
 {
   return (array->start == array->finish);
 }
 
-size_t 
-sl_array_size(sl_array_t* array)
+size_t
+devil_array_size(devil_array_t* array)
 {
   return (array->finish - array->start);
 }
 
-size_t 
-sl_array_capacity(sl_array_t* array)
+size_t
+devil_array_capacity(devil_array_t* array)
 {
   return array->capacity;
 }
 
-void 
-sl_array_clear(sl_array_t* array)
+void
+devil_array_clear(devil_array_t* array)
 {
   /* free space back to array but not free the memory */
   array->finish = array->elems;
 }
 
-void 
-sl_array_pushback(sl_array_t* array, void* value)
+void
+devil_array_pushback(devil_array_t* array, void* value)
 {
-  if ((size_t)(array->finish - array->start) >= array->capacity) 
-    sl_array_regrow(array);
+  if ((size_t)(array->finish - array->start) >= array->capacity)
+    devil_array_regrow(array);
 
   *array->finish = value;
   ++array->finish;
 }
 
 void*
-sl_array_popback(sl_array_t* array)
+devil_array_popback(devil_array_t* array)
 {
   void* value;
   if (array->start == array->finish)
     value = NULL;
-  else 
+  else
     value = *(--array->finish);
 
   return value;
 }
 
-void* 
-sl_array_front(sl_array_t* array)
+void*
+devil_array_front(devil_array_t* array)
 {
   if (array->finish > array->start)
     return *array->start;
@@ -149,8 +139,8 @@ sl_array_front(sl_array_t* array)
   return NULL;
 }
 
-void* 
-sl_array_back(sl_array_t* array)
+void*
+devil_array_back(devil_array_t* array)
 {
   if (array->finish > array->start)
     return *(array->finish - 1);
@@ -158,8 +148,8 @@ sl_array_back(sl_array_t* array)
   return NULL;
 }
 
-void 
-sl_array_set(sl_array_t* array, size_t i, void* value)
+void
+devil_array_set(devil_array_t* array, size_t i, void* value)
 {
   if (array->start + i >= array->finish)
     return;
@@ -167,8 +157,8 @@ sl_array_set(sl_array_t* array, size_t i, void* value)
   *(array->start + i) = value;
 }
 
-void* 
-sl_array_get(sl_array_t* array, size_t i)
+void*
+devil_array_get(devil_array_t* array, size_t i)
 {
   if (array->start + i >= array->finish)
     return NULL;
@@ -176,16 +166,16 @@ sl_array_get(sl_array_t* array, size_t i)
   return *(array->start + i);
 }
 
-void 
-sl_array_traverse(sl_array_t* array, void (*visit)(void*))
+void
+devil_array_traverse(devil_array_t* array, void (*visitor)(void*))
 {
   void** iter;
 
-  if (NULL == visit)
+  if (NULL == visitor)
     return;
   iter = array->start;
   while (iter < array->finish) {
-    visit(*iter);
+    visitor(*iter);
 
     ++iter;
   }
