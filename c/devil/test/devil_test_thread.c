@@ -26,30 +26,29 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include "sl_test_header.h"
-#include "../src/sl_spinlock.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "devil_test.h"
+#include "../src/devil_thread.h"
 
-
-
-
-void 
-sl_test_spinlock(void)
+static inline void
+worker(void* arg)
 {
-  sl_spinlock_t spinlock;
-  int r;
-  fprintf(stdout, "begin testing spinlock module : <%s>\n", __func__);
+  DEVIL_ASSERT((void*)34 == arg);
+}
 
-  r = sl_spinlock_init(&spinlock);
-  ASSERT(0 == r);
+void
+devil_test_thread(void)
+{
+  devil_thread_t* thread;
+  fprintf(stdout, "begin testing thread module : <%s>\n", __func__);
 
-  sl_spinlock_lock(&spinlock);
-  sl_spinlock_unlock(&spinlock);
+  thread = devil_thread_create(worker, (void*)34);
+  DEVIL_ASSERT(NULL != thread);
+  devil_thread_start(thread);
 
-  r = sl_spinlock_trylock(&spinlock);
-  ASSERT(0 == r);
-  sl_spinlock_unlock(&spinlock);
+  devil_thread_join(thread);
+  devil_thread_release(thread);
 
-  sl_spinlock_destroy(&spinlock);
-
-  fprintf(stdout, "end testing spinlock module : all passed !!!\n");
+  fprintf(stdout, "end testing thread module : all passed!!!\n");
 }
