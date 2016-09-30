@@ -26,30 +26,28 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include "sl_test_header.h"
-#include "../src/sl_mutex.h"
+#include <stdio.h>
+#include "devil_test.h"
+#include "../src/devil_mutex.h"
 
-
-
-void 
-sl_test_mutex(void)
+void
+devil_test_mutex(void)
 {
-  sl_mutex_t mutex;
+  devil_mutex_t mutex;
   int r;
 
   fprintf(stdout, "begin testing mutex module : <%s>\n", __func__);
 
   r = sl_mutex_init(&mutex);
-  ASSERT(0 == r);
+  DEVIL_ASSERT(0 == r);
 
-  sl_mutex_lock(&mutex);
-  sl_mutex_unlock(&mutex);
+  devil_mutex_lock(&mutex);
+  devil_mutex_unlock(&mutex);
 
-  r = sl_mutex_trylock(&mutex);
-  ASSERT(0 == r);
-  sl_mutex_unlock(&mutex);
+  r = devil_mutex_trylock(&mutex);
+  DEVIL_ASSERT(0 == r);
+  devil_mutex_unlock(&mutex);
 
-  sl_mutex_destroy(&mutex);
-  
+  devil_mutex_destroy(&mutex);
   fprintf(stdout, "end testing mutex module : all passed !!!\n");
 }

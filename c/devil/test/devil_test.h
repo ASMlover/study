@@ -26,54 +26,51 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef __SL_TEST_HEADER_H__
-#define __SL_TEST_HEADER_H__
+#ifndef DEVIL_TEST_HEADER_H
+#define DEVIL_TEST_HEADER_H
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <stddef.h>
+#include "../src/devil_config.h"
 
-#if defined(_WINDOWS_) || defined(_MSC_VER)
-  #define inline    __inline
-  #define __func__  __FUNCTION__
-#endif 
+#if defined(DEVIL_WINDOWS)
+# define inline __inline
+# define __func__ __FUNCTION__
+#endif
 
-#if defined(_WINDOWS_) || defined(_MSC_VER)
-  #define cmdeq(c1, c2) (0 == stricmp(c1, c2))
-#elif defined(__linux__)
-  #define cmdeq(c1, c2) (0 == strcasecmp(c1, c2))
-#endif 
+#if defined(DEVIL_WINDOWS)
+# define cmdeq(c1, c2) (0 == stricmp(c1, c2))
+#else
+# define cmdeq(c1, c2) (0 == strcasecmp(c1, c2))
+#endif
 
 #ifndef countof
-  #define countof(x)  (sizeof((x)) / sizeof(*(x)))
-#endif 
-
+# define countof(x) (sizeof((x)) / sizeof(*(x)))
+#endif
 
 /*
- * Have our own assert, so we are sure it dose not get 
+ * Have our own assert, so we are sure it dose not get
  * optomized away in a release build.
  */
-#define ASSERT(expr)\
-do {\
+#define DEVIL_ASSERT(expr) do {\
   if (!(expr)) {\
-    fprintf(stderr, \
-      "assertion failed in %s on line %d : %s\n", \
-      __FILE__, \
-      __LINE__, \
+    fprintf(stderr,\
+      "assertion failed in %s on line %d : %s\n",\
+      __FILE__,\
+      __LINE__,\
       #expr);\
       fflush(stderr);\
       abort();\
   }\
 } while (0)
 
+void devil_test_allocator(void);
+void devil_test_queue(void);
+void devil_test_list(void);
+void devil_test_table(void);
+void devil_test_array(void);
+void devil_test_mutex(void);
+void devil_test_spinlock(void);
+void devil_test_condition(void);
+void devil_test_thread(void);
 
-extern void sl_test_allocator(void);
-extern void sl_test_queue(void);
-extern void sl_test_list(void);
-extern void sl_test_table(void);
-extern void sl_test_array(void);
-extern void sl_test_mutex(void);
-extern void sl_test_spinlock(void);
-extern void sl_test_condition(void);
-extern void sl_test_thread(void);
-
-#endif  /* __SL_TEST_HEADER_H__ */
+#endif  /* DEVIL_TEST_HEADER_H */
