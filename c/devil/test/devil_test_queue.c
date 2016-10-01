@@ -26,50 +26,50 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include "sl_test_header.h"
-#include "../src/sl_queue.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "devil_test.h"
+#include "../src/devil_queue.h"
 
-
-
-void 
-sl_test_queue(void)
+void
+devil_test_queue(void)
 {
-  sl_queue_t* queue = NULL;
+  devil_queue_t* queue = NULL;
   void* v;
   size_t size;
 
-  fprintf(stdout, "test sl_queue_t <%s>\n", __func__);
+  fprintf(stdout, "test devil_queue_t <%s>\n", __func__);
 
-  fprintf(stdout, "\ttest sl_queue_size\n");
-  queue = sl_queue_create();
-  ASSERT(NULL != queue);
-  size = sl_queue_size(queue);
-  ASSERT(0 == size);
+  fprintf(stdout, "\ttest devil_queue_size\n");
+  queue = devil_queue_create();
+  DEVIL_ASSERT(NULL != queue);
+  size = devil_queue_size(queue);
+  DEVIL_ASSERT(0 == size);
 
-  fprintf(stdout, "\ttest sl_queue_push\n");
-  sl_queue_push(queue, (void*)34);
-  sl_queue_push(queue, (void*)57);
-  sl_queue_push(queue, (void*)9);
-  size = sl_queue_size(queue);
-  ASSERT(3 == size);
+  fprintf(stdout, "\ttest devil_queue_push\n");
+  devil_queue_push(queue, (void*)34);
+  devil_queue_push(queue, (void*)57);
+  devil_queue_push(queue, (void*)9);
+  size = devil_queue_size(queue);
+  DEVIL_ASSERT(3 == size);
 
-  fprintf(stdout, "\ttest sl_queue_pop\n");
-  v = sl_queue_pop(queue);
-  ASSERT(34 == (int)v);
-  size = sl_queue_size(queue);
-  ASSERT(2 == size);
+  fprintf(stdout, "\ttest devil_queue_pop\n");
+  v = devil_queue_pop(queue);
+  DEVIL_ASSERT(34 == (int)v);
+  size = devil_queue_size(queue);
+  DEVIL_ASSERT(2 == size);
 
-  v = sl_queue_pop(queue);
-  ASSERT(57 == (int)v);
-  size = sl_queue_size(queue);
-  ASSERT(1 == size);
+  v = devil_queue_pop(queue);
+  DEVIL_ASSERT(57 == (int)v);
+  size = devil_queue_size(queue);
+  DEVIL_ASSERT(1 == size);
 
-  v = sl_queue_pop(queue);
-  ASSERT(9 == (int)v);
-  size = sl_queue_size(queue);
-  ASSERT(0 == size);
+  v = devil_queue_pop(queue);
+  DEVIL_ASSERT(9 == (int)v);
+  size = devil_queue_size(queue);
+  DEVIL_ASSERT(0 == size);
 
-  fprintf(stdout, "\ttest sl_queue_release\n");
-  sl_queue_release(queue);
-  fprintf(stdout, "test sl_queue_t : all passed\n");
+  fprintf(stdout, "\ttest devil_queue_release\n");
+  devil_queue_release(queue);
+  fprintf(stdout, "test devil_queue_t : all passed\n");
 }

@@ -38,7 +38,7 @@ devil_test_mutex(void)
 
   fprintf(stdout, "begin testing mutex module : <%s>\n", __func__);
 
-  r = sl_mutex_init(&mutex);
+  r = devil_mutex_init(&mutex);
   DEVIL_ASSERT(0 == r);
 
   devil_mutex_lock(&mutex);

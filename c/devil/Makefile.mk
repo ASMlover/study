@@ -34,26 +34,26 @@ CFLAGS	= -O2 -W3 -MD -GS -Zi -Fd"vc.pdb" -DNDEBUG\
 	-D_CRT_NONSTDC_NO_WARNINGS
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest\
 	-manifestfile:$(OUT).manifest -manifestuac:no
-OBJS	= sl_win_mutex.obj\
-	sl_win_spinlock.obj\
-	sl_allocator.obj\
-	sl_queue.obj\
-	sl_list.obj\
-	sl_table.obj\
-	sl_array.obj\
-	sl_win_cond.obj\
-	sl_win_thread.obj\
+OBJS	= devil_win_mutex.obj\
+	devil_win_spinlock.obj\
+	devil_allocator.obj\
+	devil_queue.obj\
+	devil_list.obj\
+	devil_table.obj\
+	devil_array.obj\
+	devil_win_cond.obj\
+	devil_win_thread.obj\
 	\
-	sl_test_main.obj\
-	sl_test_allocator.obj\
-	sl_test_queue.obj\
-	sl_test_list.obj\
-	sl_test_table.obj\
-	sl_test_array.obj\
-	sl_test_mutex.obj\
-	sl_test_spinlock.obj\
-	sl_test_cond.obj\
-	sl_test_thread.obj
+	devil_test_main.obj\
+	devil_test_allocator.obj\
+	devil_test_queue.obj\
+	devil_test_list.obj\
+	devil_test_table.obj\
+	devil_test_array.obj\
+	devil_test_mutex.obj\
+	devil_test_spinlock.obj\
+	devil_test_cond.obj\
+	devil_test_thread.obj
 
 all: $(OUT)
 rebuild: clean all
@@ -64,6 +64,8 @@ $(OUT): $(OBJS)
 	$(LINK) -out:$(OUT) $(OBJS) $(LDFLAGS)
 	$(MT) -manifest $(OUT).manifest -outputresource:$(OUT);1
 {.\src}.c{}.obj:
+	$(CC) $(CFLAGS) $<
+{.\src\win}.c{}.obj:
 	$(CC) $(CFLAGS) $<
 {.\test}.c{}.obj:
 	$(CC) $(CFLAGS) $<

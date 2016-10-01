@@ -39,7 +39,7 @@ static inline void
 devil_help(void)
 {
   fprintf(stdout,
-      "usage: slib-test.exe [options] ...\n\n"
+      "usage: devil.exe [options] ...\n\n"
       "   help    show help for a given topic or a help overview\n"
       "   alloc   show test result of allocator module\n"
       "   queue   show test result of queue module\n"

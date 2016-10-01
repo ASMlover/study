@@ -35,8 +35,7 @@ void
 devil_test_array(void)
 {
   devil_array_t* array;
-  fprintf(stdout, "test array module of slib : <%s>\n", __func__);
-
+  fprintf(stdout, "test array module of devil : <%s>\n", __func__);
 
   fprintf(stdout, "\ttest devil_array_create\n");
   array = devil_array_create(128);
@@ -78,5 +77,5 @@ devil_test_array(void)
   DEVIL_ASSERT(devil_array_empty(array));
 
   devil_array_release(array);
-  fprintf(stdout, "test array module of slib : all passed\n");
+  fprintf(stdout, "test array module of devil : all passed\n");
 }
