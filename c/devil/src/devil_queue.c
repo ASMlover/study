@@ -28,29 +28,24 @@
  */
 #include <assert.h>
 #include <stdio.h>
-#include "sl_allocator.h"
-#include "sl_queue.h"
+#include "devil_allocator.h"
+#include "devil_queue.h"
 
-
-
-typedef struct sl_queue_item_t {
-  struct sl_queue_item_t* next;
+typedef struct devil_queue_item_t {
+  struct devil_queue_item_t* next;
   void* value;
-} sl_queue_item_t;
+} devil_queue_item_t;
 
-struct sl_queue_t {
-  sl_queue_item_t* head;
-  sl_queue_item_t* tail;
+struct devil_queue_t {
+  devil_queue_item_t* head;
+  devil_queue_item_t* tail;
   size_t size;
 };
 
-
-
-
-sl_queue_t* 
-sl_queue_create(void)
+devil_queue_t*
+devil_queue_create(void)
 {
-  sl_queue_t* queue = (sl_queue_t*)sl_malloc(sizeof(sl_queue_t));
+  devil_queue_t* queue = (devil_queue_t*)devil_malloc(sizeof(devil_queue_t));
   assert(NULL != queue);
 
   queue->head = NULL;
@@ -60,35 +55,36 @@ sl_queue_create(void)
   return queue;
 }
 
-void 
-sl_queue_release(sl_queue_t* queue)
+void
+devil_queue_release(devil_queue_t* queue)
 {
-  sl_queue_item_t* item;
+  devil_queue_item_t* item;
   while (NULL != queue->head) {
     item = queue->head;
     queue->head = queue->head->next;
 
-    sl_free(item);
+    devil_free(item);
   }
-  sl_free(queue);
+  devil_free(queue);
 }
 
-size_t 
-sl_queue_size(sl_queue_t* queue)
+size_t
+devil_queue_size(devil_queue_t* queue)
 {
   return queue->size;
 }
 
-void 
-sl_queue_push(sl_queue_t* queue, void* value)
+void
+devil_queue_push(devil_queue_t* queue, void* value)
 {
-  sl_queue_item_t* item 
-    = (sl_queue_item_t*)sl_malloc(sizeof(sl_queue_item_t));
+  devil_queue_item_t* item
+    = (devil_queue_item_t*)devil_malloc(sizeof(devil_queue_item_t));
   item->next = NULL;
   item->value = value;
 
-  if (NULL == queue->head)
+  if (NULL == queue->head) {
     queue->head = queue->tail = item;
+  }
   else {
     queue->tail->next = item;
     queue->tail = item;
@@ -96,19 +92,20 @@ sl_queue_push(sl_queue_t* queue, void* value)
   ++queue->size;
 }
 
-void* 
-sl_queue_pop(sl_queue_t* queue)
+void*
+devil_queue_pop(devil_queue_t* queue)
 {
   void* ret;
 
-  if (NULL == queue->head)
+  if (NULL == queue->head) {
     ret = NULL;
+  }
   else {
-    sl_queue_item_t* item = queue->head;
+    devil_queue_item_t* item = queue->head;
     queue->head = queue->head->next;
     ret = item->value;
 
-    sl_free(item);
+    devil_free(item);
     --queue->size;
   }
 
