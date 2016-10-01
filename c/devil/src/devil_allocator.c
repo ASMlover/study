@@ -192,8 +192,9 @@ devil_free(void* ptr)
   assert(NULL != ptr);
   realptr = (byte_t*)ptr - PREFIX_SIZE;
   index = *(size_t*)realptr;
-  if (NFREELISTS == index)
+  if (NFREELISTS == index) {
     free(realptr);
+  }
   else {
     devil_memory_t* chunk = (devil_memory_t*)realptr;
 
