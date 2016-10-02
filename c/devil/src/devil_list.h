@@ -56,6 +56,6 @@ devil_list_iter_t devil_list_begin(devil_list_t* list);
 devil_list_iter_t devil_list_end(devil_list_t* list);
 devil_list_iter_t devil_list_iter_next(devil_list_iter_t iter);
 devil_list_iter_t devil_list_iter_prev(devil_list_iter_t iter);
-void* sl_list_iter_value(devil_list_iter_t iter);
+void* devil_list_iter_value(devil_list_iter_t iter);
 
 #endif  /* DEVIL_LIST_HEADER_H */

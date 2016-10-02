@@ -47,7 +47,7 @@ devil_test_list(void)
 
   fprintf(stdout, "\ttest devil_list_pushback\n");
   for (i = 0; i < 10; ++i)
-    devil_list_pushback(list, (void*)i);
+    devil_list_pushback(list, (void*)(intptr_t)i);
   DEVIL_ASSERT(!devil_list_empty(list));
   DEVIL_ASSERT(10 == devil_list_size(list));
   DEVIL_ASSERT(0 == (int)devil_list_front(list));
@@ -55,15 +55,17 @@ devil_test_list(void)
 
   fprintf(stdout, "\ttest devil_list_pushfront\n");
   for (i = 0; i < 5; ++i)
-    devil_list_pushfront(list, (void*)((i + 1) * 100));
+    devil_list_pushfront(list, (void*)(intptr_t)((i + 1) * 100));
   DEVIL_ASSERT(15 == devil_list_size(list));
   DEVIL_ASSERT(500 == (int)devil_list_front(list));
   DEVIL_ASSERT(9 == (int)devil_list_back(list));
 
   fprintf(stdout, "\ttest devil_list_iter_t\n");
   iter = devil_list_begin(list);
-  for (; iter != devil_list_end(list); iter = devil_list_iter_next(iter))
-    fprintf(stdout, "\t\tlist item value => %d\n", (int)devil_list_iter_value(iter));
+  for (; iter != devil_list_end(list); iter = devil_list_iter_next(iter)) {
+    fprintf(stdout, "\t\tlist item value => %d\n",
+        (int)devil_list_iter_value(iter));
+  }
 
   fprintf(stdout, "\ttest devil_list_popfront\n");
   DEVIL_ASSERT(500 == (int)devil_list_popfront(list));

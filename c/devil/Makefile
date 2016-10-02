@@ -28,7 +28,7 @@
 OUT	= devil
 CC	= gcc
 RM	= rm
-CFLAGS	= -g -O2 -Wall
+CFLAGS	= -g -O2 -Wall -std=c11
 LDFLAGS	= -lpthread -lrt
 OBJS	= $(patsubst %.c,%.o,$(wildcard ./src/*.c ./src/posix/*.c ./test/*.c))
 
