@@ -64,7 +64,7 @@ void ThreadPool::stop(void) {
   {
     MutexGuard guard(mtx_);
     running_ = false;
-    not_empty_.notify_all()
+    not_empty_.notify_all();
   }
 
   for (auto& thrd : threads_)

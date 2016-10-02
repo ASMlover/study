@@ -27,7 +27,9 @@
 #include <assert.h>
 #include <errno.h>
 #include <unistd.h>
-#include <sys/prctl.h>
+#if defined(__linux__)
+# include <sys/prctl.h>
+#endif
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <stdio.h>
@@ -59,8 +61,8 @@ struct ThreadData {
   std::string thrd_name;
   std::weak_ptr<pid_t> thrd_tid;
 
-  ThreadData(ThreadCallback&& cb, const std::string& name, const std::shared_ptr<pid_t>& tid)
-    : thrd_routine(std::move(cb))
+  ThreadData(const ThreadCallback& cb, const std::string& name, const std::shared_ptr<pid_t>& tid)
+    : thrd_routine(cb)
     , thrd_name(name)
     , thrd_tid(tid) {
   }
@@ -74,7 +76,9 @@ struct ThreadData {
     }
 
     CurrentThread::internal::set_thread_name(thrd_name.empty() ? "TyrThread" : thrd_name.c_str());
+#if defined(__linux__)
     prctl(PR_SET_NAME, CurrentThread::name());
+#endif
     try {
       thrd_routine();
       CurrentThread::internal::set_thread_name("finished");

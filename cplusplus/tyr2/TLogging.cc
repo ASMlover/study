@@ -40,7 +40,12 @@ __thread char tTime[32];
 __thread time_t tLastSecond;
 
 const char* strerror_tl(int saved_errno) {
+#if defined(__APPLE__) || defined(__MACH__)
+  strerror_r(saved_errno, tErrnoBuf, sizeof(tErrnoBuf));
+  return tErrnoBuf;
+#else
   return strerror_r(saved_errno, tErrnoBuf, sizeof(tErrnoBuf));
+#endif
 }
 
 Logger::LogLevel init_log_level(void) {
@@ -175,7 +180,7 @@ LogStream& Logger::stream(void) {
   return impl_.stream_;
 }
 
-LogLevel Logger::log_level(void) {
+Logger::LogLevel Logger::log_level(void) {
   return gLogLevel;
 }
 

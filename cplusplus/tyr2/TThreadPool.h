@@ -48,7 +48,7 @@ class ThreadPool : private UnCopyable {
   Condition not_full_;
   std::string name_;
   TaskCallback thrd_init_cb_;
-  std::value<std::unique_ptr<Thread>> threads_;
+  std::vector<std::unique_ptr<Thread>> threads_;
   std::deque<TaskCallback> tasks_;
   size_t max_tasksz_;
   bool running_;

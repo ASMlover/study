@@ -25,17 +25,36 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <errno.h>
+#include <time.h>
+#if defined(__APPLE__) || defined(__MACH__)
+# include <mach/mach_time.h>
+#endif
+#include "TTypes.h"
 #include "TCondition.h"
 
 namespace tyr {
 
+#undef NANOSEC
+#define NANOSEC ((uint64_t)1e9)
+
 bool Condition::timed_wait(int seconds) {
   struct timespec ts;
-  clocl_gettime(CLOCK_REALTIME, &ts);
+#if defined(__linux__)
+  clock_gettime(CLOCK_REALTIME, &ts);
   ts.tv_sec += seconds;
+#elif defined(__APPLE__) || defined(__MACH__)
+  mach_timebase_info_data_t info;
+  if (KERN_SUCCESS != mach_timebase_info(&info))
+    abort();
+  uint64_t hrtime = mach_absolute_time() * info.numer / info.denom;
+  ts.tv_sec = hrtime / NANOSEC + seconds;
+  ts.tv_nsec = hrtime % NANOSEC;
+#else
+# error "invalid platform !!!"
+#endif
 
   Mutex::UnassignedGuard guard(mtx_);
-  return ETIMEOUT == pthread_cond_timedwait(&cond_, mtx_.get_mutex(), &ts);
+  return ETIMEDOUT == pthread_cond_timedwait(&cond_, mtx_.get_mutex(), &ts);
 }
 
 }

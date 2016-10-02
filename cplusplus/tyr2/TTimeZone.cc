@@ -264,7 +264,7 @@ time_t TimeZone::from_localtime(const struct tm& t) const {
 struct tm TimeZone::to_utc_time(time_t sec_since_epoch, bool yday) {
   struct tm utc;
   memset(&utc, 0, sizeof(utc));
-  utc.tm_zone = "GMT";
+  utc.tm_zone = const_cast<char*>("GMT");
   int seconds = static_cast<int>(sec_since_epoch % kSecondsPerDay);
   int days = static_cast<int>(sec_since_epoch / kSecondsPerDay);
   if (seconds < 0) {
