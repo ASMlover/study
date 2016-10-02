@@ -60,7 +60,7 @@ typedef struct devil_allocator_t {
   int initialized;
 } devil_allocator_t;
 
-static devil_allocator_t sAllocator;
+static devil_allocator_t _s_allocator;
 
 static inline size_t
 freelist_index(size_t bytes)
@@ -117,15 +117,15 @@ alloc_chunk(devil_allocator_t* self, size_t index)
 void
 devil_allocator_init(void)
 {
-  if (INIT_YES != sAllocator.initialized) {
-    memset(sAllocator.free_list, 0, sizeof(sAllocator.free_list));
-    sAllocator.chunk_list = (void**)malloc(sizeof(void*) * NFREELISTS);
+  if (INIT_YES != _s_allocator.initialized) {
+    memset(_s_allocator.free_list, 0, sizeof(_s_allocator.free_list));
+    _s_allocator.chunk_list = (void**)malloc(sizeof(void*) * NFREELISTS);
     assert(NULL != _s_allocator.chunk_list);
-    sAllocator.chunk_count = 0;
-    sAllocator.chunk_storage = NFREELISTS;
-    devil_spinlock_init(&sAllocator.spinlock);
+    _s_allocator.chunk_count = 0;
+    _s_allocator.chunk_storage = NFREELISTS;
+    devil_spinlock_init(&_s_allocator.spinlock);
 
-    sAllocator.initialized = INIT_YES;
+    _s_allocator.initialized = INIT_YES;
   }
 }
 
@@ -134,15 +134,15 @@ devil_allocator_destroy(void)
 {
   size_t i;
 
-  if (INIT_YES != sAllocator.initialized)
+  if (INIT_YES != _s_allocator.initialized)
     return;
 
-  for (i = 0; i < sAllocator.chunk_count; ++i)
-    free(sAllocator.chunk_list[i]);
-  free(sAllocator.chunk_list);
+  for (i = 0; i < _s_allocator.chunk_count; ++i)
+    free(_s_allocator.chunk_list[i]);
+  free(_s_allocator.chunk_list);
 
-  devil_spinlock_destroy(&sAllocator.spinlock);
-  sAllocator.initialized = INIT_NO;
+  devil_spinlock_destroy(&_s_allocator.spinlock);
+  _s_allocator.initialized = INIT_NO;
 }
 
 void*
@@ -164,7 +164,7 @@ devil_malloc(size_t bytes)
     ret = (byte_t*)ret + PREFIX_SIZE;
   }
   else {
-    devil_allocator_t* self = &sAllocator;
+    devil_allocator_t* self = &_s_allocator;
     size_t index = freelist_index(bytes);
 
     if (INIT_YES != self->initialized)
@@ -187,7 +187,7 @@ devil_free(void* ptr)
 {
   void* realptr;
   size_t index;
-  devil_allocator_t* self = &sAllocator;
+  devil_allocator_t* self = &_s_allocator;
 
   assert(NULL != ptr);
   realptr = (byte_t*)ptr - PREFIX_SIZE;

@@ -38,7 +38,11 @@
 #else
 # include <pthread.h>
   /* devil spinlock type definition */
+# if defined(DEVIL_MACOS)
+  typedef pthread_mutex_t devil_spinlock_t;
+#else
   typedef pthread_spinlock_t devil_spinlock_t;
+#endif
 #endif
 
 int devil_spinlock_init(devil_spinlock_t* spinlock);
