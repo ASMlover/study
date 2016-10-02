@@ -33,8 +33,8 @@ namespace tyr {
 
 ThreadPool::ThreadPool(const std::string& name)
   : mtx_()
-  , notify_empty_(mtx_)
-  , notify_full_(mtx_)
+  , not_empty_(mtx_)
+  , not_full_(mtx_)
   , name_(name)
   , max_tasksz_(0)
   , running_(false) {
@@ -64,7 +64,7 @@ void ThreadPool::stop(void) {
   {
     MutexGuard guard(mtx_);
     running_ = false;
-    notify_empty_.notify_all()
+    not_empty_.notify_all()
   }
 
   for (auto& thrd : threads_)
@@ -78,11 +78,11 @@ void ThreadPool::run(TaskCallback&& cb) {
   else {
     MutexGuard guard(mtx_);
     while (is_full())
-      notify_full_.wait();
+      not_full_.wait();
     assert(!is_full());
 
     tasks_.push_back(std::move(cb));
-    notify_empty_.notify();
+    not_empty_.notify();
   }
 }
 
@@ -129,14 +129,14 @@ void ThreadPool::run_in_thread(void) {
 TaskCallback ThreadPool::take_task(void) {
   MutexGuard guard(mtx_);
   while (tasks_.empty() && running_)
-    notify_empty_.wait();
+    not_empty_.wait();
 
   TaskCallback task;
   if (!tasks_.empty()) {
     task = tasks_.front();
     tasks_.pop_front();
     if (max_tasksz_ > 0)
-      notify_full_.notify();
+      not_full_.notify();
   }
 
   return task;

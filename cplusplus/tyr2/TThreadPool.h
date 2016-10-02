@@ -44,8 +44,8 @@ typedef std::function<void (void)> TaskCallback;
 
 class ThreadPool : private UnCopyable {
   mutable Mutex mtx_;
-  Condition notify_empty_;
-  Condition notify_full_;
+  Condition not_empty_;
+  Condition not_full_;
   std::string name_;
   TaskCallback thrd_init_cb_;
   std::value<std::unique_ptr<Thread>> threads_;
