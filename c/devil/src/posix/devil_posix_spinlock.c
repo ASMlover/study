@@ -28,7 +28,16 @@
  */
 #include <errno.h>
 #include <stdlib.h>
+#include "../devil_config.h"
 #include "../devil_spinlock.h"
+
+#if defined(DEVIL_MACOS)
+# define pthread_spin_init pthread_mutex_init
+# define pthread_spin_destroy pthread_mutex_destroy
+# define pthread_spin_lock pthread_mutex_lock
+# define pthread_spin_trylock pthread_mutex_trylock
+# define pthread_spin_unlock pthread_mutex_unlock
+#endif
 
 int
 devil_spinlock_init(devil_spinlock_t* spinlock)

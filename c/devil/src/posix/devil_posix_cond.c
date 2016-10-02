@@ -29,6 +29,10 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <time.h>
+#include "../devil_config.h"
+#if defined(DEVIL_MACOS)
+# include <mach/mach_time.h>
+#endif
 #include "../devil_cond.h"
 
 #undef NANOSEC
@@ -42,8 +46,10 @@ devil_cond_init(devil_cond_t* cond, devil_mutex_t* mutex)
   cond->mutex = mutex;
   if (0 != pthread_condattr_init(&attr))
     return -1;
+#if defined(DEVIL_LINUX)
   if (0 != pthread_condattr_setclock(&attr, CLOCK_MONOTONIC))
     goto Exit2;
+#endif
 
   if (0 != pthread_cond_init(&cond->cond, &attr))
     goto Exit2;
@@ -94,10 +100,15 @@ devil_cond_timedwait(devil_cond_t* cond, uint32_t millitm)
   struct timespec ts;
   int result;
 
+#if defined(DEVIL_MACOS)
+  ts.tv_sec = timeout / NANOSEC;
+  ts.tv_nsec = timeout % NANOSEC;
+#else
   clock_gettime(CLOCK_MONOTONIC, &ts);
   timeout += (((uint64_t)ts.tv_sec) * NANOSEC + ts.tv_nsec);
   ts.tv_sec = timeout / NANOSEC;
   ts.tv_nsec = timeout % NANOSEC;
+#endif
   result = pthread_cond_timedwait(&cond->cond, cond->mutex, &ts);
 
   if (0 == result)

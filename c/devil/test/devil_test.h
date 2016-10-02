@@ -29,7 +29,8 @@
 #ifndef DEVIL_TEST_HEADER_H
 #define DEVIL_TEST_HEADER_H
 
-#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "../src/devil_config.h"
 
 #if defined(DEVIL_WINDOWS)
