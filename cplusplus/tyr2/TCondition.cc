@@ -26,7 +26,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <errno.h>
 #include <time.h>
-#if defined(__APPLE__) || defined(__MACH__)
+#include "TConfig.h"
+#if defined(TYR_DARWIN)
 # include <mach/mach_time.h>
 #endif
 #include "TTypes.h"
@@ -39,10 +40,10 @@ namespace tyr {
 
 bool Condition::timed_wait(int seconds) {
   struct timespec ts;
-#if defined(__linux__)
+#if defined(TYR_LINUX)
   clock_gettime(CLOCK_REALTIME, &ts);
   ts.tv_sec += seconds;
-#elif defined(__APPLE__) || defined(__MACH__)
+#elif defined(TYR_DARWIN)
   mach_timebase_info_data_t info;
   if (KERN_SUCCESS != mach_timebase_info(&info))
     abort();
@@ -50,7 +51,7 @@ bool Condition::timed_wait(int seconds) {
   ts.tv_sec = hrtime / NANOSEC + seconds;
   ts.tv_nsec = hrtime % NANOSEC;
 #else
-# error "invalid platform !!!"
+# error ">>>>>>>>>> Unknown platform >>>>>>>>>>"
 #endif
 
   Mutex::UnassignedGuard guard(mtx_);

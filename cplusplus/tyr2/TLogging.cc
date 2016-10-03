@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sstream>
+#include "TConfig.h"
 #include "TCurrentThread.h"
 #include "TTimeZone.h"
 #include "TLogging.h"
@@ -40,7 +41,7 @@ __thread char tTime[32];
 __thread time_t tLastSecond;
 
 const char* strerror_tl(int saved_errno) {
-#if defined(__APPLE__) || defined(__MACH__)
+#if defined(TYR_DARWIN)
   strerror_r(saved_errno, tErrnoBuf, sizeof(tErrnoBuf));
   return tErrnoBuf;
 #else

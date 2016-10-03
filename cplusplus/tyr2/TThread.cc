@@ -27,12 +27,13 @@
 #include <assert.h>
 #include <errno.h>
 #include <unistd.h>
-#if defined(__linux__)
-# include <sys/prctl.h>
-#endif
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <stdio.h>
+#include "TConfig.h"
+#if defined(TYR_LINUX)
+# include <sys/prctl.h>
+#endif
 #include "TException.h"
 #include "TLogging.h"
 #include "TCurrentThread.h"
@@ -76,7 +77,7 @@ struct ThreadData {
     }
 
     CurrentThread::internal::set_thread_name(thrd_name.empty() ? "TyrThread" : thrd_name.c_str());
-#if defined(__linux__)
+#if defined(TYR_LINUX)
     prctl(PR_SET_NAME, CurrentThread::name());
 #endif
     try {
