@@ -56,7 +56,7 @@ $(OUT): $(OBJS)
 """
 
 COMPILEFORMAT = """{build_obj}: {build_src}
-	$(CC) -o {build_obj} $(CFLAGS) {build_src}
+	$(CC) -o {build_obj} -c $(CFLAGS) {build_src}
 """
 
 if sys.version_info.major < 3:
@@ -135,7 +135,6 @@ def gen_build_script(pt='linux', target='a.out', build_dir='build', source_list=
             build_objs = ''.join(build_objs_list)[:-1]
         )
         mk_dict.update(method())
-        print (mk_dict)
         with do_open('Makefile', 'w', encoding='utf-8') as fp:
             fp.write(MKFORMAT.format(**mk_dict))
 
@@ -149,18 +148,24 @@ def get_arguments():
     args = parser.parse_args()
     return args.option
 
+def remove(build_dir):
+    if os.path.exists(build_dir):
+        shutil.rmtree(build_dir)
+    if os.path.exists('Makefile'):
+        os.remove('Makefile')
+
 def main():
     option = get_arguments()
     build_dir = 'build'
 
     if option == 'remove':
-        if os.path.exists(build_dir):
-            shutil.rmtree(build_dir)
+        remove(build_dir)
+        return
 
     gen_build_dir(build_dir=build_dir)
     sources_list = get_all_source_list(path_list=['./'])
     if not gen_build_script(pt=get_platform(), target='tyr', build_dir=build_dir, source_list=sources_list):
-        shutil.rmtree(build_dir)
+        remove(build_dir)
         return
 
     if option == 'build':
@@ -170,7 +175,7 @@ def main():
     elif option == 'clean':
         subprocess.check_call('make clean', shell=True)
     else:
-        shutil.rmtree(build_dir)
+        remove(build_dir)
 
 if __name__ == '__main__':
     main()
