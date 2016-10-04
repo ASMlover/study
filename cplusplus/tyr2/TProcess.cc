@@ -40,6 +40,7 @@
 #include "TProcess.h"
 
 namespace tyr {
+namespace Process {
 
 __thread int tNumOpenedFiles = 0;
 int fd_dir_filter(const struct dirent* d) {
@@ -209,4 +210,5 @@ std::vector<pid_t> threads(void) {
   return result;
 }
 
+}
 }
