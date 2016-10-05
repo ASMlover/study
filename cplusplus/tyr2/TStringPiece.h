@@ -119,7 +119,7 @@ public:
 
   void set(const void* buf, int len) {
     str_ = reinterpret_cast<const char*>(buf);
-    length_ = strlen(str_);
+    length_ = len;
   }
 
   void remove_prefix(size_t n) {
