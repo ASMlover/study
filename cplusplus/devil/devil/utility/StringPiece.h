@@ -27,7 +27,6 @@
 #ifndef DEVIL_UTILITY_STRINGPIECE_HEADER_H
 #define DEVIL_UTILITY_STRINGPIECE_HEADER_H
 
-#include <iosfwd>
 #include <string>
 #include "Types.h"
 

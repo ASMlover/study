@@ -33,9 +33,9 @@
 #endif
 #include "UnCopyable.h"
 
-namespace devil { namespace utility {
-
 typedef unsigned char byte_t;
+
+namespace devil { namespace utility {
 
 template <typename T> struct Identity {
   typedef T Type;
