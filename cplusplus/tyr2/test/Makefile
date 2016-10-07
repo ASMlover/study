@@ -32,7 +32,7 @@ MT	= mt -nologo
 LINK	= link -nologo
 CFLAGS	= -O2 -W3 -MDd -GS -Zi -Fd"vc.pdb" -EHsc -D_DEBUG -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest -manifestfile:$(OUT).manifest -manifestuac:no winmm.lib
-OBJS	= Main.obj
+OBJS	= Main.obj TStringPiece.obj
 
 all: $(OUT)
 rebuild: clean all
@@ -43,4 +43,6 @@ $(OUT): $(OBJS)
 	$(LINK) -out:$(OUT) $(OBJS) $(LDFLAGS)
 	$(MT) -manifest $(OUT).manifest -outputresource:$(OUT);1
 .cc.obj:
+	$(CC) $(CFLAGS) $<
+{..\basic}.cc{}.obj:
 	$(CC) $(CFLAGS) $<
