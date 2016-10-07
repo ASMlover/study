@@ -24,14 +24,13 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_STRING_PIECE_HEADER_H__
-#define __TYR_STRING_PIECE_HEADER_H__
+#ifndef __TYR_BASIC_STRINGPIECE_HEADER_H__
+#define __TYR_BASIC_STRINGPIECE_HEADER_H__
 
-#include <string.h>
-#include <iosfwd>
+#include <string>
 #include "TTypes.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 class StringArg {
   const char* str_;
@@ -131,17 +130,6 @@ public:
     length_ -= n;
   }
 
-  int compare(const StringPiece& x) const {
-    int r = memcmp(str_, x.str_, std::min(length_, x.length_));
-    if (0 == r) {
-      if (length_ < x.length_)
-        r = -1;
-      else if (length_ > x.length_)
-        r = 1;
-    }
-    return r;
-  }
-
   std::string as_string(void) const {
     return std::string(data(), size());
   }
@@ -154,33 +142,45 @@ public:
     return ((length_ >= x.length_) && (0 == memcmp(str_, x.str_, x.length_)));
   }
 
+  int compare(const StringPiece& x) const {
+    int r = memcmp(str_, x.str_, tyr_min(length_, x.length_));
+    if (0 == r) {
+      if (length_ < x.length_)
+        r = -1;
+      else if (length_ > x.length_)
+        r = 1;
+    }
+    return r;
+  }
+
   bool operator==(const StringPiece& r) const {
     return ((length_ == r.length_) && (0 == memcmp(str_, r.str_, length_)));
   }
 
   bool operator<(const StringPiece& r) const {
-    int v = memcmp(str_, r.str_, std::min(length_, r.length_));
+    int v = memcmp(str_, r.str_, tyr_min(length_, r.length_));
     return ((v < 0) || ((0 == v) && (length_ < r.length_)));
   }
 
   bool operator<=(const StringPiece& r) const {
-    int v = memcmp(str_, r.str_, std::min(length_, r.length_));
+    int v = memcmp(str_, r.str_, tyr_min(length_, r.length_));
     return ((v < 0) || ((0 == v) && (length_ <= r.length_)));
   }
 
   bool operator>(const StringPiece& r) const {
-    int v = memcmp(str_, r.str_, std::min(length_, r.length_));
+    int v = memcmp(str_, r.str_, tyr_min(length_, r.length_));
     return ((v > 0) || ((0 == v) && (length_ > r.length_)));
   }
 
   bool operator>=(const StringPiece& r) const {
-    int v = memcmp(str_, r.str_, std::min(length_, r.length_));
+    int v = memcmp(str_, r.str_, tyr_min(length_, r.length_));
     return ((v > 0) || ((0 == v) && (length_ >= r.length_)));
   }
 };
 
-}
+}}
 
-std::ostream& operator<<(std::ostream& out, const tyr::StringPiece& piece);
+// TODO: need implementation of this << operation ?
+// std::ostream& operator<<(std::ostream& out, const tyr::StringPiece& piece);
 
-#endif // __TYR_STRING_PIECE_HEADER_H__
+#endif // __TYR_BASIC_STRINGPIECE_HEADER_H__

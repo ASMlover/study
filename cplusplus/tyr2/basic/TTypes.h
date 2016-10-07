@@ -37,6 +37,11 @@ typedef unsigned char byte_t;
 
 namespace tyr { namespace basic {
 
+template <typename T>
+inline const T& tyr_min(const T& a, const T& b) {
+  return a < b ? a : b;
+}
+
 template <typename T> struct Identity {
   typedef T Type;
 };
