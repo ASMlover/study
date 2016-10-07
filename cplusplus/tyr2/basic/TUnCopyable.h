@@ -24,41 +24,19 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_TYPES_HEADER_H__
-#define __TYR_TYPES_HEADER_H__
+#ifndef __TYR_BASIC_UNCOPYABLE_HEADER_H__
+#define __TYR_BASIC_UNCOPYABLE_HEADER_H__
 
-#include <stdint.h>
-#include <string>
+namespace tyr { namespace basic {
 
-#if !defined(NDEBUG)
-# include <assert.h>
-#endif
-
-#include "TUnCopyable.h"
-
-namespace tyr {
-
-typedef unsigned char byte_t;
-
-template <typename T> struct Identity {
-  typedef T Type;
+class UnCopyable {
+  UnCopyable(const UnCopyable&) = delete;
+  UnCopyable& operator=(const UnCopyable&) = delete;
+protected:
+  UnCopyable(void) = default;
+  ~UnCopyable(void) = default;
 };
 
-template <typename T>
-inline T implicit_cast(typename Identity<T>::Type x) {
-  return x;
-}
+}}
 
-template <typename Target, typename Source>
-inline Target down_cast(Source& x) {
-  return static_cast<Target>(x);
-}
-
-template <typename Target, typename Source>
-inline Target down_cast(Source* x) {
-  return static_cast<Target>(x);
-}
-
-}
-
-#endif // __TYR_TYPES_HEADER_H__
+#endif // __TYR_BASIC_UNCOPYABLE_HEADER_H__
