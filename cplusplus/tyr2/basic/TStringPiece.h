@@ -183,10 +183,8 @@ public:
   }
 };
 
-}}
+std::ostream& operator<<(std::ostream& out, const StringPiece& piece);
 
-std::ostream& operator<<(std::ostream& out, const tyr::basic::StringPiece& piece) {
-  return out << piece.as_string();
-}
+}}
 
 #endif // __TYR_BASIC_STRINGPIECE_HEADER_H__
