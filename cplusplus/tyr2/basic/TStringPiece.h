@@ -27,6 +27,7 @@
 #ifndef __TYR_BASIC_STRINGPIECE_HEADER_H__
 #define __TYR_BASIC_STRINGPIECE_HEADER_H__
 
+#include <iosfwd>
 #include <string>
 #include "TTypes.h"
 
@@ -75,6 +76,10 @@ public:
   StringPiece(const char* s, size_t n)
     : str_(s)
     , length_(n) {
+  }
+
+  explicit operator bool(void) const {
+    return nullptr != str_;
   }
 
   const char* data(void) const {
@@ -180,7 +185,8 @@ public:
 
 }}
 
-// TODO: need implementation of this << operation ?
-// std::ostream& operator<<(std::ostream& out, const tyr::StringPiece& piece);
+std::ostream& operator<<(std::ostream& out, const tyr::basic::StringPiece& piece) {
+  return out << piece.as_string();
+}
 
 #endif // __TYR_BASIC_STRINGPIECE_HEADER_H__
