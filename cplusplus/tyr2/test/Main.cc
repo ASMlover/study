@@ -29,9 +29,9 @@
 
 #define UNUSED_PARAM(arg) (void)arg
 
-void test_string_piece(void) {
-  std::string std_str("std::string('Hello, world!')");
-  const char* c_str = "raw c-types string('Hello, world!')";
+void tyr_test_StringArg(void) {
+  std::string std_str("std::string('tyr test StringArg')");
+  const char* c_str = "raw c-types string('tyr test StringArg')";
 
   tyr::basic::StringArg s1(c_str);
   std::cout << "StringArg with raw c-types string => " << s1.c_str() << std::endl;
@@ -44,11 +44,68 @@ void test_string_piece(void) {
   std::cout << "StringArg with std::string.data() => " << s4.c_str() << std::endl;
 }
 
+static void tyr_show_StringPiece(const tyr::basic::StringPiece& s, const char* name = "StringPiece") {
+  const char* output = "(null)";
+  if (static_cast<bool>(s))
+    output = s.data();
+  std::cout << "object(`" << name << "`) tyr::basic::StringPiece is: \n\t@{"
+    << "'data': '" << output << "'"
+    << ", 'size': " << s.size()
+    << ", 'empty': " << s.empty()
+    << ", 'begin': " << (void*)s.begin()
+    << ", 'end': " << (void*)s.end() << "}"
+    << "\n\t@as_string: " << s.as_string() << std::endl;
+}
+
+void tyr_test_StringPiece(void) {
+  const char* cstr = "raw c-types string<tyr test StringPiece>";
+  size_t cstr_len = strlen(cstr);
+  const byte_t* bstr = reinterpret_cast<const byte_t*>("raw byte-types string<tyr test StringPiece>");
+  std::string std_str("std::string<tyr test StringPiece>");
+  char buf[] = "memory buffer<tyr test StringPiece>";
+  size_t buf_len = sizeof(buf);
+
+  tyr::basic::StringPiece s1;
+  tyr_show_StringPiece(s1, "StringPiece.s1");
+  s1.set(cstr);
+  tyr_show_StringPiece(s1, "StringPiece.s1");
+  s1.set(cstr, cstr_len);
+  tyr_show_StringPiece(s1, "StringPiece.s1");
+  s1.set(buf, buf_len);
+  tyr_show_StringPiece(s1, "StringPiece.s1");
+  s1.remove_prefix(10);
+  tyr_show_StringPiece(s1, "StringPiece.s1");
+  s1.remove_suffix(5);
+  tyr_show_StringPiece(s1, "StringPiece.s1");
+  std::cout << "@s1(" << s1 << ") starts_with<fer>: " << s1.starts_with("fer") << std::endl;
+  s1.clear();
+  tyr_show_StringPiece(s1, "StringPiece.s1");
+
+  tyr::basic::StringPiece s2(bstr);
+  tyr_show_StringPiece(s2, "StringPiece.s2");
+  tyr::basic::StringPiece s3(std_str);
+  tyr_show_StringPiece(s3, "StringPiece.s3");
+
+  std::cout << "s2 compare with s3 -"
+    << " @==: " << (s2 == s3)
+    << " @<: " << (s2 < s3)
+    << " @<=: " << (s2 <= s3)
+    << " @>: " << (s2 > s3)
+    << " @>=: " << (s2 >= s3) << std::endl;
+
+  std::string s;
+  s2.copy_to_string(&s);
+  std::cout << "with copy_to_string @s: " << s << std::endl;
+  s3.copy_to_string(&s);
+  std::cout << "with copy_to_string @s: " << s << std::endl;
+}
+
 int main(int argc, char* argv[]) {
   UNUSED_PARAM(argc);
   UNUSED_PARAM(argv);
 
-  test_string_piece();
+  tyr_test_StringArg();
+  tyr_test_StringPiece();
 
   return 0;
 }
