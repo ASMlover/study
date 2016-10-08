@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <Windows.h>
 #include <stdint.h>
-#include "TPlatformUtils.h"
+#include "../TPlatform.h"
 
 namespace tyr { namespace basic {
 
@@ -55,6 +55,24 @@ pid_t kern_getpid(void) {
 
 pid_t kern_gettid(void) {
   return static_cast<pid_t>(GetCurrentThreadId());
+}
+
+int kern_mutex_init(kern_mutex_t* mtx) {
+  return InitializeCriticalSection(mtx), 0;
+}
+
+int kern_mutex_destroy(kern_mutex_t* mtx) {
+  return DeleteCriticalSection(mtx), 0;
+}
+
+int kern_mutex_lock(kern_mutex_t* mtx) {
+  if ((DWORD)mtx->OwningThread != GetCurrentThreadId())
+    EnterCriticalSection(mtx);
+  return 0;
+}
+
+int kern_mutex_unlock(kern_mutex_t* mtx) {
+  return LeaveCriticalSection(mtx), 0;
 }
 
 }}

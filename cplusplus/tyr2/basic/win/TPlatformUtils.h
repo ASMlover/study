@@ -32,6 +32,7 @@
 #endif
 
 typedef int pid_t;
+typedef CRITICAL_SECTION kern_mutex_t;
 
 namespace tyr { namespace basic {
 
@@ -46,8 +47,6 @@ struct timezone {
 };
 
 int gettimeofday(struct timeval* tv, struct timezone* tz);
-pid_t kern_getpid(void);
-pid_t kern_gettid(void);
 
 }}
 

@@ -29,12 +29,8 @@
 
 #include <sys/time.h>
 #include <sys/types.h>
+#include <pthread.h>
 
-namespace tyr { namespace basic {
-
-pid_t kern_getpid(void);
-pid_t kern_gettid(void);
-
-}}
+typedef pthread_mutex_t kern_mutex_t;
 
 #endif // __TYR_BASIC_POSIX_PLATFORMUTILS_HEADER_H__

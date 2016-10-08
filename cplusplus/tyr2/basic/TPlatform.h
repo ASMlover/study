@@ -35,4 +35,15 @@
 # include "posix/TPlatformUtils.h"
 #endif
 
+namespace tyr { namespace basic {
+
+pid_t kern_getpid(void);
+pid_t kern_gettid(void);
+int kern_mutex_init(kern_mutex_t* mtx);
+int kern_mutex_destroy(kern_mutex_t* mtx);
+int kern_mutex_lock(kern_mutex_t* mtx);
+int kern_mutex_unlock(kern_mutex_t* mtx);
+
+}}
+
 #endif // __TYR_BASIC_PLATFORM_HEADER_H__
