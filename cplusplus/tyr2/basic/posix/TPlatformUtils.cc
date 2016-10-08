@@ -24,37 +24,17 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <Windows.h>
-#include <stdint.h>
-#include "TPlatformUtils.h"
+#include <sys/syscall.h>
+#include <unistd.h>
 
 namespace tyr { namespace basic {
 
-static const uint64_t kEpoch = 116444736000000000ULL;
-
-int gettimeofday(struct timeval* tv, struct timezone* /*tz*/) {
-  if (tv) {
-    FILETIME ft;
-    SYSTEMTIME st;
-    ULARGE_INTEGER uli;
-
-    GetSystemTime(&st);
-    SystemTimeToFileTime(&st, &ft);
-    uli.LowPart = ft.dwLowDateTime;
-    uli.HighPart = ft.dwHighDateTime;
-
-    tv->tv_sec = static_cast<long>((uli.QuadPart - kEpoch) / 10000000L);
-    tv->tv_usec = static_cast<long>(st.wMilliseconds * 1000);
-  }
-  return 0;
-}
-
 pid_t kern_getpid(void) {
-  return static_cast<pid_t>(GetCurrentProcessId());
+  return getpid();
 }
 
 pid_t kern_gettid(void) {
-  return static_cast<pid_t>(GetCurrentThreadId());
+  return static_cast<pid_t>(syscall(SYS_gettid));
 }
 
 }}

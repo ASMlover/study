@@ -42,4 +42,7 @@
 # endif
 #endif
 
+// check if use C++11, default is 0
+#define TYR_USE_CPP11 0
+
 #endif // __TYR_BASIC_CONFIG_HEADER_H__

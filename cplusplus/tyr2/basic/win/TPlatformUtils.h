@@ -31,8 +31,13 @@
 # include <Winsock2.h>
 #endif
 
+typedef int pid_t;
+
 namespace tyr { namespace basic {
 
+#if !defined(__builtin_expect)
+# define __builtin_expect(exp, c) (exp)
+#endif
 #define gmtime_r(timep, result) gmtime_s((result), (timep))
 
 struct timezone {
@@ -41,6 +46,8 @@ struct timezone {
 };
 
 int gettimeofday(struct timeval* tv, struct timezone* tz);
+pid_t kern_getpid(void);
+pid_t kern_gettid(void);
 
 }}
 
