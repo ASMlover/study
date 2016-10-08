@@ -24,9 +24,9 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <sys/time.h>
 #include <inttypes.h>
 #include <time.h>
+#include "TPlatform.h"
 #include "TTimestamp.h"
 
 namespace tyr { namespace basic {
@@ -43,33 +43,33 @@ std::string Timestamp::to_string(void) const {
 
 std::string Timestamp::to_formatted_string(bool show_msec) const {
   char buf[32] = {0};
-  time_t sec = static_cast<time_t>(epoch_msec_ / kMicroSecondsPerSecond);
-  struct tm tm_time;
-  gmtime_r(&sec, &tm_time);
+  time_t time = static_cast<time_t>(epoch_msec_ / kMicroSecondsPerSecond);
+  struct tm result;
+  gmtime_r(&time, &result);
 
   if (show_msec) {
     int msec = static_cast<int>(epoch_msec_ % kMicroSecondsPerSecond);
     snprintf(buf,
         sizeof(buf),
         "%04d%02d%02d %02d:%02d:%02d.%06d",
-        tm_time.tm_year + 1900,
-        tm_time.tm_mon + 1,
-        tm_time.tm_mday,
-        tm_time.tm_hour,
-        tm_time.tm_min,
-        tm_time.tm_sec,
+        result.tm_year + 1900,
+        result.tm_mon + 1,
+        result.tm_mday,
+        result.tm_hour,
+        result.tm_min,
+        result.tm_sec,
         msec);
   }
   else {
     snprintf(buf,
         sizeof(buf),
         "%04d%02d%02d %02d:%02d:%02d",
-        tm_time.tm_year + 1900,
-        tm_time.tm_mon + 1,
-        tm_time.tm_mday,
-        tm_time.tm_hour,
-        tm_time.tm_min,
-        tm_time.tm_sec);
+        result.tm_year + 1900,
+        result.tm_mon + 1,
+        result.tm_mday,
+        result.tm_hour,
+        result.tm_min,
+        result.tm_sec);
   }
 
   return buf;
