@@ -25,72 +25,74 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h>
-#include <sys/syscall.h>
 #include <stdio.h>
-#include <type_traits>
-#include "TTimestamp.h"
-#include "TCurrentThread.h"
+#if TYR_USE_CPP11
+# include <chrono>
+# include <thread>
+#endif
+#include "../TPlatform.h"
+#include "../TTimestamp.h"
+#include "../unexposed/TCurrentThreadUtils.h"
+#include "../TCurrentThread.h"
 
 namespace tyr { namespace basic {
 
-pid_t gettid(void) {
-  return static_cast<pid_t>(syscall(SYS_gettid));
-}
-
 namespace CurrentThread {
+  __thread int tCachedTid = 0;
+  __thread char tTidString[32];
+  __thread int tTidStringLength = 6;
+  __thread const char* tThreadName = "unknown";
+  static_assert(std::is_same<int, pid_t>::value, "pid_t should be int");
 
-__thread int tCachedTid = 0;
-__thread char tTidString[32];
-__thread int tTidStringLength = 6;
-__thread const char* tThreadName = "unknown";
-static_assert(std::is_same<int, pid_t>::value, "pid_t should be int");
+  namespace unexposed {
+    void set_cached_tid(int cached_tid) {
+      CurrentThread::tCachedTid = cached_tid;
+    }
 
-namespace internal {
+    void set_thread_name(const char* name) {
+      CurrentThread::tThreadName = name;
+    }
+  }
 
-void set_cached_tid(int cached_tid) {
-  tyr::CurrentThread::tCachedTid = cached_tid;
-}
+  void cached_tid(void) {
+    if (0 == tCachedTid) {
+      tCachedTid = kern_gettid();
+      tTidStringLength = snprintf(tTidString, sizeof(tTidString), "%5d ", tCachedTid);
+    }
+  }
 
-void set_thread_name(const char* name) {
-  tyr::CurrentThread::tThreadName = name;
-}
+  int tid(void) {
+    if (__builtin_expect(tCachedTid == 0, 0))
+      cached_tid();
+    return tCachedTid;
+  }
 
-}
+  const char* tid_string(void) {
+    return tTidString;
+  }
 
-void cached_tid(void) {
-  if (0 == tCachedTid) {
-    tCachedTid = gettid();
-    tTidStringLength = snprintf(tTidString, sizeof(tTidString), "%5d ", tCachedTid);
+  int tid_string_length(void) {
+    return tTidStringLength;
+  }
+
+  const char* name(void) {
+    return tThreadName;
+  }
+
+  bool is_main_thread(void) {
+    return tid() == kern_getpid();
+  }
+
+  void sleep_usec(int64_t usec) {
+#if TYR_USE_CPP11
+    std::this_thread::sleep_for(std::chrono::microseconds(usec));
+#else
+    struct timespec ts = {0, 0};
+    ts.tv_sec = static_cast<time_t>(usec / Timestamp::kMicroSecondsPerSecond);
+    ts.tv_nsec = static_cast<long>(usec % Timestamp::kMicroSecondsPerSecond * 1000);
+    nanosleep(&ts, nullptr);
+#endif
   }
 }
 
-int tid(void) {
-  if (__builtin_expect(tCachedTid == 0, 0))
-    cached_tid();
-  return tCachedTid;
-}
-
-const char* tid_string(void) {
-  return tTidString;
-}
-
-int tid_string_length(void) {
-  return tTidStringLength;
-}
-
-const char* name(void) {
-  return tThreadName;
-}
-
-bool is_main_thread(void) {
-  return tid() == getpid();
-}
-
-void sleep_usec(int64_t usec) {
-  struct timespec ts = {0, 0};
-  ts.tv_sec = static_cast<time_t>(usec / Timestamp::kMicroSecondsPerSecond);
-  ts.tv_nsec = static_cast<long>(usec % Timestamp::kMicroSecondsPerSecond * 1000);
-  nanosleep(&ts, nullptr);
-}
-
-}}}
+}}

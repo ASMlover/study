@@ -28,5 +28,13 @@
 #define __TYR_BASIC_POSIX_PLATFORMUTILS_HEADER_H__
 
 #include <sys/time.h>
+#include <sys/types.h>
+
+namespace tyr { namespace basic {
+
+pid_t kern_getpid(void);
+pid_t kern_gettid(void);
+
+}}
 
 #endif // __TYR_BASIC_POSIX_PLATFORMUTILS_HEADER_H__

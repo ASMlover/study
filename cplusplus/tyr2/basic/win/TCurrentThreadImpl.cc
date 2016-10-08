@@ -24,23 +24,65 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_BASIC_CURRENTTHREAD_HEADER_H__
-#define __TYR_BASIC_CURRENTTHREAD_HEADER_H__
-
-#include <stdint.h>
+#include <stdio.h>
+#include <chrono>
+#include <thread>
+#include "../TPlatform.h"
+#include "../TTimestamp.h"
+#include "../unexposed/TCurrentThreadUtils.h"
+#include "../TCurrentThread.h"
 
 namespace tyr { namespace basic {
 
 namespace CurrentThread {
-  void cached_tid(void);
-  int tid(void);
-  const char* tid_string(void);
-  int tid_string_length(void);
-  const char* name(void);
-  bool is_main_thread(void);
-  void sleep_usec(int64_t usec);
-}
+  __declspec(thread) int tCachedTid = 0;
+  __declspec(thread) char tTidString[32];
+  __declspec(thread) int tTidStringLength = 6;
+  __declspec(thread) const char* tThreadName = "unknown";
+  static_assert(std::is_same<int, pid_t>::value, "pid_t should be int");
 
-}}
+  namespace unexposed {
+    void set_cached_tid(int cached_tid) {
+      CurrentThread::tCachedTid = cached_tid;
+    }
 
-#endif // __TYR_BASIC_CURRENTTHREAD_HEADER_H__
+    void set_thread_name(const char* name) {
+      CurrentThread::tThreadName = name;
+    }
+  }
+
+  void cached_tid(void) {
+    if (0 == tCachedTid) {
+      tCachedTid = kern_gettid();
+      tTidStringLength = snprintf(tTidString, sizeof(tTidString), "%5d ", tCachedTid);
+    }
+  }
+
+  int tid(void) {
+    if (__builtin_expect(tCachedTid == 0, 0))
+      cached_tid();
+    return tCachedTid;
+  }
+
+  const char* tid_string(void) {
+    return tTidString;
+  }
+
+  int tid_string_length(void) {
+    return tTidStringLength;
+  }
+
+  const char* name(void) {
+    return tThreadName;
+  }
+
+  bool is_main_thread(void) {
+    return tid() == kern_getpid();
+  }
+
+  void sleep_usec(int64_t usec) {
+    // use C++11 on Windows
+    std::this_thread::sleep_for(std::chrono::microseconds(usec));
+  }
+
+}}}

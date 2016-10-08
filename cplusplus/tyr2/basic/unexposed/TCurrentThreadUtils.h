@@ -24,23 +24,19 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_BASIC_CURRENTTHREAD_HEADER_H__
-#define __TYR_BASIC_CURRENTTHREAD_HEADER_H__
-
-#include <stdint.h>
+#ifndef __TYR_BASIC_UNEXPOSED_CURRENTTHREADUTILS_HEADER_H__
+#define __TYR_BASIC_UNEXPOSED_CURRENTTHREADUTILS_HEADER_H__
 
 namespace tyr { namespace basic {
 
 namespace CurrentThread {
-  void cached_tid(void);
-  int tid(void);
-  const char* tid_string(void);
-  int tid_string_length(void);
-  const char* name(void);
-  bool is_main_thread(void);
-  void sleep_usec(int64_t usec);
+  // unexposed interfaces of CurrentThread
+  namespace unexposed {
+    void set_cached_tid(int cached_tid);
+    void set_thread_name(const char* name);
+  }
 }
 
 }}
 
-#endif // __TYR_BASIC_CURRENTTHREAD_HEADER_H__
+#endif // __TYR_BASIC_UNEXPOSED_CURRENTTHREADUTILS_HEADER_H__
