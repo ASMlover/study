@@ -24,13 +24,12 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_CURRENT_THREAD_HEADER_H__
-#define __TYR_CURRENT_THREAD_HEADER_H__
+#ifndef __TYR_BASIC_CURRENTTHREAD_HEADER_H__
+#define __TYR_BASIC_CURRENTTHREAD_HEADER_H__
 
 #include <stdint.h>
 
-namespace tyr {
-namespace CurrentThread {
+namespace tyr { namespace basic { namespace CurrentThread {
 
 // just for internal
 namespace internal {
@@ -48,7 +47,6 @@ const char* name(void);
 bool is_main_thread(void);
 void sleep_usec(int64_t usec);
 
-}
-}
+}}}
 
-#endif // __TYR_CURRENT_THREAD_HEADER_H__
+#endif // __TYR_BASIC_CURRENTTHREAD_HEADER_H__

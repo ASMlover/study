@@ -29,38 +29,26 @@
 #include <time.h>
 #include "TTimestamp.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 static_assert(sizeof(Timestamp) == sizeof(int64_t), "Timestamp is same size as int64_t");
 
-bool Timestamp::is_valid(void) const {
-  return msec_ > 0;
-}
-
-int64_t Timestamp::msec_since_epoch(void) const {
-  return msec_;
-}
-
-time_t Timestamp::sec_since_epoch(void) const {
-  return static_cast<time_t>(msec_ / kMicroSecondsPerSecond);
-}
-
 std::string Timestamp::to_string(void) const {
   char buf[32] = {0};
-  int64_t sec = msec_ / kMicroSecondsPerSecond;
-  int64_t msec = msec_ % kMicroSecondsPerSecond;
+  int64_t sec = epoch_msec_ / kMicroSecondsPerSecond;
+  int64_t msec = epoch_msec_ % kMicroSecondsPerSecond;
   snprintf(buf, sizeof(buf) - 1, "%" PRId64 ".%06" PRId64 "", sec, msec);
-  return std::string(buf);
+  return buf;
 }
 
 std::string Timestamp::to_formatted_string(bool show_msec) const {
   char buf[32] = {0};
-  time_t sec = static_cast<time_t>(msec_ / kMicroSecondsPerSecond);
+  time_t sec = static_cast<time_t>(epoch_msec_ / kMicroSecondsPerSecond);
   struct tm tm_time;
   gmtime_r(&sec, &tm_time);
 
   if (show_msec) {
-    int msec = static_cast<int>(msec_ % kMicroSecondsPerSecond);
+    int msec = static_cast<int>(epoch_msec_ % kMicroSecondsPerSecond);
     snprintf(buf,
         sizeof(buf),
         "%04d%02d%02d %02d:%02d:%02d.%06d",
@@ -84,7 +72,7 @@ std::string Timestamp::to_formatted_string(bool show_msec) const {
         tm_time.tm_sec);
   }
 
-  return std::string(buf);
+  return buf;
 }
 
 Timestamp Timestamp::now(void) {
@@ -106,4 +94,4 @@ Timestamp Timestamp::from_unix_time(time_t t, int msec) {
   return Timestamp(static_cast<int64_t>(t) * kMicroSecondsPerSecond + msec);
 }
 
-}
+}}

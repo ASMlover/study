@@ -24,31 +24,42 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_TIMESTAMP_HEADER_H__
-#define __TYR_TIMESTAMP_HEADER_H__
+#ifndef __TYR_BASIC_TIMESTAMP_HEADER_H__
+#define __TYR_BASIC_TIMESTAMP_HEADER_H__
 
+#include <string>
+#include <utility>
 #include "TTypes.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 class Timestamp {
-  int64_t msec_;
+  int64_t epoch_msec_;
 public:
   Timestamp(void)
-    : msec_(0) {
+    : epoch_msec_(0) {
   }
 
-  explicit Timestamp(int64_t msec)
-    : msec_(msec) {
+  explicit Timestamp(int64_t epoch_msec)
+    : epoch_msec_(epoch_msec) {
   }
 
   void swap(Timestamp& r) {
-    std::swap(msec_, r.msec_);
+    std::swap(epoch_msec_, r.epoch_msec_);
   }
 
-  bool is_valid(void) const;
-  int64_t msec_since_epoch(void) const;
-  time_t sec_since_epoch(void) const;
+  bool is_valid(void) const {
+    return epoch_msec_ > 0;
+  }
+
+  int64_t msec_since_epoch(void) const {
+    return epoch_msec_;
+  }
+
+  time_t sec_since_epoch(void) const {
+    return static_cast<time_t>(epoch_msec_ / kMicroSecondsPerSecond);
+  }
+
   std::string to_string(void) const;
   std::string to_formatted_string(bool show_msec = true) const;
 
@@ -77,6 +88,6 @@ inline Timestamp add_time(const Timestamp& t, double sec) {
   return Timestamp(t.msec_since_epoch() + delta);
 }
 
-}
+}}
 
-#endif // __TYR_TIMESTAMP_HEADER_H__
+#endif // __TYR_BASIC_TIMESTAMP_HEADER_H__

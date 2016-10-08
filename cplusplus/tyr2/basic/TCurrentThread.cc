@@ -31,7 +31,7 @@
 #include "TTimestamp.h"
 #include "TCurrentThread.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 pid_t gettid(void) {
   return static_cast<pid_t>(syscall(SYS_gettid));
@@ -56,7 +56,6 @@ void set_thread_name(const char* name) {
 }
 
 }
-
 
 void cached_tid(void) {
   if (0 == tCachedTid) {
@@ -94,5 +93,4 @@ void sleep_usec(int64_t usec) {
   nanosleep(&ts, nullptr);
 }
 
-}
-}
+}}}
