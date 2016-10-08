@@ -24,12 +24,15 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <time.h>
 #include <iostream>
 #include "../basic/TStringPiece.h"
+#include "../basic/TTimestamp.h"
 
 #define UNUSED_PARAM(arg) (void)arg
 
 void tyr_test_StringArg(void) {
+  std::cout << "\n#################### StringArg ####################\n";
   std::string std_str("std::string('tyr test StringArg')");
   const char* c_str = "raw c-types string('tyr test StringArg')";
 
@@ -48,16 +51,18 @@ static void tyr_show_StringPiece(const tyr::basic::StringPiece& s, const char* n
   const char* output = "(null)";
   if (static_cast<bool>(s))
     output = s.data();
-  std::cout << "object(`" << name << "`) tyr::basic::StringPiece is: \n\t@{"
-    << "'data': '" << output << "'"
-    << ", 'size': " << s.size()
-    << ", 'empty': " << s.empty()
-    << ", 'begin': " << (void*)s.begin()
-    << ", 'end': " << (void*)s.end() << "}"
-    << "\n\t@as_string: " << s.as_string() << std::endl;
+  std::cout << "object(`" << name << "`) tyr::basic::StringPiece is: @{\n\t\t"
+    << "@data: " << output << "\n\t\t"
+    << "@size: " << s.size() << "\n\t\t"
+    << "@empty: " << s.empty() << "\n\t\t"
+    << "@begin: " << (void*)s.begin() << "\n\t\t"
+    << "@end: " << (void*)s.end() << "\n\t"
+    << "}\n\t"
+    << "@as_string: " << s.as_string() << std::endl;
 }
 
 void tyr_test_StringPiece(void) {
+  std::cout << "\n#################### StringPiece ####################\n";
   const char* cstr = "raw c-types string<tyr test StringPiece>";
   size_t cstr_len = strlen(cstr);
   const byte_t* bstr = reinterpret_cast<const byte_t*>("raw byte-types string<tyr test StringPiece>");
@@ -100,12 +105,52 @@ void tyr_test_StringPiece(void) {
   std::cout << "with copy_to_string @s: " << s << std::endl;
 }
 
+static void tyr_show_Timestamp(tyr::basic::Timestamp t, const char* name = "Timestamp") {
+  std::cout << "object(`" << name << "`) tyr::basic::Timestamp is: @{\n\t\t"
+    << "@is_valid: " << t.is_valid() << "\n\t\t"
+    << "@msec_since_epoch: " << t.msec_since_epoch() << "\n\t\t"
+    << "@sec_since_epoch: " << t.sec_since_epoch() << "\n\t\t"
+    << "@to_string: " << t.to_string() << "\n\t\t"
+    << "@to_formatted_string(true): " << t.to_formatted_string() << "\n\t"
+    << "}" << std::endl;
+}
+
+void tyr_test_Timestamp(void) {
+  std::cout << "\n#################### Timestamp ####################\n";
+  using namespace tyr::basic;
+
+  Timestamp t1;
+  tyr_show_Timestamp(t1, "Timestamp.t1");
+
+  Timestamp t2(time(nullptr) * Timestamp::kMicroSecondsPerSecond);
+  tyr_show_Timestamp(t2, "Timestamp.t2");
+
+  t1.swap(t2);
+  tyr_show_Timestamp(t1, "Timestamp.t1.after.swap");
+  tyr_show_Timestamp(t2, "Timestamp.t2.after.swap");
+
+  tyr_show_Timestamp(Timestamp::now(), "Timestamp.now");
+  tyr_show_Timestamp(Timestamp::invalid(), "Timestamp.invalid");
+  tyr_show_Timestamp(Timestamp::from_unix_time(time(nullptr)), "Timestamp.from_unix_time");
+  tyr_show_Timestamp(Timestamp::from_unix_time(time(nullptr), 100), "Timestamp.from_unix_time.2");
+
+  Timestamp t3(Timestamp::from_unix_time(time(nullptr)));
+  Timestamp t4(Timestamp::from_unix_time(time(nullptr), 100));
+  tyr_show_Timestamp(t3, "Timestamp.t3");
+  tyr_show_Timestamp(t4, "Timestamp.t4");
+  std::cout << "@t3 == @now: " << (t3 == Timestamp::now()) << std::endl;
+  std::cout << "@t3 < @t4: " << (t3 < t4) << std::endl;
+  std::cout << "time_difference(t4 - t3) = " << time_difference(t4, t3) << std::endl;
+  tyr_show_Timestamp(add_time(t3, 5), "Timestamp.add_time.(now + 5s)");
+}
+
 int main(int argc, char* argv[]) {
   UNUSED_PARAM(argc);
   UNUSED_PARAM(argv);
 
   tyr_test_StringArg();
   tyr_test_StringPiece();
+  tyr_test_Timestamp();
 
   return 0;
 }
