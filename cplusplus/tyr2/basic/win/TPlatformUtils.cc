@@ -43,8 +43,8 @@ int gettimeofday(struct timeval* tv, struct timezone* /*tz*/) {
     uli.LowPart = ft.dwLowDateTime;
     uli.HighPart = ft.dwHighDateTime;
 
-    tv->tv_sec = (long)((uli.QuadPart - kEpoch) / 10000000L);
-    tv->tv_usec = (long)(st.wMilliseconds * 1000);
+    tv->tv_sec = static_cast<long>((uli.QuadPart - kEpoch) / 10000000L);
+    tv->tv_usec = static_cast<long>(st.wMilliseconds * 1000);
   }
   return 0;
 }
