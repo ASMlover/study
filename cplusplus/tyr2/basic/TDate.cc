@@ -24,77 +24,54 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_DATE_HEADER_H__
-#define __TYR_DATE_HEADER_H__
+#include <stdio.h>
+#include <time.h>
+#include "TDate.h"
 
-#include "TTypes.h"
+namespace tyr { namespace basic {
 
-struct tm;
+static_assert(sizeof(int) >= sizeof(int32_t), "require 32 bit integer at least");
 
-namespace tyr {
-
-class Date {
-  int unix_day_;
-public:
-  struct InternalDate {
-    int year;
-    int month;
-    int day;
-  };
-  static const int kDaysPerWeek = 7;
-  static const int kUnixDay19700101;
-
-  Date(void)
-    : unix_day_(0) {
-  }
-
-  explicit Date(int unix_day)
-    : unix_day_(unix_day) {
-  }
-
-  Date(int year, int month, int day);
-  explicit Date(const struct tm& t);
-
-  void swap(Date& r) {
-    std::swap(unix_day_, r.unix_day_);
-  }
-
-  bool is_valid(void) const {
-    return unix_day_ > 0;
-  }
-
-  int year(void) const {
-    return internal_date().year;
-  }
-
-  int month(void) const {
-    return internal_date().month;
-  }
-
-  int day(void) const {
-    return internal_date().day;
-  }
-
-  int week_day(void) const {
-    return (unix_day_ + 1) % kDaysPerWeek;
-  }
-
-  int unix_day(void) const {
-    return unix_day_;
-  }
-
-  std::string to_iso_string(void) const;
-  InternalDate internal_date(void) const;
-};
-
-inline bool operator==(const Date& a, const Date& b) {
-  return a.unix_day() == b.unix_day();
+int get_unix_day(int year, int month, int day) {
+  int a = (14 - month) / 12;
+  int y = year + 4800 - a;
+  int m = month + 12 * a - 3;
+  return day + (m * 153 + 2) / 5 + y * 365 + y / 4 - y / 100 + y / 400 - 32045;
 }
 
-inline bool operator<(const Date& a, const Date& b) {
-  return a.unix_day() < b.unix_day();
+struct Date::DateTuple get_date_tuple(int epoch_day) {
+  int a = epoch_day + 32044;
+  int b = (a * 4 + 3) / 146097;
+  int c = a - ((b * 146097) / 4);
+  int d = (c * 4 + 3) / 1461;
+  int e = c - ((d * 1461) / 4);
+  int m = (e * 5 + 2) / 153;
+  Date::DateTuple date;
+  date.year = b * 100 + d - 4800 + (m / 10);
+  date.month = m + 3 - (m / 10) * 12;
+  date.day = e - ((m * 153 + 2) / 5) + 1;
+  return date;
 }
 
+const int Date::kEpochDay19700101 = get_unix_day(1970, 1, 1);
+
+Date::Date(int year, int month, int day)
+  : epoch_day_(get_unix_day(year, month, day)) {
 }
 
-#endif // __TYR_DATE_HEADER_H__
+Date::Date(const struct tm& t)
+  : epoch_day_(get_unix_day(t.tm_year + 1900, t.tm_mon + 1, t.tm_mday)) {
+}
+
+std::string Date::to_iso_string(void) const {
+  char buf[32];
+  DateTuple date(get_date());
+  snprintf(buf, sizeof(buf), "%4d-%02d-%02d", date.year, date.month, date.day);
+  return buf;
+}
+
+Date::DateTuple Date::get_date(void) const {
+  return get_date_tuple(epoch_day_);
+}
+
+}}
