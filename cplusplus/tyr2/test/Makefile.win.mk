@@ -25,19 +25,26 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-OUT	= tyr.test
-RM	= rm
-CC	= clang++
-CFLAGS	= -g -O2 -Wall -std=c++0x
-LDFLAGS	= -lc -lpthread
-OBJS	= $(patsubst %.cc, %.o, $(wildcard *.cc ../basic/*.cc ../basic/posix/*.cc))
+OUT	= tyr.test.exe
+RM	= del /s /f
+CC	= cl -c -nologo
+MT	= mt -nologo
+LINK	= link -nologo
+CFLAGS	= -O2 -W3 -MDd -GS -Zi -Fd"vc.pdb" -EHsc -D_DEBUG -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
+LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest -manifestfile:$(OUT).manifest -manifestuac:no winmm.lib
+OBJS	= Main.obj TStringPiece.obj TPlatformUtils.obj TTimestamp.obj TCurrentThreadImpl.obj
 
 all: $(OUT)
 rebuild: clean all
 clean:
-	$(RM) $(OUT) $(OBJS)
+	$(RM) $(OUT) $(OBJS) *.pdb *.ilk *.manifest
 
 $(OUT): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
-$(OBJS): %.o: %.cc
-	$(CC) -o $*.o -c $(CFLAGS) $^
+	$(LINK) -out:$(OUT) $(OBJS) $(LDFLAGS)
+	$(MT) -manifest $(OUT).manifest -outputresource:$(OUT);1
+.cc.obj:
+	$(CC) $(CFLAGS) $<
+{..\basic}.cc{}.obj:
+	$(CC) $(CFLAGS) $<
+{..\basic\win}.cc{}.obj:
+	$(CC) $(CFLAGS) $<
