@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # Copyright (c) 2016 ASMlover. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,28 +25,19 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import platform
-import subprocess
-import sys
+OUT	= tyr.test
+RM	= rm
+CC	= g++
+CFLAGS	= -g -O2 -Wall -std=c++11
+LDFLAGS	= -lpthread
+OBJS	= $(patsubst %.cc, %.o, $(wildcard *.cc ../basic/*.cc ../basic/posix/*.cc ../basic/linux/*.cc))
 
-def get_osname():
-    return platform.system().lower()
+all: $(OUT)
+rebuild: clean all
+clean:
+	$(RM) $(OUT) $(OBJS)
 
-def gen_make_prefix():
-    osname = get_osname()
-    make = 'make'
-    if osname == 'windows':
-        make = 'nmake'
-
-    return '{make} -f Makefile.{osname}.mk'.format(make=make, osname=osname)
-
-def main():
-    if len(sys.argv) < 2:
-        option = ''
-    else:
-        option = str(sys.argv[1])
-    cmd = '{prefix} {option}'.format(prefix=gen_make_prefix(), option=option)
-    subprocess.check_call(cmd, shell=True)
-
-if __name__ == '__main__':
-    main()
+$(OUT): $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+$(OBJS): %.o: %.cc
+	$(CC) -o $*.o -c $(CFLAGS) $^
