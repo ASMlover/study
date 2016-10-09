@@ -46,5 +46,5 @@ $(OUT): $(OBJS)
 	$(CC) $(CFLAGS) $<
 {..\basic}.cc{}.obj:
 	$(CC) $(CFLAGS) $<
-{..\basic\win}.cc{}.obj:
+{..\basic\windows}.cc{}.obj:
 	$(CC) $(CFLAGS) $<
