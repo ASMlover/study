@@ -35,7 +35,11 @@ pid_t kern_getpid(void) {
 }
 
 pid_t kern_gettid(void) {
+#if defined(TYR_DARWIN)
+  return static_cast<pid_t>(pthread_mach_thread_np(pthread_self()));
+#else
   return static_cast<pid_t>(syscall(SYS_gettid));
+#endif
 }
 
 int kern_mutex_init(kern_mutex_t* mtx) {
