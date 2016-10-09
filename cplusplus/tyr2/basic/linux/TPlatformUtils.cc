@@ -33,3 +33,5 @@ namespace tyr { namespace basic {
 pid_t kern_gettid(void) {
   return static_cast<pid_t>(syscall(SYS_gettid));
 }
+
+}}

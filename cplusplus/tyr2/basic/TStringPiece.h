@@ -27,7 +27,7 @@
 #ifndef __TYR_BASIC_STRINGPIECE_HEADER_H__
 #define __TYR_BASIC_STRINGPIECE_HEADER_H__
 
-#include <iosfwd>
+#include <string.h>
 #include <string>
 #include "TTypes.h"
 
