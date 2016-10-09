@@ -24,28 +24,28 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_MUTEX_HEADER_H__
-#define __TYR_MUTEX_HEADER_H__
+#ifndef __TYR_BASIC_MUTEX_HEADER_H__
+#define __TYR_BASIC_MUTEX_HEADER_H__
 
-#include <pthread.h>
 #include <assert.h>
-#include "TUnCopyable.h"
+#include "TTypes.h"
+#include "TPlatform.h"
 #include "TCurrentThread.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 class Mutex : private UnCopyable {
-  pthread_mutex_t mtx_;
+  kern_mutex_t mtx_;
   pid_t holder_;
 public:
   Mutex(void)
     : holder_(0) {
-    pthread_mutex_init(&mtx_, nullptr);
+    kern_mutex_init(&mtx_);
   }
 
   ~Mutex(void) {
     assert(0 == holder_);
-    pthread_mutex_destroy(&mtx_);
+    kern_mutex_destroy(&mtx_);
   }
 
   bool locked_by_this_thread(void) const {
@@ -57,16 +57,16 @@ public:
   }
 
   void lock(void) {
-    pthread_mutex_lock(&mtx_);
+    kern_mutex_lock(&mtx_);
     assign_holder();
   }
 
   void unlock(void) {
     unassign_holder();
-    pthread_mutex_unlock(&mtx_);
+    kern_mutex_unlock(&mtx_);
   }
 
-  pthread_mutex_t* get_mutex(void) {
+  kern_mutex_t* get_mutex(void) {
     return &mtx_;
   }
 private:
@@ -109,6 +109,6 @@ public:
 
 #define MutexGuard(mtx) error "missing guard object name"
 
-}
+}}
 
-#endif // __TYR_MUTEX_HEADER_H__
+#endif // __TYR_BASIC_MUTEX_HEADER_H__

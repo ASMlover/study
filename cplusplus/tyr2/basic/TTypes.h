@@ -28,9 +28,6 @@
 #define __TYR_BASIC_TYPES_HEADER_H__
 
 #include <stdint.h>
-#if !defined(NDEBUG)
-# include <assert.h>
-#endif
 #include "TUnCopyable.h"
 
 typedef unsigned char byte_t;
