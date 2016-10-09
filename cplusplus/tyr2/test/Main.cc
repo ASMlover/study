@@ -28,6 +28,8 @@
 #include <iostream>
 #include "../basic/TStringPiece.h"
 #include "../basic/TTimestamp.h"
+#include "../basic/TCurrentThread.h"
+#include "../basic/TMutex.h"
 
 #define UNUSED_PARAM(arg) (void)arg
 
@@ -144,6 +146,25 @@ void tyr_test_Timestamp(void) {
   tyr_show_Timestamp(add_time(t3, 5), "Timestamp.add_time.(now + 5s)");
 }
 
+void tyr_test_CurrentThread(void) {
+  std::cout << "\n#################### CurrentThread ####################\n";
+  using namespace tyr::basic;
+
+  CurrentThread::cached_tid();
+
+  std::cout << "namespace CurrentThread functions: @{\n\t\t"
+    << "@tid: " << CurrentThread::tid() << "\n\t\t"
+    << "@tid_string: " << CurrentThread::tid_string() << "\n\t\t"
+    << "@tid_string_length: " << CurrentThread::tid_string_length() << "\n\t\t"
+    << "@name: " << CurrentThread::name() << "\n\t\t"
+    << "@is_main_thread: " << CurrentThread::is_main_thread() << "\n\t"
+    << "}" << std::endl;
+
+  tyr_show_Timestamp(Timestamp::now(), "CurrentThread.begin");
+  CurrentThread::sleep_usec(1010);
+  tyr_show_Timestamp(Timestamp::now(), "CurrentThread.end");
+}
+
 int main(int argc, char* argv[]) {
   UNUSED_PARAM(argc);
   UNUSED_PARAM(argv);
@@ -151,6 +172,7 @@ int main(int argc, char* argv[]) {
   tyr_test_StringArg();
   tyr_test_StringPiece();
   tyr_test_Timestamp();
+  tyr_test_CurrentThread();
 
   return 0;
 }
