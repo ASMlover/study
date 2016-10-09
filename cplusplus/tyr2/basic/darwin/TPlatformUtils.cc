@@ -24,30 +24,10 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <sys/syscall.h>
-#include <unistd.h>
 #include "../TPlatform.h"
 
 namespace tyr { namespace basic {
 
-pid_t kern_getpid(void) {
-  return getpid();
+pid_t kern_gettid(void) {
+  return static_cast<pid_t>(pthread_mach_thread_np(pthread_self()));
 }
-
-int kern_mutex_init(kern_mutex_t* mtx) {
-  return pthread_mutex_init(mtx, nullptr);
-}
-
-int kern_mutex_destroy(kern_mutex_t* mtx) {
-  return pthread_mutex_destroy(mtx);
-}
-
-int kern_mutex_lock(kern_mutex_t* mtx) {
-  return pthread_mutex_lock(mtx);
-}
-
-int kern_mutex_unlock(kern_mutex_t* mtx) {
-  return pthread_mutex_unlock(mtx);
-}
-
-}}
