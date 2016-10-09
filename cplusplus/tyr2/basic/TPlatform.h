@@ -30,7 +30,7 @@
 #include "TConfig.h"
 
 #if defined(TYR_WINDOWS)
-# include "win/TPlatformUtils.h"
+# include "windows/TPlatformUtils.h"
 #else
 # include "posix/TPlatformUtils.h"
 #endif
