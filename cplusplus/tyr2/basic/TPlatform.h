@@ -30,9 +30,9 @@
 #include "TConfig.h"
 
 #if defined(TYR_WINDOWS)
-# include "windows/TPlatformUtils.h"
+# include "windows/TPlatformWindows.h"
 #else
-# include "posix/TPlatformUtils.h"
+# include "posix/TPlatformPosix.h"
 #endif
 
 namespace tyr { namespace basic {

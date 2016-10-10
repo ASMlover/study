@@ -24,22 +24,24 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <unistd.h>
 #include <stdio.h>
-#include <chrono>
-#include <thread>
+#if TYR_USE_CPP11
+# include <chrono>
+# include <thread>
+#endif
 #include "../TPlatform.h"
 #include "../TTimestamp.h"
-#include "../unexposed/TCurrentThreadUtils.h"
+#include "../unexposed/TCurrentThreadUnexposed.h"
 #include "../TCurrentThread.h"
 
 namespace tyr { namespace basic {
 
 namespace CurrentThread {
-  __declspec(thread) const int tMainTid = kern_gettid();
-  __declspec(thread) int tCachedTid = 0;
-  __declspec(thread) char tTidString[32];
-  __declspec(thread) int tTidStringLength = 6;
-  __declspec(thread) const char* tThreadName = "unknown";
+  __thread int tCachedTid = 0;
+  __thread char tTidString[32];
+  __thread int tTidStringLength = 6;
+  __thread const char* tThreadName = "unknown";
   static_assert(std::is_same<int, pid_t>::value, "pid_t should be int");
 
   namespace unexposed {
@@ -77,13 +79,16 @@ namespace CurrentThread {
     return tThreadName;
   }
 
-  bool is_main_thread(void) {
-    return tid() == tMainTid;
-  }
-
   void sleep_usec(int64_t usec) {
-    // use C++11 on Windows
+#if TYR_USE_CPP11
     std::this_thread::sleep_for(std::chrono::microseconds(usec));
+#else
+    struct timespec ts = {0, 0};
+    ts.tv_sec = static_cast<time_t>(usec / Timestamp::kMicroSecondsPerSecond);
+    ts.tv_nsec = static_cast<long>(usec % Timestamp::kMicroSecondsPerSecond * 1000);
+    nanosleep(&ts, nullptr);
+#endif
   }
+}
 
-}}}
+}}

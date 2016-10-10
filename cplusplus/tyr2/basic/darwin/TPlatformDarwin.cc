@@ -24,12 +24,14 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <sys/syscall.h>
+#include <unistd.h>
 #include "../TPlatform.h"
 
 namespace tyr { namespace basic {
 
 pid_t kern_gettid(void) {
-  return static_cast<pid_t>(pthread_mach_thread_np(pthread_self()));
+  return static_cast<pid_t>(syscall(SYS_thread_selfid));
 }
 
 }}
