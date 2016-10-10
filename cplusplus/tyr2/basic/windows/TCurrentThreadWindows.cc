@@ -38,7 +38,7 @@ namespace CurrentThread {
   __declspec(thread) const int tMainTid = kern_gettid();
   __declspec(thread) int tCachedTid = 0;
   __declspec(thread) char tTidString[32];
-  __declspec(thread) int tTidStringLength = 6;
+  __declspec(thread) int tTidStringLength = 12;
   __declspec(thread) const char* tThreadName = "unknown";
   static_assert(std::is_same<int, pid_t>::value, "pid_t should be int");
 
@@ -55,7 +55,7 @@ namespace CurrentThread {
   void cached_tid(void) {
     if (0 == tCachedTid) {
       tCachedTid = kern_gettid();
-      tTidStringLength = snprintf(tTidString, sizeof(tTidString), "%5d ", tCachedTid);
+      tTidStringLength = snprintf(tTidString, sizeof(tTidString), "%11d ", tCachedTid);
     }
   }
 
