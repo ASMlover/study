@@ -28,7 +28,7 @@
 OUT	= tyr.test
 RM	= rm
 CC	= g++
-CFLAGS	= -g -O2 -Wall -std=c++11
+CFLAGS	= -g -O2 -Wall -std=c++0x
 LDFLAGS	= -lpthread
 OBJS	= $(patsubst %.cc, %.o, $(wildcard *.cc ../basic/*.cc ../basic/posix/*.cc ../basic/linux/*.cc))
 
