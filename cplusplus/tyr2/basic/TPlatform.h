@@ -43,6 +43,7 @@ int kern_mutex_init(kern_mutex_t* mtx);
 int kern_mutex_destroy(kern_mutex_t* mtx);
 int kern_mutex_lock(kern_mutex_t* mtx);
 int kern_mutex_unlock(kern_mutex_t* mtx);
+int kern_this_thread_setname(const char* name);
 
 }}
 

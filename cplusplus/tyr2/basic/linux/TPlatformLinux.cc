@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <sys/syscall.h>
+#include <sys/prctl.h>
 #include <unistd.h>
 #include "../TPlatform.h"
 
@@ -32,6 +33,10 @@ namespace tyr { namespace basic {
 
 pid_t kern_gettid(void) {
   return static_cast<pid_t>(syscall(SYS_gettid));
+}
+
+int kern_this_thread_setname(const char* name) {
+  return prctl(PR_SET_NAME, name);
 }
 
 }}

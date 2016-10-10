@@ -34,4 +34,8 @@ pid_t kern_gettid(void) {
   return static_cast<pid_t>(syscall(SYS_thread_selfid));
 }
 
+int kern_this_thread_setname(const char* name) {
+  return pthread_setname_np(name);
+}
+
 }}

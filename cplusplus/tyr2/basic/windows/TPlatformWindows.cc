@@ -31,6 +31,16 @@
 namespace tyr { namespace basic {
 
 static const uint64_t kEpoch = 116444736000000000ULL;
+static const DWORD kMSVCException = 0x406D1388;
+
+#pragma pack(push, 8)
+typedef struct THREADNAME_INFO {
+  DWORD dwType; // must be 0x1000
+  LPCSTR szName;
+  DWORD dwThreadID; // thread id
+  DWORD dwFlags;
+} THREADNAME_INFO;
+#pragma pack(pop)
 
 int gettimeofday(struct timeval* tv, struct timezone* /*tz*/) {
   if (tv) {
@@ -73,6 +83,20 @@ int kern_mutex_lock(kern_mutex_t* mtx) {
 
 int kern_mutex_unlock(kern_mutex_t* mtx) {
   return LeaveCriticalSection(mtx), 0;
+}
+
+int kern_this_thread_setname(const char* name) {
+  THREADNAME_INFO ti;
+  ti.dwType = 0x1000;
+  ti.szName = name;
+  ti.dwThreadID = GetCurrentThreadId();
+  ti.dwFlags = 0;
+  __try {
+    RaiseException(kMSVCException, 0, sizeof(ti) / sizeof(ULONG_PTR), (ULONG_PTR*)&ti);
+  }
+  __except (EXCEPTION_EXECUTE_HANDLER) {
+  }
+  return 0;
 }
 
 }}
