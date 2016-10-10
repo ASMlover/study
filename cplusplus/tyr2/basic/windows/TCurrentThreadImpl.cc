@@ -35,6 +35,7 @@
 namespace tyr { namespace basic {
 
 namespace CurrentThread {
+  __declspec(thread) const int tMainTid = kern_gettid();
   __declspec(thread) int tCachedTid = 0;
   __declspec(thread) char tTidString[32];
   __declspec(thread) int tTidStringLength = 6;
@@ -77,7 +78,7 @@ namespace CurrentThread {
   }
 
   bool is_main_thread(void) {
-    return tid() == kern_getpid();
+    return tid() == tMainTid;
   }
 
   void sleep_usec(int64_t usec) {
