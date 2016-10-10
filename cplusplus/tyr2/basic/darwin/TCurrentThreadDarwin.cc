@@ -30,10 +30,10 @@
 namespace tyr { namespace basic {
 
 namespace CurrentThread {
-  __thread const int tMainTid = kern_gettid();
+  static const int kMainTid = kern_gettid();
 
   bool is_main_thread(void) {
-    return tid() == tMainTid;
+    return tid() == kMainTid;
   }
 }
 
