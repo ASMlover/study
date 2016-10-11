@@ -24,9 +24,10 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <mach/mach_time.h>
 #include <sys/syscall.h>
 #include <unistd.h>
-#include <mach/mach_time.h>
+#include <stdlib.h>
 #include "../TPlatform.h"
 
 namespace tyr { namespace basic {
