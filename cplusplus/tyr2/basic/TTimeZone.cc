@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 #include <algorithm>
 #include <vector>
 #include "TTypes.h"
