@@ -24,43 +24,46 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_CONDITION_HEADER_H__
-#define __TYR_CONDITION_HEADER_H__
+#ifndef __TYR_BASIC_CONDITION_HEADER_H__
+#define __TYR_BASIC_CONDITION_HEADER_H__
 
-#include <pthread.h>
+#include "TPlatform.h"
 #include "TMutex.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 class Condition : private UnCopyable {
   Mutex& mtx_;
-  pthread_cond_t cond_;
+  kern_cond_t cond_;
 public:
   explicit Condition(Mutex& mtx)
     : mtx_(mtx) {
-    pthread_cond_init(&cond_, nullptr);
+    kern_cond_init(&cond_);
   }
 
   ~Condition(void) {
-    pthread_cond_destroy(&cond_);
+    kern_cond_destroy(&cond_);
   }
 
   void wait(void) {
     Mutex::UnassignedGuard guard(mtx_);
-    pthread_cond_wait(&cond_, mtx_.get_mutex());
+    kern_cond_wait(&cond_, mtx_.get_mutex());
   }
 
-  bool timed_wait(int seconds);
-
-  void notify(void) {
-    pthread_cond_signal(&cond_);
+  bool timed_wait(int seconds) {
+    Mutex::UnassignedGuard guard(mtx_);
+    return 0 == kern_cond_timedwait(&cond_, mtx_.get_mutex(), seconds * NANOSEC);
   }
 
-  void notify_all(void) {
-    pthread_cond_broadcast(&cond_);
+  void signal(void) {
+    kern_cond_signal(&cond_);
+  }
+
+  void broadcast(void) {
+    kern_cond_broadcast(&cond_);
   }
 };
 
-}
+}}
 
-#endif // __TYR_CONDITION_HEADER_H__
+#endif // __TYR_BASIC_CONDITION_HEADER_H__
