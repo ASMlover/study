@@ -31,6 +31,7 @@
 #include <sys/types.h>
 #include <pthread.h>
 
+#define TYR_DECLARRAY(type, name, count) type name[count]
 typedef pthread_mutex_t kern_mutex_t;
 
 #endif // __TYR_BASIC_POSIX_PLATFORMPOSIX_HEADER_H__

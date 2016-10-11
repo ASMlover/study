@@ -31,6 +31,7 @@
 # include <Winsock2.h>
 #endif
 
+#define TYR_DECLARRAY(type, name, count) type* name = (type*)_alloca(sizeof(char) * (count))
 typedef int pid_t;
 typedef CRITICAL_SECTION kern_mutex_t;
 
@@ -40,6 +41,7 @@ namespace tyr { namespace basic {
 # define __builtin_expect(exp, c) (exp)
 #endif
 #define gmtime_r(timep, result) gmtime_s((result), (timep))
+#define timegm                  _mkgmtime
 
 struct timezone {
   int tz_minuteswest;
