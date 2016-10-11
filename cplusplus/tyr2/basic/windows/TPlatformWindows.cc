@@ -99,4 +99,28 @@ int kern_this_thread_setname(const char* name) {
   return 0;
 }
 
+int kern_cond_init(kern_cond_t* cond) {
+  return InitializeConditionVariable(cond), 0;
+}
+
+int kern_cond_destroy(kern_cond_t* /*cond*/) {
+  return 0;
+}
+
+int kern_cond_signal(kern_cond_t* cond) {
+  return WakeConditionVariable(cond), 0;
+}
+
+int kern_cond_broadcast(kern_cond_t* cond) {
+  return WakeAllConditionVariable(cond), 0;
+}
+
+int kern_cond_wait(kern_cond_t* cond, kern_mutex_t* mtx) {
+  return SleepConditionVariableCS(cond, mtx, INFINITE) ? 0 : -1;
+}
+
+int kern_cond_timedwait(kern_cond_t* cond, kern_mutex_t* mtx, uint64_t nanosec) {
+  return SleepConditionVariableCS(cond, mtx, static_cast<DWORD>(nanosec / 1e6)) ? 0 : -1;
+}
+
 }}

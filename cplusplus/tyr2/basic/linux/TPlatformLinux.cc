@@ -39,4 +39,8 @@ int kern_this_thread_setname(const char* name) {
   return prctl(PR_SET_NAME, name);
 }
 
+int kern_gettime(struct timespec* timep) {
+  return clock_gettime(CLOCK_REALTIME, timep);
+}
+
 }}

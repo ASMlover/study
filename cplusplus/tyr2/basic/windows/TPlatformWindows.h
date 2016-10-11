@@ -32,8 +32,10 @@
 #endif
 
 #define TYR_DECLARRAY(type, name, count) type* name = (type*)_alloca(sizeof(char) * (count))
-typedef int pid_t;
-typedef CRITICAL_SECTION kern_mutex_t;
+
+typedef int                 pid_t;
+typedef CRITICAL_SECTION    kern_mutex_t;
+typedef CONDITION_VARIABLE  kern_cond_t;
 
 namespace tyr { namespace basic {
 

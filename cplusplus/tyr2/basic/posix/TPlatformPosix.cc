@@ -50,4 +50,32 @@ int kern_mutex_unlock(kern_mutex_t* mtx) {
   return pthread_mutex_unlock(mtx);
 }
 
+int kern_cond_init(kern_cond_t* cond) {
+  return pthread_cond_init(cond, nullptr);
+}
+
+int kern_cond_destroy(kern_cond_t* cond) {
+  return pthread_cond_destroy(cond);
+}
+
+int kern_cond_signal(kern_cond_t* cond) {
+  return pthread_cond_signal(cond);
+}
+
+int kern_cond_broadcast(kern_cond_t* cond) {
+  return pthread_cond_broadcast(cond);
+}
+
+int kern_cond_wait(kern_cond_t* cond, kern_mutex_t* mtx) {
+  return pthread_cond_wait(cond, mtx);
+}
+
+int kern_cond_timedwait(kern_cond_t* cond, kern_mutex_t* mtx, uint64_t nanosec) {
+  struct timespec ts;
+  kern_gettime(&ts);
+  ts.tv_sec += nanosec / NANOSEC;
+  ts.tv_nsec = nanosec % NANOSEC;
+  return pthread_cond_timedwait(cond, mtx, &ts);
+}
+
 }}

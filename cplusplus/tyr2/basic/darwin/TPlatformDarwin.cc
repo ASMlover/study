@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <sys/syscall.h>
 #include <unistd.h>
+#include <mach/mach_time.h>
 #include "../TPlatform.h"
 
 namespace tyr { namespace basic {
@@ -36,6 +37,16 @@ pid_t kern_gettid(void) {
 
 int kern_this_thread_setname(const char* name) {
   return pthread_setname_np(name);
+}
+
+int kern_gettime(struct timespec* timep) {
+  mach_timebase_info_data_t info;
+  if (KERN_SUCCESS != mach_timebase_info(&info))
+    abort();
+  uint64_t realtime = mach_absolute_time() * info.numer / info.denom;
+  timep->tv_sec = realtime / NANOSEC;
+  timep->tv_nsec = realtime % NANOSEC;
+  return 0;
 }
 
 }}

@@ -30,8 +30,19 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <pthread.h>
+#include <time.h>
 
+#undef NANOSEC
+#define NANOSEC ((uint64_t)1e9)
 #define TYR_DECLARRAY(type, name, count) type name[count]
+
 typedef pthread_mutex_t kern_mutex_t;
+typedef pthread_cond_t  kern_cond_t;
+
+namespace tyr { namespace basic {
+
+int kern_gettime(struct timespec* timep);
+
+}}
 
 #endif // __TYR_BASIC_POSIX_PLATFORMPOSIX_HEADER_H__
