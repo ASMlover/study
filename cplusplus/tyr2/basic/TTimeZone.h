@@ -24,18 +24,16 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_TIMEZONE_HEADER_H__
-#define __TYR_TIMEZONE_HEADER_H__
+#ifndef __TYR_BASIC_TIMEZONE_HEADER_H__
+#define __TYR_BASIC_TIMEZONE_HEADER_H__
 
 #include <time.h>
 #include <memory>
 
-namespace tyr {
+namespace tyr { namespace basic {
 
+struct Data;
 class TimeZone {
-public:
-  struct Data;
-private:
   std::shared_ptr<Data> data_;
 public:
   TimeZone(void) = default;
@@ -51,6 +49,6 @@ public:
   static time_t from_utc_time(int year, int month, int day, int hour, int min, int sec);
 };
 
-}
+}}
 
-#endif // __TYR_TIMEZONE_HEADER_H__
+#endif // __TYR_BASIC_TIMEZONE_HEADER_H__

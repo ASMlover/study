@@ -26,22 +26,23 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 #include <stdio.h>
-#include <time.h>
 #include <algorithm>
 #include <vector>
+#include "TTypes.h"
+#include "TPlatform.h"
 #include "TDate.h"
 #include "TTimeZone.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 struct Transition {
-  time_t gmtime;
+  time_t gmttime;
   time_t localtime;
   int localtime_index;
 
-  Transition(time_t t, time_t l, int index)
-    : gmtime(t)
-    , localtime(l)
+  Transition(time_t gmt, time_t lt, int index)
+    : gmttime(gmt)
+    , localtime(lt)
     , localtime_index(index) {
   }
 };
@@ -55,29 +56,38 @@ struct Compare {
 
   bool operator()(const Transition& a, const Transition& b) const {
     if (compare_gmt)
-      return a.gmtime < b.gmtime;
+      return a.gmttime < b.gmttime;
     else
       return a.localtime < b.localtime;
   }
 
   bool equal(const Transition& a, const Transition& b) const {
     if (compare_gmt)
-      return a.gmtime == b.gmtime;
+      return a.gmttime == b.gmttime;
     else
       return a.localtime == b.localtime;
   }
 };
 
 struct Localtime {
-  time_t gmt_offset;
+  time_t gmtoff;
   bool isdst;
   int arrb_index;
 
-  Localtime(time_t offset, bool dst, int arrb)
-    : gmt_offset(offset)
-    , isdst(dst)
-    , arrb_index(arrb) {
+  Localtime(time_t _gmtoff, bool _isdst, int _arrb)
+    : gmtoff(_gmtoff)
+    , isdst(_isdst)
+    , arrb_index(_arrb) {
   }
+};
+
+const int kSecondsPerDay = 24 * 60 * 60;
+
+struct Data {
+  std::vector<Transition> transitions;
+  std::vector<Localtime> localtimes;
+  std::vector<std::string> names;
+  std::string abbreviation;
 };
 
 inline void fill_time(unsigned int sec, struct tm* utc) {
@@ -86,15 +96,6 @@ inline void fill_time(unsigned int sec, struct tm* utc) {
   utc->tm_min = min % 60;
   utc->tm_sec = sec % 60;
 }
-
-const int kSecondsPerDay = 24 * 60 * 60;
-
-struct TimeZone::Data {
-  std::vector<Transition> transitions;
-  std::vector<Localtime> localtimes;
-  std::vector<std::string> names;
-  std::string abbreviation;
-};
 
 class File : private UnCopyable {
   FILE* stream_;
@@ -113,11 +114,11 @@ public:
   }
 
   std::string read_bytes(size_t bytes) {
-    char buf[bytes];
+    TYR_DECLARRAY(char, buf, bytes);
     size_t n = fread(buf, 1, bytes, stream_);
     if (n != bytes)
       throw std::logic_error("no enough data");
-    return std::string(buf);
+    return buf;
   }
 
   int32_t read_int32(void) {
@@ -137,7 +138,7 @@ public:
   }
 };
 
-bool read_timezone_file(const char* zonefile, struct TimeZone::Data* data) {
+bool read_timezone_file(const char* zonefile, struct Data* data) {
   File f(zonefile);
   if (f.is_valid()) {
     try {
@@ -163,14 +164,14 @@ bool read_timezone_file(const char* zonefile, struct TimeZone::Data* data) {
       }
       for (int i = 0; i < typecnt; ++i) {
         int32_t gmtoff = f.read_int32();
-        uint8_t isdst = f.read_uint8();
+        bool isdst = 0 != f.read_uint8();
         uint8_t abbrind = f.read_uint8();
 
         data->localtimes.push_back(Localtime(gmtoff, isdst, abbrind));
       }
       for (int i = 0; i < timecnt; ++i) {
         int local_index = localtimes[i];
-        time_t lt = trans[i] + data->localtimes[local_index].gmt_offset;
+        time_t lt = trans[i] + data->localtimes[local_index].gmtoff;
         data->transitions.push_back(Transition(trans[i], lt, local_index));
       }
       data->abbreviation = f.read_bytes(charcnt);
@@ -187,7 +188,7 @@ bool read_timezone_file(const char* zonefile, struct TimeZone::Data* data) {
   return true;
 }
 
-const Localtime* find_localtime(const TimeZone::Data& data, Transition sentry, Compare cmp) {
+const Localtime* find_localtime(const Data& data, Transition sentry, Compare cmp) {
   const Localtime* local = nullptr;
 
   if (data.transitions.empty() || cmp(sentry, data.transitions.front())) {
@@ -210,14 +211,14 @@ const Localtime* find_localtime(const TimeZone::Data& data, Transition sentry, C
 }
 
 TimeZone::TimeZone(const char* zonefile)
-  : data_(new TimeZone::Data()) {
+  : data_(new Data()) {
   if (!read_timezone_file(zonefile, data_.get())) {
     data_.reset();
   }
 }
 
 TimeZone::TimeZone(int east_of_utc, const char* tzname)
-  : data_(new TimeZone::Data()) {
+  : data_(new Data()) {
   data_->localtimes.push_back(Localtime(east_of_utc, false, 0));
   data_->abbreviation = tzname;
 }
@@ -236,11 +237,13 @@ struct tm TimeZone::to_localtime(time_t sec_since_epoch) const {
   const Localtime* local = find_localtime(data, sentry, Compare(true));
 
   if (local) {
-    time_t local_seconds = sec_since_epoch + local->gmt_offset;
+    time_t local_seconds = sec_since_epoch + local->gmtoff;
     gmtime_r(&local_seconds, &ltime);
     ltime.tm_isdst = local->isdst;
-    ltime.tm_gmtoff = local->gmt_offset;
+#if !defined(TYR_WINDOWS)
+    ltime.tm_gmtoff = local->gmtoff;
     ltime.tm_zone = (char*)&data.abbreviation[local->arrb_index];
+#endif
   }
   return ltime;
 }
@@ -254,17 +257,19 @@ time_t TimeZone::from_localtime(const struct tm& t) const {
   Transition sentry(0, seconds, 0);
   const Localtime* local = find_localtime(data, sentry, Compare(false));
   if (t.tm_isdst) {
-    struct tm try_tm = to_localtime(seconds - local->gmt_offset);
+    struct tm try_tm = to_localtime(seconds - local->gmtoff);
     if (!try_tm.tm_isdst && try_tm.tm_hour == t.tm_hour && try_tm.tm_min == t.tm_min)
       seconds -= 3600;
   }
-  return seconds - local->gmt_offset;
+  return seconds - local->gmtoff;
 }
 
 struct tm TimeZone::to_utc_time(time_t sec_since_epoch, bool yday) {
   struct tm utc;
   memset(&utc, 0, sizeof(utc));
+#if !defined(TYR_WINDOWS)
   utc.tm_zone = const_cast<char*>("GMT");
+#endif
   int seconds = static_cast<int>(sec_since_epoch % kSecondsPerDay);
   int days = static_cast<int>(sec_since_epoch / kSecondsPerDay);
   if (seconds < 0) {
@@ -272,16 +277,16 @@ struct tm TimeZone::to_utc_time(time_t sec_since_epoch, bool yday) {
     --days;
   }
   fill_time(seconds, &utc);
-  Date date(days + Date::kUnixDay19700101);
-  Date::InternalDate ymd = date.internal_date();
-  utc.tm_year = ymd.year - 1900;
-  utc.tm_mon = ymd.month - 1;
-  utc.tm_mday = ymd.day;
-  utc.tm_wday = date.week_day();
+  Date date(days + Date::kEpochDay19700101);
+  Date::DateTuple dt = date.get_date();
+  utc.tm_year = dt.year - 1900;
+  utc.tm_mon = dt.month - 1;
+  utc.tm_mday = dt.day;
+  utc.tm_wday = date.weekday();
 
   if (yday) {
-    Date start(ymd.year, 1, 1);
-    utc.tm_yday = date.unix_day() - start.unix_day();
+    Date start(dt.year, 1, 1);
+    utc.tm_yday = date.epoch_day() - start.epoch_day();
   }
   return utc;
 }
@@ -294,8 +299,8 @@ time_t TimeZone::from_utc_time(const struct tm& utc) {
 time_t TimeZone::from_utc_time(int year, int month, int day, int hour, int min, int sec) {
   Date date(year, month, day);
   int sec_in_day = hour * 3600 + min * 60 + sec;
-  time_t days = date.unix_day() - Date::kUnixDay19700101;
+  time_t days = date.epoch_day() - Date::kEpochDay19700101;
   return days * kSecondsPerDay + sec_in_day;
 }
 
-}
+}}
