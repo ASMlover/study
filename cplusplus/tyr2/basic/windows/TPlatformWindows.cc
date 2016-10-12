@@ -25,7 +25,9 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <Windows.h>
-#include <stdint.h>
+#include <process.h>
+#include <assert.h>
+#include <stdlib.h>
 #include "../TPlatform.h"
 
 namespace tyr { namespace basic {
@@ -121,6 +123,34 @@ int kern_cond_wait(kern_cond_t* cond, kern_mutex_t* mtx) {
 
 int kern_cond_timedwait(kern_cond_t* cond, kern_mutex_t* mtx, uint64_t nanosec) {
   return SleepConditionVariableCS(cond, mtx, static_cast<DWORD>(nanosec / 1e6)) ? 0 : -1;
+}
+
+int kern_thread_create(kern_thread_t* thread, kern_start_routine_t start_routine, void* arg) {
+  thread->start_event = CreateEvent(nullptr, TRUE, FALSE, nullptr);
+  assert(nullptr != thread->start_event);
+
+  thread->thrd_handle = (HANDLE)_beginthreadex(nullptr, 0, start_routine, arg, 0, nullptr);
+  assert(nullptr != thread->thrd_handle);
+
+  WaitForSingleObject(thread->start_event, INFINITE);
+  CloseHandle(thread->start_event);
+
+  return 0;
+}
+
+int kern_thread_created_signal(kern_thread_t* thread) {
+  return SetEvent(thread->start_event), 0;
+}
+
+int kern_thread_join(kern_thread_t* thread) {
+  if (nullptr != thread->thrd_handle) {
+    WaitForSingleObject(thread->thrd_handle, INFINITE);
+    CloseHandle(thread->thrd_handle);
+
+    thread->reset();
+  }
+
+  return 0;
 }
 
 }}

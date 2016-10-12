@@ -36,6 +36,16 @@
 struct kern_thread_t {
   HANDLE start_event;
   HANDLE thrd_handle;
+
+  kern_thread_t(void)
+    : start_event(nullptr)
+    , thrd_handle(nullptr) {
+  }
+
+  void reset(void) {
+    start_event = nullptr;
+    thrd_handle = nullptr;
+  }
 };
 
 typedef int                   pid_t;

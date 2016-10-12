@@ -78,4 +78,22 @@ int kern_cond_timedwait(kern_cond_t* cond, kern_mutex_t* mtx, uint64_t nanosec) 
   return pthread_cond_timedwait(cond, mtx, &ts);
 }
 
+int kern_thread_create(kern_thread_t* thread, kern_start_routine_t start_routine, void* arg) {
+  return pthread_create(&thread->thread_id, nullptr, start_routine, arg);
+}
+
+int kern_thread_created_signal(kern_thread_t* /*thread*/) {
+  return 0;
+}
+
+int kern_thread_join(kern_thread_t* thread) {
+  int r;
+  if (0 != thread->thread_id) {
+    r = pthread_join(thread->thread_id, 0);
+    thread->reset();
+  }
+
+  return r;
+}
+
 }}
