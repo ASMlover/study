@@ -38,6 +38,8 @@
 
 typedef pthread_mutex_t kern_mutex_t;
 typedef pthread_cond_t  kern_cond_t;
+typedef void*           (*kern_start_routine_t)(void*);
+typedef pthread_t       kern_thread_t;
 
 namespace tyr { namespace basic {
 

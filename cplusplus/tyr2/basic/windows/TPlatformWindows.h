@@ -33,9 +33,16 @@
 
 #define TYR_DECLARRAY(type, name, count) type* name = (type*)_alloca(sizeof(char) * (count))
 
-typedef int                 pid_t;
-typedef CRITICAL_SECTION    kern_mutex_t;
-typedef CONDITION_VARIABLE  kern_cond_t;
+struct kern_thread_t {
+  HANDLE start_event;
+  HANDLE thrd_handle;
+};
+
+typedef int                   pid_t;
+typedef CRITICAL_SECTION      kern_mutex_t;
+typedef CONDITION_VARIABLE    kern_cond_t;
+typedef UINT                  (WINAPI *kern_start_routine_t)(void*);
+typedef struct kern_thread_t  kern_thread_t;
 
 namespace tyr { namespace basic {
 

@@ -55,6 +55,10 @@ int kern_cond_broadcast(kern_cond_t* cond);
 int kern_cond_wait(kern_cond_t* cond, kern_mutex_t* mtx);
 int kern_cond_timedwait(kern_cond_t* cond, kern_mutex_t* mtx, uint64_t nanosec);
 
+int kern_thread_create(kern_thread_t* thread, kern_start_routine_t start_routine);
+int kern_thread_created_signal(kern_thread_t* thread);
+int kern_thread_join(kern_thread_t* thread);
+
 }}
 
 #endif // __TYR_BASIC_PLATFORM_HEADER_H__
