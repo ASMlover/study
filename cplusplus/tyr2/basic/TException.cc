@@ -24,28 +24,45 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_EXCEPTION_HEADER_H__
-#define __TYR_EXCEPTION_HEADER_H__
+#include <execinfo.h>
+#include <stdlib.h>
+#include "TException.h"
 
-#include <exception>
-#include "TTypes.h"
+namespace tyr { namespace basic {
 
-namespace tyr {
-
-class Exception : public std::exception {
-private:
-  std::string message_;
-  std::string stack_;
-
-  void fill_stack_trace(void);
-public:
-  explicit Exception(const char* what);
-  explicit Exception(const std::string& what);
-  virtual ~Exception(void) throw();
-  virtual const char* what(void) const throw();
-  const char* stack_trace(void) const throw();
-};
-
+void Exception::fill_stack_trace(void) {
+  const int LEN = 256;
+  void* buffer[LEN];
+  int nptrs = backtrace(buffer, LEN);
+  char** strings = backtrace_symbols(buffer, nptrs);
+  if (nullptr != strings) {
+    for (int i = 0; i < nptrs; ++i) {
+      stack_.append(strings[i]);
+      stack_.push_back('\n');
+    }
+    free(strings);
+  }
 }
 
-#endif // __TYR_EXCEPTION_HEADER_H__
+Exception::Exception(const char* what)
+  : message_(what) {
+  fill_stack_trace();
+}
+
+Exception::Exception(const std::string& what)
+  : message_(what) {
+  fill_stack_trace();
+}
+
+Exception::~Exception(void) throw() {
+}
+
+const char* Exception::what(void) const throw() {
+  return message_.c_str();
+}
+
+const char* Exception::stack_trace(void) const throw() {
+  return stack_.c_str();
+}
+
+}}
