@@ -28,6 +28,7 @@
 #include <process.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <memory>
 #include "../TPlatform.h"
 
 namespace tyr { namespace basic {
@@ -43,6 +44,12 @@ typedef struct THREADNAME_INFO {
   DWORD dwFlags;
 } THREADNAME_INFO;
 #pragma pack(pop)
+
+typedef struct kern_thread_params_t {
+  kern_thread_t* thread;
+  void* (*start)(void*);
+  void* arg;
+} kern_thread_params_t;
 
 int gettimeofday(struct timeval* tv, struct timezone* /*tz*/) {
   if (tv) {
@@ -125,31 +132,49 @@ int kern_cond_timedwait(kern_cond_t* cond, kern_mutex_t* mtx, uint64_t nanosec) 
   return SleepConditionVariableCS(cond, mtx, static_cast<DWORD>(nanosec / 1e6)) ? 0 : -1;
 }
 
-int kern_thread_create(kern_thread_t* thread, kern_start_routine_t start_routine, void* arg) {
-  thread->start_event = CreateEvent(nullptr, TRUE, FALSE, nullptr);
-  assert(nullptr != thread->start_event);
+UINT WINAPI kern_thread_start_routine(void* arg) {
+  kern_thread_params_t* params = static_cast<kern_thread_params_t*>(arg);
+  if (nullptr == params)
+    return 0;
 
-  thread->thrd_handle = (HANDLE)_beginthreadex(nullptr, 0, start_routine, arg, 0, nullptr);
-  assert(nullptr != thread->thrd_handle);
-
-  WaitForSingleObject(thread->start_event, INFINITE);
-  CloseHandle(thread->start_event);
+  SetEvent(params->thread->start_event);
+  if (nullptr != params->start)
+    params->start(params->arg);
 
   return 0;
 }
 
-int kern_thread_created_signal(kern_thread_t* thread) {
-  return SetEvent(thread->start_event), 0;
+int kern_thread_create(kern_thread_t* thread, void* (*start_routine)(void*), void* arg) {
+  thread->start_event = CreateEvent(nullptr, TRUE, FALSE, nullptr);
+  if (nullptr == thread->start_event)
+    return -1;
+
+  int result = -1;
+  std::unique_ptr<kern_thread_params_t> params(new kern_thread_params_t);
+  if (!params)
+    goto _Exit;
+  params->thread = thread;
+  params->start = start_routine;
+  params->arg = arg;
+
+  thread->thrd_handle = reinterpret_cast<HANDLE>(_beginthreadex(
+        nullptr, 0, kern_thread_start_routine, params.get(), 0, nullptr));
+  if (nullptr == thread->thrd_handle)
+    goto _Exit;
+
+  WaitForSingleObject(thread->start_event, INFINITE);
+  result = 0;
+
+_Exit:
+  CloseHandle(thread->start_event);
+  return result;
 }
 
-int kern_thread_join(kern_thread_t* thread) {
-  if (nullptr != thread->thrd_handle) {
-    WaitForSingleObject(thread->thrd_handle, INFINITE);
-    CloseHandle(thread->thrd_handle);
-
-    thread->reset();
+int kern_thread_join(kern_thread_t thread) {
+  if (nullptr != thread.thrd_handle) {
+    WaitForSingleObject(thread.thrd_handle, INFINITE);
+    CloseHandle(thread.thrd_handle);
   }
-
   return 0;
 }
 

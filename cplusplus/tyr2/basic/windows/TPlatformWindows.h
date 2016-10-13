@@ -42,7 +42,7 @@ struct kern_thread_t {
     , thrd_handle(nullptr) {
   }
 
-  void reset(void) {
+  kern_thread_t& operator=(std::nullptr_t) {
     start_event = nullptr;
     thrd_handle = nullptr;
   }
@@ -51,7 +51,6 @@ struct kern_thread_t {
 typedef int                   pid_t;
 typedef CRITICAL_SECTION      kern_mutex_t;
 typedef CONDITION_VARIABLE    kern_cond_t;
-typedef UINT                  (WINAPI *kern_start_routine_t)(void*);
 typedef struct kern_thread_t  kern_thread_t;
 
 namespace tyr { namespace basic {
@@ -68,6 +67,9 @@ struct timezone {
 };
 
 int gettimeofday(struct timeval* tv, struct timezone* tz);
+
+int kern_thread_create(kern_thread_t* thread, void* (*start_routine)(void*), void* arg);
+int kern_thread_join(kern_thread_t thread);
 
 }}
 

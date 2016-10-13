@@ -36,24 +36,14 @@
 #define NANOSEC ((uint64_t)1e9)
 #define TYR_DECLARRAY(type, name, count) type name[count]
 
-struct kern_thread_t {
-  pthread_t thread_id;
-
-  kern_thread_t(void)
-    : thread_id(0) {
-  }
-
-  void reset(void) {
-    thread_id = 0;
-  }
-};
-
-typedef pthread_mutex_t       kern_mutex_t;
-typedef pthread_cond_t        kern_cond_t;
-typedef void*                 (*kern_start_routine_t)(void*);
-typedef struct kern_thread_t  kern_thread_t;
+typedef pthread_mutex_t kern_mutex_t;
+typedef pthread_cond_t  kern_cond_t;
+typedef pthread_t       kern_thread_t;
 
 namespace tyr { namespace basic {
+
+#define kern_thread_create(thrd, routine, arg)  pthread_create(thrd, nullptr, routine, arg)
+#define kern_thread_join(thrd)                  pthread_join(thrd, 0)
 
 int kern_gettime(struct timespec* timep);
 
