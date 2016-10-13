@@ -42,6 +42,11 @@ struct KernThread {
     , thrd_handle(nullptr) {
   }
 
+  KernThread(std::nullptr_t)
+    : start_event(nullptr)
+    , thrd_handle(nullptr) {
+  }
+
   KernThread& operator=(std::nullptr_t) {
     start_event = nullptr;
     thrd_handle = nullptr;

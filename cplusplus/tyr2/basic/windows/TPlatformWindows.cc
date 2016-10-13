@@ -167,6 +167,7 @@ int kern_thread_create(KernThread* thread, void* (*start_routine)(void*), void* 
 
 _Exit:
   CloseHandle(thread->start_event);
+  thread->start_event = nullptr;
   return result;
 }
 
