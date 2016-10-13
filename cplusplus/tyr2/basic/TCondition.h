@@ -34,7 +34,7 @@ namespace tyr { namespace basic {
 
 class Condition : private UnCopyable {
   Mutex& mtx_;
-  kern_cond_t cond_;
+  KernCond cond_;
 public:
   explicit Condition(Mutex& mtx)
     : mtx_(mtx) {

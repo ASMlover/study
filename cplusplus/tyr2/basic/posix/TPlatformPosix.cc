@@ -34,43 +34,43 @@ pid_t kern_getpid(void) {
   return getpid();
 }
 
-int kern_mutex_init(kern_mutex_t* mtx) {
+int kern_mutex_init(KernMutex* mtx) {
   return pthread_mutex_init(mtx, nullptr);
 }
 
-int kern_mutex_destroy(kern_mutex_t* mtx) {
+int kern_mutex_destroy(KernMutex* mtx) {
   return pthread_mutex_destroy(mtx);
 }
 
-int kern_mutex_lock(kern_mutex_t* mtx) {
+int kern_mutex_lock(KernMutex* mtx) {
   return pthread_mutex_lock(mtx);
 }
 
-int kern_mutex_unlock(kern_mutex_t* mtx) {
+int kern_mutex_unlock(KernMutex* mtx) {
   return pthread_mutex_unlock(mtx);
 }
 
-int kern_cond_init(kern_cond_t* cond) {
+int kern_cond_init(KernCond* cond) {
   return pthread_cond_init(cond, nullptr);
 }
 
-int kern_cond_destroy(kern_cond_t* cond) {
+int kern_cond_destroy(KernCond* cond) {
   return pthread_cond_destroy(cond);
 }
 
-int kern_cond_signal(kern_cond_t* cond) {
+int kern_cond_signal(KernCond* cond) {
   return pthread_cond_signal(cond);
 }
 
-int kern_cond_broadcast(kern_cond_t* cond) {
+int kern_cond_broadcast(KernCond* cond) {
   return pthread_cond_broadcast(cond);
 }
 
-int kern_cond_wait(kern_cond_t* cond, kern_mutex_t* mtx) {
+int kern_cond_wait(KernCond* cond, KernMutex* mtx) {
   return pthread_cond_wait(cond, mtx);
 }
 
-int kern_cond_timedwait(kern_cond_t* cond, kern_mutex_t* mtx, uint64_t nanosec) {
+int kern_cond_timedwait(KernCond* cond, KernMutex* mtx, uint64_t nanosec) {
   struct timespec ts;
   kern_gettime(&ts);
   ts.tv_sec += nanosec / NANOSEC;

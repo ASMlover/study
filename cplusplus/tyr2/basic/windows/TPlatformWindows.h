@@ -33,25 +33,25 @@
 
 #define TYR_DECLARRAY(type, name, count) type* name = (type*)_alloca(sizeof(char) * (count))
 
-struct kern_thread_t {
+struct KernThread {
   HANDLE start_event;
   HANDLE thrd_handle;
 
-  kern_thread_t(void)
+  KernThread(void)
     : start_event(nullptr)
     , thrd_handle(nullptr) {
   }
 
-  kern_thread_t& operator=(std::nullptr_t) {
+  KernThread& operator=(std::nullptr_t) {
     start_event = nullptr;
     thrd_handle = nullptr;
   }
 };
 
-typedef int                   pid_t;
-typedef CRITICAL_SECTION      kern_mutex_t;
-typedef CONDITION_VARIABLE    kern_cond_t;
-typedef struct kern_thread_t  kern_thread_t;
+typedef int                 pid_t;
+typedef CRITICAL_SECTION    KernMutex;
+typedef CONDITION_VARIABLE  KernCond;
+typedef struct KernThread   KernThread;
 
 namespace tyr { namespace basic {
 
@@ -67,9 +67,6 @@ struct timezone {
 };
 
 int gettimeofday(struct timeval* tv, struct timezone* tz);
-
-int kern_thread_create(kern_thread_t* thread, void* (*start_routine)(void*), void* arg);
-int kern_thread_join(kern_thread_t thread);
 
 }}
 

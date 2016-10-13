@@ -37,19 +37,19 @@ static const uint64_t kEpoch = 116444736000000000ULL;
 static const DWORD kMSVCException = 0x406D1388;
 
 #pragma pack(push, 8)
-typedef struct THREADNAME_INFO {
+typedef struct KernThreadName {
   DWORD dwType; // must be 0x1000
   LPCSTR szName;
   DWORD dwThreadID; // thread id
   DWORD dwFlags;
-} THREADNAME_INFO;
+} KernThreadName;
 #pragma pack(pop)
 
-typedef struct kern_thread_params_t {
-  kern_thread_t* thread;
+typedef struct KernThreadParams {
+  KernThread* thread;
   void* (*start)(void*);
   void* arg;
-} kern_thread_params_t;
+} KernThreadParams;
 
 int gettimeofday(struct timeval* tv, struct timezone* /*tz*/) {
   if (tv) {
@@ -76,64 +76,64 @@ pid_t kern_gettid(void) {
   return static_cast<pid_t>(GetCurrentThreadId());
 }
 
-int kern_mutex_init(kern_mutex_t* mtx) {
+int kern_mutex_init(KernMutex* mtx) {
   return InitializeCriticalSection(mtx), 0;
 }
 
-int kern_mutex_destroy(kern_mutex_t* mtx) {
+int kern_mutex_destroy(KernMutex* mtx) {
   return DeleteCriticalSection(mtx), 0;
 }
 
-int kern_mutex_lock(kern_mutex_t* mtx) {
+int kern_mutex_lock(KernMutex* mtx) {
   if ((DWORD)mtx->OwningThread != GetCurrentThreadId())
     EnterCriticalSection(mtx);
   return 0;
 }
 
-int kern_mutex_unlock(kern_mutex_t* mtx) {
+int kern_mutex_unlock(KernMutex* mtx) {
   return LeaveCriticalSection(mtx), 0;
 }
 
 int kern_this_thread_setname(const char* name) {
-  THREADNAME_INFO ti;
-  ti.dwType = 0x1000;
-  ti.szName = name;
-  ti.dwThreadID = GetCurrentThreadId();
-  ti.dwFlags = 0;
+  KernThreadName ni;
+  ni.dwType = 0x1000;
+  ni.szName = name;
+  ni.dwThreadID = GetCurrentThreadId();
+  ni.dwFlags = 0;
   __try {
-    RaiseException(kMSVCException, 0, sizeof(ti) / sizeof(ULONG_PTR), (ULONG_PTR*)&ti);
+    RaiseException(kMSVCException, 0, sizeof(ni) / sizeof(ULONG_PTR), (ULONG_PTR*)&ni);
   }
   __except (EXCEPTION_EXECUTE_HANDLER) {
   }
   return 0;
 }
 
-int kern_cond_init(kern_cond_t* cond) {
+int kern_cond_init(KernCond* cond) {
   return InitializeConditionVariable(cond), 0;
 }
 
-int kern_cond_destroy(kern_cond_t* /*cond*/) {
+int kern_cond_destroy(KernCond* /*cond*/) {
   return 0;
 }
 
-int kern_cond_signal(kern_cond_t* cond) {
+int kern_cond_signal(KernCond* cond) {
   return WakeConditionVariable(cond), 0;
 }
 
-int kern_cond_broadcast(kern_cond_t* cond) {
+int kern_cond_broadcast(KernCond* cond) {
   return WakeAllConditionVariable(cond), 0;
 }
 
-int kern_cond_wait(kern_cond_t* cond, kern_mutex_t* mtx) {
+int kern_cond_wait(KernCond* cond, KernMutex* mtx) {
   return SleepConditionVariableCS(cond, mtx, INFINITE) ? 0 : -1;
 }
 
-int kern_cond_timedwait(kern_cond_t* cond, kern_mutex_t* mtx, uint64_t nanosec) {
+int kern_cond_timedwait(KernCond* cond, KernMutex* mtx, uint64_t nanosec) {
   return SleepConditionVariableCS(cond, mtx, static_cast<DWORD>(nanosec / 1e6)) ? 0 : -1;
 }
 
 UINT WINAPI kern_thread_start_routine(void* arg) {
-  kern_thread_params_t* params = static_cast<kern_thread_params_t*>(arg);
+  KernThreadParams* params = static_cast<KernThreadParams*>(arg);
   if (nullptr == params)
     return 0;
 
@@ -144,13 +144,13 @@ UINT WINAPI kern_thread_start_routine(void* arg) {
   return 0;
 }
 
-int kern_thread_create(kern_thread_t* thread, void* (*start_routine)(void*), void* arg) {
+int kern_thread_create(KernThread* thread, void* (*start_routine)(void*), void* arg) {
   thread->start_event = CreateEvent(nullptr, TRUE, FALSE, nullptr);
   if (nullptr == thread->start_event)
     return -1;
 
   int result = -1;
-  std::unique_ptr<kern_thread_params_t> params(new kern_thread_params_t);
+  std::unique_ptr<KernThreadParams> params(new KernThreadParams);
   if (!params)
     goto _Exit;
   params->thread = thread;
@@ -170,7 +170,7 @@ _Exit:
   return result;
 }
 
-int kern_thread_join(kern_thread_t thread) {
+int kern_thread_join(KernThread thread) {
   if (nullptr != thread.thrd_handle) {
     WaitForSingleObject(thread.thrd_handle, INFINITE);
     CloseHandle(thread.thrd_handle);
