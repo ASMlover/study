@@ -24,13 +24,17 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <execinfo.h>
+#include "TConfig.h"
+#if !defined(TYR_WINDOWS)
+# include <execinfo.h>
+#endif
 #include <stdlib.h>
 #include "TException.h"
 
 namespace tyr { namespace basic {
 
 void Exception::fill_stack_trace(void) {
+#if !defined(TYR_WINDOWS)
   const int LEN = 256;
   void* buffer[LEN];
   int nptrs = backtrace(buffer, LEN);
@@ -42,6 +46,7 @@ void Exception::fill_stack_trace(void) {
     }
     free(strings);
   }
+#endif
 }
 
 Exception::Exception(const char* what)
