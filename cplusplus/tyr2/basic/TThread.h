@@ -24,22 +24,22 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_THREAD_HEADER_H__
-#define __TYR_THREAD_HEADER_H__
+#ifndef __TYR_BASIC_THREAD_HEADER_H__
+#define __TYR_BASIC_THREAD_HEADER_H__
 
-#include <pthread.h>
 #include <atomic>
 #include <functional>
 #include <memory>
 #include "TTypes.h"
+#include "TPlatform.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 typedef std::function<void (void)> ThreadCallback;
 class Thread : private UnCopyable {
   bool started_;
   bool joined_;
-  pthread_t thread_id_;
+  KernThread thread_;
   std::shared_ptr<pid_t> tid_;
   ThreadCallback routine_;
   std::string name_;
@@ -71,6 +71,6 @@ private:
   void set_default_name(void);
 };
 
-}
+}}
 
-#endif // __TYR_THREAD_HEADER_H__
+#endif // __TYR_BASIC_THREAD_HEADER_H__
