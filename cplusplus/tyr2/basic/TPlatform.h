@@ -57,6 +57,8 @@ int kern_cond_timedwait(KernCond* cond, KernMutex* mtx, uint64_t nanosec);
 
 int kern_thread_create(KernThread* thread, void* (*start_routine)(void*), void* arg);
 int kern_thread_join(KernThread thread);
+int kern_thread_detach(KernThread thread);
+int kern_thread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void));
 
 }}
 

@@ -86,4 +86,12 @@ int kern_thread_join(KernThread thread) {
   return pthread_join(thread, nullptr);
 }
 
+int kern_thread_detach(KernThread thread) {
+  return pthread_detach(thread);
+}
+
+int kern_thread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void)) {
+  return pthread_atfork(prepare, parent, child);
+}
+
 }}
