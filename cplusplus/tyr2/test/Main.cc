@@ -29,6 +29,7 @@
 #include "../basic/TStringPiece.h"
 #include "../basic/TTimestamp.h"
 #include "../basic/TCurrentThread.h"
+#include "../basic/TDate.h"
 #include "../basic/TMutex.h"
 
 #define UNUSED_PARAM(arg) (void)arg
@@ -165,6 +166,43 @@ void tyr_test_CurrentThread(void) {
   tyr_show_Timestamp(Timestamp::now(), "CurrentThread.end");
 }
 
+static void tyr_show_Date(tyr::basic::Date d, const char* name = "Date") {
+  std::cout << "object(`" << name << "`): @{\n\t\t"
+    << "@is_valid: " << d.is_valid() << "\n\t\t"
+    << "@year: " << d.year() << "\n\t\t"
+    << "@month: " << d.month() << "\n\t\t"
+    << "@day: " << d.day() << "\n\t\t"
+    << "@weekday: " << d.weekday() << "\n\t\t"
+    << "@epoch_day: " << d.epoch_day() << "\n\t\t"
+    << "@iso_string: " << d.to_iso_string() << "\n\t"
+    << "}" << std::endl;
+}
+
+void tyr_test_Date(void) {
+  std::cout << "\n#################### Date ####################\n";
+  using namespace tyr::basic;
+
+  Date d1;
+  tyr_show_Date(d1, "Date.d1");
+  Date d2(2457600);
+  tyr_show_Date(d2, "Date.d2");
+  Date d3(2016, 10, 14);
+  tyr_show_Date(d3, "Date.d3");
+  d2.swap(d3);
+  tyr_show_Date(d2, "Date.d2.after.swap");
+  tyr_show_Date(d3, "Date.d3.after.swap");
+
+  time_t current_time = time(nullptr);
+  struct tm* now = localtime(&current_time);
+  Date d4(*now);
+  tyr_show_Date(d4, "Date.d4");
+
+  Date::DateTuple dt = d4.get_date();
+  std::cout << "(`Date.d4`) @DateTuple {@year: "
+    << dt.year << ", @month: " << dt.month << ", @day: " << dt.day << "}" << std::endl;
+  std::cout << "@d3 == @d4: " << (d3 == d4) << ", @d3 < @d4: " << (d3 < d4) << std::endl;
+}
+
 int main(int argc, char* argv[]) {
   UNUSED_PARAM(argc);
   UNUSED_PARAM(argv);
@@ -173,6 +211,7 @@ int main(int argc, char* argv[]) {
   tyr_test_StringPiece();
   tyr_test_Timestamp();
   tyr_test_CurrentThread();
+  tyr_test_Date();
 
   return 0;
 }
