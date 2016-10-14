@@ -87,11 +87,11 @@ public:
   DateTuple get_date(void) const;
 };
 
-inline bool operator==(const Date& a, const Date& b) {
+inline bool operator==(Date a, Date b) {
   return a.epoch_day() == b.epoch_day();
 }
 
-inline bool operator<(const Date& a, const Date& b) {
+inline bool operator<(Date a, Date b) {
   return a.epoch_day() < b.epoch_day();
 }
 
