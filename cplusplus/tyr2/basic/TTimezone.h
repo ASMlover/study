@@ -33,12 +33,12 @@
 namespace tyr { namespace basic {
 
 struct Data;
-class TimeZone {
+class Timezone {
   std::shared_ptr<Data> data_;
 public:
-  TimeZone(void) = default;
-  explicit TimeZone(const char* zonefile);
-  TimeZone(int east_of_utc, const char* tzname);
+  Timezone(void) = default;
+  explicit Timezone(const char* zonefile);
+  Timezone(int east_of_utc, const char* tzname);
 
   bool is_valid(void) const;
   struct tm to_localtime(time_t sec_since_epoch) const;
