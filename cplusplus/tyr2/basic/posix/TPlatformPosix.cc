@@ -79,7 +79,7 @@ int kern_cond_timedwait(KernCond* cond, KernMutex* mtx, uint64_t nanosec) {
 }
 
 int kern_thread_create(KernThread* thread, void* (*start_routine)(void*), void* arg) {
-  return pthread_create(therad, nullptr, start_routine, arg);
+  return pthread_create(thread, nullptr, start_routine, arg);
 }
 
 int kern_thread_join(KernThread thread) {
