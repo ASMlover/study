@@ -61,7 +61,7 @@ $(TARGET): $(OBJS)
 {make_objs}
 """
 WINDOWS_CCOBJ = """{make_obj}: {make_src}
-    $(CC) -Fo:{make_obj} $(CFLAGS) {make_src}
+	$(CC) -Fo:{make_obj} $(CFLAGS) {make_src}
 """
 
 POSIX_MAKEFILE = """
@@ -137,7 +137,7 @@ def get_sources_from_dir(dirpath, recursive=True):
                 all_sources.append(source_fullpath)
     return all_sources
 
-def get_all_sources(dirs=(('./', True))):
+def get_all_sources(dirs=(('./', True),)):
     all_sources = []
     for path, recursive in dirs:
         all_sources.extend(get_sources_from_dir(path, recursive))
