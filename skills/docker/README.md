@@ -76,6 +76,10 @@
     $ docker cp <container-name>:/<source-path> <target-path>
     $ docker cp <container-id>:/<source-path> <target-path>
 
+    # 从本地路径拷贝文件/目录到container
+    $ docker cp <source-path> <container-name>:/<target-path>
+    $ docker cp <source-path> <container-id>:/<target-path>
+
     # 重启一个正在运行的container
     $ docker restart <container-id>
 
