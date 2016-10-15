@@ -63,8 +63,9 @@ namespace tyr { namespace basic {
 #if !defined(__builtin_expect)
 # define __builtin_expect(exp, c) (exp)
 #endif
-#define gmtime_r(timep, result) gmtime_s((result), (timep))
-#define timegm                  _mkgmtime
+#define gmtime_r(timep, result)         gmtime_s((result), (timep))
+#define strerror_r(errnum, buf, buflen) strerror_s((buf), (buflen), (errnum))
+#define timegm                          _mkgmtime
 
 struct timezone {
   int tz_minuteswest;

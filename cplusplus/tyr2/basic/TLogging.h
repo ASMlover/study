@@ -24,28 +24,30 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_LOGGING_HEADER_H__
-#define __TYR_LOGGING_HEADER_H__
+#ifndef __TYR_BASIC_LOGGING_HEADER_H__
+#define __TYR_BASIC_LOGGING_HEADER_H__
 
+#include <memory>
 #include "TTimestamp.h"
 #include "TLogStream.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
-class TimeZone;
+class Timezone;
+
+enum class LoggingLevel {
+  LOGGINGLEVEL_TRACE = 0,
+  LOGGINGLEVEL_DEBUG,
+  LOGGINGLEVEL_INFO,
+  LOGGINGLEVEL_WARN,
+  LOGGINGLEVEL_ERROR,
+  LOGGINGLEVEL_FATAL,
+
+  COUNT_LEVELS,
+};
 
 class Logger {
 public:
-  enum class LogLevel : int {
-    TRACE = 0,
-    DEBUG,
-    INFO,
-    WARN,
-    ERROR,
-    FATAL,
-    COUNT_LEVELS,
-  };
-
   class SourceFile {
   public:
     const char* data_;
@@ -71,23 +73,13 @@ public:
     }
   };
 private:
-  class LoggerImpl {
-  public:
-    Timestamp time_;
-    LogStream stream_;
-    Logger::LogLevel level_;
-    int lineno_;
-    SourceFile basename_;
+  class LoggerImpl;
 
-    LoggerImpl(Logger::LogLevel level, int old_errno, const SourceFile& file, int lineno);
-    void format_time(void);
-    void finish(void);
-  };
-  LoggerImpl impl_;
+  std::unique_ptr<LoggerImpl> impl_;
 public:
   Logger(SourceFile file, int lineno);
-  Logger(SourceFile file, int lineno, LogLevel level);
-  Logger(SourceFile file, int lineno, LogLevel level, const char* func);
+  Logger(SourceFile file, int lineno, LoggingLevel level);
+  Logger(SourceFile file, int lineno, LoggingLevel level, const char* func);
   Logger(SourceFile file, int lineno, bool to_abort);
   ~Logger(void);
 
@@ -95,24 +87,24 @@ public:
 
   typedef void (*OutputCallback)(const char* msg, int len);
   typedef void (*FlushCallback)(void);
-  static LogLevel log_level(void);
-  static void set_log_level(LogLevel level);
+  static LoggingLevel log_level(void);
+  static void set_log_level(LoggingLevel level);
   static void set_output(OutputCallback cb);
   static void set_flush(FlushCallback cb);
-  static void set_timezone(const TimeZone& tz);
+  static void set_timezone(const Timezone& tz);
 };
 
-#define TL_TRACE if (tyr::Logger::log_level() <= tyr::Logger::LogLevel::TRACE)\
-  tyr::Logger(__FILE__, __LINE__, tyr::Logger::LogLevel::TRACE, __func__).stream()
-#define TL_DEBUG if (tyr::Logger::log_level() <= tyr::Logger::LogLevel::DEBUG)\
-  tyr::Logger(__FILE__, __LINE__, tyr::Logger::LogLevel::DEBUG, __func__).stream()
-#define TL_INFO if (tyr::Logger::log_level() <= tyr::Logger::LogLevel::INFO)\
+#define TL_TRACE if (tyr::basic::Logger::log_level() <= tyr::basic::LoggingLevel::LOGGINGLEVEL_TRACE)\
+  tyr::Logger(__FILE__, __LINE__, tyr::basic::LoggingLevel::LOGGINGLEVEL_TRACE, __func__).stream()
+#define TL_DEBUG if (tyr::basic::Logger::log_level() <= tyr::basic::LoggingLevel::LOGGINGLEVEL_DEBUG)\
+  tyr::Logger(__FILE__, __LINE__, tyr::basic::LoggingLevel::LOGGINGLEVEL_DEBUG, __func__).stream()
+#define TL_INFO if (tyr::basic::Logger::log_level() <= tyr::basic::LoggingLevel::LOGGINGLEVEL_INFO)\
   tyr::Logger(__FILE__, __LINE__).stream()
-#define TL_WARN tyr::Logger(__FILE__, __LINE__, tyr::Logger::LogLevel::WARN).stream()
-#define TL_ERROR tyr::Logger(__FILE__, __LINE__, tyr::Logger::LogLevel::ERROR).stream()
-#define TL_FATAL tyr::Logger(__FILE__, __LINE__, tyr::Logger::LogLevel::FATAL).stream()
-#define TL_SYSERR tyr::Logger(__FILE__, __LINE__, false).stream()
-#define TL_SYSFATAL tyr::Logger(__FILE__, __LINE__, true).stream()
+#define TL_WARN tyr::basic::Logger(__FILE__, __LINE__, tyr::basic::LoggingLevel::LOGGINGLEVEL_WARN).stream()
+#define TL_ERROR tyr::basic::Logger(__FILE__, __LINE__, tyr::basic::LoggingLevel::LOGGINGLEVEL_ERROR).stream()
+#define TL_FATAL tyr::basic::Logger(__FILE__, __LINE__, tyr::basic::LoggingLevel::LOGGINGLEVEL_FATAL).stream()
+#define TL_SYSERR tyr::basic::Logger(__FILE__, __LINE__, false).stream()
+#define TL_SYSFATAL tyr::basic::Logger(__FILE__, __LINE__, true).stream()
 
 const char* strerror_tl(int saved_errno);
 
@@ -126,6 +118,6 @@ T* check_not_null(Logger::SourceFile file, int lineno, const char* names, T* p) 
   return p;
 }
 
-};
+}}
 
-#endif // __TYR_LOGGING_HEADER_H__
+#endif // __TYR_BASIC_LOGGING_HEADER_H__
