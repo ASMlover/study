@@ -26,7 +26,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 OUT	= tyr.test
-RM	= rm
+RM	= rm -fv
 CC	= g++
 CFLAGS	= -g -O2 -Wall -std=c++0x
 LDFLAGS	= -lpthread
