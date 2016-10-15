@@ -85,7 +85,7 @@ $(TARGET): $(OBJS)
 
 {make_objs}
 """
-POSIX_CCOBJ = """{make_obj}: ${make_src}
+POSIX_CCOBJ = """{make_obj}: {make_src}
 	$(CC) -o {make_obj} -c $(CFLAGS) {make_src}
 """
 
@@ -95,8 +95,8 @@ TARGET = 'tyr.test'
 OUTDIR = 'build'
 SOURCE_DIRS = {
     'common': (('./', True), ('../basic', False), ('../basic/unexposed', True),),
-    'darwin': (('../basic/darwin', True),),
-    'linux': (('../basic/linux', True),),
+    'darwin': (('../basic/posix', True), ('../basic/darwin', True),),
+    'linux': (('../basic/posix', True), ('../basic/linux', True),),
     'windows': (('../basic/windows', True),),
 }
 
@@ -147,16 +147,14 @@ def gen_windows_obj(source_fname):
     s = source_fname.strip('./').strip('../').replace('/', '.')
     return '$(OUTDIR)\$(OBJDIR)\{objname}.obj '.format(objname=os.path.splitext(s)[0])
 
-def gen_posix_obj(source_fname, outdir):
+def gen_posix_obj(source_fname):
     s = source_fname.strip('./').strip('../').replace('/', '.')
     return '$(OUTDIR)/$(OBJDIR)/{objname}.o '.format(objname=os.path.splitext(s)[0])
 
 def gen_windows_make_obj(out, src):
-    out = out.strip('./').strip('../').replace('/', '.')
     return WINDOWS_CCOBJ.format(make_obj=out.strip(), make_src=src)
 
 def gen_posix_make_obj(out, src):
-    out = out.strip('./').strip('../').replace('/', '.')
     return POSIX_CCOBJ.format(make_obj=out.strip(), make_src=src)
 
 def gen_makefile(platform='linux', target='a.out', outdir='build', sources=[]):
@@ -180,7 +178,7 @@ def gen_makefile(platform='linux', target='a.out', outdir='build', sources=[]):
     if ext_dict:
         make_dict.update(ext_dict)
 
-    makefile_temp = getattr(mname, '{pt}_MAKEFILE'.format(pt=platform.upper()), 'POSIX_MAKEFILE')
+    makefile_temp = getattr(mname, '{pt}_MAKEFILE'.format(pt=platform.upper()), POSIX_MAKEFILE)
     with do_open('Makefile', 'w', encoding='utf-8') as fp:
         fp.write(makefile_temp.format(**make_dict))
 
