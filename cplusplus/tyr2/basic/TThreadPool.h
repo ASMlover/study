@@ -24,8 +24,8 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_THREADPOOL_HEADER_H__
-#define __TYR_THREADPOOL_HEADER_H__
+#ifndef __TYR_BASIC_THREADPOOL_HEADER_H__
+#define __TYR_BASIC_THREADPOOL_HEADER_H__
 
 #include <functional>
 #include <memory>
@@ -36,19 +36,22 @@
 #include "TTypes.h"
 #include "TMutex.h"
 #include "TCondition.h"
-#include "TThread.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 typedef std::function<void (void)> TaskCallback;
 
+class Thread;
+
 class ThreadPool : private UnCopyable {
+  typedef std::unique_ptr<Thread> ThreadEntity;
+
   mutable Mutex mtx_;
   Condition not_empty_;
   Condition not_full_;
   std::string name_;
   TaskCallback thrd_init_cb_;
-  std::vector<std::unique_ptr<Thread>> threads_;
+  std::vector<ThreadEntity> threads_;
   std::deque<TaskCallback> tasks_;
   size_t max_tasksz_;
   bool running_;
@@ -79,6 +82,6 @@ private:
   TaskCallback take_task(void);
 };
 
-}
+}}
 
-#endif // __TYR_THREADPOOL_HEADER_H__
+#endif // __TYR_BASIC_THREADPOOL_HEADER_H__

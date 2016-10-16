@@ -32,8 +32,6 @@
 #include <pthread.h>
 #include <time.h>
 
-#undef NANOSEC
-#define NANOSEC ((uint64_t)1e9)
 #define TYR_DECLARRAY(type, name, count) type name[count]
 
 typedef pthread_mutex_t KernMutex;

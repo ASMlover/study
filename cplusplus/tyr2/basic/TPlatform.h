@@ -36,6 +36,9 @@
 # include "posix/TPlatformPosix.h"
 #endif
 
+#undef NANOSEC
+#define NANOSEC ((uint64_t)1e9)
+
 namespace tyr { namespace basic {
 
 pid_t kern_getpid(void);
