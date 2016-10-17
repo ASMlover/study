@@ -33,6 +33,10 @@
 
 #define TYR_DECLARRAY(type, name, count) type* name = (type*)_alloca(sizeof(char) * (count))
 
+typedef int                 pid_t;
+typedef CRITICAL_SECTION    KernMutex;
+typedef CONDITION_VARIABLE  KernCond;
+
 struct KernThread {
   HANDLE start_event;
   HANDLE thrd_handle;
@@ -52,11 +56,6 @@ struct KernThread {
     thrd_handle = nullptr;
   }
 };
-
-typedef int                 pid_t;
-typedef CRITICAL_SECTION    KernMutex;
-typedef CONDITION_VARIABLE  KernCond;
-typedef struct KernThread   KernThread;
 
 namespace tyr { namespace basic {
 
