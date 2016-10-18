@@ -166,11 +166,11 @@ public:
 
   enum {DEFAULT_CAPACITY = 64};
 private:
-  pointer buff_;
-  size_type capacity_;
-  size_type head_;
-  size_type tail_;
-  size_type size_;
+  pointer buff_{nullptr};
+  size_type capacity_{0};
+  size_type head_{1};
+  size_type tail_{0};
+  size_type size_{0};
   allocator_type alloc_;
 private:
   size_type normalise(size_type i) const {
@@ -209,10 +209,22 @@ private:
 
   template <typename ForwardIterator>
   void assign_n(ForwardIterator from, ForwardIterator to) {
+    if (!empty())
+      clear();
+    while (from != to)
+      push_back(*from++);
   }
 
   template <typename ForwardIterator>
   void reserve_assign_n(ForwardIterator from, ForwardIterator to) {
+    if (!empty())
+      clear();
+
+    while (from != to) {
+      if (full())
+        reserve(static_cast<size_type>(0 == capacity_ ? 1 : (capacity_ > 1 ? 1.5 * capacity_ : 2 * capacity_)));
+      push_back(*from++);
+    }
   }
 
   void destroy_all(void) {
@@ -220,21 +232,24 @@ private:
       alloc_.destroy(buff_ + get_index(i));
   }
 public:
-  explicit CircularBuffer(size_type capacity = DEFAULT_CAPACITY)
-    : buff_(alloc_.allocate(capacity))
-    , capacity_(capacity)
-    , head_(1)
-    , tail_(0)
-    , size_(0) {
+  explicit CircularBuffer(const allocator_type& alloc = allocator_type())
+    : alloc_(alloc) {
+  }
+
+  CircularBuffer(size_type capacity, const allocator_type& alloc = allocator_type())
+    : capacity_(capacity)
+    , alloc_(alloc) {
+    buff_ = alloc_.allocate(capacity_);
   }
 
   CircularBuffer(const CircularBuffer<T, Alloc>& r)
-    : buff_(alloc_.allocate(r.capacity_))
-    , capacity_(r.capacity_)
+    : capacity_(r.capacity_)
     , head_(r.head_)
     , tail_(r.tail_)
-    , size_(r.size_) {
+    , size_(r.size_)
+    , alloc_(r.get_allocator()) {
     try {
+      buff_ = alloc_.allocate(capacity_);
       assign_n(r.begin(), r.end());
     }
     catch (...) {
@@ -245,15 +260,16 @@ public:
   }
 
   template <typename InputIterator>
-  CircularBuffer(InputIterator form, InputIterator to)
-    : buff_(alloc_.allocate(DEFAULT_CAPACITY))
-    , capacity_(DEFAULT_CAPACITY)
-    , head_(1)
-    , tail_(0)
-    , size_(0) {
-    SelfType tmp;
+  CircularBuffer(InputIterator from, InputIterator to, const allocator_type& alloc = allocator_type())
+    : alloc_(alloc) {
+    SelfType tmp(alloc);
     tmp.reserve_assign_n(from, to);
     swap(tmp);
+
+    // FIXME: another implementation
+    // SelfType tmp(std::distance(from, to), alloc);
+    // tmp.assign_n(from, to);
+    // swap(tmp);
   }
 
   ~CircularBuffer(void) {
@@ -261,9 +277,20 @@ public:
     alloc_.deallocate(buff_, capacity_);
   }
 
+  CircularBuffer(CircularBuffer<T, Alloc>&& r)
+    : alloc_(r.get_allocator()) {
+    r.swap(*this);
+  }
+
   SelfType& operator=(const CircularBuffer<T, Alloc>& r) {
     CircularBuffer tmp(r);
     swap(tmp);
+    return *this;
+  }
+
+  SelfType& operator=(CircularBuffer<T, Alloc>&& r) {
+    r.swap(*this);
+    CircularBuffer<T, Alloc>(get_allocator()).swap(r);
     return *this;
   }
 
