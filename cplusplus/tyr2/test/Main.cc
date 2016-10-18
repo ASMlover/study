@@ -26,11 +26,13 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <time.h>
 #include <iostream>
-#include "../basic/TStringPiece.h"
-#include "../basic/TTimestamp.h"
-#include "../basic/TCurrentThread.h"
-#include "../basic/TDate.h"
-#include "../basic/TMutex.h"
+
+#include <TCircularBuffer.h>
+#include <TStringPiece.h>
+#include <TTimestamp.h>
+#include <TCurrentThread.h>
+#include <TDate.h>
+#include <TMutex.h>
 
 #define UNUSED_PARAM(arg) (void)arg
 
@@ -203,6 +205,11 @@ void tyr_test_Date(void) {
   std::cout << "@d3 == @d4: " << (d3 == d4) << ", @d3 < @d4: " << (d3 < d4) << std::endl;
 }
 
+void tyr_test_CircularBuffer(void) {
+  std::cout << "\n#################### CircularBuffer ####################\n";
+  using namespace tyr::basic;
+}
+
 int main(int argc, char* argv[]) {
   UNUSED_PARAM(argc);
   UNUSED_PARAM(argv);
@@ -212,6 +219,7 @@ int main(int argc, char* argv[]) {
   tyr_test_Timestamp();
   tyr_test_CurrentThread();
   tyr_test_Date();
+  tyr_test_CircularBuffer();
 
   return 0;
 }

@@ -47,6 +47,7 @@ MT	= mt -nologo
 LINK	= link -nologo
 CFLAGS	= -GS -Zi -Fd"$(OUTDIR)\$(BINDIR)\\vc.pdb" -O2 -W2 -MDd -EHsc -D_DEBUG -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(TARGET).pdb -manifest -manifestfile:$(TARGET).manifest -manifestuac:no winmm.lib
+INCLUDES	= {includes}
 OBJS	= {objs}
 
 all: $(TARGET)
@@ -61,7 +62,7 @@ $(TARGET): $(OBJS)
 {make_objs}
 """
 WINDOWS_CCOBJ = """{make_obj}: {make_src}
-	$(CC) -Fo:{make_obj} $(CFLAGS) {make_src}
+	$(CC) -Fo:{make_obj} $(CFLAGS) $(INCLUDES) {make_src}
 """
 
 POSIX_MAKEFILE = """
@@ -73,6 +74,7 @@ RM	= rm -rfv
 CC	= {cc}
 CFLAGS	= -g -O2 -Wall -std=c++0x
 LDFLAGS	= {ldflags}
+INCLUDES	= {includes}
 OBJS	= {objs}
 
 all: $(TARGET)
@@ -86,13 +88,14 @@ $(TARGET): $(OBJS)
 {make_objs}
 """
 POSIX_CCOBJ = """{make_obj}: {make_src}
-	$(CC) -o {make_obj} -c $(CFLAGS) {make_src}
+	$(CC) -o {make_obj} -c $(CFLAGS) $(INCLUDES) {make_src}
 """
 
 LINUX_MKDIR = {'cc': 'g++', 'ldflags': '-lpthread'}
 DARWIN_MKDIR = {'cc': 'clang++', 'ldflags': '-lc -lpthread'}
 TARGET = 'tyr.test'
 OUTDIR = 'build'
+INC_DIRS = ['../basic']
 SOURCE_DIRS = {
     'common': (('./', True), ('../basic', False), ('../basic/unexposed', True),),
     'darwin': (('../basic/posix', True), ('../basic/darwin', True),),
@@ -157,10 +160,23 @@ def gen_windows_make_obj(out, src):
 def gen_posix_make_obj(out, src):
     return POSIX_CCOBJ.format(make_obj=out.strip(), make_src=src)
 
+def gen_windows_include(inc_dirs=INC_DIRS):
+    inc_list = []
+    for inc in inc_dirs:
+        inc_list.append('-I"{inc}" '.format(inc=inc.replace('/', '\\')))
+    return ''.join(inc_list).rstrip()
+
+def gen_posix_include(inc_dirs=INC_DIRS):
+    inc_list = []
+    for inc in inc_dirs:
+        inc_list.append('-I{inc} '.format(inc=inc))
+    return ''.join(inc_list).rstrip()
+
 def gen_makefile(platform='linux', target='a.out', outdir='build', sources=[]):
     mname = sys.modules['__main__']
     gen_obj = getattr(mname, 'gen_{pt}_obj'.format(pt=platform), gen_posix_obj)
     gen_make_obj = getattr(mname, 'gen_{pt}_make_obj'.format(pt=platform), gen_posix_make_obj)
+    gen_includes = getattr(mname, 'gen_{pt}_include'.format(pt=platform), gen_posix_include)
 
     objs_list = []
     make_objs_list = []
@@ -171,8 +187,9 @@ def gen_makefile(platform='linux', target='a.out', outdir='build', sources=[]):
     make_dict = dict(
         outdir = outdir,
         target = target,
-        objs = ''.join(objs_list)[:-1],
-        make_objs = ''.join(make_objs_list)[:-1]
+        objs = ''.join(objs_list).rstrip(),
+        make_objs = ''.join(make_objs_list).rstrip(),
+        includes = gen_includes(INC_DIRS)
     )
     ext_dict = getattr(mname, '{pt}_MKDIR'.format(pt=platform.upper()), None)
     if ext_dict:
