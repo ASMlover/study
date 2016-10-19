@@ -24,8 +24,8 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_BLOCKINGQUEUE_HEADER_H__
-#define __TYR_BLOCKINGQUEUE_HEADER_H__
+#ifndef __TYR_BASIC_BLOCKINGQUEUE_HEADER_H__
+#define __TYR_BASIC_BLOCKINGQUEUE_HEADER_H__
 
 #include <assert.h>
 #include <deque>
@@ -33,7 +33,7 @@
 #include "TMutex.h"
 #include "TCondition.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 template <typename T>
 class BlockingQueue : private UnCopyable {
@@ -55,7 +55,7 @@ public:
   void put(T&& x) {
     MutexGuard guard(mtx_);
     queue_.push_back(std::move(x));
-    not_empty_.notify();
+    not_empty_.signal();
   }
 
   T take(void) {
@@ -72,6 +72,6 @@ public:
   }
 };
 
-}
+}}
 
-#endif // __TYR_BLOCKINGQUEUE_HEADER_H__
+#endif // __TYR_BASIC_BLOCKINGQUEUE_HEADER_H__
