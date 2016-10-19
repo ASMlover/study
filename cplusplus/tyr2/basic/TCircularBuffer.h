@@ -341,6 +341,10 @@ public:
     size_ = 0;
   }
 
+  explicit operator bool(void) const {
+    return nullptr != buff_;
+  }
+
   bool empty(void) const {
     return 0 == size_;
   }
