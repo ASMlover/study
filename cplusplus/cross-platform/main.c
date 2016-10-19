@@ -50,6 +50,7 @@ static void _kp_test_thread(void)
 
 static void _kp_thread_key_destructor(void* p) {
   free(p);
+  fprintf(stdout, "***************************** 0x%p\n", p);
 }
 
 static void _kp_test_thread_key(void)
@@ -61,6 +62,9 @@ static void _kp_test_thread_key(void)
   kp_thread_key_create(&key, _kp_thread_key_destructor);
   value = (int*)malloc(sizeof(int));
   *value = 1234;
+  kp_thread_setspecific(key, (const void*)value);
+  value = (int*)malloc(sizeof(int));
+  *value = 5678;
   kp_thread_setspecific(key, (const void*)value);
   fprintf(stdout, "kp_thread_key_t: getspecific: %d\n", *(int*)kp_thread_getspecific(key));
   kp_thread_key_delete(key);

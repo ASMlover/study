@@ -90,6 +90,13 @@ int kp_thread_join(kp_thread_t thread)
   return 0;
 }
 
+static void _kp_thread_key_clear(kp_thread_key_t key)
+{
+  void* old_val = TlsGetValue(key->key);
+  if (NULL != key->destructor && NULL != old_val)
+    key->destructor(old_val);
+}
+
 int kp_thread_key_create(kp_thread_key_t* key, void (*destructor)(void*))
 {
   struct _kp_thread_key_t* k = (struct _kp_thread_key_t*)malloc(sizeof(*k));
@@ -106,10 +113,7 @@ int kp_thread_key_create(kp_thread_key_t* key, void (*destructor)(void*))
 int kp_thread_key_delete(kp_thread_key_t key)
 {
   if (NULL != key) {
-    void* value = TlsGetValue(key->key);
-    if (NULL != key->destructor)
-      key->destructor(value);
-
+    _kp_thread_key_clear(key);
     free(key);
   }
   return 0;
@@ -122,5 +126,9 @@ void* kp_thread_getspecific(kp_thread_key_t key)
 
 int kp_thread_setspecific(kp_thread_key_t key, const void* value)
 {
-  return NULL != key ? (TlsSetValue(key->key, (LPVOID)value) ? 0 : -1) : -1;
+  if (NULL != key) {
+    _kp_thread_key_clear(key);
+    return TlsSetValue(key->key, (LPVOID)value) ? 0 : -1;
+  }
+  return -1;
 }
