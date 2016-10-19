@@ -222,7 +222,7 @@ private:
 
     while (from != to) {
       if (full())
-        reserve(static_cast<size_type>(0 == capacity_ ? 1 : (capacity_ > 1 ? 1.5 * capacity_ : 2 * capacity_)));
+        reserve(static_cast<size_type>(capacity_ < 2 ? 2 : capacity_ * 1.5));
       push_back(*from++);
     }
   }
@@ -304,6 +304,7 @@ public:
     std::swap(head_, r.head_);
     std::swap(tail_, r.tail_);
     std::swap(size_, r.size_);
+    std::swap(alloc_, r.alloc_);
   }
 
   void reserve(size_type new_size) {
