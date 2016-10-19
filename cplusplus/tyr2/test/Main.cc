@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <time.h>
 #include <iostream>
-// #define TYR_CODING
+//#define TYR_CODING
 #if defined(TYR_CODING)
 # include "../basic/TCircularBuffer.h"
 # include "../basic/TStringPiece.h"
@@ -34,6 +34,7 @@
 # include "../basic/TCurrentThread.h"
 # include "../basic/TDate.h"
 # include "../basic/TMutex.h"
+# include "../basic/TBlockingQueue.h"
 #else
 # include <basic/TCircularBuffer.h>
 # include <basic/TStringPiece.h>
@@ -41,6 +42,7 @@
 # include <basic/TCurrentThread.h>
 # include <basic/TDate.h>
 # include <basic/TMutex.h>
+# include <basic/TBlockingQueue.h>
 #endif
 
 #define UNUSED_PARAM(arg) (void)arg
@@ -273,6 +275,36 @@ void tyr_test_CircularBuffer(void) {
   tyr_show_CircularBuffer(cb2, "CircularBuffer<int>.cb2.after.push_back");
 }
 
+template <typename T>
+static void tyr_show_BlockingQueue(tyr::basic::BlockingQueue<T>& b, const char* name = "BlockingQueue<T>") {
+  if (b.size() > 0) {
+    std::cout << "object(`" << name << "`) @{"
+      << "\n\t\t@size: " << b.size()
+      << "\n\t\t@take: " << b.take();
+    std::cout
+      << "\n\t\t@size: " << b.size()
+      << "\n\t}" << std::endl;
+  }
+  else {
+    std::cout << "object(`" << name << "`) @{"
+      << "\n\t\t@size: " << b.size()
+      << "\n\t}" << std::endl;
+  }
+}
+
+void tyr_test_BlockingQueue(void) {
+  std::cout << "\n#################### BlockingQueue ####################\n";
+  using namespace tyr;
+
+  basic::BlockingQueue<int> b1;
+  tyr_show_BlockingQueue(b1, "BlockingQueue<int>.b1");
+
+  b1.put(34);
+  b1.put(45);
+  b1.put(56);
+  tyr_show_BlockingQueue(b1, "BlockingQueue<int>.b1.after.put");
+}
+
 int main(int argc, char* argv[]) {
   UNUSED_PARAM(argc);
   UNUSED_PARAM(argv);
@@ -283,6 +315,7 @@ int main(int argc, char* argv[]) {
   tyr_test_CurrentThread();
   tyr_test_Date();
   tyr_test_CircularBuffer();
+  tyr_test_BlockingQueue();
 
   return 0;
 }
