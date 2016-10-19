@@ -26,13 +26,22 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <time.h>
 #include <iostream>
-
-#include <TCircularBuffer.h>
-#include <TStringPiece.h>
-#include <TTimestamp.h>
-#include <TCurrentThread.h>
-#include <TDate.h>
-#include <TMutex.h>
+// #define TYR_CODING
+#if defined(TYR_CODING)
+# include "../basic/TCircularBuffer.h"
+# include "../basic/TStringPiece.h"
+# include "../basic/TTimestamp.h"
+# include "../basic/TCurrentThread.h"
+# include "../basic/TDate.h"
+# include "../basic/TMutex.h"
+#else
+# include <basic/TCircularBuffer.h>
+# include <basic/TStringPiece.h>
+# include <basic/TTimestamp.h>
+# include <basic/TCurrentThread.h>
+# include <basic/TDate.h>
+# include <basic/TMutex.h>
+#endif
 
 #define UNUSED_PARAM(arg) (void)arg
 
@@ -205,9 +214,63 @@ void tyr_test_Date(void) {
   std::cout << "@d3 == @d4: " << (d3 == d4) << ", @d3 < @d4: " << (d3 < d4) << std::endl;
 }
 
+template <typename T>
+static void tyr_show_CircularBuffer(
+    const tyr::basic::CircularBuffer<T>& cb, const char* name = "CircularBuffer<T>") {
+  if (cb) {
+    std::cout << "object(`" << name << "`) @{"
+      << "\n\t\t@empty: " << cb.empty()
+      << "\n\t\t@full: " << cb.full()
+      << "\n\t\t@size: " << cb.size()
+      << "\n\t\t@capacity: " << cb.capacity()
+      << "\n\t\t@max_size: " << cb.max_size()
+      << "\n\t\t@data: " << cb.data()
+      << "\n\t\t@front: " << cb.front()
+      << "\n\t\t@back: " << cb.back()
+      << "\n\t\t@elements: {";
+  }
+  else {
+    std::cout << "object(`" << name << "`) @{"
+      << "\n\t\t@empty: " << cb.empty()
+      << "\n\t\t@full: " << cb.full()
+      << "\n\t\t@size: " << cb.size()
+      << "\n\t\t@capacity: " << cb.capacity()
+      << "\n\t\t@max_size: " << cb.max_size()
+      << "\n\t\t@data: " << cb.data()
+      << "\n\t\t@elements: {";
+  }
+  for (auto& e : cb)
+    std::cout << e << ", ";
+  std::cout << "}";
+  std::cout << "\n\t}" << std::endl;
+}
+
 void tyr_test_CircularBuffer(void) {
   std::cout << "\n#################### CircularBuffer ####################\n";
   using namespace tyr::basic;
+
+  CircularBuffer<int> cb(5);
+  tyr_show_CircularBuffer(cb, "CircularBuffer<int>.cb");
+  CircularBuffer<int> cb1 = std::move(cb);
+  tyr_show_CircularBuffer(cb, "CircularBuffer<int>.cb.after.move");
+  tyr_show_CircularBuffer(cb1, "CircularBuffer<int>.cb1");
+
+  cb1.push_back(1);
+  cb1.push_back(2);
+  cb1.push_back(3);
+
+  CircularBuffer<int> cb2(cb1.begin(), cb1.end());
+  tyr_show_CircularBuffer(cb2, "CircularBuffer<int>.cb2");
+
+  cb2.clear();
+  tyr_show_CircularBuffer(cb2, "CircularBuffer<int>.cb2.after.clear");
+
+  for (int i = 0; i < 7; ++i) {
+    int x = (i + 1) * (i + 1);
+    std::cout << "CircularBuffer<int>.cb2.push_back operatation => @x: " << x << std::endl;
+    cb2.push_back(x);
+  }
+  tyr_show_CircularBuffer(cb2, "CircularBuffer<int>.cb2.after.push_back");
 }
 
 int main(int argc, char* argv[]) {

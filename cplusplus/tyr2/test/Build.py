@@ -95,7 +95,7 @@ LINUX_MKDIR = {'cc': 'g++', 'ldflags': '-lpthread'}
 DARWIN_MKDIR = {'cc': 'clang++', 'ldflags': '-lc -lpthread'}
 TARGET = 'tyr.test'
 OUTDIR = 'build'
-INC_DIRS = ['../basic']
+INC_DIRS = ['..']
 SOURCE_DIRS = {
     'common': (('./', True), ('../basic', False), ('../basic/unexposed', True),),
     'darwin': (('../basic/posix', True), ('../basic/darwin', True),),
