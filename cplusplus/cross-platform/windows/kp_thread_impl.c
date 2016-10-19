@@ -39,6 +39,11 @@ struct _kp_thread_t {
   void* arg;
 };
 
+struct _kp_thread_key_t {
+  DWORD key;
+  void (*destructor)(void*);
+};
+
 static UINT WINAPI _kp_thread_wrapper(void* arg)
 {
   struct _kp_thread_t* t = (struct _kp_thread_t*)(arg);
@@ -54,7 +59,7 @@ static UINT WINAPI _kp_thread_wrapper(void* arg)
 
 int kp_thread_create(kp_thread_t* thread, void* (*start_routine)(void*), void* arg)
 {
-  struct _kp_thread_t* t = (struct _kp_thread_t*)malloc(sizeof(struct _kp_thread_t));
+  struct _kp_thread_t* t = (struct _kp_thread_t*)malloc(sizeof(*t));
   if (NULL == t)
     return -1;
 
@@ -83,4 +88,39 @@ int kp_thread_join(kp_thread_t thread)
   }
 
   return 0;
+}
+
+int kp_thread_key_create(kp_thread_key_t* key, void (*destructor)(void*))
+{
+  struct _kp_thread_key_t* k = (struct _kp_thread_key_t*)malloc(sizeof(*k));
+  if (NULL == k)
+    return -1;
+
+  *key = k;
+  k->key = TlsAlloc();
+  k->destructor = destructor;
+
+  return 0;
+}
+
+int kp_thread_key_delete(kp_thread_key_t key)
+{
+  if (NULL != key) {
+    void* value = TlsGetValue(key->key);
+    if (NULL != key->destructor)
+      key->destructor(value);
+
+    free(key);
+  }
+  return 0;
+}
+
+void* kp_thread_getspecific(kp_thread_key_t key)
+{
+  return NULL != key ? TlsGetValue(key->key) : NULL;
+}
+
+int kp_thread_setspecific(kp_thread_key_t key, const void* value)
+{
+  return NULL != key ? (TlsSetValue(key->key, (LPVOID)value) ? 0 : -1) : -1;
 }

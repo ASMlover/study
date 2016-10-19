@@ -27,6 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include "kp_thread.h"
 
 static void* _kp_thread_routine(void* arg)
@@ -47,12 +48,31 @@ static void _kp_test_thread(void)
   thread = 0;
 }
 
+static void _kp_thread_key_destructor(void* p) {
+  free(p);
+}
+
+static void _kp_test_thread_key(void)
+{
+  kp_thread_key_t key;
+  int* value;
+
+  fprintf(stdout, "\n#################### kp_thead_key ####################\n");
+  kp_thread_key_create(&key, _kp_thread_key_destructor);
+  value = (int*)malloc(sizeof(int));
+  *value = 1234;
+  kp_thread_setspecific(key, (const void*)value);
+  fprintf(stdout, "kp_thread_key_t: getspecific: %d\n", *(int*)kp_thread_getspecific(key));
+  kp_thread_key_delete(key);
+}
+
 int main(int argc, char* argv[])
 {
   UNUSED(argc);
   UNUSED(argv);
 
   _kp_test_thread();
+  _kp_test_thread_key();
 
   return 0;
 }

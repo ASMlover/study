@@ -40,4 +40,9 @@
 extern int kp_thread_create(kp_thread_t* thread, void* (*start_routine)(void*), void* arg);
 extern int kp_thread_join(kp_thread_t thread);
 
+extern int kp_thread_key_create(kp_thread_key_t* key, void (*destuctor)(void*));
+extern int kp_thread_key_delete(kp_thread_key_t key);
+extern void* kp_thread_getspecific(kp_thread_key_t key);
+extern int kp_thread_setspecific(kp_thread_key_t key, const void* value);
+
 #endif /* KP_THREAD_H_ */

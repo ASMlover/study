@@ -29,6 +29,7 @@
 #ifndef KP_WINDOWS_THREADIMPL_H_
 #define KP_WINDOWS_THREADIMPL_H_
 
-typedef struct _kp_thread_t* kp_thread_t;
+typedef struct _kp_thread_t*      kp_thread_t;
+typedef struct _kp_thread_key_t*  kp_thread_key_t;
 
 #endif /* KP_WINDOWS_THREADIMPL_H_ */
