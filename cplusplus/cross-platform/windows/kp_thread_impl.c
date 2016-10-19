@@ -90,7 +90,7 @@ int kp_thread_join(kp_thread_t thread)
   return 0;
 }
 
-static void _kp_thread_key_clear(kp_thread_key_t key)
+static inline void _kp_thread_key_clear(kp_thread_key_t key)
 {
   void* old_val = TlsGetValue(key->key);
   if (NULL != key->destructor && NULL != old_val)
