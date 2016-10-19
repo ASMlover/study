@@ -26,23 +26,33 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef KP_THREAD_H_
-#define KP_THREAD_H_
+#include "../kp_thread.h"
 
-#include "kp_platform.h"
+int kp_thread_create(kp_thread_t* thread, void* (*start_routine)(void*), void* arg)
+{
+  return pthread_create(thread, NULL, start_routine, arg);
+}
 
-#if defined(KP_WINDOWS)
-# include "windows/kp_thread_impl.h"
-#else
-# include "posix/kp_thread_impl.h"
-#endif
+int kp_thread_join(kp_thread_t thread) {
+  return pthread_join(thread, NULL);
+}
 
-extern int kp_thread_create(kp_thread_t* thread, void* (*start_routine)(void*), void* arg);
-extern int kp_thread_join(kp_thread_t thread);
+int kp_thread_key_create(kp_thread_key_t* key, void (*destructor)(void*))
+{
+  return pthread_key_create(key, destructor);
+}
 
-extern int kp_thread_key_create(kp_thread_key_t* key, void (*destructor)(void*));
-extern int kp_thread_key_delete(kp_thread_key_t key);
-extern void* kp_thread_getspecific(kp_thread_key_t key);
-extern int kp_thread_setspecific(kp_thread_key_t key, const void* value);
+int kp_thread_key_delete(kp_thread_key_t key)
+{
+  return pthread_key_delete(key);
+}
 
-#endif /* KP_THREAD_H_ */
+void* kp_thread_getspecific(kp_thread_key_t key)
+{
+  return pthread_getspecific(key);
+}
+
+int kp_thread_setspecific(kp_thread_key_t key, const void* value)
+{
+  return pthread_setspecific(key, value);
+}

@@ -26,23 +26,12 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef KP_THREAD_H_
-#define KP_THREAD_H_
+#ifndef KP_POSIX_THREADIMPL_H_
+#define KP_POSIX_THREADIMPL_H_
 
-#include "kp_platform.h"
+#include <pthread.h>
 
-#if defined(KP_WINDOWS)
-# include "windows/kp_thread_impl.h"
-#else
-# include "posix/kp_thread_impl.h"
-#endif
+typedef pthread_t     kp_thread_t;
+typedef pthread_key_t kp_thread_key_t;
 
-extern int kp_thread_create(kp_thread_t* thread, void* (*start_routine)(void*), void* arg);
-extern int kp_thread_join(kp_thread_t thread);
-
-extern int kp_thread_key_create(kp_thread_key_t* key, void (*destructor)(void*));
-extern int kp_thread_key_delete(kp_thread_key_t key);
-extern void* kp_thread_getspecific(kp_thread_key_t key);
-extern int kp_thread_setspecific(kp_thread_key_t key, const void* value);
-
-#endif /* KP_THREAD_H_ */
+#endif /* KP_POSIX_THREADIMPL_H_ */
