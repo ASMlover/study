@@ -109,7 +109,7 @@ void default_flush(void) {
 
 Logger::OutputCallback gOutput = default_output;
 Logger::FlushCallback gFlush = default_flush;
-Timezone gLogTimeZone;
+Timezone gLogTimezone;
 
 class Logger::LoggerImpl {
 public:
@@ -143,8 +143,8 @@ void Logger::LoggerImpl::format_time(void) {
   if (seconds != tLastSecond) {
     tLastSecond = seconds;
     struct tm tm_time;
-    if (gLogTimeZone.is_valid())
-      tm_time = gLogTimeZone.to_localtime(seconds);
+    if (gLogTimezone.is_valid())
+      tm_time = gLogTimezone.to_localtime(seconds);
     else
       gmtime_r(&seconds, &tm_time);
 
@@ -155,7 +155,7 @@ void Logger::LoggerImpl::format_time(void) {
     UNUSED(len);
   }
 
-  if (gLogTimeZone.is_valid()) {
+  if (gLogTimezone.is_valid()) {
     Format fmt(".%06.d ", msec);
     assert(fmt.size() == 8);
     stream_ << T(tTime, 17) << T(fmt.data(), fmt.size());
@@ -223,7 +223,7 @@ void Logger::set_flush(FlushCallback cb) {
 }
 
 void Logger::set_timezone(const Timezone& tz) {
-  gLogTimeZone = tz;
+  gLogTimezone = tz;
 }
 
 }}
