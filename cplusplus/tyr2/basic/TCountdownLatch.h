@@ -24,32 +24,27 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "TCountdownLatch.h"
+#ifndef __TYR_BASIC_COUNTDOWNLATCH_HEADER_H__
+#define __TYR_BASIC_COUNTDOWNLATCH_HEADER_H__
 
-namespace tyr {
+#include "TUnCopyable.h"
+#include "TMutex.h"
+#include "TCondition.h"
 
-CountdownLatch::CountdownLatch(int count)
-  : mtx_()
-  , cond_(mtx_)
-  , count_(count) {
-}
+namespace tyr { namespace basic {
 
-void CountdownLatch::wait(void) {
-  MutexGuard guard(mtx_);
-  while (count_ > 0)
-    cond_.wait();
-}
+class CountdownLatch : private UnCopyable {
+  mutable Mutex mtx_;
+  Condition cond_;
+  int count_;
+public:
+  explicit CountdownLatch(int count);
 
-void CountdownLatch::countdown(void) {
-  MutexGuard guard(mtx_);
-  --count_;
-  if (0 == count_)
-    cond_.notify_all();
-}
+  void wait(void);
+  void countdown(void);
+  int count(void) const;
+};
 
-int CountdownLatch::count(void) const {
-  MutexGuard guard(mtx_);
-  return count_;
-}
+}}
 
-}
+#endif // __TYR_BASIC_COUNTDOWNLATCH_HEADER_H__
