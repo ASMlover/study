@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <time.h>
 #include <iostream>
-//#define TYR_CODING
+// #define TYR_CODING
 #if defined(TYR_CODING)
 # include "../basic/TCircularBuffer.h"
 # include "../basic/TStringPiece.h"
@@ -35,6 +35,7 @@
 # include "../basic/TDate.h"
 # include "../basic/TMutex.h"
 # include "../basic/TBlockingQueue.h"
+# include "../basic/TBoundedBlockingQueue.h"
 #else
 # include <basic/TCircularBuffer.h>
 # include <basic/TStringPiece.h>
@@ -43,6 +44,7 @@
 # include <basic/TDate.h>
 # include <basic/TMutex.h>
 # include <basic/TBlockingQueue.h>
+# include <basic/TBoundedBlockingQueue.h>
 #endif
 
 #define UNUSED_PARAM(arg) (void)arg
@@ -305,6 +307,36 @@ void tyr_test_BlockingQueue(void) {
   tyr_show_BlockingQueue(b1, "BlockingQueue<int>.b1.after.put");
 }
 
+template <typename T>
+static void tyr_show_BoundedBlockingQueue(
+    const tyr::basic::BoundedBlockingQueue<T>& b, const char* name = "BoundedBlockingQueue<T>") {
+  std::cout << "object(`" << name << "`) @{"
+    << "\n\t\t@empty: " << b.empty()
+    << "\n\t\t@full: " << b.full()
+    << "\n\t\t@size: " << b.size()
+    << "\n\t\t@capacity: " << b.capacity()
+    << "\n\t}" << std::endl;
+}
+
+void tyr_test_BoundedBlockingQueue(void) {
+  std::cout << "\n#################### BoundedBlockingQueue ####################\n";
+  using namespace tyr;
+
+  basic::BoundedBlockingQueue<int> b1(5);
+  tyr_show_BoundedBlockingQueue(b1, "BoundedBlockingQueue<int>.b1");
+
+  for (int i = 0; i < 5; ++i) {
+    int x = ((i + 1) * (i + 1)) ^ 2;
+    b1.put(x);
+    std::cout << "BoundedBlockingQueue<int>.b1.put @value: " << x << std::endl;
+  }
+  tyr_show_BoundedBlockingQueue(b1, "BoundedBlockingQueue<int>.b1.after.put operations");
+
+  while (!b1.empty())
+    std::cout << "BoundedBlockingQueue<int>.b1.take @value: " << b1.take() << std::endl;
+  tyr_show_BoundedBlockingQueue(b1, "BoundedBlockingQueue<int>.b1.after.take operations");
+}
+
 int main(int argc, char* argv[]) {
   UNUSED_PARAM(argc);
   UNUSED_PARAM(argv);
@@ -316,6 +348,7 @@ int main(int argc, char* argv[]) {
   tyr_test_Date();
   tyr_test_CircularBuffer();
   tyr_test_BlockingQueue();
+  tyr_test_BoundedBlockingQueue();
 
   return 0;
 }
