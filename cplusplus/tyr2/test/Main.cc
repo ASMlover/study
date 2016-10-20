@@ -30,18 +30,20 @@
 #if defined(TYR_CODING)
 # include "../basic/TCircularBuffer.h"
 # include "../basic/TStringPiece.h"
+# include "../basic/TDate.h"
+# include "../basic/TTimezone.h"
 # include "../basic/TTimestamp.h"
 # include "../basic/TCurrentThread.h"
-# include "../basic/TDate.h"
 # include "../basic/TMutex.h"
 # include "../basic/TBlockingQueue.h"
 # include "../basic/TBoundedBlockingQueue.h"
 #else
 # include <basic/TCircularBuffer.h>
 # include <basic/TStringPiece.h>
+# include <basic/TDate.h>
+# include <basic/TTimezone.h>
 # include <basic/TTimestamp.h>
 # include <basic/TCurrentThread.h>
-# include <basic/TDate.h>
 # include <basic/TMutex.h>
 # include <basic/TBlockingQueue.h>
 # include <basic/TBoundedBlockingQueue.h>
@@ -337,15 +339,41 @@ void tyr_test_BoundedBlockingQueue(void) {
   tyr_show_BoundedBlockingQueue(b1, "BoundedBlockingQueue<int>.b1.after.take operations");
 }
 
+static void tyr_show_tm(const struct tm& t, const char* name = "Timezone.tm") {
+  std::cout << "object(`" << name << "`) @{"
+    << "\n\t\t@tm.tm_year: " << t.tm_year + 1900
+    << "\n\t\t@tm.tm_mon: " << t.tm_mon + 1
+    << "\n\t\t@tm.tm_mday: " << t.tm_mday
+    << "\n\t\t@tm.tm_hour: " << t.tm_hour
+    << "\n\t\t@tm.tm_min: " << t.tm_min
+    << "\n\t\t@tm.tm_sec: " << t.tm_sec
+    << "\n\t}" << std::endl;
+}
+
+void tyr_test_Timezone(void) {
+  std::cout << "\n#################### Timezone ####################\n";
+  using namespace tyr;
+
+  time_t now = time(nullptr);
+  struct tm* t1 = localtime(&now);
+  tyr_show_tm(*t1, "stdc-library.localtime");
+
+  struct tm t2 = basic::Timezone::to_utc_time(now, true);
+  tyr_show_tm(t2, "Timezone.utc_time");
+  std::cout << "Timezone.from_utc_time: " << basic::Timezone::from_utc_time(t2) << std::endl;
+  std::cout << "Timezone.from_utc_time: " << basic::Timezone::from_utc_time(2016, 10, 20, 12, 12, 12) << std::endl;
+}
+
 int main(int argc, char* argv[]) {
   UNUSED_PARAM(argc);
   UNUSED_PARAM(argv);
 
   tyr_test_StringArg();
   tyr_test_StringPiece();
+  tyr_test_Date();
+  tyr_test_Timezone();
   tyr_test_Timestamp();
   tyr_test_CurrentThread();
-  tyr_test_Date();
   tyr_test_CircularBuffer();
   tyr_test_BlockingQueue();
   tyr_test_BoundedBlockingQueue();
