@@ -28,7 +28,9 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <memory>
 #include "kp_thread.h"
+#include "kp_tss.hpp"
 
 static void* _kp_thread_routine(void* arg)
 {
@@ -63,11 +65,24 @@ static void _kp_test_thread_key(void)
   value = (int*)malloc(sizeof(int));
   *value = 1234;
   kp_thread_setspecific(key, (const void*)value);
+
+  free(value);
   value = (int*)malloc(sizeof(int));
   *value = 5678;
   kp_thread_setspecific(key, (const void*)value);
   fprintf(stdout, "kp_thread_key_t: getspecific: %d\n", *(int*)kp_thread_getspecific(key));
   kp_thread_key_delete(key);
+}
+
+static void _kp_test_tss(void)
+{
+  fprintf(stdout, "\n#################### kp::Tss ####################\n");
+
+  kp::Tss tss;
+  std::unique_ptr<int> v1(new int(2345));
+
+  tss.set_specific(static_cast<void*>(v1.get()));
+  fprintf(stdout, "kp::Tss.get_sepcific: @value: %d\n", *(int*)tss.get_sepcific());
 }
 
 int main(int argc, char* argv[])
@@ -77,6 +92,7 @@ int main(int argc, char* argv[])
 
   _kp_test_thread();
   _kp_test_thread_key();
+  _kp_test_tss();
 
   return 0;
 }

@@ -30,11 +30,12 @@ RM	= del /s /f
 CC	= cl -c -nologo
 MT	= mt -nologo
 LINK	= link -nologo
-CFLAGS	= -O2 -W3 -MDd -GS -Zi -Fd"vc.pdb" -D_DEBUG -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
+CFLAGS	= -O2 -W3 -MDd -GS -Zi -Fd"vc.pdb" -EHsc -D_DEBUG -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest -manifestfile:$(OUT).manifest -manifestuac:no winmm.lib
-OBJS	= main.obj windows\kp_thread_impl.obj
+OBJS	= main.obj windows.kp_thread_impl.obj
 
 all: $(OUT)
+rebuild: clean all
 clean:
 	$(RM) $(OUT) $(OBJS) *.pdb *.ilk *.manifest
 
@@ -42,7 +43,7 @@ $(OUT): $(OBJS)
 	$(LINK) -out:$(OUT) $(OBJS) $(LDFLAGS)
 	$(MT) -manifest $(OUT).manifest -outputresource:$(OUT);1
 
-main.obj: main.c
-	$(CC) -Fo:main.obj $(CFLAGS) main.c
-windows\kp_thread_impl.obj: windows\kp_thread_impl.c
-	$(CC) -Fo:windows\kp_thread_impl.obj $(CFLAGS) windows\kp_thread_impl.c
+main.obj: main.cc
+	$(CC) -Fo:$@ $(CFLAGS) main.cc
+windows.kp_thread_impl.obj: windows\kp_thread_impl.c
+	$(CC) -Fo:$@ $(CFLAGS) windows\kp_thread_impl.c
