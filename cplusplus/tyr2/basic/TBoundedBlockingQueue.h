@@ -24,75 +24,75 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_BOUNDEDBLOCKINGQUEUE_HEADER_H__
-#define __TYR_BOUNDEDBLOCKINGQUEUE_HEADER_H__
+#ifndef __TYR_BASIC_BOUNDEDBLOCKINGQUEUE_HEADER_H__
+#define __TYR_BASIC_BOUNDEDBLOCKINGQUEUE_HEADER_H__
 
 #include <assert.h>
-#include <deque>
 #include "TUnCopyable.h"
+#include "TCircularBuffer.h"
 #include "TMutex.h"
 #include "TCondition.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 template <typename T>
 class BoundedBlockingQueue : private UnCopyable {
   mutable Mutex mtx_;
   Condition not_empty_;
   Condition not_full_;
-  size_t capacity_;
-  std::deque<T> queue_;
+  CircularBuffer<T> buff_;
 public:
   explicit BoundedBlockingQueue(size_t capacity)
     : mtx_()
     , not_empty_(mtx_)
     , not_full_(mtx_)
-    , capacity_(capacity)
-    , queue_(capacity_) {
+    , buff_(capacity) {
   }
 
   bool empty(void) const {
     MutexGuard guard(mtx_);
-    return queue_.empty();
+    return buff_.empty();
   }
 
   bool full(void) const {
     MutexGuard guard(mtx_);
-    return queue_.size() == capacity_;
+    return buff_.full();
   }
 
   size_t size(void) const {
     MutexGuard guard(mtx_);
-    return queue_.size();
+    return buff_.size();
   }
 
   size_t capacity(void) const {
-    return capacity_;
+    MutexGuard guard(mtx_);
+    return buff_.capacity();
   }
 
-  void put(T&& x) {
+  void put(const T& x) {
     MutexGuard guard(mtx_);
-    while (queue_.full())
+    while (buff_.full())
       not_full_.wait();
-    assert(!queue_.full());
-    queue_.push_back(std::move(x));
-    not_empty_.notify();
+
+    assert(!buff_.full());
+    buff_.push_back(x);
+    not_empty_.signal();
   }
 
   T take(void) {
     MutexGuard guard(mtx_);
-    while (queue_.empty())
+    while (buff_.empty())
       not_empty_.wait();
-    assert(!queue_.empty());
 
-    T front(std::move(queue_.front()));
-    queue_.erase(queue_.begin());
+    assert(!buff_.empty());
+    T front(buff_.front());
+    buff_.pop_front();
+    not_full_.signal();
 
-    not_full_.notify();
     return front;
   }
 };
 
-}
+}}
 
-#endif // __TYR_BOUNDEDBLOCKINGQUEUE_HEADER_H__
+#endif // __TYR_BASIC_BOUNDEDBLOCKINGQUEUE_HEADER_H__

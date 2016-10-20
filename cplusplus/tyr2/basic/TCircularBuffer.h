@@ -330,7 +330,7 @@ public:
   void pop_front(void) {
     size_type pos = head_;
     increment_head();
-    alloc_.deallocate(buff_ + pos);
+    alloc_.destroy(buff_ + pos);
   }
 
   void clear(void) {
