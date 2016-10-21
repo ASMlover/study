@@ -88,7 +88,7 @@ $(TARGET): $(OBJS)
 {make_objs}
 """
 POSIX_CCOBJ = """{make_obj}: {make_src}
-	$(CC) -o {make_obj} -c $(CFLAGS) $(INCLUDES) {make_src}
+	$(CC) -o $@ -c $(CFLAGS) $(INCLUDES) $^
 """
 
 LINUX_MKDIR = {'cc': 'g++', 'ldflags': '-lpthread'}

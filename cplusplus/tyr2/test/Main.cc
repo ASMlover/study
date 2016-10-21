@@ -356,12 +356,18 @@ void tyr_test_Timezone(void) {
 
   time_t now = time(nullptr);
   struct tm* t1 = localtime(&now);
-  tyr_show_tm(*t1, "stdc-library.localtime");
+  tyr_show_tm(*t1, "stdc-library.localtime.t1");
 
   struct tm t2 = basic::Timezone::to_utc_time(now, true);
-  tyr_show_tm(t2, "Timezone.utc_time");
-  std::cout << "Timezone.from_utc_time: " << basic::Timezone::from_utc_time(t2) << std::endl;
-  std::cout << "Timezone.from_utc_time: " << basic::Timezone::from_utc_time(2016, 10, 20, 12, 12, 12) << std::endl;
+  tyr_show_tm(t2, "Timezone.utc_time.t2");
+  std::cout << "Timezone.from_utc_time.t2: " << basic::Timezone::from_utc_time(t2) << std::endl;
+  std::cout << "Timezone.from_utc_time(2016-10-20 12:12:12): " << basic::Timezone::from_utc_time(2016, 10, 20, 12, 12, 12) << std::endl;
+
+  basic::Timezone tz1(8 * 3600, "CST");
+  struct tm t3 = tz1.to_localtime(time(nullptr));
+  tyr_show_tm(t3, "Timezone.tz1.to_localtime.t3");
+  std::cout << "object(`Timezone.tz1`) @is_valid: " << tz1.is_valid()
+    << ", @localtime: " << tz1.from_localtime(t3) << std::endl;
 }
 
 int main(int argc, char* argv[]) {
