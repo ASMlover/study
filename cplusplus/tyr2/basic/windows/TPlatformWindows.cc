@@ -189,4 +189,20 @@ int kern_thread_atfork(void (*prepare)(void), void (*parent)(void), void (*child
   return 0;
 }
 
+int kern_threadkey_create(KernThreadKey* key, void (*destructor)(void*)) {
+  return *key = FlsAlloc((PFLS_CALLBACK_FUNCTION)destructor), 0;
+}
+
+int kern_threadkey_delete(KernThreadKey key) {
+  return TRUE == FlsFree(key) ? 0 : -1;
+}
+
+int kern_setspecific(KernThreadKey key, const void* value) {
+  return TRUE == FlsSetValue(key, (PVOID)value) ? 0 : -1;
+}
+
+void* kern_getspecific(KernThreadKey key) {
+  return FlsGetValue(key);
+}
+
 }}

@@ -36,6 +36,7 @@
 typedef int                 pid_t;
 typedef CRITICAL_SECTION    KernMutex;
 typedef CONDITION_VARIABLE  KernCond;
+typedef DWORD               KernThreadKey;
 
 struct KernThread {
   HANDLE start_event;

@@ -94,4 +94,24 @@ int kern_thread_atfork(void (*prepare)(void), void (*parent)(void), void (*child
   return pthread_atfork(prepare, parent, child);
 }
 
+int kern_thread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void)) {
+  return 0;
+}
+
+int kern_threadkey_create(KernThreadKey* key, void (*destructor)(void*)) {
+  return pthread_key_create(key, destructor);
+}
+
+int kern_threadkey_delete(KernThreadKey key) {
+  return pthread_key_delete(key);
+}
+
+int kern_setspecific(KernThreadKey key, const void* value) {
+  return pthread_setspecific(key, value);
+}
+
+void* kern_getspecific(KernThreadKey key) {
+  return pthread_getspecific(key);
+}
+
 }}

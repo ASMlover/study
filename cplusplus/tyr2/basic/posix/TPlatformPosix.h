@@ -37,6 +37,7 @@
 typedef pthread_mutex_t KernMutex;
 typedef pthread_cond_t  KernCond;
 typedef pthread_t       KernThread;
+typedef pthread_key_t   KernThreadKey;
 
 namespace tyr { namespace basic {
 

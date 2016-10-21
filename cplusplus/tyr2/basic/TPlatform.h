@@ -63,6 +63,11 @@ int kern_thread_join(KernThread thread);
 int kern_thread_detach(KernThread thread);
 int kern_thread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void));
 
+int kern_threadkey_create(KernThreadKey* key, void (*destructor)(void*));
+int kern_threadkey_delete(KernThreadKey key);
+int kern_setspecific(KernThreadKey key, const void* value);
+void* kern_getspecific(KernThreadKey key);
+
 }}
 
 #endif // __TYR_BASIC_PLATFORM_HEADER_H__
