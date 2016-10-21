@@ -25,15 +25,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-OUT	= tyr.test.exe
+OUT	= kp.test.exe
 RM	= del /s /f
 CC	= cl -c -nologo
 MT	= mt -nologo
 LINK	= link -nologo
 CFLAGS	= -O2 -W3 -MDd -GS -Zi -Fd"vc.pdb" -EHsc -D_DEBUG -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest -manifestfile:$(OUT).manifest -manifestuac:no winmm.lib
-OBJS	= Main.obj TStringPiece.obj TPlatformWindows.obj TTimestamp.obj TCurrentThreadWindows.obj\
-	  TDate.obj TTimeZone.obj
+OBJS	= main.obj windows.kp_thread_impl.obj
 
 all: $(OUT)
 rebuild: clean all
@@ -43,9 +42,8 @@ clean:
 $(OUT): $(OBJS)
 	$(LINK) -out:$(OUT) $(OBJS) $(LDFLAGS)
 	$(MT) -manifest $(OUT).manifest -outputresource:$(OUT);1
-.cc.obj:
-	$(CC) $(CFLAGS) $<
-{..\basic}.cc{}.obj:
-	$(CC) $(CFLAGS) $<
-{..\basic\windows}.cc{}.obj:
-	$(CC) $(CFLAGS) $<
+
+main.obj: main.cc
+	$(CC) -Fo:$@ $(CFLAGS) main.cc
+windows.kp_thread_impl.obj: windows\kp_thread_impl.c
+	$(CC) -Fo:$@ $(CFLAGS) windows\kp_thread_impl.c

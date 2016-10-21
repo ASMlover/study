@@ -24,31 +24,64 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_BASIC_TIMEZONE_HEADER_H__
-#define __TYR_BASIC_TIMEZONE_HEADER_H__
+#ifndef __TYR_BASIC_THREADPOOL_HEADER_H__
+#define __TYR_BASIC_THREADPOOL_HEADER_H__
 
-#include <time.h>
+#include <functional>
 #include <memory>
+#include <string>
+#include <deque>
+#include <vector>
+
+#include "TTypes.h"
+#include "TMutex.h"
+#include "TCondition.h"
 
 namespace tyr { namespace basic {
 
-struct Data;
-class TimeZone {
-  std::shared_ptr<Data> data_;
+typedef std::function<void (void)> TaskCallback;
+
+class Thread;
+
+class ThreadPool : private UnCopyable {
+  typedef std::unique_ptr<Thread> ThreadEntity;
+
+  mutable Mutex mtx_;
+  Condition not_empty_;
+  Condition not_full_;
+  std::string name_;
+  TaskCallback thrd_init_cb_;
+  std::vector<ThreadEntity> threads_;
+  std::deque<TaskCallback> tasks_;
+  size_t max_tasksz_;
+  bool running_;
 public:
-  TimeZone(void) = default;
-  explicit TimeZone(const char* zonefile);
-  TimeZone(int east_of_utc, const char* tzname);
+  explicit ThreadPool(const std::string& name = std::string("ThreadPool"));
+  ~ThreadPool(void);
 
-  bool is_valid(void) const;
-  struct tm to_localtime(time_t sec_since_epoch) const;
-  time_t from_localtime(const struct tm& t) const;
+  void set_max_task_size(int max_size) {
+    max_tasksz_ = max_size;
+  }
 
-  static struct tm to_utc_time(time_t sec_since_epoch, bool yday = false);
-  static time_t from_utc_time(const struct tm& utc);
-  static time_t from_utc_time(int year, int month, int day, int hour, int min, int sec);
+  void set_thread_init_callback(TaskCallback&& cb) {
+    thrd_init_cb_ = std::move(cb);
+  }
+
+  const std::string& name(void) const {
+    return name_;
+  }
+
+  size_t task_size(void) const;
+
+  void start(int thrd_num);
+  void stop(void);
+  void run(TaskCallback&& cb);
+private:
+  bool is_full(void) const;
+  void run_in_thread(void);
+  TaskCallback take_task(void);
 };
 
 }}
 
-#endif // __TYR_BASIC_TIMEZONE_HEADER_H__
+#endif // __TYR_BASIC_THREADPOOL_HEADER_H__

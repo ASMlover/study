@@ -24,28 +24,53 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_EXCEPTION_HEADER_H__
-#define __TYR_EXCEPTION_HEADER_H__
+#ifndef __TYR_BASIC_THREAD_HEADER_H__
+#define __TYR_BASIC_THREAD_HEADER_H__
 
-#include <exception>
+#include <atomic>
+#include <functional>
+#include <memory>
 #include "TTypes.h"
+#include "TPlatform.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
-class Exception : public std::exception {
-private:
-  std::string message_;
-  std::string stack_;
+typedef std::function<void (void)> ThreadCallback;
+class Thread : private UnCopyable {
+  bool started_;
+  bool joined_;
+  KernThread thread_;
+  std::shared_ptr<pid_t> tid_;
+  ThreadCallback routine_;
+  std::string name_;
 
-  void fill_stack_trace(void);
+  static std::atomic<int32_t> num_created_;
 public:
-  explicit Exception(const char* what);
-  explicit Exception(const std::string& what);
-  virtual ~Exception(void) throw();
-  virtual const char* what(void) const throw();
-  const char* stack_trace(void) const throw();
+  explicit Thread(ThreadCallback&& cb, const std::string& name = std::string());
+  ~Thread(void);
+
+  void start(void);
+  int join(void);
+
+  bool started(void) const {
+    return started_;
+  }
+
+  pid_t tid(void) const {
+    return *tid_;
+  }
+
+  const std::string& name(void) const {
+    return name_;
+  }
+
+  static int32_t num_created(void) {
+    return num_created_.load();
+  }
+private:
+  void set_default_name(void);
 };
 
-}
+}}
 
-#endif // __TYR_EXCEPTION_HEADER_H__
+#endif // __TYR_BASIC_THREAD_HEADER_H__

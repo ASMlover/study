@@ -26,10 +26,28 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <time.h>
 #include <iostream>
-#include "../basic/TStringPiece.h"
-#include "../basic/TTimestamp.h"
-#include "../basic/TCurrentThread.h"
-#include "../basic/TMutex.h"
+// #define TYR_CODING
+#if defined(TYR_CODING)
+# include "../basic/TCircularBuffer.h"
+# include "../basic/TStringPiece.h"
+# include "../basic/TDate.h"
+# include "../basic/TTimezone.h"
+# include "../basic/TTimestamp.h"
+# include "../basic/TCurrentThread.h"
+# include "../basic/TMutex.h"
+# include "../basic/TBlockingQueue.h"
+# include "../basic/TBoundedBlockingQueue.h"
+#else
+# include <basic/TCircularBuffer.h>
+# include <basic/TStringPiece.h>
+# include <basic/TDate.h>
+# include <basic/TTimezone.h>
+# include <basic/TTimestamp.h>
+# include <basic/TCurrentThread.h>
+# include <basic/TMutex.h>
+# include <basic/TBlockingQueue.h>
+# include <basic/TBoundedBlockingQueue.h>
+#endif
 
 #define UNUSED_PARAM(arg) (void)arg
 
@@ -165,14 +183,200 @@ void tyr_test_CurrentThread(void) {
   tyr_show_Timestamp(Timestamp::now(), "CurrentThread.end");
 }
 
+static void tyr_show_Date(tyr::basic::Date d, const char* name = "Date") {
+  std::cout << "object(`" << name << "`): @{\n\t\t"
+    << "@is_valid: " << d.is_valid() << "\n\t\t"
+    << "@year: " << d.year() << "\n\t\t"
+    << "@month: " << d.month() << "\n\t\t"
+    << "@day: " << d.day() << "\n\t\t"
+    << "@weekday: " << d.weekday() << "\n\t\t"
+    << "@epoch_day: " << d.epoch_day() << "\n\t\t"
+    << "@iso_string: " << d.to_iso_string() << "\n\t"
+    << "}" << std::endl;
+}
+
+void tyr_test_Date(void) {
+  std::cout << "\n#################### Date ####################\n";
+  using namespace tyr::basic;
+
+  Date d1;
+  tyr_show_Date(d1, "Date.d1");
+  Date d2(2457600);
+  tyr_show_Date(d2, "Date.d2");
+  Date d3(2016, 10, 14);
+  tyr_show_Date(d3, "Date.d3");
+  d2.swap(d3);
+  tyr_show_Date(d2, "Date.d2.after.swap");
+  tyr_show_Date(d3, "Date.d3.after.swap");
+
+  time_t current_time = time(nullptr);
+  struct tm* now = localtime(&current_time);
+  Date d4(*now);
+  tyr_show_Date(d4, "Date.d4");
+
+  Date::DateTuple dt = d4.get_date();
+  std::cout << "(`Date.d4`) @DateTuple {@year: "
+    << dt.year << ", @month: " << dt.month << ", @day: " << dt.day << "}" << std::endl;
+  std::cout << "@d3 == @d4: " << (d3 == d4) << ", @d3 < @d4: " << (d3 < d4) << std::endl;
+}
+
+template <typename T>
+static void tyr_show_CircularBuffer(
+    const tyr::basic::CircularBuffer<T>& cb, const char* name = "CircularBuffer<T>") {
+  if (cb) {
+    std::cout << "object(`" << name << "`) @{"
+      << "\n\t\t@empty: " << cb.empty()
+      << "\n\t\t@full: " << cb.full()
+      << "\n\t\t@size: " << cb.size()
+      << "\n\t\t@capacity: " << cb.capacity()
+      << "\n\t\t@max_size: " << cb.max_size()
+      << "\n\t\t@data: " << cb.data()
+      << "\n\t\t@front: " << cb.front()
+      << "\n\t\t@back: " << cb.back()
+      << "\n\t\t@elements: {";
+  }
+  else {
+    std::cout << "object(`" << name << "`) @{"
+      << "\n\t\t@empty: " << cb.empty()
+      << "\n\t\t@full: " << cb.full()
+      << "\n\t\t@size: " << cb.size()
+      << "\n\t\t@capacity: " << cb.capacity()
+      << "\n\t\t@max_size: " << cb.max_size()
+      << "\n\t\t@data: " << cb.data()
+      << "\n\t\t@elements: {";
+  }
+  for (auto& e : cb)
+    std::cout << e << ", ";
+  std::cout << "}";
+  std::cout << "\n\t}" << std::endl;
+}
+
+void tyr_test_CircularBuffer(void) {
+  std::cout << "\n#################### CircularBuffer ####################\n";
+  using namespace tyr::basic;
+
+  CircularBuffer<int> cb(5);
+  tyr_show_CircularBuffer(cb, "CircularBuffer<int>.cb");
+  CircularBuffer<int> cb1 = std::move(cb);
+  tyr_show_CircularBuffer(cb, "CircularBuffer<int>.cb.after.move");
+  tyr_show_CircularBuffer(cb1, "CircularBuffer<int>.cb1");
+
+  cb1.push_back(1);
+  cb1.push_back(2);
+  cb1.push_back(3);
+
+  CircularBuffer<int> cb2(cb1.begin(), cb1.end());
+  tyr_show_CircularBuffer(cb2, "CircularBuffer<int>.cb2");
+
+  cb2.clear();
+  tyr_show_CircularBuffer(cb2, "CircularBuffer<int>.cb2.after.clear");
+
+  for (int i = 0; i < 7; ++i) {
+    int x = (i + 1) * (i + 1);
+    std::cout << "CircularBuffer<int>.cb2.push_back operatation => @x: " << x << std::endl;
+    cb2.push_back(x);
+  }
+  tyr_show_CircularBuffer(cb2, "CircularBuffer<int>.cb2.after.push_back");
+}
+
+template <typename T>
+static void tyr_show_BlockingQueue(tyr::basic::BlockingQueue<T>& b, const char* name = "BlockingQueue<T>") {
+  if (b.size() > 0) {
+    std::cout << "object(`" << name << "`) @{"
+      << "\n\t\t@size: " << b.size()
+      << "\n\t\t@take: " << b.take();
+    std::cout
+      << "\n\t\t@size: " << b.size()
+      << "\n\t}" << std::endl;
+  }
+  else {
+    std::cout << "object(`" << name << "`) @{"
+      << "\n\t\t@size: " << b.size()
+      << "\n\t}" << std::endl;
+  }
+}
+
+void tyr_test_BlockingQueue(void) {
+  std::cout << "\n#################### BlockingQueue ####################\n";
+  using namespace tyr;
+
+  basic::BlockingQueue<int> b1;
+  tyr_show_BlockingQueue(b1, "BlockingQueue<int>.b1");
+
+  b1.put(34);
+  b1.put(45);
+  b1.put(56);
+  tyr_show_BlockingQueue(b1, "BlockingQueue<int>.b1.after.put");
+}
+
+template <typename T>
+static void tyr_show_BoundedBlockingQueue(
+    const tyr::basic::BoundedBlockingQueue<T>& b, const char* name = "BoundedBlockingQueue<T>") {
+  std::cout << "object(`" << name << "`) @{"
+    << "\n\t\t@empty: " << b.empty()
+    << "\n\t\t@full: " << b.full()
+    << "\n\t\t@size: " << b.size()
+    << "\n\t\t@capacity: " << b.capacity()
+    << "\n\t}" << std::endl;
+}
+
+void tyr_test_BoundedBlockingQueue(void) {
+  std::cout << "\n#################### BoundedBlockingQueue ####################\n";
+  using namespace tyr;
+
+  basic::BoundedBlockingQueue<int> b1(5);
+  tyr_show_BoundedBlockingQueue(b1, "BoundedBlockingQueue<int>.b1");
+
+  for (int i = 0; i < 5; ++i) {
+    int x = ((i + 1) * (i + 1)) ^ 2;
+    b1.put(x);
+    std::cout << "BoundedBlockingQueue<int>.b1.put @value: " << x << std::endl;
+  }
+  tyr_show_BoundedBlockingQueue(b1, "BoundedBlockingQueue<int>.b1.after.put operations");
+
+  while (!b1.empty())
+    std::cout << "BoundedBlockingQueue<int>.b1.take @value: " << b1.take() << std::endl;
+  tyr_show_BoundedBlockingQueue(b1, "BoundedBlockingQueue<int>.b1.after.take operations");
+}
+
+static void tyr_show_tm(const struct tm& t, const char* name = "Timezone.tm") {
+  std::cout << "object(`" << name << "`) @{"
+    << "\n\t\t@tm.tm_year: " << t.tm_year + 1900
+    << "\n\t\t@tm.tm_mon: " << t.tm_mon + 1
+    << "\n\t\t@tm.tm_mday: " << t.tm_mday
+    << "\n\t\t@tm.tm_hour: " << t.tm_hour
+    << "\n\t\t@tm.tm_min: " << t.tm_min
+    << "\n\t\t@tm.tm_sec: " << t.tm_sec
+    << "\n\t}" << std::endl;
+}
+
+void tyr_test_Timezone(void) {
+  std::cout << "\n#################### Timezone ####################\n";
+  using namespace tyr;
+
+  time_t now = time(nullptr);
+  struct tm* t1 = localtime(&now);
+  tyr_show_tm(*t1, "stdc-library.localtime");
+
+  struct tm t2 = basic::Timezone::to_utc_time(now, true);
+  tyr_show_tm(t2, "Timezone.utc_time");
+  std::cout << "Timezone.from_utc_time: " << basic::Timezone::from_utc_time(t2) << std::endl;
+  std::cout << "Timezone.from_utc_time: " << basic::Timezone::from_utc_time(2016, 10, 20, 12, 12, 12) << std::endl;
+}
+
 int main(int argc, char* argv[]) {
   UNUSED_PARAM(argc);
   UNUSED_PARAM(argv);
 
   tyr_test_StringArg();
   tyr_test_StringPiece();
+  tyr_test_Date();
+  tyr_test_Timezone();
   tyr_test_Timestamp();
   tyr_test_CurrentThread();
+  tyr_test_CircularBuffer();
+  tyr_test_BlockingQueue();
+  tyr_test_BoundedBlockingQueue();
 
   return 0;
 }

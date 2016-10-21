@@ -30,7 +30,7 @@
 #include <limits>
 #include "TLogStream.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 const char kDigits[] = "9876543210123456789";
 const char* kZero = kDigits + 9;
@@ -230,4 +230,4 @@ template Format::Format(const char* fmt, unsigned long long v);
 template Format::Format(const char* fmt, float v);
 template Format::Format(const char* fmt, double v);
 
-}
+}}

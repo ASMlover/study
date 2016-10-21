@@ -24,61 +24,75 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_THREADPOOL_HEADER_H__
-#define __TYR_THREADPOOL_HEADER_H__
+#ifndef __TYR_BASIC_BOUNDEDBLOCKINGQUEUE_HEADER_H__
+#define __TYR_BASIC_BOUNDEDBLOCKINGQUEUE_HEADER_H__
 
-#include <functional>
-#include <memory>
-#include <string>
-#include <deque>
-#include <vector>
-
-#include "TTypes.h"
+#include <assert.h>
+#include "TUnCopyable.h"
+#include "TCircularBuffer.h"
 #include "TMutex.h"
 #include "TCondition.h"
-#include "TThread.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
-typedef std::function<void (void)> TaskCallback;
-
-class ThreadPool : private UnCopyable {
+template <typename T>
+class BoundedBlockingQueue : private UnCopyable {
   mutable Mutex mtx_;
   Condition not_empty_;
   Condition not_full_;
-  std::string name_;
-  TaskCallback thrd_init_cb_;
-  std::vector<std::unique_ptr<Thread>> threads_;
-  std::deque<TaskCallback> tasks_;
-  size_t max_tasksz_;
-  bool running_;
+  CircularBuffer<T> buff_;
 public:
-  explicit ThreadPool(const std::string& name = std::string("ThreadPool"));
-  ~ThreadPool(void);
-
-  void set_max_task_size(int max_size) {
-    max_tasksz_ = max_size;
+  explicit BoundedBlockingQueue(size_t capacity)
+    : mtx_()
+    , not_empty_(mtx_)
+    , not_full_(mtx_)
+    , buff_(capacity) {
   }
 
-  void set_thread_init_callback(TaskCallback&& cb) {
-    thrd_init_cb_ = std::move(cb);
+  bool empty(void) const {
+    MutexGuard guard(mtx_);
+    return buff_.empty();
   }
 
-  const std::string& name(void) const {
-    return name_;
+  bool full(void) const {
+    MutexGuard guard(mtx_);
+    return buff_.full();
   }
 
-  size_t task_size(void) const;
+  size_t size(void) const {
+    MutexGuard guard(mtx_);
+    return buff_.size();
+  }
 
-  void start(int thrd_num);
-  void stop(void);
-  void run(TaskCallback&& cb);
-private:
-  bool is_full(void) const;
-  void run_in_thread(void);
-  TaskCallback take_task(void);
+  size_t capacity(void) const {
+    MutexGuard guard(mtx_);
+    return buff_.capacity();
+  }
+
+  void put(const T& x) {
+    MutexGuard guard(mtx_);
+    while (buff_.full())
+      not_full_.wait();
+
+    assert(!buff_.full());
+    buff_.push_back(x);
+    not_empty_.signal();
+  }
+
+  T take(void) {
+    MutexGuard guard(mtx_);
+    while (buff_.empty())
+      not_empty_.wait();
+
+    assert(!buff_.empty());
+    T front(buff_.front());
+    buff_.pop_front();
+    not_full_.signal();
+
+    return front;
+  }
 };
 
-}
+}}
 
-#endif // __TYR_THREADPOOL_HEADER_H__
+#endif // __TYR_BASIC_BOUNDEDBLOCKINGQUEUE_HEADER_H__

@@ -24,75 +24,31 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_BOUNDEDBLOCKINGQUEUE_HEADER_H__
-#define __TYR_BOUNDEDBLOCKINGQUEUE_HEADER_H__
+#ifndef __TYR_BASIC_TIMEZONE_HEADER_H__
+#define __TYR_BASIC_TIMEZONE_HEADER_H__
 
-#include <assert.h>
-#include <deque>
-#include "TUnCopyable.h"
-#include "TMutex.h"
-#include "TCondition.h"
+#include <time.h>
+#include <memory>
 
-namespace tyr {
+namespace tyr { namespace basic {
 
-template <typename T>
-class BoundedBlockingQueue : private UnCopyable {
-  mutable Mutex mtx_;
-  Condition not_empty_;
-  Condition not_full_;
-  size_t capacity_;
-  std::deque<T> queue_;
+struct Data;
+class Timezone {
+  std::shared_ptr<Data> data_;
 public:
-  explicit BoundedBlockingQueue(size_t capacity)
-    : mtx_()
-    , not_empty_(mtx_)
-    , not_full_(mtx_)
-    , capacity_(capacity)
-    , queue_(capacity_) {
-  }
+  Timezone(void) = default;
+  explicit Timezone(const char* zonefile);
+  Timezone(int east_of_utc, const char* tzname);
 
-  bool empty(void) const {
-    MutexGuard guard(mtx_);
-    return queue_.empty();
-  }
+  bool is_valid(void) const;
+  struct tm to_localtime(time_t sec_since_epoch) const;
+  time_t from_localtime(const struct tm& t) const;
 
-  bool full(void) const {
-    MutexGuard guard(mtx_);
-    return queue_.size() == capacity_;
-  }
-
-  size_t size(void) const {
-    MutexGuard guard(mtx_);
-    return queue_.size();
-  }
-
-  size_t capacity(void) const {
-    return capacity_;
-  }
-
-  void put(T&& x) {
-    MutexGuard guard(mtx_);
-    while (queue_.full())
-      not_full_.wait();
-    assert(!queue_.full());
-    queue_.push_back(std::move(x));
-    not_empty_.notify();
-  }
-
-  T take(void) {
-    MutexGuard guard(mtx_);
-    while (queue_.empty())
-      not_empty_.wait();
-    assert(!queue_.empty());
-
-    T front(std::move(queue_.front()));
-    queue_.erase(queue_.begin());
-
-    not_full_.notify();
-    return front;
-  }
+  static struct tm to_utc_time(time_t sec_since_epoch, bool yday = false);
+  static time_t from_utc_time(const struct tm& utc);
+  static time_t from_utc_time(int year, int month, int day, int hour, int min, int sec);
 };
 
-}
+}}
 
-#endif // __TYR_BOUNDEDBLOCKINGQUEUE_HEADER_H__
+#endif // __TYR_BASIC_TIMEZONE_HEADER_H__

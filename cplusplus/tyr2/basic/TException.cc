@@ -24,53 +24,50 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_THREAD_HEADER_H__
-#define __TYR_THREAD_HEADER_H__
+#include "TConfig.h"
+#if !defined(TYR_WINDOWS)
+# include <execinfo.h>
+#endif
+#include <stdlib.h>
+#include "TException.h"
 
-#include <pthread.h>
-#include <atomic>
-#include <functional>
-#include <memory>
-#include "TTypes.h"
+namespace tyr { namespace basic {
 
-namespace tyr {
-
-typedef std::function<void (void)> ThreadCallback;
-class Thread : private UnCopyable {
-  bool started_;
-  bool joined_;
-  pthread_t thread_id_;
-  std::shared_ptr<pid_t> tid_;
-  ThreadCallback routine_;
-  std::string name_;
-
-  static std::atomic<int32_t> num_created_;
-public:
-  explicit Thread(ThreadCallback&& cb, const std::string& name = std::string());
-  ~Thread(void);
-
-  void start(void);
-  int join(void);
-
-  bool started(void) const {
-    return started_;
+void Exception::fill_stack_trace(void) {
+#if !defined(TYR_WINDOWS)
+  const int LEN = 256;
+  void* buffer[LEN];
+  int nptrs = backtrace(buffer, LEN);
+  char** strings = backtrace_symbols(buffer, nptrs);
+  if (nullptr != strings) {
+    for (int i = 0; i < nptrs; ++i) {
+      stack_.append(strings[i]);
+      stack_.push_back('\n');
+    }
+    free(strings);
   }
-
-  pid_t tid(void) const {
-    return *tid_;
-  }
-
-  const std::string& name(void) const {
-    return name_;
-  }
-
-  static int32_t num_created(void) {
-    return num_created_.load();
-  }
-private:
-  void set_default_name(void);
-};
-
+#endif
 }
 
-#endif // __TYR_THREAD_HEADER_H__
+Exception::Exception(const char* what)
+  : message_(what) {
+  fill_stack_trace();
+}
+
+Exception::Exception(const std::string& what)
+  : message_(what) {
+  fill_stack_trace();
+}
+
+Exception::~Exception(void) throw() {
+}
+
+const char* Exception::what(void) const throw() {
+  return message_.c_str();
+}
+
+const char* Exception::stack_trace(void) const throw() {
+  return stack_.c_str();
+}
+
+}}

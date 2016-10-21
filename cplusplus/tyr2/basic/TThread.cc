@@ -26,33 +26,28 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 #include <errno.h>
-#include <unistd.h>
-#include <sys/syscall.h>
-#include <sys/types.h>
 #include <stdio.h>
 #include "TConfig.h"
-#if defined(TYR_LINUX)
-# include <sys/prctl.h>
-#endif
 #include "TException.h"
-#include "TLogging.h"
+// #include "TLogging.h"
 #include "TCurrentThread.h"
+#include "unexposed/TCurrentThreadUnexposed.h"
 #include "TThread.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 void after_fork(void) {
-  CurrentThread::internal::set_cached_tid(0);
-  CurrentThread::internal::set_thread_name("main");
+  CurrentThread::unexposed::set_cached_tid(0);
+  CurrentThread::unexposed::set_thread_name("main");
   CurrentThread::tid();
 }
 
 class ThreadNameInitialier {
 public:
   ThreadNameInitialier(void) {
-    CurrentThread::internal::set_thread_name("main");
+    CurrentThread::unexposed::set_thread_name("main");
     CurrentThread::tid();
-    pthread_atfork(nullptr, nullptr, &after_fork);
+    kern_thread_atfork(nullptr, nullptr, &after_fork);
   }
 };
 ThreadNameInitialier gInit;
@@ -76,16 +71,14 @@ struct ThreadData {
       ptid.reset();
     }
 
-    CurrentThread::internal::set_thread_name(thrd_name.empty() ? "TyrThread" : thrd_name.c_str());
-#if defined(TYR_LINUX)
-    prctl(PR_SET_NAME, CurrentThread::name());
-#endif
+    CurrentThread::unexposed::set_thread_name(thrd_name.empty() ? "TyrThread" : thrd_name.c_str());
+    kern_this_thread_setname(CurrentThread::name());
     try {
       thrd_routine();
-      CurrentThread::internal::set_thread_name("finished");
+      CurrentThread::unexposed::set_thread_name("finished");
     }
     catch (const Exception& ex) {
-      CurrentThread::internal::set_thread_name("crashed");
+      CurrentThread::unexposed::set_thread_name("crashed");
       fprintf(stderr,
           "exception caught in Thread %s\n"
           "reason: %s\n"
@@ -96,7 +89,7 @@ struct ThreadData {
       abort();
     }
     catch (const std::exception& ex) {
-      CurrentThread::internal::set_thread_name("crashed");
+      CurrentThread::unexposed::set_thread_name("crashed");
       fprintf(stderr,
           "exception caught in Thread %s\n"
           "reason: %s\n",
@@ -105,7 +98,7 @@ struct ThreadData {
       abort();
     }
     catch (...) {
-      CurrentThread::internal::set_thread_name("crashed");
+      CurrentThread::unexposed::set_thread_name("crashed");
       fprintf(stderr, "unknown exception caught in Thread %s\n", thrd_name.c_str());
       throw;
     }
@@ -134,7 +127,7 @@ void Thread::set_default_name(void) {
 Thread::Thread(ThreadCallback&& cb, const std::string& name)
   : started_(false)
   , joined_(false)
-  , thread_id_(0)
+  , thread_(0)
   , tid_(new pid_t(0))
   , routine_(std::move(cb))
   , name_(name) {
@@ -143,7 +136,7 @@ Thread::Thread(ThreadCallback&& cb, const std::string& name)
 
 Thread::~Thread(void) {
   if (started_ && !joined_)
-    pthread_detach(thread_id_);
+    kern_thread_detach(thread_);
 }
 
 void Thread::start(void) {
@@ -151,17 +144,17 @@ void Thread::start(void) {
   started_ = true;
 
   ThreadData* data = new ThreadData(routine_, name_, tid_);
-  if (0 != pthread_create(&thread_id_, nullptr, &start_thread, data)) {
+  if (0 != kern_thread_create(&thread_, &start_thread, data)) {
     started_ = false;
     delete data;
-    TL_SYSFATAL << "Failed in call pthread_create";
+    // TL_SYSFATAL << "Failed in call pthread_create";
   }
 }
 
 int Thread::join(void) {
   assert(started_ && !joined_);
   joined_ = true;
-  return pthread_join(thread_id_, nullptr);
+  return kern_thread_join(thread_);
 }
 
-}
+}}

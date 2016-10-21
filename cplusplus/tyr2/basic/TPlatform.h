@@ -36,24 +36,32 @@
 # include "posix/TPlatformPosix.h"
 #endif
 
+#undef NANOSEC
+#define NANOSEC ((uint64_t)1e9)
+
 namespace tyr { namespace basic {
 
 pid_t kern_getpid(void);
 pid_t kern_gettid(void);
 
-int kern_mutex_init(kern_mutex_t* mtx);
-int kern_mutex_destroy(kern_mutex_t* mtx);
-int kern_mutex_lock(kern_mutex_t* mtx);
-int kern_mutex_unlock(kern_mutex_t* mtx);
+int kern_mutex_init(KernMutex* mtx);
+int kern_mutex_destroy(KernMutex* mtx);
+int kern_mutex_lock(KernMutex* mtx);
+int kern_mutex_unlock(KernMutex* mtx);
 
 int kern_this_thread_setname(const char* name);
 
-int kern_cond_init(kern_cond_t* cond);
-int kern_cond_destroy(kern_cond_t* cond);
-int kern_cond_signal(kern_cond_t* cond);
-int kern_cond_broadcast(kern_cond_t* cond);
-int kern_cond_wait(kern_cond_t* cond, kern_mutex_t* mtx);
-int kern_cond_timedwait(kern_cond_t* cond, kern_mutex_t* mtx, uint64_t nanosec);
+int kern_cond_init(KernCond* cond);
+int kern_cond_destroy(KernCond* cond);
+int kern_cond_signal(KernCond* cond);
+int kern_cond_broadcast(KernCond* cond);
+int kern_cond_wait(KernCond* cond, KernMutex* mtx);
+int kern_cond_timedwait(KernCond* cond, KernMutex* mtx, uint64_t nanosec);
+
+int kern_thread_create(KernThread* thread, void* (*start_routine)(void*), void* arg);
+int kern_thread_join(KernThread thread);
+int kern_thread_detach(KernThread thread);
+int kern_thread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void));
 
 }}
 

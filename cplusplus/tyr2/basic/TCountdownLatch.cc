@@ -24,46 +24,32 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_BASIC_CONDITION_HEADER_H__
-#define __TYR_BASIC_CONDITION_HEADER_H__
-
-#include "TPlatform.h"
-#include "TMutex.h"
+#include "TCountdownLatch.h"
 
 namespace tyr { namespace basic {
 
-class Condition : private UnCopyable {
-  Mutex& mtx_;
-  KernCond cond_;
-public:
-  explicit Condition(Mutex& mtx)
-    : mtx_(mtx) {
-    kern_cond_init(&cond_);
-  }
+CountdownLatch::CountdownLatch(int count)
+  : mtx_()
+  , cond_(mtx_)
+  , count_(count) {
+}
 
-  ~Condition(void) {
-    kern_cond_destroy(&cond_);
-  }
+void CountdownLatch::wait(void) {
+  MutexGuard guard(mtx_);
+  while (count_ > 0)
+    cond_.wait();
+}
 
-  void wait(void) {
-    Mutex::UnassignedGuard guard(mtx_);
-    kern_cond_wait(&cond_, mtx_.get_mutex());
-  }
+void CountdownLatch::countdown(void) {
+  MutexGuard guard(mtx_);
+  --count_;
+  if (0 == count_)
+    cond_.broadcast();
+}
 
-  bool timed_wait(int seconds) {
-    Mutex::UnassignedGuard guard(mtx_);
-    return 0 == kern_cond_timedwait(&cond_, mtx_.get_mutex(), seconds * NANOSEC);
-  }
-
-  void signal(void) {
-    kern_cond_signal(&cond_);
-  }
-
-  void broadcast(void) {
-    kern_cond_broadcast(&cond_);
-  }
-};
+int CountdownLatch::count(void) const {
+  MutexGuard guard(mtx_);
+  return count_;
+}
 
 }}
-
-#endif // __TYR_BASIC_CONDITION_HEADER_H__

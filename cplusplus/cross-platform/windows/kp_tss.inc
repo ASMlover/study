@@ -24,10 +24,29 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
+#ifndef KP_WINDOWS_TSS_INC_
+#define KP_WINDOWS_TSS_INC_
 
-int main(int argc, char* argv[]) {
-  std::cout << "Hello, tyr" << std::endl;
+#include <assert.h>
 
-  return 0;
+namespace kp {
+
+Tss::Tss(TssCallback /*cb*/) {
+  key_ = TlsAlloc();
 }
+
+Tss::~Tss(void) {
+  assert(TlsFree(key_));
+}
+
+inline bool Tss::set_specific(const void* value) {
+  return TlsSetValue(key_, (LPVOID)value) == TRUE;
+}
+
+inline void* Tss::get_sepcific(void) const {
+  return TlsGetValue(key_);
+}
+
+}
+
+#endif // KP_WINDOWS_TSS_INC_

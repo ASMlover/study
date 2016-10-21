@@ -70,20 +70,20 @@ public:
   static const int kMicroSecondsPerSecond = 1000 * 1000;
 };
 
-inline bool operator==(const Timestamp& a, const Timestamp& b) {
+inline bool operator==(Timestamp a, Timestamp b) {
   return a.msec_since_epoch() == b.msec_since_epoch();
 }
 
-inline bool operator<(const Timestamp& a, const Timestamp& b) {
+inline bool operator<(Timestamp a, Timestamp b) {
   return a.msec_since_epoch() < b.msec_since_epoch();
 }
 
-inline double time_difference(const Timestamp& a, const Timestamp& b) {
+inline double time_difference(Timestamp a, Timestamp b) {
   int64_t diff = a.msec_since_epoch() - b.msec_since_epoch();
   return static_cast<double>(diff) / Timestamp::kMicroSecondsPerSecond;
 }
 
-inline Timestamp add_time(const Timestamp& t, double sec) {
+inline Timestamp add_time(Timestamp t, double sec) {
   int64_t delta = static_cast<int64_t>(sec * Timestamp::kMicroSecondsPerSecond);
   return Timestamp(t.msec_since_epoch() + delta);
 }

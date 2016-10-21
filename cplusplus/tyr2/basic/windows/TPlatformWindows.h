@@ -34,16 +34,37 @@
 #define TYR_DECLARRAY(type, name, count) type* name = (type*)_alloca(sizeof(char) * (count))
 
 typedef int                 pid_t;
-typedef CRITICAL_SECTION    kern_mutex_t;
-typedef CONDITION_VARIABLE  kern_cond_t;
+typedef CRITICAL_SECTION    KernMutex;
+typedef CONDITION_VARIABLE  KernCond;
+
+struct KernThread {
+  HANDLE start_event;
+  HANDLE thrd_handle;
+
+  KernThread(void)
+    : start_event(nullptr)
+    , thrd_handle(nullptr) {
+  }
+
+  KernThread(std::nullptr_t)
+    : start_event(nullptr)
+    , thrd_handle(nullptr) {
+  }
+
+  KernThread& operator=(std::nullptr_t) {
+    start_event = nullptr;
+    thrd_handle = nullptr;
+  }
+};
 
 namespace tyr { namespace basic {
 
 #if !defined(__builtin_expect)
 # define __builtin_expect(exp, c) (exp)
 #endif
-#define gmtime_r(timep, result) gmtime_s((result), (timep))
-#define timegm                  _mkgmtime
+#define gmtime_r(timep, result)         gmtime_s((result), (timep))
+#define strerror_r(errnum, buf, buflen) strerror_s((buf), (buflen), (errnum))
+#define timegm                          _mkgmtime
 
 struct timezone {
   int tz_minuteswest;

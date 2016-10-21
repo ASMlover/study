@@ -24,46 +24,54 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_BASIC_CONDITION_HEADER_H__
-#define __TYR_BASIC_CONDITION_HEADER_H__
+#ifndef __TYR_BASIC_BLOCKINGQUEUE_HEADER_H__
+#define __TYR_BASIC_BLOCKINGQUEUE_HEADER_H__
 
-#include "TPlatform.h"
+#include <assert.h>
+#include <deque>
+#include "TUnCopyable.h"
 #include "TMutex.h"
+#include "TCondition.h"
 
 namespace tyr { namespace basic {
 
-class Condition : private UnCopyable {
-  Mutex& mtx_;
-  KernCond cond_;
+template <typename T>
+class BlockingQueue : private UnCopyable {
+  mutable Mutex mtx_;
+  Condition not_empty_;
+  std::deque<T> queue_;
 public:
-  explicit Condition(Mutex& mtx)
-    : mtx_(mtx) {
-    kern_cond_init(&cond_);
+  BlockingQueue(void)
+    : mtx_()
+    , not_empty_(mtx_)
+    , queue_() {
   }
 
-  ~Condition(void) {
-    kern_cond_destroy(&cond_);
+  size_t size(void) const {
+    MutexGuard guard(mtx_);
+    return queue_.size();
   }
 
-  void wait(void) {
-    Mutex::UnassignedGuard guard(mtx_);
-    kern_cond_wait(&cond_, mtx_.get_mutex());
+  void put(T&& x) {
+    MutexGuard guard(mtx_);
+    queue_.push_back(std::move(x));
+    not_empty_.signal();
   }
 
-  bool timed_wait(int seconds) {
-    Mutex::UnassignedGuard guard(mtx_);
-    return 0 == kern_cond_timedwait(&cond_, mtx_.get_mutex(), seconds * NANOSEC);
-  }
+  T take(void) {
+    MutexGuard guard(mtx_);
 
-  void signal(void) {
-    kern_cond_signal(&cond_);
-  }
+    while (queue_.empty())
+      not_empty_.wait();
+    assert(!queue_.empty());
 
-  void broadcast(void) {
-    kern_cond_broadcast(&cond_);
+    T front(std::move(queue_.front()));
+    queue_.pop_front();
+
+    return front;
   }
 };
 
 }}
 
-#endif // __TYR_BASIC_CONDITION_HEADER_H__
+#endif // __TYR_BASIC_BLOCKINGQUEUE_HEADER_H__

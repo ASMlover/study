@@ -35,7 +35,7 @@
 namespace tyr { namespace basic {
 
 class Mutex : private UnCopyable {
-  kern_mutex_t mtx_;
+  KernMutex mtx_;
   pid_t holder_;
 public:
   Mutex(void)
@@ -66,7 +66,7 @@ public:
     kern_mutex_unlock(&mtx_);
   }
 
-  kern_mutex_t* get_mutex(void) {
+  KernMutex* get_mutex(void) {
     return &mtx_;
   }
 private:

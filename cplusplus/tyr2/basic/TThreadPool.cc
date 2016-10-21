@@ -27,9 +27,10 @@
 #include <assert.h>
 #include <stdio.h>
 #include "TException.h"
+#include "TThread.h"
 #include "TThreadPool.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 ThreadPool::ThreadPool(const std::string& name)
   : mtx_()
@@ -64,7 +65,7 @@ void ThreadPool::stop(void) {
   {
     MutexGuard guard(mtx_);
     running_ = false;
-    not_empty_.notify_all();
+    not_empty_.broadcast();
   }
 
   for (auto& thrd : threads_)
@@ -82,7 +83,7 @@ void ThreadPool::run(TaskCallback&& cb) {
     assert(!is_full());
 
     tasks_.push_back(std::move(cb));
-    not_empty_.notify();
+    not_empty_.signal();
   }
 }
 
@@ -136,10 +137,10 @@ TaskCallback ThreadPool::take_task(void) {
     task = tasks_.front();
     tasks_.pop_front();
     if (max_tasksz_ > 0)
-      not_full_.notify();
+      not_full_.signal();
   }
 
   return task;
 }
 
-}
+}}

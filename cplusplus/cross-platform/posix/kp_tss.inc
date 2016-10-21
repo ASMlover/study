@@ -24,27 +24,29 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_COUNTDOWNLATCH_HEADER_H__
-#define __TYR_COUNTDOWNLATCH_HEADER_H__
+#ifndef KP_POSIX_TSS_INC_
+#define KP_POSIX_TSS_INC_
 
-#include "TUnCopyable.h"
-#include "TMutex.h"
-#include "TCondition.h"
+#include <assert.h>
 
-namespace tyr {
+namespace kp {
 
-class CountdownLatch : private UnCopyable {
-  mutable Mutex mtx_;
-  Condition cond_;
-  int count_;
-public:
-  explicit CountdownLatch(int count);
+Tss::Tss(TssCallback cb) {
+  assert(0 == pthread_key_create(&key_, cb));
+}
 
-  void wait(void);
-  void countdown(void);
-  int count(void) const;
-};
+Tss::~Tss(void) {
+  assert(0 == pthread_key_delete(key_));
+}
+
+inline bool Tss::set_specific(const void* value) {
+  return 0 == pthread_setspecific(key_, (const void*)value);
+}
+
+inline void* Tss::get_sepcific(void) const {
+  return pthread_getspecific(key_);
+}
 
 }
 
-#endif // __TYR_COUNTDOWNLATCH_HEADER_H__
+#endif // KP_POSIX_TSS_INC_

@@ -24,32 +24,42 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "TCountdownLatch.h"
+#ifndef KP_TSS_H_
+#define KP_TSS_H_
 
-namespace tyr {
+#include "kp_platform.h"
 
-CountdownLatch::CountdownLatch(int count)
-  : mtx_()
-  , cond_(mtx_)
-  , count_(count) {
+#if defined(KP_WINDOWS)
+# include <Windows.h>
+  typedef DWORD KPThreadKey;
+#else
+# include <pthread.h>
+  typedef pthread_key_t KPThreadKey;
+#endif
+
+namespace kp {
+
+typedef void (*TssCallback)(void*);
+
+class Tss {
+  Tss(const Tss&) = delete;
+  Tss& operator=(const Tss&) = delete;
+
+  KPThreadKey key_{0};
+public:
+  Tss(TssCallback cb = nullptr);
+  ~Tss(void);
+
+  bool set_specific(const void* value);
+  void* get_sepcific(void) const;
+};
+
 }
 
-void CountdownLatch::wait(void) {
-  MutexGuard guard(mtx_);
-  while (count_ > 0)
-    cond_.wait();
-}
+#if defined(KP_WINDOWS)
+# include "windows/kp_tss.inc"
+#else
+# include "posix/kp_tss.inc"
+#endif
 
-void CountdownLatch::countdown(void) {
-  MutexGuard guard(mtx_);
-  --count_;
-  if (0 == count_)
-    cond_.notify_all();
-}
-
-int CountdownLatch::count(void) const {
-  MutexGuard guard(mtx_);
-  return count_;
-}
-
-}
+#endif // KP_TSS_H_

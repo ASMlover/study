@@ -24,45 +24,27 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <execinfo.h>
-#include <stdlib.h>
-#include "TException.h"
+#ifndef __TYR_BASIC_COUNTDOWNLATCH_HEADER_H__
+#define __TYR_BASIC_COUNTDOWNLATCH_HEADER_H__
 
-namespace tyr {
+#include "TUnCopyable.h"
+#include "TMutex.h"
+#include "TCondition.h"
 
-void Exception::fill_stack_trace(void) {
-  const int LEN = 256;
-  void* buffer[LEN];
-  int nptrs = backtrace(buffer, LEN);
-  char** strings = backtrace_symbols(buffer, nptrs);
-  if (nullptr != strings) {
-    for (int i = 0; i < nptrs; ++i) {
-      stack_.append(strings[i]);
-      stack_.push_back('\n');
-    }
-    free(strings);
-  }
-}
+namespace tyr { namespace basic {
 
-Exception::Exception(const char* what)
-  : message_(what) {
-  fill_stack_trace();
-}
+class CountdownLatch : private UnCopyable {
+  mutable Mutex mtx_;
+  Condition cond_;
+  int count_;
+public:
+  explicit CountdownLatch(int count);
 
-Exception::Exception(const std::string& what)
-  : message_(what) {
-  fill_stack_trace();
-}
+  void wait(void);
+  void countdown(void);
+  int count(void) const;
+};
 
-Exception::~Exception(void) throw() {
-}
+}}
 
-const char* Exception::what(void) const throw() {
-  return message_.c_str();
-}
-
-const char* Exception::stack_trace(void) const throw() {
-  return stack_.c_str();
-}
-
-}
+#endif // __TYR_BASIC_COUNTDOWNLATCH_HEADER_H__

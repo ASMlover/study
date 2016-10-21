@@ -32,12 +32,11 @@
 #include <pthread.h>
 #include <time.h>
 
-#undef NANOSEC
-#define NANOSEC ((uint64_t)1e9)
 #define TYR_DECLARRAY(type, name, count) type name[count]
 
-typedef pthread_mutex_t kern_mutex_t;
-typedef pthread_cond_t  kern_cond_t;
+typedef pthread_mutex_t KernMutex;
+typedef pthread_cond_t  KernCond;
+typedef pthread_t       KernThread;
 
 namespace tyr { namespace basic {
 

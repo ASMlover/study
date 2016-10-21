@@ -24,13 +24,13 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_LOG_STREAM_HEADER_H__
-#define __TYR_LOG_STREAM_HEADER_H__
+#ifndef __TYR_BASIC_LOGSTREAM_HEADER_H__
+#define __TYR_BASIC_LOGSTREAM_HEADER_H__
 
 #include "TTypes.h"
 #include "TStringPiece.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 const int kSmallBuffer = 4096;
 const int kLargeBuffer = 4096 * 1000;
@@ -56,7 +56,7 @@ public:
     return data_;
   }
 
-  size_t length(void) const {
+  size_t size(void) const {
     return static_cast<size_t>(current_ - data_);
   }
 
@@ -94,11 +94,11 @@ public:
   const char* debug_string(void);
 
   std::string to_string(void) const {
-    return std::string(data_, length());
+    return std::string(data_, size());
   }
 
   StringPiece to_string_piece(void) const {
-    return StringPiece(data_, length());
+    return StringPiece(data_, size());
   }
 private:
   const char* tail(void) const {
@@ -163,16 +163,16 @@ public:
     return data_;
   }
 
-  size_t length(void) const {
+  size_t size(void) const {
     return length_;
   }
 };
 
 inline LogStream& operator<<(LogStream& s, const Format& fmt) {
-  s.append(fmt.data(), fmt.length());
+  s.append(fmt.data(), fmt.size());
   return s;
 }
 
-}
+}}
 
-#endif // __TYR_LOG_STREAM_HEADER_H__
+#endif // __TYR_BASIC_LOGSTREAM_HEADER_H__

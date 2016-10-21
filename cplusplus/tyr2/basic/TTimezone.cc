@@ -32,7 +32,7 @@
 #include "TTypes.h"
 #include "TPlatform.h"
 #include "TDate.h"
-#include "TTimeZone.h"
+#include "TTimezone.h"
 
 namespace tyr { namespace basic {
 
@@ -211,24 +211,24 @@ const Localtime* find_localtime(const Data& data, Transition sentry, Compare cmp
   return local;
 }
 
-TimeZone::TimeZone(const char* zonefile)
+Timezone::Timezone(const char* zonefile)
   : data_(new Data()) {
   if (!read_timezone_file(zonefile, data_.get())) {
     data_.reset();
   }
 }
 
-TimeZone::TimeZone(int east_of_utc, const char* tzname)
+Timezone::Timezone(int east_of_utc, const char* tzname)
   : data_(new Data()) {
   data_->localtimes.push_back(Localtime(east_of_utc, false, 0));
   data_->abbreviation = tzname;
 }
 
-bool TimeZone::is_valid(void) const {
+bool Timezone::is_valid(void) const {
   return static_cast<bool>(data_);
 }
 
-struct tm TimeZone::to_localtime(time_t sec_since_epoch) const {
+struct tm Timezone::to_localtime(time_t sec_since_epoch) const {
   struct tm ltime;
   memset(&ltime, 0, sizeof(ltime));
   assert(data_ != nullptr);
@@ -249,7 +249,7 @@ struct tm TimeZone::to_localtime(time_t sec_since_epoch) const {
   return ltime;
 }
 
-time_t TimeZone::from_localtime(const struct tm& t) const {
+time_t Timezone::from_localtime(const struct tm& t) const {
   assert(nullptr != data_);
   const Data& data(*data_);
 
@@ -265,7 +265,7 @@ time_t TimeZone::from_localtime(const struct tm& t) const {
   return seconds - local->gmtoff;
 }
 
-struct tm TimeZone::to_utc_time(time_t sec_since_epoch, bool yday) {
+struct tm Timezone::to_utc_time(time_t sec_since_epoch, bool yday) {
   struct tm utc;
   memset(&utc, 0, sizeof(utc));
 #if !defined(TYR_WINDOWS)
@@ -292,12 +292,12 @@ struct tm TimeZone::to_utc_time(time_t sec_since_epoch, bool yday) {
   return utc;
 }
 
-time_t TimeZone::from_utc_time(const struct tm& utc) {
+time_t Timezone::from_utc_time(const struct tm& utc) {
   return from_utc_time(
       utc.tm_year+ 1900, utc.tm_mon + 1, utc.tm_mday, utc.tm_hour, utc.tm_min, utc.tm_sec);
 }
 
-time_t TimeZone::from_utc_time(int year, int month, int day, int hour, int min, int sec) {
+time_t Timezone::from_utc_time(int year, int month, int day, int hour, int min, int sec) {
   Date date(year, month, day);
   int sec_in_day = hour * 3600 + min * 60 + sec;
   time_t days = date.epoch_day() - Date::kEpochDay19700101;
