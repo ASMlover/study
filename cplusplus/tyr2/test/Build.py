@@ -47,7 +47,7 @@ MT	= mt -nologo
 LINK	= link -nologo
 CFLAGS	= -GS -Zi -Fd"$(OUTDIR)\$(BINDIR)\\vc.pdb" -O2 -W2 -MDd -EHsc -D_DEBUG -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(TARGET).pdb -manifest -manifestfile:$(TARGET).manifest -manifestuac:no winmm.lib
-INCLUDES	= {includes}
+INCLUDES= {includes}
 OBJS	= {objs}
 
 all: $(TARGET)
@@ -62,7 +62,7 @@ $(TARGET): $(OBJS)
 {make_objs}
 """
 WINDOWS_CCOBJ = """{make_obj}: {make_src}
-	$(CC) -Fo:{make_obj} $(CFLAGS) $(INCLUDES) {make_src}
+	$(CC) -Fo:$@ $(CFLAGS) $(INCLUDES) $**
 """
 
 POSIX_MAKEFILE = """
@@ -74,7 +74,7 @@ RM	= rm -rfv
 CC	= {cc}
 CFLAGS	= -g -O2 -Wall -std=c++0x
 LDFLAGS	= {ldflags}
-INCLUDES	= {includes}
+INCLUDES= {includes}
 OBJS	= {objs}
 
 all: $(TARGET)
