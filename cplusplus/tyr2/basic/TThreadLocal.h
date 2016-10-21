@@ -27,41 +27,41 @@
 #ifndef __TYR_THREADLOCAL_HEADER_H__
 #define __TYR_THREADLOCAL_HEADER_H__
 
-#include <pthread.h>
 #include "TUnCopyable.h"
 #include "TMutex.h"
+#include "TPlatform.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 template <typename T>
 class ThreadLocal : private UnCopyable {
-  pthread_key_t pkey_;
+  KernThreadKey key_;
 
-  static void destructor(void* x) {
-    T* obj = static_cast<T*>(x);
+  static void destructor(void* data) {
+    T* obj = static_cast<T*>(data);
     if (nullptr != obj)
       delete obj;
   }
 public:
   ThreadLocal(void) {
-    pthread_key_create(&pkey_, &ThreadLocal::destructor);
+    pthread_key_create(&key_, &ThreadLocal::destructor);
   }
 
   ~ThreadLocal(void) {
-    pthread_key_delete(pkey_);
+    pthread_key_delete(key_);
   }
 
   T& value(void) {
-    T* val = static_cast<T*>(pthread_getspecific(pkey_));
+    T* val = static_cast<T*>(pthread_getspecific(key_));
     if (!val) {
       T* new_obj = new T();
-      pthread_setspecific(pkey_, new_obj);
+      pthread_setspecific(key_, new_obj);
       val = new_obj;
     }
     return *val;
   }
 };
 
-}
+}}
 
 #endif // __TYR_THREADLOCAL_HEADER_H__
