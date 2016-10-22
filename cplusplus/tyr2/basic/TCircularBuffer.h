@@ -187,7 +187,7 @@ private:
 
   reference at_checked(size_type i) const {
     if (i >= size_)
-      throw std::out_of_range();
+      throw std::out_of_range("`i` index out of range");
     return at_unchecked(i);
   }
 
