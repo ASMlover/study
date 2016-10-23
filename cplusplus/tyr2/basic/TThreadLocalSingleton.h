@@ -24,35 +24,39 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_THREADLOCALSINGLETON_HEADER_H__
-#define __TYR_THREADLOCALSINGLETON_HEADER_H__
+#ifndef __TYR_BASIC_THREADLOCALSINGLETON_HEADER_H__
+#define __TYR_BASIC_THREADLOCALSINGLETON_HEADER_H__
 
-#include <pthread.h>
 #include <assert.h>
 #include "TUnCopyable.h"
+#include "TPlatform.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 template <typename T>
 class ThreadLocalSingleton : private UnCopyable {
   class Deleter {
   public:
-    pthread_key_t pkey_;
+    KernThreadKey key_;
 
     Deleter(void) {
-      pthread_key_create(&pkey_, &ThreadLocalSingleton::destructor);
+      kern_threadkey_create(&key_, &ThreadLocalSingleton::destructor);
     }
 
     ~Deleter(void) {
-      pthread_key_delete(pkey_);
+      kern_threadkey_delete(key_);
     }
 
     void set(T* new_obj) {
-      assert(nullptr == pthread_getspecific(pkey_));
-      pthread_setspecific(pkey_, new_obj);
+      assert(nullptr == kern_setspecific(key_));
+      kern_setspecific(key_, new_obj);
     }
   };
+#if defined(TYR_WINDOWS)
+  static __declspec(thread) T* t_value_;
+#else
   static __thread T* t_value_;
+#endif
   static Deleter deleter_;
 
   ThreadLocalSingleton(void) = delete;
@@ -80,11 +84,15 @@ public:
 };
 
 template <typename T>
+#if defined(TYR_WINDOWS)
+__declspec(thread) T* ThreadLocalSingleton<T>::t_value_ = 0;
+#else
 __thread T* ThreadLocalSingleton<T>::t_value_ = 0;
+#endif
 
 template <typename T>
 typename ThreadLocalSingleton<T>::Deleter ThreadLocalSingleton<T>::deleter_;
 
-}
+}}
 
-#endif // __TYR_THREADLOCALSINGLETON_HEADER_H__
+#endif // __TYR_BASIC_THREADLOCALSINGLETON_HEADER_H__

@@ -24,11 +24,10 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_THREADLOCAL_HEADER_H__
-#define __TYR_THREADLOCAL_HEADER_H__
+#ifndef __TYR_BASIC_THREADLOCAL_HEADER_H__
+#define __TYR_BASIC_THREADLOCAL_HEADER_H__
 
 #include "TUnCopyable.h"
-#include "TMutex.h"
 #include "TPlatform.h"
 
 namespace tyr { namespace basic {
@@ -44,18 +43,18 @@ class ThreadLocal : private UnCopyable {
   }
 public:
   ThreadLocal(void) {
-    pthread_key_create(&key_, &ThreadLocal::destructor);
+    kern_threadkey_create(&key_, &ThreadLocal::destructor);
   }
 
   ~ThreadLocal(void) {
-    pthread_key_delete(key_);
+    kern_threadkey_delete(key_);
   }
 
   T& value(void) {
-    T* val = static_cast<T*>(pthread_getspecific(key_));
+    T* val = static_cast<T*>(kern_getspecific(key_));
     if (!val) {
       T* new_obj = new T();
-      pthread_setspecific(key_, new_obj);
+      kern_setspecific(key_, new_obj);
       val = new_obj;
     }
     return *val;
@@ -64,4 +63,4 @@ public:
 
 }}
 
-#endif // __TYR_THREADLOCAL_HEADER_H__
+#endif // __TYR_BASIC_THREADLOCAL_HEADER_H__
