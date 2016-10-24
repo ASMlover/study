@@ -94,10 +94,6 @@ int kern_thread_atfork(void (*prepare)(void), void (*parent)(void), void (*child
   return pthread_atfork(prepare, parent, child);
 }
 
-int kern_thread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void)) {
-  return 0;
-}
-
 int kern_threadkey_create(KernThreadKey* key, void (*destructor)(void*)) {
   return pthread_key_create(key, destructor);
 }
