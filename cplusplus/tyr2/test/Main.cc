@@ -26,17 +26,20 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <time.h>
 #include <iostream>
-// #define TYR_CODING
-#if defined(TYR_CODING)
+#if !TYR_CODING
+// Just for vim YCM plugin while editing
 # include "../basic/TCircularBuffer.h"
 # include "../basic/TStringPiece.h"
 # include "../basic/TDate.h"
 # include "../basic/TTimezone.h"
 # include "../basic/TTimestamp.h"
 # include "../basic/TCurrentThread.h"
-# include "../basic/TMutex.h"
 # include "../basic/TBlockingQueue.h"
 # include "../basic/TBoundedBlockingQueue.h"
+# include "../basic/TMutex.h"
+# include "../basic/TCondition.h"
+# include "../basic/TThread.h"
+# include "../basic/TThreadLocal.h"
 #else
 # include <basic/TCircularBuffer.h>
 # include <basic/TStringPiece.h>
@@ -44,9 +47,12 @@
 # include <basic/TTimezone.h>
 # include <basic/TTimestamp.h>
 # include <basic/TCurrentThread.h>
-# include <basic/TMutex.h>
 # include <basic/TBlockingQueue.h>
 # include <basic/TBoundedBlockingQueue.h>
+# include <basic/TMutex.h>
+# include <basic/TCondition.h>
+# include <basic/TThread.h>
+# include <basic/TThreadLocal.h>
 #endif
 
 #define UNUSED_PARAM(arg) (void)arg
