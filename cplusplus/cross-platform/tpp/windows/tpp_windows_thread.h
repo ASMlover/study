@@ -27,4 +27,85 @@
 #ifndef TPP_WINDOWS_THREAD_H_
 #define TPP_WINDOWS_THREAD_H_
 
+#include <Windows.h>
+#include <process.h>
+#include <functional>
+#include "../tpp_types.h"
+
+namespace tpp {
+
+typedef std::function<void (void*)> ThreadCallback;
+
+class Thread : private UnCopyable {
+  HANDLE entry_event_{nullptr};
+  HANDLE exit_event_{nullptr};
+  HANDLE thread_{nullptr};
+  ThreadCallback closure_{nullptr};
+  void* argument_{nullptr};
+private:
+  static void CALLBACK apc_callback(ULONG_PTR) {
+  }
+
+  static UINT WINAPI thread_callback(void* arg) {
+    Thread* thread = static_cast<Thread*>(arg);
+    if (nullptr == thread)
+      return 0;
+
+    SetEvent(thread->entry_event_);
+    if (thread->closure_)
+      thread->closure_(thread->argument_);
+
+    SetEvent(thread->exit_event_);
+    SleepEx(INFINITE, TRUE);
+    return 0;
+  }
+
+  void start_thread(void) {
+    entry_event_ = CreateEvent(nullptr, TRUE, FALSE, nullptr);
+    if (nullptr == entry_event_)
+      __tpp_throw(GetLastError(), "Thread.start_thread: invalid `entry_event_`");
+
+    exit_event_ = CreateEvent(nullptr, TRUE, FALSE, nullptr);
+    if (nullptr == exit_event_)
+      __tpp_throw(GetLastError(), "Thread.start_thread: invalid `exit_event_`");
+
+    thread_ = reinterpret_cast<HANDLE>(
+        _beginthreadex(nullptr, 0, &Thread::thread_callback, this, 0, nullptr));
+    if (nullptr == thread_) {
+      int err = static_cast<int>(GetLastError());
+      if (nullptr != entry_event_)
+        CloseHandle(entry_event_);
+      if (nullptr != exit_event_)
+        CloseHandle(exit_event_);
+      __tpp_throw(err, "Thread.start_thread: invalid `thread_`");
+    }
+
+    if (entry_event_) {
+      WaitForSingleObject(entry_event_, INFINITE);
+      CloseHandle(entry_event_);
+    }
+  }
+public:
+  Thread(const ThreadCallback& cb, void* arg)
+    : closure_(cb)
+    , argument_(arg) {
+    start_thread();
+  }
+
+  ~Thread(void) {
+    CloseHandle(thread_);
+  }
+
+  void join(void) {
+    HANDLE handles[2] = {exit_event_, thread_};
+    WaitForMultipleObjects(2, handles, FALSE, INFINITE);
+    CloseHandle(exit_event_);
+
+    QueueUserAPC(&Thread::apc_callback, thread_, 0);
+    WaitForSingleObject(thread_, INFINITE);
+  }
+};
+
+}
+
 #endif // TPP_WINDOWS_THREAD_H_

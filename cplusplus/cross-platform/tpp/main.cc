@@ -26,12 +26,21 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include "tpp_types.h"
+#include "tpp_thread.h"
+
+void thread_closure(void* arg) {
+  std::cout << "**************** thread_closure ************* " << arg << std::endl;
+}
+
 
 int main(int argc, char* argv[]) {
   TPP_UNUSED(argc);
   TPP_UNUSED(argv);
 
   std::cout << "Hello, `tpp` !" << std::endl;
+
+  tpp::Thread t(thread_closure, nullptr);
+  t.join();
 
   return 0;
 }
