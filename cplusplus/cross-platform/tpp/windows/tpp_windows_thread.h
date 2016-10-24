@@ -52,7 +52,7 @@ private:
       return 0;
 
     SetEvent(thread->entry_event_);
-    if (thread->closure_)
+    if (nullptr != thread->closure_)
       thread->closure_(thread->argument_);
 
     SetEvent(thread->exit_event_);
@@ -63,11 +63,11 @@ private:
   void start_thread(void) {
     entry_event_ = CreateEvent(nullptr, TRUE, FALSE, nullptr);
     if (nullptr == entry_event_)
-      __tpp_throw(GetLastError(), "Thread.start_thread: invalid `entry_event_`");
+      __tpp_throw(GetLastError(), "windows.Thread.start_thread: entry event failed");
 
     exit_event_ = CreateEvent(nullptr, TRUE, FALSE, nullptr);
     if (nullptr == exit_event_)
-      __tpp_throw(GetLastError(), "Thread.start_thread: invalid `exit_event_`");
+      __tpp_throw(GetLastError(), "windows.Thread.start_thread: exit event failed");
 
     thread_ = reinterpret_cast<HANDLE>(
         _beginthreadex(nullptr, 0, &Thread::thread_callback, this, 0, nullptr));
@@ -77,7 +77,7 @@ private:
         CloseHandle(entry_event_);
       if (nullptr != exit_event_)
         CloseHandle(exit_event_);
-      __tpp_throw(err, "Thread.start_thread: invalid `thread_`");
+      __tpp_throw(err, "windows.Thread.start_thread: create thread failed");
     }
 
     if (entry_event_) {

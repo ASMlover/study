@@ -27,4 +27,51 @@
 #ifndef TPP_POSIX_THREAD_H_
 #define TPP_POSIX_THREAD_H_
 
+#include <pthread.h>
+#include <functional>
+#include "../tpp_types.h"
+
+namespace tpp {
+
+typedef std::function<void (void*)> ThreadCallback;
+
+class Thread : private UnCopyable {
+  pthread_t thread_{0};
+  ThreadCallback closure_{nullptr};
+  void* argument_;
+private:
+  static void* thread_callback(void* arg) {
+    Thread* thread = static_cast<Thread*>(arg);
+    if (nullptr == thread)
+      return nullptr;
+
+    if (nullptr != thread->closure_)
+      thread->closure_(thread->argument_);
+
+    return nullptr;
+  }
+
+  void start_thread(void) {
+    int err = pthread_create(&thread_, 0, &Thread::thread_callback, this);
+    if (0 != err)
+      __tpp_throw("posix.Thread.start_thread: create thread failed");
+  }
+public:
+  Thread(const ThreadCallback& cb, void* arg)
+    : closure_(cb)
+    , argument_(arg) {
+    start_thread();
+  }
+
+  ~Thread(void) {
+    pthread_detach(thread_);
+  }
+
+  void join(void) {
+    pthread_join(thread_, 0);
+  }
+};
+
+}
+
 #endif // TPP_POSIX_THREAD_H_

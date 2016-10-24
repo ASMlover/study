@@ -32,7 +32,6 @@ void thread_closure(void* arg) {
   std::cout << "**************** thread_closure ************* " << arg << std::endl;
 }
 
-
 int main(int argc, char* argv[]) {
   TPP_UNUSED(argc);
   TPP_UNUSED(argv);
