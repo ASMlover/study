@@ -124,6 +124,16 @@ void Thread::set_default_name(void) {
   }
 }
 
+Thread::Thread(const ThreadCallback& cb, const std::string& name)
+  : started_(false)
+  , joined_(false)
+  , thread_(0)
+  , tid_(new pid_t(0))
+  , routine_(cb)
+  , name_(name) {
+  set_default_name();
+}
+
 Thread::Thread(ThreadCallback&& cb, const std::string& name)
   : started_(false)
   , joined_(false)

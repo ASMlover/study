@@ -46,6 +46,7 @@ class Thread : private UnCopyable {
 
   static std::atomic<int32_t> num_created_;
 public:
+  explicit Thread(const ThreadCallback& cb, const std::string& name = std::string());
   explicit Thread(ThreadCallback&& cb, const std::string& name = std::string());
   ~Thread(void);
 
