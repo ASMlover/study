@@ -376,6 +376,35 @@ void tyr_test_Timezone(void) {
     << ", @localtime: " << tz1.from_localtime(t3) << std::endl;
 }
 
+static void tyr_show_Mutex(tyr::basic::Mutex& m, const char* name = "Mutex") {
+  std::cout << "object(`" << name << "`) @{"
+    << "\n\t\t@locked_by_this_thread: " << m.locked_by_this_thread()
+    << "\n\t\t@get_mutex: " << m.get_mutex()
+    << "\n\t}" << std::endl;
+}
+
+void tyr_test_Mutex(void) {
+  std::cout << "\n#################### Mutex ####################\n";
+  using namespace tyr;
+
+  basic::Mutex m;
+  int counted1 = 1;
+
+  m.lock();
+  ++counted1;
+  std::cout << "Mutex.m.raw.lock - @counted1: " << counted1 << std::endl;
+  tyr_show_Mutex(m, "Mutex.raw.enter.lock");
+  m.unlock();
+  tyr_show_Mutex(m, "Mutex.raw.leave.lock");
+
+  {
+    basic::MutexGuard g1(m);
+    ++counted1;
+    std::cout << "Mutex.MutexGuard.m - @counted1: " << counted1 << std::endl;
+    tyr_show_Mutex(m, "Mutex.MutexGuard.m");
+  }
+}
+
 int main(int argc, char* argv[]) {
   UNUSED_PARAM(argc);
   UNUSED_PARAM(argv);
@@ -389,6 +418,7 @@ int main(int argc, char* argv[]) {
   tyr_test_CircularBuffer();
   tyr_test_BlockingQueue();
   tyr_test_BoundedBlockingQueue();
+  tyr_test_Mutex();
 
   return 0;
 }
