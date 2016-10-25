@@ -472,6 +472,35 @@ void tyr_test_Condition(void) {
   }
 }
 
+static void tyr_show_CurrentThread(void) {
+  std::cout << "current information: {"
+    << "\n\t\t@tid: " << basic::CurrentThread::tid()
+    << "\n\t\t@tid_string: " << basic::CurrentThread::tid_string()
+    << "\n\t\t@tid_string_length: " << basic::CurrentThread::tid_string_length()
+    << "\n\t\t@name: " << basic::CurrentThread::name()
+    << "\n\t\t@is_main_thread: " << basic::CurrentThread::is_main_thread()
+    << "\n\t}" << std::endl;
+}
+
+static void tyr_test_thread_closure(void) {
+  std::cout << "********** tyr_test_thread_closure **********\n";
+  tyr_show_CurrentThread();
+}
+
+void tyr_test_Thread(void) {
+  std::cout << "\n#################### Thread ####################\n";
+
+  basic::Thread t(tyr_test_thread_closure, "Thread.t");
+  t.start();
+  std::cout << "Thread.t information - "
+    << "@started: " << t.started()
+    << "@tid: " << t.tid()
+    << "@name: " << t.name()
+    << "@num_created: " << t.num_created()
+    << std::endl;
+  t.join();
+}
+
 int main(int argc, char* argv[]) {
   UNUSED_PARAM(argc);
   UNUSED_PARAM(argv);
@@ -487,6 +516,7 @@ int main(int argc, char* argv[]) {
   tyr_test_BoundedBlockingQueue();
   tyr_test_Mutex();
   tyr_test_Condition();
+  tyr_test_Thread();
 
   return 0;
 }
