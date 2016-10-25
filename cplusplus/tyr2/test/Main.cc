@@ -54,6 +54,7 @@
 # include <basic/TThread.h>
 # include <basic/TThreadLocal.h>
 #endif
+using namespace tyr;
 
 #define UNUSED_PARAM(arg) (void)arg
 
@@ -405,6 +406,72 @@ void tyr_test_Mutex(void) {
   }
 }
 
+class ConditionWorker : private basic::UnCopyable {
+  mutable basic::Mutex mtx_;
+  basic::Condition cond_;
+  bool broadcast_{false};
+  volatile bool posted_{false};
+public:
+  ConditionWorker(void)
+    : cond_(mtx_) {
+  }
+
+  void run(void) {
+    // basic::CurrentThread::sleep_usec(1000);
+
+    basic::MutexGuard guard(mtx_);
+    if (broadcast_)
+      cond_.broadcast();
+    else
+      cond_.signal();
+    posted_ = true;
+  }
+
+  void run_signal(void) {
+    basic::Thread t(std::bind(&ConditionWorker::run, this), "ConditionWorker.run_signal");
+    t.start();
+
+    {
+      std::cout << "ConditionWorker.run_signal begin - @posted_: " << posted_ << std::endl;
+      basic::MutexGuard guard(mtx_);
+      while (!posted_)
+        cond_.wait();
+      std::cout << "ConditionWorker.run_signal end - @posted_: " << posted_ << std::endl;
+    }
+
+    t.join();
+  }
+
+  void run_broadcast(void) {
+    broadcast_ = true;
+    basic::Thread t(std::bind(&ConditionWorker::run, this), "ConditionWorker.run_broadcast");
+    t.start();
+
+    {
+      std::cout << "ConditionWorker.run_broadcast begin - @posted_: " << posted_ << std::endl;
+      basic::MutexGuard guard(mtx_);
+      while (!posted_)
+        cond_.wait();
+      std::cout << "ConditionWorker.run_broadcast end - @posted_: " << posted_ << std::endl;
+    }
+
+    t.join();
+  }
+};
+
+void tyr_test_Condition(void) {
+  std::cout << "\n#################### Condition ####################\n";
+  {
+    ConditionWorker cw;
+    cw.run_signal();
+  }
+
+  {
+    ConditionWorker cw;
+    cw.run_broadcast();
+  }
+}
+
 int main(int argc, char* argv[]) {
   UNUSED_PARAM(argc);
   UNUSED_PARAM(argv);
@@ -419,6 +486,7 @@ int main(int argc, char* argv[]) {
   tyr_test_BlockingQueue();
   tyr_test_BoundedBlockingQueue();
   tyr_test_Mutex();
+  tyr_test_Condition();
 
   return 0;
 }
