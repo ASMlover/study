@@ -24,41 +24,18 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef TPP_THREADINGSUPPORT_H_
-#define TPP_THREADINGSUPPORT_H_
+#ifndef TPP_POSIX_THREADINGSUPPORT_H_
+#define TPP_POSIX_THREADINGSUPPORT_H_
 
-#include <stdint.h>
-#include "tpp_config.h"
-#if defined(TPP_WINDOWS)
-# include "windows/tpp_windows_threading_support.h"
-#else
-# include "posix/tpp_posix_threading_support.h"
-#endif
+#include <pthread.h>
 
 namespace tpp {
 
-int __libtpp_mutex_init(__libtpp_mutex_t* m);
-int __libtpp_mutex_destrpy(__libtpp_mutex_t* m);
-int __libtpp_mutex_lock(__libtpp_mutex_t* m);
-int __libtpp_mutex_trylock(__libtpp_mutex_t* m);
-int __libtpp_mutex_unlock(__libtpp_mutex_t* m);
-
-int __libtpp_condvar_init(__libtpp_condvar_t* cv);
-int __libtpp_condvar_destroy(__libtpp_condvar_t* cv);
-int __libtpp_condvar_signal(__libtpp_condvar_t* cv);
-int __libtpp_condvar_broadcast(__libtpp_condvar_t* cv);
-int __libtpp_condvar_wait(__libtpp_condvar_t* cv, __libtpp_mutex_t* m);
-int __libtpp_condvar_timedwait(__libtpp_condvar_t* cv, __libtpp_mutex_t* m, uint64_t nanosec);
-
-int __libtpp_thread_create(__libtpp_thread_t* t, void (*closure)(void*), void* arg);
-int __libtpp_thread_join(__libtpp_thread_t* t);
-int __libtpp_thread_detach(__libtpp_thread_t* t);
-
-int __libtpp_tls_create(__libtpp_tls_key* key, void (*closure)(void*));
-int __libtpp_tls_delete(__libtpp_tls_key key);
-int __libtpp_tls_set(__libtpp_tls_key key, void* p);
-void* __libtpp_tls_get(__libtpp_tls_key key);
+typedef pthread_mutex_t   __libtpp_mutex_t;
+typedef pthread_cond_t    __libtpp_condvar_t;
+typedef pthread_t         __libtpp_thread_t;
+typedef pthread_key_t     __libtpp_tls_key;
 
 }
 
-#endif // TPP_THREADINGSUPPORT_H_
+#endif // TPP_POSIX_THREADINGSUPPORT_H_
