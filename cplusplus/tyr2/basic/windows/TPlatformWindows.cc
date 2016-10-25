@@ -133,8 +133,8 @@ int kern_cond_timedwait(KernCond* cond, KernMutex* mtx, uint64_t nanosec) {
 }
 
 UINT WINAPI kern_thread_start_routine(void* arg) {
-  KernThreadParams* params = static_cast<KernThreadParams*>(arg);
-  if (nullptr == params)
+  std::unique_ptr<KernThreadParams> params(static_cast<KernThreadParams*>(arg));
+  if (!params)
     return 0;
 
   SetEvent(params->thread->start_event);
@@ -163,6 +163,7 @@ int kern_thread_create(KernThread* thread, void* (*start_routine)(void*), void* 
     goto _Exit;
 
   WaitForSingleObject(thread->start_event, INFINITE);
+  params.release();
   result = 0;
 
 _Exit:
