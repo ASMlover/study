@@ -24,64 +24,24 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef TPP_TYPES_H_
-#define TPP_TYPES_H_
+#ifndef TPP_WINDOWS_THREADINGSUPPORT_H_
+#define TPP_WINDOWS_THREADINGSUPPORT_H_
 
-#include <stdint.h>
-
-#if !defined(TPP_UNUSED)
-# define TPP_UNUSED(x) ((void)x)
-#endif
-
-typedef unsigned char byte_t;
-
-#if !defined(__libtpp_throw_error)
-# include <system_error>
-inline void __libtpp_throw_error(int err, const char* what) {
-  throw std::system_error(std::error_code(err, std::system_category()), what);
-}
-#endif
+#include <Windows.h>
 
 namespace tpp {
 
-class UnCopyable {
-  UnCopyable(const UnCopyable&) = delete;
-  UnCopyable& operator=(const UnCopyable&) = delete;
-protected:
-  UnCopyable(void) = default;
-  ~UnCopyable(void) = default;
+struct __libtpp_thread_imp_t {
+  HANDLE __h;
+  unsigned int __id;
 };
 
-
-template <typename T>
-inline const T& tpp_min(const T& a, const T& b) {
-  return a < b ? a : b;
-}
-
-template <typename T>
-inline const T& tpp_max(const T& a, const T& b) {
-  return a > b ? a : b;
-}
-
-template <typename T> struct Identity {
-  typedef T type;
-};
-
-template <typename T>
-inline T implicit_cast(typename Identity<T>::type x) {
-  return x;
-}
-
-template <typename Target, typename Source>
-inline Target down_cast(Source& x) {
-  return static_cast<Target>(x);
-}
-
-template <typename Target, typename Source>
-inline Target down_cast(Source* x) {
-  return static_cast<Target>(x);
-}
+typedef CRITICAL_SECTION      __libtpp_mutex_t;
+typedef CONDITION_VARIABLE    __libtpp_condvar_t;
+typedef __libtpp_thread_imp_t __libtpp_thread_t;
+typedef DWORD                 __libtpp_thread_id;
+typedef DWORD                 __libtpp_tls_key;
 
 }
 
-#endif // TPP_TYPES_H_
+#endif // TPP_WINDOWS_THREADINGSUPPORT_H_

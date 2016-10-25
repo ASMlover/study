@@ -24,64 +24,40 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef TPP_TYPES_H_
-#define TPP_TYPES_H_
+#ifndef TPP_THREADINGSUPPORT_H_
+#define TPP_THREADINGSUPPORT_H_
 
 #include <stdint.h>
-
-#if !defined(TPP_UNUSED)
-# define TPP_UNUSED(x) ((void)x)
-#endif
-
-typedef unsigned char byte_t;
-
-#if !defined(__libtpp_throw_error)
-# include <system_error>
-inline void __libtpp_throw_error(int err, const char* what) {
-  throw std::system_error(std::error_code(err, std::system_category()), what);
-}
+#include "tpp_config.h"
+#if defined(TPP_WINDOWS)
+# include "windows/tpp_windows_threading_support.h"
+#else
 #endif
 
 namespace tpp {
 
-class UnCopyable {
-  UnCopyable(const UnCopyable&) = delete;
-  UnCopyable& operator=(const UnCopyable&) = delete;
-protected:
-  UnCopyable(void) = default;
-  ~UnCopyable(void) = default;
-};
+int __libtpp_mutex_init(__libtpp_mutex_t* m);
+int __libtpp_mutex_destrpy(__libtpp_mutex_t* m);
+int __libtpp_mutex_lock(__libtpp_mutex_t* m);
+int __libtpp_mutex_trylock(__libtpp_mutex_t* m);
+int __libtpp_mutex_unlock(__libtpp_mutex_t* m);
 
+int __libtpp_condvar_init(__libtpp_condvar_t* cv);
+int __libtpp_condvar_destroy(__libtpp_condvar_t* cv);
+int __libtpp_condvar_signal(__libtpp_condvar_t* cv);
+int __libtpp_condvar_broadcast(__libtpp_condvar_t* cv);
+int __libtpp_condvar_wait(__libtpp_condvar_t* cv, __libtpp_mutex_t* m);
+int __libtpp_condvar_timedwait(__libtpp_condvar_t* cv, __libtpp_mutex_t* m, uint64_t nanosec);
 
-template <typename T>
-inline const T& tpp_min(const T& a, const T& b) {
-  return a < b ? a : b;
-}
+int __libtpp_thread_create(__libtpp_thread_t* t, void (*closure)(void*), void* arg);
+int __libtpp_thread_join(__libtpp_thread_t* t);
+int __libtpp_thread_detach(__libtpp_thread_t* t);
 
-template <typename T>
-inline const T& tpp_max(const T& a, const T& b) {
-  return a > b ? a : b;
-}
-
-template <typename T> struct Identity {
-  typedef T type;
-};
-
-template <typename T>
-inline T implicit_cast(typename Identity<T>::type x) {
-  return x;
-}
-
-template <typename Target, typename Source>
-inline Target down_cast(Source& x) {
-  return static_cast<Target>(x);
-}
-
-template <typename Target, typename Source>
-inline Target down_cast(Source* x) {
-  return static_cast<Target>(x);
-}
+int __libtpp_tls_create(__libtpp_tls_key* key, void (*closure)(void*));
+int __libtpp_tls_delete(__libtpp_tls_key key);
+int __libtpp_tls_set(__libtpp_tls_key key, void* p);
+void* __libtpp_tls_get(__libtpp_tls_key key);
 
 }
 
-#endif // TPP_TYPES_H_
+#endif // TPP_THREADINGSUPPORT_H_
