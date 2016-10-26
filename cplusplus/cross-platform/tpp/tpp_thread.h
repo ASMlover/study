@@ -27,12 +27,44 @@
 #ifndef TPP_THREAD_H_
 #define TPP_THREAD_H_
 
+#include <functional>
+#include <memory>
 #include "tpp_config.h"
+#include "tpp_types.h"
+#include "tpp_threading_support.h"
 
-#if defined(TPP_WINDOWS)
-# include "windows/tpp_windows_thread.h"
-#else
-# include "posix/tpp_posix_thread.h"
-#endif
+namespace tpp {
+
+typedef std::function<void (void*)> ThreadCallback;
+
+class Thread : private UnCopyable {
+  __libtpp_thread_t thread_{0};
+  ThreadCallback closure_{nullptr};
+  void* argument_{nullptr};
+
+  static void thread_closure(void* arg) {
+    Thread* t = static_cast<Thread*>(arg);
+    if (t && t->closure_)
+      t->closure_(t->argument_);
+  }
+public:
+  Thread(const ThreadCallback& closure, void* arguemnt = nullptr)
+    : closure_(closure)
+    , argument_(arguemnt) {
+    int ec = __libtpp_thread_create(&thread_, &Thread::thread_closure, this);
+    if (0 != ec)
+      __libtpp_throw_error(ec, "Thread construction failed");
+  }
+
+  ~Thread(void) {
+    __libtpp_thread_detach(&thread_);
+  }
+
+  void join(void) {
+    __libtpp_thread_join(&thread_);
+  }
+};
+
+}
 
 #endif // TPP_THREAD_H_
