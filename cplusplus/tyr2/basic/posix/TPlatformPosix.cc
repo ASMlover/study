@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <sys/syscall.h>
+#include <execinfo.h>
 #include <unistd.h>
 #include "../TPlatform.h"
 
@@ -32,6 +33,23 @@ namespace tyr { namespace basic {
 
 pid_t kern_getpid(void) {
   return getpid();
+}
+
+int kern_backtrace(std::string& bt) {
+  static const int kMaxBackTrace = 256;
+  void* buff[kMaxBackTrace];
+  int nptrs = backtrace(buff, kMaxBackTrace);
+  char** messages = backtrace_symbols(buff, nptrs);
+  if (nullptr != messages) {
+    char message[1024];
+    for (int i = 0; i < nptrs; ++i) {
+      snprintf(message, sizeof(message), "%i: %s\n", nptrs - i - 1, messages[i]);
+      bt.append(message);
+    }
+    free(messages);
+  }
+
+  return 0;
 }
 
 int kern_mutex_init(KernMutex* mtx) {

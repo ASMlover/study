@@ -25,8 +25,10 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <Windows.h>
+#include <DbgHelp.h>
 #include <process.h>
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <memory>
 #include "../TPlatform.h"
@@ -35,6 +37,9 @@ namespace tyr { namespace basic {
 
 static const uint64_t kEpoch = 116444736000000000ULL;
 static const DWORD kMSVCException = 0x406D1388;
+static const int kMaxBackTrace = 256;
+static const HANDLE kMainProc = GetCurrentProcess();
+static const BOOL kBTTempInit = SymInitialize(kMainProc, NULL, TRUE);
 
 #pragma pack(push, 8)
 typedef struct KernThreadName {
@@ -74,6 +79,25 @@ pid_t kern_getpid(void) {
 
 pid_t kern_gettid(void) {
   return static_cast<pid_t>(GetCurrentThreadId());
+}
+
+int kern_backtrace(std::string& bt) {
+  void* stack[kMaxBackTrace];
+  int frames = CaptureStackBackTrace(0, kMaxBackTrace, stack, nullptr);
+
+  char symbol_buff[sizeof(SYMBOL_INFO) + kMaxBackTrace * sizeof(char)];
+  PSYMBOL_INFO symbol = (PSYMBOL_INFO)symbol_buff;
+  symbol->MaxNameLen = kMaxBackTrace;
+  symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+
+  char message[1024];
+  for (int i = 0; i < frames; ++i) {
+    SymFromAddr(kMainProc, (DWORD)stack[i], 0, symbol);
+    snprintf(message, sizeof(message), "%i: %s - 0x%p\n", frames - i - 1, symbol->Name, (void*)symbol->Address);
+    bt.append(message);
+  }
+
+  return 0;
 }
 
 int kern_mutex_init(KernMutex* mtx) {

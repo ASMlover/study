@@ -27,6 +27,7 @@
 #ifndef __TYR_BASIC_PLATFORM_HEADER_H__
 #define __TYR_BASIC_PLATFORM_HEADER_H__
 
+#include <string>
 #include "TConfig.h"
 #include "TTypes.h"
 
@@ -43,6 +44,8 @@ namespace tyr { namespace basic {
 
 pid_t kern_getpid(void);
 pid_t kern_gettid(void);
+
+int kern_backtrace(std::string& bt);
 
 int kern_mutex_init(KernMutex* mtx);
 int kern_mutex_destroy(KernMutex* mtx);
