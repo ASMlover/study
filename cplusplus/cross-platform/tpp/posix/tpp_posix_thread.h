@@ -52,9 +52,9 @@ private:
   }
 
   void start_thread(void) {
-    int err = pthread_create(&thread_, 0, &Thread::thread_callback, this);
-    if (0 != err)
-      __tpp_throw("posix.Thread.start_thread: create thread failed");
+    int ec = pthread_create(&thread_, 0, &Thread::thread_callback, this);
+    if (0 != ec)
+      __libtpp_throw_error(ec, "posix.Thread.start_thread: create thread failed");
   }
 public:
   Thread(const ThreadCallback& cb, void* arg)

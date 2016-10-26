@@ -108,23 +108,27 @@ int __libtpp_thread_create(__libtpp_thread_t* t, void (*closure)(void*), void* a
 }
 
 int __libtpp_thread_join(__libtpp_thread_t* t) {
+  int ec = -1;
   if (0 != *t) {
-    int ec = pthread_join(*t, 0);
+    ec = pthread_join(*t, 0);
     if (0 == ec)
       *t = 0;
     else
       __libtpp_throw_error(ec, "__libtpp_thread_join failed");
   }
+  return ec;
 }
 
 int __libtpp_thread_detach(__libtpp_thread_t* t) {
+  int ec = -1;
   if (0 != *t) {
-    int ec = pthread_detach(*t);
+    ec = pthread_detach(*t);
     if (0 == ec)
       *t = 0;
     else
       __libtpp_throw_error(ec, "__libtpp_thread_detach failed");
   }
+  return ec;
 }
 
 int __libtpp_tls_create(__libtpp_tls_key* key, void (*closure)(void*)) {
