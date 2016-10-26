@@ -45,8 +45,8 @@ RM	= del /s /f /q
 CC	= cl -c -nologo
 MT	= mt -nologo
 LINK	= link -nologo
-CFLAGS	= -GS -Zi -Fd"$(OUTDIR)\$(BINDIR)\\vc.pdb" -O2 -W2 -MDd -EHsc -D_DEBUG -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS -DTYR_CODING=1
-LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(TARGET).pdb -manifest -manifestfile:$(TARGET).manifest -manifestuac:no winmm.lib
+CFLAGS	= -GS -Zi -Fd"$(OUTDIR)\$(BINDIR)\\vc.pdb" -O2 -W2 -MDd -EHsc -D_DEBUG -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS -DTYR_CODING=1 -wd4091
+LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(TARGET).pdb -manifest -manifestfile:$(TARGET).manifest -manifestuac:no winmm.lib Dbghelp.lib
 INCLUDES= {includes}
 OBJS	= {objs}
 
