@@ -25,38 +25,20 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "TConfig.h"
-#if !defined(TYR_WINDOWS)
-# include <execinfo.h>
-#endif
+#include "TPlatform.h"
 #include <stdlib.h>
 #include "TException.h"
 
 namespace tyr { namespace basic {
 
-void Exception::fill_stack_trace(void) {
-#if !defined(TYR_WINDOWS)
-  const int LEN = 256;
-  void* buffer[LEN];
-  int nptrs = backtrace(buffer, LEN);
-  char** strings = backtrace_symbols(buffer, nptrs);
-  if (nullptr != strings) {
-    for (int i = 0; i < nptrs; ++i) {
-      stack_.append(strings[i]);
-      stack_.push_back('\n');
-    }
-    free(strings);
-  }
-#endif
-}
-
 Exception::Exception(const char* what)
   : message_(what) {
-  fill_stack_trace();
+  kern_backtrace(stack_); // append backtrace information into `stack_`
 }
 
 Exception::Exception(const std::string& what)
   : message_(what) {
-  fill_stack_trace();
+  kern_backtrace(stack_); // append backtrace information into `stack_`
 }
 
 Exception::~Exception(void) throw() {

@@ -36,8 +36,6 @@ namespace tyr { namespace basic {
 class Exception : public std::exception {
   std::string message_;
   std::string stack_;
-
-  void fill_stack_trace(void);
 public:
   explicit Exception(const char* what);
   explicit Exception(const std::string& what);
