@@ -24,30 +24,15 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <exception>
-#include <iostream>
-#include "tpp_types.h"
-#include "tpp_thread.h"
-#include "tpp_backtrace.h"
+#ifndef TPP_BACKTRACE_H_
+#define TPP_BACKTRACE_H_
 
-void thread_closure(void* arg) {
-  std::cout << "**************** thread_closure ************* " << arg << std::endl;
+#include "tpp_config.h"
+
+namespace tpp {
+
+int __libtpp_backtrace(void (*closure)(void*));
+
 }
 
-static void backtrace_closure(void* p) {
-  std::cout << (const char*)p << std::endl;
-}
-
-int main(int argc, char* argv[]) {
-  TPP_UNUSED(argc);
-  TPP_UNUSED(argv);
-
-  std::cout << "Hello, `tpp` !" << std::endl;
-
-  tpp::Thread t(thread_closure, nullptr);
-  t.join();
-
-  tpp::__libtpp_backtrace(backtrace_closure);
-
-  return 0;
-}
+#endif // TPP_BACKTRACE_H_

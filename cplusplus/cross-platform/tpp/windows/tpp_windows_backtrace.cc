@@ -24,30 +24,46 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <exception>
-#include <iostream>
-#include "tpp_types.h"
-#include "tpp_thread.h"
-#include "tpp_backtrace.h"
+#include <Windows.h>
+#include <Dbghelp.h>
+#include <stdio.h>
+#include "../tpp_backtrace.h"
 
-void thread_closure(void* arg) {
-  std::cout << "**************** thread_closure ************* " << arg << std::endl;
+#define MAX_STACKLEN      (256)
+#define DEF_TRACENAMELEN  (256)
+#define DEF_BTINFOLEN     (1024)
+
+namespace tpp {
+
+__declspec(thread) HANDLE __libtpp_bt_h = nullptr;
+
+static bool __libtpp_backtrace_initialize(void) {
+  __libtpp_bt_h = GetCurrentProcess();
+  return SymInitialize(__libtpp_bt_h, nullptr, TRUE) == TRUE;
 }
+static const bool __libtpp_bt_init = __libtpp_backtrace_initialize();
 
-static void backtrace_closure(void* p) {
-  std::cout << (const char*)p << std::endl;
-}
+int __libtpp_backtrace(void (*closure)(void*)) {
+  if (nullptr == closure)
+    return 0;
 
-int main(int argc, char* argv[]) {
-  TPP_UNUSED(argc);
-  TPP_UNUSED(argv);
+  void* stack[MAX_STACKLEN];
+  int frames = CaptureStackBackTrace(0, MAX_STACKLEN, stack, nullptr);
 
-  std::cout << "Hello, `tpp` !" << std::endl;
+  char buffer[sizeof(SYMBOL_INFO) + DEF_TRACENAMELEN * sizeof(char)];
+  PSYMBOL_INFO symbol = (PSYMBOL_INFO)buffer;
+  symbol->MaxNameLen = DEF_TRACENAMELEN;
+  symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
 
-  tpp::Thread t(thread_closure, nullptr);
-  t.join();
-
-  tpp::__libtpp_backtrace(backtrace_closure);
+  char trace[DEF_BTINFOLEN];
+  for (int i = 0; i < frames; ++i) {
+    SymFromAddr(__libtpp_bt_h, (DWORD)stack[i], 0, symbol);
+    snprintf(trace, sizeof(trace), "%i: %s - 0x%p",
+        frames - i - 1, symbol->Name, (void*)symbol->Address);
+    closure(trace);
+  }
 
   return 0;
+}
+
 }

@@ -31,9 +31,10 @@ CC	= cl -c -nologo
 MT	= mt -nologo
 LINK	= link -nologo
 CFLAGS	= -O2 -W3 -MDd -GS -Zi -Fd"vc.pdb" -EHsc -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
-LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest -manifestfile:$(OUT).manifest -manifestuac:no winmm.lib
+LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest -manifestfile:$(OUT).manifest -manifestuac:no winmm.lib Dbghelp.lib
 OBJS	= main.obj\
-	tpp_windows_threading_support.obj
+	tpp_windows_threading_support.obj\
+	tpp_windows_backtrace.obj
 
 all: $(OUT)
 rebuild: clean all
