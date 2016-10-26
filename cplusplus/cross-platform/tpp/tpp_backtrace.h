@@ -27,11 +27,12 @@
 #ifndef TPP_BACKTRACE_H_
 #define TPP_BACKTRACE_H_
 
+#include <string>
 #include "tpp_config.h"
 
 namespace tpp {
 
-int __libtpp_backtrace(void (*closure)(void*));
+int __libtpp_backtrace(std::string& bt);
 
 }
 

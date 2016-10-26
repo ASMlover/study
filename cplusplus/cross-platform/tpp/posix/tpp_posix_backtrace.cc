@@ -24,40 +24,26 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <Windows.h>
-#include <Dbghelp.h>
+#include <execinfo.h>
 #include <stdio.h>
 #include "../tpp_backtrace.h"
 
-#define MAX_STACKLEN      (256)
-#define DEF_TRACENAMELEN  (256)
-#define DEF_BTINFOLEN     (1024)
+#define MAX_STACKLEN  (256)
+#define DEF_BTINFOLEN (1024)
 
 namespace tpp {
 
-__declspec(thread) HANDLE __libtpp_bt_h = nullptr;
-
-static bool __libtpp_backtrace_initialize(void) {
-  __libtpp_bt_h = GetCurrentProcess();
-  return SymInitialize(__libtpp_bt_h, nullptr, TRUE) == TRUE;
-}
-static const bool __libtpp_bt_init = __libtpp_backtrace_initialize();
-
 int __libtpp_backtrace(std::string& bt) {
-  void* stack[MAX_STACKLEN];
-  int frames = CaptureStackBackTrace(0, MAX_STACKLEN, stack, nullptr);
-
-  char buffer[sizeof(SYMBOL_INFO) + DEF_TRACENAMELEN * sizeof(char)];
-  PSYMBOL_INFO symbol = (PSYMBOL_INFO)buffer;
-  symbol->MaxNameLen = DEF_TRACENAMELEN;
-  symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
-
-  char trace[DEF_BTINFOLEN];
-  for (int i = 0; i < frames; ++i) {
-    SymFromAddr(__libtpp_bt_h, (DWORD)stack[i], 0, symbol);
-    snprintf(trace, sizeof(trace), "%i: %s - 0x%p\n",
-        frames - i - 1, symbol->Name, (void*)symbol->Address);
-    bt.append(trace);
+  void* buffer[MAX_STACKLEN];
+  int nptrs = backtrace(buffer, MAX_STACKLEN);
+  char** messages = backtrace_symbols(buffer, nptrs);
+  if (nullptr != messages) {
+    char trace[DEF_BTINFOLEN];
+    for (int i = 0; i < nptrs; ++i) {
+      snprintf(trace, sizeof(trace), "%i: %s\n", nptrs - i - 1, messages[i]);
+      bt.append(trace);
+    }
+    free(messages);
   }
 
   return 0;

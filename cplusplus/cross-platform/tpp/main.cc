@@ -26,16 +26,13 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <exception>
 #include <iostream>
+#include <string>
 #include "tpp_types.h"
 #include "tpp_thread.h"
 #include "tpp_backtrace.h"
 
 void thread_closure(void* arg) {
   std::cout << "**************** thread_closure ************* " << arg << std::endl;
-}
-
-static void backtrace_closure(void* p) {
-  std::cout << (const char*)p << std::endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -47,7 +44,9 @@ int main(int argc, char* argv[]) {
   tpp::Thread t(thread_closure, nullptr);
   t.join();
 
-  tpp::__libtpp_backtrace(backtrace_closure);
+  std::string bt;
+  tpp::__libtpp_backtrace(bt);
+  std::cout << bt << std::endl;
 
   return 0;
 }
