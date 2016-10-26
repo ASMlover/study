@@ -32,7 +32,8 @@ MT	= mt -nologo
 LINK	= link -nologo
 CFLAGS	= -O2 -W3 -MDd -GS -Zi -Fd"vc.pdb" -EHsc -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest -manifestfile:$(OUT).manifest -manifestuac:no winmm.lib
-OBJS	= main.obj
+OBJS	= main.obj\
+	tpp_windows_threading_support.obj
 
 all: $(OUT)
 rebuild: clean all
@@ -42,5 +43,8 @@ clean:
 $(OUT): $(OBJS)
 	$(LINK) -out:$(OUT) $(OBJS) $(LDFLAGS)
 	$(MT) -manifest $(OUT).manifest -outputresource:$(OUT);1
+
 .cc.obj:
+	$(CC) $(CFLAGS) $<
+{.\windows}.cc{}.obj:
 	$(CC) $(CFLAGS) $<
