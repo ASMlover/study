@@ -27,9 +27,10 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
+#include <memory>
 #include "TConfig.h"
 #include "TException.h"
-// #include "TLogging.h"
+#include "TLogging.h"
 #include "TCurrentThread.h"
 #include "unexposed/TCurrentThreadUnexposed.h"
 #include "TThread.h"
@@ -106,9 +107,9 @@ struct ThreadData {
 };
 
 void* start_thread(void* argument) {
-  ThreadData* data = static_cast<ThreadData*>(argument);
-  data->run_in_thread();
-  delete data;
+  std::unique_ptr<ThreadData> data(static_cast<ThreadData*>(argument));
+  if (data)
+    data->run_in_thread();
   return nullptr;
 }
 
@@ -153,11 +154,13 @@ void Thread::start(void) {
   assert(!started_);
   started_ = true;
 
-  ThreadData* data = new ThreadData(routine_, name_, tid_);
-  if (0 != kern_thread_create(&thread_, &start_thread, data)) {
+  std::unique_ptr<ThreadData> data(new ThreadData(routine_, name_, tid_));
+  if (0 == kern_thread_create(&thread_, &start_thread, data.get())) {
+    data.release();
+  }
+  else {
     started_ = false;
-    delete data;
-    // TL_SYSFATAL << "Failed in call pthread_create";
+    TL_SYSFATAL << "Failed in call `kern_thread_create`";
   }
 }
 
