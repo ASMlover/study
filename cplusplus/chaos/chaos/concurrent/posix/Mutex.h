@@ -27,4 +27,35 @@
 #ifndef CHAOS_CONCURRENT_POSIX_MUTEX_H
 #define CHAOS_CONCURRENT_POSIX_MUTEX_H
 
+#include <pthread.h>
+#include "../../UnCopyable.h"
+
+namespace chaos {
+
+class Mutex : private UnCopyable {
+  pthread_mutex_t m_;
+public:
+  Mutex(void) {
+    pthread_mutex_init(&m_, 0);
+  }
+
+  ~Mutex(void) {
+    pthread_mutex_destroy(&m_);
+  }
+
+  void lock(void) {
+    pthread_mutex_lock(&m_);
+  }
+
+  bool try_lock(void) {
+    return 0 == pthread_mutex_trylock(&m_);
+  }
+
+  void unlock(void) {
+    pthread_mutex_unlock(&m_);
+  }
+};
+
+}
+
 #endif // CHAOS_CONCURRENT_POSIX_MUTEX_H
