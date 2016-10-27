@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sstream>
+#include <iostream>
 #include "TTypes.h"
 #include "TPlatform.h"
 #include "TCurrentThread.h"
@@ -69,12 +70,12 @@ LoggingLevel init_log_level(void) {
 LoggingLevel gLogLevel = init_log_level();
 
 const char* kLogLevelName[static_cast<int>(LoggingLevel::COUNT_LEVELS)] = {
-  "TRACE",
-  "DEBUG",
-  "INFO",
-  "WARN",
-  "ERROR",
-  "FATAL"
+  "TRACE ",
+  "DEBUG ",
+  "INFO  ",
+  "WARN  ",
+  "ERROR ",
+  "FATAL "
 };
 
 class T {
