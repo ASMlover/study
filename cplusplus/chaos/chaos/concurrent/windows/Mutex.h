@@ -24,29 +24,41 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef CHAOS_PLATFORM_H
-#define CHAOS_PLATFORM_H
+#ifndef CHAOS_CONCURRENT_WINDOWS_MUTEX_H
+#define CHAOS_CONCURRENT_WINDOWS_MUTEX_H
 
-#if defined(_WIN32) || defined(_WIN64) || defined(_WINDOWS_) || defined(_MSC_VER)
-# define CHAOS_WINDOWS
-#elif defined(linux) || defined(__linux) || defined(__linux__)
-# define CHAOS_LINUX
-#elif defined(macintosh) || defined(__APPLE__) || defined(__MACH__)
-# define CHAOS_DARWIN
-#else
-# error "Unknown Platform."
-#endif
+#include <Windows.h>
+#include "../../UnCopyable.h"
 
-#if !defined(CHAOS_WINDOWS)
-# define CHAOS_POSIX
-#endif
+namespace chaos {
 
-#define CHAOS_IMPL_WITH_STD (0)
+class Mutex : private UnCopyable {
+  CRITICAL_SECTION m_;
+public:
+  Mutex(void) {
+    InitializeCriticalSection(&m_);
+  }
 
-#if defined(CHAOS_WINDOWS)
-# define CHAOS_ARRAY(type, name, count) type* name = (type*)_alloca((count) * sizeof(type))
-#else
-# define CHAOS_ARRAY(type, name, count) type name[count]
-#endif
+  ~Mutex(void) {
+    DeleteCriticalSection(&m_);
+  }
 
-#endif // CHAOS_PLATFORM_H
+  void lock(void) {
+    if ((DWORD)m_.OwningThread != GetCurrentThreadId())
+      EnterCriticalSection(&m_);
+  }
+
+  bool try_lock(void) {
+    if ((DWORD)m_.OwningThread != GetCurrentThreadId())
+      return TRUE == TryEnterCriticalSection(&m_);
+    return true;
+  }
+
+  void unlock(void) {
+    LeaveCriticalSection(&m_);
+  }
+};
+
+}
+
+#endif // CHAOS_CONCURRENT_WINDOWS_MUTEX_H

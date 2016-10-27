@@ -24,29 +24,17 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef CHAOS_PLATFORM_H
-#define CHAOS_PLATFORM_H
+#ifndef CHAOS_ERROR_SYSTEMERROR_H
+#define CHAOS_ERROR_SYSTEMERROR_H
 
-#if defined(_WIN32) || defined(_WIN64) || defined(_WINDOWS_) || defined(_MSC_VER)
-# define CHAOS_WINDOWS
-#elif defined(linux) || defined(__linux) || defined(__linux__)
-# define CHAOS_LINUX
-#elif defined(macintosh) || defined(__APPLE__) || defined(__MACH__)
-# define CHAOS_DARWIN
-#else
-# error "Unknown Platform."
-#endif
+#include <system_error>
 
-#if !defined(CHAOS_WINDOWS)
-# define CHAOS_POSIX
-#endif
+namespace chaos {
 
-#define CHAOS_IMPL_WITH_STD (0)
+inline void __chaos_throw_error(int ec, const char* what) {
+  throw std::system_error(std::error_code(ec, std::system_category()), what);
+}
 
-#if defined(CHAOS_WINDOWS)
-# define CHAOS_ARRAY(type, name, count) type* name = (type*)_alloca((count) * sizeof(type))
-#else
-# define CHAOS_ARRAY(type, name, count) type name[count]
-#endif
+}
 
-#endif // CHAOS_PLATFORM_H
+#endif // CHAOS_ERROR_SYSTEMERROR_H
