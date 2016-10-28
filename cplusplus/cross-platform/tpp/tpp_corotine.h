@@ -24,49 +24,47 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <exception>
-#include <iostream>
-#include <string>
+#ifndef TPP_COROTINE_H_
+#define TPP_COROTINE_H_
+
+#include <functional>
+#include <memory>
+#include <set>
 #include "tpp_types.h"
-#include "tpp_thread.h"
-#include "tpp_backtrace.h"
-#include "tpp_corotine.h"
 
-void thread_closure(void* arg) {
-  std::cout << "**************** thread_closure ************* " << arg << std::endl;
+namespace tpp {
+
+enum class CoStatus : int {
+  DEAD = 0,
+  READY,
+  RUNNING,
+  SUSPEND,
+};
+
+
+typedef std::function<void (void*)> CorotineCallback;
+
+class __libtpp_context_t;
+typedef std::shared_ptr<__libtpp_context_t> __libtpp_context_ptr;
+class Corotine : private UnCopyable {
+  __libtpp_context_ptr main_;
+  std::weak_ptr<__libtpp_context_t> running_;
+  std::set<__libtpp_context_ptr> co_;
+private:
+  static void closure_callback(Corotine* c);
+public:
+  Corotine(void);
+  ~Corotine(void);
+
+  __libtpp_context_ptr create(const CorotineCallback& cb, void* arg);
+  __libtpp_context_ptr create(CorotineCallback&& cb, void* arg);
+
+  bool resume(__libtpp_context_ptr& c);
+  bool yield(void);
+  CoStatus status(__libtpp_context_ptr& c);
+  __libtpp_context_ptr running(void);
+};
+
 }
 
-void corotine_closure(void* arg) {
-  tpp::Corotine* co = (tpp::Corotine*)arg;
-  auto c = co->running();
-  for (auto i = 0; i < 5; ++i) {
-    std::cout << "**************** corotine_closure ************* " << c << std::endl;
-    co->yield();
-  }
-}
-
-int main(int argc, char* argv[]) {
-  TPP_UNUSED(argc);
-  TPP_UNUSED(argv);
-
-  std::cout << "Hello, `tpp` !" << std::endl;
-
-  tpp::Thread t(thread_closure, nullptr);
-  t.join();
-
-  std::string bt;
-  tpp::__libtpp_backtrace(bt);
-  std::cout << bt << std::endl;
-
-  tpp::Corotine co;
-  auto c1 = co.create(corotine_closure, &co);
-  auto c2 = co.create(corotine_closure, &co);
-
-  while (tpp::CoStatus::DEAD != co.status(c1)
-      && tpp::CoStatus::DEAD != co.status(c2)) {
-    co.resume(c1);
-    co.resume(c2);
-  }
-
-  return 0;
-}
+#endif // TPP_COROTINE_H_
