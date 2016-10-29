@@ -33,6 +33,8 @@ namespace tpp {
 
 int __libtpp_protect_stack(void* top, uint32_t stack_size, uint32_t page);
 void __libtpp_unprotect_stack(void* top, uint32_t page);
+uint32_t __libtpp_get_protect_stack_page(void);
+void __libtpp_set_protect_stack_page(uint32_t page);
 
 }
 

@@ -29,6 +29,8 @@
 
 namespace tpp {
 
+__thread uint32_t t_protect_stack_page = 0;
+
 int __libtpp_protect_stack(void* top, uint32_t stack_size, uint32_t page) {
   if (0 == page)
     return -1;
@@ -52,6 +54,14 @@ void __libtpp_unprotect_stack(void* top, uint32_t page) {
   void* protect_addr = ((uint32_t)top & 0xfff) ?
     (void*)(((uint32_t)top & ~(uint32_t)0xfff) + 0x1000) : top;
   mprotect(protect_addr, getpagesize() * page, PROT_READ | PROT_WRITE);
+}
+
+uint32_t __libtpp_get_protect_stack_page(void) {
+  return t_protect_stack_page;
+}
+
+void __libtpp_set_protect_stack_page(uint32_t page) {
+  t_protect_stack_page = page;
 }
 
 }
