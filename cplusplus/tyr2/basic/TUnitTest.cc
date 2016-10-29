@@ -55,14 +55,17 @@ bool register_unittest(const char* base, const char* name, void (*closure)(void)
 }
 
 int run_all_tests(void) {
-  int num = 0;
+  int num_tests = 0;
+  int num_passed = 0;
   if (g_tests && !g_tests->empty()) {
+    num_tests = static_cast<int>(g_tests->size());
+
     for (auto& t : *g_tests) {
       t.__closure();
-      ++num;
+      ++num_passed;
     }
   }
-  fprintf(stderr, "========== PASSED %d tests\n", num);
+  fprintf(stderr, "========== PASSED (%d/%d) unit tests\n", num_passed, num_tests);
   return 0;
 }
 
