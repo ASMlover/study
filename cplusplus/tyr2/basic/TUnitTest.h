@@ -62,59 +62,22 @@ public:
     return *this;
   }
 
-  template <typename X, typename Y>
-  Tester& is_eq(const X& x, const Y& y) {
-    if (!(x == y)) {
-      ss_ << " failed: " << x << " == " << y;
-      ok_ = false;
-    }
-    return *this;
+#define BINARY_OPERATION(name, op)\
+  template <typename X, typename Y>\
+  Tester& name(const X& x, const Y& y) {\
+    if (!(x op y)) {\
+      ss_ << " failed: " << x << " " #op " " << y;\
+      ok_ = false;\
+    }\
+    return *this;\
   }
-
-  template <typename X, typename Y>
-  Tester& is_ne(const X& x, const Y& y) {
-    if (!(x != y)) {
-      ss_ << " failed: " << x << " != " << y;
-      ok_ = false;
-    }
-    return *this;
-  }
-
-  template <typename X, typename Y>
-  Tester& is_ge(const X& x, const Y& y) {
-    if (!(x >= y)) {
-      ss_ << " failed: " << x << " >= " << y;
-      ok_ = false;
-    }
-    return *this;
-  }
-
-  template <typename X, typename Y>
-  Tester& is_gt(const X& x, const Y& y) {
-    if (!(x > y)) {
-      ss_ << " failed: " << x << " > " << y;
-      ok_ = false;
-    }
-    return *this;
-  }
-
-  template <typename X, typename Y>
-  Tester& is_le(const X& x, const Y& y) {
-    if (!(x <= y)) {
-      ss_ << " failed: " << x << " <= " << y;
-      ok_ = false;
-    }
-    return *this;
-  }
-
-  template <typename X, typename Y>
-  Tester& is_lt(const X& x, const Y& y) {
-    if (!(x < y)) {
-      ss_ << " failed: " << x << " < " << y;
-      ok_ = false;
-    }
-    return *this;
-  }
+  BINARY_OPERATION(is_eq, ==)
+  BINARY_OPERATION(is_ne, !=)
+  BINARY_OPERATION(is_ge, >=)
+  BINARY_OPERATION(is_gt, >)
+  BINARY_OPERATION(is_le, <=)
+  BINARY_OPERATION(is_lt, <)
+#undef BINARY_OPERATION
 
   template <typename T>
   Tester& operator<<(const T& value) {

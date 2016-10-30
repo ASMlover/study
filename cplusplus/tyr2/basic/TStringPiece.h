@@ -162,6 +162,10 @@ public:
     return ((length_ == r.length_) && (0 == memcmp(str_, r.str_, length_)));
   }
 
+  bool operator!=(const StringPiece& r) const {
+    return !(operator==(r));
+  }
+
   bool operator<(const StringPiece& r) const {
     int v = memcmp(str_, r.str_, tyr_min(length_, r.length_));
     return ((v < 0) || ((0 == v) && (length_ < r.length_)));
