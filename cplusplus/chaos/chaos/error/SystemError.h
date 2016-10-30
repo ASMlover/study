@@ -27,9 +27,14 @@
 #ifndef CHAOS_ERROR_SYSTEMERROR_H
 #define CHAOS_ERROR_SYSTEMERROR_H
 
+#include <exception>
 #include <system_error>
 
 namespace chaos {
+
+inline void __chaos_throw_exception(const char* what) {
+  throw std::exception(what);
+}
 
 inline void __chaos_throw_error(int ec, const char* what) {
   throw std::system_error(std::error_code(ec, std::system_category()), what);
