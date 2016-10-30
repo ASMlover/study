@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-#
 # Copyright (c) 2016 ASMlover. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,49 +25,19 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import print_function
+OUT	= tyr.test.exe
+RM	= del /s /f
+CC	= cl -c -nologo
+MT	= mt -nologo
+LINK	= link -nologo
+CFLAGS	= -O2 -W3 -MDd -Zi -GS -Fd"vc.pdb" -EHsc -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS
+LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest -manifestfile:$(OUT).manifest -manifestuac:no
+OBJS	= Main.obj
 
-import argparse
-import platform
-import subprocess
-import sys
-
-def get_arguments():
-    parser = argparse.ArgumentParser(description='Building tools for Tyr')
-    parser.add_argument('option', nargs='?', help='make|clean the project')
-    args = parser.parse_args()
-    return args.option
-
-def get_platform():
-    return platform.system().lower()
-
-def make(make, makefile):
-    cmd = '{make} -f {fname}'.format(make=make, fname=makefile)
-    subprocess.check_call(cmd, shell=True)
-
-def clean(make, makefile):
-    cmd = '{make} -f {fname} clean'.format(make=make, fname=makefile)
-    subprocess.check_call(cmd, shell=True)
-
-def main():
-    pt = get_platform()
-    make = 'make'
-    if pt == 'linux':
-        makefile = 'make.linux.mk'
-    elif pt == 'darwin':
-        makefile = 'make.darwin.mk'
-    elif pt == 'windows':
-        makefile = 'make.windows.mk'
-        make = 'nmake'
-    else:
-        print ('********** INVALID PLATFORM (support Linux/macOS only) **********')
-        sys.exit()
-
-    option = get_arguments()
-    if option is None:
-        option = 'make'
-    fun = getattr(sys.modules['__main__'], option, None)
-    fun and fun(make, makefile)
-
-if __name__ == '__main__':
-    main()
+$(OUT): $(OBJS)
+	$(LINK) -out:$(OUT) $(OBJS) $(LDFLAGS)
+	$(MT) -manifest $(OUT).manifest -outputresource:$(OUT);1
+.cc.obj:
+	$(CC) $(CFLAGS) $<
+clean:
+	$(RM) $(OUT) $(OBJS) *.pdb *.ilk *.manifest

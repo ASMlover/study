@@ -24,11 +24,48 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include "TSmartPtr.h"
+
+class Integer {
+  int value_{0};
+public:
+  Integer(int value = 0)
+    : value_(value) {
+    std::cout << "Integer::Integer" << std::endl;
+  }
+
+  ~Integer(void) {
+    std::cout << "Integer::~Integer" << std::endl;
+  }
+
+  void set(int value) {
+    value_ = value;
+  }
+
+  int get(void) const {
+    return value_;
+  }
+};
+
+#include <stdio.h>
+FILE* openf(const char* fname) {
+  std::cout << "openf - @fname: " << fname << std::endl;
+  return fopen(fname, "rb");
+}
+
+void closef(FILE* f) {
+  std::cout << "closef - @f: " << f << std::endl;
+  fclose(f);
+}
+
 
 int main(int argc, char* argv[]) {
   UNUSED(argc)
   UNUSED(argv)
+
+  auto p = tyr::make_smarted<Integer>();
+  std::cout << "Integer.value is: " << p->get() << std::endl;
 
   return 0;
 }
