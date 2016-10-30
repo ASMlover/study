@@ -24,9 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <ucontext.h>
-#include <sys/mman.h>
-#include <unistd.h>
+#include <Windows.h>
 #include "../tpp_corotine.h"
 
 #define COROTINE_STACKSIZE  (1024 * 1024)
@@ -35,37 +33,41 @@ namespace tpp {
 
 class __libtpp_context_t {
 public:
-  ucontext_t uc_;
+  void* native_{nullptr};
   CorotineCallback closure_{nullptr};
   void* arg_{nullptr};
   CoStatus status_{CoStatus::DEAD};
-  char* stack_{nullptr};
 
   __libtpp_context_t(const CorotineCallback& cb, void* arg, bool is_main = false)
     : closure_(cb)
     , arg_(arg)
     , status_(CoStatus::READY) {
-    if (!is_main) {
-      int pagesz = getpagesize();
-      char* buf = (char*)malloc(COROTINE_STACKSIZE + pagesz);
-      mprotect(buf, pagesz, PROT_NONE);
-      stack_ = buf + pagesz;
+    if (is_main) {
+      native_ = ConvertThreadToFiber(nullptr);
+    }
+    else {
+      SIZE_T commit_size = COROTINE_STACKSIZE;
+      native_ = CreateFiberEx(commit_size, commit_size, FIBER_FLAG_FLOAT_SWITCH,
+          (LPFIBER_START_ROUTINE)&__libtpp_context_t::__libtpp_fiber_closure, this);
     }
   }
 
   ~__libtpp_context_t(void) {
-    if (nullptr != stack_) {
-      int pagesz = getpagesize();
-      char* buf = stack_ - pagesz;
-      mprotect(buf, pagesz, PROT_READ | PROT_WRITE);
-      free(buf);
+    if (nullptr != native_) {
+      DeleteFiber(native_);
+      native_ = nullptr;
     }
   }
-};
 
-//  std::unique_ptr<__libtpp_context_t> main_;
-//  std::weak_ptr<__libtpp_context_t> running_;
-//  std::set<__libtpp_context_ptr> co_;
+  static void CALLBACK __libtpp_fiber_closure(void* arg) {
+    __libtpp_context_t* context = (__libtpp_context_t*)arg;
+    if (nullptr == context)
+      return;
+
+    if (nullptr != context->closure_)
+      context->closure_(context->arg_);
+  }
+};
 
 Corotine::Corotine(void)
   : main_(new __libtpp_context_t(nullptr, nullptr, true)) {
@@ -106,20 +108,10 @@ bool Corotine::resume(__libtpp_context_ptr& c) {
 
   switch (c->status_) {
   case CoStatus::READY:
-    getcontext(&c->uc_);
-    c->uc_.uc_stack.ss_sp = c->stack_;
-    c->uc_.uc_stack.ss_size = COROTINE_STACKSIZE;
-    c->uc_.uc_link = &main_->uc_;
-    running_ = c;
-    c->status_ = CoStatus::RUNNING;
-    makecontext(&c->uc_, (void(*)(void))&Corotine::closure_callback, 1, this);
-
-    swapcontext(&main_->uc_, &c->uc_);
-    break;
   case CoStatus::SUSPEND:
     running_ = c;
     c->status_ = CoStatus::RUNNING;
-    swapcontext(&main_->uc_, &c->uc_);
+    SwitchToFiber(c->native_);
     break;
   default:
     return false;
@@ -137,7 +129,7 @@ bool Corotine::yield(void) {
     return false;
 
   c->status_ = CoStatus::SUSPEND;
-  swapcontext(&c->uc_, &main_->uc_);
+  SwitchToFiber(c->native_);
 
   return true;
 }

@@ -34,7 +34,8 @@ CFLAGS	= -O2 -W3 -MDd -GS -Zi -Fd"vc.pdb" -EHsc -D_CRT_SECURE_NO_WARNINGS -D_CRT
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest -manifestfile:$(OUT).manifest -manifestuac:no winmm.lib Dbghelp.lib
 OBJS	= main.obj\
 	tpp_windows_threading_support.obj\
-	tpp_windows_backtrace.obj
+	tpp_windows_backtrace.obj\
+	tpp_windows_corotine.obj
 
 all: $(OUT)
 rebuild: clean all

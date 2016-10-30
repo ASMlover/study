@@ -64,6 +64,7 @@ int main(int argc, char* argv[]) {
 
   while (tpp::CoStatus::DEAD != co.status(c1)
       && tpp::CoStatus::DEAD != co.status(c2)) {
+    std::cout << "================ main corotine ================" << std::endl;
     co.resume(c1);
     co.resume(c2);
   }
