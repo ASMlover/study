@@ -56,13 +56,13 @@ public:
 
   Tester& is_true(bool b, const char* msg) {
     if (!b) {
-      ss_ << " Assection failure " << msg;
+      ss_ << " Assection failure: " << msg;
       ok_ = false;
     }
     return *this;
   }
 
-#define BINARY_OP(name, op)\
+#define CHAOS_BINARY_OPERATOR(name, op)\
   template <typename X, typename Y>\
   Tester& name(const X& x, const Y& y) {\
     if (!(x op y)) {\
@@ -72,13 +72,13 @@ public:
     return *this;\
   }
 
-  BINARY_OP(is_eq, ==)
-  BINARY_OP(is_ne, !=)
-  BINARY_OP(is_ge, >=)
-  BINARY_OP(is_gt, >)
-  BINARY_OP(is_le, <=)
-  BINARY_OP(is_lt, <)
-#undef BINARY_OP
+  CHAOS_BINARY_OPERATOR(is_eq, ==)
+  CHAOS_BINARY_OPERATOR(is_ne, !=)
+  CHAOS_BINARY_OPERATOR(is_ge, >=)
+  CHAOS_BINARY_OPERATOR(is_gt, >)
+  CHAOS_BINARY_OPERATOR(is_le, <=)
+  CHAOS_BINARY_OPERATOR(is_lt, <)
+#undef CHAOS_BINARY_OPERATOR
 
   template <typename V>
   Tester& operator<<(const V& value) {
