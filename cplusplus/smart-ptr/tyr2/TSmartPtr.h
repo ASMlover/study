@@ -218,6 +218,11 @@ inline bool operator!=(std::nullptr_t, const SmartPtr<T>& p) {
   return nullptr != p.Get();
 }
 
+template <typename T, typename... Args>
+inline SmartPtr<T> make_smarted(Args&&... args) {
+  return SmartPtr<T>(new T(std::forward<Args>(args)...));
+}
+
 }
 
 #endif // TYR_SMART_PTR_HEADER_H

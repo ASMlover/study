@@ -45,7 +45,7 @@ public:
   explicit SharedCount(Y* p)
     : pi_(nullptr) {
     try {
-      pi_ = new CountedImplDelete<Y>(p);
+      pi_ = reinterpret_cast<CountedBase*>(new CountedImplDelete<Y>(p));
     }
     catch (...) {
       if (nullptr != p)
@@ -57,7 +57,7 @@ public:
   SharedCount(Y* p, D d)
     : pi_(nullptr) {
     try {
-      pi_ = new CountedImplDestructor<Y, D>(p, d);
+      pi_ = reinterpret_cast<CountedBase*>(new CountedImplDestructor<Y, D>(p, d));
     }
     catch (...) {
       if (nullptr != p)
