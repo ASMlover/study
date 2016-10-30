@@ -63,7 +63,7 @@ public:
     SIZE_T commit_size = 4 * 1024;
     native_ = CreateFiberEx(commit_size,
         std::max<uint32_t>(stack_size, commit_size), FIBER_FLAG_FLOAT_SWITCH,
-        (LPFIBER_START_ROUTIN)&Context::fiber_closure, &closure_);
+        (LPFIBER_START_ROUTINE)&Context::fiber_closure, &closure_);
     if (nullptr == native_) {
       int ec = static_cast<int>(GetLastError());
       __libtpp_throw_error(ec, "make context failed");
