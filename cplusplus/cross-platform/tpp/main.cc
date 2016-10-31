@@ -31,6 +31,7 @@
 #include "tpp_thread.h"
 #include "tpp_backtrace.h"
 #include "tpp_corotine.h"
+#include "tpp_intrusive_ptr.h"
 
 void thread_closure(void* arg) {
   std::cout << "**************** thread_closure ************* " << arg << std::endl;
@@ -44,6 +45,9 @@ void corotine_closure(void* arg) {
     co->yield();
   }
 }
+
+class Integer : public tpp::IntrusiveRefCounter<Integer, tpp::ThreadUnsafeCounter> {
+};
 
 int main(int argc, char* argv[]) {
   TPP_UNUSED(argc);
@@ -68,6 +72,8 @@ int main(int argc, char* argv[]) {
     co.resume(c1);
     co.resume(c2);
   }
+
+  tpp::IntrusivePtr<Integer> p;
 
   return 0;
 }
