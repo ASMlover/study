@@ -129,7 +129,7 @@ bool Corotine::yield(void) {
     return false;
 
   c->status_ = CoStatus::SUSPEND;
-  SwitchToFiber(c->native_);
+  SwitchToFiber(main_->native_);
 
   return true;
 }

@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <sys/mman.h>
+#include <unistd.h>
 #include "../tpp_context_support.h"
 
 namespace tpp {
@@ -39,8 +40,9 @@ int __libtpp_protect_stack(void* top, uint32_t stack_size, uint32_t page) {
   if (stack_size <= pagesize * (page + 1))
     return -1;
 
-  void* protect_addr = ((uint32_t)top & 0xfff) ?
-    (void*)(((uint32_t)top & ~(uint32_t)0xfff) + 0x1000) : top;
+  uint32_t top_value = static_cast<uint32_t>(reinterpret_cast<uint64_t>(top));
+  void* protect_addr = (top_value & 0xfff) ?
+    reinterpret_cast<void*>((top_value & ~(uint32_t)0xfff) + 0x1000) : top;
   if (-1 == mprotect(protect_addr, pagesize * page, PROT_NONE))
     return -1;
 
@@ -51,8 +53,9 @@ void __libtpp_unprotect_stack(void* top, uint32_t page) {
   if (0 == page)
     return;
 
-  void* protect_addr = ((uint32_t)top & 0xfff) ?
-    (void*)(((uint32_t)top & ~(uint32_t)0xfff) + 0x1000) : top;
+  uint32_t top_value = static_cast<uint32_t>(reinterpret_cast<uint64_t>(top));
+  void* protect_addr = (top_value & 0xfff) ?
+    reinterpret_cast<void*>((top_value & ~(uint32_t)0xfff) + 0x1000) : top;
   mprotect(protect_addr, getpagesize() * page, PROT_READ | PROT_WRITE);
 }
 
