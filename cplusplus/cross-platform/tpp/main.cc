@@ -47,6 +47,14 @@ void corotine_closure(void* arg) {
 }
 
 class Integer : public tpp::IntrusiveRefCounter<Integer, tpp::ThreadUnsafeCounter> {
+public:
+  Integer(void) {
+    std::cout << "********** Integer::Integer **********" << std::endl;
+  }
+
+  ~Integer(void) {
+    std::cout << "********** Integer::~Integer **********" << std::endl;
+  }
 };
 
 int main(int argc, char* argv[]) {
@@ -62,18 +70,23 @@ int main(int argc, char* argv[]) {
   tpp::__libtpp_backtrace(bt);
   std::cout << bt << std::endl;
 
-  tpp::Corotine co;
-  auto c1 = co.create(corotine_closure, &co);
-  auto c2 = co.create(corotine_closure, &co);
-
-  while (tpp::CoStatus::DEAD != co.status(c1)
-      && tpp::CoStatus::DEAD != co.status(c2)) {
-    std::cout << "================ main corotine ================" << std::endl;
-    co.resume(c1);
-    co.resume(c2);
+  {
+    tpp::IntrusivePtr<Integer> p(new Integer());
   }
 
-  tpp::IntrusivePtr<Integer> p;
+  {
+    tpp::Corotine co;
+    auto c1 = co.create(corotine_closure, &co);
+    auto c2 = co.create(corotine_closure, &co);
+
+    while (tpp::CoStatus::DEAD != co.status(c1)
+        && tpp::CoStatus::DEAD != co.status(c2)) {
+      std::cout << "================ main corotine ================" << std::endl;
+      co.resume(c1);
+      co.resume(c2);
+    }
+    std::cout << "================ return main thread ================" << std::endl;
+  }
 
   return 0;
 }
