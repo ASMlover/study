@@ -63,10 +63,6 @@ public:
   }
 };
 
-//  std::unique_ptr<__libtpp_context_t> main_;
-//  std::weak_ptr<__libtpp_context_t> running_;
-//  std::set<__libtpp_context_ptr> co_;
-
 Corotine::Corotine(void)
   : main_(new __libtpp_context_t(nullptr, nullptr, true)) {
   main_->status_ = CoStatus::RUNNING;

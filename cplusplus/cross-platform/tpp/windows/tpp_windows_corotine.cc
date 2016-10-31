@@ -66,6 +66,7 @@ public:
 
     if (nullptr != context->closure_)
       context->closure_(context->arg_);
+    context->status_ = CoStatus::DEAD;
   }
 };
 
@@ -91,14 +92,7 @@ __libtpp_context_ptr Corotine::create(CorotineCallback&& cb, void* arg) {
   return c;
 }
 
-void Corotine::closure_callback(Corotine* c) {
-  auto co = c->running_.lock();
-  if (co) {
-    if (co->closure_)
-      co->closure_(co->arg_);
-    co->status_ = CoStatus::DEAD;
-    c->running_.reset();
-  }
+void Corotine::closure_callback(Corotine* /*c*/) {
 }
 
 bool Corotine::resume(__libtpp_context_ptr& c) {
@@ -118,7 +112,7 @@ bool Corotine::resume(__libtpp_context_ptr& c) {
   }
 
   if (c->status_ == CoStatus::DEAD)
-    co_.erase(co_.find(c));
+    co_.erase(iter);
 
   return true;
 }
