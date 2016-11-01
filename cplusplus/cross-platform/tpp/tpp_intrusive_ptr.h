@@ -88,7 +88,7 @@ protected:
   template <typename DerivedT, typename CounterPolicyT>
   friend void intrusive_ptr_add_ref(const IntrusiveRefCounter<DerivedT, CounterPolicyT>*);
   template <typename DerivedT, typename CounterPolicyT>
-  friend void intrusive_ptr_del_ref<DerivedT, CounterPolicyT>(const IntrusiveRefCounter<DerivedT, CounterPolicyT>*);
+  friend void intrusive_ptr_del_ref(const IntrusiveRefCounter<DerivedT, CounterPolicyT>*);
 };
 
 template <typename DerivedT, typename CounterPolicyT>
@@ -107,9 +107,7 @@ class IntrusivePtr {
   typedef IntrusivePtr<T> SelfType;
   T* px_{nullptr};
 public:
-  IntrusivePtr(void)
-    : px_(nullptr) {
-  }
+  IntrusivePtr(void) = default;
 
   IntrusivePtr(T* p, bool add_ref = true)
     : px_(p) {
