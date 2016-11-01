@@ -41,4 +41,8 @@ public:
 
 CO_TEST(Utils, co::test::FakeTest) {
   std::shared_ptr<UtilsRef> p1 = co::make_shared<UtilsRef>();
+  std::shared_ptr<UtilsRef> p2 = co::shared_from_this(p1.get());
+
+  co::IntrusiveRefGuard guard1(p1.get());
+  co::IntrusiveRefGuard guard2(p2.get());
 }
