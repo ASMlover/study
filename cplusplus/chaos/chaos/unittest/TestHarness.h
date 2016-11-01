@@ -102,16 +102,16 @@ int run_all_testharness(void);
 }
 
 #define CHAOS_TEST(Name, Base)\
-class _TestHarness_##Name : public Base {\
+class _ChaosTestHarness_##Name : public Base {\
 public:\
   void _run(void);\
   static void _run_harness(void) {\
-    _TestHarness_##Name t;\
+    _ChaosTestHarness_##Name t;\
     t._run();\
   }\
 };\
-static bool _TestHarness_##Name_ignored =\
-  chaos::register_testharness(#Base, #Name, &_TestHarness_##Name::_run_harness);\
-void _TestHarness_##Name::_run(void)
+static bool _ChaosTestHarness_##Name_ignored =\
+  chaos::register_testharness(#Base, #Name, &_ChaosTestHarness_##Name::_run_harness);\
+void _ChaosTestHarness_##Name::_run(void)
 
 #endif // CHAOS_UNITTEST_TESTHARNESS_H

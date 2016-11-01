@@ -48,8 +48,7 @@ bool register_testharness(const char* base, const char* name, void (*closure)(vo
   if (!g_tests)
     g_tests.reset(new HarnessContextVector);
 
-  HarnessContext hc(base, name, closure);
-  g_tests->push_back(hc);
+  g_tests->push_back(HarnessContext(base, name, closure));
 
   return true;
 }
