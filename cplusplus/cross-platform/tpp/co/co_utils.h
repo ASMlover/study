@@ -70,14 +70,14 @@ template <typename T>
 typename std::enable_if<std::is_base_of<IntrusiveRef, T>::value, std::shared_ptr<T>>::type
 shared_from_this(T* p) {
   p->increment();
-  return std::shared_ptr<T>(p, [](T* self) { self->decrement(); })
+  return std::shared_ptr<T>(p, [](T* self) { self->decrement(); });
 }
 
 template <typename T, typename... Args>
 typename std::enable_if<std::is_base_of<IntrusiveRef, T>::value, std::shared_ptr<T>>::type
 make_shared(Args&&... args) {
   T* p = new T(std::forward<Args>(args)...);
-  return std::shared_ptr<T>(p, [](T* self) { self->decrement(); })
+  return std::shared_ptr<T>(p, [](T* self) { self->decrement(); });
 }
 
 template <typename T>
