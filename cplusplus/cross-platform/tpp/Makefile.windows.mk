@@ -35,7 +35,10 @@ LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(OUT).pdb -manifest -manifestfile:$(OUT).man
 OBJS	= main.obj\
 	tpp_windows_threading_support.obj\
 	tpp_windows_backtrace.obj\
-	tpp_windows_corotine.obj
+	tpp_windows_corotine.obj\
+	\
+	co_unittest.obj\
+	co_utils_test.obj
 
 all: $(OUT)
 rebuild: clean all
@@ -49,4 +52,8 @@ $(OUT): $(OBJS)
 .cc.obj:
 	$(CC) $(CFLAGS) $<
 {.\windows}.cc{}.obj:
+	$(CC) $(CFLAGS) $<
+{.\co}.cc{}.obj:
+	$(CC) $(CFLAGS) $<
+{.\co\test}.cc{}.obj:
 	$(CC) $(CFLAGS) $<

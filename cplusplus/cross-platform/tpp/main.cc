@@ -27,6 +27,7 @@
 #include <exception>
 #include <iostream>
 #include <string>
+#include "co/co_unittest.h"
 #include "tpp_types.h"
 #include "tpp_thread.h"
 #include "tpp_backtrace.h"
@@ -63,18 +64,25 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Hello, `tpp` !" << std::endl;
 
-  tpp::Thread t(thread_closure, nullptr);
-  t.join();
-
-  std::string bt;
-  tpp::__libtpp_backtrace(bt);
-  std::cout << bt << std::endl;
-
   {
+    // thread sample
+    tpp::Thread t(thread_closure, nullptr);
+    t.join();
+  }
+  {
+    // backtrace sample
+    std::string bt;
+    tpp::__libtpp_backtrace(bt);
+    std::cout << bt << std::endl;
+  }
+  {
+    // intrusive pointer sample
     tpp::IntrusivePtr<Integer> p(new Integer());
   }
+  co::test::run_all_unittests();
 
   {
+    // corotine sample
     tpp::Corotine co;
     auto c1 = co.create(corotine_closure, &co);
     auto c2 = co.create(corotine_closure, &co);
