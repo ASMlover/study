@@ -85,10 +85,10 @@ public:
     return CounterPolicyT::load(ref_counter_);
   }
 protected:
-  template <typename DerivedT, typename CounterPolicyT>
-  friend void intrusive_ptr_add_ref(const IntrusiveRefCounter<DerivedT, CounterPolicyT>*);
-  template <typename DerivedT, typename CounterPolicyT>
-  friend void intrusive_ptr_del_ref(const IntrusiveRefCounter<DerivedT, CounterPolicyT>*);
+  template <typename _Derived, typename _CounterPolicy>
+  friend void intrusive_ptr_add_ref(const IntrusiveRefCounter<_Derived, _CounterPolicy>* p);
+  template <typename _Derived, typename _CounterPolicy>
+  friend void intrusive_ptr_del_ref(const IntrusiveRefCounter<_Derived, _CounterPolicy>* p);
 };
 
 template <typename DerivedT, typename CounterPolicyT>

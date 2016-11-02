@@ -30,7 +30,7 @@ RM	= rm -fv
 CC	= g++
 CFLAGS	= -g -O2 -Wall -std=c++11
 LDFLAGS	= -lpthread
-OBJS	= $(patsubst %.cc, %.o, $(wildcard *.cc ./posix/*.cc ./linux/*.cc))
+OBJS	= $(patsubst %.cc, %.o, $(wildcard *.cc ./posix/*.cc ./linux/*.cc ./co/*.cc ./co/test/*.cc))
 
 all: $(OUT)
 rebuild: clean all

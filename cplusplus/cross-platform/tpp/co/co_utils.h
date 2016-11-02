@@ -43,7 +43,7 @@ protected:
 
 struct FakeLock {
   template <typename _Mutex>
-  explicit FakeLock(_Mutex&) = default;
+  explicit FakeLock(_Mutex&) {}
 };
 
 class IntrusiveRef : private UnCopyable {
