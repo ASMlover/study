@@ -31,9 +31,20 @@
 #include "../basic/TPlatform.h"
 #if defined(TYR_WINDOWS)
 # include <WinSock2.h>
-# include <sys/param.h>
 
-# if BYTE_ORDER == LITTLE_ENDIAN
+enum {
+  TYR_LITTLE_ENDIAN = 0x03020100UL,
+  TYR_BIG_ENDIAN = 0x00010203UL,
+  TYR_PDP_ENDIAN = 0x01000302UL,
+};
+static const union {
+  unsigned char bytes[4];
+  uint32_t value;
+} kByteOrder = {{0, 1, 2, 3}};
+
+# define TYR_BYTE_ORDER (kByteOrder.value)
+
+# if TYR_BYTE_ORDER == TYR_LITTLE_ENDIAN
 #   define htobe16(x) htons((x))
 #   define htole16(x) (x)
 #   define be16toh(x) ntohs((x))
@@ -46,7 +57,7 @@
 #   define htole64(x) (x)
 #   define be64toh(x) ntohll((x))
 #   define le64toh(x) (x)
-# elif BYTE_ORDER == BIG_ENDIAN
+# elif TYR_BYTE_ORDER == TYR_BIG_ENDIAN
 #   define htobe16(x) (x)
 #   define htole16(x) __builtin_bswap16((x))
 #   define be16toh(x) (x)
