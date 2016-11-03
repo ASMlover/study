@@ -34,6 +34,19 @@
 #include "tpp_corotine.h"
 #include "tpp_intrusive_ptr.h"
 
+#define LITTLE_ENDIAN (0x41424344UL)
+#define BIG_ENDIAN    (0x44434241UL)
+#define PDP_ENDIAN    (0x42414443UL)
+#define BYTE_ORDER    ('ABCD')
+
+enum {
+  TPP_LITTLE_ENDIAN = 0x03020100ul,
+  TPP_BIG_ENDIAN = 0x00010203ul,
+  TPP_PDP_ENDIAN = 0x01000302ul,
+};
+static const union { unsigned char bytes[4]; uint32_t value; } tpp_byte_order = {{0, 1, 2, 3}};
+#define TPP_BYTE_ORDER (tpp_byte_order.value)
+
 void thread_closure(void* arg) {
   std::cout << "**************** thread_closure ************* " << arg << std::endl;
 }
@@ -63,6 +76,19 @@ int main(int argc, char* argv[]) {
   TPP_UNUSED(argv);
 
   std::cout << "Hello, `tpp` !" << std::endl;
+
+  {
+    // byte order checking
+    // if (BYTE_ORDER == LITTLE_ENDIAN)
+    if (TPP_BYTE_ORDER == TPP_LITTLE_ENDIAN)
+      std::cout << "little endian" << std::endl;
+    else if (BYTE_ORDER == BIG_ENDIAN)
+      std::cout << "big endian" << std::endl;
+    else if (BYTE_ORDER == PDP_ENDIAN)
+      std::cout << "pdp endian" << std::endl;
+    else
+      std::cout << "error endian" << std::endl;
+  }
 
   {
     // thread sample
