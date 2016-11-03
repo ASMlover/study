@@ -82,9 +82,9 @@ int main(int argc, char* argv[]) {
     // if (__TPP_BYTE_ORDER == __TPP_LITTLE_ENDIAN)
     if (TPP_BYTE_ORDER == TPP_LITTLE_ENDIAN)
       std::cout << "little endian" << std::endl;
-    else if (BYTE_ORDER == BIG_ENDIAN)
+    else if (TPP_BYTE_ORDER == TPP_BIG_ENDIAN)
       std::cout << "big endian" << std::endl;
-    else if (BYTE_ORDER == PDP_ENDIAN)
+    else if (TPP_BYTE_ORDER == TPP_PDP_ENDIAN)
       std::cout << "pdp endian" << std::endl;
     else
       std::cout << "error endian" << std::endl;
