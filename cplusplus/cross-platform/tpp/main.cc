@@ -34,10 +34,10 @@
 #include "tpp_corotine.h"
 #include "tpp_intrusive_ptr.h"
 
-#define LITTLE_ENDIAN (0x41424344UL)
-#define BIG_ENDIAN    (0x44434241UL)
-#define PDP_ENDIAN    (0x42414443UL)
-#define BYTE_ORDER    ('ABCD')
+#define __TPP_LITTLE_ENDIAN (0x41424344UL)
+#define __TPP_BIG_ENDIAN    (0x44434241UL)
+#define __TPP_PDP_ENDIAN    (0x42414443UL)
+#define __TPP_BYTE_ORDER    ('ABCD')
 
 enum {
   TPP_LITTLE_ENDIAN = 0x03020100ul,
@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
 
   {
     // byte order checking
-    // if (BYTE_ORDER == LITTLE_ENDIAN)
+    // if (__TPP_BYTE_ORDER == __TPP_LITTLE_ENDIAN)
     if (TPP_BYTE_ORDER == TPP_LITTLE_ENDIAN)
       std::cout << "little endian" << std::endl;
     else if (BYTE_ORDER == BIG_ENDIAN)
