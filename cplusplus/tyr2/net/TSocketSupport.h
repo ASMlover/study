@@ -27,38 +27,53 @@
 #ifndef __TYR_NET_SOCKETSUPPORT_HEADER_H__
 #define __TYR_NET_SOCKETSUPPORT_HEADER_H__
 
-#include <arpa/inet.h>
+#include "../basic/TConfig.h"
+#include "../basic/TTypes.h"
+#if defined(TYR_WINDOWS)
+# include <BaseTsd.h>
+# include <WinSock2.h>
+
+  typedef SSIZE_T ssize_t;
+  typedef WSABUF  KernIovec;
+#else
+# include <sys/socket.h>
+# include <sys/uio.h>
+
+  typedef struct iovec KernIovec;
+#endif
 
 namespace tyr { namespace net {
 
 namespace SocketSupport {
-  int tyr_socket(sa_family_t family);
-  int tyr_connect(int fd, const struct sockaddr* addr);
-  void tyr_bind(int fd, const struct sockaddr* addr);
-  void tyr_listen(int fd);
-  int tyr_accept(int fd, struct sockaddr_in6* addr);
-  ssize_t tyr_read(int fd, void* buf, size_t len);
-  ssize_t tyr_readv(int fd, const struct iovec* iov, int iovcnt);
-  ssize_t tyr_write(int fd, const void* buf, size_t len);
-  void tyr_close(int fd);
-  void tyr_shutdown(int fd);
+  void kern_set_iovec(KernIovec* vec, char* buf, size_t len);
 
-  void tyr_to_ip_port(char* buf, size_t len, const struct sockaddr* addr);
-  void tyr_to_ip(char* buf, size_t len, const struct sockaddr* addr);
-  void tyr_from_ip_port(const char* ip, uint16_t port, struct sockaddr_in* addr);
-  void tyr_from_ip_port(const char* ip, uint16_t port, struct sockaddr_in6* addr);
+  int kern_socket(int family);
+  int kern_connect(int sockfd, const struct sockaddr* addr);
+  int kern_bind(int sockfd, const struct sockaddr* addr);
+  int kern_listen(int sockfd);
+  int kern_accept(int sockfd, struct sockaddr_in6* addr);
+  ssize_t kern_read(int sockfd, void* buf, size_t len);
+  ssize_t kern_readv(int sockfd, const KernIovec* iov, int iovcnt);
+  ssize_t kern_write(int sockfd, const void* buf, size_t len);
+  int kern_shutdown(int sockfd);
+  int kern_close(int sockfd);
 
-  int tyr_socket_error(int fd);
+  void kern_to_ip_port(char* buf, size_t len, const struct sockaddr* addr);
+  void kern_to_ip(char* buf, size_t len, const struct sockaddr* addr);
+  void kern_from_ip_port(const char* ip, uint16_t port, struct sockaddr_in* addr);
+  void kern_from_ip_port(const char* ip, uint16_t port, struct sockaddr_in6* addr);
 
-  const struct sockaddr* tyr_sockaddr_cast(const struct sockaddr_in* addr);
-  const struct sockaddr* tyr_sockaddr_cast(const struct sockaddr_in6* addr);
-  struct sockaddr* tyr_sockaddr_cast(struct sockaddr_in6* addr);
-  const struct sockaddr_in* tyr_sockaddr_in_cast(const struct sockaddr* addr);
-  const struct sockaddr_in6* tyr_sockaddr_in6_cast(const struct sockaddr* addr);
+  int kern_socket_error(int fd);
 
-  struct sockaddr_in6 tyr_localaddr(int fd);
-  struct sockaddr_in6 tyr_peekaddr(int fd);
-  bool tyr_is_self_connect(int fd);
+  const struct sockaddr* kern_sockaddr_cast(const struct sockaddr_in* addr);
+  const struct sockaddr* kern_sockaddr_cast(const struct sockaddr_in6* addr);
+  struct sockaddr* kern_sockaddr_cast(struct sockaddr_in6* addr);
+  const struct sockaddr_in* kern_sockaddr_in_cast(const struct sockaddr* addr);
+  const struct sockaddr_in6* kern_sockaddr_in6_cast(const struct sockaddr* addr);
+
+  struct sockaddr_in6 kern_localaddr(int fd);
+  struct sockaddr_in6 kern_peekaddr(int fd);
+  bool kern_is_self_connect(int fd);
 }
 
 }}
