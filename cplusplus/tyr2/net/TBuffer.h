@@ -50,7 +50,6 @@ public:
     : buff_(kCheapPrepend + init_size)
     , rindex_(kCheapPrepend)
     , windex_(kCheapPrepend) {
-    // TODO: assert checking
   }
 
   ~Buffer(void) {

@@ -25,7 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <errno.h>
-#include <sys/uio.h>
+#include "TSocketSupport.h"
 #include "TBuffer.h"
 
 using namespace tyr::basic;
@@ -36,14 +36,12 @@ ssize_t Buffer::read_fd(int fd, int& saved_errno) {
   char extra_buf[65535];
   const size_t writable = writable_bytes();
 
-  struct iovec vec[2];
-  vec[0].iov_base = begin() + windex_;
-  vec[0].iov_len = writable;
-  vec[1].iov_base = extra_buf;
-  vec[1].iov_len = sizeof(extra_buf);
+  KernIovec vec[2];
+  SocketSupport::kern_set_iovec(&vec[0], begin() + windex_, writable);
+  SocketSupport::kern_set_iovec(&vec[1], extra_buf, sizeof(extra_buf));
 
   const int iovcnt = (writable < sizeof(extra_buf) ? 2 : 1);
-  const ssize_t n = readv(fd, vec, iovcnt);
+  const ssize_t n = SocketSupport::kern_readv(fd, vec, iovcnt);
   if (n < 0) {
     saved_errno = errno;
   }
