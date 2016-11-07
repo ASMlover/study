@@ -45,8 +45,8 @@ RM	= del /s /f /q
 CC	= cl -c -nologo
 MT	= mt -nologo
 LINK	= link -nologo
-CFLAGS	= -GS -Zi -Fd"$(OUTDIR)\$(BINDIR)\\vc.pdb" -O2 -W2 -MDd -EHsc -D_DEBUG -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS -DTYR_CODING=1 -wd4091
-LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(TARGET).pdb -manifest -manifestfile:$(TARGET).manifest -manifestuac:no winmm.lib Dbghelp.lib
+CFLAGS	= -GS -Zi -Fd"$(OUTDIR)\$(BINDIR)\\vc.pdb" -O2 -W2 -MDd -EHsc -D_DEBUG -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS -DTYR_CODING=1 -wd4091 -wd4996
+LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(TARGET).pdb -manifest -manifestfile:$(TARGET).manifest -manifestuac:no winmm.lib Dbghelp.lib ws2_32.lib
 INCLUDES= {includes}
 OBJS	= {objs}
 
@@ -91,16 +91,16 @@ POSIX_CCOBJ = """{make_obj}: {make_src}
 	$(CC) -o $@ -c $(CFLAGS) $(INCLUDES) $^
 """
 
-LINUX_MKDIR = {'cc': 'g++', 'ldflags': '-lpthread'}
-DARWIN_MKDIR = {'cc': 'clang++', 'ldflags': '-lc -lpthread'}
+LINUX_MKEXT = {'cc': 'g++', 'ldflags': '-lpthread'}
+DARWIN_MKEXT = {'cc': 'clang++', 'ldflags': '-lc -lpthread'}
 TARGET = 'tyr.test'
 OUTDIR = 'build'
 INC_DIRS = ['..']
 SOURCE_DIRS = {
-    'common': (('./', True), ('../basic', False), ('../basic/unexposed', True),),
-    'darwin': (('../basic/posix', True), ('../basic/darwin', True),),
-    'linux': (('../basic/posix', True), ('../basic/linux', True),),
-    'windows': (('../basic/windows', True),),
+    'common': (('./', True), ('../basic', False), ('../basic/unexposed', True), ('../net', False)),
+    'darwin': (('../basic/posix', True), ('../basic/darwin', True), ('../net/posix', True), ('../net/darwin', True)),
+    'linux': (('../basic/posix', True), ('../basic/linux', True), ('../net/posix', True), ('../net/linux', True)),
+    'windows': (('../basic/windows', True), ('../net/windows', True)),
 }
 
 if sys.version_info.major < 3:
@@ -191,7 +191,7 @@ def gen_makefile(platform='linux', target='a.out', outdir='build', sources=[]):
         make_objs = ''.join(make_objs_list).rstrip(),
         includes = gen_includes(INC_DIRS)
     )
-    ext_dict = getattr(mname, '{pt}_MKDIR'.format(pt=platform.upper()), None)
+    ext_dict = getattr(mname, '{pt}_MKEXT'.format(pt=platform.upper()), None)
     if ext_dict:
         make_dict.update(ext_dict)
 
