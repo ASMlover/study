@@ -27,139 +27,145 @@
 #ifndef TPP_BASIC_MEMORY_H_
 #define TPP_BASIC_MEMORY_H_
 
-#include <atomic>
-#include <utility>
+#include "tpp_counted.h"
 
 namespace tpp { namespace basic {
 
+template <typename T> class WeakPtr;
 template <typename T>
 class SharedPtr {
-public:
-  typedef T                   element_type;
-  typedef element_type*       pointer;
-  typedef const element_type* const_pointer;
-  typedef element_type&       reference;
-  typedef const element_type& const_reference;
-private:
-  struct _Container {
-    pointer px;
-    std::atomic<int> rc;
+  T* px_{nullptr};
+  SharedCount pn_;
 
-    explicit _Container(pointer p)
-      : px(p)
-      , rc(1) {
-    }
-
-    ~_Container(void) {
-      delete px;
-    }
-  };
-  _Container* pc_{nullptr};
+  template <typename Y> class WeakPtr;
+  typedef SharedPtr<T> SelfType;
 public:
   SharedPtr(void) = default;
+  SharedPtr(std::nullptr_t) = default;
+  ~SharedPtr(void) = default;
 
-  explicit SharedPtr(pointer p)
-    : pc_(new _Container(p)) {
+  template <typename Y>
+  explicit SharedPtr(Y* p)
+    : px_(p)
+    , pn_(px_) {
+  }
+
+  template <typename Y, typename D>
+  SharedPtr(Y* p, D d)
+    : px_(p)
+    , pn_(p, d) {
+  }
+
+  template <typename D>
+  SharedPtr(std::nullptr_t, D d)
+    : px_(nullptr)
+    , pn_(nullptr, d) {
   }
 
   SharedPtr(const SharedPtr& r)
-    : pc_(r.p_) {
-    if (nullptr != pc_)
-      ++pc_->rc;
+    : px_(r.px_)
+    , pn_(r.pn_) {
   }
 
   SharedPtr(SharedPtr&& r)
-    : pc_(r.pc_) {
-    r.pc_ = nullptr;
+    : px_(r.px_)
+    , pn_() {
+    pn_.swap(r.pn_);
+    r.px_ = nullptr;
   }
 
-  ~SharedPtr(void) {
-    reset();
+  template <typename Y>
+  SharedPtr(const SharedPtr<Y>& r)
+    : px_(r.px_)
+    , pn_(r.pn_) {
   }
 
-  SharedPtr& operator=(pointer p) {
-    reset(p);
-    return *this;
+  template <typename Y>
+  SharedPtr(SharedPtr<Y>&& r)
+    : px_(r.px_)
+    , pn_() {
+    pn_.swap(r.pn_);
+    r.px_ = nullptr;
   }
 
   SharedPtr& operator=(const SharedPtr& r) {
-    reset();
-    pc_ = r.pc_;
-    if (nullptr != pc_)
-      ++pc_->rc;
+    SelfType(r).swap(*this);
     return *this;
   }
 
   SharedPtr& operator=(SharedPtr&& r) {
-    swap(r);
+    SelfType(static_cast<SharedPtr&&>(r)).swap(*this);
     return *this;
   }
 
-  void reset(pointer p = nullptr) {
-    auto old = pc_;
-    pc_ = nullptr != p ? new _Container(p) : nullptr;
-    if (nullptr != old && 0 == --old->rc)
-      delete old;
+  template <typename Y>
+  SharedPtr& operator=(const SharedPtr<Y>& r) {
+    SelfType(r).swap(*this);
+    return *this;
+  }
+
+  template <typename Y>
+  SharedPtr& operator=(SharedPtr<Y>&& r) {
+    SelfType(static_cast<SharedPtr<Y>&&>(r)).swap(*this);
+    return *this;
+  }
+
+  SharedPtr& operator=(std::nullptr_t) {
+    SelfType().swap(*this);
+    return *this;
   }
 
   void swap(SharedPtr& r) {
-    std::swap(pc_, r.pc_);
+    std::swap(px_, r.px_);
+    pn_.swap(r.pn_);
   }
 
-  explicit operator bool(void) const {
-    return nullptr != get();
+  void reset(void) {
+    SelfType().swap(*this);
   }
 
-  int use_count(void) const {
-    return nullptr != pc_ ? pc_->rc : 0;
+  template <typename Y>
+  void reset(Y* p) {
+    SelfType(p).swap(*this);
+  }
+
+  template <typename Y, typename D>
+  void reset(Y* p, D d) {
+    SelfType(p, d).swap(*this);
+  }
+
+  template <typename Y>
+  void reset(const SharedPtr<Y>& r) {
+    SelfType(r).swap(*this);
+  }
+
+  template <typename Y>
+  void reset(SharedPtr<Y>&& r) {
+    SelfType(static_cast<SharedPtr<Y>&&>(r)).swap(*this);
+  }
+
+  T& operator*(void) const {
+    return *px_;
+  }
+
+  T* operator->(void) const {
+    return px_;
+  }
+
+  T& operator[](size_t i) const {
+    return px_[i];
+  }
+
+  uint32_t use_count(void) const {
+    return pn_.use_count();
   }
 
   bool unique(void) const {
-    return 1 == use_count();
+    return pn_.unique();
   }
 
-  pointer get(void) {
-    return nullptr != pc_ ? pc_->px : nullptr;
-  }
-
-  const_pointer get(void) const {
-    return nullptr != pc_ ? pc_->px : nullptr;
-  }
-
-  pointer operator->(void) {
-    return get();
-  }
-
-  const_pointer operator->(void) const {
-    return get();
-  }
-
-  reference operator*(void) {
-    return *get();
-  }
-
-  const_reference operator*(void) const {
-    return *get();
-  }
-
-  reference operator[](int i) {
-    return get()[i];
-  }
-
-  const_reference operator[](int i) const {
-    return get()[i];
-  }
-
-  bool operator==(pointer p) const {
-    return get() == p;
-  }
-
-  bool operator==(const SharedPtr& r) const {
-    return get() == r.get();
-  }
-
-  bool operator<(const SharedPtr& r) const {
-    return get() < r.get();
+  T* get(void) const {
+    return px_;
   }
 };
 
