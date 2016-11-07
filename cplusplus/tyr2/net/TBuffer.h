@@ -41,7 +41,7 @@ class Buffer {
   std::vector<char> buff_;
   size_t rindex_; // reader index
   size_t windex_; // writer index
-  static const char* kCRLF = "\r\n";
+  static const char* kCRLF;
 public:
   static const size_t kCheapPrepend = 8;
   static const size_t kInitialSize = 1024;
@@ -174,7 +174,7 @@ public:
   }
 
   std::string retrieve_all_to_string(void) {
-    return retrieve_as_string(readable_bytes());
+    return retrieve_to_string(readable_bytes());
   }
 
   tyr::basic::StringPiece to_string_piece(void) const {

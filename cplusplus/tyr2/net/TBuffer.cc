@@ -32,6 +32,8 @@ using namespace tyr::basic;
 
 namespace tyr { namespace net {
 
+const char* Buffer::kCRLF = "\r\n";
+
 ssize_t Buffer::read_fd(int fd, int& saved_errno) {
   char extra_buf[65535];
   const size_t writable = writable_bytes();

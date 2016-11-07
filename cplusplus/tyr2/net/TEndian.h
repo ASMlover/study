@@ -32,17 +32,10 @@
 #if defined(TYR_WINDOWS)
 # include <WinSock2.h>
 
-enum {
-  TYR_LITTLE_ENDIAN = 0x03020100UL,
-  TYR_BIG_ENDIAN = 0x00010203UL,
-  TYR_PDP_ENDIAN = 0x01000302UL,
-};
-static const union {
-  unsigned char bytes[4];
-  uint32_t value;
-} kByteOrder = {{0, 1, 2, 3}};
-
-# define TYR_BYTE_ORDER (kByteOrder.value)
+# define TYR_LITTLE_ENDIAN 0x41424344UL
+# define TYR_BIG_ENDIAN 0x44434241UL
+# define TYR_PDP_ENDIAN 0x42414443UL
+# define TYR_BYTE_ORDER ('ABCD')
 
 # if TYR_BYTE_ORDER == TYR_LITTLE_ENDIAN
 #   define htobe16(x) htons((x))
