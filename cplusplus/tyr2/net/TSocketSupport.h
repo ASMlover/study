@@ -30,11 +30,12 @@
 #include "../basic/TConfig.h"
 #include "../basic/TTypes.h"
 #if defined(TYR_WINDOWS)
-# include <BaseTsd.h>
+# include <WS2tcpip.h>
 # include <WinSock2.h>
 
   typedef SSIZE_T ssize_t;
   typedef WSABUF  KernIovec;
+  typedef int     socklen_t;
 #else
 # include <sys/socket.h>
 # include <sys/uio.h>
@@ -48,10 +49,10 @@ namespace SocketSupport {
   void kern_set_iovec(KernIovec* vec, char* buf, size_t len);
 
   int kern_socket(int family);
-  int kern_connect(int sockfd, const struct sockaddr* addr);
   int kern_bind(int sockfd, const struct sockaddr* addr);
   int kern_listen(int sockfd);
   int kern_accept(int sockfd, struct sockaddr_in6* addr);
+  int kern_connect(int sockfd, const struct sockaddr* addr);
   ssize_t kern_read(int sockfd, void* buf, size_t len);
   ssize_t kern_readv(int sockfd, const KernIovec* iov, int iovcnt);
   ssize_t kern_write(int sockfd, const void* buf, size_t len);
@@ -63,7 +64,7 @@ namespace SocketSupport {
   void kern_from_ip_port(const char* ip, uint16_t port, struct sockaddr_in* addr);
   void kern_from_ip_port(const char* ip, uint16_t port, struct sockaddr_in6* addr);
 
-  int kern_socket_error(int fd);
+  int kern_socket_error(int sockfd);
 
   const struct sockaddr* kern_sockaddr_cast(const struct sockaddr_in* addr);
   const struct sockaddr* kern_sockaddr_cast(const struct sockaddr_in6* addr);
@@ -71,9 +72,9 @@ namespace SocketSupport {
   const struct sockaddr_in* kern_sockaddr_in_cast(const struct sockaddr* addr);
   const struct sockaddr_in6* kern_sockaddr_in6_cast(const struct sockaddr* addr);
 
-  struct sockaddr_in6 kern_localaddr(int fd);
-  struct sockaddr_in6 kern_peekaddr(int fd);
-  bool kern_is_self_connect(int fd);
+  struct sockaddr_in6 kern_localaddr(int sockfd);
+  struct sockaddr_in6 kern_peekaddr(int sockfd);
+  bool kern_is_self_connect(int sockfd);
 }
 
 }}
