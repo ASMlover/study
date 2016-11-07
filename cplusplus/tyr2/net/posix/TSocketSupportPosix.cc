@@ -24,13 +24,31 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <fcntl.h>
+#include <unistd.h>
+#include "../unexposed/TSocketSupportUnexposed.h"
 #include "../TSocketSupport.h"
 
 namespace tyr { namespace net {
+namespace SocketSupport {
+  namespace unexposed {
+    void kern_set_nonblock(int sockfd) {
+      // non-block
+      int flags = fcntl(sockfd, F_GETFL, 0);
+      flags |= O_NONBLOCK;
+      fcntl(sockfd, F_SETFL, flags);
 
-void kern_set_iovec(KernIovec* vec, char* buf, size_t len) {
-  vec->iov_base = buf;
-  vec->iov_len = len;
+      // close-on-exec
+      flags = fcntl(sockfd, F_GETFD, 0);
+      flags |= FD_CLOEXEC;
+      fcntl(sockfd, F_SETFD, flags);
+    }
+  }
+
+  void kern_set_iovec(KernIovec* vec, char* buf, size_t len) {
+    vec->iov_base = buf;
+    vec->iov_len = len;
+  }
 }
 
 }}

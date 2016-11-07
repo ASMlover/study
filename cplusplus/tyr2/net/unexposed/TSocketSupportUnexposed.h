@@ -24,24 +24,17 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <WinSock2.h>
-#include "../unexposed/TSocketSupportUnexposed.h"
-#include "../TSocketSupport.h"
+#ifndef __TYR_NET_UNEXPOSED_SOCKETSUPPORTUNEXPOSED_HEADER_H__
+#define __TYR_NET_UNEXPOSED_SOCKETSUPPORTUNEXPOSED_HEADER_H__
 
 namespace tyr { namespace net {
 
 namespace SocketSupport {
   namespace unexposed {
-    void kern_set_nonblock(int sockfd) {
-      u_long val = 1;
-      ioctlsocket(sockfd, FIONBIO, &val);
-    }
-  }
-
-  void kern_set_iovec(KernIovec* vec, char* buf, size_t len) {
-    vec->buf = buf;
-    vec->len = len;
+    void kern_set_nonblock(int sockfd);
   }
 }
 
 }}
+
+#endif // __TYR_NET_UNEXPOSED_SOCKETSUPPORTUNEXPOSED_HEADER_H__
