@@ -49,6 +49,18 @@ namespace SocketSupport {
     vec->iov_base = buf;
     vec->iov_len = len;
   }
+
+  ssize_t kern_read(int sockfd, void* buf, size_t len) {
+    return read(sockfd, buf, len);
+  }
+
+  ssize_t kern_readv(int sockfd, const KernIovec* iov, int iovcnt) {
+    return readv(sockfd, iov, iovcnt);
+  }
+
+  ssize_t kern_write(int sockfd, const void* buf, size_t len) {
+    return write(sockfd, buf, len);
+  }
 }
 
 }}
