@@ -26,6 +26,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/socket.h>
+#include "../../basic/TLogging.h"
+#include "../TEndian.h"
 #include "../unexposed/TSocketSupportUnexposed.h"
 #include "../TSocketSupport.h"
 
@@ -60,6 +63,46 @@ namespace SocketSupport {
 
   ssize_t kern_write(int sockfd, const void* buf, size_t len) {
     return write(sockfd, buf, len);
+  }
+
+  int kern_shutdown(int sockfd) {
+    int rc = shutdown(sockfd, SHUT_WR);
+    if (rc < 0)
+      TL_SYSERR << "SocketSupport::kern_shutdown failed";
+    return 0;
+  }
+
+  int kern_close(int sockfd) {
+    int rc = close(sockfd);
+    if (rc < 0)
+      TL_SYSERR << "SocketSupport::kern_close failed";
+  }
+
+  void kern_to_ip(char* buf, size_t len, const struct sockaddr* addr) {
+    if (addr->sa_family == AF_INET) {
+      const struct sockaddr_in* addr4 = kern_sockaddr_in_cast(addr);
+      inet_ntop(AF_INET, &addr4->sin_addr, buf, static_cast<socklen_t>(len));
+    }
+    else if (addr->sa_family == AF_INET6) {
+      const struct sockaddr_in6* addr6 = kern_sockaddr_in6_cast(addr);
+      inet_ntop(AF_INET6, &addr6->sin6_addr, buf, static_cast<socklen_t>(len));
+    }
+  }
+
+  void kern_from_ip_port(const char* ip, uint16_t port, struct sockaddr_in* addr) {
+    addr->sin_family = AF_INET;
+    addr->sin_port = host_to_net16(port);
+    int rc = inet_pton(AF_INET, ip, &addr->sin_addr);
+    if (rc <= 0)
+      TL_SYSERR << "SocketSupport::kern_from_ip_port(ipv4) failed";
+  }
+
+  void kern_from_ip_port(const char* ip, uint16_t port, struct sockaddr_in6* addr) {
+    addr->sin6_family = AF_INET6;
+    addr->sin6_port = host_to_net16(port);
+    int rc = inet_pton(AF_INET6, ip, &addr->sin6_addr);
+    if (rc <= 0)
+      TL_SYSERR << "SocketSupport::kern_from_ip_port(ipv6) failed";
   }
 }
 
