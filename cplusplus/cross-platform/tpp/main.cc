@@ -28,24 +28,17 @@
 #include <iostream>
 #include <string>
 #include "co/co_unittest.h"
+#include "basic/tpp_memory.h"
 #include "tpp_types.h"
 #include "tpp_thread.h"
 #include "tpp_backtrace.h"
 #include "tpp_corotine.h"
 #include "tpp_intrusive_ptr.h"
 
-#define __TPP_LITTLE_ENDIAN (0x41424344UL)
-#define __TPP_BIG_ENDIAN    (0x44434241UL)
-#define __TPP_PDP_ENDIAN    (0x42414443UL)
-#define __TPP_BYTE_ORDER    ('ABCD')
-
-enum {
-  TPP_LITTLE_ENDIAN = 0x03020100ul,
-  TPP_BIG_ENDIAN = 0x00010203ul,
-  TPP_PDP_ENDIAN = 0x01000302ul,
-};
-static const union { unsigned char bytes[4]; uint32_t value; } tpp_byte_order = {{0, 1, 2, 3}};
-#define TPP_BYTE_ORDER (tpp_byte_order.value)
+#define TPP_LITTLE_ENDIAN (0x41424344UL)
+#define TPP_BIG_ENDIAN    (0x44434241UL)
+#define TPP_PDP_ENDIAN    (0x42414443UL)
+#define TPP_BYTE_ORDER    (unsigned int)('ABCD')
 
 void thread_closure(void* arg) {
   std::cout << "**************** thread_closure ************* " << arg << std::endl;
@@ -71,6 +64,17 @@ public:
   }
 };
 
+class IntegerEx {
+public:
+  IntegerEx(void) {
+    std::cout << "########## IntegerEx::IntegerEx ##########" << std::endl;
+  }
+
+  ~IntegerEx(void) {
+    std::cout << "########## IntegerEx::~IntegerEx ##########" << std::endl;
+  }
+};
+
 int main(int argc, char* argv[]) {
   TPP_UNUSED(argc);
   TPP_UNUSED(argv);
@@ -79,7 +83,6 @@ int main(int argc, char* argv[]) {
 
   {
     // byte order checking
-    // if (__TPP_BYTE_ORDER == __TPP_LITTLE_ENDIAN)
     if (TPP_BYTE_ORDER == TPP_LITTLE_ENDIAN)
       std::cout << "little endian" << std::endl;
     else if (TPP_BYTE_ORDER == TPP_BIG_ENDIAN)
@@ -104,6 +107,13 @@ int main(int argc, char* argv[]) {
   {
     // intrusive pointer sample
     tpp::IntrusivePtr<Integer> p(new Integer());
+  }
+  {
+    // shared pointer sample
+    tpp::basic::SharedPtr<IntegerEx> sp1 = tpp::basic::make_shared<IntegerEx>();
+    tpp::basic::WeakPtr<IntegerEx> wp1(sp1);
+    tpp::basic::SharedPtr<IntegerEx> sp2 = sp1;
+    std::cout << "use_count: " << wp1.lock().use_count() << std::endl;
   }
   co::test::run_all_unittests();
 
