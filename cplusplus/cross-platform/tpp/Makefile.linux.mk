@@ -28,7 +28,7 @@
 OUT	= tpp.test
 RM	= rm -fv
 CC	= g++
-CFLAGS	= -g -O2 -Wall -std=c++11
+CFLAGS	= -g -O2 -Wall -std=c++11 -Wno-multichar
 LDFLAGS	= -lpthread
 OBJS	= $(patsubst %.cc, %.o, $(wildcard *.cc ./posix/*.cc ./linux/*.cc ./co/*.cc ./co/test/*.cc))
 
