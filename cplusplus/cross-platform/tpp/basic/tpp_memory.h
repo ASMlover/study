@@ -64,7 +64,8 @@ public:
   template <typename Y>
   explicit SharedPtr(const WeakPtr<Y>& r)
     : pn_(r.pn_) {
-    px_ = r.px_;
+    if (!pn_.empty())
+      px_ = r.px_;
   }
 
   SharedPtr(const SharedPtr& r)
