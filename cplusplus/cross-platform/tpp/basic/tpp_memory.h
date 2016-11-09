@@ -37,11 +37,10 @@ class SharedPtr {
   T* px_{};
   SharedCount pn_;
 
-  template <typename Y> class WeakPtr;
+  template <typename Y> friend class WeakPtr;
   typedef SharedPtr<T> SelfType;
 public:
   SharedPtr(void) = default;
-  SharedPtr(std::nullptr_t) = default;
   ~SharedPtr(void) = default;
 
   template <typename Y>
@@ -60,6 +59,12 @@ public:
   SharedPtr(std::nullptr_t, D d)
     : px_(nullptr)
     , pn_(nullptr, d) {
+  }
+
+  template <typename Y>
+  explicit SharedPtr(const WeakPtr<Y>& r)
+    : pn_(r.pn_) {
+    px_ = r.px_;
   }
 
   SharedPtr(const SharedPtr& r)
