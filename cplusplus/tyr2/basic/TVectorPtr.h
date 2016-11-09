@@ -48,7 +48,7 @@ public:
   typedef std::reverse_iterator<iterator>           reverse_iterator;
   typedef std::reverse_iterator<const_iterator>     const_reverse_iterator;
 private:
-  vector_type* vec_{nullptr};
+  vector_type* vec_{};
 public:
   VectorPtr(void) = default;
   ~VectorPtr(void) = default;
@@ -293,6 +293,16 @@ public:
     vec_->emplace_back(std::forward<Args>(args)...);
   }
 };
+
+template <typename T, typename Alloc>
+inline bool operator==(const VectorPtr<T, Alloc>& a, const VectorPtr<T, Alloc>& b) {
+  return a.get() == b.get();
+}
+
+template <typename T, typename Alloc>
+inline bool operator!=(const VectorPtr<T, Alloc>& a, const VectorPtr<T, Alloc>& b) {
+  return *a.get() != *b.get();
+}
 
 }}
 
