@@ -36,6 +36,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include "../basic/TLogging.h"
+#include "TEndian.h"
 #include "unexposed/TSocketSupportUnexposed.h"
 #include "TSocketSupport.h"
 
@@ -84,15 +85,22 @@ namespace SocketSupport {
     return connect(sockfd, addr, static_cast<socklen_t>(sizeof(struct sockaddr_in6)));
   }
 
-// int kern_shutdown(int sockfd);
-// int kern_close(int sockfd);
-//
-// void kern_to_ip_port(char* buf, size_t len, const struct sockaddr* addr);
-// void kern_to_ip(char* buf, size_t len, const struct sockaddr* addr);
-// void kern_from_ip_port(const char* ip, uint16_t port, struct sockaddr_in* addr);
-// void kern_from_ip_port(const char* ip, uint16_t port, struct sockaddr_in6* addr);
-//
-// int kern_socket_error(int fd);
+  void kern_to_ip_port(char* buf, size_t len, const struct sockaddr* addr) {
+    kern_to_ip(buf, len, addr);
+    size_t end = strlen(buf);
+    const struct sockaddr_in* addr4 = kern_sockaddr_in_cast(addr);
+    uint16_t port = net_to_host16(addr4->sin_port);
+    snprintf(buf + end, len - end, ":%u", port);
+  }
+
+  int kern_socket_error(int sockfd) {
+    char optval;
+    socklen_t optlen = static_cast<socklen_t>(sizeof(optval));
+    if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0)
+      return errno;
+    else
+      return optval;
+  }
 
   const struct sockaddr* kern_sockaddr_cast(const struct sockaddr_in* addr) {
     return static_cast<const struct sockaddr*>(tyr::basic::implicit_cast<const void*>(addr));
@@ -114,8 +122,24 @@ namespace SocketSupport {
     return static_cast<const struct sockaddr_in6*>(tyr::basic::implicit_cast<const void*>(addr));
   }
 
-// struct sockaddr_in6 kern_localaddr(int fd);
-// struct sockaddr_in6 kern_peekaddr(int fd);
+  struct sockaddr_in6 kern_localaddr(int sockfd) {
+    struct sockaddr_in6 addr;
+    memset(&addr, 0, sizeof(addr));
+    socklen_t addrlen = static_cast<socklen_t>(sizeof(addr));
+    if (getsockname(sockfd, kern_sockaddr_cast(&addr), &addrlen) < 0)
+      TL_SYSERR << "SocketSupport::kern_localaddr failed";
+    return addr;
+  }
+
+  struct sockaddr_in6 kern_peekaddr(int sockfd) {
+    struct sockaddr_in6 addr;
+    memset(&addr, 0, sizeof(addr));
+    socklen_t addrlen = static_cast<socklen_t>(sizeof(addr));
+    if (getpeername(sockfd, kern_sockaddr_cast(&addr), &addrlen) < 0)
+      TL_SYSERR << "SocketSupport::kern_peekaddr failed";
+    return addr;
+  }
+
 // bool kern_is_self_connect(int fd);
 }
 
