@@ -119,6 +119,93 @@ class SharedCount {
   friend class WeakCount;
 public:
   SharedCount(void) = default;
+
+  template <typename Y>
+  explicit SharedCount(Y* p) {
+    try {
+      pc_ = new CountedDelete<Y>(p);
+    }
+    catch (...) {
+      if (nullptr != p)
+        delete p;
+    }
+  }
+
+  template <typename Y, typename D>
+  SharedCount(Y* p, D& d) {
+    try {
+      pc_ = new CountedDestructor<Y, D>(p, d);
+    }
+    catch (...) {
+      if (nullptr != p)
+        d(p);
+    }
+  }
+
+  ~SharedCount(void) {
+    if (nullptr != pc_)
+      pc_->del_ref();
+  }
+
+  SharedCount(const SharedCount& r)
+    : pc_(r.pc_) {
+    if (nullptr != pc_)
+      pc_->add_ref();
+  }
+
+  SharedCount(SharedCount&& r)
+    : pc_(r.pc_) {
+    r.pc_ = nullptr;
+  }
+
+  SharedCount(const WeakCount& r);
+
+  SharedCount& operator=(const SharedCount& r) {
+    CountedBase* tmp = r.pc_;
+    if (tmp != pc_) {
+      if (nullptr != tmp)
+        tmp->add_ref();
+      if (nullptr != pc_)
+        pc_->del_ref();
+      pc_ = tmp;
+    }
+    return *this;
+  }
+
+  SharedCount& operator=(SharedCount&& r) {
+    CountedBase* tmp = r.pc_;
+    if (tmp != pc_) {
+      if (nullptr != pc_)
+        pc_->del_ref();
+      pc_ = tmp;
+      r.pc_ = nullptr;
+    }
+    return *this;
+  }
+
+  void swap(SharedCount& r) {
+    std::swap(pc_, r.pc_);
+  }
+
+  uint32_t use_count(void) const {
+    return nullptr != pc_ ? pc_->use_count() : 0;
+  }
+
+  bool unique(void) const {
+    return 1 == use_count();
+  }
+
+  bool empty(void) const {
+    return nullptr == pc_;
+  }
+
+  bool operator==(const SharedCount& r) const {
+    return pc_ == r.pc_;
+  }
+
+  bool operator<(const SharedCount& r) const {
+    return std::less<CountedBase*>()(pc_, r.pc_);
+  }
 };
 
 }
