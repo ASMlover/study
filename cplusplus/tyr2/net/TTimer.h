@@ -24,29 +24,80 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_NET_TIMERID_HEADER_H__
-#define __TYR_NET_TIMERID_HEADER_H__
+#ifndef __TYR_NET_TIMER_HEADER_H__
+#define __TYR_NET_TIMER_HEADER_H__
 
-#include <stdint.h>
+#include <atomic>
+#include "../basic/TUnCopyable.h"
+#include "../basic/TTimestamp.h"
+#include "TCallbacks.h"
 
 namespace tyr { namespace net {
 
 class Timer;
 
-class TimerId {
+class TimerID {
   Timer* timer_{};
   int64_t sequence_{};
 
   friend class TimerQueue;
 public:
-  TimerId(void) = default;
+  TimerID(void) = default;
 
-  TimerId(Timer* timer, int64_t seq)
+  TimerID(Timer* timer, int64_t seq)
     : timer_(timer)
     , sequence_(seq) {
   }
 };
 
+class Timer : private tyr::basic::UnCopyable {
+  const TimerCallback closure_;
+  tyr::basic::Timestamp expiry_time_;
+  const double interval_;
+  const bool repeat_;
+  const int64_t sequence_;
+
+  static std::atomic<int64_t> s_num_created_;
+public:
+  Timer(const TimerCallback& fn, tyr::basic::Timestamp when, double interval)
+    : closure_(fn)
+    , expiry_time_(when)
+    , interval_(interval)
+    , repeat_(interval > 0)
+    sequence_(++s_num_created_) {
+  }
+
+  Timer(TimerCallback&& fn, tyr::basic::Timestamp when, double interval)
+    : closure_(std::move(fn))
+    , expiry_time_(when)
+    , interval_(interval)
+    , repeat_(interval > 0)
+    , sequence_(++s_num_created_) {
+  }
+
+  void run(void) const {
+    closure_();
+  }
+
+  tyr::basic::Timestamp expiry_time(void) const {
+    return expiry_time_;
+  }
+
+  bool repeat(void) const {
+    return repeat_;
+  }
+
+  int64_t sequence(void) const {
+    return sequence_;
+  }
+
+  void restart(tyr::basic::Timestamp now);
+
+  static int64_t num_created(void) {
+    return s_num_created_;
+  }
+};
+
 }}
 
-#endif // __TYR_NET_TIMERID_HEADER_H__
+#endif // __TYR_NET_TIMER_HEADER_H__
