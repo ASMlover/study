@@ -140,7 +140,23 @@ namespace SocketSupport {
     return addr;
   }
 
-// bool kern_is_self_connect(int fd);
+  bool kern_is_self_connect(int sockfd) {
+    struct sockaddr_in6 localaddr = kern_localaddr(sockfd);
+    struct sockaddr_in6 peeraddr = kern_peekaddr(sockfd);
+    if (localaddr.sin6_family == AF_INET) {
+      const struct sockaddr_in* laddr4 = reinterpret_cast<const struct sockaddr_in*>(&localaddr);
+      const struct sockaddr_in* paddr4 = reinterpret_cast<const struct sockaddr_in*>(&peeraddr);
+      return (laddr4->sin_port == paddr4->sin_port &&
+          laddr4->sin_addr.s_addr == paddr4->sin_addr.s_addr);
+    }
+    else if (localaddr.sin6_family == AF_INET6) {
+      return (localaddr.sin6_port == peeraddr.sin6_port &&
+          0 == memcmp(&localaddr.sin6_addr, &peeraddr.sin6_addr, sizeof(localaddr.sin6_addr)));
+    }
+    else {
+      return false;
+    }
+  }
 }
 
 }}
