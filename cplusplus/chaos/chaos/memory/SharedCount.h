@@ -142,6 +142,8 @@ public:
     }
   }
 
+  explicit SharedCount(const WeakCount& r);
+
   ~SharedCount(void) {
     if (nullptr != pc_)
       pc_->del_ref();
@@ -157,8 +159,6 @@ public:
     : pc_(r.pc_) {
     r.pc_ = nullptr;
   }
-
-  SharedCount(const WeakCount& r);
 
   SharedCount& operator=(const SharedCount& r) {
     CountedBase* tmp = r.pc_;
@@ -207,6 +207,97 @@ public:
     return std::less<CountedBase*>()(pc_, r.pc_);
   }
 };
+
+class WeakCount {
+  CountedBase* pc_{};
+
+  friend class SharedCount;
+public:
+  WeakCount(void) = default;
+
+  explicit WeakCount(const SharedCount& r)
+    : pc_(r.pc_) {
+    if (nullptr != pc_)
+      pc_->add_weak_ref();
+  }
+
+  ~WeakCount(void) {
+    if (nullptr != pc_)
+      pc_->del_weak_ref();
+  }
+
+  WeakCount(const WeakCount& r)
+    : pc_(r.pc_) {
+    if (nullptr != pc_)
+      pc_->add_weak_ref();
+  }
+
+  WeakCount(WeakCount&& r)
+    : pc_(r.pc_) {
+    r.pc_ = nullptr;
+  }
+
+  WeakCount& operator=(const WeakCount& r) {
+    CountedBase* tmp = r.pc_;
+    if (tmp != pc_) {
+      if (nullptr != tmp)
+        tmp->add_weak_ref();
+      if (nullptr != pc_)
+        pc_->del_weak_ref();
+      pc_ = tmp;
+    }
+    return *this;
+  }
+
+  WeakCount& operator=(WeakCount&& r) {
+    CountedBase* tmp = r.pc_;
+    if (tmp != pc_) {
+      if (nullptr != pc_)
+        pc_->del_weak_ref();
+      pc_ = tmp;
+      r.pc_ = nullptr;
+    }
+    return *this;
+  }
+
+  WeakCount& operator=(const SharedCount& r) {
+    CountedBase* tmp = r.pc_;
+    if (tmp != pc_) {
+      if (nullptr != tmp)
+        tmp->add_weak_ref();
+      if (nullptr != pc_)
+        pc_->del_weak_ref();
+      pc_ = tmp;
+    }
+    return *this;
+  }
+
+  void swap(WeakCount& r) {
+    std::swap(pc_, r.pc_);
+  }
+
+  uint32_t use_count(void) const {
+    return nullptr != pc_ ? pc_->use_count() : 0;
+  }
+
+  bool empty(void) const {
+    return nullptr == pc_;
+  }
+
+  bool operator==(const WeakCount& r) const {
+    return pc_ == r.pc_;
+  }
+
+  bool operator<(const WeakCount& r) const {
+    return std::less<CountedBase*>()(pc_, r.pc_);
+  }
+};
+
+SharedCount::SharedCount(const WeakCount& r)
+  : pc_(r.pc_) {
+  if (nullptr != pc_ && !pc_->add_ref_lock())
+    pc_ = nullptr;
+}
 
 }
 
