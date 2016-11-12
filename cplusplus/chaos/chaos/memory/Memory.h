@@ -190,6 +190,46 @@ public:
   }
 };
 
+template <typename T, typename U>
+inline bool operator==(const SharedPtr<T>& a, const SharedPtr<U>& b) {
+  return a.get() == b.get();
+}
+
+template <typename T, typename U>
+inline bool operator!=(const SharedPtr<T>& a, const SharedPtr<U>& b) {
+  return a.get() != b.get();
+}
+
+template <typename T, typename U>
+inline bool operator<(const SharedPtr<T>& a, const SharedPtr<U>& b) {
+  return a.less(b);
+}
+
+template <typename T>
+inline bool operator!=(const SharedPtr<T>& a, const SharedPtr<T>& b) {
+  return a.get() != b.get();
+}
+
+template <typename T>
+inline bool operator==(const SharedPtr<T>& p, std::nullptr_t) {
+  return p.get() == nullptr;
+}
+
+template <typename T>
+inline bool operator!=(const SharedPtr<T>& p, std::nullptr_t) {
+  return p.get() != nullptr;
+}
+
+template <typename T>
+inline bool operator==(std::nullptr_t, const SharedPtr<T>& p) {
+  return nullptr == p.get();
+}
+
+template <typename T>
+inline bool operator!=(std::nullptr_t, const SharedPtr<T>& p) {
+  return nullptr != p.get();
+}
+
 template <typename T, typename... Args>
 inline SharedPtr<T> make_shared(Args&&... args) {
   return SharedPtr<T>(new T(std::forward<Args>(args)...));
