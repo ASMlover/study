@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <string.h>
 #include "../Types.h"
 #include "Base64.h"
 
@@ -42,12 +43,11 @@ namespace Base64 {
     return s;
   }
 
-  std::string encode(const std::string& s) {
+  std::string encode(const char* s, size_t n) {
     std::string r;
 
-    const byte_t* b = reinterpret_cast<const byte_t*>(s.c_str());
-    int n = static_cast<int>(s.size());
-    for (int i = 0; i < n; i += 3) {
+    const byte_t* b = reinterpret_cast<const byte_t*>(s);
+    for (size_t i = 0; i < n; i += 3) {
       r.push_back(kEncode64[b[i] >> 2]);
 
       if (i + 1 < n) {
@@ -71,12 +71,11 @@ namespace Base64 {
     return r;
   }
 
-  std::string decode(const std::string& s) {
+  std::string decode(const char* s, size_t n) {
     std::string r;
 
-    const byte_t* b = reinterpret_cast<const byte_t*>(s.c_str());
-    int n = static_cast<int>(s.size());
-    for (int i = 0; i < n; i += 4) {
+    const byte_t* b = reinterpret_cast<const byte_t*>(s);
+    for (size_t i = 0; i < n; i += 4) {
       r.push_back((kDecode64[b[i]] << 2) | ((kDecode64[b[i + 1]] >> 4) & 0x03));
       if (b[i + 2] != '=')
         r.push_back((kDecode64[b[i + 1]] << 4) | ((kDecode64[b[i + 2]] >> 2) & 0x0f));
@@ -85,6 +84,22 @@ namespace Base64 {
     }
 
     return r;
+  }
+
+  std::string encode(const char* s) {
+    return encode(s, strlen(s));
+  }
+
+  std::string decode(const char* s) {
+    return decode(s, strlen(s));
+  }
+
+  std::string encode(const std::string& s) {
+    return encode(s.data(), s.size());
+  }
+
+  std::string decode(const std::string& s) {
+    return decode(s.data(), s.size());
   }
 }
 

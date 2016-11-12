@@ -32,6 +32,10 @@
 namespace chaos {
 
 namespace Base64 {
+  std::string encode(const char* s, size_t n);
+  std::string decode(const char* s, size_t n);
+  std::string encode(const char* s);
+  std::string decode(const char* s);
   std::string encode(const std::string& s);
   std::string decode(const std::string& s);
 }
