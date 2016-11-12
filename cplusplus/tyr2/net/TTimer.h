@@ -64,7 +64,7 @@ public:
     , expiry_time_(when)
     , interval_(interval)
     , repeat_(interval > 0)
-    sequence_(++s_num_created_) {
+    , sequence_(++s_num_created_) {
   }
 
   Timer(TimerCallback&& fn, tyr::basic::Timestamp when, double interval)
