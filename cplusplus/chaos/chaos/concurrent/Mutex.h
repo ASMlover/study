@@ -46,8 +46,8 @@ struct AdoptLock {};
 
 template <typename MutexType>
 class ScopedLock : private UnCopyable {
-  MutexType* m_{nullptr};
-  bool owned_{false};
+  MutexType* m_{};
+  bool owned_{};
 public:
   explicit ScopedLock(MutexType& m)
     : m_(&m)
