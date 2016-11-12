@@ -50,9 +50,12 @@ public:
 };
 
 class StringPiece {
-  const char* str_{nullptr};
-  size_t size_{0};
+  const char* str_{};
+  size_t size_{};
 public:
+  StringPiece(void) = default;
+  ~StringPiece(void) = default;
+
   StringPiece(const char* s)
     : str_(s)
     , size_(strlen(str_)) {

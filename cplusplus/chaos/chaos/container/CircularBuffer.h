@@ -47,8 +47,8 @@ public:
   typedef typename circualr_buffer_type::const_reference  const_reference;
   typedef typename circualr_buffer_type::difference_type  difference_type;
 private:
-  circualr_buffer_type* buf_{nullptr};
-  size_type pos_{0};
+  circualr_buffer_type* buf_{};
+  size_type pos_{};
 public:
   CircularBufferIterator(circualr_buffer_type* buf, size_type pos)
     : buf_(buf)
@@ -164,11 +164,11 @@ public:
   typedef std::reverse_iterator<iterator>                           reverse_iterator;
   typedef std::reverse_iterator<const_iterator>                     const_reverse_iterator;
 private:
-  pointer buff_{nullptr};
-  size_type capacity_{0};
+  pointer buff_{};
+  size_type capacity_{};
   size_type head_{1};
-  size_type tail_{0};
-  size_type size_{0};
+  size_type tail_{};
+  size_type size_{};
   allocator_type alloc_;
 private:
   size_type normalise(size_type i) const {
