@@ -33,8 +33,9 @@ namespace chaos {
 
 template <typename T>
 class IntrusivePtr {
+  T* px_{};
+
   typedef IntrusivePtr<T> SelfType;
-  T* px_{nullptr};
 public:
   IntrusivePtr(void) = default;
 
@@ -197,7 +198,7 @@ inline bool operator!=(std::nullptr_t, const IntrusivePtr<T>& p) {
 
 template <typename T>
 inline bool operator<(const IntrusivePtr<T>& a, const IntrusivePtr<T>& b) {
-  return std::less<T*>(a.get(), b.get());
+  return std::less<T*>()(a.get(), b.get());
 }
 
 }

@@ -75,7 +75,7 @@ void intrusive_ptr_del_ref(const IntrusiveRefCounter<DerivedT, CounterPolicyT>* 
 template <typename DerivedT, typename CounterPolicyT>
 class IntrusiveRefCounter {
   typedef typename CounterPolicyT::type counter_type;
-  mutable counter_type ref_counter_{0};
+  mutable counter_type ref_counter_{};
 public:
   IntrusiveRefCounter& operator=(const IntrusiveRefCounter&) {
     return *this;
