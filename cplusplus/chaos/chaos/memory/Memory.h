@@ -31,6 +31,92 @@
 
 namespace chaos {
 
+template <typename T>
+class ScopedPtr : private UnCopyable {
+  T* px_{};
+
+  typedef ScopedPtr<T> SelfType;
+public:
+  ScopedPtr(void) = default;
+
+  explicit ScopedPtr(T* p = nullptr)
+    : px_(p) {
+  }
+
+  ScopedPtr(std::nullptr_t)
+    : px_(nullptr) {
+  }
+
+  ~ScopedPtr(void) {
+    if (nullptr != px_)
+      delete px_;
+  }
+
+  ScopedPtr(ScopedPtr&& r)
+    : px_(r.px_) {
+    r.px_ = nullptr;
+  }
+
+  ScopedPtr& operator=(std::nullptr_t) {
+    reset();
+    return *this;
+  }
+
+  ScopedPtr& operator=(ScopedPtr&& r) {
+    if (this != &r) {
+      if (nullptr != px_)
+        delete px_;
+      px_ = r.px_;
+      r.px_ = nullptr;
+    }
+    return *this;
+  }
+
+  T& operator*(void) const {
+    return *px_;
+  }
+
+  T* operator->(void) const {
+    return px_;
+  }
+
+  T* get(void) const {
+    return px_;
+  }
+
+  explicit operator bool(void) const {
+    return nullptr != px_;
+  }
+
+  void reset(T* p = nullptr) {
+    SelfType(p).swap(*this);
+  }
+
+  void swap(ScopedPtr& r) {
+    std::swap(px_, r.px_);
+  }
+};
+
+template <typename T>
+inline bool operator==(const ScopedPtr<T>& p, std::nullptr_t) {
+  return p.get() == nullptr;
+}
+
+template <typename T>
+inline bool operator!=(const ScopedPtr<T>& p, std::nullptr_t) {
+  return p.get() != nullptr;
+}
+
+template <typename T>
+inline bool operator==(std::nullptr_t, const ScopedPtr<T>& p) {
+  return nullptr == p.get();
+}
+
+template <typename T>
+inline bool operator!=(std::nullptr_t, const ScopedPtr<T>& p) {
+  return nullptr != p.get();
+}
+
 template <typename T> class WeakPtr;
 
 template <typename T>
