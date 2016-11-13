@@ -63,7 +63,7 @@ public:
   }
 
   ScopedPtr& operator=(ScopedPtr&& r) {
-    if (this != &r) {
+    if (&r != this) {
       if (nullptr != px_)
         delete px_;
       px_ = r.px_;
@@ -114,6 +114,88 @@ inline bool operator==(std::nullptr_t, const ScopedPtr<T>& p) {
 
 template <typename T>
 inline bool operator!=(std::nullptr_t, const ScopedPtr<T>& p) {
+  return nullptr != p.get();
+}
+
+template <typename T>
+class ScopedArray : private UnCopyable {
+  T* px_{};
+
+  typedef ScopedArray<T> SelfType;
+public:
+  ScopedArray(void) = default;
+
+  ScopedArray(std::nullptr_t)
+    : px_(nullptr) {
+  }
+
+  explicit ScopedArray(T* p = nullptr)
+    : px_(p) {
+  }
+
+  ~ScopedArray(void) {
+    if (nullptr != px_)
+      delete [] px_;
+  }
+
+  ScopedArray(ScopedArray&& r)
+    : px_(r.px_) {
+    r.px_ = nullptr;
+  }
+
+  ScopedArray& operator=(std::nullptr_t) {
+    reset();
+    return *this;
+  }
+
+  ScopedArray& operator=(ScopedArray&& r) {
+    if (&r != this) {
+      if (nullptr != px_)
+        delete [] px_;
+      px_ = r.px_;
+      r.px_ = nullptr;
+    }
+    return *this;
+  }
+
+  T& operator[](std::ptrdiff_t i) const {
+    return px_[i];
+  }
+
+  T* get(void) const {
+    return px_;
+  }
+
+  explicit operator bool(void) const {
+    return nullptr != px_;
+  }
+
+  void reset(T* p = nullptr) {
+    SelfType(p).swap(*this)
+  }
+
+  void swap(ScopedArray& r) {
+    std::swap(px_, r.px_);
+  }
+};
+
+template <typename T>
+inline bool operator==(const ScopedArray<T>& p, std::nullptr_t) {
+  return p.get() == nullptr;
+}
+
+template <typename T>
+inline bool operator!=(const ScopedArray<T>& p, std::nullptr_t) {
+  return p.get() != nullptr;
+}
+
+template <typename T>
+inline bool operator==(std::nullptr_t, const ScopedArray<T>& p) {
+  return nullptr == p.get();
+}
+
+template <typename T>
+inline bool operator!=(std::nullptr_t, const ScopedArray<T>& p) {
   return nullptr != p.get();
 }
 
