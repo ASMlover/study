@@ -124,7 +124,7 @@ def safe_rmdir(dirpath):
 def safe_rm(path):
     if os.path.exists(path):
         if os.path.isdir(path):
-            safe_mkdir(path)
+            safe_rmdir(path)
         else:
             os.remove(path)
 
