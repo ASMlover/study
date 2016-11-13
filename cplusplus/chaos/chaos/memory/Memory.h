@@ -235,6 +235,115 @@ inline SharedPtr<T> make_shared(Args&&... args) {
   return SharedPtr<T>(new T(std::forward<Args>(args)...));
 }
 
+template <typename T>
+class WeakPtr {
+  T* px_{};
+  WeakCount pn_{};
+
+  template <typename Y> friend class SharedPtr;
+  typedef WeakPtr<T> SelfType;
+public:
+  WeakPtr(void) = default;
+
+  template <typename Y>
+  explicit WeakPtr(const SharedPtr<Y>& r)
+    : px_(r.px_)
+    , pn_(r.pn_) {
+  }
+
+  WeakPtr(const WeakPtr& r)
+    : px_(r.px_)
+    , pn_(r.pn_) {
+  }
+
+  template <typename Y>
+  WeakPtr(const WeakPtr<Y>& r)
+    : px_(r.lock().get())
+    , pn_(r.pn_) {
+  }
+
+  WeakPtr(WeakPtr&& r)
+    : px_(r.px_)
+    , pn_(std::move(r.pn_)) {
+    r.px_ = nullptr;
+  }
+
+  template <typename Y>
+  WeakPtr(WeakPtr<Y>&& r)
+    : px_(r.px_)
+    , pn_(std::move(r.pn_)) {
+    r.px_ = nullptr;
+  }
+
+  WeakPtr& operator=(const WeakPtr& r) {
+    px_ = r.px_;
+    pn_ = r.pn_;
+    return *this;
+  }
+
+  template <typename Y>
+  WeakPtr& operator=(const WeakPtr<Y>& r) {
+    px_ = r.lock().get();
+    pn_ = r.pn_;
+    return *this;
+  }
+
+  WeakPtr& operator=(WeakPtr&& r) {
+    SelfType(static_cast<WeakPtr&&>(r)).swap(*this);
+    return *this;
+  }
+
+  template <typename Y>
+  WeakPtr& operator=(WeakPtr<Y>&& r) {
+    SelfType(static_cast<WeakPtr<Y>&&>(r)).swap(*this);
+    return *this;
+  }
+
+  template <typename Y>
+  WeakPtr& operator=(const SharedPtr<Y>& r) {
+    px_ = r.px_;
+    pn_ = r.pn_;
+    return *this;
+  }
+
+  SharedPtr<T> lock(void) const {
+    return SharedPtr<T>(*this);
+  }
+
+  void reset(void) {
+    SelfType().swap(*this);
+    return *this;
+  }
+
+  void swap(WeakPtr& r) {
+    std::swap(px_, r.px_);
+    pn_.swap(r.pn_);
+  }
+
+  uint32_t use_count(void) const {
+    return pn_.use_count();
+  }
+
+  bool expired(void) const {
+    return 0 == use_count();
+  }
+
+  template <typename Y>
+  bool less(const WeakPtr<Y>& r) const {
+    return pn_ < r.pn_;
+  }
+
+  template <typename Y>
+  bool less(const SharedPtr<Y>& r) const {
+    return pn_ < r.pn_;
+  }
+};
+
+template <typename T, typename U>
+inline bool operator<(const WeakPtr<T>& a, const WeakPtr<U>& b) {
+  return a.less(b);
+}
+
 }
 
 #endif // CHAOS_MEMORY_MEMORY_H
