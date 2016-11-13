@@ -27,6 +27,7 @@
 #ifndef CHAOS_CONCURRENT_MUTEX_H
 #define CHAOS_CONCURRENT_MUTEX_H
 
+#include <atomic>
 #include <utility>
 #include "../Platform.h"
 #include "../UnCopyable.h"
@@ -140,6 +141,30 @@ public:
 
   MutexType* get_mutex(void) const {
     return m_;
+  }
+};
+
+class Mutex : private UnCopyable {
+};
+
+class FastMutex : private UnCopyable {
+  volatile std::atomic_flag m_;
+public:
+  FastMutex(void) {
+    m_.clear();
+  }
+
+  void lock(void) {
+    while (std::atomic_flag_test_and_set_explicit(&m_, std::memory_order_acquire)) {
+    }
+  }
+
+  bool try_lock(void) {
+    return !std::atomic_flag_test_and_set_explicit(&m_, std::memory_order_acquire);
+  }
+
+  void unlock(void) {
+    std::atomic_flag_clear_explicit(&m_, std::memory_order_release);
   }
 };
 
