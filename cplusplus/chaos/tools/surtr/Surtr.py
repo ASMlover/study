@@ -30,6 +30,7 @@
 from __future__ import print_function
 
 import argparse
+import json
 import os
 import platform
 import shutil
@@ -67,6 +68,33 @@ def get_options():
     args = parser.parse_args()
     return args.option
 
+def get_conf(tool_dir='./', platform='linux'):
+    ptname = 'posix'
+    if platform == 'windows':
+        ptname = 'windows'
+
+    surtr_dir = '{tool_dir}/surtr/templates'.format(tool_dir=tool_dir)
+
+    # get building Makefile template
+    fname = '{surtr_dir}/build.{pt}.mk'.format(surtr_dir=surtr_dir, pt=ptname)
+    with do_open(fname, 'r', encoding='utf-8') as fp:
+        build_mk = fp.read()
+
+    # get object generation template
+    fname = '{surtr_dir}/obj.{pt}.mk'.format(surtr_dir=surtr_dir, pt=ptname)
+    with do_open(fname, 'r', encoding='utf-8') as fp:
+        obj_mk = fp.read()
+
+    # get default build configure
+    try:
+        with do_open('surtr.conf', 'r', encoding='utf-8') as fp:
+            build_conf = json.load(fp)
+    except Exception:
+        fname = '{surtr_dir}/default.{pt}.conf'.format(surtr_dir=surtr_dir, pt=ptname)
+        with do_open(fname, 'r', encoding='utf-8') as fp:
+            build_conf = json.load(fp)
+    return build_mk, obj_mk, build_conf
+
 def get_sources_for_dir(dirpath, recursive=True):
     cur_sources = os.listdir(dirpath)
     all_sources = []
@@ -85,8 +113,33 @@ def get_all_sources(dirs=(('./', True),)):
         all_sources.extend(get_sources_for_dir(path, recursive))
     return all_sources
 
+def gen_outobj(source_fname, posix=True):
+    s = source_fname.strip('./').strip('../').replace('/', '.')
+    objname = os.path.splitext(s)[0]
+    if posix:
+        outobj_format = '$(OUTDIR)/$(OUTOBJ)/{objname}.o'
+    else:
+        outobj_format = '$(OUTDIR)\$(OUTOBJ)\{objname}.obj'
+    return outobj_format.format(objname=objname)
+
+def gen_makefile(platform='linux', target='a.out', outdir='build', sources=[]):
+    module = sys.modules['__main__']
+
+    objs_list = []
+    makeobjs_list = []
+    for s in sources:
+        objstr = gen_outobj(s, platform != 'windows')
+        objs_list.append(objstr)
+        makeobjs_list.append()
+
 def main():
-    pass
+    # Just for testing
+    bmk, omk, bconf = get_conf('../')
+    print (bmk)
+    print ('********************************************************************')
+    print (omk)
+    print ('********************************************************************')
+    print (bconf)
 
 if __name__ == '__main__':
     main()
