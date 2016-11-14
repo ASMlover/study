@@ -33,7 +33,7 @@ RM	= del /s /f /q
 CC	= cl -c -nologo
 MT	= mt -nologo
 LINK	= link -nologo
-CFLAGS	= -GS -Zi -Fd"$(OUTDIR)\\$(BINDIR)\\vc.pdb" {cflags} {includes}
+CFLAGS	= -GS -Zi -Fd"$(OUTDIR)\\$(BINDIR)\\vc.pdb" -EHsc {cflags} {includes}
 LDFLAGS	= -INCREMENTAL -DEBUG -PDB:$(TARGET).pdb -manifest -manifestfile:$(TARGET).manifest -manifestuac:no {ldflags}
 OBJS	= {objs}
 
