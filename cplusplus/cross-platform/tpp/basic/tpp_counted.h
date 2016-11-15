@@ -80,10 +80,10 @@ public:
 };
 
 template <typename T>
-class CountedDelte : public CountedBase {
+class CountedDelete : public CountedBase {
   T* px_{nullptr};
 public:
-  explicit CountedDelte(T* p)
+  explicit CountedDelete(T* p)
     : px_(p) {
   }
 
@@ -125,7 +125,7 @@ public:
   template <typename Y>
   explicit SharedCount(Y* p) {
     try {
-      pi_ = new CountedDelte<Y>(p);
+      pi_ = new CountedDelete<Y>(p);
     }
     catch (...) {
       if (nullptr != p)

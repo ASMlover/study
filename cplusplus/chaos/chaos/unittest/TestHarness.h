@@ -110,7 +110,7 @@ public:\
     t._run();\
   }\
 };\
-static bool _ChaosTestHarness_##Name_ignored =\
+static bool _ChaosTestHarness_ignored_##Name =\
   chaos::register_testharness(#Base, #Name, &_ChaosTestHarness_##Name::_run_harness);\
 void _ChaosTestHarness_##Name::_run(void)
 

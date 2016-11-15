@@ -52,6 +52,10 @@
        git config --global color.status auto
     2) 把颜色全部都打开:
        git config --global color.ui true
+    3) `Linux`上使用vimdiff作为diff工具
+       git config --global diff.tool 'vimdiff'
+       git config --global difftool.prompt false
+       使用git difftool可以使用vimdiff来diff
 > ### **3.2 编辑器配置**
     git config --global core.editor 'vim'
 > ### **3.3 配置用户信息** ###
@@ -68,7 +72,15 @@
     [pretty]
       graph = %Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset
     [alias]
-      lg = log --pretty=graph --graph --abbrev-commit --
+      ll = log --pretty=graph --graph --abbrev-commit --
+      st = status
+      co = clone
+      ci = commit
+      df = difftool
+    [diff]
+      tool = vimdiff
+    [difftoll]
+      prompt = false
 
 
 ## **4. 好玩儿**
