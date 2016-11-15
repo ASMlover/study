@@ -31,12 +31,37 @@
 
 namespace tpp { namespace basic {
 
+template <typename T>
+inline void checked_delete(T* p) {
+  static_assert(sizeof(T), "type must validate");
+  delete p;
+}
+
+template <typename T>
+inline void checked_array_delete(T* p) {
+  static_assert(sizeof(T), "type must validate");
+  delete [] p;
+}
+
+template <typename T> struct CheckedDeleter {
+  void operator()(T* p) {
+    checked_delete(p);
+  }
+};
+
+template <typename T> struct CheckedArrayDeleter {
+  void operator()(T* p) {
+    checked_array_delete(p);
+  }
+};
+
 template <typename T> class WeakPtr;
 template <typename T>
 class SharedPtr {
   T* px_{};
   SharedCount pn_;
 
+  template <typename Y> friend class SharedPtr;
   template <typename Y> friend class WeakPtr;
   typedef SharedPtr<T> SelfType;
 public:
@@ -239,10 +264,12 @@ class WeakPtr {
   T* px_{};
   WeakCount pn_;
 
+  template <typename Y> friend class WeakPtr;
   template <typename Y> friend class SharedPtr;
   typedef WeakPtr<T> SelfType;
 public:
   WeakPtr(void) = default;
+  ~WeakPtr(void) = default;
 
   template <typename Y>
   WeakPtr(const SharedPtr<Y>& r)
@@ -341,6 +368,157 @@ public:
 template <typename T, typename U>
 inline bool operator<(const WeakPtr<T>& a, const WeakPtr<U>& b) {
   return a.less(b);
+}
+
+template <typename T>
+class SharedArray {
+  T* px_{};
+  SharedCount pn_;
+
+  template <typename Y> friend class SharedArray;
+  typedef SharedArray<T> SelfType;
+public:
+  SharedArray(void) = default;
+  ~SharedArray(void) = default;
+
+  SharedArray(std::nullptr_t)
+    : px_(nullptr)
+    , pn_() {
+  }
+
+  template <typename Y>
+  SharedArray(Y* p)
+    : px_(p)
+    , pn_(p, CheckedArrayDeleter<Y>()) {
+  }
+
+  template <typename Y, typename D>
+  SharedArray(Y* p, D d)
+    : px_(p)
+    , pn_(p, d) {
+  }
+
+  SharedArray(const SharedArray& r)
+    : px_(r.px_)
+    , pn_(r.pn_) {
+  }
+
+  template <typename Y>
+  SharedArray(const SharedArray<Y>& r)
+    : px_(r.px_)
+    , pn_(r.pn_) {
+  }
+
+  SharedArray(SharedArray&& r)
+    : px_(r.px_)
+    , pn_() {
+    pn_.swap(r.pn_);
+    r.px_ = nullptr;
+  }
+
+  template <typename Y>
+  SharedArray(SharedArray<Y>&& r)
+    : px_(r.px_)
+    , pn_() {
+    pn_.swap(r.pn_);
+    r.px_ = nullptr;
+  }
+
+  SharedArray& operator=(const SharedArray& r) {
+    SelfType(r).swap(*this);
+    return *this;
+  }
+
+  template <typename Y>
+  SharedArray& operator=(const SharedArray<Y>& r) {
+    SelfType(r).swap(*this);
+    return *this;
+  }
+
+  SharedArray& operator=(SharedArray&& r) {
+    SelfType(static_cast<SharedArray&&>(r)).swap(*this);
+    return *this;
+  }
+
+  template <typename Y>
+  SharedArray& operator=(SharedArray<Y>&& r) {
+    SelfType(static_cast<SharedArray<Y>&&>(r)).swap(*this);
+    return *this;
+  }
+
+  void reset(void) {
+    SelfType().swap(*this);
+  }
+
+  template <typename Y>
+  void reset(Y* p) {
+    SelfType(p).swap(*this);
+  }
+
+  template <typename Y, typename D>
+  void reset(Y* p, D d) {
+    SelfType(p, d).swap(*this);
+  }
+
+  template <typename Y>
+  void reset(const SharedArray<Y>& r) {
+    SelfType(r).swap(*this);
+  }
+
+  void swap(SharedArray& r) {
+    std::swap(px_, r.px_);
+    pn_.swap(r.pn_);
+  }
+
+  T& operator[](size_t i) const {
+    return px_[i];
+  }
+
+  T* get(void) const {
+    return px_;
+  }
+
+  bool unique(void) const {
+    return pn_.unique();
+  }
+
+  uint32_t use_count(void) const {
+    return pn_.use_count();
+  }
+
+  explicit operator bool(void) const {
+    return nullptr != px_;
+  }
+};
+
+template <typename T, typename U>
+inline bool operator==(const SharedArray<T>& a, const SharedArray<U>& b) {
+  return a.get() == b.get();
+}
+
+template <typename T, typename U>
+inline bool operator!=(const SharedArray<T>& a, const SharedArray<U>& b) {
+  return a.get() != b.get();
+}
+
+template <typename T>
+inline bool operator==(const SharedArray<T>& p, std::nullptr_t) {
+  return p.get() == nullptr;
+}
+
+template <typename T>
+inline bool operator!=(const SharedArray<T>& p, std::nullptr_t) {
+  return p.get() != nullptr;
+}
+
+template <typename T>
+inline bool operator==(std::nullptr_t, const SharedArray<T>& p) {
+  return nullptr == p.get();
+}
+
+template <typename T>
+inline bool operator!=(std::nullptr_t, const SharedArray<T>& p) {
+  return nullptr != p.get();
 }
 
 }}

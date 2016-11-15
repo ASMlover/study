@@ -114,6 +114,8 @@ int main(int argc, char* argv[]) {
     tpp::basic::WeakPtr<IntegerEx> wp1(sp1);
     tpp::basic::SharedPtr<IntegerEx> sp2 = sp1;
     std::cout << "use_count: " << wp1.lock().use_count() << std::endl;
+
+    tpp::basic::SharedArray<IntegerEx> sa1(new IntegerEx[3]);
   }
   co::test::run_all_unittests();
 
