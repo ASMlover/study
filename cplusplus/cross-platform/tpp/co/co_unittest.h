@@ -110,7 +110,7 @@ public:\
     t._run();\
   }\
 };\
-bool _CoUnitTest_##name_ignored =\
+bool _CoUnitTest_ignored_##name =\
   co::test::register_unittest(#base, #name, &_CoUnitTest_##name::_run_unit);\
 void _CoUnitTest_##name::_run(void)
 
