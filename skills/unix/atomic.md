@@ -35,6 +35,14 @@
             { *ptr op = value; return *ptr; }
             { *ptr = ~*ptr & value; return *ptr; }  // nand
         这两组函数的区别是, 第一组返回更新前的值, 第二组返回更新后的值;
+        bool __sync_bool_compare_and_swap(type* ptr, type oldval, type newval, ...)
+            { return (*ptr == oldval) ? (*ptr = newval, true) : false; }
+        type __sync_val_compare_and_swap(type* ptr, type oldval, type newval, ...)
+            { return (*ptr == oldval) ? (*ptr = newval, oldval) : *ptr; }
+        type __sync_lock_test_and_set(type* ptr, type value, ...)
+            { type oldval = *ptr; *ptr = value; return oldval; }
+        void __sync_lock_release(type* ptr, ...)
+            { *ptr = 0; }
 > ### **2.3 应用** ###
         其应用也很简单, 和以前的atomic_*系列的函数类似, 但是对于那些使用了
     atomic.h的老代码, 可以使用宏定义的方式, 一直到高内核版本的Linux系统上:
