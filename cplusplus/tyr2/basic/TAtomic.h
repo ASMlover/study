@@ -27,62 +27,15 @@
 #ifndef __TYR_BASIC_ATOMIC_HEADER_H__
 #define __TYR_BASIC_ATOMIC_HEADER_H__
 
-#include "TTypes.h"
+#include "TConfig.h"
+
+#if defined(TYR_WINDOWS)
+# include "windows/TAtomicWindows.h"
+#else
+# include "posix/TAtomicPosix.h"
+#endif
 
 namespace tyr { namespace basic {
-
-template <typename T>
-class AtomicInt : private UnCopyable {
-  volatile T value_{};
-
-  static_assert(sizeof(T) == 1
-      || sizeof(T) == 2
-      || sizeof(T) == 4
-      || sizeof(T) == 8
-      , "AtomicInt size must be `1`, `2`, `4`, `8`");
-public:
-  AtomicInt(void) = default;
-
-  T get(void) {
-    return __sync_val_compare_and_swap(&value_, 0, 0);
-  }
-
-  T set(T desired) {
-    return __sync_lock_test_and_set(&value_, desired);
-  }
-
-  T fetch_add(T arg) {
-    return __sync_fetch_and_add(&value_, arg);
-  }
-
-  T fetch_sub(T arg) {
-    return __sync_fetch_and_sub(&value_, arg);
-  }
-
-  T operator+=(T arg) {
-    return fetch_add(arg) + arg;
-  }
-
-  T operator-=(T arg) {
-    return fetch_sub(arg) - arg;
-  }
-
-  T operator++(void) {
-    return fetch_add(1) + 1;
-  }
-
-  T operator--(void) {
-    return fetch_sub(1) - 1;
-  }
-
-  T operator++(int) {
-    return fetch_add(1);
-  }
-
-  T operator--(int) {
-    return fetch_sub(1);
-  }
-};
 
 typedef AtomicInt<int32_t> AtomicI32;
 typedef AtomicInt<int64_t> AtomicI64;
