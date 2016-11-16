@@ -28,6 +28,7 @@
 #define __TYR_BASIC_WINDOWS_ATOMICWINDOWS_HEADER_H__
 
 #include "../TTypes.h"
+#include <Windows.h>
 
 namespace tyr { namespace basic {
 
@@ -44,19 +45,19 @@ public:
   AtomicInt(void) = default;
 
   T get(void) {
-    return InterlockedCompareExchange(&value_, 0, 0);
+    return InterlockedCompareExchange(reinterpret_cast<LONG*>(&value_), 0, 0);
   }
 
   T set(T desired) {
-    return InterlockedExchange(&value_, desired);
+    return InterlockedExchange(reinterpret_cast<LONG*>(&value_), desired);
   }
 
   T fetch_add(T arg) {
-    return InterlockedExchangeAdd(&value_, arg);
+    return InterlockedExchangeAdd(reinterpret_cast<LONG*>(&value_), arg);
   }
 
   T fetch_sub(T arg) {
-    return InterlockedExchangeAdd(&value_, -arg);
+    return InterlockedExchangeAdd(reinterpret_cast<LONG*>(&value_), -arg);
   }
 
   T operator+=(T arg) {
@@ -68,11 +69,11 @@ public:
   }
 
   T operator++(void) {
-    return InterlockedIncrement(&value_);
+    return InterlockedIncrement(reinterpret_cast<LONG*>(&value_));
   }
 
   T operator--(void) {
-    return InterlockedDecrement(&value_);
+    return InterlockedDecrement(reinterpret_cast<LONG*>(&value_));
   }
 
   T operator++(int) {
