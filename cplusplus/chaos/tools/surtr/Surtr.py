@@ -30,6 +30,7 @@
 from __future__ import print_function
 
 import argparse
+import copy
 import json
 import os
 import platform
@@ -71,6 +72,16 @@ def get_options():
     args = parser.parse_args()
     return args.option, args.surtr_path
 
+def merge_conf_with_default(custom_conf, default_conf):
+    conf = copy.deepcopy(custom_conf)
+    for key, val in default_conf.items():
+        if key not in conf:
+            conf[key] = val
+        else:
+            if isinstance(val, dict):
+                conf[key] = merge_conf_with_default(conf[key], val)
+    return conf
+
 def get_conf(tool_path='./', platform='linux'):
     ptname = 'posix'
     if platform == 'windows':
@@ -89,13 +100,18 @@ def get_conf(tool_path='./', platform='linux'):
         obj_mk = fp.read()
 
     # get default build configure
+    build_conf = {}
+    fname = '{surtr_path}/default.{pt}.conf'.format(surtr_path=surtr_path, pt=ptname)
+    with do_open(fname, 'r', encoding='utf-8') as fp:
+        default_build_conf = json.load(fp)
+
     try:
         with do_open('surtr.conf', 'r', encoding='utf-8') as fp:
             build_conf = json.load(fp)
-    except Exception:
-        fname = '{surtr_path}/default.{pt}.conf'.format(surtr_path=surtr_path, pt=ptname)
-        with do_open(fname, 'r', encoding='utf-8') as fp:
-            build_conf = json.load(fp)
+
+        build_conf = merge_conf_with_default(build_conf, default_build_conf)
+    except Exception as e:
+        build_conf = default_build_conf
     return build_mk, obj_mk, build_conf
 
 def get_sources_for_dir(dirpath, valid_exts, recursive=True, exclusive=[]):
@@ -122,9 +138,9 @@ def gen_outobj(source_fname, posix=True):
     s = source_fname.strip('./').strip('../').replace('/', '.')
     objname = os.path.splitext(s)[0]
     if posix:
-        outobj_format = '$(OUTDIR)/$(OUTOBJ)/{objname}.o '
+        outobj_format = '$(OUTDIR)/$(OBJDIR)/{objname}.o '
     else:
-        outobj_format = '$(OUTDIR)\$(OUTOBJ)\{objname}.obj '
+        outobj_format = '$(OUTDIR)\$(OBJDIR)\{objname}.obj '
     return outobj_format.format(objname=objname)
 
 def gen_buildobj(conf, out, src):
@@ -197,10 +213,14 @@ def gen_outdir(outdir=OUTDIR):
     safe_mkdir('{outdir}/bin'.format(outdir=outdir))
     safe_mkdir('{outdir}/obj'.format(outdir=outdir))
 
+def do_remove():
+    safe_rm(OUTDIR)
+    safe_rm('Makefile')
+
 def main():
     option, surtr_path = get_options()
     if option == 'remove':
-        safe_rm(OUTDIR)
+        do_remove()
         return
 
     if surtr_path is None:
@@ -223,7 +243,7 @@ def main():
     }
     flag = make_flags.get(option)
     if flag is None:
-        safe_rm(OUTDIR)
+        do_remove()
     else:
         subprocess.check_call('{make} {flag}'.format(make=make, flag=flag), shell=True)
 
