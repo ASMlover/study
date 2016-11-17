@@ -1,4 +1,4 @@
-# **Surtr**
+# **Surtr: Tiny C++ Building Tool**
 
-## **Summary**
-  C/C++ building tool named `Surtr`
+## **What is Surtr**
+  * Surtr is a tiny C/C++ building tool.
