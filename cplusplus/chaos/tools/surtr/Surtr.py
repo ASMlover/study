@@ -141,7 +141,7 @@ def gen_outobj(source_fname, posix=True):
     if posix:
         outobj_format = '$(OUTDIR)/$(OBJDIR)/{objname}.o '
     else:
-        outobj_format = '$(OUTDIR)\$(OBJDIR)\{objname}.obj '
+        outobj_format = r'$(OUTDIR)\$(OBJDIR)\{objname}.obj '
     return outobj_format.format(objname=objname)
 
 def gen_buildobj(conf, out, src):
