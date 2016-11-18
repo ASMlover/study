@@ -35,7 +35,6 @@ import json
 import os
 import platform
 import shutil
-import six
 import subprocess
 import sys
 
@@ -45,8 +44,14 @@ if sys.version_info.major < 3:
     import codecs
     def do_open(fname, mode='rb', encoding=None):
         return codecs.open(fname, mode, encoding)
+
+    def do_iteritems(d, **kwargs):
+        return d.iteritems(**kwargs)
 else:
     do_open = open
+
+    def do_iteritems(d, **kwargs):
+        return iter(d.items(**kwargs))
 
 def get_platform():
     return platform.system().lower()
@@ -75,7 +80,7 @@ def get_options():
 
 def merge_conf_with_default(custom_conf, default_conf):
     conf = copy.deepcopy(custom_conf)
-    for key, val in six.iteritems(default_conf):
+    for key, val in do_iteritems(default_conf):
         if key not in conf:
             conf[key] = val
         else:
