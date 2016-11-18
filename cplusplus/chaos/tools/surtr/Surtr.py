@@ -35,6 +35,7 @@ import json
 import os
 import platform
 import shutil
+import six
 import subprocess
 import sys
 
@@ -74,7 +75,7 @@ def get_options():
 
 def merge_conf_with_default(custom_conf, default_conf):
     conf = copy.deepcopy(custom_conf)
-    for key, val in default_conf.items():
+    for key, val in six.iteritems(default_conf):
         if key not in conf:
             conf[key] = val
         else:
