@@ -32,7 +32,7 @@ import subprocess
 import sys
 
 def main():
-    options = ''.join(sys.argv[1:]).rstrip()
+    options = ' '.join(sys.argv[1:]).rstrip()
     shell_cmd = 'python ../tools/surtr/Surtr.py ../tools {options}'.format(options=options)
     subprocess.check_call(shell_cmd, shell=True)
 

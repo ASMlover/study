@@ -144,9 +144,9 @@ def gen_outobj(source_fname, posix=True):
     s = source_fname.strip('./').strip('../').replace('/', '.')
     objname = os.path.splitext(s)[0]
     if posix:
-        outobj_format = '$(OUTDIR)/$(OBJDIR)/{objname}.o '
+        outobj_format = '$(OUTDIR)/$(OBJDIR)/{objname}.o'
     else:
-        outobj_format = r'$(OUTDIR)\$(OBJDIR)\{objname}.obj '
+        outobj_format = r'$(OUTDIR)\$(OBJDIR)\{objname}.obj'
     return outobj_format.format(objname=objname)
 
 def gen_buildobj(conf, out, src):
@@ -155,30 +155,30 @@ def gen_buildobj(conf, out, src):
 def gen_cflags(build_conf):
     cflags = []
     for option in build_conf['precompile_options']:
-        cflags.append('-D{opt} '.format(opt=option))
+        cflags.append('-D{opt}'.format(opt=option))
     for option in build_conf['compile_options']:
-        cflags.append('-{opt} '.format(opt=option))
+        cflags.append('-{opt}'.format(opt=option))
     for option in build_conf['extra_options']:
-        cflags.append('-{opt} '.format(opt=option))
-    return ''.join(cflags).rstrip()
+        cflags.append('-{opt}'.format(opt=option))
+    return ' '.join(cflags)
 
 def gen_includes(build_conf, posix=True):
     includes = []
     for inc in build_conf['compile_includes']:
         if posix:
-            includes.append('-I{inc} '.format(inc=inc))
+            includes.append('-I{inc}'.format(inc=inc))
         else:
-            includes.append('-I"{inc}" '.format(inc=inc.replace('/', '\\')))
-    return ''.join(includes).rstrip()
+            includes.append('-I"{inc}"'.format(inc=inc.replace('/', '\\')))
+    return ' '.join(includes)
 
 def gen_ldflags(build_conf, posix=True):
     ldincludes = []
     ldlibraries = []
     for inc in build_conf['link_includes']:
         if posix:
-            ldincludes.append('-L{inc} '.format(inc=inc))
+            ldincludes.append('-L{inc}'.format(inc=inc))
         else:
-            ldincludes.append('-LIBPATH:"{inc}" '.format(inc=inc.replace('/', '\\')))
+            ldincludes.append('-LIBPATH:"{inc}"'.format(inc=inc.replace('/', '\\')))
 
     if posix:
         for lib in build_conf['link_libraries']:
@@ -187,8 +187,8 @@ def gen_ldflags(build_conf, posix=True):
             ldlibraries.append(lib)
     else:
         ldlibraries = build_conf['link_libraries']
-    ldlibraries = ('{lib} '.format(lib=lib) for lib in ldlibraries)
-    return '{incs}{libs}'.format(incs=''.join(ldincludes), libs=''.join(ldlibraries).rstrip())
+    ldlibraries = ('{lib}'.format(lib=lib) for lib in ldlibraries)
+    return '{incs} {libs}'.format(incs=' '.join(ldincludes), libs=' '.join(ldlibraries))
 
 def gen_makefile(surtr_path='./', platform='linux', outdir='build'):
     is_posix = platform != 'windows'
@@ -207,8 +207,8 @@ def gen_makefile(surtr_path='./', platform='linux', outdir='build'):
         cflags = gen_cflags(build_conf),
         includes = gen_includes(build_conf, is_posix),
         ldflags = gen_ldflags(build_conf, is_posix),
-        objs = ''.join(objs_list).rstrip(),
-        build_objs = ''.join(buildobjs_list).rstrip(),
+        objs = ' '.join(objs_list),
+        build_objs = ''.join(buildobjs_list),
     )
 
     with do_open('Makefile', 'w', encoding='utf-8') as fp:
