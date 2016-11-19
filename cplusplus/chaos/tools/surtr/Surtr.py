@@ -73,10 +73,10 @@ def safe_rm(path):
 
 def get_options():
     parser = argparse.ArgumentParser(description='Surtr C/C++ building tool')
-    parser.add_argument('option', nargs='?', help='config|build|rebuild|clean|remove the project')
     parser.add_argument('surtr_path', nargs='?', help='relative path of `Surtr`')
+    parser.add_argument('option', nargs='?', help='config|build|rebuild|clean|remove the project')
     args = parser.parse_args()
-    return args.option, args.surtr_path
+    return args.surtr_path, args.option
 
 def merge_conf_with_default(custom_conf, default_conf):
     conf = copy.deepcopy(custom_conf)
@@ -224,7 +224,7 @@ def do_remove():
     safe_rm('Makefile')
 
 def main():
-    option, surtr_path = get_options()
+    surtr_path, option = get_options()
     if option == 'remove':
         do_remove()
         return
