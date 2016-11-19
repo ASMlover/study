@@ -28,21 +28,12 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import argparse
 import subprocess
-
-def get_options():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('options', nargs='?', help='options: [config|build|rebuild|clean|remove]')
-    args = parser.parse_args()
-    return args.options
+import sys
 
 def main():
-    option = get_options()
-    if option is None:
-        option = 'build'
-
-    shell_cmd = 'python ../tools/surtr/Surtr.py {option} ../tools'.format(option=option)
+    options = ''.join(sys.argv[1:]).rstrip()
+    shell_cmd = 'python ../tools/surtr/Surtr.py ../tools {options}'.format(options=options)
     subprocess.check_call(shell_cmd, shell=True)
 
 if __name__ == '__main__':
