@@ -1,4 +1,2 @@
-add_compile_option("O2")
-add_compile_option("g")
-add_compile_option("Wall")
-add_compile_option("std=c++11")
+add_cxxflags("g", "O2", "Wall")
+add_defines("std=c++11")
