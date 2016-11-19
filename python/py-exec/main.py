@@ -54,7 +54,7 @@ def add_cxxflags(*args):
     _add_compile_cflags('cxxflags', *args)
 
 def main():
-    with do_open('Conf', mode='r', encoding='utf-8') as fp:
+    with do_open('exec.txt', mode='r', encoding='utf-8') as fp:
         conf_script = fp.read()
         exec(conf_script)
 
