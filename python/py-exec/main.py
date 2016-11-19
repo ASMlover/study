@@ -41,10 +41,17 @@ if sys.version_info.major < 3:
 else:
     do_open = open
 
-def add_compile_option(option):
-    global_options = GLOBAL_SETTINGS.setdefault('options', [])
-    if option not in global_options:
-        global_options.append(option)
+def _add_compile_cflags(flags_name, *args):
+    owned_flags = GLOBAL_SETTINGS.setdefault(flags_name, set())
+    for arg in args:
+        flag = str(arg)
+        owned_flags.add(flag)
+
+def add_defines(*args):
+    _add_compile_cflags('defines', *args)
+
+def add_cxxflags(*args):
+    _add_compile_cflags('cxxflags', *args)
 
 def main():
     with do_open('Conf', mode='r', encoding='utf-8') as fp:
