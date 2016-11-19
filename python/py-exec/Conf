@@ -1,0 +1,4 @@
+add_compile_option("O2")
+add_compile_option("g")
+add_compile_option("Wall")
+add_compile_option("std=c++11")
