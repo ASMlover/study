@@ -27,7 +27,7 @@
 #ifndef CHAOS_MEMORY_INTRUSIVEPTR_H
 #define CHAOS_MEMORY_INTRUSIVEPTR_H
 
-#include "IntrusiveRefCounter.h"
+#include <chaos/memory/IntrusiveRefCounter.h>
 
 namespace chaos {
 

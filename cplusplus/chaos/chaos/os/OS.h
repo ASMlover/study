@@ -27,15 +27,15 @@
 #ifndef CHAOS_OS_OS_H
 #define CHAOS_OS_OS_H
 
-#include "../Platform.h"
+#include <chaos/Platform.h>
 #if defined(CHAOS_WINDOWS)
-# include "windows/OS.h"
+# include <chaos/os/windows/OS.h>
 #else
-# include "posix/OS.h"
+# include <chaos/os/posix/OS.h>
 # if defined(CHAOS_LINUX)
-#   include "linux/OS.h"
+#   include <chaos/os/linux/OS.h>
 # elif defined(CHAOS_DARWIN)
-#   include "darwin/OS.h"
+#   include <chaos/os/darwin/OS.h>
 # endif
 #endif
 

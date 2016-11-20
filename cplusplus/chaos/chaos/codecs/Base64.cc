@@ -25,8 +25,8 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
-#include "../Types.h"
-#include "Base64.h"
+#include <chaos/Types.h>
+#include <chaos/codecs/Base64.h>
 
 namespace chaos {
 
