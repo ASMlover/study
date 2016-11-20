@@ -24,12 +24,53 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <chaos/Types.h>
+#include <chaos/concurrent/Atomic.h>
 #include <chaos/unittest/TestHarness.h>
 
-int main(int argc, char* argv[]) {
-  CHAOS_UNUSED(argc);
-  CHAOS_UNUSED(argv);
+CHAOS_TEST(AtomicI16, chaos::FakeTester) {
+  chaos::AtomicI16 a0;
+  CHAOS_CHECK_EQ(a0.get(), 0);
+  CHAOS_CHECK_EQ(a0.fetch_add(1), 0);
+  CHAOS_CHECK_EQ(a0.get(), 1);
+  CHAOS_CHECK_EQ(a0++, 1);
+  CHAOS_CHECK_EQ(a0.get(), 2);
+  CHAOS_CHECK_EQ(++a0, 3);
+  CHAOS_CHECK_EQ(a0.set(5), 3);
+  CHAOS_CHECK_EQ(a0.fetch_sub(1), 5);
+  CHAOS_CHECK_EQ(a0.get(), 4);
+  CHAOS_CHECK_EQ(a0--, 4);
+  CHAOS_CHECK_EQ(a0.get(), 3);
+  CHAOS_CHECK_EQ(--a0, 2);
+}
 
-  return chaos::run_all_testharness();
+CHAOS_TEST(AtomicI32, chaos::FakeTester) {
+  chaos::AtomicI32 a0;
+  CHAOS_CHECK_TRUE(a0.get() == 0);
+  CHAOS_CHECK_TRUE(a0.fetch_add(1) == 0);
+  CHAOS_CHECK_TRUE(a0.get() == 1);
+  CHAOS_CHECK_TRUE(a0++ == 1);
+  CHAOS_CHECK_TRUE(a0.get() == 2);
+  CHAOS_CHECK_TRUE(++a0 == 3);
+  CHAOS_CHECK_TRUE(a0.set(5) == 3);
+  CHAOS_CHECK_TRUE(a0.fetch_sub(1) == 5);
+  CHAOS_CHECK_TRUE(a0.get() == 4);
+  CHAOS_CHECK_TRUE(a0-- == 4);
+  CHAOS_CHECK_TRUE(a0.get() == 3);
+  CHAOS_CHECK_TRUE(--a0 == 2);
+}
+
+CHAOS_TEST(AtomicI64, chaos::FakeTester) {
+  chaos::AtomicI64 a0;
+  CHAOS_CHECK_EQ(a0.get(), 0);
+  CHAOS_CHECK_EQ(a0.fetch_add(1), 0);
+  CHAOS_CHECK_EQ(a0.get(), 1);
+  CHAOS_CHECK_EQ(a0++, 1);
+  CHAOS_CHECK_EQ(a0.get(), 2);
+  CHAOS_CHECK_EQ(++a0, 3);
+  CHAOS_CHECK_EQ(a0.set(5), 3);
+  CHAOS_CHECK_EQ(a0.fetch_sub(1), 5);
+  CHAOS_CHECK_EQ(a0.get(), 4);
+  CHAOS_CHECK_EQ(a0--, 4);
+  CHAOS_CHECK_EQ(a0.get(), 3);
+  CHAOS_CHECK_EQ(--a0, 2);
 }
