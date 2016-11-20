@@ -24,11 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#if !SURTR_BUILD
-# include "../chaos/Types.h"
-#else
-# include <chaos/Types.h>
-#endif
+#include <chaos/Types.h>
 
 int main(int argc, char* argv[]) {
   CHAOS_UNUSED(argc);
