@@ -116,7 +116,7 @@ def get_conf(tool_path='./', platform='linux'):
             build_conf = json.load(fp)
 
         build_conf = merge_conf_with_default(build_conf, default_build_conf)
-    except Exception as e:
+    except Exception:
         build_conf = default_build_conf
     return build_mk, obj_mk, build_conf
 
@@ -151,6 +151,15 @@ def gen_outobj(source_fname, posix=True):
 
 def gen_buildobj(conf, out, src):
     return conf.format(build_obj=out.strip(), build_src=src)
+
+def gen_cc(platform, posix=True):
+    if posix:
+        cc = 'g++'
+        if platform == 'darwin':
+            cc = 'clang++'
+    else:
+        cc = 'cl'
+    return cc
 
 def gen_cflags(build_conf):
     cflags = []
@@ -204,6 +213,7 @@ def gen_makefile(surtr_path='./', platform='linux', outdir='build'):
     build_dict = dict(
         outdir = outdir,
         target = build_conf['target'],
+        cc = gen_cc(platform, is_posix),
         cflags = gen_cflags(build_conf),
         includes = gen_includes(build_conf, is_posix),
         ldflags = gen_ldflags(build_conf, is_posix),
