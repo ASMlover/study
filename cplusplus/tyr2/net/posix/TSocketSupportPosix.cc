@@ -76,6 +76,7 @@ namespace SocketSupport {
     int rc = close(sockfd);
     if (rc < 0)
       TL_SYSERR << "SocketSupport::kern_close failed";
+    return 0;
   }
 
   void kern_to_ip(char* buf, size_t len, const struct sockaddr* addr) {
