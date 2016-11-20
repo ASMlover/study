@@ -34,6 +34,8 @@ namespace chaos {
 
 class Mutex : private UnCopyable {
   CRITICAL_SECTION m_;
+
+  typedef CRITICAL_SECTION MutexType;
 public:
   Mutex(void) {
     InitializeCriticalSection(&m_);
@@ -56,6 +58,10 @@ public:
 
   void unlock(void) {
     LeaveCriticalSection(&m_);
+  }
+
+  MutexType* get_mutex(void) const {
+    return &m_;
   }
 };
 

@@ -34,6 +34,8 @@ namespace chaos {
 
 class Mutex : private UnCopyable {
   pthread_mutex_t m_;
+
+  typedef pthread_mutex_t MutexType;
 public:
   Mutex(void) {
     pthread_mutex_init(&m_, 0);
@@ -53,6 +55,10 @@ public:
 
   void unlock(void) {
     pthread_mutex_unlock(&m_);
+  }
+
+  MutexType* get_mutex(void) const {
+    return &m_;
   }
 };
 

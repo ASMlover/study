@@ -144,9 +144,6 @@ public:
   }
 };
 
-class Mutex : private UnCopyable {
-};
-
 class FastMutex : private UnCopyable {
   volatile std::atomic_flag m_;
 public:
