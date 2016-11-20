@@ -32,6 +32,11 @@
 # include "windows/OS.h"
 #else
 # include "posix/OS.h"
+# if defined(CHAOS_LINUX)
+#   include "linux/OS.h"
+# elif defined(CHAOS_DARWIN)
+#   include "darwin/OS.h"
+# endif
 #endif
 
 #endif // CHAOS_OS_OS_H
