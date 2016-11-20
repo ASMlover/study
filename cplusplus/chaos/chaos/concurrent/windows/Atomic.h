@@ -28,7 +28,7 @@
 #define CHAOS_CONCURRENT_WINDOWS_ATOMIC_H
 
 #include <Windows.h>
-#include "../../Types.h"
+#include <chaos/UnCopyable.h>
 
 namespace chaos {
 
@@ -40,27 +40,27 @@ class Atomic : private UnCopyable {
       "chaos::Atomic value type's size must be `1`, `2`, `4` or `8`");
 public:
   T get(void) {
-    return InterlockedCompareExchange(reinterpret_cast<LONG*>(&value_), 0, 0);
+    return static_cast<T>(InterlockedCompareExchange(reinterpret_cast<volatile LONG*>(&value_), 0, 0));
   }
 
   T set(T desired) {
-    return InterlockedExchange(reinterpret_cast<LONG*>(&value_), desired);
+    return static_cast<T>(InterlockedExchange(reinterpret_cast<volatile LONG*>(&value_), desired));
   }
 
   T fetch_add(T arg) {
-    return InterlockedExchangeAdd(reinterpret_cast<LONG*>(&value_), arg);
+    return static_cast<T>(InterlockedExchangeAdd(reinterpret_cast<volatile LONG*>(&value_), arg));
   }
 
   T fetch_sub(T arg) {
-    return InterlockedExchangeSubtract(reinterpret_cast<LONG*>(&value_), arg);
+    return static_cast<T>(InterlockedExchangeAdd(reinterpret_cast<volatile LONG*>(&value_), -arg));
   }
 
   T operator++(void) {
-    return InterlockedIncrement(reinterpret_cast<LONG*>(&value_));
+    return static_cast<T>(InterlockedIncrement(reinterpret_cast<volatile LONG*>(&value_)));
   }
 
   T operator--(void) {
-    return InterlockedDecrement(reinterpret_cast<LONG*>(&value_));
+    return static_cast<T>(InterlockedDecrement(reinterpret_cast<volatile LONG*>(&value_)));
   }
 
   T operator++(int) {

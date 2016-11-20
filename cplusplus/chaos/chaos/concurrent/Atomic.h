@@ -27,12 +27,12 @@
 #ifndef CHAOS_CONCURRENT_ATOMIC_H
 #define CHAOS_CONCURRENT_ATOMIC_H
 
-#include "../Platform.h"
-
+#include <stdint.h>
+#include <chaos/Platform.h>
 #if defined(CHAOS_WINDOWS)
-# include "windows/Atomic.h"
+# include <chaos/concurrent/windows/Atomic.h>
 #else
-# include "posix/Atomic.h"
+# include <chaos/concurrent/posix/Atomic.h>
 #endif
 
 namespace chaos {
