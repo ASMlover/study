@@ -27,6 +27,7 @@
 #include <sys/syscall.h>
 #include <execinfo.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include "../TPlatform.h"
 
 namespace tyr { namespace basic {
