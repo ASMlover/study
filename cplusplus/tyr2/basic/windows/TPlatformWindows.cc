@@ -109,8 +109,8 @@ int kern_mutex_destroy(KernMutex* mtx) {
 }
 
 int kern_mutex_lock(KernMutex* mtx) {
-  if ((DWORD)mtx->OwningThread != GetCurrentThreadId())
-    EnterCriticalSection(mtx);
+  // FIXME: need non-recursive mutex on Windows
+  EnterCriticalSection(mtx);
   return 0;
 }
 
