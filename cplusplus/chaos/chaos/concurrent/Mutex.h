@@ -173,6 +173,14 @@ public:
     unassign_holder();
     MutexBase::unlock();
   }
+
+  bool locked_by_current_thread(void) const {
+    return holder_ == CurrentThread::get_tid();
+  }
+
+  void assert_locked(void) const {
+    CHAOS_CHECK(locked_by_current_thread(), "Mutex::assert_locked");
+  }
 };
 
 class UnassignScopedMutex : private UnCopyable {
