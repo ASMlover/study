@@ -24,24 +24,24 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef CHAOS_CONCURRENT_POSIX_MUTEX_H
-#define CHAOS_CONCURRENT_POSIX_MUTEX_H
+#ifndef CHAOS_CONCURRENT_POSIX_MUTEXBASE_H
+#define CHAOS_CONCURRENT_POSIX_MUTEXBASE_H
 
 #include <pthread.h>
 #include <chaos/UnCopyable.h>
 
 namespace chaos {
 
-class Mutex : private UnCopyable {
+class MutexBase : private UnCopyable {
   pthread_mutex_t m_;
 
   typedef pthread_mutex_t MutexType;
 public:
-  Mutex(void) {
+  MutexBase(void) {
     pthread_mutex_init(&m_, 0);
   }
 
-  ~Mutex(void) {
+  ~MutexBase(void) {
     pthread_mutex_destroy(&m_);
   }
 
@@ -57,11 +57,11 @@ public:
     pthread_mutex_unlock(&m_);
   }
 
-  MutexType* get_mutex(void) const {
+  MutexType* get_mutex(void) {
     return &m_;
   }
 };
 
 }
 
-#endif // CHAOS_CONCURRENT_POSIX_MUTEX_H
+#endif // CHAOS_CONCURRENT_POSIX_MUTEXBASE_H

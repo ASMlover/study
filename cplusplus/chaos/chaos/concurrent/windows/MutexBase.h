@@ -24,24 +24,24 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef CHAOS_CONCURRENT_WINDOWS_MUTEX_H
-#define CHAOS_CONCURRENT_WINDOWS_MUTEX_H
+#ifndef CHAOS_CONCURRENT_WINDOWS_MUTEXBASE_H
+#define CHAOS_CONCURRENT_WINDOWS_MUTEXBASE_H
 
 #include <Windows.h>
 #include <chaos/UnCopyable.h>
 
 namespace chaos {
 
-class Mutex : private UnCopyable {
+class MutexBase : private UnCopyable {
   CRITICAL_SECTION m_;
 
   typedef CRITICAL_SECTION MutexType;
 public:
-  Mutex(void) {
+  MutexBase(void) {
     InitializeCriticalSection(&m_);
   }
 
-  ~Mutex(void) {
+  ~MutexBase(void) {
     DeleteCriticalSection(&m_);
   }
 
@@ -53,18 +53,18 @@ public:
   bool try_lock(void) {
     if ((DWORD)m_.OwningThread != GetCurrentThreadId())
       return TRUE == TryEnterCriticalSection(&m_);
-    return true;
+    return false;
   }
 
   void unlock(void) {
     LeaveCriticalSection(&m_);
   }
 
-  MutexType* get_mutex(void) const {
+  MutexType* get_mutex(void) {
     return &m_;
   }
 };
 
 }
 
-#endif // CHAOS_CONCURRENT_WINDOWS_MUTEX_H
+#endif // CHAOS_CONCURRENT_WINDOWS_MUTEXBASE_H
