@@ -46,14 +46,13 @@ public:
   }
 
   void lock(void) {
-    if ((DWORD)m_.OwningThread != GetCurrentThreadId())
-      EnterCriticalSection(&m_);
+    // FIXME: need non-recursive mutex on Windows
+    EnterCriticalSection(&m_);
   }
 
   bool try_lock(void) {
-    if ((DWORD)m_.OwningThread != GetCurrentThreadId())
-      return TRUE == TryEnterCriticalSection(&m_);
-    return false;
+    // FIXME: need non-recursive mutex on Windows
+    return TRUE == TryEnterCriticalSection(&m_);
   }
 
   void unlock(void) {
