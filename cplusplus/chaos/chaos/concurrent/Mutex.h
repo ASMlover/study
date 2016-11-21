@@ -32,11 +32,13 @@
 #include <chaos/Platform.h>
 #include <chaos/UnCopyable.h>
 #include <chaos/error/SystemError.h>
+#include <chaos/os/OS.h>
+#include <chaos/concurrent/CurrentThread.h>
 
 #if defined(CHAOS_WINDOWS)
-# include <chaos/concurrent/windows/Mutex.h>
+# include <chaos/concurrent/windows/MutexBase.h>
 #else
-# include <chaos/concurrent/posix/Mutex.h>
+# include <chaos/concurrent/posix/MutexBase.h>
 #endif
 
 namespace chaos {
@@ -141,6 +143,48 @@ public:
 
   MutexType* get_mutex(void) const {
     return m_;
+  }
+};
+
+class Mutex : public MutexBase {
+  pid_t holder_{};
+
+  friend class UnassignScopedMutex;
+private:
+  void assign_holder(void) {
+    holder_ = CurrentThread::get_tid();
+  }
+
+  void unassign_holder(void) {
+    holder_ = 0;
+  }
+public:
+  void lock(void) {
+    MutexBase::lock();
+    assign_holder();
+  }
+
+  bool try_lock(void) {
+    bool r = MutexBase::try_lock();
+    return r ? (assign_holder(), true) : false;
+  }
+
+  void unlock(void) {
+    unassign_holder();
+    MutexBase::unlock();
+  }
+};
+
+class UnassignScopedMutex : private UnCopyable {
+  Mutex& owner_;
+public:
+  explicit UnassignScopedMutex(Mutex& owner)
+    : owner_(owner) {
+    owner_.unassign_holder();
+  }
+
+  ~UnassignScopedMutex(void) {
+    owner_.assign_holder();
   }
 };
 
