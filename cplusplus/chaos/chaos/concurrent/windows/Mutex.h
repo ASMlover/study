@@ -28,7 +28,7 @@
 #define CHAOS_CONCURRENT_WINDOWS_MUTEX_H
 
 #include <Windows.h>
-#include "../../UnCopyable.h"
+#include <chaos/UnCopyable.h>
 
 namespace chaos {
 

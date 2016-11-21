@@ -29,14 +29,14 @@
 
 #include <atomic>
 #include <utility>
-#include "../Platform.h"
-#include "../UnCopyable.h"
-#include "../error/SystemError.h"
+#include <chaos/Platform.h>
+#include <chaos/UnCopyable.h>
+#include <chaos/error/SystemError.h>
 
 #if defined(CHAOS_WINDOWS)
-# include "windows/Mutex.h"
+# include <chaos/concurrent/windows/Mutex.h>
 #else
-# include "posix/Mutex.h"
+# include <chaos/concurrent/posix/Mutex.h>
 #endif
 
 namespace chaos {
