@@ -24,13 +24,67 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <ostream>
-#include <chaos/container/StringPiece.h>
+#ifndef __TYR_BASIC_WINDOWS_ATOMICWINDOWS_HEADER_H__
+#define __TYR_BASIC_WINDOWS_ATOMICWINDOWS_HEADER_H__
 
-namespace chaos {
+#include "../TTypes.h"
+#include <Windows.h>
 
-std::ostream& operator<<(std::ostream& out, const StringPiece& piece) {
-  return out << piece.data();
-}
+namespace tyr { namespace basic {
 
-}
+template <typename T>
+class AtomicInt : private UnCopyable {
+  volatile T value_{};
+
+  static_assert(sizeof(T) == 1
+      || sizeof(T) == 2
+      || sizeof(T) == 4
+      || sizeof(T) == 8
+      , "AtomicInt size must be `1`, `2`, `4`, `8`");
+public:
+  AtomicInt(void) = default;
+
+  T get(void) {
+    return InterlockedCompareExchange(reinterpret_cast<LONG*>(&value_), 0, 0);
+  }
+
+  T set(T desired) {
+    return InterlockedExchange(reinterpret_cast<LONG*>(&value_), desired);
+  }
+
+  T fetch_add(T arg) {
+    return InterlockedExchangeAdd(reinterpret_cast<LONG*>(&value_), arg);
+  }
+
+  T fetch_sub(T arg) {
+    return InterlockedExchangeAdd(reinterpret_cast<LONG*>(&value_), -arg);
+  }
+
+  T operator+=(T arg) {
+    return fetch_add(arg) + arg;
+  }
+
+  T operator-=(T arg) {
+    return fetch_sub(arg) - arg;
+  }
+
+  T operator++(void) {
+    return InterlockedIncrement(reinterpret_cast<LONG*>(&value_));
+  }
+
+  T operator--(void) {
+    return InterlockedDecrement(reinterpret_cast<LONG*>(&value_));
+  }
+
+  T operator++(int) {
+    return fetch_add(1);
+  }
+
+  T operator--(int) {
+    return fetch_sub(1);
+  }
+};
+
+}}
+
+#endif // __TYR_BASIC_WINDOWS_ATOMICWINDOWS_HEADER_H__

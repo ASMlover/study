@@ -27,8 +27,8 @@
 #ifndef CHAOS_MEMORY_INTRUSIVEREFCOUNTER_H
 #define CHAOS_MEMORY_INTRUSIVEREFCOUNTER_H
 
+#include <stdint.h>
 #include <atomic>
-#include "../Types.h"
 
 namespace chaos {
 

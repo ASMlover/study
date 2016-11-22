@@ -24,13 +24,46 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <ostream>
-#include <chaos/container/StringPiece.h>
+#ifndef CHAOS_CONCURRENT_WINDOWS_MUTEXBASE_H
+#define CHAOS_CONCURRENT_WINDOWS_MUTEXBASE_H
+
+#include <Windows.h>
+#include <chaos/UnCopyable.h>
 
 namespace chaos {
 
-std::ostream& operator<<(std::ostream& out, const StringPiece& piece) {
-  return out << piece.data();
-}
+class MutexBase : private UnCopyable {
+  CRITICAL_SECTION m_;
+
+  typedef CRITICAL_SECTION MutexType;
+public:
+  MutexBase(void) {
+    InitializeCriticalSection(&m_);
+  }
+
+  ~MutexBase(void) {
+    DeleteCriticalSection(&m_);
+  }
+
+  void lock(void) {
+    // FIXME: need non-recursive mutex on Windows
+    EnterCriticalSection(&m_);
+  }
+
+  bool try_lock(void) {
+    // FIXME: need non-recursive mutex on Windows
+    return TRUE == TryEnterCriticalSection(&m_);
+  }
+
+  void unlock(void) {
+    LeaveCriticalSection(&m_);
+  }
+
+  MutexType* get_mutex(void) {
+    return &m_;
+  }
+};
 
 }
+
+#endif // CHAOS_CONCURRENT_WINDOWS_MUTEXBASE_H

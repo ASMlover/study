@@ -24,13 +24,28 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <ostream>
-#include <chaos/container/StringPiece.h>
+#include <stdint.h>
+#include <chaos/os/windows/OS.h>
 
 namespace chaos {
 
-std::ostream& operator<<(std::ostream& out, const StringPiece& piece) {
-  return out << piece.data();
+static const uint64_t kEpoch = 116444736000000000ULL;
+
+int kern_gettimeofday(struct timeval* tv, struct timezone* /*tz*/) {
+  if (nullptr != tv) {
+    FILETIME ft;
+    SYSTEMTIME st;
+    ULARGE_INTEGER uli;
+
+    GetSystemTime(&st);
+    SystemTimeToFileTime(&st, &ft);
+    uli.LowPart = ft.dwLowDateTime;
+    uli.HighPart = ft.dwHighDateTime;
+
+    tv->tv_sec = static_cast<long>((uli.QuadPart - kEpoch) / 10000000L);
+    tv->tv_usec = static_cast<long>(st.wMilliseconds * 1000);
+  }
+  return 0;
 }
 
 }

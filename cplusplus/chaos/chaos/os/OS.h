@@ -24,13 +24,19 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <ostream>
-#include <chaos/container/StringPiece.h>
+#ifndef CHAOS_OS_OS_H
+#define CHAOS_OS_OS_H
 
-namespace chaos {
+#include <chaos/Platform.h>
+#if defined(CHAOS_WINDOWS)
+# include <chaos/os/windows/OS.h>
+#else
+# include <chaos/os/posix/OS.h>
+# if defined(CHAOS_LINUX)
+#   include <chaos/os/linux/OS.h>
+# elif defined(CHAOS_DARWIN)
+#   include <chaos/os/darwin/OS.h>
+# endif
+#endif
 
-std::ostream& operator<<(std::ostream& out, const StringPiece& piece) {
-  return out << piece.data();
-}
-
-}
+#endif // CHAOS_OS_OS_H

@@ -24,13 +24,41 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <ostream>
-#include <chaos/container/StringPiece.h>
+#ifndef CHAOS_OS_POSIX_OS_H
+#define CHAOS_OS_POSIX_OS_H
+
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <string.h>
+#include <time.h>
 
 namespace chaos {
 
-std::ostream& operator<<(std::ostream& out, const StringPiece& piece) {
-  return out << piece.data();
+inline struct tm* kern_gmtime(const time_t* timep, struct tm* result) {
+  return gmtime_r(timep, result);
+}
+
+inline char* kern_strerror(int errnum, char* buf, size_t buflen) {
+  return strerror_r(errnum, buf, buflen);
+}
+
+inline time_t kern_timegm(struct tm* timep) {
+  return timegm(timep);
+}
+
+int kern_gettimeofday(const struct timeval* tv, const struct timezone* tz) {
+  return gettimeofday(tv, tz);
+}
+
+inline pid_t kern_getpid(void) {
+  return getpid();
+}
+
+inline pid_t kern_getppid(void) {
+  return getppid();
 }
 
 }
+
+#endif // CHAOS_OS_POSIX_OS_H

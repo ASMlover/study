@@ -24,13 +24,18 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <ostream>
-#include <chaos/container/StringPiece.h>
+#ifndef CHAOS_OS_DARWIN_OS_H
+#define CHAOS_OS_DARWIN_OS_H
+
+#include <syscall.h>
+#include <unistd.h>
 
 namespace chaos {
 
-std::ostream& operator<<(std::ostream& out, const StringPiece& piece) {
-  return out << piece.data();
+inline pid_t kern_gettid(void) {
+  return static_cast<pid_t>(syscall(SYS_thread_selfid));
 }
 
 }
+
+#endif // CHAOS_OS_DARWIN_OS_H

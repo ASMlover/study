@@ -24,13 +24,66 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <ostream>
-#include <chaos/container/StringPiece.h>
+#ifndef __TYR_BASIC_POSIX_ATOMICPOSIX_HEADER_H__
+#define __TYR_BASIC_POSIX_ATOMICPOSIX_HEADER_H__
 
-namespace chaos {
+#include "../TTypes.h"
 
-std::ostream& operator<<(std::ostream& out, const StringPiece& piece) {
-  return out << piece.data();
-}
+namespace tyr { namespace basic {
 
-}
+template <typename T>
+class AtomicInt : private UnCopyable {
+  volatile T value_{};
+
+  static_assert(sizeof(T) == 1
+      || sizeof(T) == 2
+      || sizeof(T) == 4
+      || sizeof(T) == 8
+      , "AtomicInt size must be `1`, `2`, `4`, `8`");
+public:
+  AtomicInt(void) = default;
+
+  T get(void) {
+    return __sync_val_compare_and_swap(&value_, 0, 0);
+  }
+
+  T set(T desired) {
+    return __sync_lock_test_and_set(&value_, desired);
+  }
+
+  T fetch_add(T arg) {
+    return __sync_fetch_and_add(&value_, arg);
+  }
+
+  T fetch_sub(T arg) {
+    return __sync_fetch_and_sub(&value_, arg);
+  }
+
+  T operator+=(T arg) {
+    return fetch_add(arg) + arg;
+  }
+
+  T operator-=(T arg) {
+    return fetch_sub(arg) - arg;
+  }
+
+  T operator++(void) {
+    return fetch_add(1) + 1;
+  }
+
+  T operator--(void) {
+    return fetch_sub(1) - 1;
+  }
+
+  T operator++(int) {
+    return fetch_add(1);
+  }
+
+  T operator--(int) {
+    return fetch_sub(1);
+  }
+};
+
+}}
+
+#endif // __TYR_BASIC_POSIX_ATOMICPOSIX_HEADER_H__

@@ -24,13 +24,44 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <ostream>
-#include <chaos/container/StringPiece.h>
+#ifndef CHAOS_CONCURRENT_POSIX_MUTEXBASE_H
+#define CHAOS_CONCURRENT_POSIX_MUTEXBASE_H
+
+#include <pthread.h>
+#include <chaos/UnCopyable.h>
 
 namespace chaos {
 
-std::ostream& operator<<(std::ostream& out, const StringPiece& piece) {
-  return out << piece.data();
-}
+class MutexBase : private UnCopyable {
+  pthread_mutex_t m_;
+
+  typedef pthread_mutex_t MutexType;
+public:
+  MutexBase(void) {
+    pthread_mutex_init(&m_, 0);
+  }
+
+  ~MutexBase(void) {
+    pthread_mutex_destroy(&m_);
+  }
+
+  void lock(void) {
+    pthread_mutex_lock(&m_);
+  }
+
+  bool try_lock(void) {
+    return 0 == pthread_mutex_trylock(&m_);
+  }
+
+  void unlock(void) {
+    pthread_mutex_unlock(&m_);
+  }
+
+  MutexType* get_mutex(void) {
+    return &m_;
+  }
+};
 
 }
+
+#endif // CHAOS_CONCURRENT_POSIX_MUTEXBASE_H

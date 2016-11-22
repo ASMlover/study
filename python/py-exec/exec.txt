@@ -1,0 +1,2 @@
+add_cxxflags("g", "O2", "Wall")
+add_defines("std=c++11")

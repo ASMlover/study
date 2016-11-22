@@ -24,49 +24,53 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <memory>
-#include <vector>
+#include <chaos/concurrent/Atomic.h>
 #include <chaos/unittest/TestHarness.h>
 
-namespace chaos {
-
-struct HarnessContext {
-  const char* base;
-  const char* name;
-  void (*closure)(void);
-
-  HarnessContext(const char* b, const char* n, void (*fn)(void))
-    : base(b)
-    , name(n)
-    , closure(fn) {
-  }
-};
-typedef std::vector<HarnessContext> HarnessContextVector;
-std::unique_ptr<HarnessContextVector> g_tests;
-
-bool register_testharness(const char* base, const char* name, void (*closure)(void)) {
-  if (!g_tests)
-    g_tests.reset(new HarnessContextVector);
-
-  g_tests->push_back(HarnessContext(base, name, closure));
-
-  return true;
+CHAOS_TEST(AtomicI16, chaos::FakeTester) {
+  chaos::AtomicI16 a0;
+  CHAOS_CHECK_EQ(a0.get(), 0);
+  CHAOS_CHECK_EQ(a0.fetch_add(1), 0);
+  CHAOS_CHECK_EQ(a0.get(), 1);
+  CHAOS_CHECK_EQ(a0++, 1);
+  CHAOS_CHECK_EQ(a0.get(), 2);
+  CHAOS_CHECK_EQ(++a0, 3);
+  CHAOS_CHECK_EQ(a0.set(5), 3);
+  CHAOS_CHECK_EQ(a0.fetch_sub(1), 5);
+  CHAOS_CHECK_EQ(a0.get(), 4);
+  CHAOS_CHECK_EQ(a0--, 4);
+  CHAOS_CHECK_EQ(a0.get(), 3);
+  CHAOS_CHECK_EQ(--a0, 2);
 }
 
-int run_all_testharness(void) {
-  int total_tests = 0;
-  int passed_tests = 0;
-
-  if (g_tests && !g_tests->empty()) {
-    total_tests = static_cast<int>(g_tests->size());
-
-    for (auto& hc : *g_tests) {
-      hc.closure();
-      ++passed_tests;
-    }
-  }
-  fprintf(stdout, "========== PASSED (%d/%d) test harness\n", passed_tests, total_tests);
-  return 0;
+CHAOS_TEST(AtomicI32, chaos::FakeTester) {
+  chaos::AtomicI32 a0;
+  CHAOS_CHECK_TRUE(a0.get() == 0);
+  CHAOS_CHECK_TRUE(a0.fetch_add(1) == 0);
+  CHAOS_CHECK_TRUE(a0.get() == 1);
+  CHAOS_CHECK_TRUE(a0++ == 1);
+  CHAOS_CHECK_TRUE(a0.get() == 2);
+  CHAOS_CHECK_TRUE(++a0 == 3);
+  CHAOS_CHECK_TRUE(a0.set(5) == 3);
+  CHAOS_CHECK_TRUE(a0.fetch_sub(1) == 5);
+  CHAOS_CHECK_TRUE(a0.get() == 4);
+  CHAOS_CHECK_TRUE(a0-- == 4);
+  CHAOS_CHECK_TRUE(a0.get() == 3);
+  CHAOS_CHECK_TRUE(--a0 == 2);
 }
 
+CHAOS_TEST(AtomicI64, chaos::FakeTester) {
+  chaos::AtomicI64 a0;
+  CHAOS_CHECK_EQ(a0.get(), 0);
+  CHAOS_CHECK_EQ(a0.fetch_add(1), 0);
+  CHAOS_CHECK_EQ(a0.get(), 1);
+  CHAOS_CHECK_EQ(a0++, 1);
+  CHAOS_CHECK_EQ(a0.get(), 2);
+  CHAOS_CHECK_EQ(++a0, 3);
+  CHAOS_CHECK_EQ(a0.set(5), 3);
+  CHAOS_CHECK_EQ(a0.fetch_sub(1), 5);
+  CHAOS_CHECK_EQ(a0.get(), 4);
+  CHAOS_CHECK_EQ(a0--, 4);
+  CHAOS_CHECK_EQ(a0.get(), 3);
+  CHAOS_CHECK_EQ(--a0, 2);
 }

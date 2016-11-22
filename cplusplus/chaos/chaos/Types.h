@@ -29,7 +29,7 @@
 
 #include <stdint.h>
 #include <memory>
-#include "UnCopyable.h"
+#include <chaos/UnCopyable.h>
 
 #if !defined(CHAOS_UNUSED)
 # define CHAOS_UNUSED(x) ((void)x)

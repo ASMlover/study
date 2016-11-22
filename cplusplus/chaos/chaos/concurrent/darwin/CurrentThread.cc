@@ -24,13 +24,17 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <ostream>
-#include <chaos/container/StringPiece.h>
+#include <chaos/os/OS.h>
+#include <chaos/concurrent/CurrentThread.h>
 
 namespace chaos {
 
-std::ostream& operator<<(std::ostream& out, const StringPiece& piece) {
-  return out << piece.data();
+namespace CurrentThread {
+  static const int kMainTid = kern_gettid();
+
+  bool is_main_thread(void) {
+    return get_tid() == kMainTid;
+  }
 }
 
 }

@@ -24,13 +24,23 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <ostream>
-#include <chaos/container/StringPiece.h>
+#ifndef CHAOS_CONCURRENT_ATOMIC_H
+#define CHAOS_CONCURRENT_ATOMIC_H
+
+#include <stdint.h>
+#include <chaos/Platform.h>
+#if defined(CHAOS_WINDOWS)
+# include <chaos/concurrent/windows/Atomic.h>
+#else
+# include <chaos/concurrent/posix/Atomic.h>
+#endif
 
 namespace chaos {
 
-std::ostream& operator<<(std::ostream& out, const StringPiece& piece) {
-  return out << piece.data();
-}
+typedef Atomic<int16_t> AtomicI16;
+typedef Atomic<int32_t> AtomicI32;
+typedef Atomic<int64_t> AtomicI64;
 
 }
+
+#endif // CHAOS_CONCURRENT_ATOMIC_H

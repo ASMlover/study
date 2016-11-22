@@ -24,13 +24,12 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <ostream>
-#include <chaos/container/StringPiece.h>
+#include <chaos/Types.h>
+#include <chaos/unittest/TestHarness.h>
 
-namespace chaos {
+int main(int argc, char* argv[]) {
+  CHAOS_UNUSED(argc);
+  CHAOS_UNUSED(argv);
 
-std::ostream& operator<<(std::ostream& out, const StringPiece& piece) {
-  return out << piece.data();
-}
-
+  return chaos::run_all_testharness();
 }

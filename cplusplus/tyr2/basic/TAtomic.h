@@ -24,13 +24,24 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <ostream>
-#include <chaos/container/StringPiece.h>
+#ifndef __TYR_BASIC_ATOMIC_HEADER_H__
+#define __TYR_BASIC_ATOMIC_HEADER_H__
 
-namespace chaos {
+#include "TConfig.h"
 
-std::ostream& operator<<(std::ostream& out, const StringPiece& piece) {
-  return out << piece.data();
-}
+#if defined(TYR_WINDOWS)
+# include "windows/TAtomicWindows.h"
+#else
+# include "posix/TAtomicPosix.h"
+#endif
 
-}
+namespace tyr { namespace basic {
+
+typedef AtomicInt<int32_t> AtomicI32;
+typedef AtomicInt<int64_t> AtomicI64;
+typedef AtomicInt<uint32_t> AtomicU32;
+typedef AtomicInt<uint64_t> AtomicU64;
+
+}}
+
+#endif // __TYR_BASIC_ATOMIC_HEADER_H__

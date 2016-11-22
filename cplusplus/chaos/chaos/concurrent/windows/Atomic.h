@@ -24,49 +24,62 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <memory>
-#include <vector>
-#include <chaos/unittest/TestHarness.h>
+#ifndef CHAOS_CONCURRENT_WINDOWS_ATOMIC_H
+#define CHAOS_CONCURRENT_WINDOWS_ATOMIC_H
+
+#include <Windows.h>
+#include <chaos/UnCopyable.h>
 
 namespace chaos {
 
-struct HarnessContext {
-  const char* base;
-  const char* name;
-  void (*closure)(void);
+template <typename T>
+class Atomic : private UnCopyable {
+  volatile T value_{};
 
-  HarnessContext(const char* b, const char* n, void (*fn)(void))
-    : base(b)
-    , name(n)
-    , closure(fn) {
+  static_assert(sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8,
+      "chaos::Atomic value type's size must be `1`, `2`, `4` or `8`");
+public:
+  T get(void) {
+    return static_cast<T>(InterlockedCompareExchange(reinterpret_cast<volatile LONG*>(&value_), 0, 0));
+  }
+
+  T set(T desired) {
+    return static_cast<T>(InterlockedExchange(reinterpret_cast<volatile LONG*>(&value_), desired));
+  }
+
+  T fetch_add(T arg) {
+    return static_cast<T>(InterlockedExchangeAdd(reinterpret_cast<volatile LONG*>(&value_), arg));
+  }
+
+  T fetch_sub(T arg) {
+    return static_cast<T>(InterlockedExchangeAdd(reinterpret_cast<volatile LONG*>(&value_), -arg));
+  }
+
+  T operator++(void) {
+    return static_cast<T>(InterlockedIncrement(reinterpret_cast<volatile LONG*>(&value_)));
+  }
+
+  T operator--(void) {
+    return static_cast<T>(InterlockedDecrement(reinterpret_cast<volatile LONG*>(&value_)));
+  }
+
+  T operator++(int) {
+    return fetch_add(1);
+  }
+
+  T operator--(int) {
+    return fetch_sub(1);
+  }
+
+  T operator+=(T arg) {
+    return fetch_add(arg) + arg;
+  }
+
+  T operator-=(T arg) {
+    return fetch_sub(arg) - arg;
   }
 };
-typedef std::vector<HarnessContext> HarnessContextVector;
-std::unique_ptr<HarnessContextVector> g_tests;
-
-bool register_testharness(const char* base, const char* name, void (*closure)(void)) {
-  if (!g_tests)
-    g_tests.reset(new HarnessContextVector);
-
-  g_tests->push_back(HarnessContext(base, name, closure));
-
-  return true;
-}
-
-int run_all_testharness(void) {
-  int total_tests = 0;
-  int passed_tests = 0;
-
-  if (g_tests && !g_tests->empty()) {
-    total_tests = static_cast<int>(g_tests->size());
-
-    for (auto& hc : *g_tests) {
-      hc.closure();
-      ++passed_tests;
-    }
-  }
-  fprintf(stdout, "========== PASSED (%d/%d) test harness\n", passed_tests, total_tests);
-  return 0;
-}
 
 }
+
+#endif // CHAOS_CONCURRENT_WINDOWS_ATOMIC_H

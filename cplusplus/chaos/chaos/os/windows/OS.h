@@ -24,41 +24,49 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef CHAOS_CONCURRENT_WINDOWS_MUTEX_H
-#define CHAOS_CONCURRENT_WINDOWS_MUTEX_H
+#ifndef CHAOS_OS_WINDOWS_OS_H
+#define CHAOS_OS_WINDOWS_OS_H
 
 #include <Windows.h>
-#include "../../UnCopyable.h"
+#include <string.h>
+#include <time.h>
+
+typedef int pid_t;
+
+struct timezone {
+  int tz_minuteswest;
+  int tz_dsttime;
+};
 
 namespace chaos {
 
-class Mutex : private UnCopyable {
-  CRITICAL_SECTION m_;
-public:
-  Mutex(void) {
-    InitializeCriticalSection(&m_);
-  }
+#if !defined(__builtin_expect)
+# define __builtin_expect(exp, c) (exp)
+#endif
 
-  ~Mutex(void) {
-    DeleteCriticalSection(&m_);
-  }
+inline errno_t kern_gmtime(const time_t* timep, struct tm* result) {
+  return gmtime_s(result, timep);
+}
 
-  void lock(void) {
-    if ((DWORD)m_.OwningThread != GetCurrentThreadId())
-      EnterCriticalSection(&m_);
-  }
+inline errno_t kern_strerror(int errnum, char* buf, size_t buflen) {
+  return strerror_s(buf, buflen, errnum);
+}
 
-  bool try_lock(void) {
-    if ((DWORD)m_.OwningThread != GetCurrentThreadId())
-      return TRUE == TryEnterCriticalSection(&m_);
-    return true;
-  }
+inline time_t kern_timegm(struct tm* timep) {
+  return _mkgmtime(timep);
+}
 
-  void unlock(void) {
-    LeaveCriticalSection(&m_);
-  }
-};
+inline pid_t kern_getpid(void) {
+  return static_cast<pid_t>(GetCurrentProcessId());
+}
+
+inline pid_t kern_gettid(void) {
+  return static_cast<pid_t>(GetCurrentThreadId());
+}
+
+// int kern_getppid(void); // not support on Windows
+int kern_gettimeofday(struct timeval* tv, struct timezone* tz);
 
 }
 
-#endif // CHAOS_CONCURRENT_WINDOWS_MUTEX_H
+#endif // CHAOS_OS_WINDOWS_OS_H
