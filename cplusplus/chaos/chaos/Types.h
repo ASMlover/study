@@ -49,7 +49,7 @@
       fflush(stderr);\
       abort();\
     }\
-  while (0)
+} while (0)
 #endif
 
 typedef unsigned char byte_t;
