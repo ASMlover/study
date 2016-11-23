@@ -28,14 +28,63 @@
 #define CHAOS_CONCURRENT_WINDOWS_MUTEXBASE_H
 
 #include <Windows.h>
-#include <chaos/UnCopyable.h>
+#include <chaos/Types.h>
 
 namespace chaos {
 
 class MutexBase : private UnCopyable {
   CRITICAL_SECTION m_;
+  int tid_{-1};
+  int cnt_{};
 
   typedef CRITICAL_SECTION MutexType;
+private:
+  enum MutexResult {
+    MUTEX_SUCCESS,
+    MUTEX_TIMEDOUT,
+    MUTEX_BUSY,
+    MUTEX_ERROR,
+  };
+
+  inline int CHECK_RETURN(int ret, int desired = MUTEX_SUCCESS) {
+    CHAOS_CHECK(!(ret != MUTEX_SUCCESS && ret != desired), "Mutex::CHECK_RETURN mutex error");
+    return ret;
+  }
+
+
+  int do_lock(bool try_lock = false) {
+    int r = WAIT_TIMEOUT;
+    int tid = static_cast<int>(GetCurrentThreadId());
+
+    if (!try_lock) {
+      if (tid_ != tid)
+        EnterCriticalSection(&m_);
+      r = WAIT_OBJECT_0;
+    }
+    else {
+      if (tid_ != tid)
+        r = TRUE == TryEnterCriticalSection(&m_) ? WAIT_OBJECT_0 : WAIT_TIMEOUT;
+      else
+        r = WAIT_OBJECT_0;
+    }
+
+    if (r != WAIT_OBJECT_0 && r != WAIT_ABANDONED)
+      ;
+    else if (1 < ++cnt_)
+      r = (--cnt_, WAIT_TIMEOUT);
+    else
+      tid_ = tid;
+
+    switch (r) {
+    case WAIT_OBJECT_0:
+    case WAIT_ABANDONED:
+      return MUTEX_SUCCESS;
+    case WAIT_TIMEOUT:
+      return try_lock ? MUTEX_BUSY : MUTEX_TIMEDOUT;
+    }
+
+    return MUTEX_ERROR;
+  }
 public:
   MutexBase(void) {
     InitializeCriticalSection(&m_);
@@ -46,17 +95,18 @@ public:
   }
 
   void lock(void) {
-    // FIXME: need non-recursive mutex on Windows
-    EnterCriticalSection(&m_);
+    CHECK_RETURN(do_lock());
   }
 
   bool try_lock(void) {
-    // FIXME: need non-recursive mutex on Windows
-    return TRUE == TryEnterCriticalSection(&m_);
+    return CHECK_RETURN(do_lock(true), MUTEX_BUSY) == MUTEX_SUCCESS;
   }
 
   void unlock(void) {
-    LeaveCriticalSection(&m_);
+    if (0 == --cnt_) {
+      tid_ = -1;
+      LeaveCriticalSection(&m_);
+    }
   }
 
   MutexType* get_mutex(void) {
