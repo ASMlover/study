@@ -36,6 +36,7 @@ OBJS	= main.obj\
 	tpp_windows_threading_support.obj\
 	tpp_windows_backtrace.obj\
 	tpp_windows_corotine.obj\
+	tpp_windows_mutex_impl.obj\
 	\
 	co_unittest.obj\
 	co_utils_test.obj

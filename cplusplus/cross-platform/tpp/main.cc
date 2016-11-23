@@ -117,6 +117,11 @@ int main(int argc, char* argv[]) {
 
     tpp::basic::SharedArray<IntegerEx> sa1(new IntegerEx[3]);
   }
+  {
+    // non-recursive mutex sample
+    extern void test_NonRecursiveMutex(void);
+    test_NonRecursiveMutex();
+  }
   co::test::run_all_unittests();
 
   {
