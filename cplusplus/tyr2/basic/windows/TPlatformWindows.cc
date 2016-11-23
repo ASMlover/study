@@ -100,22 +100,79 @@ int kern_backtrace(std::string& bt) {
   return 0;
 }
 
-int kern_mutex_init(KernMutex* mtx) {
-  return InitializeCriticalSection(mtx), 0;
+enum {
+  KMUTEX_SUCCESS,
+  KMUTEX_TIMEDOUT,
+  KMUTEX_BUSY,
+  KMUTEX_ERROR,
+};
+
+int kern_mutex_do_lock(KernMutex* mtx, bool try_lock = FALSE) {
+  int r = WAIT_TIMEOUT;
+  pid_t tid = kern_gettid();
+
+  if (!try_lock) {
+    if (mtx->tid != tid)
+      mtx->lock();
+    r = WAIT_OBJECT_0;
+  }
+  else {
+    if (mtx->tid != tid)
+      r = mtx->try_lock() ? WAIT_OBJECT_0 : WAIT_TIMEOUT;
+    else
+      r = WAIT_OBJECT_0;
+  }
+
+  if (r != WAIT_OBJECT_0 && r != WAIT_ABANDONED)
+    ;
+  else if (1 < ++mtx->count)
+    r = (--mtx->count, WAIT_TIMEOUT);
+  else
+    mtx->tid = tid;
+
+  switch (r) {
+  case WAIT_OBJECT_0:
+  case WAIT_ABANDONED:
+    return KMUTEX_SUCCESS;
+  case WAIT_TIMEOUT:
+    return try_lock ? KMUTEX_BUSY : KMUTEX_TIMEDOUT;
+  default:
+    return KMUTEX_ERROR;
+  }
+
+  return KMUTEX_ERROR;
 }
 
-int kern_mutex_destroy(KernMutex* mtx) {
-  return DeleteCriticalSection(mtx), 0;
+inline int kern_mutex_check_return(int r) {
+  if (r != KMUTEX_SUCCESS)
+    abort();
+  return r;
+}
+
+inline int kern_mutex_check_return(int r, int other) {
+  if (r != KMUTEX_SUCCESS && r != other)
+    abort();
+  return r;
+}
+
+int kern_mutex_init(KernMutex* /*mtx*/) {
+  return KMUTEX_SUCCESS;
+}
+
+int kern_mutex_destroy(KernMutex* /*mtx*/) {
+  return KMUTEX_SUCCESS;
 }
 
 int kern_mutex_lock(KernMutex* mtx) {
-  // FIXME: need non-recursive mutex on Windows
-  EnterCriticalSection(mtx);
-  return 0;
+  return kern_mutex_check_return(kern_mutex_do_lock(mtx));
 }
 
 int kern_mutex_unlock(KernMutex* mtx) {
-  return LeaveCriticalSection(mtx), 0;
+  if (0 == --mtx->count) {
+    mtx->tid = -1;
+    mtx->unlock();
+  }
+  return KMUTEX_SUCCESS;
 }
 
 int kern_this_thread_setname(const char* name) {
@@ -149,11 +206,11 @@ int kern_cond_broadcast(KernCond* cond) {
 }
 
 int kern_cond_wait(KernCond* cond, KernMutex* mtx) {
-  return SleepConditionVariableCS(cond, mtx, INFINITE) ? 0 : -1;
+  return SleepConditionVariableCS(cond, (CRITICAL_SECTION*)mtx, INFINITE) ? 0 : -1;
 }
 
 int kern_cond_timedwait(KernCond* cond, KernMutex* mtx, uint64_t nanosec) {
-  return SleepConditionVariableCS(cond, mtx, static_cast<DWORD>(nanosec / 1e6)) ? 0 : -1;
+  return SleepConditionVariableCS(cond, (CRITICAL_SECTION*)mtx, static_cast<DWORD>(nanosec / 1e6)) ? 0 : -1;
 }
 
 UINT WINAPI kern_thread_start_routine(void* arg) {
