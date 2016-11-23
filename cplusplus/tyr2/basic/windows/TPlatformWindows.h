@@ -34,9 +34,34 @@
 #define TYR_DECLARRAY(type, name, count) type* name = (type*)_alloca(sizeof(char) * (count))
 
 typedef int                 pid_t;
-typedef CRITICAL_SECTION    KernMutex;
 typedef CONDITION_VARIABLE  KernCond;
 typedef DWORD               KernThreadKey;
+
+struct KernMutex {
+  CRITICAL_SECTION cs;
+  pid_t tid{-1};
+  int count{0};
+
+  KernMutex(void) {
+    InitializeCriticalSectionEx(&cs, 4000, 0);
+  }
+
+  ~KernMutex(void) {
+    DeleteCriticalSection(&cs);
+  }
+
+  void lock(void) {
+    EnterCriticalSection(&cs);
+  }
+
+  bool try_lock(void) {
+    return TRUE == TryEnterCriticalSection(&cs);
+  }
+
+  void unlock(void) {
+    LeaveCriticalSection(&cs);
+  }
+};
 
 struct KernThread {
   HANDLE start_event;

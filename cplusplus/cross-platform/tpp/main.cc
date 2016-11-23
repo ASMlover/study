@@ -29,6 +29,7 @@
 #include <string>
 #include "co/co_unittest.h"
 #include "basic/tpp_memory.h"
+#include "tpp_config.h"
 #include "tpp_types.h"
 #include "tpp_thread.h"
 #include "tpp_backtrace.h"
@@ -116,6 +117,16 @@ int main(int argc, char* argv[]) {
     std::cout << "use_count: " << wp1.lock().use_count() << std::endl;
 
     tpp::basic::SharedArray<IntegerEx> sa1(new IntegerEx[3]);
+  }
+  {
+    // non-recursive mutex sample
+#if defined(TPP_WINDOWS)
+    extern void test_RecursiveMutex(void);
+    test_RecursiveMutex();
+
+    extern void test_NonRecursiveMutex(void);
+    test_NonRecursiveMutex();
+#endif
   }
   co::test::run_all_unittests();
 
