@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <Windows.h>
+#include <process.h>
 #include <stdint.h>
 #include <iostream>
 
@@ -69,41 +70,70 @@ class NonRecursiveMutex {
 
   NonRecursiveMutex(const NonRecursiveMutex&) = delete;
   NonRecursiveMutex& operator=(const NonRecursiveMutex&) = delete;
+
+  enum {
+    _MUTEX_SUCCESS,
+    _MUTEX_NOMEM,
+    _MUTEX_TIMEDOUT,
+    _MUTEX_BUSY,
+    _MUTEX_ERROR,
+  };
+
+  int do_lock(bool for_try = false) {
+    int r = WAIT_TIMEOUT;
+    long current_tid = static_cast<long>(GetCurrentThreadId());
+    if (!for_try) {
+      // non recursive mutex
+      if (thread_id_ != current_tid)
+        cs_.lock();
+      r = WAIT_OBJECT_0;
+    }
+    else {
+      if (thread_id_ != current_tid)
+        r = cs_.try_lock() ? WAIT_OBJECT_0 : WAIT_TIMEOUT;
+      else
+        r = WAIT_OBJECT_0;
+    }
+
+    if (r != WAIT_OBJECT_0 && r != WAIT_ABANDONED)
+      ;
+    else if (1 < ++count_)
+      r = (--count_, WAIT_TIMEOUT);
+    else
+      thread_id_ = current_tid;
+
+    switch (r) {
+    case WAIT_OBJECT_0:
+    case WAIT_ABANDONED:
+      return _MUTEX_SUCCESS;
+    case WAIT_TIMEOUT:
+      return for_try ? _MUTEX_BUSY : _MUTEX_TIMEDOUT;
+    default:
+      return _MUTEX_ERROR;
+    }
+  }
+
+  int check_return(int r) {
+    if (r != _MUTEX_SUCCESS)
+      abort();
+    return r;
+  }
+
+  int check_return(int r, int other) {
+    if (r != _MUTEX_SUCCESS && r != other)
+      abort();
+    return r;
+  }
 public:
   NonRecursiveMutex(void) = default;
   ~NonRecursiveMutex(void) = default;
 
   void lock(void) {
-    if (thread_id_ != static_cast<long>(GetCurrentThreadId())) {
-      cs_.lock();
-      thread_id_ = static_cast<long>(GetCurrentThreadId());
-    }
-    ++count_;
+    check_return(do_lock());
   }
 
   bool try_lock(void) {
-    int res = WAIT_TIMEOUT;
-    if (thread_id_ != static_cast<long>(GetCurrentThreadId())) {
-      if (cs_.try_lock())
-        res = WAIT_OBJECT_0;
-      else
-        res = WAIT_TIMEOUT;
-    }
-    else {
-      res = WAIT_OBJECT_0;
-    }
-
-    if (res != WAIT_OBJECT_0 && res != WAIT_ABANDONED) {
-    }
-    else if (1 < ++count_) {
-      --count_;
-      res = WAIT_TIMEOUT;
-    }
-    else {
-      thread_id_ = static_cast<long>(GetCurrentThreadId());
-    }
-
-    return res == WAIT_OBJECT_0 || res == WAIT_ABANDONED;
+    return check_return(do_lock(), _MUTEX_BUSY) == _MUTEX_SUCCESS;
   }
 
   void unlock(void) {
@@ -121,20 +151,57 @@ public:
 
 }
 
+tpp::NonRecursiveMutex g_nr_mutex;
+tpp::CriticalSection g_mutex;
+int g_counter;
+
+static UINT WINAPI thread_closure_nr(void* /*arg*/) {
+  for (int i = 0; i < 10; ++i) {
+    g_nr_mutex.lock();
+
+    ++g_counter;
+    std::cout << "thread_closure_nr use NonRecursiveMutex: "
+      << GetCurrentThreadId() << " : " << g_counter << std::endl;
+
+    g_nr_mutex.unlock();
+  }
+  return 0;
+}
+
+static UINT WINAPI thread_closure(void* /*arg*/) {
+  for (int i = 0; i < 10; ++i) {
+    g_mutex.lock();
+    g_mutex.lock();
+
+    ++g_counter;
+    std::cout << "thread_closure use CriticalSection: "
+      << GetCurrentThreadId() << " : " << g_counter << std::endl;
+
+    g_mutex.unlock();
+    g_mutex.unlock();
+  }
+  return 0;
+}
+
 #include <iostream>
 void test_NonRecursiveMutex(void) {
-  tpp::NonRecursiveMutex mtx;
-  mtx.show();
+  HANDLE t1 = (HANDLE)_beginthreadex(NULL, 0, thread_closure_nr, NULL, 0, NULL);
+  HANDLE t2 = (HANDLE)_beginthreadex(NULL, 0, thread_closure_nr, NULL, 0, NULL);
 
-  mtx.lock();
-  mtx.show();
+  WaitForSingleObject(t1, INFINITE);
+  WaitForSingleObject(t2, INFINITE);
 
-  mtx.lock();
-  mtx.show();
+  CloseHandle(t1);
+  CloseHandle(t2);
+}
 
-  mtx.unlock();
-  mtx.show();
+void test_RecursiveMutex(void) {
+  HANDLE t1 = (HANDLE)_beginthreadex(NULL, 0, thread_closure, NULL, 0, NULL);
+  HANDLE t2 = (HANDLE)_beginthreadex(NULL, 0, thread_closure, NULL, 0, NULL);
 
-  mtx.unlock();
-  mtx.show();
+  WaitForSingleObject(t1, INFINITE);
+  WaitForSingleObject(t2, INFINITE);
+
+  CloseHandle(t1);
+  CloseHandle(t2);
 }

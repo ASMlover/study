@@ -29,6 +29,7 @@
 #include <string>
 #include "co/co_unittest.h"
 #include "basic/tpp_memory.h"
+#include "tpp_config.h"
 #include "tpp_types.h"
 #include "tpp_thread.h"
 #include "tpp_backtrace.h"
@@ -119,8 +120,13 @@ int main(int argc, char* argv[]) {
   }
   {
     // non-recursive mutex sample
+#if defined(TPP_WINDOWS)
+    extern void test_RecursiveMutex(void);
+    test_RecursiveMutex();
+
     extern void test_NonRecursiveMutex(void);
     test_NonRecursiveMutex();
+#endif
   }
   co::test::run_all_unittests();
 
