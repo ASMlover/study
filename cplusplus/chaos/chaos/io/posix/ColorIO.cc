@@ -34,22 +34,26 @@ namespace ColorIO {
   static chaos::Mutex g_color_mutex;
 
   int vfprintf(FILE* stream, ColorType color, const char* format, va_list ap) {
-    chaos::ScopedLock<chaos::Mutex> guard(g_color_mutex);
-
+    const char* new_color = "\033[0m";
     switch (color) {
     case ColorType::COLORTYPE_INVALID:
       __chaos_throw_exception(std::logic_error("invalid color type"));
       break;
     case ColorType::COLORTYPE_RED:
-      fprintf(stream, "\033[31;1m");
+      new_color = "\033[31;1m";
       break;
     case ColorType::COLORTYPE_GREEN:
-      fprintf(stream, "\033[32;1m");
+      new_color = "\033[32;1m";
       break;
     }
 
-    int n = ::vfprintf(stream, format, ap);
-    fprintf(stream, "\033[0m");
+    int n;
+    {
+      chaos::ScopedLock<chaos::Mutex> guard(g_color_mutex);
+      fprintf(stream, "%s", new_color);
+      n = ::vfprintf(stream, format, ap);
+      fprintf(stream, "\033[0m");
+    }
 
     return n;
   }
