@@ -45,3 +45,36 @@ CHAOS_TEST(Mutex, chaos::FakeTester) {
 
   CHAOS_CHECK_EQ(counter, 10);
 }
+
+CHAOS_TEST(FastMutex, chaos::FakeTester) {
+  chaos::FastMutex mtx;
+  int counter = 0;
+
+  CHAOS_CHECK_EQ(counter, 0);
+
+  std::thread t([&] {
+      chaos::ScopedLock<chaos::FastMutex> guard(mtx);
+
+      for (int i = 0; i < 10; ++i)
+        std::cout << "chaos::FastMutex unittest, @i: " << ++counter << std::endl;
+  });
+  t.join();
+
+  CHAOS_CHECK_EQ(counter, 10);
+}
+
+CHAOS_TEST(ScopedLock, chaos::FakeTester) {
+  chaos::Mutex mtx;
+  chaos::ScopedLock<chaos::Mutex> guard(mtx);
+
+  CHAOS_CHECK_TRUE(guard.owned_lock());
+  CHAOS_CHECK_TRUE(static_cast<bool>(guard));
+  CHAOS_CHECK_EQ(guard.get_mutex(), &mtx);
+
+  guard.unlock();
+  guard.release();
+
+  CHAOS_CHECK_TRUE(!guard.owned_lock());
+  CHAOS_CHECK_TRUE(!static_cast<bool>(guard));
+  CHAOS_CHECK_TRUE(guard.get_mutex() == nullptr);
+}
