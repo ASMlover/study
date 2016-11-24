@@ -66,6 +66,7 @@ inline pid_t kern_gettid(void) {
 
 // int kern_getppid(void); // not support on Windows
 int kern_gettimeofday(struct timeval* tv, struct timezone* tz);
+int kern_this_thread_setname(const char* name);
 
 }
 

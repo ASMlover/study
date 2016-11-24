@@ -30,6 +30,16 @@
 namespace chaos {
 
 static const uint64_t kEpoch = 116444736000000000ULL;
+static const DWORD kMSVCException = 0x406D1388;
+
+#pragma pack(push, 8)
+typedef struct KernThreadName {
+  DWORD dwType; // must be 0x1000
+  LPCSTR szName;
+  DWORD dwThreadID; // thread id
+  DWORD dwFlags;
+} KernThreadName;
+#pragma pack(pop)
 
 int kern_gettimeofday(struct timeval* tv, struct timezone* /*tz*/) {
   if (nullptr != tv) {
@@ -44,6 +54,20 @@ int kern_gettimeofday(struct timeval* tv, struct timezone* /*tz*/) {
 
     tv->tv_sec = static_cast<long>((uli.QuadPart - kEpoch) / 10000000L);
     tv->tv_usec = static_cast<long>(st.wMilliseconds * 1000);
+  }
+  return 0;
+}
+
+int kern_this_thread_setname(const char* name) {
+  KernThreadName tn;
+  tn.dwType = 0x1000;
+  tn.szName = name;
+  tn.dwThreadID = GetCurrentThreadId();
+  tn.dwFlags = 0;
+  __try {
+    RaiseException(kMSVCException, 0, sizeof(tn) / sizeof(ULONG_PTR), (ULONG_PTR*)&tn);
+  }
+  __except (EXCEPTION_EXECUTE_HANDLER) {
   }
   return 0;
 }
