@@ -27,13 +27,18 @@
 #ifndef CHAOS_OS_DARWIN_OS_H
 #define CHAOS_OS_DARWIN_OS_H
 
-#include <syscall.h>
+#include <sys/syscall.h>
+#include <pthread.h>
 #include <unistd.h>
 
 namespace chaos {
 
 inline pid_t kern_gettid(void) {
   return static_cast<pid_t>(syscall(SYS_thread_selfid));
+}
+
+inline int kern_this_thread_setname(const char* name) {
+  return pthread_setname_np(name);
 }
 
 }

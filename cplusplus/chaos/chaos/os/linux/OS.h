@@ -27,6 +27,7 @@
 #ifndef CHAOS_OS_LINUX_OS_H
 #define CHAOS_OS_LINUX_OS_H
 
+#include <sys/prctl.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 
@@ -34,6 +35,10 @@ namespace chaos {
 
 inline pid_t kern_gettid(void) {
   return static_cast<pid_t>(syscall(SYS_gettid));
+}
+
+inline int kern_this_thread_setname(const char* name) {
+  return prctl(PR_SET_NAME, name);
 }
 
 }
