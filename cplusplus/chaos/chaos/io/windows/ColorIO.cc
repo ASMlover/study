@@ -32,7 +32,7 @@
 namespace chaos {
 
 namespace ColorIO {
-  chaos::Mutex g_color_mutex;
+  static chaos::Mutex g_color_mutex;
 
   int vfprintf(FILE* stream, ColorType color, const char* format, va_list ap) {
     HANDLE out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
