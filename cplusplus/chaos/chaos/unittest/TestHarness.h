@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sstream>
+#include <chaos/io/ColorIO.h>
 
 namespace chaos {
 
@@ -49,7 +50,8 @@ public:
 
   ~Tester(void) {
     if (!ok_) {
-      fprintf(stderr, "%s:%d - %s\n", fname_, lineno_, ss_.str().c_str());
+      ColorIO::fprintf(stderr, ColorIO::ColorType::COLORTYPE_RED,
+          "%s:%d - %s\n", fname_, lineno_, ss_.str().c_str());
       exit(1);
     }
   }

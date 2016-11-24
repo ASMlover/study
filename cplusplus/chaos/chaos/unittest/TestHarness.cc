@@ -65,7 +65,8 @@ int run_all_testharness(void) {
       ++passed_tests;
     }
   }
-  fprintf(stdout, "========== PASSED (%d/%d) test harness\n", passed_tests, total_tests);
+  ColorIO::fprintf(stdout, ColorIO::ColorType::COLORTYPE_GREEN,
+      "========== PASSED (%d/%d) test harness\n", passed_tests, total_tests);
   return 0;
 }
 

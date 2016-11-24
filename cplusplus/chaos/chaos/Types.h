@@ -36,11 +36,12 @@
 #endif
 
 #if !defined(CHAOS_CHECK)
-# include <stdio.h>
 # include <stdlib.h>
+# include <chaos/io/ColorIO.h>
 # define CHAOS_CHECK(condition, message) do {\
     if (!(condition)) {\
-      fprintf(stderr,\
+      ColorIO::fprintf(stderr,\
+          chaos::ColorIO::ColorType::COLORTYPE_RED,\
           "[%s:%d] CHECKING FAILED `%s()` - %s\n",\
           __FILE__,\
           __LINE__,\
