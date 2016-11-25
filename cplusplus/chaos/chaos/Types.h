@@ -35,6 +35,10 @@
 # define CHAOS_UNUSED(x) ((void)x)
 #endif
 
+#if !defined(CHAOS_NANOSEC)
+# define CHAOS_NANOSEC ((uint64_t)1e9)
+#endif
+
 #if !defined(CHAOS_CHECK)
 # include <stdlib.h>
 # include <chaos/io/ColorIO.h>
