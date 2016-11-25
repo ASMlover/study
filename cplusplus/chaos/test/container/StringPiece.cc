@@ -42,4 +42,67 @@ CHAOS_TEST(StringArg, chaos::FakeTester) {
 }
 
 CHAOS_TEST(StringPiece, chaos::FakeTester) {
+  const char* raw_str = "chaos::StringPiece tester with raw string";
+  std::string cpp_str("chaos::StringPiece tester with C++ std::string");
+
+  chaos::StringPiece s0;
+  CHAOS_CHECK_TRUE(!static_cast<bool>(s0));
+  CHAOS_CHECK_TRUE(s0.data() == nullptr);
+  CHAOS_CHECK_EQ(s0.size(), 0);
+  CHAOS_CHECK_TRUE(s0.empty());
+  CHAOS_CHECK_TRUE(s0.begin() == nullptr);
+  CHAOS_CHECK_TRUE(s0.end() == nullptr);
+
+  chaos::StringPiece s1(raw_str);
+  CHAOS_CHECK_TRUE(static_cast<bool>(s1));
+  CHAOS_CHECK_EQ(s1.data(), raw_str);
+  CHAOS_CHECK_EQ(s1.size(), strlen(raw_str));
+  CHAOS_CHECK_TRUE(!s1.empty());
+  CHAOS_CHECK_TRUE(s1.begin() == raw_str);
+  CHAOS_CHECK_TRUE(s1.end() == raw_str + s1.size());
+  size_t size = s1.size();
+  s1.remove_prefix(2);
+  size -= 2;
+  CHAOS_CHECK_EQ(s1.size(), size);
+  CHAOS_CHECK_EQ(s1.begin(), raw_str + 2);
+  s1.remove_suffix(2);
+  size -= 2;
+  CHAOS_CHECK_EQ(s1.size(), size);
+  CHAOS_CHECK_EQ(s1.end(), raw_str + strlen(raw_str) - 2);
+  s1.clear();
+  CHAOS_CHECK_TRUE(s1.empty());
+
+  chaos::StringPiece s2(cpp_str);
+  CHAOS_CHECK_TRUE(static_cast<bool>(s2));
+  CHAOS_CHECK_EQ(s2.data(), cpp_str.data());
+  CHAOS_CHECK_EQ(s2.size(), cpp_str.size());
+  CHAOS_CHECK_TRUE(!s2.empty());
+  CHAOS_CHECK_TRUE(s2.begin() == cpp_str.c_str());
+  CHAOS_CHECK_TRUE(s2.end() == cpp_str.c_str() + cpp_str.size());
+  s2.remove_prefix(2);
+  CHAOS_CHECK_EQ(s2.size(), cpp_str.size() - 2);
+  CHAOS_CHECK_EQ(s2.begin(), cpp_str.data() + 2);
+  s2.remove_suffix(2);
+  CHAOS_CHECK_EQ(s2.size(), cpp_str.size() - 4);
+  CHAOS_CHECK_EQ(s2.end(), cpp_str.data() + cpp_str.size() - 2);
+  s2.clear();
+  CHAOS_CHECK_TRUE(s2.empty());
+
+  chaos::StringPiece s;
+  CHAOS_CHECK_TRUE(s.empty());
+  s.set(raw_str);
+  CHAOS_CHECK_TRUE(!s.empty());
+  CHAOS_CHECK_TRUE(s.size() == strlen(raw_str));
+  s.set(cpp_str.c_str(), cpp_str.size());
+  CHAOS_CHECK_TRUE(s.size() == cpp_str.size());
+  CHAOS_CHECK_TRUE(s.starts_with("chaos"));
+
+  chaos::StringPiece a("AAA");
+  chaos::StringPiece b("BBB");
+  CHAOS_CHECK_TRUE(a < b);
+  CHAOS_CHECK_TRUE(a <= a);
+  CHAOS_CHECK_TRUE(a <= b);
+  CHAOS_CHECK_TRUE(b > a);
+  CHAOS_CHECK_TRUE(b >= b);
+  CHAOS_CHECK_TRUE(b >= a);
 }
