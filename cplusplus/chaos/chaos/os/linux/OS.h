@@ -30,6 +30,7 @@
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #include <unistd.h>
+#include <time.h>
 
 namespace chaos {
 
@@ -39,6 +40,10 @@ inline pid_t kern_gettid(void) {
 
 inline int kern_this_thread_setname(const char* name) {
   return prctl(PR_SET_NAME, name);
+}
+
+inline int kern_gettime(struct timespec* timep) {
+  return clock_gettime(CLOCK_REALTIME, timep);
 }
 
 }

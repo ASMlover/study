@@ -27,9 +27,12 @@
 #ifndef CHAOS_OS_DARWIN_OS_H
 #define CHAOS_OS_DARWIN_OS_H
 
+#include <mach/mach_time.h>
 #include <sys/syscall.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <time.h>
+#include <chaos/Types.h>
 
 namespace chaos {
 
@@ -39,6 +42,16 @@ inline pid_t kern_gettid(void) {
 
 inline int kern_this_thread_setname(const char* name) {
   return pthread_setname_np(name);
+}
+
+inline int kern_gettime(struct timespec* timep) {
+  mach_timebase_info_data_t info;
+  if (KERN_SUCCESS != mach_timebase_info(&info))
+    abort();
+  uint64_t realtime = mach_absolute_time() * info.numer / info.denom;
+  timep->tv_sec = realtime / CHAOS_NANOSEC;
+  timep->tv_nsec = realtime % CHAOS_NANOSEC;
+  return 0;
 }
 
 }
