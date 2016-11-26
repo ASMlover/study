@@ -33,7 +33,8 @@
 namespace chaos {
 
 inline void __chaos_throw_exception(const char* what) {
-  throw std::exception(what);
+  // FIXME: default as logica_error
+  throw std::logic_error(what);
 }
 
 template <typename Exception>
