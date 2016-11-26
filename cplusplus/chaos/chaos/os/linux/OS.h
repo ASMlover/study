@@ -39,7 +39,7 @@ inline char* kern_strerror(int errnum, char* buf, size_t buflen) {
   return strerror_r(errnum, buf, buflen);
 }
 
-inline int kern_gettimeofday(const struct timeval* tv, const struct timezone* tz) {
+inline int kern_gettimeofday(struct timeval* tv, struct timezone* tz) {
   return gettimeofday(tv, tz);
 }
 
