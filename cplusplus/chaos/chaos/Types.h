@@ -29,6 +29,7 @@
 
 #include <stdint.h>
 #include <memory>
+#include <chaos/Copyable.h>
 #include <chaos/UnCopyable.h>
 
 #if !defined(CHAOS_UNUSED)
