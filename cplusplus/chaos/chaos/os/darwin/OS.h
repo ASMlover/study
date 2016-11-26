@@ -29,12 +29,21 @@
 
 #include <mach/mach_time.h>
 #include <sys/syscall.h>
+#include <sys/time.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <time.h>
 #include <chaos/Types.h>
 
 namespace chaos {
+
+inline int kern_strerror(int errnum, char* buf, size_t buflen) {
+  return strerror_r(errnum, buf, buflen);
+}
+
+inline int kern_gettimeofday(const struct timeval* tv, const struct timezone* tz) {
+  return gettimeofday((struct timeval*)tv, (struct timezone*)tz);
+}
 
 inline pid_t kern_gettid(void) {
   return static_cast<pid_t>(syscall(SYS_thread_selfid));

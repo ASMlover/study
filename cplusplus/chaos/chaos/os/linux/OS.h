@@ -29,10 +29,19 @@
 
 #include <sys/prctl.h>
 #include <sys/syscall.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <time.h>
 
 namespace chaos {
+
+inline char* kern_strerror(int errnum, char* buf, size_t buflen) {
+  return strerror_r(errnum, buf, buflen);
+}
+
+inline int kern_gettimeofday(const struct timeval* tv, const struct timezone* tz) {
+  return gettimeofday(tv, tz);
+}
 
 inline pid_t kern_gettid(void) {
   return static_cast<pid_t>(syscall(SYS_gettid));

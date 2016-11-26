@@ -39,16 +39,8 @@ inline struct tm* kern_gmtime(const time_t* timep, struct tm* result) {
   return gmtime_r(timep, result);
 }
 
-inline char* kern_strerror(int errnum, char* buf, size_t buflen) {
-  return strerror_r(errnum, buf, buflen);
-}
-
 inline time_t kern_timegm(struct tm* timep) {
   return timegm(timep);
-}
-
-int kern_gettimeofday(const struct timeval* tv, const struct timezone* tz) {
-  return gettimeofday(tv, tz);
 }
 
 inline pid_t kern_getpid(void) {
