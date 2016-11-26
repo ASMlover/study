@@ -152,7 +152,7 @@ class Functor(object):
         self.nargs = nargs
 
     def __call__(self, args):
-        self.closure(args)
+        self.closure(*args)
 
 class Executor(object):
     def __init__(self):
@@ -162,9 +162,6 @@ class Executor(object):
         self._env = {
             'show_msg': Functor(self._show_msg, '_show_msg', 1)
         }
-
-    def env_func_wrapper(self, funcname, narg):
-        pass
 
     def _show_msg(self, msg):
         print(msg)
@@ -189,7 +186,7 @@ class Executor(object):
         functor = self._env[fn.text]
         if functor.nargs != len(args):
             raise Exception('`%s` arguments count unmatched, at line: %d' % (fn.text, fn.lineno))
-        functor(*args)
+        functor(args)
 
     def do_execute(self, lex, token):
         if token.type == TYPE_IDENTIFIER:
