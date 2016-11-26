@@ -48,7 +48,7 @@ CHAOS_TEST(StringPiece, chaos::FakeTester) {
   chaos::StringPiece s0;
   CHAOS_CHECK_TRUE(!static_cast<bool>(s0));
   CHAOS_CHECK_TRUE(s0.data() == nullptr);
-  CHAOS_CHECK_EQ(s0.size(), 0);
+  CHAOS_CHECK_TRUE(s0.size() == 0);
   CHAOS_CHECK_TRUE(s0.empty());
   CHAOS_CHECK_TRUE(s0.begin() == nullptr);
   CHAOS_CHECK_TRUE(s0.end() == nullptr);
