@@ -16,3 +16,5 @@ tolset
 *.out
 *.conf
 logging
+.ycm_extra_conf.py
+Makefile
