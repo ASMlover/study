@@ -33,7 +33,7 @@
 namespace chaos {
 
 class MutexBase : private UnCopyable {
-  CRITICAL_SECTION m_;
+  mutable CRITICAL_SECTION m_;
   int tid_{-1};
   int cnt_{};
 
