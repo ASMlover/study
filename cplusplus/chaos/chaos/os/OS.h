@@ -28,6 +28,7 @@
 #define CHAOS_OS_OS_H
 
 #include <chaos/Platform.h>
+
 #if defined(CHAOS_WINDOWS)
 # include <chaos/os/windows/OS.h>
 #else

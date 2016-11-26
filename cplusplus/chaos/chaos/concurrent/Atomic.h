@@ -29,6 +29,7 @@
 
 #include <stdint.h>
 #include <chaos/Platform.h>
+
 #if defined(CHAOS_WINDOWS)
 # include <chaos/concurrent/windows/Atomic.h>
 #else
