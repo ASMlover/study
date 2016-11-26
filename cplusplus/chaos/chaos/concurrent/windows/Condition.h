@@ -47,16 +47,16 @@ public:
     SleepConditionVariableCS(&cond_, mtx_.get_mutex(), INFINITE);
   }
 
-  bool timed_wait(int seconds) {
+  bool wait_for(int seconds) {
     UnassignScopedMutex guard(mtx_);
     return TRUE == SleepConditionVariableCS(&cond_, mtx_.get_mutex(), static_cast<DWORD>(seconds * 1000));
   }
 
-  void signal(void) {
+  void notify_one(void) {
     WakeConditionVariable(&cond_);
   }
 
-  void broadcast(void) {
+  void notify_all(void) {
     WakeAllConditionVariable(&cond_);
   }
 };

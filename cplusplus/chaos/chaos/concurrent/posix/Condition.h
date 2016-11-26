@@ -52,7 +52,7 @@ public:
     pthread_cond_wait(&cond_, mtx_.get_mutex());
   }
 
-  bool timed_wait(int seconds) {
+  bool wait_for(int seconds) {
     UnassignScopedMutex guard(mtx_);
 
     struct timespec ts;
@@ -61,11 +61,11 @@ public:
     return 0 == pthread_cond_timedwait(&cond_, mtx_.get_mutex(), &ts);
   }
 
-  void signal(void) {
+  void notify_one(void) {
     pthread_cond_signal(&cond_);
   }
 
-  void broadcast(void) {
+  void notify_all(void) {
     pthread_cond_broadcast(&cond_);
   }
 };
