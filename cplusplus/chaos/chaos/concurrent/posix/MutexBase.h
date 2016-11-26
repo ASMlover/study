@@ -33,9 +33,9 @@
 namespace chaos {
 
 class MutexBase : private UnCopyable {
-  mutable pthread_mutex_t m_;
-
   typedef pthread_mutex_t MutexType;
+
+  mutable MutexType m_;
 public:
   MutexBase(void) {
     pthread_mutex_init(&m_, 0);

@@ -33,11 +33,11 @@
 namespace chaos {
 
 class MutexBase : private UnCopyable {
-  mutable CRITICAL_SECTION m_;
-  int tid_{-1};
-  int cnt_{};
-
   typedef CRITICAL_SECTION MutexType;
+
+  mutable MutexType m_;
+  int tid_{-1};
+  int count_{};
 private:
   enum MutexResult {
     MUTEX_SUCCESS,
@@ -69,8 +69,8 @@ private:
 
     if (r != WAIT_OBJECT_0 && r != WAIT_ABANDONED)
       ;
-    else if (1 < ++cnt_)
-      r = (--cnt_, WAIT_TIMEOUT);
+    else if (1 < ++count_)
+      r = (--count_, WAIT_TIMEOUT);
     else
       tid_ = tid;
 
@@ -102,7 +102,7 @@ public:
   }
 
   void unlock(void) {
-    if (0 == --cnt_) {
+    if (0 == --count_) {
       tid_ = -1;
       LeaveCriticalSection(&m_);
     }
