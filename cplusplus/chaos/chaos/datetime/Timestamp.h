@@ -30,14 +30,14 @@
 #include <stdint.h>
 #include <string>
 #include <utility>
+#include <chaos/Copyable.h>
 
 namespace chaos {
 
-class Timestamp {
+class Timestamp : public Copyable {
   int64_t epoch_msec_{};
 public:
   Timestamp(void) = default;
-  ~Timestamp(void) = default;
 
   explicit Timestamp(int64_t epoch_msec)
     : epoch_msec_(epoch_msec) {

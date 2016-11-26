@@ -29,12 +29,13 @@
 
 #include <time.h>
 #include <memory>
+#include <chaos/Copyable.h>
 
 namespace chaos {
 
 struct TZData;
 
-class Timezone {
+class Timezone : public Copyable {
   std::shared_ptr<TZData> data_;
 public:
   Timezone(void) = default;

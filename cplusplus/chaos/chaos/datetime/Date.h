@@ -28,12 +28,13 @@
 #define CHAOS_DATETIME_DATE_H
 
 #include <string>
+#include <chaos/Copyable.h>
 
 struct tm;
 
 namespace chaos {
 
-class Date {
+class Date : public Copyable {
   int epoch_day_{};
 public:
   struct DateTuple {
@@ -45,7 +46,6 @@ public:
   static const int kEpochDay19700101;
 
   Date(void) = default;
-  ~Date(void) = default;
 
   explicit Date(int epoch_day)
     : epoch_day_(epoch_day) {
