@@ -24,26 +24,38 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef CHAOS_CONCURRENT_BLOCKINGQUEUE_H
-#define CHAOS_CONCURRENT_BLOCKINGQUEUE_H
+#ifndef CHAOS_CONCURRENT_BOUNDEDBLOCKINGQUEUE_H
+#define CHAOS_CONCURRENT_BOUNDEDBLOCKINGQUEUE_H
 
-#include <deque>
 #include <chaos/Types.h>
+#include <chaos/container/CircularBuffer.h>
 #include <chaos/concurrent/Mutex.h>
 #include <chaos/concurrent/Condition.h>
 
 namespace chaos {
 
 template <typename T>
-class BlockingQueue : private UnCopyable {
+class BoundedBlockingQueue : private UnCopyable {
   mutable Mutex mtx_;
   Condition non_empty_;
-  std::deque<T> queue_;
+  Condition non_full_;
+  CircularBuffer<T> queue_;
 public:
-  BlockingQueue(void)
+  explicit  BoundedBlockingQueue(size_t capacity)
     : mtx_()
     , non_empty_(mtx_)
-    , queue_() {
+    , non_full_(mtx_)
+    , queue_(capacity) {
+  }
+
+  bool empty(void) const {
+    ScopedLock<Mutex> guard(mtx_);
+    return queue_.empty();
+  }
+
+  bool full(void) const {
+    ScopedLock<Mutex> guard(mtx_);
+    return queue_.full();
   }
 
   size_t size(void) const {
@@ -51,8 +63,17 @@ public:
     return queue_.size();
   }
 
+  size_t capacity(void) const {
+    ScopedLock<Mutex> guard(mtx_);
+    return queue_.capacity();
+  }
+
   void put_in(const T& x) {
     ScopedLock<Mutex> guard(mtx_);
+
+    while (queue_.full())
+      non_full_.wait();
+    CHAOS_CHECK(!queue_.full(), "BoundedBlockingQueue::put_in(const T&) - queue should be not full");
 
     queue_.push_back(x);
     non_empty_.notify_one();
@@ -60,6 +81,10 @@ public:
 
   void put_in(T&& x) {
     ScopedLock<Mutex> guard(mtx_);
+
+    while (queue_.full())
+      non_full_.wait();
+    CHAOS_CHECK(!queue_.full(), "BoundedBlockingQueue::put_in(T&&) - queue should be not full");
 
     queue_.push_back(std::move(x));
     non_empty_.notify_one();
@@ -70,10 +95,11 @@ public:
 
     while (queue_.empty())
       non_empty_.wait();
-    CHAOS_CHECK(!queue_.empty(), "BlockingQueue::fetch_out - queue should be not empty");
+    CHAOS_CHECK(!queue_.empty(), "BoundedBlockingQueue::fetch_out - queue should be not empty");
 
-    T front(std::move(queue_.front()));
+    T front(queue_.front());
     queue_.pop_front();
+    non_full_.notify_one();
 
     return front;
   }
@@ -81,4 +107,4 @@ public:
 
 }
 
-#endif // CHAOS_CONCURRENT_BLOCKINGQUEUE_H
+#endif // CHAOS_CONCURRENT_BOUNDEDBLOCKINGQUEUE_H
