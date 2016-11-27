@@ -86,7 +86,7 @@ public:
       non_full_.wait();
     CHAOS_CHECK(!queue_.full(), "BoundedBlockingQueue::put_in(T&&) - queue should be not full");
 
-    queue_.push_back(std::move(x));
+    queue_.push_back(std::forward<T>(x));
     non_empty_.notify_one();
   }
 

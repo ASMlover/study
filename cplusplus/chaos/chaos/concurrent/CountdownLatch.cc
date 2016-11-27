@@ -24,61 +24,33 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef CHAOS_CONCURRENT_BLOCKINGQUEUE_H
-#define CHAOS_CONCURRENT_BLOCKINGQUEUE_H
-
-#include <deque>
-#include <chaos/Types.h>
-#include <chaos/concurrent/Mutex.h>
-#include <chaos/concurrent/Condition.h>
+#include <chaos/concurrent/CountdownLatch.h>
 
 namespace chaos {
 
-template <typename T>
-class BlockingQueue : private UnCopyable {
-  mutable Mutex mtx_;
-  Condition non_empty_;
-  std::deque<T> queue_;
-public:
-  BlockingQueue(void)
-    : mtx_()
-    , non_empty_(mtx_)
-    , queue_() {
-  }
-
-  size_t size(void) const {
-    ScopedLock<Mutex> guard(mtx_);
-    return queue_.size();
-  }
-
-  void put_in(const T& x) {
-    ScopedLock<Mutex> guard(mtx_);
-
-    queue_.push_back(x);
-    non_empty_.notify_one();
-  }
-
-  void put_in(T&& x) {
-    ScopedLock<Mutex> guard(mtx_);
-
-    queue_.push_back(std::forward<T>(x));
-    non_empty_.notify_one();
-  }
-
-  T fetch_out(void) {
-    ScopedLock<Mutex> guard(mtx_);
-
-    while (queue_.empty())
-      non_empty_.wait();
-    CHAOS_CHECK(!queue_.empty(), "BlockingQueue::fetch_out - queue should be not empty");
-
-    T front(std::move(queue_.front()));
-    queue_.pop_front();
-
-    return front;
-  }
-};
-
+CountdownLatch::CountdownLatch(int count)
+  : mtx_()
+  , cond_(mtx_)
+  , count_(count) {
 }
 
-#endif // CHAOS_CONCURRENT_BLOCKINGQUEUE_H
+int CountdownLatch::get_count(void) const {
+  ScopedLock<Mutex> guard(mtx_);
+  return count_;
+}
+
+void CountdownLatch::wait(void) {
+  ScopedLock<Mutex> guard(mtx_);
+
+  while (count_ > 0)
+    cond_.wait();
+}
+
+void CountdownLatch::countdown(void) {
+  ScopedLock<Mutex> guard(mtx_);
+
+  if (0 == --count_)
+    cond_.notify_all();
+}
+
+}
