@@ -52,6 +52,12 @@ public:
     return queue_.size();
   }
 
+  void put(const T& x) {
+    MutexGuard guard(mtx_);
+    queue_.push_back(x);
+    not_empty_.signal();
+  }
+
   void put(T&& x) {
     MutexGuard guard(mtx_);
     queue_.push_back(std::move(x));
