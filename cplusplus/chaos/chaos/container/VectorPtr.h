@@ -324,6 +324,167 @@ inline bool operator>=(const VectorPtr<T, Allocator>& a, const VectorPtr<T, Allo
   return *a.get() >= *b.get();
 }
 
+template <typename T, typename Allocator = std::allocator<T>>
+class ConstVectorPtr {
+public:
+  typedef std::vector<T, Allocator>                 vector_type;
+  typedef T                                         value_type;
+  typedef Allocator                                 allocator_type;
+  typedef typename vector_type::size_type           size_type;
+  typedef typename vector_type::difference_type     difference_type;
+  typedef typename allocator_type::pointer          pointer;
+  typedef typename allocator_type::const_pointer    const_pointer;
+  typedef typename allocator_type::reference        reference;
+  typedef typename allocator_type::const_reference  const_reference;
+  typedef typename vector_type::iterator            iterator;
+  typedef typename vector_type::const_iterator      const_iterator;
+  typedef std::reverse_iterator<iterator>           reverse_iterator;
+  typedef std::reverse_iterator<const_iterator>     const_reverse_iterator;
+private:
+  const vector_type* vec_{};
+public:
+  ConstVectorPtr(void) = default;
+  ~ConstVectorPtr(void) = default;
+
+  explicit ConstVectorPtr(const vector_type& vec)
+    : vec_(&vec) {
+  }
+
+  ConstVectorPtr(const ConstVectorPtr& r)
+    : vec_(r.vec_) {
+  }
+
+  ConstVectorPtr(ConstVectorPtr&& r)
+    : vec_(r.vec_) {
+    r.vec_ = nullptr;
+  }
+
+  ConstVectorPtr& operator=(const ConstVectorPtr& r) {
+    vec_ = r.vec_;
+    return *this;
+  }
+
+  ConstVectorPtr& operator=(ConstVectorPtr&& r) {
+    vec_ = r.vec_;
+    r.vec_ = nullptr;
+    return *this;
+  }
+
+  allocator_type get_allocator(void) const {
+    return vec_->get_allocator();
+  }
+
+  void reset(const vector_type* vec = nullptr) {
+    vec_ = vec;
+  }
+
+  explicit operator bool(void) const {
+    return nullptr != vec_;
+  }
+
+  const vector_type* get(void) const {
+    return vec_;
+  }
+
+  const_iterator begin(void) const {
+    return vec_->begin();
+  }
+
+  const_iterator end(void) const {
+    return vec_->end();
+  }
+
+  const_reverse_iterator rbegin(void) const {
+    return vec_->rbegin();
+  }
+
+  const_reverse_iterator rend(void) const {
+    return vec_->rend();
+  }
+
+  const_iterator cbegin(void) const {
+    return vec_->cbegin();
+  }
+
+  const_iterator cend(void) const {
+    return vec_->cend();
+  }
+
+  const_reverse_iterator crbegin(void) const {
+    return vec_->crbegin();
+  }
+
+  const_reverse_iterator crend(void) const {
+    return vec_->crend();
+  }
+
+  bool empty(void) const {
+    return vec_->empty();
+  }
+
+  size_type size(void) const {
+    return vec_->size();
+  }
+
+  size_type capacity(void) const {
+    return vec_->capacity();
+  }
+
+  size_type max_size(void) const {
+    return vec_->max_size();
+  }
+
+  const_reference operator[](size_type i) const {
+    return vec_->operator[](i);
+  }
+
+  const_reference at(size_type i) const {
+    return vec_->at(i);
+  }
+
+  const_reference front(void) const {
+    return vec_->front();
+  }
+
+  const_reference back(void) const {
+    return vec_->back();
+  }
+
+  const vector_type* data(void) const {
+    return vec_->data();
+  }
+};
+
+template <typename T, typename Allocator>
+inline bool operator==(const ConstVectorPtr<T, Allocator>& a, const ConstVectorPtr<T, Allocator>& b) {
+  return a.get() == b.get() or *a.get() == *b.get();
+}
+
+template <typename T, typename Allocator>
+inline bool operator!=(const ConstVectorPtr<T, Allocator>& a, const ConstVectorPtr<T, Allocator>& b) {
+  return a.get() != b.get() && *a.get() != *b.get();
+}
+
+template <typename T, typename Allocator>
+inline bool operator<(const ConstVectorPtr<T, Allocator>& a, const ConstVectorPtr<T, Allocator>& b) {
+  return *a.get() < *b.get();
+}
+
+template <typename T, typename Allocator>
+inline bool operator<=(const ConstVectorPtr<T, Allocator>& a, const ConstVectorPtr<T, Allocator>& b) {
+  return *a.get() <= *b.get();
+}
+
+template <typename T, typename Allocator>
+inline bool operator>(const ConstVectorPtr<T, Allocator>& a, const ConstVectorPtr<T, Allocator>& b) {
+  return *a.get() > *b.get();
+}
+
+template <typename T, typename Allocator>
+inline bool operator>=(const ConstVectorPtr<T, Allocator>& a, const ConstVectorPtr<T, Allocator>& b) {
+  return *a.get() >= *b.get();
+}
+
 }
 
 #endif // CHAOS_CONTAINER_VECTORPTR_H
