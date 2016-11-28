@@ -360,8 +360,8 @@ public:
   }
 
   ConstVectorPtr& operator=(const ConstVectorPtr& r) {
-  vec_ = r.vec_;
-  return *this;
+    vec_ = r.vec_;
+    return *this;
   }
 
   ConstVectorPtr& operator=(ConstVectorPtr&& r) {
