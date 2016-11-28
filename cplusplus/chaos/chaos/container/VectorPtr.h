@@ -294,6 +294,36 @@ public:
   }
 };
 
+template <typename T, typename Allocator>
+inline bool operator==(const VectorPtr<T, Allocator>& a, const VectorPtr<T, Allocator>& b) {
+  return a.get() == b.get() || *a.get() == *b.get();
+}
+
+template <typename T, typename Allocator>
+inline bool operator!=(const VectorPtr<T, Allocator>& a, const VectorPtr<T, Allocator>& b) {
+  return a.get() != b.get() && *a.get() != *b.get();
+}
+
+template <typename T, typename Allocator>
+inline bool operator<(const VectorPtr<T, Allocator>& a, const VectorPtr<T, Allocator>& b) {
+  return *a.get() < *b.get();
+}
+
+template <typename T, typename Allocator>
+inline bool operator<=(const VectorPtr<T, Allocator>& a, const VectorPtr<T, Allocator>& b) {
+  return *a.get() <= *b.get();
+}
+
+template <typename T, typename Allocator>
+inline bool operator>(const VectorPtr<T, Allocator>& a, const VectorPtr<T, Allocator>& b) {
+  return *a.get() > *b.get();
+}
+
+template <typename T, typename Allocator>
+inline bool operator>=(const VectorPtr<T, Allocator>& a, const VectorPtr<T, Allocator>& b) {
+  return *a.get() >= *b.get();
+}
+
 }
 
 #endif // CHAOS_CONTAINER_VECTORPTR_H
