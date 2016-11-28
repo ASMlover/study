@@ -485,6 +485,16 @@ inline bool operator>=(const ConstVectorPtr<T, Allocator>& a, const ConstVectorP
   return *a.get() >= *b.get();
 }
 
+template <typename T, typename Allocator = std::allocator<T>>
+inline VectorPtr<T, Allocator> make_vector_ptr(std::vector<T, Allocator>& vec) {
+  return VectorPtr<T, Allocator>(&vec);
+}
+
+template <typename T, typename Allocator = std::allocator<T>>
+inline ConstVectorPtr<T, Allocator> make_vector_ptr(const std::vector<T, Allocator>& vec) {
+  return ConstVectorPtr<T, Allocator>(&vec);
+}
+
 }
 
 #endif // CHAOS_CONTAINER_VECTORPTR_H
