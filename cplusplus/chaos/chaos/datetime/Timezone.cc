@@ -32,6 +32,7 @@
 #include <chaos/Types.h>
 #include <chaos/error/SystemError.h>
 #include <chaos/io/ColorIO.h>
+#include <chaos/os/OS.h>
 #include <chaos/datetime/Date.h>
 #include <chaos/datetime/Timezone.h>
 
@@ -218,6 +219,96 @@ const Localtime* find_localtime(const TZData& tzdata, Transition sentry, Transit
     }
   }
   return local;
+}
+
+Timezone::Timezone(const char* zonefile)
+  : data_(new TZData()) {
+  if (!read_timezone_file(zonefile, data_.get()))
+    data_.reset();
+}
+
+Timezone::Timezone(int east_of_utc, const char* tzname)
+  : data_(new TZData()) {
+  data_->localtimes.push_back(Localtime(east_of_utc, false, 0));
+  data_->abbreviation = tzname;
+}
+
+bool Timezone::is_valid(void) const {
+  return static_cast<bool>(data_);
+}
+
+struct tm Timezone::to_localtime(time_t sec_since_epoch) const {
+  struct tm ltime{};
+  CHAOS_CHECK(nullptr != data_, "Timezone::to_localtime - `data_` should not be null");
+  const TZData& data(*data_);
+
+  Transition sentry(sec_since_epoch, 0, 0);
+  const Localtime* local = find_localtime(data, sentry, TransitionCompare(true));
+
+  if (nullptr != local) {
+    time_t local_seconds = sec_since_epoch + local->gmtoff;
+    kern_gmtime(&local_seconds, &ltime);
+    ltime.tm_isdst = local->isdst;
+#if !defined(CHAOS_WINDOWS)
+    ltime.tm_gmtoff = local->gmtoff;
+    ltime.tm_zone = (char*)&data.abbreviation[local->arrb_index];
+#endif
+  }
+  return ltime;
+}
+
+time_t Timezone::from_localtime(const struct tm& t) const {
+  CHAOS_CHECK(nullptr != data_, "Timezone::from_localtime - `data_` should not be null");
+  const TZData data(*data_);
+
+  struct tm tmp = t;
+  time_t seconds = kern_timegm(&tmp);
+  Transition sentry(0, seconds, 0);
+  const Localtime* local = find_localtime(data, sentry, TransitionCompare(false));
+  if (t.tm_isdst) {
+    struct tm try_tm = to_localtime(seconds - local->gmtoff);
+    if (try_tm.tm_isdst && try_tm.tm_hour == t.tm_hour && try_tm.tm_min == t.tm_min)
+      seconds -= 3600;
+  }
+  return seconds - local->gmtoff;
+}
+
+struct tm Timezone::to_utc_time(time_t sec_since_epoch, bool yday) {
+  struct tm utc{};
+#if !defined(CHAOS_WINDOWS)
+  utc.tm_zone = const_cast<char*>("GMT");
+#endif
+  int seconds = static_cast<int>(sec_since_epoch % kSecondsPerDay);
+  int days = static_cast<int>(sec_since_epoch / kSecondsPerDay);
+  if (seconds < 0) {
+    seconds += kSecondsPerDay;
+    --days;
+  }
+  fill_time(seconds, utc);
+  Date date(days + Date::kEpochDay19700101);
+  Date::DateTuple dt = date.get_date();
+  utc.tm_year = dt.year - 1900;
+  utc.tm_mon = dt.month - 1;
+  utc.tm_mday = dt.day;
+  utc.tm_wday = date.weekday();
+
+  if (yday) {
+    Date start(dt.year, 1, 1);
+    utc.tm_yday = date.epoch_day() - start.epoch_day();
+  }
+  return utc;
+}
+
+time_t Timezone::from_utc_time(const struct tm& utc) {
+  return from_utc_time(
+      utc.tm_year + 1900, utc.tm_mon + 1, utc.tm_mday, utc.tm_hour, utc.tm_min, utc.tm_sec);
+}
+
+time_t Timezone::from_utc_time(int year, int month, int day, int hour, int min, int sec) {
+  Date date(year, month, day);
+  int sec_in_day = hour * 3600 + min * 60 + sec;
+  time_t days = date.epoch_day() - Date::kEpochDay19700101;
+  return days * kSecondsPerDay + sec_in_day;
 }
 
 }
