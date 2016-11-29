@@ -122,7 +122,7 @@ private:
 
   void static_check(void);
   template <typename T>
-  void format_integer(T v);
+  void format_integer(T value);
 public:
   void append(const char* s, size_t n) {
     buff_.append(s, n);
@@ -161,7 +161,7 @@ class Format {
   size_t size_;
 public:
   template <typename T>
-  Format(const char* fmt, T v);
+  Format(const char* fmt, T value);
 
   const char* data(void) const {
     return data_;
