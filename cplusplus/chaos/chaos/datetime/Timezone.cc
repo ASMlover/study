@@ -31,6 +31,7 @@
 #include <chaos/Platform.h>
 #include <chaos/Types.h>
 #include <chaos/error/SystemError.h>
+#include <chaos/io/ColorIO.h>
 #include <chaos/datetime/Date.h>
 #include <chaos/datetime/Timezone.h>
 
@@ -146,5 +147,77 @@ public:
     return read_integer<int32_t>();
   }
 };
+
+bool read_timezone_file(const char* zonefile, struct TZData* tzdata) {
+  TZFile f(zonefile);
+  if (f.is_valid()) {
+    try {
+      std::string head = f.read_bytes(4);
+      if (head != "TZif")
+        throw std::logic_error("read_timezone_file - bad head");
+      std::string version = f.read_bytes(1);
+      f.read_bytes(15);
+
+      int32_t isgmtcnt = f.read_int32();
+      int32_t isstdcnt = f.read_int32();
+      int32_t leapcnt = f.read_int32();
+      int32_t timecnt = f.read_int32();
+      int32_t typecnt = f.read_int32();
+      int32_t charcnt = f.read_int32();
+
+      std::vector<int32_t> trans;
+      std::vector<int> localtimes;
+      trans.reserve(timecnt);
+      for (int i = 0; i < timecnt; ++i)
+        trans.push_back(f.read_int32());
+      for (int i = 0; i < timecnt; ++i)
+        localtimes.push_back(f.read_uint8());
+      for (int i = 0; i < typecnt; ++i) {
+        int32_t gmtoff = f.read_int32();
+        bool isdst = 0 != f.read_uint8();
+        uint8_t arrb_index = f.read_uint8();
+
+        tzdata->localtimes.push_back(Localtime(gmtoff, isdst, arrb_index));
+      }
+      for (int i = 0; i < timecnt; ++i) {
+        int local_index = localtimes[i];
+        time_t lt = trans[i] + tzdata->localtimes[local_index].gmtoff;
+        tzdata->transitions.push_back(Transition(trans[i], lt, local_index));
+      }
+      tzdata->abbreviation = f.read_bytes(charcnt);
+
+      for (int i = 0; i < leapcnt; ++i) {
+      }
+      CHAOS_UNUSED(isstdcnt);
+      CHAOS_UNUSED(isgmtcnt);
+    }
+    catch (std::logic_error& e) {
+      ColorIO::fprintf(stderr, ColorIO::ColorType::COLORTYPE_RED, "%s\n", e.what());
+    }
+  }
+  return true;
+}
+
+const Localtime* find_localtime(const TZData& tzdata, Transition sentry, TransitionCompare cmp) {
+  const Localtime* local = nullptr;
+
+  if (tzdata.transitions.empty() || cmp(sentry, tzdata.transitions.front())) {
+    local = &tzdata.localtimes.front();
+  }
+  else {
+    auto trans_iter = std::lower_bound(tzdata.transitions.begin(), tzdata.transitions.end(), sentry, cmp);
+    if (trans_iter != tzdata.transitions.end()) {
+      if (!cmp.equal(sentry, *trans_iter)) {
+        CHAOS_CHECK(trans_iter != tzdata.transitions.begin(), "TZData's transitions error");
+        --trans_iter;
+      }
+      local = &tzdata.localtimes[trans_iter->localtime_index];
+    }
+    else {
+      local = &tzdata.localtimes[tzdata.transitions.back().localtime_index];
+    }
+  }
+  return local;
+}
 
 }
