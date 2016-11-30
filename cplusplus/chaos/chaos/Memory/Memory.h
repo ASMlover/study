@@ -27,7 +27,7 @@
 #ifndef CHAOS_MEMORY_MEMORY_H
 #define CHAOS_MEMORY_MEMORY_H
 
-#include <chaos/memory/SharedCount.h>
+#include <chaos/Memory/SharedCount.h>
 
 namespace chaos {
 
