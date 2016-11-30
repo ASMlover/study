@@ -28,7 +28,7 @@
 #define CHAOS_CONCURRENT_BOUNDEDBLOCKINGQUEUE_H
 
 #include <chaos/Types.h>
-#include <chaos/container/CircularBuffer.h>
+#include <chaos/Container/CircularBuffer.h>
 #include <chaos/concurrent/Mutex.h>
 #include <chaos/concurrent/Condition.h>
 
