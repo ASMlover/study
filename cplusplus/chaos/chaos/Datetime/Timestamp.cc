@@ -27,7 +27,7 @@
 #include <inttypes.h>
 #include <time.h>
 #include <chaos/os/OS.h>
-#include <chaos/datetime/Timestamp.h>
+#include <chaos/Datetime/Timestamp.h>
 
 namespace chaos {
 

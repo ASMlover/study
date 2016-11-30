@@ -33,8 +33,8 @@
 #include <chaos/error/SystemError.h>
 #include <chaos/IO/ColorIO.h>
 #include <chaos/os/OS.h>
-#include <chaos/datetime/Date.h>
-#include <chaos/datetime/Timezone.h>
+#include <chaos/Datetime/Date.h>
+#include <chaos/Datetime/Timezone.h>
 
 namespace chaos {
 
