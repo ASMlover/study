@@ -30,7 +30,7 @@
 #include <Chaos/Types.h>
 #include <Chaos/Container/StringPiece.h>
 
-namespace chaos {
+namespace Chaos {
 
 const int kSmallBuffer = 4096;
 const int kLargeBuffer = 4096000; // 4906 * 1000

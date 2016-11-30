@@ -28,7 +28,7 @@
 #include <Chaos/Types.h>
 #include <Chaos/Codecs/Base64.h>
 
-namespace chaos {
+namespace Chaos {
 
 namespace Base64 {
   static const char* base64_initilize(void);

@@ -32,7 +32,7 @@
 #include <Chaos/Concurrent/Mutex.h>
 #include <Chaos/OS/OS.h>
 
-namespace chaos {
+namespace Chaos {
 
 class Condition : private UnCopyable {
   Mutex& mtx_;

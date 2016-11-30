@@ -29,7 +29,7 @@
 
 #include <Chaos/Memory/SharedCount.h>
 
-namespace chaos {
+namespace Chaos {
 
 template <typename T>
 inline void checked_delete(T* p) {

@@ -31,7 +31,7 @@
 #include <Chaos/Concurrent/Mutex.h>
 #include <Chaos/Concurrent/Condition.h>
 
-namespace chaos {
+namespace Chaos {
 
 class CountdownLatch : private UnCopyable {
   mutable Mutex mtx_;

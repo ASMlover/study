@@ -29,7 +29,7 @@
 
 #include <vector>
 
-namespace chaos {
+namespace Chaos {
 
 template <typename T, typename Allocator = std::allocator<T>>
 class VectorPtr {

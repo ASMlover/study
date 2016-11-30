@@ -31,7 +31,7 @@
 #include <memory>
 #include <Chaos/Copyable.h>
 
-namespace chaos {
+namespace Chaos {
 
 struct TZData;
 

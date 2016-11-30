@@ -32,7 +32,7 @@
 #include <utility>
 #include <Chaos/Copyable.h>
 
-namespace chaos {
+namespace Chaos {
 
 class Timestamp : public Copyable {
   int64_t epoch_msec_{};

@@ -30,7 +30,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-namespace chaos {
+namespace Chaos {
 
 namespace ColorIO {
   enum class ColorType {

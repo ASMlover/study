@@ -29,7 +29,7 @@
 
 #include <Chaos/Memory/IntrusiveRefCounter.h>
 
-namespace chaos {
+namespace Chaos {
 
 template <typename T>
 class IntrusivePtr {

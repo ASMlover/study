@@ -30,7 +30,7 @@
 #include <exception>
 #include <system_error>
 
-namespace chaos {
+namespace Chaos {
 
 inline void __chaos_throw_exception(const char* what) {
   // FIXME: default as logica_error

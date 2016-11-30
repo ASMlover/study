@@ -32,7 +32,7 @@
 #include <Chaos/Concurrent/Mutex.h>
 #include <Chaos/Concurrent/Condition.h>
 
-namespace chaos {
+namespace Chaos {
 
 template <typename T>
 class BoundedBlockingQueue : private UnCopyable {

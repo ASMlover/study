@@ -36,7 +36,7 @@
 # include <Chaos/Concurrent/Posix/Atomic.h>
 #endif
 
-namespace chaos {
+namespace Chaos {
 
 typedef Atomic<int16_t> AtomicI16;
 typedef Atomic<int32_t> AtomicI32;

@@ -29,7 +29,7 @@
 #include <limits>
 #include <Chaos/Logging/LogStream.h>
 
-namespace chaos {
+namespace Chaos {
 
 const char kDigits[] = "9876543210123456789";
 const char* kZero = kDigits + 9;

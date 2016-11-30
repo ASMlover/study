@@ -35,7 +35,7 @@
 #include <time.h>
 #include <Chaos/Types.h>
 
-namespace chaos {
+namespace Chaos {
 
 inline int kern_strerror(int errnum, char* buf, size_t buflen) {
   return strerror_r(errnum, buf, buflen);

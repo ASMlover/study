@@ -27,11 +27,11 @@
 #ifndef CHAOS_CONCURRENT_UNEXPOSED_CURRENTTHREAD_H
 #define CHAOS_CONCURRENT_UNEXPOSED_CURRENTTHREAD_H
 
-namespace chaos {
+namespace Chaos {
 
 namespace CurrentThread {
   // unexposed methods of CurrentThread
-  namespace unexposed {
+  namespace Unexposed {
     void set_cached_tid(int cached_tid);
     void set_name(const char* name);
   }

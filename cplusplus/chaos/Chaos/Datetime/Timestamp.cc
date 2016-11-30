@@ -29,7 +29,7 @@
 #include <Chaos/OS/OS.h>
 #include <Chaos/Datetime/Timestamp.h>
 
-namespace chaos {
+namespace Chaos {
 
 static_assert(sizeof(Timestamp) == sizeof(int64_t), "Timestamp should be same size as `int64_t`");
 

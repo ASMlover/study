@@ -27,7 +27,7 @@
 #ifndef CHAOS_UNCOPYABLE_H
 #define CHAOS_UNCOPYABLE_H
 
-namespace chaos {
+namespace Chaos {
 
 class UnCopyable {
   UnCopyable(const UnCopyable&) = delete;

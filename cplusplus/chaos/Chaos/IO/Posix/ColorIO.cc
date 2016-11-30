@@ -28,10 +28,10 @@
 #include <Chaos/Concurrent/Mutex.h>
 #include <Chaos/IO/ColorIO.h>
 
-namespace chaos {
+namespace Chaos {
 
 namespace ColorIO {
-  static chaos::Mutex g_color_mutex;
+  static Mutex g_color_mutex;
 
   int vfprintf(FILE* stream, ColorType color, const char* format, va_list ap) {
     const char* new_color = "\033[0m";
@@ -49,7 +49,7 @@ namespace ColorIO {
 
     int n;
     {
-      chaos::ScopedLock<chaos::Mutex> guard(g_color_mutex);
+      ScopedLock<Mutex> guard(g_color_mutex);
       fprintf(stream, "%s", new_color);
       n = ::vfprintf(stream, format, ap);
       fprintf(stream, "\033[0m");

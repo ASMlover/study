@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <Chaos/Concurrent/CountdownLatch.h>
 
-namespace chaos {
+namespace Chaos {
 
 CountdownLatch::CountdownLatch(int count)
   : mtx_()

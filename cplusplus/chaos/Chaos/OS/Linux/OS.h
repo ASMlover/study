@@ -33,7 +33,7 @@
 #include <unistd.h>
 #include <time.h>
 
-namespace chaos {
+namespace Chaos {
 
 inline char* kern_strerror(int errnum, char* buf, size_t buflen) {
   return strerror_r(errnum, buf, buflen);

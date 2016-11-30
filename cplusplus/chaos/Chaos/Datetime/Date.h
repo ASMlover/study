@@ -32,7 +32,7 @@
 
 struct tm;
 
-namespace chaos {
+namespace Chaos {
 
 class Date : public Copyable {
   int epoch_day_{};

@@ -32,7 +32,7 @@
 #include <sstream>
 #include <Chaos/IO/ColorIO.h>
 
-namespace chaos {
+namespace Chaos {
 
 class FakeTester {};
 
@@ -90,13 +90,13 @@ public:
   }
 };
 
-#define CHAOS_CHECK_TRUE(c)   chaos::Tester(__FILE__, __LINE__).is_true((c), #c)
-#define CHAOS_CHECK_EQ(a, b)  chaos::Tester(__FILE__, __LINE__).is_eq((a), (b))
-#define CHAOS_CHECK_NE(a, b)  chaos::Tester(__FILE__, __LINE__).is_ne((a), (b))
-#define CHAOS_CHECK_GE(a, b)  chaos::Tester(__FILE__, __LINE__).is_ge((a), (b))
-#define CHAOS_CHECK_GT(a, b)  chaos::Tester(__FILE__, __LINE__).is_gt((a), (b))
-#define CHAOS_CHECK_LE(a, b)  chaos::Tester(__FILE__, __LINE__).is_le((a), (b))
-#define CHAOS_CHECK_LT(a, b)  chaos::Tester(__FILE__, __LINE__).is_lt((a), (b))
+#define CHAOS_CHECK_TRUE(c)   Chaos::Tester(__FILE__, __LINE__).is_true((c), #c)
+#define CHAOS_CHECK_EQ(a, b)  Chaos::Tester(__FILE__, __LINE__).is_eq((a), (b))
+#define CHAOS_CHECK_NE(a, b)  Chaos::Tester(__FILE__, __LINE__).is_ne((a), (b))
+#define CHAOS_CHECK_GE(a, b)  Chaos::Tester(__FILE__, __LINE__).is_ge((a), (b))
+#define CHAOS_CHECK_GT(a, b)  Chaos::Tester(__FILE__, __LINE__).is_gt((a), (b))
+#define CHAOS_CHECK_LE(a, b)  Chaos::Tester(__FILE__, __LINE__).is_le((a), (b))
+#define CHAOS_CHECK_LT(a, b)  Chaos::Tester(__FILE__, __LINE__).is_lt((a), (b))
 
 bool register_testharness(const char* base, const char* name, void (*closure)(void));
 int run_all_testharness(void);
@@ -113,7 +113,7 @@ public:\
   }\
 };\
 bool _ChaosTestHarness_ignored_##Name =\
-  chaos::register_testharness(#Base, #Name, &_ChaosTestHarness_##Name::_run_harness);\
+  Chaos::register_testharness(#Base, #Name, &_ChaosTestHarness_##Name::_run_harness);\
 void _ChaosTestHarness_##Name::_run(void)
 
 #endif // CHAOS_UNITTEST_TESTHARNESS_H

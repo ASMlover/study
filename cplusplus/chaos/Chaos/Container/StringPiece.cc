@@ -27,7 +27,7 @@
 #include <ostream>
 #include <Chaos/Container/StringPiece.h>
 
-namespace chaos {
+namespace Chaos {
 
 std::ostream& operator<<(std::ostream& out, const StringPiece& piece) {
   return out << piece.data();

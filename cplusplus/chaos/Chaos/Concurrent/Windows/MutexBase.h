@@ -30,7 +30,7 @@
 #include <Windows.h>
 #include <Chaos/Types.h>
 
-namespace chaos {
+namespace Chaos {
 
 class MutexBase : private UnCopyable {
   typedef CRITICAL_SECTION MutexType;

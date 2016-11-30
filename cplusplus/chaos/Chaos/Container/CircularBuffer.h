@@ -31,7 +31,7 @@
 #include <memory>
 #include <stdexcept>
 
-namespace chaos {
+namespace Chaos {
 
 template <typename T, typename ElemType = typename T::value_type>
 class CircularBufferIterator {

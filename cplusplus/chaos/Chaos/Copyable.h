@@ -27,7 +27,7 @@
 #ifndef CHAOS_COPYABLE_H
 #define CHAOS_COPYABLE_H
 
-namespace chaos {
+namespace Chaos {
 
 class Copyable {
 protected:

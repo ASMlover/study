@@ -27,8 +27,8 @@
 #include <Chaos/Concurrent/Atomic.h>
 #include <Chaos/Unittest/TestHarness.h>
 
-CHAOS_TEST(AtomicI16, chaos::FakeTester) {
-  chaos::AtomicI16 a0;
+CHAOS_TEST(AtomicI16, Chaos::FakeTester) {
+  Chaos::AtomicI16 a0;
   CHAOS_CHECK_EQ(a0.get(), 0);
   CHAOS_CHECK_EQ(a0.fetch_add(1), 0);
   CHAOS_CHECK_EQ(a0.get(), 1);
@@ -43,8 +43,8 @@ CHAOS_TEST(AtomicI16, chaos::FakeTester) {
   CHAOS_CHECK_EQ(--a0, 2);
 }
 
-CHAOS_TEST(AtomicI32, chaos::FakeTester) {
-  chaos::AtomicI32 a0;
+CHAOS_TEST(AtomicI32, Chaos::FakeTester) {
+  Chaos::AtomicI32 a0;
   CHAOS_CHECK_TRUE(a0.get() == 0);
   CHAOS_CHECK_TRUE(a0.fetch_add(1) == 0);
   CHAOS_CHECK_TRUE(a0.get() == 1);
@@ -59,8 +59,8 @@ CHAOS_TEST(AtomicI32, chaos::FakeTester) {
   CHAOS_CHECK_TRUE(--a0 == 2);
 }
 
-CHAOS_TEST(AtomicI64, chaos::FakeTester) {
-  chaos::AtomicI64 a0;
+CHAOS_TEST(AtomicI64, Chaos::FakeTester) {
+  Chaos::AtomicI64 a0;
   CHAOS_CHECK_EQ(a0.get(), 0);
   CHAOS_CHECK_EQ(a0.fetch_add(1), 0);
   CHAOS_CHECK_EQ(a0.get(), 1);

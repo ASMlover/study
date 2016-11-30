@@ -28,7 +28,7 @@
 #include <vector>
 #include <Chaos/Unittest/TestHarness.h>
 
-namespace chaos {
+namespace Chaos {
 
 struct HarnessContext {
   const char* base;

@@ -46,7 +46,7 @@
 # define CHAOS_CHECK(condition, message) do {\
     if (!(condition)) {\
       ColorIO::fprintf(stderr,\
-          chaos::ColorIO::ColorType::COLORTYPE_RED,\
+          Chaos::ColorIO::ColorType::COLORTYPE_RED,\
           "[%s:%d] CHECKING FAILED `%s()` - %s\n",\
           __FILE__,\
           __LINE__,\
@@ -60,7 +60,7 @@
 
 typedef unsigned char byte_t;
 
-namespace chaos {
+namespace Chaos {
 
 template <typename T>
 inline const T& chaos_min(const T& a, const T& b) {

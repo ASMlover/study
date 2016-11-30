@@ -29,7 +29,7 @@
 
 #include <stdint.h>
 
-namespace chaos {
+namespace Chaos {
 
 namespace CurrentThread {
   void cached_tid(void);

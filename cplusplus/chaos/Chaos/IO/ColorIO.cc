@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <Chaos/IO/ColorIO.h>
 
-namespace chaos {
+namespace Chaos {
 
 namespace ColorIO {
   int printf(ColorType color, const char* format, ...) {

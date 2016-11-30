@@ -36,7 +36,7 @@
 #include <Chaos/Datetime/Date.h>
 #include <Chaos/Datetime/Timezone.h>
 
-namespace chaos {
+namespace Chaos {
 
 struct Transition {
   time_t gmttime;

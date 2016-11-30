@@ -29,7 +29,7 @@
 
 #include <string>
 
-namespace chaos {
+namespace Chaos {
 
 namespace Base64 {
   std::string encode(const char* s, size_t n);

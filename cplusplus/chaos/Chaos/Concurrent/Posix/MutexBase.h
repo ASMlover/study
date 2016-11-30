@@ -30,7 +30,7 @@
 #include <pthread.h>
 #include <Chaos/UnCopyable.h>
 
-namespace chaos {
+namespace Chaos {
 
 class MutexBase : private UnCopyable {
   typedef pthread_mutex_t MutexType;

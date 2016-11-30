@@ -29,43 +29,43 @@
 #include <iostream>
 #include <thread>
 
-CHAOS_TEST(Mutex, chaos::FakeTester) {
-  chaos::Mutex mtx;
+CHAOS_TEST(Mutex, Chaos::FakeTester) {
+  Chaos::Mutex mtx;
   int counter = 0;
 
   CHAOS_CHECK_EQ(counter, 0);
 
   std::thread t([&] {
-      chaos::ScopedLock<chaos::Mutex> guard(mtx);
+      Chaos::ScopedLock<Chaos::Mutex> guard(mtx);
 
       for (int i = 0; i < 10; ++i)
-        std::cout << "chaos::Mutex unittest, @i: " << ++counter << std::endl;
+        std::cout << "Chaos::Mutex unittest, @i: " << ++counter << std::endl;
   });
   t.join();
 
   CHAOS_CHECK_EQ(counter, 10);
 }
 
-CHAOS_TEST(FastMutex, chaos::FakeTester) {
-  chaos::FastMutex mtx;
+CHAOS_TEST(FastMutex, Chaos::FakeTester) {
+  Chaos::FastMutex mtx;
   int counter = 0;
 
   CHAOS_CHECK_EQ(counter, 0);
 
   std::thread t([&] {
-      chaos::ScopedLock<chaos::FastMutex> guard(mtx);
+      Chaos::ScopedLock<Chaos::FastMutex> guard(mtx);
 
       for (int i = 0; i < 10; ++i)
-        std::cout << "chaos::FastMutex unittest, @i: " << ++counter << std::endl;
+        std::cout << "Chaos::FastMutex unittest, @i: " << ++counter << std::endl;
   });
   t.join();
 
   CHAOS_CHECK_EQ(counter, 10);
 }
 
-CHAOS_TEST(ScopedLock, chaos::FakeTester) {
-  chaos::Mutex mtx;
-  chaos::ScopedLock<chaos::Mutex> guard(mtx);
+CHAOS_TEST(ScopedLock, Chaos::FakeTester) {
+  Chaos::Mutex mtx;
+  Chaos::ScopedLock<Chaos::Mutex> guard(mtx);
 
   CHAOS_CHECK_TRUE(guard.owned_lock());
   CHAOS_CHECK_TRUE(static_cast<bool>(guard));

@@ -32,7 +32,7 @@
 #include <algorithm>
 #include <Chaos/UnCopyable.h>
 
-namespace chaos {
+namespace Chaos {
 
 class CountedBase : private UnCopyable {
   std::atmoic<uint32_t> shared_count_{1};

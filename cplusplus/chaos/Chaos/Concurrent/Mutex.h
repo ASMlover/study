@@ -41,7 +41,7 @@
 # include <Chaos/Concurrent/Posix/MutexBase.h>
 #endif
 
-namespace chaos {
+namespace Chaos {
 
 struct DeferLock {};
 struct TryToLock {};

@@ -30,7 +30,7 @@
 #include <stdint.h>
 #include <atomic>
 
-namespace chaos {
+namespace Chaos {
 
 struct CountedThreadUnsafe {
   typedef uint32_t type;

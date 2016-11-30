@@ -27,7 +27,7 @@
 #include <Chaos/OS/OS.h>
 #include <Chaos/Concurrent/CurrentThread.h>
 
-namespace chaos {
+namespace Chaos {
 
 namespace CurrentThread {
   static const int kMainTid = kern_gettid();

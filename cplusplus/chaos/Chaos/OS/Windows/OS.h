@@ -38,7 +38,7 @@ struct timezone {
   int tz_dsttime;
 };
 
-namespace chaos {
+namespace Chaos {
 
 #if !defined(__builtin_expect)
 # define __builtin_expect(exp, c) (exp)

@@ -31,5 +31,5 @@ int main(int argc, char* argv[]) {
   CHAOS_UNUSED(argc);
   CHAOS_UNUSED(argv);
 
-  return chaos::run_all_testharness();
+  return Chaos::run_all_testharness();
 }

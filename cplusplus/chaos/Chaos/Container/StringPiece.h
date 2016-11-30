@@ -31,7 +31,7 @@
 #include <string>
 #include <Chaos/Types.h>
 
-namespace chaos {
+namespace Chaos {
 
 class StringArg {
   const char* str_;

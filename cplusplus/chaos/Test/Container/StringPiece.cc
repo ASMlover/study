@@ -27,12 +27,12 @@
 #include <Chaos/Container/StringPiece.h>
 #include <Chaos/Unittest/TestHarness.h>
 
-CHAOS_TEST(StringArg, chaos::FakeTester) {
-  const char* raw_str = "chaos::StringArg tester with raw string";
+CHAOS_TEST(StringArg, Chaos::FakeTester) {
+  const char* raw_str = "Chaos::StringArg tester with raw string";
   std::string cpp_str(raw_str);
-  chaos::StringArg s0(raw_str);
-  chaos::StringArg s1(cpp_str);
-  chaos::StringArg s2 = raw_str;
+  Chaos::StringArg s0(raw_str);
+  Chaos::StringArg s1(cpp_str);
+  Chaos::StringArg s2 = raw_str;
 
   CHAOS_CHECK_EQ(s0.c_str(), raw_str);
   CHAOS_CHECK_EQ(strlen(s0.c_str()), strlen(raw_str));
@@ -41,11 +41,11 @@ CHAOS_TEST(StringArg, chaos::FakeTester) {
   CHAOS_CHECK_EQ(s2.c_str(), s0.c_str());
 }
 
-CHAOS_TEST(StringPiece, chaos::FakeTester) {
-  const char* raw_str = "chaos::StringPiece tester with raw string";
-  std::string cpp_str("chaos::StringPiece tester with C++ std::string");
+CHAOS_TEST(StringPiece, Chaos::FakeTester) {
+  const char* raw_str = "Chaos::StringPiece tester with raw string";
+  std::string cpp_str("Chaos::StringPiece tester with C++ std::string");
 
-  chaos::StringPiece s0;
+  Chaos::StringPiece s0;
   CHAOS_CHECK_TRUE(!static_cast<bool>(s0));
   CHAOS_CHECK_TRUE(s0.data() == nullptr);
   CHAOS_CHECK_TRUE(s0.size() == 0);
@@ -53,7 +53,7 @@ CHAOS_TEST(StringPiece, chaos::FakeTester) {
   CHAOS_CHECK_TRUE(s0.begin() == nullptr);
   CHAOS_CHECK_TRUE(s0.end() == nullptr);
 
-  chaos::StringPiece s1(raw_str);
+  Chaos::StringPiece s1(raw_str);
   CHAOS_CHECK_TRUE(static_cast<bool>(s1));
   CHAOS_CHECK_EQ(s1.data(), raw_str);
   CHAOS_CHECK_EQ(s1.size(), strlen(raw_str));
@@ -72,7 +72,7 @@ CHAOS_TEST(StringPiece, chaos::FakeTester) {
   s1.clear();
   CHAOS_CHECK_TRUE(s1.empty());
 
-  chaos::StringPiece s2(cpp_str);
+  Chaos::StringPiece s2(cpp_str);
   CHAOS_CHECK_TRUE(static_cast<bool>(s2));
   CHAOS_CHECK_EQ(s2.data(), cpp_str.data());
   CHAOS_CHECK_EQ(s2.size(), cpp_str.size());
@@ -88,7 +88,7 @@ CHAOS_TEST(StringPiece, chaos::FakeTester) {
   s2.clear();
   CHAOS_CHECK_TRUE(s2.empty());
 
-  chaos::StringPiece s;
+  Chaos::StringPiece s;
   CHAOS_CHECK_TRUE(s.empty());
   s.set(raw_str);
   CHAOS_CHECK_TRUE(!s.empty());
@@ -97,8 +97,8 @@ CHAOS_TEST(StringPiece, chaos::FakeTester) {
   CHAOS_CHECK_TRUE(s.size() == cpp_str.size());
   CHAOS_CHECK_TRUE(s.starts_with("chaos"));
 
-  chaos::StringPiece a("AAA");
-  chaos::StringPiece b("BBB");
+  Chaos::StringPiece a("AAA");
+  Chaos::StringPiece b("BBB");
   CHAOS_CHECK_TRUE(a < b);
   CHAOS_CHECK_TRUE(a <= a);
   CHAOS_CHECK_TRUE(a <= b);

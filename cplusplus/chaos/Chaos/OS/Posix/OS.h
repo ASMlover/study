@@ -33,7 +33,7 @@
 #include <string.h>
 #include <time.h>
 
-namespace chaos {
+namespace Chaos {
 
 inline struct tm* kern_gmtime(const time_t* timep, struct tm* result) {
   return gmtime_r(timep, result);

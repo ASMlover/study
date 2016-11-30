@@ -27,7 +27,7 @@
 #include <stdint.h>
 #include <Chaos/OS/Windows/OS.h>
 
-namespace chaos {
+namespace Chaos {
 
 static const uint64_t kEpoch = 116444736000000000ULL;
 static const DWORD kMSVCException = 0x406D1388;

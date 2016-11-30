@@ -29,7 +29,7 @@
 #include <time.h>
 #include <Chaos/Datetime/Date.h>
 
-namespace chaos {
+namespace Chaos {
 
 static_assert(sizeof(Date) >= sizeof(int32_t), "require 32 bit integer at least");
 

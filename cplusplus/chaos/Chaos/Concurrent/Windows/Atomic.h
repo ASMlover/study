@@ -30,14 +30,14 @@
 #include <Windows.h>
 #include <Chaos/UnCopyable.h>
 
-namespace chaos {
+namespace Chaos {
 
 template <typename T>
 class Atomic : private UnCopyable {
   volatile T value_{};
 
   static_assert(sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8,
-      "chaos::Atomic value type's size must be `1`, `2`, `4` or `8`");
+      "Chaos::Atomic value type's size must be `1`, `2`, `4` or `8`");
 public:
   T get(void) {
     return static_cast<T>(InterlockedCompareExchange(reinterpret_cast<volatile LONG*>(&value_), 0, 0));

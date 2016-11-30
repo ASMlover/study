@@ -32,7 +32,7 @@
 #include <Chaos/Concurrent/Unexposed/CurrentThread.h>
 #include <Chaos/Concurrent/CurrentThread.h>
 
-namespace chaos {
+namespace Chaos {
 
 namespace CurrentThread {
   static const int kMainTid = kern_gettid();
@@ -42,7 +42,7 @@ namespace CurrentThread {
   __declspec(thread) const char* t_thread_name = "unknown";
   static_assert(std::is_same<int, pid_t>::value, "pid_t should be `int`");
 
-  namespace unexposed {
+  namespace Unexposed {
     void set_cached_tid(int cached_tid) {
       CurrentThread::t_cachaed_tid = cached_tid;
     }
