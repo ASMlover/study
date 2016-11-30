@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <algorithm>
 #include <limits>
-#include <chaos/logging/LogStream.h>
+#include <chaos/Logging/LogStream.h>
 
 namespace chaos {
 
