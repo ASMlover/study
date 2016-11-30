@@ -247,7 +247,7 @@ struct tm Timezone::to_localtime(time_t sec_since_epoch) const {
 
   if (nullptr != local) {
     time_t local_seconds = sec_since_epoch + local->gmtoff;
-    kern_gmtime(&local_seconds, &ltime);
+    Chaos::kern_gmtime(&local_seconds, &ltime);
     ltime.tm_isdst = local->isdst;
 #if !defined(CHAOS_WINDOWS)
     ltime.tm_gmtoff = local->gmtoff;
@@ -262,7 +262,7 @@ time_t Timezone::from_localtime(const struct tm& t) const {
   const TZData data(*data_);
 
   struct tm tmp = t;
-  time_t seconds = kern_timegm(&tmp);
+  time_t seconds = Chaos::kern_timegm(&tmp);
   Transition sentry(0, seconds, 0);
   const Localtime* local = find_localtime(data, sentry, TransitionCompare(false));
   if (t.tm_isdst) {

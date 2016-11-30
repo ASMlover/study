@@ -35,7 +35,7 @@
 namespace Chaos {
 
 namespace CurrentThread {
-  static const int kMainTid = kern_gettid();
+  static const int kMainTid = Chaos::kern_gettid();
   __declspec(thread) int t_cachaed_tid = 0;
   __declspec(thread) char t_strftid[32];
   __declspec(thread) int t_strftid_length = 12;
@@ -54,7 +54,7 @@ namespace CurrentThread {
 
   void cached_tid(void) {
     if (0 == t_cachaed_tid) {
-      t_cachaed_tid = kern_gettid();
+      t_cachaed_tid = Chaos::kern_gettid();
       t_strftid_length = snprintf(t_strftid, sizeof(t_strftid), "%11d ", t_cachaed_tid);
     }
   }

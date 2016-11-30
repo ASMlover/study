@@ -56,7 +56,7 @@ public:
     UnassignScopedMutex guard(mtx_);
 
     struct timespec ts;
-    kern_gettime(&ts);
+    Chaos::kern_gettime(&ts);
     ts.tv_sec += seconds;
     return 0 == pthread_cond_timedwait(&cond_, mtx_.get_mutex(), &ts);
   }

@@ -45,7 +45,7 @@ std::string Timestamp::to_formatted_string(bool show_msec) const {
   char buf[32];
   time_t time = static_cast<time_t>(epoch_msec_ / kMicrosecondsPerSecond);
   struct tm result;
-  kern_gmtime(&time, &result);
+  Chaos::kern_gmtime(&time, &result);
 
   if (show_msec) {
     int msec = static_cast<int>(epoch_msec_ % kMicrosecondsPerSecond);
@@ -77,7 +77,7 @@ std::string Timestamp::to_formatted_string(bool show_msec) const {
 
 Timestamp Timestamp::now(void) {
   struct timeval tv;
-  kern_gettimeofday(&tv, nullptr);
+  Chaos::kern_gettimeofday(&tv, nullptr);
   int64_t sec = tv.tv_sec;
   return Timestamp(sec * kMicrosecondsPerSecond + tv.tv_usec);
 }

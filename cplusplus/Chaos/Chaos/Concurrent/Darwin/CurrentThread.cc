@@ -30,7 +30,7 @@
 namespace Chaos {
 
 namespace CurrentThread {
-  static const int kMainTid = kern_gettid();
+  static const int kMainTid = Chaos::kern_gettid();
 
   bool is_main_thread(void) {
     return get_tid() == kMainTid;
