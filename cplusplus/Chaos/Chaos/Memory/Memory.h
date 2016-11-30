@@ -240,7 +240,7 @@ public:
   ~SharedPtr(void) = default;
 
   template <typename Y>
-  explicit SharedPtr(T* p)
+  explicit SharedPtr(Y* p)
     : px_(p)
     , pn_(px_) {
   }

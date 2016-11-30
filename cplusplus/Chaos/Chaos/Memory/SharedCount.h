@@ -35,8 +35,8 @@
 namespace Chaos {
 
 class CountedBase : private UnCopyable {
-  std::atmoic<uint32_t> shared_count_{1};
-  std::atmoic<uint32_t> weak_count_{1};
+  std::atomic<uint32_t> shared_count_{1};
+  std::atomic<uint32_t> weak_count_{1};
 public:
   CountedBase(void) = default;
   virtual ~CountedBase(void) {}

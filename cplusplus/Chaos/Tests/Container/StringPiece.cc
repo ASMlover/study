@@ -95,7 +95,7 @@ CHAOS_TEST(StringPiece, Chaos::FakeTester) {
   CHAOS_CHECK_TRUE(s.size() == strlen(raw_str));
   s.set(cpp_str.c_str(), cpp_str.size());
   CHAOS_CHECK_TRUE(s.size() == cpp_str.size());
-  CHAOS_CHECK_TRUE(s.starts_with("chaos"));
+  CHAOS_CHECK_TRUE(s.starts_with("Chaos"));
 
   Chaos::StringPiece a("AAA");
   Chaos::StringPiece b("BBB");

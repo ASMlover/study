@@ -41,7 +41,7 @@ class BoundedBlockingQueue : private UnCopyable {
   Condition non_full_;
   CircularBuffer<T> queue_;
 public:
-  explicit  BoundedBlockingQueue(size_t capacity)
+  explicit BoundedBlockingQueue(size_t capacity)
     : mtx_()
     , non_empty_(mtx_)
     , non_full_(mtx_)
