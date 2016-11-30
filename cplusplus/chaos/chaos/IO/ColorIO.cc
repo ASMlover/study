@@ -24,42 +24,27 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <Windows.h>
-#include <chaos/error/SystemError.h>
-#include <chaos/concurrent/Mutex.h>
-#include <chaos/io/ColorIO.h>
+#include <chaos/IO/ColorIO.h>
 
 namespace chaos {
 
 namespace ColorIO {
-  static chaos::Mutex g_color_mutex;
+  int printf(ColorType color, const char* format, ...) {
+    va_list ap;
 
-  int vfprintf(FILE* stream, ColorType color, const char* format, va_list ap) {
-    HANDLE out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_SCREEN_BUFFER_INFO info;
-    GetConsoleScreenBufferInfo(out_handle, &info);
-    WORD old_color = info.wAttributes;
-    WORD new_color = old_color;
+    va_start(ap, format);
+    int n = ColorIO::vfprintf(stdout, color, format, ap);
+    va_end(ap);
 
-    switch (color) {
-    case ColorType::COLORTYPE_INVALID:
-      __chaos_throw_exception(std::logic_error("invalid color type"));
-      break;
-    case ColorType::COLORTYPE_RED:
-      new_color = FOREGROUND_INTENSITY | FOREGROUND_RED;
-      break;
-    case ColorType::COLORTYPE_GREEN:
-      new_color = FOREGROUND_INTENSITY | FOREGROUND_GREEN;
-      break;
-    }
+    return n;
+  }
 
-    int n;
-    {
-      ScopedLock<Mutex> guard(g_color_mutex);
-      SetConsoleTextAttribute(out_handle, new_color);
-      n = ::vfprintf(stream, format, ap);
-      SetConsoleTextAttribute(out_handle, old_color);
-    }
+  int fprintf(FILE* stream, ColorType color, const char* format, ...) {
+    va_list ap;
+
+    va_start(ap, format);
+    int n = ColorIO::vfprintf(stream, color, format, ap);
+    va_end(ap);
 
     return n;
   }

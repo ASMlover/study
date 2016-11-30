@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <chaos/error/SystemError.h>
 #include <chaos/concurrent/Mutex.h>
-#include <chaos/io/ColorIO.h>
+#include <chaos/IO/ColorIO.h>
 
 namespace chaos {
 

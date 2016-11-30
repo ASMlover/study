@@ -42,7 +42,7 @@
 
 #if !defined(CHAOS_CHECK)
 # include <stdlib.h>
-# include <chaos/io/ColorIO.h>
+# include <chaos/IO/ColorIO.h>
 # define CHAOS_CHECK(condition, message) do {\
     if (!(condition)) {\
       ColorIO::fprintf(stderr,\

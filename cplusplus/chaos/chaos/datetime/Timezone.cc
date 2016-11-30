@@ -31,7 +31,7 @@
 #include <chaos/Platform.h>
 #include <chaos/Types.h>
 #include <chaos/error/SystemError.h>
-#include <chaos/io/ColorIO.h>
+#include <chaos/IO/ColorIO.h>
 #include <chaos/os/OS.h>
 #include <chaos/datetime/Date.h>
 #include <chaos/datetime/Timezone.h>

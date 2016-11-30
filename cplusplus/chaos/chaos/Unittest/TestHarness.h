@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sstream>
-#include <chaos/io/ColorIO.h>
+#include <chaos/IO/ColorIO.h>
 
 namespace chaos {
 
