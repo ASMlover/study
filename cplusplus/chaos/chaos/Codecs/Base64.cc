@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include <chaos/Types.h>
-#include <chaos/codecs/Base64.h>
+#include <chaos/Codecs/Base64.h>
 
 namespace chaos {
 
