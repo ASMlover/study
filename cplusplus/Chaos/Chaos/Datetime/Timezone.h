@@ -38,6 +38,7 @@ struct TZData;
 class Timezone : public Copyable {
   std::shared_ptr<TZData> data_;
 public:
+  Timezone(void) = default;
   explicit Timezone(const char* zonefile);
   Timezone(int east_of_utc, const char* tzname);
 
