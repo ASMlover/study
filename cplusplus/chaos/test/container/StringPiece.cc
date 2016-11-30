@@ -25,7 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <chaos/container/StringPiece.h>
-#include <chaos/unittest/TestHarness.h>
+#include <chaos/Unittest/TestHarness.h>
 
 CHAOS_TEST(StringArg, chaos::FakeTester) {
   const char* raw_str = "chaos::StringArg tester with raw string";

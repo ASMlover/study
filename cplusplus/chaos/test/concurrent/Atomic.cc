@@ -25,7 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <chaos/concurrent/Atomic.h>
-#include <chaos/unittest/TestHarness.h>
+#include <chaos/Unittest/TestHarness.h>
 
 CHAOS_TEST(AtomicI16, chaos::FakeTester) {
   chaos::AtomicI16 a0;

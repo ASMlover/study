@@ -25,7 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <chaos/concurrent/Mutex.h>
-#include <chaos/unittest/TestHarness.h>
+#include <chaos/Unittest/TestHarness.h>
 #include <iostream>
 #include <thread>
 

@@ -25,7 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <chaos/Types.h>
-#include <chaos/unittest/TestHarness.h>
+#include <chaos/Unittest/TestHarness.h>
 
 int main(int argc, char* argv[]) {
   CHAOS_UNUSED(argc);

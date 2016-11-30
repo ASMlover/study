@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 #include <vector>
-#include <chaos/unittest/TestHarness.h>
+#include <chaos/Unittest/TestHarness.h>
 
 namespace chaos {
 
