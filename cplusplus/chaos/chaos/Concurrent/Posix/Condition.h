@@ -24,15 +24,52 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#ifndef CHAOS_CONCURRENT_POSIX_CONDITION_H
+#define CHAOS_CONCURRENT_POSIX_CONDITION_H
+
+#include <pthread.h>
+#include <chaos/UnCopyable.h>
+#include <chaos/Concurrent/Mutex.h>
 #include <chaos/OS/OS.h>
-#include <chaos/concurrent/CurrentThread.h>
 
 namespace chaos {
 
-namespace CurrentThread {
-  bool is_main_thread(void) {
-    return get_tid() == kern_gettid();
+class Condition : private UnCopyable {
+  Mutex& mtx_;
+  pthread_cond_t cond_;
+public:
+  explicit Condition(Mutex& mtx)
+    : mtx_(mtx) {
+    pthread_cond_init(&cond_, nullptr);
   }
-}
+
+  ~Condition(void) {
+    pthread_cond_destroy(&cond_);
+  }
+
+  void wait(void) {
+    UnassignScopedMutex guard(mtx_);
+    pthread_cond_wait(&cond_, mtx_.get_mutex());
+  }
+
+  bool wait_for(int seconds) {
+    UnassignScopedMutex guard(mtx_);
+
+    struct timespec ts;
+    kern_gettime(&ts);
+    ts.tv_sec += seconds;
+    return 0 == pthread_cond_timedwait(&cond_, mtx_.get_mutex(), &ts);
+  }
+
+  void notify_one(void) {
+    pthread_cond_signal(&cond_);
+  }
+
+  void notify_all(void) {
+    pthread_cond_broadcast(&cond_);
+  }
+};
 
 }
+
+#endif // CHAOS_CONCURRENT_POSIX_CONDITION_H

@@ -29,8 +29,8 @@
 
 #include <chaos/Types.h>
 #include <chaos/Container/CircularBuffer.h>
-#include <chaos/concurrent/Mutex.h>
-#include <chaos/concurrent/Condition.h>
+#include <chaos/Concurrent/Mutex.h>
+#include <chaos/Concurrent/Condition.h>
 
 namespace chaos {
 

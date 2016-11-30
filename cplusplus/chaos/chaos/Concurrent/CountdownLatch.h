@@ -24,52 +24,27 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef CHAOS_CONCURRENT_POSIX_CONDITION_H
-#define CHAOS_CONCURRENT_POSIX_CONDITION_H
+#ifndef CHAOS_CONCURRENT_COUNTDOWNLATCH_H
+#define CHAOS_CONCURRENT_COUNTDOWNLATCH_H
 
-#include <pthread.h>
 #include <chaos/UnCopyable.h>
-#include <chaos/concurrent/Mutex.h>
-#include <chaos/OS/OS.h>
+#include <chaos/Concurrent/Mutex.h>
+#include <chaos/Concurrent/Condition.h>
 
 namespace chaos {
 
-class Condition : private UnCopyable {
-  Mutex& mtx_;
-  pthread_cond_t cond_;
+class CountdownLatch : private UnCopyable {
+  mutable Mutex mtx_;
+  Condition cond_;
+  int count_;
 public:
-  explicit Condition(Mutex& mtx)
-    : mtx_(mtx) {
-    pthread_cond_init(&cond_, nullptr);
-  }
+  explicit CountdownLatch(int count);
 
-  ~Condition(void) {
-    pthread_cond_destroy(&cond_);
-  }
-
-  void wait(void) {
-    UnassignScopedMutex guard(mtx_);
-    pthread_cond_wait(&cond_, mtx_.get_mutex());
-  }
-
-  bool wait_for(int seconds) {
-    UnassignScopedMutex guard(mtx_);
-
-    struct timespec ts;
-    kern_gettime(&ts);
-    ts.tv_sec += seconds;
-    return 0 == pthread_cond_timedwait(&cond_, mtx_.get_mutex(), &ts);
-  }
-
-  void notify_one(void) {
-    pthread_cond_signal(&cond_);
-  }
-
-  void notify_all(void) {
-    pthread_cond_broadcast(&cond_);
-  }
+  int get_count(void) const;
+  void wait(void);
+  void countdown(void);
 };
 
 }
 
-#endif // CHAOS_CONCURRENT_POSIX_CONDITION_H
+#endif // CHAOS_CONCURRENT_COUNTDOWNLATCH_H

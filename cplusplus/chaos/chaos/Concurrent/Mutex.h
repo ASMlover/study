@@ -33,12 +33,12 @@
 #include <chaos/Types.h>
 #include <chaos/Error/SystemError.h>
 #include <chaos/OS/OS.h>
-#include <chaos/concurrent/CurrentThread.h>
+#include <chaos/Concurrent/CurrentThread.h>
 
 #if defined(CHAOS_WINDOWS)
-# include <chaos/concurrent/windows/MutexBase.h>
+# include <chaos/Concurrent/Windows/MutexBase.h>
 #else
-# include <chaos/concurrent/posix/MutexBase.h>
+# include <chaos/Concurrent/Posix/MutexBase.h>
 #endif
 
 namespace chaos {

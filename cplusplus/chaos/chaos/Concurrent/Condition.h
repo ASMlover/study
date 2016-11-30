@@ -30,9 +30,9 @@
 #include <chaos/Platform.h>
 
 #if defined(CHAOS_WINDOWS)
-# include "windows/Condition.h"
+# include "Windows/Condition.h"
 #else
-# include "posix/Condition.h"
+# include "Posix/Condition.h"
 #endif
 
 #endif // CHAOS_CONCURRENT_CONDITION_H

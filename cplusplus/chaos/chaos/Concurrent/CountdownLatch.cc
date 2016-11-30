@@ -24,43 +24,33 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef CHAOS_CONCURRENT_WINDOWS_CONDITION_H
-#define CHAOS_CONCURRENT_WINDOWS_CONDITION_H
-
-#include <Windows.h>
-#include <chaos/UnCopyable.h>
-#include <chaos/concurrent/Mutex.h>
+#include <chaos/Concurrent/CountdownLatch.h>
 
 namespace chaos {
 
-class Condition : private UnCopyable {
-  Mutex& mtx_;
-  CONDITION_VARIABLE cond_;
-public:
-  explicit Condition(Mutex& mtx)
-    : mtx_(mtx) {
-    InitializeConditionVariable(&cond_);
-  }
-
-  void wait(void) {
-    UnassignScopedMutex guard(mtx_);
-    SleepConditionVariableCS(&cond_, mtx_.get_mutex(), INFINITE);
-  }
-
-  bool wait_for(int seconds) {
-    UnassignScopedMutex guard(mtx_);
-    return TRUE == SleepConditionVariableCS(&cond_, mtx_.get_mutex(), static_cast<DWORD>(seconds * 1000));
-  }
-
-  void notify_one(void) {
-    WakeConditionVariable(&cond_);
-  }
-
-  void notify_all(void) {
-    WakeAllConditionVariable(&cond_);
-  }
-};
-
+CountdownLatch::CountdownLatch(int count)
+  : mtx_()
+  , cond_(mtx_)
+  , count_(count) {
 }
 
-#endif // CHAOS_CONCURRENT_WINDOWS_CONDITION_H
+int CountdownLatch::get_count(void) const {
+  ScopedLock<Mutex> guard(mtx_);
+  return count_;
+}
+
+void CountdownLatch::wait(void) {
+  ScopedLock<Mutex> guard(mtx_);
+
+  while (count_ > 0)
+    cond_.wait();
+}
+
+void CountdownLatch::countdown(void) {
+  ScopedLock<Mutex> guard(mtx_);
+
+  if (0 == --count_)
+    cond_.notify_all();
+}
+
+}
