@@ -1,7 +1,7 @@
 # **Chaos: Morden C++ Library**
 ***
 
-## **What is `chaos`?**
+## **What is `Chaos`?**
   **Chaos is a basic library of C++11 components.**
 
   * A collection of C++ class libraries.
