@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <inttypes.h>
 #include <time.h>
-#include <chaos/os/OS.h>
+#include <chaos/OS/OS.h>
 #include <chaos/Datetime/Timestamp.h>
 
 namespace chaos {

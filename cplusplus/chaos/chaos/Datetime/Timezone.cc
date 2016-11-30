@@ -32,7 +32,7 @@
 #include <chaos/Types.h>
 #include <chaos/Error/SystemError.h>
 #include <chaos/IO/ColorIO.h>
-#include <chaos/os/OS.h>
+#include <chaos/OS/OS.h>
 #include <chaos/Datetime/Date.h>
 #include <chaos/Datetime/Timezone.h>
 

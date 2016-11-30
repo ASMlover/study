@@ -32,7 +32,7 @@
 #include <chaos/Platform.h>
 #include <chaos/Types.h>
 #include <chaos/Error/SystemError.h>
-#include <chaos/os/OS.h>
+#include <chaos/OS/OS.h>
 #include <chaos/concurrent/CurrentThread.h>
 
 #if defined(CHAOS_WINDOWS)
