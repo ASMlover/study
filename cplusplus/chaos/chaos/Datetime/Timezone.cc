@@ -30,7 +30,7 @@
 #include <vector>
 #include <chaos/Platform.h>
 #include <chaos/Types.h>
-#include <chaos/error/SystemError.h>
+#include <chaos/Error/SystemError.h>
 #include <chaos/IO/ColorIO.h>
 #include <chaos/os/OS.h>
 #include <chaos/Datetime/Date.h>

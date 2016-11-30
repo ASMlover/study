@@ -31,7 +31,7 @@
 #include <utility>
 #include <chaos/Platform.h>
 #include <chaos/Types.h>
-#include <chaos/error/SystemError.h>
+#include <chaos/Error/SystemError.h>
 #include <chaos/os/OS.h>
 #include <chaos/concurrent/CurrentThread.h>
 

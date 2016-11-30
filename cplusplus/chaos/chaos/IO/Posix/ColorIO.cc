@@ -24,7 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <chaos/error/SystemError.h>
+#include <chaos/Error/SystemError.h>
 #include <chaos/concurrent/Mutex.h>
 #include <chaos/IO/ColorIO.h>
 
