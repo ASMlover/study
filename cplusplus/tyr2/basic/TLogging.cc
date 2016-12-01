@@ -157,7 +157,7 @@ void Logger::LoggerImpl::format_time(void) {
   }
 
   if (gLogTimezone.is_valid()) {
-    Format fmt(".%06.d ", msec);
+    Format fmt(".%06d ", msec);
     assert(fmt.size() == 8);
     stream_ << T(tTime, 17) << T(fmt.data(), fmt.size());
   }

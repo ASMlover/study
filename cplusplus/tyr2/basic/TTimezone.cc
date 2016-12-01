@@ -159,10 +159,10 @@ bool read_timezone_file(const char* zonefile, struct Data* data) {
       std::vector<int32_t> trans;
       std::vector<int> localtimes;
       trans.reserve(timecnt);
-      for (int i = 0; i < timecnt; ++i) {
+      for (int i = 0; i < timecnt; ++i)
         trans.push_back(f.read_int32());
+      for (int i = 0; i < timecnt; ++i)
         localtimes.push_back(f.read_uint8());
-      }
       for (int i = 0; i < typecnt; ++i) {
         int32_t gmtoff = f.read_int32();
         bool isdst = 0 != f.read_uint8();
