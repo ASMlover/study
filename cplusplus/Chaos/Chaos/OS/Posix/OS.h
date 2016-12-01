@@ -32,6 +32,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
+#include <string>
 
 namespace Chaos {
 
@@ -50,6 +51,8 @@ inline pid_t kern_getpid(void) {
 inline pid_t kern_getppid(void) {
   return getppid();
 }
+
+int kern_backtrace(std::string& bt);
 
 }
 

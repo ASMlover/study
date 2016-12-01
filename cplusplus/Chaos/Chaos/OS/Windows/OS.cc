@@ -24,13 +24,19 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <Windows.h>
+#include <DbgHelp.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <Chaos/OS/Windows/OS.h>
 
 namespace Chaos {
 
 static const uint64_t kEpoch = 116444736000000000ULL;
 static const DWORD kMSVCException = 0x406D1388;
+static const int kMaxBacktrace = 256;
+static const HANDLE kMainProc = GetCurrentProcess();
+static const BOOL kBTIgnoredInit = SymInitialize(kMainProc, NULL, TRUE);
 
 #pragma pack(push, 8)
 typedef struct KernThreadName {
@@ -69,6 +75,25 @@ int kern_this_thread_setname(const char* name) {
   }
   __except (EXCEPTION_EXECUTE_HANDLER) {
   }
+  return 0;
+}
+
+int kern_backtrace(std::string& bt) {
+  void* stack[kMaxBacktrace];
+  int frames = CaptureStackBackTrace(0, kMaxBacktrace, stack, NULL);
+
+  char symbol_buff[sizeof(SYMBOL_INFO) + kMaxBacktrace * sizeof(char)];
+  PSYMBOL_INFO symbol = (PSYMBOL_INFO)symbol_buff;
+  symbol->MaxNameLen = kMaxBacktrace;
+  symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+
+  char message[1024];
+  for (int i = 0; i < frames; ++i) {
+    SymFromAddr(kMainProc, (DWORD)stack[i], 0, symbol);
+    snprintf(message, sizeof(message), "%i: %s - 0x%p\n", frames - i - 1, symbol->Name, (void*)symbol->Address);
+    bt.append(message);
+  }
+
   return 0;
 }
 

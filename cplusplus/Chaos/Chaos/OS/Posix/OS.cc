@@ -24,52 +24,28 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef CHAOS_OS_WINDOWS_OS_H
-#define CHAOS_OS_WINDOWS_OS_H
-
-#include <Windows.h>
-#include <string.h>
-#include <time.h>
-#include <string>
-
-typedef int pid_t;
-
-struct timezone {
-  int tz_minuteswest;
-  int tz_dsttime;
-};
+#include <execinfo.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <Chaos/OS/Posix/OS.h>
 
 namespace Chaos {
 
-#if !defined(__builtin_expect)
-# define __builtin_expect(exp, c) (exp)
-#endif
+int kern_backtrace(std::string& bt) {
+  static const int kMaxBacktrace = 256;
+  void* buff[kMaxBacktrace];
+  int nptrs = backtrace(buff, kMaxBacktrace);
+  char** messages = backtrace_symbols(buff, nptrs);
+  if (nullptr != messages) {
+    char message[1024];
+    for (int i = 0; i < nptrs; ++i) {
+      snprintf(message, sizeof(message), "%i: %s\n", nptrs - i - 1, messages[i]);
+      bt.append(message);
+    }
+    free(message);
+  }
 
-inline errno_t kern_gmtime(const time_t* timep, struct tm* result) {
-  return gmtime_s(result, timep);
+  return 0;
 }
 
-inline errno_t kern_strerror(int errnum, char* buf, size_t buflen) {
-  return strerror_s(buf, buflen, errnum);
 }
-
-inline time_t kern_timegm(struct tm* timep) {
-  return _mkgmtime(timep);
-}
-
-inline pid_t kern_getpid(void) {
-  return static_cast<pid_t>(GetCurrentProcessId());
-}
-
-inline pid_t kern_gettid(void) {
-  return static_cast<pid_t>(GetCurrentThreadId());
-}
-
-// int kern_getppid(void); // not support on Windows
-int kern_gettimeofday(struct timeval* tv, struct timezone* tz);
-int kern_this_thread_setname(const char* name);
-int kern_backtrace(std::string& bt);
-
-}
-
-#endif // CHAOS_OS_WINDOWS_OS_H
