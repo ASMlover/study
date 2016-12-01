@@ -109,7 +109,7 @@ void default_logging_flush(void) {
 
 Logger::OutputCallback g_output_fn = default_logging_output;
 Logger::FlushCallback g_flush_fn = default_logging_flush;
-Timezone g_log_timezone;
+Timezone g_logging_tzone;
 
 class Logger::LoggerImpl {
 public:
@@ -138,10 +138,98 @@ Logger::LoggerImpl::LoggerImpl(LoggingLevel level, int saved_errno, const Source
 }
 
 void Logger::LoggerImpl::format_time(void) {
+  int64_t msec_since_epoch = time_.msec_since_epoch();
+  time_t seconds = static_cast<time_t>(msec_since_epoch / Timestamp::kMicrosecondsPerSecond);
+  int msec = static_cast<int>(msec_since_epoch % Timestamp::kMicrosecondsPerSecond);
+  if (seconds != t_last_seconds) {
+    t_last_seconds = seconds;
+    struct tm t;
+    if (g_logging_tzone.is_valid())
+      t = g_logging_tzone.to_localtime(seconds);
+    else
+      Chaos::kern_gmtime(&seconds, &t);
+
+    int n = snprintf(t_timebuf,
+        sizeof(t_timebuf),
+        "%04d%02d%02d %02d:%02d:%02d",
+        t.tm_year + 1900,
+        t.tm_mon + 1,
+        t.tm_mday,
+        t.tm_hour,
+        t.tm_min,
+        t.tm_sec);
+    CHAOS_CHECK(n == 17, "Logger::LoggerImpl::format_time: `t_timebuf` length error");
+  }
+
+  if (g_logging_tzone.is_valid()) {
+    Format fmt(".%06d", msec);
+    CHAOS_CHECK(fmt.size() == 8, "Logger::LoggerImpl::format_time: format size should be `8`");
+    stream_ << ValueT(t_timebuf, 17) << ValueT(fmt.data(), fmt.size());
+  }
+  else {
+    Format fmt(".%06dZ", msec);
+    CHAOS_CHECK(fmt.size() == 9, "Logger::LoggerImpl::format_time: format size should be `9`");
+    stream_ << ValueT(t_timebuf, 17) << ValueT(fmt.data(), fmt.size());
+  }
 }
 
 void Logger::LoggerImpl::finish(void) {
   stream_ << " - " << basename_ << ":" << lineno_ << "\n";
+}
+
+Logger::Logger(SourceFile file, int lineno)
+  : impl_(new LoggerImpl(LoggingLevel::LOGGINGLEVEL_INFO, 0, file, lineno)) {
+}
+
+Logger::Logger(SourceFile file, int lineno, LoggingLevel level)
+  : impl_(new LoggerImpl(level, 0, file, lineno)) {
+}
+
+Logger::Logger(SourceFile file, int lineno, LoggingLevel level, const char* func)
+  : impl_(new LoggerImpl(level, 0, file, lineno)) {
+  impl_->stream_ << func << ' ';
+}
+
+Logger::Logger(SourceFile file, int lineno, bool do_abort)
+  : impl_(new LoggerImpl(
+        do_abort ? LoggingLevel::LOGGINGLEVEL_FATAL : LoggingLevel::LOGGINGLEVEL_ERROR,
+        errno,
+        file,
+        lineno)) {
+}
+
+Logger::~Logger(void) {
+  impl_->finish();
+  const LogStream::buffer_type& buf(get_stream().get_buffer());
+  g_output_fn(buf.data(), buf.size());
+  if (LoggingLevel::LOGGINGLEVEL_FATAL == impl_->level_) {
+    g_flush_fn();
+    abort();
+  }
+}
+
+LogStream& Logger::get_stream(void) {
+  return impl_->stream_;
+}
+
+LoggingLevel Logger::get_loglevel(void) {
+  return g_loglevel;
+}
+
+void Logger::set_loglevel(LoggingLevel level) {
+  g_loglevel = level;
+}
+
+void Logger::set_output_callback(OutputCallback fn) {
+  g_output_fn = fn;
+}
+
+void Logger::set_flush_callback(FlushCallback fn) {
+  g_flush_fn = fn;
+}
+
+void Logger::set_timezone(const Timezone& tz) {
+  g_logging_tzone = tz;
 }
 
 }

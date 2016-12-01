@@ -84,6 +84,7 @@ public:
   Logger(SourceFile file, int lineno, LoggingLevel level);
   Logger(SourceFile file, int lineno, LoggingLevel level, const char* func);
   Logger(SourceFile file, int lineno, bool do_abort);
+  ~Logger(void);
 
   LogStream& get_stream(void);
 
