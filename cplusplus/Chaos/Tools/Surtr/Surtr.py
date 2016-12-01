@@ -54,7 +54,7 @@ else:
         return iter(d.items(**kwargs))
 
 def get_platform():
-    return platform.system().lower()
+    return platform.system()
 
 def safe_mkdir(dirpath):
     if not os.path.exists(dirpath):
@@ -88,26 +88,26 @@ def merge_conf_with_default(custom_conf, default_conf):
                 conf[key] = merge_conf_with_default(conf[key], val)
     return conf
 
-def get_conf(tool_path='./', platform='linux'):
-    ptname = 'posix'
-    if platform == 'windows':
-        ptname = 'windows'
+def get_conf(tool_path='./', platform='Linux'):
+    ptname = 'Posix'
+    if platform == 'Windows':
+        ptname = 'Windows'
 
-    surtr_path = '{tool_path}/surtr/templates'.format(tool_path=tool_path)
+    surtr_path = '{tool_path}/Surtr/Templates'.format(tool_path=tool_path)
 
     # get building Makefile template
-    fname = '{surtr_path}/build.{pt}.mk'.format(surtr_path=surtr_path, pt=ptname)
+    fname = '{surtr_path}/Build.{pt}.mk'.format(surtr_path=surtr_path, pt=ptname)
     with do_open(fname, 'r', encoding='utf-8') as fp:
         build_mk = fp.read()
 
     # get object generation template
-    fname = '{surtr_path}/obj.{pt}.mk'.format(surtr_path=surtr_path, pt=ptname)
+    fname = '{surtr_path}/Obj.{pt}.mk'.format(surtr_path=surtr_path, pt=ptname)
     with do_open(fname, 'r', encoding='utf-8') as fp:
         obj_mk = fp.read()
 
     # get default build configure
     build_conf = {}
-    fname = '{surtr_path}/default.{pt}.conf'.format(surtr_path=surtr_path, pt=ptname)
+    fname = '{surtr_path}/Default.{pt}.conf'.format(surtr_path=surtr_path, pt=ptname)
     with do_open(fname, 'r', encoding='utf-8') as fp:
         default_build_conf = json.load(fp)
 
@@ -155,7 +155,7 @@ def gen_buildobj(conf, out, src):
 def gen_cc(platform, posix=True):
     if posix:
         cc = 'g++'
-        if platform == 'darwin':
+        if platform == 'Darwin':
             cc = 'clang++'
     else:
         cc = 'cl'
@@ -200,7 +200,7 @@ def gen_ldflags(build_conf, posix=True):
     return '{incs} {libs}'.format(incs=' '.join(ldincludes), libs=' '.join(ldlibraries))
 
 def gen_makefile(surtr_path='./', platform='linux', outdir='build'):
-    is_posix = platform != 'windows'
+    is_posix = platform != 'Windows'
     build_mk, obj_mk, build_conf = get_conf(surtr_path, platform)
     sources = get_all_sources(build_conf['sources_paths'], valid_exts=build_conf['extensions'])
 
@@ -251,7 +251,7 @@ def main():
     elif option is None:
         option = 'build'
 
-    make = platform == 'windows' and 'nmake' or 'make'
+    make = platform == 'Windows' and 'nmake' or 'make'
     make_flags = {
         'build': '',
         'rebuild': 'rebuild',

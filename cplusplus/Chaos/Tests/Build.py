@@ -33,7 +33,7 @@ import sys
 
 def main():
     options = ' '.join(sys.argv[1:])
-    shell_cmd = 'python ../Tools/surtr/Surtr.py ../Tools {options}'.format(options=options)
+    shell_cmd = 'python ../Tools/Surtr/Surtr.py ../Tools {options}'.format(options=options)
     subprocess.check_call(shell_cmd, shell=True)
 
 if __name__ == '__main__':
