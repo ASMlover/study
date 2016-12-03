@@ -70,6 +70,41 @@ int kern_gettimeofday(struct timeval* tv, struct timezone* tz);
 int kern_this_thread_setname(const char* name);
 int kern_backtrace(std::string& bt);
 
+// windows thread methods wrapper
+struct _Thread_t {
+  HANDLE notify_start{};
+  HANDLE handle{};
+
+  _Thread_t(void) = default;
+
+  _Thread_t(std::nullptr_t)
+    : notify_start(nullptr)
+    , handle(nullptr) {
+  }
+
+  _Thread_t& operator=(std::nullptr_t) {
+    notify_start = nullptr;
+    handle = nullptr;
+    return *this;
+  }
+};
+
+int kern_thread_create(_Thread_t* thread, void* (*start_routine)(void*), void* arg);
+
+inline int kern_thread_join(_Thread_t thread) {
+  if (nullptr != thread.handle) {
+    WaitForSingleObject(thread.handle, INFINITE);
+    CloseHandle(thread.handle);
+  }
+  return 0;
+}
+
+inline int kern_thread_detach(_Thread_t thread) {
+  if (nullptr != thread.handle)
+    CloseHandle(thread.handle);
+  return 0;
+}
+
 }
 
 #endif // CHAOS_OS_WINDOWS_OS_H

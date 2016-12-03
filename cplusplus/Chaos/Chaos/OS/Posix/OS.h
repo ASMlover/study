@@ -30,6 +30,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <string.h>
 #include <time.h>
 #include <string>
@@ -53,6 +54,21 @@ inline pid_t kern_getppid(void) {
 }
 
 int kern_backtrace(std::string& bt);
+
+// posix thread methods wrapper
+typedef pthread_t _Thread_t;
+
+inline int kern_thread_create(_Thread_t* thread, void* (*start_routine)(void*), void* arg) {
+  return pthread_create(thread, nullptr, start_routine, arg);
+}
+
+inline int kern_thread_join(_Thread_t thread) {
+  return pthread_join(thread, nullptr);
+}
+
+inline int kern_thread_detach(_Thread_t thread) {
+  return pthread_detach(thread);
+}
 
 }
 

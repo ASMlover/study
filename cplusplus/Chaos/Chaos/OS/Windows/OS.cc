@@ -26,8 +26,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <Windows.h>
 #include <DbgHelp.h>
+#include <process.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <memory>
 #include <Chaos/OS/Windows/OS.h>
 
 namespace Chaos {
@@ -39,13 +41,19 @@ static const HANDLE kMainProc = GetCurrentProcess();
 static const BOOL kBTIgnoredInit = SymInitialize(kMainProc, NULL, TRUE);
 
 #pragma pack(push, 8)
-typedef struct KernThreadName {
+typedef struct _ThreadName {
   DWORD dwType; // must be 0x1000
   LPCSTR szName;
   DWORD dwThreadID; // thread id
   DWORD dwFlags;
-} KernThreadName;
+} _ThreadName;
 #pragma pack(pop)
+
+typedef struct _ThreadBinder {
+  _Thread_t* thread;
+  void* (*start)(void*);
+  void* arg;
+} _ThreadBinder;
 
 int kern_gettimeofday(struct timeval* tv, struct timezone* /*tz*/) {
   if (nullptr != tv) {
@@ -65,7 +73,7 @@ int kern_gettimeofday(struct timeval* tv, struct timezone* /*tz*/) {
 }
 
 int kern_this_thread_setname(const char* name) {
-  KernThreadName tn;
+  _ThreadName tn;
   tn.dwType = 0x1000;
   tn.szName = name;
   tn.dwThreadID = GetCurrentThreadId();
@@ -95,6 +103,46 @@ int kern_backtrace(std::string& bt) {
   }
 
   return 0;
+}
+
+static UINT WINAPI kern_thread_start_routine(void* arg) {
+  std::unique_ptr<_ThreadBinder> params(static_cast<_ThreadBinder*>(arg));
+  if (!params)
+    return 0;
+
+  SetEvent(params->thread->notify_start);
+  if (NULL != params->start)
+    params->start(params->arg);
+
+  return 0;
+}
+
+int kern_thread_create(_Thread_t* thread, void* (*start_routine)(void*), void* arg) {
+  thread->notify_start = CreateEvent(NULL, TRUE, FALSE, NULL);
+  if (NULL == thread->notify_start)
+    return -1;
+
+  int result = -1;
+  std::unique_ptr<_ThreadBinder> params(new _ThreadBinder);
+  if (!params)
+    goto _Exit;
+  params->thread = thread;
+  params->start = start_routine;
+  params->arg = arg;
+
+  thread->handle = reinterpret_cast<HANDLE>(_beginthreadex(
+        nullptr, 0, kern_thread_start_routine, params.get(), 0, nullptr));
+  if (nullptr == thread->handle)
+    goto _Exit;
+
+  WaitForSingleObject(thread->notify_start, INFINITE);
+  params.release();
+  result = 0;
+
+_Exit:
+  CloseHandle(thread->notify_start);
+  thread->notify_start = NULL;
+  return result;
 }
 
 }
