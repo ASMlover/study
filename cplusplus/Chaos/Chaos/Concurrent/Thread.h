@@ -52,10 +52,14 @@ private:
 public:
   explicit Thread(const ThreadCallback& fn, const std::string& name = std::string());
   explicit Thread(ThreadCallback&& fn, const std::string& name = std::string());
-  ~Thread(void);
+
+  ~Thread(void) {
+    if (started_ && !joined_)
+      Chaos::kern_thread_detach(thread_);
+  }
 
   void start(void);
-  int join(void);
+  bool join(void);
 
   bool is_started(void) const {
     return started_;
