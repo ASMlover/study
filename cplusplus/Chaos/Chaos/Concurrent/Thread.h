@@ -61,6 +61,10 @@ public:
     return started_;
   }
 
+  bool is_joined(void) const {
+    return joined_;
+  }
+
   pid_t get_tid(void) const {
     return *tid_;
   }
