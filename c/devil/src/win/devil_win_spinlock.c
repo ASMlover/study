@@ -31,10 +31,7 @@
 int
 devil_spinlock_init(devil_spinlock_t* spinlock)
 {
-  if (InitializeCriticalSectionAndSpinCount(spinlock, 4000))
-    return 0;
-  else
-    return -1;
+  return InitializeCriticalSectionAndSpinCount(spinlock, 4000) ? 0 : -1;
 }
 
 void
@@ -46,22 +43,13 @@ devil_spinlock_destroy(devil_spinlock_t* spinlock)
 void
 devil_spinlock_lock(devil_spinlock_t* spinlock)
 {
-  if ((DWORD)spinlock->OwningThread == GetCurrentThreadId())
-    return;
-
   EnterCriticalSection(spinlock);
 }
 
 int
 devil_spinlock_trylock(devil_spinlock_t* spinlock)
 {
-  if ((DWORD)spinlock->OwningThread == GetCurrentThreadId())
-    return 0;
-
-  if (TryEnterCriticalSection(spinlock))
-    return 0;
-  else
-    return -1;
+  return TryEnterCriticalSection(spinlock) ? 0 : -1;
 }
 
 void
