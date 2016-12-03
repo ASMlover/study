@@ -41,19 +41,19 @@ static const HANDLE kMainProc = GetCurrentProcess();
 static const BOOL kBTIgnoredInit = SymInitialize(kMainProc, NULL, TRUE);
 
 #pragma pack(push, 8)
-typedef struct _ThreadName {
+typedef struct _ThreadName_t {
   DWORD dwType; // must be 0x1000
   LPCSTR szName;
   DWORD dwThreadID; // thread id
   DWORD dwFlags;
-} _ThreadName;
+} _ThreadName_t;
 #pragma pack(pop)
 
-typedef struct _ThreadBinder {
+typedef struct _ThreadBinder_t {
   _Thread_t* thread;
   void* (*start)(void*);
   void* arg;
-} _ThreadBinder;
+} _ThreadBinder_t;
 
 int kern_gettimeofday(struct timeval* tv, struct timezone* /*tz*/) {
   if (nullptr != tv) {
@@ -73,7 +73,7 @@ int kern_gettimeofday(struct timeval* tv, struct timezone* /*tz*/) {
 }
 
 int kern_this_thread_setname(const char* name) {
-  _ThreadName tn;
+  _ThreadName_t tn;
   tn.dwType = 0x1000;
   tn.szName = name;
   tn.dwThreadID = GetCurrentThreadId();
@@ -106,7 +106,7 @@ int kern_backtrace(std::string& bt) {
 }
 
 static UINT WINAPI kern_thread_start_routine(void* arg) {
-  std::unique_ptr<_ThreadBinder> params(static_cast<_ThreadBinder*>(arg));
+  std::unique_ptr<_ThreadBinder_t> params(static_cast<_ThreadBinder_t*>(arg));
   if (!params)
     return 0;
 
@@ -123,7 +123,7 @@ int kern_thread_create(_Thread_t* thread, void* (*start_routine)(void*), void* a
     return -1;
 
   int result = -1;
-  std::unique_ptr<_ThreadBinder> params(new _ThreadBinder);
+  std::unique_ptr<_ThreadBinder_t> params(new _ThreadBinder_t);
   if (!params)
     goto _Exit;
   params->thread = thread;
