@@ -70,6 +70,10 @@ inline int kern_thread_detach(_Thread_t thread) {
   return pthread_detach(thread);
 }
 
+inline int kern_thread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void)) {
+  return pthread_atfork(prepare, parent, child);
+}
+
 }
 
 #endif // CHAOS_OS_POSIX_OS_H

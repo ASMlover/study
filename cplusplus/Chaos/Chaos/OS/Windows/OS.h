@@ -105,6 +105,10 @@ inline int kern_thread_detach(_Thread_t thread) {
   return 0;
 }
 
+inline int kern_thread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void)) {
+  return 0;
+}
+
 }
 
 #endif // CHAOS_OS_WINDOWS_OS_H
