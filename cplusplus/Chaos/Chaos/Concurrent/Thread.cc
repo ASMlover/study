@@ -35,6 +35,22 @@
 
 namespace Chaos {
 
+static void after_fork(void) {
+  CurrentThread::Unexposed::set_cached_tid(0);
+  CurrentThread::Unexposed::set_name("main");
+  CurrentThread::get_tid();
+}
+
+class _ThreadNameInitializer {
+public:
+  _ThreadNameInitializer(void) {
+    CurrentThread::Unexposed::set_name("main");
+    CurrentThread::get_tid();
+    Chaos::kern_thread_atfork(nullptr, nullptr, &after_fork);
+  }
+};
+_ThreadNameInitializer g_threadname_init;
+
 struct ThreadData {
   ThreadCallback _fn;
   std::string _name;
