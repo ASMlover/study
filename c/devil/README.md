@@ -20,7 +20,7 @@
           $ cd devil
           $ make
 
-  * **macOS**
+ * **macOS**
 
           $ cd devil
           $ make -f Makefile.mac.mk
