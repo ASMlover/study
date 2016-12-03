@@ -42,7 +42,7 @@ int kern_backtrace(std::string& bt) {
       snprintf(message, sizeof(message), "%i: %s\n", nptrs - i - 1, messages[i]);
       bt.append(message);
     }
-    free(message);
+    free(messages);
   }
 
   return 0;
