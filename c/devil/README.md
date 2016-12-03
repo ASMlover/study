@@ -13,9 +13,14 @@
         step1: Setting environment for using MSVC.
         step2:
           \> cd devil
-          \> nmake -f makefile.mk
+          \> nmake -f Makefile.win.mk
 
  * **Linux**
 
           $ cd devil
           $ make
+
+  * **macOS**
+
+          $ cd devil
+          $ make -f Makefile.mac.mk
