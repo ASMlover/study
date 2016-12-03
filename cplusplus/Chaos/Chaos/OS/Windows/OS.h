@@ -70,7 +70,7 @@ int kern_gettimeofday(struct timeval* tv, struct timezone* tz);
 int kern_this_thread_setname(const char* name);
 int kern_backtrace(std::string& bt);
 
-// windows thread methods wrapper
+// Windows thread methods wrapper
 struct _Thread_t {
   HANDLE notify_start{};
   HANDLE handle{};
@@ -107,6 +107,25 @@ inline int kern_thread_detach(_Thread_t thread) {
 
 inline int kern_thread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void)) {
   return 0;
+}
+
+// Windows thread local methods wrapper
+typedef DWORD _Tls_t;
+
+inline int kern_tls_create(_Tls_t* tls, void (*destructor)(void)) {
+  return *tls = FlsAlloc((PFLS_CALLBACK_FUNCTION)destructor), 0;
+}
+
+inline int kern_tls_delete(_Tls_t tls) {
+  return TRUE == FlsFree(tls) ? 0 : -1;
+}
+
+inline int kern_tls_setspecific(_Tls_t tls, const void* value) {
+  return TRUE == FlsSetValue(tls, (PVOID)value) ? 0 : -1;
+}
+
+inline void* kern_tls_getspecific(_Tls_t tls) {
+  return FlsGetValue(tls);
 }
 
 }
