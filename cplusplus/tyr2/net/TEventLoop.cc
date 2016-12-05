@@ -38,16 +38,16 @@ __thread EventLoop* t_loop_this_thread = nullptr;
 #endif
 
 void EventLoop::abort_not_in_loopthread(void) {
-  TL_SYSFATAL << "EventLoop::abort_not_in_loopthread - EventLoop " << this
+  TYRLOG_SYSFATAL << "EventLoop::abort_not_in_loopthread - EventLoop " << this
     << " was created in thread: " << tid_
     << ", current thread id: " << basic::CurrentThread::tid();
 }
 
 EventLoop::EventLoop(void)
   : tid_(basic::CurrentThread::tid()) {
-  TL_TRACE << "EventLoop created " << this << " in thread " << tid_;
+  TYRLOG_TRACE << "EventLoop created " << this << " in thread " << tid_;
   if (nullptr != t_loop_this_thread)
-    TL_SYSFATAL << "Another EventLoop " << t_loop_this_thread << " exists in this thread " << tid_;
+    TYRLOG_SYSFATAL << "Another EventLoop " << t_loop_this_thread << " exists in this thread " << tid_;
   else
     t_loop_this_thread = this;
 }
@@ -64,7 +64,7 @@ void EventLoop::loop(void) {
 
   SocketSupport::kern_poll(nullptr, 0, 5 * 1000);
 
-  TL_TRACE << "EventLoop " << this << " stop looping";
+  TYRLOG_TRACE << "EventLoop " << this << " stop looping";
   looping_ = false;
 }
 

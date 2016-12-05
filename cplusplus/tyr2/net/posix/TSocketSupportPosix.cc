@@ -68,14 +68,14 @@ namespace SocketSupport {
   int kern_shutdown(int sockfd) {
     int rc = shutdown(sockfd, SHUT_WR);
     if (rc < 0)
-      TL_SYSERR << "SocketSupport::kern_shutdown failed";
+      TYRLOG_SYSERR << "SocketSupport::kern_shutdown failed";
     return 0;
   }
 
   int kern_close(int sockfd) {
     int rc = close(sockfd);
     if (rc < 0)
-      TL_SYSERR << "SocketSupport::kern_close failed";
+      TYRLOG_SYSERR << "SocketSupport::kern_close failed";
     return 0;
   }
 
@@ -95,7 +95,7 @@ namespace SocketSupport {
     addr->sin_port = host_to_net16(port);
     int rc = inet_pton(AF_INET, ip, &addr->sin_addr);
     if (rc <= 0)
-      TL_SYSERR << "SocketSupport::kern_from_ip_port(ipv4) failed";
+      TYRLOG_SYSERR << "SocketSupport::kern_from_ip_port(ipv4) failed";
   }
 
   void kern_from_ip_port(const char* ip, uint16_t port, struct sockaddr_in6* addr) {
@@ -103,7 +103,7 @@ namespace SocketSupport {
     addr->sin6_port = host_to_net16(port);
     int rc = inet_pton(AF_INET6, ip, &addr->sin6_addr);
     if (rc <= 0)
-      TL_SYSERR << "SocketSupport::kern_from_ip_port(ipv6) failed";
+      TYRLOG_SYSERR << "SocketSupport::kern_from_ip_port(ipv6) failed";
   }
 
   int kern_poll(KernPollfd fds[], uint32_t nfds, int timeout) {
