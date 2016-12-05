@@ -33,16 +33,18 @@
 # include <WS2tcpip.h>
 # include <WinSock2.h>
 
-  typedef SSIZE_T ssize_t;
-  typedef WSABUF  KernIovec;
-  typedef int     socklen_t;
+  typedef SSIZE_T   ssize_t;
+  typedef WSABUF    KernIovec;
+  typedef int       socklen_t;
+  typedef WSAPOLLFD KernPollfd;
 #else
 # include <arpa/inet.h>
 # include <netinet/in.h>
 # include <sys/socket.h>
 # include <sys/uio.h>
 
-  typedef struct iovec KernIovec;
+  typedef struct iovec  KernIovec;
+  typedef struct pollfd KernPollfd;
 #endif
 
 namespace tyr { namespace net {
@@ -77,6 +79,9 @@ namespace SocketSupport {
   struct sockaddr_in6 kern_localaddr(int sockfd);
   struct sockaddr_in6 kern_peekaddr(int sockfd);
   bool kern_is_self_connect(int sockfd);
+
+  // poll wrapper
+  int kern_poll(KernPollfd fds[], uint32_t nfds, int timeout);
 }
 
 }}

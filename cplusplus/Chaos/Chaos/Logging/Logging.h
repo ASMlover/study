@@ -58,7 +58,7 @@ public:
     size_t size_;
 
     template <size_t N>
-    explicit SourceFile(const char (&arr)[N])
+    SourceFile(const char (&arr)[N])
       : data_(arr)
       , size_(N - 1) {
       const char* slash = strrchr(data_, '/');
@@ -84,6 +84,7 @@ public:
   Logger(SourceFile file, int lineno, LoggingLevel level);
   Logger(SourceFile file, int lineno, LoggingLevel level, const char* func);
   Logger(SourceFile file, int lineno, bool do_abort);
+  ~Logger(void);
 
   LogStream& get_stream(void);
 
@@ -108,18 +109,18 @@ inline T* check_non_nil(Logger::SourceFile file, int lineno, const char* names, 
   Chaos::check_non_nil(__FILE__, __LINE__, "`" #value "` must be non-nil", (value));
 #endif
 
-#define LOG_TRACE if (Chaos::Logger::get_loglevel() <= Chaos::LoggingLevel::LOGGINGLEVEL_TRACE)\
-  Chaos::Logger(__FILE__, __LINE__, Chaos::LoggingLevel::LOGGINGLEVEL_TRACE, __func__).get_stream()
-#define LOG_DEBUG if (Chaos::Logger::get_loglevel() <= Chaos::LoggingLevel::LOGGINGLEVEL_DEBUG)\
-  Chaos::Logger(__FILE__, __LINE__, Chaos::LoggingLevel::LOGGINGLEVEL_DEBUG, __func__).get_stream()
-#define LOG_INFO if (Chaos::Logger::get_loglevel() <= Chaos::LoggingLevel::LOGGINGLEVEL_INFO)\
-  Chaos::Logger(__FILE__, __LINE__).get_stream()
-#define LOG_WARN Chaos::Logger(__FILE__, __LINE__, Chaos::LoggingLevel::LOGGINGLEVEL_WARN).get_stream()
-#define LOG_ERROR Chaos::Logger(__FILE__, __LINE__, Chaos::LoggingLevel::LOGGINGLEVEL_ERROR).get_stream()
-#define LOG_FATAL Chaos::Logger(__FILE__, __LINE__, Chaos::LoggingLevel::LOGGINGLEVEL_FATAL).get_stream()
-#define LOG_SYSERR Chaos::Logger(__FILE__, __LINE__, false).get_stream()
-#define LOG_SYSFATAL Chaos::Logger(__FILE__, __LINE__, true).get_stream()
-
 }
+
+#define CHAOSLOG_TRACE if (Chaos::Logger::get_loglevel() <= Chaos::LoggingLevel::LOGGINGLEVEL_TRACE)\
+  Chaos::Logger(__FILE__, __LINE__, Chaos::LoggingLevel::LOGGINGLEVEL_TRACE, __func__).get_stream()
+#define CHAOSLOG_DEBUG if (Chaos::Logger::get_loglevel() <= Chaos::LoggingLevel::LOGGINGLEVEL_DEBUG)\
+  Chaos::Logger(__FILE__, __LINE__, Chaos::LoggingLevel::LOGGINGLEVEL_DEBUG, __func__).get_stream()
+#define CHAOSLOG_INFO if (Chaos::Logger::get_loglevel() <= Chaos::LoggingLevel::LOGGINGLEVEL_INFO)\
+  Chaos::Logger(__FILE__, __LINE__).get_stream()
+#define CHAOSLOG_WARN Chaos::Logger(__FILE__, __LINE__, Chaos::LoggingLevel::LOGGINGLEVEL_WARN).get_stream()
+#define CHAOSLOG_ERROR Chaos::Logger(__FILE__, __LINE__, Chaos::LoggingLevel::LOGGINGLEVEL_ERROR).get_stream()
+#define CHAOSLOG_FATAL Chaos::Logger(__FILE__, __LINE__, Chaos::LoggingLevel::LOGGINGLEVEL_FATAL).get_stream()
+#define CHAOSLOG_SYSERR Chaos::Logger(__FILE__, __LINE__, false).get_stream()
+#define CHAOSLOG_SYSFATAL Chaos::Logger(__FILE__, __LINE__, true).get_stream()
 
 #endif // CHAOS_LOGGING_LOGGING_H

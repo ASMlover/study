@@ -103,6 +103,10 @@ namespace SocketSupport {
     if (rc <= 0)
       TL_SYSERR << "SocketSupport::kern_from_ip_port(ipv6) failed";
   }
+
+  int kern_poll(KernPollfd fds[], uint32_t nfds, int timeout) {
+    return WSAPoll(fds, (ULONG)nfds, timeout);
+  }
 }
 
 }}

@@ -24,45 +24,48 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <Windows.h>
-#include <Chaos/Except/SystemError.h>
-#include <Chaos/Concurrent/Mutex.h>
-#include <Chaos/IO/ColorIO.h>
+#include <assert.h>
+#include "../basic/TLogging.h"
+#include "TSocketSupport.h"
+#include "TEventLoop.h"
 
-namespace Chaos {
+namespace tyr { namespace net {
 
-namespace ColorIO {
-  static Mutex g_color_mutex;
+#if defined(TYR_WINDOWS)
+__declspec(thread) EventLoop* t_loop_this_thread = nullptr;
+#else
+__thread EventLoop* t_loop_this_thread = nullptr;
+#endif
 
-  int vfprintf(FILE* stream, ColorType color, const char* format, va_list ap) {
-    HANDLE out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_SCREEN_BUFFER_INFO info;
-    GetConsoleScreenBufferInfo(out_handle, &info);
-    WORD old_color = info.wAttributes;
-    WORD new_color = old_color;
-
-    switch (color) {
-    case ColorType::COLORTYPE_INVALID:
-      __chaos_throw_exception(std::logic_error("invalid color type"));
-      break;
-    case ColorType::COLORTYPE_RED:
-      new_color = FOREGROUND_INTENSITY | FOREGROUND_RED;
-      break;
-    case ColorType::COLORTYPE_GREEN:
-      new_color = FOREGROUND_INTENSITY | FOREGROUND_GREEN;
-      break;
-    }
-
-    int n;
-    {
-      ScopedLock<Mutex> guard(g_color_mutex);
-      SetConsoleTextAttribute(out_handle, new_color);
-      n = ::vfprintf(stream, format, ap);
-      SetConsoleTextAttribute(out_handle, old_color);
-    }
-
-    return n;
-  }
+void EventLoop::abort_not_in_loopthread(void) {
+  TL_SYSFATAL << "EventLoop::abort_not_in_loopthread - EventLoop " << this
+    << " was created in thread: " << tid_
+    << ", current thread id: " << basic::CurrentThread::tid();
 }
 
+EventLoop::EventLoop(void)
+  : tid_(basic::CurrentThread::tid()) {
+  TL_TRACE << "EventLoop created " << this << " in thread " << tid_;
+  if (nullptr != t_loop_this_thread)
+    TL_SYSFATAL << "Another EventLoop " << t_loop_this_thread << " exists in this thread " << tid_;
+  else
+    t_loop_this_thread = this;
 }
+
+EventLoop::~EventLoop(void) {
+  assert(!looping_);
+  t_loop_this_thread = nullptr;
+}
+
+void EventLoop::loop(void) {
+  assert(!looping_);
+  assert_in_loopthread();
+  looping_ = true;
+
+  SocketSupport::kern_poll(nullptr, 0, 5 * 1000);
+
+  TL_TRACE << "EventLoop " << this << " stop looping";
+  looping_ = false;
+}
+
+}}

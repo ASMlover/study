@@ -30,8 +30,10 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <string.h>
 #include <time.h>
+#include <string>
 
 namespace Chaos {
 
@@ -49,6 +51,46 @@ inline pid_t kern_getpid(void) {
 
 inline pid_t kern_getppid(void) {
   return getppid();
+}
+
+int kern_backtrace(std::string& bt);
+
+// Posix thread methods wrapper
+typedef pthread_t _Thread_t;
+
+inline int kern_thread_create(_Thread_t* thread, void* (*start_routine)(void*), void* arg) {
+  return pthread_create(thread, nullptr, start_routine, arg);
+}
+
+inline int kern_thread_join(_Thread_t thread) {
+  return pthread_join(thread, nullptr);
+}
+
+inline int kern_thread_detach(_Thread_t thread) {
+  return pthread_detach(thread);
+}
+
+inline int kern_thread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void)) {
+  return pthread_atfork(prepare, parent, child);
+}
+
+// Posix thread local methods wrapper
+typedef pthread_key_t _Tls_t;
+
+inline int kern_tls_create(_Tls_t* tls, void (*destructor)(void)) {
+  return pthread_key_create(tls, destructor);
+}
+
+inline int kern_tls_delete(_Tls_t tls) {
+  return pthread_key_delete(tls);
+}
+
+inline int kern_tls_setspecific(_Tls_t tls, const void* value) {
+  return pthread_setspecific(tls, value);
+}
+
+inline void* kern_tls_getspecific(_Tls_t tls) {
+  return pthread_getspecific(tls);
 }
 
 }

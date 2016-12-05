@@ -24,45 +24,68 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <Windows.h>
-#include <Chaos/Except/SystemError.h>
+#ifndef CHAOS_CONCURRENT_THREADPOOL_H
+#define CHAOS_CONCURRENT_THREADPOOL_H
+
+#include <functional>
+#include <memory>
+#include <string>
+#include <deque>
+#include <vector>
+#include <Chaos/Types.h>
 #include <Chaos/Concurrent/Mutex.h>
-#include <Chaos/IO/ColorIO.h>
+#include <Chaos/Concurrent/Condition.h>
 
 namespace Chaos {
 
-namespace ColorIO {
-  static Mutex g_color_mutex;
+typedef std::function<void (void)> TaskCallback;
 
-  int vfprintf(FILE* stream, ColorType color, const char* format, va_list ap) {
-    HANDLE out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_SCREEN_BUFFER_INFO info;
-    GetConsoleScreenBufferInfo(out_handle, &info);
-    WORD old_color = info.wAttributes;
-    WORD new_color = old_color;
+class Thread;
 
-    switch (color) {
-    case ColorType::COLORTYPE_INVALID:
-      __chaos_throw_exception(std::logic_error("invalid color type"));
-      break;
-    case ColorType::COLORTYPE_RED:
-      new_color = FOREGROUND_INTENSITY | FOREGROUND_RED;
-      break;
-    case ColorType::COLORTYPE_GREEN:
-      new_color = FOREGROUND_INTENSITY | FOREGROUND_GREEN;
-      break;
-    }
+class ThreadPool : private UnCopyable {
+  typedef std::unique_ptr<Thread> ThreadEntity;
 
-    int n;
-    {
-      ScopedLock<Mutex> guard(g_color_mutex);
-      SetConsoleTextAttribute(out_handle, new_color);
-      n = ::vfprintf(stream, format, ap);
-      SetConsoleTextAttribute(out_handle, old_color);
-    }
+  size_t tasks_capacity_{};
+  bool running_{};
+  mutable Mutex mtx_;
+  Condition non_empty_;
+  Condition non_full_;
+  std::string name_;
+  TaskCallback thread_init_fn_;
+  std::vector<ThreadEntity> threads_;
+  std::deque<TaskCallback> tasks_;
+private:
+  bool is_full(void) const;
+  TaskCallback fetch_task(void);
+  void run_thread_callback(void);
+public:
+  explicit ThreadPool(const std::string& name = "ThreadPool");
+  ~ThreadPool(void);
 
-    return n;
+  void set_thread_initializer(const TaskCallback& fn) {
+    thread_init_fn_ = fn;
   }
-}
+
+  void set_thread_initializer(TaskCallback&& fn) {
+    thread_init_fn_ = std::move(fn);
+  }
+
+  const std::string& get_name(void) const {
+    return name_;
+  }
+
+  void set_tasks_capacity(size_t capacity) {
+    // should be called before start
+    tasks_capacity_ = capacity;
+  }
+
+  size_t get_tasks_count(void) const;
+  void start(int threads_num);
+  void stop(void);
+  void run(const TaskCallback& fn);
+  void run(TaskCallback&& fn);
+};
 
 }
+
+#endif // CHAOS_CONCURRENT_THREADPOOL_H

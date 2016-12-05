@@ -24,28 +24,28 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef CHAOS_ERROR_SYSTEMERROR_H
-#define CHAOS_ERROR_SYSTEMERROR_H
-
-#include <exception>
-#include <system_error>
+#include <execinfo.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <Chaos/OS/Posix/OS.h>
 
 namespace Chaos {
 
-inline void __chaos_throw_exception(const char* what) {
-  // FIXME: default throw logic_error
-  throw std::logic_error(what);
+int kern_backtrace(std::string& bt) {
+  static const int kMaxBacktrace = 256;
+  void* buff[kMaxBacktrace];
+  int nptrs = backtrace(buff, kMaxBacktrace);
+  char** messages = backtrace_symbols(buff, nptrs);
+  if (nullptr != messages) {
+    char message[1024];
+    for (int i = 0; i < nptrs; ++i) {
+      snprintf(message, sizeof(message), "%i: %s\n", nptrs - i - 1, messages[i]);
+      bt.append(message);
+    }
+    free(messages);
+  }
+
+  return 0;
 }
 
-template <typename Exception>
-inline void __chaos_throw_exception(const Exception& e) {
-  throw std::exception(e);
 }
-
-inline void __chaos_throw_error(int ec, const char* what) {
-  throw std::system_error(std::error_code(ec, std::system_category()), what);
-}
-
-}
-
-#endif // CHAOS_ERROR_SYSTEMERROR_H

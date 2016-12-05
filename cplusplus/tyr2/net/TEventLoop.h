@@ -24,45 +24,36 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <Windows.h>
-#include <Chaos/Except/SystemError.h>
-#include <Chaos/Concurrent/Mutex.h>
-#include <Chaos/IO/ColorIO.h>
+#ifndef __TYR_NET_EVENTLOOP_HEADER_H__
+#define __TYR_NET_EVENTLOOP_HEADER_H__
 
-namespace Chaos {
+#include "../basic/TUnCopyable.h"
+#include "../basic/TPlatform.h"
+#include "../basic/TCurrentThread.h"
 
-namespace ColorIO {
-  static Mutex g_color_mutex;
+namespace tyr { namespace net {
 
-  int vfprintf(FILE* stream, ColorType color, const char* format, va_list ap) {
-    HANDLE out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_SCREEN_BUFFER_INFO info;
-    GetConsoleScreenBufferInfo(out_handle, &info);
-    WORD old_color = info.wAttributes;
-    WORD new_color = old_color;
+class EventLoop : private basic::UnCopyable {
+  bool looping_{};
+  const pid_t tid_{};
 
-    switch (color) {
-    case ColorType::COLORTYPE_INVALID:
-      __chaos_throw_exception(std::logic_error("invalid color type"));
-      break;
-    case ColorType::COLORTYPE_RED:
-      new_color = FOREGROUND_INTENSITY | FOREGROUND_RED;
-      break;
-    case ColorType::COLORTYPE_GREEN:
-      new_color = FOREGROUND_INTENSITY | FOREGROUND_GREEN;
-      break;
-    }
+  void abort_not_in_loopthread(void);
+public:
+  EventLoop(void);
+  ~EventLoop(void);
 
-    int n;
-    {
-      ScopedLock<Mutex> guard(g_color_mutex);
-      SetConsoleTextAttribute(out_handle, new_color);
-      n = ::vfprintf(stream, format, ap);
-      SetConsoleTextAttribute(out_handle, old_color);
-    }
+  void loop(void);
 
-    return n;
+  void assert_in_loopthread(void) {
+    if (!in_loopthread())
+      abort_not_in_loopthread();
   }
-}
 
-}
+  bool in_loopthread(void) const {
+    return tid_ == basic::CurrentThread::tid();
+  }
+};
+
+}}
+
+#endif // __TYR_NET_EVENTLOOP_HEADER_H__

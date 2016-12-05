@@ -24,22 +24,36 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <Windows.h>
+#include <DbgHelp.h>
+#include <process.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <memory>
 #include <Chaos/OS/Windows/OS.h>
 
 namespace Chaos {
 
 static const uint64_t kEpoch = 116444736000000000ULL;
 static const DWORD kMSVCException = 0x406D1388;
+static const int kMaxBacktrace = 256;
+static const HANDLE kMainProc = GetCurrentProcess();
+static const BOOL kBTIgnoredInit = SymInitialize(kMainProc, NULL, TRUE);
 
 #pragma pack(push, 8)
-typedef struct KernThreadName {
+typedef struct _ThreadName_t {
   DWORD dwType; // must be 0x1000
   LPCSTR szName;
   DWORD dwThreadID; // thread id
   DWORD dwFlags;
-} KernThreadName;
+} _ThreadName_t;
 #pragma pack(pop)
+
+typedef struct _ThreadBinder_t {
+  _Thread_t* thread;
+  void* (*start)(void*);
+  void* arg;
+} _ThreadBinder_t;
 
 int kern_gettimeofday(struct timeval* tv, struct timezone* /*tz*/) {
   if (nullptr != tv) {
@@ -59,7 +73,7 @@ int kern_gettimeofday(struct timeval* tv, struct timezone* /*tz*/) {
 }
 
 int kern_this_thread_setname(const char* name) {
-  KernThreadName tn;
+  _ThreadName_t tn;
   tn.dwType = 0x1000;
   tn.szName = name;
   tn.dwThreadID = GetCurrentThreadId();
@@ -70,6 +84,65 @@ int kern_this_thread_setname(const char* name) {
   __except (EXCEPTION_EXECUTE_HANDLER) {
   }
   return 0;
+}
+
+int kern_backtrace(std::string& bt) {
+  void* stack[kMaxBacktrace];
+  int frames = CaptureStackBackTrace(0, kMaxBacktrace, stack, NULL);
+
+  char symbol_buff[sizeof(SYMBOL_INFO) + kMaxBacktrace * sizeof(char)];
+  PSYMBOL_INFO symbol = (PSYMBOL_INFO)symbol_buff;
+  symbol->MaxNameLen = kMaxBacktrace;
+  symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+
+  char message[1024];
+  for (int i = 0; i < frames; ++i) {
+    SymFromAddr(kMainProc, (DWORD)stack[i], 0, symbol);
+    snprintf(message, sizeof(message), "%i: %s - 0x%p\n", frames - i - 1, symbol->Name, (void*)symbol->Address);
+    bt.append(message);
+  }
+
+  return 0;
+}
+
+static UINT WINAPI kern_thread_start_routine(void* arg) {
+  std::unique_ptr<_ThreadBinder_t> params(static_cast<_ThreadBinder_t*>(arg));
+  if (!params)
+    return 0;
+
+  SetEvent(params->thread->notify_start);
+  if (NULL != params->start)
+    params->start(params->arg);
+
+  return 0;
+}
+
+int kern_thread_create(_Thread_t* thread, void* (*start_routine)(void*), void* arg) {
+  thread->notify_start = CreateEvent(NULL, TRUE, FALSE, NULL);
+  if (NULL == thread->notify_start)
+    return -1;
+
+  int result = -1;
+  std::unique_ptr<_ThreadBinder_t> params(new _ThreadBinder_t);
+  if (!params)
+    goto _Exit;
+  params->thread = thread;
+  params->start = start_routine;
+  params->arg = arg;
+
+  thread->handle = reinterpret_cast<HANDLE>(_beginthreadex(
+        nullptr, 0, kern_thread_start_routine, params.get(), 0, nullptr));
+  if (nullptr == thread->handle)
+    goto _Exit;
+
+  WaitForSingleObject(thread->notify_start, INFINITE);
+  params.release();
+  result = 0;
+
+_Exit:
+  CloseHandle(thread->notify_start);
+  thread->notify_start = NULL;
+  return result;
 }
 
 }

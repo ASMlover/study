@@ -147,3 +147,17 @@
     $ git remote add -f origin https://github.com/ASMlover/study.git
     $ git pull origin master
 ```
+
+## **5. git使用submodule(子模块)**
+``` bash
+    $ cd <repo>
+    $ git submodule add <submodule-repo-git-address> <target-dir>
+```
+    例子如下：
+``` bash
+    $ cd Chaos
+    $ git submodule add https://github.com/ASMlover/Surtr.git Tools/Surtr
+```
+
+    删除子模块，直接使用一条命令:
+    $ git rm <submodule_name>

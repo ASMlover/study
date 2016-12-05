@@ -24,45 +24,28 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <Windows.h>
-#include <Chaos/Except/SystemError.h>
-#include <Chaos/Concurrent/Mutex.h>
-#include <Chaos/IO/ColorIO.h>
+#ifndef CHAOS_EXCEPT_SYSTEMERROR_H
+#define CHAOS_EXCEPT_SYSTEMERROR_H
+
+#include <exception>
+#include <system_error>
 
 namespace Chaos {
 
-namespace ColorIO {
-  static Mutex g_color_mutex;
+inline void __chaos_throw_exception(const char* what) {
+  // FIXME: default throw logic_error
+  throw std::logic_error(what);
+}
 
-  int vfprintf(FILE* stream, ColorType color, const char* format, va_list ap) {
-    HANDLE out_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_SCREEN_BUFFER_INFO info;
-    GetConsoleScreenBufferInfo(out_handle, &info);
-    WORD old_color = info.wAttributes;
-    WORD new_color = old_color;
+template <typename Exception>
+inline void __chaos_throw_exception(const Exception& e) {
+  throw std::exception(e);
+}
 
-    switch (color) {
-    case ColorType::COLORTYPE_INVALID:
-      __chaos_throw_exception(std::logic_error("invalid color type"));
-      break;
-    case ColorType::COLORTYPE_RED:
-      new_color = FOREGROUND_INTENSITY | FOREGROUND_RED;
-      break;
-    case ColorType::COLORTYPE_GREEN:
-      new_color = FOREGROUND_INTENSITY | FOREGROUND_GREEN;
-      break;
-    }
-
-    int n;
-    {
-      ScopedLock<Mutex> guard(g_color_mutex);
-      SetConsoleTextAttribute(out_handle, new_color);
-      n = ::vfprintf(stream, format, ap);
-      SetConsoleTextAttribute(out_handle, old_color);
-    }
-
-    return n;
-  }
+inline void __chaos_throw_error(int ec, const char* what) {
+  throw std::system_error(std::error_code(ec, std::system_category()), what);
 }
 
 }
+
+#endif // CHAOS_EXCEPT_SYSTEMERROR_H

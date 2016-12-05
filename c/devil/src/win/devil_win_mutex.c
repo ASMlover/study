@@ -31,8 +31,7 @@
 int
 devil_mutex_init(devil_mutex_t* mutex)
 {
-  InitializeCriticalSection(mutex);
-  return 0;
+  return InitializeCriticalSection(mutex), 0;
 }
 
 void
@@ -44,22 +43,13 @@ devil_mutex_destroy(devil_mutex_t* mutex)
 void
 devil_mutex_lock(devil_mutex_t* mutex)
 {
-  if ((DWORD)mutex->OwningThread == GetCurrentThreadId())
-    return;
-
   EnterCriticalSection(mutex);
 }
 
 int
 devil_mutex_trylock(devil_mutex_t* mutex)
 {
-  if ((DWORD)mutex->OwningThread == GetCurrentThreadId())
-    return 0;
-
-  if (TryEnterCriticalSection(mutex))
-    return 0;
-  else
-    return -1;
+  return TryEnterCriticalSection(mutex) ? 0 : -1;
 }
 
 void
