@@ -39,20 +39,16 @@ namespace tyr { namespace net {
 class Channel;
 
 class Poller : private basic::UnCopyable {
-  typedef std::vector<Channel*> ChannelVector;
-  typedef std::vector<KernPollfd> PollfdVector;
-  typedef std::map<int, Channel*> ChannleMap;
-
   EventLoop* owner_loop_{};
-  PollfdVector pollfds_;
-  ChannleMap channels_;
+  std::vector<KernPollfd> pollfds_;
+  std::map<int, Channel*> channels_;
 
-  void fill_active_channels(int nevents, ChannelVector* active_channels) const;
+  void fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const;
 public:
   Poller(EventLoop* loop);
   ~Poller(void);
 
-  basic::Timestamp poll(int timeout, ChannelVector* active_channels);
+  basic::Timestamp poll(int timeout, std::vector<Channel*>* active_channels);
   void update_channel(Channel* channel);
 
   void assert_in_loopthread(void) {

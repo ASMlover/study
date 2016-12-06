@@ -38,7 +38,7 @@ Poller::Poller(EventLoop* loop)
 Poller::~Poller(void) {
 }
 
-void Poller::fill_active_channels(int nevents, ChannelVector* active_channels) const {
+void Poller::fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const {
   for (auto fdp = pollfds_.begin(); fdp != pollfds_.end() && nevents > 0; ++fdp) {
     if (nevents > 0) {
       --nevents;
@@ -53,8 +53,10 @@ void Poller::fill_active_channels(int nevents, ChannelVector* active_channels) c
   }
 }
 
-basic::Timestamp Poller::poll(int timeout, ChannelVector* active_channels) {
+basic::Timestamp Poller::poll(int timeout, std::vector<Channel*>* active_channels) {
   basic::Timestamp now(basic::Timestamp::now());
+  if (pollfds_.empty())
+    return now;
 
   int nevents = SocketSupport::kern_poll(&*pollfds_.begin(), pollfds_.size(), timeout);
   if (nevents > 0) {
