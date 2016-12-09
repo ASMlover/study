@@ -108,16 +108,16 @@ T* check_not_null(Logger::SourceFile file, int lineno, const char* names, T* p) 
 
 }}
 
-#define TL_TRACE if (tyr::basic::Logger::log_level() <= tyr::basic::LoggingLevel::LOGGINGLEVEL_TRACE)\
+#define TYRLOG_TRACE if (tyr::basic::Logger::log_level() <= tyr::basic::LoggingLevel::LOGGINGLEVEL_TRACE)\
   tyr::basic::Logger(__FILE__, __LINE__, tyr::basic::LoggingLevel::LOGGINGLEVEL_TRACE, __func__).stream()
-#define TL_DEBUG if (tyr::basic::Logger::log_level() <= tyr::basic::LoggingLevel::LOGGINGLEVEL_DEBUG)\
+#define TYRLOG_DEBUG if (tyr::basic::Logger::log_level() <= tyr::basic::LoggingLevel::LOGGINGLEVEL_DEBUG)\
   tyr::basic::Logger(__FILE__, __LINE__, tyr::basic::LoggingLevel::LOGGINGLEVEL_DEBUG, __func__).stream()
-#define TL_INFO if (tyr::basic::Logger::log_level() <= tyr::basic::LoggingLevel::LOGGINGLEVEL_INFO)\
+#define TYRLOG_INFO if (tyr::basic::Logger::log_level() <= tyr::basic::LoggingLevel::LOGGINGLEVEL_INFO)\
   tyr::basic::Logger(__FILE__, __LINE__).stream()
-#define TL_WARN tyr::basic::Logger(__FILE__, __LINE__, tyr::basic::LoggingLevel::LOGGINGLEVEL_WARN).stream()
-#define TL_ERROR tyr::basic::Logger(__FILE__, __LINE__, tyr::basic::LoggingLevel::LOGGINGLEVEL_ERROR).stream()
-#define TL_FATAL tyr::basic::Logger(__FILE__, __LINE__, tyr::basic::LoggingLevel::LOGGINGLEVEL_FATAL).stream()
-#define TL_SYSERR tyr::basic::Logger(__FILE__, __LINE__, false).stream()
-#define TL_SYSFATAL tyr::basic::Logger(__FILE__, __LINE__, true).stream()
+#define TYRLOG_WARN tyr::basic::Logger(__FILE__, __LINE__, tyr::basic::LoggingLevel::LOGGINGLEVEL_WARN).stream()
+#define TYRLOG_ERROR tyr::basic::Logger(__FILE__, __LINE__, tyr::basic::LoggingLevel::LOGGINGLEVEL_ERROR).stream()
+#define TYRLOG_FATAL tyr::basic::Logger(__FILE__, __LINE__, tyr::basic::LoggingLevel::LOGGINGLEVEL_FATAL).stream()
+#define TYRLOG_SYSERR tyr::basic::Logger(__FILE__, __LINE__, false).stream()
+#define TYRLOG_SYSFATAL tyr::basic::Logger(__FILE__, __LINE__, true).stream()
 
 #endif // __TYR_BASIC_LOGGING_HEADER_H__

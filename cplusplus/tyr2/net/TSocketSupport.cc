@@ -46,7 +46,7 @@ namespace SocketSupport {
   int kern_socket(int family) {
     int sockfd = socket(family, SOCK_STREAM, IPPROTO_TCP);
     if (sockfd < 0)
-      TL_SYSFATAL << "SocketSupport::kern_socket failed";
+      TYRLOG_SYSFATAL << "SocketSupport::kern_socket failed";
     unexposed::kern_set_nonblock(sockfd);
 
     return sockfd;
@@ -56,14 +56,14 @@ namespace SocketSupport {
     socklen_t addrlen = static_cast<socklen_t>(sizeof(struct sockaddr_in6));
     int rc = bind(sockfd, addr, addrlen);
     if (rc < 0)
-      TL_SYSFATAL << "SocketSupport::kern_bind failed";
+      TYRLOG_SYSFATAL << "SocketSupport::kern_bind failed";
     return 0;
   }
 
   int kern_listen(int sockfd) {
     int rc = listen(sockfd, SOMAXCONN);
     if (rc < 0)
-      TL_SYSFATAL << "SocketSupport::kern_listen failed";
+      TYRLOG_SYSFATAL << "SocketSupport::kern_listen failed";
     return 0;
   }
 
@@ -74,7 +74,7 @@ namespace SocketSupport {
 
     if (connfd < 0) {
       int saved_errno = errno;
-      TL_SYSERR << "SocketSupport::kern_accept failed";
+      TYRLOG_SYSERR << "SocketSupport::kern_accept failed";
       switch (saved_errno) {
       }
     }
@@ -127,7 +127,7 @@ namespace SocketSupport {
     memset(&addr, 0, sizeof(addr));
     socklen_t addrlen = static_cast<socklen_t>(sizeof(addr));
     if (getsockname(sockfd, kern_sockaddr_cast(&addr), &addrlen) < 0)
-      TL_SYSERR << "SocketSupport::kern_localaddr failed";
+      TYRLOG_SYSERR << "SocketSupport::kern_localaddr failed";
     return addr;
   }
 
@@ -136,7 +136,7 @@ namespace SocketSupport {
     memset(&addr, 0, sizeof(addr));
     socklen_t addrlen = static_cast<socklen_t>(sizeof(addr));
     if (getpeername(sockfd, kern_sockaddr_cast(&addr), &addrlen) < 0)
-      TL_SYSERR << "SocketSupport::kern_peekaddr failed";
+      TYRLOG_SYSERR << "SocketSupport::kern_peekaddr failed";
     return addr;
   }
 

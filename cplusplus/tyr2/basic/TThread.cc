@@ -160,7 +160,7 @@ void Thread::start(void) {
   }
   else {
     started_ = false;
-    TL_SYSFATAL << "Failed in call `kern_thread_create`";
+    TYRLOG_SYSFATAL << "Failed in call `kern_thread_create`";
   }
 }
 

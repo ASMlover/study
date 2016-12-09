@@ -24,48 +24,38 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <assert.h>
-#include "../basic/TLogging.h"
+#ifndef __TYR_NET_POLLER_HEADER_H__
+#define __TYR_NET_POLLER_HEADER_H__
+
+#include <vector>
+#include <map>
+#include "../basic/TUnCopyable.h"
+#include "../basic/TTimestamp.h"
 #include "TSocketSupport.h"
 #include "TEventLoop.h"
 
 namespace tyr { namespace net {
 
-#if defined(TYR_WINDOWS)
-__declspec(thread) EventLoop* t_loop_this_thread = nullptr;
-#else
-__thread EventLoop* t_loop_this_thread = nullptr;
-#endif
+class Channel;
 
-void EventLoop::abort_not_in_loopthread(void) {
-  TYRLOG_SYSFATAL << "EventLoop::abort_not_in_loopthread - EventLoop " << this
-    << " was created in thread: " << tid_
-    << ", current thread id: " << basic::CurrentThread::tid();
-}
+class Poller : private basic::UnCopyable {
+  EventLoop* owner_loop_{};
+  std::vector<KernPollfd> pollfds_;
+  std::map<int, Channel*> channels_;
 
-EventLoop::EventLoop(void)
-  : tid_(basic::CurrentThread::tid()) {
-  TYRLOG_TRACE << "EventLoop created " << this << " in thread " << tid_;
-  if (nullptr != t_loop_this_thread)
-    TYRLOG_SYSFATAL << "Another EventLoop " << t_loop_this_thread << " exists in this thread " << tid_;
-  else
-    t_loop_this_thread = this;
-}
+  void fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const;
+public:
+  Poller(EventLoop* loop);
+  ~Poller(void);
 
-EventLoop::~EventLoop(void) {
-  assert(!looping_);
-  t_loop_this_thread = nullptr;
-}
+  basic::Timestamp poll(int timeout, std::vector<Channel*>* active_channels);
+  void update_channel(Channel* channel);
 
-void EventLoop::loop(void) {
-  assert(!looping_);
-  assert_in_loopthread();
-  looping_ = true;
-
-  SocketSupport::kern_poll(nullptr, 0, 5 * 1000);
-
-  TYRLOG_TRACE << "EventLoop " << this << " stop looping";
-  looping_ = false;
-}
+  void assert_in_loopthread(void) {
+    owner_loop_->assert_in_loopthread();
+  }
+};
 
 }}
+
+#endif // __TYR_NET_POLLER_HEADER_H__

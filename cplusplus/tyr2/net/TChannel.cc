@@ -24,48 +24,44 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <assert.h>
 #include "../basic/TLogging.h"
 #include "TSocketSupport.h"
 #include "TEventLoop.h"
+#include "TChannel.h"
 
 namespace tyr { namespace net {
 
-#if defined(TYR_WINDOWS)
-__declspec(thread) EventLoop* t_loop_this_thread = nullptr;
-#else
-__thread EventLoop* t_loop_this_thread = nullptr;
-#endif
+const int Channel::kNoneEvent = 0;
+const int Channel::kReadEvent = POLLIN | POLLOUT;
+const int Channel::kWriteEvent = POLLOUT;
 
-void EventLoop::abort_not_in_loopthread(void) {
-  TYRLOG_SYSFATAL << "EventLoop::abort_not_in_loopthread - EventLoop " << this
-    << " was created in thread: " << tid_
-    << ", current thread id: " << basic::CurrentThread::tid();
+Channel::Channel(EventLoop* loop, int fd)
+  : loop_(loop)
+  , fd_(fd) {
 }
 
-EventLoop::EventLoop(void)
-  : tid_(basic::CurrentThread::tid()) {
-  TYRLOG_TRACE << "EventLoop created " << this << " in thread " << tid_;
-  if (nullptr != t_loop_this_thread)
-    TYRLOG_SYSFATAL << "Another EventLoop " << t_loop_this_thread << " exists in this thread " << tid_;
-  else
-    t_loop_this_thread = this;
+void Channel::handle_event(void) {
+  if (revents_ & POLLNVAL)
+    TYRLOG_WARN << "Channel::handle_event() POLLNVAL";
+
+  if (revents_ & (POLLERR | POLLNVAL)) {
+    if (nullptr != error_fn_)
+      error_fn_();
+  }
+
+  if (revents_ & (POLLIN | POLLPRI | POLLHUP)) {
+    if (nullptr != read_fn_)
+      read_fn_();
+  }
+
+  if (revents_ & POLLOUT) {
+    if (nullptr != write_fn_)
+      write_fn_();
+  }
 }
 
-EventLoop::~EventLoop(void) {
-  assert(!looping_);
-  t_loop_this_thread = nullptr;
-}
-
-void EventLoop::loop(void) {
-  assert(!looping_);
-  assert_in_loopthread();
-  looping_ = true;
-
-  SocketSupport::kern_poll(nullptr, 0, 5 * 1000);
-
-  TYRLOG_TRACE << "EventLoop " << this << " stop looping";
-  looping_ = false;
+void Channel::update(void) {
+  loop_->update_channel(this);
 }
 
 }}
