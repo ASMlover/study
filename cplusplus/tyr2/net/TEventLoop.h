@@ -27,15 +27,23 @@
 #ifndef __TYR_NET_EVENTLOOP_HEADER_H__
 #define __TYR_NET_EVENTLOOP_HEADER_H__
 
+#include <memory>
+#include <vector>
 #include "../basic/TUnCopyable.h"
 #include "../basic/TPlatform.h"
 #include "../basic/TCurrentThread.h"
 
 namespace tyr { namespace net {
 
+class Channel;
+class Poller;
+
 class EventLoop : private basic::UnCopyable {
   bool looping_{};
+  bool quit_{};
   const pid_t tid_{};
+  std::unique_ptr<Poller> poller_;
+  std::vector<Channel*> active_channels_;
 
   void abort_not_in_loopthread(void);
 public:
@@ -43,6 +51,8 @@ public:
   ~EventLoop(void);
 
   void loop(void);
+  void quit(void);
+  void update_channel(Channel* channel);
 
   void assert_in_loopthread(void) {
     if (!in_loopthread())
