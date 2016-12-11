@@ -371,3 +371,11 @@
     7) 注意需要先创建liteboost目录
     8) 同时编译裁剪版的时候需要写上--with-regex等指定要编译的模块，否则会造
        成编译全部的boost模块由于是裁剪的会失败；
+
+## **25. 两个客户端保证随机数一致**
+    要让多个客户端保存随机数一致，只需要传递相同的随机数种子即可
+``` Python
+    def get_random(seed=1):
+        random.seed(seed)
+        return random.random()
+```

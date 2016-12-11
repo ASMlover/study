@@ -161,3 +161,9 @@
 
     删除子模块，直接使用一条命令:
     $ git rm <submodule_name>
+
+    如果子模块对应的项目有更新，主工程想使用最新的子模块，那么子模块需要checkout到master分支，在主目录更新或进入子模块更新：
+    $ git submodule foreach git pull origin master
+    $ cd <submodule-dir>
+    $ git pull
+    正常情况在主项目pull之后需要git status查看子模块是否有更新。

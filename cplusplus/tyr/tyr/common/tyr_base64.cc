@@ -53,16 +53,18 @@ std::string Base64::Encode(const std::string& s) {
     }
     else {
       r.push_back(kEncode64[(b[i] & 0x03) << 4]);
-      r.push_back('=');
-      r.push_back('=');
+      r.append("==");
+      break;
     }
 
     if (i + 2 < n) {
       r.push_back(kEncode64[((b[i + 1] & 0x0f) << 2) | (b[i + 2] >> 6)]);
+      r.push_back(kEncode64[b[i + 2] & 0x3f]);
     }
     else {
       r.push_back(kEncode64[(b[i + 1] & 0x0f) << 2]);
       r.push_back('=');
+      break;
     }
   }
 
