@@ -29,8 +29,8 @@
 #include "TSocketSupport.h"
 #include "TChannel.h"
 #include "TPoller.h"
+#include "TTimerQueue.h"
 #include "TEventLoop.h"
-#include <iostream>
 
 namespace tyr { namespace net {
 
@@ -49,7 +49,8 @@ void EventLoop::abort_not_in_loopthread(void) {
 
 EventLoop::EventLoop(void)
   : tid_(basic::CurrentThread::tid())
-  , poller_(new Poller(this)) {
+  , poller_(new Poller(this))
+  , timer_queue_(new TimerQueue(this)) {
   TYRLOG_TRACE << "EventLoop created " << this << " in thread " << tid_;
   if (nullptr != t_loop_this_thread)
     TYRLOG_SYSFATAL << "Another EventLoop " << t_loop_this_thread << " exists in this thread " << tid_;
@@ -70,7 +71,7 @@ void EventLoop::loop(void) {
 
   while (!quit_) {
     active_channels_.clear();
-    poller_->poll(kPollMicroSecond, &active_channels_);
+    poll_return_time_ = poller_->poll(kPollMicroSecond, &active_channels_);
     for (auto it = active_channels_.begin(); it != active_channels_.end(); ++it)
       (*it)->handle_event();
   }
@@ -87,6 +88,20 @@ void EventLoop::update_channel(Channel* channel) {
   assert(channel->get_owner_loop() == this);
   assert_in_loopthread();
   poller_->update_channel(channel);
+}
+
+TimerID EventLoop::run_at(basic::Timestamp time, const TimerCallback& fn) {
+  return timer_queue_->add_timer(fn, time, 0.0);
+}
+
+TimerID EventLoop::run_after(double delay, const TimerCallback& fn) {
+  basic::Timestamp time(basic::add_time(basic::Timestamp::now(), delay));
+  return run_at(time, fn);
+}
+
+TimerID EventLoop::run_every(double interval, const TimerCallback& fn) {
+  basic::Timestamp time(basic::add_time(basic::Timestamp::now(), interval));
+  return timer_queue_->add_timer(fn, time, interval);
 }
 
 }}

@@ -32,17 +32,22 @@
 #include "../basic/TUnCopyable.h"
 #include "../basic/TPlatform.h"
 #include "../basic/TCurrentThread.h"
+#include "../basic/TTimestamp.h"
+#include "TTimer.h"
 
 namespace tyr { namespace net {
 
 class Channel;
 class Poller;
+class TimerQueue;
 
 class EventLoop : private basic::UnCopyable {
   bool looping_{};
   bool quit_{};
   const pid_t tid_{};
+  basic::Timestamp poll_return_time_;
   std::unique_ptr<Poller> poller_;
+  std::unique_ptr<TimerQueue> timer_queue_;
   std::vector<Channel*> active_channels_;
 
   void abort_not_in_loopthread(void);
@@ -53,6 +58,10 @@ public:
   void loop(void);
   void quit(void);
   void update_channel(Channel* channel);
+
+  TimerID run_at(basic::Timestamp time, const TimerCallback& fn);
+  TimerID run_after(double delay, const TimerCallback& fn);
+  TimerID run_every(double interval, const TimerCallback& fn);
 
   void assert_in_loopthread(void) {
     if (!in_loopthread())
