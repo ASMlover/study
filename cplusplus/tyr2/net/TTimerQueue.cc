@@ -84,7 +84,7 @@ TimerQueue::TimerQueue(EventLoop* loop)
 }
 
 TimerQueue::~TimerQueue(void) {
-  // close(timerfd_);
+  Kern::close_timer(timerfd_);
 
   for (auto& t : timers_)
     delete t.second;
@@ -121,7 +121,8 @@ std::vector<TimerQueue::Entry> TimerQueue::get_expired(basic::Timestamp now) {
   Entry sentry = std::make_pair(now, reinterpret_cast<Timer*>(UINTPTR_MAX));
   auto it = timers_.lower_bound(sentry);
   assert(it == timers_.end() || now < it->first);
-  std::copy(timers_.begin(), it, std::back_inserter(expired));
+  // std::copy(timers_.begin(), it, std::back_inserter(expired));
+  std::copy(timers_.begin(), it, expired.begin());
   timers_.erase(timers_.begin(), it);
 
   return expired;
@@ -156,8 +157,6 @@ bool TimerQueue::insert(Timer* timer) {
   assert(result.second);
 
   return changed;
-
-  return true;
 }
 
 }}
