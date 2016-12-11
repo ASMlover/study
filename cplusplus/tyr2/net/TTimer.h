@@ -44,7 +44,7 @@ class TimerID {
 public:
   TimerID(void) = default;
 
-  TimerID(Timer* timer, int64_t seq)
+  TimerID(Timer* timer, int64_t seq = 0)
     : timer_(timer)
     , sequence_(seq) {
   }

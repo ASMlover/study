@@ -40,8 +40,8 @@ class EventLoop;
 class TimerID;
 class Timer;
 
-class TimerQueue : private tyr::basic::UnCopyable {
-  typedef std::pair<tyr::basic::Timestamp, Timer*> Entry;
+class TimerQueue : private basic::UnCopyable {
+  typedef std::pair<basic::Timestamp, Timer*> Entry;
   typedef std::set<Entry> TimerSet;
   typedef std::pair<Timer*, int64_t> ActiveTimer;
   typedef std::set<ActiveTimer> ActiveTimerSet;
@@ -64,7 +64,7 @@ private:
   void add_timer_in_loop(Timer* timer);
   void cancel_in_loop(TimerID timerid);
   void handle_read(void);
-  std::vector<Entry> get_expired(tyr::basic::Timestamp now);
+  std::vector<TimerQueue::Entry> get_expired(tyr::basic::Timestamp now);
   void reset(const std::vector<Entry>& expired, tyr::basic::Timestamp now);
   bool insert(Timer* timer);
 };
