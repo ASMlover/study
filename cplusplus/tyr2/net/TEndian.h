@@ -32,10 +32,12 @@
 #if defined(TYR_WINDOWS)
 # include <WinSock2.h>
 
+# define TYR_LECHR(a, b, c, d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
+
 # define TYR_LITTLE_ENDIAN 0x41424344UL
 # define TYR_BIG_ENDIAN 0x44434241UL
 # define TYR_PDP_ENDIAN 0x42414443UL
-# define TYR_BYTE_ORDER ('ABCD')
+# define TYR_BYTE_ORDER TYR_LECHR('A', 'B', 'C', 'D')
 
 # if TYR_BYTE_ORDER == TYR_LITTLE_ENDIAN
 #   define htobe16(x) htons((x))
