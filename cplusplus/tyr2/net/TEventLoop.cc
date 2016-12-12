@@ -30,6 +30,7 @@
 #include "TChannel.h"
 #include "TPoller.h"
 #include "TTimerQueue.h"
+#include "TKernWrapper.h"
 #include "TEventLoop.h"
 
 namespace tyr { namespace net {
@@ -47,19 +48,34 @@ void EventLoop::abort_not_in_loopthread(void) {
     << ", current thread id: " << basic::CurrentThread::tid();
 }
 
+void EventLoop::handle_read(void) {
+  // for waked up
+}
+
+void EventLoop::do_pending_functors(void) {
+}
+
+// ================== PUBLIC ==================
+
 EventLoop::EventLoop(void)
   : tid_(basic::CurrentThread::tid())
   , poller_(new Poller(this))
-  , timer_queue_(new TimerQueue(this)) {
+  , timer_queue_(new TimerQueue(this))
+  , wakeup_fd_(Kern::create_eventfd())
+  , wakeup_channel_(new Channel(this, wakeup_fd_)) {
   TYRLOG_TRACE << "EventLoop created " << this << " in thread " << tid_;
   if (nullptr != t_loop_this_thread)
     TYRLOG_SYSFATAL << "Another EventLoop " << t_loop_this_thread << " exists in this thread " << tid_;
   else
     t_loop_this_thread = this;
+
+  wakeup_channel_->set_read_callback(std::bind(&EventLoop::handle_read, this));
+  wakeup_channel_->enabled_reading();
 }
 
 EventLoop::~EventLoop(void) {
   assert(!looping_);
+  Kern::close_eventfd(wakeup_fd_);
   t_loop_this_thread = nullptr;
 }
 
@@ -102,6 +118,30 @@ TimerID EventLoop::run_after(double delay, const TimerCallback& fn) {
 TimerID EventLoop::run_every(double interval, const TimerCallback& fn) {
   basic::Timestamp time(basic::add_time(basic::Timestamp::now(), interval));
   return timer_queue_->add_timer(fn, time, interval);
+}
+
+void EventLoop::wakeup(void) {
+  uint64_t one = 1;
+  int n = Kern::write_eventfd(wakeup_fd_, &one, sizeof(one));
+  if (n != sizeof(one))
+    TYRLOG_ERROR << "EventLoop::wakeup() - writes " << n << " bytes instead of 8";
+}
+
+void EventLoop::run_in_loop(const FunctorCallback& cb) {
+  if (in_loopthread())
+    cb();
+  else
+    put_in_loop(cb);
+}
+
+void EventLoop::put_in_loop(const FunctorCallback& cb) {
+  {
+    basic::MutexGuard guard(mtx_);
+    pending_functors_.push_back(cb);
+  }
+
+  if (!in_loopthread())
+    wakeup();
 }
 
 }}

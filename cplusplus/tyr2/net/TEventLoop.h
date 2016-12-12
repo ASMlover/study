@@ -32,6 +32,7 @@
 #include "../basic/TUnCopyable.h"
 #include "../basic/TPlatform.h"
 #include "../basic/TCurrentThread.h"
+#include "../basic/TMutex.h"
 #include "../basic/TTimestamp.h"
 #include "TTimer.h"
 
@@ -42,26 +43,39 @@ class Poller;
 class TimerQueue;
 
 class EventLoop : private basic::UnCopyable {
-  bool looping_{};
-  bool quit_{};
+  typedef std::function<void (void)> FunctorCallback;
+
+  bool looping_{}; // need atomic
+  bool quit_{}; // need atomic
+  bool calling_pending_functors_{}; // need atomic
   const pid_t tid_{};
   basic::Timestamp poll_return_time_;
   std::unique_ptr<Poller> poller_;
   std::unique_ptr<TimerQueue> timer_queue_;
+  int wakeup_fd_;
+  std::unique_ptr<Channel> wakeup_channel_;
   std::vector<Channel*> active_channels_;
+  basic::Mutex mtx_;
+  std::vector<FunctorCallback> pending_functors_; // locked by mtx_
 
   void abort_not_in_loopthread(void);
+  void handle_read(void); // for waked up
+  void do_pending_functors(void);
 public:
   EventLoop(void);
   ~EventLoop(void);
 
   void loop(void);
   void quit(void);
+  void wakeup(void);
   void update_channel(Channel* channel);
 
   TimerID run_at(basic::Timestamp time, const TimerCallback& fn);
   TimerID run_after(double delay, const TimerCallback& fn);
   TimerID run_every(double interval, const TimerCallback& fn);
+
+  void run_in_loop(const FunctorCallback& cb);
+  void put_in_loop(const FunctorCallback& cb);
 
   void assert_in_loopthread(void) {
     if (!in_loopthread())
