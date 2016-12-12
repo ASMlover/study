@@ -36,6 +36,11 @@ namespace Kern {
   void close_timer(int timerfd);
   int read_timer(int timerfd, void* buf, size_t len);
   int set_timer(int timerfd, int64_t msec);
+
+  int create_eventfd(void);
+  void close_eventfd(int eventfd);
+  int read_eventfd(int eventfd, void* buf, size_t len);
+  int write_eventfd(int eventfd, const void* buf, size_t len);
 }
 
 }}
