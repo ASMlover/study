@@ -92,16 +92,25 @@ TimerQueue::~TimerQueue(void) {
 
 TimerID TimerQueue::add_timer(const TimerCallback& cb, basic::Timestamp when, double interval) {
   Timer* timer = new Timer(cb, when, interval);
-  loop_->assert_in_loopthread();
-  bool earlist_changed = insert(timer);
-
-  if (earlist_changed)
-    reset_timerfd(timerfd_, timer->expiry_time());
+  loop_->run_in_loop(std::bind(&TimerQueue::add_timer_in_loop, this, timer));
   return TimerID(timer);
 }
-// TimerID add_timer(TimerCallback&& cb, tyr::basic::Timestamp when, double interval);
+
+TimerID TimerQueue::add_timer(TimerCallback&& cb, basic::Timestamp when, double interval) {
+  Timer* timer = new Timer(std::move(cb), when, interval);
+  loop_->run_in_loop(std::bind(&TimerQueue::add_timer_in_loop, this, timer));
+  return TimerID(timer);
+}
+
 // void cancel(TimerID timerid);
-// void add_timer_in_loop(Timer* timer);
+
+void TimerQueue::add_timer_in_loop(Timer* timer) {
+  loop_->assert_in_loopthread();
+  bool earlist_changed = insert(timer);
+  if (earlist_changed)
+    reset_timerfd(timerfd_, timer->expiry_time());
+}
+
 // void cancel_in_loop(TimerID timerid);
 
 void TimerQueue::handle_read(void) {
