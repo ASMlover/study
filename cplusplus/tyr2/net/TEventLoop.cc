@@ -50,9 +50,24 @@ void EventLoop::abort_not_in_loopthread(void) {
 
 void EventLoop::handle_read(void) {
   // for waked up
+  uint64_t one = 1;
+  int n = Kern::read_eventfd(wakeup_fd_, &one, sizeof(one));
+  if (n != sizeof(one))
+    TYRLOG_ERROR << "EventLoop::handle_read() - reads " << n << " bytes instead of 8";
 }
 
 void EventLoop::do_pending_functors(void) {
+  std::vector<FunctorCallback> functors;
+  calling_pending_functors_ = true;
+
+  {
+    basic::MutexGuard guard(mtx_);
+    functors.swap(pending_functors_);
+  }
+
+  for (auto& fn : functors)
+    fn();
+  calling_pending_functors_ = false;
 }
 
 // ================== PUBLIC ==================
@@ -90,6 +105,8 @@ void EventLoop::loop(void) {
     poll_return_time_ = poller_->poll(kPollMicroSecond, &active_channels_);
     for (auto it = active_channels_.begin(); it != active_channels_.end(); ++it)
       (*it)->handle_event();
+
+    do_pending_functors();
   }
 
   TYRLOG_TRACE << "EventLoop " << this << " stop looping";
@@ -98,6 +115,8 @@ void EventLoop::loop(void) {
 
 void EventLoop::quit(void) {
   quit_ = true;
+  if (!in_loopthread())
+    wakeup();
 }
 
 void EventLoop::update_channel(Channel* channel) {
@@ -140,7 +159,7 @@ void EventLoop::put_in_loop(const FunctorCallback& cb) {
     pending_functors_.push_back(cb);
   }
 
-  if (!in_loopthread())
+  if (!in_loopthread() || calling_pending_functors_)
     wakeup();
 }
 
