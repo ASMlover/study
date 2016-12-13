@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
+#include "../basic/TConfig.h"
 #include "../basic/TLogging.h"
 #include "TChannel.h"
 #include "TPoller.h"
@@ -84,6 +85,7 @@ void Poller::update_channel(Channel* channel) {
     pfd.revents = 0;
     pollfds_.push_back(pfd);
     int index = static_cast<int>(pollfds_.size()) - 1;
+    UNUSED(index);
     channels_[pfd.fd] = channel;
   }
   else {
