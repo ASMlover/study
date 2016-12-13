@@ -42,6 +42,7 @@
 # include <netinet/in.h>
 # include <sys/socket.h>
 # include <sys/uio.h>
+# include <poll.h>
 
   typedef struct iovec  KernIovec;
   typedef struct pollfd KernPollfd;
