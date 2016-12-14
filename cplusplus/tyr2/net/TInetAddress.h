@@ -29,29 +29,49 @@
 
 #include <string>
 #include "../basic/TTypes.h"
+#include "../basic/TStringPiece.h"
 #include "TSocketSupport.h"
 
 namespace tyr { namespace net {
 
 class InetAddress : private basic::UnCopyable {
-  struct sockaddr_in addr_;
+  union {
+    struct sockaddr_in addr_;
+    struct sockaddr_in6 addr6_;
+  };
 public:
-  explicit InetAddress(uint16_t port);
-  InetAddress(const std::string& host, uint16_t port);
-
   explicit InetAddress(const struct sockaddr_in& addr)
     : addr_(addr) {
   }
 
+  explicit InetAddress(const struct sockaddr_in6& addr6)
+    : addr6_(addr6) {
+  }
+
+  explicit InetAddress(uint16_t port = 0, bool loopback_only = false, bool ipv6 = false);
+  InetAddress(basic::StringPiece host, uint16_t port, bool ipv6 = false);
+  std::string to_host(void) const;
   std::string to_host_port(void) const;
+  uint16_t to_port(void) const;
+  uint32_t get_host_endian(void) const;
 
-  const struct sockaddr_in& get_address(void) const {
-    return addr_;
+  uint16_t get_port_endian(void) const {
+    return addr_.sin_port;
   }
 
-  void set_address(const struct sockaddr_in& addr) {
-    addr_ = addr;
+  sa_family_t get_family(void) const {
+    return addr_.sin_family;
   }
+
+  const struct sockaddr* get_address(void) const {
+    return SocketSupport::kern_sockaddr_cast(&addr6_);
+  }
+
+  void set_address(const struct sockaddr_in6& addr6) {
+    addr6_ = addr6;
+  }
+
+  static bool resolve(basic::StringPiece hostname, InetAddress* result);
 };
 
 }}

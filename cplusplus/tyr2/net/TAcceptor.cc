@@ -55,7 +55,7 @@ void Acceptor::listen(void) {
 
 void Acceptor::handle_read(void) {
   loop_->assert_in_loopthread();
-  InetAddress peeraddr(0);
+  InetAddress peeraddr;
 
   int connfd = accept_sock_.accept(&peeraddr);
   if (connfd >= 0) {

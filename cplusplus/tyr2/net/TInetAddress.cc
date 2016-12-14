@@ -24,32 +24,87 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <assert.h>
 #include <string.h>
+#include "../basic/TConfig.h"
 #include "TSocketSupport.h"
 #include "TEndian.h"
 #include "TInetAddress.h"
 
 namespace tyr { namespace net {
 
-static const int kInAddrAny = INADDR_ANY;
-static_assert(sizeof(InetAddress) == sizeof(struct sockaddr_in), "InetAddress size must be same as sockaddr_in");
+static const in_addr_t kInAddrAny = INADDR_ANY;
+static const in_addr_t kInAddrLoopback = INADDR_LOOPBACK;
+static_assert(sizeof(InetAddress) == sizeof(struct sockaddr_in6), "InetAddress is same size as sockaddr_in6");
+static_assert(offsetof(sockaddr_in, sin_family) == 0, "sin_family offset must be 0");
+static_assert(offsetof(sockaddr_in6, sin6_family) == 0, "sin6_family offset must be 0");
+static_assert(offsetof(sockaddr_in, sin_port) == 2, "sin_port offset must be 2");
+static_assert(offsetof(sockaddr_in6, sin6_port) == 2, "sin6_port offset must be 2");
 
-InetAddress::InetAddress(uint16_t port) {
-  memset(&addr_, 0, sizeof(addr_));
-  addr_.sin_family = AF_INET;
-  addr_.sin_addr.s_addr = host_to_net32(kInAddrAny);
-  addr_.sin_port = host_to_net16(port);
+InetAddress::InetAddress(uint16_t port, bool loopback_only, bool ipv6) {
+  static_assert(offsetof(InetAddress, addr_) == 0, "addr_ offset must be 0");
+  static_assert(offsetof(InetAddress, addr6_) == 0, "addr6_ offset must be 0");
+
+  if (ipv6) {
+    memset(&addr6_, 0, sizeof(addr6_));
+    addr6_.sin6_family = AF_INET6;
+    addr6_.sin6_addr = loopback_only ? in6addr_loopback : in6addr_any;
+    addr6_.sin6_port = host_to_net16(port);
+  }
+  else {
+    memset(&addr_, 0, sizeof(addr_));
+    addr_.sin_family = AF_INET;
+    addr_.sin_addr.s_addr = host_to_net32(loopback_only ? kInAddrLoopback : kInAddrAny);
+    addr_.sin_port = host_to_net16(port);
+  }
 }
 
-InetAddress::InetAddress(const std::string& host, uint16_t port) {
-  memset(&addr_, 0, sizeof(addr_));
-  SocketSupport::kern_from_ip_port(host.c_str(), port, &addr_);
+InetAddress::InetAddress(basic::StringPiece host, uint16_t port, bool ipv6) {
+  if (ipv6) {
+    memset(&addr6_, 0, sizeof(addr6_));
+    SocketSupport::kern_from_ip_port(host.data(), port, &addr6_);
+  }
+  else {
+    memset(&addr_, 0, sizeof(addr_));
+    SocketSupport::kern_from_ip_port(host.data(), port, &addr_);
+  }
+}
+
+std::string InetAddress::to_host(void) const {
+  char buf[64] = {0};
+  SocketSupport::kern_to_ip(buf, sizeof(buf), get_address());
+  return buf;
 }
 
 std::string InetAddress::to_host_port(void) const {
-  char buf[32];
-  SocketSupport::kern_to_ip_port(buf, sizeof(buf), SocketSupport::kern_sockaddr_cast(&addr_));
+  char buf[64] = {0};
+  SocketSupport::kern_to_ip_port(buf, sizeof(buf), get_address());
   return buf;
 }
+
+uint16_t InetAddress::to_port(void) const {
+  return net_to_host16(get_port_endian());
+}
+
+uint32_t InetAddress::get_host_endian(void) const {
+  assert(get_family() == AF_INET);
+  return addr_.sin_addr.s_addr;
+}
+
+#if defined(TYR_WINDOWS)
+static __declspec(thread) char t_resolve_buff[64* 1024];
+#else
+static __thread char t_resolve_buff[64* 1024];
+#endif
+
+// bool InetAddress::resolve(basic::StringPiece hostname, InetAddress* result) {
+//   struct hostent hent = {0};
+//   struct hostent* hentp = nullptr;
+//   int herrno = 0;
+//
+//   int ret = gethostbyname(hostname.data(), &hent, t_resolve_buff, sizeof(t_resolve_buff), &hentp, &herrno);
+//
+//   return true;
+// }
 
 }}
