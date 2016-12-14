@@ -36,6 +36,8 @@
   typedef SSIZE_T   ssize_t;
   typedef WSABUF    KernIovec;
   typedef int       socklen_t;
+  typedef int       sa_family_t;
+  typedef int       in_addr_t;
   typedef WSAPOLLFD KernPollfd;
 #else
 # include <arpa/inet.h>
@@ -53,7 +55,7 @@ namespace tyr { namespace net {
 namespace SocketSupport {
   void kern_set_iovec(KernIovec* vec, char* buf, size_t len);
 
-  int kern_socket(int family);
+  int kern_socket(sa_family_t family);
   int kern_bind(int sockfd, const struct sockaddr* addr);
   int kern_listen(int sockfd);
   int kern_accept(int sockfd, struct sockaddr_in6* addr);
