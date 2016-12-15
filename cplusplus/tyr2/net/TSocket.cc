@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include "../basic/TConfig.h"
+#include "../basic/TLogging.h"
 #include "TInetAddress.h"
 #include "TSocketSupport.h"
 #include "TSocket.h"
@@ -53,13 +54,29 @@ int Socket::accept(InetAddress* peeraddr) {
   return connfd;
 }
 
+void Socket::shutdown_write(void) {
+  SocketSupport::kern_shutdown(sockfd_);
+}
+
+void Socket::set_tcp_nodelay(bool nodelay) {
+  SocketSupport::kern_set_option(sockfd_, IPPROTO_TCP, TCP_NODELAY, nodelay ? 1 : 0);
+}
+
 void Socket::set_reuse_addr(bool reuse) {
-  int optval = reuse ? 1 : 0;
-#if defined(TYR_WINDOWS)
-  setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, sizeof(optval));
-#else
-  setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+  SocketSupport::kern_set_option(sockfd_, SOL_SOCKET, SO_REUSEADDR, reuse ? 1 : 0);
+}
+
+void Socket::set_reuse_port(bool reuse) {
+  int ret = -1;
+#ifdef SO_REUSEPORT
+  ret = SocketSupport::kern_set_option(sockfd_, SOL_SOCKET, SO_REUSEPORT, reuse ? 1 : 0);
 #endif
+  if (ret < 0 && reuse)
+    TYRLOG_SYSERR << "SO_REUSEPORT failed or not support.";
+}
+
+void Socket::set_keep_alive(bool keep_alive) {
+  SocketSupport::kern_set_option(sockfd_, SOL_SOCKET, SO_KEEPALIVE, keep_alive ? 1 : 0);
 }
 
 }}

@@ -46,10 +46,17 @@ public:
     return sockfd_;
   }
 
+  // bool get_tcp_info(struct tcp_info* info) const;
+  // bool get_tcp_info_string(char* buf, int len) const;
+
   void bind_address(const InetAddress& localaddr);
   void listen(void);
   int accept(InetAddress* peeraddr);
+  void shutdown_write(void);
+  void set_tcp_nodelay(bool nodelay);
   void set_reuse_addr(bool reuse);
+  void set_reuse_port(bool reuse);
+  void set_keep_alive(bool keep_alive);
 };
 
 }}
