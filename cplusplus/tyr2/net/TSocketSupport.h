@@ -65,6 +65,7 @@ namespace SocketSupport {
   ssize_t kern_write(int sockfd, const void* buf, size_t len);
   int kern_shutdown(int sockfd);
   int kern_close(int sockfd);
+  int kern_set_option(int sockfd, int level, int optname, int optval);
 
   void kern_to_ip_port(char* buf, size_t len, const struct sockaddr* addr);
   void kern_to_ip(char* buf, size_t len, const struct sockaddr* addr);

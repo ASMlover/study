@@ -79,6 +79,10 @@ namespace SocketSupport {
     return 0;
   }
 
+  int kern_set_option(int sockfd, int level, int optname, int optval) {
+    return setsockopt(sockfd, level, optname, &optval, sizeof(optval));
+  }
+
   void kern_to_ip(char* buf, size_t len, const struct sockaddr* addr) {
     if (addr->sa_family == AF_INET) {
       const struct sockaddr_in* addr4 = kern_sockaddr_in_cast(addr);
