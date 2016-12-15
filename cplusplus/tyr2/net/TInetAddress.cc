@@ -27,6 +27,7 @@
 #include <assert.h>
 #include <string.h>
 #include "../basic/TConfig.h"
+#include "../basic/TLogging.h"
 #include "TSocketSupport.h"
 #include "TEndian.h"
 #include "TInetAddress.h"
@@ -97,14 +98,30 @@ static __declspec(thread) char t_resolve_buff[64* 1024];
 static __thread char t_resolve_buff[64* 1024];
 #endif
 
-// bool InetAddress::resolve(basic::StringPiece hostname, InetAddress* result) {
-//   struct hostent hent = {0};
-//   struct hostent* hentp = nullptr;
-//   int herrno = 0;
-//
-//   int ret = gethostbyname(hostname.data(), &hent, t_resolve_buff, sizeof(t_resolve_buff), &hentp, &herrno);
-//
-//   return true;
-// }
+bool InetAddress::resolve(basic::StringPiece hostname, InetAddress* result) {
+  struct hostent* hentp = nullptr;
+  int ret = 0;
+
+#if defined(TYR_WINDOWS)
+  hentp = gethostbyname(hostname.data());
+  if (nullptr == hentp)
+    ret = -1;
+#else
+  struct hostent hent = {0};
+  int herrno = 0;
+  ret = gethostbyname_r(hostname.data(), &hent, t_resolve_buff, sizeof(t_resolve_buff), &hentp, &herrno);
+#endif
+
+  if (0 == ret && nullptr != hentp) {
+    assert(hentp->h_addrtype == AF_INET && hentp->h_length == sizeof(uint32_t));
+    result->addr_.sin_addr = *reinterpret_cast<struct in_addr*>(hentp->h_addr);
+    return true;
+  }
+  else {
+    if (0 != ret)
+      TYRLOG_SYSERR << "InetAddress::resolve";
+    return false;
+  }
+}
 
 }}
