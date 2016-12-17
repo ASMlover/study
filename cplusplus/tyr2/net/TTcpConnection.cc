@@ -24,56 +24,49 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_NET_INETADDRESS_HEADER_H__
-#define __TYR_NET_INETADDRESS_HEADER_H__
-
-#include <string>
-#include "../basic/TTypes.h"
-#include "../basic/TStringPiece.h"
+#include "TTcpConnection.h"
+#include <assert.h>
+#include <errno.h>
+#include <stdio.h>
+#include <functional>
+#include "../basic/TLogging.h"
+#include "TChannel.h"
+#include "TEventLoop.h"
+#include "TSocket.h"
 #include "TSocketSupport.h"
 
 namespace tyr { namespace net {
 
-class InetAddress : public basic::Copyable {
-  union {
-    struct sockaddr_in addr_;
-    struct sockaddr_in6 addr6_;
-  };
-public:
-  explicit InetAddress(const struct sockaddr_in& addr)
-    : addr_(addr) {
-  }
+TcpConnection::TcpConnection(EventLoop* loop, const std::string& name,
+      int sockfd, const InetAddress& local_addr, const InetAddress& peer_addr)
+  : loop_(TCHECK_NOTNULL(loop))
+  , name_(name)
+  , state_(ST_CONNECTING)
+  , socket_(new Socket(sockfd))
+  , channel_(new Channel(loop, sockfd))
+  , local_addr_(local_addr)
+  , peer_addr_(peer_addr) {
+  TYRLOG_DEBUG << "TcpConnection::ctor [" << name_ << "] at " << this << " fd = " << sockfd;
+  channel_->set_read_callback(std::bind(&TcpConnection::handle_read, this));
+}
 
-  explicit InetAddress(const struct sockaddr_in6& addr6)
-    : addr6_(addr6) {
-  }
+TcpConnection::~TcpConnection(void) {
+  TYRLOG_DEBUG << "TcpConnection::dtor [" << name_ << "] at " << this << " fd = " << channel_->get_fd();
+}
 
-  explicit InetAddress(uint16_t port = 0, bool loopback_only = false, bool ipv6 = false);
-  InetAddress(basic::StringPiece host, uint16_t port, bool ipv6 = false);
-  std::string to_host(void) const;
-  std::string to_host_port(void) const;
-  uint16_t to_port(void) const;
-  uint32_t get_host_endian(void) const;
+void TcpConnection::connect_established(void) {
+  loop_->assert_in_loopthread();
+  assert(state_ == ST_CONNECTING);
+  set_state(ST_CONNECTD);
+  channel_->enabled_reading();
 
-  uint16_t get_port_endian(void) const {
-    return addr_.sin_port;
-  }
+  connection_fn_(shared_from_this());
+}
 
-  sa_family_t get_family(void) const {
-    return addr_.sin_family;
-  }
-
-  const struct sockaddr* get_address(void) const {
-    return SocketSupport::kern_sockaddr_cast(&addr6_);
-  }
-
-  void set_address(const struct sockaddr_in6& addr6) {
-    addr6_ = addr6;
-  }
-
-  static bool resolve(basic::StringPiece hostname, InetAddress* result);
-};
+void TcpConnection::handle_read(void) {
+  char buf[65535];
+  ssize_t len = SocketSupport::kern_read(channel_->get_fd(), buf, sizeof(buf));
+  message_fn_(shared_from_this(), buf, len);
+}
 
 }}
-
-#endif // __TYR_NET_INETADDRESS_HEADER_H__
