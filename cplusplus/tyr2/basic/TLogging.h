@@ -97,7 +97,7 @@ public:
 const char* strerror_tl(int saved_errno);
 
 #define TCHECK_NOTNULL(v)\
-  tyr::basic::check_not_null(__FILE__, __LINE__, "'" #v "' Must be not null", (val))
+  tyr::basic::check_not_null(__FILE__, __LINE__, "'" #v "' Must be not null", (v))
 
 template <typename T>
 T* check_not_null(Logger::SourceFile file, int lineno, const char* names, T* p) {
