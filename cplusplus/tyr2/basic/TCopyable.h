@@ -24,41 +24,17 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_BASIC_TYPES_HEADER_H__
-#define __TYR_BASIC_TYPES_HEADER_H__
-
-#include <stdint.h>
-#include "TCopyable.h"
-#include "TUnCopyable.h"
-
-typedef unsigned char byte_t;
+#ifndef __TYR_BASIC_COPYABLE_HEADER_H__
+#define __TYR_BASIC_COPYABLE_HEADER_H__
 
 namespace tyr { namespace basic {
 
-template <typename T>
-inline const T& tyr_min(const T& a, const T& b) {
-  return a < b ? a : b;
-}
-
-template <typename T> struct Identity {
-  typedef T Type;
+class Copyable {
+protected:
+  Copyable(void) = default;
+  ~Copyable(void) = default;
 };
-
-template <typename T>
-inline T implicit_cast(typename Identity<T>::Type x) {
-  return x;
-}
-
-template <typename Target, typename Source>
-inline Target down_cast(Source& x) {
-  return static_cast<Target>(x);
-}
-
-template <typename Target, typename Source>
-inline Target down_cast(Source* x) {
-  return static_cast<Target>(x);
-}
 
 }}
 
-#endif // __TYR_BASIC_TYPES_HEADER_H__
+#endif // __TYR_BASIC_COPYABLE_HEADER_H__
