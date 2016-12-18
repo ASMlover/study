@@ -43,7 +43,7 @@
 namespace tyr { namespace net {
 
 namespace SocketSupport {
-  int kern_socket(int family) {
+  int kern_socket(sa_family_t family) {
     int sockfd = socket(family, SOCK_STREAM, IPPROTO_TCP);
     if (sockfd < 0)
       TYRLOG_SYSFATAL << "SocketSupport::kern_socket failed";
