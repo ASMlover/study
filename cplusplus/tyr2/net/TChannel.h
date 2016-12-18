@@ -42,10 +42,12 @@ class Channel : private basic::UnCopyable {
   int events_{};
   int revents_{};
   int index_{-1};
+  bool event_handling_{};
 
   EventCallback read_fn_{};
   EventCallback write_fn_{};
   EventCallback error_fn_{};
+  EventCallback close_fn_{};
 
   static const int kNoneEvent;
   static const int kReadEvent;
@@ -54,6 +56,7 @@ class Channel : private basic::UnCopyable {
   void update(void);
 public:
   Channel(EventLoop* loop, int fd);
+  ~Channel(void);
 
   void handle_event(void);
 
@@ -67,6 +70,10 @@ public:
 
   void set_error_callback(const EventCallback& fn) {
     error_fn_ = fn;
+  }
+
+  void set_close_callback(const EventCallback& fn) {
+    close_fn_ = fn;
   }
 
   int get_fd(void) const {

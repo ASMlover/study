@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <assert.h>
 #include "../basic/TLogging.h"
 #include "TSocketSupport.h"
 #include "TEventLoop.h"
@@ -40,9 +41,20 @@ Channel::Channel(EventLoop* loop, int fd)
   , fd_(fd) {
 }
 
+Channel::~Channel(void) {
+  assert(!event_handling_);
+}
+
 void Channel::handle_event(void) {
+  event_handling_ = true;
   if (revents_ & POLLNVAL)
     TYRLOG_WARN << "Channel::handle_event() POLLNVAL";
+
+  if ((revents_ & POLLHUP) && !(revents_ & POLLIN)) {
+    TYRLOG_WARN << "Channel::handle_event() POLLHUP";
+    if (nullptr != close_fn_)
+      close_fn_();
+  }
 
   if (revents_ & (POLLERR | POLLNVAL)) {
     if (nullptr != error_fn_)
