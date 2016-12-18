@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
+#include <stddef.h>
 #include <string.h>
 #include "../basic/TConfig.h"
 #include "../basic/TLogging.h"
@@ -37,8 +38,13 @@ namespace tyr { namespace net {
 static const in_addr_t kInAddrAny = INADDR_ANY;
 static const in_addr_t kInAddrLoopback = INADDR_LOOPBACK;
 static_assert(sizeof(InetAddress) == sizeof(struct sockaddr_in6), "InetAddress is same size as sockaddr_in6");
-static_assert(offsetof(sockaddr_in, sin_family) == 0, "sin_family offset must be 0");
-static_assert(offsetof(sockaddr_in6, sin6_family) == 0, "sin6_family offset must be 0");
+#if defined(TYR_DARWIN)
+  static_assert(offsetof(sockaddr_in, sin_family) == 1, "sin_family offset must be 1");
+  static_assert(offsetof(sockaddr_in6, sin6_family) == 1, "sin6_family offset must be 1");
+#else
+  static_assert(offsetof(sockaddr_in, sin_family) == 0, "sin_family offset must be 0");
+  static_assert(offsetof(sockaddr_in6, sin6_family) == 0, "sin6_family offset must be 0");
+#endif
 static_assert(offsetof(sockaddr_in, sin_port) == 2, "sin_port offset must be 2");
 static_assert(offsetof(sockaddr_in6, sin6_port) == 2, "sin6_port offset must be 2");
 
@@ -92,24 +98,22 @@ uint32_t InetAddress::get_host_endian(void) const {
   return addr_.sin_addr.s_addr;
 }
 
-#if defined(TYR_WINDOWS)
-static __declspec(thread) char t_resolve_buff[64* 1024];
-#else
-static __thread char t_resolve_buff[64* 1024];
+#if defined(TYR_LINUX)
+  static __thread char t_resolve_buff[64* 1024];
 #endif
 
 bool InetAddress::resolve(basic::StringPiece hostname, InetAddress* result) {
   struct hostent* hentp = nullptr;
   int ret = 0;
 
-#if defined(TYR_WINDOWS)
-  hentp = gethostbyname(hostname.data());
-  if (nullptr == hentp)
-    ret = -1;
-#else
+#if defined(TYR_LINUX)
   struct hostent hent = {0};
   int herrno = 0;
   ret = gethostbyname_r(hostname.data(), &hent, t_resolve_buff, sizeof(t_resolve_buff), &hentp, &herrno);
+#else
+  hentp = gethostbyname(hostname.data());
+  if (nullptr == hentp)
+    ret = -1;
 #endif
 
   if (0 == ret && nullptr != hentp) {

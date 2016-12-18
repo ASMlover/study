@@ -42,8 +42,11 @@
 #else
 # include <arpa/inet.h>
 # include <netinet/in.h>
+# include <netinet/tcp.h>
 # include <sys/socket.h>
+# include <sys/types.h>
 # include <sys/uio.h>
+# include <netdb.h>
 # include <poll.h>
 
   typedef struct iovec  KernIovec;
