@@ -50,6 +50,7 @@ public:
 
   basic::Timestamp poll(int timeout, std::vector<Channel*>* active_channels);
   void update_channel(Channel* channel);
+  void remove_channel(Channel* channel);
 
   void assert_in_loopthread(void) {
     owner_loop_->assert_in_loopthread();
