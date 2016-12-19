@@ -69,6 +69,7 @@ public:
   void quit(void);
   void wakeup(void);
   void update_channel(Channel* channel);
+  void remove_channel(Channel* channel);
 
   TimerID run_at(basic::Timestamp time, const TimerCallback& fn);
   TimerID run_after(double delay, const TimerCallback& fn);

@@ -125,6 +125,12 @@ void EventLoop::update_channel(Channel* channel) {
   poller_->update_channel(channel);
 }
 
+void EventLoop::remove_channel(Channel* channel) {
+  assert(channel->get_owner_loop() == this);
+  assert_in_loopthread();
+  poller_->remove_channel(channel);
+}
+
 TimerID EventLoop::run_at(basic::Timestamp time, const TimerCallback& fn) {
   return timer_queue_->add_timer(fn, time, 0.0);
 }
