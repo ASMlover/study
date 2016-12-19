@@ -45,6 +45,7 @@ class TcpConnection
   enum State {
     ST_CONNECTING,
     ST_CONNECTD,
+    ST_DICONNECTED,
   };
 
   EventLoop* loop_{};
@@ -56,12 +57,16 @@ class TcpConnection
   InetAddress peer_addr_;
   ConnectionCallback connection_fn_;
   MessageCallback message_fn_;
+  CloseCallback close_fn_;
 
   void set_state(State s) {
     state_ = s;
   }
 
   void handle_read(void);
+  void handle_write(void);
+  void handle_close(void);
+  void handle_error(void);
 public:
   TcpConnection(EventLoop* loop, const std::string& name,
       int sockfd, const InetAddress& local_addr, const InetAddress& peer_addr);
@@ -87,15 +92,20 @@ public:
     return state_ == ST_CONNECTD;
   }
 
-  void set_connection_callback(const ConnectionCallback& cb) {
-    connection_fn_ = cb;
+  void set_connection_callback(const ConnectionCallback& fn) {
+    connection_fn_ = fn;
   }
 
-  void set_message_callback(const MessageCallback& cb) {
-    message_fn_ = cb;
+  void set_message_callback(const MessageCallback& fn) {
+    message_fn_ = fn;
+  }
+
+  void set_close_callback(const CloseCallback& fn) {
+    close_fn_ = fn;
   }
 
   void connect_established(void);
+  void connect_destroyed(void);
 };
 
 typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
