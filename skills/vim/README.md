@@ -175,6 +175,10 @@
     - 首先修改bigvim.bat(32位平台)或bigvim64.bat(64位平台)
     - 这里我的例子(32-bit/64-bit), 然后使用`VS2015 x64 本机工具命令提示符`工具进入vim\src目录:
 ```shell
+    :: 设置VC编译环境
+    \> D:\Tools\MSVC2015\VC\vcvarsall.bat
+```
+```shell
 :: for x86
 :: command to build big Vim with OLE, Perl, Python, Ruby and Tcl
 SET VCDIR="D:\Tools\MSVC2015\VC\bin\"
