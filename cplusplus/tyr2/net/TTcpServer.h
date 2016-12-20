@@ -52,18 +52,19 @@ class TcpServer : private basic::UnCopyable {
   ConnectionMap connections_;
 
   void new_connection(int sockfd, const InetAddress& peeraddr);
+  void remove_connection(const TcpConnectionPtr& conn);
 public:
   TcpServer(EventLoop* loop, const InetAddress& listen_addr);
   ~TcpServer(void) = default;
 
   void start(void);
 
-  void set_connection_callback(const ConnectionCallback& cb) {
-    connection_fn_ = cb;
+  void set_connection_callback(const ConnectionCallback& fn) {
+    connection_fn_ = fn;
   }
 
-  void set_message_callback(const MessageCallback& cb) {
-    message_fn_ = cb;
+  void set_message_callback(const MessageCallback& fn) {
+    message_fn_ = fn;
   }
 };
 
