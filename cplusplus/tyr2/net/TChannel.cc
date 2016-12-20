@@ -70,6 +70,7 @@ void Channel::handle_event(basic::Timestamp recv_time) {
     if (!write_fn_)
       write_fn_();
   }
+  event_handling_ = false;
 }
 
 void Channel::update(void) {

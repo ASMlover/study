@@ -114,6 +114,10 @@ public:
     update();
   }
 
+  bool is_writing(void) const {
+    return events_ & kWriteEvent;
+  }
+
   int get_index(void) const {
     return index_;
   }

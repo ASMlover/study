@@ -45,9 +45,10 @@ class TcpConnection
   : private basic::UnCopyable
   , public std::enable_shared_from_this<TcpConnection> {
   enum State {
-    ST_CONNECTING,
-    ST_CONNECTD,
-    ST_DICONNECTED,
+    STATE_CONNECTING,
+    STATE_CONNECTED,
+    STATE_DISCONNECTING,
+    STATE_DISCONNECTED,
   };
 
   EventLoop* loop_{};
@@ -61,6 +62,7 @@ class TcpConnection
   MessageCallback message_fn_;
   CloseCallback close_fn_;
   Buffer input_buff_;
+  Buffer output_buff_;
 
   void set_state(State s) {
     state_ = s;
@@ -70,6 +72,8 @@ class TcpConnection
   void handle_write(void);
   void handle_close(void);
   void handle_error(void);
+  void write_in_loop(const std::string& message);
+  void shutdown_in_loop(void);
 public:
   TcpConnection(EventLoop* loop, const std::string& name,
       int sockfd, const InetAddress& local_addr, const InetAddress& peer_addr);
@@ -92,7 +96,7 @@ public:
   }
 
   bool is_connected(void) const {
-    return state_ == ST_CONNECTD;
+    return state_ == STATE_CONNECTED;
   }
 
   void set_connection_callback(const ConnectionCallback& fn) {
@@ -109,6 +113,8 @@ public:
 
   void connect_established(void);
   void connect_destroyed(void);
+  void write(const std::string& message);
+  void shutdown(void);
 };
 
 typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
