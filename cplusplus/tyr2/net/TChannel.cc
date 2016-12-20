@@ -45,29 +45,29 @@ Channel::~Channel(void) {
   assert(!event_handling_);
 }
 
-void Channel::handle_event(void) {
+void Channel::handle_event(basic::Timestamp recv_time) {
   event_handling_ = true;
   if (revents_ & POLLNVAL)
     TYRLOG_WARN << "Channel::handle_event() POLLNVAL";
 
   if ((revents_ & POLLHUP) && !(revents_ & POLLIN)) {
     TYRLOG_WARN << "Channel::handle_event() POLLHUP";
-    if (nullptr != close_fn_)
+    if (!close_fn_)
       close_fn_();
   }
 
   if (revents_ & (POLLERR | POLLNVAL)) {
-    if (nullptr != error_fn_)
+    if (!error_fn_)
       error_fn_();
   }
 
   if (revents_ & (POLLIN | POLLPRI | POLLHUP)) {
-    if (nullptr != read_fn_)
-      read_fn_();
+    if (!read_fn_)
+      read_fn_(recv_time);
   }
 
   if (revents_ & POLLOUT) {
-    if (nullptr != write_fn_)
+    if (!write_fn_)
       write_fn_();
   }
 }

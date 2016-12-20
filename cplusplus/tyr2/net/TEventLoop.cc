@@ -103,8 +103,8 @@ void EventLoop::loop(void) {
   while (!quit_) {
     active_channels_.clear();
     poll_return_time_ = poller_->poll(kPollMicroSecond, &active_channels_);
-    for (auto it = active_channels_.begin(); it != active_channels_.end(); ++it)
-      (*it)->handle_event();
+    for (auto channel : active_channels_)
+      channel->handle_event(poll_return_time_);
 
     do_pending_functors();
   }

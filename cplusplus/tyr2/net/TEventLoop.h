@@ -86,6 +86,10 @@ public:
   bool in_loopthread(void) const {
     return tid_ == basic::CurrentThread::tid();
   }
+
+  basic::Timestamp get_poll_return_time(void) const {
+    return poll_return_time_;
+  }
 };
 
 }}

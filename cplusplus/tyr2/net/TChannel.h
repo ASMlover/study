@@ -29,12 +29,14 @@
 
 #include <functional>
 #include "../basic/TUnCopyable.h"
+#include "../basic/TTimestamp.h"
 
 namespace tyr { namespace net {
 
 class EventLoop;
 
 typedef std::function<void (void)> EventCallback;
+typedef std::function<void (basic::Timestamp)> ReadEventCallback;
 
 class Channel : private basic::UnCopyable {
   EventLoop* loop_;
@@ -44,7 +46,7 @@ class Channel : private basic::UnCopyable {
   int index_{-1};
   bool event_handling_{};
 
-  EventCallback read_fn_{};
+  ReadEventCallback read_fn_{};
   EventCallback write_fn_{};
   EventCallback error_fn_{};
   EventCallback close_fn_{};
@@ -58,9 +60,9 @@ public:
   Channel(EventLoop* loop, int fd);
   ~Channel(void);
 
-  void handle_event(void);
+  void handle_event(basic::Timestamp recv_time);
 
-  void set_read_callback(const EventCallback& fn) {
+  void set_read_callback(const ReadEventCallback& fn) {
     read_fn_ = fn;
   }
 
