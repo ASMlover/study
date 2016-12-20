@@ -30,6 +30,8 @@
 #include <memory>
 #include <string>
 #include "../basic/TUnCopyable.h"
+#include "../basic/TTimestamp.h"
+#include "TBuffer.h"
 #include "TCallbacks.h"
 #include "TInetAddress.h"
 
@@ -58,12 +60,13 @@ class TcpConnection
   ConnectionCallback connection_fn_;
   MessageCallback message_fn_;
   CloseCallback close_fn_;
+  Buffer input_buff_;
 
   void set_state(State s) {
     state_ = s;
   }
 
-  void handle_read(void);
+  void handle_read(basic::Timestamp recv_time);
   void handle_write(void);
   void handle_close(void);
   void handle_error(void);

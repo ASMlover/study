@@ -24,16 +24,16 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "TTcpConnection.h"
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <functional>
 #include "../basic/TLogging.h"
+#include "TSocketSupport.h"
 #include "TChannel.h"
 #include "TEventLoop.h"
 #include "TSocket.h"
-#include "TSocketSupport.h"
+#include "TTcpConnection.h"
 
 namespace tyr { namespace net {
 
@@ -47,7 +47,7 @@ TcpConnection::TcpConnection(EventLoop* loop, const std::string& name,
   , local_addr_(local_addr)
   , peer_addr_(peer_addr) {
   TYRLOG_DEBUG << "TcpConnection::ctor [" << name_ << "] at " << this << " fd = " << sockfd;
-  channel_->set_read_callback(std::bind(&TcpConnection::handle_read, this));
+  channel_->set_read_callback(std::bind(&TcpConnection::handle_read, this, std::placeholders::_1));
   channel_->set_write_callback(std::bind(&TcpConnection::handle_write, this));
   channel_->set_close_callback(std::bind(&TcpConnection::handle_close, this));
   channel_->set_error_callback(std::bind(&TcpConnection::handle_error, this));
@@ -75,15 +75,20 @@ void TcpConnection::connect_destroyed(void) {
   loop_->remove_channel(get_pointer(channel_));
 }
 
-void TcpConnection::handle_read(void) {
-  char buf[65535];
-  ssize_t len = SocketSupport::kern_read(channel_->get_fd(), buf, sizeof(buf));
-  if (len > 0)
-    message_fn_(shared_from_this(), buf, len);
-  else if (0 == len)
+void TcpConnection::handle_read(basic::Timestamp recv_time) {
+  int saved_errno = 0;
+  ssize_t len = input_buff_.read_fd(channel_->get_fd(), saved_errno);
+  if (len > 0) {
+    message_fn_(shared_from_this(), &input_buff_, recv_time);
+  }
+  else if (0 == len) {
     handle_close();
-  else
+  }
+  else {
+    errno = saved_errno;
+    TYRLOG_SYSERR << "TcpConnection::handle_read";
     handle_error();
+  }
 }
 
 void TcpConnection::handle_write(void) {
