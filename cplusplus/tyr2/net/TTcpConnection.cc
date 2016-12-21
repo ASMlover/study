@@ -91,6 +91,10 @@ void TcpConnection::shutdown(void) {
   }
 }
 
+void TcpConnection::set_tcp_nodelay(bool nodelay) {
+  socket_->set_tcp_nodelay(nodelay);
+}
+
 void TcpConnection::handle_read(basic::Timestamp recv_time) {
   int saved_errno = 0;
   ssize_t len = input_buff_.read_fd(channel_->get_fd(), saved_errno);

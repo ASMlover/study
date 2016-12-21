@@ -115,6 +115,7 @@ public:
   void connect_destroyed(void);
   void write(const std::string& message);
   void shutdown(void);
+  void set_tcp_nodelay(bool nodelay);
 };
 
 typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
