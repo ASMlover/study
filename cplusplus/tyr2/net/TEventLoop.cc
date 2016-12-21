@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 #include "../basic/TLogging.h"
+#include "TIgnoreSigPipe.h"
 #include "TSocketSupport.h"
 #include "TChannel.h"
 #include "TPoller.h"
@@ -41,6 +42,8 @@ __declspec(thread) EventLoop* t_loop_this_thread = nullptr;
 __thread EventLoop* t_loop_this_thread = nullptr;
 #endif
 const int kPollMicroSecond = 10000;
+
+IgnoreSigPipe g_ignore_sigpipe;
 
 void EventLoop::abort_not_in_loopthread(void) {
   TYRLOG_SYSFATAL << "EventLoop::abort_not_in_loopthread - EventLoop " << this
@@ -71,7 +74,6 @@ void EventLoop::do_pending_functors(void) {
 }
 
 // ================== PUBLIC ==================
-
 EventLoop::EventLoop(void)
   : tid_(basic::CurrentThread::tid())
   , poller_(new Poller(this))
