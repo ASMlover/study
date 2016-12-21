@@ -119,6 +119,8 @@ void TcpConnection::handle_write(void) {
       output_buff_.retrieve(n);
       if (0 == output_buff_.readable_bytes()) {
         channel_->disabled_writing();
+        if (write_complete_fn_)
+          loop_->put_in_loop(std::bind(write_complete_fn_, shared_from_this()));
         if (STATE_DISCONNECTING == state_)
           shutdown_in_loop();
       }
@@ -157,6 +159,8 @@ void TcpConnection::write_in_loop(const std::string& message) {
     if (nwrote >= 0) {
       if (basic::implicit_cast<size_t>(nwrote) < message.size())
         TYRLOG_TRACE << "TcpConnection::write_in_loop - I'm going to write more data";
+      else if (write_complete_fn_)
+        loop_->put_in_loop(std::bind(write_complete_fn_, shared_from_this()));
     }
     else {
       nwrote = 0;

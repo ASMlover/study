@@ -60,6 +60,7 @@ class TcpConnection
   InetAddress peer_addr_;
   ConnectionCallback connection_fn_;
   MessageCallback message_fn_;
+  WriteCompleteCallback write_complete_fn_;
   CloseCallback close_fn_;
   Buffer input_buff_;
   Buffer output_buff_;
@@ -105,6 +106,10 @@ public:
 
   void set_message_callback(const MessageCallback& fn) {
     message_fn_ = fn;
+  }
+
+  void set_write_complete_callback(const WriteCompleteCallback& fn) {
+    write_complete_fn_ = fn;
   }
 
   void set_close_callback(const CloseCallback& fn) {
