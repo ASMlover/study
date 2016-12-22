@@ -46,8 +46,8 @@ class Connector : private basic::UnCopyable {
     STATES_CONNECTING,
     STATES_CONNECTED,
   };
-  static const int kMaxRetryDelayMicrosecond = 30 * 1000;
-  static const int kInitRetryDelayMicrosecond = 500;
+  static const int kMaxRetryDelayMillisecond = 30 * 1000;
+  static const int kInitRetryDelayMillisecond = 500;
 
   EventLoop* loop_{};
   bool connect_{};

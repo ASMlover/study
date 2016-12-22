@@ -26,7 +26,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 #include <errno.h>
+#include "../basic/TTypes.h"
 #include "../basic/TLogging.h"
+#include "TCallbacks.h"
 #include "TChannel.h"
 #include "TEventLoop.h"
 #include "TSocketSupport.h"
@@ -37,7 +39,7 @@ namespace tyr { namespace net {
 Connector::Connector(EventLoop* loop, const InetAddress& server_addr)
   : loop_(loop)
   , server_addr_(server_addr)
-  , retry_delay_ms_(kInitRetryDelayMicrosecond) {
+  , retry_delay_ms_(kInitRetryDelayMillisecond) {
   TYRLOG_DEBUG << "Connector ctor [" << this << "]";
 }
 
@@ -52,13 +54,61 @@ void Connector::start(void) {
   loop_->run_in_loop(std::bind(&Connector::start_in_loop, this));
 }
 
-// void restart(void);
-// void stop(void);
-
-void Connector::start_in_loop(void) {
+void Connector::restart(void) {
+  loop_->assert_in_loopthread();
+  set_state(STATES_DISCONNECTED);
+  retry_delay_ms_ = kInitRetryDelayMillisecond;
+  connect_ = true;
+  start_in_loop();
 }
 
-// void connect(void);
+void Connector::stop(void) {
+  connect_ = false;
+  loop_->cancel(timerid_);
+}
+
+void Connector::start_in_loop(void) {
+  loop_->assert_in_loopthread();
+  assert(state_ == STATES_DISCONNECTED);
+  if (connect_)
+    connect();
+  else
+    TYRLOG_DEBUG << "Connector::start_in_loop - do not connect";
+}
+
+void Connector::connect(void) {
+  int sockfd = SocketSupport::kern_socket(AF_INET);
+  int ret = SocketSupport::kern_connect(sockfd, server_addr_.get_address());
+  int saved_errno = (ret == 0) ? 0 : errno;
+  switch (saved_errno) {
+  case 0:
+  case EINPROGRESS:
+  case EINTR:
+  case EISCONN:
+    connecting(sockfd);
+    break;
+  case EAGAIN:
+  case EADDRINUSE:
+  case EADDRNOTAVAIL:
+  case ECONNREFUSED:
+  case ENETUNREACH:
+    retry(sockfd);
+    break;
+  case EACCES:
+  case EPERM:
+  case EBADF:
+  case EFAULT:
+  case EAFNOSUPPORT:
+  case EALREADY:
+    TYRLOG_SYSERR << "Connector::connect - connect error in Connector::start_in_loop " << saved_errno;
+    SocketSupport::kern_close(sockfd);
+    break;
+  default:
+    TYRLOG_SYSERR << "Connector::connect - unexcepted error in Connector::start_in_loop " << saved_errno;
+    SocketSupport::kern_close(sockfd);
+    break;
+  }
+}
 
 void Connector::connecting(int sockfd) {
   set_state(STATES_CONNECTING);
@@ -69,14 +119,68 @@ void Connector::connecting(int sockfd) {
   channel_->enabled_writing();
 }
 
-// void retry(int sockfd);
-// int remove_and_reset_channel(void);
-// void reset_channel(void);
+void Connector::retry(int sockfd) {
+  SocketSupport::kern_close(sockfd);
+  set_state(STATES_DISCONNECTED);
+  if (connect_) {
+    TYRLOG_INFO << "Connector::retry - retry connecting to "
+      << server_addr_.to_host_port() << " in "
+      << retry_delay_ms_ << " milliseconds.";
+    timerid_ = loop_->run_after(retry_delay_ms_ / 1000.0, std::bind(&Connector::start_in_loop, this));
+    retry_delay_ms_ = basic::tyr_min(retry_delay_ms_ * 2, kMaxRetryDelayMillisecond);
+  }
+  else {
+    TYRLOG_DEBUG << "Connector::retry - do not connect";
+  }
+}
+
+int Connector::remove_and_reset_channel(void) {
+  channel_->disabled_all();
+  int sockfd = channel_->get_fd();
+  loop_->remove_channel(get_pointer(channel_));
+  loop_->put_in_loop(std::bind(&Connector::reset_channel, this));
+  return sockfd;
+}
+
+void Connector::reset_channel(void) {
+  channel_.reset();
+}
 
 void Connector::handle_write(void) {
+
+  TYRLOG_TRACE << "Connector::handle_write - " << state_;
+  if (state_ == STATES_CONNECTING) {
+    int sockfd = remove_and_reset_channel();
+    int err = SocketSupport::kern_socket_error(sockfd);
+    if (err != 0) {
+      TYRLOG_WARN << "Connector::handle_write - SO_ERROR = " << err << " " << basic::strerror_tl(err);
+      retry(sockfd);
+    }
+    else if (SocketSupport::kern_is_self_connect(sockfd)) {
+      TYRLOG_WARN << "Connector::handle_write - self connect";
+      retry(sockfd);
+    }
+    else {
+      set_state(STATES_CONNECTED);
+      if (connect_)
+        new_connection_fn_(sockfd);
+      else
+        SocketSupport::kern_close(sockfd);
+    }
+  }
+  else {
+    assert(state_ == STATES_DISCONNECTED);
+  }
 }
 
 void Connector::handle_error(void) {
+  TYRLOG_ERROR << "Connector::handle_error";
+  assert(state_ == STATES_CONNECTING);
+
+  int sockfd = remove_and_reset_channel();
+  int err = SocketSupport::kern_socket_error(sockfd);
+  TYRLOG_TRACE << "Connector::handle_error - SO_ERROR = " << err << " " << basic::strerror_tl(err);
+  retry(sockfd);
 }
 
 }}
