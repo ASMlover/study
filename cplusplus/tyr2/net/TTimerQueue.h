@@ -50,7 +50,7 @@ class TimerQueue : private basic::UnCopyable {
   const int timerfd_;
   Channel timerfd_channel_;
   TimerSet timers_;
-  ActiveTimerSet avtive_timers_;
+  ActiveTimerSet active_timers_;
   bool calling_expired_timers_;
   ActiveTimerSet cancelling_timers_;
 public:

@@ -102,7 +102,9 @@ TimerID TimerQueue::add_timer(TimerCallback&& cb, basic::Timestamp when, double 
   return TimerID(timer);
 }
 
-// void cancel(TimerID timerid);
+void TimerQueue::cancel(TimerID timerid) {
+  loop_->run_in_loop(std::bind(&TimerQueue::cancel_in_loop, this, timerid));
+}
 
 void TimerQueue::add_timer_in_loop(Timer* timer) {
   loop_->assert_in_loopthread();
@@ -111,7 +113,22 @@ void TimerQueue::add_timer_in_loop(Timer* timer) {
     reset_timerfd(timerfd_, timer->expiry_time());
 }
 
-// void cancel_in_loop(TimerID timerid);
+void TimerQueue::cancel_in_loop(TimerID timerid) {
+  loop_->assert_in_loopthread();
+  assert(timers_.size() == active_timers_.size());
+  ActiveTimer timer(timerid.timer_, timerid.sequence_);
+  auto it = active_timers_.find(timer);
+  if (it != active_timers_.end()) {
+    size_t n = timers_.erase(Entry(it->first->expiry_time(), it->first));
+    assert(n == 1); (void)n;
+    delete it->first;
+    active_timers_.erase(it);
+  }
+  else if (calling_expired_timers_) {
+    cancelling_timers_.insert(timer);
+  }
+  assert(timers_.size() == active_timers_.size());
+}
 
 void TimerQueue::handle_read(void) {
   loop_->assert_in_loopthread();
