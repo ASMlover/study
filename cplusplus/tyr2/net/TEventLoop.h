@@ -68,6 +68,7 @@ public:
   void loop(void);
   void quit(void);
   void wakeup(void);
+  void cancel(TimerID timerid);
   void update_channel(Channel* channel);
   void remove_channel(Channel* channel);
 

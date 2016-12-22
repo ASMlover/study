@@ -154,6 +154,10 @@ void EventLoop::wakeup(void) {
     TYRLOG_ERROR << "EventLoop::wakeup() - writes " << n << " bytes instead of 8";
 }
 
+void EventLoop::cancel(TimerID timerid) {
+  timer_queue_->cancel(timerid);
+}
+
 void EventLoop::run_in_loop(const FunctorCallback& cb) {
   if (in_loopthread())
     cb();
