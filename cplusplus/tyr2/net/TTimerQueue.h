@@ -46,12 +46,12 @@ class TimerQueue : private basic::UnCopyable {
   typedef std::pair<Timer*, int64_t> ActiveTimer;
   typedef std::set<ActiveTimer> ActiveTimerSet;
 
-  EventLoop* loop_;
+  EventLoop* loop_{};
   const int timerfd_;
   Channel timerfd_channel_;
   TimerSet timers_;
+  bool calling_expired_timers_{};
   ActiveTimerSet active_timers_;
-  bool calling_expired_timers_;
   ActiveTimerSet cancelling_timers_;
 public:
   explicit TimerQueue(EventLoop* loop);
