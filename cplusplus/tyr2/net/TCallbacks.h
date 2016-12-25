@@ -60,7 +60,7 @@ typedef std::function<void (const TcpConnectionPtr&, size_t)> HighWaterMarkCallb
 typedef std::function<void (const TcpConnectionPtr&, Buffer*, basic::Timestamp)> MessageCallback;
 
 void default_connection_callback(const TcpConnectionPtr& conn);
-void default_message_callback(const TcpConnectionPtr& conn, Buffer* buff, basic::Timestamp ts);
+void default_message_callback(const TcpConnectionPtr& conn, Buffer* buff, basic::Timestamp recv_time);
 
 }}
 
