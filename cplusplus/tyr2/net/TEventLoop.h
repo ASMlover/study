@@ -47,7 +47,9 @@ class EventLoop : private basic::UnCopyable {
 
   bool looping_{}; // need atomic
   bool quit_{}; // need atomic
+  bool event_handling_{}; // need atomic
   bool calling_pending_functors_{}; // need atomic
+  int64_t iteration_;
   const pid_t tid_{};
   basic::Timestamp poll_return_time_;
   std::unique_ptr<Poller> poller_;
@@ -55,12 +57,15 @@ class EventLoop : private basic::UnCopyable {
   int wakeup_fd_;
   std::unique_ptr<Channel> wakeup_channel_;
   std::vector<Channel*> active_channels_;
-  basic::Mutex mtx_;
+  Channel* current_active_channel_{};
+  mutable basic::Mutex mtx_;
   std::vector<FunctorCallback> pending_functors_; // locked by mtx_
 
   void abort_not_in_loopthread(void);
-  void handle_read(void); // for waked up
+  void handle_read(void); // just for waked up
   void do_pending_functors(void);
+
+  void debug_active_channels(void) const; // just for debug print
 public:
   EventLoop(void);
   ~EventLoop(void);
@@ -71,13 +76,23 @@ public:
   void cancel(TimerID timerid);
   void update_channel(Channel* channel);
   void remove_channel(Channel* channel);
+  bool has_channel(Channel* channel);
+
+  size_t get_functor_count(void) const;
 
   TimerID run_at(basic::Timestamp time, const TimerCallback& fn);
+  TimerID run_at(basic::Timestamp time, TimerCallback&& fn);
   TimerID run_after(double delay, const TimerCallback& fn);
+  TimerID run_after(double delay, TimerCallback&& fn);
   TimerID run_every(double interval, const TimerCallback& fn);
+  TimerID run_every(double interval, TimerCallback&& fn);
 
-  void run_in_loop(const FunctorCallback& cb);
-  void put_in_loop(const FunctorCallback& cb);
+  void run_in_loop(const FunctorCallback& fn);
+  void run_in_loop(FunctorCallback&& fn);
+  void put_in_loop(const FunctorCallback& fn);
+  void put_in_loop(FunctorCallback&& fn);
+
+  static EventLoop* get_loop_of_current_thread(void);
 
   void assert_in_loopthread(void) {
     if (!in_loopthread())
@@ -90,6 +105,14 @@ public:
 
   basic::Timestamp get_poll_return_time(void) const {
     return poll_return_time_;
+  }
+
+  int64_t get_iteration(void) const {
+    return iteration_;
+  }
+
+  bool get_event_handling(void) const {
+    return event_handling_;
   }
 };
 

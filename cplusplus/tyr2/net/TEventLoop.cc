@@ -56,7 +56,7 @@ void EventLoop::handle_read(void) {
   uint64_t one = 1;
   int n = Kern::read_eventfd(wakeup_fd_, &one, sizeof(one));
   if (n != sizeof(one))
-    TYRLOG_ERROR << "EventLoop::handle_read() - reads " << n << " bytes instead of 8";
+    TYRLOG_ERROR << "EventLoop::handle_read - reads " << n << " bytes instead of 8";
 }
 
 void EventLoop::do_pending_functors(void) {
@@ -73,25 +73,36 @@ void EventLoop::do_pending_functors(void) {
   calling_pending_functors_ = false;
 }
 
+void EventLoop::debug_active_channels(void) const {
+  for (auto ch : active_channels_)
+    TYRLOG_TRACE << "EventLoop""debug_active_channels - {" << ch->revents_to_string() << "}";
+}
+
 // ================== PUBLIC ==================
 EventLoop::EventLoop(void)
   : tid_(basic::CurrentThread::tid())
-  , poller_(new Poller(this))
+  , poller_(Poller::new_default_poller(this))
   , timer_queue_(new TimerQueue(this))
   , wakeup_fd_(Kern::create_eventfd())
   , wakeup_channel_(new Channel(this, wakeup_fd_)) {
-  TYRLOG_TRACE << "EventLoop created " << this << " in thread " << tid_;
-  if (nullptr != t_loop_this_thread)
-    TYRLOG_SYSFATAL << "Another EventLoop " << t_loop_this_thread << " exists in this thread " << tid_;
-  else
+  TYRLOG_DEBUG << "EventLoop::EventLoop - created " << this << " in thread " << tid_;
+  if (nullptr != t_loop_this_thread) {
+    TYRLOG_SYSFATAL << "EventLoop::EventLoop - another EventLoop "
+      << t_loop_this_thread << " exists in this thread " << tid_;
+  }
+  else {
     t_loop_this_thread = this;
+  }
 
   wakeup_channel_->set_read_callback(std::bind(&EventLoop::handle_read, this));
   wakeup_channel_->enabled_reading();
 }
 
 EventLoop::~EventLoop(void) {
-  assert(!looping_);
+  TYRLOG_DEBUG << "EventLoop::~EventLoop - " << this << " of thread " << tid_
+    << " destructs in thread " << basic::CurrentThread::tid();
+  wakeup_channel_->disabled_all();
+  wakeup_channel_->remove();
   Kern::close_eventfd(wakeup_fd_);
   t_loop_this_thread = nullptr;
 }
@@ -101,17 +112,27 @@ void EventLoop::loop(void) {
   assert_in_loopthread();
   looping_ = true;
   quit_ = false;
+  TYRLOG_TRACE << "EventLoop::loop - " << this << " start looping";
 
   while (!quit_) {
     active_channels_.clear();
     poll_return_time_ = poller_->poll(kPollMicroSecond, &active_channels_);
-    for (auto channel : active_channels_)
-      channel->handle_event(poll_return_time_);
+    ++iteration_;
+    if (basic::Logger::log_level() <= basic::LoggingLevel::LOGGINGLEVEL_TRACE)
+      debug_active_channels();
+
+    event_handling_ = true;
+    for (auto channel : active_channels_) {
+      current_active_channel_ = channel;
+      current_active_channel_->handle_event(poll_return_time_);
+    }
+    current_active_channel_ = nullptr;
+    event_handling_ = false;
 
     do_pending_functors();
   }
 
-  TYRLOG_TRACE << "EventLoop " << this << " stop looping";
+  TYRLOG_TRACE << "EventLoop::loop - " << this << " stop looping";
   looping_ = false;
 }
 
@@ -130,11 +151,31 @@ void EventLoop::update_channel(Channel* channel) {
 void EventLoop::remove_channel(Channel* channel) {
   assert(channel->get_owner_loop() == this);
   assert_in_loopthread();
+
+  if (event_handling_) {
+    assert(current_active_channel_ == channel ||
+        std::find(active_channels_.begin(), active_channels_.end(), channel) == active_channels_.end());
+  }
   poller_->remove_channel(channel);
+}
+
+bool EventLoop::has_channel(Channel* channel) {
+  assert(channel->get_owner_loop() == this);
+  assert_in_loopthread();
+  return poller_->has_channel(channel);
+}
+
+size_t EventLoop::get_functor_count(void) const {
+  basic::MutexGuard guard(mtx_);
+  return pending_functors_.size();
 }
 
 TimerID EventLoop::run_at(basic::Timestamp time, const TimerCallback& fn) {
   return timer_queue_->add_timer(fn, time, 0.0);
+}
+
+TimerID EventLoop::run_at(basic::Timestamp time, TimerCallback&& fn) {
+  return timer_queue_->add_timer(std::move(fn), time, 0.0);
 }
 
 TimerID EventLoop::run_after(double delay, const TimerCallback& fn) {
@@ -142,37 +183,68 @@ TimerID EventLoop::run_after(double delay, const TimerCallback& fn) {
   return run_at(time, fn);
 }
 
+TimerID EventLoop::run_after(double delay, TimerCallback&& fn) {
+  basic::Timestamp time(basic::add_time(basic::Timestamp::now(), delay));
+  return run_at(time, std::move(fn));
+}
+
 TimerID EventLoop::run_every(double interval, const TimerCallback& fn) {
   basic::Timestamp time(basic::add_time(basic::Timestamp::now(), interval));
   return timer_queue_->add_timer(fn, time, interval);
+}
+
+TimerID EventLoop::run_every(double interval, TimerCallback&& fn) {
+  basic::Timestamp time(basic::add_time(basic::Timestamp::now(), interval));
+  return timer_queue_->add_timer(std::move(fn), time, interval);
 }
 
 void EventLoop::wakeup(void) {
   uint64_t one = 1;
   int n = Kern::write_eventfd(wakeup_fd_, &one, sizeof(one));
   if (n != sizeof(one))
-    TYRLOG_ERROR << "EventLoop::wakeup() - writes " << n << " bytes instead of 8";
+    TYRLOG_ERROR << "EventLoop::wakeup - writes " << n << " bytes instead of 8";
 }
 
 void EventLoop::cancel(TimerID timerid) {
   timer_queue_->cancel(timerid);
 }
 
-void EventLoop::run_in_loop(const FunctorCallback& cb) {
+void EventLoop::run_in_loop(const FunctorCallback& fn) {
   if (in_loopthread())
-    cb();
+    fn();
   else
-    put_in_loop(cb);
+    put_in_loop(fn);
 }
 
-void EventLoop::put_in_loop(const FunctorCallback& cb) {
+void EventLoop::run_in_loop(FunctorCallback&& fn) {
+  if (in_loopthread())
+    fn();
+  else
+    put_in_loop(std::move(fn));
+}
+
+void EventLoop::put_in_loop(const FunctorCallback& fn) {
   {
     basic::MutexGuard guard(mtx_);
-    pending_functors_.push_back(cb);
+    pending_functors_.push_back(fn);
   }
 
   if (!in_loopthread() || calling_pending_functors_)
     wakeup();
+}
+
+void EventLoop::put_in_loop(FunctorCallback&& fn) {
+  {
+    basic::MutexGuard guard(mtx_);
+    pending_functors_.push_back(std::move(fn));
+  }
+
+  if (!in_loopthread() || calling_pending_functors_)
+    wakeup();
+}
+
+EventLoop* EventLoop::get_loop_of_current_thread(void) {
+  return t_loop_this_thread;
 }
 
 }}
