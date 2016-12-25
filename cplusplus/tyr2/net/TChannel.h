@@ -28,6 +28,8 @@
 #define __TYR_NET_CHANNEL_HEADER_H__
 
 #include <functional>
+#include <memory>
+#include <string>
 #include "../basic/TUnCopyable.h"
 #include "../basic/TTimestamp.h"
 
@@ -39,12 +41,16 @@ typedef std::function<void (void)> EventCallback;
 typedef std::function<void (basic::Timestamp)> ReadEventCallback;
 
 class Channel : private basic::UnCopyable {
-  EventLoop* loop_;
-  const int fd_;
+  EventLoop* loop_{};
+  const int fd_{};
   int events_{};
   int revents_{};
   int index_{-1};
+  bool log_hup_{true};
   bool event_handling_{};
+  bool added_to_loop_{};
+  bool tied_{};
+  std::weak_ptr<void> wk_tie_;
 
   ReadEventCallback read_fn_{};
   EventCallback write_fn_{};
@@ -56,26 +62,51 @@ class Channel : private basic::UnCopyable {
   static const int kWriteEvent;
 
   void update(void);
+  void handle_event_with_guard(basic::Timestamp recv_time);
+
+  static std::string events_to_string(int fd, int event);
 public:
   Channel(EventLoop* loop, int fd);
   ~Channel(void);
 
   void handle_event(basic::Timestamp recv_time);
+  void tie(const std::shared_ptr<void>& tiep);
+  void remove(void);
+
+  // for debuging
+  std::string events_to_string(void) const;
+  std::string revents_to_string(void) const;
 
   void set_read_callback(const ReadEventCallback& fn) {
     read_fn_ = fn;
+  }
+
+  void set_read_callback(ReadEventCallback&& fn) {
+    read_fn_ = std::move(fn);
   }
 
   void set_write_callback(const EventCallback& fn) {
     write_fn_ = fn;
   }
 
+  void set_write_callback(EventCallback&& fn) {
+    write_fn_ = std::move(fn);
+  }
+
   void set_error_callback(const EventCallback& fn) {
     error_fn_ = fn;
   }
 
+  void set_error_callback(EventCallback&& fn) {
+    error_fn_ = std::move(fn);
+  }
+
   void set_close_callback(const EventCallback& fn) {
     close_fn_ = fn;
+  }
+
+  void set_close_callback(EventCallback&& fn) {
+    close_fn_ = std::move(fn);
   }
 
   int get_fd(void) const {
@@ -99,6 +130,11 @@ public:
     update();
   }
 
+  void disabled_reading(void) {
+    events_ &= ~kReadEvent;
+    update();
+  }
+
   void enabled_writing(void) {
     events_ |= kWriteEvent;
     update();
@@ -114,6 +150,10 @@ public:
     update();
   }
 
+  bool is_reading(void) const {
+    return events_ & kReadEvent;
+  }
+
   bool is_writing(void) const {
     return events_ & kWriteEvent;
   }
@@ -124,6 +164,10 @@ public:
 
   void set_index(int index) {
     index_ = index;
+  }
+
+  void set_non_loghup(void) {
+    log_hup_ = false;
   }
 
   EventLoop* get_owner_loop(void) const {
