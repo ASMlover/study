@@ -31,7 +31,6 @@
 #include <map>
 #include "../basic/TUnCopyable.h"
 #include "../basic/TTimestamp.h"
-#include "TSocketSupport.h"
 #include "TEventLoop.h"
 
 namespace tyr { namespace net {
@@ -40,19 +39,20 @@ class Channel;
 
 class Poller : private basic::UnCopyable {
   EventLoop* owner_loop_{};
-  std::vector<KernPollfd> pollfds_;
+protected:
   std::map<int, Channel*> channels_;
-
-  void fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const;
 public:
   Poller(EventLoop* loop);
-  ~Poller(void);
+  virtual ~Poller(void);
 
-  basic::Timestamp poll(int timeout, std::vector<Channel*>* active_channels);
-  void update_channel(Channel* channel);
-  void remove_channel(Channel* channel);
+  virtual basic::Timestamp poll(int timeout, std::vector<Channel*>* active_channels) = 0;
+  virtual void update_channel(Channel* channel) = 0;
+  virtual void remove_channel(Channel* channel) = 0;
+  virtual bool has_channel(Channel* channel) const;
 
-  void assert_in_loopthread(void) {
+  static Poller* new_default_poller(EventLoop* loop);
+
+  void assert_in_loopthread(void) const {
     owner_loop_->assert_in_loopthread();
   }
 };
