@@ -35,12 +35,32 @@ namespace tyr { namespace basic {
 
 namespace unexposed {
   template <bool B, typename T = void>
-  struct DisableIf {
+  struct DisableIfC {
     typedef T type;
   };
 
   template <typename T>
-  struct DisableIf<true, T> {
+  struct DisableIfC<true, T> {};
+
+  template <typename Cond, typename T = void>
+  struct DisableIf : public DisableIfC<Cond::value, T> {};
+
+  template <typename T>
+  struct AddReferenceImpl {
+    typedef T& type;
+  };
+
+  template <typename T>
+  struct AddReferenceImpl<T&&> {
+    typedef T&& type;
+  };
+
+  template <typename T> struct AddReference {
+    typedef typename AddReferenceImpl<T>::type type;
+  };
+
+  template <typename T> struct AddReference<T&> {
+    typedef T& type;
   };
 }
 
@@ -107,8 +127,8 @@ public:
 
   template <typename ValueType>
   Any(ValueType&& value,
-      typename unexposed::DisableIf<std::is_same<Any&, ValueType>::value>::type* = nullptr,
-      typename unexposed::DisableIf<std::is_const<ValueType>::value>::type* = nullptr)
+      typename unexposed::DisableIf<std::is_same<Any&, ValueType>>::type* = nullptr,
+      typename unexposed::DisableIf<std::is_const<ValueType>>::type* = nullptr)
     : content_(new Holder<typename std::decay<ValueType>::type>(std::move(value))) {
   }
 
@@ -146,6 +166,62 @@ public:
     return (nullptr != content_) ? content_->get_type() : typeid(void);
   }
 };
+
+class BadAnyCast : public std::bad_cast {
+public:
+  virtual const char* what(void) const noexcept override {
+    return "tyr::basic::BadAnyCast: failed conversion using tyr::basic::any_cast";
+  }
+};
+
+template <typename ValueType>
+inline ValueType* any_cast(Any* operand) {
+  return operand && operand->get_type() == typeid(ValueType)
+    ? &static_cast<Any::Holder<typename std::remove_cv<ValueType>::type>*>(operand->content_)->held_
+    : nullptr;
+}
+
+template <typename ValueType>
+inline const ValueType* any_cast(const Any* operand) {
+  return any_cast<ValueType>(const_cast<Any*>(operand));
+}
+
+template <typename ValueType>
+ValueType any_cast(Any& operand) {
+  typedef typename std::remove_reference<ValueType>::type NonRef;
+
+  NonRef* result = any_cast<NonRef>(&operand);
+  if (!result)
+    throw std::exception(BadAnyCast());
+
+  typedef typename std::conditional<
+    std::is_reference<ValueType>::value,
+    ValueType,
+    typename unexposed::AddReference<ValueType>::type>::type RefType;
+
+  return static_cast<RefType>(*result);
+}
+
+template <typename ValueType>
+inline ValueType any_cast(const Any& operand) {
+  typedef typename std::remove_reference<ValueType>::type NonRef;
+  return any_cast<const NonRef&>(const_cast<Any&>(operand));
+}
+
+template <typename ValueType>
+inline ValueType any_cast(Any&& operand) {
+  return any_cast<ValueType>(operand);
+}
+
+template <typename ValueType>
+inline ValueType* unsafe_any_cast(Any* operand) {
+  return &static_cast<Any::Holder<ValueType>*>(operand->content_)->held_;
+}
+
+template <typename ValueType>
+inline const ValueType* unsafe_any_cast(const Any* operand) {
+  return unsafe_any_cast<ValueType>(const_cast<Any*>(operand));
+}
 
 }}
 
