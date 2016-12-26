@@ -38,8 +38,8 @@ namespace tyr { namespace net {
 
 Connector::Connector(EventLoop* loop, const InetAddress& server_addr)
   : loop_(loop)
-  , server_addr_(server_addr)
-  , retry_delay_ms_(kInitRetryDelayMillisecond) {
+  , retry_delay_ms_(kInitRetryDelayMillisecond)
+  , server_addr_(server_addr) {
   TYRLOG_DEBUG << "Connector ctor [" << this << "]";
 }
 
