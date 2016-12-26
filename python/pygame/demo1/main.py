@@ -42,8 +42,8 @@ class Game(object):
         self._screen = pygame.display.set_mode((640, 480), 0, 32)
         pygame.display.set_caption(self._caption)
 
-        self._background = pygame.image.load('background.jpg').convert()
-        self._cursor = pygame.image.load('cursor.png').convert_alpha()
+        self._background = pygame.image.load('../res/background.jpg').convert()
+        self._cursor = pygame.image.load('../res/cursor.png').convert_alpha()
 
     def update(self):
         self._screen.blit(self._background, (0, 0))
