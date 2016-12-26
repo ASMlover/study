@@ -28,41 +28,11 @@
 #define __TYR_BASIC_ANY_HEADER_H__
 
 #include <typeinfo>
-#include <type_traits>
 #include <utility>
+#include "TTraits.h"
+#include <iostream>
 
 namespace tyr { namespace basic {
-
-namespace unexposed {
-  template <bool B, typename T = void>
-  struct DisableIfC {
-    typedef T type;
-  };
-
-  template <typename T>
-  struct DisableIfC<true, T> {};
-
-  template <typename Cond, typename T = void>
-  struct DisableIf : public DisableIfC<Cond::value, T> {};
-
-  template <typename T>
-  struct AddReferenceImpl {
-    typedef T& type;
-  };
-
-  template <typename T>
-  struct AddReferenceImpl<T&&> {
-    typedef T&& type;
-  };
-
-  template <typename T> struct AddReference {
-    typedef typename AddReferenceImpl<T>::type type;
-  };
-
-  template <typename T> struct AddReference<T&> {
-    typedef T& type;
-  };
-}
 
 class Any {
   class Placeholder {
@@ -127,8 +97,8 @@ public:
 
   template <typename ValueType>
   Any(ValueType&& value,
-      typename unexposed::DisableIf<std::is_same<Any&, ValueType>>::type* = nullptr,
-      typename unexposed::DisableIf<std::is_const<ValueType>>::type* = nullptr)
+      DisableIf_t<std::is_same<Any&, ValueType>>* = nullptr,
+      DisableIf_t<std::is_const<ValueType>>* = nullptr)
     : content_(new Holder<typename std::decay<ValueType>::type>(std::move(value))) {
   }
 
@@ -197,7 +167,7 @@ ValueType any_cast(Any& operand) {
   typedef typename std::conditional<
     std::is_reference<ValueType>::value,
     ValueType,
-    typename unexposed::AddReference<ValueType>::type>::type RefType;
+    AddReference_t<ValueType>>::type RefType;
 
   return static_cast<RefType>(*result);
 }
