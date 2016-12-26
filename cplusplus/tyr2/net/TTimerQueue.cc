@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
+#include "../basic/TTypes.h"
 #include "../basic/TLogging.h"
 #include "TKernWrapper.h"
 #include "TTimer.h"
@@ -67,13 +68,6 @@ void reset_timerfd(int timerfd, basic::Timestamp expired) {
     TYRLOG_SYSERR << "Kern::set_timer";
 }
 
-// EventLoop* loop_;
-// const int timerfd_;
-// Channel timerfd_channel_;
-// TimerSet timers_;
-// ActiveTimerSet avtive_timers_;
-// bool calling_expired_timers_;
-// ActiveTimerSet cancelling_timers_;
 TimerQueue::TimerQueue(EventLoop* loop)
   : loop_(loop)
   , timerfd_(create_timerfd())
@@ -102,7 +96,9 @@ TimerID TimerQueue::add_timer(TimerCallback&& cb, basic::Timestamp when, double 
   return TimerID(timer);
 }
 
-// void cancel(TimerID timerid);
+void TimerQueue::cancel(TimerID timerid) {
+  loop_->run_in_loop(std::bind(&TimerQueue::cancel_in_loop, this, timerid));
+}
 
 void TimerQueue::add_timer_in_loop(Timer* timer) {
   loop_->assert_in_loopthread();
@@ -111,28 +107,53 @@ void TimerQueue::add_timer_in_loop(Timer* timer) {
     reset_timerfd(timerfd_, timer->expiry_time());
 }
 
-// void cancel_in_loop(TimerID timerid);
+void TimerQueue::cancel_in_loop(TimerID timerid) {
+  loop_->assert_in_loopthread();
+  assert(timers_.size() == active_timers_.size());
+  ActiveTimer timer(timerid.timer_, timerid.sequence_);
+  auto it = active_timers_.find(timer);
+  if (it != active_timers_.end()) {
+    size_t n = timers_.erase(Entry(it->first->expiry_time(), it->first));
+    assert(n == 1); UNUSED(n);
+    delete it->first;
+    active_timers_.erase(it);
+  }
+  else if (calling_expired_timers_) {
+    cancelling_timers_.insert(timer);
+  }
+  assert(timers_.size() == active_timers_.size());
+}
 
 void TimerQueue::handle_read(void) {
   loop_->assert_in_loopthread();
   basic::Timestamp now(basic::Timestamp::now());
   read_timerfd(timerfd_, now);
 
+  calling_expired_timers_ = true;
+  cancelling_timers_.clear();
   std::vector<Entry> expired = get_expired(now);
   for (auto& entry : expired)
     entry.second->run();
+  calling_expired_timers_ = false;
 
   reset(expired, now);
 }
 
 std::vector<TimerQueue::Entry> TimerQueue::get_expired(basic::Timestamp now) {
+  assert(timers_.size() == active_timers_.size());
   std::vector<Entry> expired;
   Entry sentry = std::make_pair(now, reinterpret_cast<Timer*>(UINTPTR_MAX));
   auto it = timers_.lower_bound(sentry);
   assert(it == timers_.end() || now < it->first);
-  // std::copy(timers_.begin(), it, std::back_inserter(expired));
-  std::copy(timers_.begin(), it, expired.begin());
+  std::copy(timers_.begin(), it, std::back_inserter(expired));
   timers_.erase(timers_.begin(), it);
+
+  for (auto& entry : expired) {
+    ActiveTimer timer(entry.second, entry.second->sequence());
+    size_t n = active_timers_.erase(timer);
+    assert(n == 1); UNUSED(n);
+  }
+  assert(timers_.size() == active_timers_.size());
 
   return expired;
 }
@@ -141,7 +162,8 @@ void TimerQueue::reset(const std::vector<Entry>& expired, basic::Timestamp now) 
   basic::Timestamp next_expired;
 
   for (auto& entry : expired) {
-    if (entry.second->repeat()) {
+    ActiveTimer timer(entry.second, entry.second->sequence());
+    if (entry.second->repeat() && cancelling_timers_.find(timer) == cancelling_timers_.end()) {
       entry.second->restart(now);
       insert(entry.second);
     }
@@ -157,13 +179,24 @@ void TimerQueue::reset(const std::vector<Entry>& expired, basic::Timestamp now) 
 }
 
 bool TimerQueue::insert(Timer* timer) {
+  loop_->assert_in_loopthread();
+  assert(timers_.size() == active_timers_.size());
+
   bool changed{};
   basic::Timestamp when = timer->expiry_time();
   auto it = timers_.begin();
   if (it == timers_.end() || when < it->first)
     changed = true;
-  auto result = timers_.insert(std::make_pair(when, timer));
-  assert(result.second);
+
+  {
+    auto result = timers_.insert(Entry(when, timer));
+    assert(result.second); UNUSED(result);
+  }
+  {
+    auto result = active_timers_.insert(ActiveTimer(timer, timer->sequence()));
+    assert(result.second); UNUSED(result);
+  }
+  assert(timers_.size() == active_timers_.size());
 
   return changed;
 }

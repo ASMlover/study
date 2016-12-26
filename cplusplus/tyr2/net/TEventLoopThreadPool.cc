@@ -24,37 +24,45 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <errno.h>
-#include "TBuffer.h"
-
-using namespace tyr::basic;
+#include <assert.h>
+#include <functional>
+#include "TEventLoop.h"
+#include "TEventLoopThread.h"
+#include "TEventLoopThreadPool.h"
 
 namespace tyr { namespace net {
 
-const char* Buffer::kCRLF = "\r\n";
+EventLoopThreadPool::EventLoopThreadPool(EventLoop* base_loop)
+  : base_loop_(base_loop) {
+}
 
-ssize_t Buffer::read_fd(int fd, int& saved_errno) {
-  char extra_buf[65535];
-  const size_t writable = writable_bytes();
+EventLoopThreadPool::~EventLoopThreadPool(void) {
+}
 
-  KernIovec vec[2];
-  SocketSupport::kern_set_iovec(&vec[0], begin() + windex_, writable);
-  SocketSupport::kern_set_iovec(&vec[1], extra_buf, sizeof(extra_buf));
+void EventLoopThreadPool::start(void) {
+  assert(!started_);
+  base_loop_->assert_in_loopthread();
 
-  const int iovcnt = (writable < sizeof(extra_buf) ? 2 : 1);
-  const ssize_t n = SocketSupport::kern_readv(fd, vec, iovcnt);
-  if (n < 0) {
-    saved_errno = errno;
+  started_ = true;
+  for (int i = 0; i < thread_count_; ++i) {
+    EventLoopThread* t = new EventLoopThread();
+    threads_.push_back(std::unique_ptr<EventLoopThread>(t));
+    loops_.push_back(t->start_loop());
   }
-  else if (implicit_cast<size_t>(n) <= writable) {
-    windex_ += n;
-  }
-  else {
-    windex_ = buff_.size();
-    append(extra_buf, n - writable);
+}
+
+EventLoop* EventLoopThreadPool::get_next_loop(void) {
+  base_loop_->assert_in_loopthread();
+  EventLoop* loop = base_loop_;
+
+  if (!loops_.empty()) {
+    loop = loops_[next_thread_];
+    ++next_thread_;
+    if (static_cast<size_t>(next_thread_) >= loops_.size())
+      next_thread_ = 0;
   }
 
-  return n;
+  return loop;
 }
 
 }}

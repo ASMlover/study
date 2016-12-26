@@ -205,3 +205,16 @@ SET TOOLDIR=D:\Tools\
         \> copy src\xxd\xxd.exe [targetdir]\vim\vim74
 
   * 在[targetdir]\vim目录下创建默认的vimfiles目录和`_vimrc`
+
+
+## **Windows下更新编译YouCompleteMe**
+  * 更新YouCompleteMe以及submodules
+  * 更新Vim的Plug（PlugUpdate）
+  * 重新编译`ycm_core`
+```shell
+  \> cd ~/.vim/plugged/YouCompleteMe
+  \> git pull
+  \> git submodule update --init --recursive
+  \> call gvim -u "%HOME%\.vim\evil-vimrc\evil-install.vim" +PlugUpdate
+  \> python install.py --clang --completer
+```

@@ -57,13 +57,10 @@ typedef std::function<void (const TcpConnectionPtr&)> ConnectionCallback;
 typedef std::function<void (const TcpConnectionPtr&)> CloseCallback;
 typedef std::function<void (const TcpConnectionPtr&)> WriteCompleteCallback;
 typedef std::function<void (const TcpConnectionPtr&, size_t)> HighWaterMarkCallback;
-// typedef std::function<void (const TcpConnectionPtr&, Buffer*, basic::Timestamp)> MessageCallback;
-
-// temporary MessageCallback definitions
-using MessageCallback = std::function<void (const TcpConnectionPtr&, const char* buf, int len)>;
+typedef std::function<void (const TcpConnectionPtr&, Buffer*, basic::Timestamp)> MessageCallback;
 
 void default_connection_callback(const TcpConnectionPtr& conn);
-void default_message_callback(const TcpConnectionPtr& conn, Buffer* buff, basic::Timestamp ts);
+void default_message_callback(const TcpConnectionPtr& conn, Buffer* buff, basic::Timestamp recv_time);
 
 }}
 

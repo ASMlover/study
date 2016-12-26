@@ -25,12 +25,107 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
-#include "../basic/TConfig.h"
-#include "../basic/TLogging.h"
 #include "TChannel.h"
 #include "TPoller.h"
 
 namespace tyr { namespace net {
+
+// Poller::Poller(EventLoop* loop)
+//   : owner_loop_(loop) {
+// }
+//
+// Poller::~Poller(void) {
+// }
+//
+// void Poller::fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const {
+//   for (auto fdp = pollfds_.begin(); fdp != pollfds_.end() && nevents > 0; ++fdp) {
+//     if (nevents > 0) {
+//       --nevents;
+//
+//       auto ch_iter = channels_.find(fdp->fd);
+//       assert(ch_iter != channels_.end());
+//       Channel* channel = ch_iter->second;
+//       assert(channel->get_fd() == fdp->fd);
+//       channel->set_revents(fdp->revents);
+//       active_channels->push_back(channel);
+//     }
+//   }
+// }
+//
+// basic::Timestamp Poller::poll(int timeout, std::vector<Channel*>* active_channels) {
+//   basic::Timestamp now(basic::Timestamp::now());
+//   if (pollfds_.empty())
+//     return now;
+//
+//   int nevents = SocketSupport::kern_poll(&*pollfds_.begin(), pollfds_.size(), timeout);
+//   if (nevents > 0) {
+//     TYRLOG_TRACE << "Poller::poll() - " << nevents << " events happened";
+//     fill_active_channels(nevents, active_channels);
+//   }
+//   else if (0 == nevents) {
+//     TYRLOG_TRACE << "Poller::poll() - nothing happened";
+//   }
+//   else {
+//     TYRLOG_SYSERR << "Poller::poll()";
+//   }
+//
+//   return now;
+// }
+//
+// void Poller::update_channel(Channel* channel) {
+//   assert_in_loopthread();
+//   TYRLOG_TRACE << "fd = " << channel->get_fd() << " events = " << channel->get_events();
+//   if (channel->get_index() < 0) {
+//     assert(channels_.find(channel->get_fd()) == channels_.end());
+//     KernPollfd pfd;
+//     pfd.fd = channel->get_fd();
+//     pfd.events = static_cast<short>(channel->get_events());
+//     pfd.revents = 0;
+//     pollfds_.push_back(pfd);
+//     int index = static_cast<int>(pollfds_.size()) - 1;
+//     channel->set_index(index);
+//     channels_[pfd.fd] = channel;
+//   }
+//   else {
+//     assert(channels_.find(channel->get_fd()) != channels_.end());
+//     assert(channels_[channel->get_fd()] == channel);
+//     int index = channel->get_index();
+//     assert(0 <= index && index < static_cast<int>(pollfds_.size()));
+//     KernPollfd& pfd = pollfds_[index];
+//     assert(pfd.fd == channel->get_fd() || pfd.fd == -channel->get_fd() - 1);
+//     pfd.events = static_cast<short>(channel->get_events());
+//     pfd.revents = 0;
+//     if (channel->is_none_event())
+//       pfd.fd = -channel->get_fd() - 1;
+//   }
+// }
+//
+// void Poller::remove_channel(Channel* channel) {
+//   assert_in_loopthread();
+//   TYRLOG_TRACE << "fd = " << channel->get_fd();
+//   assert(channels_.find(channel->get_fd()) != channels_.end());
+//   assert(channels_[channel->get_fd()] == channel);
+//   assert(channel->is_none_event());
+//   int index = channel->get_index();
+//   assert(0 <= index && index <= static_cast<int>(pollfds_.size()));
+//   const KernPollfd& pfd = pollfds_[index];
+//   assert(pfd.fd == -channel->get_fd() - 1 && pfd.events == channel->get_events());
+//   size_t n = channels_.erase(channel->get_fd());
+//   assert(n == 1);
+//   UNUSED(pfd);
+//   UNUSED(n);
+//   if (basic::implicit_cast<size_t>(index) == pollfds_.size() - 1) {
+//     pollfds_.pop_back();
+//   }
+//   else {
+//     int channel_at_end = pollfds_.back().fd;
+//     std::iter_swap(pollfds_.begin() + index, pollfds_.end() - 1);
+//     if (channel_at_end < 0)
+//       channel_at_end = -channel_at_end - 1;
+//     channels_[channel_at_end]->set_index(index);
+//     pollfds_.pop_back();
+//   }
+// }
 
 Poller::Poller(EventLoop* loop)
   : owner_loop_(loop) {
@@ -39,67 +134,10 @@ Poller::Poller(EventLoop* loop)
 Poller::~Poller(void) {
 }
 
-void Poller::fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const {
-  for (auto fdp = pollfds_.begin(); fdp != pollfds_.end() && nevents > 0; ++fdp) {
-    if (nevents > 0) {
-      --nevents;
-
-      auto ch_iter = channels_.find(fdp->fd);
-      assert(ch_iter != channels_.end());
-      Channel* channel = ch_iter->second;
-      assert(channel->get_fd() == fdp->fd);
-      channel->set_revents(fdp->revents);
-      active_channels->push_back(channel);
-    }
-  }
-}
-
-basic::Timestamp Poller::poll(int timeout, std::vector<Channel*>* active_channels) {
-  basic::Timestamp now(basic::Timestamp::now());
-  if (pollfds_.empty())
-    return now;
-
-  int nevents = SocketSupport::kern_poll(&*pollfds_.begin(), pollfds_.size(), timeout);
-  if (nevents > 0) {
-    TYRLOG_TRACE << "Poller::poll() - " << nevents << " events happened";
-    fill_active_channels(nevents, active_channels);
-  }
-  else if (0 == nevents) {
-    TYRLOG_TRACE << "Poller::poll() - nothing happened";
-  }
-  else {
-    TYRLOG_SYSERR << "Poller::poll()";
-  }
-
-  return now;
-}
-
-void Poller::update_channel(Channel* channel) {
+bool Poller::has_channel(Channel* channel) const {
   assert_in_loopthread();
-  TYRLOG_TRACE << "fd = " << channel->get_fd() << " events = " << channel->get_events();
-  if (channel->get_index() < 0) {
-    assert(channels_.find(channel->get_fd()) == channels_.end());
-    KernPollfd pfd;
-    pfd.fd = channel->get_fd();
-    pfd.events = static_cast<short>(channel->get_events());
-    pfd.revents = 0;
-    pollfds_.push_back(pfd);
-    int index = static_cast<int>(pollfds_.size()) - 1;
-    UNUSED(index);
-    channels_[pfd.fd] = channel;
-  }
-  else {
-    assert(channels_.find(channel->get_fd()) != channels_.end());
-    assert(channels_[channel->get_fd()] == channel);
-    int index = channel->get_index();
-    assert(0 <= index && index < static_cast<int>(pollfds_.size()));
-    KernPollfd& pfd = pollfds_[index];
-    assert(pfd.fd == channel->get_fd() || pfd.fd == -1);
-    pfd.events = static_cast<short>(channel->get_events());
-    pfd.revents = 0;
-    if (channel->is_none_event())
-      pfd.fd = -1;
-  }
+  auto it = channels_.find(channel->get_fd());
+  return it != channels_.end() && it->second == channel;
 }
 
 }}

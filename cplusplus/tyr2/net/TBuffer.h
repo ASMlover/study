@@ -34,6 +34,7 @@
 #include "../basic/TTypes.h"
 #include "../basic/TStringPiece.h"
 #include "TEndian.h"
+#include "TSocketSupport.h"
 
 namespace tyr { namespace net {
 

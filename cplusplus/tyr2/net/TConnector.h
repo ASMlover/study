@@ -24,51 +24,70 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_NET_TIMERQUEUE_HEADER_H__
-#define __TYR_NET_TIMERQUEUE_HEADER_H__
+#ifndef __TYR_NET_CONNECTOR_HEADER_H__
+#define __TYR_NET_CONNECTOR_HEADER_H__
 
-#include <set>
-#include <vector>
-#include "../basic/TMutex.h"
-#include "../basic/TTimestamp.h"
-#include "TCallbacks.h"
-#include "TChannel.h"
+#include <functional>
+#include <memory>
+#include "../basic/TUnCopyable.h"
+#include "TInetAddress.h"
+#include "TTimer.h"
 
 namespace tyr { namespace net {
 
+class Channel;
 class EventLoop;
-class TimerID;
-class Timer;
 
-class TimerQueue : private basic::UnCopyable {
-  typedef std::pair<basic::Timestamp, Timer*> Entry;
-  typedef std::set<Entry> TimerSet;
-  typedef std::pair<Timer*, int64_t> ActiveTimer;
-  typedef std::set<ActiveTimer> ActiveTimerSet;
+class Connector : private basic::UnCopyable {
+  typedef std::function<void (int sockfd)> NewConnectionCallback;
+
+  enum States {
+    STATES_DISCONNECTED,
+    STATES_CONNECTING,
+    STATES_CONNECTED,
+  };
+  static const int kMaxRetryDelayMillisecond = 30 * 1000;
+  static const int kInitRetryDelayMillisecond = 500;
 
   EventLoop* loop_{};
-  const int timerfd_;
-  Channel timerfd_channel_;
-  TimerSet timers_;
-  bool calling_expired_timers_{};
-  ActiveTimerSet active_timers_;
-  ActiveTimerSet cancelling_timers_;
-public:
-  explicit TimerQueue(EventLoop* loop);
-  ~TimerQueue(void);
+  bool connect_{};
+  States state_{};
+  int retry_delay_ms_{};
+  InetAddress server_addr_;
+  std::unique_ptr<Channel> channel_;
+  NewConnectionCallback new_connection_fn_;
+  TimerID timerid_;
 
-  TimerID add_timer(const TimerCallback& cb, tyr::basic::Timestamp when, double interval);
-  TimerID add_timer(TimerCallback&& cb, tyr::basic::Timestamp when, double interval);
-  void cancel(TimerID timerid);
-private:
-  void add_timer_in_loop(Timer* timer);
-  void cancel_in_loop(TimerID timerid);
-  void handle_read(void);
-  std::vector<TimerQueue::Entry> get_expired(tyr::basic::Timestamp now);
-  void reset(const std::vector<Entry>& expired, tyr::basic::Timestamp now);
-  bool insert(Timer* timer);
+  void set_state(States s) {
+    state_ = s;
+  }
+
+  void start_in_loop(void);
+  void connect(void);
+  void connecting(int sockfd);
+  void handle_write(void);
+  void handle_error(void);
+  void retry(int sockfd);
+  int remove_and_reset_channel(void);
+  void reset_channel(void);
+public:
+  Connector(EventLoop* loop, const InetAddress& server_addr);
+  ~Connector(void);
+
+  void set_new_connection_callback(const NewConnectionCallback& fn) {
+    new_connection_fn_ = fn;
+  }
+
+  const InetAddress& get_server_address(void) const {
+    return server_addr_;
+  }
+
+  void start(void);
+  void restart(void);
+  void stop(void);
 };
+typedef std::shared_ptr<Connector> ConnectorPtr;
 
 }}
 
-#endif // __TYR_NET_TIMERQUEUE_HEADER_H__
+#endif // __TYR_NET_CONNECTOR_HEADER_H__

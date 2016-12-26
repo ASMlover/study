@@ -24,37 +24,38 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <assert.h>
 #include <errno.h>
-#include "TBuffer.h"
-
-using namespace tyr::basic;
+#include "../../basic/TTypes.h"
+#include "../../basic/TLogging.h"
+#include "../TChannel.h"
+#include "TSelectPollerWindows.h"
 
 namespace tyr { namespace net {
 
-const char* Buffer::kCRLF = "\r\n";
+SelectPoller::SelectPoller(EventLoop* loop)
+  : Poller(loop) {
+}
 
-ssize_t Buffer::read_fd(int fd, int& saved_errno) {
-  char extra_buf[65535];
-  const size_t writable = writable_bytes();
+SelectPoller::~SelectPoller(void) {
+}
 
-  KernIovec vec[2];
-  SocketSupport::kern_set_iovec(&vec[0], begin() + windex_, writable);
-  SocketSupport::kern_set_iovec(&vec[1], extra_buf, sizeof(extra_buf));
+basic::Timestamp SelectPoller::poll(int timeout, std::vector<Channel*>* active_channels) {
+  basic::Timestamp now(basic::Timestamp::now());
+  // TODO:
+  return now;
+}
 
-  const int iovcnt = (writable < sizeof(extra_buf) ? 2 : 1);
-  const ssize_t n = SocketSupport::kern_readv(fd, vec, iovcnt);
-  if (n < 0) {
-    saved_errno = errno;
-  }
-  else if (implicit_cast<size_t>(n) <= writable) {
-    windex_ += n;
-  }
-  else {
-    windex_ = buff_.size();
-    append(extra_buf, n - writable);
-  }
+void SelectPoller::update_channel(Channel* channel) {
+  // TODO:
+}
 
-  return n;
+void SelectPoller::remove_channel(Channel* channel) {
+  // TODO:
+}
+
+void SelectPoller::fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const {
+  // TODO:
 }
 
 }}

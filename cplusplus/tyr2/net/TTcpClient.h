@@ -24,37 +24,66 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <errno.h>
-#include "TBuffer.h"
+#ifndef __TYR_NET_TCPCLIENT_HEADER_H__
+#define __TYR_NET_TCPCLIENT_HEADER_H__
 
-using namespace tyr::basic;
+#include <memory>
+#include "../basic/TUnCopyable.h"
+#include "../basic/TMutex.h"
+#include "TCallbacks.h"
+#include "TTcpConnection.h"
 
 namespace tyr { namespace net {
 
-const char* Buffer::kCRLF = "\r\n";
+class Connector;
+typedef std::shared_ptr<Connector> ConnectorPtr;
 
-ssize_t Buffer::read_fd(int fd, int& saved_errno) {
-  char extra_buf[65535];
-  const size_t writable = writable_bytes();
+class EventLoop;
+class InetAddress;
 
-  KernIovec vec[2];
-  SocketSupport::kern_set_iovec(&vec[0], begin() + windex_, writable);
-  SocketSupport::kern_set_iovec(&vec[1], extra_buf, sizeof(extra_buf));
+class TcpClient : private basic::UnCopyable {
+  EventLoop* loop_{};
+  ConnectorPtr connector_{};
+  ConnectionCallback connection_fn_{};
+  MessageCallback message_fn_{};
+  WriteCompleteCallback write_complete_fn_{};
+  bool retry_{};
+  bool connect_{true};
+  int next_connid_{1};
+  mutable basic::Mutex mtx_;
+  TcpConnectionPtr connection_;
 
-  const int iovcnt = (writable < sizeof(extra_buf) ? 2 : 1);
-  const ssize_t n = SocketSupport::kern_readv(fd, vec, iovcnt);
-  if (n < 0) {
-    saved_errno = errno;
+  void new_connection(int sockfd);
+  void remove_connection(const TcpConnectionPtr& conn);
+public:
+  TcpClient(EventLoop* loop, const InetAddress& server_addr);
+  ~TcpClient(void);
+
+  void connect(void);
+  void disconnect(void);
+  void stop(void);
+
+  bool get_retry(void) const {
+    return retry_;
   }
-  else if (implicit_cast<size_t>(n) <= writable) {
-    windex_ += n;
-  }
-  else {
-    windex_ = buff_.size();
-    append(extra_buf, n - writable);
+
+  void enable_retry(void) {
+    retry_ = true;
   }
 
-  return n;
-}
+  void set_connection_callback(const ConnectionCallback& fn) {
+    connection_fn_ = fn;
+  }
+
+  void set_message_callback(const MessageCallback& fn) {
+    message_fn_ = fn;
+  }
+
+  void set_write_complete_callback(const WriteCompleteCallback& fn) {
+    write_complete_fn_ = fn;
+  }
+};
 
 }}
+
+#endif // __TYR_NET_TCPCLIENT_HEADER_H__

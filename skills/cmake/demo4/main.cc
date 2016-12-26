@@ -24,37 +24,21 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <errno.h>
-#include "TBuffer.h"
+#include <iostream>
+#include "demo.h"
+#if defined(USE_DMATH)
+# error "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+# include "math/math.h"
+#endif
 
-using namespace tyr::basic;
+int main(int argc, char* argv[]) {
+  demo::say_hello("Hello, CMake");
 
-namespace tyr { namespace net {
+#if defined(USE_DMATH)
+  std::cout << "use libmath 30 + 20 = " << demo::math::add(30, 20) << std::endl;
+#else
+  std::cout << "do not use libmath 30 + 20 = " << 30 + 20 << std::endl;
+#endif
 
-const char* Buffer::kCRLF = "\r\n";
-
-ssize_t Buffer::read_fd(int fd, int& saved_errno) {
-  char extra_buf[65535];
-  const size_t writable = writable_bytes();
-
-  KernIovec vec[2];
-  SocketSupport::kern_set_iovec(&vec[0], begin() + windex_, writable);
-  SocketSupport::kern_set_iovec(&vec[1], extra_buf, sizeof(extra_buf));
-
-  const int iovcnt = (writable < sizeof(extra_buf) ? 2 : 1);
-  const ssize_t n = SocketSupport::kern_readv(fd, vec, iovcnt);
-  if (n < 0) {
-    saved_errno = errno;
-  }
-  else if (implicit_cast<size_t>(n) <= writable) {
-    windex_ += n;
-  }
-  else {
-    windex_ = buff_.size();
-    append(extra_buf, n - writable);
-  }
-
-  return n;
+  return 0;
 }
-
-}}

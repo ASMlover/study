@@ -37,6 +37,7 @@ namespace tyr { namespace net {
 
 class Acceptor;
 class EventLoop;
+class EventLoopThreadPool;
 class InetAddress;
 
 class TcpServer : private basic::UnCopyable {
@@ -47,23 +48,32 @@ class TcpServer : private basic::UnCopyable {
   EventLoop* loop_{}; // acceptor event loop
   const std::string name_;
   std::unique_ptr<Acceptor> acceptor_;
+  std::unique_ptr<EventLoopThreadPool> thread_pool_;
   ConnectionCallback connection_fn_;
   MessageCallback message_fn_;
+  WriteCompleteCallback write_complete_fn_;
   ConnectionMap connections_;
 
   void new_connection(int sockfd, const InetAddress& peeraddr);
+  void remove_connection(const TcpConnectionPtr& conn);
+  void remove_connection_in_loop(const TcpConnectionPtr& conn);
 public:
   TcpServer(EventLoop* loop, const InetAddress& listen_addr);
-  ~TcpServer(void) = default;
+  ~TcpServer(void);
 
   void start(void);
+  void set_thread_count(int thread_count);
 
-  void set_connection_callback(const ConnectionCallback& cb) {
-    connection_fn_ = cb;
+  void set_connection_callback(const ConnectionCallback& fn) {
+    connection_fn_ = fn;
   }
 
-  void set_message_callback(const MessageCallback& cb) {
-    message_fn_ = cb;
+  void set_message_callback(const MessageCallback& fn) {
+    message_fn_ = fn;
+  }
+
+  void set_write_complete_callback(const WriteCompleteCallback& fn) {
+    write_complete_fn_ = fn;
   }
 };
 

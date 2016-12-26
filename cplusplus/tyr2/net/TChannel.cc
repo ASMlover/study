@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
+#include <sstream>
 #include "../basic/TLogging.h"
 #include "TSocketSupport.h"
 #include "TEventLoop.h"
@@ -33,7 +34,7 @@
 namespace tyr { namespace net {
 
 const int Channel::kNoneEvent = 0;
-const int Channel::kReadEvent = POLLIN | POLLOUT;
+const int Channel::kReadEvent = POLLIN | POLLPRI;
 const int Channel::kWriteEvent = POLLOUT;
 
 Channel::Channel(EventLoop* loop, int fd)
@@ -43,37 +44,99 @@ Channel::Channel(EventLoop* loop, int fd)
 
 Channel::~Channel(void) {
   assert(!event_handling_);
+  assert(!added_to_loop_);
+  if (loop_->in_loopthread())
+    assert(!loop_->has_channel(this));
 }
 
-void Channel::handle_event(void) {
-  event_handling_ = true;
-  if (revents_ & POLLNVAL)
-    TYRLOG_WARN << "Channel::handle_event() POLLNVAL";
-
-  if ((revents_ & POLLHUP) && !(revents_ & POLLIN)) {
-    TYRLOG_WARN << "Channel::handle_event() POLLHUP";
-    if (nullptr != close_fn_)
-      close_fn_();
+void Channel::handle_event(basic::Timestamp recv_time) {
+  std::shared_ptr<void> guard;
+  if (tied_) {
+    guard = wk_tie_.lock();
+    if (guard)
+      handle_event_with_guard(recv_time);
   }
-
-  if (revents_ & (POLLERR | POLLNVAL)) {
-    if (nullptr != error_fn_)
-      error_fn_();
+  else {
+    handle_event_with_guard(recv_time);
   }
+}
 
-  if (revents_ & (POLLIN | POLLPRI | POLLHUP)) {
-    if (nullptr != read_fn_)
-      read_fn_();
-  }
+void Channel::tie(const std::shared_ptr<void>& tiep) {
+  wk_tie_ = tiep;
+  tied_ = true;
+}
 
-  if (revents_ & POLLOUT) {
-    if (nullptr != write_fn_)
-      write_fn_();
-  }
+void Channel::remove(void) {
+  assert(is_none_event());
+  added_to_loop_ = false;
+  loop_->remove_channel(this);
+}
+
+std::string Channel::events_to_string(void) const {
+  // TODO:
+  return "";
+}
+
+std::string Channel::revents_to_string(void) const {
+  // TODO:
+  return "";
 }
 
 void Channel::update(void) {
+  added_to_loop_ = true;
   loop_->update_channel(this);
+}
+
+void Channel::handle_event_with_guard(basic::Timestamp recv_time) {
+  event_handling_ = true;
+  TYRLOG_TRACE << "Channel::handle_event_with_guard - " << revents_to_string();
+
+  if ((revents_ & POLLHUP) && !(revents_ & POLLIN)) {
+    if (log_hup_)
+      TYRLOG_WARN << "Channel::handle_event_with_guard - fd=" << fd_ << " POLLHUP";
+    if (close_fn_)
+      close_fn_();
+  }
+
+  if (revents_ & POLLNVAL)
+    TYRLOG_WARN << "Channel::handle_event_with_guard - fd=" << fd_ << " POLLNVAL";
+
+  if (revents_ & (POLLERR | POLLNVAL)) {
+    if (error_fn_)
+      error_fn_();
+  }
+  if (revents_ & (POLLIN | POLLPRI | POLLHUP)) {
+    if (read_fn_)
+      read_fn_(recv_time);
+  }
+  if (revents_ & POLLOUT) {
+    if (write_fn_)
+      write_fn_();
+  }
+  event_handling_ = false;
+}
+
+std::string Channel::events_to_string(int fd, int event) {
+  std::ostringstream oss;
+
+  oss << fd << ": ";
+  if (event & POLLIN)
+    oss << "IN ";
+  if (event & POLLPRI)
+    oss << "PRI ";
+  if (event & POLLOUT)
+    oss << "OUT ";
+  if (event & POLLHUP)
+    oss << "HUP ";
+#if !defined(TYR_WINDOWS)
+  if (event & POLLRDHUP)
+    oss << "RDHUP ";
+#endif
+  if (event & POLLERR)
+    oss << "ERR ";
+  if (event & POLLNVAL)
+    oss << "NVAL ";
+  return oss.str();
 }
 
 }}
