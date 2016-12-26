@@ -29,6 +29,7 @@
 
 #include <memory>
 #include <vector>
+#include "../basic/TAny.h"
 #include "../basic/TUnCopyable.h"
 #include "../basic/TPlatform.h"
 #include "../basic/TCurrentThread.h"
@@ -56,6 +57,7 @@ class EventLoop : private basic::UnCopyable {
   std::unique_ptr<TimerQueue> timer_queue_;
   int wakeup_fd_;
   std::unique_ptr<Channel> wakeup_channel_;
+  basic::Any context_;
   std::vector<Channel*> active_channels_;
   Channel* current_active_channel_{};
   mutable basic::Mutex mtx_;
@@ -113,6 +115,18 @@ public:
 
   bool get_event_handling(void) const {
     return event_handling_;
+  }
+
+  void set_context(const basic::Any& context) {
+    context_ = context;
+  }
+
+  const basic::Any& get_context(void) const {
+    return context_;
+  }
+
+  basic::Any* get_mutable_context(void) {
+    return &context_;
   }
 };
 
