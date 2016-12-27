@@ -27,11 +27,27 @@
 #ifndef __TYR_NET_SELECTPOLLER_HEADER_H__
 #define __TYR_NET_SELECTPOLLER_HEADER_H__
 
-#include "../basic/TConfig.h"
+#include <vector>
+#include "TSocketSupport.h"
+#include "TPoller.h"
 
-#if defined(TYR_WINDOWS)
-# include "windows/TSelectPollerWindows.h"
-#else
-#endif
+namespace tyr { namespace net {
+
+class Channel;
+
+class SelectPoller : public Poller {
+  std::vector<KernPollfd> pollfds_;
+
+  void fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const;
+public:
+  SelectPoller(EventLoop* loop);
+  virtual ~SelectPoller(void);
+
+  virtual basic::Timestamp poll(int timeout, std::vector<Channel*>* active_channels) override;
+  virtual void update_channel(Channel* channel) override;
+  virtual void remove_channel(Channel* channel) override;
+};
+
+}}
 
 #endif // __TYR_NET_SELECTPOLLER_HEADER_H__
