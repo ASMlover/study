@@ -27,6 +27,8 @@
 #ifndef __TYR_NET_EVENTLOOPTHREAD_HEADER_H__
 #define __TYR_NET_EVENTLOOPTHREAD_HEADER_H__
 
+#include <functional>
+#include <string>
 #include "../basic/TUnCopyable.h"
 #include "../basic/TMutex.h"
 #include "../basic/TCondition.h"
@@ -37,15 +39,18 @@ namespace tyr { namespace net {
 class EventLoop;
 
 class EventLoopThread : private basic::UnCopyable {
+  using ThreadInitCallback = std::function<void (EventLoop*)>;
+
   EventLoop* loop_{};
   bool exiting_{};
   basic::Thread thread_;
   mutable basic::Mutex mtx_;
   basic::Condition cond_;
+  ThreadInitCallback thread_init_fn_{};
 
   void thread_callback(void);
 public:
-  EventLoopThread(void);
+  EventLoopThread(const ThreadInitCallback& fn = ThreadInitCallback(), const std::string& name = std::string());
   ~EventLoopThread(void);
   EventLoop* start_loop(void);
 };

@@ -27,7 +27,9 @@
 #ifndef __TYR_NET_EVENTLOOPTHREADPOOL_HEADER_H__
 #define __TYR_NET_EVENTLOOPTHREADPOOL_HEADER_H__
 
+#include <functional>
 #include <memory>
+#include <string>
 #include <vector>
 #include "../basic/TUnCopyable.h"
 
@@ -37,21 +39,34 @@ class EventLoop;
 class EventLoopThread;
 
 class EventLoopThreadPool : private basic::UnCopyable {
+  using ThreadInitCallback = std::function<void (EventLoop*)>;
+
   EventLoop* base_loop_{};
+  std::string name_{};
   bool started_{};
   int thread_count_{};
   int next_thread_{};
   std::vector<std::unique_ptr<EventLoopThread>> threads_;
   std::vector<EventLoop*> loops_;
 public:
-  EventLoopThreadPool(EventLoop* base_loop);
+  EventLoopThreadPool(EventLoop* base_loop, const std::string& name);
   ~EventLoopThreadPool(void);
 
-  void start(void);
+  void start(const ThreadInitCallback& fn = ThreadInitCallback());
   EventLoop* get_next_loop(void);
+  EventLoop* get_loop_as_hash(size_t hash_code);
+  std::vector<EventLoop*> get_all_loops(void);
 
   void set_thread_count(int thread_count) {
     thread_count_ = thread_count;
+  }
+
+  bool is_started(void) const {
+    return started_;
+  }
+
+  const std::string& get_name(void) const {
+    return name_;
   }
 };
 

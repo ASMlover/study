@@ -30,16 +30,19 @@
 
 namespace tyr { namespace net {
 
-EventLoopThread::EventLoopThread(void)
-  : thread_(std::bind(&EventLoopThread::thread_callback, this))
+EventLoopThread::EventLoopThread(const ThreadInitCallback& fn, const std::string& name)
+  : thread_(std::bind(&EventLoopThread::thread_callback, this), name)
   , mtx_()
-  , cond_(mtx_) {
+  , cond_(mtx_)
+  , thread_init_fn_(fn) {
 }
 
 EventLoopThread::~EventLoopThread(void) {
   exiting_ = true;
-  loop_->quit();
-  thread_.join();
+  if (nullptr != loop_) {
+    loop_->quit();
+    thread_.join();
+  }
 }
 
 EventLoop* EventLoopThread::start_loop(void) {
@@ -58,6 +61,9 @@ EventLoop* EventLoopThread::start_loop(void) {
 void EventLoopThread::thread_callback(void) {
   EventLoop loop;
 
+  if (thread_init_fn_)
+    thread_init_fn_(&loop);
+
   {
     basic::MutexGuard guard(mtx_);
     loop_ = &loop;
@@ -65,6 +71,7 @@ void EventLoopThread::thread_callback(void) {
   }
 
   loop.loop();
+  loop_ = nullptr;
 }
 
 }}
