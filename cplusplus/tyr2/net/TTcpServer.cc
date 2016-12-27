@@ -36,26 +36,38 @@
 
 namespace tyr { namespace net {
 
-TcpServer::TcpServer(EventLoop* loop, const InetAddress& listen_addr)
+TcpServer::TcpServer(EventLoop* loop, const InetAddress& host_addr, const std::string& name, Option opt)
   : loop_(TCHECK_NOTNULL(loop))
-  , name_(listen_addr.to_host_port())
-  , acceptor_(new Acceptor(loop_, listen_addr))
-  , thread_pool_(new EventLoopThreadPool(loop_)) {
+  , ip_port_(host_addr.to_host_port())
+  , name_(name)
+  , acceptor_(new Acceptor(loop_, host_addr))
+  , thread_pool_(new EventLoopThreadPool(loop_, name_))
+  , connection_fn_(default_connection_callback)
+  , message_fn_(default_message_callback) {
   acceptor_->set_new_connection_callback(
       std::bind(&TcpServer::new_connection, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 TcpServer::~TcpServer(void) {
+  loop_->assert_in_loopthread();
+  TYRLOG_TRACE << "TcpServer::~TcpServer [" << name_ << "] destructing";
+
+  for (auto& conn_obj : connections_) {
+    TcpConnectionPtr conn = conn_obj.second;
+    conn_obj.second.reset();
+    conn->get_loop()->run_in_loop(std::bind(&TcpConnection::connect_destroyed, conn));
+    conn.reset();
+  }
 }
 
 void TcpServer::start(void) {
-  if (!started_) {
-    started_ = true;
-    thread_pool_->start();
-  }
+  if (0 == started_++) {
+    thread_pool_->start(thread_init_fn_);
 
-  if (!acceptor_->is_listenning())
-    loop_->run_in_loop(std::bind(&Acceptor::listen, get_pointer(acceptor_)));
+    assert(!acceptor_->is_listenning());
+    if (!acceptor_->is_listenning())
+      loop_->run_in_loop(std::bind(&Acceptor::listen, get_pointer(acceptor_)));
+  }
 }
 
 void TcpServer::set_thread_count(int thread_count) {
@@ -65,8 +77,8 @@ void TcpServer::set_thread_count(int thread_count) {
 
 void TcpServer::new_connection(int sockfd, const InetAddress& peeraddr) {
   loop_->assert_in_loopthread();
-  char buf[32];
-  snprintf(buf, sizeof(buf), "#%d", next_connid_);
+  char buf[64];
+  snprintf(buf, sizeof(buf), "-%s#%d", ip_port_.c_str(), next_connid_);
   ++next_connid_;
   std::string conn_name = name_ + buf;
 
@@ -94,7 +106,7 @@ void TcpServer::remove_connection_in_loop(const TcpConnectionPtr& conn) {
   TYRLOG_INFO << "TcpServer::remove_connection [" << name_
     << "] - connection " << conn->get_name();
   size_t n = connections_.erase(conn->get_name());
-  assert(n == 1); (void)n;
+  UNUSED(n);
   EventLoop* io_loop = conn->get_loop();
   io_loop->put_in_loop(std::bind(&TcpConnection::connect_destroyed, conn));
 }

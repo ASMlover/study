@@ -27,10 +27,11 @@
 #ifndef __TYR_NET_TCPSERVER_HEADER_H__
 #define __TYR_NET_TCPSERVER_HEADER_H__
 
+#include <atomic>
 #include <map>
 #include <memory>
 #include <string>
-#include "../basic/TUnCopyable.h"
+#include "../basic/TTypes.h"
 #include "TCallbacks.h"
 
 namespace tyr { namespace net {
@@ -41,28 +42,55 @@ class EventLoopThreadPool;
 class InetAddress;
 
 class TcpServer : private basic::UnCopyable {
+  typedef std::function<void (EventLoop*)> ThreadInitCallback;
   typedef std::map<std::string, TcpConnectionPtr> ConnectionMap;
 
-  bool started_{};
   int next_connid_{1};
+  std::atomic<int32_t> started_{0};
   EventLoop* loop_{}; // acceptor event loop
+  const std::string ip_port_;
   const std::string name_;
   std::unique_ptr<Acceptor> acceptor_;
-  std::unique_ptr<EventLoopThreadPool> thread_pool_;
-  ConnectionCallback connection_fn_;
-  MessageCallback message_fn_;
-  WriteCompleteCallback write_complete_fn_;
+  std::shared_ptr<EventLoopThreadPool> thread_pool_;
+  ConnectionCallback connection_fn_{};
+  MessageCallback message_fn_{};
+  WriteCompleteCallback write_complete_fn_{};
+  ThreadInitCallback thread_init_fn_{};
   ConnectionMap connections_;
 
   void new_connection(int sockfd, const InetAddress& peeraddr);
   void remove_connection(const TcpConnectionPtr& conn);
   void remove_connection_in_loop(const TcpConnectionPtr& conn);
 public:
-  TcpServer(EventLoop* loop, const InetAddress& listen_addr);
+  enum Option {
+    OPTION_UNREUSEPORT,
+    OPTION_REUSEPORT,
+  };
+  TcpServer(EventLoop* loop, const InetAddress& host_addr, const std::string& name, Option opt = OPTION_UNREUSEPORT);
   ~TcpServer(void);
 
   void start(void);
   void set_thread_count(int thread_count);
+
+  const std::string& get_ip_port(void) const {
+    return ip_port_;
+  }
+
+  const std::string& get_name(void) const {
+    return name_;
+  }
+
+  EventLoop* get_loop(void) const {
+    return loop_;
+  }
+
+  std::shared_ptr<EventLoopThreadPool> get_thread_pool(void) {
+    return thread_pool_;
+  }
+
+  void set_thread_init_callback(const ThreadInitCallback& fn) {
+    thread_init_fn_ = fn;
+  }
 
   void set_connection_callback(const ConnectionCallback& fn) {
     connection_fn_ = fn;
