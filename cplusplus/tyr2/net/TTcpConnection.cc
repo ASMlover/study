@@ -29,13 +29,27 @@
 #include <stdio.h>
 #include <functional>
 #include "../basic/TLogging.h"
+#include "../basic/TWeakCallback.h"
 #include "TSocketSupport.h"
 #include "TChannel.h"
 #include "TEventLoop.h"
 #include "TSocket.h"
 #include "TTcpConnection.h"
 
+#define TYR_HIGH_WATERMARK (64 * 1024 * 1024)
+
 namespace tyr { namespace net {
+
+void default_connection_callback(const TcpConnectionPtr& conn) {
+  TYRLOG_TRACE << "default_connection_callback - "
+    << conn->get_local_address().to_host_port() << " -> "
+    << conn->get_peer_address().to_host_port() << " is "
+    << (conn->is_connected() ? "UP" : "DOWN");
+}
+
+void default_message_callback(const TcpConnectionPtr& /*conn*/, Buffer* buf, basic::Timestamp /*t*/) {
+  buf->retrieve_all();
+}
 
 TcpConnection::TcpConnection(EventLoop* loop, const std::string& name,
       int sockfd, const InetAddress& local_addr, const InetAddress& peer_addr)
@@ -45,43 +59,71 @@ TcpConnection::TcpConnection(EventLoop* loop, const std::string& name,
   , socket_(new Socket(sockfd))
   , channel_(new Channel(loop, sockfd))
   , local_addr_(local_addr)
-  , peer_addr_(peer_addr) {
-  TYRLOG_DEBUG << "TcpConnection::ctor [" << name_ << "] at " << this << " fd = " << sockfd;
+  , peer_addr_(peer_addr)
+  , high_water_mark_(TYR_HIGH_WATERMARK) {
   channel_->set_read_callback(std::bind(&TcpConnection::handle_read, this, std::placeholders::_1));
   channel_->set_write_callback(std::bind(&TcpConnection::handle_write, this));
   channel_->set_close_callback(std::bind(&TcpConnection::handle_close, this));
   channel_->set_error_callback(std::bind(&TcpConnection::handle_error, this));
+
+  TYRLOG_DEBUG << "TcpConnection::TcpConnection [" << name_ << "] at " << this << " fd=" << sockfd;
+  socket_->set_keep_alive(true);
 }
 
 TcpConnection::~TcpConnection(void) {
-  TYRLOG_DEBUG << "TcpConnection::dtor [" << name_ << "] at " << this << " fd = " << channel_->get_fd();
+  TYRLOG_DEBUG << "TcpConnection::~TcpConnection [" << name_ << "] at "
+    << this << " fd=" << channel_->get_fd() << " state=" << state_to_string();
+  assert(state_ == STATE_DISCONNECTED);
 }
 
 void TcpConnection::connect_established(void) {
   loop_->assert_in_loopthread();
   assert(state_ == STATE_CONNECTING);
   set_state(STATE_CONNECTED);
+  channel_->tie(shared_from_this());
   channel_->enabled_reading();
+
   connection_fn_(shared_from_this());
 }
 
 void TcpConnection::connect_destroyed(void) {
   loop_->assert_in_loopthread();
-  assert(state_ == STATE_CONNECTED || state_ == STATE_DISCONNECTING);
-  set_state(STATE_DISCONNECTED);
-  channel_->disabled_all();
-  connection_fn_(shared_from_this());
+  if (state_ == STATE_CONNECTED) {
+    set_state(STATE_DISCONNECTED);
+    channel_->disabled_all();
 
-  loop_->remove_channel(get_pointer(channel_));
+    connection_fn_(shared_from_this());
+  }
+  channel_->remove();
 }
 
-void TcpConnection::write(const std::string& message) {
+void TcpConnection::write(const basic::StringPiece& message) {
   if (STATE_CONNECTED == state_) {
-    if (loop_->in_loopthread())
+    if (loop_->in_loopthread()) {
       write_in_loop(message);
-    else
-      loop_->run_in_loop(std::bind(&TcpConnection::write_in_loop, this, message));
+    }
+    else {
+      void (TcpConnection::*fnp)(const basic::StringPiece& message) = &TcpConnection::write_in_loop;
+      loop_->run_in_loop(std::bind(fnp, this, message));
+    }
   }
+}
+
+void TcpConnection::write(Buffer* buf) {
+  if (STATE_CONNECTED == state_) {
+    if (loop_->in_loopthread()) {
+      write_in_loop(buf->peek(), buf->readable_bytes());
+      buf->retrieve_all();
+    }
+    else {
+      void (TcpConnection::*fnp)(const basic::StringPiece& message) = &TcpConnection::write_in_loop;
+      loop_->run_in_loop(std::bind(fnp, this, buf->retrieve_all_to_string()));
+    }
+  }
+}
+
+void TcpConnection::write(void* buf, size_t len) {
+  write(basic::StringPiece(static_cast<const char*>(buf), len));
 }
 
 void TcpConnection::shutdown(void) {
@@ -91,11 +133,34 @@ void TcpConnection::shutdown(void) {
   }
 }
 
+void TcpConnection::force_close(void) {
+  if (STATE_CONNECTED == state_ || STATE_DISCONNECTING == state_) {
+    set_state(STATE_DISCONNECTING);
+    loop_->put_in_loop(std::bind(&TcpConnection::force_close_in_loop, shared_from_this()));
+  }
+}
+
+void TcpConnection::force_close_with_delay(double seconds) {
+  if (STATE_CONNECTED == state_ || STATE_DISCONNECTING == state_) {
+    set_state(STATE_DISCONNECTING);
+    loop_->run_after(seconds, basic::make_weak_callback(shared_from_this(), &TcpConnection::force_close));
+  }
+}
+
 void TcpConnection::set_tcp_nodelay(bool nodelay) {
   socket_->set_tcp_nodelay(nodelay);
 }
 
+void TcpConnection::start_read(void) {
+  loop_->run_in_loop(std::bind(&TcpConnection::start_read_in_loop, this));
+}
+
+void TcpConnection::stop_read(void) {
+  loop_->run_in_loop(std::bind(&TcpConnection::stop_read_in_loop, this));
+}
+
 void TcpConnection::handle_read(basic::Timestamp recv_time) {
+  loop_->assert_in_loopthread();
   int saved_errno = 0;
   ssize_t len = input_buff_.read_fd(channel_->get_fd(), saved_errno);
   if (len > 0) {
@@ -106,7 +171,7 @@ void TcpConnection::handle_read(basic::Timestamp recv_time) {
   }
   else {
     errno = saved_errno;
-    TYRLOG_SYSERR << "TcpConnection::handle_read";
+    TYRLOG_SYSERR << "TcpConnection::handle_read - errno=" << saved_errno;
     handle_error();
   }
 }
@@ -133,45 +198,68 @@ void TcpConnection::handle_write(void) {
     }
   }
   else {
-    TYRLOG_TRACE << "TcpConnection::handle_write - connection is down, no more data for writing";
+    TYRLOG_TRACE << "TcpConnection::handle_write - connection="
+      << channel_->get_fd() << " is down, no more data for writing";
   }
 }
 
 void TcpConnection::handle_close(void) {
   loop_->assert_in_loopthread();
-  TYRLOG_TRACE << "TcpConnection::handle_close state = " << state_;
+  TYRLOG_TRACE << "TcpConnection::handle_close - fd=" << channel_->get_fd() << " state=" << state_to_string();
   assert(STATE_CONNECTED == state_ || STATE_DISCONNECTING == state_);
+  set_state(STATE_DISCONNECTED);
   channel_->disabled_all();
-  close_fn_(shared_from_this());
+
+  TcpConnectionPtr this_conn(shared_from_this());
+  connection_fn_(this_conn);
+  close_fn_(this_conn);
 }
 
 void TcpConnection::handle_error(void) {
   int err = SocketSupport::kern_socket_error(channel_->get_fd());
-  TYRLOG_TRACE << "TcpConnection::handle_error [" << name_
-    << "] - SO_ERROR = " << err << " " << basic::strerror_tl(err);
+  TYRLOG_ERROR << "TcpConnection::handle_error [" << name_
+    << "] - SO_ERROR=" << err << " " << basic::strerror_tl(err);
 }
 
-void TcpConnection::write_in_loop(const std::string& message) {
+void TcpConnection::write_in_loop(const basic::StringPiece& message) {
+  write_in_loop(message.data(), message.size());
+}
+
+void TcpConnection::write_in_loop(const void* buf, size_t len) {
   loop_->assert_in_loopthread();
   ssize_t nwrote = 0;
+  size_t remain_len = len;
+  bool fault_error = false;
+
+  if (STATE_DISCONNECTED == state_) {
+    TYRLOG_WARN << "TcpConnection::write_in_loop - disconnected, give up writing";
+    return;
+  }
+
   if (!channel_->is_writing() && 0 == output_buff_.readable_bytes()) {
-    nwrote = SocketSupport::kern_write(channel_->get_fd(), message.data(), message.size());
+    nwrote = SocketSupport::kern_write(channel_->get_fd(), buf, len);
     if (nwrote >= 0) {
-      if (basic::implicit_cast<size_t>(nwrote) < message.size())
-        TYRLOG_TRACE << "TcpConnection::write_in_loop - I'm going to write more data";
-      else if (write_complete_fn_)
+      remain_len = len - nwrote;
+      if (0 == remain_len && write_complete_fn_)
         loop_->put_in_loop(std::bind(write_complete_fn_, shared_from_this()));
     }
     else {
       nwrote = 0;
-      if (errno != EWOULDBLOCK)
-        TYRLOG_SYSERR << "TcpConnection::write_in_loop";
+      if (errno != EWOULDBLOCK) {
+        TYRLOG_SYSERR << "TcpConnection::write_in_loop - write error=" << errno;
+        if (EPIPE == errno || ECONNRESET == errno)
+          fault_error = true;
+      }
     }
   }
 
-  assert(nwrote >= 0);
-  if (basic::implicit_cast<size_t>(nwrote) < message.size()) {
-    output_buff_.append(message.data() + nwrote, message.size() - nwrote);
+  assert(remain_len <= len);
+  if (!fault_error && remain_len > 0) {
+    size_t old_len = output_buff_.readable_bytes();
+    if (old_len + remain_len >= high_water_mark_ && old_len < high_water_mark_ && high_water_mark_fn_)
+      loop_->put_in_loop(std::bind(high_water_mark_fn_, shared_from_this(), old_len + remain_len));
+
+    output_buff_.append(static_cast<const char*>(buf) + nwrote, remain_len);
     if (!channel_->is_writing())
       channel_->enabled_writing();
   }
@@ -181,6 +269,42 @@ void TcpConnection::shutdown_in_loop(void) {
   loop_->assert_in_loopthread();
   if (!channel_->is_writing())
     socket_->shutdown_write();
+}
+
+void TcpConnection::force_close_in_loop(void) {
+  loop_->assert_in_loopthread();
+  if (STATE_CONNECTED == state_ || STATE_DISCONNECTING == state_)
+    handle_close();
+}
+
+const char* TcpConnection::state_to_string(void) const {
+  switch (state_) {
+  case STATE_DISCONNECTED:
+    return "STATE_DISCONNECTED";
+  case STATE_CONNECTING:
+    return "STATE_CONNECTING";
+  case STATE_CONNECTED:
+    return "STATE_CONNECTED";
+  case STATE_DISCONNECTING:
+    return "STATE_DISCONNECTING";
+  }
+  return "Unknown state";
+}
+
+void TcpConnection::start_read_in_loop(void) {
+  loop_->assert_in_loopthread();
+  if (!reading_ || !channel_->is_reading()) {
+    channel_->enabled_reading();
+    reading_ = true;
+  }
+}
+
+void TcpConnection::stop_read_in_loop(void) {
+  loop_->assert_in_loopthread();
+  if (reading_ || channel_->is_reading()) {
+    channel_->disabled_reading();
+    reading_ = false;
+  }
 }
 
 }}

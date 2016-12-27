@@ -37,6 +37,16 @@ Socket::~Socket(void) {
   SocketSupport::kern_close(sockfd_);
 }
 
+// bool Socket::get_tcp_info(struct tcp_info* info) const {
+//   // TODO:
+//   return false;
+// }
+//
+// bool Socket::get_tcp_info_string(char* buf, int len) const {
+//   // TODO:
+//   return false;
+// }
+
 void Socket::bind_address(const InetAddress& localaddr) {
   SocketSupport::kern_bind(sockfd_, localaddr.get_address());
 }
@@ -46,8 +56,7 @@ void Socket::listen(void) {
 }
 
 int Socket::accept(InetAddress* peeraddr) {
-  struct sockaddr_in6 addr6;
-  memset(&addr6, 0, sizeof(addr6));
+  struct sockaddr_in6 addr6 = {0};
   int connfd = SocketSupport::kern_accept(sockfd_, &addr6);
   if (connfd >= 0)
     peeraddr->set_address(addr6);

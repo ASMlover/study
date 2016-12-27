@@ -29,7 +29,9 @@
 
 #include <memory>
 #include <string>
+#include "../basic/TAny.h"
 #include "../basic/TUnCopyable.h"
+#include "../basic/TStringPiece.h"
 #include "../basic/TTimestamp.h"
 #include "TBuffer.h"
 #include "TCallbacks.h"
@@ -53,17 +55,21 @@ class TcpConnection
 
   EventLoop* loop_{};
   std::string name_;
-  State state_;
+  State state_{};
+  bool reading_{};
   std::unique_ptr<Socket> socket_;
   std::unique_ptr<Channel> channel_;
   InetAddress local_addr_;
   InetAddress peer_addr_;
-  ConnectionCallback connection_fn_;
-  MessageCallback message_fn_;
-  WriteCompleteCallback write_complete_fn_;
-  CloseCallback close_fn_;
+  ConnectionCallback connection_fn_{};
+  MessageCallback message_fn_{};
+  WriteCompleteCallback write_complete_fn_{};
+  HighWaterMarkCallback high_water_mark_fn_{};
+  CloseCallback close_fn_{};
+  size_t high_water_mark_{};
   Buffer input_buff_;
   Buffer output_buff_;
+  basic::Any context_;
 
   void set_state(State s) {
     state_ = s;
@@ -73,8 +79,13 @@ class TcpConnection
   void handle_write(void);
   void handle_close(void);
   void handle_error(void);
-  void write_in_loop(const std::string& message);
+  void write_in_loop(const basic::StringPiece& message);
+  void write_in_loop(const void* buf, size_t len);
   void shutdown_in_loop(void);
+  void force_close_in_loop(void);
+  const char* state_to_string(void) const;
+  void start_read_in_loop(void);
+  void stop_read_in_loop(void);
 public:
   TcpConnection(EventLoop* loop, const std::string& name,
       int sockfd, const InetAddress& local_addr, const InetAddress& peer_addr);
@@ -100,6 +111,10 @@ public:
     return state_ == STATE_CONNECTED;
   }
 
+  bool is_disconnected(void) const {
+    return state_ == STATE_DISCONNECTED;
+  }
+
   void set_connection_callback(const ConnectionCallback& fn) {
     connection_fn_ = fn;
   }
@@ -112,15 +127,52 @@ public:
     write_complete_fn_ = fn;
   }
 
+  void set_high_water_mark_callback(const HighWaterMarkCallback& fn) {
+    high_water_mark_fn_ = fn;
+  }
+
   void set_close_callback(const CloseCallback& fn) {
     close_fn_ = fn;
   }
 
+  bool is_reading(void) const {
+    return reading_;
+  }
+
+  void set_context(const basic::Any& context) {
+    context_ = context;
+  }
+
+  const basic::Any& get_context(void) const {
+    return context_;
+  }
+
+  basic::Any* get_mutable_context(void) {
+    return &context_;
+  }
+
+  Buffer* input_buffer(void) {
+    return &input_buff_;
+  }
+
+  Buffer* output_buffer(void) {
+    return &output_buff_;
+  }
+
+  // bool get_tcp_info(struct tcp_info* info) const;
+  // std::string get_tcp_info_string(void) const;
+
   void connect_established(void);
   void connect_destroyed(void);
-  void write(const std::string& message);
+  void write(const basic::StringPiece& message);
+  void write(Buffer* buf);
+  void write(void* buf, size_t len);
   void shutdown(void);
+  void force_close(void);
+  void force_close_with_delay(double seconds);
   void set_tcp_nodelay(bool nodelay);
+  void start_read(void);
+  void stop_read(void);
 };
 
 typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
