@@ -24,28 +24,38 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_NET_WINDOWS_SELECTPOLLERWINDOWS_HEADER_H__
-#define __TYR_NET_WINDOWS_SELECTPOLLERWINDOWS_HEADER_H__
-
-#include <vector>
-#include "../TSocketSupport.h"
-#include "../TPoller.h"
+#include <assert.h>
+#include <errno.h>
+#include "../../basic/TTypes.h"
+#include "../../basic/TLogging.h"
+#include "../TChannel.h"
+#include "../TSelectPoller.h"
 
 namespace tyr { namespace net {
 
-class SelectPoller : public Poller {
-  std::vector<KernPollfd> pollfds_;
+SelectPoller::SelectPoller(EventLoop* loop)
+  : Poller(loop) {
+}
 
-  void fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const;
-public:
-  SelectPoller(EventLoop* loop);
-  virtual ~SelectPoller(void);
+SelectPoller::~SelectPoller(void) {
+}
 
-  virtual basic::Timestamp poll(int timeout, std::vector<Channel*>* active_channels) override;
-  virtual void update_channel(Channel* channel) override;
-  virtual void remove_channel(Channel* channel) override;
-};
+basic::Timestamp SelectPoller::poll(int timeout, std::vector<Channel*>* active_channels) {
+  basic::Timestamp now(basic::Timestamp::now());
+  // TODO:
+  return now;
+}
+
+void SelectPoller::update_channel(Channel* channel) {
+  // TODO:
+}
+
+void SelectPoller::remove_channel(Channel* channel) {
+  // TODO:
+}
+
+void SelectPoller::fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const {
+  // TODO:
+}
 
 }}
-
-#endif // __TYR_NET_WINDOWS_SELECTPOLLERWINDOWS_HEADER_H__

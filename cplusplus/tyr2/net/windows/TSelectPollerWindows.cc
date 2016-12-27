@@ -29,7 +29,7 @@
 #include "../../basic/TTypes.h"
 #include "../../basic/TLogging.h"
 #include "../TChannel.h"
-#include "TSelectPollerWindows.h"
+#include "../TSelectPoller.h"
 
 namespace tyr { namespace net {
 
