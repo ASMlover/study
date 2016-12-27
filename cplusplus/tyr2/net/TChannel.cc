@@ -73,13 +73,11 @@ void Channel::remove(void) {
 }
 
 std::string Channel::events_to_string(void) const {
-  // TODO:
-  return "";
+  return events_to_string(fd_, events_);
 }
 
 std::string Channel::revents_to_string(void) const {
-  // TODO:
-  return "";
+  return events_to_string(fd_, revents_);
 }
 
 void Channel::update(void) {
