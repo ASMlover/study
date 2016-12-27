@@ -33,42 +33,39 @@ namespace tyr { namespace basic {
 
 // disable if `traits`
 template <bool B, typename T = void>
-struct DisableIfImpl {
+struct DisableIf {
   typedef T type;
 };
 
 template <typename T>
-struct DisableIfImpl<true, T> {};
-
-template <typename Cond, typename T = void>
-struct DisableIf : public DisableIfImpl<Cond::value, T> {};
+struct DisableIf<true, T> {};
 
 // add reference `traits`
 template <typename T>
-struct AddReferenceImpl {
+struct AddRefImpl {
   typedef T& type;
 };
 
 template <typename T>
-struct AddReferenceImpl<T&&> {
+struct AddRefImpl<T&&> {
   typedef T&& type;
 };
 
 template <typename T>
-struct AddReference {
-  typedef typename AddReferenceImpl<T>::type type;
+struct AddRef {
+  typedef typename AddRefImpl<T>::type type;
 };
 
 template <typename T>
-struct AddReference<T&> {
+struct AddRef<T&> {
   typedef T& type;
 };
 
-template <typename Cond, typename T = void>
-using DisableIf_t = typename DisableIf<Cond, T>::type;
+template <bool B, typename T = void>
+using DisableIf_t = typename DisableIf<B, T>::type;
 
 template <typename T>
-using AddReference_t = typename AddReference<T>::type;
+using AddRef_t = typename AddRef<T>::type;
 
 #if __cplusplus < 201402L
   template <typename T>
@@ -78,18 +75,28 @@ using AddReference_t = typename AddReference<T>::type;
   using RemoveRef_t = typename std::remove_reference<T>::type;
 
   template <typename T>
+  using AddPtr_t = typename std::add_pointer<T>::type;
+
+  template <typename T>
   using RemovePtr_t = typename std::remove_pointer<T>::type;
 
   template <bool B, typename T = void>
   using EnableIf_t = typename std::enable_if<B, T>::type;
+#else
+  template <typename T>
+  using RemoveCV_t = std::remove_cv_t<T>;
 
   template <typename T>
-  using AddPointer_t = typename std::add_pointer<T>::type;
-#else
-# define RemoveCV_t std::remove_cv_t
-# define RemoveRef_t std::remove_reference_t
-# define RemovePtr_t std::remove_pointer_t
-# define EnableIf_t std::enable_if_t
+  using RemoveRef_t = std::remove_reference_t<T>;
+
+  template <typedef T>
+  using AddPtr_t = std::add_pointer_t<T>;
+
+  template <typename T>
+  using RemovePtr_t = std::remove_pointer_t<T>;
+
+  template <bool B, typename T = void>
+  using EnableIf_t = std::enable_if_t<B, T>;
 #endif
 
 }}
