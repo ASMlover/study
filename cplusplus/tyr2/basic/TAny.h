@@ -97,8 +97,8 @@ public:
 
   template <typename ValueType>
   Any(ValueType&& value,
-      DisableIf_t<std::is_same<Any&, ValueType>>* = nullptr,
-      DisableIf_t<std::is_const<ValueType>>* = nullptr)
+      DisableIf_t<std::is_same<Any&, ValueType>::value>* = nullptr,
+      DisableIf_t<std::is_const<ValueType>::value>* = nullptr)
     : content_(new Holder<typename std::decay<ValueType>::type>(std::move(value))) {
   }
 
@@ -167,7 +167,7 @@ ValueType any_cast(Any& operand) {
   typedef typename std::conditional<
     std::is_reference<ValueType>::value,
     ValueType,
-    AddReference_t<ValueType>>::type RefType;
+    AddRef_t<ValueType>>::type RefType;
 
   return static_cast<RefType>(*result);
 }
