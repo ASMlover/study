@@ -37,8 +37,8 @@
 namespace tyr { namespace net {
 
 class EventLoop;
-class TimerID;
 class Timer;
+class TimerID;
 
 class TimerQueue : private basic::UnCopyable {
   typedef std::pair<basic::Timestamp, Timer*> Entry;
@@ -47,26 +47,26 @@ class TimerQueue : private basic::UnCopyable {
   typedef std::set<ActiveTimer> ActiveTimerSet;
 
   EventLoop* loop_{};
-  const int timerfd_;
+  const int timerfd_{};
   Channel timerfd_channel_;
   TimerSet timers_;
   bool calling_expired_timers_{};
   ActiveTimerSet active_timers_;
   ActiveTimerSet cancelling_timers_;
+
+  void add_timer_in_loop(Timer* timer);
+  void cancel_in_loop(TimerID timerid);
+  void handle_read(void);
+  std::vector<TimerQueue::Entry> get_expired(basic::Timestamp now);
+  void reset(const std::vector<Entry>& expired, basic::Timestamp now);
+  bool insert(Timer* timer);
 public:
   explicit TimerQueue(EventLoop* loop);
   ~TimerQueue(void);
 
-  TimerID add_timer(const TimerCallback& cb, tyr::basic::Timestamp when, double interval);
-  TimerID add_timer(TimerCallback&& cb, tyr::basic::Timestamp when, double interval);
+  TimerID add_timer(const TimerCallback& fn, basic::Timestamp when, double interval);
+  TimerID add_timer(TimerCallback&& fn, basic::Timestamp when, double interval);
   void cancel(TimerID timerid);
-private:
-  void add_timer_in_loop(Timer* timer);
-  void cancel_in_loop(TimerID timerid);
-  void handle_read(void);
-  std::vector<TimerQueue::Entry> get_expired(tyr::basic::Timestamp now);
-  void reset(const std::vector<Entry>& expired, tyr::basic::Timestamp now);
-  bool insert(Timer* timer);
 };
 
 }}

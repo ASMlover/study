@@ -31,6 +31,7 @@
 #include <iterator>
 #include "../basic/TTypes.h"
 #include "../basic/TLogging.h"
+#include "TSocketSupport.h"
 #include "TKernWrapper.h"
 #include "TTimer.h"
 #include "TEventLoop.h"
@@ -41,7 +42,7 @@ namespace tyr { namespace net {
 int create_timerfd(void) {
   int timerfd = Kern::create_timer();
   if (timerfd < 0)
-    TYRLOG_SYSFATAL << "Failed in Kern::create_timer";
+    TYRLOG_SYSFATAL << "create_timerfd - failed in Kern::create_timer";
 
   return timerfd;
 }
@@ -56,16 +57,16 @@ int64_t get_msec_from_now(basic::Timestamp when) {
 
 void read_timerfd(int timerfd, basic::Timestamp now) {
   uint64_t how_many;
-  int n = Kern::read_timer(timerfd, &how_many, sizeof(how_many));
+  ssize_t n = Kern::read_timer(timerfd, &how_many, sizeof(how_many));
   TYRLOG_TRACE << "read_timerfd - " << how_many << " at " << now.to_string();
   if (n != sizeof(how_many))
-    TYRLOG_ERROR << "read_timerfd reads " << n << " bytes instead of 8";
+    TYRLOG_ERROR << "read_timerfd - reads " << n << " bytes instead of 8";
 }
 
 void reset_timerfd(int timerfd, basic::Timestamp expired) {
   int64_t t = get_msec_from_now(expired);
   if (Kern::set_timer(timerfd, t))
-    TYRLOG_SYSERR << "Kern::set_timer";
+    TYRLOG_SYSERR << "reset_timerfd - Kern::set_timer";
 }
 
 TimerQueue::TimerQueue(EventLoop* loop)
@@ -78,22 +79,25 @@ TimerQueue::TimerQueue(EventLoop* loop)
 }
 
 TimerQueue::~TimerQueue(void) {
+  timerfd_channel_.disabled_all();
+  timerfd_channel_.remove();
+
   Kern::close_timer(timerfd_);
 
   for (auto& t : timers_)
     delete t.second;
 }
 
-TimerID TimerQueue::add_timer(const TimerCallback& cb, basic::Timestamp when, double interval) {
-  Timer* timer = new Timer(cb, when, interval);
+TimerID TimerQueue::add_timer(const TimerCallback& fn, basic::Timestamp when, double interval) {
+  Timer* timer = new Timer(fn, when, interval);
   loop_->run_in_loop(std::bind(&TimerQueue::add_timer_in_loop, this, timer));
-  return TimerID(timer);
+  return TimerID(timer, timer->sequence());
 }
 
-TimerID TimerQueue::add_timer(TimerCallback&& cb, basic::Timestamp when, double interval) {
-  Timer* timer = new Timer(std::move(cb), when, interval);
+TimerID TimerQueue::add_timer(TimerCallback&& fn, basic::Timestamp when, double interval) {
+  Timer* timer = new Timer(std::move(fn), when, interval);
   loop_->run_in_loop(std::bind(&TimerQueue::add_timer_in_loop, this, timer));
-  return TimerID(timer);
+  return TimerID(timer, timer->sequence());
 }
 
 void TimerQueue::cancel(TimerID timerid) {
