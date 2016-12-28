@@ -38,31 +38,33 @@ namespace tyr { namespace net {
 class Channel;
 class EventLoop;
 
-class Connector : private basic::UnCopyable {
-  typedef std::function<void (int sockfd)> NewConnectionCallback;
+class Connector
+  : private basic::UnCopyable
+  , public std::enable_shared_from_this<Connector> {
+  using NewConnectionCallback = std::function<void (int sockfd)>;
 
-  enum States {
-    STATES_DISCONNECTED,
-    STATES_CONNECTING,
-    STATES_CONNECTED,
+  enum State {
+    STATE_DISCONNECTED,
+    STATE_CONNECTING,
+    STATE_CONNECTED,
   };
   static const int kMaxRetryDelayMillisecond = 30 * 1000;
   static const int kInitRetryDelayMillisecond = 500;
 
   EventLoop* loop_{};
   bool connect_{};
-  States state_{};
+  State state_{};
   int retry_delay_ms_{};
   InetAddress server_addr_;
   std::unique_ptr<Channel> channel_;
-  NewConnectionCallback new_connection_fn_;
-  TimerID timerid_;
+  NewConnectionCallback new_connection_fn_{};
 
-  void set_state(States s) {
+  void set_state(State s) {
     state_ = s;
   }
 
   void start_in_loop(void);
+  void stop_in_loop(void);
   void connect(void);
   void connecting(int sockfd);
   void handle_write(void);
@@ -86,7 +88,6 @@ public:
   void restart(void);
   void stop(void);
 };
-typedef std::shared_ptr<Connector> ConnectorPtr;
 
 }}
 
