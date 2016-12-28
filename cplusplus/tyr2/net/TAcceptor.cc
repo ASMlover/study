@@ -32,18 +32,19 @@
 
 namespace tyr { namespace net {
 
-// bool listenning_{};
-// EventLoop* loop_{};
-// Socket accept_sock_;
-// Channel accept_channel_;
-// NewConnectionCallback new_connection_fn_;
-Acceptor::Acceptor(EventLoop* loop, const InetAddress& listen_addr)
+Acceptor::Acceptor(EventLoop* loop, const InetAddress& listen_addr, bool reuse_port)
   : loop_(loop)
-  , accept_sock_(SocketSupport::kern_socket(AF_INET))
+  , accept_sock_(SocketSupport::kern_socket(listen_addr.get_family()))
   , accept_channel_(loop_, accept_sock_.get_fd()) {
   accept_sock_.set_reuse_addr(true);
+  accept_sock_.set_reuse_port(reuse_port);
   accept_sock_.bind_address(listen_addr);
   accept_channel_.set_read_callback(std::bind(&Acceptor::handle_read, this));
+}
+
+Acceptor::~Acceptor(void) {
+  accept_channel_.disabled_all();
+  accept_channel_.remove();
 }
 
 void Acceptor::listen(void) {

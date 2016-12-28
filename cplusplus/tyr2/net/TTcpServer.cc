@@ -40,7 +40,7 @@ TcpServer::TcpServer(EventLoop* loop, const InetAddress& host_addr, const std::s
   : loop_(TCHECK_NOTNULL(loop))
   , ip_port_(host_addr.to_host_port())
   , name_(name)
-  , acceptor_(new Acceptor(loop_, host_addr))
+  , acceptor_(new Acceptor(loop_, host_addr, opt == OPTION_REUSEPORT))
   , thread_pool_(new EventLoopThreadPool(loop_, name_))
   , connection_fn_(default_connection_callback)
   , message_fn_(default_message_callback) {

@@ -38,22 +38,23 @@ class EventLoop;
 class InetAddress;
 
 class Acceptor : private basic::UnCopyable {
-public:
-  typedef std::function<void (int sockfd, const InetAddress& addr)> NewConnectionCallback;
-private:
-  bool listenning_{};
+  using NewConnectionCallback = std::function<void (int sockfd, const InetAddress& addr)>;
+
   EventLoop* loop_{};
   Socket accept_sock_;
   Channel accept_channel_;
-  NewConnectionCallback new_connection_fn_;
+  NewConnectionCallback new_connection_fn_{};
+  bool listenning_{};
 
   void handle_read(void);
 public:
-  Acceptor(EventLoop* loop, const InetAddress& listen_addr);
+  Acceptor(EventLoop* loop, const InetAddress& listen_addr, bool reuse_port);
+  ~Acceptor(void);
+
   void listen(void);
 
-  void set_new_connection_callback(const NewConnectionCallback& cb) {
-    new_connection_fn_ = cb;
+  void set_new_connection_callback(const NewConnectionCallback& fn) {
+    new_connection_fn_ = fn;
   }
 
   bool is_listenning(void) const {
