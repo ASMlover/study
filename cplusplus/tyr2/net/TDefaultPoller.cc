@@ -29,18 +29,17 @@
 #include "TPoller.h"
 #include "TSelectPoller.h"
 #include "TPollPoller.h"
+#include "TAsyncPoller.h"
 
 namespace tyr { namespace net {
 
 Poller* Poller::new_default_poller(EventLoop* loop) {
-  if (getenv("TYR_USE_SELECT")) {
+  if (getenv("TYR_USE_SELECT"))
     return new SelectPoller(loop);
-  }
-  else if (getenv("TYR_USE_POLL")) {
+  else if (getenv("TYR_USE_POLL"))
     return new PollPoller(loop);
-  }
-
-  return nullptr;
+  else
+    return new AsyncPoller(loop);
 }
 
 }}
