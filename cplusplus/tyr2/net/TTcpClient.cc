@@ -43,9 +43,13 @@ static void s_remove_connection(EventLoop* loop, const TcpConnectionPtr& conn) {
 static void s_remove_connector(const ConnectorPtr& connector) {
 }
 
-TcpClient::TcpClient(EventLoop* loop, const InetAddress& server_addr)
+TcpClient::TcpClient(EventLoop* loop, const InetAddress& server_addr, const std::string& name)
   : loop_(TCHECK_NOTNULL(loop))
-  , connector_(new Connector(loop, server_addr)) {
+  , connector_(new Connector(loop, server_addr))
+  , name_(name)
+  , connection_fn_(default_connection_callback)
+  , message_fn_(default_message_callback)
+{
   connector_->set_new_connection_callback(std::bind(&TcpClient::new_connection, this, std::placeholders::_1));
   TYRLOG_INFO << "TcpClient::TcpClient [" << this << "] - connector " << get_pointer(connector_);
 }
@@ -54,14 +58,20 @@ TcpClient::~TcpClient(void) {
   TYRLOG_INFO << "TcpClient::~TcpClient [" << this << "] - connector " << get_pointer(connector_);
 
   TcpConnectionPtr conn;
+  bool is_unique = false;
   {
     basic::MutexGuard guard(mtx_);
+    is_unique = connection_.unique();
     conn = connection_;
   }
 
   if (conn) {
+    assert(loop_ == conn->get_loop());
     CloseCallback close_fn = std::bind(&s_remove_connection, loop_, std::placeholders::_1);
     loop_->run_in_loop(std::bind(&TcpConnection::set_close_callback, conn, close_fn));
+
+    if (is_unique)
+      conn->force_close();
   }
   else {
     connector_->stop();
@@ -98,7 +108,7 @@ void TcpClient::new_connection(int sockfd) {
   char buf[32];
   snprintf(buf, sizeof(buf), ":%s#%d", peer_addr.to_host_port().c_str(), next_connid_);
   ++next_connid_;
-  std::string conn_name(buf);
+  std::string conn_name = name_ + buf;
 
   InetAddress local_addr(SocketSupport::kern_localaddr(sockfd));
   TcpConnectionPtr conn(new TcpConnection(loop_, conn_name, sockfd, local_addr, peer_addr));

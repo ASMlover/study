@@ -28,6 +28,7 @@
 #define __TYR_NET_TCPCLIENT_HEADER_H__
 
 #include <memory>
+#include <string>
 #include "../basic/TUnCopyable.h"
 #include "../basic/TMutex.h"
 #include "TCallbacks.h"
@@ -44,6 +45,7 @@ class InetAddress;
 class TcpClient : private basic::UnCopyable {
   EventLoop* loop_{};
   ConnectorPtr connector_{};
+  const std::string name_;
   ConnectionCallback connection_fn_{};
   MessageCallback message_fn_{};
   WriteCompleteCallback write_complete_fn_{};
@@ -56,12 +58,21 @@ class TcpClient : private basic::UnCopyable {
   void new_connection(int sockfd);
   void remove_connection(const TcpConnectionPtr& conn);
 public:
-  TcpClient(EventLoop* loop, const InetAddress& server_addr);
+  TcpClient(EventLoop* loop, const InetAddress& server_addr, const std::string& name);
   ~TcpClient(void);
 
   void connect(void);
   void disconnect(void);
   void stop(void);
+
+  TcpConnectionPtr get_connection(void) const {
+    basic::MutexGuard guard(mtx_);
+    return connection_;
+  }
+
+  EventLoop* get_loop(void) const {
+    return loop_;
+  }
 
   bool get_retry(void) const {
     return retry_;
@@ -75,12 +86,24 @@ public:
     connection_fn_ = fn;
   }
 
+  void set_connection_callback(ConnectionCallback&& fn) {
+    connection_fn_ = std::move(fn);
+  }
+
   void set_message_callback(const MessageCallback& fn) {
     message_fn_ = fn;
   }
 
+  void set_message_callback(MessageCallback&& fn) {
+    message_fn_ = std::move(fn);
+  }
+
   void set_write_complete_callback(const WriteCompleteCallback& fn) {
     write_complete_fn_ = fn;
+  }
+
+  void set_write_complete_callback(WriteCompleteCallback&& fn) {
+    write_complete_fn_ = std::move(fn);
   }
 };
 
