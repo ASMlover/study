@@ -28,10 +28,37 @@
 #include <errno.h>
 #include "../../basic/TTypes.h"
 #include "../../basic/TLogging.h"
+#include "../TSocketSupport.h"
 #include "../TChannel.h"
-#include "../TSelectPoller.h"
+#include "TSelectPollerWindows.h"
 
 namespace tyr { namespace net {
+
+struct _FdSet_t {
+  u_int fd_count;
+  int fd_array[1];
+};
+
+#define WINFD_CLR   FD_CLR
+#define WINFD_ZERO  FD_ZERO
+#define WINFD_ISSET FD_ISSET
+static inline void WINFD_SET(int fd, _FdSet_t* set)  {
+  u_int i;
+  for (i = 0; i < set->fd_count; ++i) {
+    if (fd == set->fd_array[i])
+      break;
+  }
+
+  if (i == set->fd_count) {
+    set->fd_array[i] = fd;
+    ++set->fd_count;
+  }
+}
+
+static inline void WINFD_COPY(_FdSet_t* d_set, _FdSet_t* s_set) {
+  d_set->fd_count = s_set->fd_count;
+  memcpy(d_set->fd_array, s_set->fd_array, s_set->fd_count * sizeof(int));
+}
 
 SelectPoller::SelectPoller(EventLoop* loop)
   : Poller(loop) {
@@ -41,9 +68,8 @@ SelectPoller::~SelectPoller(void) {
 }
 
 basic::Timestamp SelectPoller::poll(int timeout, std::vector<Channel*>* active_channels) {
-  basic::Timestamp now(basic::Timestamp::now());
   // TODO:
-  return now;
+  return basic::Timestamp::now();
 }
 
 void SelectPoller::update_channel(Channel* channel) {
@@ -55,6 +81,18 @@ void SelectPoller::remove_channel(Channel* channel) {
 }
 
 void SelectPoller::fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const {
+  // TODO:
+}
+
+void SelectPoller::init_fds(void) {
+  // TODO:
+}
+
+void SelectPoller::clear_fds(void) {
+  // TODO:
+}
+
+void SelectPoller::regrow_fds(void) {
   // TODO:
 }
 
