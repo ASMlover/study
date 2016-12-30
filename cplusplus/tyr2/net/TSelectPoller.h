@@ -34,7 +34,7 @@
 #elif defined(TYR_LINUX)
 # include "linux/TSelectPollerLinux.h"
 #elif defined(TYR_DARWIN)
-// # include "darwin/TSelectPollerDarwin.h"
+# include "darwin/TSelectPollerDarwin.h"
 #endif
 
 #endif // __TYR_NET_SELECTPOLLER_HEADER_H__
