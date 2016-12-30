@@ -84,15 +84,15 @@ void SelectPoller::fill_active_channels(int nevents, std::vector<Channel*>* acti
   // TODO:
 }
 
-void SelectPoller::init_fds(void) {
+void SelectPoller::sets_init(void) {
   // TODO:
 }
 
-void SelectPoller::clear_fds(void) {
+void SelectPoller::sets_clear(void) {
   // TODO:
 }
 
-void SelectPoller::regrow_fds(void) {
+void SelectPoller::sets_regrow(void) {
   // TODO:
 }
 

@@ -36,15 +36,15 @@ class Channel;
 
 class SelectPoller : public Poller {
   int fd_storage_{};
-  _FdSet_t* rset_in_{};
-  _FdSet_t* wset_in_{};
-  _FdSet_t* rset_out_{};
-  _FdSet_t* wset_out_{};
+  _FdSet_t* rsets_in_{};
+  _FdSet_t* wsets_in_{};
+  _FdSet_t* rsets_out_{};
+  _FdSet_t* wsets_out_{};
 
   void fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const;
-  void init_fds(void);
-  void clear_fds(void);
-  void regrow_fds(void);
+  void sets_init(void);
+  void sets_clear(void);
+  void sets_regrow(void);
 public:
   explicit SelectPoller(EventLoop* loop);
   virtual ~SelectPoller(void);
