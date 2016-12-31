@@ -27,8 +27,9 @@
 #ifndef __TYR_NET_DARWIN_SELECTPOLLERDARWIN_HEADER_H__
 #define __TYR_NET_DARWIN_SELECTPOLLERDARWIN_HEADER_H__
 
-#include <sys/select.h>
 #include "../TPoller.h"
+
+struct fd_set;
 
 namespace tyr { namespace net {
 
@@ -43,9 +44,9 @@ class SelectPoller : public Poller {
   fd_set* wsets_out_{};
 
   void fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const;
-  void sets_init(void);
-  void sets_clear(void);
-  void sets_regrow(void);
+  void sets_alloc(void);
+  void sets_dealloc(void);
+  void sets_realloc(void);
 public:
   explicit SelectPoller(EventLoop* loop);
   virtual ~SelectPoller(void);

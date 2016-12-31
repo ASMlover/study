@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <sys/select.h>
 #include "../../basic/TTypes.h"
 #include "../../basic/TLogging.h"
 #include "../TSocketSupport.h"
@@ -67,15 +68,15 @@ void SelectPoller::fill_active_channels(int nevents, std::vector<Channel*>* acti
   // TODO:
 }
 
-void SelectPoller::sets_init(void) {
+void SelectPoller::sets_alloc(void) {
   // TODO:
 }
 
-void SelectPoller::sets_clear(void) {
+void SelectPoller::sets_dealloc(void) {
   // TODO:
 }
 
-void SelectPoller::sets_regrow(void) {
+void SelectPoller::sets_realloc(void) {
   // TODO:
 }
 
