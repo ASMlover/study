@@ -28,6 +28,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <sys/types.h>
 #include "../../basic/TTypes.h"
 #include "../../basic/TLogging.h"
 #include "../TSocketSupport.h"
@@ -35,6 +36,10 @@
 #include "TSelectPollerDarwin.h"
 
 namespace tyr { namespace net {
+
+static inline size_t calc_sets_bytes(int nfds) {
+  return howmany(nfds, NFDBITS) * sizeof(fd_mask);
+}
 
 SelectPoller::SelectPoller(EventLoop* loop)
   : Poller(loop) {
