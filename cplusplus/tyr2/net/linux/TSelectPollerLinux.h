@@ -37,8 +37,10 @@ class Channel;
 class SelectPoller : public Poller {
   // fd_set is a fixed size buffer in Linux, can not regrow.
   int max_fd_{}; // record the highest-numbered filedes in any of three sets, plus 1
-  fd_set rsets_{};
-  fd_set wsets_{};
+  fd_set rsets_in_{};
+  fd_set wsets_in_{};
+  fd_set rsets_out_{};
+  fd_set wsets_out_{};
 
   void fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const;
 public:

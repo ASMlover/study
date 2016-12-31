@@ -94,7 +94,7 @@ basic::Timestamp SelectPoller::poll(int timeout, std::vector<Channel*>* active_c
   else {
     if (saved_errno != EINTR) {
       errno = saved_errno;
-      TYRLOG_SYSERR << "SelectPoller::poll";
+      TYRLOG_SYSERR << "SelectPoller::poll - errno=" << saved_errno;
     }
   }
   return basic::Timestamp::now();

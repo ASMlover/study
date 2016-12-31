@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 #include <errno.h>
+#include <sys/types.h>
 #include "../../basic/TTypes.h"
 #include "../../basic/TLogging.h"
 #include "../TSocketSupport.h"
@@ -39,24 +40,104 @@ SelectPoller::SelectPoller(EventLoop* loop)
 }
 
 SelectPoller::~SelectPoller(void) {
-  // TODO:
 }
 
 basic::Timestamp SelectPoller::poll(int timeout, std::vector<Channel*>* active_channels) {
-  // TODO:
+  struct timeval tv = {timeout / 1000, timeout % 1000 * 1000};
+  memcpy(&rsets_out_, &rsets_in_, sizeof(rsets_in_));
+  memcpy(&wsets_out_, &wsets_in_, sizeof(wsets_in_));
+
+  int num_events = select(max_fd_ + 1, &rsets_out_, &wsets_out_, nullptr, &tv);
+  int saved_errno = errno;
+  if (num_events > 0) {
+    TYRLOG_TRACE << "SelectPoller::poll - " << num_events << " events happened";
+    fill_active_channels(num_events, active_channels);
+  }
+  else if (num_events == 0) {
+    TYRLOG_TRACE << "SelectPoller::poll - nothing happened";
+  }
+  else {
+    if (saved_errno != EINTR) {
+      errno = saved_errno;
+      TYRLOG_SYSERR << "SelectPoller::poll - errno=" << saved_errno;
+    }
+  }
   return basic::Timestamp::now();
 }
 
 void SelectPoller::update_channel(Channel* channel) {
-  // TODO:
+  assert_in_loopthread();
+  TYRLOG_TRACE << "SelectPoller::update_channel - fd=" << channel->get_fd() << " events=" << channel->get_events();
+
+  int fd = channel->get_fd();
+  if (channel->get_index() < 0) {
+    assert(channels_.find(fd) == channels_.end());
+    if (channels_.size() >= FD_SETSIZE)
+      return;
+
+    if (channel->is_reading())
+      FD_SET(fd, &rsets_in_);
+    if (channel->is_writing())
+      FD_SET(fd, &wsets_in_);
+    channel->set_index(fd);
+    channels_[fd] = channel;
+
+    if (fd > max_fd_)
+      max_fd_ = fd;
+  }
+  else {
+    assert(channels_.find(fd) != channels_.end());
+    assert(channels_[fd] == channel);
+    assert(channel->get_index() > 0);
+    if (!channel->is_reading())
+      FD_CLR(fd, &rsets_in_);
+    if (!channel->is_writing())
+      FD_CLR(fd, &wsets_in_);
+  }
 }
 
 void SelectPoller::remove_channel(Channel* channel) {
-  // TODO:
+  assert_in_loopthread();
+  TYRLOG_TRACE << "SelectPoller::remove_channel - fd=" << channel->get_fd();
+
+  int fd = channel->get_fd();
+  assert(channels_.find(fd) != channels_.end());
+  assert(channels_[fd] == channel);
+  assert(Channel->get_index() > 0);
+
+  FD_CLR(fd, &rsets_in_);
+  FD_CLR(fd, &wsets_in_);
+  FD_CLR(fd, &rsets_out_);
+  FD_CLR(fd, &wsets_out_);
+
+  if (fd == max_fd_) {
+    max_fd_ = 0;
+    for (ch : channels_) {
+      if (ch.first > max_fd_)
+        max_fd_ = ch.first;
+    }
+  }
 }
 
 void SelectPoller::fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const {
-  // TODO:
+  for (auto& ch : channels_) {
+    if (nevents <= 0)
+      break;
+
+    int revents = 0;
+    Channel* channel = ch.second;
+    if (FD_ISSET(channel->get_fd(), &rsets_out_))
+      revents |= POLLIN;
+    if (FD_ISSET(channel->get_fd(), &wsets_out_))
+      revents |= POLLOUT;
+
+    if (revents == 0)
+      continue;
+
+    --nevents;
+    channel->set_revents(revents);
+    active_channels->push_back(channel);
+  }
 }
 
 }}
