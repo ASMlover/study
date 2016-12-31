@@ -134,6 +134,12 @@ void SelectPoller::remove_channel(Channel* channel) {
   assert(channels_.find(channel->get_fd()) != channels_.end());
   assert(channels_[channel->get_fd()] == channel);
   assert(channel->is_none_event());
+
+  int fd = channel->get_fd();
+  WINFD_CLR(fd, rsets_in_);
+  WINFD_CLR(fd, wsets_in_);
+  WINFD_CLR(fd, rsets_out_);
+  WINFD_CLR(fd, wsets_out_);
 }
 
 void SelectPoller::fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const {
