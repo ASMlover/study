@@ -1,4 +1,4 @@
-// Copyright (c) 2016 ASMlover. All rights reserved.
+// Copyright (c) 2017 ASMlover. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -24,25 +24,37 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_NET_ASYNCPOLLER_HEADER_H__
-#define __TYR_NET_ASYNCPOLLER_HEADER_H__
+#ifndef __TYR_NET_DARWIN_ASYNCPOLLERDARWIN_HEADER_H__
+#define __TYR_NET_DARWIN_ASYNCPOLLERDARWIN_HEADER_H__
 
-#include "../basic/TConfig.h"
+#include <vector>
+#include "../TPoller.h"
 
-#if defined(TYR_WINDOWS)
-# include "TPollPoller.h"
-#elif defined(TYR_LINUX)
-# include "linux/TAsyncPollerLinux.h"
-#elif defined(TYR_DARWIN)
-# include "darwin/TAsyncPollerDarwin.h"
-#endif
+struct kevent;
 
 namespace tyr { namespace net {
 
-#if defined(TYR_WINDOWS)
-  using AsyncPoller = PollPoller;
-#endif
+class Channel;
+class EventLoop;
+
+class AsyncPoller : public Poller {
+  static const int kInitNumEvents = 16;
+
+  int kqueuefd_{};
+  std::vector<struct kevent> kqueue_events_;
+
+  static const char* operation_to_string(int op);
+  void update(int operation, Channel* channel);
+  void fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const;
+public:
+  explicit AsyncPoller(EventLoop* loop);
+  virtual ~AsyncPoller(void);
+
+  virtual basic::Timestamp poll(int timeout, std::vector<Channel*>* active_channels) override;
+  virtual void update_channel(Channel* channel) override;
+  virtual void remove_channel(Channel* channel) override;
+};
 
 }}
 
-#endif // __TYR_NET_ASYNCPOLLER_HEADER_H__
+#endif // __TYR_NET_DARWIN_ASYNCPOLLERDARWIN_HEADER_H__
