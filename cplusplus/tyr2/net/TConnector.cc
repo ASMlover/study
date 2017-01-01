@@ -36,6 +36,9 @@
 
 namespace tyr { namespace net {
 
+const int Connector::kInitRetryDelayMillisecond;
+const int Connector::kMaxRetryDelayMillisecond;
+
 Connector::Connector(EventLoop* loop, const InetAddress& server_addr)
   : loop_(loop)
   , retry_delay_ms_(kInitRetryDelayMillisecond)

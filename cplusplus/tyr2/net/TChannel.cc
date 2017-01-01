@@ -126,7 +126,7 @@ std::string Channel::events_to_string(int fd, int event) {
     oss << "OUT ";
   if (event & POLLHUP)
     oss << "HUP ";
-#if !defined(TYR_WINDOWS)
+#if defined(TYR_LINUX)
   if (event & POLLRDHUP)
     oss << "RDHUP ";
 #endif
