@@ -35,6 +35,27 @@
 
 namespace tyr { namespace net {
 
+SelectPoller::FdsEntity::FdsEntity(void) {
+  FD_ZERO(esets);
+  FD_ZERO(rsets);
+  FD_ZERO(wsets);
+}
+
+SelectPoller::FdsEntity::~FdsEntity(void) {
+}
+
+void SelectPoller::FdsEntity::copy(const SelectPoller::FdsEntity& r) {
+  memcpy(&esets, &r.esets, sizeof(r.esets));
+  memcpy(&rsets, &r.rsets, sizeof(r.rsets));
+  memcpy(&wsets, &r.wsets, sizeof(r.wsets));
+}
+
+void SelectPoller::FdsEntity::remove(int fd) {
+  FD_CLR(fd, esets);
+  FD_CLR(fd, rsets);
+  FD_CLR(fd, wsets);
+}
+
 SelectPoller::SelectPoller(EventLoop* loop)
   : Poller(loop) {
 }
@@ -44,10 +65,9 @@ SelectPoller::~SelectPoller(void) {
 
 basic::Timestamp SelectPoller::poll(int timeout, std::vector<Channel*>* active_channels) {
   struct timeval tv = {timeout / 1000, timeout % 1000 * 1000};
-  memcpy(&rsets_out_, &rsets_in_, sizeof(rsets_in_));
-  memcpy(&wsets_out_, &wsets_in_, sizeof(wsets_in_));
 
-  int num_events = select(max_fd_ + 1, &rsets_out_, &wsets_out_, nullptr, &tv);
+  sets_out_.copy(sets_in_);
+  int num_events = select(max_fd_ + 1, &sets_out_.rsets, &sets_out_.wsets, &sets_out_.esets, &tv);
   int saved_errno = errno;
   if (num_events > 0) {
     TYRLOG_TRACE << "SelectPoller::poll - " << num_events << " events happened";
@@ -67,20 +87,29 @@ basic::Timestamp SelectPoller::poll(int timeout, std::vector<Channel*>* active_c
 
 void SelectPoller::update_channel(Channel* channel) {
   assert_in_loopthread();
-  TYRLOG_TRACE << "SelectPoller::update_channel - fd=" << channel->get_fd() << " events=" << channel->get_events();
 
   int fd = channel->get_fd();
-  if (channel->get_index() < 0) {
-    assert(channels_.find(fd) == channels_.end());
-    if (channels_.size() >= FD_SETSIZE)
-      return;
+  const int index = channel->get_index();
+  TYRLOG_TRACE << "SelectPoller::update_channel - fd=" << fd << " events=" << channel->get_events();
 
+  if (index == POLLER_EVENT_NEW || index == POLLER_EVENT_DEL) {
+    if (index == POLLER_EVENT_NEW) {
+      assert(channels_.find(fd) == channels_.end());
+      if (channels_.size() >= FD_SETSIZE)
+        return;
+      channels_[fd] = channel;
+    }
+    else {
+      assert(channels_.find(fd) != channels_.end());
+      assert(channels_[fd] == channel);
+    }
+
+    FD_SET(fd, &sets_in_.esets);
     if (channel->is_reading())
-      FD_SET(fd, &rsets_in_);
+      FD_SET(fd, &sets_in_.rsets);
     if (channel->is_writing())
-      FD_SET(fd, &wsets_in_);
-    channel->set_index(fd);
-    channels_[fd] = channel;
+      FD_SET(fd, &sets_in_.wsets);
+    channel->set_index(POLLER_EVENT_ADD);
 
     if (fd > max_fd_)
       max_fd_ = fd;
@@ -88,27 +117,34 @@ void SelectPoller::update_channel(Channel* channel) {
   else {
     assert(channels_.find(fd) != channels_.end());
     assert(channels_[fd] == channel);
-    assert(channel->get_index() > 0);
-    if (!channel->is_reading())
-      FD_CLR(fd, &rsets_in_);
-    if (!channel->is_writing())
-      FD_CLR(fd, &wsets_in_);
+    assert(index == POLLER_EVENT_ADD);
+    if (channel->is_none_event()) {
+      sets_in_.remove(fd);
+      channel->set_index(POLLER_EVENT_DEL);
+    }
+    else {
+      if (!channel->is_reading())
+        FD_CLR(fd, &rsets_in_);
+      if (!channel->is_writing())
+        FD_CLR(fd, &wsets_in_);
+    }
   }
 }
 
 void SelectPoller::remove_channel(Channel* channel) {
   assert_in_loopthread();
-  TYRLOG_TRACE << "SelectPoller::remove_channel - fd=" << channel->get_fd();
 
   int fd = channel->get_fd();
+  const int index = channel->get_index();
+  TYRLOG_TRACE << "SelectPoller::remove_channel - fd=" << fd;
+
   assert(channels_.find(fd) != channels_.end());
   assert(channels_[fd] == channel);
-  assert(Channel->get_index() > 0);
+  assert(channel->is_none_event());
+  assert(index == POLLER_EVENT_ADD || index == POLLER_EVENT_DEL);
 
-  FD_CLR(fd, &rsets_in_);
-  FD_CLR(fd, &wsets_in_);
-  FD_CLR(fd, &rsets_out_);
-  FD_CLR(fd, &wsets_out_);
+  sets_in_.remove(fd);
+  sets_out_.remove(fd);
 
   if (fd == max_fd_) {
     max_fd_ = 0;
@@ -126,9 +162,11 @@ void SelectPoller::fill_active_channels(int nevents, std::vector<Channel*>* acti
 
     int revents = 0;
     Channel* channel = ch.second;
-    if (FD_ISSET(channel->get_fd(), &rsets_out_))
+    if (FD_ISSET(channel->get_fd(), &sets_out_.esets))
+      revents |= POLLERR;
+    if (FD_ISSET(channel->get_fd(), &sets_out_.rsets))
       revents |= POLLIN;
-    if (FD_ISSET(channel->get_fd(), &wsets_out_))
+    if (FD_ISSET(channel->get_fd(), &sets_out_.wsets))
       revents |= POLLOUT;
 
     if (revents == 0)

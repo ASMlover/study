@@ -80,6 +80,9 @@ SelectPoller::FdsEntity::FdsEntity(int nsets) {
       break;
     if (nullptr == (rsets = (_FdSet_t*)malloc(size)))
       break;
+    WINFD_ZERO(esets);
+    WINFD_ZERO(rsets);
+    WINFD_ZERO(wsets);
 
     return;
   } while (false);
@@ -162,10 +165,11 @@ basic::Timestamp SelectPoller::poll(int timeout, std::vector<Channel*>* active_c
 
 void SelectPoller::update_channel(Channel* channel) {
   assert_in_loopthread();
-  TYRLOG_TRACE << "SelectPoller::update_channel - fd=" << channel->get_fd() << " events=" << channel->get_events();
 
   int fd = channel->get_fd();
   const int index = channel->get_index();
+  TYRLOG_TRACE << "SelectPoller::update_channel - fd=" << fd << " events=" << channel->get_events();
+
   if (index == POLLER_EVENT_NEW || index == POLLER_EVENT_DEL) {
     if (index == POLLER_EVENT_NEW) {
       // add new fd events listening into channels_
@@ -210,10 +214,11 @@ void SelectPoller::update_channel(Channel* channel) {
 
 void SelectPoller::remove_channel(Channel* channel) {
   assert_in_loopthread();
-  TYRLOG_TRACE << "SelectPoller::remove_channel - fd=" << channel->get_fd();
 
   int fd = channel->get_fd();
   const int index = channel->get_index();
+  TYRLOG_TRACE << "SelectPoller::remove_channel - fd=" << fd;
+
   assert(channels_.find(fd) != channels_.end());
   assert(channels_[fd] == channel);
   assert(channel->is_none_event());

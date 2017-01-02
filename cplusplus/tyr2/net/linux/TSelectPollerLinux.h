@@ -35,12 +35,22 @@ namespace tyr { namespace net {
 class Channel;
 
 class SelectPoller : public Poller {
+  struct FdsEntity {
+    fd_set esets;
+    fd_set rsets;
+    fd_set wsets;
+
+    FdsEntity(void);
+    ~FdsEntity(void);
+
+    void copy(const FdsEntity& r);
+    void remove(int fd);
+  };
+
   // fd_set is a fixed size buffer in Linux, can not regrow.
   int max_fd_{}; // record the highest-numbered filedes in any of three sets, plus 1
-  fd_set rsets_in_{};
-  fd_set wsets_in_{};
-  fd_set rsets_out_{};
-  fd_set wsets_out_{};
+  FdsEntity sets_in_;
+  FdsEntity sets_out_;
 
   void fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const;
 public:
