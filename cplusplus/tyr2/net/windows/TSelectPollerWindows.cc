@@ -38,12 +38,7 @@ struct _FdSet_t {
   int fd_array[1];
 };
 
-#define WINFD_FREE(set) do {\
-  if (nullptr != set) {\
-    free(set);\
-    (set) = nullptr;\
-  }\
-} while (false)
+#define WINFD_FREE(set) if (!(set)) { free(set); (set) = nullptr; }
 
 static inline void WINFD_CLR(int fd, _FdSet_t* set) {
   FD_CLR(fd, set);
@@ -75,23 +70,79 @@ static inline void WINFD_COPY(_FdSet_t* d_set, _FdSet_t* s_set) {
   memcpy(d_set->fd_array, s_set->fd_array, s_set->fd_count * sizeof(int));
 }
 
+SelectPoller::FdsEntity::FdsEntity(int nsets) {
+  size_t size = sizeof(_FdSet_t) + (nsets - 1) * sizeof(int);
+  if (nullptr == (esets = (_FdSet_t*)malloc(size)))
+    return;
+
+  do {
+    if (nullptr == (rsets = (_FdSet_t*)malloc(size)))
+      break;
+    if (nullptr == (rsets = (_FdSet_t*)malloc(size)))
+      break;
+
+    return;
+  } while (false);
+  destroy();
+}
+
+SelectPoller::FdsEntity::~FdsEntity(void) {
+  destroy();
+}
+
+void SelectPoller::FdsEntity::copy(const SelectPoller::FdsEntity& r) {
+  WINFD_COPY(esets, r.esets);
+  WINFD_COPY(rsets, r.rsets);
+  WINFD_COPY(wsets, r.wsets);
+}
+
+void SelectPoller::FdsEntity::destroy(void) {
+  WINFD_FREE(esets);
+  WINFD_FREE(rsets);
+  WINFD_FREE(wsets);
+}
+
+void SelectPoller::FdsEntity::resize(int new_nsets) {
+  size_t size = sizeof(_FdSet_t) + (new_nsets - 1) * sizeof(int);
+
+  if (nullptr == (esets = (_FdSet_t*)realloc(esets, size)))
+    return;
+
+  do {
+    if (nullptr == (rsets = (_FdSet_t*)realloc(rsets, size)))
+      break;
+    if (nullptr == (wsets = (_FdSet_t*)realloc(wsets, size)))
+      break;
+
+    return;
+  } while (false);
+  destroy();
+}
+
+void SelectPoller::FdsEntity::remove(int fd) {
+  WINFD_CLR(fd, esets);
+  WINFD_CLR(fd, rsets);
+  WINFD_CLR(fd, wsets);
+}
+
 SelectPoller::SelectPoller(EventLoop* loop)
-  : Poller(loop) {
-  sets_alloc();
+  : Poller(loop)
+  , sets_in_(fd_storage_)
+  , sets_out_(fd_storage_) {
 }
 
 SelectPoller::~SelectPoller(void) {
-  sets_dealloc();
 }
 
 basic::Timestamp SelectPoller::poll(int timeout, std::vector<Channel*>* active_channels) {
   struct timeval tv = {timeout / 1000, timeout % 1000 * 1000};
-  WINFD_COPY(esets_out_, esets_in_);
-  WINFD_COPY(rsets_out_, rsets_in_);
-  WINFD_COPY(wsets_out_, wsets_in_);
 
+  sets_out_.copy(sets_in_);
   int num_events = select(0,
-      (struct fd_set*)rsets_out_, (struct fd_set*)wsets_out_, (struct fd_set*)esets_out_, &tv);
+      (struct fd_set*)sets_out_.rsets,
+      (struct fd_set*)sets_out_.wsets,
+      (struct fd_set*)sets_out_.esets,
+      &tv);
   int saved_errno = errno;
   if (num_events > 0) {
     TYRLOG_TRACE << "SelectPoller::poll - " << num_events << " events happened";
@@ -117,14 +168,18 @@ void SelectPoller::update_channel(Channel* channel) {
   if (channel->get_index() < 0) {
     // add new fd events listening into channels_
     assert(channels_.find(fd) == channels_.end());
-    if (channels_.size() >= static_cast<size_t>(fd_storage_))
-      sets_realloc();
+    if (channels_.size() >= static_cast<size_t>(fd_storage_)) {
+      int new_nsets = (0 != fd_storage_ ? static_cast<int>(1.5 * fd_storage_) : FD_SETSIZE);
+      sets_in_.resize(new_nsets);
+      sets_out_.resize(new_nsets);
+      fd_storage_ = new_nsets;
+    }
 
-    WINFD_SET(fd, esets_in_);
+    WINFD_SET(fd, sets_in_.esets);
     if (channel->is_reading())
-      WINFD_SET(fd, rsets_in_);
+      WINFD_SET(fd, sets_in_.rsets);
     if (channel->is_writing())
-      WINFD_SET(fd, wsets_in_);
+      WINFD_SET(fd, sets_in_.wsets);
     channel->set_index(fd);
     channels_[fd] = channel;
   }
@@ -134,9 +189,9 @@ void SelectPoller::update_channel(Channel* channel) {
     assert(channels_[fd] == channel);
     assert(channel->get_index() > 0);
     if (!channel->is_reading())
-      WINFD_CLR(fd, rsets_in_);
+      WINFD_CLR(fd, sets_in_.rsets);
     if (!channel->is_writing())
-      WINFD_CLR(fd, wsets_in_);
+      WINFD_CLR(fd, sets_in_.wsets);
   }
 }
 
@@ -149,12 +204,8 @@ void SelectPoller::remove_channel(Channel* channel) {
   assert(channels_[fd] == channel);
   assert(channel->is_none_event());
 
-  WINFD_CLR(fd, esets_in_);
-  WINFD_CLR(fd, rsets_in_);
-  WINFD_CLR(fd, wsets_in_);
-  WINFD_CLR(fd, esets_out_);
-  WINFD_CLR(fd, rsets_out_);
-  WINFD_CLR(fd, wsets_out_);
+  sets_in_.remove(fd);
+  sets_out_.remove(fd);
 }
 
 void SelectPoller::fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const {
@@ -164,11 +215,11 @@ void SelectPoller::fill_active_channels(int nevents, std::vector<Channel*>* acti
 
     int revents = 0;
     Channel* channel = ch.second;
-    if (WINFD_ISSET(channel->get_fd(), esets_out_))
+    if (WINFD_ISSET(channel->get_fd(), sets_out_.esets))
       revents |= POLLERR;
-    if (WINFD_ISSET(channel->get_fd(), rsets_out_))
+    if (WINFD_ISSET(channel->get_fd(), sets_out_.rsets))
       revents |= POLLIN;
-    if (WINFD_ISSET(channel->get_fd(), wsets_out_))
+    if (WINFD_ISSET(channel->get_fd(), sets_out_.wsets))
       revents |= POLLOUT;
 
     if (revents == 0)
@@ -178,70 +229,6 @@ void SelectPoller::fill_active_channels(int nevents, std::vector<Channel*>* acti
     channel->set_revents(revents);
     active_channels->push_back(channel);
   }
-}
-
-void SelectPoller::sets_alloc(void) {
-  fd_storage_ = FD_SETSIZE;
-  size_t size = sizeof(_FdSet_t) + (fd_storage_ - 1) * sizeof(int);
-
-  if (nullptr == (esets_in_ = (_FdSet_t*)malloc(size)))
-    return;
-
-  do {
-    if (nullptr == (rsets_in_ = (_FdSet_t*)malloc(size)))
-      break;
-    if (nullptr == (wsets_in_ = (_FdSet_t*)malloc(size)))
-      break;
-    if (nullptr == (esets_out_ = (_FdSet_t*)malloc(size)))
-      break;
-    if (nullptr == (rsets_out_ = (_FdSet_t*)malloc(size)))
-      break;
-    if (nullptr == (wsets_out_ = (_FdSet_t*)malloc(size)))
-      break;
-
-    WINFD_ZERO(esets_in_);
-    WINFD_ZERO(rsets_in_);
-    WINFD_ZERO(wsets_in_);
-    return;
-  } while (false);
-
-  sets_dealloc();
-}
-
-void SelectPoller::sets_dealloc(void) {
-  WINFD_FREE(esets_in_);
-  WINFD_FREE(rsets_in_);
-  WINFD_FREE(wsets_in_);
-  WINFD_FREE(esets_out_);
-  WINFD_FREE(rsets_out_);
-  WINFD_FREE(wsets_out_);
-  fd_storage_ = FD_SETSIZE;
-}
-
-void SelectPoller::sets_realloc(void) {
-  int new_fd_storage = (0 != fd_storage_ ? static_cast<int>(1.5 * fd_storage_) : FD_SETSIZE);
-  size_t size = sizeof(_FdSet_t) + (new_fd_storage - 1) * sizeof(int);
-
-  if (nullptr == (esets_in_ = (_FdSet_t*)realloc(esets_in_, size)))
-    return;
-
-  do {
-    if (nullptr == (rsets_in_ = (_FdSet_t*)realloc(rsets_in_, size)))
-      break;
-    if (nullptr == (wsets_in_ = (_FdSet_t*)realloc(wsets_in_, size)))
-      break;
-    if (nullptr == (esets_out_ = (_FdSet_t*)realloc(esets_out_, size)))
-      break;
-    if (nullptr == (rsets_out_ = (_FdSet_t*)realloc(rsets_out_, size)))
-      break;
-    if (nullptr == (wsets_out_ = (_FdSet_t*)realloc(wsets_out_, size)))
-      break;
-
-    fd_storage_ = new_fd_storage;
-    return;
-  } while (false);
-
-  sets_dealloc();
 }
 
 }}

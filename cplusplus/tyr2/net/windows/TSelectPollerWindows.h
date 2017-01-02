@@ -36,18 +36,26 @@ struct _FdSet_t;
 class Channel;
 
 class SelectPoller : public Poller {
+  struct FdsEntity {
+    _FdSet_t* esets{};
+    _FdSet_t* rsets{};
+    _FdSet_t* wsets{};
+
+    FdsEntity(int nsets = FD_SETSIZE);
+    ~FdsEntity(void);
+
+    void copy(const FdsEntity& r);
+
+    void destroy(void);
+    void resize(int new_nsets);
+    void remove(int fd);
+  };
+
   int fd_storage_{FD_SETSIZE};
-  _FdSet_t* esets_in_{}; // error fd sets
-  _FdSet_t* rsets_in_{}; // read fd sets
-  _FdSet_t* wsets_in_{}; // write fd sets
-  _FdSet_t* esets_out_{};
-  _FdSet_t* rsets_out_{};
-  _FdSet_t* wsets_out_{};
+  FdsEntity sets_in_;
+  FdsEntity sets_out_;
 
   void fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const;
-  void sets_alloc(void);
-  void sets_dealloc(void);
-  void sets_realloc(void);
 public:
   explicit SelectPoller(EventLoop* loop);
   virtual ~SelectPoller(void);
