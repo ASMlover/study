@@ -36,9 +36,9 @@
 namespace tyr { namespace net {
 
 SelectPoller::FdsEntity::FdsEntity(void) {
-  FD_ZERO(esets);
-  FD_ZERO(rsets);
-  FD_ZERO(wsets);
+  FD_ZERO(&esets);
+  FD_ZERO(&rsets);
+  FD_ZERO(&wsets);
 }
 
 SelectPoller::FdsEntity::~FdsEntity(void) {
@@ -148,7 +148,7 @@ void SelectPoller::remove_channel(Channel* channel) {
 
   if (fd == max_fd_) {
     max_fd_ = 0;
-    for (ch : channels_) {
+    for (auto& ch : channels_) {
       if (ch.first > max_fd_)
         max_fd_ = ch.first;
     }
