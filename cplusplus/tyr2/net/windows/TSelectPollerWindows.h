@@ -37,8 +37,10 @@ class Channel;
 
 class SelectPoller : public Poller {
   int fd_storage_{FD_SETSIZE};
-  _FdSet_t* rsets_in_{};
-  _FdSet_t* wsets_in_{};
+  _FdSet_t* esets_in_{}; // error fd sets
+  _FdSet_t* rsets_in_{}; // read fd sets
+  _FdSet_t* wsets_in_{}; // write fd sets
+  _FdSet_t* esets_out_{};
   _FdSet_t* rsets_out_{};
   _FdSet_t* wsets_out_{};
 
