@@ -41,17 +41,17 @@ class SelectPoller : public Poller {
     _FdSet_t* rsets{};
     _FdSet_t* wsets{};
 
-    FdsEntity(int nsets = FD_SETSIZE);
+    FdsEntity(int nsets);
     ~FdsEntity(void);
 
-    void copy(const FdsEntity& r);
-
     void destroy(void);
-    void resize(int new_nsets);
+    bool resize(int new_nsets);
+
+    void copy(const FdsEntity& r);
     void remove(int fd);
   };
 
-  int fd_storage_{FD_SETSIZE};
+  int fd_storage_{};
   FdsEntity sets_in_;
   FdsEntity sets_out_;
 

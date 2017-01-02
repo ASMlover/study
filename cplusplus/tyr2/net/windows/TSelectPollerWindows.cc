@@ -71,32 +71,15 @@ static inline void WINFD_COPY(_FdSet_t* d_set, _FdSet_t* s_set) {
 }
 
 SelectPoller::FdsEntity::FdsEntity(int nsets) {
-  size_t size = sizeof(_FdSet_t) + (nsets - 1) * sizeof(int);
-  if (nullptr == (esets = (_FdSet_t*)malloc(size)))
-    return;
-
-  do {
-    if (nullptr == (rsets = (_FdSet_t*)malloc(size)))
-      break;
-    if (nullptr == (rsets = (_FdSet_t*)malloc(size)))
-      break;
+  if (resize(nsets)) {
     WINFD_ZERO(esets);
     WINFD_ZERO(rsets);
     WINFD_ZERO(wsets);
-
-    return;
-  } while (false);
-  destroy();
+  }
 }
 
 SelectPoller::FdsEntity::~FdsEntity(void) {
   destroy();
-}
-
-void SelectPoller::FdsEntity::copy(const SelectPoller::FdsEntity& r) {
-  WINFD_COPY(esets, r.esets);
-  WINFD_COPY(rsets, r.rsets);
-  WINFD_COPY(wsets, r.wsets);
 }
 
 void SelectPoller::FdsEntity::destroy(void) {
@@ -105,21 +88,28 @@ void SelectPoller::FdsEntity::destroy(void) {
   WINFD_FREE(wsets);
 }
 
-void SelectPoller::FdsEntity::resize(int new_nsets) {
+bool SelectPoller::FdsEntity::resize(int new_nsets) {
   size_t size = sizeof(_FdSet_t) + (new_nsets - 1) * sizeof(int);
 
   if (nullptr == (esets = (_FdSet_t*)realloc(esets, size)))
-    return;
-
+    return false;
   do {
     if (nullptr == (rsets = (_FdSet_t*)realloc(rsets, size)))
       break;
     if (nullptr == (wsets = (_FdSet_t*)realloc(wsets, size)))
       break;
 
-    return;
+    return true;
   } while (false);
+
   destroy();
+  return false;
+}
+
+void SelectPoller::FdsEntity::copy(const SelectPoller::FdsEntity& r) {
+  WINFD_COPY(esets, r.esets);
+  WINFD_COPY(rsets, r.rsets);
+  WINFD_COPY(wsets, r.wsets);
 }
 
 void SelectPoller::FdsEntity::remove(int fd) {
@@ -130,6 +120,7 @@ void SelectPoller::FdsEntity::remove(int fd) {
 
 SelectPoller::SelectPoller(EventLoop* loop)
   : Poller(loop)
+  , fd_storage_(FD_SETSIZE)
   , sets_in_(fd_storage_)
   , sets_out_(fd_storage_) {
 }
