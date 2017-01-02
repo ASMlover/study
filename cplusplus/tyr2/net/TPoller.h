@@ -35,6 +35,12 @@
 
 namespace tyr { namespace net {
 
+enum PollerEvent {
+  POLLER_EVENT_NEW = -1,
+  POLLER_EVENT_ADD = 1,
+  POLLER_EVENT_DEL = 2,
+};
+
 class Channel;
 
 class Poller : private basic::UnCopyable {

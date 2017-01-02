@@ -165,14 +165,22 @@ void SelectPoller::update_channel(Channel* channel) {
   TYRLOG_TRACE << "SelectPoller::update_channel - fd=" << channel->get_fd() << " events=" << channel->get_events();
 
   int fd = channel->get_fd();
-  if (channel->get_index() < 0) {
-    // add new fd events listening into channels_
-    assert(channels_.find(fd) == channels_.end());
-    if (channels_.size() >= static_cast<size_t>(fd_storage_)) {
-      int new_nsets = (0 != fd_storage_ ? static_cast<int>(1.5 * fd_storage_) : FD_SETSIZE);
-      sets_in_.resize(new_nsets);
-      sets_out_.resize(new_nsets);
-      fd_storage_ = new_nsets;
+  const int index = channel->get_index();
+  if (index == POLLER_EVENT_NEW || index == POLLER_EVENT_DEL) {
+    if (index == POLLER_EVENT_NEW) {
+      // add new fd events listening into channels_
+      assert(channels_.find(fd) == channels_.end());
+      if (channels_.size() >= static_cast<size_t>(fd_storage_)) {
+        int new_nsets = (0 != fd_storage_ ? static_cast<int>(1.5 * fd_storage_) : FD_SETSIZE);
+        sets_in_.resize(new_nsets);
+        sets_out_.resize(new_nsets);
+        fd_storage_ = new_nsets;
+      }
+      channels_[fd] = channel;
+    }
+    else {
+      assert(channels_.find(fd) != channels_.end());
+      assert(channels_[fd] == channel);
     }
 
     WINFD_SET(fd, sets_in_.esets);
@@ -180,18 +188,23 @@ void SelectPoller::update_channel(Channel* channel) {
       WINFD_SET(fd, sets_in_.rsets);
     if (channel->is_writing())
       WINFD_SET(fd, sets_in_.wsets);
-    channel->set_index(fd);
-    channels_[fd] = channel;
+    channel->set_index(POLLER_EVENT_ADD);
   }
   else {
     // updated the events of an existing channel
     assert(channels_.find(fd) != channels_.end());
     assert(channels_[fd] == channel);
-    assert(channel->get_index() > 0);
-    if (!channel->is_reading())
-      WINFD_CLR(fd, sets_in_.rsets);
-    if (!channel->is_writing())
-      WINFD_CLR(fd, sets_in_.wsets);
+    assert(index == POLLER_EVENT_ADD);
+    if (channel->is_none_event()) {
+      sets_in_.remove(fd);
+      channel->set_index(POLLER_EVENT_DEL);
+    }
+    else {
+      if (!channel->is_reading())
+        WINFD_CLR(fd, sets_in_.rsets);
+      if (!channel->is_writing())
+        WINFD_CLR(fd, sets_in_.wsets);
+    }
   }
 }
 
@@ -200,12 +213,17 @@ void SelectPoller::remove_channel(Channel* channel) {
   TYRLOG_TRACE << "SelectPoller::remove_channel - fd=" << channel->get_fd();
 
   int fd = channel->get_fd();
+  const int index = channel->get_index();
   assert(channels_.find(fd) != channels_.end());
   assert(channels_[fd] == channel);
   assert(channel->is_none_event());
+  assert(index == POLLER_EVENT_ADD || index == POLLER_EVENT_DEL);
+  size_t n = channels_.erase(fd);
+  assert(n == 1); UNUSED(n);
 
   sets_in_.remove(fd);
   sets_out_.remove(fd);
+  channel->set_index(POLLER_EVENT_NEW);
 }
 
 void SelectPoller::fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const {
