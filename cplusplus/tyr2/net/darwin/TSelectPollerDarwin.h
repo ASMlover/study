@@ -36,17 +36,28 @@ namespace tyr { namespace net {
 class Channel;
 
 class SelectPoller : public Poller {
+  struct FdsEntity {
+    int fdsize{};
+    fd_set* esets{};
+    fd_set* rsets{};
+    fd_set* wsets{};
+
+    FdsEntity(int nsets);
+    ~FdsEntity(void);
+
+    void destroy(void);
+    bool resize(int new_nsets);
+
+    void copy(const FdsEntity& r);
+    void remove(int fd);
+  };
+
   int max_fd_{}; // record the highest-numbered filedes in any of three sets, plus 1
   int fd_storage_{};
-  fd_set* rsets_in_{};
-  fd_set* wsets_in_{};
-  fd_set* rsets_out_{};
-  fd_set* wsets_out_{};
+  FdsEntity sets_in_;
+  FdsEntity sets_out_;
 
   void fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const;
-  void sets_alloc(void);
-  void sets_dealloc(void);
-  void sets_realloc(void);
 public:
   explicit SelectPoller(EventLoop* loop);
   virtual ~SelectPoller(void);
