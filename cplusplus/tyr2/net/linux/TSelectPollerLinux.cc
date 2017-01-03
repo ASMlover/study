@@ -51,9 +51,9 @@ void SelectPoller::FdsEntity::copy(const SelectPoller::FdsEntity& r) {
 }
 
 void SelectPoller::FdsEntity::remove(int fd) {
-  FD_CLR(fd, esets);
-  FD_CLR(fd, rsets);
-  FD_CLR(fd, wsets);
+  FD_CLR(fd, &esets);
+  FD_CLR(fd, &rsets);
+  FD_CLR(fd, &wsets);
 }
 
 SelectPoller::SelectPoller(EventLoop* loop)
@@ -124,9 +124,9 @@ void SelectPoller::update_channel(Channel* channel) {
     }
     else {
       if (!channel->is_reading())
-        FD_CLR(fd, &rsets_in_);
+        FD_CLR(fd, &sets_in_.rsets);
       if (!channel->is_writing())
-        FD_CLR(fd, &wsets_in_);
+        FD_CLR(fd, &sets_in_.wsets);
     }
   }
 }
@@ -142,6 +142,7 @@ void SelectPoller::remove_channel(Channel* channel) {
   assert(channels_[fd] == channel);
   assert(channel->is_none_event());
   assert(index == POLLER_EVENT_ADD || index == POLLER_EVENT_DEL);
+  UNUSED(index);
 
   sets_in_.remove(fd);
   sets_out_.remove(fd);
