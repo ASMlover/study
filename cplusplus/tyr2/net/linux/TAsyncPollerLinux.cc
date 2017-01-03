@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <poll.h>
 #include <sys/epoll.h>
+#include "../../basic/TTypes.h"
 #include "../../basic/TLogging.h"
 #include "../TChannel.h"
 #include "TAsyncPollerLinux.h"
