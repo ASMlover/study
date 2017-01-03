@@ -123,10 +123,23 @@ void SelectPoller::update_channel(Channel* channel) {
       channel->set_index(POLLER_EVENT_DEL);
     }
     else {
-      if (!channel->is_reading())
-        FD_CLR(fd, &sets_in_.rsets);
-      if (!channel->is_writing())
-        FD_CLR(fd, &sets_in_.wsets);
+      if (channel->is_reading()) {
+        if (!FD_ISSET(fd, &sets_in_.rsets))
+          FD_SET(fd, &sets_in_.rsets);
+      }
+      else {
+        if (FD_ISSET(fd, &sets_in_.rsets))
+          FD_CLR(fd, &sets_in_.rsets);
+      }
+
+      if (channel->is_writing()) {
+        if (!FD_ISSET(fd, &sets_in_.wsets))
+          FD_SET(fd, &sets_in_.wsets);
+      }
+      else {
+        if (FD_ISSET(fd, &sets_in_.wsets))
+          FD_CLR(fd, &sets_in_.wsets);
+      }
     }
   }
 }
