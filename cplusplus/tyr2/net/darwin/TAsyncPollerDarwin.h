@@ -46,6 +46,10 @@ class AsyncPoller : public Poller {
   static const char* operation_to_string(int op);
   void update(int operation, Channel* channel);
   void fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const;
+  int kevent_add(int fd, Channel* channel);
+  int kevent_del(int fd);
+  int kevent_mod(int fd, Channel* channel);
+  int kevent_ctl(int operation, int fd, Channel* channel);
 public:
   explicit AsyncPoller(EventLoop* loop);
   virtual ~AsyncPoller(void);
