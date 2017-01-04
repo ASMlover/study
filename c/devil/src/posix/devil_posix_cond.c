@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 #include "../devil_config.h"
 #if defined(DEVIL_MACOS)
 # include <mach/mach_time.h>

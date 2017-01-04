@@ -29,9 +29,12 @@
 #ifndef DEVIL_TEST_HEADER_H
 #define DEVIL_TEST_HEADER_H
 
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "../src/devil_config.h"
+#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
 
 #if defined(DEVIL_WINDOWS)
 # define inline __inline

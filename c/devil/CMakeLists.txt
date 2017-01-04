@@ -28,10 +28,10 @@
 cmake_minimum_required(VERSION 3.0)
 project(Devil C)
 
-if (CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_definitions(-std=c11)
-    set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-g -O2 -Wall")
-elseif (CMAKE_C_COMPILER_ID MATCHES "MSVC")
+    set(CMAKE_CXX_FLAGS ${CMAKE_C_FLAGS} "-g -O2 -Wall")
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     if (MSVC_VERSION LESS 1900)
         message(FATAL_ERROR "you need Visual Studio 2015 or later")
     endif()
@@ -39,7 +39,7 @@ elseif (CMAKE_C_COMPILER_ID MATCHES "MSVC")
         /D_UNICODE
         /D_CRT_SECURE_NO_WARNINGS
         /D_CRT_NONSTDC_NO_WARNINGS)
-    set(CMAKE_C_FLAGS "-W3 -GF -GS -Gs -Zi")
+    set(CMAKE_CXX_FLAGS "-W3 -GF -GS -Gs -Zi")
 endif()
 
 add_subdirectory(src)
