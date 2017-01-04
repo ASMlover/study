@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <poll.h>
 #include <sys/event.h>
+#include <unistd.h>
 #include "../../basic/TTypes.h"
 #include "../../basic/TLogging.h"
 #include "../TChannel.h"
