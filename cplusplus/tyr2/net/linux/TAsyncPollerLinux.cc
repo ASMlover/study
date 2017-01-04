@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <poll.h>
 #include <sys/epoll.h>
+#include <unistd.h>
 #include "../../basic/TTypes.h"
 #include "../../basic/TLogging.h"
 #include "../TChannel.h"
@@ -150,7 +151,7 @@ void AsyncPoller::update(int operation, Channel* channel) {
   TYRLOG_TRACE << "AsyncPoller::update - epoll_ctl op=" << operation_to_string(operation)
     << " fd=" << fd << " event={" << channel->events_to_string() << "}";
 
-  struct epoll_event event = {0};
+  struct epoll_event event{};
   event.events = channel->get_events();
   event.data.ptr = channel;
   if (epoll_ctl(epollfd_, operation, fd, &event) < 0) {
@@ -163,7 +164,7 @@ void AsyncPoller::update(int operation, Channel* channel) {
 
 void AsyncPoller::fill_active_channels(int nevents, std::vector<Channel*>* active_channels) const {
   assert(basic::implicit_cast<size_t>(nevents) <= epoll_events_.size());
-  for (auto i = 0; i < num_events; ++i) {
+  for (auto i = 0; i < nevents; ++i) {
     Channel* channel = static_cast<Channel*>(epoll_events_[i].data.ptr);
     channel->set_revents(epoll_events_[i].events);
     active_channels->push_back(channel);
