@@ -48,7 +48,7 @@ else()
         posix/devil_posix_thread.c)
 endif()
 
-add_library(devil ${DEVIL_SRC})
+add_library(devil STATIC ${DEVIL_SRC})
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_libraries(devil pthread rt)
