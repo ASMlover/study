@@ -34,11 +34,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../src/devil_config.h"
-#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
 
 #if defined(DEVIL_WINDOWS)
 # define inline __inline
 # define __func__ __FUNCTION__
+#elif defined(DEVIL_LINUX)
+# pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
 #endif
 
 #if defined(DEVIL_WINDOWS)
