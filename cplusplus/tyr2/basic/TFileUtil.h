@@ -24,18 +24,18 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef __TYR_FILEUTIL_HEADER_H__
-#define __TYR_FILEUTIL_HEADER_H__
+#ifndef __TYR_BASIC_FILEUTIL_HEADER_H__
+#define __TYR_BASIC_FILEUTIL_HEADER_H__
 
 #include "TUnCopyable.h"
 #include "TStringPiece.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 class ReadSmallFile : private UnCopyable {
   static const int kBufferSize = 64*1024;
-  int fd_;
-  int errno_;
+  int fd_{};
+  int errno_{};
   char buffer_[kBufferSize];
 public:
   explicit ReadSmallFile(StringArg fname);
@@ -46,7 +46,7 @@ public:
       int64_t* filesz, int64_t* modify_time, int64_t* create_time);
   int read_to_buffer(int* size);
 
-  const char* buffer(void) const {
+  const char* get_buffer(void) const {
     return buffer_;
   }
 };
@@ -59,16 +59,16 @@ int read_file(StringArg fname, int maxsz, String* content,
 }
 
 class AppendFile : private UnCopyable {
-  FILE* stream_;
+  FILE* stream_{};
+  size_t written_bytes_{};
   char buffer_[64*1024];
-  size_t written_bytes_;
 
-  size_t write(const char* buffer, size_t len);
+  size_t write(const char* buf, size_t len);
 public:
   explicit AppendFile(StringArg fname);
   ~AppendFile(void);
 
-  void append(const char* buffer, size_t len);
+  void append(const char* buf, size_t len);
   void flush(void);
 
   size_t written_bytes(void) const {
@@ -76,6 +76,6 @@ public:
   }
 };
 
-}
+}}
 
-#endif // __TYR_FILEUTIL_HEADER_H__
+#endif // __TYR_BASIC_FILEUTIL_HEADER_H__

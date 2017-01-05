@@ -1,4 +1,4 @@
-// Copyright (c) 2016 ASMlover. All rights reserved.
+// Copyright (c) 2017 ASMlover. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -26,18 +26,16 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <assert.h>
 #include <errno.h>
-#include <stdio.h>
-#include <algorithm>
-#include "TLogging.h"
-#include "TFileUtil.h"
+#include "../TLogging.h"
+#include "../TFileUtil.h"
 
-namespace tyr {
+namespace tyr { namespace basic {
 
 ReadSmallFile::ReadSmallFile(StringArg fname)
-  : fd_(open(fname.c_str(), O_RDONLY | O_CLOEXEC)),
-  , errno_(0) {
+  : fd_(open(fname.c_str(), O_RDONLY | O_CLOEXEC)) {
   buffer_[0] = '\0';
   if (fd_ < 0)
     errno_ = errno;
@@ -113,47 +111,4 @@ int ReadSmallFile::read_to_buffer(int* size) {
   return err;
 }
 
-template int ReadSmallFile::read_to_string(int max, std::string* content,
-    int64_t* filesz, int64_t* modify_time, int64_t* create_time);
-
-template int read_file(StringArg fname, int maxsz, std::string* content,
-    int64_t* filesz, int64_t* modify_time, int64_t* create_time);
-
-AppendFile::AppendFile(StringArg fname)
-  : stream_(fopen(fname.c_str(), "ae"))
-  , written_bytes_(0) {
-  assert(nullptr != stream_);
-  setbuffer(stream_, buffer_, sizeof(buffer_));
-}
-
-AppendFile::~AppendFile(void) {
-  fclose(stream_);
-}
-
-void AppendFile::append(const char* buffer, size_t len) {
-  size_t n = write(buffer, len);
-  size_t remain = len - n;
-  while (remain > 0) {
-    size_t x = write(buffer + n, remain);
-    if (0 == x) {
-      int err = ferror(stream_);
-      if (0 != err)
-        fprintf(stderr, "AppendFile::append() faield %s\n", strerror_tl(err));
-      break;
-    }
-    n += x;
-    remain = len - n;
-  }
-
-  written_bytes_ += len;
-}
-
-void AppendFile::flush(void) {
-  fflush(stream_);
-}
-
-size_t AppendFile::write(const char* buffer, size_t len) {
-  return fwrite_unlocked(buffer, 1, len, stream_);
-}
-
-}
+}}

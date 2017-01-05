@@ -31,6 +31,7 @@ set(TYR_BASIC_SOURCES
   TCountdownLatch.cc
   TDate.cc
   TException.cc
+  TFileUtil.cc
   TLogStream.cc
   TLogging.cc
   TStringPiece.cc
@@ -45,10 +46,16 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
   set(TYR_BASIC_SOURCES ${TYR_BASIC_SOURCES}
 
     windows/TCurrentThreadWindows.cc
+	windows/TFileUtilWindows.cc
     windows/TPlatformWindows.cc
     )
 else()
-  set(TYR_BASIC_SOURCES ${TYR_BASIC_SOURCES} posix/TCurrentThreadPosix.cc posix/TPlatformPosix.cc)
+  set(TYR_BASIC_SOURCES ${TYR_BASIC_SOURCES}
+
+	  posix/TCurrentThreadPosix.cc
+	  posix/TFileUtilPosix.cc
+	  posix/TPlatformPosix.cc
+	  )
   if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     set(TYR_BASIC_SOURCES ${TYR_BASIC_SOURCES}
 
