@@ -90,7 +90,7 @@ int ReadSmallFile::read_to_string(int maxsz, String* content,
       else {
         if (n < 0)
           err = errno;
-        break
+        break;
       }
     }
   }
@@ -115,5 +115,8 @@ int ReadSmallFile::read_to_buffer(int* size) {
 
   return err;
 }
+
+template int ReadSmallFile::read_to_string(int, std::string*, int64_t*, int64_t*, int64_t*);
+template int read_file(StringArg, int, std::string*, int64_t*, int64_t*, int64_t*);
 
 }}

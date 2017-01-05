@@ -33,12 +33,6 @@
 
 namespace tyr { namespace basic {
 
-template int ReadSmallFile::read_to_string(int max, std::string* content,
-    int64_t* filesz, int64_t* modify_time, int64_t* create_time);
-
-template int read_file(StringArg fname, int maxsz, std::string* content,
-    int64_t* filesz, int64_t* modify_time, int64_t* create_time);
-
 AppendFile::AppendFile(StringArg fname)
   : stream_(fopen(fname.c_str(), "ae"))
   , written_bytes_(0) {

@@ -27,6 +27,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 #include <assert.h>
 #include <errno.h>
 #include "../TLogging.h"
@@ -86,7 +87,7 @@ int ReadSmallFile::read_to_string(int maxsz, String* content,
       else {
         if (n < 0)
           err = errno;
-        break
+        break;
       }
     }
   }
@@ -110,5 +111,8 @@ int ReadSmallFile::read_to_buffer(int* size) {
 
   return err;
 }
+
+template int ReadSmallFile::read_to_string(int, std::string*, int64_t*, int64_t*, int64_t*);
+template int read_file(StringArg, int, std::string*, int64_t*, int64_t*, int64_t*);
 
 }}

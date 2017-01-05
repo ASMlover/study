@@ -27,6 +27,7 @@
 #ifndef __TYR_BASIC_FILEUTIL_HEADER_H__
 #define __TYR_BASIC_FILEUTIL_HEADER_H__
 
+#include <stdint.h>
 #include "TUnCopyable.h"
 #include "TStringPiece.h"
 
