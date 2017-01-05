@@ -74,8 +74,29 @@ namespace SocketSupport {
 
     if (connfd < 0) {
       int saved_errno = errno;
-      TYRLOG_SYSERR << "SocketSupport::kern_accept failed";
+      TYRLOG_SYSERR << "SocketSupport::kern_accept - failed";
       switch (saved_errno) {
+      case EAGAIN:
+      case EINTR:
+      case EPERM:
+      case EMFILE:
+      case ECONNABORTED:
+      case EPROTO:
+        errno = saved_errno;
+        break;
+      case EBADF:
+      case EFAULT:
+      case EINVAL:
+      case ENFILE:
+      case ENOMEM:
+      case ENOBUFS:
+      case ENOTSOCK:
+      case EOPNOTSUPP:
+        TYRLOG_SYSFATAL << "SocketSupport::kern_accept - unexpected error=" << saved_errno;
+        break;
+      default:
+        TYRLOG_SYSFATAL << "SocketSupport::kern_accept - unknown errno=" << saved_errno;
+        break;
       }
     }
     return connfd;
