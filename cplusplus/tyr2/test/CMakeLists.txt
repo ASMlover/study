@@ -28,4 +28,4 @@
 file(GLOB_RECURSE ALL_SOURCES *.cc)
 
 add_executable(tyr.test ${ALL_SOURCES})
-target_link_libraries(tyr.test tyr)
+target_link_libraries(tyr.test tyr.basic tyr.net)

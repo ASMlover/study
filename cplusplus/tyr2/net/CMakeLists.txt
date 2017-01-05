@@ -25,46 +25,57 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+set(TYR_NET_NAME "tyr.net")
 set(TYR_NET_SOURCES
-  net/TAcceptor.cc
-  net/TBuffer.cc
-  net/TChannel.cc
-  net/TConnector.cc
-  net/TDefaultPoller.cc
-  net/TEventLoop.cc
-  net/TEventLoopThread.cc
-  net/TEventLoopThreadPool.cc
-  net/TInetAddress.cc
-  net/TPollPoller.cc
-  net/TPoller.cc
-  net/TSocket.cc
-  net/TSocketSupport.cc
-  net/TTcpClient.cc
-  net/TTcpConnection.cc
-  net/TTcpServer.cc
-  net/TTimer.cc
-  net/TTimerQueue.cc
+
+  TAcceptor.cc
+  TBuffer.cc
+  TChannel.cc
+  TConnector.cc
+  TDefaultPoller.cc
+  TEventLoop.cc
+  TEventLoopThread.cc
+  TEventLoopThreadPool.cc
+  TInetAddress.cc
+  TPollPoller.cc
+  TPoller.cc
+  TSocket.cc
+  TSocketSupport.cc
+  TTcpClient.cc
+  TTcpConnection.cc
+  TTcpServer.cc
+  TTimer.cc
+  TTimerQueue.cc
   )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
   set(TYR_NET_SOURCES ${TYR_NET_SOURCES}
-    net/windows/TKernWrapperWindows.cc
-    net/windows/TSocketSupportWindows.cc
-    net/windows/TSelectPollerWindows.cc
+
+    windows/TKernWrapperWindows.cc
+    windows/TSocketSupportWindows.cc
+    windows/TSelectPollerWindows.cc
     )
 else()
-  set(TYR_NET_SOURCES ${TYR_NET_SOURCES} net/posix/TSocketSupportPosix.cc)
+  set(TYR_NET_SOURCES ${TYR_NET_SOURCES} posix/TSocketSupportPosix.cc)
   if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     set(TYR_NET_SOURCES ${TYR_NET_SOURCES}
-      net/linux/TAsyncPollerLinux.cc
-      net/linux/TSelectPollerLinux.cc
-      net/linux/TKernWrapperLinux.cc
+
+      linux/TAsyncPollerLinux.cc
+      linux/TSelectPollerLinux.cc
+      linux/TKernWrapperLinux.cc
       )
   elseif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set(TYR_NET_SOURCES ${TYR_NET_SOURCES}
-      net/darwin/TAsyncPollerDarwin.cc
-      net/darwin/TSelectPollerDarwin.cc
-      net/darwin/TKernWrapperDarwin.cc
+
+      darwin/TAsyncPollerDarwin.cc
+      darwin/TSelectPollerDarwin.cc
+      darwin/TKernWrapperDarwin.cc
       )
   endif()
 endif()
+
+add_library(${TYR_NET_NAME} STATIC ${TYR_NET_SOURCES})
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+  target_link_libraries(${TYR_NET_NAME} ws2_32.lib)
+endif()
+target_link_libraries(${TYR_NET_NAME} tyr.basic)
