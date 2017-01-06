@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <assert.h>
 #include <exception>
 #include <iostream>
 #include <string>
@@ -35,6 +36,7 @@
 #include "tpp_backtrace.h"
 #include "tpp_corotine.h"
 #include "tpp_intrusive_ptr.h"
+#include "tpp_atomic.h"
 
 #define TPP_LECHR(a, b, c, d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
 
@@ -119,6 +121,20 @@ int main(int argc, char* argv[]) {
     std::cout << "use_count: " << wp1.lock().use_count() << std::endl;
 
     tpp::basic::SharedArray<IntegerEx> sa1(new IntegerEx[3]);
+  }
+  {
+    // atomic sample
+    tpp::Atomic<int8_t> i8;
+    assert(i8.set(1) == 0);
+
+    tpp::Atomic<int16_t> i16;
+    assert(i16.set(1) == 0);
+
+    tpp::Atomic<int32_t> i32;
+    assert(i32.set(1) == 0);
+
+    tpp::Atomic<int64_t> i64;
+    assert(i64.set(1) == 0);
   }
   {
     // non-recursive mutex sample
