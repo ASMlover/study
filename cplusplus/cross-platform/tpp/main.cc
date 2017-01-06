@@ -36,10 +36,12 @@
 #include "tpp_corotine.h"
 #include "tpp_intrusive_ptr.h"
 
+#define TPP_LECHR(a, b, c, d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
+
 #define TPP_LITTLE_ENDIAN (0x41424344UL)
 #define TPP_BIG_ENDIAN    (0x44434241UL)
 #define TPP_PDP_ENDIAN    (0x42414443UL)
-#define TPP_BYTE_ORDER    (unsigned int)('ABCD')
+#define TPP_BYTE_ORDER    TPP_LECHR('A', 'B', 'C', 'D')
 
 void thread_closure(void* arg) {
   std::cout << "**************** thread_closure ************* " << arg << std::endl;
