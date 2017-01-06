@@ -9,18 +9,37 @@
 
 ## **Building devil** ##
  * **Windows**
+ ``` bat
+  :: step1: Setting environment for using MSVC.
+  :: step2: create build directory:
+    \> cd devil
+    \> mkdir cmake-build
 
-        step1: Setting environment for using MSVC.
-        step2:
-          \> cd devil
-          \> nmake -f Makefile.win.mk
+  :: step3:
+    \> cd cmake-build
 
- * **Linux**
+    :: use Visual Studio
+    \> cmake ..
+    \> msbuild DevilPROJ.sln
 
-          $ cd devil
-          $ make
+    :: use NMake (default building type is `Debug`)
+    \> cmake -G "NMake Makefiles" ..
+    \> nmake
 
- * **macOS**
+    :: build `Release` version
+    \> cmake -G "NMake Makefiles" -D CMAKE_BUILD_TYPE=Release ..
+    \> nmake
+ ```
 
-          $ cd devil
-          $ make -f Makefile.mac.mk
+ * **Linux & macOS**
+ ``` bash
+    $ cd devil
+    $ mkdir cmake-build
+    $ cd cmake-build
+    $ cmake ..
+    $ make
+
+    # build `Release` version
+    $ cmake -D CMAKE_BUILD_TYPE=Release ..
+    $ make
+ ```
