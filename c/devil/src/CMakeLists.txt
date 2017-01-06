@@ -25,33 +25,37 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+set(LIBNAME "devil")
 set(DEVIL_SRC
-    devil_allocator.c
-    devil_array.c
-    devil_list.c
-    devil_queue.c
-    devil_table.c)
+
+  devil_allocator.c
+  devil_array.c
+  devil_list.c
+  devil_queue.c
+  devil_table.c)
 
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
-    set(DEVIL_SRC
-        ${DEVIL_SRC}
-        win/devil_win_cond.c
-        win/devil_win_mutex.c
-        win/devil_win_spinlock.c
-        win/devil_win_thread.c)
+  set(DEVIL_SRC ${DEVIL_SRC}
+
+    win/devil_win_cond.c
+    win/devil_win_mutex.c
+    win/devil_win_spinlock.c
+    win/devil_win_thread.c)
 else()
-    set(DEVIL_SRC
-        ${DEVIL_SRC}
-        posix/devil_posix_cond.c
-        posix/devil_posix_mutex.c
-        posix/devil_posix_spinlock.c
-        posix/devil_posix_thread.c)
+  set(DEVIL_SRC ${DEVIL_SRC}
+
+    posix/devil_posix_cond.c
+    posix/devil_posix_mutex.c
+    posix/devil_posix_spinlock.c
+    posix/devil_posix_thread.c)
 endif()
 
-add_library(devil STATIC ${DEVIL_SRC})
+add_library(${LIBNAME} STATIC ${DEVIL_SRC})
 
-if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    target_link_libraries(devil pthread rt)
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+  target_link_libraries(${LIBNAME} winmm.lib)
+elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
+  target_link_libraries(${LIBNAME} pthread rt)
 elseif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    target_link_libraries(devil pthread c)
+  target_link_libraries(${LIBNAME} pthread c)
 endif()

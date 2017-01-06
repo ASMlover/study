@@ -26,16 +26,17 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 set(TEST_SRC
-    devil_test_allocator.c
-    devil_test_array.c
-    devil_test_cond.c
-    devil_test_list.c
-    devil_test_main.c
-    devil_test_mutex.c
-    devil_test_queue.c
-    devil_test_spinlock.c
-    devil_test_table.c
-    devil_test_thread.c)
+
+  devil_test_allocator.c
+  devil_test_array.c
+  devil_test_cond.c
+  devil_test_list.c
+  devil_test_main.c
+  devil_test_mutex.c
+  devil_test_queue.c
+  devil_test_spinlock.c
+  devil_test_table.c
+  devil_test_thread.c)
 
 add_executable(devil.test ${TEST_SRC})
 target_link_libraries(devil.test devil)
