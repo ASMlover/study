@@ -24,9 +24,11 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#define _XOPEN_SOURCE
 #include <ucontext.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include "../tpp_corotine.h"
 
 #define COROTINE_STACKSIZE  (1024 * 1024)

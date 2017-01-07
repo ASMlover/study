@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <execinfo.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "../tpp_backtrace.h"
 
 #define MAX_STACKLEN  (256)
