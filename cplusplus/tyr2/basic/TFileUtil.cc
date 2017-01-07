@@ -69,6 +69,8 @@ void AppendFile::flush(void) {
 size_t AppendFile::write(const char* buf, size_t len) {
 #if defined(TYR_WINDOWS)
   return _fwrite_nolock(buf, 1, len, stream_);
+#elif defined(TYR_DARWIN)
+  return fwrite(buf, 1, len, stream_);
 #else
   return fwrite_unlocked(buf, 1, len, stream_);
 #endif
