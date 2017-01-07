@@ -59,7 +59,7 @@ basic::Timestamp AsyncPoller::poll(int timeout, std::vector<Channel*>* active_ch
 
   struct timespec ts = {timeout / 1000, timeout % 1000 * 1000000};
   int events_count = static_cast<int>(kqueue_events_.size());
-  int num_events = kevent(kqueuefd_, nullptr, &*kqueue_events_.begin(), events_count, &ts);
+  int num_events = kevent(kqueuefd_, nullptr, 0, &*kqueue_events_.begin(), events_count, &ts);
   int saved_errno = errno;
   if (num_events > 0) {
     TYRLOG_TRACE << "AsyncPoller::poll - " << num_events << " events happened";
@@ -168,7 +168,7 @@ void AsyncPoller::fill_active_channels(int nevents, std::vector<Channel*>* activ
     if (kqueue_events_[i].flags & EV_ERROR)
       revents |= POLLERR;
     if (kqueue_events_[i].flags & EV_EOF)
-      revents |= POLLRDHUP;
+      revents |= POLLHUP;
     if (kqueue_events_[i].filter == EVFILT_READ)
       revents |= POLLIN;
     if (kqueue_events_[i].filter == EVFILT_WRITE)

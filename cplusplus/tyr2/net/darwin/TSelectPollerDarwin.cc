@@ -105,7 +105,7 @@ SelectPoller::~SelectPoller(void) {
 basic::Timestamp SelectPoller::poll(int timeout, std::vector<Channel*>* active_channels) {
   struct timeval tv = {timeout / 1000, timeout % 1000 * 1000};
 
-  sets_out_.copn(sets_in_);
+  sets_out_.copy(sets_in_);
   int num_events = select(max_fd_ + 1, sets_out_.rsets, sets_out_.wsets, sets_out_.esets, &tv);
   int saved_errno = errno;
   if (num_events > 0) {
@@ -198,6 +198,7 @@ void SelectPoller::remove_channel(Channel* channel) {
   assert(channels_[fd] == channel);
   assert(channel->is_none_event());
   assert(index == POLLER_EVENT_ADD || index == POLLER_EVENT_DEL);
+  UNUSED(index);
 
   sets_in_.remove(fd);
   sets_out_.remove(fd);
