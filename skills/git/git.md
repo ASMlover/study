@@ -170,7 +170,7 @@
 
 ## **6. git emoji**
   * :art: - `:art:` 改进代码结构或格式
-  * :zap:/:racehource: - `:zapo:/:racehource:` 提升性能
+  * :zap:/:racehourse: - `:zapo:/:racehourse:` 提升性能
   * :fire: - `:fire:` 移除代码或文件
   * :bug: - `:bug:` 修复bug
   * :ambulance: - `:ambulance:` 重要补丁
