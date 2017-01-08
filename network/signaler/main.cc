@@ -29,23 +29,71 @@
 
 #define UNUSED(x) ((void)x)
 
-int make_fdpair(int& w, int& r) {
-  struct sockaddr_in addr = {0};
-  addr.sin_family = AF_INET;
+struct _EventFd_t {
+  int writer{};
+  int reader{};
+
+  bool is_valid(void) const {
+    return writer > 0 && reader > 0;
+  }
+
+  _EventFd_t& operator=(std::nullptr_t) {
+    writer = 0;
+    reader = 0;
+  }
+};
+
+void eventfd_close(_EventFd_t eventfd) {
+  if (eventfd.reader > 0)
+    closesocket(eventfd.reader);
+  if (eventfd.writer > 0)
+    closesocket(eventfd.writer);
+}
+
+_EventFd_t eventfd_create(void) {
+  struct sockaddr_in addr{};
   addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+  addr.sin_family = AF_INET;
 
+  bool has_error = false;
+  _EventFd_t eventfd{};
   int listener = socket(AF_INET, SOCK_STREAM, 0);
-  bind(listener, (const struct sockaddr*)&addr, sizeof(addr));
-  listen(listener, 1);
-  int addrlen = sizeof(addr);
-  getsockname(listener, (struct sockaddr*)&addr, &addrlen);
+  if (listener < 0)
+    return eventfd;
 
-  w = socket(AF_INET, SOCK_STREAM, 0);
-  connect(w, (struct sockaddr*)&addr, sizeof(addr));
-  r = accept(listener, NULL, NULL);
+  int r = bind(listener, (const struct sockaddr*)&addr, sizeof(addr));
+  if (0 == r) {
+    int addrlen = sizeof(addr);
+    r = getsockname(listener, (struct sockaddr*)&addr, &addrlen);
+  }
+  if (0 == r)
+    r = listen(listener, 1);
 
-  closesocket(listener);
-  return 0;
+  eventfd.writer = socket(AF_INET, SOCK_STREAM, 0);
+  if (eventfd.writer < 0)
+    goto Exit;
+  if (0 == r)
+    r = connect(eventfd.writer, (struct sockaddr*)&addr, sizeof(addr));
+  if (0 == r)
+    eventfd.reader = accept(listener, nullptr, nullptr);
+  if (eventfd.reader <= 0)
+    has_error = true;
+
+Exit:
+  if (has_error)
+    eventfd_close(eventfd);
+  if (listener > 0)
+    closesocket(listener);
+
+  return eventfd;
+}
+
+int eventfd_read(_EventFd_t eventfd, char* buf, size_t len) {
+  return recv(eventfd.reader, buf, len, 0);
+}
+
+int eventfd_write(_EventFd_t eventfd, const char* buf, size_t len) {
+  return send(eventfd.writer, buf, len, 0);
 }
 
 int main(int argc, char* argv[]) {
@@ -55,18 +103,18 @@ int main(int argc, char* argv[]) {
   WSAStartup(MAKEWORD(2, 2), &wd);
 
   static const int RUN_TIMES = 100;
-  int w;
-  int r;
-  make_fdpair(w, r);
+  _EventFd_t eventfd = eventfd_create();
 
   for (int i = 0; i < RUN_TIMES; ++i) {
     char wbuf[8] = "Wakeup!";
-    send(w, wbuf, sizeof(wbuf), 0);
+    eventfd_write(eventfd, wbuf, sizeof(wbuf));
 
     char rbuf[8] = {0};
-    recv(r, rbuf, sizeof(rbuf), 0);
+    eventfd_read(eventfd, rbuf, sizeof(rbuf));
     std::cout << "[" << i+1 << "] read buffer is : " << rbuf << std::endl;
   }
+
+  eventfd_close(eventfd);
 
   WSACleanup();
   return 0;
