@@ -46,40 +46,6 @@ const int kPollMicroSecond = 10000;
 
 IgnoreSigPipe g_ignore_sigpipe;
 
-void EventLoop::abort_not_in_loopthread(void) {
-  TYRLOG_SYSFATAL << "EventLoop::abort_not_in_loopthread - EventLoop " << this
-    << " was created in thread: " << tid_
-    << ", current thread id: " << basic::CurrentThread::tid();
-}
-
-void EventLoop::handle_read(void) {
-  // for waked up
-  uint64_t one = 1;
-  int n = Kern::read_eventfd(wakeup_fd_, &one, sizeof(one));
-  if (n != sizeof(one))
-    TYRLOG_ERROR << "EventLoop::handle_read - reads " << n << " bytes instead of 8";
-}
-
-void EventLoop::do_pending_functors(void) {
-  std::vector<FunctorCallback> functors;
-  calling_pending_functors_ = true;
-
-  {
-    basic::MutexGuard guard(mtx_);
-    functors.swap(pending_functors_);
-  }
-
-  for (auto& fn : functors)
-    fn();
-  calling_pending_functors_ = false;
-}
-
-void EventLoop::debug_active_channels(void) const {
-  for (auto ch : active_channels_)
-    TYRLOG_TRACE << "EventLoop""debug_active_channels - {" << ch->revents_to_string() << "}";
-}
-
-// ================== PUBLIC ==================
 EventLoop::EventLoop(void)
   : tid_(basic::CurrentThread::tid())
   , poller_(Poller::new_default_poller(this))
@@ -246,6 +212,39 @@ void EventLoop::put_in_loop(FunctorCallback&& fn) {
 
 EventLoop* EventLoop::get_loop_of_current_thread(void) {
   return t_loop_this_thread;
+}
+
+void EventLoop::abort_not_in_loopthread(void) {
+  TYRLOG_SYSFATAL << "EventLoop::abort_not_in_loopthread - EventLoop " << this
+    << " was created in thread: " << tid_
+    << ", current thread id: " << basic::CurrentThread::tid();
+}
+
+void EventLoop::handle_read(void) {
+  // for waked up
+  uint64_t one = 1;
+  int n = Kern::read_eventfd(wakeup_fd_, &one, sizeof(one));
+  if (n != sizeof(one))
+    TYRLOG_ERROR << "EventLoop::handle_read - reads " << n << " bytes instead of 8";
+}
+
+void EventLoop::do_pending_functors(void) {
+  std::vector<FunctorCallback> functors;
+  calling_pending_functors_ = true;
+
+  {
+    basic::MutexGuard guard(mtx_);
+    functors.swap(pending_functors_);
+  }
+
+  for (auto& fn : functors)
+    fn();
+  calling_pending_functors_ = false;
+}
+
+void EventLoop::debug_active_channels(void) const {
+  for (auto ch : active_channels_)
+    TYRLOG_TRACE << "EventLoop""debug_active_channels - {" << ch->revents_to_string() << "}";
 }
 
 }}
