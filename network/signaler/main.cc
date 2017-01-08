@@ -27,6 +27,9 @@
 #include <Winsock2.h>
 #include <iostream>
 
+// build command:
+// \> cl.exe /Fe"a.exe" main.cc /EHsc ws2_32.lib
+
 #define UNUSED(x) ((void)x)
 
 struct _EventFd_t {
