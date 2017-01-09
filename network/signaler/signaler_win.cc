@@ -28,7 +28,7 @@
 #include <iostream>
 
 // build command:
-// \> cl.exe /Fe"a.exe" main.cc /EHsc ws2_32.lib
+// \> cl.exe /Fe"a.exe" signaler_win.cc /EHsc ws2_32.lib
 
 #define UNUSED(x) ((void)x)
 
