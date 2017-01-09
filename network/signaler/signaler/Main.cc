@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <assert.h>
 #include <iostream>
 #include "WakeupSignal.h"
 
@@ -35,6 +36,7 @@ int main(int argc, char* argv[]) {
 
   const int RUN_COUNT = 9;
   WakeupSignal wakeup;
+  assert(wakeup.is_opened());
   for (int i = 0; i < RUN_COUNT; ++i) {
     char wbuf[8] = "Wakeup!";
     wakeup.set_signal(wbuf, sizeof(wbuf));

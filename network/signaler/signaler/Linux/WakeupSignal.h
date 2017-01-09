@@ -56,6 +56,10 @@ public:
     return eventfd_;
   }
 
+  bool is_opened(void) const {
+    return eventfd_ > 0;
+  }
+
   int set_signal(const char* buf, size_t len) {
     return write(eventfd_, buf, len);
   }

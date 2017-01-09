@@ -74,6 +74,10 @@ public:
     return fds_[0];
   }
 
+  bool is_opened(void) const {
+    return fds_[0] > 0 && fds_[1] > 0;
+  }
+
   int set_signal(const char* buf, size_t len) {
     return write(fds_[1], buf, len);
   }
