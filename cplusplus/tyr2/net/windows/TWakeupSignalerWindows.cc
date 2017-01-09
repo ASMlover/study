@@ -24,10 +24,8 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <assert.h>
-#include <iostream>
+#include <WinSock2.h>
 #include "../../basic/TLogging.h"
-#include "../TSocketSupport.h"
 #include "TWakeupSignalerWindows.h"
 
 namespace tyr { namespace net {
@@ -43,11 +41,11 @@ WakeupSignaler::~WakeupSignaler(void) {
 }
 
 int WakeupSignaler::set_signal(const void* buf, size_t len) {
-  return SocketSupport::kern_write(wfd_, buf, len);
+  return send(wfd_, (const char*)buf, len, 0);
 }
 
 int WakeupSignaler::get_signal(void* buf, size_t len) {
-  return SocketSupport::kern_read(rfd_, buf, len);
+  return recv(rfd_, (char*)buf, len, 0);
 }
 
 void WakeupSignaler::open_signaler(void) {
