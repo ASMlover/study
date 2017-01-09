@@ -54,6 +54,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     windows/TKernWrapperWindows.cc
     windows/TSocketSupportWindows.cc
     windows/TSelectPollerWindows.cc
+    windows/TWakeupSignalerWindows.cc
     )
 else()
   set(TYR_NET_SOURCES ${TYR_NET_SOURCES} posix/TSocketSupportPosix.cc)
