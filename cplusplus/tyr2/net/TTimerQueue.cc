@@ -74,15 +74,18 @@ TimerQueue::TimerQueue(EventLoop* loop)
   , timerfd_(create_timerfd())
   , timerfd_channel_(loop_, timerfd_)
   , timers_() {
-  timerfd_channel_.set_read_callback(std::bind(&TimerQueue::handle_read, this));
-  timerfd_channel_.enabled_reading();
+  if (timerfd_ > 0) {
+    timerfd_channel_.set_read_callback(std::bind(&TimerQueue::handle_read, this));
+    timerfd_channel_.enabled_reading();
+  }
 }
 
 TimerQueue::~TimerQueue(void) {
-  timerfd_channel_.disabled_all();
-  timerfd_channel_.remove();
-
-  Kern::close_timer(timerfd_);
+  if (timerfd_ > 0) {
+    timerfd_channel_.disabled_all();
+    timerfd_channel_.remove();
+    Kern::close_timer(timerfd_);
+  }
 
   for (auto& t : timers_)
     delete t.second;
@@ -104,10 +107,28 @@ void TimerQueue::cancel(TimerID timerid) {
   loop_->run_in_loop(std::bind(&TimerQueue::cancel_in_loop, this, timerid));
 }
 
+void TimerQueue::poll_timer(void) {
+#if defined(TYR_LINUX)
+  static_assert(false, "TimerQueue::poll_timer - do not call in Linux");
+#else
+  loop_->assert_in_loopthread();
+  basic::Timestamp now(basic::Timestamp::now());
+
+  calling_expired_timers_ = true;
+  cancelling_timers_.clear();
+  std::vector<Entry> expired = get_expired(now);
+  for (auto& entry : expired)
+    entry.second->run();
+  calling_expired_timers_ = false;
+
+  reset(expired, now);
+#endif
+}
+
 void TimerQueue::add_timer_in_loop(Timer* timer) {
   loop_->assert_in_loopthread();
   bool earlist_changed = insert(timer);
-  if (earlist_changed)
+  if (earlist_changed && timerfd_ > 0)
     reset_timerfd(timerfd_, timer->expiry_time());
 }
 
@@ -178,7 +199,7 @@ void TimerQueue::reset(const std::vector<Entry>& expired, basic::Timestamp now) 
 
   if (!timers_.empty())
     next_expired = timers_.begin()->second->expiry_time();
-  if (next_expired.is_valid())
+  if (next_expired.is_valid() && timerfd_ > 0)
     reset_timerfd(timerfd_, next_expired);
 }
 

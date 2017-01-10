@@ -67,6 +67,8 @@ public:
   TimerID add_timer(const TimerCallback& fn, basic::Timestamp when, double interval);
   TimerID add_timer(TimerCallback&& fn, basic::Timestamp when, double interval);
   void cancel(TimerID timerid);
+
+  void poll_timer(void); // Just for Windows and macOS
 };
 
 }}
