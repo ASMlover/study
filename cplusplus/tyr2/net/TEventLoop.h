@@ -35,6 +35,7 @@
 #include "../basic/TCurrentThread.h"
 #include "../basic/TMutex.h"
 #include "../basic/TTimestamp.h"
+#include "TSocketInitializer.h"
 #include "TTimer.h"
 
 namespace tyr { namespace net {
@@ -56,6 +57,7 @@ class EventLoop : private basic::UnCopyable {
   basic::Timestamp poll_return_time_;
   std::unique_ptr<Poller> poller_;
   std::unique_ptr<TimerQueue> timer_queue_;
+  SocketInitializer<> init_; // socket initializer
   std::unique_ptr<WakeupSignaler> wakeup_;
   std::unique_ptr<Channel> wakeup_channel_;
   basic::Any context_;
