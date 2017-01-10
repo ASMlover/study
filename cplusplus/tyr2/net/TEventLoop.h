@@ -42,6 +42,7 @@ namespace tyr { namespace net {
 class Channel;
 class Poller;
 class TimerQueue;
+class WakeupSignaler;
 
 class EventLoop : private basic::UnCopyable {
   typedef std::function<void (void)> FunctorCallback;
@@ -55,7 +56,7 @@ class EventLoop : private basic::UnCopyable {
   basic::Timestamp poll_return_time_;
   std::unique_ptr<Poller> poller_;
   std::unique_ptr<TimerQueue> timer_queue_;
-  int wakeup_fd_;
+  std::unique_ptr<WakeupSignaler> wakeup_;
   std::unique_ptr<Channel> wakeup_channel_;
   basic::Any context_;
   std::vector<Channel*> active_channels_;

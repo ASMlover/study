@@ -33,6 +33,7 @@
 #include "TPoller.h"
 #include "TTimerQueue.h"
 #include "TKernWrapper.h"
+#include "TWakeupSignaler.h"
 #include "TEventLoop.h"
 
 namespace tyr { namespace net {
@@ -50,8 +51,8 @@ EventLoop::EventLoop(void)
   : tid_(basic::CurrentThread::tid())
   , poller_(Poller::new_default_poller(this))
   , timer_queue_(new TimerQueue(this))
-  , wakeup_fd_(Kern::create_eventfd())
-  , wakeup_channel_(new Channel(this, wakeup_fd_)) {
+  , wakeup_(new WakeupSignaler())
+  , wakeup_channel_(new Channel(this, wakeup_->get_reader_fd())) {
   TYRLOG_DEBUG << "EventLoop::EventLoop - created " << this << " in thread " << tid_;
   if (nullptr != t_loop_this_thread) {
     TYRLOG_SYSFATAL << "EventLoop::EventLoop - another EventLoop "
@@ -70,7 +71,6 @@ EventLoop::~EventLoop(void) {
     << " destructs in thread " << basic::CurrentThread::tid();
   wakeup_channel_->disabled_all();
   wakeup_channel_->remove();
-  Kern::close_eventfd(wakeup_fd_);
   t_loop_this_thread = nullptr;
 }
 
@@ -167,7 +167,7 @@ TimerID EventLoop::run_every(double interval, TimerCallback&& fn) {
 
 void EventLoop::wakeup(void) {
   uint64_t one = 1;
-  int n = Kern::write_eventfd(wakeup_fd_, &one, sizeof(one));
+  int n = wakeup_->set_signal(&one, sizeof(one));
   if (n != sizeof(one))
     TYRLOG_ERROR << "EventLoop::wakeup - writes " << n << " bytes instead of 8";
 }
@@ -223,7 +223,7 @@ void EventLoop::abort_not_in_loopthread(void) {
 void EventLoop::handle_read(void) {
   // for waked up
   uint64_t one = 1;
-  int n = Kern::read_eventfd(wakeup_fd_, &one, sizeof(one));
+  int n = wakeup_->get_signal(&one, sizeof(one));
   if (n != sizeof(one))
     TYRLOG_ERROR << "EventLoop::handle_read - reads " << n << " bytes instead of 8";
 }
