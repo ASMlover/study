@@ -45,21 +45,6 @@ namespace Kern {
   int set_timer(int /*timerfd*/, int64_t /*msec*/) {
     return 0;
   }
-
-  int create_eventfd(void) {
-    return 0;
-  }
-
-  void close_eventfd(int /*eventfd*/) {
-  }
-
-  int read_eventfd(int /*eventfd*/, void* /*buf*/, size_t /*len*/) {
-    return 0;
-  }
-
-  int write_eventfd(int /*eventfd*/, const void* /*buf*/, size_t /*len*/) {
-    return 0;
-  }
 }
 
 }}

@@ -65,30 +65,6 @@ namespace Kern {
       TYRLOG_SYSERR << "timerfd_settime";
     return 0;
   }
-
-  int create_eventfd(void) {
-    int eventfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
-    if (eventfd < 0) {
-      TYRLOG_SYSERR << "Failed in eventfd";
-      abort();
-    }
-
-    return eventfd;
-  }
-
-  void close_eventfd(int eventfd) {
-    close(eventfd);
-  }
-
-  int read_eventfd(int eventfd, void* buf, size_t len) {
-    ssize_t n = read(eventfd, buf, len);
-    return static_cast<int>(n);
-  }
-
-  int write_eventfd(int eventfd, const void* buf, size_t len) {
-    ssize_t n = write(eventfd, buf, len);
-    return static_cast<int>(n);
-  }
 }
 
 }}
