@@ -64,6 +64,7 @@ else()
       linux/TAsyncPollerLinux.cc
       linux/TSelectPollerLinux.cc
       linux/TKernWrapperLinux.cc
+      linux/TWakeupSignalerLinux.cc
       )
   elseif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set(TYR_NET_SOURCES ${TYR_NET_SOURCES}
@@ -71,6 +72,7 @@ else()
       darwin/TAsyncPollerDarwin.cc
       darwin/TSelectPollerDarwin.cc
       darwin/TKernWrapperDarwin.cc
+      darwin/TWakeupSignalerDarwin.cc
       )
   endif()
 endif()

@@ -32,7 +32,9 @@
 #if defined(TYR_WINDOWS)
 # include "windows/TWakeupSignalerWindows.h"
 #elif defined(TYR_LINUX)
+# include "linux/TWakeupSignalerLinux.h"
 #elif defined(TYR_DARWIN)
+# include "darwin/TWakeupSignalerDarwin.h"
 #endif
 
 #endif // __TYR_NET_WAKEUPSIGNALER_HEADER_H__
