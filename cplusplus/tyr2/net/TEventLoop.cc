@@ -97,6 +97,9 @@ void EventLoop::loop(void) {
     event_handling_ = false;
 
     do_pending_functors();
+#if !defined(TYR_LINUX)
+    timer_queue_->poll_timer();
+#endif
   }
 
   TYRLOG_TRACE << "EventLoop::loop - " << this << " stop looping";
