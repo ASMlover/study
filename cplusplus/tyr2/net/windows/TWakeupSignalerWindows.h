@@ -27,6 +27,7 @@
 #ifndef __TYR_NET_WINDOWS_WAKESIGNALERWINDOWS_HEADER_H__
 #define __TYR_NET_WINDOWS_WAKESIGNALERWINDOWS_HEADER_H__
 
+#include <stddef.h>
 #include "../../basic/TUnCopyable.h"
 
 namespace tyr { namespace net {
@@ -50,6 +51,10 @@ public:
 
   int get_reader_fd(void) const {
     return rfd_;
+  }
+
+  int get_writer_fd(void) const {
+    return wfd_;
   }
 };
 
