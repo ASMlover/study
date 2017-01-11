@@ -108,46 +108,34 @@ enum {
 };
 
 int kern_mutex_do_lock(KernMutex* mtx, bool try_lock = false) {
-  int r = WAIT_TIMEOUT;
   pid_t tid = kern_gettid();
+  int r = WAIT_TIMEOUT;
 
   if (!try_lock) {
-    if (mtx->tid != tid) {
+    if (mtx->tid != tid)
       mtx->lock();
-      mtx->tid = tid;
-    }
-    ++mtx->count;
-    return KMUTEX_SUCCESS;
+    r = WAIT_OBJECT_0;
   }
   else {
-    if (!try_lock) {
-      if (mtx->tid != tid)
-        mtx->lock();
-      r = WAIT_OBJECT_0;
-    }
-    else {
-      if (mtx->tid != tid)
-        r = mtx->try_lock() ? WAIT_OBJECT_0 : WAIT_TIMEOUT;
-      else
-        r = WAIT_OBJECT_0;
-    }
-
-    if (r != WAIT_OBJECT_0 && r != WAIT_ABANDONED)
-      ;
-    else if (1 < ++mtx->count)
-      r = (--mtx->count, WAIT_TIMEOUT);
+    if (mtx->tid != tid)
+      r = mtx->try_lock() ? WAIT_OBJECT_0 : WAIT_TIMEOUT;
     else
-      mtx->tid = tid;
+      r = WAIT_OBJECT_0;
+  }
 
-    switch (r) {
-      case WAIT_OBJECT_0:
-      case WAIT_ABANDONED:
-        return KMUTEX_SUCCESS;
-      case WAIT_TIMEOUT:
-        return try_lock ? KMUTEX_BUSY : KMUTEX_TIMEDOUT;
-      default:
-        return KMUTEX_ERROR;
-    }
+  if (r != WAIT_OBJECT_0 && r != WAIT_ABANDONED)
+    ;
+  else if (1 < ++mtx->count)
+    r = (--mtx->count, WAIT_TIMEOUT);
+  else
+    mtx->tid = tid;
+
+  switch (r) {
+  case WAIT_OBJECT_0:
+  case WAIT_ABANDONED:
+    return KMUTEX_SUCCESS;
+  case WAIT_TIMEOUT:
+    return KMUTEX_BUSY;
   }
 
   return KMUTEX_ERROR;
@@ -174,15 +162,19 @@ int kern_mutex_destroy(KernMutex* /*mtx*/) {
 }
 
 int kern_mutex_lock(KernMutex* mtx) {
-  return kern_mutex_check_return(kern_mutex_do_lock(mtx));
+  // FIXME: need implementation non-recursive mutex in Windows
+  // return kern_mutex_check_return(kern_mutex_do_lock(mtx));
+  return mtx->lock(), KMUTEX_SUCCESS;
 }
 
 int kern_mutex_unlock(KernMutex* mtx) {
-  if (0 == --mtx->count) {
-    mtx->tid = -1;
-    mtx->unlock();
-  }
-  return KMUTEX_SUCCESS;
+  // FIXME: need implementation non-recursive mutex in Windows
+  // if (0 == --mtx->count) {
+  //   mtx->tid = -1;
+  //   mtx->unlock();
+  // }
+  // return KMUTEX_SUCCESS;
+  return mtx->unlock(), KMUTEX_SUCCESS;
 }
 
 int kern_this_thread_setname(const char* name) {
