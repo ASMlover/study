@@ -109,7 +109,7 @@ void TimerQueue::cancel(TimerID timerid) {
 
 void TimerQueue::poll_timer(void) {
 #if defined(TYR_LINUX)
-  static_assert(false, "TimerQueue::poll_timer - do not call in Linux");
+  TYRLOG_SYSFATAL << "TimerQueue::poll_timer - do not call in Linux";
 #else
   loop_->assert_in_loopthread();
   basic::Timestamp now(basic::Timestamp::now());

@@ -31,8 +31,10 @@
 
 namespace tyr { namespace net {
 
+template <int Major = 0, int Minor = 0>
 class SocketInitializer : private basic::UnCopyable {
   // dummy socket initializer for posix
+  static_assert(Major == 0 && Minor == 0, "should be a dummy initialier");
 };
 
 }}
