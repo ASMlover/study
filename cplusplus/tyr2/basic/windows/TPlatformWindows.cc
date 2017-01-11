@@ -153,6 +153,16 @@ inline int kern_mutex_check_return(int r, int other) {
   return r;
 }
 
+inline void kern_mutex_clear_owner(KernMutex* mtx) {
+  mtx->tid = -1;
+  --mtx->count;
+}
+
+inline void kern_mutex_reset_owner(KernMutex* mtx) {
+  mtx->tid = kern_gettid();
+  ++mtx->count;
+}
+
 int kern_mutex_init(KernMutex* /*mtx*/) {
   return KMUTEX_SUCCESS;
 }
@@ -162,19 +172,15 @@ int kern_mutex_destroy(KernMutex* /*mtx*/) {
 }
 
 int kern_mutex_lock(KernMutex* mtx) {
-  // FIXME: need implementation non-recursive mutex in Windows
-  // return kern_mutex_check_return(kern_mutex_do_lock(mtx));
-  return mtx->lock(), KMUTEX_SUCCESS;
+  return kern_mutex_check_return(kern_mutex_do_lock(mtx));
 }
 
 int kern_mutex_unlock(KernMutex* mtx) {
-  // FIXME: need implementation non-recursive mutex in Windows
-  // if (0 == --mtx->count) {
-  //   mtx->tid = -1;
-  //   mtx->unlock();
-  // }
-  // return KMUTEX_SUCCESS;
-  return mtx->unlock(), KMUTEX_SUCCESS;
+  if (0 == --mtx->count) {
+    mtx->tid = -1;
+    mtx->unlock();
+  }
+  return KMUTEX_SUCCESS;
 }
 
 int kern_this_thread_setname(const char* name) {
@@ -208,11 +214,19 @@ int kern_cond_broadcast(KernCond* cond) {
 }
 
 int kern_cond_wait(KernCond* cond, KernMutex* mtx) {
-  return SleepConditionVariableCS(cond, (CRITICAL_SECTION*)mtx, INFINITE) ? 0 : -1;
+  kern_mutex_clear_owner(mtx);
+  int r = SleepConditionVariableCS(cond, (CRITICAL_SECTION*)mtx, INFINITE) ? 0 : -1;
+  kern_mutex_reset_owner(mtx);
+
+  return r;
 }
 
 int kern_cond_timedwait(KernCond* cond, KernMutex* mtx, uint64_t nanosec) {
-  return SleepConditionVariableCS(cond, (CRITICAL_SECTION*)mtx, static_cast<DWORD>(nanosec / 1e6)) ? 0 : -1;
+  kern_mutex_clear_owner(mtx);
+  int r = SleepConditionVariableCS(cond, (CRITICAL_SECTION*)mtx, static_cast<DWORD>(nanosec / 1e6)) ? 0 : -1;
+  kern_mutex_reset_owner(mtx);
+
+  return r;
 }
 
 UINT WINAPI kern_thread_start_routine(void* arg) {
