@@ -42,6 +42,8 @@ ThreadPool::ThreadPool(const std::string& name)
 }
 
 ThreadPool::~ThreadPool(void) {
+  if (running_)
+    stop();
 }
 
 size_t ThreadPool::task_size(void) const {
