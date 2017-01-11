@@ -1,4 +1,4 @@
-// Copyright (c) 2016 ASMlover. All rights reserved.
+// Copyright (c) 2017 ASMlover. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -24,47 +24,43 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <sys/timerfd.h>
-#include <sys/eventfd.h>
-#include <stdlib.h>
-#include <time.h>
-#include <unistd.h>
+#ifndef __TYR_NET_WINDOWS_SOCKETINIIALIZERWINDOWS_HEADER_H__
+#define __TYR_NET_WINDOWS_SOCKETINIIALIZERWINDOWS_HEADER_H__
+
+#include <WinSock2.h>
+#include "../../basic/TUnCopyable.h"
 #include "../../basic/TLogging.h"
-#include "../TKernWrapper.h"
 
 namespace tyr { namespace net {
 
-namespace Kern {
-  int create_timer(void) {
-    int timerfd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
-    if (timerfd < 0)
-      TYRLOG_SYSFATAL << "Failed in timerfd_create";
+template <int Major = 2, int Minor = 2>
+class SocketInitializer : private basic::UnCopyable {
+  long init_count_{};
 
-    return timerfd;
+  void startup(unsigned char major, unsigned char minor) {
+    if (InterlockedIncrement(&init_count_) == 1) {
+      WSADATA wd;
+      int r = WSAStartup(MAKEWORD(major, minor), &wd);
+
+      if (r != 0)
+        TYRLOG_SYSFATAL << "SocketInitializer::startup - WinSock2 startup failed";
+    }
   }
 
-  void close_timer(int timerfd) {
-    close(timerfd);
+  void cleanup(void) {
+    if (InterlockedDecrement(&init_count_) == 0)
+      WSACleanup();
+  }
+public:
+  SocketInitializer(void) {
+    startup(Major, Minor);
   }
 
-  int read_timer(int timerfd, void* buf, size_t len) {
-    ssize_t n = read(timerfd, buf, len);
-    return static_cast<int>(n);
+  ~SocketInitializer(void) {
+    cleanup();
   }
-
-  int set_timer(int timerfd, int64_t msec) {
-    struct itimerspec oldt{};
-    struct itimerspec newt{};
-
-    struct timespec ts;
-    ts.tv_sec = static_cast<time_t>(msec / 1000000);
-    ts.tv_nsec = static_cast<long>((msec % 1000000) * 1000);
-    newt.it_value = ts;
-    int r = timerfd_settime(timerfd, 0, &newt, &oldt);
-    if (r)
-      TYRLOG_SYSERR << "timerfd_settime";
-    return 0;
-  }
-}
+};
 
 }}
+
+#endif // __TYR_NET_WINDOWS_SOCKETINIIALIZERWINDOWS_HEADER_H__

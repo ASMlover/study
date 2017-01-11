@@ -107,37 +107,47 @@ enum {
   KMUTEX_ERROR,
 };
 
-int kern_mutex_do_lock(KernMutex* mtx, bool try_lock = FALSE) {
+int kern_mutex_do_lock(KernMutex* mtx, bool try_lock = false) {
   int r = WAIT_TIMEOUT;
   pid_t tid = kern_gettid();
 
   if (!try_lock) {
-    if (mtx->tid != tid)
+    if (mtx->tid != tid) {
       mtx->lock();
-    r = WAIT_OBJECT_0;
+      mtx->tid = tid;
+    }
+    ++mtx->count;
+    return KMUTEX_SUCCESS;
   }
   else {
-    if (mtx->tid != tid)
-      r = mtx->try_lock() ? WAIT_OBJECT_0 : WAIT_TIMEOUT;
-    else
+    if (!try_lock) {
+      if (mtx->tid != tid)
+        mtx->lock();
       r = WAIT_OBJECT_0;
-  }
+    }
+    else {
+      if (mtx->tid != tid)
+        r = mtx->try_lock() ? WAIT_OBJECT_0 : WAIT_TIMEOUT;
+      else
+        r = WAIT_OBJECT_0;
+    }
 
-  if (r != WAIT_OBJECT_0 && r != WAIT_ABANDONED)
-    ;
-  else if (1 < ++mtx->count)
-    r = (--mtx->count, WAIT_TIMEOUT);
-  else
-    mtx->tid = tid;
+    if (r != WAIT_OBJECT_0 && r != WAIT_ABANDONED)
+      ;
+    else if (1 < ++mtx->count)
+      r = (--mtx->count, WAIT_TIMEOUT);
+    else
+      mtx->tid = tid;
 
-  switch (r) {
-  case WAIT_OBJECT_0:
-  case WAIT_ABANDONED:
-    return KMUTEX_SUCCESS;
-  case WAIT_TIMEOUT:
-    return try_lock ? KMUTEX_BUSY : KMUTEX_TIMEDOUT;
-  default:
-    return KMUTEX_ERROR;
+    switch (r) {
+      case WAIT_OBJECT_0:
+      case WAIT_ABANDONED:
+        return KMUTEX_SUCCESS;
+      case WAIT_TIMEOUT:
+        return try_lock ? KMUTEX_BUSY : KMUTEX_TIMEDOUT;
+      default:
+        return KMUTEX_ERROR;
+    }
   }
 
   return KMUTEX_ERROR;

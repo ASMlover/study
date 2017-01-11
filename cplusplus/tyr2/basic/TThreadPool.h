@@ -75,6 +75,7 @@ public:
 
   void start(int thrd_num);
   void stop(void);
+  void run(const TaskCallback& cb);
   void run(TaskCallback&& cb);
 private:
   bool is_full(void) const;

@@ -41,6 +41,9 @@ ThreadPool::ThreadPool(const std::string& name)
   , running_(false) {
 }
 
+ThreadPool::~ThreadPool(void) {
+}
+
 size_t ThreadPool::task_size(void) const {
   MutexGuard guard(mtx_);
   return tasks_.size();
@@ -70,6 +73,21 @@ void ThreadPool::stop(void) {
 
   for (auto& thrd : threads_)
     thrd->join();
+}
+
+void ThreadPool::run(const TaskCallback& cb) {
+  if (threads_.empty()) {
+    cb();
+  }
+  else {
+    MutexGuard guard(mtx_);
+    while (is_full())
+      not_full_.wait();
+    assert(!is_full());
+
+    tasks_.push_back(cb);
+    not_empty_.signal();
+  }
 }
 
 void ThreadPool::run(TaskCallback&& cb) {
