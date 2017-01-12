@@ -31,17 +31,17 @@
 
 namespace tpp {
 
-class CriticalSection {
+class RecursiveMutex {
   CRITICAL_SECTION cs_;
 
-  CriticalSection(const CriticalSection&) = delete;
-  CriticalSection& operator=(const CriticalSection&) = delete;
+  RecursiveMutex(const RecursiveMutex&) = delete;
+  RecursiveMutex& operator=(const RecursiveMutex&) = delete;
 public:
-  CriticalSection(void) {
+  RecursiveMutex(void) {
     InitializeCriticalSectionEx(&cs_, 4000, 0);
   }
 
-  ~CriticalSection(void) {
+  ~RecursiveMutex(void) {
     DeleteCriticalSection(&cs_);
   }
 
@@ -64,7 +64,7 @@ struct XTime {
 };
 
 class NonRecursiveMutex {
-  CriticalSection cs_{};
+  RecursiveMutex cs_{};
   long thread_id_{-1};
   int count_{};
 
@@ -107,7 +107,7 @@ class NonRecursiveMutex {
     case WAIT_ABANDONED:
       return _MUTEX_SUCCESS;
     case WAIT_TIMEOUT:
-      return for_try ? _MUTEX_BUSY : _MUTEX_TIMEDOUT;
+      return _MUTEX_BUSY;
     default:
       return _MUTEX_ERROR;
     }
@@ -123,6 +123,16 @@ class NonRecursiveMutex {
     if (r != _MUTEX_SUCCESS && r != other)
       abort();
     return r;
+  }
+
+  void clear_owner(void) {
+    thread_id_ = -1;
+    --count_;
+  }
+
+  void reset_owner(void) {
+    thread_id_ = static_cast<long>(GetCurrentThreadId());
+    ++count_;
   }
 public:
   NonRecursiveMutex(void) = default;
@@ -152,7 +162,7 @@ public:
 }
 
 tpp::NonRecursiveMutex g_nr_mutex;
-tpp::CriticalSection g_mutex;
+tpp::RecursiveMutex g_mutex;
 int g_counter;
 
 static UINT WINAPI thread_closure_nr(void* /*arg*/) {
