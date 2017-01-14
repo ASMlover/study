@@ -29,6 +29,7 @@ set(NEPTUNELIB_NAME "neptune")
 set(NEPTUNE_SOURCES
 
   Buffer.cc
+  Kern/SocketFd.cc
   )
 
 add_library(${NEPTUNELIB_NAME} STATIC ${NEPTUNE_SOURCES})
