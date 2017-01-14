@@ -32,4 +32,16 @@ set(NEPTUNE_SOURCES
   Kern/SocketFd.cc
   )
 
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+  set(NEPTUNE_SOURCES ${NEPTUNE_SOURCES}
+
+    Kern/Windows/SocketFd.cc
+    )
+else()
+  set(NEPTUNE_SOURCES ${NEPTUNE_SOURCES}
+
+    Kern/Posix/SocketFd.cc
+    )
+endif()
+
 add_library(${NEPTUNELIB_NAME} STATIC ${NEPTUNE_SOURCES})
