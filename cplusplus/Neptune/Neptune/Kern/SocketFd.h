@@ -50,13 +50,14 @@
   typedef struct iovec Iovec_t;
   typedef struct pollfd Pollfd_t;
 #endif
-#include <cstdint>
 #include <string>
 
 namespace Neptune {
 
 class SocketFd : public Chaos::Copyable {
   int sockfd_{};
+
+  void set_nonblock(int sockfd);
 public:
   SocketFd(int sockfd)
     : sockfd_(sockfd) {
@@ -66,31 +67,37 @@ public:
     return sockfd_;
   }
 
-  bool open(sa_family_t family);
+  bool is_opened(void) const {
+    return sockfd_ > 0;
+  }
+
+  void open(sa_family_t family);
   void shutdown_read(void);
   void shutdown_write(void);
+  void shutdown_all(void);
   void close(void);
-  bool bind(const struct sockaddr* addr);
-  bool listen(void);
-  int accept(struct sockaddr* addr);
-  bool connect(const struct sockaddr* addr);
+  void bind(const struct sockaddr* addr);
+  void listen(void);
+  int accept(struct sockaddr_in6* addr);
+  int connect(const struct sockaddr* addr);
   ssize_t read(std::size_t len, void* buf);
   ssize_t write(const void* buf, std::size_t len);
   void set_iovec(Iovec_t& vec, char* buf, size_t len);
   ssize_t readv(int niov, Iovec_t* iov);
 
   void set_nonblock(void);
-  void set_option(int level, int optname, int optval);
+  bool set_option(int level, int optname, int optval);
+  bool get_option(int level, int optname, int* optval, socklen_t* optlen);
 
-  std::string to_string(const struct sockaddr* addr, bool ip_only = true);
-  std::string to_string(const struct sockaddr* addr);
-  void get_address(const char* ip, std::uint16_t port, struct sockaddr_in* addr);
-  void get_address(const char* ip, std::uint16_t port, struct sockaddr_in6* addr);
-
-  int get_error(void);
+  int get_errno(void);
   struct sockaddr_in6 get_local(void) const;
   struct sockaddr_in6 get_peer(void) const;
   bool is_self_connect(void) const;
+
+  static std::string to_string(const struct sockaddr* addr, bool ip_only = true);
+  static std::string to_string(const struct sockaddr* addr);
+  static void get_address(const char* ip, std::uint16_t port, struct sockaddr_in* addr);
+  static void get_address(const char* ip, std::uint16_t port, struct sockaddr_in6* addr);
 
   static struct sockaddr* cast(struct sockaddr_in* addr);
   static const struct sockaddr* cast(const struct sockaddr_in* addr);
