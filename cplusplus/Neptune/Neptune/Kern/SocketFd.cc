@@ -27,7 +27,6 @@
 #include <Chaos/Platform.h>
 #if defined(CHAOS_WINDOWS)
 # include <WinSock2.h>
-# include <Windows.h>
 #else
 # include <sys/socket.h>
 # include <fcntl.h>
@@ -39,6 +38,7 @@
 #include <Chaos/Types.h>
 #include <Chaos/Logging/Logging.h>
 #include <Neptune/Endian.h>
+#include <Neptune/Kern/SockAddr.h>
 #include <Neptune/Kern/SocketFd.h>
 
 namespace Neptune {
@@ -63,7 +63,7 @@ void SocketFd::listen(void) {
 
 int SocketFd::accept(struct sockaddr_in6* addr) {
   socklen_t addrlen = static_cast<socklen_t>(sizeof(*addr));
-  int connfd = ::accept(sockfd_, cast(addr), &addrlen);
+  int connfd = ::accept(sockfd_, SockAddr::cast(addr), &addrlen);
   set_nonblock(connfd);
 
   if (connfd < 0) {
@@ -115,7 +115,7 @@ int SocketFd::get_errno(void) {
 struct sockaddr_in6 SocketFd::get_local(void) const {
   struct sockaddr_in6 addr{};
   socklen_t addrlen = static_cast<socklen_t>(sizeof(addr));
-  if (getsockname(sockfd_, cast(&addr), &addrlen) < 0)
+  if (getsockname(sockfd_, SockAddr::cast(&addr), &addrlen) < 0)
     CHAOSLOG_SYSERR << "SocketFd::get_local";
   return addr;
 }
@@ -123,7 +123,7 @@ struct sockaddr_in6 SocketFd::get_local(void) const {
 struct sockaddr_in6 SocketFd::get_peer(void) const {
   struct sockaddr_in6 addr{};
   socklen_t addrlen = static_cast<socklen_t>(sizeof(addr));
-  if (getpeername(sockfd_, cast(&addr), &addrlen) < 0)
+  if (getpeername(sockfd_, SockAddr::cast(&addr), &addrlen) < 0)
     CHAOSLOG_SYSERR << "SocketFd::get_peer";
   return addr;
 }
