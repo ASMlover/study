@@ -37,7 +37,7 @@ struct sockaddr_in6;
 namespace Neptune {
 
 namespace SockAddr {
-  std::string to_string(const struct sockaddr* addr, bool ip_only = true);
+  std::string to_string(const struct sockaddr* addr, bool ip_only);
   std::string to_string(const struct sockaddr* addr);
   void get_address(const char* ip, std::uint16_t port, struct sockaddr_in* addr);
   void get_address(const char* ip, std::uint16_t port, struct sockaddr_in6* addr);
