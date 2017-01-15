@@ -28,9 +28,10 @@
 set(NEPTUNELIB_NAME "neptune")
 set(NEPTUNE_SOURCES
 
-  Buffer.cc
   Kern/SocketFd.cc
   Kern/SockAddr.cc
+  Buffer.cc
+  InetAddress.cc
   )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
