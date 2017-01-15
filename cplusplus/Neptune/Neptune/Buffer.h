@@ -36,7 +36,7 @@
 
 namespace Neptune {
 
-class Buffer {
+class Buffer : public Chaos::Copyable {
   std::vector<char> buff_;
   std::size_t rindex_; // reader index
   std::size_t windex_; // writer index
