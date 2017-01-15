@@ -87,31 +87,4 @@ bool SocketFd::get_option(int level, int optname, int* optval, socklen_t* optlen
   return getsockopt(sockfd_, level, optname, (char*)optval, optlen) == 0;
 }
 
-std::string SocketFd::to_string(const struct sockaddr* addr, bool /*ip_only*/) {
-  char buf[64]{};
-  if (addr->sa_family == AF_INET) {
-    const struct sockaddr_in* addr4 = to_v4(addr);
-    InetNtop(AF_INET, (PVOID)&addr4->sin_addr, buf, sizeof(buf));
-  }
-  else if (addr->sa_family == AF_INET6) {
-    const struct sockaddr_in6* addr6 = to_v6(addr);
-    InetNtop(AF_INET6, (PVOID)&addr6->sin6_addr, buf, sizeof(buf));
-  }
-  return buf;
-}
-
-void SocketFd::get_address(const char* ip, std::uint16_t port, struct sockaddr_in* addr) {
-  addr->sin_family = AF_INET;
-  addr->sin_port = Neptune::h2n16(port);
-  if (InetPton(AF_INET, ip, &addr->sin_addr) <= 0)
-    CHAOSLOG_SYSERR << "SocketFd::get_address(ipv4) - failed";
-}
-
-void SocketFd::get_address(const char* ip, std::uint16_t port, struct sockaddr_in6* addr) {
-  addr->sin6_family = AF_INET6;
-  addr->sin6_port = Neptune::h2n16(port);
-  if (InetPton(AF_INET6, ip, &addr->sin6_addr) <= 0)
-    CHAOSLOG_SYSERR << "SocketFd::get_address(ipv6) - failed";
-}
-
 }

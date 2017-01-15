@@ -144,38 +144,4 @@ bool SocketFd::is_self_connect(void) const {
   return false;
 }
 
-std::string SocketFd::to_string(const struct sockaddr* addr) {
-  std::string ip = to_string(addr, true);
-  const struct sockaddr_in* addr4 = to_v4(addr);
-  std::uint16_t port = Neptune::n2h16(addr4->sin_port);
-
-  char buf[64]{};
-  std::snprintf(buf, sizeof(buf), "%s:%u", ip.c_str(), port);
-  return buf;
-}
-
-struct sockaddr* SocketFd::cast(struct sockaddr_in* addr) {
-  return static_cast<struct sockaddr*>(Chaos::implicit_cast<void*>(addr));
-}
-
-const struct sockaddr* SocketFd::cast(const struct sockaddr_in* addr) {
-  return static_cast<const struct sockaddr*>(Chaos::implicit_cast<const void*>(addr));
-}
-
-struct sockaddr* SocketFd::cast(struct sockaddr_in6* addr) {
-  return static_cast<struct sockaddr*>(Chaos::implicit_cast<void*>(addr));
-}
-
-const struct sockaddr* SocketFd::cast(const struct sockaddr_in6* addr) {
-  return static_cast<const struct sockaddr*>(Chaos::implicit_cast<const void*>(addr));
-}
-
-const struct sockaddr_in* SocketFd::to_v4(const struct sockaddr* addr) {
-  return static_cast<const struct sockaddr_in*>(Chaos::implicit_cast<const void*>(addr));
-}
-
-const struct sockaddr_in6* SocketFd::to_v6(const struct sockaddr* addr) {
-  return static_cast<const struct sockaddr_in6*>(Chaos::implicit_cast<const void*>(addr));
-}
-
 }

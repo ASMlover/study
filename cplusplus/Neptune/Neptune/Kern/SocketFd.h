@@ -38,17 +38,14 @@
   typedef int in_addr_t;
   typedef SSIZE_T ssize_t;
   typedef WSABUF Iovec_t;
-  typedef WSAPOLLFD Pollfd_t;
 #else
 # include <arpa/inet.h>
 # include <netinet/in.h>
 # include <netinet/tcp.h>
 # include <sys/types.h>
 # include <netdb.h>
-# include <poll.h>
 
   typedef struct iovec Iovec_t;
-  typedef struct pollfd Pollfd_t;
 #endif
 #include <string>
 
@@ -63,7 +60,7 @@ public:
     : sockfd_(sockfd) {
   }
 
-  int get_fd(void) const {
+  int get_sockfd(void) const {
     return sockfd_;
   }
 
@@ -93,18 +90,6 @@ public:
   struct sockaddr_in6 get_local(void) const;
   struct sockaddr_in6 get_peer(void) const;
   bool is_self_connect(void) const;
-
-  static std::string to_string(const struct sockaddr* addr, bool ip_only = true);
-  static std::string to_string(const struct sockaddr* addr);
-  static void get_address(const char* ip, std::uint16_t port, struct sockaddr_in* addr);
-  static void get_address(const char* ip, std::uint16_t port, struct sockaddr_in6* addr);
-
-  static struct sockaddr* cast(struct sockaddr_in* addr);
-  static const struct sockaddr* cast(const struct sockaddr_in* addr);
-  static struct sockaddr* cast(struct sockaddr_in6* addr);
-  static const struct sockaddr* cast(const struct sockaddr_in6* addr);
-  static const struct sockaddr_in* to_v4(const struct sockaddr* addr);
-  static const struct sockaddr_in6* to_v6(const struct sockaddr* addr);
 };
 
 }
