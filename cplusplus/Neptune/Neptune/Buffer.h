@@ -280,7 +280,7 @@ public:
     return buff_.capacity();
   }
 
-  // ssize_t read_sockfd(int sockfd, int& saved_errno);
+  int read_sockfd(int sockfd, int& saved_errno);
 private:
   char* begin(void) {
     return &*buff_.begin();
