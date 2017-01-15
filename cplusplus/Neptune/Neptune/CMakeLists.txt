@@ -30,18 +30,25 @@ set(NEPTUNE_SOURCES
 
   Buffer.cc
   Kern/SocketFd.cc
+  Kern/SockAddr.cc
   )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
   set(NEPTUNE_SOURCES ${NEPTUNE_SOURCES}
 
     Kern/Windows/SocketFd.cc
+    Kern/Windows/SockAddr.cc
     )
 else()
   set(NEPTUNE_SOURCES ${NEPTUNE_SOURCES}
 
     Kern/Posix/SocketFd.cc
+    Kern/Posix/SockAddr.cc
     )
 endif()
 
 add_library(${NEPTUNELIB_NAME} STATIC ${NEPTUNE_SOURCES})
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+  target_link_libraries(${NEPTUNELIB_NAME} ws2_32.lib)
+else()
+endif()
