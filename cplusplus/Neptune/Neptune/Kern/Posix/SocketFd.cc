@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netdb.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <cerrno>
@@ -81,7 +82,7 @@ void SocketFd::set_iovec(Iovec_t& vec, char* buf, size_t len) {
 }
 
 ssize_t SocketFd::readv(int niov, Iovec_t* iov) {
-  return readv(sockfd_, iov, niov);
+  return ::readv(sockfd_, iov, niov);
 }
 
 bool SocketFd::set_option(int level, int optname, int optval) {

@@ -39,10 +39,6 @@
   typedef SSIZE_T ssize_t;
   typedef WSABUF Iovec_t;
 #else
-# include <arpa/inet.h>
-# include <netinet/in.h>
-# include <netinet/tcp.h>
-# include <sys/types.h>
 # include <netdb.h>
 
   typedef struct iovec Iovec_t;
