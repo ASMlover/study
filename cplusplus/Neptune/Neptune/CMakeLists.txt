@@ -32,6 +32,7 @@ set(NEPTUNE_SOURCES
   Kern/SockAddr.cc
   Buffer.cc
   InetAddress.cc
+  Timer.cc
   )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
