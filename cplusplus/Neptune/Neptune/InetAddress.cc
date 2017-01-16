@@ -66,20 +66,20 @@ InetAddress::InetAddress(std::uint16_t port, bool loopback_only, bool ipv6) {
 InetAddress::InetAddress(Chaos::StringPiece ip, std::uint16_t port, bool ipv6) {
   if (ipv6) {
     memset(&addr6_, 0, sizeof(addr6_));
-    SockAddr::get_address(ip.data(), port, &addr6_);
+    NetOps::addr::get_address(ip.data(), port, &addr6_);
   }
   else {
     memset(&addr_, 0, sizeof(addr_));
-    SockAddr::get_address(ip.data(), port, &addr_);
+    NetOps::addr::get_address(ip.data(), port, &addr_);
   }
 }
 
 std::string InetAddress::get_host(void) const {
-  return SockAddr::to_string(get_address(), true);
+  return NetOps::addr::to_string(get_address(), true);
 }
 
 std::string InetAddress::get_host_port(void) const {
-  return SockAddr::to_string(get_address());
+  return NetOps::addr::to_string(get_address());
 }
 
 std::uint16_t InetAddress::get_port(void) const {

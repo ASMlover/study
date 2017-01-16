@@ -28,24 +28,22 @@
 set(NEPTUNELIB_NAME "neptune")
 set(NEPTUNE_SOURCES
 
-  Kern/SocketFd.cc
-  Kern/SockAddr.cc
+  Kern/NetOps.cc
   Buffer.cc
   InetAddress.cc
+  Socket.cc
   Timer.cc
   )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
   set(NEPTUNE_SOURCES ${NEPTUNE_SOURCES}
 
-    Kern/Windows/SocketFd.cc
-    Kern/Windows/SockAddr.cc
+    Kern/Windows/NetOps.cc
     )
 else()
   set(NEPTUNE_SOURCES ${NEPTUNE_SOURCES}
 
-    Kern/Posix/SocketFd.cc
-    Kern/Posix/SockAddr.cc
+    Kern/Posix/NetOps.cc
     )
 endif()
 

@@ -30,8 +30,7 @@
 #include <string>
 #include <Chaos/Copyable.h>
 #include <Chaos/Container/StringPiece.h>
-#include <Neptune/Kern/SocketFd.h>
-#include <Neptune/Kern/SockAddr.h>
+#include <Neptune/Kern/NetOps.h>
 
 namespace Neptune {
 
@@ -69,7 +68,7 @@ public:
   }
 
   const struct sockaddr* get_address(void) const {
-    return SockAddr::cast(&addr6_);
+    return NetOps::addr::cast(&addr6_);
   }
 
   static bool resolve(Chaos::StringPiece hostname, InetAddress& result);

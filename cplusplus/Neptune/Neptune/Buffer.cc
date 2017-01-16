@@ -25,24 +25,23 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cerrno>
-#include <Neptune/Kern/SocketFd.h>
+#include <Neptune/Kern/NetOps.h>
 #include <Neptune/Buffer.h>
 
 namespace Neptune {
 
 const char* Buffer::kCRLF = "\r\n";
 
-int Buffer::read_sockfd(int fd, int& saved_errno) {
+int Buffer::read_sockfd(int sockfd, int& saved_errno) {
   char extra_buf[65535];
   const std::size_t writable = writable_bytes();
 
-  Neptune::SocketFd sockfd(fd);
-  Iovec_t vec[2];
-  sockfd.set_iovec(vec[0], begin() + windex_, writable);
-  sockfd.set_iovec(vec[1], extra_buf, sizeof(extra_buf));
+  NetOps::Iovec_t vec[2];
+  NetOps::socket::set_iovec(vec[0], begin() + windex_, writable);
+  NetOps::socket::set_iovec(vec[1], extra_buf, sizeof(extra_buf));
 
   const int niov = writable < sizeof(extra_buf) ? 2 : 1;
-  const int n = sockfd.readv(niov, vec);
+  const int n = NetOps::socket::readv(sockfd, niov, vec);
   if (n < 0) {
     saved_errno = errno;
   }
