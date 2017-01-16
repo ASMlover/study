@@ -74,27 +74,27 @@ namespace socket {
       int saved_errno = errno;
       CHAOSLOG_SYSERR << "SocketFd::accept - accept failed, errno=" << saved_errno;
       switch (saved_errno) {
-        case EAGAIN:
-        case EINTR:
-        case EPERM:
-        case EMFILE:
-        case ECONNABORTED:
-        case EPROTO:
-          errno = saved_errno;
-          break;
-        case EBADF:
-        case EFAULT:
-        case EINVAL:
-        case ENFILE:
-        case ENOMEM:
-        case ENOBUFS:
-        case ENOTSOCK:
-        case EOPNOTSUPP:
-          CHAOSLOG_SYSFATAL << "SocketFd::accept - unexpected errno=" << saved_errno;
-          break;
-        default:
-          CHAOSLOG_SYSFATAL << "SocketFd::accept - unknown errno=" << saved_errno;
-          break;
+      case EAGAIN:
+      case EINTR:
+      case EPERM:
+      case EMFILE:
+      case ECONNABORTED:
+      case EPROTO:
+        errno = saved_errno;
+        break;
+      case EBADF:
+      case EFAULT:
+      case EINVAL:
+      case ENFILE:
+      case ENOMEM:
+      case ENOBUFS:
+      case ENOTSOCK:
+      case EOPNOTSUPP:
+        CHAOSLOG_SYSFATAL << "SocketFd::accept - unexpected errno=" << saved_errno;
+        break;
+      default:
+        CHAOSLOG_SYSFATAL << "SocketFd::accept - unknown errno=" << saved_errno;
+        break;
       }
     }
     return connfd;
