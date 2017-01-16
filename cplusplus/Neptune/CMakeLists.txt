@@ -61,7 +61,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   endif()
 
   add_definitions(
-    /D_UNICODE
     /D_CRT_SECURE_NO_WARNINGS
     /D_CRT_NONSTDC_NO_WARNINGS
     /wd4091
