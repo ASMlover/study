@@ -28,7 +28,7 @@
 
 namespace Neptune {
 
-std::atomic<std::int64_t> Timer::s_ncreated_;
+std::atomic_int64_t Timer::s_ncreated_;
 
 void Timer::restart(Chaos::Timestamp now) {
   if (repeat_)
