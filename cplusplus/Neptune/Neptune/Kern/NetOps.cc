@@ -27,10 +27,6 @@
 #include <Chaos/Platform.h>
 #if defined(CHAOS_WINDOWS)
 # include <WinSock2.h>
-#else
-# include <sys/socket.h>
-# include <fcntl.h>
-# include <unistd.h>
 #endif
 #include <cerrno>
 #include <cstdio>

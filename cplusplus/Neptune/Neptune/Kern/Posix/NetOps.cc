@@ -25,12 +25,10 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <Chaos/Logging/Logging.h>
+#include <Neptune/Endian.h>
 #include <Neptune/Kern/NetOps.h>
 
 namespace Neptune { namespace NetOps {
@@ -94,7 +92,7 @@ namespace socket {
   }
 
   int get_option(int sockfd, int level, int optname, int* optval, socklen_t* optlen) {
-    return getsockopt(sockfd_, level, optname, optval, optlen);
+    return getsockopt(sockfd, level, optname, optval, optlen);
   }
 }
 
