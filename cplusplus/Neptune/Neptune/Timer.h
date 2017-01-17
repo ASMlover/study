@@ -56,7 +56,7 @@ class Timer : private Chaos::UnCopyable {
   const bool repeat_{};
   const std::int64_t sequence_{};
 
-  static std::atomic_int64_t s_ncreated_;
+  static std::atomic<std::int64_t> s_ncreated_;
 public:
   Timer(const TimerCallback& fn, Chaos::Timestamp when, double interval)
     : closure_fn_(fn)
