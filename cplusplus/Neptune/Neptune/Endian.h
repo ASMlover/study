@@ -32,7 +32,9 @@
 
 #if defined(CHAOS_WINDOWS)
 # if CHAOS_BYTE_ORDER == CHAOS_LITTLE_ENDIAN
-#   include <WinSock2.h>
+#   if !defined(_WINDOWS_)
+#     include <WinSock2.h>
+#   endif
 
 #   define htobe16(x) htons((x))
 #   define htole16(x) (x)
