@@ -30,9 +30,12 @@ set(NEPTUNE_SOURCES
 
   Kern/NetOps.cc
   Buffer.cc
+  Channel.cc
+  EventLoop.cc
   InetAddress.cc
   Socket.cc
   Timer.cc
+  TimerQueue.cc
   )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
