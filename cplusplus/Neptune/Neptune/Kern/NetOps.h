@@ -30,7 +30,9 @@
 #include <Chaos/Platform.h>
 #if defined(CHAOS_WINDOWS)
 # include <WS2tcpip.h>
-# include <WinSock2.h>
+# if !defined(_WINDOWS_)
+#   include <WinSock2.h>
+# endif
 
   typedef int socklen_t;
   typedef int sa_family_t;
