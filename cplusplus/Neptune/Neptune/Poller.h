@@ -50,11 +50,8 @@ public:
   virtual void remove_channel(Channel* channel) = 0;
   virtual bool has_channel(Channel* channel) const;
 
+  void assert_in_loopthread(void) const;
   static Poller* get_poller(EventLoop* loop);
-
-  void assert_in_loopthread(void) const {
-    // TODO:
-  }
 };
 
 }

@@ -24,6 +24,8 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <Neptune/Channel.h>
+#include <Neptune/EventLoop.h>
 #include <Neptune/Poller.h>
 
 namespace Neptune {
@@ -37,10 +39,12 @@ Poller::~Poller(void) {
 
 bool Poller::has_channel(Channel* channel) const {
   assert_in_loopthread();
-  // TODO:
-  // auto it = channels_.find(channel->get_fd());
-  // return it != channels_.end() && it->second == channel;
-  return false;
+  auto it = channels_.find(channel->get_fd());
+  return it != channels_.end() && it->second == channel;
+}
+
+void Poller::assert_in_loopthread(void) const {
+  owner_loop_->assert_in_loopthread();
 }
 
 }
