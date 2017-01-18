@@ -59,8 +59,8 @@ class TimerQueue : private Chaos::UnCopyable {
   void add_timer_in_loop(Timer* timer);
   void cancel_in_loop(TimerID timerid);
   bool insert(Timer* timer);
-  void reset(const std::vector<TimerQueue::Entry>& expired, Chaos::Timestamp now);
-  std::vector<TimerQueue::Entry> get_expired(Chaos::Timestamp now);
+  void reset(const std::vector<Entry>& expired, Chaos::Timestamp now);
+  std::vector<Entry> get_expired(Chaos::Timestamp now);
 public:
   explicit TimerQueue(EventLoop* loop);
   ~TimerQueue(void);

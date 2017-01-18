@@ -142,13 +142,13 @@ void TimerQueue::add_timer_in_loop(Timer* timer) {
 
 void TimerQueue::cancel_in_loop(TimerID timerid) {
   loop_->assert_in_loopthread();
-  CHAOS_CHECK(timers_.size() == active_timers_.size(), "len(timers_) == len(active_timers_)");
+  CHAOS_CHECK(timers_.size() == active_timers_.size(), "");
   ActiveTimer timer(timerid.timer_, timerid.sequence_);
 }
 
 bool TimerQueue::insert(Timer* timer) {
   loop_->assert_in_loopthread();
-  CHAOS_CHECK(timers_.size() == active_timers_.size(), "len(timers_) == len(active_timers_)");
+  CHAOS_CHECK(timers_.size() == active_timers_.size(), "");
 
   bool changed = false;
   Chaos::Timestamp when = timer->get_expiry_time();
@@ -164,19 +164,47 @@ bool TimerQueue::insert(Timer* timer) {
     auto result = active_timers_.insert(ActiveTimer(timer, timer->get_sequence()));
     CHAOS_CHECK(result.second, "TimerQueue::insert - insert active timer must be valid");
   }
-  CHAOS_CHECK(timers_.size() == active_timers_.size(), "len(timers_) == len(active_timers_)");
+  CHAOS_CHECK(timers_.size() == active_timers_.size(), "");
 
   return changed;
 }
 
-void TimerQueue::reset(const std::vector<TimerQueue::Entry>& expired, Chaos::Timestamp now) {
-  // TODO:
+void TimerQueue::reset(const std::vector<Entry>& expired_entries, Chaos::Timestamp now) {
+  Chaos::Timestamp next_expired;
+
+  for (auto& entry : expired_entries) {
+    ActiveTimer timer(entry.second, entry.second->get_sequence());
+    if (entry.second->is_repeat()
+        && cancelling_timers_.find(timer) == cancelling_timers_.end()) {
+      entry.second->restart(now);
+      insert(entry.second);
+    }
+    else {
+      delete entry.second;
+    }
+  }
+
+  if (!timers_.empty())
+    next_expired = timers_.begin()->second->get_expiry_time();
+  if (next_expired.is_valid() && timerfd_ > 0)
+    Unexposed::timerfd_reset(timerfd_, next_expired);
 }
 
 std::vector<TimerQueue::Entry> TimerQueue::get_expired(Chaos::Timestamp now) {
-  // TODO:
-  std::vector<Entry> expired;
-  return expired;
+  std::vector<Entry> expired_entries;
+  Entry sentry = std::make_pair(now, reinterpret_cast<Timer*>(UINTPTR_MAX));
+  auto it = timers_.lower_bound(sentry);
+  std::copy(timers_.begin(), it, std::back_inserter(expired_entries));
+  timers_.erase(timers_.begin(), it);
+
+  for (auto& entry : expired_entries) {
+    ActiveTimer timer(entry.second, entry.second->get_sequence());
+    std::size_t n = active_timers_.erase(timer);
+    CHAOS_CHECK(n == 1, "TimerQueue::get_expired - erased 1 active timer");
+  }
+  CHAOS_CHECK(timers_.size() == active_timers_.size(), "");
+
+  return expired_entries;
 }
 
 }
