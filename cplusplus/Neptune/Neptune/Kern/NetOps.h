@@ -39,7 +39,8 @@
   typedef int in_addr_t;
   typedef SSIZE_T ssize_t;
 #else
-# include <netdb.h>
+# include <netinet/tcp.h> // for TCP_NODELAY and etc
+# include <netdb.h> // for sockaddr_in6 and etc
 # include <poll.h>
 #endif
 #include <string>
