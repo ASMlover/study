@@ -51,7 +51,7 @@ int WakeupSignaler::get_signal(void* buf, size_t len) {
 
 void WakeupSignaler::open_signaler(void) {
   eventfd_ = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
-  if (eventfd_ > 0)
+  if (eventfd_ < 0)
     TYRLOG_SYSFATAL << "WakeupSignaler::open_signaler - create eventfd failed, eventfd_=" << eventfd_;
 }
 
