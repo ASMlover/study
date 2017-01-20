@@ -42,12 +42,24 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
   set(NEPTUNE_SOURCES ${NEPTUNE_SOURCES}
 
     Kern/Windows/NetOps.cc
+    Windows/WakeupSignaler.cc
     )
 else()
   set(NEPTUNE_SOURCES ${NEPTUNE_SOURCES}
 
     Kern/Posix/NetOps.cc
     )
+  if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    set(NEPTUNE_SOURCES ${NEPTUNE_SOURCES}
+
+      Linux/WakeupSignaler.cc
+      )
+  elseif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    set(NEPTUNE_SOURCES ${NEPTUNE_SOURCES}
+
+      Darwin/WakeupSignaler.cc
+      )
+  endif()
 endif()
 
 add_library(${NEPTUNELIB_NAME} STATIC ${NEPTUNE_SOURCES})
