@@ -36,6 +36,7 @@
 #include <Chaos/Concurrent/CurrentThread.h>
 #include <Chaos/Concurrent/Mutex.h>
 #include <Chaos/Datetime/Timestamp.h>
+#include <Neptune/NetInitializer.h>
 #include <Neptune/Timer.h>
 
 namespace Neptune {
@@ -57,7 +58,7 @@ class EventLoop : private Chaos::UnCopyable {
   Chaos::Timestamp poll_return_time_;
   std::unique_ptr<Poller> poller_;
   std::unique_ptr<TimerQueue> timer_queue_;
-  // NetInitializer<> init_;
+  NetInitializer<> init_;
   std::unique_ptr<WakeupSignaler> wakeup_;
   std::unique_ptr<Channel> wakeup_channel_;
   Chaos::Any context_;

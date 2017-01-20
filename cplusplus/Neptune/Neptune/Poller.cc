@@ -47,4 +47,9 @@ void Poller::assert_in_loopthread(void) const {
   owner_loop_->assert_in_loopthread();
 }
 
+Poller* Poller::get_poller(EventLoop* loop) {
+  // TODO:
+  return nullptr;
+}
+
 }
