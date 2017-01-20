@@ -56,6 +56,7 @@ class TimerQueue : private Chaos::UnCopyable {
   ActiveTimerSet cancelling_timers_{};
 
   void do_handle_read(void);
+  void poll_timer_internal(bool need_read = false);
   void add_timer_in_loop(Timer* timer);
   void cancel_in_loop(TimerID timerid);
   bool insert(Timer* timer);

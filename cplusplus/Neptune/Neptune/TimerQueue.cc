@@ -104,24 +104,20 @@ void TimerQueue::poll_timer(void) {
 #if defined(CHAOS_LINUX)
   CHAOSLOG_SYSFATAL << "TimerQueue::poll_timer - unable to call in Linux";
 #else
-  loop_->assert_in_loopthread();
-  Chaos::Timestamp now(Chaos::Timestamp::now());
-
-  calling_expired_timers_ = true;
-  cancelling_timers_.clear();
-  std::vector<Entry> expired_entries = get_expired(now);
-  for (auto& entry : expired_entries)
-    entry.second->run();
-  calling_expired_timers_ = false;
-
-  reset(expired_entries, now);
+  poll_timer_internal(false);
 #endif
 }
 
 void TimerQueue::do_handle_read(void) {
+  poll_timer_internal(true);
+}
+
+void TimerQueue::poll_timer_internal(bool need_read) {
   loop_->assert_in_loopthread();
   Chaos::Timestamp now(Chaos::Timestamp::now());
-  Unexposed::timerfd_read(timerfd_, now);
+
+  if (need_read)
+    Unexposed::timerfd_read(timerfd_, now);
 
   calling_expired_timers_ = true;
   cancelling_timers_.clear();
