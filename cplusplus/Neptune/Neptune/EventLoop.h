@@ -50,16 +50,16 @@ class EventLoop : private Chaos::UnCopyable {
 
   bool looping_{}; // need atomic
   bool quit_{}; // need atomic
-  bool event_handing_{}; // need atomic
+  bool event_handling_{}; // need atomic
   bool calling_pending_functors_{}; // need atomic
   std::int64_t iteration_{};
   const pid_t tid_{};
   Chaos::Timestamp poll_return_time_;
   std::unique_ptr<Poller> poller_;
-  // std::unique_ptr<TimerQueue> timer_queue_;
+  std::unique_ptr<TimerQueue> timer_queue_;
   // NetInitializer<> init_;
-  // std::unique_ptr<WakeupSignaler> wakeup_;
-  // std::unique_ptr<Channel> wakeup_channel_;
+  std::unique_ptr<WakeupSignaler> wakeup_;
+  std::unique_ptr<Channel> wakeup_channel_;
   Chaos::Any context_;
   Channel* current_active_channel_{};
   std::vector<Channel*> active_channels_;
@@ -115,7 +115,7 @@ public:
   }
 
   bool get_event_handling(void) const {
-    return event_handing_;
+    return event_handling_;
   }
 
   void set_context(const Chaos::Any& context) {
