@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <algorithm>
 #include <Chaos/Platform.h>
+#include <Chaos/Types.h>
 #include <Chaos/Logging/Logging.h>
 #include <Neptune/Kern/NetOps.h>
 #include <Neptune/IgnoreSigPipe.h>
@@ -57,6 +58,10 @@ EventLoop::EventLoop(void)
 
   wakeup_channel_->bind_read_functor(std::bind(&EventLoop::do_handle_read, this));
   wakeup_channel_->enabled_reading();
+
+#if defined(CHAOS_POSIX)
+  CHAOS_UNUSED(init_);
+#endif
 }
 
 EventLoop::~EventLoop(void) {

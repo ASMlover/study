@@ -91,7 +91,9 @@ std::uint32_t InetAddress::get_host_endian(void) const {
   return addr_.sin_addr.s_addr;
 }
 
-static __chaos_tl char t_resolve_buff[64 * 1024];
+#if defined(CHAOS_LINUX)
+  static __chaos_tl char t_resolve_buff[64 * 1024];
+#endif
 bool InetAddress::resolve(Chaos::StringPiece hostname, InetAddress& result) {
   struct hostent* hentp{};
   int rc{};
