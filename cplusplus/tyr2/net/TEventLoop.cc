@@ -64,6 +64,8 @@ EventLoop::EventLoop(void)
 
   wakeup_channel_->set_read_callback(std::bind(&EventLoop::handle_read, this));
   wakeup_channel_->enabled_reading();
+
+  UNUSED(init_);
 }
 
 EventLoop::~EventLoop(void) {
