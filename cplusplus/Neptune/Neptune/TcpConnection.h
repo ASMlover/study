@@ -183,13 +183,13 @@ public:
     return &context_;
   }
 
-  // Buffer* get_readbuffer(void) {
-  //   return &readbuff_;
-  // }
+  Buffer* get_readbuffer(void) {
+    return &readbuff_;
+  }
 
-  // Buffer* get_writbuffer(void) {
-  //   return &writbuff_;
-  // }
+  Buffer* get_writbuffer(void) {
+    return &writbuff_;
+  }
 };
 
 typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
