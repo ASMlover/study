@@ -24,8 +24,8 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef NEPTUNE_BUFFER_H
-#define NEPTUNE_BUFFER_H
+#ifndef NEPTUNE_CALLBACKS_H
+#define NEPTUNE_CALLBACKS_H
 
 #include <functional>
 #include <memory>
@@ -49,4 +49,4 @@ void on_message_default(const TcpConnectionPtr& conn, Buffer* buff, Chaos::Times
 
 }
 
-#endif // NEPTUNE_BUFFER_H
+#endif // NEPTUNE_CALLBACKS_H
