@@ -28,14 +28,8 @@
 cmake_minimum_required(VERSION 3.0)
 project(AsioPROJ CXX)
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-  add_definitions(
-    /D_CRT_SECURE_NO_WARNINGS
-    /D_CRT_NONSTDC_NO_WARNINGS)
-  set(CMAKE_CXX_FLAGS "/W3 /GF /GS /Gs /Zi /EHsc")
-else()
-  set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-g -O2 -std=c++11 -Wall")
-endif()
+# only for GCC and Clang
+set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-g -O2 -std=c++11 -Wall")
 
 include_directories(${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_61_0)
 link_directories(${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_61_0/stage/lib)
