@@ -28,17 +28,22 @@
 #include <boost/asio.hpp>
 
 int main(int argc, char* argv[]) {
-  boost::asio::io_service service;
+  try {
+    boost::asio::io_service service;
 
-  boost::asio::ip::tcp::socket s(service);
-  boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 5555);
-  s.connect(endpoint);
+    boost::asio::ip::tcp::socket s(service);
+    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 5555);
+    s.connect(endpoint);
 
-  char reply[1024]{};
-  boost::asio::read(s, boost::asio::buffer(reply, sizeof(reply)));
-  std::cout << "reply is : " << reply << std::endl;
+    char reply[1024]{};
+    s.read_some(boost::asio::buffer(reply, sizeof(reply)));
+    std::cout << "reply is : " << reply << std::endl;
 
-  s.close();
+    s.close();
+  }
+  catch (std::exception& ex) {
+    std::cout << "exception: " << ex.what() << std::endl;
+  }
 
   return 0;
 }

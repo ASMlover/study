@@ -61,8 +61,9 @@ class Session : public std::enable_shared_from_this<Session> {
   void do_write(void) {
     std::time_t now = std::time(nullptr);
     SharedConstBuffer buf(std::ctime(&now));
+    auto self(shared_from_this());
     boost::asio::async_write(socket_, buf,
-        [](boost::system::error_code, std::size_t) {
+        [self](boost::system::error_code, std::size_t) {
         });
   }
 public:
