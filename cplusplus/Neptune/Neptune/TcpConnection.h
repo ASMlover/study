@@ -75,11 +75,7 @@ class TcpConnection : private Chaos::UnCopyable , public std::enable_shared_from
   void do_handle_error(void);
   void write_in_loop(const Chaos::StringPiece& message);
   void write_in_loop(const void* buf, std::size_t len);
-  void shutdown_in_loop(void);
-  void force_close_in_loop(void);
   const char* linkstate_to_string(void) const;
-  void start_read_in_loop(void);
-  void stop_read_in_loop(void);
 
   void set_linkstate(NetLink linkstate) {
     linkstate_ = linkstate;
