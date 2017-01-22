@@ -11,7 +11,7 @@
         * Set MSVC environments
         * \> cd boost_1_59_0
         * \> bootstrap.bat
-        * \> bjam.exe
+        * \> b2.exe
     3) Compile for *nix
         * $ cd boost_1_59_0
         * $ sh bootstrap.sh
