@@ -32,6 +32,7 @@ set(NEPTUNE_SOURCES
   Acceptor.cc
   Buffer.cc
   Channel.cc
+  Connector.cc
   EventLoop.cc
   EventLoopThread.cc
   EventLoopThreadPool.cc
