@@ -29,6 +29,7 @@ set(NEPTUNELIB_NAME "neptune")
 set(NEPTUNE_SOURCES
 
   Kern/NetOps.cc
+  Acceptor.cc
   Buffer.cc
   Channel.cc
   EventLoop.cc
