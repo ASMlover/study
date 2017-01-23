@@ -24,10 +24,55 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <boost/asio.hpp>
 #include <iostream>
+#include <memory>
+#include <boost/asio.hpp>
 
 using boost::asio::ip::tcp;
+
+class tcp_client : private boost::noncopyable, public std::enable_shared_from_this<tcp_client> {
+  tcp::socket socket_;
+  tcp::resolver::iterator epiter_;
+
+  void do_connect(void) {
+    boost::asio::async_connect(socket_, epiter_,
+        [this](boost::system::error_code ec, tcp::resolver::iterator) {
+          if (!ec) {
+            do_write();
+            do_read();
+          }
+        });
+  }
+
+  void do_read(void) {
+    char buf[1024]{};
+    auto self(shared_from_this());
+    socket_.async_read_some(boost::asio::buffer(buf, sizeof(buf)),
+        [this, self, &buf](boost::system::error_code ec, std::size_t /*n*/) {
+          if (!ec)
+            std::cout << "echo reply: " << buf << std::endl;
+
+          socket_.close();
+        });
+  }
+
+  void do_write(void) {
+    std::string echo_msg = "Hello, world!";
+    auto self(shared_from_this());
+    boost::asio::async_write(socket_, boost::asio::buffer(echo_msg),
+        [self](boost::system::error_code /*ec*/, std::size_t /*n*/) {
+        });
+  }
+public:
+  tcp_client(boost::asio::io_service& io_service, tcp::resolver::iterator epiter)
+    : socket_(io_service)
+    , epiter_(epiter) {
+  }
+
+  void start(void) {
+    do_connect();
+  }
+};
 
 int main(int argc, char* argv[]) {
   ((void)argc), ((void)argv);
