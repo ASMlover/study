@@ -38,6 +38,7 @@ set(NEPTUNE_SOURCES
   InetAddress.cc
   Socket.cc
   TcpConnection.cc
+  TcpServer.cc
   Timer.cc
   TimerQueue.cc
   )
