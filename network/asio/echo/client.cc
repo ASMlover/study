@@ -30,12 +30,13 @@
 
 using boost::asio::ip::tcp;
 
-class tcp_client : private boost::noncopyable {
+class tcp_client : private boost::noncopyable, public std::enable_shared_from_this<tcp_client> {
   tcp::socket socket_;
 
   void do_connect(tcp::resolver::iterator epiter) {
+    auto self(shared_from_this());
     boost::asio::async_connect(socket_, epiter,
-        [this](const boost::system::error_code& ec, tcp::resolver::iterator) {
+        [this, self](const boost::system::error_code& ec, tcp::resolver::iterator) {
           if (!ec) {
             std::cout << "tcp.client connect to server success ..." << std::endl;
 
@@ -50,8 +51,9 @@ class tcp_client : private boost::noncopyable {
 
   void do_read(void) {
     char buf[1024]{};
+    auto self(shared_from_this());
     socket_.async_read_some(boost::asio::buffer(buf, sizeof(buf)),
-        [this, &buf](const boost::system::error_code& ec, std::size_t /*n*/) {
+        [this, self, &buf](const boost::system::error_code& ec, std::size_t /*n*/) {
           if (!ec)
             std::cout << "echo reply: " << buf << std::endl;
 
@@ -61,8 +63,9 @@ class tcp_client : private boost::noncopyable {
 
   void do_write(void) {
     std::string echo_msg = "Hello, world!";
+    auto self(shared_from_this());
     boost::asio::async_write(socket_, boost::asio::buffer(echo_msg),
-        [this](boost::system::error_code ec, std::size_t /*n*/) {
+        [this, self](boost::system::error_code ec, std::size_t /*n*/) {
           if (ec)
             socket_.close();
         });
@@ -82,9 +85,9 @@ int main(int argc, char* argv[]) {
 
   boost::asio::io_service io_service;
 
-  tcp_client client(io_service);
+  std::shared_ptr<tcp_client> client(new tcp_client(io_service));
   tcp::resolver r(io_service);
-  client.start(r.resolve({"127.0.0.1", "5555"}));
+  client->start(r.resolve({"127.0.0.1", "5555"}));
 
   io_service.run();
 
