@@ -51,52 +51,159 @@ Connector::~Connector(void) {
 }
 
 void Connector::start(void) {
-  // TODO:
+  need_connect_ = true;
+  loop_->run_in_loop(std::bind(&Connector::start_in_loop, this));
 }
 
 void Connector::stop(void) {
-  // TODO:
+  need_connect_ = false;
+  auto self(shared_from_this());
+  loop_->put_in_loop([this, self](void) {
+        loop_->assert_in_loopthread();
+        if (linkstate_ == NetLink::NETLINK_CONNECTING) {
+          set_linkstate(NetLink::NETLINK_DISCONNECTED);
+          int sockfd = remove_and_reset_channel();
+          retry(sockfd);
+        }
+      });
 }
 
 void Connector::restart(void) {
-  // TODO:
+  loop_->assert_in_loopthread();
+
+  set_linkstate(NetLink::NETLINK_DISCONNECTED);
+  retry_delay_millisecond_ = kInitRetryDelayMillisecond;
+  need_connect_ = true;
+  start_in_loop();
 }
 
 void Connector::start_in_loop(void) {
-  // TODO:
-}
+  loop_->assert_in_loopthread();
 
-void Connector::stop_in_loop(void) {
-  // TODO:
+  CHAOS_CHECK(linkstate_ == NetLink::NETLINK_DISCONNECTED, "link state should in disconnected");
+  if (need_connect_)
+    do_connect();
+  else
+    CHAOSLOG_DEBUG << "Connector::start_in_loop - do not connect";
 }
 
 void Connector::do_connect(void) {
-  // TODO:
+  int sockfd = NetOps::socket::open(server_addr_.get_family());
+  int r = NetOps::socket::connect(sockfd, server_addr_.get_address());
+  int saved_errno = (r == 0) ? 0 : errno;
+  switch (saved_errno) {
+  case 0:
+  case EINPROGRESS:
+  case EINTR:
+  case EISCONN:
+    do_connecting(sockfd);
+    break;
+  case EAGAIN:
+  case EADDRINUSE:
+  case EADDRNOTAVAIL:
+  case ECONNREFUSED:
+  case ENETUNREACH:
+    retry(sockfd);
+    break;
+  case EACCES:
+  case EPERM:
+  case EBADF:
+  case EFAULT:
+  case EAFNOSUPPORT:
+  case EALREADY:
+  case ENOTSOCK:
+    CHAOSLOG_SYSERR << "Connector::do_connect - connect failed, errno=" << saved_errno;
+    NetOps::socket::close(sockfd);
+    break;
+  default:
+    CHAOSLOG_SYSERR << "Connector::do_connect - unexcepted error, errno=" << saved_errno;
+    NetOps::socket::close(sockfd);
+    break;
+  }
 }
 
 void Connector::do_connecting(int sockfd) {
-  // TODO:
+  set_linkstate(NetLink::NETLINK_CONNECTING);
+  CHAOS_CHECK(!channel_, "connector channel should invalid");
+  channel_.reset(new Channel(loop_, sockfd));
+  channel_->bind_write_functor(std::bind(&Connector::do_handle_write, this));
+  channel_->bind_error_functor(std::bind(&Connector::do_handle_error, this));
+  channel_->enabled_writing();
 }
 
 void Connector::do_handle_write(void) {
-  // TODO:
+  CHAOSLOG_TRACE << "Connector::do_handle_write - linkstate=" << linkstate_to_string();
+  if (linkstate_ == NetLink::NETLINK_CONNECTING) {
+    int sockfd = remove_and_reset_channel();
+    int err = NetOps::socket::get_errno(sockfd);
+    if (err != 0) {
+      CHAOSLOG_WARN << "Connector::do_handle_write - SO_ERROR=" << err << " " << Chaos::strerror_tl(err);
+      retry(sockfd);
+    }
+    else if (NetOps::socket::is_self_connect(sockfd)) {
+      CHAOSLOG_WARN << "Connector::do_handle_write - in self connect";
+      retry(sockfd);
+    }
+    else {
+      set_linkstate(NetLink::NETLINK_CONNECTED);
+      if (need_connect_)
+        new_connection_fn_(sockfd);
+      else
+        NetOps::socket::close(sockfd);
+    }
+  }
+  else {
+    CHAOS_CHECK(linkstate_ == NetLink::NETLINK_DISCONNECTED, "link state is disconnected");
+  }
 }
 
 void Connector::do_handle_error(void) {
-  // TODO:
+  CHAOSLOG_ERROR << "Connector::do_handle_error - linkstate=" << linkstate_to_string();
+  if (linkstate_ == NetLink::NETLINK_CONNECTING) {
+    int sockfd = remove_and_reset_channel();
+    int err = NetOps::socket::get_errno(sockfd);
+    CHAOSLOG_TRACE << "Connector::do_handle_error - SO_ERROR=" << err << " " << Chaos::strerror_tl(err);
+    retry(sockfd);
+  }
 }
 
 void Connector::retry(int sockfd) {
-  // TODO:
-}
-
-void Connector::reset_channel(void) {
-  // TODO:
+  NetOps::socket::close(sockfd);
+  set_linkstate(NetLink::NETLINK_DISCONNECTED);
+  if (need_connect_) {
+    CHAOSLOG_INFO << "Connector::retry - retry connecting to "
+      << server_addr_.get_host_port() << " in "
+      << retry_delay_millisecond_ << " milliseconds.";
+    loop_->run_after(retry_delay_millisecond_ / 1000.0, std::bind(&Connector::start_in_loop, shared_from_this()));
+    retry_delay_millisecond_ = Chaos::chaos_min(retry_delay_millisecond_ * 2, kMaxRetryDelayMillisecond);
+  }
+  else {
+    CHAOSLOG_DEBUG << "Connector::retry - do not connect";
+  }
 }
 
 int Connector::remove_and_reset_channel(void) {
-  // TODO:
-  return 0;
+  int sockfd = channel_->get_fd();
+  channel_->disabled_all();
+  channel_->remove();
+
+  auto self(shared_from_this());
+  loop_->put_in_loop([this, self] {
+        channel_.reset();
+      });
+  return sockfd;
+}
+
+const char* Connector::linkstate_to_string(void) const {
+  switch (linkstate_) {
+  case NetLink::NETLINK_DISCONNECTED:
+    return "NETLINK_DISCONNECTED";
+  case NetLink::NETLINK_CONNECTING:
+    return "NETLINK_CONNECTING";
+  case NetLink::NETLINK_CONNECTED:
+    return "NETLINK_CONNECTED";
+  }
+  return "Unknown linkstate";
 }
 
 }

@@ -58,14 +58,13 @@ class Connector : private Chaos::UnCopyable, public std::enable_shared_from_this
   NewConnectionFunction new_connection_fn_{};
 
   void start_in_loop(void);
-  void stop_in_loop(void);
   void do_connect(void);
   void do_connecting(int sockfd);
   void do_handle_write(void);
   void do_handle_error(void);
   void retry(int sockfd);
-  void reset_channel(void);
   int remove_and_reset_channel(void);
+  const char* linkstate_to_string(void) const;
 
   void set_linkstate(NetLink linkstate) {
     linkstate_ = linkstate;
