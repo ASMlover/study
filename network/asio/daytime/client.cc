@@ -30,9 +30,37 @@
 
 using boost::asio::ip::tcp;
 
-int main(int argc, char* argv[]) {
-  (void)argc; (void)argv;
+class tcp_client : private boost::noncopyable {
+  tcp::socket socket_;
+  tcp::resolver::iterator epiter_;
 
+public:
+  tcp_client(boost::asio::io_service& io_service, tcp::resolver::iterator epiter)
+    : socket_(io_service)
+    , epiter_(epiter) {
+  }
+
+  void start(void) {
+    boost::asio::async_connect(socket_, epiter_,
+        [this](const boost::system::error_code& ec, tcp::resolver::iterator) {
+          if (!ec) {
+            std::vector<char> buf(1024);
+            socket_.async_read_some(boost::asio::buffer(buf),
+                [this, &buf](const boost::system::error_code& ec, std::size_t /*n*/) {
+                  if (!ec)
+                    std::cout << "daytime client - " << buf.data() << std::endl;
+
+                  socket_.close();
+                });
+          }
+          else {
+            socket_.close();
+          }
+        });
+  }
+};
+
+void start_sync_client(void) {
   boost::asio::io_service io_service;
   tcp::socket client_socket(io_service);
   client_socket.connect(tcp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 5555));
@@ -43,6 +71,30 @@ int main(int argc, char* argv[]) {
   std::cout << "get daytime is : " << buf.data() << std::endl;
 
   client_socket.close();
+}
+
+void start_async_client(void) {
+  boost::asio::io_service io_service;
+
+  tcp::resolver r(io_service);
+  tcp_client client(io_service, r.resolve({"127.0.0.1", "5555"}));
+  client.start();
+
+  io_service.run();
+}
+
+int main(int argc, char* argv[]) {
+  (void)argc; (void)argv;
+
+  if (argc != 2) {
+    std::cerr << "Usage ./asio.client [async|sync] ..." << std::endl;
+    return 0;
+  }
+
+  if (std::string("async") == argv[1])
+    start_async_client();
+  else
+    start_sync_client();
 
   return 0;
 }
