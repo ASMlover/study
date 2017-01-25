@@ -36,6 +36,7 @@ set(NEPTUNE_SOURCES
   EventLoop.cc
   EventLoopThread.cc
   EventLoopThreadPool.cc
+  EventPoll.cc
   InetAddress.cc
   Socket.cc
   TcpClient.cc
