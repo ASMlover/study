@@ -91,8 +91,31 @@ void EventPoll::update_channel(Channel* channel) {
 }
 
 void EventPoll::remove_channel(Channel* channel) {
-  // TODO:
-  CHAOS_UNUSED(channel);
+  assert_in_loopthread();
+
+  int fd = channel->get_fd();
+  CHAOSLOG_TRACE << "EventPoll::remove_channel - fd=" << fd;
+  CHAOS_CHECK(channels_.find(fd) != channels_.end(), "fd should not in channels");
+  CHAOS_CHECK(channels_[fd] == channel, "channels_[fd] should equal to channel");
+  CHAOS_CHECK(channel->is_none_event(), "channel should none event");
+
+  int index = channel->get_index();
+  CHAOS_CHECK(0 <= index && index < static_cast<int>(pollfds_.size()), "index of channel should valid");
+  const NetOps::Pollfd_t& pfd = pollfds_[index];
+  CHAOS_CHECK(pfd.fd == -fd - 1 && pfd.events == channel->get_events(), "pollfd should valid");
+  std::size_t n = channels_.erase(fd);
+  CHAOS_CHECK(n == 1, "remove channel count should be 1");
+  if (Chaos::implicit_cast<std::size_t>(index) == pollfds_.size() - 1) {
+    pollfds_.pop_back();
+  }
+  else {
+    int channel_end_fd = pollfds_.back().fd;
+    std::iter_swap(pollfds_.begin() + index, pollfds_.end() - 1);
+    if (channel_end_fd < 0)
+      channel_end_fd = -channel_end_fd - 1;
+    channels_[channel_end_fd]->set_index(index);
+    pollfds_.pop_back();
+  }
 }
 
 void EventPoll::fill_active_channels(int nevents, std::vector<Channel*>& active_channels) const {
