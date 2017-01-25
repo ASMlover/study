@@ -119,8 +119,20 @@ void EventPoll::remove_channel(Channel* channel) {
 }
 
 void EventPoll::fill_active_channels(int nevents, std::vector<Channel*>& active_channels) const {
-  // TODO:
-  CHAOS_UNUSED(nevents), CHAOS_UNUSED(active_channels);
+  for (const auto& pfd : pollfds_) {
+    if (nevents <= 0)
+      break;
+
+    if (pfd.revents > 0) {
+      --nevents;
+      const auto channel_pair = channels_.find(pfd.fd);
+      CHAOS_CHECK(channel_pair != channels_.end(), "channel_pair with fd not in channels_");
+      Channel* channel = channel_pair->second;
+      CHAOS_CHECK(channel->get_fd() == pfd.fd, "channel's fd should equal to pfd.fd");
+      channel->set_revents(pfd.revents);
+      active_channels.push_back(channel);
+    }
+  }
 }
 
 }
