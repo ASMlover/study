@@ -42,6 +42,11 @@ class Poller : private Chaos::UnCopyable {
 protected:
   std::map<int, Channel*> channels_;
 public:
+  enum EventType {
+    EVENT_NEW = -1,
+    EVENT_ADD = 1,
+    EVENT_DEL = 2,
+  };
   explicit Poller(EventLoop* loop);
   virtual ~Poller(void);
 
