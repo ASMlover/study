@@ -42,7 +42,7 @@ class EventPoll : public Poller {
   void fill_active_channels(int nevents, std::vector<Channel*>& active_channels) const;
 public:
   explicit EventPoll(EventLoop* loop);
-  virtual ~EventPoll(void);
+  virtual ~EventPoll(void) override;
 
   virtual Chaos::Timestamp poll(int timeout, std::vector<Channel*>& active_channels) override;
   virtual void update_channel(Channel* channel) override;

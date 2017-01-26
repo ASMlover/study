@@ -65,6 +65,7 @@ else()
   elseif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set(NEPTUNE_SOURCES ${NEPTUNE_SOURCES}
 
+      Darwin/EventSelect.cc
       Darwin/WakeupSignaler.cc
       )
   endif()
