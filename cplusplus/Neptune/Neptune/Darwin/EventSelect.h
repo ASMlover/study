@@ -38,7 +38,7 @@ class EventLoop;
 
 class EventSelect : public Poller {
   struct FdsEntity {
-    int nfds{};
+    int fds_bytes{};
     fd_set* read_fds{};
     fd_set* write_fds{};
     fd_set* error_fds{};
@@ -60,7 +60,7 @@ class EventSelect : public Poller {
   void fill_active_channels(int nevents, std::vector<Channel*>& active_channels) const;
 public:
   explicit EventSelect(EventLoop* loop);
-  virtual ~EventSelect(void);
+  virtual ~EventSelect(void) override;
 
   virtual Chaos::Timestamp poll(int timeout, std::vector<Channel*>& active_channels) override;
   virtual void update_channel(Channel* channel) override;
