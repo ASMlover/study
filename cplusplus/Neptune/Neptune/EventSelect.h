@@ -31,6 +31,7 @@
 
 #if defined(CHAOS_WINDOWS)
 #elif defined(CHAOS_LINUX)
+# include <Neptune/Linux/EventSelect.h>
 #elif defined(CHAOS_DARWIN)
 # include <Neptune/Darwin/EventSelect.h>
 #endif
