@@ -26,8 +26,11 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cassert>
 #include <cerrno>
+#include <cstring>
+#include <algorithm>
 #include <sys/types.h>
 #include <Chaos/Logging/Logging.h>
+#include <Neptune/Kern/NetOps.h>
 #include <Neptune/Channel.h>
 #include <Neptune/Linux/EventSelect.h>
 
