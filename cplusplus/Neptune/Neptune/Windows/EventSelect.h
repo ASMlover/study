@@ -24,17 +24,46 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#ifndef NEPTUNE_EVENTSELECT_H
-#define NEPTUNE_EVENTSELECT_H
+#ifndef NEPTUNE_WINDOWS_EVENTSELECT_H
+#define NEPTUNE_WINDOWS_EVENTSELECT_H
 
-#include <Chaos/Platform.h>
+#include <Neptune/Poller.h>
 
-#if defined(CHAOS_WINDOWS)
-# include <Neptune/Windows/EventSelect.h>
-#elif defined(CHAOS_LINUX)
-# include <Neptune/Linux/EventSelect.h>
-#elif defined(CHAOS_DARWIN)
-# include <Neptune/Darwin/EventSelect.h>
-#endif
+namespace Neptune {
 
-#endif // NEPTUNE_EVENTSELECT_H
+struct FdSet_t;
+class Channel;
+class EventLoop;
+
+class EventSelect : public Poller {
+  struct FdsEntity {
+    FdSet_t* read_fds{};
+    FdSet_t* write_fds{};
+    FdSet_t* error_fds{};
+
+    FdsEntity(int fdcount);
+    ~FdsEntity(void);
+
+    void destroy(void);
+    bool resize(int new_fdcount);
+    void copy(const FdsEntity& r);
+    void remove(int fd);
+  };
+
+  int fd_storage_{};
+  FdsEntity fds_in_;
+  FdsEntity fds_out_;
+
+  void fill_active_channels(int nevents, std::vector<Channel*>& active_channels) const;
+public:
+  explicit EventSelect(EventLoop* loop);
+  virtual ~EventSelect(void) override;
+
+  virtual Chaos::Timestamp poll(int timeout, std::vector<Channel*>& active_channels) override;
+  virtual void update_channel(Channel* channel) override;
+  virtual void remove_channel(Channel* channel) override;
+};
+
+}
+
+#endif // NEPTUNE_WINDOWS_EVENTSELECT_H
