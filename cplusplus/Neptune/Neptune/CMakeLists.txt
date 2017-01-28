@@ -50,6 +50,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
   set(NEPTUNE_SOURCES ${NEPTUNE_SOURCES}
 
     Kern/Windows/NetOps.cc
+    Windows/EventSelect.cc
     Windows/WakeupSignaler.cc
     )
 else()
