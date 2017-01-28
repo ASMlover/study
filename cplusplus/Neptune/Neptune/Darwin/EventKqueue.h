@@ -42,13 +42,13 @@ class EventKqueue : public Poller {
   int kqueuefd_{};
   std::vector<struct kevent> kqueue_events_;
 
-  static const char* operation_to_string(int operation);
-  void update(int operation, Channel* channel);
   void fill_active_channels(int nevents, std::vector<Channel*>& active_channels) const;
+  void update(int operation, Channel* channel);
   int kqueue_event_add(int fd, Channel* channel);
   int kqueue_event_del(int fd);
   int kqueue_event_mod(int fd, Channel* channel);
   int kqueue_event_ctl(int operation, int fd, Channel* channel);
+  static const char* operation_to_string(int operation);
 public:
   explicit EventKqueue(EventLoop* loop);
   virtual ~EventKqueue(void) override;
