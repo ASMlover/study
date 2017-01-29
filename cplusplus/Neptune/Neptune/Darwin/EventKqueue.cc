@@ -36,10 +36,10 @@
 
 namespace Neptune {
 
-enum KeventOperation {
-  KEVENT_ADD,
-  KEVENT_DEL,
-  KEVENT_MOD,
+enum KQueueEventOperation {
+  KQUEUEEVENT_ADD,
+  KQUEUEEVENT_DEL,
+  KQUEUEEVENT_MOD,
 };
 
 EventKqueue::EventKqueue(EventLoop* loop)
@@ -55,29 +55,117 @@ EventKqueue::~EventKqueue(void) {
 }
 
 Chaos::Timestamp EventKqueue::poll(int timeout, std::vector<Channel*>& active_channels) {
-  CHAOS_UNUSED(timeout), CHAOS_UNUSED(active_channels);
-  // TODO:
+  CHAOSLOG_TRACE << "EventKqueue::poll - fd total count is: " << channels_.size();
+
+  struct timespec ts{timeout / 1000, timeout % 1000 * 1000000};
+  int old_nevents = static_cast<int>(kqueue_events_.size());
+  int nevents = kevent(kqueuefd_, nullptr, 0, &*kqueue_events_.begin(), old_nevents, &ts);
+  int saved_errno = errno;
+  if (nevents > 0) {
+    CHAOSLOG_TRACE << "EventKqueue::poll - " << nevents << " events happened";
+    fill_active_channels(nevents, active_channels);
+    if (nevents == old_nevents)
+      kqueue_events_.resize(old_nevents * 2);
+  }
+  else if (nevents == 0) {
+    CHAOSLOG_TRACE << "EventKqueue::poll - nothing happened";
+  }
+  else {
+    if (saved_errno != EINTR) {
+      errno = saved_errno;
+      CHAOSLOG_TRACE << "EventKqueue::poll - errno=" << saved_errno;
+    }
+  }
   return Chaos::Timestamp::now();
 }
 
 void EventKqueue::update_channel(Channel* channel) {
-  CHAOS_UNUSED(channel);
-  // TODO:
+  assert_in_loopthread();
+
+  const int fd = channel->get_fd();
+  const int index = channel->get_index();
+  CHAOSLOG_TRACE << "EventKqueue::update_channel - fd=" << fd << " events=" << channel->get_events();
+
+  if (index == Poller::EVENT_NEW || index == Poller::EVENT_DEL) {
+    if (index == Poller::EVENT_NEW) {
+      assert(channels_.find(fd) == channels_.end());
+      channels_[fd] = channel;
+    }
+    else {
+      assert(channels_.find(fd) != channels_.end());
+      assert(channels_[fd] == channel);
+    }
+
+    channel->set_index(Poller::EVENT_ADD);
+    update(KQUEUEEVENT_ADD, channel);
+  }
+  else {
+    assert(channels_.find(fd) != channels_.end());
+    assert(channels_[fd] == channel);
+    assert(index == Poller::EVENT_ADD);
+    if (channel->is_none_event()) {
+      update(KQUEUEEVENT_DEL, channel);
+      channel->set_index(Poller::EVENT_DEL);
+    }
+    else {
+      update(KQUEUEEVENT_MOD, channel);
+    }
+  }
 }
 
 void EventKqueue::remove_channel(Channel* channel) {
-  CHAOS_UNUSED(channel);
-  // TODO:
+  assert_in_loopthread();
+
+  const int fd = channel->get_index();
+  const int index = channel->get_index();
+  CHAOSLOG_TRACE << "EventKqueue::remove_channel - fd=" << fd;
+
+  assert(channels_.find(fd) != channels_.end());
+  assert(channels_[fd] == channel);
+  assert(channel->is_none_event());
+  assert(index == Poller::EVENT_ADD || index == Poller::EVENT_DEL);
+  std::size_t n = channels_.erase(fd);
+  assert(n == 1); CHAOS_UNUSED(n);
+
+  if (index == Poller::EVENT_ADD)
+    update(KQUEUEEVENT_DEL, channel);
+  channel->set_index(Poller::EVENT_NEW);
 }
 
 void EventKqueue::fill_active_channels(int nevents, std::vector<Channel*>& active_channels) const {
-  CHAOS_UNUSED(nevents), CHAOS_UNUSED(active_channels);
-  // TODO:
+  assert(Chaos::implicit_cast<std::size_t>(nevents) <= kqueue_events_.size());
+  for (int i = 0; i < nevents; ++i) {
+    Channel* channel = static_cast<Channel*>(kqueue_events_[i].udata);
+
+    int revents = 0;
+    if (kqueue_events_[i].filter == EVFILT_READ)
+      revents |= POLLIN;
+    if (kqueue_events_[i].filter == EVFILT_WRITE)
+      revents |= POLLOUT;
+    if (kqueue_events_[i].flags & EV_ERROR)
+      revents |= POLLERR;
+    if (kqueue_events_[i].flags & EV_EOF)
+      revents |= POLLHUP;
+
+    if (revents == 0)
+      continue;
+
+    channel->set_revents(revents);
+    active_channels.push_back(channel);
+  }
 }
 
 void EventKqueue::update(int operation, Channel* channel) {
-  CHAOS_UNUSED(operation), CHAOS_UNUSED(channel);
-  // TODO:
+  const int fd = channel->get_fd();
+  CHAOSLOG_TRACE << "EventKqueue::update - opetation=" << operation_to_string(operation)
+    << " fd=" << fd << " events={" << channel->get_events() << "}";
+
+  if (kqueue_event_ctl(operation, fd, channel) < 0) {
+    if (operation == KQUEUEEVENT_DEL)
+      CHAOSLOG_SYSERR << "EventKqueue::update - operation=" << operation_to_string(operation) << " fd=" << fd;
+    else
+      CHAOSLOG_SYSFATAL << "EventKqueue::update - operation=" << operation_to_string(operation) << " fd=" << fd;
+  }
 }
 
 int EventKqueue::kqueue_event_add(int fd, Channel* channel) {
@@ -116,11 +204,11 @@ int EventKqueue::kqueue_event_mod(int fd, Channel* channel) {
 
 int EventKqueue::kqueue_event_ctl(int operation, int fd, Channel* channel) {
   switch (operation) {
-  case KEVENT_ADD:
+  case KQUEUEEVENT_ADD:
     return kqueue_event_add(fd, channel);
-  case KEVENT_DEL:
+  case KQUEUEEVENT_DEL:
     return kqueue_event_del(fd);
-  case KEVENT_MOD:
+  case KQUEUEEVENT_MOD:
     return kqueue_event_mod(fd, channel);
   }
   return 0;
@@ -128,11 +216,11 @@ int EventKqueue::kqueue_event_ctl(int operation, int fd, Channel* channel) {
 
 const char* EventKqueue::operation_to_string(int operation) {
   switch (operation) {
-  case KEVENT_ADD:
+  case KQUEUEEVENT_ADD:
     return "ADD";
-  case KEVENT_DEL:
+  case KQUEUEEVENT_DEL:
     return "DEL";
-  case KEVENT_MOD:
+  case KQUEUEEVENT_MOD:
     return "MOD";
   }
   return "Unknown Operation";
