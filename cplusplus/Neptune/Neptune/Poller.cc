@@ -24,9 +24,17 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <Chaos/Platform.h>
 #include <Neptune/Channel.h>
 #include <Neptune/EventLoop.h>
 #include <Neptune/Poller.h>
+#include <Neptune/EventPoll.h>
+#include <Neptune/EventSelect.h>
+#if defined(CHAOS_LINUX)
+// need TODO:
+#elif defined(CHAOS_DARWIN)
+# include <Neptune/Darwin/EventKqueue.h>
+#endif
 
 namespace Neptune {
 
@@ -48,7 +56,18 @@ void Poller::assert_in_loopthread(void) const {
 }
 
 Poller* Poller::get_poller(EventLoop* loop) {
-  // TODO:
+#if defined(NEPTUNE_USE_SELECT)
+  return new Neptune::EventSelect(loop);
+#elif defined(NEPTUNE_USE_POLL)
+  return new Neptune::EventPoll(loop);
+#else
+# if defined(CHAOS_WINDOWS)
+  return new Neptune::EventPoll(loop);
+# elif defined(CHAOS_LINUX)
+# elif defined(CHAOS_DARWIN)
+  return new Neptune::EventKqueue(loop);
+# endif
+#endif
   return nullptr;
 }
 
