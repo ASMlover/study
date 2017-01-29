@@ -51,7 +51,7 @@ EventKqueue::EventKqueue(EventLoop* loop)
 }
 
 EventKqueue::~EventKqueue(void) {
-  // TODO:
+  close(kqueuefd_);
 }
 
 Chaos::Timestamp EventKqueue::poll(int timeout, std::vector<Channel*>& active_channels) {
@@ -81,26 +81,48 @@ void EventKqueue::update(int operation, Channel* channel) {
 }
 
 int EventKqueue::kqueue_event_add(int fd, Channel* channel) {
-  CHAOS_UNUSED(fd), CHAOS_UNUSED(channel);
-  // TODO:
-  return 0;
+  struct kevent kev[2];
+  int nchanges = 0;
+
+  if (channel->is_reading())
+    EV_SET(kev + nchanges++, fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, (void*)channel);
+  if (channel->is_writing())
+    EV_SET(kev + nchanges++, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, (void*)channel);
+  return kevent(kqueuefd_, kev, nchanges, nullptr, 0, nullptr);
 }
 
 int EventKqueue::kqueue_event_del(int fd) {
-  CHAOS_UNUSED(fd);
-  // TODO:
-  return 0;
+  struct kevent kev[2];
+
+  EV_SET(&kev[0], fd, EVFILT_READ, EV_DELETE, 0, 0, nullptr);
+  EV_SET(&kev[1], fd, EVFILT_WRITE, EV_DELETE, 0, 0, nullptr);
+  return kevent(kqueuefd_, kev, 2, nullptr, 0, nullptr);
 }
 
 int EventKqueue::kqueue_event_mod(int fd, Channel* channel) {
-  CHAOS_UNUSED(fd), CHAOS_UNUSED(channel);
-  // TODO:
-  return 0;
+  struct kevent kev[2];
+  int nchanges = 0;
+
+  if (channel->is_reading())
+    EV_SET(kev + nchanges++, fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, (void*)channel);
+  else
+    EV_SET(kev + nchanges++, fd, EVFILT_READ, EV_DELETE, 0, 0, nullptr);
+  if (channel->is_writing())
+    EV_SET(kev + nchanges++, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, (void*)channel);
+  else
+    EV_SET(kev + nchanges++, fd, EVFILT_WRITE, EV_DELETE, 0, 0, nullptr);
+  return kevent(kqueuefd_, kev, nchanges, nullptr, 0, nullptr);
 }
 
 int EventKqueue::kqueue_event_ctl(int operation, int fd, Channel* channel) {
-  CHAOS_UNUSED(operation), CHAOS_UNUSED(channel);
-  // TODO:
+  switch (operation) {
+  case KEVENT_ADD:
+    return kqueue_event_add(fd, channel);
+  case KEVENT_DEL:
+    return kqueue_event_del(fd);
+  case KEVENT_MOD:
+    return kqueue_event_mod(fd, channel);
+  }
   return 0;
 }
 
