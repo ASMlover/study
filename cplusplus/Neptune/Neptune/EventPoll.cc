@@ -24,8 +24,9 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <algorithm>
+#include <cassert>
 #include <cerrno>
+#include <algorithm>
 #include <Chaos/Types.h>
 #include <Chaos/Logging/Logging.h>
 #include <Neptune/Channel.h>
@@ -64,10 +65,10 @@ Chaos::Timestamp EventPoll::poll(int timeout, std::vector<Channel*>& active_chan
 void EventPoll::update_channel(Channel* channel) {
   assert_in_loopthread();
 
-  int fd = channel->get_fd();
+  const int fd = channel->get_fd();
   CHAOSLOG_TRACE << "EventPoll::update_channel - fd=" << fd << ", events=" << channel->get_events();
   if (channel->get_index() < 0) {
-    CHAOS_CHECK(channels_.find(fd) == channels_.end(), "fd not in channels");
+    assert(channels_.find(fd) == channels_.end());
     NetOps::Pollfd_t pfd;
     pfd.fd = fd;
     pfd.events = static_cast<short>(channel->get_events());
@@ -77,12 +78,12 @@ void EventPoll::update_channel(Channel* channel) {
     channels_[fd] = channel;
   }
   else {
-    CHAOS_CHECK(channels_.find(fd) != channels_.end(), "fd should in channels");
-    CHAOS_CHECK(channels_[fd] == channel, "fd should in channels");
-    int index = channel->get_index();
-    CHAOS_CHECK(0 <= index && index < static_cast<int>(pollfds_.size()), "index should valid");
+    const int index = channel->get_index();
+    assert(channels_.find(fd) != channels_.end());
+    assert(channels_[fd] == channel);
+    assert(0 <= index && index < static_cast<int>(pollfds_.size()));
     NetOps::Pollfd_t& pfd = pollfds_[index];
-    CHAOS_CHECK(pfd.fd == fd || pfd.fd == -fd - 1, "");
+    assert(pfd.fd == fd || pfd.fd == -fd - 1);
     pfd.events = static_cast<short>(channel->get_events());
     pfd.revents = 0;
     if (channel->is_none_event())
@@ -93,18 +94,19 @@ void EventPoll::update_channel(Channel* channel) {
 void EventPoll::remove_channel(Channel* channel) {
   assert_in_loopthread();
 
-  int fd = channel->get_fd();
+  const int fd = channel->get_fd();
+  const int index = channel->get_index();
   CHAOSLOG_TRACE << "EventPoll::remove_channel - fd=" << fd;
-  CHAOS_CHECK(channels_.find(fd) != channels_.end(), "fd should not in channels");
-  CHAOS_CHECK(channels_[fd] == channel, "channels_[fd] should equal to channel");
-  CHAOS_CHECK(channel->is_none_event(), "channel should none event");
 
-  int index = channel->get_index();
-  CHAOS_CHECK(0 <= index && index < static_cast<int>(pollfds_.size()), "index of channel should valid");
+  assert(channels_.find(fd) != channels_.end());
+  assert(channels_[fd] == channel);
+  assert(channel->is_none_event());
+  assert(0 <= index && index < static_cast<int>(pollfds_.size()));
+
   const NetOps::Pollfd_t& pfd = pollfds_[index];
-  CHAOS_CHECK(pfd.fd == -fd - 1 && pfd.events == channel->get_events(), "pollfd should valid");
+  assert(pfd.fd == -fd - 1 && pfd.events == channel->get_events()); CHAOS_UNUSED(pfd);
   std::size_t n = channels_.erase(fd);
-  CHAOS_CHECK(n == 1, "remove channel count should be 1");
+  assert(n == 1); CHAOS_UNUSED(n);
   if (Chaos::implicit_cast<std::size_t>(index) == pollfds_.size() - 1) {
     pollfds_.pop_back();
   }
@@ -126,9 +128,9 @@ void EventPoll::fill_active_channels(int nevents, std::vector<Channel*>& active_
     if (pfd.revents > 0) {
       --nevents;
       const auto channel_pair = channels_.find(pfd.fd);
-      CHAOS_CHECK(channel_pair != channels_.end(), "channel_pair with fd not in channels_");
+      assert(channel_pair != channels_.end());
       Channel* channel = channel_pair->second;
-      CHAOS_CHECK(channel->get_fd() == pfd.fd, "channel's fd should equal to pfd.fd");
+      assert(channel->get_fd() == pfd.fd);
       channel->set_revents(pfd.revents);
       active_channels.push_back(channel);
     }
