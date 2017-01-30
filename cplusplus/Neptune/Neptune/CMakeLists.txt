@@ -62,6 +62,7 @@ else()
   if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     set(NEPTUNE_SOURCES ${NEPTUNE_SOURCES}
 
+      Linux/EventEpoll.cc
       Linux/EventSelect.cc
       Linux/WakeupSignaler.cc
       )
