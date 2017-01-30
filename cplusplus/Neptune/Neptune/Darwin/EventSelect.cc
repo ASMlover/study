@@ -132,7 +132,7 @@ void EventSelect::update_channel(Channel* channel) {
 
   if (index == Poller::EVENT_NEW || index == Poller::EVENT_DEL) {
     if (index == Poller::EVENT_NEW) {
-      CHAOS_CHECK(channels_.find(fd) == channels_.end(), "channel of fd not in channels");
+      assert(channels_.find(fd) == channels_.end());
       if (channels_.size() >= static_cast<std::size_t>(fd_storage_)) {
         int new_fdcount = (fd_storage_ != 0 ? static_cast<int>(1.5 * fd_storage_) : FD_SETSIZE);
         fds_in_.resize(new_fdcount);
@@ -142,8 +142,8 @@ void EventSelect::update_channel(Channel* channel) {
       channels_[fd] = channel;
     }
     else {
-      CHAOS_CHECK(channels_.find(fd) != channels_.end(), "channel of fd should in channels");
-      CHAOS_CHECK(channels_[fd] == channel, "channel of fd should in channels");
+      assert(channels_.find(fd) != channels_.end());
+      assert(channels_[fd] == channel);
     }
 
     FD_SET(fd, fds_in_.error_fds);
@@ -157,9 +157,9 @@ void EventSelect::update_channel(Channel* channel) {
       max_fd_ = fd;
   }
   else {
-    CHAOS_CHECK(channels_.find(fd) != channels_.end(), "channel of fd should in channels");
-    CHAOS_CHECK(channels_[fd] == channel, "channel of fd should in channels");
-    CHAOS_CHECK(index == Poller::EVENT_ADD, "channel index should be EVENT_ADD");
+    assert(channels_.find(fd) != channels_.end());
+    assert(channels_[fd] == channel);
+    assert(index == Poller::EVENT_ADD);
     if (channel->is_none_event()) {
       fds_in_.remove(fd);
       channel->set_index(Poller::EVENT_DEL);
