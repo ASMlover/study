@@ -31,7 +31,7 @@
 #include <Neptune/EventPoll.h>
 #include <Neptune/EventSelect.h>
 #if defined(CHAOS_LINUX)
-// need TODO:
+# include <Neptune/Linux/EventEpoll.h>
 #elif defined(CHAOS_DARWIN)
 # include <Neptune/Darwin/EventKqueue.h>
 #endif
@@ -64,6 +64,7 @@ Poller* Poller::get_poller(EventLoop* loop) {
 # if defined(CHAOS_WINDOWS)
   return new Neptune::EventPoll(loop);
 # elif defined(CHAOS_LINUX)
+  return new Neptune::EventEpoll(loop);
 # elif defined(CHAOS_DARWIN)
   return new Neptune::EventKqueue(loop);
 # endif
