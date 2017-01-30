@@ -147,7 +147,7 @@ void EventEpoll::update(int operation, Channel* channel) {
   struct epoll_event event{};
   event.events = channel->get_events();
   event.data.ptr = channel;
-  if (epoll_crl(epollfd_, operation, fd, &event) < 0) {
+  if (epoll_ctl(epollfd_, operation, fd, &event) < 0) {
     if (operation == Poller::EVENT_DEL)
       CHAOSLOG_SYSERR << "EventEpoll::update - operation=" << operation_to_string(operation) << " fd=" << fd;
     else
