@@ -168,6 +168,9 @@
     $ git pull
     正常情况在主项目pull之后需要git status查看子模块是否有更新。
 
+    在一个工程中更新子模块：
+    $ git submodule update --init --recursive
+
 ## **6. git emoji**
   * :art: - `:art:` 改进代码结构或格式
   * :zap:/:racehorse: - `:zapo:/:racehorse:` 提升性能
