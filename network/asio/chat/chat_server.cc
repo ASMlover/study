@@ -31,7 +31,7 @@
 
 using boost::asio::ip::tcp;
 
-class ChatSession : public std::enable_shared_from_this<ChatSession> {
+class ChatSession : private boost::noncopyable, public std::enable_shared_from_this<ChatSession> {
   static const int kDefBufferBytes = 1024;
 
   tcp::socket socket_;

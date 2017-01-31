@@ -76,9 +76,9 @@ public:
     : socket_(io_service) {
   }
 
-  void start(tcp::resolver::iterator endpoint) {
-    std::cout << "ChatClient::start - begin connect to chat.server ..." << std::endl;
-    boost::asio::async_connect(socket_, endpoint,
+  void start(tcp::resolver::iterator epiter) {
+    std::cout << "ChatClient::start - connecting to chat.server ..." << std::endl;
+    boost::asio::async_connect(socket_, epiter,
         [this](const boost::system::error_code& ec, tcp::resolver::iterator /*endpoint*/) {
           if (!ec) {
             std::cout << "ChatClient::start - connect to chat.server success ..." << std::endl;
