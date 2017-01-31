@@ -31,6 +31,8 @@
 using boost::asio::ip::tcp;
 
 class ChatClient : private boost::noncopyable {
+  static const int kDefBufferBytes = 1024;
+
   tcp::socket socket_;
   std::vector<char> buffer_;
 
@@ -55,18 +57,22 @@ class ChatClient : private boost::noncopyable {
   }
 public:
   ChatClient(boost::asio::io_service& io_service)
-    : socket_(io_service) {
+    : socket_(io_service)
+    , buffer_(kDefBufferBytes) {
   }
 
-  void start(const char* host = "127.0.0.1", const char* port = "5555") {
-    std::cout << "begin connect to {" << host << ", " << port << "} ..." << std::endl;
-    tcp::resolver r(socket_.get_io_service());
-    boost::asio::async_connect(socket_, r.resolve({host, port}),
-        [this, host, port](const boost::system::error_code& ec, tcp::resolver::iterator /*endpoint*/) {
+  void start(tcp::resolver::iterator endpoint) {
+    std::cout << "ChatClient::start - begin connect to chat.server ..." << std::endl;
+    boost::asio::async_connect(socket_, endpoint,
+        [this](const boost::system::error_code& ec, tcp::resolver::iterator /*endpoint*/) {
           if (!ec) {
-            std::cout << "connect to {" << host << ", " << port << "} success ..." << std::endl;
+            std::cout << "ChatClient::start - connect to chat.server success ..." << std::endl;
+
             do_read();
             do_write();
+          }
+          else {
+            socket_.close();
           }
         });
   }
@@ -77,8 +83,9 @@ int main(int argc, char* argv[]) {
 
   boost::asio::io_service io_service;
 
-  ChatClient clint(io_service);
-  clint.start();
+  ChatClient client(io_service);
+  tcp::resolver r(io_service);
+  client.start(r.resolve({"127.0.0.1", "5555"}));
 
   io_service.run();
 
