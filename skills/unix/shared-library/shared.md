@@ -11,6 +11,8 @@
     1) gcc -o $@ $^ -lxxx
     2) 在具体运行的时候还需要设置环境变量export LD_LIBRARY_PATH=/xxx/xx/xx
     3) 具体例子请参见./shared-demo/
+    4) 如果是macOS系统，需要链接的是dylib类型的共享库，则需要使用
+        $ export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/xxx/yyy/zzz
 
 ## **`error while loading shared libraries: xxx.so.x`解决方法**
     1) 原因：
