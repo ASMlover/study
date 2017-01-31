@@ -30,35 +30,50 @@
 
 using boost::asio::ip::tcp;
 
-class ChatClient : private boost::noncopyable {
+class ChatSession : private boost::noncopyable, public std::enable_shared_from_this<ChatSession> {
   static const int kDefBufferBytes = 1024;
 
   tcp::socket socket_;
   std::vector<char> buffer_;
 
   void do_read(void) {
+    auto self(shared_from_this());
     socket_.async_read_some(boost::asio::buffer(buffer_),
-        [this](const boost::system::error_code& ec, std::size_t /*n*/) {
+        [this, self](const boost::system::error_code& ec, std::size_t /*read_bytes*/) {
           if (!ec)
-            std::cout << "receive from server: " << buffer_.data() << std::endl;
+            std::cout << "ChatSession::do_read - read data from server: " << buffer_.data() << std::endl;
 
           socket_.close();
         });
   }
 
   void do_write(void) {
-    std::string send_msg("This is chat client");
-    boost::asio::async_write(socket_, boost::asio::buffer(send_msg),
-        [this](const boost::system::error_code& ec, std::size_t /*n*/) {
-          std::cout << "ChatClient::do_write - write complete handler coming ..." << std::endl;
+    std::string write_message("ChatClient.ChatSession<do_write>");
+    auto self(shared_from_this());
+    boost::asio::async_write(socket_, boost::asio::buffer(write_message),
+        [this, self](const boost::system::error_code& ec, std::size_t /*written_bytes*/) {
+          std::cout << "ChatSession::do_write - write complete handler coming ..." << std::endl;
           if (ec)
             socket_.close();
         });
   }
 public:
-  ChatClient(boost::asio::io_service& io_service)
-    : socket_(io_service)
+  ChatSession(tcp::socket&& socket)
+    : socket_(std::move(socket))
     , buffer_(kDefBufferBytes) {
+  }
+
+  void start(void) {
+    do_read();
+    do_write();
+  }
+};
+
+class ChatClient : private boost::noncopyable {
+  tcp::socket socket_;
+public:
+  ChatClient(boost::asio::io_service& io_service)
+    : socket_(io_service) {
   }
 
   void start(tcp::resolver::iterator endpoint) {
@@ -67,9 +82,7 @@ public:
         [this](const boost::system::error_code& ec, tcp::resolver::iterator /*endpoint*/) {
           if (!ec) {
             std::cout << "ChatClient::start - connect to chat.server success ..." << std::endl;
-
-            do_read();
-            do_write();
+            std::make_shared<ChatSession>(std::move(socket_))->start();
           }
           else {
             socket_.close();
