@@ -62,6 +62,10 @@ public:
     return data_ + NHEADER;
   }
 
+  std::size_t get_nheader(void) const {
+    return NHEADER;
+  }
+
   std::size_t get_nbody(void) const {
     return nbody_;
   }
