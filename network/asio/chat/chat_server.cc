@@ -25,11 +25,48 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <algorithm>
+#include <functional>
 #include <memory>
+#include <deque>
+#include <set>
 #include <vector>
 #include <boost/asio.hpp>
+#include "chat_message.h"
 
 using boost::asio::ip::tcp;
+
+typedef std::deque<ChatMessage> ChatMessageQueue;
+
+class ChatParticipant {
+public:
+  virtual ~ChatParticipant(void) {}
+  virtual void deliver(const ChatMessage& msg) = 0;
+};
+
+typedef std::shared_ptr<ChatParticipant> ChatParticipantPtr;
+
+class ChatRoom : private boost::noncopyable {
+  enum { MAX_RECENT_NMSG = 100 };
+  std::set<ChatParticipantPtr> participants_;
+  ChatMessageQueue recent_msgs_;
+public:
+  void join(const ChatParticipantPtr& participant) {
+    participants_.insert(participant);
+    std::for_each(recent_msgs_.begin(), recent_msgs_.end(),
+        [this](const ChatMessage& msg) {
+          recent_msgs_.push_back(msg);
+          while (recent_msgs_.size() > MAX_RECENT_NMSG)
+            recent_msgs_.pop_front();
+
+          std::for_each(participants_.begin(), participants_.end(),
+            std::bind(&ChatParticipant::deliver, std::placeholders::_1, std::ref(msg)));
+        });
+  }
+
+  void leave(const ChatParticipantPtr& participant) {
+    participants_.erase(participant);
+  }
+};
 
 class ChatSession : private boost::noncopyable, public std::enable_shared_from_this<ChatSession> {
   static const int kDefBufferBytes = 1024;
