@@ -144,12 +144,13 @@ public:
 class ChatServer : private boost::noncopyable {
   tcp::acceptor acceptor_;
   tcp::socket socket_;
+  ChatRoom room_;
 
   void do_accept(void) {
     acceptor_.async_accept(socket_,
         [this](const boost::system::error_code& ec) {
           if (!ec)
-            std::make_shared<ChatSession>(std::move(socket_))->start();
+            std::make_shared<ChatSession>(std::move(socket_), room_)->start();
 
           do_accept();
         });
