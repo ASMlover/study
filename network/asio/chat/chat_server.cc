@@ -133,7 +133,8 @@ public:
     wmsg_queue_.push_back(msg);
     if (!write_in_progress) {
       auto self(shared_from_this());
-      boost::asio::async_write(socket_, boost::asio::buffer(wmsg_queue_.front().data(), wmsg_queue_.front().size()),
+      boost::asio::async_write(socket_,
+          boost::asio::buffer(wmsg_queue_.front().data(), wmsg_queue_.front().size()),
           [this, self](const boost::system::error_code& ec, std::size_t /*written_bytes*/) {
             do_write(ec);
           });
