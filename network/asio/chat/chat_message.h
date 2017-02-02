@@ -31,11 +31,12 @@
 #include <cstdlib>
 #include <cstring>
 
+enum EDef_ChatMessage {
+  NHEADER = 4,
+  MAX_NBODY = 512,
+};
+
 class ChatMessage {
-  enum {
-    NHEADER = 4,
-    MAX_NBODY = 512,
-  };
   char data_[NHEADER + MAX_NBODY]{};
   std::size_t nbody_{};
 public:
@@ -68,6 +69,14 @@ public:
 
   std::size_t get_nbody(void) const {
     return nbody_;
+  }
+
+  static std::size_t default_nheader(void) {
+    return NHEADER;
+  }
+
+  static std::size_t default_nbody(void) {
+    return MAX_NBODY;
   }
 
   void set_nbody(std::size_t new_len) {
