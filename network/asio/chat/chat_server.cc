@@ -52,10 +52,8 @@ class ChatRoom : private boost::noncopyable {
 public:
   void join(const ChatParticipantPtr& participant) {
     participants_.insert(participant);
-    std::for_each(recent_msgs_.begin(), recent_msgs_.end(),
-        [this](const ChatMessage& msg) {
-          deliver(msg);
-        });
+    for (const auto& msg : recent_msgs_)
+      participant->deliver(msg);
   }
 
   void leave(const ChatParticipantPtr& participant) {
@@ -67,8 +65,8 @@ public:
     while (recent_msgs_.size() > MAX_RECENT_NMSG)
       recent_msgs_.pop_front();
 
-    std::for_each(participants_.begin(), participants_.end(),
-        std::bind(&ChatParticipant::deliver, std::placeholders::_1, std::ref(msg)));
+    for (auto& participant : participants_)
+      participant->deliver(msg);
   }
 };
 
