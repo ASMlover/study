@@ -62,7 +62,7 @@ class ChatClient : private boost::noncopyable {
     boost::asio::async_read(socket_, boost::asio::buffer(rmsg_.body(), rmsg_.get_nbody()),
         [this](const boost::system::error_code& ec, std::size_t /*read_bytes*/) {
           if (!ec) {
-            std::cout << "(" << rmsg_.get_nbody() << ") - " << rmsg_.body() << std::endl;
+            std::cout.write(rmsg_.body(), rmsg_.get_nbody()); std::cout << std::endl;
             do_read_header();
           }
           else {
@@ -121,8 +121,8 @@ int main(int argc, char* argv[]) {
   client.start(endpoint_iter);
 
   std::thread t([&io_service](void) { io_service.run(); });
-  char line[513]{};
-  while (std::cin.getline(line, 513)) {
+  char line[MAX_NBODY + 1]{};
+  while (std::cin.getline(line, MAX_NBODY + 1)) {
     ChatMessage msg;
     msg.set_nbody(std::strlen(line));
     std::memcpy(msg.body(), line, msg.get_nbody());
