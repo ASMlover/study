@@ -117,8 +117,21 @@ int main(int argc, char* argv[]) {
 
   tcp::resolver r(io_service);
   auto endpoint_iter = r.resolve({"127.0.0.1", "5555"});
+  ChatClient client(io_service);
+  client.start(endpoint_iter);
 
-  io_service.run();
+  std::thread t([&io_service](void) { io_service.run(); });
+  char line[513]{};
+  while (std::cin.getline(line, 513)) {
+    ChatMessage msg;
+    msg.set_nbody(std::strlen(line));
+    std::memcpy(msg.body(), line, msg.get_nbody());
+    msg.encode_header();
+    client.write(msg);
+  }
+
+  client.close();
+  t.join();
 
   return 0;
 }
