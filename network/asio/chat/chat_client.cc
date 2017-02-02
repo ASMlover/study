@@ -27,72 +27,12 @@
 #include <iostream>
 #include <deque>
 #include <vector>
+#include <thread>
 #include <boost/asio.hpp>
 #include "chat_message.h"
 
 using boost::asio::ip::tcp;
 using ChatMessageQueue = std::deque<ChatMessage>;
-
-// class ChatSession : private boost::noncopyable, public std::enable_shared_from_this<ChatSession> {
-//   static const int kDefBufferBytes = 1024;
-//
-//   tcp::socket socket_;
-//   std::vector<char> buffer_;
-//
-//   void do_read(void) {
-//     auto self(shared_from_this());
-//     socket_.async_read_some(boost::asio::buffer(buffer_),
-//         [this, self](const boost::system::error_code& ec, std::size_t /*read_bytes*/) {
-//           if (!ec)
-//             std::cout << "ChatSession::do_read - read data from server: " << buffer_.data() << std::endl;
-//
-//           socket_.close();
-//         });
-//   }
-//
-//   void do_write(void) {
-//     std::string write_message("ChatClient.ChatSession<do_write>");
-//     auto self(shared_from_this());
-//     boost::asio::async_write(socket_, boost::asio::buffer(write_message),
-//         [this, self](const boost::system::error_code& ec, std::size_t /*written_bytes*/) {
-//           std::cout << "ChatSession::do_write - write complete handler coming ..." << std::endl;
-//           if (ec)
-//             socket_.close();
-//         });
-//   }
-// public:
-//   ChatSession(tcp::socket&& socket)
-//     : socket_(std::move(socket))
-//     , buffer_(kDefBufferBytes) {
-//   }
-//
-//   void start(void) {
-//     do_read();
-//     do_write();
-//   }
-// };
-//
-// class ChatClient : private boost::noncopyable {
-//   tcp::socket socket_;
-// public:
-//   ChatClient(boost::asio::io_service& io_service)
-//     : socket_(io_service) {
-//   }
-//
-//   void start(tcp::resolver::iterator epiter) {
-//     std::cout << "ChatClient::start - connecting to chat.server ..." << std::endl;
-//     boost::asio::async_connect(socket_, epiter,
-//         [this](const boost::system::error_code& ec, tcp::resolver::iterator /*endpoint*/) {
-//           if (!ec) {
-//             std::cout << "ChatClient::start - connect to chat.server success ..." << std::endl;
-//             std::make_shared<ChatSession>(std::move(socket_))->start();
-//           }
-//           else {
-//             socket_.close();
-//           }
-//         });
-//   }
-// };
 
 class ChatClient : private boost::noncopyable {
   boost::asio::io_service& io_service_;
@@ -100,12 +40,50 @@ class ChatClient : private boost::noncopyable {
   ChatMessage rmsg_;
   ChatMessageQueue wmsg_queue_;
 
-  void do_read(void) {
-    // TODO:
+  void do_connect(tcp::resolver::iterator endpoint_iter) {
+    boost::asio::async_connect(socket_, endpoint_iter,
+        [this](const boost::system::error_code& ec, tcp::resolver::iterator) {
+          if (!ec)
+            do_read_header();
+        });
   }
 
-  void do_write(const ChatMessage& msg) {
-    // TODO:
+  void do_read_header(void) {
+    boost::asio::async_read(socket_, boost::asio::buffer(rmsg_.data(), rmsg_.get_nheader()),
+        [this](const boost::system::error_code& ec, std::size_t /*read_bytes*/) {
+          if (!ec && rmsg_.decode_header())
+            do_read_body();
+          else
+            socket_.close();
+        });
+  }
+
+  void do_read_body(void) {
+    boost::asio::async_read(socket_, boost::asio::buffer(rmsg_.body(), rmsg_.get_nbody()),
+        [this](const boost::system::error_code& ec, std::size_t /*read_bytes*/) {
+          if (!ec) {
+            std::cout << "(" << rmsg_.get_nbody() << ") - " << rmsg_.body() << std::endl;
+            do_read_header();
+          }
+          else {
+            socket_.close();
+          }
+        });
+  }
+
+  void do_write(void) {
+    boost::asio::async_write(socket_,
+        boost::asio::buffer(wmsg_queue_.front().data(), wmsg_queue_.front().size()),
+        [this](const boost::system::error_code& ec, std::size_t /*written_bytes*/) {
+          if (!ec) {
+            wmsg_queue_.pop_front();
+            if (!wmsg_queue_.empty())
+              do_write();
+          }
+          else {
+            socket_.close();
+          }
+        });
   }
 public:
   ChatClient(boost::asio::io_service& io_service)
@@ -114,15 +92,17 @@ public:
   }
 
   void start(tcp::resolver::iterator endpoint_iter) {
-    boost::asio::async_connect(socket_, endpoint_iter,
-        [this](const boost::system::error_code& ec, tcp::resolver::iterator) {
-          if (!ec)
-            do_read();
-        });
+    do_connect(endpoint_iter);
   }
 
   void write(const ChatMessage& msg) {
-    // TODO:
+    io_service_.post(
+        [this, msg](void) {
+          bool write_in_progress = !wmsg_queue_.empty();
+          wmsg_queue_.push_back(msg);
+          if (!write_in_progress)
+            do_write();
+        });
   }
 
   void close(void) {
@@ -135,9 +115,8 @@ int main(int argc, char* argv[]) {
 
   boost::asio::io_service io_service;
 
-  // ChatClient client(io_service);
-  // tcp::resolver r(io_service);
-  // client.start(r.resolve({"127.0.0.1", "5555"}));
+  tcp::resolver r(io_service);
+  auto endpoint_iter = r.resolve({"127.0.0.1", "5555"});
 
   io_service.run();
 
