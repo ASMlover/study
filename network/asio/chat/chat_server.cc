@@ -76,40 +76,23 @@ class ChatSession : public ChatParticipant, public std::enable_shared_from_this<
   ChatMessage rmsg_;
   ChatMessageQueue wmsg_queue_;
 
-  void do_start(void) {
+  void do_read_header(void) {
     auto self(shared_from_this());
     boost::asio::async_read(socket_, boost::asio::buffer(rmsg_.data(), rmsg_.get_nheader()),
         [this, self](const boost::system::error_code& ec, std::size_t /*read_bytes*/) {
-          if (!ec && rmsg_.decode_header()) {
-            boost::asio::async_read(socket_, boost::asio::buffer(rmsg_.body(), rmsg_.get_nbody()),
-              [this, self](const boost::system::error_code& ec, std::size_t /*read_bytes*/) {
-                if (!ec)
-                  do_start();
-                else
-                  room_.leave(shared_from_this());
-              });
-          }
-          else {
+          if (!ec && rmsg_.decode_header())
+            do_read_body();
+          else
             room_.leave(shared_from_this());
-          }
         });
   }
 
-  void do_write(const boost::system::error_code& ec) {
-    if (!ec) {
-      wmsg_queue_.pop_front();
-      if (!wmsg_queue_.empty()) {
-        auto self(shared_from_this());
-        boost::asio::async_write(socket_,
-            boost::asio::buffer(wmsg_queue_.front().data(), wmsg_queue_.front().size()),
-            [this, self](const boost::system::error_code& ec, std::size_t /*n*/) {
-              do_write(ec);
-            });
-      }
-    }
-    else {
-      room_.leave(shared_from_this());
-    }
+  void do_read_body(void) {
+    // TODO:
+  }
+
+  void do_write(void) {
+    // TODO:
   }
 public:
   ChatSession(tcp::socket&& socket, ChatRoom& room)
@@ -123,20 +106,14 @@ public:
 
   void start(void) {
     room_.join(shared_from_this());
-    do_start();
+    do_read_header();
   }
 
   void deliver(const ChatMessage& msg) {
     bool write_in_progress = !wmsg_queue_.empty();
     wmsg_queue_.push_back(msg);
-    if (!write_in_progress) {
-      auto self(shared_from_this());
-      boost::asio::async_write(socket_,
-          boost::asio::buffer(wmsg_queue_.front().data(), wmsg_queue_.front().size()),
-          [this, self](const boost::system::error_code& ec, std::size_t /*written_bytes*/) {
-            do_write(ec);
-          });
-    }
+    if (!write_in_progress)
+      do_write();
   }
 };
 
