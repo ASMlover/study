@@ -88,11 +88,33 @@ class ChatSession : public ChatParticipant, public std::enable_shared_from_this<
   }
 
   void do_read_body(void) {
-    // TODO:
+    auto self(shared_from_this());
+    boost::asio::async_read(socket_, boost::asio::buffer(rmsg_.body(), rmsg_.get_nbody()),
+        [this, self](const boost::system::error_code& ec, std::size_t /*read_bytes*/) {
+          if (!ec) {
+            room_.deliver(rmsg_);
+            do_read_header();
+          }
+          else {
+            room_.leave(shared_from_this());
+          }
+        });
   }
 
   void do_write(void) {
-    // TODO:
+    auto self(shared_from_this());
+    boost::asio::async_write(socket_,
+        boost::asio::buffer(wmsg_queue_.front().data(), wmsg_queue_.front().size()),
+        [this, self](const boost::system::error_code& ec, std::size_t /*written_bytes*/) {
+          if (!ec) {
+            wmsg_queue_.pop_front();
+            if (!wmsg_queue_.empty())
+              do_write();
+          }
+          else {
+            room_.leave(shared_from_this());
+          }
+        });
   }
 public:
   ChatSession(tcp::socket&& socket, ChatRoom& room)
