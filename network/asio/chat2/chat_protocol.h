@@ -26,12 +26,14 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
 struct ChatProtocol {
   enum ProtocolType {
+    CP_UNKNOWN,
     CP_SESSION,
     CP_MESSAGE,
   };
@@ -40,10 +42,70 @@ struct ChatProtocol {
     NHEADER = 4,
     NBODY_MAX = 1024,
   };
+
+  std::int16_t msglen;
+  std::int16_t proto;
 };
 
 class ChatMessage {
   char data_[ChatProtocol::NHEADER + ChatProtocol::NBODY_MAX];
+  int proto_{};
   std::size_t nbody_{};
 public:
+  char* data(void) {
+    return data_;
+  }
+
+  const char* data(void) const {
+    return data_;
+  }
+
+  std::size_t size(void) const {
+    return ChatProtocol::NHEADER + nbody_;
+  }
+
+  char* body(void) {
+    return data_ + ChatProtocol::NHEADER;
+  }
+
+  const char* body(void) const {
+    return data_ + ChatProtocol::NHEADER;
+  }
+
+  void set_nbody(std::size_t new_nbody) {
+    nbody_ = new_nbody;
+    if (nbody_ > ChatProtocol::NBODY_MAX)
+      nbody_ = ChatProtocol::NBODY_MAX;
+  }
+
+  std::size_t get_nbody(void) const {
+    return nbody_;
+  }
+
+  void set_proto(int proto) {
+    proto_ = proto;
+  }
+
+  int get_proto(void) const {
+    return proto_;
+  }
+
+  void encode_header(void) {
+    ChatProtocol cp;
+    cp.proto = static_cast<std::int16_t>(proto_);
+    cp.msglen = static_cast<std::int16_t>(nbody_);
+    std::memcpy(data_, &cp, sizeof(cp));
+  }
+
+  bool decode_header(void) {
+    ChatProtocol cp;
+    std::memcpy(&cp, data_, ChatProtocol::NHEADER);
+    proto_ = cp.proto;
+    nbody_ = cp.msglen;
+    if (nbody_ > ChatProtocol::NBODY_MAX) {
+      nbody_ = 0;
+      return false;
+    }
+    return true;
+  }
 };
