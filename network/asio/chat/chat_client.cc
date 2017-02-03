@@ -39,6 +39,7 @@ class ChatClient : private boost::noncopyable {
   tcp::socket socket_;
   ChatMessage rmsg_;
   ChatMessageQueue wmsg_queue_;
+  std::string session_id_;
 
   void do_connect(tcp::resolver::iterator endpoint_iter) {
     boost::asio::async_connect(socket_, endpoint_iter,
@@ -62,7 +63,14 @@ class ChatClient : private boost::noncopyable {
     boost::asio::async_read(socket_, boost::asio::buffer(rmsg_.body(), rmsg_.get_nbody()),
         [this](const boost::system::error_code& ec, std::size_t /*read_bytes*/) {
           if (!ec) {
-            std::cout.write(rmsg_.body(), rmsg_.get_nbody()); std::cout << std::endl;
+            if (session_id_.empty()) {
+              std::string s(rmsg_.body(), rmsg_.get_nbody());
+              session_id_ = s;
+            }
+            else {
+              std::cout.write(rmsg_.body(), rmsg_.get_nbody());
+              std::cout << std::endl;
+            }
             do_read_header();
           }
           else {
@@ -108,6 +116,10 @@ public:
   void close(void) {
     io_service_.post([this](void) { socket_.close(); });
   }
+
+  const std::string& get_session(void) const {
+    return session_id_;
+  }
 };
 
 int main(int argc, char* argv[]) {
@@ -121,11 +133,15 @@ int main(int argc, char* argv[]) {
   client.start(endpoint_iter);
 
   std::thread t([&io_service](void) { io_service.run(); });
+
   char line[MAX_NBODY + 1]{};
+  char session_prefix[64]{};
   while (std::cin.getline(line, MAX_NBODY + 1)) {
+    std::snprintf(session_prefix, sizeof(session_prefix), "[%s] - ", client.get_session().c_str());
     ChatMessage msg;
-    msg.set_nbody(std::strlen(line));
-    std::memcpy(msg.body(), line, msg.get_nbody());
+    msg.set_nbody(std::strlen(session_prefix) + std::strlen(line));
+    std::memcpy(msg.body(), session_prefix, std::strlen(session_prefix));
+    std::memcpy(msg.body() + std::strlen(session_prefix), line, std::strlen(line));
     msg.encode_header();
     client.write(msg);
   }
