@@ -27,10 +27,11 @@
 #include <atomic>
 #include <algorithm>
 #include <functional>
+#include <iostream>
 #include <memory>
+#include <sstream>
 #include <deque>
 #include <set>
-#include <sstream>
 #include <vector>
 #include <boost/asio.hpp>
 #include "chat_message.h"
@@ -76,12 +77,9 @@ public:
   static std::int64_t gen_id(void) {
     return ++s_id_;
   }
-
-  static std::string gen_session_id(void) {
-    std::stringstream ss;
-    return ss << gen_id(), ss.str();
-  }
 };
+
+std::atomic<std::int64_t> ChatRoom::s_id_;
 
 class ChatSession : public ChatParticipant, public std::enable_shared_from_this<ChatSession> {
   tcp::socket socket_;
@@ -129,6 +127,16 @@ class ChatSession : public ChatParticipant, public std::enable_shared_from_this<
           }
         });
   }
+
+  void reply_session_id(void) {
+    char buf[64]{};
+    std::snprintf(buf, sizeof(buf), "%08lld", ChatRoom::gen_id());
+    ChatMessage msg;
+    msg.set_nbody(std::strlen(buf));
+    std::memcpy(msg.body(), buf, msg.get_nbody());
+    msg.encode_header();
+    deliver(msg);
+  }
 public:
   ChatSession(tcp::socket&& socket, ChatRoom& room)
     : socket_(std::move(socket))
@@ -141,6 +149,7 @@ public:
 
   void start(void) {
     room_.join(shared_from_this());
+    reply_session_id();
     do_read_header();
   }
 
