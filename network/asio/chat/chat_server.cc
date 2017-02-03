@@ -24,11 +24,13 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <atomic>
 #include <algorithm>
 #include <functional>
 #include <memory>
 #include <deque>
 #include <set>
+#include <sstream>
 #include <vector>
 #include <boost/asio.hpp>
 #include "chat_message.h"
@@ -49,6 +51,8 @@ class ChatRoom : private boost::noncopyable {
   enum { MAX_RECENT_NMSG = 100 };
   std::set<ChatParticipantPtr> participants_;
   ChatMessageQueue recent_msgs_;
+
+  static std::atomic<std::int64_t> s_id_;
 public:
   void join(const ChatParticipantPtr& participant) {
     participants_.insert(participant);
@@ -67,6 +71,15 @@ public:
 
     for (auto& participant : participants_)
       participant->deliver(msg);
+  }
+
+  static std::int64_t gen_id(void) {
+    return ++s_id_;
+  }
+
+  static std::string gen_session_id(void) {
+    std::stringstream ss;
+    return ss << gen_id(), ss.str();
   }
 };
 
