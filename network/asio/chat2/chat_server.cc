@@ -79,6 +79,79 @@ public:
 
 std::atomic<std::int64_t> ChatRoom::s_id_;
 
+class ChatSession : public ChatParticipant, public std::enable_shared_from_this<ChatSession> {
+  tcp::socket socket_;
+  ChatRoom& chat_room_;
+  ChatMessage readmsg_;
+  ChatMessageQueue writmsg_queue_;
+
+  void do_write_session(void) {
+    char buf[64]{};
+    std::snprintf(buf, sizeof(buf), "%08lld", ChatRoom::gen_id());
+    ChatMessage msg = gen_chat_message(ChatProtocol::CP_SESSION, buf, std::strlen(buf));
+    deliver(msg);
+  }
+
+  void do_read_header(void) {
+    auto self(shared_from_this());
+    boost::asio::async_read(socket_, boost::asio::buffer(readmsg_.data(), ChatProtocol::NHEADER),
+        [this, self](const boost::system::error_code& ec, std::size_t /*n*/) {
+          if (!ec && readmsg_.decode_header())
+            do_read_body();
+          else
+            chat_room_.leave_out(shared_from_this());
+        });
+  }
+
+  void do_read_body(void) {
+    auto self(shared_from_this());
+    boost::asio::async_read(socket_, boost::asio::buffer(readmsg_.body(), readmsg_.get_nbody()),
+        [this, self](const boost::system::error_code& ec, std::size_t /*n*/) {
+          if (!ec) {
+            chat_room_.deliver(readmsg_);
+            do_read_header();
+          }
+          else {
+            chat_room_.leave_out(shared_from_this());
+          }
+        });
+  }
+
+  void do_write(void) {
+    auto self(shared_from_this());
+    boost::asio::async_write(socket_,
+        boost::asio::buffer(writmsg_queue_.front().data(), writmsg_queue_.front().size()),
+        [this, self](const boost::system::error_code& ec, std::size_t /*n*/) {
+          if (!ec) {
+            writmsg_queue_.pop_front();
+            if (!writmsg_queue_.empty())
+              do_write();
+          }
+          else {
+            chat_room_.leave_out(shared_from_this());
+          }
+        });
+  }
+public:
+  ChatSession(tcp::socket&& socket, ChatRoom& chat_room)
+    : socket_(std::move(socket))
+    , chat_room_(chat_room) {
+  }
+
+  void start(void) {
+    chat_room_.join_in(shared_from_this());
+    do_write_session();
+    do_read_header();
+  }
+
+  void deliver(const ChatMessage& msg) {
+    bool write_in_progress = !writmsg_queue_.empty();
+    writmsg_queue_.push_back(msg);
+    if (!write_in_progress)
+      do_write();
+  }
+};
+
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
