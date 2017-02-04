@@ -152,6 +152,31 @@ public:
   }
 };
 
+class ChatServer : private boost::noncopyable {
+  tcp::acceptor acceptor_;
+  tcp::socket socket_;
+  ChatRoom chat_room_;
+
+  void do_accept(void) {
+    acceptor_.async_accept(socket_,
+        [this](const boost::system::error_code& ec) {
+          if (!ec)
+            std::make_shared<ChatSession>(std::move(socket_), chat_room_)->start();
+
+          do_accept();
+        });
+  }
+public:
+  ChatServer(boost::asio::io_service& io_service, const tcp::endpoint& endpoint)
+    : acceptor_(io_service, endpoint)
+    , socket_(io_service) {
+  }
+
+  void start(void) {
+    do_accept();
+  }
+};
+
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
