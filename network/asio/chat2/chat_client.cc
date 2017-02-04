@@ -24,60 +24,11 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <atomic>
-#include <cstdlib>
+#include <cstdint>
+#include <cstdio>
 #include <iostream>
-#include <memory>
 #include <deque>
-#include <vector>
-#include <set>
 #include <boost/asio.hpp>
-#include "chat_protocol.h"
-
-using boost::asio::ip::tcp;
-using ChatMessageQueue = std::deque<ChatMessage>;
-
-class ChatParticipant {
-public:
-  virtual ~ChatParticipant(void) {}
-  virtual void deliver(const ChatMessage& msg) = 0;
-};
-
-using ChatParticipantPtr = std::shared_ptr<ChatParticipant>;
-
-class ChatRoom : private boost::noncopyable {
-  enum { RECENT_NMSGS_MAX = 100 };
-
-  std::set<ChatParticipantPtr> participants_;
-  ChatMessageQueue recent_msgs_;
-
-  static std::atomic<std::int64_t> s_id_;
-public:
-  void join_in(const ChatParticipantPtr& participant) {
-    participants_.insert(participant);
-    for (const auto& msg : recent_msgs_)
-      participant->deliver(msg);
-  }
-
-  void leave_out(const ChatParticipantPtr& participant) {
-    participants_.erase(participant);
-  }
-
-  void deliver(const ChatMessage& msg) {
-    recent_msgs_.push_back(msg);
-    while (recent_msgs_.size() > RECENT_NMSGS_MAX)
-      recent_msgs_.pop_front();
-
-    for (const auto& participant : participants_)
-      participant->deliver(msg);
-  }
-
-  static std::int64_t gen_id(void) {
-    return ++s_id_;
-  }
-};
-
-std::atomic<std::int64_t> ChatRoom::s_id_;
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
