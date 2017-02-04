@@ -109,3 +109,12 @@ public:
     return true;
   }
 };
+
+ChatMessage gen_chat_message(int proto, const char* buf, int len) {
+  ChatMessage msg;
+  msg.set_proto(proto);
+  msg.set_nbody(len);
+  std::memcpy(msg.body(), buf, msg.get_nbody());
+
+  return msg;
+}
