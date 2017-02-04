@@ -180,5 +180,20 @@ public:
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
+  try {
+    boost::asio::io_service io_service;
+
+    std::vector<std::unique_ptr<ChatServer>> servers;
+    for (int i = 0; i < 5; ++i) {
+      tcp::endpoint endpoint(tcp::v4(), 5555);
+      servers.emplace_back(new ChatServer(io_service, endpoint));
+    }
+
+    io_service.run();
+  }
+  catch (std::exception& ex) {
+    std::cerr << "exception: " << ex.what() << std::endl;
+  }
+
   return 0;
 }
