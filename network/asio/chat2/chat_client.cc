@@ -56,13 +56,11 @@ class ChatClient : private boost::noncopyable {
     boost::asio::async_read(socket_, boost::asio::buffer(readmsg_.body(), readmsg_.get_nbody()),
         [this](const boost::system::error_code& ec, std::size_t /*n*/) {
           if (!ec) {
-            if (readmsg_.get_proto() == ChatProtocol::CP_SESSION) {
+            if (readmsg_.get_proto() == ChatProtocol::CP_SESSION)
               session_id_ = readmsg_.body();
-            }
-            else {
+            else
               std::cout.write(readmsg_.body(), readmsg_.get_nbody()); std::cout << std::endl;
-              do_read_header();
-            }
+            do_read_header();
           }
           else {
             socket_.close();
@@ -71,7 +69,7 @@ class ChatClient : private boost::noncopyable {
   }
 
   void write_message(const ChatMessage& msg) {
-    io_service_.post([this, msg](void) {
+    io_service_.post([this, msg] {
           bool write_in_progress = !writmsg_queue_.empty();
           writmsg_queue_.push_back(msg);
           if (!write_in_progress)
@@ -104,8 +102,6 @@ public:
         [this](const boost::system::error_code& ec, tcp::resolver::iterator) {
           if (!ec)
             do_read_header();
-          else
-            socket_.close();
         });
   }
 
@@ -117,7 +113,7 @@ public:
   }
 
   void close(void) {
-    io_service_.post([this](void) { socket_.close(); });
+    io_service_.post([this] { socket_.close(); });
   }
 
   const std::string& get_session(void) const {
@@ -127,6 +123,27 @@ public:
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
+
+  try {
+    boost::asio::io_service io_service;
+
+    tcp::resolver r(io_service);
+    ChatClient client(io_service);
+    client.start(r.resolve({"127.0.0.1", "5555"}));
+
+    std::thread t([&io_service] { io_service.run(); });
+
+    const int NLINE = 512;
+    char line[NLINE + 1]{};
+    while (std::cin.getline(line, sizeof(line)))
+      client.write(line);
+
+    client.close();
+    t.join();
+  }
+  catch (std::exception& ex) {
+    std::cerr << "exception: " << ex.what() << std::endl;
+  }
 
   return 0;
 }
