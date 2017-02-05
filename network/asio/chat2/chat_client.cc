@@ -28,7 +28,57 @@
 #include <cstdio>
 #include <iostream>
 #include <deque>
+#include <thread>
 #include <boost/asio.hpp>
+#include "chat_protocol.h"
+
+using boost::asio::ip::tcp;
+using ChatMessageQueue = std::deque<ChatMessage>;
+
+class ChatClient : private boost::noncopyable {
+  boost::asio::io_service& io_service_;
+  tcp::socket socket_;
+  ChatMessage readmsg_;
+  ChatMessageQueue writmsg_queue_;
+  std::string session_id_;
+
+  void do_connect(tcp::resolver::iterator endpoint_iter) {
+    // TODO:
+  }
+
+  void do_read_header(void) {
+    // TODO:
+  }
+
+  void do_read_body(void) {
+    // TODO:
+  }
+
+  void do_write(void) {
+    // TODO:
+  }
+public:
+  ChatClient(boost::asio::io_service& io_service)
+    : io_service_(io_service)
+    , socket_(io_service_) {
+  }
+
+  void start(tcp::resolver::iterator endpoint_iter) {
+    // TODO:
+  }
+
+  void write(const char* buf, std::size_t len) {
+    // TODO:
+  }
+
+  void write(const ChatMessage& msg) {
+    // TODO:
+  }
+
+  void close(void) {
+    io_service_.post([this](void) { socket_.close(); });
+  }
+};
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
