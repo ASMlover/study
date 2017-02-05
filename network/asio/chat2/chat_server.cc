@@ -108,7 +108,9 @@ class ChatSession : public ChatParticipant, public std::enable_shared_from_this<
     boost::asio::async_read(socket_, boost::asio::buffer(readmsg_.body(), readmsg_.get_nbody()),
         [this, self](const boost::system::error_code& ec, std::size_t /*n*/) {
           if (!ec) {
-            chat_room_.deliver(readmsg_);
+            if (readmsg_.get_proto() == ChatProtocol::CP_MESSAGE)
+              chat_room_.deliver(readmsg_);
+            std::cout << "ChatSession::do_read_body - message=" << readmsg_.body() << std::endl;
             do_read_header();
           }
           else {
@@ -139,8 +141,8 @@ public:
   }
 
   void start(void) {
-    chat_room_.join_in(shared_from_this());
     do_write_session();
+    chat_room_.join_in(shared_from_this());
     do_read_header();
   }
 
