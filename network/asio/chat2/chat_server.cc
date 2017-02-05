@@ -185,8 +185,9 @@ int main(int argc, char* argv[]) {
 
     std::vector<std::unique_ptr<ChatServer>> servers;
     for (int i = 0; i < 5; ++i) {
-      tcp::endpoint endpoint(tcp::v4(), 5555);
+      tcp::endpoint endpoint(tcp::v4(), 5555 + i);
       servers.emplace_back(new ChatServer(io_service, endpoint));
+      servers[i]->start();
     }
 
     io_service.run();
