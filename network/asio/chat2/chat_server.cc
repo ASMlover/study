@@ -88,7 +88,7 @@ class ChatSession : public ChatParticipant, public std::enable_shared_from_this<
   void do_write_session(void) {
     char buf[64]{};
     std::snprintf(buf, sizeof(buf), "%08lld", ChatRoom::gen_id());
-    ChatMessage msg = gen_chat_message(ChatProtocol::CP_SESSION, buf, std::strlen(buf));
+    ChatMessage msg(gen_chat_message(ChatProtocol::CP_SESSION, buf, std::strlen(buf)));
     deliver(msg);
   }
 
