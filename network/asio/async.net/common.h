@@ -29,4 +29,5 @@
 #include <memory>
 #include <boost/asio.hpp>
 
+using boost::asio::ip::tcp;
 using StrandPtr = std::shared_ptr<boost::asio::io_service::strand>;
