@@ -58,11 +58,7 @@ endif()
 message(STATUS "`${PROJNAME}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 set(LIBASYNCNAME "asyncnet")
-set(ALL_SOURCES
-
-  connection_base.cc
-  connection_manager.cc
-  )
+aux_source_directory(${PROJECT_SOURCE_DIR} ALL_SOURCES)
 add_library(${LIBASYNCNAME} ${ALL_SOURCES})
 
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
