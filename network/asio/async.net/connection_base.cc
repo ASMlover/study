@@ -45,3 +45,11 @@ void ConnectionBase::stop(void) {
 bool ConnectionBase::is_alived(void) {
   return ConnectionManager::get_instance().has_connection(shared_from_this());
 }
+
+void ConnectionBase::do_register(void) {
+  ConnectionManager::get_instance().register_connection(shared_from_this());
+}
+
+void ConnectionBase::do_unregister(void) {
+  ConnectionManager::get_instance().unregister_connection(shared_from_this());
+}

@@ -48,6 +48,8 @@ public:
   void stop(void);
   virtual void do_stop(void) = 0;
   bool is_alived(void);
+  void do_register(void);
+  void do_unregister(void);
 
   StrandPtr get_strand(void) {
     return strand_;
