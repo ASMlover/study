@@ -43,6 +43,7 @@ set(LIBASYNCNAME "asyncnet")
 set(ALL_SOURCES
 
   connection_base.cc
+  connection_manager.cc
   )
 add_library(${LIBASYNCNAME} ${ALL_SOURCES})
 target_link_libraries(${LIBASYNCNAME} boost_system pthread)

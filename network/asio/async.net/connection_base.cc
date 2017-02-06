@@ -25,3 +25,23 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "connection_base.h"
+#include "connection_manager.h"
+
+ConnectionBase::ConnectionBase(boost::asio::io_service& io_service)
+  : strand_(new boost::asio::io_service::strand(io_service)) {
+}
+
+ConnectionBase::~ConnectionBase(void) {
+}
+
+void ConnectionBase::start(void) {
+  do_start();
+}
+
+void ConnectionBase::stop(void) {
+  do_stop();
+}
+
+bool ConnectionBase::is_alived(void) {
+  return ConnectionManager::get_instance().has_connection(shared_from_this());
+}

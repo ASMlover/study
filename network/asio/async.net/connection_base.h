@@ -44,8 +44,10 @@ public:
   virtual ~ConnectionBase(void);
 
   void start(void);
+  virtual void do_start(void) = 0;
   void stop(void);
-  bool is_alived(void) const;
+  virtual void do_stop(void) = 0;
+  bool is_alived(void);
 
   StrandPtr get_strand(void) {
     return strand_;
