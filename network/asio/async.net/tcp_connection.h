@@ -117,3 +117,5 @@ public:
     do_async_write_impl(buf);
   }
 };
+
+using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
