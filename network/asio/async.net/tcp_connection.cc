@@ -37,7 +37,12 @@ TcpConnection::~TcpConnection(void) {
 }
 
 void TcpConnection::do_start(void) {
-  // TODO:
+  auto self(shared_from_this());
+  socket_.async_read_some(boost::asio::buffer(buffer_),
+      [this, self](const boost::system::error_code& ec, std::size_t /*n*/) {
+        if (!ec)
+          do_start();
+      });
 }
 
 bool TcpConnection::do_stop(void) {
