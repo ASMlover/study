@@ -36,6 +36,7 @@
 using WriteBufPtr = std::shared_ptr<boost::asio::streambuf>;
 
 class ConnectionBase : private boost::noncopyable, public std::enable_shared_from_this<ConnectionBase> {
+protected:
   StrandPtr strand_;
   std::string local_addr_;
   std::int16_t local_port_;
@@ -75,7 +76,7 @@ public:
   }
   virtual void do_async_write(WriteBufPtr /*buf*/, bool /*reliable*/, std::int8_t /*channel*/) {}
 
-  virtual const std::string& get_remote_addr(void) const = 0;
+  virtual const std::string get_remote_addr(void) const = 0;
   virtual std::int16_t get_remote_port(void) const = 0;
 
   void bind_local_endpoint(const std::string& addr, std::int16_t port) {
