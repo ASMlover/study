@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <atomic>
 #include <deque>
 #include <vector>
 #include "common.h"
@@ -35,7 +36,7 @@ class TcpConnection : public ConnectionBase {
   tcp::socket socket_;
   bool disconnected_{};
   bool sending_{};
-  bool closed_{};
+  std::atomic<bool> closed_{false};
   std::uint32_t data_queue_count_{};
   std::uint32_t nwrite_limit_{};
   std::vector<char> buffer_;
@@ -67,7 +68,8 @@ class TcpConnection : public ConnectionBase {
           }
           else {
             sending_ = false;
-            // TODO:
+            if (disconnected_ && do_stop())
+              do_unregister();
           }
         });
   }
@@ -76,8 +78,16 @@ public:
   virtual ~TcpConnection(void) override;
 
   virtual void do_start(void) override;
-  virtual void do_stop(void) override;
+  virtual bool do_stop(void) override;
   virtual void do_disconnect(void) override;
+  virtual const std::string get_remote_addr(void) const override;
+  virtual std::int16_t get_remote_port(void) const override;
+  const std::string get_local_addr(void) const;
+  std::int16_t get_local_port(void) const;
+
+  tcp::socket& get_socket(void) {
+    return socket_;
+  }
 
   void set_buffer_size(std::size_t size) {
     std::vector<char>(size).swap(buffer_);
