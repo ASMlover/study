@@ -60,6 +60,7 @@ message(STATUS "`${PROJNAME}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 set(LIBASYNCNAME "asyncnet")
 aux_source_directory(${PROJECT_SOURCE_DIR} ALL_SOURCES)
 add_library(${LIBASYNCNAME} ${ALL_SOURCES})
+message(STATUS "`${PROJNAME}` ALL_SOURCES: ${ALL_SOURCES}")
 
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
   target_link_libraries(${LIBASYNCNAME} boost_system)
