@@ -46,7 +46,7 @@ public:
   void start(void);
   virtual void do_start(void) = 0;
   void stop(void);
-  virtual void do_stop(void) = 0;
+  virtual bool do_stop(void) = 0;
   bool is_alived(void);
   void do_register(void);
   void do_unregister(void);
