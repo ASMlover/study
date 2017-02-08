@@ -26,24 +26,44 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cmake_minimum_required(VERSION 3.0)
-project(AsyncNet CXX)
+set(PROJNAME "AsyncNetPROJ")
+project(${PROJNAME} CXX)
 
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
-message(STATUS "`AsyncNet` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+message(STATUS "`${PROJNAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
-set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-g -O2 -std=c++11 -Wall")
-message(STATUS "`AsyncNet` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+option(AN_INHOME "linking boost in home PC" OFF)
+message(STATUS "`${PROJNAME}` AN_INHOME: ${AN_INHOME}")
 
-include_directories(${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_61_0)
-link_directories(${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_61_0/stage/lib)
+if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+  add_definitions(
+    /D_UNICODE
+    /D_CRT_SECURE_NO_WARNINGS
+    /D_CRT_NONSTDC_NO_WARNINGS)
+  set(CMAKE_CXX_FLAGS "/W3 /GF /GS /Gs /Zi /EHsc")
+
+  if (AN_INHOME)
+    include_directories("D:/Tools/boost_1_63_0")
+    link_directories("D:/Tools/boost_1_63_0/stage/lib")
+  else()
+  endif()
+else()
+  set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-g -O2 -std=c++11 -Wall")
+
+  include_directories(${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_61_0)
+  link_directories(${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_61_0/stage/lib)
+endif()
+message(STATUS "`${PROJNAME}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 set(LIBASYNCNAME "asyncnet")
-set(ALL_SOURCES
-
-  connection_base.cc
-  connection_manager.cc
-  )
+aux_source_directory(${PROJECT_SOURCE_DIR} ALL_SOURCES)
 add_library(${LIBASYNCNAME} ${ALL_SOURCES})
-target_link_libraries(${LIBASYNCNAME} boost_system pthread)
+message(STATUS "`${PROJNAME}` ALL_SOURCES: ${ALL_SOURCES}")
+
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+  target_link_libraries(${LIBASYNCNAME} boost_system)
+else()
+  target_link_libraries(${LIBASYNCNAME} boost_system pthread)
+endif()
