@@ -26,9 +26,59 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <boost/asio.hpp>
+#include "echo.pb.h"
+
+using boost::asio::ip::tcp;
+namespace gpb = google::protobuf;
+
+class MyRpcChannel : public gpb::RpcChannel {
+  tcp::socket& client_socket_;
+public:
+  MyRpcChannel(tcp::socket& client_socket)
+    : client_socket_(client_socket) {
+  }
+
+  virtual void CallMethod(const gpb::MethodDescriptor* method, gpb::RpcController* /*controller*/,
+      const gpb::Message* request, gpb::Message* response, gpb::Closure* done) override {
+    std::cout << "MyRpcChannel::CallMethodi - " << method->DebugString() << std::endl;
+
+    char buf[1024]{};
+    request->SerializeToArray(buf, sizeof(buf));
+    client_socket_.write_some(boost::asio::buffer(buf, std::strlen(buf)));
+
+    std::memset(buf, 0, sizeof(buf));
+    std::size_t n = client_socket_.read_some(boost::asio::buffer(buf, sizeof(buf)));
+    response->ParseFromArray(buf, n);
+
+    if (done)
+      done->Run();
+  }
+};
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
+
+  try {
+    boost::asio::io_service io_service;
+
+    tcp::socket socket(io_service);
+    socket.connect(tcp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 5555));
+
+    MyRpcChannel channel(socket);
+    echo::EchoService::Stub stub(&channel);
+
+    echo::EchoRequest request;
+    request.set_request("Hello, world! This is RPC.CLIENT");
+    echo::EchoResponse response;
+    stub.do_echo(nullptr, &request, &response, nullptr);
+
+    std::cout << "Get echo response : " << response.response() << std::endl;
+
+    io_service.run();
+  }
+  catch (std::exception& ex) {
+    std::cerr << "exception: " << ex.what() << std::endl;
+  }
 
   return 0;
 }
