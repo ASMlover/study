@@ -45,8 +45,8 @@ else()
 endif()
 message(STATUS "`${RPC_PROJNAME}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
-include_directories(${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_61_0)
-link_directories(${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_61_0/stage/lib)
+include_directories(${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_63_0)
+link_directories(${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_63_0/stage/lib)
 include_directories(${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/protobuf/src)
 link_directories(${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/protobuf/cmake/cmake-build)
 
