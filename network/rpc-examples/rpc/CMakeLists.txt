@@ -47,10 +47,11 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     ${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_63_0/stage/lib
     ${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/protobuf/cmake/cmake-build)
 else()
-  set(CMAKE_CXX_FLAGS
+  add_definitions(
     /D_UNICODE
     /D_CRT_SECURE_NO_WARNINGS
     /D_CRT_NONSTDC_NO_WARNINGS)
+  set(CMAKE_CXX_FLAGS "/W3 /GF /GS /Gs /Zi /EHsc")
 
   include_directories(
     "D:/Tools/boost_1_63_0"
