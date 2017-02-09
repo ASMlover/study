@@ -39,25 +39,45 @@ option(RPC_BUILD_CLIENT "build rpc client" ON)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-g -O2 -Wall -std=c++11")
+
+  include_directories(
+    ${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_63_0
+    ${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/protobuf/src)
+  link_directories(
+    ${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_63_0/stage/lib
+    ${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/protobuf/cmake/cmake-build)
 else()
-  message(FATAL_ERROR "`${RPC_PROJNAME}` need install boost and protobuf")
-  return()
+  set(CMAKE_CXX_FLAGS
+    /D_UNICODE
+    /D_CRT_SECURE_NO_WARNINGS
+    /D_CRT_NONSTDC_NO_WARNINGS)
+
+  include_directories(
+    "D:/Tools/boost_1_63_0"
+    "D:/Tools/protobuf/src")
+  link_directories(
+    "D:/Tools/boost_1_63_0/stage/lib"
+    "D:/Tools/protobuf/cmake/cmake-build")
 endif()
 message(STATUS "`${RPC_PROJNAME}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
-include_directories(${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_63_0)
-link_directories(${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_63_0/stage/lib)
-include_directories(${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/protobuf/src)
-link_directories(${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/protobuf/cmake/cmake-build)
 
 set(RPC_SERVER "rpc.server")
 set(RPC_CLIENT "rpc.client")
 
 if (RPC_BUILD_SERVER)
   add_executable(${RPC_SERVER} server.cc echo.pb.cc)
-  target_link_libraries(${RPC_SERVER} pthread boost_system protobuf)
+  if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    target_link_libraries(${RPC_SERVER} boost_system protobuf)
+  else()
+    target_link_libraries(${RPC_SERVER} pthread boost_system protobuf)
+  endif()
 endif()
 if (RPC_BUILD_CLIENT)
   add_executable(${RPC_CLIENT} client.cc echo.pb.cc)
-  target_link_libraries(${RPC_CLIENT} pthread boost_system protobuf)
+  if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    target_link_libraries(${RPC_CLIENT} boost_system protobuf)
+  else()
+    target_link_libraries(${RPC_CLIENT} pthread boost_system protobuf)
+  endif()
 endif()
