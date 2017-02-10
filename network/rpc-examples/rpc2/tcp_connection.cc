@@ -24,28 +24,45 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "echo.pb.h"
 #include "tcp_connection.h"
 
-TcpConnection::TcpConnection(boost::asio::io_service& io_service)
-  : socket_(io_service) {
+TcpConnection::TcpConnection(tcp::socket&& socket)
+  : socket_(std::move(socket)) {
 }
 
 TcpConnection::~TcpConnection(void) {
 }
 
 void TcpConnection::add_service(gpb::Service* service) {
+  rpc_services_.push_back(service);
+}
+
+void TcpConnection::do_read(void) {
   // TODO:
 }
 
-void TcpConnection::write(const char* buf, std::size_t len) {
-  // TODO:
+void TcpConnection::do_write(const char* buf, std::size_t len) {
+  auto self(shared_from_this());
+  boost::asio::async_write(socket_, boost::asio::buffer(buf, len),
+      [this, self](const boost::system::error_code& /*ec*/, std::size_t /*n*/) {
+      });
 }
 
 void TcpConnection::CallMethod(const gpb::MethodDescriptor* method,
-    gpb::RpcController* controller, const gpb::Message* request, gpb::Message* response, gpb::Closure* done) {
-  // TODO:
+    gpb::RpcController* /*controller*/, const gpb::Message* request,
+    gpb::Message* /*response*/, gpb::Closure* /*done*/) {
+  char c[2]{};
+  c[0] = '0' + method->index();
+  c[1] = 0;
+  std::string s(c);
+  s += request->SerializeAsString();
+  do_write(s.c_str(), s.size());
 }
 
 void TcpConnection::handle_data(std::vector<char>& buf) {
-  // TODO:
+  echo::EchoRequest request;
+  auto fid = buf[0] - '0';
+  request.ParseFromString(&buf[1]);
+  rpc_services_[0]->CallMethod(rpc_services_[0]->GetDescriptor()->method(fid), nullptr, &request, nullptr, nullptr);
 }

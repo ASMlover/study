@@ -34,17 +34,18 @@
 using boost::asio::ip::tcp;
 namespace gpb = google::protobuf;
 
-class TcpConnection : public gpb::RpcChannel {
+class TcpConnection : public gpb::RpcChannel, public std::enable_shared_from_this<TcpConnection> {
   tcp::socket socket_;
   std::vector<gpb::Service*> rpc_services_;
 
   void handle_data(std::vector<char>& buf);
 public:
-  explicit TcpConnection(boost::asio::io_service& io_service);
+  explicit TcpConnection(tcp::socket&& socket);
   ~TcpConnection(void);
 
   void add_service(gpb::Service* service);
-  void write(const char* buf, std::size_t len);
+  void do_read(void);
+  void do_write(const char* buf, std::size_t len);
 
   virtual void CallMethod(const gpb::MethodDescriptor* method, gpb::RpcController* controller,
       const gpb::Message* request, gpb::Message* response, gpb::Closure* done) override;
@@ -53,3 +54,5 @@ public:
     return socket_;
   }
 };
+
+using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
