@@ -61,3 +61,9 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
 else()
   target_link_libraries(${RPC_LIBNAME} pthread boost_system protobuf)
 endif()
+
+add_executable(rpc.server server.cc)
+target_link_libraries(rpc.server ${RPC_LIBNAME})
+
+add_executable(rpc.client client.cc)
+target_link_libraries(rpc.client ${RPC_LIBNAME})

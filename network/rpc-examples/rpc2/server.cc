@@ -24,17 +24,26 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#include <iostream>
+#include <thread>
+#include "rpc_service.h"
+#include "tcp_server.h"
 
-#include "tcp_connection.h"
+int main(int argc, char* argv[]) {
+  (void)argc, (void)argv;
 
-class TcpClient : private boost::noncopyable {
-  std::unique_ptr<TcpConnection> conn_;
-public:
-  TcpClient(boost::asio::io_service& io_service);
-  void start(const char* host = "127.0.0.1", std::uint16_t port = 5555);
+  boost::asio::io_service io_service;
 
-  TcpConnection* get_connection(void) const {
-    return conn_.get();
+  TcpServer server(io_service);
+  std::thread t([&io_service] { io_service.run(); });
+
+  while (true) {
+    std::string in;
+    std::cin >> in;
+    server.do_echo(in.c_str());
   }
-};
+
+  t.join();
+
+  return 0;
+}
