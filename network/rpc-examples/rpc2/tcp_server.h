@@ -37,6 +37,5 @@ class TcpServer : private boost::noncopyable {
   void do_accept(void);
 public:
   TcpServer(boost::asio::io_service& io_service, std::uint16_t port = 5555);
-  void do_echo(const char* buf, std::size_t len);
-  void write_to_all(const char* buf, std::size_t len);
+  void do_echo(const char* buf);
 };

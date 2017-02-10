@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "rpc_service.h"
 #include "tcp_server.h"
 
 TcpServer::TcpServer(boost::asio::io_service& io_service, std::uint16_t port)
@@ -33,14 +34,26 @@ TcpServer::TcpServer(boost::asio::io_service& io_service, std::uint16_t port)
   do_accept();
 }
 
-void TcpServer::do_echo(const char* buf, std::size_t len) {
-  // TODO:
-}
-
-void TcpServer::write_to_all(const char* buf, std::size_t len) {
-  // TODO:
+void TcpServer::do_echo(const char* buf) {
+  for (auto& conn : connections_) {
+    echo::EchoRequest request;
+    request.set_request(buf);
+    echo::EchoService::Stub stub(conn.get());
+    stub.do_echo(nullptr, &request, nullptr, nullptr);
+  }
 }
 
 void TcpServer::do_accept(void) {
-  // TODO:
+  acceptor_.async_accept(socket_,
+      [this](const boost::system::error_code& ec) {
+        if (!ec) {
+          auto conn = std::make_shared<TcpConnection>(std::move(socket_));
+          conn->add_service(new RpcEchoResponseService(conn.get()));
+          connections_.push_back(conn);
+
+          conn->do_read();
+        }
+
+        do_accept();
+      });
 }
