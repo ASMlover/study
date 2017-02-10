@@ -47,10 +47,11 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     ${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_63_0/stage/lib
     ${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/protobuf/cmake/cmake-build)
 else()
-  set(CMAKE_CXX_FLAGS
+  add_definitions(
     /D_UNICODE
     /D_CRT_SECURE_NO_WARNINGS
     /D_CRT_NONSTDC_NO_WARNINGS)
+  set(CMAKE_CXX_FLAGS "/W3 /GF /GS /Gs /Zi /EHsc")
 
   include_directories(
     "D:/Tools/boost_1_63_0"
@@ -68,7 +69,17 @@ set(RPC_CLIENT "rpc.client")
 if (RPC_BUILD_SERVER)
   add_executable(${RPC_SERVER} server.cc echo.pb.cc)
   if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    target_link_libraries(${RPC_SERVER} boost_system protobuf)
+    if (CMAKE_GENERATOR MATCHES "NMake")
+      if (CMAKE_BUILD_TYPE MATCHES "Debug")
+        target_link_libraries(${RPC_SERVER} libboost_system-vc140-mt-gd-1_63 libprotobufd)
+      else()
+        target_link_libraries(${RPC_SERVER} libboost_system-vc140-mt-1_63 libprotobuf)
+      endif()
+    else()
+      target_link_libraries(${RPC_SERVER}
+        debug libboost_system-vc140-mt-gd-1_63 optimized libboost_system-vc140-mt-1_63
+        debug libprotobufd optimized libprotobuf)
+    endif()
   else()
     target_link_libraries(${RPC_SERVER} pthread boost_system protobuf)
   endif()
@@ -76,7 +87,17 @@ endif()
 if (RPC_BUILD_CLIENT)
   add_executable(${RPC_CLIENT} client.cc echo.pb.cc)
   if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    target_link_libraries(${RPC_CLIENT} boost_system protobuf)
+    if (CMAKE_GENERATOR MATCHES "NMake")
+      if (CMAKE_BUILD_TYPE MATCHES "Debug")
+        target_link_libraries(${RPC_CLIENT} libboost_system-vc140-mt-gd-1_63 libprotobufd)
+      else()
+        target_link_libraries(${RPC_CLIENT} libboost_system-vc140-mt-1_63 libprotobuf)
+      endif()
+    else()
+      target_link_libraries(${RPC_CLIENT}
+        debug libboost_system-vc140-mt-gd-1_63 optimized libboost_system-vc140-mt-1_63
+        debug libprotobufd optimized libprotobuf)
+    endif()
   else()
     target_link_libraries(${RPC_CLIENT} pthread boost_system protobuf)
   endif()
