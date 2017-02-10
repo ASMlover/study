@@ -36,6 +36,7 @@ namespace gpb = google::protobuf;
 
 class TcpConnection : public gpb::RpcChannel, public std::enable_shared_from_this<TcpConnection> {
   tcp::socket socket_;
+  std::vector<char> buffer_;
   std::vector<gpb::Service*> rpc_services_;
 
   void handle_data(std::vector<char>& buf);

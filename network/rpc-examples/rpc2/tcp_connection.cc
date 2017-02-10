@@ -24,11 +24,13 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include "echo.pb.h"
 #include "tcp_connection.h"
 
 TcpConnection::TcpConnection(tcp::socket&& socket)
-  : socket_(std::move(socket)) {
+  : socket_(std::move(socket))
+  , buffer_(1024) {
 }
 
 TcpConnection::~TcpConnection(void) {
@@ -39,7 +41,19 @@ void TcpConnection::add_service(gpb::Service* service) {
 }
 
 void TcpConnection::do_read(void) {
-  // TODO:
+  auto self(shared_from_this());
+  socket_.async_read_some(boost::asio::buffer(buffer_),
+      [this, self](const boost::system::error_code& ec, std::size_t /*n*/) {
+        if (!ec) {
+          handle_data(buffer_);
+
+          do_read();
+        }
+        else {
+          std::cerr << "read something error" << std::endl;
+          socket_.close();
+        }
+      });
 }
 
 void TcpConnection::do_write(const char* buf, std::size_t len) {
