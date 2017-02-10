@@ -50,7 +50,8 @@ message(STATUS "`${RPC_PROJNAME}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 set(RPC_SOURCES
 
   echo.pb.cc
-  tcp_connection.cc)
+  tcp_connection.cc
+  tcp_server.cc)
 
 set(RPC_LIBNAME "tinyrpc")
 add_library(${RPC_LIBNAME} STATIC ${RPC_SOURCES})
