@@ -50,6 +50,7 @@ message(STATUS "`${RPC_PROJNAME}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 set(RPC_SOURCES
 
   echo.pb.cc
+  tcp_client.cc
   tcp_connection.cc
   tcp_server.cc)
 
