@@ -39,7 +39,7 @@ _nyxcore_tasks = []
 _nyxcore_ncancelled = 0
 
 class DelayCaller(object):
-    """延迟调用的caller/function"""
+    """延迟调用的caller"""
     def __init__(self, seconds, target, *args, **kwargs):
         assert callable(target), '%s is un-callable' % target
         assert sys.maxint >= seconds >= 0, '%s is not >= 0' % seconds
@@ -62,8 +62,9 @@ class DelayCaller(object):
         return self._timeout <= other._timeout
 
     def call(self):
-        """调用这个函数target"""
-        assert not self._cancelled, 'already cancelled'
+        """调用这个caller"""
+        assert not self._cancelled, 'this caller already cancelled'
+
         try:
             try:
                 self._target(*self._args, **self._kwargs)
@@ -79,16 +80,44 @@ class DelayCaller(object):
                 self.expire()
 
     def reset(self):
-        pass
+        assert not self._cancelled, 'this caller already cancelled'
+
+        self._timeout = time.time() + self._delay
+        self._repush = True
 
     def delay(self, seconds):
-        pass
+        assert not self._cancelled, 'this caller already cancelled'
+        assert sys.maxint >= seconds >= 0, '%s int not >= 0' % seconds
+
+        self._delay = seconds
+        new_timeout = time.time() + self._delay
+        if new_timeout > self._timeout:
+            self._timeout = new_timeout
+            self._repush = True
+        else:
+            # FIXME: should improved
+            self._timeout = new_timeout
+            heapq.heapify(_nyxcore_tasks)
 
     def cancel(self):
-        pass
+        assert not self._cancelled, 'this caller already cancelled'
+        assert not self._expired, 'this caller already expired'
+
+        self._cancelled = True
+        del self._target, self._args, self._kwargs, self._err_fn
+
+        global _nyxcore_ncancelled, _nyxcore_tasks
+        _nyxcore_ncancelled += 1
+        if _nyxcore_ncancelled > 10 and float(_nyxcore_ncancelled) / len(_nyxcore_tasks) > 0.25:
+            # _remove_cancelled_tasks()
+            pass
 
     def expire(self):
-        pass
+        assert not self._cancelled, 'this caller already cancelled'
+        assert not self._expired, 'this caller already expired'
+
+        self._expired = True
+        del self._target, self._args, self._kwargs, self._err_fn
 
 if __name__ == '__main__':
     caller = DelayCaller(1, lambda x: x)
