@@ -55,5 +55,40 @@ class DelayCaller(object):
         self._expired = False
         heapq.heappush(_nyxcore_tasks, self)
 
+    def __lt__(self, other):
+        return self._timeout < other._timeout
+
+    def __le__(self, other):
+        return self._timeout <= other._timeout
+
+    def call(self):
+        """调用这个函数target"""
+        assert not self._cancelled, 'already cancelled'
+        try:
+            try:
+                self._target(*self._args, **self._kwargs)
+            except (KeyboardInterrupt, SystemExit, asyncore.ExitNow):
+                raise
+            except:
+                if self._err_fn is not None:
+                    self._err_fn()
+                else:
+                    raise
+        finally:
+            if not self._cancelled:
+                self.expire()
+
+    def reset(self):
+        pass
+
+    def delay(self, seconds):
+        pass
+
+    def cancel(self):
+        pass
+
+    def expire(self):
+        pass
+
 if __name__ == '__main__':
     caller = DelayCaller(1, lambda x: x)
