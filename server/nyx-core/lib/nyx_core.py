@@ -130,5 +130,31 @@ class DelayCaller(object):
         self._expired = True
         del self._target, self._args, self._kwargs, self._err_fn
 
+class CycleCaller(DelayCaller):
+    """循环调用caller"""
+    def call(self):
+        assert not self._cancelled, 'this caller already cancelled'
+
+        raised = False
+        try:
+            try:
+                self._target(*self._args, **self._kwargs)
+            except (KeyboardInterrupt, SystemExit, asyncore.ExitNow):
+                raised = True
+                raise
+            except:
+                if self._err_fn is not None:
+                    self._err_fn()
+                else:
+                    raised = True
+                    raise
+        finally:
+            if not self._cancelled:
+                if raised:
+                    self.cancel()
+                else:
+                    self._timeout = time.time() + self._delay
+                    heapq.heappush(_nyxcore_tasks, self)
+
 if __name__ == '__main__':
     caller = DelayCaller(1, lambda x: x)
