@@ -38,6 +38,18 @@ import traceback
 _nyxcore_tasks = []
 _nyxcore_ncancelled = 0
 
+def _nyxcore_remove_cancelled_tasks():
+    """移除取消的任务，重新生成heap"""
+    global _nyxcore_tasks, _nyxcore_ncancelled
+
+    temp_tasks = []
+    for task in _nyxcore_tasks:
+        if not task._cancelled:
+            temp_tasks.append(task)
+    _nyxcore_tasks = temp_tasks
+    heapq.heapify(_nyxcore_tasks)
+    _nyxcore_ncancelled = 0
+
 class DelayCaller(object):
     """延迟调用的caller"""
     def __init__(self, seconds, target, *args, **kwargs):
@@ -106,11 +118,10 @@ class DelayCaller(object):
         self._cancelled = True
         del self._target, self._args, self._kwargs, self._err_fn
 
-        global _nyxcore_ncancelled, _nyxcore_tasks
+        global _nyxcore_tasks, _nyxcore_ncancelled
         _nyxcore_ncancelled += 1
         if _nyxcore_ncancelled > 10 and float(_nyxcore_ncancelled) / len(_nyxcore_tasks) > 0.25:
-            # _remove_cancelled_tasks()
-            pass
+            _nyxcore_remove_cancelled_tasks()
 
     def expire(self):
         assert not self._cancelled, 'this caller already cancelled'
