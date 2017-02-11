@@ -8,11 +8,27 @@
  * 从github下载后根据cmake/README.md来编译
 ``` bash
   $ git clone https://github.com/google/protobuf.git
-  $ cd protobuf/cmake
+  $ cd protobuf
+  $ git clone -b release-1.7.0 https://github.com/google/googlemock.git gmock
+  $ cd gmock
+  $ git clone -b release-1.7.0 https://github.com/google/googletest.git gtest
+  $ cd .. && cd cmake
   $ mkdir cmake-build
   $ cd cmake-build
   $ cmake ..
   $ make
+
+  # 在Windows上默认使用的是static MSVC runtime, 要使用动态库，则需要设置protobuf_MSVC_STATIC_RUNTIME
+  \> git clone https://github.com/google/protobuf.git
+  \> cd protobuf
+  \> git clone -b release-1.7.0 https://github.com/google/googlemock.git gmock
+  \> cd gmock
+  \> git clone -b release-1.7.0 https://github.com/google/googletest.git gtest
+  \> cd .. && cd cmake
+  \> mkdir cmake-build
+  \> cd cmake-build
+  \> cmake -G"NMake Makefiles" -Dprotobuf_MSVC_STATIC_RUNTIME=OFF ..
+  \> nmake
 ```
 
 ## **1. Protobuf的数据类型**
