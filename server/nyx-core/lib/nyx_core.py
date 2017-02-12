@@ -232,7 +232,7 @@ def poll(timeout=0.0, socket_map=None):
         try:
             r, w, e = asyncore.select.select(r, w, e, timeout)
         except asyncore.select.error, err:
-            if err.args[0] != EINTR:
+            if err.args[0] != errno.EINTR:
                 raise
             else:
                 return
@@ -255,6 +255,34 @@ def poll(timeout=0.0, socket_map=None):
 
 def poll2(timeout=0.0, socket_map=None):
     """使用poll替换掉使用select的poll"""
+    if socket_map is None:
+        socket_map = asyncore.socket_map
+    if timeout is not None:
+        timeout = int(timeout * 1000)
+
+    poller = asyncore.select.poll()
+    if socket_map:
+        for fd, obj in socket_map.items():
+            flags = 0
+            if obj.readable():
+                flags |= asyncore.select.POLLIN | asyncore.select.POLLPRI
+            if obj.writable() and not obj.accepting:
+                flags |= asyncore.select.POLLOUT
+            if flags:
+                flags |= asyncore.select.POLLERR | asyncore.select.POLLHUP | asyncore.select.POLLNVAL
+                poller.register(fd, flags)
+
+        try:
+            r = poller.poll(timeout)
+        except asyncore.select.error, err:
+            if err.args[0] != errno.EINTR:
+                raise
+            r = []
+        for fd, flags in r:
+            obj = socket_map.get(fd)
+            if obj is None:
+                continue
+            asyncore.readwrite(obj, flags)
 
 if __name__ == '__main__':
     pass
