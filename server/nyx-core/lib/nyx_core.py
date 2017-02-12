@@ -230,4 +230,63 @@ def loop(timeout=0.1, use_poll=True, socket_map=None, count=None):
             count -= 1
 
 if __name__ == '__main__':
-    pass
+    # TEST: test DelayCaller
+    # def delay_foo():
+    #     print 'nyx_core.delay_foo() function'
+    # c = DelayCaller(2.5, delay_foo)
+
+    # TEST: test CycleCaller
+    # def cycle_foo():
+    #     print 'nyx_core.cycle_foo() function'
+    # c = CycleCaller(1, cycle_foo)
+
+    # TEST: test DelayCaller(reset/delay/cancel)
+    # c = DelayCaller(1, delay_foo)
+    # c.reset()
+    # c.delay(1.5)
+    # c.cancel()
+
+    import socket
+    class UselessDemo(asyncore.dispatcher):
+        def __init__(self, addr, timeout=3):
+            asyncore.dispatcher.__init__(self)
+            self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.connect(addr)
+            self._caller = DelayCaller(timeout, self._timeout_caller)
+            self._read_buffer = []
+
+        def _timeout_caller(self):
+            print 'UselessDemo._timeout_caller - no response'
+            self.close()
+
+        def writable(self):
+            return not self.connected
+
+        def handle_connect(self):
+            print 'UselessDemo.handle_connect - connected'
+
+        def handle_read(self):
+            print 'UselessDemo.handle_read - read'
+            self._caller.reset()
+            data = self.recv(10240)
+            self._read_buffer.append(data)
+
+        def handle_close(self):
+            print 'UselessDemo.handle_close - close'
+            if self._read_buffer:
+                print 'UselessDemo.handle_close - in_buffer data is `%s`' % ''.join(self._read_buffer)
+            self.close()
+
+        def handle_error(self):
+            print 'UselessDemo.handle_error - error'
+            raise
+
+        def close(self):
+            if not self._caller._cancelled:
+                self._caller.cancel()
+            asyncore.dispatcher.close(self)
+
+    useless = UselessDemo(('www.baidu.com', 80))
+    useless_caller = DelayCaller(5, close_all)
+
+    loop()
