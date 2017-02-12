@@ -229,6 +229,12 @@ def loop(timeout=0.1, use_poll=True, socket_map=None, count=None):
             _nyxcore_scheduler()
             count -= 1
 
+def add_timer(delay, fun, *args, **kwargs):
+    return DelayCaller(delay, fun, *args, **kwargs)
+
+def add_cycle_timer(delay, fun, *args, **kwargs):
+    return CycleCaller(delay, fun, *args, **kwargs)
+
 if __name__ == '__main__':
     # TEST: test DelayCaller
     # def delay_foo():
