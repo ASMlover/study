@@ -176,5 +176,79 @@ class CycleCaller(DelayCaller):
                     self._timeout = time.time() + self._delay
                     heapq.heappush(_nyxcore_tasks, self)
 
+def close_all(socket_map=None, ignore_all=False):
+    """关闭所有的scheduler函数并打开sockets"""
+    if socket_map is None:
+        socket_map = asyncore.socket_map
+
+    for x in socket_map.values():
+        try:
+            x.close()
+        except OSError, x:
+            if x[0] == errno.EBADF:
+                pass
+            elif not ignore_all:
+                raise
+        except (KeyboardInterrupt, SystemExit, asyncore.ExitNow):
+            raise
+        except:
+            if not ignore_all:
+                asyncore.socket_map.clear()
+                del _nyxcore_tasks[:]
+                raise
+    socket_map.clear()
+
+    for x in _nyxcore_tasks:
+        try:
+            if not x._cancelled and not x._expired:
+                x.cancel()
+        except (KeyboardInterrupt, SystemExit, asyncore.ExitNow):
+            raise
+        except:
+            if not ignore_all:
+                del _nyxcore_tasks[:]
+                raise
+    del _nyxcore_tasks[:]
+
+def poll(timeout=0.0, socket_map=None):
+    if socket_map is None:
+        socket_map = asyncore.socket_map
+
+    if socket_map:
+        r = []; w = []; e = []
+        for fd, obj in socket_map.items():
+            is_r = obj.readable()
+            is_w = obj.writable()
+            if is_r:
+                r.append(fd)
+            if is_w and not obj.accepting:
+                w.append(fd)
+            if is_r or is_w:
+                e.append(fd)
+        if r == w == e == []:
+            time.sleep(timeout)
+            return
+
+        try:
+            r, w, e = asyncore.select.select(r, w, e, timeout)
+        except asyncore.select.error, err:
+            if err.args[0] != EINTR:
+                raise
+            else:
+                return
+
+        for fd in r:
+            obj = socket_map.get(fd)
+            if obj is not None:
+                read(obj)
+        for fd in w:
+            obj = socket_map.get(fd)
+            if obj is not Noe:
+                write(obj)
+        for fd in e:
+            obj = socket_map.get(fd)
+            if obj is not None:
+                _exception(obj)
+
 if __name__ == '__main__':
     pass
