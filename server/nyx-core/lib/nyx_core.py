@@ -225,7 +225,7 @@ def poll(timeout=0.0, socket_map=None):
                 w.append(fd)
             if is_r or is_w:
                 e.append(fd)
-        if r == w == e == []:
+        if [] == r == w == e:
             time.sleep(timeout)
             return
 
@@ -239,16 +239,22 @@ def poll(timeout=0.0, socket_map=None):
 
         for fd in r:
             obj = socket_map.get(fd)
-            if obj is not None:
-                read(obj)
+            if obj is None:
+                continue
+            asyncore.read(obj)
         for fd in w:
             obj = socket_map.get(fd)
-            if obj is not Noe:
-                write(obj)
+            if obj is None:
+                continue
+            asyncore.write(obj)
         for fd in e:
             obj = socket_map.get(fd)
-            if obj is not None:
-                _exception(obj)
+            if obj is None:
+                continue
+            asyncore._exception(obj)
+
+def poll2(timeout=0.0, socket_map=None):
+    """使用poll替换掉使用select的poll"""
 
 if __name__ == '__main__':
     pass
