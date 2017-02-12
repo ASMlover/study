@@ -50,6 +50,26 @@ def _nyxcore_remove_cancelled_tasks():
     heapq.heapify(_nyxcore_tasks)
     _nyxcore_ncancelled = 0
 
+def _nyxcore_scheduler():
+    global _nyxcore_tasks, _nyxcore_ncancelled
+
+    now = time.time()
+    while _nyxcore_tasks and now >= _nyxcore_tasks[0]._timeout:
+        caller = heapq.heappop(_nyxcore_tasks)
+        if caller._cancelled:
+            _nyxcore_ncancelled -= 1
+            continue
+        if caller._repush:
+            heapq.heappush(_nyxcore_tasks, caller)
+            caller._repush = False
+            continue
+        try:
+            caller.call()
+        except (KeyboardInterrupt, SystemExit, asyncore.ExitNow):
+            raise
+        except:
+            print traceback.format_exc()
+
 class DelayCaller(object):
     """延迟调用的caller"""
     def __init__(self, seconds, target, *args, **kwargs):
@@ -157,4 +177,4 @@ class CycleCaller(DelayCaller):
                     heapq.heappush(_nyxcore_tasks, self)
 
 if __name__ == '__main__':
-    caller = DelayCaller(1, lambda x: x)
+    pass
