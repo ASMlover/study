@@ -210,79 +210,24 @@ def close_all(socket_map=None, ignore_all=False):
                 raise
     del _nyxcore_tasks[:]
 
-def poll(timeout=0.0, socket_map=None):
+def loop(timeout=0.1, use_poll=True, socket_map=None, count=None):
+    """使用该函数替换asyncore.loop"""
+    if use_poll and hasattr(asyncore.select, 'poll'):
+        poll_fn = asyncore.poll2
+    else:
+        poll_fn = asyncore.poll
+
     if socket_map is None:
         socket_map = asyncore.socket_map
-
-    if socket_map:
-        r = []; w = []; e = []
-        for fd, obj in socket_map.items():
-            is_r = obj.readable()
-            is_w = obj.writable()
-            if is_r:
-                r.append(fd)
-            if is_w and not obj.accepting:
-                w.append(fd)
-            if is_r or is_w:
-                e.append(fd)
-        if [] == r == w == e:
-            time.sleep(timeout)
-            return
-
-        try:
-            r, w, e = asyncore.select.select(r, w, e, timeout)
-        except asyncore.select.error, err:
-            if err.args[0] != errno.EINTR:
-                raise
-            else:
-                return
-
-        for fd in r:
-            obj = socket_map.get(fd)
-            if obj is None:
-                continue
-            asyncore.read(obj)
-        for fd in w:
-            obj = socket_map.get(fd)
-            if obj is None:
-                continue
-            asyncore.write(obj)
-        for fd in e:
-            obj = socket_map.get(fd)
-            if obj is None:
-                continue
-            asyncore._exception(obj)
-
-def poll2(timeout=0.0, socket_map=None):
-    """使用poll替换掉使用select的poll"""
-    if socket_map is None:
-        socket_map = asyncore.socket_map
-    if timeout is not None:
-        timeout = int(timeout * 1000)
-
-    poller = asyncore.select.poll()
-    if socket_map:
-        for fd, obj in socket_map.items():
-            flags = 0
-            if obj.readable():
-                flags |= asyncore.select.POLLIN | asyncore.select.POLLPRI
-            if obj.writable() and not obj.accepting:
-                flags |= asyncore.select.POLLOUT
-            if flags:
-                flags |= asyncore.select.POLLERR | asyncore.select.POLLHUP | asyncore.select.POLLNVAL
-                poller.register(fd, flags)
-
-        try:
-            r = poller.poll(timeout)
-        except asyncore.select.error, err:
-            if err.args[0] != errno.EINTR:
-                raise
-            r = []
-        for fd, flags in r:
-            obj = socket_map.get(fd)
-            if obj is None:
-                continue
-            asyncore.readwrite(obj, flags)
+    if count is None:
+        while (socket_map or _nyxcore_tasks):
+            poll_fn(timeout, socket_map)
+            _nyxcore_scheduler()
+    else:
+        while (socket_map or _nyxcore_tasks) and count > 0:
+            poll_fn(timeout, socket_map)
+            _nyxcore_scheduler()
+            count -= 1
 
 if __name__ == '__main__':
     pass
