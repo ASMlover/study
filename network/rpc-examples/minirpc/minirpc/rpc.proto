@@ -1,0 +1,29 @@
+syntax = "proto3";
+package minirpc;
+
+option cc_generic_services = true;
+
+enum MessageType {
+  MT_ERROR = 0;
+  MT_REQUEST = 1;
+  MT_RESPONSE = 2;
+};
+
+enum ErrorCode {
+  EC_WRONG_PROTO = 0;
+  EC_NO_SERVICE = 1;
+  EC_NO_METHOD = 2;
+  EC_INVALID_REQUEST = 3;
+  EC_INVALID_RESPONSE = 4;
+};
+
+message RpcMessage {
+  MessageType type = 1;
+  fixed64 id = 2;
+
+  string service = 3;
+  string method = 4;
+  bytes request = 5;
+  bytes response = 6;
+  ErrorCode ec = 7;
+};
