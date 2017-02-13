@@ -52,12 +52,12 @@ enum ParseError {
   UNKNWON_MESSAGE,
   PARSE_ERROR,
 };
-inline ParseError decode(const char* buf, int len, minirpc::RpcMessage* message) {
+inline ParseError decode(const char* buf, int len, minirpc::RpcMessage& message) {
   ParseError r = SUCCESS;
 
   if (std::memcmp(buf, "RPC0", 4) == 0) {
     const char* data = buf + 4;
-    if (message->ParseFromArray(data, len - 4))
+    if (message.ParseFromArray(data, len - 4))
       r = SUCCESS;
     else
       r = PARSE_ERROR;
