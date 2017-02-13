@@ -29,7 +29,7 @@
 #include "tcp_connection.h"
 
 class TcpClient : private boost::noncopyable {
-  std::unique_ptr<TcpConnection> conn_;
+  std::shared_ptr<TcpConnection> conn_;
 public:
   TcpClient(boost::asio::io_service& io_service);
   void start(const char* host = "127.0.0.1", std::uint16_t port = 5555);

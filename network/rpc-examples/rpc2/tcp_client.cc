@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include "rpc_service.h"
 #include "tcp_client.h"
-
+#include <iostream>
 
 TcpClient::TcpClient(boost::asio::io_service& io_service) {
   tcp::socket socket(io_service);
@@ -34,11 +34,14 @@ TcpClient::TcpClient(boost::asio::io_service& io_service) {
 }
 
 void TcpClient::start(const char* host, std::uint16_t port) {
-  tcp::endpoint endpoint(boost::asio::ip::address::from_string(host), port);
   conn_->add_service(new RpcEchoRequestService(conn_.get()));
+
+  tcp::endpoint endpoint(boost::asio::ip::address::from_string(host), port);
   conn_->get_socket().async_connect(endpoint,
-      [this](const boost::system::error_code& ec) {
-        if (!ec)
+      [this, host, port](const boost::system::error_code& ec) {
+        if (!ec) {
+          std::cout << "TcpClient::start - connect to {" << host << ", " << port << "} success" << std::endl;
           conn_->do_read();
+        }
       });
 }
