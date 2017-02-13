@@ -35,6 +35,14 @@ endif()
 message(STATUS "`${RPC_PROJNAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+  add_definitions(
+    /D_UNICODE
+    /D_CRT_SECURE_NO_WARNINGS
+    /D_CRT_NONSTDC_NO_WARNINGS)
+  set(CMAKE_CXX_FLAGS "/W3 /GF /GS /Gs /Zi /EHsc")
+
+  include_directories("D:/Tools/boost_1_63_0" "D:/Tools/protobuf/src")
+  link_directories("D:/Tools/boost_1_63_0/stage/lib" "D:/Tools/protobuf/cmake/cmake-build")
 else()
   set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-g -O2 -Wall -std=c++11")
 
@@ -58,6 +66,9 @@ set(RPC_LIBNAME "tinyrpc")
 add_library(${RPC_LIBNAME} STATIC ${RPC_SOURCES})
 
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+  target_link_libraries(${RPC_LIBNAME}
+    debug libboost_system-vc140-mt-gd-1_63 optimized libboost_system-vc140-mt-1_63
+    debug libprotobufd optimized libprotobuf)
 else()
   target_link_libraries(${RPC_LIBNAME} pthread boost_system protobuf)
 endif()
