@@ -1,0 +1,15 @@
+syntax = "proto3";
+package echo;
+
+option cc_generic_services = true;
+
+message Void {
+};
+
+message EchoRequest {
+  string request = 1;
+};
+
+service EchoService {
+  rpc echo_call(EchoRequest) returns(Void);
+};
