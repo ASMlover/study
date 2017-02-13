@@ -26,8 +26,12 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <atomic>
+#include <memory>
 #include <map>
+#include <mutex>
 #include <string>
+#include <vector>
 #include <boost/asio.hpp>
 #include <google/protobuf/service.h>
 #include <google/protobuf/descriptor.h>
@@ -37,7 +41,43 @@ namespace minirpc {
 using ::boost::asio::ip::tcp;
 namespace gpb = ::google::protobuf;
 
-class RpcChannel : public gpb::RpcChannel {
+class RpcMessage;
+
+class RpcChannel : public gpb::RpcChannel, public std::enable_shared_from_this<RpcChannel> {
+  boost::asio::io_service& io_service_;
+  tcp::socket socket_;
+  std::vector<char> buffer_;
+
+  struct OutstandingCall {
+    gpb::Message* response;
+    gpb::Closure* done;
+  };
+  std::atomic<std::int64_t> id_;
+  mutable std::mutex mutex_;
+  std::map<std::int64_t, OutstandingCall> outstandings_;
+  std::map<std::string, gpb::Service*> services_;
+
+  void do_write(const RpcMessage& message);
+  void do_read_header(void);
+  void do_read_body(int len);
+  void handle_message(const RpcMessage& message);
+  void done_callback(gpb::Message* response, std::int64_t id);
+public:
+  explicit RpcChannel(boost::asio::io_service& io_service, tcp::socket&& socket);
+  ~RpcChannel(void);
+
+  virtual void CallMethod(const gpb::MethodDescriptor* method,
+      gpb::RpcController* controller,
+      const gpb::Message* request,
+      gpb::Message* response,
+      gpb::Closure* done) override;
+
+  void start(void);
+  void close(void);
+
+  void set_services(const std::map<std::string, gpb::Service*>& services) {
+    services_ = services;
+  }
 };
 
 }
