@@ -35,8 +35,8 @@ int main(int argc, char* argv[]) {
   boost::asio::io_service io_service;
 
   TcpClient client(io_service);
-  std::thread t([&io_service] { io_service.run(); });
   client.start();
+  std::thread t([&io_service] { io_service.run(); });
 
   echo::EchoService::Stub stub(client.get_connection());
   while (true) {
