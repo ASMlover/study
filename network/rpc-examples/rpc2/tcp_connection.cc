@@ -50,7 +50,7 @@ void TcpConnection::do_read(void) {
           do_read();
         }
         else {
-          std::cerr << "read something error" << std::endl;
+          std::cerr << "TcpConnection::do_read - read data error" << std::endl;
           socket_.close();
         }
       });

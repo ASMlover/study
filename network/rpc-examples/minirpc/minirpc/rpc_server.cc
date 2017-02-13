@@ -24,24 +24,41 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "rpc_service.h"
-#include "tcp_client.h"
-#include <iostream>
+#include "rpc.pb.h"
+#include "rpc_channel.h"
+#include "rpc_server.h"
 
-TcpClient::TcpClient(boost::asio::io_service& io_service) {
-  tcp::socket socket(io_service);
-  conn_.reset(new TcpConnection(std::move(socket)));
+namespace minirpc {
+
+
+RpcServer::RpcServer(boost::asio::io_service& io_service, std::uint16_t port)
+  : io_service_(io_service)
+  , acceptor_(io_service, tcp::endpoint(tcp::v4(), port))
+  , socket_(io_service) {
 }
 
-void TcpClient::start(const char* host, std::uint16_t port) {
-  conn_->add_service(new RpcEchoRequestService(conn_.get()));
+RpcServer::~RpcServer(void) {
+}
 
-  tcp::endpoint endpoint(boost::asio::ip::address::from_string(host), port);
-  conn_->get_socket().async_connect(endpoint,
-      [this, host, port](const boost::system::error_code& ec) {
+void RpcServer::register_service(gpb::Service* service) {
+  const auto* desc = service->GetDescriptor();
+  services_[desc->name()] = service;
+}
+
+void RpcServer::start(void) {
+  acceptor_.async_accept(socket_,
+      [this](const boost::system::error_code& ec) {
         if (!ec) {
-          std::cout << "TcpClient::start - connect to {" << host << ", " << port << "} success" << std::endl;
-          conn_->do_read();
+          auto channel = std::make_shared<RpcChannel>(io_service_, std::move(socket_));
+          channel->set_services(services_);
+          channel->start();
+
+          std::unique_lock<std::mutex> guard(mutex_);
+          channels_.insert(channel);
         }
+
+        start();
       });
+}
+
 }

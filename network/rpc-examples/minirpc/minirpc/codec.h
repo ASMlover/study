@@ -24,24 +24,49 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "rpc_service.h"
-#include "tcp_client.h"
-#include <iostream>
+#pragma once
 
-TcpClient::TcpClient(boost::asio::io_service& io_service) {
-  tcp::socket socket(io_service);
-  conn_.reset(new TcpConnection(std::move(socket)));
+#include <cstring>
+#include <vector>
+#include "rpc.pb.h"
+
+namespace minirpc {
+
+namespace gpb = ::google::protobuf;
+
+inline void encode(const minirpc::RpcMessage& message, std::vector<char>& buf) {
+  const int nbyte = message.ByteSize();
+  const int len = nbyte + 4; // RPC0
+  const int ntotal = len + 4; // length prepend
+
+  buf.resize(ntotal);
+  std::memcpy(&buf[0], &ntotal, sizeof(ntotal));
+  std::memcpy(&buf[4], "RPC0", 4);
+  message.SerializeWithCachedSizesToArray((std::uint8_t*)&buf[8]);
 }
 
-void TcpClient::start(const char* host, std::uint16_t port) {
-  conn_->add_service(new RpcEchoRequestService(conn_.get()));
+enum ParseError {
+  SUCCESS = 0,
+  INVALID_LENGTH,
+  INVALID_NAMELEN,
+  UNKNWON_MESSAGE,
+  PARSE_ERROR,
+};
+inline ParseError decode(const char* buf, int len, minirpc::RpcMessage& message) {
+  ParseError r = SUCCESS;
 
-  tcp::endpoint endpoint(boost::asio::ip::address::from_string(host), port);
-  conn_->get_socket().async_connect(endpoint,
-      [this, host, port](const boost::system::error_code& ec) {
-        if (!ec) {
-          std::cout << "TcpClient::start - connect to {" << host << ", " << port << "} success" << std::endl;
-          conn_->do_read();
-        }
-      });
+  if (std::memcmp(buf, "RPC0", 4) == 0) {
+    const char* data = buf + 4;
+    if (message.ParseFromArray(data, len - 4))
+      r = SUCCESS;
+    else
+      r = PARSE_ERROR;
+  }
+  else {
+    r = UNKNWON_MESSAGE;
+  }
+
+  return r;
+}
+
 }

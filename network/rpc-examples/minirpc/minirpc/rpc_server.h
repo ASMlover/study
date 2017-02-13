@@ -24,24 +24,38 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "rpc_service.h"
-#include "tcp_client.h"
-#include <iostream>
+#pragma once
 
-TcpClient::TcpClient(boost::asio::io_service& io_service) {
-  tcp::socket socket(io_service);
-  conn_.reset(new TcpConnection(std::move(socket)));
-}
+#include <map>
+#include <memory>
+#include <mutex>
+#include <set>
+#include <string>
+#include <vector>
+#include <google/protobuf/service.h>
+#include <boost/asio.hpp>
 
-void TcpClient::start(const char* host, std::uint16_t port) {
-  conn_->add_service(new RpcEchoRequestService(conn_.get()));
+namespace minirpc {
 
-  tcp::endpoint endpoint(boost::asio::ip::address::from_string(host), port);
-  conn_->get_socket().async_connect(endpoint,
-      [this, host, port](const boost::system::error_code& ec) {
-        if (!ec) {
-          std::cout << "TcpClient::start - connect to {" << host << ", " << port << "} success" << std::endl;
-          conn_->do_read();
-        }
-      });
+using ::boost::asio::ip::tcp;
+namespace gpb = ::google::protobuf;
+
+class RpcChannel;
+
+class RpcServer : private boost::noncopyable {
+  boost::asio::io_service& io_service_;
+  tcp::acceptor acceptor_;
+  tcp::socket socket_;
+
+  std::map<std::string, gpb::Service*> services_;
+  std::mutex mutex_;
+  std::set<std::shared_ptr<RpcChannel>> channels_;
+public:
+  RpcServer(boost::asio::io_service& io_service, std::uint16_t port = 5555);
+  ~RpcServer(void);
+
+  void register_service(gpb::Service* service);
+  void start(void);
+};
+
 }

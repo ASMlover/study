@@ -24,24 +24,27 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "rpc_service.h"
-#include "tcp_client.h"
 #include <iostream>
+#include <boost/asio.hpp>
+#include "../minirpc/rpc_channel.h"
+#include "../minirpc/rpc_server.h"
+#include "echo.pb.h"
 
-TcpClient::TcpClient(boost::asio::io_service& io_service) {
-  tcp::socket socket(io_service);
-  conn_.reset(new TcpConnection(std::move(socket)));
-}
+namespace gpb = ::google::protobuf;
 
-void TcpClient::start(const char* host, std::uint16_t port) {
-  conn_->add_service(new RpcEchoRequestService(conn_.get()));
+class EchoServiceImpl : public echo::EchoService {
+public:
+  virtual void echo_call(gpb::RpcController* /*controller*/,
+      const echo::EchoRequest* request, echo::Void* /*response*/, gpb::Closure* done) override {
+    std::cout << "EchoServiceImpl::echo_call - request=" << request->request() << std::endl;
 
-  tcp::endpoint endpoint(boost::asio::ip::address::from_string(host), port);
-  conn_->get_socket().async_connect(endpoint,
-      [this, host, port](const boost::system::error_code& ec) {
-        if (!ec) {
-          std::cout << "TcpClient::start - connect to {" << host << ", " << port << "} success" << std::endl;
-          conn_->do_read();
-        }
-      });
+    if (done)
+      done->Run();
+  }
+};
+
+int main(int argc, char* argv[]) {
+  (void)argc, (void)argv;
+
+  return 0;
 }
