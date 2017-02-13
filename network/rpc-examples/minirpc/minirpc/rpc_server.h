@@ -27,6 +27,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <string>
@@ -42,12 +43,13 @@ namespace gpb = ::google::protobuf;
 class RpcChannel;
 
 class RpcServer : private boost::noncopyable {
+  boost::asio::io_service& io_service_;
   tcp::acceptor acceptor_;
   tcp::socket socket_;
 
   std::map<std::string, gpb::Service*> services_;
   std::mutex mutex_;
-  std::set<RpcChannel*> channels_;
+  std::set<std::shared_ptr<RpcChannel>> channels_;
 public:
   RpcServer(boost::asio::io_service& io_service, std::uint16_t port = 5555);
   ~RpcServer(void);

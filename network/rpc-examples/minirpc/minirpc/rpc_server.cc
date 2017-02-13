@@ -32,20 +32,33 @@ namespace minirpc {
 
 
 RpcServer::RpcServer(boost::asio::io_service& io_service, std::uint16_t port)
-  : acceptor_(io_service, tcp::endpoint(tcp::v4(), port))
+  : io_service_(io_service)
+  , acceptor_(io_service, tcp::endpoint(tcp::v4(), port))
   , socket_(io_service) {
 }
 
 RpcServer::~RpcServer(void) {
-  // TODO:
 }
 
 void RpcServer::register_service(gpb::Service* service) {
-  // TODO:
+  const auto* desc = service->GetDescriptor();
+  services_[desc->name()] = service;
 }
 
 void RpcServer::start(void) {
-  // TODO:
+  acceptor_.async_accept(socket_,
+      [this](const boost::system::error_code& ec) {
+        if (!ec) {
+          auto channel = std::make_shared<RpcChannel>(io_service_, std::move(socket_));
+          channel->set_services(services_);
+          channel->start();
+
+          std::unique_lock<std::mutex> guard(mutex_);
+          channels_.insert(channel);
+        }
+
+        start();
+      });
 }
 
 }
