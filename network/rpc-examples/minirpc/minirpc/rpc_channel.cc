@@ -50,6 +50,7 @@ void RpcChannel::CallMethod(const gpb::MethodDescriptor* method,
   message.set_type(MT_REQUEST);
   message.set_id(id);
   message.set_service(method->service()->name());
+  message.set_method(method->name());
   message.set_request(request->SerializeAsString());
 
   {
@@ -90,7 +91,8 @@ void RpcChannel::do_read_header(void) {
   boost::asio::async_read(socket_, boost::asio::buffer(buffer_),
       [this, self](const boost::system::error_code& ec, std::size_t n) {
         if (!ec && n == 4) {
-          int len = std::atoi(buffer_.data());
+          int len = 0;
+          std::memcpy(&len, buffer_.data(), 4);
           do_read_body(len);
         }
         else {
