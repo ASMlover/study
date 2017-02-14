@@ -1,0 +1,16 @@
+syntax = "proto3";
+package minirpc;
+
+option cc_generic_services = true;
+
+message Void {
+};
+
+message RpcMessage {
+  string method = 1;
+  string arguments = 2;
+};
+
+service IRpcService {
+  rpc call_method(RpcMessage) returns(Void);
+};
