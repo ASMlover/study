@@ -46,5 +46,15 @@ public:
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
+  boost::asio::io_service io_service;
+  minirpc::RpcServer server(io_service);
+
+  EchoServiceImpl impl;
+  server.register_service(&impl);
+
+  server.start();
+
+  io_service.run();
+
   return 0;
 }

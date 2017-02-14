@@ -25,9 +25,32 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <memory>
+#include <boost/asio.hpp>
+#include "../minirpc/rpc_channel.h"
+#include "echo.pb.h"
+
+using ::boost::asio::ip::tcp;
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
+
+  boost::asio::io_service io_service;
+
+  tcp::socket socket(io_service);
+  socket.connect(tcp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 5555));
+
+  auto ch = std::make_shared<minirpc::RpcChannel>(io_service, std::move(socket));
+  ch->start();
+
+  echo::EchoService::Stub stub(ch.get());
+  echo::EchoRequest request;
+  request.set_request("Hello, world!");
+  stub.echo_call(nullptr, &request, nullptr, nullptr);
+
+  ch->close();
+
+  io_service.run();
 
   return 0;
 }
