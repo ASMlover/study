@@ -30,7 +30,6 @@
 
 namespace minirpc {
 
-
 RpcServer::RpcServer(boost::asio::io_service& io_service, std::uint16_t port)
   : io_service_(io_service)
   , acceptor_(io_service, tcp::endpoint(tcp::v4(), port))

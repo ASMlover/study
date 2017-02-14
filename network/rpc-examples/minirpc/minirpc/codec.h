@@ -40,7 +40,7 @@ inline void encode(const minirpc::RpcMessage& message, std::vector<char>& buf) {
   const int ntotal = len + 4; // length prepend
 
   buf.resize(ntotal);
-  std::memcpy(&buf[0], &ntotal, sizeof(ntotal));
+  std::memcpy(&buf[0], &len, sizeof(len));
   std::memcpy(&buf[4], "RPC0", 4);
   message.SerializeWithCachedSizesToArray((std::uint8_t*)&buf[8]);
 }

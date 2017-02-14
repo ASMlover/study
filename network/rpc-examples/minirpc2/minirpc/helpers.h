@@ -24,37 +24,19 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
+#pragma once
+
 #include <boost/asio.hpp>
-#include "../minirpc/rpc_channel.h"
-#include "../minirpc/rpc_server.h"
-#include "echo.pb.h"
+#include "rpc.pb.h"
+
+namespace minirpc {
+
+namespace asio {
+  using namespace ::boost::asio;
+  using ::boost::asio::ip::tcp;
+  using ::boost::asio::ip::address;
+}
 
 namespace gpb = ::google::protobuf;
 
-class EchoServiceImpl : public echo::EchoService {
-public:
-  virtual void echo_call(gpb::RpcController* /*controller*/,
-      const echo::EchoRequest* request, echo::Void* /*response*/, gpb::Closure* done) override {
-    std::cout << "EchoServiceImpl::echo_call - request=" << request->request() << std::endl;
-
-    if (done)
-      done->Run();
-  }
-};
-
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
-
-  boost::asio::io_service io_service;
-  minirpc::RpcServer server(io_service);
-
-  EchoServiceImpl impl;
-  server.register_service(&impl);
-
-  server.start();
-
-  io_service.run();
-
-  return 0;
 }

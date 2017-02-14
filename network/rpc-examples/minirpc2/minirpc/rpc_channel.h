@@ -24,37 +24,53 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
-#include <boost/asio.hpp>
-#include "../minirpc/rpc_channel.h"
-#include "../minirpc/rpc_server.h"
-#include "echo.pb.h"
+#pragma once
 
-namespace gpb = ::google::protobuf;
+#include <atomic>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <vector>
+#include "helpers.h"
 
-class EchoServiceImpl : public echo::EchoService {
+namespace minirpc {
+
+class RpcMessage;
+
+class RpcChannel : public gpb::RpcChannel , public std::enable_shared_from_this<RpcChannel> {
+  asio::io_service& io_service_;
+  asio::tcp::socket socket_;
+  std::vector<char> buffer_;
+
+  struct OutstandingCall {
+    gpb::Message* response;
+    gpb::Closure* done;
+  };
+  gpb::Service* service_{};
+  std::atomic<std::int64_t> id_;
+  mutable std::mutex mutex_;
+  std::map<std::int64_t, OutstandingCall> outstandings_;
+
+  void do_read_header(void);
+  void do_read_body(std::size_t len);
+  void do_write(const RpcMessage& message);
+  void handle_message(const RpcMessage& message);
+  void done_callback(gpb::Message* response, std::int64_t id);
+  void encode(const RpcMessage& msg, std::vector<char>& buf);
+  bool decode(const std::vector<char>& buf, RpcMessage& msg);
 public:
-  virtual void echo_call(gpb::RpcController* /*controller*/,
-      const echo::EchoRequest* request, echo::Void* /*response*/, gpb::Closure* done) override {
-    std::cout << "EchoServiceImpl::echo_call - request=" << request->request() << std::endl;
+  RpcChannel(asio::io_service& io_service, asio::tcp::socket&& socket);
+  ~RpcChannel(void);
 
-    if (done)
-      done->Run();
+  virtual void CallMethod(const gpb::MethodDescriptor* method, gpb::RpcController* controller,
+      const gpb::Message* request, gpb::Message* response, gpb::Closure* done) override;
+
+  void start(void);
+  void close(void);
+
+  void set_service(gpb::Service* service) {
+    service_ = service;
   }
 };
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
-
-  boost::asio::io_service io_service;
-  minirpc::RpcServer server(io_service);
-
-  EchoServiceImpl impl;
-  server.register_service(&impl);
-
-  server.start();
-
-  io_service.run();
-
-  return 0;
 }

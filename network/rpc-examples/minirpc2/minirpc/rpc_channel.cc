@@ -26,12 +26,11 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include "rpc.pb.h"
-#include "codec.h"
 #include "rpc_channel.h"
 
 namespace minirpc {
 
-RpcChannel::RpcChannel(boost::asio::io_service& io_service, tcp::socket&& socket)
+RpcChannel::RpcChannel(asio::io_service& io_service, asio::tcp::socket&& socket)
   : io_service_(io_service)
   , socket_(std::move(socket)) {
 }
@@ -39,15 +38,12 @@ RpcChannel::RpcChannel(boost::asio::io_service& io_service, tcp::socket&& socket
 RpcChannel::~RpcChannel(void) {
 }
 
-void RpcChannel::CallMethod(const gpb::MethodDescriptor* method,
-    gpb::RpcController* /*controller*/,
-    const gpb::Message* request,
-    gpb::Message* response,
-    gpb::Closure* done) {
+void RpcChannel::CallMethod(const gpb::MethodDescriptor* method, gpb::RpcController* /*controller*/,
+    const gpb::Message* request, gpb::Message* response, gpb::Closure* done) {
   std::int64_t id = ++id_;
 
   minirpc::RpcMessage message;
-  message.set_type(MT_REQUEST);
+  message.set_type(TYPE_REQUEST);
   message.set_id(id);
   message.set_service(method->service()->name());
   message.set_method(method->name());
@@ -56,7 +52,7 @@ void RpcChannel::CallMethod(const gpb::MethodDescriptor* method,
   {
     OutstandingCall out{response, done};
     std::unique_lock<std::mutex> guard(mutex_);
-    outstandings_[id] = out;
+    outstandings_.insert(std::make_pair(id, out));
   }
 
   do_write(message);
@@ -71,27 +67,13 @@ void RpcChannel::close(void) {
   io_service_.post([this, self] { socket_.close(); });
 }
 
-void RpcChannel::do_write(const minirpc::RpcMessage& message) {
-  std::vector<char> buf;
-  minirpc::encode(message, buf);
-
-  auto self(shared_from_this());
-  boost::asio::async_write(socket_, boost::asio::buffer(buf),
-      [this, self](const boost::system::error_code& ec, std::size_t /*n*/) {
-        if (ec) {
-          std::cout << "RpcChannel::do_write - write message failed ...." << std::endl;
-          socket_.close();
-        }
-      });
-}
-
 void RpcChannel::do_read_header(void) {
-  auto self(shared_from_this());
   buffer_.resize(4);
-  boost::asio::async_read(socket_, boost::asio::buffer(buffer_),
+  auto self(shared_from_this());
+  asio::async_read(socket_, asio::buffer(buffer_),
       [this, self](const boost::system::error_code& ec, std::size_t n) {
         if (!ec && n == 4) {
-          int len = 0;
+          std::size_t len = 0;
           std::memcpy(&len, buffer_.data(), 4);
           do_read_body(len);
         }
@@ -101,15 +83,14 @@ void RpcChannel::do_read_header(void) {
       });
 }
 
-void RpcChannel::do_read_body(int len) {
-  auto self(shared_from_this());
+void RpcChannel::do_read_body(std::size_t len) {
   buffer_.resize(len);
-  boost::asio::async_read(socket_, boost::asio::buffer(buffer_),
+  auto self(shared_from_this());
+  asio::async_read(socket_, asio::buffer(buffer_),
       [this, self, len](const boost::system::error_code& ec, std::size_t n) {
-        if (!ec && static_cast<std::size_t>(len) == n) {
+        if (!ec && len == n) {
           minirpc::RpcMessage message;
-          minirpc::ParseError r = minirpc::decode(buffer_.data(), len, message);
-          if (r == minirpc::ParseError::SUCCESS)
+          if (decode(buffer_, message))
             handle_message(message);
 
           do_read_header();
@@ -120,25 +101,36 @@ void RpcChannel::do_read_body(int len) {
       });
 }
 
+void RpcChannel::do_write(const RpcMessage& message) {
+  std::vector<char> buf;
+  encode(message, buf);
+
+  auto self(shared_from_this());
+  asio::async_write(socket_, asio::buffer(buf),
+      [this, self](const boost::system::error_code& ec, std::size_t /*n*/) {
+        if (ec) {
+          std::cerr << "RpcChannel::do_write - write RpcMessage failed ..." << std::endl;
+          socket_.close();
+        }
+      });
+}
+
 void RpcChannel::handle_message(const RpcMessage& message) {
-  if (message.type() == minirpc::MessageType::MT_REQUEST) {
-    auto it = services_.find(message.service());
-    if (it != services_.end()) {
-      auto* service = it->second;
-      const auto* desc = service->GetDescriptor();
+  if (message.type() == TYPE_REQUEST) {
+    if (service_) {
+      const auto* desc = service_->GetDescriptor();
       const auto* method = desc->FindMethodByName(message.method());
       if (method) {
-        auto* request = service->GetRequestPrototype(method).New();
+        auto* request = service_->GetRequestPrototype(method).New();
         request->ParseFromString(message.request());
-        auto* response = service->GetResponsePrototype(method).New();
-        std::int64_t id = message.id();
-        service->CallMethod(method, nullptr, request, response,
-            gpb::NewCallback(this, &RpcChannel::done_callback, response, id));
+        service_->CallMethod(method, nullptr, request, nullptr, nullptr);
+        // TODO: solve response
+
         delete request;
       }
     }
   }
-  else if (message.type() == minirpc::MessageType::MT_RESPONSE) {
+  else if (message.type() == TYPE_RESPONSE) {
     std::int64_t id = message.id();
     OutstandingCall out{};
 
@@ -162,12 +154,32 @@ void RpcChannel::handle_message(const RpcMessage& message) {
 
 void RpcChannel::done_callback(gpb::Message* response, std::int64_t id) {
   minirpc::RpcMessage message;
-  message.set_type(MT_RESPONSE);
+  message.set_type(TYPE_RESPONSE);
   message.set_id(id);
   message.set_response(response->SerializeAsString());
   do_write(message);
 
   delete response;
+}
+
+void RpcChannel::encode(const RpcMessage& msg, std::vector<char>& buf) {
+  const int bytes = msg.ByteSize();
+  const int len = bytes + 4; // RPC0
+  const int ntotal = len + 4;
+
+  buf.resize(ntotal);
+  std::memcpy(&buf[0], &len, sizeof(len));
+  std::memcpy(&buf[4], "RPC0", 4);
+  msg.SerializeWithCachedSizesToArray((std::uint8_t*)&buf[0]);
+}
+
+bool RpcChannel::decode(const std::vector<char>& buf, RpcMessage& msg) {
+  if (std::memcmp(buf.data(), "RPC0", 4) == 0) {
+    if (msg.ParseFromArray(&buf[4], buf.size() - 4))
+      return true;
+  }
+
+  return false;
 }
 
 }
