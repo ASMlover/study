@@ -36,9 +36,6 @@ import platform
 import time
 import traceback
 
-def _nyxlog_compact_traceback(self):
-    self.error(traceback.format_exc())
-
 # [LOG-LEVEL] 定义log的级别
 NYXLOG_CRITICAL = logging.CRITICAL
 NYXLOG_ERROR = logging.ERROR
@@ -60,69 +57,89 @@ class GameLogger(object):
         jsonstr = json.dumps(info_dict, ensure_ascii=False)
         self._logger.info('[%s][%s] - %s' % (logtime, operation, jsonstr))
 
+def _nyxlog_compact_traceback(logger):
+    logger.error(traceback.format_exc())
+
 class LogManager(object):
-    created_modules = set()
-    log_level = NYXLOG_DEBUG
-    log_handle = NYXLOG_STREAM
-    log_tag = 'nyx.core'
-    game_log_tag = 'nyx.game'
-    sys_logger = None
+    # internal instance variables definitions
+    _exists_modules = set()
+    _level = NYXLOG_DEBUG
+    _handler = NYXLOG_STREAM
+    _tag = 'nyx.core'
+    _game_tag = 'nyx.game'
+    _sys_logger = None
 
     @staticmethod
-    def set_log_level(level):
-        LogManager.log_level = level
+    def set_level(level):
+        LogManager._level = level
 
     @staticmethod
-    def set_log_handle(handle):
-        LogManager.log_handle = handle
+    def set_handler(handler):
+        LogManager._handler = handler
 
     @staticmethod
-    def set_log_tag(log_tag):
-        LogManager.log_tag = log_tag
+    def set_tag(tag):
+        LogManager._tag = tag
 
     @staticmethod
-    def set_game_log_tag(log_tag):
-        LogManager.game_log_tag = log_tag
+    def set_game_tag(tag):
+        LogManager._game_tag = tag
 
     @staticmethod
     def get_logger(modulename):
-        if LogManager.log_handle == NYXLOG_SYSLOG and platform.system() == 'Linux' and LogManager.sys_logger != None:
-            return logging.LoggerAdapter(LogManager.sys_logger, {'modulename': modulename})
+        if LogManager._handler == NYXLOG_SYSLOG and platform.system() == 'Linux' and LogManager._sys_logger != None:
+            return logging.LoggerAdapter(LogManager._sys_logger, {'modulename': modulename})
 
-        if modulename in LogManager.created_modules:
+        if modulename in LogManager._exists_modules:
             return logging.getLogger(modulename)
 
         logger = logging.getLogger(modulename)
         logger.nyxlog_exception = new.instancemethod(_nyxlog_compact_traceback, logger, logger.__class__)
-        logger.setLevel(LogManager.log_level)
-        formatlist = ['%(asctime)s', 'NyxEngine', LogManager.log_tag, '%(name)s', '%(levelname)s', '%(message)s']
-        if LogManager.log_handle == NYXLOG_SYSLOG:
+        logger.setLevel(LogManager._level)
+        formatlist = ['%(asctime)s', 'NyxEngine', LogManager._tag, '%(name)s', '%(levelname)s', '%(message)s']
+        if LogManager._handler == NYXLOG_SYSLOG:
             if platform.system() == 'Linux':
                 ch = LH.SysLogHandler('/dev/log', facility=LH.SysLogHandler.LOG_LOCAL1)
-                LogManager.sys_logger = logger
-                formatlist = ['%(asctime)s', 'NyxEngine', LogManager.log_tag, '%(modulename)s', '%(levelname)s', '%(message)s']
+                LogManager._sys_logger = logger
+                formatlist = ['%(asctime)s', 'NyxEngine', LogManager._tag, '%(modulename)s', '%(levelname)s', '%(message)s']
             else:
-                ch = logging.FileHandler('%s.%s.log' % (LogManager.log_tag, time.strftime('%Y%m%d%H%M%S')), encoding='utf-8')
-        elif LogManager.log_handle == NYXLOG_FILE:
-            ch = logging.FileHandler('%s.%s.log' % (LogManager.log_tag, time.strftime('%Y%m%d%H%M%S')), encoding='utf-8')
+                ch = logging.FileHandler('%s.%s.log' % (LogManager._tag, time.strftime('%Y%m%d%H%M%S')), encoding='utf-8')
+        elif LogManager._handler == NYXLOG_FILE:
+            ch = logging.FileHandler('%s.%s.log' % (LogManager._tag, time.strftime('%Y%m%d%H%M%S')), encoding='utf-8')
         else:
             ch = logging.StreamHandler()
-        ch.setLevel(LogManager.log_level)
+        ch.setLevel(LogManager._level)
         formatter = logging.Formatter(' - '.join(formatlist))
         ch.setFormatter(formatter)
         logger.addHandler(ch)
-        LogManager.created_modules.add(modulename)
+        LogManager._exists_modules.add(modulename)
 
-        if LogManager.log_handle == NYXLOG_SYSLOG and platform.system() == 'Linux' and LogManager.sys_logger != None:
-            return logging.LoggerAdapter(LogManager.sys_logger, {'modulename': modulename})
+        if LogManager._handler == NYXLOG_SYSLOG and platform.system() == 'Linux' and LogManager._sys_logger != None:
+            return logging.LoggerAdapter(LogManager._sys_logger, {'modulename': modulename})
         return logger
 
     @staticmethod
     def get_game_logger():
-        pass
+        if 'GameLogger' in LogManager._exists_modules:
+            return GameLogger(logging.getLogger('GameLogger'))
+
+        logger = logging.getLogger('GameLogger')
+        logger.setLevel(logging.INFO)
+        if platform.system() == 'Linux':
+            ch = LH.SysLogHandler('/dev/log', facility=LH.SysLogHandler.LOG_LOCAL0)
+            ch.setLevel(logging.INFO)
+            formatter = logging.Formatter('%s: %(message)s' % LogManager._game_tag)
+        else:
+            ch = logging.FileHandler('%s.%s.log' % (LogManager._game_tag, time.strftime('%Y%m%d%H%M%S')), encoding='utf-8')
+            formatter = logging.Formatter('%(message)s')
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
+
+        LogManager._exists_modules.add('GameLogger')
+        return GameLogger(logger)
 
 if __name__ == '__main__':
-    # TEST: log handle is NYXLOG_STREAM
+    # TEST: NYXLOG_STREAM
     logger = LogManager.get_logger('LogManager.Main.Stream')
     logger.debug('log.main - this is `debug` test')
     logger.info('log.main - this is `info` test')
@@ -130,11 +147,22 @@ if __name__ == '__main__':
     logger.error('log.main - this is `error` test')
     logger.critical('log.main - this is `critical` test')
 
-    # TEST: log handle is NYXLOG_SYSLOG
-    LogManager.set_log_handle(NYXLOG_SYSLOG)
+    # TEST: NYXLOG_SYSLOG
+    LogManager.set_handler(NYXLOG_SYSLOG)
     logger = LogManager.get_logger('LogManager.Main.Syslog')
     logger.debug('log.main - this is `debug` test')
     logger.info('log.main - this is `info` test')
     logger.warn('log.main - this is `warn` test')
     logger.error('log.main - this is `error` test')
     logger.critical('log.main - this is `critical` test')
+
+    # TEST: GameLogger
+    LogManager.set_game_tag('NyxGameLogger')
+    game_logger = LogManager.get_game_logger()
+    game_logger.log('Startup', {'time': int(time.time()), 'id': 11001, 'name': 'avatar1', 'dev': 'ios'})
+
+    # TEST: logging exception
+    try:
+        raise SystemError('LogManager system error')
+    except:
+        logger.nyxlog_exception()
