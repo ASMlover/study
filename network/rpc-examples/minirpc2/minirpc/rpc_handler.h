@@ -33,17 +33,15 @@
 
 namespace minirpc {
 
+typedef std::function<void (const std::string&)> MethodType;
 class RpcHandler {
   minirpc::IRpcService::Stub* stub_{};
 
-  typedef std::function<void (const std::string&)> MethodType;
   std::map<std::string, MethodType> methods_;
 public:
-  RpcHandler(void) {
-    init_methods();
-  }
+  RpcHandler(void) {}
   virtual ~RpcHandler(void) {}
-  virtual void init_methods(void) {}
+  virtual void init_methods(void) = 0;
 
   void reg_method(const std::string& name, const MethodType& method) {
     methods_.insert(std::make_pair(name, method));
@@ -58,7 +56,7 @@ public:
     stub_ = stub;
   }
 
-  void call_client_method(const std::string& name, const std::string& arguments) {
+  void call_method_proxy(const std::string& name, const std::string& arguments) {
     if (stub_) {
       minirpc::CallMessage message;
       message.set_method(name);
@@ -69,3 +67,6 @@ public:
 };
 
 }
+
+#define REG_HANDLER_METHOD(Class, Method)\
+  reg_method(#Method, std::bind(&Class::Method, this, std::placeholders::_1))
