@@ -170,7 +170,7 @@ void RpcChannel::encode(const RpcMessage& msg, std::vector<char>& buf) {
   buf.resize(ntotal);
   std::memcpy(&buf[0], &len, sizeof(len));
   std::memcpy(&buf[4], "RPC0", 4);
-  msg.SerializeWithCachedSizesToArray((std::uint8_t*)&buf[0]);
+  msg.SerializeWithCachedSizesToArray((std::uint8_t*)&buf[8]);
 }
 
 bool RpcChannel::decode(const std::vector<char>& buf, RpcMessage& msg) {
