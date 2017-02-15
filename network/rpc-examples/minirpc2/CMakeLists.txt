@@ -34,7 +34,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "`${MINIRPC_PROJ}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
-option(MINIRPC_BUILD_DEMO "building demo of `${MINIRPC_PROJ}`" OFF)
+option(MINIRPC_BUILD_DEMO "building demo of `${MINIRPC_PROJ}`" ON)
 
 # set cxx_flags
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
