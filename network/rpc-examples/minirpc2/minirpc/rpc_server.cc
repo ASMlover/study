@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include "rpc_channel.h"
 #include "rpc_handler.h"
 #include "rpc_service.h"
@@ -49,6 +50,8 @@ void RpcServer::do_accept(void) {
   acceptor_.async_accept(socket_,
       [this](const boost::system::error_code& ec) {
         if (!ec) {
+          std::cout << "RpcServer::do_accept - accept new connection ..." << std::endl;
+
           auto ch = std::make_shared<RpcChannel>(io_service_, std::move(socket_));
           auto service = std::make_shared<RpcService>(ch.get(), handler_);
           ch->set_service(service.get());

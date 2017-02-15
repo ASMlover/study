@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <iostream>
 #include "helpers.h"
 #include "rpc_handler.h"
 
@@ -40,11 +41,15 @@ public:
   RpcService(RpcChannel* channel, RpcHandler* handler)
     : handler_(handler)
     , stub_(channel) {
+    handler_->init_methods();
     handler_->set_stub(&stub_);
   }
 
   virtual void call_method(gpb::RpcController* /*controller*/,
       const minirpc::CallMessage* request, minirpc::Void* /*response*/, gpb::Closure* done) override {
+    std::cout << "RpcService::call_method - request.method="
+      << request->method() << ", request.arguments=" << request->arguments() << std::endl;
+
     handler_->call_method(request->method(), request->arguments());
 
     if (done)
