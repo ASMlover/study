@@ -29,14 +29,15 @@
 #include "../minirpc/rpc_channel.h"
 #include "../minirpc/rpc_handler.h"
 #include "../minirpc/rpc_service.h"
+#include "../minirpc/rpc_client.h"
 
 using ::boost::asio::ip::tcp;
 
 class MyHandler : public minirpc::RpcHandler {
-  minirpc::RpcChannel* ch_{};
+  minirpc::RpcClient& rc_;
 public:
-  MyHandler(minirpc::RpcChannel* ch)
-    : ch_(ch) {
+  MyHandler(minirpc::RpcClient& rc)
+    : rc_(rc) {
   }
 
   virtual void init_methods(void) override {
@@ -50,7 +51,7 @@ public:
   void back_hello(const std::string& args) {
     std::cout << "MyHandler::back_hello - args=" << args << std::endl;
 
-    ch_->close();
+    rc_.close();
   }
 };
 
@@ -59,16 +60,9 @@ int main(int argc, char* argv[]) {
 
   boost::asio::io_service io_service;
 
-  tcp::socket socket(io_service);
-  socket.connect(tcp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 5555));
-
-  auto ch = std::make_shared<minirpc::RpcChannel>(io_service, std::move(socket));
-  MyHandler handler(ch.get());
-  auto service = std::make_shared<minirpc::RpcService>(ch.get(), &handler);
-  ch->set_service(service.get());
-  ch->start();
-
-  handler.say_hello("Hello, world!");
+  minirpc::RpcClient client(io_service);
+  MyHandler handler(client);
+  client.start(&handler, [&handler] { handler.say_hello("Hello, world!"); });
 
   io_service.run();
 
