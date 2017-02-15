@@ -25,43 +25,11 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cmake_minimum_required(VERSION 3.0)
-set(MINIRPC_PROJ "MiniRPC")
-project(${MINIRPC_PROJ} CXX)
+set(DEMO_SNAME "demo.server")
+set(DEMO_CNAME "demo.client")
 
-if (NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
-endif()
-message(STATUS "`${MINIRPC_PROJ}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+add_executable(${DEMO_SNAME} server.cc)
+target_link_libraries(${DEMO_SNAME} minirpc)
 
-option(MINIRPC_BUILD_DEMO "building demo of `${MINIRPC_PROJ}`" ON)
-
-# set cxx_flags
-if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-  add_definitions(
-    /D_UNICODE
-    /D_CRT_SECURE_NO_WARNINGS
-    /D_CRT_NONSTDC_NO_WARNINGS)
-  set(CMAKE_CXX_FLAGS "/W3 /GF /GS /Gs /Zi /EHsc")
-else()
-  set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-g -O2 -Wall -std=c++1y")
-endif()
-message(STATUS "`${MINIRPC_PROJ}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
-
-# set include_directories and link_directories
-if (CMAKE_SYSTEM_NAME MATCHES "Windows")
-  include_directories("D:/Tools/boost_1_63_0" "D:/Tools/protobuf/src")
-  link_directories("D:/Tools/boost_1_63_0/stage/lib" "D:/Tools/protobuf/cmake/cmake-build")
-else()
-  include_directories(
-    ${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_63_0
-    ${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/protobuf/src)
-  link_directories(
-    ${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_63_0/stage/lib
-    ${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/protobuf/cmake/cmake-build)
-endif()
-
-add_subdirectory(minirpc)
-if (MINIRPC_BUILD_DEMO)
-  add_subdirectory(demo)
-endif()
+add_executable(${DEMO_CNAME} client.cc)
+target_link_libraries(${DEMO_CNAME} minirpc)
