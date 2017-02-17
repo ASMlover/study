@@ -74,4 +74,18 @@ if __name__ == '__main__':
     a.name = 'John'
     a.age = 20
     a.sex = 'male'
-    print 'a.name=%s, a.age=%d, a.sex=%s' % (a.name, a.age, a.sex)
+    print 'a.name=`%s`, a.age=%d, a.sex=`%s`' % (a.name, a.age, a.sex)
+
+    @singleton
+    class UselessName(object):
+        def __init__(self):
+            self._name = 'Useless'
+
+        def set_name(self, name):
+            self._name = name
+
+        def show(self):
+            print 'UselessName.show - name=`%s`' % self._name
+
+    UselessName().set_name('Jack.Gus')
+    UselessName().show()
