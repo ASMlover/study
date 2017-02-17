@@ -28,7 +28,9 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import os
 import platform
+import sys
 
 class ExtendableType(type):
     def __new__(cls, name, bases, dict_info):
@@ -68,6 +70,26 @@ def singleton(cls):
 
 def get_architecture():
     return platform.architecture()[0]
+
+def add_syspath(new_path):
+    """给Python的sys.path添加一个目录
+
+    Returns:
+        1表示添加成功
+        0表示new_path已经在sys.path中了
+        -1表示new_path目录不存在
+    """
+    if not os.path.exists(new_path):
+        return -1
+    new_abspath = os.path.abspath(new_path)
+    if sys.platform == 'win32':
+        new_abspath = new_abspath.lower()
+        for path in sys.path:
+            abspath = os.path.abspath(path).lower()
+            if new_abspath in (abspath, abspath + os.sep):
+                return 0
+    sys.path.append(new_abspath)
+    return 1
 
 if __name__ == '__main__':
     a = AttrProxy({})
