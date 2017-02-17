@@ -28,9 +28,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import os
 import platform
-import sys
 
 class ExtendableType(type):
     def __new__(cls, name, bases, dict_info):
@@ -44,6 +42,21 @@ class ExtendableType(type):
         else:
             return super(ExtendableType, cls).__new__(cls, name, bases, dict_info)
 
+class AttrProxy(object):
+    def __init__(self, attr):
+        super(AttrProxy, self).__setattr__('attr', attr)
+
+    def __getattr__(self, name):
+        attr = super(AttrProxy, self).__getattribute__('attr')
+        value = attr.get(name)
+        if not value:
+            raise AttributeError('AttrProxy has no attribute(%s)' % name)
+        return value
+
+    def __setattr__(self, name, value):
+        attr = super(AttrProxy, self).__getattribute__('attr')
+        attr[name] = value
+
 def singleton(cls):
     _instances = {}
 
@@ -55,3 +68,10 @@ def singleton(cls):
 
 def get_architecture():
     return platform.architecture()[0]
+
+if __name__ == '__main__':
+    a = AttrProxy({})
+    a.name = 'John'
+    a.age = 20
+    a.sex = 'male'
+    print 'a.name=%s, a.age=%d, a.sex=%s' % (a.name, a.age, a.sex)
