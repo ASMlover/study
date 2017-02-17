@@ -43,3 +43,15 @@ class ExtendableType(type):
             return None
         else:
             return super(ExtendableType, cls).__new__(cls, name, bases, dict_info)
+
+def singleton(cls):
+    _instances = {}
+
+    def get_instance(*args, **kwargs):
+        if cls not in _instances:
+            _instances[cls] = cls(*args, **kwargs)
+        return _instances[cls]
+    return get_instance
+
+def get_architecture():
+    return platform.architecture()[0]
