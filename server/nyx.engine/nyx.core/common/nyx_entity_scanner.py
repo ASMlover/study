@@ -33,7 +33,7 @@ import pkgutil
 import sys
 
 def _nyx_get_module_files(module_dir):
-    module_name_set = set()
+    module_names = set()
     try:
         module_files = os.listdir(module_dir)
     except:
@@ -44,6 +44,11 @@ def _nyx_get_module_files(module_dir):
         splited_list = fname.split('.')
         if len(splited_list) == 2:
             if splited_list[1] in ('py', 'pyc'):
-                module_name_set.add(splited_list[0])
-    module_name_set.discard('__init__')
-    return module_name_set
+                module_names.add(splited_list[0])
+    module_names.discard('__init__')
+    return module_names
+
+if __name__ == '__main__':
+    # TEST: for `_nyx_get_module_files`
+    module_names = _nyx_get_module_files('.')
+    print module_names
