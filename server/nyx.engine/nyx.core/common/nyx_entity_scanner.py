@@ -76,6 +76,23 @@ def _nyx_load_all_modules(dir_path):
             modules.append(mod)
     return modules
 
+def _nyx_get_classes(module, base_classes):
+    """获取module模块中属于base_classes所指定子类的类"""
+    classes = []
+    for name in dir(module):
+        attr = getattr(module, name)
+        if isinstance(attr, type) and issubclass(attr, base_classes):
+            classes.append(attr)
+    return classes
+
+def scan_entity_classes(module_dir, base_classes):
+    class_dict = {}
+    for module in _nyx_load_all_modules(module_dir):
+        classes = _nyx_get_classes(module, base_classes)
+        for cls in classes:
+            class_dict[cls.__name__] = cls
+    return class_dict
+
 if __name__ == '__main__':
     # TEST: for `_nyx_get_module_names`
     module_names = _nyx_get_module_names('.')
@@ -84,3 +101,11 @@ if __name__ == '__main__':
     # TEST: for `_nyx_get_modules`
     modules = _nyx_get_modules('.')
     print modules
+
+    # TEST: for `_nyx_load_all_modules`
+    loaded_modules = _nyx_load_all_modules('../../lib')
+    print loaded_modules
+
+    # TEST: for `scan_entity_classes`
+    class_dict = scan_entity_classes('../log', (object,))
+    print class_dict
