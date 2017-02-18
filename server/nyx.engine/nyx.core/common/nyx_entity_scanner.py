@@ -32,12 +32,14 @@ import os
 import pkgutil
 import sys
 
-def _nyx_get_module_files(module_dir):
+import nyx_common as nc
+
+def _nyx_get_module_names(module_dir):
     module_names = set()
     try:
         module_files = os.listdir(module_dir)
     except:
-        print 'get module files failed for directory: %s' % module_dir
+        print 'get module names failed for directory: %s' % module_dir
         return ()
 
     for fname in module_files:
@@ -48,7 +50,37 @@ def _nyx_get_module_files(module_dir):
     module_names.discard('__init__')
     return module_names
 
+def _nyx_get_modules(module_dir):
+    module_names = _nyx_get_module_names(module_dir)
+    modules = []
+    nc.add_syspath(module_dir)
+    for module_name in module_names:
+        try:
+            mod = __import__(module_name, fromlist=[''])
+            if mod:
+                modules.append(mod)
+        except:
+            print 'get module(%s) failed' % module_name
+
+            import traceback
+            traceback.print_exc()
+            continue
+    return modules
+
+def _nyx_load_all_modules(dir_path):
+    modules = []
+    nc.add_syspath(dir_path)
+    for importer, package_name, _ in pkgutil.walk_packages([dir_path]):
+        if package_name not in sys.modules:
+            mod = importer.find_module(package_name).load_module(package_name)
+            modules.append(mod)
+    return modules
+
 if __name__ == '__main__':
-    # TEST: for `_nyx_get_module_files`
-    module_names = _nyx_get_module_files('.')
+    # TEST: for `_nyx_get_module_names`
+    module_names = _nyx_get_module_names('.')
     print module_names
+
+    # TEST: for `_nyx_get_modules`
+    modules = _nyx_get_modules('.')
+    print modules
