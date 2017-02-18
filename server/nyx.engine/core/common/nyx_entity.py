@@ -29,31 +29,25 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from log.LogManager import LogManager
-from nyx_common import ExtendableType
+from nyx_common import ExtendableType, singleton
 
+@singleton
 class EntityFactory(object):
     __metaclass__ = ExtendableType
-    _instace = None
 
     def __init__(self):
         self._logger = LogManager.get_logger('NyxCore.EntityFactory')
         self._entity_classes = {}
 
-    @staticmethod
-    def get_instance(cls):
-        if cls._instace is None:
-            cls._instace = EntityFactory()
-        return cls._instace
-
     def register_entity(self, entity_type, entity_class):
         self._entity_classes[entity_type] = entity_class
-        # TODO:
+        # TODO: FIXME:
         import inspect
         methods = inspect.getmembers(entity_class, predicate=inspect.ismethod)
         methods.sort(lambda a, b: cmp(a[0], b[0]))
         for method in methods:
             if not method[0].startswith('_'):
-                # TODO: need FIXME:
+                # TODO: FIXME:
                 pass
 
     def get_entity_class(self, entity_type):
@@ -73,3 +67,28 @@ class EntityFactory(object):
             return entity_class()
         else:
             return entity_class(entity_id)
+
+@singleton
+class EntityManager(object):
+    def __init__(self):
+        self._logger = LogManager.get_logger('NyxCore.EntityManager')
+        self._entities = {}
+
+    def has_entity(self, entity_id):
+        return entity_id in self._entities
+
+    def get_entity(self, entity_id):
+        return self._entities.get(entity_id)
+
+    def add_entity(self, entity_id, entity, replace=False):
+        if entity_id in self._entities:
+            self._logger.warn('entity(%s) already exists', entity_id)
+            if not replace:
+                return
+        self._entities[entity_id] = entity
+
+    def del_entity(self, entity_id):
+        try:
+            del self._entities[entity_id]
+        except KeyError:
+            self._logger.warn('entity(%s) does not exist', entity_id)
