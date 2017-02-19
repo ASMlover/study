@@ -70,3 +70,47 @@ class IndexCache(object):
     @staticmethod
     def get_index(string):
         return IndexCache._str2index.get(string, -1)
+
+class CodecEncoder(object):
+    """md5或index的Encoder"""
+    def __init__(self):
+        self._str2index = {}
+
+    def reset(self):
+        self._str2index = {}
+
+    def add_index(self, md5, index):
+        if _NYXCORE_DEBUG:
+            string = md5
+        else:
+            string = Md5Cache.get_str(md5)
+        _logger.debug('CodecEncoder.add_index: %s, %s', string, index)
+        if string and index > 0:
+            self._str2index[string] = index
+
+    def encode(self, md5_index, string):
+        index = IndexCache.get_index(string)
+        if index <= 0:
+            index = self._str2index.get(string, 0)
+
+        if index > 0:
+            md5_index.index = index
+        else:
+            if _NYXCORE_DEBUG:
+                md5_index.md5 = string
+            else:
+                md5_index.md5 = Md5Cache.get_md5(string)
+        return md5_index
+
+    def raw_encode(self, string):
+        index = IndexCache.get_index(string)
+        if index <= 0:
+            index = self._str2index.get(string, 0)
+
+        if index > 0:
+            return index, ''
+        else:
+            if _NYXCORE_DEBUG:
+                return 0, string
+            else:
+                return 0, Md5Cache.get_md5(string)
