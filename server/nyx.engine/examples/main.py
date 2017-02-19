@@ -29,15 +29,35 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import sys
+import unittest
 
 sys.path.append('../lib')
-sys.path.append('../nyx.core')
+sys.path.append('../core')
 
-import async_timer
-import asyncore_scheduler
+from log.nyx_log import LogManager
+
+_logger = LogManager.get_logger('NyxCore.Examples')
+
+class NyxEngineUnittest(unittest.TestCase):
+    def test_async_timer(self):
+        import async_timer
+        import asyncore_scheduler
+
+        def foo():
+            _logger.debug('show foo function')
+        async_timer.add_timer(1, foo)
+        asyncore_scheduler.loop()
+
+    def test_entity_scanner(self):
+        from common.nyx_entity import EntityScanner as ES
+
+        class_dict = ES().scan_entity_classes('../core/common', (object, type,))
+        for key, value in class_dict.iteritems():
+            _logger.debug('{%s => %s}', key, value)
+
+def main():
+    suite = unittest.TestLoader().loadTestsFromTestCase(NyxEngineUnittest)
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
 if __name__ == '__main__':
-    def foo():
-        print 'nyx.engine.examples - foo function'
-    async_timer.add_timer(1, foo)
-    asyncore_scheduler.loop()
+    main()
