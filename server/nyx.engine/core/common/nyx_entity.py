@@ -28,7 +28,11 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from log.LogManager import LogManager
+import os
+import pkgutil
+import sys
+from log.nyx_log import LogManager
+import nyx_common as _nc
 from nyx_common import ExtendableType, singleton
 
 @singleton
@@ -92,3 +96,67 @@ class EntityManager(object):
             del self._entities[entity_id]
         except KeyError:
             self._logger.warn('entity(%s) does not exist', entity_id)
+
+@singleton
+class EntityScanner(object):
+    def __init__(self):
+        self._logger = LogManager.get_logger('NyxCore.EntityScanner')
+
+    def _nyx_get_module_names(self, module_dir):
+        module_names = set()
+        try:
+            module_files = os.listdir(module_dir)
+        except:
+            self._logger.warn('get module names failed for directory(%s)', module_dir)
+            return ()
+
+        for fname in module_files:
+            splited_list = fname.split('.')
+            if len(splited_list) == 2:
+                if splited_list[1] in ('py', 'pyc'):
+                    module_names.add(splited_list[0])
+        module_names.discard('__init__')
+        return module_names
+
+    def _nyx_get_modules(self, module_dir):
+        module_names = self._nyx_get_module_names(module_dir)
+        modules = []
+        _nc.add_syspath(module_dir)
+        for module_name in module_names:
+            try:
+                mod = __import__(module_name, fromlist=[''])
+                if mod:
+                    modules.append(mod)
+            except:
+                self._logger.warn('get module(%s) failed', module_name)
+
+                import traceback
+                traceback.print_exc()
+                continue
+        return modules
+
+    def _nyx_load_all_modules(self, dir_path):
+        modules = []
+        _nc.add_syspath(dir_path)
+        for importer, package_name, _ in pkgutil.walk_packages([dir_path]):
+            if package_name not in sys.modules:
+                mod = importer.find_module(package_name).load_module(package_name)
+                modules.append(mod)
+        return modules
+
+    def _nyx_get_classes(self, module, base_classes):
+        """获取module模块中属于base_classes所指定子类的类"""
+        classes = []
+        for name in dir(module):
+            attr = getattr(module, name)
+            if isinstance(attr, type) and issubclass(attr, base_classes):
+                classes.append(attr)
+        return classes
+
+    def scan_entity_classes(self, module_dir, base_classes):
+        class_dict = {}
+        for module in self._nyx_load_all_modules(module_dir):
+            classes = self._nyx_get_classes(module, base_classes)
+            for cls in classes:
+                class_dict[cls.__name__] = cls
+        return class_dict
