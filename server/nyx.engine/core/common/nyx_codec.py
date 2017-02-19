@@ -57,3 +57,16 @@ class Md5Cache(object):
     @staticmethod
     def get_str(md5):
         return Md5Cache._md52str.get(md5)
+
+_NYXCORE_MAX_INDEX = 100000
+class IndexCache(object):
+    _str2index = {}
+    _index2str = {}
+
+    @staticmethod
+    def get_str(index):
+        return IndexCache._index2str.get(index)
+
+    @staticmethod
+    def get_index(string):
+        return IndexCache._str2index.get(string, -1)
