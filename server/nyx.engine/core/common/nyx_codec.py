@@ -114,3 +114,64 @@ class CodecEncoder(object):
                 return 0, string
             else:
                 return 0, Md5Cache.get_md5(string)
+
+class CodecDecoder(object):
+    """md5或index解析为字符串"""
+    def __init__(self):
+        self._max_index = _NYXCORE_MAX_INDEX + 1
+        self._str2index = {}
+        self._index2str = {}
+
+    def register_str(self, string):
+        if string in self._str2index:
+            return
+        index = self._max_index
+        Md5Cache.get_md5(string)
+        self._max_index += 1
+        self._index2str[index] = string
+        self._str2index[string] = index
+
+    def decode(self, md5_index):
+        index = md5_index.index
+        if index > 0:
+            if index <= _NYXCORE_MAX_INDEX:
+                string = IndexCache.get_str(index)
+            else:
+                string = self._index2str.get(index)
+            if string is None:
+                _logger.error('CodecDecoder.decode - string for index(%s) not found', index)
+            return False, string
+        else:
+            if _NYXCORE_DEBUG:
+                string = md5_index.md5
+            else:
+                string = Md5Cache.get_str(md5_index.md5)
+            if string is None:
+                _logger.error('CodecDecoder.decode - MD5(%s) for string not found', binascii.hexlify(md5_index.md5))
+                return False, string
+            md5_index.index = IndexCache.get_index(string)
+            if md5_index.index <= 0:
+                md5_index.index = self._str2index.get(string, 0)
+            return True, string
+
+    def raw_decode(self, md5, index):
+        if index > 0:
+            if index <= _NYXCORE_MAX_INDEX:
+                string = IndexCache.get_str(index)
+            else:
+                string = self._index2str.get(index)
+            if string is None:
+                _logger.error('CodecDecoder.raw_decode - string for index(%s) not found', index)
+            return False, string, -1
+        else:
+            if _NYXCORE_DEBUG:
+                string = md5
+            else:
+                string = Md5Cache.get_str(md5)
+            if string is None:
+                _logger.error('CodecDecoder.raw_decode - MD5(%s) for string not found', binascii.hexlify(md5))
+                return False, string, -1
+            index = IndexCache.get_index(string)
+            if index <= 0:
+                index = self._str2index.get(string, 0)
+            return True, string, index
