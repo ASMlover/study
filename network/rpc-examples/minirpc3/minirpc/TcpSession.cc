@@ -27,4 +27,53 @@
 #include "TcpSession.h"
 
 namespace minirpc {
+
+TcpSession::TcpSession(asio::io_service& io_service)
+  : io_service_(io_service)
+  , strand_(io_service)
+  , socket_(io_service) {
+}
+
+TcpSession::~TcpSession(void) {
+  // TODO:
+}
+
+void TcpSession::start(void) {
+  // TODO:
+}
+
+void TcpSession::close(void) {
+  auto self(shared_from_this());
+  strand_.post([this, self] { socket_.close(); });
+}
+
+void TcpSession::write(const BufType& buf) {
+  bool write_in_progress = !writbuf_queue_.empty();
+  writbuf_queue_.push_back(buf);
+  if (!write_in_progress)
+    do_write();
+}
+
+void TcpSession::write(BufType&& buf) {
+  bool write_in_progress = !writbuf_queue_.empty();
+  writbuf_queue_.push_back(std::move(buf));
+  if (!write_in_progress)
+    do_write();
+}
+
+void TcpSession::do_write(void) {
+  auto self(shared_from_this());
+  asio::async_write(socket_, asio::buffer(writbuf_queue_.front()),
+      [this, self](const asio::error_code& ec, std::size_t /*n*/) {
+        if (!ec) {
+          writbuf_queue_.pop_front();
+          if (!writbuf_queue_.empty())
+            do_write();
+        }
+        else {
+          socket_.close();
+        }
+      });
+}
+
 }

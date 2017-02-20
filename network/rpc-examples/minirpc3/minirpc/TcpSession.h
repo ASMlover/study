@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <deque>
 #include <memory>
 #include <vector>
 #include "Helpers.h"
@@ -33,16 +34,24 @@
 namespace minirpc {
 
 class TcpSession : private boost::noncopyable, public std::enable_shared_from_this<TcpSession> {
+  using BufType = std::vector<char>;
+
   asio::io_service& io_service_;
   asio::io_service::strand strand_;
   asio::tcp::socket socket_;
-  std::vector<char> readbuf_;
+
+  BufType readbuf_;
+  std::deque<BufType> writbuf_queue_;
+
+  void do_write(void);
 public:
   explicit TcpSession(asio::io_service& io_service);
   ~TcpSession(void);
 
   void start(void);
   void close(void);
+  void write(const BufType& buf);
+  void write(BufType&& buf);
 
   asio::tcp::socket& get_socket(void) {
     return socket_;
