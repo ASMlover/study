@@ -30,13 +30,16 @@
 
 import json
 
-def load(fname):
-    conffile = open(fname)
-    jsonconf = json.load(conffile)
-    conffile.close()
-    return jsonconf
+class JsonConfig(object):
+    @staticmethod
+    def load(fname):
+        conffile = open(fname)
+        jsonconf = json.load(conffile)
+        conffile.close()
+        return jsonconf
 
-def save(fname, jsonconf):
-    conffile = open(fname, 'w')
-    json.dump(jsonconf, conffile)
-    conffile.close()
+    @staticmethod
+    def save(fname, jsonconf):
+        conffile = open(fname, 'w')
+        json.dump(jsonconf, conffile)
+        conffile.close()
