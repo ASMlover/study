@@ -30,8 +30,23 @@
 
 import asyncore
 import socket
-from StringIO import StringIO
+from cStringIO import StringIO
 from log.nyx_log import LogManager
+
+# [doc]
+# channel
+#   - on_disconnected() # TODO: 需要实现channel的on_disconnected回调
+#   - input_data(...) # TODO: 需要实现channel的input_data接口
+#
+# encrypter
+#   - encrypt(...) # TODO: 需要有encrypt接口
+#
+# decrypter
+#   - decrypt(...) # TODO: 需要有decrypt接口
+#
+# compressor
+#   - compress(...) # TODO: 需要有加压缩接口
+#   - decompress(...) # TODO: 需要有解压缩接口
 
 class TcpSession(asyncore.dispatcher):
     """一条建立好的网络链接，可以是服务器的accept也可以是客户端的connect"""
@@ -60,7 +75,13 @@ class TcpSession(asyncore.dispatcher):
             self.set_sockoption()
 
     def set_sockoption(self):
-        pass
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        if (hasattr(socket, 'TCP_KEEPCNT')
+                and hasattr(socket, 'TCP_KEEPIDLE')
+                and hasattr(socket, 'TCP_KEEPINTVL')):
+            self.socket.setsockopt(socket.SOL_TCP, socket.TCP_KEEPCNT, 3)
+            self.socket.setsockopt(socket.SOL_TCP, socket.TCP_KEEPIDLE, 60)
+            self.socket.setsockopt(socket.SOL_TCP, socket.TCP_KEEPINTVL, 60)
 
     def set_channel(self, channel):
         self._channel = channel
@@ -76,31 +97,85 @@ class TcpSession(asyncore.dispatcher):
         self._decrypter = decrypter
 
     def is_established(self):
+        """判断连接是否已建立"""
         return self._status == TcpSession._STATUS_ESTABLISHED
 
     def set_recv_buffer(self, recv_bytes):
+        """设置接收缓冲区的大小"""
         self._recvbuf_bytes = recv_bytes
 
     def disconnect(self, flush=True):
-        pass
+        """断开连接"""
+        if self._status == TcpSession._STATUS_DISCONNECTED:
+            return
+        if self._channel:
+            self._channel.on_disconnected()
+            self._channel = None
+        if self.socket:
+            if self.writable() and flush:
+                self.handle_write()
+            super(TcpSession, self).close()
+        self._status = TcpSession._STATUS_DISCONNECTED
 
     def get_peername(self):
+        """获取对端(ip, port)"""
         return self._peername
 
     def handle_close(self):
-        pass
+        """断开连接的时候回调"""
+        super(TcpSession, self).handle_close()
+        self.disconnect(flush=False)
 
     def handle_expt(self):
-        pass
+        """连接异常的时候回调"""
+        super(TcpSession, self).handle_expt()
+        self.disconnect(flush=False)
+
+    def handle_error(self):
+        """连接出错的时候回调"""
+        super(TcpSession, self).handle_error()
+        self.disconnect(flush=False)
 
     def handle_read(self):
-        pass
+        """数据可读的时候回调"""
+        data = self.recv(self._recvbuf_bytes)
+        if data:
+            if self._channel is None:
+                return
+
+            if self._decrypter:
+                data = self._decrypter.decrypt(data)
+            if self._compressor:
+                data = self._compressor.decompress(data)
+            r = self._channel.input_data(data)
+
+            if r == 2:
+                return
+            elif r == 3:
+                self._logger.error('TcpSession.handle_read - buffer length error')
+            elif r == 0:
+                self.disconnect(flush=False)
+                return
+            else:
+                self._logger.warn('TcpSession.handle_read - return(%d), close socket with(%s)', r, self.get_peername())
+                self.disconnect(flush=False)
+                return
 
     def handle_write(self):
-        pass
+        """数据可写的时候回调"""
+        buf = self._writbuf.getvalue()
+        if buf:
+            nwrote = self.send(buf)
+            self._writbuf = StringIO(buf[nwrote:])
+            self._writbuf.seek(0, 2)
 
     def write_data(self, data):
-        pass
+        """发送数据信息"""
+        if self._compressor:
+            data = self._compressor.compress(data)
+        if self._encrypter:
+            data = self._encrypter.encrypt(data)
+        self._writbuf.write(data)
 
     def writable(self):
         return (self._writbuf and self._writbuf.getvalue()) or (self._status != TcpSession._STATUS_ESTABLISHED)
