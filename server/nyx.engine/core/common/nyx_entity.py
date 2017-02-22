@@ -29,8 +29,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import pkgutil
-import sys
 from log.nyx_log import LogManager
 from common.nyx_codec import CodecDecoder
 import common.nyx_common as _nc
@@ -41,7 +39,7 @@ class EntityFactory(object):
     _instance = None
 
     def __init__(self):
-        self._logger = LogManager.get_logger('NyxCore.EntityFactory')
+        self._logger = LogManager.get_logger('NyxCore.Common.EntityFactory')
         self._decoder = CodecDecoder()
         self._entity_classes = {}
 
@@ -81,7 +79,7 @@ class EntityFactory(object):
 @singleton
 class EntityManager(object):
     def __init__(self):
-        self._logger = LogManager.get_logger('NyxCore.EntityManager')
+        self._logger = LogManager.get_logger('NyxCore.Common.EntityManager')
         self._entities = {}
 
     def has_entity(self, entity_id):
@@ -106,7 +104,7 @@ class EntityManager(object):
 @singleton
 class EntityScanner(object):
     def __init__(self):
-        self._logger = LogManager.get_logger('NyxCore.EntityScanner')
+        self._logger = LogManager.get_logger('NyxCore.Common.EntityScanner')
 
     def _nyx_get_module_names(self, module_dir):
         module_names = set()
@@ -119,7 +117,7 @@ class EntityScanner(object):
         for fname in module_files:
             splited_list = fname.split('.')
             if len(splited_list) == 2:
-                if splited_list[1] in ('py', 'pyc'):
+                if splited_list[1] in ('py', 'pyc', 'pyo'):
                     module_names.add(splited_list[0])
         module_names.discard('__init__')
         return module_names
@@ -141,15 +139,6 @@ class EntityScanner(object):
                 continue
         return modules
 
-    def _nyx_load_all_modules(self, dir_path):
-        modules = []
-        _nc.add_syspath(dir_path)
-        for importer, package_name, _ in pkgutil.walk_packages([dir_path]):
-            if package_name not in sys.modules:
-                mod = importer.find_module(package_name).load_module(package_name)
-                modules.append(mod)
-        return modules
-
     def _nyx_get_classes(self, module, base_classes):
         """获取module模块中属于base_classes所指定子类的类"""
         classes = []
@@ -161,7 +150,7 @@ class EntityScanner(object):
 
     def scan_entity_classes(self, module_dir, base_classes):
         class_dict = {}
-        for module in self._nyx_load_all_modules(module_dir):
+        for module in self._nyx_get_modules(module_dir):
             classes = self._nyx_get_classes(module, base_classes)
             for cls in classes:
                 class_dict[cls.__name__] = cls

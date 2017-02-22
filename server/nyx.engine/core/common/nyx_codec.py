@@ -33,7 +33,7 @@ import hashlib
 from log.nyx_log import LogManager
 
 _NYXCORE_DEBUG = 0
-_logger = LogManager.get_logger('NyxCore.Codec')
+_logger = LogManager.get_logger('NyxCore.Common.Codec')
 
 class Md5Cache(object):
     _str2md5 = {}
