@@ -36,24 +36,29 @@ from common.nyx_codec import CodecDecoder
 import common.nyx_common as _nc
 from common.nyx_common import ExtendableType, singleton
 
-@singleton
 class EntityFactory(object):
     __metaclass__ = ExtendableType
+    _instance = None
 
     def __init__(self):
         self._logger = LogManager.get_logger('NyxCore.EntityFactory')
         self._decoder = CodecDecoder()
         self._entity_classes = {}
 
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = EntityFactory()
+        return cls._instance
+
     def register_entity(self, entity_type, entity_class):
         self._entity_classes[entity_type] = entity_class
         self._decoder.register_str(entity_class.__name__)
         import inspect
         methods = inspect.getmembers(entity_class, predicate=inspect.ismethod)
-        methods.sort(lambda a, b: cmp(a[0], b[0]))
-        for method in methods:
-            if not method[0].startswith('_'):
-                self._decoder.register_str(method[0])
+        for name, _ in methods:
+            if not name.startswith('_'):
+                self._decoder.register_str(name)
 
     def get_entity_class(self, entity_type):
         entity_class = None
