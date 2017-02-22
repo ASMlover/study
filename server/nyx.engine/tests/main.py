@@ -36,7 +36,7 @@ sys.path.append('../core')
 
 from log.nyx_log import LogManager
 
-_logger = LogManager.get_logger('NyxCore.Examples')
+_logger = LogManager.get_logger('NyxCore.Tests')
 
 class NyxEngineUnittest(unittest.TestCase):
     def test_async_timer(self):
