@@ -33,13 +33,11 @@ import json
 class JsonConfig(object):
     @staticmethod
     def load(fname):
-        conffile = open(fname)
-        jsonconf = json.load(conffile)
-        conffile.close()
-        return jsonconf
+        with open(fname) as fp:
+            jsonconf = json.load(fp)
+            return jsonconf
 
     @staticmethod
     def save(fname, jsonconf):
-        conffile = open(fname, 'w')
-        json.dump(jsonconf, conffile)
-        conffile.close()
+        with open(fname, 'w') as fp:
+            json.dump(jsonconf, fp)
