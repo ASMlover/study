@@ -55,6 +55,12 @@ class NyxEngineUnittest(unittest.TestCase):
         for key, value in class_dict.iteritems():
             _logger.debug('{%s => %s}', key, value)
 
+    def test_id_creator(self):
+        from common.nyx_id import IdCreator
+
+        for i in xrange(10):
+            _logger.debug('[%d] id=%s', i, IdCreator.genid())
+
 def main():
     suite = unittest.TestLoader().loadTestsFromTestCase(NyxEngineUnittest)
     unittest.TextTestRunner(verbosity=2).run(suite)
