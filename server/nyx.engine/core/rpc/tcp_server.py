@@ -77,10 +77,27 @@ class TcpServer(asyncore.dispatcher):
         super(TcpServer, self).close()
 
     def handle_accept(self):
-        pass
+        """连接事件回调"""
+        try:
+            sock, addr = self.accept()
+        except socket.error:
+            self._logger.warn('TcpServer.handle_accept - throw an exception')
+            self._logger.nyxlog_exception()
+            return
+        except TypeError:
+            self._logger.warn('TcpServer.handle_accept - throw EWOULDBLOCK')
+            self._logger.nyxlog_exception()
+            return
+
+        if self._conn_handler:
+            conn = TcpSession(sock, addr)
+            self._conn_handler.on_new_connection(conn)
+        else:
+            self._logger.warn('TcpServer.handle_accept - no connection to handled')
 
     def handle_error(self):
-        pass
+        """出错的时候回调"""
+        self._logger.error(str(inspect.stack()))
 
     def handle_close(self):
         pass
