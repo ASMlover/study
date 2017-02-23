@@ -34,6 +34,10 @@ import socket
 from log.nyx_log import LogManager
 from rpc.nyx_tcp_session import TcpSession
 
+# [doc]
+# connection_handler
+#   - on_new_connection(...) # TODO: 需要实现on_new_connection回调
+
 class TcpServer(asyncore.dispatcher):
     """负责监听TCP连接，创建连接"""
     def __init__(self, addr, port, conn_handler=None, reuse_addr=False):
@@ -97,7 +101,8 @@ class TcpServer(asyncore.dispatcher):
 
     def handle_error(self):
         """出错的时候回调"""
-        self._logger.error(str(inspect.stack()))
+        self._logger.error('TcpServer.handle_error - error: %s', str(inspect.stack()))
 
     def handle_close(self):
-        pass
+        """关闭的时候回调"""
+        self._logger.info('TcpServer.handle_close - called from: %s', str(inspect.stack()))
