@@ -32,6 +32,11 @@ import socket
 from log.nyx_log import LogManager
 from rpc.nyx_tcp_session import TcpSession
 
+# [doc]
+# connection_handler
+#   - on_new_connection(...) # TODO: 需要实现on_new_connection回调
+#   - on_connection_failed(...) # TODO: 需要实现on_connection_failed回调
+
 class TcpClient(TcpSession):
     """TCP客户端连接"""
     def __init__(self, addr, port, conn_handler=None):
