@@ -52,12 +52,29 @@ class TcpClient(TcpSession):
         self.connect(self._peername)
 
     def sync_connect(self):
-        pass
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.connect(self._peername)
+        except socket.error as msg:
+            sock.close()
+            self._logger.warn('TcpClient.sync_connect - connect failed %s', msg)
+            return False
+
+        sock.setblocking(False)
+        self.set_socket(sock)
+        self.set_sockoption()
+        self._status = TcpSession._STATUS_ESTABLISHED
+        return True
 
     def handle_connect(self):
         """连接成功的时候回调"""
-        pass
+        if self._conn_handler:
+            self._status = TcpSession._STATUS_ESTABLISHED
+            self._conn_handler.on_new_connection(self)
+        else:
+            self._logger.warn('TcpClient.handle_connect - no connection to handle')
 
     def handle_close(self):
         """连接关闭的时候回调"""
-        pass
+        super(TcpClient, self).handle_close()
+        self._conn_handler.on_connection_failed(self)
