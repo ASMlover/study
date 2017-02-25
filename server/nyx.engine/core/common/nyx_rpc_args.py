@@ -63,3 +63,40 @@ class RpcArgument(object):
 
     def convert_error(self, data):
         return ConvertError('Cannot convert Argument(%s) to Type(%s) with Data(%s)' % (self.name, self.get_type(), data))
+
+class NoLimit(object):
+    def is_valid(self, value):
+        return True
+
+    def __str__(self):
+        return ''
+
+class NumeralLimit(object):
+    def __init__(self, val_min=None, val_max=None, val_range=None):
+        super(NumeralLimit, self).__init__()
+        self._min = val_min
+        self._max = val_max
+        self._range = val_range
+
+    def is_valid(self, value):
+        if self._min is not None and value < self._min:
+            return False
+        if self._max is not None and value > self._max:
+            return False
+        if self._range is not None and value not in self._range:
+            return False
+        return True
+
+    def __str__(self):
+        str_repr = ''
+        if self._min is not None or self._max is not None:
+            str_repr = '['
+            if self._min is not None:
+                str_repr += str(self._min)
+            str_repr += '-'
+            if self._max is not None:
+                str_repr += str(self._max)
+            str_repr += ']'
+        elif self._range is not None:
+            str_repr = str(self._range).replace(' ', '')
+        return str_repr
