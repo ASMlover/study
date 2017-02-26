@@ -119,6 +119,19 @@ class Number(RpcArgument):
 
         return value
 
+class Bool(RpcArgument):
+    def convert(self, value):
+        try:
+            return bool(value)
+        except:
+            raise self.convert_error(value)
+
+    def get_type(self):
+        return '<Bool>'
+
+    def default_val(self):
+        return False
+
 class Int(Number):
     def convert(self, value):
         assert isinstance(value, int), self.convert_error(value)
@@ -168,3 +181,36 @@ class Binary(RpcArgument):
 
     def default_val(self):
         return ''
+
+class Tuple(RpcArgument):
+    def convert(self, data):
+        assert isinstance(data, tuple) or isinstance(data, list), self.convert_error(data)
+        return tuple(data)
+
+    def get_type(self):
+        return '<Tuple>'
+
+    def default_val(self):
+        return ()
+
+def List(RpcArgument):
+    def convert(self, data):
+        assert isinstance(data, list), self.convert_error(data)
+        return data
+
+    def get_type(self):
+        return '<List>'
+
+    def default_val(self):
+        return []
+
+def Dict(RpcArgument):
+    def convert(self, data):
+        assert isinstance(data, dict), self.convert_error(data)
+        return data
+
+    def get_type(self):
+        return '<Dict>'
+
+    def default_val(self):
+        return {}
