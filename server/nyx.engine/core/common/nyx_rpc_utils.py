@@ -241,3 +241,55 @@ class Mailbox(RpcArgument):
     """服务端调用服务端"""
     def __init__(self, name='Mailbox'):
         super(Mailbox, self).__init__(name)
+
+NYXRPC_CONLY = 0 # client -> server
+NYXRPC_CANY = 1 # any client -> server
+NYXRPC_SONLY = 2 # server -> server
+NYXRPC_BOTH = 3 # client/server -> server
+NYXRPC_CSTUB = 4 # server -> client
+
+def rpc_call(func, parameters=None):
+    args = []
+
+    if parameters:
+        if isinstance(parameters, list):
+            parameters = {'__args': parameters}
+        '__args' in parameters and parameters.update(dict(enumerate(parameters.pop('__args'))))
+        for arg_type in func.arg_types:
+            arg_name = arg_type.get_name()
+            args.append(arg_type.convert(parameters[arg_name]))
+    return func(*args)
+
+def rpc_method(rpc_type, *arg_types):
+    assert (not filter(lambda t: not hasattr(t, 'convert'), arg_types)), 'Bad argument type(s)'
+    assert (rpc_type in (NYXRPC_CONLY, NYXRPC_CANY, NYXRPC_SONLY, NYXRPC_BOTH, NYXRPC_CSTUB)), \
+            '%s: type must be one of (NYXRPC_CONLY, NYXRPC_CANY, NYXRPC_SONLY, NYXRPC_BOTH, NYXRPC_CSTUB)' % str(type)
+
+    def _auto_name_argtypes(arg_types):
+        n = 0
+        for arg_type in arg_types:
+            if arg_type.name is None:
+                arg_type.name = n
+                n += 1
+
+    if rpc_type == NYXRPC_CANY:
+        arg_types = (Exposed(),) + arg_types
+    _auto_name_argtypes(arg_types)
+
+    def _rpc_wrapper(func):
+        func.rpc_type = rpc_type
+        func.arg_types = arg_types
+        return func
+    return _rpc_wrapper
+
+def is_rpc(func):
+    """是否是rpc方法"""
+    return hasattr(func, 'rpc_type')
+
+def is_unexposed_to_client(func):
+    """是否RPC不允许客户端调用(rpc_type需要是NYXRPC_CONLY, NYXRPC_CANY, NYXRPC_BOTH)"""
+    return not is_rpc(func) or func.rpc_type not in (NYXRPC_CONLY, NYXRPC_CANY, NYXRPC_BOTH)
+
+def is_unexposed_to_server(func):
+    """是否RPC不允许服务端调用(rpc_type需要是NYXRPC_SONLY, NYXRPC_BOTH)"""
+    return not is_rpc(func) or func.rpc_type not in (NYXRPC_SONLY, NYXRPC_BOTH)
