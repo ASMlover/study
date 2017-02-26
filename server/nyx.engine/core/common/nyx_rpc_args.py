@@ -214,3 +214,30 @@ def Dict(RpcArgument):
 
     def default_val(self):
         return {}
+
+class Uuid(RpcArgument):
+    def convert(self, data):
+        if data is None:
+            return ''
+        assert IdCreator.is_valid(data), self.convert_error(data)
+        return data
+
+    def get_type(self):
+        return '<Uuid>'
+
+    def default_val(self):
+        return ''
+
+class Exposed(Uuid):
+    def get_type(self):
+        return '<Exposed>'
+
+class Avatar(RpcArgument):
+    """客户端调用服务端"""
+    def __init__(self, name='Avatar'):
+        super(Avatar, self).__init__(name)
+
+class Mailbox(RpcArgument):
+    """服务端调用服务端"""
+    def __init__(self, name='Mailbox'):
+        super(Mailbox, self).__init__(name)
