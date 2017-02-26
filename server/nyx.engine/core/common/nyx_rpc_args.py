@@ -133,16 +133,38 @@ class Int(Number):
     def default_val(self):
         return 0
 
-class Long(Number):
+class Float(Number):
     def convert(self, value):
-        assert isinstance(value, int) or isinstance(value, long), self.convert_error(value)
-        return long(value)
+        assert isinstance(value, float) or isinstance(value, int), self.convert_error(value)
+        return float(value)
 
     def get_type(self):
         if hasattr(self, '_limited'):
-            return '<Long>%s' % str(self._limited)
+            return '<Float>%s' % str(self._limited)
         else:
-            return '<Long>'
+            return '<Float>'
 
     def default_val(self):
-        return long(0)
+        return 0.0
+
+class Str(RpcArgument):
+    def convert(self, value):
+        assert isinstance(value, str) or isinstance(value, unicode), self.convert_error(value)
+        return str(value)
+
+    def get_type(self):
+        return '<Str>'
+
+    def default_val(self):
+        return ''
+
+class Binary(RpcArgument):
+    def convert(self, data):
+        assert isinstance(data, str), self.convert_error(data)
+        return data
+
+    def get_type(self):
+        return '<Binary>'
+
+    def default_val(self):
+        return ''
