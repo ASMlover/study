@@ -101,10 +101,10 @@ class NumeralLimit(object):
             str_repr = str(self._range).replace(' ', '')
         return str_repr
 
-class NumberArg(RpcArgument):
+class Number(RpcArgument):
     """数值类型参数的基类"""
     def __init__(self, name=None, val_min=None, val_max=None, val_range=None):
-        super(NumberArg, self).__init__(name)
+        super(Number, self).__init__(name)
         if val_min is not None or val_max is not None or val_range is not None:
             self._limited = NumeralLimit(val_min=val_min, val_max=val_max, val_range=val_range)
 
@@ -118,3 +118,31 @@ class NumberArg(RpcArgument):
             raise ConvertError('Data(%r) exceeds limit of Type(%s)'% (data, self.get_type()))
 
         return value
+
+class Int(Number):
+    def convert(self, value):
+        assert isinstance(value, int), self.convert_error(value)
+        return value
+
+    def get_type(self):
+        if hasattr(self, '_limited'):
+            return '<Int>%s' % str(self._limited)
+        else:
+            return '<Int>'
+
+    def default_val(self):
+        return 0
+
+class Long(Number):
+    def convert(self, value):
+        assert isinstance(value, int) or isinstance(value, long), self.convert_error(value)
+        return long(value)
+
+    def get_type(self):
+        if hasattr(self, '_limited'):
+            return '<Long>%s' % str(self._limited)
+        else:
+            return '<Long>'
+
+    def default_val(self):
+        return long(0)
