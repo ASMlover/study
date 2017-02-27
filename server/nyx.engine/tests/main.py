@@ -61,6 +61,13 @@ class NyxEngineUnittest(unittest.TestCase):
         for i in xrange(10):
             _logger.debug('[%d] id=%s', i, IdCreator.genid())
 
+    def test_codec(self):
+        from common.nyx_codec import Md5Cache
+
+        s = 'test_codec.Md5Cache'
+        md5 = Md5Cache.get_md5(s)
+        _logger.debug('{%s => %s} {%s => %s}', s, md5, md5, Md5Cache.get_str(md5))
+
 def main():
     suite = unittest.TestLoader().loadTestsFromTestCase(NyxEngineUnittest)
     unittest.TextTestRunner(verbosity=2).run(suite)
