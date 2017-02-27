@@ -58,3 +58,65 @@ class NyxRpcChannel(service.RpcChannel):
 
     def set_max_datalen(self, datalen):
         self._rpc_request_parser.set_max_datalen(datalen)
+
+    def register_listener(self, listener):
+        self._conn_listeners.add(listener)
+        self._logger.debug('NyxRpcChannel.register_listener - register listener')
+
+    def unregister_listener(self, listener):
+        self._conn_listeners.discard(listener)
+
+    def get_peeraddr(self):
+        if self._conn:
+            return self._conn.get_peeraddr()
+        return 'No connection attached'
+
+    def set_compressor(self, compressor):
+        self._conn.set_compressor(compressor)
+
+    def set_crypter(self, encrypter, decrypter):
+        self._conn.set_crypter(encrypter, decrypter)
+
+    def set_user_data(self, user_data):
+        self._user_data = user_data
+
+    def get_user_data(self):
+        return self._user_data
+
+    def set_session_seed(self, seed):
+        self._session_seed = seed
+
+    def get_session_seed(self):
+        return self._session_seed
+
+    def disconnect(self):
+        """断开连接"""
+        if self._conn:
+            self._conn.disconnect()
+
+    def on_disconnected(self):
+        """连接(TcpSession)断开时回调"""
+        for listener in self._conn_listeners:
+            listener.on_channel_disconnected(self)
+        self._rpc_request.reset()
+        self._rpc_request_parser.reset()
+        self._conn_listeners = None
+        self._conn = None
+        self._user_data = None
+
+    def CallMethod(self, method, controller, request, response, done):
+        """protobuf重载，发送rpc需要"""
+        index = method.index
+        assert index < 65535
+        data = request.SerializeToString()
+        datalen = len(data) + 2
+        self._conn.write_data(''.join([struct.pack('<I', datalen), struct.pack('<H', index), data]))
+
+    def parse(self, data, skip):
+        pass
+
+    def request(self, method, request):
+        pass
+
+    def input_data(self, data):
+        pass
