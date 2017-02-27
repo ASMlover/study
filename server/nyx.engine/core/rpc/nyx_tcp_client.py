@@ -54,12 +54,12 @@ class TcpClient(TcpSession):
     def async_connect(self):
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.set_sockoption()
-        self.connect(self._peername)
+        self.connect(self._peeraddr)
 
     def sync_connect(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            sock.connect(self._peername)
+            sock.connect(self._peeraddr)
         except socket.error as msg:
             sock.close()
             self._logger.warn('TcpClient.sync_connect - connect failed %s', msg)

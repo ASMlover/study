@@ -55,7 +55,7 @@ class TcpSession(asyncore.dispatcher):
     _STATUS_ESTABLISHED = 1
     _STATUS_DISCONNECTED = 2
 
-    def __init__(self, sock, peername):
+    def __init__(self, sock, peeraddr):
         super(TcpSession, self).__init__(sock)
 
         self._logger = LogManager.get_logger('NyxCore.Rpc.TcpSession')
@@ -65,7 +65,7 @@ class TcpSession(asyncore.dispatcher):
             self._status = TcpSession._STATUS_ESTABLISHED
         self._recvbuf_bytes = TcpSession._DEF_RECV_BYTES
         self._channel = None
-        self._peername = peername
+        self._peeraddr = peeraddr
 
         self._encrypter = None
         self._decrypter = None
@@ -117,9 +117,9 @@ class TcpSession(asyncore.dispatcher):
             super(TcpSession, self).close()
         self._status = TcpSession._STATUS_DISCONNECTED
 
-    def get_peername(self):
+    def get_peeraddr(self):
         """获取对端(ip, port)"""
-        return self._peername
+        return self._peeraddr
 
     def handle_close(self):
         """断开连接的时候回调"""
@@ -157,7 +157,7 @@ class TcpSession(asyncore.dispatcher):
                 self.disconnect(flush=False)
                 return
             else:
-                self._logger.warn('TcpSession.handle_read - return(%d), close socket with(%s)', r, self.get_peername())
+                self._logger.warn('TcpSession.handle_read - return(%d), close socket with(%s)', r, self.get_peeraddr())
                 self.disconnect(flush=False)
                 return
 
