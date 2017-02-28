@@ -139,13 +139,15 @@ class RpcChannelCreator(object):
 
     def on_new_connection(self, conn):
         """TcpServer或TcpClient新连接建立的时候回调"""
-        # TODO:
-        pass
+        rpc_channel = NyxRpcChannel(self._rpc_service, conn)
+        if self._max_datalen > 0:
+            rpc_channel.set_max_datalen(self._max_datalen)
+
+        self._handler.on_new_channel(rpc_channel)
 
     def on_connection_failed(self, conn):
         """连接断开的时候回调"""
-        # TODO:
-        pass
+        self._logger.info('RpcChannelCreator.on_connection_failed')
 
 class RpcChannelHolder(object):
     def __init__(self):
@@ -188,5 +190,4 @@ class RpcChannelManager(object):
         if peeraddr in self._rpc_channels:
             self._rpc_channels.pop(peeraddr, None)
         else:
-            # TODO:
-            pass
+            self._logger.info('RpcChannelManager.on_channel_disconnected - disconnected connection %s', peeraddr)
