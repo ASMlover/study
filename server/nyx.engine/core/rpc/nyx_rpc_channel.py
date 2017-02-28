@@ -127,12 +127,12 @@ class NyxRpcChannel(service.RpcChannel):
         pass
 
 class RpcChannelCreator(object):
-    def __init__(self, rpc_service, handler, max_datalen=0):
+    def __init__(self, rpc_service, handler, max_datalen=0):
         super(RpcChannelCreator, self).__init__()
         self._logger = LogManager.get_logger('NyxCore.Rpc.RpcChannelCreator')
         self._rpc_service = rpc_service
         self._handler = handler
-        self._max_datalen = datalen
+        self._max_datalen = max_datalen
 
     def set_max_datalen(self, datalen):
         self._max_datalen = datalen
