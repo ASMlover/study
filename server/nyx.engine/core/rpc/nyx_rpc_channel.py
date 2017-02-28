@@ -61,7 +61,6 @@ class NyxRpcChannel(service.RpcChannel):
 
     def register_listener(self, listener):
         self._conn_listeners.add(listener)
-        self._logger.debug('NyxRpcChannel.register_listener - register listener')
 
     def unregister_listener(self, listener):
         self._conn_listeners.discard(listener)
@@ -96,8 +95,10 @@ class NyxRpcChannel(service.RpcChannel):
 
     def on_disconnected(self):
         """连接(TcpSession)断开时回调"""
-        for listener in self._conn_listeners:
-            listener.on_channel_disconnected(self)
+        for listener in list(self._conn_listeners):
+            # 这里先拷贝到list是为了防止在其他线程有unreg的情况
+            if listener in self._conn_listeners:
+                listener.on_channel_disconnected(self)
         self._rpc_request.reset()
         self._rpc_request_parser.reset()
         self._conn_listeners = None
