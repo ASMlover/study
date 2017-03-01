@@ -62,12 +62,25 @@ class NyxEngineUnittest(unittest.TestCase):
             _logger.debug('[%d] id=%s', i, IdCreator.genid())
 
     def test_codec(self):
+        import random
         from common.nyx_codec import Md5Cache
+        from common.nyx_codec import IndexCache
 
+        # unittest for Md5Cache
         for i in xrange(50):
             s = 'test_codec.Md5Cache#%d' % (i + 1)
             md5 = Md5Cache.get_md5(s)
             _logger.debug('{%s => %s} {%s => %s}', s, md5, md5, Md5Cache.get_str(md5))
+
+        # unittest for IndexCache
+        for i in xrange(50):
+            s = 'test_codec.IndexCache#%d' % i
+            IndexCache._index2str[i] = s
+            IndexCache._str2index[s] = i
+        for i in xrange(10):
+            n = random.randint(1, 49)
+            s = 'test_codec.IndexCache#%d' % n
+            assert n == IndexCache.get_index(s) and s == IndexCache.get_str(n)
 
 def main():
     suite = unittest.TestLoader().loadTestsFromTestCase(NyxEngineUnittest)
