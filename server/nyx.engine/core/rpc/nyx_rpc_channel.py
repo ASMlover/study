@@ -117,14 +117,54 @@ class NyxRpcChannel(service.RpcChannel):
         datalen = len(data) + 2
         self._conn.write_data(''.join([struct.pack('<I', datalen), struct.pack('<H', index), data]))
 
-    def parse(self, data, skip):
-        pass
+    def on_request(self):
+        l = len(self._rpc_request.data)
+        if l < 2:
+            self._logger.error('NyxRpcChannel.on_request - get error request size: %d', l)
+            return False
 
-    def request(self, method, request):
-        pass
+        index_data = self._rpc_request.data[0:2]
+        cmd_index = struct.unpack('<H', index_data)[0]
+        rpc_service = self._rpc_service
+        descriptor = rpc_service.GetDescriptor()
+
+        if cmd_index > len(descriptor.methods):
+            self._logger.error('NyxRpcChannel.on_request - get error method index: %d', cmd_index)
+            return False
+        method = descriptor.methods[cmd_index]
+
+        try:
+            request = rpc_service.GetRequesetClass(method)()
+            serilized = self._rpc_request.data[2:]
+            request.ParseFromString(serilized)
+            rpc_service.CallMethod(method, self._controller, request, None)
+        except:
+            self._logger.error('NyxRpcChannel.on_request - call rpc method failed')
+            self._logger.nyxlog_except()
+
+        return True
 
     def input_data(self, data):
-        pass
+        total_bytes = len(data)
+        skip = 0
+        while skip < total_bytes:
+            result, consum = self._rpc_request_parser.parse(self._rpc_request, data, skip)
+            assert consum > 0
+
+            skip += consum
+            if result == 1:
+                ok = self.on_request()
+                self._rpc_request.reset()
+                if not ok:
+                    return 0
+                continue
+            elif result == 0:
+                return 0
+            else:
+                continue
+
+        # 需要更多的数据
+        return 2
 
 class RpcChannelCreator(object):
     def __init__(self, rpc_service, handler, max_datalen=0):
