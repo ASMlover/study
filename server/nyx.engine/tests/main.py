@@ -66,6 +66,7 @@ class NyxEngineUnittest(unittest.TestCase):
         from common.nyx_codec import Md5Cache
         from common.nyx_codec import IndexCache
         from common.nyx_codec import CodecEncoder
+        from common.nyx_codec import CodecDecoder
 
         # unittest for Md5Cache
         for i in xrange(50):
@@ -93,6 +94,15 @@ class NyxEngineUnittest(unittest.TestCase):
         md5_idx = Md5OrIndex()
         ce.encode(md5_idx, 'Hello, world!')
         _logger.debug('test_codec.CodecEncoder - md5=%s, index=%s', md5_idx.md5, md5_idx.index)
+        index, md5 = ce.raw_encode('Hello, world!')
+        assert index is 0 and md5 == md5_idx.md5
+
+        # unittest for CodecDecoder
+        cd = CodecDecoder()
+        r, destr = cd.decode(md5_idx)
+        _logger.debug('test_codec.CodecDecoder - result=%s, decode-string=%s', r, destr)
+        r2, destr2, index2 = cd.raw_decode(md5, index)
+        assert r2 is True and destr2 == destr and index2 == index
 
 def main():
     suite = unittest.TestLoader().loadTestsFromTestCase(NyxEngineUnittest)
