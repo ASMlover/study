@@ -86,9 +86,11 @@ class ChannelClient(object):
             self._client.disconnect()
 
     def on_new_connection(self, conn):
-        # TODO:
-        pass
+        rpc_channel = NyxRpcChannel(self._rpc_service, conn)
+        self._status = ChannelClient._STATUS_CONNECTSUCCESS
+        self._connect_callback(rpc_channel)
 
     def on_connection_failed(self, conn):
-        # TODO:
-        pass
+        self.cancel_timer()
+        self._status = ChannelClient._STATUS_CONNECTFAILED
+        self._connect_callback(None)
