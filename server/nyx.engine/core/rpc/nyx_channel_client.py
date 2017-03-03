@@ -53,12 +53,21 @@ class ChannelClient(object):
         return self._client.get_peeraddr()
 
     def reset(self, addr=None, port=None):
-        # TODO:
-        pass
+        self._status = ChannelClient._STATUS_INIT
+        if self._client:
+            self._client.close()
+
+        if addr:
+            self._addr = addr
+        if port:
+            self._port = port
+        self._client = TcpClient(self._addr, self._port, self)
+        self.cancel_timer()
 
     def cancel_timer(self):
-        # TODO:
-        pass
+        if self._timer and not self._timer.cancelled and not self._timer.expired:
+            self._timer.cancel()
+            self._timer = None
 
     def check_connection(self):
         # TODO:
