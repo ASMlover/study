@@ -45,6 +45,7 @@ class CallLater(object):
         # seconds from the epoch at which to call the function
         self.timeout = time.time() + self._delay
         self.cancelled = False
+        self.expired = False
         heapq.heappush(_tasks, self)
 
     def __le__(self, other):
@@ -91,6 +92,7 @@ class CallLater(object):
     def cancel(self):
         """Unschedule this call."""
         assert not self.cancelled, "Already cancelled"
+        assert not self.expired, "Already expired"
         self.cancelled = True
         del self._target, self._args, self._kwargs, self._errback
         if self in _tasks:
@@ -102,6 +104,13 @@ class CallLater(object):
             else:
                 _tasks[pos] = _tasks.pop()
                 heapq._siftup(_tasks, pos)
+
+    def expire(self):
+        """This call has been scheduled."""
+        assert not self.cancelled, "Already cancelled"
+        assert not self.expired, "Already expired"
+        self.expired = True
+        del self._target, self._args, self._kwargs, self._errback
 
 
 class CallEvery(CallLater):
@@ -173,7 +182,7 @@ def close_all(map=None, ignore_all=False):
 
     for x in _tasks:
         try:
-            if not x.cancelled:
+            if not x.cancelled and not x.expired:
                 x.cancel()
         except (asyncore.ExitNow, KeyboardInterrupt, SystemExit):
             raise
