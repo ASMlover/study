@@ -48,6 +48,7 @@ class ChannelClient(object):
         self._timer = None
         self._client = TcpClient(self._addr, self._port, self)
         self._status = ChannelClient._STATUS_INIT
+        self._connect_callback = None
 
     def get_peeraddr(self):
         return self._client.get_peeraddr()
@@ -69,13 +70,16 @@ class ChannelClient(object):
             self._timer.cancel()
             self._timer = None
 
-    def check_connection(self):
-        # TODO:
-        pass
+    def _check_connection(self):
+        if self._status != ChannelClient._STATUS_CONNECTSUCCESS:
+            self._connect_callback and self._connect_callback(None)
+            self._status = ChannelClient._STATUS_CONNECTFAILED
 
     def connect(self, timeout, callback):
-        # TODO:
-        pass
+        self._client.async_connect()
+        self._connect_callback = callback
+        self._status = ChannelClient._STATUS_CONNECTING
+        self._timer = _at.add_timer(timeout, self._check_connection)
 
     def disconnect(self):
         if self._client:
