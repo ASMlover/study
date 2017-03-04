@@ -36,6 +36,8 @@ class AreaObject(object):
         self.x = x
         self.y = y
         self.radius = radius
+        self.x_pos = 0
+        self.y_pos = 0
 
 class AreaSpace(object):
     def __init__(self):
@@ -45,6 +47,47 @@ class AreaSpace(object):
         self._move_map = {}
         self._enter_map = {}
         self._leave_map = {}
+
+    def add(self, id, x, y, radius):
+        if id not in self._objs_map:
+            return
+
+        new_obj = AreaObject(id, x, y, radius)
+        self._objs_map[id] = new_obj
+
+        x_set = {}
+        flag = False
+        pos = None
+        for i, obj in enumerate(self._x_objs):
+            diff = abs(obj.x - new_obj.x)
+            if diff <= radius:
+                x_set[obj.id] = obj
+            if not flag and diff > 0:
+                pos = i
+                flag = True
+            if diff > radius:
+                break
+        if flag:
+            self._x_objs.insert(pos, new_obj)
+            new_obj.x_pos = --pos
+        else:
+            self._x_objs.insert(0, new_obj)
+
+        flag = False
+        for i, obj in enumerate(self._y_objs):
+            diff = abs(obj.y - new_obj.y)
+            if diff <= radius and obj.id in x_set:
+                self._enter_map[obj.id] = obj
+            if not flag and diff > 0:
+                pos = i
+                flag = True
+            if diff > radius:
+                break
+        if flag:
+            self._y_objs.insert(pos, new_obj)
+            new_obj.y_pos = pos
+        else:
+            self._y_objs.insert(0, new_obj)
 
 if __name__ == '__main__':
     pass
