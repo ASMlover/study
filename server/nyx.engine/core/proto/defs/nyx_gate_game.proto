@@ -1,0 +1,66 @@
+// Copyright (c) 2017 ASMlover. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list ofconditions and the following disclaimer.
+//
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in
+//    the documentation and/or other materialsprovided with the
+//    distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+syntax = "proto3";
+import "nyx_common.proto";
+package nyx.core;
+
+option cc_generic_services = true;
+option py_generic_services = true;
+
+// gate与game之间的通信协议
+
+message ClientInfo {
+  // gate收到client的请求后，添加ClientInfo信息到routes以便game直到是哪个
+  // 客户端发送的请求，以便进行相应的处理
+  bytes addr = 1; // 客户端的ip地址
+  int32 port = 2; // 客户端的port
+  bytes client_id = 3; // 客户端的标识
+  bytes session_id = 4; // 服务器session标识
+  bytes gate_id = 5; // gate服务器的id信息
+}
+
+message GateMailbox {
+  ClientInfo client_info = 1;
+  bytes entity_id = 2;
+}
+
+message ClientBindMessage {
+  ClientInfo client_info = 1; // 客户端标识
+  ServerInfo server_info = 2; // 新的服务器信息
+  bytes entity_id = 3; // 需要转移的entity id
+}
+
+message RegisterMd5IndexMessage {
+  bytes routes = 1;
+  Md5Index md5_index = 2;
+}
+
+message GateReturnValue {
+  ClientInfo client_info = 1; // 客户端标识信息
+  bool return_value = 2; // 返回是否OK
+}
