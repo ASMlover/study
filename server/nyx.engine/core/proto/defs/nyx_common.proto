@@ -1,0 +1,94 @@
+syntax = "proto3";
+package nyx.core;
+
+option cc_generic_services = true;
+option py_generic_services = true;
+
+message Void {
+  // 用于RPC返回消息，我们设计返回消息为一个空消息
+}
+
+message ConnectRequest {
+  // 连接建立的请求，用于连接建立后的第一个RPC
+  enum RequestType {
+    NEWCONNECTION = 0; // 新登陆
+    RECONNECTION = 1; // 断线重连
+    BIND_AVATAR = 2; // 绑定entity对象到avatar
+  }
+  bytes routes = 1;
+  RequestType type = 2; // 认证类型
+  bytes device_id = 3; // 用于标识客户端的设备id
+  bytes entity_id = 4; // 断线重连或绑定avatar需要的entity id
+  bytes auth_msg = 5; // 验证消息
+}
+
+message ConnectRespone  {
+  // client连接请求的应答消息
+  enum ResponseType {
+    BUSY = 0; // 服务器忙
+    CONNECTED = 1; // 连接成功
+    RECONNECT_OK = 2; // 断线重连成功
+    RECONNECT_FAIL = 3; // 断线重连失败
+    FORBIDDEN = 4; // 服务器禁止某client的连接
+    MAX_CONNECTION = 5; // 服务器连接达到上限
+  }
+  bytes routes = 1;
+  ResponseType type = 2; // [attention] 需要系统设定默认回复类型为 BUSY
+  bytes entity_id = 3; // 当前绑定的avatar的entity id, 重连时恢复
+  bytes extra_msg = 4; // 需要返回给client的额外信息
+}
+
+message Md5Index {
+  // 在需要传递方法名或类型的地方，在网络上传递字符串的md5或索引
+  bytes md5 = 1;
+  sint32 index = 2; // [attention] 需要系统默认设定为-1
+}
+
+message EntityRpcMessage {
+  // entity的RPC调用的消息
+  bytes routes = 1;
+  bytes entity_id = 2;
+  Md5Index method = 3; // entity的方法名
+  bytes params = 4; // RPC调用的参数，可以使用BSON，protobuf等序列化
+  bool reliable = 5; // hint，告诉对方在重连的时候，此包是否必须到达，默认应该为true
+}
+
+message GlobalEntityRpcMessage {
+  // 全局entity的RPC调用消息
+  bytes target = 1;
+  Md5Index method = 2; // 全局entity的方法名
+  bytes params = 3; // 全局RPC调用的参数，可以使用BSON，protobuf等序列化
+  bool reliable = 4; // hint，告诉对方在重连的时候，此包是否必须到达，默认应该为true
+}
+
+message EntityInfo {
+  // entity的信息
+  bytes routes = 1;
+  Md5Index type = 2; // 创建的entity的类型
+  bytes entity_id = 3; // 创建的entity的id
+  bytes info = 4; // entity的具体信息
+}
+
+message OutbandInfo {
+  bytes routes = 1;
+  bytes info = 2; // 服务器发送给客户端的一些带外信息
+}
+
+message ServerInfo {
+  // 服务器的连接点信息
+  enum ServerType {
+    INVALID = 0;
+    NORMAL = 1; // 常规服务器
+  }
+
+  bytes addr = 1; // 服务器的ip地址信息
+  int32 port = 2; // 服务器的端口
+  int32 sid = 3; // game manager分配的server id
+  bool ban_client = 4; // 禁止玩家接入
+  ServerType server_typee = 5; // game server的类型
+}
+
+message EntityMailbox {
+  bytes entity_id = 1; // entity全局唯一标识
+  ServerInfo server_info = 2; // entity所在服务器的信息
+}
