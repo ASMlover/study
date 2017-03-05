@@ -105,12 +105,12 @@ service SGateToGame {
 
   // 连接game服务器，进行认证
   rpc connect_server(ConnectRequest) returns(Void);
-  // entity rpc消息
+  // 客户端entity的rpc消息，通过gate服务器转发到game服务器
   rpc entity_message(EntityRpcMessage) returns(Void);
   // 通知game服务器，客户端断开连接了
   rpc client_lose_connection(ClientInfo) returns(Void);
-  // 通知game服务器，是否可以开始转移entity
-  rpc pre_trans_client_callback(GateReturnValue) returns(Void);
+  // gate在准备好后，回复game服务器可以开始迁移entity
+  rpc on_transfer_client(GateReturnValue) returns(Void);
   // gate转发的game之间的消息
   rpc forward_entity_message(EntityRpcMessage) returns(Void);
   // 注册gateserver，用于转发消息
@@ -125,4 +125,39 @@ service SGateToGame {
   rpc real_entity_created(EntityMailbox) returns(Void);
   // 客户端发送的md5和index注册消息
   rpc reg_md5index(RegisterMd5IndexMessage) returns(Void);
+}
+
+service SGameToGate {
+  // game服务器发送给gate服务器的rpc信息
+
+  // 对gate连接请求的应答
+  rpc on_connect_server(ConnectResponse) returns(Void);
+  // game服务器通知client创建entity，通过gate服务器转发
+  rpc create_entity(EntityInfo) returns(Void);
+  // game服务器通知client销毁entity，通过gate服务器转发
+  rpc destroy_entity(EntityInfo) returns(Void);
+  // game服务器通知gate主动断开与client的连接
+  rpc disconnect_client(ClientInfo) returns(Void);
+  // game服务器通过gate转到到client的entity rpc消息
+  rpc entity_message(EntityRpcMessage) returns(Void);
+  // game服务器发送到client的global entity消息(通过gate转发到所有client)
+  rpc global_entity_message(GlobalEntityRpcMessage) returns(Void);
+  // game服务器发送到client的一些带外数据信息
+  rpc chat_to_client(OutbandInfo) returns(Void);
+  // game服务器通知gate服务器跨进程迁移avatar，需要gate做缓存
+  rpc transfer_client(ClientBindMessage) returns(Void);
+  // 跨进程转移avatar到新的game，game发送通知给gate
+  rpc bind_client_to_game(ClientBindMessage) returns(Void);
+  // game通过gate转发消息
+  rpc forward_entity_message(EntityRpcMessage) returns(Void);
+  // 通知迁移目标game建立了真正的entity
+  rpc create_real_entity(RealEntityCreateInfo) returns(Void);
+  // 通知gate服务器迁移源game服务器已经创建了真正的entity
+  rpc real_entity_created(EntityMailbox) returns(Void);
+  // 向客户端注册md5和index信息
+  rpc reg_md5index(RegisterMd5IndexMessage) returns(Void);
+  // game服务器向gate服务器发送负载情况
+  rpc update_game_load(GameLoad) returns(Void);
+  // game服务器发送给gate的rpc消息
+  rpc gate_method(GateRpcMessage) returns(Void);
 }
