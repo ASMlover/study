@@ -64,3 +64,38 @@ message GateReturnValue {
   ClientInfo client_info = 1; // 客户端标识信息
   bool return_value = 2; // 返回是否OK
 }
+
+message RealEntityCreateInfo {
+  ServerInfo dst_server = 1; // 迁移的目标服务器信息
+  ServerInfo src_server = 2; // 迁移的源服务器信息
+  bytes real_entity_id = 3; // 要迁移的entity id
+  bytes real_entity_class = 4; // 要迁移的entity class类型
+  bytes pre_trans_entity_id = 5; // 目标服务器占位entity id
+  bytes content = 6; // 初始化信息
+  bytes client_info_cache = 7; // 如果创建的是一个avatar，需设置cleint info
+}
+
+message GateToGameReturnValue {
+  enum CallbackType {
+    NO_CALLBACK = 0; // 没这个callback
+    GATE2GAME_ENTITYMSG = 1; // gate到game的message信息
+  }
+  CallbackType type = 1; // 默认应该为NO_CALLBACK
+  int32 callback_id = 2; // callback id信息，rpc调用时传递
+  bool return_bvalue = 3; // bool返回值使用这个
+  bytes return_svalue = 4; // 复杂返回值，编码成字符串
+  bytes error_msg = 5; // 错误信息
+}
+
+message GameLoad {
+  double load = 1;
+}
+
+message GateInfo {
+  bytes gate_id = 1; // gate的id信息
+}
+
+message GateRpcMessage {
+  Md5Index method = 1;
+  bytes params = 2;
+}
