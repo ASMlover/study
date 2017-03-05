@@ -28,8 +28,12 @@
 @echo off
 
 @set PROTOC_PATH=..\..\..\tools\protoc-3.2.0\bin
+@set PROTO_PATH=..\
 if exist %PROTOC_PATH% (
-  %PROTOC_PATH%\protoc.exe --python_out=../ *.proto
+  if not exist "%PROTO_PATH%\pyproto" (
+    call mkdir "%PROTO_PATH%\pyproto"
+  )
+  %PROTOC_PATH%\protoc.exe --python_out="%PROTO_PATH%\pyproto" *.proto
 )
 
 @echo on
