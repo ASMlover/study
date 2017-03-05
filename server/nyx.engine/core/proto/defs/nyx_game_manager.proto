@@ -104,7 +104,7 @@ message ScriptInfo {
   bytes script_content = 1; // 脚本字符串信息
 }
 
-message ControlCode {
+message ControlCommand {
   // nyx.core个服务器的控制码信息
   enum ControlOperation {
     NOP = 0; // 什么都不做
@@ -127,4 +127,45 @@ message ControlCode {
     CLOSE_GAME_MANAGER = 9; // 结束game manager服务器进程
   }
   ControlOperation op = 1; // 默认应该为NOP
+}
+
+service SClientToGameManager {
+  // gate、game、db或admin客户端向game manager发送的rpc调用
+
+  ///// admin客户端向game manager之间的通信
+  // 请求所有game运行指定的脚本信息
+  rpc run_script(ScriptInfo) returns(Void);
+  // 向所有game server等发送控制命令
+  rpc server_control(ControlCommand) returns(Void);
+
+  ///// db manager和game manager之间的通信
+  // db manager向game manager注册自己
+  rpc reg_db_manager(Void) returns(Void);
+
+  ///// gate和game manager之间的通信
+  // gate向game manager请求所有game server的信息
+  rpc get_game_server_list(Void) returns(Void);
+
+  ////// game和game manager之间的通信
+  // game向game manager注册自己
+  rpc reg_game_server(ServerInfo) returns(Void);
+  // game向game manager注册全局entity的mailbox，会转发到所有的game，直到删除
+  rpc reg_global_entity_mailbox(GlobalEntityRegisterMessage) returns(Void);
+  rpc unreg_global_entity_mailbox(GlobalEntityRegisterMessage) returns(Void);
+  // game向game manager请求转发消息到另一个entity
+  rpc forward_entity_message(EntityRpcMessage) returns(Void);
+  // game发送给game manager转发的全局信息，game manager需要转发给所有game，game再转发给所有entity
+  rpc global_entity_message(GlobalEntityRpcMessage) returns(Void);
+  // game向game manager转发全局消息，game manager不保存，直接转发（不可靠）
+  rpc global_message(GlobalMessage) returns(Void);
+  // game向game manager转发全局数据，game manager会先保存下来再转发给所有game（可靠）
+  rpc global_data(GlobalData) returns(Void);
+  // game请求删除全局数据
+  rpc del_global_data(GlobalData) returns(Void);
+  // game请求game manager创建entity信息，game manager选择任意或指定的game
+  rpc create_entity(EntityInfo) returns(Void);
+  // game通过game manager要求创建的entity成功，game manager则通知发起创建entity的game进程
+  rpc game_create_entity_success(GameManagerReturnValue) returns(Void);
+  // game回应game manager保存keep-alive的命令
+  rpc on_keep_alive(Void) returns(Void);
 }
