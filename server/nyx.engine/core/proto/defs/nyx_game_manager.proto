@@ -154,7 +154,7 @@ service SClientToGameManager {
   rpc unreg_global_entity_mailbox(GlobalEntityRegisterMessage) returns(Void);
   // game向game manager请求转发消息到另一个entity
   rpc forward_entity_message(EntityRpcMessage) returns(Void);
-  // game发送给game manager转发的全局信息，game manager需要转发给所有game，game再转发给所有entity
+  // game发送给game manager转发的全局信息，game manager需要转发给当前在线的所有game，game再转发给所有entity
   rpc global_entity_message(GlobalEntityRpcMessage) returns(Void);
   // game向game manager转发全局消息，game manager不保存，直接转发（不可靠）
   rpc global_message(GlobalMessage) returns(Void);
@@ -168,4 +168,39 @@ service SClientToGameManager {
   rpc game_create_entity_success(GameManagerReturnValue) returns(Void);
   // game回应game manager保存keep-alive的命令
   rpc on_keep_alive(Void) returns(Void);
+}
+
+service SGameManagerToClient {
+  // game manager返回game，gate以及db manager发起的请求
+
+  ///// gate和game manager之间的通信
+  // 返回gate请求的game server列表信息
+  rpc on_get_game_server_list(GameServerInfoList) returns(Void);
+
+  ///// game和game manager之间的通信
+  // game manager通知game，其他game注册的全局entity的mailbox信息
+  rpc on_reg_global_entity_mailbox(GlobalEntityRegisterMessage) returns(Void);
+  rpc on_unreg_global_entity_mailbox(GlobalEntityRegisterMessage) returns(Void);
+
+  ///// game和gate都需要处理的控制信息
+  rpc on_server_control(ControlCommand) returns(Void);
+
+  // game manager收到转发请求后, 转发消息给对应的game
+  rpc on_forward_entity_message(EntityRpcMessage) returns(Void);
+  // game manager转发到game的global rpc消息，需要每个game调用所有的avatar
+  rpc on_global_entity_message(GlobalEntityRpcMessage) returns(Void);
+  // game manager转发的全局不可靠消息（当时在线的所有game服务器）
+  rpc on_global_message(GlobalMessage) returns(Void);
+  // game manager转发的全局可靠数据，会存下来发给所有的game
+  rpc on_global_data(GlobalData) returns(Void);
+  // 删除全局数据
+  rpc on_del_global_data(GlobalData) returns(Void);
+  // game manager通知game创建entity
+  rpc create_entity(EntityInfo) returns(Void);
+  // game请求的game manager的操作，game manager的返回
+  rpc game_manager_callback(GameManagerReturnValue) returns(Void);
+  // 通知game运行指定的脚本
+  rpc run_script(ScriptInfo) returns(Void);
+  // game manager向game发起保持keep-alive请求
+  rpc keep_alive(Void) returns(Void);
 }
