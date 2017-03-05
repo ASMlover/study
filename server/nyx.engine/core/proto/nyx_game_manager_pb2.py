@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='nyx_game_manager.proto',
   package='nyx.core',
   syntax='proto3',
-  serialized_pb=_b('\n\x16nyx_game_manager.proto\x12\x08nyx.core\x1a\x10nyx_common.proto\x1a\x13nyx_gate_game.proto\"@\n\x12GameServerInfoList\x12*\n\x0cgame_servers\x18\x01 \x03(\x0b\x32\x14.nyx.core.ServerInfo\"!\n\nCallbackID\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\"\x87\x01\n\x1bGlobalEntityRegisterMessage\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x18\n\x10\x65ntity_unique_id\x18\x02 \x01(\x0c\x12\'\n\x06maibox\x18\x03 \x01(\x0b\x32\x17.nyx.core.EntityMailbox\x12\x10\n\x08override\x18\x04 \x01(\x08\"\x9a\x01\n\x14\x46orwardMessageHeader\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12,\n\x0bsrc_mailbox\x18\x02 \x01(\x0b\x32\x17.nyx.core.EntityMailbox\x12,\n\x0b\x64st_mailbox\x18\x03 \x01(\x0b\x32\x17.nyx.core.EntityMailbox\x12\x11\n\tclient_id\x18\x04 \x01(\x0c\"\x85\x02\n\x10\x45ntityInfoHeader\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x14\n\x0ctrans_entity\x18\x02 \x01(\x08\x12\x15\n\rcreate_fromdb\x18\x03 \x01(\x08\x12\x17\n\x0f\x63reate_anywhere\x18\x04 \x01(\x05\x12(\n\ndst_server\x18\x05 \x01(\x0b\x32\x14.nyx.core.ServerInfo\x12)\n\x0b\x63lient_info\x18\x06 \x01(\x0b\x32\x14.nyx.core.ClientInfo\"A\n\nServerType\x12\r\n\tANY_WHERE\x10\x00\x12\x10\n\x0cSPECIFY_TYPE\x10\x01\x12\x12\n\x0eSPECIFY_SERVER\x10\x02\" \n\rGlobalMessage\x12\x0f\n\x07message\x18\x01 \x01(\x0c\"(\n\nGlobalData\x12\x0b\n\x03key\x18\x01 \x01(\x0c\x12\r\n\x05value\x18\x02 \x01(\x0c\"\x93\x02\n\x16GameManagerReturnValue\x12;\n\x04type\x18\x01 \x01(\x0e\x32-.nyx.core.GameManagerReturnValue.CallbackType\x12\x13\n\x0b\x63\x61llback_id\x18\x02 \x01(\x05\x12\x15\n\rreturn_bvalue\x18\x03 \x01(\x08\x12\x15\n\rreturn_svalue\x18\x04 \x01(\x0c\x12\x11\n\terror_msg\x18\x05 \x01(\x0c\"f\n\x0c\x43\x61llbackType\x12\x0f\n\x0bNO_CALLBACK\x10\x00\x12\x16\n\x12REG_ENTITY_MAILBOX\x10\x01\x12\x1a\n\x16\x46ORWARD_ENTITY_MESSAGE\x10\x02\x12\x11\n\rCREATE_ENTITY\x10\x03\"$\n\nScriptInfo\x12\x16\n\x0escript_content\x18\x01 \x01(\x0c\"\xc7\x02\n\x0e\x43ontrolCommand\x12\x35\n\x02op\x18\x01 \x01(\x0e\x32).nyx.core.ControlCommand.ControlOperation\"\xfd\x01\n\x10\x43ontrolOperation\x12\x07\n\x03NOP\x10\x00\x12\x1c\n\x18\x46ORBIDDEN_NEW_CONNECTION\x10\x01\x12 \n\x1cIGNORE_CLIENT_ENTITY_MESSAGE\x10\x02\x12\x1d\n\x19\x44ISCONNECT_ALL_CONNECTION\x10\x03\x12\x0e\n\nCLOSE_GATE\x10\x04\x12\x19\n\x15NOTIFY_SERVER_CLOSING\x10\x05\x12\x18\n\x14NOTIFY_SERVER_CLOSED\x10\x06\x12\x0e\n\nCLOSE_GAME\x10\x07\x12\x14\n\x10\x43LOSE_DB_MANAGER\x10\x08\x12\x16\n\x12\x43LOSE_GAME_MANAGER\x10\t2\xc5\x07\n\x14SClientToGameManager\x12\x32\n\nrun_script\x12\x14.nyx.core.ScriptInfo\x1a\x0e.nyx.core.Void\x12:\n\x0eserver_control\x12\x18.nyx.core.ControlCommand\x1a\x0e.nyx.core.Void\x12\x30\n\x0ereg_db_manager\x12\x0e.nyx.core.Void\x1a\x0e.nyx.core.Void\x12\x36\n\x14get_game_server_list\x12\x0e.nyx.core.Void\x1a\x0e.nyx.core.Void\x12\x37\n\x0freg_game_server\x12\x14.nyx.core.ServerInfo\x1a\x0e.nyx.core.Void\x12R\n\x19reg_global_entity_mailbox\x12%.nyx.core.GlobalEntityRegisterMessage\x1a\x0e.nyx.core.Void\x12T\n\x1bunreg_global_entity_mailbox\x12%.nyx.core.GlobalEntityRegisterMessage\x1a\x0e.nyx.core.Void\x12\x44\n\x16\x66orward_entity_message\x12\x1a.nyx.core.EntityRpcMessage\x1a\x0e.nyx.core.Void\x12I\n\x15global_entity_message\x12 .nyx.core.GlobalEntityRpcMessage\x1a\x0e.nyx.core.Void\x12\x39\n\x0eglobal_message\x12\x17.nyx.core.GlobalMessage\x1a\x0e.nyx.core.Void\x12\x33\n\x0bglobal_data\x12\x14.nyx.core.GlobalData\x1a\x0e.nyx.core.Void\x12\x37\n\x0f\x64\x65l_global_data\x12\x14.nyx.core.GlobalData\x1a\x0e.nyx.core.Void\x12\x35\n\rcreate_entity\x12\x14.nyx.core.EntityInfo\x1a\x0e.nyx.core.Void\x12N\n\x1agame_create_entity_success\x12 .nyx.core.GameManagerReturnValue\x1a\x0e.nyx.core.Void\x12/\n\ron_keep_alive\x12\x0e.nyx.core.Void\x1a\x0e.nyx.core.VoidB\x06\x80\x01\x01\x90\x01\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x16nyx_game_manager.proto\x12\x08nyx.core\x1a\x10nyx_common.proto\x1a\x13nyx_gate_game.proto\"@\n\x12GameServerInfoList\x12*\n\x0cgame_servers\x18\x01 \x03(\x0b\x32\x14.nyx.core.ServerInfo\"!\n\nCallbackID\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\"\x87\x01\n\x1bGlobalEntityRegisterMessage\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x18\n\x10\x65ntity_unique_id\x18\x02 \x01(\x0c\x12\'\n\x06maibox\x18\x03 \x01(\x0b\x32\x17.nyx.core.EntityMailbox\x12\x10\n\x08override\x18\x04 \x01(\x08\"\x9a\x01\n\x14\x46orwardMessageHeader\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12,\n\x0bsrc_mailbox\x18\x02 \x01(\x0b\x32\x17.nyx.core.EntityMailbox\x12,\n\x0b\x64st_mailbox\x18\x03 \x01(\x0b\x32\x17.nyx.core.EntityMailbox\x12\x11\n\tclient_id\x18\x04 \x01(\x0c\"\x85\x02\n\x10\x45ntityInfoHeader\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x14\n\x0ctrans_entity\x18\x02 \x01(\x08\x12\x15\n\rcreate_fromdb\x18\x03 \x01(\x08\x12\x17\n\x0f\x63reate_anywhere\x18\x04 \x01(\x05\x12(\n\ndst_server\x18\x05 \x01(\x0b\x32\x14.nyx.core.ServerInfo\x12)\n\x0b\x63lient_info\x18\x06 \x01(\x0b\x32\x14.nyx.core.ClientInfo\"A\n\nServerType\x12\r\n\tANY_WHERE\x10\x00\x12\x10\n\x0cSPECIFY_TYPE\x10\x01\x12\x12\n\x0eSPECIFY_SERVER\x10\x02\" \n\rGlobalMessage\x12\x0f\n\x07message\x18\x01 \x01(\x0c\"(\n\nGlobalData\x12\x0b\n\x03key\x18\x01 \x01(\x0c\x12\r\n\x05value\x18\x02 \x01(\x0c\"\x93\x02\n\x16GameManagerReturnValue\x12;\n\x04type\x18\x01 \x01(\x0e\x32-.nyx.core.GameManagerReturnValue.CallbackType\x12\x13\n\x0b\x63\x61llback_id\x18\x02 \x01(\x05\x12\x15\n\rreturn_bvalue\x18\x03 \x01(\x08\x12\x15\n\rreturn_svalue\x18\x04 \x01(\x0c\x12\x11\n\terror_msg\x18\x05 \x01(\x0c\"f\n\x0c\x43\x61llbackType\x12\x0f\n\x0bNO_CALLBACK\x10\x00\x12\x16\n\x12REG_ENTITY_MAILBOX\x10\x01\x12\x1a\n\x16\x46ORWARD_ENTITY_MESSAGE\x10\x02\x12\x11\n\rCREATE_ENTITY\x10\x03\"$\n\nScriptInfo\x12\x16\n\x0escript_content\x18\x01 \x01(\x0c\"\xc7\x02\n\x0e\x43ontrolCommand\x12\x35\n\x02op\x18\x01 \x01(\x0e\x32).nyx.core.ControlCommand.ControlOperation\"\xfd\x01\n\x10\x43ontrolOperation\x12\x07\n\x03NOP\x10\x00\x12\x1c\n\x18\x46ORBIDDEN_NEW_CONNECTION\x10\x01\x12 \n\x1cIGNORE_CLIENT_ENTITY_MESSAGE\x10\x02\x12\x1d\n\x19\x44ISCONNECT_ALL_CONNECTION\x10\x03\x12\x0e\n\nCLOSE_GATE\x10\x04\x12\x19\n\x15NOTIFY_SERVER_CLOSING\x10\x05\x12\x18\n\x14NOTIFY_SERVER_CLOSED\x10\x06\x12\x0e\n\nCLOSE_GAME\x10\x07\x12\x14\n\x10\x43LOSE_DB_MANAGER\x10\x08\x12\x16\n\x12\x43LOSE_GAME_MANAGER\x10\t2\xc5\x07\n\x14SClientToGameManager\x12\x32\n\nrun_script\x12\x14.nyx.core.ScriptInfo\x1a\x0e.nyx.core.Void\x12:\n\x0eserver_control\x12\x18.nyx.core.ControlCommand\x1a\x0e.nyx.core.Void\x12\x30\n\x0ereg_db_manager\x12\x0e.nyx.core.Void\x1a\x0e.nyx.core.Void\x12\x36\n\x14get_game_server_list\x12\x0e.nyx.core.Void\x1a\x0e.nyx.core.Void\x12\x37\n\x0freg_game_server\x12\x14.nyx.core.ServerInfo\x1a\x0e.nyx.core.Void\x12R\n\x19reg_global_entity_mailbox\x12%.nyx.core.GlobalEntityRegisterMessage\x1a\x0e.nyx.core.Void\x12T\n\x1bunreg_global_entity_mailbox\x12%.nyx.core.GlobalEntityRegisterMessage\x1a\x0e.nyx.core.Void\x12\x44\n\x16\x66orward_entity_message\x12\x1a.nyx.core.EntityRpcMessage\x1a\x0e.nyx.core.Void\x12I\n\x15global_entity_message\x12 .nyx.core.GlobalEntityRpcMessage\x1a\x0e.nyx.core.Void\x12\x39\n\x0eglobal_message\x12\x17.nyx.core.GlobalMessage\x1a\x0e.nyx.core.Void\x12\x33\n\x0bglobal_data\x12\x14.nyx.core.GlobalData\x1a\x0e.nyx.core.Void\x12\x37\n\x0f\x64\x65l_global_data\x12\x14.nyx.core.GlobalData\x1a\x0e.nyx.core.Void\x12\x35\n\rcreate_entity\x12\x14.nyx.core.EntityInfo\x1a\x0e.nyx.core.Void\x12N\n\x1agame_create_entity_success\x12 .nyx.core.GameManagerReturnValue\x1a\x0e.nyx.core.Void\x12/\n\ron_keep_alive\x12\x0e.nyx.core.Void\x1a\x0e.nyx.core.Void2\xfb\x06\n\x14SGameManagerToClient\x12G\n\x17on_get_game_server_list\x12\x1c.nyx.core.GameServerInfoList\x1a\x0e.nyx.core.Void\x12U\n\x1con_reg_global_entity_mailbox\x12%.nyx.core.GlobalEntityRegisterMessage\x1a\x0e.nyx.core.Void\x12W\n\x1eon_unreg_global_entity_mailbox\x12%.nyx.core.GlobalEntityRegisterMessage\x1a\x0e.nyx.core.Void\x12=\n\x11on_server_control\x12\x18.nyx.core.ControlCommand\x1a\x0e.nyx.core.Void\x12G\n\x19on_forward_entity_message\x12\x1a.nyx.core.EntityRpcMessage\x1a\x0e.nyx.core.Void\x12L\n\x18on_global_entity_message\x12 .nyx.core.GlobalEntityRpcMessage\x1a\x0e.nyx.core.Void\x12<\n\x11on_global_message\x12\x17.nyx.core.GlobalMessage\x1a\x0e.nyx.core.Void\x12\x36\n\x0eon_global_data\x12\x14.nyx.core.GlobalData\x1a\x0e.nyx.core.Void\x12:\n\x12on_del_global_data\x12\x14.nyx.core.GlobalData\x1a\x0e.nyx.core.Void\x12\x35\n\rcreate_entity\x12\x14.nyx.core.EntityInfo\x1a\x0e.nyx.core.Void\x12I\n\x15game_manager_callback\x12 .nyx.core.GameManagerReturnValue\x1a\x0e.nyx.core.Void\x12\x32\n\nrun_script\x12\x14.nyx.core.ScriptInfo\x1a\x0e.nyx.core.Void\x12,\n\nkeep_alive\x12\x0e.nyx.core.Void\x1a\x0e.nyx.core.VoidB\x06\x80\x01\x01\x90\x01\x01\x62\x06proto3')
   ,
   dependencies=[nyx__common__pb2.DESCRIPTOR,nyx__gate__game__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -814,6 +814,146 @@ SClientToGameManager = service_reflection.GeneratedServiceType('SClientToGameMan
 
 SClientToGameManager_Stub = service_reflection.GeneratedServiceStubType('SClientToGameManager_Stub', (SClientToGameManager,), dict(
   DESCRIPTOR = _SCLIENTTOGAMEMANAGER,
+  __module__ = 'nyx_game_manager_pb2'
+  ))
+
+
+
+_SGAMEMANAGERTOCLIENT = _descriptor.ServiceDescriptor(
+  name='SGameManagerToClient',
+  full_name='nyx.core.SGameManagerToClient',
+  file=DESCRIPTOR,
+  index=1,
+  options=None,
+  serialized_start=2426,
+  serialized_end=3317,
+  methods=[
+  _descriptor.MethodDescriptor(
+    name='on_get_game_server_list',
+    full_name='nyx.core.SGameManagerToClient.on_get_game_server_list',
+    index=0,
+    containing_service=None,
+    input_type=_GAMESERVERINFOLIST,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_reg_global_entity_mailbox',
+    full_name='nyx.core.SGameManagerToClient.on_reg_global_entity_mailbox',
+    index=1,
+    containing_service=None,
+    input_type=_GLOBALENTITYREGISTERMESSAGE,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_unreg_global_entity_mailbox',
+    full_name='nyx.core.SGameManagerToClient.on_unreg_global_entity_mailbox',
+    index=2,
+    containing_service=None,
+    input_type=_GLOBALENTITYREGISTERMESSAGE,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_server_control',
+    full_name='nyx.core.SGameManagerToClient.on_server_control',
+    index=3,
+    containing_service=None,
+    input_type=_CONTROLCOMMAND,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_forward_entity_message',
+    full_name='nyx.core.SGameManagerToClient.on_forward_entity_message',
+    index=4,
+    containing_service=None,
+    input_type=nyx__common__pb2._ENTITYRPCMESSAGE,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_global_entity_message',
+    full_name='nyx.core.SGameManagerToClient.on_global_entity_message',
+    index=5,
+    containing_service=None,
+    input_type=nyx__common__pb2._GLOBALENTITYRPCMESSAGE,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_global_message',
+    full_name='nyx.core.SGameManagerToClient.on_global_message',
+    index=6,
+    containing_service=None,
+    input_type=_GLOBALMESSAGE,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_global_data',
+    full_name='nyx.core.SGameManagerToClient.on_global_data',
+    index=7,
+    containing_service=None,
+    input_type=_GLOBALDATA,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_del_global_data',
+    full_name='nyx.core.SGameManagerToClient.on_del_global_data',
+    index=8,
+    containing_service=None,
+    input_type=_GLOBALDATA,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='create_entity',
+    full_name='nyx.core.SGameManagerToClient.create_entity',
+    index=9,
+    containing_service=None,
+    input_type=nyx__common__pb2._ENTITYINFO,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='game_manager_callback',
+    full_name='nyx.core.SGameManagerToClient.game_manager_callback',
+    index=10,
+    containing_service=None,
+    input_type=_GAMEMANAGERRETURNVALUE,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='run_script',
+    full_name='nyx.core.SGameManagerToClient.run_script',
+    index=11,
+    containing_service=None,
+    input_type=_SCRIPTINFO,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='keep_alive',
+    full_name='nyx.core.SGameManagerToClient.keep_alive',
+    index=12,
+    containing_service=None,
+    input_type=nyx__common__pb2._VOID,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+])
+
+SGameManagerToClient = service_reflection.GeneratedServiceType('SGameManagerToClient', (_service.Service,), dict(
+  DESCRIPTOR = _SGAMEMANAGERTOCLIENT,
+  __module__ = 'nyx_game_manager_pb2'
+  ))
+
+SGameManagerToClient_Stub = service_reflection.GeneratedServiceStubType('SGameManagerToClient_Stub', (SGameManagerToClient,), dict(
+  DESCRIPTOR = _SGAMEMANAGERTOCLIENT,
   __module__ = 'nyx_game_manager_pb2'
   ))
 
