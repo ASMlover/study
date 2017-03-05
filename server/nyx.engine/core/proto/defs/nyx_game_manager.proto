@@ -1,0 +1,130 @@
+// Copyright (c) 2017 ASMlover. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list ofconditions and the following disclaimer.
+//
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in
+//    the documentation and/or other materialsprovided with the
+//    distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+syntax = "proto3";
+import "nyx_common.proto";
+import "nyx_gate_game.proto";
+package nyx.core;
+
+option cc_generic_services = true;
+option py_generic_services = true;
+
+// nyx.core服务器gate和game在game manager之间的通信
+
+message GameServerInfoList {
+  // game服务器的服务器接入点信息
+  repeated ServerInfo game_servers = 1;
+}
+
+message CallbackID {
+  int32 callback_id = 1; // 在需要回调的时候设置，默认应该为-1
+}
+
+message GlobalEntityRegisterMessage {
+  // 全局的entity对象注册信息
+  int32 callback_id = 1; // 需要回调的时候设置，默认应该为-1
+  bytes entity_unique_id = 2; // entity的全局唯一标识
+  EntityMailbox maibox = 3; // global entity的mailbox
+  bool override = 4; // 如果需要迁移对象，需要强制override该对象
+}
+
+message ForwardMessageHeader {
+  // game manager转发的entity消息需要添加该头部信息
+  int32 callback_id = 1; // 需要回调的时候设置，默认应该为-1
+  EntityMailbox src_mailbox = 2;
+  EntityMailbox dst_mailbox = 3;
+  bytes client_id = 4;
+}
+
+message EntityInfoHeader {
+  // gate与game之间，game与game manager之间的调用头部信息
+  enum ServerType {
+    ANY_WHERE = 0; // 任意地方
+    SPECIFY_TYPE = 1;
+    SPECIFY_SERVER = 2;
+  }
+  int32 callback_id = 1;
+  bool trans_entity = 2; // True则迁移现有的entity，False则创建一个新的entity
+  bool create_fromdb = 3; // 如果是新的entity，标识是否从db中读取数据来创建
+  int32 create_anywhere = 4; // 创建entity，创建在任意地方还是指定的地方
+  ServerInfo dst_server = 5; // 指定的服务器相关信息
+  ClientInfo client_info = 6;
+}
+
+message GlobalMessage {
+  bytes message = 1; // global信息
+}
+
+message GlobalData {
+  bytes key = 1; // 编码后的对象
+  bytes value = 2; // 编码后的对象
+}
+
+message GameManagerReturnValue {
+  // game调用game manager的rpc后需要game manager返回的信息
+  enum CallbackType {
+    NO_CALLBACK = 0;
+    REG_ENTITY_MAILBOX = 1;
+    FORWARD_ENTITY_MESSAGE = 2;
+    CREATE_ENTITY = 3;
+  }
+  CallbackType type = 1; // 回调类型，默认应该是NO_CALLBACK
+  int32 callback_id = 2; // 在rpc调用的时候回传，默认应该是-1
+  bool return_bvalue = 3; // bool值使用这个
+  bytes return_svalue = 4; // 复杂的值需要编码成字符串
+  bytes error_msg = 5; // 出错的错误信息
+}
+
+message ScriptInfo {
+  // admin需要game服务器运行指定的脚本信息
+  bytes script_content = 1; // 脚本字符串信息
+}
+
+message ControlCode {
+  // nyx.core个服务器的控制码信息
+  enum ControlOperation {
+    NOP = 0; // 什么都不做
+
+    // 对gate服务器的控制
+    FORBIDDEN_NEW_CONNECTION = 1; // 禁止新连接(登录)
+    IGNORE_CLIENT_ENTITY_MESSAGE = 2; // 忽略client发送的所有信息
+    DISCONNECT_ALL_CONNECTION = 3; // 踢掉所有的客户端用户
+    CLOSE_GATE = 4; // 结束gate服务器进程
+
+    // 对game服务器的控制
+    NOTIFY_SERVER_CLOSING = 5; // 通知服务器即将关闭，需要调用所有entity的on_server_closing回调
+    NOTIFY_SERVER_CLOSED = 6; // 通知服务器关闭，需要调用所有entity的on_server_closed
+    CLOSE_GAME = 7; // 结束game服务器进程
+
+    // 对db manager服务器的控制
+    CLOSE_DB_MANAGER = 8; // 结束dbmanager服务器进程
+
+    // 对game manager服务器的控制
+    CLOSE_GAME_MANAGER = 9; // 结束game manager服务器进程
+  }
+  ControlOperation op = 1; // 默认应该为NOP
+}
