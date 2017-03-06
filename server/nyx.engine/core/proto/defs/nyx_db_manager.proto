@@ -1,0 +1,72 @@
+// Copyright (c) 2017 ASMlover. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list ofconditions and the following disclaimer.
+//
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in
+//    the documentation and/or other materialsprovided with the
+//    distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+syntax = "proto3";
+import "nyx_common.proto";
+package nyx.core;
+
+option cc_generic_services = true;
+option py_generic_services = true;
+
+// nyx.core数据库(mongodb)的读写操作，数据应该使用bson，以便可以将db manager C++化
+
+message FindDocRequest {
+  // 读取操作请求
+  int32 callback_id = 1; // 需要回调时，必须大于0
+  bytes db = 2;
+  bytes collection = 3; // collection name
+  bytes query = 4; // bson编码的query信息
+  bytes fields = 5; // bson编码的dict
+  int32 limit = 6; // 需要返回多少个结果
+  bool seq_flag = 7; // 该操作是否保证有序
+  bytes seq_key = 8; // seq_flag操作的key，指定_id之外的key
+  bytes sort = 9; // 排序
+  int32 read_pref = 10; // 在开启复制集replica set的时候，表示选择查询节点的方式
+  bytes hint = 11;
+  bytes skip = 12;
+}
+
+message CountDocRequest {
+  // 获取doc的条目数据信息
+  int32 callback_id = 1; // 需要回调时，必须大于0
+  bytes db = 2;
+  bytes collection = 3;
+  bytes query = 4; // bson编码的query信息
+}
+
+message UpdateDocRequest {
+  // 更新doc的相关数据定义
+  int32 callback_id = 1; // 需要回调时，必须大于0
+  bytes db = 2;
+  bytes collection = 3;
+  bytes query = 4; // bson编码的query信息
+  bytes doc = 5; // bson编码的dict信息，用于更新
+  bool upset = 6; // 不存在是否插入
+  bool multi = 7; // 是否更新多个
+  bool seq_flag = 8; // 该操作是否需要保证有序
+  bytes seq_key = 9; // seq_flag操作的key，除_id之外的key
+}
