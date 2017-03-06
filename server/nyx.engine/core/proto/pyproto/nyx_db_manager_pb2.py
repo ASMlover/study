@@ -7,6 +7,8 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf import service as _service
+from google.protobuf import service_reflection
 from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
@@ -20,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='nyx_db_manager.proto',
   package='nyx.core',
   syntax='proto3',
-  serialized_pb=_b('\n\x14nyx_db_manager.proto\x12\x08nyx.core\x1a\x10nyx_common.proto\"\xd3\x01\n\x0e\x46indDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x0e\n\x06\x66ields\x18\x05 \x01(\x0c\x12\r\n\x05limit\x18\x06 \x01(\x05\x12\x10\n\x08seq_flag\x18\x07 \x01(\x08\x12\x0f\n\x07seq_key\x18\x08 \x01(\x0c\x12\x0c\n\x04sort\x18\t \x01(\x0c\x12\x11\n\tread_pref\x18\n \x01(\x05\x12\x0c\n\x04hint\x18\x0b \x01(\x0c\x12\x0c\n\x04skip\x18\x0c \x01(\x0c\"D\n\x0f\x46indDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x0c\n\x04\x64ocs\x18\x03 \x01(\x0c\"U\n\x0f\x43ountDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\"F\n\x10\x43ountDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\r\n\x05\x63ount\x18\x03 \x01(\x05\"\xa5\x01\n\x10UpdateDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x0b\n\x03\x64oc\x18\x05 \x01(\x0c\x12\x0e\n\x06upsert\x18\x06 \x01(\x08\x12\r\n\x05multi\x18\x07 \x01(\x08\x12\x10\n\x08seq_flag\x18\x08 \x01(\x08\x12\x0f\n\x07seq_key\x18\t \x01(\x0c\"8\n\x11UpdateDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\"w\n\x10InsertDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\x0b\n\x03\x64oc\x18\x04 \x01(\x0c\x12\x10\n\x08seq_flag\x18\x05 \x01(\x08\x12\x0f\n\x07seq_key\x18\x06 \x01(\x0c\"K\n\x11InsertDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x11\n\tinsert_id\x18\x03 \x01(\x0c\"y\n\x10\x44\x65leteDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x10\n\x08seq_flag\x18\x05 \x01(\x08\x12\x0f\n\x07seq_key\x18\x06 \x01(\x0c\"8\n\x11\x44\x65leteDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\"\xbd\x01\n\x17\x46indAndModifyDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x0e\n\x06\x66ields\x18\x05 \x01(\x0c\x12\x0e\n\x06update\x18\x06 \x01(\x0c\x12\x0e\n\x06upsert\x18\x07 \x01(\x08\x12\x0b\n\x03new\x18\x08 \x01(\x08\x12\x10\n\x08seq_flag\x18\t \x01(\x08\x12\x0f\n\x07seq_key\x18\n \x01(\x0c\"L\n\x18\x46indAndModifyDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x0b\n\x03\x64oc\x18\x03 \x01(\x0c\"_\n\x10ProcedureRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x0c\n\x04proc\x18\x03 \x01(\x0c\x12\x0c\n\x04\x61rgs\x18\x04 \x01(\x0c\x12\x0e\n\x06kwargs\x18\x05 \x01(\x0c\"E\n\x11ProcedureResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x0b\n\x03\x64oc\x18\x03 \x01(\x0c\"\xd8\x01\n\x15OperationIndexRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12;\n\x04type\x18\x04 \x01(\x0e\x32-.nyx.core.OperationIndexRequest.OperationType\x12\r\n\x05query\x18\x05 \x01(\x0c\x12\x0c\n\x04\x64\x65sc\x18\x06 \x01(\x0c\"0\n\rOperationType\x12\n\n\x06\x45NSURE\x10\x00\x12\x08\n\x04\x44ROP\x10\x01\x12\t\n\x05RESET\x10\x02\"=\n\x16OperationIndexResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\"b\n\x17\x43reateCollectionRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\x12\n\noperations\x18\x05 \x01(\x0c\"\xa6\x01\n\x18\x43reateCollectionResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12?\n\x06status\x18\x02 \x01(\x0e\x32/.nyx.core.CreateCollectionResponse.CreateStatus\"4\n\x0c\x43reateStatus\x12\x0b\n\x07SUCCESS\x10\x00\x12\x0b\n\x07\x45XISTED\x10\x01\x12\n\n\x06\x46\x41ILED\x10\x02\"\x81\x01\n\x0f\x44\x42StatusMessage\x12\x32\n\x06status\x18\x01 \x01(\x0e\x32\".nyx.core.DBStatusMessage.DBStatus\":\n\x08\x44\x42Status\x12\r\n\tCONNECTED\x10\x00\x12\x15\n\x11\x43ONNECTION_FAILED\x10\x01\x12\x08\n\x04\x42USY\x10\x02\x42\x06\x80\x01\x01\x90\x01\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x14nyx_db_manager.proto\x12\x08nyx.core\x1a\x10nyx_common.proto\"\xd3\x01\n\x0e\x46indDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x0e\n\x06\x66ields\x18\x05 \x01(\x0c\x12\r\n\x05limit\x18\x06 \x01(\x05\x12\x10\n\x08seq_flag\x18\x07 \x01(\x08\x12\x0f\n\x07seq_key\x18\x08 \x01(\x0c\x12\x0c\n\x04sort\x18\t \x01(\x0c\x12\x11\n\tread_pref\x18\n \x01(\x05\x12\x0c\n\x04hint\x18\x0b \x01(\x0c\x12\x0c\n\x04skip\x18\x0c \x01(\x0c\"D\n\x0f\x46indDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x0c\n\x04\x64ocs\x18\x03 \x01(\x0c\"U\n\x0f\x43ountDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\"F\n\x10\x43ountDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\r\n\x05\x63ount\x18\x03 \x01(\x05\"\xa5\x01\n\x10UpdateDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x0b\n\x03\x64oc\x18\x05 \x01(\x0c\x12\x0e\n\x06upsert\x18\x06 \x01(\x08\x12\r\n\x05multi\x18\x07 \x01(\x08\x12\x10\n\x08seq_flag\x18\x08 \x01(\x08\x12\x0f\n\x07seq_key\x18\t \x01(\x0c\"8\n\x11UpdateDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\"w\n\x10InsertDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\x0b\n\x03\x64oc\x18\x04 \x01(\x0c\x12\x10\n\x08seq_flag\x18\x05 \x01(\x08\x12\x0f\n\x07seq_key\x18\x06 \x01(\x0c\"K\n\x11InsertDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x11\n\tinsert_id\x18\x03 \x01(\x0c\"y\n\x10\x44\x65leteDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x10\n\x08seq_flag\x18\x05 \x01(\x08\x12\x0f\n\x07seq_key\x18\x06 \x01(\x0c\"8\n\x11\x44\x65leteDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\"\xbd\x01\n\x17\x46indAndModifyDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x0e\n\x06\x66ields\x18\x05 \x01(\x0c\x12\x0e\n\x06update\x18\x06 \x01(\x0c\x12\x0e\n\x06upsert\x18\x07 \x01(\x08\x12\x0b\n\x03new\x18\x08 \x01(\x08\x12\x10\n\x08seq_flag\x18\t \x01(\x08\x12\x0f\n\x07seq_key\x18\n \x01(\x0c\"L\n\x18\x46indAndModifyDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x0b\n\x03\x64oc\x18\x03 \x01(\x0c\"_\n\x10ProcedureRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x0c\n\x04proc\x18\x03 \x01(\x0c\x12\x0c\n\x04\x61rgs\x18\x04 \x01(\x0c\x12\x0e\n\x06kwargs\x18\x05 \x01(\x0c\"E\n\x11ProcedureResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x0b\n\x03\x64oc\x18\x03 \x01(\x0c\"\xd8\x01\n\x15OperationIndexRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12;\n\x04type\x18\x04 \x01(\x0e\x32-.nyx.core.OperationIndexRequest.OperationType\x12\r\n\x05query\x18\x05 \x01(\x0c\x12\x0c\n\x04\x64\x65sc\x18\x06 \x01(\x0c\"0\n\rOperationType\x12\n\n\x06\x45NSURE\x10\x00\x12\x08\n\x04\x44ROP\x10\x01\x12\t\n\x05RESET\x10\x02\"=\n\x16OperationIndexResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\"b\n\x17\x43reateCollectionRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\x12\n\noperations\x18\x05 \x01(\x0c\"\xa6\x01\n\x18\x43reateCollectionResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12?\n\x06status\x18\x02 \x01(\x0e\x32/.nyx.core.CreateCollectionResponse.CreateStatus\"4\n\x0c\x43reateStatus\x12\x0b\n\x07SUCCESS\x10\x00\x12\x0b\n\x07\x45XISTED\x10\x01\x12\n\n\x06\x46\x41ILED\x10\x02\"\x81\x01\n\x0f\x44\x42StatusMessage\x12\x32\n\x06status\x18\x01 \x01(\x0e\x32\".nyx.core.DBStatusMessage.DBStatus\":\n\x08\x44\x42Status\x12\r\n\tCONNECTED\x10\x00\x12\x15\n\x11\x43ONNECTION_FAILED\x10\x01\x12\x08\n\x04\x42USY\x10\x02\"B\n\rCallDBRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06method\x18\x02 \x01(\x0c\x12\x0c\n\x04\x61rgs\x18\x03 \x01(\x0c\"3\n\x0e\x43\x61llDBResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0c\n\x04\x61rgs\x18\x02 \x01(\x0c\x32\x84\x06\n\x12SClientToDBManager\x12\x32\n\nreg_client\x12\x14.nyx.core.ServerInfo\x1a\x0e.nyx.core.Void\x12\x37\n\x0b\x64\x62_find_doc\x12\x18.nyx.core.FindDocRequest\x1a\x0e.nyx.core.Void\x12;\n\rdb_update_doc\x12\x1a.nyx.core.UpdateDocRequest\x1a\x0e.nyx.core.Void\x12;\n\rdb_delete_doc\x12\x1a.nyx.core.DeleteDocRequest\x1a\x0e.nyx.core.Void\x12;\n\rdb_insert_doc\x12\x1a.nyx.core.InsertDocRequest\x1a\x0e.nyx.core.Void\x12\x39\n\x0c\x64\x62_count_doc\x12\x19.nyx.core.CountDocRequest\x1a\x0e.nyx.core.Void\x12K\n\x16\x64\x62_find_and_modify_doc\x12!.nyx.core.FindAndModifyDocRequest\x1a\x0e.nyx.core.Void\x12>\n\x10\x64\x62_run_procedure\x12\x1a.nyx.core.ProcedureRequest\x1a\x0e.nyx.core.Void\x12\x45\n\x12\x64\x62_operation_index\x12\x1f.nyx.core.OperationIndexRequest\x1a\x0e.nyx.core.Void\x12I\n\x14\x64\x62_create_collection\x12!.nyx.core.CreateCollectionRequest\x1a\x0e.nyx.core.Void\x12\x35\n\x13\x64\x62_reload_procedure\x12\x0e.nyx.core.Void\x1a\x0e.nyx.core.Void\x12\x39\n\x0e\x63\x61ll_db_method\x12\x17.nyx.core.CallDBRequest\x1a\x0e.nyx.core.Void2\xfc\x05\n\x12SDBManagerToClient\x12\x39\n\x0con_db_status\x12\x19.nyx.core.DBStatusMessage\x1a\x0e.nyx.core.Void\x12;\n\x0eon_db_find_doc\x12\x19.nyx.core.FindDocResponse\x1a\x0e.nyx.core.Void\x12?\n\x10on_db_update_doc\x12\x1b.nyx.core.UpdateDocResponse\x1a\x0e.nyx.core.Void\x12?\n\x10on_db_delete_doc\x12\x1b.nyx.core.DeleteDocResponse\x1a\x0e.nyx.core.Void\x12?\n\x10on_db_insert_doc\x12\x1b.nyx.core.InsertDocResponse\x1a\x0e.nyx.core.Void\x12=\n\x0fon_db_count_doc\x12\x1a.nyx.core.CountDocResponse\x1a\x0e.nyx.core.Void\x12O\n\x19on_db_find_and_modify_doc\x12\".nyx.core.FindAndModifyDocResponse\x1a\x0e.nyx.core.Void\x12\x42\n\x13on_db_run_procedure\x12\x1b.nyx.core.ProcedureResponse\x1a\x0e.nyx.core.Void\x12I\n\x15on_db_operation_index\x12 .nyx.core.OperationIndexResponse\x1a\x0e.nyx.core.Void\x12M\n\x17on_db_create_collection\x12\".nyx.core.CreateCollectionResponse\x1a\x0e.nyx.core.Void\x12=\n\x11on_call_db_method\x12\x18.nyx.core.CallDBResponse\x1a\x0e.nyx.core.VoidB\x06\x80\x01\x01\x90\x01\x01\x62\x06proto3')
   ,
   dependencies=[nyx__common__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -1166,6 +1168,89 @@ _DBSTATUSMESSAGE = _descriptor.Descriptor(
   serialized_end=2219,
 )
 
+
+_CALLDBREQUEST = _descriptor.Descriptor(
+  name='CallDBRequest',
+  full_name='nyx.core.CallDBRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='nyx.core.CallDBRequest.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='method', full_name='nyx.core.CallDBRequest.method', index=1,
+      number=2, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='args', full_name='nyx.core.CallDBRequest.args', index=2,
+      number=3, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=2221,
+  serialized_end=2287,
+)
+
+
+_CALLDBRESPONSE = _descriptor.Descriptor(
+  name='CallDBResponse',
+  full_name='nyx.core.CallDBResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='nyx.core.CallDBResponse.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='args', full_name='nyx.core.CallDBResponse.args', index=1,
+      number=2, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=2289,
+  serialized_end=2340,
+)
+
 _OPERATIONINDEXREQUEST.fields_by_name['type'].enum_type = _OPERATIONINDEXREQUEST_OPERATIONTYPE
 _OPERATIONINDEXREQUEST_OPERATIONTYPE.containing_type = _OPERATIONINDEXREQUEST
 _CREATECOLLECTIONRESPONSE.fields_by_name['status'].enum_type = _CREATECOLLECTIONRESPONSE_CREATESTATUS
@@ -1191,6 +1276,8 @@ DESCRIPTOR.message_types_by_name['OperationIndexResponse'] = _OPERATIONINDEXRESP
 DESCRIPTOR.message_types_by_name['CreateCollectionRequest'] = _CREATECOLLECTIONREQUEST
 DESCRIPTOR.message_types_by_name['CreateCollectionResponse'] = _CREATECOLLECTIONRESPONSE
 DESCRIPTOR.message_types_by_name['DBStatusMessage'] = _DBSTATUSMESSAGE
+DESCRIPTOR.message_types_by_name['CallDBRequest'] = _CALLDBREQUEST
+DESCRIPTOR.message_types_by_name['CallDBResponse'] = _CALLDBRESPONSE
 
 FindDocRequest = _reflection.GeneratedProtocolMessageType('FindDocRequest', (_message.Message,), dict(
   DESCRIPTOR = _FINDDOCREQUEST,
@@ -1325,7 +1412,274 @@ DBStatusMessage = _reflection.GeneratedProtocolMessageType('DBStatusMessage', (_
   ))
 _sym_db.RegisterMessage(DBStatusMessage)
 
+CallDBRequest = _reflection.GeneratedProtocolMessageType('CallDBRequest', (_message.Message,), dict(
+  DESCRIPTOR = _CALLDBREQUEST,
+  __module__ = 'nyx_db_manager_pb2'
+  # @@protoc_insertion_point(class_scope:nyx.core.CallDBRequest)
+  ))
+_sym_db.RegisterMessage(CallDBRequest)
+
+CallDBResponse = _reflection.GeneratedProtocolMessageType('CallDBResponse', (_message.Message,), dict(
+  DESCRIPTOR = _CALLDBRESPONSE,
+  __module__ = 'nyx_db_manager_pb2'
+  # @@protoc_insertion_point(class_scope:nyx.core.CallDBResponse)
+  ))
+_sym_db.RegisterMessage(CallDBResponse)
+
 
 DESCRIPTOR.has_options = True
 DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), _b('\200\001\001\220\001\001'))
+
+_SCLIENTTODBMANAGER = _descriptor.ServiceDescriptor(
+  name='SClientToDBManager',
+  full_name='nyx.core.SClientToDBManager',
+  file=DESCRIPTOR,
+  index=0,
+  options=None,
+  serialized_start=2343,
+  serialized_end=3115,
+  methods=[
+  _descriptor.MethodDescriptor(
+    name='reg_client',
+    full_name='nyx.core.SClientToDBManager.reg_client',
+    index=0,
+    containing_service=None,
+    input_type=nyx__common__pb2._SERVERINFO,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='db_find_doc',
+    full_name='nyx.core.SClientToDBManager.db_find_doc',
+    index=1,
+    containing_service=None,
+    input_type=_FINDDOCREQUEST,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='db_update_doc',
+    full_name='nyx.core.SClientToDBManager.db_update_doc',
+    index=2,
+    containing_service=None,
+    input_type=_UPDATEDOCREQUEST,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='db_delete_doc',
+    full_name='nyx.core.SClientToDBManager.db_delete_doc',
+    index=3,
+    containing_service=None,
+    input_type=_DELETEDOCREQUEST,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='db_insert_doc',
+    full_name='nyx.core.SClientToDBManager.db_insert_doc',
+    index=4,
+    containing_service=None,
+    input_type=_INSERTDOCREQUEST,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='db_count_doc',
+    full_name='nyx.core.SClientToDBManager.db_count_doc',
+    index=5,
+    containing_service=None,
+    input_type=_COUNTDOCREQUEST,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='db_find_and_modify_doc',
+    full_name='nyx.core.SClientToDBManager.db_find_and_modify_doc',
+    index=6,
+    containing_service=None,
+    input_type=_FINDANDMODIFYDOCREQUEST,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='db_run_procedure',
+    full_name='nyx.core.SClientToDBManager.db_run_procedure',
+    index=7,
+    containing_service=None,
+    input_type=_PROCEDUREREQUEST,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='db_operation_index',
+    full_name='nyx.core.SClientToDBManager.db_operation_index',
+    index=8,
+    containing_service=None,
+    input_type=_OPERATIONINDEXREQUEST,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='db_create_collection',
+    full_name='nyx.core.SClientToDBManager.db_create_collection',
+    index=9,
+    containing_service=None,
+    input_type=_CREATECOLLECTIONREQUEST,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='db_reload_procedure',
+    full_name='nyx.core.SClientToDBManager.db_reload_procedure',
+    index=10,
+    containing_service=None,
+    input_type=nyx__common__pb2._VOID,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='call_db_method',
+    full_name='nyx.core.SClientToDBManager.call_db_method',
+    index=11,
+    containing_service=None,
+    input_type=_CALLDBREQUEST,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+])
+
+SClientToDBManager = service_reflection.GeneratedServiceType('SClientToDBManager', (_service.Service,), dict(
+  DESCRIPTOR = _SCLIENTTODBMANAGER,
+  __module__ = 'nyx_db_manager_pb2'
+  ))
+
+SClientToDBManager_Stub = service_reflection.GeneratedServiceStubType('SClientToDBManager_Stub', (SClientToDBManager,), dict(
+  DESCRIPTOR = _SCLIENTTODBMANAGER,
+  __module__ = 'nyx_db_manager_pb2'
+  ))
+
+
+
+_SDBMANAGERTOCLIENT = _descriptor.ServiceDescriptor(
+  name='SDBManagerToClient',
+  full_name='nyx.core.SDBManagerToClient',
+  file=DESCRIPTOR,
+  index=1,
+  options=None,
+  serialized_start=3118,
+  serialized_end=3882,
+  methods=[
+  _descriptor.MethodDescriptor(
+    name='on_db_status',
+    full_name='nyx.core.SDBManagerToClient.on_db_status',
+    index=0,
+    containing_service=None,
+    input_type=_DBSTATUSMESSAGE,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_db_find_doc',
+    full_name='nyx.core.SDBManagerToClient.on_db_find_doc',
+    index=1,
+    containing_service=None,
+    input_type=_FINDDOCRESPONSE,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_db_update_doc',
+    full_name='nyx.core.SDBManagerToClient.on_db_update_doc',
+    index=2,
+    containing_service=None,
+    input_type=_UPDATEDOCRESPONSE,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_db_delete_doc',
+    full_name='nyx.core.SDBManagerToClient.on_db_delete_doc',
+    index=3,
+    containing_service=None,
+    input_type=_DELETEDOCRESPONSE,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_db_insert_doc',
+    full_name='nyx.core.SDBManagerToClient.on_db_insert_doc',
+    index=4,
+    containing_service=None,
+    input_type=_INSERTDOCRESPONSE,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_db_count_doc',
+    full_name='nyx.core.SDBManagerToClient.on_db_count_doc',
+    index=5,
+    containing_service=None,
+    input_type=_COUNTDOCRESPONSE,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_db_find_and_modify_doc',
+    full_name='nyx.core.SDBManagerToClient.on_db_find_and_modify_doc',
+    index=6,
+    containing_service=None,
+    input_type=_FINDANDMODIFYDOCRESPONSE,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_db_run_procedure',
+    full_name='nyx.core.SDBManagerToClient.on_db_run_procedure',
+    index=7,
+    containing_service=None,
+    input_type=_PROCEDURERESPONSE,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_db_operation_index',
+    full_name='nyx.core.SDBManagerToClient.on_db_operation_index',
+    index=8,
+    containing_service=None,
+    input_type=_OPERATIONINDEXRESPONSE,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_db_create_collection',
+    full_name='nyx.core.SDBManagerToClient.on_db_create_collection',
+    index=9,
+    containing_service=None,
+    input_type=_CREATECOLLECTIONRESPONSE,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_call_db_method',
+    full_name='nyx.core.SDBManagerToClient.on_call_db_method',
+    index=10,
+    containing_service=None,
+    input_type=_CALLDBRESPONSE,
+    output_type=nyx__common__pb2._VOID,
+    options=None,
+  ),
+])
+
+SDBManagerToClient = service_reflection.GeneratedServiceType('SDBManagerToClient', (_service.Service,), dict(
+  DESCRIPTOR = _SDBMANAGERTOCLIENT,
+  __module__ = 'nyx_db_manager_pb2'
+  ))
+
+SDBManagerToClient_Stub = service_reflection.GeneratedServiceStubType('SDBManagerToClient_Stub', (SDBManagerToClient,), dict(
+  DESCRIPTOR = _SDBMANAGERTOCLIENT,
+  __module__ = 'nyx_db_manager_pb2'
+  ))
+
+
 # @@protoc_insertion_point(module_scope)
