@@ -195,3 +195,50 @@ message DBStatusMessage {
   }
   DBStatus status = 1; // 查询db mananger状态信息
 }
+
+message CallDBRequest {
+  int32 callback_id = 1;
+  bytes method = 2;
+  bytes args = 3;
+}
+
+message CallDBResponse {
+  int32 callback_id = 1;
+  bytes args = 2;
+}
+
+service SClientToDBManager {
+  // game其他访问db manager的rpc操作
+
+  // 将game服务器信息注册到db manager
+  rpc reg_client(ServerInfo) returns(Void);
+  rpc db_find_doc(FindDocRequest) returns(Void);
+  rpc db_update_doc(UpdateDocRequest) returns(Void);
+  rpc db_delete_doc(DeleteDocRequest) returns(Void);
+  rpc db_insert_doc(InsertDocRequest) returns(Void);
+  rpc db_count_doc(CountDocRequest) returns(Void);
+  rpc db_find_and_modify_doc(FindAndModifyDocRequest) returns(Void);
+  rpc db_run_procedure(ProcedureRequest) returns(Void);
+  rpc db_operation_index(OperationIndexRequest) returns(Void);
+  rpc db_create_collection(CreateCollectionRequest) returns(Void);
+  rpc db_reload_procedure(Void) returns(Void);
+  // 和db manager通信的rpc接口
+  rpc call_db_method(CallDBRequest) returns(Void);
+}
+
+service SDBManagerToClient {
+  // db manager同连接的game服务器返回rpc
+
+  // 返回db manager的状态信息
+  rpc on_db_status(DBStatusMessage) returns(Void);
+  rpc on_db_find_doc(FindDocResponse) returns(Void);
+  rpc on_db_update_doc(UpdateDocResponse) returns(Void);
+  rpc on_db_delete_doc(DeleteDocResponse) returns(Void);
+  rpc on_db_insert_doc(InsertDocResponse) returns(Void);
+  rpc on_db_count_doc(CountDocResponse) returns(Void);
+  rpc on_db_find_and_modify_doc(FindAndModifyDocResponse) returns(Void);
+  rpc on_db_run_procedure(ProcedureResponse) returns(Void);
+  rpc on_db_operation_index(OperationIndexResponse) returns(Void);
+  rpc on_db_create_collection(CreateCollectionResponse) returns(Void);
+  rpc on_call_db_method(CallDBResponse) returns(Void);
+}
