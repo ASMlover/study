@@ -62,7 +62,7 @@ class _RotatedIdGenerator(object):
     def __init__(self):
         self._id = 1
 
-    def gen_id(self):
+    def genid(self):
         if self._id != _RotatedIdGenerator._maxid:
             self._id += 1
         else:
@@ -71,7 +71,7 @@ class _RotatedIdGenerator(object):
 
 _nyx_gamemgr_id_gen = _RotatedIdGenerator()
 def reg_gamemgr_callback(callback):
-    callback_id = _nyx_gamemgr_id_gen.gen_id()
+    callback_id = _nyx_gamemgr_id_gen.genid()
     _nyx_gamemgr_callbacks[callback_id] = callback
     return callback_id
 
@@ -80,7 +80,7 @@ def unreg_gamemgr_callback(callback_id):
 
 _nyx_dbmgr_id_gen = _RotatedIdGenerator()
 def reg_dbmgr_callback(callback):
-    callback_id = _nyx_dbmgr_id_gen.gen_id()
+    callback_id = _nyx_dbmgr_id_gen.genid()
     _nyx_dbmgr_callbacks[callback_id] = callback
     return callback_id
 
@@ -89,7 +89,7 @@ def unreg_dbmgr_callback(callback_id):
 
 _nyx_gate_id_gen = _RotatedIdGenerator()
 def reg_gate_callback(callback):
-    callback_id = _nyx_gate_id_gen.gen_id()
+    callback_id = _nyx_gate_id_gen.genid()
     _nyx_gate_callbacks[callback_id] = callback
     return callback_id
 
