@@ -68,3 +68,30 @@ class _RotatedIdGenerator(object):
         else:
             self._id =  1
         return (nyx_game_info.sid << 20) + self._id
+
+_nyx_gamemgr_id_gen = _RotatedIdGenerator()
+def reg_gamemgr_callback(callback):
+    callback_id = _nyx_gamemgr_id_gen.gen_id()
+    _nyx_gamemgr_callbacks[callback_id] = callback
+    return callback_id
+
+def unreg_gamemgr_callback(callback_id):
+    return _nyx_gamemgr_callbacks.pop(callback_id, None)
+
+_nyx_dbmgr_id_gen = _RotatedIdGenerator()
+def reg_dbmgr_callback(callback):
+    callback_id = _nyx_dbmgr_id_gen.gen_id()
+    _nyx_dbmgr_callbacks[callback_id] = callback
+    return callback_id
+
+def unreg_dbmgr_callback(callback_id):
+    return _nyx_dbmgr_callbacks.pop(callback_id, None)
+
+_nyx_gate_id_gen = _RotatedIdGenerator()
+def reg_gate_callback(callback):
+    callback_id = _nyx_gate_id_gen.gen_id()
+    _nyx_gate_callbacks[callback_id] = callback
+    return callback_id
+
+def unreg_gate_callback(callback_id):
+    return _nyx_gate_callbacks.pop(callback_id, None)
