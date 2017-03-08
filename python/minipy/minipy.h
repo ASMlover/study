@@ -24,28 +24,8 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "minipy.h"
-#include <iostream>
+#pragma once
+
 #include <string>
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
-
-  const char* prompt = ">>> ";
-  std::cout << "********** MiniPy 0.1 **********" << std::endl;
-  std::cout << prompt;
-
-  std::string command;
-  while (std::getline(std::cin, command)) {
-    if (command.empty())
-      ;
-    else if (command == "exit")
-      break;
-    else
-      Py_Execute(command);
-
-    std::cout << prompt;
-  }
-
-  return 0;
-}
+void Py_Execute(const std::string& command);
