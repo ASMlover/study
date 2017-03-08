@@ -54,7 +54,7 @@ static void dict_print(PyObject* dict) {
   auto dict_object = (PyDictObject*)dict;
   std::cout << "{";
   for (auto& item : dict_object->ob_table) {
-    std::cout << item.first << " : ";
+    std::cout << item.first << ": ";
     item.second->ob_type->tp_print(item.second);
     std::cout << ", ";
   }

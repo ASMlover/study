@@ -71,7 +71,7 @@ static std::size_t string_hash(PyObject* object) {
   std::size_t size = str_object->ob_ssize;
   std::uint8_t* p = (std::uint8_t*)str_object->ob_svalue;
   std::size_t hash = *p << 7;
-  while (--size >= 0)
+  while (size-- > 0)
     hash = (1000003 * hash) ^ *p++;
   if (hash == -1)
     hash = -2;
