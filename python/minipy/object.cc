@@ -24,31 +24,12 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#include "object.h"
 
-#include <cstddef>
-
-#define PyObject_HEAD\
-  std::size_t ob_refcnt;\
-  struct _PyObjectType* ob_type
-
-#define PyObject_HEAD_INIT(type)\
-  0, type
-
-typedef struct _PyObject {
-  PyObject_HEAD;
-} PyObject;
-
-typedef void (*printfunc)(PyObject* object);
-typedef PyObject* (*addfunc)(PyObject* lobject, PyObject* robject);
-typedef std::size_t (*hashfunc)(PyObject* object);
-
-typedef struct _PyObjectType {
-  PyObject_HEAD;
-  char* tp_name;
-  printfunc tp_print;
-  addfunc tp_add;
-  hashfunc tp_hash;
-} PyObjectType;
-
-extern PyObjectType PyType_Type;
+PyObjectType PyType_Type = {
+  PyObject_HEAD_INIT(&PyType_Type),
+  "type",
+  0,  // tp_print
+  0,  // tp_add
+  0,  // tp_hash
+};
