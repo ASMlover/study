@@ -31,10 +31,9 @@
 
 typedef struct _PyDictObject {
   PyObject_HEAD;
-  std::map<std::size_t, PyObject*> ob_table;
+  std::map<long, PyObject*> ob_table;
 } PyDictObject;
 
-extern PyObjectType PyDict_Type;
 PyObject* PyDict_Create(void);
 PyObject* PyDict_GetItem(PyObject* dict, PyObject* key);
 void PyDict_SetItem(PyObject* dict, PyObject* key, PyObject* value);

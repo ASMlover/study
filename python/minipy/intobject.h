@@ -33,5 +33,4 @@ typedef struct _PyIntObject {
   int ob_ivalue;
 } PyIntObject;
 
-extern PyObjectType PyInt_Type;
 PyObject* PyInt_Create(int value);

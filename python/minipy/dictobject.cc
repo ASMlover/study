@@ -27,29 +27,6 @@
 #include "dictobject.h"
 #include <iostream>
 
-PyObject* PyDict_Create(void) {
-  PyDictObject* object = new PyDictObject;
-  object->ob_refcnt = 1;
-  object->ob_type = &PyDict_Type;
-
-  return (PyObject*)object;
-}
-
-PyObject* PyDict_GetItem(PyObject* dict, PyObject* key) {
-  std::size_t hash_value = key->ob_type->tp_hash(key);
-  auto& table = ((PyDictObject*)dict)->ob_table;
-  auto it = table.find(hash_value);
-  if (it == table.end())
-    return nullptr;
-  return it->second;
-}
-
-void PyDict_SetItem(PyObject* dict, PyObject* key, PyObject* value) {
-  std::size_t hash_value = key->ob_type->tp_hash(key);
-  auto dict_object = (PyDictObject*)dict;
-  dict_object->ob_table[hash_value] = value;
-}
-
 static void dict_print(PyObject* dict) {
   auto dict_object = (PyDictObject*)dict;
   std::cout << "{";
@@ -68,3 +45,26 @@ PyObjectType PyDict_Type = {
   0,          // tp_add
   0,          // tp_hash
 };
+
+PyObject* PyDict_Create(void) {
+  PyDictObject* object = new PyDictObject;
+  object->ob_refcnt = 1;
+  object->ob_type = &PyDict_Type;
+
+  return (PyObject*)object;
+}
+
+PyObject* PyDict_GetItem(PyObject* dict, PyObject* key) {
+  long hash_value = key->ob_type->tp_hash(key);
+  auto& table = ((PyDictObject*)dict)->ob_table;
+  auto it = table.find(hash_value);
+  if (it == table.end())
+    return nullptr;
+  return it->second;
+}
+
+void PyDict_SetItem(PyObject* dict, PyObject* key, PyObject* value) {
+  long hash_value = key->ob_type->tp_hash(key);
+  auto dict_object = (PyDictObject*)dict;
+  dict_object->ob_table[hash_value] = value;
+}

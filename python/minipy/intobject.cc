@@ -28,15 +28,6 @@
 #include <cstdio>
 #include <iostream>
 
-PyObject* PyInt_Create(int value) {
-  PyIntObject* object = new PyIntObject;
-  object->ob_refcnt = 1;
-  object->ob_type = &PyInt_Type;
-  object->ob_ivalue = value;
-
-  return (PyObject*)object;
-}
-
 static void int_print(PyObject* object) {
   PyIntObject* int_object = (PyIntObject*)object;
   std::cout << int_object->ob_ivalue << std::endl;
@@ -57,7 +48,7 @@ static PyObject* int_add(PyObject* lobject, PyObject* robject) {
   return (PyObject*)result;
 }
 
-static std::size_t int_hash(PyObject* object) {
+static long int_hash(PyObject* object) {
   return (std::size_t)((PyIntObject*)object)->ob_ivalue;
 }
 
@@ -68,3 +59,12 @@ PyObjectType PyInt_Type = {
   int_add,    // tp_add
   int_hash,   // tp_hash
 };
+
+PyObject* PyInt_Create(int value) {
+  PyIntObject* object = new PyIntObject;
+  object->ob_refcnt = 1;
+  object->ob_type = &PyInt_Type;
+  object->ob_ivalue = value;
+
+  return (PyObject*)object;
+}

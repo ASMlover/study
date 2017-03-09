@@ -29,19 +29,6 @@
 #include <cstring>
 #include <iostream>
 
-PyObject* PyString_Create(const char* s) {
-  PyStringObject* object = new PyStringObject;
-  object->ob_refcnt = 1;
-  object->ob_type = &PyString_Type;
-  object->ob_ssize = (s == nullptr) ? 0 : std::strlen(s);
-  object->ob_shash = -1;
-  std::memset(object->ob_svalue, 0, sizeof(object->ob_svalue));
-  if (s != nullptr)
-    std::strcpy(object->ob_svalue, s);
-
-  return (PyObject*)object;
-}
-
 static void string_print(PyObject* object) {
   PyStringObject* str_object = (PyStringObject*)object;
   std::cout << str_object->ob_svalue << std::endl;
@@ -63,15 +50,15 @@ static PyObject* string_add(PyObject* lobject, PyObject* robject) {
   return (PyObject*)result;
 }
 
-static std::size_t string_hash(PyObject* object) {
+static long string_hash(PyObject* object) {
   PyStringObject* str_object = (PyStringObject*)object;
   if (str_object->ob_shash != -1)
     return str_object->ob_shash;
 
-  std::size_t size = str_object->ob_ssize;
+  Py_ssize_t size = str_object->ob_ssize;
   std::uint8_t* p = (std::uint8_t*)str_object->ob_svalue;
-  std::size_t hash = *p << 7;
-  while (size-- > 0)
+  long hash = *p << 7;
+  while (--size >= 0)
     hash = (1000003 * hash) ^ *p++;
   if (hash == -1)
     hash = -2;
@@ -87,3 +74,16 @@ PyObjectType PyString_Type = {
   string_add,   // tp_add
   string_hash,  // tp_hash
 };
+
+PyObject* PyString_Create(const char* s) {
+  PyStringObject* object = new PyStringObject;
+  object->ob_refcnt = 1;
+  object->ob_type = &PyString_Type;
+  object->ob_ssize = (s == nullptr) ? 0 : (Py_ssize_t)std::strlen(s);
+  object->ob_shash = -1;
+  std::memset(object->ob_svalue, 0, sizeof(object->ob_svalue));
+  if (s != nullptr)
+    std::strcpy(object->ob_svalue, s);
+
+  return (PyObject*)object;
+}

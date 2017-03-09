@@ -26,10 +26,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <cstddef>
+typedef signed int Py_ssize_t;
 
 #define PyObject_HEAD\
-  std::size_t ob_refcnt;\
+  Py_ssize_t ob_refcnt;\
   struct _PyObjectType* ob_type
 
 #define PyObject_HEAD_INIT(type)\
@@ -41,7 +41,7 @@ typedef struct _PyObject {
 
 typedef void (*printfunc)(PyObject* object);
 typedef PyObject* (*addfunc)(PyObject* lobject, PyObject* robject);
-typedef std::size_t (*hashfunc)(PyObject* object);
+typedef long (*hashfunc)(PyObject* object);
 
 typedef struct _PyObjectType {
   PyObject_HEAD;

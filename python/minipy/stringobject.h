@@ -30,10 +30,9 @@
 
 typedef struct _PyStringObject {
   PyObject_HEAD;
-  std::size_t ob_ssize;
-  std::size_t ob_shash;
+  Py_ssize_t ob_ssize;
+  long ob_shash;
   char ob_svalue[128];
 } PyStringObject;
 
-extern PyObjectType PyString_Type;
 PyObject* PyString_Create(const char* s);
