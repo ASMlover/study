@@ -27,12 +27,13 @@
 #pragma once
 
 #include "object.h"
+#include <string>
 
 typedef struct _PyStringObject {
   PyObject_HEAD;
   Py_ssize_t ob_ssize;
   long ob_shash;
-  char ob_svalue[128];
+  std::string ob_svalue;
 } PyStringObject;
 
 PyObject* PyString_Create(const char* s);

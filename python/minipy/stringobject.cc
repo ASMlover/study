@@ -43,8 +43,7 @@ static PyObject* string_add(PyObject* lobject, PyObject* robject) {
     exit(1);
   }
   else {
-    std::snprintf(result->ob_svalue, sizeof(result->ob_svalue),
-        "%s%s", lstr->ob_svalue, rstr->ob_svalue);
+    result->ob_svalue = lstr->ob_svalue + rstr->ob_svalue;
   }
 
   return (PyObject*)result;
@@ -56,7 +55,7 @@ static long string_hash(PyObject* object) {
     return str_object->ob_shash;
 
   Py_ssize_t size = str_object->ob_ssize;
-  std::uint8_t* p = (std::uint8_t*)str_object->ob_svalue;
+  std::uint8_t* p = (std::uint8_t*)str_object->ob_svalue.c_str();
   long hash = *p << 7;
   while (--size >= 0)
     hash = (1000003 * hash) ^ *p++;
@@ -81,9 +80,8 @@ PyObject* PyString_Create(const char* s) {
   object->ob_type = &PyString_Type;
   object->ob_ssize = (s == nullptr) ? 0 : (Py_ssize_t)std::strlen(s);
   object->ob_shash = -1;
-  std::memset(object->ob_svalue, 0, sizeof(object->ob_svalue));
   if (s != nullptr)
-    std::strcpy(object->ob_svalue, s);
+    object->ob_svalue = s;
 
   return (PyObject*)object;
 }
