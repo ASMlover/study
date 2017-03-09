@@ -52,7 +52,7 @@ static long int_hash(PyObject* object) {
   return (std::size_t)((PyIntObject*)object)->ob_ivalue;
 }
 
-PyObjectType PyInt_Type = {
+PyTypeObject PyInt_Type = {
   PyObject_HEAD_INIT(&PyType_Type),
   "int",
   int_print,  // tp_print

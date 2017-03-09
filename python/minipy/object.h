@@ -30,7 +30,7 @@ typedef signed int Py_ssize_t;
 
 #define PyObject_HEAD\
   Py_ssize_t ob_refcnt;\
-  struct _PyObjectType* ob_type
+  struct _PyTypeObject* ob_type
 
 #define PyObject_HEAD_INIT(type)\
   0, type
@@ -43,12 +43,12 @@ typedef void (*printfunc)(PyObject* object);
 typedef PyObject* (*addfunc)(PyObject* lobject, PyObject* robject);
 typedef long (*hashfunc)(PyObject* object);
 
-typedef struct _PyObjectType {
+typedef struct _PyTypeObject {
   PyObject_HEAD;
   char* tp_name;
   printfunc tp_print;
   addfunc tp_add;
   hashfunc tp_hash;
-} PyObjectType;
+} PyTypeObject;
 
-extern PyObjectType PyType_Type;
+extern PyTypeObject PyType_Type;

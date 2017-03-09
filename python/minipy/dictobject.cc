@@ -38,7 +38,7 @@ static void dict_print(PyObject* dict) {
   std::cout << "}" << std::endl;
 }
 
-PyObjectType PyDict_Type = {
+PyTypeObject PyDict_Type = {
   PyObject_HEAD_INIT(&PyType_Type),
   "dict",
   dict_print, // tp_print

@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include "object.h"
 
-PyObjectType PyType_Type = {
+PyTypeObject PyType_Type = {
   PyObject_HEAD_INIT(&PyType_Type),
   "type",
   0,  // tp_print

@@ -66,7 +66,7 @@ static long string_hash(PyObject* object) {
   return hash;
 }
 
-PyObjectType PyString_Type = {
+PyTypeObject PyString_Type = {
   PyObject_HEAD_INIT(&PyType_Type),
   "str",
   string_print, // tp_print
