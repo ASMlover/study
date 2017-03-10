@@ -71,3 +71,10 @@ def _create_remote_entity(entity_type, server_info=None, entity_id=None,
     if entity_content is not None:
         entity_info.info = _gglobal.proto_encoder.encode(entity_content)
     _gglobal.nyx_gamemgr_proxy.create_entity(entity_info)
+
+def call_global_client_method(method_name, parameters, reliable=True):
+    global_entity_msg = _c_pb2.GlobalEntityRpcMessage()
+    _codec_encoder.encode(global_entity_msg.method, method_name)
+    global_entity_msg.params = _gglobal.proto_encoder.encode(parameters)
+    global_entity_msg.reliable = reliable
+    _gglobal.nyx_gamemgr_proxy.global_entity_message(global_entity_msg)
