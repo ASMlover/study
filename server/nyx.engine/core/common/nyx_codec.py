@@ -30,6 +30,7 @@
 
 import binascii
 import hashlib
+from bson import BSON
 from log.nyx_log import LogManager
 
 _NYXCORE_DEBUG = 0
@@ -175,3 +176,18 @@ class CodecDecoder(object):
             if index <= 0:
                 index = self._str2index.get(string, 0)
             return True, string, index
+
+class ProtoEncoder(object):
+    def __init__(self):
+        self._encoder = lambda p: BSON.encode(p)
+        self._decoder = lambda p: BSON.decode(p)
+
+    def encode(self, parameters):
+        if self._encoder is not None:
+            return self._encoder(parameters)
+        return None
+
+    def decode(self, parameters):
+        if self._decoder is not None:
+            return self._decoder(parameters)
+        return None
