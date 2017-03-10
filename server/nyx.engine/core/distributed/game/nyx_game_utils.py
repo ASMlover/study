@@ -88,3 +88,21 @@ def call_global_group_client_method(target, method_name, parameters, reliable=Tr
     global_entity_msg.params = _gglobal.proto_encoder.encode(parameters)
     global_entity_msg.reliable =  reliable
     _gglobal.nyx_gamemgr_proxy.global_entity_message(global_entity_msg)
+
+def call_local_group_client_method(target, method_name, parameters, reliable=True):
+    """server ->(call)-> client"""
+    client_list = {'target': []}
+
+    # TODO:
+    pass
+
+def create_entity_locally(entity_type, entity_id=None, entity_content=None):
+    """创建一个本地game server的entity
+
+    Attention:
+        需要entity实现init_from_dict接口
+    """
+    entity = EntityFactory.get_instance().create_entity(entity_type, entity_id)
+    if entity is not None and entity_content is not None:
+        entity.init_from_dict(entity_content)
+    return entity
