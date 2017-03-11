@@ -93,7 +93,7 @@ def call_local_group_client_method(target, method_name, parameters, reliable=Tru
     """server ->(call)-> client"""
     client_list = {'target': []}
 
-    # TODO:
+    # TODO: FIXME:
     pass
 
 def create_entity_locally(entity_type, entity_id=None, entity_content=None):
@@ -106,3 +106,14 @@ def create_entity_locally(entity_type, entity_id=None, entity_content=None):
     if entity is not None and entity_content is not None:
         entity.init_from_dict(entity_content)
     return entity
+
+def create_entity_remotely(entity_type, server_info=None,
+        entity_id=None, entity_content=None, fromdb=False, callback=None):
+    """在指定的远端game上创建entity"""
+    _create_remote_entity(entity_type, server_info=server_info, entity_id=entity_id,
+            entity_content=entity_content, fromdb=fromdb, callback=callback)
+
+def create_entity_anywhere(entity_type, entity_id=None, entity_content=None, fromdb=False, callback=None):
+    """在任意game上创建entity"""
+    _create_remote_entity(entity_type=entity_type, entity_id=entity_id,
+            entity_content=entity_content, fromdb=fromdb, callback=callback)
