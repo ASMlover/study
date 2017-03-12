@@ -317,3 +317,23 @@ def ensure_db_index(dbname, collection_name, index, desc=None, callback=None):
     dbmgr_proxy.db_operation_index(dbname, collection_name,
             _dm_pb2.OperationIndexRequest.ENSURE, index, desc, callback)
     return True
+
+def drop_db_index(dbname, collection_name, callback=None):
+    dbmgr_proxy = get_dbmgr_proxy()
+    if dbmgr_proxy is None:
+        _logger.warn('drop_db_index - db not connected, drop index failed')
+        return False
+
+    dbmgr_proxy.db_operation_index(dbname, collection_name,
+            _dm_pb2.OperationIndexRequest.DROP, None, None, callback)
+    return True
+
+def reset_db_index(dbname, collection_name, index, desc=None, callback=None):
+    dbmgr_proxy = get_dbmgr_proxy()
+    if dbmgr_proxy is None:
+        _logger.warn('reset_db_index - db not connected, index=%s', str(index))
+        return False
+
+    dbmgr_proxy.db_operation_index(dbname, collection_name,
+            _dm_pb2.OperationIndexRequest.RESET, index, desc, callback)
+    return True
