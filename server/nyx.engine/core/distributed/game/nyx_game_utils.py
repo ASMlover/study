@@ -186,3 +186,24 @@ def game_mailbox_entity_id(mailbox):
 def is_local_server(server_info):
     local_server = _gglobal.nyx_game_info
     return local_server.addr == server_info.addr and local_server.port == server_info.port
+
+def get_dbmgr_proxy(entity_id=None):
+    def get_hash(entity_id):
+        if len(_gglobal.nyx_dbmgr_proxy_set) == 1:
+            return 0
+        key = 0
+        for c in entity_id:
+            key += ord(c)
+        return key % len(_gglobal.nyx_dbmgr_proxy_set)
+
+    if entity_id is not None:
+        return _gglobal.nyx_dbmgr_proxy_set[get_hash(entity_id)]
+    else:
+        import random
+        return random.choice(_gglobal.nyx_dbmgr_proxy_set)
+
+def _find_data_callback(status, docs, callback):
+    if status and len(docs) == 1:
+        callback(docs[0])
+    else:
+        callback(None)
