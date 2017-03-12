@@ -117,3 +117,29 @@ def create_entity_anywhere(entity_type, entity_id=None, entity_content=None, fro
     """在任意game上创建entity"""
     _create_remote_entity(entity_type=entity_type, entity_id=entity_id,
             entity_content=entity_content, fromdb=fromdb, callback=callback)
+
+def create_entity_server_type(entity_type, server_type,
+        entity_id=None, entity_content=None, fromdb=False, callback=None):
+    """在任意game上创建server类型的entity"""
+    if not _gglobal.nyx_gamemgr_proxy.connected:
+        _logger.error('create_entity_server_type - lost connection with game manager')
+        return
+
+    server_info = _c_pb2.ServerInfo()
+    server_info.server_type = server_type
+
+    entity_info_header = _gm_pb2.EntityInfoHeader()
+    entity_info_header.dst_server.CopyFrom(server_info)
+    entity_info_header.create_anywhere = _gm_pb2.EntityInfoHeader.SPECIFY_SERVER
+    entity_info_header.trans_entity = False
+    entity_info_header.create_fromdb = fromdb
+    if callback is not None:
+        entity_info_header.callback_id = _gglobal.reg_gamemgr_callback(callback)
+    entity_info = _c_pb2.EntityInfo()
+    entity_info.routes = entity_info_header.SerializeToString()
+    _codec_encoder.encode(entity_info.type, entity_type)
+    if entity_id is not None:
+        entity_info.entity_id = entity_id
+    if entity_content is not None:
+        entity_info.info = _gglobal.proto_encoder.encode(entity_content)
+    _gglobal.nyx_gamemgr_proxy.create_entity(entity_info)
