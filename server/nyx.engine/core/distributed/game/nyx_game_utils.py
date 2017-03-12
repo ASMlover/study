@@ -206,7 +206,7 @@ def find(collection_name, query, fields, callback, read_pref=None, hint=None):
     """查找满足query条件的一条记录"""
     dbmgr_proxy = get_dbmgr_proxy()
     if dbmgr_proxy is None:
-        _logger.warn('find - db not connected, query is:%s', query)
+        _logger.warn('find - db not connected, query=%s', query)
         callback(None)
         return False
 
@@ -223,7 +223,7 @@ def find_multi(collection_name, query, fields, callback, read_pref=None, limit=1
     """查找满足query条件的多条记录"""
     dbmgr_proxy = get_dbmgr_proxy()
     if dbmgr_proxy is None:
-        _logger.warn('find_multi - db not connected, query is:%s', query)
+        _logger.warn('find_multi - db not connected, query=%s', query)
         callback(None)
         return False
 
@@ -235,3 +235,50 @@ def find_multi(collection_name, query, fields, callback, read_pref=None, limit=1
     dbmgr_proxy.db_find_doc(_gglobal.nyx_dbname, collection_name,
             query, fields, limit, _find_multi_data_callback, read_pref=read_pref, hint=hint)
     return True
+
+def find_data_record(collection_name, record_id, callback, read_pref=None):
+    """查找record_id指定的一条记录"""
+    dbmgr_proxy = get_dbmgr_proxy()
+    if dbmgr_proxy is None:
+        _logger.warn('find_data_record - db not connected, record_id=%s', record_id)
+        callback(None)
+        return False
+
+    def _find_data_callback(status, docs):
+        if status and len(docs) == 1:
+            callback(docs[0])
+        else:
+            callback(None)
+    dbmgr_proxy.db_find_doc(_gglobal.nyx_dbname, collection_name,
+            {'_id': record_id}, None, 1, _find_data_callback, read_pref=read_pref)
+    return True
+
+def find_and_modify(collection_name, query, update, fields, upsert, new, callback, seq_flag=False):
+    """找到query指定的记录并修改"""
+    dbmgr_proxy = get_dbmgr_proxy()
+    if dbmgr_proxy is None:
+        _logger.warn('find_and_modify - db not connected, query=%s', query)
+        callback(None)
+        return False
+    dbmgr_proxy.db_find_and_modify_doc(_gglobal.nyx_dbname, collection_name,
+            query, update, fields, upsert, new, callback, seq_flag)
+    return True
+
+def update(collection_name, query, fields, upsert=True, multi=False, callback=None):
+    dbmgr_proxy = get_dbmgr_proxy()
+    if dbmgr_proxy is None:
+        _logger.warn('update - db not connected, update query=%s', query)
+        return False
+
+    dbmgr_proxy.db_update_doc(_gglobal.nyx_dbname, collection_name,
+            query, fields, callback, upsert, multi=multi)
+    return True
+
+def update_data_record(collection_name, record_id, data, callback=None, upsert=True):
+    """更新record_id指定的一条记录"""
+    dbmgr_proxy = get_dbmgr_proxy()
+    if dbmgr_proxy is None:
+        _logger.warn('update_data_record - db not  connected, record_id=%s', record_id)
+        return False
+    dbmgr_proxy.db_update_doc(_gglobal.nyx_dbname, collection_name,
+            {'_id': record_id}, {'$set': data}, callback, upsert)
