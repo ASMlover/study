@@ -143,3 +143,46 @@ def create_entity_server_type(entity_type, server_type,
     if entity_content is not None:
         entity_info.info = _gglobal.proto_encoder.encode(entity_content)
     _gglobal.nyx_gamemgr_proxy.create_entity(entity_info)
+
+def register_entity_globally(entity_unique_id, entity, callback=None, override=False):
+    """将entity注册为全局entity，如果已有则根据override来重写"""
+    if not _gglobal.nyx_gamemgr_proxy.connected:
+        _logger.error('register_entity_globally - lost connection with game manager')
+        return
+
+    entity_regmsg = _gm_pb2.GlobalEntityRegisterMessage()
+    entity_regmsg.entity_unique_id = entity_unique_id
+    entity_regmsg.mailbox.entity_id = entity.id
+    entity_regmsg.mailbox.server_info.CopyFrom(_gglobal.nyx_game_info)
+    if callback is not None:
+        entity_regmsg.callback_id = _gglobal.reg_gamemgr_callback(callback)
+    if override:
+        entity_regmsg.override = True
+    _gglobal.nyx_gamemgr_proxy.reg_global_entity_mailbox(entity_regmsg)
+
+def get_global_entity_mailbox(entity_unique_id):
+    return _gglobal.nyx_entity_global.get(entity_unique_id)
+
+def encode_mailbox(mailbox):
+    if mailbox is None:
+        return None
+    return Binary(mailbox.SerializeToString())
+
+def decode_mailbox(mailbox_bytes):
+    if mailbox_bytes is None:
+        return None
+    mailbox = _c_pb2.EntityMailbox()
+    mailbox.ParseFromString(mailbox_bytes)
+    return mailbox
+
+def is_same_mailbox(mb1, mb2):
+    return (mb1.entity_id == mb2.entity_id
+            and mb1.server_info.addr == mb2.server_info.addr
+            and mb1.server_info.port == mb2.server_info.port)
+
+def game_mailbox_entity_id(mailbox):
+    return mailbox.entity_id
+
+def is_local_server(server_info):
+    local_server = _gglobal.nyx_game_info
+    return local_server.addr == server_info.addr and local_server.port == server_info.port
