@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='nyx_common.proto',
   package='nyx.core',
   syntax='proto3',
-  serialized_pb=_b('\n\x10nyx_common.proto\x12\x08nyx.core\"\x06\n\x04Void\"\xd1\x01\n\x0e\x43onnectRequest\x12\x0e\n\x06routes\x18\x01 \x01(\x0c\x12\x32\n\x04type\x18\x02 \x01(\x0e\x32$.nyx.core.ConnectRequest.RequestType\x12\x11\n\tdevice_id\x18\x03 \x01(\x0c\x12\x11\n\tentity_id\x18\x04 \x01(\x0c\x12\x10\n\x08\x61uth_msg\x18\x05 \x01(\x0c\"C\n\x0bRequestType\x12\x11\n\rNEWCONNECTION\x10\x00\x12\x10\n\x0cRECONNECTION\x10\x01\x12\x0f\n\x0b\x42IND_AVATAR\x10\x02\"\xef\x01\n\x0f\x43onnectResponse\x12\x0e\n\x06routes\x18\x01 \x01(\x0c\x12\x34\n\x04type\x18\x02 \x01(\x0e\x32&.nyx.core.ConnectResponse.ResponseType\x12\x11\n\tentity_id\x18\x03 \x01(\x0c\x12\x11\n\textra_msg\x18\x04 \x01(\x0c\"p\n\x0cResponseType\x12\x08\n\x04\x42USY\x10\x00\x12\r\n\tCONNECTED\x10\x01\x12\x10\n\x0cRECONNECT_OK\x10\x02\x12\x12\n\x0eRECONNECT_FAIL\x10\x03\x12\r\n\tFORBIDDEN\x10\x04\x12\x12\n\x0eMAX_CONNECTION\x10\x05\"&\n\x08Md5Index\x12\x0b\n\x03md5\x18\x01 \x01(\x0c\x12\r\n\x05index\x18\x02 \x01(\x11\"{\n\x10\x45ntityRpcMessage\x12\x0e\n\x06routes\x18\x01 \x01(\x0c\x12\x11\n\tentity_id\x18\x02 \x01(\x0c\x12\"\n\x06method\x18\x03 \x01(\x0b\x32\x12.nyx.core.Md5Index\x12\x0e\n\x06params\x18\x04 \x01(\x0c\x12\x10\n\x08reliable\x18\x05 \x01(\x08\"n\n\x16GlobalEntityRpcMessage\x12\x0e\n\x06target\x18\x01 \x01(\x0c\x12\"\n\x06method\x18\x02 \x01(\x0b\x32\x12.nyx.core.Md5Index\x12\x0e\n\x06params\x18\x03 \x01(\x0c\x12\x10\n\x08reliable\x18\x04 \x01(\x08\"_\n\nEntityInfo\x12\x0e\n\x06routes\x18\x01 \x01(\x0c\x12 \n\x04type\x18\x02 \x01(\x0b\x32\x12.nyx.core.Md5Index\x12\x11\n\tentity_id\x18\x03 \x01(\x0c\x12\x0c\n\x04info\x18\x04 \x01(\x0c\"+\n\x0bOutbandInfo\x12\x0e\n\x06routes\x18\x01 \x01(\x0c\x12\x0c\n\x04info\x18\x02 \x01(\x0c\"\xa7\x01\n\nServerInfo\x12\x0c\n\x04\x61\x64\x64r\x18\x01 \x01(\x0c\x12\x0c\n\x04port\x18\x02 \x01(\x05\x12\x0b\n\x03sid\x18\x03 \x01(\x05\x12\x12\n\nban_client\x18\x04 \x01(\x08\x12\x35\n\x0cserver_typee\x18\x05 \x01(\x0e\x32\x1f.nyx.core.ServerInfo.ServerType\"%\n\nServerType\x12\x0b\n\x07INVALID\x10\x00\x12\n\n\x06NORMAL\x10\x01\"M\n\rEntityMailbox\x12\x11\n\tentity_id\x18\x01 \x01(\x0c\x12)\n\x0bserver_info\x18\x02 \x01(\x0b\x32\x14.nyx.core.ServerInfoB\x06\x80\x01\x01\x90\x01\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x10nyx_common.proto\x12\x08nyx.core\"\x06\n\x04Void\"\xd1\x01\n\x0e\x43onnectRequest\x12\x0e\n\x06routes\x18\x01 \x01(\x0c\x12\x32\n\x04type\x18\x02 \x01(\x0e\x32$.nyx.core.ConnectRequest.RequestType\x12\x11\n\tdevice_id\x18\x03 \x01(\x0c\x12\x11\n\tentity_id\x18\x04 \x01(\x0c\x12\x10\n\x08\x61uth_msg\x18\x05 \x01(\x0c\"C\n\x0bRequestType\x12\x11\n\rNEWCONNECTION\x10\x00\x12\x10\n\x0cRECONNECTION\x10\x01\x12\x0f\n\x0b\x42IND_AVATAR\x10\x02\"\xef\x01\n\x0f\x43onnectResponse\x12\x0e\n\x06routes\x18\x01 \x01(\x0c\x12\x34\n\x04type\x18\x02 \x01(\x0e\x32&.nyx.core.ConnectResponse.ResponseType\x12\x11\n\tentity_id\x18\x03 \x01(\x0c\x12\x11\n\textra_msg\x18\x04 \x01(\x0c\"p\n\x0cResponseType\x12\x08\n\x04\x42USY\x10\x00\x12\r\n\tCONNECTED\x10\x01\x12\x10\n\x0cRECONNECT_OK\x10\x02\x12\x12\n\x0eRECONNECT_FAIL\x10\x03\x12\r\n\tFORBIDDEN\x10\x04\x12\x12\n\x0eMAX_CONNECTION\x10\x05\"&\n\x08Md5Index\x12\x0b\n\x03md5\x18\x01 \x01(\x0c\x12\r\n\x05index\x18\x02 \x01(\x11\"{\n\x10\x45ntityRpcMessage\x12\x0e\n\x06routes\x18\x01 \x01(\x0c\x12\x11\n\tentity_id\x18\x02 \x01(\x0c\x12\"\n\x06method\x18\x03 \x01(\x0b\x32\x12.nyx.core.Md5Index\x12\x0e\n\x06params\x18\x04 \x01(\x0c\x12\x10\n\x08reliable\x18\x05 \x01(\x08\"n\n\x16GlobalEntityRpcMessage\x12\x0e\n\x06target\x18\x01 \x01(\x0c\x12\"\n\x06method\x18\x02 \x01(\x0b\x32\x12.nyx.core.Md5Index\x12\x0e\n\x06params\x18\x03 \x01(\x0c\x12\x10\n\x08reliable\x18\x04 \x01(\x08\"_\n\nEntityInfo\x12\x0e\n\x06routes\x18\x01 \x01(\x0c\x12 \n\x04type\x18\x02 \x01(\x0b\x32\x12.nyx.core.Md5Index\x12\x11\n\tentity_id\x18\x03 \x01(\x0c\x12\x0c\n\x04info\x18\x04 \x01(\x0c\"+\n\x0bOutbandInfo\x12\x0e\n\x06routes\x18\x01 \x01(\x0c\x12\x0c\n\x04info\x18\x02 \x01(\x0c\"\xa6\x01\n\nServerInfo\x12\x0c\n\x04\x61\x64\x64r\x18\x01 \x01(\x0c\x12\x0c\n\x04port\x18\x02 \x01(\x05\x12\x0b\n\x03sid\x18\x03 \x01(\x05\x12\x12\n\nban_client\x18\x04 \x01(\x08\x12\x34\n\x0bserver_type\x18\x05 \x01(\x0e\x32\x1f.nyx.core.ServerInfo.ServerType\"%\n\nServerType\x12\x0b\n\x07INVALID\x10\x00\x12\n\n\x06NORMAL\x10\x01\"M\n\rEntityMailbox\x12\x11\n\tentity_id\x18\x01 \x01(\x0c\x12)\n\x0bserver_info\x18\x02 \x01(\x0b\x32\x14.nyx.core.ServerInfoB\x06\x80\x01\x01\x90\x01\x01\x62\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -106,8 +106,8 @@ _SERVERINFO_SERVERTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=1042,
-  serialized_end=1079,
+  serialized_start=1041,
+  serialized_end=1078,
 )
 _sym_db.RegisterEnumDescriptor(_SERVERINFO_SERVERTYPE)
 
@@ -524,7 +524,7 @@ _SERVERINFO = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='server_typee', full_name='nyx.core.ServerInfo.server_typee', index=4,
+      name='server_type', full_name='nyx.core.ServerInfo.server_type', index=4,
       number=5, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -544,7 +544,7 @@ _SERVERINFO = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=912,
-  serialized_end=1079,
+  serialized_end=1078,
 )
 
 
@@ -581,8 +581,8 @@ _ENTITYMAILBOX = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1081,
-  serialized_end=1158,
+  serialized_start=1080,
+  serialized_end=1157,
 )
 
 _CONNECTREQUEST.fields_by_name['type'].enum_type = _CONNECTREQUEST_REQUESTTYPE
@@ -592,7 +592,7 @@ _CONNECTRESPONSE_RESPONSETYPE.containing_type = _CONNECTRESPONSE
 _ENTITYRPCMESSAGE.fields_by_name['method'].message_type = _MD5INDEX
 _GLOBALENTITYRPCMESSAGE.fields_by_name['method'].message_type = _MD5INDEX
 _ENTITYINFO.fields_by_name['type'].message_type = _MD5INDEX
-_SERVERINFO.fields_by_name['server_typee'].enum_type = _SERVERINFO_SERVERTYPE
+_SERVERINFO.fields_by_name['server_type'].enum_type = _SERVERINFO_SERVERTYPE
 _SERVERINFO_SERVERTYPE.containing_type = _SERVERINFO
 _ENTITYMAILBOX.fields_by_name['server_info'].message_type = _SERVERINFO
 DESCRIPTOR.message_types_by_name['Void'] = _VOID

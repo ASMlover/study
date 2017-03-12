@@ -112,7 +112,7 @@ message ServerInfo {
   int32 port = 2; // 服务器的端口
   int32 sid = 3; // game manager分配的server id
   bool ban_client = 4; // 禁止玩家接入
-  ServerType server_typee = 5; // game server的类型
+  ServerType server_type = 5; // game server的类型
 }
 
 message EntityMailbox {
