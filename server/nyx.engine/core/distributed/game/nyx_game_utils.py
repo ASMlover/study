@@ -278,7 +278,42 @@ def update_data_record(collection_name, record_id, data, callback=None, upsert=T
     """更新record_id指定的一条记录"""
     dbmgr_proxy = get_dbmgr_proxy()
     if dbmgr_proxy is None:
-        _logger.warn('update_data_record - db not  connected, record_id=%s', record_id)
+        _logger.warn('update_data_record - db not connected, record_id=%s', record_id)
         return False
     dbmgr_proxy.db_update_doc(_gglobal.nyx_dbname, collection_name,
             {'_id': record_id}, {'$set': data}, callback, upsert)
+    return True
+
+def insert_data_record(collection_name, record_id=None, data={}, callback=None):
+    """插入一条记录，如果record_id已经存在则失败"""
+    dbmgr_proxy = get_dbmgr_proxy()
+    if dbmgr_proxy is None:
+        _logger.warn('insert_data_record - db not connected, record_id=%s', record_id)
+        return False
+
+    insert_data = {}
+    if record_id:
+        insert_data['_id'] = record_id
+    insert_data.update(data)
+    dbmgr_proxy.db_insert_doc(_gglobal.nyx_dbname, collection_name, insert_data, callback)
+    return True
+
+def delete_data_record(collection_name, record_id, callback=None):
+    """删除record_id指定的一条记录"""
+    dbmgr_proxy = get_dbmgr_proxy()
+    if dbmgr_proxy is None:
+        _logger.warn('delete_data_record - db not connected, record_id=%s', record_id)
+        return False
+
+    dbmgr_proxy.db_delete_doc(_gglobal.nyx_dbname, collection_name, {'_id': record_id}, callback)
+    return True
+
+def ensure_db_index(dbname, collection_name, index, desc=None, callback=None):
+    dbmgr_proxy = get_dbmgr_proxy()
+    if dbmgr_proxy is None:
+        _logger.warn('ensure_db_index - db not connected, index=%s', str(index))
+        return False
+
+    dbmgr_proxy.db_operation_index(dbname, collection_name,
+            _dm_pb2.OperationIndexRequest.ENSURE, index, desc, callback)
+    return True
