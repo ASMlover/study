@@ -202,8 +202,36 @@ def get_dbmgr_proxy(entity_id=None):
         import random
         return random.choice(_gglobal.nyx_dbmgr_proxy_set)
 
-def _find_data_callback(status, docs, callback):
-    if status and len(docs) == 1:
-        callback(docs[0])
-    else:
+def find(collection_name, query, fields, callback, read_pref=None, hint=None):
+    """查找满足query条件的一条记录"""
+    dbmgr_proxy = get_dbmgr_proxy()
+    if dbmgr_proxy is None:
+        _logger.warn('find - db not connected, query is:%s', query)
         callback(None)
+        return False
+
+    def _find_data_callback(status, docs):
+        if status and len(docs) == 1:
+            callback(docs[0])
+        else:
+            callback(None)
+    dbmgr_proxy.db_find_doc(_gglobal.nyx_dbname, collection_name,
+            query, fields, 1, _find_data_callback, read_pref=read_pref, hint=hint)
+    return True
+
+def find_multi(collection_name, query, fields, callback, read_pref=None, limit=1, hint=None):
+    """查找满足query条件的多条记录"""
+    dbmgr_proxy = get_dbmgr_proxy()
+    if dbmgr_proxy is None:
+        _logger.warn('find_multi - db not connected, query is:%s', query)
+        callback(None)
+        return False
+
+    def _find_multi_data_callback(status, docs):
+        if status:
+            callback(docs)
+        else:
+            callback(None)
+    dbmgr_proxy.db_find_doc(_gglobal.nyx_dbname, collection_name,
+            query, fields, limit, _find_multi_data_callback, read_pref=read_pref, hint=hint)
+    return True
