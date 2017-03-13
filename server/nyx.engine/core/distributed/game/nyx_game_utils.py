@@ -346,3 +346,30 @@ def create_collection(dbname, collection_name, opts={}, callback=None):
 
     dbmgr_proxy.db_create_collection(dbname, collection_name, opts, callback)
     return True
+
+def _on_game_traceback():
+    """traceback时调用"""
+    import sys
+    t, v, tb = sys.exc_info()
+    _gglobal.nyx_game_event_callback.on_traceback(t, v, tb)
+
+def _load_entity_callback(status, docs, entity_type, entity_id, callback):
+    if status and len(docs) == 1:
+        entity_dict = docs[0]
+        EntityClass = EntityFactory.get_instance().get_entity_class(entity_type)
+        if not EntityClass:
+            callback(None)
+        entity = EntityClass(entity_id)
+        try:
+            entity.init_from_dict(entity_dict)
+        except:
+            _logger.error('_load_entity_callback - load from dict failed {%s: %s}', entity_type, entity_id)
+            _on_game_traceback()
+            _logger.nyxlog_exception()
+            entity.cancel_save_timer() # TODO: cancel_save_timer() function
+            EntityManager.get_instance().del_entity(entity_id)
+            callback(None)
+        else:
+            callback(entity)
+    else:
+        callback(None)
