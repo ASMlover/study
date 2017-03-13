@@ -425,3 +425,25 @@ def del_entity(entity_id, callback=None):
 
     dbmgr_proxy.db_delete_doc(_gglobal.nyx_dbname, 'entities', {'_id': entity_id}, callback)
     return True
+
+def save_entity(entity, callback=None):
+    """将entity的数据信息存储到db"""
+    entity_id = entity.id
+    dbmgr_proxy = get_dbmgr_proxy(entity_id)
+    if dbmgr_proxy is None:
+        _logger.warn('save_entity - db not connected, entity_id=%s', entity_id)
+        callback and callback(False)
+        return False
+
+    update_dict = {'entity_class': entity.__class__.__name__}
+    try:
+        pdict = entity.get_persistent_dict()
+    except:
+        callback and callback(False)
+        _logger.nyxlog_exception()
+        _logger.error('save_entity - get_persistent_dict failed')
+        return False
+    update_dict.update(pdict)
+    dbmgr_proxy.db_update_doc(_gglobal.nyx_dbname, 'entities',
+            {'_id': entity_id}, {'$set': update_dict}, callback, seq_flag=True)
+    return True
