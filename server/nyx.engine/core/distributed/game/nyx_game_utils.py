@@ -337,3 +337,12 @@ def reset_db_index(dbname, collection_name, index, desc=None, callback=None):
     dbmgr_proxy.db_operation_index(dbname, collection_name,
             _dm_pb2.OperationIndexRequest.RESET, index, desc, callback)
     return True
+
+def create_collection(dbname, collection_name, opts={}, callback=None):
+    dbmgr_proxy = get_dbmgr_proxy()
+    if dbmgr_proxy is None:
+        _logger.warn('create_collection - db not connected, collection_name=%s', collection_name)
+        return False
+
+    dbmgr_proxy.db_create_collection(dbname, collection_name, opts, callback)
+    return True
