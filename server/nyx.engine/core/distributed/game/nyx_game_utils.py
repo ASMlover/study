@@ -393,3 +393,26 @@ def create_entity_fromdb(entity_type, entity_id, callback=None):
     dbmgr_proxy.db_find_doc(_gglobal.nyx_dbname, 'entities',
             {'_id': entity_id}, fields, 1, func, seq_flag=True)
     return True
+
+def load_entity_dict_fromdb(entity_type, entity_id, callback):
+    """从db获取entity数据信息"""
+    dbmgr_proxy = get_dbmgr_proxy()
+    if dbmgr_proxy is None:
+        _logger.warn('load_entity_dict_fromdb - db not connected, entity_id=%s', entity_id)
+        callback(entity_id, None)
+        return False
+    EntityClass = EntityFactory.get_instance().get_entity_class(entity_type)
+    if not EntityClass:
+        _logger.error('load_entity_dict_fromdb - error entity_type=%s, entity_id=%s', entity_type, entity_id)
+        callback(entity_id, None)
+        return False
+
+    def _load_entity_dict_callback(status, docs):
+        if status and len(docs) == 1:
+            callback(entity_id, docs[0])
+        else:
+            callback(entity_id, None)
+    fields = getattr(EntityClass.init_from_dict, 'fieldlist', None)
+    dbmgr_proxy.db_find_doc(_gglobal.nyx_dbname, 'entities',
+            {'_id': entity_id}, fields, 1, _load_entity_dict_callback)
+    return True
