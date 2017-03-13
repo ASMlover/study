@@ -416,3 +416,12 @@ def load_entity_dict_fromdb(entity_type, entity_id, callback):
     dbmgr_proxy.db_find_doc(_gglobal.nyx_dbname, 'entities',
             {'_id': entity_id}, fields, 1, _load_entity_dict_callback)
     return True
+
+def del_entity(entity_id, callback=None):
+    dbmgr_proxy = get_dbmgr_proxy()
+    if dbmgr_proxy is None:
+        _logger.warn('del_entity - db not connected, entity_id=%s', entity_id)
+        return False
+
+    dbmgr_proxy.db_delete_doc(_gglobal.nyx_dbname, 'entities', {'_id': entity_id}, callback)
+    return True
