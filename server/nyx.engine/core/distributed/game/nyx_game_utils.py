@@ -373,3 +373,23 @@ def _load_entity_callback(status, docs, entity_type, entity_id, callback):
             callback(entity)
     else:
         callback(None)
+
+def create_entity_fromdb(entity_type, entity_id, callback=None):
+    """创建entity，从数据库恢复数据"""
+    dbmgr_proxy = get_dbmgr_proxy()
+    if dbmgr_proxy is None:
+        _logger.warn('create_entity_fromdb - db not connected, entity_id=%s', entity_id)
+        callback(None)
+        return False
+
+    EntityClass = EntityFactory.get_instance().get_entity_class(entity_type)
+    if not EntityClass:
+        _logger.error('create_entity_fromdb - error entity_type=%s, entity_id=%s', entity_type, entity_id)
+        callback(None)
+        return False
+
+    fields = getattr(EntityClass.init_from_dict, 'fieldlist', None)
+    func = lambda status, docs: _load_entity_callback(status, docs, entity_type, entity_id, callback)
+    dbmgr_proxy.db_find_doc(_gglobal.nyx_dbname, 'entities',
+            {'_id': entity_id}, fields, 1, func, seq_flag=True)
+    return True
