@@ -39,7 +39,6 @@ class BaseClientProxy(object):
     def __init__(self, stub, client_info=None):
         self.logger = LogManager.get_logger(self.__class__.__name__)
         self.stub = stub
-        self.encoder = CodecEncoder()
         self.client_info = client_info
         self.cached_client_info_bytes = ''
         self.recv_client_message_seq = None
@@ -141,3 +140,13 @@ class BaseClientProxy(object):
 
     def unbind_soul(self, callback=None):
         raise NotImplemented
+
+class ClientProxy(BaseClientProxy):
+    """客户端代理，用于调用客户端的avatar entity方法"""
+    def __init__(self, stub, client_info=None):
+        super(ClientProxy, self).__init__(stub, client_info)
+        self.owner = None
+        self.encoder = CodecEncoder()
+        self.set_stub(stub)
+        self.set_client_info(client_info)
+        self.transfer_entity_callback = None
