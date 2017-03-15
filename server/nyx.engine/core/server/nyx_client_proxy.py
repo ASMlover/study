@@ -170,7 +170,7 @@ class ClientProxy(BaseClientProxy):
             msg.routes = self.cached_client_info_bytes
             msg.entity_id = entity_id
             self.encoder.encode(msg.method, name)
-            msg.parameters = _gglobal.proto_encoder.encode({'_': args})
+            msg.params = _gglobal.proto_encoder.encode({'_': args})
             self.stub.entity_message(None, msg)
 
         return _caller
@@ -187,7 +187,7 @@ class ClientProxy(BaseClientProxy):
         msg.routes = self.cached_client_info_bytes
         msg.entity_id = entity_id
         self.encoder.encode(msg.method, method)
-        msg.parameters = _gglobal.proto_encoder.encode(parameters)
+        msg.params = _gglobal.proto_encoder.encode(parameters)
         msg.reliable = reliable
         self.stub.entity_message(None, msg)
 
@@ -202,7 +202,7 @@ class ClientProxy(BaseClientProxy):
         msg.routes = self.cached_client_info_bytes
         msg.entity_id = entity_id
         self.encoder.encode(msg.method, method)
-        msg.parameters = parameters
+        msg.params = parameters
         msg.reliable = reliable
         self.stub.entity_message(None, msg)
 
