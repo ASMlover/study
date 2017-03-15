@@ -174,3 +174,19 @@ class ClientProxy(BaseClientProxy):
             self.stub.entity_message(None, msg)
 
         return _caller
+
+    def call_client_method(self, method, parameters, entity_id=None, reliable=True):
+        """调用客户端的rpc方法"""
+        if entity_id is None:
+            entity_id = self.get_owner_id()
+            if entity_id is None:
+                self.logger.error('ClientProxy.call_client_method: need pass entity id')
+                return
+
+        msg = EntityRpcMessage()
+        msg.routes = self.cached_client_info_bytes
+        msg.entity_id = entity_id
+        self.encoder.encode(msg.method, method)
+        msg.parameters = _gglobal.proto_encoder.encode(parameters)
+        msg.reliable = reliable
+        self.stub.entity_message(None, msg)
