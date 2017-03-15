@@ -205,3 +205,15 @@ class ClientProxy(BaseClientProxy):
         msg.parameters = parameters
         msg.reliable = reliable
         self.stub.entity_message(None, msg)
+
+    def call_gate_method(self, method, parameters=''):
+        if not method:
+            return
+
+        msg = _gg_pb2.GateRpcMessage()
+        msg.method.md5 = method
+        if isinstance(parameters, str):
+            msg.params = parameters
+        else:
+            msg.params = _gglobal.proto_encoder.encode(parameters)
+        self.stub.gate_method(None, msg)
