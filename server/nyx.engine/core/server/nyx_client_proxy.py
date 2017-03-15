@@ -150,3 +150,27 @@ class ClientProxy(BaseClientProxy):
         self.set_stub(stub)
         self.set_client_info(client_info)
         self.transfer_entity_callback = None
+
+    def create_entity(self, entity_type, entity_data, entity_id):
+        """调用客户端的create_entity方法创建客户端entity"""
+        if entity_id is None:
+            self.logger.error('ClientProxy.create_entity: need pass entity id')
+            return
+        entity_info = EntityInfo()
+        EntityInfo.routes = self.cached_client_info_bytes
+        entity_info.entity_id = entity_id
+        self.encoder.encode(entity_info.type, entity_type)
+        entity_info.info = _gglobal.proto_encoder.encode(entity_data)
+        self.stub.create_entity(None, entity_info)
+
+    def __getattr__(self, name):
+        def _caller(*args):
+            entity_id = self.get_owner_id()
+            msg = EntityRpcMessage()
+            msg.routes = self.cached_client_info_bytes
+            msg.entity_id = entity_id
+            self.encoder.encode(msg.method, name)
+            msg.parameters = _gglobal.proto_encoder.encode({'_': args})
+            self.stub.entity_message(None, msg)
+
+        return _caller
