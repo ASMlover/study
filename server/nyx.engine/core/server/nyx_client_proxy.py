@@ -31,7 +31,7 @@
 from common.nyx_codec import CodecEncoder
 from common.nyx_id import IdCreator
 from log.nyx_log import LogManager
-from proto.pyproto.nyx_commom_pb2 import ConnectRequest, EntityInfo, EntityRpcMessage
+from proto.pyproto.nyx_commom_pb2 import ConnectResponse, EntityInfo, EntityRpcMessage
 from proto.pyproto import nyx_gate_game_pb2 as _gg_pb2
 from distributed.game import nyx_game_global as _gglobal
 
@@ -76,7 +76,7 @@ class BaseClientProxy(object):
     def call_client_method_raw(self, method, parameters, entity_id=None):
         raise NotImplemented
 
-    def on_connect_server(self, response_type, entity_id=None, extra_msg=None):
+    def connect_response(self, response_type, entity_id=None, extra_msg=None):
         raise NotImplemented
 
     def become_player(self, entity_id):
@@ -217,3 +217,20 @@ class ClientProxy(BaseClientProxy):
         else:
             msg.params = _gglobal.proto_encoder.encode(parameters)
         self.stub.gate_method(None, msg)
+
+    def connect_response(self, response_type, entity_id=None, extra_msg=None):
+        response = ConnectResponse()
+        response.type = response_type
+        if entity_id is not None:
+            response.entity_id = entity_id
+        if extra_msg:
+            response.extra_msg = _gglobal.proto_encoder.encode(extra_msg)
+        response.routes = self.cached_client_info_bytes
+        self.stub.on_connect_server(None, response)
+
+    def notify_destroyed_entity(self, entity_id):
+        """通知客户端entity_id指定的服务器entity对象销毁了"""
+        info = EntityInfo()
+        info.entity_id = entity_id
+        info.routes = self.cached_client_info_bytes
+        self.stub.destroy_entity(None, info)
