@@ -234,3 +234,43 @@ class ClientProxy(BaseClientProxy):
         info.entity_id = entity_id
         info.routes = self.cached_client_info_bytes
         self.stub.destroy_entity(None, info)
+
+    def notify_disconnect_client(self):
+        info = _gg_pb2.ClientInfo()
+        info.ParseFromString(self.cached_client_info_bytes)
+        self.stub.disconnect_client(None, info)
+
+    def chat_to_client(self, outband_info):
+        outband_info.routes = self.cached_client_info_bytes
+        self.stub.chat_to_client(None, outband_info)
+
+    def transfer_client(self, client_bindmsg, callback):
+        self.transfer_entity_callback = callback
+        self.stub.transfer_client(None, client_bindmsg)
+
+    def on_transfer_client_callback(self, return_value):
+        if self.transfer_entity_callback:
+            self.transfer_entity_callback(return_value.return_value)
+            self.transfer_entity_callback = None
+
+    def bind_client_to_game(self, client_bindmsg):
+        self.stub.bind_client_to_game(None, client_bindmsg)
+
+    def send_reg_md5index(self, md5_index):
+        self.stub.reg_md5index(None, md5_index)
+
+    def reg_md5index(self, md5_index):
+        self.encoder.add_index(md5_index.md5, md5_index.index)
+
+    def bind_soul(self, avatar_mailbox, soul_mailbox, callback=None):
+        pass
+
+    def unbind_soul(self, callback=None):
+        pass
+
+    def destroy(self):
+        super(ClientProxy, self).destroy()
+        self.stub = None
+        self.owner = None
+        self.logger = None
+        self.encoder = None
