@@ -262,12 +262,6 @@ class ClientProxy(BaseClientProxy):
     def reg_md5index(self, md5_index):
         self.encoder.add_index(md5_index.md5, md5_index.index)
 
-    def bind_soul(self, avatar_mailbox, soul_mailbox, callback=None):
-        pass
-
-    def unbind_soul(self, callback=None):
-        pass
-
     def destroy(self):
         super(ClientProxy, self).destroy()
         self.stub = None
