@@ -44,19 +44,36 @@ class NyxServer(IoService):
         self.save_index = 0
 
     def _on_tick(self):
-        pass
+        for entity in EntityManager.get_instance()._entities.values():
+            try:
+                entity.on_tick()
+            except:
+                if _gglobal.nyx_game_event_callback is not None:
+                    import sys
+                    t, v, tb = sys.exc_info()
+                    _gglobal.nyx_game_event_callback.on_traceback(t, v, tb)
+                self._logger.nyxlog_exception()
+                return
 
     def add_server(self, rpc_server):
         self.servers.append(rpc_server)
 
     def run(self, timeout=None):
-        pass
+        super(NyxServer, self).run(timeout)
 
     def generate_save_list(self):
-        pass
+        self.save_list = []
+        for entity in EntityManager.get_instance()._entities.itervalues():
+            if entity.is_persistent():
+                self.save_list.append(entity.id)
+        self.save_index = 0
 
     def save_entities(self):
+        # TODO:
         pass
 
     def stop(self):
-        pass
+        super(NyxServer, self).stop()
+        self._tick_timer.cancel()
+        for server in self.servers:
+            server.close()
