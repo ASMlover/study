@@ -39,7 +39,7 @@ def PersistentTime(save_time=None):
     def _persistent_time(cls):
         cls.is_persistent = is_persistent
         if save_time is not None:
-            cls.get_persisten_time = lambda self: save_time
+            cls.get_persistent_time = lambda self: save_time
         return cls
     return _persistent_time
 
