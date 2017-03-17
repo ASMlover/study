@@ -69,8 +69,19 @@ class NyxServer(IoService):
         self.save_index = 0
 
     def save_entities(self):
-        # TODO:
-        pass
+        if self.save_index > len(self.save_list) - 1:
+            self.generate_save_list()
+        save_count = len(self.save_list)
+
+        if save_count == 0:
+            return
+        while self.save_index < save_count:
+            entity = EntityManager.get_instance().get_entity(self.save_list[self.save_index])
+            if entity is not None:
+                entity.save()
+                self.save_index += 1
+                break
+            self.save_index += 1
 
     def stop(self):
         super(NyxServer, self).stop()
