@@ -60,3 +60,17 @@ class DirtyManager(object):
     @staticmethod
     def get_dirty_state(id):
         return DirtyManager._dirties.get(id, False)
+
+class EntityProxy(object):
+    def __init__(self, entity, mailbox):
+        self.entity = entity
+        self.mailbox = mailbox
+
+    def __getattr__(self, name):
+        def _caller(*args):
+            if args:
+                parameters = {'_': args}
+            else:
+                parameters = None
+            self.entity.call_server_method(self.mailbox, name, parameters)
+        return _caller
