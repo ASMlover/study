@@ -180,10 +180,19 @@ class ServerEntity(object):
         """
 
     def _transfer_result(self, status, user_callback):
-        pass
+        if user_callback:
+            try:
+                user_callback(status)
+            except:
+                self.logger.nyxlog_exception()
 
     def _create_pre_entity_callback(self, status, dst_server, pre_entity_id, content, user_callback):
-        pass
+        if not status:
+            self._transfer_result(status, user_callback)
+        else:
+            self._do_transfer(dst_server, pre_entity_id, content, user_callback)
+            self.destroy_to_post()
+            self._create_post_entity(dst_server)
 
     def _create_post_entity(self, dst_server, bindmsg=None, client=None):
         pass
