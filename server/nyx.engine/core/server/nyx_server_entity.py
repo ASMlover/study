@@ -162,6 +162,11 @@ class ServerEntity(object):
 
     def _get_gate_proxy(self):
         """获取对于的game proxy"""
+        # TODO: game service 上需要实现 get_random_gate_proxy()接口
+        if (self._gate_proxy is None or
+                not _gglobal.nyx_game_client_mgr.has_gate_proxy(self._gate_proxy.gate_id)):
+            self._gate_proxy = _gglobal.nyx_game_client_mgr.get_random_gate_proxy()
+        return self._gate_proxy
 
     def call_server_method(self, remote_mailbox, method, parameters=None, callback=None):
         """调用其他game上entity的rpc方法"""
@@ -224,3 +229,63 @@ class ServerEntity(object):
         mailbox.entity_id = self.id
         mailbox.server_info.CopyFrom(_gglobal.nyx_game_info)
         return mailbox
+
+class PrepareEntity(ServerEntity):
+    """预备entity，用于迁移时在目标服建立的entity"""
+    _LIFE_CYCLE = 20
+    def __init__(self, entity_id=None):
+        pass
+
+    def create_real_entity(self, create_info):
+        pass
+
+    def _create_fromdb_callback(self, create_info, real):
+        pass
+
+    def _create_client_proxy(self, entity, create_info):
+        """创建entity的client proxy"""
+        pass
+
+    def _handle_destroy(self):
+        pass
+
+    def destroy(self, callback=None):
+        pass
+
+class PostEntity(ServerEntity):
+    """迁移后，留在原服务器用于转发的entity"""
+    _LIFE_CYCLE = 20
+    _MAX_CACHE_MESSAGE = 2000
+    def __init__(self, entity_id=None):
+        pass
+
+    def set_dst_server(self, dst_server):
+        pass
+
+    def set_bind_client(self, client):
+        pass
+
+    def set_bind_client_msg(self, bindmsg):
+        pass
+
+    def forward_message(self, entity_msg):
+        """转发消息"""
+        pass
+
+    def _do_forward_message(self, entity_msg):
+        pass
+
+    def real_entity_created(self):
+        pass
+
+    def _bind_client(self):
+        pass
+
+    def _flush(self):
+        pass
+
+    def _handle_destroy(self):
+        pass
+
+    def destroy(self, callback=None):
+        pass
