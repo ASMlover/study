@@ -74,3 +74,59 @@ class EntityProxy(object):
                 parameters = None
             self.entity.call_server_method(self.mailbox, name, parameters)
         return _caller
+
+class ServerEntity(object):
+    def __init__(self, entity_id=None):
+        self.logger = LogManager.get_logger('NyxCore.ServerEntity.%s' % self.__class__.__name__)
+        self.id = entity_id or IdCreator.gen_id()
+        self._gate_proxy = None
+        self._save_timer = None
+        EntityManager.get_instance().add_entity(self.id, self, False)
+        self.is_destroyed = False
+        save_time = self.get_persistent_time()
+        if save_time > 0:
+            self._save_timer = _at.add_cycle_timer(save_time, lambda: self.save())
+        DirtyManager.add_dirty_state(self, False)
+
+    def __getattribute__(self, key):
+        if key == '__class__':
+            return super(ServerEntity, self).__getattribute__(key)
+        DirtyManager.set_dirty_state(self, True)
+        return super(ServerEntity, self).__getattribute__(key)
+
+    def create_global_entity(self, name):
+        pass
+
+    def get_global_entity(self, name):
+        pass
+
+    def on_tick(self):
+        """每个game tick的回调"""
+        pass
+
+    def save(self, callback=None):
+        pass
+
+    def destroy(self, callback=None):
+        """销毁自己"""
+        pass
+
+    def cancel_save_timer(self):
+        pass
+
+    def destroy_callback(self, result, callback):
+        pass
+
+    def is_persistent(self):
+        return False
+
+    def get_persistent_time(self):
+        return _gglobal.nyx_def_savetime
+
+    def init_from_dict(self, entity_dict):
+        """以entity_dict数据来初始化字节"""
+        pass
+
+    def get_persistent_dict(self):
+        """获取可持久化的数据信息"""
+        return {}
