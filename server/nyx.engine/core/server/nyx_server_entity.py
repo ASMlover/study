@@ -289,3 +289,60 @@ class PostEntity(ServerEntity):
 
     def destroy(self, callback=None):
         pass
+
+class AvatarEntity(ServerEntity):
+    """玩家entity"""
+    def __init__(self, entity_id=None):
+        super(AvatarEntity, self).__init__(entity_id)
+        self.client = None
+
+    def set_client(self, client):
+        """绑定底层client proxy对象"""
+        pass
+
+    def destroy_client(self):
+        """销毁client proxy对象"""
+        pass
+
+    def on_transfered(self):
+        """迁移到新game上时回调"""
+        pass
+
+    def on_become_player(self):
+        """被玩家可控时回调"""
+        pass
+
+    def give_client_to(self, other):
+        """将client proxy转交给other"""
+        pass
+
+    def destroy(self, callback=None):
+        pass
+
+    def destroy_to_post(self):
+        pass
+
+    def on_lose_client(self):
+        """客户端断开连接时回调"""
+        self.destroy()
+
+    def is_belong_to(self, entity_id):
+        return self.id == entity_id
+
+    def on_client_message(self, method, entity_id, reliable):
+        """处理来自客户端的消息"""
+        pass
+
+    def _create_pre_entity_callback(self, status, dst_server, pre_entity_id, content, user_callback):
+        pass
+
+    def _get_client_info(self):
+        pass
+
+    def _cache_client_message(self, dst_server, pre_entity_id, content, user_callback):
+        """缓存客户端发送的消息"""
+        pass
+
+    def _cache_client_message_callback(self, status, dst_server,
+            pre_entity_id, client_bindmsg, content, user_callback):
+        pass
