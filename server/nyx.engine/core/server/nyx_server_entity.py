@@ -95,27 +95,56 @@ class ServerEntity(object):
         return super(ServerEntity, self).__getattribute__(key)
 
     def create_global_entity(self, name):
-        pass
+        mailbox = _gutils.get_global_entity_mailbox(name)
+        if mailbox is not None:
+            return EntityProxy(self, mailbox)
+        return self.get_global_entity(name)
 
     def get_global_entity(self, name):
-        pass
+        mailbox = _gutils.get_global_entity_mailbox(name)
+        if mailbox is not None:
+            return EntityProxy(self, mailbox)
+
+        entity = _gutils.create_entity_locally(name)
+        def _failed_callback(success):
+            if not success:
+                entity.destroy()
+        _gutils.register_entity_globally(name, entity, _failed_callback)
+        return EntityProxy(self, entity)
 
     def on_tick(self):
         """每个game tick的回调"""
         pass
 
     def save(self, callback=None):
-        pass
+        if self.is_persistent():
+            if DirtyManager.get_dirty_state(self):
+                _gutils.save_entity(self, callback)
+                DirtyManager.set_dirty_state(self, False)
+        else:
+            callback and callback(True)
 
     def destroy(self, callback=None):
         """销毁自己"""
-        pass
+        if self.is_destroyed:
+            return
+        self.cancel_save_timer()
+        if callback is None:
+            self.save()
+            EntityManager.get_instance().del_entity(self.id)
+        else:
+            self.save(lambda r: self.destroy_callback(r, callback))
+        self.is_destroyed = True
+        DirtyManager.del_dirty_state(self)
 
     def cancel_save_timer(self):
-        pass
+        if self._save_timer:
+            self._save_timer.cancel()
+            self._save_timer = None
 
     def destroy_callback(self, result, callback):
-        pass
+        callback(result)
+        EntityManager.get_instance().del_entity(self.id)
 
     def is_persistent(self):
         return False
@@ -130,3 +159,68 @@ class ServerEntity(object):
     def get_persistent_dict(self):
         """获取可持久化的数据信息"""
         return {}
+
+    def _get_gate_proxy(self):
+        """获取对于的game proxy"""
+
+    def call_server_method(self, remote_mailbox, method, parameters=None, callback=None):
+        """调用其他game上entity的rpc方法"""
+
+    def transfer_to_server(self, dst_server, content=None, callback=None):
+        """迁移到其他server
+
+        在dst_server创建预备entity，检查与目标服务器是否能正确迁移；
+        将entity迁移到dst_server，需要注意有些entity有数据保存的需要做数据库迁移；
+        在src_server创建事后entity，负责转发server到server的rpc
+        """
+
+    def _transfer_result(self, status, user_callback):
+        pass
+
+    def _create_pre_entity_callback(self, status, dst_server, pre_entity_id, content, user_callback):
+        pass
+
+    def _create_post_entity(self, dst_server, bindmsg=None, client=None):
+        pass
+
+    def _do_transfer(self, dst_server, pre_entity_id, content, user_callback):
+        pass
+
+    def _get_client_info(self):
+        return None
+
+    def pre_reload_script(self):
+        pass
+
+    def reload_script(self):
+        pass
+
+    def on_server_closing(self):
+        """通知服务器将要关闭"""
+        pass
+
+    def on_server_closed(self, callback=None):
+        """通知服务器关闭"""
+        pass
+
+    def on_reconnected(self, auth_msg=None):
+        """重连成功"""
+        pass
+
+    def can_reconnected(self, auth_msg):
+        """是否可以重连"""
+        return self.client is not None
+
+    def get_reconnected_extra(self):
+        """获取重连是额外传递给客户端的信息"""
+        return {}
+
+    def copy_gate_proxy_to(self, other):
+        """将gate proxy拷贝给另一个entity"""
+        other._gate_proxy = self._gate_proxy
+
+    def get_mailbox(self):
+        mailbox = _c_pb2.EntityMailbox()
+        mailbox.entity_id = self.id
+        mailbox.server_info.CopyFrom(_gglobal.nyx_game_info)
+        return mailbox
