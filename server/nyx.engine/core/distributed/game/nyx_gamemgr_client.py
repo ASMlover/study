@@ -102,3 +102,115 @@ class GameManagerProxy(object):
     def create_entity(self, entity_info):
         # TODO:
         pass
+
+class GameManagerClient(_gm_pb2.SGameManagerToClient):
+    _STATUS_NOT_CONNECTED = 1
+    _STATUS_CONNECTING = 2
+    _STATUS_CONNECTED = 3
+
+    def __init__(self, config, config_sections):
+        # TODO:
+        pass
+
+    def start_connect(self, timeout):
+        """开始连接game manager"""
+        # TODO:
+        pass
+
+    def channel_callback(self, rpc_channel):
+        # TODO:
+        pass
+
+    def on_channel_disconnected(self, rpc_channel):
+        # TODO:
+        pass
+
+    def on_reg_global_entity_mailbox(self, controller, entity_regmsg, done):
+        """注册global mailbox的rpc回调"""
+        # TODO:
+        pass
+
+    def on_unreg_global_entity_mailbox(self, controller, entity_regmsg, done):
+        """反注册global mailbox的rpc回调"""
+        # TODO:
+        pass
+
+    def _get_rpc_method(self, entity, method):
+        """查找entity的rpc方法"""
+        # TODO:
+        pass
+
+    def on_forward_entity_message(self, controller, entity_msg, done):
+        """game manager收到转发过来的msg"""
+        # TODO:
+        pass
+
+    def on_global_entity_message(self, controller, global_entity_msg, done):
+        # TODO:
+        pass
+
+    def on_global_message(self, controller, global_msg, done):
+        """game manager转发过来的全局消息"""
+        # TODO:
+        pass
+
+    def on_global_data(self, controller, global_data, done):
+        """game manager转发过来的全局数据信息"""
+        # TODO:
+        pass
+
+    def on_del_global_data(self, controller, global_data, done):
+        """game manager转发过来的删除全局数据消息"""
+        # TODO:
+        pass
+
+    def _create_entity(self, entity_type, entity_info):
+        # TODO:
+        pass
+
+    def create_entity(self, controller, entity_info, done):
+        """game manager通知创建entity"""
+        # TODO:
+        pass
+
+    def post_create_entity(self, entity, entity_info_header):
+        # TODO:
+        pass
+
+    def game_manager_callback(self, controller, return_value, done):
+        # TODO:
+        pass
+
+    def on_get_game_server_list(self, controller, game_server_infos, done):
+        # TODO:
+        pass
+
+    def run_script(self, controller, script, done):
+        # TODO:
+        pass
+
+    def on_server_control(self, controller, script, done):
+        # TODO:
+        pass
+
+    def _notify_server_closing(self):
+        """通知服务器将要关闭"""
+        # TODO:
+        pass
+
+    def _notify_server_closed(self):
+        """通知服务器关闭"""
+        # TODO:
+        pass
+
+    def _server_closed_callback(self, status):
+        # TODO:
+        pass
+
+    def _get_alive_entities_count_as_dict(self):
+        # TODO:
+        pass
+
+    def _check_saved_success(self):
+        # TODO:
+        pass
