@@ -67,11 +67,11 @@ class GameManagerProxy(object):
         # TODO:
         pass
 
-    def reg_entity_mailbox(self, entity_regmsg):
+    def reg_global_entity_mailbox(self, entity_regmsg):
         # TODO:
         pass
 
-    def unreg_entity_mailbox(self, entity_regmsg):
+    def unreg_global_entity_mailbox(self, entity_regmsg):
         # TODO:
         pass
 
