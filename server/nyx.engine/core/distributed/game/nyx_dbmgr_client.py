@@ -116,3 +116,64 @@ class DBManagerClient(_dm_pb2.SDBManagerToClient):
         self.logger = LogManager.get_logger('NyxCore.Game.DBManagerClient')
         # TODO:
         pass
+
+    def _parse_db_config(self, config, config_sections, name):
+        # TODO:
+        pass
+
+    def start_connect(self, timeout):
+        """开始连接db manager"""
+        # TODO:
+        pass
+
+    def _set_global_db_proxy(self, proxy):
+        # TODO:
+        pass
+
+    def channel_callback(self, rpc_channel, client):
+        # TODO:
+        pass
+
+    def on_channel_disconnected(self, rpc_channel):
+        # TODO:
+        pass
+
+    def on_db_status(self, controller, status_msg, done):
+        # TODO:
+        pass
+
+    def on_db_find_doc(self, controller, response, done):
+        # TODO:
+        pass
+
+    def on_db_update_doc(self, controller, response, done):
+        # TODO:
+        pass
+
+    def on_db_delete_doc(self, controller, response, done):
+        # TODO:
+        pass
+
+    def on_db_insert_doc(self, controller, response, done):
+        # TODO:
+        pass
+
+    def on_db_count_doc(self, controller, response, done):
+        # TODO:
+        pass
+
+    def on_db_find_and_modify_doc(self, controller, response, done):
+        # TODO:
+        pass
+
+    def on_db_run_procedure(self, controller, response, done):
+        # TODO:
+        pass
+
+    def on_db_operation_index(self, controller, response, done):
+        # TODO:
+        pass
+
+    def on_db_create_collection(self, controller, response, done):
+        # TODO:
+        pass
