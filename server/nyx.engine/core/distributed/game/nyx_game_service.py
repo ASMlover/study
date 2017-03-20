@@ -95,3 +95,126 @@ class GameClientProxyManager(object):
     def get_gate_proxies(self):
         # TODO:
         pass
+
+class GameService(_gg_pb2.SGateToGame):
+    def __init__(self, config, config_sections):
+        super(GameService, self).__init__()
+        self.logger = LogManager.get_logger('NyxCore.Game.GameService')
+        # TODO:
+        pass
+
+    def _create_entity(self, entity_name):
+        # TODO:
+        pass
+
+    def _parse_client_info(self, msg, client_info):
+        # TODO:
+        pass
+
+    def _get_new_client_proxy(self, stub, client_info):
+        # TODO:
+        pass
+
+    def _on_game_traceback(self):
+        # TODO:
+        pass
+
+    def connect_server(self, controller, request_msg, done):
+        """客户端连接服务器rpc调用"""
+        # TODO:
+        pass
+
+    def _do_bind_avatar(self, client_info, request_msg, rpc_channel):
+        # TODO:
+        pass
+
+    def _do_new_connection(self, client_info, rpc_channel):
+        # TODO:
+        pass
+
+    def _do_reconnection(self, client_info, request_msg, rpc_channel):
+        # TODO:
+        pass
+
+    def _reconnection_failed(self, client_info, rpc_channel):
+        # TODO:
+        pass
+
+    def _get_server_rpc_method(self, entity, method):
+        # TODO: 获取entity的rpc方法
+        pass
+
+    def _get_rpc_method(self, method):
+        # TODO:
+        pass
+
+    def is_entity_id_valid(self, client_proxy, entity_id):
+        # TODO:
+        pass
+
+    def reg_md5index(self, controller, md5_index, done):
+        # TODO:
+        pass
+
+    def entity_message(self, controller, entity_msg, done):
+        # TODO:
+        pass
+
+    def _call_entity_method(self, entity_id, entity_msg):
+        # TODO:
+        pass
+
+    def forward_entity_message(self, controller, entity_msg, done):
+        """gate转发过来的entity的rpc消息调用"""
+        # TODO:
+        pass
+
+    def reg_gate_server(self, controller, info, done):
+        # TODO:
+        pass
+
+    def client_lose_connection(self, controller, client_info, done):
+        """客户端断开连接的消息rpc通知"""
+        # TODO:
+        pass
+
+    def get_entity_method(self, entity, method):
+        """获取entity的rpc方法"""
+        # TODO:
+        pass
+
+    def on_transfer_client(self, controller, return_value, done):
+        # TODO:
+        pass
+
+    def on_channel_disconnected(self, rpc_channel):
+        # TODO:
+        pass
+
+    def _del_clients_binding_of_gate(self, gate_id):
+        # TODO:
+        pass
+
+    def gate_callback(self, controller, return_value, done):
+        # TODO:
+        pass
+
+    def unbind_client_from_game(self, controller, client_info, done):
+        # TODO:
+        pass
+
+    def _remove_client_proxy(self, client_id):
+        # TODO: 删除一个client proxy
+        pass
+
+    def create_real_entity(self, controller, create_info, done):
+        # TODO:
+        pass
+
+    def real_entity_created(self, controller, entity_mailbox, done):
+        # TODO:
+        pass
+
+    def update_load(self):
+        # TODO:
+        pass
