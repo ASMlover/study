@@ -69,3 +69,29 @@ class GameClientProxy(object):
     def bind_client_to_game(self, bindmsg):
         # TODO:
         pass
+
+class GameClientProxyManager(object):
+    def __init__(self):
+        super(GameClientProxyManager, self).__init__()
+        # TODO:
+        pass
+
+    def add_gate_proxy(self, proxy, gate_id=None):
+        # TODO:
+        pass
+
+    def del_gate_proxy(self, gate_id):
+        # TODO:
+        pass
+
+    def get_random_gate_proxy(self):
+        # TODO:
+        pass
+
+    def has_gate_proxy(self, gate_id):
+        # TODO:
+        pass
+
+    def get_gate_proxies(self):
+        # TODO:
+        pass
