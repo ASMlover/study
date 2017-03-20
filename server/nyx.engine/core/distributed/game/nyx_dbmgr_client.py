@@ -105,6 +105,12 @@ class DBManagerClient(_dm_pb2.SDBManagerToClient):
     _STATUS_CONNECTING = 2
     _STATUS_CONNECTED = 3
 
+    class _DBClient(object):
+        def __init__(self):
+            self.client = None
+            self.status = DBManagerClient._STATUS_NOT_CONNECTED
+            self.dbproxy = None
+
     def __init__(self, config, config_sections, name=None):
         super(DBManagerClient, self).__init__()
         self.logger = LogManager.get_logger('NyxCore.Game.DBManagerClient')
