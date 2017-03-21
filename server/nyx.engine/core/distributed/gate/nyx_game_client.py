@@ -77,3 +77,51 @@ def GameServerProxy(object):
         self.logger = LogManager.get_logger('NyxCore.Gate.GameServerProxy')
         # TODO:
         pass
+
+    def on_channel_disconnected(self, rpc_channel):
+        # TODO:
+        pass
+
+    def connect_server(self, client_info, request_msg):
+        # TODO: 连接game服务器
+        pass
+
+    def entity_message(self, client_info, entity_msg):
+        # TODO:
+        pass
+
+    def client_lose_connection(self, client_info):
+        # TODO:
+        pass
+
+    def on_transfer_client(self, gate_return_value):
+        # TODO:
+        pass
+
+    def forward_entity_message(self, entity_msg):
+        # TODO:
+        pass
+
+    def unbind_client_from_game(self, client_info):
+        # TODO:
+        pass
+
+    def gate_callback(self, callback_type, callback_id, return_value):
+        # TODO:
+        pass
+
+    def reg_gate_server(self):
+        # TODO:
+        pass
+
+    def create_real_entity(self, create_info):
+        # TODO:
+        pass
+
+    def real_entity_created(self, entity_mailbox):
+        # TODO:
+        pass
+
+    def reg_md5index(self, client_info, md5_index):
+        # TODO:
+        pass
