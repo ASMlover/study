@@ -51,3 +51,39 @@ class GameServer(object):
         self.logger = LogManager.get_logger('NyxCore.Game.GameServer')
         # TODO:
         pass
+
+    def _merge_common_config(self):
+        # TODO:
+        pass
+
+    def _create_game_service(self):
+        # TODO:
+        pass
+
+    def call_init_function(self):
+        # TODO:
+        pass
+
+    def setup_logic_path(self):
+        # TODO:
+        pass
+
+    def register_entities(self):
+        # TODO:
+        pass
+
+    def _start_console(self):
+        # TODO:
+        pass
+
+    def _check_game_started(self):
+        # TODO:
+        pass
+
+    def run(self):
+        # TODO:
+        pass
+
+    def stop(self):
+        # TODO:
+        pass
