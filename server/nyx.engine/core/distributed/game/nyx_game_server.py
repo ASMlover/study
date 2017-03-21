@@ -34,5 +34,20 @@ from common import nyx_common as _nc
 from common.nyx_entity import EntityFactory, EntityManager, EntityScanner
 from common.nyx_codec import ProtoEncoder
 from distributed.game import nyx_game_global as _gglobal
+from distributed.game.nyx_dbmgr_client import DBManagerClient
 from distributed.game.nyx_gamemgr_client import GameManagerClient
-# TODO: need import dependency modules
+from distributed.game.nyx_game_service import GameService, GameClientProxyManager
+from log.nyx_log import LogManager
+from rpc.nyx_rpc_channel import RpcChannelCreator, RpcChannelManager
+from rpc.nyx_service import IoService
+from rpc.nyx_tcp_server import TcpServer
+from proto.pyproto import nyx_common_pb2 as _c_pb2
+from server.nyx_server import NyxServer
+from server.nyx_server_entity import ServerEntity
+
+class GameServer(object):
+    def __init__(self, config, config_sections):
+        super(GameServer, self).__init__()
+        self.logger = LogManager.get_logger('NyxCore.Game.GameServer')
+        # TODO:
+        pass
