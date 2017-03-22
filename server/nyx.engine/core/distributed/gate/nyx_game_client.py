@@ -125,3 +125,9 @@ def GameServerProxy(object):
     def reg_md5index(self, client_info, md5_index):
         # TODO:
         pass
+
+class GameServerClient(_gg_pb2.SGateToGame):
+    """gate与game的通信"""
+    _STATUS_NOT_CONNECTED = 1
+    _STATUS_CONNECTING = 2
+    _STATUS_CONNECTED = 3
