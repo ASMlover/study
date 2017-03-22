@@ -131,3 +131,93 @@ class GameServerClient(_gg_pb2.SGateToGame):
     _STATUS_NOT_CONNECTED = 1
     _STATUS_CONNECTING = 2
     _STATUS_CONNECTED = 3
+
+    def __init__(self, addr, port, proxy_mgr, gate_id, config, config_sections,
+            ban_client=False, server_type=_c_pb2.ServerInfo.NORMAL):
+        super(GameServerClient, self).__init__()
+        self.logger = LogManager.get_logger('NyxCore.Game.GameServerClient')
+        # TODO:
+        pass
+
+    def is_not_connected(self):
+        return self.status == GameServerClient._STATUS_NOT_CONNECTED
+
+    def start_connect(self, timeout):
+        # TODO:
+        pass
+
+    def channel_callback(self, rpc_channel):
+        # TODO:
+        pass
+
+    def on_channel_disconnected(self, rpc_channel):
+        # TODO:
+        pass
+
+    def _get_proxy(self, routes):
+        # TODO:
+        pass
+
+    def on_connect_server(self, controller, response, done):
+        # TODO:
+        pass
+
+    def create_entity(self, controller, entity_info, done):
+        # TODO:
+        pass
+
+    def destroy_entity(self, controller, entity_info, done):
+        # TODO:
+        pass
+
+    def disconnect_client(self, controller, client_info, done):
+        # TODO:
+        pass
+
+    def entity_message(self, controller, entity_msg, done):
+        # TODO:
+        pass
+
+    def global_entity_message(self, controller, entity_msg, done):
+        # TODO:
+        pass
+
+    def forward_entity_message(self, controller, entity_msg, done):
+        # TODO:
+        pass
+
+    def chat_to_client(self, controller, outband_info, done):
+        # TODO:
+        pass
+
+    def _do_transfer_client(self, client_info, dst_server):
+        # TODO:
+        pass
+
+    def  transfer_client(self, controller, client_bindmsg, done):
+        # TODO:
+        pass
+
+    def bind_client_to_game(self, controller, client_bindmsg, done):
+        # TODO:
+        pass
+
+    def create_real_entity(self, controller, create_info, done):
+        # TODO:
+        pass
+
+    def real_entity_created(self, controller, entity_mailbox, done):
+        # TODO:
+        pass
+
+    def reg_md5index(self, controller, md5_index, done):
+        # TODO:
+        pass
+
+    def update_game_load(self, controller, game_load, done):
+        # TODO:
+        pass
+
+    def gate_method(self, controller, method, done):
+        # TODO:
+        pass
