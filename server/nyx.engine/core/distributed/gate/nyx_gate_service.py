@@ -83,3 +83,38 @@ class GateClientProxy(object):
     def reg_md5index(self, md5_index):
         # TODO:
         pass
+
+class GateService(_cg_pb2.SClientToGate):
+    def __init__(self, proxy_mgr, gate_config, gate_id):
+        super(GateService, self).__init__(self)
+        self.logger = LogManager.get_logger('NyxCore.Gate.GateService')
+        # TODO:
+        pass
+
+    def on_channel_disconnected(self, rpc_channel):
+        # TODO:
+        pass
+
+    def _remove_client_proxy(self, client_id, unreg_rpc_channel=True):
+        # TODO:
+        pass
+
+    def seed_request(self, controller, request, done):
+        # TODO:
+        pass
+
+    def session_key(self, controller, key, done):
+        # TODO:
+        pass
+
+    def connect_server(self, controller, request, done):
+        # TODO:
+        pass
+
+    def entity_message(self, controller, entity_msg, done):
+        # TODO:
+        pass
+
+    def reg_md5index(self, controller, md5_index, done):
+        # TODO:
+        pass
