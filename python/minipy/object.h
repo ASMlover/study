@@ -45,7 +45,7 @@ typedef long (*hashfunc)(PyObject* object);
 
 typedef struct _PyTypeObject {
   PyObject_HEAD;
-  char* tp_name;
+  const char* tp_name;
   printfunc tp_print;
   addfunc tp_add;
   hashfunc tp_hash;
