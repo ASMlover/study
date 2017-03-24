@@ -1,7 +1,6 @@
 # **Python基础知识**
 ***
 
-
 ## **1. 数据结构**
 > ### **1.1 列表**
     * list.append(x)    追加新对象
@@ -57,8 +56,6 @@
     * dict.values()/dict.itervalues()
       values以列表形式返回字典中的值, itervalues返回字典中值的迭代器;
 
-
-
 ## **2. 控制结构**
     False, None, 0, '', (), [], {}
     标准值False和None, 所有类型的数字0(浮点数, 长整型和其他类型), 空序列(空
@@ -71,13 +68,13 @@
           names = ['name1', 'name2', 'name3']
           ages = [11, 22, 33]
           for name, age in zip(names, ages):
-            print name, age 
+            print name, age
     2) 编号迭代
         使用enumerate(seq), 返回索引和元素;
           for i, name in enumerate(names):
-            print i, name 
+            print i, name
     3) 翻转和排序迭代
-        sorted方法和reserved方法, 返回原序列的副本, reserved返回一个迭代器 
+        sorted方法和reserved方法, 返回原序列的副本, reserved返回一个迭代器
           l = [23, 45, 7, 3, 34, 89, 9, 0, 121]
           x = sorted(l)
           print x
@@ -87,18 +84,15 @@
     是用其他列表创建新列表的方法;
         [x * x for x in range(10)]
 
-
-
-
 ## **3. 抽象**
 > ### **3.1 函数**
     1) 搜集参数(用户可以传递任意多个参数, 其实时以元组的方式传递的; 或以键值
        对的方式传递任意多个参数, 是以字典方式实现的)
        func(*args)  元组
-       func(**args) 字典 
+       func(**args) 字典
         * map(func, seq[,seq,...])    对序列中的每个元素应用函数
         * filter(func, seq)           返回其函数为真的元素的列表
-        * reduce(func,seq[,initial])  
+        * reduce(func,seq[,initial])
           等同func(func(seq[0],seq[1],seq[2]),...)
         * sum(seq)                    返回seq中所有元素的和
         * apply(func[,args[,kwargs]]) 调用函数, 可以提供参数
@@ -120,7 +114,7 @@
     3) 类中没有加self限定的变量, 类似于静态成员; 但是如果以某实例重新绑定了
        该变量的值, 那么只会影响该实例;
     4) 面向对象的思考:
-        * 属于一类的对象放在一起; 
+        * 属于一类的对象放在一起;
         * 不要让对象过于亲密;
         * 小心继承, 尤其是多继承;
         * 简单就好, 让你的方法小巧;
@@ -133,8 +127,6 @@
         * random.choice(sequence)           从非空序列中随机选择元素
         * setattr(object,name,value)        设定对象的给定特性为value
         * type(object)                      返回对应的类型
-
-
 
 ## **4. 异常**
     1) 内建异常
@@ -154,9 +146,6 @@
        会被执行;
     4) warings.filterwarnings(action, ...)  用于过滤警告
 
-
-
-
 ## **5. 魔法方法, 属性和迭代器**
     Python里名字前面和后面都有两个下划线的方法称为魔法方法; 为了确保类是新型
     的, 应该把赋值语句__metaclass__ = type放在模块的最开始, 或子类化内建类
@@ -169,8 +158,6 @@
         * property(fget,fset,fdel,doc)
           返回一个属性, 所有的参数都是可选的
         * super(class,obj)    返回一个类的超类的绑定实例
-
-
 
 ## **6. 模块**
 > ### **6.1 模块**
@@ -187,7 +174,7 @@
             b. 没有在Python解释器目录中存储文件的权限;
             c. 想将模块放在其他地方;
           设置PYTHONPATH环境变量(如):
-            export PYTHONPATH=$PYTHONPATH:~/Python 
+            export PYTHONPATH=$PYTHONPATH:~/Python
 
 > ### **6.2 包**
     1) 为了组织好模块, 可以将它们分组成包; 包是另外一类模块, 能包含其他模块,
@@ -234,7 +221,7 @@
         * isstdin()         检查最后一行是否来自sys.stdin
         * nextfile()        关闭当前文件, 移到下一个文件
         * close()           关闭序列
-        DEMO: ./src/number_lines.py 
+        DEMO: ./src/number_lines.py
     4) 堆是优先队列的一种, 能以任意顺序增加对象, 并能在任何时间找到最小的元
        素;
        heapq模块中的重要函数:
@@ -244,12 +231,12 @@
         * heapreplace(heap, x)  将堆中最小的元素弹出, 同时将x入堆
         * nlargest(n, iter)     返回iter中第N大的元素
         * nsmallest(n, iter)    返回iter中第n小的元素
-    5) 双端队列使用deque来实现; 能够有效地在开头增加和弹出元素; 
+    5) 双端队列使用deque来实现; 能够有效地在开头增加和弹出元素;
     6) time模块可以实现: 获得当前时间, 操作时间和日期, 从字符串读取时间以及
        格式化时间为字符串;
        Python中日期元组的字段含义:
         * 0     年      2001, 2014
-        * 1     月      1 ~ 12 
+        * 1     月      1 ~ 12
         * 2     日      1 ~ 31
         * 3     时      0 ~ 23
         * 4     分      0 ~ 59
@@ -264,7 +251,7 @@
         * sleep(secs)               休眠secs秒
         * strptime(string[,format]) 将字符串解析为时间元组
         * time()                    当前时间(新纪元开始后的秒数, UTC为准)
-    7) random模块中的一些重要函数 
+    7) random模块中的一些重要函数
         * random()              返回0<=n<=1之间的随机实数, 0<n<=1
         * getrandbits(n)        以长整形形式返回n个随机位
         * uniform(a,b)          返回随机实数n, a<=n<b
@@ -273,7 +260,7 @@
         * choice(seq)           从序列seq中返回随意元素
         * shuffle(seq[,random]) 原地指定序列seq
         * sample(seq,n)         从seq中选择n个随机且独立的元素
-    8) re模块中一些重要函数 
+    8) re模块中一些重要函数
         * compile(pattern[, flags])
           根据包含正则表达式的字符串创建模式对象
         * search(pattern, string[, flags])
@@ -300,14 +287,11 @@
     * sets,heapq,deque  有用的数据解构
     * time              获取当前时间, 并可进行时间日期操作和格式化
     * random            可产生随机数, 从序列中选取随机元素以及打乱列表元素
-    * shelve            
+    * shelve
       可创建持续性映射, 同时将映射的内容保存在给定文件名的数据库中
     * re                支持正则表达式的模块
     实用函数
     reload(module)      返回已经导入模块的重新载入版本
-
-
-
 
 ## **7. 文件**
 > ### **7.1 打开文件**
@@ -324,11 +308,8 @@
         * > 1         表示缓冲区的大小(字节)
         * -1          表示使用默认缓冲区大小
 > ### **7.2 对文件内容进行迭代**
-    1) DEMO: ./src/file_iter.py 
-    2) 使用文件迭代器: ./src/file_iter.py 
-
-
-
+    1) DEMO: ./src/file_iter.py
+    2) 使用文件迭代器: ./src/file_iter.py
 
 ## **8. 数据库支持**
     1) DB API的模块特性
@@ -374,7 +355,7 @@
        游标对象的特性
         * description         结果列描述的序列, 只读
         * rowcount            结果中的行数, 只读
-        * arraysize           fetchmay中返回行数, 默认为1 
+        * arraysize           fetchmay中返回行数, 默认为1
     6) DB API构造函数和特殊值
         * Date(year,month,day)        创建保存日期值的对象
         * Time(hour,minute,second)    创建保存时间值的对象
@@ -387,9 +368,7 @@
         * BINARY                      描述二进制列
         * NUMBER                      描述数字列
         * DATETIME                    描述日期/时间列
-        * ROWID                       描述行ID列 
-
-
+        * ROWID                       描述行ID列
 
 ## **9. 网络**
     1) select模块中的polling事件常量
@@ -399,7 +378,7 @@
         * POLLERR     与文件描述符有关的错误情况
         * POLLHUP     挂起, 连接丢失
         * POLLNVAL    无效请求, 连接没有打开
-       DEMO: ./src/poll_server.py 
+       DEMO: ./src/poll_server.py
     2) HTMLParser的回调方法
         * handle_starttag(tag, attrs)
           找到开始标签时调用; attr是(名称, 值)对的序列
@@ -413,14 +392,12 @@
         * handle_decl(decl)       声明<!...>形式时调用
         * handle_pi(data)         处理指令时调用
 
-
-
 ## **10. 测试**
     1) 使用doctest
-          ./src/test/my_math.py 
+          ./src/test/my_math.py
     2) unittest的一些TestCase方法
         * assert_(expr[, msg])    如表达式为假则失败, 可选择给出信息
-        * failUnless(expr[,msg])  同assert 
+        * failUnless(expr[,msg])  同assert
         * assertEqual(x,y[,msg])  如果两值不同则失败, 在回溯中打印两个值
         * failUnlessEqual(x,y[,msg])    同assertEqual
         * assertNotEqual(x,y[,msg])     和assertEqual相反
@@ -443,8 +420,6 @@
         * 分析: 使用profile模块
         * profile.run(stmt,[filename])  执行并分析语句, 结果存入filename文件
 
-
-
 ## **11. 扩展Python**
     1) 处理速度的考虑
         * 在Python中开发一个原型程序
@@ -454,11 +429,11 @@
         * 为代码编写接口文件
         * 在接口文件上运行swig(为了字典的产生C代码)
         * 把原来的C语言代码和产生的包装代码一起编译来产生共享库
-        1. C文件 ./src/ext/palindrome.c 
+        1. C文件 ./src/ext/palindrome.c
         2. 接口文件: ./src/ext/palindrome.i
         3. 运行swig
             $ swig -python palindrome.i
-            得到palindrome_wrap.c和palindrome.py文件 
+            得到palindrome_wrap.c和palindrome.py文件
         4. 编译
             Linux:
               $ gcc -c palindrome.c
@@ -466,15 +441,13 @@
               $ gcc -shared palindrome.o palindrome_wrap.o -o _palindrome.so
             Windows:
               $ gcc -shared platform.o palindrome_wrap.o -o _palindrome.dll
-        5. 使用 
+        5. 使用
             >>> import _palindrome
             >>> _palindrome.is_palindrome('xxx')
 
-
-
 ## **12. 打包**
     1) 使用distutils制作安装脚本
-        ./src/install/demo1/ 
+        ./src/install/demo1/
         * 建立存档文件
           $ python setup.py sdist
         * 创建Windows安装程序
@@ -483,34 +456,27 @@
     2) 使用distutils编译扩展
         在使用swig的前提下, setup.py如下:
             from distutils.core import setup, Extension
-            setup(name='palindrome', 
-                version='1.0', 
+            setup(name='palindrome',
+                version='1.0',
                 ext_modules= [
                   Extension('palindrome', ['palindrome.c', 'palindrome.i'])
                 ])
         然后编译:
-          $ python setup.py build_ext --inplace 
+          $ python setup.py build_ext --inplace
     3) 使用py2exe创建windows下面的可执行程序
-        * 编写一个程序 hello.py 
-        * 在包含hello.py的目录中编写setup.py 
+        * 编写一个程序 hello.py
+        * 在包含hello.py的目录中编写setup.py
             from distutils.core import setup
             import py2exe
             setup(console=['hello.py'])
         * 编译脚本
-          $ python setup.py py2exe 
-
-
-
+          $ python setup.py py2exe
 
 ## **13. 使用模块**
     1) 读取配置文件ConfigParser
-        ./src/config_parser.py 
+        ./src/config_parser.py
     2) 日志记录模块logging
-        ./src/demo_logging.py 
-
-
-
-
+        ./src/demo_logging.py
 
 ## **14. 使用XML-RPC**
     1) 在实例化服务器之后可以注册一个实例, 使用register_instance方法实现"远
