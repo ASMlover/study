@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <vector>
 #include <boost/asio.hpp>
 
 using boost::asio::ip::udp;
@@ -34,13 +35,13 @@ class Server : private boost::noncopyable {
   udp::endpoint sender_ep_;
 
   enum {MAX_LENGTH = 1024};
-  char data_[MAX_LENGTH];
+  std::vector<char> readbuff_;
 
   void do_read(void) {
-    socket_.async_receive_from(boost::asio::buffer(data_, MAX_LENGTH), sender_ep_,
+    socket_.async_receive_from(boost::asio::buffer(readbuff_), sender_ep_,
         [this](const boost::system::error_code& ec, std::size_t read_bytes) {
           if (!ec && read_bytes > 0) {
-            std::cout << "receive from: endpoint=" << sender_ep_ << ", messge=" << data_ << std::endl;
+            std::cout << "receive from: endpoint=" << sender_ep_ << ", messge=" << readbuff_.data() << std::endl;
             do_write(read_bytes);
           }
           else {
@@ -50,14 +51,15 @@ class Server : private boost::noncopyable {
   }
 
   void do_write(std::size_t length) {
-    socket_.async_send_to(boost::asio::buffer(data_, length), sender_ep_,
+    socket_.async_send_to(boost::asio::buffer(readbuff_, length), sender_ep_,
         [this](const boost::system::error_code& /*ec*/, std::size_t /*n*/) {
           do_read();
         });
   }
 public:
   Server(boost::asio::io_service& io_service, std::uint16_t port = 5555)
-    : socket_(io_service, udp::endpoint(udp::v4(), port)) {
+    : socket_(io_service, udp::endpoint(udp::v4(), port))
+    , readbuff_(MAX_LENGTH) {
   }
 
   void start(void) {

@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cstring>
 #include <iostream>
+#include <vector>
 #include <boost/asio.hpp>
 
 using boost::asio::ip::udp;
@@ -41,7 +42,7 @@ void run_client(const char* remote_addr = "127.0.0.1", const char* remote_port =
   s.send_to(boost::asio::buffer(send_buff, std::strlen(send_buff)), endpoint);
 
   udp::endpoint sender_ep;
-  char buff[MAX_LENGTH];
-  s.receive_from(boost::asio::buffer(buff, MAX_LENGTH), sender_ep);
-  std::cout << "Receive: " << buff << std::endl;
+  std::vector<char> readbuff(MAX_LENGTH);
+  s.receive_from(boost::asio::buffer(readbuff), sender_ep);
+  std::cout << "Receive: " << readbuff.data() << std::endl;
 }
