@@ -26,8 +26,21 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 
+extern void run_server(std::uint16_t port);
+extern void run_client(const char* remote_addr, const char* remote_port);
+
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
+
+  if (argc < 2) {
+    std::cerr << "usage: echo [c|s] ..." << std::endl;
+    return 1;
+  }
+
+  if (argv[1][0] == 's')
+    run_server(5555);
+  else
+    run_client("127.0.0.1", "5555");
 
   return 0;
 }
