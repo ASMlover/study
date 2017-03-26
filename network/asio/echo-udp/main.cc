@@ -24,31 +24,23 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#include <iostream>
 
-typedef signed int Py_ssize_t;
+extern void run_server(std::uint16_t port);
+extern void run_client(const char* remote_addr, const char* remote_port);
 
-#define PyObject_HEAD\
-  Py_ssize_t ob_refcnt;\
-  struct _PyTypeObject* ob_type
+int main(int argc, char* argv[]) {
+  (void)argc, (void)argv;
 
-#define PyObject_HEAD_INIT(type)\
-  0, type
+  if (argc < 2) {
+    std::cerr << "usage: echo [c|s] ..." << std::endl;
+    return 1;
+  }
 
-typedef struct _PyObject {
-  PyObject_HEAD;
-} PyObject;
+  if (argv[1][0] == 's')
+    run_server(5555);
+  else
+    run_client("127.0.0.1", "5555");
 
-typedef void (*printfunc)(PyObject* object);
-typedef PyObject* (*addfunc)(PyObject* lobject, PyObject* robject);
-typedef long (*hashfunc)(PyObject* object);
-
-typedef struct _PyTypeObject {
-  PyObject_HEAD;
-  const char* tp_name;
-  printfunc tp_print;
-  addfunc tp_add;
-  hashfunc tp_hash;
-} PyTypeObject;
-
-extern PyTypeObject PyType_Type;
+  return 0;
+}

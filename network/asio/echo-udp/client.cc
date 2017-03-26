@@ -24,31 +24,25 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#include <cstring>
+#include <iostream>
+#include <vector>
+#include <boost/asio.hpp>
 
-typedef signed int Py_ssize_t;
+using boost::asio::ip::udp;
+const int MAX_LENGTH = 1024;
 
-#define PyObject_HEAD\
-  Py_ssize_t ob_refcnt;\
-  struct _PyTypeObject* ob_type
+void run_client(const char* remote_addr = "127.0.0.1", const char* remote_port = "5555") {
+  boost::asio::io_service io_service;
+  udp::socket s(io_service, udp::endpoint(udp::v4(), 0));
+  udp::resolver r(io_service);
+  auto endpoint = *r.resolve({udp::v4(), remote_addr, remote_port});
 
-#define PyObject_HEAD_INIT(type)\
-  0, type
+  const char* send_buff = "This is udp echo client";
+  s.send_to(boost::asio::buffer(send_buff, std::strlen(send_buff)), endpoint);
 
-typedef struct _PyObject {
-  PyObject_HEAD;
-} PyObject;
-
-typedef void (*printfunc)(PyObject* object);
-typedef PyObject* (*addfunc)(PyObject* lobject, PyObject* robject);
-typedef long (*hashfunc)(PyObject* object);
-
-typedef struct _PyTypeObject {
-  PyObject_HEAD;
-  const char* tp_name;
-  printfunc tp_print;
-  addfunc tp_add;
-  hashfunc tp_hash;
-} PyTypeObject;
-
-extern PyTypeObject PyType_Type;
+  udp::endpoint sender_ep;
+  std::vector<char> readbuff(MAX_LENGTH);
+  s.receive_from(boost::asio::buffer(readbuff), sender_ep);
+  std::cout << "Receive: " << readbuff.data() << std::endl;
+}

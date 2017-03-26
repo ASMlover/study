@@ -4,7 +4,7 @@
 ## **1. 性能**
     前提是针对Python2.x
     1) 获取dict的keys或values以及items的时候应该使用iterkeys, itervalues,
-       iteritems; 
+       iteritems;
        这样遍历的是一个迭代器而不用返回一个list然后再删除掉...
     2) 使用内建函数(它们非常块):
         input()
@@ -44,7 +44,7 @@
     11) 了解itertools模块, 该模块对迭代和组合是非常有效的;
     12) 学习bisect模块保持列表排序, 这是一个免费的二分查找实现和快速插入有序
         序列的工具;
-    13) 理解python列表, 实际上是一个数组; 
+    13) 理解python列表, 实际上是一个数组;
     14) 使用dict和set测试成员:
         检查一个元素是在dict或set是否存在是非常快速的; 因为dict和set是使用
         hash表来实现的; 如果需要经常检查成员, 使用dict或set作为你的容器;
