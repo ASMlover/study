@@ -39,3 +39,15 @@ def get_sin(calc=True):
      value = _SIN(value)
   print vallue
 ```
+但是推荐的解决方法是在函数的开头import需要的模块：
+```python
+def get_sin(calc=True):
+  import math
+
+  value = math.pi
+  if calc:
+    value = math.sin(value)
+
+  print value
+```
+Python的名字是按照**LGB**的规则来搜索的，也就是(Local Scope -> Global Scope -> Builtin Scope)。

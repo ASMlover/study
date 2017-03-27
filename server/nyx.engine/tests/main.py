@@ -62,11 +62,47 @@ class NyxEngineUnittest(unittest.TestCase):
             _logger.debug('[%d] id=%s', i, IdCreator.genid())
 
     def test_codec(self):
+        import random
         from common.nyx_codec import Md5Cache
+        from common.nyx_codec import IndexCache
+        from common.nyx_codec import CodecEncoder
+        from common.nyx_codec import CodecDecoder
 
-        s = 'test_codec.Md5Cache'
-        md5 = Md5Cache.get_md5(s)
-        _logger.debug('{%s => %s} {%s => %s}', s, md5, md5, Md5Cache.get_str(md5))
+        # unittest for Md5Cache
+        for i in xrange(50):
+            s = 'test_codec.Md5Cache#%d' % (i + 1)
+            md5 = Md5Cache.get_md5(s)
+            _logger.debug('{%s => %s} {%s => %s}', s, md5, md5, Md5Cache.get_str(md5))
+
+        # unittest for IndexCache
+        for i in xrange(50):
+            s = 'test_codec.IndexCache#%d' % i
+            IndexCache._index2str[i] = s
+            IndexCache._str2index[s] = i
+        for i in xrange(10):
+            n = random.randint(1, 49)
+            s = 'test_codec.IndexCache#%d' % n
+            assert n == IndexCache.get_index(s) and s == IndexCache.get_str(n)
+
+        class Md5OrIndex(object):
+            def __init__(self):
+                self.md5 = ''
+                self.index = -1
+
+        # unittest for CodecEncoder
+        ce = CodecEncoder()
+        md5_idx = Md5OrIndex()
+        ce.encode(md5_idx, 'Hello, world!')
+        _logger.debug('test_codec.CodecEncoder - md5=%s, index=%s', md5_idx.md5, md5_idx.index)
+        index, md5 = ce.raw_encode('Hello, world!')
+        assert index is 0 and md5 == md5_idx.md5
+
+        # unittest for CodecDecoder
+        cd = CodecDecoder()
+        r, destr = cd.decode(md5_idx)
+        _logger.debug('test_codec.CodecDecoder - result=%s, decode-string=%s', r, destr)
+        r2, destr2, index2 = cd.raw_decode(md5, index)
+        assert r2 is True and destr2 == destr and index2 == index
 
 def main():
     suite = unittest.TestLoader().loadTestsFromTestCase(NyxEngineUnittest)

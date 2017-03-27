@@ -1,0 +1,244 @@
+// Copyright (c) 2017 ASMlover. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list ofconditions and the following disclaimer.
+//
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in
+//    the documentation and/or other materialsprovided with the
+//    distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+syntax = "proto3";
+import "nyx_common.proto";
+package nyx.core;
+
+option cc_generic_services = true;
+option py_generic_services = true;
+
+// nyx.core数据库(mongodb)的读写操作，数据应该使用bson，以便可以将db manager C++化
+
+message FindDocRequest {
+  // 读取操作请求
+  int32 callback_id = 1; // 需要回调时，必须大于0
+  bytes db = 2;
+  bytes collection = 3; // collection name
+  bytes query = 4; // bson编码的query信息
+  bytes fields = 5; // bson编码的dict
+  int32 limit = 6; // 需要返回多少个结果
+  bool seq_flag = 7; // 该操作是否保证有序
+  bytes seq_key = 8; // seq_flag操作的key，指定_id之外的key
+  bytes sort = 9; // 排序
+  int32 read_pref = 10; // 在开启复制集replica set的时候，表示选择查询节点的方式
+  bytes hint = 11;
+  bytes skip = 12;
+}
+
+message FindDocResponse {
+  int32 callback_id = 1; // find操作成功之后的callback
+  bool status = 2; // find操作是否成功
+  bytes docs = 3; // bson编码的doc列表
+}
+
+message CountDocRequest {
+  // 获取doc的条目数据信息
+  int32 callback_id = 1; // 需要回调时，必须大于0
+  bytes db = 2;
+  bytes collection = 3;
+  bytes query = 4; // bson编码的query信息
+}
+
+message CountDocResponse {
+  int32 callback_id = 1; // 获取count操作成功之后的callback
+  bool status = 2; // 操作是否成功
+  int32 count = 3; // 返回doc的数量
+}
+
+message UpdateDocRequest {
+  // 更新doc的相关数据定义
+  int32 callback_id = 1; // 需要回调时，必须大于0
+  bytes db = 2;
+  bytes collection = 3;
+  bytes query = 4; // bson编码的query信息
+  bytes doc = 5; // bson编码的dict信息，用于更新
+  bool upsert = 6; // 不存在是否插入
+  bool multi = 7; // 是否更新多个
+  bool seq_flag = 8; // 该操作是否需要保证有序
+  bytes seq_key = 9; // seq_flag操作的key，除_id之外的key
+}
+
+message UpdateDocResponse {
+  int32 callback_id = 1; // update操作成功之后的callback
+  bool status = 2; // update操作是否成功
+}
+
+message InsertDocRequest {
+  // 插入新doc操作
+  int32 callback_id = 1; // 需要回调时，必须大于0
+  bytes db = 2;
+  bytes collection = 3;
+  bytes doc = 4;
+  bool seq_flag = 5; // 该操作是否需要保证有序
+  bytes seq_key = 6; // seq_flag操作的key，除_id之外的key
+}
+
+message InsertDocResponse {
+  int32 callback_id = 1; // insert操作成功之后的callback
+  bool status = 2; // insert操作是否成功
+  bytes insert_id = 3; // 插入成功之后返回的_id
+}
+
+message DeleteDocRequest {
+  int32 callback_id = 1; // 需要回调时，必须大于0
+  bytes db = 2;
+  bytes collection = 3;
+  bytes query = 4; // bson编码的query信息
+  bool seq_flag = 5; // 该操作是否需要保证有序
+  bytes seq_key = 6; // seq_flag操作的key，除_id之外的key
+}
+
+message DeleteDocResponse {
+  int32 callback_id = 1; // delete操作成功之后的callback
+  bool status = 2; // delete操作是否成功
+}
+
+message FindAndModifyDocRequest {
+  int32 callback_id = 1; // 需要回调时，必须大于0
+  bytes db = 2;
+  bytes collection = 3;
+  bytes query = 4; // bson编码的query信息
+  bytes fields = 5; // bson编码的dict
+  bytes update = 6; // bson编码的dict
+  bool upsert = 7; // 不存在则插入
+  bool new = 8; // 为真返回修改后的doc
+  bool seq_flag = 9; // 该操作是否需要保证有序
+  bytes seq_key = 10; // seq_flag操作的key，除_id之外的key
+}
+
+message FindAndModifyDocResponse {
+  int32 callback_id = 1; // findAndModify操作成功之后的callback
+  bool status = 2; // findAndModify操作是否成功
+  bytes doc = 3; // findAndModify操作成功之后返回的doc
+}
+
+message ProcedureRequest {
+  int32 callback_id = 1; // 需要回调时，必须大于0
+  bytes db = 2;
+  bytes proc = 3;
+  bytes args = 4; // bson编码的args
+  bytes kwargs = 5; // bson编码的kwargs
+}
+
+message ProcedureResponse {
+  int32 callback_id = 1; // 执行存储过程成功之后的callback
+  bool status = 2; // 存储过程执行是否成功
+  bytes doc = 3; // 存储过程执行成功之后返回的doc
+}
+
+message OperationIndexRequest {
+  enum OperationType {
+    ENSURE = 0;
+    DROP = 1;
+    RESET = 2;
+  }
+  int32 callback_id = 1;
+  bytes db = 2;
+  bytes collection = 3;
+  OperationType type = 4;
+  bytes query = 5;
+  bytes desc = 6;
+}
+
+message OperationIndexResponse {
+  int32 callback_id = 1;
+  bool status = 2; // 操作是否成功
+}
+
+message CreateCollectionRequest {
+  int32 callback_id = 1;
+  bytes db = 2;
+  bytes collection = 3;
+  bytes operations = 5; // 新建collection的选项
+}
+
+message CreateCollectionResponse {
+  enum CreateStatus {
+    SUCCESS = 0; // 成功
+    EXISTED = 1; // 已经存在
+    FAILED = 2; // 其他错误
+  }
+  int32 callback_id = 1; // 创建collection成功之后的callback
+  CreateStatus status = 2; // 创建colllection操作的返回状态
+}
+
+message DBStatusMessage {
+  enum DBStatus {
+    CONNECTED = 0; // db manager和mongodb连接正常
+    CONNECTION_FAILED = 1; // db manager和mongodb连接失败
+    BUSY = 2; // db mananger等待执行的队列过长
+  }
+  DBStatus status = 1; // 查询db mananger状态信息
+}
+
+message CallDBRequest {
+  int32 callback_id = 1;
+  bytes method = 2;
+  bytes args = 3;
+}
+
+message CallDBResponse {
+  int32 callback_id = 1;
+  bytes args = 2;
+}
+
+service SClientToDBManager {
+  // game其他访问db manager的rpc操作
+
+  // 将game服务器信息注册到db manager
+  rpc reg_client(ServerInfo) returns(Void);
+  rpc db_find_doc(FindDocRequest) returns(Void);
+  rpc db_update_doc(UpdateDocRequest) returns(Void);
+  rpc db_delete_doc(DeleteDocRequest) returns(Void);
+  rpc db_insert_doc(InsertDocRequest) returns(Void);
+  rpc db_count_doc(CountDocRequest) returns(Void);
+  rpc db_find_and_modify_doc(FindAndModifyDocRequest) returns(Void);
+  rpc db_run_procedure(ProcedureRequest) returns(Void);
+  rpc db_operation_index(OperationIndexRequest) returns(Void);
+  rpc db_create_collection(CreateCollectionRequest) returns(Void);
+  rpc db_reload_procedure(Void) returns(Void);
+  // 和db manager通信的rpc接口
+  rpc call_db_method(CallDBRequest) returns(Void);
+}
+
+service SDBManagerToClient {
+  // db manager同连接的game服务器返回rpc
+
+  // 返回db manager的状态信息
+  rpc on_db_status(DBStatusMessage) returns(Void);
+  rpc on_db_find_doc(FindDocResponse) returns(Void);
+  rpc on_db_update_doc(UpdateDocResponse) returns(Void);
+  rpc on_db_delete_doc(DeleteDocResponse) returns(Void);
+  rpc on_db_insert_doc(InsertDocResponse) returns(Void);
+  rpc on_db_count_doc(CountDocResponse) returns(Void);
+  rpc on_db_find_and_modify_doc(FindAndModifyDocResponse) returns(Void);
+  rpc on_db_run_procedure(ProcedureResponse) returns(Void);
+  rpc on_db_operation_index(OperationIndexResponse) returns(Void);
+  rpc on_db_create_collection(CreateCollectionResponse) returns(Void);
+  rpc on_call_db_method(CallDBResponse) returns(Void);
+}

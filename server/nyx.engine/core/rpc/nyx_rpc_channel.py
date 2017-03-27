@@ -40,7 +40,7 @@ from rpc import nyx_request as _request
 class NyxRpcController(service.RpcController):
     def __init__(self, channel):
         super(NyxRpcController, self).__init__()
-        self._rpc_chanel = channel
+        self._rpc_channel = channel
 
 class NyxRpcChannel(service.RpcChannel):
     def __init__(self, rpc_service, conn):
@@ -193,19 +193,19 @@ class RpcChannelHolder(object):
     def __init__(self):
         super(RpcChannelHolder, self).__init__()
         self._logger = LogManager.get_logger('NyxCore.Rpc.RpcChannelHolder')
-        self._rpc_chanel = None
+        self._rpc_channel = None
 
     def get_rpc_channel(self):
-        return self._rpc_chanel
+        return self._rpc_channel
 
     def on_new_channel(self, rpc_channel):
         """TcpServer或TcpClient处理新连接时的回调"""
-        self._rpc_chanel = rpc_channel
+        self._rpc_channel = rpc_channel
         rpc_channel.register_listener(self)
 
     def on_channel_disconnected(self, rpc_channel):
         """连接断开的时候channel回调"""
-        self._rpc_chanel = None
+        self._rpc_channel = None
 
 class RpcChannelManager(object):
     def __init__(self):
