@@ -32,78 +32,78 @@
 void ms_sample1(void) {
   fprintf(stdout, "sample1: all objects on stack\n");
 
-  VM* vm = new_vm();
-  push_int(vm, 1);
-  push_int(vm, 2);
+  NyVM* vm = NyVM_New();
+  NyObject_PushInt(vm, 1);
+  NyObject_PushInt(vm, 2);
 
-  gc_collect(vm);
-  free_vm(vm);
+  NyGC_Collect(vm);
+  NyVM_Free(vm);
 }
 
 void ms_sample2(void) {
   fprintf(stdout, "sample2: objects unreached\n");
 
-  VM* vm = new_vm();
-  push_int(vm, 1);
-  push_int(vm, 2);
-  pop_object(vm);
-  pop_object(vm);
+  NyVM* vm = NyVM_New();
+  NyObject_PushInt(vm, 1);
+  NyObject_PushInt(vm, 2);
+  NyObject_Pop(vm);
+  NyObject_Pop(vm);
 
-  gc_collect(vm);
-  free_vm(vm);
+  NyGC_Collect(vm);
+  NyVM_Free(vm);
 }
 
 void ms_sample3(void) {
   fprintf(stdout, "sample3: reached nested objects\n");
 
-  VM* vm = new_vm();
-  push_int(vm, 1);
-  push_int(vm, 2);
-  push_pair(vm);
-  push_int(vm, 3);
-  push_int(vm, 4);
-  push_pair(vm);
-  push_pair(vm);
+  NyVM* vm = NyVM_New();
+  NyObject_PushInt(vm, 1);
+  NyObject_PushInt(vm, 2);
+  NyObject_PushPair(vm);
+  NyObject_PushInt(vm, 3);
+  NyObject_PushInt(vm, 4);
+  NyObject_PushPair(vm);
+  NyObject_PushPair(vm);
 
-  gc_collect(vm);
-  free_vm(vm);
+  NyGC_Collect(vm);
+  NyVM_Free(vm);
 }
 
 void ms_sample4(void) {
   fprintf(stdout, "sample4: cycles objects\n");
 
-  VM* vm = new_vm();
-  push_int(vm, 1);
-  push_int(vm, 2);
-  Object* a = push_pair(vm);
-  push_int(vm, 3);
-  push_int(vm, 4);
-  Object* b = push_pair(vm);
+  NyVM* vm = NyVM_New();
+  NyObject_PushInt(vm, 1);
+  NyObject_PushInt(vm, 2);
+  NyObject* a = NyObject_PushPair(vm);
+  NyObject_PushInt(vm, 3);
+  NyObject_PushInt(vm, 4);
+  NyObject* b = NyObject_PushPair(vm);
 
-  a->first = b;
-  b->first = a;
+  a->tail = b;
+  b->tail = a;
 
-  gc_collect(vm);
-  pop_object(vm);
-  pop_object(vm);
+  NyGC_Collect(vm);
+  NyObject_Pop(vm);
+  NyObject_Pop(vm);
 
-  gc_collect(vm);
-  free_vm(vm);
+  NyGC_Collect(vm);
+  NyVM_Free(vm);
 }
 
 void ms_sample5(void) {
   fprintf(stdout, "sample5: performace\n");
-  VM* vm = new_vm();
+  NyVM* vm = NyVM_New();
 
   for (int i = 0; i < 1000000; ++i) {
     for (int j = 0; j < 20; ++j)
-      push_int(vm, i);
+      NyObject_PushInt(vm, i);
 
     for (int j = 0; j < 20; ++j)
-      pop_object(vm);
+      NyObject_Pop(vm);
   }
 
-  free_vm(vm);
+  NyVM_Free(vm);
 }
 
 int main(int argc, char* argv[]) {
