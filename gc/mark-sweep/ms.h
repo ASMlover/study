@@ -30,31 +30,36 @@
 
 #include <stdint.h>
 
-typedef enum _objecttype {
+#define NyAPI_FUNC(type) extern type
+
+typedef enum _type {
   OBJECT_INT,
   OBJECT_PAIR,
-} ObjectType;
+} NyType;
+
+typedef struct _gc {
+  uint8_t marked;
+} NyGC;
 
 typedef struct _object {
-  ObjectType type;
-  uint8_t marked;
+  NyGC gc;
 
+  NyType type;
   struct _object* next;
-
   union {
     int value;
     struct {
-      struct _object* first;
-      struct _object* second;
+      struct _object* head;
+      struct _object* tail;
     };
   };
-} Object;
+} NyObject;
 
-typedef struct _vm VM;
+typedef struct _vm NyVM;
 
-extern VM* new_vm(void);
-extern void free_vm(VM* vm);
-extern Object* push_int(VM* vm, int value);
-extern Object* push_pair(VM* vm);
-extern Object* pop_object(VM* vm);
-extern void gc_collect(VM* vm);
+NyAPI_FUNC(NyVM*) NyVM_New(void);
+NyAPI_FUNC(void) NyVM_Free(NyVM* vm);
+NyAPI_FUNC(NyObject*) NyObject_PushInt(NyVM* vm, int value);
+NyAPI_FUNC(NyObject*) NyObject_PushPair(NyVM* vm);
+NyAPI_FUNC(NyObject*) NyObject_Pop(NyVM* vm);
+NyAPI_FUNC(void) NyGC_Collect(NyVM* vm);
