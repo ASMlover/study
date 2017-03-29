@@ -156,3 +156,78 @@ class MongoClientDriver(object):
     def report_failure(self, op_type, op_request, client_proxy):
         # TODO:
         pass
+
+class DBManagerService(_dm_pb2.SClientToDBManager):
+    def __init__(self, mongo_config, db_config):
+        super(DBManagerService, self).__init__()
+        self.logger = LogManager.get_logger('NyxCore.DBMgr.DBManagerService')
+        # TODO:
+        pass
+
+    def sned_callback(self, op_type, op_request, client_proxy, op_status, result):
+        # TODO:
+        pass
+
+    def on_channel_disconnected(self, rpc_channel):
+        # TODO:
+        pass
+
+    def reg_client(self, controller, server_info, done):
+        # TODO:
+        pass
+
+    def _mongo_client_operation(self, op_type, op_request, client_proxy):
+        # TODO:
+        pass
+
+    def _reload_procedure(self):
+        # TODO:
+        pass
+
+    def _check_sequence(self, op_type, request, client_proxy):
+        # TODO:
+        pass
+
+    def _get_request_seq_key(self, request):
+        # TODO:
+        pass
+
+    def db_create_collection(self, controller, request, done):
+        # TODO:
+        pass
+
+    def db_find_doc(self, controller, request, done):
+        # TODO:
+        pass
+
+    def db_operation_index(self, controller, request, done):
+        # TODO:
+        pass
+
+    def db_count_doc(self, controller, request, done):
+        # TODO:
+        pass
+
+    def db_update_doc(self, controller, request, done):
+        # TODO:
+        pass
+
+    def db_insert_doc(self, controller, request, done):
+        # TODO:
+        pass
+
+    def db_delete_doc(self, controller, request, done):
+        # TODO:
+        pass
+
+    def db_find_and_modify_doc(self, controller, request, done):
+        # TODO:
+        pass
+
+    def db_run_procedure(self, controller, request, done):
+        # TODO:
+        pass
+
+    def db_reload_procedure(self, controller, request, done):
+        # TODO:
+        pass
