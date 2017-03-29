@@ -101,3 +101,58 @@ class DBClientProxy(object):
     def on_db_create_collection(self, callback_id, status):
         # TODO:
         pass
+
+class MongoClientDriver(object):
+    def __init__(self, mongo_config, db_config):
+        super(MongoClientDriver, self).__init__()
+        self.logger = LogManager.get_logger('NyxCore.DBMgr.MongoClientDriver')
+        # TODO:
+        pass
+
+    def connect_mongo(self):
+        # TODO:
+        pass
+
+    def request_callback(self):
+        # TODO:
+        pass
+
+    def drop_collection(self, db, collection):
+        # TODO:
+        pass
+
+    def _init_procedure(self):
+        # TODO:
+        pass
+
+    def get_db_status(self):
+        # TODO:
+        pass
+
+    def _db_operation_response(self, request, result):
+        # TODO:
+        pass
+
+    def _db_operation_except(self, request, exc_info):
+        # TODO:
+        pass
+
+    def _db_operation_callback(self, request, result, callback):
+        # TODO:
+        pass
+
+    def _do_db_operation(self, op_type, op_request, client_proxy):
+        # TODO:
+        pass
+
+    def db_operation(self, op_type, op_request, client_proxy, callback):
+        # TODO:
+        pass
+
+    def get_db_result(self):
+        # TODO:
+        pass
+
+    def report_failure(self, op_type, op_request, client_proxy):
+        # TODO:
+        pass
