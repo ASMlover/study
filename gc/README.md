@@ -2,4 +2,5 @@
 ***
 
 ## **Summary**
-  * Some algorithms about **GC**
+  * Some algorithms about **GC**.
+  * **GC** demos name based **Njord**.
