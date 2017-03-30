@@ -40,9 +40,9 @@ typedef enum _marked {
 
 struct _vm {
   NjObject* stack[MAX_STACK];
-  int stack_cnt;
+  int stackcnt;
 
-  NjObject* head_obj;
+  NjObject* startobj;
   int objcnt;
   int maxobj;
 };
@@ -56,14 +56,14 @@ struct _vm {
 
 static void
 _njord_push(NjVM* vm, NjObject* obj) {
-  CHECK(vm->stack_cnt < MAX_STACK, "VM stack overflow");
-  vm->stack[vm->stack_cnt++] = obj;
+  CHECK(vm->stackcnt < MAX_STACK, "VM stack overflow");
+  vm->stack[vm->stackcnt++] = obj;
 }
 
 static NjObject*
 _njord_pop(NjVM* vm) {
-  CHECK(vm->stack_cnt > 0, "VM stack underflow");
-  return vm->stack[--vm->stack_cnt];
+  CHECK(vm->stackcnt > 0, "VM stack underflow");
+  return vm->stack[--vm->stackcnt];
 }
 
 static void
@@ -80,13 +80,13 @@ _njord_gc_mark(NjObject* obj) {
 
 static void
 _njord_gc_markall(NjVM* vm) {
-  for (int i = 0; i < vm->stack_cnt; ++i)
+  for (int i = 0; i < vm->stackcnt; ++i)
     _njord_gc_mark(vm->stack[i]);
 }
 
 static void
 _njord_gc_sweep(NjVM* vm) {
-  NjObject** start_obj = &vm->head_obj;
+  NjObject** start_obj = &vm->startobj;
   while (*start_obj) {
     if ((*start_obj)->gc.marked == UNMARKED) {
       NjObject* unmarked = *start_obj;
@@ -109,8 +109,8 @@ _njord_new_object(NjVM* vm, NjType type) {
   NjObject* obj = (NjObject*)malloc(sizeof(NjObject));
   obj->gc.marked = UNMARKED;
   obj->type = type;
-  obj->next = vm->head_obj;
-  vm->head_obj = obj;
+  obj->next = vm->startobj;
+  vm->startobj = obj;
   ++vm->objcnt;
 
   return obj;
@@ -121,8 +121,8 @@ njord_new(void) {
   NjVM* vm = (NjVM*)malloc(sizeof(NjVM));
   CHECK(vm != NULL, "create NjVM failed");
 
-  vm->stack_cnt = 0;
-  vm->head_obj = NULL;
+  vm->stackcnt = 0;
+  vm->startobj = NULL;
   vm->objcnt = 0;
   vm->maxobj = INIT_GC_THRESHOLD;
 
@@ -131,7 +131,7 @@ njord_new(void) {
 
 void
 njord_free(NjVM* vm) {
-  vm->stack_cnt = 0;
+  vm->stackcnt = 0;
   njord_collect(vm);
   free(vm);
 }
