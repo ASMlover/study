@@ -27,93 +27,93 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdio.h>
-#include "ms.h"
+#include "nj_gc.h"
 
-void ms_sample1(void) {
+void njord_sample1(void) {
   fprintf(stdout, "sample1: all objects on stack\n");
 
-  NyVM* vm = NyVM_New();
-  NyObject_PushInt(vm, 1);
-  NyObject_PushInt(vm, 2);
+  NjVM* vm = njord_new();
+  njord_pushint(vm, 1);
+  njord_pushint(vm, 2);
 
-  NyGC_Collect(vm);
-  NyVM_Free(vm);
+  njord_collect(vm);
+  njord_free(vm);
 }
 
-void ms_sample2(void) {
+void njord_sample2(void) {
   fprintf(stdout, "sample2: objects unreached\n");
 
-  NyVM* vm = NyVM_New();
-  NyObject_PushInt(vm, 1);
-  NyObject_PushInt(vm, 2);
-  NyObject_Pop(vm);
-  NyObject_Pop(vm);
+  NjVM* vm = njord_new();
+  njord_pushint(vm, 1);
+  njord_pushint(vm, 2);
+  njord_pop(vm);
+  njord_pop(vm);
 
-  NyGC_Collect(vm);
-  NyVM_Free(vm);
+  njord_collect(vm);
+  njord_free(vm);
 }
 
-void ms_sample3(void) {
+void njord_sample3(void) {
   fprintf(stdout, "sample3: reached nested objects\n");
 
-  NyVM* vm = NyVM_New();
-  NyObject_PushInt(vm, 1);
-  NyObject_PushInt(vm, 2);
-  NyObject_PushPair(vm);
-  NyObject_PushInt(vm, 3);
-  NyObject_PushInt(vm, 4);
-  NyObject_PushPair(vm);
-  NyObject_PushPair(vm);
+  NjVM* vm = njord_new();
+  njord_pushint(vm, 1);
+  njord_pushint(vm, 2);
+  njord_pushpair(vm);
+  njord_pushint(vm, 3);
+  njord_pushint(vm, 4);
+  njord_pushpair(vm);
+  njord_pushpair(vm);
 
-  NyGC_Collect(vm);
-  NyVM_Free(vm);
+  njord_collect(vm);
+  njord_free(vm);
 }
 
-void ms_sample4(void) {
+void njord_sample4(void) {
   fprintf(stdout, "sample4: cycles objects\n");
 
-  NyVM* vm = NyVM_New();
-  NyObject_PushInt(vm, 1);
-  NyObject_PushInt(vm, 2);
-  NyObject* a = NyObject_PushPair(vm);
-  NyObject_PushInt(vm, 3);
-  NyObject_PushInt(vm, 4);
-  NyObject* b = NyObject_PushPair(vm);
+  NjVM* vm = njord_new();
+  njord_pushint(vm, 1);
+  njord_pushint(vm, 2);
+  NjObject* a = njord_pushpair(vm);
+  njord_pushint(vm, 3);
+  njord_pushint(vm, 4);
+  NjObject* b = njord_pushpair(vm);
 
   a->tail = b;
   b->tail = a;
 
-  NyGC_Collect(vm);
-  NyObject_Pop(vm);
-  NyObject_Pop(vm);
+  njord_collect(vm);
+  njord_pop(vm);
+  njord_pop(vm);
 
-  NyGC_Collect(vm);
-  NyVM_Free(vm);
+  njord_collect(vm);
+  njord_free(vm);
 }
 
-void ms_sample5(void) {
+void njord_sample5(void) {
   fprintf(stdout, "sample5: performace\n");
-  NyVM* vm = NyVM_New();
+  NjVM* vm = njord_new();
 
   for (int i = 0; i < 1000000; ++i) {
     for (int j = 0; j < 20; ++j)
-      NyObject_PushInt(vm, i);
+      njord_pushint(vm, i);
 
     for (int j = 0; j < 20; ++j)
-      NyObject_Pop(vm);
+      njord_pop(vm);
   }
 
-  NyVM_Free(vm);
+  njord_free(vm);
 }
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
-  ms_sample1();
-  ms_sample2();
-  ms_sample3();
-  ms_sample4();
-  ms_sample5();
+  njord_sample1();
+  njord_sample2();
+  njord_sample3();
+  njord_sample4();
+  njord_sample5();
 
   return 0;
 }

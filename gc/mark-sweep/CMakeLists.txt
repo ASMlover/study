@@ -26,7 +26,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cmake_minimum_required(VERSION 3.0)
-set(PROJ_NAME "MarkSweepPROJ")
+set(PROJ_NAME "NjordGC")
 project(${PROJ_NAME} CXX C)
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -45,5 +45,5 @@ else()
 endif()
 
 aux_source_directory(. PROJ_SOURCES)
-set(PROJ_BIN "ms")
+set(PROJ_BIN "njord")
 add_executable(${PROJ_BIN} ${PROJ_SOURCES})
