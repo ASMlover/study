@@ -28,7 +28,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
-#include "ms.h"
+#include "nj_gc.h"
 
 #define MAX_STACK         (256)
 #define INIT_GC_THRESHOLD (8)
@@ -36,13 +36,13 @@
 typedef enum _marked {
   UNMARKED,
   MARKED,
-} NyMarked;
+} NjMarked;
 
 struct _vm {
-  NyObject* stack[MAX_STACK];
-  int stack_cnt;
+  NjObject* stack[MAX_STACK];
+  int stackcnt;
 
-  NyObject* head_obj;
+  NjObject* startobj;
   int objcnt;
   int maxobj;
 };
@@ -55,41 +55,41 @@ struct _vm {
 } while (0)
 
 static void
-_NyVM_Push(NyVM* vm, NyObject* obj) {
-  CHECK(vm->stack_cnt < MAX_STACK, "VM stack overflow");
-  vm->stack[vm->stack_cnt++] = obj;
+_njord_push(NjVM* vm, NjObject* obj) {
+  CHECK(vm->stackcnt < MAX_STACK, "VM stack overflow");
+  vm->stack[vm->stackcnt++] = obj;
 }
 
-static NyObject*
-_NyVM_Pop(NyVM* vm) {
-  CHECK(vm->stack_cnt > 0, "VM stack underflow");
-  return vm->stack[--vm->stack_cnt];
+static NjObject*
+_njord_pop(NjVM* vm) {
+  CHECK(vm->stackcnt > 0, "VM stack underflow");
+  return vm->stack[--vm->stackcnt];
 }
 
 static void
-_NyGC_Mark(NyObject* obj) {
+_njord_gc_mark(NjObject* obj) {
   if (obj->gc.marked == MARKED)
     return;
 
   obj->gc.marked = MARKED;
   if (obj->type == OBJECT_PAIR) {
-    _NyGC_Mark(obj->head);
-    _NyGC_Mark(obj->tail);
+    _njord_gc_mark(obj->head);
+    _njord_gc_mark(obj->tail);
   }
 }
 
 static void
-_NyGC_MarkAll(NyVM* vm) {
-  for (int i = 0; i < vm->stack_cnt; ++i)
-    _NyGC_Mark(vm->stack[i]);
+_njord_gc_markall(NjVM* vm) {
+  for (int i = 0; i < vm->stackcnt; ++i)
+    _njord_gc_mark(vm->stack[i]);
 }
 
 static void
-_NyGC_Sweep(NyVM* vm) {
-  NyObject** start_obj = &vm->head_obj;
+_njord_gc_sweep(NjVM* vm) {
+  NjObject** start_obj = &vm->startobj;
   while (*start_obj) {
     if ((*start_obj)->gc.marked == UNMARKED) {
-      NyObject* unmarked = *start_obj;
+      NjObject* unmarked = *start_obj;
       *start_obj = unmarked->next;
       free(unmarked);
       --vm->objcnt;
@@ -101,28 +101,28 @@ _NyGC_Sweep(NyVM* vm) {
   }
 }
 
-static NyObject*
-_NyObject_New(NyVM* vm, NyType type) {
+static NjObject*
+_njord_new_object(NjVM* vm, NjType type) {
   if (vm->objcnt >= vm->maxobj)
-    NyGC_Collect(vm);
+    njord_collect(vm);
 
-  NyObject* obj = (NyObject*)malloc(sizeof(NyObject));
+  NjObject* obj = (NjObject*)malloc(sizeof(NjObject));
   obj->gc.marked = UNMARKED;
   obj->type = type;
-  obj->next = vm->head_obj;
-  vm->head_obj = obj;
+  obj->next = vm->startobj;
+  vm->startobj = obj;
   ++vm->objcnt;
 
   return obj;
 }
 
-NyVM*
-NyVM_New(void) {
-  NyVM* vm = (NyVM*)malloc(sizeof(NyVM));
-  CHECK(vm != NULL, "create NyVM failed");
+NjVM*
+njord_new(void) {
+  NjVM* vm = (NjVM*)malloc(sizeof(NjVM));
+  CHECK(vm != NULL, "create NjVM failed");
 
-  vm->stack_cnt = 0;
-  vm->head_obj = NULL;
+  vm->stackcnt = 0;
+  vm->startobj = NULL;
   vm->objcnt = 0;
   vm->maxobj = INIT_GC_THRESHOLD;
 
@@ -130,44 +130,44 @@ NyVM_New(void) {
 }
 
 void
-NyVM_Free(NyVM* vm) {
-  vm->stack_cnt = 0;
-  NyGC_Collect(vm);
+njord_free(NjVM* vm) {
+  vm->stackcnt = 0;
+  njord_collect(vm);
   free(vm);
 }
 
-NyObject*
-NyObject_PushInt(NyVM* vm, int value) {
-  NyObject* obj = _NyObject_New(vm, OBJECT_INT);
+NjObject*
+njord_pushint(NjVM* vm, int value) {
+  NjObject* obj = _njord_new_object(vm, OBJECT_INT);
   obj->value = value;
-  _NyVM_Push(vm, obj);
+  _njord_push(vm, obj);
 
   return obj;
 }
 
-NyObject*
-NyObject_PushPair(NyVM* vm) {
-  NyObject* obj = _NyObject_New(vm, OBJECT_PAIR);
-  obj->tail = _NyVM_Pop(vm);
-  obj->head = _NyVM_Pop(vm);
-  _NyVM_Push(vm, obj);
+NjObject*
+njord_pushpair(NjVM* vm) {
+  NjObject* obj = _njord_new_object(vm, OBJECT_PAIR);
+  obj->tail = _njord_pop(vm);
+  obj->head = _njord_pop(vm);
+  _njord_push(vm, obj);
 
   return obj;
 }
 
-NyObject*
-NyObject_Pop(NyVM* vm) {
-  return _NyVM_Pop(vm);
+NjObject*
+njord_pop(NjVM* vm) {
+  return _njord_pop(vm);
 }
 
 void
-NyGC_Collect(NyVM* vm) {
+njord_collect(NjVM* vm) {
   int old_objcnt = vm->objcnt;
 
-  _NyGC_MarkAll(vm);
-  _NyGC_Sweep(vm);
+  _njord_gc_markall(vm);
+  _njord_gc_sweep(vm);
 
   vm->maxobj = (int)(vm->maxobj * 1.5);
-  fprintf(stdout, "NyGC collected [%d] objects, [%d] remaining.\n",
+  fprintf(stdout, "njord collected [%d] objects, [%d] remaining.\n",
       old_objcnt - vm->objcnt, vm->objcnt);
 }

@@ -30,21 +30,21 @@
 
 #include <stdint.h>
 
-#define NyAPI_FUNC(type) extern type
+#define NjAPI_FUNC(type) extern type
 
 typedef enum _type {
   OBJECT_INT,
   OBJECT_PAIR,
-} NyType;
+} NjType;
 
 typedef struct _gc {
   uint8_t marked;
-} NyGC;
+} NjGC;
 
 typedef struct _object {
-  NyGC gc;
+  NjGC gc;
 
-  NyType type;
+  NjType type;
   struct _object* next;
   union {
     int value;
@@ -53,13 +53,13 @@ typedef struct _object {
       struct _object* tail;
     };
   };
-} NyObject;
+} NjObject;
 
-typedef struct _vm NyVM;
+typedef struct _vm NjVM;
 
-NyAPI_FUNC(NyVM*) NyVM_New(void);
-NyAPI_FUNC(void) NyVM_Free(NyVM* vm);
-NyAPI_FUNC(NyObject*) NyObject_PushInt(NyVM* vm, int value);
-NyAPI_FUNC(NyObject*) NyObject_PushPair(NyVM* vm);
-NyAPI_FUNC(NyObject*) NyObject_Pop(NyVM* vm);
-NyAPI_FUNC(void) NyGC_Collect(NyVM* vm);
+NjAPI_FUNC(NjVM*) njord_new(void);
+NjAPI_FUNC(void) njord_free(NjVM* vm);
+NjAPI_FUNC(NjObject*) njord_pushint(NjVM* vm, int value);
+NjAPI_FUNC(NjObject*) njord_pushpair(NjVM* vm);
+NjAPI_FUNC(NjObject*) njord_pop(NjVM* vm);
+NjAPI_FUNC(void) njord_collect(NjVM* vm);
