@@ -104,3 +104,86 @@ class ServerClientProxy(object):
     def game_manager_callback(self, callback_type, callback_id, return_value):
         # TODO:
         pass
+
+class GameManagerService(_gm_pb2.SClientToGameManager):
+    def __init__(self):
+        super(GameManagerService, self).__init__()
+        self.logger = LogManager.get_logger('NyxCore.GameMgr.GameManagerService')
+        # TODO:
+        pass
+
+    def on_channel_disconnected(self, rpc_channel):
+        # TODO:
+        pass
+
+    def _send_game_server_list(self):
+        # TODO:
+        pass
+
+    def get_game_server_list(self, controller, request, done):
+        # TODO:
+        pass
+
+    def _del_server_client_proxy(self, client_proxy):
+        # TODO:
+        pass
+
+    def remove_global_entities(self, server_info):
+        # TODO:
+        pass
+
+    def distribute_game_serverid(self, server_info):
+        # TODO:
+        pass
+
+    def reg_db_manager(self, controller, request, done):
+        # TODO:
+        pass
+
+    def reg_game_server(self, controller, server_info, done):
+        # TODO:
+        pass
+
+    def reg_global_entity_mailbox(self, controller, entity_msg, done):
+        # TODO:
+        pass
+
+    def unreg_global_entity_mailbox(self, controller, entity_msg, done):
+        # TODO:
+        pass
+
+    def forward_entity_message(self, controller, entity_msg, done):
+        # TODO:
+        pass
+
+    def global_entity_message(self, controller, global_msg, done):
+        # TODO:
+        pass
+
+    def global_message(self, controller, global_msg, done):
+        # TODO:
+        pass
+
+    def global_data(self, controller, global_data, done):
+        # TODO:
+        pass
+
+    def del_global_data(self, controller, global_data, done):
+        # TODO:
+        pass
+
+    def run_script(self, controller, script, done):
+        # TODO:
+        pass
+
+    def server_control(self, controller, control_op, done):
+        # TODO:
+        pass
+
+    def create_entity(self, controller, entity_info, done):
+        # TODO:
+        pass
+
+    def game_create_entity_success(self, controller, return_value, done):
+        # TODO:
+        pass
