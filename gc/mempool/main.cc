@@ -24,9 +24,18 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "mempool_v1.h"
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
+
+  {
+    v1::MemoryPool pool(sizeof(int), 8, 16);
+    for (auto i = 0; i < 100; ++i) {
+      int* p = (int*)pool.alloc();
+      pool.dealloc(p);
+    }
+  }
 
   return 0;
 }
