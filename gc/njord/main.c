@@ -31,28 +31,29 @@
 #include <time.h>
 #include "njmem.h"
 
-#define ALLOC_COUNT (10000000)
+#define ALLOC_COUNT (100000)
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
+  int* p[ALLOC_COUNT];
   clock_t beg = clock();
   clock_t end = beg;
   fprintf(stdout, "[system allocator] begin clock: %ld\n", beg);
-  for (int i = 0; i < ALLOC_COUNT; ++i) {
-    int* p = (int*)malloc(sizeof(int));
-    free(p);
-  }
+  for (int i = 0; i < ALLOC_COUNT; ++i)
+    p[i] = (int*)malloc(sizeof(int));
+  for (int i = 0; i < ALLOC_COUNT; ++i)
+    free(p[i]);
   end = clock();
   fprintf(stdout, "[system allocator] end clock: %ld,  use clock: %ld\n", end, end - beg);
 
   {
     beg = clock();
     fprintf(stdout, "[mempool allocator] begin clock: %ld\n", beg);
-    for (int i = 0; i < ALLOC_COUNT; ++i) {
-      int* p = (int*)njmem_malloc(sizeof(int));
-      njmem_free(p, sizeof(int));
-    }
+    for (int i = 0; i < ALLOC_COUNT; ++i)
+      p[i] = (int*)njmem_malloc(sizeof(int));
+    for (int i = 0; i < ALLOC_COUNT; ++i)
+      njmem_free(p[i], sizeof(int));
     end = clock();
     fprintf(stdout, "[mempool allocator] end clock: %ld,  use clock: %ld\n", end, end - beg);
   }
