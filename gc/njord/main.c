@@ -36,7 +36,7 @@
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
-  char* p[ALLOC_COUNT];
+  char* p;
   int alloc_bytes_list[] = {1, 4, 8, 16, 32, 64};
   int alloc_bytes_count = sizeof(alloc_bytes_list) / sizeof(int);
 
@@ -47,8 +47,8 @@ int main(int argc, char* argv[]) {
   fprintf(stdout, "[system allocator] begin clock: %ld\n", beg);
   for (int i = 0; i < ALLOC_COUNT; ++i) {
     int s = alloc_bytes_list[rand() % alloc_bytes_count];
-    p[i] = (char*)malloc(s);
-    free(p[i]);
+    p = (char*)malloc(s);
+    free(p);
   }
   end = clock();
   fprintf(stdout, "[system allocator] end clock: %ld,  use clock: %ld\n", end, end - beg);
@@ -58,8 +58,8 @@ int main(int argc, char* argv[]) {
     fprintf(stdout, "[mempool allocator] begin clock: %ld\n", beg);
     for (int i = 0; i < ALLOC_COUNT; ++i) {
       int s = alloc_bytes_list[rand() % alloc_bytes_count];
-      p[i] = (char*)njmem_malloc(s);
-      njmem_free(p[i], s);
+      p = (char*)njmem_malloc(s);
+      njmem_free(p, s);
     }
     end = clock();
     fprintf(stdout, "[mempool allocator] end clock: %ld,  use clock: %ld\n", end, end - beg);
