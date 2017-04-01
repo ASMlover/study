@@ -26,37 +26,37 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include "njmem.h"
+#ifndef Nj_NJCONFIG_H
+#define Nj_NJCONFIG_H
 
-#define ALLOC_COUNT (10000000)
+#include <stddef.h>
+#include <stdint.h>
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
+typedef char          Nj_char_t;
+typedef unsigned char Nj_uchar_t;
+typedef int8_t        Nj_int8_t;
+typedef uint8_t       Nj_uint8_t;
+typedef int16_t       Nj_int16_t;
+typedef uint16_t      Nj_uint16_t;
+typedef int32_t       Nj_int32_t;
+typedef uint32_t      Nj_uint32_t;
+typedef int64_t       Nj_int64_t;
+typedef uint64_t      Nj_uint64_t;
+typedef intptr_t      Nj_intptr_t;
+typedef uintptr_t     Nj_uintptr_t;
+typedef int           Nj_int_t;
+typedef size_t        Nj_size_t;
+#if defined(HAVE_SSIZE_T)
+  typedef ssize_t     Nj_ssize_t;
+#else
+  typedef Nj_intptr_t Nj_ssize_t;
+#endif
 
-  clock_t beg = clock();
-  clock_t end = beg;
-  fprintf(stdout, "[system allocator] begin clock: %ld\n", beg);
-  for (int i = 0; i < ALLOC_COUNT; ++i) {
-    int* p = (int*)malloc(sizeof(int));
-    free(p);
-  }
-  end = clock();
-  fprintf(stdout, "[system allocator] end clock: %ld,  use clock: %ld\n", end, end - beg);
+#if !defined(NjAPI_FUNC)
+# define NjAPI_FUNC(RTYPE) extern RTYPE
+#endif
+#if !defined(NjAPI_DATA)
+# define NjAPI_DATA(RTYPE) extern RTYPE
+#endif
 
-  {
-    beg = clock();
-    fprintf(stdout, "[mempool allocator] begin clock: %ld\n", beg);
-    for (int i = 0; i < ALLOC_COUNT; ++i) {
-      int* p = (int*)njmem_malloc(sizeof(int));
-      njmem_free(p, sizeof(int));
-    }
-    end = clock();
-    fprintf(stdout, "[mempool allocator] end clock: %ld,  use clock: %ld\n", end, end - beg);
-  }
-
-  njmem_collect();
-  return 0;
-}
+#endif /* Nj_NJCONFIG_H */

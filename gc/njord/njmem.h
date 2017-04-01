@@ -26,37 +26,13 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include "njmem.h"
+#ifndef Nj_NJMEM_H
+#define Nj_NJMEM_H
 
-#define ALLOC_COUNT (10000000)
+#include "njconfig.h"
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
+NjAPI_FUNC(void*) njmem_malloc(Nj_size_t bytes);
+NjAPI_FUNC(void) njmem_free(void* p, Nj_size_t bytes);
+NjAPI_FUNC(void) njmem_collect(void);
 
-  clock_t beg = clock();
-  clock_t end = beg;
-  fprintf(stdout, "[system allocator] begin clock: %ld\n", beg);
-  for (int i = 0; i < ALLOC_COUNT; ++i) {
-    int* p = (int*)malloc(sizeof(int));
-    free(p);
-  }
-  end = clock();
-  fprintf(stdout, "[system allocator] end clock: %ld,  use clock: %ld\n", end, end - beg);
-
-  {
-    beg = clock();
-    fprintf(stdout, "[mempool allocator] begin clock: %ld\n", beg);
-    for (int i = 0; i < ALLOC_COUNT; ++i) {
-      int* p = (int*)njmem_malloc(sizeof(int));
-      njmem_free(p, sizeof(int));
-    }
-    end = clock();
-    fprintf(stdout, "[mempool allocator] end clock: %ld,  use clock: %ld\n", end, end - beg);
-  }
-
-  njmem_collect();
-  return 0;
-}
+#endif /* Nj_NJMEM_H */
