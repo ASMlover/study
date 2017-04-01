@@ -32,10 +32,9 @@
 namespace v1 {
 
 struct Block {
-  std::uint16_t bytes;
+  std::size_t bytes;
   std::uint16_t nfree;
   std::uint16_t first{1};
-  std::uint16_t dummy;
   Block* next{};
   char data[1];
 
@@ -66,7 +65,7 @@ struct Block {
 
 class MemoryPool {
   Block* block_{};
-  std::uint16_t unit_size_{};
+  std::size_t unit_size_{};
   std::uint16_t init_count_{};
   std::uint16_t grow_count_{};
 
