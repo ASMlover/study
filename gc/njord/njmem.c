@@ -39,6 +39,10 @@
 #define SMALL_REQUEST_THRESHOLD (512)
 #define NB_SMALL_SIZE_CLASSES   (SMALL_REQUEST_THRESHOLD / ALIGNMENT)
 
+#define PAGE_SIZE       (4 << 10)
+#define PAGE_SIZE_MASK  (PAGE_SIZE - 1)
+#define CHUNK_SIZE      (256 << 10)
+
 typedef struct _NjBlock {
   struct _NjBlock* nextblock;
 } NjBlock;
@@ -64,16 +68,20 @@ _insert_chunk(NjBlock* blockptr) {
 static NjBlock*
 _alloc_chunk(Nj_size_t index) {
   Nj_size_t block_bytes = INDEX2BYTES(index);
-  Nj_size_t chunk_bytes = block_bytes * NB_SMALL_SIZE_CLASSES;
+  NjBlock* new_chunk;
 
   if (freeblocks[index] == NULL) {
-    freeblocks[index] = (NjBlock*)malloc(chunk_bytes);
-    if (freeblocks[index] == NULL)
+    new_chunk = (NjBlock*)malloc(CHUNK_SIZE);
+    if (new_chunk == NULL)
       return NULL;
-    _insert_chunk(freeblocks[index]);
+    _insert_chunk(new_chunk);
+
+    Nj_size_t excess = (Nj_uintptr_t)new_chunk & PAGE_SIZE_MASK;
+    if (excess != 0)
+      freeblocks[index] = (NjBlock*)((Nj_uchar_t*)new_chunk + PAGE_SIZE - excess);
 
     NjBlock* block = freeblocks[index];
-    for (Nj_size_t i = 0; i < chunk_bytes - block_bytes; i += block_bytes)
+    for (Nj_size_t i = 0; i < CHUNK_SIZE - (PAGE_SIZE - excess + block_bytes); i += block_bytes)
       block = block->nextblock = block + block_bytes / sizeof(NjBlock);
     block->nextblock = NULL;
   }
