@@ -138,8 +138,8 @@ public:
   void dealloc(void* p) {
     auto* block = block_;
     Block* pre_block{};
-    while ((std::uint32_t)p < (std::uint32_t)block->data ||
-        (std::uint32_t)p > (std::uint32_t)(block->data + block->bytes)) {
+    while ((std::uintptr_t)p < (std::uintptr_t)block->data ||
+        (std::uintptr_t)p > (std::uintptr_t)(block->data + block->bytes)) {
       pre_block = block;
       block = block->next;
       if (!block)
@@ -149,7 +149,7 @@ public:
     if (block) {
       ++block->nfree;
       *(std::uint16_t*)p = block->first;
-      block->first = (std::uint16_t)(((std::uint32_t)p - (std::uint32_t)block->data) / unit_size_);
+      block->first = (std::uint16_t)(((std::uintptr_t)p - (std::uintptr_t)block->data) / unit_size_);
 
       if (block->nfree * unit_size_ == block->bytes) {
         if (!block->next) {
