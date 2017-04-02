@@ -24,17 +24,42 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <ctime>
+#include <iostream>
 #include "mempool_v1.h"
+#include "mempool_v2.h"
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
+  static int COUNT = 100000;
+  auto beg = std::clock();
+  for (auto i = 0; i < COUNT; ++i) {
+    int* p = new int;
+    delete p;
+  }
+  std::cout << "[system allocator] use clock: " << std::clock() - beg << std::endl;
+
   {
     v1::MemoryPool pool(sizeof(int), 8, 16);
-    for (auto i = 0; i < 100; ++i) {
+
+    beg = std::clock();
+    for (auto i = 0; i < COUNT; ++i) {
       int* p = (int*)pool.alloc();
       pool.dealloc(p);
     }
+    std::cout << "[mempool allocator (v1)] use clock: " << std::clock() - beg << std::endl;
+  }
+
+  {
+    auto& pool = v2::MemoryPool::get_instance();
+
+    beg = std::clock();
+    for (auto i = 0; i < COUNT; ++i) {
+      int* p = (int*)pool.alloc(sizeof(int));
+      pool.dealloc(p, sizeof(int));
+    }
+    std::cout << "[mempool allocator (v2)] use clock: " << std::clock() - beg << std::endl;
   }
 
   return 0;
