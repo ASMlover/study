@@ -77,11 +77,18 @@ _alloc_chunk(Nj_size_t index) {
     _insert_chunk(new_chunk);
 
     Nj_size_t excess = (Nj_uintptr_t)new_chunk & PAGE_SIZE_MASK;
-    if (excess != 0)
+    Nj_size_t alignment_chunk_size;
+    if (excess != 0) {
       freeblocks[index] = (NjBlock*)((Nj_uchar_t*)new_chunk + PAGE_SIZE - excess);
+      alignment_chunk_size = CHUNK_SIZE - (PAGE_SIZE - excess + block_bytes);
+    }
+    else {
+      freeblocks[index] = new_chunk;
+      alignment_chunk_size = CHUNK_SIZE - block_bytes;
+    }
 
     NjBlock* block = freeblocks[index];
-    for (Nj_size_t i = 0; i < CHUNK_SIZE - (PAGE_SIZE - excess + block_bytes); i += block_bytes)
+    for (Nj_size_t i = 0; i < alignment_chunk_size; i += block_bytes)
       block = block->nextblock = block + block_bytes / sizeof(NjBlock);
     block->nextblock = NULL;
   }
