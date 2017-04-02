@@ -112,7 +112,7 @@ void
 njmem_free(void* p, Nj_size_t bytes) {
   if (bytes <= SMALL_REQUEST_THRESHOLD) {
     Nj_size_t index = BYTES2INDEX(bytes);
-    NjBlock* block = freeblocks[index];
+    NjBlock* block = (NjBlock*)p;
     block->nextblock = freeblocks[index];
     freeblocks[index] = block;
   }
