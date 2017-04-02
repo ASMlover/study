@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
   int alloc_bytes_list[] = {1, 4, 8, 16, 32, 64};
   int alloc_bytes_count = sizeof(alloc_bytes_list) / sizeof(int);
 
-  srand(time(NULL));
+  srand((unsigned int)time(NULL));
 
   clock_t beg = clock();
   clock_t end = beg;
