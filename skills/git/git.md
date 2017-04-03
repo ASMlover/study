@@ -171,6 +171,11 @@
     在一个工程中更新子模块：
     $ git submodule update --init --recursive
 
+    随着开发进行更新最新的submodules模块(需要将submodules切换到master或某个具体的分支)
+    $ git submodule init # 初始化子模块
+    $ git submodule update # 更新子模块
+    $ git submodule foreach git pull # 拉取所有的子模块
+
 ## **6. git emoji**
   * :art: - `:art:` 改进代码结构或格式
   * :zap:/:racehorse: - `:zapo:/:racehorse:` 提升性能
