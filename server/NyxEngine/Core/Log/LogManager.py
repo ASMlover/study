@@ -64,8 +64,8 @@ class LogManager(object):
     _exists_modules = set()
     _level = DEBUG
     _handler = _STREAM
-    _tag = 'NyxEngine.Core'
-    _game_tag = 'NyxEngine.Game'
+    _tag = 'Core'
+    _game_tag = 'Gameplay'
     _sys_logger = None
 
     @staticmethod
@@ -122,10 +122,11 @@ class LogManager(object):
                     '%(message)s'
                 ]
             else:
-                ch = logging.FileHandler('%s.%s.log' % (LogManager._tag,
-                    time.strftime('%Y%m%d%H%M%S')), encoding='utf-8')
+                ch = logging.FileHandler('NyxEngine.%s.%s.log' % (
+                    LogManager._tag, time.strftime('%Y%m%d%H%M%S')),
+                    encoding='utf-8')
         elif LogManager._handler == _FILE:
-            ch = logging.FileHandler('%s.%s.log' % (LogManager._tag,
+            ch = logging.FileHandler('NyxEngine.%s.%s.log' % (LogManager._tag,
                 time.strftime('%Y%m%d%H%M%S')), encoding='utf-8')
         else:
             ch = logging.StreamHandler()
@@ -156,11 +157,48 @@ class LogManager(object):
             formatter = logging.Formatter(
                     '%s: %(message)s' % LogManager._game_tag)
         else:
-            ch = logging.FileHandler('%s.%s.log' % (LogManager._game_tag,
-                time.strftime('%Y%m%d%H%M%S')), encoding='utf-8')
+            ch = logging.FileHandler('NyxEngine.%s.%s.log' % (
+                LogManager._game_tag, time.strftime('%Y%m%d%H%M%S')),
+                encoding='utf-8')
             formatter = logging.Formatter('%(message)s')
         ch.setFormatter(formatter)
         logger.addHandler(ch)
 
         LogManager._exists_modules.add('GameLogger')
         return GameLogger(logger)
+
+if __name__ == '__main__':
+    # LogManager测试列子
+    # 测试_STREAM
+    LogManager.set_handler(_STREAM)
+    logger = LogManager.get_logger('__main__.STREAM')
+    logger.debug('this is a logger message test about <DEBUG>')
+    logger.info('this is a logger message test about <INFO>')
+    logger.warn('this is a logger message test about <WARN>')
+    logger.error('this is a logger message test about <ERROR>')
+    logger.critical('this is a logger message test about <CRITICAL>')
+
+    # 测试_SYSLOG
+    LogManager.set_handler(_SYSLOG)
+    logger = LogManager.get_logger('__main__.SYSLOG')
+    logger.debug('this is a logger message test about <DEBUG>')
+    logger.info('this is a logger message test about <INFO>')
+    logger.warn('this is a logger message test about <WARN>')
+    logger.error('this is a logger message test about <ERROR>')
+    logger.critical('this is a logger message test about <CRITICAL>')
+
+    # 测试GameLogger
+    LogManager.set_game_tag('Gameplay')
+    game_logger = LogManager.get_game_logger()
+    game_logger.log('Startup', {
+        'time': int(time.time()),
+        'id': 1001,
+        'name': 'avatar.1001',
+        'dev': 'iOS'
+        })
+
+    # 测试logger异常处理
+    try:
+        raise SystemError('LogManager SystemError')
+    except:
+        logger._log_exception()
