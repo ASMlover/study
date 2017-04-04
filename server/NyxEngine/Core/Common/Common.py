@@ -28,6 +28,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import json
 import os
 import platform
 import sys
@@ -58,6 +59,17 @@ class AttrProxy(object):
         if not value:
             raise AttributeError('AttrProxy has no attribute(%s)' % name)
         return value
+
+class JsonConfig(object):
+    @staticmethod
+    def load(fname):
+        with open(fname) as fp:
+            return json.load(fp)
+
+    @staticmethod
+    def save(fname, jsonconf):
+        with open(fname, 'w') as fp:
+            json.dump(jsonconf, fp)
 
 def singleton(cls):
     _instances = {}
