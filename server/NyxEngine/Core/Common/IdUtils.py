@@ -31,7 +31,7 @@
 import base64
 from bson.objectid import ObjectId
 
-class IdCreator(object):
+class IdUtils(object):
     """通用的entity id使用base64来编码"""
     @staticmethod
     def gen_id():
