@@ -100,9 +100,31 @@ njord_gc_sample2(void) {
 }
 
 static void
+njord_gc_sample3(void) {
+  fprintf(stdout, "sample3: cycle reference objects\n");
+
+  NjVM* vm = njord_new();
+  njord_pushint(vm, 1);
+  njord_pushint(vm, 2);
+  NjObject* a = njord_pushpair(vm);
+  njord_pushint(vm, 3);
+  njord_pushint(vm, 4);
+  NjObject* b = njord_pushpair(vm);
+
+  njord_setpair(a, b, NULL);
+  njord_setpair(b, a, NULL);
+
+  njord_pop(vm);
+  njord_pop(vm);
+
+  njord_free(vm);
+}
+
+static void
 njord_gc(void) {
   njord_gc_sample1();
   njord_gc_sample2();
+  njord_gc_sample3();
 }
 
 int main(int argc, char* argv[]) {
