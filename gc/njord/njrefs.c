@@ -28,6 +28,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include "njmem.h"
 #include "njrefs.h"
 
 #define MAX_STACK (1024)
@@ -64,7 +65,7 @@ _njord_pop(NjVM* vm) {
 
 static NjObject*
 _njord_new_object(NjType type) {
-  NjObject* obj = (NjObject*)malloc(sizeof(NjObject));
+  NjObject* obj = (NjObject*)njmem_malloc(sizeof(NjObject));
   Nj_NEWREF(obj);
   obj->type = type;
 
@@ -77,12 +78,12 @@ _njord_free_object(NjObject* obj) {
     Nj_XDECREF(obj->head);
     Nj_XDECREF(obj->tail);
   }
-  free(obj);
+  njmem_free(obj, sizeof(NjObject));
 }
 
 NjVM*
 njord_new(void) {
-  NjVM* vm = (NjVM*)malloc(sizeof(NjVM));
+  NjVM* vm = (NjVM*)njmem_malloc(sizeof(NjVM));
   Nj_CHECK(vm != NULL, "create NjVM failed");
 
   vm->stackcnt = 0;
@@ -94,7 +95,7 @@ void
 njord_free(NjVM* vm) {
   while (vm->stackcnt > 0)
     njord_pop(vm);
-  free(vm);
+  njmem_free(vm, sizeof(NjVM));
 }
 
 NjObject*
