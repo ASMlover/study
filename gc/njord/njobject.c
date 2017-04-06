@@ -26,57 +26,48 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef Nj_NJOBJECT_H
-#define Nj_NJOBJECT_H
+#include "njobject.h"
+#include "njrefs.h"
 
-#include "njconfig.h"
+static NjGCObject* gcobj = NULL;
 
-#define NjObject_HEAD\
-  const char* ob_name;
+void
+njord_initgc(NjGCType type) {
+  if (type == GC_REFS)
+    gcobj = &NjGC_Refs;
+}
 
-typedef struct _object {
-  NjObject_HEAD
-} NjObject;
+NjObject*
+njord_new(void) {
+  return gcobj->methods->tp_newvm();
+}
 
-typedef NjObject* (*newvmfunc)(void);
-typedef void (*freevmfunc)(NjObject*);
-typedef NjObject* (*pushintfunc)(NjObject*, int);
-typedef NjObject* (*pushpairfunc)(NjObject*);
-typedef void (*setpairfunc)(NjObject*, NjObject*, NjObject*);
-typedef void (*popfunc)(NjObject*);
-typedef void (*collectfunc)(NjObject*);
+void
+njord_free(NjObject* vm) {
+  gcobj->methods->tp_freevm(vm);
+}
 
-typedef enum _gc_type {
-  GC_REFS,
-} NjGCType;
+NjObject*
+njord_pushint(NjObject* vm, int value) {
+  return gcobj->methods->tp_pushint(vm, value);
+}
 
-typedef struct _gc_methods {
-  newvmfunc tp_newvm;
-  freevmfunc tp_freevm;
-  pushintfunc tp_pushint;
-  pushpairfunc tp_pushpair;
-  setpairfunc tp_setpair;
-  popfunc tp_pop;
-  collectfunc tp_collect;
-} NjGCMethods;
+NjObject*
+njord_pushpair(NjObject* vm) {
+  return gcobj->methods->tp_pushpair(vm);
+}
 
-typedef struct _gc_object {
-  NjGCType type;
-  NjGCMethods* methods;
-} NjGCObject;
+void
+njord_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
+  gcobj->methods->tp_setpair(pair, head, tail);
+}
 
-typedef enum _vartype {
-  VAR_INT,
-  VAR_PAIR,
-} NjVarType;
+void
+njord_pop(NjObject* vm) {
+  gcobj->methods->tp_pop(vm);
+}
 
-NjAPI_FUNC(void) njord_initgc(NjGCType type);
-NjAPI_FUNC(NjObject*) njord_new(void);
-NjAPI_FUNC(void) njord_free(NjObject* vm);
-NjAPI_FUNC(NjObject*) njord_pushint(NjObject* vm, int value);
-NjAPI_FUNC(NjObject*) njord_pushpair(NjObject* vm);
-NjAPI_FUNC(void) njord_setpair(NjObject* pair, NjObject* head, NjObject* tail);
-NjAPI_FUNC(void) njord_pop(NjObject* vm);
-NjAPI_FUNC(void) njord_collect(NjObject* vm);
-
-#endif /* Nj_NJOBJECT_H */
+void
+njord_collect(NjObject* vm) {
+  gcobj->methods->tp_collect(vm);
+}

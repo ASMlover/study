@@ -59,11 +59,6 @@ typedef size_t        Nj_size_t;
 # define NjAPI_DATA(RTYPE) extern RTYPE
 #endif
 
-typedef enum _type {
-  OBJECT_INT,
-  OBJECT_PAIR,
-} NjType;
-
 #define Nj_UNUSED(x) ((void)x)
 
 #define Nj_CHECK(cond, msg) do {\
