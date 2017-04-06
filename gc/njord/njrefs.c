@@ -37,7 +37,8 @@
 #define Nj_INCREF(ob) (((NjObject*)(ob))->refcnt++)
 #define Nj_DECREF(ob) do {\
   if (--((NjObject*)(ob))->refcnt == 0) {\
-    fprintf(stdout, "NjObject(%p: %d) collected\n", ((NjObject*)(ob)), ((NjObject*)(ob))->type);\
+    fprintf(stdout, "NjObject(%p: %d) collected\n",\
+        ((NjObject*)(ob)), ((NjObject*)(ob))->type);\
     _njord_free_object(ob);\
   }\
 } while (0)
