@@ -32,13 +32,17 @@
 
 #define MAX_STACK (1024)
 
-#define Nj_INCREF(ob) ((NjObject*)(ob))->refcnt++
+#define Nj_REFCNT(ob) (((NjObject*)(ob))->refcnt)
+#define Nj_NEWREF(ob) (Nj_REFCNT(ob) = 1)
+#define Nj_INCREF(ob) (((NjObject*)(ob))->refcnt++)
 #define Nj_DECREF(ob) do {\
   if (--((NjObject*)(ob))->refcnt == 0) {\
     fprintf(stdout, "NjObject(%p: %d) collected\n", ((NjObject*)(ob)), ((NjObject*)(ob))->type);\
-    free(ob);\
+    _njord_free_object(ob);\
   }\
 } while (0)
+#define Nj_XINCREF(ob) do { if ((ob) != NULL) Nj_INCREF(ob); } while (0)
+#define Nj_XDECREF(ob) do { if ((ob) != NULL) Nj_DECREF(ob); } while (0)
 
 struct _vm {
   NjObject* stack[MAX_STACK];
@@ -60,7 +64,7 @@ _njord_pop(NjVM* vm) {
 static NjObject*
 _njord_new_object(NjType type) {
   NjObject* obj = (NjObject*)malloc(sizeof(NjObject));
-  obj->refcnt = 1;
+  Nj_NEWREF(obj);
   obj->type = type;
 
   return obj;
@@ -69,10 +73,10 @@ _njord_new_object(NjType type) {
 static void
 _njord_free_object(NjObject* obj) {
   if (obj->type == OBJECT_PAIR) {
-    _njord_free_object(obj->head);
-    _njord_free_object(obj->tail);
+    Nj_XDECREF(obj->head);
+    Nj_XDECREF(obj->tail);
   }
-  Nj_DECREF(obj);
+  free(obj);
 }
 
 NjVM*
@@ -104,8 +108,8 @@ njord_pushint(NjVM* vm, int value) {
 NjObject*
 njord_pushpair(NjVM* vm) {
   NjObject* obj = _njord_new_object(OBJECT_PAIR);
-  NjObject* head = _njord_pop(vm);
   NjObject* tail = _njord_pop(vm);
+  NjObject* head = _njord_pop(vm);
 
   Nj_INCREF(head);
   obj->head = head;
@@ -121,9 +125,24 @@ njord_pushpair(NjVM* vm) {
 }
 
 void
+njord_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
+  if (head != NULL) {
+    Nj_DECREF(pair->head);
+    Nj_INCREF(head);
+    pair->head = head;
+  }
+
+  if (tail != NULL) {
+    Nj_DECREF(pair->tail);
+    Nj_INCREF(tail);
+    pair->tail = tail;
+  }
+}
+
+void
 njord_pop(NjVM* vm) {
   NjObject* obj = _njord_pop(vm);
-  _njord_free_object(obj);
+  Nj_DECREF(obj);
 }
 
 void
