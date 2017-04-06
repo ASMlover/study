@@ -75,7 +75,7 @@ static void
 njord_gc_sample1(void) {
   fprintf(stdout, "sample1: all objects on stack\n");
 
-  NjVM* vm = njord_new();
+  NjObject* vm = njord_new();
 
   njord_pushint(vm, 1);
   njord_pushint(vm, 2);
@@ -87,7 +87,7 @@ static void
 njord_gc_sample2(void) {
   fprintf(stdout, "sample2: objects nested\n");
 
-  NjVM* vm = njord_new();
+  NjObject* vm = njord_new();
   njord_pushint(vm, 1);
   njord_pushint(vm, 2);
   njord_pushpair(vm);
@@ -103,7 +103,7 @@ static void
 njord_gc_sample3(void) {
   fprintf(stdout, "sample3: cycle reference objects\n");
 
-  NjVM* vm = njord_new();
+  NjObject* vm = njord_new();
   njord_pushint(vm, 1);
   njord_pushint(vm, 2);
   NjObject* a = njord_pushpair(vm);
@@ -122,6 +122,8 @@ njord_gc_sample3(void) {
 
 static void
 njord_gc(void) {
+  njord_initgc(GC_REFS);
+
   njord_gc_sample1();
   njord_gc_sample2();
   njord_gc_sample3();
