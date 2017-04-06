@@ -31,6 +31,14 @@
 
 #if defined(Nj_USE_REF)
 # include "njrefs.h"
+
+# define njord_new njref_new
+# define njord_free njref_free
+# define njord_pushint njref_pushint
+# define njord_pushpair njref_pushpair
+# define njord_setpair njref_setpair
+# define njord_pop njref_pop
+# define njord_collect njref_collect
 #endif
 
 #endif /* Nj_NJOBJECT_H */

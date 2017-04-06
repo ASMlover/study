@@ -46,12 +46,12 @@ typedef struct _object {
 
 typedef struct _vm NjVM;
 
-NjAPI_FUNC(NjVM*) njord_new(void);
-NjAPI_FUNC(void) njord_free(NjVM* vm);
-NjAPI_FUNC(NjObject*) njord_pushint(NjVM* vm, int value);
-NjAPI_FUNC(NjObject*) njord_pushpair(NjVM* vm);
-NjAPI_FUNC(void) njord_setpair(NjObject* pair, NjObject* head, NjObject* tail);
-NjAPI_FUNC(void) njord_pop(NjVM* vm);
-NjAPI_FUNC(void) njord_collect(NjVM* vm);
+NjAPI_FUNC(NjVM*) njref_new(void);
+NjAPI_FUNC(void) njref_free(NjVM* vm);
+NjAPI_FUNC(NjObject*) njref_pushint(NjVM* vm, int value);
+NjAPI_FUNC(NjObject*) njref_pushpair(NjVM* vm);
+NjAPI_FUNC(void) njref_setpair(NjObject* pair, NjObject* head, NjObject* tail);
+NjAPI_FUNC(void) njref_pop(NjVM* vm);
+NjAPI_FUNC(void) njref_collect(NjVM* vm);
 
 #endif /* Nj_NJREFS_H */

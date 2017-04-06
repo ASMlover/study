@@ -82,7 +82,7 @@ _njord_free_object(NjObject* obj) {
 }
 
 NjVM*
-njord_new(void) {
+njref_new(void) {
   NjVM* vm = (NjVM*)njmem_malloc(sizeof(NjVM));
   Nj_CHECK(vm != NULL, "create NjVM failed");
 
@@ -92,14 +92,14 @@ njord_new(void) {
 }
 
 void
-njord_free(NjVM* vm) {
+njref_free(NjVM* vm) {
   while (vm->stackcnt > 0)
-    njord_pop(vm);
+    njref_pop(vm);
   njmem_free(vm, sizeof(NjVM));
 }
 
 NjObject*
-njord_pushint(NjVM* vm, int value) {
+njref_pushint(NjVM* vm, int value) {
   NjObject* obj = _njord_new_object(OBJECT_INT);
   obj->value = value;
   _njord_push(vm, obj);
@@ -108,7 +108,7 @@ njord_pushint(NjVM* vm, int value) {
 }
 
 NjObject*
-njord_pushpair(NjVM* vm) {
+njref_pushpair(NjVM* vm) {
   NjObject* obj = _njord_new_object(OBJECT_PAIR);
   NjObject* tail = _njord_pop(vm);
   NjObject* head = _njord_pop(vm);
@@ -127,7 +127,7 @@ njord_pushpair(NjVM* vm) {
 }
 
 void
-njord_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
+njref_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
   if (head != NULL) {
     Nj_DECREF(pair->head);
     Nj_INCREF(head);
@@ -142,12 +142,12 @@ njord_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
 }
 
 void
-njord_pop(NjVM* vm) {
+njref_pop(NjVM* vm) {
   NjObject* obj = _njord_pop(vm);
   Nj_DECREF(obj);
 }
 
 void
-njord_collect(NjVM* vm) {
+njref_collect(NjVM* vm) {
   Nj_UNUSED(vm);
 }
