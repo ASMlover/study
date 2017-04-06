@@ -33,39 +33,54 @@
 
 #define MAX_STACK (1024)
 
-#define Nj_REFCNT(ob) (((NjObject*)(ob))->refcnt)
+#define Nj_REFCNT(ob) (((NjRefsObject*)(ob))->refcnt)
 #define Nj_NEWREF(ob) (Nj_REFCNT(ob) = 1)
-#define Nj_INCREF(ob) (((NjObject*)(ob))->refcnt++)
+#define Nj_INCREF(ob) (((NjRefsObject*)(ob))->refcnt++)
 #define Nj_DECREF(ob) do {\
-  if (--((NjObject*)(ob))->refcnt == 0) {\
+  if (--((NjRefsObject*)(ob))->refcnt == 0) {\
     fprintf(stdout, "NjObject(%p: %d) collected\n",\
-        ((NjObject*)(ob)), ((NjObject*)(ob))->type);\
+        ((NjRefsObject*)(ob)), ((NjRefsObject*)(ob))->type);\
     _njord_free_object(ob);\
   }\
 } while (0)
 #define Nj_XINCREF(ob) do { if ((ob) != NULL) Nj_INCREF(ob); } while (0)
 #define Nj_XDECREF(ob) do { if ((ob) != NULL) Nj_DECREF(ob); } while (0)
 
-struct _vm {
-  NjObject* stack[MAX_STACK];
+typedef struct _varobject {
+  NjObject_HEAD
+
+  Nj_ssize_t refcnt;
+  NjVarType type;
+  union {
+    int value;
+    struct {
+      struct _varobject* head;
+      struct _varobject* tail;
+    };
+  };
+} NjRefsObject;
+
+typedef struct _vm {
+  NjRefsObject* stack[MAX_STACK];
   int stackcnt;
-};
+} NjRefsVM;
 
 static void
-_njord_push(NjVM* vm, NjObject* obj) {
+_njord_push(NjRefsVM* vm, NjRefsObject* obj) {
   Nj_CHECK(vm->stackcnt < MAX_STACK, "VM stack overflow");
   vm->stack[vm->stackcnt++] = obj;
 }
 
-static NjObject*
-_njord_pop(NjVM* vm) {
+static NjRefsObject*
+_njord_pop(NjRefsVM* vm) {
   Nj_CHECK(vm->stackcnt > 0, "VM stack underflow");
   return vm->stack[--vm->stackcnt];
 }
 
-static NjObject*
-_njord_new_object(NjType type) {
-  NjObject* obj = (NjObject*)njmem_malloc(sizeof(NjObject));
+static NjRefsObject*
+_njord_new_object(NjVarType type) {
+  NjRefsObject* obj = (NjRefsObject*)njmem_malloc(sizeof(NjRefsObject));
+  obj->ob_name = "refs_object";
   Nj_NEWREF(obj);
   obj->type = type;
 
@@ -73,45 +88,47 @@ _njord_new_object(NjType type) {
 }
 
 static void
-_njord_free_object(NjObject* obj) {
-  if (obj->type == OBJECT_PAIR) {
+_njord_free_object(NjRefsObject* obj) {
+  if (obj->type == VAR_PAIR) {
     Nj_XDECREF(obj->head);
     Nj_XDECREF(obj->tail);
   }
   njmem_free(obj, sizeof(NjObject));
 }
 
-NjVM*
+static void njref_pop(NjObject* vm);
+
+static NjObject*
 njref_new(void) {
-  NjVM* vm = (NjVM*)njmem_malloc(sizeof(NjVM));
+  NjRefsVM* vm = (NjRefsVM*)njmem_malloc(sizeof(NjRefsVM));
   Nj_CHECK(vm != NULL, "create NjVM failed");
 
   vm->stackcnt = 0;
 
-  return vm;
+  return (NjObject*)vm;
 }
 
-void
-njref_free(NjVM* vm) {
-  while (vm->stackcnt > 0)
+static void
+njref_free(NjObject* vm) {
+  while (((NjRefsVM*)vm)->stackcnt > 0)
     njref_pop(vm);
-  njmem_free(vm, sizeof(NjVM));
+  njmem_free(vm, sizeof(NjRefsVM));
 }
 
-NjObject*
-njref_pushint(NjVM* vm, int value) {
-  NjObject* obj = _njord_new_object(OBJECT_INT);
+static NjObject*
+njref_pushint(NjObject* vm, int value) {
+  NjRefsObject* obj = _njord_new_object(VAR_INT);
   obj->value = value;
-  _njord_push(vm, obj);
+  _njord_push((NjRefsVM*)vm, obj);
 
-  return obj;
+  return (NjObject*)obj;
 }
 
-NjObject*
-njref_pushpair(NjVM* vm) {
-  NjObject* obj = _njord_new_object(OBJECT_PAIR);
-  NjObject* tail = _njord_pop(vm);
-  NjObject* head = _njord_pop(vm);
+static NjObject*
+njref_pushpair(NjObject* vm) {
+  NjRefsObject* obj = _njord_new_object(VAR_PAIR);
+  NjRefsObject* tail = _njord_pop((NjRefsVM*)vm);
+  NjRefsObject* head = _njord_pop((NjRefsVM*)vm);
 
   Nj_INCREF(head);
   obj->head = head;
@@ -121,33 +138,48 @@ njref_pushpair(NjVM* vm) {
   obj->tail = tail;
   Nj_DECREF(tail);
 
-  _njord_push(vm, obj);
+  _njord_push((NjRefsVM*)vm, obj);
 
-  return obj;
+  return (NjObject*)obj;
 }
 
-void
+static void
 njref_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
   if (head != NULL) {
-    Nj_DECREF(pair->head);
+    Nj_DECREF(((NjRefsObject*)pair)->head);
     Nj_INCREF(head);
-    pair->head = head;
+    ((NjRefsObject*)pair)->head = (NjRefsObject*)head;
   }
 
   if (tail != NULL) {
-    Nj_DECREF(pair->tail);
+    Nj_DECREF(((NjRefsObject*)pair)->tail);
     Nj_INCREF(tail);
-    pair->tail = tail;
+    ((NjRefsObject*)pair)->tail = (NjRefsObject*)tail;
   }
 }
 
-void
-njref_pop(NjVM* vm) {
-  NjObject* obj = _njord_pop(vm);
+static void
+njref_pop(NjObject* vm) {
+  NjRefsObject* obj = _njord_pop((NjRefsVM*)vm);
   Nj_DECREF(obj);
 }
 
-void
-njref_collect(NjVM* vm) {
+static void
+njref_collect(NjObject* vm) {
   Nj_UNUSED(vm);
 }
+
+static NjGCMethods refs_methods = {
+  njref_new, /* tp_newvm */
+  njref_free, /* tp_freevm */
+  njref_pushint, /* tp_pushint */
+  njref_pushpair, /* tp_pushpair */
+  njref_setpair, /* tp_setpair */
+  njref_pop, /* tp_pop */
+  njref_collect, /* tp_collect */
+};
+
+NjGCObject NjGC_Refs = {
+  GC_REFS, /* type */
+  (NjGCMethods*)&refs_methods, /* methods */
+};

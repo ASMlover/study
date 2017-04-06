@@ -29,29 +29,8 @@
 #ifndef Nj_NJREFS_H
 #define Nj_NJREFS_H
 
-#include "njconfig.h"
+#include "njobject.h"
 
-typedef struct _object {
-  Nj_ssize_t refcnt;
-
-  NjType type;
-  union {
-    int value;
-    struct {
-      struct _object* head;
-      struct _object* tail;
-    };
-  };
-} NjObject;
-
-typedef struct _vm NjVM;
-
-NjAPI_FUNC(NjVM*) njref_new(void);
-NjAPI_FUNC(void) njref_free(NjVM* vm);
-NjAPI_FUNC(NjObject*) njref_pushint(NjVM* vm, int value);
-NjAPI_FUNC(NjObject*) njref_pushpair(NjVM* vm);
-NjAPI_FUNC(void) njref_setpair(NjObject* pair, NjObject* head, NjObject* tail);
-NjAPI_FUNC(void) njref_pop(NjVM* vm);
-NjAPI_FUNC(void) njref_collect(NjVM* vm);
+NjAPI_DATA(NjGCObject) NjGC_Refs;
 
 #endif /* Nj_NJREFS_H */
