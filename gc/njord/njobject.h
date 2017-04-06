@@ -26,51 +26,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef Nj_NJCONFIG_H
-#define Nj_NJCONFIG_H
+#ifndef Nj_NJOBJECT_H
+#define Nj_NJOBJECT_H
 
-#include <stddef.h>
-#include <stdint.h>
-
-typedef char          Nj_char_t;
-typedef unsigned char Nj_uchar_t;
-typedef int8_t        Nj_int8_t;
-typedef uint8_t       Nj_uint8_t;
-typedef int16_t       Nj_int16_t;
-typedef uint16_t      Nj_uint16_t;
-typedef int32_t       Nj_int32_t;
-typedef uint32_t      Nj_uint32_t;
-typedef int64_t       Nj_int64_t;
-typedef uint64_t      Nj_uint64_t;
-typedef intptr_t      Nj_intptr_t;
-typedef uintptr_t     Nj_uintptr_t;
-typedef int           Nj_int_t;
-typedef size_t        Nj_size_t;
-#if defined(HAVE_SSIZE_T)
-  typedef ssize_t     Nj_ssize_t;
-#else
-  typedef Nj_intptr_t Nj_ssize_t;
+#if defined(Nj_USE_REF)
+# include "njrefs.h"
 #endif
 
-#if !defined(NjAPI_FUNC)
-# define NjAPI_FUNC(RTYPE) extern RTYPE
-#endif
-#if !defined(NjAPI_DATA)
-# define NjAPI_DATA(RTYPE) extern RTYPE
-#endif
-
-typedef enum _type {
-  OBJECT_INT,
-  OBJECT_PAIR,
-} NjType;
-
-#define Nj_UNUSED(x) ((void)x)
-
-#define Nj_CHECK(cond, msg) do {\
-  if (!(cond)) {\
-    fprintf(stderr, "%s\n", msg);\
-    abort();\
-  }\
-} while (0)
-
-#endif /* Nj_NJCONFIG_H */
+#endif /* Nj_NJOBJECT_H */

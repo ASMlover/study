@@ -26,51 +26,31 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef Nj_NJCONFIG_H
-#define Nj_NJCONFIG_H
+#ifndef Nj_NJREFS_H
+#define Nj_NJREFS_H
 
-#include <stddef.h>
-#include <stdint.h>
+#include "njconfig.h"
 
-typedef char          Nj_char_t;
-typedef unsigned char Nj_uchar_t;
-typedef int8_t        Nj_int8_t;
-typedef uint8_t       Nj_uint8_t;
-typedef int16_t       Nj_int16_t;
-typedef uint16_t      Nj_uint16_t;
-typedef int32_t       Nj_int32_t;
-typedef uint32_t      Nj_uint32_t;
-typedef int64_t       Nj_int64_t;
-typedef uint64_t      Nj_uint64_t;
-typedef intptr_t      Nj_intptr_t;
-typedef uintptr_t     Nj_uintptr_t;
-typedef int           Nj_int_t;
-typedef size_t        Nj_size_t;
-#if defined(HAVE_SSIZE_T)
-  typedef ssize_t     Nj_ssize_t;
-#else
-  typedef Nj_intptr_t Nj_ssize_t;
-#endif
+typedef struct _object {
+  Nj_ssize_t refcnt;
 
-#if !defined(NjAPI_FUNC)
-# define NjAPI_FUNC(RTYPE) extern RTYPE
-#endif
-#if !defined(NjAPI_DATA)
-# define NjAPI_DATA(RTYPE) extern RTYPE
-#endif
+  NjType type;
+  union {
+    int value;
+    struct {
+      struct _object* head;
+      struct _object* tail;
+    };
+  };
+} NjObject;
 
-typedef enum _type {
-  OBJECT_INT,
-  OBJECT_PAIR,
-} NjType;
+typedef struct _vm NjVM;
 
-#define Nj_UNUSED(x) ((void)x)
+NjAPI_FUNC(NjVM*) njord_new(void);
+NjAPI_FUNC(void) njord_free(NjVM* vm);
+NjAPI_FUNC(NjObject*) njord_pushint(NjVM* vm, int value);
+NjAPI_FUNC(NjObject*) njord_pushpair(NjVM* vm);
+NjAPI_FUNC(void) njord_pop(NjVM* vm);
+NjAPI_FUNC(void) njord_collect(NjVM* vm);
 
-#define Nj_CHECK(cond, msg) do {\
-  if (!(cond)) {\
-    fprintf(stderr, "%s\n", msg);\
-    abort();\
-  }\
-} while (0)
-
-#endif /* Nj_NJCONFIG_H */
+#endif /* Nj_NJREFS_H */
