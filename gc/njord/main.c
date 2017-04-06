@@ -26,16 +26,19 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#define Nj_USE_REF
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include "njmem.h"
+#include "njobject.h"
 
 #define ALLOC_COUNT (1000000)
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
-
+static void
+njord_memory_pool(void) {
   char* p;
   int alloc_bytes_list[] = {1, 4, 8, 16, 32, 64};
   int alloc_bytes_count = sizeof(alloc_bytes_list) / sizeof(int);
@@ -66,5 +69,54 @@ int main(int argc, char* argv[]) {
   }
 
   njmem_collect();
+}
+
+static void
+njord_gc_sample1(void) {
+  fprintf(stdout, "sample1: all objects on stack\n");
+
+  NjVM* vm = njord_new();
+
+  njord_pushint(vm, 1);
+  njord_pushint(vm, 2);
+
+  njord_free(vm);
+}
+
+static void
+njord_gc_sample2(void) {
+  fprintf(stdout, "sample2: objects nested\n");
+
+  NjVM* vm = njord_new();
+  njord_pushint(vm, 1);
+  njord_pushint(vm, 2);
+  njord_pushpair(vm);
+  njord_pushint(vm, 3);
+  njord_pushint(vm, 4);
+  njord_pushpair(vm);
+  njord_pushpair(vm);
+
+  njord_free(vm);
+}
+
+static void
+njord_gc(void) {
+  njord_gc_sample1();
+  njord_gc_sample2();
+}
+
+int main(int argc, char* argv[]) {
+  (void)argc, (void)argv;
+
+  if (argc < 2) {
+    fprintf(stdout, "Usage: njord [mem|gc] ...\n");
+    return 1;
+  }
+
+  if (strcmp(argv[1], "mem") == 0)
+    njord_memory_pool();
+  else if (strcmp(argv[1], "gc") == 0)
+    njord_gc();
+
   return 0;
 }
