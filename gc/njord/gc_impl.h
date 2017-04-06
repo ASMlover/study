@@ -26,11 +26,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef Nj_NJREFS_H
-#define Nj_NJREFS_H
+#ifndef Nj_GCIMPL_H
+#define Nj_GCIMPL_H
 
 #include "njobject.h"
 
 NjAPI_DATA(NjGCObject) NjGC_Refs;
 
-#endif /* Nj_NJREFS_H */
+#endif /* Nj_GCIMPL_H */

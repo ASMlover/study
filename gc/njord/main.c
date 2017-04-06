@@ -26,8 +26,6 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#define Nj_USE_REF
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,7 +52,8 @@ njord_memory_pool(void) {
     free(p);
   }
   end = clock();
-  fprintf(stdout, "[system allocator] end clock: %ld,  use clock: %ld\n", end, end - beg);
+  fprintf(stdout, "[system allocator] end clock: %ld,  use clock: %ld\n",
+      end, end - beg);
 
   {
     beg = clock();
@@ -65,7 +64,8 @@ njord_memory_pool(void) {
       njmem_free(p, s);
     }
     end = clock();
-    fprintf(stdout, "[mempool allocator] end clock: %ld,  use clock: %ld\n", end, end - beg);
+    fprintf(stdout, "[mempool allocator] end clock: %ld,  use clock: %ld\n",
+        end, end - beg);
   }
 
   njmem_collect();
@@ -129,11 +129,16 @@ njord_gc(void) {
   njord_gc_sample3();
 }
 
+static void
+_njord_usage(void) {
+  fprintf(stdout, "USAGE: njord [mem|gc] ...\n");
+}
+
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
   if (argc < 2) {
-    fprintf(stdout, "Usage: njord [mem|gc] ...\n");
+    _njord_usage();
     return 1;
   }
 
@@ -141,6 +146,8 @@ int main(int argc, char* argv[]) {
     njord_memory_pool();
   else if (strcmp(argv[1], "gc") == 0)
     njord_gc();
+  else
+    _njord_usage();
 
   return 0;
 }

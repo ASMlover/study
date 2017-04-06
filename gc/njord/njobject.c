@@ -28,7 +28,7 @@
  */
 #include "njmem.h"
 #include "njobject.h"
-#include "njrefs.h"
+#include "gc_impl.h"
 
 static NjGCObject* gcobj = NULL;
 

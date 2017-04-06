@@ -29,7 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "njmem.h"
-#include "njrefs.h"
+#include "gc_impl.h"
 
 #define MAX_STACK (1024)
 
