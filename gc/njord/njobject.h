@@ -65,6 +65,8 @@ typedef struct _gc_object {
   NjGCMethods* methods;
 } NjGCObject;
 
+#define Nj_GCFUN(gc) (((NjGCObject*)(gc))->methods)
+
 typedef enum _vartype {
   VAR_INT,
   VAR_PAIR,

@@ -26,6 +26,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include "njmem.h"
 #include "njobject.h"
 #include "njrefs.h"
 
@@ -39,35 +40,38 @@ njord_initgc(NjGCType type) {
 
 NjObject*
 njord_new(void) {
-  return gcobj->methods->tp_newvm();
+  return Nj_GCFUN(gcobj)->tp_newvm();
 }
 
 void
 njord_free(NjObject* vm) {
-  gcobj->methods->tp_freevm(vm);
+  Nj_GCFUN(gcobj)->tp_freevm(vm);
 }
 
 NjObject*
 njord_pushint(NjObject* vm, int value) {
-  return gcobj->methods->tp_pushint(vm, value);
+  return Nj_GCFUN(gcobj)->tp_pushint(vm, value);
 }
 
 NjObject*
 njord_pushpair(NjObject* vm) {
-  return gcobj->methods->tp_pushpair(vm);
+  return Nj_GCFUN(gcobj)->tp_pushpair(vm);
 }
 
 void
 njord_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
-  gcobj->methods->tp_setpair(pair, head, tail);
+  Nj_GCFUN(gcobj)->tp_setpair(pair, head, tail);
 }
 
 void
 njord_pop(NjObject* vm) {
-  gcobj->methods->tp_pop(vm);
+  Nj_GCFUN(gcobj)->tp_pop(vm);
 }
 
 void
 njord_collect(NjObject* vm) {
-  gcobj->methods->tp_collect(vm);
+  if (Nj_GCFUN(gcobj)->tp_collect != NULL)
+    Nj_GCFUN(gcobj)->tp_collect(vm);
+  else
+    njmem_collect();
 }
