@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "gc_impl.h"
+#include "njmem.h"
 
 #define MAX_STACK         (1024)
 #define INIT_GC_THRESHOLD (8)
@@ -101,7 +102,7 @@ _njord_sweep(NjMarkSVM* vm) {
     if ((*startobj)->marked == UNMARKED) {
       NjMarkSObject* unmarked = *startobj;
       startobj = &unmarked->next;
-      free(unmarked);
+      njmem_free(unmarked, sizeof(NjMarkSObject));
       --vm->objcnt;
     }
     else {
@@ -129,7 +130,7 @@ _njord_new_object(NjMarkSVM* vm, NjVarType type) {
   if (vm->objcnt >= vm->maxobj)
     njmarks_collect((NjObject*)vm);
 
-  NjMarkSObject* obj = (NjMarkSObject*)malloc(sizeof(NjMarkSObject));
+  NjMarkSObject* obj = (NjMarkSObject*)njmem_malloc(sizeof(NjMarkSObject));
   obj->ob_name = "marks_object";
   obj->marked = UNMARKED;
   obj->type = type;
@@ -142,7 +143,7 @@ _njord_new_object(NjMarkSVM* vm, NjVarType type) {
 
 static NjObject*
 njmarks_new(void) {
-  NjMarkSVM* vm = (NjMarkSVM*)malloc(sizeof(NjMarkSVM));
+  NjMarkSVM* vm = (NjMarkSVM*)njmem_malloc(sizeof(NjMarkSVM));
   Nj_CHECK(vm != NULL, "create VM failed");
 
   vm->ob_name = "NjMarkSVM";
@@ -157,7 +158,7 @@ njmarks_new(void) {
 static void
 njmarks_free(NjObject* vm) {
   njmarks_collect(vm);
-  free(vm);
+  njmem_free(vm, sizeof(NjMarkSVM));
 }
 
 static NjObject*
