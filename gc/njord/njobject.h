@@ -48,6 +48,7 @@ typedef void (*collectfunc)(NjObject*);
 
 typedef enum _gc_type {
   GC_REFS,
+  GC_MARK_SWEEP,
 } NjGCType;
 
 typedef struct _gc_methods {

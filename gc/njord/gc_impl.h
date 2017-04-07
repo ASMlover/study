@@ -31,6 +31,9 @@
 
 #include "njobject.h"
 
-NjAPI_DATA(NjGCObject) NjGC_Refs;
+NjAPI_DATA(NjGCObject) NjGC_Refs; /* easy implementation of reference
+                                     counting garbage collector */
+NjAPI_DATA(NjGCObject) NjGC_MarkS; /* easy implementation of mark and
+                                      sweep garbage collector */
 
 #endif /* Nj_GCIMPL_H */

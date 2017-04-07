@@ -80,6 +80,9 @@ njord_gc_sample1(void) {
   njord_pushint(vm, 1);
   njord_pushint(vm, 2);
 
+  njord_pop(vm);
+  njord_pop(vm);
+
   njord_free(vm);
 }
 
@@ -95,6 +98,8 @@ njord_gc_sample2(void) {
   njord_pushint(vm, 4);
   njord_pushpair(vm);
   njord_pushpair(vm);
+
+  njord_pop(vm);
 
   njord_free(vm);
 }
@@ -121,8 +126,8 @@ njord_gc_sample3(void) {
 }
 
 static void
-njord_gc(void) {
-  njord_initgc(GC_REFS);
+njord_gc(NjGCType gc_type) {
+  njord_initgc(gc_type);
 
   njord_gc_sample1();
   njord_gc_sample2();
@@ -131,7 +136,12 @@ njord_gc(void) {
 
 static void
 _njord_usage(void) {
-  fprintf(stdout, "USAGE: njord [mem|gc] ...\n");
+  fprintf(stdout,
+      "USAGE: njord [mem|gc [gctype]] ...\n"
+      " gctype:\n"
+      "   0 - reference counting garbage collector\n"
+      "   1 - mark and sweep garbage collector\n"
+      );
 }
 
 int main(int argc, char* argv[]) {
@@ -142,12 +152,19 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  if (strcmp(argv[1], "mem") == 0)
+  if (strcmp(argv[1], "mem") == 0) {
     njord_memory_pool();
-  else if (strcmp(argv[1], "gc") == 0)
-    njord_gc();
-  else
+  }
+  else if (strcmp(argv[1], "gc") == 0) {
+    if (argc < 3) {
+      _njord_usage();
+      return 1;
+    }
+    njord_gc((NjGCType)atoi(argv[2]));
+  }
+  else {
     _njord_usage();
+  }
 
   return 0;
 }
