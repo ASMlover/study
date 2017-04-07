@@ -63,6 +63,8 @@ typedef struct _varobject {
 } NjRefsObject;
 
 typedef struct _vm {
+  NjObject_HEAD
+
   NjRefsObject* stack[MAX_STACK];
   int stackcnt;
 } NjRefsVM;
@@ -103,8 +105,9 @@ static void njref_pop(NjObject* vm);
 static NjObject*
 njref_new(void) {
   NjRefsVM* vm = (NjRefsVM*)njmem_malloc(sizeof(NjRefsVM));
-  Nj_CHECK(vm != NULL, "create NjVM failed");
+  Nj_CHECK(vm != NULL, "create VM failed");
 
+  vm->ob_name = "NjRefsVM";
   vm->stackcnt = 0;
 
   return (NjObject*)vm;
@@ -166,11 +169,6 @@ njref_pop(NjObject* vm) {
   Nj_DECREF(obj);
 }
 
-static void
-njref_collect(NjObject* vm) {
-  Nj_UNUSED(vm);
-}
-
 static NjGCMethods refs_methods = {
   njref_new, /* tp_newvm */
   njref_free, /* tp_freevm */
@@ -178,7 +176,7 @@ static NjGCMethods refs_methods = {
   njref_pushpair, /* tp_pushpair */
   njref_setpair, /* tp_setpair */
   njref_pop, /* tp_pop */
-  njref_collect, /* tp_collect */
+  0, /* tp_collect */
 };
 
 NjGCObject NjGC_Refs = {
