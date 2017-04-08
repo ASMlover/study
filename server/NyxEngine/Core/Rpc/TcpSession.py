@@ -36,7 +36,16 @@ from Log.LogManager import LogManager
 class TcpSession(asyncore.dispatcher):
     """建立好的网络链接
 
-    可以是服务器的accept connector也可以是客户端的connector
+    可以是服务器的accept connector也可以是客户端的connector。
+    依赖channel来处理连接断开和接收的数据信息，需要channel实现接口：
+        on_disconnected - 网络连接断开的处理
+        on_input_data - 对接收到的网络对端发送的数据信息进行处理
+    依赖crypter来处理加密、解密的操作，需要crypter实现具体接口：
+        encrypt - 对待发送到网络对端的数据进行加密处理
+        decrypt - 对接收到的网络对端发送的数据进行解密处理
+    依赖compressor来处理加压、解压数据的操作，需要compressor实现具体接口：
+        compress - 对待发送到网络对端的数据进行加压缩处理
+        decompress - 对接收到的网络对端发送的数据进行解压处理
     """
     _DEFAULT_RECV_BYTES = 4096 # 默认接收buffer的大小
     _STATUS_INIT = 0
@@ -55,9 +64,8 @@ class TcpSession(asyncore.dispatcher):
         self.channel = None
         self.peeraddr = peeraddr
 
-        self.encrypter = None
-        self.decrypter = None
-        self.compressor = None
+        self.crypter = None # 加密、解密器
+        self.compressor = None # 加压、解压器
 
         if sock:
             self.set_sockoption()
@@ -77,9 +85,8 @@ class TcpSession(asyncore.dispatcher):
     def get_channel(self):
         return self.channel
 
-    def set_crypter(self, encrypter, decrypter):
-        self.encrypter = encrypter
-        self.decrypter = decrypter
+    def set_crypter(self, crypter):
+        self.crypter = crypter
 
     def set_compressor(self, compressor):
         self.compressor = compressor
@@ -115,7 +122,7 @@ class TcpSession(asyncore.dispatcher):
         if self.compressor:
             data = self.compressor.compress(data)
         if self.encrypter:
-            data = self.encrypter.encryt(data)
+            data = self.crypter.encrypt(data)
         self.writbuf.write(data)
 
     def writable(self):
@@ -147,7 +154,7 @@ class TcpSession(asyncore.dispatcher):
                 return
 
             if self.decrypter:
-                data = self.decrypter.decrypt(data)
+                data = self.crypter.decrypt(data)
             if self.compressor:
                 data = self.compressor.decompress(data)
             r = self.channel.on_input_data(data) # 调用channel的on_input_data
