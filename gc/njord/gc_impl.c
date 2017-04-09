@@ -26,48 +26,89 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "gc_impl.h"
 #include "njmem.h"
+
+static void
+njint_print(NjObject* obj) {
+  fprintf(stdout, "NjIntObject<'%s', 0x%p, %d>\n",
+      obj->ob_type->tp_name, obj, ((NjIntObject*)obj)->value);
+}
 
 NjTypeObject NjInt_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "int", /* tp_name */
-  0, /* tp_print */
+  njint_print, /* tp_print */
+  0, /* tp_setter */
+  0, /* tp_getter */
   0, /* tp_gc */
 };
+
+static void
+njpair_print(NjObject* obj) {
+  fprintf(stdout, "NjPairObject<'%s' 0x%p, <<'%s', 0x%p>, <'%s', 0x%p>>>\n",
+      obj->ob_type->tp_name, obj,
+      ((NjPairObject*)obj)->head->ob_type->tp_name, ((NjPairObject*)obj)->head,
+      ((NjPairObject*)obj)->tail->ob_type->tp_name, ((NjPairObject*)obj)->tail
+      );
+}
 
 NjTypeObject NjPair_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "pair", /* tp_name */
-  0, /* tp_print */
+  njpair_print, /* tp_print */
+  njord_pairsetter, /* tp_setter */
+  njord_pairgetter, /* tp_getter */
   0, /* tp_gc */
 };
 
 NjObject*
-njord_new_object(NjVarType type, Nj_ssize_t gc_size) {
-  NjObject* obj = NULL;
-  NjTypeObject* typeobj = NULL;
-  Nj_ssize_t ob_size = 0;
-
-  if (type == VAR_INT) {
-    ob_size = sizeof(NjIntObject);
-    typeobj = &NjInt_Type;
-  }
-  else if (type == VAR_PAIR) {
-    ob_size = sizeof(NjPair_Type);
-    typeobj = &NjPair_Type;
-  }
+njord_newint(Nj_ssize_t gc_size, Nj_int_t value) {
+  Nj_ssize_t ob_size = sizeof(NjIntObject);
   Nj_char_t* p = (Nj_char_t*)njmem_malloc(ob_size + gc_size);
-  obj = (NjObject*)(p + gc_size);
-  obj->ob_type = typeobj;
-  ((NjVarObject*)obj)->ob_size = ob_size;
+  NjIntObject* obj = (NjIntObject*)(p + gc_size);
+  obj->ob_type = &NjInt_Type;
+  obj->ob_size = ob_size;
+  obj->value = value;
 
-  return obj;
+  return (NjObject*)obj;
+}
+
+NjObject*
+njord_newpair(Nj_ssize_t gc_size, NjObject* head, NjObject* tail) {
+  Nj_ssize_t ob_size = sizeof(NjPairObject);
+  Nj_char_t* p = (Nj_char_t*)njmem_malloc(ob_size + gc_size);
+  NjPairObject* obj = (NjPairObject*)(p + gc_size);
+  obj->ob_type = &NjPair_Type;
+  obj->ob_size = ob_size;
+  obj->head = head;
+  obj->tail = tail;
+
+  return (NjObject*)obj;
 }
 
 void
-njord_free_object(NjObject* obj, Nj_ssize_t gc_size) {
+njord_pairsetter(NjObject* obj, const char* key, NjObject* value) {
+  if (strcmp(key, "head") == 0)
+    ((NjPairObject*)obj)->head = value;
+  else if (strcmp(key, "tail") == 0)
+    ((NjPairObject*)obj)->tail = value;
+}
+
+NjObject*
+njord_pairgetter(NjObject* obj, const char* key) {
+  if (strcmp(key, "head") == 0)
+    return ((NjPairObject*)obj)->head;
+  else if (strcmp(key, "tail") == 0)
+    return ((NjPairObject*)obj)->tail;
+  return NULL;
+}
+
+void
+njord_freeobj(NjObject* obj, Nj_ssize_t gc_size) {
   Nj_ssize_t ob_size = ((NjVarObject*)obj)->ob_size;
   Nj_char_t* p = (Nj_char_t*)obj - gc_size;
   njmem_free(p, ob_size + gc_size);

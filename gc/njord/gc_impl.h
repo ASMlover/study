@@ -45,8 +45,13 @@ typedef struct _pairobject {
 NjAPI_DATA(NjTypeObject) NjInt_Type;
 NjAPI_DATA(NjTypeObject) NjPair_Type;
 
-NjAPI_FUNC(NjObject*) njord_new_object(NjVarType type, Nj_ssize_t gc_size);
-NjAPI_FUNC(void) njord_free_object(NjObject* obj, Nj_ssize_t gc_size);
+NjAPI_FUNC(NjObject*) njord_newint(Nj_ssize_t gc_size, Nj_int_t value);
+NjAPI_FUNC(NjObject*) njord_newpair(
+    Nj_ssize_t gc_size, NjObject* head, NjObject* tail);
+NjAPI_FUNC(void) njord_pairsetter(
+    NjObject* obj, const char* key, NjObject* value);
+NjAPI_FUNC(NjObject*) njord_pairgetter(NjObject* obj, const char* key);
+NjAPI_FUNC(void) njord_freeobj(NjObject* obj, Nj_ssize_t gc_size);
 
 NjAPI_DATA(NjTypeObject) NjRefs_Type; /* easy implementation of reference
                                          counting garbage collector*/
