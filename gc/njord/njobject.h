@@ -51,6 +51,8 @@ typedef struct _varobject {
 } NjVarObject;
 
 typedef void (*printfunc)(NjObject*);
+typedef void (*setterfunc)(NjObject*, const char*, NjObject*);
+typedef NjObject* (*getterfunc)(NjObject*, const char*);
 typedef NjObject* (*newvmfunc)(void);
 typedef void (*freevmfunc)(NjObject*);
 typedef NjObject* (*pushintfunc)(NjObject*, int);
@@ -73,6 +75,8 @@ typedef struct _typeobject {
   NjObject_HEAD;
   const char* tp_name;
   printfunc tp_print;
+  setterfunc tp_setter;
+  getterfunc tp_getter;
   NjGCMethods* tp_gc;
 } NjTypeObject;
 
@@ -87,11 +91,6 @@ typedef struct _gcobject {
 } NjGCObject;
 
 #define Nj_GC(gc) (((NjObject*)(gc))->ob_type->tp_gc)
-
-typedef enum _vartype {
-  VAR_INT,
-  VAR_PAIR,
-} NjVarType;
 
 NjAPI_DATA(NjTypeObject) NjType_Type;
 

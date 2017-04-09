@@ -82,5 +82,7 @@ NjTypeObject NjType_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "type", /* tp_name */
   0, /* tp_print */
+  0, /* tp_setter */
+  0, /* tp_getter */
   0, /* tp_gc */
 };
