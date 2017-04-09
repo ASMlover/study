@@ -43,12 +43,12 @@
 #define PAGE_SIZE_MASK  (PAGE_SIZE - 1)
 #define CHUNK_SIZE      (256 << 10)
 
-typedef struct _NjBlock {
-  struct _NjBlock* nextblock;
+typedef struct _block {
+  struct _block* nextblock;
 } NjBlock;
 
-typedef struct _NjChunk {
-  struct _NjChunk* nextchunk;
+typedef struct _chunk {
+  struct _chunk* nextchunk;
   NjBlock* blockptr;
 } NjChunk;
 
@@ -79,7 +79,8 @@ _alloc_chunk(Nj_size_t index) {
     Nj_size_t excess = (Nj_uintptr_t)new_chunk & PAGE_SIZE_MASK;
     Nj_size_t alignment_chunk_size;
     if (excess != 0) {
-      freeblocks[index] = (NjBlock*)((Nj_uchar_t*)new_chunk + PAGE_SIZE - excess);
+      freeblocks[index] = (NjBlock*)(
+          (Nj_uchar_t*)new_chunk + PAGE_SIZE - excess);
       alignment_chunk_size = CHUNK_SIZE - (PAGE_SIZE - excess + block_bytes);
     }
     else {
