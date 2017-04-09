@@ -32,12 +32,25 @@
 #include "njconfig.h"
 
 #define NjObject_HEAD\
-  const char* ob_name;
+  struct _typeobject* ob_type
+
+#define NjObject_HEAD_INIT(type)\
+  type
+
+#define NjObject_VAR_HEAD\
+  NjObject_HEAD;\
+  Nj_ssize_t ob_size;\
+  struct _varobject* next
 
 typedef struct _object {
-  NjObject_HEAD
+  NjObject_HEAD;
 } NjObject;
 
+typedef struct _varobject {
+  NjObject_VAR_HEAD;
+} NjVarObject;
+
+typedef void (*printfunc)(NjObject*);
 typedef NjObject* (*newvmfunc)(void);
 typedef void (*freevmfunc)(NjObject*);
 typedef NjObject* (*pushintfunc)(NjObject*, int);
@@ -46,32 +59,41 @@ typedef void (*setpairfunc)(NjObject*, NjObject*, NjObject*);
 typedef void (*popfunc)(NjObject*);
 typedef void (*collectfunc)(NjObject*);
 
-typedef enum _gc_type {
+typedef struct {
+  newvmfunc gc_newvm;
+  freevmfunc gc_freevm;
+  pushintfunc gc_pushint;
+  pushpairfunc gc_pushpair;
+  setpairfunc gc_setpair;
+  popfunc gc_pop;
+  collectfunc gc_collect;
+} NjGCMethods;
+
+typedef struct _typeobject {
+  NjObject_HEAD;
+  const char* tp_name;
+  printfunc tp_print;
+  NjGCMethods* tp_gc;
+} NjTypeObject;
+
+typedef enum _gctype {
   GC_REFS,
   GC_MARK_SWEEP,
 } NjGCType;
 
-typedef struct _gc_methods {
-  newvmfunc tp_newvm;
-  freevmfunc tp_freevm;
-  pushintfunc tp_pushint;
-  pushpairfunc tp_pushpair;
-  setpairfunc tp_setpair;
-  popfunc tp_pop;
-  collectfunc tp_collect;
-} NjGCMethods;
-
-typedef struct _gc_object {
+typedef struct _gcobject {
   NjGCType type;
   NjGCMethods* methods;
 } NjGCObject;
 
-#define Nj_GCFUN(gc) (((NjGCObject*)(gc))->methods)
+#define Nj_GC(gc) (((NjObject*)(gc))->ob_type->tp_gc)
 
 typedef enum _vartype {
   VAR_INT,
   VAR_PAIR,
 } NjVarType;
+
+NjAPI_DATA(NjTypeObject) NjType_Type;
 
 NjAPI_FUNC(void) njord_initgc(NjGCType type);
 NjAPI_FUNC(NjObject*) njord_new(void);

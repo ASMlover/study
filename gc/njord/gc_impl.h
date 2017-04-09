@@ -31,9 +31,27 @@
 
 #include "njobject.h"
 
-NjAPI_DATA(NjGCObject) NjGC_Refs; /* easy implementation of reference
-                                     counting garbage collector */
+typedef struct _intobject {
+  NjObject_VAR_HEAD;
+  Nj_int_t value;
+} NjIntObject;
+
+typedef struct _pairobject {
+  NjObject_VAR_HEAD;
+  NjObject* head;
+  NjObject* tail;
+} NjPairObject;
+
+NjAPI_DATA(NjTypeObject) NjInt_Type;
+NjAPI_DATA(NjTypeObject) NjPair_Type;
+
+NjAPI_FUNC(NjObject*) njord_new_object(NjVarType type, Nj_ssize_t gc_size);
+NjAPI_FUNC(void) njord_free_object(NjObject* obj, Nj_ssize_t gc_size);
+
+NjAPI_DATA(NjTypeObject) NjRefs_Type; /* easy implementation of reference
+                                         counting garbage collector*/
 NjAPI_DATA(NjGCObject) NjGC_MarkS; /* easy implementation of mark and
                                       sweep garbage collector */
+
 
 #endif /* Nj_GCIMPL_H */

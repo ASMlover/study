@@ -26,59 +26,49 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include "njmem.h"
-#include "njobject.h"
+#include <stdlib.h>
 #include "gc_impl.h"
+#include "njmem.h"
 
-static NjObject gc;
-
-void
-njord_initgc(NjGCType type) {
-  if (type == GC_REFS)
-    gc.ob_type = &NjRefs_Type;
-}
-
-NjObject*
-njord_new(void) {
-  return Nj_GC(&gc)->gc_newvm();
-}
-
-void
-njord_free(NjObject* vm) {
-  Nj_GC(&gc)->gc_freevm(vm);
-}
-
-NjObject*
-njord_pushint(NjObject* vm, int value) {
-  return Nj_GC(&gc)->gc_pushint(vm, value);
-}
-
-NjObject*
-njord_pushpair(NjObject* vm) {
-  return Nj_GC(&gc)->gc_pushpair(vm);
-}
-
-void
-njord_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
-  Nj_GC(&gc)->gc_setpair(pair, head, tail);
-}
-
-void
-njord_pop(NjObject* vm) {
-  Nj_GC(&gc)->gc_pop(vm);
-}
-
-void
-njord_collect(NjObject* vm) {
-  if (Nj_GC(&gc)->gc_collect != NULL)
-    Nj_GC(&gc)->gc_collect(vm);
-  else
-    njmem_collect();
-}
-
-NjTypeObject NjType_Type = {
+NjTypeObject NjInt_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
-  "type", /* tp_name */
+  "int", /* tp_name */
   0, /* tp_print */
   0, /* tp_gc */
 };
+
+NjTypeObject NjPair_Type = {
+  NjObject_HEAD_INIT(&NjType_Type),
+  "pair", /* tp_name */
+  0, /* tp_print */
+  0, /* tp_gc */
+};
+
+NjObject*
+njord_new_object(NjVarType type, Nj_ssize_t gc_size) {
+  NjObject* obj = NULL;
+  NjTypeObject* typeobj = NULL;
+  Nj_ssize_t ob_size = 0;
+
+  if (type == VAR_INT) {
+    ob_size = sizeof(NjIntObject);
+    typeobj = &NjInt_Type;
+  }
+  else if (type == VAR_PAIR) {
+    ob_size = sizeof(NjPair_Type);
+    typeobj = &NjPair_Type;
+  }
+  Nj_char_t* p = (Nj_char_t*)njmem_malloc(ob_size + gc_size);
+  obj = (NjObject*)(p + gc_size);
+  obj->ob_type = typeobj;
+  ((NjVarObject*)obj)->ob_size = ob_size;
+
+  return obj;
+}
+
+void
+njord_free_object(NjObject* obj, Nj_ssize_t gc_size) {
+  Nj_ssize_t ob_size = ((NjVarObject*)obj)->ob_size;
+  Nj_char_t* p = (Nj_char_t*)obj - gc_size;
+  njmem_free(p, ob_size + gc_size);
+}
