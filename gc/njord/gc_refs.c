@@ -42,7 +42,7 @@
     fprintf(stdout, "NjObject<0x%p, '%s'> collected\n",\
         ((NjObject*)(ob)),\
         ((NjObject*)(ob))->ob_type->tp_name);\
-    _njord_free_object(ob);\
+    _njord_dealloc(ob);\
   }\
 } while (0)
 #define Nj_XINCREF(ob) do { if ((ob) != NULL) Nj_INCREF(ob); } while (0)
@@ -71,21 +71,15 @@ _njord_pop(NjVMObject* vm) {
   return vm->stack[--vm->stackcnt];
 }
 
-static NjObject*
-_njord_new_object(NjVarType type) {
-  NjObject* obj = njord_new_object(type, sizeof(GCHead));
-  Nj_NEWREF(obj);
-
-  return obj;
-}
-
 static void
-_njord_free_object(NjObject* obj) {
+_njord_dealloc(NjObject* obj) {
   if (obj->ob_type == &NjPair_Type) {
-    Nj_XDECREF(((NjPairObject*)obj)->head);
-    Nj_XDECREF(((NjPairObject*)obj)->tail);
+    NjObject* head = njord_pairgetter(obj, "head");
+    Nj_XDECREF(head);
+    NjObject* tail = njord_pairgetter(obj, "tail");
+    Nj_XDECREF(tail);
   }
-  njord_free_object(obj, sizeof(GCHead));
+  njord_freeobj(obj, sizeof(GCHead));
 }
 
 static void njrefs_pop(NjObject* vm);
@@ -110,8 +104,8 @@ njrefs_freevm(NjObject* vm) {
 
 static NjObject*
 njrefs_pushint(NjObject* vm, int value) {
-  NjIntObject* obj = (NjIntObject*)_njord_new_object(VAR_INT);
-  obj->value = value;
+  NjIntObject* obj = (NjIntObject*)njord_newint(sizeof(GCHead), value);
+  Nj_NEWREF(obj);
   _njord_push((NjVMObject*)vm, (NjObject*)obj);
 
   return (NjObject*)obj;
@@ -119,18 +113,16 @@ njrefs_pushint(NjObject* vm, int value) {
 
 static NjObject*
 njrefs_pushpair(NjObject* vm) {
-  NjPairObject* obj = (NjPairObject*)_njord_new_object(VAR_PAIR);
   NjObject* tail = _njord_pop((NjVMObject*)vm);
   NjObject* head = _njord_pop((NjVMObject*)vm);
 
   Nj_INCREF(head);
-  obj->head = head;
-  Nj_DECREF(head);
-
   Nj_INCREF(tail);
-  obj->tail = tail;
+  NjPairObject* obj = (NjPairObject*)njord_newpair(
+      sizeof(GCHead), head, tail);
+  Nj_NEWREF(obj);
+  Nj_DECREF(head);
   Nj_DECREF(tail);
-
   _njord_push((NjVMObject*)vm, (NjObject*)obj);
 
   return (NjObject*)obj;
@@ -139,15 +131,17 @@ njrefs_pushpair(NjObject* vm) {
 static void
 njrefs_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
   if (head != NULL) {
-    Nj_DECREF(((NjPairObject*)pair)->head);
+    NjObject* old_head = njord_pairgetter(pair, "head");
+    Nj_DECREF(old_head);
     Nj_INCREF(head);
-    ((NjPairObject*)pair)->head = head;
+    njord_pairsetter(pair, "head", head);
   }
 
   if (tail != NULL) {
-    Nj_DECREF(((NjPairObject*)pair)->tail);
+    NjObject* old_tail = njord_pairgetter(pair, "tail");
+    Nj_DECREF(old_tail);
     Nj_INCREF(tail);
-    ((NjPairObject*)pair)->tail = tail;
+    njord_pairsetter(pair, "tail", tail);
   }
 }
 
@@ -171,5 +165,7 @@ NjTypeObject NjRefs_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "refs_gc", /* tp_name */
   0, /* tp_print */
+  0, /* tp_setter */
+  0, /* tp_getter */
   (NjGCMethods*)&gc_methods, /* tp_gc */
 };

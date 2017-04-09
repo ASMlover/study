@@ -74,8 +74,10 @@ _njord_mark(NjObject* obj) {
 
   Nj_ASGC(obj)->marked = MARKED;
   if (obj->ob_type == &NjPair_Type) {
-    _njord_mark(((NjPairObject*)obj)->head);
-    _njord_mark(((NjPairObject*)obj)->tail);
+    NjObject* head = njord_pairgetter(obj, "head");
+    _njord_mark(head);
+    NjObject* tail = njord_pairgetter(obj, "tail");
+    _njord_mark(tail);
   }
 }
 
@@ -94,7 +96,7 @@ _njord_sweep(NjVMObject* vm) {
       startobj = &((NjVarObject*)unmarked)->next;
       fprintf(stdout, "NjObject<0x%p, '%s'> collected\n",
           unmarked, unmarked->ob_type->tp_name);
-      njord_free_object(unmarked, sizeof(GCHead));
+      njord_freeobj(unmarked, sizeof(GCHead));
       --vm->objcnt;
     }
     else {
@@ -115,20 +117,6 @@ njmarks_collect(NjObject* vm) {
   _vm->maxobj = (int)(old_objcnt * 1.5);
   fprintf(stdout, "NjGC_MarkS collected [%d] objects, [%d] remaining.\n",
       old_objcnt - _vm->objcnt, _vm->objcnt);
-}
-
-static NjObject*
-_njord_new_object(NjVMObject* vm, NjVarType type) {
-  if (vm->objcnt >= vm->maxobj)
-    njmarks_collect((NjObject*)vm);
-
-  NjObject* obj = (NjObject*)njord_new_object(type, sizeof(GCHead));
-  Nj_ASGC(obj)->marked = UNMARKED;
-  ((NjVarObject*)obj)->next = vm->startobj;
-  vm->startobj = obj;
-  ++vm->objcnt;
-
-  return obj;
 }
 
 static NjObject*
@@ -153,20 +141,34 @@ njmarks_freevm(NjObject* vm) {
 
 static NjObject*
 njmarks_pushint(NjObject* vm, int value) {
-  NjIntObject* obj = (NjIntObject*)_njord_new_object((NjVMObject*)vm, VAR_INT);
-  obj->value = value;
-  _njord_push((NjVMObject*)vm, (NjObject*)obj);
+  NjVMObject* _vm = (NjVMObject*)vm;
+  if (_vm->objcnt >= _vm->maxobj)
+    njmarks_collect(vm);
+
+  NjIntObject* obj = (NjIntObject*)njord_newint(sizeof(GCHead), value);
+  Nj_ASGC(obj)->marked = UNMARKED;
+  obj->next = _vm->startobj;
+  _vm->startobj = (NjObject*)obj;
+  ++_vm->objcnt;
+  _njord_push(_vm, (NjObject*)obj);
 
   return (NjObject*)obj;
 }
 
 static NjObject*
 njmarks_pushpair(NjObject* vm) {
-  NjPairObject* obj = (NjPairObject*)_njord_new_object(
-      (NjVMObject*)vm, VAR_PAIR);
-  obj->tail = _njord_pop((NjVMObject*)vm);
-  obj->head = _njord_pop((NjVMObject*)vm);
-  _njord_push((NjVMObject*)vm, (NjObject*)obj);
+  NjVMObject* _vm = (NjVMObject*)vm;
+  if (_vm->objcnt >= _vm->maxobj)
+    njmarks_collect(vm);
+
+  NjObject* tail = _njord_pop(_vm);
+  NjObject* head = _njord_pop(_vm);
+  NjPairObject* obj = (NjPairObject*)njord_newpair(sizeof(GCHead), head, tail);
+  Nj_ASGC(obj)->marked = UNMARKED;
+  obj->next = _vm->startobj;
+  _vm->startobj = (NjObject*)obj;
+  ++_vm->objcnt;
+  _njord_push(_vm, (NjObject*)obj);
 
   return (NjObject*)obj;
 }
@@ -174,10 +176,10 @@ njmarks_pushpair(NjObject* vm) {
 static void
 njmarks_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
   if (head != NULL)
-    ((NjPairObject*)pair)->head = head;
+    njord_pairsetter(pair, "head", head);
 
   if (tail != NULL)
-    ((NjPairObject*)pair)->tail = tail;
+    njord_pairsetter(pair, "tail", tail);
 }
 
 static void
@@ -199,5 +201,7 @@ NjTypeObject NjMarks_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "marks_gc", /* tp_name */
   0, /* tp_print */
+  0, /* tp_setter */
+  0, /* tp_getter */
   (NjGCMethods*)&gc_methods, /* tp_gc */
 };
