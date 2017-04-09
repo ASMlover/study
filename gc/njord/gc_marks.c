@@ -33,88 +33,78 @@
 
 #define MAX_STACK         (1024)
 #define INIT_GC_THRESHOLD (8)
+#define Nj_ASGC(ob)       ((GCHead*)(ob) - 1)
 
 typedef enum _marked {
   UNMARKED,
   MARKED,
 } NjMarked;
 
-typedef struct _varobject {
-  NjObject_HEAD
-
+typedef struct _gc {
   Nj_uchar_t marked;
-  struct _varobject* next;
-  NjVarType type;
-  union {
-    int value;
-    struct {
-      struct _varobject* head;
-      struct _varobject* tail;
-    };
-  };
-} NjMarkSObject;
+} GCHead;
 
 typedef struct _vm {
-  NjObject_HEAD
+  NjObject_HEAD;
 
-  NjMarkSObject* stack[MAX_STACK];
+  NjObject* stack[MAX_STACK];
   int stackcnt;
 
-  NjMarkSObject* startobj;
+  NjObject* startobj;
   int objcnt;
   int maxobj;
-} NjMarkSVM;
+} NjVMObject;
 
 static void
-_njord_push(NjMarkSVM* vm, NjMarkSObject* obj) {
+_njord_push(NjVMObject* vm, NjObject* obj) {
   Nj_CHECK(vm->stackcnt < MAX_STACK, "VM stack overflow");
   vm->stack[vm->stackcnt++] = obj;
 }
 
-static NjMarkSObject*
-_njord_pop(NjMarkSVM* vm) {
+static NjObject*
+_njord_pop(NjVMObject* vm) {
   Nj_CHECK(vm->stackcnt > 0, "VM stack underflow");
   return vm->stack[--vm->stackcnt];
 }
 
 static void
-_njord_mark(NjMarkSObject* obj) {
-  if (obj->marked == MARKED)
+_njord_mark(NjObject* obj) {
+  if (Nj_ASGC(obj)->marked == MARKED)
     return;
 
-  obj->marked = MARKED;
-  if (obj->type == VAR_PAIR) {
-    _njord_mark(obj->head);
-    _njord_mark(obj->tail);
+  Nj_ASGC(obj)->marked = MARKED;
+  if (obj->ob_type == &NjPair_Type) {
+    _njord_mark(((NjPairObject*)obj)->head);
+    _njord_mark(((NjPairObject*)obj)->tail);
   }
 }
 
 static void
-_njord_mark_all(NjMarkSVM* vm) {
+_njord_mark_all(NjVMObject* vm) {
   for (int i = 0; i < vm->stackcnt; ++i)
     _njord_mark(vm->stack[i]);
 }
 
 static void
-_njord_sweep(NjMarkSVM* vm) {
-  NjMarkSObject** startobj = &vm->startobj;
+_njord_sweep(NjVMObject* vm) {
+  NjObject** startobj = &vm->startobj;
   while (*startobj != NULL) {
-    if ((*startobj)->marked == UNMARKED) {
-      NjMarkSObject* unmarked = *startobj;
-      startobj = &unmarked->next;
-      njmem_free(unmarked, sizeof(NjMarkSObject));
+    if (Nj_ASGC(*startobj)->marked == UNMARKED) {
+      NjObject* unmarked = *startobj;
+      startobj = &((NjVarObject*)unmarked)->next;
+      njord_free_object(unmarked, sizeof(GCHead));
       --vm->objcnt;
     }
     else {
-      (*startobj)->marked = UNMARKED;
-      startobj = &(*startobj)->next;
+      Nj_ASGC(*startobj)->marked = UNMARKED;
+      startobj = &((NjVarObject*)*startobj)->next;
     }
   }
 }
 
 static void
 njmarks_collect(NjObject* vm) {
-  NjMarkSVM* _vm = (NjMarkSVM*)vm;
+  NjVMObject* _vm = (NjVMObject*)vm;
   int old_objcnt = _vm->objcnt;
 
   _njord_mark_all(_vm);
@@ -125,16 +115,14 @@ njmarks_collect(NjObject* vm) {
       old_objcnt - _vm->objcnt, _vm->objcnt);
 }
 
-static NjMarkSObject*
-_njord_new_object(NjMarkSVM* vm, NjVarType type) {
+static NjObject*
+_njord_new_object(NjVMObject* vm, NjVarType type) {
   if (vm->objcnt >= vm->maxobj)
     njmarks_collect((NjObject*)vm);
 
-  NjMarkSObject* obj = (NjMarkSObject*)njmem_malloc(sizeof(NjMarkSObject));
-  obj->ob_name = "marks_object";
-  obj->marked = UNMARKED;
-  obj->type = type;
-  obj->next = vm->startobj;
+  NjObject* obj = (NjObject*)njord_new_object(type, sizeof(GCHead));
+  Nj_ASGC(obj)->marked = UNMARKED;
+  ((NjVarObject*)obj)->next = vm->startobj;
   vm->startobj = obj;
   ++vm->objcnt;
 
@@ -142,11 +130,11 @@ _njord_new_object(NjMarkSVM* vm, NjVarType type) {
 }
 
 static NjObject*
-njmarks_new(void) {
-  NjMarkSVM* vm = (NjMarkSVM*)njmem_malloc(sizeof(NjMarkSVM));
+njmarks_newvm(void) {
+  NjVMObject* vm = (NjVMObject*)njmem_malloc(sizeof(NjVMObject));
   Nj_CHECK(vm != NULL, "create VM failed");
 
-  vm->ob_name = "NjMarkSVM";
+  vm->ob_type = &NjMarks_Type;
   vm->stackcnt = 0;
   vm->startobj = NULL;
   vm->objcnt = 0;
@@ -156,26 +144,27 @@ njmarks_new(void) {
 }
 
 static void
-njmarks_free(NjObject* vm) {
+njmarks_freevm(NjObject* vm) {
   njmarks_collect(vm);
-  njmem_free(vm, sizeof(NjMarkSVM));
+  njmem_free(vm, sizeof(NjVMObject));
 }
 
 static NjObject*
 njmarks_pushint(NjObject* vm, int value) {
-  NjMarkSObject* obj = _njord_new_object((NjMarkSVM*)vm, VAR_INT);
+  NjIntObject* obj = (NjIntObject*)_njord_new_object((NjVMObject*)vm, VAR_INT);
   obj->value = value;
-  _njord_push((NjMarkSVM*)vm, obj);
+  _njord_push((NjVMObject*)vm, (NjObject*)obj);
 
   return (NjObject*)obj;
 }
 
 static NjObject*
 njmarks_pushpair(NjObject* vm) {
-  NjMarkSObject* obj = _njord_new_object((NjMarkSVM*)vm, VAR_PAIR);
-  obj->tail = _njord_pop((NjMarkSVM*)vm);
-  obj->head = _njord_pop((NjMarkSVM*)vm);
-  _njord_push((NjMarkSVM*)vm, obj);
+  NjPairObject* obj = (NjPairObject*)_njord_new_object(
+      (NjVMObject*)vm, VAR_PAIR);
+  obj->tail = _njord_pop((NjVMObject*)vm);
+  obj->head = _njord_pop((NjVMObject*)vm);
+  _njord_push((NjVMObject*)vm, (NjObject*)obj);
 
   return (NjObject*)obj;
 }
@@ -183,28 +172,30 @@ njmarks_pushpair(NjObject* vm) {
 static void
 njmarks_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
   if (head != NULL)
-    ((NjMarkSObject*)pair)->head = (NjMarkSObject*)head;
+    ((NjPairObject*)pair)->head = head;
 
   if (tail != NULL)
-    ((NjMarkSObject*)pair)->tail = (NjMarkSObject*)tail;
+    ((NjPairObject*)pair)->tail = tail;
 }
 
 static void
 njmarks_pop(NjObject* vm) {
-  _njord_pop((NjMarkSVM*)vm);
+  _njord_pop((NjVMObject*)vm);
 }
 
-static NjGCMethods marks_methods = {
-  njmarks_new, /* tp_newvm */
-  njmarks_free, /* tp_freevm */
-  njmarks_pushint, /* tp_pushint */
-  njmarks_pushpair, /* tp_pushpair */
-  njmarks_setpair, /* tp_setpair */
-  njmarks_pop, /* tp_pop */
-  njmarks_collect, /* tp_collect */
+static NjGCMethods gc_methods = {
+  njmarks_newvm, /* gc_newvm */
+  njmarks_freevm, /* gc_freevm */
+  njmarks_pushint, /* gc_pushint */
+  njmarks_pushpair, /* gc_pushpair */
+  njmarks_setpair, /* gc_setpair */
+  njmarks_pop, /* gc_pop */
+  njmarks_collect, /* gc_collect */
 };
 
-NjGCObject NjGC_MarkS = {
-  GC_MARK_SWEEP, /* type */
-  (NjGCMethods*)&marks_methods, /* methods */
+NjTypeObject NjMarks_Type = {
+  NjObject_HEAD_INIT(&NjType_Type),
+  "marks_gc", /* tp_name */
+  0, /* tp_print */
+  (NjGCMethods*)&gc_methods, /* tp_gc */
 };
