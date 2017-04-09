@@ -36,6 +36,8 @@ void
 njord_initgc(NjGCType type) {
   if (type == GC_REFS)
     gc.ob_type = &NjRefs_Type;
+  else if (type == GC_MARK_SWEEP)
+    gc.ob_type = &NjMarks_Type;
 }
 
 NjObject*

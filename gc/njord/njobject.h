@@ -40,7 +40,7 @@
 #define NjObject_VAR_HEAD\
   NjObject_HEAD;\
   Nj_ssize_t ob_size;\
-  struct _varobject* next
+  struct _object* next
 
 typedef struct _object {
   NjObject_HEAD;

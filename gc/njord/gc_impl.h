@@ -50,8 +50,8 @@ NjAPI_FUNC(void) njord_free_object(NjObject* obj, Nj_ssize_t gc_size);
 
 NjAPI_DATA(NjTypeObject) NjRefs_Type; /* easy implementation of reference
                                          counting garbage collector*/
-NjAPI_DATA(NjGCObject) NjGC_MarkS; /* easy implementation of mark and
-                                      sweep garbage collector */
+NjAPI_DATA(NjTypeObject) NjMarks_Type; /* easy implementation of mark and
+                                          sweep garbage collector */
 
 
 #endif /* Nj_GCIMPL_H */
