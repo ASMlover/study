@@ -81,8 +81,9 @@ typedef struct _typeobject {
 } NjTypeObject;
 
 typedef enum _gctype {
-  GC_REFS,
-  GC_MARK_SWEEP,
+  GC_REFS, /* reference counting garbage collection */
+  GC_MARK_SWEEP, /* mark and sweep garbage collection */
+  GC_MARK_SWEEP2, /* mark and sweep garbage collection with no-recursive */
 } NjGCType;
 
 typedef struct _gcobject {
