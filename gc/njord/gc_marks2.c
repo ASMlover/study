@@ -64,7 +64,7 @@ static MarkStack* mark_stack;
 
 static void
 _njmarkstack_push(NjObject* obj) {
-  MarkStack* node = (MarkStack*)malloc(sizeof(MarkStack));
+  MarkStack* node = (MarkStack*)njmem_malloc(sizeof(MarkStack));
   node->obj = obj;
   node->next = mark_stack;
   mark_stack = node;
@@ -73,7 +73,9 @@ _njmarkstack_push(NjObject* obj) {
 static NjObject*
 _njmarkstack_pop(void) {
   NjObject* obj = mark_stack->obj;
+  MarkStack* temp = mark_stack;
   mark_stack = mark_stack->next;
+  njmem_free(temp, sizeof(MarkStack));
   return obj;
 }
 
