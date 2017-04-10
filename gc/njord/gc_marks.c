@@ -115,8 +115,8 @@ njmarks_collect(NjObject* vm) {
   _njord_sweep(_vm);
 
   _vm->maxobj = (int)(old_objcnt * 1.5);
-  fprintf(stdout, "NjGC_MarkS collected [%d] objects, [%d] remaining.\n",
-      old_objcnt - _vm->objcnt, _vm->objcnt);
+  fprintf(stdout, "<%s> collected [%d] objects, [%d] remaining.\n",
+      _vm->ob_type->tp_name, old_objcnt - _vm->objcnt, _vm->objcnt);
 }
 
 static NjObject*

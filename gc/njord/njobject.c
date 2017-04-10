@@ -38,6 +38,8 @@ njord_initgc(NjGCType type) {
     gc.ob_type = &NjRefs_Type;
   else if (type == GC_MARK_SWEEP)
     gc.ob_type = &NjMarks_Type;
+  else if (type == GC_MARK_SWEEP2)
+    gc.ob_type = &NjMarks_Type2;
 }
 
 NjObject*
