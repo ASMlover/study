@@ -141,6 +141,7 @@ _njord_usage(void) {
       " gctype:\n"
       "   0 - reference counting garbage collector\n"
       "   1 - mark and sweep garbage collector\n"
+      "   2 - mark and sweep garbage collector with non-recursive\n"
       );
 }
 
