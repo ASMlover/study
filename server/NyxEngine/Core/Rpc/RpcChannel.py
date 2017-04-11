@@ -116,9 +116,49 @@ class RpcChannel(service.RpcChannel):
                 ''.join([pack('<I', datalen), pack('<H', index), data]))
 
     def on_request(self):
-        # TODO:
-        pass
+        l = len(self.rpc_request.data)
+        if l < 2:
+            self.logger.error('RpcChannel.on_request - error size: %d', l)
+            return False
+
+        index_data = self.rpc_request.data[0:2]
+        index = unpack('<H', index_data)[0]
+        rpc_service = self.rpc_service
+        descriptor = rpc_service.GetDescriptor()
+
+        if index > len(descriptor.methods):
+            self.logger.error('RpcChannel.on_request - error index: %d', index)
+            return False
+        method = descriptor.methods[index]
+
+        try:
+            request = rpc_service.GetRequestClass(method)()
+            serialized = self.rpc_request.data[2:]
+            request.ParseFromString(serialized)
+            rpc_service.CallMethod(method, self.controller, request, None)
+        except:
+            self.logger.error('RpcChannel.on_request - call rpc failed')
+            self.logger._log_exception()
+        return True
 
     def on_input_data(self, data):
-        # TODO:
-        pass
+        total_bytes = len(data)
+        skip = 0
+        while skip < total_bytes:
+            result, consum = self.rpc_request_parser.parse(
+                    self.rpc_request, data, skip)
+            assert consum > 0
+
+            skip += consum
+            if result == 1:
+                ok = self.on_request()
+                self.rpc_request.reset()
+                if not ok:
+                    return 0
+                continue
+            elif result == 0:
+                return 0
+            else:
+                continue
+
+        return 2
