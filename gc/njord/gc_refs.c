@@ -39,7 +39,7 @@
 #define Nj_INCREF(ob) (++Nj_ASGC(ob)->refcnt)
 #define Nj_DECREF(ob) do {\
   if (--Nj_ASGC(ob)->refcnt == 0) {\
-    fprintf(stdout, "NjObject<0x%p, '%s'> collected\n",\
+    fprintf(stdout, "NjObject<%p, '%s'> collected\n",\
         ((NjObject*)(ob)),\
         ((NjObject*)(ob))->ob_type->tp_name);\
     _njord_dealloc(ob);\

@@ -94,7 +94,7 @@ _njord_sweep(NjVMObject* vm) {
     if (Nj_ASGC(*startobj)->marked == UNMARKED) {
       NjObject* unmarked = *startobj;
       startobj = &((NjVarObject*)unmarked)->next;
-      fprintf(stdout, "NjObject<0x%p, '%s'> collected\n",
+      fprintf(stdout, "NjObject<%p, '%s'> collected\n",
           unmarked, unmarked->ob_type->tp_name);
       njord_freeobj(unmarked, sizeof(GCHead));
       --vm->objcnt;
