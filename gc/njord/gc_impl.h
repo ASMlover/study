@@ -57,9 +57,11 @@ NjAPI_DATA(NjTypeObject) NjRefs_Type; /* easy implementation of reference
                                          counting garbage collector*/
 NjAPI_DATA(NjTypeObject) NjMarks_Type; /* easy implementation of mark and
                                           sweep garbage collector */
-NjAPI_DATA(NjTypeObject) NjMarks_Type2; /* easy implementation of mark and
+NjAPI_DATA(NjTypeObject) NjMarks2_Type; /* easy implementation of mark and
                                            sweep garbage collector with
                                            non-recursive */
+NjAPI_DATA(NjTypeObject) NjCopy_Type; /* easy implementation of copying node
+                                         garbage collector */
 
 
 #endif /* Nj_GCIMPL_H */

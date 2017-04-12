@@ -34,12 +34,16 @@ static NjObject gc;
 
 void
 njord_initgc(NjGCType type) {
-  if (type == GC_REFS)
-    gc.ob_type = &NjRefs_Type;
-  else if (type == GC_MARK_SWEEP)
-    gc.ob_type = &NjMarks_Type;
-  else if (type == GC_MARK_SWEEP2)
-    gc.ob_type = &NjMarks_Type2;
+  switch (type) {
+  case GC_REFS:
+    gc.ob_type = &NjRefs_Type; break;
+  case GC_MARK_SWEEP:
+    gc.ob_type = &NjMarks_Type; break;
+  case GC_MARK_SWEEP2:
+    gc.ob_type = &NjMarks2_Type; break;
+  case GC_COPYING:
+    gc.ob_type = &NjCopy_Type; break;
+  }
 }
 
 NjObject*

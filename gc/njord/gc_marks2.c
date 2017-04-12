@@ -155,7 +155,7 @@ njmarks_newvm(void) {
   NjVMObject* vm = (NjVMObject*)malloc(sizeof(NjVMObject));
   Nj_CHECK(vm != NULL, "create VM failed");
 
-  vm->ob_type = &NjMarks_Type2;
+  vm->ob_type = &NjMarks2_Type;
   vm->stackcnt = 0;
   vm->startobj = NULL;
   vm->objcnt = 0;
@@ -228,7 +228,7 @@ static NjGCMethods gc_methods = {
   njmarks_collect, /* gc_collect */
 };
 
-NjTypeObject NjMarks_Type2 = {
+NjTypeObject NjMarks2_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "marks2_gc", /* tp_name */
   0, /* tp_print */
