@@ -124,7 +124,7 @@ _njmarks_sweep(NjVMObject* vm) {
   while (*startobj != NULL) {
     if (Nj_ASGC(*startobj)->marked == UNMARKED) {
       NjObject* unmarked = *startobj;
-      startobj = &((NjVarObject*)unmarked)->next;
+      *startobj = ((NjVarObject*)unmarked)->next;
       fprintf(stdout, "NjObject<%p, '%s'> collected\n",
           unmarked, unmarked->ob_type->tp_name);
       njord_freeobj(unmarked, sizeof(GCHead));
@@ -132,7 +132,7 @@ _njmarks_sweep(NjVMObject* vm) {
     }
     else {
       Nj_ASGC(*startobj)->marked = UNMARKED;
-      startobj = &((NjVarObject*)*startobj)->next;
+      *startobj = ((NjVarObject*)*startobj)->next;
     }
   }
 }
