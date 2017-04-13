@@ -104,5 +104,6 @@ NjAPI_FUNC(NjObject*) njord_pushpair(NjObject* vm);
 NjAPI_FUNC(void) njord_setpair(NjObject* pair, NjObject* head, NjObject* tail);
 NjAPI_FUNC(void) njord_pop(NjObject* vm);
 NjAPI_FUNC(void) njord_collect(NjObject* vm);
+NjAPI_FUNC(void) njord_print(NjObject* obj);
 
 #endif /* Nj_NJOBJECT_H */

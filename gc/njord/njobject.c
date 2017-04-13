@@ -26,6 +26,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <stdio.h>
 #include "njmem.h"
 #include "njobject.h"
 #include "gc_impl.h"
@@ -82,6 +83,14 @@ njord_collect(NjObject* vm) {
     Nj_GC(&gc)->gc_collect(vm);
   else
     njmem_collect();
+}
+
+void
+njord_print(NjObject* obj) {
+  if (obj->ob_type->tp_print != NULL)
+    obj->ob_type->tp_print(obj);
+  else
+    fprintf(stdout, "NjObject<%p, %s>\n", obj, obj->ob_type->tp_name);
 }
 
 NjTypeObject NjType_Type = {
