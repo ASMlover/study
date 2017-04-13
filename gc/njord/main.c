@@ -126,12 +126,28 @@ njord_gc_sample3(void) {
 }
 
 static void
+njord_gc_sample4(void) {
+  fprintf(stdout, "sample4: performance objects\n");
+
+  NjObject* vm = njord_new();
+  for (int i = 0; i < 1000; ++i) {
+    for (int j = 0; j < 20; ++j)
+      njord_pushint(vm, i);
+
+    for (int j = 0; j < 20; ++j)
+      njord_pop(vm);
+  }
+  njord_free(vm);
+}
+
+static void
 njord_gc(NjGCType gc_type) {
   njord_initgc(gc_type);
 
   njord_gc_sample1();
   njord_gc_sample2();
   njord_gc_sample3();
+  njord_gc_sample4();
 }
 
 static void
@@ -142,6 +158,7 @@ _njord_usage(void) {
       "   0 - reference counting garbage collector\n"
       "   1 - mark and sweep garbage collector\n"
       "   2 - mark and sweep garbage collector with non-recursive\n"
+      "   3 - copying node garbage collector\n"
       );
 }
 
