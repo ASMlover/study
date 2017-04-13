@@ -32,10 +32,10 @@
 #include "gc_impl.h"
 #include "njmem.h"
 
-#define MAX_STACK        (1024)
-#define COPYGC_HALF_SIZE (512 << 10)
-#define Nj_ASGC(ob)     ((GCHead*)(ob) - 1)
-#define Nj_COPYN(ob)    (((NjVarObject*)(ob))->ob_size + sizeof(GCHead))
+#define MAX_STACK         (1024)
+#define COPYGC_HALF_SIZE  (512 << 10)
+#define Nj_ASGC(ob)       ((GCHead*)(ob) - 1)
+#define Nj_COPYN(ob)      (((NjVarObject*)(ob))->ob_size + sizeof(GCHead))
 
 static Nj_uchar_t* copymem = NULL;
 static Nj_uchar_t* fromspace = NULL;

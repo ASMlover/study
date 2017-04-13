@@ -33,7 +33,7 @@
 
 #define MAX_STACK (1024)
 
-#define Nj_ASGC(ob) ((GCHead*)(ob) - 1)
+#define Nj_ASGC(ob)   ((GCHead*)(ob) - 1)
 #define Nj_REFCNT(ob) (Nj_ASGC(ob)->refcnt)
 #define Nj_NEWREF(ob) (Nj_REFCNT(ob) = 1)
 #define Nj_INCREF(ob) (++Nj_ASGC(ob)->refcnt)
@@ -42,7 +42,7 @@
     fprintf(stdout, "NjObject<%p, '%s'> collected\n",\
         ((NjObject*)(ob)),\
         ((NjObject*)(ob))->ob_type->tp_name);\
-    _njord_dealloc(ob);\
+    _njrefs_dealloc(ob);\
   }\
 } while (0)
 #define Nj_XINCREF(ob) do { if ((ob) != NULL) Nj_INCREF(ob); } while (0)
@@ -60,19 +60,19 @@ typedef struct _vm {
 } NjVMObject;
 
 static void
-_njord_push(NjVMObject* vm, NjObject* obj) {
+_njrefs_push(NjVMObject* vm, NjObject* obj) {
   Nj_CHECK(vm->stackcnt < MAX_STACK, "VM stack overflow");
   vm->stack[vm->stackcnt++] = obj;
 }
 
 static NjObject*
-_njord_pop(NjVMObject* vm) {
+_njrefs_pop(NjVMObject* vm) {
   Nj_CHECK(vm->stackcnt > 0, "VM stack underflow");
   return vm->stack[--vm->stackcnt];
 }
 
 static void
-_njord_dealloc(NjObject* obj) {
+_njrefs_dealloc(NjObject* obj) {
   if (obj->ob_type == &NjPair_Type) {
     NjObject* head = njord_pairgetter(obj, "head");
     Nj_XDECREF(head);
@@ -107,15 +107,15 @@ njrefs_pushint(NjObject* vm, int value) {
   NjIntObject* obj = (NjIntObject*)njord_newint(
       sizeof(GCHead), value, NULL, NULL);
   Nj_NEWREF(obj);
-  _njord_push((NjVMObject*)vm, (NjObject*)obj);
+  _njrefs_push((NjVMObject*)vm, (NjObject*)obj);
 
   return (NjObject*)obj;
 }
 
 static NjObject*
 njrefs_pushpair(NjObject* vm) {
-  NjObject* tail = _njord_pop((NjVMObject*)vm);
-  NjObject* head = _njord_pop((NjVMObject*)vm);
+  NjObject* tail = _njrefs_pop((NjVMObject*)vm);
+  NjObject* head = _njrefs_pop((NjVMObject*)vm);
 
   Nj_INCREF(head);
   Nj_INCREF(tail);
@@ -124,7 +124,7 @@ njrefs_pushpair(NjObject* vm) {
   Nj_NEWREF(obj);
   Nj_DECREF(head);
   Nj_DECREF(tail);
-  _njord_push((NjVMObject*)vm, (NjObject*)obj);
+  _njrefs_push((NjVMObject*)vm, (NjObject*)obj);
 
   return (NjObject*)obj;
 }
@@ -148,7 +148,7 @@ njrefs_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
 
 static void
 njrefs_pop(NjObject* vm) {
-  NjObject* obj = _njord_pop((NjVMObject*)vm);
+  NjObject* obj = _njrefs_pop((NjVMObject*)vm);
   Nj_DECREF(obj);
 }
 

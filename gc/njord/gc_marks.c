@@ -56,39 +56,39 @@ typedef struct _vm {
 } NjVMObject;
 
 static void
-_njord_push(NjVMObject* vm, NjObject* obj) {
+_njmarks_push(NjVMObject* vm, NjObject* obj) {
   Nj_CHECK(vm->stackcnt < MAX_STACK, "VM stack overflow");
   vm->stack[vm->stackcnt++] = obj;
 }
 
 static NjObject*
-_njord_pop(NjVMObject* vm) {
+_njmarks_pop(NjVMObject* vm) {
   Nj_CHECK(vm->stackcnt > 0, "VM stack underflow");
   return vm->stack[--vm->stackcnt];
 }
 
 static void
-_njord_mark(NjObject* obj) {
+_njmarks_mark(NjObject* obj) {
   if (Nj_ASGC(obj)->marked == MARKED)
     return;
 
   Nj_ASGC(obj)->marked = MARKED;
   if (obj->ob_type == &NjPair_Type) {
     NjObject* head = njord_pairgetter(obj, "head");
-    _njord_mark(head);
+    _njmarks_mark(head);
     NjObject* tail = njord_pairgetter(obj, "tail");
-    _njord_mark(tail);
+    _njmarks_mark(tail);
   }
 }
 
 static void
-_njord_mark_all(NjVMObject* vm) {
+_njmarks_mark_all(NjVMObject* vm) {
   for (int i = 0; i < vm->stackcnt; ++i)
-    _njord_mark(vm->stack[i]);
+    _njmarks_mark(vm->stack[i]);
 }
 
 static void
-_njord_sweep(NjVMObject* vm) {
+_njmarks_sweep(NjVMObject* vm) {
   NjObject** startobj = &vm->startobj;
   while (*startobj != NULL) {
     if (Nj_ASGC(*startobj)->marked == UNMARKED) {
@@ -111,8 +111,8 @@ njmarks_collect(NjObject* vm) {
   NjVMObject* _vm = (NjVMObject*)vm;
   int old_objcnt = _vm->objcnt;
 
-  _njord_mark_all(_vm);
-  _njord_sweep(_vm);
+  _njmarks_mark_all(_vm);
+  _njmarks_sweep(_vm);
 
   _vm->maxobj = (int)(old_objcnt * 1.5);
   fprintf(stdout, "<%s> collected [%d] objects, [%d] remaining.\n",
@@ -151,7 +151,7 @@ njmarks_pushint(NjObject* vm, int value) {
   obj->next = _vm->startobj;
   _vm->startobj = (NjObject*)obj;
   ++_vm->objcnt;
-  _njord_push(_vm, (NjObject*)obj);
+  _njmarks_push(_vm, (NjObject*)obj);
 
   return (NjObject*)obj;
 }
@@ -162,15 +162,15 @@ njmarks_pushpair(NjObject* vm) {
   if (_vm->objcnt >= _vm->maxobj)
     njmarks_collect(vm);
 
-  NjObject* tail = _njord_pop(_vm);
-  NjObject* head = _njord_pop(_vm);
+  NjObject* tail = _njmarks_pop(_vm);
+  NjObject* head = _njmarks_pop(_vm);
   NjPairObject* obj = (NjPairObject*)njord_newpair(
       sizeof(GCHead), head, tail, NULL, NULL);
   Nj_ASGC(obj)->marked = UNMARKED;
   obj->next = _vm->startobj;
   _vm->startobj = (NjObject*)obj;
   ++_vm->objcnt;
-  _njord_push(_vm, (NjObject*)obj);
+  _njmarks_push(_vm, (NjObject*)obj);
 
   return (NjObject*)obj;
 }
@@ -186,7 +186,7 @@ njmarks_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
 
 static void
 njmarks_pop(NjObject* vm) {
-  _njord_pop((NjVMObject*)vm);
+  _njmarks_pop((NjVMObject*)vm);
 }
 
 static NjGCMethods gc_methods = {
