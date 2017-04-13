@@ -66,9 +66,14 @@ NjTypeObject NjPair_Type = {
 };
 
 NjObject*
-njord_newint(Nj_ssize_t gc_size, Nj_int_t value) {
+njord_newint(Nj_ssize_t gc_size,
+    Nj_int_t value, allocfunc user_alloc, void* arg) {
   Nj_ssize_t ob_size = sizeof(NjIntObject);
-  Nj_char_t* p = (Nj_char_t*)njmem_malloc(ob_size + gc_size);
+  Nj_char_t* p;
+  if (user_alloc != NULL)
+    p = (Nj_char_t*)user_alloc(ob_size + gc_size, arg);
+  else
+    p = (Nj_char_t*)njmem_malloc(ob_size + gc_size);
   NjIntObject* obj = (NjIntObject*)(p + gc_size);
   obj->ob_type = &NjInt_Type;
   obj->ob_size = ob_size;
@@ -78,9 +83,14 @@ njord_newint(Nj_ssize_t gc_size, Nj_int_t value) {
 }
 
 NjObject*
-njord_newpair(Nj_ssize_t gc_size, NjObject* head, NjObject* tail) {
+njord_newpair(Nj_ssize_t gc_size,
+    NjObject* head, NjObject* tail, allocfunc user_alloc, void* arg) {
   Nj_ssize_t ob_size = sizeof(NjPairObject);
-  Nj_char_t* p = (Nj_char_t*)njmem_malloc(ob_size + gc_size);
+  Nj_char_t* p;
+  if (user_alloc != NULL)
+    p = (Nj_char_t*)user_alloc(ob_size + gc_size, arg);
+  else
+    p = (Nj_char_t*)njmem_malloc(ob_size + gc_size);
   NjPairObject* obj = (NjPairObject*)(p + gc_size);
   obj->ob_type = &NjPair_Type;
   obj->ob_size = ob_size;

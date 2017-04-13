@@ -75,7 +75,8 @@ _copymem_destroy(void) {
 }
 
 static void*
-_copymem_alloc(NjVMObject* vm, Nj_ssize_t n) {
+_copymem_alloc(Nj_ssize_t n, void* arg) {
+  NjVMObject* vm = (NjVMObject*)arg;
   if (allocptr + n > tospace + COPYGC_HALF_SIZE)
     njcopy_collect((NjObject*)vm);
   Nj_CHECK(allocptr + n <= tospace + COPYGC_HALF_SIZE, "allocate failed");
@@ -144,12 +145,9 @@ njcopy_freevm(NjObject* vm) {
 
 static NjObject*
 njcopy_pushint(NjObject* vm, int value) {
-  Nj_uchar_t* p = (Nj_uchar_t*)_copymem_alloc(
-      (NjVMObject*)vm, sizeof(NjIntObject) + sizeof(GCHead));
-  NjIntObject* obj = (NjIntObject*)(p + sizeof(GCHead));
+  NjIntObject* obj = (NjIntObject*)njord_newint(
+      sizeof(GCHead), value, _copymem_alloc, vm);
   Nj_ASGC(obj)->forward = NULL;
-  obj->ob_type = &NjInt_Type;
-  obj->ob_size = sizeof(NjIntObject);
   obj->value = value;
   _njcopy_push((NjVMObject*)vm, (NjObject*)obj);
 
@@ -158,14 +156,11 @@ njcopy_pushint(NjObject* vm, int value) {
 
 static NjObject*
 njcopy_pushpair(NjObject* vm) {
-  Nj_uchar_t* p = (Nj_uchar_t*)_copymem_alloc(
-      (NjVMObject*)vm, sizeof(NjPairObject) + sizeof(GCHead));
-  NjPairObject* obj = (NjPairObject*)(p + sizeof(GCHead));
+  NjObject* tail = _njcopy_pop((NjVMObject*)vm);
+  NjObject* head = _njcopy_pop((NjVMObject*)vm);
+  NjPairObject* obj = (NjPairObject*)njord_newpair(
+      sizeof(GCHead), head, tail, _copymem_alloc, vm);
   Nj_ASGC(obj)->forward = NULL;
-  obj->ob_type = &NjPair_Type;
-  obj->ob_size = sizeof(NjPairObject);
-  obj->tail = _njcopy_pop((NjVMObject*)vm);
-  obj->head = _njcopy_pop((NjVMObject*)vm);
   _njcopy_push((NjVMObject*)vm, (NjObject*)obj);
 
   return (NjObject*)obj;

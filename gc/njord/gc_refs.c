@@ -104,7 +104,8 @@ njrefs_freevm(NjObject* vm) {
 
 static NjObject*
 njrefs_pushint(NjObject* vm, int value) {
-  NjIntObject* obj = (NjIntObject*)njord_newint(sizeof(GCHead), value);
+  NjIntObject* obj = (NjIntObject*)njord_newint(
+      sizeof(GCHead), value, NULL, NULL);
   Nj_NEWREF(obj);
   _njord_push((NjVMObject*)vm, (NjObject*)obj);
 
@@ -119,7 +120,7 @@ njrefs_pushpair(NjObject* vm) {
   Nj_INCREF(head);
   Nj_INCREF(tail);
   NjPairObject* obj = (NjPairObject*)njord_newpair(
-      sizeof(GCHead), head, tail);
+      sizeof(GCHead), head, tail, NULL, NULL);
   Nj_NEWREF(obj);
   Nj_DECREF(head);
   Nj_DECREF(tail);

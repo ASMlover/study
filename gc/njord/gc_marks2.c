@@ -176,7 +176,8 @@ njmarks_pushint(NjObject* _vm, int value) {
   if (vm->objcnt >= vm->maxobj)
     njmarks_collect(_vm);
 
-  NjIntObject* obj = (NjIntObject*)njord_newint(sizeof(GCHead), value);
+  NjIntObject* obj = (NjIntObject*)njord_newint(
+      sizeof(GCHead), value, NULL, NULL);
   Nj_ASGC(obj)->marked = UNMARKED;
   obj->next = vm->startobj;
   vm->startobj = (NjObject*)obj;
@@ -194,7 +195,8 @@ njmarks_pushpair(NjObject* _vm) {
 
   NjObject* tail = _njmarks_pop(vm);
   NjObject* head = _njmarks_pop(vm);
-  NjPairObject* obj = (NjPairObject*)njord_newpair(sizeof(GCHead), head, tail);
+  NjPairObject* obj = (NjPairObject*)njord_newpair(
+      sizeof(GCHead), head, tail, NULL, NULL);
   Nj_ASGC(obj)->marked = UNMARKED;
   obj->next = vm->startobj;
   vm->startobj = (NjObject*)obj;
