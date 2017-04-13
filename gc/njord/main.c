@@ -77,8 +77,10 @@ njord_gc_sample1(void) {
 
   NjObject* vm = njord_new();
 
-  njord_pushint(vm, 1);
-  njord_pushint(vm, 2);
+  NjObject* i1 = njord_pushint(vm, 1);
+  njord_print(i1);
+  NjObject* i2 = njord_pushint(vm, 2);
+  njord_print(i2);
 
   njord_pop(vm);
   njord_pop(vm);
@@ -91,13 +93,20 @@ njord_gc_sample2(void) {
   fprintf(stdout, "sample2: objects nested\n");
 
   NjObject* vm = njord_new();
-  njord_pushint(vm, 1);
-  njord_pushint(vm, 2);
-  njord_pushpair(vm);
-  njord_pushint(vm, 3);
-  njord_pushint(vm, 4);
-  njord_pushpair(vm);
-  njord_pushpair(vm);
+  NjObject* i1 = njord_pushint(vm, 1);
+  njord_print(i1);
+  NjObject* i2 = njord_pushint(vm, 2);
+  njord_print(i2);
+  NjObject* p1 = njord_pushpair(vm);
+  njord_print(p1);
+  NjObject* i3 = njord_pushint(vm, 3);
+  njord_print(i3);
+  NjObject* i4 = njord_pushint(vm, 4);
+  njord_print(i4);
+  NjObject* p2 = njord_pushpair(vm);
+  njord_print(p2);
+  NjObject* p3 = njord_pushpair(vm);
+  njord_print(p3);
 
   njord_pop(vm);
 
@@ -109,15 +118,23 @@ njord_gc_sample3(void) {
   fprintf(stdout, "sample3: cycle reference objects\n");
 
   NjObject* vm = njord_new();
-  njord_pushint(vm, 1);
-  njord_pushint(vm, 2);
+  NjObject* i1 = njord_pushint(vm, 1);
+  njord_print(i1);
+  NjObject* i2 = njord_pushint(vm, 2);
+  njord_print(i2);
   NjObject* a = njord_pushpair(vm);
-  njord_pushint(vm, 3);
-  njord_pushint(vm, 4);
+  njord_print(a);
+  NjObject* i3 = njord_pushint(vm, 3);
+  njord_print(i3);
+  NjObject* i4 = njord_pushint(vm, 4);
+  njord_print(i4);
   NjObject* b = njord_pushpair(vm);
+  njord_print(b);
 
   njord_setpair(a, b, NULL);
+  njord_print(a);
   njord_setpair(b, a, NULL);
+  njord_print(b);
 
   njord_pop(vm);
   njord_pop(vm);
@@ -141,24 +158,28 @@ njord_gc_sample4(void) {
 }
 
 static void
-njord_gc(NjGCType gc_type) {
+njord_gc(NjGCType gc_type, int prof) {
   njord_initgc(gc_type);
 
   njord_gc_sample1();
   njord_gc_sample2();
   njord_gc_sample3();
-  njord_gc_sample4();
+  if (prof)
+    njord_gc_sample4();
 }
 
 static void
 _njord_usage(void) {
   fprintf(stdout,
-      "USAGE: njord [mem|gc [gctype]] ...\n"
+      "USAGE: njord [mem|gc [gctype [prof]]] ...\n"
       " gctype:\n"
       "   0 - reference counting garbage collector\n"
       "   1 - mark and sweep garbage collector\n"
       "   2 - mark and sweep garbage collector with non-recursive\n"
       "   3 - copying node garbage collector\n"
+      " prof:\n"
+      "   0 - disable proformance test\n"
+      "   1 - enable proformance test\n"
       );
 }
 
@@ -178,7 +199,10 @@ int main(int argc, char* argv[]) {
       _njord_usage();
       return 1;
     }
-    njord_gc((NjGCType)atoi(argv[2]));
+    int prof = 0;
+    if (argc > 3)
+      prof = atoi(argv[3]);
+    njord_gc((NjGCType)atoi(argv[2]), prof);
   }
   else {
     _njord_usage();
