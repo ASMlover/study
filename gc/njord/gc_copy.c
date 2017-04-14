@@ -118,8 +118,10 @@ _njcopy_copy(NjObject* obj) {
         njord_pairsetter(new_obj, "tail", _njcopy_copy(tail));
     }
   }
+#if defined(Nj_DEBUG_OBJECT)
   fprintf(stdout, "<%s> copy NjObject<'%s'> [%p] to [%p]\n",
       NjCopy_Type.tp_name, obj->ob_type->tp_name, obj, Nj_ASGC(obj)->forward);
+#endif
 
   return Nj_ASGC(obj)->forward;
 }

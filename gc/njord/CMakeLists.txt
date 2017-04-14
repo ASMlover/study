@@ -34,14 +34,23 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "<${PROJ_NAME}> CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
+option(Nj_DEBUG_OBJECT "Logging for NjObject collection" OFF)
+
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   add_definitions(
     /D_UNICODE
     /D_CRT_SECURE_NO_WARNINGS
     /D_CRT_NONSTDC_NO_WARNINGS)
   set(CMAKE_C_FLAGS "/W3 /GF /GS /Gs /Zi")
+
+  if (Nj_DEBUG_OBJECT)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /DNj_DEBUG_OBJECT")
+  endif()
 else()
-  set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-g -O2 -Wall -std=c11")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O2 -Wall -std=c11")
+  if (Nj_DEBUG_OBJECT)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNj_DEBUG_OBJECT")
+  endif()
 endif()
 message(STATUS "<${PROJ_NAME}> CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
 

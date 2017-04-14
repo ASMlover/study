@@ -37,7 +37,8 @@
 #define Nj_REFCNT(ob) (Nj_ASGC(ob)->refcnt)
 #define Nj_NEWREF(ob) (Nj_REFCNT(ob) = 1)
 #define Nj_INCREF(ob) (++Nj_ASGC(ob)->refcnt)
-#define Nj_DECREF(ob) do {\
+#if defined(Nj_DEBUG_OBJECT)
+# define Nj_DECREF(ob) do {\
   if (--Nj_ASGC(ob)->refcnt == 0) {\
     fprintf(stdout, "NjObject<%p, '%s'> collected\n",\
         ((NjObject*)(ob)),\
@@ -45,6 +46,12 @@
     _njrefs_dealloc(ob);\
   }\
 } while (0)
+#else
+# define Nj_DECREF(ob) do {\
+  if (--Nj_ASGC(ob)->refcnt == 0)\
+    _njrefs_dealloc(ob);\
+} while (0)
+#endif
 #define Nj_XINCREF(ob) do { if ((ob) != NULL) Nj_INCREF(ob); } while (0)
 #define Nj_XDECREF(ob) do { if ((ob) != NULL) Nj_DECREF(ob); } while (0)
 
