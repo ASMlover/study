@@ -32,7 +32,8 @@
 #include "njmem.h"
 
 #define MAX_STACK         (1024)
-#define INIT_GC_THRESHOLD (8)
+#define INIT_GC_THRESHOLD (64)
+#define MAX_GC_THRESHOLD  (1024)
 #define Nj_ASGC(ob)       ((GCHead*)(ob) - 1)
 
 typedef enum _marked {
@@ -101,7 +102,7 @@ _njmarks_sweep(NjVMObject* vm) {
     }
     else {
       Nj_ASGC(*startobj)->marked = UNMARKED;
-      *startobj = ((NjVarObject*)*startobj)->next;
+      startobj = &((NjVarObject*)*startobj)->next;
     }
   }
 }
@@ -114,7 +115,11 @@ njmarks_collect(NjObject* vm) {
   _njmarks_mark_all(_vm);
   _njmarks_sweep(_vm);
 
-  _vm->maxobj = (int)(old_objcnt * 1.5);
+  if (_vm->maxobj < MAX_GC_THRESHOLD) {
+    _vm->maxobj = _vm->objcnt << 1;
+    if (_vm->maxobj > MAX_GC_THRESHOLD)
+      _vm->maxobj = MAX_GC_THRESHOLD;
+  }
   fprintf(stdout, "<%s> collected [%d] objects, [%d] remaining.\n",
       _vm->ob_type->tp_name, old_objcnt - _vm->objcnt, _vm->objcnt);
 }
