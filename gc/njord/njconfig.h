@@ -61,11 +61,12 @@ typedef size_t        Nj_size_t;
 
 #define Nj_UNUSED(x) ((void)x)
 
-#define Nj_CHECK(cond, msg) do {\
-  if (!(cond)) {\
-    fprintf(stderr, "%s\n", msg);\
-    abort();\
-  }\
-} while (0)
+#if !defined(Nj_CHECK)
+# include "njlog.h"
+# define Nj_CHECK(cond, msg) do {\
+    if (!(cond))\
+      njlog_fatal("%s\n", msg);\
+  } while (0)
+#endif
 
 #endif /* Nj_NJCONFIG_H */

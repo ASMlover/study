@@ -40,7 +40,7 @@ NjAPI_FUNC(void) njlog_write(NjLogLevel level, const char* format, ...);
 
 #define njlog_repr(fmt, ...) njlog_write(INFO, (fmt), ##__VA_ARGS__)
 #define njlog_debug(fmt, ...) njlog_write(DEBUG, (fmt), ##__VA_ARGS__)
-#define njlog_log(fmt, ...) njlog_write(INFO, (fmt), ##__VA_ARGS__)
+#define njlog_info(fmt, ...) njlog_write(INFO, (fmt), ##__VA_ARGS__)
 #define njlog_fatal(fmt, ...) njlog_write(FATAL, (fmt), ##__VA_ARGS__)
 
 #endif /* Nj_NJLOG_H */

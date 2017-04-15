@@ -26,11 +26,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include "njmem.h"
+#include "njlog.h"
 #include "njobject.h"
 
 #define ALLOC_COUNT (1000000)
@@ -45,26 +45,26 @@ njord_memory_pool(void) {
 
   clock_t beg = clock();
   clock_t end = beg;
-  fprintf(stdout, "[system allocator] begin clock: %ld\n", beg);
+  njlog_info("[system allocator] begin clock: %ld\n", beg);
   for (int i = 0; i < ALLOC_COUNT; ++i) {
     int s = alloc_bytes_list[rand() % alloc_bytes_count];
     p = (char*)malloc(s);
     free(p);
   }
   end = clock();
-  fprintf(stdout, "[system allocator] end clock: %ld,  use clock: %ld\n",
+  njlog_info("[system allocator] end clock: %ld,  use clock: %ld\n",
       end, end - beg);
 
   {
     beg = clock();
-    fprintf(stdout, "[mempool allocator] begin clock: %ld\n", beg);
+    njlog_info("[mempool allocator] begin clock: %ld\n", beg);
     for (int i = 0; i < ALLOC_COUNT; ++i) {
       int s = alloc_bytes_list[rand() % alloc_bytes_count];
       p = (char*)njmem_malloc(s);
       njmem_free(p, s);
     }
     end = clock();
-    fprintf(stdout, "[mempool allocator] end clock: %ld,  use clock: %ld\n",
+    njlog_info("[mempool allocator] end clock: %ld,  use clock: %ld\n",
         end, end - beg);
   }
 
@@ -73,7 +73,7 @@ njord_memory_pool(void) {
 
 static void
 njord_gc_sample1(void) {
-  fprintf(stdout, "sample1: all objects on stack\n");
+  njlog_info("sample1: all objects on stack\n");
 
   NjObject* vm = njord_new();
 
@@ -90,7 +90,7 @@ njord_gc_sample1(void) {
 
 static void
 njord_gc_sample2(void) {
-  fprintf(stdout, "sample2: objects nested\n");
+  njlog_info("sample2: objects nested\n");
 
   NjObject* vm = njord_new();
   NjObject* i1 = njord_pushint(vm, 1);
@@ -115,7 +115,7 @@ njord_gc_sample2(void) {
 
 static void
 njord_gc_sample3(void) {
-  fprintf(stdout, "sample3: cycle reference objects\n");
+  njlog_info("sample3: cycle reference objects\n");
 
   NjObject* vm = njord_new();
   NjObject* i1 = njord_pushint(vm, 1);
@@ -144,7 +144,7 @@ njord_gc_sample3(void) {
 
 static void
 njord_gc_sample4(void) {
-  fprintf(stdout, "sample4: performance objects\n");
+  njlog_info("sample4: performance objects\n");
 
   NjObject* vm = njord_new();
   for (int i = 0; i < 1000; ++i) {
@@ -170,7 +170,7 @@ njord_gc(NjGCType gc_type, int prof) {
 
 static void
 _njord_usage(void) {
-  fprintf(stdout,
+  njlog_repr(
       "USAGE: njord [mem|gc [gctype [prof]]] ...\n"
       " gctype:\n"
       "   0 - reference counting garbage collector\n"

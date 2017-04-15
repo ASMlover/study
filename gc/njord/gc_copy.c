@@ -26,10 +26,10 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdlib.h> /* for malloc/free */
 #include <string.h>
 #include "gc_impl.h"
+#include "njlog.h"
 #include "njmem.h"
 
 #define MAX_STACK         (1024)
@@ -118,10 +118,8 @@ _njcopy_copy(NjObject* obj) {
         njord_pairsetter(new_obj, "tail", _njcopy_copy(tail));
     }
   }
-#if defined(Nj_DEBUG_OBJECT)
-  fprintf(stdout, "<%s> copy NjObject<'%s'> [%p] to [%p]\n",
+  njlog_debug("<%s> copy NjObject<'%s'> [%p] to [%p]\n",
       NjCopy_Type.tp_name, obj->ob_type->tp_name, obj, Nj_ASGC(obj)->forward);
-#endif
 
   return Nj_ASGC(obj)->forward;
 }
@@ -185,7 +183,7 @@ njcopy_pop(NjObject* vm) {
 static void
 njcopy_collect(NjObject* _vm) {
   NjVMObject* vm = (NjVMObject*)_vm;
-  fprintf(stdout, "before flip <%s>: fromspace=%p, tospace=%p, allocptr=%p\n",
+  njlog_info("before flip <%s>: fromspace=%p, tospace=%p, allocptr=%p\n",
       vm->ob_type->tp_name, fromspace, tospace, allocptr);
 
   Nj_uchar_t* p = fromspace;
@@ -193,7 +191,7 @@ njcopy_collect(NjObject* _vm) {
   tospace = p;
   allocptr = tospace;
 
-  fprintf(stdout, "after flip <%s>: fromspace=%p, tospace=%p, allocptr=%p\n",
+  njlog_info("after flip <%s>: fromspace=%p, tospace=%p, allocptr=%p\n",
       vm->ob_type->tp_name, fromspace, tospace, allocptr);
   for (int i = 0; i < vm->stackcnt; ++i)
     vm->stack[i] = _njcopy_copy(vm->stack[i]);

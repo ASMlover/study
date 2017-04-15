@@ -26,15 +26,14 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include "gc_impl.h"
+#include "njlog.h"
 #include "njmem.h"
 
 static void
 njint_print(NjObject* obj) {
-  fprintf(stdout, "NjIntObject<'%s', 0x%p, %d>\n",
+  njlog_repr("NjIntObject<'%s', 0x%p, %d>\n",
       obj->ob_type->tp_name, obj, ((NjIntObject*)obj)->value);
 }
 
@@ -49,7 +48,7 @@ NjTypeObject NjInt_Type = {
 
 static void
 njpair_print(NjObject* obj) {
-  fprintf(stdout, "NjPairObject<'%s' 0x%p, <<'%s', 0x%p>, <'%s', 0x%p>>>\n",
+  njlog_repr("NjPairObject<'%s' 0x%p, <<'%s', 0x%p>, <'%s', 0x%p>>>\n",
       obj->ob_type->tp_name, obj,
       ((NjPairObject*)obj)->head->ob_type->tp_name, ((NjPairObject*)obj)->head,
       ((NjPairObject*)obj)->tail->ob_type->tp_name, ((NjPairObject*)obj)->tail

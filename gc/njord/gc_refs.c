@@ -26,9 +26,8 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdio.h>
-#include <stdlib.h>
 #include "njmem.h"
+#include "njlog.h"
 #include "gc_impl.h"
 
 #define MAX_STACK (1024)
@@ -37,21 +36,14 @@
 #define Nj_REFCNT(ob) (Nj_ASGC(ob)->refcnt)
 #define Nj_NEWREF(ob) (Nj_REFCNT(ob) = 1)
 #define Nj_INCREF(ob) (++Nj_ASGC(ob)->refcnt)
-#if defined(Nj_DEBUG_OBJECT)
-# define Nj_DECREF(ob) do {\
+#define Nj_DECREF(ob) do {\
   if (--Nj_ASGC(ob)->refcnt == 0) {\
-    fprintf(stdout, "NjObject<%p, '%s'> collected\n",\
+    njlog_debug("NjObject<%p, '%s'> collected\n",\
         ((NjObject*)(ob)),\
         ((NjObject*)(ob))->ob_type->tp_name);\
     _njrefs_dealloc(ob);\
   }\
 } while (0)
-#else
-# define Nj_DECREF(ob) do {\
-  if (--Nj_ASGC(ob)->refcnt == 0)\
-    _njrefs_dealloc(ob);\
-} while (0)
-#endif
 #define Nj_XINCREF(ob) do { if ((ob) != NULL) Nj_INCREF(ob); } while (0)
 #define Nj_XDECREF(ob) do { if ((ob) != NULL) Nj_DECREF(ob); } while (0)
 

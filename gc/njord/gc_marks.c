@@ -26,9 +26,8 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdio.h>
-#include <stdlib.h>
 #include "gc_impl.h"
+#include "njlog.h"
 #include "njmem.h"
 
 #define MAX_STACK         (1024)
@@ -95,10 +94,8 @@ _njmarks_sweep(NjVMObject* vm) {
     if (Nj_ASGC(*startobj)->marked == UNMARKED) {
       NjObject* unmarked = *startobj;
       *startobj = ((NjVarObject*)unmarked)->next;
-#if defined(Nj_DEBUG_OBJECT)
-      fprintf(stdout, "NjObject<%p, '%s'> collected\n",
+      njlog_debug("NjObject<%p, '%s'> collected\n",
           unmarked, unmarked->ob_type->tp_name);
-#endif
       njord_freeobj(unmarked, sizeof(GCHead));
       --vm->objcnt;
     }
@@ -122,7 +119,7 @@ njmarks_collect(NjObject* vm) {
     if (_vm->maxobj > MAX_GC_THRESHOLD)
       _vm->maxobj = MAX_GC_THRESHOLD;
   }
-  fprintf(stdout, "<%s> collected [%d] objects, [%d] remaining.\n",
+  njlog_info("<%s> collected [%d] objects, [%d] remaining.\n",
       _vm->ob_type->tp_name, old_objcnt - _vm->objcnt, _vm->objcnt);
 }
 
