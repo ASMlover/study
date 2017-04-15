@@ -32,7 +32,7 @@
 #include "njlog.h"
 
 void
-njlog_repr(NjLogLevel level, const char* fmt, ...) {
+njlog_write(NjLogLevel level, const char* fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
 
