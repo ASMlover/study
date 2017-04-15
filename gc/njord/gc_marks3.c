@@ -27,80 +27,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdio.h>
-#include "njmem.h"
-#include "njobject.h"
+#include <stdlib.h>
 #include "gc_impl.h"
+#include "njmem.h"
 
-static NjObject gc;
-
-void
-njord_initgc(NjGCType type) {
-  switch (type) {
-  case GC_REFS:
-    gc.ob_type = &NjRefs_Type; break;
-  case GC_MARK_SWEEP:
-    gc.ob_type = &NjMarks_Type; break;
-  case GC_MARK_SWEEP2:
-    gc.ob_type = &NjMarks2_Type; break;
-  case GC_MARK_SWEEP3:
-    gc.ob_type = &NjMarks3_Type; break;
-  case GC_COPYING:
-    gc.ob_type = &NjCopy_Type; break;
-  default:
-    /* use reference counting gc as defaulted */
-    gc.ob_type = &NjRefs_Type; break;
-  }
-}
-
-NjObject*
-njord_new(void) {
-  return Nj_GC(&gc)->gc_newvm();
-}
-
-void
-njord_free(NjObject* vm) {
-  Nj_GC(&gc)->gc_freevm(vm);
-}
-
-NjObject*
-njord_pushint(NjObject* vm, int value) {
-  return Nj_GC(&gc)->gc_pushint(vm, value);
-}
-
-NjObject*
-njord_pushpair(NjObject* vm) {
-  return Nj_GC(&gc)->gc_pushpair(vm);
-}
-
-void
-njord_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
-  Nj_GC(&gc)->gc_setpair(pair, head, tail);
-}
-
-void
-njord_pop(NjObject* vm) {
-  Nj_GC(&gc)->gc_pop(vm);
-}
-
-void
-njord_collect(NjObject* vm) {
-  if (Nj_GC(&gc)->gc_collect != NULL)
-    Nj_GC(&gc)->gc_collect(vm);
-  else
-    njmem_collect();
-}
-
-void
-njord_print(NjObject* obj) {
-  if (obj->ob_type->tp_print != NULL)
-    obj->ob_type->tp_print(obj);
-  else
-    fprintf(stdout, "NjObject<%p, %s>\n", obj, obj->ob_type->tp_name);
-}
-
-NjTypeObject NjType_Type = {
+NjTypeObject NjMarks3_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
-  "type", /* tp_name */
+  "marks3_gc", /* tp_name */
   0, /* tp_print */
   0, /* tp_setter */
   0, /* tp_getter */

@@ -64,6 +64,9 @@ NjAPI_DATA(NjTypeObject) NjMarks_Type; /* easy implementation of mark and
 NjAPI_DATA(NjTypeObject) NjMarks2_Type; /* easy implementation of mark and
                                            sweep garbage collector with
                                            non-recursive */
+NjAPI_DATA(NjTypeObject) NjMarks3_Type; /* easy implementation of mark and
+                                           sweep garbage collector wirh tri-
+                                           coloured abstruction */
 NjAPI_DATA(NjTypeObject) NjCopy_Type; /* easy implementation of copying node
                                          garbage collector */
 
