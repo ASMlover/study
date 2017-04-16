@@ -35,7 +35,11 @@ from Log.LogManager import LogManager
 from Rpc.TcpSession import TcpSession
 
 class TcpServer(asyncore.dispatcher):
-    """负责监听TCP连接，创建客户连接，可以创建多个TCP连接"""
+    """负责监听TCP连接，创建客户连接，可以创建多个TCP连接
+
+    依赖connector handler，需要实现处理新连接的回调：
+        on_new_connection - 处理新连接
+    """
     def __init__(self, ip, port, conn_handler=None, reuse_addr=False):
         asyncore.dispatcher.__init__(self)
         self.logger = LogManager.get_logger('Rpc.TcpServer')
