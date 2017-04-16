@@ -46,6 +46,8 @@ njord_initgc(NjGCType type) {
     gc.ob_type = &NjMarks3_Type; break;
   case GC_COPYING:
     gc.ob_type = &NjCopy_Type; break;
+  case GC_BITMAP:
+    gc.ob_type = &NjBitmap_Type; break;
   default:
     /* use reference counting gc as defaulted */
     gc.ob_type = &NjRefs_Type; break;
