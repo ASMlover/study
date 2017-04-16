@@ -37,7 +37,7 @@ from Rpc.TcpSession import TcpSession
 class TcpServer(asyncore.dispatcher):
     """负责监听TCP连接，创建客户连接，可以创建多个TCP连接"""
     def __init__(self, ip, port, conn_handler=None, reuse_addr=False):
-        super(TcpServer, self).__init__()
+        asyncore.dispatcher.__init__(self)
         self.logger = LogManager.get_logger('Rpc.TcpServer')
 
         self.ip = ip
@@ -101,9 +101,9 @@ class TcpServer(asyncore.dispatcher):
     def handle_close(self):
         """连接关闭的时候回调"""
         self.logger.info(
-                'TcpServer.handle_close - call from(%s)', str(inspect.stack()))
+                'TcpServer.handle_close - call from(%s)', inspect.stack())
 
     def handle_error(self):
         """连接出错的时候回调"""
         self.logger.error(
-                'TcpServer.handle_error - error(%s)', str(inspect.stack()))
+                'TcpServer.handle_error - error(%s)', inspect.stack())
