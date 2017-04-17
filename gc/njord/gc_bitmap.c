@@ -34,7 +34,12 @@
 #define MAX_STACK         (1024)
 #define INIT_GC_THRESHOLD (8)
 #define MAX_GC_THRESHOLD  (1024)
-#define Nj_BIT(ob)        (gc_bitmap[_hash_index(ob)])
+#define MAX_BITMAP        (MAX_GC_THRESHOLD >> 3)
+#define Nj_BIT_BIG(i)     ((i) / 8)
+#define Nj_BIT_SMALL(i)   ((i) % 8)
+#define Nj_BIT_GET(i)     ((gc_bitmap[Nj_BIT_BIG(i)] >> Nj_BIT_SMALL(i)) & 1)
+#define Nj_BIT_SET(i)     (gc_bitmap[Nj_BIT_BIG(i)] |= (1 << Nj_BIT_SMALL(i)))
+#define Nj_BIT_CLR(i)     (gc_bitmap[Nj_BIT_BIG(i)] &= ~(1 << Nj_BIT_SMALL(i)))
 
 typedef enum _marked {
   UNMARKED,
@@ -52,7 +57,7 @@ typedef struct _vm {
   Nj_int_t maxobj;
 } NjVMObject;
 
-static Nj_uchar_t gc_bitmap[MAX_GC_THRESHOLD];
+static Nj_uchar_t gc_bitmap[MAX_BITMAP];
 
 static inline int
 _hash_index(NjObject* obj) {
@@ -75,10 +80,11 @@ _njbitmap_pop(NjVMObject* vm) {
 
 static void
 _njbitmap_mark(NjObject* obj) {
-  if (Nj_BIT(obj) == MARKED)
+  int i = _hash_index(obj);
+  if (Nj_BIT_GET(i))
     return;
 
-  Nj_BIT(obj) = MARKED;
+  Nj_BIT_SET(i);
   if (obj->ob_type == &NjPair_Type) {
     NjObject* head = njord_pairgetter(obj, "head");
     _njbitmap_mark(head);
@@ -98,7 +104,8 @@ static void
 _njbitmap_sweep(NjVMObject* vm) {
   NjObject** startobj = &vm->startobj;
   while (*startobj != NULL) {
-    if (Nj_BIT(*startobj) == UNMARKED) {
+    int i = _hash_index(*startobj);
+    if (!Nj_BIT_GET(i)) {
       NjObject* unmarked = *startobj;
       *startobj = ((NjVarObject*)unmarked)->next;
       njlog_debug("NjObject<%p, '%s'> collected\n",
@@ -107,6 +114,7 @@ _njbitmap_sweep(NjVMObject* vm) {
       --vm->objcnt;
     }
     else {
+      Nj_BIT_CLR(i);
       startobj = &((NjVarObject*)*startobj)->next;
     }
   }
