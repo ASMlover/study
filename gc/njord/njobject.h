@@ -87,6 +87,7 @@ typedef enum _gctype {
   GC_MARK_SWEEP3, /* mark and sweep garbage collection with tri-coloured */
   GC_COPYING, /* copying node garbage collection */
   GC_BITMAP, /* mark and sweep garbage collection with bitmap */
+  GC_LAZY_SWEEP, /* lazy sweep garbage collection */
 } NjGCType;
 
 typedef struct _gcobject {
