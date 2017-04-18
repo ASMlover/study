@@ -35,6 +35,8 @@
 #define INIT_GC_THRESHOLD (64)
 #define MAX_GC_THRESHOLD  (1024)
 #define COMPACTION_HEAP   (512 << 10)
+#define ALIGNMENT         (8)
+#define ROUND_UP(n)       (((n) + ALIGNMENT - 1) & ~(ALIGNMENT - 1))
 
 typedef struct _block {
   struct _block* nextblock;
@@ -64,7 +66,10 @@ _njcompactheap_destroy(void) {
 }
 
 static void*
-_njcompactheap_alloc(Nj_ssize_t n) {
+_njcompactheap_alloc(Nj_ssize_t n, void* arg) {
+  Nj_UNUSED(arg);
+
+  n = ROUND_UP(n);
   void* p = NULL;
   if (freeblock != NULL) {
     Block** block = &freeblock;
@@ -168,8 +173,21 @@ _njcompact_sweep(NjVMObject* vm) {
 }
 
 static void
-njcompact_collect(NjObject* vm) {
-  // TODO:
+njcompact_collect(NjObject* _vm) {
+  NjVMObject* vm = (NjVMObject*)_vm;
+  Nj_int_t old_objcnt = vm->objcnt;
+
+  _njcompact_mark_all(vm);
+  _njcompact_sweep(vm);
+
+  if (vm->maxobj < MAX_GC_THRESHOLD) {
+    vm->maxobj = vm->objcnt << 1;
+    if (vm->maxobj > MAX_GC_THRESHOLD)
+      vm->maxobj = MAX_GC_THRESHOLD;
+  }
+
+  njlog_info("<%s> collected [%d] objects, [%d] remaining.\n",
+      vm->ob_type->tp_name, old_objcnt - vm->objcnt, vm->objcnt);
 }
 
 static NjObject*
@@ -200,7 +218,8 @@ njcompact_pushint(NjObject* _vm, int value) {
   if (vm->objcnt >= vm->maxobj)
     njcompact_collect(_vm);
 
-  NjIntObject* obj = (NjIntObject*)njord_newint(0, value, NULL, NULL);
+  NjIntObject* obj = (NjIntObject*)njord_newint(
+      0, value, _njcompactheap_alloc, NULL);
   obj->next = vm->startobj;
   vm->startobj = (NjObject*)obj;
   ++vm->objcnt;
@@ -217,7 +236,8 @@ njcompact_pushpair(NjObject* _vm) {
 
   NjObject* tail = _njcompact_pop(vm);
   NjObject* head = _njcompact_pop(vm);
-  NjPairObject* obj = (NjPairObject*)njord_newpair(0, head, tail, NULL, NULL);
+  NjPairObject* obj = (NjPairObject*)njord_newpair(
+      0, head, tail, _njcompactheap_alloc, NULL);
   obj->next = vm->startobj;
   vm->startobj = (NjObject*)obj;
   ++vm->objcnt;
