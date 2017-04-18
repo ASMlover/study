@@ -146,12 +146,18 @@ static void
 njord_gc_sample4(void) {
   njlog_info("sample4: performance objects\n");
 
+  const int POPCOUNT = 20;
+  const int PUSHCOUNT = POPCOUNT * 3;
   NjObject* vm = njord_new();
   for (int i = 0; i < 1000; ++i) {
-    for (int j = 0; j < 20; ++j)
-      njord_pushint(vm, i);
+    for (int j = 0; j < PUSHCOUNT; ++j) {
+      if ((j + 1) % 3 == 0)
+        njord_pushpair(vm);
+      else
+        njord_pushint(vm, i);
+    }
 
-    for (int j = 0; j < 20; ++j)
+    for (int j = 0; j < POPCOUNT; ++j)
       njord_pop(vm);
   }
   njord_free(vm);
