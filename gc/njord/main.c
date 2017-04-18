@@ -179,6 +179,7 @@ _njord_usage(void) {
       "   3 - mark and sweep garbage collector with tri-coloured\n"
       "   4 - copying node garbage collector\n"
       "   5 - mark and sweep garbage collector with bitmap\n"
+      "   6 - lazy sweep garbage collector\n"
       " prof:\n"
       "   0 - disable proformance test\n"
       "   1 - enable proformance test\n"
