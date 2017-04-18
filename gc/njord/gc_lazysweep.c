@@ -195,13 +195,17 @@ _njlazysweep_alloc(Nj_ssize_t n) {
 
 static void*
 _njlazysweep_lazy_sweep(NjVMObject* vm, Nj_ssize_t n) {
+  Nj_int_t old_objcnt = vm->objcnt;
   while (reclaimlist != NULL) {
     Nj_ssize_t size = ROUND_UP(reclaimlist->ob_size);
     Block* block = (Block*)reclaimlist;
     reclaimlist = (NjVarObject*)reclaimlist->next;
     --vm->objcnt;
-    if (size >= n)
+    if (size >= n) {
+      njlog_info("<%s> collected [%d] objects, [%d] remaining.\n",
+          vm->ob_type->tp_name, old_objcnt - vm->objcnt, vm->objcnt);
       return block;
+    }
 
     if ((Nj_uchar_t*)block + size == allocptr) {
       allocptr = (Nj_uchar_t*)block;
@@ -213,6 +217,8 @@ _njlazysweep_lazy_sweep(NjVMObject* vm, Nj_ssize_t n) {
     }
   }
 
+  njlog_info("<%s> collected [%d] objects, [%d] remaining.\n",
+      vm->ob_type->tp_name, old_objcnt - vm->objcnt, vm->objcnt);
   return _njlazysweep_alloc(n);
 }
 
@@ -238,7 +244,6 @@ _njlazysweep_newobj(Nj_ssize_t n, void* arg) {
 static void
 njlazysweep_collect(NjObject* _vm) {
   NjVMObject* vm = (NjVMObject*)_vm;
-  Nj_int_t old_objcnt = vm->objcnt;
 
   _njlazysweep_mark_all(vm);
   _njlazysweep_lazy_sweep(vm, LAZY_HEAP_SIZE);
@@ -248,9 +253,6 @@ njlazysweep_collect(NjObject* _vm) {
     if (vm->maxobj > MAX_GC_THRESHOLD)
       vm->maxobj = MAX_GC_THRESHOLD;
   }
-
-  njlog_info("<%s> collected [%d] objects, [%d] remaining.\n",
-      vm->ob_type->tp_name, old_objcnt - vm->objcnt, vm->objcnt);
 }
 
 static NjObject*
