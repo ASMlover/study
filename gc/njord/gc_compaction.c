@@ -27,6 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdlib.h>
+#include <string.h>
 #include "gc_impl.h"
 #include "njlog.h"
 #include "njmem.h"
@@ -37,15 +38,14 @@
 #define COMPACTION_HEAP   (512 << 10)
 #define ALIGNMENT         (8)
 #define ROUND_UP(n)       (((n) + ALIGNMENT - 1) & ~(ALIGNMENT - 1))
-
-typedef struct _block {
-  struct _block* nextblock;
-  Nj_ssize_t blocksz;
-} Block;
+#define Nj_ASGC(ob)       ((GCHead*)(ob) - 1)
+#define Nj_FORWARDING(ob)\
+  ((NjObject*)(Nj_ASGC(ob)->forwarding + sizeof(GCHead)))
 
 static Nj_uchar_t* heap_address;
 static Nj_uchar_t* allocptr;
-static Block* freeblock;
+
+static void njcompact_collect(NjObject* vm);
 
 static void
 _njcompactheap_init(void) {
@@ -53,41 +53,26 @@ _njcompactheap_init(void) {
   Nj_CHECK(heap_address != NULL, "allocating heap failed");
 
   allocptr = heap_address;
-  freeblock = NULL;
 }
 
 static void
 _njcompactheap_destroy(void) {
   free(heap_address);
-
-  heap_address = NULL;
-  allocptr = NULL;
-  freeblock = NULL;
 }
 
 static void*
 _njcompactheap_alloc(Nj_ssize_t n, void* arg) {
-  Nj_UNUSED(arg);
+  NjObject* vm = (NjObject*)arg;
 
-  n = ROUND_UP(n);
   void* p = NULL;
-  if (freeblock != NULL) {
-    Block** block = &freeblock;
-    while (*block != NULL) {
-      if ((*block)->blocksz >= n) {
-        p = *block;
-        *block = (*block)->nextblock;
-      }
-      else {
-        block = &(*block)->nextblock;
-      }
-    }
-  }
+  if (allocptr + n > heap_address + COMPACTION_HEAP)
+    njcompact_collect(vm);
 
-  if (p == NULL && allocptr + n <= heap_address + COMPACTION_HEAP) {
+  if (allocptr + n <= heap_address + COMPACTION_HEAP) {
     p = allocptr;
     allocptr += n;
   }
+  Nj_CHECK(p != NULL, "allocating object memory failed");
 
   return p;
 }
@@ -121,6 +106,10 @@ _njcompact_unsetmarked(NjObject* obj) {
   gc_bitmaps[_hash_index(obj)] = UNMARKED;
 }
 
+typedef struct _gc {
+  Nj_uchar_t* forwarding;
+} GCHead;
+
 typedef struct _vm {
   NjObject_HEAD;
 
@@ -128,6 +117,7 @@ typedef struct _vm {
   Nj_int_t stackcnt;
 
   NjObject* startobj;
+  NjObject* endobj;
   Nj_int_t objcnt;
   Nj_int_t maxobj;
 } NjVMObject;
@@ -142,6 +132,21 @@ static NjObject*
 _njcompact_pop(NjVMObject* vm) {
   Nj_CHECK(vm->stackcnt > 0, "VM stack underflow");
   return vm->stack[--vm->stackcnt];
+}
+
+static void
+_njcompact_insert(NjVMObject* vm, NjObject* obj) {
+  Nj_CHECK((Nj_uchar_t*)obj > (Nj_uchar_t*)vm->endobj,
+      "allocating new object failed");
+
+  ((NjVarObject*)obj)->next = NULL;
+  if (vm->startobj == NULL) {
+    vm->startobj = vm->endobj = obj;
+  }
+  else {
+    ((NjVarObject*)vm->endobj)->next = obj;
+    vm->endobj = obj;
+  }
 }
 
 static void
@@ -169,7 +174,68 @@ _njcompact_mark_all(NjVMObject* vm) {
 
 static void
 _njcompact_sweep(NjVMObject* vm) {
-  // TODO:
+  Nj_uchar_t* freeptr = heap_address;
+  NjObject* scan = vm->startobj;
+
+  /* setting new forwarding address */
+  while (scan != NULL) {
+    if (_njcompact_ismarked(scan)) {
+      Nj_ssize_t size = ((NjVarObject*)scan)->ob_size + sizeof(GCHead);
+      Nj_ASGC(scan)->forwarding = freeptr;
+      freeptr += size;
+    }
+    scan = ((NjVarObject*)scan)->next;
+  }
+
+  /* updated roots */
+  for (int i = 0; i < vm->stackcnt; ++i)
+    vm->stack[i] = Nj_FORWARDING(vm->stack[i]);
+
+  /* updated fields */
+  scan = vm->startobj;
+  while (scan != NULL) {
+    if (_njcompact_ismarked(scan)) {
+      if (scan->ob_type == &NjPair_Type) {
+        NjObject* head = njord_pairgetter(scan, "head");
+        if (head != NULL)
+          njord_pairsetter(scan, "head", Nj_FORWARDING(head));
+
+        NjObject* tail = njord_pairgetter(scan, "tail");
+        if (tail != NULL)
+          njord_pairsetter(scan, "tail", Nj_FORWARDING(tail));
+      }
+    }
+    scan = ((NjVarObject*)scan)->next;
+  }
+
+  /* relocating the object address */
+  NjObject* next = NULL;
+  scan = vm->startobj;
+  vm->startobj = vm->endobj = NULL;
+  while (scan != NULL) {
+    next = ((NjVarObject*)scan)->next;
+    if (_njcompact_ismarked(scan)) {
+      Nj_ssize_t size = ((NjVarObject*)scan)->ob_size + sizeof(GCHead);
+      Nj_uchar_t* forwarding = Nj_ASGC(scan)->forwarding;
+      NjObject* forwarding_obj = Nj_FORWARDING(scan);
+
+      memmove(forwarding, Nj_ASGC(scan), size);
+      ((NjVarObject*)forwarding_obj)->next = NULL;
+      if (vm->startobj == NULL) {
+        vm->startobj = vm->endobj = forwarding_obj;
+      }
+      else {
+        ((NjVarObject*)vm->endobj)->next = forwarding_obj;
+        vm->endobj = forwarding_obj;
+      }
+    }
+    else {
+      --vm->objcnt;
+    }
+    scan = next;
+  }
+  allocptr = freeptr;
+  memset(gc_bitmaps, 0, sizeof(gc_bitmaps));
 }
 
 static void
@@ -198,6 +264,7 @@ njcompact_newvm(void) {
   vm->ob_type = &NjCompaction_Type;
   vm->stackcnt = 0;
   vm->startobj = NULL;
+  vm->endobj = NULL;
   vm->objcnt = 0;
   vm->maxobj = INIT_GC_THRESHOLD;
   _njcompactheap_init();
@@ -219,9 +286,8 @@ njcompact_pushint(NjObject* _vm, int value) {
     njcompact_collect(_vm);
 
   NjIntObject* obj = (NjIntObject*)njord_newint(
-      0, value, _njcompactheap_alloc, NULL);
-  obj->next = vm->startobj;
-  vm->startobj = (NjObject*)obj;
+      sizeof(GCHead), value, _njcompactheap_alloc, vm);
+  _njcompact_insert(vm, (NjObject*)obj);
   ++vm->objcnt;
   _njcompact_push(vm, (NjObject*)obj);
 
@@ -237,9 +303,8 @@ njcompact_pushpair(NjObject* _vm) {
   NjObject* tail = _njcompact_pop(vm);
   NjObject* head = _njcompact_pop(vm);
   NjPairObject* obj = (NjPairObject*)njord_newpair(
-      0, head, tail, _njcompactheap_alloc, NULL);
-  obj->next = vm->startobj;
-  vm->startobj = (NjObject*)obj;
+      sizeof(GCHead), head, tail, _njcompactheap_alloc, vm);
+  _njcompact_insert(vm, (NjObject*)obj);
   ++vm->objcnt;
   _njcompact_push(vm, (NjObject*)obj);
 
