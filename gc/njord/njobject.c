@@ -50,6 +50,8 @@ njord_initgc(NjGCType type) {
     gc.ob_type = &NjBitmap_Type; break;
   case GC_LAZY_SWEEP:
     gc.ob_type = &NjLazy_Type; break;
+  case GC_MARK_COMPACTION:
+    gc.ob_type = &NjCompaction_Type; break;
   default:
     /* use reference counting gc as defaulted */
     gc.ob_type = &NjRefs_Type; break;

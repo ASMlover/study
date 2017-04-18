@@ -73,6 +73,8 @@ NjAPI_DATA(NjTypeObject) NjBitmap_Type; /* easy implementation of mark and
                                            sweep gc with bitmap */
 NjAPI_DATA(NjTypeObject) NjLazy_Type; /* easy implementation of lazy sweep
                                          garbage collector */
+NjAPI_DATA(NjTypeObject) NjCompaction_Type; /* easy implementation of mark and
+                                               compaction garbage collector */
 
 
 #endif /* Nj_GCIMPL_H */
