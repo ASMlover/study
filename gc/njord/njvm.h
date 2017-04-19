@@ -41,8 +41,8 @@
 
 typedef void (*initvmfunc)(NjObject*);
 typedef void (*destroyvmfunc)(NjObject*);
-typedef NjIntObject* (newintfunc)(NjObject*, int);
-typedef NjPairObject* (newpairfunc)(NjObject*, NjObject*, NjObject*);
+typedef NjIntObject* (*newintfunc)(NjObject*, int);
+typedef NjPairObject* (*newpairfunc)(NjObject*, NjObject*, NjObject*);
 
 NjAPI_FUNC(NjGCMethods*) njvm_defgc(void);
 NjAPI_FUNC(NjTypeObject*) njvm_base(NjObject* vm);
