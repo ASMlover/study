@@ -26,12 +26,9 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <string.h>
-#include "gc_impl.h"
 #include "njlog.h"
-#include "njmem.h"
+#include "njvm.h"
 
-#define MAX_STACK         (1024)
 #define INIT_GC_THRESHOLD (8)
 #define MAX_GC_THRESHOLD  (1024)
 #define MAX_BITMAP        (MAX_GC_THRESHOLD >> 3)
@@ -41,16 +38,8 @@
 #define Nj_BIT_SET(i)     (gc_bitmap[Nj_BIT_BIG(i)] |= (1 << Nj_BIT_SMALL(i)))
 #define Nj_BIT_CLR(i)     (gc_bitmap[Nj_BIT_BIG(i)] &= ~(1 << Nj_BIT_SMALL(i)))
 
-typedef enum _marked {
-  UNMARKED,
-  MARKED,
-} NjMarked;
-
 typedef struct _vm {
-  NjObject_HEAD;
-
-  NjObject* stack[MAX_STACK];
-  Nj_int_t stackcnt;
+  NjObject_VM_HEAD;
 
   NjObject* startobj;
   Nj_int_t objcnt;
@@ -58,18 +47,6 @@ typedef struct _vm {
 } NjVMObject;
 
 static Nj_uchar_t gc_bitmap[MAX_BITMAP];
-
-static void
-_njbitmap_push(NjVMObject* vm, NjObject* obj) {
-  Nj_CHECK(vm->stackcnt < MAX_STACK, "VM stack overflow");
-  vm->stack[vm->stackcnt++] = obj;
-}
-
-static NjObject*
-_njbitmap_pop(NjVMObject* vm) {
-  Nj_CHECK(vm->stackcnt > 0, "VM stack underflow");
-  return vm->stack[--vm->stackcnt];
-}
 
 static void
 _njbitmap_mark(NjObject* obj) {
@@ -88,7 +65,6 @@ _njbitmap_mark(NjObject* obj) {
 
 static void
 _njbitmap_mark_all(NjVMObject* vm) {
-  memset(gc_bitmap, 0, sizeof(gc_bitmap));
   for (int i = 0; i < vm->stackcnt; ++i)
     _njbitmap_mark(vm->stack[i]);
 }
@@ -131,61 +107,55 @@ njbitmap_collect(NjObject* _vm) {
       vm->ob_type->tp_name, old_objcnt - vm->objcnt, vm->objcnt);
 }
 
-static NjObject*
-njbitmap_newvm(void) {
-  NjVMObject* vm = (NjVMObject*)njmem_malloc(sizeof(NjVMObject));
-  Nj_CHECK(vm != NULL, "create VM failed");
-
+static void
+_njbitmap_vm_init(NjObject* _vm) {
+  NjVMObject* vm = (NjVMObject*)_vm;
   vm->ob_type = &NjBitmap_Type;
-  vm->stackcnt = 0;
   vm->startobj = NULL;
   vm->objcnt = 0;
   vm->maxobj = INIT_GC_THRESHOLD;
+}
 
-  return (NjObject*)vm;
+static NjObject*
+njbitmap_newvm(void) {
+  return njvm_newvm(sizeof(NjVMObject), _njbitmap_vm_init);
 }
 
 static void
 njbitmap_freevm(NjObject* vm) {
-  njbitmap_collect(vm);
-  njmem_free(vm, sizeof(NjVMObject));
+  njvm_freevm(vm, NULL);
+}
+
+static NjIntObject*
+_njbitmap_newint(NjObject* _vm, int value) {
+  NjVMObject* vm = (NjVMObject*)_vm;
+  NjIntObject* obj = (NjIntObject*)njord_newint(0, value, NULL, NULL);
+  obj->next = vm->startobj;
+  vm->startobj = (NjObject*)obj;
+  ++vm->objcnt;
+  return obj;
 }
 
 static NjObject*
 njbitmap_pushint(NjObject* _vm, int value) {
   NjVMObject* vm = (NjVMObject*)_vm;
-  if (vm->objcnt >= vm->maxobj)
-    njbitmap_collect(_vm);
+  return njvm_pushint(_vm, value, vm->objcnt >= vm->maxobj, _njbitmap_newint);
+}
 
-  NjIntObject* obj = (NjIntObject*)njord_newint(0, value, NULL, NULL);
+static NjPairObject*
+_njbitmap_newpair(NjObject* _vm, NjObject* head, NjObject* tail) {
+  NjVMObject* vm = (NjVMObject*)_vm;
+  NjPairObject* obj = (NjPairObject*)njord_newpair(0, head, tail, NULL, NULL);
   obj->next = vm->startobj;
   vm->startobj = (NjObject*)obj;
   ++vm->objcnt;
-  _njbitmap_push(vm, (NjObject*)obj);
-
-  return (NjObject*)obj;
+  return obj;
 }
 
 static NjObject*
 njbitmap_pushpair(NjObject* _vm) {
   NjVMObject* vm = (NjVMObject*)_vm;
-  if (vm->objcnt >= vm->maxobj)
-    njbitmap_collect(_vm);
-
-  NjObject* tail = _njbitmap_pop(vm);
-  NjObject* head = _njbitmap_pop(vm);
-  NjPairObject* obj = (NjPairObject*)njord_newpair(0, head, tail, NULL, NULL);
-  obj->next = vm->startobj;
-  vm->startobj = (NjObject*)obj;
-  ++vm->objcnt;
-  _njbitmap_push(vm, (NjObject*)obj);
-
-  return (NjObject*)obj;
-}
-
-static void
-njbitmap_pop(NjObject* vm) {
-  _njbitmap_pop((NjVMObject*)vm);
+  return njvm_pushpair(_vm, vm->objcnt >= vm->maxobj, _njbitmap_newpair);
 }
 
 static NjGCMethods gc_methods = {
@@ -194,7 +164,7 @@ static NjGCMethods gc_methods = {
   njbitmap_pushint, /* gc_pushint */
   njbitmap_pushpair, /* gc_pushpair */
   0, /* gc_setpair */
-  njbitmap_pop, /* gc_pop */
+  0, /* gc_pop */
   njbitmap_collect, /* gc_collect */
 };
 

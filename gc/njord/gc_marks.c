@@ -26,11 +26,9 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include "gc_impl.h"
 #include "njlog.h"
-#include "njmem.h"
+#include "njvm.h"
 
-#define MAX_STACK         (1024)
 #define INIT_GC_THRESHOLD (64)
 #define MAX_GC_THRESHOLD  (1024)
 #define Nj_ASGC(ob)       ((GCHead*)(ob) - 1)
@@ -45,27 +43,12 @@ typedef struct _gc {
 } GCHead;
 
 typedef struct _vm {
-  NjObject_HEAD;
-
-  NjObject* stack[MAX_STACK];
-  int stackcnt;
+  NjObject_VM_HEAD;
 
   NjObject* startobj;
   int objcnt;
   int maxobj;
 } NjVMObject;
-
-static void
-_njmarks_push(NjVMObject* vm, NjObject* obj) {
-  Nj_CHECK(vm->stackcnt < MAX_STACK, "VM stack overflow");
-  vm->stack[vm->stackcnt++] = obj;
-}
-
-static NjObject*
-_njmarks_pop(NjVMObject* vm) {
-  Nj_CHECK(vm->stackcnt > 0, "VM stack underflow");
-  return vm->stack[--vm->stackcnt];
-}
 
 static void
 _njmarks_mark(NjObject* obj) {
@@ -123,65 +106,59 @@ njmarks_collect(NjObject* vm) {
       _vm->ob_type->tp_name, old_objcnt - _vm->objcnt, _vm->objcnt);
 }
 
-static NjObject*
-njmarks_newvm(void) {
-  NjVMObject* vm = (NjVMObject*)njmem_malloc(sizeof(NjVMObject));
-  Nj_CHECK(vm != NULL, "create VM failed");
-
+static void
+_njmarks_vm_init(NjObject* _vm) {
+  NjVMObject* vm = (NjVMObject*)_vm;
   vm->ob_type = &NjMarks_Type;
-  vm->stackcnt = 0;
   vm->startobj = NULL;
   vm->objcnt = 0;
   vm->maxobj = INIT_GC_THRESHOLD;
+}
 
-  return (NjObject*)vm;
+static NjObject*
+njmarks_newvm(void) {
+  return njvm_newvm(sizeof(NjVMObject), _njmarks_vm_init);
 }
 
 static void
 njmarks_freevm(NjObject* vm) {
-  njmarks_collect(vm);
-  njmem_free(vm, sizeof(NjVMObject));
+  return njvm_freevm(vm, NULL);
 }
 
-static NjObject*
-njmarks_pushint(NjObject* vm, int value) {
-  NjVMObject* _vm = (NjVMObject*)vm;
-  if (_vm->objcnt >= _vm->maxobj)
-    njmarks_collect(vm);
-
+static NjIntObject*
+_njmarks_newint(NjObject* _vm, int value) {
+  NjVMObject* vm = (NjVMObject*)_vm;
   NjIntObject* obj = (NjIntObject*)njord_newint(
       sizeof(GCHead), value, NULL, NULL);
   Nj_ASGC(obj)->marked = UNMARKED;
-  obj->next = _vm->startobj;
-  _vm->startobj = (NjObject*)obj;
-  ++_vm->objcnt;
-  _njmarks_push(_vm, (NjObject*)obj);
-
-  return (NjObject*)obj;
+  obj->next = vm->startobj;
+  vm->startobj = (NjObject*)obj;
+  ++vm->objcnt;
+  return obj;
 }
 
 static NjObject*
-njmarks_pushpair(NjObject* vm) {
-  NjVMObject* _vm = (NjVMObject*)vm;
-  if (_vm->objcnt >= _vm->maxobj)
-    njmarks_collect(vm);
+njmarks_pushint(NjObject* _vm, int value) {
+  NjVMObject* vm = (NjVMObject*)_vm;
+  return njvm_pushint(_vm, value, vm->objcnt >= vm->maxobj, _njmarks_newint);
+}
 
-  NjObject* tail = _njmarks_pop(_vm);
-  NjObject* head = _njmarks_pop(_vm);
+static NjPairObject*
+_njmarks_newpair(NjObject* _vm, NjObject* head, NjObject* tail) {
+  NjVMObject* vm = (NjVMObject*)_vm;
   NjPairObject* obj = (NjPairObject*)njord_newpair(
       sizeof(GCHead), head, tail, NULL, NULL);
   Nj_ASGC(obj)->marked = UNMARKED;
-  obj->next = _vm->startobj;
-  _vm->startobj = (NjObject*)obj;
-  ++_vm->objcnt;
-  _njmarks_push(_vm, (NjObject*)obj);
-
-  return (NjObject*)obj;
+  obj->next = vm->startobj;
+  vm->startobj = (NjObject*)obj;
+  ++vm->objcnt;
+  return obj;
 }
 
-static void
-njmarks_pop(NjObject* vm) {
-  _njmarks_pop((NjVMObject*)vm);
+static NjObject*
+njmarks_pushpair(NjObject* _vm) {
+  NjVMObject* vm = (NjVMObject*)_vm;
+  return njvm_pushpair(_vm, vm->objcnt >= vm->maxobj, _njmarks_newpair);
 }
 
 static NjGCMethods gc_methods = {
@@ -190,7 +167,7 @@ static NjGCMethods gc_methods = {
   njmarks_pushint, /* gc_pushint */
   njmarks_pushpair, /* gc_pushpair */
   0, /* gc_setpair */
-  njmarks_pop, /* gc_pop */
+  0, /* gc_pop */
   njmarks_collect, /* gc_collect */
 };
 

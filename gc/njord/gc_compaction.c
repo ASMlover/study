@@ -28,16 +28,12 @@
  */
 #include <stdlib.h>
 #include <string.h>
-#include "gc_impl.h"
 #include "njlog.h"
-#include "njmem.h"
+#include "njvm.h"
 
-#define MAX_STACK         (1024)
 #define INIT_GC_THRESHOLD (64)
 #define MAX_GC_THRESHOLD  (1024)
 #define COMPACTION_HEAP   (512 << 10)
-#define ALIGNMENT         (8)
-#define ROUND_UP(n)       (((n) + ALIGNMENT - 1) & ~(ALIGNMENT - 1))
 #define Nj_ASGC(ob)       ((GCHead*)(ob) - 1)
 #define Nj_FORWARDING(ob)\
   ((NjObject*)(Nj_ASGC(ob)->forwarding + sizeof(GCHead)))
@@ -56,7 +52,8 @@ _njcompactheap_init(void) {
 }
 
 static void
-_njcompactheap_destroy(void) {
+_njcompactheap_destroy(void* arg) {
+  Nj_UNUSED(arg);
   free(heap_address);
 }
 
@@ -106,28 +103,13 @@ typedef struct _gc {
 } GCHead;
 
 typedef struct _vm {
-  NjObject_HEAD;
-
-  NjObject* stack[MAX_STACK];
-  Nj_int_t stackcnt;
+  NjObject_VM_HEAD;
 
   NjObject* startobj;
   NjObject* endobj;
   Nj_int_t objcnt;
   Nj_int_t maxobj;
 } NjVMObject;
-
-static void
-_njcompact_push(NjVMObject* vm, NjObject* obj) {
-  Nj_CHECK(vm->stackcnt < MAX_STACK, "VM stack overflow");
-  vm->stack[vm->stackcnt++] = obj;
-}
-
-static NjObject*
-_njcompact_pop(NjVMObject* vm) {
-  Nj_CHECK(vm->stackcnt > 0, "VM stack underflow");
-  return vm->stack[--vm->stackcnt];
-}
 
 static void
 _njcompact_insert(NjVMObject* vm, NjObject* obj) {
@@ -251,64 +233,57 @@ njcompact_collect(NjObject* _vm) {
       vm->ob_type->tp_name, old_objcnt - vm->objcnt, vm->objcnt);
 }
 
-static NjObject*
-njcompact_newvm(void) {
-  NjVMObject* vm = (NjVMObject*)njmem_malloc(sizeof(NjVMObject));
-  Nj_CHECK(vm != NULL, "create VM failed");
-
+static void
+_njcompact_vm_init(NjObject* _vm) {
+  NjVMObject* vm = (NjVMObject*)_vm;
   vm->ob_type = &NjCompaction_Type;
-  vm->stackcnt = 0;
   vm->startobj = NULL;
   vm->endobj = NULL;
   vm->objcnt = 0;
   vm->maxobj = INIT_GC_THRESHOLD;
   _njcompactheap_init();
+}
 
-  return (NjObject*)vm;
+static NjObject*
+njcompact_newvm(void) {
+  return njvm_newvm(sizeof(NjVMObject), _njcompact_vm_init);
 }
 
 static void
 njcompact_freevm(NjObject* vm) {
-  njcompact_collect(vm);
-  _njcompactheap_destroy();
-  njmem_free(vm, sizeof(NjVMObject));
+  njvm_freevm(vm, (destroyvmfunc)_njcompactheap_destroy);
+}
+
+static NjIntObject*
+_njcompact_newint(NjObject* _vm, int value) {
+  NjVMObject* vm = (NjVMObject*)_vm;
+  NjIntObject* obj = (NjIntObject*)njord_newint(
+      sizeof(GCHead), value, _njcompactheap_alloc, vm);
+  _njcompact_insert(vm, (NjObject*)obj);
+  ++vm->objcnt;
+  return obj;
 }
 
 static NjObject*
 njcompact_pushint(NjObject* _vm, int value) {
   NjVMObject* vm = (NjVMObject*)_vm;
-  if (vm->objcnt >= vm->maxobj)
-    njcompact_collect(_vm);
+  return njvm_pushint(_vm, value, vm->objcnt >= vm->maxobj, _njcompact_newint);
+}
 
-  NjIntObject* obj = (NjIntObject*)njord_newint(
-      sizeof(GCHead), value, _njcompactheap_alloc, vm);
+static NjPairObject*
+_njcompact_newpair(NjObject* _vm, NjObject* head, NjObject* tail) {
+  NjVMObject* vm = (NjVMObject*)_vm;
+  NjPairObject* obj = (NjPairObject*)njord_newpair(
+      sizeof(GCHead), head, tail, _njcompactheap_alloc, vm);
   _njcompact_insert(vm, (NjObject*)obj);
   ++vm->objcnt;
-  _njcompact_push(vm, (NjObject*)obj);
-
-  return (NjObject*)obj;
+  return obj;
 }
 
 static NjObject*
 njcompact_pushpair(NjObject* _vm) {
   NjVMObject* vm = (NjVMObject*)_vm;
-  if (vm->objcnt >= vm->maxobj)
-    njcompact_collect(_vm);
-
-  NjObject* tail = _njcompact_pop(vm);
-  NjObject* head = _njcompact_pop(vm);
-  NjPairObject* obj = (NjPairObject*)njord_newpair(
-      sizeof(GCHead), head, tail, _njcompactheap_alloc, vm);
-  _njcompact_insert(vm, (NjObject*)obj);
-  ++vm->objcnt;
-  _njcompact_push(vm, (NjObject*)obj);
-
-  return (NjObject*)obj;
-}
-
-static void
-njcompact_pop(NjObject* vm) {
-  _njcompact_pop((NjVMObject*)vm);
+  return njvm_pushpair(_vm, vm->objcnt >= vm->maxobj, _njcompact_newpair);
 }
 
 static NjGCMethods gc_methods = {
@@ -317,7 +292,7 @@ static NjGCMethods gc_methods = {
   njcompact_pushint, /* gc_pushint */
   njcompact_pushpair, /* gc_pushpair */
   0, /* gc_setpair */
-  njcompact_pop, /* gc_pop */
+  0, /* gc_pop */
   njcompact_collect, /* gc_collect */
 };
 

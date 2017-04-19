@@ -28,29 +28,24 @@
  */
 #include <stdlib.h> /* for malloc/free */
 #include <string.h>
-#include "gc_impl.h"
 #include "njlog.h"
-#include "njmem.h"
+#include "njvm.h"
 
-#define MAX_STACK         (1024)
 #define COPYGC_HALF_SIZE  (512 << 10)
 #define Nj_ASGC(ob)       ((GCHead*)(ob) - 1)
 #define Nj_COPYN(ob)      (((NjVarObject*)(ob))->ob_size + sizeof(GCHead))
 
-static Nj_uchar_t* copymem = NULL;
-static Nj_uchar_t* fromspace = NULL;
-static Nj_uchar_t* tospace = NULL;
-static Nj_uchar_t* allocptr = NULL;
+static Nj_uchar_t* copymem;
+static Nj_uchar_t* fromspace;
+static Nj_uchar_t* tospace;
+static Nj_uchar_t* allocptr;
 
 typedef struct _gc {
   NjObject* forward;
 } GCHead;
 
 typedef struct _vm {
-  NjObject_HEAD;
-
-  NjObject* stack[MAX_STACK];
-  int stackcnt;
+  NjObject_VM_HEAD;
 } NjVMObject;
 
 static void njcopy_collect(NjObject* vm);
@@ -66,7 +61,8 @@ _copymem_init(void) {
 }
 
 static void
-_copymem_destroy(void) {
+_copymem_destroy(void* arg) {
+  Nj_UNUSED(arg);
   free(copymem);
   copymem = NULL;
   fromspace = NULL;
@@ -84,18 +80,6 @@ _copymem_alloc(Nj_ssize_t n, void* arg) {
   void* p = allocptr;
   allocptr += n;
   return p;
-}
-
-static void
-_njcopy_push(NjVMObject* vm, NjObject* obj) {
-  Nj_CHECK(vm->stackcnt < MAX_STACK, "VM stack overflow");
-  vm->stack[vm->stackcnt++] = obj;
-}
-
-static NjObject*
-_njcopy_pop(NjVMObject* vm) {
-  Nj_CHECK(vm->stackcnt > 0, "VM stack underflow");
-  return vm->stack[--vm->stackcnt];
 }
 
 static NjObject*
@@ -124,51 +108,47 @@ _njcopy_copy(NjObject* obj) {
   return Nj_ASGC(obj)->forward;
 }
 
+static void
+_njcopy_vm_init(NjObject* _vm) {
+  NjVMObject* vm = (NjVMObject*)_vm;
+  vm->ob_type = &NjCopy_Type;
+  _copymem_init();
+}
+
 static NjObject*
 njcopy_newvm(void) {
-  _copymem_init();
-  NjVMObject* vm = (NjVMObject*)njmem_malloc(sizeof(NjVMObject));
-  Nj_CHECK(vm != NULL, "create VM failed");
-
-  vm->ob_type = &NjCopy_Type;
-  vm->stackcnt = 0;
-
-  return (NjObject*)vm;
+  return njvm_newvm(sizeof(NjVMObject), _njcopy_vm_init);
 }
 
 static void
 njcopy_freevm(NjObject* vm) {
-  njcopy_collect(vm);
-  njmem_free(vm, sizeof(NjVMObject));
-  _copymem_destroy();
+  njvm_freevm(vm, (destroyvmfunc)_copymem_destroy);
+}
+
+static NjIntObject*
+_njcopy_newint(NjObject* vm, int value) {
+  NjIntObject* obj = (NjIntObject*)njord_newint(
+      sizeof(GCHead), value, _copymem_alloc, vm);
+  Nj_ASGC(obj)->forward = NULL;
+  return obj;
 }
 
 static NjObject*
 njcopy_pushint(NjObject* vm, int value) {
-  NjIntObject* obj = (NjIntObject*)njord_newint(
-      sizeof(GCHead), value, _copymem_alloc, vm);
-  Nj_ASGC(obj)->forward = NULL;
-  obj->value = value;
-  _njcopy_push((NjVMObject*)vm, (NjObject*)obj);
+  return njvm_pushint(vm, value, 0, _njcopy_newint);
+}
 
-  return (NjObject*)obj;
+static NjPairObject*
+_njcopy_newpair(NjObject* vm, NjObject* head, NjObject* tail) {
+  NjPairObject* obj = (NjPairObject*)njord_newpair(
+      sizeof(GCHead), head, tail, _copymem_alloc, vm);
+  Nj_ASGC(obj)->forward = NULL;
+  return obj;
 }
 
 static NjObject*
 njcopy_pushpair(NjObject* vm) {
-  NjObject* tail = _njcopy_pop((NjVMObject*)vm);
-  NjObject* head = _njcopy_pop((NjVMObject*)vm);
-  NjPairObject* obj = (NjPairObject*)njord_newpair(
-      sizeof(GCHead), head, tail, _copymem_alloc, vm);
-  Nj_ASGC(obj)->forward = NULL;
-  _njcopy_push((NjVMObject*)vm, (NjObject*)obj);
-
-  return (NjObject*)obj;
-}
-
-static void
-njcopy_pop(NjObject* vm) {
-  _njcopy_pop((NjVMObject*)vm);
+  return njvm_pushpair(vm, 0, _njcopy_newpair);
 }
 
 static void
@@ -194,7 +174,7 @@ static NjGCMethods gc_methods = {
   njcopy_pushint, /* gc_pushint */
   njcopy_pushpair, /* gc_pushpair */
   0, /* gc_setpair */
-  njcopy_pop, /* gc_pop */
+  0, /* gc_pop */
   njcopy_collect, /* gc_collect */
 };
 

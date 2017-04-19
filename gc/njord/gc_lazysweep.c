@@ -27,11 +27,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdlib.h>
-#include "gc_impl.h"
 #include "njlog.h"
-#include "njmem.h"
+#include "njvm.h"
 
-#define MAX_STACK         (1024)
 #define INIT_GC_THRESHOLD (64)
 #define MAX_GC_THRESHOLD  (1024)
 #define LAZY_HEAP_SIZE    (512 << 10)
@@ -57,7 +55,8 @@ _njlazyheap_init(void) {
 }
 
 static void
-_njlazyheap_destroy(void) {
+_njlazyheap_destroy(void* arg) {
+  Nj_UNUSED(arg);
   free(heap_address);
 
   heap_address = NULL;
@@ -81,10 +80,7 @@ typedef enum _marked {
 } NjMarked;
 
 typedef struct _vm {
-  NjObject_HEAD;
-
-  NjObject* stack[MAX_STACK];
-  Nj_int_t stackcnt;
+  NjObject_VM_HEAD;
 
   NjObject* startobj;
   Nj_int_t objcnt;
@@ -110,18 +106,6 @@ static inline void
 _njlazysweep_clearmarked(NjObject* obj) {
   int i = njhash_getindex(obj, MAX_GC_THRESHOLD);
   gc_bitmaps[i] = UNMARKED;
-}
-
-static void
-_njlazysweep_push(NjVMObject* vm, NjObject* obj) {
-  Nj_CHECK(vm->stackcnt < MAX_STACK, "VM stack overflow");
-  vm->stack[vm->stackcnt++] = obj;
-}
-
-static NjObject*
-_njlazysweep_pop(NjVMObject* vm) {
-  Nj_CHECK(vm->stackcnt > 0, "VM stack underflow");
-  return vm->stack[--vm->stackcnt];
 }
 
 static void
@@ -248,26 +232,35 @@ njlazysweep_collect(NjObject* _vm) {
   }
 }
 
-static NjObject*
-njlazysweep_newvm(void) {
-  NjVMObject* vm = (NjVMObject*)njmem_malloc(sizeof(NjVMObject));
-  Nj_CHECK(vm != NULL, "create VM failed");
-
+static void
+_njlazysweep_vm_init(NjObject* _vm) {
+  NjVMObject* vm = (NjVMObject*)_vm;
   vm->ob_type = &NjLazy_Type;
-  vm->stackcnt = 0;
   vm->startobj = NULL;
   vm->objcnt = 0;
   vm->maxobj = INIT_GC_THRESHOLD;
   _njlazyheap_init();
+}
 
-  return (NjObject*)vm;
+static NjObject*
+njlazysweep_newvm(void) {
+  return njvm_newvm(sizeof(NjVMObject), _njlazysweep_vm_init);
 }
 
 static void
 njlazysweep_freevm(NjObject* vm) {
-  njlazysweep_collect(vm);
-  _njlazyheap_destroy();
-  njmem_free(vm, sizeof(NjVMObject));
+  njvm_freevm(vm, (destroyvmfunc)_njlazyheap_destroy);
+}
+
+static NjIntObject*
+_njlazysweep_newint(NjObject* _vm, int value) {
+  NjVMObject* vm = (NjVMObject*)_vm;
+  NjIntObject* obj = (NjIntObject*)njord_newint(
+      0, value, _njlazysweep_newobj, vm);
+  obj->next = vm->startobj;
+  vm->startobj = (NjObject*)obj;
+  ++vm->objcnt;
+  return obj;
 }
 
 static NjObject*
@@ -275,15 +268,18 @@ njlazysweep_pushint(NjObject* _vm, int value) {
   NjVMObject* vm = (NjVMObject*)_vm;
   if (vm->objcnt > vm->maxobj)
     _njlazysweep_mark_all(vm);
+  return njvm_pushint(_vm, value, 0, _njlazysweep_newint);
+}
 
-  NjIntObject* obj = (NjIntObject*)njord_newint(
-      0, value, _njlazysweep_newobj, vm);
+static NjPairObject*
+_njlazysweep_newpair(NjObject* _vm, NjObject* head, NjObject* tail) {
+  NjVMObject* vm = (NjVMObject*)_vm;
+  NjPairObject* obj = (NjPairObject*)njord_newpair(
+      0, head, tail, _njlazysweep_newobj, vm);
   obj->next = vm->startobj;
   vm->startobj = (NjObject*)obj;
   ++vm->objcnt;
-  _njlazysweep_push(vm, (NjObject*)obj);
-
-  return (NjObject*)obj;
+  return obj;
 }
 
 static NjObject*
@@ -291,22 +287,7 @@ njlazysweep_pushpair(NjObject* _vm) {
   NjVMObject* vm = (NjVMObject*)_vm;
   if (vm->objcnt >= vm->maxobj)
     _njlazysweep_mark_all(vm);
-
-  NjObject* tail = _njlazysweep_pop(vm);
-  NjObject* head = _njlazysweep_pop(vm);
-  NjPairObject* obj = (NjPairObject*)njord_newpair(
-      0, head, tail, _njlazysweep_newobj, vm);
-  obj->next = vm->startobj;
-  vm->startobj = (NjObject*)obj;
-  ++vm->objcnt;
-  _njlazysweep_push(vm, (NjObject*)obj);
-
-  return (NjObject*)obj;
-}
-
-static void
-njlazysweep_pop(NjObject* vm) {
-  _njlazysweep_pop((NjVMObject*)vm);
+  return njvm_pushpair(_vm, 0, _njlazysweep_newpair);
 }
 
 static NjGCMethods gc_methods = {
@@ -315,7 +296,7 @@ static NjGCMethods gc_methods = {
   njlazysweep_pushint, /* gc_pushint */
   njlazysweep_pushpair, /* gc_pushpair */
   0, /* gc_setpair */
-  njlazysweep_pop, /* gc_pop */
+  0, /* gc_pop */
   njlazysweep_collect, /* gc_collect */
 };
 
