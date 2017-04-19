@@ -29,6 +29,7 @@
 #include "njmem.h"
 #include "njobject.h"
 #include "njlog.h"
+#include "njvm.h"
 #include "gc_impl.h"
 
 static NjObject gc;
@@ -60,22 +61,34 @@ njord_initgc(NjGCType type) {
 
 NjObject*
 njord_new(void) {
-  return Nj_GC(&gc)->gc_newvm();
+  if (Nj_GC(&gc)->gc_newvm != NULL)
+    return Nj_GC(&gc)->gc_newvm();
+  else
+    return njvm_defgc()->gc_newvm();
 }
 
 void
 njord_free(NjObject* vm) {
-  Nj_GC(&gc)->gc_freevm(vm);
+  if (Nj_GC(&gc)->gc_freevm != NULL)
+    Nj_GC(&gc)->gc_freevm(vm);
+  else
+    njvm_defgc()->gc_freevm(vm);
 }
 
 NjObject*
 njord_pushint(NjObject* vm, int value) {
-  return Nj_GC(&gc)->gc_pushint(vm, value);
+  if (Nj_GC(&gc)->gc_pushint != NULL)
+    return Nj_GC(&gc)->gc_pushint(vm, value);
+  else
+    return njvm_defgc()->gc_pushint(vm, value);
 }
 
 NjObject*
 njord_pushpair(NjObject* vm) {
-  return Nj_GC(&gc)->gc_pushpair(vm);
+  if (Nj_GC(&gc)->gc_pushpair != NULL)
+    return Nj_GC(&gc)->gc_pushpair(vm);
+  else
+    return njvm_defgc()->gc_pushpair(vm);
 }
 
 void
@@ -97,7 +110,10 @@ njord_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
 
 void
 njord_pop(NjObject* vm) {
-  Nj_GC(&gc)->gc_pop(vm);
+  if (Nj_GC(&gc)->gc_pop != NULL)
+    Nj_GC(&gc)->gc_pop(vm);
+  else
+    njvm_defgc()->gc_pop(vm);
 }
 
 void
