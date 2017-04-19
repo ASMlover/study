@@ -180,15 +180,6 @@ njmarks_pushpair(NjObject* vm) {
 }
 
 static void
-njmarks_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
-  if (head != NULL)
-    njord_pairsetter(pair, "head", head);
-
-  if (tail != NULL)
-    njord_pairsetter(pair, "tail", tail);
-}
-
-static void
 njmarks_pop(NjObject* vm) {
   _njmarks_pop((NjVMObject*)vm);
 }
@@ -198,7 +189,7 @@ static NjGCMethods gc_methods = {
   njmarks_freevm, /* gc_freevm */
   njmarks_pushint, /* gc_pushint */
   njmarks_pushpair, /* gc_pushpair */
-  njmarks_setpair, /* gc_setpair */
+  0, /* gc_setpair */
   njmarks_pop, /* gc_pop */
   njmarks_collect, /* gc_collect */
 };

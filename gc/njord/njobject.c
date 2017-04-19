@@ -80,7 +80,19 @@ njord_pushpair(NjObject* vm) {
 
 void
 njord_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
-  Nj_GC(&gc)->gc_setpair(pair, head, tail);
+  if (Nj_GC(&gc)->gc_setpair != NULL) {
+    Nj_GC(&gc)->gc_setpair(pair, head, tail);
+  }
+  else if (pair->ob_type->tp_setter != NULL) {
+    if (head != NULL)
+      pair->ob_type->tp_setter(pair, "head", head);
+
+    if (tail != NULL)
+      pair->ob_type->tp_setter(pair, "tail", tail);
+  }
+  else {
+    njlog_fatal("njord_setpair: no matched function\n");
+  }
 }
 
 void

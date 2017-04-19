@@ -305,15 +305,6 @@ njlazysweep_pushpair(NjObject* _vm) {
 }
 
 static void
-njlazysweep_setpair(NjObject* obj, NjObject* head, NjObject* tail) {
-  if (head != NULL)
-    njord_pairsetter(obj, "head", head);
-
-  if (tail != NULL)
-    njord_pairsetter(obj, "tail", tail);
-}
-
-static void
 njlazysweep_pop(NjObject* vm) {
   _njlazysweep_pop((NjVMObject*)vm);
 }
@@ -323,7 +314,7 @@ static NjGCMethods gc_methods = {
   njlazysweep_freevm, /* gc_freevm */
   njlazysweep_pushint, /* gc_pushint */
   njlazysweep_pushpair, /* gc_pushpair */
-  njlazysweep_setpair, /* gc_setpair */
+  0, /* gc_setpair */
   njlazysweep_pop, /* gc_pop */
   njlazysweep_collect, /* gc_collect */
 };

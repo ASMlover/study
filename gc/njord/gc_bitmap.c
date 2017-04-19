@@ -184,15 +184,6 @@ njbitmap_pushpair(NjObject* _vm) {
 }
 
 static void
-njbitmap_setpair(NjObject* obj, NjObject* head, NjObject* tail) {
-  if (head != NULL)
-    njord_pairsetter(obj, "head", head);
-
-  if (tail != NULL)
-    njord_pairsetter(obj, "tail", tail);
-}
-
-static void
 njbitmap_pop(NjObject* vm) {
   _njbitmap_pop((NjVMObject*)vm);
 }
@@ -202,7 +193,7 @@ static NjGCMethods gc_methods = {
   njbitmap_freevm, /* gc_freevm */
   njbitmap_pushint, /* gc_pushint */
   njbitmap_pushpair, /* gc_pushpair */
-  njbitmap_setpair, /* gc_setpair */
+  0, /* gc_setpair */
   njbitmap_pop, /* gc_pop */
   njbitmap_collect, /* gc_collect */
 };

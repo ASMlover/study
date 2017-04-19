@@ -167,15 +167,6 @@ njcopy_pushpair(NjObject* vm) {
 }
 
 static void
-njcopy_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
-  if (head != NULL)
-    njord_pairsetter(pair, "head", head);
-
-  if (tail != NULL)
-    njord_pairsetter(pair, "tail", tail);
-}
-
-static void
 njcopy_pop(NjObject* vm) {
   _njcopy_pop((NjVMObject*)vm);
 }
@@ -202,7 +193,7 @@ static NjGCMethods gc_methods = {
   njcopy_freevm, /* gc_freevm */
   njcopy_pushint, /* gc_pushint */
   njcopy_pushpair, /* gc_pushpair */
-  njcopy_setpair, /* gc_setpair */
+  0, /* gc_setpair */
   njcopy_pop, /* gc_pop */
   njcopy_collect, /* gc_collect */
 };

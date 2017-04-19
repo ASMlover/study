@@ -307,15 +307,6 @@ njcompact_pushpair(NjObject* _vm) {
 }
 
 static void
-njcompact_setpair(NjObject* obj, NjObject* head, NjObject* tail) {
-  if (head != NULL )
-    njord_pairsetter(obj, "head", head);
-
-  if (tail != NULL)
-    njord_pairsetter(obj, "tail", tail);
-}
-
-static void
 njcompact_pop(NjObject* vm) {
   _njcompact_pop((NjVMObject*)vm);
 }
@@ -325,7 +316,7 @@ static NjGCMethods gc_methods = {
   njcompact_freevm, /* gc_freevm */
   njcompact_pushint, /* gc_pushint */
   njcompact_pushpair, /* gc_pushpair */
-  njcompact_setpair, /* gc_setpair */
+  0, /* gc_setpair */
   njcompact_pop, /* gc_pop */
   njcompact_collect, /* gc_collect */
 };
