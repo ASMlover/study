@@ -121,11 +121,6 @@ njbitmap_newvm(void) {
   return njvm_newvm(sizeof(NjVMObject), _njbitmap_vm_init);
 }
 
-static void
-njbitmap_freevm(NjObject* vm) {
-  njvm_freevm(vm, NULL);
-}
-
 static NjIntObject*
 _njbitmap_newint(NjObject* _vm, int value) {
   NjVMObject* vm = (NjVMObject*)_vm;
@@ -160,7 +155,7 @@ njbitmap_pushpair(NjObject* _vm) {
 
 static NjGCMethods gc_methods = {
   njbitmap_newvm, /* gc_newvm */
-  njbitmap_freevm, /* gc_freevm */
+  0, /* gc_freevm */
   njbitmap_pushint, /* gc_pushint */
   njbitmap_pushpair, /* gc_pushpair */
   0, /* gc_setpair */

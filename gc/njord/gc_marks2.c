@@ -152,11 +152,6 @@ njmarks_newvm(void) {
   return njvm_newvm(sizeof(NjVMObject), _njmarks_vm_init);
 }
 
-static void
-njmarks_freevm(NjObject* vm) {
-  njvm_freevm(vm, NULL);
-}
-
 static NjIntObject*
 _njmarks_newint(NjObject* _vm, int value) {
   NjVMObject* vm = (NjVMObject*)_vm;
@@ -195,7 +190,7 @@ njmarks_pushpair(NjObject* _vm) {
 
 static NjGCMethods gc_methods = {
   njmarks_newvm, /* gc_newvm */
-  njmarks_freevm, /* gc_freevm */
+  0, /* gc_freevm */
   njmarks_pushint, /* gc_pushint */
   njmarks_pushpair, /* gc_pushpair */
   0, /* gc_setpair */

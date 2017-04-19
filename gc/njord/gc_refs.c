@@ -26,11 +26,9 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include "njmem.h"
 #include "njlog.h"
-#include "gc_impl.h"
-
-#define MAX_STACK (1024)
+#include "njmem.h"
+#include "njvm.h"
 
 #define Nj_ASGC(ob)   ((GCHead*)(ob) - 1)
 #define Nj_REFCNT(ob) (Nj_ASGC(ob)->refcnt)
@@ -52,15 +50,12 @@ typedef struct _gc {
 } GCHead;
 
 typedef struct _vm {
-  NjObject_HEAD;
-
-  NjObject* stack[MAX_STACK];
-  int stackcnt;
+  NjObject_VM_HEAD;
 } NjVMObject;
 
 static void
 _njrefs_push(NjVMObject* vm, NjObject* obj) {
-  Nj_CHECK(vm->stackcnt < MAX_STACK, "VM stack overflow");
+  Nj_CHECK(vm->stackcnt < Nj_VMSTACK, "VM stack overflow");
   vm->stack[vm->stackcnt++] = obj;
 }
 
@@ -83,22 +78,21 @@ _njrefs_dealloc(NjObject* obj) {
 
 static void njrefs_pop(NjObject* vm);
 
-static NjObject*
-njrefs_newvm(void) {
-  NjVMObject* vm = (NjVMObject*)njmem_malloc(sizeof(NjVMObject));
-  Nj_CHECK(vm != NULL, "create VM failed");
-
-  vm->ob_type = &NjRefs_Type;
-  vm->stackcnt = 0;
-
-  return (NjObject*)vm;
+static void
+njrefs_collect(NjObject* vm) {
+  while (((NjVMObject*)vm)->stackcnt > 0)
+    njrefs_pop(vm);
 }
 
 static void
-njrefs_freevm(NjObject* vm) {
-  while (((NjVMObject*)vm)->stackcnt > 0)
-    njrefs_pop(vm);
-  njmem_free(vm, sizeof(NjVMObject));
+_njrefs_vm_init(NjObject* _vm) {
+  NjVMObject* vm = (NjVMObject*)_vm;
+  vm->ob_type = &NjRefs_Type;
+}
+
+static NjObject*
+njrefs_newvm(void) {
+  return njvm_newvm(sizeof(NjVMObject), _njrefs_vm_init);
 }
 
 static NjObject*
@@ -153,12 +147,12 @@ njrefs_pop(NjObject* vm) {
 
 static NjGCMethods gc_methods = {
   njrefs_newvm, /* gc_newvm */
-  njrefs_freevm, /* gc_freevm */
+  0, /* gc_freevm */
   njrefs_pushint, /* gc_pushint */
   njrefs_pushpair, /* gc_pushpair */
   njrefs_setpair, /* gc_setpair */
   njrefs_pop, /* gc_pop */
-  0, /* gc_collect */
+  njrefs_collect, /* gc_collect */
 };
 
 NjTypeObject NjRefs_Type = {
