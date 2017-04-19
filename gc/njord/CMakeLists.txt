@@ -56,4 +56,6 @@ message(STATUS "<${PROJ_NAME}> CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
 
 set(PROJ_BIN "njord")
 aux_source_directory(. PROJ_SOURCES)
+message(STATUS, "<${PROJ_NAME}> PROJ_SOURCES: ${PROJ_SOURCES}")
+
 add_executable(${PROJ_BIN} ${PROJ_SOURCES})
