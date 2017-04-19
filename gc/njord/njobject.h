@@ -89,6 +89,8 @@ typedef enum _gctype {
   GC_BITMAP, /* mark and sweep garbage collection with bitmap */
   GC_LAZY_SWEEP, /* lazy sweep garbage collection */
   GC_MARK_COMPACTION, /* mark and compaction garbage collection  */
+
+  GC_COUNTS, /* [attention] should always in last line */
 } NjGCType;
 
 typedef struct _gcobject {

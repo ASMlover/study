@@ -26,75 +26,80 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include "njmem.h"
 #include "njobject.h"
 #include "njlog.h"
+#include "njmem.h"
 #include "njvm.h"
 #include "gc_impl.h"
 
-static NjObject gc;
+typedef struct _gcmap {
+  NjGCType gc_type;
+  NjTypeObject* gc_obj;
+} NjGCMap;
+
+static NjGCMap gc_mapped[] = {
+  {GC_REFS, &NjRefs_Type},
+  {GC_MARK_SWEEP, &NjMarks_Type},
+  {GC_MARK_SWEEP2, &NjMarks2_Type},
+  {GC_MARK_SWEEP3, &NjMarks3_Type},
+  {GC_COPYING, &NjCopy_Type},
+  {GC_BITMAP, &NjBitmap_Type},
+  {GC_LAZY_SWEEP, &NjLazy_Type},
+  {GC_MARK_COMPACTION, &NjCompaction_Type},
+};
+
+#define Nj_STARTUPGC()  (gc_mapped[startup_gctype].gc_obj->tp_gc)
+
+static NjGCType startup_gctype;
+static NjObject* startup_gc;
 
 void
 njord_initgc(NjGCType type) {
-  switch (type) {
-  case GC_REFS:
-    gc.ob_type = &NjRefs_Type; break;
-  case GC_MARK_SWEEP:
-    gc.ob_type = &NjMarks_Type; break;
-  case GC_MARK_SWEEP2:
-    gc.ob_type = &NjMarks2_Type; break;
-  case GC_MARK_SWEEP3:
-    gc.ob_type = &NjMarks3_Type; break;
-  case GC_COPYING:
-    gc.ob_type = &NjCopy_Type; break;
-  case GC_BITMAP:
-    gc.ob_type = &NjBitmap_Type; break;
-  case GC_LAZY_SWEEP:
-    gc.ob_type = &NjLazy_Type; break;
-  case GC_MARK_COMPACTION:
-    gc.ob_type = &NjCompaction_Type; break;
-  default:
-    /* use reference counting gc as defaulted */
-    gc.ob_type = &NjRefs_Type; break;
-  }
+  Nj_CHECK(type >= 0 && type < GC_COUNTS, "gc type invalid");
+  startup_gctype = type;
+  startup_gc = NULL;
 }
 
 NjObject*
 njord_new(void) {
-  if (Nj_GC(&gc)->gc_newvm != NULL)
-    return Nj_GC(&gc)->gc_newvm();
+  if (Nj_STARTUPGC()->gc_newvm != NULL)
+    startup_gc = Nj_STARTUPGC()->gc_newvm();
   else
-    return njvm_defgc()->gc_newvm();
+    startup_gc = njvm_defgc()->gc_newvm();
+  return startup_gc;
 }
 
 void
 njord_free(NjObject* vm) {
-  if (Nj_GC(&gc)->gc_freevm != NULL)
-    Nj_GC(&gc)->gc_freevm(vm);
+  if (Nj_GC(vm)->gc_freevm != NULL)
+    Nj_GC(vm)->gc_freevm(vm);
   else
-    njvm_defgc()->gc_freevm(vm);
+    njvm_base(vm)->tp_gc->gc_freevm(vm);
 }
 
 NjObject*
 njord_pushint(NjObject* vm, int value) {
-  if (Nj_GC(&gc)->gc_pushint != NULL)
-    return Nj_GC(&gc)->gc_pushint(vm, value);
+  if (Nj_GC(vm)->gc_pushint != NULL)
+    return Nj_GC(vm)->gc_pushint(vm, value);
   else
-    return njvm_defgc()->gc_pushint(vm, value);
+    return njvm_base(vm)->tp_gc->gc_pushint(vm, value);
 }
 
 NjObject*
 njord_pushpair(NjObject* vm) {
-  if (Nj_GC(&gc)->gc_pushpair != NULL)
-    return Nj_GC(&gc)->gc_pushpair(vm);
+  if (Nj_GC(vm)->gc_pushpair != NULL)
+    return Nj_GC(vm)->gc_pushpair(vm);
   else
-    return njvm_defgc()->gc_pushpair(vm);
+    return njvm_base(vm)->tp_gc->gc_pushpair(vm);
 }
 
 void
 njord_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
-  if (Nj_GC(&gc)->gc_setpair != NULL) {
-    Nj_GC(&gc)->gc_setpair(pair, head, tail);
+  if (Nj_GC(startup_gc)->gc_setpair != NULL) {
+    Nj_GC(startup_gc)->gc_setpair(pair, head, tail);
+  }
+  else if (njvm_base(startup_gc)->tp_gc->gc_setpair != NULL) {
+    njvm_base(startup_gc)->tp_gc->gc_setpair(pair, head, tail);
   }
   else if (pair->ob_type->tp_setter != NULL) {
     if (head != NULL)
@@ -110,18 +115,17 @@ njord_setpair(NjObject* pair, NjObject* head, NjObject* tail) {
 
 void
 njord_pop(NjObject* vm) {
-  if (Nj_GC(&gc)->gc_pop != NULL)
-    Nj_GC(&gc)->gc_pop(vm);
+  if (Nj_GC(vm)->gc_pop != NULL)
+    Nj_GC(vm)->gc_pop(vm);
   else
-    njvm_defgc()->gc_pop(vm);
+    njvm_base(vm)->tp_gc->gc_pop(vm);
 }
 
 void
 njord_collect(NjObject* vm) {
-  if (Nj_GC(&gc)->gc_collect != NULL)
-    Nj_GC(&gc)->gc_collect(vm);
-  else
-    njmem_collect();
+  if (Nj_GC(vm)->gc_collect != NULL)
+    Nj_GC(vm)->gc_collect(vm);
+  njmem_collect();
 }
 
 void
