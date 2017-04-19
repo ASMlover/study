@@ -84,27 +84,22 @@ typedef enum _marked {
 
 static Nj_uchar_t gc_bitmaps[MAX_GC_THRESHOLD];
 
-static inline int
-_hash_index(NjObject* obj) {
-  Nj_size_t h = 1315423911;
-  h ^= ((h << 5) + (Nj_size_t)obj + (h >> 2));
-  return h % MAX_GC_THRESHOLD;
-}
-
 static int
 _njcompact_ismarked(NjObject* obj) {
-  return gc_bitmaps[_hash_index(obj)] == MARKED;
+  return gc_bitmaps[njhash_getindex(obj, MAX_GC_THRESHOLD)] == MARKED;
 }
 
 static void
 _njcompact_setmarked(NjObject* obj) {
-  gc_bitmaps[_hash_index(obj)] = MARKED;
+  gc_bitmaps[njhash_getindex(obj, MAX_GC_THRESHOLD)] = MARKED;
 }
 
-static void
-_njcompact_unsetmarked(NjObject* obj) {
-  gc_bitmaps[_hash_index(obj)] = UNMARKED;
-}
+/*
+ *static void
+ *_njcompact_unsetmarked(NjObject* obj) {
+ *  gc_bitmaps[njhash_getindex(obj, MAX_GC_THRESHOLD)] = UNMARKED;
+ *}
+ */
 
 typedef struct _gc {
   Nj_uchar_t* forwarding;

@@ -95,27 +95,20 @@ static Nj_uchar_t gc_bitmaps[MAX_GC_THRESHOLD];
 static NjVarObject* reclaimlist;
 
 static inline int
-_hash_index(NjObject* obj) {
-  Nj_size_t h = 1315423911;
-  h ^= ((h << 5) + (Nj_size_t)obj + (h >> 2));
-  return h % MAX_GC_THRESHOLD;
-}
-
-static inline int
 _njlazysweep_ismarked(NjObject* obj) {
-  int i = _hash_index(obj);
+  int i = njhash_getindex(obj, MAX_GC_THRESHOLD);
   return gc_bitmaps[i] == MARKED;
 }
 
 static inline void
 _njlazysweep_setmarked(NjObject* obj) {
-  int i = _hash_index(obj);
+  int i = njhash_getindex(obj, MAX_GC_THRESHOLD);
   gc_bitmaps[i] = MARKED;
 }
 
 static inline void
 _njlazysweep_clearmarked(NjObject* obj) {
-  int i = _hash_index(obj);
+  int i = njhash_getindex(obj, MAX_GC_THRESHOLD);
   gc_bitmaps[i] = UNMARKED;
 }
 

@@ -110,4 +110,12 @@ NjAPI_FUNC(void) njord_pop(NjObject* vm);
 NjAPI_FUNC(void) njord_collect(NjObject* vm);
 NjAPI_FUNC(void) njord_print(NjObject* obj);
 
+inline int
+njhash_getindex(NjObject* obj, Nj_ssize_t table_size) {
+  /* get hash index with table size */
+  Nj_size_t h = 1315423911;
+  h ^= ((h << 5) + (Nj_size_t)obj + (h >> 2));
+  return h % table_size;
+}
+
 #endif /* Nj_NJOBJECT_H */

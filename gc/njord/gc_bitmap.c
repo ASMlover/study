@@ -59,13 +59,6 @@ typedef struct _vm {
 
 static Nj_uchar_t gc_bitmap[MAX_BITMAP];
 
-static inline int
-_hash_index(NjObject* obj) {
-  Nj_size_t h = 1315423911;
-  h ^= ((h << 5) + (Nj_size_t)obj + (h >> 2));
-  return h % MAX_GC_THRESHOLD;
-}
-
 static void
 _njbitmap_push(NjVMObject* vm, NjObject* obj) {
   Nj_CHECK(vm->stackcnt < MAX_STACK, "VM stack overflow");
@@ -80,7 +73,7 @@ _njbitmap_pop(NjVMObject* vm) {
 
 static void
 _njbitmap_mark(NjObject* obj) {
-  int i = _hash_index(obj);
+  int i = njhash_getindex(obj, MAX_GC_THRESHOLD);
   if (Nj_BIT_GET(i))
     return;
 
@@ -104,7 +97,7 @@ static void
 _njbitmap_sweep(NjVMObject* vm) {
   NjObject** startobj = &vm->startobj;
   while (*startobj != NULL) {
-    int i = _hash_index(*startobj);
+    int i = njhash_getindex(*startobj, MAX_GC_THRESHOLD);
     if (!Nj_BIT_GET(i)) {
       NjObject* unmarked = *startobj;
       *startobj = ((NjVarObject*)unmarked)->next;
