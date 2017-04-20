@@ -151,14 +151,13 @@ _worklist_pop(void) {
 }
 
 static NjObject*
-_njsemispacecopy_copy(NjVMObject* vm, NjObject* fromref) {
+_njsemispacecopy_copy(NjObject* fromref) {
   NjObject* toref = Nj_FROMGC(allocptr);
   allocptr += Nj_COPYSIZE(fromref);
 
   memmove(Nj_ASGC(toref), Nj_ASGC(fromref), Nj_COPYSIZE(fromref));
   Nj_FORWARDING(fromref) = toref;
   _worklist_push(toref);
-  ++vm->objcnt;
 
   return toref;
 }
@@ -166,8 +165,10 @@ _njsemispacecopy_copy(NjVMObject* vm, NjObject* fromref) {
 static NjObject*
 _njsemispacecopy_forward(NjVMObject* vm, NjObject* fromref) {
   NjObject* toref = Nj_FORWARDING(fromref);
-  if (toref == NULL)
-    toref = _njsemispacecopy_copy(vm, fromref);
+  if (toref == NULL) {
+    toref = _njsemispacecopy_copy(fromref);
+    ++vm->objcnt;
+  }
   return toref;
 }
 
