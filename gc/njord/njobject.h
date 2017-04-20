@@ -112,6 +112,11 @@ NjAPI_FUNC(void) njord_pop(NjObject* vm);
 NjAPI_FUNC(void) njord_collect(NjObject* vm);
 NjAPI_FUNC(void) njord_print(NjObject* obj);
 
+typedef enum _marked {
+  UNMARKED,
+  MARKED,
+} NjMarked;
+
 inline int
 njhash_getindex(NjObject* obj, Nj_ssize_t table_size) {
   /* get hash index with table size */
@@ -119,5 +124,10 @@ njhash_getindex(NjObject* obj, Nj_ssize_t table_size) {
   h ^= ((h << 5) + (Nj_size_t)obj + (h >> 2));
   return h % table_size;
 }
+
+NjAPI_FUNC(void) njmark_init(void);
+NjAPI_FUNC(Nj_bool_t) njmark_ismarked(NjObject* obj);
+NjAPI_FUNC(void) njmark_setmark(NjObject* obj);
+NjAPI_FUNC(void) njmark_unsetmark(NjObject* obj);
 
 #endif /* Nj_NJOBJECT_H */

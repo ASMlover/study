@@ -34,11 +34,6 @@
 #define MAX_GC_THRESHOLD  (1024)
 #define Nj_ASGC(ob)       ((GCHead*)(ob) - 1)
 
-typedef enum _marked {
-  UNMARKED,
-  MARKED,
-} NjMarked;
-
 typedef struct _gc {
   Nj_uchar_t marked;
 } GCHead;

@@ -74,11 +74,6 @@ _njlazyheap_alloc(Nj_ssize_t bytes) {
   return p;
 }
 
-typedef enum _marked {
-  UNMARKED,
-  MARKED,
-} NjMarked;
-
 typedef struct _vm {
   NjObject_VM_HEAD;
 
@@ -87,40 +82,21 @@ typedef struct _vm {
   Nj_int_t maxobj;
 } NjVMObject;
 
-static Nj_uchar_t gc_bitmaps[MAX_GC_THRESHOLD];
 static NjVarObject* reclaimlist;
-
-static inline int
-_njlazysweep_ismarked(NjObject* obj) {
-  int i = njhash_getindex(obj, MAX_GC_THRESHOLD);
-  return gc_bitmaps[i] == MARKED;
-}
-
-static inline void
-_njlazysweep_setmarked(NjObject* obj) {
-  int i = njhash_getindex(obj, MAX_GC_THRESHOLD);
-  gc_bitmaps[i] = MARKED;
-}
-
-static inline void
-_njlazysweep_clearmarked(NjObject* obj) {
-  int i = njhash_getindex(obj, MAX_GC_THRESHOLD);
-  gc_bitmaps[i] = UNMARKED;
-}
 
 static void
 _njlazysweep_mark(NjObject* obj) {
-  if (_njlazysweep_ismarked(obj))
+  if (njmark_ismarked(obj))
     return;
 
-  _njlazysweep_setmarked(obj);
+  njmark_setmark(obj);
   if (obj->ob_type == &NjPair_Type) {
     NjObject* head = njord_pairgetter(obj, "head");
-    if (head != NULL && !_njlazysweep_ismarked(head))
+    if (head != NULL && !njmark_ismarked(head))
       _njlazysweep_mark(head);
 
     NjObject* tail = njord_pairgetter(obj, "tail");
-    if (tail != NULL && !_njlazysweep_ismarked(tail))
+    if (tail != NULL && !njmark_ismarked(tail))
       _njlazysweep_mark(tail);
   }
 }
@@ -132,14 +108,14 @@ _njlazysweep_mark_all(NjVMObject* vm) {
 
   NjObject** startobj = &vm->startobj;
   while (*startobj != NULL) {
-    if (!_njlazysweep_ismarked(*startobj)) {
+    if (!njmark_ismarked(*startobj)) {
       NjVarObject* unmarked = (NjVarObject*)*startobj;
       *startobj = unmarked->next;
       unmarked->next = (NjObject*)reclaimlist;
       reclaimlist = unmarked;
     }
     else {
-      _njlazysweep_clearmarked(*startobj);
+      njmark_unsetmark(*startobj);
       startobj = &((NjVarObject*)*startobj)->next;
     }
   }

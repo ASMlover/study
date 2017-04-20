@@ -74,30 +74,6 @@ _njcompactheap_alloc(Nj_ssize_t n, void* arg) {
   return p;
 }
 
-typedef enum _marked {
-  UNMARKED,
-  MARKED,
-} NjMarked;
-
-static Nj_uchar_t gc_bitmaps[MAX_GC_THRESHOLD];
-
-static int
-_njcompact_ismarked(NjObject* obj) {
-  return gc_bitmaps[njhash_getindex(obj, MAX_GC_THRESHOLD)] == MARKED;
-}
-
-static void
-_njcompact_setmarked(NjObject* obj) {
-  gc_bitmaps[njhash_getindex(obj, MAX_GC_THRESHOLD)] = MARKED;
-}
-
-/*
- *static void
- *_njcompact_unsetmarked(NjObject* obj) {
- *  gc_bitmaps[njhash_getindex(obj, MAX_GC_THRESHOLD)] = UNMARKED;
- *}
- */
-
 typedef struct _gc {
   Nj_uchar_t* forwarding;
 } GCHead;
@@ -128,18 +104,18 @@ _njcompact_insert(NjVMObject* vm, NjObject* obj) {
 
 static void
 _njcompact_mark(NjObject* obj) {
-  if (_njcompact_ismarked(obj))
+  if (njmark_ismarked(obj))
     return;
 
-  _njcompact_setmarked(obj);
+  njmark_setmark(obj);
   if (obj->ob_type == &NjPair_Type) {
     NjObject* head = njord_pairgetter(obj, "head");
-    if (head != NULL && !_njcompact_ismarked(head))
+    if (head != NULL && !njmark_ismarked(head))
       _njcompact_mark(head);
 
     NjObject* tail = njord_pairgetter(obj, "tail");
-    if (tail != NULL && !_njcompact_ismarked(tail))
-      _njcompact_setmarked(tail);
+    if (tail != NULL && !njmark_ismarked(tail))
+      _njcompact_mark(tail);
   }
 }
 
@@ -156,7 +132,7 @@ _njcompact_sweep(NjVMObject* vm) {
 
   /* setting new forwarding address */
   while (scan != NULL) {
-    if (_njcompact_ismarked(scan)) {
+    if (njmark_ismarked(scan)) {
       Nj_ssize_t size = ((NjVarObject*)scan)->ob_size + sizeof(GCHead);
       Nj_ASGC(scan)->forwarding = freeptr;
       freeptr += size;
@@ -171,7 +147,7 @@ _njcompact_sweep(NjVMObject* vm) {
   /* updated fields */
   scan = vm->startobj;
   while (scan != NULL) {
-    if (_njcompact_ismarked(scan)) {
+    if (njmark_ismarked(scan)) {
       if (scan->ob_type == &NjPair_Type) {
         NjObject* head = njord_pairgetter(scan, "head");
         if (head != NULL)
@@ -191,7 +167,7 @@ _njcompact_sweep(NjVMObject* vm) {
   vm->startobj = vm->endobj = NULL;
   while (scan != NULL) {
     next = ((NjVarObject*)scan)->next;
-    if (_njcompact_ismarked(scan)) {
+    if (njmark_ismarked(scan)) {
       Nj_ssize_t size = ((NjVarObject*)scan)->ob_size + sizeof(GCHead);
       Nj_uchar_t* forwarding = Nj_ASGC(scan)->forwarding;
       NjObject* forwarding_obj = Nj_FORWARDING(scan);
@@ -212,7 +188,7 @@ _njcompact_sweep(NjVMObject* vm) {
     scan = next;
   }
   allocptr = freeptr;
-  memset(gc_bitmaps, 0, sizeof(gc_bitmaps));
+  njmark_init();
 }
 
 static void

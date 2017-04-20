@@ -51,6 +51,7 @@ typedef size_t        Nj_size_t;
 #else
   typedef Nj_intptr_t Nj_ssize_t;
 #endif
+typedef enum _bool {FALSE, TRUE} Nj_bool_t;
 
 #if !defined(NjAPI_FUNC)
 # define NjAPI_FUNC(RTYPE) extern RTYPE

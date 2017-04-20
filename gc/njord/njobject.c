@@ -26,6 +26,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <string.h>
 #include "njobject.h"
 #include "njlog.h"
 #include "njmem.h"
@@ -144,3 +145,25 @@ NjTypeObject NjType_Type = {
   0, /* tp_getter */
   0, /* tp_gc */
 };
+
+static Nj_uchar_t gc_bitmaps[Nj_VMSTACK];
+
+void
+njmark_init(void) {
+  memset(gc_bitmaps, 0, sizeof(gc_bitmaps));
+}
+
+Nj_bool_t
+njmark_ismarked(NjObject* obj) {
+  return (Nj_bool_t)(gc_bitmaps[njhash_getindex(obj, Nj_VMSTACK)] == MARKED);
+}
+
+void
+njmark_setmark(NjObject* obj) {
+  gc_bitmaps[njhash_getindex(obj, Nj_VMSTACK)] = MARKED;
+}
+
+void
+njmark_unsetmark(NjObject* obj) {
+  gc_bitmaps[njhash_getindex(obj, Nj_VMSTACK)] = UNMARKED;
+}
