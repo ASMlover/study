@@ -88,7 +88,8 @@ typedef enum _gctype {
   GC_COPYING, /* copying node garbage collection */
   GC_BITMAP, /* mark and sweep garbage collection with bitmap */
   GC_LAZY_SWEEP, /* lazy sweep garbage collection */
-  GC_MARK_COMPACTION, /* mark and compaction garbage collection  */
+  GC_MARK_COMPACTION, /* mark and compaction garbage collection */
+  GC_COPYING2, /* semispace copying garbage collection */
 
   GC_COUNTS, /* [attention] should always in last line */
 } NjGCType;

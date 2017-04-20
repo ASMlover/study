@@ -47,6 +47,7 @@ static NjGCMap gc_mapped[] = {
   {GC_BITMAP, &NjBitmap_Type},
   {GC_LAZY_SWEEP, &NjLazy_Type},
   {GC_MARK_COMPACTION, &NjCompaction_Type},
+  {GC_COPYING2, &NjCopy2_Type},
 };
 
 #define Nj_STARTUPGC()  (gc_mapped[startup_gctype].gc_obj->tp_gc)

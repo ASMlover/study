@@ -75,6 +75,7 @@ NjAPI_DATA(NjTypeObject) NjLazy_Type; /* easy implementation of lazy sweep
                                          garbage collector */
 NjAPI_DATA(NjTypeObject) NjCompaction_Type; /* easy implementation of mark and
                                                compaction garbage collector */
-
+NjAPI_DATA(NjTypeObject) NjCopy2_Type; /* easy implementation of semispace
+                                          copying garbage collector */
 
 #endif /* Nj_GCIMPL_H */

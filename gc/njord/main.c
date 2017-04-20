@@ -187,6 +187,7 @@ _njord_usage(void) {
       "   5 - mark and sweep garbage collector with bitmap\n"
       "   6 - lazy sweep garbage collector\n"
       "   7 - mark and compaction garbage collector\n"
+      "   8 - semispaces copying garbage collector\n"
       " prof:\n"
       "   0 - disable proformance test\n"
       "   1 - enable proformance test\n"
