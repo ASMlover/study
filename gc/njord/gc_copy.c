@@ -31,17 +31,20 @@
 #include "njlog.h"
 #include "njvm.h"
 
-#define COPYGC_HALF_SIZE  (512 << 10)
+#define Nj_SEMISPACE_SIZE (512 << 10)
 #define Nj_ASGC(ob)       ((GCHead*)(ob) - 1)
-#define Nj_COPYN(ob)      (((NjVarObject*)(ob))->ob_size + sizeof(GCHead))
+#define Nj_FROMGC(gc)     ((NjObject*)((GCHead*)(gc) + 1))
+#define Nj_COPYSIZE(ob)   (((NjVarObject*)(ob))->ob_size + sizeof(GCHead))
+#define Nj_FORWARDING(ob) (Nj_ASGC(ob)->forwarding)
+#define Nj_VM(vm)         ((NjVMObject*)(vm))
 
-static Nj_uchar_t* copymem;
+static Nj_uchar_t* heaptr;
 static Nj_uchar_t* fromspace;
 static Nj_uchar_t* tospace;
 static Nj_uchar_t* allocptr;
 
 typedef struct _gc {
-  NjObject* forward;
+  NjObject* forwarding;
 } GCHead;
 
 typedef struct _vm {
@@ -52,30 +55,26 @@ static void njcopy_collect(NjObject* vm);
 
 static void
 _copymem_init(void) {
-  copymem = (Nj_uchar_t*)malloc(2 * COPYGC_HALF_SIZE);
-  Nj_CHECK(copymem != NULL, "allocate copying space failed");
+  heaptr = (Nj_uchar_t*)malloc(2 * Nj_SEMISPACE_SIZE);
+  Nj_CHECK(heaptr != NULL, "allocate copying space failed");
 
-  tospace = copymem;
-  fromspace = tospace + COPYGC_HALF_SIZE;
+  tospace = heaptr;
+  fromspace = tospace + Nj_SEMISPACE_SIZE;
   allocptr = tospace;
 }
 
 static void
 _copymem_destroy(void* arg) {
   Nj_UNUSED(arg);
-  free(copymem);
-  copymem = NULL;
-  fromspace = NULL;
-  tospace = NULL;
-  allocptr = NULL;
+  free(heaptr);
 }
 
 static void*
 _copymem_alloc(Nj_ssize_t n, void* arg) {
   NjVMObject* vm = (NjVMObject*)arg;
-  if (allocptr + n > tospace + COPYGC_HALF_SIZE)
+  if (allocptr + n > tospace + Nj_SEMISPACE_SIZE)
     njcopy_collect((NjObject*)vm);
-  Nj_CHECK(allocptr + n <= tospace + COPYGC_HALF_SIZE, "allocate failed");
+  Nj_CHECK(allocptr + n <= tospace + Nj_SEMISPACE_SIZE, "allocate failed");
 
   void* p = allocptr;
   allocptr += n;
@@ -83,35 +82,33 @@ _copymem_alloc(Nj_ssize_t n, void* arg) {
 }
 
 static NjObject*
-_njcopy_copy(NjObject* obj) {
-  if (Nj_ASGC(obj)->forward == NULL) {
-    Nj_uchar_t* p = allocptr;
-    allocptr += Nj_COPYN(obj);
+_njcopy_copy(NjObject* vm, NjObject* obj) {
+  if (Nj_FORWARDING(obj) == NULL) {
+    NjObject* toref = Nj_FROMGC(allocptr);
+    allocptr += Nj_COPYSIZE(obj);
 
-    memmove(p, Nj_ASGC(obj), Nj_COPYN(obj));
-    NjObject* new_obj = (NjObject*)(p + sizeof(GCHead));
-    Nj_ASGC(obj)->forward = new_obj;
+    memmove(Nj_ASGC(toref), Nj_ASGC(obj), Nj_COPYSIZE(obj));
+    Nj_FORWARDING(obj) = toref;
 
     if (obj->ob_type == &NjPair_Type) {
-      NjObject* head = njord_pairgetter(new_obj, "head");
+      NjObject* head = njord_pairgetter(toref, "head");
       if (head != NULL)
-        njord_pairsetter(new_obj, "head", _njcopy_copy(head));
+        njord_pairsetter(toref, "head", _njcopy_copy(vm, head));
 
-      NjObject* tail = njord_pairgetter(new_obj, "tail");
+      NjObject* tail = njord_pairgetter(toref, "tail");
       if (tail != NULL)
-        njord_pairsetter(new_obj, "tail", _njcopy_copy(tail));
+        njord_pairsetter(toref, "tail", _njcopy_copy(vm, tail));
     }
   }
   njlog_debug("<%s> copy NjObject<'%s'> [%p] to [%p]\n",
-      NjCopy_Type.tp_name, obj->ob_type->tp_name, obj, Nj_ASGC(obj)->forward);
+      vm->ob_type->tp_name, obj->ob_type->tp_name, obj, Nj_FORWARDING(obj));
 
-  return Nj_ASGC(obj)->forward;
+  return Nj_FORWARDING(obj);
 }
 
 static void
-_njcopy_vm_init(NjObject* _vm) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  vm->ob_type = &NjCopy_Type;
+_njcopy_vm_init(NjObject* vm) {
+  ((NjVMObject*)vm)->ob_type = &NjCopy_Type;
   _copymem_init();
 }
 
@@ -129,31 +126,30 @@ static NjIntObject*
 _njcopy_newint(NjObject* vm, int value) {
   NjIntObject* obj = (NjIntObject*)njord_newint(
       sizeof(GCHead), value, _copymem_alloc, vm);
-  Nj_ASGC(obj)->forward = NULL;
+  Nj_FORWARDING(obj) = NULL;
   return obj;
 }
 
 static NjObject*
 njcopy_pushint(NjObject* vm, int value) {
-  return njvm_pushint(vm, value, 0, _njcopy_newint);
+  return njvm_pushint(vm, value, FALSE, _njcopy_newint);
 }
 
 static NjPairObject*
 _njcopy_newpair(NjObject* vm, NjObject* head, NjObject* tail) {
   NjPairObject* obj = (NjPairObject*)njord_newpair(
       sizeof(GCHead), head, tail, _copymem_alloc, vm);
-  Nj_ASGC(obj)->forward = NULL;
+  Nj_FORWARDING(obj) = NULL;
   return obj;
 }
 
 static NjObject*
 njcopy_pushpair(NjObject* vm) {
-  return njvm_pushpair(vm, 0, _njcopy_newpair);
+  return njvm_pushpair(vm, FALSE, _njcopy_newpair);
 }
 
 static void
-njcopy_collect(NjObject* _vm) {
-  NjVMObject* vm = (NjVMObject*)_vm;
+njcopy_collect(NjObject* vm) {
   njlog_info("before flip <%s>: fromspace=%p, tospace=%p, allocptr=%p\n",
       vm->ob_type->tp_name, fromspace, tospace, allocptr);
 
@@ -164,8 +160,8 @@ njcopy_collect(NjObject* _vm) {
 
   njlog_info("after flip <%s>: fromspace=%p, tospace=%p, allocptr=%p\n",
       vm->ob_type->tp_name, fromspace, tospace, allocptr);
-  for (int i = 0; i < vm->stackcnt; ++i)
-    vm->stack[i] = _njcopy_copy(vm->stack[i]);
+  for (int i = 0; i < Nj_VM(vm)->stackcnt; ++i)
+    Nj_VM(vm)->stack[i] = _njcopy_copy(vm, Nj_VM(vm)->stack[i]);
 }
 
 static NjGCMethods gc_methods = {
@@ -180,7 +176,7 @@ static NjGCMethods gc_methods = {
 
 NjTypeObject NjCopy_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
-  "copy_gc", /* tp_name */
+  "copying_gc", /* tp_name */
   0, /* tp_print */
   0, /* tp_setter */
   0, /* tp_getter */
