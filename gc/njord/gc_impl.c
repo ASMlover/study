@@ -78,7 +78,7 @@ njord_newint(Nj_ssize_t gc_size,
   obj->ob_size = ob_size;
   obj->value = value;
 
-  return (NjObject*)obj;
+  return Nj_ASOBJ(obj);
 }
 
 NjObject*
@@ -96,7 +96,7 @@ njord_newpair(Nj_ssize_t gc_size,
   obj->head = head;
   obj->tail = tail;
 
-  return (NjObject*)obj;
+  return Nj_ASOBJ(obj);
 }
 
 void

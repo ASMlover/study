@@ -29,14 +29,18 @@
 #include "njlog.h"
 #include "njvm.h"
 
-#define INIT_GC_THRESHOLD (8)
-#define MAX_GC_THRESHOLD  (1024)
-#define MAX_BITMAP        (MAX_GC_THRESHOLD >> 3)
-#define Nj_BIT_BIG(i)     ((i) / 8)
-#define Nj_BIT_SMALL(i)   ((i) % 8)
-#define Nj_BIT_GET(i)     ((gc_bitmap[Nj_BIT_BIG(i)] >> Nj_BIT_SMALL(i)) & 1)
-#define Nj_BIT_SET(i)     (gc_bitmap[Nj_BIT_BIG(i)] |= (1 << Nj_BIT_SMALL(i)))
-#define Nj_BIT_CLR(i)     (gc_bitmap[Nj_BIT_BIG(i)] &= ~(1 << Nj_BIT_SMALL(i)))
+#define Nj_GC_INITTHRESHOLD (64)
+#define Nj_GC_MAXTHRESHILD  (1024)
+#define Nj_GC_BITMAPS       (Nj_GC_MAXTHRESHILD >> 3)
+#define Nj_VM(vm)           ((NjVMObject*)vm)
+#define Nj_BIT_BIG(i)       ((i) / 8)
+#define Nj_BIT_SMALL(i)     ((i) % 8)
+#define Nj_BIT_GET(i)\
+  ((gc_bitmaps[Nj_BIT_BIG(i)] >> Nj_BIT_SMALL(i)) & 1)
+#define Nj_BIT_SET(i)\
+  (gc_bitmaps[Nj_BIT_BIG(i)] |= (1 << Nj_BIT_SMALL(i)))
+#define Nj_BIT_CLR(i)\
+  (gc_bitmaps[Nj_BIT_BIG(i)] &= ~(1 << Nj_BIT_SMALL(i)))
 
 typedef struct _vm {
   NjObject_VM_HEAD;
@@ -46,11 +50,11 @@ typedef struct _vm {
   Nj_int_t maxobj;
 } NjVMObject;
 
-static Nj_uchar_t gc_bitmap[MAX_BITMAP];
+static Nj_uchar_t gc_bitmaps[Nj_GC_BITMAPS];
 
 static void
 _njbitmap_mark(NjObject* obj) {
-  int i = njhash_getindex(obj, MAX_GC_THRESHOLD);
+  int i = njhash_getindex(obj, Nj_GC_MAXTHRESHILD);
   if (Nj_BIT_GET(i))
     return;
 
@@ -73,7 +77,7 @@ static void
 _njbitmap_sweep(NjVMObject* vm) {
   NjObject** startobj = &vm->startobj;
   while (*startobj != NULL) {
-    int i = njhash_getindex(*startobj, MAX_GC_THRESHOLD);
+    int i = njhash_getindex(*startobj, Nj_GC_MAXTHRESHILD);
     if (!Nj_BIT_GET(i)) {
       NjObject* unmarked = *startobj;
       *startobj = ((NjVarObject*)unmarked)->next;
@@ -90,30 +94,29 @@ _njbitmap_sweep(NjVMObject* vm) {
 }
 
 static void
-njbitmap_collect(NjObject* _vm) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  Nj_int_t old_objcnt = vm->objcnt;
+njbitmap_collect(NjObject* vm) {
+  Nj_int_t old_objcnt = Nj_VM(vm)->objcnt;
 
-  _njbitmap_mark_all(vm);
-  _njbitmap_sweep(vm);
+  _njbitmap_mark_all(Nj_VM(vm));
+  _njbitmap_sweep(Nj_VM(vm));
 
-  if (vm->maxobj < MAX_GC_THRESHOLD) {
-    vm->maxobj = vm->objcnt << 1;
-    if (vm->maxobj > MAX_GC_THRESHOLD)
-      vm->maxobj = MAX_GC_THRESHOLD;
+  if (Nj_VM(vm)->maxobj < Nj_GC_MAXTHRESHILD) {
+    Nj_VM(vm)->maxobj = Nj_VM(vm)->objcnt << 1;
+    if (Nj_VM(vm)->maxobj > Nj_GC_MAXTHRESHILD)
+      Nj_VM(vm)->maxobj = Nj_GC_MAXTHRESHILD;
   }
 
   njlog_info("<%s> collected [%d] objects, [%d] remaining.\n",
-      vm->ob_type->tp_name, old_objcnt - vm->objcnt, vm->objcnt);
+      Nj_VM(vm)->ob_type->tp_name,
+      old_objcnt - Nj_VM(vm)->objcnt, Nj_VM(vm)->objcnt);
 }
 
 static void
-_njbitmap_vm_init(NjObject* _vm) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  vm->ob_type = &NjBitmap_Type;
-  vm->startobj = NULL;
-  vm->objcnt = 0;
-  vm->maxobj = INIT_GC_THRESHOLD;
+_njbitmap_vm_init(NjObject* vm) {
+  Nj_VM(vm)->ob_type = &NjBitmap_Type;
+  Nj_VM(vm)->startobj = NULL;
+  Nj_VM(vm)->objcnt = 0;
+  Nj_VM(vm)->maxobj = Nj_GC_INITTHRESHOLD;
 }
 
 static NjObject*
@@ -122,35 +125,33 @@ njbitmap_newvm(void) {
 }
 
 static NjIntObject*
-_njbitmap_newint(NjObject* _vm, int value) {
-  NjVMObject* vm = (NjVMObject*)_vm;
+_njbitmap_newint(NjObject* vm, int value) {
   NjIntObject* obj = (NjIntObject*)njord_newint(0, value, NULL, NULL);
-  obj->next = vm->startobj;
-  vm->startobj = (NjObject*)obj;
-  ++vm->objcnt;
+  obj->next = Nj_VM(vm)->startobj;
+  Nj_VM(vm)->startobj = (NjObject*)obj;
+  ++Nj_VM(vm)->objcnt;
   return obj;
 }
 
 static NjObject*
-njbitmap_pushint(NjObject* _vm, int value) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  return njvm_pushint(_vm, value, vm->objcnt >= vm->maxobj, _njbitmap_newint);
+njbitmap_pushint(NjObject* vm, int value) {
+  return njvm_pushint(
+      vm, value, Nj_VM(vm)->objcnt >= Nj_VM(vm)->maxobj, _njbitmap_newint);
 }
 
 static NjPairObject*
-_njbitmap_newpair(NjObject* _vm, NjObject* head, NjObject* tail) {
-  NjVMObject* vm = (NjVMObject*)_vm;
+_njbitmap_newpair(NjObject* vm, NjObject* head, NjObject* tail) {
   NjPairObject* obj = (NjPairObject*)njord_newpair(0, head, tail, NULL, NULL);
-  obj->next = vm->startobj;
-  vm->startobj = (NjObject*)obj;
-  ++vm->objcnt;
+  obj->next = Nj_VM(vm)->startobj;
+  Nj_VM(vm)->startobj = (NjObject*)obj;
+  ++Nj_VM(vm)->objcnt;
   return obj;
 }
 
 static NjObject*
-njbitmap_pushpair(NjObject* _vm) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  return njvm_pushpair(_vm, vm->objcnt >= vm->maxobj, _njbitmap_newpair);
+njbitmap_pushpair(NjObject* vm) {
+  return njvm_pushpair(
+      vm, Nj_VM(vm)->objcnt >= Nj_VM(vm)->maxobj, _njbitmap_newpair);
 }
 
 static NjGCMethods gc_methods = {

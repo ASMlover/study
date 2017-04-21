@@ -94,12 +94,8 @@ typedef enum _gctype {
   GC_COUNTS, /* [attention] should always in last line */
 } NjGCType;
 
-typedef struct _gcobject {
-  NjGCType type;
-  NjGCMethods* methods;
-} NjGCObject;
-
-#define Nj_GC(gc) (((NjObject*)(gc))->ob_type->tp_gc)
+#define Nj_GC(gc)     (((NjObject*)(gc))->ob_type->tp_gc)
+#define Nj_ASOBJ(ob)  ((NjObject*)(ob))
 
 NjAPI_DATA(NjTypeObject) NjType_Type;
 
