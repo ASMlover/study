@@ -30,6 +30,7 @@
 #include "njmem.h"
 #include "njvm.h"
 
+#define Nj_VM(vm)     ((NjVMObject*)(vm))
 #define Nj_ASGC(ob)   ((GCHead*)(ob) - 1)
 #define Nj_REFCNT(ob) (Nj_ASGC(ob)->refcnt)
 #define Nj_NEWREF(ob) (Nj_REFCNT(ob) = 1)
@@ -74,25 +75,6 @@ _njrefs_dealloc(NjObject* obj) {
     Nj_XDECREF(tail);
   }
   njord_freeobj(obj, sizeof(GCHead));
-}
-
-static void njrefs_pop(NjObject* vm);
-
-static void
-njrefs_collect(NjObject* vm) {
-  while (((NjVMObject*)vm)->stackcnt > 0)
-    njrefs_pop(vm);
-}
-
-static void
-_njrefs_vm_init(NjObject* _vm) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  vm->ob_type = &NjRefs_Type;
-}
-
-static NjObject*
-njrefs_newvm(void) {
-  return njvm_newvm(sizeof(NjVMObject), _njrefs_vm_init);
 }
 
 static NjObject*
@@ -145,9 +127,14 @@ njrefs_pop(NjObject* vm) {
   Nj_DECREF(obj);
 }
 
+static void
+njrefs_collect(NjObject* vm) {
+  while (Nj_VM(vm)->stackcnt > 0)
+    Nj_GC(vm)->gc_pop(vm);
+}
+
 static NjGCMethods gc_methods = {
-  njrefs_newvm, /* gc_newvm */
-  0, /* gc_freevm */
+  0, /* gc_dealloc */
   njrefs_pushint, /* gc_pushint */
   njrefs_pushpair, /* gc_pushpair */
   njrefs_setpair, /* gc_setpair */
@@ -155,7 +142,7 @@ static NjGCMethods gc_methods = {
   njrefs_collect, /* gc_collect */
 };
 
-NjTypeObject NjRefs_Type = {
+static NjTypeObject NjRefs_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "refs_gc", /* tp_name */
   0, /* tp_print */
@@ -163,3 +150,13 @@ NjTypeObject NjRefs_Type = {
   0, /* tp_getter */
   (NjGCMethods*)&gc_methods, /* tp_gc */
 };
+
+static void
+_njrefs_vm_init(NjObject* vm) {
+  Nj_VM(vm)->ob_type = &NjRefs_Type;
+}
+
+NjObject*
+njrefs_create(void) {
+  return njvm_newvm(sizeof(NjVMObject), _njrefs_vm_init);
+}

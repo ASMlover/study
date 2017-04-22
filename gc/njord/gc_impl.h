@@ -47,6 +47,7 @@ NjAPI_DATA(NjTypeObject) NjPair_Type;
 
 typedef void* (*allocfunc)(Nj_ssize_t, void*);
 
+/* type object operations */
 NjAPI_FUNC(NjObject*) njord_newint(
     Nj_ssize_t gc_size, Nj_int_t value, allocfunc user_alloc, void* arg);
 NjAPI_FUNC(NjObject*) njord_newpair(
@@ -57,25 +58,15 @@ NjAPI_FUNC(void) njord_pairsetter(
 NjAPI_FUNC(NjObject*) njord_pairgetter(NjObject* obj, const char* key);
 NjAPI_FUNC(void) njord_freeobj(NjObject* obj, Nj_ssize_t gc_size);
 
-NjAPI_DATA(NjTypeObject) NjRefs_Type; /* easy implementation of reference
-                                         counting garbage collector*/
-NjAPI_DATA(NjTypeObject) NjMarks_Type; /* easy implementation of mark and
-                                          sweep garbage collector */
-NjAPI_DATA(NjTypeObject) NjMarks2_Type; /* easy implementation of mark and
-                                           sweep garbage collector with
-                                           non-recursive */
-NjAPI_DATA(NjTypeObject) NjMarks3_Type; /* easy implementation of mark and
-                                           sweep garbage collector wirh tri-
-                                           coloured abstraction */
-NjAPI_DATA(NjTypeObject) NjCopy_Type; /* easy implementation of copying node
-                                         garbage collector */
-NjAPI_DATA(NjTypeObject) NjBitmap_Type; /* easy implementation of mark and
-                                           sweep gc with bitmap */
-NjAPI_DATA(NjTypeObject) NjLazy_Type; /* easy implementation of lazy sweep
-                                         garbage collector */
-NjAPI_DATA(NjTypeObject) NjCompaction_Type; /* easy implementation of mark and
-                                               compaction garbage collector */
-NjAPI_DATA(NjTypeObject) NjCopy2_Type; /* easy implementation of semispace
-                                          copying garbage collector */
+/* gc vm creating functions */
+NjAPI_FUNC(NjObject*) njrefs_create(void);
+NjAPI_FUNC(NjObject*) njmarks_create(void);
+NjAPI_FUNC(NjObject*) njmarks2_create(void);
+NjAPI_FUNC(NjObject*) njmarks3_create(void);
+NjAPI_FUNC(NjObject*) njsemispacecopy_create(void);
+NjAPI_FUNC(NjObject*) njbitmap_create(void);
+NjAPI_FUNC(NjObject*) njlazysweep_create(void);
+NjAPI_FUNC(NjObject*) njcompact_create(void);
+NjAPI_FUNC(NjObject*) njsemispacecopy2_create(void);
 
 #endif /* Nj_GCIMPL_H */

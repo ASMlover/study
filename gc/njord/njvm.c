@@ -29,9 +29,11 @@
 #include "njmem.h"
 #include "njvm.h"
 
-typedef struct _vm {
+typedef struct _vmobject {
   NjObject_VM_HEAD;
 } NjVMObject;
+
+#define Nj_VM(vm) ((NjVMObject*)(vm))
 
 static void
 _njdefvm_push(NjVMObject* vm, NjObject* obj) {
@@ -45,13 +47,8 @@ _njdefvm_pop(NjVMObject* vm) {
   return vm->stack[--vm->stackcnt];
 }
 
-static NjObject*
-njdefvm_newvm(void) {
-  return njvm_newvm(0, NULL);
-}
-
 static void
-njdefvm_freevm(NjObject* vm) {
+njdefvm_dealloc(NjObject* vm) {
   njvm_freevm(vm, NULL);
 }
 
@@ -67,12 +64,17 @@ njdefvm_pushpair(NjObject* vm) {
 
 static void
 njdefvm_pop(NjObject* vm) {
-  _njdefvm_pop((NjVMObject*)vm);
+  _njdefvm_pop(Nj_VM(vm));
+}
+
+static void
+njdefvm_collect(NjObject* vm) {
+  Nj_UNUSED(vm);
+  njmem_collect();
 }
 
 static NjGCMethods gc_methods = {
-  njdefvm_newvm, /* gc_newvm */
-  njdefvm_freevm, /* gc_freevm */
+  njdefvm_dealloc, /* gc_dealloc */
   njdefvm_pushint, /* gc_pushint */
   njdefvm_pushpair, /* gc_pushpair */
   0, /* gc_setpair */
@@ -82,22 +84,21 @@ static NjGCMethods gc_methods = {
 
 static NjTypeObject NjVM_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
-  "defvm", /* tp_name */
+  "defvm_gc", /* tp_name */
   0, /* tp_print */
   0, /* tp_setter */
   0, /* tp_getter */
   (NjGCMethods*)&gc_methods, /* tp_gc */
 };
 
-NjGCMethods*
-njvm_defgc(void) {
-  return NjVM_Type.tp_gc;
+NjObject*
+njvm_defvm(void) {
+  return njvm_newvm(0, NULL);
 }
 
 NjTypeObject*
-njvm_base(NjObject* _vm) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  return vm->vm_base;
+njvm_base(NjObject* vm) {
+  return Nj_VM(vm)->vm_base;
 }
 
 NjObject*
@@ -114,53 +115,50 @@ njvm_newvm(Nj_ssize_t vmsz, initvmfunc init) {
   if (init != NULL)
     init((NjObject*)vm);
   else
-    vm->ob_type = &NjVM_Type;
+    vm->ob_type = &NjType_Type;
 
-  return (NjObject*)vm;
+  return Nj_ASOBJ(vm);
 }
 
 void
-njvm_freevm(NjObject* _vm, destroyvmfunc destroy) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  if (vm->ob_type->tp_gc->gc_collect)
-    vm->ob_type->tp_gc->gc_collect(_vm);
+njvm_freevm(NjObject* vm, destroyvmfunc destroy) {
+  if (Nj_GC(vm)->gc_collect)
+    Nj_GC(vm)->gc_collect(vm);
 
   if (destroy != NULL)
-    destroy(_vm);
+    destroy(vm);
 
-  njmem_free(vm, vm->vm_size);
+  njmem_free(vm, Nj_VM(vm)->vm_size);
 }
 
 NjObject*
-njvm_pushint(NjObject* _vm, int value, int need_collect, newintfunc newint) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  if (need_collect)
-    vm->ob_type->tp_gc->gc_collect(_vm);
+njvm_pushint(NjObject* vm, int value, int need_collect, newintfunc newint) {
+  if (need_collect && Nj_GC(vm)->gc_collect)
+    Nj_GC(vm)->gc_collect(vm);
 
   NjIntObject* obj;
   if (newint != NULL)
-    obj = newint(_vm, value);
+    obj = newint(vm, value);
   else
     obj = (NjIntObject*)njord_newint(0, value, NULL, NULL);
-  _njdefvm_push(vm, (NjObject*)obj);
+  _njdefvm_push(Nj_VM(vm), Nj_ASOBJ(obj));
 
-  return (NjObject*)obj;
+  return Nj_ASOBJ(obj);
 }
 
 NjObject*
-njvm_pushpair(NjObject* _vm, int need_collect, newpairfunc newpair) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  if (need_collect)
-    vm->ob_type->tp_gc->gc_collect(_vm);
+njvm_pushpair(NjObject* vm, int need_collect, newpairfunc newpair) {
+  if (need_collect && Nj_GC(vm)->gc_collect)
+    Nj_GC(vm)->gc_collect(vm);
 
   NjPairObject* obj;
-  NjObject* tail = _njdefvm_pop(vm);
-  NjObject* head = _njdefvm_pop(vm);
+  NjObject* tail = _njdefvm_pop(Nj_VM(vm));
+  NjObject* head = _njdefvm_pop(Nj_VM(vm));
   if (newpair != NULL)
-    obj = newpair(_vm, head, tail);
+    obj = newpair(vm, head, tail);
   else
     obj = (NjPairObject*)njord_newpair(0, head, tail, NULL, NULL);
-  _njdefvm_push(vm, (NjObject*)obj);
+  _njdefvm_push(Nj_VM(vm), Nj_ASOBJ(obj));
 
-  return (NjObject*)obj;
+  return Nj_ASOBJ(obj);
 }

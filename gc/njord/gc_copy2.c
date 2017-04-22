@@ -81,19 +81,7 @@ typedef struct _vm {
 } NjVMObject;
 
 static void
-_njsemispacecopy_vm_init(NjObject* vm) {
-  ((NjVMObject*)vm)->ob_type = &NjCopy2_Type;
-  ((NjVMObject*)vm)->objcnt = 0;
-  _njsemispace_init();
-}
-
-static NjObject*
-njsemispacecopy_newvm(void) {
-  return njvm_newvm(sizeof(NjVMObject), _njsemispacecopy_vm_init);
-}
-
-static void
-njsemispacecopy_freevm(NjObject* vm) {
+njsemispacecopy_dealloc(NjObject* vm) {
   njvm_freevm(vm, (destroyvmfunc)_njsemispace_destroy);
 }
 
@@ -211,8 +199,7 @@ njsemispacecopy_collect(NjObject* _vm) {
 }
 
 static NjGCMethods gc_methods = {
-  njsemispacecopy_newvm, /* gc_newvm */
-  njsemispacecopy_freevm, /* gc_freevm */
+  njsemispacecopy_dealloc, /* gc_dealloc */
   njsemispacecopy_pushint, /* gc_pushint */
   njsemispacecopy_pushpair, /* gc_pushpair */
   0, /* gc_setpair */
@@ -222,9 +209,21 @@ static NjGCMethods gc_methods = {
 
 NjTypeObject NjCopy2_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
-  "semispace_copy2_gc", /* tp_name */
+  "semispacescopy2_gc", /* tp_name */
   0, /* tp_print */
   0, /* tp_setter */
   0, /* tp_getter */
   (NjGCMethods*)&gc_methods, /* tp_gc */
 };
+
+static void
+_njsemispacecopy_vm_init(NjObject* vm) {
+  ((NjVMObject*)vm)->ob_type = &NjCopy2_Type;
+  ((NjVMObject*)vm)->objcnt = 0;
+  _njsemispace_init();
+}
+
+NjObject*
+njsemispacecopy2_create(void) {
+  return njvm_newvm(sizeof(NjVMObject), _njsemispacecopy_vm_init);
+}

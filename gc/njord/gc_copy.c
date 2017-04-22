@@ -51,8 +51,6 @@ typedef struct _vm {
   NjObject_VM_HEAD;
 } NjVMObject;
 
-static void njcopy_collect(NjObject* vm);
-
 static void
 _copymem_init(void) {
   heaptr = (Nj_uchar_t*)malloc(2 * Nj_SEMISPACE_SIZE);
@@ -71,9 +69,9 @@ _copymem_destroy(void* arg) {
 
 static void*
 _copymem_alloc(Nj_ssize_t n, void* arg) {
-  NjVMObject* vm = (NjVMObject*)arg;
+  NjObject* vm = (NjObject*)arg;
   if (allocptr + n > tospace + Nj_SEMISPACE_SIZE)
-    njcopy_collect((NjObject*)vm);
+    Nj_GC(vm)->gc_collect(vm);
   Nj_CHECK(allocptr + n <= tospace + Nj_SEMISPACE_SIZE, "allocate failed");
 
   void* p = allocptr;
@@ -107,18 +105,7 @@ _njcopy_copy(NjObject* vm, NjObject* obj) {
 }
 
 static void
-_njcopy_vm_init(NjObject* vm) {
-  ((NjVMObject*)vm)->ob_type = &NjCopy_Type;
-  _copymem_init();
-}
-
-static NjObject*
-njcopy_newvm(void) {
-  return njvm_newvm(sizeof(NjVMObject), _njcopy_vm_init);
-}
-
-static void
-njcopy_freevm(NjObject* vm) {
+njcopy_dealoc(NjObject* vm) {
   njvm_freevm(vm, (destroyvmfunc)_copymem_destroy);
 }
 
@@ -165,8 +152,7 @@ njcopy_collect(NjObject* vm) {
 }
 
 static NjGCMethods gc_methods = {
-  njcopy_newvm, /* gc_newvm */
-  njcopy_freevm, /* gc_freevm */
+  njcopy_dealoc, /* gc_dealloc */
   njcopy_pushint, /* gc_pushint */
   njcopy_pushpair, /* gc_pushpair */
   0, /* gc_setpair */
@@ -174,11 +160,22 @@ static NjGCMethods gc_methods = {
   njcopy_collect, /* gc_collect */
 };
 
-NjTypeObject NjCopy_Type = {
+static NjTypeObject NjCopy_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
-  "copying_gc", /* tp_name */
+  "semispacescopy_gc", /* tp_name */
   0, /* tp_print */
   0, /* tp_setter */
   0, /* tp_getter */
   (NjGCMethods*)&gc_methods, /* tp_gc */
 };
+
+static void
+_njcopy_vm_init(NjObject* vm) {
+  ((NjVMObject*)vm)->ob_type = &NjCopy_Type;
+  _copymem_init();
+}
+
+NjObject*
+njsemispacecopy_create(void) {
+  return njvm_newvm(sizeof(NjVMObject), _njcopy_vm_init);
+}

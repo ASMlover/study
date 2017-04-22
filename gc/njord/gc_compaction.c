@@ -38,23 +38,21 @@
 #define Nj_FORWARDING(ob)\
   ((NjObject*)(Nj_ASGC(ob)->forwarding + sizeof(GCHead)))
 
-static Nj_uchar_t* heap_address;
+static Nj_uchar_t* heaptr;
 static Nj_uchar_t* allocptr;
-
-static void njcompact_collect(NjObject* vm);
 
 static void
 _njcompactheap_init(void) {
-  heap_address = (Nj_uchar_t*)malloc(COMPACTION_HEAP);
-  Nj_CHECK(heap_address != NULL, "allocating heap failed");
+  heaptr = (Nj_uchar_t*)malloc(COMPACTION_HEAP);
+  Nj_CHECK(heaptr != NULL, "allocating heap failed");
 
-  allocptr = heap_address;
+  allocptr = heaptr;
 }
 
 static void
 _njcompactheap_destroy(void* arg) {
   Nj_UNUSED(arg);
-  free(heap_address);
+  free(heaptr);
 }
 
 static void*
@@ -62,10 +60,10 @@ _njcompactheap_alloc(Nj_ssize_t n, void* arg) {
   NjObject* vm = (NjObject*)arg;
 
   void* p = NULL;
-  if (allocptr + n > heap_address + COMPACTION_HEAP)
-    njcompact_collect(vm);
+  if (allocptr + n > heaptr + COMPACTION_HEAP)
+    Nj_GC(vm)->gc_collect(vm);
 
-  if (allocptr + n <= heap_address + COMPACTION_HEAP) {
+  if (allocptr + n <= heaptr + COMPACTION_HEAP) {
     p = allocptr;
     allocptr += n;
   }
@@ -127,7 +125,7 @@ _njcompact_mark_all(NjVMObject* vm) {
 
 static void
 _njcompact_sweep(NjVMObject* vm) {
-  Nj_uchar_t* freeptr = heap_address;
+  Nj_uchar_t* freeptr = heaptr;
   NjObject* scan = vm->startobj;
 
   /* setting new forwarding address */
@@ -192,41 +190,7 @@ _njcompact_sweep(NjVMObject* vm) {
 }
 
 static void
-njcompact_collect(NjObject* _vm) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  Nj_int_t old_objcnt = vm->objcnt;
-
-  _njcompact_mark_all(vm);
-  _njcompact_sweep(vm);
-
-  if (vm->maxobj < MAX_GC_THRESHOLD) {
-    vm->maxobj = vm->objcnt << 1;
-    if (vm->maxobj > MAX_GC_THRESHOLD)
-      vm->maxobj = MAX_GC_THRESHOLD;
-  }
-
-  njlog_info("<%s> collected [%d] objects, [%d] remaining.\n",
-      vm->ob_type->tp_name, old_objcnt - vm->objcnt, vm->objcnt);
-}
-
-static void
-_njcompact_vm_init(NjObject* _vm) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  vm->ob_type = &NjCompaction_Type;
-  vm->startobj = NULL;
-  vm->endobj = NULL;
-  vm->objcnt = 0;
-  vm->maxobj = INIT_GC_THRESHOLD;
-  _njcompactheap_init();
-}
-
-static NjObject*
-njcompact_newvm(void) {
-  return njvm_newvm(sizeof(NjVMObject), _njcompact_vm_init);
-}
-
-static void
-njcompact_freevm(NjObject* vm) {
+njcompact_dealloc(NjObject* vm) {
   njvm_freevm(vm, (destroyvmfunc)_njcompactheap_destroy);
 }
 
@@ -262,9 +226,26 @@ njcompact_pushpair(NjObject* _vm) {
   return njvm_pushpair(_vm, vm->objcnt >= vm->maxobj, _njcompact_newpair);
 }
 
+static void
+njcompact_collect(NjObject* _vm) {
+  NjVMObject* vm = (NjVMObject*)_vm;
+  Nj_int_t old_objcnt = vm->objcnt;
+
+  _njcompact_mark_all(vm);
+  _njcompact_sweep(vm);
+
+  if (vm->maxobj < MAX_GC_THRESHOLD) {
+    vm->maxobj = vm->objcnt << 1;
+    if (vm->maxobj > MAX_GC_THRESHOLD)
+      vm->maxobj = MAX_GC_THRESHOLD;
+  }
+
+  njlog_info("<%s> collected [%d] objects, [%d] remaining.\n",
+      vm->ob_type->tp_name, old_objcnt - vm->objcnt, vm->objcnt);
+}
+
 static NjGCMethods gc_methods = {
-  njcompact_newvm, /* gc_newvm */
-  njcompact_freevm, /* gc_freevm */
+  njcompact_dealloc, /* gc_dealloc */
   njcompact_pushint, /* gc_pushint */
   njcompact_pushpair, /* gc_pushpair */
   0, /* gc_setpair */
@@ -272,7 +253,7 @@ static NjGCMethods gc_methods = {
   njcompact_collect, /* gc_collect */
 };
 
-NjTypeObject NjCompaction_Type = {
+static NjTypeObject NjCompaction_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "markcompaction_gc", /* tp_name */
   0, /* tp_print */
@@ -280,3 +261,19 @@ NjTypeObject NjCompaction_Type = {
   0, /* tp_getter */
   (NjGCMethods*)&gc_methods, /* tp_gc */
 };
+
+static void
+_njcompact_vm_init(NjObject* _vm) {
+  NjVMObject* vm = (NjVMObject*)_vm;
+  vm->ob_type = &NjCompaction_Type;
+  vm->startobj = NULL;
+  vm->endobj = NULL;
+  vm->objcnt = 0;
+  vm->maxobj = INIT_GC_THRESHOLD;
+  _njcompactheap_init();
+}
+
+NjObject*
+njcompact_create(void) {
+  return njvm_newvm(sizeof(NjVMObject), _njcompact_vm_init);
+}

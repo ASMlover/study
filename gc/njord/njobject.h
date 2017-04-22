@@ -53,8 +53,7 @@ typedef struct _varobject {
 typedef void (*printfunc)(NjObject*);
 typedef void (*setterfunc)(NjObject*, const char*, NjObject*);
 typedef NjObject* (*getterfunc)(NjObject*, const char*);
-typedef NjObject* (*newvmfunc)(void);
-typedef void (*freevmfunc)(NjObject*);
+typedef void (*deallocfunc)(NjObject*);
 typedef NjObject* (*pushintfunc)(NjObject*, int);
 typedef NjObject* (*pushpairfunc)(NjObject*);
 typedef void (*setpairfunc)(NjObject*, NjObject*, NjObject*);
@@ -62,8 +61,7 @@ typedef void (*popfunc)(NjObject*);
 typedef void (*collectfunc)(NjObject*);
 
 typedef struct {
-  newvmfunc gc_newvm;
-  freevmfunc gc_freevm;
+  deallocfunc gc_dealloc;
   pushintfunc gc_pushint;
   pushpairfunc gc_pushpair;
   setpairfunc gc_setpair;
@@ -80,31 +78,18 @@ typedef struct _typeobject {
   NjGCMethods* tp_gc;
 } NjTypeObject;
 
-typedef enum _gctype {
-  GC_REFS, /* reference counting garbage collection */
-  GC_MARK_SWEEP, /* mark and sweep garbage collection */
-  GC_MARK_SWEEP2, /* mark and sweep garbage collection with no-recursive */
-  GC_MARK_SWEEP3, /* mark and sweep garbage collection with tri-coloured */
-  GC_COPYING, /* copying node garbage collection */
-  GC_BITMAP, /* mark and sweep garbage collection with bitmap */
-  GC_LAZY_SWEEP, /* lazy sweep garbage collection */
-  GC_MARK_COMPACTION, /* mark and compaction garbage collection */
-  GC_COPYING2, /* semispace copying garbage collection */
-
-  GC_COUNTS, /* [attention] should always in last line */
-} NjGCType;
-
 #define Nj_GC(gc)     (((NjObject*)(gc))->ob_type->tp_gc)
 #define Nj_ASOBJ(ob)  ((NjObject*)(ob))
 
 NjAPI_DATA(NjTypeObject) NjType_Type;
 
-NjAPI_FUNC(void) njord_initgc(NjGCType type);
+NjAPI_FUNC(void) njord_initgc(const char* name);
+NjAPI_FUNC(void) njord_usagegc(void);
 NjAPI_FUNC(NjObject*) njord_new(void);
 NjAPI_FUNC(void) njord_free(NjObject* vm);
 NjAPI_FUNC(NjObject*) njord_pushint(NjObject* vm, int value);
 NjAPI_FUNC(NjObject*) njord_pushpair(NjObject* vm);
-NjAPI_FUNC(void) njord_setpair(NjObject* pair, NjObject* head, NjObject* tail);
+NjAPI_FUNC(void) njord_setpair(NjObject* obj, NjObject* head, NjObject* tail);
 NjAPI_FUNC(void) njord_pop(NjObject* vm);
 NjAPI_FUNC(void) njord_collect(NjObject* vm);
 NjAPI_FUNC(void) njord_print(NjObject* obj);

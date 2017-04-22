@@ -164,8 +164,8 @@ njord_gc_sample4(void) {
 }
 
 static void
-njord_gc(NjGCType gc_type, int prof) {
-  njord_initgc(gc_type);
+njord_gc(const char* gc_name, int prof) {
+  njord_initgc(gc_name);
 
   njord_gc_sample1();
   njord_gc_sample2();
@@ -176,22 +176,8 @@ njord_gc(NjGCType gc_type, int prof) {
 
 static void
 _njord_usage(void) {
-  njlog_repr(
-      "USAGE: njord [mem|gc [gctype [prof]]] ...\n"
-      " gctype:\n"
-      "   0 - reference counting garbage collector\n"
-      "   1 - mark and sweep garbage collector\n"
-      "   2 - mark and sweep garbage collector with non-recursive\n"
-      "   3 - mark and sweep garbage collector with tri-coloured\n"
-      "   4 - copying node garbage collector\n"
-      "   5 - mark and sweep garbage collector with bitmap\n"
-      "   6 - lazy sweep garbage collector\n"
-      "   7 - mark and compaction garbage collector\n"
-      "   8 - semispaces copying garbage collector\n"
-      " prof:\n"
-      "   0 - disable proformance test\n"
-      "   1 - enable proformance test\n"
-      );
+  njlog_repr("USAGE: njord [mem]|[gc] ...\n");
+  njord_usagegc();
 }
 
 int main(int argc, char* argv[]) {
@@ -213,7 +199,7 @@ int main(int argc, char* argv[]) {
     int prof = 0;
     if (argc > 3)
       prof = atoi(argv[3]);
-    njord_gc((NjGCType)atoi(argv[2]), prof);
+    njord_gc(argv[2], prof);
   }
   else {
     _njord_usage();

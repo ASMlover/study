@@ -93,37 +93,6 @@ _njbitmap_sweep(NjVMObject* vm) {
   }
 }
 
-static void
-njbitmap_collect(NjObject* vm) {
-  Nj_int_t old_objcnt = Nj_VM(vm)->objcnt;
-
-  _njbitmap_mark_all(Nj_VM(vm));
-  _njbitmap_sweep(Nj_VM(vm));
-
-  if (Nj_VM(vm)->maxobj < Nj_GC_MAXTHRESHILD) {
-    Nj_VM(vm)->maxobj = Nj_VM(vm)->objcnt << 1;
-    if (Nj_VM(vm)->maxobj > Nj_GC_MAXTHRESHILD)
-      Nj_VM(vm)->maxobj = Nj_GC_MAXTHRESHILD;
-  }
-
-  njlog_info("<%s> collected [%d] objects, [%d] remaining.\n",
-      Nj_VM(vm)->ob_type->tp_name,
-      old_objcnt - Nj_VM(vm)->objcnt, Nj_VM(vm)->objcnt);
-}
-
-static void
-_njbitmap_vm_init(NjObject* vm) {
-  Nj_VM(vm)->ob_type = &NjBitmap_Type;
-  Nj_VM(vm)->startobj = NULL;
-  Nj_VM(vm)->objcnt = 0;
-  Nj_VM(vm)->maxobj = Nj_GC_INITTHRESHOLD;
-}
-
-static NjObject*
-njbitmap_newvm(void) {
-  return njvm_newvm(sizeof(NjVMObject), _njbitmap_vm_init);
-}
-
 static NjIntObject*
 _njbitmap_newint(NjObject* vm, int value) {
   NjIntObject* obj = (NjIntObject*)njord_newint(0, value, NULL, NULL);
@@ -154,9 +123,26 @@ njbitmap_pushpair(NjObject* vm) {
       vm, Nj_VM(vm)->objcnt >= Nj_VM(vm)->maxobj, _njbitmap_newpair);
 }
 
+static void
+njbitmap_collect(NjObject* vm) {
+  Nj_int_t old_objcnt = Nj_VM(vm)->objcnt;
+
+  _njbitmap_mark_all(Nj_VM(vm));
+  _njbitmap_sweep(Nj_VM(vm));
+
+  if (Nj_VM(vm)->maxobj < Nj_GC_MAXTHRESHILD) {
+    Nj_VM(vm)->maxobj = Nj_VM(vm)->objcnt << 1;
+    if (Nj_VM(vm)->maxobj > Nj_GC_MAXTHRESHILD)
+      Nj_VM(vm)->maxobj = Nj_GC_MAXTHRESHILD;
+  }
+
+  njlog_info("<%s> collected [%d] objects, [%d] remaining.\n",
+      Nj_VM(vm)->ob_type->tp_name,
+      old_objcnt - Nj_VM(vm)->objcnt, Nj_VM(vm)->objcnt);
+}
+
 static NjGCMethods gc_methods = {
-  njbitmap_newvm, /* gc_newvm */
-  0, /* gc_freevm */
+  0, /* gc_dealloc */
   njbitmap_pushint, /* gc_pushint */
   njbitmap_pushpair, /* gc_pushpair */
   0, /* gc_setpair */
@@ -164,11 +150,24 @@ static NjGCMethods gc_methods = {
   njbitmap_collect, /* gc_collect */
 };
 
-NjTypeObject NjBitmap_Type = {
+static NjTypeObject NjBitmap_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
-  "marks_bitmap_gc", /* tp_name */
+  "markbitmap_gc", /* tp_name */
   0, /* tp_print */
   0, /* tp_setter */
   0, /* tp_getter */
   (NjGCMethods*)&gc_methods, /* tp_gc */
 };
+
+static void
+_njbitmap_vm_init(NjObject* vm) {
+  Nj_VM(vm)->ob_type = &NjBitmap_Type;
+  Nj_VM(vm)->startobj = NULL;
+  Nj_VM(vm)->objcnt = 0;
+  Nj_VM(vm)->maxobj = Nj_GC_INITTHRESHOLD;
+}
+
+NjObject*
+njbitmap_create(void) {
+  return njvm_newvm(sizeof(NjVMObject), _njbitmap_vm_init);
+}

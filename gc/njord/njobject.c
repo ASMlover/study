@@ -29,54 +29,96 @@
 #include <string.h>
 #include "njobject.h"
 #include "njlog.h"
-#include "njmem.h"
 #include "njvm.h"
 #include "gc_impl.h"
 
+typedef NjObject* (*newvmfunc)(void);
 typedef struct _gcmap {
-  NjGCType gc_type;
-  NjTypeObject* gc_obj;
+  const char* gc_name;
+  const char* gc_doc;
+  newvmfunc gc_newvm;
 } NjGCMap;
 
 static NjGCMap gc_mapped[] = {
-  {GC_REFS, &NjRefs_Type},
-  {GC_MARK_SWEEP, &NjMarks_Type},
-  {GC_MARK_SWEEP2, &NjMarks2_Type},
-  {GC_MARK_SWEEP3, &NjMarks3_Type},
-  {GC_COPYING, &NjCopy_Type},
-  {GC_BITMAP, &NjBitmap_Type},
-  {GC_LAZY_SWEEP, &NjLazy_Type},
-  {GC_MARK_COMPACTION, &NjCompaction_Type},
-  {GC_COPYING2, &NjCopy2_Type},
+  {"refs",
+    "\t[refs] - reference-counting garbage collector",
+    njrefs_create},
+  {"marks",
+    "\t[marks] - mark-sweep garbage collector version-1",
+    njmarks_create},
+  {"marks2",
+    "\t[marks2] - mark-sweep garbage collector version-2",
+    njmarks2_create},
+  {"marks3",
+    "\t[marks3] - mark-sweep garbage collector version-3",
+    njmarks3_create},
+  {"copy",
+    "\t[copy] - semispaces-copying garbage collector version-1",
+    njsemispacecopy_create},
+  {"bits",
+    "\t[bits] - mark-sweep with bitmap garbage collector",
+    njbitmap_create},
+  {"lazy",
+    "\t[lazy] - lazy-sweep garbage collector",
+    njlazysweep_create},
+  {"compact",
+    "\t[compact] - mark-compaction garbage collector",
+    njcompact_create},
+  {"copy2",
+    "\t[copy2] - semispaces-copying garbage collector version-2",
+    njsemispacecopy2_create},
 };
 
-#define Nj_STARTUPGC()  (gc_mapped[startup_gctype].gc_obj->tp_gc)
+#define Nj_STARTUPGC()    (gc_mapped[startup_gcindex])
+#define Nj_GCCOUNT(array) ((int)(sizeof(array) / sizeof(array[0])))
 
-static NjGCType startup_gctype;
+static int startup_gcindex;
 static NjObject* startup_gc;
 
 void
-njord_initgc(NjGCType type) {
-  Nj_CHECK(type >= 0 && type < GC_COUNTS, "gc type invalid");
-  startup_gctype = type;
+njord_initgc(const char* name) {
+  startup_gcindex = -1;
   startup_gc = NULL;
+
+  for (int i = 0; i < Nj_GCCOUNT(gc_mapped); ++i) {
+    if (strcmp(gc_mapped[i].gc_name, name) == 0) {
+      startup_gcindex = i;
+      break;
+    }
+  }
+  if (startup_gcindex == -1)
+    njord_usagegc();
+  Nj_CHECK(startup_gcindex != -1, "startup gc failed");
+}
+
+void
+njord_usagegc(void) {
+  njlog_repr(
+      "USAGE: njord gc [name] [profile]\n"
+      " name:\n");
+  for (int i = 0; i < Nj_GCCOUNT(gc_mapped); ++i)
+    njlog_repr("%s\n", gc_mapped[i].gc_doc);
+  njlog_repr(
+      " profile:\n"
+      "\t[0] - withnot performace testing\n"
+      "\t[1] - with performace testing\n");
 }
 
 NjObject*
 njord_new(void) {
-  if (Nj_STARTUPGC()->gc_newvm != NULL)
-    startup_gc = Nj_STARTUPGC()->gc_newvm();
+  if (Nj_STARTUPGC().gc_newvm != NULL)
+    startup_gc = Nj_STARTUPGC().gc_newvm();
   else
-    startup_gc = njvm_defgc()->gc_newvm();
+    startup_gc = njvm_defvm();
   return startup_gc;
 }
 
 void
 njord_free(NjObject* vm) {
-  if (Nj_GC(vm)->gc_freevm != NULL)
-    Nj_GC(vm)->gc_freevm(vm);
+  if (Nj_GC(vm)->gc_dealloc != NULL)
+    Nj_GC(vm)->gc_dealloc(vm);
   else
-    njvm_base(vm)->tp_gc->gc_freevm(vm);
+    njvm_base(vm)->tp_gc->gc_dealloc(vm);
 }
 
 NjObject*
@@ -127,7 +169,8 @@ void
 njord_collect(NjObject* vm) {
   if (Nj_GC(vm)->gc_collect != NULL)
     Nj_GC(vm)->gc_collect(vm);
-  njmem_collect();
+  else
+    njvm_base(vm)->tp_gc->gc_collect(vm);
 }
 
 void

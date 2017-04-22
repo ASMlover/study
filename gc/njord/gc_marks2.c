@@ -116,37 +116,6 @@ _njmarks_sweep(NjVMObject* vm) {
   }
 }
 
-static void
-njmarks_collect(NjObject* _vm) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  int old_objcnt = vm->objcnt;
-
-  _njmarks_mark_all(vm);
-  _njmarks_sweep(vm);
-
-  if (vm->maxobj < MAX_GC_THRESHOLD) {
-    vm->maxobj = vm->objcnt << 1;
-    if (vm->maxobj > MAX_GC_THRESHOLD)
-      vm->maxobj = MAX_GC_THRESHOLD;
-  }
-  njlog_info("<%s> collected [%d] objects, [%d] remaining.\n",
-      vm->ob_type->tp_name, old_objcnt - vm->objcnt, vm->objcnt);
-}
-
-static void
-_njmarks_vm_init(NjObject* _vm) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  vm->ob_type = &NjMarks2_Type;
-  vm->startobj = NULL;
-  vm->objcnt = 0;
-  vm->maxobj = INIT_GC_THRESHOLD;
-}
-
-static NjObject*
-njmarks_newvm(void) {
-  return njvm_newvm(sizeof(NjVMObject), _njmarks_vm_init);
-}
-
 static NjIntObject*
 _njmarks_newint(NjObject* _vm, int value) {
   NjVMObject* vm = (NjVMObject*)_vm;
@@ -183,9 +152,25 @@ njmarks_pushpair(NjObject* _vm) {
   return njvm_pushpair(_vm, vm->objcnt >= vm->maxobj, _njmarks_newpair);
 }
 
+static void
+njmarks_collect(NjObject* _vm) {
+  NjVMObject* vm = (NjVMObject*)_vm;
+  int old_objcnt = vm->objcnt;
+
+  _njmarks_mark_all(vm);
+  _njmarks_sweep(vm);
+
+  if (vm->maxobj < MAX_GC_THRESHOLD) {
+    vm->maxobj = vm->objcnt << 1;
+    if (vm->maxobj > MAX_GC_THRESHOLD)
+      vm->maxobj = MAX_GC_THRESHOLD;
+  }
+  njlog_info("<%s> collected [%d] objects, [%d] remaining.\n",
+      vm->ob_type->tp_name, old_objcnt - vm->objcnt, vm->objcnt);
+}
+
 static NjGCMethods gc_methods = {
-  njmarks_newvm, /* gc_newvm */
-  0, /* gc_freevm */
+  0, /* gc_dealloc */
   njmarks_pushint, /* gc_pushint */
   njmarks_pushpair, /* gc_pushpair */
   0, /* gc_setpair */
@@ -193,11 +178,25 @@ static NjGCMethods gc_methods = {
   njmarks_collect, /* gc_collect */
 };
 
-NjTypeObject NjMarks2_Type = {
+static NjTypeObject NjMarks2_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
-  "marks2_gc", /* tp_name */
+  "marksweep2_gc", /* tp_name */
   0, /* tp_print */
   0, /* tp_setter */
   0, /* tp_getter */
   (NjGCMethods*)&gc_methods, /* tp_gc */
 };
+
+static void
+_njmarks_vm_init(NjObject* _vm) {
+  NjVMObject* vm = (NjVMObject*)_vm;
+  vm->ob_type = &NjMarks2_Type;
+  vm->startobj = NULL;
+  vm->objcnt = 0;
+  vm->maxobj = INIT_GC_THRESHOLD;
+}
+
+NjObject*
+njmarks2_create(void) {
+  return njvm_newvm(sizeof(NjVMObject), _njmarks_vm_init);
+}

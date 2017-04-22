@@ -44,7 +44,7 @@ typedef void (*destroyvmfunc)(NjObject*);
 typedef NjIntObject* (*newintfunc)(NjObject*, int);
 typedef NjPairObject* (*newpairfunc)(NjObject*, NjObject*, NjObject*);
 
-NjAPI_FUNC(NjGCMethods*) njvm_defgc(void);
+NjAPI_FUNC(NjObject*) njvm_defvm(void);
 NjAPI_FUNC(NjTypeObject*) njvm_base(NjObject* vm);
 NjAPI_FUNC(NjObject*) njvm_newvm(Nj_ssize_t vmsz, initvmfunc init);
 NjAPI_FUNC(void) njvm_freevm(NjObject* vm, destroyvmfunc destroy);
