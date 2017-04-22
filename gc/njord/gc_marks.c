@@ -85,7 +85,7 @@ _njmarks_sweep(NjVMObject* vm) {
 }
 
 static NjIntObject*
-_njmarks_newint(NjObject* _vm, int value) {
+_njmarks_newint(NjObject* _vm, Nj_int_t value) {
   NjVMObject* vm = (NjVMObject*)_vm;
   NjIntObject* obj = (NjIntObject*)njord_newint(
       sizeof(GCHead), value, NULL, NULL);
@@ -97,7 +97,7 @@ _njmarks_newint(NjObject* _vm, int value) {
 }
 
 static NjObject*
-njmarks_pushint(NjObject* _vm, int value) {
+njmarks_pushint(NjObject* _vm, Nj_int_t value) {
   NjVMObject* vm = (NjVMObject*)_vm;
   return njvm_pushint(_vm, value, vm->objcnt >= vm->maxobj, _njmarks_newint);
 }
@@ -156,12 +156,11 @@ static NjTypeObject NjMarks_Type = {
 };
 
 static void
-_njmarks_vm_init(NjObject* _vm) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  vm->ob_type = &NjMarks_Type;
-  vm->startobj = NULL;
-  vm->objcnt = 0;
-  vm->maxobj = INIT_GC_THRESHOLD;
+_njmarks_vm_init(NjObject* vm) {
+  Nj_VM(vm)->ob_type = &NjMarks_Type;
+  Nj_VM(vm)->startobj = NULL;
+  Nj_VM(vm)->objcnt = 0;
+  Nj_VM(vm)->maxobj = INIT_GC_THRESHOLD;
 }
 
 NjObject*

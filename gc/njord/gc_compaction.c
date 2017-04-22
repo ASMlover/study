@@ -31,10 +31,10 @@
 #include "njlog.h"
 #include "njvm.h"
 
-#define INIT_GC_THRESHOLD (64)
-#define MAX_GC_THRESHOLD  (1024)
-#define COMPACTION_HEAP   (512 << 10)
-#define Nj_ASGC(ob)       ((GCHead*)(ob) - 1)
+#define Nj_GC_INITTHRESHOLD (64)
+#define Nj_GC_MAXTHRESHOLD  (1024)
+#define Nj_COMPACTION_SIZE  (512 << 10)
+#define Nj_ASGC(ob)         ((GCHead*)(ob) - 1)
 #define Nj_FORWARDING(ob)\
   ((NjObject*)(Nj_ASGC(ob)->forwarding + sizeof(GCHead)))
 
@@ -43,7 +43,7 @@ static Nj_uchar_t* allocptr;
 
 static void
 _njcompactheap_init(void) {
-  heaptr = (Nj_uchar_t*)malloc(COMPACTION_HEAP);
+  heaptr = (Nj_uchar_t*)malloc(Nj_COMPACTION_SIZE);
   Nj_CHECK(heaptr != NULL, "allocating heap failed");
 
   allocptr = heaptr;
@@ -60,10 +60,10 @@ _njcompactheap_alloc(Nj_ssize_t n, void* arg) {
   NjObject* vm = (NjObject*)arg;
 
   void* p = NULL;
-  if (allocptr + n > heaptr + COMPACTION_HEAP)
+  if (allocptr + n > heaptr + Nj_COMPACTION_SIZE)
     Nj_GC(vm)->gc_collect(vm);
 
-  if (allocptr + n <= heaptr + COMPACTION_HEAP) {
+  if (allocptr + n <= heaptr + Nj_COMPACTION_SIZE) {
     p = allocptr;
     allocptr += n;
   }
@@ -234,10 +234,10 @@ njcompact_collect(NjObject* _vm) {
   _njcompact_mark_all(vm);
   _njcompact_sweep(vm);
 
-  if (vm->maxobj < MAX_GC_THRESHOLD) {
+  if (vm->maxobj < Nj_GC_MAXTHRESHOLD) {
     vm->maxobj = vm->objcnt << 1;
-    if (vm->maxobj > MAX_GC_THRESHOLD)
-      vm->maxobj = MAX_GC_THRESHOLD;
+    if (vm->maxobj > Nj_GC_MAXTHRESHOLD)
+      vm->maxobj = Nj_GC_MAXTHRESHOLD;
   }
 
   njlog_info("<%s> collected [%d] objects, [%d] remaining.\n",
@@ -263,13 +263,12 @@ static NjTypeObject NjCompaction_Type = {
 };
 
 static void
-_njcompact_vm_init(NjObject* _vm) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  vm->ob_type = &NjCompaction_Type;
-  vm->startobj = NULL;
-  vm->endobj = NULL;
-  vm->objcnt = 0;
-  vm->maxobj = INIT_GC_THRESHOLD;
+_njcompact_vm_init(NjObject* vm) {
+  Nj_VM(vm)->ob_type = &NjCompaction_Type;
+  Nj_VM(vm)->startobj = NULL;
+  Nj_VM(vm)->endobj = NULL;
+  Nj_VM(vm)->objcnt = 0;
+  Nj_VM(vm)->maxobj = Nj_GC_INITTHRESHOLD;
   _njcompactheap_init();
 }
 

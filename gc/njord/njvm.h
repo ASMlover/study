@@ -32,6 +32,7 @@
 #include "gc_impl.h"
 
 #define Nj_VMSTACK  (1024)
+#define Nj_VM(vm)   ((NjVMObject*)(vm)) /* vm object should named NjVMObject */
 #define NjObject_VM_HEAD\
   NjObject_HEAD;\
   NjTypeObject* vm_base;\
@@ -41,7 +42,7 @@
 
 typedef void (*initvmfunc)(NjObject*);
 typedef void (*destroyvmfunc)(NjObject*);
-typedef NjIntObject* (*newintfunc)(NjObject*, int);
+typedef NjIntObject* (*newintfunc)(NjObject*, Nj_int_t);
 typedef NjPairObject* (*newpairfunc)(NjObject*, NjObject*, NjObject*);
 
 NjAPI_FUNC(NjObject*) njvm_defvm(void);
@@ -49,8 +50,8 @@ NjAPI_FUNC(NjTypeObject*) njvm_base(NjObject* vm);
 NjAPI_FUNC(NjObject*) njvm_newvm(Nj_ssize_t vmsz, initvmfunc init);
 NjAPI_FUNC(void) njvm_freevm(NjObject* vm, destroyvmfunc destroy);
 NjAPI_FUNC(NjObject*) njvm_pushint(NjObject* vm,
-    int value, int need_collect, newintfunc newint);
+    Nj_int_t value, Nj_bool_t need_collect, newintfunc newint);
 NjAPI_FUNC(NjObject*) njvm_pushpair(
-    NjObject* vm, int need_collect, newpairfunc newpair);
+    NjObject* vm, Nj_bool_t need_collect, newpairfunc newpair);
 
 #endif /* Nj_NJVM_H */

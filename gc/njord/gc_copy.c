@@ -36,7 +36,6 @@
 #define Nj_FROMGC(gc)     ((NjObject*)((GCHead*)(gc) + 1))
 #define Nj_COPYSIZE(ob)   (((NjVarObject*)(ob))->ob_size + sizeof(GCHead))
 #define Nj_FORWARDING(ob) (Nj_ASGC(ob)->forwarding)
-#define Nj_VM(vm)         ((NjVMObject*)(vm))
 
 static Nj_uchar_t* heaptr;
 static Nj_uchar_t* fromspace;
@@ -110,7 +109,7 @@ njcopy_dealoc(NjObject* vm) {
 }
 
 static NjIntObject*
-_njcopy_newint(NjObject* vm, int value) {
+_njcopy_newint(NjObject* vm, Nj_int_t value) {
   NjIntObject* obj = (NjIntObject*)njord_newint(
       sizeof(GCHead), value, _copymem_alloc, vm);
   Nj_FORWARDING(obj) = NULL;
@@ -118,7 +117,7 @@ _njcopy_newint(NjObject* vm, int value) {
 }
 
 static NjObject*
-njcopy_pushint(NjObject* vm, int value) {
+njcopy_pushint(NjObject* vm, Nj_int_t value) {
   return njvm_pushint(vm, value, FALSE, _njcopy_newint);
 }
 

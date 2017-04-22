@@ -32,6 +32,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef int           Nj_bool_t;
 typedef char          Nj_char_t;
 typedef unsigned char Nj_uchar_t;
 typedef int8_t        Nj_int8_t;
@@ -51,7 +52,8 @@ typedef size_t        Nj_size_t;
 #else
   typedef Nj_intptr_t Nj_ssize_t;
 #endif
-typedef enum _bool {FALSE, TRUE} Nj_bool_t;
+#define FALSE (0)
+#define TRUE  (1)
 
 #if !defined(NjAPI_FUNC)
 # define NjAPI_FUNC(RTYPE) extern RTYPE

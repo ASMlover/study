@@ -30,7 +30,6 @@
 #include "njmem.h"
 #include "njvm.h"
 
-#define Nj_VM(vm)     ((NjVMObject*)(vm))
 #define Nj_ASGC(ob)   ((GCHead*)(ob) - 1)
 #define Nj_REFCNT(ob) (Nj_ASGC(ob)->refcnt)
 #define Nj_NEWREF(ob) (Nj_REFCNT(ob) = 1)
@@ -78,7 +77,7 @@ _njrefs_dealloc(NjObject* obj) {
 }
 
 static NjObject*
-njrefs_pushint(NjObject* vm, int value) {
+njrefs_pushint(NjObject* vm, Nj_int_t value) {
   NjIntObject* obj = (NjIntObject*)njord_newint(
       sizeof(GCHead), value, NULL, NULL);
   Nj_NEWREF(obj);

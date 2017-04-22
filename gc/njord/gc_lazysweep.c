@@ -197,7 +197,7 @@ njlazysweep_dealloc(NjObject* vm) {
 }
 
 static NjIntObject*
-_njlazysweep_newint(NjObject* _vm, int value) {
+_njlazysweep_newint(NjObject* _vm, Nj_int_t value) {
   NjVMObject* vm = (NjVMObject*)_vm;
   NjIntObject* obj = (NjIntObject*)njord_newint(
       0, value, _njlazysweep_newobj, vm);
@@ -208,7 +208,7 @@ _njlazysweep_newint(NjObject* _vm, int value) {
 }
 
 static NjObject*
-njlazysweep_pushint(NjObject* _vm, int value) {
+njlazysweep_pushint(NjObject* _vm, Nj_int_t value) {
   NjVMObject* vm = (NjVMObject*)_vm;
   if (vm->objcnt > vm->maxobj)
     _njlazysweep_mark_all(vm);
@@ -267,12 +267,11 @@ static NjTypeObject NjLazy_Type = {
 };
 
 static void
-_njlazysweep_vm_init(NjObject* _vm) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  vm->ob_type = &NjLazy_Type;
-  vm->startobj = NULL;
-  vm->objcnt = 0;
-  vm->maxobj = INIT_GC_THRESHOLD;
+_njlazysweep_vm_init(NjObject* vm) {
+  Nj_VM(vm)->ob_type = &NjLazy_Type;
+  Nj_VM(vm)->startobj = NULL;
+  Nj_VM(vm)->objcnt = 0;
+  Nj_VM(vm)->maxobj = INIT_GC_THRESHOLD;
   _njlazyheap_init();
 }
 

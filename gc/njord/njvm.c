@@ -33,18 +33,16 @@ typedef struct _vmobject {
   NjObject_VM_HEAD;
 } NjVMObject;
 
-#define Nj_VM(vm) ((NjVMObject*)(vm))
-
-static void
-_njdefvm_push(NjVMObject* vm, NjObject* obj) {
-  Nj_CHECK(vm->stackcnt < Nj_VMSTACK, "vm stack overflow");
-  vm->stack[vm->stackcnt++] = obj;
+static inline void
+_njdefvm_push(NjObject* vm, NjObject* obj) {
+  Nj_CHECK(Nj_VM(vm)->stackcnt < Nj_VMSTACK, "vm stack overflow");
+  Nj_VM(vm)->stack[Nj_VM(vm)->stackcnt++] = obj;
 }
 
-static NjObject*
-_njdefvm_pop(NjVMObject* vm) {
-  Nj_CHECK(vm->stackcnt > 0, "vm stack underflow");
-  return vm->stack[--vm->stackcnt];
+static inline NjObject*
+_njdefvm_pop(NjObject* vm) {
+  Nj_CHECK(Nj_VM(vm)->stackcnt > 0, "vm stack underflow");
+  return Nj_VM(vm)->stack[--Nj_VM(vm)->stackcnt];
 }
 
 static void
@@ -53,18 +51,18 @@ njdefvm_dealloc(NjObject* vm) {
 }
 
 static NjObject*
-njdefvm_pushint(NjObject* vm, int value) {
-  return njvm_pushint(vm, value, 0, NULL);
+njdefvm_pushint(NjObject* vm, Nj_int_t value) {
+  return njvm_pushint(vm, value, FALSE, NULL);
 }
 
 static NjObject*
 njdefvm_pushpair(NjObject* vm) {
-  return njvm_pushpair(vm, 0, NULL);
+  return njvm_pushpair(vm, FALSE, NULL);
 }
 
 static void
 njdefvm_pop(NjObject* vm) {
-  _njdefvm_pop(Nj_VM(vm));
+  _njdefvm_pop(vm);
 }
 
 static void
@@ -79,7 +77,7 @@ static NjGCMethods gc_methods = {
   njdefvm_pushpair, /* gc_pushpair */
   0, /* gc_setpair */
   njdefvm_pop, /* gc_pop */
-  0, /* gc_collect */
+  njdefvm_collect, /* gc_collect */
 };
 
 static NjTypeObject NjVM_Type = {
@@ -132,8 +130,9 @@ njvm_freevm(NjObject* vm, destroyvmfunc destroy) {
 }
 
 NjObject*
-njvm_pushint(NjObject* vm, int value, int need_collect, newintfunc newint) {
-  if (need_collect && Nj_GC(vm)->gc_collect)
+njvm_pushint(NjObject* vm,
+    Nj_int_t value, Nj_bool_t need_collect, newintfunc newint) {
+  if (need_collect)
     Nj_GC(vm)->gc_collect(vm);
 
   NjIntObject* obj;
@@ -141,24 +140,24 @@ njvm_pushint(NjObject* vm, int value, int need_collect, newintfunc newint) {
     obj = newint(vm, value);
   else
     obj = (NjIntObject*)njord_newint(0, value, NULL, NULL);
-  _njdefvm_push(Nj_VM(vm), Nj_ASOBJ(obj));
+  _njdefvm_push(vm, Nj_ASOBJ(obj));
 
   return Nj_ASOBJ(obj);
 }
 
 NjObject*
-njvm_pushpair(NjObject* vm, int need_collect, newpairfunc newpair) {
-  if (need_collect && Nj_GC(vm)->gc_collect)
+njvm_pushpair(NjObject* vm, Nj_bool_t need_collect, newpairfunc newpair) {
+  if (need_collect)
     Nj_GC(vm)->gc_collect(vm);
 
   NjPairObject* obj;
-  NjObject* tail = _njdefvm_pop(Nj_VM(vm));
-  NjObject* head = _njdefvm_pop(Nj_VM(vm));
+  NjObject* tail = _njdefvm_pop(vm);
+  NjObject* head = _njdefvm_pop(vm);
   if (newpair != NULL)
     obj = newpair(vm, head, tail);
   else
     obj = (NjPairObject*)njord_newpair(0, head, tail, NULL, NULL);
-  _njdefvm_push(Nj_VM(vm), Nj_ASOBJ(obj));
+  _njdefvm_push(vm, Nj_ASOBJ(obj));
 
   return Nj_ASOBJ(obj);
 }

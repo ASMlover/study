@@ -30,9 +30,8 @@
 #include "njvm.h"
 
 #define Nj_GC_INITTHRESHOLD (64)
-#define Nj_GC_MAXTHRESHILD  (1024)
-#define Nj_GC_BITMAPS       (Nj_GC_MAXTHRESHILD >> 3)
-#define Nj_VM(vm)           ((NjVMObject*)vm)
+#define Nj_GC_MAXTHRESHOLD  (1024)
+#define Nj_GC_BITMAPS       (Nj_GC_MAXTHRESHOLD >> 3)
 #define Nj_BIT_BIG(i)       ((i) / 8)
 #define Nj_BIT_SMALL(i)     ((i) % 8)
 #define Nj_BIT_GET(i)\
@@ -54,7 +53,7 @@ static Nj_uchar_t gc_bitmaps[Nj_GC_BITMAPS];
 
 static void
 _njbitmap_mark(NjObject* obj) {
-  int i = njhash_getindex(obj, Nj_GC_MAXTHRESHILD);
+  int i = njhash_getindex(obj, Nj_GC_MAXTHRESHOLD);
   if (Nj_BIT_GET(i))
     return;
 
@@ -77,7 +76,7 @@ static void
 _njbitmap_sweep(NjVMObject* vm) {
   NjObject** startobj = &vm->startobj;
   while (*startobj != NULL) {
-    int i = njhash_getindex(*startobj, Nj_GC_MAXTHRESHILD);
+    int i = njhash_getindex(*startobj, Nj_GC_MAXTHRESHOLD);
     if (!Nj_BIT_GET(i)) {
       NjObject* unmarked = *startobj;
       *startobj = ((NjVarObject*)unmarked)->next;
@@ -94,7 +93,7 @@ _njbitmap_sweep(NjVMObject* vm) {
 }
 
 static NjIntObject*
-_njbitmap_newint(NjObject* vm, int value) {
+_njbitmap_newint(NjObject* vm, Nj_int_t value) {
   NjIntObject* obj = (NjIntObject*)njord_newint(0, value, NULL, NULL);
   obj->next = Nj_VM(vm)->startobj;
   Nj_VM(vm)->startobj = (NjObject*)obj;
@@ -103,7 +102,7 @@ _njbitmap_newint(NjObject* vm, int value) {
 }
 
 static NjObject*
-njbitmap_pushint(NjObject* vm, int value) {
+njbitmap_pushint(NjObject* vm, Nj_int_t value) {
   return njvm_pushint(
       vm, value, Nj_VM(vm)->objcnt >= Nj_VM(vm)->maxobj, _njbitmap_newint);
 }
@@ -130,10 +129,10 @@ njbitmap_collect(NjObject* vm) {
   _njbitmap_mark_all(Nj_VM(vm));
   _njbitmap_sweep(Nj_VM(vm));
 
-  if (Nj_VM(vm)->maxobj < Nj_GC_MAXTHRESHILD) {
+  if (Nj_VM(vm)->maxobj < Nj_GC_MAXTHRESHOLD) {
     Nj_VM(vm)->maxobj = Nj_VM(vm)->objcnt << 1;
-    if (Nj_VM(vm)->maxobj > Nj_GC_MAXTHRESHILD)
-      Nj_VM(vm)->maxobj = Nj_GC_MAXTHRESHILD;
+    if (Nj_VM(vm)->maxobj > Nj_GC_MAXTHRESHOLD)
+      Nj_VM(vm)->maxobj = Nj_GC_MAXTHRESHOLD;
   }
 
   njlog_info("<%s> collected [%d] objects, [%d] remaining.\n",
