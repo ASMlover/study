@@ -122,7 +122,7 @@ njord_free(NjObject* vm) {
 }
 
 NjObject*
-njord_pushint(NjObject* vm, int value) {
+njord_pushint(NjObject* vm, Nj_int_t value) {
   if (Nj_GC(vm)->gc_pushint != NULL)
     return Nj_GC(vm)->gc_pushint(vm, value);
   else
