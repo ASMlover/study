@@ -40,7 +40,7 @@ class TcpClient(TcpSession):
         on_connection_closed - 处理连接关闭回调
     """
     def __init__(self, ip, port, conn_handler=None):
-        super(TcpClient, self).__init__(None, (ip, port))
+        TcpSession.__init__(self, None, (ip, port))
         self.logger = LogManager.get_logger('Rpc.TcpClient')
 
         self.conn_handler = conn_handler
@@ -83,5 +83,5 @@ class TcpClient(TcpSession):
 
     def handle_close(self):
         """连接关闭时回调"""
-        super(TcpClient, self).handle_close()
+        TcpSession.handle_close(self)
         self.conn_handler.on_connection_closed(self)

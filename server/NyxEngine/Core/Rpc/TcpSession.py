@@ -53,7 +53,7 @@ class TcpSession(asyncore.dispatcher):
     _STATUS_DISCONNECTED = 2
 
     def __init__(self, sock, peeraddr):
-        super(TcpSession, self).__init__(sock)
+        asyncore.dispatcher.__init__(self, sock)
         self.logger = LogManager.get_logger('Rpc.TcpSession')
 
         self.status = TcpSession._STATUS_INIT
@@ -114,14 +114,14 @@ class TcpSession(asyncore.dispatcher):
         if self.socket:
             if self.writable() and flush:
                 self.handle_write()
-            super(TcpSession, self).close()
+            asyncore.dispatcher.close(self)
         self.status = TcpSession._STATUS_DISCONNECTED
 
     def write_data(self, data):
         """向网络对端发送数据信息"""
         if self.compressor:
             data = self.compressor.compress(data)
-        if self.encrypter:
+        if self.crypter:
             data = self.crypter.encrypt(data)
         self.writbuf.write(data)
 
@@ -133,17 +133,17 @@ class TcpSession(asyncore.dispatcher):
     # override基类的事件处理handler
     def handle_close(self):
         """断开连接时回调"""
-        super(TcpSession, self).handle_close()
+        asyncore.dispatcher.handle_close(self)
         self.disconnect(flush=False)
 
     def handle_expt(self):
         """连接异常时回调"""
-        super(TcpSession, self).handle_expt()
+        asyncore.dispatcher.handle_expt(self)
         self.disconnect(flush=False)
 
     def handle_error(self):
         """连接出错或读写出错时回调"""
-        super(TcpSession, self).handle_error()
+        asyncore.dispatcher.handle_error(self)
         self.disconnect(flush=False)
 
     def handle_read(self):
