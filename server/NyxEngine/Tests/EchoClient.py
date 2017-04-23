@@ -41,7 +41,7 @@ def main():
     conn_mgr = ConnectionMgr(lambda conn: LogChannelObj(conn))
     client = TcpClient("127.0.0.1", 5555, conn_mgr)
 
-    client.sync_connect()
+    client.async_connect()
     client.write_data("Hello, world!")
     asyncore_scheduler.loop(0.1, True, None, 1)
     time.sleep(1)
