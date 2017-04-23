@@ -78,8 +78,10 @@ typedef struct _typeobject {
   NjGCMethods* tp_gc;
 } NjTypeObject;
 
-#define Nj_GC(gc)     (((NjObject*)(gc))->ob_type->tp_gc)
-#define Nj_ASOBJ(ob)  ((NjObject*)(ob))
+#define Nj_GC_INITTHRESHOLD (64)
+#define Nj_GC_MAXTHRESHOLD  (1024)
+#define Nj_GC(gc)           (((NjObject*)(gc))->ob_type->tp_gc)
+#define Nj_ASOBJ(ob)        ((NjObject*)(ob))
 
 NjAPI_DATA(NjTypeObject) NjType_Type;
 

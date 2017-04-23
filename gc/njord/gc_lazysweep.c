@@ -30,24 +30,22 @@
 #include "njlog.h"
 #include "njvm.h"
 
-#define INIT_GC_THRESHOLD (64)
-#define MAX_GC_THRESHOLD  (1024)
-#define LAZY_HEAP_SIZE    (512 << 10)
-#define ALIGNMENT         (8)
-#define ROUND_UP(n)       (((n) + ALIGNMENT - 1) & ~(ALIGNMENT - 1))
+#define Nj_LAZYSWEEP_SIZE   (512 << 10)
+#define Nj_ALIGNMENT        (8)
+#define Nj_ROUNDUP(n)       (((n) + Nj_ALIGNMENT - 1) & ~(Nj_ALIGNMENT - 1))
 
 typedef struct _block {
   struct _block* nextblock;
   Nj_ssize_t blocksz;
 } Block;
 
-static Nj_uchar_t* heaptr = NULL;
-static Nj_uchar_t* allocptr = NULL;
-static Block* freeblock = NULL;
+static Nj_uchar_t* heaptr;
+static Nj_uchar_t* allocptr;
+static Block* freeblock;
 
 static void
 _njlazyheap_init(void) {
-  heaptr = (Nj_uchar_t*)malloc(LAZY_HEAP_SIZE);
+  heaptr = (Nj_uchar_t*)malloc(Nj_LAZYSWEEP_SIZE);
   Nj_CHECK(heaptr != NULL, "init lazy heap failed");
 
   allocptr = heaptr;
@@ -63,7 +61,7 @@ _njlazyheap_destroy(void* arg) {
 static void*
 _njlazyheap_alloc(Nj_ssize_t bytes) {
   void* p = NULL;
-  if (allocptr + bytes <= heaptr + LAZY_HEAP_SIZE) {
+  if (allocptr + bytes <= heaptr + Nj_LAZYSWEEP_SIZE) {
     p = allocptr;
     allocptr += bytes;
   }
@@ -147,7 +145,7 @@ static void*
 _njlazysweep_lazy_sweep(NjVMObject* vm, Nj_ssize_t n) {
   Nj_int_t old_objcnt = vm->objcnt;
   while (reclaimlist != NULL) {
-    Nj_ssize_t size = ROUND_UP(reclaimlist->ob_size);
+    Nj_ssize_t size = Nj_ROUNDUP(reclaimlist->ob_size);
     Block* block = (Block*)reclaimlist;
     reclaimlist = (NjVarObject*)reclaimlist->next;
     --vm->objcnt;
@@ -175,7 +173,7 @@ _njlazysweep_lazy_sweep(NjVMObject* vm, Nj_ssize_t n) {
 static void*
 _njlazysweep_newobj(Nj_ssize_t n, void* arg) {
   NjVMObject* vm = (NjVMObject*)arg;
-  n = ROUND_UP(n);
+  n = Nj_ROUNDUP(n);
   void* p = _njlazysweep_alloc(n);
   if (p == NULL) {
     if (reclaimlist != NULL)
@@ -239,12 +237,12 @@ njlazysweep_collect(NjObject* _vm) {
   NjVMObject* vm = (NjVMObject*)_vm;
 
   _njlazysweep_mark_all(vm);
-  _njlazysweep_lazy_sweep(vm, LAZY_HEAP_SIZE);
+  _njlazysweep_lazy_sweep(vm, Nj_LAZYSWEEP_SIZE);
 
-  if (vm->maxobj < MAX_GC_THRESHOLD) {
+  if (vm->maxobj < Nj_GC_MAXTHRESHOLD) {
     vm->maxobj = vm->objcnt << 1;
-    if (vm->maxobj > MAX_GC_THRESHOLD)
-      vm->maxobj = MAX_GC_THRESHOLD;
+    if (vm->maxobj > Nj_GC_MAXTHRESHOLD)
+      vm->maxobj = Nj_GC_MAXTHRESHOLD;
   }
 }
 
@@ -271,7 +269,7 @@ _njlazysweep_vm_init(NjObject* vm) {
   Nj_VM(vm)->ob_type = &NjLazy_Type;
   Nj_VM(vm)->startobj = NULL;
   Nj_VM(vm)->objcnt = 0;
-  Nj_VM(vm)->maxobj = INIT_GC_THRESHOLD;
+  Nj_VM(vm)->maxobj = Nj_GC_INITTHRESHOLD;
   _njlazyheap_init();
 }
 

@@ -30,9 +30,7 @@
 #include "njmem.h"
 #include "njvm.h"
 
-#define INIT_GC_THRESHOLD (64)
-#define MAX_GC_THRESHOLD  (1024)
-#define Nj_ASGC(ob)       ((GCHead*)(ob) - 1)
+#define Nj_ASGC(ob) ((GCHead*)(ob) - 1)
 
 typedef struct _gc {
   Nj_uchar_t marked;
@@ -160,10 +158,10 @@ njmarks_collect(NjObject* _vm) {
   _njmarks_mark_all(vm);
   _njmarks_sweep(vm);
 
-  if (vm->maxobj < MAX_GC_THRESHOLD) {
+  if (vm->maxobj < Nj_GC_MAXTHRESHOLD) {
     vm->maxobj = vm->objcnt << 1;
-    if (vm->maxobj > MAX_GC_THRESHOLD)
-      vm->maxobj = MAX_GC_THRESHOLD;
+    if (vm->maxobj > Nj_GC_MAXTHRESHOLD)
+      vm->maxobj = Nj_GC_MAXTHRESHOLD;
   }
   njlog_info("<%s> collected [%d] objects, [%d] remaining.\n",
       vm->ob_type->tp_name, old_objcnt - vm->objcnt, vm->objcnt);
@@ -192,7 +190,7 @@ _njmarks_vm_init(NjObject* vm) {
   Nj_VM(vm)->ob_type = &NjMarks2_Type;
   Nj_VM(vm)->startobj = NULL;
   Nj_VM(vm)->objcnt = 0;
-  Nj_VM(vm)->maxobj = INIT_GC_THRESHOLD;
+  Nj_VM(vm)->maxobj = Nj_GC_INITTHRESHOLD;
 }
 
 NjObject*

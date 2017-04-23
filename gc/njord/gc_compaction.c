@@ -31,8 +31,6 @@
 #include "njlog.h"
 #include "njvm.h"
 
-#define Nj_GC_INITTHRESHOLD (64)
-#define Nj_GC_MAXTHRESHOLD  (1024)
 #define Nj_COMPACTION_SIZE  (512 << 10)
 #define Nj_ASGC(ob)         ((GCHead*)(ob) - 1)
 #define Nj_FORWARDING(ob)\

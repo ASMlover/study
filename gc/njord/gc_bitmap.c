@@ -29,8 +29,6 @@
 #include "njlog.h"
 #include "njvm.h"
 
-#define Nj_GC_INITTHRESHOLD (64)
-#define Nj_GC_MAXTHRESHOLD  (1024)
 #define Nj_GC_BITMAPS       (Nj_GC_MAXTHRESHOLD >> 3)
 #define Nj_BIT_BIG(i)       ((i) / 8)
 #define Nj_BIT_SMALL(i)     ((i) % 8)
