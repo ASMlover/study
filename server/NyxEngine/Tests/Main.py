@@ -29,52 +29,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import sys
-import time
 import unittest
 sys.path.append('../External')
 sys.path.append('../Core')
 
-import asyncore_scheduler
-from Log.LogManager import LogManager
-from Rpc.TcpServer import TcpServer
-
-_logger = LogManager.get_logger('NyxEngine.Tests')
-
-class EchoChannelObj(object):
-    def __init__(self, conn):
-        super(EchoChannelObj, self).__init__()
-        self.conn = conn
-
-    def on_disconnected(self):
-        _logger.debug('EchoChannelObj.on_disconnected - connection closed')
-
-    def on_input_data(self, data):
-        _logger.debug('EchoChannelObj.on_input_data - data(%s)', data)
-        self.conn.write_data(data)
-        return 2
-
-class ConnectionMgr(object):
-    def __init__(self, channel_creator=None):
-        super(ConnectionMgr, self).__init__()
-        self.channel_creator = channel_creator
-
-    def on_new_connection(self, conn):
-        _logger.debug(
-                'ConnectionMgr.on_new_connection - new connection(%s)',
-                conn.socket.getpeername())
-        ch = self.channel_creator(conn)
-        conn.set_channel(ch)
-
-def run_TcpServer():
-    conn_mgr = ConnectionMgr(lambda conn: EchoChannelObj(conn))
-    TcpServer('127.0.0.1', 5555, conn_mgr)
-    while True:
-        asyncore_scheduler.loop(1, True, None, 1)
-        time.sleep(0.001)
-
 class NyxEngineUnittest(unittest.TestCase):
-    def test_TcpServer(self):
-        run_TcpServer()
+    pass
 
 def main():
     suite = unittest.TestLoader().loadTestsFromTestCase(NyxEngineUnittest)
