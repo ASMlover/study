@@ -110,7 +110,7 @@ class TcpSession(asyncore.dispatcher):
 
         if self.channel:
             self.channel.on_disconnected() # 调用channel的on_disconnected
-            self.channel = None
+        self.channel = None
         if self.socket:
             if self.writable() and flush:
                 self.handle_write()
@@ -153,7 +153,7 @@ class TcpSession(asyncore.dispatcher):
             if self.channel is None:
                 return
 
-            if self.decrypter:
+            if self.crypter:
                 data = self.crypter.decrypt(data)
             if self.compressor:
                 data = self.compressor.decompress(data)
