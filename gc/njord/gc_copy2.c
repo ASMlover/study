@@ -42,6 +42,7 @@ static Nj_uchar_t* heaptr; /* heap start of semispace gc */
 static Nj_uchar_t* fromspace;
 static Nj_uchar_t* tospace;
 static Nj_uchar_t* allocptr;
+static Nj_uchar_t* scanptr;
 
 static void
 _njsemispace_init(void) {
@@ -113,29 +114,15 @@ njsemispacecopy_pushpair(NjObject* vm) {
   return njvm_pushpair(vm, FALSE, _njsemispacecopy_newpair);
 }
 
-typedef struct _worknode {
-  struct _worknode* next;
-  NjObject* obj;
-} WorkNode;
-
-static WorkNode* worklist;
-#define _worklist_init() (worklist = NULL)
-
-static void
-_worklist_push(NjObject* obj) {
-  WorkNode* node = (WorkNode*)njmem_malloc(sizeof(WorkNode));
-  node->obj = obj;
-  node->next = worklist;
-  worklist = node;
-}
+#define _worklist_init()  (scanptr = allocptr)
+#define _worklist_empty() (scanptr == allocptr)
+#define _worklist_add(ob) Nj_UNUSED(ob)
 
 static NjObject*
-_worklist_pop(void) {
-  WorkNode* node = worklist;
-  NjObject* obj = node->obj;
-  worklist = node->next;
-  njmem_free(node, sizeof(*node));
-  return obj;
+_worklist_remove(void) {
+  NjObject* ref = Nj_FROMGC(scanptr);
+  scanptr += Nj_COPYSIZE(ref);
+  return ref;
 }
 
 static NjObject*
@@ -145,7 +132,7 @@ _njsemispacecopy_copy(NjObject* fromref) {
 
   memmove(Nj_ASGC(toref), Nj_ASGC(fromref), Nj_COPYSIZE(fromref));
   Nj_FORWARDING(fromref) = toref;
-  _worklist_push(toref);
+  _worklist_add(toref);
 
   return toref;
 }
@@ -179,8 +166,8 @@ njsemispacecopy_collect(NjObject* _vm) {
   for (int i = 0; i < vm->stackcnt; ++i)
     vm->stack[i] = _njsemispacecopy_forward(vm, vm->stack[i]);
   /* copy transitive closure */
-  while (worklist != NULL) {
-    NjObject* ref = _worklist_pop();
+  while (!_worklist_empty()) {
+    NjObject* ref = _worklist_remove();
     if (ref->ob_type == &NjPair_Type) {
       NjObject* head = njord_pairgetter(ref, "head");
       if (head != NULL)
