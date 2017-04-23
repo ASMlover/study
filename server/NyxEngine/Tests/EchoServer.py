@@ -34,20 +34,15 @@ sys.path.append('../External')
 sys.path.append('../Core')
 
 import asyncore_scheduler
-from Rpc.TcpClient import TcpClient
-from TestUtils import ConnectionMgr, LogChannelObj
+from Rpc.TcpServer import TcpServer
+from TestUtils import ConnectionMgr, EchoChannelObj
 
 def main():
-    conn_mgr = ConnectionMgr(lambda conn: LogChannelObj(conn))
-    client = TcpClient("127.0.0.1", 5555, conn_mgr)
-
-    client.sync_connect()
-    client.write_data("Hello, world!")
-    asyncore_scheduler.loop(0.1, True, None, 1)
-    time.sleep(1)
-    asyncore_scheduler.loop(0.1, True, None, 1)
-    client.disconnect()
-    asyncore_scheduler.loop(0.1, True, None, 1)
+    conn_mgr = ConnectionMgr(lambda conn: EchoChannelObj(conn))
+    TcpServer('127.0.0.1', 5555, conn_mgr)
+    while True:
+        asyncore_scheduler.loop(1, True, None, 1)
+        time.sleep(0.001)
 
 if __name__ == '__main__':
     main()
