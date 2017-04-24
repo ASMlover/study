@@ -176,7 +176,10 @@ njord_gc(const char* gc_name, int prof) {
 
 static void
 _njord_usage(void) {
-  njlog_repr("USAGE: njord [mem]|[gc] ...\n");
+  njlog_repr(
+      "USAGE: njord [mem] [gc] ...\n"
+      "USAGE: njord mem - performance memory pool\n"
+      );
   njord_usagegc();
 }
 

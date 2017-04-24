@@ -67,6 +67,9 @@ static NjGCMap gc_mapped[] = {
   {"copy2",
     "\t[copy2] - semispaces-copying garbage collector version-2",
     njsemispacecopy2_create},
+  {"refs2",
+    "\t[refs2] - reference-counting garbage collector version-2",
+    njrefs2_create},
 };
 
 #define Nj_STARTUPGC()    (gc_mapped[startup_gcindex])

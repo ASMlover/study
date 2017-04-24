@@ -67,7 +67,7 @@ _njrefs_pop(NjVMObject* vm) {
 
 static void
 _njrefs_dealloc(NjObject* obj) {
-  if (obj->ob_type == &NjPair_Type) {
+  if (Nj_ISPAIR(obj)) {
     NjObject* head = njord_pairgetter(obj, "head");
     Nj_XDECREF(head);
     NjObject* tail = njord_pairgetter(obj, "tail");

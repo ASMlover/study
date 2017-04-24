@@ -161,3 +161,8 @@ njvm_pushpair(NjObject* vm, Nj_bool_t need_collect, newpairfunc newpair) {
 
   return Nj_ASOBJ(obj);
 }
+
+NjObject*
+njvm_pop(NjObject* vm) {
+  return _njdefvm_pop(vm);
+}

@@ -53,5 +53,6 @@ NjAPI_FUNC(NjObject*) njvm_pushint(NjObject* vm,
     Nj_int_t value, Nj_bool_t need_collect, newintfunc newint);
 NjAPI_FUNC(NjObject*) njvm_pushpair(
     NjObject* vm, Nj_bool_t need_collect, newpairfunc newpair);
+NjAPI_FUNC(NjObject*) njvm_pop(NjObject* vm);
 
 #endif /* Nj_NJVM_H */

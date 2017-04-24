@@ -31,6 +31,8 @@
 
 #include "njobject.h"
 
+#define Nj_ISPAIR(ob) ((ob)->ob_type == &NjPair_Type)
+
 typedef struct _intobject {
   NjObject_VAR_HEAD;
   Nj_int_t value;
@@ -68,5 +70,6 @@ NjAPI_FUNC(NjObject*) njbitmap_create(void);
 NjAPI_FUNC(NjObject*) njlazysweep_create(void);
 NjAPI_FUNC(NjObject*) njcompact_create(void);
 NjAPI_FUNC(NjObject*) njsemispacecopy2_create(void);
+NjAPI_FUNC(NjObject*) njrefs2_create(void);
 
 #endif /* Nj_GCIMPL_H */
