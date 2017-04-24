@@ -152,9 +152,9 @@ njord_gc_sample4(void) {
   for (int i = 0; i < 1000; ++i) {
     for (int j = 0; j < PUSHCOUNT; ++j) {
       if ((j + 1) % 3 == 0)
-        njord_pushpair(vm);
+        njlog_debug("%s\n", njord_repr(njord_pushpair(vm)));
       else
-        njord_pushint(vm, i);
+        njlog_debug("%s\n", njord_repr(njord_pushint(vm, i)));
     }
 
     for (int j = 0; j < POPCOUNT; ++j)

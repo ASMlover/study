@@ -26,10 +26,15 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <stdio.h>
 #include <string.h>
 #include "gc_impl.h"
 #include "njlog.h"
 #include "njmem.h"
+
+#define Nj_BUFLEN (512)
+
+static char repr[Nj_BUFLEN];
 
 static void
 njint_print(NjObject* obj) {
@@ -37,10 +42,18 @@ njint_print(NjObject* obj) {
       obj->ob_type->tp_name, obj, ((NjIntObject*)obj)->value);
 }
 
+static const char*
+njint_repr(NjObject* obj) {
+  snprintf(repr, sizeof(repr), "NjIntObject<`%s`, 0x%p, %d>",
+      obj->ob_type->tp_name, obj, ((NjIntObject*)obj)->value);
+  return repr;
+}
+
 NjTypeObject NjInt_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "int", /* tp_name */
   njint_print, /* tp_print */
+  njint_repr, /* tp_repr */
   0, /* tp_setter */
   0, /* tp_getter */
   0, /* tp_gc */
@@ -55,10 +68,22 @@ njpair_print(NjObject* obj) {
       );
 }
 
+static const char*
+njpair_repr(NjObject* obj) {
+  snprintf(repr, sizeof(repr),
+      "NjPairObject<`%s` 0x%p, <<`%s`, 0x%p>, <`%s`, 0x%p>>>",
+      obj->ob_type->tp_name, obj,
+      ((NjPairObject*)obj)->head->ob_type->tp_name, ((NjPairObject*)obj)->head,
+      ((NjPairObject*)obj)->tail->ob_type->tp_name, ((NjPairObject*)obj)->tail
+      );
+  return repr;
+}
+
 NjTypeObject NjPair_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "pair", /* tp_name */
   njpair_print, /* tp_print */
+  njpair_repr, /* tp_repr */
   njord_pairsetter, /* tp_setter */
   njord_pairgetter, /* tp_getter */
   0, /* tp_gc */

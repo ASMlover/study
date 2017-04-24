@@ -184,10 +184,18 @@ njord_print(NjObject* obj) {
     njlog_repr("NjObject<%p, %s>\n", obj, obj->ob_type->tp_name);
 }
 
+const char*
+njord_repr(NjObject* obj) {
+  if (obj->ob_type->tp_repr != NULL)
+    return obj->ob_type->tp_repr(obj);
+  return "???";
+}
+
 NjTypeObject NjType_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "type", /* tp_name */
   0, /* tp_print */
+  0, /* tp_repr */
   0, /* tp_setter */
   0, /* tp_getter */
   0, /* tp_gc */

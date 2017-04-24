@@ -151,6 +151,7 @@ static NjTypeObject NjBitmap_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "markbitmap_gc", /* tp_name */
   0, /* tp_print */
+  0, /* tp_repr */
   0, /* tp_setter */
   0, /* tp_getter */
   (NjGCMethods*)&gc_methods, /* tp_gc */
