@@ -70,8 +70,10 @@ njpair_debug(NjObject* obj) {
   NjObject* tail = ((NjPairObject*)obj)->tail;
   njlog_debug("NjPairObject<`%s`, %p, <<`%s`, %p>, <`%s`, %p>>>\n",
       obj->ob_type->tp_name, obj,
-      head != NULL ? head->ob_type->tp_name : "null", head,
-      tail != NULL ? tail->ob_type->tp_name : "null", tail);
+      head != NULL && head->ob_type != NULL
+        ?  head->ob_type->tp_name : "null", head,
+      tail != NULL && tail->ob_type != NULL
+        ? tail->ob_type->tp_name : "null", tail);
 }
 
 NjTypeObject NjPair_Type = {
