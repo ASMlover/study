@@ -136,11 +136,9 @@ njvm_pushint(NjObject* vm,
   if (need_collect)
     Nj_GC(vm)->gc_collect(vm);
 
-  NjIntObject* obj;
-  if (newint != NULL)
-    obj = newint(vm, value);
-  else
-    obj = (NjIntObject*)njord_newint(0, value, NULL, NULL);
+  NjIntObject* obj = (newint != NULL)
+    ? newint(vm, value)
+    : (NjIntObject*)njord_newint(0, value, NULL, NULL);
   _njdefvm_push(vm, Nj_ASOBJ(obj));
 
   return Nj_ASOBJ(obj);
@@ -152,11 +150,9 @@ njvm_pushpair(NjObject* vm, Nj_bool_t need_collect,
   if (need_collect)
     Nj_GC(vm)->gc_collect(vm);
 
-  NjPairObject* obj;
-  if (newpair != NULL)
-    obj = newpair(vm);
-  else
-    obj = (NjPairObject*)njord_newpair(0, NULL, NULL);
+  NjPairObject* obj = (newpair != NULL)
+    ? newpair(vm)
+    : (NjPairObject*)njord_newpair(0, NULL, NULL);
   NjObject* tail = _njdefvm_pop(vm);
   NjObject* head = _njdefvm_pop(vm);
   if (initpair != NULL)
