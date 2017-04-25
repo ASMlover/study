@@ -209,19 +209,19 @@ njcompact_pushint(NjObject* _vm, int value) {
 }
 
 static NjPairObject*
-_njcompact_newpair(NjObject* _vm, NjObject* head, NjObject* tail) {
-  NjVMObject* vm = (NjVMObject*)_vm;
+_njcompact_newpair(NjObject* vm) {
   NjPairObject* obj = (NjPairObject*)njord_newpair(
-      sizeof(GCHead), head, tail, _njcompactheap_alloc, vm);
-  _njcompact_insert(vm, (NjObject*)obj);
-  ++vm->objcnt;
+      sizeof(GCHead), _njcompactheap_alloc, vm);
+  _njcompact_insert(Nj_VM(vm), Nj_ASOBJ(obj));
+  ++Nj_VM(vm)->objcnt;
   return obj;
 }
 
 static NjObject*
 njcompact_pushpair(NjObject* _vm) {
   NjVMObject* vm = (NjVMObject*)_vm;
-  return njvm_pushpair(_vm, vm->objcnt >= vm->maxobj, _njcompact_newpair);
+  return njvm_pushpair(_vm,
+      vm->objcnt >= vm->maxobj, _njcompact_newpair, NULL);
 }
 
 static void
@@ -255,7 +255,7 @@ static NjTypeObject NjCompaction_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "markcompaction_gc", /* tp_name */
   0, /* tp_print */
-  0, /* tp_repr */
+  0, /* tp_debug */
   0, /* tp_setter */
   0, /* tp_getter */
   (NjGCMethods*)&gc_methods, /* tp_gc */

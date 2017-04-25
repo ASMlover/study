@@ -57,7 +57,7 @@ njdefvm_pushint(NjObject* vm, Nj_int_t value) {
 
 static NjObject*
 njdefvm_pushpair(NjObject* vm) {
-  return njvm_pushpair(vm, FALSE, NULL);
+  return njvm_pushpair(vm, FALSE, NULL, NULL);
 }
 
 static void
@@ -84,7 +84,7 @@ static NjTypeObject NjVM_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "defvm_gc", /* tp_name */
   0, /* tp_print */
-  0, /* tp_repr */
+  0, /* tp_debug */
   0, /* tp_setter */
   0, /* tp_getter */
   (NjGCMethods*)&gc_methods, /* tp_gc */
@@ -147,17 +147,22 @@ njvm_pushint(NjObject* vm,
 }
 
 NjObject*
-njvm_pushpair(NjObject* vm, Nj_bool_t need_collect, newpairfunc newpair) {
+njvm_pushpair(NjObject* vm, Nj_bool_t need_collect,
+    newpairfunc newpair, pairinitfunc initpair) {
   if (need_collect)
     Nj_GC(vm)->gc_collect(vm);
 
   NjPairObject* obj;
+  if (newpair != NULL)
+    obj = newpair(vm);
+  else
+    obj = (NjPairObject*)njord_newpair(0, NULL, NULL);
   NjObject* tail = _njdefvm_pop(vm);
   NjObject* head = _njdefvm_pop(vm);
-  if (newpair != NULL)
-    obj = newpair(vm, head, tail);
-  else
-    obj = (NjPairObject*)njord_newpair(0, head, tail, NULL, NULL);
+  if (initpair != NULL)
+    initpair(vm, obj, head, tail);
+  obj->head = head;
+  obj->tail = tail;
   _njdefvm_push(vm, Nj_ASOBJ(obj));
 
   return Nj_ASOBJ(obj);

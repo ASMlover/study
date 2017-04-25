@@ -88,16 +88,17 @@ njrefs_pushint(NjObject* vm, Nj_int_t value) {
 
 static NjObject*
 njrefs_pushpair(NjObject* vm) {
+
+  NjPairObject* obj = (NjPairObject*)njord_newpair(sizeof(GCHead), NULL, NULL);
   NjObject* tail = _njrefs_pop((NjVMObject*)vm);
   NjObject* head = _njrefs_pop((NjVMObject*)vm);
-
   Nj_INCREF(head);
   Nj_INCREF(tail);
-  NjPairObject* obj = (NjPairObject*)njord_newpair(
-      sizeof(GCHead), head, tail, NULL, NULL);
-  Nj_NEWREF(obj);
+  obj->head = head;
+  obj->tail = tail;
   Nj_DECREF(head);
   Nj_DECREF(tail);
+  Nj_NEWREF(obj);
   _njrefs_push((NjVMObject*)vm, (NjObject*)obj);
 
   return (NjObject*)obj;
@@ -145,7 +146,7 @@ static NjTypeObject NjRefs_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "refs_gc", /* tp_name */
   0, /* tp_print */
-  0, /* tp_repr */
+  0, /* tp_debug */
   0, /* tp_setter */
   0, /* tp_getter */
   (NjGCMethods*)&gc_methods, /* tp_gc */

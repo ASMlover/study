@@ -210,26 +210,23 @@ njlazysweep_pushint(NjObject* _vm, Nj_int_t value) {
   NjVMObject* vm = (NjVMObject*)_vm;
   if (vm->objcnt > vm->maxobj)
     _njlazysweep_mark_all(vm);
-  return njvm_pushint(_vm, value, 0, _njlazysweep_newint);
+  return njvm_pushint(_vm, value, FALSE, _njlazysweep_newint);
 }
 
 static NjPairObject*
-_njlazysweep_newpair(NjObject* _vm, NjObject* head, NjObject* tail) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  NjPairObject* obj = (NjPairObject*)njord_newpair(
-      0, head, tail, _njlazysweep_newobj, vm);
-  obj->next = vm->startobj;
-  vm->startobj = (NjObject*)obj;
-  ++vm->objcnt;
+_njlazysweep_newpair(NjObject* vm) {
+  NjPairObject* obj = (NjPairObject*)njord_newpair(0, _njlazysweep_newobj, vm);
+  obj->next = Nj_VM(vm)->startobj;
+  Nj_VM(vm)->startobj = (NjObject*)obj;
+  ++Nj_VM(vm)->objcnt;
   return obj;
 }
 
 static NjObject*
-njlazysweep_pushpair(NjObject* _vm) {
-  NjVMObject* vm = (NjVMObject*)_vm;
-  if (vm->objcnt >= vm->maxobj)
-    _njlazysweep_mark_all(vm);
-  return njvm_pushpair(_vm, 0, _njlazysweep_newpair);
+njlazysweep_pushpair(NjObject* vm) {
+  if (Nj_VM(vm)->objcnt >= Nj_VM(vm)->maxobj)
+    _njlazysweep_mark_all(Nj_VM(vm));
+  return njvm_pushpair(vm, FALSE, _njlazysweep_newpair, NULL);
 }
 
 static void
@@ -259,7 +256,7 @@ static NjTypeObject NjLazy_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "lazysweep_gc", /* tp_name */
   0, /* tp_print */
-  0, /* tp_repr */
+  0, /* tp_debug */
   0, /* tp_setter */
   0, /* tp_getter */
   (NjGCMethods*)&gc_methods, /* tp_gc */

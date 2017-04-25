@@ -181,14 +181,15 @@ njord_print(NjObject* obj) {
   if (obj->ob_type->tp_print != NULL)
     obj->ob_type->tp_print(obj);
   else
-    njlog_repr("NjObject<%p, %s>\n", obj, obj->ob_type->tp_name);
+    njlog_repr("NjObject<`%s`, %p>\n", obj, obj->ob_type->tp_name);
 }
 
-const char*
-njord_repr(NjObject* obj) {
-  if (obj->ob_type->tp_repr != NULL)
-    return obj->ob_type->tp_repr(obj);
-  return "???";
+void
+njord_debug(NjObject* obj) {
+  if (obj->ob_type->tp_debug != NULL)
+    obj->ob_type->tp_debug(obj);
+  else
+    njlog_debug("NjObject<`%s`, %p>\n", obj, obj->ob_type->tp_name);
 }
 
 NjTypeObject NjType_Type = {

@@ -133,10 +133,9 @@ njmarks_pushint(NjObject* _vm, Nj_int_t value) {
 }
 
 static NjPairObject*
-_njmarks_newpair(NjObject* _vm, NjObject* head, NjObject* tail) {
+_njmarks_newpair(NjObject* _vm) {
   NjVMObject* vm = (NjVMObject*)_vm;
-  NjPairObject* obj = (NjPairObject*)njord_newpair(
-      sizeof(GCHead), head, tail, NULL, NULL);
+  NjPairObject* obj = (NjPairObject*)njord_newpair(sizeof(GCHead), NULL, NULL);
   Nj_ASGC(obj)->marked = UNMARKED;
   obj->next = vm->startobj;
   vm->startobj = (NjObject*)obj;
@@ -147,7 +146,7 @@ _njmarks_newpair(NjObject* _vm, NjObject* head, NjObject* tail) {
 static NjObject*
 njmarks_pushpair(NjObject* _vm) {
   NjVMObject* vm = (NjVMObject*)_vm;
-  return njvm_pushpair(_vm, vm->objcnt >= vm->maxobj, _njmarks_newpair);
+  return njvm_pushpair(_vm, vm->objcnt >= vm->maxobj, _njmarks_newpair, NULL);
 }
 
 static void
@@ -180,7 +179,7 @@ static NjTypeObject NjMarks2_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "marksweep2_gc", /* tp_name */
   0, /* tp_print */
-  0, /* tp_repr */
+  0, /* tp_debug */
   0, /* tp_setter */
   0, /* tp_getter */
   (NjGCMethods*)&gc_methods, /* tp_gc */

@@ -51,7 +51,7 @@ typedef struct _varobject {
 } NjVarObject;
 
 typedef void (*printfunc)(NjObject*);
-typedef const char* (*reprfunc)(NjObject*);
+typedef void (*debugfunc)(NjObject*);
 typedef void (*setterfunc)(NjObject*, const char*, NjObject*);
 typedef NjObject* (*getterfunc)(NjObject*, const char*);
 typedef void (*deallocfunc)(NjObject*);
@@ -74,7 +74,7 @@ typedef struct _typeobject {
   NjObject_HEAD;
   const char* tp_name;
   printfunc tp_print;
-  reprfunc tp_repr;
+  debugfunc tp_debug;
   setterfunc tp_setter;
   getterfunc tp_getter;
   NjGCMethods* tp_gc;
@@ -97,7 +97,7 @@ NjAPI_FUNC(void) njord_setpair(NjObject* obj, NjObject* head, NjObject* tail);
 NjAPI_FUNC(void) njord_pop(NjObject* vm);
 NjAPI_FUNC(void) njord_collect(NjObject* vm);
 NjAPI_FUNC(void) njord_print(NjObject* obj);
-NjAPI_FUNC(const char*) njord_repr(NjObject* obj);
+NjAPI_FUNC(void) njord_debug(NjObject* obj);
 
 typedef enum _marked {
   UNMARKED,

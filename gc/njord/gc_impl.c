@@ -32,28 +32,23 @@
 #include "njlog.h"
 #include "njmem.h"
 
-#define Nj_BUFLEN (512)
-
-static char repr[Nj_BUFLEN];
-
 static void
 njint_print(NjObject* obj) {
-  njlog_repr("NjIntObject<'%s', 0x%p, %d>\n",
+  njlog_repr("NjIntObject<`%s`, %p, %d>\n",
       obj->ob_type->tp_name, obj, ((NjIntObject*)obj)->value);
 }
 
-static const char*
-njint_repr(NjObject* obj) {
-  snprintf(repr, sizeof(repr), "NjIntObject<`%s`, 0x%p, %d>",
+static void
+njint_debug(NjObject* obj) {
+  njlog_debug("NjIntObject<`%s`, %p, %d>\n",
       obj->ob_type->tp_name, obj, ((NjIntObject*)obj)->value);
-  return repr;
 }
 
 NjTypeObject NjInt_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "int", /* tp_name */
   njint_print, /* tp_print */
-  njint_repr, /* tp_repr */
+  njint_debug, /* tp_debug */
   0, /* tp_setter */
   0, /* tp_getter */
   0, /* tp_gc */
@@ -61,29 +56,29 @@ NjTypeObject NjInt_Type = {
 
 static void
 njpair_print(NjObject* obj) {
-  njlog_repr("NjPairObject<'%s' 0x%p, <<'%s', 0x%p>, <'%s', 0x%p>>>\n",
+  NjObject* head = ((NjPairObject*)obj)->head;
+  NjObject* tail = ((NjPairObject*)obj)->tail;
+  njlog_repr("NjPairObject<`%s`, %p, <<`%s`, %p>, <`%s`, %p>>>\n",
       obj->ob_type->tp_name, obj,
-      ((NjPairObject*)obj)->head->ob_type->tp_name, ((NjPairObject*)obj)->head,
-      ((NjPairObject*)obj)->tail->ob_type->tp_name, ((NjPairObject*)obj)->tail
-      );
+      head != NULL ? head->ob_type->tp_name : "null", head,
+      tail != NULL ? tail->ob_type->tp_name : "null", tail);
 }
 
-static const char*
-njpair_repr(NjObject* obj) {
-  snprintf(repr, sizeof(repr),
-      "NjPairObject<`%s` 0x%p, <<`%s`, 0x%p>, <`%s`, 0x%p>>>",
+static void
+njpair_debug(NjObject* obj) {
+  NjObject* head = ((NjPairObject*)obj)->head;
+  NjObject* tail = ((NjPairObject*)obj)->tail;
+  njlog_debug("NjPairObject<`%s`, %p, <<`%s`, %p>, <`%s`, %p>>>\n",
       obj->ob_type->tp_name, obj,
-      ((NjPairObject*)obj)->head->ob_type->tp_name, ((NjPairObject*)obj)->head,
-      ((NjPairObject*)obj)->tail->ob_type->tp_name, ((NjPairObject*)obj)->tail
-      );
-  return repr;
+      head != NULL ? head->ob_type->tp_name : "null", head,
+      tail != NULL ? tail->ob_type->tp_name : "null", tail);
 }
 
 NjTypeObject NjPair_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "pair", /* tp_name */
   njpair_print, /* tp_print */
-  njpair_repr, /* tp_repr */
+  njpair_debug, /* tp_debug */
   njord_pairsetter, /* tp_setter */
   njord_pairgetter, /* tp_getter */
   0, /* tp_gc */
@@ -107,8 +102,7 @@ njord_newint(Nj_ssize_t gc_size,
 }
 
 NjObject*
-njord_newpair(Nj_ssize_t gc_size,
-    NjObject* head, NjObject* tail, allocfunc user_alloc, void* arg) {
+njord_newpair(Nj_ssize_t gc_size, allocfunc user_alloc, void* arg) {
   Nj_ssize_t ob_size = sizeof(NjPairObject);
   Nj_char_t* p;
   if (user_alloc != NULL)
@@ -118,8 +112,6 @@ njord_newpair(Nj_ssize_t gc_size,
   NjPairObject* obj = (NjPairObject*)(p + gc_size);
   obj->ob_type = &NjPair_Type;
   obj->ob_size = ob_size;
-  obj->head = head;
-  obj->tail = tail;
 
   return Nj_ASOBJ(obj);
 }

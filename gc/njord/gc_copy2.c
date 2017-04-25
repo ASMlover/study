@@ -100,9 +100,9 @@ njsemispacecopy_pushint(NjObject* vm, int value) {
 }
 
 static NjPairObject*
-_njsemispacecopy_newpair(NjObject* vm, NjObject* head, NjObject* tail) {
+_njsemispacecopy_newpair(NjObject* vm) {
   NjPairObject* obj = (NjPairObject*)njord_newpair(
-      sizeof(GCHead), head, tail, _njsemispace_alloc, vm);
+      sizeof(GCHead), _njsemispace_alloc, vm);
   Nj_FORWARDING(obj) = NULL;
   ++((NjVMObject*)vm)->objcnt;
   return obj;
@@ -110,7 +110,7 @@ _njsemispacecopy_newpair(NjObject* vm, NjObject* head, NjObject* tail) {
 
 static NjObject*
 njsemispacecopy_pushpair(NjObject* vm) {
-  return njvm_pushpair(vm, FALSE, _njsemispacecopy_newpair);
+  return njvm_pushpair(vm, FALSE, _njsemispacecopy_newpair, NULL);
 }
 
 #define _worklist_init()  (scanptr = allocptr)
@@ -197,7 +197,7 @@ NjTypeObject NjCopy2_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "semispacescopy2_gc", /* tp_name */
   0, /* tp_print */
-  0, /* tp_repr */
+  0, /* tp_debug */
   0, /* tp_setter */
   0, /* tp_getter */
   (NjGCMethods*)&gc_methods, /* tp_gc */

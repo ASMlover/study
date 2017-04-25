@@ -122,16 +122,16 @@ njcopy_pushint(NjObject* vm, Nj_int_t value) {
 }
 
 static NjPairObject*
-_njcopy_newpair(NjObject* vm, NjObject* head, NjObject* tail) {
+_njcopy_newpair(NjObject* vm) {
   NjPairObject* obj = (NjPairObject*)njord_newpair(
-      sizeof(GCHead), head, tail, _copymem_alloc, vm);
+      sizeof(GCHead), _copymem_alloc, vm);
   Nj_FORWARDING(obj) = NULL;
   return obj;
 }
 
 static NjObject*
 njcopy_pushpair(NjObject* vm) {
-  return njvm_pushpair(vm, FALSE, _njcopy_newpair);
+  return njvm_pushpair(vm, FALSE, _njcopy_newpair, NULL);
 }
 
 static void
@@ -163,7 +163,7 @@ static NjTypeObject NjCopy_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "semispacescopy_gc", /* tp_name */
   0, /* tp_print */
-  0, /* tp_repr */
+  0, /* tp_debug */
   0, /* tp_setter */
   0, /* tp_getter */
   (NjGCMethods*)&gc_methods, /* tp_gc */

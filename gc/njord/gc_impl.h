@@ -53,8 +53,7 @@ typedef void* (*allocfunc)(Nj_ssize_t, void*);
 NjAPI_FUNC(NjObject*) njord_newint(
     Nj_ssize_t gc_size, Nj_int_t value, allocfunc user_alloc, void* arg);
 NjAPI_FUNC(NjObject*) njord_newpair(
-    Nj_ssize_t gc_size, NjObject* head, NjObject* tail,
-    allocfunc user_alloc, void* arg);
+    Nj_ssize_t gc_size, allocfunc user_alloc, void* arg);
 NjAPI_FUNC(void) njord_pairsetter(
     NjObject* obj, const char* key, NjObject* value);
 NjAPI_FUNC(NjObject*) njord_pairgetter(NjObject* obj, const char* key);

@@ -56,7 +56,7 @@ _njbitmap_mark(NjObject* obj) {
     return;
 
   Nj_BIT_SET(i);
-  if (obj->ob_type == &NjPair_Type) {
+  if (Nj_ISPAIR(obj)) {
     NjObject* head = njord_pairgetter(obj, "head");
     _njbitmap_mark(head);
     NjObject* tail = njord_pairgetter(obj, "tail");
@@ -105,19 +105,19 @@ njbitmap_pushint(NjObject* vm, Nj_int_t value) {
       vm, value, Nj_VM(vm)->objcnt >= Nj_VM(vm)->maxobj, _njbitmap_newint);
 }
 
-static NjPairObject*
-_njbitmap_newpair(NjObject* vm, NjObject* head, NjObject* tail) {
-  NjPairObject* obj = (NjPairObject*)njord_newpair(0, head, tail, NULL, NULL);
+static void
+_njbitmap_initpair(NjObject* vm,
+    NjPairObject* obj, NjObject* head, NjObject* tail) {
+  Nj_UNUSED(head), Nj_UNUSED(tail);
   obj->next = Nj_VM(vm)->startobj;
   Nj_VM(vm)->startobj = (NjObject*)obj;
   ++Nj_VM(vm)->objcnt;
-  return obj;
 }
 
 static NjObject*
 njbitmap_pushpair(NjObject* vm) {
   return njvm_pushpair(
-      vm, Nj_VM(vm)->objcnt >= Nj_VM(vm)->maxobj, _njbitmap_newpair);
+      vm, Nj_VM(vm)->objcnt >= Nj_VM(vm)->maxobj, NULL, _njbitmap_initpair);
 }
 
 static void
@@ -151,7 +151,7 @@ static NjTypeObject NjBitmap_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "markbitmap_gc", /* tp_name */
   0, /* tp_print */
-  0, /* tp_repr */
+  0, /* tp_debug */
   0, /* tp_setter */
   0, /* tp_getter */
   (NjGCMethods*)&gc_methods, /* tp_gc */
