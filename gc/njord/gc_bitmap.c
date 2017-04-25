@@ -26,12 +26,14 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <string.h>
 #include "njlog.h"
 #include "njvm.h"
 
 #define Nj_GC_BITMAPS       (Nj_GC_MAXTHRESHOLD >> 3)
 #define Nj_BIT_BIG(i)       ((i) / 8)
 #define Nj_BIT_SMALL(i)     ((i) % 8)
+#define Nj_BIT_INIT()       (memset(gc_bitmaps, 0, sizeof(gc_bitmaps)))
 #define Nj_BIT_GET(i)\
   ((gc_bitmaps[Nj_BIT_BIG(i)] >> Nj_BIT_SMALL(i)) & 1)
 #define Nj_BIT_SET(i)\
@@ -66,6 +68,7 @@ _njbitmap_mark(NjObject* obj) {
 
 static void
 _njbitmap_mark_all(NjVMObject* vm) {
+  Nj_BIT_INIT();
   for (int i = 0; i < vm->stackcnt; ++i)
     _njbitmap_mark(vm->stack[i]);
 }
@@ -84,7 +87,6 @@ _njbitmap_sweep(NjVMObject* vm) {
       --vm->objcnt;
     }
     else {
-      Nj_BIT_CLR(i);
       startobj = &((NjVarObject*)*startobj)->next;
     }
   }
@@ -94,7 +96,7 @@ static NjIntObject*
 _njbitmap_newint(NjObject* vm, Nj_int_t value) {
   NjIntObject* obj = (NjIntObject*)njord_newint(0, value, NULL, NULL);
   obj->next = Nj_VM(vm)->startobj;
-  Nj_VM(vm)->startobj = (NjObject*)obj;
+  Nj_VM(vm)->startobj = Nj_ASOBJ(obj);
   ++Nj_VM(vm)->objcnt;
   return obj;
 }
@@ -105,19 +107,19 @@ njbitmap_pushint(NjObject* vm, Nj_int_t value) {
       vm, value, Nj_VM(vm)->objcnt >= Nj_VM(vm)->maxobj, _njbitmap_newint);
 }
 
-static void
-_njbitmap_initpair(NjObject* vm,
-    NjPairObject* obj, NjObject* head, NjObject* tail) {
-  Nj_UNUSED(head), Nj_UNUSED(tail);
+static NjPairObject*
+_njbitmap_newpair(NjObject* vm) {
+  NjPairObject* obj = (NjPairObject*)njord_newpair(0, NULL, NULL);
   obj->next = Nj_VM(vm)->startobj;
-  Nj_VM(vm)->startobj = (NjObject*)obj;
+  Nj_VM(vm)->startobj = Nj_ASOBJ(obj);
   ++Nj_VM(vm)->objcnt;
+  return obj;
 }
 
 static NjObject*
 njbitmap_pushpair(NjObject* vm) {
   return njvm_pushpair(
-      vm, Nj_VM(vm)->objcnt >= Nj_VM(vm)->maxobj, NULL, _njbitmap_initpair);
+      vm, Nj_VM(vm)->objcnt >= Nj_VM(vm)->maxobj, _njbitmap_newpair, NULL);
 }
 
 static void

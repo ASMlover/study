@@ -98,6 +98,7 @@ _njlazysweep_mark(NjObject* obj) {
 
 static void
 _njlazysweep_mark_all(NjVMObject* vm) {
+  njmark_init();
   for (int i = 0; i < vm->stackcnt; ++i)
     _njlazysweep_mark(vm->stack[i]);
 
@@ -110,7 +111,6 @@ _njlazysweep_mark_all(NjVMObject* vm) {
       reclaimlist = unmarked;
     }
     else {
-      njmark_unsetmark(*startobj);
       startobj = &((NjVarObject*)*startobj)->next;
     }
   }
