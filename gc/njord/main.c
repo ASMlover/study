@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "njdict.h"
 #include "njmem.h"
 #include "njlog.h"
 #include "njobject.h"
@@ -69,6 +70,20 @@ njord_memory_pool(void) {
   }
 
   njmem_collect();
+}
+
+static void
+njord_dict(void) {
+  NjDict* dict = njdict_create();
+  njlog_repr("create dict(%p) success, dict.size=%d\n",
+      dict, njdict_size(dict));
+
+  njdict_add(dict, (NjObject*)0x77450f80);
+  njlog_repr("after dict.add, dict.size=%d\n", njdict_size(dict));
+  njlog_repr("dict.pop=%p\n", njdict_pop(dict));
+  njlog_repr("after dict.pop, dict.size=%d\n", njdict_size(dict));
+
+  njdict_dealloc(dict);
 }
 
 static void
@@ -177,8 +192,9 @@ njord_gc(const char* gc_name, int prof) {
 static void
 _njord_usage(void) {
   njlog_repr(
-      "USAGE: njord [mem] [gc] ...\n"
+      "USAGE: njord [mem] [dict] [gc] ...\n"
       "USAGE: njord mem - performance memory pool\n"
+      "USAGE: njord dict - unittest for njord dict\n"
       );
   njord_usagegc();
 }
@@ -193,6 +209,9 @@ int main(int argc, char* argv[]) {
 
   if (strcmp(argv[1], "mem") == 0) {
     njord_memory_pool();
+  }
+  else if (strcmp(argv[1], "dict") == 0) {
+    njord_dict();
   }
   else if (strcmp(argv[1], "gc") == 0) {
     if (argc < 3) {
