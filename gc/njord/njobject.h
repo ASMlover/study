@@ -50,6 +50,7 @@ typedef struct _varobject {
   NjObject_VAR_HEAD;
 } NjVarObject;
 
+typedef void (*visitfunc)(NjObject*, void*);
 typedef void (*printfunc)(NjObject*);
 typedef void (*debugfunc)(NjObject*);
 typedef void (*setterfunc)(NjObject*, const char*, NjObject*);
