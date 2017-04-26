@@ -34,6 +34,7 @@ typedef struct _dict NjDict;
 /* dict length should less than 1024, later we'll add resize functional */
 NjAPI_FUNC(NjDict*) njdict_create(void);
 NjAPI_FUNC(void) njdict_dealloc(NjDict* dict);
+NjAPI_FUNC(void) njdict_clear(NjDict* dict);
 NjAPI_FUNC(Nj_ssize_t) njdict_size(NjDict* dict);
 NjAPI_FUNC(void) njdict_add(NjDict* dict, NjObject* obj);
 NjAPI_FUNC(void) njdict_remove(NjDict* dict, NjObject* obj);

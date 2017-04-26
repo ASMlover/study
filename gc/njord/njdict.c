@@ -27,6 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <string.h>
+#include "njlog.h"
 #include "njmem.h"
 #include "njdict.h"
 
@@ -52,6 +53,12 @@ njdict_create(void) {
 void
 njdict_dealloc(NjDict* dict) {
   njmem_free(dict, sizeof(NjDict));
+}
+
+void
+njdict_clear(NjDict* dict) {
+  dict->size = 0;
+  memset(dict->table, 0, sizeof(dict->table));
 }
 
 Nj_ssize_t
