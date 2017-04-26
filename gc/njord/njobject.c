@@ -70,6 +70,9 @@ static NjGCMap gc_mapped[] = {
   {"refs2",
     "\t[refs2] - reference-counting garbage collector version-2",
     njrefs2_create},
+  {"refs3",
+    "\t[refs3] - deferred reference-counting garbage collector",
+    njrefs3_create},
 };
 
 #define Nj_STARTUPGC()    (gc_mapped[startup_gcindex])
