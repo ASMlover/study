@@ -33,7 +33,9 @@
 
 #define Nj_ASGC(ob)   ((GCHead*)(ob) - 1)
 #define Nj_REFCNT(ob) (Nj_ASGC(ob)->refcnt)
+#define Nj_NEWREF(ob) (Nj_REFCNT(ob) = 1)
 #define Nj_COLOUR(ob) (Nj_ASGC(ob)->color)
+#define Nj_NEWCOL(ob) (Nj_COLOUR(ob) = BLACK)
 
 typedef enum _color {
   BLACK,
@@ -94,7 +96,6 @@ _njrecycler_release(NjObject* obj) {
 
   if (!njdict_contains(candidates, obj)) {
     njord_freeobj(obj, sizeof(GCHead));
-    /* TODO: maybe need some logging ??? */
     --Nj_VM(njord_startup_gc())->objcnt;
   }
 }
@@ -114,8 +115,8 @@ static NjIntObject*
 _njrecycler_newint(NjObject* vm, Nj_int_t value) {
   NjIntObject* obj = (NjIntObject*)njord_newint(
       sizeof(GCHead), value, NULL, NULL);
-  Nj_REFCNT(obj) = 0;
-  _njrecycler_addref(Nj_ASOBJ(obj));
+  Nj_NEWREF(obj);
+  Nj_NEWCOL(obj);
   ++Nj_VM(vm)->objcnt;
   return obj;
 }
@@ -129,8 +130,8 @@ njrecycler_pushint(NjObject* vm, Nj_int_t value) {
 static NjPairObject*
 _njrecycler_newpair(NjObject* vm) {
   NjPairObject* obj = (NjPairObject*)njord_newpair(sizeof(GCHead), NULL, NULL);
-  Nj_REFCNT(obj) = 0;
-  _njrecycler_addref(Nj_ASOBJ(obj));
+  Nj_NEWREF(obj);
+  Nj_NEWCOL(obj);
   ++Nj_VM(vm)->objcnt;
   return obj;
 }
@@ -163,26 +164,26 @@ njrecycler_pop(NjObject* vm) {
 
 static void
 _njrecycler_mark_grey(NjObject* obj) {
+#define Nj_MARKGREY(ob) do {\
+  if ((ob) != NULL) {\
+    --Nj_REFCNT(ob);\
+    _njrecycler_mark_grey((ob));\
+  }\
+} while (0)
+
   if (Nj_COLOUR(obj) != GREY) {
     Nj_COLOUR(obj) = GREY;
     if (Nj_ISPAIR(obj)) {
-      NjObject* head = njord_pairgetter(obj, "head");
-      if (head != NULL) {
-        --Nj_REFCNT(head);
-        _njrecycler_mark_grey(head);
-      }
-
-      NjObject* tail = njord_pairgetter(obj, "tail");
-      if (tail != NULL) {
-        --Nj_REFCNT(tail);
-        _njrecycler_mark_grey(tail);
-      }
+      Nj_MARKGREY(njord_pairgetter(obj, "head"));
+      Nj_MARKGREY(njord_pairgetter(obj, "tail"));
     }
   }
+
+#undef Nj_MARKGREY
 }
 
 static void
-_njrecycler_candidate_visit(NjObject* obj, void* arg) {
+_njrecycler_mark_candidate(NjObject* obj, void* arg) {
   NjObject* vm = (NjObject*)arg;
   if (Nj_COLOUR(obj) == PURPLE) {
     _njrecycler_mark_grey(obj);
@@ -198,33 +199,31 @@ _njrecycler_candidate_visit(NjObject* obj, void* arg) {
 
 static void
 _njrecycler_mark_candidates(NjObject* vm) {
-  njdict_traverse(candidates, _njrecycler_candidate_visit, vm);
+  njdict_traverse(candidates, _njrecycler_mark_candidate, vm);
 }
 
 static void
 _njrecycler_scan_black(NjObject* obj) {
+#define Nj_SCANBLACK(ob) do {\
+  if ((ob) != NULL) {\
+    ++Nj_REFCNT(ob);\
+    if (Nj_COLOUR(ob) != BLACK)\
+      _njrecycler_scan_black((ob));\
+  }\
+} while (0)
+
   Nj_COLOUR(obj) = BLACK;
   if (Nj_ISPAIR(obj)) {
-    NjObject* head = njord_pairgetter(obj, "head");
-    if (head != NULL) {
-      --Nj_REFCNT(head);
-      if (Nj_COLOUR(head) != BLACK)
-        _njrecycler_scan_black(head);
-    }
-
-    NjObject* tail = njord_pairgetter(obj, "tail");
-    if (tail != NULL) {
-      --Nj_REFCNT(tail);
-      if (Nj_COLOUR(tail) != BLACK)
-        _njrecycler_scan_black(tail);
-    }
+    Nj_SCANBLACK(njord_pairgetter(obj, "head"));
+    Nj_SCANBLACK(njord_pairgetter(obj, "tail"));
   }
+
+#undef Nj_SCANBLACK
 }
 
 static void
-_njrecycler_scan(NjObject* obj) {
-  if (obj == NULL)
-    return;
+_njrecycler_scan(NjObject* obj, void* arg) {
+#define Nj_SCAN(ob) { if ((ob) != NULL) _njrecycler_scan((ob), arg);}
 
   if (Nj_COLOUR(obj) == GREY) {
     if (Nj_REFCNT(obj) > 0) {
@@ -233,47 +232,43 @@ _njrecycler_scan(NjObject* obj) {
     else {
       Nj_COLOUR(obj) = WHITE;
       if (Nj_ISPAIR(obj)) {
-        _njrecycler_scan(njord_pairgetter(obj, "head"));
-        _njrecycler_scan(njord_pairgetter(obj, "tail"));
+        Nj_SCAN(njord_pairgetter(obj, "head"));
+        Nj_SCAN(njord_pairgetter(obj, "tail"));
       }
     }
   }
-}
 
-static void
-_njrecycler_candidate_scan(NjObject* obj, void* arg) {
-  Nj_UNUSED(arg);
-  _njrecycler_scan(obj);
+#undef Nj_SCAN
 }
 
 static void
 _njrecycler_collect_white(NjObject* obj, void* arg) {
-  if (obj != NULL &&
-      Nj_COLOUR(obj) == WHITE && !njdict_contains(candidates, obj)) {
-    NjObject* vm = (NjObject*)arg;
+#define Nj_COLLECT_WHITE(ob) do {\
+  if ((ob) != NULL) \
+    _njrecycler_collect_white((ob), arg);\
+} while (0)
+
+  njdict_remove(candidates, obj);
+  if (Nj_COLOUR(obj) == WHITE && !njdict_contains(candidates, obj)) {
     Nj_COLOUR(obj) = BLACK;
     if (Nj_ISPAIR(obj)) {
-      _njrecycler_collect_white(vm, njord_pairgetter(obj, "head"));
-      _njrecycler_collect_white(vm, njord_pairgetter(obj, "tail"));
+      Nj_COLLECT_WHITE(njord_pairgetter(obj, "head"));
+      Nj_COLLECT_WHITE(njord_pairgetter(obj, "tail"));
     }
     njord_freeobj(obj, sizeof(GCHead));
-    --Nj_VM(vm)->objcnt;
+    --Nj_VM(arg)->objcnt;
   }
-}
 
-static void
-_njrecycler_collect_candidates(NjObject* vm) {
-  njdict_traverse(candidates, _njrecycler_collect_white, vm);
-  njdict_clear(candidates);
+#undef Nj_COLLECT_WHITE
 }
 
 static void
 njrecycler_collect(NjObject* vm) {
   Nj_int_t old_objcnt = Nj_VM(vm)->objcnt;
 
-  _njrecycler_mark_candidates(vm);
-  njdict_traverse(candidates, _njrecycler_candidate_scan, NULL);
-  _njrecycler_collect_candidates(vm);
+  _njrecycler_mark_candidates(vm); /* mark all candidates objects to GREY */
+  njdict_traverse(candidates, _njrecycler_scan, NULL); /* colour to WHITE */
+  njdict_traverse(candidates, _njrecycler_collect_white, vm); /* recycle */
 
   if (Nj_VM(vm)->maxobj < Nj_GC_MAXTHRESHOLD) {
     Nj_VM(vm)->maxobj = Nj_VM(vm)->objcnt << 1;
