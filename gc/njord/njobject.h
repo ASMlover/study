@@ -90,6 +90,7 @@ NjAPI_DATA(NjTypeObject) NjType_Type;
 
 NjAPI_FUNC(void) njord_initgc(const char* name);
 NjAPI_FUNC(void) njord_usagegc(void);
+NjAPI_FUNC(NjObject*) njord_startup_gc(void);
 NjAPI_FUNC(NjObject*) njord_new(void);
 NjAPI_FUNC(void) njord_free(NjObject* vm);
 NjAPI_FUNC(NjObject*) njord_pushint(NjObject* vm, Nj_int_t value);

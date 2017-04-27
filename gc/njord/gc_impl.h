@@ -71,5 +71,6 @@ NjAPI_FUNC(NjObject*) njcompact_create(void); /* mark-compaction */
 NjAPI_FUNC(NjObject*) njsemispacecopy2_create(void); /* semispaces copying */
 NjAPI_FUNC(NjObject*) njrefs2_create(void); /* reference-counting */
 NjAPI_FUNC(NjObject*) njrefs3_create(void); /* deferred reference-counting */
+NjAPI_FUNC(NjObject*) njrefs4_create(void); /* recycler reference-counting */
 
 #endif /* Nj_GCIMPL_H */

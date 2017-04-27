@@ -73,6 +73,9 @@ static NjGCMap gc_mapped[] = {
   {"refs3",
     "\t[refs3] - deferred reference-counting garbage collector",
     njrefs3_create},
+  {"refs4",
+    "\t[refs4] - recycler reference-counting garbage collector",
+    njrefs4_create},
 };
 
 #define Nj_STARTUPGC()    (gc_mapped[startup_gcindex])
@@ -108,6 +111,11 @@ njord_usagegc(void) {
       " profile:\n"
       "\t[0] - withnot performace testing\n"
       "\t[1] - with performace testing\n");
+}
+
+NjObject*
+njord_startup_gc(void) {
+  return startup_gc;
 }
 
 NjObject*
@@ -199,7 +207,7 @@ NjTypeObject NjType_Type = {
   NjObject_HEAD_INIT(&NjType_Type),
   "type", /* tp_name */
   0, /* tp_print */
-  0, /* tp_repr */
+  0, /* tp_debug */
   0, /* tp_setter */
   0, /* tp_getter */
   0, /* tp_gc */

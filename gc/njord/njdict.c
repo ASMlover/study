@@ -66,6 +66,11 @@ njdict_size(NjDict* dict) {
   return dict->size;
 }
 
+Nj_bool_t
+njdict_contains(NjDict* dict, NjObject* obj) {
+  return dict->table[Nj_HASH(obj)] != NULL;
+}
+
 void
 njdict_add(NjDict* dict, NjObject* obj) {
   if (obj != NULL) {
