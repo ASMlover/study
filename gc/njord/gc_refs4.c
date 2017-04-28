@@ -61,6 +61,14 @@ static NjDict* candidates;
 static void _njrecycler_release(NjObject*);
 
 static void
+_njrecycler_reclaim(NjObject* vm, NjObject* obj) {
+  njlog_debug("collecting NjObject<%p, `%s`> ...\n",
+      obj, obj->ob_type->tp_name);
+  njord_freeobj(obj, sizeof(GCHead));
+  --Nj_VM(vm)->objcnt;
+}
+
+static void
 _njrecycler_candidate(NjObject* obj) {
   if (Nj_COLOUR(obj) != PURPLE) {
     Nj_COLOUR(obj) = PURPLE;
@@ -94,10 +102,8 @@ _njrecycler_release(NjObject* obj) {
   }
   Nj_COLOUR(obj) = BLACK;
 
-  if (!njdict_contains(candidates, obj)) {
-    njord_freeobj(obj, sizeof(GCHead));
-    --Nj_VM(njord_startup_gc())->objcnt;
-  }
+  if (!njdict_contains(candidates, obj))
+    _njrecycler_reclaim(njord_startup_gc(), obj);
 }
 
 static void
@@ -184,16 +190,13 @@ _njrecycler_mark_grey(NjObject* obj) {
 
 static void
 _njrecycler_mark_candidate(NjObject* obj, void* arg) {
-  NjObject* vm = (NjObject*)arg;
   if (Nj_COLOUR(obj) == PURPLE) {
     _njrecycler_mark_grey(obj);
   }
   else {
     njdict_remove(candidates, obj);
-    if (Nj_COLOUR(obj) == BLACK && Nj_REFCNT(obj) == 0) {
-      njord_freeobj(obj, sizeof(GCHead));
-      --Nj_VM(vm)->objcnt;
-    }
+    if (Nj_COLOUR(obj) == BLACK && Nj_REFCNT(obj) == 0)
+      _njrecycler_reclaim((NjObject*)arg, obj);
   }
 }
 
@@ -255,8 +258,7 @@ _njrecycler_collect_white(NjObject* obj, void* arg) {
       Nj_COLLECT_WHITE(njord_pairgetter(obj, "head"));
       Nj_COLLECT_WHITE(njord_pairgetter(obj, "tail"));
     }
-    njord_freeobj(obj, sizeof(GCHead));
-    --Nj_VM(arg)->objcnt;
+    _njrecycler_reclaim((NjObject*)arg, obj);
   }
 
 #undef Nj_COLLECT_WHITE
