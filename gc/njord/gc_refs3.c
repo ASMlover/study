@@ -26,9 +26,9 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include "njdict.h"
 #include "njlog.h"
 #include "njmem.h"
+#include "njset.h"
 #include "njvm.h"
 
 #define Nj_ASGC(ob)   ((GCHead*)(ob) - 1)
@@ -47,7 +47,7 @@ typedef struct _vm {
   Nj_int_t maxobj;
 } NjVMObject;
 
-static NjDict* zct; /* zero counting table */
+static NjSet* zct; /* zero counting table */
 
 static inline void
 _njrefs_addref(NjObject* ref) {
@@ -74,14 +74,14 @@ static inline void
 _njrefs_delref_tozct(NjObject* ref) {
   if (ref != NULL) {
     if (Nj_DECREF(ref) == 0)
-      njdict_add(zct, ref);
+      njset_add(zct, ref);
   }
 }
 
 static void
 _njrefs_vm_destroy(NjObject* vm) {
   Nj_UNUSED(vm);
-  njdict_dealloc(zct);
+  njset_dealloc(zct);
 }
 
 static void
@@ -95,7 +95,7 @@ _njrefs_newint(NjObject* vm, Nj_int_t value) {
       sizeof(GCHead), value, NULL, NULL);
   Nj_REFCNT(obj) = 0;
   ++Nj_VM(vm)->objcnt;
-  njdict_add(zct, Nj_ASOBJ(obj));
+  njset_add(zct, Nj_ASOBJ(obj));
   return obj;
 }
 
@@ -110,7 +110,7 @@ _njrefs_newpair(NjObject* vm) {
   NjPairObject* obj = (NjPairObject*)njord_newpair(sizeof(GCHead), NULL, NULL);
   Nj_REFCNT(obj) = 0;
   ++Nj_VM(vm)->objcnt;
-  njdict_add(zct, Nj_ASOBJ(obj));
+  njset_add(zct, Nj_ASOBJ(obj));
   return obj;
 }
 
@@ -120,8 +120,8 @@ _njrefs_initpair(NjObject* vm,
   Nj_UNUSED(vm), Nj_UNUSED(obj);
   _njrefs_addref(head);
   _njrefs_addref(tail);
-  njdict_remove(zct, head);
-  njdict_remove(zct, tail);
+  njset_remove(zct, head);
+  njset_remove(zct, tail);
 }
 
 static NjObject*
@@ -134,14 +134,14 @@ static void
 njrefs_setpair(NjObject* obj, NjObject* head, NjObject* tail) {
   if (head != NULL) {
     _njrefs_addref(head);
-    njdict_remove(zct, head);
+    njset_remove(zct, head);
     _njrefs_delref_tozct(njord_pairgetter(obj, "head"));
     njord_pairsetter(obj, "head", head);
   }
 
   if (tail != NULL) {
     _njrefs_addref(tail);
-    njdict_remove(zct, tail);
+    njset_remove(zct, tail);
     _njrefs_delref_tozct(njord_pairgetter(obj, "tail"));
     njord_pairsetter(obj, "tail", tail);
   }
@@ -167,8 +167,8 @@ njrefs_collect(NjObject* vm) {
 
   Nj_int_t old_objcnt = Nj_VM(vm)->objcnt;
   /* sweep zct */
-  njdict_traverse(zct, _njrefs_sweep_visist, vm);
-  njdict_clear(zct);
+  njset_traverse(zct, _njrefs_sweep_visist, vm);
+  njset_clear(zct);
 
   for (int i = 0; i < Nj_VM(vm)->stackcnt; ++i)
     _njrefs_delref_tozct(Nj_VM(vm)->stack[i]);
@@ -207,7 +207,7 @@ _njrefs_vm_init(NjObject* vm) {
   Nj_VM(vm)->ob_type = &NjDeferRefs_Type;
   Nj_VM(vm)->objcnt = 0;
   Nj_VM(vm)->maxobj = Nj_GC_INITTHRESHOLD;
-  zct = njdict_create();
+  zct = njset_create();
 }
 
 NjObject*

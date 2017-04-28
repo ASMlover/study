@@ -29,10 +29,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "njdict.h"
 #include "njmem.h"
 #include "njlog.h"
 #include "njobject.h"
+#include "njset.h"
 
 #define ALLOC_COUNT (1000000)
 
@@ -73,17 +73,17 @@ njord_memory_pool(void) {
 }
 
 static void
-njord_dict(void) {
-  NjDict* dict = njdict_create();
-  njlog_repr("create dict(%p) success, dict.size=%d\n",
-      dict, njdict_size(dict));
+njord_set(void) {
+  NjSet* set = njset_create();
+  njlog_repr("create set(%p) success, set.size=%d\n",
+      set, njset_size(set));
 
-  njdict_add(dict, (NjObject*)0x77450f80);
-  njlog_repr("after dict.add, dict.size=%d\n", njdict_size(dict));
-  njlog_repr("dict.pop=%p\n", njdict_pop(dict));
-  njlog_repr("after dict.pop, dict.size=%d\n", njdict_size(dict));
+  njset_add(set, (NjObject*)0x77450f80);
+  njlog_repr("after set.add, set.size=%d\n", njset_size(set));
+  njlog_repr("set.pop=%p\n", njset_pop(set));
+  njlog_repr("after set.pop, set.size=%d\n", njset_size(set));
 
-  njdict_dealloc(dict);
+  njset_dealloc(set);
 }
 
 static void
@@ -194,7 +194,7 @@ _njord_usage(void) {
   njlog_repr(
       "USAGE: njord [mem] [dict] [gc] ...\n"
       "USAGE: njord mem - performance memory pool\n"
-      "USAGE: njord dict - unittest for njord dict\n"
+      "USAGE: njord set - unittest for njord set\n"
       );
   njord_usagegc();
 }
@@ -210,8 +210,8 @@ int main(int argc, char* argv[]) {
   if (strcmp(argv[1], "mem") == 0) {
     njord_memory_pool();
   }
-  else if (strcmp(argv[1], "dict") == 0) {
-    njord_dict();
+  else if (strcmp(argv[1], "set") == 0) {
+    njord_set();
   }
   else if (strcmp(argv[1], "gc") == 0) {
     if (argc < 3) {
