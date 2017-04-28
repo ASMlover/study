@@ -76,6 +76,9 @@ static NjGCMap gc_mapped[] = {
   {"refs4",
     "\t[refs4] - recycler reference-counting garbage collector",
     njrefs4_create},
+  {"refs5",
+    "\t[refs5] - coalesced reference-counting garbage collector",
+    njrefs5_create},
 };
 
 #define Nj_STARTUPGC()    (gc_mapped[startup_gcindex])
