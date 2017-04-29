@@ -51,5 +51,25 @@ class ChannelCreator(object):
         self.handler.on_new_channel(rpc_channel)
 
     def on_connection_failed(self, conn):
-        """连接断开的时候回调"""
+        """连接失败的时候回调"""
         self.logger.info('ChannelCreator.on_connection_failed')
+
+class ChannelHolder(object):
+    """管理多个RpcChannel"""
+    def __init__(self):
+        super(ChannelHolder, self).__init__()
+        self.logger = LogManager.get_logger('Rpc.ChannelHolder')
+        self.rpc_channel = None
+
+    def get_channel(self):
+        return self.rpc_channel
+
+    def on_new_channel(self, rpc_channel):
+        """服务端或客户端处理新连接的回调"""
+        self.logger.debug('ChannelHolder.on_new_channel')
+        self.rpc_channel = rpc_channel
+        rpc_channel.reg_listener(self)
+
+    def on_channel_disconnected(self, rpc_channel):
+        """连接断开或关闭的时候回调"""
+        self.rpc_channel = None
