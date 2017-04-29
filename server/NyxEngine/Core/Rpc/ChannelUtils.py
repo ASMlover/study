@@ -55,7 +55,6 @@ class ChannelCreator(object):
         self.logger.info('ChannelCreator.on_connection_failed')
 
 class ChannelHolder(object):
-    """管理多个RpcChannel"""
     def __init__(self):
         super(ChannelHolder, self).__init__()
         self.logger = LogManager.get_logger('Rpc.ChannelHolder')
@@ -73,3 +72,29 @@ class ChannelHolder(object):
     def on_channel_disconnected(self, rpc_channel):
         """连接断开或关闭的时候回调"""
         self.rpc_channel = None
+
+class ChannelManager(object):
+    """管理RpcChannel"""
+    def __init__(self):
+        super(ChannelManager, self).__init__()
+        self.logger = LogManager.get_logger('Rpc.ChannelManager')
+        self.rpc_channels = {}
+
+    def get_channel(self, peeraddr):
+        return self.rpc_channels.get(peeraddr)
+
+    def get_nchannels(self):
+        return len(self.rpc_channels)
+
+    def on_new_channel(self, rpc_channel):
+        """建立新连接的时候回调"""
+        self.rpc_channels[rpc_channel.get_peeraddr()] = rpc_channel
+        rpc_channel.reg_listener(self)
+
+    def on_channel_disconnected(self, rpc_channel):
+        """连接断开的时候回调"""
+        peeraddr = rpc_channel.get_peeraddr()
+        if peeraddr in self.rpc_channels:
+            self.rpc_channels.pop(peeraddr, None)
+        else:
+            self.logger.info('ChannelManager.on_channel_disconnected')
