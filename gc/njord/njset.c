@@ -29,75 +29,76 @@
 #include <string.h>
 #include "njlog.h"
 #include "njmem.h"
-#include "njdict.h"
+#include "njset.h"
 
-#define Nj_DICTLEN  (1361)
-#define Nj_HASH(ob) ((Nj_size_t)(ob) % Nj_DICTLEN)
+#define Nj_SETLEN    (1361)
+#define Nj_HASH(ob)  ((Nj_size_t)(ob) % Nj_SETLEN)
+#define Nj_CLRSET(s) do {\
+  (s)->size = 0;\
+  memset((s)->table, 0, sizeof((s)->table));\
+} while (0)
 
-struct _dict {
+struct _set {
   Nj_ssize_t size;
-  NjObject* table[Nj_DICTLEN];
+  NjObject* table[Nj_SETLEN];
 };
 
-NjDict*
-njdict_create(void) {
-  NjDict* dict = (NjDict*)njmem_malloc(sizeof(NjDict));
-  Nj_CHECK(dict != NULL, "create NjDict failed");
+NjSet*
+njset_create(void) {
+  NjSet* set = (NjSet*)njmem_malloc(sizeof(NjSet));
+  Nj_CHECK(set != NULL, "create NjSet failed");
 
-  dict->size = 0;
-  memset(dict->table, 0, sizeof(dict->table));
-
-  return dict;
+  Nj_CLRSET(set);
+  return set;
 }
 
 void
-njdict_dealloc(NjDict* dict) {
-  njmem_free(dict, sizeof(NjDict));
+njset_dealloc(NjSet* set) {
+  njmem_free(set, sizeof(NjSet));
 }
 
 void
-njdict_clear(NjDict* dict) {
-  dict->size = 0;
-  memset(dict->table, 0, sizeof(dict->table));
+njset_clear(NjSet* set) {
+  Nj_CLRSET(set);
 }
 
 Nj_ssize_t
-njdict_size(NjDict* dict) {
-  return dict->size;
+njset_size(NjSet* set) {
+  return set->size;
 }
 
 Nj_bool_t
-njdict_contains(NjDict* dict, NjObject* obj) {
-  return dict->table[Nj_HASH(obj)] != NULL;
+njset_contains(NjSet* set, NjObject* obj) {
+  return set->table[Nj_HASH(obj)] != NULL;
 }
 
 void
-njdict_add(NjDict* dict, NjObject* obj) {
+njset_add(NjSet* set, NjObject* obj) {
   if (obj != NULL) {
-    dict->table[Nj_HASH(obj)] = obj;
-    ++dict->size;
+    set->table[Nj_HASH(obj)] = obj;
+    ++set->size;
   }
 }
 
 void
-njdict_remove(NjDict* dict, NjObject* obj) {
+njset_remove(NjSet* set, NjObject* obj) {
   if (obj != NULL) {
     int i = Nj_HASH(obj);
-    if (dict->table[i] != NULL) {
-      dict->table[i] = NULL;
-      --dict->size;
+    if (set->table[i] != NULL) {
+      set->table[i] = NULL;
+      --set->size;
     }
   }
 }
 
 NjObject*
-njdict_pop(NjDict* dict) {
+njset_pop(NjSet* set) {
   NjObject* obj = NULL;
-  for (int i = 0; i < Nj_DICTLEN; ++i) {
-    if (dict->table[i] != NULL) {
-      obj = dict->table[i];
-      dict->table[i] = NULL;
-      --dict->size;
+  for (int i = 0; i < Nj_SETLEN; ++i) {
+    if (set->table[i] != NULL) {
+      obj = set->table[i];
+      set->table[i] = NULL;
+      --set->size;
       break;
     }
   }
@@ -105,9 +106,9 @@ njdict_pop(NjDict* dict) {
 }
 
 void
-njdict_traverse(NjDict* dict, visitfunc visit, void* arg) {
-  for (int i = 0; i < Nj_DICTLEN; ++i) {
-    if (dict->table[i] != NULL)
-      visit(dict->table[i], arg);
+njset_traverse(NjSet* set, visitfunc visit, void* arg) {
+  for (int i = 0; i < Nj_SETLEN; ++i) {
+    if (set->table[i] != NULL)
+      visit(set->table[i], arg);
   }
 }

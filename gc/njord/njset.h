@@ -26,22 +26,22 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef Nj_NJDICT_H
-#define Nj_NJDICT_H
+#ifndef Nj_NJSET_H
+#define Nj_NJSET_H
 
 #include "njobject.h"
 
-typedef struct _dict NjDict;
+typedef struct _set NjSet;
 
-/* dict length should less than 1024, later we'll add resize functional */
-NjAPI_FUNC(NjDict*) njdict_create(void);
-NjAPI_FUNC(void) njdict_dealloc(NjDict* dict);
-NjAPI_FUNC(void) njdict_clear(NjDict* dict);
-NjAPI_FUNC(Nj_ssize_t) njdict_size(NjDict* dict);
-NjAPI_FUNC(Nj_bool_t) njdict_contains(NjDict* dict, NjObject* obj);
-NjAPI_FUNC(void) njdict_add(NjDict* dict, NjObject* obj);
-NjAPI_FUNC(void) njdict_remove(NjDict* dict, NjObject* obj);
-NjAPI_FUNC(NjObject*) njdict_pop(NjDict* dict);
-NjAPI_FUNC(void) njdict_traverse(NjDict* dict, visitfunc visit, void* arg);
+/* set length should less than 1024, later we'll add resize functional */
+NjAPI_FUNC(NjSet*) njset_create(void);
+NjAPI_FUNC(void) njset_dealloc(NjSet* set);
+NjAPI_FUNC(void) njset_clear(NjSet* set);
+NjAPI_FUNC(Nj_ssize_t) njset_size(NjSet* set);
+NjAPI_FUNC(Nj_bool_t) njset_contains(NjSet* dict, NjObject* obj);
+NjAPI_FUNC(void) njset_add(NjSet* set, NjObject* obj);
+NjAPI_FUNC(void) njset_remove(NjSet* set, NjObject* obj);
+NjAPI_FUNC(NjObject*) njset_pop(NjSet* set);
+NjAPI_FUNC(void) njset_traverse(NjSet* set, visitfunc visit, void* arg);
 
-#endif /* Nj_NJDICT_H */
+#endif /* Nj_NJSET_H */

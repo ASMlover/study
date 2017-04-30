@@ -26,9 +26,9 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include "njdict.h"
 #include "njlog.h"
 #include "njmem.h"
+#include "njset.h"
 #include "njvm.h"
 
 #define Nj_ASGC(ob)   ((GCHead*)(ob) - 1)
@@ -56,15 +56,23 @@ typedef struct _vm {
   Nj_int_t maxobj;
 } NjVMObject;
 
-static NjDict* candidates;
+static NjSet* candidates;
 
 static void _njrecycler_release(NjObject*);
+
+static void
+_njrecycler_reclaim(NjObject* vm, NjObject* obj) {
+  njlog_debug("collecting NjObject<%p, `%s`> ...\n",
+      obj, obj->ob_type->tp_name);
+  njord_freeobj(obj, sizeof(GCHead));
+  --Nj_VM(vm)->objcnt;
+}
 
 static void
 _njrecycler_candidate(NjObject* obj) {
   if (Nj_COLOUR(obj) != PURPLE) {
     Nj_COLOUR(obj) = PURPLE;
-    njdict_add(candidates, obj);
+    njset_add(candidates, obj);
   }
 }
 
@@ -94,16 +102,14 @@ _njrecycler_release(NjObject* obj) {
   }
   Nj_COLOUR(obj) = BLACK;
 
-  if (!njdict_contains(candidates, obj)) {
-    njord_freeobj(obj, sizeof(GCHead));
-    --Nj_VM(njord_startup_gc())->objcnt;
-  }
+  if (!njset_contains(candidates, obj))
+    _njrecycler_reclaim(njord_startup_gc(), obj);
 }
 
 static void
 _njrecycler_vm_destroy(NjObject* vm) {
   Nj_UNUSED(vm);
-  njdict_dealloc(candidates);
+  njset_dealloc(candidates);
 }
 
 static void
@@ -184,22 +190,19 @@ _njrecycler_mark_grey(NjObject* obj) {
 
 static void
 _njrecycler_mark_candidate(NjObject* obj, void* arg) {
-  NjObject* vm = (NjObject*)arg;
   if (Nj_COLOUR(obj) == PURPLE) {
     _njrecycler_mark_grey(obj);
   }
   else {
-    njdict_remove(candidates, obj);
-    if (Nj_COLOUR(obj) == BLACK && Nj_REFCNT(obj) == 0) {
-      njord_freeobj(obj, sizeof(GCHead));
-      --Nj_VM(vm)->objcnt;
-    }
+    njset_remove(candidates, obj);
+    if (Nj_COLOUR(obj) == BLACK && Nj_REFCNT(obj) == 0)
+      _njrecycler_reclaim((NjObject*)arg, obj);
   }
 }
 
 static void
 _njrecycler_mark_candidates(NjObject* vm) {
-  njdict_traverse(candidates, _njrecycler_mark_candidate, vm);
+  njset_traverse(candidates, _njrecycler_mark_candidate, vm);
 }
 
 static void
@@ -248,15 +251,14 @@ _njrecycler_collect_white(NjObject* obj, void* arg) {
     _njrecycler_collect_white((ob), arg);\
 } while (0)
 
-  njdict_remove(candidates, obj);
-  if (Nj_COLOUR(obj) == WHITE && !njdict_contains(candidates, obj)) {
+  njset_remove(candidates, obj);
+  if (Nj_COLOUR(obj) == WHITE && !njset_contains(candidates, obj)) {
     Nj_COLOUR(obj) = BLACK;
     if (Nj_ISPAIR(obj)) {
       Nj_COLLECT_WHITE(njord_pairgetter(obj, "head"));
       Nj_COLLECT_WHITE(njord_pairgetter(obj, "tail"));
     }
-    njord_freeobj(obj, sizeof(GCHead));
-    --Nj_VM(arg)->objcnt;
+    _njrecycler_reclaim((NjObject*)arg, obj);
   }
 
 #undef Nj_COLLECT_WHITE
@@ -267,8 +269,8 @@ njrecycler_collect(NjObject* vm) {
   Nj_int_t old_objcnt = Nj_VM(vm)->objcnt;
 
   _njrecycler_mark_candidates(vm); /* mark all candidates objects to GREY */
-  njdict_traverse(candidates, _njrecycler_scan, NULL); /* colour to WHITE */
-  njdict_traverse(candidates, _njrecycler_collect_white, vm); /* recycle */
+  njset_traverse(candidates, _njrecycler_scan, NULL); /* colour to WHITE */
+  njset_traverse(candidates, _njrecycler_collect_white, vm); /* recycle */
 
   if (Nj_VM(vm)->maxobj < Nj_GC_MAXTHRESHOLD) {
     Nj_VM(vm)->maxobj = Nj_VM(vm)->objcnt << 1;
@@ -304,7 +306,7 @@ _njrecycler_vm_init(NjObject* vm) {
   Nj_VM(vm)->ob_type = &NjRecycler_Type;
   Nj_VM(vm)->objcnt = 0;
   Nj_VM(vm)->maxobj = Nj_GC_INITTHRESHOLD;
-  candidates = njdict_create();
+  candidates = njset_create();
 }
 
 NjObject*
