@@ -50,9 +50,9 @@ class ChannelCreator(object):
             rpc_channel.set_max_databytes(self.max_databytes)
         self.handler.on_new_channel(rpc_channel)
 
-    def on_connection_failed(self, conn):
-        """连接失败的时候回调"""
-        self.logger.info('ChannelCreator.on_connection_failed')
+    def on_connection_closed(self, conn):
+        """连接失败或关闭的时候回调"""
+        self.logger.info('ChannelCreator.on_connection_closed')
 
 class ChannelHolder(object):
     def __init__(self):
