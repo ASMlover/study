@@ -90,3 +90,204 @@ service SGateToClient {
   // 将服务器字符串的MD5对应索引注册到客户端
   rpc reg_md5index(Md5Index) returns(Void);
 }
+
+// DB操作的基本通信协议（默认使用MongoDB，数据应该是BSON，以便C++化）
+// [SUMMARY]
+//  [1] - callback_id表示需要回调时的callback的id，必须大于0
+//  [2] - query/fields/update/doc/docs应该是BSON编码
+//  [3] - status表示DB操作的结果是否成功（bool类型）
+message FindDocRequest {
+  // 查找操作请求信息
+  int32 callback_id = 1;
+  bytes db = 2;
+  bytes collection = 3;
+  bytes query = 4;
+  bytes fields = 5;
+  int32 limit = 6; // 需要返回的结果数量
+  bool seq_flag = 7; // 是否保证有序
+  bytes seq_key = 8; // seq_flag操作的key
+  bytes sort = 9; // 排序
+  int32 read_pref = 10;
+  bytes hint = 11;
+  bytes skip = 12;
+}
+
+message FindDocResponse {
+  int32 callback_id = 1;
+  bool status = 2;
+  bytes docs = 3; // 查询到的数据信息
+}
+
+message CountDocRequest {
+  // 获取docs的条目数量
+  int32 callback_id = 1;
+  bytes db = 2;
+  bytes collection = 3;
+  bytes query = 4;
+}
+
+message CountDocResponse {
+  int32 callback_id = 1;
+  bool status = 2;
+  int32 count = 3; // 返回docs的条目数量
+}
+
+message UpdateDocRequest {
+  // 更新指定的doc数据信息
+  int32 callback_id = 1;
+  bytes db = 2;
+  bytes collection = 3;
+  bytes query = 4;
+  bytes doc = 5;
+  bool upsert = 6; // 如果记录不存在表示是否进行插入操作
+  bool multi = 7; // 是否更新多个记录
+  bool seq_flag = 8;
+  bytes seq_key = 9;
+}
+
+message UpdateDocResponse {
+  int32 callback_id = 1;
+  bool status = 2;
+}
+
+message InsertDocRequest {
+  // 插入新doc记录的操作
+  int32 callback_id = 1;
+  bytes db = 2;
+  bytes collection = 3;
+  bytes doc = 4;
+  bool seq_flag = 5;
+  bytes seq_key = 6;
+}
+
+message InsertDocResponse {
+  int32 callback_id = 1;
+  bool status = 2;
+  bytes insert_id = 3; // 插入成功后返回的记录_id
+}
+
+message DeleteDocRequest {
+  // 删除某doc的操作
+  int32 callback_id = 1;
+  bytes db = 2;
+  bytes collection = 3;
+  bytes query = 4;
+  bool seq_flag = 5;
+  bytes seq_key = 6;
+}
+
+message DeleteDocResponse {
+  int32 callback_id = 1;
+  bool status = 2;
+}
+
+message FindAndModifyDocRequest {
+  // 查找并修改doc的操作
+  int32 callback_id = 1;
+  bytes db = 2;
+  bytes collection = 3;
+  bytes query = 4;
+  bytes fields = 5;
+  bytes update = 6;
+  bool upsert = 7;
+  bool new = 8; // 为真返回修改之后的结果
+  bool seq_flag = 9;
+  bytes seq_key =  10;
+}
+
+message FindAndModifyDocResponse {
+  int32 callback_id = 1;
+  bool status = 2;
+  bytes doc = 3;
+}
+
+message OperationIndexRequest {
+  // 索引操作请求
+  enum OperationType {
+    ENSURE = 0;
+    DROP = 1;
+    RESET = 2;
+  }
+  int32 callback_id = 1;
+  bytes db = 2;
+  bytes collection = 3;
+  OperationType type = 4;
+  bytes query = 5;
+  bytes desc = 6;
+}
+
+message OperationIndexResponse {
+  int32 callback_id = 1;
+  bool status = 2;
+}
+
+message CreateCollectionRequest {
+  // 创建Collection的操作
+  int32 callback_id = 1;
+  bytes db = 2;
+  bytes collection = 3;
+  bytes operations = 4; // 创建collection的选项
+}
+
+message CreateCollectionResponse {
+  enum CreateResult {
+    SUCCESS = 0; // 创建成功
+    EXISTED = 1; // 创建失败，已经存在该collection
+    FAILED = 2; // 创建失败，其他错误
+  }
+  int32 callback_id = 1;
+  CreateResult result = 2;
+}
+
+message DBStatusMessage {
+  enum StatusType {
+    CONNECTED = 0; // DBManager和后台DB服务器连接正常
+    CONNECTION_FAIL = 1; // DBManager和后台DB服务器连接失败
+    BUSY = 2; // DBManager等待执行的操作队列过长
+  }
+  StatusType status = 1; // 查询的DBManager状态信息
+}
+
+message CallDBRequest {
+  int32 callback_id = 1;
+  bytes method = 2;
+  bytes args = 3;
+}
+
+message CallDBResponse {
+  int32 callback_id = 1;
+  bytes args = 2;
+}
+
+service SClientToDBManager {
+  // DBManager客户端访问DBManager的RPC操作请求，需要DBManager实现
+
+  // 将Game等作为DBManager客户端的服务器信息注册到DBManager
+  rpc reg_client(ServerInfo) returns(Void);
+  // 同DBManager通信的RPC接口
+  rpc call_db_method(CallDBRequest) returns(Void);
+  rpc db_find_doc(FindDocRequest) returns(Void);
+  rpc db_update_doc(UpdateDocRequest) returns(Void);
+  rpc db_insert_doc(InsertDocRequest) returns(Void);
+  rpc db_delete_doc(DeleteDocRequest) returns(Void);
+  rpc db_count_doc(CountDocRequest) returns(Void);
+  rpc db_find_and_modify_doc(FindAndModifyDocRequest) returns(Void);
+  rpc db_operation_index(OperationIndexRequest) returns(Void);
+  rpc db_create_collection(CreateCollectionRequest) returns(Void);
+}
+
+service SDBManagerToClient {
+  // 返回DBManager客户端的通信RPC信息，可能是Game服务器，需DBManager客户端实现
+
+  // 返回DBManager的状态信息
+  rpc on_db_status(DBStatusMessage) returns(Void);
+  rpc on_call_db_method(CallDBResponse) returns(Void);
+  rpc on_db_find_doc(FindDocResponse) returns(Void);
+  rpc on_db_update_doc(UpdateDocResponse) returns(Void);
+  rpc on_db_insert_doc(InsertDocResponse) returns(Void);
+  rpc on_db_delete_doc(DeleteDocResponse) returns(Void);
+  rpc on_db_count_doc(CountDocResponse) returns(Void);
+  rpc on_db_find_and_modify_doc(FindAndModifyDocResponse) returns(Void);
+  rpc on_db_operation_index(OperationIndexResponse) returns(Void);
+  rpc on_db_create_collection(CreateCollectionResponse) returns(Void);
+}

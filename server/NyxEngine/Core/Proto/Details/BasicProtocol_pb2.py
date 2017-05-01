@@ -22,12 +22,90 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='BasicProtocol.proto',
   package='Nyx.Core',
   syntax='proto3',
-  serialized_pb=_b('\n\x13\x42\x61sicProtocol.proto\x12\x08Nyx.Core\x1a\x0c\x43ommon.proto\"$\n\rEncryptString\x12\x13\n\x0b\x65ncrypt_str\x18\x01 \x01(\x0c\"\x1b\n\x0bSessionSeed\x12\x0c\n\x04seed\x18\x01 \x01(\x03\"i\n\nSessionKey\x12\x1b\n\x13random_padding_head\x18\x01 \x01(\x0c\x12\x13\n\x0bsession_key\x18\x02 \x01(\x0c\x12\x0c\n\x04seed\x18\x03 \x01(\x03\x12\x1b\n\x13random_padding_tail\x18\x04 \x01(\x0c\x32\xa0\x02\n\rSClientToGate\x12.\n\x0crequest_seed\x12\x0e.Nyx.Core.Void\x1a\x0e.Nyx.Core.Void\x12\x36\n\x0bsession_key\x12\x17.Nyx.Core.EncryptString\x1a\x0e.Nyx.Core.Void\x12\x38\n\x0c\x63onnect_gate\x12\x18.Nyx.Core.ConnectRequest\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0e\x65ntity_message\x12\x17.Nyx.Core.EntityMessage\x1a\x0e.Nyx.Core.Void\x12\x32\n\x0creg_md5index\x12\x12.Nyx.Core.Md5Index\x1a\x0e.Nyx.Core.Void2\xd0\x03\n\rSGateToClient\x12\x38\n\x0fon_request_seed\x12\x15.Nyx.Core.SessionSeed\x1a\x0e.Nyx.Core.Void\x12\x30\n\x0eon_session_key\x12\x0e.Nyx.Core.Void\x1a\x0e.Nyx.Core.Void\x12<\n\x0fon_connect_gate\x12\x19.Nyx.Core.ConnectResponse\x1a\x0e.Nyx.Core.Void\x12\x35\n\rcreate_entity\x12\x14.Nyx.Core.EntityInfo\x1a\x0e.Nyx.Core.Void\x12\x36\n\x0e\x64\x65stroy_entity\x12\x14.Nyx.Core.EntityInfo\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0e\x65ntity_message\x12\x17.Nyx.Core.EntityMessage\x1a\x0e.Nyx.Core.Void\x12\x37\n\x0e\x63hat_to_client\x12\x15.Nyx.Core.OutbandInfo\x1a\x0e.Nyx.Core.Void\x12\x32\n\x0creg_md5index\x12\x12.Nyx.Core.Md5Index\x1a\x0e.Nyx.Core.VoidB\x06\x80\x01\x01\x90\x01\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x13\x42\x61sicProtocol.proto\x12\x08Nyx.Core\x1a\x0c\x43ommon.proto\"$\n\rEncryptString\x12\x13\n\x0b\x65ncrypt_str\x18\x01 \x01(\x0c\"\x1b\n\x0bSessionSeed\x12\x0c\n\x04seed\x18\x01 \x01(\x03\"i\n\nSessionKey\x12\x1b\n\x13random_padding_head\x18\x01 \x01(\x0c\x12\x13\n\x0bsession_key\x18\x02 \x01(\x0c\x12\x0c\n\x04seed\x18\x03 \x01(\x03\x12\x1b\n\x13random_padding_tail\x18\x04 \x01(\x0c\"\xd3\x01\n\x0e\x46indDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x0e\n\x06\x66ields\x18\x05 \x01(\x0c\x12\r\n\x05limit\x18\x06 \x01(\x05\x12\x10\n\x08seq_flag\x18\x07 \x01(\x08\x12\x0f\n\x07seq_key\x18\x08 \x01(\x0c\x12\x0c\n\x04sort\x18\t \x01(\x0c\x12\x11\n\tread_pref\x18\n \x01(\x05\x12\x0c\n\x04hint\x18\x0b \x01(\x0c\x12\x0c\n\x04skip\x18\x0c \x01(\x0c\"D\n\x0f\x46indDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x0c\n\x04\x64ocs\x18\x03 \x01(\x0c\"U\n\x0f\x43ountDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\"F\n\x10\x43ountDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\r\n\x05\x63ount\x18\x03 \x01(\x05\"\xa5\x01\n\x10UpdateDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x0b\n\x03\x64oc\x18\x05 \x01(\x0c\x12\x0e\n\x06upsert\x18\x06 \x01(\x08\x12\r\n\x05multi\x18\x07 \x01(\x08\x12\x10\n\x08seq_flag\x18\x08 \x01(\x08\x12\x0f\n\x07seq_key\x18\t \x01(\x0c\"8\n\x11UpdateDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\"w\n\x10InsertDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\x0b\n\x03\x64oc\x18\x04 \x01(\x0c\x12\x10\n\x08seq_flag\x18\x05 \x01(\x08\x12\x0f\n\x07seq_key\x18\x06 \x01(\x0c\"K\n\x11InsertDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x11\n\tinsert_id\x18\x03 \x01(\x0c\"y\n\x10\x44\x65leteDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x10\n\x08seq_flag\x18\x05 \x01(\x08\x12\x0f\n\x07seq_key\x18\x06 \x01(\x0c\"8\n\x11\x44\x65leteDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\"\xbd\x01\n\x17\x46indAndModifyDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x0e\n\x06\x66ields\x18\x05 \x01(\x0c\x12\x0e\n\x06update\x18\x06 \x01(\x0c\x12\x0e\n\x06upsert\x18\x07 \x01(\x08\x12\x0b\n\x03new\x18\x08 \x01(\x08\x12\x10\n\x08seq_flag\x18\t \x01(\x08\x12\x0f\n\x07seq_key\x18\n \x01(\x0c\"L\n\x18\x46indAndModifyDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x0b\n\x03\x64oc\x18\x03 \x01(\x0c\"\xd8\x01\n\x15OperationIndexRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12;\n\x04type\x18\x04 \x01(\x0e\x32-.Nyx.Core.OperationIndexRequest.OperationType\x12\r\n\x05query\x18\x05 \x01(\x0c\x12\x0c\n\x04\x64\x65sc\x18\x06 \x01(\x0c\"0\n\rOperationType\x12\n\n\x06\x45NSURE\x10\x00\x12\x08\n\x04\x44ROP\x10\x01\x12\t\n\x05RESET\x10\x02\"=\n\x16OperationIndexResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\"b\n\x17\x43reateCollectionRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\x12\n\noperations\x18\x04 \x01(\x0c\"\xa6\x01\n\x18\x43reateCollectionResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12?\n\x06result\x18\x02 \x01(\x0e\x32/.Nyx.Core.CreateCollectionResponse.CreateResult\"4\n\x0c\x43reateResult\x12\x0b\n\x07SUCCESS\x10\x00\x12\x0b\n\x07\x45XISTED\x10\x01\x12\n\n\x06\x46\x41ILED\x10\x02\"\x83\x01\n\x0f\x44\x42StatusMessage\x12\x34\n\x06status\x18\x01 \x01(\x0e\x32$.Nyx.Core.DBStatusMessage.StatusType\":\n\nStatusType\x12\r\n\tCONNECTED\x10\x00\x12\x13\n\x0f\x43ONNECTION_FAIL\x10\x01\x12\x08\n\x04\x42USY\x10\x02\"B\n\rCallDBRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06method\x18\x02 \x01(\x0c\x12\x0c\n\x04\x61rgs\x18\x03 \x01(\x0c\"3\n\x0e\x43\x61llDBResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0c\n\x04\x61rgs\x18\x02 \x01(\x0c\x32\xa0\x02\n\rSClientToGate\x12.\n\x0crequest_seed\x12\x0e.Nyx.Core.Void\x1a\x0e.Nyx.Core.Void\x12\x36\n\x0bsession_key\x12\x17.Nyx.Core.EncryptString\x1a\x0e.Nyx.Core.Void\x12\x38\n\x0c\x63onnect_gate\x12\x18.Nyx.Core.ConnectRequest\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0e\x65ntity_message\x12\x17.Nyx.Core.EntityMessage\x1a\x0e.Nyx.Core.Void\x12\x32\n\x0creg_md5index\x12\x12.Nyx.Core.Md5Index\x1a\x0e.Nyx.Core.Void2\xd0\x03\n\rSGateToClient\x12\x38\n\x0fon_request_seed\x12\x15.Nyx.Core.SessionSeed\x1a\x0e.Nyx.Core.Void\x12\x30\n\x0eon_session_key\x12\x0e.Nyx.Core.Void\x1a\x0e.Nyx.Core.Void\x12<\n\x0fon_connect_gate\x12\x19.Nyx.Core.ConnectResponse\x1a\x0e.Nyx.Core.Void\x12\x35\n\rcreate_entity\x12\x14.Nyx.Core.EntityInfo\x1a\x0e.Nyx.Core.Void\x12\x36\n\x0e\x64\x65stroy_entity\x12\x14.Nyx.Core.EntityInfo\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0e\x65ntity_message\x12\x17.Nyx.Core.EntityMessage\x1a\x0e.Nyx.Core.Void\x12\x37\n\x0e\x63hat_to_client\x12\x15.Nyx.Core.OutbandInfo\x1a\x0e.Nyx.Core.Void\x12\x32\n\x0creg_md5index\x12\x12.Nyx.Core.Md5Index\x1a\x0e.Nyx.Core.Void2\x8d\x05\n\x12SClientToDBManager\x12\x32\n\nreg_client\x12\x14.Nyx.Core.ServerInfo\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0e\x63\x61ll_db_method\x12\x17.Nyx.Core.CallDBRequest\x1a\x0e.Nyx.Core.Void\x12\x37\n\x0b\x64\x62_find_doc\x12\x18.Nyx.Core.FindDocRequest\x1a\x0e.Nyx.Core.Void\x12;\n\rdb_update_doc\x12\x1a.Nyx.Core.UpdateDocRequest\x1a\x0e.Nyx.Core.Void\x12;\n\rdb_insert_doc\x12\x1a.Nyx.Core.InsertDocRequest\x1a\x0e.Nyx.Core.Void\x12;\n\rdb_delete_doc\x12\x1a.Nyx.Core.DeleteDocRequest\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0c\x64\x62_count_doc\x12\x19.Nyx.Core.CountDocRequest\x1a\x0e.Nyx.Core.Void\x12K\n\x16\x64\x62_find_and_modify_doc\x12!.Nyx.Core.FindAndModifyDocRequest\x1a\x0e.Nyx.Core.Void\x12\x45\n\x12\x64\x62_operation_index\x12\x1f.Nyx.Core.OperationIndexRequest\x1a\x0e.Nyx.Core.Void\x12I\n\x14\x64\x62_create_collection\x12!.Nyx.Core.CreateCollectionRequest\x1a\x0e.Nyx.Core.Void2\xb8\x05\n\x12SDBManagerToClient\x12\x39\n\x0con_db_status\x12\x19.Nyx.Core.DBStatusMessage\x1a\x0e.Nyx.Core.Void\x12=\n\x11on_call_db_method\x12\x18.Nyx.Core.CallDBResponse\x1a\x0e.Nyx.Core.Void\x12;\n\x0eon_db_find_doc\x12\x19.Nyx.Core.FindDocResponse\x1a\x0e.Nyx.Core.Void\x12?\n\x10on_db_update_doc\x12\x1b.Nyx.Core.UpdateDocResponse\x1a\x0e.Nyx.Core.Void\x12?\n\x10on_db_insert_doc\x12\x1b.Nyx.Core.InsertDocResponse\x1a\x0e.Nyx.Core.Void\x12?\n\x10on_db_delete_doc\x12\x1b.Nyx.Core.DeleteDocResponse\x1a\x0e.Nyx.Core.Void\x12=\n\x0fon_db_count_doc\x12\x1a.Nyx.Core.CountDocResponse\x1a\x0e.Nyx.Core.Void\x12O\n\x19on_db_find_and_modify_doc\x12\".Nyx.Core.FindAndModifyDocResponse\x1a\x0e.Nyx.Core.Void\x12I\n\x15on_db_operation_index\x12 .Nyx.Core.OperationIndexResponse\x1a\x0e.Nyx.Core.Void\x12M\n\x17on_db_create_collection\x12\".Nyx.Core.CreateCollectionResponse\x1a\x0e.Nyx.Core.VoidB\x06\x80\x01\x01\x90\x01\x01\x62\x06proto3')
   ,
   dependencies=[Common__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 
+
+_OPERATIONINDEXREQUEST_OPERATIONTYPE = _descriptor.EnumDescriptor(
+  name='OperationType',
+  full_name='Nyx.Core.OperationIndexRequest.OperationType',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='ENSURE', index=0, number=0,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='DROP', index=1, number=1,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='RESET', index=2, number=2,
+      options=None,
+      type=None),
+  ],
+  containing_type=None,
+  options=None,
+  serialized_start=1708,
+  serialized_end=1756,
+)
+_sym_db.RegisterEnumDescriptor(_OPERATIONINDEXREQUEST_OPERATIONTYPE)
+
+_CREATECOLLECTIONRESPONSE_CREATERESULT = _descriptor.EnumDescriptor(
+  name='CreateResult',
+  full_name='Nyx.Core.CreateCollectionResponse.CreateResult',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='SUCCESS', index=0, number=0,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='EXISTED', index=1, number=1,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='FAILED', index=2, number=2,
+      options=None,
+      type=None),
+  ],
+  containing_type=None,
+  options=None,
+  serialized_start=2036,
+  serialized_end=2088,
+)
+_sym_db.RegisterEnumDescriptor(_CREATECOLLECTIONRESPONSE_CREATERESULT)
+
+_DBSTATUSMESSAGE_STATUSTYPE = _descriptor.EnumDescriptor(
+  name='StatusType',
+  full_name='Nyx.Core.DBStatusMessage.StatusType',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='CONNECTED', index=0, number=0,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='CONNECTION_FAIL', index=1, number=1,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='BUSY', index=2, number=2,
+      options=None,
+      type=None),
+  ],
+  containing_type=None,
+  options=None,
+  serialized_start=2164,
+  serialized_end=2222,
+)
+_sym_db.RegisterEnumDescriptor(_DBSTATUSMESSAGE_STATUSTYPE)
 
 
 _ENCRYPTSTRING = _descriptor.Descriptor(
@@ -143,9 +221,1074 @@ _SESSIONKEY = _descriptor.Descriptor(
   serialized_end=219,
 )
 
+
+_FINDDOCREQUEST = _descriptor.Descriptor(
+  name='FindDocRequest',
+  full_name='Nyx.Core.FindDocRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.FindDocRequest.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='db', full_name='Nyx.Core.FindDocRequest.db', index=1,
+      number=2, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='collection', full_name='Nyx.Core.FindDocRequest.collection', index=2,
+      number=3, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='query', full_name='Nyx.Core.FindDocRequest.query', index=3,
+      number=4, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='fields', full_name='Nyx.Core.FindDocRequest.fields', index=4,
+      number=5, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='limit', full_name='Nyx.Core.FindDocRequest.limit', index=5,
+      number=6, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='seq_flag', full_name='Nyx.Core.FindDocRequest.seq_flag', index=6,
+      number=7, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='seq_key', full_name='Nyx.Core.FindDocRequest.seq_key', index=7,
+      number=8, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='sort', full_name='Nyx.Core.FindDocRequest.sort', index=8,
+      number=9, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='read_pref', full_name='Nyx.Core.FindDocRequest.read_pref', index=9,
+      number=10, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='hint', full_name='Nyx.Core.FindDocRequest.hint', index=10,
+      number=11, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='skip', full_name='Nyx.Core.FindDocRequest.skip', index=11,
+      number=12, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=222,
+  serialized_end=433,
+)
+
+
+_FINDDOCRESPONSE = _descriptor.Descriptor(
+  name='FindDocResponse',
+  full_name='Nyx.Core.FindDocResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.FindDocResponse.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='status', full_name='Nyx.Core.FindDocResponse.status', index=1,
+      number=2, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='docs', full_name='Nyx.Core.FindDocResponse.docs', index=2,
+      number=3, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=435,
+  serialized_end=503,
+)
+
+
+_COUNTDOCREQUEST = _descriptor.Descriptor(
+  name='CountDocRequest',
+  full_name='Nyx.Core.CountDocRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.CountDocRequest.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='db', full_name='Nyx.Core.CountDocRequest.db', index=1,
+      number=2, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='collection', full_name='Nyx.Core.CountDocRequest.collection', index=2,
+      number=3, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='query', full_name='Nyx.Core.CountDocRequest.query', index=3,
+      number=4, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=505,
+  serialized_end=590,
+)
+
+
+_COUNTDOCRESPONSE = _descriptor.Descriptor(
+  name='CountDocResponse',
+  full_name='Nyx.Core.CountDocResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.CountDocResponse.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='status', full_name='Nyx.Core.CountDocResponse.status', index=1,
+      number=2, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='count', full_name='Nyx.Core.CountDocResponse.count', index=2,
+      number=3, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=592,
+  serialized_end=662,
+)
+
+
+_UPDATEDOCREQUEST = _descriptor.Descriptor(
+  name='UpdateDocRequest',
+  full_name='Nyx.Core.UpdateDocRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.UpdateDocRequest.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='db', full_name='Nyx.Core.UpdateDocRequest.db', index=1,
+      number=2, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='collection', full_name='Nyx.Core.UpdateDocRequest.collection', index=2,
+      number=3, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='query', full_name='Nyx.Core.UpdateDocRequest.query', index=3,
+      number=4, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='doc', full_name='Nyx.Core.UpdateDocRequest.doc', index=4,
+      number=5, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='upsert', full_name='Nyx.Core.UpdateDocRequest.upsert', index=5,
+      number=6, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='multi', full_name='Nyx.Core.UpdateDocRequest.multi', index=6,
+      number=7, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='seq_flag', full_name='Nyx.Core.UpdateDocRequest.seq_flag', index=7,
+      number=8, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='seq_key', full_name='Nyx.Core.UpdateDocRequest.seq_key', index=8,
+      number=9, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=665,
+  serialized_end=830,
+)
+
+
+_UPDATEDOCRESPONSE = _descriptor.Descriptor(
+  name='UpdateDocResponse',
+  full_name='Nyx.Core.UpdateDocResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.UpdateDocResponse.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='status', full_name='Nyx.Core.UpdateDocResponse.status', index=1,
+      number=2, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=832,
+  serialized_end=888,
+)
+
+
+_INSERTDOCREQUEST = _descriptor.Descriptor(
+  name='InsertDocRequest',
+  full_name='Nyx.Core.InsertDocRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.InsertDocRequest.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='db', full_name='Nyx.Core.InsertDocRequest.db', index=1,
+      number=2, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='collection', full_name='Nyx.Core.InsertDocRequest.collection', index=2,
+      number=3, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='doc', full_name='Nyx.Core.InsertDocRequest.doc', index=3,
+      number=4, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='seq_flag', full_name='Nyx.Core.InsertDocRequest.seq_flag', index=4,
+      number=5, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='seq_key', full_name='Nyx.Core.InsertDocRequest.seq_key', index=5,
+      number=6, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=890,
+  serialized_end=1009,
+)
+
+
+_INSERTDOCRESPONSE = _descriptor.Descriptor(
+  name='InsertDocResponse',
+  full_name='Nyx.Core.InsertDocResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.InsertDocResponse.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='status', full_name='Nyx.Core.InsertDocResponse.status', index=1,
+      number=2, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='insert_id', full_name='Nyx.Core.InsertDocResponse.insert_id', index=2,
+      number=3, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1011,
+  serialized_end=1086,
+)
+
+
+_DELETEDOCREQUEST = _descriptor.Descriptor(
+  name='DeleteDocRequest',
+  full_name='Nyx.Core.DeleteDocRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.DeleteDocRequest.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='db', full_name='Nyx.Core.DeleteDocRequest.db', index=1,
+      number=2, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='collection', full_name='Nyx.Core.DeleteDocRequest.collection', index=2,
+      number=3, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='query', full_name='Nyx.Core.DeleteDocRequest.query', index=3,
+      number=4, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='seq_flag', full_name='Nyx.Core.DeleteDocRequest.seq_flag', index=4,
+      number=5, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='seq_key', full_name='Nyx.Core.DeleteDocRequest.seq_key', index=5,
+      number=6, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1088,
+  serialized_end=1209,
+)
+
+
+_DELETEDOCRESPONSE = _descriptor.Descriptor(
+  name='DeleteDocResponse',
+  full_name='Nyx.Core.DeleteDocResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.DeleteDocResponse.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='status', full_name='Nyx.Core.DeleteDocResponse.status', index=1,
+      number=2, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1211,
+  serialized_end=1267,
+)
+
+
+_FINDANDMODIFYDOCREQUEST = _descriptor.Descriptor(
+  name='FindAndModifyDocRequest',
+  full_name='Nyx.Core.FindAndModifyDocRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.FindAndModifyDocRequest.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='db', full_name='Nyx.Core.FindAndModifyDocRequest.db', index=1,
+      number=2, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='collection', full_name='Nyx.Core.FindAndModifyDocRequest.collection', index=2,
+      number=3, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='query', full_name='Nyx.Core.FindAndModifyDocRequest.query', index=3,
+      number=4, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='fields', full_name='Nyx.Core.FindAndModifyDocRequest.fields', index=4,
+      number=5, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='update', full_name='Nyx.Core.FindAndModifyDocRequest.update', index=5,
+      number=6, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='upsert', full_name='Nyx.Core.FindAndModifyDocRequest.upsert', index=6,
+      number=7, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='new', full_name='Nyx.Core.FindAndModifyDocRequest.new', index=7,
+      number=8, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='seq_flag', full_name='Nyx.Core.FindAndModifyDocRequest.seq_flag', index=8,
+      number=9, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='seq_key', full_name='Nyx.Core.FindAndModifyDocRequest.seq_key', index=9,
+      number=10, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1270,
+  serialized_end=1459,
+)
+
+
+_FINDANDMODIFYDOCRESPONSE = _descriptor.Descriptor(
+  name='FindAndModifyDocResponse',
+  full_name='Nyx.Core.FindAndModifyDocResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.FindAndModifyDocResponse.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='status', full_name='Nyx.Core.FindAndModifyDocResponse.status', index=1,
+      number=2, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='doc', full_name='Nyx.Core.FindAndModifyDocResponse.doc', index=2,
+      number=3, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1461,
+  serialized_end=1537,
+)
+
+
+_OPERATIONINDEXREQUEST = _descriptor.Descriptor(
+  name='OperationIndexRequest',
+  full_name='Nyx.Core.OperationIndexRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.OperationIndexRequest.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='db', full_name='Nyx.Core.OperationIndexRequest.db', index=1,
+      number=2, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='collection', full_name='Nyx.Core.OperationIndexRequest.collection', index=2,
+      number=3, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='type', full_name='Nyx.Core.OperationIndexRequest.type', index=3,
+      number=4, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='query', full_name='Nyx.Core.OperationIndexRequest.query', index=4,
+      number=5, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='desc', full_name='Nyx.Core.OperationIndexRequest.desc', index=5,
+      number=6, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+    _OPERATIONINDEXREQUEST_OPERATIONTYPE,
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1540,
+  serialized_end=1756,
+)
+
+
+_OPERATIONINDEXRESPONSE = _descriptor.Descriptor(
+  name='OperationIndexResponse',
+  full_name='Nyx.Core.OperationIndexResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.OperationIndexResponse.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='status', full_name='Nyx.Core.OperationIndexResponse.status', index=1,
+      number=2, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1758,
+  serialized_end=1819,
+)
+
+
+_CREATECOLLECTIONREQUEST = _descriptor.Descriptor(
+  name='CreateCollectionRequest',
+  full_name='Nyx.Core.CreateCollectionRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.CreateCollectionRequest.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='db', full_name='Nyx.Core.CreateCollectionRequest.db', index=1,
+      number=2, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='collection', full_name='Nyx.Core.CreateCollectionRequest.collection', index=2,
+      number=3, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='operations', full_name='Nyx.Core.CreateCollectionRequest.operations', index=3,
+      number=4, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1821,
+  serialized_end=1919,
+)
+
+
+_CREATECOLLECTIONRESPONSE = _descriptor.Descriptor(
+  name='CreateCollectionResponse',
+  full_name='Nyx.Core.CreateCollectionResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.CreateCollectionResponse.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='result', full_name='Nyx.Core.CreateCollectionResponse.result', index=1,
+      number=2, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+    _CREATECOLLECTIONRESPONSE_CREATERESULT,
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1922,
+  serialized_end=2088,
+)
+
+
+_DBSTATUSMESSAGE = _descriptor.Descriptor(
+  name='DBStatusMessage',
+  full_name='Nyx.Core.DBStatusMessage',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='status', full_name='Nyx.Core.DBStatusMessage.status', index=0,
+      number=1, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+    _DBSTATUSMESSAGE_STATUSTYPE,
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=2091,
+  serialized_end=2222,
+)
+
+
+_CALLDBREQUEST = _descriptor.Descriptor(
+  name='CallDBRequest',
+  full_name='Nyx.Core.CallDBRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.CallDBRequest.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='method', full_name='Nyx.Core.CallDBRequest.method', index=1,
+      number=2, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='args', full_name='Nyx.Core.CallDBRequest.args', index=2,
+      number=3, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=2224,
+  serialized_end=2290,
+)
+
+
+_CALLDBRESPONSE = _descriptor.Descriptor(
+  name='CallDBResponse',
+  full_name='Nyx.Core.CallDBResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.CallDBResponse.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='args', full_name='Nyx.Core.CallDBResponse.args', index=1,
+      number=2, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=2292,
+  serialized_end=2343,
+)
+
+_OPERATIONINDEXREQUEST.fields_by_name['type'].enum_type = _OPERATIONINDEXREQUEST_OPERATIONTYPE
+_OPERATIONINDEXREQUEST_OPERATIONTYPE.containing_type = _OPERATIONINDEXREQUEST
+_CREATECOLLECTIONRESPONSE.fields_by_name['result'].enum_type = _CREATECOLLECTIONRESPONSE_CREATERESULT
+_CREATECOLLECTIONRESPONSE_CREATERESULT.containing_type = _CREATECOLLECTIONRESPONSE
+_DBSTATUSMESSAGE.fields_by_name['status'].enum_type = _DBSTATUSMESSAGE_STATUSTYPE
+_DBSTATUSMESSAGE_STATUSTYPE.containing_type = _DBSTATUSMESSAGE
 DESCRIPTOR.message_types_by_name['EncryptString'] = _ENCRYPTSTRING
 DESCRIPTOR.message_types_by_name['SessionSeed'] = _SESSIONSEED
 DESCRIPTOR.message_types_by_name['SessionKey'] = _SESSIONKEY
+DESCRIPTOR.message_types_by_name['FindDocRequest'] = _FINDDOCREQUEST
+DESCRIPTOR.message_types_by_name['FindDocResponse'] = _FINDDOCRESPONSE
+DESCRIPTOR.message_types_by_name['CountDocRequest'] = _COUNTDOCREQUEST
+DESCRIPTOR.message_types_by_name['CountDocResponse'] = _COUNTDOCRESPONSE
+DESCRIPTOR.message_types_by_name['UpdateDocRequest'] = _UPDATEDOCREQUEST
+DESCRIPTOR.message_types_by_name['UpdateDocResponse'] = _UPDATEDOCRESPONSE
+DESCRIPTOR.message_types_by_name['InsertDocRequest'] = _INSERTDOCREQUEST
+DESCRIPTOR.message_types_by_name['InsertDocResponse'] = _INSERTDOCRESPONSE
+DESCRIPTOR.message_types_by_name['DeleteDocRequest'] = _DELETEDOCREQUEST
+DESCRIPTOR.message_types_by_name['DeleteDocResponse'] = _DELETEDOCRESPONSE
+DESCRIPTOR.message_types_by_name['FindAndModifyDocRequest'] = _FINDANDMODIFYDOCREQUEST
+DESCRIPTOR.message_types_by_name['FindAndModifyDocResponse'] = _FINDANDMODIFYDOCRESPONSE
+DESCRIPTOR.message_types_by_name['OperationIndexRequest'] = _OPERATIONINDEXREQUEST
+DESCRIPTOR.message_types_by_name['OperationIndexResponse'] = _OPERATIONINDEXRESPONSE
+DESCRIPTOR.message_types_by_name['CreateCollectionRequest'] = _CREATECOLLECTIONREQUEST
+DESCRIPTOR.message_types_by_name['CreateCollectionResponse'] = _CREATECOLLECTIONRESPONSE
+DESCRIPTOR.message_types_by_name['DBStatusMessage'] = _DBSTATUSMESSAGE
+DESCRIPTOR.message_types_by_name['CallDBRequest'] = _CALLDBREQUEST
+DESCRIPTOR.message_types_by_name['CallDBResponse'] = _CALLDBRESPONSE
 
 EncryptString = _reflection.GeneratedProtocolMessageType('EncryptString', (_message.Message,), dict(
   DESCRIPTOR = _ENCRYPTSTRING,
@@ -168,6 +1311,139 @@ SessionKey = _reflection.GeneratedProtocolMessageType('SessionKey', (_message.Me
   ))
 _sym_db.RegisterMessage(SessionKey)
 
+FindDocRequest = _reflection.GeneratedProtocolMessageType('FindDocRequest', (_message.Message,), dict(
+  DESCRIPTOR = _FINDDOCREQUEST,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.FindDocRequest)
+  ))
+_sym_db.RegisterMessage(FindDocRequest)
+
+FindDocResponse = _reflection.GeneratedProtocolMessageType('FindDocResponse', (_message.Message,), dict(
+  DESCRIPTOR = _FINDDOCRESPONSE,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.FindDocResponse)
+  ))
+_sym_db.RegisterMessage(FindDocResponse)
+
+CountDocRequest = _reflection.GeneratedProtocolMessageType('CountDocRequest', (_message.Message,), dict(
+  DESCRIPTOR = _COUNTDOCREQUEST,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.CountDocRequest)
+  ))
+_sym_db.RegisterMessage(CountDocRequest)
+
+CountDocResponse = _reflection.GeneratedProtocolMessageType('CountDocResponse', (_message.Message,), dict(
+  DESCRIPTOR = _COUNTDOCRESPONSE,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.CountDocResponse)
+  ))
+_sym_db.RegisterMessage(CountDocResponse)
+
+UpdateDocRequest = _reflection.GeneratedProtocolMessageType('UpdateDocRequest', (_message.Message,), dict(
+  DESCRIPTOR = _UPDATEDOCREQUEST,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.UpdateDocRequest)
+  ))
+_sym_db.RegisterMessage(UpdateDocRequest)
+
+UpdateDocResponse = _reflection.GeneratedProtocolMessageType('UpdateDocResponse', (_message.Message,), dict(
+  DESCRIPTOR = _UPDATEDOCRESPONSE,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.UpdateDocResponse)
+  ))
+_sym_db.RegisterMessage(UpdateDocResponse)
+
+InsertDocRequest = _reflection.GeneratedProtocolMessageType('InsertDocRequest', (_message.Message,), dict(
+  DESCRIPTOR = _INSERTDOCREQUEST,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.InsertDocRequest)
+  ))
+_sym_db.RegisterMessage(InsertDocRequest)
+
+InsertDocResponse = _reflection.GeneratedProtocolMessageType('InsertDocResponse', (_message.Message,), dict(
+  DESCRIPTOR = _INSERTDOCRESPONSE,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.InsertDocResponse)
+  ))
+_sym_db.RegisterMessage(InsertDocResponse)
+
+DeleteDocRequest = _reflection.GeneratedProtocolMessageType('DeleteDocRequest', (_message.Message,), dict(
+  DESCRIPTOR = _DELETEDOCREQUEST,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.DeleteDocRequest)
+  ))
+_sym_db.RegisterMessage(DeleteDocRequest)
+
+DeleteDocResponse = _reflection.GeneratedProtocolMessageType('DeleteDocResponse', (_message.Message,), dict(
+  DESCRIPTOR = _DELETEDOCRESPONSE,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.DeleteDocResponse)
+  ))
+_sym_db.RegisterMessage(DeleteDocResponse)
+
+FindAndModifyDocRequest = _reflection.GeneratedProtocolMessageType('FindAndModifyDocRequest', (_message.Message,), dict(
+  DESCRIPTOR = _FINDANDMODIFYDOCREQUEST,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.FindAndModifyDocRequest)
+  ))
+_sym_db.RegisterMessage(FindAndModifyDocRequest)
+
+FindAndModifyDocResponse = _reflection.GeneratedProtocolMessageType('FindAndModifyDocResponse', (_message.Message,), dict(
+  DESCRIPTOR = _FINDANDMODIFYDOCRESPONSE,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.FindAndModifyDocResponse)
+  ))
+_sym_db.RegisterMessage(FindAndModifyDocResponse)
+
+OperationIndexRequest = _reflection.GeneratedProtocolMessageType('OperationIndexRequest', (_message.Message,), dict(
+  DESCRIPTOR = _OPERATIONINDEXREQUEST,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.OperationIndexRequest)
+  ))
+_sym_db.RegisterMessage(OperationIndexRequest)
+
+OperationIndexResponse = _reflection.GeneratedProtocolMessageType('OperationIndexResponse', (_message.Message,), dict(
+  DESCRIPTOR = _OPERATIONINDEXRESPONSE,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.OperationIndexResponse)
+  ))
+_sym_db.RegisterMessage(OperationIndexResponse)
+
+CreateCollectionRequest = _reflection.GeneratedProtocolMessageType('CreateCollectionRequest', (_message.Message,), dict(
+  DESCRIPTOR = _CREATECOLLECTIONREQUEST,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.CreateCollectionRequest)
+  ))
+_sym_db.RegisterMessage(CreateCollectionRequest)
+
+CreateCollectionResponse = _reflection.GeneratedProtocolMessageType('CreateCollectionResponse', (_message.Message,), dict(
+  DESCRIPTOR = _CREATECOLLECTIONRESPONSE,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.CreateCollectionResponse)
+  ))
+_sym_db.RegisterMessage(CreateCollectionResponse)
+
+DBStatusMessage = _reflection.GeneratedProtocolMessageType('DBStatusMessage', (_message.Message,), dict(
+  DESCRIPTOR = _DBSTATUSMESSAGE,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.DBStatusMessage)
+  ))
+_sym_db.RegisterMessage(DBStatusMessage)
+
+CallDBRequest = _reflection.GeneratedProtocolMessageType('CallDBRequest', (_message.Message,), dict(
+  DESCRIPTOR = _CALLDBREQUEST,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.CallDBRequest)
+  ))
+_sym_db.RegisterMessage(CallDBRequest)
+
+CallDBResponse = _reflection.GeneratedProtocolMessageType('CallDBResponse', (_message.Message,), dict(
+  DESCRIPTOR = _CALLDBRESPONSE,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.CallDBResponse)
+  ))
+_sym_db.RegisterMessage(CallDBResponse)
+
 
 DESCRIPTOR.has_options = True
 DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), _b('\200\001\001\220\001\001'))
@@ -178,8 +1454,8 @@ _SCLIENTTOGATE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   options=None,
-  serialized_start=222,
-  serialized_end=510,
+  serialized_start=2346,
+  serialized_end=2634,
   methods=[
   _descriptor.MethodDescriptor(
     name='request_seed',
@@ -246,8 +1522,8 @@ _SGATETOCLIENT = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=1,
   options=None,
-  serialized_start=513,
-  serialized_end=977,
+  serialized_start=2637,
+  serialized_end=3101,
   methods=[
   _descriptor.MethodDescriptor(
     name='on_request_seed',
@@ -330,6 +1606,232 @@ SGateToClient = service_reflection.GeneratedServiceType('SGateToClient', (_servi
 
 SGateToClient_Stub = service_reflection.GeneratedServiceStubType('SGateToClient_Stub', (SGateToClient,), dict(
   DESCRIPTOR = _SGATETOCLIENT,
+  __module__ = 'BasicProtocol_pb2'
+  ))
+
+
+
+_SCLIENTTODBMANAGER = _descriptor.ServiceDescriptor(
+  name='SClientToDBManager',
+  full_name='Nyx.Core.SClientToDBManager',
+  file=DESCRIPTOR,
+  index=2,
+  options=None,
+  serialized_start=3104,
+  serialized_end=3757,
+  methods=[
+  _descriptor.MethodDescriptor(
+    name='reg_client',
+    full_name='Nyx.Core.SClientToDBManager.reg_client',
+    index=0,
+    containing_service=None,
+    input_type=Common__pb2._SERVERINFO,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='call_db_method',
+    full_name='Nyx.Core.SClientToDBManager.call_db_method',
+    index=1,
+    containing_service=None,
+    input_type=_CALLDBREQUEST,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='db_find_doc',
+    full_name='Nyx.Core.SClientToDBManager.db_find_doc',
+    index=2,
+    containing_service=None,
+    input_type=_FINDDOCREQUEST,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='db_update_doc',
+    full_name='Nyx.Core.SClientToDBManager.db_update_doc',
+    index=3,
+    containing_service=None,
+    input_type=_UPDATEDOCREQUEST,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='db_insert_doc',
+    full_name='Nyx.Core.SClientToDBManager.db_insert_doc',
+    index=4,
+    containing_service=None,
+    input_type=_INSERTDOCREQUEST,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='db_delete_doc',
+    full_name='Nyx.Core.SClientToDBManager.db_delete_doc',
+    index=5,
+    containing_service=None,
+    input_type=_DELETEDOCREQUEST,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='db_count_doc',
+    full_name='Nyx.Core.SClientToDBManager.db_count_doc',
+    index=6,
+    containing_service=None,
+    input_type=_COUNTDOCREQUEST,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='db_find_and_modify_doc',
+    full_name='Nyx.Core.SClientToDBManager.db_find_and_modify_doc',
+    index=7,
+    containing_service=None,
+    input_type=_FINDANDMODIFYDOCREQUEST,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='db_operation_index',
+    full_name='Nyx.Core.SClientToDBManager.db_operation_index',
+    index=8,
+    containing_service=None,
+    input_type=_OPERATIONINDEXREQUEST,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='db_create_collection',
+    full_name='Nyx.Core.SClientToDBManager.db_create_collection',
+    index=9,
+    containing_service=None,
+    input_type=_CREATECOLLECTIONREQUEST,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+])
+
+SClientToDBManager = service_reflection.GeneratedServiceType('SClientToDBManager', (_service.Service,), dict(
+  DESCRIPTOR = _SCLIENTTODBMANAGER,
+  __module__ = 'BasicProtocol_pb2'
+  ))
+
+SClientToDBManager_Stub = service_reflection.GeneratedServiceStubType('SClientToDBManager_Stub', (SClientToDBManager,), dict(
+  DESCRIPTOR = _SCLIENTTODBMANAGER,
+  __module__ = 'BasicProtocol_pb2'
+  ))
+
+
+
+_SDBMANAGERTOCLIENT = _descriptor.ServiceDescriptor(
+  name='SDBManagerToClient',
+  full_name='Nyx.Core.SDBManagerToClient',
+  file=DESCRIPTOR,
+  index=3,
+  options=None,
+  serialized_start=3760,
+  serialized_end=4456,
+  methods=[
+  _descriptor.MethodDescriptor(
+    name='on_db_status',
+    full_name='Nyx.Core.SDBManagerToClient.on_db_status',
+    index=0,
+    containing_service=None,
+    input_type=_DBSTATUSMESSAGE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_call_db_method',
+    full_name='Nyx.Core.SDBManagerToClient.on_call_db_method',
+    index=1,
+    containing_service=None,
+    input_type=_CALLDBRESPONSE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_db_find_doc',
+    full_name='Nyx.Core.SDBManagerToClient.on_db_find_doc',
+    index=2,
+    containing_service=None,
+    input_type=_FINDDOCRESPONSE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_db_update_doc',
+    full_name='Nyx.Core.SDBManagerToClient.on_db_update_doc',
+    index=3,
+    containing_service=None,
+    input_type=_UPDATEDOCRESPONSE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_db_insert_doc',
+    full_name='Nyx.Core.SDBManagerToClient.on_db_insert_doc',
+    index=4,
+    containing_service=None,
+    input_type=_INSERTDOCRESPONSE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_db_delete_doc',
+    full_name='Nyx.Core.SDBManagerToClient.on_db_delete_doc',
+    index=5,
+    containing_service=None,
+    input_type=_DELETEDOCRESPONSE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_db_count_doc',
+    full_name='Nyx.Core.SDBManagerToClient.on_db_count_doc',
+    index=6,
+    containing_service=None,
+    input_type=_COUNTDOCRESPONSE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_db_find_and_modify_doc',
+    full_name='Nyx.Core.SDBManagerToClient.on_db_find_and_modify_doc',
+    index=7,
+    containing_service=None,
+    input_type=_FINDANDMODIFYDOCRESPONSE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_db_operation_index',
+    full_name='Nyx.Core.SDBManagerToClient.on_db_operation_index',
+    index=8,
+    containing_service=None,
+    input_type=_OPERATIONINDEXRESPONSE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_db_create_collection',
+    full_name='Nyx.Core.SDBManagerToClient.on_db_create_collection',
+    index=9,
+    containing_service=None,
+    input_type=_CREATECOLLECTIONRESPONSE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+])
+
+SDBManagerToClient = service_reflection.GeneratedServiceType('SDBManagerToClient', (_service.Service,), dict(
+  DESCRIPTOR = _SDBMANAGERTOCLIENT,
+  __module__ = 'BasicProtocol_pb2'
+  ))
+
+SDBManagerToClient_Stub = service_reflection.GeneratedServiceStubType('SDBManagerToClient_Stub', (SDBManagerToClient,), dict(
+  DESCRIPTOR = _SDBMANAGERTOCLIENT,
   __module__ = 'BasicProtocol_pb2'
   ))
 
