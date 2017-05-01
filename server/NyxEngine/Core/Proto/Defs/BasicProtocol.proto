@@ -1,0 +1,92 @@
+// Copyright (c) 2017 ASMlover. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list ofconditions and the following disclaimer.
+//
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in
+//    the documentation and/or other materialsprovided with the
+//    distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+syntax = "proto3";
+import "Common.proto";
+package Nyx.Core;
+
+option cc_generic_services = true;
+option py_generic_services = true;
+
+// NyxEngine服务器与客户端通信的基本通信协议
+// RPC Service的定义规范：
+//  [1] 以`S`开头，表示是RPC Service定义
+//  [2] 以`To`来连接通信双方，如SClientToGate表示Client到Gate的协议，需要Gate
+//      对定义RPC进行监听、并处理
+//  [3] 对于请求返回的RPC函数，尽量以`on_`开头表示对请求的应答回调
+
+// 客户端与Gate之间的基本通信协议
+message EncryptString {
+  bytes encrypt_str = 1; // 加密的字符串信息
+}
+
+message SessionSeed {
+  int64 seed = 1; // 加密的随机数种子
+}
+
+message SessionKey {
+  bytes random_padding_head = 1;
+  bytes session_key = 2; // 加密的会话字符串
+  int64 seed = 3; // 服务器返回给客户端的随机种子
+  bytes random_padding_tail = 4;
+}
+
+service SClientToGate {
+  // 客户端发送到Gate服务器的RPC请求，需要Gate实现
+
+  // 向Gate服务器请求随机数种子
+  rpc request_seed(Void) returns(Void);
+  // 向Gate服务器注册通信密钥
+  rpc session_key(EncryptString) returns(Void);
+  // 连接Gate服务器，进行通信认证
+  rpc connect_gate(ConnectRequest) returns(Void);
+  // 客户端向服务器发起的RPC调用（这些调用通过Gate进行转发）
+  rpc entity_message(EntityMessage) returns(Void);
+  // 将客户端字符串的MD5对应索引注册到服务器
+  rpc reg_md5index(Md5Index) returns(Void);
+}
+
+service SGateToClient {
+  // Gate服务器返回给客户端的RPC消息，需要客户端实现
+
+  // 返回客户端请求的随机数种子
+  rpc on_request_seed(SessionSeed) returns(Void);
+  // 告知客户端注册通信密钥成功
+  rpc on_session_key(Void) returns(Void);
+  // 回复客户端连接Gate的请求
+  rpc on_connect_gate(ConnectResponse) returns(Void);
+  // 服务器通知客户端创建Entity（Game通过Gate转发的RPC调用）
+  rpc create_entity(EntityInfo) returns(Void);
+  // 服务器通知客户端销毁Entity（Game通过Gate转发的RPC调用）
+  rpc destroy_entity(EntityInfo) returns(Void);
+  // 服务器向客户端发起的RPC调用（这些调用通过Gate进行转发）
+  rpc entity_message(EntityMessage) returns(Void);
+  // 服务器发送给客户端的带外数据信息
+  rpc chat_to_client(OutbandInfo) returns(Void);
+  // 将服务器字符串的MD5对应索引注册到客户端
+  rpc reg_md5index(Md5Index) returns(Void);
+}
