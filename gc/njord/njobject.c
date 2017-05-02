@@ -216,7 +216,8 @@ NjTypeObject NjType_Type = {
   0, /* tp_gc */
 };
 
-static Nj_uchar_t gc_bitmaps[Nj_VMSTACK];
+#define Nj_BITMAPSLEN (1361)
+static Nj_uchar_t gc_bitmaps[Nj_BITMAPSLEN];
 
 void
 njmark_init(void) {
@@ -225,15 +226,15 @@ njmark_init(void) {
 
 Nj_bool_t
 njmark_ismarked(NjObject* obj) {
-  return (Nj_bool_t)(gc_bitmaps[njhash_getindex(obj, Nj_VMSTACK)] == MARKED);
+  return (Nj_bool_t)(gc_bitmaps[njhash_getindex(obj, Nj_BITMAPSLEN)] == MARKED);
 }
 
 void
 njmark_setmark(NjObject* obj) {
-  gc_bitmaps[njhash_getindex(obj, Nj_VMSTACK)] = MARKED;
+  gc_bitmaps[njhash_getindex(obj, Nj_BITMAPSLEN)] = MARKED;
 }
 
 void
 njmark_unsetmark(NjObject* obj) {
-  gc_bitmaps[njhash_getindex(obj, Nj_VMSTACK)] = UNMARKED;
+  gc_bitmaps[njhash_getindex(obj, Nj_BITMAPSLEN)] = UNMARKED;
 }

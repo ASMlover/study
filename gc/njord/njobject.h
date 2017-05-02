@@ -106,13 +106,7 @@ typedef enum _marked {
   MARKED,
 } NjMarked;
 
-inline int
-njhash_getindex(NjObject* obj, Nj_ssize_t table_size) {
-  /* get hash index with table size */
-  Nj_size_t h = 1315423911;
-  h ^= ((h << 5) + (Nj_size_t)obj + (h >> 2));
-  return h % table_size;
-}
+#define njhash_getindex(ob, sz) ((Nj_size_t)(ob) % (sz))
 
 NjAPI_FUNC(void) njmark_init(void);
 NjAPI_FUNC(Nj_bool_t) njmark_ismarked(NjObject* obj);

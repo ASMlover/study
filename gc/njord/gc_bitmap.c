@@ -30,7 +30,8 @@
 #include "njlog.h"
 #include "njvm.h"
 
-#define Nj_GC_BITMAPS       (Nj_GC_MAXTHRESHOLD >> 3)
+#define Nj_TABLESIZE        (1361)
+#define Nj_GC_BITMAPS       ((Nj_TABLESIZE >> 3) + 1)
 #define Nj_BIT_BIG(i)       ((i) / 8)
 #define Nj_BIT_SMALL(i)     ((i) % 8)
 #define Nj_BIT_INIT()       (memset(gc_bitmaps, 0, sizeof(gc_bitmaps)))
@@ -53,7 +54,7 @@ static Nj_uchar_t gc_bitmaps[Nj_GC_BITMAPS];
 
 static void
 _njbitmap_mark(NjObject* obj) {
-  int i = njhash_getindex(obj, Nj_GC_MAXTHRESHOLD);
+  int i = njhash_getindex(obj, Nj_TABLESIZE);
   if (Nj_BIT_GET(i))
     return;
 
@@ -77,7 +78,7 @@ static void
 _njbitmap_sweep(NjVMObject* vm) {
   NjObject** startobj = &vm->startobj;
   while (*startobj != NULL) {
-    int i = njhash_getindex(*startobj, Nj_GC_MAXTHRESHOLD);
+    int i = njhash_getindex(*startobj, Nj_TABLESIZE);
     if (!Nj_BIT_GET(i)) {
       NjObject* unmarked = *startobj;
       *startobj = ((NjVarObject*)unmarked)->next;
