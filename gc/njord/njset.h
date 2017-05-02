@@ -38,7 +38,7 @@ NjAPI_FUNC(NjSet*) njset_create(void);
 NjAPI_FUNC(void) njset_dealloc(NjSet* set);
 NjAPI_FUNC(void) njset_clear(NjSet* set);
 NjAPI_FUNC(Nj_ssize_t) njset_size(NjSet* set);
-NjAPI_FUNC(Nj_bool_t) njset_contains(NjSet* dict, NjObject* obj);
+NjAPI_FUNC(Nj_bool_t) njset_contains(NjSet* set, NjObject* obj);
 NjAPI_FUNC(void) njset_add(NjSet* set, NjObject* obj);
 NjAPI_FUNC(void) njset_remove(NjSet* set, NjObject* obj);
 NjAPI_FUNC(NjObject*) njset_pop(NjSet* set);
