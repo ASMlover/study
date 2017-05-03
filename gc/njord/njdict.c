@@ -88,6 +88,17 @@ njdict_add(NjDict* dict, NjObject* key, NjObject* value) {
   }
 }
 
+NjObject*
+njdict_get(NjDict* dict, NjObject* key) {
+  NjObject* value = NULL;
+  if (key != NULL) {
+    Nj_size_t i = Nj_HASH(key);
+    if (dict->table[i].key == key)
+      value = dict->table[i].value;
+  }
+  return value;
+}
+
 void
 njdict_remove(NjDict* dict, NjObject* key) {
   if (key != NULL) {
@@ -121,4 +132,16 @@ njdict_traverse(NjDict* dict, visitfunc visit, void* arg) {
     if (dict->table[i].key != NULL)
       visit(dict->table[i].value, arg);
   }
+}
+
+NjObject*
+njdict_itemkey(NjObject* obj) {
+  Nj_CHECK(obj != NULL, "NjDict item should be valid");
+  return ((Entry*)obj)->key;
+}
+
+NjObject*
+njdict_itemvalue(NjObject* obj) {
+  Nj_CHECK(obj != NULL, "NjDict item should be valid");
+  return ((Entry*)obj)->value;
 }

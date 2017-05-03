@@ -40,8 +40,11 @@ NjAPI_FUNC(void) njdict_clear(NjDict* dict);
 NjAPI_FUNC(Nj_ssize_t) njdict_size(NjDict* dict);
 NjAPI_FUNC(Nj_bool_t) njdict_contains(NjDict* dict, NjObject* key);
 NjAPI_FUNC(void) njdict_add(NjDict* dict, NjObject* key, NjObject* value);
+NjAPI_FUNC(NjObject*) njdict_get(NjDict* dict, NjObject* key);
 NjAPI_FUNC(void) njdict_remove(NjDict* dict, NjObject* key);
 NjAPI_FUNC(NjObject*) njdict_pop(NjDict* dict);
 NjAPI_FUNC(void) njdict_traverse(NjDict* set, visitfunc visit, void* arg);
+NjAPI_FUNC(NjObject*) njdict_itemkey(NjObject* obj);
+NjAPI_FUNC(NjObject*) njdict_itemvalue(NjObject* obj);
 
 #endif /* Nj_NJDICT_H */
