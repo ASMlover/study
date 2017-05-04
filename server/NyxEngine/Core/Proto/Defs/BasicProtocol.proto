@@ -291,3 +291,128 @@ service SDBManagerToClient {
   rpc on_db_operation_index(OperationIndexResponse) returns(Void);
   rpc on_db_create_collection(CreateCollectionResponse) returns(Void);
 }
+
+// Gate与Game之间的通信协议
+message ClientInfo {
+  // Gate收到客户端的请求后，添加ClientInfo信息到routes，以便Game知道
+  // 发送请求的客户端来做相应的处理
+  bytes ip = 1; // 客户端的ip地址
+  int32 port = 2; // 客户端的端口信息
+  bytes client_id = 3; // 客户端的标识id信息
+  bytes session_id = 4; // 服务器的session id
+  bytes gate_id = 5; // Gate服务器的id标识
+}
+
+message ClientBindMessage {
+  ClientInfo client_info = 1; // 客户端标识信息
+  ServerInfo server_info = 2; // 服务器标识信息
+  bytes entity_id = 3; // 需要转移的Entity的id信息
+}
+
+message RegMd5IndexMessage {
+  bytes routes = 1;
+  Md5Index md5index = 2;
+}
+
+message GateReturnValue {
+  ClientInfo client_info = 1; // 客户端标识信息
+  bool return_status = 2; // 返回信息状态，是否OK
+}
+
+message RealEntityCreateInfo {
+  ServerInfo dst_server = 1; // 迁移的目标服务器信息
+  ServerInfo src_server = 2; // 迁移的源服务器信息
+  bytes real_entity_id = 3; // 需要迁移的Entity的id信息
+  bytes real_entity_type = 4; // 需要迁移的Entity的类型信息
+  bytes migrate_entity_id = 5; // 迁移的目标服务器的占位Entity的id信息
+  bytes content = 6; // Entity的初始化信息
+  bytes client_info_cache = 7; // 如需要创建Avatar，则需要设置client info信息
+}
+
+message GateToGameReturnValue {
+  enum CallbackType {
+    NO_CALLBACK = 0; // 没有这个callback
+    GATE2GAME_ENTITYMSG = 1; // Gate到Game的entity_message
+  }
+  CallbackType type = 1;
+  int32 callback_id = 2; // 默认的callback id信息，RPC调用传递
+  bool return_status = 3; // bool类型返回值
+  bytes return_value = 4; // 复杂类型的返回值
+  bytes error_msg = 5; // 错误信息
+}
+
+message GateInfo {
+  bytes gate_id = 1; // Gate的id标识信息
+}
+
+message ServerLoad {
+  // 服务器负载
+  double load = 1;
+}
+
+message GateMessage {
+  Md5Index method = 1;
+  bytes parameters = 2;
+}
+
+service SGateToGame {
+  // Gate服务器与Game服务器通信的RPC定义，需要Game实现
+
+  // 连接Game服务器
+  rpc connect_game(ConnectRequest) returns(Void);
+  // 客户端发送到Game的rpc消息，经由Gate转发
+  rpc entity_message(EntityMessage) returns(Void);
+  // 通知Game，客户端断开连接
+  rpc client_lose_connection(ClientInfo) returns(Void);
+  // Gate准备好之后，回复Game可以开始迁移Entity了
+  rpc transfer_client_callback(GateReturnValue) returns(Void);
+  // Gate转发Game之间的消息
+  rpc forward_entity_message(EntityMessage) returns(Void);
+  // 注册Gate到Game，用于消息转发
+  rpc reg_gate(GateInfo) returns(Void);
+  // Gate转发的回调
+  rpc gate_callback(GateToGameReturnValue) returns(Void);
+  // Avatar迁移成功后，通知Game删除相应的绑定
+  rpc unbind_client_from_game(ClientInfo) returns(Void);
+  // 通知Game创建真的Entity
+  rpc create_real_entity(RealEntityCreateInfo) returns(Void);
+  // 通知Game真的Entity迁移到目标服务器并创建成功了
+  rpc create_real_entity_successed(EntityMailbox) returns(Void);
+  // 客户端注册MD5和对应索引信息
+  rpc reg_md5index(RegMd5IndexMessage) returns(Void);
+}
+
+service SGameToGate {
+  // Game与Gate之间的RPC通信，需要Gate实现
+
+  // 对Gate连接Game的请求应答
+  rpc on_connect_game(ConnectResponse) returns(Void);
+  // Game通知客户端创建Entity，通过Gate进行转发
+  rpc create_entity(EntityInfo) returns(Void);
+  // Game通知客户端销毁Entity，通过Gate进行转发
+  rpc destroy_entity(EntityInfo) returns(Void);
+  // Game主动断开与客户端的连接
+  rpc disconnect_client(ClientInfo) returns(Void);
+  // Game通过Gate进行转发与客户端之间的RPC消息
+  rpc entity_message(EntityMessage) returns(Void);
+  // Game发送全局对象的RPC消息到客户端
+  rpc global_entity_message(GlobalEntityMessage) returns(Void);
+  // Game发送给客户端的一些带外数据信息
+  rpc chat_to_client(OutbandInfo) returns(Void);
+  // Game通知Gate进行迁移Avatar的操作，需要Gate做一些缓存操作
+  rpc transfer_client(ClientBindMessage) returns(Void);
+  // 跨进程迁移Avatar到新的Game，通知Gate将Avatar绑定到目标Game
+  rpc bind_client_to_game(ClientBindMessage) returns(Void);
+  // Game通过Gate转发Game对象之间的RPC消息
+  rpc forward_entity_message(EntityMessage) returns(Void);
+  // 通知目标Game创建准备迁移对象Entity
+  rpc create_real_entity(RealEntityCreateInfo) returns(Void);
+  // 通知Gate迁移的源Game已经在目标服务器创建了迁移对象Entity
+  rpc create_real_entity_successed(EntityMailbox) returns(Void);
+  // 向客户端注册MD5以及对应的index消息
+  rpc reg_md5index(RegMd5IndexMessage) returns(Void);
+  // Game服务器向Gate服务器发送当前Game的负载信息
+  rpc notify_game_load(ServerLoad) returns(Void);
+  // Game发送给Gate的RPC消息
+  rpc gate_method(GateMessage) returns(Void);
+}
