@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='BasicProtocol.proto',
   package='Nyx.Core',
   syntax='proto3',
-  serialized_pb=_b('\n\x13\x42\x61sicProtocol.proto\x12\x08Nyx.Core\x1a\x0c\x43ommon.proto\"$\n\rEncryptString\x12\x13\n\x0b\x65ncrypt_str\x18\x01 \x01(\x0c\"\x1b\n\x0bSessionSeed\x12\x0c\n\x04seed\x18\x01 \x01(\x03\"i\n\nSessionKey\x12\x1b\n\x13random_padding_head\x18\x01 \x01(\x0c\x12\x13\n\x0bsession_key\x18\x02 \x01(\x0c\x12\x0c\n\x04seed\x18\x03 \x01(\x03\x12\x1b\n\x13random_padding_tail\x18\x04 \x01(\x0c\"\xd3\x01\n\x0e\x46indDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x0e\n\x06\x66ields\x18\x05 \x01(\x0c\x12\r\n\x05limit\x18\x06 \x01(\x05\x12\x10\n\x08seq_flag\x18\x07 \x01(\x08\x12\x0f\n\x07seq_key\x18\x08 \x01(\x0c\x12\x0c\n\x04sort\x18\t \x01(\x0c\x12\x11\n\tread_pref\x18\n \x01(\x05\x12\x0c\n\x04hint\x18\x0b \x01(\x0c\x12\x0c\n\x04skip\x18\x0c \x01(\x0c\"D\n\x0f\x46indDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x0c\n\x04\x64ocs\x18\x03 \x01(\x0c\"U\n\x0f\x43ountDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\"F\n\x10\x43ountDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\r\n\x05\x63ount\x18\x03 \x01(\x05\"\xa5\x01\n\x10UpdateDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x0b\n\x03\x64oc\x18\x05 \x01(\x0c\x12\x0e\n\x06upsert\x18\x06 \x01(\x08\x12\r\n\x05multi\x18\x07 \x01(\x08\x12\x10\n\x08seq_flag\x18\x08 \x01(\x08\x12\x0f\n\x07seq_key\x18\t \x01(\x0c\"8\n\x11UpdateDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\"w\n\x10InsertDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\x0b\n\x03\x64oc\x18\x04 \x01(\x0c\x12\x10\n\x08seq_flag\x18\x05 \x01(\x08\x12\x0f\n\x07seq_key\x18\x06 \x01(\x0c\"K\n\x11InsertDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x11\n\tinsert_id\x18\x03 \x01(\x0c\"y\n\x10\x44\x65leteDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x10\n\x08seq_flag\x18\x05 \x01(\x08\x12\x0f\n\x07seq_key\x18\x06 \x01(\x0c\"8\n\x11\x44\x65leteDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\"\xbd\x01\n\x17\x46indAndModifyDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x0e\n\x06\x66ields\x18\x05 \x01(\x0c\x12\x0e\n\x06update\x18\x06 \x01(\x0c\x12\x0e\n\x06upsert\x18\x07 \x01(\x08\x12\x0b\n\x03new\x18\x08 \x01(\x08\x12\x10\n\x08seq_flag\x18\t \x01(\x08\x12\x0f\n\x07seq_key\x18\n \x01(\x0c\"L\n\x18\x46indAndModifyDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x0b\n\x03\x64oc\x18\x03 \x01(\x0c\"\xd8\x01\n\x15OperationIndexRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12;\n\x04type\x18\x04 \x01(\x0e\x32-.Nyx.Core.OperationIndexRequest.OperationType\x12\r\n\x05query\x18\x05 \x01(\x0c\x12\x0c\n\x04\x64\x65sc\x18\x06 \x01(\x0c\"0\n\rOperationType\x12\n\n\x06\x45NSURE\x10\x00\x12\x08\n\x04\x44ROP\x10\x01\x12\t\n\x05RESET\x10\x02\"=\n\x16OperationIndexResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\"b\n\x17\x43reateCollectionRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\x12\n\noperations\x18\x04 \x01(\x0c\"\xa6\x01\n\x18\x43reateCollectionResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12?\n\x06result\x18\x02 \x01(\x0e\x32/.Nyx.Core.CreateCollectionResponse.CreateResult\"4\n\x0c\x43reateResult\x12\x0b\n\x07SUCCESS\x10\x00\x12\x0b\n\x07\x45XISTED\x10\x01\x12\n\n\x06\x46\x41ILED\x10\x02\"\x83\x01\n\x0f\x44\x42StatusMessage\x12\x34\n\x06status\x18\x01 \x01(\x0e\x32$.Nyx.Core.DBStatusMessage.StatusType\":\n\nStatusType\x12\r\n\tCONNECTED\x10\x00\x12\x13\n\x0f\x43ONNECTION_FAIL\x10\x01\x12\x08\n\x04\x42USY\x10\x02\"B\n\rCallDBRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06method\x18\x02 \x01(\x0c\x12\x0c\n\x04\x61rgs\x18\x03 \x01(\x0c\"3\n\x0e\x43\x61llDBResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0c\n\x04\x61rgs\x18\x02 \x01(\x0c\"^\n\nClientInfo\x12\n\n\x02ip\x18\x01 \x01(\x0c\x12\x0c\n\x04port\x18\x02 \x01(\x05\x12\x11\n\tclient_id\x18\x03 \x01(\x0c\x12\x12\n\nsession_id\x18\x04 \x01(\x0c\x12\x0f\n\x07gate_id\x18\x05 \x01(\x0c\"|\n\x11\x43lientBindMessage\x12)\n\x0b\x63lient_info\x18\x01 \x01(\x0b\x32\x14.Nyx.Core.ClientInfo\x12)\n\x0bserver_info\x18\x02 \x01(\x0b\x32\x14.Nyx.Core.ServerInfo\x12\x11\n\tentity_id\x18\x03 \x01(\x0c\"J\n\x12RegMd5IndexMessage\x12\x0e\n\x06routes\x18\x01 \x01(\x0c\x12$\n\x08md5index\x18\x02 \x01(\x0b\x32\x12.Nyx.Core.Md5Index\"S\n\x0fGateReturnValue\x12)\n\x0b\x63lient_info\x18\x01 \x01(\x0b\x32\x14.Nyx.Core.ClientInfo\x12\x15\n\rreturn_status\x18\x02 \x01(\x08\"\xe3\x01\n\x14RealEntityCreateInfo\x12(\n\ndst_server\x18\x01 \x01(\x0b\x32\x14.Nyx.Core.ServerInfo\x12(\n\nsrc_server\x18\x02 \x01(\x0b\x32\x14.Nyx.Core.ServerInfo\x12\x16\n\x0ereal_entity_id\x18\x03 \x01(\x0c\x12\x18\n\x10real_entity_type\x18\x04 \x01(\x0c\x12\x19\n\x11migrate_entity_id\x18\x05 \x01(\x0c\x12\x0f\n\x07\x63ontent\x18\x06 \x01(\x0c\x12\x19\n\x11\x63lient_info_cache\x18\x07 \x01(\x0c\"\xe2\x01\n\x15GateToGameReturnValue\x12:\n\x04type\x18\x01 \x01(\x0e\x32,.Nyx.Core.GateToGameReturnValue.CallbackType\x12\x13\n\x0b\x63\x61llback_id\x18\x02 \x01(\x05\x12\x15\n\rreturn_status\x18\x03 \x01(\x08\x12\x14\n\x0creturn_value\x18\x04 \x01(\x0c\x12\x11\n\terror_msg\x18\x05 \x01(\x0c\"8\n\x0c\x43\x61llbackType\x12\x0f\n\x0bNO_CALLBACK\x10\x00\x12\x17\n\x13GATE2GAME_ENTITYMSG\x10\x01\"\x1b\n\x08GateInfo\x12\x0f\n\x07gate_id\x18\x01 \x01(\x0c\"\x1a\n\nServerLoad\x12\x0c\n\x04load\x18\x01 \x01(\x01\"E\n\x0bGateMessage\x12\"\n\x06method\x18\x01 \x01(\x0b\x32\x12.Nyx.Core.Md5Index\x12\x12\n\nparameters\x18\x02 \x01(\x0c\x32\xa0\x02\n\rSClientToGate\x12.\n\x0crequest_seed\x12\x0e.Nyx.Core.Void\x1a\x0e.Nyx.Core.Void\x12\x36\n\x0bsession_key\x12\x17.Nyx.Core.EncryptString\x1a\x0e.Nyx.Core.Void\x12\x38\n\x0c\x63onnect_gate\x12\x18.Nyx.Core.ConnectRequest\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0e\x65ntity_message\x12\x17.Nyx.Core.EntityMessage\x1a\x0e.Nyx.Core.Void\x12\x32\n\x0creg_md5index\x12\x12.Nyx.Core.Md5Index\x1a\x0e.Nyx.Core.Void2\xd0\x03\n\rSGateToClient\x12\x38\n\x0fon_request_seed\x12\x15.Nyx.Core.SessionSeed\x1a\x0e.Nyx.Core.Void\x12\x30\n\x0eon_session_key\x12\x0e.Nyx.Core.Void\x1a\x0e.Nyx.Core.Void\x12<\n\x0fon_connect_gate\x12\x19.Nyx.Core.ConnectResponse\x1a\x0e.Nyx.Core.Void\x12\x35\n\rcreate_entity\x12\x14.Nyx.Core.EntityInfo\x1a\x0e.Nyx.Core.Void\x12\x36\n\x0e\x64\x65stroy_entity\x12\x14.Nyx.Core.EntityInfo\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0e\x65ntity_message\x12\x17.Nyx.Core.EntityMessage\x1a\x0e.Nyx.Core.Void\x12\x37\n\x0e\x63hat_to_client\x12\x15.Nyx.Core.OutbandInfo\x1a\x0e.Nyx.Core.Void\x12\x32\n\x0creg_md5index\x12\x12.Nyx.Core.Md5Index\x1a\x0e.Nyx.Core.Void2\x8d\x05\n\x12SClientToDBManager\x12\x32\n\nreg_client\x12\x14.Nyx.Core.ServerInfo\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0e\x63\x61ll_db_method\x12\x17.Nyx.Core.CallDBRequest\x1a\x0e.Nyx.Core.Void\x12\x37\n\x0b\x64\x62_find_doc\x12\x18.Nyx.Core.FindDocRequest\x1a\x0e.Nyx.Core.Void\x12;\n\rdb_update_doc\x12\x1a.Nyx.Core.UpdateDocRequest\x1a\x0e.Nyx.Core.Void\x12;\n\rdb_insert_doc\x12\x1a.Nyx.Core.InsertDocRequest\x1a\x0e.Nyx.Core.Void\x12;\n\rdb_delete_doc\x12\x1a.Nyx.Core.DeleteDocRequest\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0c\x64\x62_count_doc\x12\x19.Nyx.Core.CountDocRequest\x1a\x0e.Nyx.Core.Void\x12K\n\x16\x64\x62_find_and_modify_doc\x12!.Nyx.Core.FindAndModifyDocRequest\x1a\x0e.Nyx.Core.Void\x12\x45\n\x12\x64\x62_operation_index\x12\x1f.Nyx.Core.OperationIndexRequest\x1a\x0e.Nyx.Core.Void\x12I\n\x14\x64\x62_create_collection\x12!.Nyx.Core.CreateCollectionRequest\x1a\x0e.Nyx.Core.Void2\xb8\x05\n\x12SDBManagerToClient\x12\x39\n\x0con_db_status\x12\x19.Nyx.Core.DBStatusMessage\x1a\x0e.Nyx.Core.Void\x12=\n\x11on_call_db_method\x12\x18.Nyx.Core.CallDBResponse\x1a\x0e.Nyx.Core.Void\x12;\n\x0eon_db_find_doc\x12\x19.Nyx.Core.FindDocResponse\x1a\x0e.Nyx.Core.Void\x12?\n\x10on_db_update_doc\x12\x1b.Nyx.Core.UpdateDocResponse\x1a\x0e.Nyx.Core.Void\x12?\n\x10on_db_insert_doc\x12\x1b.Nyx.Core.InsertDocResponse\x1a\x0e.Nyx.Core.Void\x12?\n\x10on_db_delete_doc\x12\x1b.Nyx.Core.DeleteDocResponse\x1a\x0e.Nyx.Core.Void\x12=\n\x0fon_db_count_doc\x12\x1a.Nyx.Core.CountDocResponse\x1a\x0e.Nyx.Core.Void\x12O\n\x19on_db_find_and_modify_doc\x12\".Nyx.Core.FindAndModifyDocResponse\x1a\x0e.Nyx.Core.Void\x12I\n\x15on_db_operation_index\x12 .Nyx.Core.OperationIndexResponse\x1a\x0e.Nyx.Core.Void\x12M\n\x17on_db_create_collection\x12\".Nyx.Core.CreateCollectionResponse\x1a\x0e.Nyx.Core.Void2\xcc\x05\n\x0bSGateToGame\x12\x38\n\x0c\x63onnect_game\x12\x18.Nyx.Core.ConnectRequest\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0e\x65ntity_message\x12\x17.Nyx.Core.EntityMessage\x1a\x0e.Nyx.Core.Void\x12>\n\x16\x63lient_lose_connection\x12\x14.Nyx.Core.ClientInfo\x1a\x0e.Nyx.Core.Void\x12\x45\n\x18transfer_client_callback\x12\x19.Nyx.Core.GateReturnValue\x1a\x0e.Nyx.Core.Void\x12\x41\n\x16\x66orward_entity_message\x12\x17.Nyx.Core.EntityMessage\x1a\x0e.Nyx.Core.Void\x12.\n\x08reg_gate\x12\x12.Nyx.Core.GateInfo\x1a\x0e.Nyx.Core.Void\x12@\n\rgate_callback\x12\x1f.Nyx.Core.GateToGameReturnValue\x1a\x0e.Nyx.Core.Void\x12?\n\x17unbind_client_from_game\x12\x14.Nyx.Core.ClientInfo\x1a\x0e.Nyx.Core.Void\x12\x44\n\x12\x63reate_real_entity\x12\x1e.Nyx.Core.RealEntityCreateInfo\x1a\x0e.Nyx.Core.Void\x12G\n\x1c\x63reate_real_entity_successed\x12\x17.Nyx.Core.EntityMailbox\x1a\x0e.Nyx.Core.Void\x12<\n\x0creg_md5index\x12\x1c.Nyx.Core.RegMd5IndexMessage\x1a\x0e.Nyx.Core.Void2\xb5\x07\n\x0bSGameToGate\x12<\n\x0fon_connect_game\x12\x19.Nyx.Core.ConnectResponse\x1a\x0e.Nyx.Core.Void\x12\x35\n\rcreate_entity\x12\x14.Nyx.Core.EntityInfo\x1a\x0e.Nyx.Core.Void\x12\x36\n\x0e\x64\x65stroy_entity\x12\x14.Nyx.Core.EntityInfo\x1a\x0e.Nyx.Core.Void\x12\x39\n\x11\x64isconnect_client\x12\x14.Nyx.Core.ClientInfo\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0e\x65ntity_message\x12\x17.Nyx.Core.EntityMessage\x1a\x0e.Nyx.Core.Void\x12\x46\n\x15global_entity_message\x12\x1d.Nyx.Core.GlobalEntityMessage\x1a\x0e.Nyx.Core.Void\x12\x37\n\x0e\x63hat_to_client\x12\x15.Nyx.Core.OutbandInfo\x1a\x0e.Nyx.Core.Void\x12>\n\x0ftransfer_client\x12\x1b.Nyx.Core.ClientBindMessage\x1a\x0e.Nyx.Core.Void\x12\x42\n\x13\x62ind_client_to_game\x12\x1b.Nyx.Core.ClientBindMessage\x1a\x0e.Nyx.Core.Void\x12\x41\n\x16\x66orward_entity_message\x12\x17.Nyx.Core.EntityMessage\x1a\x0e.Nyx.Core.Void\x12\x44\n\x12\x63reate_real_entity\x12\x1e.Nyx.Core.RealEntityCreateInfo\x1a\x0e.Nyx.Core.Void\x12G\n\x1c\x63reate_real_entity_successed\x12\x17.Nyx.Core.EntityMailbox\x1a\x0e.Nyx.Core.Void\x12<\n\x0creg_md5index\x12\x1c.Nyx.Core.RegMd5IndexMessage\x1a\x0e.Nyx.Core.Void\x12\x38\n\x10notify_game_load\x12\x14.Nyx.Core.ServerLoad\x1a\x0e.Nyx.Core.Void\x12\x34\n\x0bgate_method\x12\x15.Nyx.Core.GateMessage\x1a\x0e.Nyx.Core.VoidB\x06\x80\x01\x01\x90\x01\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x13\x42\x61sicProtocol.proto\x12\x08Nyx.Core\x1a\x0c\x43ommon.proto\"$\n\rEncryptString\x12\x13\n\x0b\x65ncrypt_str\x18\x01 \x01(\x0c\"\x1b\n\x0bSessionSeed\x12\x0c\n\x04seed\x18\x01 \x01(\x03\"i\n\nSessionKey\x12\x1b\n\x13random_padding_head\x18\x01 \x01(\x0c\x12\x13\n\x0bsession_key\x18\x02 \x01(\x0c\x12\x0c\n\x04seed\x18\x03 \x01(\x03\x12\x1b\n\x13random_padding_tail\x18\x04 \x01(\x0c\"\xd3\x01\n\x0e\x46indDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x0e\n\x06\x66ields\x18\x05 \x01(\x0c\x12\r\n\x05limit\x18\x06 \x01(\x05\x12\x10\n\x08seq_flag\x18\x07 \x01(\x08\x12\x0f\n\x07seq_key\x18\x08 \x01(\x0c\x12\x0c\n\x04sort\x18\t \x01(\x0c\x12\x11\n\tread_pref\x18\n \x01(\x05\x12\x0c\n\x04hint\x18\x0b \x01(\x0c\x12\x0c\n\x04skip\x18\x0c \x01(\x0c\"D\n\x0f\x46indDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x0c\n\x04\x64ocs\x18\x03 \x01(\x0c\"U\n\x0f\x43ountDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\"F\n\x10\x43ountDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\r\n\x05\x63ount\x18\x03 \x01(\x05\"\xa5\x01\n\x10UpdateDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x0b\n\x03\x64oc\x18\x05 \x01(\x0c\x12\x0e\n\x06upsert\x18\x06 \x01(\x08\x12\r\n\x05multi\x18\x07 \x01(\x08\x12\x10\n\x08seq_flag\x18\x08 \x01(\x08\x12\x0f\n\x07seq_key\x18\t \x01(\x0c\"8\n\x11UpdateDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\"w\n\x10InsertDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\x0b\n\x03\x64oc\x18\x04 \x01(\x0c\x12\x10\n\x08seq_flag\x18\x05 \x01(\x08\x12\x0f\n\x07seq_key\x18\x06 \x01(\x0c\"K\n\x11InsertDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x11\n\tinsert_id\x18\x03 \x01(\x0c\"y\n\x10\x44\x65leteDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x10\n\x08seq_flag\x18\x05 \x01(\x08\x12\x0f\n\x07seq_key\x18\x06 \x01(\x0c\"8\n\x11\x44\x65leteDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\"\xbd\x01\n\x17\x46indAndModifyDocRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\r\n\x05query\x18\x04 \x01(\x0c\x12\x0e\n\x06\x66ields\x18\x05 \x01(\x0c\x12\x0e\n\x06update\x18\x06 \x01(\x0c\x12\x0e\n\x06upsert\x18\x07 \x01(\x08\x12\x0b\n\x03new\x18\x08 \x01(\x08\x12\x10\n\x08seq_flag\x18\t \x01(\x08\x12\x0f\n\x07seq_key\x18\n \x01(\x0c\"L\n\x18\x46indAndModifyDocResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\x12\x0b\n\x03\x64oc\x18\x03 \x01(\x0c\"\xd8\x01\n\x15OperationIndexRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12;\n\x04type\x18\x04 \x01(\x0e\x32-.Nyx.Core.OperationIndexRequest.OperationType\x12\r\n\x05query\x18\x05 \x01(\x0c\x12\x0c\n\x04\x64\x65sc\x18\x06 \x01(\x0c\"0\n\rOperationType\x12\n\n\x06\x45NSURE\x10\x00\x12\x08\n\x04\x44ROP\x10\x01\x12\t\n\x05RESET\x10\x02\"=\n\x16OperationIndexResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06status\x18\x02 \x01(\x08\"b\n\x17\x43reateCollectionRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\n\n\x02\x64\x62\x18\x02 \x01(\x0c\x12\x12\n\ncollection\x18\x03 \x01(\x0c\x12\x12\n\noperations\x18\x04 \x01(\x0c\"\xa6\x01\n\x18\x43reateCollectionResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12?\n\x06result\x18\x02 \x01(\x0e\x32/.Nyx.Core.CreateCollectionResponse.CreateResult\"4\n\x0c\x43reateResult\x12\x0b\n\x07SUCCESS\x10\x00\x12\x0b\n\x07\x45XISTED\x10\x01\x12\n\n\x06\x46\x41ILED\x10\x02\"\x83\x01\n\x0f\x44\x42StatusMessage\x12\x34\n\x06status\x18\x01 \x01(\x0e\x32$.Nyx.Core.DBStatusMessage.StatusType\":\n\nStatusType\x12\r\n\tCONNECTED\x10\x00\x12\x13\n\x0f\x43ONNECTION_FAIL\x10\x01\x12\x08\n\x04\x42USY\x10\x02\"B\n\rCallDBRequest\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0e\n\x06method\x18\x02 \x01(\x0c\x12\x0c\n\x04\x61rgs\x18\x03 \x01(\x0c\"3\n\x0e\x43\x61llDBResponse\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x0c\n\x04\x61rgs\x18\x02 \x01(\x0c\"^\n\nClientInfo\x12\n\n\x02ip\x18\x01 \x01(\x0c\x12\x0c\n\x04port\x18\x02 \x01(\x05\x12\x11\n\tclient_id\x18\x03 \x01(\x0c\x12\x12\n\nsession_id\x18\x04 \x01(\x0c\x12\x0f\n\x07gate_id\x18\x05 \x01(\x0c\"|\n\x11\x43lientBindMessage\x12)\n\x0b\x63lient_info\x18\x01 \x01(\x0b\x32\x14.Nyx.Core.ClientInfo\x12)\n\x0bserver_info\x18\x02 \x01(\x0b\x32\x14.Nyx.Core.ServerInfo\x12\x11\n\tentity_id\x18\x03 \x01(\x0c\"J\n\x12RegMd5IndexMessage\x12\x0e\n\x06routes\x18\x01 \x01(\x0c\x12$\n\x08md5index\x18\x02 \x01(\x0b\x32\x12.Nyx.Core.Md5Index\"S\n\x0fGateReturnValue\x12)\n\x0b\x63lient_info\x18\x01 \x01(\x0b\x32\x14.Nyx.Core.ClientInfo\x12\x15\n\rreturn_status\x18\x02 \x01(\x08\"\xe3\x01\n\x14RealEntityCreateInfo\x12(\n\ndst_server\x18\x01 \x01(\x0b\x32\x14.Nyx.Core.ServerInfo\x12(\n\nsrc_server\x18\x02 \x01(\x0b\x32\x14.Nyx.Core.ServerInfo\x12\x16\n\x0ereal_entity_id\x18\x03 \x01(\x0c\x12\x18\n\x10real_entity_type\x18\x04 \x01(\x0c\x12\x19\n\x11migrate_entity_id\x18\x05 \x01(\x0c\x12\x0f\n\x07\x63ontent\x18\x06 \x01(\x0c\x12\x19\n\x11\x63lient_info_cache\x18\x07 \x01(\x0c\"\xe2\x01\n\x15GateToGameReturnValue\x12:\n\x04type\x18\x01 \x01(\x0e\x32,.Nyx.Core.GateToGameReturnValue.CallbackType\x12\x13\n\x0b\x63\x61llback_id\x18\x02 \x01(\x05\x12\x15\n\rreturn_status\x18\x03 \x01(\x08\x12\x14\n\x0creturn_value\x18\x04 \x01(\x0c\x12\x11\n\terror_msg\x18\x05 \x01(\x0c\"8\n\x0c\x43\x61llbackType\x12\x0f\n\x0bNO_CALLBACK\x10\x00\x12\x17\n\x13GATE2GAME_ENTITYMSG\x10\x01\"\x1b\n\x08GateInfo\x12\x0f\n\x07gate_id\x18\x01 \x01(\x0c\"\x1a\n\nServerLoad\x12\x0c\n\x04load\x18\x01 \x01(\x01\"E\n\x0bGateMessage\x12\"\n\x06method\x18\x01 \x01(\x0b\x32\x12.Nyx.Core.Md5Index\x12\x12\n\nparameters\x18\x02 \x01(\x0c\"@\n\x12GameServerInfoList\x12*\n\x0cgame_servers\x18\x01 \x03(\x0b\x32\x14.Nyx.Core.ServerInfo\"!\n\nCallbackID\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\"\x83\x01\n\x16GlobalEntityRegMessage\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x18\n\x10\x65ntity_unique_id\x18\x02 \x01(\x0c\x12(\n\x07mailbox\x18\x03 \x01(\x0b\x32\x17.Nyx.Core.EntityMailbox\x12\x10\n\x08override\x18\x04 \x01(\x08\"\x9a\x01\n\x14\x46orwardMessageHeader\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12,\n\x0bsrc_mailbox\x18\x02 \x01(\x0b\x32\x17.Nyx.Core.EntityMailbox\x12,\n\x0b\x64st_mailbox\x18\x03 \x01(\x0b\x32\x17.Nyx.Core.EntityMailbox\x12\x11\n\tclient_id\x18\x04 \x01(\x0c\"\x88\x02\n\x10\x45ntityInfoHeader\x12\x13\n\x0b\x63\x61llback_id\x18\x01 \x01(\x05\x12\x17\n\x0ftransfer_entity\x18\x02 \x01(\x08\x12\x15\n\rcreate_fromdb\x18\x03 \x01(\x08\x12\x17\n\x0f\x63reate_anywhere\x18\x04 \x01(\x05\x12(\n\ndst_server\x18\x05 \x01(\x0b\x32\x14.Nyx.Core.ServerInfo\x12)\n\x0b\x63lient_info\x18\x06 \x01(\x0b\x32\x14.Nyx.Core.ClientInfo\"A\n\nServerType\x12\r\n\tANY_WHERE\x10\x00\x12\x10\n\x0cSPECIFY_TYPE\x10\x01\x12\x12\n\x0eSPECIFY_SERVER\x10\x02\" \n\rGlobalMessage\x12\x0f\n\x07message\x18\x01 \x01(\x0c\"(\n\nGlobalData\x12\x0b\n\x03key\x18\x01 \x01(\x0c\x12\r\n\x05value\x18\x02 \x01(\x0c\"\x8a\x02\n\x12GameMgrReturnValue\x12\x37\n\x04type\x18\x01 \x01(\x0e\x32).Nyx.Core.GameMgrReturnValue.CallbackType\x12\x13\n\x0b\x63\x61llback_id\x18\x02 \x01(\x05\x12\x15\n\rreturn_status\x18\x03 \x01(\x08\x12\x14\n\x0creturn_value\x18\x04 \x01(\x0c\x12\x11\n\terror_msg\x18\x05 \x01(\x0c\"f\n\x0c\x43\x61llbackType\x12\x0f\n\x0bNO_CALLBACK\x10\x00\x12\x16\n\x12REG_ENTITY_MAILBOX\x10\x01\x12\x1a\n\x16\x46ORWARD_ENTITY_MESSAGE\x10\x02\x12\x11\n\rCREATE_ENTITY\x10\x03\" \n\x06Script\x12\x16\n\x0escript_content\x18\x01 \x01(\x0c\"\xb9\x02\n\x0e\x43ontrolCommand\x12\x35\n\x02op\x18\x01 \x01(\x0e\x32).Nyx.Core.ControlCommand.ControlOperation\"\xef\x01\n\x10\x43ontrolOperation\x12\x07\n\x03NOP\x10\x00\x12\x1c\n\x18\x46ORBIDDEN_NEW_CONNECTION\x10\x01\x12 \n\x1cIGNORE_CLIENT_ENTITY_MESSAGE\x10\x02\x12\x1d\n\x19\x44ISCONNECT_ALL_CONNECTION\x10\x03\x12\x0e\n\nCLOSE_GATE\x10\x04\x12\x17\n\x13NOTIFY_GAME_CLOSING\x10\x05\x12\x16\n\x12NOTIFY_GAME_CLOSED\x10\x06\x12\x0e\n\nCLOSE_GAME\x10\x07\x12\x0f\n\x0b\x43LOSE_DBMGR\x10\x08\x12\x11\n\rCLOSE_GAMEMGR\x10\t2\xa0\x02\n\rSClientToGate\x12.\n\x0crequest_seed\x12\x0e.Nyx.Core.Void\x1a\x0e.Nyx.Core.Void\x12\x36\n\x0bsession_key\x12\x17.Nyx.Core.EncryptString\x1a\x0e.Nyx.Core.Void\x12\x38\n\x0c\x63onnect_gate\x12\x18.Nyx.Core.ConnectRequest\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0e\x65ntity_message\x12\x17.Nyx.Core.EntityMessage\x1a\x0e.Nyx.Core.Void\x12\x32\n\x0creg_md5index\x12\x12.Nyx.Core.Md5Index\x1a\x0e.Nyx.Core.Void2\xd0\x03\n\rSGateToClient\x12\x38\n\x0fon_request_seed\x12\x15.Nyx.Core.SessionSeed\x1a\x0e.Nyx.Core.Void\x12\x30\n\x0eon_session_key\x12\x0e.Nyx.Core.Void\x1a\x0e.Nyx.Core.Void\x12<\n\x0fon_connect_gate\x12\x19.Nyx.Core.ConnectResponse\x1a\x0e.Nyx.Core.Void\x12\x35\n\rcreate_entity\x12\x14.Nyx.Core.EntityInfo\x1a\x0e.Nyx.Core.Void\x12\x36\n\x0e\x64\x65stroy_entity\x12\x14.Nyx.Core.EntityInfo\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0e\x65ntity_message\x12\x17.Nyx.Core.EntityMessage\x1a\x0e.Nyx.Core.Void\x12\x37\n\x0e\x63hat_to_client\x12\x15.Nyx.Core.OutbandInfo\x1a\x0e.Nyx.Core.Void\x12\x32\n\x0creg_md5index\x12\x12.Nyx.Core.Md5Index\x1a\x0e.Nyx.Core.Void2\x8d\x05\n\x12SClientToDBManager\x12\x32\n\nreg_client\x12\x14.Nyx.Core.ServerInfo\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0e\x63\x61ll_db_method\x12\x17.Nyx.Core.CallDBRequest\x1a\x0e.Nyx.Core.Void\x12\x37\n\x0b\x64\x62_find_doc\x12\x18.Nyx.Core.FindDocRequest\x1a\x0e.Nyx.Core.Void\x12;\n\rdb_update_doc\x12\x1a.Nyx.Core.UpdateDocRequest\x1a\x0e.Nyx.Core.Void\x12;\n\rdb_insert_doc\x12\x1a.Nyx.Core.InsertDocRequest\x1a\x0e.Nyx.Core.Void\x12;\n\rdb_delete_doc\x12\x1a.Nyx.Core.DeleteDocRequest\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0c\x64\x62_count_doc\x12\x19.Nyx.Core.CountDocRequest\x1a\x0e.Nyx.Core.Void\x12K\n\x16\x64\x62_find_and_modify_doc\x12!.Nyx.Core.FindAndModifyDocRequest\x1a\x0e.Nyx.Core.Void\x12\x45\n\x12\x64\x62_operation_index\x12\x1f.Nyx.Core.OperationIndexRequest\x1a\x0e.Nyx.Core.Void\x12I\n\x14\x64\x62_create_collection\x12!.Nyx.Core.CreateCollectionRequest\x1a\x0e.Nyx.Core.Void2\xb8\x05\n\x12SDBManagerToClient\x12\x39\n\x0con_db_status\x12\x19.Nyx.Core.DBStatusMessage\x1a\x0e.Nyx.Core.Void\x12=\n\x11on_call_db_method\x12\x18.Nyx.Core.CallDBResponse\x1a\x0e.Nyx.Core.Void\x12;\n\x0eon_db_find_doc\x12\x19.Nyx.Core.FindDocResponse\x1a\x0e.Nyx.Core.Void\x12?\n\x10on_db_update_doc\x12\x1b.Nyx.Core.UpdateDocResponse\x1a\x0e.Nyx.Core.Void\x12?\n\x10on_db_insert_doc\x12\x1b.Nyx.Core.InsertDocResponse\x1a\x0e.Nyx.Core.Void\x12?\n\x10on_db_delete_doc\x12\x1b.Nyx.Core.DeleteDocResponse\x1a\x0e.Nyx.Core.Void\x12=\n\x0fon_db_count_doc\x12\x1a.Nyx.Core.CountDocResponse\x1a\x0e.Nyx.Core.Void\x12O\n\x19on_db_find_and_modify_doc\x12\".Nyx.Core.FindAndModifyDocResponse\x1a\x0e.Nyx.Core.Void\x12I\n\x15on_db_operation_index\x12 .Nyx.Core.OperationIndexResponse\x1a\x0e.Nyx.Core.Void\x12M\n\x17on_db_create_collection\x12\".Nyx.Core.CreateCollectionResponse\x1a\x0e.Nyx.Core.Void2\xcc\x05\n\x0bSGateToGame\x12\x38\n\x0c\x63onnect_game\x12\x18.Nyx.Core.ConnectRequest\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0e\x65ntity_message\x12\x17.Nyx.Core.EntityMessage\x1a\x0e.Nyx.Core.Void\x12>\n\x16\x63lient_lose_connection\x12\x14.Nyx.Core.ClientInfo\x1a\x0e.Nyx.Core.Void\x12\x45\n\x18transfer_client_callback\x12\x19.Nyx.Core.GateReturnValue\x1a\x0e.Nyx.Core.Void\x12\x41\n\x16\x66orward_entity_message\x12\x17.Nyx.Core.EntityMessage\x1a\x0e.Nyx.Core.Void\x12.\n\x08reg_gate\x12\x12.Nyx.Core.GateInfo\x1a\x0e.Nyx.Core.Void\x12@\n\rgate_callback\x12\x1f.Nyx.Core.GateToGameReturnValue\x1a\x0e.Nyx.Core.Void\x12?\n\x17unbind_client_from_game\x12\x14.Nyx.Core.ClientInfo\x1a\x0e.Nyx.Core.Void\x12\x44\n\x12\x63reate_real_entity\x12\x1e.Nyx.Core.RealEntityCreateInfo\x1a\x0e.Nyx.Core.Void\x12G\n\x1c\x63reate_real_entity_successed\x12\x17.Nyx.Core.EntityMailbox\x1a\x0e.Nyx.Core.Void\x12<\n\x0creg_md5index\x12\x1c.Nyx.Core.RegMd5IndexMessage\x1a\x0e.Nyx.Core.Void2\xb5\x07\n\x0bSGameToGate\x12<\n\x0fon_connect_game\x12\x19.Nyx.Core.ConnectResponse\x1a\x0e.Nyx.Core.Void\x12\x35\n\rcreate_entity\x12\x14.Nyx.Core.EntityInfo\x1a\x0e.Nyx.Core.Void\x12\x36\n\x0e\x64\x65stroy_entity\x12\x14.Nyx.Core.EntityInfo\x1a\x0e.Nyx.Core.Void\x12\x39\n\x11\x64isconnect_client\x12\x14.Nyx.Core.ClientInfo\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0e\x65ntity_message\x12\x17.Nyx.Core.EntityMessage\x1a\x0e.Nyx.Core.Void\x12\x46\n\x15global_entity_message\x12\x1d.Nyx.Core.GlobalEntityMessage\x1a\x0e.Nyx.Core.Void\x12\x37\n\x0e\x63hat_to_client\x12\x15.Nyx.Core.OutbandInfo\x1a\x0e.Nyx.Core.Void\x12>\n\x0ftransfer_client\x12\x1b.Nyx.Core.ClientBindMessage\x1a\x0e.Nyx.Core.Void\x12\x42\n\x13\x62ind_client_to_game\x12\x1b.Nyx.Core.ClientBindMessage\x1a\x0e.Nyx.Core.Void\x12\x41\n\x16\x66orward_entity_message\x12\x17.Nyx.Core.EntityMessage\x1a\x0e.Nyx.Core.Void\x12\x44\n\x12\x63reate_real_entity\x12\x1e.Nyx.Core.RealEntityCreateInfo\x1a\x0e.Nyx.Core.Void\x12G\n\x1c\x63reate_real_entity_successed\x12\x17.Nyx.Core.EntityMailbox\x1a\x0e.Nyx.Core.Void\x12<\n\x0creg_md5index\x12\x1c.Nyx.Core.RegMd5IndexMessage\x1a\x0e.Nyx.Core.Void\x12\x38\n\x10notify_game_load\x12\x14.Nyx.Core.ServerLoad\x1a\x0e.Nyx.Core.Void\x12\x34\n\x0bgate_method\x12\x15.Nyx.Core.GateMessage\x1a\x0e.Nyx.Core.Void2\xd7\x06\n\x14SClientToGameManager\x12.\n\nrun_script\x12\x10.Nyx.Core.Script\x1a\x0e.Nyx.Core.Void\x12:\n\x0eserver_control\x12\x18.Nyx.Core.ControlCommand\x1a\x0e.Nyx.Core.Void\x12+\n\treg_dbmgr\x12\x0e.Nyx.Core.Void\x1a\x0e.Nyx.Core.Void\x12\x38\n\x16query_game_server_list\x12\x0e.Nyx.Core.Void\x1a\x0e.Nyx.Core.Void\x12\x30\n\x08reg_game\x12\x14.Nyx.Core.ServerInfo\x1a\x0e.Nyx.Core.Void\x12\x46\n\x12reg_entity_mailbox\x12 .Nyx.Core.GlobalEntityRegMessage\x1a\x0e.Nyx.Core.Void\x12H\n\x14unreg_entity_mailbox\x12 .Nyx.Core.GlobalEntityRegMessage\x1a\x0e.Nyx.Core.Void\x12\x41\n\x16\x66orward_entity_message\x12\x17.Nyx.Core.EntityMessage\x1a\x0e.Nyx.Core.Void\x12\x46\n\x15global_entity_message\x12\x1d.Nyx.Core.GlobalEntityMessage\x1a\x0e.Nyx.Core.Void\x12\x39\n\x0eglobal_message\x12\x17.Nyx.Core.GlobalMessage\x1a\x0e.Nyx.Core.Void\x12\x33\n\x0bglobal_data\x12\x14.Nyx.Core.GlobalData\x1a\x0e.Nyx.Core.Void\x12\x37\n\x0f\x64\x65l_global_data\x12\x14.Nyx.Core.GlobalData\x1a\x0e.Nyx.Core.Void\x12\x35\n\rcreate_entity\x12\x14.Nyx.Core.EntityInfo\x1a\x0e.Nyx.Core.Void\x12=\n\rgame_callback\x12\x1c.Nyx.Core.GameMgrReturnValue\x1a\x0e.Nyx.Core.Void2\xa4\x06\n\x14SGameManagerToClient\x12I\n\x19on_query_game_server_list\x12\x1c.Nyx.Core.GameServerInfoList\x1a\x0e.Nyx.Core.Void\x12I\n\x15on_reg_entity_mailbox\x12 .Nyx.Core.GlobalEntityRegMessage\x1a\x0e.Nyx.Core.Void\x12K\n\x17on_unreg_entity_mailbox\x12 .Nyx.Core.GlobalEntityRegMessage\x1a\x0e.Nyx.Core.Void\x12=\n\x11on_server_control\x12\x18.Nyx.Core.ControlCommand\x1a\x0e.Nyx.Core.Void\x12\x44\n\x19on_forward_entity_message\x12\x17.Nyx.Core.EntityMessage\x1a\x0e.Nyx.Core.Void\x12I\n\x18on_global_entity_message\x12\x1d.Nyx.Core.GlobalEntityMessage\x1a\x0e.Nyx.Core.Void\x12<\n\x11on_global_message\x12\x17.Nyx.Core.GlobalMessage\x1a\x0e.Nyx.Core.Void\x12\x36\n\x0eon_global_data\x12\x14.Nyx.Core.GlobalData\x1a\x0e.Nyx.Core.Void\x12:\n\x12on_del_global_data\x12\x14.Nyx.Core.GlobalData\x1a\x0e.Nyx.Core.Void\x12\x35\n\rcreate_entity\x12\x14.Nyx.Core.EntityInfo\x1a\x0e.Nyx.Core.Void\x12@\n\x10gamemgr_callback\x12\x1c.Nyx.Core.GameMgrReturnValue\x1a\x0e.Nyx.Core.Void\x12.\n\nrun_script\x12\x10.Nyx.Core.Script\x1a\x0e.Nyx.Core.VoidB\x06\x80\x01\x01\x90\x01\x01\x62\x06proto3')
   ,
   dependencies=[Common__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -128,6 +128,116 @@ _GATETOGAMERETURNVALUE_CALLBACKTYPE = _descriptor.EnumDescriptor(
   serialized_end=3185,
 )
 _sym_db.RegisterEnumDescriptor(_GATETOGAMERETURNVALUE_CALLBACKTYPE)
+
+_ENTITYINFOHEADER_SERVERTYPE = _descriptor.EnumDescriptor(
+  name='ServerType',
+  full_name='Nyx.Core.EntityInfoHeader.ServerType',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='ANY_WHERE', index=0, number=0,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='SPECIFY_TYPE', index=1, number=1,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='SPECIFY_SERVER', index=2, number=2,
+      options=None,
+      type=None),
+  ],
+  containing_type=None,
+  options=None,
+  serialized_start=3907,
+  serialized_end=3972,
+)
+_sym_db.RegisterEnumDescriptor(_ENTITYINFOHEADER_SERVERTYPE)
+
+_GAMEMGRRETURNVALUE_CALLBACKTYPE = _descriptor.EnumDescriptor(
+  name='CallbackType',
+  full_name='Nyx.Core.GameMgrReturnValue.CallbackType',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='NO_CALLBACK', index=0, number=0,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='REG_ENTITY_MAILBOX', index=1, number=1,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='FORWARD_ENTITY_MESSAGE', index=2, number=2,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='CREATE_ENTITY', index=3, number=3,
+      options=None,
+      type=None),
+  ],
+  containing_type=None,
+  options=None,
+  serialized_start=4215,
+  serialized_end=4317,
+)
+_sym_db.RegisterEnumDescriptor(_GAMEMGRRETURNVALUE_CALLBACKTYPE)
+
+_CONTROLCOMMAND_CONTROLOPERATION = _descriptor.EnumDescriptor(
+  name='ControlOperation',
+  full_name='Nyx.Core.ControlCommand.ControlOperation',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='NOP', index=0, number=0,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='FORBIDDEN_NEW_CONNECTION', index=1, number=1,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='IGNORE_CLIENT_ENTITY_MESSAGE', index=2, number=2,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='DISCONNECT_ALL_CONNECTION', index=3, number=3,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='CLOSE_GATE', index=4, number=4,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='NOTIFY_GAME_CLOSING', index=5, number=5,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='NOTIFY_GAME_CLOSED', index=6, number=6,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='CLOSE_GAME', index=7, number=7,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='CLOSE_DBMGR', index=8, number=8,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='CLOSE_GAMEMGR', index=9, number=9,
+      options=None,
+      type=None),
+  ],
+  containing_type=None,
+  options=None,
+  serialized_start=4428,
+  serialized_end=4667,
+)
+_sym_db.RegisterEnumDescriptor(_CONTROLCOMMAND_CONTROLOPERATION)
 
 
 _ENCRYPTSTRING = _descriptor.Descriptor(
@@ -1696,6 +1806,431 @@ _GATEMESSAGE = _descriptor.Descriptor(
   serialized_end=3313,
 )
 
+
+_GAMESERVERINFOLIST = _descriptor.Descriptor(
+  name='GameServerInfoList',
+  full_name='Nyx.Core.GameServerInfoList',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='game_servers', full_name='Nyx.Core.GameServerInfoList.game_servers', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=3315,
+  serialized_end=3379,
+)
+
+
+_CALLBACKID = _descriptor.Descriptor(
+  name='CallbackID',
+  full_name='Nyx.Core.CallbackID',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.CallbackID.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=3381,
+  serialized_end=3414,
+)
+
+
+_GLOBALENTITYREGMESSAGE = _descriptor.Descriptor(
+  name='GlobalEntityRegMessage',
+  full_name='Nyx.Core.GlobalEntityRegMessage',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.GlobalEntityRegMessage.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='entity_unique_id', full_name='Nyx.Core.GlobalEntityRegMessage.entity_unique_id', index=1,
+      number=2, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='mailbox', full_name='Nyx.Core.GlobalEntityRegMessage.mailbox', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='override', full_name='Nyx.Core.GlobalEntityRegMessage.override', index=3,
+      number=4, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=3417,
+  serialized_end=3548,
+)
+
+
+_FORWARDMESSAGEHEADER = _descriptor.Descriptor(
+  name='ForwardMessageHeader',
+  full_name='Nyx.Core.ForwardMessageHeader',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.ForwardMessageHeader.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='src_mailbox', full_name='Nyx.Core.ForwardMessageHeader.src_mailbox', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='dst_mailbox', full_name='Nyx.Core.ForwardMessageHeader.dst_mailbox', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='client_id', full_name='Nyx.Core.ForwardMessageHeader.client_id', index=3,
+      number=4, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=3551,
+  serialized_end=3705,
+)
+
+
+_ENTITYINFOHEADER = _descriptor.Descriptor(
+  name='EntityInfoHeader',
+  full_name='Nyx.Core.EntityInfoHeader',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.EntityInfoHeader.callback_id', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='transfer_entity', full_name='Nyx.Core.EntityInfoHeader.transfer_entity', index=1,
+      number=2, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='create_fromdb', full_name='Nyx.Core.EntityInfoHeader.create_fromdb', index=2,
+      number=3, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='create_anywhere', full_name='Nyx.Core.EntityInfoHeader.create_anywhere', index=3,
+      number=4, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='dst_server', full_name='Nyx.Core.EntityInfoHeader.dst_server', index=4,
+      number=5, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='client_info', full_name='Nyx.Core.EntityInfoHeader.client_info', index=5,
+      number=6, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+    _ENTITYINFOHEADER_SERVERTYPE,
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=3708,
+  serialized_end=3972,
+)
+
+
+_GLOBALMESSAGE = _descriptor.Descriptor(
+  name='GlobalMessage',
+  full_name='Nyx.Core.GlobalMessage',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='message', full_name='Nyx.Core.GlobalMessage.message', index=0,
+      number=1, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=3974,
+  serialized_end=4006,
+)
+
+
+_GLOBALDATA = _descriptor.Descriptor(
+  name='GlobalData',
+  full_name='Nyx.Core.GlobalData',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='key', full_name='Nyx.Core.GlobalData.key', index=0,
+      number=1, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='value', full_name='Nyx.Core.GlobalData.value', index=1,
+      number=2, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=4008,
+  serialized_end=4048,
+)
+
+
+_GAMEMGRRETURNVALUE = _descriptor.Descriptor(
+  name='GameMgrReturnValue',
+  full_name='Nyx.Core.GameMgrReturnValue',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='type', full_name='Nyx.Core.GameMgrReturnValue.type', index=0,
+      number=1, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='callback_id', full_name='Nyx.Core.GameMgrReturnValue.callback_id', index=1,
+      number=2, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='return_status', full_name='Nyx.Core.GameMgrReturnValue.return_status', index=2,
+      number=3, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='return_value', full_name='Nyx.Core.GameMgrReturnValue.return_value', index=3,
+      number=4, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='error_msg', full_name='Nyx.Core.GameMgrReturnValue.error_msg', index=4,
+      number=5, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+    _GAMEMGRRETURNVALUE_CALLBACKTYPE,
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=4051,
+  serialized_end=4317,
+)
+
+
+_SCRIPT = _descriptor.Descriptor(
+  name='Script',
+  full_name='Nyx.Core.Script',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='script_content', full_name='Nyx.Core.Script.script_content', index=0,
+      number=1, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=4319,
+  serialized_end=4351,
+)
+
+
+_CONTROLCOMMAND = _descriptor.Descriptor(
+  name='ControlCommand',
+  full_name='Nyx.Core.ControlCommand',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='op', full_name='Nyx.Core.ControlCommand.op', index=0,
+      number=1, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+    _CONTROLCOMMAND_CONTROLOPERATION,
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=4354,
+  serialized_end=4667,
+)
+
 _OPERATIONINDEXREQUEST.fields_by_name['type'].enum_type = _OPERATIONINDEXREQUEST_OPERATIONTYPE
 _OPERATIONINDEXREQUEST_OPERATIONTYPE.containing_type = _OPERATIONINDEXREQUEST
 _CREATECOLLECTIONRESPONSE.fields_by_name['result'].enum_type = _CREATECOLLECTIONRESPONSE_CREATERESULT
@@ -1711,6 +2246,17 @@ _REALENTITYCREATEINFO.fields_by_name['src_server'].message_type = Common__pb2._S
 _GATETOGAMERETURNVALUE.fields_by_name['type'].enum_type = _GATETOGAMERETURNVALUE_CALLBACKTYPE
 _GATETOGAMERETURNVALUE_CALLBACKTYPE.containing_type = _GATETOGAMERETURNVALUE
 _GATEMESSAGE.fields_by_name['method'].message_type = Common__pb2._MD5INDEX
+_GAMESERVERINFOLIST.fields_by_name['game_servers'].message_type = Common__pb2._SERVERINFO
+_GLOBALENTITYREGMESSAGE.fields_by_name['mailbox'].message_type = Common__pb2._ENTITYMAILBOX
+_FORWARDMESSAGEHEADER.fields_by_name['src_mailbox'].message_type = Common__pb2._ENTITYMAILBOX
+_FORWARDMESSAGEHEADER.fields_by_name['dst_mailbox'].message_type = Common__pb2._ENTITYMAILBOX
+_ENTITYINFOHEADER.fields_by_name['dst_server'].message_type = Common__pb2._SERVERINFO
+_ENTITYINFOHEADER.fields_by_name['client_info'].message_type = _CLIENTINFO
+_ENTITYINFOHEADER_SERVERTYPE.containing_type = _ENTITYINFOHEADER
+_GAMEMGRRETURNVALUE.fields_by_name['type'].enum_type = _GAMEMGRRETURNVALUE_CALLBACKTYPE
+_GAMEMGRRETURNVALUE_CALLBACKTYPE.containing_type = _GAMEMGRRETURNVALUE
+_CONTROLCOMMAND.fields_by_name['op'].enum_type = _CONTROLCOMMAND_CONTROLOPERATION
+_CONTROLCOMMAND_CONTROLOPERATION.containing_type = _CONTROLCOMMAND
 DESCRIPTOR.message_types_by_name['EncryptString'] = _ENCRYPTSTRING
 DESCRIPTOR.message_types_by_name['SessionSeed'] = _SESSIONSEED
 DESCRIPTOR.message_types_by_name['SessionKey'] = _SESSIONKEY
@@ -1742,6 +2288,16 @@ DESCRIPTOR.message_types_by_name['GateToGameReturnValue'] = _GATETOGAMERETURNVAL
 DESCRIPTOR.message_types_by_name['GateInfo'] = _GATEINFO
 DESCRIPTOR.message_types_by_name['ServerLoad'] = _SERVERLOAD
 DESCRIPTOR.message_types_by_name['GateMessage'] = _GATEMESSAGE
+DESCRIPTOR.message_types_by_name['GameServerInfoList'] = _GAMESERVERINFOLIST
+DESCRIPTOR.message_types_by_name['CallbackID'] = _CALLBACKID
+DESCRIPTOR.message_types_by_name['GlobalEntityRegMessage'] = _GLOBALENTITYREGMESSAGE
+DESCRIPTOR.message_types_by_name['ForwardMessageHeader'] = _FORWARDMESSAGEHEADER
+DESCRIPTOR.message_types_by_name['EntityInfoHeader'] = _ENTITYINFOHEADER
+DESCRIPTOR.message_types_by_name['GlobalMessage'] = _GLOBALMESSAGE
+DESCRIPTOR.message_types_by_name['GlobalData'] = _GLOBALDATA
+DESCRIPTOR.message_types_by_name['GameMgrReturnValue'] = _GAMEMGRRETURNVALUE
+DESCRIPTOR.message_types_by_name['Script'] = _SCRIPT
+DESCRIPTOR.message_types_by_name['ControlCommand'] = _CONTROLCOMMAND
 
 EncryptString = _reflection.GeneratedProtocolMessageType('EncryptString', (_message.Message,), dict(
   DESCRIPTOR = _ENCRYPTSTRING,
@@ -1960,6 +2516,76 @@ GateMessage = _reflection.GeneratedProtocolMessageType('GateMessage', (_message.
   ))
 _sym_db.RegisterMessage(GateMessage)
 
+GameServerInfoList = _reflection.GeneratedProtocolMessageType('GameServerInfoList', (_message.Message,), dict(
+  DESCRIPTOR = _GAMESERVERINFOLIST,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.GameServerInfoList)
+  ))
+_sym_db.RegisterMessage(GameServerInfoList)
+
+CallbackID = _reflection.GeneratedProtocolMessageType('CallbackID', (_message.Message,), dict(
+  DESCRIPTOR = _CALLBACKID,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.CallbackID)
+  ))
+_sym_db.RegisterMessage(CallbackID)
+
+GlobalEntityRegMessage = _reflection.GeneratedProtocolMessageType('GlobalEntityRegMessage', (_message.Message,), dict(
+  DESCRIPTOR = _GLOBALENTITYREGMESSAGE,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.GlobalEntityRegMessage)
+  ))
+_sym_db.RegisterMessage(GlobalEntityRegMessage)
+
+ForwardMessageHeader = _reflection.GeneratedProtocolMessageType('ForwardMessageHeader', (_message.Message,), dict(
+  DESCRIPTOR = _FORWARDMESSAGEHEADER,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.ForwardMessageHeader)
+  ))
+_sym_db.RegisterMessage(ForwardMessageHeader)
+
+EntityInfoHeader = _reflection.GeneratedProtocolMessageType('EntityInfoHeader', (_message.Message,), dict(
+  DESCRIPTOR = _ENTITYINFOHEADER,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.EntityInfoHeader)
+  ))
+_sym_db.RegisterMessage(EntityInfoHeader)
+
+GlobalMessage = _reflection.GeneratedProtocolMessageType('GlobalMessage', (_message.Message,), dict(
+  DESCRIPTOR = _GLOBALMESSAGE,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.GlobalMessage)
+  ))
+_sym_db.RegisterMessage(GlobalMessage)
+
+GlobalData = _reflection.GeneratedProtocolMessageType('GlobalData', (_message.Message,), dict(
+  DESCRIPTOR = _GLOBALDATA,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.GlobalData)
+  ))
+_sym_db.RegisterMessage(GlobalData)
+
+GameMgrReturnValue = _reflection.GeneratedProtocolMessageType('GameMgrReturnValue', (_message.Message,), dict(
+  DESCRIPTOR = _GAMEMGRRETURNVALUE,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.GameMgrReturnValue)
+  ))
+_sym_db.RegisterMessage(GameMgrReturnValue)
+
+Script = _reflection.GeneratedProtocolMessageType('Script', (_message.Message,), dict(
+  DESCRIPTOR = _SCRIPT,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.Script)
+  ))
+_sym_db.RegisterMessage(Script)
+
+ControlCommand = _reflection.GeneratedProtocolMessageType('ControlCommand', (_message.Message,), dict(
+  DESCRIPTOR = _CONTROLCOMMAND,
+  __module__ = 'BasicProtocol_pb2'
+  # @@protoc_insertion_point(class_scope:Nyx.Core.ControlCommand)
+  ))
+_sym_db.RegisterMessage(ControlCommand)
+
 
 DESCRIPTOR.has_options = True
 DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), _b('\200\001\001\220\001\001'))
@@ -1970,8 +2596,8 @@ _SCLIENTTOGATE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   options=None,
-  serialized_start=3316,
-  serialized_end=3604,
+  serialized_start=4670,
+  serialized_end=4958,
   methods=[
   _descriptor.MethodDescriptor(
     name='request_seed',
@@ -2038,8 +2664,8 @@ _SGATETOCLIENT = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=1,
   options=None,
-  serialized_start=3607,
-  serialized_end=4071,
+  serialized_start=4961,
+  serialized_end=5425,
   methods=[
   _descriptor.MethodDescriptor(
     name='on_request_seed',
@@ -2133,8 +2759,8 @@ _SCLIENTTODBMANAGER = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=2,
   options=None,
-  serialized_start=4074,
-  serialized_end=4727,
+  serialized_start=5428,
+  serialized_end=6081,
   methods=[
   _descriptor.MethodDescriptor(
     name='reg_client',
@@ -2246,8 +2872,8 @@ _SDBMANAGERTOCLIENT = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=3,
   options=None,
-  serialized_start=4730,
-  serialized_end=5426,
+  serialized_start=6084,
+  serialized_end=6780,
   methods=[
   _descriptor.MethodDescriptor(
     name='on_db_status',
@@ -2359,8 +2985,8 @@ _SGATETOGAME = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=4,
   options=None,
-  serialized_start=5429,
-  serialized_end=6145,
+  serialized_start=6783,
+  serialized_end=7499,
   methods=[
   _descriptor.MethodDescriptor(
     name='connect_game',
@@ -2481,8 +3107,8 @@ _SGAMETOGATE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=5,
   options=None,
-  serialized_start=6148,
-  serialized_end=7097,
+  serialized_start=7502,
+  serialized_end=8451,
   methods=[
   _descriptor.MethodDescriptor(
     name='on_connect_game',
@@ -2628,6 +3254,286 @@ SGameToGate = service_reflection.GeneratedServiceType('SGameToGate', (_service.S
 
 SGameToGate_Stub = service_reflection.GeneratedServiceStubType('SGameToGate_Stub', (SGameToGate,), dict(
   DESCRIPTOR = _SGAMETOGATE,
+  __module__ = 'BasicProtocol_pb2'
+  ))
+
+
+
+_SCLIENTTOGAMEMANAGER = _descriptor.ServiceDescriptor(
+  name='SClientToGameManager',
+  full_name='Nyx.Core.SClientToGameManager',
+  file=DESCRIPTOR,
+  index=6,
+  options=None,
+  serialized_start=8454,
+  serialized_end=9309,
+  methods=[
+  _descriptor.MethodDescriptor(
+    name='run_script',
+    full_name='Nyx.Core.SClientToGameManager.run_script',
+    index=0,
+    containing_service=None,
+    input_type=_SCRIPT,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='server_control',
+    full_name='Nyx.Core.SClientToGameManager.server_control',
+    index=1,
+    containing_service=None,
+    input_type=_CONTROLCOMMAND,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='reg_dbmgr',
+    full_name='Nyx.Core.SClientToGameManager.reg_dbmgr',
+    index=2,
+    containing_service=None,
+    input_type=Common__pb2._VOID,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='query_game_server_list',
+    full_name='Nyx.Core.SClientToGameManager.query_game_server_list',
+    index=3,
+    containing_service=None,
+    input_type=Common__pb2._VOID,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='reg_game',
+    full_name='Nyx.Core.SClientToGameManager.reg_game',
+    index=4,
+    containing_service=None,
+    input_type=Common__pb2._SERVERINFO,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='reg_entity_mailbox',
+    full_name='Nyx.Core.SClientToGameManager.reg_entity_mailbox',
+    index=5,
+    containing_service=None,
+    input_type=_GLOBALENTITYREGMESSAGE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='unreg_entity_mailbox',
+    full_name='Nyx.Core.SClientToGameManager.unreg_entity_mailbox',
+    index=6,
+    containing_service=None,
+    input_type=_GLOBALENTITYREGMESSAGE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='forward_entity_message',
+    full_name='Nyx.Core.SClientToGameManager.forward_entity_message',
+    index=7,
+    containing_service=None,
+    input_type=Common__pb2._ENTITYMESSAGE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='global_entity_message',
+    full_name='Nyx.Core.SClientToGameManager.global_entity_message',
+    index=8,
+    containing_service=None,
+    input_type=Common__pb2._GLOBALENTITYMESSAGE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='global_message',
+    full_name='Nyx.Core.SClientToGameManager.global_message',
+    index=9,
+    containing_service=None,
+    input_type=_GLOBALMESSAGE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='global_data',
+    full_name='Nyx.Core.SClientToGameManager.global_data',
+    index=10,
+    containing_service=None,
+    input_type=_GLOBALDATA,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='del_global_data',
+    full_name='Nyx.Core.SClientToGameManager.del_global_data',
+    index=11,
+    containing_service=None,
+    input_type=_GLOBALDATA,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='create_entity',
+    full_name='Nyx.Core.SClientToGameManager.create_entity',
+    index=12,
+    containing_service=None,
+    input_type=Common__pb2._ENTITYINFO,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='game_callback',
+    full_name='Nyx.Core.SClientToGameManager.game_callback',
+    index=13,
+    containing_service=None,
+    input_type=_GAMEMGRRETURNVALUE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+])
+
+SClientToGameManager = service_reflection.GeneratedServiceType('SClientToGameManager', (_service.Service,), dict(
+  DESCRIPTOR = _SCLIENTTOGAMEMANAGER,
+  __module__ = 'BasicProtocol_pb2'
+  ))
+
+SClientToGameManager_Stub = service_reflection.GeneratedServiceStubType('SClientToGameManager_Stub', (SClientToGameManager,), dict(
+  DESCRIPTOR = _SCLIENTTOGAMEMANAGER,
+  __module__ = 'BasicProtocol_pb2'
+  ))
+
+
+
+_SGAMEMANAGERTOCLIENT = _descriptor.ServiceDescriptor(
+  name='SGameManagerToClient',
+  full_name='Nyx.Core.SGameManagerToClient',
+  file=DESCRIPTOR,
+  index=7,
+  options=None,
+  serialized_start=9312,
+  serialized_end=10116,
+  methods=[
+  _descriptor.MethodDescriptor(
+    name='on_query_game_server_list',
+    full_name='Nyx.Core.SGameManagerToClient.on_query_game_server_list',
+    index=0,
+    containing_service=None,
+    input_type=_GAMESERVERINFOLIST,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_reg_entity_mailbox',
+    full_name='Nyx.Core.SGameManagerToClient.on_reg_entity_mailbox',
+    index=1,
+    containing_service=None,
+    input_type=_GLOBALENTITYREGMESSAGE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_unreg_entity_mailbox',
+    full_name='Nyx.Core.SGameManagerToClient.on_unreg_entity_mailbox',
+    index=2,
+    containing_service=None,
+    input_type=_GLOBALENTITYREGMESSAGE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_server_control',
+    full_name='Nyx.Core.SGameManagerToClient.on_server_control',
+    index=3,
+    containing_service=None,
+    input_type=_CONTROLCOMMAND,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_forward_entity_message',
+    full_name='Nyx.Core.SGameManagerToClient.on_forward_entity_message',
+    index=4,
+    containing_service=None,
+    input_type=Common__pb2._ENTITYMESSAGE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_global_entity_message',
+    full_name='Nyx.Core.SGameManagerToClient.on_global_entity_message',
+    index=5,
+    containing_service=None,
+    input_type=Common__pb2._GLOBALENTITYMESSAGE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_global_message',
+    full_name='Nyx.Core.SGameManagerToClient.on_global_message',
+    index=6,
+    containing_service=None,
+    input_type=_GLOBALMESSAGE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_global_data',
+    full_name='Nyx.Core.SGameManagerToClient.on_global_data',
+    index=7,
+    containing_service=None,
+    input_type=_GLOBALDATA,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='on_del_global_data',
+    full_name='Nyx.Core.SGameManagerToClient.on_del_global_data',
+    index=8,
+    containing_service=None,
+    input_type=_GLOBALDATA,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='create_entity',
+    full_name='Nyx.Core.SGameManagerToClient.create_entity',
+    index=9,
+    containing_service=None,
+    input_type=Common__pb2._ENTITYINFO,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='gamemgr_callback',
+    full_name='Nyx.Core.SGameManagerToClient.gamemgr_callback',
+    index=10,
+    containing_service=None,
+    input_type=_GAMEMGRRETURNVALUE,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='run_script',
+    full_name='Nyx.Core.SGameManagerToClient.run_script',
+    index=11,
+    containing_service=None,
+    input_type=_SCRIPT,
+    output_type=Common__pb2._VOID,
+    options=None,
+  ),
+])
+
+SGameManagerToClient = service_reflection.GeneratedServiceType('SGameManagerToClient', (_service.Service,), dict(
+  DESCRIPTOR = _SGAMEMANAGERTOCLIENT,
+  __module__ = 'BasicProtocol_pb2'
+  ))
+
+SGameManagerToClient_Stub = service_reflection.GeneratedServiceStubType('SGameManagerToClient_Stub', (SGameManagerToClient,), dict(
+  DESCRIPTOR = _SGAMEMANAGERTOCLIENT,
   __module__ = 'BasicProtocol_pb2'
   ))
 

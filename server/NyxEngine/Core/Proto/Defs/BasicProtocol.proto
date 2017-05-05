@@ -416,3 +416,171 @@ service SGameToGate {
   // Game发送给Gate的RPC消息
   rpc gate_method(GateMessage) returns(Void);
 }
+
+// Gate/Game与GameManager之间的通信协议
+// [SUMMARY]
+//  [1] - callback_id表示需要回调时的callback的id，必须大于0
+message GameServerInfoList {
+  // Game服务器的接入点信息
+  repeated ServerInfo game_servers = 1;
+}
+
+message CallbackID {
+  int32 callback_id = 1;
+}
+
+message GlobalEntityRegMessage {
+  // 全局Entity对象的注册信息
+  int32 callback_id = 1;
+  bytes entity_unique_id = 2; // Entity的全局唯一标识
+  EntityMailbox mailbox = 3; // 全局Entity的mailbox
+  bool override = 4; // 如果需要迁移对象，需要强制override该对象
+}
+
+message ForwardMessageHeader {
+  // GameManager转发的Entity消息需要添加的消息协议头
+  int32 callback_id = 1;
+  EntityMailbox src_mailbox = 2;
+  EntityMailbox dst_mailbox = 3;
+  bytes client_id = 4;
+}
+
+message EntityInfoHeader {
+  // Gate与Game之间，Game与GameManager之间调用头部信息
+  enum ServerType {
+    ANY_WHERE = 0; // 任意地方
+    SPECIFY_TYPE = 1;
+    SPECIFY_SERVER = 2;
+  }
+  int32 callback_id = 1;
+  bool transfer_entity = 2; // True表示迁移现有Entity，False则创建新Entity
+  bool create_fromdb = 3; // 如果是新Entity，从DB中读取数据来创建Entity
+  int32 create_anywhere = 4; // 创建Entity到指定的服务器或转移到任意服务器
+  ServerInfo dst_server = 5; // 指定的目标服务器的信息
+  ClientInfo client_info = 6;
+}
+
+message GlobalMessage {
+  bytes message = 1; // Global消息
+}
+
+message GlobalData {
+  // 编码后的dict行数据信息
+  bytes key = 1;
+  bytes value = 2;
+}
+
+message GameMgrReturnValue {
+  // Game调用GameManager的RPC之后需要GameManager的返回值
+  enum CallbackType {
+    NO_CALLBACK = 0;
+    REG_ENTITY_MAILBOX = 1;
+    FORWARD_ENTITY_MESSAGE = 2;
+    CREATE_ENTITY = 3;
+  }
+  CallbackType type = 1;
+  int32 callback_id = 2;
+  bool return_status = 3;
+  bytes return_value = 4;
+  bytes error_msg = 5;
+}
+
+message Script {
+  // admin需要Game服务器运行指定的脚本信息
+  bytes script_content = 1;
+}
+
+message ControlCommand {
+  enum ControlOperation {
+    NOP = 0; // 任何事情都不做
+
+    // 对Gate服务器的控制
+    FORBIDDEN_NEW_CONNECTION = 1; // 禁止新连接
+    IGNORE_CLIENT_ENTITY_MESSAGE = 2; // 忽略客户端发送的信息
+    DISCONNECT_ALL_CONNECTION = 3; // 断开所有客户端连接
+    CLOSE_GATE = 4; // 结束Gate服务器
+
+    // 对Game服务器的控制
+    NOTIFY_GAME_CLOSING = 5; // 通知即将关闭Game服务器
+    NOTIFY_GAME_CLOSED = 6; // 通知Game服务器已经关闭
+    CLOSE_GAME = 7; // 结束Game服务器
+
+    // 对DBManager服务器的控制
+    CLOSE_DBMGR = 8; // 结束DBManager服务器
+
+    // 对GameManager服务器的控制
+    CLOSE_GAMEMGR = 9; // 结束GameManager服务器
+  }
+  ControlOperation op = 1;
+}
+
+service SClientToGameManager {
+  // Gate/Game/DBManager或Admin向GameManager发送RPC信息，需要GameManager实现
+
+  ///// Admin客户端向GameManager之间的通信
+  // 请求所有Game服务器运行指定的脚本信息
+  rpc run_script(Script) returns(Void);
+  // 向所有Game发送控制命令
+  rpc server_control(ControlCommand) returns(Void);
+
+  ///// DBManager和GameManager之间的通信
+  // DBManager向GameManager注册
+  rpc reg_dbmgr(Void) returns(Void);
+
+  ///// Gate和GameManager之间的通信
+  // Gate向GameManager请求所有Game的数据信息
+  rpc query_game_server_list(Void) returns(Void);
+
+  ///// Game和GameManager之间的通信
+  // Game向GameManager注册
+  rpc reg_game(ServerInfo) returns(Void);
+  // Game向GameManager注册Entity的mailbox，该消息会转发给所有Game
+  rpc reg_entity_mailbox(GlobalEntityRegMessage) returns(Void);
+  rpc unreg_entity_mailbox(GlobalEntityRegMessage) returns(Void);
+  // Game向GameManager请求转发消息给另外一个Game的Entity
+  rpc forward_entity_message(EntityMessage) returns(Void);
+  // GameManager转发到Game的全局Entity消息，调用全服所有Avatar的entity_message
+  rpc global_entity_message(GlobalEntityMessage) returns(Void);
+  // 全局消息，只发送给当前在线的所有Game服务器
+  rpc global_message(GlobalMessage) returns(Void);
+  // 全局数据，GameManager会保存并发送给所有的Game服务器
+  rpc global_data(GlobalData) returns(Void);
+  // 删除全局数据
+  rpc del_global_data(GlobalData) returns(Void);
+  // 通知GameManager选择任意或指定一个Game创建Entity
+  rpc create_entity(EntityInfo) returns(Void);
+  // 通知GameManager转发给发起创建Entity的Game创建Entity成功
+  rpc game_callback(GameMgrReturnValue) returns(Void);
+}
+
+service SGameManagerToClient {
+  // GameManager与其客户端(Gate/Game/DBManager)通信RPC协议，需要其客户端实现
+
+  ///// Gate与GameManager之间的通信
+  // 返回Gate查询的Game服务器列表的信息
+  rpc on_query_game_server_list(GameServerInfoList) returns(Void);
+
+  ///// Game与GameManager之间的通信
+  // GameManager通知Game，其他Game注册的全局Entity的mailbox回调
+  rpc on_reg_entity_mailbox(GlobalEntityRegMessage) returns(Void);
+  rpc on_unreg_entity_mailbox(GlobalEntityRegMessage) returns(Void);
+
+  ///// Gate和Game需要处理的控制信息回调
+  rpc on_server_control(ControlCommand) returns(Void);
+  // GameManager收到转发消息的请求后，转发消息给对应的Game
+  rpc on_forward_entity_message(EntityMessage) returns(Void);
+  // GameManager转到Game的全局消息，调用全服所有Avatar的entity_message
+  rpc on_global_entity_message(GlobalEntityMessage) returns(Void);
+  // 全局消息，只将消息转发给当前在线的Game服务器
+  rpc on_global_message(GlobalMessage) returns(Void);
+  // 全局消息，GameManager会保存并将消息转发给所有的Game服务器
+  rpc on_global_data(GlobalData) returns(Void);
+  // GameManager通知Game删除全局数据
+  rpc on_del_global_data(GlobalData) returns(Void);
+  // GameManager通知Game创建对应的Entity
+  rpc create_entity(EntityInfo) returns(Void);
+  // GameManager通知Game的调用中的callback回调
+  rpc gamemgr_callback(GameMgrReturnValue) returns(Void);
+  // GameManager转发通知Game运行指定的脚本信息
+  rpc run_script(Script) returns(Void);
+}
