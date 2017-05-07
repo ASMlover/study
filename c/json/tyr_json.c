@@ -300,6 +300,7 @@ static int tyr_parse_array(tyr_context* c, tyr_value* value) {
 
   for (int i = 0; i < (int)size; ++i)
     tyr_free((tyr_value*)tyr_context_pop(c, sizeof(tyr_value)));
+  return r;
 }
 
 static int tyr_parse_value(tyr_context* c, tyr_value* value) {
