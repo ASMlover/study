@@ -157,9 +157,52 @@ static int tyr_parse_number(tyr_context* c, tyr_value* value) {
   return TYR_PARSE_OK;
 }
 
+static const char* tyr_parse_hex4(const char* p, unsigned int* u) {
+  *u = 0;
+  for (int i = 0; i < 4; ++i) {
+    char ch = *p++;
+    *u <<= 4;
+    if (ch >= '0' && ch <= '9')
+      *u |= ch - '0';
+    else if (ch >= 'A' && ch <= 'F')
+      *u |= ch - ('A' - 10);
+    else if (ch >= 'a' && ch <= 'f')
+      *u |= ch - ('a' - 10);
+    else
+      return NULL;
+  }
+  return p;
+}
+
+static void tyr_encode_utf8(tyr_context* c, unsigned int u) {
+  if (u <= 0x7F) {
+    PUTC(c, u & 0xFF);
+  }
+  else if (u <= 0x7FF) {
+    PUTC(c, 0xC0 | ((u >> 6) & 0xFF));
+    PUTC(c, 0x80 | (u & 0x3F));
+  }
+  else if (u <= 0xFFFF) {
+    PUTC(c, 0xE0 | ((u >> 12) & 0xFF));
+    PUTC(c, 0x80 | ((u >> 6) & 0x3F));
+    PUTC(c, 0x80 | (u & 0x3F));
+  }
+  else {
+    assert(u <= 0x10FFFF);
+    PUTC(c, 0xF0 | ((u >> 18) & 0xFF));
+    PUTC(c, 0x80 | ((u >> 12) & 0x3F));
+    PUTC(c, 0x80 | ((u >> 6) & 0x3F));
+    PUTC(c, 0x80 | (u & 0x3F));
+  }
+}
+
 static int tyr_parse_string(tyr_context* c, tyr_value* value) {
+#define STRING_ERROR(r) do { c->top = head; return r; } while (0)
+
   size_t head = c->top;
   size_t len;
+  unsigned int u;
+  unsigned int u2;
   const char* p;
 
   EXPECT(c, '\"');
@@ -182,22 +225,36 @@ static int tyr_parse_string(tyr_context* c, tyr_value* value) {
       case 'r': PUTC(c, '\r'); break;
       case 'n': PUTC(c, '\n'); break;
       case 't': PUTC(c, '\t'); break;
+      case 'u':
+        if (NULL == (p = tyr_parse_hex4(p, &u)))
+          STRING_ERROR(TYR_PARSE_INVALID_UNICODE_HEX);
+        if (u >= 0xD800 && u <= 0xDBFF) {
+          if ('\\' != *p++)
+            STRING_ERROR(TYR_PARSE_INVALID_UNICODE_SURROGATE);
+          if ('u' != *p++)
+            STRING_ERROR(TYR_PARSE_INVALID_UNICODE_SURROGATE);
+          if (NULL == (p = tyr_parse_hex4(p, &u2)))
+            STRING_ERROR(TYR_PARSE_INVALID_UNICODE_HEX);
+          if (u2 < 0xDC00 || u2 > 0xDFFF)
+            STRING_ERROR(TYR_PARSE_INVALID_UNICODE_SURROGATE);
+          u = (((u - 0xD800) << 10) | (u2 - 0xDC00)) + 0x10000;
+        }
+        tyr_encode_utf8(c, u);
+        break;
       default:
-        c->top = head;
-        return TYR_PARSE_INVALID_STRING_ESCAPE;
+        STRING_ERROR(TYR_PARSE_INVALID_STRING_ESCAPE);
       }
       break;
     case '\0':
-      c->top = head;
-      return TYR_PARSE_MISS_QUOTATION_MARK;
+      STRING_ERROR(TYR_PARSE_MISS_QUOTATION_MARK);
     default:
-      if ((unsigned char)ch < 0x20) {
-        c->top = head;
-        return TYR_PARSE_INVALID_STRING_CHAR;
-      }
+      if ((unsigned char)ch < 0x20)
+        STRING_ERROR(TYR_PARSE_INVALID_STRING_CHAR);
       PUTC(c, ch);
     }
   }
+
+#undef STRING_ERROR
 }
 
 static int tyr_parse_value(tyr_context* c, tyr_value* value) {
