@@ -338,8 +338,16 @@ int tyr_parse(tyr_value* value, const char* json) {
 
 void tyr_free(tyr_value* value) {
   assert(NULL != value);
-  if (TYR_STRING == value->type)
+  switch ((int)value->type) {
+  case TYR_STRING:
     free(value->u.string.s);
+    break;
+  case TYR_ARRAY:
+    for (size_t i = 0; i < value->u.array.n; ++i)
+      tyr_free(&value->u.array.e[i]);
+    free(value->u.array.e);
+    break;
+  }
   value->type = TYR_NULL;
 }
 
