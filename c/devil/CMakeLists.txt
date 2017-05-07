@@ -29,7 +29,7 @@ cmake_minimum_required(VERSION 3.0)
 project(DevilPROJ CXX C)
 
 if (NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Debug)
+  set(CMAKE_BUILD_TYPE Release)
 endif()
 message(STATUS "`DevilPROJ` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
@@ -47,7 +47,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
       return()
     endif()
   endif()
-  set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-g -O2 -std=c11 -Wall -Werror")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O2 -std=c11 -Wall -Werror")
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   if (MSVC_VERSION LESS 1900)
     message(FATAL_ERROR "you need Visual Studio 2015 or later")
@@ -57,7 +57,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     /D_UNICODE
     /D_CRT_SECURE_NO_WARNINGS
     /D_CRT_NONSTDC_NO_WARNINGS)
-  set(CMAKE_CXX_FLAGS "-W3 -GF -GS -Gs -Zi")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W3 -GF -GS -Gs -Zi")
 endif()
 message(STATUS "`DevilPROJ` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
