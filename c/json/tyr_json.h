@@ -43,6 +43,7 @@ typedef enum {
 
 typedef struct tyr_value {
   union {
+    struct { struct tyr_value* e; size_t n; } array;
     struct { char* s; size_t n; } string;
     double number;
   } u;
@@ -60,6 +61,7 @@ enum {
   TYR_PARSE_INVALID_STRING_CHAR,
   TYR_PARSE_INVALID_UNICODE_HEX,
   TYR_PARSE_INVALID_UNICODE_SURROGATE,
+  TYR_PARSE_MISS_COMMA_OR_SQUARE_BRACKET,
 };
 
 #define tyr_init(v) do { (v)->type = TYR_NULL; } while (0)
@@ -76,5 +78,7 @@ void tyr_set_number(tyr_value* value, double n);
 const char* tyr_get_string(const tyr_value* value);
 size_t tyr_get_string_length(const tyr_value* value);
 void tyr_set_string(tyr_value* value, const char* s, size_t n);
+size_t tyr_get_array_size(const tyr_value* value);
+tyr_value* tyr_get_array_element(const tyr_value* value, size_t index);
 
 #endif /* __TYR_JSON_HEADER_H__ */

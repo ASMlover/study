@@ -257,12 +257,58 @@ static int tyr_parse_string(tyr_context* c, tyr_value* value) {
 #undef STRING_ERROR
 }
 
+static int tyr_parse_value(tyr_context*, tyr_value*);
+
+static int tyr_parse_array(tyr_context* c, tyr_value* value) {
+  size_t size = 0;
+  int r;
+  EXPECT(c, '[');
+  tyr_parse_whitespace(c);
+  if (']' == *c->json) {
+    ++c->json;
+    value->type = TYR_ARRAY;
+    value->u.array.n = 0;
+    value->u.array.e = NULL;
+    return TYR_PARSE_OK;
+  }
+  for (;;) {
+    tyr_value e;
+    tyr_init(&e);
+    if (TYR_PARSE_OK != (r = tyr_parse_value(c, &e)))
+      return r;
+    memcpy(tyr_context_push(c, sizeof(tyr_value)), &e, sizeof(tyr_value));
+    ++size;
+    tyr_parse_whitespace(c);
+    if (',' == *c->json) {
+      ++c->json;
+      tyr_parse_whitespace(c);
+    }
+    else if (']' == *c->json) {
+      ++c->json;
+      value->type = TYR_ARRAY;
+      value->u.array.n = size;
+      size *= sizeof(tyr_value);
+      value->u.array.e = (tyr_value*)malloc(size);
+      memcpy(value->u.array.e, tyr_context_pop(c, size), size);
+      return TYR_PARSE_OK;
+    }
+    else {
+      r = TYR_PARSE_MISS_QUOTATION_MARK;
+      break;
+    }
+  }
+
+  for (int i = 0; i < (int)size; ++i)
+    tyr_free((tyr_value*)tyr_context_pop(c, sizeof(tyr_value)));
+}
+
 static int tyr_parse_value(tyr_context* c, tyr_value* value) {
   switch (*c->json) {
   case 'n': return tyr_parse_null(c, value);
   case 't': return tyr_parse_true(c, value);
   case 'f': return tyr_parse_false(c, value);
   case '"': return tyr_parse_string(c, value);
+  case '[': return tyr_parse_array(c, value);
   case '\0': return TYR_PARSE_EXPECT_VALUE;
   default: return tyr_parse_number(c, value);
   }
@@ -343,4 +389,15 @@ void tyr_set_string(tyr_value* value, const char* s, size_t n) {
   value->u.string.s[n] = 0;
   value->u.string.n = n;
   value->type = TYR_STRING;
+}
+
+size_t tyr_get_array_size(const tyr_value* value) {
+  assert(NULL != value && TYR_ARRAY == value->type);
+  return value->u.array.n;
+}
+
+tyr_value* tyr_get_array_element(const tyr_value* value, size_t index) {
+  assert(NULL != value && TYR_ARRAY == value->type);
+  assert(index >= 0 && index < value->u.array.n);
+  return &value->u.array.e[index];
 }
