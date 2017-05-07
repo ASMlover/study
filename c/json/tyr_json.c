@@ -303,6 +303,16 @@ static int tyr_parse_array(tyr_context* c, tyr_value* value) {
   return r;
 }
 
+static int tyr_parse_object(tyr_context* c, tyr_value* value) {
+  size_t size;
+  tyr_member m;
+  int r = 0;
+
+  /* TODO: */
+
+  return r;
+}
+
 static int tyr_parse_value(tyr_context* c, tyr_value* value) {
   switch (*c->json) {
   case 'n': return tyr_parse_null(c, value);
@@ -310,6 +320,7 @@ static int tyr_parse_value(tyr_context* c, tyr_value* value) {
   case 'f': return tyr_parse_false(c, value);
   case '"': return tyr_parse_string(c, value);
   case '[': return tyr_parse_array(c, value);
+  case '{': return tyr_parse_object(c, value);
   case '\0': return TYR_PARSE_EXPECT_VALUE;
   default: return tyr_parse_number(c, value);
   }
@@ -409,4 +420,27 @@ tyr_value* tyr_get_array_element(const tyr_value* value, size_t index) {
   assert(NULL != value && TYR_ARRAY == value->type);
   assert(index >= 0 && index < value->u.array.n);
   return &value->u.array.e[index];
+}
+
+size_t tyr_get_object_size(const tyr_value* value) {
+  assert(NULL != value && TYR_OBJECT == value->type);
+  return value->u.object.n;
+}
+
+const char* tyr_get_object_key(const tyr_value* value, size_t index) {
+  assert(NULL != value && TYR_OBJECT == value->type);
+  assert(index >= 0 && index < value->u.object.n);
+  return value->u.object.m[index].k;
+}
+
+size_t tyr_get_object_key_length(const tyr_value* value, size_t index) {
+  assert(NULL != value && TYR_OBJECT == value->type);
+  assert(index >= 0 && index < value->u.object.n);
+  return value->u.object.m[index].klen;
+}
+
+tyr_value* tyr_get_object_value(const tyr_value* value, size_t index) {
+  assert(NULL != value && TYR_OBJECT == value->type);
+  assert(index >= 0 && index < value->u.object.n);
+  return &value->u.object.m[index].v;
 }
