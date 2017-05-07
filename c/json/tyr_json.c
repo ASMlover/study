@@ -196,11 +196,10 @@ static void tyr_encode_utf8(tyr_context* c, unsigned int u) {
   }
 }
 
-static int tyr_parse_string(tyr_context* c, tyr_value* value) {
+static int tyr_parse_string_raw(tyr_context* c, char** s, size_t* len) {
 #define STRING_ERROR(r) do { c->top = head; return r; } while (0)
 
   size_t head = c->top;
-  size_t len;
   unsigned int u;
   unsigned int u2;
   const char* p;
@@ -211,8 +210,8 @@ static int tyr_parse_string(tyr_context* c, tyr_value* value) {
     char ch = *p++;
     switch (ch) {
     case '\"':
-      len = c->top - head;
-      tyr_set_string(value, (const char*)tyr_context_pop(c, len), len);
+      *len = c->top - head;
+      *s = (char*)tyr_context_pop(c, *len);
       c->json = p;
       return TYR_PARSE_OK;
     case '\\':
@@ -255,6 +254,15 @@ static int tyr_parse_string(tyr_context* c, tyr_value* value) {
   }
 
 #undef STRING_ERROR
+}
+
+static int tyr_parse_string(tyr_context* c, tyr_value* value) {
+  char* s;
+  size_t len;
+  int r;
+  if (TYR_PARSE_OK == (r = tyr_parse_string_raw(c, &s, &len)))
+    tyr_set_string(value, s, len);
+  return r;
 }
 
 static int tyr_parse_value(tyr_context*, tyr_value*);
@@ -304,11 +312,74 @@ static int tyr_parse_array(tyr_context* c, tyr_value* value) {
 }
 
 static int tyr_parse_object(tyr_context* c, tyr_value* value) {
-  size_t size;
-  tyr_member m;
-  int r = 0;
+  EXPECT(c, '{');
+  tyr_parse_whitespace(c);
+  if ('}' == *c->json) {
+    ++c->json;
+    value->type = TYR_OBJECT;
+    value->u.object.m = NULL;
+    value->u.object.n = 0;
+    return TYR_PARSE_OK;
+  }
 
-  /* TODO: */
+  tyr_member m;
+  m.k = NULL;
+  size_t size = 0;
+  int r;
+  for (;;) {
+    tyr_init(&m.v);
+    if ('\"' != *c->json) {
+      r = TYR_PARSE_MISS_KEY;
+      break;
+    }
+    char* s;
+    if (TYR_PARSE_OK != (r = tyr_parse_string_raw(c, &s, &m.klen)))
+      break;
+    m.k = (char*)malloc(m.klen + 1);
+    memcpy(m.k, s, m.klen);
+    m.k[m.klen] = 0;
+
+    tyr_parse_whitespace(c);
+    if (':' != *c->json) {
+      r = TYR_PARSE_MISS_COLON;
+      break;
+    }
+    ++c->json;
+    tyr_parse_whitespace(c);
+
+    if (TYR_PARSE_OK != (r = tyr_parse_value(c, &m.v)))
+      break;
+    memcpy(tyr_context_push(c, sizeof(tyr_member)), &m, sizeof(tyr_member));
+    ++size;
+    m.k = NULL;
+
+    tyr_parse_whitespace(c);
+    if (',' == *c->json) {
+      ++c->json;
+      tyr_parse_whitespace(c);
+    }
+    else if ('}' == *c->json) {
+      size_t msize = sizeof(tyr_member) * size;
+      ++c->json;
+      value->type = TYR_OBJECT;
+      value->u.object.n = size;
+      value->u.object.m = (tyr_member*)malloc(msize);
+      memcpy(value->u.object.m, tyr_context_pop(c, msize), msize);
+      return TYR_PARSE_OK;
+    }
+    else {
+      r = TYR_PARSE_MISS_COMMA_OR_CURLY_BRACKET;
+      break;
+    }
+  }
+
+  free(m.k);
+  for (size_t i = 0; i < size; ++i) {
+    tyr_member* m = (tyr_member*)tyr_context_pop(c, sizeof(tyr_member));
+    free(m->k);
+    tyr_free(&m->v);
+  }
+  value->type = TYR_NULL;
 
   return r;
 }
@@ -357,6 +428,13 @@ void tyr_free(tyr_value* value) {
     for (size_t i = 0; i < value->u.array.n; ++i)
       tyr_free(&value->u.array.e[i]);
     free(value->u.array.e);
+    break;
+  case TYR_OBJECT:
+    for (size_t i = 0; i < value->u.object.n; ++i) {
+      free(value->u.object.m[i].k);
+      tyr_free(&value->u.object.m[i].v);
+    }
+    free(value->u.object.m);
     break;
   }
   value->type = TYR_NULL;
