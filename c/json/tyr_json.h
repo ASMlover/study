@@ -80,6 +80,7 @@ enum {
 #define tyr_set_nil(v) tyr_free(v)
 
 int tyr_parse(tyr_value* value, const char* json);
+char* tyr_stringify(const tyr_value* value, size_t* length);
 void tyr_free(tyr_value* value);
 tyr_type tyr_get_type(const tyr_value* value);
 

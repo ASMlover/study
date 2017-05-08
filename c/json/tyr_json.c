@@ -30,11 +30,13 @@
 #include <ctype.h>
 #include <errno.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "tyr_json.h"
 
 #define TYR_PARSE_INIT_STACKSZ 256
+#define TYR_PARSE_STRINGIFY_INIT_SIZE 256
 
 #define ISDIGIT1TO9(ch) ((ch) >= '1' && (ch) <= '9')
 #define EXPECT(c, ch) do {\
@@ -44,6 +46,7 @@
 #define PUTC(c, ch) do {\
   *(char*)tyr_context_push(c, sizeof(char)) = (ch);\
 } while (0)
+#define PUTS(c, s, len) memcpy(tyr_context_push((c), (len)), (s), (len))
 
 typedef struct tyr_context {
   const char* json;
@@ -416,6 +419,52 @@ int tyr_parse(tyr_value* value, const char* json) {
   assert(0 == c.top);
   tyr_context_destroy(c);
   return r;
+}
+
+static void tyr_stringify_string(tyr_context* c, const char* s, size_t len) {
+  /* TODO: */
+}
+
+static void tyr_stringify_value(tyr_context* c, const tyr_value* value) {
+  switch ((int)value->type) {
+  case TYR_NULL:
+    PUTS(c, "null", 4); break;
+  case TYR_FALSE:
+    PUTS(c, "false", 5); break;
+  case TYR_TRUE:
+    PUTS(c, "true", 4); break;
+  case TYR_NUMBER:
+    {
+      char* buff = (char*)tyr_context_push(c, 32);
+      int n = snprintf(buff, 32, "%.17g", value->u.number);
+      c->top -= 32 - n;
+    }
+    break;
+  case TYR_STRING:
+    tyr_stringify_string(c, value->u.string.s, value->u.string.n);
+    break;
+  case TYR_ARRAY:
+    /* TODO: */
+    break;
+  case TYR_OBJECT:
+    /* TODO: */
+    break;
+  default:
+    assert(0 && "invalid json type");
+  }
+}
+
+char* tyr_stringify(const tyr_value* value, size_t* length) {
+  assert(NULL != value);
+  tyr_context c;
+  c.size = TYR_PARSE_STRINGIFY_INIT_SIZE;
+  c.stack = (char*)malloc(c.size);
+  c.top = 0;
+  tyr_stringify_value(&c, value);
+  if (NULL != length)
+    *length = c.top;
+  PUTC(&c, '\0');
+  return c.stack;
 }
 
 void tyr_free(tyr_value* value) {
