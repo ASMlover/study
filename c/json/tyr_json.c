@@ -422,7 +422,30 @@ int tyr_parse(tyr_value* value, const char* json) {
 }
 
 static void tyr_stringify_string(tyr_context* c, const char* s, size_t len) {
-  /* TODO: */
+  assert(NULL != s);
+  PUTC(c, '\"');
+  for (size_t i = 0; i < len; ++i) {
+    unsigned char ch = (unsigned char)s[i];
+    switch (ch) {
+    case '\"': PUTS(c, "\\\"", 2); break;
+    case '\\': PUTS(c, "\\\\", 2); break;
+    case '\b': PUTS(c, "\\\b", 2); break;
+    case '\f': PUTS(c, "\\f", 2); break;
+    case '\r': PUTS(c, "\\r", 2); break;
+    case '\n': PUTS(c, "\\n", 2); break;
+    case '\t': PUTS(c, "\\t", 2); break;
+    default:
+      if (ch < 0x20) {
+        char buff[8];
+        snprintf(buff, 8, "\\u%04x", ch);
+        PUTS(c, buff, 6);
+      }
+      else {
+        PUTC(c, s[i]);
+      }
+    }
+  }
+  PUTC(c, '\"');
 }
 
 static void tyr_stringify_value(tyr_context* c, const tyr_value* value) {
@@ -444,10 +467,25 @@ static void tyr_stringify_value(tyr_context* c, const tyr_value* value) {
     tyr_stringify_string(c, value->u.string.s, value->u.string.n);
     break;
   case TYR_ARRAY:
-    /* TODO: */
+    PUTC(c, '[');
+    for (size_t i = 0; i < value->u.array.n; ++i) {
+      if (i > 0)
+        PUTC(c, ',');
+      tyr_stringify_value(c, &value->u.array.e[i]);
+    }
+    PUTC(c, ']');
     break;
   case TYR_OBJECT:
-    /* TODO: */
+    PUTC(c, '{');
+    for (size_t i = 0; i < value->u.object.n; ++i) {
+      if (i > 0)
+        PUTC(c, ',');
+      tyr_stringify_string(
+          c, value->u.object.m[i].k, value->u.object.m[i].klen);
+      PUTC(c, ':');
+      tyr_stringify_value(c, &value->u.object.m[i].v);
+    }
+    PUTC(c, '}');
     break;
   default:
     assert(0 && "invalid json type");
