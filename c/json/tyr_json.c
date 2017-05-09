@@ -423,29 +423,35 @@ int tyr_parse(tyr_value* value, const char* json) {
 
 static void tyr_stringify_string(tyr_context* c, const char* s, size_t len) {
   assert(NULL != s);
-  PUTC(c, '\"');
+  static const char* hex_digits = "0123456789ABCDEF";
+  char* head;
+  char* p;
+  size_t size = len * 6 + 2;
+  p = head = (char*)tyr_context_push(c, size);
+  *p++ = '\"';
   for (size_t i = 0; i < len; ++i) {
     unsigned char ch = (unsigned char)s[i];
     switch (ch) {
-    case '\"': PUTS(c, "\\\"", 2); break;
-    case '\\': PUTS(c, "\\\\", 2); break;
-    case '\b': PUTS(c, "\\\b", 2); break;
-    case '\f': PUTS(c, "\\f", 2); break;
-    case '\r': PUTS(c, "\\r", 2); break;
-    case '\n': PUTS(c, "\\n", 2); break;
-    case '\t': PUTS(c, "\\t", 2); break;
+    case '\"': *p++ = '\\'; *p++ = '\"'; break;
+    case '\\': *p++ = '\\'; *p++ = '\\'; break;
+    case '\b': *p++ = '\\'; *p++ = 'b'; break;
+    case '\f': *p++ = '\\'; *p++ = 'f'; break;
+    case '\r': *p++ = '\\'; *p++ = 'r'; break;
+    case '\n': *p++ = '\\'; *p++ = 'n'; break;
+    case '\t': *p++ = '\\'; *p++ = 't'; break;
     default:
       if (ch < 0x20) {
-        char buff[8];
-        snprintf(buff, 8, "\\u%04x", ch);
-        PUTS(c, buff, 6);
+        *p++ = '\\'; *p++ = 'u'; *p++ = '0'; *p++ = '0';
+        *p++ = hex_digits[ch >> 4];
+        *p++ = hex_digits[ch & 15];
       }
       else {
-        PUTC(c, s[i]);
+        *p++ = s[i];
       }
     }
   }
-  PUTC(c, '\"');
+  *p++ = '\"';
+  c->top -= size - (p - head);
 }
 
 static void tyr_stringify_value(tyr_context* c, const tyr_value* value) {
