@@ -5,7 +5,7 @@
   * Some algorithms about **GC**.
   * **GC** demos name based **Njord**.
 
-## **Spin-Lock**
+## **SpinLocks**
 1. AtomicExchange spin lock
 ```shell
 ExchangeLock(x):
@@ -24,14 +24,43 @@ AtomicExchange(x, v):
 2. Test and test and set AtomicExchange spin lock
 ```shell
 TestAndTestAndSetExchangeLock(x):
-  while TestAndExchange(x) == 1
+  while TestAndExchange(x) = 1
     /* do nothing */
 
 TestAndTestAndSetExchangeUnlock(x):
   *x <- 0
 
 TestAndExchange(x):
-  while *x == 1
+  while *x = 1
     /* do nothing */
   return AtomicExchange(x, 1)
+```
+3. TestAndSet primitive implement spin lock
+```shell
+TestAndSetLock(x):
+  while TestAndSet(x) = 1
+    /* do nothing */
+
+TestAndSetUnlock(x):
+  *x <- 0
+
+TestAndSet(x):
+  atomic
+    old <- *x
+    if old = 0
+      *x = 1
+      return 0
+    return 1
+
+TestAndTestAndSetLock(x):
+  while TestAndTestAndSet(x) = 1
+    /* do nothing */
+
+TestAndTestAndSetUnlock(x):
+  TestAndSetUnlock(x)
+
+TestAndTestAndSet(x):
+  while *x = 1
+    /* do nothing */
+  return TestAndSet(x)
 ```
