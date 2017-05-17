@@ -21,9 +21,8 @@ AtomicExchange(x, v):
     *x <- v
   return old
 ```
-
 2. Test and test and set AtomicExchange spin lock
-```sell
+```shell
 TestAndTestAndSetExchangeLock(x):
   while TestAndExchange(x) == 1
     /* do nothing */
