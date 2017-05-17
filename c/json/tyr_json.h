@@ -41,13 +41,23 @@ typedef enum {
   TYR_OBJECT,
 } tyr_type;
 
-typedef struct tyr_value {
+typedef struct tyr_value tyr_value;
+typedef struct tyr_member tyr_member;
+
+struct tyr_value {
   union {
+    struct { tyr_member* m; size_t n; } object;
+    struct { tyr_value* e; size_t n; } array;
     struct { char* s; size_t n; } string;
     double number;
   } u;
   tyr_type type;
-} tyr_value;
+};
+
+struct tyr_member {
+  char* k; size_t klen; /* key of member */
+  tyr_value v;
+};
 
 enum {
   TYR_PARSE_OK = 0,
@@ -58,12 +68,19 @@ enum {
   TYR_PARSE_MISS_QUOTATION_MARK,
   TYR_PARSE_INVALID_STRING_ESCAPE,
   TYR_PARSE_INVALID_STRING_CHAR,
+  TYR_PARSE_INVALID_UNICODE_HEX,
+  TYR_PARSE_INVALID_UNICODE_SURROGATE,
+  TYR_PARSE_MISS_COMMA_OR_SQUARE_BRACKET,
+  TYR_PARSE_MISS_KEY,
+  TYR_PARSE_MISS_COLON,
+  TYR_PARSE_MISS_COMMA_OR_CURLY_BRACKET,
 };
 
 #define tyr_init(v) do { (v)->type = TYR_NULL; } while (0)
 #define tyr_set_nil(v) tyr_free(v)
 
 int tyr_parse(tyr_value* value, const char* json);
+char* tyr_stringify(const tyr_value* value, size_t* length);
 void tyr_free(tyr_value* value);
 tyr_type tyr_get_type(const tyr_value* value);
 
@@ -74,5 +91,11 @@ void tyr_set_number(tyr_value* value, double n);
 const char* tyr_get_string(const tyr_value* value);
 size_t tyr_get_string_length(const tyr_value* value);
 void tyr_set_string(tyr_value* value, const char* s, size_t n);
+size_t tyr_get_array_size(const tyr_value* value);
+tyr_value* tyr_get_array_element(const tyr_value* value, size_t index);
+size_t tyr_get_object_size(const tyr_value* value);
+const char* tyr_get_object_key(const tyr_value* value, size_t index);
+size_t tyr_get_object_key_length(const tyr_value* value, size_t index);
+tyr_value* tyr_get_object_value(const tyr_value* value, size_t index);
 
 #endif /* __TYR_JSON_HEADER_H__ */

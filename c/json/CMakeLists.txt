@@ -1,4 +1,4 @@
-# Copyright (c) 2016 ASMlover. All rights reserved.
+# Copyright (c) 2017 ASMlover. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,20 +25,27 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-EXENAME	= json
-ifeq ($(OS), Windows_NT)
-	EXENAME	= json.exe
-endif
+cmake_minimum_required(VERSION 3.0)
+set(PROJ_NAME "JsonPROJ")
+project(${PROJ_NAME} CXX C)
 
-OUT	= $(EXENAME)
-RM	= rm
-CC	= gcc
-CFLAGS	= -g -O2 -Wall
-OBJS	= main.o tyr_json.o
+if (NOT CMAKE_BUILD_TYPE)
+  set(${CMAKE_BUILD_TYPE} Release)
+endif()
+message(STATUS "<${PROJ_NAME}> CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
-$(OUT): $(OBJS)
-	$(CC) -o $@ $^
-$(OBJS): %.o: %.c
-	$(CC) -o $*.o -c $(CFLAGS) $^
-clean:
-	$(RM) $(OUT) $(OBJS)
+if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+  add_definitions(
+    /D_UNICODE
+    /D_CRT_SECURE_NO_WARNINGS
+    /D_CRT_NONSTDC_NO_WARNINGS)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W3 /GF /GS /Gs /Zi")
+else()
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -ggdb -O2 -Wall -std=c11")
+endif()
+message(STATUS "<${PROJ_NAME}> CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
+
+aux_source_directory(. PROJ_SOURCES)
+message(STATUS "<${PROJ_NAME}> PROJ_SOURCES: ${PROJ_SOURCES}")
+
+add_executable(json ${PROJ_SOURCES})

@@ -1,0 +1,586 @@
+// Copyright (c) 2017 ASMlover. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list ofconditions and the following disclaimer.
+//
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in
+//    the documentation and/or other materialsprovided with the
+//    distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+syntax = "proto3";
+import "Common.proto";
+package Nyx.Core;
+
+option cc_generic_services = true;
+option py_generic_services = true;
+
+// NyxEngine服务器与客户端通信的基本通信协议
+// RPC Service的定义规范：
+//  [1] 以`S`开头，表示是RPC Service定义
+//  [2] 以`To`来连接通信双方，如SClientToGate表示Client到Gate的协议，需要Gate
+//      对定义RPC进行监听、并处理
+//  [3] 对于请求返回的RPC函数，尽量以`on_`开头表示对请求的应答回调
+
+// 客户端与Gate之间的基本通信协议
+message EncryptString {
+  bytes encrypt_str = 1; // 加密的字符串信息
+}
+
+message SessionSeed {
+  int64 seed = 1; // 加密的随机数种子
+}
+
+message SessionKey {
+  bytes random_padding_head = 1;
+  bytes session_key = 2; // 加密的会话字符串
+  int64 seed = 3; // 服务器返回给客户端的随机种子
+  bytes random_padding_tail = 4;
+}
+
+service SClientToGate {
+  // 客户端发送到Gate服务器的RPC请求，需要Gate实现
+
+  // 向Gate服务器请求随机数种子
+  rpc request_seed(Void) returns(Void);
+  // 向Gate服务器注册通信密钥
+  rpc session_key(EncryptString) returns(Void);
+  // 连接Gate服务器，进行通信认证
+  rpc connect_gate(ConnectRequest) returns(Void);
+  // 客户端向服务器发起的RPC调用（这些调用通过Gate进行转发）
+  rpc entity_message(EntityMessage) returns(Void);
+  // 将客户端字符串的MD5对应索引注册到服务器
+  rpc reg_md5index(Md5Index) returns(Void);
+}
+
+service SGateToClient {
+  // Gate服务器返回给客户端的RPC消息，需要客户端实现
+
+  // 返回客户端请求的随机数种子
+  rpc on_request_seed(SessionSeed) returns(Void);
+  // 告知客户端注册通信密钥成功
+  rpc on_session_key(Void) returns(Void);
+  // 回复客户端连接Gate的请求
+  rpc on_connect_gate(ConnectResponse) returns(Void);
+  // 服务器通知客户端创建Entity（Game通过Gate转发的RPC调用）
+  rpc create_entity(EntityInfo) returns(Void);
+  // 服务器通知客户端销毁Entity（Game通过Gate转发的RPC调用）
+  rpc destroy_entity(EntityInfo) returns(Void);
+  // 服务器向客户端发起的RPC调用（这些调用通过Gate进行转发）
+  rpc entity_message(EntityMessage) returns(Void);
+  // 服务器发送给客户端的带外数据信息
+  rpc chat_to_client(OutbandInfo) returns(Void);
+  // 将服务器字符串的MD5对应索引注册到客户端
+  rpc reg_md5index(Md5Index) returns(Void);
+}
+
+// DB操作的基本通信协议（默认使用MongoDB，数据应该是BSON，以便C++化）
+// [SUMMARY]
+//  [1] - callback_id表示需要回调时的callback的id，必须大于0
+//  [2] - query/fields/update/doc/docs应该是BSON编码
+//  [3] - status表示DB操作的结果是否成功（bool类型）
+message FindDocRequest {
+  // 查找操作请求信息
+  int32 callback_id = 1;
+  bytes db = 2;
+  bytes collection = 3;
+  bytes query = 4;
+  bytes fields = 5;
+  int32 limit = 6; // 需要返回的结果数量
+  bool seq_flag = 7; // 是否保证有序
+  bytes seq_key = 8; // seq_flag操作的key
+  bytes sort = 9; // 排序
+  int32 read_pref = 10;
+  bytes hint = 11;
+  bytes skip = 12;
+}
+
+message FindDocResponse {
+  int32 callback_id = 1;
+  bool status = 2;
+  bytes docs = 3; // 查询到的数据信息
+}
+
+message CountDocRequest {
+  // 获取docs的条目数量
+  int32 callback_id = 1;
+  bytes db = 2;
+  bytes collection = 3;
+  bytes query = 4;
+}
+
+message CountDocResponse {
+  int32 callback_id = 1;
+  bool status = 2;
+  int32 count = 3; // 返回docs的条目数量
+}
+
+message UpdateDocRequest {
+  // 更新指定的doc数据信息
+  int32 callback_id = 1;
+  bytes db = 2;
+  bytes collection = 3;
+  bytes query = 4;
+  bytes doc = 5;
+  bool upsert = 6; // 如果记录不存在表示是否进行插入操作
+  bool multi = 7; // 是否更新多个记录
+  bool seq_flag = 8;
+  bytes seq_key = 9;
+}
+
+message UpdateDocResponse {
+  int32 callback_id = 1;
+  bool status = 2;
+}
+
+message InsertDocRequest {
+  // 插入新doc记录的操作
+  int32 callback_id = 1;
+  bytes db = 2;
+  bytes collection = 3;
+  bytes doc = 4;
+  bool seq_flag = 5;
+  bytes seq_key = 6;
+}
+
+message InsertDocResponse {
+  int32 callback_id = 1;
+  bool status = 2;
+  bytes insert_id = 3; // 插入成功后返回的记录_id
+}
+
+message DeleteDocRequest {
+  // 删除某doc的操作
+  int32 callback_id = 1;
+  bytes db = 2;
+  bytes collection = 3;
+  bytes query = 4;
+  bool seq_flag = 5;
+  bytes seq_key = 6;
+}
+
+message DeleteDocResponse {
+  int32 callback_id = 1;
+  bool status = 2;
+}
+
+message FindAndModifyDocRequest {
+  // 查找并修改doc的操作
+  int32 callback_id = 1;
+  bytes db = 2;
+  bytes collection = 3;
+  bytes query = 4;
+  bytes fields = 5;
+  bytes update = 6;
+  bool upsert = 7;
+  bool new = 8; // 为真返回修改之后的结果
+  bool seq_flag = 9;
+  bytes seq_key =  10;
+}
+
+message FindAndModifyDocResponse {
+  int32 callback_id = 1;
+  bool status = 2;
+  bytes doc = 3;
+}
+
+message OperationIndexRequest {
+  // 索引操作请求
+  enum OperationType {
+    ENSURE = 0;
+    DROP = 1;
+    RESET = 2;
+  }
+  int32 callback_id = 1;
+  bytes db = 2;
+  bytes collection = 3;
+  OperationType type = 4;
+  bytes query = 5;
+  bytes desc = 6;
+}
+
+message OperationIndexResponse {
+  int32 callback_id = 1;
+  bool status = 2;
+}
+
+message CreateCollectionRequest {
+  // 创建Collection的操作
+  int32 callback_id = 1;
+  bytes db = 2;
+  bytes collection = 3;
+  bytes operations = 4; // 创建collection的选项
+}
+
+message CreateCollectionResponse {
+  enum CreateResult {
+    SUCCESS = 0; // 创建成功
+    EXISTED = 1; // 创建失败，已经存在该collection
+    FAILED = 2; // 创建失败，其他错误
+  }
+  int32 callback_id = 1;
+  CreateResult result = 2;
+}
+
+message DBStatusMessage {
+  enum StatusType {
+    CONNECTED = 0; // DBManager和后台DB服务器连接正常
+    CONNECTION_FAIL = 1; // DBManager和后台DB服务器连接失败
+    BUSY = 2; // DBManager等待执行的操作队列过长
+  }
+  StatusType status = 1; // 查询的DBManager状态信息
+}
+
+message CallDBRequest {
+  int32 callback_id = 1;
+  bytes method = 2;
+  bytes args = 3;
+}
+
+message CallDBResponse {
+  int32 callback_id = 1;
+  bytes args = 2;
+}
+
+service SClientToDBManager {
+  // DBManager客户端访问DBManager的RPC操作请求，需要DBManager实现
+
+  // 将Game等作为DBManager客户端的服务器信息注册到DBManager
+  rpc reg_client(ServerInfo) returns(Void);
+  // 同DBManager通信的RPC接口
+  rpc call_db_method(CallDBRequest) returns(Void);
+  rpc db_find_doc(FindDocRequest) returns(Void);
+  rpc db_update_doc(UpdateDocRequest) returns(Void);
+  rpc db_insert_doc(InsertDocRequest) returns(Void);
+  rpc db_delete_doc(DeleteDocRequest) returns(Void);
+  rpc db_count_doc(CountDocRequest) returns(Void);
+  rpc db_find_and_modify_doc(FindAndModifyDocRequest) returns(Void);
+  rpc db_operation_index(OperationIndexRequest) returns(Void);
+  rpc db_create_collection(CreateCollectionRequest) returns(Void);
+}
+
+service SDBManagerToClient {
+  // 返回DBManager客户端的通信RPC信息，可能是Game服务器，需DBManager客户端实现
+
+  // 返回DBManager的状态信息
+  rpc on_db_status(DBStatusMessage) returns(Void);
+  rpc on_call_db_method(CallDBResponse) returns(Void);
+  rpc on_db_find_doc(FindDocResponse) returns(Void);
+  rpc on_db_update_doc(UpdateDocResponse) returns(Void);
+  rpc on_db_insert_doc(InsertDocResponse) returns(Void);
+  rpc on_db_delete_doc(DeleteDocResponse) returns(Void);
+  rpc on_db_count_doc(CountDocResponse) returns(Void);
+  rpc on_db_find_and_modify_doc(FindAndModifyDocResponse) returns(Void);
+  rpc on_db_operation_index(OperationIndexResponse) returns(Void);
+  rpc on_db_create_collection(CreateCollectionResponse) returns(Void);
+}
+
+// Gate与Game之间的通信协议
+message ClientInfo {
+  // Gate收到客户端的请求后，添加ClientInfo信息到routes，以便Game知道
+  // 发送请求的客户端来做相应的处理
+  bytes ip = 1; // 客户端的ip地址
+  int32 port = 2; // 客户端的端口信息
+  bytes client_id = 3; // 客户端的标识id信息
+  bytes session_id = 4; // 服务器的session id
+  bytes gate_id = 5; // Gate服务器的id标识
+}
+
+message ClientBindMessage {
+  ClientInfo client_info = 1; // 客户端标识信息
+  ServerInfo server_info = 2; // 服务器标识信息
+  bytes entity_id = 3; // 需要转移的Entity的id信息
+}
+
+message RegMd5IndexMessage {
+  bytes routes = 1;
+  Md5Index md5index = 2;
+}
+
+message GateReturnValue {
+  ClientInfo client_info = 1; // 客户端标识信息
+  bool return_status = 2; // 返回信息状态，是否OK
+}
+
+message RealEntityCreateInfo {
+  ServerInfo dst_server = 1; // 迁移的目标服务器信息
+  ServerInfo src_server = 2; // 迁移的源服务器信息
+  bytes real_entity_id = 3; // 需要迁移的Entity的id信息
+  bytes real_entity_type = 4; // 需要迁移的Entity的类型信息
+  bytes migrate_entity_id = 5; // 迁移的目标服务器的占位Entity的id信息
+  bytes content = 6; // Entity的初始化信息
+  bytes client_info_cache = 7; // 如需要创建Avatar，则需要设置client info信息
+}
+
+message GateToGameReturnValue {
+  enum CallbackType {
+    NO_CALLBACK = 0; // 没有这个callback
+    GATE2GAME_ENTITYMSG = 1; // Gate到Game的entity_message
+  }
+  CallbackType type = 1;
+  int32 callback_id = 2; // 默认的callback id信息，RPC调用传递
+  bool return_status = 3; // bool类型返回值
+  bytes return_value = 4; // 复杂类型的返回值
+  bytes error_msg = 5; // 错误信息
+}
+
+message GateInfo {
+  bytes gate_id = 1; // Gate的id标识信息
+}
+
+message ServerLoad {
+  // 服务器负载
+  double load = 1;
+}
+
+message GateMessage {
+  Md5Index method = 1;
+  bytes parameters = 2;
+}
+
+service SGateToGame {
+  // Gate服务器与Game服务器通信的RPC定义，需要Game实现
+
+  // 连接Game服务器
+  rpc connect_game(ConnectRequest) returns(Void);
+  // 客户端发送到Game的rpc消息，经由Gate转发
+  rpc entity_message(EntityMessage) returns(Void);
+  // 通知Game，客户端断开连接
+  rpc client_lose_connection(ClientInfo) returns(Void);
+  // Gate准备好之后，回复Game可以开始迁移Entity了
+  rpc transfer_client_callback(GateReturnValue) returns(Void);
+  // Gate转发Game之间的消息
+  rpc forward_entity_message(EntityMessage) returns(Void);
+  // 注册Gate到Game，用于消息转发
+  rpc reg_gate(GateInfo) returns(Void);
+  // Gate转发的回调
+  rpc gate_callback(GateToGameReturnValue) returns(Void);
+  // Avatar迁移成功后，通知Game删除相应的绑定
+  rpc unbind_client_from_game(ClientInfo) returns(Void);
+  // 通知Game创建真的Entity
+  rpc create_real_entity(RealEntityCreateInfo) returns(Void);
+  // 通知Game真的Entity迁移到目标服务器并创建成功了
+  rpc create_real_entity_successed(EntityMailbox) returns(Void);
+  // 客户端注册MD5和对应索引信息
+  rpc reg_md5index(RegMd5IndexMessage) returns(Void);
+}
+
+service SGameToGate {
+  // Game与Gate之间的RPC通信，需要Gate实现
+
+  // 对Gate连接Game的请求应答
+  rpc on_connect_game(ConnectResponse) returns(Void);
+  // Game通知客户端创建Entity，通过Gate进行转发
+  rpc create_entity(EntityInfo) returns(Void);
+  // Game通知客户端销毁Entity，通过Gate进行转发
+  rpc destroy_entity(EntityInfo) returns(Void);
+  // Game主动断开与客户端的连接
+  rpc disconnect_client(ClientInfo) returns(Void);
+  // Game通过Gate进行转发与客户端之间的RPC消息
+  rpc entity_message(EntityMessage) returns(Void);
+  // Game发送全局对象的RPC消息到客户端
+  rpc global_entity_message(GlobalEntityMessage) returns(Void);
+  // Game发送给客户端的一些带外数据信息
+  rpc chat_to_client(OutbandInfo) returns(Void);
+  // Game通知Gate进行迁移Avatar的操作，需要Gate做一些缓存操作
+  rpc transfer_client(ClientBindMessage) returns(Void);
+  // 跨进程迁移Avatar到新的Game，通知Gate将Avatar绑定到目标Game
+  rpc bind_client_to_game(ClientBindMessage) returns(Void);
+  // Game通过Gate转发Game对象之间的RPC消息
+  rpc forward_entity_message(EntityMessage) returns(Void);
+  // 通知目标Game创建准备迁移对象Entity
+  rpc create_real_entity(RealEntityCreateInfo) returns(Void);
+  // 通知Gate迁移的源Game已经在目标服务器创建了迁移对象Entity
+  rpc create_real_entity_successed(EntityMailbox) returns(Void);
+  // 向客户端注册MD5以及对应的index消息
+  rpc reg_md5index(RegMd5IndexMessage) returns(Void);
+  // Game服务器向Gate服务器发送当前Game的负载信息
+  rpc notify_game_load(ServerLoad) returns(Void);
+  // Game发送给Gate的RPC消息
+  rpc gate_method(GateMessage) returns(Void);
+}
+
+// Gate/Game与GameManager之间的通信协议
+// [SUMMARY]
+//  [1] - callback_id表示需要回调时的callback的id，必须大于0
+message GameServerInfoList {
+  // Game服务器的接入点信息
+  repeated ServerInfo game_servers = 1;
+}
+
+message CallbackID {
+  int32 callback_id = 1;
+}
+
+message GlobalEntityRegMessage {
+  // 全局Entity对象的注册信息
+  int32 callback_id = 1;
+  bytes entity_unique_id = 2; // Entity的全局唯一标识
+  EntityMailbox mailbox = 3; // 全局Entity的mailbox
+  bool override = 4; // 如果需要迁移对象，需要强制override该对象
+}
+
+message ForwardMessageHeader {
+  // GameManager转发的Entity消息需要添加的消息协议头
+  int32 callback_id = 1;
+  EntityMailbox src_mailbox = 2;
+  EntityMailbox dst_mailbox = 3;
+  bytes client_id = 4;
+}
+
+message EntityInfoHeader {
+  // Gate与Game之间，Game与GameManager之间调用头部信息
+  enum ServerType {
+    ANY_WHERE = 0; // 任意地方
+    SPECIFY_TYPE = 1;
+    SPECIFY_SERVER = 2;
+  }
+  int32 callback_id = 1;
+  bool transfer_entity = 2; // True表示迁移现有Entity，False则创建新Entity
+  bool create_fromdb = 3; // 如果是新Entity，从DB中读取数据来创建Entity
+  int32 create_anywhere = 4; // 创建Entity到指定的服务器或转移到任意服务器
+  ServerInfo dst_server = 5; // 指定的目标服务器的信息
+  ClientInfo client_info = 6;
+}
+
+message GlobalMessage {
+  bytes message = 1; // Global消息
+}
+
+message GlobalData {
+  // 编码后的dict行数据信息
+  bytes key = 1;
+  bytes value = 2;
+}
+
+message GameMgrReturnValue {
+  // Game调用GameManager的RPC之后需要GameManager的返回值
+  enum CallbackType {
+    NO_CALLBACK = 0;
+    REG_ENTITY_MAILBOX = 1;
+    FORWARD_ENTITY_MESSAGE = 2;
+    CREATE_ENTITY = 3;
+  }
+  CallbackType type = 1;
+  int32 callback_id = 2;
+  bool return_status = 3;
+  bytes return_value = 4;
+  bytes error_msg = 5;
+}
+
+message Script {
+  // admin需要Game服务器运行指定的脚本信息
+  bytes script_content = 1;
+}
+
+message ControlCommand {
+  enum ControlOperation {
+    NOP = 0; // 任何事情都不做
+
+    // 对Gate服务器的控制
+    FORBIDDEN_NEW_CONNECTION = 1; // 禁止新连接
+    IGNORE_CLIENT_ENTITY_MESSAGE = 2; // 忽略客户端发送的信息
+    DISCONNECT_ALL_CONNECTION = 3; // 断开所有客户端连接
+    CLOSE_GATE = 4; // 结束Gate服务器
+
+    // 对Game服务器的控制
+    NOTIFY_GAME_CLOSING = 5; // 通知即将关闭Game服务器
+    NOTIFY_GAME_CLOSED = 6; // 通知Game服务器已经关闭
+    CLOSE_GAME = 7; // 结束Game服务器
+
+    // 对DBManager服务器的控制
+    CLOSE_DBMGR = 8; // 结束DBManager服务器
+
+    // 对GameManager服务器的控制
+    CLOSE_GAMEMGR = 9; // 结束GameManager服务器
+  }
+  ControlOperation op = 1;
+}
+
+service SClientToGameManager {
+  // Gate/Game/DBManager或Admin向GameManager发送RPC信息，需要GameManager实现
+
+  ///// Admin客户端向GameManager之间的通信
+  // 请求所有Game服务器运行指定的脚本信息
+  rpc run_script(Script) returns(Void);
+  // 向所有Game发送控制命令
+  rpc server_control(ControlCommand) returns(Void);
+
+  ///// DBManager和GameManager之间的通信
+  // DBManager向GameManager注册
+  rpc reg_dbmgr(Void) returns(Void);
+
+  ///// Gate和GameManager之间的通信
+  // Gate向GameManager请求所有Game的数据信息
+  rpc query_game_server_list(Void) returns(Void);
+
+  ///// Game和GameManager之间的通信
+  // Game向GameManager注册
+  rpc reg_game(ServerInfo) returns(Void);
+  // Game向GameManager注册Entity的mailbox，该消息会转发给所有Game
+  rpc reg_entity_mailbox(GlobalEntityRegMessage) returns(Void);
+  rpc unreg_entity_mailbox(GlobalEntityRegMessage) returns(Void);
+  // Game向GameManager请求转发消息给另外一个Game的Entity
+  rpc forward_entity_message(EntityMessage) returns(Void);
+  // GameManager转发到Game的全局Entity消息，调用全服所有Avatar的entity_message
+  rpc global_entity_message(GlobalEntityMessage) returns(Void);
+  // 全局消息，只发送给当前在线的所有Game服务器
+  rpc global_message(GlobalMessage) returns(Void);
+  // 全局数据，GameManager会保存并发送给所有的Game服务器
+  rpc global_data(GlobalData) returns(Void);
+  // 删除全局数据
+  rpc del_global_data(GlobalData) returns(Void);
+  // 通知GameManager选择任意或指定一个Game创建Entity
+  rpc create_entity(EntityInfo) returns(Void);
+  // 通知GameManager转发给发起创建Entity的Game创建Entity成功
+  rpc game_callback(GameMgrReturnValue) returns(Void);
+}
+
+service SGameManagerToClient {
+  // GameManager与其客户端(Gate/Game/DBManager)通信RPC协议，需要其客户端实现
+
+  ///// Gate与GameManager之间的通信
+  // 返回Gate查询的Game服务器列表的信息
+  rpc on_query_game_server_list(GameServerInfoList) returns(Void);
+
+  ///// Game与GameManager之间的通信
+  // GameManager通知Game，其他Game注册的全局Entity的mailbox回调
+  rpc on_reg_entity_mailbox(GlobalEntityRegMessage) returns(Void);
+  rpc on_unreg_entity_mailbox(GlobalEntityRegMessage) returns(Void);
+
+  ///// Gate和Game需要处理的控制信息回调
+  rpc on_server_control(ControlCommand) returns(Void);
+  // GameManager收到转发消息的请求后，转发消息给对应的Game
+  rpc on_forward_entity_message(EntityMessage) returns(Void);
+  // GameManager转到Game的全局消息，调用全服所有Avatar的entity_message
+  rpc on_global_entity_message(GlobalEntityMessage) returns(Void);
+  // 全局消息，只将消息转发给当前在线的Game服务器
+  rpc on_global_message(GlobalMessage) returns(Void);
+  // 全局消息，GameManager会保存并将消息转发给所有的Game服务器
+  rpc on_global_data(GlobalData) returns(Void);
+  // GameManager通知Game删除全局数据
+  rpc on_del_global_data(GlobalData) returns(Void);
+  // GameManager通知Game创建对应的Entity
+  rpc create_entity(EntityInfo) returns(Void);
+  // GameManager通知Game的调用中的callback回调
+  rpc gamemgr_callback(GameMgrReturnValue) returns(Void);
+  // GameManager转发通知Game运行指定的脚本信息
+  rpc run_script(Script) returns(Void);
+}
