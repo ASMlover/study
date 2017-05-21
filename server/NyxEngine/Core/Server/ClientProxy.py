@@ -132,3 +132,143 @@ class BaseClientProxy(object):
     def give_cache_to(self, other):
         """转移缓存"""
         raise NotImplemented
+
+class ClientProxy(BaseClientProxy):
+    """服务端Avatar的客户端代理，用于调用客户度Avatar的Entity方法"""
+    def __init__(self, stub, client_info=None):
+        super(ClientProxy, self).__init__(stub, client_info)
+        self.encoder = CodecEncoder()
+        self.set_stub(stub)
+        self.set_client_info(client_info)
+        self.transfer_entity_callback = None
+
+    def create_entity(self, entity_type, entity_info, entity_id):
+        """调用客户端的create_entity方法创建客户端Entity"""
+        if entity_id is None:
+            self.logger.error('ClientProxy.create_entity: need entity id')
+            return
+        info = EntityInfo()
+        info.routes = self.cached_client_infos
+        info.entity_id = entity_id
+        self.encoder.encode(info.type, entity_type)
+        info.infos = GameGlobal.proto_encoder.encode(entity_info)
+        self.stub.create_entity(None, info)
+
+    def __getattr__(self, name):
+        def _caller(*args):
+            msg = EntityMessage()
+            msg.routes = self.cached_client_infos
+            msg.entity_id = self.get_ownerid()
+            self.encoder.encode(msg.method, name)
+            msg.parameters = GameGlobal.proto_encoder.encode({'_': args})
+            self.stub.entity_message(None, msg)
+        return _caller
+
+    def destroy(self):
+        """销毁自己"""
+        super(ClientProxy, self).destroy()
+        self.logger = None
+        self.stub = None
+        self.owner = None
+        self.encoder = None
+
+    def call_client_method(self,
+            method, parameters, entity_id=None, reliable=True):
+        """调用客户端的RPC方法
+
+        Args：
+            method - 字符串，表示调用的方法名
+            parameters - 一个dict，表示调用的参数
+            entity_id - 默认使用owner的entity_id
+        """
+        if entity_id is None:
+            entity_id = self.get_ownerid()
+            if entity_id is None:
+                self.logger.error(
+                        'ClientProxy.call_client_method: need entity id')
+                return
+        msg = EntityMessage()
+        msg.routes = self.cached_client_infos
+        msg.entity_id = entity_id
+        self.encoder.encode(msg.method, method)
+        msg.parameters = GameGlobal.proto_encoder.encode(parameters)
+        msg.reliable = reliable
+        self.stub.entity_message(None, msg)
+
+    def call_client_method_raw(self,
+            method, parameters, entity_id=None, reliable=True):
+        """原始的调用客户端方法，参数无压缩"""
+        if entity_id is None:
+            entity_id = self.get_ownerid()
+            if entity_id is None:
+                self.logger.error(
+                        'ClientProxy.call_client_method_raw: need entity id')
+                return
+        msg = EntityMessage()
+        msg.routes = self.cached_client_infos
+        msg.entity_id = entity_id
+        msg.encoder.encode(msg.method, method)
+        msg.parameters = parameters
+        msg.reliable = reliable
+        self.stub.entity_message(None, msg)
+
+    def call_gate_method(self, method, parameters=''):
+        """调用Gate的RPC方法"""
+        if not method:
+            return
+        msg = _B_PB2.GateMessage()
+        msg.method.md5 = method
+        if isinstance(parameters, str):
+            msg.parameters = parameters
+        else:
+            msg.parameters = GameGlobal.proto_encoder.encode(parameters)
+        self.stub.gate_method(None, msg)
+
+    def connect_response(self, response_type, entity_id=None, extra_msg=None):
+        """客户端连接的回复"""
+        response = ConnectResponse()
+        response.routes = self.cached_client_infos
+        response.type = response_type
+        if entity_id is not None:
+            response.entity_id = entity_id
+        if extra_msg:
+            response.extra_msg = GameGlobal.proto_encoder.encode(extra_msg)
+        self.stub.connect_response(None, response)
+
+    def notify_entity_destroyed(self, entity_id):
+        """通知客户端某个客户端的Entity已经销毁了"""
+        info = EntityInfo()
+        info.routes = self.cached_client_infos
+        info.entity_id = entity_id
+        self.stub.destroy_entity(None, info)
+
+    def notify_disconnect_client(self):
+        """通知断开客户端的连接"""
+        info = _B_PB2.ClientInfo()
+        info.ParseFromString(self.cached_client_infos)
+        if self.stub:
+            self.stub.disconnect_client(None, info)
+
+    def chat_to_client(self, outband_info):
+        outband_info.routes = self.cached_client_infos
+        self.stub.chat_to_client(None, outband_info)
+
+    def transfer_client(self, bind_msg, callback):
+        """转移客户端Entity"""
+        self.stub.transfer_client(None, bind_msg)
+        self.transfer_entity_callback = callback
+
+    def transfer_client_callback(self, return_value):
+        if self.transfer_entity_callback:
+            self.transfer_entity_callback(return_value.return_status)
+            self.transfer_entity_callback = None
+
+    def bind_client_to_game(self, bind_msg):
+        self.stub.bind_client_to_game(None, bind_msg)
+
+    def send_reg_md5index(self, md5_index):
+        self.stub.reg_md5index(None, md5_index)
+
+    def reg_md5index(self, md5_index):
+        """处理客户端的注册请求"""
+        self.encoder.add_index(md5_index.md5, md5_index.index)
