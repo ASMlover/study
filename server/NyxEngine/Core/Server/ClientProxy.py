@@ -29,7 +29,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from Common.Codec import CodecEncoder
-from Common.IdUtils import IdUtils
 from Distributed.Game import GameGlobal
 from Log.LogManager import LogManager
 from Proto.Details import BasicProtocol_pb2 as _B_PB2
