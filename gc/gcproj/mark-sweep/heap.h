@@ -24,10 +24,44 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
+#pragma once
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 
-  return 0;
+namespace gc {
+
+using uchar_t = std::uint8_t;
+
+struct Object;
+class Worklist;
+
+class HeapManager {
+  enum {ROOT_COUNT = 1024};
+  uchar_t* heaptr_{};
+  uchar_t* allocptr_{};
+  Object* roots_[ROOT_COUNT];
+  std::size_t size_{};
+  Object* freelist_{};
+  std::unique_ptr<Worklist> worklist_;
+
+  uchar_t* alloc(std::size_t& n);
+  void dealloc(uchar_t* p);
+  void mark_from_roots(void);
+  void sweep(void);
+public:
+  static HeapManager& get_instance(void) {
+    static HeapManager _ins;
+    return _ins;
+  }
+
+  HeapManager(void);
+  ~HeapManager(void);
+
+  Object* new_int(int value);
+  Object* new_pair(Object* first = nullptr, Object* second = nullptr);
+  void collect(void);
+};
+
 }

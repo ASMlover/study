@@ -24,10 +24,45 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
+#pragma once
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
+#include <cstddef>
+#include <cstdint>
 
-  return 0;
+namespace gc {
+
+struct Object {
+  enum {INT, PAIR};
+  std::uint8_t type;
+  bool marked{};
+  std::uint16_t size{};
+  Object* next{};
+};
+
+class Int : public Object {
+  int value_{};
+public:
+  Int(void) { type = Object::INT; }
+  void value(int value = 0) { value_ = value; }
+  int value(void) const { return value_; }
+};
+
+class Pair : public Object {
+  Object* first_{};
+  Object* second_{};
+public:
+  Pair(void) { type = Object::PAIR; }
+  void first(Object* first) { first_ = first; }
+  Object* first(void) const { return first_; }
+  void second(Object* second) { second_ = second; }
+  Object* second(void) const { return second_; }
+};
+
+constexpr std::size_t kAlignment = sizeof(void*);
+constexpr std::size_t kRoundup(std::size_t n) {
+  return (n + kAlignment - 1) & ~(kAlignment - 1);
+}
+constexpr std::size_t kObjSize(void) { return kRoundup(sizeof(Object)); }
+constexpr std::size_t kMinObjSize(void) { return kRoundup(sizeof(Int)); }
+
 }
