@@ -27,25 +27,25 @@
 #include <iostream>
 #include <stdexcept>
 #include "object.h"
-#include "heap.h"
+#include "mark_sweep.h"
 
 namespace gc {
 
 constexpr std::size_t kHeapSize = 512 << 10;
 
-HeapManager::HeapManager(void) {
+MarkSweep::MarkSweep(void) {
   heaptr_ = new uchar_t[kHeapSize];
   if (heaptr_ == nullptr)
     throw std::logic_error("allocate heap failed");
   allocptr_ = heaptr_;
 }
 
-HeapManager::~HeapManager(void) {
+MarkSweep::~MarkSweep(void) {
   delete [] heaptr_;
   heaptr_ = allocptr_ = nullptr;
 }
 
-uchar_t* HeapManager::alloc(std::size_t& n) {
+uchar_t* MarkSweep::alloc(std::size_t& n) {
   if (allocptr_ + n <= heaptr_ + kHeapSize) {
     auto leftsize = static_cast<std::size_t>(
         (heaptr_ + kHeapSize) - (allocptr_ + n));
@@ -73,7 +73,7 @@ uchar_t* HeapManager::alloc(std::size_t& n) {
   return nullptr;
 }
 
-Object* HeapManager::new_object(
+Object* MarkSweep::new_object(
     std::size_t n, const std::function<Object* (uchar_t*)>& fn) {
   n = roundup(n);
   uchar_t* p = alloc(n);
@@ -92,7 +92,7 @@ Object* HeapManager::new_object(
   return obj;
 }
 
-void HeapManager::mark(void) {
+void MarkSweep::mark(void) {
   while (!worklist_.empty()) {
     auto* obj = worklist_.top();
     worklist_.pop();
@@ -113,7 +113,7 @@ void HeapManager::mark(void) {
   }
 }
 
-void HeapManager::mark_from_roots(void) {
+void MarkSweep::mark_from_roots(void) {
   for (auto obj : roots_) {
     if (obj != nullptr && !obj->marked) {
       obj->marked = true;
@@ -123,7 +123,7 @@ void HeapManager::mark_from_roots(void) {
   }
 }
 
-void HeapManager::sweep(void) {
+void MarkSweep::sweep(void) {
   auto* p = heaptr_;
   MemoryHeader* freelist{};
   while (p < allocptr_) {
@@ -165,19 +165,12 @@ void HeapManager::sweep(void) {
   }
 }
 
-void HeapManager::collect(void) {
-  auto old_objcnt = objcnt_;
-
-  mark_from_roots();
-  sweep();
-
-  std::cout
-    << "COLLECT OBJECT COUNT: " << old_objcnt - objcnt_
-    << ", CURRENT OBJECT COUNT: " << objcnt_
-    << std::endl;
+MarkSweep& MarkSweep::get_instance(void) {
+  static MarkSweep ins;
+  return ins;
 }
 
-Object* HeapManager::new_int(int value) {
+Object* MarkSweep::new_int(int value) {
   return new_object(sizeof(Int), [value](uchar_t* p) -> Object* {
         Int* obj = new (p) Int;
         obj->value(value);
@@ -185,7 +178,7 @@ Object* HeapManager::new_int(int value) {
       });
 }
 
-Object* HeapManager::new_pair(Object* first, Object* second) {
+Object* MarkSweep::new_pair(Object* first, Object* second) {
   return new_object(sizeof(Pair), [first, second](uchar_t* p) -> Object* {
         Pair* obj = new (p) Pair;
         if (first != nullptr)
@@ -196,10 +189,22 @@ Object* HeapManager::new_pair(Object* first, Object* second) {
       });
 }
 
-Object* HeapManager::pop_object(void) {
+Object* MarkSweep::pop_object(void) {
   Object* r = roots_.back();
   roots_.pop_back();
   return r;
+}
+
+void MarkSweep::collect(void) {
+  auto old_objcnt = objcnt_;
+
+  mark_from_roots();
+  sweep();
+
+  std::cout
+    << "COLLECT OBJECT COUNT: " << old_objcnt - objcnt_
+    << ", CURRENT OBJECT COUNT: " << objcnt_
+    << std::endl;
 }
 
 }

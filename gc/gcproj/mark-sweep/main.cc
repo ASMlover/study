@@ -25,7 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
-#include "heap.h"
+#include "mark_sweep.h"
 
 constexpr int kObjCount = 1000000;
 
@@ -33,10 +33,10 @@ int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
   for (auto i = 0; i < kObjCount; ++i) {
-    gc::HeapManager::get_instance().new_pair();
-    gc::HeapManager::get_instance().pop_object();
+    gc::MarkSweep::get_instance().new_pair();
+    gc::MarkSweep::get_instance().pop_object();
   }
-  gc::HeapManager::get_instance().collect();
+  gc::MarkSweep::get_instance().collect();
 
   return 0;
 }

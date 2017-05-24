@@ -38,12 +38,15 @@ using uchar_t = std::uint8_t;
 
 class Object;
 
-class HeapManager {
+class MarkSweep {
   uchar_t* heaptr_{};
   uchar_t* allocptr_{};
   std::vector<Object*> roots_;
   std::stack<Object*> worklist_;
   std::size_t objcnt_{};
+
+  MarkSweep(void);
+  ~MarkSweep(void);
 
   uchar_t* alloc(std::size_t& n);
   Object* new_object(
@@ -52,13 +55,7 @@ class HeapManager {
   void mark_from_roots(void);
   void sweep(void);
 public:
-  static HeapManager& get_instance(void) {
-    static HeapManager _ins;
-    return _ins;
-  }
-
-  HeapManager(void);
-  ~HeapManager(void);
+  static MarkSweep& get_instance(void);
 
   Object* new_int(int value);
   Object* new_pair(Object* first = nullptr, Object* second = nullptr);
