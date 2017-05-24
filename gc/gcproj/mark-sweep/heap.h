@@ -36,7 +36,7 @@ namespace gc {
 
 using uchar_t = std::uint8_t;
 
-struct Object;
+class Object;
 
 class HeapManager {
   uchar_t* heaptr_{};
