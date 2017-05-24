@@ -27,10 +27,12 @@
 #include <iostream>
 #include "heap.h"
 
+constexpr int kObjCount = 1000000;
+
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
-  for (auto i = 0; i < 1000000; ++i) {
+  for (auto i = 0; i < kObjCount; ++i) {
     gc::HeapManager::get_instance().new_pair();
     gc::HeapManager::get_instance().pop_object();
   }

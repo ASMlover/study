@@ -51,7 +51,7 @@ uchar_t* HeapManager::alloc(std::size_t& n) {
   if (allocptr_ + n <= heaptr_ + kHeapSize) {
     std::size_t leftsize = static_cast<std::size_t>(
         (heaptr_ + kHeapSize) - (allocptr_ + n));
-    if (leftsize < kMinObjSize)
+    if (leftsize > 0 && leftsize < kMinObjSize)
       n += leftsize;
 
     uchar_t* p = allocptr_;
@@ -149,10 +149,14 @@ void HeapManager::sweep(void) {
 }
 
 void HeapManager::collect(void) {
+  auto old_objcnt = objcnt_;
   mark_from_roots();
   sweep();
 
-  std::cout << "CURRENT OBJECT COUNT: " << objcnt_ << std::endl;
+  std::cout
+    << "COLLECT OBJECT COUNT: " << old_objcnt - objcnt_
+    << ", CURRENT OBJECT COUNT: " << objcnt_
+    << std::endl;
 }
 
 Object* HeapManager::new_int(int value) {
