@@ -31,17 +31,19 @@
 
 namespace gc {
 
-struct Object {
+struct MemoryHeader {
   enum {INVALID, INT, PAIR};
   std::uint8_t type{INVALID};
   bool marked{};
   std::size_t size{};
 };
 
+class Object : public MemoryHeader {};
+
 class Int : public Object {
   int value_{};
 public:
-  Int(void) { type = Object::INT; }
+  Int(void) { type = MemoryHeader::INT; }
   void value(int value = 0) { value_ = value; }
   int value(void) const { return value_; }
 };

@@ -24,7 +24,6 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <cstdlib>
 #include <iostream>
 #include <stdexcept>
 #include "object.h"
@@ -38,7 +37,7 @@ constexpr std::size_t kMaxStack = 1024;
 HeapManager::HeapManager(void) {
   heaptr_ = new uchar_t[kHeapSize];
   if (heaptr_ == nullptr)
-    std::abort();
+    throw std::logic_error("allocate heap failed");
   allocptr_ = heaptr_;
 }
 
@@ -61,9 +60,9 @@ uchar_t* HeapManager::alloc(std::size_t& n) {
 
   uchar_t* p = heaptr_;
   while (p < allocptr_) {
-    auto* scan = (Object*)p;
-    if (scan->type == Object::INVALID && scan->size >= n) {
-      if (scan->size - n < kMinObjSize)
+    auto* scan = reinterpret_cast<MemoryHeader*>(p);
+    if (scan->type == MemoryHeader::INVALID && scan->size >= n) {
+      if (scan->size > n && scan->size - n < kMinObjSize)
         n = scan->size;
       return p;
     }
@@ -80,7 +79,7 @@ void HeapManager::mark(void) {
     auto* obj = worklist_.top();
     worklist_.pop();
 
-    if (obj->type == Object::PAIR) {
+    if (obj->type == MemoryHeader::PAIR) {
       auto* first = static_cast<Pair*>(obj)->first();
       if (first != nullptr && !first->marked) {
         first->marked = true;
@@ -108,10 +107,10 @@ void HeapManager::mark_from_roots(void) {
 
 void HeapManager::sweep(void) {
   auto* p = heaptr_;
-  Object* freelist{};
+  MemoryHeader* freelist{};
   while (p < allocptr_) {
-    auto* scan = (Object*)p;
-    if (scan->type == Object::INVALID) {
+    auto* scan = reinterpret_cast<MemoryHeader*>(p);
+    if (scan->type == MemoryHeader::INVALID) {
       freelist = scan;
       p += scan->size;
       continue;
@@ -122,7 +121,7 @@ void HeapManager::sweep(void) {
     }
     else {
       --objcnt_;
-      scan->type = Object::INVALID;
+      scan->type = MemoryHeader::INVALID;
       if (freelist != nullptr) {
         if ((uchar_t*)freelist + freelist->size == p) {
           freelist->size += scan->size;
