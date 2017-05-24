@@ -35,8 +35,7 @@ struct Object {
   enum {INVALID, INT, PAIR};
   std::uint8_t type{INVALID};
   bool marked{};
-  std::uint16_t size{};
-  Object* next{};
+  std::size_t size{};
 };
 
 class Int : public Object {
