@@ -32,8 +32,8 @@
 namespace gc {
 
 struct Object {
-  enum {INT, PAIR};
-  std::uint8_t type;
+  enum {INVALID, INT, PAIR};
+  std::uint8_t type{INVALID};
   bool marked{};
   std::uint16_t size{};
   Object* next{};
@@ -59,10 +59,9 @@ public:
 };
 
 constexpr std::size_t kAlignment = sizeof(void*);
-constexpr std::size_t kRoundup(std::size_t n) {
+constexpr std::size_t roundup(std::size_t n) {
   return (n + kAlignment - 1) & ~(kAlignment - 1);
 }
-constexpr std::size_t kObjSize(void) { return kRoundup(sizeof(Object)); }
-constexpr std::size_t kMinObjSize(void) { return kRoundup(sizeof(Int)); }
+constexpr std::size_t kMinObjSize = roundup(sizeof(Int));
 
 }

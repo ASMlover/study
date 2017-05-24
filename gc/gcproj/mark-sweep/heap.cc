@@ -25,6 +25,8 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cstdlib>
+#include <iostream>
+#include <stdexcept>
 #include "object.h"
 #include "heap.h"
 
@@ -33,18 +35,7 @@ namespace gc {
 constexpr std::size_t kHeapSize = 512 << 10;
 constexpr std::size_t kMaxStack = 1024;
 
-class Worklist {
-  Object* worklist_[kMaxStack];
-  std::size_t size_{};
-public:
-  bool is_full(void) const { return size_ >= kMaxStack; }
-  bool is_empty(void) const { return size_ == 0; }
-  void push(Object* obj) { worklist_[size_++] = obj; }
-  Object* pop(void) { return worklist_[--size_]; }
-};
-
-HeapManager::HeapManager(void)
-  : worklist_(new Worklist) {
+HeapManager::HeapManager(void) {
   heaptr_ = new uchar_t[kHeapSize];
   if (heaptr_ == nullptr)
     std::abort();
@@ -60,7 +51,7 @@ uchar_t* HeapManager::alloc(std::size_t& n) {
   if (allocptr_ + n <= heaptr_ + kHeapSize) {
     std::size_t leftsize = static_cast<std::size_t>(
         (heaptr_ + kHeapSize) - (allocptr_ + n));
-    if (leftsize < kMinObjSize())
+    if (leftsize < kMinObjSize)
       n += leftsize;
 
     uchar_t* p = allocptr_;
@@ -68,35 +59,147 @@ uchar_t* HeapManager::alloc(std::size_t& n) {
     return p;
   }
 
-  if (freelist_ != nullptr) {
-    void* p{};
-    auto** block = &freelist_;
-    while (*block != nullptr) {
-      if ((*block)->size >= n) {
-        p = *block;
-        if ((*block)->size - n >= kMinObjSize()) {
-          auto* nextobj = new (*block + n) Object;
-          nextobj->size = (*block)->size - static_cast<std::uint16_t>(n);
-          *block = nextobj;
-        }
-        else {
-          *block = (*block)->next;
-        }
-        break;
-      }
-      else {
-        block = &(*block)->next;
-      }
+  uchar_t* p = heaptr_;
+  while (p < allocptr_) {
+    auto* scan = (Object*)p;
+    if (scan->type == Object::INVALID && scan->size >= n) {
+      if (scan->size - n < kMinObjSize)
+        n = scan->size;
+      return p;
     }
-
-    if (p != nullptr)
-      return static_cast<uchar_t*>(p);
+    else {
+      p += scan->size;
+    }
   }
 
   return nullptr;
 }
 
+void HeapManager::mark(void) {
+  while (!worklist_.empty()) {
+    auto* obj = worklist_.top();
+    worklist_.pop();
+
+    if (obj->type == Object::PAIR) {
+      auto* first = static_cast<Pair*>(obj)->first();
+      if (first != nullptr && !first->marked) {
+        first->marked = true;
+        worklist_.push(first);
+      }
+
+      auto* second = static_cast<Pair*>(obj)->second();
+      if (second != nullptr && !second->marked) {
+        second->marked = true;
+        worklist_.push(second);
+      }
+    }
+  }
+}
+
+void HeapManager::mark_from_roots(void) {
+  for (auto obj : roots_) {
+    if (obj != nullptr && !obj->marked) {
+      obj->marked = true;
+      worklist_.push(obj);
+      mark();
+    }
+  }
+}
+
+void HeapManager::sweep(void) {
+  auto* p = heaptr_;
+  Object* freelist{};
+  while (p < allocptr_) {
+    auto* scan = (Object*)p;
+    if (scan->type == Object::INVALID) {
+      freelist = scan;
+      p += scan->size;
+      continue;
+    }
+
+    if (scan->marked) {
+      scan->marked = false;
+    }
+    else {
+      --objcnt_;
+      scan->type = Object::INVALID;
+      if (freelist != nullptr) {
+        if ((uchar_t*)freelist + freelist->size == p) {
+          freelist->size += scan->size;
+          if ((uchar_t*)freelist + freelist->size == allocptr_) {
+            allocptr_ = (uchar_t*)freelist;
+            break;
+          }
+        }
+        else {
+          freelist = scan;
+        }
+      }
+      else {
+        freelist = scan;
+      }
+
+      if (p + scan->size == allocptr_) {
+        allocptr_ = p;
+        break;
+      }
+    }
+    p += scan->size;
+  }
+}
+
 void HeapManager::collect(void) {
+  mark_from_roots();
+  sweep();
+
+  std::cout << "CURRENT OBJECT COUNT: " << objcnt_ << std::endl;
+}
+
+Object* HeapManager::new_int(int value) {
+  std::size_t n = roundup(sizeof(Int));
+  uchar_t* p = alloc(n);
+  if (p == nullptr) {
+    collect();
+    p = alloc(n);
+    if (p == nullptr)
+      throw std::length_error("out of memory");
+  }
+
+  Int* obj = new (p) Int;
+  obj->size = n;
+  obj->value(value);
+  roots_.push_back(obj);
+  ++objcnt_;
+
+  return obj;
+}
+
+Object* HeapManager::new_pair(Object* first, Object* second) {
+  std::size_t n = roundup(sizeof(Pair));
+  uchar_t* p = alloc(n);
+  if (p == nullptr) {
+    collect();
+    p = alloc(n);
+    if (p == nullptr)
+      throw std::length_error("out of memory");
+  }
+
+  Pair* obj = new (p) Pair;
+  obj->size = n;
+  if (first != nullptr )
+    obj->first(first);
+  if (second != nullptr)
+    obj->second(second);
+  roots_.push_back(obj);
+  ++objcnt_;
+
+  return obj;
+}
+
+Object* HeapManager::pop_object(void) {
+  Object* r = roots_.back();
+  roots_.pop_back();
+  return r;
 }
 
 }

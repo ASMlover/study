@@ -28,26 +28,24 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <memory>
+#include <stack>
+#include <vector>
 
 namespace gc {
 
 using uchar_t = std::uint8_t;
 
 struct Object;
-class Worklist;
 
 class HeapManager {
-  enum {ROOT_COUNT = 1024};
   uchar_t* heaptr_{};
   uchar_t* allocptr_{};
-  Object* roots_[ROOT_COUNT];
-  std::size_t size_{};
-  Object* freelist_{};
-  std::unique_ptr<Worklist> worklist_;
+  std::vector<Object*> roots_;
+  std::stack<Object*> worklist_;
+  std::size_t objcnt_{};
 
   uchar_t* alloc(std::size_t& n);
-  void dealloc(uchar_t* p);
+  void mark(void);
   void mark_from_roots(void);
   void sweep(void);
 public:
@@ -61,6 +59,7 @@ public:
 
   Object* new_int(int value);
   Object* new_pair(Object* first = nullptr, Object* second = nullptr);
+  Object* pop_object(void);
   void collect(void);
 };
 
