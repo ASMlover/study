@@ -33,7 +33,11 @@ int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
   for (auto i = 0; i < kObjCount; ++i) {
-    gc::MarkSweep::get_instance().new_pair();
+    gc::MarkSweep::get_instance().new_int(i * 1);
+    gc::MarkSweep::get_instance().new_int(i * 2);
+    auto* second = gc::MarkSweep::get_instance().pop_object();
+    auto* first = gc::MarkSweep::get_instance().pop_object();
+    gc::MarkSweep::get_instance().new_pair(first, second);
     gc::MarkSweep::get_instance().pop_object();
   }
   gc::MarkSweep::get_instance().collect();
