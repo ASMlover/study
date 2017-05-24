@@ -28,6 +28,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <stack>
 #include <vector>
 
@@ -45,6 +46,8 @@ class HeapManager {
   std::size_t objcnt_{};
 
   uchar_t* alloc(std::size_t& n);
+  Object* new_object(
+      std::size_t n, const std::function<Object* (uchar_t*)>& fn);
   void mark(void);
   void mark_from_roots(void);
   void sweep(void);

@@ -32,7 +32,6 @@
 namespace gc {
 
 constexpr std::size_t kHeapSize = 512 << 10;
-constexpr std::size_t kMaxStack = 1024;
 
 HeapManager::HeapManager(void) {
   heaptr_ = new uchar_t[kHeapSize];
@@ -48,7 +47,7 @@ HeapManager::~HeapManager(void) {
 
 uchar_t* HeapManager::alloc(std::size_t& n) {
   if (allocptr_ + n <= heaptr_ + kHeapSize) {
-    std::size_t leftsize = static_cast<std::size_t>(
+    auto leftsize = static_cast<std::size_t>(
         (heaptr_ + kHeapSize) - (allocptr_ + n));
     if (leftsize > 0 && leftsize < kMinObjSize)
       n += leftsize;
@@ -72,6 +71,25 @@ uchar_t* HeapManager::alloc(std::size_t& n) {
   }
 
   return nullptr;
+}
+
+Object* HeapManager::new_object(
+    std::size_t n, const std::function<Object* (uchar_t*)>& fn) {
+  n = roundup(n);
+  uchar_t* p = alloc(n);
+  if (p == nullptr) {
+    collect();
+    p = alloc(n);
+    if (p == nullptr)
+      throw std::length_error("out of memory");
+  }
+
+  Object* obj = fn(p);
+  obj->size = n;
+  roots_.push_back(obj);
+  ++objcnt_;
+
+  return obj;
 }
 
 void HeapManager::mark(void) {
@@ -149,6 +167,7 @@ void HeapManager::sweep(void) {
 
 void HeapManager::collect(void) {
   auto old_objcnt = objcnt_;
+
   mark_from_roots();
   sweep();
 
@@ -159,44 +178,22 @@ void HeapManager::collect(void) {
 }
 
 Object* HeapManager::new_int(int value) {
-  std::size_t n = roundup(sizeof(Int));
-  uchar_t* p = alloc(n);
-  if (p == nullptr) {
-    collect();
-    p = alloc(n);
-    if (p == nullptr)
-      throw std::length_error("out of memory");
-  }
-
-  Int* obj = new (p) Int;
-  obj->size = n;
-  obj->value(value);
-  roots_.push_back(obj);
-  ++objcnt_;
-
-  return obj;
+  return new_object(sizeof(Int), [value](uchar_t* p) -> Object* {
+        Int* obj = new (p) Int;
+        obj->value(value);
+        return obj;
+      });
 }
 
 Object* HeapManager::new_pair(Object* first, Object* second) {
-  std::size_t n = roundup(sizeof(Pair));
-  uchar_t* p = alloc(n);
-  if (p == nullptr) {
-    collect();
-    p = alloc(n);
-    if (p == nullptr)
-      throw std::length_error("out of memory");
-  }
-
-  Pair* obj = new (p) Pair;
-  obj->size = n;
-  if (first != nullptr )
-    obj->first(first);
-  if (second != nullptr)
-    obj->second(second);
-  roots_.push_back(obj);
-  ++objcnt_;
-
-  return obj;
+  return new_object(sizeof(Pair), [first, second](uchar_t* p) -> Object* {
+        Pair* obj = new (p) Pair;
+        if (first != nullptr)
+          obj->first(first);
+        if (second != nullptr)
+          obj->second(second);
+        return obj;
+      });
 }
 
 Object* HeapManager::pop_object(void) {
