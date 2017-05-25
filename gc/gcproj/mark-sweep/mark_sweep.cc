@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <stdexcept>
-#include "object.h"
+#include "../common/object.h"
 #include "mark_sweep.h"
 
 namespace gc {

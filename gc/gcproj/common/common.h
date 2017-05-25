@@ -31,38 +31,14 @@
 
 namespace gc {
 
-struct MemoryHeader {
-  enum {INVALID, INT, PAIR};
-  std::uint8_t type{INVALID};
-  bool marked{};
-  std::size_t size{};
+using uchar_t = std::uint8_t;
+
+class UnCopyable {
+  UnCopyable(const UnCopyable&) = delete;
+  UnCopyable& operator=(const UnCopyable&) = delete;
+protected:
+  UnCopyable(void) = default;
+  ~UnCopyable(void) = default;
 };
-
-class Object : public MemoryHeader {};
-
-class Int : public Object {
-  int value_{};
-public:
-  Int(void) { type = MemoryHeader::INT; }
-  void value(int value = 0) { value_ = value; }
-  int value(void) const { return value_; }
-};
-
-class Pair : public Object {
-  Object* first_{};
-  Object* second_{};
-public:
-  Pair(void) { type = Object::PAIR; }
-  void first(Object* first) { first_ = first; }
-  Object* first(void) const { return first_; }
-  void second(Object* second) { second_ = second; }
-  Object* second(void) const { return second_; }
-};
-
-constexpr std::size_t kAlignment = sizeof(void*);
-constexpr std::size_t roundup(std::size_t n) {
-  return (n + kAlignment - 1) & ~(kAlignment - 1);
-}
-constexpr std::size_t kMinObjSize = roundup(sizeof(Int));
 
 }

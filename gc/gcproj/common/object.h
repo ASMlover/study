@@ -26,38 +26,47 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <functional>
-#include <stack>
-#include <vector>
-#include "../common/common.h"
+#include "common.h"
 
 namespace gc {
 
-class Object;
-
-class MarkSweep {
-  uchar_t* heaptr_{};
-  uchar_t* allocptr_{};
-  std::vector<Object*> roots_;
-  std::stack<Object*> worklist_;
-  std::size_t objcnt_{};
-
-  MarkSweep(void);
-  ~MarkSweep(void);
-
-  uchar_t* alloc(std::size_t& n);
-  Object* new_object(
-      std::size_t n, const std::function<Object* (uchar_t*)>& fn);
-  void mark(void);
-  void mark_from_roots(void);
-  void sweep(void);
-public:
-  static MarkSweep& get_instance(void);
-
-  Object* new_int(int value);
-  Object* new_pair(Object* first = nullptr, Object* second = nullptr);
-  Object* pop_object(void);
-  void collect(void);
+struct MemoryHeader {
+  enum {INVALID, INT, PAIR};
+  std::uint8_t type{INVALID};
+  bool marked{};
+  std::size_t size{};
 };
+
+class Object : public MemoryHeader, private UnCopyable {
+public:
+  const char* name(void) { return "Object"; }
+};
+
+class Int : public Object {
+  int value_{};
+public:
+  Int(void) { type = MemoryHeader::INT; }
+  void value(int value = 0) { value_ = value; }
+  int value(void) const { return value_; }
+  const char* name(void) const { return "Int"; }
+};
+
+class Pair : public Object {
+  Object* first_{};
+  Object* second_{};
+public:
+  Pair(void) { type = MemoryHeader::PAIR; }
+  void first(Object* first) { first_ = first; }
+  Object* first(void) const { return first_; }
+  void second(Object* second) { second_ = second; }
+  Object* second(void) const { return second_; }
+  const char* name(void) const { return "Pair"; }
+};
+
+constexpr std::size_t kAlignment = sizeof(void*);
+constexpr std::size_t roundup(std::size_t n) {
+  return (n + kAlignment - 1) & ~(kAlignment - 1);
+}
+constexpr std::size_t kMinObjSize = roundup(sizeof(Int));
 
 }
