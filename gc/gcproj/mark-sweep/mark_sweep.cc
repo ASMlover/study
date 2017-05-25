@@ -60,13 +60,13 @@ uchar_t* MarkSweep::alloc(std::size_t& n) {
   uchar_t* p = heaptr_;
   while (p < allocptr_) {
     auto* scan = reinterpret_cast<MemoryHeader*>(p);
-    if (scan->type == MemoryHeader::INVALID && scan->size >= n) {
-      if (scan->size > n && scan->size - n < kMinObjSize)
-        n = scan->size;
+    if (scan->type() == MemoryHeader::INVALID && scan->size() >= n) {
+      if (scan->size() > n && scan->size() - n < kMinObjSize)
+        n = scan->size();
       return p;
     }
     else {
-      p += scan->size;
+      p += scan->size();
     }
   }
 
@@ -85,7 +85,7 @@ Object* MarkSweep::new_object(
   }
 
   Object* obj = fn(p);
-  obj->size = n;
+  obj->set_size(n);
   roots_.push_back(obj);
   ++objcnt_;
 
@@ -97,16 +97,16 @@ void MarkSweep::mark(void) {
     auto* obj = worklist_.top();
     worklist_.pop();
 
-    if (obj->type == MemoryHeader::PAIR) {
+    if (obj->type() == MemoryHeader::PAIR) {
       auto* first = static_cast<Pair*>(obj)->first();
-      if (first != nullptr && !first->marked) {
-        first->marked = true;
+      if (first != nullptr && !first->marked()) {
+        first->set_mark();
         worklist_.push(first);
       }
 
       auto* second = static_cast<Pair*>(obj)->second();
-      if (second != nullptr && !second->marked) {
-        second->marked = true;
+      if (second != nullptr && !second->marked()) {
+        second->set_mark();
         worklist_.push(second);
       }
     }
@@ -115,8 +115,8 @@ void MarkSweep::mark(void) {
 
 void MarkSweep::mark_from_roots(void) {
   for (auto obj : roots_) {
-    if (obj != nullptr && !obj->marked) {
-      obj->marked = true;
+    if (obj != nullptr && !obj->marked()) {
+      obj->set_mark();
       worklist_.push(obj);
       mark();
     }
@@ -128,22 +128,22 @@ void MarkSweep::sweep(void) {
   MemoryHeader* freelist{};
   while (p < allocptr_) {
     auto* scan = reinterpret_cast<MemoryHeader*>(p);
-    if (scan->type == MemoryHeader::INVALID) {
+    if (scan->type() == MemoryHeader::INVALID) {
       freelist = scan;
-      p += scan->size;
+      p += scan->size();
       continue;
     }
 
-    if (scan->marked) {
-      scan->marked = false;
+    if (scan->marked()) {
+      scan->unset_mark();
     }
     else {
       --objcnt_;
-      scan->type = MemoryHeader::INVALID;
+      scan->set_type(MemoryHeader::INVALID);
       if (freelist != nullptr) {
-        if ((uchar_t*)freelist + freelist->size == p) {
-          freelist->size += scan->size;
-          if ((uchar_t*)freelist + freelist->size == allocptr_) {
+        if ((uchar_t*)freelist + freelist->size() == p) {
+          freelist->inc_size(scan->size());
+          if ((uchar_t*)freelist + freelist->size() == allocptr_) {
             allocptr_ = (uchar_t*)freelist;
             break;
           }
@@ -156,12 +156,12 @@ void MarkSweep::sweep(void) {
         freelist = scan;
       }
 
-      if (p + scan->size == allocptr_) {
+      if (p + scan->size() == allocptr_) {
         allocptr_ = p;
         break;
       }
     }
-    p += scan->size;
+    p += scan->size();
   }
 }
 
@@ -173,7 +173,7 @@ MarkSweep& MarkSweep::get_instance(void) {
 Object* MarkSweep::new_int(int value) {
   return new_object(sizeof(Int), [value](uchar_t* p) -> Object* {
         Int* obj = new (p) Int;
-        obj->value(value);
+        obj->set_value(value);
         return obj;
       });
 }
@@ -182,9 +182,9 @@ Object* MarkSweep::new_pair(Object* first, Object* second) {
   return new_object(sizeof(Pair), [first, second](uchar_t* p) -> Object* {
         Pair* obj = new (p) Pair;
         if (first != nullptr)
-          obj->first(first);
+          obj->set_first(first);
         if (second != nullptr)
-          obj->second(second);
+          obj->set_second(second);
         return obj;
       });
 }

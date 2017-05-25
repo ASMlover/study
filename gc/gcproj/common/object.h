@@ -32,9 +32,19 @@ namespace gc {
 
 struct MemoryHeader {
   enum {INVALID, INT, PAIR};
-  std::uint8_t type{INVALID};
-  bool marked{};
-  std::size_t size{};
+  std::int8_t _type{MemoryHeader::INVALID};
+  bool _marked{};
+  std::size_t _size{};
+
+  void set_type(std::int8_t type) { _type = type; }
+  std::int8_t type(void) const { return _type; }
+  void set_mark(void) { _marked = true; }
+  void unset_mark(void) { _marked = false; }
+  bool marked(void) const { return _marked; }
+  void set_size(std::size_t n) { _size = n; }
+  void inc_size(std::size_t n) { _size += n; }
+  void dec_size(std::size_t n) { _size -= n; }
+  std::size_t size(void) const { return _size; }
 };
 
 class Object : public MemoryHeader, private UnCopyable {
@@ -45,8 +55,8 @@ public:
 class Int : public Object {
   int value_{};
 public:
-  Int(void) { type = MemoryHeader::INT; }
-  void value(int value = 0) { value_ = value; }
+  Int(void) { set_type(MemoryHeader::INT); }
+  void set_value(int value = 0) { value_ = value; }
   int value(void) const { return value_; }
   const char* name(void) const { return "Int"; }
 };
@@ -55,10 +65,10 @@ class Pair : public Object {
   Object* first_{};
   Object* second_{};
 public:
-  Pair(void) { type = MemoryHeader::PAIR; }
-  void first(Object* first) { first_ = first; }
+  Pair(void) { set_type(MemoryHeader::PAIR); }
+  void set_first(Object* first) { first_ = first; }
   Object* first(void) const { return first_; }
-  void second(Object* second) { second_ = second; }
+  void set_second(Object* second) { second_ = second; }
   Object* second(void) const { return second_; }
   const char* name(void) const { return "Pair"; }
 };
