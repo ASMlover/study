@@ -28,6 +28,13 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import async_timer
+from Common.Codec import Md5Cache
+from Common.EntityUtils import EntityFactory, EntityManager
+from Common.IdUtils import IdUtils
+from Log.LogManager import LogManager
+from Server.ClientProxy import ClientProxy
+
 class DirtyManager(object):
     _dirties = {}
 
@@ -62,3 +69,63 @@ class EntityProxy(object):
                 parameters = None
             self.entity.call_server_method(self.mailbox, name, parameters)
         return _caller
+
+class ServerEntity(object):
+    """所有服务器对象的基类"""
+    def __init__(self, entity_id=None):
+        super(ServerEntity, self).__init__()
+        self.logger = LogManager.get_logger(
+                'ServerEntity.%s' % self.__class__.__name__)
+        if entity_id is None:
+            self.entity_id = IdUtils.gen_id()
+        else:
+            self.entity_id = entity_id
+        self.gate_proxy = None
+        self.save_timer = None
+        self.is_destroyed = False
+        save_interval = self.get_persistent_time()
+        if save_interval > 0:
+            self.save_timer = async_timer.add_cycle_timer(
+                    save_interval, lambda: self.save())
+        EntityManager.add_entity(self.entity_id, self, False)
+        DirtyManager.add_dirty_state(self, False)
+
+    def __getattribute__(self, key):
+        if key != '__class__':
+            DirtyManager.set_dirty_state(self, True)
+        return super(ServerEntity, self).__getattribute__(key)
+
+    def tick(self):
+        """每Game Tick的时间调用一次"""
+        pass
+
+    def save(self, callback=None):
+        if self.is_persistent():
+            if DirtyManager.get_dirty_state(self):
+                # TODO: need implementation GameAPI operations
+                # GameAPI.save_entity(self, callback)
+                DirtyManager.set_dirty_state(self, False)
+        elif callback:
+            callback(True)
+
+    def cancel_save_timer(self):
+        if self.save_timer:
+            self.save_timer.cancel()
+            self.save_timer = None
+
+    def _destroy_callback(self, r, callback):
+        callback(r)
+        EntityManager.del_entity(self.entity_id)
+
+    def destroy(self, callback=None):
+        """销毁当前Entity"""
+        if self.is_destroyed:
+            return
+        self.cancel_save_timer()
+        if callback is None:
+            self.save()
+            EntityManager.del_entity(self.entity_id)
+        else:
+            self.save(lambda r: self._destroy_callback(r, callback))
+        DirtyManager.del_dirty_state(self)
+        self.is_destroyed = True
