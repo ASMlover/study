@@ -32,9 +32,24 @@ int main(int argc, char* argv[]) {
   CHAOS_UNUSED(argc), CHAOS_UNUSED(argv);
 
   std::cout << "MarkSweep Garbage Collection Algorithm" << std::endl;
-  for (auto i = 0; i < 1000000; ++i) {
-    gc::MarkSweep::get_instance().create_int(i * i);
-    gc::MarkSweep::get_instance().release_object();
+
+  constexpr int kCount = 1000;
+  constexpr int kReleaseCount = 20;
+  constexpr int kCreateCount = kReleaseCount * 3;
+  for (auto i = 0; i < kCount; ++i) {
+    for (auto j = 0; j < kCreateCount; ++j) {
+      if ((j + 1) % 3 == 0) {
+        auto* second = gc::MarkSweep::get_instance().release_object();
+        auto* first = gc::MarkSweep::get_instance().release_object();
+        gc::MarkSweep::get_instance().create_pair(first, second);
+      }
+      else {
+        gc::MarkSweep::get_instance().create_int(i);
+      }
+    }
+
+    for (auto j = 0; j < kReleaseCount; ++j)
+      gc::MarkSweep::get_instance().release_object();
   }
   gc::MarkSweep::get_instance().collect();
 
