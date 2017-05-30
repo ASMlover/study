@@ -54,7 +54,7 @@ byte_t* MarkSweep::alloc(std::size_t& n) {
     return p;
   }
 
-  byte_t* p = allocptr_;
+  byte_t* p = heaptr_;
   while (p < allocptr_) {
     auto* scan = as_memory(p);
     if (scan->is_invalid() && scan->size() >= n) {
