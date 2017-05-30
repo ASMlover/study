@@ -24,19 +24,32 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
+#pragma once
+
 #include <Chaos/Types.h>
-#include "mark_sweep.h"
 
-int main(int argc, char* argv[]) {
-  CHAOS_UNUSED(argc), CHAOS_UNUSED(argv);
+namespace gc {
 
-  std::cout << "MarkSweep Garbage Collection Algorithm" << std::endl;
-  for (auto i = 0; i < 1000000; ++i) {
-    gc::MarkSweep::get_instance().create_int(i * i);
-    gc::MarkSweep::get_instance().release_object();
-  }
-  gc::MarkSweep::get_instance().collect();
+struct MemoryHeader {
+  enum {INVALID, INT, PAIR};
+  std::int8_t _type{INVALID};
+  bool _marked{};
+  std::size_t _size{};
 
-  return 0;
+  bool is_invalid(void) const { return _type == INVALID; }
+  void set_type(std::int8_t t) { _type = t; }
+  std::int8_t type(void) const { return _type; }
+  void set_mark(void) { _marked = true; }
+  void unset_mark(void) { _marked = false; }
+  bool is_marked(void) const { return _marked; }
+  void set_size(std::size_t n) { _size = n; }
+  void inc_size(std::size_t n) { _size += n; }
+  void dec_size(std::size_t n) { _size -= n; }
+  std::size_t size(void) const { return _size; }
+};
+
+inline MemoryHeader* as_memory(void* p) {
+  return reinterpret_cast<MemoryHeader*>(p);
+}
+
 }

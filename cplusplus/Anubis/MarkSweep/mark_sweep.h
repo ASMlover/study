@@ -24,19 +24,41 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
-#include <Chaos/Types.h>
-#include "mark_sweep.h"
+#pragma once
 
-int main(int argc, char* argv[]) {
-  CHAOS_UNUSED(argc), CHAOS_UNUSED(argv);
+#include <functional>
+#include <vector>
+#include <stack>
+#include "object.h"
 
-  std::cout << "MarkSweep Garbage Collection Algorithm" << std::endl;
-  for (auto i = 0; i < 1000000; ++i) {
-    gc::MarkSweep::get_instance().create_int(i * i);
-    gc::MarkSweep::get_instance().release_object();
-  }
-  gc::MarkSweep::get_instance().collect();
+namespace gc {
 
-  return 0;
+class MarkSweep : private Chaos::UnCopyable {
+  byte_t* heaptr_{};
+  byte_t* allocptr_{};
+  std::vector<BaseObject*> roots_;
+  std::stack<BaseObject*> worklist_;
+  std::size_t obj_count_{};
+  static constexpr std::size_t kHeapSize = 512 << 10;
+
+  MarkSweep(void);
+  ~MarkSweep(void);
+
+  byte_t* alloc(std::size_t& n);
+  BaseObject* new_object(
+      std::size_t n, const std::function<BaseObject* (byte_t*)>& fn);
+  void mark(void);
+  void mark_from_roots(void);
+  void sweep(void);
+public:
+  static MarkSweep& get_instance(void);
+
+  void collect(void);
+
+  BaseObject* create_int(int value);
+  BaseObject* create_pair(
+      BaseObject* first = nullptr, BaseObject* second = nullptr);
+  BaseObject* release_object(void);
+};
+
 }

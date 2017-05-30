@@ -24,19 +24,47 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
-#include <Chaos/Types.h>
-#include "mark_sweep.h"
+#pragma once
 
-int main(int argc, char* argv[]) {
-  CHAOS_UNUSED(argc), CHAOS_UNUSED(argv);
+#include "memory_header.h"
 
-  std::cout << "MarkSweep Garbage Collection Algorithm" << std::endl;
-  for (auto i = 0; i < 1000000; ++i) {
-    gc::MarkSweep::get_instance().create_int(i * i);
-    gc::MarkSweep::get_instance().release_object();
-  }
-  gc::MarkSweep::get_instance().collect();
+namespace gc {
 
-  return 0;
+class BaseObject : public MemoryHeader, private Chaos::UnCopyable {
+public:
+  const char* get_name(void) const { return "BaseObject"; }
+  bool is_int(void) const { return type() == MemoryHeader::INT; }
+  bool is_pair(void) const { return type() == MemoryHeader::PAIR; }
+};
+
+class Int : public BaseObject {
+  int value_{};
+public:
+  Int(void) { set_type(MemoryHeader::INT); }
+  const char* get_name(void) const { return "Int"; }
+  void set_value(int value) { value_ = value; }
+  int value(void) const { return value_; }
+};
+
+class Pair : public BaseObject {
+  BaseObject* first_{};
+  BaseObject* second_{};
+public:
+  Pair(void) { set_type(MemoryHeader::PAIR); }
+  const char* get_name(void) const { return "Pair"; }
+  void set_first(BaseObject* obj) { first_ = obj; }
+  BaseObject* first(void) const { return first_; }
+  void set_second(BaseObject* obj) { second_ = obj; }
+  BaseObject* second(void) const { return second_; }
+};
+
+inline Int* as_int(BaseObject* obj) { return static_cast<Int*>(obj); }
+inline Pair* as_pair(BaseObject* obj) { return static_cast<Pair*>(obj); }
+
+constexpr std::size_t kAlignment = sizeof(void*);
+constexpr std::size_t roundup(std::size_t n) {
+  return (n + kAlignment - 1) & ~(kAlignment - 1);
+}
+constexpr std::size_t kMinObjSize = roundup(sizeof(Int));
+
 }
