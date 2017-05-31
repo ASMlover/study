@@ -63,4 +63,6 @@ endif()
 message(STATUS "[${ANUBIS_PROJECT}] CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 include_directories(${PROJECT_SOURCE_DIR}/../../../Chaos)
+link_directories(${PROJECT_SOURCE_DIR}/../../../Chaos/cmake-build/Chaos)
+
 add_subdirectory(MarkSweep)

@@ -31,5 +31,4 @@ file(GLOB_RECURSE MARKSWEEP_SOURCES *.cc)
 message(STATUS "[AnubisPROJ] MarkSweep MARKSWEEP_SOURCES: ${MARKSWEEP_SOURCES}")
 
 add_executable(${OUTPUT_NAME} ${MARKSWEEP_SOURCES})
-# link_directories(${PROJECT_SOURCE_DIR}/../../../Chaos/cmake-build/Chaos)
-# target_link_libraries(${OUTPUT_NAME} chaos)
+target_link_libraries(${OUTPUT_NAME} chaos)
