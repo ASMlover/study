@@ -140,3 +140,92 @@ def create_entity_anywhere(entity_type,
     """在任意Game Server上创建Entity"""
     _create_remote_entity(entity_type, entity_id=entity_id,
             entity_content=entity_content, fromdb=fromdb, callback=callback)
+
+def create_entity_servertype(entity_type, server_type,
+        entity_id=None, entity_content=None, fromdb=False, callback=None):
+    """根据指定的Server Type在任意Game Server上创建Entity"""
+    if not GameGlobal.gamemgr_proxy.connected:
+        _logger.error(
+                'create_entity_servertype: lost connection with game manager')
+        return
+
+    server_info = _C_PB2.ServerInfo()
+    server_info.server_type = server_type
+
+    header = _B_PB2.EntityInfoHeader()
+    header.dst_server.CopyFrom(server_info)
+    header.create_anywhere = _B_PB2.EntityInfoHeader.SPECIFY_SERVER
+    header.transfer_entity = False
+    header.create_fromdb = fromdb
+    if callback is not None:
+        header.callback_id = GameGlobal.reg_gamemgr_callback(callback)
+
+    info = _C_PB2.EntityInfo()
+    info.routes = header.SerializeToString()
+    _codec_encoder.encode(info.type, entity_type)
+    if entity_id is not None:
+        info.entity_id = entity_id
+    if entity_content is not None:
+        info.infos = GameGlobal.proto_encoder.encode(entity_content)
+    GameGlobal.gamemgr_proxy.create_entity(info)
+
+def register_entity_globally(
+        entity_unique_id, entity, callback=None, override=False):
+    """将Entity注册到全局，如果用相同的key且override为False则失败"""
+    if not GameGlobal.gamemgr_proxy.connected:
+        _logger.error(
+                'register_entity_globally: lost connection with game manager')
+        return
+
+    msg = _B_PB2.GlobalEntityRegMessage()
+    msg.entity_unique_id = entity_unique_id
+    msg.mailbox.entity_id = entity.entity_id
+    msg.mailbox.server_info.CopyFrom(GameGlobal.game_info)
+    if callback is not None:
+        msg.callback_id = GameGlobal.reg_gamemgr_callback(callback)
+    if override:
+        msg.override = True
+    GameGlobal.gamemgr_proxy.reg_entity_mailbox(msg)
+
+def get_global_entity_mailbox(entity_unique_id):
+    return GameGlobal.global_entities.get(entity_unique_id)
+
+def encode_mailbox(mailbox):
+    if mailbox is None:
+        return None
+    return Binary(mailbox.SerializeToString())
+
+def decode_mailbox(mbbytes):
+    if mbbytes is None:
+        return None
+    mailbox = _C_PB2.EntityMailbox()
+    mailbox.ParseFromString(mbbytes)
+    return mailbox
+
+def is_same_mailbox(mb1, mb2):
+    return (mb1.entity_id == mb2.entity_id and
+            mb1.server_info.ip == mb2.server_info.ip and
+            mb1.server_info.port == mb2.server_info.port)
+
+def get_mailbox_entity_id(mb):
+    return mb.entity_id
+
+def is_local_server(server_info):
+    local_server = GameGlobal.game_info
+    return (local_server.ip == server_info.ip and
+            local_server.port == server_info.port)
+
+def get_dbmgr_proxy(entity_id=None):
+    def hash_code(bytes):
+        if len(GameGlobal.dbmgr_proxy_set) == 1:
+            return 0
+        key = 0
+        for c in bytes:
+            key += ord(c)
+        return key % len(GameGlobal.dbmgr_proxy_set)
+
+    if entity_id is not None:
+        return GameGlobal.dbmgr_proxy_set[hash_code(entity_id)]
+    else:
+        import random
+        return random.choice(GameGlobal.dbmgr_proxy_set)
