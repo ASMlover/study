@@ -32,7 +32,6 @@ from bson import Binary
 from Common import Common
 from Common.Codec import CodecEncoder
 from Common.EntityUtils import EntityFactory, EntityManager
-from Common.IdUtils import IdUtils
 from Distributed.Game import GameGlobal
 from Log.LogManager import LogManager
 from Proto.Details import BasicProtocol_pb2 as _B_PB2
@@ -229,3 +228,109 @@ def get_dbmgr_proxy(entity_id=None):
     else:
         import random
         return random.choice(GameGlobal.dbmgr_proxy_set)
+
+def _get_dbproxy_wrapper(callback=None):
+    dbproxy = get_dbmgr_proxy()
+    if dbproxy is None:
+        _logger.warn('_get_dbproxy_wrapper: db manager not connected')
+        callback and callback(None)
+    return dbproxy
+
+def find(collection, query, fields, callback, read_pref=None, hint=None):
+    """调用dbmgr查找满足条件的记录"""
+    dbproxy = _get_dbproxy_wrapper(callback)
+    if dbproxy is None:
+        return False
+
+    def _find_callback(status, docs):
+        if status and len(docs) == 1:
+            callback(docs[0])
+        else:
+            callback(None)
+    dbproxy.db_find_doc(GameGlobal.dbname, collection,
+            query, fields, 1, _find_callback, read_pref=read_pref, hint=hint)
+    return True
+
+def find_multi(collection,
+        query, fields, callback, read_pref=None, hint=None, limit=1):
+    """查找满足条件的多条记录"""
+    dbproxy = _get_dbproxy_wrapper(callback)
+    if dbproxy is None:
+        return False
+
+    def _find_multi_callback(status, docs):
+        if status:
+            callback(docs)
+        else:
+            callback(None)
+    dbproxy.db_find_doc(GameGlobal.dbname, collection, query, fields,
+            limit, _find_multi_callback, read_pref=read_pref, hint=hint)
+    return True
+
+def find_data_record(collection, record_id, callback, read_pref=None):
+    """查找指定的记录，如果存在则callback返回"""
+    dbproxy = _get_dbproxy_wrapper(callback)
+    if dbproxy is None:
+        return False
+
+    def _find_record_callback(status, docs):
+        if status and len(docs) == 1:
+            callback(docs[0])
+        else:
+            callback(None)
+    dbproxy.db_find_doc(GameGlobal.dbname, collection, {'_id': record_id},
+            None, 1, _find_record_callback, read_pref=read_pref)
+    return True
+
+def find_and_modify(collection,
+        query, update, fields, upsert, new, callback, seq_flag=False):
+    dbproxy = _get_dbproxy_wrapper(callback)
+    if dbproxy is None:
+        return False
+
+    dbproxy.db_find_and_modify_doc(GameGlobal.dbname, collection,
+            query, update, fields, upsert, new, callback, seq_flag)
+    return True
+
+def update(collection, query, fields, upsert=True, multi=False, callback=None):
+    dbproxy = _get_dbproxy_wrapper()
+    if dbproxy is None:
+        return False
+
+    dbproxy.db_update_doc(GameGlobal.dbname,
+            collection, query, fields, callback, upsert, multi)
+    return True
+
+def update_data_record(
+        collection, record_id, data, callback=None, upsert=True):
+    dbproxy = _get_dbproxy_wrapper()
+    if dbproxy is None:
+        return False
+
+    dbproxy.db_update_doc(GameGlobal.dbname, collection,
+            {'_id': record_id}, {'$set': data}, callback, upsert)
+    return True
+
+def insert_data_record(collection, record_id=None, data={}, callback=None):
+    """插入一条记录"""
+    dbproxy = _get_dbproxy_wrapper()
+    if dbproxy is None:
+        return False
+
+    if not record_id:
+        insert_data = {}
+    else:
+        insert_data = {'_id': record_id}
+    insert_data.update(data)
+    dbproxy.db_insert_doc(GameGlobal.dbname, collection, insert_data, callback)
+    return True
+
+def delete_data_record(collection, record_id, callback=None):
+    """删除一条记录"""
+    dbproxy = _get_dbproxy_wrapper()
+    if dbproxy is None:
+        return False
+
+    dbproxy.db_delete_doc(GameGlobal.dbname,
+            collection, {'_id': record_id}, callback)
+    return True
