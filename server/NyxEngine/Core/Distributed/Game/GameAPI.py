@@ -229,11 +229,15 @@ def get_dbmgr_proxy(entity_id=None):
         import random
         return random.choice(GameGlobal.dbmgr_proxy_set)
 
-def _get_dbproxy_wrapper(callback=None):
+def _get_dbproxy_wrapper(callback=None, *args):
     dbproxy = get_dbmgr_proxy()
     if dbproxy is None:
         _logger.warn('_get_dbproxy_wrapper: db manager not connected')
-        callback and callback(None)
+        if callback:
+            if args:
+                callback(None, *args)
+            else:
+                callback(None)
     return dbproxy
 
 def find(collection, query, fields, callback, read_pref=None, hint=None):
@@ -333,4 +337,129 @@ def delete_data_record(collection, record_id, callback=None):
 
     dbproxy.db_delete_doc(GameGlobal.dbname,
             collection, {'_id': record_id}, callback)
+    return True
+
+def ensure_db_index(dbname, collection, index, desc=None, callback=None):
+    dbproxy = _get_dbproxy_wrapper()
+    if dbproxy is None:
+        return False
+
+    dbproxy.db_operation_index(dbname, collection,
+            _B_PB2.OperationIndexRequest.ENSURE, index, desc, callback)
+    return True
+
+def drop_db_index(dbname, collection, callback=None):
+    dbproxy = _get_dbproxy_wrapper()
+    if dbproxy is None:
+        return False
+
+    dbproxy.db_operation_index(dbname, collection,
+            _B_PB2.OperationIndexRequest.DROP, None, None, callback)
+    return True
+
+def reset_db_index(dbname, collection, index, desc=None, callback=None):
+    dbproxy = _get_dbproxy_wrapper()
+    if dbproxy is None:
+        return False
+
+    dbproxy.db_operation_index(dbname, collection,
+            _B_PB2.OperationIndexRequest.RESET, index, desc, callback)
+    return True
+
+def create_collection(dbname, collection, options={}, callback=None):
+    dbproxy = _get_dbproxy_wrapper()
+    if dbproxy is None:
+        return False
+
+    dbproxy.db_create_collection(dbname, collection, options, callback)
+    return True
+
+def _on_game_traceback():
+    """traceback时调用"""
+    import sys
+    t, v, tb = sys.exc_info()
+    GameGlobal.game_event_callback.on_traceback(t, v, tb)
+
+def create_entity_fromdb(entity_type, entity_id, callback=None):
+    """从DB中恢复数据并创建Entity"""
+    dbproxy = _get_dbproxy_wrapper(callback)
+    if dbproxy is None:
+        return False
+
+    EntityClass = EntityFactory.get_instance().get_entity_class(entity_type)
+    if not EntityClass:
+        _logger.error('create_entity_fromdb: entity class not registered')
+        callback(None)
+        return False
+
+    def _load_entity_callback(status, docs):
+        if status and len(docs) == 1:
+            entity = EntityClass(entity_id)
+            try:
+                entity.init_from_dict(docs[0])
+            except:
+                _logger.error('create_entity_fromdb: init_from_dict error')
+                _on_game_traceback()
+                _logger._log_exception()
+                entity.cancel_save_timer()
+                EntityManager.del_entity(entity_id)
+                callback(None)
+            else:
+                callback(entity)
+        else:
+            callback(None)
+    fields = getattr(EntityClass.init_from_dict, 'fieldlist', None)
+    dbproxy.db_find_doc(GameGlobal.dbname, 'entities',
+            {'_id': entity_id}, fields, 1, _load_entity_callback, seq_flag=True)
+    return True
+
+def load_entity_dict_fromdb(entity_type, entity_id, callback):
+    """从DB中恢复Entity的数据信息"""
+    dbproxy = _get_dbproxy_wrapper(callback, entity_id)
+    if dbproxy is None:
+        return False
+
+    EntityClass = EntityFactory.get_instance().get_entity_class(entity_type)
+    if not EntityClass:
+        _logger.error('load_entity_dict_fromdb: entity claass not registered')
+        return False
+
+    def _load_entity_dict_callback(status, docs):
+        if status and len(docs) == 1:
+            callback(docs[0], entity_id)
+        else:
+            callback(None, entity_id)
+    fields = getattr(EntityClass.init_from_dict, 'fieldlist', None)
+    dbproxy.db_find_doc(GameGlobal.dbname, 'entities',
+            {'_id': entity_id}, fields, 1, _load_entity_dict_callback)
+    return True
+
+def del_entity(entity_id, callback=None):
+    dbproxy = _get_dbproxy_wrapper()
+    if dbproxy is None:
+        return False
+
+    dbproxy.db_delete_doc(GameGlobal.dbname,
+            'entities', {'_id': entity_id}, callback)
+    return True
+
+def save_entity(entity, callback=None):
+    entity_id = entity.entity_id
+    dbproxy = get_dbmgr_proxy(entity_id)
+    if dbproxy is None:
+        _logger.warn('save_entity: db manager not connected')
+        return False
+
+    update_dict = {'entity_class': entity.__class__.__name__}
+    try:
+        save_dict = entity.get_persistent_dict()
+    except:
+        if callback is not None:
+            callback(False)
+        _logger.error('save_entity: get_persistent_dict for entity failed')
+        _logger._log_exception()
+        return False
+    update_dict.update(save_dict)
+    dbproxy.db_update_doc(GameGlobal.dbname, 'entities',
+            {'_id': entity_id}, {'$set': update_dict}, callback, seq_flag=True)
     return True
