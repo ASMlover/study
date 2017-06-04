@@ -32,6 +32,8 @@ import async_timer
 from Common.Codec import Md5Cache
 from Common.EntityUtils import EntityFactory, EntityManager
 from Common.IdUtils import IdUtils
+from Distributed.Game import GameAPI
+from Distributed.Game import GameGlobal
 from Log.LogManager import LogManager
 from Server.ClientProxy import ClientProxy
 
@@ -129,3 +131,37 @@ class ServerEntity(object):
             self.save(lambda r: self._destroy_callback(r, callback))
         DirtyManager.del_dirty_state(self)
         self.is_destroyed = True
+
+    def init_from_dict(self, data_dict):
+        """使用data_dict来初始化，只有序列化到持久存储的才需要"""
+        pass
+
+    def is_persistent(self):
+        """表示该Entity是否持久化到DB"""
+        return False
+
+    def get_persistent_time(self):
+        """返回存盘时间，默认时间为15s"""
+        return GameGlobal.def_savetime
+
+    def get_persistent_dict(self):
+        """将自己序列化到一个dict，需要兼容BSON"""
+        return {}
+
+    def _get_gate_proxy(self):
+        """得到Entity对应的GateProxy，Entity应该始终对应同一个GateProxy"""
+        gate_id = self.gate_proxy.gate_id
+        if self.gate_proxy is None:
+            self.gate_proxy = GameGlobal.game_client_mgr.get_random_gate_proxy()
+        elif not GameGlobal.game_client_mgr.has_gate_proxy(gate_id):
+            self.gate_proxy = GameGlobal.game_client_mgr.get_random_gate_proxy()
+            self.logger.warn(
+                    'ServerEntity._get_gate_proxy: lost connection to Gate')
+        return self.gate_proxy
+
+    def call_server_method(self,
+            mailbox, method, parameters=None, callback=None):
+        """调用其他Game上的Entity方法，如果有Gate到Game的连接，则直接消息
+        发送过去，否则通过GameManager将消息发送出去
+        """
+        pass
