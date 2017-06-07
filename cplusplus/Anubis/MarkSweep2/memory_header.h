@@ -34,6 +34,7 @@ struct MemoryHeader {
   enum {INVALID, INT, PAIR};
   std::int8_t _type{INVALID};
   bool _marked{};
+  MemoryHeader* _next{};
 
   bool is_invalid(void) const { return _type == INVALID; }
   void set_type(std::int8_t t) { _type = t; }

@@ -33,20 +33,18 @@
 
 namespace gc {
 
-struct MemoryBlock;
-
 class MarkSweep : private Chaos::UnCopyable {
   static constexpr std::size_t kChunkCount = 64;
   static constexpr std::size_t kHeapSize = 512 << 10;
   static constexpr std::size_t kAlignment = sizeof(void*);
   static constexpr std::size_t kFreelistCount = 512 / kAlignment;
 
-  struct Chunk { int index; MemoryBlock* chunk; };
+  struct MemoryChunk { int index; MemoryHeader* chunk; };
 
-  MemoryBlock* freelist_[kFreelistCount]{};
+  MemoryHeader* freelist_[kFreelistCount]{};
   byte_t* heaptr_{};
   byte_t* allocptr_{};
-  std::vector<Chunk> chunklist_;
+  std::vector<MemoryChunk> chunklist_;
   std::vector<BaseObject*> roots_;
   std::stack<BaseObject*> worklist_;
   std::size_t obj_count_{};

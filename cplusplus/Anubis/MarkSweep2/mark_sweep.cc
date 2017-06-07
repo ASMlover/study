@@ -29,8 +29,6 @@
 
 namespace gc {
 
-struct MemoryBlock { MemoryBlock* next{}; };
-
 MarkSweep::MarkSweep(void) {
   heaptr_ = new byte_t[kHeapSize];
   CHAOS_CHECK(heaptr_, "allocating heap failed...");
@@ -53,17 +51,21 @@ void* MarkSweep::alloc(std::size_t n) {
     if (left_size < alloc_size)
       alloc_size = left_size / chunk_size * chunk_size;
 
-    freelist_[index] = reinterpret_cast<MemoryBlock*>(allocptr_);
+    freelist_[index] = as_memory(allocptr_);
+    chunklist_.push_back({index, as_memory(allocptr_)});
     allocptr_ += alloc_size;
-    chunklist_.push_back({index, freelist_[index]});
 
-    auto* block = freelist_[index];
-    for (std::size_t i = 0; i < alloc_size - chunk_size; i += chunk_size)
-      block = block->next = block + 1;
-    block->next = nullptr;
+    auto* block = new (freelist_[index]) MemoryHeader;
+    for (std::size_t i = 0; i < alloc_size - chunk_size; i += chunk_size) {
+      auto* next = new ((byte_t*)block + chunk_size) MemoryHeader;
+      block = block->_next = next;
+    }
+    block->_next = nullptr;
   }
 
-  return freelist_[index];
+  auto* r = freelist_[index];
+  freelist_[index] = r->_next;
+  return r;
 }
 
 BaseObject* MarkSweep::new_object(
@@ -117,14 +119,17 @@ void MarkSweep::sweep(void) {
     auto block_size = as_bytes(ch.index);
     for (std::size_t i = 0;
         i < kChunkCount && p < allocptr_; ++i) {
-      auto* mem = as_memory(p);
-      if (mem->is_marked()) {
-        mem->unset_mark();
+      auto* block = as_memory(p);
+      if (block->is_invalid())
+        continue;
+
+      if (block->is_marked()) {
+        block->unset_mark();
       }
       else {
         --obj_count_;
-        auto* block = reinterpret_cast<MemoryBlock*>(p);
-        block->next = freelist_[ch.index];
+        block->set_type(MemoryHeader::INVALID);
+        block->_next = freelist_[ch.index];
         freelist_[ch.index] = block;
       }
 
