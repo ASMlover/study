@@ -24,34 +24,58 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
-#include <Chaos/Types.h>
-#include "mark_sweep.h"
+#pragma once
 
-int main(int argc, char* argv[]) {
-  CHAOS_UNUSED(argc), CHAOS_UNUSED(argv);
+#include <functional>
+#include <vector>
+#include <stack>
+#include "object.h"
 
-  std::cout << "MarkSweep Garbage Collection Algorithm" << std::endl;
+namespace gc {
 
-  constexpr int kCount = 100000;
-  constexpr int kReleaseCount = 20;
-  constexpr int kCreateCount = kReleaseCount * 3;
-  for (auto i = 0; i < kCount; ++i) {
-    for (auto j = 0; j < kCreateCount; ++j) {
-      if ((j + 1) % 3 == 0) {
-        auto* second = gc::MarkSweep::get_instance().release_object();
-        auto* first = gc::MarkSweep::get_instance().release_object();
-        gc::MarkSweep::get_instance().create_pair(first, second);
-      }
-      else {
-        gc::MarkSweep::get_instance().create_int(i);
-      }
-    }
+struct MemoryBlock;
 
-    for (auto j = 0; j < kReleaseCount; ++j)
-      gc::MarkSweep::get_instance().release_object();
+class MarkSweep : private Chaos::UnCopyable {
+  static constexpr std::size_t kChunkCount = 64;
+  static constexpr std::size_t kHeapSize = 512 << 10;
+  static constexpr std::size_t kAlignment = sizeof(void*);
+  static constexpr std::size_t kFreelistCount = 512 / kAlignment;
+
+  struct Chunk { int index; MemoryBlock* chunk; };
+
+  MemoryBlock* freelist_[kFreelistCount]{};
+  byte_t* heaptr_{};
+  byte_t* allocptr_{};
+  std::vector<Chunk> chunklist_;
+  std::vector<BaseObject*> roots_;
+  std::stack<BaseObject*> worklist_;
+  std::size_t obj_count_{};
+
+  static constexpr int as_index(std::size_t n) {
+    return (n + 1) / kAlignment;
   }
-  gc::MarkSweep::get_instance().collect();
 
-  return 0;
+  static constexpr std::size_t as_bytes(int index) {
+    return (index + 1) * kAlignment;
+  }
+
+  MarkSweep(void);
+  ~MarkSweep(void);
+
+  void* alloc(std::size_t n);
+  BaseObject* new_object(
+      std::size_t n, const std::function<BaseObject* (void*)>& fn);
+  void mark(void);
+  void mark_from_roots(void);
+  void sweep(void);
+public:
+  static MarkSweep& get_instance(void);
+
+  void collect(void);
+  BaseObject* create_int(int value = 0);
+  BaseObject* create_pair(
+      BaseObject* first = nullptr, BaseObject* second = nullptr);
+  BaseObject* release_object(void);
+};
+
 }

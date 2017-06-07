@@ -24,34 +24,41 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
-#include <Chaos/Types.h>
-#include "mark_sweep.h"
+#pragma once
 
-int main(int argc, char* argv[]) {
-  CHAOS_UNUSED(argc), CHAOS_UNUSED(argv);
+#include "memory_header.h"
 
-  std::cout << "MarkSweep Garbage Collection Algorithm" << std::endl;
+namespace gc {
 
-  constexpr int kCount = 100000;
-  constexpr int kReleaseCount = 20;
-  constexpr int kCreateCount = kReleaseCount * 3;
-  for (auto i = 0; i < kCount; ++i) {
-    for (auto j = 0; j < kCreateCount; ++j) {
-      if ((j + 1) % 3 == 0) {
-        auto* second = gc::MarkSweep::get_instance().release_object();
-        auto* first = gc::MarkSweep::get_instance().release_object();
-        gc::MarkSweep::get_instance().create_pair(first, second);
-      }
-      else {
-        gc::MarkSweep::get_instance().create_int(i);
-      }
-    }
+class BaseObject : public MemoryHeader, private Chaos::UnCopyable {
+public:
+  const char* get_name(void) const { return "BaseObject"; }
+  bool is_int(void) const { return type() == MemoryHeader::INT; }
+  bool is_pair(void) const { return type() == MemoryHeader::PAIR; }
+};
 
-    for (auto j = 0; j < kReleaseCount; ++j)
-      gc::MarkSweep::get_instance().release_object();
-  }
-  gc::MarkSweep::get_instance().collect();
+class Int : public BaseObject {
+  int value_{};
+public:
+  Int(void) { set_type(MemoryHeader::INT); }
+  const char* get_name(void) const { return "Int"; }
+  void set_value(int value) { value_ = value; }
+  int value(void) const { return value_; }
+};
 
-  return 0;
+class Pair : public BaseObject {
+  BaseObject* first_{};
+  BaseObject* second_{};
+public:
+  Pair(void) { set_type(MemoryHeader::PAIR); }
+  const char* get_name(void) const { return "Pair"; }
+  void set_first(BaseObject* obj) { first_ = obj; }
+  BaseObject* first(void) const { return first_; }
+  void set_second(BaseObject* obj) { second_ = obj; }
+  BaseObject* second(void) const { return second_; }
+};
+
+inline Int* as_int(BaseObject* obj) { return static_cast<Int*>(obj); }
+inline Pair* as_pair(BaseObject* obj) { return static_cast<Pair*>(obj); }
+
 }
