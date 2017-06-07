@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << "MarkSweep Garbage Collection Algorithm" << std::endl;
 
-  constexpr int kCount = 100000;
+  constexpr int kCount = 10000;
   constexpr int kReleaseCount = 20;
   constexpr int kCreateCount = kReleaseCount * 3;
   for (auto i = 0; i < kCount; ++i) {

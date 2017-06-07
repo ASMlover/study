@@ -113,18 +113,22 @@ void MarkSweep::mark_from_roots(void) {
 
 void MarkSweep::sweep(void) {
   for (auto& ch : chunklist_) {
-    auto* block = ch.chunk;
+    byte_t* p = reinterpret_cast<byte_t*>(ch.chunk);
+    auto block_size = as_bytes(ch.index);
     for (std::size_t i = 0;
-        i < kChunkCount && ((byte_t*)block < allocptr_); ++i) {
-      auto* mem = as_memory(block);
+        i < kChunkCount && p < allocptr_; ++i) {
+      auto* mem = as_memory(p);
       if (mem->is_marked()) {
         mem->unset_mark();
       }
       else {
         --obj_count_;
+        auto* block = reinterpret_cast<MemoryBlock*>(p);
         block->next = freelist_[ch.index];
         freelist_[ch.index] = block;
       }
+
+      p += block_size;
     }
   }
 }
