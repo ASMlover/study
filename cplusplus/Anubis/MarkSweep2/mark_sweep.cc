@@ -77,9 +77,9 @@ BaseObject* MarkSweep::new_object(
     CHAOS_CHECK(p, "out of memory");
   }
 
-  BaseObject* obj = fn(p);
-  roots_.push_back(obj);
+  auto* obj = fn(p);
   ++obj_count_;
+  roots_.push_back(obj);
 
   return obj;
 }
@@ -120,19 +120,17 @@ void MarkSweep::sweep(void) {
     for (std::size_t i = 0;
         i < kChunkCount && p < allocptr_; ++i) {
       auto* block = as_memory(p);
-      if (block->is_invalid())
-        continue;
-
-      if (block->is_marked()) {
-        block->unset_mark();
+      if (!block->is_invalid()) {
+        if (block->is_marked()) {
+          block->unset_mark();
+        }
+        else {
+          --obj_count_;
+          block->set_type(MemoryHeader::INVALID);
+          block->_next = freelist_[ch.index];
+          freelist_[ch.index] = block;
+        }
       }
-      else {
-        --obj_count_;
-        block->set_type(MemoryHeader::INVALID);
-        block->_next = freelist_[ch.index];
-        freelist_[ch.index] = block;
-      }
-
       p += block_size;
     }
   }
