@@ -43,28 +43,28 @@ MarkSweep::~MarkSweep(void) {
 void* MarkSweep::alloc(std::size_t n) {
   auto index = as_index(n);
   if (freelist_[index] == nullptr) {
-    auto chunk_size = as_bytes(index);
-    auto alloc_size = chunk_size * kChunkCount;
+    auto block_size = as_bytes(index);
+    auto alloc_size = block_size * kChunkCount;
     auto left_size = static_cast<std::size_t>(heaptr_ + kHeapSize - allocptr_);
-    if (left_size < chunk_size)
+    if (left_size < block_size)
       return nullptr;
     if (left_size < alloc_size)
-      alloc_size = left_size / chunk_size * chunk_size;
+      alloc_size = left_size / block_size * block_size;
 
     freelist_[index] = as_memory(allocptr_);
     chunklist_.push_back({index, as_memory(allocptr_)});
     allocptr_ += alloc_size;
 
     auto* block = new (freelist_[index]) MemoryHeader;
-    for (std::size_t i = 0; i < alloc_size - chunk_size; i += chunk_size) {
-      auto* next = new ((byte_t*)block + chunk_size) MemoryHeader;
-      block = block->_next = next;
+    for (std::size_t i = 0; i < alloc_size - block_size; i += block_size) {
+      auto* next = new (as_ptr(block) + block_size) MemoryHeader;
+      block = block->set_next(next);
     }
     block->_next = nullptr;
   }
 
   auto* r = freelist_[index];
-  freelist_[index] = r->_next;
+  freelist_[index] = r->next();
   return r;
 }
 
@@ -115,7 +115,7 @@ void MarkSweep::mark_from_roots(void) {
 
 void MarkSweep::sweep(void) {
   for (auto& ch : chunklist_) {
-    byte_t* p = reinterpret_cast<byte_t*>(ch.chunk);
+    byte_t* p = as_ptr(ch.chunk);
     auto block_size = as_bytes(ch.index);
     for (std::size_t i = 0;
         i < kChunkCount && p < allocptr_; ++i) {
@@ -127,7 +127,7 @@ void MarkSweep::sweep(void) {
         else {
           --obj_count_;
           block->set_type(MemoryHeader::INVALID);
-          block->_next = freelist_[ch.index];
+          block->set_next(freelist_[ch.index]);
           freelist_[ch.index] = block;
         }
       }

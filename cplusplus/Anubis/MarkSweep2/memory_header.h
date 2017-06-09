@@ -42,10 +42,16 @@ struct MemoryHeader {
   void set_mark(void) { _marked = true; }
   void unset_mark(void) { _marked = false; }
   bool is_marked(void) const { return _marked; }
+  MemoryHeader* set_next(MemoryHeader* n) { return _next = n, _next; }
+  MemoryHeader* next(void) const { return _next; }
 };
 
 inline MemoryHeader* as_memory(void* p) {
   return reinterpret_cast<MemoryHeader*>(p);
+}
+
+inline byte_t* as_ptr(MemoryHeader* p) {
+  return reinterpret_cast<byte_t*>(p);
 }
 
 }
