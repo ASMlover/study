@@ -35,6 +35,8 @@ from Common.IdUtils import IdUtils
 from Distributed.Game import GameAPI
 from Distributed.Game import GameGlobal
 from Log.LogManager import LogManager
+from Proto.Details import BasicProtocol_pb2 as _B_PB2
+from Proto.Details import Common_pb2 as _C_PB2
 from Server.ClientProxy import ClientProxy
 
 class DirtyManager(object):
@@ -164,4 +166,85 @@ class ServerEntity(object):
         """调用其他Game上的Entity方法，如果有Gate到Game的连接，则直接消息
         发送过去，否则通过GameManager将消息发送出去
         """
-        pass
+        msg = _C_PB2.EntityMessage()
+        msg.entity_id = mailbox.entity_id
+        msg.method.md5 = Md5Cache.get_md5(method)
+        if parameters is not None:
+            msg.parameters = str(GameGlobal.proto_encode(parameters))
+        header = _B_PB2.ForwardMessageHeader()
+        header.src_mailbox.entity_id = self.entity_id
+        header.src_mailbox.server_info.CopyFrom(GameGlobal.game_info)
+        header.dst_mailbox.CopyFrom(mailbox)
+        gate_proxy = self._get_gate_proxy()
+        if gate_proxy:
+            # 找到了mailbox对应的porxy，直接转发消息
+            if callback is not None:
+                header.callback_id = GameGlobal.reg_gate_callback(callback)
+            msg.routes = header.SerializeToString()
+            gate_proxy.forward_entity_message(msg)
+        else:
+            # 没找到mailbox对应的proxy，通过Game Manager转发
+            self.logger.info(
+                    'ServerEntity.call_server_method: forward by game manager')
+            if callback is not None:
+                header.callback_id = GameGlobal.reg_gamemgr_callback(callback)
+            msg.routes = header.SerializeToString()
+            GameGlobal.gamemgr_proxy.forward_entity_message(msg)
+
+    def transfer_to_server(self, dst_server, content=None, callback=None):
+        """将某Entity转移到其他服务器
+
+        * 在dst_server创建PreEntity，检查目标服务器能否迁移Entity
+        * 将Entity迁移到dst_server，如果是Persistent的，且content不为None，需要
+          经过数据库进行数据迁移
+        * 在src_server创建PostEntity，转发S2S的RPC
+        """
+        if GameAPI.is_local_server(dst_server):
+            self.logger.warn('ServerEntity.transfer_to_server: same as current')
+            return
+
+        if not self.is_persistent() and not content:
+            content = self.get_persistent_dict()
+
+        pre_entity_id = IdUtils.get_id()
+        src_server = _C_PB2.ServerInfo()
+        src_server.CopyFrom(GameGlobal.game_info)
+        GameAPI._create_remote_entity('PreEntity', dst_server,
+                entity_id=pre_entity_id, entity_content=None,
+                fromdb=False, transfer_entity=True,
+                callback=lambda x: self._on_create_pre_entity(
+                    x, dst_server, pre_entity_id, content, callback))
+
+    def _on_transfer_result(self, status, callback):
+        if callback:
+            try:
+                callback(status)
+            except:
+                self.logger._log_exception()
+
+    def _on_create_pre_entity(self,
+            status, dst_server, pre_entity_id, content, callback):
+        """创建PreEntity的回调"""
+        if not status:
+            self.logger.warn(
+                    'ServerEntity._on_create_pre_entity: create PreEntity fail')
+            self._on_transfer_result(status, callback)
+        else:
+            self._do_transfer_to_server(dst_server,
+                    pre_entity_id, content, callback)
+            # 保存并销毁自己，为了保证同一时刻只存在一个Entity
+            self.destroy()
+            self._create_post_entity(dst_server)
+
+    def _do_transfer_to_server(self,
+            dst_server, pre_entity_id, content, callback):
+        """执行迁移工作"""
+        # TODO:
+
+    def _create_post_entity(self, dst_server, bind_msg=None, client=None):
+        """创建一个与自己entity_id一样的PostEntity，负责转发RPC"""
+        entity = EntityFactory.get_instance().create_entity(
+                'PostEntity', self.entity_id)
+        entity.set_dest_server(dst_server)
+        entity.set_bind_client_msg(bind_msg)
+        entity.set_bind_client(client)
