@@ -106,8 +106,7 @@ class ServerEntity(object):
     def save(self, callback=None):
         if self.is_persistent():
             if DirtyManager.get_dirty_state(self):
-                # TODO: need implementation GameAPI operations
-                # GameAPI.save_entity(self, callback)
+                GameAPI.save_entity(self, callback)
                 DirtyManager.set_dirty_state(self, False)
         elif callback:
             callback(True)
@@ -150,6 +149,9 @@ class ServerEntity(object):
         """将自己序列化到一个dict，需要兼容BSON"""
         return {}
 
+    def _get_client_info(self):
+        return None
+
     def _get_gate_proxy(self):
         """得到Entity对应的GateProxy，Entity应该始终对应同一个GateProxy"""
         gate_id = self.gate_proxy.gate_id
@@ -170,7 +172,7 @@ class ServerEntity(object):
         msg.entity_id = mailbox.entity_id
         msg.method.md5 = Md5Cache.get_md5(method)
         if parameters is not None:
-            msg.parameters = str(GameGlobal.proto_encode(parameters))
+            msg.parameters = str(GameGlobal.proto_encoder.encode(parameters))
         header = _B_PB2.ForwardMessageHeader()
         header.src_mailbox.entity_id = self.entity_id
         header.src_mailbox.server_info.CopyFrom(GameGlobal.game_info)
@@ -239,7 +241,29 @@ class ServerEntity(object):
     def _do_transfer_to_server(self,
             dst_server, pre_entity_id, content, callback):
         """执行迁移工作"""
-        # TODO:
+        gate_proxy = self._get_gate_proxy()
+        if not gate_proxy:
+            self.logger.error(
+                    'ServerEntity._do_transfer_to_server: no gate proxy found')
+            self._on_transfer_result(False, callback)
+            return
+
+        # 通知迁移成功
+        self._on_transfer_result(True, callback)
+
+        # 通知远端的PreEntity创建真的Entity
+        info = _B_PB2.RealEntityCreateInfo()
+        info.dst_server.CopyFrom(dst_server)
+        info.src_server.CopyFrom(GameGlobal.game_info)
+        info.migrate_entity_id = pre_entity_id
+        info.real_entity_id = self.entity_id
+        info.real_entity_type = self.__class__.__name__
+        if content:
+            info.content = GameGlobal.proto_encoder.encode(content)
+        client_info = self._get_client_info()
+        if client_info:
+            info.client_info_cache = bytes(client_info.SerializeToString())
+        gate_proxy.create_real_entity(info)
 
     def _create_post_entity(self, dst_server, bind_msg=None, client=None):
         """创建一个与自己entity_id一样的PostEntity，负责转发RPC"""
@@ -248,3 +272,33 @@ class ServerEntity(object):
         entity.set_dest_server(dst_server)
         entity.set_bind_client_msg(bind_msg)
         entity.set_bind_client(client)
+
+    def on_server_closing(self):
+        """通知服务器即将关闭"""
+        pass
+
+    def on_server_closed(self, callback=None):
+        """通知服务器关闭"""
+        self.destroy(callback)
+
+    def can_be_reconnected(self, auth_msg):
+        """是否可以进行重连"""
+        return self.client is not None
+
+    def on_reconnected(self, auth_msg=None):
+        """重新连接成功"""
+        pass
+
+    def get_reconnected_extra_msg(self):
+        """获取重连时额外的数据信息"""
+        return {}
+
+    def copy_gate_proxy_to(self, other):
+        """将自己的gate_proxy拷贝给另一个Entity"""
+        other.gate_proxy = self.gate_proxy
+
+    def get_mailbox(self):
+        mailbox = _C_PB2.EntityMailbox()
+        mailbox.entity_id = self.entity_id
+        mailbox.server_info.CopyFrom(GameGlobal.game_info)
+        return mailbox
