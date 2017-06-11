@@ -395,4 +395,79 @@ class PreEntity(ServerEntity):
         self.destroy()
 
 class PostEntity(ServerEntity):
-    pass
+    """迁移时留在源服务器做RPC转发的Entity
+
+    entity_id与目标服务器上真的Entity的entity_id一样，在接收到目标
+    服务器上的Entity创建完成的通知之前，cache住转发的RPC
+    """
+    _MAX_CACHE_MESSAGE = 2000
+    _LIFE_TIME = 20
+    def __init__(self, entity_id=None):
+        super(PostEntity, self).__init__(entity_id)
+        self.dest_server = None
+        self.bind_client = None # 绑定的客户端
+        self.bind_client_msg = None
+        self.cache_messages = []
+        self.real_entity_created = False
+        self._destroy_handler = async_timer.add_timer(
+                self._LIFE_TIME, self._on_destroy_handler)
+
+    def _on_destroy_handler(self):
+        self._destroy_handler = None
+        self.destroy()
+
+    def destroy(self, callback=None):
+        if self._destroy_handler:
+            self._destroy_handler.cancel()
+            self._destroy_handler = None
+        if self.bind_client:
+            self.bind_client.destroy()
+            self.bind_client = None
+        # 将cache的消息转发出去
+        self._forward_all_messages()
+        super(PostEntity, self).destroy(callback)
+
+    def set_dest_server(self, dest_server):
+        self.dest_server = dest_server
+
+    def set_bind_client(self, client):
+        self.bind_client = client
+
+    def set_bind_client_msg(self, bind_msg):
+        self.bind_client_msg = bind_msg
+
+    def forward_message(self, entity_msg):
+        """消息转发"""
+        if self.real_entity_created:
+            self._do_forward_message(entity_msg)
+        else:
+            self.cache_messages.append(entity_msg)
+            if len(self.cache_messages) > self._MAX_CACHE_MESSAGE:
+                # 缓存的消息过多，FIXME: 需要更好的处理
+                self.cache_messages = []
+                self.destroy()
+
+    def _do_forward_message(self, entity_msg):
+        header = _B_PB2.ForwardMessageHeader()
+        header.ParseFromString(entity_msg.routes)
+        header.dst_mailbox.server_info.CopyFrom(self.dest_server)
+        entity_msg.routes = header.SerializeToString()
+
+        gate_proxy = self._get_gate_proxy()
+        if not gate_proxy:
+            self.logger.error(
+                    'PostEntity._do_forward_message: find gate proxy fail')
+            return
+        gate_proxy.forward_entity_message(entity_msg)
+
+    def create_real_entity_successed(self):
+        if self.bind_client:
+            if self.bind_client_msg:
+                self.bind_client.bind_client_to_game(self.bind_client_msg)
+        self._forward_all_messages()
+        self.real_entity_created = True
+
+    def _forward_all_messages(self):
+        for msg in self.cache_messages:
+            self._do_forward_message(msg)
+        self.cache_messages = []
