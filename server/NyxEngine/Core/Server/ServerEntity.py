@@ -302,3 +302,97 @@ class ServerEntity(object):
         mailbox.entity_id = self.entity_id
         mailbox.server_info.CopyFrom(GameGlobal.game_info)
         return mailbox
+
+class PreEntity(ServerEntity):
+    """Entity迁移时，在目标服务器建立的Entity，生命期结束后自动销毁"""
+    _LIFE_TIME = 20
+    def __init__(self, entity_id=None):
+        super(PreEntity, self).__init__(entity_id)
+        self._destroy_handler = async_timer.add_timer(
+                self._LIFE_TIME, lambda: self._on_destroy_handler)
+
+    def _on_destroy_handler(self):
+        self._destroy_handler = None
+        self.destroy()
+
+    def destroy(self, callback=None):
+        if self._destroy_handler:
+            self._destroy_handler.cancel()
+            self._destroy_handler = None
+        super(PreEntity, self).destroy(callback)
+
+    def create_real_entity(self, create_info):
+        real_entity_id = create_info.real_entity_id
+        real_entity_type = create_info.real_entity_type
+        real_entity = EntityManager.get_entity(real_entity_id)
+        if real_entity:
+            if isinstance(real_entity, PostEntity):
+                # 如果有PostEntity，则销毁real_entity
+                real_entity.destroy()
+            else:
+                self.destroy()
+                return
+
+        real_entity = None
+        gate_proxy = self._get_gate_proxy()
+        if not gate_proxy:
+            self.logger.error(
+                    'PreEntity.create_real_entity: cannot get gate proxy')
+            return
+
+        if create_info.HasField('content'):
+            # 如果content中有数据则直接创建，否则从DB中读取数据
+            content = GameGlobal.proto_encoder.decode(create_info.content)
+            real_entity = EntityFactory.get_instance().create_entity(
+                    real_entity_type, real_entity_id)
+            if real_entity is None:
+                # 创建Entity失败
+                self.logger.error(
+                        'PreEntity.create_real_entity: create real entity fail')
+                self.destroy()
+            else:
+                real_entity.init_from_dict(content)
+                self._create_entity_client(real_entity, create_info)
+                mailbox = _C_PB2.EntityMailbox()
+                mailbox.server_info.CopyFrom(create_info.src_server)
+                mailbox.entity_id = real_entity_id
+                gate_proxy.create_real_entity_successed(mailbox)
+                self.destroy()
+        else:
+            r = GameAPI.create_entity_fromdb(real_entity_type, real_entity_id,
+                    lambda x: self._on_create_entity_fromdb(x, create_info))
+            if not r:
+                self.logger.error(
+                        'PreEntity.create_real_entity: create from db failed')
+                self.destroy()
+
+    def _create_entity_client(self, entity, create_info):
+        """直接创建一个Entity客户端"""
+        if create_info.HasField('client_info_cache'):
+            client_info = _B_PB2.ClientInfo()
+            client_info.ParseFromString(create_info.client_info_cache)
+            client_proxy = ClientProxy(None, client_info)
+            entity.set_client(client_proxy)
+
+    def _on_create_entity_fromdb(self, entity, create_info):
+        if not entity:
+            self.logger.error(
+                    'PreEntity._on_create_entity_fromdb: create from db failed')
+            self.destroy()
+            return
+
+        self._create_entity_client(entity, create_info)
+        mailbox = _C_PB2.EntityMailbox()
+        mailbox.server_info.CopyFrom(create_info.src_server)
+        mailbox.entity_id = entity.entity_id
+        gate_proxy = self._get_gate_proxy()
+        if not gate_proxy:
+            self.logger.error(
+                    'PreEntity._on_create_entity_fromdb: find gate proxy fail')
+            self.destroy()
+            return
+        gate_proxy.create_real_entity_successed(mailbox)
+        self.destroy()
+
+class PostEntity(ServerEntity):
+    pass
