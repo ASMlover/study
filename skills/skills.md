@@ -1,7 +1,6 @@
 # **Skills(小技巧)**
 ***
-    主要记录了各种编程的小技巧或者小知识点
-
+  * 记录各种编程的小技巧或者工具使用小知识
 
 ## **1. 函数调用约定(MSVC)**
         int add(int a,  int b)
@@ -28,8 +27,6 @@
     2) 以__stdcall调用约定编译后的函数为_add@8 (_函数名@参数的总字节数)
     3) 参见例子 ./call-convention/main.c
 
-
-
 ## **2. 编译时候指定任意后缀的文件**
 > ### **2.1 引子**
         查看STLport的源代码的时候发现有.c后缀的文件, 单文件中使用的是C++语法
@@ -40,8 +37,6 @@
     1) MSVC下有个编译选项/Tp, 指定文件按C++编译
     2) MSVC下有个编译选项/Tc, 指定文件按C编译
     3) GCC下有个编译选项 -x language, 可以在language指定具体文件
-
-
 
 ## **3. git配置**
 > ### **3.1 配置颜色**
@@ -99,17 +94,16 @@
       df = difftool
     [diff]
       tool = vimdiff
-    [difftoll]
+    [difftool]
       prompt = false
-
+    [push]
+      default = current
 
 ## **4. 好玩儿**
 > ### **4.1 一行代码将浏览器变为记事本**
     1) 在浏览器地址栏输入:
        data:text/html, <html contenteditable>
     2) 由这一行代码引起的头脑风暴, [请查看](http://www.oschina.net/news/37360/one-line-code-online-editor)
-
-
 
 ## **5. Windows路径转换**
 > ### **5.1 在命令行下从一个地方转到另一个地方**
@@ -126,8 +120,6 @@
         另外一种方法是使用start命令(进入当前目录):
         C:\> start .
 
-
-
 ## **6. 新安装的动态库在系统中找不到(Linux)**
         下面的例子以libzmq为例, 系统中新安装了libzmq的动态库到/usr/local/lib
     下, 但是在程序运行的时候却不能加载;
@@ -139,15 +131,10 @@
         另外新安装的共享库, 找不到的情况下还需要运行sudo ldconfig来配置动态
     库的环境
 
-
-
-
 ## **7. 玩家二进制数据升级的问题**
     当涉及玩家的二进制数据升级的时候, 可以对玩家的数据打上版本的标记, 升级的
     时候直接写两套代码分别处理不同版本的数据信息;
     这样就可以处理不管是在数据结构的尾部增加还是在中间增加的玩家数据了;
-
-
 
 ## **8. 网络库Message Queue设计**
     可以设计两个队列, 各个工作线程将读取的数据推送到一个队列, 然后逻辑主线程
@@ -161,8 +148,6 @@
     2. 写优先 - 写队列满了之后再翻转两个数据队列
     3. 如果读队列中的数据没有取完, 而写队列满的情况, 后续来的数据丢掉
 
-
-
 ## **9. MySQL datetime转换为time_t**
 > ### **在MySQL中转换**
     SELECT UNIT_TIMESTAMP(`time`) FROM `table_name`;
@@ -173,15 +158,11 @@
     strptime(src_time_str, "%Y-%m-%d %H:%M:%s", &tm_out);
     time_t t = mktime(&tm_out);
 
-
-
 ## **10. g++编译C++11**
     需要加上编译选项-std=c++0x
 > ### **常用的C++11特性**
     1. shared_ptr
         在<memory>头文件中, 在命名空间std下面;
-
-
 
 ## **11. 递归删除某类型的文件**
     我们以orig文件类型为例子
@@ -196,12 +177,8 @@
     5. "-exec":           后面跟一个执行命令, 将find出的文件或目录执行该命令
                           然后再跟{}, 一个空格, 一个\, 最后是一个分号;
 
-
-
 ## **12. 64位数据**
     Windows下面__int64同Linux的long long有一个区别, 就是不支持位移操作;
-
-
 
 ## **13. 时间**
 > ### **Windows**
@@ -240,7 +217,6 @@
     #endif
     }
 
-
 ## **14. 类型转换**
     template <typename T>
     inline std::string ToString(const T& v) {
@@ -257,8 +233,6 @@
       s >> t;
       return t;
     }
-
-
 
 ## **15. VT100控制码**
     [0m     复位所有的颜色和文本属性
@@ -295,13 +269,10 @@
     [1J     清除当前行上面的每一行
     [2J     清除整个屏幕
 
-
 ## **16. 函数栈空间的大小**
     C/C++语言函数的栈空间是有限制的; Windows一般默认是1M;
     linux下查看栈空间大小:
       $ ulimit -a
-
-
 
 ## **17. GCC升级到4.8**
     $ sudo add-apt-repository ppa:ubuntu-toolchain-r/test
@@ -314,10 +285,8 @@
     $ sudo ln -s gcc-4.8 gcc
     $ sudo ln -s g++-4.8 g++
 
-
 ## **18. VS恢复默认设置和默认Layout**
 		工具->导入和导出设置->重置所有设置
-
 
 ## **19. FOIL二项式乘法**
     (a + b)(c + d) =>
