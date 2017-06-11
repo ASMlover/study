@@ -58,14 +58,34 @@
        使用git difftool可以使用vimdiff来diff
 > ### **3.2 编辑器配置**
     git config --global core.editor 'vim'
-> ### **3.3 配置用户信息** ###
+> ### **3.3 配置用户信息**
     git config --global user.name "your name"
     git config --global user.email you@example.com
-> ### **3.4 一个git配置例子**
+> ### **3.4 crlf换行符**
+    Windows/Dos下换行为CRLF \r\n(CR回车, LF换行)
+    Linux/Unix下换行为LF \n
+    macOS下换行为CR \r
+    1) autocrlf
+      # 提交时转换为LF，检出时转换为CRLF
+      git config --global core.autocrlf true
+      # 提交时转换为LF，检出时不转换
+      git config --global core.autocrlf input
+      # 提交和检出均不进行转换
+      git config --global core.autocrlf false
+    2) safecrlf
+      # 拒绝提交包含混合换行符的文件
+      git config --global core.safecrlf true
+      # 允许提交包含混合换行符的文件
+      git config --global core.safecrlf false
+      # 提交包含混合换行符的文件会给出警告
+      git config --global core.safecrlf warn
+> ### **3.5 一个git配置例子**
     [color]
       ui = true
     [core]
       editor = vim
+      autocrlf = false
+      safecrlf = true
     [user]
       name = ASMlover
       email = asmlover@126.com
