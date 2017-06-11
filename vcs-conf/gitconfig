@@ -5,7 +5,8 @@
   ui = true
 [core]
   editor = vim
-  autocrlf = true
+  autocrlf = false
+  safecrlf = true
 [pretty]
   graph = %Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset
 [alias]
@@ -13,5 +14,10 @@
   ci = commit
   co = clone
   st = status
+  df = difftool
+[diff]
+  tool = vimdiff
+[difftool]
+  prompt = false
 [push]
   default = current
