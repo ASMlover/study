@@ -153,17 +153,17 @@
     - 首先修改bigvim.bat(32位平台)或bigvim64.bat(64位平台)
     - 这里我的例子(32-bit/64-bit), 然后使用`VS2015 x64 本机工具命令提示符`工具进入vim\src目录:
 ```shell
-	:: 下面的环境设置假设了编译器安装地址(请根据自己环境进行设置)
+    :: 下面的环境设置假设了编译器安装地址(请根据自己环境进行设置)
 
-	:: 设置VC2015 x86编译环境
+    :: 设置VC2015 x86编译环境
     \> D:\Tools\MSVC2015\VC\vcvarsall.bat x86
-	:: 设置VC2017 x86编译环境
-	\> D:\Tools\VS2017\VC\Auxiliary\Build\vcvarsall.bat x86
+    :: 设置VC2017 x86编译环境
+    \> D:\Tools\VS2017\VC\Auxiliary\Build\vcvarsall.bat x86
 
-	:: 设置VC2015 x64编译环境
+    :: 设置VC2015 x64编译环境
     \> D:\Tools\MSVC2015\VC\vcvarsall.bat amd64
-	:: 设置VC2017 x64编译环境
-	\> D:\Tools\VS2017\VC\Auxiliary\Build\vcvarsall.bat amd64
+    :: 设置VC2017 x64编译环境
+    \> D:\Tools\VS2017\VC\Auxiliary\Build\vcvarsall.bat amd64
 ```
 ```shell
 :: for x86 with VS2015
