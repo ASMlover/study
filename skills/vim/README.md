@@ -1,18 +1,14 @@
 # **README for vim**
 ***
 
-
 ## **说明**
     主要记录vim的相关操作技巧以及环境等...
     vim-demo是一个终端下的vim配置例子
-
     win-vim主要记录了windows下面gvim的配置信息
-
 
 ## **备份**
   * Windows => (kuaipan)
   * Linux(Ubuntu) => vim.tar.gz
-
 
 ## **将vim中关键字设置成非粗体模式**
     需要修改colorscheme对应的主题模式中的代码;
@@ -20,7 +16,6 @@
     在文件的最后添加上:
     hi Type gui=none
     hi Statement gui=none
-
 
 ## **Vim退格建失效的解决方案**
     具体请参见VIM帮助 :h bs
@@ -47,21 +42,15 @@
     2. 设置BOM头
        : set bomb
 
-
-
 ## **Vim获取文件名字及时间**
     获取当前的文件名字:
       expand("%:t")
     获取当前的时间:
       strftime("%y/%m:%d %H:%M:%S")
 
-
-
 ## **Vim使用"alt + 左右键"来移动标签**
     nn <silent> <M-left> :if tabpagenr() == 1\|exe "tabm ".tabpagenr("$")\|el\|exe "tabm ".(tabpagenr() - 2)\|en<CR>
     nn <silent> <M-right> :if tabpagenr() == tabpagenr("$")\|tabm 0\|el\|exe "tabm ".tabpagenr()\|en<CR>
-
-
 
 ## **Windows下将文件拖入vim的新标签页**
 > ### **1. 新建立一个bat**
@@ -84,15 +73,11 @@
         [HKEY_CLASSES_ROOT\*\Shell\Edit with &Vim\Command]值修改为:
         "D:\Tools\gvim\vim73\gvim.exe" -p --remote-tab-silent "%1"
 
-
 ## **VIM恢复文件关闭之前的光标位置**
     在.vimrc文件中添加
     if has("autocmd")
       au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
     endif
-
-
-
 
 ## **Ubuntu Install YouCompleteMe**
     $ sudo apt-get install build-essential cmake
@@ -100,13 +85,11 @@
     $ cd ~/.vim/bundle/YouCompleteMe/
     $ ./install.sh --clang-completer
 
-
 ## **YouCompleteMe in Windows**
   * Python2.7+
   * x64
   * Vim74 (support python 2.x)
   * Demo `Vim74.zip`
-
 
 ## **Vim 代码折叠**
     启用缩进折叠, 所有文本将按照缩进层次自动折叠:
@@ -128,7 +111,6 @@
       * zn 禁用折叠
       * zN 启用折叠
 
-
 ## **针对NERDTree和Ag插件映射快捷键**
     " keyboard shortcuts
     let mapleader=','
@@ -137,12 +119,10 @@
     nnoremap <silent> <leader>f :NERDTreeFind<CR>
     nnoremap <silent> <leader>] :TagbarToggle<CR>
 
-
 ## **常用设置**
  * `set autochdir` 自动转换到打开文件所在目录
  * `set autoread` 自动读取修改了的文件
  * `set autowrite` 自动保存文件(编译或切换文件)
-
 
 ## **配置vim-marching**
 > ### **For Windows**
@@ -153,7 +133,6 @@
  * 然后根据[vim-marching](https://github.com/osyo-manga/vim-marching)来配置
  * vim-marching的运行需要[vimproc.vim](https://github.com/Shougo/vimproc.vim)
  * 编译vimproc.vim
-
 
 ## **远程Terminal下Powerline Font**
 > ### **Font的安装**
@@ -168,27 +147,50 @@
     set guifont=PowerlineSymbols\ for\ Powerline
     let g:Powerline_symbols='fancy'
 
-
 ## **Windows下编译vim**
   * 下载最新的vim源代码(这里以vim74为例子)
   * 进入vim目录(vim\src)
     - 首先修改bigvim.bat(32位平台)或bigvim64.bat(64位平台)
     - 这里我的例子(32-bit/64-bit), 然后使用`VS2015 x64 本机工具命令提示符`工具进入vim\src目录:
 ```shell
-    :: 设置VC编译环境
-    \> D:\Tools\MSVC2015\VC\vcvarsall.bat
+	:: 下面的环境设置假设了编译器安装地址(请根据自己环境进行设置)
+
+	:: 设置VC2015 x86编译环境
+    \> D:\Tools\MSVC2015\VC\vcvarsall.bat x86
+	:: 设置VC2017 x86编译环境
+	\> D:\Tools\VS2017\VC\Auxiliary\Build\vcvarsall.bat x86
+
+	:: 设置VC2015 x64编译环境
+    \> D:\Tools\MSVC2015\VC\vcvarsall.bat amd64
+	:: 设置VC2017 x64编译环境
+	\> D:\Tools\VS2017\VC\Auxiliary\Build\vcvarsall.bat amd64
 ```
 ```shell
-:: for x86
+:: for x86 with VS2015
 :: command to build big Vim with OLE, Perl, Python, Ruby and Tcl
 SET VCDIR="D:\Tools\MSVC2015\VC\bin\"
 SET TOOLDIR=D:\Tools\
 %VCDIR%nmake -f Make_mvc.mak SDK_INCLUDE_DIR="C:\Program Files\Microsoft SDKs\Windows\v7.1A\Include" GUI=yes OLE=yes PYTHON3=%TOOLDIR%python35 DYNAMIC_PYTHON3=yes PYTHON3_VER=35 %1 IME=yes CSCOPE=yes
 ```
 ```shell
-:: for x64
+:: for x86 with VS2017
+:: command to build big Vim with OLE, Perl, Python, Ruby and Tcl
+SET VCDIR="D:\Tools\VS2017\VC\Tools\MSVC\14.10.25017\bin\HostX86\x86\"
+SET TOOLDIR=D:\Tools\
+%VCDIR%nmake -f Make_mvc.mak SDK_INCLUDE_DIR="C:\Program Files\Microsoft SDKs\Windows\v7.1A\Include" GUI=yes OLE=yes PYTHON3=%TOOLDIR%python35 DYNAMIC_PYTHON3=yes PYTHON3_VER=35 %1 IME=yes CSCOPE=yes
+```
+
+```shell
+:: for x64 with VS2015
 :: command to build big Vim with OLE, Perl, Python, Ruby and Tcl
 SET VCDIR="D:\Tools\MSVC2015\VC\bin\"
+SET TOOLDIR=D:\Tools\
+%VCDIR%nmake -f Make_mvc.mak SDK_INCLUDE_DIR="C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Include" CPU=AMD64 GUI=yes OLE=yes PYTHON3=%TOOLDIR%python35 DYNAMIC_PYTHON3=yes PYTHON3_VER=35 %1 IME=yes CSCOPE=yes
+```
+```shell
+:: for x64 with VS2017
+:: command to build big Vim with OLE, Perl, Python, Ruby and Tcl
+SET VCDIR="D:\Tools\VS2017\VC\Tools\MSVC\14.10.25017\bin\HostX64\x64\"
 SET TOOLDIR=D:\Tools\
 %VCDIR%nmake -f Make_mvc.mak SDK_INCLUDE_DIR="C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Include" CPU=AMD64 GUI=yes OLE=yes PYTHON3=%TOOLDIR%python35 DYNAMIC_PYTHON3=yes PYTHON3_VER=35 %1 IME=yes CSCOPE=yes
 ```
