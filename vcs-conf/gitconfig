@@ -2,16 +2,27 @@
   name = ASMlover
   email = asmlover@126.com
 [color]
+  branch = auto
+  diff = auto
+  interactive = auto
+  status = auto
   ui = true
 [core]
   editor = vim
-  autocrlf = true
+  ignorecase = false
+  autocrlf = false
+  safecrlf = true
 [pretty]
   graph = %Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset
 [alias]
-  lg = log --pretty=graph --graph --abbrev-commit --
+  ll = log --pretty=graph --graph --abbrev-commit --
   ci = commit
   co = clone
   st = status
+  df = difftool
+[diff]
+  tool = vimdiff
+[difftool]
+  prompt = false
 [push]
   default = current
