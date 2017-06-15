@@ -471,3 +471,87 @@ class PostEntity(ServerEntity):
         for msg in self.cache_messages:
             self._do_forward_message(msg)
         self.cache_messages = []
+
+class AvatarEntity(ServerEntity):
+    """玩家控制的Entity，是与客户端Entity相对应"""
+    def __init__(self, entity_id=None):
+        super(AvatarEntity, self).__init__(entity_id)
+        self.client = None
+
+    def set_client(self, client):
+        """绑定ClientProxy对象，以便与客户端Avatar互相通信"""
+        if self.client is not None:
+            self.client.set_owner(None)
+            self.client.notify_disconnect_client()
+        self.client = client
+        if self.client is not None:
+            self.client.set_owner(self)
+
+    def destroy_client(self):
+        """销毁用ClientProxy对象绑定的对象，不触发notify_disconnect_client"""
+        if self.client is None:
+            return
+        self.client.destroy()
+        self.client = None
+
+    def on_transfered(self):
+        """在Entity迁移到新Game上时在on_become_player之前调用"""
+        pass
+
+    def on_become_player(self):
+        """Entity成为玩家可控制的Entity时调用"""
+        self.client.create_entity(self.__class__.__name__,
+                self.get_persistent_dict(), self.entity_id)
+        self.client.call_client_method('become_player', {})
+
+    def gave_client_to(self, other):
+        """将ClientProxy移交给其他Entity"""
+        other.set_client(self.client)
+        other.on_become_player()
+        self.client = None
+
+    def destroy(self, callback=None):
+        """销毁AvatarEntity"""
+        if self.client is not None:
+            self.client.destroy()
+            self.client = None
+        super(AvatarEntity, self).destroy(callback)
+
+    def on_lose_client(self):
+        """客户端断开连接的回调"""
+        self.destroy()
+
+    def on_client_message(self, method, entity_id, reliable):
+        """有来自对应客户端的RPC消息"""
+        pass
+
+    def _on_create_pre_entity(self,
+            status, dst_server, pre_entity_id, content, callback):
+        if not status:
+            self._on_transfer_result(status, callback)
+        else:
+            self._cache_client_message(dst_server,
+                    pre_entity_id, content, callback)
+
+    def _cache_client_message(self,
+            dst_server, pre_entity_id, content, callback):
+        """缓存客户端发送的RPC消息"""
+        msg = _B_PB2.ClientBindMessage()
+        msg.client_info.CopyFrom(self.client.client_info)
+        msg.server_info.CopyFrom(dst_server)
+        msg.entity_id = self.entity_id
+
+        def _cache_client_message_callback(status):
+            if not status:
+                self.logger.error(
+                        'AvatarEntity._cache_client_message: cache RPC failed')
+                self._on_transfer_result(status, callback)
+                return
+            self._do_transfer_to_server(dst_server,
+                    pre_entity_id, content, callback)
+            client = self.client
+            self.client = None
+            self.destroy()
+            self._create_post_entity(dst_server, msg, client)
+
+        self.client.transfer_client(msg, callback)
