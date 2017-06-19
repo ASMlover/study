@@ -29,6 +29,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"sync"
 	"os"
 )
 
@@ -41,15 +42,44 @@ func fill_buffer(buf []byte, buflen int, fill byte) {
 func cover_usage() {
 	fmt.Printf("Cover - cover the disk\n\n")
 	fmt.Printf("Usage:\n")
-	fmt.Printf("\t--driver - setting the target disk driver(D:/E:, ect...)\n")
-	fmt.Printf("\t--fill   - setting the buffer fill value(0/1/...)\n")
-	fmt.Printf("\t--buflen - setting the length of buffer\n")
+	fmt.Printf("\t--driver   - setting the target disk driver(D:/E:, ect...)\n")
+	fmt.Printf("\t--fill     - setting the buffer fill value(0/1/...)\n")
+	fmt.Printf("\t--buflen   - setting the length of buffer\n")
+	fmt.Printf("\t--jobcount - setting the goroutines count\n")
+}
+
+func cover_disk(wg *sync.WaitGroup, cover_fname string, buflen int, fill int) {
+	defer wg.Done()
+
+	f, _ := os.OpenFile(cover_fname,
+		os.O_CREATE | os.O_WRONLY | os.O_APPEND, 0644)
+	defer f.Close()
+
+	buf := make([]byte, buflen)
+	fill_buffer(buf, buflen, uint8(fill))
+
+	count := 1
+	for true {
+		n, err := f.Write(buf)
+		if err != nil {
+			if buflen <= 1 {
+				break
+			}
+			buflen /= 2
+			buf := make([]byte, buflen)
+			fill_buffer(buf, buflen, uint8(fill))
+		} else {
+			fmt.Printf("<%s>(%d) Wrote (%d) bytes\n", cover_fname, count, n)
+			count++
+		}
+	}
 }
 
 func main() {
 	disk_driver := flag.String("driver", "E:", "Target disk driver")
 	fill := flag.Int("fill", 0, "Buffer fill byte")
 	buflen := flag.Int("buflen", 4 * 1024 * 1024, "Default buffer length")
+	jobcount := flag.Int("jobcount", 5, "Defualt goroutines count")
 	flag.Parse()
 
 	if flag.NFlag() <= 1 {
@@ -57,23 +87,12 @@ func main() {
 		return
 	}
 
-	cover_fname := *disk_driver + "/COVER.BIN"
-	fmt.Printf("cover_fname: %s\n", cover_fname)
-
-	f, _ := os.OpenFile(cover_fname,
-		os.O_CREATE | os.O_WRONLY | os.O_APPEND, 0644)
-	defer f.Close()
-
-	buf := make([]byte, *buflen)
-	fill_buffer(buf, *buflen, uint8(*fill))
-	count := 0
-	for true {
-		n, err := f.Write(buf)
-		if err != nil {
-			os.Exit(0)
-		}
-		count++
-		fmt.Printf("[%d] Wrote %d bytes\n", count, n)
-		f.Sync()
+	wg := sync.WaitGroup{}
+	for i := 0; i < *jobcount; i++ {
+		wg.Add(1)
+		cover_fname := fmt.Sprintf("%s/COVER_%d.BIN", *disk_driver, i + 1)
+		fmt.Printf("cover_fname: %s\n", cover_fname)
+		go cover_disk(&wg, cover_fname, *buflen, *fill)
 	}
+	wg.Wait()
 }
