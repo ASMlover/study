@@ -26,23 +26,15 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 BIN_OUT	= echo
-GO	= go 
-RM	= rm 
-SRC	= echo.go 
+GO	= go
+RM	= rm
+SRC	= echo.go
 
-
-
-all: bin 
-
+all: bin
 bin: $(BIN_OUT)
-
-rebuild: clean all 
-
+rebuild: clean all
 clean:
 	$(RM) $(BIN_OUT)
-
-
-
 
 $(BIN_OUT): $(SRC)
 	$(GO) build -o $@ $^
