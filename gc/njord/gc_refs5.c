@@ -34,21 +34,18 @@
 
 /* TODO: there's some bugs of this gc, need fix it */
 
-#define Nj_ASGC(ob)     ((GCHead*)(ob) - 1)
-#define Nj_REFCNT(ob)   (Nj_ASGC(ob)->refcnt)
-#define Nj_DIRTY(ob)    (Nj_ASGC(ob)->dirty)
-#define Nj_NEWREF(ob)   (Nj_REFCNT(ob) = 0)
-#define Nj_LOGPTR(ob)   (Nj_ASGC(ob)->logptr)
-#define Nj_NEWLOG(ob)   (Nj_LOGPTR(ob) = NULL)
+#define Nj_ASGC(ob)       ((GCHead*)(ob) - 1)
+#define Nj_REFCNT(ob)     (Nj_ASGC(ob)->refcnt)
+#define Nj_DIRTY(ob)      (Nj_ASGC(ob)->dirty)
+#define Nj_NEWREF(ob)     (Nj_REFCNT(ob) = 0)
+#define Nj_CLEAN          (-1)
+#define Nj_INITDIRTY(ob)  (Nj_ASGC(ob)->dirty = Nj_CLEAN)
+#define Nj_ISDIRTY(ob)    (Nj_ASGC(ob)->dirty != Nj_CLEAN)
 
-typedef struct _log {
-  struct _log* nextptr;
-  NjObject* obj;
-} LogPtr;
 
 typedef struct _gc {
   Nj_ssize_t refcnt;
-  LogPtr* logptr;
+  Nj_int_t dirty;
 } GCHead;
 
 typedef struct _vm {
@@ -58,18 +55,13 @@ typedef struct _vm {
   Nj_int_t maxobj;
 } NjVMObject;
 
-typedef struct _logqueue {
-  LogPtr* log[Nj_VMSTACK];
-  Nj_int_t logcnt;
-} LogQueue;
+typedef struct _logentry {
+  NjObject* log[Nj_VMSTACK];
+  Nj_int_t count;
+} LogEntry;
 
 static NjSet* zct; /* zero counting table */
-static LogQueue logqueue;
-
-static void
-_njcoalesced_logqueue_init(void) {
-  memset(&logqueue, 0, sizeof(logqueue));
-}
+static LogEntry logentry;
 
 static void
 _njcoalesced_reclaim(NjObject* vm, NjObject* obj) {
@@ -80,11 +72,20 @@ _njcoalesced_reclaim(NjObject* vm, NjObject* obj) {
 }
 
 static void
-_njcoalesced_log_add(LogPtr** entry, NjObject* obj) {
-  LogPtr* log = (LogPtr*)njmem_malloc(sizeof(LogPtr));
-  log->obj = obj;
-  log->nextptr = *entry;
-  *entry = log;
+_njcoalesced_logentry_init(void) {
+  memset(&logentry, 0, sizeof(logentry));
+}
+
+static void
+_njcoalesced_logentry_append(NjObject* obj) {
+  logentry.log[logentry.count++] = obj;
+}
+
+static Nj_int_t
+_njcoalesced_logentry_append_commit(NjObject* obj) {
+  Nj_int_t i = logentry.count;
+  logentry.log[logentry.count++] = obj;
+  return i;
 }
 
 static void
@@ -100,31 +101,30 @@ _njcoalesced_delref(NjObject* vm, NjObject* obj) {
 
 static Nj_bool_t
 _njcoalesced_isdirty(NjObject* obj) {
-  return Nj_LOGPTR(obj) != NULL;
+  return Nj_ISDIRTY(obj);
 }
 
 static void
-_njcoalesced_setdirty(NjObject* obj, LogPtr* entry) {
-  Nj_LOGPTR(obj) = entry;
+_njcoalesced_setdirty(NjObject* obj, Nj_int_t solt) {
+  Nj_ASGC(obj)->dirty = solt;
 }
 
 static void
 _njcoalesced_log(NjObject* obj) {
-#define Nj_LOGAPPEND(ob) do {\
+#define Nj_LOGAPPEND(ob) {\
   if ((ob) != NULL)\
-    _njcoalesced_log_add(entry, (ob));\
-} while (0)
+    _njcoalesced_logentry_append(ob);\
+}
 
-  LogPtr** entry = &Nj_LOGPTR(obj);
-  if (*entry == NULL)
-    entry = &logqueue.log[logqueue.logcnt++];
+  if (obj == NULL)
+    return;
   if (Nj_ISPAIR(obj)) {
     Nj_LOGAPPEND(njord_pairgetter(obj, "head"));
     Nj_LOGAPPEND(njord_pairgetter(obj, "tail"));
   }
   if (!_njcoalesced_isdirty(obj)) {
-    _njcoalesced_log_add(entry, obj);
-    _njcoalesced_setdirty(obj, *entry);
+    Nj_int_t solt = _njcoalesced_logentry_append_commit(obj);
+    _njcoalesced_setdirty(obj, solt);
   }
 
 #undef Nj_LOGAPPEND
@@ -143,29 +143,31 @@ _njcoalesced_incnew(NjObject* obj) {
 }
 
 static void
-_njcoalesced_decold(LogPtr* entry) {
-  while (entry != NULL) {
-    LogPtr* node = entry;
-    NjObject* obj = node->obj;
-    entry = entry->nextptr;
-    if (obj != NULL && --Nj_REFCNT(obj))
-      njset_add(zct, obj);
-    njmem_free(node, sizeof(LogPtr));
+_njcoalesced_decold(Nj_int_t entry) {
+#define Nj_DECOBJ(ob) {\
+  if ((ob) != NULL && --Nj_REFCNT(ob) == 0) njset_add(zct, (ob));\
+}
+
+  NjObject* obj = logentry.log[entry];
+  if (obj != NULL && Nj_ISPAIR(obj)) {
+    Nj_DECOBJ(njord_pairgetter(obj, "head"));
+    Nj_DECOBJ(njord_pairgetter(obj, "tail"));
   }
+
+#undef Nj_DECOBJ
 }
 
 static void
 _njcoalesced_process_logqueue(void) {
-  for (int i = 0; i < logqueue.logcnt; ++i) {
-    LogPtr* entry = logqueue.log[i];
-    NjObject* obj = entry->obj;
+  for (Nj_int_t i = 0; i < logentry.count; ++i) {
+    NjObject* obj = logentry.log[i];
     if (_njcoalesced_isdirty(obj)) {
-      Nj_LOGPTR(obj) = NULL;
+      Nj_INITDIRTY(obj);
       _njcoalesced_incnew(obj);
-      _njcoalesced_decold(entry);
+      _njcoalesced_decold(i);
     }
   }
-  _njcoalesced_logqueue_init();
+  _njcoalesced_logentry_init();
 }
 
 static void
@@ -184,7 +186,7 @@ _njcoalesced_newint(NjObject* vm, Nj_int_t value) {
   NjIntObject* obj = (NjIntObject*)njord_newint(
       sizeof(GCHead), value, NULL, NULL);
   Nj_NEWREF(obj);
-  Nj_NEWLOG(obj);
+  Nj_INITDIRTY(obj);
   ++Nj_VM(vm)->objcnt;
   njset_add(zct, Nj_ASOBJ(obj));
   return obj;
@@ -200,20 +202,20 @@ static NjPairObject*
 _njcoalesced_newpair(NjObject* vm) {
   NjPairObject* obj = (NjPairObject*)njord_newpair(sizeof(GCHead), NULL, NULL);
   Nj_NEWREF(obj);
-  Nj_NEWLOG(obj);
+  Nj_INITDIRTY(obj);
   ++Nj_VM(vm)->objcnt;
   njset_add(zct, Nj_ASOBJ(obj));
-
-  if (!_njcoalesced_isdirty(Nj_ASOBJ(obj)))
-    _njcoalesced_log(Nj_ASOBJ(obj));
-
   return obj;
 }
 
 static NjObject*
 njcoalesced_pushpair(NjObject* vm) {
-  return njvm_pushpair(vm,
+  NjObject* obj = njvm_pushpair(vm,
       Nj_VM(vm)->objcnt >= Nj_VM(vm)->maxobj, _njcoalesced_newpair, NULL);
+
+  if (!_njcoalesced_isdirty(obj))
+    _njcoalesced_log(obj);
+  return obj;
 }
 
 static void
@@ -282,7 +284,7 @@ _njcoalesced_vm_init(NjObject* vm) {
   Nj_VM(vm)->objcnt = 0;
   Nj_VM(vm)->maxobj = Nj_GC_MAXTHRESHOLD;
   zct = njset_create();
-  _njcoalesced_logqueue_init();
+  _njcoalesced_logentry_init();
 }
 
 NjObject*

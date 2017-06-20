@@ -88,7 +88,6 @@ njrefs_pushint(NjObject* vm, Nj_int_t value) {
 
 static NjObject*
 njrefs_pushpair(NjObject* vm) {
-
   NjPairObject* obj = (NjPairObject*)njord_newpair(sizeof(GCHead), NULL, NULL);
   NjObject* tail = _njrefs_pop((NjVMObject*)vm);
   NjObject* head = _njrefs_pop((NjVMObject*)vm);
