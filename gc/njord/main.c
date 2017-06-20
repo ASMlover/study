@@ -119,6 +119,7 @@ njord_gc_sample1(void) {
   njord_pop(vm);
 
   njord_free(vm);
+  njmem_collect();
 }
 
 static void
@@ -144,6 +145,7 @@ njord_gc_sample2(void) {
   njord_pop(vm);
 
   njord_free(vm);
+  njmem_collect();
 }
 
 static void
@@ -173,6 +175,7 @@ njord_gc_sample3(void) {
   njord_pop(vm);
 
   njord_free(vm);
+  njmem_collect();
 }
 
 static void
@@ -194,6 +197,7 @@ njord_gc_sample4(void) {
       njord_pop(vm);
   }
   njord_free(vm);
+  njmem_collect();
 }
 
 static void
