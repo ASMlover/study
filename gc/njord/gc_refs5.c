@@ -149,7 +149,7 @@ _njcoalesced_decold(Nj_int_t entry) {
 }
 
   NjObject* obj = logentry.log[entry];
-  if (obj != NULL && Nj_ISPAIR(obj)) {
+  if (obj != NULL && Nj_REFCNT(obj) > 0 && Nj_ISPAIR(obj)) {
     Nj_DECOBJ(njord_pairgetter(obj, "head"));
     Nj_DECOBJ(njord_pairgetter(obj, "tail"));
   }
@@ -158,7 +158,7 @@ _njcoalesced_decold(Nj_int_t entry) {
 }
 
 static void
-_njcoalesced_process_logqueue(void) {
+_njcoalesced_process_logentry(void) {
   for (Nj_int_t i = 0; i < logentry.count; ++i) {
     NjObject* obj = logentry.log[i];
     if (_njcoalesced_isdirty(obj)) {
@@ -246,7 +246,7 @@ static void
 njcoalesced_collect(NjObject* vm) {
   Nj_int_t old_objcnt = Nj_VM(vm)->objcnt;
 
-  _njcoalesced_process_logqueue();
+  _njcoalesced_process_logentry();
   njset_traverse(zct, _njcoalesced_sweepzct_visit, vm);
 
   if (Nj_VM(vm)->maxobj < Nj_GC_MAXTHRESHOLD) {
