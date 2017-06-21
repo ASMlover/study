@@ -42,7 +42,6 @@
 #define Nj_INITDIRTY(ob)  (Nj_ASGC(ob)->dirty = Nj_CLEAN)
 #define Nj_ISDIRTY(ob)    (Nj_ASGC(ob)->dirty != Nj_CLEAN)
 
-
 typedef struct _gc {
   Nj_ssize_t refcnt;
   Nj_int_t dirty;
@@ -78,13 +77,15 @@ _njcoalesced_logentry_init(void) {
 
 static void
 _njcoalesced_logentry_append(NjObject* obj) {
-  logentry.log[logentry.count++] = obj;
+  if (obj != NULL)
+    logentry.log[logentry.count++] = obj;
 }
 
 static Nj_int_t
 _njcoalesced_logentry_append_commit(NjObject* obj) {
   Nj_int_t i = logentry.count;
-  logentry.log[logentry.count++] = obj;
+  if (obj != NULL)
+    logentry.log[logentry.count++] = obj;
   return i;
 }
 
@@ -111,23 +112,16 @@ _njcoalesced_setdirty(NjObject* obj, Nj_int_t solt) {
 
 static void
 _njcoalesced_log(NjObject* obj) {
-#define Nj_LOGAPPEND(ob) {\
-  if ((ob) != NULL)\
-    _njcoalesced_logentry_append(ob);\
-}
-
-  if (obj == NULL)
-    return;
-  if (Nj_ISPAIR(obj)) {
-    Nj_LOGAPPEND(njord_pairgetter(obj, "head"));
-    Nj_LOGAPPEND(njord_pairgetter(obj, "tail"));
+  if (obj != NULL) {
+    if (Nj_ISPAIR(obj)) {
+      _njcoalesced_logentry_append(njord_pairgetter(obj, "head"));
+      _njcoalesced_logentry_append(njord_pairgetter(obj, "tail"));
+    }
+    if (!_njcoalesced_isdirty(obj)) {
+      Nj_int_t solt = _njcoalesced_logentry_append_commit(obj);
+      _njcoalesced_setdirty(obj, solt);
+    }
   }
-  if (!_njcoalesced_isdirty(obj)) {
-    Nj_int_t solt = _njcoalesced_logentry_append_commit(obj);
-    _njcoalesced_setdirty(obj, solt);
-  }
-
-#undef Nj_LOGAPPEND
 }
 
 static void
