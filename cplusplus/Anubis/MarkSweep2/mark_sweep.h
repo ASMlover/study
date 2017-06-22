@@ -50,7 +50,7 @@ class MarkSweep : private Chaos::UnCopyable {
   std::size_t obj_count_{};
 
   static constexpr int as_index(std::size_t n) {
-    return (n + 1) / kAlignment;
+    return static_cast<int>((n + 1) / kAlignment);
   }
 
   static constexpr std::size_t as_bytes(int index) {
