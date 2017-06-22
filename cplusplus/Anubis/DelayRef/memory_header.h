@@ -38,10 +38,10 @@ struct MemoryHeader {
   bool is_invalid(void) const { return _type == INVALID; }
   void set_type(std::uint8_t type) { _type = type; }
   std::uint8_t type(void) const { return _type; }
-  std::uint8_t inc_ref(void) { return ++_ref; }
-  std::uint8_t dec_ref(void) { return --_ref; }
-  void set_ref(std::uint8_t ref) { _ref = ref; }
-  std::uint8_t ref(void) const { return _ref; }
+  std::uint32_t inc_ref(void) { return ++_ref; }
+  std::uint32_t dec_ref(void) { return --_ref; }
+  void set_ref(std::uint32_t ref) { _ref = ref; }
+  std::uint32_t ref(void) const { return _ref; }
 };
 
 }
