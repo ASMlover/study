@@ -30,26 +30,26 @@
 
 namespace gc {
 
-void RefSweep::inc_ref(BaseObject* obj) {
-  if (obj != nullptr)
-    inc_objects_.push(obj);
+void RefSweep::inc(BaseObject* ref) {
+  if (ref != nullptr)
+    inc_objects_.push(ref);
 }
 
-void RefSweep::dec_ref(BaseObject* obj) {
-  if (obj != nullptr)
-    dec_objects_.push(obj);
+void RefSweep::dec(BaseObject* ref) {
+  if (ref != nullptr)
+    dec_objects_.push(ref);
 }
 
-void RefSweep::write(BaseObject* pair, BaseObject* obj, bool is_first) {
-  auto* dest = as_pair(pair);
-  inc_ref(obj);
+void RefSweep::write(BaseObject* p, BaseObject* obj, bool is_first) {
+  auto* pair = as_pair(p);
+  inc(obj);
   if (is_first) {
-    dec_ref(dest->first());
-    dest->set_first(obj);
+    dec(pair->first());
+    pair->set_first(obj);
   }
   else {
-    dec_ref(dest->second());
-    dest->set_second(obj);
+    dec(pair->second());
+    pair->set_second(obj);
   }
 }
 
@@ -65,8 +65,7 @@ void RefSweep::scan_counting(void) {
   while (!dec_objects_.empty()) {
     auto* obj = dec_objects_.top();
     dec_objects_.pop();
-    obj->dec_ref();
-    if (obj->ref() == 0 && obj->is_pair()) {
+    if (obj->dec_ref() == 0 && obj->is_pair()) {
       auto* first = as_pair(obj)->first();
       if (first != nullptr)
         dec_objects_.push(first);
@@ -116,7 +115,7 @@ BaseObject* RefSweep::create_int(int value) {
 
   objects_.push_back(obj);
   roots_.push_back(obj);
-  inc_ref(obj);
+  inc(obj);
 
   return obj;
 }
@@ -133,7 +132,7 @@ BaseObject* RefSweep::create_pair(BaseObject* first, BaseObject* second) {
 
   objects_.push_back(obj);
   roots_.push_back(obj);
-  inc_ref(obj);
+  inc(obj);
 
   return obj;
 }
@@ -141,7 +140,7 @@ BaseObject* RefSweep::create_pair(BaseObject* first, BaseObject* second) {
 BaseObject* RefSweep::release_object(void) {
   auto* obj = roots_.back();
   roots_.pop_back();
-  dec_ref(obj);
+  dec(obj);
   return obj;
 }
 
