@@ -67,3 +67,4 @@ link_directories(${PROJECT_SOURCE_DIR}/../../../Chaos/cmake-build/Chaos)
 
 add_subdirectory(MarkSweep)
 add_subdirectory(MarkSweep2)
+add_subdirectory(TraceSweep)
