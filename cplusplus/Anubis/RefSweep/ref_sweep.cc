@@ -40,6 +40,19 @@ void RefSweep::dec_ref(BaseObject* obj) {
     dec_objects_.push(obj);
 }
 
+void RefSweep::write(BaseObject* pair, BaseObject* obj, bool is_first) {
+  auto* dest = as_pair(pair);
+  inc_ref(obj);
+  if (is_first) {
+    dec_ref(dest->first());
+    dest->set_first(obj);
+  }
+  else {
+    dec_ref(dest->second());
+    dest->set_second(obj);
+  }
+}
+
 void RefSweep::apply_increments(void) {
   while (!inc_objects_.empty()) {
     auto* obj = inc_objects_.top();
@@ -113,14 +126,10 @@ BaseObject* RefSweep::create_pair(BaseObject* first, BaseObject* second) {
     collect_counting();
 
   auto* obj = new Pair();
-  if (first != nullptr) {
-    inc_ref(first);
-    obj->set_first(first);
-  }
-  if (second != nullptr) {
-    inc_ref(second);
-    obj->set_second(second);
-  }
+  if (first != nullptr)
+    write(obj, first, true);
+  if (second != nullptr)
+    write(obj, second, false);
 
   objects_.push_back(obj);
   roots_.push_back(obj);

@@ -47,6 +47,7 @@ class RefSweep : private Chaos::UnCopyable {
 
   void inc_ref(BaseObject* obj);
   void dec_ref(BaseObject* obj);
+  void write(BaseObject* pair, BaseObject* obj, bool is_first = true);
   void apply_increments(void);
   void scan_counting(void);
   void sweep_counting(void);
