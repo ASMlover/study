@@ -41,13 +41,13 @@ void TraceSweep::scan_tracing(std::stack<BaseObject*>& trace_objects) {
     trace_objects.pop();
     obj->inc_ref();
     if (obj->ref() == 1 && obj->is_pair()) {
-      auto* first = as_pair(obj)->first();
-      if (first != nullptr)
-        trace_objects.push(first);
+      auto append_fn = [&trace_objects](BaseObject* obj) {
+        if (obj != nullptr)
+          trace_objects.push(obj);
+      };
 
-      auto* second = as_pair(obj)->second();
-      if (second != nullptr)
-        trace_objects.push(second);
+      append_fn(as_pair(obj)->first());
+      append_fn(as_pair(obj)->second());
     }
   }
 }

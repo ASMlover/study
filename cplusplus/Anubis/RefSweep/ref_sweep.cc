@@ -66,13 +66,13 @@ void RefSweep::scan_counting(void) {
     auto* obj = dec_objects_.top();
     dec_objects_.pop();
     if (obj->dec_ref() == 0 && obj->is_pair()) {
-      auto* first = as_pair(obj)->first();
-      if (first != nullptr)
-        dec_objects_.push(first);
+      auto append_fn = [this](BaseObject* obj) {
+        if (obj != nullptr)
+          dec_objects_.push(obj);
+      };
 
-      auto* second = as_pair(obj)->second();
-      if (second != nullptr)
-        dec_objects_.push(second);
+      append_fn(as_pair(obj)->first());
+      append_fn(as_pair(obj)->second());
     }
   }
 }
