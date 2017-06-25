@@ -139,9 +139,9 @@ BaseObject* RefMemory::create_pair(BaseObject* first, BaseObject* second) {
 
   auto* obj = new (alloc(sizeof(Pair))) Pair();
   if (first != nullptr)
-    write(obj->first(), first, true);
+    write(obj, first, true);
   if (second != nullptr)
-    write(obj->second(), second, false);
+    write(obj, second, false);
 
   roots_.push_back(obj);
   objects_.push_back(obj);
