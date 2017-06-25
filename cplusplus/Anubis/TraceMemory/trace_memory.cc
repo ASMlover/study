@@ -32,15 +32,15 @@
 namespace gc {
 
 void* TraceMemory::alloc(std::size_t n) {
-  return Chaos::MemoryPool::get_instace().alloc(n);
+  return Chaos::MemoryPool::get_instance().alloc(n);
 }
 
 void TraceMemory::dealloc(BaseObject* obj) {
   if (obj != nullptr) {
     if (obj->is_int())
-      Chaos::MemoryPool::get_instace().dealloc(obj, sizeof(Int));
+      Chaos::MemoryPool::get_instance().dealloc(obj, sizeof(Int));
     else if (obj->is_pair())
-      Chaos::MemoryPool::get_instace().dealloc(obj, sizeof(Pair));
+      Chaos::MemoryPool::get_instance().dealloc(obj, sizeof(Pair));
   }
 }
 
