@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <Chaos/Except/SystemError.h>
+#include "object.h"
 #include "mark_sweep.h"
 
 namespace gc {
@@ -75,8 +76,8 @@ byte_t* MarkSweep::alloc(std::size_t& n) {
   return nullptr;
 }
 
-BaseObject* MarkSweep::new_object(
-    std::size_t n, const std::function<BaseObject* (byte_t*)>& fn) {
+BaseObject* MarkSweep::create_object(
+      std::size_t n, std::function<BaseObject* (byte_t*)>&& fn) {
   n = roundup(n);
   byte_t* p = alloc(n);
   if (p == nullptr) {
@@ -86,7 +87,7 @@ BaseObject* MarkSweep::new_object(
       Chaos::__chaos_throw_exception("out of memory");
   }
 
-  BaseObject* obj = fn(p);
+  auto* obj = fn(p);
   obj->set_size(n);
   roots_.push_back(obj);
   ++obj_count_;
@@ -178,16 +179,17 @@ void MarkSweep::collect(void) {
     << "[" << obj_count_ << "] remaining." << std::endl;
 }
 
-BaseObject* MarkSweep::create_int(int value) {
-  return new_object(sizeof(Int), [value](byte_t* p) -> BaseObject* {
-        Int* obj = new (p) Int;
+BaseObject* MarkSweep::put_in(int value) {
+  return create_object(sizeof(Int), [value](byte_t* p) -> BaseObject* {
+        auto* obj = new (p) Int();
         obj->set_value(value);
         return obj;
       });
 }
-BaseObject* MarkSweep::create_pair(BaseObject* first, BaseObject* second) {
-  return new_object(sizeof(Pair), [first, second](byte_t* p) -> BaseObject* {
-        Pair* obj = new (p) Pair;
+
+BaseObject* MarkSweep::put_in(BaseObject* first, BaseObject* second) {
+  return create_object(sizeof(Pair), [first, second](byte_t* p) -> BaseObject* {
+        auto* obj = new (p) Pair();
         if (first != nullptr)
           obj->set_first(first);
         if (second != nullptr)
@@ -196,10 +198,10 @@ BaseObject* MarkSweep::create_pair(BaseObject* first, BaseObject* second) {
       });
 }
 
-BaseObject* MarkSweep::release_object(void) {
-  auto* r = roots_.back();
+BaseObject* MarkSweep::fetch_out(void) {
+  auto* obj = roots_.back();
   roots_.pop_back();
-  return r;
+  return obj;
 }
 
 }

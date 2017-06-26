@@ -29,9 +29,11 @@
 #include <functional>
 #include <vector>
 #include <stack>
-#include "object.h"
+#include <Chaos/Types.h>
 
 namespace gc {
+
+class BaseObject;
 
 class MarkSweep : private Chaos::UnCopyable {
   byte_t* heaptr_{};
@@ -45,8 +47,8 @@ class MarkSweep : private Chaos::UnCopyable {
   ~MarkSweep(void);
 
   byte_t* alloc(std::size_t& n);
-  BaseObject* new_object(
-      std::size_t n, const std::function<BaseObject* (byte_t*)>& fn);
+  BaseObject* create_object(
+      std::size_t n, std::function<BaseObject* (byte_t*)>&& fn);
   void mark(void);
   void mark_from_roots(void);
   void sweep(void);
@@ -54,11 +56,9 @@ public:
   static MarkSweep& get_instance(void);
 
   void collect(void);
-
-  BaseObject* create_int(int value);
-  BaseObject* create_pair(
-      BaseObject* first = nullptr, BaseObject* second = nullptr);
-  BaseObject* release_object(void);
+  BaseObject* put_in(int value);
+  BaseObject* put_in(BaseObject* first = nullptr, BaseObject* second = nullptr);
+  BaseObject* fetch_out(void);
 };
 
 }

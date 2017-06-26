@@ -24,14 +24,11 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
 #include <Chaos/Types.h>
 #include "mark_sweep.h"
 
 int main(int argc, char* argv[]) {
   CHAOS_UNUSED(argc), CHAOS_UNUSED(argv);
-
-  std::cout << "MarkSweep Garbage Collection Algorithm" << std::endl;
 
   constexpr int kCount = 1000;
   constexpr int kReleaseCount = 20;
@@ -39,17 +36,17 @@ int main(int argc, char* argv[]) {
   for (auto i = 0; i < kCount; ++i) {
     for (auto j = 0; j < kCreateCount; ++j) {
       if ((j + 1) % 3 == 0) {
-        auto* second = gc::MarkSweep::get_instance().release_object();
-        auto* first = gc::MarkSweep::get_instance().release_object();
-        gc::MarkSweep::get_instance().create_pair(first, second);
+        auto* second = gc::MarkSweep::get_instance().fetch_out();
+        auto* first = gc::MarkSweep::get_instance().fetch_out();
+        gc::MarkSweep::get_instance().put_in(first, second);
       }
       else {
-        gc::MarkSweep::get_instance().create_int(i);
+        gc::MarkSweep::get_instance().put_in(i * j);
       }
     }
 
     for (auto j = 0; j < kReleaseCount; ++j)
-      gc::MarkSweep::get_instance().release_object();
+      gc::MarkSweep::get_instance().fetch_out();
   }
   gc::MarkSweep::get_instance().collect();
 
