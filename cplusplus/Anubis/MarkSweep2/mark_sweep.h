@@ -33,6 +33,8 @@
 
 namespace gc {
 
+class BaseObject;
+
 class MarkSweep : private Chaos::UnCopyable {
   static constexpr std::size_t kChunkCount = 64;
   static constexpr std::size_t kHeapSize = 512 << 10;
@@ -61,8 +63,8 @@ class MarkSweep : private Chaos::UnCopyable {
   ~MarkSweep(void);
 
   void* alloc(std::size_t n);
-  BaseObject* new_object(
-      std::size_t n, const std::function<BaseObject* (void*)>& fn);
+  BaseObject* create_object(
+      std::size_t n, std::function<BaseObject* (void*)>&& fn);
   void mark(void);
   void mark_from_roots(void);
   void sweep(void);
@@ -70,10 +72,9 @@ public:
   static MarkSweep& get_instance(void);
 
   void collect(void);
-  BaseObject* create_int(int value = 0);
-  BaseObject* create_pair(
-      BaseObject* first = nullptr, BaseObject* second = nullptr);
-  BaseObject* release_object(void);
+  BaseObject* put_in(int value = 0);
+  BaseObject* put_in(BaseObject* first = nullptr, BaseObject* second = nullptr);
+  BaseObject* fetch_out(void);
 };
 
 }

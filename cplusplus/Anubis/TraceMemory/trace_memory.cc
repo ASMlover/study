@@ -68,7 +68,7 @@ void TraceMemory::scan_tracing(std::stack<BaseObject*>& trace_objects) {
 void TraceMemory::sweep_tracing(void) {
   for (auto it = objects_.begin(); it != objects_.end();) {
     if ((*it)->ref() == 0) {
-      dealloc((*it));
+      dealloc(*it);
       objects_.erase(it++);
     }
     else {
@@ -96,20 +96,20 @@ void TraceMemory::collect_tracing(void) {
     << "[" << objects_.size() << "] remaining." << std::endl;
 }
 
-BaseObject* TraceMemory::create_int(int value) {
+BaseObject* TraceMemory::put_in(int value) {
   if (objects_.size() >= kMaxObjects)
     collect_tracing();
 
   auto* obj = new (alloc(sizeof(Int))) Int();
   obj->set_value(value);
 
-  objects_.push_back(obj);
   roots_.push_back(obj);
+  objects_.push_back(obj);
 
   return obj;
 }
 
-BaseObject* TraceMemory::create_pair(BaseObject* first, BaseObject* second) {
+BaseObject* TraceMemory::put_in(BaseObject* first, BaseObject* second) {
   if (objects_.size() >= kMaxObjects)
     collect_tracing();
 
@@ -119,13 +119,13 @@ BaseObject* TraceMemory::create_pair(BaseObject* first, BaseObject* second) {
   if (second != nullptr)
     obj->set_second(second);
 
-  objects_.push_back(obj);
   roots_.push_back(obj);
+  objects_.push_back(obj);
 
   return obj;
 }
 
-BaseObject* TraceMemory::release_object(void) {
+BaseObject* TraceMemory::fetch_out(void) {
   auto* obj = roots_.back();
   roots_.pop_back();
   return obj;

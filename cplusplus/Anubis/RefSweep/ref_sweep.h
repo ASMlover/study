@@ -29,7 +29,7 @@
 #include <list>
 #include <stack>
 #include <vector>
-#include <Chaos/Types.h>
+#include <Chaos/UnCopyable.h>
 
 namespace gc {
 
@@ -40,7 +40,7 @@ class RefSweep : private Chaos::UnCopyable {
   std::list<BaseObject*> objects_;
   std::stack<BaseObject*> inc_objects_;
   std::stack<BaseObject*> dec_objects_;
-  static constexpr std::size_t kMaxObject = 1024;
+  static constexpr std::size_t kMaxObjects = 1024;
 
   RefSweep(void) = default;
   ~RefSweep(void) = default;
@@ -55,10 +55,9 @@ public:
   static RefSweep& get_instance(void);
 
   void collect_counting(void);
-  BaseObject* create_int(int value);
-  BaseObject* create_pair(
-      BaseObject* first = nullptr, BaseObject* second = nullptr);
-  BaseObject* release_object(void);
+  BaseObject* put_in(int value);
+  BaseObject* put_in(BaseObject* first = nullptr, BaseObject* second = nullptr);
+  BaseObject* fetch_out(void);
 };
 
 }

@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <Chaos/Types.h>
+#include <cstdint>
 
 namespace gc {
 

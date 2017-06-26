@@ -122,22 +122,22 @@ void DelayRef::collect(void) {
     << "[" << objects_.size() << "] objects remaining." << std::endl;
 }
 
-BaseObject* DelayRef::create_int(int value) {
-  if (objects_.size() >= kMaxObject)
+BaseObject* DelayRef::put_in(int value) {
+  if (objects_.size() >= kMaxObjects)
     collect();
 
   auto* obj = new Int();
   obj->set_value(value);
 
-  objects_.push_back(obj);
   roots_.push_back(obj);
+  objects_.push_back(obj);
   inc(obj);
 
   return obj;
 }
 
-BaseObject* DelayRef::create_pair(BaseObject* first, BaseObject* second) {
-  if (objects_.size() >= kMaxObject)
+BaseObject* DelayRef::put_in(BaseObject* first, BaseObject* second) {
+  if (objects_.size() >= kMaxObjects)
     collect();
 
   auto* obj = new Pair();
@@ -146,14 +146,14 @@ BaseObject* DelayRef::create_pair(BaseObject* first, BaseObject* second) {
   if (second != nullptr)
     write(obj, second, false);
 
-  objects_.push_back(obj);
   roots_.push_back(obj);
+  objects_.push_back(obj);
   inc(obj);
 
   return obj;
 }
 
-BaseObject* DelayRef::release_object(void) {
+BaseObject* DelayRef::fetch_out(void) {
   auto* obj = roots_.back();
   roots_.pop_back();
   dec(obj);

@@ -36,17 +36,17 @@ int main(int argc, char* argv[]) {
   for (auto i = 0; i < kCount; ++i) {
     for (auto j = 0; j < kCreateCount; ++j) {
       if ((j + 1) % 3 == 0) {
-        auto* second = gc::TraceMemory::get_instance().release_object();
-        auto* first = gc::TraceMemory::get_instance().release_object();
-        gc::TraceMemory::get_instance().create_pair(first, second);
+        auto* second = gc::TraceMemory::get_instance().fetch_out();
+        auto* first = gc::TraceMemory::get_instance().fetch_out();
+        gc::TraceMemory::get_instance().put_in(first, second);
       }
       else {
-        gc::TraceMemory::get_instance().create_int(i);
+        gc::TraceMemory::get_instance().put_in(i * j);
       }
     }
 
     for (auto j = 0; j < kReleaseCount; ++j)
-      gc::TraceMemory::get_instance().release_object();
+      gc::TraceMemory::get_instance().fetch_out();
   }
   gc::TraceMemory::get_instance().collect_tracing();
 

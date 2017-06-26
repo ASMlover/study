@@ -36,10 +36,12 @@ void* RefMemory::alloc(std::size_t n) {
 }
 
 void RefMemory::dealloc(BaseObject* obj) {
-  if (obj->is_int())
-    Chaos::MemoryPool::get_instance().dealloc(obj, sizeof(Int));
-  else if (obj->is_pair())
-    Chaos::MemoryPool::get_instance().dealloc(obj, sizeof(Pair));
+  if (obj != nullptr) {
+    if (obj->is_int())
+      Chaos::MemoryPool::get_instance().dealloc(obj, sizeof(Int));
+    else if (obj->is_pair())
+      Chaos::MemoryPool::get_instance().dealloc(obj, sizeof(Pair));
+  }
 }
 
 void RefMemory::inc(BaseObject* ref) {
@@ -119,7 +121,7 @@ void RefMemory::collect_counting(void) {
     << "[" << objects_.size() << "] objects remaining." << std::endl;
 }
 
-BaseObject* RefMemory::create_int(int value) {
+BaseObject* RefMemory::put_in(int value) {
   if (objects_.size() >= kMaxObjects)
     collect_counting();
 
@@ -133,7 +135,7 @@ BaseObject* RefMemory::create_int(int value) {
   return obj;
 }
 
-BaseObject* RefMemory::create_pair(BaseObject* first, BaseObject* second) {
+BaseObject* RefMemory::put_in(BaseObject* first, BaseObject* second) {
   if (objects_.size() >= kMaxObjects)
     collect_counting();
 
@@ -150,7 +152,7 @@ BaseObject* RefMemory::create_pair(BaseObject* first, BaseObject* second) {
   return obj;
 }
 
-BaseObject* RefMemory::release_object(void) {
+BaseObject* RefMemory::fetch_out(void) {
   auto* obj = roots_.back();
   roots_.pop_back();
   dec(obj);

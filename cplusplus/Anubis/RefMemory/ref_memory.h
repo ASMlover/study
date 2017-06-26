@@ -57,10 +57,9 @@ public:
   static RefMemory& get_instance(void);
 
   void collect_counting(void);
-  BaseObject* create_int(int value);
-  BaseObject* create_pair(
-      BaseObject* first = nullptr, BaseObject* second = nullptr);
-  BaseObject* release_object(void);
+  BaseObject* put_in(int value);
+  BaseObject* put_in(BaseObject* first = nullptr, BaseObject* second = nullptr);
+  BaseObject* fetch_out(void);
 };
 
 }

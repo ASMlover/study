@@ -36,9 +36,9 @@ namespace gc {
 class BaseObject;
 
 class TraceSweep : private Chaos::UnCopyable {
-  std::list<BaseObject*> objects_;
   std::vector<BaseObject*> roots_;
-  static constexpr std::size_t kMaxObject = 1024;
+  std::list<BaseObject*> objects_;
+  static constexpr std::size_t kMaxObjects = 1024;
 
   TraceSweep(void) = default;
   ~TraceSweep(void) = default;
@@ -49,10 +49,9 @@ public:
   static TraceSweep& get_instance(void);
 
   void collect_tracing(void);
-  BaseObject* create_int(int value);
-  BaseObject* create_pair(
-      BaseObject* first = nullptr, BaseObject* second = nullptr);
-  BaseObject* release_object(void);
+  BaseObject* put_in(int value);
+  BaseObject* put_in(BaseObject* first = nullptr, BaseObject* second = nullptr);
+  BaseObject* fetch_out(void);
 };
 
 }

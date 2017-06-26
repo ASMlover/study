@@ -68,18 +68,18 @@ void* MarkSweep::alloc(std::size_t n) {
   return r;
 }
 
-BaseObject* MarkSweep::new_object(
-    std::size_t n, const std::function<BaseObject* (void*)>& fn) {
+BaseObject* MarkSweep::create_object(
+    std::size_t n, std::function<BaseObject* (void*)>&& fn) {
   void* p = alloc(n);
   if (p == nullptr) {
     collect();
     p = alloc(n);
-    CHAOS_CHECK(p, "out of memory");
+    CHAOS_CHECK(p != nullptr, "out of memory");
   }
 
   auto* obj = fn(p);
-  ++obj_count_;
   roots_.push_back(obj);
+  ++obj_count_;
 
   return obj;
 }
@@ -117,8 +117,7 @@ void MarkSweep::sweep(void) {
   for (auto& ch : chunklist_) {
     byte_t* p = as_ptr(ch.chunk);
     auto block_size = as_bytes(ch.index);
-    for (std::size_t i = 0;
-        i < kChunkCount && p < allocptr_; ++i) {
+    for (std::size_t i = 0; i < kChunkCount && p < allocptr_; ++i) {
       auto* block = as_memory(p);
       if (!block->is_invalid()) {
         if (block->is_marked()) {
@@ -152,16 +151,16 @@ void MarkSweep::collect(void) {
     << "[" << obj_count_ << "] remaining." << std::endl;
 }
 
-BaseObject* MarkSweep::create_int(int value) {
-  return new_object(sizeof(Int), [value](void* p) -> BaseObject* {
+BaseObject* MarkSweep::put_in(int value) {
+  return create_object(sizeof(Int), [value](void* p) -> BaseObject* {
         auto* obj = new (p) Int;
         obj->set_value(value);
         return obj;
       });
 }
 
-BaseObject* MarkSweep::create_pair(BaseObject* first, BaseObject* second) {
-  return new_object(sizeof(Pair), [first, second](void* p) -> BaseObject* {
+BaseObject* MarkSweep::put_in(BaseObject* first, BaseObject* second) {
+  return create_object(sizeof(Pair), [first, second](void* p) -> BaseObject* {
         auto* obj = new (p) Pair;
         if (first != nullptr)
           obj->set_first(first);
@@ -171,7 +170,7 @@ BaseObject* MarkSweep::create_pair(BaseObject* first, BaseObject* second) {
       });
 }
 
-BaseObject* MarkSweep::release_object(void) {
+BaseObject* MarkSweep::fetch_out(void) {
   auto* obj = roots_.back();
   roots_.pop_back();
   return obj;

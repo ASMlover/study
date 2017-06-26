@@ -36,10 +36,12 @@ void* DelayMemory::alloc(std::size_t n) {
 }
 
 void DelayMemory::dealloc(BaseObject* obj) {
-  if (obj->is_int())
-    Chaos::MemoryPool::get_instance().dealloc(obj, sizeof(Int));
-  else if (obj->is_pair())
-    Chaos::MemoryPool::get_instance().dealloc(obj, sizeof(Pair));
+  if (obj != nullptr) {
+    if (obj->is_int())
+      Chaos::MemoryPool::get_instance().dealloc(obj, sizeof(Int));
+    else if (obj->is_pair())
+      Chaos::MemoryPool::get_instance().dealloc(obj, sizeof(Pair));
+  }
 }
 
 void DelayMemory::inc(BaseObject* ref) {
@@ -134,7 +136,7 @@ void DelayMemory::collect_counting(void) {
     << "[" << objects_.size() << "] objects remaining." << std::endl;
 }
 
-BaseObject* DelayMemory::create_int(int value) {
+BaseObject* DelayMemory::put_in(int value) {
   if (objects_.size() >= kMaxObjects)
     collect_counting();
 
@@ -148,7 +150,7 @@ BaseObject* DelayMemory::create_int(int value) {
   return obj;
 }
 
-BaseObject* DelayMemory::create_pair(BaseObject* first, BaseObject* second) {
+BaseObject* DelayMemory::put_in(BaseObject* first, BaseObject* second) {
   if (objects_.size() >= kMaxObjects)
     collect_counting();
 
@@ -165,7 +167,7 @@ BaseObject* DelayMemory::create_pair(BaseObject* first, BaseObject* second) {
   return obj;
 }
 
-BaseObject* DelayMemory::release_object(void) {
+BaseObject* DelayMemory::fetch_out(void) {
   auto* obj = roots_.back();
   roots_.pop_back();
   dec(obj);
