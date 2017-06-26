@@ -106,22 +106,22 @@ void RefSweep::collect_counting(void) {
     << "[" << objects_.size() << "] objects remaining." << std::endl;
 }
 
-BaseObject* RefSweep::create_int(int value) {
-  if (objects_.size() >= kMaxObject)
+BaseObject* RefSweep::put_in(int value) {
+  if (objects_.size() >= kMaxObjects)
     collect_counting();
 
   auto* obj = new Int();
   obj->set_value(value);
 
-  objects_.push_back(obj);
   roots_.push_back(obj);
+  objects_.push_back(obj);
   inc(obj);
 
   return obj;
 }
 
-BaseObject* RefSweep::create_pair(BaseObject* first, BaseObject* second) {
-  if (objects_.size() >= kMaxObject)
+BaseObject* RefSweep::put_in(BaseObject* first, BaseObject* second) {
+  if (objects_.size() >= kMaxObjects)
     collect_counting();
 
   auto* obj = new Pair();
@@ -137,7 +137,7 @@ BaseObject* RefSweep::create_pair(BaseObject* first, BaseObject* second) {
   return obj;
 }
 
-BaseObject* RefSweep::release_object(void) {
+BaseObject* RefSweep::fetch_out(void) {
   auto* obj = roots_.back();
   roots_.pop_back();
   dec(obj);

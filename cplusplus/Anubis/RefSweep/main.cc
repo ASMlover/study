@@ -25,8 +25,6 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <Chaos/Types.h>
-#include <iostream>
-#include "object.h"
 #include "ref_sweep.h"
 
 int main(int argc, char* argv[]) {
@@ -38,17 +36,17 @@ int main(int argc, char* argv[]) {
   for (auto i = 0; i < kCount; ++i) {
     for (auto j = 0; j < kCreateCount; ++j) {
       if ((j + 1) % 3 == 0) {
-        auto* second = gc::RefSweep::get_instance().release_object();
-        auto* first = gc::RefSweep::get_instance().release_object();
-        gc::RefSweep::get_instance().create_pair(first, second);
+        auto* second = gc::RefSweep::get_instance().fetch_out();
+        auto* first = gc::RefSweep::get_instance().fetch_out();
+        gc::RefSweep::get_instance().put_in(first, second);
       }
       else {
-        gc::RefSweep::get_instance().create_int(j);
+        gc::RefSweep::get_instance().put_in(i * j);
       }
     }
 
     for (auto j = 0; j < kReleaseCount; ++j)
-      gc::RefSweep::get_instance().release_object();
+      gc::RefSweep::get_instance().fetch_out();
   }
   gc::RefSweep::get_instance().collect_counting();
 
