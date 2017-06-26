@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <Chaos/Types.h>
+#include <cstdint>
 
 namespace gc {
 
@@ -40,7 +40,7 @@ struct MemoryHeader {
   std::uint8_t type(void) const { return _type; }
   std::uint8_t inc_ref(void) { return ++_ref; }
   std::uint8_t dec_ref(void) { return --_ref; }
-  void set_ref(std::uint8_t ref) { _ref = ref; }
+  std::uint8_t set_ref(std::uint8_t ref) { return _ref = ref, _ref; }
   std::uint8_t ref(void) const { return _ref; }
 };
 

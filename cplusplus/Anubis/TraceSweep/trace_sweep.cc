@@ -70,10 +70,9 @@ TraceSweep& TraceSweep::get_instance(void) {
 }
 
 void TraceSweep::collect_tracing(void) {
-  std::stack<BaseObject*> trace_objects;
-
   auto old_count = objects_.size();
 
+  std::stack<BaseObject*> trace_objects;
   roots_tracing(trace_objects);
   scan_tracing(trace_objects);
   sweep_tracing();
@@ -83,20 +82,20 @@ void TraceSweep::collect_tracing(void) {
     << "[" << objects_.size() << "] objects remaining." << std::endl;
 }
 
-BaseObject* TraceSweep::create_int(int value) {
+BaseObject* TraceSweep::put_in(int value) {
   if (objects_.size() >= kMaxObject)
     collect_tracing();
 
   auto* obj = new Int();
   obj->set_value(value);
 
-  objects_.push_back(obj);
   roots_.push_back(obj);
+  objects_.push_back(obj);
 
   return obj;
 }
 
-BaseObject* TraceSweep::create_pair(BaseObject* first, BaseObject* second) {
+BaseObject* TraceSweep::put_in(BaseObject* first, BaseObject* second) {
   if (objects_.size() >= kMaxObject)
     collect_tracing();
 
@@ -106,13 +105,13 @@ BaseObject* TraceSweep::create_pair(BaseObject* first, BaseObject* second) {
   if (second != nullptr)
     obj->set_second(second);
 
-  objects_.push_back(obj);
   roots_.push_back(obj);
+  objects_.push_back(obj);
 
   return obj;
 }
 
-BaseObject* TraceSweep::release_object(void) {
+BaseObject* TraceSweep::fetch_out(void) {
   auto* obj = roots_.back();
   roots_.pop_back();
   return obj;
