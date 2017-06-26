@@ -36,17 +36,17 @@ int main(int argc, char* argv[]) {
   for (auto i = 0; i < kCount; ++i) {
     for (auto j = 0; j < kCreateCount; ++j) {
       if ((j + 1) % 3 == 0) {
-        auto* second = gc::RefMemory::get_instance().release_object();
-        auto* first = gc::RefMemory::get_instance().release_object();
-        gc::RefMemory::get_instance().create_pair(first, second);
+        auto* second = gc::RefMemory::get_instance().fetch_out();
+        auto* first = gc::RefMemory::get_instance().fetch_out();
+        gc::RefMemory::get_instance().put_in(first, second);
       }
       else {
-        gc::RefMemory::get_instance().create_int(i);
+        gc::RefMemory::get_instance().put_in(i * j);
       }
     }
 
     for (auto j = 0; j < kReleaseCount; ++j)
-      gc::RefMemory::get_instance().release_object();
+      gc::RefMemory::get_instance().fetch_out();
   }
   gc::RefMemory::get_instance().collect_counting();
 
