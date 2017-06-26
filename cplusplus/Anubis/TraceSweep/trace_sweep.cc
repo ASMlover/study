@@ -83,7 +83,7 @@ void TraceSweep::collect_tracing(void) {
 }
 
 BaseObject* TraceSweep::put_in(int value) {
-  if (objects_.size() >= kMaxObject)
+  if (objects_.size() >= kMaxObjects)
     collect_tracing();
 
   auto* obj = new Int();
@@ -96,7 +96,7 @@ BaseObject* TraceSweep::put_in(int value) {
 }
 
 BaseObject* TraceSweep::put_in(BaseObject* first, BaseObject* second) {
-  if (objects_.size() >= kMaxObject)
+  if (objects_.size() >= kMaxObjects)
     collect_tracing();
 
   auto* obj = new Pair();

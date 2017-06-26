@@ -38,7 +38,7 @@ class BaseObject;
 class TraceSweep : private Chaos::UnCopyable {
   std::vector<BaseObject*> roots_;
   std::list<BaseObject*> objects_;
-  static constexpr std::size_t kMaxObject = 1024;
+  static constexpr std::size_t kMaxObjects = 1024;
 
   TraceSweep(void) = default;
   ~TraceSweep(void) = default;
