@@ -36,11 +36,11 @@ namespace gc {
 class BaseObject;
 
 class DelayRef : private Chaos::UnCopyable {
-  std::list<BaseObject*> objects_;
   std::vector<BaseObject*> roots_;
+  std::list<BaseObject*> objects_;
   std::stack<BaseObject*> inc_objects_;
   std::stack<BaseObject*> dec_objects_;
-  static constexpr std::size_t kMaxObject = 1024;
+  static constexpr std::size_t kMaxObjects = 1024;
 
   DelayRef(void) = default;
   ~DelayRef(void) = default;
@@ -57,10 +57,9 @@ public:
   static DelayRef& get_instance(void);
 
   void collect(void);
-  BaseObject* create_int(int value);
-  BaseObject* create_pair(
-      BaseObject* first = nullptr, BaseObject* second = nullptr);
-  BaseObject* release_object(void);
+  BaseObject* put_in(int value);
+  BaseObject* put_in(BaseObject* first = nullptr, BaseObject* second = nullptr);
+  BaseObject* fetch_out(void);
 };
 
 }
