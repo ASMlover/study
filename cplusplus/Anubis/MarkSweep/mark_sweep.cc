@@ -83,8 +83,7 @@ BaseObject* MarkSweep::create_object(
   if (p == nullptr) {
     collect();
     p = alloc(n);
-    if (p == nullptr)
-      Chaos::__chaos_throw_exception("out of memory");
+    CHAOS_CHECK(p != nullptr, "out of memory");
   }
 
   auto* obj = fn(p);
