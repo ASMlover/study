@@ -25,9 +25,30 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <Chaos/Types.h>
+#include "delay_memory.h"
 
 int main(int argc, char* argv[]) {
   CHAOS_UNUSED(argc), CHAOS_UNUSED(argv);
+
+  constexpr int kCount = 1000;
+  constexpr int kReleaseCount = 20;
+  constexpr int kCreateCount = kReleaseCount * 3;
+  for (auto i = 0; i < kCount; ++i) {
+    for (auto j = 0; j < kCreateCount; ++j) {
+      if ((j + 1) % 3 == 0) {
+        auto* second = gc::DelayMemory::get_instance().release_object();
+        auto* first = gc::DelayMemory::get_instance().release_object();
+        gc::DelayMemory::get_instance().create_pair(first, second);
+      }
+      else {
+        gc::DelayMemory::get_instance().create_int(i * j);
+      }
+    }
+
+    for (auto j = 0; j < kReleaseCount; ++j)
+      gc::DelayMemory::get_instance().release_object();
+  }
+  gc::DelayMemory::get_instance().collect_counting();
 
   return 0;
 }

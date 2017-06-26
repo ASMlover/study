@@ -66,18 +66,52 @@ void DelayMemory::write(BaseObject* target, BaseObject* obj, bool is_first) {
 }
 
 void DelayMemory::roots_tracing(std::stack<BaseObject*>& trace_objects) {
+  for (auto* obj : roots_)
+    trace_objects.push(obj);
 }
 
 void DelayMemory::apply_increments(void) {
+  while (!inc_objects_.empty()) {
+    auto* obj = inc_objects_.top();
+    inc_objects_.pop();
+    obj->inc_ref();
+  }
 }
 
 void DelayMemory::apply_decrements(void) {
+  while (!dec_objects_.empty()) {
+    auto* obj = dec_objects_.top();
+    dec_objects_.pop();
+    obj->dec_ref();
+  }
 }
 
 void DelayMemory::scan_counting(void) {
+  while (!dec_objects_.empty()) {
+    auto* obj = dec_objects_.top();
+    dec_objects_.pop();
+    if (obj->dec_ref() == 0 && obj->is_pair()) {
+      auto append_fn = [this](BaseObject* ob) {
+        if (ob != nullptr)
+          dec_objects_.push(ob);
+      };
+
+      append_fn(as_pair(obj)->first());
+      append_fn(as_pair(obj)->second());
+    }
+  }
 }
 
 void DelayMemory::sweep_counting(void) {
+  for (auto it = objects_.begin(); it != objects_.end();) {
+    if ((*it)->ref() == 0) {
+      dealloc(*it);
+      objects_.erase(it++);
+    }
+    else {
+      ++it;
+    }
+  }
 }
 
 DelayMemory& DelayMemory::get_instance(void) {
@@ -86,6 +120,18 @@ DelayMemory& DelayMemory::get_instance(void) {
 }
 
 void DelayMemory::collect_counting(void) {
+  auto old_count = objects_.size();
+
+  roots_tracing(inc_objects_);
+  apply_increments();
+  scan_counting();
+  sweep_counting();
+  roots_tracing(dec_objects_);
+  apply_decrements();
+
+  std::cout
+    << "[" << old_count - objects_.size() << "] objects collected, "
+    << "[" << objects_.size() << "] objects remaining." << std::endl;
 }
 
 BaseObject* DelayMemory::create_int(int value) {
