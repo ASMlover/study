@@ -62,4 +62,8 @@ public:
   BaseObject* second(void) const { return second_; }
 };
 
+inline BaseObject* as_object(void* p) {
+  return reinterpret_cast<BaseObject*>(p);
+}
+
 }

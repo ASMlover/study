@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <vector>
 #include <Chaos/Types.h>
 
 namespace gc {
@@ -33,6 +34,31 @@ namespace gc {
 class BaseObject;
 
 class SemispaceCopy : private Chaos::UnCopyable {
+  byte_t* heaptr_{};
+  byte_t* fromspace_{};
+  byte_t* tospace_{};
+  byte_t* allocptr_{};
+  byte_t* scanptr_{};
+  std::vector<BaseObject*> roots_;
+  std::size_t obj_count_{};
+  static constexpr std::size_t kSemispaceSize = 512 << 9;
+
+  SemispaceCopy(void);
+  ~SemispaceCopy(void);
+  void* alloc(std::size_t n);
+  void worklist_init(void);
+  bool worklist_empty(void) const;
+  void worklist_put(BaseObject* /*ob*/) {}
+  BaseObject* worklist_fetch(void);
+  BaseObject* forward(BaseObject* from_ref);
+  BaseObject* copy(BaseObject* from_ref);
+public:
+  static SemispaceCopy& get_instance(void);
+
+  void collect(void);
+  BaseObject* put_in(int value);
+  BaseObject* put_in(BaseObject* first = nullptr, BaseObject* second = nullptr);
+  BaseObject* fetch_out(void);
 };
 
 }
