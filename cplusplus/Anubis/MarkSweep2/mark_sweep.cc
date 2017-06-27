@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include "object.h"
 #include "mark_sweep.h"
 
 namespace gc {
@@ -78,7 +79,7 @@ BaseObject* MarkSweep::create_object(
 
   auto* obj = fn(p);
   roots_.push_back(obj);
-  ++obj_count_;
+  objects_.push_back(obj);
 
   return obj;
 }
@@ -111,23 +112,18 @@ void MarkSweep::mark_from_roots(void) {
 }
 
 void MarkSweep::sweep(void) {
-  for (auto& ch : chunklist_) {
-    byte_t* p = as_ptr(ch.chunk);
-    auto block_size = as_bytes(ch.index);
-    for (std::size_t i = 0; i < kChunkCount && p < allocptr_; ++i) {
-      auto* block = as_memory(p);
-      if (!block->is_invalid()) {
-        if (block->is_marked()) {
-          block->unset_mark();
-        }
-        else {
-          --obj_count_;
-          block->set_type(MemoryHeader::INVALID);
-          block->set_next(freelist_[ch.index]);
-          freelist_[ch.index] = block;
-        }
-      }
-      p += block_size;
+  for (auto it = objects_.begin(); it != objects_.end();) {
+    if (!(*it)->is_marked()) {
+      auto* block = as_memory(*it);
+      auto index = as_index((*it)->get_size());
+      block->set_type(MemoryHeader::INVALID);
+      block->set_next(freelist_[index]);
+      freelist_[index] = block;
+      objects_.erase(it++);
+    }
+    else {
+      (*it)->unset_mark();
+      ++it;
     }
   }
 }
@@ -138,14 +134,14 @@ MarkSweep& MarkSweep::get_instance(void) {
 }
 
 void MarkSweep::collect(void) {
-  auto old_count = obj_count_;
+  auto old_count = objects_.size();
 
   mark_from_roots();
   sweep();
 
   std::cout
-    << "[" << old_count - obj_count_ << "] objects collected, "
-    << "[" << obj_count_ << "] remaining." << std::endl;
+    << "[" << old_count - objects_.size() << "] objects collected, "
+    << "[" << objects_.size() << "] remaining." << std::endl;
 }
 
 BaseObject* MarkSweep::put_in(int value) {

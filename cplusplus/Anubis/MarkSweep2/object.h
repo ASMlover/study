@@ -32,6 +32,9 @@ namespace gc {
 
 class BaseObject : public MemoryHeader, private Chaos::UnCopyable {
 public:
+  virtual ~BaseObject(void) {}
+  virtual const char* get_name(void) const { return "BaseObject"; }
+  virtual std::size_t get_size(void) const { return sizeof(*this); }
   bool is_int(void) const { return type() == MemoryHeader::INT; }
   bool is_pair(void) const { return type() == MemoryHeader::PAIR; }
 };
@@ -40,6 +43,8 @@ class Int : public BaseObject {
   int value_{};
 public:
   Int(void) { set_type(MemoryHeader::INT); }
+  virtual const char* get_name(void) const override { return "Int"; }
+  virtual std::size_t get_size(void) const override { return sizeof(*this); }
   void set_value(int value) { value_ = value; }
   int value(void) const { return value_; }
 };
@@ -49,6 +54,8 @@ class Pair : public BaseObject {
   BaseObject* second_{};
 public:
   Pair(void) { set_type(MemoryHeader::PAIR); }
+  virtual const char* get_name(void) const override { return "Pair"; }
+  virtual std::size_t get_size(void) const override { return sizeof(*this); }
   void set_first(BaseObject* obj) { first_ = obj; }
   BaseObject* first(void) const { return first_; }
   void set_second(BaseObject* obj) { second_ = obj; }

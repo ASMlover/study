@@ -27,12 +27,14 @@
 #pragma once
 
 #include <functional>
-#include <vector>
+#include <list>
 #include <stack>
-#include "object.h"
+#include <vector>
+#include <Chaos/Types.h>
 
 namespace gc {
 
+struct MemoryHeader;
 class BaseObject;
 
 class MarkSweep : private Chaos::UnCopyable {
@@ -48,8 +50,8 @@ class MarkSweep : private Chaos::UnCopyable {
   byte_t* allocptr_{};
   std::vector<MemoryChunk> chunklist_;
   std::vector<BaseObject*> roots_;
+  std::list<BaseObject*> objects_;
   std::stack<BaseObject*> worklist_;
-  std::size_t obj_count_{};
 
   static constexpr int as_index(std::size_t n) {
     return static_cast<int>((n + 1) / kAlignment);
