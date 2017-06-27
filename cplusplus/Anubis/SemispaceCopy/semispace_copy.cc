@@ -53,17 +53,9 @@ void* SemispaceCopy::alloc(std::size_t n) {
   return p;
 }
 
-void SemispaceCopy::worklist_init(void) {
-  scanptr_ = allocptr_;
-}
-
-bool SemispaceCopy::worklist_empty(void) const {
-  return scanptr_ == allocptr_;
-}
-
 BaseObject* SemispaceCopy::worklist_fetch(void) {
   auto* ref = as_object(scanptr_);
-  scanptr_ += (ref->is_int() ? sizeof(Int) : sizeof(Pair));
+  scanptr_ += ref->get_size();
   return ref;
 }
 
@@ -79,7 +71,7 @@ BaseObject* SemispaceCopy::forward(BaseObject* from_ref) {
 
 BaseObject* SemispaceCopy::copy(BaseObject* from_ref) {
   auto* p = allocptr_;
-  allocptr_ += (from_ref->is_int() ? sizeof(Int) : sizeof(Pair));
+  allocptr_ += from_ref->get_size();
 
   BaseObject* to_ref{};
   if (from_ref->is_int())
@@ -106,8 +98,6 @@ void SemispaceCopy::collect(void) {
 
   obj_count_ = 0;
   worklist_init();
-  for (auto i = 0u; i < roots_.size(); ++i)
-    roots_[i] = forward(roots_[i]);
   for (auto& obj : roots_)
     obj = forward(obj);
 

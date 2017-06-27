@@ -34,9 +34,8 @@ namespace gc {
 
 class BaseObject : public MemoryHeader, public Chaos::UnCopyable {
 public:
-  BaseObject(void) = default;
-  BaseObject(BaseObject&& o) { std::memmove(this, &o, sizeof(*this)); }
-  const char* get_name(void) const { return "BaseObject"; }
+  virtual const char* get_name(void) const { return "BaseObject"; }
+  virtual std::size_t get_size(void) const { return sizeof(*this); }
   bool is_int(void) const { return type() == MemoryHeader::INT; }
   bool is_pair(void) const { return type() == MemoryHeader::PAIR; }
 };
@@ -45,7 +44,11 @@ class Int : public BaseObject {
   int value_{};
 public:
   Int(void) { set_type(MemoryHeader::INT); }
-  const char* get_name(void) const { return "Int"; }
+  Int(Int&& o) : value_(o.value_) {
+    set_type(o.type()); set_forward(o.forward());
+  }
+  virtual const char* get_name(void) const override { return "Int"; }
+  virtual std::size_t get_size(void) const override { return sizeof(*this); }
   void set_value(int value) { value_ = value; }
   int value(void) const { return value_; }
 };
@@ -55,7 +58,11 @@ class Pair : public BaseObject {
   BaseObject* second_{};
 public:
   Pair(void) { set_type(MemoryHeader::PAIR); }
-  const char* get_name(void) const { return "Pair"; }
+  Pair(Pair&& o) : first_(o.first_), second_(o.second_) {
+    set_type(o.type()); set_forward(o.forward());
+  }
+  virtual const char* get_name(void) const override { return "Pair"; }
+  virtual std::size_t get_size(void) const override { return sizeof(*this); }
   void set_first(BaseObject* obj) { first_ = obj; }
   BaseObject* first(void) const { return first_; }
   void set_second(BaseObject* obj) { second_ = obj; }

@@ -46,8 +46,8 @@ class SemispaceCopy : private Chaos::UnCopyable {
   SemispaceCopy(void);
   ~SemispaceCopy(void);
   void* alloc(std::size_t n);
-  void worklist_init(void);
-  bool worklist_empty(void) const;
+  void worklist_init(void) { scanptr_ = allocptr_; }
+  bool worklist_empty(void) const { return scanptr_ == allocptr_; }
   void worklist_put(BaseObject* /*ob*/) {}
   BaseObject* worklist_fetch(void);
   BaseObject* forward(BaseObject* from_ref);
