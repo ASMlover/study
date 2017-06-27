@@ -108,6 +108,8 @@ void SemispaceCopy::collect(void) {
   worklist_init();
   for (auto i = 0u; i < roots_.size(); ++i)
     roots_[i] = forward(roots_[i]);
+  for (auto& obj : roots_)
+    obj = forward(obj);
 
   while (!worklist_empty()) {
     auto* ref = worklist_fetch();
