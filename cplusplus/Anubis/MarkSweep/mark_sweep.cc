@@ -33,14 +33,12 @@ namespace gc {
 
 MarkSweep::MarkSweep(void) {
   heaptr_ = new byte_t[kHeapSize];
-  if (heaptr_ == nullptr)
-    Chaos::__chaos_throw_exception("allocating heap failed");
+  CHAOS_CHECK(heaptr_ != nullptr, "allocting heap failed");
   allocptr_ = heaptr_;
 }
 
 MarkSweep::~MarkSweep(void) {
   delete [] heaptr_;
-  heaptr_ = allocptr_ = nullptr;
 }
 
 byte_t* MarkSweep::alloc(std::size_t& n) {
@@ -57,7 +55,7 @@ byte_t* MarkSweep::alloc(std::size_t& n) {
 
   byte_t* p = heaptr_;
   while (p < allocptr_) {
-    auto* scan = as_memory(p);
+    auto* scan = as_object(p);
     if (scan->is_invalid() && scan->size() >= n) {
       if (scan->size() - n < kMinObjSize || scan->size() == n) {
         n = scan->size();
@@ -100,17 +98,14 @@ void MarkSweep::mark(void) {
     worklist_.pop();
 
     if (obj->is_pair()) {
-      auto* first = as_pair(obj)->first();
-      if (first != nullptr && !first->is_marked()) {
-        first->set_mark();
-        worklist_.push(first);
-      }
+      auto push_fn = [this](BaseObject* o) {
+        if (o != nullptr && !o->is_marked()) {
+          o->set_mark(); worklist_.push(o);
+        }
+      };
 
-      auto* second = as_pair(obj)->second();
-      if (second != nullptr && !second->is_marked()) {
-        second->set_mark();
-        worklist_.push(second);
-      }
+      push_fn(Chaos::down_cast<Pair*>(obj)->first());
+      push_fn(Chaos::down_cast<Pair*>(obj)->second());
     }
   }
 }
@@ -127,7 +122,7 @@ void MarkSweep::sweep(void) {
   auto* p = heaptr_;
   MemoryHeader* freelist{};
   while (p < allocptr_) {
-    auto* scan = as_memory(p);
+    auto* scan = as_object(p);
     if (!scan->is_invalid()) {
       if (scan->is_marked()) {
         scan->unset_mark();

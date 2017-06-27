@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 namespace gc {
@@ -42,14 +43,10 @@ struct MemoryHeader {
   void set_mark(void) { _marked = true; }
   void unset_mark(void) { _marked = false; }
   bool is_marked(void) const { return _marked; }
-  void set_size(std::size_t n) { _size = n; }
-  void inc_size(std::size_t n) { _size += n; }
-  void dec_size(std::size_t n) { _size -= n; }
+  std::size_t set_size(std::size_t n) { return _size = n, _size; }
+  std::size_t inc_size(std::size_t n) { return _size += n, _size; }
+  std::size_t dec_size(std::size_t n) { return _size -= n, _size; }
   std::size_t size(void) const { return _size; }
 };
-
-inline MemoryHeader* as_memory(void* p) {
-  return reinterpret_cast<MemoryHeader*>(p);
-}
 
 }
