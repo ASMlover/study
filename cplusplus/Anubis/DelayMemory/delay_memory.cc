@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <Chaos/Types.h>
 #include <Chaos/Memory/MemoryPool.h>
 #include "object.h"
 #include "delay_memory.h"
@@ -36,12 +37,8 @@ void* DelayMemory::alloc(std::size_t n) {
 }
 
 void DelayMemory::dealloc(BaseObject* obj) {
-  if (obj != nullptr) {
-    if (obj->is_int())
-      Chaos::MemoryPool::get_instance().dealloc(obj, sizeof(Int));
-    else if (obj->is_pair())
-      Chaos::MemoryPool::get_instance().dealloc(obj, sizeof(Pair));
-  }
+  if (obj != nullptr)
+    Chaos::MemoryPool::get_instance().dealloc(obj, obj->get_size());
 }
 
 void DelayMemory::inc(BaseObject* ref) {
@@ -55,7 +52,7 @@ void DelayMemory::dec(BaseObject* ref) {
 }
 
 void DelayMemory::write(BaseObject* target, BaseObject* obj, bool is_first) {
-  auto* pair = as_pair(target);
+  auto* pair = Chaos::down_cast<Pair*>(target);
   inc(obj);
   if (is_first) {
     dec(pair->first());
@@ -98,8 +95,8 @@ void DelayMemory::scan_counting(void) {
           dec_objects_.push(ob);
       };
 
-      append_fn(as_pair(obj)->first());
-      append_fn(as_pair(obj)->second());
+      append_fn(Chaos::down_cast<Pair*>(obj)->first());
+      append_fn(Chaos::down_cast<Pair*>(obj)->second());
     }
   }
 }

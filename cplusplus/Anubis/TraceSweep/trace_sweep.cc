@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <Chaos/Types.h>
 #include "object.h"
 #include "trace_sweep.h"
 
@@ -45,8 +46,8 @@ void TraceSweep::scan_tracing(std::stack<BaseObject*>& trace_objects) {
           trace_objects.push(obj);
       };
 
-      append_fn(as_pair(obj)->first());
-      append_fn(as_pair(obj)->second());
+      append_fn(Chaos::down_cast<Pair*>(obj)->first());
+      append_fn(Chaos::down_cast<Pair*>(obj)->second());
     }
   }
 }

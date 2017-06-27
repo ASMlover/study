@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <Chaos/Types.h>
 #include "object.h"
 #include "delay_ref.h"
 
@@ -41,7 +42,7 @@ void DelayRef::dec(BaseObject* ref) {
 }
 
 void DelayRef::write(BaseObject* p, BaseObject* obj, bool is_first) {
-  auto* pair = as_pair(p);
+  auto* pair = Chaos::down_cast<Pair*>(p);
   inc(obj);
   if (is_first) {
     dec(pair->first());
@@ -84,8 +85,8 @@ void DelayRef::scan_counting(void) {
           dec_objects_.push(obj);
       };
 
-      append_fn(as_pair(obj)->first());
-      append_fn(as_pair(obj)->second());
+      append_fn(Chaos::down_cast<Pair*>(obj)->first());
+      append_fn(Chaos::down_cast<Pair*>(obj)->second());
     }
   }
 }

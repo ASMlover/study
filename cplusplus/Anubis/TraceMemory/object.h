@@ -33,6 +33,7 @@ namespace gc {
 
 class BaseObject : public MemoryHeader, private Chaos::UnCopyable {
 public:
+  virtual ~BaseObject(void) {}
   virtual const char* get_name(void) const { return "BaseObject"; }
   virtual std::size_t get_size(void) const { return sizeof(*this); }
   bool is_int(void) const { return type() == MemoryHeader::INT; }
