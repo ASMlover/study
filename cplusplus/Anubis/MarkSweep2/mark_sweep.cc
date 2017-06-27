@@ -37,7 +37,6 @@ MarkSweep::MarkSweep(void) {
 
 MarkSweep::~MarkSweep(void) {
   delete [] heaptr_;
-  heaptr_ = allocptr_ = nullptr;
 }
 
 void* MarkSweep::alloc(std::size_t n) {
@@ -90,17 +89,15 @@ void MarkSweep::mark(void) {
     worklist_.pop();
 
     if (obj->is_pair()) {
-      auto* first = as_pair(obj)->first();
-      if (first != nullptr && !first->is_marked()) {
-        first->set_mark();
-        worklist_.push(first);
-      }
+      auto push_fn = [this](BaseObject* o) {
+        if (o != nullptr && !o->is_marked()) {
+          o->set_mark();
+          worklist_.push(o);
+        }
+      };
 
-      auto* second = as_pair(obj)->second();
-      if (second != nullptr && !second->is_marked()) {
-        second->set_mark();
-        worklist_.push(second);
-      }
+      push_fn(Chaos::down_cast<Pair*>(obj)->first());
+      push_fn(Chaos::down_cast<Pair*>(obj)->second());
     }
   }
 }

@@ -46,12 +46,6 @@ struct MemoryHeader {
   MemoryHeader* next(void) const { return _next; }
 };
 
-inline MemoryHeader* as_memory(void* p) {
-  return reinterpret_cast<MemoryHeader*>(p);
-}
-
-inline byte_t* as_ptr(MemoryHeader* p) {
-  return reinterpret_cast<byte_t*>(p);
-}
+inline byte_t* as_ptr(MemoryHeader* p) { return reinterpret_cast<byte_t*>(p); }
 
 }
