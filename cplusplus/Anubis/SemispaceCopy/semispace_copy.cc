@@ -76,8 +76,9 @@ BaseObject* SemispaceCopy::copy(BaseObject* from_ref) {
   BaseObject* to_ref{};
   if (from_ref->is_int())
     to_ref = new (p) Int(std::move(*Chaos::down_cast<Int*>(from_ref)));
-  else
+  else if (from_ref->is_pair())
     to_ref = new (p) Pair(std::move(*Chaos::down_cast<Pair*>(from_ref)));
+  CHAOS_CHECK(to_ref != nullptr, "copy object failed");
   from_ref->set_forward(to_ref);
   worklist_put(to_ref);
 
