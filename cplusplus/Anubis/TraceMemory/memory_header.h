@@ -36,6 +36,8 @@ struct MemoryHeader {
   std::uint8_t _ref{};
 
   bool is_invalid(void) const { return _type == INVALID; }
+  bool is_int(void) const { return _type == INT; }
+  bool is_pair(void) const { return _type == PAIR; }
   void set_type(std::uint8_t type) { _type = type; }
   std::uint8_t type(void) const { return _type; }
   std::uint8_t set_ref(std::uint8_t ref) { return _ref = ref, _ref; }

@@ -36,8 +36,6 @@ public:
   virtual ~BaseObject(void) {}
   virtual const char* get_name(void) const { return "BaseObject"; }
   virtual std::size_t get_size(void) const { return sizeof(*this); }
-  bool is_int(void) const { return type() == MemoryHeader::INT; }
-  bool is_pair(void) const { return type() == MemoryHeader::PAIR; }
 };
 
 class Int : public BaseObject {

@@ -38,6 +38,8 @@ struct MemoryHeader {
   std::size_t _size{};
 
   bool is_invalid(void) const { return _type == INVALID; }
+  bool is_int(void) const { return _type == INT; }
+  bool is_pair(void) const { return _type == PAIR; }
   void set_type(std::int8_t t) { _type = t; }
   std::int8_t type(void) const { return _type; }
   void set_mark(void) { _marked = true; }
