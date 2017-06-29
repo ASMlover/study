@@ -53,13 +53,13 @@ class NurserySweep : private Chaos::UnCopyable {
   void roots_nursery(void);
   void scan_nursery(void);
   void sweep_nursery(void);
-  void collect_nursery(void);
   void roots_tracing(std::stack<BaseObject*>& trace_objects);
   void scan_tracing(std::stack<BaseObject*>& trace_objects);
   void sweep_tracing(void);
 public:
   static NurserySweep& get_instance(void);
 
+  void collect_nursery(void);
   void collect(void);
   BaseObject* put_in(int value);
   BaseObject* put_in(BaseObject* first = nullptr, BaseObject* second = nullptr);

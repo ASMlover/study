@@ -48,6 +48,7 @@ int main(int argc, char* argv[]) {
     for (auto j = 0; j < kReleaseCount; ++j)
       gc::NurserySweep::get_instance().fetch_out();
   }
+  gc::NurserySweep::get_instance().collect_nursery();
   gc::NurserySweep::get_instance().collect();
 
   return 0;

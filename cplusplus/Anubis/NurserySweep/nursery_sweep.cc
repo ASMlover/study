@@ -120,18 +120,6 @@ void NurserySweep::sweep_nursery(void) {
   nursery_.clear();
 }
 
-void NurserySweep::collect_nursery(void) {
-  auto old_count = nursery_.size();
-
-  roots_nursery();
-  scan_nursery();
-  sweep_nursery();
-
-  std::cout
-    << "[" << old_count - nursery_.size() << "] nursery objects collected, "
-    << "[" << nursery_.size() << "] nursery objects remaining." << std::endl;
-}
-
 void NurserySweep::roots_tracing(std::stack<BaseObject*>& trace_objects) {
   for (auto* obj : roots_)
     trace_objects.push(obj);
@@ -171,6 +159,19 @@ NurserySweep& NurserySweep::get_instance(void) {
   return ins;
 }
 
+void NurserySweep::collect_nursery(void) {
+  auto old_count = nursery_.size();
+
+  roots_nursery();
+  scan_nursery();
+  sweep_nursery();
+
+  std::cout
+    << "[" << old_count - nursery_.size() << "] nursery objects collected, "
+    << "[" << nursery_.size() << "] nursery objects remaining. "
+    << "[" << objects_.size() << "] objects remaining." << std::endl;
+}
+
 void NurserySweep::collect(void) {
   auto old_count = objects_.size();
 
@@ -180,6 +181,7 @@ void NurserySweep::collect(void) {
   sweep_tracing();
 
   std::cout
+    << "[" << nursery_.size() << "] nursery objects remaining. "
     << "[" << old_count - objects_.size() << "] objects collected, "
     << "[" << objects_.size() << "] objects remaining." << std::endl;
 }
