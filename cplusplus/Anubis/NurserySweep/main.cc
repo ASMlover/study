@@ -25,9 +25,30 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <Chaos/Types.h>
+#include "nursery_sweep.h"
 
 int main(int argc, char* argv[]) {
   CHAOS_UNUSED(argc), CHAOS_UNUSED(argv);
+
+  constexpr int kCount = 10000;
+  constexpr int kReleaseCount = 20;
+  constexpr int kCreateCount = kReleaseCount * 3;
+  for (auto i = 0; i < kCount; ++i) {
+    for (auto j = 0; j < kCreateCount; ++j) {
+      if ((j + 1) % 3 == 0) {
+        auto* second = gc::NurserySweep::get_instance().fetch_out();
+        auto* first = gc::NurserySweep::get_instance().fetch_out();
+        gc::NurserySweep::get_instance().put_in(first, second);
+      }
+      else {
+        gc::NurserySweep::get_instance().put_in(i * j);
+      }
+    }
+
+    for (auto j = 0; j < kReleaseCount; ++j)
+      gc::NurserySweep::get_instance().fetch_out();
+  }
+  gc::NurserySweep::get_instance().collect();
 
   return 0;
 }

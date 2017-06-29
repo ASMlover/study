@@ -39,8 +39,9 @@ class BaseObject;
 class NurserySweep : private Chaos::UnCopyable {
   std::vector<BaseObject*> roots_;
   std::list<BaseObject*> objects_;
-  std::list<BaseObject*> reclaim_objects_;
+  std::list<BaseObject*> record_objects_;
   std::unordered_set<BaseObject*> nursery_;
+  static constexpr std::size_t kMaxObjects = 1024;
 
   NurserySweep(void) = default;
   ~NurserySweep(void) = default;
@@ -48,10 +49,14 @@ class NurserySweep : private Chaos::UnCopyable {
   void inc_nursery(BaseObject* ref);
   void dec_nursery(BaseObject* ref);
   void write_pair(BaseObject* p, BaseObject* obj, bool is_first = true);
+  BaseObject* create_object(std::uint8_t type);
   void roots_nursery(void);
   void scan_nursery(void);
   void sweep_nursery(void);
   void collect_nursery(void);
+  void roots_tracing(std::stack<BaseObject*>& trace_objects);
+  void scan_tracing(std::stack<BaseObject*>& trace_objects);
+  void sweep_tracing(void);
 public:
   static NurserySweep& get_instance(void);
 
