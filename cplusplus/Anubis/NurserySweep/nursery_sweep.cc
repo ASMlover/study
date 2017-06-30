@@ -97,7 +97,7 @@ void NurserySweep::scan_nursery(void) {
 
     if (obj->inc_ref() == 1 && obj->is_pair()) {
       auto append_fn = [this](BaseObject* obj) {
-        if (nursery_.find(obj) != nursery_.end())
+        if (obj != nullptr && nursery_.find(obj) != nursery_.end())
           record_objects_.push_back(obj);
       };
 
