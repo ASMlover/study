@@ -28,7 +28,7 @@
 set(OUTPUT_NAME "delay-rc")
 
 file(GLOB_RECURSE DELAYRC_SOURCES *.cc)
-message(STATUS "[AnubisPROJ.DelayRef] DELAYRC_SOURCES: ${DELAYRC_SOURCES}")
+message(STATUS "[LearnGC.DelayRef] DELAYRC_SOURCES: ${DELAYRC_SOURCES}")
 
 add_executable(${OUTPUT_NAME} ${DELAYRC_SOURCES})
 target_link_libraries(${OUTPUT_NAME} chaos)

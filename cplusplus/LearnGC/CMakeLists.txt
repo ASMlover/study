@@ -26,13 +26,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cmake_minimum_required(VERSION 3.0)
-set(ANUBIS_PROJECT "AnubisPROJ")
-project(${ANUBIS_PROJECT} CXX)
+set(LEARNGC_PROJECT "LearnGC")
+project(${LEARNGC_PROJECT} CXX)
 
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
-message(STATUS "[${ANUBIS_PROJECT}] CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+message(STATUS "[${LEARNGC_PROJECT}] CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   if (MSVC_VERSION LESS 1900)
@@ -60,7 +60,7 @@ else()
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -ggdb -O2 -Wall -std=c++1y")
 endif()
-message(STATUS "[${ANUBIS_PROJECT}] CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+message(STATUS "[${LEARNGC_PROJECT}] CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 include_directories(${PROJECT_SOURCE_DIR}/../../../Chaos)
 link_directories(${PROJECT_SOURCE_DIR}/../../../Chaos/cmake-build/Chaos)

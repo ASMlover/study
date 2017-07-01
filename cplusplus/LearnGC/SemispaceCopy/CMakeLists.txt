@@ -28,7 +28,7 @@
 set(OUTPUT_NAME "semispace-copy")
 
 file(GLOB_RECURSE SEMISPACECOPY_SOURCES *.cc)
-message(STATUS "[AnubisPROJ.SemispaceCopy] SEMISPACECOPY_SOURCES: ${SEMISPACECOPY_SOURCES}")
+message(STATUS "[LearnGC.SemispaceCopy] SEMISPACECOPY_SOURCES: ${SEMISPACECOPY_SOURCES}")
 
 add_executable(${OUTPUT_NAME} ${SEMISPACECOPY_SOURCES})
 target_link_libraries(${OUTPUT_NAME} chaos)

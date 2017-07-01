@@ -28,7 +28,7 @@
 set(OUTPUT_NAME "delay-memory")
 
 file(GLOB_RECURSE DELAYMEMORY_SOURCES *.cc)
-message(STATUS "[AnubisPROJ.DelayMemory] DELAYMEMORY_SOURCES: ${DELAYMEMORY_SOURCES}")
+message(STATUS "[LearnGC.DelayMemory] DELAYMEMORY_SOURCES: ${DELAYMEMORY_SOURCES}")
 
 add_executable(${OUTPUT_NAME} ${DELAYMEMORY_SOURCES})
 target_link_libraries(${OUTPUT_NAME} chaos)

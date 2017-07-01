@@ -28,7 +28,7 @@
 set(OUTPUT_NAME "trace-memory")
 
 file(GLOB_RECURSE TRACEMEMORY_SOURCES *.cc)
-message(STATUS "[AnubisPROJ.TraceMemory] TRACEMEMORY_SOURCES: ${TRACEMEMORY_SOURCES}")
+message(STATUS "[LearnGC.TraceMemory] TRACEMEMORY_SOURCES: ${TRACEMEMORY_SOURCES}")
 
 add_executable(${OUTPUT_NAME} ${TRACEMEMORY_SOURCES})
 target_link_libraries(${OUTPUT_NAME} chaos)

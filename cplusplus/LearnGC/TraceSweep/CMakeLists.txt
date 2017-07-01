@@ -28,7 +28,7 @@
 set(OUTPUT_NAME "trace-sweep")
 
 file(GLOB_RECURSE TRACESWEEP_SOURCES *.cc)
-message(STATUS "[AnubisPROJ.TraceSweep] TRACESWEEP_SOURCES: ${TRACESWEEP_SOURCES}")
+message(STATUS "[LearnGC.TraceSweep] TRACESWEEP_SOURCES: ${TRACESWEEP_SOURCES}")
 
 add_executable(${OUTPUT_NAME} ${TRACESWEEP_SOURCES})
 target_link_libraries(${OUTPUT_NAME} chaos)

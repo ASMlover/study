@@ -28,7 +28,7 @@
 set(OUTPUT_NAME "nursery-sweep")
 
 file(GLOB_RECURSE NURSERYSWEEP_SOURCES *.cc)
-message(STATUS "[AnubisPROJ.NurserySweep] NURSERYSWEEP_SOURCES: ${NURSERYSWEEP_SOURCES}")
+message(STATUS "[LearnGC.NurserySweep] NURSERYSWEEP_SOURCES: ${NURSERYSWEEP_SOURCES}")
 
 add_executable(${OUTPUT_NAME} ${NURSERYSWEEP_SOURCES})
 target_link_libraries(${OUTPUT_NAME} chaos)

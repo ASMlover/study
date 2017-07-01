@@ -28,7 +28,7 @@
 set(OUTPUT_NAME "ref-sweep")
 
 file(GLOB_RECURSE REFSWEEP_SOURCES *.cc)
-message(STATUS [AnubisPROK.RefSweep] REFSWEEP_SOURCES: ${REFSWEEP_SOURCES})
+message(STATUS [LearnGC.RefSweep] REFSWEEP_SOURCES: ${REFSWEEP_SOURCES})
 
 add_executable(${OUTPUT_NAME} ${REFSWEEP_SOURCES})
 target_link_libraries(${OUTPUT_NAME} chaos)

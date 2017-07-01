@@ -28,7 +28,7 @@
 set(OUTPUT_NAME "mark-sweep2")
 
 file(GLOB_RECURSE MARKSWEEP_SOURCES *.cc)
-message(STATUS "[AnubisPROJ.MarkSweep2] MARKSWEEP_SOURCES: ${MARKSWEEP_SOURCES}")
+message(STATUS "[LearnGC.MarkSweep2] MARKSWEEP_SOURCES: ${MARKSWEEP_SOURCES}")
 
 add_executable(${OUTPUT_NAME} ${MARKSWEEP_SOURCES})
 target_link_libraries(${OUTPUT_NAME} chaos)

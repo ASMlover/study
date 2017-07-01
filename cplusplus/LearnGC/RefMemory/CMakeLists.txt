@@ -28,7 +28,7 @@
 set(OUTPUT_NAME "ref-memory")
 
 file(GLOB_RECURSE REFMEMORY_SOURCES *.cc)
-message(STATUS "[AnubisPROJ.RefMemory] REFMEMORY_SOURCES: ${REFMEMORY_SOURCES}")
+message(STATUS "[LearnGC.RefMemory] REFMEMORY_SOURCES: ${REFMEMORY_SOURCES}")
 
 add_executable(${OUTPUT_NAME} ${REFMEMORY_SOURCES})
 target_link_libraries(${OUTPUT_NAME} chaos)

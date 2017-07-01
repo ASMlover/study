@@ -28,7 +28,7 @@
 set(OUTPUT_NAME "nursery-memory")
 
 file(GLOB_RECURSE NURSERYMEMORY_SOURCES *.cc)
-message(STATUS "[AnubisPROJ.NurseryMemory] NURSERYMEMORY_SOURCES: ${NURSERYMEMORY_SOURCES}")
+message(STATUS "[LearnGC.NurseryMemory] NURSERYMEMORY_SOURCES: ${NURSERYMEMORY_SOURCES}")
 
 add_executable(${OUTPUT_NAME} ${NURSERYMEMORY_SOURCES})
 target_link_libraries(${OUTPUT_NAME} chaos)
