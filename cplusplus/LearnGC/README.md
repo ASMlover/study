@@ -1,4 +1,4 @@
-# **Anubis: Learning Garbage Collection**
+# **LearnGC: Learning Garbage Collection**
 ***
 
 ## **Summary**
