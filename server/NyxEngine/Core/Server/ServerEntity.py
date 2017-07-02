@@ -555,3 +555,83 @@ class AvatarEntity(ServerEntity):
             self._create_post_entity(dst_server, msg, client)
 
         self.client.transfer_client(msg, callback)
+
+class ReconnectEntity(AvatarEntity):
+    def __init__(self, entity_id=None):
+        super(ReconnectEntity, self).__init__(entity_id)
+        self.binary_reconnect_req = None
+        self.avatar_id = None
+        self.client_id = None
+        self.auth_msg = None
+
+    def get_persistent_dict(self):
+        return dict(
+            avatar_id=self.avatar_id,
+            client_id=self.client_id,
+            auth_msg=self.auth_msg
+        )
+
+    def init_from_dict(self, data_dict):
+        self.avatar_id = data_dict.get('avatar_id')
+        self.client_id = data_dict.get('client_id')
+        self.auth_msg = data_dict.get('auth_msg')
+
+    def on_become_player(self):
+        self._connect_to_local_avatar()
+
+    def on_lose_client(self):
+        pass
+
+    def set_reconnect_info(self, avatar_id, client_id, auth_msg):
+        self.avatar_id = avatar_id
+        self.client_id = client_id
+        self.auth_msg = auth_msg
+
+    def get_avatar_id(self):
+        return self.avatar_id
+
+    def get_auth_msg(self):
+        return self.auth_msg
+
+    def notify_client_reconnect_failed(self):
+        if self.client:
+            self.client.connect_response(
+                    _C_PB2.ConnectResponse.RECONNECTION_FAIL)
+
+    def notify_client_reconnect_succeed(self, avatar_id, extra_msg={}):
+        if self.client:
+            self.client.connect_response(
+                    _C_PB2.ConnectResponse.RECONNECTION_OK,
+                    avatar_id,
+                    extra_msg)
+
+    def _notify_client_failed_and_destroy(self):
+        self.notify_client_reconnect_failed()
+        if self.client:
+            self.client.notify_disconnect_client()
+            self.destroy()
+
+    def _connect_to_local_avatar(self):
+        if not self.client:
+            return
+
+        avatar_id = self.get_avatar_id()
+        avatar = EntityManager.get_entity(avatar_id)
+        if avatar is None:
+            self._notify_client_failed_and_destroy()
+            return
+
+        if not avatar.can_be_reconnected(self.auth_msg):
+            self._notify_client_failed_and_destroy()
+            return
+        if (avatar.client and avatar.client.client_info
+                and avatar.client.client_info.client_id != self.client_id):
+            self._notify_client_failed_and_destroy()
+            return
+        # 可以重连
+        extra_msg = avatar.get_reconnected_extra_msg()
+        self.notify_client_reconnect_succeed(avatar.entity_id, extra_msg)
+        avatar.set_client(self.client)
+        self.client = None
+        avatar.on_reconnected(self.auth_msg)
+        self.destroy()
