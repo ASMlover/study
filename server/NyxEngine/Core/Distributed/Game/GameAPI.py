@@ -90,7 +90,7 @@ def call_local_group_client_method(target, method, parameters, reliable=True):
     """调用客户端的RPC"""
     client_list = {'target': []}
 
-    gate_proxies = GameGlobal.game.game_client_mgr.gate_proxy_by_uuid
+    gate_proxies = GameGlobal.game.game_client_mgr.gate_proxies_by_uuid
     for gate_uuid, stub in gate_proxies.items():
         count = 0
         for entity_id in target:
