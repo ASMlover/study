@@ -57,25 +57,31 @@ void NurseryMemory::write_pair(BaseObject* p, BaseObject* obj, bool is_first) {
   }
 }
 
-void* NurseryMemory::alloc(std::size_t n) {
-  auto alloc_fn = [this](std::size_t bytes) -> void* {
+BaseObject* NurseryMemory::alloc(std::uint8_t type, std::size_t bytes) {
+  auto alloc_fn = [this, type, bytes](void) -> BaseObject* {
     if (nursery_.size() >= kMaxObjects || objects_.size() >= kMaxObjects)
       return nullptr;
 
-    return Chaos::MemoryPool::get_instance().alloc(bytes);
+    void* p = Chaos::MemoryPool::get_instance().alloc(bytes);
+    if (type == MemoryHeader::INT)
+      return new (p) Int();
+    else if (type == MemoryHeader::PAIR)
+      return new (p) Pair();
+    return nullptr;
   };
 
-  auto* ref = alloc_fn(n);
+  auto* ref = alloc_fn();
   if (ref == nullptr) {
     collect_nursery();
-    ref = alloc_fn(n);
+    ref = alloc_fn();
     if (ref == nullptr) {
       collect();
-      ref = alloc_fn(n);
+      ref = alloc_fn();
       CHAOS_CHECK(ref != nullptr, "out of memory");
     }
   }
 
+  nursery_.insert(ref);
   return ref;
 }
 
@@ -189,24 +195,22 @@ void NurseryMemory::collect(void) {
 }
 
 BaseObject* NurseryMemory::put_in(int value) {
-  auto* obj = new (alloc(sizeof(Int))) Int();
+  auto* obj = Chaos::down_cast<Int*>(alloc(MemoryHeader::INT, sizeof(Int)));
   obj->set_value(value);
 
   roots_.push_back(obj);
-  nursery_.insert(obj);
 
   return obj;
 }
 
 BaseObject* NurseryMemory::put_in(BaseObject* first, BaseObject* second) {
-  auto* obj = new (alloc(sizeof(Pair))) Pair();
+  auto* obj = Chaos::down_cast<Pair*>(alloc(MemoryHeader::PAIR, sizeof(Pair)));
   if (first != nullptr)
     write_pair(obj, first, true);
   if (second != nullptr)
     write_pair(obj, second, false);
 
   roots_.push_back(obj);
-  nursery_.insert(obj);
 
   return obj;
 }

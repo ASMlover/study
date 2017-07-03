@@ -48,7 +48,7 @@ class NurseryMemory : private Chaos::UnCopyable {
   void inc_nursery(BaseObject* ref);
   void dec_nursery(BaseObject* ref);
   void write_pair(BaseObject* p, BaseObject* obj, bool is_first = true);
-  void* alloc(std::size_t n);
+  BaseObject* alloc(std::uint8_t type, std::size_t bytes);
   void dealloc(BaseObject* obj);
   void roots_nursery(void);
   void scan_nursery(void);
