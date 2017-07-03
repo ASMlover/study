@@ -27,7 +27,6 @@
 #ifndef __UTIL_OBJECT_MANAGER_HEADER_H__
 #define __UTIL_OBJECT_MANAGER_HEADER_H__
 
-
 namespace util {
 
 template <typename Key, typename Object, typename Locker = DummyLock>
@@ -51,7 +50,7 @@ public:
     objects_.erase(key);
   }
 
-  bool GetObject(const Key& key, Object& obj) { 
+  bool GetObject(const Key& key, Object& obj) {
     LockerGuard<Locker> guard(locker_);
 
     typename std::map<Key, Object>::iterator it = objects_.find(key);
@@ -72,7 +71,6 @@ public:
     return objects_.size();
   }
 };
-
 
 }
 

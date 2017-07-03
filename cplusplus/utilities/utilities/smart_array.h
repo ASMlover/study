@@ -27,9 +27,7 @@
 #ifndef __UTIL_SMART_ARRAY_HEADER_H__
 #define __UTIL_SMART_ARRAY_HEADER_H__
 
-
 namespace util {
-
 
 class RefArray : private UnCopyable {
 public:
@@ -38,7 +36,6 @@ public:
 
   virtual void Destroy(void) = 0;
 };
-
 
 template <typename T>
 class RefArrayDelete : public RefArray {
@@ -56,7 +53,6 @@ public:
       delete [] ptr_;
   }
 };
-
 
 template <typename T, typename D>
 class RefArrayDestructor : public RefArray {
@@ -77,15 +73,12 @@ public:
   }
 };
 
-
-
-
-// SmartArray 
+// SmartArray
 //
 // SmartArray extends SmartPtr to arrays.
-// The array pointed to is deleted when the last SmartArray pointing to 
+// The array pointed to is deleted when the last SmartArray pointing to
 // it is destroyed or reset.
-template <typename T, typename Locker = DummyLock> 
+template <typename T, typename Locker = DummyLock>
 class SmartArray {
   T*                  ptr_;
   RefArray*           ref_array_;
@@ -94,8 +87,8 @@ class SmartArray {
   typedef SmartArray<T, Locker> SelfType;
 public:
   SmartArray(void)
-    : ptr_(nullptr) 
-    , ref_array_(nullptr) 
+    : ptr_(nullptr)
+    , ref_array_(nullptr)
     , ref_count_(nullptr) {
   }
 
@@ -107,7 +100,7 @@ public:
   }
 
   template <typename Y, typename D>
-  explicit SmartArray(Y* p, D d) 
+  explicit SmartArray(Y* p, D d)
     : ptr_(p)
     , ref_array_(new RefArrayDestructor<T, D>(ptr_, d))
     , ref_count_(new RefCounter<Locker>(1)) {
@@ -118,7 +111,7 @@ public:
       if (0 == --*ref_count_) {
         ref_array_->Destroy();
         ptr_ = nullptr;
-        
+
         delete ref_array_;
         ref_array_ = nullptr;
 
@@ -128,7 +121,7 @@ public:
     }
   }
 
-  SmartArray(const SmartArray& x) 
+  SmartArray(const SmartArray& x)
     : ptr_(x.ptr_)
     , ref_array_(x.ref_array_)
     , ref_count_(x.ref_count_) {
@@ -137,9 +130,9 @@ public:
   }
 
   template <typename Y>
-  SmartArray(const SmartArray<Y, Locker>& x) 
+  SmartArray(const SmartArray<Y, Locker>& x)
     : ptr_(x.Get())
-    , ref_array_(x.GetRefArray()) 
+    , ref_array_(x.GetRefArray())
     , ref_count_(x.GetRefCounter()) {
     if (nullptr != ref_count_)
       ++*ref_count_;
@@ -152,11 +145,11 @@ public:
     return *this;
   }
 
-  template <typename Y> 
+  template <typename Y>
   SmartArray& operator=(const SmartArray<Y, Locker>& x) {
     if ((void*)this != (void*)&x)
       SelfType(x).Swap(*this);
-    
+
     return *this;
   }
 public:
@@ -197,18 +190,17 @@ private:
   }
 };
 
-template <typename T, typename Y, typename Locker> 
+template <typename T, typename Y, typename Locker>
 inline bool operator==(
     const SmartArray<T, Locker>& x, const SmartArray<Y, Locker>& y) {
   return x.Get() == y.Get();
 }
 
-template <typename T, typename Y, typename Locker> 
+template <typename T, typename Y, typename Locker>
 inline bool operator!=(
     const SmartArray<T, Locker>& x, const SmartArray<Y, Locker>& y) {
   return x.Get() != y.Get();
 }
-
 
 }
 

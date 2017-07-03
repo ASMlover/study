@@ -27,9 +27,7 @@
 #ifndef __UTIL_THREAD_HEADER_H__
 #define __UTIL_THREAD_HEADER_H__
 
-
 namespace util {
-
 
 class Routiner : private UnCopyable {
 public:
@@ -44,7 +42,7 @@ class ThreadRoutiner : public Routiner {
   Routine routine_;
   void*   argument_;
 public:
-  explicit ThreadRoutiner(Routine routine, void* argument = nullptr) 
+  explicit ThreadRoutiner(Routine routine, void* argument = nullptr)
     : routine_(routine)
     , argument_(argument) {
   }
@@ -56,7 +54,6 @@ public:
     routine_(argument_);
   }
 };
-
 
 }
 

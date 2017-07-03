@@ -29,12 +29,11 @@
 
 namespace util {
 
-
-// UniqueArray 
+// UniqueArray
 //
-// UniqueArray extends AutoPtr to arrays. Deletion of the array 
-// pointed to is guaranteed, either on destruction of the 
-// UniqueArray or via on explicit Reset(). Use SmartArray if your 
+// UniqueArray extends AutoPtr to arrays. Deletion of the array
+// pointed to is guaranteed, either on destruction of the
+// UniqueArray or via on explicit Reset(). Use SmartArray if your
 // needs are more complex.
 template <typename T>
 class UniqueArray : private UnCopyable {
@@ -42,7 +41,7 @@ class UniqueArray : private UnCopyable {
 
   typedef UniqueArray<T>  SelfType;
 public:
-  explicit UniqueArray(T* p = nullptr) 
+  explicit UniqueArray(T* p = nullptr)
     : ptr_(p) {
   }
 
@@ -67,7 +66,6 @@ private:
     std::swap(ptr_, x.ptr_);
   }
 };
-
 
 }
 

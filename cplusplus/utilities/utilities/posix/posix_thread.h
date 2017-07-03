@@ -27,15 +27,13 @@
 #ifndef __UTIL_POSIX_THREAD_HEADER_H__
 #define __UTIL_POSIX_THREAD_HEADER_H__
 
-
 namespace util {
-
 
 class Thread : private UnCopyable {
   pthread_t           thread_id_;
   SmartPtr<Routiner>  routine_;
 public:
-  Thread(void) 
+  Thread(void)
     : thread_id_(0)
     , routine_(static_cast<Routiner*>(NULL)) {
   }
@@ -50,7 +48,7 @@ public:
     if (NULL == routine_.Get())
       return;
 
-    UTIL_ASSERT(0 == 
+    UTIL_ASSERT(0 ==
         pthread_create(&thread_id_, 0, &Thread::Routine, this));
   }
 
@@ -82,7 +80,6 @@ private:
     return NULL;
   }
 };
-
 
 }
 

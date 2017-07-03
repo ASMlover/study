@@ -27,9 +27,7 @@
 #ifndef __UTIL_REF_COUNTER_HEADER_H__
 #define __UTIL_REF_COUNTER_HEADER_H__
 
-
 namespace util {
-
 
 template <typename Locker = DummyLock>
 class RefCounter : private UnCopyable {
@@ -57,7 +55,6 @@ public:
     return --counter_;
   }
 };
-
 
 }
 

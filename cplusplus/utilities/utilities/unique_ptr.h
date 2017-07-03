@@ -27,16 +27,14 @@
 #ifndef __UTIL_UNIQUE_PTR_HEADER_H__
 #define __UTIL_UNIQUE_PTR_HEADER_H__
 
-
 namespace util {
 
-
 // UniquePtr
-// 
+//
 // UniquePtr mimics a built-in pointer except that it guaranteed
-// deletion of the object pointed to, either on destruction of 
+// deletion of the object pointed to, either on destruction of
 // the UniquePtr or via an explicit Reset().
-// UniquePtr it a simple solution for simple needs, use SmartPtr 
+// UniquePtr it a simple solution for simple needs, use SmartPtr
 // if your needs are more complex.
 template <typename T>
 class UniquePtr : private UnCopyable {
@@ -44,7 +42,7 @@ class UniquePtr : private UnCopyable {
 
   typedef UniquePtr<T>  SelfType;
 public:
-  explicit UniquePtr(T* p = nullptr) 
+  explicit UniquePtr(T* p = nullptr)
     : ptr_(p) {
   }
 
@@ -74,8 +72,6 @@ private:
   }
 };
 
-
 }
-
 
 #endif  // __UTIL_UNIQUE_PTR_HEADER_H__

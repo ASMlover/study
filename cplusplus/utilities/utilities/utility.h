@@ -27,7 +27,6 @@
 #ifndef __UTIL_UTILITY_HEADER_H__
 #define __UTIL_UTILITY_HEADER_H__
 
-
 #include "types.h"
 
 // System interfaces header
@@ -55,7 +54,6 @@
 #include <string.h>
 #include <time.h>
 
-
 // ANSI C++ header
 #if defined(USE_CPP0X)
 # include <functional>
@@ -64,7 +62,6 @@
 #include <string>
 #include <stdexcept>
 
-
 // STL header
 #include <algorithm>
 #include <queue>
@@ -72,7 +69,7 @@
 #include <set>
 #include <vector>
 
-// Have our own assert, so we are sure it dose not get 
+// Have our own assert, so we are sure it dose not get
 // optomized away in a release build.
 #ifndef UTIL_ASSERT
 # define UTIL_ASSERT(expr)\
@@ -88,8 +85,6 @@
     }\
   } while (0)
 #endif
-
-
 
 // utilities header
 #include "uncopyable.h"
@@ -107,8 +102,5 @@
 #if defined(USE_CPP0X)
 # include "threadex.h"
 #endif
-
-
-
 
 #endif  // __UTIL_UTILITY_HEADER_H__

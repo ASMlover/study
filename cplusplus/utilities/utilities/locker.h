@@ -27,9 +27,7 @@
 #ifndef __UTIL_LOCKER_HEADER_H__
 #define __UTIL_LOCKER_HEADER_H__
 
-
 namespace util {
-
 
 // Helper class to Lock and Unlock a Locker automatically.
 template <typename Locker>
@@ -54,7 +52,6 @@ public:
   void Lock(void) {}
   void Unlock(void) {}
 };
-
 
 }
 

@@ -28,7 +28,7 @@
 #include "ref.h"
 #include "autorelease_pool.h"
 
-AutoreleasePool::AutoreleasePool(void) 
+AutoreleasePool::AutoreleasePool(void)
   : name_("") {
   objects_array_.reserve(150);
   PoolManager::GetInstance()->Push(this);
@@ -50,31 +50,17 @@ void AutoreleasePool::AddObject(Ref* object) {
 }
 
 void AutoreleasePool::Clear(void) {
-#if defined(USE_CPP0X)
-  for (const auto& obj : objects_array_) 
+  for (auto* obj : objects_array_)
     obj->Release();
-#else
-  size_t count = objects_array_.size();
-  for (size_t i = 0; i < count; ++i)
-    objects_array_[i]->Release();
-#endif
 
   objects_array_.clear();
 }
 
 bool AutoreleasePool::Contains(Ref* object) const {
-#if defined(USE_CPP0X)
-  for (const auto& obj : objects_array_) {
+  for (auto* obj : objects_array_) {
     if (object == obj)
       return true;
   }
-#else
-  size_t count = objects_array_.size();
-  for (size_t i = 0; i < count; ++i) {
-    if (object == objects_array_[i])
-      return true;
-  }
-#endif
 
   return false;
 }
@@ -83,7 +69,7 @@ static PoolManager* s_sharedPoolManager = nullptr;
 PoolManager* PoolManager::GetInstance(void) {
   if (nullptr == s_sharedPoolManager) {
     s_sharedPoolManager = new PoolManager();
-    s_sharedPoolManager->current_pool_ 
+    s_sharedPoolManager->current_pool_
         = new AutoreleasePool("utility auto release pool");
     s_sharedPoolManager->pool_stack_.push_back(
         s_sharedPoolManager->current_pool_);
@@ -99,17 +85,11 @@ void PoolManager::DestroyInstance(void) {
   }
 }
 
-PoolManager::PoolManager(void) 
-  : current_pool_(nullptr) {
-}
-
 PoolManager::~PoolManager(void) {
-  while (!pool_stack_.empty()) {
-    AutoreleasePool* pool = pool_stack_.back();
-    pool_stack_.pop_back();
-
+  for (auto* pool : pool_stack_)
     delete pool;
-  }
+
+  pool_stack_.clear();
 }
 
 AutoreleasePool* PoolManager::GetCurrentPool(void) const {
@@ -117,18 +97,10 @@ AutoreleasePool* PoolManager::GetCurrentPool(void) const {
 }
 
 bool PoolManager::IsObjectInPools(Ref* object) const {
-#if defined(USE_CPP0X)
   for (const auto& pool : pool_stack_) {
     if (pool->Contains(object))
       return true;
   }
-#else
-  size_t count = pool_stack_.size();
-  for (size_t i = 0; i < count; ++i) {
-    if (pool_stack_[i]->Contains(object))
-      return true;
-  }
-#endif
 
   return false;
 }

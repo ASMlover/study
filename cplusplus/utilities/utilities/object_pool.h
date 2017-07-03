@@ -27,11 +27,9 @@
 #ifndef __UTIL_OBJECT_POOL_HEADER_H__
 #define __UTIL_OBJECT_POOL_HEADER_H__
 
-
 namespace util {
 
-
-template <typename T, typename Locker = DummyLock> 
+template <typename T, typename Locker = DummyLock>
 class ObjectPool : private UnCopyable {
   enum {DEFAULT_CHUNK_SIZE = 16};
 
@@ -40,8 +38,8 @@ class ObjectPool : private UnCopyable {
   std::queue<T*>              free_list_;
   std::vector<SmartArray<T> > all_objects_;
 public:
-  explicit ObjectPool(uint32_t chunk_size = DEFAULT_CHUNK_SIZE) 
-    throw (std::invalid_argument, std::bad_alloc) 
+  explicit ObjectPool(uint32_t chunk_size = DEFAULT_CHUNK_SIZE)
+    throw (std::invalid_argument, std::bad_alloc)
     : chunk_size_(chunk_size) {
     if (0 == chunk_size_)
       throw std::invalid_argument("chunk size must be positive");
@@ -83,8 +81,6 @@ private:
   }
 };
 
-
 }
-
 
 #endif  // __UTIL_OBJECT_POOL_HEADER_H__

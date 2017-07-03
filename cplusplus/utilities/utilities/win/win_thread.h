@@ -31,16 +31,14 @@
 # error "requires /MDd, /MD, /MTd or /MT compiler options"
 #endif
 
-
 namespace util {
-
 
 class Thread : private UnCopyable {
   HANDLE              start_event_;
   HANDLE              thread_;
   SmartPtr<Routiner>  routine_;
 public:
-  Thread(void) 
+  Thread(void)
     : start_event_(NULL)
     , thread_(NULL)
     , routine_(static_cast<Routiner*>(NULL)) {
@@ -59,7 +57,7 @@ public:
     start_event_ = CreateEvent(NULL, TRUE, FALSE, NULL);
     UTIL_ASSERT(NULL != start_event_);
 
-    thread_ = (HANDLE)_beginthreadex(NULL, 
+    thread_ = (HANDLE)_beginthreadex(NULL,
         0, &Thread::Routine, this, 0, NULL);
     UTIL_ASSERT(NULL != thread_);
 
@@ -101,7 +99,6 @@ private:
     return 0;
   }
 };
-
 
 }
 

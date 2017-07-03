@@ -40,13 +40,11 @@ namespace util {
 // implemention with C++11
 // #define STATIC_ASSERT(expr) do {\
 //   enum class Checker {
-//     CHECKER_VALUE = 1 / static_cast<int>(expr), 
+//     CHECKER_VALUE = 1 / static_cast<int>(expr),
 //   };
 // } while (0)
 
-
-
-// use incomplete type to implement 
+// use incomplete type to implement
 //
 // template <bool expr> struct CompileTimeChecker;
 // template <> struct CompileTimeChecker<true> {};
@@ -55,15 +53,13 @@ namespace util {
 // } while (0)
 
 
-// use sizeof to implement 
+// use sizeof to implement
 //
 // template <bool expr> struct CompileTimeChecker;
 // template <> struct CompileTimeChecker<true> {};
 // #define STATIC_ASSERT(expr) do {\
 //   (void)sizeof(CompileTimeChecker<(expr)>);\
 // } while (0)
-
-
 
 // use strongly enumerates with C++11
 //
@@ -72,7 +68,7 @@ template <bool expr> struct CompileTimeChecker;
 template <> struct CompileTimeChecker<true> {
 #if defined(USE_CPP0X)
   enum class Checker : bool {
-    CHECKER_VALUE = true, 
+    CHECKER_VALUE = true,
   };
 #else
   enum Checker { CHECKER_VALUE = 1, };
@@ -81,7 +77,6 @@ template <> struct CompileTimeChecker<true> {
 #define STATIC_ASSERT(expr) do {\
   (void)CompileTimeChecker<(expr)>::Checker::CHECKER_VALUE;\
 } while (0)
-
 
 }
 

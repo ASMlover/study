@@ -1,4 +1,4 @@
-# Copyright (c) 2014 ASMlover. All rights reserved.
+# Copyright (c) 2017 ASMlover. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,34 +25,29 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-OUT	= util 
-RM	= rm 
-CC	= g++
-CFLAGS	= -g -O2 -Wall -Wno-comment -std=c++0x
-INCLUDES = -I./utilities 
-LDFLAGS	= -lpthread
-SRCS	= $(wildcard *.cc)
-OBJS	= $(SRCS:.cc=.o)
+cmake_minimum_required(VERSION 3.0)
+set(PROJECT_NAME "UtilitiesPROJ")
+project(${PROJECT_NAME} CXX)
 
+if (NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+message(STATUS "[${PROJECT_NAME}] CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+  add_definitions(
+    /D_UNICODE
+    /D_CRT_SECURE_NO_WARNINGS
+    /D_CRT_NONSTDC_NO_WARNINGS)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc")
+else()
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -ggdb -O2 -Wall -Wno-comment -std=c++1y")
+endif()
+message(STATUS "[${PROJECT_NAME}] CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
+include_directories(${PROJECT_SOURCE_DIR}/utilities)
 
+file(GLOB_RECURSE UTILITIES_SOURCES *.cc)
+message(STATUS "[${PROJECT_NAME}] UTILITIES_SOURCES: ${UTILITIES_SOURCES}")
 
-all: $(OUT)
-
-rebuild: clean all 
-
-clean:
-	$(RM) $(OUT) $(OBJS)
-
-clean_test:
-	$(RM) *.txt
-
-
-
-
-$(OUT): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
-
-$(OBJS): %.o: %.cc 
-	$(CC) -o $*.o -c $(CFLAGS) $(INCLUDES) $^
+add_executable(utilities ${UTILITIES_SOURCES})

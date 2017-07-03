@@ -35,7 +35,7 @@ class AutoreleasePool : private util::UnCopyable {
   std::string       name_;
   std::vector<Ref*> objects_array_;
 public:
-  // Don't create an auto release pool in heap, 
+  // Don't create an auto release pool in heap,
   // create it in stack.
   AutoreleasePool(void);
 
@@ -45,15 +45,15 @@ public:
 
   // Add a given object into this pool.
   //
-  // The same object may be added several times to the 
-  // same pool, when the pool is destructed, the object's 
-  // Ref::Release() method will be called for each time 
+  // The same object may be added several times to the
+  // same pool, when the pool is destructed, the object's
+  // Ref::Release() method will be called for each time
   // it was added.
   void AddObject(Ref* object);
 
   // Clear the auto release pool.
   //
-  // Ref::Release() will be called for each time the managed 
+  // Ref::Release() will be called for each time the managed
   // objects is added to the pool.
   void Clear(void);
 
@@ -62,15 +62,15 @@ public:
 };
 
 class PoolManager : private util::UnCopyable {
-  AutoreleasePool*              current_pool_;
+  AutoreleasePool*              current_pool_{};
   std::deque<AutoreleasePool*>  pool_stack_;
 public:
   static PoolManager* GetInstance(void);
   static void DestroyInstance(void);
 
-  // Get current auto release pool, there is at least one 
-  // auto release pool that created by engine. 
-  // You can create your own auto release pool at demand, 
+  // Get current auto release pool, there is at least one
+  // auto release pool that created by engine.
+  // You can create your own auto release pool at demand,
   // which will be put into auto release pool stack.
   AutoreleasePool* GetCurrentPool(void) const;
 
@@ -79,7 +79,7 @@ public:
   void Push(AutoreleasePool* pool);
   void Pop(void);
 private:
-  PoolManager(void);
+  PoolManager(void) = default;
   ~PoolManager(void);
 };
 

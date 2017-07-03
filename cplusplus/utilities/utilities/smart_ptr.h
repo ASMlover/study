@@ -27,9 +27,7 @@
 #ifndef __UTIL_SMART_PTR_HEADER_H__
 #define __UTIL_SMART_PTR_HEADER_H__
 
-
 namespace util {
-
 
 // abstruct base class for destructor of smart pointer
 class RefPointer : private UnCopyable {
@@ -39,7 +37,6 @@ public:
 
   virtual void Destroy(void) = 0;
 };
-
 
 template <typename T>
 class RefPtrDelete : public RefPointer {
@@ -77,15 +74,13 @@ public:
   }
 };
 
-
-
 // SmartPtr
 //
-// An enhanced relative of smart pointer with reference counted copy 
+// An enhanced relative of smart pointer with reference counted copy
 // semantics.
-// This object pointed to is deleted when the last SmartPtr pointing 
+// This object pointed to is deleted when the last SmartPtr pointing
 // to it is destroyed or reset.
-template <typename T, typename Locker = DummyLock> 
+template <typename T, typename Locker = DummyLock>
 class SmartPtr {
   T*                  ptr_;
   RefPointer*         ref_ptr_;
@@ -93,9 +88,9 @@ class SmartPtr {
 
   typedef SmartPtr<T, Locker> SelfType;
 public:
-  SmartPtr(void) 
+  SmartPtr(void)
     : ptr_(nullptr)
-    , ref_ptr_(nullptr) 
+    , ref_ptr_(nullptr)
     , ref_count_(nullptr) {
   }
 
@@ -128,7 +123,7 @@ public:
     }
   }
 
-  SmartPtr(const SmartPtr& x) 
+  SmartPtr(const SmartPtr& x)
     : ptr_(x.ptr_)
     , ref_ptr_(x.ref_ptr_)
     , ref_count_(x.ref_count_) {
@@ -137,7 +132,7 @@ public:
   }
 
   template <typename Y>
-  SmartPtr(const SmartPtr<Y, Locker>& x) 
+  SmartPtr(const SmartPtr<Y, Locker>& x)
     : ptr_(x.Get())
     , ref_ptr_(x.GetRefPointer())
     , ref_count_(x.GetRefCounter()) {
@@ -213,8 +208,6 @@ inline bool operator!=(
   return x.Get() != y.Get();
 }
 
-
 }
-
 
 #endif  // __UTIL_SMART_PTR_HEADER_H__

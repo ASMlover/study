@@ -27,9 +27,7 @@
 #ifndef __UTIL_SINGLETON_HEADER_H__
 #define __UTIL_SINGLETON_HEADER_H__
 
-
 namespace util {
-
 
 // Singleton class implements.
 template <typename Object, typename Locker = SpinLock>
@@ -51,7 +49,6 @@ public:
     return *s_instance;
   }
 };
-
 
 }
 

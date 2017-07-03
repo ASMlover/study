@@ -27,7 +27,6 @@
 #ifndef __UTIL_POSIX_THREADEX_HEADER_H__
 #define __UTIL_POSIX_THREADEX_HEADER_H__
 
-
 namespace util {
 
 class ThreadEx : private UnCopyable {
@@ -35,9 +34,9 @@ class ThreadEx : private UnCopyable {
   RoutinerType routine_;
   void*        argument_;
 public:
-  ThreadEx(void) 
-    : thread_id_(0) 
-    , routine_(nullptr) 
+  ThreadEx(void)
+    : thread_id_(0)
+    , routine_(nullptr)
     , argument_(nullptr) {
   }
 
@@ -49,7 +48,7 @@ public:
     routine_ = routine;
     argument_ = argument;
 
-    UTIL_ASSERT(0 == 
+    UTIL_ASSERT(0 ==
         pthread_create(&thread_id_, 0, ThreadEx::Routine, this));
   }
 
@@ -59,7 +58,7 @@ public:
       thread_id_ = 0;
     }
   }
-  
+
   uint32_t GetID(void) const {
     return pthread_self();
   }
@@ -84,6 +83,5 @@ private:
 };
 
 }
-
 
 #endif  // __UTIL_POSIX_THREADEX_HEADER_H__

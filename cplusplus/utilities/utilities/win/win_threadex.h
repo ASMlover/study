@@ -27,7 +27,6 @@
 #ifndef __UTIL_WIN_THREADEX_HEADER_H__
 #define __UTIL_WIN_THREADEX_HEADER_H__
 
-
 namespace util {
 
 class ThreadEx : private UnCopyable {
@@ -36,10 +35,10 @@ class ThreadEx : private UnCopyable {
   RoutinerType routine_;
   void*        argument_;
 public:
-  ThreadEx(void) 
-    : thread_(nullptr) 
-    , start_event_(nullptr) 
-    , routine_(nullptr) 
+  ThreadEx(void)
+    : thread_(nullptr)
+    , start_event_(nullptr)
+    , routine_(nullptr)
     , argument_(nullptr) {
   }
 
@@ -54,7 +53,7 @@ public:
     start_event_ = CreateEvent(nullptr, TRUE, FALSE, nullptr);
     UTIL_ASSERT(nullptr != start_event_);
 
-    thread_ = static_cast<HANDLE>(_beginthreadex(nullptr, 
+    thread_ = static_cast<HANDLE>(_beginthreadex(nullptr,
           0, &ThreadEx::Routine, this, 0, nullptr));
     UTIL_ASSERT(nullptr != thread_);
 
@@ -91,7 +90,7 @@ private:
 
     SetEvent(self->start_event_);
 
-    if (nullptr != self->routine_) 
+    if (nullptr != self->routine_)
       self->routine_(self->argument_);
 
     return 0;
@@ -99,6 +98,5 @@ private:
 };
 
 }
-
 
 #endif  // __UTIL_WIN_THREADEX_HEADER_H__

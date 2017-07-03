@@ -27,15 +27,17 @@
 #ifndef __REF_HEADER_H__
 #define __REF_HEADER_H__
 
+#include <stdint.h>
+
 class Ref {
 protected:
-  uint32_t ref_count_;
+  uint32_t ref_count_{1};
 
-  Ref(void);
+  Ref(void) = default;
 public:
-  virtual ~Ref(void);
+  virtual ~Ref(void) {}
 
-  // Retains the ownership. 
+  // Retains the ownership.
   //
   // This increases the Ref's reference count.
   void Retain(void);
@@ -44,16 +46,16 @@ public:
   //
   // This decrements the Ref's reference count.
   //
-  // If the reference count reaches 0 after the decrements, 
+  // If the reference count reaches 0 after the decrements,
   // the Ref is destructed.
   void Release(void);
 
   // Release the ownership sometime soom automatically.
   //
-  // This decrements the Ref's reference count at the 
+  // This decrements the Ref's reference count at the
   // end of current autorelease pool block.
   //
-  // If the reference count reaches 0 after the decrements, 
+  // If the reference count reaches 0 after the decrements,
   // the Ref is destructed.
   Ref* Autorelease(void);
 

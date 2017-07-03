@@ -27,17 +27,17 @@
 #ifndef __DISPATCHER_HEADER_H__
 #define __DISPATCHER_HEADER_H__
 
-#include <functional>
+#include <utility.h>
 
 enum class MsgType {
-  MSGTYPE_ERROR = 0, 
-  MSGTYPE_LOGIN, 
-  MSGTYPE_GAME, 
+  MSGTYPE_ERROR = 0,
+  MSGTYPE_LOGIN,
+  MSGTYPE_GAME,
 };
 
 // The dispatcher of networking message.
 //
-// Since the Dispatcher is a singleton, the standard way 
+// Since the Dispatcher is a singleton, the standard way
 // to use it is by calling:
 //    Dispatcher::GetSingleton().methodName();
 class Dispatcher : private util::UnCopyable {
@@ -45,8 +45,8 @@ class Dispatcher : private util::UnCopyable {
     MsgType Type;
     uint8_t Proto;
 
-    KeyType(MsgType type, uint8_t proto) 
-      : Type(type) 
+    KeyType(MsgType type, uint8_t proto)
+      : Type(type)
       , Proto(proto) {
     }
 
@@ -62,13 +62,13 @@ class Dispatcher : private util::UnCopyable {
 
   std::map<KeyType, ValueType> dispatchers_;
 public:
-  Dispatcher(void);
-  ~Dispatcher(void);
+  Dispatcher(void) = default;
+  ~Dispatcher(void) = default;
 
   // returns a shared instance of Dispatcher
   static Dispatcher& GetSingleton(void);
 
-  // process the metworking message 
+  // process the metworking message
   bool Dispatch(MsgType type, uint8_t proto, const void* msg);
 
   // register/ungister dispatch handler

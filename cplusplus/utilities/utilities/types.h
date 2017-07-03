@@ -39,7 +39,6 @@
 # endif
 #endif
 
-
 #if defined(PLATFORM_WIN)
 # if (_MSC_VER < 1600)
 #   if (_MSC_VER < 1300)
@@ -82,16 +81,6 @@
 # endif
 #else
 # include <stdint.h>
-#endif
-
-#if !defined(USE_CPP0X)
-# if defined(__cplusplus) && (__cplusplus == 201103L)
-#   define USE_CPP0X
-# endif
-#endif
-
-#if !defined(USE_CPP0X)
-# define nullptr  NULL
 #endif
 
 #endif  // __UTIL_TYPES_HEADER_H__

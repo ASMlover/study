@@ -29,7 +29,7 @@
 class Value : private util::UnCopyable {
   int val_;
 public:
-  explicit Value(int v) 
+  explicit Value(int v)
     : val_(v) {
     fprintf(stdout, "%s => val_ = %d\n", __func__, val_);
   }
@@ -38,7 +38,6 @@ public:
     fprintf(stdout, "%s => val_ = %d\n", __func__, val_);
   }
 };
-
 
 class TraceLock : private util::UnCopyable {
 public:
@@ -76,7 +75,6 @@ int main(int argc, char* argv[]) {
     util::SmartPtr<FILE, TraceLock> f1(fopen("demo2.txt", "w"), CloseFile);
     f1 = f;
   }
-
 
   return 0;
 }

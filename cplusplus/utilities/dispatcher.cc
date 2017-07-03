@@ -27,12 +27,6 @@
 #include <utility.h>
 #include "dispatcher.h"
 
-Dispatcher::Dispatcher(void) {
-}
-
-Dispatcher::~Dispatcher(void) {
-}
-
 Dispatcher& Dispatcher::GetSingleton(void) {
   static Dispatcher s_shared_dispatcher;
 
@@ -41,9 +35,9 @@ Dispatcher& Dispatcher::GetSingleton(void) {
 
 bool Dispatcher::Dispatch(MsgType type, uint8_t proto, const void* msg) {
   KeyType key(type, proto);
-  std::map<KeyType, ValueType>::iterator it = dispatchers_.find(key);
+  auto it = dispatchers_.find(key);
 
-  if (it != dispatchers_.end()) 
+  if (it != dispatchers_.end())
     it->second(msg);
 
   return true;
@@ -52,9 +46,9 @@ bool Dispatcher::Dispatch(MsgType type, uint8_t proto, const void* msg) {
 bool Dispatcher::RegisterDispatcher(
     MsgType type, uint8_t proto, const ValueType& callback) {
   KeyType key(type, proto);
-  std::map<KeyType, ValueType>::iterator it = dispatchers_.find(key);
+  auto it = dispatchers_.find(key);
 
-  if (it == dispatchers_.end()) 
+  if (it == dispatchers_.end())
     dispatchers_[key] = callback;
 
   return true;
@@ -62,7 +56,7 @@ bool Dispatcher::RegisterDispatcher(
 
 void Dispatcher::UnregisterDispatcher(MsgType type, uint8_t proto) {
   KeyType key(type, proto);
-  std::map<KeyType, ValueType>::iterator it = dispatchers_.find(key);
+  auto it = dispatchers_.find(key);
 
   if (it != dispatchers_.end())
     dispatchers_.erase(it);

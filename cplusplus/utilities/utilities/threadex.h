@@ -27,7 +27,6 @@
 #ifndef __UTIL_THREADEX_HEADER_H__
 #define __UTIL_THREADEX_HEADER_H__
 
-
 typedef std::function<void (void*)> RoutinerType;
 
 #define UTIL_THREAD_CALLBACK(__selector__, __target__)\
