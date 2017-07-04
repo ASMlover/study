@@ -25,6 +25,44 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <algorithm>
+#include <vector>
+
+class Component {
+public:
+  Component(void) = default;
+  virtual ~Component(void) {}
+  virtual void add_child(Component* /*child*/) {}
+  virtual void del_child(Component* /*child*/) {}
+  virtual Component* get_child(int /*index*/) { return nullptr; }
+};
+
+class Composite : public Component {
+  std::vector<Component*> components_;
+public:
+  Composite(void) = default;
+  virtual ~Composite(void) {
+    for (auto* comp : components_)
+      delete comp;
+    components_.clear();
+  }
+
+  virtual void add_child(Component* child) override {
+    components_.push_back(child);
+  }
+
+  virtual void del_child(Component* child) override {
+    components_.erase(
+        std::find(components_.begin(), components_.end(), child));
+  }
+
+  virtual Component* get_child(int index) override {
+    if (index < 0 || static_cast<std::size_t>(index) >= components_.size())
+      return nullptr;
+
+    return components_[index];
+  }
+};
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
