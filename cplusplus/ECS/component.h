@@ -24,48 +24,19 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
-#include <algorithm>
-#include <vector>
+#pragma once
 
-class Component {
-public:
-  Component(void) = default;
-  virtual ~Component(void) {}
-  virtual void add_child(Component* /*child*/) {}
-  virtual void del_child(Component* /*child*/) {}
-  virtual Component* get_child(int /*index*/) { return nullptr; }
-};
+#include <cstdint>
 
-class Composite : public Component {
-  std::vector<Component*> components_;
-public:
-  Composite(void) = default;
-  virtual ~Composite(void) {
-    for (auto* comp : components_)
-      delete comp;
-    components_.clear();
-  }
+namespace ecs {
 
-  virtual void add_child(Component* child) override {
-    components_.push_back(child);
-  }
+struct BaseComponent {
+  static constexpr std::uint8_t kMaxComponents = 128;
+  static std::uint8_t id_counter;
 
-  virtual void del_child(Component* child) override {
-    components_.erase(
-        std::find(components_.begin(), components_.end(), child));
-  }
-
-  virtual Component* get_child(int index) override {
-    if (index < 0 || static_cast<std::size_t>(index) >= components_.size())
-      return nullptr;
-
-    return components_[index];
+  static std::uint8_t get_id(void) {
+    return id_counter++;
   }
 };
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
-
-  return 0;
 }
