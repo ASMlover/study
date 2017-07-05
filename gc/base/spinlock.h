@@ -31,24 +31,51 @@
 # include <Windows.h>
 #endif
 
+namespace details {
+
+inline long atomic_exchange(long* p, long v, long old = 0) {
+#if defined(BASE_POSIX)
+  return __sync_val_compare_and_swap(p, old, v);
+#else
+  return InterlockedExchange(p, v);
+#endif
+}
+
+inline long atomic_test_exchange(long* p, long v, long old = 0) {
+#if defined(BASE_POSIX)
+  while (__sync_val_compare_and_swap(p, 0, 0) == 1) {
+  }
+#else
+  while (InterlockedCompareExchange(p, 0, 0) == 1) {
+  }
+#endif
+  return atomic_exchange(p, v, old);
+}
+
+}
+
 class ExchangeSpinlock : private UnCopyable {
   long mutex_{};
 public:
   void lock(void) {
-#if defined(BASE_POSIX)
-    while (__sync_val_compare_and_swap(&mutex_, 0, 1) == 1) {
+    while (details::atomic_exchange(&mutex_, 1) == 1) {
     }
-#else
-    while (InterlockedExchange(&mutex_, 1) == 1) {
-    }
-#endif
   }
 
   void unlock(void) {
-#if defined(BASE_POSIX)
-    __sync_val_compare_and_swap(&mutex_, 1, 0);
-#else
-    InterlockedExchange(&mutex_, 0);
-#endif
+    details::atomic_exchange(&mutex_, 0, 1);
+  }
+};
+
+class TestExchangeSpinlock : private UnCopyable {
+  long mutex_{};
+public:
+  void lock(void) {
+    while (details::atomic_test_exchange(&mutex_, 1) == 1) {
+    }
+  }
+
+  void unlock(void) {
+    details::atomic_exchange(&mutex_, 0, 1);
   }
 };
