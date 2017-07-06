@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <atomic>
 #include "base.h"
 #if defined(BASE_WINDOWS)
 # include <Windows.h>
@@ -33,7 +34,7 @@
 
 namespace details {
 
-inline long atomic_exchange(long* p, long v, long old = 0) {
+inline long atomic_exchange(volatile long* p, long v, long old = 0) {
 #if defined(BASE_POSIX)
   return __sync_val_compare_and_swap(p, old, v);
 #else
@@ -41,7 +42,7 @@ inline long atomic_exchange(long* p, long v, long old = 0) {
 #endif
 }
 
-inline long atomic_test_exchange(long* p, long v, long old = 0) {
+inline long atomic_test_exchange(volatile long* p, long v, long old = 0) {
 #if defined(BASE_POSIX)
   while (__sync_val_compare_and_swap(p, 0, 0) == 1) {
   }
@@ -52,30 +53,93 @@ inline long atomic_test_exchange(long* p, long v, long old = 0) {
   return atomic_exchange(p, v, old);
 }
 
+inline long atomic_test_and_set(volatile long* p, long v) {
+#if defined(BASE_POSIX)
+  return __sync_lock_test_and_set(p, v);
+#else
+  return InterlockedExchange(p, v);
+#endif
+}
+
+inline long atomic_test_and_test_and_set(volatile long* p, long v) {
+#if defined(BASE_POSIX)
+  while (__sync_val_compare_and_swap(p, 0, 0) == 1) {
+  }
+#else
+  while (InterlockedCompareExchange(p, 0, 0) == 1) {
+  }
+#endif
+  return atomic_test_and_set(p, v);
+}
+
 }
 
 class ExchangeSpinlock : private UnCopyable {
-  long mutex_{};
+  volatile long m_{};
 public:
   void lock(void) {
-    while (details::atomic_exchange(&mutex_, 1) == 1) {
+    while (details::atomic_exchange(&m_, 1) == 1) {
     }
   }
 
   void unlock(void) {
-    details::atomic_exchange(&mutex_, 0, 1);
+    details::atomic_exchange(&m_, 0, 1);
   }
 };
 
 class TestExchangeSpinlock : private UnCopyable {
-  long mutex_{};
+  volatile long m_{};
 public:
   void lock(void) {
-    while (details::atomic_test_exchange(&mutex_, 1) == 1) {
+    while (details::atomic_test_exchange(&m_, 1) == 1) {
     }
   }
 
   void unlock(void) {
-    details::atomic_exchange(&mutex_, 0, 1);
+    details::atomic_exchange(&m_, 0, 1);
+  }
+};
+
+class TestAndSetSpinlock : private UnCopyable {
+  volatile long m_{};
+public:
+  void lock(void) {
+    while (details::atomic_test_and_set(&m_, 1) == 1) {
+    }
+  }
+
+  void unlock(void) {
+    details::atomic_test_and_set(&m_, 0);
+  }
+};
+
+class TestAndTestAndSetSpinlock : private UnCopyable {
+  volatile long m_{};
+public:
+  void lock(void) {
+    while (details::atomic_test_and_test_and_set(&m_, 1) == 1) {
+    }
+  }
+
+  void unlock(void) {
+    details::atomic_test_and_set(&m_, 0);
+  }
+};
+
+class FastSpinlock : private UnCopyable {
+  volatile std::atomic_flag m_;
+public:
+  FastSpinlock(void) {
+    m_.clear();
+  }
+
+  void lock(void) {
+    while (std::atomic_flag_test_and_set_explicit(&m_,
+          std::memory_order_acquire)) {
+    }
+  }
+
+  void unlock(void) {
+    std::atomic_flag_clear_explicit(&m_, std::memory_order_release);
   }
 };
