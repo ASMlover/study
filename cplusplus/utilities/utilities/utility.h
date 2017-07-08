@@ -55,9 +55,7 @@
 #include <time.h>
 
 // ANSI C++ header
-#if defined(USE_CPP0X)
-# include <functional>
-#endif
+#include <functional>
 #include <memory>
 #include <string>
 #include <stdexcept>

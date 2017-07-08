@@ -27,11 +27,11 @@
 #ifndef __REF_HEADER_H__
 #define __REF_HEADER_H__
 
-#include <stdint.h>
+#include <cstdint>
 
 class Ref {
 protected:
-  uint32_t ref_count_{1};
+  std::uint32_t ref_count_{1};
 
   Ref(void) = default;
 public:
@@ -60,7 +60,7 @@ public:
   Ref* Autorelease(void);
 
   // Returns the Ref's current reference count.
-  uint32_t GetRefCount(void) const;
+  std::uint32_t GetRefCount(void) const;
 };
 
 #endif  // __REF_HEADER_H__

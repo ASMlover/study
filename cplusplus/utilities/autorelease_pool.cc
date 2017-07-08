@@ -30,13 +30,13 @@
 
 AutoreleasePool::AutoreleasePool(void)
   : name_("") {
-  objects_array_.reserve(150);
+  objects_array_.reserve(kPoolSize);
   PoolManager::GetInstance()->Push(this);
 }
 
 AutoreleasePool::AutoreleasePool(const std::string& name)
   : name_(name) {
-  objects_array_.reserve(150);
+  objects_array_.reserve(kPoolSize);
   PoolManager::GetInstance()->Push(this);
 }
 

@@ -34,6 +34,7 @@ class Ref;
 class AutoreleasePool : private util::UnCopyable {
   std::string       name_;
   std::vector<Ref*> objects_array_;
+  static constexpr std::size_t kPoolSize = 150;
 public:
   // Don't create an auto release pool in heap,
   // create it in stack.

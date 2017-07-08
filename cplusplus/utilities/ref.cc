@@ -42,6 +42,6 @@ Ref* Ref::Autorelease(void) {
   return this;
 }
 
-uint32_t Ref::GetRefCount(void) const {
+std::uint32_t Ref::GetRefCount(void) const {
   return ref_count_;
 }
