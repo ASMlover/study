@@ -38,7 +38,7 @@
         bool __sync_bool_compare_and_swap(type* ptr, type oldval, type newval, ...)
             { return (*ptr == oldval) ? (*ptr = newval, true) : false; }
         type __sync_val_compare_and_swap(type* ptr, type oldval, type newval, ...)
-            { return (*ptr == oldval) ? (*ptr = newval, oldval) : *ptr; }
+            { tmp = *ptr; if (*ptr == oldval) { *ptr = newval; } return tmp; }
         type __sync_lock_test_and_set(type* ptr, type value, ...)
             { type oldval = *ptr; *ptr = value; return oldval; }
         void __sync_lock_release(type* ptr, ...)
