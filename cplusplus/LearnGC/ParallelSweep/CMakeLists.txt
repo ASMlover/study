@@ -27,8 +27,8 @@
 
 set(OUTPUT_NAME "parallel-sweep")
 
-file(GLOB_RECURSE PARALLELMARK_SOURCES *.cc)
-message(STATUS "[LearnGC.ParallelMarkSweep] PARALLELMARK_SOURCES: ${PARALLELMARK_SOURCES}")
+file(GLOB_RECURSE PARALLELSWEEP_SOURCES *.cc)
+message(STATUS "[LearnGC.ParallelSweep] PARALLELSWEEP_SOURCES: ${PARALLELSWEEP_SOURCES}")
 
-add_executable(${OUTPUT_NAME} ${PARALLELMARK_SOURCES})
+add_executable(${OUTPUT_NAME} ${PARALLELSWEEP_SOURCES})
 target_link_libraries(${OUTPUT_NAME} chaos)
