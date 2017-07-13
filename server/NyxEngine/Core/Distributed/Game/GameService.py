@@ -29,11 +29,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import random
+import sys
 import async_timer
 from Common.EntityUtils import EntityFactory, EntityManager
 from Common.Codec import CodecDecoder
 from Distributed.Game import GameGlobal
 from Log.LogManager import LogManager
+from Proto.Details import BasicProtocol_pb2 as _B_PB2
+from Proto.Details import Common_pb2 as _C_PB2
 
 class Game2ClientProxy(object):
     def __init__(self, stub):
@@ -87,3 +90,85 @@ class Game2ClientProxyManager(object):
 
     def get_gate_proxies(self):
         return self.gate_proxies
+
+class GameService(_B_PB2.SGateToGame):
+    """Game服务"""
+    def __init__(self, config, config_sections):
+        _B_PB2.SGateToGame.__init__(self)
+        self.logger = LogManager.get_logger('Game.GameService')
+        LogManager.set_game_tag(
+                config[config_sections.game].get('game_tag', ''))
+        self.config = config
+
+        GameGlobal.game_event_callback = self._create_entity(
+                str(config[config_sections.game]['game_event_callback']))
+        GameGlobal.game_name = config[config_sections.game].get('game_name', '')
+
+        sys.excepthook = lambda t, v, tb:
+            GameGlobal.game_event_callback.on_traceback(t, v, tb)
+        self.bootstrap_entity =
+            str(config[config_sections.game]['bootstrap_entity'])
+        self.reconnect_entity = str(config[config_sections.game].get(
+            'reconnect_entity', 'ReconnectEntity'))
+        self.enable_md5index = bool(config[config_sections.game].get(
+            'enable_md5index', False))
+
+        self.client_info = _B_PB2.ClientInfo()
+        self.clients = {}
+        self.forward_haeder = _B_PB2.ForwardMessageHeader()
+        # TODO:
+
+        GameGlobal.game_service = self
+
+    def _create_entity(self, entity_type):
+        entity = EntityFactory.get_instance().create_entity(entity_type)
+        if entity is None:
+            self.logger.error(
+                    'GameService._create_entity: can not create entity %s',
+                    entity_type)
+            raise Exception('can not create entity %s' % entity_type)
+        return entity
+
+    def _on_game_traceback(self):
+        """Game Service发生的traceback"""
+        t, v, tb = sys.exc_info()
+        GameGlobal.game_event_callback.on_traceback(t, v tb)
+
+    def _parse_client_info(self, request_msg, client_info):
+        client_info.ParseFromString(request_msg.routes)
+        if not client_info.HasField('client_id'):
+            self.logger.error(
+                    'GameService._parse_client_info: not found client id')
+            return
+        return True
+
+    def _do_new_connection(self, client_info, rpc_channel):
+        # TODO:
+        pass
+
+    def _do_reconnection(self, client_info, request, rpc_channel):
+        # TODO:
+        pass
+
+    def _do_bind_avatar(self, client_info, request, rpc_channel):
+        # TODO:
+        pass
+
+    def connect_game(self, controller, request, done):
+        """客户端连接Game的RPC调用"""
+        client_info = _B_PB2.ClientInfo()
+        if not self._parse_client_info(request, client_info):
+            self.logger.error('GameService.connect_game: no valid client info')
+            return
+
+        rpc_channel = controller.rpc_channel
+        try:
+            if request.type == _C_PB2.ConnectRequest.NEWCONNECTION:
+                self._do_new_connection(client_info, rpc_channel)
+            elif request.type == _C_PB2.ConnectRequest.RECONNECTION:
+                self._do_reconnection(client_info, request, rpc_channel)
+            elif request.type == _C_PB2.ConnectRequest.BIND_AVATAR:
+                self._do_bind_avatar(client_info, request, rpc_channel)
+        except:
+            self._on_game_traceback()
+            self.logger._log_exception()
