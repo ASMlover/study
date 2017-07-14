@@ -24,33 +24,62 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include <list>
-#include <vector>
-#include <Chaos/UnCopyable.h>
+#include <iostream>
+#include <Chaos/Types.h>
+#include <Chaos/Concurrent/Thread.h>
+#include "object.h"
+#include "parallel_sweep.h"
 
 namespace gc {
 
-class BaseObject;
-class Worker;
+ParallelSweep::ParallelSweep(void) {
+}
 
-class ParallelSweep : private Chaos::UnCopyable {
-  bool stop_{};
-  std::vector<Worker*> wrokers_;
+ParallelSweep::~ParallelSweep(void) {
+}
 
-  ParallelSweep(void);
-  ~ParallelSweep(void);
+void ParallelSweep::start_workers(int nworker) {
+}
 
-  void start_workers(int nworker = 4);
-  void stop_workers(void);
-public:
-  static ParallelSweep& get_instance(void);
+void ParallelSweep::stop_workers(void) {
+}
 
-  void collect(void);
-  BaseObject* put_in(int value);
-  BaseObject* put_in(BaseObject* first = nullptr, BaseObject* second = nullptr);
-  BaseObject* fetch_out(void);
-};
+ParallelSweep& ParallelSweep::get_instance(void) {
+  static ParallelSweep ins;
+  return ins;
+}
+
+void ParallelSweep::collect(void) {
+}
+
+BaseObject* ParallelSweep::put_in(int value) {
+  // TODO:
+
+  auto* obj = new Int();
+  obj->set_value(value);
+
+  // TODO:
+
+  return obj;
+}
+
+BaseObject* ParallelSweep::put_in(BaseObject* first, BaseObject* second) {
+  // TODO:
+
+  auto* obj = new Pair();
+  if (first != nullptr)
+    obj->set_first(first);
+  if (second != nullptr)
+    obj->set_second(second);
+
+  // TODO:
+
+  return obj;
+}
+
+BaseObject* ParallelSweep::fetch_out(void) {
+  // TODO:
+  return nullptr;
+}
 
 }
