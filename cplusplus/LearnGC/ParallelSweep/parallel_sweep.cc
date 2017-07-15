@@ -24,24 +24,102 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <algorithm>
+#include <functional>
 #include <iostream>
+#include <mutex>
+#include <thread>
 #include <Chaos/Types.h>
-#include <Chaos/Concurrent/Thread.h>
 #include "object.h"
 #include "parallel_sweep.h"
 
 namespace gc {
 
+struct Worker {
+  std::mutex mutex_;
+  std::unique_ptr<std::thread> thread_;
+  std::vector<BaseObject*> roots_;
+public:
+  Worker(std::thread* thread)
+    : thread_(thread) {
+  }
+
+  void put_in(BaseObject* obj) {
+    roots_.push_back(obj);
+  }
+
+  BaseObject* fetch_out(void) {
+    auto* obj = roots_.back();
+    roots_.pop_back();
+    return obj;
+  }
+
+  void transfer(std::size_t n, std::vector<BaseObject*>& objects) {
+    std::copy_n(roots_.begin(), n, objects.begin());
+  }
+};
+
 ParallelSweep::ParallelSweep(void) {
+  start_workers();
 }
 
 ParallelSweep::~ParallelSweep(void) {
+  stop_workers();
 }
 
-void ParallelSweep::start_workers(int nworker) {
+void ParallelSweep::start_workers(int nworkers) {
+  nworkers_ = nworkers;
+  for (auto i = 0; i < nworkers_; ++i) {
+    auto* worker = new Worker(new std::thread(
+        std::bind(&ParallelSweep::collect_routine, this)));
+    workers_.emplace_back(worker);
+  }
 }
 
 void ParallelSweep::stop_workers(void) {
+  stop_ = true;
+  for (auto i = 0; i < nworkers_; ++i)
+    workers_[i]->thread_->join();
+}
+
+void ParallelSweep::collect_routine(void) {
+  std::vector<BaseObject*> stack_objects;
+  while (!stop_) {
+  }
+}
+
+int ParallelSweep::put_in_turn(void) {
+  int index = put_index_;
+  put_index_ = (put_index_ + 1) % nworkers_;
+  return index;
+}
+
+int ParallelSweep::fetch_out_turn(void) {
+  int index = fetch_index_;
+  fetch_index_ = (fetch_index_ + 1) % nworkers_;
+  return index;
+}
+
+void ParallelSweep::acquire_work(void) {
+}
+
+void ParallelSweep::perform_work(void) {
+}
+
+void ParallelSweep::generate_work(void) {
+}
+
+void ParallelSweep::sweep(void) {
+  for (auto it = objects_.begin(); it != objects_.end();) {
+    if (!(*it)->is_marked()) {
+      delete *it;
+      objects_.erase(it++);
+    }
+    else {
+      (*it)->unset_marked();
+      ++it;
+    }
+  }
 }
 
 ParallelSweep& ParallelSweep::get_instance(void) {

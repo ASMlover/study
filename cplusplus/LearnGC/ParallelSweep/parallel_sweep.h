@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <memory>
 #include <list>
 #include <vector>
 #include <Chaos/UnCopyable.h>
@@ -33,17 +34,31 @@
 namespace gc {
 
 class BaseObject;
-class Worker;
+struct Worker;
 
 class ParallelSweep : private Chaos::UnCopyable {
+  using WorkerEntity = std::unique_ptr<Worker>;
+
   bool stop_{};
-  std::vector<Worker*> wrokers_;
+  int nworkers_{};
+  int put_index_{};
+  int fetch_index_{};
+  std::vector<WorkerEntity> workers_;
+  std::list<BaseObject*> objects_;
+  static constexpr std::size_t kMaxObjects = 4096;
 
   ParallelSweep(void);
   ~ParallelSweep(void);
 
-  void start_workers(int nworker = 4);
+  void start_workers(int nworkers = 4);
   void stop_workers(void);
+  void collect_routine(void);
+  int put_in_turn(void);
+  int fetch_out_turn(void);
+  void acquire_work(void);
+  void perform_work(void);
+  void generate_work(void);
+  void sweep(void);
 public:
   static ParallelSweep& get_instance(void);
 
