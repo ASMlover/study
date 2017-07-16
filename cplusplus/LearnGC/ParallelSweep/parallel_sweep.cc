@@ -25,28 +25,92 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <algorithm>
+#include <chrono>
 #include <functional>
 #include <iostream>
 #include <mutex>
 #include <thread>
 #include <Chaos/Types.h>
+#include <Chaos/Logging/Logging.h>
 #include "object.h"
 #include "parallel_sweep.h"
 
 namespace gc {
 
-struct Worker {
+class Worker {
+  int order_{};
+  bool stop_{};
+  bool run_tracing_{};
   std::mutex mutex_;
   std::unique_ptr<std::thread> thread_;
   std::vector<BaseObject*> roots_;
-public:
-  Worker(std::thread* thread)
-    : thread_(thread) {
+  std::vector<BaseObject*> mark_objects_;
+
+  friend class ParallelSweep;
+
+  void acquire_work(void) {
+    if (!mark_objects_.empty())
+      return;
+
+    {
+      std::unique_lock<std::mutex> g(mutex_);
+      transfer(roots_.size() / 2, mark_objects_);
+    }
+
+    if (mark_objects_.empty())
+      ParallelSweep::get_instance().acquire_work(order_, mark_objects_);
   }
 
-  void put_in(BaseObject* obj) {
-    roots_.push_back(obj);
+  void perform_work(void) {
+    while (!mark_objects_.empty()) {
+      auto* obj = mark_objects_.back();
+      mark_objects_.pop_back();
+
+      obj->set_marked();
+      if (obj->is_pair()) {
+        auto append_fn = [this](BaseObject* o) {
+          if (o != nullptr && !o->is_marked()) {
+            o->set_marked(); mark_objects_.push_back(o);
+          }
+        };
+
+        append_fn(Chaos::down_cast<Pair*>(obj)->first());
+        append_fn(Chaos::down_cast<Pair*>(obj)->second());
+      }
+    }
   }
+
+  void generate_work(void) {
+    if (roots_.empty()) {
+      std::unique_lock<std::mutex> g(mutex_);
+      std::copy(mark_objects_.begin(),
+          mark_objects_.end(), std::back_inserter(roots_));
+      mark_objects_.clear();
+    }
+  }
+
+  void worker_routine(void) {
+    while (!stop_) {
+      if (run_tracing_) {
+        acquire_work();
+        perform_work();
+        generate_work();
+      }
+      if (mark_objects_.empty())
+        run_tracing_ = false;
+
+      std::this_thread::sleep_for(std::chrono::microseconds(10));
+    }
+  }
+public:
+  Worker(int order)
+    : order_(order)
+    , thread_(new std::thread(std::bind(&Worker::worker_routine, this)))
+  {}
+  ~Worker(void) { stop(); thread_->join(); }
+  void stop(void) { stop_ = true; }
+  void run_tracing(void) { run_tracing_ = true; }
+  void put_in(BaseObject* obj) { roots_.push_back(obj); }
 
   BaseObject* fetch_out(void) {
     auto* obj = roots_.back();
@@ -55,7 +119,8 @@ public:
   }
 
   void transfer(std::size_t n, std::vector<BaseObject*>& objects) {
-    std::copy_n(roots_.begin(), n, objects.begin());
+    std::copy_n(roots_.begin(), n, std::back_inserter(objects));
+    roots_.erase(roots_.begin(), roots_.begin() + n);
   }
 };
 
@@ -69,44 +134,25 @@ ParallelSweep::~ParallelSweep(void) {
 
 void ParallelSweep::start_workers(int nworkers) {
   nworkers_ = nworkers;
-  for (auto i = 0; i < nworkers_; ++i) {
-    auto* worker = new Worker(new std::thread(
-        std::bind(&ParallelSweep::collect_routine, this)));
-    workers_.emplace_back(worker);
-  }
+  for (auto i = 0; i < nworkers_; ++i)
+    workers_.emplace_back(new Worker(i));
 }
 
 void ParallelSweep::stop_workers(void) {
-  stop_ = true;
   for (auto i = 0; i < nworkers_; ++i)
-    workers_[i]->thread_->join();
+    workers_[i]->stop();
 }
 
-void ParallelSweep::collect_routine(void) {
-  std::vector<BaseObject*> stack_objects;
-  while (!stop_) {
-  }
+int ParallelSweep::put_in_order(void) {
+  int r = put_order_;
+  put_order_ = (put_order_ + 1) % nworkers_;
+  return r;
 }
 
-int ParallelSweep::put_in_turn(void) {
-  int index = put_index_;
-  put_index_ = (put_index_ + 1) % nworkers_;
-  return index;
-}
-
-int ParallelSweep::fetch_out_turn(void) {
-  int index = fetch_index_;
-  fetch_index_ = (fetch_index_ + 1) % nworkers_;
-  return index;
-}
-
-void ParallelSweep::acquire_work(void) {
-}
-
-void ParallelSweep::perform_work(void) {
-}
-
-void ParallelSweep::generate_work(void) {
+int ParallelSweep::fetch_out_order(void) {
+  int r = fetch_order_;
+  fetch_order_ = (fetch_order_ + 1) % nworkers_;
+  return r;
 }
 
 void ParallelSweep::sweep(void) {
@@ -127,22 +173,56 @@ ParallelSweep& ParallelSweep::get_instance(void) {
   return ins;
 }
 
+void ParallelSweep::acquire_work(
+    int own_order, std::vector<BaseObject*>& objects) {
+  for (auto i = 0; i < nworkers_; ++i) {
+    if (i == own_order)
+      continue;
+
+    if (workers_[i]->mutex_.try_lock()) {
+      workers_[i]->transfer(workers_[i]->roots_.size() / 2, objects);
+      workers_[i]->mutex_.unlock();
+      break;
+    }
+  }
+}
+
 void ParallelSweep::collect(void) {
+  for (auto i = 0; i < nworkers_; ++i)
+    workers_[i]->run_tracing();
+
+  auto nfinished = 0;
+  while (true) {
+    for (auto i = 0; i < nworkers_; ++i) {
+      if (!workers_[i]->run_tracing_)
+        ++nfinished;
+    }
+
+    if (nfinished == nworkers_)
+      break;
+    std::this_thread::sleep_for(std::chrono::microseconds(10));
+  }
+
+  sweep();
 }
 
 BaseObject* ParallelSweep::put_in(int value) {
-  // TODO:
+  if (objects_.size() >= kMaxObjects)
+    collect();
 
   auto* obj = new Int();
   obj->set_value(value);
 
-  // TODO:
+  auto order = put_in_order();
+  workers_[order]->put_in(obj);
+  objects_.push_back(obj);
 
   return obj;
 }
 
 BaseObject* ParallelSweep::put_in(BaseObject* first, BaseObject* second) {
-  // TODO:
+  if (objects_.size() >= kMaxObjects)
+    collect();
 
   auto* obj = new Pair();
   if (first != nullptr)
@@ -150,14 +230,16 @@ BaseObject* ParallelSweep::put_in(BaseObject* first, BaseObject* second) {
   if (second != nullptr)
     obj->set_second(second);
 
-  // TODO:
+  auto order = put_in_order();
+  workers_[order]->put_in(obj);
+  objects_.push_back(obj);
 
   return obj;
 }
 
 BaseObject* ParallelSweep::fetch_out(void) {
-  // TODO:
-  return nullptr;
+  auto order = fetch_out_order();
+  return workers_[order]->fetch_out();
 }
 
 }

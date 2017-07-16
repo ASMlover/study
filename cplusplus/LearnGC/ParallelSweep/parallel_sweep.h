@@ -34,15 +34,14 @@
 namespace gc {
 
 class BaseObject;
-struct Worker;
+class Worker;
 
 class ParallelSweep : private Chaos::UnCopyable {
   using WorkerEntity = std::unique_ptr<Worker>;
 
-  bool stop_{};
   int nworkers_{};
-  int put_index_{};
-  int fetch_index_{};
+  int put_order_{};
+  int fetch_order_{};
   std::vector<WorkerEntity> workers_;
   std::list<BaseObject*> objects_;
   static constexpr std::size_t kMaxObjects = 4096;
@@ -53,14 +52,13 @@ class ParallelSweep : private Chaos::UnCopyable {
   void start_workers(int nworkers = 4);
   void stop_workers(void);
   void collect_routine(void);
-  int put_in_turn(void);
-  int fetch_out_turn(void);
-  void acquire_work(void);
-  void perform_work(void);
-  void generate_work(void);
+  int put_in_order(void);
+  int fetch_out_order(void);
   void sweep(void);
 public:
   static ParallelSweep& get_instance(void);
+
+  void acquire_work(int own_order, std::vector<BaseObject*>& objects);
 
   void collect(void);
   BaseObject* put_in(int value);
