@@ -28,6 +28,7 @@
 #include <chrono>
 #include <functional>
 #include <iostream>
+#include <set>
 #include <mutex>
 #include <thread>
 #include <Chaos/Types.h>
@@ -96,7 +97,7 @@ class Worker {
         perform_work();
         generate_work();
       }
-      if (mark_objects_.empty())
+      if (run_tracing_ && mark_objects_.empty())
         run_tracing_ = false;
 
       std::this_thread::sleep_for(std::chrono::microseconds(10));
@@ -144,15 +145,14 @@ void ParallelSweep::stop_workers(void) {
 }
 
 int ParallelSweep::put_in_order(void) {
-  int r = put_order_;
-  put_order_ = (put_order_ + 1) % nworkers_;
+  int r = order_;
+  order_ = (order_ + 1) % nworkers_;
   return r;
 }
 
 int ParallelSweep::fetch_out_order(void) {
-  int r = fetch_order_;
-  fetch_order_ = (fetch_order_ + 1) % nworkers_;
-  return r;
+  order_ = (order_ - 1 + nworkers_) % nworkers_;
+  return order_;
 }
 
 void ParallelSweep::sweep(void) {
@@ -188,22 +188,29 @@ void ParallelSweep::acquire_work(
 }
 
 void ParallelSweep::collect(void) {
+  auto old_count = objects_.size();
+
   for (auto i = 0; i < nworkers_; ++i)
     workers_[i]->run_tracing();
 
-  auto nfinished = 0;
+  std::set<int> finished;
   while (true) {
     for (auto i = 0; i < nworkers_; ++i) {
       if (!workers_[i]->run_tracing_)
-        ++nfinished;
+        finished.insert(i);
     }
 
-    if (nfinished == nworkers_)
+    if (finished.size() == static_cast<std::size_t>(nworkers_))
       break;
     std::this_thread::sleep_for(std::chrono::microseconds(10));
   }
+  finished.clear();
 
   sweep();
+
+  std::cout
+    << "[" << old_count - objects_.size() << "] objects collected, "
+    << "[" << objects_.size() << "] objects remaining." << std::endl;
 }
 
 BaseObject* ParallelSweep::put_in(int value) {

@@ -40,8 +40,7 @@ class ParallelSweep : private Chaos::UnCopyable {
   using WorkerEntity = std::unique_ptr<Worker>;
 
   int nworkers_{};
-  int put_order_{};
-  int fetch_order_{};
+  int order_{};
   std::vector<WorkerEntity> workers_;
   std::list<BaseObject*> objects_;
   static constexpr std::size_t kMaxObjects = 4096;
