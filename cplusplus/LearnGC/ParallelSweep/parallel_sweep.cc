@@ -28,11 +28,11 @@
 #include <chrono>
 #include <functional>
 #include <iostream>
+#include <iterator>
 #include <set>
 #include <mutex>
 #include <thread>
 #include <Chaos/Types.h>
-#include <Chaos/Logging/Logging.h>
 #include "object.h"
 #include "parallel_sweep.h"
 
