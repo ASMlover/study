@@ -111,6 +111,10 @@ public:
   ~Worker(void) { stop(); thread_->join(); }
   void stop(void) { stop_ = true; }
   void run_tracing(void) { run_tracing_ = true; }
+  bool is_tracing(void) const { return run_tracing_; }
+  std::size_t roots_count(void) const { return roots_.size(); }
+  bool try_lock(void) { return mutex_.try_lock(); }
+  void unlock(void) { mutex_.unlock(); }
   void put_in(BaseObject* obj) { roots_.push_back(obj); }
 
   BaseObject* fetch_out(void) {
@@ -182,9 +186,9 @@ void ParallelSweep::acquire_work(
     if (i == own_order)
       continue;
 
-    if (workers_[i]->mutex_.try_lock()) {
-      workers_[i]->transfer(workers_[i]->roots_.size() / 2, objects);
-      workers_[i]->mutex_.unlock();
+    if (workers_[i]->try_lock()) {
+      workers_[i]->transfer(workers_[i]->roots_count() / 2, objects);
+      workers_[i]->unlock();
       break;
     }
   }
@@ -199,7 +203,7 @@ void ParallelSweep::collect(void) {
   std::set<int> finished;
   while (true) {
     for (auto i = 0; i < nworkers_; ++i) {
-      if (!workers_[i]->run_tracing_)
+      if (!workers_[i]->is_tracing())
         finished.insert(i);
     }
 
