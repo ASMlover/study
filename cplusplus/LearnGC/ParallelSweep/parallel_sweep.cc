@@ -114,9 +114,12 @@ public:
   void put_in(BaseObject* obj) { roots_.push_back(obj); }
 
   BaseObject* fetch_out(void) {
-    auto* obj = roots_.back();
-    roots_.pop_back();
-    return obj;
+    if (!roots_.empty()) {
+      auto* obj = roots_.back();
+      roots_.pop_back();
+      return obj;
+    }
+    return nullptr;
   }
 
   void transfer(std::size_t n, std::vector<BaseObject*>& objects) {
