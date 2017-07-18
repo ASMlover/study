@@ -24,31 +24,25 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <Chaos/Types.h>
-#include "parallel_sweep.h"
+#pragma once
 
-int main(int argc, char* argv[]) {
-  CHAOS_UNUSED(argc), CHAOS_UNUSED(argv);
+#include <cstdint>
 
-  constexpr int kCount = 10000;
-  constexpr int kReleaseCount = 20;
-  constexpr int kCreateCount = kReleaseCount * 3;
-  for (auto i = 0; i < kCount; ++i) {
-    for (auto j = 0; j < kCreateCount; ++j) {
-      if ((j + 1) % 3 == 0) {
-        auto* second = gc::ParallelSweep::get_instance().fetch_out();
-        auto* first = gc::ParallelSweep::get_instance().fetch_out();
-        gc::ParallelSweep::get_instance().put_in(first, second);
-      }
-      else {
-        gc::ParallelSweep::get_instance().put_in(i * j);
-      }
-    }
+namespace gc {
 
-    for (auto j = 0; j < kReleaseCount; ++j)
-      gc::ParallelSweep::get_instance().fetch_out();
-  }
-  gc::ParallelSweep::get_instance().collect();
+struct MemoryHeader {
+  enum {INVALID, INT, PAIR};
+  std::uint8_t _type{INVALID};
+  bool _marked{};
 
-  return 0;
+  bool is_invalid(void) const { return _type == INVALID; }
+  bool is_int(void) const { return _type == INT; }
+  bool is_pair(void) const { return _type == PAIR; }
+  void set_type(std::uint8_t type) { _type = type; }
+  std::uint8_t type(void) const { return _type; }
+  bool is_marked(void) const { return _marked; }
+  void set_marked(void) { _marked = true; }
+  void unset_marked(void) { _marked = false; }
+};
+
 }

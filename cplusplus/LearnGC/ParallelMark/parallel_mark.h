@@ -24,31 +24,42 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <Chaos/Types.h>
-#include "parallel_sweep.h"
+#pragma once
 
-int main(int argc, char* argv[]) {
-  CHAOS_UNUSED(argc), CHAOS_UNUSED(argv);
+#include <memory>
+#include <list>
+#include <vector>
+#include <Chaos/UnCopyable.h>
 
-  constexpr int kCount = 10000;
-  constexpr int kReleaseCount = 20;
-  constexpr int kCreateCount = kReleaseCount * 3;
-  for (auto i = 0; i < kCount; ++i) {
-    for (auto j = 0; j < kCreateCount; ++j) {
-      if ((j + 1) % 3 == 0) {
-        auto* second = gc::ParallelSweep::get_instance().fetch_out();
-        auto* first = gc::ParallelSweep::get_instance().fetch_out();
-        gc::ParallelSweep::get_instance().put_in(first, second);
-      }
-      else {
-        gc::ParallelSweep::get_instance().put_in(i * j);
-      }
-    }
+namespace gc {
 
-    for (auto j = 0; j < kReleaseCount; ++j)
-      gc::ParallelSweep::get_instance().fetch_out();
-  }
-  gc::ParallelSweep::get_instance().collect();
+class BaseObject;
+class Worker;
 
-  return 0;
+class ParallelMark : private Chaos::UnCopyable {
+  using WorkerEntity = std::unique_ptr<Worker>;
+
+  int order_{};
+  std::vector<WorkerEntity> workers_;
+  std::list<BaseObject*> objects_;
+  static constexpr int kWorkers = 4;
+  static constexpr std::size_t kMaxObjects = 4096;
+
+  ParallelMark(void);
+  ~ParallelMark(void);
+
+  void start_workers(void);
+  void stop_workers(void);
+  int put_in_order(void);
+  int fetch_out_order(void);
+  void sweep(void);
+public:
+  static ParallelMark& get_instance(void);
+
+  void collect(void);
+  BaseObject* put_in(int value);
+  BaseObject* put_in(BaseObject* first = nullptr, BaseObject* second = nullptr);
+  BaseObject* fetch_out(void);
+};
+
 }

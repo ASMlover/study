@@ -24,31 +24,42 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <Chaos/Types.h>
-#include "parallel_sweep.h"
+#pragma once
 
-int main(int argc, char* argv[]) {
-  CHAOS_UNUSED(argc), CHAOS_UNUSED(argv);
+#include <cstddef>
+#include <Chaos/UnCopyable.h>
+#include "memory_header.h"
 
-  constexpr int kCount = 10000;
-  constexpr int kReleaseCount = 20;
-  constexpr int kCreateCount = kReleaseCount * 3;
-  for (auto i = 0; i < kCount; ++i) {
-    for (auto j = 0; j < kCreateCount; ++j) {
-      if ((j + 1) % 3 == 0) {
-        auto* second = gc::ParallelSweep::get_instance().fetch_out();
-        auto* first = gc::ParallelSweep::get_instance().fetch_out();
-        gc::ParallelSweep::get_instance().put_in(first, second);
-      }
-      else {
-        gc::ParallelSweep::get_instance().put_in(i * j);
-      }
-    }
+namespace gc {
 
-    for (auto j = 0; j < kReleaseCount; ++j)
-      gc::ParallelSweep::get_instance().fetch_out();
-  }
-  gc::ParallelSweep::get_instance().collect();
+class BaseObject : public MemoryHeader, private Chaos::UnCopyable {
+public:
+  virtual ~BaseObject(void) {}
+  virtual const char* get_name(void) const { return "BaseObject"; }
+  virtual std::size_t get_size(void) const { return sizeof(*this); }
+};
 
-  return 0;
+class Int : public BaseObject {
+  int value_{};
+public:
+  Int(void) { set_type(MemoryHeader::INT); }
+  virtual const char* get_name(void) const override { return "Int"; }
+  virtual std::size_t get_size(void) const override { return sizeof(*this); }
+  void set_value(int value) { value_ = value; }
+  int value(void) const { return value_; }
+};
+
+class Pair : public BaseObject {
+  BaseObject* first_{};
+  BaseObject* second_{};
+public:
+  Pair(void) { set_type(MemoryHeader::PAIR); }
+  virtual const char* get_name(void) const override { return "Pair"; }
+  virtual std::size_t get_size(void) const override { return sizeof(*this); }
+  void set_first(BaseObject* obj) { first_ = obj; }
+  BaseObject* first(void) const { return first_; }
+  void set_second(BaseObject* obj) { second_ = obj; }
+  BaseObject* second(void) const { return second_; }
+};
+
 }

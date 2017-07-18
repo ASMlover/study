@@ -25,14 +25,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-set(OUTPUT_NAME "parallel-sweep")
+set(OUTPUT_NAME "parallel-mark")
 
-file(GLOB_RECURSE PARALLELSWEEP_SOURCES *.cc)
-message(STATUS "[LearnGC.ParallelSweep] PARALLELSWEEP_SOURCES: ${PARALLELSWEEP_SOURCES}")
+file(GLOB_RECURSE PARALLELMARK_SOURCES *.cc)
+message(STATUS "[LearnGC.ParallelMark] PARALLELMARK_SOURCES: ${PARALLELMARK_SOURCES}")
 
-add_executable(${OUTPUT_NAME} ${PARALLELSWEEP_SOURCES})
+add_executable(${OUTPUT_NAME} ${PARALLELMARK_SOURCES})
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
-  target_link_libraries(${OUTPUT_NAME} chaos Dbghelp)
+  target_link_libraries(${OUTPUT_NAME} chaos)
 else()
   target_link_libraries(${OUTPUT_NAME} chaos pthread)
 endif()
