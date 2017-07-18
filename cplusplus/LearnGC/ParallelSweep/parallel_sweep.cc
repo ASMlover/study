@@ -100,7 +100,7 @@ class Worker {
       if (run_tracing_ && mark_objects_.empty())
         run_tracing_ = false;
 
-      std::this_thread::sleep_for(std::chrono::microseconds(10));
+      std::this_thread::sleep_for(std::chrono::microseconds(1));
     }
   }
 public:
@@ -209,7 +209,7 @@ void ParallelSweep::collect(void) {
 
     if (finished.size() == static_cast<std::size_t>(nworkers_))
       break;
-    std::this_thread::sleep_for(std::chrono::microseconds(10));
+    std::this_thread::sleep_for(std::chrono::microseconds(1));
   }
   finished.clear();
 
