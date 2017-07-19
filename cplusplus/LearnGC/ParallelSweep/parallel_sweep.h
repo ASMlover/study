@@ -29,7 +29,10 @@
 #include <memory>
 #include <list>
 #include <vector>
+#include <set>
 #include <Chaos/UnCopyable.h>
+#include <Chaos/Concurrent/Mutex.h>
+#include <Chaos/Concurrent/Condition.h>
 
 namespace gc {
 
@@ -41,6 +44,9 @@ class ParallelSweep : private Chaos::UnCopyable {
 
   int nworkers_{};
   int order_{};
+  mutable Chaos::Mutex mutex_;
+  Chaos::Condition finish_cond_;
+  std::set<int> finish_set_;
   std::vector<WorkerEntity> workers_;
   std::list<BaseObject*> objects_;
   static constexpr std::size_t kMaxObjects = 4096;
@@ -58,6 +64,7 @@ public:
   static ParallelSweep& get_instance(void);
 
   void acquire_work(int own_order, std::vector<BaseObject*>& objects);
+  void notify_trace_finished(int id);
 
   void collect(void);
   BaseObject* put_in(int value);

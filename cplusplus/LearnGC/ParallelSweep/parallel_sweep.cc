@@ -28,10 +28,8 @@
 #include <functional>
 #include <iostream>
 #include <iterator>
-#include <set>
 #include <Chaos/Types.h>
 #include <Chaos/Concurrent/CurrentThread.h>
-#include <Chaos/Concurrent/Mutex.h>
 #include <Chaos/Concurrent/Thread.h>
 #include "object.h"
 #include "parallel_sweep.h"
@@ -43,6 +41,8 @@ class Worker {
   bool running_{true};
   bool run_tracing_{};
   mutable Chaos::Mutex mutex_;
+  mutable Chaos::Mutex trace_mutex_;
+  Chaos::Condition trace_cond_;
   Chaos::Thread thread_;
   std::vector<BaseObject*> roots_;
   std::vector<BaseObject*> mark_objects_;
@@ -90,24 +90,35 @@ class Worker {
 
   void worker_routine(void) {
     while (running_) {
-      if (run_tracing_) {
+      while (running_ && !run_tracing_)
+        trace_cond_.wait();
+      if (!running_)
+        break;
+
+      while (run_tracing_) {
         acquire_work();
         perform_work();
         generate_work();
-      }
-      if (run_tracing_ && mark_objects_.empty())
-        run_tracing_ = false;
 
-      Chaos::CurrentThread::sleep_usec(1);
+        if (mark_objects_.empty()) {
+          run_tracing_ = false;
+          gc::ParallelSweep::get_instance().notify_trace_finished(id_);
+        }
+      }
     }
   }
 public:
   Worker(int id)
-    : id_(id), thread_(std::bind(&Worker::worker_routine, this))
-  { thread_.start(); }
+    : id_(id)
+    , trace_mutex_()
+    , trace_cond_(trace_mutex_)
+    , thread_(std::bind(&Worker::worker_routine, this)) {
+      thread_.start();
+  }
+
   ~Worker(void) { stop(); thread_.join(); }
-  void stop(void) { running_ = false; }
-  void run_tracing(void) { run_tracing_ = true; }
+  void stop(void) { running_ = false; trace_cond_.notify_one(); }
+  void run_tracing(void) { run_tracing_ = true; trace_cond_.notify_one(); }
   bool is_tracing(void) const { return run_tracing_; }
   std::size_t roots_count(void) const { return roots_.size(); }
   bool try_lock(void) { return mutex_.try_lock(); }
@@ -129,7 +140,9 @@ public:
   }
 };
 
-ParallelSweep::ParallelSweep(void) {
+ParallelSweep::ParallelSweep(void)
+  : mutex_()
+  , finish_cond_(mutex_) {
   start_workers();
 }
 
@@ -191,24 +204,23 @@ void ParallelSweep::acquire_work(
   }
 }
 
+void ParallelSweep::notify_trace_finished(int id) {
+  {
+    Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
+    finish_set_.insert(id);
+  }
+  finish_cond_.notify_one();
+}
+
 void ParallelSweep::collect(void) {
   auto old_count = objects_.size();
 
+  finish_set_.clear();
   for (auto i = 0; i < nworkers_; ++i)
     workers_[i]->run_tracing();
 
-  std::set<int> finished;
-  while (true) {
-    for (auto i = 0; i < nworkers_; ++i) {
-      if (!workers_[i]->is_tracing())
-        finished.insert(i);
-    }
-
-    if (finished.size() == static_cast<std::size_t>(nworkers_))
-      break;
-    Chaos::CurrentThread::sleep_usec(1);
-  }
-  finished.clear();
+  while (finish_set_.size() > static_cast<std::size_t>(nworkers_))
+    finish_cond_.wait();
 
   sweep();
 
