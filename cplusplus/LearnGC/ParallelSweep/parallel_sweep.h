@@ -45,6 +45,7 @@ class ParallelSweep : private Chaos::UnCopyable {
   int nworkers_{};
   int order_{};
   mutable Chaos::Mutex mutex_;
+  mutable Chaos::Mutex finish_mutex_;
   Chaos::Condition finish_cond_;
   std::set<int> finish_set_;
   std::vector<WorkerEntity> workers_;

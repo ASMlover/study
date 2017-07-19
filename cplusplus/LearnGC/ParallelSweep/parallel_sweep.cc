@@ -141,8 +141,8 @@ public:
 };
 
 ParallelSweep::ParallelSweep(void)
-  : mutex_()
-  , finish_cond_(mutex_) {
+  : finish_mutex_()
+  , finish_cond_(finish_mutex_) {
   start_workers();
 }
 
