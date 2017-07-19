@@ -39,15 +39,13 @@
 namespace gc {
 
 class Worker {
-  int order_{};
-  bool stop_{};
+  int id_{};
+  bool running_{true};
   bool run_tracing_{};
-  Chaos::Mutex mutex_;
+  mutable Chaos::Mutex mutex_;
   Chaos::Thread thread_;
   std::vector<BaseObject*> roots_;
   std::vector<BaseObject*> mark_objects_;
-
-  friend class ParallelSweep;
 
   void acquire_work(void) {
     if (!mark_objects_.empty())
@@ -59,7 +57,7 @@ class Worker {
     }
 
     if (mark_objects_.empty())
-      ParallelSweep::get_instance().acquire_work(order_, mark_objects_);
+      ParallelSweep::get_instance().acquire_work(id_, mark_objects_);
   }
 
   void perform_work(void) {
@@ -91,7 +89,7 @@ class Worker {
   }
 
   void worker_routine(void) {
-    while (!stop_) {
+    while (running_) {
       if (run_tracing_) {
         acquire_work();
         perform_work();
@@ -104,11 +102,11 @@ class Worker {
     }
   }
 public:
-  Worker(int order)
-    : order_(order), thread_(std::bind(&Worker::worker_routine, this))
+  Worker(int id)
+    : id_(id), thread_(std::bind(&Worker::worker_routine, this))
   { thread_.start(); }
   ~Worker(void) { stop(); thread_.join(); }
-  void stop(void) { stop_ = true; }
+  void stop(void) { running_ = false; }
   void run_tracing(void) { run_tracing_ = true; }
   bool is_tracing(void) const { return run_tracing_; }
   std::size_t roots_count(void) const { return roots_.size(); }
