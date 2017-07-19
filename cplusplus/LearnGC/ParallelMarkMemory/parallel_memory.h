@@ -44,8 +44,9 @@ class ParallelMemory : private Chaos::UnCopyable {
 
   std::size_t order_{};
   mutable Chaos::Mutex mutex_;
-  Chaos::Condition sweep_cond_;
   std::set<std::size_t> sweep_set_;
+  mutable Chaos::Mutex sweep_mutex_;
+  Chaos::Condition sweep_cond_;
   std::vector<WorkerEntity> workers_;
   std::list<BaseObject*> objects_;
   static constexpr std::size_t kWorkerNumber = 4;

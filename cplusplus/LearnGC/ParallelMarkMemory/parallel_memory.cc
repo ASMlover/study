@@ -47,7 +47,21 @@ class Worker : private Chaos::UnCopyable {
   std::vector<BaseObject*> worklist_;
 
   void mark(void) {
-    // TODO:
+    while (!worklist_.empty()) {
+      auto* obj = worklist_.back();
+      worklist_.pop_back();
+
+      if (obj->is_pair()) {
+        auto append_fn = [this](BaseObject* o) {
+          if (o != nullptr && !o->is_marked()) {
+            o->set_marked(); worklist_.push_back(o);
+          }
+        };
+
+        append_fn(Chaos::down_cast<Pair*>(obj)->first());
+        append_fn(Chaos::down_cast<Pair*>(obj)->second());
+      }
+    }
   }
 
   void mark_from_roots(void) {
@@ -60,7 +74,17 @@ class Worker : private Chaos::UnCopyable {
 
   void work_closure(void) {
     while (running_) {
-      // TODO:
+      while (running_ && !marking_)
+        mark_cond_.wait();
+      if (!running_)
+        break;
+
+      mark_from_roots();
+
+      if (marking_) {
+        marking_ = false;
+        gc::ParallelMemory::get_instance().notify_sweeping(id_);
+      }
     }
   }
 public:
@@ -84,8 +108,8 @@ public:
 };
 
 ParallelMemory::ParallelMemory(void)
-  : mutex_()
-  , sweep_cond_(mutex_) {
+  : sweep_mutex_()
+  , sweep_cond_(sweep_mutex_) {
   start_workers();
 }
 
@@ -150,7 +174,20 @@ void ParallelMemory::notify_sweeping(std::size_t id) {
 }
 
 void ParallelMemory::collect(void) {
-  // TODO:
+  auto old_count = objects_.size();
+
+  sweep_set_.clear();
+  for (auto& w : workers_)
+    w->marking();
+
+  while (sweep_set_.size() < kWorkerNumber)
+    sweep_cond_.wait();
+
+  sweep();
+
+  std::cout
+    << "[" << old_count - objects_.size() << "] objects collected, "
+    << "[" << objects_.size() << "] objects remaining." << std::endl;
 }
 
 BaseObject* ParallelMemory::put_in(int value) {
@@ -160,7 +197,7 @@ BaseObject* ParallelMemory::put_in(int value) {
   auto* obj = new (alloc(sizeof(Int))) Int();
   obj->set_value(value);
 
-  // TODO:
+  workers_[put_in_order()]->put_in(obj);
   objects_.push_back(obj);
 
   return obj;
@@ -176,15 +213,14 @@ BaseObject* ParallelMemory::put_in(BaseObject* first, BaseObject* second) {
   if (second != nullptr)
     obj->set_second(second);
 
-  // TODO:
+  workers_[put_in_order()]->put_in(obj);
   objects_.push_back(obj);
 
   return nullptr;
 }
 
 BaseObject* ParallelMemory::fetch_out(void) {
-  // TODO:
-  return nullptr;
+  return workers_[fetch_out_order()]->fetch_out();
 }
 
 }
