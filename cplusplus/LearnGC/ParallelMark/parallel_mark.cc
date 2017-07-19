@@ -34,25 +34,70 @@
 namespace gc {
 
 class Worker : private Chaos::UnCopyable {
-  int id_{};
-  bool stop_{};
+  std::size_t id_{};
+  bool running_{true};
+  bool tracing_{};
+  mutable Chaos::Mutex mutex_;
+  Chaos::Condition trace_cond_;
   Chaos::Thread thread_;
   std::vector<BaseObject*> roots_;
+  std::vector<BaseObject*> worklist_;
+
+  void mark(void) {
+    while (!worklist_.empty()) {
+      auto* obj = worklist_.back();
+      worklist_.pop_back();
+
+      if (obj->is_pair()) {
+        auto append_fn = [this](BaseObject* o) {
+          if (o != nullptr && !o->is_marked()) {
+            o->set_marked(); worklist_.push_back(o);
+          }
+        };
+
+        append_fn(Chaos::down_cast<Pair*>(obj)->first());
+        append_fn(Chaos::down_cast<Pair*>(obj)->second());
+      }
+    }
+  }
+
+  void mark_from_roots(void) {
+    for (auto* obj : roots_) {
+      obj->set_marked();
+      worklist_.push_back(obj);
+      mark();
+    }
+  }
 
   void work_closure(void) {
-    while (!stop_) {
+    while (running_) {
+      while (running_ && !tracing_)
+        trace_cond_.wait();
+      if (!running_)
+        break;
+
+      mark_from_roots();
+
+      if (tracing_) {
+        tracing_ = false;
+        gc::ParallelMark::get_instance().notify_sweeping(id_);
+      }
     }
   }
 public:
-  Worker(int id)
+  Worker(std::size_t id)
     : id_(id)
-    , thread_(std::bind(&Worker::work_closure, this))
-  {
+    , mutex_()
+    , trace_cond_(mutex_)
+    , thread_(std::bind(&Worker::work_closure, this)) {
   }
-  ~Worker(void) {}
-  int get_id(void) const { return id_; }
+
+  ~Worker(void) { stop(); thread_.join(); }
+  std::size_t get_id(void) const { return id_; }
   void start(void) { thread_.start(); }
-  void stop(void) { stop_ = true; }
+  void stop(void) { running_ = false; trace_cond_.notify_one(); }
+  bool is_tracing(void) const { return tracing_; }
+  void tracing(void) { tracing_ = true; trace_cond_.notify_one(); }
   void put_in(BaseObject* obj) { roots_.push_back(obj); }
   BaseObject* fetch_out(void) {
     auto* obj = roots_.back();
@@ -61,11 +106,18 @@ public:
   }
 };
 
-ParallelMark::ParallelMark(void) { start_workers(); }
-ParallelMark::~ParallelMark(void) { stop_workers(); }
+ParallelMark::ParallelMark(void)
+  : mutex_()
+  , sweep_cond_(mutex_) {
+  start_workers();
+}
+
+ParallelMark::~ParallelMark(void) {
+  stop_workers();
+}
 
 void ParallelMark::start_workers(void) {
-  for (auto i = 0; i < kWorkers; ++i) {
+  for (std::size_t i = 0; i < kWorkers; ++i) {
     workers_.emplace_back(new Worker(i));
     workers_[i]->start();
   }
@@ -76,13 +128,13 @@ void ParallelMark::stop_workers(void) {
     w->stop();
 }
 
-int ParallelMark::put_in_order(void) {
+std::size_t ParallelMark::put_in_order(void) {
   auto order = order_;
   order_ = (order_ + 1) % kWorkers;
   return order;
 }
 
-int ParallelMark::fetch_out_order(void) {
+std::size_t ParallelMark::fetch_out_order(void) {
   order_ = (order_ - 1 + kWorkers) % kWorkers;
   return order_;
 }
@@ -105,8 +157,29 @@ ParallelMark& ParallelMark::get_instance(void) {
   return ins;
 }
 
+void ParallelMark::notify_sweeping(std::size_t id) {
+  {
+    Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
+    sweep_set_.insert(id);
+  }
+  sweep_cond_.notify_one();
+}
+
 void ParallelMark::collect(void) {
-  // TODO:
+  auto old_count = objects_.size();
+
+  sweep_set_.clear();
+  for (auto& w : workers_)
+    w->tracing();
+
+  while (sweep_set_.size() < kWorkers)
+    sweep_cond_.wait();
+
+  sweep();
+
+  std::cout
+    << "[" << old_count - objects_.size() << "] objects collected, "
+    << "[" << objects_.size() << "] objects remaining." << std::endl;
 }
 
 BaseObject* ParallelMark::put_in(int value) {

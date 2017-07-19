@@ -28,8 +28,11 @@
 
 #include <memory>
 #include <list>
+#include <set>
 #include <vector>
 #include <Chaos/UnCopyable.h>
+#include <Chaos/Concurrent/Mutex.h>
+#include <Chaos/Concurrent/Condition.h>
 
 namespace gc {
 
@@ -39,10 +42,13 @@ class Worker;
 class ParallelMark : private Chaos::UnCopyable {
   using WorkerEntity = std::unique_ptr<Worker>;
 
-  int order_{};
+  std::size_t order_{};
   std::vector<WorkerEntity> workers_;
   std::list<BaseObject*> objects_;
-  static constexpr int kWorkers = 4;
+  mutable Chaos::Mutex mutex_;
+  Chaos::Condition sweep_cond_;
+  std::set<std::size_t> sweep_set_;
+  static constexpr std::size_t kWorkers = 4;
   static constexpr std::size_t kMaxObjects = 4096;
 
   ParallelMark(void);
@@ -50,12 +56,13 @@ class ParallelMark : private Chaos::UnCopyable {
 
   void start_workers(void);
   void stop_workers(void);
-  int put_in_order(void);
-  int fetch_out_order(void);
+  std::size_t put_in_order(void);
+  std::size_t fetch_out_order(void);
   void sweep(void);
 public:
   static ParallelMark& get_instance(void);
 
+  void notify_sweeping(std::size_t id);
   void collect(void);
   BaseObject* put_in(int value);
   BaseObject* put_in(BaseObject* first = nullptr, BaseObject* second = nullptr);
