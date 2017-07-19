@@ -96,7 +96,6 @@ public:
   std::size_t get_id(void) const { return id_; }
   void start(void) { thread_.start(); }
   void stop(void) { running_ = false; trace_cond_.notify_one(); }
-  bool is_tracing(void) const { return tracing_; }
   void tracing(void) { tracing_ = true; trace_cond_.notify_one(); }
   void put_in(BaseObject* obj) { roots_.push_back(obj); }
   BaseObject* fetch_out(void) {
@@ -107,8 +106,8 @@ public:
 };
 
 ParallelMark::ParallelMark(void)
-  : mutex_()
-  , sweep_cond_(mutex_) {
+  : sweep_mutex_()
+  , sweep_cond_(sweep_mutex_) {
   start_workers();
 }
 

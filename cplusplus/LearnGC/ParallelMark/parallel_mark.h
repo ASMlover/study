@@ -46,6 +46,7 @@ class ParallelMark : private Chaos::UnCopyable {
   std::vector<WorkerEntity> workers_;
   std::list<BaseObject*> objects_;
   mutable Chaos::Mutex mutex_;
+  mutable Chaos::Mutex sweep_mutex_;
   Chaos::Condition sweep_cond_;
   std::set<std::size_t> sweep_set_;
   static constexpr std::size_t kWorkers = 4;
