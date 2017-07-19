@@ -32,7 +32,7 @@ message(STATUS "[LearnGC.ParallelSweep] PARALLELSWEEP_SOURCES: ${PARALLELSWEEP_S
 
 add_executable(${OUTPUT_NAME} ${PARALLELSWEEP_SOURCES})
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
-  target_link_libraries(${OUTPUT_NAME} chaos)
+  target_link_libraries(${OUTPUT_NAME} chaos Dbghelp)
 else()
   target_link_libraries(${OUTPUT_NAME} chaos pthread)
 endif()

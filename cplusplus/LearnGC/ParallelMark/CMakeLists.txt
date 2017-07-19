@@ -32,7 +32,7 @@ message(STATUS "[LearnGC.ParallelMark] PARALLELMARK_SOURCES: ${PARALLELMARK_SOUR
 
 add_executable(${OUTPUT_NAME} ${PARALLELMARK_SOURCES})
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
-  target_link_libraries(${OUTPUT_NAME} chaos)
+  target_link_libraries(${OUTPUT_NAME} chaos Dbghelp)
 else()
   target_link_libraries(${OUTPUT_NAME} chaos pthread)
 endif()

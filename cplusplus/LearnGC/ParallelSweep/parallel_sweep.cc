@@ -25,14 +25,14 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <algorithm>
-#include <chrono>
 #include <functional>
 #include <iostream>
 #include <iterator>
 #include <set>
-#include <mutex>
-#include <thread>
 #include <Chaos/Types.h>
+#include <Chaos/Concurrent/CurrentThread.h>
+#include <Chaos/Concurrent/Mutex.h>
+#include <Chaos/Concurrent/Thread.h>
 #include "object.h"
 #include "parallel_sweep.h"
 
@@ -42,8 +42,8 @@ class Worker {
   int order_{};
   bool stop_{};
   bool run_tracing_{};
-  std::mutex mutex_;
-  std::unique_ptr<std::thread> thread_;
+  Chaos::Mutex mutex_;
+  Chaos::Thread thread_;
   std::vector<BaseObject*> roots_;
   std::vector<BaseObject*> mark_objects_;
 
@@ -54,7 +54,7 @@ class Worker {
       return;
 
     {
-      std::unique_lock<std::mutex> g(mutex_);
+      Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
       transfer(roots_.size() / 2, mark_objects_);
     }
 
@@ -83,7 +83,7 @@ class Worker {
 
   void generate_work(void) {
     if (roots_.empty()) {
-      std::unique_lock<std::mutex> g(mutex_);
+      Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
       std::copy(mark_objects_.begin(),
           mark_objects_.end(), std::back_inserter(roots_));
       mark_objects_.clear();
@@ -100,15 +100,14 @@ class Worker {
       if (run_tracing_ && mark_objects_.empty())
         run_tracing_ = false;
 
-      std::this_thread::sleep_for(std::chrono::microseconds(1));
+      Chaos::CurrentThread::sleep_usec(1);
     }
   }
 public:
   Worker(int order)
-    : order_(order)
-    , thread_(new std::thread(std::bind(&Worker::worker_routine, this)))
-  {}
-  ~Worker(void) { stop(); thread_->join(); }
+    : order_(order), thread_(std::bind(&Worker::worker_routine, this))
+  { thread_.start(); }
+  ~Worker(void) { stop(); thread_.join(); }
   void stop(void) { stop_ = true; }
   void run_tracing(void) { run_tracing_ = true; }
   bool is_tracing(void) const { return run_tracing_; }
@@ -209,7 +208,7 @@ void ParallelSweep::collect(void) {
 
     if (finished.size() == static_cast<std::size_t>(nworkers_))
       break;
-    std::this_thread::sleep_for(std::chrono::microseconds(1));
+    Chaos::CurrentThread::sleep_usec(1);
   }
   finished.clear();
 
