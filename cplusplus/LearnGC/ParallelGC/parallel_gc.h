@@ -42,7 +42,6 @@ class ParallelGC : private Chaos::UnCopyable {
   using SweeperEntity = std::unique_ptr<Sweeper>;
 
   int order_{};
-  mutable Chaos::Mutex mutex_;
   int sweeper_counter_{};
   mutable Chaos::Mutex sweeper_mutex_;
   Chaos::Condition sweeper_cond_;
