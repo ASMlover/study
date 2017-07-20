@@ -219,7 +219,7 @@ void ParallelSweep::collect(void) {
   for (auto i = 0; i < nworkers_; ++i)
     workers_[i]->run_tracing();
 
-  while (finish_set_.size() > static_cast<std::size_t>(nworkers_))
+  while (finish_set_.size() < static_cast<std::size_t>(nworkers_))
     finish_cond_.wait();
 
   sweep();
