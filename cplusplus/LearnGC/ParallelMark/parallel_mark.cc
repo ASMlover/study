@@ -71,16 +71,19 @@ class Worker : private Chaos::UnCopyable {
 
   void work_closure(void) {
     while (running_) {
-      while (running_ && !tracing_)
-        trace_cond_.wait();
-      if (!running_)
-        break;
+      {
+        Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
+        while (running_ && !tracing_)
+          trace_cond_.wait();
+        if (!running_)
+          break;
+      }
 
       mark_from_roots();
 
       if (tracing_) {
         tracing_ = false;
-        gc::ParallelMark::get_instance().notify_sweeping(id_);
+        ParallelMark::get_instance().notify_sweeping(id_);
       }
     }
   }
@@ -138,6 +141,14 @@ std::size_t ParallelMark::fetch_out_order(void) {
   return order_;
 }
 
+void ParallelMark::notify_sweeping(std::size_t id) {
+  {
+    Chaos::ScopedLock<Chaos::Mutex> g(sweep_mutex_);
+    sweep_set_.insert(id);
+  }
+  sweep_cond_.notify_one();
+}
+
 void ParallelMark::sweep(void) {
   for (auto it = objects_.begin(); it != objects_.end();) {
     if (!(*it)->is_marked()) {
@@ -156,14 +167,6 @@ ParallelMark& ParallelMark::get_instance(void) {
   return ins;
 }
 
-void ParallelMark::notify_sweeping(std::size_t id) {
-  {
-    Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
-    sweep_set_.insert(id);
-  }
-  sweep_cond_.notify_one();
-}
-
 void ParallelMark::collect(void) {
   auto old_count = objects_.size();
 
@@ -171,8 +174,11 @@ void ParallelMark::collect(void) {
   for (auto& w : workers_)
     w->tracing();
 
-  while (sweep_set_.size() < kWorkers)
-    sweep_cond_.wait();
+  {
+    Chaos::ScopedLock<Chaos::Mutex> g(sweep_mutex_);
+    while (sweep_set_.size() < kWorkers)
+      sweep_cond_.wait();
+  }
 
   sweep();
 

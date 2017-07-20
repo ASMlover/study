@@ -45,12 +45,13 @@ class ParallelMark : private Chaos::UnCopyable {
   std::size_t order_{};
   std::vector<WorkerEntity> workers_;
   std::list<BaseObject*> objects_;
-  mutable Chaos::Mutex mutex_;
   mutable Chaos::Mutex sweep_mutex_;
   Chaos::Condition sweep_cond_;
   std::set<std::size_t> sweep_set_;
   static constexpr std::size_t kWorkers = 4;
   static constexpr std::size_t kMaxObjects = 4096;
+
+  friend class Worker;
 
   ParallelMark(void);
   ~ParallelMark(void);
@@ -59,11 +60,11 @@ class ParallelMark : private Chaos::UnCopyable {
   void stop_workers(void);
   std::size_t put_in_order(void);
   std::size_t fetch_out_order(void);
+  void notify_sweeping(std::size_t id);
   void sweep(void);
 public:
   static ParallelMark& get_instance(void);
 
-  void notify_sweeping(std::size_t id);
   void collect(void);
   BaseObject* put_in(int value);
   BaseObject* put_in(BaseObject* first = nullptr, BaseObject* second = nullptr);
