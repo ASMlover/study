@@ -24,10 +24,8 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <algorithm>
 #include <functional>
 #include <iostream>
-#include <iterator>
 #include <Chaos/Types.h>
 #include <Chaos/Concurrent/Thread.h>
 #include <Chaos/Memory/MemoryPool.h>
