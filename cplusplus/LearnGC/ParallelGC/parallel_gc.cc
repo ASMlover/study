@@ -85,7 +85,7 @@ class Sweeper : private Chaos::UnCopyable {
   }
 
   void sweeper_closure(void) {
-    while (sweeping_) {
+    while (running_) {
       while (running_ && !sweeping_)
         cond_.wait();
       if (!running_)
