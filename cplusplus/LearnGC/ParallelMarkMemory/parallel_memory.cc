@@ -72,10 +72,13 @@ class Worker : private Chaos::UnCopyable {
 
   void work_closure(void) {
     while (running_) {
-      while (running_ && !marking_)
-        mark_cond_.wait();
-      if (!running_)
-        break;
+      {
+        Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
+        while (running_ && !marking_)
+          mark_cond_.wait();
+        if (!running_)
+          break;
+      }
 
       mark_from_roots();
 
@@ -145,6 +148,14 @@ std::size_t ParallelMemory::fetch_out_order(void) {
   return order_;
 }
 
+void ParallelMemory::notify_sweeping(std::size_t id) {
+  {
+    Chaos::ScopedLock<Chaos::Mutex> g(sweep_mutex_);
+    sweep_set_.insert(id);
+  }
+  sweep_cond_.notify_one();
+}
+
 void ParallelMemory::sweep(void) {
   for (auto it = objects_.begin(); it != objects_.end();) {
     if (!(*it)->is_marked()) {
@@ -163,14 +174,6 @@ ParallelMemory& ParallelMemory::get_instance(void) {
   return ins;
 }
 
-void ParallelMemory::notify_sweeping(std::size_t id) {
-  {
-    Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
-    sweep_set_.insert(id);
-  }
-  sweep_cond_.notify_one();
-}
-
 void ParallelMemory::collect(void) {
   auto old_count = objects_.size();
 
@@ -178,8 +181,11 @@ void ParallelMemory::collect(void) {
   for (auto& w : workers_)
     w->marking();
 
-  while (sweep_set_.size() < kWorkerNumber)
-    sweep_cond_.wait();
+  {
+    Chaos::ScopedLock<Chaos::Mutex> g(sweep_mutex_);
+    while (sweep_set_.size() < kWorkerNumber)
+      sweep_cond_.wait();
+  }
 
   sweep();
 

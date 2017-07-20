@@ -43,7 +43,6 @@ class ParallelMemory : private Chaos::UnCopyable {
   using WorkerEntity = std::unique_ptr<Worker> ;
 
   std::size_t order_{};
-  mutable Chaos::Mutex mutex_;
   std::set<std::size_t> sweep_set_;
   mutable Chaos::Mutex sweep_mutex_;
   Chaos::Condition sweep_cond_;
@@ -51,6 +50,8 @@ class ParallelMemory : private Chaos::UnCopyable {
   std::list<BaseObject*> objects_;
   static constexpr std::size_t kWorkerNumber = 4;
   static constexpr std::size_t kMaxObjects = 4096;
+
+  friend class Worker;
 
   ParallelMemory(void);
   ~ParallelMemory(void);
@@ -61,11 +62,11 @@ class ParallelMemory : private Chaos::UnCopyable {
   void stop_workers(void);
   std::size_t put_in_order(void);
   std::size_t fetch_out_order(void);
+  void notify_sweeping(std::size_t id);
   void sweep(void);
 public:
   static ParallelMemory& get_instance(void);
 
-  void notify_sweeping(std::size_t id);
   void collect(void);
   BaseObject* put_in(int value);
   BaseObject* put_in(BaseObject* first = nullptr, BaseObject* second = nullptr);

@@ -90,10 +90,13 @@ class Worker {
 
   void worker_routine(void) {
     while (running_) {
-      while (running_ && !run_tracing_)
-        trace_cond_.wait();
-      if (!running_)
-        break;
+      {
+        Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
+        while (running_ && !run_tracing_)
+          trace_cond_.wait();
+        if (!running_)
+          break;
+      }
 
       while (run_tracing_) {
         acquire_work();
@@ -172,6 +175,28 @@ int ParallelSweep::fetch_out_order(void) {
   return order_;
 }
 
+void ParallelSweep::acquire_work(
+    int own_order, std::vector<BaseObject*>& objects) {
+  for (auto i = 0; i < nworkers_; ++i) {
+    if (i == own_order)
+      continue;
+
+    if (workers_[i]->try_lock()) {
+      workers_[i]->transfer(workers_[i]->roots_count() / 2, objects);
+      workers_[i]->unlock();
+      break;
+    }
+  }
+}
+
+void ParallelSweep::notify_trace_finished(int id) {
+  {
+    Chaos::ScopedLock<Chaos::Mutex> g(finish_mutex_);
+    finish_set_.insert(id);
+  }
+  finish_cond_.notify_one();
+}
+
 void ParallelSweep::sweep(void) {
   for (auto it = objects_.begin(); it != objects_.end();) {
     if (!(*it)->is_marked()) {
@@ -190,28 +215,6 @@ ParallelSweep& ParallelSweep::get_instance(void) {
   return ins;
 }
 
-void ParallelSweep::acquire_work(
-    int own_order, std::vector<BaseObject*>& objects) {
-  for (auto i = 0; i < nworkers_; ++i) {
-    if (i == own_order)
-      continue;
-
-    if (workers_[i]->try_lock()) {
-      workers_[i]->transfer(workers_[i]->roots_count() / 2, objects);
-      workers_[i]->unlock();
-      break;
-    }
-  }
-}
-
-void ParallelSweep::notify_trace_finished(int id) {
-  {
-    Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
-    finish_set_.insert(id);
-  }
-  finish_cond_.notify_one();
-}
-
 void ParallelSweep::collect(void) {
   auto old_count = objects_.size();
 
@@ -219,8 +222,11 @@ void ParallelSweep::collect(void) {
   for (auto i = 0; i < nworkers_; ++i)
     workers_[i]->run_tracing();
 
-  while (finish_set_.size() < static_cast<std::size_t>(nworkers_))
-    finish_cond_.wait();
+  {
+    Chaos::ScopedLock<Chaos::Mutex> g(finish_mutex_);
+    while (finish_set_.size() < static_cast<std::size_t>(nworkers_))
+      finish_cond_.wait();
+  }
 
   sweep();
 

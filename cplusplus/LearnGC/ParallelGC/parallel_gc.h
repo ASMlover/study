@@ -27,7 +27,6 @@
 #pragma once
 
 #include <memory>
-#include <list>
 #include <vector>
 #include <Chaos/UnCopyable.h>
 #include <Chaos/Concurrent/Mutex.h>
@@ -50,6 +49,8 @@ class ParallelGC : private Chaos::UnCopyable {
   static constexpr int kMaxSweepers = 4;
   static constexpr std::size_t kMaxObjects = 4096;
 
+  friend class Sweeper;
+
   ParallelGC(void);
   ~ParallelGC(void);
 
@@ -57,10 +58,10 @@ class ParallelGC : private Chaos::UnCopyable {
   void clearup_sweepers(void);
   int put_in_order(void);
   int fetch_out_order(void);
+  void notify_collected(int id, std::size_t remain_count = 0);
 public:
   static ParallelGC& get_instance(void);
 
-  void notify_collected(int id, std::size_t remain_count = 0);
   void collect(void);
   BaseObject* put_in(int value);
   BaseObject* put_in(BaseObject* first = nullptr, BaseObject* second = nullptr);

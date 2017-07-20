@@ -89,10 +89,13 @@ class Sweeper : private Chaos::UnCopyable {
 
   void sweeper_closure(void) {
     while (running_) {
-      while (running_ && !tracing_)
-        trace_cond_.wait();
-      if (!running_)
-        break;
+      {
+        Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
+        while (running_ && !tracing_)
+          trace_cond_.wait();
+        if (!running_)
+          break;
+      }
 
       while (tracing_) {
         acquire_work();
@@ -194,7 +197,7 @@ void ParallelSweep::acquire_work(int id, std::vector<BaseObject*>& objects) {
 
 void ParallelSweep::notify_sweeping(int /*id*/) {
   {
-    Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
+    Chaos::ScopedLock<Chaos::Mutex> g(sweeper_mutex_);
     ++sweeper_counter_;
   }
   sweeper_cond_.notify_one();
@@ -225,8 +228,11 @@ void ParallelSweep::collect(void) {
   for (auto& s : sweepers_)
     s->tracing();
 
-  while (sweeper_counter_ < kMaxSweepers)
-    sweeper_cond_.wait();
+  {
+    Chaos::ScopedLock<Chaos::Mutex> g(sweeper_mutex_);
+    while (sweeper_counter_ < kMaxSweepers)
+      sweeper_cond_.wait();
+  }
 
   sweep();
 

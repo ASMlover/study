@@ -44,13 +44,14 @@ class ParallelSweep : private Chaos::UnCopyable {
 
   int nworkers_{};
   int order_{};
-  mutable Chaos::Mutex mutex_;
   mutable Chaos::Mutex finish_mutex_;
   Chaos::Condition finish_cond_;
   std::set<int> finish_set_;
   std::vector<WorkerEntity> workers_;
   std::list<BaseObject*> objects_;
   static constexpr std::size_t kMaxObjects = 4096;
+
+  friend class Worker;
 
   ParallelSweep(void);
   ~ParallelSweep(void);
@@ -60,12 +61,11 @@ class ParallelSweep : private Chaos::UnCopyable {
   void collect_routine(void);
   int put_in_order(void);
   int fetch_out_order(void);
+  void acquire_work(int own_order, std::vector<BaseObject*>& objects);
+  void notify_trace_finished(int id);
   void sweep(void);
 public:
   static ParallelSweep& get_instance(void);
-
-  void acquire_work(int own_order, std::vector<BaseObject*>& objects);
-  void notify_trace_finished(int id);
 
   void collect(void);
   BaseObject* put_in(int value);

@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <functional>
 #include <iostream>
+#include <list>
 #include <Chaos/Types.h>
 #include <Chaos/Concurrent/Thread.h>
 #include "object.h"
@@ -159,11 +160,6 @@ int ParallelGC::fetch_out_order(void) {
   return order_;
 }
 
-ParallelGC& ParallelGC::get_instance(void) {
-  static ParallelGC ins;
-  return ins;
-}
-
 void ParallelGC::notify_collected(int /*id*/, std::size_t remain_count) {
   {
     Chaos::ScopedLock<Chaos::Mutex> g(sweeper_mutex_);
@@ -171,6 +167,11 @@ void ParallelGC::notify_collected(int /*id*/, std::size_t remain_count) {
     object_counter_ += remain_count;
   }
   sweeper_cond_.notify_one();
+}
+
+ParallelGC& ParallelGC::get_instance(void) {
+  static ParallelGC ins;
+  return ins;
 }
 
 void ParallelGC::collect(void) {
