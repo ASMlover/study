@@ -86,17 +86,20 @@ class Sweeper : private Chaos::UnCopyable {
 
   void sweeper_closure(void) {
     while (running_) {
-      while (running_ && !sweeping_)
-        cond_.wait();
-      if (!running_)
-        break;
+      {
+        Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
+        while (running_ && !sweeping_)
+          cond_.wait();
+        if (!running_)
+          break;
+      }
 
       mark_from_roots();
       sweep();
 
       if (sweeping_) {
         sweeping_ = false;
-        gc::ParallelMemory::get_instance().notify_collected(objects_.size());
+        ParallelMemory::get_instance().notify_collected(objects_.size());
       }
     }
   }
@@ -167,7 +170,7 @@ int ParallelMemory::fetch_out_order(void) {
 
 void ParallelMemory::notify_collected(std::size_t remain_count) {
   {
-    Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
+    Chaos::ScopedLock<Chaos::Mutex> g(sweeper_mutex_);
     ++sweeper_counter_;
     object_counter_ += remain_count;
   }
@@ -187,8 +190,11 @@ void ParallelMemory::collect(void) {
   for (auto& s : sweepers_)
     s->collect();
 
-  while (sweeper_counter_ < kMaxSweepers)
-    sweeper_cond_.wait();
+  {
+    Chaos::ScopedLock<Chaos::Mutex> g(sweeper_mutex_);
+    while (sweeper_counter_ < kMaxSweepers)
+      sweeper_cond_.wait();
+  }
 
   std::cout
     << "[" << old_count - object_counter_ << "] objects collected, "

@@ -41,7 +41,6 @@ class ParallelMemory : private Chaos::UnCopyable {
   using SweeperEntity = std::unique_ptr<Sweeper>;
 
   int order_{};
-  mutable Chaos::Mutex mutex_;
   int sweeper_counter_{};
   std::size_t object_counter_{};
   mutable Chaos::Mutex sweeper_mutex_;
