@@ -27,7 +27,6 @@
 #pragma once
 
 #include <memory>
-#include <list>
 #include <vector>
 #include <Chaos/UnCopyable.h>
 #include <Chaos/Concurrent/Mutex.h>
@@ -36,37 +35,37 @@
 namespace gc {
 
 class BaseObject;
-class Tracer;
+class Sweeper;
 
 class ParallelChannel : private Chaos::UnCopyable {
-  using TracerEntity = std::unique_ptr<Tracer>;
+  using SweeperEntity = std::unique_ptr<Sweeper>;
 
-  static constexpr int kMaxTraceers = 4;
+  static constexpr int kMaxSweepers = 4;
   static constexpr std::size_t kMaxObjects = 4096;
-  static constexpr std::size_t kChannelObjects = kMaxObjects / kMaxTraceers;
+  static constexpr std::size_t kChannelObjects = kMaxObjects / kMaxSweepers;
 
   int order_{};
-  int tracer_counter_{};
-  mutable Chaos::Mutex trace_mutex_;
-  Chaos::Condition trace_cond_;
-  std::vector<TracerEntity> tracers_;
-  std::list<BaseObject*> objects_;
-  std::vector<BaseObject*> channels_[kMaxTraceers][kMaxTraceers];
+  int sweeper_counter_{};
+  std::size_t object_counter_{};
+  mutable Chaos::Mutex sweeper_mutex_;
+  Chaos::Condition sweeper_cond_;
+  std::vector<SweeperEntity> sweepers_;
+  std::vector<BaseObject*> channels_[kMaxSweepers][kMaxSweepers];
 
-  friend class Tracer;
+  friend class Sweeper;
 
   ParallelChannel(void);
   ~ParallelChannel(void);
 
-  void startup_tracers(void);
-  void clearup_tracers(void);
+  void startup_sweepers(void);
+  void clearup_sweepers(void);
   int put_in_order(void);
   int fetch_out_order(void);
-  void real_put_in(BaseObject* obj);
-  void acquire_work(int tracer_id, std::vector<BaseObject*>& objects);
-  bool generate_work(int tracer_id, BaseObject* obj);
-  void notify_sweeping(int id);
-  void sweep(void);
+  void put_into_sweeper(BaseObject* obj);
+  void init_marked_objects(int sweeper_id, std::vector<BaseObject*>& objects);
+  void acquire_work(int sweeper_id, std::vector<BaseObject*>& objects);
+  bool generate_work(int sweeper_id, BaseObject* obj);
+  void notify_sweeping(int id, std::size_t remain_count);
 public:
   static ParallelChannel& get_instance(void);
 
