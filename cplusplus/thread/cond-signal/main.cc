@@ -54,9 +54,9 @@ class Worker {
       {
         std::unique_lock<std::mutex> lk(mutex_);
         cv_work_.wait(lk, [this]{ return !datas_.empty() || !running_; });
+        if (!running_)
+          break;
       }
-      if (!running_)
-        break;
 
       auto sum = 0;
       std::for_each(datas_.begin(), datas_.end(), [&sum](int& v){ sum += v; });
@@ -75,15 +75,19 @@ class Worker {
     }
   }
 public:
-  Worker(int id)
+  explicit Worker(int id)
     : id_(id)
     , thread_(std::bind(&Worker::closure, this)) {
+  }
+
+  ~Worker(void) {
+    stop();
+    thread_.join();
   }
 
   void stop(void) {
     running_ = false;
     cv_work_.notify_one();
-    thread_.join();
   }
 
   void put_in(int v) {
