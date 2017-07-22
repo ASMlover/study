@@ -51,7 +51,38 @@ class Sweeper : private Chaos::UnCopyable {
       Chaos::MemoryPool::get_instance().dealloc(obj, obj->get_size());
   }
 
+  void perform_work(void) {
+    while (!marked_objects_.empty()) {
+      auto* obj = marked_objects_.back();
+      marked_objects_.pop_back();
+
+      if (!obj->is_marked())
+        obj->set_marked();
+      if (obj->is_pair()) {
+        auto append_fn = [this](BaseObject* o) {
+          if (o != nullptr && !o->is_marked()) {
+            if (!ParallelChannel::get_instance().generate_work(id_, o))
+              marked_objects_.push_back(o);
+          }
+        };
+
+        append_fn(Chaos::down_cast<Pair*>(obj)->first());
+        append_fn(Chaos::down_cast<Pair*>(obj)->second());
+      }
+    }
+  }
+
   void sweep(void) {
+    for (auto it = objects_.begin(); it != objects_.end();) {
+      if (!(*it)->is_marked()) {
+        dealloc(*it);
+        objects_.erase(it++);
+      }
+      else {
+        (*it)->unset_marked();
+        ++it;
+      }
+    }
   }
 
   void sweeper_closure(void) {
@@ -64,7 +95,19 @@ class Sweeper : private Chaos::UnCopyable {
           break;
       }
 
-      // TODO:
+      marked_objects_.clear();
+      ParallelChannel::get_instance().init_sweeper_marked_objects(
+          id_, marked_objects_);
+
+      while (sweeping_) {
+        ParallelChannel::get_instance().acquire_work(id_, marked_objects_);
+        perform_work();
+
+        if (marked_objects_.empty()) {
+          sweeping_ = false;
+          break;
+        }
+      }
 
       sweep();
       ParallelChannel::get_instance().notify_sweeped(id_, objects_.size());
@@ -96,9 +139,13 @@ ParallelChannel::~ParallelChannel(void) {
 }
 
 void ParallelChannel::startup_sweepers(void) {
+  for (auto i = 0; i < kMaxSweepers; ++i)
+    sweepers_.emplace_back(new Sweeper(i));
 }
 
 void ParallelChannel::clearup_sweepers(void) {
+  for (auto& s : sweepers_)
+    s->stop();
 }
 
 void* ParallelChannel::alloc(std::size_t n) {
@@ -117,22 +164,56 @@ int ParallelChannel::fetch_out_order(void) {
 }
 
 void ParallelChannel::put_into_sweeper(BaseObject* obj) {
+  auto i = put_in_order();
+  channels_[i][i].push_back(obj);
+  sweepers_[i]->put_in(obj);
 }
 
 void ParallelChannel::init_sweeper_marked_objects(
     int sweeper_id, std::vector<BaseObject*>& objects) {
+  auto& ch = channels_[sweeper_id][sweeper_id];
+  if (!ch.empty())
+    std::copy(ch.begin(), ch.end(), std::back_inserter(objects));
 }
 
 void ParallelChannel::acquire_work(
     int sweeper_id, std::vector<BaseObject*>& objects) {
+  for (auto i = 0; i < kMaxSweepers; ++i) {
+    if (i == sweeper_id)
+      continue;
+
+    auto& ch = channels_[i][sweeper_id];
+    if (!ch.empty()) {
+      auto* obj = ch.back();
+      ch.pop_back();
+      objects.push_back(obj);
+      break;
+    }
+  }
 }
 
 bool ParallelChannel::generate_work(int sweeper_id, BaseObject* obj) {
+  for (auto i = 0; i < kMaxSweepers; ++i) {
+    if (i == sweeper_id)
+      continue;
+
+    auto& ch = channels_[i][sweeper_id];
+    if (ch.size() < kChannelObjects) {
+      ch.push_back(obj);
+      return true;
+    }
+  }
   return false;
 }
 
 void ParallelChannel::notify_sweeped(
-    int sweeper_id, std::size_t remain_count) {
+    int /*sweeper_id*/, std::size_t remain_count) {
+  {
+    Chaos::ScopedLock<Chaos::Mutex> g(sweeper_mutex_);
+    ++sweeper_counter_;
+    object_counter_ += remain_count;
+  }
+  sweeper_cond_.notify_one();
 }
 
 ParallelChannel& ParallelChannel::get_instance(void) {
@@ -141,6 +222,22 @@ ParallelChannel& ParallelChannel::get_instance(void) {
 }
 
 void ParallelChannel::collect(void) {
+  auto old_count = object_counter_;
+
+  sweeper_counter_ = 0;
+  object_counter_ = 0;
+  for (auto& s : sweepers_)
+    s->sweeping();
+
+  {
+    Chaos::ScopedLock<Chaos::Mutex> g(sweeper_mutex_);
+    while (sweeper_counter_ < kMaxSweepers)
+      sweeper_cond_.wait();
+  }
+
+  std::cout
+    << "[" << old_count - object_counter_ << "] objects collected, "
+    << "[" << object_counter_ << "] objects remaining." << std::endl;
 }
 
 BaseObject* ParallelChannel::put_in(int value) {
@@ -173,6 +270,13 @@ BaseObject* ParallelChannel::put_in(BaseObject* first, BaseObject* second) {
 }
 
 BaseObject* ParallelChannel::fetch_out(void) {
+  int i = fetch_out_order();
+  auto& ch = channels_[i][i];
+  if (!ch.empty()) {
+    auto* obj = ch.back();
+    ch.pop_back();
+    return obj;
+  }
   return nullptr;
 }
 
