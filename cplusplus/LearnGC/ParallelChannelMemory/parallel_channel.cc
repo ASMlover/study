@@ -99,7 +99,7 @@ class Sweeper : private Chaos::UnCopyable {
       ParallelChannel::get_instance().init_sweeper_marked_objects(
           id_, marked_objects_);
 
-      while (sweeping_) {
+      while (sweeping_ || !marked_objects_.empty()) {
         ParallelChannel::get_instance().acquire_work(id_, marked_objects_);
         perform_work();
 
