@@ -60,7 +60,7 @@ class ParallelMemory : private Chaos::UnCopyable {
   void dealloc(BaseObject* obj);
   int put_in_order(void);
   int fetch_out_order(void);
-  void notify_collected(std::size_t remain_count);
+  void notify_collected(int sweeper_id, std::size_t remain_count);
 public:
   static ParallelMemory& get_instance(void);
 

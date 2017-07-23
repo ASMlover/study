@@ -99,7 +99,7 @@ class Sweeper : private Chaos::UnCopyable {
 
       if (sweeping_) {
         sweeping_ = false;
-        ParallelMemory::get_instance().notify_collected(objects_.size());
+        ParallelMemory::get_instance().notify_collected(id_, objects_.size());
       }
     }
   }
@@ -168,7 +168,8 @@ int ParallelMemory::fetch_out_order(void) {
   return order_;
 }
 
-void ParallelMemory::notify_collected(std::size_t remain_count) {
+void ParallelMemory::notify_collected(
+    int /*sweeper_id*/, std::size_t remain_count) {
   {
     Chaos::ScopedLock<Chaos::Mutex> g(sweeper_mutex_);
     ++sweeper_counter_;
