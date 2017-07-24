@@ -49,6 +49,8 @@ class Sweeper : private Chaos::UnCopyable {
     while (!marked_objects_.empty()) {
       auto* obj = marked_objects_.back();
       marked_objects_.pop_back();
+      if (obj == nullptr)
+        continue;
 
       if (!obj->is_marked())
         obj->set_marked();
@@ -184,8 +186,8 @@ bool ParallelChannel::generate_work(int sweeper_id, BaseObject* obj) {
   for (auto i = 0; i < kMaxSweepers; ++i) {
     if (i == sweeper_id)
       continue;
-    if (channels_[i][sweeper_id].size() < kChannelObjects) {
-      channels_[i][sweeper_id].push_back(obj);
+    if (channels_[sweeper_id][i].size() < kChannelObjects) {
+      channels_[sweeper_id][i].push_back(obj);
       return true;
     }
   }
