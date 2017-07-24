@@ -118,11 +118,11 @@ class Sweeper : private Chaos::UnCopyable {
           break;
       }
 
-      while (sweeping_) {
+      if (sweeping_) {
         sweep();
         sweeping_ = false;
+        ParallelChannel::get_instance().notify_sweeped(id_, objects_.size());
       }
-      ParallelChannel::get_instance().notify_sweeped(id_, objects_.size());
     }
   }
 public:
