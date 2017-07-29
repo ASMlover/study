@@ -33,6 +33,7 @@ namespace gc {
 struct MemoryHeader {
   enum {INVALID, INT, PAIR};
   std::uint8_t _type{INVALID};
+  bool _generated{};
   MemoryHeader* forwarding_{};
 
   bool is_invalid(void) const { return _type == INVALID; }
@@ -40,6 +41,8 @@ struct MemoryHeader {
   bool is_pair(void) const { return _type == PAIR; }
   std::uint8_t type(void) const { return _type; }
   void set_type(std::uint8_t type) { _type = type; }
+  bool is_generated(void) const { return _generated; }
+  void set_generated(void) { _generated = true; }
   MemoryHeader* forward(void) const { return forwarding_; }
   void set_forward(MemoryHeader* forward) { forwarding_ = forward; }
 };
