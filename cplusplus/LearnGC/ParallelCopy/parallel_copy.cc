@@ -34,13 +34,11 @@
 namespace gc {
 
 struct ForwardNode {
-  BaseObject* obj{};
-  BaseObject* child{};
+  BaseObject* from_ref{};
   ForwadingCallback callback{};
 
-  ForwardNode(BaseObject* o, BaseObject* ref, ForwadingCallback&& cb)
-    : obj(o)
-    , child(ref)
+  ForwardNode(BaseObject* ref, ForwadingCallback&& cb)
+    : from_ref(ref)
     , callback(std::move(cb)) {
   }
 };
@@ -59,6 +57,7 @@ class Sweeper : private Chaos::UnCopyable {
   byte_t* scanptr_{};
   std::size_t object_counter_{};
   std::vector<BaseObject*> roots_;
+  mutable Chaos::Mutex forward_mutex_;
   std::queue<ForwardNode> forward_workers_;
   static constexpr std::size_t kSemispaceSize = 100 << 9;
 
@@ -135,7 +134,7 @@ class Sweeper : private Chaos::UnCopyable {
           auto* first = pair->first();
           if (first != nullptr) {
             if (!in_sweeper(first)) {
-              ParallelCopy::get_instance().generate_work(id_, pair, first,
+              ParallelCopy::get_instance().generate_work(id_, first,
                   [pair](BaseObject* ref) { pair->set_first(ref); });
             }
             else {
@@ -146,7 +145,8 @@ class Sweeper : private Chaos::UnCopyable {
           auto* second = pair->second();
           if (second != nullptr) {
             if (!in_sweeper(second)) {
-              ParallelCopy::get_instance().generate_work(id_, pair, second,
+              // FIXME: there's bug need fix in Windows ???
+              ParallelCopy::get_instance().generate_work(id_, second,
                   [pair](BaseObject* ref) { pair->set_second(ref); });
             }
             else {
@@ -158,13 +158,13 @@ class Sweeper : private Chaos::UnCopyable {
       ParallelCopy::get_instance().notify_traced(id_);
 
       while (true) {
-        if (ParallelCopy::get_instance().tracing_counter() >=
-            ParallelCopy::kMaxSweepers && forward_workers_.empty())
+        if (ParallelCopy::get_instance().is_traced()
+            && forward_workers_.empty())
           break;
 
         if (!forward_workers_.empty()) {
           auto& node = forward_workers_.front();
-          auto* to_ref = forward(node.child);
+          auto* to_ref = forward(node.from_ref);
           node.callback(to_ref);
           forward_workers_.pop();
         }
@@ -216,10 +216,12 @@ public:
     return false;
   }
 
-  void put_in_forwarding(BaseObject* obj,
-      BaseObject* child, ForwadingCallback&& cb) {
-    if (need_moving(child))
-      forward_workers_.push(ForwardNode(obj, child, std::move(cb)));
+  void put_in_forwarding(BaseObject* from_ref, ForwadingCallback&& cb) {
+    Chaos::ScopedLock<Chaos::Mutex> g(forward_mutex_);
+    if (need_moving(from_ref) && !from_ref->is_generated()) {
+      forward_workers_.push(ForwardNode(from_ref, std::move(cb)));
+      from_ref->set_generated();
+    }
   }
 
   BaseObject* put_in(int value) {
@@ -284,13 +286,13 @@ int ParallelCopy::fetch_out_order(void) {
 }
 
 void ParallelCopy::generate_work(int sweeper_id,
-      BaseObject* obj, BaseObject* child, ForwadingCallback&& cb) {
+      BaseObject* from_ref, ForwadingCallback&& cb) {
   for (auto& s : sweepers_) {
     if (s->get_id() == sweeper_id)
       continue;
 
-    if (s->in_sweeper(child))
-      s->put_in_forwarding(obj, child, std::move(cb));
+    if (s->in_sweeper(from_ref))
+      s->put_in_forwarding(from_ref, std::move(cb));
   }
 }
 

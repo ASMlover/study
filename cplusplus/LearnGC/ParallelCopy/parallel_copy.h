@@ -55,8 +55,8 @@ class ParallelCopy : private Chaos::UnCopyable {
 
   friend class Sweeper;
 
-  int tracing_counter(void) const {
-    return tracing_counter_;
+  bool is_traced(void) const {
+    return tracing_counter_ >= kMaxSweepers;
   }
 
   ParallelCopy(void);
@@ -67,7 +67,7 @@ class ParallelCopy : private Chaos::UnCopyable {
   int put_in_order(void);
   int fetch_out_order(void);
   void generate_work(int sweeper_id,
-      BaseObject* obj, BaseObject* child, ForwadingCallback&& cb);
+      BaseObject* from_ref, ForwadingCallback&& cb);
   void notify_traced(int sweeper_id);
   void notify_collected(int sweeper_id, std::size_t alive_count);
 public:
