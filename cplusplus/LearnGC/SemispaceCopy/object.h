@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <cstring>
+#include <cstddef>
 #include <Chaos/UnCopyable.h>
 #include "memory_header.h"
 
@@ -34,6 +34,7 @@ namespace gc {
 
 class BaseObject : public MemoryHeader, public Chaos::UnCopyable {
 public:
+  virtual ~BaseObject(void) {}
   virtual const char* get_name(void) const { return "BaseObject"; }
   virtual std::size_t get_size(void) const { return sizeof(*this); }
 };
