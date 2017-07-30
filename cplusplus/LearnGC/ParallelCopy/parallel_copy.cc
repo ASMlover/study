@@ -37,6 +37,8 @@ struct ForwardNode {
   BaseObject* from_ref{};
   ForwadingCallback callback{};
 
+  ForwardNode(void) {}
+
   ForwardNode(BaseObject* ref, ForwadingCallback&& cb)
     : from_ref(ref)
     , callback(std::move(cb)) {
@@ -161,12 +163,15 @@ class Sweeper : private Chaos::UnCopyable {
             && forward_workers_.empty())
           break;
 
-        Chaos::ScopedLock<Chaos::Mutex> g(forward_mutex_);
         if (!forward_workers_.empty()) {
-          auto& node = forward_workers_.front();
+          ForwardNode node;
+          {
+            Chaos::ScopedLock<Chaos::Mutex> g(forward_mutex_);
+            node = forward_workers_.front();
+            forward_workers_.pop();
+          }
           auto* to_ref = forward(node.from_ref);
           node.callback(to_ref);
-          forward_workers_.pop();
         }
       }
 
