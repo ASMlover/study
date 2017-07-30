@@ -145,7 +145,6 @@ class Sweeper : private Chaos::UnCopyable {
           auto* second = pair->second();
           if (second != nullptr) {
             if (!in_sweeper(second)) {
-              // FIXME: there's bug need fix in Windows ???
               ParallelCopy::get_instance().generate_work(id_, second,
                   [pair](BaseObject* ref) { pair->set_second(ref); });
             }
@@ -162,6 +161,7 @@ class Sweeper : private Chaos::UnCopyable {
             && forward_workers_.empty())
           break;
 
+        Chaos::ScopedLock<Chaos::Mutex> g(forward_mutex_);
         if (!forward_workers_.empty()) {
           auto& node = forward_workers_.front();
           auto* to_ref = forward(node.from_ref);
