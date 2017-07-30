@@ -163,9 +163,9 @@ int ParallelGC::fetch_out_order(void) {
 void ParallelGC::notify_collected(int /*id*/, std::size_t remain_count) {
   {
     Chaos::ScopedLock<Chaos::Mutex> g(sweeper_mutex_);
-    ++sweeper_counter_;
     object_counter_ += remain_count;
   }
+  ++sweeper_counter_;
   sweeper_cond_.notify_one();
 }
 

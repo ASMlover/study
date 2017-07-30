@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <atomic>
 #include <memory>
 #include <vector>
 #include <Chaos/UnCopyable.h>
@@ -41,7 +42,7 @@ class ParallelGC : private Chaos::UnCopyable {
   using SweeperEntity = std::unique_ptr<Sweeper>;
 
   int order_{};
-  int sweeper_counter_{};
+  std::atomic<int> sweeper_counter_{};
   mutable Chaos::Mutex sweeper_mutex_;
   Chaos::Condition sweeper_cond_;
   std::vector<SweeperEntity> sweepers_;
