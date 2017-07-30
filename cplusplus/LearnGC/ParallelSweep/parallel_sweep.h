@@ -26,10 +26,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <atomic>
 #include <memory>
 #include <list>
 #include <vector>
-#include <set>
 #include <Chaos/UnCopyable.h>
 #include <Chaos/Concurrent/Mutex.h>
 #include <Chaos/Concurrent/Condition.h>
@@ -42,13 +42,13 @@ class Worker;
 class ParallelSweep : private Chaos::UnCopyable {
   using WorkerEntity = std::unique_ptr<Worker>;
 
-  int nworkers_{};
   int order_{};
   mutable Chaos::Mutex finish_mutex_;
   Chaos::Condition finish_cond_;
-  std::set<int> finish_set_;
+  std::atomic<int> finish_counter_{};
   std::vector<WorkerEntity> workers_;
   std::list<BaseObject*> objects_;
+  static constexpr int kMaxWorkers = 4;
   static constexpr std::size_t kMaxObjects = 4096;
 
   friend class Worker;
@@ -56,12 +56,12 @@ class ParallelSweep : private Chaos::UnCopyable {
   ParallelSweep(void);
   ~ParallelSweep(void);
 
-  void start_workers(int nworkers = 4);
+  void start_workers(void);
   void stop_workers(void);
   void collect_routine(void);
   int put_in_order(void);
   int fetch_out_order(void);
-  void acquire_work(int own_order, std::vector<BaseObject*>& objects);
+  void acquire_work(int worker_id, std::vector<BaseObject*>& objects);
   void notify_trace_finished(int id);
   void sweep(void);
 public:

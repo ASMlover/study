@@ -25,7 +25,6 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <algorithm>
-#include <functional>
 #include <iostream>
 #include <iterator>
 #include <Chaos/Types.h>
@@ -115,13 +114,14 @@ public:
     : id_(id)
     , trace_mutex_()
     , trace_cond_(trace_mutex_)
-    , thread_(std::bind(&Worker::worker_routine, this)) {
-      thread_.start();
+    , thread_([this]{ worker_routine(); }) {
+    thread_.start();
   }
 
   ~Worker(void) { stop(); thread_.join(); }
   void stop(void) { running_ = false; trace_cond_.notify_one(); }
   void run_tracing(void) { run_tracing_ = true; trace_cond_.notify_one(); }
+  int get_id(void) const { return id_; }
   bool is_tracing(void) const { return run_tracing_; }
   std::size_t roots_count(void) const { return roots_.size(); }
   bool try_lock(void) { return mutex_.try_lock(); }
@@ -153,47 +153,43 @@ ParallelSweep::~ParallelSweep(void) {
   stop_workers();
 }
 
-void ParallelSweep::start_workers(int nworkers) {
-  nworkers_ = nworkers;
-  for (auto i = 0; i < nworkers_; ++i)
+void ParallelSweep::start_workers(void) {
+  for (auto i = 0; i < kMaxWorkers; ++i)
     workers_.emplace_back(new Worker(i));
 }
 
 void ParallelSweep::stop_workers(void) {
-  for (auto i = 0; i < nworkers_; ++i)
-    workers_[i]->stop();
+  for (auto& w : workers_)
+    w->stop();
 }
 
 int ParallelSweep::put_in_order(void) {
   int r = order_;
-  order_ = (order_ + 1) % nworkers_;
+  order_ = (order_ + 1) % kMaxWorkers;
   return r;
 }
 
 int ParallelSweep::fetch_out_order(void) {
-  order_ = (order_ - 1 + nworkers_) % nworkers_;
+  order_ = (order_ - 1 + kMaxWorkers) % kMaxWorkers;
   return order_;
 }
 
 void ParallelSweep::acquire_work(
-    int own_order, std::vector<BaseObject*>& objects) {
-  for (auto i = 0; i < nworkers_; ++i) {
-    if (i == own_order)
+    int worker_id, std::vector<BaseObject*>& objects) {
+  for (auto& w : workers_) {
+    if (w->get_id() == worker_id)
       continue;
 
-    if (workers_[i]->try_lock()) {
-      workers_[i]->transfer(workers_[i]->roots_count() / 2, objects);
-      workers_[i]->unlock();
+    if (w->try_lock()) {
+      w->transfer(w->roots_count() / 2, objects);
+      w->unlock();
       break;
     }
   }
 }
 
-void ParallelSweep::notify_trace_finished(int id) {
-  {
-    Chaos::ScopedLock<Chaos::Mutex> g(finish_mutex_);
-    finish_set_.insert(id);
-  }
+void ParallelSweep::notify_trace_finished(int /*id*/) {
+  ++finish_counter_;
   finish_cond_.notify_one();
 }
 
@@ -218,13 +214,13 @@ ParallelSweep& ParallelSweep::get_instance(void) {
 void ParallelSweep::collect(void) {
   auto old_count = objects_.size();
 
-  finish_set_.clear();
-  for (auto i = 0; i < nworkers_; ++i)
-    workers_[i]->run_tracing();
+  finish_counter_ = 0;
+  for (auto& w : workers_)
+    w->run_tracing();
 
   {
     Chaos::ScopedLock<Chaos::Mutex> g(finish_mutex_);
-    while (finish_set_.size() < static_cast<std::size_t>(nworkers_))
+    while (finish_counter_ < kMaxWorkers)
       finish_cond_.wait();
   }
 
@@ -242,8 +238,7 @@ BaseObject* ParallelSweep::put_in(int value) {
   auto* obj = new Int();
   obj->set_value(value);
 
-  auto order = put_in_order();
-  workers_[order]->put_in(obj);
+  workers_[put_in_order()]->put_in(obj);
   objects_.push_back(obj);
 
   return obj;
@@ -259,16 +254,14 @@ BaseObject* ParallelSweep::put_in(BaseObject* first, BaseObject* second) {
   if (second != nullptr)
     obj->set_second(second);
 
-  auto order = put_in_order();
-  workers_[order]->put_in(obj);
+  workers_[put_in_order()]->put_in(obj);
   objects_.push_back(obj);
 
   return obj;
 }
 
 BaseObject* ParallelSweep::fetch_out(void) {
-  auto order = fetch_out_order();
-  return workers_[order]->fetch_out();
+  return workers_[fetch_out_order()]->fetch_out();
 }
 
 }
