@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <atomic>
 #include <memory>
 #include <list>
 #include <set>
@@ -42,13 +43,13 @@ class Worker;
 class ParallelMark : private Chaos::UnCopyable {
   using WorkerEntity = std::unique_ptr<Worker>;
 
-  std::size_t order_{};
+  int order_{};
   std::vector<WorkerEntity> workers_;
   std::list<BaseObject*> objects_;
   mutable Chaos::Mutex sweep_mutex_;
   Chaos::Condition sweep_cond_;
-  std::set<std::size_t> sweep_set_;
-  static constexpr std::size_t kWorkers = 4;
+  std::atomic<int> sweep_counter_{};
+  static constexpr int kWorkers = 4;
   static constexpr std::size_t kMaxObjects = 4096;
 
   friend class Worker;
@@ -58,9 +59,9 @@ class ParallelMark : private Chaos::UnCopyable {
 
   void start_workers(void);
   void stop_workers(void);
-  std::size_t put_in_order(void);
-  std::size_t fetch_out_order(void);
-  void notify_sweeping(std::size_t id);
+  int put_in_order(void);
+  int fetch_out_order(void);
+  void notify_sweeping(int worker_id);
   void sweep(void);
 public:
   static ParallelMark& get_instance(void);

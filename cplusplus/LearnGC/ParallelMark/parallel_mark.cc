@@ -24,7 +24,6 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <functional>
 #include <iostream>
 #include <Chaos/Types.h>
 #include <Chaos/Concurrent/Thread.h>
@@ -34,7 +33,7 @@
 namespace gc {
 
 class Worker : private Chaos::UnCopyable {
-  std::size_t id_{};
+  int id_{};
   bool running_{true};
   bool tracing_{};
   mutable Chaos::Mutex mutex_;
@@ -88,19 +87,19 @@ class Worker : private Chaos::UnCopyable {
     }
   }
 public:
-  Worker(std::size_t id)
+  Worker(int id)
     : id_(id)
     , mutex_()
     , trace_cond_(mutex_)
-    , thread_(std::bind(&Worker::work_closure, this)) {
+    , thread_([this]{ work_closure(); }) {
+    thread_.start();
   }
 
   ~Worker(void) { stop(); thread_.join(); }
-  std::size_t get_id(void) const { return id_; }
-  void start(void) { thread_.start(); }
   void stop(void) { running_ = false; trace_cond_.notify_one(); }
   void tracing(void) { tracing_ = true; trace_cond_.notify_one(); }
   void put_in(BaseObject* obj) { roots_.push_back(obj); }
+
   BaseObject* fetch_out(void) {
     auto* obj = roots_.back();
     roots_.pop_back();
@@ -119,10 +118,8 @@ ParallelMark::~ParallelMark(void) {
 }
 
 void ParallelMark::start_workers(void) {
-  for (std::size_t i = 0; i < kWorkers; ++i) {
+  for (int i = 0; i < kWorkers; ++i)
     workers_.emplace_back(new Worker(i));
-    workers_[i]->start();
-  }
 }
 
 void ParallelMark::stop_workers(void) {
@@ -130,22 +127,19 @@ void ParallelMark::stop_workers(void) {
     w->stop();
 }
 
-std::size_t ParallelMark::put_in_order(void) {
+int ParallelMark::put_in_order(void) {
   auto order = order_;
   order_ = (order_ + 1) % kWorkers;
   return order;
 }
 
-std::size_t ParallelMark::fetch_out_order(void) {
+int ParallelMark::fetch_out_order(void) {
   order_ = (order_ - 1 + kWorkers) % kWorkers;
   return order_;
 }
 
-void ParallelMark::notify_sweeping(std::size_t id) {
-  {
-    Chaos::ScopedLock<Chaos::Mutex> g(sweep_mutex_);
-    sweep_set_.insert(id);
-  }
+void ParallelMark::notify_sweeping(int /*id*/) {
+  ++sweep_counter_;
   sweep_cond_.notify_one();
 }
 
@@ -170,13 +164,13 @@ ParallelMark& ParallelMark::get_instance(void) {
 void ParallelMark::collect(void) {
   auto old_count = objects_.size();
 
-  sweep_set_.clear();
+  sweep_counter_ = 0;
   for (auto& w : workers_)
     w->tracing();
 
   {
     Chaos::ScopedLock<Chaos::Mutex> g(sweep_mutex_);
-    while (sweep_set_.size() < kWorkers)
+    while (sweep_counter_ < kWorkers)
       sweep_cond_.wait();
   }
 
