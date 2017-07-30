@@ -29,7 +29,6 @@
 #include <atomic>
 #include <memory>
 #include <list>
-#include <set>
 #include <vector>
 #include <Chaos/UnCopyable.h>
 #include <Chaos/Concurrent/Mutex.h>

@@ -26,8 +26,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <atomic>
 #include <list>
-#include <set>
 #include <vector>
 #include <memory>
 #include <Chaos/UnCopyable.h>
@@ -42,13 +42,13 @@ class Worker;
 class ParallelMemory : private Chaos::UnCopyable {
   using WorkerEntity = std::unique_ptr<Worker> ;
 
-  std::size_t order_{};
-  std::set<std::size_t> sweep_set_;
+  int order_{};
+  std::atomic<int> sweep_counter_{};
   mutable Chaos::Mutex sweep_mutex_;
   Chaos::Condition sweep_cond_;
   std::vector<WorkerEntity> workers_;
   std::list<BaseObject*> objects_;
-  static constexpr std::size_t kWorkerNumber = 4;
+  static constexpr int kWorkerNumber = 4;
   static constexpr std::size_t kMaxObjects = 4096;
 
   friend class Worker;
@@ -60,9 +60,9 @@ class ParallelMemory : private Chaos::UnCopyable {
   void dealloc(BaseObject* obj);
   void start_workers(void);
   void stop_workers(void);
-  std::size_t put_in_order(void);
-  std::size_t fetch_out_order(void);
-  void notify_sweeping(std::size_t id);
+  int put_in_order(void);
+  int fetch_out_order(void);
+  void notify_sweeping(int id);
   void sweep(void);
 public:
   static ParallelMemory& get_instance(void);

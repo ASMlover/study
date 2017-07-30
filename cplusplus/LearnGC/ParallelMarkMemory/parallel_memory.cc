@@ -24,7 +24,6 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <functional>
 #include <iostream>
 #include <Chaos/Types.h>
 #include <Chaos/Concurrent/Thread.h>
@@ -35,7 +34,7 @@
 namespace gc {
 
 class Worker : private Chaos::UnCopyable {
-  std::size_t id_{};
+  int id_{};
   bool running_{true};
   bool marking_{};
   mutable Chaos::Mutex mutex_;
@@ -89,11 +88,11 @@ class Worker : private Chaos::UnCopyable {
     }
   }
 public:
-  explicit Worker(std::size_t id)
+  explicit Worker(int id)
     : id_(id)
     , mutex_()
     , mark_cond_(mutex_)
-    , thread_(std::bind(&Worker::work_closure, this)) {
+    , thread_([this]{ work_closure(); }) {
     thread_.start();
   }
 
@@ -101,6 +100,7 @@ public:
   void stop(void) { running_ = false; mark_cond_.notify_one(); }
   void marking(void) { marking_ = true; mark_cond_.notify_one(); }
   void put_in(BaseObject* obj) { roots_.push_back(obj); }
+
   BaseObject* fetch_out(void) {
     auto* obj = roots_.back();
     roots_.pop_back();
@@ -128,7 +128,7 @@ void ParallelMemory::dealloc(BaseObject* obj) {
 }
 
 void ParallelMemory::start_workers(void) {
-  for (auto i = 0u; i < kWorkerNumber; ++i)
+  for (auto i = 0; i < kWorkerNumber; ++i)
     workers_.emplace_back(new Worker(i));
 }
 
@@ -137,22 +137,19 @@ void ParallelMemory::stop_workers(void) {
     w->stop();
 }
 
-std::size_t ParallelMemory::put_in_order(void) {
+int ParallelMemory::put_in_order(void) {
   auto order = order_;
   order_ = (order_ + 1) % kWorkerNumber;
   return order;
 }
 
-std::size_t ParallelMemory::fetch_out_order(void) {
+int ParallelMemory::fetch_out_order(void) {
   order_ = (order_ - 1 + kWorkerNumber) % kWorkerNumber;
   return order_;
 }
 
-void ParallelMemory::notify_sweeping(std::size_t id) {
-  {
-    Chaos::ScopedLock<Chaos::Mutex> g(sweep_mutex_);
-    sweep_set_.insert(id);
-  }
+void ParallelMemory::notify_sweeping(int /*id*/) {
+  ++sweep_counter_;
   sweep_cond_.notify_one();
 }
 
@@ -177,13 +174,13 @@ ParallelMemory& ParallelMemory::get_instance(void) {
 void ParallelMemory::collect(void) {
   auto old_count = objects_.size();
 
-  sweep_set_.clear();
+  sweep_counter_ = 0;
   for (auto& w : workers_)
     w->marking();
 
   {
     Chaos::ScopedLock<Chaos::Mutex> g(sweep_mutex_);
-    while (sweep_set_.size() < kWorkerNumber)
+    while (sweep_counter_ < kWorkerNumber)
       sweep_cond_.wait();
   }
 
