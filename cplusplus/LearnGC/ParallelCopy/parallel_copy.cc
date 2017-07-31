@@ -126,7 +126,7 @@ class Sweeper : private Chaos::UnCopyable {
 
       object_counter_ = 0;
       worklist_init();
-      for (auto* obj : roots_)
+      for (auto& obj : roots_)
         obj = forward(obj);
 
       while (!worklist_empty()) {
