@@ -60,6 +60,7 @@ class ParallelChannel : private Chaos::UnCopyable {
 
   void startup_sweepers(void);
   void clearup_sweepers(void);
+  void* alloc(std::size_t n);
   int put_in_order(void);
   int fetch_out_order(void);
   void put_into_sweeper(BaseObject* obj);

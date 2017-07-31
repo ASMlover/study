@@ -49,17 +49,33 @@ class Sweeper : private Chaos::UnCopyable {
   std::vector<BaseObject*> marked_objects_;
   std::list<BaseObject*> objects_;
 
-  void* alloc(std::size_t n) {
-    return Chaos::MemoryPool::get_instance().alloc(n);
-  }
-
   void dealloc(BaseObject* obj) {
     if (obj != nullptr)
       Chaos::MemoryPool::get_instance().dealloc(obj, obj->get_size());
   }
 
   void perform_work(void) {
-    // TODO:
+    while (!marked_objects_.empty()) {
+      auto* obj = marked_objects_.back();
+      marked_objects_.pop_back();
+
+      if (obj == nullptr)
+        continue;
+
+      if (!obj->is_marked())
+        obj->set_marked();
+      if (obj->is_pair()) {
+        auto append_fn = [this](BaseObject* o) {
+          if (o != nullptr && !o->is_marked()) {
+            if (!ParallelChannel::get_instance().generate_work(id_, o))
+              marked_objects_.push_back(o);
+          }
+        };
+
+        append_fn(Chaos::down_cast<Pair*>(obj)->first());
+        append_fn(Chaos::down_cast<Pair*>(obj)->second());
+      }
+    }
   }
 
   void sweep(void) {
@@ -89,7 +105,15 @@ class Sweeper : private Chaos::UnCopyable {
       ParallelChannel::get_instance().init_sweeper_marked_objects(
           id_, marked_objects_);
 
-      // TODO:
+      while (tracing_ || !marked_objects_.empty()) {
+        ParallelChannel::get_instance().acquire_work(id_, marked_objects_);
+        perform_work();
+
+        if (marked_objects_.empty()) {
+          tracing_ = false;
+          break;
+        }
+      }
       ParallelChannel::get_instance().notify_sweeping(id_);
 
       {
@@ -154,6 +178,9 @@ void ParallelChannel::clearup_sweepers(void) {
     s->stop();
 }
 
+void* ParallelChannel::alloc(std::size_t n) {
+  return Chaos::MemoryPool::get_instance().alloc(n);
+}
 
 int ParallelChannel::put_in_order(void) {
   int r = order_;
@@ -167,29 +194,61 @@ int ParallelChannel::fetch_out_order(void) {
 }
 
 void ParallelChannel::put_into_sweeper(BaseObject* obj) {
-  // TODO:
+  int i = put_in_order();
+  channels_[i][i].push_back(obj);
+  sweepers_[i]->put_in(obj);
 }
 
 void ParallelChannel::init_sweeper_marked_objects(
     int sweeper_id, std::vector<BaseObject*>& objects) {
-  // TODO:
+  auto& ch = channels_[sweeper_id][sweeper_id];
+  if (!ch.empty())
+    std::copy(ch.begin(), ch.end(), std::back_inserter(objects));
 }
 
 void ParallelChannel::acquire_work(
     int sweeper_id, std::vector<BaseObject*>& objects) {
-  // TODO:
+  for (auto i = 0; i < kMaxSweepers; ++i) {
+    if (i == sweeper_id)
+      continue;
+
+    auto& ch = channels_[i][sweeper_id];
+    if (!ch.empty()) {
+      auto* obj = ch.back();
+      ch.pop_back();
+      objects.push_back(obj);
+      break;
+    }
+  }
 }
 
 bool ParallelChannel::generate_work(int sweeper_id, BaseObject* obj) {
+  for (auto i = 0; i < kMaxSweepers; ++i) {
+    if (i == sweeper_id)
+      continue;
+
+    auto& ch = channels_[i][sweeper_id];
+    if (ch.size() < kChannelObjects) {
+      ch.push_back(obj);
+      return true;
+    }
+  }
   return false;
 }
 
-void ParallelChannel::notify_sweeping(int sweeper_id) {
-  // TODO:
+void ParallelChannel::notify_sweeping(int /*sweeper_id*/) {
+  ++sweeper_counter_;
+  sweeper_cond_.notify_one();
 }
 
-void ParallelChannel::notify_sweeped(int sweeper_id, std::size_t alive_count) {
-  // TODO:
+void ParallelChannel::notify_sweeped(
+    int /*sweeper_id*/, std::size_t alive_count) {
+  {
+    Chaos::ScopedLock<Chaos::Mutex> g(sweeper_mutex_);
+    object_counter_ += alive_count;
+  }
+  ++sweeper_counter_;
+  sweeper_cond_.notify_one();
 }
 
 ParallelChannel& ParallelChannel::get_instance(void) {
@@ -198,21 +257,70 @@ ParallelChannel& ParallelChannel::get_instance(void) {
 }
 
 void ParallelChannel::collect(void) {
-  // TODO:
+  sweeper_counter_ = 0;
+  for (auto& s : sweepers_)
+    s->tracing();
+
+  {
+    Chaos::ScopedLock<Chaos::Mutex> g(sweeper_mutex_);
+    while (sweeper_counter_ < kMaxSweepers)
+      sweeper_cond_.wait();
+  }
+
+  auto old_count = object_counter_;
+  sweeper_counter_ = 0;
+  object_counter_ = 0;
+  for (auto& s : sweepers_)
+    s->sweeping();
+  {
+    Chaos::ScopedLock<Chaos::Mutex> g(sweeper_mutex_);
+    while (sweeper_counter_ < kMaxSweepers)
+      sweeper_cond_.wait();
+  }
+
+  std::cout
+    << "[" << old_count - object_counter_ << "] objects collected, "
+    << "[" << object_counter_ << "] objects remaining." << std::endl;
 }
 
 BaseObject* ParallelChannel::put_in(int value) {
-  // TODO:
-  return nullptr;
+  if (object_counter_ >= kMaxObjects)
+    collect();
+
+  auto* obj = new (alloc(sizeof(Int))) Int();
+  obj->set_value(value);
+
+  ++object_counter_;
+  put_into_sweeper(obj);
+
+  return obj;
 }
 
 BaseObject* ParallelChannel::put_in(BaseObject* first, BaseObject* second) {
-  // TODO:
-  return nullptr;
+  if (object_counter_ >= kMaxObjects)
+    collect();
+
+  auto* obj = new (alloc(sizeof(Pair))) Pair();
+  if (first != nullptr)
+    obj->set_first(first);
+  if (second != nullptr)
+    obj->set_second(second);
+
+  ++object_counter_;
+  put_into_sweeper(obj);
+
+  return obj;
 }
 
 BaseObject* ParallelChannel::fetch_out(void) {
-  // TODO:
+  int i = fetch_out_order();
+
+  auto& ch = channels_[i][i];
+  if (!ch.empty()) {
+    auto* obj = ch.back();
+    ch.pop_back();
+    return obj;
+  }
   return nullptr;
 }
 
