@@ -30,8 +30,6 @@
 
 namespace gc {
 
-// FIXME: 存在回收时新的对象覆盖老的未来得及回收的对象的bug？？？
-
 ConcurrencyCopy::ConcurrencyCopy(void)
   : copy_mutex_()
   , copy_cond_(copy_mutex_)
@@ -56,13 +54,13 @@ ConcurrencyCopy::~ConcurrencyCopy(void) {
 }
 
 void* ConcurrencyCopy::alloc(std::size_t n) {
-  if (allocptr_ + n >= tospace_ + kSemispaceSize)
+  if (allocptr_ + n > tospace_ + kSemispaceSize)
     collect();
 
   Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
-
   auto* p = allocptr_;
   allocptr_ += n;
+
   return p;
 }
 
@@ -77,6 +75,7 @@ void ConcurrencyCopy::concurrency_closure(void) {
     }
 
     collecting();
+    copying_ = false;
   }
 }
 
@@ -107,7 +106,7 @@ BaseObject* ConcurrencyCopy::copy(BaseObject* from_ref) {
 }
 
 void ConcurrencyCopy::collecting(void) {
-  auto old_count = object_counter_;
+  std::size_t old_count = object_counter_;
 
   object_counter_ = 0;
   {

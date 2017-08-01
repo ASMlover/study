@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <atomic>
 #include <vector>
 #include <Chaos/Types.h>
 #include <Chaos/Concurrent/Mutex.h>
@@ -41,10 +42,9 @@ class ConcurrencyCopy {
   byte_t* fromspace_{};
   byte_t* tospace_{};
   byte_t* allocptr_{};
-  byte_t* scanptr_{};
   bool running_{true};
   bool copying_{};
-  std::size_t object_counter_{};
+  std::atomic<std::size_t> object_counter_{};
   mutable Chaos::Mutex mutex_;
   mutable Chaos::Mutex copy_mutex_;
   Chaos::Condition copy_cond_;
