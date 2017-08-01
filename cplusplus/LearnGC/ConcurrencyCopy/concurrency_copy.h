@@ -29,6 +29,7 @@
 #include <vector>
 #include <Chaos/Types.h>
 #include <Chaos/Concurrent/Mutex.h>
+#include <Chaos/Concurrent/Condition.h>
 #include <Chaos/Concurrent/Thread.h>
 
 namespace gc {
@@ -42,7 +43,13 @@ class ConcurrencyCopy {
   byte_t* allocptr_{};
   byte_t* scanptr_{};
   bool running_{true};
+  bool copying_{};
+  std::size_t object_counter_{};
   mutable Chaos::Mutex mutex_;
+  mutable Chaos::Mutex copy_mutex_;
+  Chaos::Condition copy_cond_;
+  mutable Chaos::Mutex collect_mutex_;
+  Chaos::Condition collect_cond_;
   Chaos::Thread thread_;
   std::vector<BaseObject*> roots_;
   std::vector<BaseObject*> worklist_;
@@ -55,12 +62,13 @@ class ConcurrencyCopy {
   void concurrency_closure(void);
   BaseObject* forward(BaseObject* from_ref);
   BaseObject* copy(BaseObject* from_ref);
-  void collect(void);
+  void collecting(void);
 public:
   static ConcurrencyCopy& get_instance(void);
 
+  void collect(void);
   BaseObject* put_in(int value);
-  BaseObject* put_in(void);
+  BaseObject* put_in(BaseObject* first, BaseObject* second);
   BaseObject* fetch_out(void);
 };
 
