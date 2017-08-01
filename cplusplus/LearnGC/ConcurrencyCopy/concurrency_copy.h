@@ -48,6 +48,7 @@ class ConcurrencyCopy {
   mutable Chaos::Mutex mutex_;
   mutable Chaos::Mutex copy_mutex_;
   Chaos::Condition copy_cond_;
+  std::atomic<bool> collecting_{};
   mutable Chaos::Mutex collect_mutex_;
   Chaos::Condition collect_cond_;
   Chaos::Thread thread_;

@@ -118,16 +118,18 @@ void ConcurrencyCopy::collecting(void) {
     for (auto& obj : roots_)
       obj = forward(obj);
   }
+  collecting_ = true;
   collect_cond_.notify_one();
 
   while (true) {
-    Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
     if (worklist_.empty())
       break;
 
     auto* obj = worklist_.back();
     worklist_.pop_back();
     if (obj->is_pair()) {
+      Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
+
       auto* pair = Chaos::down_cast<Pair*>(obj);
       auto* first = pair->first();
       if (first != nullptr)
@@ -152,11 +154,13 @@ ConcurrencyCopy& ConcurrencyCopy::get_instance(void) {
 
 void ConcurrencyCopy::collect(void) {
   copying_ = true;
+  collecting_ = false;
   copy_cond_.notify_one();
 
   {
     Chaos::ScopedLock<Chaos::Mutex> g(collect_mutex_);
-    collect_cond_.wait();
+    while (!collecting_)
+      collect_cond_.wait();
   }
 }
 
