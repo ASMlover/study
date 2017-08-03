@@ -5,6 +5,19 @@
     It's just for studing this language.
     Record some skills of Python.
 
+## **Windows编译Python2.7**
+  * 使用VS2017打开PCbuild目录下的pcbuild.sln转换为VC2017工程
+  * 只编译pythoncore和python两个工程
+  * 修改timemodule.c中timezone、daylight、tzname
+```c++
+// 添加特定的宏定义
+#if defined(_MSC_VER)
+# define timezone _timezone
+# define daylight _daylight
+# define tzname _tzname
+#endif
+```
+
 ## **1. Locating in name spaces**
 在编译期的写操作会将变量的命名空间局限Block(函数, if等)内部。
 ```python
