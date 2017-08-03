@@ -124,14 +124,14 @@ void ConcurrencyCopy::collecting(void) {
   collect_cond_.notify_one();
 
   while (true) {
+    Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
+
     if (worklist_.empty())
       break;
 
     auto* obj = worklist_.back();
     worklist_.pop_back();
     if (obj->is_pair()) {
-      Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
-
       auto* pair = Chaos::down_cast<Pair*>(obj);
       auto* first = pair->first();
       if (first != nullptr)
