@@ -27,6 +27,7 @@
 #pragma once
 
 #include <atomic>
+#include <memory>
 #include <vector>
 #include <Chaos/Types.h>
 #include <Chaos/Concurrent/Mutex.h>
@@ -37,30 +38,34 @@ namespace gc {
 
 class BaseObject;
 
-class ConcurrencyCopy {
+class ConcurrencyCopy : private Chaos::UnCopyable {
+  using ThreadEntity = std::unique_ptr<Chaos::Thread>;
+
+  static constexpr int kThreadCount = 4;
+  static constexpr std::size_t kSemispaceSize = 512 << 9;
+
   byte_t* heaptr_{};
   byte_t* fromspace_{};
   byte_t* tospace_{};
   byte_t* allocptr_{};
   bool running_{true};
-  bool copying_{};
+  bool sweeping_{};
+  std::atomic<int> notify_counter_{};
   std::atomic<std::size_t> object_counter_{};
   mutable Chaos::Mutex mutex_;
-  mutable Chaos::Mutex copy_mutex_;
-  Chaos::Condition copy_cond_;
-  std::atomic<bool> collecting_{};
-  mutable Chaos::Mutex collect_mutex_;
-  Chaos::Condition collect_cond_;
-  Chaos::Thread thread_;
+  mutable Chaos::Mutex sweep_mutex_;
+  Chaos::Condition sweep_cond_;
+  std::vector<ThreadEntity> threads_;
   std::vector<BaseObject*> roots_;
   std::vector<BaseObject*> worklist_;
-  static constexpr std::size_t kSemispaceSize = 512 << 9;
 
   ConcurrencyCopy(void);
   ~ConcurrencyCopy(void);
 
   void* alloc(std::size_t n);
   void concurrency_closure(void);
+  void startup_closures(void);
+  void clearup_closures(void);
   BaseObject* forward(BaseObject* from_ref);
   BaseObject* copy(BaseObject* from_ref);
   void collecting(void);

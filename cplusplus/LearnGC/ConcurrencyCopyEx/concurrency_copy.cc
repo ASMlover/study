@@ -28,14 +28,14 @@
 #include "object.h"
 #include "concurrency_copy.h"
 
+static Chaos::Mutex g_logmutex;
+static std::size_t g_logindex{};
+
 namespace gc {
 
 ConcurrencyCopy::ConcurrencyCopy(void)
-  : copy_mutex_()
-  , copy_cond_(copy_mutex_)
-  , collect_mutex_()
-  , collect_cond_(collect_mutex_)
-  , thread_([this]{ concurrency_closure(); }) {
+  : sweep_mutex_()
+  , sweep_cond_(sweep_mutex_) {
   heaptr_ = new byte_t[kSemispaceSize * 2];
   CHAOS_CHECK(heaptr_ != nullptr, "create semispace failed");
 
@@ -43,14 +43,11 @@ ConcurrencyCopy::ConcurrencyCopy(void)
   tospace_ = heaptr_;
   allocptr_ = tospace_;
 
-  thread_.start();
+  startup_closures();
 }
 
 ConcurrencyCopy::~ConcurrencyCopy(void) {
-  running_ = false;
-  copy_cond_.notify_one();
-
-  thread_.join();
+  clearup_closures();
 
   delete [] heaptr_;
 }
@@ -69,16 +66,30 @@ void* ConcurrencyCopy::alloc(std::size_t n) {
 void ConcurrencyCopy::concurrency_closure(void) {
   while (running_) {
     {
-      Chaos::ScopedLock<Chaos::Mutex> g(copy_mutex_);
-      while (running_ && !copying_)
-        copy_cond_.wait();
+      Chaos::ScopedLock<Chaos::Mutex> g(sweep_mutex_);
+      while (running_ && !sweeping_)
+        sweep_cond_.wait();
       if (!running_)
         break;
     }
 
     collecting();
-    copying_ = false;
+    sweeping_ = false;
   }
+}
+
+void ConcurrencyCopy::startup_closures(void) {
+  for (auto i = 0; i < kThreadCount; ++i) {
+    threads_.emplace_back(new Chaos::Thread([this]{ concurrency_closure(); }));
+    threads_[i]->start();
+  }
+}
+
+void ConcurrencyCopy::clearup_closures(void) {
+  running_ = false;
+  sweep_cond_.notify_all();
+  for (auto& t : threads_)
+    t->join();
 }
 
 BaseObject* ConcurrencyCopy::forward(BaseObject* from_ref) {
@@ -108,21 +119,6 @@ BaseObject* ConcurrencyCopy::copy(BaseObject* from_ref) {
 }
 
 void ConcurrencyCopy::collecting(void) {
-  std::size_t old_count = object_counter_;
-
-  object_counter_ = 0;
-  {
-    Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
-    // semispace flip
-    std::swap(fromspace_, tospace_);
-    allocptr_ = tospace_;
-
-    for (auto& obj : roots_)
-      obj = forward(obj);
-  }
-  collecting_ = true;
-  collect_cond_.notify_one();
-
   while (true) {
     Chaos::ScopedLock<Chaos::Mutex> g(mutex_);
 
@@ -143,10 +139,11 @@ void ConcurrencyCopy::collecting(void) {
     }
   }
 
+  // this turn collecting finished
+  Chaos::ScopedLock<Chaos::Mutex> g(g_logmutex);
   std::cout
-    << "[" << old_count << "] objects alive before collecting, "
-    << "[" << object_counter_ << "] objects alive after collecting."
-    << std::endl;
+    << "[" << g_logindex++ << "] "
+    << "[" << object_counter_ << "] object still aliving ..." << std::endl;
 }
 
 ConcurrencyCopy& ConcurrencyCopy::get_instance(void) {
@@ -155,15 +152,22 @@ ConcurrencyCopy& ConcurrencyCopy::get_instance(void) {
 }
 
 void ConcurrencyCopy::collect(void) {
-  copying_ = true;
-  collecting_ = false;
-  copy_cond_.notify_one();
+  std::size_t old_count = object_counter_;
 
-  {
-    Chaos::ScopedLock<Chaos::Mutex> g(collect_mutex_);
-    while (!collecting_)
-      collect_cond_.wait();
-  }
+  object_counter_ = 0;
+  std::swap(fromspace_, tospace_);
+  allocptr_ = tospace_;
+  for (auto& obj : roots_)
+    obj = forward(obj);
+
+  sweeping_ = true;
+  sweep_cond_.notify_all();
+
+  Chaos::ScopedLock<Chaos::Mutex> g(g_logmutex);
+  std::cout
+    << "[" << g_logindex << "] "
+    << "[" << old_count - object_counter_ << "] roots objects collected ..."
+    << std::endl;
 }
 
 BaseObject* ConcurrencyCopy::put_in(int value) {
