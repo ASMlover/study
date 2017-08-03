@@ -51,6 +51,8 @@ ConcurrencyCopy::~ConcurrencyCopy(void) {
   copy_cond_.notify_one();
 
   thread_.join();
+
+  delete [] heaptr_;
 }
 
 void* ConcurrencyCopy::alloc(std::size_t n) {
