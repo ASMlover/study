@@ -33,3 +33,9 @@ set(KCPNET_SOURCES ${KCPNET_SOURCES}
 message(STATUS "[KcpNet] KCPNET_SOURCES: ${KCPNET_SOURCES}")
 
 add_executable(${KCPNET_NAME} ${KCPNET_SOURCES})
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+  target_link_libraries(${KCPNET_NAME}
+    debug libboost_system-vc140-mt-gd-1_63 optimized libboost_system-vc140-mt-1_63)
+else()
+  target_link_libraries(${KCPNET_NAME} pthread boost_system)
+endif()

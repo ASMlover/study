@@ -68,6 +68,13 @@ else()
 endif()
 message(STATUS "[KcpNet] CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+  include_directories("D:/Tools/boost_1_63_0")
+  link_libraries("D:/Tools/boost_1_63_0/stage/lib")
+else()
+  include_directories(${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0)
+  link_directories(${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0/stage/lib)
+endif()
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/External/kcp)
 
