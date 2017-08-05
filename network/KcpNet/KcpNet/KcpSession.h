@@ -29,7 +29,7 @@
 #include <memory>
 #include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
-#include "Types.h"
+#include "KcpTypes.h"
 
 namespace KcpNet {
 

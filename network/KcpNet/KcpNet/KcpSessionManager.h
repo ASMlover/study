@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include "Types.h"
+#include "KcpTypes.h"
 #include "KcpSessionContainer.h"
 
 namespace KcpNet {
