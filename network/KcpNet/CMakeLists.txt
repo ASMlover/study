@@ -40,6 +40,8 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "[KcpNet] CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
+option(KCPNET_DEVHOME_WIN "kcpnet-dev in home Windows platform" OFF)
+
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   if (MSVC_VERSION LESS 1900)
     message(FATAL_ERROR "you need Visual Studio 2015 or later")
@@ -49,7 +51,9 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   add_definitions(
     /D_UNICODE
     /D_CRT_SECURE_NO_WARNINGS
-    /D_CRT_NONSTDC_NO_WARNINGS)
+    /D_CRT_NONSTDC_NO_WARNINGS
+    /D_WIN32_WINNT=0x0501
+    /wd4267)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc")
 else()
   if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
@@ -69,8 +73,13 @@ endif()
 message(STATUS "[KcpNet] CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
-  include_directories("D:/Tools/boost_1_63_0")
-  link_libraries("D:/Tools/boost_1_63_0/stage/lib")
+  if (KCPNET_DEVHOME_WIN)
+    include_directories("D:/Tools/boost_1_64_0")
+    link_directories("D:/Tools/boost_1_64_0/stage/x64/lib")
+  else()
+    include_directories("D:/Tools/boost_1_63_0")
+    link_libraries("D:/Tools/boost_1_63_0/stage/lib")
+  endif()
 else()
   include_directories(${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0)
   link_directories(${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0/stage/lib)
