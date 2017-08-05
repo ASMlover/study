@@ -24,10 +24,34 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <sys/time.h>
 #include <ikcp.h>
 #include "Utility.h"
 #include "KcpSessionManager.h"
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+# include <Windows.h>
+#else
+# include <sys/time.h>
+#endif
+
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+static int gettimeofday(struct timeval* tv, struct timezone* /*tz*/) {
+  if (tv) {
+    FILETIME ft;
+    SYSTEMTIME st;
+    ULARGE_INTEGER uli;
+
+    GetSystemTime(&st);
+    SystemTimeToFileTime(&st, &ft);
+    uli.LowPart = ft.dwLowDateTime;
+    uli.HighPart = ft.dwHighDateTime;
+
+    tv->tv_sec = static_cast<long>(
+        (uli.QuadPart - 116444736000000000ULL) / 10000000L);
+    tv->tv_usec = static_cast<long>(st.wMilliseconds * 1000);
+  }
+  return 0;
+}
+#endif
 
 static inline std::uint64_t get_clock64(void) {
   struct timeval t;
