@@ -29,7 +29,7 @@
 #include <memory>
 #include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
-#include "Types.h"
+#include "KcpTypes.h"
 
 namespace KcpNet {
 
@@ -42,8 +42,8 @@ public:
   explicit KcpServer(boost::asio::io_service& io_service,
       const std::string& address, std::uint16_t port);
 
-  void bind_message_functor(const MessageFunction& fn);
-  void bind_meesage_functor(MessageFunction&& fn);
+  void bind_message_functor(const SMessageFunctor& fn);
+  void bind_meesage_functor(SMessageFunctor&& fn);
 
   void stop(void);
 };

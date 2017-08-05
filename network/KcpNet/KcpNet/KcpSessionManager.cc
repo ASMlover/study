@@ -139,7 +139,7 @@ void KcpSessionManager::stop_all(void) {
 }
 
 void KcpSessionManager::call_message_functor(
-    kcp_conv_t conv, MessageType type, const MessageBuffer& buf) {
+    kcp_conv_t conv, SMessageType type, const MessageBuffer& buf) {
   if (message_fn_)
     message_fn_(conv, type, buf);
 }

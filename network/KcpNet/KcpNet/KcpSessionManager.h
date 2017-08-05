@@ -38,7 +38,7 @@ class KcpSessionManager
 
   bool stopped_{};
   char data_[1024 * 32]{};
-  MessageFunction message_fn_{};
+  SMessageFunctor message_fn_{};
   udp::socket socket_;
   udp::endpoint sender_ep_;
   boost::asio::deadline_timer timer_;
@@ -53,17 +53,17 @@ public:
   KcpSessionManager(boost::asio::io_service& io_service,
       const std::string& address, std::uint16_t port);
 
-  void bind_meesage_functor(const MessageFunction& fn) {
+  void bind_meesage_functor(const SMessageFunctor& fn) {
     message_fn_ = fn;
   }
 
-  void bind_meesage_functor(MessageFunction&& fn) {
+  void bind_meesage_functor(SMessageFunctor&& fn) {
     message_fn_ = std::move(fn);
   }
 
   void stop_all(void);
   void call_message_functor(
-      kcp_conv_t conv, MessageType type, const MessageBuffer& buf);
+      kcp_conv_t conv, SMessageType type, const MessageBuffer& buf);
   void write_kcp_packet(const std::string& buf, const udp::endpoint& ep);
 };
 

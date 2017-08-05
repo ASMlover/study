@@ -35,11 +35,11 @@ KcpServer::KcpServer(boost::asio::io_service& io_service,
   , session_mgr_(new KcpSessionManager(io_service_, address, port)) {
 }
 
-void KcpServer::bind_message_functor(const MessageFunction& fn) {
+void KcpServer::bind_message_functor(const SMessageFunctor& fn) {
   session_mgr_->bind_meesage_functor(fn);
 }
 
-void KcpServer::bind_meesage_functor(MessageFunction&& fn) {
+void KcpServer::bind_meesage_functor(SMessageFunctor&& fn) {
   session_mgr_->bind_meesage_functor(std::move(fn));
 }
 

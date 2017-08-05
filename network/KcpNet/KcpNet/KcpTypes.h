@@ -36,14 +36,26 @@ typedef std::uint32_t kcp_conv_t;
 
 namespace KcpNet {
 
-enum class MessageType {
+// message event types for server
+enum class SMessageType {
   MT_CONNECT,
   MT_DISCONNECT,
   MT_RECV,
 };
 
 using MessageBuffer = std::shared_ptr<std::string>;
-using MessageFunction =
-  std::function<void (kcp_conv_t, MessageType, const MessageBuffer&)>;
+using SMessageFunctor =
+  std::function<void (kcp_conv_t, SMessageType, const MessageBuffer&)>;
+
+// message event types for client
+enum class CMessageType {
+  MT_CONNECT,
+  MT_CONNECTFAIL,
+  MT_DISCONNECT,
+  MT_RECV,
+};
+
+using CMessageFunctor =
+  std::function<void (kcp_conv_t, CMessageType, const std::string&, void*)>;
 
 }
