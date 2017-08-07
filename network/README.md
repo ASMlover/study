@@ -7,22 +7,22 @@
   * Just for studying and for fun.
 
 ## **UDP Programming**
- * UDP是一种**非连接的、不可靠的数据报文协议**
- * UDP客户端不需要和服务端建立连接，可以直接使用sendto来发送数据报文
- * UDP服务端不需要accept客户端的连接，直接使用recvfrom来接收客户端发送的数据报文
- * UDP客户端可以使用read、write替换recvfrom和sendto
- * UDP服务端必须使用recvfrom和sendto，因为UDP没有连接，必须指定struct sockaddr
- * UDP服务器特点
-  - 服务器不接受客户端连接，只需要监听端口
-  - 循环服务器，可交替处理各客户端数据报，不会被一个客户端独占
- * UDP客户端connect
-  - 与TCP connect不同，没有三次握手，内核只检查是否存在立即可知的错误，记录对端的IP和端口，理解返回到调用进程
-  - 无连接需要使用sendto和recvfrom
-  - 已连接需要使用send和recv，不能使用sendto
-  - connect在UDP中用来检查UDP端口是否开放、没被使用
-  - 一旦UDP调用了connect则不再使用recvfrom来获取数据报的发送者，而直接使用read、recv，内核会自动填写IP地址与端口给已connect的socket数据报
-  - 在wuconnect的情况下，使用非指定地址的函数（write发送数据），将失败
-  - 未连接的UDP调用sendto，内核会暂时连接该socket，然后发送数据报载断开；因此，当应用程序知道要给同一个socket发哦是那个多个数据报时，显示连接的UDP效率更高
+  * UDP是一种**非连接的、不可靠的数据报文协议**
+  * UDP客户端不需要和服务端建立连接，可以直接使用sendto来发送数据报文
+  * UDP服务端不需要accept客户端的连接，直接使用recvfrom来接收客户端发送的数据报文
+  * UDP客户端可以使用read、write替换recvfrom和sendto
+  * UDP服务端必须使用recvfrom和sendto，因为UDP没有连接，必须指定struct sockaddr
+  * UDP服务器特点
+    - 服务器不接受客户端连接，只需要监听端口
+    - 循环服务器，可交替处理各客户端数据报，不会被一个客户端独占
+  * UDP客户端connect
+    - 与TCP connect不同，没有三次握手，内核只检查是否存在立即可知的错误，记录对端的IP和端口，理解返回到调用进程
+    - 无连接需要使用sendto和recvfrom
+    - 已连接需要使用send和recv，不能使用sendto
+    - connect在UDP中用来检查UDP端口是否开放、没被使用
+    - 一旦UDP调用了connect则不再使用recvfrom来获取数据报的发送者，而直接使用read、recv，内核会自动填写IP地址与端口给已connect的socket数据报
+    - 在wuconnect的情况下，使用非指定地址的函数（write发送数据），将失败
+    - 未连接的UDP调用sendto，内核会暂时连接该socket，然后发送数据报载断开；因此，当应用程序知道要给同一个socket发哦是那个多个数据报时，显示连接的UDP效率更高
 ```c++
   #include <sys/socket.h>
 
