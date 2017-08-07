@@ -26,12 +26,50 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <vector>
 #include <boost/noncopyable.hpp>
+#include <boost/asio.hpp>
 #include "KcpTypes.h"
 
 namespace KcpNet {
 
+using namespace boost::asio::ip;
+
 class KcpClient : private boost::noncopyable {
+  bool stopped_{};
+  udp::socket socket_;
+  udp::endpoint remote_ep_;
+  bool connecting_{};
+  std::uint64_t connect_begtime_{};
+  std::uint64_t connect_last_reqtime_{};
+  bool connected_{};
+
+  char data_[1024 * 32]{};
+  ikcpcb* kcp_{};
+  CMessageFunctor message_fn_{};
+
+  static int output_callback(const char* buf, int len, ikcpcb* kcp, void* user);
+  void init_kcp(kcp_conv_t conv);
+  void do_connect(std::uint64_t current_clock);
+  void do_connect_resend_packet(std::uint64_t current_clock);
+  void try_recv_connect_back_packet(void);
+  void do_async_receive(void);
+  std::string recv_package_from_kcp(void);
+  void write_package(const char* buf, int len);
+public:
+  KcpClient(boost::asio::io_service& io_service, std::uint16_t bind_port);
+  void stop(void);
+  void connect_async(const std::string& remote_ip, std::uint16_t remote_port);
+  void update(void);
+  void write_buffer(const std::string& buf);
+
+  void bind_meesage_functor(const CMessageFunctor& fn) {
+    message_fn_ = fn;
+  }
+
+  void bind_meesage_functor(CMessageFunctor&& fn) {
+    message_fn_ = std::move(fn);
+  }
 };
 
 }
