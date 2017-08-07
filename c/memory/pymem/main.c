@@ -35,19 +35,20 @@ int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
   static const int ALLOC_COUNT = 1000000;
-
-  int alloc_bytes_list[] = {1, 4, 8, 16, 32, 64};
-  int alloc_bytes_count = sizeof(alloc_bytes_list) / sizeof(int);
+  int* alloc_array = (int*)malloc(ALLOC_COUNT * sizeof(int));
 
   srand((unsigned int)time(NULL));
+  for (int i = 0; i < ALLOC_COUNT; ++i) {
+    alloc_array[i] = rand() % 512;
+    if (alloc_array[i] == 0)
+      alloc_array[i] = 1;
+  }
 
   char* p;
   clock_t beg = clock();
   clock_t end;
   for (int i = 0; i < ALLOC_COUNT; ++i) {
-    // int s = alloc_bytes_list[rand() % alloc_bytes_count];
-    int s = 123;
-    p = (char*)malloc(s);
+    p = (char*)malloc(alloc_array[i]);
     free(p);
   }
   end = clock();
@@ -56,14 +57,14 @@ int main(int argc, char* argv[]) {
 
   beg = clock();
   for (int i = 0; i < ALLOC_COUNT; ++i) {
-    // int s = alloc_bytes_list[rand() % alloc_bytes_count];
-    int s = 123;
-    p = (char*)pymem_alloc(s);
+    p = (char*)pymem_alloc(alloc_array[i]);
     pymem_dealloc(p);
   }
   end = clock();
   fprintf(stdout,
       "[pymem allocator] %ld ~ %ld, used: %ld\n", beg, end, end - beg);
+
+  free(alloc_array);
 
   return 0;
 }
