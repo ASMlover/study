@@ -26,10 +26,45 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+# include <Windows.h>
+#else
+# include <sys/time.h>
+#endif
 #include <cstring>
 #include <string>
 
 namespace KcpNet {
+
+#if defined(_WINDOWS_) || defined(_MSC_VER)
+inline int gettimeofday(struct timeval* tv, struct timezone* /*tz*/) {
+  if (tv) {
+    FILETIME ft;
+    SYSTEMTIME st;
+    ULARGE_INTEGER uli;
+
+    GetSystemTime(&st);
+    SystemTimeToFileTime(&st, &ft);
+    uli.LowPart = ft.dwLowDateTime;
+    uli.HighPart = ft.dwHighDateTime;
+
+    tv->tv_sec = static_cast<long>(
+        (uli.QuadPart - 116444736000000000ULL) / 10000000L);
+    tv->tv_usec = static_cast<long>(st.wMilliseconds * 1000);
+  }
+  return 0;
+}
+#endif
+
+inline std::uint64_t get_clock64(void) {
+  struct timeval t;
+  gettimeofday(&t, nullptr);
+  return ((std::uint64_t)t.tv_sec) * 1000 + (t.tv_usec / 1000);
+}
+
+inline std::uint32_t get_clock32(void) {
+  return (std::uint32_t)(get_clock64() & 0xFFFFFFFF);
+}
 
 #define KCPNET_CONNECT_PACKET "kcpnet-connect-packet"
 #define KCPNET_SENDBACK_PACKET "kcpnet-sendback-packet"
