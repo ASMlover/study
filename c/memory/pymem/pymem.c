@@ -127,9 +127,7 @@ static ArenaObject* new_arena(void) {
   uint32_t excess;
 
   if (unused_arenas == NULL) {
-    uint32_t numarenas;
-
-    numarenas = maxarenas ? maxarenas << 1 : INIT_ARENA_OBJECTS;
+    uint32_t numarenas = maxarenas ? maxarenas << 1 : INIT_ARENA_OBJECTS;
     if (numarenas <= maxarenas)
       return NULL;
 
@@ -224,7 +222,7 @@ __init_pool:
       }
 
       pool->size_index = size;
-      size = SIZE2INDEX(size);
+      size = INDEX2SIZE(size);
       bp = (Block*)pool + POOL_OVERHEAD;
       pool->next_offset = POOL_OVERHEAD + (size << 1);
       pool->max_next_offset = POOL_SIZE - size;
@@ -255,12 +253,84 @@ __redirect:
 void pymem_dealloc(void* p) {
   PoolHeaderPtr pool;
   Block* lastfree;
+  uint32_t arenaindex_temp;
+
+  if (p == NULL)
+    return;
 
   pool = POOL_ADDR(p);
-  if (1) { // TODO: need updated the condition
+  if (ADDR_IN_RANGE(p, pool)) {
     *(Block**)p = lastfree = pool->freeblock;
     pool->freeblock = (Block*)p;
+    if (lastfree) {
+      if (--pool->ref.count != 0)
+        return;
 
-    // TODO:
+      PoolHeaderPtr next = pool->nextpool;
+      PoolHeaderPtr prev = pool->prevpool;
+      next->prevpool = prev;
+      prev->nextpool = next;
+
+      ArenaObject* ao = &arenas[pool->arena_inedx];
+      pool->nextpool = ao->freepools;
+      ao->freepools = pool;
+      uint32_t nf = ++ao->nfreepools;
+      if (nf == ao->ntotalpools) {
+        if (ao->prev_arena == NULL)
+          usable_arenas = ao->next_arena;
+        else
+          ao->prev_arena->next_arena = ao->next_arena;
+
+        if (ao->next_arena != NULL)
+          ao->next_arena->prev_arena = ao->prev_arena;
+        ao->next_arena = unused_arenas;
+        unused_arenas = ao;
+        free((void*)ao->address);
+        ao->address = 0;
+        --narenas_currently_allocated;
+
+        return;
+      }
+      if (nf == 1) {
+        ao->next_arena = usable_arenas;
+        ao->prev_arena = NULL;
+        if (usable_arenas)
+          usable_arenas->prev_arena = ao;
+        usable_arenas = ao;
+
+        return;
+      }
+      if (ao->next_arena == NULL || nf <= ao->next_arena->nfreepools)
+        return;
+
+      if (ao->prev_arena != NULL)
+        ao->prev_arena->next_arena = ao->next_arena;
+      else
+        usable_arenas = ao->next_arena;
+      ao->next_arena->prev_arena = ao->prev_arena;
+
+      while (ao->next_arena != NULL && nf > ao->next_arena->nfreepools) {
+        ao->prev_arena = ao->next_arena;
+        ao->next_arena = ao->next_arena->next_arena;
+      }
+      ao->prev_arena->next_arena = ao;
+      if (ao->next_arena != NULL)
+        ao->next_arena->prev_arena = ao;
+
+      return;
+    }
+
+    --pool->ref.count;
+    uint32_t size = pool->size_index;
+    PoolHeaderPtr next = usedpools[size + size];
+    PoolHeaderPtr prev = next->prevpool;
+    pool->nextpool = next;
+    pool->prevpool = prev;
+    next->prevpool = pool;
+    prev->nextpool = pool;
+
+    return;
   }
+
+  free(p);
 }

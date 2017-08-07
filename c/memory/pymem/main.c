@@ -27,10 +27,43 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 #include "pymem.h"
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
+
+  static const int ALLOC_COUNT = 1000000;
+
+  int alloc_bytes_list[] = {1, 4, 8, 16, 32, 64};
+  int alloc_bytes_count = sizeof(alloc_bytes_list) / sizeof(int);
+
+  srand((unsigned int)time(NULL));
+
+  char* p;
+  clock_t beg = clock();
+  clock_t end;
+  for (int i = 0; i < ALLOC_COUNT; ++i) {
+    // int s = alloc_bytes_list[rand() % alloc_bytes_count];
+    int s = 123;
+    p = (char*)malloc(s);
+    free(p);
+  }
+  end = clock();
+  fprintf(stdout,
+      "[system allocator] %ld ~ %ld, used: %ld\n", beg, end, end - beg);
+
+  beg = clock();
+  for (int i = 0; i < ALLOC_COUNT; ++i) {
+    // int s = alloc_bytes_list[rand() % alloc_bytes_count];
+    int s = 123;
+    p = (char*)pymem_alloc(s);
+    pymem_dealloc(p);
+  }
+  end = clock();
+  fprintf(stdout,
+      "[pymem allocator] %ld ~ %ld, used: %ld\n", beg, end, end - beg);
 
   return 0;
 }
