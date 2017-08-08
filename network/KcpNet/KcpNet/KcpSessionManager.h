@@ -64,7 +64,7 @@ public:
   void stop_all(void);
   void call_message_functor(
       kcp_conv_t conv, SMessageType type, const MessageBuffer& buf);
-  void write_kcp_packet(const std::string& buf, const udp::endpoint& ep);
+  void write_udp_buffer(const std::string& buf, const udp::endpoint& ep);
 };
 
 }

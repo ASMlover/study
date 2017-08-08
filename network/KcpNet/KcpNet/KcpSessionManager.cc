@@ -47,7 +47,7 @@ void KcpSessionManager::do_async_receive(void) {
   auto self(shared_from_this());
   socket_.async_receive_from(
       boost::asio::buffer(data_, sizeof(data_)), sender_ep_,
-      [this, self](boost::system::error_code ec, std::size_t n) {
+      [this, self](const boost::system::error_code& ec, std::size_t n) {
         if (!ec && n > 0) {
           if (is_connect_packet(data_, n)) {
             handle_connect_packet();
@@ -109,9 +109,13 @@ void KcpSessionManager::call_message_functor(
     message_fn_(conv, type, buf);
 }
 
-void KcpSessionManager::write_kcp_packet(
-    const std::string& buf, const udp::endpoint& /*ep*/) {
-  socket_.send_to(boost::asio::buffer(buf), sender_ep_);
+void KcpSessionManager::write_udp_buffer(
+    const std::string& buf, const udp::endpoint& ep) {
+  // use `async_send_to` replace `send_to`, does it work ?
+  // FIXME: does it will use `sender_ep_` or `ep` ?
+  // socket_.send_to(boost::asio::buffer(buf), sender_ep_);
+  socket_.async_send_to(boost::asio::buffer(buf), ep,
+      [](const boost::system::error_code& /*ec*/, std::size_t /*n*/) {});
 }
 
 }

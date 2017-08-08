@@ -44,14 +44,14 @@ void KcpSession::init_kcp(kcp_conv_t conv) {
   ikcp_nodelay(kcp_, 1, 5, 1, 1);
 }
 
-void KcpSession::write_package(const char* buf, std::size_t len) {
+void KcpSession::write_udp_buffer(const char* buf, std::size_t len) {
   if (auto mgr = session_mgr_.lock())
-    mgr->write_kcp_packet(std::string(buf, len), sender_ep_);
+    mgr->write_udp_buffer(std::string(buf, len), sender_ep_);
 }
 
 int KcpSession::output_callback(
     const char* buf, int len, ikcpcb* /*kcp*/, void* user) {
-  static_cast<KcpSession*>(user)->write_package(buf, len);
+  static_cast<KcpSession*>(user)->write_udp_buffer(buf, len);
   return 0;
 }
 
@@ -86,23 +86,12 @@ void KcpSession::read_buffer(
     const char* buf, std::size_t len, const udp::endpoint& sender_ep) {
   sender_ep_ = sender_ep;
   ikcp_input(kcp_, buf, len);
-
-  {
-    char kcp_buf[1024*100]{};
-    int nread = ikcp_recv(kcp_, kcp_buf, sizeof(kcp_buf));
-    if (nread <= 0) {
-      // TODO:
-    }
-    else {
-      write_package_back(std::string(kcp_buf, nread));
-    }
-  }
 }
 
 void KcpSession::write_buffer(const std::string& buf) {
   auto nwrote = ikcp_send(kcp_, buf.data(), buf.size());
   if (nwrote < 0) {
-    // TODO:
+    // TODO: need solve send error
   }
 }
 

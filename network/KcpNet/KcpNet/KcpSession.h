@@ -42,12 +42,8 @@ class KcpSession : private boost::noncopyable {
   ikcpcb* kcp_{};
   udp::endpoint sender_ep_;
 
-  void write_package_back(const std::string& package) {
-    write_buffer(package);
-  }
-
   void init_kcp(kcp_conv_t conv);
-  void write_package(const char* buf, std::size_t len);
+  void write_udp_buffer(const char* buf, std::size_t len);
   static int output_callback(
       const char* buf, int len, ikcpcb* kcp, void* user);
 public:
@@ -56,10 +52,6 @@ public:
   explicit KcpSession(const std::weak_ptr<KcpSessionManager>& session_mgr);
   ~KcpSession(void);
 
-  void set_sender_endpoint(const udp::endpoint& sender_ep) {
-    sender_ep_ = sender_ep;
-  }
-
   static KcpSession::KcpSessionPtr create(
       const std::weak_ptr<KcpSessionManager>& session_mgr,
       kcp_conv_t conv, const udp::endpoint& sender_ep);
@@ -67,6 +59,14 @@ public:
   void read_buffer(
       const char* buf, std::size_t len, const udp::endpoint& sender_ep);
   void write_buffer(const std::string& buf);
+
+  void set_sender_endpoint(const udp::endpoint& sender_ep) {
+    sender_ep_ = sender_ep;
+  }
+
+  void set_sender_endpoint(udp::endpoint&& sender_ep) {
+    sender_ep_ = std::move(sender_ep);
+  }
 };
 
 }
