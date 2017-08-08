@@ -33,6 +33,9 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "[PyMem] CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
+option(PYMEM_USE_MMAP "use mmap in linux ?" OFF)
+option(PYMEM_PYTHON "use python memory allocating ?" OFF)
+
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   add_definitions(
     /D_UNICODE
@@ -40,7 +43,14 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     /D_CRT_NONSTDC_NO_WARNINGS)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W3 /GF /GS /Gs /Zi")
 else()
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -ggdb -O2 -Wall -std=c11")
+  if (PYMEM_USE_MMAP)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -ggdb -O2 -Wall -std=gnu11")
+  else()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -ggdb -O2 -Wall -std=c11")
+  endif()
+endif()
+if (PYMEM_PYTHON)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DPYMEM_PYTHON")
 endif()
 message(STATUS "[PyMem] CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
 

@@ -31,8 +31,17 @@
 #include <time.h>
 #include "pymem.h"
 
+extern void* PyObject_Malloc(size_t nbytes);
+extern void PyObject_Free(void* p);
+
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
+
+#if defined(PYMEM_PYTHON)
+  fprintf(stdout, "memory pool testing: use python allocating ...\n");
+#else
+  fprintf(stdout, "memory pool testing: use self allocating ...\n");
+#endif
 
   static const int ALLOC_COUNT = 1000000;
   int* alloc_array = (int*)malloc(ALLOC_COUNT * sizeof(int));
@@ -57,8 +66,13 @@ int main(int argc, char* argv[]) {
 
   beg = clock();
   for (int i = 0; i < ALLOC_COUNT; ++i) {
+#if defined(PYMEM_PYTHON)
     p = (char*)pymem_alloc(alloc_array[i]);
     pymem_dealloc(p);
+#else
+    p = (char*)PyObject_Malloc(alloc_array[i]);
+    PyObject_Free(p);
+#endif
   }
   end = clock();
   fprintf(stdout,
