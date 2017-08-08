@@ -25,8 +25,8 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <ikcp.h>
-#include "Utility.h"
 #include "KcpSessionManager.h"
+#include "Utility.h"
 
 namespace KcpNet {
 
