@@ -123,8 +123,7 @@ void* ParallelMemory::alloc(std::size_t n) {
 }
 
 void ParallelMemory::dealloc(BaseObject* obj) {
-  if (obj != nullptr)
-    Chaos::MemoryPool::get_instance().dealloc(obj, obj->get_size());
+  Chaos::MemoryPool::get_instance().dealloc(obj);
 }
 
 void ParallelMemory::start_workers(void) {

@@ -178,8 +178,7 @@ void* ParallelSweep::alloc(std::size_t n) {
 }
 
 void ParallelSweep::dealloc(BaseObject* obj) {
-  if (obj != nullptr)
-    Chaos::MemoryPool::get_instance().dealloc(obj, obj->get_size());
+  Chaos::MemoryPool::get_instance().dealloc(obj);
 }
 
 void ParallelSweep::acquire_work(int id, std::vector<BaseObject*>& objects) {

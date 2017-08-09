@@ -86,8 +86,7 @@ BaseObject* NurseryMemory::alloc(std::uint8_t type, std::size_t bytes) {
 }
 
 void NurseryMemory::dealloc(BaseObject* obj) {
-  if (obj != nullptr)
-    Chaos::MemoryPool::get_instance().dealloc(obj, obj->get_size());
+  Chaos::MemoryPool::get_instance().dealloc(obj);
 }
 
 void NurseryMemory::roots_nursery(void) {
