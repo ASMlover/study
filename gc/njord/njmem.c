@@ -81,7 +81,8 @@ _alloc_chunk(Nj_size_t index) {
     if (excess != 0) {
       freeblocks[index] = (NjBlock*)(
           (Nj_uchar_t*)new_chunk + PAGE_SIZE - excess);
-      alignment_chunk_size = CHUNK_SIZE - (PAGE_SIZE - excess + block_bytes);
+      alignment_chunk_size =
+        (CHUNK_SIZE / PAGE_SIZE - 1) * PAGE_SIZE - block_bytes;
     }
     else {
       freeblocks[index] = new_chunk;
@@ -101,7 +102,7 @@ void*
 njmem_malloc(Nj_size_t bytes) {
   void* r;
 
-  if (bytes <= SMALL_REQUEST_THRESHOLD) {
+  if ((bytes - 1) < SMALL_REQUEST_THRESHOLD) {
     Nj_size_t index = BYTES2INDEX(bytes);
     if (freeblocks[index] == NULL)
       _alloc_chunk(index);
@@ -118,7 +119,7 @@ njmem_malloc(Nj_size_t bytes) {
 
 void
 njmem_free(void* p, Nj_size_t bytes) {
-  if (bytes <= SMALL_REQUEST_THRESHOLD) {
+  if ((bytes - 1) < SMALL_REQUEST_THRESHOLD) {
     Nj_size_t index = BYTES2INDEX(bytes);
     NjBlock* block = (NjBlock*)p;
     block->nextblock = freeblocks[index];
