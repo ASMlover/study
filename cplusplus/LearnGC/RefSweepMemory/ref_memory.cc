@@ -37,8 +37,7 @@ void* RefMemory::alloc(std::size_t n) {
 }
 
 void RefMemory::dealloc(BaseObject* obj) {
-  if (obj != nullptr)
-    Chaos::MemoryPool::get_instance().dealloc(obj, obj->get_size());
+  Chaos::MemoryPool::get_instance().dealloc(obj);
 }
 
 void RefMemory::inc(BaseObject* ref) {

@@ -47,8 +47,7 @@ class Sweeper : private Chaos::UnCopyable {
   std::list<BaseObject*> objects_;
 
   void dealloc(BaseObject* obj) {
-    if (obj != nullptr)
-      Chaos::MemoryPool::get_instance().dealloc(obj, obj->get_size());
+    Chaos::MemoryPool::get_instance().dealloc(obj);
   }
 
   void perform_work(void) {

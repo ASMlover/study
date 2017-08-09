@@ -37,8 +37,7 @@ void* DelayMemory::alloc(std::size_t n) {
 }
 
 void DelayMemory::dealloc(BaseObject* obj) {
-  if (obj != nullptr)
-    Chaos::MemoryPool::get_instance().dealloc(obj, obj->get_size());
+  Chaos::MemoryPool::get_instance().dealloc(obj);
 }
 
 void DelayMemory::inc(BaseObject* ref) {

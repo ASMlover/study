@@ -37,8 +37,7 @@ void* TraceMemory::alloc(std::size_t n) {
 }
 
 void TraceMemory::dealloc(BaseObject* obj) {
-  if (obj != nullptr)
-    Chaos::MemoryPool::get_instance().dealloc(obj, obj->get_size());
+  Chaos::MemoryPool::get_instance().dealloc(obj);
 }
 
 void TraceMemory::roots_tracing(std::stack<BaseObject*>& trace_objects) {
