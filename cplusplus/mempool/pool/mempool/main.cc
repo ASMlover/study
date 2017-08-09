@@ -32,8 +32,8 @@
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
-  constexpr int kCount = 10000;
-  int alloc_bytes_array[kCount]{};
+  constexpr int kCount = 1000000;
+  int* alloc_bytes_array = new int[kCount]{};
 
   std::srand((unsigned int)std::time(nullptr));
   for (auto i = 0; i < kCount; ++i) {
@@ -47,8 +47,8 @@ int main(int argc, char* argv[]) {
 
   {
     beg = std::clock();
-    for (auto nbytes : alloc_bytes_array) {
-      p = std::malloc(nbytes);
+    for (auto i = 0; i < kCount; ++i) {
+      p = std::malloc(alloc_bytes_array[i]);
       std::free(p);
     }
     end = std::clock();
@@ -57,8 +57,8 @@ int main(int argc, char* argv[]) {
 
   {
     beg = std::clock();
-    for (auto nbytes : alloc_bytes_array) {
-      p = MemPool::get_instance().alloc(nbytes);
+    for (auto i = 0; i < kCount; ++i) {
+      p = MemPool::get_instance().alloc(alloc_bytes_array[i]);
       MemPool::get_instance().dealloc(p);
     }
     end = std::clock();
