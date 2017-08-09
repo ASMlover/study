@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
   constexpr int kCount = 10000;
   int alloc_bytes_array[kCount]{};
 
-  std::srand(std::time(nullptr));
+  std::srand((unsigned int)std::time(nullptr));
   for (auto i = 0; i < kCount; ++i) {
     alloc_bytes_array[i] = std::rand() % 512;
     if (alloc_bytes_array[i] == 0)

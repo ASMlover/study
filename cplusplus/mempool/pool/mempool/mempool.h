@@ -53,11 +53,11 @@ class MemPool {
   MemBlock* new_block(int index);
 
   inline std::size_t index2bytes(int index) {
-    return (index + 1) << ALIGNMENT_SHIFT;
+    return static_cast<std::size_t>((index + 1) << ALIGNMENT_SHIFT);
   }
 
   inline int bytes2index(std::size_t nbytes) {
-    return (nbytes - 1) >> ALIGNMENT_SHIFT;
+    return static_cast<int>((nbytes - 1) >> ALIGNMENT_SHIFT);
   }
 public:
   static MemPool& get_instance(void) {

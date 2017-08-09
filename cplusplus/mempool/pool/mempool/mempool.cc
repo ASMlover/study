@@ -61,7 +61,7 @@ MemBlock* MemPool::new_block(int index) {
     MemBlock* block = freeblocks_[index];
     blocks_[block] = std::make_pair(blockobj, index);
 
-    for (auto i = 0u; i < alignment_bytes; i += nbytes)
+    for (std::size_t i = 0u; i < alignment_bytes; i += nbytes)
       block = block->next = block + nbytes / sizeof(MemBlock);
     block->next = nullptr;
   }
@@ -72,7 +72,7 @@ MemBlock* MemPool::new_block(int index) {
 void* MemPool::alloc(std::size_t nbytes) {
   void* p{};
 
-  if (nbytes < NB_SMALL_SIZE_CLASSES) {
+  if (nbytes < SMALL_REQUEST_THRESHOLD) {
     auto index = bytes2index(nbytes);
     if (freeblocks_[index] == nullptr)
       new_block(index);
