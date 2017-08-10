@@ -69,6 +69,7 @@ inline std::uint32_t get_clock32(void) {
 
 #define KCPNET_CONNECT_PACKET "kcpnet-connect-packet"
 #define KCPNET_SENDBACK_PACKET "kcpnet-sendback-packet"
+#define KCPNET_CONNECT_FAILED "kcpnet-connect-failed"
 #define KCPNET_CONNECT_TIMEOUT "kcpnet-connect-timeout"
 
 inline std::string make_connect_packet(void) {

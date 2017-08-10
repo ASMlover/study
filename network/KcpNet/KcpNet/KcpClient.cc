@@ -31,17 +31,16 @@
 namespace KcpNet {
 
 static constexpr std::uint64_t kConnectTimeout = 5000; // milliseconds
-static constexpr std::uint64_t kConnectRequestInterval = 500; // milliseconds
 
-int KcpClient::output_callback(
+int KcpClient::output_handler(
     const char* buf, int len, ikcpcb* /*kcp*/, void* user) {
-  static_cast<KcpClient*>(user)->write_package(buf, len);
+  static_cast<KcpClient*>(user)->write_udp_buffer(buf, len);
   return 0;
 }
 
 void KcpClient::init_kcp(kcp_conv_t conv) {
   kcp_ = ikcp_create(conv, (void*)this);
-  kcp_->output = &KcpClient::output_callback;
+  kcp_->output = &KcpClient::output_handler;
 
   // fastest: ikcp_nodelay(kcp, 1, 20, 2, 1)
   // nodelay: 0:disable(default), 1:enable
@@ -52,106 +51,130 @@ void KcpClient::init_kcp(kcp_conv_t conv) {
   ikcp_nodelay(kcp_, 1, 5, 1, 1);
 }
 
-void KcpClient::do_connect(std::uint64_t current_clock) {
-  if (current_clock - connect_begtime_ > kConnectTimeout) {
-    connecting_ = false;
-    message_fn_(0, CMessageType::MT_CONNECTFAIL, KCPNET_CONNECT_TIMEOUT, this);
+void KcpClient::update(void) {
+  uint64_t current_clock = get_clock64();
+  if (connecting_) {
+    if (current_clock - connect_begtime_ > kConnectTimeout) {
+      connecting_ = false;
+      message_fn_(0,
+          CMessageType::MT_CONNECTFAIL, KCPNET_CONNECT_TIMEOUT, this);
+    }
     return;
   }
 
-  if (current_clock - connect_last_reqtime_ > kConnectRequestInterval)
-    do_connect_resend_packet(current_clock);
-  try_recv_connect_back_packet();
+  if (connected_)
+    ikcp_update(kcp_, current_clock);
 }
 
-void KcpClient::do_connect_resend_packet(std::uint64_t current_clock) {
-  connect_last_reqtime_ = current_clock;
+void KcpClient::do_timer(void) {
+  if (stopped_)
+    return;
 
-  std::string msg(make_connect_packet());
-  socket_.send(boost::asio::buffer(msg));
+  timer_.expires_from_now(boost::posix_time::milliseconds(5));
+  timer_.async_wait(
+      [this](const boost::system::error_code& ec) {
+        if (!ec)
+          update();
+
+        do_timer();
+      });
 }
 
-void KcpClient::try_recv_connect_back_packet(void) {
-  char recv_buf[1024]{};
-  socket_.receive(boost::asio::buffer(recv_buf, sizeof(recv_buf)));
+void KcpClient::do_connect(void) {
+  if (stopped_ || !connecting_)
+    return;
 
-  auto len = std::strlen(recv_buf);
-  if (len > 0 && is_connect_sendback_packet(recv_buf, len)) {
-    auto conv = get_conv_from_sendback_packet(recv_buf);
-    init_kcp(conv);
-    connecting_ = false;
-    connected_ = true;
+  socket_.async_send(boost::asio::buffer(make_connect_packet()),
+      [this](const boost::system::error_code& ec, std::size_t n) {
+        if (!ec && n > 0) {
+        char buf[1024]{};
+          socket_.async_receive(boost::asio::buffer(buf, sizeof(buf)),
+              [this, &buf](const boost::system::error_code& ec, std::size_t n) {
+                if (!ec && n > 0 && is_connect_sendback_packet(buf, n)) {
+                  auto conv = get_conv_from_sendback_packet(buf);
+                  init_kcp(conv);
+                  connecting_ = false;
+                  connected_ = true;
 
-    do_async_receive();
-  }
+                  do_async_receive();
+                }
+                else {
+                  do_connect();
+                }
+              });
+        }
+        else {
+          do_connect();
+        }
+      });
 }
 
 void KcpClient::do_async_receive(void) {
   if (stopped_)
     return;
 
-  socket_.async_receive_from(
-      boost::asio::buffer(data_, sizeof(data_)), remote_ep_,
-      [this](boost::system::error_code ec, std::size_t n) {
+  socket_.async_receive(
+      boost::asio::buffer(data_, sizeof(data_)),
+      [this](const boost::system::error_code& ec, std::size_t n) {
         if (!ec && n > 0) {
           ikcp_input(kcp_, data_, n);
 
           while (true) {
-            std::string msg(recv_package_from_kcp());
-            if (msg.size() > 0)
-              message_fn_(kcp_->conv, CMessageType::MT_RECV, msg, this);
-            else
+            char recvbuf[1024 * 10]{};
+            int len = ikcp_recv(kcp_, recvbuf, sizeof(recvbuf));
+            if (len > 0) {
+              message_fn_(kcp_->conv,
+                  CMessageType::MT_RECV, std::string(recvbuf, len), this);
+            }
+            else {
               break;
+            }
           }
         }
+
         do_async_receive();
       });
 }
 
-std::string KcpClient::recv_package_from_kcp(void) {
-  char buf[1024 * 10]{};
-  auto len = ikcp_recv(kcp_, buf, sizeof(buf));
-  if (len < 0)
-    return "";
-
-  return std::string(buf, len);
-}
-
-void KcpClient::write_package(const char* buf, int len) {
-  socket_.send(boost::asio::buffer(buf, len));
+void KcpClient::write_udp_buffer(const char* buf, int len) {
+  // FIXME: need a sending queue to send other message while this completed
+  socket_.async_send(boost::asio::buffer(buf, len),
+      [](const boost::system::error_code& /*ec*/, std::size_t /*n*/) {});
 }
 
 KcpClient::KcpClient(
     boost::asio::io_service& io_service, std::uint16_t bind_port)
-  : socket_(io_service, udp::endpoint(udp::v4(), bind_port)) {
-  do_async_receive();
+  : socket_(io_service, udp::endpoint(udp::v4(), bind_port))
+  , timer_(io_service) {
 }
 
 void KcpClient::stop(void) {
+  stopped_ = true;
+
   socket_.cancel();
   socket_.close();
-  stopped_ = true;
+
+  timer_.cancel();
 }
 
 void KcpClient::connect_async(
     const std::string& remote_ip, std::uint16_t remote_port) {
   remote_ep_ = udp::endpoint(
       boost::asio::ip::address::from_string(remote_ip), remote_port);
-  socket_.connect(remote_ep_);
+  socket_.async_connect(remote_ep_,
+      [this](const boost::system::error_code& ec) {
+        if (!ec) {
+          connecting_ = true;
+          connect_begtime_ = get_clock64();
 
-  connecting_ = true;
-  connect_begtime_ = get_clock64();
-}
-
-void KcpClient::update(void) {
-  uint64_t current_clock = get_clock64();
-  if (connecting_) {
-    do_connect(current_clock);
-    return;
-  }
-
-  if (connected_)
-    ikcp_update(kcp_, current_clock);
+          do_connect();
+          do_timer();
+        }
+        else {
+          message_fn_(0,
+              CMessageType::MT_CONNECTFAIL, KCPNET_CONNECT_FAILED, this);
+        }
+      });
 }
 
 void KcpClient::write_buffer(const std::string& buf) {

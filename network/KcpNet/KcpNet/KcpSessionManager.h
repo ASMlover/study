@@ -46,7 +46,6 @@ class KcpSessionManager
 
   void do_async_receive(void);
   void do_timer(void);
-  void handle_timer(void);
   void handle_connect_packet(void);
   void handle_packet(std::size_t n);
 public:
@@ -63,7 +62,7 @@ public:
 
   void stop_all(void);
   void call_message_functor(
-      kcp_conv_t conv, SMessageType type, const MessageBuffer& buf);
+      kcp_conv_t conv, SMessageType type, const std::string& buf);
   void write_udp_buffer(const std::string& buf, const udp::endpoint& ep);
 };
 

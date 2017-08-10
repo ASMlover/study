@@ -33,7 +33,7 @@ namespace KcpNet {
 void KcpSession::init_kcp(kcp_conv_t conv) {
   conv_ = conv;
   kcp_ = ikcp_create(conv, this);
-  kcp_->output = &KcpSession::output_callback;
+  kcp_->output = &KcpSession::output_handler;
 
   // fastest: ikcp_nodelay(kcp, 1, 20, 2, 1)
   // nodelay: 0:disable(default), 1:enable
@@ -49,7 +49,7 @@ void KcpSession::write_udp_buffer(const char* buf, std::size_t len) {
     mgr->write_udp_buffer(std::string(buf, len), sender_ep_);
 }
 
-int KcpSession::output_callback(
+int KcpSession::output_handler(
     const char* buf, int len, ikcpcb* /*kcp*/, void* user) {
   static_cast<KcpSession*>(user)->write_udp_buffer(buf, len);
   return 0;
@@ -82,10 +82,24 @@ void KcpSession::update(std::uint32_t clock) {
   ikcp_update(kcp_, clock);
 }
 
-void KcpSession::read_buffer(
+void KcpSession::input_handler(
     const char* buf, std::size_t len, const udp::endpoint& sender_ep) {
   sender_ep_ = sender_ep;
   ikcp_input(kcp_, buf, len);
+
+  while (true) {
+    char recvbuf[1024 * 100]{};
+    int n = ikcp_recv(kcp_, recvbuf, sizeof(recvbuf));
+    if (n > 0) {
+      if (auto mgr = session_mgr_.lock()) {
+        mgr->call_message_functor(conv_,
+            SMessageType::MT_RECV, std::string(recvbuf, n));
+      }
+    }
+    else {
+      break;
+    }
+  }
 }
 
 void KcpSession::write_buffer(const std::string& buf) {

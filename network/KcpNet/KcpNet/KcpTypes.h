@@ -43,9 +43,8 @@ enum class SMessageType {
   MT_RECV,
 };
 
-using MessageBuffer = std::shared_ptr<std::string>;
 using SMessageFunctor =
-  std::function<void (kcp_conv_t, SMessageType, const MessageBuffer&)>;
+  std::function<void (kcp_conv_t, SMessageType, const std::string&)>;
 
 // message event types for client
 enum class CMessageType {

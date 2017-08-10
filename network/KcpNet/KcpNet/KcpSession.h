@@ -44,7 +44,7 @@ class KcpSession : private boost::noncopyable {
 
   void init_kcp(kcp_conv_t conv);
   void write_udp_buffer(const char* buf, std::size_t len);
-  static int output_callback(
+  static int output_handler(
       const char* buf, int len, ikcpcb* kcp, void* user);
 public:
   using KcpSessionPtr = std::shared_ptr<KcpSession>;
@@ -56,7 +56,7 @@ public:
       const std::weak_ptr<KcpSessionManager>& session_mgr,
       kcp_conv_t conv, const udp::endpoint& sender_ep);
   void update(std::uint32_t clock);
-  void read_buffer(
+  void input_handler(
       const char* buf, std::size_t len, const udp::endpoint& sender_ep);
   void write_buffer(const std::string& buf);
 

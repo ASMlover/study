@@ -55,6 +55,7 @@ void KcpSessionManager::do_async_receive(void) {
           }
 
           handle_packet(n);
+          do_async_receive();
         }
         else {
           // async receive error
@@ -66,18 +67,13 @@ void KcpSessionManager::do_timer(void) {
   if (stopped_)
     return;
 
+  auto self(shared_from_this());
   timer_.expires_from_now(boost::posix_time::milliseconds(5));
-  timer_.async_wait(std::bind(&KcpSessionManager::handle_timer, this));
-  // FIXME: timer do not support lambda ? WHY
-  // timer_.async_wait([this](void) {
-  //       do_timer();
-  //       container_.update_all(get_clock32());
-  //     });
-}
-
-void KcpSessionManager::handle_timer(void) {
-  do_timer();
-  container_.update_all(get_clock32());
+  timer_.async_wait([this, self](const boost::system::error_code& ec) {
+        if (!ec)
+          container_.update_all(get_clock32());
+        do_timer();
+      });
 }
 
 void KcpSessionManager::handle_connect_packet(void) {
@@ -92,7 +88,7 @@ void KcpSessionManager::handle_packet(std::size_t n) {
     s = container_.new_session(shared_from_this(), conv, sender_ep_);
 
   if (s)
-    s->read_buffer(data_, n, sender_ep_);
+    s->input_handler(data_, n, sender_ep_);
 }
 
 void KcpSessionManager::stop_all(void) {
@@ -101,10 +97,12 @@ void KcpSessionManager::stop_all(void) {
 
   socket_.cancel();
   socket_.close();
+
+  timer_.cancel();
 }
 
 void KcpSessionManager::call_message_functor(
-    kcp_conv_t conv, SMessageType type, const MessageBuffer& buf) {
+    kcp_conv_t conv, SMessageType type, const std::string& buf) {
   if (message_fn_)
     message_fn_(conv, type, buf);
 }
