@@ -44,6 +44,7 @@ int main(int argc, char* argv[]) {
 #endif
 
   static const int ALLOC_COUNT = 1000000;
+  static const int TEST_COUNT = 100;
   int* alloc_array = (int*)malloc(ALLOC_COUNT * sizeof(int));
 
   srand((unsigned int)time(NULL));
@@ -53,30 +54,36 @@ int main(int argc, char* argv[]) {
       alloc_array[i] = 1;
   }
 
-  char* p;
-  clock_t beg = clock();
-  clock_t end;
-  for (int i = 0; i < ALLOC_COUNT; ++i) {
-    p = (char*)malloc(alloc_array[i]);
-    free(p);
-  }
-  end = clock();
-  fprintf(stdout,
-      "[system allocator] %ld ~ %ld, used: %ld\n", beg, end, end - beg);
+  int count = 0;
 
-  beg = clock();
-  for (int i = 0; i < ALLOC_COUNT; ++i) {
+  while (count++ < TEST_COUNT) {
+    char* p;
+    clock_t beg = clock();
+    clock_t end;
+    for (int i = 0; i < ALLOC_COUNT; ++i) {
+      p = (char*)malloc(alloc_array[i]);
+      free(p);
+    }
+    end = clock();
+    fprintf(stdout,
+        "[system allocator][%d] %ld ~ %ld, used: %ld\n",
+        count, beg, end, end - beg);
+
+    beg = clock();
+    for (int i = 0; i < ALLOC_COUNT; ++i) {
 #if defined(PYMEM_PYTHON)
-    p = (char*)pymem_alloc(alloc_array[i]);
-    pymem_dealloc(p);
+      p = (char*)pymem_alloc(alloc_array[i]);
+      pymem_dealloc(p);
 #else
-    p = (char*)PyObject_Malloc(alloc_array[i]);
-    PyObject_Free(p);
+      p = (char*)PyObject_Malloc(alloc_array[i]);
+      PyObject_Free(p);
 #endif
+    }
+    end = clock();
+    fprintf(stdout,
+        "[pymem allocator][%d] %ld ~ %ld, used: %ld\n",
+        count, beg, end, end - beg);
   }
-  end = clock();
-  fprintf(stdout,
-      "[pymem allocator] %ld ~ %ld, used: %ld\n", beg, end, end - beg);
 
   free(alloc_array);
 
