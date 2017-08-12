@@ -41,10 +41,13 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   endif()
 
   add_definitions(
+    /DUNICODE
     /D_UNICODE
     /D_CRT_SECURE_NO_WARNINGS
     /D_CRT_NONSTDC_NO_WARNINGS)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc")
+  set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd")
+  set(CMAKE_CXX_FLAGS_RELEASE "/DNDEBUG /Ox /MD")
 else()
   if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.1")
@@ -58,9 +61,12 @@ else()
     endif()
   endif()
 
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -ggdb -O2 -Wall -std=c++1y")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++1y -march=native")
+  set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -O0")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 endif()
-message(STATUS "[${LEARNGC_PROJECT}] CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
+message(STATUS "[${LEARNGC_PROJECT}] CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")
 
 include_directories(${PROJECT_SOURCE_DIR}/../../../Chaos)
 link_directories(${PROJECT_SOURCE_DIR}/../../../Chaos/cmake-build/Chaos)
