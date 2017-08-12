@@ -53,7 +53,7 @@ MemBlock* MemPool::new_block(int index) {
   char* aligned_block;
   if (excess != 0) {
     aligned_block = (char*)blockobj + (SYSTEM_PAGE_SIZE - excess);
-    aligned_bytes = PAGE_COUNT * SYSTEM_PAGE_SIZE;
+    aligned_bytes = (PAGE_COUNT - 1) * SYSTEM_PAGE_SIZE;
   }
   else {
     aligned_block = (char*)blockobj;
@@ -68,7 +68,7 @@ MemBlock* MemPool::new_block(int index) {
     auto* h = (BlockHeader*)aligned_block;
     h->address = (std::uintptr_t)blockobj;
     h->size_index = index;
-    h->block_index = i / SYSTEM_PAGE_SIZE;
+    h->block_index = static_cast<int>(i / SYSTEM_PAGE_SIZE);
     auto block_bytes = SYSTEM_PAGE_SIZE - block_header - nbytes;
     auto* block = reinterpret_cast<MemBlock*>(aligned_block + block_header);
     for (std::size_t s = 0; s < block_bytes; s += nbytes)
@@ -88,9 +88,8 @@ void* MemPool::alloc(std::size_t nbytes) {
       new_block(index);
 
     p = freeblocks_[index];
-    if (p == nullptr)
-      return nullptr;
-    freeblocks_[index] = freeblocks_[index]->next;
+    if (p != nullptr)
+      freeblocks_[index] = freeblocks_[index]->next;
   }
   else {
     p = std::malloc(nbytes);
@@ -100,12 +99,13 @@ void* MemPool::alloc(std::size_t nbytes) {
 }
 
 void MemPool::dealloc(void* p) {
-  auto* h = (BlockHeader*)((std::uintptr_t)p & ~SYSTEM_PAGE_SIZE_MASK);
+  auto* h = reinterpret_cast<BlockHeader*>(
+      (std::uintptr_t)p & ~SYSTEM_PAGE_SIZE_MASK);
   if (h->block_index < PAGE_COUNT
       && (std::uintptr_t)p - h->address < POOL_SIZE
       && h->address != 0) {
     auto index = h->size_index;
-    auto* free_block = (MemBlock*)p;
+    auto* free_block = reinterpret_cast<MemBlock*>(p);
     free_block->next = freeblocks_[index];
     freeblocks_[index] = free_block;
   }
