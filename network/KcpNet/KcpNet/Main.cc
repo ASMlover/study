@@ -25,9 +25,36 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <boost/asio.hpp>
+#include "KcpClient.h"
+#include "KcpServer.h"
+
+void run_server(void) {
+  boost::asio::io_service io_service;
+
+  KcpNet::KcpServer s(io_service, "127.0.0.1", 5555);
+  io_service.run();
+}
+
+void run_client(void) {
+  boost::asio::io_service io_service;
+
+  KcpNet::KcpClient c(io_service, 5656);
+  c.connect_async("127.0.0.1", 5555);
+
+  io_service.run();
+}
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
+
+  if (argc < 2)
+    return 0;
+
+  if (std::strcmp(argv[1], "server") == 0)
+    run_server();
+  else if (std::strcmp(argv[1], "client") == 0)
+    run_client();
 
   return 0;
 }
