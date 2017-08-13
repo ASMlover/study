@@ -44,10 +44,9 @@ void KcpSessionManager::do_async_receive(void) {
   if (stopped_)
     return;
 
-  auto self(shared_from_this());
   socket_.async_receive_from(
       boost::asio::buffer(data_, sizeof(data_)), sender_ep_,
-      [this, self](const boost::system::error_code& ec, std::size_t n) {
+      [this](const boost::system::error_code& ec, std::size_t n) {
         if (!ec && n > 0) {
           if (is_connect_packet(data_, n)) {
             handle_connect_packet();
@@ -67,9 +66,8 @@ void KcpSessionManager::do_timer(void) {
   if (stopped_)
     return;
 
-  auto self(shared_from_this());
   timer_.expires_from_now(boost::posix_time::milliseconds(5));
-  timer_.async_wait([this, self](const boost::system::error_code& ec) {
+  timer_.async_wait([this](const boost::system::error_code& ec) {
         if (!ec)
           container_.update_all(get_clock32());
         do_timer();
