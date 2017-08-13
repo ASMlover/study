@@ -63,7 +63,7 @@ void KcpClient::update(void) {
   }
 
   if (connected_)
-    ikcp_update(kcp_, current_clock);
+    ikcp_update(kcp_, static_cast<std::uint32_t>(current_clock));
 }
 
 void KcpClient::do_timer(void) {
