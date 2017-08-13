@@ -1,15 +1,14 @@
 # **README for SublimeText**
 ***
 
-
 ## **1. Windows安装**
-    解压安装包并安装, 破解即可...
-
+    解压安装包并安装, 破解即可，安装插件。。。
+    1）Ctrl+Shift+p，键入“pcip”，然后回车，等待完成安装
+    2）Ctrl+Shift+p，键入“mp”，可以按安装Markdown Preview: Preview in Browser
 
 ## **2. 安装格式化插件**
     1) Shift+Ctrl+p -> Install Package -> Aligment
     2) 选中 -> Ctrl+Alt+A
-
 
 ## **3. 常用快捷键**
     1) 选择类
@@ -80,7 +79,6 @@
         * Ctrl+K+B 开启/关闭侧边栏
         * F11 全屏模式
         * Shift+F11 免打扰模式
-
 
 ## **4. 常用插件**
     1) All Autocomplete 自动补全, 自动匹配所有打开的文件的词条;
