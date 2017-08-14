@@ -31,13 +31,12 @@ using boost::asio::ip::udp;
 
 class Client : private boost::noncopyable {
   udp::socket socket_;
-  udp::endpoint remote_ep_;
 
   static constexpr std::size_t kMaxBufferSize = 1024;
 
-  void do_connect(udp::resolver::iterator epiter) {
-    boost::asio::async_connect(socket_, epiter,
-        [this](const boost::system::error_code& ec, udp::resolver::iterator) {
+  void do_connect(const udp::endpoint& remote_ep) {
+    socket_.async_connect(remote_ep,
+        [this](const boost::system::error_code& ec) {
           if (!ec) {
             do_read();
             do_write();
@@ -68,10 +67,11 @@ class Client : private boost::noncopyable {
         });
   }
 public:
-  Client(boost::asio::io_service& io_service,
-      std::uint16_t port, udp::resolver::iterator epiter)
+  Client(boost::asio::io_service& io_service, std::uint16_t port,
+      const char* remote_ip, std::uint16_t remote_port)
     : socket_(io_service, udp::endpoint(udp::v4(), port)) {
-    do_connect(epiter);
+    do_connect(udp::endpoint(
+          boost::asio::ip::address::from_string(remote_ip), remote_port));
   }
 };
 
@@ -80,7 +80,7 @@ void run_client(void) {
     boost::asio::io_service io_service;
 
     udp::resolver r(io_service);
-    Client c(io_service, 5656, r.resolve({"127.0.0.1", "5555"}));
+    Client c(io_service, 5656, "127.0.0.1", 5555);
 
     io_service.run();
   }
