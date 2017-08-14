@@ -34,6 +34,9 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "[${LEARNGC_PROJECT}] CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
+# build all binaries into specifiled directory
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   if (MSVC_VERSION LESS 1900)
     message(FATAL_ERROR "you need Visual Studio 2015 or later")
@@ -69,7 +72,7 @@ string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 message(STATUS "[${LEARNGC_PROJECT}] CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")
 
 include_directories(${PROJECT_SOURCE_DIR}/../../../Chaos)
-link_directories(${PROJECT_SOURCE_DIR}/../../../Chaos/cmake-build/Chaos)
+link_directories(${PROJECT_SOURCE_DIR}/../../../Chaos/cmake-build/lib)
 
 add_subdirectory(MarkSweep)
 add_subdirectory(MarkSweep2)
