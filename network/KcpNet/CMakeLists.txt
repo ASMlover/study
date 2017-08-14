@@ -40,6 +40,8 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "[KcpNet] CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 option(KCPNET_DEVHOME_WIN "kcpnet-dev in home Windows platform" OFF)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
