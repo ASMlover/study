@@ -26,67 +26,45 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cmake_minimum_required(VERSION 3.0)
-project(KcpNet C CXX)
-
-if (POLICY CMP0025)
-  cmake_policy(SET CMP0025 NEW)
-endif()
-if (POLICY CMP0054)
-  cmake_policy(SET CMP0054 NEW)
-endif()
+project(EchoPROJ CXX)
 
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
-message(STATUS "[KcpNet] CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+message(STATUS "[EchoPROJ] CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-option(KCPNET_DEVHOME_WIN "kcpnet-dev in home Windows platform" OFF)
-
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-  if (MSVC_VERSION LESS 1900)
-    message(FATAL_ERROR "you need Visual Studio 2015 or later")
-    return()
-  endif()
-
   add_definitions(
+    /DUNICODE
     /D_UNICODE
     /D_CRT_SECURE_NO_WARNINGS
-    /D_CRT_NONSTDC_NO_WARNINGS
-    /D_WIN32_WINNT=0x0501
-    /wd4267)
+    /D_CRT_NONSTDC_NO_WARNINGS)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc")
+  set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd")
+  set(CMAKE_CXX_FLAGS_RELEASE "/DNDEBUG /MD /Ox")
+
+  include_directories("D:/Tools/boost_1_63_0")
+  link_directories("D:/Tools/boost_1_63_0/stage/lib")
 else()
-  if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.1")
-      message(FATAL_ERROR "you need GCC-4.8.1 or later")
-      return()
-    endif()
-  elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.3")
-      message(FATAL_ERROR "you need Clang-3.3 or later")
-      return()
-    endif()
-  endif()
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++1y -march=native")
+  set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -O0")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -ggdb -O2 -Wall -std=c++1y")
+  include_directories(${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_63_0)
+  link_directories(${PROJECT_SOURCE_DIR}/../../../../../../OpenLib/boost_1_63_0/stage/lib)
 endif()
-message(STATUS "[KcpNet] CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
+message(STATUS "[EchoPROJ] CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")
 
+aux_source_directory(. ECHOPROJ_SOURCES)
+message(STATUS "[EchoPROJ] ECHOPROJ_SOURCES: ${ECHOPROJ_SOURCES}")
+
+add_executable(echo-udp ${ECHOPROJ_SOURCES})
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
-  if (KCPNET_DEVHOME_WIN)
-    include_directories("D:/Tools/boost_1_64_0")
-    link_directories("D:/Tools/boost_1_64_0/stage/x64/lib")
-  else()
-    include_directories("D:/Tools/boost_1_63_0")
-    link_libraries("D:/Tools/boost_1_63_0/stage/lib")
-  endif()
+  target_link_libraries(echo-udp
+    debug libboost_system-vc140-mt-gd-1_63 optimized libboost_system-vc140-mt-1_63)
 else()
-  include_directories(${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0)
-  link_directories(${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0/stage/lib)
+  target_link_libraries(echo-udp boost_system pthread)
 endif()
-include_directories(${PROJECT_SOURCE_DIR})
-include_directories(${PROJECT_SOURCE_DIR}/External/kcp)
-
-add_subdirectory(KcpNet)
