@@ -82,8 +82,7 @@ void KcpClient::do_read_connection(void) {
           connecting_ = false;
           connected_ = true;
 
-          std::cout << "conv: " << conv << ", begin to read ..." << std::endl;
-
+          message_fn_(conv, CMessageType::MT_CONNECT, "", this);
           do_read();
         }
         else {

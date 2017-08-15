@@ -33,6 +33,12 @@ void run_server(void) {
   boost::asio::io_service io_service;
 
   KcpNet::KcpServer s(io_service, "127.0.0.1", 5555);
+  s.bind_meesage_functor([](kcp_conv_t conv,
+        KcpNet::SMessageType t, const std::string& buf) {
+        if (t == KcpNet::SMessageType::MT_RECV) {
+          std::cout << "from: " << conv << ", recv: " << buf << std::endl;
+        }
+      });
   io_service.run();
 }
 
@@ -40,6 +46,13 @@ void run_client(void) {
   boost::asio::io_service io_service;
 
   KcpNet::KcpClient c(io_service, 5656);
+  c.bind_meesage_functor([&c](kcp_conv_t conv,
+        KcpNet::CMessageType t, const std::string& buf, void* user) {
+        if (t == KcpNet::CMessageType::MT_CONNECT) {
+          std::cout << "connect success, conv: " << conv << std::endl;
+          c.write_buffer("Hello, world!");
+        }
+      });
   c.connect_async("127.0.0.1", 5555);
 
   io_service.run();
