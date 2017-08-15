@@ -37,14 +37,14 @@ class KcpSessionManager
   static constexpr std::size_t kMaxPacket = 1080;
 
   bool stopped_{};
-  char data_[1024 * 32]{};
+  char readbuff_[1024 * 32]{};
   SMessageFunctor message_fn_{};
   udp::socket socket_;
   udp::endpoint sender_ep_;
   boost::asio::deadline_timer timer_;
   KcpSessionContainer container_;
 
-  void do_async_receive(void);
+  void do_read(void);
   void do_timer(void);
   void handle_connect_packet(void);
   void handle_packet(std::size_t n);

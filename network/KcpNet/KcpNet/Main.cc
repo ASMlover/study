@@ -48,13 +48,17 @@ void run_client(void) {
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
-  if (argc < 2)
+  if (argc < 2) {
+    std::cerr << "Usage: kcpnet [server|client] ..." << std::endl;
     return 0;
+  }
 
   if (std::strcmp(argv[1], "server") == 0)
     run_server();
   else if (std::strcmp(argv[1], "client") == 0)
     run_client();
+  else
+    std::cerr << "Usage: kcpnet [server|client] ..." << std::endl;
 
   return 0;
 }

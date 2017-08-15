@@ -39,21 +39,21 @@ class KcpClient : private boost::noncopyable {
   bool stopped_{};
   udp::socket socket_;
   boost::asio::deadline_timer timer_;
-  udp::endpoint remote_ep_;
   bool connecting_{};
   std::uint64_t connect_begtime_{};
   bool connected_{};
 
-  char data_[1024 * 32]{};
+  char readbuff_[1024 * 32]{};
   ikcpcb* kcp_{};
   CMessageFunctor message_fn_{};
 
   static int output_handler(const char* buf, int len, ikcpcb* kcp, void* user);
   void init_kcp(kcp_conv_t conv);
   void update(void);
+  void do_read_connection(void);
+  void do_write_connection(void);
   void do_timer(void);
-  void do_connect(void);
-  void do_async_receive(void);
+  void do_read(void);
   void write_udp_buffer(const char* buf, int len);
 public:
   KcpClient(boost::asio::io_service& io_service, std::uint16_t bind_port);

@@ -36,29 +36,28 @@ KcpSessionManager::KcpSessionManager(
   : socket_(io_service,
       udp::endpoint(boost::asio::ip::address::from_string(address), port))
   , timer_(io_service) {
-  do_async_receive();
+  do_read();
   do_timer();
 }
 
-void KcpSessionManager::do_async_receive(void) {
+void KcpSessionManager::do_read(void) {
   if (stopped_)
     return;
 
   socket_.async_receive_from(
-      boost::asio::buffer(data_, sizeof(data_)), sender_ep_,
+      boost::asio::buffer(readbuff_, sizeof(readbuff_)), sender_ep_,
       [this](const boost::system::error_code& ec, std::size_t n) {
         if (!ec && n > 0) {
-          if (is_connect_packet(data_, n)) {
+          if (is_connect_packet(readbuff_, n))
             handle_connect_packet();
-            do_async_receive();
-          }
-
-          handle_packet(n);
-          do_async_receive();
+          else
+            handle_packet(n);
         }
         else {
           // async receive error
         }
+
+        do_read();
       });
 }
 
@@ -76,17 +75,18 @@ void KcpSessionManager::do_timer(void) {
 
 void KcpSessionManager::handle_connect_packet(void) {
   auto conv = container_.gen_conv();
-  socket_.send_to(boost::asio::buffer(make_sendback_packet(conv)), sender_ep_);
+  auto buf = make_sendback_packet(conv);
+  socket_.send_to(boost::asio::buffer(buf), sender_ep_);
 }
 
 void KcpSessionManager::handle_packet(std::size_t n) {
-  auto conv = ikcp_getconv(data_);
+  auto conv = ikcp_getconv(readbuff_);
   auto s = container_.get(conv);
   if (!s)
     s = container_.new_session(shared_from_this(), conv, sender_ep_);
 
   if (s)
-    s->input_handler(data_, n, sender_ep_);
+    s->input_handler(readbuff_, n, sender_ep_);
 }
 
 void KcpSessionManager::stop_all(void) {

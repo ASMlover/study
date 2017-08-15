@@ -24,9 +24,12 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include <ikcp.h>
 #include "KcpClient.h"
 #include "Utility.h"
+
+// TODO: need add event callback for connection and something else ...
 
 namespace KcpNet {
 
@@ -66,6 +69,42 @@ void KcpClient::update(void) {
     ikcp_update(kcp_, static_cast<std::uint32_t>(current_clock));
 }
 
+void KcpClient::do_read_connection(void) {
+  if (stopped_ || !connecting_)
+    return;
+
+  char buf[1024]{};
+  socket_.async_receive(boost::asio::buffer(buf, sizeof(buf)),
+      [this, &buf](const boost::system::error_code& ec, std::size_t n) {
+        if (!ec && n > 0 && is_connect_sendback_packet(buf, n)) {
+          auto conv = get_conv_from_sendback_packet(buf);
+          init_kcp(conv);
+          connecting_ = false;
+          connected_ = true;
+
+          std::cout << "conv: " << conv << ", begin to read ..." << std::endl;
+
+          do_read();
+        }
+        else {
+          do_read_connection();
+          do_write_connection();
+        }
+      });
+}
+
+void KcpClient::do_write_connection(void) {
+  if (stopped_ || !connecting_)
+    return;
+
+  auto buf = make_connect_packet();
+  socket_.async_send(boost::asio::buffer(buf),
+      [this](const boost::system::error_code& ec, std::size_t) {
+        if (ec)
+          do_write_connection();
+      });
+}
+
 void KcpClient::do_timer(void) {
   if (stopped_)
     return;
@@ -80,51 +119,22 @@ void KcpClient::do_timer(void) {
       });
 }
 
-void KcpClient::do_connect(void) {
-  if (stopped_ || !connecting_)
-    return;
-
-  socket_.async_send(boost::asio::buffer(make_connect_packet()),
-      [this](const boost::system::error_code& ec, std::size_t n) {
-        if (!ec && n > 0) {
-        char buf[1024]{};
-          socket_.async_receive(boost::asio::buffer(buf, sizeof(buf)),
-              [this, &buf](const boost::system::error_code& ec, std::size_t n) {
-                if (!ec && n > 0 && is_connect_sendback_packet(buf, n)) {
-                  auto conv = get_conv_from_sendback_packet(buf);
-                  init_kcp(conv);
-                  connecting_ = false;
-                  connected_ = true;
-
-                  do_async_receive();
-                }
-                else {
-                  do_connect();
-                }
-              });
-        }
-        else {
-          do_connect();
-        }
-      });
-}
-
-void KcpClient::do_async_receive(void) {
+void KcpClient::do_read(void) {
   if (stopped_)
     return;
 
   socket_.async_receive(
-      boost::asio::buffer(data_, sizeof(data_)),
+      boost::asio::buffer(readbuff_, sizeof(readbuff_)),
       [this](const boost::system::error_code& ec, std::size_t n) {
         if (!ec && n > 0) {
-          ikcp_input(kcp_, data_, n);
+          ikcp_input(kcp_, readbuff_, n);
 
           while (true) {
-            char recvbuf[1024 * 10]{};
-            int len = ikcp_recv(kcp_, recvbuf, sizeof(recvbuf));
+            char buf[1024 * 10]{};
+            int len = ikcp_recv(kcp_, buf, sizeof(buf));
             if (len > 0) {
               message_fn_(kcp_->conv,
-                  CMessageType::MT_RECV, std::string(recvbuf, len), this);
+                  CMessageType::MT_RECV, std::string(buf, len), this);
             }
             else {
               break;
@@ -132,7 +142,7 @@ void KcpClient::do_async_receive(void) {
           }
         }
 
-        do_async_receive();
+        do_read();
       });
 }
 
@@ -159,15 +169,15 @@ void KcpClient::stop(void) {
 
 void KcpClient::connect_async(
     const std::string& remote_ip, std::uint16_t remote_port) {
-  remote_ep_ = udp::endpoint(
-      boost::asio::ip::address::from_string(remote_ip), remote_port);
-  socket_.async_connect(remote_ep_,
+  socket_.async_connect(udp::endpoint(
+        boost::asio::ip::address::from_string(remote_ip), remote_port),
       [this](const boost::system::error_code& ec) {
         if (!ec) {
           connecting_ = true;
           connect_begtime_ = get_clock64();
 
-          do_connect();
+          do_read_connection();
+          do_write_connection();
           do_timer();
         }
         else {
