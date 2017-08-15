@@ -33,7 +33,7 @@ set(KCPNETLIB_SOURCES ${KCPNETLIB_SOURCES}
 message(STATUS "[KcpNet.KcpNet] KCPNETLIB_SOURCES: ${KCPNETLIB_SOURCES}")
 
 add_library(${OUTPUT_NAME} STATIC ${KCPNETLIB_SOURCES})
-if (CMAKE_SYSTEM_NAME MATCHES "MSVC")
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
   if (KCPNET_USE_BOOST164)
     target_link_libraries(${OUTPUT_NAME}
       debug libboost_system-vc141-mt-gd-1_64 optimized libboost_system-vc141-mt-1_64)
