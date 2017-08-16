@@ -24,40 +24,26 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
+#pragma once
+
+#include <vector>
+#include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
-#include "../KcpNet/KcpClient.h"
-#include "../KcpNet/KcpServer.h"
 
-void run_client(void) {
-  boost::asio::io_service io_service;
+namespace KcpNet {
 
-  KcpNet::KcpClient c(io_service, 5656);
-  c.connect("127.0.0.1", 5555);
-  io_service.run();
-}
+using boost::asio::ip::udp;
 
-void run_server(void) {
-  boost::asio::io_service io_service;
+class KcpServer : private boost::noncopyable {
+  static constexpr std::size_t kBufferSize = 32 << 10;
 
-  KcpNet::KcpServer s(io_service, 5555);
-  io_service.run();
-}
+  udp::socket socket_;
+  std::vector<char> readbuff_;
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
+  void do_read(void);
+public:
+  KcpServer(boost::asio::io_service& io_service, std::uint16_t port);
+  void wirte(const char* buf, std::size_t len, const udp::endpoint& ep);
+};
 
-  if (argc < 2) {
-    std::cerr << "Usage: kcpnet [s|c] ..." << std::endl;
-    return 0;
-  }
-
-  if (argv[1][0] == 's')
-    run_server();
-  else if (argv[1][0] == 'c')
-    run_client();
-  else
-    std::cerr << "Usage: kcpnet [s|c] ..." << std::endl;
-
-  return 0;
 }

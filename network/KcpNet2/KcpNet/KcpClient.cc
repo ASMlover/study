@@ -25,32 +25,66 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
-#include "KcpServer.h"
+#include "Utility.h"
+#include "KcpClient.h"
 
 namespace KcpNet {
 
-KcpServer::KcpServer(boost::asio::io_service& io_service, std::uint16_t port)
+KcpClient::KcpClient(boost::asio::io_service& io_service, std::uint16_t port)
   : socket_(io_service, udp::endpoint(udp::v4(), port))
   , readbuff_(kBufferSize) {
-  do_read();
 }
 
-void KcpServer::do_read(void) {
-  udp::endpoint sender_ep;
-  socket_.async_receive_from(boost::asio::buffer(readbuff_), sender_ep,
-      [this, &sender_ep](const boost::system::error_code& ec, std::size_t n) {
+void KcpClient::do_write_connection(void) {
+  socket_.async_send(boost::asio::buffer(make_connect_request()),
+      [this](const boost::system::error_code& ec, std::size_t /*n*/) {
+        if (ec) {
+          // TODO: send connect request failed, need re-send again
+        }
+      });
+}
+
+void KcpClient::do_read_connection(void) {
+  char buf[1024]{};
+  socket_.async_receive(boost::asio::buffer(buf, sizeof(buf)),
+      [this, &buf](const boost::system::error_code& ec, std::size_t n) {
         if (!ec && n > 0) {
-          std::cout << "from: " << sender_ep << ", read: " << readbuff_.data() << std::endl;
-          wirte(readbuff_.data(), n, sender_ep);
+          std::cout << "connect response: " << buf << std::endl;
+
+          do_read();
+        }
+        else {
+          // TODO: recv connect response failed, need send request again
+        }
+      });
+}
+
+void KcpClient::do_read(void) {
+  socket_.async_receive(boost::asio::buffer(readbuff_),
+      [this](const boost::system::error_code& ec, std::size_t n) {
+        if (!ec && n > 0) {
         }
 
         do_read();
       });
 }
 
-void KcpServer::wirte(
-    const char* buf, std::size_t len, const udp::endpoint& ep) {
-  socket_.async_send_to(boost::asio::buffer(buf, len), ep,
+void KcpClient::connect(
+    const std::string& remote_ip, std::uint16_t remote_port) {
+  udp::endpoint remote_ep(
+      boost::asio::ip::address::from_string(remote_ip), remote_port);
+  socket_.async_connect(remote_ep,
+      [this](const boost::system::error_code& ec) {
+        if (!ec) {
+          do_read_connection();
+          do_write_connection();
+        }
+        // TODO: need re-connect again
+      });
+}
+
+void KcpClient::write(const char* buf, std::size_t len) {
+  socket_.async_send(boost::asio::buffer(buf, len),
       [](const boost::system::error_code& /*ec*/, std::size_t /*n*/) {});
 }
 
