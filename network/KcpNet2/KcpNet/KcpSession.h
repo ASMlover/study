@@ -26,26 +26,32 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <vector>
+#include <memory>
 #include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
+#include "KcpTypes.h"
 
 namespace KcpNet {
 
 using boost::asio::ip::udp;
 
-class KcpServer : private boost::noncopyable {
-  static constexpr std::size_t kBufferSize = 32 << 10;
-
-  udp::socket socket_;
+class KcpSession
+  : private boost::noncopyable
+  , public std::enable_shared_from_this<KcpSession> {
+  kcp_conv_t conv_{};
+  ikcpcb* kcp_{};
   udp::endpoint sender_ep_;
-  std::vector<char> readbuff_;
 
-  void do_read(void);
+  void init_kcp(kcp_conv_t conv);
+  static int output_handler(const char* buf, int len, ikcpcb* kcp, void* user);
 public:
-  KcpServer(boost::asio::io_service& io_service, std::uint16_t port);
-  void write(const std::string& buf, const udp::endpoint& ep);
-  void write(const char* buf, std::size_t len, const udp::endpoint& ep);
+  KcpSession(kcp_conv_t conv, const udp::endpoint& sender_ep);
+  ~KcpSession(void);
+
+  void update(std::uint32_t clock);
+  void input_handler(
+      const char* buf, std::size_t len, const udp::endpoint& sender_ep);
+  void write_buffer(const std::string& buf);
 };
 
 }

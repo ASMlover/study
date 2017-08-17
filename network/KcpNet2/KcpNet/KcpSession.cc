@@ -24,28 +24,33 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include <vector>
-#include <boost/noncopyable.hpp>
-#include <boost/asio.hpp>
+#include <ikcp.h>
+#include "KcpSession.h"
 
 namespace KcpNet {
 
-using boost::asio::ip::udp;
+KcpSession::KcpSession(kcp_conv_t conv, const udp::endpoint& sender_ep) {
+}
 
-class KcpServer : private boost::noncopyable {
-  static constexpr std::size_t kBufferSize = 32 << 10;
+KcpSession::~KcpSession(void) {
+}
 
-  udp::socket socket_;
-  udp::endpoint sender_ep_;
-  std::vector<char> readbuff_;
+void KcpSession::init_kcp(kcp_conv_t conv) {
+}
 
-  void do_read(void);
-public:
-  KcpServer(boost::asio::io_service& io_service, std::uint16_t port);
-  void write(const std::string& buf, const udp::endpoint& ep);
-  void write(const char* buf, std::size_t len, const udp::endpoint& ep);
-};
+int KcpSession::output_handler(
+    const char* buf, int len, ikcpcb* kcp, void* user) {
+  return 0;
+}
+
+void KcpSession::update(std::uint32_t clock) {
+}
+
+void KcpSession::input_handler(
+    const char* buf, std::size_t len, const udp::endpoint& sender_ep) {
+}
+
+void KcpSession::write_buffer(const std::string& buf) {
+}
 
 }

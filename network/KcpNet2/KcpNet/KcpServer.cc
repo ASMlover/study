@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include "Utility.h"
 #include "KcpServer.h"
 
 namespace KcpNet {
@@ -36,19 +37,29 @@ KcpServer::KcpServer(boost::asio::io_service& io_service, std::uint16_t port)
 }
 
 void KcpServer::do_read(void) {
-  udp::endpoint sender_ep;
-  socket_.async_receive_from(boost::asio::buffer(readbuff_), sender_ep,
-      [this, &sender_ep](const boost::system::error_code& ec, std::size_t n) {
+  socket_.async_receive_from(boost::asio::buffer(readbuff_), sender_ep_,
+      [this](const boost::system::error_code& ec, std::size_t n) {
         if (!ec && n > 0) {
-          std::cout << "from: " << sender_ep << ", read: " << readbuff_.data() << std::endl;
-          wirte(readbuff_.data(), n, sender_ep);
+          std::cout << "from: " << sender_ep_ << ", read: " << readbuff_.data() << std::endl;
+          if (is_connect_request(readbuff_.data(), n)) {
+            // response the connect request
+            write(make_connect_response(0), sender_ep_);
+          }
+          else {
+            // TODO: solve received message
+          }
         }
 
         do_read();
       });
 }
 
-void KcpServer::wirte(
+void KcpServer::write(const std::string& buf, const udp::endpoint& ep) {
+  socket_.async_send_to(boost::asio::buffer(buf), ep,
+      [](const boost::system::error_code& /*ec*/, std::size_t /*n*/) {});
+}
+
+void KcpServer::write(
     const char* buf, std::size_t len, const udp::endpoint& ep) {
   socket_.async_send_to(boost::asio::buffer(buf, len), ep,
       [](const boost::system::error_code& /*ec*/, std::size_t /*n*/) {});
