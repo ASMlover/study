@@ -25,33 +25,86 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <ikcp.h>
 #include "Utility.h"
+#include "KcpSession.h"
 #include "KcpServer.h"
 
 namespace KcpNet {
 
 KcpServer::KcpServer(boost::asio::io_service& io_service, std::uint16_t port)
   : socket_(io_service, udp::endpoint(udp::v4(), port))
-  , readbuff_(kBufferSize) {
+  , readbuff_(kBufferSize)
+  , timer_(io_service) {
   do_read();
+  do_timer();
+}
+
+KcpServer::~KcpServer(void) {
+  stopped_ = true;
+  sessions_.clear();
+
+  socket_.close();
+  timer_.cancel();
 }
 
 void KcpServer::do_read(void) {
+  if (stopped_)
+    return;
+
   socket_.async_receive_from(boost::asio::buffer(readbuff_), sender_ep_,
       [this](const boost::system::error_code& ec, std::size_t n) {
         if (!ec && n > 0) {
           std::cout << "from: " << sender_ep_ << ", read: " << readbuff_.data() << std::endl;
           if (is_connect_request(readbuff_.data(), n)) {
             // response the connect request
-            write(make_connect_response(0), sender_ep_);
+            write(make_connect_response(gen_conv()), sender_ep_);
           }
           else {
-            // TODO: solve received message
+            // solve received buffer
+            auto conv = ikcp_getconv(readbuff_.data());
+            auto it = sessions_.find(conv);
+            if (it == sessions_.end()) {
+              auto s = std::make_shared<KcpSession>(conv, sender_ep_);
+              s->bind_writeto_functor(
+                  [this](const KcpSessionPtr& /*s*/,
+                    const std::string& buf, const udp::endpoint& ep) {
+                    write(buf, ep);
+                  });
+              sessions_[conv] = s;
+
+              s->input_handler(readbuff_.data(), n, sender_ep_);
+            }
+            else {
+              it->second->input_handler(readbuff_.data(), n, sender_ep_);
+            }
           }
         }
 
         do_read();
       });
+}
+
+void KcpServer::do_timer(void) {
+  if (stopped_)
+    return;
+
+  timer_.expires_from_now(boost::posix_time::milliseconds(5));
+  timer_.async_wait([this](const boost::system::error_code& ec) {
+        if (!ec)
+          update(get_clock32());
+        do_timer();
+      });
+}
+
+kcp_conv_t KcpServer::gen_conv(void) const {
+  static kcp_conv_t s_conv = 1000;
+  return ++s_conv;
+}
+
+void KcpServer::update(std::uint32_t clock) {
+  for (auto& s : sessions_)
+    s.second->update(clock);
 }
 
 void KcpServer::write(const std::string& buf, const udp::endpoint& ep) {

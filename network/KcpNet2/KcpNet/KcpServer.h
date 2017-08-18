@@ -27,8 +27,11 @@
 #pragma once
 
 #include <vector>
+#include <unordered_map>
 #include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
+#include "KcpTypes.h"
+#include "Callbacks.h"
 
 namespace KcpNet {
 
@@ -37,13 +40,20 @@ using boost::asio::ip::udp;
 class KcpServer : private boost::noncopyable {
   static constexpr std::size_t kBufferSize = 32 << 10;
 
+  bool stopped_{};
   udp::socket socket_;
   udp::endpoint sender_ep_;
   std::vector<char> readbuff_;
+  boost::asio::deadline_timer timer_;
+  std::unordered_map<kcp_conv_t, KcpSessionPtr> sessions_;
 
   void do_read(void);
+  void do_timer(void);
+  kcp_conv_t gen_conv(void) const;
+  void update(std::uint32_t clock);
 public:
   KcpServer(boost::asio::io_service& io_service, std::uint16_t port);
+  ~KcpServer(void);
   void write(const std::string& buf, const udp::endpoint& ep);
   void write(const char* buf, std::size_t len, const udp::endpoint& ep);
 };
