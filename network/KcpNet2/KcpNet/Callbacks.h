@@ -28,7 +28,18 @@
 
 #include <functional>
 #include <memory>
+#include <boost/asio.hpp>
 
 namespace KcpNet {
+
+using boost::asio::ip::udp;
+class KcpSession;
+
+using KcpSessionPtr   = std::shared_ptr<KcpSession>;
+using MessageFunction =
+  std::function<void (const KcpSessionPtr&, const std::string&)>;
+using WriteToFunction =
+  std::function<void (
+      const KcpSessionPtr&, const std::string&, const udp::endpoint&)>;
 
 }

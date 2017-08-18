@@ -29,6 +29,7 @@
 #include <memory>
 #include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
+#include "Callbacks.h"
 #include "KcpTypes.h"
 
 namespace KcpNet {
@@ -41,9 +42,12 @@ class KcpSession
   kcp_conv_t conv_{};
   ikcpcb* kcp_{};
   udp::endpoint sender_ep_;
+  WriteToFunction writeto_fn_{};
+  MessageFunction message_fn_{};
 
-  void init_kcp(kcp_conv_t conv);
+  void init_kcp(void);
   static int output_handler(const char* buf, int len, ikcpcb* kcp, void* user);
+  void write_to_impl(const char* buf, std::size_t len);
 public:
   KcpSession(kcp_conv_t conv, const udp::endpoint& sender_ep);
   ~KcpSession(void);
@@ -52,6 +56,30 @@ public:
   void input_handler(
       const char* buf, std::size_t len, const udp::endpoint& sender_ep);
   void write_buffer(const std::string& buf);
+
+  void set_sender_endpoint(const udp::endpoint& sender_ep) {
+    sender_ep_ = sender_ep;
+  }
+
+  void set_sender_endpoint(udp::endpoint&& sender_ep) {
+    sender_ep_ = std::move(sender_ep);
+  }
+
+  void bind_writeto_functor(const WriteToFunction& fn) {
+    writeto_fn_ = fn;
+  }
+
+  void bind_writeto_functor(WriteToFunction&& fn) {
+    writeto_fn_ = std::move(fn);
+  }
+
+  void bind_message_functor(const MessageFunction& fn) {
+    message_fn_ = fn;
+  }
+
+  void bind_message_functor(MessageFunction&& fn) {
+    message_fn_ = std::move(fn);
+  }
 };
 
 }
