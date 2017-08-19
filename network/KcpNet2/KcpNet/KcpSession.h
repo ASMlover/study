@@ -57,6 +57,10 @@ public:
       const char* buf, std::size_t len, const udp::endpoint& sender_ep);
   void write_buffer(const std::string& buf);
 
+  kcp_conv_t get_conv(void) const {
+    return conv_;
+  }
+
   void set_sender_endpoint(const udp::endpoint& sender_ep) {
     sender_ep_ = sender_ep;
   }

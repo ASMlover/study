@@ -63,21 +63,25 @@ void KcpServer::do_read(void) {
           else {
             // solve received buffer
             auto conv = ikcp_getconv(readbuff_.data());
+            KcpSessionPtr s{};
             auto it = sessions_.find(conv);
             if (it == sessions_.end()) {
-              auto s = std::make_shared<KcpSession>(conv, sender_ep_);
+              s = std::make_shared<KcpSession>(conv, sender_ep_);
               s->bind_writeto_functor(
                   [this](const KcpSessionPtr& /*s*/,
                     const std::string& buf, const udp::endpoint& ep) {
                     write(buf, ep);
                   });
+              s->bind_message_functor(message_fn_);
               sessions_[conv] = s;
 
-              s->input_handler(readbuff_.data(), n, sender_ep_);
+              if (connection_fn_)
+                connection_fn_(s);
             }
             else {
-              it->second->input_handler(readbuff_.data(), n, sender_ep_);
+              s = it->second;
             }
+            s->input_handler(readbuff_.data(), n, sender_ep_);
           }
         }
 
@@ -91,8 +95,10 @@ void KcpServer::do_timer(void) {
 
   timer_.expires_from_now(boost::posix_time::milliseconds(5));
   timer_.async_wait([this](const boost::system::error_code& ec) {
-        if (!ec)
-          update(get_clock32());
+        if (!ec) {
+          for (auto& s : sessions_)
+            s.second->update(get_clock32());
+        }
         do_timer();
       });
 }
@@ -100,11 +106,6 @@ void KcpServer::do_timer(void) {
 kcp_conv_t KcpServer::gen_conv(void) const {
   static kcp_conv_t s_conv = 1000;
   return ++s_conv;
-}
-
-void KcpServer::update(std::uint32_t clock) {
-  for (auto& s : sessions_)
-    s.second->update(clock);
 }
 
 void KcpServer::write(const std::string& buf, const udp::endpoint& ep) {

@@ -46,16 +46,33 @@ class KcpServer : private boost::noncopyable {
   std::vector<char> readbuff_;
   boost::asio::deadline_timer timer_;
   std::unordered_map<kcp_conv_t, KcpSessionPtr> sessions_;
+  ConnectionFunction connection_fn_{};
+  MessageFunction message_fn_{};
 
   void do_read(void);
   void do_timer(void);
   kcp_conv_t gen_conv(void) const;
-  void update(std::uint32_t clock);
 public:
   KcpServer(boost::asio::io_service& io_service, std::uint16_t port);
   ~KcpServer(void);
   void write(const std::string& buf, const udp::endpoint& ep);
   void write(const char* buf, std::size_t len, const udp::endpoint& ep);
+
+  void bind_connection_functor(const ConnectionFunction& fn) {
+    connection_fn_ = fn;
+  }
+
+  void bind_connection_functor(ConnectionFunction&& fn) {
+    connection_fn_ = std::move(fn);
+  }
+
+  void bind_message_functor(const MessageFunction& fn) {
+    message_fn_ = fn;
+  }
+
+  void bind_message_functor(MessageFunction&& fn) {
+    message_fn_ = std::move(fn);
+  }
 };
 
 }
