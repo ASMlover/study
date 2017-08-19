@@ -39,8 +39,7 @@ using KcpSessionPtr       = std::shared_ptr<KcpSession>;
 using ConnectionFunction  = std::function<void (const KcpSessionPtr&)>;
 using MessageFunction     =
   std::function<void (const KcpSessionPtr&, const std::string&)>;
-using WriteToFunction     =
-  std::function<void (
-      const KcpSessionPtr&, const std::string&, const udp::endpoint&)>;
+using WriteFunction       =
+  std::function<void (const KcpSessionPtr&, const std::string&)>;
 
 }
