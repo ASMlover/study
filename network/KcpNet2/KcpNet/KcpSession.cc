@@ -63,23 +63,21 @@ int KcpSession::output_handler(
     const char* buf, int len, ikcpcb* /*kcp*/, void* user) {
   auto* self = static_cast<KcpSession*>(user);
   if (self != nullptr)
-    self->write_to_impl(buf, len);
+    self->write_impl(buf, len);
 
   return 0;
 }
 
-void KcpSession::write_to_impl(const char* buf, std::size_t len) {
-  if (writeto_fn_)
-    writeto_fn_(shared_from_this(), std::string(buf, len), sender_ep_);
+void KcpSession::write_impl(const char* buf, std::size_t len) {
+  if (write_fn_)
+    write_fn_(shared_from_this(), std::string(buf, len));
 }
 
 void KcpSession::update(std::uint32_t clock) {
   ikcp_update(kcp_, clock);
 }
 
-void KcpSession::input_handler(
-    const char* buf, std::size_t len, const udp::endpoint& sender_ep) {
-  sender_ep_ = sender_ep;
+void KcpSession::input_handler(const char* buf, std::size_t len) {
   ikcp_input(kcp_, buf, len);
 
   while (true) {
@@ -93,6 +91,12 @@ void KcpSession::input_handler(
       break;
     }
   }
+}
+
+void KcpSession::input_handler(
+    const char* buf, std::size_t len, const udp::endpoint& sender_ep) {
+  sender_ep_ = sender_ep;
+  input_handler(buf, len);
 }
 
 void KcpSession::write_buffer(const std::string& buf) {

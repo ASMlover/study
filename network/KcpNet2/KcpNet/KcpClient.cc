@@ -33,7 +33,15 @@ namespace KcpNet {
 
 KcpClient::KcpClient(boost::asio::io_service& io_service, std::uint16_t port)
   : socket_(io_service, udp::endpoint(udp::v4(), port))
+  , timer_(io_service)
   , readbuff_(kBufferSize) {
+}
+
+KcpClient::~KcpClient(void) {
+  stopped_ = true;
+
+  socket_.close();
+  timer_.cancel();
 }
 
 void KcpClient::do_write_connection(void) {
@@ -55,7 +63,10 @@ void KcpClient::do_read_connection(void) {
           auto conv = KcpNet::get_conv_from_connect_response(buf);
           session_ = std::make_shared<KcpSession>(conv);
           session_->bind_message_functor(message_fn_);
-          // TODO: need bind write callback
+          session_->bind_write_functor(
+              [this](const KcpSessionPtr& /*s*/, const std::string& buf) {
+                write(buf);
+              });
           if (connection_fn_)
             connection_fn_(session_);
 
@@ -68,12 +79,28 @@ void KcpClient::do_read_connection(void) {
 }
 
 void KcpClient::do_read(void) {
+  if (stopped_)
+    return;
+
   socket_.async_receive(boost::asio::buffer(readbuff_),
       [this](const boost::system::error_code& ec, std::size_t n) {
         if (!ec && n > 0) {
+          session_->input_handler(readbuff_.data(), n);
         }
 
         do_read();
+      });
+}
+
+void KcpClient::do_timer(void) {
+  if (stopped_)
+    return;
+
+  timer_.expires_from_now(boost::posix_time::milliseconds(5));
+  timer_.async_wait([this](const boost::system::error_code& ec) {
+        if (!ec)
+          session_->update(get_clock32());
+        do_timer();
       });
 }
 
@@ -86,9 +113,15 @@ void KcpClient::connect(
         if (!ec) {
           do_read_connection();
           do_write_connection();
+          do_timer();
         }
         // TODO: need re-connect again
       });
+}
+
+void KcpClient::write(const std::string& buf) {
+  socket_.async_send(boost::asio::buffer(buf),
+      [](const boost::system::error_code& /*ec*/, std::size_t /*n*/) {});
 }
 
 void KcpClient::write(const char* buf, std::size_t len) {

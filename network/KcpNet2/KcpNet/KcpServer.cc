@@ -67,12 +67,11 @@ void KcpServer::do_read(void) {
             auto it = sessions_.find(conv);
             if (it == sessions_.end()) {
               s = std::make_shared<KcpSession>(conv, sender_ep_);
-              s->bind_writeto_functor(
-                  [this](const KcpSessionPtr& /*s*/,
-                    const std::string& buf, const udp::endpoint& ep) {
-                    write(buf, ep);
-                  });
               s->bind_message_functor(message_fn_);
+              s->bind_write_functor(
+                  [this](const KcpSessionPtr& s, const std::string& buf) {
+                    write(buf, s->get_endpoint());
+                  });
               sessions_[conv] = s;
 
               if (connection_fn_)

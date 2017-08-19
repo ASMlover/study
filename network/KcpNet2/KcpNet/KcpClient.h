@@ -38,7 +38,9 @@ using boost::asio::ip::udp;
 class KcpClient : private boost::noncopyable {
   static constexpr std::size_t kBufferSize = 32 << 10;
 
+  bool stopped_{};
   udp::socket socket_;
+  boost::asio::deadline_timer timer_;
   std::vector<char> readbuff_;
   KcpSessionPtr session_{};
   ConnectionFunction connection_fn_{};
@@ -47,9 +49,12 @@ class KcpClient : private boost::noncopyable {
   void do_write_connection(void);
   void do_read_connection(void);
   void do_read(void);
+  void do_timer(void);
 public:
   KcpClient(boost::asio::io_service& io_service, std::uint16_t port);
+  ~KcpClient(void);
   void connect(const std::string& remote_ip, std::uint16_t remote_port);
+  void write(const std::string& buf);
   void write(const char* buf, std::size_t len);
 
   void bind_connection_functor(const ConnectionFunction& fn) {

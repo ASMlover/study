@@ -42,24 +42,29 @@ class KcpSession
   kcp_conv_t conv_{};
   ikcpcb* kcp_{};
   udp::endpoint sender_ep_;
-  WriteToFunction writeto_fn_{};
+  WriteFunction write_fn_{};
   MessageFunction message_fn_{};
 
   void init_kcp(void);
   static int output_handler(const char* buf, int len, ikcpcb* kcp, void* user);
-  void write_to_impl(const char* buf, std::size_t len);
+  void write_impl(const char* buf, std::size_t len);
 public:
   KcpSession(kcp_conv_t conv);
   KcpSession(kcp_conv_t conv, const udp::endpoint& sender_ep);
   ~KcpSession(void);
 
   void update(std::uint32_t clock);
-  void input_handler(
-      const char* buf, std::size_t len, const udp::endpoint& sender_ep);
+  void input_handler(const char* buf, std::size_t len);
+  void input_handler(const char* buf, std::size_t len,
+      const udp::endpoint& sender_ep);
   void write_buffer(const std::string& buf);
 
   kcp_conv_t get_conv(void) const {
     return conv_;
+  }
+
+  const udp::endpoint& get_endpoint(void) const {
+    return sender_ep_;
   }
 
   void set_sender_endpoint(const udp::endpoint& sender_ep) {
@@ -70,12 +75,12 @@ public:
     sender_ep_ = std::move(sender_ep);
   }
 
-  void bind_writeto_functor(const WriteToFunction& fn) {
-    writeto_fn_ = fn;
+  void bind_write_functor(const WriteFunction& fn) {
+    write_fn_ = fn;
   }
 
-  void bind_writeto_functor(WriteToFunction&& fn) {
-    writeto_fn_ = std::move(fn);
+  void bind_write_functor(WriteFunction&& fn) {
+    write_fn_ = std::move(fn);
   }
 
   void bind_message_functor(const MessageFunction& fn) {
