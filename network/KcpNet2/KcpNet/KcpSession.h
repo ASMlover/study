@@ -49,6 +49,7 @@ class KcpSession
   static int output_handler(const char* buf, int len, ikcpcb* kcp, void* user);
   void write_to_impl(const char* buf, std::size_t len);
 public:
+  KcpSession(kcp_conv_t conv);
   KcpSession(kcp_conv_t conv, const udp::endpoint& sender_ep);
   ~KcpSession(void);
 

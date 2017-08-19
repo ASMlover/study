@@ -29,6 +29,11 @@
 
 namespace KcpNet {
 
+KcpSession::KcpSession(kcp_conv_t conv)
+  : conv_(conv) {
+  init_kcp();
+}
+
 KcpSession::KcpSession(kcp_conv_t conv, const udp::endpoint& sender_ep)
   : conv_(conv)
   , sender_ep_(sender_ep) {

@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include "Utility.h"
+#include "KcpSession.h"
 #include "KcpClient.h"
 
 namespace KcpNet {
@@ -50,6 +51,13 @@ void KcpClient::do_read_connection(void) {
       [this, &buf](const boost::system::error_code& ec, std::size_t n) {
         if (!ec && n > 0) {
           std::cout << "connect response: " << buf << std::endl;
+
+          auto conv = KcpNet::get_conv_from_connect_response(buf);
+          session_ = std::make_shared<KcpSession>(conv);
+          session_->bind_message_functor(message_fn_);
+          // TODO: need bind write callback
+          if (connection_fn_)
+            connection_fn_(session_);
 
           do_read();
         }

@@ -29,6 +29,7 @@
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
+#include "Callbacks.h"
 
 namespace KcpNet {
 
@@ -39,6 +40,9 @@ class KcpClient : private boost::noncopyable {
 
   udp::socket socket_;
   std::vector<char> readbuff_;
+  KcpSessionPtr session_{};
+  ConnectionFunction connection_fn_{};
+  MessageFunction message_fn_{};
 
   void do_write_connection(void);
   void do_read_connection(void);
@@ -47,6 +51,22 @@ public:
   KcpClient(boost::asio::io_service& io_service, std::uint16_t port);
   void connect(const std::string& remote_ip, std::uint16_t remote_port);
   void write(const char* buf, std::size_t len);
+
+  void bind_connection_functor(const ConnectionFunction& fn) {
+    connection_fn_ = fn;
+  }
+
+  void bind_connection_functor(ConnectionFunction&& fn) {
+    connection_fn_ = std::move(fn);
+  }
+
+  void bind_message_functor(const MessageFunction& fn) {
+    message_fn_ = fn;
+  }
+
+  void bind_message_functor(MessageFunction&& fn) {
+    message_fn_ = std::move(fn);
+  }
 };
 
 }
