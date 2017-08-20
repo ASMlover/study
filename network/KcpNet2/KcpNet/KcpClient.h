@@ -37,13 +37,18 @@ using boost::asio::ip::udp;
 
 class KcpClient : private boost::noncopyable {
   static constexpr std::size_t kBufferSize = 32 << 10;
+  static constexpr std::uint64_t kConnectTimeout = 5000;
 
   bool stopped_{};
+  bool connecting_{};
+  bool connected_{};
+  std::uint64_t connect_begtime_{};
   udp::socket socket_;
   boost::asio::deadline_timer timer_;
   std::vector<char> readbuff_;
   KcpSessionPtr session_{};
   ConnectionFunction connection_fn_{};
+  ConnectFailFunction connectfail_fn_{};
   MessageFunction message_fn_{};
 
   void do_write_connection(void);
@@ -63,6 +68,14 @@ public:
 
   void bind_connection_functor(ConnectionFunction&& fn) {
     connection_fn_ = std::move(fn);
+  }
+
+  void bind_connectfail_functor(const ConnectFailFunction& fn) {
+    connectfail_fn_ = fn;
+  }
+
+  void bind_connectfail_functor(ConnectFailFunction&& fn) {
+    connectfail_fn_ = std::move(fn);
   }
 
   void bind_message_functor(const MessageFunction& fn) {

@@ -45,20 +45,28 @@ KcpClient::~KcpClient(void) {
 }
 
 void KcpClient::do_write_connection(void) {
+  if (stopped_ || !connecting_)
+    return;
+
   socket_.async_send(boost::asio::buffer(make_connect_request()),
       [this](const boost::system::error_code& ec, std::size_t /*n*/) {
-        if (ec) {
-          // TODO: send connect request failed, need re-send again
-        }
+        if (ec)
+          do_write_connection();
       });
 }
 
 void KcpClient::do_read_connection(void) {
+  if (stopped_ || !connecting_)
+    return;
+
   char buf[1024]{};
   socket_.async_receive(boost::asio::buffer(buf, sizeof(buf)),
       [this, &buf](const boost::system::error_code& ec, std::size_t n) {
         if (!ec && n > 0) {
           std::cout << "connect response: " << buf << std::endl;
+
+          connecting_ = false;
+          connected_ = true;
 
           auto conv = KcpNet::get_conv_from_connect_response(buf);
           session_ = std::make_shared<KcpSession>(conv);
@@ -73,13 +81,14 @@ void KcpClient::do_read_connection(void) {
           do_read();
         }
         else {
-          // TODO: recv connect response failed, need send request again
+          do_read_connection();
+          do_write_connection();
         }
       });
 }
 
 void KcpClient::do_read(void) {
-  if (stopped_)
+  if (stopped_ || !connected_)
     return;
 
   socket_.async_receive(boost::asio::buffer(readbuff_),
@@ -98,8 +107,21 @@ void KcpClient::do_timer(void) {
 
   timer_.expires_from_now(boost::posix_time::milliseconds(5));
   timer_.async_wait([this](const boost::system::error_code& ec) {
-        if (!ec)
-          session_->update(get_clock32());
+        if (!ec) {
+          // doing kcp update
+          std::uint64_t clock = get_clock64();
+          if (connecting_) {
+            if (clock - connect_begtime_ > kConnectTimeout) {
+              connecting_ = false;
+              if (connectfail_fn_)
+                connectfail_fn_();
+            }
+            return;
+          }
+
+          if (connected_)
+            session_->update(static_cast<std::uint32_t>(clock));
+        }
         do_timer();
       });
 }
@@ -111,11 +133,17 @@ void KcpClient::connect(
   socket_.async_connect(remote_ep,
       [this](const boost::system::error_code& ec) {
         if (!ec) {
+          connecting_ = true;
+          connect_begtime_ = get_clock64();
+
           do_read_connection();
           do_write_connection();
           do_timer();
         }
-        // TODO: need re-connect again
+        else {
+          if (connectfail_fn_)
+            connectfail_fn_();
+        }
       });
 }
 
