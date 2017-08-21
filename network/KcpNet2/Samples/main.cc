@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <boost/asio.hpp>
+#include "../KcpNet/KcpSession.h"
 #include "../KcpNet/KcpClient.h"
 #include "../KcpNet/KcpServer.h"
 
@@ -33,6 +34,15 @@ void run_client(void) {
   boost::asio::io_service io_service;
 
   KcpNet::KcpClient c(io_service, 5656);
+  c.bind_connection_functor([](const KcpNet::KcpSessionPtr& s) {
+        std::cout << "connect to 127.0.0.1:5555 success ..." << std::endl;
+        s->write_buffer("Hello, world!");
+      });
+  c.bind_message_functor(
+      [](const KcpNet::KcpSessionPtr& /*s*/, const std::string& buf) {
+        std::cout << "from(127.0.0.1:5555) read: " << buf << std::endl;
+      });
+
   c.connect("127.0.0.1", 5555);
   io_service.run();
 }
@@ -41,6 +51,19 @@ void run_server(void) {
   boost::asio::io_service io_service;
 
   KcpNet::KcpServer s(io_service, 5555);
+  s.bind_connection_functor([](const KcpNet::KcpSessionPtr& s) {
+        std::cout
+          << "accept session from: (" << s->get_endpoint()
+          << ", " << s->get_conv() << ")" << std::endl;
+      });
+  s.bind_message_functor(
+      [](const KcpNet::KcpSessionPtr& s, const std::string& buf) {
+        std::cout
+          << "from(" << s->get_endpoint() << ", " << s->get_conv()
+          << ") read: " << buf << std::endl;
+        s->write_buffer(buf);
+      });
+
   io_service.run();
 }
 
