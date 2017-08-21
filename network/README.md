@@ -5,6 +5,7 @@
 ## **What's network** ##
   * Records knowledge about network both about Windows/Linux.
   * Just for studying and for fun.
+  * `CMakeLists.standalone`是单独编译asio的cmake脚本
 
 ## **UDP Programming**
   * UDP是一种**非连接的、不可靠的数据报文协议**
