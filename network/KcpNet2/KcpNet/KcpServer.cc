@@ -24,7 +24,6 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
 #include <ikcp.h>
 #include "Utility.h"
 #include "KcpSession.h"
@@ -55,7 +54,6 @@ void KcpServer::do_read(void) {
   socket_.async_receive_from(boost::asio::buffer(readbuff_), sender_ep_,
       [this](const boost::system::error_code& ec, std::size_t n) {
         if (!ec && n > 0) {
-          std::cout << "from: " << sender_ep_ << ", read: " << readbuff_.data() << std::endl;
           if (is_connect_request(readbuff_.data(), n)) {
             // response the connect request
             write(make_connect_response(gen_conv()), sender_ep_);
