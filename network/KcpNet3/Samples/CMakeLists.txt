@@ -31,3 +31,4 @@ aux_source_directory(. KCPNETSAMPLES_SOURCES)
 message(STATUS "[KcpNet.Samples] KCPNETSAMPLES_SOURCES: ${KCPNETSAMPLES_SOURCES}")
 
 add_executable(${OUTPUT_NAME} ${KCPNETSAMPLES_SOURCES})
+target_link_libraries(${OUTPUT_NAME} kcpnet)
