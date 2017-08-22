@@ -26,8 +26,26 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 
+void run_server(void) {
+}
+
+void run_client(void) {
+}
+
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
+
+  if (argc < 2) {
+    std::cout << "USAGE: kcpnet-samples [s|c] ..." << std::endl;
+    return 0;
+  }
+
+  if (argv[1][0] == 's')
+    run_server();
+  else if (argv[1][0] == 'c')
+    run_client();
+  else
+    std::cout << "USAGE: kcpnet-samples [s|c] ..." << std::endl;
 
   return 0;
 }
