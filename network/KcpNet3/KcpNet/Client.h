@@ -27,7 +27,6 @@
 #pragma once
 
 #include <vector>
-#include <unordered_map>
 #include <asio.hpp>
 #include <asio/system_timer.hpp>
 #include "Types.h"
@@ -37,26 +36,40 @@ namespace KcpNet {
 
 using asio::ip::udp;
 
-class Server : private UnCopyable {
+class Client : private UnCopyable {
   static constexpr std::size_t kBufferSize = 32 << 10;
+  static constexpr std::uint64_t kConnectTimeout = 5000;
 
   bool stopped_{};
+  bool connecting_{};
+  bool connected_{};
+  std::uint64_t connect_begtime_{};
   udp::socket socket_;
   asio::system_timer timer_;
-  udp::endpoint sender_ep_;
   std::vector<char> readbuff_;
-  std::unordered_map<kcp_conv_t, SessionPtr> sessions_;
+  SessionPtr session_{};
+  ErrorCallback error_fn_{}; // connect failed
   ConnectionCallback connection_fn_{};
   MessageCallback message_fn_{};
 
+  void do_read_connection(void);
+  void do_write_connecttion(void);
   void do_read(void);
   void do_timer(void);
-  kcp_conv_t gen_conv(void) const;
-  void write_udp(const char* buf, std::size_t len, const udp::endpoint& ep);
-  void write_udp(const std::string& buf, const udp::endpoint& ep);
+  void write_udp(const char* buf, std::size_t len);
+  void write_udp(const std::string& buf);
 public:
-  Server(asio::io_context& io_context, std::uint16_t port);
-  ~Server(void);
+  Client(asio::io_context& io_context, std::uint16_t port);
+  ~Client(void);
+  void connect(const std::string& remote_ip, std::uint16_t remote_port);
+
+  void bind_error_functor(const ErrorCallback& fn) {
+    error_fn_ = fn;
+  }
+
+  void bind_error_functor(ErrorCallback&& fn) {
+    error_fn_ = std::move(fn);
+  }
 
   void bind_connecttion_functor(const ConnectionCallback& fn) {
     connection_fn_ = fn;
