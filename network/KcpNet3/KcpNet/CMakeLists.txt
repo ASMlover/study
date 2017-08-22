@@ -27,7 +27,8 @@
 
 set(OUTPUT_NAME "kcpnet")
 
-set(KCPNETLIB_SOURCES
+aux_source_directory(. KCPNETLIB_SOURCES)
+set(KCPNETLIB_SOURCES ${KCPNETLIB_SOURCES}
   ${PROJECT_SOURCE_DIR}/External/kcp/ikcp.c
   ${PROJECT_SOURCE_DIR}/External/asio/asio/src/asio.cpp)
 message(STATUS "[KcpNet.KcpNet] KCPNETLIB_SOURCES: ${KCPNETLIB_SOURCES}")
