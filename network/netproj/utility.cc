@@ -27,10 +27,26 @@
 #include <iostream>
 #include "utility.h"
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
+namespace netproj {
 
-  netproj::show_endian();
+void show_endian(void) {
+  union {
+    short s;
+    char  c[sizeof(short)];
+  } un;
+  un.s = 0x0102;
 
-  return 0;
+  if (sizeof(short) == 2) {
+    if (un.c[0] == 1 && un.c[1] == 2)
+      std::cout << "big endian" << std::endl;
+    else if (un.c[0] == 2 && un.c[1] == 1)
+      std::cout << "little endian" << std::endl;
+    else
+      std::cout << "unknown" << std::endl;
+  }
+  else {
+    std::cout << "sizeof(short) = " << sizeof(short) << std::endl;
+  }
+}
+
 }
