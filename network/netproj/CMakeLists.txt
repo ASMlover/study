@@ -39,7 +39,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     /DUNICODE
     /D_UNICODE
     /D_CRT_SECURE_NO_WARNINGS
-    /D_CRT_NONSTDC_NO_WARNINGS)
+    /D_CRT_NONSTDC_NO_WARNINGS
+    /wd4996)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc")
   set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd")
   set(CMAKE_CXX_FLAGS_RELEASE "/DNDEBUG /MD /Ox")
@@ -55,3 +56,7 @@ aux_source_directory(. PROJ_SOURCES)
 message(STATUS "[${PROJ_NAME}] PROJ_SOURCES: ${PROJ_SOURCES}")
 
 add_executable(netproj ${PROJ_SOURCES})
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+  target_link_libraries(netproj ws2_32.lib)
+else()
+endif()

@@ -24,16 +24,21 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#if defined(_WIN32) || defined(_WIN64) || defined(_WINDOWS_) \
+  || defined(_MSC_VER)
+# define NETOP_WINDOWS
+#else
+# define NETOP_POSIX
+#endif
+
+#if defined(NETOP_WINDOWS)
+# include <WinSock2.h>
+#else
+# include <arpa/inet.h>
+#endif
 #include <iostream>
-#include "utility.h"
 
-void show_inet(void);
-
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
-
-  netproj::show_endian();
-  show_inet();
-
-  return 0;
+void show_inet(void) {
+  auto addr = inet_addr("127.0.0.1");
+  std::cout << addr << ", " << inet_ntoa(*(struct in_addr*)&addr) << std::endl;
 }
