@@ -47,7 +47,8 @@ void KcpClient::do_write_connection(void) {
   if (stopped_ || !connecting_)
     return;
 
-  socket_.async_send(boost::asio::buffer(make_connect_request()),
+  auto req = make_connect_request();
+  socket_.async_send(boost::asio::buffer(req.data(), req.size()),
       [this](const boost::system::error_code& ec, std::size_t /*n*/) {
         if (ec)
           do_write_connection();
@@ -145,8 +146,7 @@ void KcpClient::connect(
 }
 
 void KcpClient::write(const std::string& buf) {
-  socket_.async_send(boost::asio::buffer(buf),
-      [](const boost::system::error_code& /*ec*/, std::size_t /*n*/) {});
+  write(buf.data(), buf.size());
 }
 
 void KcpClient::write(const char* buf, std::size_t len) {

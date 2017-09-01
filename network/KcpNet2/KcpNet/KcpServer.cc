@@ -106,8 +106,7 @@ kcp_conv_t KcpServer::gen_conv(void) const {
 }
 
 void KcpServer::write(const std::string& buf, const udp::endpoint& ep) {
-  socket_.async_send_to(boost::asio::buffer(buf), ep,
-      [](const boost::system::error_code& /*ec*/, std::size_t /*n*/) {});
+  write(buf.data(), buf.size(), ep);
 }
 
 void KcpServer::write(
