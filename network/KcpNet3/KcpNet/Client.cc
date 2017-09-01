@@ -80,7 +80,8 @@ void Client::do_write_connecttion(void) {
   if (stopped_ || !connecting_)
     return;
 
-  socket_.async_send(asio::buffer(make_connect_request()),
+  auto buf = make_connect_request();
+  socket_.async_send(asio::buffer(buf.data(), buf.size()),
       [this](const std::error_code& ec, std::size_t /*n*/) {
         if (ec)
           do_write_connecttion();
@@ -124,12 +125,12 @@ void Client::do_timer(void) {
 }
 
 void Client::write_udp(const char* buf, std::size_t len) {
-  write_udp(std::string(buf, len));
+  socket_.async_send(asio::buffer(buf, len),
+      [](const std::error_code& /*ec*/, std::size_t /*n*/) {});
 }
 
 void Client::write_udp(const std::string& buf) {
-  socket_.async_send(asio::buffer(buf),
-      [](const std::error_code& /*ec*/, std::size_t /*n*/) {});
+  write_udp(buf.data(), buf.size());
 }
 
 void Client::connect(const std::string& remote_ip, std::uint16_t remote_port) {

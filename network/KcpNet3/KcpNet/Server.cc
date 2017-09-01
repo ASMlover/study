@@ -106,12 +106,12 @@ kcp_conv_t Server::gen_conv(void) const {
 
 void Server::write_udp(
     const char* buf, std::size_t len, const udp::endpoint& ep) {
-  write_udp(std::string(buf, len), ep);
+  socket_.async_send_to(asio::buffer(buf, len), ep,
+      [](const std::error_code& /*ec*/, std::size_t /*n*/) {});
 }
 
 void Server::write_udp(const std::string& buf, const udp::endpoint& ep) {
-  socket_.async_send_to(asio::buffer(buf), ep,
-      [](const std::error_code& /*ec*/, std::size_t /*n*/) {});
+  write_udp(buf.data(), buf.size(), ep);
 }
 
 }
