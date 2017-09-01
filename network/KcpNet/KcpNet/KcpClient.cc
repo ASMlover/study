@@ -97,7 +97,7 @@ void KcpClient::do_write_connection(void) {
     return;
 
   auto buf = make_connect_packet();
-  socket_.async_send(boost::asio::buffer(buf),
+  socket_.async_send(boost::asio::buffer(buf.data(), buf.size()),
       [this](const boost::system::error_code& ec, std::size_t) {
         if (ec)
           do_write_connection();

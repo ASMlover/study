@@ -95,7 +95,6 @@ void KcpSessionManager::stop_all(void) {
 
   socket_.cancel();
   socket_.close();
-
   timer_.cancel();
 }
 
@@ -107,10 +106,15 @@ void KcpSessionManager::call_message_functor(
 
 void KcpSessionManager::write_udp_buffer(
     const std::string& buf, const udp::endpoint& ep) {
+  write_udp_buffer(buf.data(), buf.size(), ep);
+}
+
+void KcpSessionManager::write_udp_buffer(
+    const char* buf, std::size_t len, const udp::endpoint& ep) {
   // use `async_send_to` replace `send_to`, does it work ?
   // FIXME: does it will use `sender_ep_` or `ep` ?
-  // socket_.send_to(boost::asio::buffer(buf), sender_ep_);
-  socket_.async_send_to(boost::asio::buffer(buf), ep,
+  // socket_.send_to(boost::asio::buffer(buf, len), sender_ep_);
+  socket_.async_send_to(boost::asio::buffer(buf, len), ep,
       [](const boost::system::error_code& /*ec*/, std::size_t /*n*/) {});
 }
 
