@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <ctime>
 #include <iostream>
 #include <boost/asio.hpp>
 #include "../KcpNet/KcpSession.h"
@@ -36,11 +37,14 @@ void run_client(void) {
   KcpNet::KcpClient c(io_service, 5656);
   c.bind_connection_functor([](const KcpNet::KcpSessionPtr& s) {
         std::cout << "connect to 127.0.0.1:5555 success ..." << std::endl;
-        s->write_buffer("Hello, world!");
+        auto t = std::time(nullptr);
+        s->write_buffer(std::asctime(std::localtime(&t)));
       });
   c.bind_message_functor(
-      [](const KcpNet::KcpSessionPtr& /*s*/, const std::string& buf) {
+      [](const KcpNet::KcpSessionPtr& s, const std::string& buf) {
         std::cout << "from(127.0.0.1:5555) read: " << buf << std::endl;
+        auto t = std::time(nullptr);
+        s->write_buffer(std::asctime(std::localtime(&t)));
       });
 
   c.connect("127.0.0.1", 5555);
