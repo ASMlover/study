@@ -29,7 +29,7 @@ set(KCPNET_NAME "kcpnet")
 
 file(GLOB_RECURSE KCPNET_SOURCES *.cc)
 set(KCPNET_SOURCES ${KCPNET_SOURCES}
-  ${PROJECT_SOURCE_DIR}/../3dparty/kcp/ikcp.c)
+  ${PROJECT_SOURCE_DIR}/../3rdparty/kcp/ikcp.c)
 message(STATUS "[KcpNet] KCPNET_SOURCES: ${KCPNET_SOURCES}")
 
 add_executable(${KCPNET_NAME} ${KCPNET_SOURCES})

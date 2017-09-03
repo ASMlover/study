@@ -59,7 +59,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     /D_CRT_NONSTDC_NO_WARNINGS
     /DASIO_STANDALONE
     /DASIO_SEPARATE_COMPILATION
-    /D_WIN32_WINNT=0x0601)
+    /D_WIN32_WINNT=0x0601
+    /wd4267)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc")
   set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd")
   set(CMAKE_CXX_FLAGS_RELEASE "/DNDEBUG /MD /Ox")
@@ -87,8 +88,8 @@ string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 message(STATUS "[KcpNet] CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")
 
 include_directories(${PROJECT_SOURCE_DIR})
-include_directories(${PROJECT_SOURCE_DIR}/External/kcp)
-include_directories(${PROJECT_SOURCE_DIR}/External/asio/asio/include)
+include_directories(${PROJECT_SOURCE_DIR}/../3rdparty/kcp)
+include_directories(${PROJECT_SOURCE_DIR}/../3rdparty/asio/asio/include)
 
 add_subdirectory(KcpNet)
 if (KCPNET_BUILD_SAMPLES)

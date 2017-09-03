@@ -60,11 +60,11 @@ endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 message(STATUS "[EchoPROJ] CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")
 
-include_directories(${PROJECT_SOURCE_DIR}/../../3dparty/asio/asio/include)
+include_directories(${PROJECT_SOURCE_DIR}/../../3rdparty/asio/asio/include)
 
 aux_source_directory(. ECHOPROJ_SOURCES)
 set(ECHOPROJ_SOURCES ${ECHOPROJ_SOURCES}
-  ${PROJECT_SOURCE_DIR}/../../3dparty/asio/asio/src/asio.cpp)
+  ${PROJECT_SOURCE_DIR}/../../3rdparty/asio/asio/src/asio.cpp)
 message(STATUS "[EchoPROJ] ECHOPROJ_SOURCES: ${ECHOPROJ_SOURCES}")
 
 add_executable(echo.udp ${ECHOPROJ_SOURCES})

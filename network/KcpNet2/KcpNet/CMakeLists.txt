@@ -29,7 +29,7 @@ set(OUTPUT_NAME "kcpnet")
 
 aux_source_directory(. KCPNETLIB_SOURCES)
 set(KCPNETLIB_SOURCES ${KCPNETLIB_SOURCES}
-  ${PROJECT_SOURCE_DIR}/External/kcp/ikcp.c)
+  ${PROJECT_SOURCE_DIR}/../3rdparty/kcp/ikcp.c)
 message(STATUS "[KcpNet.KcpNet] KCPNETLIB_SOURCES: ${KCPNETLIB_SOURCES}")
 
 add_library(${OUTPUT_NAME} STATIC ${KCPNETLIB_SOURCES})

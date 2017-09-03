@@ -92,6 +92,6 @@ else()
   link_directories(${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0/stage/lib)
 endif()
 include_directories(${PROJECT_SOURCE_DIR})
-include_directories(${PROJECT_SOURCE_DIR}/../3dparty/kcp)
+include_directories(${PROJECT_SOURCE_DIR}/../3rdparty/kcp)
 
 add_subdirectory(KcpNet)
