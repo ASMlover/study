@@ -198,7 +198,7 @@
   * :construction_worker: - `:construction_worker:` 添加CI构建系统
   * :chart_with_upwards_trend: - `:chart_with_upwards_trend:` 添加分析或跟踪代码
   * :hammer: - `:hammer:` 重大重构
-  * :heavy_plus_sign:/:heavy_minus_sign: - `:heavy_plus_sign:` 增加/减少一个依赖
+  * :heavy_plus_sign:/:heavy_minus_sign: - `:heavy_plus_sign:/:heavy_minus_sign:` 增加/减少一个依赖
   * :whale: - `:whale:` docker相关工作
   * :wrench: - `:wrench:` 修改配置文件
   * :globe_with_meridians: - `:globe_with_meridians:` 国际化与本地化
