@@ -173,7 +173,7 @@
 
     随着开发进行更新最新的submodules模块(需要将submodules切换到master或某个具体的分支)
     $ git submodule init # 初始化子模块
-    $ git submodule update # 更新子模块
+    $ git submodule update # 更新子模块到父项目指定的版本
     $ git submodule foreach git pull # 拉取所有的子模块
 
 ## **6. git emoji**
