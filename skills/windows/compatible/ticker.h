@@ -24,45 +24,11 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <Windows.h>
+#pragma once
+
 #include <cstdint>
 
-// nanosleep的精度是100纳秒
-void nanosleep(std::uint64_t ns) {
-  HANDLE timer;
-  if ((timer = CreateWaitableTimer(NULL, TRUE, NULL)) == nullptr)
-    return;
+void usleep(std::uint64_t microsec);
 
-  __try {
-    LARGE_INTEGER li;
-    li.QuadPart = -static_cast<LONGLONG>(ns);
-    if (!SetWaitableTimer(timer, &li, 0, NULL, NULL, FALSE))
-      return;
-
-    WaitForSingleObject(timer, INFINITE);
-  }
-  __finally {
-    CloseHandle(timer);
-  }
-}
-
-void usleep(std::uint64_t microsec) {
-  nanosleep(microsec * 10);
-}
-
-static std::int64_t s_freq;
-static std::int64_t s_ticker;
-void start_ticker(void) {
-  LARGE_INTEGER li;
-  QueryPerformanceFrequency(&li);
-
-  s_freq = li.QuadPart;
-  QueryPerformanceCounter(&li);
-  s_ticker = li.QuadPart;
-}
-
-std::uint64_t get_interval(void) {
-  LARGE_INTEGER li;
-  QueryPerformanceCounter(&li);
-  return (li.QuadPart - s_ticker) * 1000000000 / s_freq;
-}
+void start_ticker(void);
+std::uint64_t get_interval(void);

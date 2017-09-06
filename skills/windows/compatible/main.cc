@@ -27,7 +27,10 @@
 #include <Windows.h>
 #include <iostream>
 #include <cstdint>
+#include <chrono>
+#include <thread>
 #include "color.h"
+#include "ticker.h"
 
 void show_color_attributes(void) {
 #define CLRATTR(c) color_printf(static_cast<ColorType>(c), #c); printf(" : 0x%02X\n", (c))
@@ -393,11 +396,30 @@ void show_color(void) {
   CLRPRINT2(ColorType::FORE_GRAY, ColorType::BACK_LIGHTWHITE);
 }
 
+void show_ticker(void) {
+  start_ticker();
+  usleep(1);
+  std::cout << "usleep    interval=" << get_interval() << " nanosec" << std::endl;
+
+  start_ticker();
+  std::this_thread::sleep_for(std::chrono::microseconds(1));
+  std::cout << "sleep_for interval=" << get_interval() << " nanosec" << std::endl;
+
+  start_ticker();
+  usleep(1);
+  std::cout << "usleep    interval=" << get_interval() << " nanosec" << std::endl;
+
+  start_ticker();
+  std::this_thread::sleep_for(std::chrono::microseconds(1));
+  std::cout << "sleep_for interval=" << get_interval() << " nanosec" << std::endl;
+}
+
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
   show_color();
   show_color_attributes();
+  show_ticker();
 
   return 0;
 }
