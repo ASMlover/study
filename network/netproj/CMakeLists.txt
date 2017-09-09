@@ -34,6 +34,8 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "[${PROJ_NAME}] CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
@@ -54,4 +56,10 @@ endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 message(STATUS "[${PROJ_NAME}] CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")
 
+include_directories(${PROJECT_SOURCE_DIR}/../../../Chaos)
+link_directories(${PROJECT_SOURCE_DIR}/../../../Chaos/cmake-build/lib)
+
+add_subdirectory(base)
+
 add_subdirectory(netproj)
+add_subdirectory(echo-multi)
