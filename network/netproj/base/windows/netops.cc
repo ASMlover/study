@@ -34,7 +34,7 @@ void startup(void) {
   WSADATA wd;
   int r = WSAStartup(MAKEWORD(2, 2), &wd);
 
-  if (r == 0) {
+  if (r != 0) {
     namespace cc = Chaos::ColorIO;
     cc::fprintf(stderr, cc::ColorType::COLORTYPE_FG_RED,
         "net.startup - WinSock2 library startup failed\n");
