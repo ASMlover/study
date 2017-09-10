@@ -30,7 +30,7 @@
 #include <stack>
 #include <vector>
 #include <unordered_set>
-#include <Chaos/UnCopyable.h>
+#include <Chaos/Base/UnCopyable.h>
 
 namespace gc {
 

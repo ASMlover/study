@@ -30,7 +30,7 @@
 #include <memory>
 #include <list>
 #include <vector>
-#include <Chaos/UnCopyable.h>
+#include <Chaos/Base/UnCopyable.h>
 #include <Chaos/Concurrent/Mutex.h>
 #include <Chaos/Concurrent/Condition.h>
 

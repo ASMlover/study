@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <queue>
-#include <Chaos/Types.h>
+#include <Chaos/Base/Types.h>
 #include <Chaos/Concurrent/Thread.h>
 #include "object.h"
 #include "parallel_copy.h"

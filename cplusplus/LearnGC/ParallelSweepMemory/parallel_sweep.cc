@@ -27,7 +27,7 @@
 #include <algorithm>
 #include <iostream>
 #include <iterator>
-#include <Chaos/Types.h>
+#include <Chaos/Base/Types.h>
 #include <Chaos/Concurrent/Thread.h>
 #include <Chaos/Memory/MemoryPool.h>
 #include "object.h"

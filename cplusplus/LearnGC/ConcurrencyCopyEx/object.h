@@ -27,7 +27,7 @@
 #pragma once
 
 #include <cstddef>
-#include <Chaos/Types.h>
+#include <Chaos/Base/Types.h>
 #include "memory_header.h"
 
 namespace gc {

@@ -29,7 +29,7 @@
 #include <list>
 #include <stack>
 #include <vector>
-#include <Chaos/UnCopyable.h>
+#include <Chaos/Base/UnCopyable.h>
 
 namespace gc {
 

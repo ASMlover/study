@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <Chaos/UnCopyable.h>
+#include <Chaos/Base/UnCopyable.h>
 #include "memory_header.h"
 
 namespace gc {

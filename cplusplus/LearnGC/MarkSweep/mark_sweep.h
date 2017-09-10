@@ -29,7 +29,7 @@
 #include <functional>
 #include <vector>
 #include <stack>
-#include <Chaos/Types.h>
+#include <Chaos/Base/Types.h>
 
 namespace gc {
 

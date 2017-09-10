@@ -29,7 +29,7 @@
 #include <atomic>
 #include <memory>
 #include <vector>
-#include <Chaos/Types.h>
+#include <Chaos/Base/Types.h>
 #include <Chaos/Concurrent/Mutex.h>
 #include <Chaos/Concurrent/Condition.h>
 #include <Chaos/Concurrent/Thread.h>

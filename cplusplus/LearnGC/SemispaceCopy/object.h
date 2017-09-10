@@ -27,7 +27,7 @@
 #pragma once
 
 #include <cstddef>
-#include <Chaos/UnCopyable.h>
+#include <Chaos/Base/UnCopyable.h>
 #include "memory_header.h"
 
 namespace gc {

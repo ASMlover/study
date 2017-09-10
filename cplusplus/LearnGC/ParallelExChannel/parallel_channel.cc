@@ -28,7 +28,7 @@
 #include <iostream>
 #include <iterator>
 #include <list>
-#include <Chaos/Types.h>
+#include <Chaos/Base/Types.h>
 #include <Chaos/Concurrent/Thread.h>
 #include "object.h"
 #include "parallel_channel.h"

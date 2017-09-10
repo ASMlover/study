@@ -30,7 +30,7 @@
 #include <list>
 #include <stack>
 #include <vector>
-#include <Chaos/Types.h>
+#include <Chaos/Base/Types.h>
 
 namespace gc {
 
