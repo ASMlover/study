@@ -57,7 +57,7 @@ void show_inet(void) {
     // inet_pton & inet_ntop
     struct in_addr addr;
     inet_pton(AF_INET, "127.0.0.1", &addr);
-    std::cout << "use(inet_pton) addr=" << addr.S_un.S_addr << std::endl;
+    std::cout << "use(inet_pton) addr=" << addr.s_addr << std::endl;
 
     char buf[64]{};
     inet_ntop(AF_INET, &addr, buf, sizeof(buf));
