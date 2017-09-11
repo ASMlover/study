@@ -31,7 +31,7 @@
 #include "../base/netops.h"
 
 void run_server(void) {
-  int sockfd = net::socket::open(AF_INET, SOCK_STREAM, 0);
+  int sockfd = net::socket::open(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
   struct sockaddr_in addr{};
   addr.sin_family = AF_INET;

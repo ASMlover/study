@@ -33,7 +33,7 @@
 namespace cc = Chaos::ColorIO;
 
 void run_client(void) {
-  int sockfd = net::socket::open(AF_INET, SOCK_STREAM, 0);
+  int sockfd = net::socket::open(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
   struct sockaddr_in addr{};
   addr.sin_family = AF_INET;
@@ -43,15 +43,23 @@ void run_client(void) {
 
   std::string line;
   std::vector<char> buf(1024);
+  cc::printf(cc::ColorType::COLORTYPE_FG_RED, "please enter :> ");
   while (std::getline(std::cin, line)) {
+    if (line == "exit")
+      break;
+
     net::socket::write(sockfd, line.data(), line.size());
 
     buf.assign(buf.size(), 0);
-    if (net::socket::read(sockfd, buf.size(), buf.data()) > 0)
-      cc::printf(cc::ColorType::COLORTYPE_FG_CYAN, "client: %s\n", buf.data());
-    else
+    if (net::socket::read(sockfd, buf.size(), buf.data()) > 0) {
+      std::cout << "from{127.0.0.1:5555} read: ";
+      cc::printf(cc::ColorType::COLORTYPE_FG_CYAN, "%s\n", buf.data());
+    }
+    else {
       break;
-  }
+    }
 
+    cc::printf(cc::ColorType::COLORTYPE_FG_RED, "please enter :> ");
+  }
   net::socket::close(sockfd);
 }
