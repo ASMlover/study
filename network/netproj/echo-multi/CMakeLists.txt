@@ -27,10 +27,10 @@
 
 set(OUTPUT_NAME "echo-multi")
 
-aux_source_directory(. ECHOMULTI_SOURCES)
-message(STATUS "[netproj.echo-multi] ECHOMULTI_SOURCES: ${ECHOMULTI_SOURCES}")
+aux_source_directory(. ALL_SOURCES)
+message(STATUS "[netproj.echo-multi] ALL_SOURCES: ${ALL_SOURCES}")
 
-add_executable(${OUTPUT_NAME} ${ECHOMULTI_SOURCES})
+add_executable(${OUTPUT_NAME} ${ALL_SOURCES})
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
   target_link_libraries(${OUTPUT_NAME} base Dbghelp)
 else()

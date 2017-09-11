@@ -63,3 +63,4 @@ add_subdirectory(base)
 
 add_subdirectory(netproj)
 add_subdirectory(echo-multi)
+add_subdirectory(echo-multi-number)
