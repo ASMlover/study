@@ -24,48 +24,26 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include <cstddef>
-#include <cstdint>
-#include <Chaos/Base/Platform.h>
-#if defined(CHAOS_WINDOWS)
-# include <WS2tcpip.h>
-# if !defined(_WINDOWS_)
-#   include <WinSock2.h>
-# endif
-  using socklen_t = int;
-  using sa_family_t = int;
-  using in_addr_t = int;
-  using ssize_t = SSIZE_T;
-#else
-# include <arpa/inet.h>
-# include <netinet/in.h>
-# include <netinet/tcp.h>
-# include <sys/socket.h>
-# include <netdb.h>
-# include <poll.h>
-#endif
+#include <unistd.h>
+#include "../netops.h"
 
 namespace net {
 
-void startup(void);
-void cleanup(void);
+void startup(void) {}
+void cleanup(void) {}
 
 namespace socket {
-  constexpr int SHUT_READ = 0;
-  constexpr int SHUT_WRITE = 1;
-  constexpr int SHUT_BOTH = 2;
+  int close(int sockfd) {
+    return ::close(sockfd);
+  }
 
-  int open(sa_family_t family, int socket_type, int protocal);
-  int close(int sockfd);
-  int shutdown(int sockfd, int how);
-  int bind(int sockfd, const struct sockaddr* addr);
-  int listen(int sockfd);
-  int accept(int sockfd, struct sockaddr* addr);
-  int connect(int sockfd, const struct sockaddr* addr);
-  ssize_t read(int sockfd, std::size_t len, void* buf);
-  ssize_t write(int sockfd, const void* buf, std::size_t len);
+  ssize_t read(int sockfd, std::size_t len, void* buf) {
+    return ::read(sockfd, buf, len);
+  }
+
+  ssize_t write(int sockfd, const void* buf, std::size_t len) {
+    return ::write(sockfd, buf, len);
+  }
 }
 
 }
