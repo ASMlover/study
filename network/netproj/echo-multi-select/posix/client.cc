@@ -24,11 +24,50 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <unistd.h>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <Chaos/IO/ColorIO.h>
 #include "../../base/netops.h"
 
 void run_client(void) {
+  int sockfd = net::socket::open(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+  struct sockaddr_in addr{};
+  addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(5555);
+  net::socket::connect(sockfd, (const struct sockaddr*)&addr);
+
+  fd_set rset;
+  FD_ZERO(&rset);
+  for (;;) {
+    int readfd = ::fileno(stdin);
+    FD_SET(readfd, &rset);
+    FD_SET(sockfd, &rset);
+    auto maxfd = std::max(readfd, sockfd) + 1;
+
+    if (net::io::select(maxfd, &rset, nullptr, nullptr, nullptr) < 0)
+      break;
+
+    if (FD_ISSET(sockfd, &rset)) {
+      std::vector<char> buf(1024);
+      if (net::socket::read(sockfd, buf.size(), buf.data()) < 0)
+        break;
+
+      std::cout << "from{127.0.0.1:5555} read: " << buf.data() << std::endl;
+    }
+    if (FD_ISSET(readfd, &rset)) {
+      std::string buf;
+      if (std::getline(std::cin, buf)) {
+        if (buf == "exit")
+          break;
+        net::socket::write(sockfd, buf.data(), buf.size());
+      }
+      else {
+        break;
+      }
+    }
+  }
+  net::socket::close(sockfd);
 }
