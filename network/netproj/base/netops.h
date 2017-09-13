@@ -43,6 +43,7 @@
 # include <netinet/in.h>
 # include <netinet/tcp.h>
 # include <sys/socket.h>
+# include <sys/time.h>
 # include <netdb.h>
 # include <poll.h>
 #endif
@@ -66,6 +67,11 @@ namespace socket {
   int connect(int sockfd, const struct sockaddr* addr);
   ssize_t read(int sockfd, std::size_t len, void* buf);
   ssize_t write(int sockfd, const void* buf, std::size_t len);
+}
+
+namespace io {
+  int select(int nfds, fd_set* readfds, fd_set* writefds,
+      fd_set* exceptfds, const struct timeval* timeout);
 }
 
 }
