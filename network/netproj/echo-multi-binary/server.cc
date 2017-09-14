@@ -37,13 +37,13 @@ void run_server(void) {
   host_addr.sin_addr.s_addr = htonl(INADDR_ANY);
   host_addr.sin_family = AF_INET;
   host_addr.sin_port = htons(5555);
-  net::socket::bind(sockfd, (const sockaddr*)&host_addr);
+  net::socket::bind(sockfd, &host_addr);
   net::socket::listen(sockfd);
 
   std::vector<std::unique_ptr<Chaos::Thread>> threads;
   for (;;) {
     struct sockaddr_in addr{};
-    int connfd = net::socket::accept(sockfd, (struct sockaddr*)&addr);
+    int connfd = net::socket::accept(sockfd, &addr);
 
     auto t = new Chaos::Thread([&connfd]{
           while (true) {
