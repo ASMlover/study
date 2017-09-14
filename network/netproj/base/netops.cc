@@ -37,22 +37,23 @@ namespace socket {
     return ::shutdown(sockfd, how);
   }
 
-  int bind(int sockfd, const struct sockaddr* addr) {
+  int bind(int sockfd, const void* addr) {
     socklen_t addrlen = sizeof(struct sockaddr_in);
-    return ::bind(sockfd, addr, addrlen);
+    return ::bind(sockfd, (const struct sockaddr*)addr, addrlen);
   }
 
   int listen(int sockfd) {
     return ::listen(sockfd, SOMAXCONN);
   }
 
-  int accept(int sockfd, struct sockaddr* addr) {
-    socklen_t addrlen = sizeof(*addr);
-    return static_cast<int>(::accept(sockfd, addr, &addrlen));
+  int accept(int sockfd, void* addr) {
+    socklen_t addrlen = sizeof(struct sockaddr_in);
+    return static_cast<int>(::accept(sockfd, (struct sockaddr*)addr, &addrlen));
   }
 
-  int connect(int sockfd, const struct sockaddr* addr) {
-    return ::connect(sockfd, addr, sizeof(struct sockaddr_in));
+  int connect(int sockfd, const void* addr) {
+    return ::connect(sockfd,
+        (const struct sockaddr*)addr, sizeof(struct sockaddr_in));
   }
 }
 

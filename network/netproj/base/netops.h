@@ -61,10 +61,10 @@ namespace socket {
   int open(sa_family_t family, int socket_type, int protocal);
   int close(int sockfd);
   int shutdown(int sockfd, int how);
-  int bind(int sockfd, const struct sockaddr* addr);
+  int bind(int sockfd, const void* addr);
   int listen(int sockfd);
-  int accept(int sockfd, struct sockaddr* addr);
-  int connect(int sockfd, const struct sockaddr* addr);
+  int accept(int sockfd, void* addr);
+  int connect(int sockfd, const void* addr);
   ssize_t read(int sockfd, std::size_t len, void* buf);
   ssize_t write(int sockfd, const void* buf, std::size_t len);
 }
