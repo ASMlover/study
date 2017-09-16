@@ -38,6 +38,7 @@
   using sa_family_t = int;
   using in_addr_t = int;
   using ssize_t = SSIZE_T;
+  using pollfd = WSAPOLLFD;
 #else
 # include <arpa/inet.h>
 # include <netinet/in.h>
@@ -72,6 +73,7 @@ namespace socket {
 namespace io {
   int select(int nfds, fd_set* readfds, fd_set* writefds,
       fd_set* exceptfds, const struct timeval* timeout);
+  int poll(pollfd fds[], std::uint32_t nfds, int timeout);
 }
 
 }

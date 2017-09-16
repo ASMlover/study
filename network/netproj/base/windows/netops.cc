@@ -60,4 +60,10 @@ namespace socket {
   }
 }
 
+namespace io {
+  int poll(pollfd fds[], std::uint32_t nfds, int timeout) {
+    return ::WSAPoll(fds, (ULONG)nfds, timeout);
+  }
+}
+
 }
