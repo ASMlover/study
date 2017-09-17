@@ -44,6 +44,11 @@ namespace socket {
   ssize_t write(int sockfd, const void* buf, std::size_t len) {
     return ::write(sockfd, buf, len);
   }
+
+  int set_option(int sockfd, int level, int optname, int optval) {
+    return ::setsockopt(sockfd,
+        level, optname, (const void*)&optval, sizeof(optval));
+  }
 }
 
 namespace io {

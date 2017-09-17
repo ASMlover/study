@@ -58,6 +58,11 @@ namespace socket {
     return ::send(sockfd,
         static_cast<const char*>(buf), static_cast<int>(len), 0);
   }
+
+  int set_option(int sockfd, int level, int optname, int optval) {
+    return ::setsockopt(sockfd,
+        level, optname, (const char*)&optval, sizeof(optval));
+  }
 }
 
 namespace io {
