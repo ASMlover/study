@@ -45,9 +45,14 @@ namespace socket {
     return ::write(sockfd, buf, len);
   }
 
-  int set_option(int sockfd, int level, int optname, int optval) {
-    return ::setsockopt(sockfd,
-        level, optname, (const void*)&optval, sizeof(optval));
+  int set_option(int sockfd,
+      int level, int optname, const void* optval, socklen_t optlen) {
+    return ::setsockopt(sockfd, level, optname, optval, optlen);
+  }
+
+  int get_option(int sockfd,
+      int level, int optname, void* optval, socklen_t* optlen) {
+    return ::getsockopt(sockfd, level, optname, optval, optlen);
   }
 }
 

@@ -68,7 +68,10 @@ namespace socket {
   int connect(int sockfd, const void* addr);
   ssize_t read(int sockfd, std::size_t len, void* buf);
   ssize_t write(int sockfd, const void* buf, std::size_t len);
-  int set_option(int sockfd, int level, int optname, int optval);
+  int set_option(int sockfd,
+      int level, int optname, const void* optval, socklen_t optlen);
+  int get_option(int sockfd,
+      int level, int optname, void* optval, socklen_t* optlen);
 }
 
 namespace io {

@@ -59,9 +59,16 @@ namespace socket {
         static_cast<const char*>(buf), static_cast<int>(len), 0);
   }
 
-  int set_option(int sockfd, int level, int optname, int optval) {
+  int set_option(int sockfd,
+      int level, int optname, const void* optval, socklen_t optlen) {
     return ::setsockopt(sockfd,
-        level, optname, (const char*)&optval, sizeof(optval));
+        level, optname, (const char*)optval, optlen);
+  }
+
+  int get_option(int sockfd,
+      int level, int optname, void* optval, socklen_t* optlen) {
+    return ::getsockopt(sockfd,
+        level, optname, (char*)optval, optlen);
   }
 }
 
