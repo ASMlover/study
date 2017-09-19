@@ -45,6 +45,17 @@ namespace socket {
     return ::write(sockfd, buf, len);
   }
 
+  ssize_t readfrom(int sockfd, std::size_t len, void* buf, void* addr) {
+    socklen_t addrlen = sizeof(struct sockaddr_in);
+    return ::recvfrom(sockfd, buf, len, 0, (struct sockaddr*)addr, &addrlen);
+  }
+
+  ssize_t writeto(int sockfd,
+      const void* buf, std::size_t len, const void* addr) {
+    socklen_t addrlen = sizeof(struct sockaddr_in);
+    return ::sendto(sockfd, buf, len, 0, (const struct sockaddr*)addr, addrlen);
+  }
+
   int set_option(int sockfd,
       int level, int optname, const void* optval, socklen_t optlen) {
     return ::setsockopt(sockfd, level, optname, optval, optlen);
