@@ -67,19 +67,41 @@ struct SockOpts {
   {"SO_REUSEPORT", 0, 0, nullptr},
 #endif
   {"SO_TYPE", SOL_SOCKET, SO_TYPE, sock_str_int},
+#if defined(SO_USELOOPBACK)
   {"SO_USELOOPBACK", SOL_SOCKET, SO_USELOOPBACK, sock_str_flag},
+#else
+  {"SO_USELOOPBACK", 0, 0, nullptr},
+#endif
   {"IP_TOS", IPPROTO_IP, IP_TOS, sock_str_int},
   {"IP_TTL", IPPROTO_IP, IP_TTL, sock_str_int},
+#if defined(IPV6_DONTFRAG)
   {"IPV6_DONTFRAG", IPPROTO_IPV6, IPV6_DONTFRAG, sock_str_flag},
+#else
+  {"IPV6_DONTFRAG", 0, 0, nullptr},
+#endif
   {"IPV6_UNICAST_HOPS", IPPROTO_IPV6, IPV6_UNICAST_HOPS, sock_str_int},
   {"IPV6_V6ONLY", IPPROTO_IPV6, IPV6_V6ONLY, sock_str_flag},
   {"TCP_MAXSEG", IPPROTO_TCP, TCP_MAXSEG, sock_str_int},
   {"TCP_NODELAY", IPPROTO_TCP, TCP_NODELAY, sock_str_flag},
-#if defined(CHAOS_POSIX)
+#if defined(SCTP_AUTOCLOSE)
   {"SCTP_AUTOCLOSE", IPPROTO_SCTP, SCTP_AUTOCLOSE, sock_str_int},
+#else
+  {"SCTP_AUTOCLOSE", 0, 0, nullptr},
+#endif
+#if defined(SCTP_MAXBURSET)
   {"SCTP_MAXBURSET", IPPROTO_SCTP, SCTP_MAXBURSET, sock_str_int},
+#else
+  {"SCTP_MAXBURSET", 0, 0, nullptr},
+#endif
+#if defined(SCTP_MAXSEG)
   {"SCTP_MAXSEG", IPPROTO_SCTP, SCTP_MAXSEG, sock_str_int},
+#else
+  {"SCTP_MAXSEG", 0, 0, nullptr},
+#endif
+#if defined(SCTP_NODELAY)
   {"SCTP_NODELAY", IPPROTO_SCTP, SCTP_NODELAY, sock_str_flag},
+#else
+  {"SCTP_NODELAY", 0, 0, nullptr},
 #endif
   {nullptr, 0, 0, nullptr},
 };
@@ -149,7 +171,7 @@ int main(int argc, char* argv[]) {
         break;
       }
 
-      int n = sizeof(val);
+      socklen_t n = sizeof(val);
       if (net::socket::get_option(sockfd,
             opt->opt_level, opt->opt_name, &val, &n) == -1) {
         std::cerr << "getsockopt error" << std::endl;
