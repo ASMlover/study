@@ -59,7 +59,8 @@ message(STATUS "[${PROJ_NAME}] CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_F
 include_directories(${PROJECT_SOURCE_DIR}/../../../Chaos)
 link_directories(${PROJECT_SOURCE_DIR}/../../../Chaos/cmake-build/lib)
 
-add_subdirectory(base)
+# add_subdirectory(base)
+add_subdirectory(libase)
 
 add_subdirectory(netproj)
 add_subdirectory(echo-multi)

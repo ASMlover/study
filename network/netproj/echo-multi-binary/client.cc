@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <Chaos/IO/ColorIO.h>
-#include "../base/netops.h"
+#include "../libase/netops.h"
 #include "msg.h"
 
 namespace cc = Chaos::ColorIO;

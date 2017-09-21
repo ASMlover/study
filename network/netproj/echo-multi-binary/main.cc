@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <Chaos/Base/Types.h>
-#include "../base/netops.h"
+#include "../libase/netops.h"
 
 void run_server(void);
 void run_client(void);

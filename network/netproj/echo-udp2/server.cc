@@ -25,7 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
-#include "../base/netops.h"
+#include "../libase/netops.h"
 
 void run_server(void) {
   int sockfd = net::socket::open(AF_INET, SOCK_DGRAM, IPPROTO_UDP);

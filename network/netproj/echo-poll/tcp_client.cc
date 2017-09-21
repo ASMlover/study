@@ -28,7 +28,7 @@
 #include <string>
 #include <vector>
 #include <Chaos/IO/ColorIO.h>
-#include "../base/netops.h"
+#include "../libase/netops.h"
 
 namespace cc = Chaos::ColorIO;
 
