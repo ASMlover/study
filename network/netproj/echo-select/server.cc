@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <algorithm>
 #include <memory>
 #include <vector>
 #include <Chaos/Concurrent/Thread.h>
@@ -48,7 +49,7 @@ void run_server(void) {
 
   fd_set rset;
   FD_ZERO(&rset);
-  auto maxfd = std::max(tcpfd, udpfd) + 1;
+  auto maxfd = std::max<int>(tcpfd, udpfd) + 1;
   for (;;) {
     FD_SET(tcpfd, &rset);
     FD_SET(udpfd, &rset);
