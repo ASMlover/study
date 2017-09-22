@@ -83,6 +83,11 @@ namespace socket {
     return ::getsockopt(sockfd,
         level, optname, (char*)optval, optlen);
   }
+
+  void set_nonblock(int sockfd) {
+    u_long val{1};
+    ::ioctlsocket(sockfd, FIONBIO, &val);
+  }
 }
 
 namespace io {
