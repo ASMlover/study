@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <fcntl.h>
 #include <unistd.h>
 #include "../netops.h"
 
@@ -64,6 +65,12 @@ namespace socket {
   int get_option(int sockfd,
       int level, int optname, void* optval, socklen_t* optlen) {
     return ::getsockopt(sockfd, level, optname, optval, optlen);
+  }
+
+  void set_nonblock(int sockfd) {
+    int flags = ::fcntl(sockfd, F_GETFL, 0);
+    flags |= O_NONBLOCK;
+    ::fcntl(sockfd, F_SETFL, flags);
   }
 }
 

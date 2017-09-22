@@ -76,6 +76,7 @@ namespace socket {
       int level, int optname, const void* optval, socklen_t optlen);
   int get_option(int sockfd,
       int level, int optname, void* optval, socklen_t* optlen);
+  void set_nonblock(int sockfd);
 }
 
 namespace io {
