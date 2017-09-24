@@ -67,6 +67,12 @@ namespace socket {
     return ::getsockopt(sockfd, level, optname, optval, optlen);
   }
 
+  void set_block(int sockfd) {
+    int flags = ::fcntl(sockfd, F_GETFL, 0);
+    flags &= ~O_NONBLOCK;
+    ::fcntl(sockfd, F_SETFL, flags);
+  }
+
   void set_nonblock(int sockfd) {
     int flags = ::fcntl(sockfd, F_GETFL, 0);
     flags |= O_NONBLOCK;
