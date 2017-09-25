@@ -91,4 +91,22 @@ namespace io {
   }
 }
 
+namespace addr {
+  std::string as_string(const void* addr, bool v6) {
+    char host[64]{};
+    char buf[128]{};
+    if (v6) {
+      ::inet_ntop(AF_INET6, addr, host, sizeof(host));
+      std::snprintf(buf, sizeof(buf),
+          "{%s - %d}", host, ntohs(((const sockaddr_in6*)addr)->sin6_port));
+    }
+    else {
+      ::inet_ntop(AF_INET, addr, host, sizeof(host));
+      std::snprintf(buf, sizeof(buf),
+          "{%s - %d}", host, ntohs(((const sockaddr_in*)addr)->sin_port));
+    }
+    return std::string(buf);
+  }
+}
+
 }

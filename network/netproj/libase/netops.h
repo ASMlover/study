@@ -28,6 +28,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <Chaos/Base/Platform.h>
 #if defined(CHAOS_WINDOWS)
 # include <WS2tcpip.h>
@@ -85,6 +86,10 @@ namespace io {
   int select(int nfds, fd_set* readfds, fd_set* writefds,
       fd_set* exceptfds, const struct timeval* timeout);
   int poll(pollfd fds[], std::uint32_t nfds, int timeout);
+}
+
+namespace addr {
+  std::string as_string(const void* addr, bool v6 = false);
 }
 
 }
