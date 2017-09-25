@@ -24,69 +24,42 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <algorithm>
 #include <memory>
 #include <vector>
 #include <Chaos/Concurrent/Thread.h>
 #include "../libase/netops.h"
 
 void run_server(void) {
+  int sockfd = net::socket::open(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
   struct sockaddr_in host_addr{};
   host_addr.sin_addr.s_addr = htonl(INADDR_ANY);
   host_addr.sin_family = AF_INET;
   host_addr.sin_port = htons(5555);
-
-  int reuse = 1;
-  int tcpfd = net::socket::open(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-  net::socket::set_option(tcpfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int));
-  net::socket::bind(tcpfd, &host_addr);
-  net::socket::listen(tcpfd);
-
-  int udpfd = net::socket::open(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-  net::socket::bind(udpfd, &host_addr);
+  net::socket::bind(sockfd, &host_addr);
+  net::socket::listen(sockfd);
 
   std::vector<std::unique_ptr<Chaos::Thread>> threads;
-
-  fd_set rset;
-  FD_ZERO(&rset);
-  auto maxfd = std::max<int>(tcpfd, udpfd) + 1;
   for (;;) {
-    FD_SET(tcpfd, &rset);
-    FD_SET(udpfd, &rset);
-
-    auto nready = net::io::select(maxfd, &rset, nullptr, nullptr, nullptr);
-    if (nready <= 0)
-      break;
-
-    if (FD_ISSET(tcpfd, &rset)) {
-      struct sockaddr_in addr{};
-      int connfd = net::socket::accept(tcpfd, &addr);
-      auto t = new Chaos::Thread([connfd] {
-            std::vector<char> buf(1024);
-            for (;;) {
-              auto n = net::socket::read(connfd, buf.size(), buf.data());
-              if (n > 0)
-                net::socket::write(connfd, buf.data(), n);
-              else
-                break;
-            }
-            net::socket::close(connfd);
-          });
-      t->start();
-      threads.emplace_back(t);
-    }
-
-    if (FD_ISSET(udpfd, &rset)) {
-      struct sockaddr_in addr{};
-      std::vector<char> buf(1024);
-      auto n = net::socket::readfrom(udpfd, buf.size(), buf.data(), &addr);
-      if (n > 0)
-        net::socket::writeto(udpfd, buf.data(), n, &addr);
-    }
+    struct sockaddr_in addr{};
+    int connfd = net::socket::accept(sockfd, &addr);
+    auto t = new Chaos::Thread([connfd] {
+          std::vector<char> buf(1024);
+          for (;;) {
+            buf.assign(buf.size(), 0);
+            auto n = net::socket::read(connfd, buf.size(), buf.data());
+            if (n > 0)
+              net::socket::write(connfd, buf.data(), n);
+            else
+              break;
+          }
+          net::socket::close(connfd);
+        });
+    t->start();
+    threads.emplace_back(t);
   }
   for (auto& t : threads)
     t->join();
 
-  net::socket::close(udpfd);
-  net::socket::close(tcpfd);
+  net::socket::close(sockfd);
 }

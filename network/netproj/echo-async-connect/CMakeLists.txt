@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-#
 # Copyright (c) 2017 ASMlover. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,36 +25,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""通过json.loads转换后的dict中的key和value都是unicode,
-一个简单的函数将其转换为utf8格式
-"""
+set(OUTPUT_NAME "echo-async-connect")
 
-import json
+aux_source_directory(. ALL_SOURCES)
+message(STATUS "[netproj.echo-async-connect] ALL_SOURCES: ${ALL_SOURCES}")
 
-def jsonloads_u8(json_str):
-    def byteify(attr):
-        if isinstance(attr, dict):
-            return {byteify(k): byteify(v) for k, v in attr.iteritems()}
-        elif isinstance(attr, list):
-            return [byteify(v) for v in attr]
-        elif isinstance(attr, unicode):
-            return attr.encode('utf-8')
-        else:
-            return attr
-    return byteify(json.loads(json_str))
-
-def main():
-    avatar = dict(
-        id = 1000001,
-        name = 'json转换测试',
-        level = 44,
-        equips = {4001: {'atk': 11, 'speed': 5}, 4002: {'magic': 13}},
-        packages = [{1001: {'precious': True, 'count': 1}}, {1002: {'count': 99}}],
-    )
-
-    json_avatar = json.dumps(avatar)
-    print 'json.loads: %s' % json.loads(json_avatar)
-    print 'jsonloads_u8: %s' % jsonloads_u8(json_avatar)
-
-if __name__ == '__main__':
-    main()
+add_executable(${OUTPUT_NAME} ${ALL_SOURCES})
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+  target_link_libraries(${OUTPUT_NAME} chaos base Dbghelp)
+else()
+  target_link_libraries(${OUTPUT_NAME} chaos base pthread)
+endif()
