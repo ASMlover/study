@@ -27,6 +27,9 @@
 #pragma once
 
 #include <cstddef>
+#include <string>
+#include <array>
+#include <vector>
 
 namespace netpp {
 
@@ -135,6 +138,101 @@ template <typename PodType, std::size_t N>
 inline ConstBuffer buffer(PodType (&buf)[N], std::size_t max_bytes) noexcept {
   return ConstBuffer(buf,
       N * sizeof(PodType) < max_bytes ? N * sizeof(PodType) : max_bytes);
+}
+
+template <typename PodType, std::size_t N>
+inline MutableBuffer buffer(std::array<PodType, N>& b) noexcept {
+  return MutableBuffer(b.data(), b.size() * sizeof(PodType));
+}
+
+template <typename PodType, std::size_t N>
+inline MutableBuffer buffer(
+    std::array<PodType, N>& b, std::size_t max_bytes) noexcept {
+  return MutableBuffer(b.data(),
+      b.size() * sizeof(PodType) < max_bytes
+      ? b.size() * sizeof(PodType) : max_bytes);
+}
+
+template <typename PodType, std::size_t N>
+inline ConstBuffer buffer(std::array<PodType, N>& b) noexcept {
+  return ConstBuffer(b.data(), b.size() * sizeof(PodType));
+}
+
+template <typename PodType, std::size_t N>
+inline ConstBuffer buffer(
+    std::array<PodType, N>& b, std::size_t max_bytes) noexcept {
+  return ConstBuffer(b.data(),
+      b.size() * sizeof(PodType) < max_bytes
+      ? b.size() * sizeof(PodType) : max_bytes);
+}
+
+template <typename PodType, std::size_t N>
+inline ConstBuffer buffer(const std::array<PodType, N>& b) noexcept {
+  return ConstBuffer(b.data(), b.size() * sizeof(PodType));
+}
+
+template <typename PodType, std::size_t N>
+inline ConstBuffer buffer(
+    const std::array<PodType, N>& b, std::size_t max_bytes) noexcept {
+  return ConstBuffer(b.data(),
+      b.size() * sizeof(PodType) < max_bytes
+      ? b.size() * sizeof(PodType) : max_bytes);
+}
+
+template <typename PodType, typename Allocator>
+inline MutableBuffer buffer(std::vector<PodType, Allocator>& b) noexcept {
+  return MutableBuffer(b.size() ? &b[0] : nullptr, b.size() * sizeof(PodType));
+}
+
+template <typename PodType, typename Allocator>
+inline MutableBuffer buffer(
+    std::vector<PodType, Allocator>& b, std::size_t max_bytes) noexcept {
+  return MutableBuffer(b.size() ? &b[0] : nullptr,
+      b.size() * sizeof(PodType) < max_bytes
+      ? b.size() * sizeof(PodType) : max_bytes);
+}
+
+template <typename PodType, typename Allocator>
+inline ConstBuffer buffer(const std::vector<PodType, Allocator>& b) noexcept {
+  return ConstBuffer(b.size() ? &b[0] : nullptr, b.size() * sizeof(PodType));
+}
+
+template <typename PodType, typename Allocator>
+inline ConstBuffer buffer(
+    const std::vector<PodType, Allocator>& b, std::size_t max_bytes) noexcept {
+  return ConstBuffer(b.size() ? &b[0] : nullptr,
+      b.size() * sizeof(PodType) < max_bytes
+      ? b.size() * sizeof(PodType) : max_bytes);
+}
+
+template <typename Elem, typename Traits, typename Allocator>
+inline MutableBuffer buffer(
+    std::basic_string<Elem, Traits, Allocator>& b) noexcept {
+  return MutableBuffer(b.size() ? &b[0] : nullptr, b.size() * sizeof(Elem));
+}
+
+template <typename Elem, typename Traits, typename Allocator>
+inline MutableBuffer buffer(
+    std::basic_string<Elem, Traits, Allocator>& b,
+    std::size_t max_bytes) noexcept {
+  return MutableBuffer(b.size() ? &b[0] : nullptr,
+      b.size() * sizeof(Elem) < max_bytes
+      ? b.size() * sizeof(Elem) : max_bytes);
+}
+
+template <typename Elem, typename Traits, typename Allocator>
+inline ConstBuffer buffer(
+    const std::basic_string<Elem, Traits, Allocator>& b) noexcept {
+  return ConstBuffer(b.size() ? &b[0] : nullptr, b.size() * sizeof(Elem));
+}
+
+template <typename Elem, typename Traits, typename Allocator>
+inline ConstBuffer buffer(
+    const std::basic_string<Elem, Traits, Allocator>& b,
+    std::size_t max_bytes) noexcept {
+  return ConstBuffer(b.size() ? &b[0] : nullptr,
+      b.size() * sizeof(Elem) < max_bytes
+      ? b.size() * sizeof(Elem) : max_bytes);
 }
 
 }
