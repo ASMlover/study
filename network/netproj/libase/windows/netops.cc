@@ -59,15 +59,20 @@ namespace socket {
         static_cast<const char*>(buf), static_cast<int>(len), 0);
   }
 
-  ssize_t readfrom(int sockfd, std::size_t len, void* buf, void* addr) {
+  ssize_t readfrom(int sockfd,
+      std::size_t len, void* buf, void* addr, bool v6) {
     socklen_t addrlen = sizeof(struct sockaddr_in);
+    if (v6)
+      addrlen = sizeof(struct sockaddr_in6);
     return ::recvfrom(sockfd,
         (char*)buf, (int)len, 0, (struct sockaddr*)addr, &addrlen);
   }
 
   ssize_t writeto(int sockfd,
-      const void* buf, std::size_t len, const void* addr) {
+      const void* buf, std::size_t len, const void* addr, bool v6) {
     socklen_t addrlen = sizeof(struct sockaddr_in);
+    if (v6)
+      addrlen = sizeof(struct sockaddr_in6);
     return ::sendto(sockfd,
         (const char*)buf, (int)len, 0, (const struct sockaddr*)addr, addrlen);
   }

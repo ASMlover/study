@@ -46,14 +46,19 @@ namespace socket {
     return ::write(sockfd, buf, len);
   }
 
-  ssize_t readfrom(int sockfd, std::size_t len, void* buf, void* addr) {
+  ssize_t readfrom(int sockfd,
+      std::size_t len, void* buf, void* addr, bool v6) {
     socklen_t addrlen = sizeof(struct sockaddr_in);
+    if (v6)
+      addrlen = sizeof(struct sockaddr_in6);
     return ::recvfrom(sockfd, buf, len, 0, (struct sockaddr*)addr, &addrlen);
   }
 
   ssize_t writeto(int sockfd,
-      const void* buf, std::size_t len, const void* addr) {
+      const void* buf, std::size_t len, const void* addr, bool v6) {
     socklen_t addrlen = sizeof(struct sockaddr_in);
+    if (v6)
+      addrlen = sizeof(struct sockaddr_in6);
     return ::sendto(sockfd, buf, len, 0, (const struct sockaddr*)addr, addrlen);
   }
 

@@ -63,15 +63,16 @@ namespace socket {
   int open(sa_family_t family, int socket_type, int protocal);
   int close(int sockfd);
   int shutdown(int sockfd, int how);
-  int bind(int sockfd, const void* addr);
+  int bind(int sockfd, const void* addr, bool v6 = false);
   int listen(int sockfd);
-  int accept(int sockfd, void* addr);
-  int connect(int sockfd, const void* addr);
+  int accept(int sockfd, void* addr, bool v6 = false);
+  int connect(int sockfd, const void* addr, bool v6 = false);
   ssize_t read(int sockfd, std::size_t len, void* buf);
   ssize_t write(int sockfd, const void* buf, std::size_t len);
-  ssize_t readfrom(int sockfd, std::size_t len, void* buf, void* addr);
+  ssize_t readfrom(int sockfd,
+      std::size_t len, void* buf, void* addr, bool v6 = false);
   ssize_t writeto(int sockfd,
-      const void* buf, std::size_t len, const void* addr);
+      const void* buf, std::size_t len, const void* addr, bool v6 = false);
   int set_option(int sockfd,
       int level, int optname, const void* optval, socklen_t optlen);
   int get_option(int sockfd,
