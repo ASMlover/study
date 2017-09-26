@@ -31,6 +31,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <netdb.h>
+#include <poll.h>
 #include <unistd.h>
 #include <cstddef>
 #include <cstdint>
@@ -85,6 +86,11 @@ const char* inet_ntop(int family, const void* addr, int len, char* buf) {
 
 int inet_pton(int family, const char* buf, void* addr) {
   return ::inet_pton(family, buf, addr);
+}
+
+int poll(PollFd* fds, int nfds, int timeout) {
+  return ::poll(reinterpret_cast<struct pollfd*>(fds),
+      static_cast<nfds_t>(nfds), timeout);
 }
 
 }

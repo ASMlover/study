@@ -95,4 +95,9 @@ int inet_pton(int family, const char* buf, void* addr) {
   return ::InetPtonA(family, buf, addr);
 }
 
+int poll(PollFd* fds, int nfds, int timeout) {
+  return ::WSAPoll(reinterpret_cast<WSAPOLLFD*>(fds),
+      static_cast<ULONG>(nfds), timeout);
+}
+
 }

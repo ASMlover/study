@@ -55,4 +55,17 @@ namespace socket {
 const char* inet_ntop(int family, const void* addr, int len, char* buf);
 int inet_pton(int family, const char* buf, void* addr);
 
+struct PollFd {
+  int fd{};
+  short events{};
+  short revents{};
+
+  PollFd(int f, short ev, short rev)
+    : fd(f)
+    , events(ev)
+    , revents(rev) {
+  }
+};
+int poll(PollFd* fds, int nfds, int timeout);
+
 }
