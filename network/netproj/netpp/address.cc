@@ -83,7 +83,10 @@ Address::Address(const char* host, std::uint16_t port, bool with_v6) {
 }
 
 Address::~Address(void) {
-  delete addr_;
+  if (addr_->sa_family == AF_INET6)
+    delete reinterpret_cast<struct sockaddr_in6*>(addr_);
+  else
+    delete reinterpret_cast<struct sockaddr_in*>(addr_);
 }
 
 int Address::get_family(void) const {
