@@ -79,4 +79,12 @@ namespace socket {
   }
 }
 
+const char* inet_ntop(int family, const void* addr, int len, char* buf) {
+  return ::inet_ntop(family, addr, buf, static_cast<socklen_t>(len));
+}
+
+int inet_pton(int family, const char* buf, void* addr) {
+  return ::inet_pton(family, buf, addr);
+}
+
 }

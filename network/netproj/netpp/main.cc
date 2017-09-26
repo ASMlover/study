@@ -24,19 +24,21 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <Chaos/Base/Platform.h>
 #include <Chaos/Base/Types.h>
+#include <iostream>
 #include "buffer.h"
+#include "primitive.h"
 
+#if defined(CHAOS_POSIX)
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <thread>
 #include <vector>
-#include "primitive.h"
 
 void echo_server(void) {
   int sockfd = netpp::socket::open(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
@@ -96,13 +98,25 @@ void echo_client(void) {
   netpp::socket::close(sockfd);
 }
 
+void echo_sample(char c) {
+  if (c == 's')
+    echo_server();
+  else if (c == 'c')
+    echo_client();
+}
+#else
+void echo_sample(char c) {
+  std::cout << "netpp - echo_sample: c=" << c << std::endl;
+}
+#endif
+
 int main(int argc, char* argv[]) {
   CHAOS_UNUSED(argc), CHAOS_UNUSED(argv);
 
-  if (argv[1][0] == 's')
-    echo_server();
-  if (argv[1][0] == 'c')
-    echo_client();
+  if (argc > 1)
+    echo_sample(argv[1][0]);
+
+  std::cout << sizeof(sa_family_t) << std::endl;
 
   return 0;
 }
