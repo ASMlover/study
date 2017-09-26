@@ -46,7 +46,7 @@ namespace netpp {
 
 namespace socket {
   int open(int family, int socket_type, int protocol) {
-    return ::socket(family, socket_type, protocol);
+    return static_cast<int>(::socket(family, socket_type, protocol));
   }
 
   int shutdown(int sockfd, int how) {

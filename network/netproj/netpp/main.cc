@@ -116,7 +116,5 @@ int main(int argc, char* argv[]) {
   if (argc > 1)
     echo_sample(argv[1][0]);
 
-  std::cout << sizeof(sa_family_t) << std::endl;
-
   return 0;
 }

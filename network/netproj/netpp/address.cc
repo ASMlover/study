@@ -26,7 +26,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <Chaos/Base/Platform.h>
 #if defined(CHAOS_WINDOWS)
-# include <WinSock2.h>
+# include <WS2tcpip.h>
+# if !defined(_WINDOWS_)
+#   include <WinSock2.h>
+# endif
 #else
 # include <arpa/inet.h>
 #endif
