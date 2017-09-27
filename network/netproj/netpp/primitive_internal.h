@@ -26,48 +26,15 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-struct sockaddr;
+#include <system_error>
+#include "primitive.h"
 
 namespace netpp {
 
-void startup(void);
-void cleanup(void);
-
-namespace socket {
-  static constexpr int SHUT_READ = 0;
-  static constexpr int SHUT_WRITE = 1;
-  static constexpr int SHUT_BOTH = 2;
-
-  int open(int family, int socket_type, int protocol);
-  int close(int sockfd);
-  int shutdown(int sockfd, int how);
-  int bind(int sockfd, const void* addr);
-  int listen(int sockfd);
-  int accept(int sockfd, void* addr, bool with_v6 = false);
-  int connect(int sockfd, const void* addr);
-  int read(int sockfd, int len, void* buf);
-  int write(int sockfd, const void* buf, int len);
-  int readfrom(int sockfd,
-      int len, void* buf, void* addr, bool with_v6 = false);
-  int writeto(int sockfd, const void* buf, int len, const void* addr);
+template <typename ReturnType>
+inline ReturnType error_wrapper(ReturnType r, std::error_code& ec) {
+  ec = std::error_code(get_errno(), std::system_category());
+  return r;
 }
-
-int get_errno(void);
-
-const char* inet_ntop(int family, const void* addr, int len, char* buf);
-int inet_pton(int family, const char* buf, void* addr);
-
-struct PollFd {
-  int fd{};
-  short events{};
-  short revents{};
-
-  PollFd(int f, short ev, short rev)
-    : fd(f)
-    , events(ev)
-    , revents(rev) {
-  }
-};
-int poll(PollFd* fds, int nfds, int timeout);
 
 }

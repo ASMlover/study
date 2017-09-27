@@ -87,6 +87,10 @@ namespace socket {
   }
 }
 
+int get_errno(void) {
+  return ::WSAGetLastError();
+}
+
 const char* inet_ntop(int family, const void* addr, int len, char* buf) {
   return ::InetNtopA(family, addr, buf, static_cast<std::size_t>(len));
 }

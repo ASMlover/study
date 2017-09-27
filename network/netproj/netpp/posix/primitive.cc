@@ -33,6 +33,7 @@
 #include <netdb.h>
 #include <poll.h>
 #include <unistd.h>
+#include <cerrno>
 #include <cstddef>
 #include <cstdint>
 #include "../primitive.h"
@@ -78,6 +79,10 @@ namespace socket {
     return ::sendto(sockfd,
         buf, static_cast<std::size_t>(len), 0, to_addr, addrlen);
   }
+}
+
+int get_errno(void) {
+  return errno;
 }
 
 const char* inet_ntop(int family, const void* addr, int len, char* buf) {
