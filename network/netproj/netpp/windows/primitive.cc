@@ -85,6 +85,23 @@ namespace socket {
     return ::sendto(sockfd,
         static_cast<const char*>(buf), len, 0, to_addr, addrlen);
   }
+
+  bool set_non_blocking(int sockfd, bool mode, std::error_code& ec) {
+    if (sockfd == -1) {
+      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      return false;
+    }
+
+    clear_last_errno();
+    int flags = mode ? 1 : 0;
+    int r = error_wrapper(::ioctlsocket(sockfd, FIONBIO, &flags), ec);
+
+    if (r >= 0) {
+      ec = std::error_code();
+      return true;
+    }
+    return false;
+  }
 }
 
 void clear_last_errno(void) {

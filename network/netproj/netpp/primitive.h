@@ -53,6 +53,7 @@ namespace socket {
       int len, void* buf, void* addr, std::error_code& ec, bool with_v6 = false);
   int writeto(int sockfd,
       const void* buf, int len, const void* addr, std::error_code& ec);
+  bool set_non_blocking(int sockfd, bool mode, std::error_code& ec);
 }
 
 void clear_last_errno(void);

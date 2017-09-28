@@ -32,6 +32,7 @@
 #include <sys/time.h>
 #include <netdb.h>
 #include <poll.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <cerrno>
 #include <cstddef>
@@ -107,6 +108,27 @@ namespace socket {
     if (nwrote >= 0)
       ec = std::error_code();
     return nwrote;
+  }
+
+  bool set_non_blocking(int sockfd, bool mode, std::error_code& ec) {
+    if (sockfd == -1) {
+      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      return false;
+    }
+
+    clear_last_errno();
+    int r = error_wrapper(::fcntl(sockfd, F_GETFL, 0), ec);
+    if (r >= 0) {
+      clear_last_errno();
+      int flags =- (mode ? (r | O_NONBLOCK) : (r & ~O_NONBLOCK));
+      r = error_wrapper(::fcntl(sockfd, F_SETFL, flags), ec);
+    }
+
+    if (r >= 0) {
+      ec = std::error_code();
+      return true;
+    }
+    return false;
   }
 }
 
