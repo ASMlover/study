@@ -28,6 +28,7 @@
 #include "utils.h"
 #include "primitive.h"
 #include "address.h"
+#include "buffer.h"
 #include "socket.h"
 
 namespace netpp {
@@ -112,6 +113,68 @@ void BaseSocket::non_blocking(bool mode) {
 void BaseSocket::non_blocking(bool mode, std::error_code& ec) {
   if (socket::set_non_blocking(fd_, mode, ec))
     non_blocking_ = mode;
+}
+
+std::size_t TcpSocket::read(const MutableBuffer& buf) {
+  std::error_code ec;
+  std::size_t nread = socket::read(get_fd(), buf.size(), buf.data(), ec);
+  netpp::throw_error(ec, "read");
+  return nread;
+}
+
+std::size_t TcpSocket::read(const MutableBuffer& buf, std::error_code& ec) {
+  return socket::read(get_fd(), buf.size(), buf.data(), ec);
+}
+
+std::size_t TcpSocket::read_some(const MutableBuffer& buf) {
+  std::error_code ec;
+  std::size_t nread = socket::read(get_fd(), buf.size(), buf.data(), ec);
+  netpp::throw_error(ec, "read_some");
+  return nread;
+}
+
+std::size_t TcpSocket::read_some(const MutableBuffer& buf, std::error_code& ec) {
+  return socket::read(get_fd(), buf.size(), buf.data(), ec);
+}
+
+void TcpSocket::async_read(
+    const MutableBuffer& buf, const ReadHandler& handler) {
+  // TODO: need io_service
+}
+
+void TcpSocket::async_read(const MutableBuffer& buf, ReadHandler&& handler) {
+  // TODO: need io_service
+}
+
+std::size_t TcpSocket::write(const ConstBuffer& buf) {
+  std::error_code ec;
+  std::size_t nwrote = socket::write(get_fd(), buf.data(), buf.size(), ec);
+  netpp::throw_error(ec, "write");
+  return nwrote;
+}
+
+std::size_t TcpSocket::write(const ConstBuffer& buf, std::error_code& ec) {
+  return socket::write(get_fd(), buf.data(), buf.size(), ec);
+}
+
+std::size_t TcpSocket::write_some(const ConstBuffer& buf) {
+  std::error_code ec;
+  std::size_t nwrote = socket::write(get_fd(), buf.data(), buf.size(), ec);
+  netpp::throw_error(ec, "write_some");
+  return nwrote;
+}
+
+std::size_t TcpSocket::write_some(const ConstBuffer& buf, std::error_code& ec) {
+  return socket::write(get_fd(), buf.data(), buf.size(), ec);
+}
+
+void TcpSocket::async_write(
+    const ConstBuffer& buf, const WriteHandler& handler) {
+  // TODO: need io_service
+}
+
+void TcpSocket::async_write(const ConstBuffer& buf, WriteHandler&& handler) {
+  // TODO: need io_service
 }
 
 }
