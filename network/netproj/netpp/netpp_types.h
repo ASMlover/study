@@ -26,10 +26,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <cstdint>
 #include <Chaos/Base/Platform.h>
 
 #if defined(CHAOS_WINDOWS)
-# include <cstdint>
 # if defined(CHAOS_ARCH64)
     using socket_t = std::uint64_t;
 # else
