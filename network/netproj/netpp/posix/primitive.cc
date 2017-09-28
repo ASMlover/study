@@ -38,7 +38,6 @@
 #include <cstddef>
 #include <cstdint>
 #include "../primitive.h"
-#include "../primitive_internal.h"
 
 namespace netpp {
 

@@ -29,7 +29,6 @@
 #  include <WinSock2.h>
 #endif
 #include <Chaos/IO/ColorIO.h>
-#include "../primitive_internal.h"
 #include "../primitive.h"
 
 using socklen_t = int;
