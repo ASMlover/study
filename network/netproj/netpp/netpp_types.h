@@ -27,17 +27,22 @@
 #pragma once
 
 #include <Chaos/Base/Platform.h>
+
 #if defined(CHAOS_WINDOWS)
-# include <WS2tcpip.h>
-# if !defined(_WINDOWS_)
-#   include <WinSock2.h>
+# include <cstdint>
+# if defined(CHAOS_ARCH64)
+    using socket_t = std::uint64_t;
+# else
+    using socket_t = std::uint32_t;
 # endif
+  using socklen_t = int;
 #else
-# include <arpa/inet.h>
-# include <netinet/in.h>
-# include <netinet/tcp.h>
-# include <sys/socket.h>
-# include <sys/types.h>
-# include <sys/time.h>
-# include <netdb.h>
+  using socket_t = int;
 #endif
+
+namespace netpp {
+
+static constexpr socket_t kInvalidSocket = (socket_t)(~0);
+static constexpr int kSocketError = -1;
+
+}

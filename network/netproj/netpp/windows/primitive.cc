@@ -29,6 +29,7 @@
 #  include <WinSock2.h>
 #endif
 #include <Chaos/IO/ColorIO.h>
+#include "../primitive_internal.h"
 #include "../primitive.h"
 
 using socklen_t = int;
@@ -50,50 +51,100 @@ void cleanup(void) {
 }
 
 namespace socket {
-  int close(int sockfd) {
-    return ::closesocket(sockfd);
+  int close(socket_t sockfd, std::error_code& ec) {
+    int r{};
+    if (sockfd != kInvalidSocket) {
+      clear_last_errno();
+      r = error_wrapper(::closesocket(sockfd), ec);
+    }
+
+    if (r == 0)
+      ec = std::error_code();
+    return r;
   }
 
-  int read(int sockfd, int len, void* buf) {
-    return ::recv(sockfd, static_cast<char*>(buf), len, 0);
+  int read(socket_t sockfd, std::size_t len, void* buf, std::error_code& ec) {
+    if (sockfd == kInvalidSocket) {
+      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      return kSocketError;
+    }
+
+    clear_last_errno();
+    auto nread = error_wrapper(::recv(sockfd,
+          static_cast<char*>(buf), static_cast<int>(len), 0), ec);
+    if (nread >= 0)
+      ec = std::error_code();
+    return nread;
   }
 
-  int write(int sockfd, const void* buf, int len) {
-    return ::send(sockfd, static_cast<const char*>(buf), len, 0);
+  int write(socket_t sockfd,
+      const void* buf, std::size_t len, std::error_code& ec) {
+    if (sockfd == kInvalidSocket) {
+      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      return kSocketError;
+    }
+
+    clear_last_errno();
+    auto nwrote = error_wrapper(::send(sockfd,
+          static_cast<const char*>(buf), static_cast<int>(len), 0), ec);
+    if (nwrote >= 0)
+      ec = std::error_code();
+    return nwrote;
   }
 
-  int readfrom(int sockfd, int len, void* buf, void* addr, bool with_v6) {
+  int readfrom(socket_t sockfd, std::size_t len,
+      void* buf, void* addr, std::error_code& ec, bool with_v6) {
+    if (sockfd == kInvalidSocket) {
+      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      return kSocketError;
+    }
+
     socklen_t addrlen{};
     if (with_v6)
       addrlen = sizeof(struct sockaddr_in6);
     else
       addrlen = sizeof(struct sockaddr_in);
 
-    return ::recvfrom(sockfd, static_cast<char*>(buf),
-        len, 0, static_cast<struct sockaddr*>(addr), &addrlen);
+    clear_last_errno();
+    auto nread = error_wrapper(::recvfrom(sockfd,
+          static_cast<char*>(buf), static_cast<int>(len), 0,
+          static_cast<struct sockaddr*>(addr), &addrlen), ec);
+    if (nread >= 0)
+      ec = std::error_code();
+    return nread;
   }
 
-  int writeto(int sockfd, const void* buf, int len, const void* addr) {
-    auto* to_addr = static_cast<const struct sockaddr*>(addr);
+  int writeto(socket_t sockfd,
+      const void* buf, std::size_t len, const void* addr, std::error_code& ec) {
+    if (sockfd == kInvalidSocket) {
+      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      return kSocketError;
+    }
 
+    auto* to_addr = static_cast<const struct sockaddr*>(addr);
     socklen_t addrlen{};
     if (to_addr->sa_family == AF_INET6)
       addrlen = sizeof(struct sockaddr_in6);
     else
       addrlen = sizeof(struct sockaddr_in);
 
-    return ::sendto(sockfd,
-        static_cast<const char*>(buf), len, 0, to_addr, addrlen);
+    clear_last_errno();
+    auto nwrote = error_wrapper(::sendto(sockfd,
+          static_cast<const char*>(buf),
+          static_cast<int>(len), 0, to_addr, addrlen), ec);
+    if (nwrote >= 0)
+      ec = std::error_code();
+    return nwrote;
   }
 
-  bool set_non_blocking(int sockfd, bool mode, std::error_code& ec) {
-    if (sockfd == -1) {
+  bool set_non_blocking(socket_t sockfd, bool mode, std::error_code& ec) {
+    if (sockfd == kInvalidSocket) {
       ec = std::make_error_code(std::errc::bad_file_descriptor);
       return false;
     }
 
     clear_last_errno();
-    int flags = mode ? 1 : 0;
+    u_long flags = mode ? 1 : 0;
     int r = error_wrapper(::ioctlsocket(sockfd, FIONBIO, &flags), ec);
 
     if (r >= 0) {

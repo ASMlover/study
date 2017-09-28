@@ -54,7 +54,7 @@ void echo_server(void) {
   std::vector<std::unique_ptr<std::thread>> threads;
   for (;;) {
     struct sockaddr_in6 addr6{};
-    int connfd = netpp::socket::accept(s.get_fd(), &addr6, ec, true);
+    auto connfd = netpp::socket::accept(s.get_fd(), &addr6, ec, true);
     threads.emplace_back(new std::thread([connfd] {
             std::error_code ec;
             std::vector<char> buf(1024);

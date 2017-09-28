@@ -29,6 +29,7 @@
 #include <functional>
 #include <system_error>
 #include <Chaos/Base/UnCopyable.h>
+#include "netpp_types.h"
 
 namespace netpp {
 
@@ -39,7 +40,7 @@ class MutableBuffer;
 class BaseSocket : private Chaos::UnCopyable {
   using ConnectHandler = std::function<void (const std::error_code&)>;
 
-  int fd_{-1};
+  socket_t fd_{kInvalidSocket};
   bool non_blocking_{};
 public:
   BaseSocket(void);
@@ -61,7 +62,7 @@ public:
   void non_blocking(bool mode);
   void non_blocking(bool mode, std::error_code& ec);
 
-  int get_fd(void) const {
+  socket_t get_fd(void) const {
     return fd_;
   }
 

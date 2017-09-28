@@ -27,6 +27,7 @@
 #pragma once
 
 #include <system_error>
+#include "netpp_types.h"
 
 struct sockaddr;
 
@@ -40,20 +41,22 @@ namespace socket {
   static constexpr int SHUT_WRITE = 1;
   static constexpr int SHUT_BOTH = 2;
 
-  int open(int family, int socket_type, int protocol, std::error_code& ec);
-  int close(int sockfd, std::error_code& ec);
-  int shutdown(int sockfd, int how, std::error_code& ec);
-  int bind(int sockfd, const void* addr, std::error_code& ec);
-  int listen(int sockfd, std::error_code& ec);
-  int accept(int sockfd, void* addr, std::error_code& ec, bool with_v6 = false);
-  int connect(int sockfd, const void* addr, std::error_code& ec);
-  int read(int sockfd, int len, void* buf, std::error_code& ec);
-  int write(int sockfd, const void* buf, int len, std::error_code& ec);
-  int readfrom(int sockfd,
-      int len, void* buf, void* addr, std::error_code& ec, bool with_v6 = false);
-  int writeto(int sockfd,
-      const void* buf, int len, const void* addr, std::error_code& ec);
-  bool set_non_blocking(int sockfd, bool mode, std::error_code& ec);
+  socket_t open(int family, int socket_type, int protocol, std::error_code& ec);
+  int close(socket_t sockfd, std::error_code& ec);
+  int shutdown(socket_t sockfd, int how, std::error_code& ec);
+  int bind(socket_t sockfd, const void* addr, std::error_code& ec);
+  int listen(socket_t sockfd, std::error_code& ec);
+  socket_t accept(
+      socket_t sockfd, void* addr, std::error_code& ec, bool with_v6 = false);
+  int connect(socket_t sockfd, const void* addr, std::error_code& ec);
+  int read(socket_t sockfd, std::size_t len, void* buf, std::error_code& ec);
+  int write(socket_t sockfd,
+      const void* buf, std::size_t len, std::error_code& ec);
+  int readfrom(socket_t sockfd, std::size_t len,
+      void* buf, void* addr, std::error_code& ec, bool with_v6 = false);
+  int writeto(socket_t sockfd,
+      const void* buf, std::size_t len, const void* addr, std::error_code& ec);
+  bool set_non_blocking(socket_t sockfd, bool mode, std::error_code& ec);
 }
 
 void clear_last_errno(void);
@@ -63,11 +66,11 @@ const char* inet_ntop(int family, const void* addr, int len, char* buf);
 int inet_pton(int family, const char* buf, void* addr);
 
 struct PollFd {
-  int fd{};
+  socket_t fd{};
   short events{};
   short revents{};
 
-  PollFd(int f, short ev, short rev)
+  PollFd(socket_t f, short ev, short rev)
     : fd(f), events(ev), revents(rev) {
   }
 };

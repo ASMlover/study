@@ -117,7 +117,7 @@ void BaseSocket::non_blocking(bool mode, std::error_code& ec) {
 
 std::size_t TcpSocket::read(const MutableBuffer& buf) {
   std::error_code ec;
-  std::size_t nread = socket::read(get_fd(), buf.size(), buf.data(), ec);
+  auto nread = socket::read(get_fd(), buf.size(), buf.data(), ec);
   netpp::throw_error(ec, "read");
   return nread;
 }
@@ -128,7 +128,7 @@ std::size_t TcpSocket::read(const MutableBuffer& buf, std::error_code& ec) {
 
 std::size_t TcpSocket::read_some(const MutableBuffer& buf) {
   std::error_code ec;
-  std::size_t nread = socket::read(get_fd(), buf.size(), buf.data(), ec);
+  auto nread = socket::read(get_fd(), buf.size(), buf.data(), ec);
   netpp::throw_error(ec, "read_some");
   return nread;
 }
@@ -148,7 +148,7 @@ void TcpSocket::async_read(const MutableBuffer& buf, ReadHandler&& handler) {
 
 std::size_t TcpSocket::write(const ConstBuffer& buf) {
   std::error_code ec;
-  std::size_t nwrote = socket::write(get_fd(), buf.data(), buf.size(), ec);
+  auto nwrote = socket::write(get_fd(), buf.data(), buf.size(), ec);
   netpp::throw_error(ec, "write");
   return nwrote;
 }
@@ -159,7 +159,7 @@ std::size_t TcpSocket::write(const ConstBuffer& buf, std::error_code& ec) {
 
 std::size_t TcpSocket::write_some(const ConstBuffer& buf) {
   std::error_code ec;
-  std::size_t nwrote = socket::write(get_fd(), buf.data(), buf.size(), ec);
+  auto nwrote = socket::write(get_fd(), buf.data(), buf.size(), ec);
   netpp::throw_error(ec, "write_some");
   return nwrote;
 }

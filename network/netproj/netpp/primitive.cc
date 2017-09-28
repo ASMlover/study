@@ -31,10 +31,10 @@
 namespace netpp {
 
 namespace socket {
-  int open(int family, int socket_type, int protocol, std::error_code& ec) {
+  socket_t open(
+      int family, int socket_type, int protocol, std::error_code& ec) {
     clear_last_errno();
-    int sockfd = static_cast<int>(
-        error_wrapper(::socket(family, socket_type, protocol), ec));
+    auto sockfd = error_wrapper(::socket(family, socket_type, protocol), ec);
     if (sockfd == kInvalidSocket)
       return sockfd;
 
@@ -42,7 +42,7 @@ namespace socket {
     return sockfd;
   }
 
-  int shutdown(int sockfd, int how, std::error_code& ec) {
+  int shutdown(socket_t sockfd, int how, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
       ec = std::make_error_code(std::errc::bad_file_descriptor);
       return kSocketError;
@@ -55,7 +55,7 @@ namespace socket {
     return r;
   }
 
-  int bind(int sockfd, const void* addr, std::error_code& ec) {
+  int bind(socket_t sockfd, const void* addr, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
       ec = std::make_error_code(std::errc::bad_file_descriptor);
       return kSocketError;
@@ -75,7 +75,7 @@ namespace socket {
     return r;
   }
 
-  int listen(int sockfd, std::error_code& ec) {
+  int listen(socket_t sockfd, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
       ec = std::make_error_code(std::errc::bad_file_descriptor);
       return kSocketError;
@@ -88,7 +88,8 @@ namespace socket {
     return r;
   }
 
-  int accept(int sockfd, void* addr, std::error_code& ec, bool with_v6) {
+  socket_t accept(
+      socket_t sockfd, void* addr, std::error_code& ec, bool with_v6) {
     if (sockfd == kInvalidSocket) {
       ec = std::make_error_code(std::errc::bad_file_descriptor);
       return kSocketError;
@@ -101,8 +102,8 @@ namespace socket {
       addrlen = sizeof(struct sockaddr_in);
 
     clear_last_errno();
-    auto newfd = error_wrapper(static_cast<int>(
-          ::accept(sockfd, (struct sockaddr*)addr, &addrlen)), ec);
+    auto newfd = error_wrapper(
+        ::accept(sockfd, (struct sockaddr*)addr, &addrlen), ec);
     if (newfd == kInvalidSocket)
       return newfd;
 
@@ -110,7 +111,7 @@ namespace socket {
     return newfd;
   }
 
-  int connect(int sockfd, const void* addr, std::error_code& ec) {
+  int connect(socket_t sockfd, const void* addr, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
       ec = std::make_error_code(std::errc::bad_file_descriptor);
       return kSocketError;
