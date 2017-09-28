@@ -37,6 +37,7 @@
 #include <cstddef>
 #include <cstdint>
 #include "../primitive.h"
+#include "../primitive_internal.h"
 
 namespace netpp {
 
@@ -44,41 +45,73 @@ void startup(void) {}
 void cleanup(void) {}
 
 namespace socket {
-  int close(int sockfd) {
-    return ::close(sockfd);
+  int close(int sockfd, std::error_code& ec) {
+    int r{};
+    if (sockfd != -1) {
+      clear_last_errno();
+      r = error_wrapper(::close(sockfd), ec);
+    }
+
+    if (r == 0)
+      ec = std::error_code();
+    return r;
   }
 
-  int read(int sockfd, int len, void* buf) {
-    return ::read(sockfd, buf, static_cast<std::size_t>(len));
+  int read(int sockfd, int len, void* buf, std::error_code& ec) {
+    clear_last_errno();
+    auto nread = error_wrapper(
+        ::read(sockfd, buf, static_cast<std::size_t>(len)), ec);
+    if (nread >= 0)
+      ec = std::error_code();
+    return nread;
   }
 
-  int write(int sockfd, const void* buf, int len) {
-    return ::write(sockfd, buf, static_cast<std::size_t>(len));
+  int write(int sockfd, const void* buf, int len, std::error_code& ec) {
+    clear_last_errno();
+    auto nwrote = error_wrapper(
+        ::write(sockfd, buf, static_cast<std::size_t>(len)), ec);
+    if (nwrote >= 0)
+      ec = std::error_code();
+    return nwrote;
   }
 
-  int readfrom(int sockfd, int len, void* buf, void* addr, bool with_v6) {
+  int readfrom(int sockfd,
+      int len, void* buf, void* addr, std::error_code& ec, bool with_v6) {
     socklen_t addrlen{};
     if (with_v6)
       addrlen = sizeof(struct sockaddr_in6);
     else
       addrlen = sizeof(struct sockaddr_in);
 
-    return ::recvfrom(sockfd, buf, static_cast<std::size_t>(len),
-        0, static_cast<struct sockaddr*>(addr), &addrlen);
+    clear_last_errno();
+    auto nread = error_wrapper(
+        ::recvfrom(sockfd, buf, static_cast<std::size_t>(len),
+        0, static_cast<struct sockaddr*>(addr), &addrlen), ec);
+    if (nread >= 0)
+      ec = std::error_code();
+    return nread;
   }
 
-  int writeto(int sockfd, const void* buf, int len, const void* addr) {
+  int writeto(int sockfd,
+      const void* buf, int len, const void* addr, std::error_code& ec) {
     auto* to_addr = static_cast<const struct sockaddr*>(addr);
-
     socklen_t addrlen{};
     if (to_addr->sa_family == AF_INET6)
       addrlen = sizeof(struct sockaddr_in6);
     else
       addrlen = sizeof(struct sockaddr_in);
 
-    return ::sendto(sockfd,
-        buf, static_cast<std::size_t>(len), 0, to_addr, addrlen);
+    clear_last_errno();
+    auto nwrote = error_wrapper(::sendto(
+          sockfd, buf, static_cast<std::size_t>(len), 0, to_addr, addrlen), ec);
+    if (nwrote >= 0)
+      ec = std::error_code();
+    return nwrote;
   }
+}
+
+void clear_last_errno(void) {
+  errno = 0;
 }
 
 int get_errno(void) {

@@ -87,6 +87,10 @@ namespace socket {
   }
 }
 
+void clear_last_errno(void) {
+  ::WSASetLastError(0);
+}
+
 int get_errno(void) {
   return ::WSAGetLastError();
 }

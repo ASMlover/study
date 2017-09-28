@@ -24,71 +24,110 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <Chaos/Base/Platform.h>
-#if defined(CHAOS_WINDOWS)
-# include <WS2tcpip.h>
-# if !defined(_WINDOWS_)
-#   include <WinSock2.h>
-# endif
-  using socklen_t = int;
-#else
-# include <arpa/inet.h>
-# include <netinet/in.h>
-# include <netinet/tcp.h>
-# include <sys/socket.h>
-# include <sys/types.h>
-# include <sys/time.h>
-# include <netdb.h>
-#endif
+#include "netpp_internal.h"
+#include "primitive_internal.h"
 #include "primitive.h"
 
 namespace netpp {
 
 namespace socket {
-  int open(int family, int socket_type, int protocol) {
-    return static_cast<int>(::socket(family, socket_type, protocol));
+  int open(int family, int socket_type, int protocol, std::error_code& ec) {
+    clear_last_errno();
+    int sockfd = static_cast<int>(
+        error_wrapper(::socket(family, socket_type, protocol), ec));
+    if (sockfd == kInvalidSocket)
+      return sockfd;
+
+    ec = std::error_code();
+    return sockfd;
   }
 
-  int shutdown(int sockfd, int how) {
-    return ::shutdown(sockfd, how);
+  int shutdown(int sockfd, int how, std::error_code& ec) {
+    if (sockfd == kInvalidSocket) {
+      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      return kSocketError;
+    }
+
+    clear_last_errno();
+    int r = error_wrapper(::shutdown(sockfd, how), ec);
+    if (r == 0)
+      ec = std::error_code();
+    return r;
   }
 
-  int bind(int sockfd, const void* addr) {
+  int bind(int sockfd, const void* addr, std::error_code& ec) {
+    if (sockfd == kInvalidSocket) {
+      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      return kSocketError;
+    }
+
     auto* bind_addr = static_cast<const struct sockaddr*>(addr);
-
     socklen_t addrlen{};
     if (bind_addr->sa_family == AF_INET6)
       addrlen = sizeof(struct sockaddr_in6);
     else
       addrlen = sizeof(struct sockaddr_in);
 
-    return ::bind(sockfd, bind_addr, addrlen);
+    clear_last_errno();
+    int r = error_wrapper(::bind(sockfd, bind_addr, addrlen), ec);
+    if (r == 0)
+      ec = std::error_code();
+    return r;
   }
 
-  int listen(int sockfd) {
-    return ::listen(sockfd, SOMAXCONN);
+  int listen(int sockfd, std::error_code& ec) {
+    if (sockfd == kInvalidSocket) {
+      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      return kSocketError;
+    }
+
+    clear_last_errno();
+    int r = error_wrapper(::listen(sockfd, SOMAXCONN), ec);
+    if (r == 0)
+      ec = std::error_code();
+    return r;
   }
 
-  int accept(int sockfd, void* addr, bool with_v6) {
+  int accept(int sockfd, void* addr, std::error_code& ec, bool with_v6) {
+    if (sockfd == kInvalidSocket) {
+      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      return kSocketError;
+    }
+
     socklen_t addrlen{};
     if (with_v6)
       addrlen = sizeof(struct sockaddr_in6);
     else
       addrlen = sizeof(struct sockaddr_in);
 
-    return static_cast<int>(::accept(sockfd, (struct sockaddr*)addr, &addrlen));
+    clear_last_errno();
+    auto newfd = error_wrapper(static_cast<int>(
+          ::accept(sockfd, (struct sockaddr*)addr, &addrlen)), ec);
+    if (newfd == kInvalidSocket)
+      return newfd;
+
+    ec = std::error_code();
+    return newfd;
   }
 
-  int connect(int sockfd, const void* addr) {
-    auto* connect_addr = static_cast<const struct sockaddr*>(addr);
+  int connect(int sockfd, const void* addr, std::error_code& ec) {
+    if (sockfd == kInvalidSocket) {
+      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      return kSocketError;
+    }
 
+    auto* connect_addr = static_cast<const struct sockaddr*>(addr);
     socklen_t addrlen{};
     if (connect_addr->sa_family == AF_INET6)
       addrlen = sizeof(struct sockaddr_in6);
     else
       addrlen = sizeof(struct sockaddr_in);
 
-    return ::connect(sockfd, connect_addr, addrlen);
+    clear_last_errno();
+    int r = error_wrapper(::connect(sockfd, connect_addr, addrlen), ec);
+    if (r == 0)
+      ec = std::error_code();
+    return r;
   }
 }
 

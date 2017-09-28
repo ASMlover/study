@@ -26,50 +26,26 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <system_error>
-
-struct sockaddr;
+#include <Chaos/Base/Platform.h>
+#if defined(CHAOS_WINDOWS)
+# include <WS2tcpip.h>
+# if !defined(_WINDOWS_)
+#   include <WinSock2.h>
+# endif
+  using socklen_t = int;
+#else
+# include <arpa/inet.h>
+# include <netinet/in.h>
+# include <netinet/tcp.h>
+# include <sys/socket.h>
+# include <sys/types.h>
+# include <sys/time.h>
+# include <netdb.h>
+#endif
 
 namespace netpp {
 
-void startup(void);
-void cleanup(void);
-
-namespace socket {
-  static constexpr int SHUT_READ = 0;
-  static constexpr int SHUT_WRITE = 1;
-  static constexpr int SHUT_BOTH = 2;
-
-  int open(int family, int socket_type, int protocol, std::error_code& ec);
-  int close(int sockfd, std::error_code& ec);
-  int shutdown(int sockfd, int how, std::error_code& ec);
-  int bind(int sockfd, const void* addr, std::error_code& ec);
-  int listen(int sockfd, std::error_code& ec);
-  int accept(int sockfd, void* addr, std::error_code& ec, bool with_v6 = false);
-  int connect(int sockfd, const void* addr, std::error_code& ec);
-  int read(int sockfd, int len, void* buf, std::error_code& ec);
-  int write(int sockfd, const void* buf, int len, std::error_code& ec);
-  int readfrom(int sockfd,
-      int len, void* buf, void* addr, std::error_code& ec, bool with_v6 = false);
-  int writeto(int sockfd,
-      const void* buf, int len, const void* addr, std::error_code& ec);
-}
-
-void clear_last_errno(void);
-int get_errno(void);
-
-const char* inet_ntop(int family, const void* addr, int len, char* buf);
-int inet_pton(int family, const char* buf, void* addr);
-
-struct PollFd {
-  int fd{};
-  short events{};
-  short revents{};
-
-  PollFd(int f, short ev, short rev)
-    : fd(f), events(ev), revents(rev) {
-  }
-};
-int poll(PollFd* fds, int nfds, int timeout);
+static constexpr int kInvalidSocket = -1;
+static constexpr int kSocketError = -1;
 
 }
