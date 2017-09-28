@@ -31,14 +31,17 @@
 namespace netpp {
 
 inline void throw_error(const std::error_code& ec) {
-  throw std::system_error(ec);
+  if (ec)
+    throw std::system_error(ec);
 }
 
 inline void throw_error(const std::error_code& ec, const char* location) {
-  std::string err_msg(location);
-  err_msg += ":";
-  err_msg += ec.message();
-  throw std::system_error(ec, err_msg);
+  if (ec) {
+    std::string err_msg(location);
+    err_msg += ":";
+    err_msg += ec.message();
+    throw std::system_error(ec, err_msg);
+  }
 }
 
 }
