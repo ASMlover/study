@@ -29,6 +29,8 @@
 #include <iostream>
 #include "buffer.h"
 #include "primitive.h"
+#include "address.h"
+#include "socket.h"
 
 #if defined(CHAOS_POSIX)
 #include <arpa/inet.h>
@@ -42,19 +44,17 @@
 
 void echo_server(void) {
   std::error_code ec;
-  int sockfd = netpp::socket::open(AF_INET6, SOCK_STREAM, IPPROTO_TCP, ec);
 
-  struct sockaddr_in6 host_addr6{};
-  host_addr6.sin6_addr = in6addr_any;
-  host_addr6.sin6_family = AF_INET6;
-  host_addr6.sin6_port = htons(5555);
-  netpp::socket::bind(sockfd, &host_addr6, ec);
-  netpp::socket::listen(sockfd, ec);
+  netpp::TcpSocket s;
+  s.open(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
+  netpp::Address host_addr6(5555, false, true);
+  s.bind(host_addr6);
+  netpp::socket::listen(s.get_fd(), ec);
 
   std::vector<std::unique_ptr<std::thread>> threads;
   for (;;) {
     struct sockaddr_in6 addr6{};
-    int connfd = netpp::socket::accept(sockfd, &addr6, ec, true);
+    int connfd = netpp::socket::accept(s.get_fd(), &addr6, ec, true);
     threads.emplace_back(new std::thread([connfd] {
             std::error_code ec;
             std::vector<char> buf(1024);
@@ -71,34 +71,30 @@ void echo_server(void) {
   for (auto& t : threads)
     t->join();
 
-  netpp::socket::close(sockfd, ec);
+  s.close();
 }
 
 void echo_client(void) {
   std::error_code ec;
-  int sockfd = netpp::socket::open(AF_INET, SOCK_STREAM, IPPROTO_TCP, ec);
 
-  struct sockaddr_in addr{};
-  addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-  addr.sin_family = AF_INET;
-  addr.sin_port = htons(5555);
-  netpp::socket::connect(sockfd, &addr, ec);
+  netpp::TcpSocket s;
+  s.open(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  s.connect(netpp::Address("127.0.0.1", 5555));
 
   std::string line;
   std::vector<char> buf(1024);
   while (std::getline(std::cin, line)) {
     if (line == "quit")
       break;
-    netpp::socket::write(sockfd, line.data(), line.size(), ec);
+    s.write(netpp::buffer(line));
 
     buf.assign(buf.size(), 0);
-    if (netpp::socket::read(sockfd, buf.size(), buf.data(), ec) > 0)
+    if (s.read(netpp::buffer(buf)) > 0)
       std::cout << "echo read: " << buf.data() << std::endl;
     else
       break;
   }
-
-  netpp::socket::close(sockfd, ec);
+  s.close();
 }
 
 void echo_sample(char c) {
