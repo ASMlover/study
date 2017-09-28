@@ -41,61 +41,64 @@
 #include <vector>
 
 void echo_server(void) {
-  int sockfd = netpp::socket::open(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
+  std::error_code ec;
+  int sockfd = netpp::socket::open(AF_INET6, SOCK_STREAM, IPPROTO_TCP, ec);
 
   struct sockaddr_in6 host_addr6{};
   host_addr6.sin6_addr = in6addr_any;
   host_addr6.sin6_family = AF_INET6;
   host_addr6.sin6_port = htons(5555);
-  netpp::socket::bind(sockfd, &host_addr6);
-  netpp::socket::listen(sockfd);
+  netpp::socket::bind(sockfd, &host_addr6, ec);
+  netpp::socket::listen(sockfd, ec);
 
   std::vector<std::unique_ptr<std::thread>> threads;
   for (;;) {
     struct sockaddr_in6 addr6{};
-    int connfd = netpp::socket::accept(sockfd, &addr6, true);
+    int connfd = netpp::socket::accept(sockfd, &addr6, ec, true);
     threads.emplace_back(new std::thread([connfd] {
+            std::error_code ec;
             std::vector<char> buf(1024);
             for (;;) {
-              auto n = netpp::socket::read(connfd, buf.size(), buf.data());
+              auto n = netpp::socket::read(connfd, buf.size(), buf.data(), ec);
               if (n > 0)
-                netpp::socket::write(connfd, buf.data(), n);
+                netpp::socket::write(connfd, buf.data(), n, ec);
               else
                 break;
             }
-            netpp::socket::close(connfd);
+            netpp::socket::close(connfd, ec);
           }));
   }
   for (auto& t : threads)
     t->join();
 
-  netpp::socket::close(sockfd);
+  netpp::socket::close(sockfd, ec);
 }
 
 void echo_client(void) {
-  int sockfd = netpp::socket::open(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  std::error_code ec;
+  int sockfd = netpp::socket::open(AF_INET, SOCK_STREAM, IPPROTO_TCP, ec);
 
   struct sockaddr_in addr{};
   addr.sin_addr.s_addr = inet_addr("127.0.0.1");
   addr.sin_family = AF_INET;
   addr.sin_port = htons(5555);
-  netpp::socket::connect(sockfd, &addr);
+  netpp::socket::connect(sockfd, &addr, ec);
 
   std::string line;
   std::vector<char> buf(1024);
   while (std::getline(std::cin, line)) {
     if (line == "quit")
       break;
-    netpp::socket::write(sockfd, line.data(), line.size());
+    netpp::socket::write(sockfd, line.data(), line.size(), ec);
 
     buf.assign(buf.size(), 0);
-    if (netpp::socket::read(sockfd, buf.size(), buf.data()) > 0)
+    if (netpp::socket::read(sockfd, buf.size(), buf.data(), ec) > 0)
       std::cout << "echo read: " << buf.data() << std::endl;
     else
       break;
   }
 
-  netpp::socket::close(sockfd);
+  netpp::socket::close(sockfd, ec);
 }
 
 void echo_sample(char c) {
