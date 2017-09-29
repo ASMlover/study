@@ -101,8 +101,14 @@ namespace socket {
       addrlen = sizeof(struct sockaddr_in);
 
     clear_last_errno();
-    auto newfd = error_wrapper(
+    auto newfd{kInvalidSocket};
+    if (addr != nullptr) {
+      newfd = error_wrapper(
         ::accept(sockfd, (struct sockaddr*)addr, &addrlen), ec);
+    }
+    else {
+      newfd = error_wrapper(::accept(sockfd, nullptr, nullptr), ec);
+    }
     if (newfd == kInvalidSocket)
       return newfd;
 

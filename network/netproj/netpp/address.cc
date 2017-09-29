@@ -49,14 +49,14 @@ Address::Address(const struct sockaddr_in6& addr6)
 
 Address::Address(std::uint16_t port, bool loopback, bool with_v6) {
   if (with_v6) {
-    auto* addr6 = new sockaddr_in6;
+    auto* addr6 = new sockaddr_in6();
     addr6->sin6_family = AF_INET6;
     addr6->sin6_addr = loopback ? in6addr_loopback : in6addr_any;
     addr6->sin6_port = netpp::h2n16(port);
     addr_ = reinterpret_cast<struct sockaddr*>(addr6);
   }
   else {
-    auto* addr4 = new sockaddr_in;
+    auto* addr4 = new sockaddr_in();
     addr4->sin_family = AF_INET;
     addr4->sin_addr.s_addr =
       netpp::h2n32(loopback ? INADDR_LOOPBACK : INADDR_ANY);
@@ -67,14 +67,14 @@ Address::Address(std::uint16_t port, bool loopback, bool with_v6) {
 
 Address::Address(const char* host, std::uint16_t port, bool with_v6) {
   if (with_v6) {
-    auto* addr6 = new sockaddr_in6;
+    auto* addr6 = new sockaddr_in6();
     addr6->sin6_family = AF_INET6;
     addr6->sin6_port = netpp::h2n16(port);
     netpp::inet_pton(AF_INET6, host, &addr6->sin6_addr);
     addr_ = reinterpret_cast<struct sockaddr*>(addr6);
   }
   else {
-    auto* addr4 = new sockaddr_in;
+    auto* addr4 = new sockaddr_in();
     addr4->sin_family = AF_INET;
     addr4->sin_port = netpp::h2n16(port);
     netpp::inet_pton(AF_INET, host, &addr4->sin_addr);
