@@ -33,12 +33,6 @@ struct sockaddr;
 
 namespace netpp {
 
-template <typename ReturnType>
-inline ReturnType error_wrapper(ReturnType r, std::error_code& ec) {
-  ec = std::error_code(get_errno(), std::system_category());
-  return r;
-}
-
 void startup(void);
 void cleanup(void);
 
@@ -67,6 +61,13 @@ namespace socket {
 
 void clear_last_errno(void);
 int get_errno(void);
+
+template <typename ReturnType>
+inline ReturnType error_wrapper(ReturnType r, std::error_code& ec) {
+  ec = std::error_code(get_errno(), std::system_category());
+  return r;
+}
+
 
 const char* inet_ntop(int family, const void* addr, int len, char* buf);
 int inet_pton(int family, const char* buf, void* addr);
