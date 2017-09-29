@@ -126,6 +126,15 @@ std::size_t TcpSocket::read(const MutableBuffer& buf, std::error_code& ec) {
   return socket::read(get_fd(), buf.size(), buf.data(), ec);
 }
 
+void TcpSocket::async_read(
+    const MutableBuffer& buf, const ReadHandler& handler) {
+  // TODO: need io_service
+}
+
+void TcpSocket::async_read(const MutableBuffer& buf, ReadHandler&& handler) {
+  // TODO: need io_service
+}
+
 std::size_t TcpSocket::read_some(const MutableBuffer& buf) {
   std::error_code ec;
   auto nread = socket::read(get_fd(), buf.size(), buf.data(), ec);
@@ -135,15 +144,6 @@ std::size_t TcpSocket::read_some(const MutableBuffer& buf) {
 
 std::size_t TcpSocket::read_some(const MutableBuffer& buf, std::error_code& ec) {
   return socket::read(get_fd(), buf.size(), buf.data(), ec);
-}
-
-void TcpSocket::async_read(
-    const MutableBuffer& buf, const ReadHandler& handler) {
-  // TODO: need io_service
-}
-
-void TcpSocket::async_read(const MutableBuffer& buf, ReadHandler&& handler) {
-  // TODO: need io_service
 }
 
 std::size_t TcpSocket::write(const ConstBuffer& buf) {
@@ -157,6 +157,15 @@ std::size_t TcpSocket::write(const ConstBuffer& buf, std::error_code& ec) {
   return socket::write(get_fd(), buf.data(), buf.size(), ec);
 }
 
+void TcpSocket::async_write(
+    const ConstBuffer& buf, const WriteHandler& handler) {
+  // TODO: need io_service
+}
+
+void TcpSocket::async_write(const ConstBuffer& buf, WriteHandler&& handler) {
+  // TODO: need io_service
+}
+
 std::size_t TcpSocket::write_some(const ConstBuffer& buf) {
   std::error_code ec;
   auto nwrote = socket::write(get_fd(), buf.data(), buf.size(), ec);
@@ -168,12 +177,91 @@ std::size_t TcpSocket::write_some(const ConstBuffer& buf, std::error_code& ec) {
   return socket::write(get_fd(), buf.data(), buf.size(), ec);
 }
 
-void TcpSocket::async_write(
+std::size_t UdpSocket::read(const MutableBuffer& buf) {
+  std::error_code ec;
+  auto nread = socket::read(get_fd(), buf.size(), buf.data(), ec);
+  netpp::throw_error(ec, "read");
+  return nread;
+}
+
+std::size_t UdpSocket::read(const MutableBuffer& buf, std::error_code& ec) {
+  return socket::read(get_fd(), buf.size(), buf.data(), ec);
+}
+
+void UdpSocket::async_read(
+    const MutableBuffer& buf, const ReadHandler& handler) {
+  // TODO: need io_service
+}
+
+void UdpSocket::async_read(const MutableBuffer& buf, ReadHandler&& handler) {
+  // TODO: need io_service
+}
+
+std::size_t UdpSocket::read_from(const MutableBuffer& buf, Address& addr) {
+  std::error_code ec;
+  auto nread = socket::read_from(get_fd(),
+      buf.size(), buf.data(), addr.get_address(), ec);
+  netpp::throw_error(ec, "read_from");
+  return nread;
+}
+
+std::size_t UdpSocket::read_from(
+    const MutableBuffer& buf, Address& addr, std::error_code& ec) {
+  return socket::read_from(get_fd(),
+      buf.size(), buf.data(), addr.get_address(), ec);
+}
+
+void UdpSocket::async_read_from(
+    const MutableBuffer& buf, Address& addr, const ReadHandler& handler) {
+  // TODO: need io_service
+}
+
+void UdpSocket::async_read_from(
+    const MutableBuffer& buf, Address& addr, ReadHandler&& handler) {
+  // TODO: need io_service
+}
+
+std::size_t UdpSocket::write(const ConstBuffer& buf) {
+  std::error_code ec;
+  auto nwrote = socket::write(get_fd(), buf.data(), buf.size(), ec);
+  netpp::throw_error(ec, "write");
+  return nwrote;
+}
+
+std::size_t UdpSocket::write(const ConstBuffer& buf, std::error_code& ec) {
+  return socket::write(get_fd(), buf.data(), buf.size(), ec);
+}
+
+void UdpSocket::async_write(
     const ConstBuffer& buf, const WriteHandler& handler) {
   // TODO: need io_service
 }
 
-void TcpSocket::async_write(const ConstBuffer& buf, WriteHandler&& handler) {
+void UdpSocket::async_write(const ConstBuffer& buf, WriteHandler&& handler) {
+  // TODO: need io_service
+}
+
+std::size_t UdpSocket::write_to(const ConstBuffer& buf, const Address& addr) {
+  std::error_code ec;
+  auto nwrote = socket::write_to(get_fd(),
+      buf.data(), buf.size(), addr.get_address(), ec);
+  netpp::throw_error(ec, "write_to");
+  return nwrote;
+}
+
+std::size_t UdpSocket::write_to(
+    const ConstBuffer& buf, const Address& addr, std::error_code& ec) {
+  return socket::write_to(get_fd(),
+      buf.data(), buf.size(), addr.get_address(), ec);
+}
+
+void UdpSocket::async_write_to(
+    const ConstBuffer& buf, const Address& addr, const WriteHandler& handler) {
+  // TODO: need io_service
+}
+
+void UdpSocket::async_write_to(
+    const ConstBuffer& buf, const Address& addr, WriteHandler&& handler) {
   // TODO: need io_service
 }
 

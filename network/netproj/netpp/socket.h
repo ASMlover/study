@@ -77,16 +77,44 @@ class TcpSocket : public BaseSocket {
 public:
   std::size_t read(const MutableBuffer& buf);
   std::size_t read(const MutableBuffer& buf, std::error_code& ec);
-  std::size_t read_some(const MutableBuffer& buf);
-  std::size_t read_some(const MutableBuffer& buf, std::error_code& ec);
   void async_read(const MutableBuffer& buf, const ReadHandler& handler);
   void async_read(const MutableBuffer& buf, ReadHandler&& handler);
+  std::size_t read_some(const MutableBuffer& buf);
+  std::size_t read_some(const MutableBuffer& buf, std::error_code& ec);
   std::size_t write(const ConstBuffer& buf);
   std::size_t write(const ConstBuffer& buf, std::error_code& ec);
-  std::size_t write_some(const ConstBuffer& buf);
-  std::size_t write_some(const ConstBuffer& buf, std::error_code& ec);
   void async_write(const ConstBuffer& buf, const WriteHandler& handler);
   void async_write(const ConstBuffer& buf, WriteHandler&& handler);
+  std::size_t write_some(const ConstBuffer& buf);
+  std::size_t write_some(const ConstBuffer& buf, std::error_code& ec);
+};
+
+class UdpSocket : public BaseSocket {
+  using ReadHandler = std::function<void (const std::error_code&, std::size_t)>;
+  using WriteHandler = std::function<void (const std::error_code&, std::size_t)>;
+public:
+  std::size_t read(const MutableBuffer& buf);
+  std::size_t read(const MutableBuffer& buf, std::error_code& ec);
+  void async_read(const MutableBuffer& buf, const ReadHandler& handler);
+  void async_read(const MutableBuffer& buf, ReadHandler&& handler);
+  std::size_t read_from(const MutableBuffer& buf, Address& addr);
+  std::size_t read_from(
+      const MutableBuffer& buf, Address& addr, std::error_code& ec);
+  void async_read_from(
+      const MutableBuffer& buf, Address& addr, const ReadHandler& handler);
+  void async_read_from(
+      const MutableBuffer& buf, Address& addr, ReadHandler&& handler);
+  std::size_t write(const ConstBuffer& buf);
+  std::size_t write(const ConstBuffer& buf, std::error_code& ec);
+  void async_write(const ConstBuffer& buf, const WriteHandler& handler);
+  void async_write(const ConstBuffer& buf, WriteHandler&& handler);
+  std::size_t write_to(const ConstBuffer& buf, const Address& addr);
+  std::size_t write_to(
+      const ConstBuffer& buf, const Address& addr, std::error_code& ec);
+  void async_write_to(
+      const ConstBuffer& buf, const Address& addr, const WriteHandler& handler);
+  void async_write_to(
+      const ConstBuffer& buf, const Address& addr, WriteHandler&& handler);
 };
 
 }
