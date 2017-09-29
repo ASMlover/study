@@ -53,6 +53,9 @@ public:
     return addr_;
   }
 
+  struct sockaddr* get_address(void) {
+    return addr_;
+  }
 };
 
 }

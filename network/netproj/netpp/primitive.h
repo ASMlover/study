@@ -52,9 +52,9 @@ namespace socket {
   int read(socket_t sockfd, std::size_t len, void* buf, std::error_code& ec);
   int write(socket_t sockfd,
       const void* buf, std::size_t len, std::error_code& ec);
-  int readfrom(socket_t sockfd, std::size_t len,
+  int read_from(socket_t sockfd, std::size_t len,
       void* buf, void* addr, std::error_code& ec, bool with_v6 = false);
-  int writeto(socket_t sockfd,
+  int write_to(socket_t sockfd,
       const void* buf, std::size_t len, const void* addr, std::error_code& ec);
   bool set_non_blocking(socket_t sockfd, bool mode, std::error_code& ec);
 }

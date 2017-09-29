@@ -91,7 +91,7 @@ namespace socket {
     return nwrote;
   }
 
-  int readfrom(socket_t sockfd, std::size_t len,
+  int read_from(socket_t sockfd, std::size_t len,
       void* buf, void* addr, std::error_code& ec, bool with_v6) {
     if (sockfd == kInvalidSocket) {
       ec = std::make_error_code(std::errc::bad_file_descriptor);
@@ -113,7 +113,7 @@ namespace socket {
     return nread;
   }
 
-  int writeto(socket_t sockfd,
+  int write_to(socket_t sockfd,
       const void* buf, std::size_t len, const void* addr, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
       ec = std::make_error_code(std::errc::bad_file_descriptor);
