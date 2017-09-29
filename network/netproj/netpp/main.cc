@@ -31,6 +31,7 @@
 #include "primitive.h"
 #include "address.h"
 #include "socket.h"
+#include "acceptor.h"
 
 #if defined(CHAOS_POSIX)
 #include <arpa/inet.h>
@@ -45,33 +46,30 @@
 void echo_server(void) {
   std::error_code ec;
 
-  netpp::TcpSocket s;
-  s.open(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
-  netpp::Address host_addr6(5555, false, true);
-  s.bind(host_addr6);
-  netpp::socket::listen(s.get_fd(), ec);
-
+  netpp::Acceptor acceptor(netpp::Address(5555, false, true));
   std::vector<std::unique_ptr<std::thread>> threads;
   for (;;) {
-    struct sockaddr_in6 addr6{};
-    auto connfd = netpp::socket::accept(s.get_fd(), &addr6, ec, true);
-    threads.emplace_back(new std::thread([connfd] {
+    netpp::TcpSocket conn;
+    acceptor.accept(conn);
+    std::cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ conn " << conn.get_fd() << std::endl;
+    threads.emplace_back(new std::thread([&conn] {
             std::error_code ec;
             std::vector<char> buf(1024);
+            std::cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ conn " << conn.get_fd() << std::endl;
             for (;;) {
-              auto n = netpp::socket::read(connfd, buf.size(), buf.data(), ec);
+              auto n = conn.read(netpp::buffer(buf));
               if (n > 0)
-                netpp::socket::write(connfd, buf.data(), n, ec);
+                conn.write(netpp::buffer(buf, n));
               else
                 break;
             }
-            netpp::socket::close(connfd, ec);
+            conn.close();
           }));
   }
   for (auto& t : threads)
     t->join();
 
-  s.close();
+  acceptor.close();
 }
 
 void echo_client(void) {

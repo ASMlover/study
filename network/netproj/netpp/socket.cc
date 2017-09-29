@@ -39,10 +39,6 @@ BaseSocket::BaseSocket(void) {
 BaseSocket::~BaseSocket(void) {
 }
 
-bool BaseSocket::is_open(void) const {
-  return fd_ == kInvalidSocket;
-}
-
 void BaseSocket::open(int family, int socket_type, int protocol) {
   std::error_code ec;
   fd_ = socket::open(family, socket_type, protocol, ec);

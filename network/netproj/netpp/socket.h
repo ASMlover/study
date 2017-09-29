@@ -46,7 +46,6 @@ public:
   BaseSocket(void);
   ~BaseSocket(void);
 
-  bool is_open(void) const;
   void open(int family, int socket_type, int protocol);
   void open(int family, int socket_type, int protocol, std::error_code& ec);
   void close(void);
@@ -64,6 +63,14 @@ public:
 
   socket_t get_fd(void) const {
     return fd_;
+  }
+
+  void attach_fd(socket_t fd) {
+    fd_ = fd;
+  }
+
+  bool is_open(void) const {
+    return fd_ != kInvalidSocket;
   }
 
   bool is_non_blocking(void) const {
