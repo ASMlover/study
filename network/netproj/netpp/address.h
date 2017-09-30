@@ -58,4 +58,9 @@ public:
   }
 };
 
+template <typename ProtocolType>
+inline ProtocolType get_protocol(const Address& addr) {
+  return ProtocolType::get_protocol(addr.get_family());
+}
+
 }

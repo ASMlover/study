@@ -36,12 +36,10 @@ namespace netpp {
 Acceptor::Acceptor(void) {
 }
 
-Acceptor::Acceptor(Protocol proto) {
+Acceptor::Acceptor(const ProtocolType& protocol) {
   std::error_code ec;
-  if (proto == Protocol::PROTO_V6)
-    fd_ = socket::open(AF_INET6, SOCK_STREAM, IPPROTO_TCP, ec);
-  else
-    fd_ = socket::open(AF_INET, SOCK_STREAM, IPPROTO_TCP, ec);
+  fd_ = socket::open(protocol.family(),
+      protocol.socket_type(), protocol.protocol(), ec);
   netpp::throw_error(ec, "open");
 }
 
@@ -51,7 +49,10 @@ Acceptor::Acceptor(const Address& addr, bool reuse_addr) {
   netpp::throw_error(ec, "open");
 
   if (reuse_addr) {
-    // TODO: set reuse addr option
+    int optval{1};
+    socket::set_option(fd_,
+        SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval), ec);
+    netpp::throw_error(ec, "set_option");
   }
   socket::bind(fd_, addr.get_address(), ec);
   netpp::throw_error(ec, "bind");
@@ -62,20 +63,16 @@ Acceptor::Acceptor(const Address& addr, bool reuse_addr) {
 Acceptor::~Acceptor(void) {
 }
 
-void Acceptor::open(Protocol proto) {
+void Acceptor::open(const ProtocolType& protocol) {
   std::error_code ec;
-  if (proto == Protocol::PROTO_V6)
-    fd_ = socket::open(AF_INET6, SOCK_STREAM, IPPROTO_TCP, ec);
-  else
-    fd_ = socket::open(AF_INET, SOCK_STREAM, IPPROTO_TCP, ec);
+  fd_ = socket::open(protocol.family(),
+      protocol.socket_type(), protocol.protocol(), ec);
   netpp::throw_error(ec, "open");
 }
 
-void Acceptor::open(Protocol proto, std::error_code& ec) {
-  if (proto == Protocol::PROTO_V6)
-    fd_ = socket::open(AF_INET6, SOCK_STREAM, IPPROTO_TCP, ec);
-  else
-    fd_ = socket::open(AF_INET, SOCK_STREAM, IPPROTO_TCP, ec);
+void Acceptor::open(const ProtocolType& protocol, std::error_code& ec) {
+  fd_ = socket::open(protocol.family(),
+      protocol.socket_type(), protocol.protocol(), ec);
 }
 
 void Acceptor::close(void) {

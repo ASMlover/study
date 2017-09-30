@@ -33,6 +33,46 @@
 
 namespace netpp {
 
+Tcp Tcp::v4(void) {
+  return Tcp(AF_INET);
+}
+
+Tcp Tcp::v6(void) {
+  return Tcp(AF_INET6);
+}
+
+Tcp Tcp::get_protocol(int family) {
+  return Tcp(family);
+}
+
+int Tcp::socket_type(void) const {
+  return SOCK_STREAM;
+}
+
+int Tcp::protocol(void) const {
+  return IPPROTO_TCP;
+}
+
+Udp Udp::v4(void) {
+  return Udp(AF_INET);
+}
+
+Udp Udp::v6(void) {
+  return Udp(AF_INET6);
+}
+
+Udp Udp::get_protocol(int family) {
+  return Udp(family);
+}
+
+int Udp::socket_type(void) const {
+  return SOCK_DGRAM;
+}
+
+int Udp::protocol(void) const {
+  return IPPROTO_UDP;
+}
+
 BaseSocket::BaseSocket(void) {
 }
 
@@ -111,6 +151,18 @@ void BaseSocket::non_blocking(bool mode, std::error_code& ec) {
     non_blocking_ = mode;
 }
 
+TcpSocket::TcpSocket(void) {
+}
+
+TcpSocket::TcpSocket(const ProtocolType& protocol) {
+  std::error_code ec;
+  open(protocol.family(), protocol.socket_type(), protocol.protocol(), ec);
+  netpp::throw_error(ec, "open");
+}
+
+TcpSocket::~TcpSocket(void) {
+}
+
 std::size_t TcpSocket::read(const MutableBuffer& buf) {
   std::error_code ec;
   auto nread = socket::read(get_fd(), buf.size(), buf.data(), ec);
@@ -171,6 +223,27 @@ std::size_t TcpSocket::write_some(const ConstBuffer& buf) {
 
 std::size_t TcpSocket::write_some(const ConstBuffer& buf, std::error_code& ec) {
   return socket::write(get_fd(), buf.data(), buf.size(), ec);
+}
+
+UdpSocket::UdpSocket(void) {
+}
+
+UdpSocket::UdpSocket(const ProtocolType& protocol) {
+  std::error_code ec;
+  open(protocol.family(), protocol.socket_type(), protocol.protocol(), ec);
+  netpp::throw_error(ec, "open");
+}
+
+UdpSocket::UdpSocket(const Address& addr) {
+  const auto protocol = netpp::get_protocol<ProtocolType>(addr);
+  std::error_code ec;
+  open(protocol.family(), protocol.socket_type(), protocol.protocol(), ec);
+  netpp::throw_error(ec, "open");
+  bind(addr, ec);
+  netpp::throw_error(ec, "bind");
+}
+
+UdpSocket::~UdpSocket(void) {
 }
 
 std::size_t UdpSocket::read(const MutableBuffer& buf) {

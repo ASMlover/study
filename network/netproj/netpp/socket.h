@@ -30,6 +30,7 @@
 #include <system_error>
 #include <Chaos/Base/UnCopyable.h>
 #include "netpp_types.h"
+#include "protocol.h"
 
 namespace netpp {
 
@@ -43,8 +44,28 @@ class BaseSocket : private Chaos::UnCopyable {
   socket_t fd_{kInvalidSocket};
   bool non_blocking_{};
 public:
+  using TcpProtocol = Tcp;
+  using UdpProtocol = Udp;
+
   BaseSocket(void);
   ~BaseSocket(void);
+
+  BaseSocket(BaseSocket&& o)
+    : fd_(o.fd_)
+    , non_blocking_(o.non_blocking_) {
+    o.fd_ = kInvalidSocket;
+    o.non_blocking_ = false;
+  }
+
+  BaseSocket& operator=(BaseSocket&& o) {
+    if (this != &o) {
+      fd_ = o.fd_;
+      non_blocking_ = o.non_blocking_;
+      o.fd_ = kInvalidSocket;
+      o.non_blocking_ = false;
+    }
+    return *this;
+  }
 
   void open(int family, int socket_type, int protocol);
   void open(int family, int socket_type, int protocol, std::error_code& ec);
@@ -82,6 +103,21 @@ class TcpSocket : public BaseSocket {
   using ReadHandler = std::function<void (const std::error_code&, std::size_t)>;
   using WriteHandler = std::function<void (const std::error_code&, std::size_t)>;
 public:
+  using ProtocolType = Tcp;
+
+  TcpSocket(void);
+  TcpSocket(const ProtocolType& protocol);
+  ~TcpSocket(void);
+
+  TcpSocket(TcpSocket&& o)
+    : BaseSocket(std::move(o)) {
+  }
+
+  TcpSocket& operator=(TcpSocket&& o) {
+    BaseSocket::operator=(std::move(o));
+    return *this;
+  }
+
   std::size_t read(const MutableBuffer& buf);
   std::size_t read(const MutableBuffer& buf, std::error_code& ec);
   void async_read(const MutableBuffer& buf, const ReadHandler& handler);
@@ -100,6 +136,22 @@ class UdpSocket : public BaseSocket {
   using ReadHandler = std::function<void (const std::error_code&, std::size_t)>;
   using WriteHandler = std::function<void (const std::error_code&, std::size_t)>;
 public:
+  using ProtocolType = Udp;
+
+  UdpSocket(void);
+  UdpSocket(const ProtocolType& protocol);
+  UdpSocket(const Address& addr);
+  ~UdpSocket(void);
+
+  UdpSocket(UdpSocket&& o)
+    : BaseSocket(std::move(o)) {
+  }
+
+  UdpSocket& operator=(UdpSocket&& o) {
+    BaseSocket::operator=(std::move(o));
+    return *this;
+  }
+
   std::size_t read(const MutableBuffer& buf);
   std::size_t read(const MutableBuffer& buf, std::error_code& ec);
   void async_read(const MutableBuffer& buf, const ReadHandler& handler);

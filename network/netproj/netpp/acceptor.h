@@ -30,6 +30,7 @@
 #include <system_error>
 #include <Chaos/Base/UnCopyable.h>
 #include "netpp_types.h"
+#include "protocol.h"
 
 namespace netpp {
 
@@ -43,18 +44,32 @@ class Acceptor : private Chaos::UnCopyable {
   socket_t fd_{kInvalidSocket};
   bool non_blocking_{};
 public:
-  enum class Protocol {
-    PROTO_V4,
-    PROTO_V6,
-  };
+  using ProtocolType = Tcp;
 
   Acceptor(void);
-  Acceptor(Protocol proto);
+  Acceptor(const ProtocolType& proto);
   Acceptor(const Address& addr, bool reuse_addr = true);
   ~Acceptor(void);
 
-  void open(Protocol proto);
-  void open(Protocol proto, std::error_code& ec);
+  Acceptor(Acceptor&& o)
+    : fd_(o.fd_)
+    , non_blocking_(o.non_blocking_) {
+    o.fd_ = kInvalidSocket;
+    o.non_blocking_ = false;
+  }
+
+  Acceptor& operator=(Acceptor&& o) {
+    if (this != &o) {
+      fd_ = o.fd_;
+      non_blocking_ = o.non_blocking_;
+      o.fd_ = kInvalidSocket;
+      o.non_blocking_ = false;
+    }
+    return *this;
+  }
+
+  void open(const ProtocolType& protocol);
+  void open(const ProtocolType& protocol, std::error_code& ec);
   void close(void);
   void close(std::error_code& ec);
   void bind(const Address& addr);
