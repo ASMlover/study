@@ -27,21 +27,16 @@
 #include <Chaos/Base/Platform.h>
 #include <Chaos/Base/Types.h>
 #include <iostream>
+#include <memory>
+#include <string>
+#include <thread>
+#include <vector>
+#include "netpp_internal.h"
 #include "buffer.h"
 #include "primitive.h"
 #include "address.h"
 #include "socket.h"
 #include "acceptor.h"
-
-#if defined(CHAOS_POSIX)
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <memory>
-#include <string>
-#include <thread>
-#include <vector>
 
 void echo_server(void) {
   std::error_code ec;
@@ -51,11 +46,9 @@ void echo_server(void) {
   for (;;) {
     netpp::TcpSocket conn;
     acceptor.accept(conn);
-    std::cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ conn " << conn.get_fd() << std::endl;
-    threads.emplace_back(new std::thread([&conn] {
+    threads.emplace_back(new std::thread([](netpp::TcpSocket&& conn) {
             std::error_code ec;
             std::vector<char> buf(1024);
-            std::cout << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ conn " << conn.get_fd() << std::endl;
             for (;;) {
               auto n = conn.read(netpp::buffer(buf));
               if (n > 0)
@@ -64,7 +57,7 @@ void echo_server(void) {
                 break;
             }
             conn.close();
-          }));
+          }, std::move(conn)));
   }
   for (auto& t : threads)
     t->join();
@@ -75,8 +68,7 @@ void echo_server(void) {
 void echo_client(void) {
   std::error_code ec;
 
-  netpp::TcpSocket s;
-  s.open(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  netpp::TcpSocket s(netpp::Tcp::v4());
   s.connect(netpp::Address("127.0.0.1", 5555));
 
   std::string line;
@@ -96,16 +88,13 @@ void echo_client(void) {
 }
 
 void echo_sample(char c) {
+  netpp::startup();
   if (c == 's')
     echo_server();
   else if (c == 'c')
     echo_client();
+  netpp::cleanup();
 }
-#else
-void echo_sample(char c) {
-  std::cout << "netpp - echo_sample: c=" << c << std::endl;
-}
-#endif
 
 int main(int argc, char* argv[]) {
   CHAOS_UNUSED(argc), CHAOS_UNUSED(argv);
