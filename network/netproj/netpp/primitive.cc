@@ -101,7 +101,7 @@ namespace socket {
       addrlen = sizeof(struct sockaddr_in);
 
     clear_last_errno();
-    auto newfd{kInvalidSocket};
+    socket_t newfd{kInvalidSocket};
     if (addr != nullptr) {
       newfd = error_wrapper(
         ::accept(sockfd, (struct sockaddr*)addr, &addrlen), ec);
@@ -131,6 +131,21 @@ namespace socket {
 
     clear_last_errno();
     int r = error_wrapper(::connect(sockfd, connect_addr, addrlen), ec);
+    if (r == 0)
+      ec = std::error_code();
+    return r;
+  }
+
+  int set_option(socket_t sockfd, int level, int optname,
+      const void* optval, std::size_t optlen, std::error_code& ec) {
+    if (sockfd == kInvalidSocket) {
+      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      return kSocketError;
+    }
+
+    clear_last_errno();
+    int r = error_wrapper(::setsockopt(sockfd, level, optname,
+          static_cast<const char*>(optval), static_cast<socklen_t>(optlen)), ec);
     if (r == 0)
       ec = std::error_code();
     return r;

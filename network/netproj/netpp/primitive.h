@@ -57,6 +57,8 @@ namespace socket {
   int write_to(socket_t sockfd,
       const void* buf, std::size_t len, const void* addr, std::error_code& ec);
   bool set_non_blocking(socket_t sockfd, bool mode, std::error_code& ec);
+  int set_option(socket_t sockfd, int level, int optname,
+      const void* optval, std::size_t optlen, std::error_code& ec);
 }
 
 void clear_last_errno(void);
