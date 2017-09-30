@@ -39,9 +39,11 @@
 #include "acceptor.h"
 
 void echo_server(void) {
-  std::error_code ec;
-
-  netpp::Acceptor acceptor(netpp::Address(netpp::IP::v6(), 5555, false));
+#if defined(CHAOS_POSIX)
+  netpp::Acceptor acceptor(netpp::Address(netpp::IP::v6(), 5555));
+#else
+  netpp::Acceptor acceptor(netpp::Address(netpp::IP::v4(), 5555));
+#endif
   std::vector<std::unique_ptr<std::thread>> threads;
   for (;;) {
     netpp::TcpSocket conn;
@@ -66,8 +68,6 @@ void echo_server(void) {
 }
 
 void echo_client(void) {
-  std::error_code ec;
-
   netpp::TcpSocket s(netpp::Tcp::v4());
   s.connect(netpp::Address(netpp::IP::v4(), "127.0.0.1", 5555));
 
