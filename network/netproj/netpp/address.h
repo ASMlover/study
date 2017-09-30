@@ -36,14 +36,15 @@ struct sockaddr_in6;
 
 namespace netpp {
 
+class IP;
+
 class Address : private Chaos::UnCopyable {
   struct sockaddr* addr_{};
 public:
   explicit Address(const struct sockaddr_in& addr);
   explicit Address(const struct sockaddr_in6& addr6);
-  explicit Address(
-      std::uint16_t port, bool loopback = false, bool with_v6 = false);
-  Address(const char* host, std::uint16_t port, bool with_v6 = false);
+  explicit Address(const IP& ipv, std::uint16_t port, bool loopback = false);
+  Address(const IP& ipv, const char* host, std::uint16_t port);
   ~Address(void);
   int get_family(void) const;
   std::string get_host(void) const;

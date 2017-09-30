@@ -35,6 +35,7 @@
 #endif
 #include "compatible_endian.h"
 #include "primitive.h"
+#include "protocol.h"
 #include "address.h"
 
 namespace netpp {
@@ -47,8 +48,8 @@ Address::Address(const struct sockaddr_in6& addr6)
   : addr_(reinterpret_cast<struct sockaddr*>(new sockaddr_in6(addr6))) {
 }
 
-Address::Address(std::uint16_t port, bool loopback, bool with_v6) {
-  if (with_v6) {
+Address::Address(const IP& ipv, std::uint16_t port, bool loopback) {
+  if (ipv.family() == AF_INET6) {
     auto* addr6 = new sockaddr_in6();
     addr6->sin6_family = AF_INET6;
     addr6->sin6_addr = loopback ? in6addr_loopback : in6addr_any;
@@ -65,8 +66,8 @@ Address::Address(std::uint16_t port, bool loopback, bool with_v6) {
   }
 }
 
-Address::Address(const char* host, std::uint16_t port, bool with_v6) {
-  if (with_v6) {
+Address::Address(const IP& ipv, const char* host, std::uint16_t port) {
+  if (ipv.family() == AF_INET6) {
     auto* addr6 = new sockaddr_in6();
     addr6->sin6_family = AF_INET6;
     addr6->sin6_port = netpp::h2n16(port);

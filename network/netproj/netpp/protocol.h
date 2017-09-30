@@ -28,6 +28,22 @@
 
 namespace netpp {
 
+class IP {
+  int family_{};
+
+  explicit IP(int family)
+    : family_(family) {
+  }
+public:
+  static IP v4(void);
+  static IP v6(void);
+  static IP get_protocol(int family);
+
+  int family(void) const {
+    return family_;
+  }
+};
+
 class Tcp {
   int family_{};
 

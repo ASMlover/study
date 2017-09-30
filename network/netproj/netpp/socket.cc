@@ -33,6 +33,18 @@
 
 namespace netpp {
 
+IP IP::v4(void) {
+  return IP(AF_INET);
+}
+
+IP IP::v6(void) {
+  return IP(AF_INET6);
+}
+
+IP IP::get_protocol(int family) {
+  return IP(family);
+}
+
 Tcp Tcp::v4(void) {
   return Tcp(AF_INET);
 }

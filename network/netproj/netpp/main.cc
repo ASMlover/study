@@ -41,7 +41,7 @@
 void echo_server(void) {
   std::error_code ec;
 
-  netpp::Acceptor acceptor(netpp::Address(5555, false, true));
+  netpp::Acceptor acceptor(netpp::Address(netpp::IP::v6(), 5555, false));
   std::vector<std::unique_ptr<std::thread>> threads;
   for (;;) {
     netpp::TcpSocket conn;
@@ -69,7 +69,7 @@ void echo_client(void) {
   std::error_code ec;
 
   netpp::TcpSocket s(netpp::Tcp::v4());
-  s.connect(netpp::Address("127.0.0.1", 5555));
+  s.connect(netpp::Address(netpp::IP::v4(), "127.0.0.1", 5555));
 
   std::string line;
   std::vector<char> buf(1024);
