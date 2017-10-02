@@ -26,19 +26,19 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <Chaos/Base/Platform.h>
 #include <Chaos/Base/Types.h>
+#include <cstring>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <thread>
 #include <vector>
-#include "netpp_internal.h"
 #include "buffer.h"
 #include "primitive.h"
 #include "address.h"
 #include "socket.h"
 #include "acceptor.h"
 
-void echo_server(void) {
+void echo_tcp_server(void) {
 #if defined(CHAOS_POSIX)
   netpp::Acceptor acceptor(netpp::Address(netpp::IP::v6(), 5555));
 #else
@@ -67,7 +67,7 @@ void echo_server(void) {
   acceptor.close();
 }
 
-void echo_client(void) {
+void echo_tcp_client(void) {
   netpp::TcpSocket s(netpp::Tcp::v4());
   s.connect(netpp::Address(netpp::IP::v4(), "127.0.0.1", 5555));
 
@@ -87,12 +87,49 @@ void echo_client(void) {
   s.close();
 }
 
-void echo_sample(char c) {
+void echo_udp_server(void) {
+  netpp::UdpSocket s(netpp::Address(netpp::IP::v4(), 5555));
+
+  std::vector<char> buf(1024);
+  for (;;) {
+    netpp::Address addr(netpp::IP::v4());
+    auto n = s.read_from(netpp::buffer(buf), addr);
+    if (n >= 0)
+      s.write_to(netpp::buffer(buf, n), addr);
+    else
+      break;
+  }
+  s.close();
+}
+
+void echo_udp_client(void) {
+  netpp::UdpSocket s(netpp::UdpSocket::ProtocolType::v4());
+  s.connect(netpp::Address(netpp::IP::v4(), "127.0.0.1", 5555));
+
+  std::string line;
+  std::vector<char> buf(1024);
+  while (std::getline(std::cin, line)) {
+    if (line == "quit")
+      break;
+    s.write(netpp::buffer(line));
+
+    buf.assign(buf.size(), 0);
+    if (s.read(netpp::buffer(buf)) >= 0)
+      std::cout << "from{127.0.0.1:5555} read: " << buf.data() << std::endl;
+  }
+  s.close();
+}
+
+void echo_sample(const char* c) {
   netpp::startup();
-  if (c == 's')
-    echo_server();
-  else if (c == 'c')
-    echo_client();
+  if (std::strcmp(c, "ts") == 0)
+    echo_tcp_server();
+  else if (std::strcmp(c, "tc") == 0)
+    echo_tcp_client();
+  else if (std::strcmp(c, "us") == 0)
+    echo_udp_server();
+  else if (std::strcmp(c, "uc") == 0)
+    echo_udp_client();
   netpp::cleanup();
 }
 
@@ -100,7 +137,7 @@ int main(int argc, char* argv[]) {
   CHAOS_UNUSED(argc), CHAOS_UNUSED(argv);
 
   if (argc > 1)
-    echo_sample(argv[1][0]);
+    echo_sample(argv[1]);
 
   return 0;
 }
