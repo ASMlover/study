@@ -40,6 +40,12 @@
 
 namespace netpp {
 
+Address::Address(const IP& ipv)
+  : addr_(ipv.family() == AF_INET6
+      ? reinterpret_cast<struct sockaddr*>(new sockaddr_in6())
+      : reinterpret_cast<struct sockaddr*>(new sockaddr_in())) {
+}
+
 Address::Address(const struct sockaddr_in& addr)
   : addr_(reinterpret_cast<struct sockaddr*>(new sockaddr_in(addr))) {
 }

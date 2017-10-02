@@ -41,6 +41,7 @@ class IP;
 class Address : private Chaos::UnCopyable {
   struct sockaddr* addr_{};
 public:
+  explicit Address(const IP& ipv);
   explicit Address(const struct sockaddr_in& addr);
   explicit Address(const struct sockaddr_in6& addr6);
   explicit Address(const IP& ipv, std::uint16_t port, bool loopback = false);
