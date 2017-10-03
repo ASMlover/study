@@ -41,3 +41,4 @@
 # include <sys/time.h>
 # include <netdb.h>
 #endif
+#include <cerrno>

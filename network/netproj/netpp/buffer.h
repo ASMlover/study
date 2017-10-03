@@ -92,6 +92,8 @@ public:
   }
 };
 
+class NullBuffer {};
+
 inline MutableBuffer buffer(const MutableBuffer& b) noexcept {
   return MutableBuffer(b);
 }

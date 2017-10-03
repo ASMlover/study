@@ -136,6 +136,20 @@ namespace socket {
     return r;
   }
 
+  int poll_connect(socket_t sockfd, int msec, std::error_code& ec) {
+    if (sockfd == kInvalidSocket) {
+      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      return kSocketError;
+    }
+
+    PollFd fds(sockfd, POLLOUT);
+    clear_last_errno();
+    int r = error_wrapper(netpp::poll(&fds, 1, msec), ec);
+    if (r >= 0)
+      ec = std::error_code();
+    return r;
+  }
+
   int set_option(socket_t sockfd, int level, int optname,
       const void* optval, std::size_t optlen, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
@@ -147,6 +161,40 @@ namespace socket {
     int r = error_wrapper(::setsockopt(sockfd, level, optname,
           static_cast<const char*>(optval), static_cast<socklen_t>(optlen)), ec);
     if (r == 0)
+      ec = std::error_code();
+    return r;
+  }
+
+  int poll_read(
+      socket_t sockfd, bool non_blocking, int msec, std::error_code& ec) {
+    if (sockfd == kInvalidSocket) {
+      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      return kSocketError;
+    }
+
+    PollFd fds(sockfd, POLLIN);
+    clear_last_errno();
+    int r = error_wrapper(netpp::poll(&fds, 1, msec), ec);
+    if (r == 0)
+      ec = non_blocking ? netpp::make_error(EWOULDBLOCK) : std::error_code();
+    else if (r > 0)
+      ec = std::error_code();
+    return r;
+  }
+
+  int poll_write(
+      socket_t sockfd, bool non_blocking, int msec, std::error_code& ec) {
+    if (sockfd == kInvalidSocket) {
+      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      return kSocketError;
+    }
+
+    PollFd fds(sockfd, POLLOUT);
+    clear_last_errno();
+    int r = error_wrapper(netpp::poll(&fds, 1, msec), ec);
+    if (r == 0)
+      ec = non_blocking ? netpp::make_error(EWOULDBLOCK) : std::error_code();
+    else if (r > 0)
       ec = std::error_code();
     return r;
   }

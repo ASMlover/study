@@ -49,9 +49,14 @@ namespace socket {
   socket_t accept(
       socket_t sockfd, void* addr, std::error_code& ec, bool with_v6 = false);
   int connect(socket_t sockfd, const void* addr, std::error_code& ec);
+  int poll_connect(socket_t sockfd, int msec, std::error_code& ec);
   int read(socket_t sockfd, std::size_t len, void* buf, std::error_code& ec);
+  int poll_read(
+      socket_t sockfd, bool non_blocking, int msec, std::error_code& ec);
   int write(socket_t sockfd,
       const void* buf, std::size_t len, std::error_code& ec);
+  int poll_write(
+      socket_t sockfd, bool non_blocking, int msec, std::error_code& ec);
   int read_from(socket_t sockfd, std::size_t len,
       void* buf, void* addr, std::error_code& ec, bool with_v6 = false);
   int write_to(socket_t sockfd,
@@ -70,6 +75,10 @@ inline ReturnType error_wrapper(ReturnType r, std::error_code& ec) {
   return r;
 }
 
+inline std::error_code make_error(int ec) {
+  return std::error_code(ec, std::system_category());
+}
+
 
 const char* inet_ntop(int family, const void* addr, int len, char* buf);
 int inet_pton(int family, const char* buf, void* addr);
@@ -79,7 +88,7 @@ struct PollFd {
   short events{};
   short revents{};
 
-  PollFd(socket_t f, short ev, short rev)
+  PollFd(socket_t f, short ev = 0, short rev = 0)
     : fd(f), events(ev), revents(rev) {
   }
 };
