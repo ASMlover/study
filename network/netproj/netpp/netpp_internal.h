@@ -42,3 +42,4 @@
 # include <netdb.h>
 #endif
 #include <cerrno>
+#include "error.h"

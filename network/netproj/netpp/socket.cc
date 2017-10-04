@@ -25,7 +25,6 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "netpp_internal.h"
-#include "utils.h"
 #include "primitive.h"
 #include "address.h"
 #include "buffer.h"

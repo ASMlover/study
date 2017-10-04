@@ -94,7 +94,7 @@ void echo_udp_server(void) {
   for (;;) {
     netpp::Address addr(netpp::IP::v4());
     auto n = s.read_from(netpp::buffer(buf), addr);
-    if (n >= 0)
+    if (n > 0)
       s.write_to(netpp::buffer(buf, n), addr);
     else
       break;
@@ -114,7 +114,7 @@ void echo_udp_client(void) {
     s.write(netpp::buffer(line));
 
     buf.assign(buf.size(), 0);
-    if (s.read(netpp::buffer(buf)) >= 0)
+    if (s.read(netpp::buffer(buf)) > 0)
       std::cout << "from{127.0.0.1:5555} read: " << buf.data() << std::endl;
   }
   s.close();
