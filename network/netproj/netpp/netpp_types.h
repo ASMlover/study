@@ -27,6 +27,8 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
+#include <system_error>
 #include <Chaos/Base/Platform.h>
 
 #if defined(CHAOS_WINDOWS)
@@ -44,5 +46,10 @@ namespace netpp {
 
 static constexpr socket_t kInvalidSocket = (socket_t)(~0);
 static constexpr int kSocketError = -1;
+
+using AcceptHandler = std::function<void (const std::error_code&)>;
+using ConnectHandler = std::function<void (const std::error_code&)>;
+using ReadHandler = std::function<void (const std::error_code&, std::size_t)>;
+using WriteHandler = std::function<void (const std::error_code&, std::size_t)>;
 
 }
