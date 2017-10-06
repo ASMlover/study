@@ -37,8 +37,10 @@
 #include "address.h"
 #include "socket.h"
 #include "acceptor.h"
+#include "socket_service.h"
 
 void echo_tcp_server(void) {
+  netpp::SocketService service;
 #if defined(CHAOS_POSIX)
   netpp::Acceptor acceptor(netpp::Address(netpp::IP::v6(), 5555));
 #else
@@ -46,7 +48,7 @@ void echo_tcp_server(void) {
 #endif
   std::vector<std::unique_ptr<std::thread>> threads;
   for (;;) {
-    netpp::TcpSocket conn;
+    netpp::TcpSocket conn(service);
     acceptor.accept(conn);
     threads.emplace_back(new std::thread([](netpp::TcpSocket&& conn) {
             std::error_code ec;
@@ -68,7 +70,8 @@ void echo_tcp_server(void) {
 }
 
 void echo_tcp_client(void) {
-  netpp::TcpSocket s(netpp::Tcp::v4());
+  netpp::SocketService service;
+  netpp::TcpSocket s(service, netpp::Tcp::v4());
   s.connect(netpp::Address(netpp::IP::v4(), "127.0.0.1", 5555));
 
   std::string line;
@@ -88,7 +91,8 @@ void echo_tcp_client(void) {
 }
 
 void echo_udp_server(void) {
-  netpp::UdpSocket s(netpp::Address(netpp::IP::v4(), 5555));
+  netpp::SocketService service;
+  netpp::UdpSocket s(service, netpp::Address(netpp::IP::v4(), 5555));
 
   std::vector<char> buf(1024);
   for (;;) {
@@ -103,7 +107,8 @@ void echo_udp_server(void) {
 }
 
 void echo_udp_client(void) {
-  netpp::UdpSocket s(netpp::UdpSocket::ProtocolType::v4());
+  netpp::SocketService service;
+  netpp::UdpSocket s(service, netpp::UdpSocket::ProtocolType::v4());
   s.connect(netpp::Address(netpp::IP::v4(), "127.0.0.1", 5555));
 
   std::string line;

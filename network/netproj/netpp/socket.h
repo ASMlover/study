@@ -37,32 +37,36 @@ namespace netpp {
 class Address;
 class ConstBuffer;
 class MutableBuffer;
+class SocketService;
 
 class BaseSocket : private Chaos::UnCopyable {
-  using ConnectHandler = std::function<void (const std::error_code&)>;
-
   socket_t fd_{kInvalidSocket};
   bool non_blocking_{};
+  SocketService* service_{};
 public:
   using TcpProtocol = Tcp;
   using UdpProtocol = Udp;
 
-  BaseSocket(void);
+  BaseSocket(SocketService& service);
   ~BaseSocket(void);
 
   BaseSocket(BaseSocket&& o)
     : fd_(o.fd_)
-    , non_blocking_(o.non_blocking_) {
+    , non_blocking_(o.non_blocking_)
+    , service_(o.service_) {
     o.fd_ = kInvalidSocket;
     o.non_blocking_ = false;
+    o.service_ = nullptr;
   }
 
   BaseSocket& operator=(BaseSocket&& o) {
     if (this != &o) {
       fd_ = o.fd_;
       non_blocking_ = o.non_blocking_;
+      service_ = o.service_;
       o.fd_ = kInvalidSocket;
       o.non_blocking_ = false;
+      o.service_ = nullptr;
     }
     return *this;
   }
@@ -97,16 +101,18 @@ public:
   bool is_non_blocking(void) const {
     return non_blocking_;
   }
+
+  SocketService& get_service(void) {
+    return *service_;
+  }
 };
 
 class TcpSocket : public BaseSocket {
-  using ReadHandler = std::function<void (const std::error_code&, std::size_t)>;
-  using WriteHandler = std::function<void (const std::error_code&, std::size_t)>;
 public:
   using ProtocolType = Tcp;
 
-  TcpSocket(void);
-  TcpSocket(const ProtocolType& protocol);
+  TcpSocket(SocketService& service);
+  TcpSocket(SocketService& service, const ProtocolType& protocol);
   ~TcpSocket(void);
 
   TcpSocket(TcpSocket&& o)
@@ -133,14 +139,12 @@ public:
 };
 
 class UdpSocket : public BaseSocket {
-  using ReadHandler = std::function<void (const std::error_code&, std::size_t)>;
-  using WriteHandler = std::function<void (const std::error_code&, std::size_t)>;
 public:
   using ProtocolType = Udp;
 
-  UdpSocket(void);
-  UdpSocket(const ProtocolType& protocol);
-  UdpSocket(const Address& addr);
+  UdpSocket(SocketService& service);
+  UdpSocket(SocketService& service, const ProtocolType& protocol);
+  UdpSocket(SocketService& service, const Address& addr);
   ~UdpSocket(void);
 
   UdpSocket(UdpSocket&& o)
