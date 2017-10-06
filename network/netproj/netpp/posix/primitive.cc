@@ -137,7 +137,7 @@ namespace socket {
     int r = error_wrapper(::fcntl(sockfd, F_GETFL, 0), ec);
     if (r >= 0) {
       clear_last_errno();
-      int flags =- (mode ? (r | O_NONBLOCK) : (r & ~O_NONBLOCK));
+      int flags = (mode ? (r | O_NONBLOCK) : (r & ~O_NONBLOCK));
       r = error_wrapper(::fcntl(sockfd, F_SETFL, flags), ec);
     }
 
