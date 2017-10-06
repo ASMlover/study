@@ -39,7 +39,7 @@ class MutableBuffer;
 
 class SocketService : private Chaos::UnCopyable {
 public:
-  void non_blocking(socket_t sockfd, bool mode, std::error_code& ec);
+  bool non_blocking(socket_t sockfd, bool mode, std::error_code& ec);
   socket_t open(int family, int socket_type, int protocol, std::error_code& ec);
   void close(socket_t sockfd, std::error_code& ec);
   void shutdown(socket_t sockfd, int how, std::error_code& ec);

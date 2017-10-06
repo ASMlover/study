@@ -32,9 +32,9 @@
 
 namespace netpp {
 
-void SocketService::non_blocking(
+bool SocketService::non_blocking(
     socket_t sockfd, bool mode, std::error_code& ec) {
-  socket::set_non_blocking(sockfd, mode, ec);
+  return socket::set_non_blocking(sockfd, mode, ec);
 }
 
 socket_t SocketService::open(
