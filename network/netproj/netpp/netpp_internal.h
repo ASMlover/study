@@ -40,6 +40,7 @@
 # include <sys/types.h>
 # include <sys/time.h>
 # include <netdb.h>
+# include <poll.h>
 #endif
 #include <cerrno>
 #include "error.h"
