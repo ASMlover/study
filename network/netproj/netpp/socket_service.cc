@@ -76,7 +76,7 @@ void SocketService::async_accept(socket_t sockfd,
 
 void SocketService::connect(
     socket_t sockfd, const Address& addr, std::error_code& ec) {
-  socket::bind(sockfd, addr.get_address(), ec);
+  socket::connect(sockfd, addr.get_address(), ec);
 }
 
 void SocketService::async_connect(
