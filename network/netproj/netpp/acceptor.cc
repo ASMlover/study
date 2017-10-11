@@ -25,37 +25,41 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "netpp_internal.h"
-#include "primitive.h"
 #include "address.h"
 #include "socket.h"
+#include "socket_service.h"
 #include "acceptor.h"
 
 namespace netpp {
 
-Acceptor::Acceptor(void) {
+Acceptor::Acceptor(SocketService& service)
+  : service_(&service) {
 }
 
-Acceptor::Acceptor(const ProtocolType& protocol) {
+Acceptor::Acceptor(SocketService& service, const ProtocolType& protocol)
+  : service_(&service) {
   std::error_code ec;
-  fd_ = socket::open(protocol.family(),
+  fd_ = get_service().open(protocol.family(),
       protocol.socket_type(), protocol.protocol(), ec);
   netpp::throw_error(ec, "open");
 }
 
-Acceptor::Acceptor(const Address& addr, bool reuse_addr) {
+Acceptor::Acceptor(
+    SocketService& service, const Address& addr, bool reuse_addr)
+  : service_(&service) {
   std::error_code ec;
-  fd_ = socket::open(addr.get_family(), SOCK_STREAM, IPPROTO_TCP, ec);
+  fd_ = get_service().open(addr.get_family(), SOCK_STREAM, IPPROTO_TCP, ec);
   netpp::throw_error(ec, "open");
 
   if (reuse_addr) {
     int optval{1};
-    socket::set_option(fd_,
+    get_service().set_option(fd_,
         SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval), ec);
     netpp::throw_error(ec, "set_option");
   }
-  socket::bind(fd_, addr.get_address(), ec);
+  get_service().bind(fd_, addr, ec);
   netpp::throw_error(ec, "bind");
-  socket::listen(fd_, ec);
+  get_service().listen(fd_, ec);
   netpp::throw_error(ec, "listen");
 }
 
@@ -64,56 +68,56 @@ Acceptor::~Acceptor(void) {
 
 void Acceptor::open(const ProtocolType& protocol) {
   std::error_code ec;
-  fd_ = socket::open(protocol.family(),
+  fd_ = get_service().open(protocol.family(),
       protocol.socket_type(), protocol.protocol(), ec);
   netpp::throw_error(ec, "open");
 }
 
 void Acceptor::open(const ProtocolType& protocol, std::error_code& ec) {
-  fd_ = socket::open(protocol.family(),
+  fd_ = get_service().open(protocol.family(),
       protocol.socket_type(), protocol.protocol(), ec);
 }
 
 void Acceptor::close(void) {
   std::error_code ec;
-  socket::close(fd_, ec);
+  get_service().close(fd_, ec);
   netpp::throw_error(ec, "close");
 }
 
 void Acceptor::close(std::error_code& ec) {
-  socket::close(fd_, ec);
+  get_service().close(fd_, ec);
 }
 
 void Acceptor::bind(const Address& addr) {
   std::error_code ec;
-  socket::bind(fd_, addr.get_address(), ec);
+  get_service().bind(fd_, addr, ec);
   netpp::throw_error(ec, "bind");
 }
 
 void Acceptor::bind(const Address& addr, std::error_code& ec) {
-  socket::bind(fd_, addr.get_address(), ec);
+  get_service().bind(fd_, addr, ec);
 }
 
 void Acceptor::listen(void) {
   std::error_code ec;
-  socket::listen(fd_, ec);
+  get_service().listen(fd_, ec);
   netpp::throw_error(ec, "listen");
 }
 
 void Acceptor::listen(std::error_code& ec) {
-  socket::listen(fd_, ec);
+  get_service().listen(fd_, ec);
 }
 
 void Acceptor::accept(BaseSocket& peer) {
   std::error_code ec;
-  auto sockfd = socket::accept(fd_, nullptr, ec);
+  auto sockfd = get_service().accept(fd_, nullptr, is_non_blocking(), ec);
   if (sockfd != kInvalidSocket)
     peer.attach_fd(sockfd);
   netpp::throw_error(ec, "accept");
 }
 
 void Acceptor::accept(BaseSocket& peer, std::error_code& ec) {
-  auto sockfd = socket::accept(fd_, nullptr, ec);
+  auto sockfd = get_service().accept(fd_, nullptr, is_non_blocking(), ec);
   if (sockfd != kInvalidSocket)
     peer.attach_fd(sockfd);
 }
@@ -128,14 +132,14 @@ void Acceptor::async_accept(BaseSocket& peer, AcceptHandler&& handler) {
 
 void Acceptor::accept(BaseSocket& peer, Address& addr) {
   std::error_code ec;
-  auto sockfd = socket::accept(fd_, addr.get_address(), ec);
+  auto sockfd = get_service().accept(fd_, &addr, is_non_blocking(), ec);
   if (sockfd != kInvalidSocket)
     peer.attach_fd(sockfd);
   netpp::throw_error(ec, "accept");
 }
 
 void Acceptor::accept(BaseSocket& peer, Address& addr, std::error_code& ec) {
-  auto sockfd = socket::accept(fd_, addr.get_address(), ec);
+  auto sockfd = get_service().accept(fd_, &addr, is_non_blocking(), ec);
   if (sockfd != kInvalidSocket)
     peer.attach_fd(sockfd);
 }
@@ -152,13 +156,13 @@ void Acceptor::async_accept(
 
 void Acceptor::set_non_blocking(bool mode) {
   std::error_code ec;
-  if (socket::set_non_blocking(fd_, mode, ec))
+  if (get_service().set_non_blocking(fd_, mode, ec))
     non_blocking_ = mode;
   netpp::throw_error(ec, "non_blocking");
 }
 
 void Acceptor::set_non_blocking(bool mode, std::error_code& ec) {
-  if (socket::set_non_blocking(fd_, mode, ec))
+  if (get_service().set_non_blocking(fd_, mode, ec))
     non_blocking_ = mode;
 }
 

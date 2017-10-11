@@ -36,6 +36,7 @@ namespace netpp {
 
 class Address;
 class BaseSocket;
+class SocketService;
 
 // Tcp socket acceptor
 class Acceptor : private Chaos::UnCopyable {
@@ -43,17 +44,19 @@ class Acceptor : private Chaos::UnCopyable {
 
   socket_t fd_{kInvalidSocket};
   bool non_blocking_{};
+  SocketService* service_{};
 public:
   using ProtocolType = Tcp;
 
-  Acceptor(void);
-  Acceptor(const ProtocolType& proto);
-  Acceptor(const Address& addr, bool reuse_addr = true);
+  Acceptor(SocketService& service);
+  Acceptor(SocketService& service, const ProtocolType& proto);
+  Acceptor(SocketService& service, const Address& addr, bool reuse_addr = true);
   ~Acceptor(void);
 
   Acceptor(Acceptor&& o)
     : fd_(o.fd_)
-    , non_blocking_(o.non_blocking_) {
+    , non_blocking_(o.non_blocking_)
+    , service_(o.service_) {
     o.fd_ = kInvalidSocket;
     o.non_blocking_ = false;
   }
@@ -62,8 +65,10 @@ public:
     if (this != &o) {
       fd_ = o.fd_;
       non_blocking_ = o.non_blocking_;
+      service_ = o.service_;
       o.fd_ = kInvalidSocket;
       o.non_blocking_ = false;
+      o.service_ = nullptr;
     }
     return *this;
   }
@@ -98,6 +103,10 @@ public:
 
   bool is_non_blocking(void) const {
     return non_blocking_;
+  }
+
+  SocketService& get_service(void) {
+    return *service_;
   }
 };
 
