@@ -34,8 +34,10 @@
 #if defined(CHAOS_WINDOWS)
 # if defined(CHAOS_ARCH64)
     using socket_t = std::uint64_t;
+    using ssize_t = std::int64_t;
 # else
     using socket_t = std::uint32_t;
+    using ssize_t = long;
 # endif
   using socklen_t = int;
 #else
