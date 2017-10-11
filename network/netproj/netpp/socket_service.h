@@ -40,13 +40,18 @@ class NullBuffer;
 
 class SocketService : private Chaos::UnCopyable {
 public:
-  bool non_blocking(socket_t sockfd, bool mode, std::error_code& ec);
+  bool set_non_blocking(socket_t sockfd, bool mode, std::error_code& ec);
+  int set_option(socket_t sockfd, int level, int optname,
+      const void* optval, std::size_t optlen, std::error_code& ec);
+  int get_option(socket_t sockfd, int level, int optname,
+      void* optval, std::size_t* optlen, std::error_code& ec);
   socket_t open(int family, int socket_type, int protocol, std::error_code& ec);
   void close(socket_t sockfd, std::error_code& ec);
   void shutdown(socket_t sockfd, int how, std::error_code& ec);
   void bind(socket_t sockfd, const Address& addr, std::error_code& ec);
   void listen(socket_t sockfd, std::error_code& ec);
-  socket_t accept(socket_t sockfd, Address& peer_addr, std::error_code& ec);
+  socket_t accept(socket_t sockfd,
+      Address* peer_addr, bool non_blocking, std::error_code& ec);
   void async_accept(socket_t sockfd,
       BaseSocket& peer, Address& peer_addr, const AcceptHandler& handler);
   void async_accept(socket_t sockfd,
@@ -74,12 +79,16 @@ public:
       socket_t sockfd, const ConstBuffer& buf, WriteHandler&& handler);
   std::size_t read_from(socket_t sockfd, const MutableBuffer& buf,
       Address& peer_addr, bool non_blocking, std::error_code& ec);
+  std::size_t read_from(socket_t sockfd,
+      const NullBuffer&, Address&, bool non_blocking, std::error_code& ec);
   void async_read_from(socket_t sockfd,
       const MutableBuffer& buf, Address& peer_addr, const ReadHandler& handler);
   void async_read_from(socket_t sockfd,
       const MutableBuffer& buf, Address& peer_addr, ReadHandler& handler);
   std::size_t write_to(socket_t sockfd, const ConstBuffer& buf,
       const Address& peer_addr, bool non_blocking, std::error_code& ec);
+  std::size_t write_to(socket_t sockfd, const NullBuffer&,
+      const Address&, bool non_blocking, std::error_code& ec);
   void async_write_to(socket_t sockfd, const ConstBuffer& buf,
       const Address& peer_addr, const WriteHandler& handler);
   void async_write_to(socket_t sockfd,

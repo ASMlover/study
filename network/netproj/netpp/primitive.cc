@@ -116,6 +116,26 @@ namespace socket {
     return newfd;
   }
 
+  socket_t sync_accept(socket_t sockfd,
+      void* addr, bool non_blocking, std::error_code& ec, bool with_v6) {
+    for (;;) {
+      socket_t new_sockfd = socket::accept(sockfd, addr, ec, with_v6);
+      if (new_sockfd != kInvalidSocket)
+        return new_sockfd;
+
+      if (ec.value() == error::TRYAGAIN || ec.value() == error::WOULD_BLOCK) {
+        if (non_blocking)
+          return kInvalidSocket;
+      }
+      else {
+        return kInvalidSocket;
+      }
+
+      if (socket::poll_read(sockfd, non_blocking, -1, ec) < 0)
+        return kInvalidSocket;
+    }
+  }
+
   int connect(socket_t sockfd, const void* addr, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
       ec = make_error(error::BAD_DESCRIPTOR);

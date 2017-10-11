@@ -48,6 +48,8 @@ namespace socket {
   int listen(socket_t sockfd, std::error_code& ec);
   socket_t accept(
       socket_t sockfd, void* addr, std::error_code& ec, bool with_v6 = false);
+  socket_t sync_accept(socket_t sockfd,
+      void* addr, bool non_blocking, std::error_code& ec, bool with_v6 = false);
   int connect(socket_t sockfd, const void* addr, std::error_code& ec);
   int poll_connect(socket_t sockfd, int msec, std::error_code& ec);
   int sync_connect(socket_t sockfd, const void* addr, std::error_code& ec);

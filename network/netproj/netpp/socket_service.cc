@@ -32,9 +32,19 @@
 
 namespace netpp {
 
-bool SocketService::non_blocking(
+bool SocketService::set_non_blocking(
     socket_t sockfd, bool mode, std::error_code& ec) {
   return socket::set_non_blocking(sockfd, mode, ec);
+}
+
+int SocketService::set_option(socket_t sockfd, int level, int optname,
+      const void* optval, std::size_t optlen, std::error_code& ec) {
+  return socket::set_option(sockfd, level, optname, optval, optlen, ec);
+}
+
+int SocketService::get_option(socket_t sockfd, int level, int optname,
+      void* optval, std::size_t* optlen, std::error_code& ec) {
+  return socket::get_option(sockfd, level, optname, optval, optlen, ec);
 }
 
 socket_t SocketService::open(
@@ -59,9 +69,10 @@ void SocketService::listen(socket_t sockfd, std::error_code& ec) {
   socket::listen(sockfd, ec);
 }
 
-socket_t SocketService::accept(
-    socket_t sockfd, Address& peer_addr, std::error_code& ec) {
-  return socket::accept(sockfd, peer_addr.get_address(), ec);
+socket_t SocketService::accept(socket_t sockfd,
+    Address* peer_addr, bool non_blocking, std::error_code& ec) {
+  return socket::sync_accept(sockfd,
+      peer_addr ? peer_addr->get_address() : nullptr, non_blocking, ec);
 }
 
 void SocketService::async_accept(socket_t sockfd,
@@ -139,6 +150,12 @@ std::size_t SocketService::read_from(socket_t sockfd, const MutableBuffer& buf,
       buf.size(), buf.data(), peer_addr.get_address(), non_blocking, ec);
 }
 
+std::size_t SocketService::read_from(socket_t sockfd,
+      const NullBuffer&, Address&, bool non_blocking, std::error_code& ec) {
+  socket::poll_read(sockfd, non_blocking, -1, ec);
+  return 0;
+}
+
 void SocketService::async_read_from(socket_t sockfd,
     const MutableBuffer& buf, Address& peer_addr, const ReadHandler& handler) {
   // TODO:
@@ -153,6 +170,12 @@ std::size_t SocketService::write_to(socket_t sockfd, const ConstBuffer& buf,
     const Address& peer_addr, bool non_blocking, std::error_code& ec) {
   return socket::sync_write(sockfd,
       buf.data(), buf.size(), peer_addr.get_address(), non_blocking, ec);
+}
+
+std::size_t SocketService::write_to(socket_t sockfd,
+    const NullBuffer&, const Address&, bool non_blocking, std::error_code& ec) {
+  socket::poll_write(sockfd, non_blocking, -1, ec);
+  return 0;
 }
 
 void SocketService::async_write_to(socket_t sockfd, const ConstBuffer& buf,
