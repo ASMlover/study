@@ -180,13 +180,13 @@ TcpSocket::~TcpSocket(void) {
 
 std::size_t TcpSocket::read(const MutableBuffer& buf) {
   std::error_code ec;
-  auto nread = get_service().read(get_fd(), buf, ec);
+  auto nread = get_service().read(get_fd(), buf, is_non_blocking(), ec);
   netpp::throw_error(ec, "read");
   return nread;
 }
 
 std::size_t TcpSocket::read(const MutableBuffer& buf, std::error_code& ec) {
-  return get_service().read(get_fd(), buf, ec);
+  return get_service().read(get_fd(), buf, is_non_blocking(), ec);
 }
 
 void TcpSocket::async_read(
@@ -200,24 +200,25 @@ void TcpSocket::async_read(const MutableBuffer& buf, ReadHandler&& handler) {
 
 std::size_t TcpSocket::read_some(const MutableBuffer& buf) {
   std::error_code ec;
-  auto nread = get_service().read_some(get_fd(), buf, ec);
+  auto nread = get_service().read(get_fd(), buf, is_non_blocking(), ec);
   netpp::throw_error(ec, "read_some");
   return nread;
 }
 
-std::size_t TcpSocket::read_some(const MutableBuffer& buf, std::error_code& ec) {
-  return get_service().read_some(get_fd(), buf, ec);
+std::size_t TcpSocket::read_some(
+    const MutableBuffer& buf, std::error_code& ec) {
+  return get_service().read(get_fd(), buf, is_non_blocking(), ec);
 }
 
 std::size_t TcpSocket::write(const ConstBuffer& buf) {
   std::error_code ec;
-  auto nwrote = get_service().write(get_fd(), buf, ec);
+  auto nwrote = get_service().write(get_fd(), buf, is_non_blocking(), ec);
   netpp::throw_error(ec, "write");
   return nwrote;
 }
 
 std::size_t TcpSocket::write(const ConstBuffer& buf, std::error_code& ec) {
-  return get_service().write(get_fd(), buf, ec);
+  return get_service().write(get_fd(), buf, is_non_blocking(), ec);
 }
 
 void TcpSocket::async_write(
@@ -231,13 +232,13 @@ void TcpSocket::async_write(const ConstBuffer& buf, WriteHandler&& handler) {
 
 std::size_t TcpSocket::write_some(const ConstBuffer& buf) {
   std::error_code ec;
-  auto nwrote = get_service().write(get_fd(), buf, ec);
+  auto nwrote = get_service().write(get_fd(), buf, is_non_blocking(), ec);
   netpp::throw_error(ec, "write_some");
   return nwrote;
 }
 
 std::size_t TcpSocket::write_some(const ConstBuffer& buf, std::error_code& ec) {
-  return get_service().write(get_fd(), buf, ec);
+  return get_service().write(get_fd(), buf, is_non_blocking(), ec);
 }
 
 UdpSocket::UdpSocket(SocketService& service)
@@ -266,13 +267,13 @@ UdpSocket::~UdpSocket(void) {
 
 std::size_t UdpSocket::read(const MutableBuffer& buf) {
   std::error_code ec;
-  auto nread = get_service().read(get_fd(), buf, ec);
+  auto nread = get_service().read(get_fd(), buf, is_non_blocking(), ec);
   netpp::throw_error(ec, "read");
   return nread;
 }
 
 std::size_t UdpSocket::read(const MutableBuffer& buf, std::error_code& ec) {
-  return get_service().read(get_fd(), buf, ec);
+  return get_service().read(get_fd(), buf, is_non_blocking(), ec);
 }
 
 void UdpSocket::async_read(
@@ -286,14 +287,15 @@ void UdpSocket::async_read(const MutableBuffer& buf, ReadHandler&& handler) {
 
 std::size_t UdpSocket::read_from(const MutableBuffer& buf, Address& addr) {
   std::error_code ec;
-  auto nread = get_service().read_from(get_fd(), buf, addr, ec);
+  auto nread =
+    get_service().read_from(get_fd(), buf, addr, is_non_blocking(), ec);
   netpp::throw_error(ec, "read_from");
   return nread;
 }
 
 std::size_t UdpSocket::read_from(
     const MutableBuffer& buf, Address& addr, std::error_code& ec) {
-  return get_service().read_from(get_fd(), buf, addr, ec);
+  return get_service().read_from(get_fd(), buf, addr, is_non_blocking(), ec);
 }
 
 void UdpSocket::async_read_from(
@@ -308,13 +310,13 @@ void UdpSocket::async_read_from(
 
 std::size_t UdpSocket::write(const ConstBuffer& buf) {
   std::error_code ec;
-  auto nwrote = get_service().write(get_fd(), buf, ec);
+  auto nwrote = get_service().write(get_fd(), buf, is_non_blocking(), ec);
   netpp::throw_error(ec, "write");
   return nwrote;
 }
 
 std::size_t UdpSocket::write(const ConstBuffer& buf, std::error_code& ec) {
-  return get_service().write(get_fd(), buf, ec);
+  return get_service().write(get_fd(), buf, is_non_blocking(), ec);
 }
 
 void UdpSocket::async_write(
@@ -328,14 +330,15 @@ void UdpSocket::async_write(const ConstBuffer& buf, WriteHandler&& handler) {
 
 std::size_t UdpSocket::write_to(const ConstBuffer& buf, const Address& addr) {
   std::error_code ec;
-  auto nwrote = get_service().write_to(get_fd(), buf, addr, ec);
+  auto nwrote =
+    get_service().write_to(get_fd(), buf, addr, is_non_blocking(),  ec);
   netpp::throw_error(ec, "write_to");
   return nwrote;
 }
 
 std::size_t UdpSocket::write_to(
     const ConstBuffer& buf, const Address& addr, std::error_code& ec) {
-  return get_service().write_to(get_fd(), buf, addr, ec);
+  return get_service().write_to(get_fd(), buf, addr, is_non_blocking(), ec);
 }
 
 void UdpSocket::async_write_to(

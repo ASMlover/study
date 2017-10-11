@@ -76,7 +76,7 @@ void SocketService::async_accept(socket_t sockfd,
 
 void SocketService::connect(
     socket_t sockfd, const Address& addr, std::error_code& ec) {
-  socket::connect(sockfd, addr.get_address(), ec);
+  socket::sync_connect(sockfd, addr.get_address(), ec);
 }
 
 void SocketService::async_connect(
@@ -89,9 +89,16 @@ void SocketService::async_connect(
   // TODO:
 }
 
-std::size_t SocketService::read(
-    socket_t sockfd, const MutableBuffer& buf, std::error_code& ec) {
-  return socket::read(sockfd, buf.size(), buf.data(), ec);
+std::size_t SocketService::read(socket_t sockfd,
+    const MutableBuffer& buf, bool non_blocking, std::error_code& ec) {
+  auto all_empty = buf.size() == 0;
+  return socket::sync_read(sockfd,
+      buf.size(), buf.data(), non_blocking, all_empty, ec);
+}
+
+std::size_t SocketService::read(socket_t sockfd,
+    const NullBuffer&, bool non_blocking, std::error_code& ec) {
+  return socket::poll_read(sockfd, non_blocking, -1, ec);
 }
 
 void SocketService::async_read(
@@ -104,14 +111,16 @@ void SocketService::async_read(
   // TODO:
 }
 
-std::size_t SocketService::read_some(
-    socket_t sockfd, const MutableBuffer& buf, std::error_code& ec) {
-  return socket::read(sockfd, buf.size(), buf.data(), ec);
+std::size_t SocketService::write(socket_t sockfd,
+    const ConstBuffer& buf, bool non_blocking, std::error_code& ec) {
+  auto all_empty = buf.size() == 0;
+  return socket::sync_write(sockfd,
+      buf.data(), buf.size(), non_blocking, all_empty, ec);
 }
 
-std::size_t SocketService::write(
-    socket_t sockfd, const ConstBuffer& buf, std::error_code& ec) {
-  return socket::write(sockfd, buf.data(), buf.size(), ec);
+std::size_t SocketService::write(socket_t sockfd,
+      const NullBuffer&, bool non_blocking, std::error_code& ec) {
+  return socket::poll_write(sockfd, non_blocking, -1, ec);
 }
 
 void SocketService::async_write(
@@ -124,15 +133,10 @@ void SocketService::async_write(
   // TODO:
 }
 
-std::size_t SocketService::write_some(
-    socket_t sockfd, const ConstBuffer& buf, std::error_code& ec) {
-  return socket::write(sockfd, buf.data(), buf.size(), ec);
-}
-
-std::size_t SocketService::read_from(socket_t sockfd,
-    const MutableBuffer& buf, Address& peer_addr, std::error_code& ec) {
-  return socket::read_from(sockfd,
-      buf.size(), buf.data(), peer_addr.get_address(), ec);
+std::size_t SocketService::read_from(socket_t sockfd, const MutableBuffer& buf,
+    Address& peer_addr, bool non_blocking, std::error_code& ec) {
+  return socket::sync_read_from(sockfd,
+      buf.size(), buf.data(), peer_addr.get_address(), non_blocking, ec);
 }
 
 void SocketService::async_read_from(socket_t sockfd,
@@ -145,10 +149,10 @@ void SocketService::async_read_from(socket_t sockfd,
   // TODO:
 }
 
-std::size_t SocketService::write_to(socket_t sockfd,
-    const ConstBuffer& buf, const Address& peer_addr, std::error_code& ec) {
-  return socket::write_to(sockfd,
-      buf.data(), buf.size(), peer_addr.get_address(), ec);
+std::size_t SocketService::write_to(socket_t sockfd, const ConstBuffer& buf,
+    const Address& peer_addr, bool non_blocking, std::error_code& ec) {
+  return socket::sync_write(sockfd,
+      buf.data(), buf.size(), peer_addr.get_address(), non_blocking, ec);
 }
 
 void SocketService::async_write_to(socket_t sockfd, const ConstBuffer& buf,

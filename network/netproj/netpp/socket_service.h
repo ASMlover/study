@@ -36,6 +36,7 @@ class Address;
 class BaseSocket;
 class ConstBuffer;
 class MutableBuffer;
+class NullBuffer;
 
 class SocketService : private Chaos::UnCopyable {
 public:
@@ -55,30 +56,30 @@ public:
       socket_t sockfd, const Address& addr, const ConnectHandler& handler);
   void async_connect(
       socket_t sockfd, const Address& addr, ConnectHandler&& handler);
-  std::size_t read(
-      socket_t sockfd, const MutableBuffer& buf, std::error_code& ec);
+  std::size_t read(socket_t sockfd,
+      const MutableBuffer& buf, bool non_blocking, std::error_code& ec);
+  std::size_t read(socket_t sockfd,
+      const NullBuffer&, bool non_blocking, std::error_code& ec);
   void async_read(
       socket_t sockfd, const MutableBuffer& buf, const ReadHandler& handler);
   void async_read(
       socket_t sockfd, const MutableBuffer& buf, ReadHandler&& handler);
-  std::size_t read_some(
-      socket_t sockfd, const MutableBuffer& buf, std::error_code& ec);
-  std::size_t write(
-      socket_t sockfd, const ConstBuffer& buf, std::error_code& ec);
+  std::size_t write(socket_t sockfd,
+      const ConstBuffer& buf, bool non_blocking, std::error_code& ec);
+  std::size_t write(socket_t sockfd,
+      const NullBuffer&, bool non_blocking, std::error_code& ec);
   void async_write(
       socket_t sockfd, const ConstBuffer& buf, const WriteHandler& handler);
   void async_write(
       socket_t sockfd, const ConstBuffer& buf, WriteHandler&& handler);
-  std::size_t write_some(
-      socket_t sockfd, const ConstBuffer& buf, std::error_code& ec);
-  std::size_t read_from(socket_t sockfd,
-      const MutableBuffer& buf, Address& peer_addr, std::error_code& ec);
+  std::size_t read_from(socket_t sockfd, const MutableBuffer& buf,
+      Address& peer_addr, bool non_blocking, std::error_code& ec);
   void async_read_from(socket_t sockfd,
       const MutableBuffer& buf, Address& peer_addr, const ReadHandler& handler);
   void async_read_from(socket_t sockfd,
       const MutableBuffer& buf, Address& peer_addr, ReadHandler& handler);
-  std::size_t write_to(socket_t sockfd,
-      const ConstBuffer& buf, const Address& peer_addr, std::error_code& ec);
+  std::size_t write_to(socket_t sockfd, const ConstBuffer& buf,
+      const Address& peer_addr, bool non_blocking, std::error_code& ec);
   void async_write_to(socket_t sockfd, const ConstBuffer& buf,
       const Address& peer_addr, const WriteHandler& handler);
   void async_write_to(socket_t sockfd,
