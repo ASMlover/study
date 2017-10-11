@@ -152,15 +152,15 @@ void BaseSocket::async_connect(const Address& addr, ConnectHandler&& handler) {
   get_service().async_connect(fd_, addr, std::move(handler));
 }
 
-void BaseSocket::non_blocking(bool mode) {
+void BaseSocket::set_non_blocking(bool mode) {
   std::error_code ec;
-  if (get_service().non_blocking(fd_, mode, ec))
+  if (get_service().set_non_blocking(fd_, mode, ec))
     non_blocking_ = mode;
   netpp::throw_error(ec, "non_blocking");
 }
 
-void BaseSocket::non_blocking(bool mode, std::error_code& ec) {
-  if (get_service().non_blocking(fd_, mode, ec))
+void BaseSocket::set_non_blocking(bool mode, std::error_code& ec) {
+  if (get_service().set_non_blocking(fd_, mode, ec))
     non_blocking_ = mode;
 }
 

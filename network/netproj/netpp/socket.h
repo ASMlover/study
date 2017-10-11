@@ -83,8 +83,8 @@ public:
   void connect(const Address& addr, std::error_code& ec);
   void async_connect(const Address& addr, const ConnectHandler& handler);
   void async_connect(const Address& addr, ConnectHandler&& handler);
-  void non_blocking(bool mode);
-  void non_blocking(bool mode, std::error_code& ec);
+  void set_non_blocking(bool mode);
+  void set_non_blocking(bool mode, std::error_code& ec);
 
   socket_t get_fd(void) const {
     return fd_;
