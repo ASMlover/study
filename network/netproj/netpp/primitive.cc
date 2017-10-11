@@ -43,7 +43,7 @@ namespace socket {
 
   int shutdown(socket_t sockfd, int how, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
-      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      ec = make_error(error::BAD_DESCRIPTOR);
       return kSocketError;
     }
 
@@ -56,7 +56,7 @@ namespace socket {
 
   int bind(socket_t sockfd, const void* addr, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
-      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      ec = make_error(error::BAD_DESCRIPTOR);
       return kSocketError;
     }
 
@@ -76,7 +76,7 @@ namespace socket {
 
   int listen(socket_t sockfd, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
-      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      ec = make_error(error::BAD_DESCRIPTOR);
       return kSocketError;
     }
 
@@ -90,7 +90,7 @@ namespace socket {
   socket_t accept(
       socket_t sockfd, void* addr, std::error_code& ec, bool with_v6) {
     if (sockfd == kInvalidSocket) {
-      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      ec = make_error(error::BAD_DESCRIPTOR);
       return kSocketError;
     }
 
@@ -118,7 +118,7 @@ namespace socket {
 
   int connect(socket_t sockfd, const void* addr, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
-      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      ec = make_error(error::BAD_DESCRIPTOR);
       return kSocketError;
     }
 
@@ -138,7 +138,7 @@ namespace socket {
 
   int poll_connect(socket_t sockfd, int msec, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
-      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      ec = make_error(error::BAD_DESCRIPTOR);
       return kSocketError;
     }
 
@@ -150,10 +150,28 @@ namespace socket {
     return r;
   }
 
+  int sync_connect(socket_t sockfd, const void* addr, std::error_code& ec) {
+    socket::connect(sockfd, addr, ec);
+    if (ec.value() != error::IN_PROGRESS && ec.value() != error::WOULD_BLOCK)
+      return kSocketError;
+
+    if (socket::poll_connect(sockfd, -1, ec) < 0)
+      return kSocketError;
+
+    int err{};
+    std::size_t errlen = sizeof(err);
+    if (socket::get_option(sockfd,
+          SOL_SOCKET, SO_ERROR, &err, &errlen, ec) != 0)
+      return kSocketError;
+    ec = make_error(err);
+
+    return 0;
+  }
+
   int set_option(socket_t sockfd, int level, int optname,
       const void* optval, std::size_t optlen, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
-      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      ec = make_error(error::BAD_DESCRIPTOR);
       return kSocketError;
     }
 
@@ -165,10 +183,27 @@ namespace socket {
     return r;
   }
 
+  int get_option(socket_t sockfd, int level, int optname,
+      void* optval, std::size_t* optlen, std::error_code& ec) {
+    if (sockfd == kInvalidSocket) {
+      ec = make_error(error::BAD_DESCRIPTOR);
+      return kSocketError;
+    }
+
+    clear_last_errno();
+    auto tmp_optlen = static_cast<socklen_t>(*optlen);
+    int r = error_wrapper(::getsockopt(sockfd, level, optname,
+          static_cast<char*>(optval), &tmp_optlen), ec);
+    *optlen = tmp_optlen;
+    if (r == 0)
+      ec = std::error_code();
+    return r;
+  }
+
   int poll_read(
       socket_t sockfd, bool non_blocking, int msec, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
-      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      ec = make_error(error::BAD_DESCRIPTOR);
       return kSocketError;
     }
 
@@ -182,10 +217,36 @@ namespace socket {
     return r;
   }
 
+  int sync_read(socket_t sockfd, std::size_t len, void* buf,
+      bool non_blocking, bool all_empty, std::error_code& ec) {
+    if (sockfd == kInvalidSocket) {
+      ec = make_error(error::BAD_DESCRIPTOR);
+      return kSocketError;
+    }
+
+    if (all_empty) {
+      ec = std::error_code();
+      return 0;
+    }
+
+    for (;;) {
+      auto nread = socket::read(sockfd, len, buf, ec);
+      if (nread > 0)
+        return nread;
+
+      if (non_blocking ||
+          (ec.value() == error::TRYAGAIN && ec.value() == error::WOULD_BLOCK))
+        return 0;
+
+      if (socket::poll_read(sockfd, non_blocking, -1, ec) < 0)
+        return 0;
+    }
+  }
+
   int poll_write(
       socket_t sockfd, bool non_blocking, int msec, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
-      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      ec = make_error(error::BAD_DESCRIPTOR);
       return kSocketError;
     }
 
@@ -197,6 +258,74 @@ namespace socket {
     else if (r > 0)
       ec = std::error_code();
     return r;
+  }
+
+  int sync_write(socket_t sockfd, const void* buf, std::size_t len,
+      bool non_blocking, bool all_empty, std::error_code& ec) {
+    if (sockfd == kInvalidSocket) {
+      ec = make_error(error::BAD_DESCRIPTOR);
+      return kSocketError;
+    }
+
+    if (all_empty) {
+      ec = std::error_code();
+      return 0;
+    }
+
+    for (;;) {
+      auto nwrote = socket::write(sockfd, buf, len, ec);
+      if (nwrote >= 0)
+        return nwrote;
+
+      if (non_blocking ||
+          (ec.value() != error::TRYAGAIN && ec.value() != error::WOULD_BLOCK))
+        return 0;
+
+      if (socket::poll_write(sockfd, non_blocking, -1, ec) < 0)
+        return 0;
+    }
+  }
+
+  int sync_read_from(socket_t sockfd, std::size_t len, void* buf, void* addr,
+      bool non_blocking, std::error_code& ec, bool with_v6) {
+    if (sockfd == kInvalidSocket) {
+      ec = make_error(error::BAD_DESCRIPTOR);
+      return 0;
+    }
+
+    for (;;) {
+      auto nread = socket::read_from(sockfd, len, buf, addr, ec, with_v6);
+      if (nread >= 0)
+        return nread;
+
+      if (non_blocking ||
+          (ec.value() != error::TRYAGAIN && ec.value() != error::WOULD_BLOCK))
+        return 0;
+
+      if (socket::poll_read(sockfd, non_blocking, -1, ec) < 0)
+        return 0;
+    }
+  }
+
+  int sync_write_to(socket_t sockfd, const void* buf, std::size_t len,
+      const void* addr, bool non_blocking, std::error_code& ec) {
+    if (sockfd == kInvalidSocket) {
+      ec = make_error(error::BAD_DESCRIPTOR);
+      return 0;
+    }
+
+    for (;;) {
+      auto nwrote = socket::write_to(sockfd, buf, len, addr, ec);
+      if (nwrote >= 0)
+        return nwrote;
+
+      if (non_blocking ||
+          (ec.value() != error::TRYAGAIN && ec.value() != error::WOULD_BLOCK))
+        return 0;
+
+      if (socket::poll_write(sockfd, non_blocking, -1, ec) < 0)
+        return 0;
+    }
   }
 }
 

@@ -50,20 +50,31 @@ namespace socket {
       socket_t sockfd, void* addr, std::error_code& ec, bool with_v6 = false);
   int connect(socket_t sockfd, const void* addr, std::error_code& ec);
   int poll_connect(socket_t sockfd, int msec, std::error_code& ec);
+  int sync_connect(socket_t sockfd, const void* addr, std::error_code& ec);
   int read(socket_t sockfd, std::size_t len, void* buf, std::error_code& ec);
   int poll_read(
       socket_t sockfd, bool non_blocking, int msec, std::error_code& ec);
+  int sync_read(socket_t sockfd, std::size_t len, void* buf,
+      bool non_blocking, bool all_empty, std::error_code& ec);
   int write(socket_t sockfd,
       const void* buf, std::size_t len, std::error_code& ec);
   int poll_write(
       socket_t sockfd, bool non_blocking, int msec, std::error_code& ec);
+  int sync_write(socket_t sockfd, const void* buf, std::size_t len,
+      bool non_blocking, bool all_empty, std::error_code& ec);
   int read_from(socket_t sockfd, std::size_t len,
       void* buf, void* addr, std::error_code& ec, bool with_v6 = false);
+  int sync_read_from(socket_t sockfd, std::size_t len, void* buf, void* addr,
+      bool non_blocking, std::error_code& ec, bool with_v6 = false);
   int write_to(socket_t sockfd,
       const void* buf, std::size_t len, const void* addr, std::error_code& ec);
+  int sync_write_to(socket_t sockfd, const void* buf, std::size_t len,
+      const void* addr, bool non_blocking, std::error_code& ec);
   bool set_non_blocking(socket_t sockfd, bool mode, std::error_code& ec);
   int set_option(socket_t sockfd, int level, int optname,
       const void* optval, std::size_t optlen, std::error_code& ec);
+  int get_option(socket_t sockfd, int level, int optname,
+      void* optval, std::size_t* optlen, std::error_code& ec);
 }
 
 void clear_last_errno(void);

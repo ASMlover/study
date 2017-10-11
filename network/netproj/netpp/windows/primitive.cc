@@ -29,6 +29,7 @@
 #  include <WinSock2.h>
 #endif
 #include <Chaos/IO/ColorIO.h>
+#include "../error.h"
 #include "../primitive.h"
 
 using socklen_t = int;
@@ -64,7 +65,7 @@ namespace socket {
 
   int read(socket_t sockfd, std::size_t len, void* buf, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
-      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      ec = make_error(error::BAD_DESCRIPTOR);
       return kSocketError;
     }
 
@@ -79,7 +80,7 @@ namespace socket {
   int write(socket_t sockfd,
       const void* buf, std::size_t len, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
-      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      ec = make_error(error::BAD_DESCRIPTOR);
       return kSocketError;
     }
 
@@ -94,7 +95,7 @@ namespace socket {
   int read_from(socket_t sockfd, std::size_t len,
       void* buf, void* addr, std::error_code& ec, bool with_v6) {
     if (sockfd == kInvalidSocket) {
-      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      ec = make_error(error::BAD_DESCRIPTOR);
       return kSocketError;
     }
 
@@ -116,7 +117,7 @@ namespace socket {
   int write_to(socket_t sockfd,
       const void* buf, std::size_t len, const void* addr, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
-      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      ec = make_error(error::BAD_DESCRIPTOR);
       return kSocketError;
     }
 
@@ -138,7 +139,7 @@ namespace socket {
 
   bool set_non_blocking(socket_t sockfd, bool mode, std::error_code& ec) {
     if (sockfd == kInvalidSocket) {
-      ec = std::make_error_code(std::errc::bad_file_descriptor);
+      ec = make_error(error::BAD_DESCRIPTOR);
       return false;
     }
 
