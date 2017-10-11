@@ -95,6 +95,7 @@ void echo_tcp_client(void) {
 void echo_udp_server(void) {
   netpp::SocketService service;
   netpp::UdpSocket s(service, netpp::Address(netpp::IP::v4(), 5555));
+  s.set_non_blocking(true);
 
   std::vector<char> buf(1024);
   for (;;) {
@@ -111,6 +112,7 @@ void echo_udp_server(void) {
 void echo_udp_client(void) {
   netpp::SocketService service;
   netpp::UdpSocket s(service, netpp::UdpSocket::ProtocolType::v4());
+  s.set_non_blocking(true);
   s.connect(netpp::Address(netpp::IP::v4(), "127.0.0.1", 5555));
 
   std::string line;

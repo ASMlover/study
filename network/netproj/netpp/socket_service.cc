@@ -168,7 +168,7 @@ void SocketService::async_read_from(socket_t sockfd,
 
 std::size_t SocketService::write_to(socket_t sockfd, const ConstBuffer& buf,
     const Address& peer_addr, bool non_blocking, std::error_code& ec) {
-  return socket::sync_write(sockfd,
+  return socket::sync_write_to(sockfd,
       buf.data(), buf.size(), peer_addr.get_address(), non_blocking, ec);
 }
 
