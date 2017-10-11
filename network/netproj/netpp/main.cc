@@ -46,6 +46,7 @@ void echo_tcp_server(void) {
 #else
   netpp::Acceptor acceptor(service, netpp::Address(netpp::IP::v4(), 5555));
 #endif
+  acceptor.set_non_blocking(true);
   std::vector<std::unique_ptr<std::thread>> threads;
   for (;;) {
     netpp::TcpSocket conn(service);
@@ -72,6 +73,7 @@ void echo_tcp_server(void) {
 void echo_tcp_client(void) {
   netpp::SocketService service;
   netpp::TcpSocket s(service, netpp::Tcp::v4());
+  s.set_non_blocking(true);
   s.connect(netpp::Address(netpp::IP::v4(), "127.0.0.1", 5555));
 
   std::string line;

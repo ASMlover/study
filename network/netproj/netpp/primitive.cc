@@ -124,7 +124,7 @@ namespace socket {
         return new_sockfd;
 
       if (ec.value() == error::TRYAGAIN || ec.value() == error::WOULD_BLOCK) {
-        if (non_blocking)
+        if (!non_blocking)
           return kInvalidSocket;
       }
       else {
@@ -231,7 +231,7 @@ namespace socket {
     clear_last_errno();
     int r = error_wrapper(netpp::poll(&fds, 1, msec), ec);
     if (r == 0)
-      ec = non_blocking ? netpp::make_error(EWOULDBLOCK) : std::error_code();
+      ec = non_blocking ? make_error(error::WOULD_BLOCK) : std::error_code();
     else if (r > 0)
       ec = std::error_code();
     return r;
@@ -254,9 +254,10 @@ namespace socket {
       if (nread > 0)
         return nread;
 
-      if (non_blocking ||
-          (ec.value() == error::TRYAGAIN && ec.value() == error::WOULD_BLOCK))
-        return 0;
+      if (non_blocking) {
+        if (ec.value() != error::TRYAGAIN && ec.value() != error::WOULD_BLOCK)
+          return 0;
+      }
 
       if (socket::poll_read(sockfd, non_blocking, -1, ec) < 0)
         return 0;
@@ -274,7 +275,7 @@ namespace socket {
     clear_last_errno();
     int r = error_wrapper(netpp::poll(&fds, 1, msec), ec);
     if (r == 0)
-      ec = non_blocking ? netpp::make_error(EWOULDBLOCK) : std::error_code();
+      ec = non_blocking ? make_error(error::WOULD_BLOCK) : std::error_code();
     else if (r > 0)
       ec = std::error_code();
     return r;
@@ -297,9 +298,10 @@ namespace socket {
       if (nwrote >= 0)
         return nwrote;
 
-      if (non_blocking ||
-          (ec.value() != error::TRYAGAIN && ec.value() != error::WOULD_BLOCK))
-        return 0;
+      if (non_blocking) {
+        if (ec.value() != error::TRYAGAIN && ec.value() != error::WOULD_BLOCK)
+          return 0;
+      }
 
       if (socket::poll_write(sockfd, non_blocking, -1, ec) < 0)
         return 0;
@@ -318,9 +320,10 @@ namespace socket {
       if (nread >= 0)
         return nread;
 
-      if (non_blocking ||
-          (ec.value() != error::TRYAGAIN && ec.value() != error::WOULD_BLOCK))
-        return 0;
+      if (non_blocking) {
+        if (ec.value() != error::TRYAGAIN && ec.value() != error::WOULD_BLOCK)
+          return 0;
+      }
 
       if (socket::poll_read(sockfd, non_blocking, -1, ec) < 0)
         return 0;
@@ -339,9 +342,10 @@ namespace socket {
       if (nwrote >= 0)
         return nwrote;
 
-      if (non_blocking ||
-          (ec.value() != error::TRYAGAIN && ec.value() != error::WOULD_BLOCK))
-        return 0;
+      if (non_blocking) {
+        if (ec.value() != error::TRYAGAIN && ec.value() != error::WOULD_BLOCK)
+          return 0;
+      }
 
       if (socket::poll_write(sockfd, non_blocking, -1, ec) < 0)
         return 0;
