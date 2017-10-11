@@ -42,9 +42,9 @@
 void echo_tcp_server(void) {
   netpp::SocketService service;
 #if defined(CHAOS_POSIX)
-  netpp::Acceptor acceptor(netpp::Address(netpp::IP::v6(), 5555));
+  netpp::Acceptor acceptor(service, netpp::Address(netpp::IP::v6(), 5555));
 #else
-  netpp::Acceptor acceptor(netpp::Address(netpp::IP::v4(), 5555));
+  netpp::Acceptor acceptor(service, netpp::Address(netpp::IP::v4(), 5555));
 #endif
   std::vector<std::unique_ptr<std::thread>> threads;
   for (;;) {
