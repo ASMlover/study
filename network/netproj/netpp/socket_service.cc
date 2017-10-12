@@ -188,4 +188,8 @@ void SocketService::async_write_to(socket_t sockfd,
   // TODO:
 }
 
+void SocketService::run(void) {
+  // TODO:
+}
+
 }

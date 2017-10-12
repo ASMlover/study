@@ -93,6 +93,8 @@ public:
       const Address& peer_addr, const WriteHandler& handler);
   void async_write_to(socket_t sockfd,
       const ConstBuffer& buf, const Address& peer_addr, WriteHandler&& handler);
+
+  void run(void);
 };
 
 }
