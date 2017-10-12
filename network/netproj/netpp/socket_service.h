@@ -26,9 +26,12 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <memory>
 #include <system_error>
+#include <vector>
+#include <unordered_map>
 #include <Chaos/Base/UnCopyable.h>
-#include "netpp_types.h"
+#include "primitive.h"
 
 namespace netpp {
 
@@ -37,8 +40,12 @@ class BaseSocket;
 class ConstBuffer;
 class MutableBuffer;
 class NullBuffer;
+class Channel;
 
 class SocketService : private Chaos::UnCopyable {
+  bool running_{true};
+  std::vector<PollFd> pollfds_;
+  std::unordered_map<int, Channel*> channels_;
 public:
   bool set_non_blocking(socket_t sockfd, bool mode, std::error_code& ec);
   int set_option(socket_t sockfd, int level, int optname,

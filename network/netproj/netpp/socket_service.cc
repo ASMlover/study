@@ -189,7 +189,9 @@ void SocketService::async_write_to(socket_t sockfd,
 }
 
 void SocketService::run(void) {
-  // TODO:
+  while (running_) {
+    // TODO:
+  }
 }
 
 }
