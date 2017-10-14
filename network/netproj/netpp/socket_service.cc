@@ -32,6 +32,42 @@
 
 namespace netpp {
 
+struct AcceptOperation : public BaseOperation {
+  BaseSocket& peer;
+  AcceptHandler handler{};
+
+  AcceptOperation(int e, BaseSocket& s, AcceptHandler&& h)
+    : BaseOperation(e) , peer(s) , handler(std::move(h)) {
+  }
+};
+
+struct ConnectOperation : public BaseOperation {
+  ConnectHandler handler{};
+
+  ConnectOperation(int e, ConnectHandler&& h)
+    : BaseOperation(e), handler(std::move(h)) {
+  }
+};
+
+struct ReadOperation : public BaseOperation {
+  MutableBuffer& mbuf;
+  ReadHandler handler{};
+
+  ReadOperation(int e, MutableBuffer& buf, ReadHandler&& h)
+    : BaseOperation(e), mbuf(buf), handler(std::move(h)) {
+  }
+};
+
+struct WriteOperation : public BaseOperation {
+  ConstBuffer& cbuf;
+  WriteHandler handler{};
+
+  WriteOperation(int e, ConstBuffer& buf, ReadHandler&& h)
+    : BaseOperation(e), cbuf(buf), handler(std::move(h)) {
+  }
+};
+
+
 bool SocketService::set_non_blocking(
     socket_t sockfd, bool mode, std::error_code& ec) {
   return socket::set_non_blocking(sockfd, mode, ec);
