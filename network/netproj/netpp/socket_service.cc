@@ -36,6 +36,10 @@ struct AcceptOperation : public BaseOperation {
   BaseSocket& peer;
   AcceptHandler handler{};
 
+  AcceptOperation(int e, BaseSocket& s, const AcceptHandler& h)
+    : BaseOperation(e), peer(s), handler(h) {
+  }
+
   AcceptOperation(int e, BaseSocket& s, AcceptHandler&& h)
     : BaseOperation(e) , peer(s) , handler(std::move(h)) {
   }
@@ -43,6 +47,10 @@ struct AcceptOperation : public BaseOperation {
 
 struct ConnectOperation : public BaseOperation {
   ConnectHandler handler{};
+
+  ConnectOperation(int e, const ConnectHandler& h)
+    : BaseOperation(e), handler(h) {
+  }
 
   ConnectOperation(int e, ConnectHandler&& h)
     : BaseOperation(e), handler(std::move(h)) {
@@ -53,6 +61,10 @@ struct ReadOperation : public BaseOperation {
   MutableBuffer& mbuf;
   ReadHandler handler{};
 
+  ReadOperation(int e, MutableBuffer& buf, const ReadHandler& h)
+    : BaseOperation(e), mbuf(buf), handler(h) {
+  }
+
   ReadOperation(int e, MutableBuffer& buf, ReadHandler&& h)
     : BaseOperation(e), mbuf(buf), handler(std::move(h)) {
   }
@@ -61,6 +73,10 @@ struct ReadOperation : public BaseOperation {
 struct WriteOperation : public BaseOperation {
   ConstBuffer& cbuf;
   WriteHandler handler{};
+
+  WriteOperation(int e, ConstBuffer& buf, const ReadHandler& h)
+    : BaseOperation(e), cbuf(buf), handler(h) {
+  }
 
   WriteOperation(int e, ConstBuffer& buf, ReadHandler&& h)
     : BaseOperation(e), cbuf(buf), handler(std::move(h)) {
@@ -113,6 +129,8 @@ socket_t SocketService::accept(socket_t sockfd,
 
 void SocketService::async_accept(socket_t sockfd,
     BaseSocket& peer, Address& peer_addr, const AcceptHandler& handler) {
+  pollfds_.push_back(PollFd(sockfd, POLLIN));
+  operations_[sockfd] = new AcceptOperation(POLLIN, peer, handler);
   // TODO:
 }
 

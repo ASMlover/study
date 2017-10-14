@@ -50,7 +50,7 @@ struct BaseOperation {
 class SocketService : private Chaos::UnCopyable {
   bool running_{true};
   std::vector<PollFd> pollfds_;
-  std::unordered_map<int, BaseOperation*> channels_;
+  std::unordered_map<int, BaseOperation*> operations_;
 public:
   bool set_non_blocking(socket_t sockfd, bool mode, std::error_code& ec);
   int set_option(socket_t sockfd, int level, int optname,
