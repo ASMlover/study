@@ -41,6 +41,9 @@ option(PYMEM_USE_JEMALLOC "use jemalloc for linux ?" ON)
 if (PYMEM_PYTHON)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DPYMEM_PYTHON")
 endif()
+if (PYMEM_USE_JEMALLOC)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DPYMEM_USE_JEMALLOC")
+endif()
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   add_definitions(
     /D_UNICODE

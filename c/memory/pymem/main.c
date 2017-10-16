@@ -30,11 +30,14 @@
 #include <stdlib.h>
 #include <time.h>
 #include "pymem.h"
+#if defined(PYMEM_USE_JEMALLOC)
+# include <jemalloc/jemalloc.h>
+#endif
 
 extern void* PyObject_Malloc(size_t nbytes);
 extern void PyObject_Free(void* p);
 
-static const int ALLOC_COUNT = 1000000;
+static const int ALLOC_COUNT = 10000;
 static const int TEST_COUNT = 100;
 
 static void bench_test1(int alloc_size_array[]) {
@@ -135,6 +138,10 @@ int main(int argc, char* argv[]) {
   bench_test2(alloc_array);
 
   free(alloc_array);
+
+#if defined(PYMEM_USE_JEMALLOC)
+  malloc_stats_print(NULL, NULL, NULL);
+#endif
 
   return 0;
 }
