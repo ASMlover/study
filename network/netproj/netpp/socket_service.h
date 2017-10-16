@@ -29,6 +29,7 @@
 #include <memory>
 #include <system_error>
 #include <vector>
+#include <map>
 #include <unordered_map>
 #include <Chaos/Base/UnCopyable.h>
 #include "primitive.h"
@@ -42,15 +43,32 @@ class MutableBuffer;
 class NullBuffer;
 
 struct BaseOperation {
+  enum {
+    OPER_INVALID = -1,
+
+    OPER_ACCEPT, OPER_CONNECT,
+    OPER_READ, OPER_WRITE, OPER_READFROM, OPER_WRITETO,
+  };
+
+  int op_type{OPER_INVALID};
   int events{};
 
-  BaseOperation(int e) : events(e) {}
+  BaseOperation(int ot, int e) : op_type(ot), events(e) {}
+
+  int get_type(void) const { return op_type; }
+  int get_events(void) const { return events; }
 };
 
 class SocketService : private Chaos::UnCopyable {
+  using OperationDict = std::map<int, BaseOperation*>;
+
   bool running_{true};
   std::vector<PollFd> pollfds_;
-  std::unordered_map<int, BaseOperation*> operations_;
+  std::unordered_map<int, OperationDict> operations_;
+
+  static constexpr int kPollTimeout = 10;
+
+  bool add_operation(int sockfd, BaseOperation* oper);
 public:
   bool set_non_blocking(socket_t sockfd, bool mode, std::error_code& ec);
   int set_option(socket_t sockfd, int level, int optname,
@@ -107,6 +125,7 @@ public:
       const ConstBuffer& buf, const Address& peer_addr, WriteHandler&& handler);
 
   void run(void);
+  void stop(void);
 };
 
 }

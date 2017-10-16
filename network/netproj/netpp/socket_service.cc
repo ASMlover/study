@@ -34,14 +34,16 @@ namespace netpp {
 
 struct AcceptOperation : public BaseOperation {
   BaseSocket& peer;
+  Address& peer_addr;
   AcceptHandler handler{};
 
-  AcceptOperation(int e, BaseSocket& s, const AcceptHandler& h)
-    : BaseOperation(e), peer(s), handler(h) {
+  AcceptOperation(int e, BaseSocket& s, Address& addr, const AcceptHandler& h)
+    : BaseOperation(OPER_ACCEPT, e), peer(s), peer_addr(addr), handler(h) {
   }
 
-  AcceptOperation(int e, BaseSocket& s, AcceptHandler&& h)
-    : BaseOperation(e) , peer(s) , handler(std::move(h)) {
+  AcceptOperation(int e, BaseSocket& s, Address& addr, AcceptHandler&& h)
+    : BaseOperation(OPER_ACCEPT, e)
+    , peer(s), peer_addr(addr), handler(std::move(h)) {
   }
 };
 
@@ -49,40 +51,87 @@ struct ConnectOperation : public BaseOperation {
   ConnectHandler handler{};
 
   ConnectOperation(int e, const ConnectHandler& h)
-    : BaseOperation(e), handler(h) {
+    : BaseOperation(OPER_CONNECT, e), handler(h) {
   }
 
   ConnectOperation(int e, ConnectHandler&& h)
-    : BaseOperation(e), handler(std::move(h)) {
+    : BaseOperation(OPER_CONNECT, e), handler(std::move(h)) {
   }
 };
 
 struct ReadOperation : public BaseOperation {
-  MutableBuffer& mbuf;
+  const MutableBuffer& mbuf;
   ReadHandler handler{};
 
-  ReadOperation(int e, MutableBuffer& buf, const ReadHandler& h)
-    : BaseOperation(e), mbuf(buf), handler(h) {
+  ReadOperation(int e, const MutableBuffer& buf, const ReadHandler& h)
+    : BaseOperation(OPER_READ, e), mbuf(buf), handler(h) {
   }
 
-  ReadOperation(int e, MutableBuffer& buf, ReadHandler&& h)
-    : BaseOperation(e), mbuf(buf), handler(std::move(h)) {
+  ReadOperation(int e, const MutableBuffer& buf, ReadHandler&& h)
+    : BaseOperation(OPER_READ, e), mbuf(buf), handler(std::move(h)) {
   }
 };
 
 struct WriteOperation : public BaseOperation {
-  ConstBuffer& cbuf;
+  const ConstBuffer& cbuf;
   WriteHandler handler{};
 
-  WriteOperation(int e, ConstBuffer& buf, const ReadHandler& h)
-    : BaseOperation(e), cbuf(buf), handler(h) {
+  WriteOperation(int e, const ConstBuffer& buf, const ReadHandler& h)
+    : BaseOperation(OPER_WRITE, e), cbuf(buf), handler(h) {
   }
 
-  WriteOperation(int e, ConstBuffer& buf, ReadHandler&& h)
-    : BaseOperation(e), cbuf(buf), handler(std::move(h)) {
+  WriteOperation(int e, const ConstBuffer& buf, ReadHandler&& h)
+    : BaseOperation(OPER_WRITE, e), cbuf(buf), handler(std::move(h)) {
   }
 };
 
+struct ReadFromOperation : public BaseOperation {
+  const MutableBuffer& mbuf;
+  const Address& peer_addr;
+  ReadHandler handler{};
+
+  ReadFromOperation(int e,
+      const MutableBuffer& buf, const Address& addr, const ReadHandler& h)
+    : BaseOperation(OPER_READFROM, e), mbuf(buf), peer_addr(addr), handler(h) {
+  }
+
+  ReadFromOperation(int e,
+      const MutableBuffer& buf, const Address& addr, ReadHandler&& h)
+    : BaseOperation(OPER_READFROM, e)
+    , mbuf(buf), peer_addr(addr), handler(std::move(h)) {
+  }
+};
+
+struct WriteToOperation : public BaseOperation {
+  const ConstBuffer& cbuf;
+  const Address& peer_addr;
+  WriteHandler handler{};
+
+  WriteToOperation(int e,
+      const ConstBuffer& buf, const Address& addr, const WriteHandler& h)
+    : BaseOperation(OPER_WRITETO, e), cbuf(buf), peer_addr(addr), handler(h) {
+  }
+
+  WriteToOperation(int e,
+      const ConstBuffer& buf, const Address& addr, WriteHandler&& h)
+    : BaseOperation(OPER_WRITETO, e)
+    , cbuf(buf), peer_addr(addr), handler(std::move(h)) {
+  }
+};
+
+bool SocketService::add_operation(int sockfd, BaseOperation* oper) {
+  if (operations_.find(sockfd) == operations_.end())
+    operations_[sockfd] = OperationDict();
+
+  auto event = oper->get_events();
+  if (operations_[sockfd].find(event) == operations_[sockfd].end()) {
+    pollfds_.push_back(PollFd(sockfd, event));
+    operations_[sockfd][event] = oper;
+    return true;
+  }
+
+  return false;
+}
 
 bool SocketService::set_non_blocking(
     socket_t sockfd, bool mode, std::error_code& ec) {
@@ -129,14 +178,16 @@ socket_t SocketService::accept(socket_t sockfd,
 
 void SocketService::async_accept(socket_t sockfd,
     BaseSocket& peer, Address& peer_addr, const AcceptHandler& handler) {
-  pollfds_.push_back(PollFd(sockfd, POLLIN));
-  operations_[sockfd] = new AcceptOperation(POLLIN, peer, handler);
-  // TODO:
+  // sockfd should be non-blocking
+  auto* oper = new AcceptOperation(POLLIN, peer, peer_addr, handler);
+  add_operation(sockfd, oper);
 }
 
 void SocketService::async_accept(socket_t sockfd,
     BaseSocket& peer, Address& peer_addr, AcceptHandler&& handler) {
-  // TODO:
+  // sockfd should be non-blocking
+  auto* oper = new AcceptOperation(POLLIN, peer, peer_addr, std::move(handler));
+  add_operation(sockfd, oper);
 }
 
 void SocketService::connect(
@@ -146,12 +197,40 @@ void SocketService::connect(
 
 void SocketService::async_connect(
     socket_t sockfd, const Address& addr, const ConnectHandler& handler) {
-  // TODO:
+  // sockfd should be non-blocking
+  std::error_code ec;
+  socket::connect(sockfd, addr.get_address(), ec);
+  if (!ec) {
+    handler(ec);
+  }
+  else {
+    if (ec.value() != error::IN_PROGRESS && ec.value() != error::WOULD_BLOCK) {
+      handler(ec);
+    }
+    else {
+      auto* oper = new ConnectOperation(POLLIN, handler);
+      add_operation(sockfd, oper);
+    }
+  }
 }
 
 void SocketService::async_connect(
     socket_t sockfd, const Address& addr, ConnectHandler&& handler) {
-  // TODO:
+  // sockfd should be non-blocking
+  std::error_code ec;
+  socket::connect(sockfd, addr.get_address(), ec);
+  if (!ec) {
+    handler(ec);
+  }
+  else {
+    if (ec.value() != error::IN_PROGRESS && ec.value() != error::WOULD_BLOCK) {
+      handler(ec);
+    }
+    else {
+      auto* oper = new ConnectOperation(POLLIN, std::move(handler));
+      add_operation(sockfd, oper);
+    }
+  }
 }
 
 std::size_t SocketService::read(socket_t sockfd,
@@ -168,12 +247,16 @@ std::size_t SocketService::read(socket_t sockfd,
 
 void SocketService::async_read(
     socket_t sockfd, const MutableBuffer& buf, const ReadHandler& handler) {
-  // TODO:
+  // sockfd should be non-blocking
+  auto* oper = new ReadOperation(POLLIN, buf, handler);
+  add_operation(sockfd, oper);
 }
 
 void SocketService::async_read(
     socket_t sockfd, const MutableBuffer& buf, ReadHandler&& handler) {
-  // TODO:
+  // sockfd should be non-blocking
+  auto* oper = new ReadOperation(POLLIN, buf, std::move(handler));
+  add_operation(sockfd, oper);
 }
 
 std::size_t SocketService::write(socket_t sockfd,
@@ -190,12 +273,16 @@ std::size_t SocketService::write(socket_t sockfd,
 
 void SocketService::async_write(
     socket_t sockfd, const ConstBuffer& buf, const WriteHandler& handler) {
-  // TODO:
+  // sockfd should be non-blocking
+  auto* oper = new WriteOperation(POLLOUT, buf, handler);
+  add_operation(sockfd, oper);
 }
 
 void SocketService::async_write(
     socket_t sockfd, const ConstBuffer& buf, WriteHandler&& handler) {
-  // TODO:
+  // sockfd should be non-blocking
+  auto* oper = new WriteOperation(POLLOUT, buf, handler);
+  add_operation(sockfd, oper);
 }
 
 std::size_t SocketService::read_from(socket_t sockfd, const MutableBuffer& buf,
@@ -212,12 +299,17 @@ std::size_t SocketService::read_from(socket_t sockfd,
 
 void SocketService::async_read_from(socket_t sockfd,
     const MutableBuffer& buf, Address& peer_addr, const ReadHandler& handler) {
-  // TODO:
+  // sockfd should be non-blocking
+  auto* oper = new ReadFromOperation(POLLIN, buf, peer_addr, handler);
+  add_operation(sockfd, oper);
 }
 
 void SocketService::async_read_from(socket_t sockfd,
     const MutableBuffer& buf, Address& peer_addr, ReadHandler& handler) {
-  // TODO:
+  // sockfd should be non-blocking
+  auto* oper = new ReadFromOperation(
+      POLLIN, buf, peer_addr, std::move(handler));
+  add_operation(sockfd, oper);
 }
 
 std::size_t SocketService::write_to(socket_t sockfd, const ConstBuffer& buf,
@@ -234,18 +326,33 @@ std::size_t SocketService::write_to(socket_t sockfd,
 
 void SocketService::async_write_to(socket_t sockfd, const ConstBuffer& buf,
     const Address& peer_addr, const WriteHandler& handler) {
-  // TODO:
+  // sockfd should be non-blocking
+  auto* oper = new WriteToOperation(POLLOUT, buf, peer_addr, handler);
+  add_operation(sockfd, oper);
 }
 
 void SocketService::async_write_to(socket_t sockfd,
     const ConstBuffer& buf, const Address& peer_addr, WriteHandler&& handler) {
-  // TODO:
+  // sockfd should be non-blocking
+  auto* oper = new WriteToOperation(
+      POLLOUT, buf, peer_addr, std::move(handler));
+  add_operation(sockfd, oper);
 }
 
 void SocketService::run(void) {
   while (running_) {
-    // TODO:
+    auto n = netpp::poll(&pollfds_[0], pollfds_.size(), kPollTimeout);
+    if (n <= 0)
+      continue;
+
+    for (auto i = 0; i < n; ++i) {
+      // TODO:
+    }
   }
+}
+
+void SocketService::stop(void) {
+  running_ = false;
 }
 
 }
