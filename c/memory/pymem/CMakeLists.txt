@@ -63,3 +63,6 @@ aux_source_directory(. PYMEM_SOURCES)
 message(STATUS "[PyMem] PYMEM_SOURCES: ${PYMEM_SOURCES}")
 
 add_executable(pymem ${PYMEM_SOURCES})
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+  target_link_libraries(pymem -ltcmalloc_minimal)
+endif()
