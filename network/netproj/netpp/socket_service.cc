@@ -341,12 +341,36 @@ void SocketService::async_write_to(socket_t sockfd,
 
 void SocketService::run(void) {
   while (running_) {
-    auto n = netpp::poll(&pollfds_[0], pollfds_.size(), kPollTimeout);
+    auto n = netpp::poll(&*pollfds_.begin(), pollfds_.size(), kPollTimeout);
     if (n <= 0)
       continue;
 
-    for (auto i = 0; i < n; ++i) {
-      // TODO:
+    for (auto it = pollfds_.begin(); it != pollfds_.end();) {
+      if (n-- <= 0)
+        break;
+
+      auto revents = it->revents;
+      if (revents > 0) {
+        auto oper_dict = operations_.find(it->fd);
+        if (oper_dict != operations_.end()) {
+          if ((revents & POLLHUP) && !(revents & POLLIN))  {
+            // TODO: need solve close-functor
+          }
+          if (revents & (POLLERR | POLLNVAL)) {
+            // TODO: need solve error-functor
+          }
+          if (revents & (POLLIN | POLLPRI | POLLHUP)) {
+            // TODO: need solve read-functor
+          }
+          if (revents & POLLOUT) {
+            // TODO: need solve write-functor
+          }
+        }
+        pollfds_.erase(it++);
+      }
+      else {
+        ++it;
+      }
     }
   }
 }
