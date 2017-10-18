@@ -28,6 +28,7 @@
 #include "buffer.h"
 #include "primitive.h"
 #include "address.h"
+#include "socket.h"
 #include "socket_service.h"
 
 namespace netpp {
@@ -339,6 +340,76 @@ void SocketService::async_write_to(socket_t sockfd,
   add_operation(sockfd, oper);
 }
 
+void SocketService::handle_operation(int sockfd, int event) {
+  auto oper_dict_iter = operations_.find(sockfd);
+  if (oper_dict_iter == operations_.end())
+    return;
+
+  auto& oper_dict = operations_[sockfd];
+  auto oper_iter = oper_dict.find(event);
+  if (oper_iter != oper_dict.end()) {
+    auto* oper = oper_iter->second;
+    if (oper != nullptr) {
+      std::error_code ec;
+      switch (oper->get_type()) {
+      case BaseOperation::OPER_ACCEPT:
+        {
+          auto* aop = reinterpret_cast<AcceptOperation*>(oper);
+          auto fd = socket::accept(sockfd, aop->peer_addr.get_address(), ec);
+          aop->peer.attach_fd(fd);
+          aop->handler(ec);
+          delete aop;
+        } break;
+      case BaseOperation::OPER_CONNECT:
+        {
+          auto* cop = reinterpret_cast<ConnectOperation*>(oper);
+          std::error_code ec;
+          // TODO: need getting connecting error
+          cop->handler(ec);
+          delete cop;
+        } break;
+      case BaseOperation::OPER_READ:
+        {
+          auto* rop = reinterpret_cast<ReadOperation*>(oper);
+          auto n = socket::read(sockfd, rop->mbuf.size(), rop->mbuf.data(), ec);
+          rop->handler(ec, n);
+          delete rop;
+        } break;
+      case BaseOperation::OPER_WRITE:
+        {
+          auto* wop = reinterpret_cast<WriteOperation*>(oper);
+          auto n = socket::write(
+              sockfd, wop->cbuf.data(), wop->cbuf.size(), ec);
+          wop->handler(ec, n);
+          delete wop;
+        } break;
+      case BaseOperation::OPER_READFROM:
+        {
+          auto* rop = reinterpret_cast<ReadFromOperation*>(oper);
+          auto n = socket::read_from(sockfd,
+              rop->mbuf.size(), rop->mbuf.data(),
+              (void*)rop->peer_addr.get_address(),
+              ec, rop->peer_addr.get_family() == AF_INET6);
+          rop->handler(ec, n);
+          delete rop;
+        } break;
+      case BaseOperation::OPER_WRITETO:
+        {
+          auto* wop = reinterpret_cast<WriteToOperation*>(oper);
+          auto n = socket::write_to(sockfd,
+              wop->cbuf.data(), wop->cbuf.size(),
+              wop->peer_addr.get_address(), ec);
+          wop->handler(ec, n);
+          delete wop;
+        } break;
+      }
+    }
+    oper_dict.erase(oper_iter);
+  }
+  if (oper_dict.empty())
+    operations_.erase(oper_dict_iter);
+}
+
 void SocketService::run(void) {
   while (running_) {
     auto n = netpp::poll(&*pollfds_.begin(), pollfds_.size(), kPollTimeout);
@@ -351,22 +422,16 @@ void SocketService::run(void) {
 
       auto revents = it->revents;
       if (revents > 0) {
-        auto oper_dict = operations_.find(it->fd);
-        if (oper_dict != operations_.end()) {
-          if ((revents & POLLHUP) && !(revents & POLLIN))  {
-            // TODO: need solve close-functor
-          }
-          if (revents & (POLLERR | POLLNVAL)) {
-            // TODO: need solve error-functor
-          }
-          if (revents & (POLLIN | POLLPRI | POLLHUP)) {
-            // TODO: need solve read-functor
-          }
-          if (revents & POLLOUT) {
-            // TODO: need solve write-functor
-          }
+        if ((revents & POLLHUP) && !(revents & POLLIN))  {
+          // TODO: need solve close-functor
         }
-        pollfds_.erase(it++);
+        if (revents & (POLLERR | POLLNVAL)) {
+          // TODO: need solve error-functor
+        }
+        if (revents & (POLLIN | POLLPRI | POLLHUP))
+          handle_operation(it->fd, POLLIN);
+        if (revents & POLLOUT)
+          handle_operation(it->fd, POLLOUT);
       }
       else {
         ++it;

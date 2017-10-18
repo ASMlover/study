@@ -69,6 +69,7 @@ class SocketService : private Chaos::UnCopyable {
   static constexpr int kPollTimeout = 10;
 
   bool add_operation(int sockfd, BaseOperation* oper);
+  void handle_operation(int sockfd, int event);
 public:
   bool set_non_blocking(socket_t sockfd, bool mode, std::error_code& ec);
   int set_option(socket_t sockfd, int level, int optname,
