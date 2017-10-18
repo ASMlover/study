@@ -48,26 +48,28 @@ void echo_tcp_server(void) {
 #endif
   acceptor.set_non_blocking(true);
   std::vector<std::unique_ptr<std::thread>> threads;
-  for (;;) {
-    netpp::TcpSocket conn(service);
-    acceptor.accept(conn);
-    threads.emplace_back(new std::thread([](netpp::TcpSocket&& conn) {
-            std::error_code ec;
-            std::vector<char> buf(1024);
-            for (;;) {
-              auto n = conn.read(netpp::buffer(buf));
-              if (n > 0)
-                conn.write(netpp::buffer(buf, n));
-              else
-                break;
-            }
-            conn.close();
-          }, std::move(conn)));
-  }
+  netpp::TcpSocket conn(service);
+  acceptor.async_accept(conn,
+      [&threads, &acceptor, &conn](const std::error_code& ec) {
+        if (!ec) {
+          threads.emplace_back(new std::thread([](netpp::TcpSocket&& conn) {
+                  std::error_code ec;
+                  std::vector<char> buf(1024);
+                  for (;;) {
+                    auto n = conn.read(netpp::buffer(buf));
+                    if (n > 0)
+                      conn.write(netpp::buffer(buf, n));
+                    else
+                      break;
+                  }
+                  conn.close();
+                }, std::move(conn)));
+        }
+      });
+
+  service.run();
   for (auto& t : threads)
     t->join();
-
-  acceptor.close();
 }
 
 void echo_tcp_client(void) {
