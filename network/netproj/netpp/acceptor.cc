@@ -41,6 +41,7 @@ Acceptor::Acceptor(SocketService& service, const ProtocolType& protocol)
   std::error_code ec;
   fd_ = get_service().open(protocol.family(),
       protocol.socket_type(), protocol.protocol(), ec);
+  is_ipv6_ = protocol.family() == AF_INET6;
   netpp::throw_error(ec, "open");
 }
 
@@ -49,6 +50,7 @@ Acceptor::Acceptor(
   : service_(&service) {
   std::error_code ec;
   fd_ = get_service().open(addr.get_family(), SOCK_STREAM, IPPROTO_TCP, ec);
+  is_ipv6_ = addr.get_family() == AF_INET6;
   netpp::throw_error(ec, "open");
 
   if (reuse_addr) {
@@ -70,12 +72,14 @@ void Acceptor::open(const ProtocolType& protocol) {
   std::error_code ec;
   fd_ = get_service().open(protocol.family(),
       protocol.socket_type(), protocol.protocol(), ec);
+  is_ipv6_ = protocol.family() == AF_INET6;
   netpp::throw_error(ec, "open");
 }
 
 void Acceptor::open(const ProtocolType& protocol, std::error_code& ec) {
   fd_ = get_service().open(protocol.family(),
       protocol.socket_type(), protocol.protocol(), ec);
+  is_ipv6_ = protocol.family() == AF_INET6;
 }
 
 void Acceptor::close(void) {
@@ -123,11 +127,21 @@ void Acceptor::accept(BaseSocket& peer, std::error_code& ec) {
 }
 
 void Acceptor::async_accept(BaseSocket& peer, const AcceptHandler& handler) {
-  // TODO: need io_service
+  if (!is_open()) {
+    netpp::throw_error(make_error(error::BAD_DESCRIPTOR), "async_accept");
+    return;
+  }
+  Address addr(is_ipv6_ ? IP::v6() : IP::v4());
+  get_service().async_accept(fd_, peer, addr, handler);
 }
 
 void Acceptor::async_accept(BaseSocket& peer, AcceptHandler&& handler) {
-  // TODO: need io_service
+  if (!is_open()) {
+    netpp::throw_error(make_error(error::BAD_DESCRIPTOR), "async_accept");
+    return;
+  }
+  Address addr(is_ipv6_ ? IP::v6() : IP::v4());
+  get_service().async_accept(fd_, peer, addr, std::move(handler));
 }
 
 void Acceptor::accept(BaseSocket& peer, Address& addr) {
@@ -146,12 +160,20 @@ void Acceptor::accept(BaseSocket& peer, Address& addr, std::error_code& ec) {
 
 void Acceptor::async_accept(
     BaseSocket& peer, Address& addr, const AcceptHandler& handler) {
-  // TODO: need io_service
+  if (!is_open()) {
+    netpp::throw_error(make_error(error::BAD_DESCRIPTOR), "async_accept");
+    return;
+  }
+  get_service().async_accept(fd_, peer, addr, handler);
 }
 
 void Acceptor::async_accept(
     BaseSocket& peer, Address& addr, AcceptHandler&& handler) {
-  // TODO: need io_service
+  if (!is_open()) {
+    netpp::throw_error(make_error(error::BAD_DESCRIPTOR), "async_accept");
+    return;
+  }
+  get_service().async_accept(fd_, peer, addr, std::move(handler));
 }
 
 void Acceptor::set_non_blocking(bool mode) {

@@ -43,6 +43,7 @@ class Acceptor : private Chaos::UnCopyable {
   using AcceptHandler = std::function<void (const std::error_code&)>;
 
   socket_t fd_{kInvalidSocket};
+  bool is_ipv6_{};
   bool non_blocking_{};
   SocketService* service_{};
 public:
@@ -55,18 +56,23 @@ public:
 
   Acceptor(Acceptor&& o)
     : fd_(o.fd_)
+    , is_ipv6_(o.is_ipv6_)
     , non_blocking_(o.non_blocking_)
     , service_(o.service_) {
     o.fd_ = kInvalidSocket;
+    o.is_ipv6_ = 0;
     o.non_blocking_ = false;
+    o.service_ = nullptr;
   }
 
   Acceptor& operator=(Acceptor&& o) {
     if (this != &o) {
       fd_ = o.fd_;
+      is_ipv6_ = o.is_ipv6_;
       non_blocking_ = o.non_blocking_;
       service_ = o.service_;
       o.fd_ = kInvalidSocket;
+      o.is_ipv6_ = 0;
       o.non_blocking_ = false;
       o.service_ = nullptr;
     }
