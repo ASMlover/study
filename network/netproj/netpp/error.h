@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <string>
 #include <system_error>
 #include <Chaos/Base/Platform.h>
 #if defined(CHAOS_WINDOWS)
