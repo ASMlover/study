@@ -62,6 +62,7 @@ struct ConnectOperation : public BaseOperation {
 
 struct ReadOperation : public BaseOperation {
   const MutableBuffer& mbuf;
+  std::size_t nread{};
   ReadHandler handler{};
 
   ReadOperation(int e, const MutableBuffer& buf, const ReadHandler& h)
@@ -75,6 +76,7 @@ struct ReadOperation : public BaseOperation {
 
 struct WriteOperation : public BaseOperation {
   const ConstBuffer& cbuf;
+  std::size_t nwrote{};
   WriteHandler handler{};
 
   WriteOperation(int e, const ConstBuffer& buf, const ReadHandler& h)
@@ -88,6 +90,7 @@ struct WriteOperation : public BaseOperation {
 
 struct ReadFromOperation : public BaseOperation {
   const MutableBuffer& mbuf;
+  std::size_t nread{};
   const Address& peer_addr;
   ReadHandler handler{};
 
@@ -105,6 +108,7 @@ struct ReadFromOperation : public BaseOperation {
 
 struct WriteToOperation : public BaseOperation {
   const ConstBuffer& cbuf;
+  std::size_t nwrote{};
   const Address& peer_addr;
   WriteHandler handler{};
 
@@ -120,7 +124,7 @@ struct WriteToOperation : public BaseOperation {
   }
 };
 
-bool SocketService::add_operation(int sockfd, BaseOperation* oper) {
+bool SocketService::add_operation(socket_t sockfd, BaseOperation* oper) {
   if (operations_.find(sockfd) == operations_.end())
     operations_[sockfd] = OperationDict();
 
@@ -340,7 +344,7 @@ void SocketService::async_write_to(socket_t sockfd,
   add_operation(sockfd, oper);
 }
 
-void SocketService::handle_operation(int sockfd, int event) {
+void SocketService::handle_operation(socket_t sockfd, int event) {
   auto oper_dict_iter = operations_.find(sockfd);
   if (oper_dict_iter == operations_.end())
     return;
@@ -372,6 +376,7 @@ void SocketService::handle_operation(int sockfd, int event) {
         {
           auto* rop = reinterpret_cast<ReadOperation*>(oper);
           auto n = socket::read(sockfd, rop->mbuf.size(), rop->mbuf.data(), ec);
+          rop->nread = n;
           rop->handler(ec, n);
           delete rop;
         } break;
@@ -380,6 +385,7 @@ void SocketService::handle_operation(int sockfd, int event) {
           auto* wop = reinterpret_cast<WriteOperation*>(oper);
           auto n = socket::write(
               sockfd, wop->cbuf.data(), wop->cbuf.size(), ec);
+          wop->nwrote = n;
           wop->handler(ec, n);
           delete wop;
         } break;
@@ -390,6 +396,7 @@ void SocketService::handle_operation(int sockfd, int event) {
               rop->mbuf.size(), rop->mbuf.data(),
               (void*)rop->peer_addr.get_address(),
               ec, rop->peer_addr.get_family() == AF_INET6);
+          rop->nread = n;
           rop->handler(ec, n);
           delete rop;
         } break;
@@ -399,6 +406,7 @@ void SocketService::handle_operation(int sockfd, int event) {
           auto n = socket::write_to(sockfd,
               wop->cbuf.data(), wop->cbuf.size(),
               wop->peer_addr.get_address(), ec);
+          wop->nwrote = n;
           wop->handler(ec, n);
           delete wop;
         } break;
@@ -412,7 +420,8 @@ void SocketService::handle_operation(int sockfd, int event) {
 
 void SocketService::run(void) {
   while (running_) {
-    auto n = netpp::poll(&*pollfds_.begin(), pollfds_.size(), kPollTimeout);
+    auto n = netpp::poll(&*pollfds_.begin(),
+        static_cast<int>(pollfds_.size()), kPollTimeout);
     if (n <= 0)
       continue;
 

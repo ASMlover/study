@@ -64,12 +64,12 @@ class SocketService : private Chaos::UnCopyable {
 
   bool running_{true};
   std::vector<PollFd> pollfds_;
-  std::unordered_map<int, OperationDict> operations_;
+  std::unordered_map<socket_t, OperationDict> operations_;
 
   static constexpr int kPollTimeout = 10;
 
-  bool add_operation(int sockfd, BaseOperation* oper);
-  void handle_operation(int sockfd, int event);
+  bool add_operation(socket_t sockfd, BaseOperation* oper);
+  void handle_operation(socket_t sockfd, int event);
 public:
   bool set_non_blocking(socket_t sockfd, bool mode, std::error_code& ec);
   int set_option(socket_t sockfd, int level, int optname,
