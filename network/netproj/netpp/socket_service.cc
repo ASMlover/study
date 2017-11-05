@@ -431,8 +431,8 @@ void SocketService::handle_operation(socket_t sockfd, int event) {
           auto n = socket::read(sockfd, rop->mbuf.size() - off,
               reinterpret_cast<char*>(rop->mbuf.data()) + off, ec);
           rop->nread += n;
-          if (rop->nread >= rop->mbuf.size()) {
-            rop->handler(ec, n);
+          if (rop->nread >= rop->mbuf.size() && !ec) {
+            rop->handler(ec, rop->nread);
             delete rop;
           }
         } break;
@@ -451,8 +451,8 @@ void SocketService::handle_operation(socket_t sockfd, int event) {
               reinterpret_cast<const char*>(wop->cbuf.data()) + off,
               wop->cbuf.size() - off, ec);
           wop->nwrote += n;
-          if (wop->nwrote >= wop->cbuf.size()) {
-            wop->handler(ec, n);
+          if (wop->nwrote >= wop->cbuf.size() && !ec) {
+            wop->handler(ec, wop->nwrote);
             delete wop;
           }
         } break;
