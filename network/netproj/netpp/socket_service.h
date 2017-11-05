@@ -47,7 +47,8 @@ struct BaseOperation {
     OPER_INVALID = -1,
 
     OPER_ACCEPT, OPER_CONNECT,
-    OPER_READ, OPER_WRITE, OPER_READFROM, OPER_WRITETO,
+    OPER_READ, OPER_READ_SOME, OPER_WRITE, OPER_WRITE_SOME,
+    OPER_READFROM, OPER_WRITETO,
   };
 
   int op_type{OPER_INVALID};
@@ -100,6 +101,10 @@ public:
       socket_t sockfd, const MutableBuffer& buf, const ReadHandler& handler);
   void async_read(
       socket_t sockfd, const MutableBuffer& buf, ReadHandler&& handler);
+  void async_read_some(
+      socket_t sockfd, const MutableBuffer& buf, const ReadHandler& handler);
+  void async_read_some(
+      socket_t sockfd, const MutableBuffer& buf, ReadHandler&& handler);
   std::size_t write(socket_t sockfd,
       const ConstBuffer& buf, bool non_blocking, std::error_code& ec);
   std::size_t write(socket_t sockfd,
@@ -107,6 +112,10 @@ public:
   void async_write(
       socket_t sockfd, const ConstBuffer& buf, const WriteHandler& handler);
   void async_write(
+      socket_t sockfd, const ConstBuffer& buf, WriteHandler&& handler);
+  void async_write_some(
+      socket_t sockfd, const ConstBuffer& buf, const WriteHandler& handler);
+  void async_write_some(
       socket_t sockfd, const ConstBuffer& buf, WriteHandler&& handler);
   std::size_t read_from(socket_t sockfd, const MutableBuffer& buf,
       Address& peer_addr, bool non_blocking, std::error_code& ec);
