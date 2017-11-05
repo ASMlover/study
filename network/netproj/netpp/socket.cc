@@ -212,12 +212,12 @@ std::size_t TcpSocket::read_some(
 
 void TcpSocket::async_read_some(
     const MutableBuffer& buf, const ReadHandler&& handler) {
-  get_service().async_read(get_fd(), buf, handler);
+  get_service().async_read_some(get_fd(), buf, handler);
 }
 
 void TcpSocket::async_read_some(
     const MutableBuffer& buf, ReadHandler&& handler) {
-  get_service().async_read(get_fd(), buf, std::move(handler));
+  get_service().async_read_some(get_fd(), buf, std::move(handler));
 }
 
 std::size_t TcpSocket::write(const ConstBuffer& buf) {
@@ -253,12 +253,12 @@ std::size_t TcpSocket::write_some(const ConstBuffer& buf, std::error_code& ec) {
 
 void TcpSocket::async_write_some(
     const ConstBuffer& buf, const WriteHandler& handler) {
-  get_service().async_write(get_fd(), buf, handler);
+  get_service().async_write_some(get_fd(), buf, handler);
 }
 
 void TcpSocket::async_write_some(
     const ConstBuffer& buf, WriteHandler&& handler) {
-  get_service().async_write(get_fd(), buf, std::move(handler));
+  get_service().async_write_some(get_fd(), buf, std::move(handler));
 }
 
 UdpSocket::UdpSocket(SocketService& service)
