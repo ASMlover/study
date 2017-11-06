@@ -265,11 +265,36 @@ void SocketService::async_connect(
 std::size_t SocketService::read(socket_t sockfd,
     const MutableBuffer& buf, bool non_blocking, std::error_code& ec) {
   auto all_empty = buf.size() == 0;
+  std::size_t nread{};
+  for (;;) {
+    auto n = socket::sync_read(sockfd,
+        buf.size() - nread, reinterpret_cast<char*>(buf.data()) + nread,
+        non_blocking, all_empty, ec);
+    if (!ec) {
+      nread += n;
+      if (nread >= buf.size())
+        break;
+    }
+    else {
+      break;
+    }
+  }
+  return nread;
+}
+
+std::size_t SocketService::read(socket_t sockfd,
+    const NullBuffer&, bool non_blocking, std::error_code& ec) {
+  return socket::poll_read(sockfd, non_blocking, -1, ec);
+}
+
+std::size_t SocketService::read_some(socket_t sockfd,
+    const MutableBuffer& buf, bool non_blocking, std::error_code& ec) {
+  auto all_empty = buf.size() == 0;
   return socket::sync_read(sockfd,
       buf.size(), buf.data(), non_blocking, all_empty, ec);
 }
 
-std::size_t SocketService::read(socket_t sockfd,
+std::size_t SocketService::read_some(socket_t sockfd,
     const NullBuffer&, bool non_blocking, std::error_code& ec) {
   return socket::poll_read(sockfd, non_blocking, -1, ec);
 }
@@ -305,12 +330,37 @@ void SocketService::async_read_some(
 std::size_t SocketService::write(socket_t sockfd,
     const ConstBuffer& buf, bool non_blocking, std::error_code& ec) {
   auto all_empty = buf.size() == 0;
-  return socket::sync_write(sockfd,
-      buf.data(), buf.size(), non_blocking, all_empty, ec);
+  std::size_t nwrote{};
+  for (;;) {
+    auto n = socket::sync_write(sockfd,
+        reinterpret_cast<const char*>(buf.data()) + nwrote,
+        buf.size() - nwrote, non_blocking, all_empty, ec);
+    if (!ec) {
+      nwrote += n;
+      if (nwrote >= buf.size())
+        break;
+    }
+    else {
+      break;
+    }
+  }
+  return nwrote;
 }
 
 std::size_t SocketService::write(socket_t sockfd,
       const NullBuffer&, bool non_blocking, std::error_code& ec) {
+  return socket::poll_write(sockfd, non_blocking, -1, ec);
+}
+
+std::size_t SocketService::write_some(socket_t sockfd,
+    const ConstBuffer& buf, bool non_blocking, std::error_code& ec) {
+  auto all_empty = buf.size() == 0;
+  return socket::sync_write(sockfd,
+      buf.data(), buf.size(), non_blocking, all_empty, ec);
+}
+
+std::size_t SocketService::write_some(socket_t sockfd,
+    const NullBuffer&, bool non_blocking, std::error_code& ec) {
   return socket::poll_write(sockfd, non_blocking, -1, ec);
 }
 
@@ -432,7 +482,7 @@ void SocketService::handle_operation(socket_t sockfd, int event) {
               reinterpret_cast<char*>(rop->mbuf.data()) + off, ec);
           if (!ec)
             rop->nread += n;
-          if ((rop->nread >= rop->mbuf.size() && !ec) || ec) {
+          if ((!ec && rop->nread >= rop->mbuf.size()) || ec) {
             rop->handler(ec, rop->nread);
             delete rop;
           }
@@ -453,7 +503,7 @@ void SocketService::handle_operation(socket_t sockfd, int event) {
               wop->cbuf.size() - off, ec);
           if (!ec)
             wop->nwrote += n;
-          if ((wop->nwrote >= wop->cbuf.size() && !ec) || ec) {
+          if ((!ec && wop->nwrote >= wop->cbuf.size()) || ec) {
             wop->handler(ec, wop->nwrote);
             delete wop;
           }

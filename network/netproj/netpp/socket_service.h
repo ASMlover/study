@@ -97,6 +97,10 @@ public:
       const MutableBuffer& buf, bool non_blocking, std::error_code& ec);
   std::size_t read(socket_t sockfd,
       const NullBuffer&, bool non_blocking, std::error_code& ec);
+  std::size_t read_some(socket_t sockfd,
+      const MutableBuffer& buf, bool non_blocking, std::error_code& ec);
+  std::size_t read_some(socket_t sockfd,
+      const NullBuffer&, bool non_blocking, std::error_code& ec);
   void async_read(
       socket_t sockfd, const MutableBuffer& buf, const ReadHandler& handler);
   void async_read(
@@ -108,6 +112,10 @@ public:
   std::size_t write(socket_t sockfd,
       const ConstBuffer& buf, bool non_blocking, std::error_code& ec);
   std::size_t write(socket_t sockfd,
+      const NullBuffer&, bool non_blocking, std::error_code& ec);
+  std::size_t write_some(socket_t sockfd,
+      const ConstBuffer& buf, bool non_blocking, std::error_code& ec);
+  std::size_t write_some(socket_t sockfd,
       const NullBuffer&, bool non_blocking, std::error_code& ec);
   void async_write(
       socket_t sockfd, const ConstBuffer& buf, const WriteHandler& handler);
