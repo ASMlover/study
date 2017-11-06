@@ -200,14 +200,14 @@ void TcpSocket::async_read(const MutableBuffer& buf, ReadHandler&& handler) {
 
 std::size_t TcpSocket::read_some(const MutableBuffer& buf) {
   std::error_code ec;
-  auto nread = get_service().read(get_fd(), buf, is_non_blocking(), ec);
+  auto nread = get_service().read_some(get_fd(), buf, is_non_blocking(), ec);
   netpp::throw_error(ec, "read_some");
   return nread;
 }
 
 std::size_t TcpSocket::read_some(
     const MutableBuffer& buf, std::error_code& ec) {
-  return get_service().read(get_fd(), buf, is_non_blocking(), ec);
+  return get_service().read_some(get_fd(), buf, is_non_blocking(), ec);
 }
 
 void TcpSocket::async_read_some(
@@ -242,13 +242,13 @@ void TcpSocket::async_write(const ConstBuffer& buf, WriteHandler&& handler) {
 
 std::size_t TcpSocket::write_some(const ConstBuffer& buf) {
   std::error_code ec;
-  auto nwrote = get_service().write(get_fd(), buf, is_non_blocking(), ec);
+  auto nwrote = get_service().write_some(get_fd(), buf, is_non_blocking(), ec);
   netpp::throw_error(ec, "write_some");
   return nwrote;
 }
 
 std::size_t TcpSocket::write_some(const ConstBuffer& buf, std::error_code& ec) {
-  return get_service().write(get_fd(), buf, is_non_blocking(), ec);
+  return get_service().write_some(get_fd(), buf, is_non_blocking(), ec);
 }
 
 void TcpSocket::async_write_some(
