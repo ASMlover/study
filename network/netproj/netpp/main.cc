@@ -56,9 +56,9 @@ void echo_tcp_server(void) {
                   std::error_code ec;
                   std::vector<char> buf(1024);
                   for (;;) {
-                    auto n = conn.read(netpp::buffer(buf));
+                    auto n = conn.read_some(netpp::buffer(buf));
                     if (n > 0)
-                      conn.write(netpp::buffer(buf, n));
+                      conn.write_some(netpp::buffer(buf, n));
                     else
                       break;
                   }
