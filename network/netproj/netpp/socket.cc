@@ -211,7 +211,7 @@ std::size_t TcpSocket::read_some(
 }
 
 void TcpSocket::async_read_some(
-    const MutableBuffer& buf, const ReadHandler&& handler) {
+    const MutableBuffer& buf, const ReadHandler& handler) {
   get_service().async_read_some(get_fd(), buf, handler);
 }
 
