@@ -130,7 +130,7 @@ public:
   void async_read(const MutableBuffer& buf, ReadHandler&& handler);
   std::size_t read_some(const MutableBuffer& buf);
   std::size_t read_some(const MutableBuffer& buf, std::error_code& ec);
-  void async_read_some(const MutableBuffer& buf, const ReadHandler&& handler);
+  void async_read_some(const MutableBuffer& buf, const ReadHandler& handler);
   void async_read_some(const MutableBuffer& buf, ReadHandler&& handler);
   std::size_t write(const ConstBuffer& buf);
   std::size_t write(const ConstBuffer& buf, std::error_code& ec);
