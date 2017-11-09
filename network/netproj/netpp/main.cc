@@ -53,6 +53,8 @@ class TcpConnection
         [this, self](const std::error_code& ec, std::size_t n) {
           if (!ec)
             do_write(n);
+          else
+            socket_.close();
         });
   }
 
@@ -62,6 +64,8 @@ class TcpConnection
         [this, self](const std::error_code& ec, std::size_t) {
           if (!ec)
             do_read();
+          else
+            socket_.close();
         });
   }
 public:
@@ -103,41 +107,59 @@ public:
   }
 };
 
+class EchoTcpClient
+  : private Chaos::UnCopyable
+  , public std::enable_shared_from_this<EchoTcpClient> {
+  netpp::TcpSocket socket_;
+
+  void do_connect(const netpp::Address& addr) {
+    auto self(shared_from_this());
+    socket_.async_connect(addr, [this, self](const std::error_code& ec) {
+          if (!ec) {
+            do_read();
+          }
+          else {
+            socket_.close();
+          }
+        });
+  }
+
+  void do_read(void) {
+    std::vector<char> buf(1024);
+    auto self(shared_from_this());
+    socket_.async_read_some(netpp::buffer(buf),
+        [this, self, &buf](const std::error_code& ec, std::size_t) {
+          if (!ec)
+            std::cout << "echo reply: " << buf.data() << std::endl;
+          socket_.close();
+        });
+  }
+
+  void do_write(void) {
+    std::string echo("Hello, world!");
+    auto self(shared_from_this());
+    socket_.async_write_some(netpp::buffer(echo),
+        [this, self](const std::error_code& ec, std::size_t) {
+          if (ec)
+            socket_.close();
+        });
+  }
+public:
+  EchoTcpClient(netpp::SocketService& service)
+    : socket_(service, netpp::Tcp::v4()) {
+  }
+
+  void start(const char* ip, std::uint16_t port) {
+    do_connect(netpp::Address(netpp::IP::v4(), ip, port));
+  }
+};
+
 void echo_tcp_server(void) {
   netpp::SocketService service;
   EchoTcpServer server(service, 5555);
   server.start();
 
-// #if defined(CHAOS_POSIX)
-//   netpp::Acceptor acceptor(service, netpp::Address(netpp::IP::v6(), 5555));
-// #else
-//   netpp::Acceptor acceptor(service, netpp::Address(netpp::IP::v4(), 5555));
-// #endif
-//   acceptor.set_non_blocking(true);
-//   std::vector<std::unique_ptr<std::thread>> threads;
-//   netpp::TcpSocket conn(service);
-//   acceptor.async_accept(conn,
-//       [&threads, &acceptor, &conn](const std::error_code& ec) {
-//         if (!ec) {
-//           threads.emplace_back(new std::thread([](netpp::TcpSocket&& conn) {
-//                   std::error_code ec;
-//                   std::vector<char> buf(1024);
-//                   for (;;) {
-//                     auto n = conn.read_some(netpp::buffer(buf));
-//                     if (n > 0)
-//                       conn.write_some(netpp::buffer(buf, n));
-//                     else
-//                       break;
-//                   }
-//                   conn.close();
-//                 }, std::move(conn)));
-//         }
-//       });
-
   service.run();
-
-//   for (auto& t : threads)
-//     t->join();
 }
 
 void echo_tcp_client(void) {
