@@ -571,6 +571,9 @@ void SocketService::run(void) {
         ++it;
       }
     }
+
+    if (pollfds_.size() == 0 && operations_.size() == 0)
+      running_ = false;
   }
 }
 
