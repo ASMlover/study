@@ -469,8 +469,6 @@ void SocketService::handle_operation(socket_t sockfd, int event) {
       case BaseOperation::OPER_CONNECT:
         {
           auto* cop = reinterpret_cast<ConnectOperation*>(oper);
-          std::error_code ec;
-          // TODO: need getting connecting error
           cop->handler(ec);
           delete cop;
         } break;
@@ -544,6 +542,66 @@ void SocketService::handle_operation(socket_t sockfd, int event) {
 }
 
 void SocketService::handle_error(socket_t sockfd) {
+  auto oper_dict_iter = operations_.find(sockfd);
+  if (oper_dict_iter == operations_.end())
+    return;
+
+  auto& oper_dict = operations_[sockfd];
+  for (auto& it : oper_dict) {
+    std::error_code ec = make_error(get_errno());
+    auto* oper = it.second;
+    switch (oper->get_type()) {
+    case BaseOperation::OPER_ACCEPT:
+      {
+        auto* aop = reinterpret_cast<AcceptOperation*>(oper);
+        aop->handler(ec);
+        delete aop;
+      } break;
+    case BaseOperation::OPER_CONNECT:
+      {
+        auto* cop = reinterpret_cast<ConnectOperation*>(oper);
+        cop->handler(ec);
+        delete cop;
+      } break;
+    case BaseOperation::OPER_READ:
+      {
+        auto* rop = reinterpret_cast<ReadOperation*>(oper);
+        rop->handler(ec, rop->nread);
+        delete rop;
+      } break;
+    case BaseOperation::OPER_READ_SOME:
+      {
+        auto* rop = reinterpret_cast<ReadSomeOperation*>(oper);
+        rop->handler(ec, 0);
+        delete rop;
+      } break;
+    case BaseOperation::OPER_WRITE:
+      {
+        auto* wop = reinterpret_cast<WriteOperation*>(oper);
+        wop->handler(ec, wop->nwrote);
+        delete wop;
+      } break;
+    case BaseOperation::OPER_WRITE_SOME:
+      {
+        auto* wop = reinterpret_cast<WriteSomeOperation*>(oper);
+        wop->handler(ec, 0);
+        delete wop;
+      } break;
+    case BaseOperation::OPER_READFROM:
+      {
+        auto* rop = reinterpret_cast<ReadFromOperation*>(oper);
+        rop->handler(ec, 0);
+        delete rop;
+      } break;
+    case BaseOperation::OPER_WRITETO:
+      {
+        auto* wop = reinterpret_cast<WriteToOperation*>(oper);
+        wop->handler(ec, 0);
+        delete wop;
+      } break;
+    }
+  }
+  operations_.erase(oper_dict_iter);
 }
 
 void SocketService::run(void) {
