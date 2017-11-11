@@ -543,6 +543,9 @@ void SocketService::handle_operation(socket_t sockfd, int event) {
     operations_.erase(oper_dict_iter);
 }
 
+void SocketService::handle_error(socket_t sockfd) {
+}
+
 void SocketService::run(void) {
   while (running_) {
     auto n = netpp::poll(&*pollfds_.begin(),
@@ -559,9 +562,8 @@ void SocketService::run(void) {
         if ((revents & POLLHUP) && !(revents & POLLIN))  {
           // TODO: need solve close-functor
         }
-        if (revents & (POLLERR | POLLNVAL)) {
-          // TODO: need solve error-functor
-        }
+        if (revents & (POLLERR | POLLNVAL)) // solve error-functor
+          handle_error(it->fd);
         if (revents & (POLLIN | POLLPRI | POLLHUP))
           handle_operation(it->fd, POLLIN);
         if (revents & POLLOUT)

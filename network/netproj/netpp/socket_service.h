@@ -71,6 +71,7 @@ class SocketService : private Chaos::UnCopyable {
 
   bool add_operation(socket_t sockfd, BaseOperation* oper);
   void handle_operation(socket_t sockfd, int event);
+  void handle_error(socket_t sockfd);
 public:
   bool set_non_blocking(socket_t sockfd, bool mode, std::error_code& ec);
   int set_option(socket_t sockfd, int level, int optname,
