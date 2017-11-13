@@ -72,6 +72,7 @@ public:
   TcpConnection(netpp::TcpSocket&& s)
     : socket_(std::move(s))
     , buffer_(kMaxBuffer) {
+    socket_.set_non_blocking(true);
   }
 
   void start(void) {
