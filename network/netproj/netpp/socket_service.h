@@ -61,6 +61,7 @@ struct BaseOperation {
 };
 
 class SocketService : private Chaos::UnCopyable {
+  using OperationList = std::vector<BaseOperation*>;
   using OperationDict = std::map<int, BaseOperation*>;
 
   bool running_{true};
@@ -70,7 +71,7 @@ class SocketService : private Chaos::UnCopyable {
   static constexpr int kPollTimeout = 10;
 
   bool add_operation(socket_t sockfd, BaseOperation* oper);
-  void handle_operation(socket_t sockfd, int event);
+  bool handle_operation(socket_t sockfd, int event);
   void handle_error(socket_t sockfd);
 public:
   bool set_non_blocking(socket_t sockfd, bool mode, std::error_code& ec);

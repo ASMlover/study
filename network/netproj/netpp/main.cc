@@ -87,7 +87,7 @@ class EchoTcpServer : private Chaos::UnCopyable {
   void do_accept(void) {
     acceptor_.async_accept(socket_, [this](const std::error_code& ec) {
           if (!ec)
-            std::make_shared<TcpConnection>(std::move(socket_));
+            std::make_shared<TcpConnection>(std::move(socket_))->start();
 
           do_accept();
         });

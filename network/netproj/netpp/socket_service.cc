@@ -30,6 +30,7 @@
 #include "address.h"
 #include "socket.h"
 #include "socket_service.h"
+#include <iostream>
 
 namespace netpp {
 
@@ -446,13 +447,14 @@ void SocketService::async_write_to(socket_t sockfd,
   add_operation(sockfd, oper);
 }
 
-void SocketService::handle_operation(socket_t sockfd, int event) {
+bool SocketService::handle_operation(socket_t sockfd, int event) {
   auto oper_dict_iter = operations_.find(sockfd);
   if (oper_dict_iter == operations_.end())
-    return;
+    return false;
 
   auto& oper_dict = operations_[sockfd];
   auto oper_iter = oper_dict.find(event);
+  bool need_remove{true};
   if (oper_iter != oper_dict.end()) {
     auto* oper = oper_iter->second;
     if (oper != nullptr) {
@@ -484,6 +486,9 @@ void SocketService::handle_operation(socket_t sockfd, int event) {
             rop->handler(ec, rop->nread);
             delete rop;
           }
+          else {
+            need_remove = false;
+          }
         } break;
       case BaseOperation::OPER_READ_SOME:
         {
@@ -504,6 +509,9 @@ void SocketService::handle_operation(socket_t sockfd, int event) {
           if ((!ec && wop->nwrote >= wop->cbuf.size()) || ec) {
             wop->handler(ec, wop->nwrote);
             delete wop;
+          }
+          else {
+            need_remove = false;
           }
         } break;
       case BaseOperation::OPER_WRITE_SOME:
@@ -535,10 +543,13 @@ void SocketService::handle_operation(socket_t sockfd, int event) {
         } break;
       }
     }
-    oper_dict.erase(oper_iter);
+    if (need_remove)
+      oper_dict.erase(oper_iter);
   }
   if (oper_dict.empty())
     operations_.erase(oper_dict_iter);
+
+  return need_remove;
 }
 
 void SocketService::handle_error(socket_t sockfd) {
@@ -611,25 +622,36 @@ void SocketService::run(void) {
     if (n <= 0)
       continue;
 
+    std::vector<PollFd> active_fds;
     for (auto it = pollfds_.begin(); it != pollfds_.end();) {
       if (n-- <= 0)
         break;
 
       auto revents = it->revents;
       if (revents > 0) {
-        if ((revents & POLLHUP) && !(revents & POLLIN))  {
-          // TODO: need solve close-functor
-        }
-        if (revents & (POLLERR | POLLNVAL)) // solve error-functor
-          handle_error(it->fd);
-        if (revents & (POLLIN | POLLPRI | POLLHUP))
-          handle_operation(it->fd, POLLIN);
-        if (revents & POLLOUT)
-          handle_operation(it->fd, POLLOUT);
+        active_fds.push_back(*it);
+        pollfds_.erase(it++);
       }
       else {
         ++it;
       }
+    }
+
+    for (auto& fd : active_fds) {
+        bool need_remove{true};
+        auto revents = fd.revents;
+        if ((revents & POLLHUP) && !(revents & POLLIN))  {
+          // TODO: need solve close-functor
+        }
+        if (revents & (POLLERR | POLLNVAL)) // solve error-functor
+          handle_error(fd.fd);
+        if (revents & (POLLIN | POLLPRI | POLLHUP))
+          need_remove = handle_operation(fd.fd, POLLIN);
+        if (revents & POLLOUT)
+          need_remove = handle_operation(fd.fd, POLLOUT);
+
+        if (!need_remove)
+          pollfds_.push_back(fd);
     }
 
     if (pollfds_.size() == 0 && operations_.size() == 0)
