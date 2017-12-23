@@ -31,10 +31,13 @@
 import time
 import datetime
 
-_DAILY_REFRESH_TIME = 0 # 凌晨
+_DAILY_REFRESH_TIME = 0
 
 def parse_date(s):
-    """解析字符串格式的date时间，必须是YYYY-mm-dd格式，返回当天的起始时间（秒数）"""
+    """parse string mode date
+
+    date format must be `YYYY-mm-dd`, return the start seconds of day
+    """
     if '-' in s:
         sd = s.split('-')
     else:
@@ -47,7 +50,10 @@ def parse_date(s):
     return time.mktime(datetime.datetime(y, m, d).timetuple())
 
 def parse_time(s):
-    """解析字符串格式的time时间，必须是HH:MM格式或HH:MM:SS格式，返回在一天中的秒数"""
+    """parse string mode time
+
+    time format must be `HH:MM` or `HH:MM:SS`, return the seconds in day
+    """
     if ':' in s:
         st = map(int, s.split(':'))
     else:
@@ -64,11 +70,14 @@ def parse_time(s):
     return h * 3600 + m * 60 + s
 
 def _get_time():
-    """获取当前的时间，原则上应该是当前时间加上服务器延迟的，这里暂时只获取当前时间"""
+    """get current time(seconds)
+
+    it's should be add diff-time of server network delay
+    """
     return time.time()
 
 def get_day_time(t=None, refresh_time=None):
-    """获取当天的起始时间（可以指定一个每日刷新的时间，默认为凌晨）"""
+    """get start seconds of day"""
     if t is None:
         t = _get_time()
     if refresh_time is None:
@@ -78,11 +87,11 @@ def get_day_time(t=None, refresh_time=None):
     return day_time
 
 def get_time_of_day(t=None, refresh_time=None):
-    """获取时间戳在一天中的秒数"""
+    """get the seconds in day"""
     if t is None:
         t = _get_time()
     return t - get_day_time(t, refresh_time)
 
 def is_same_day(t1, t2, refresh_time=None):
-    """判断2个时间戳是否在同一天"""
+    """check two times in same day"""
     return get_day_time(t1, refresh_time) == get_day_time(t2, refresh_time)

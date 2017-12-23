@@ -47,7 +47,7 @@ def _gen_sequence_function(funcs):
     return _caller
 
 def _extract_component_units(component, properties, funcs):
-    """提取模块的属性和函数"""
+    """gather properties and functions of component"""
     for name, attr in component.iteritems():
         if name.startswith('__') and name.endswith('__') and name != '__init__':
             continue
@@ -61,7 +61,7 @@ def _extract_component_units(component, properties, funcs):
         methods.append(attr)
 
 def _gather_component_units(components, properties, funcs):
-    """聚集所有组件的属性和函数等"""
+    """gather all properties and functions of all components"""
     for comp in components:
         token = comp.split('.')
         module_name = '.'.join(token[:-1])
@@ -73,7 +73,7 @@ def _gather_component_units(components, properties, funcs):
         _extract_component_units(comp.__dict__, properties, funcs)
 
 def _gather_function(properties, funcs):
-    """生成组合后的函数，同名函数根据定义的components顺序依次调用"""
+    """generate functions of all components as sequence"""
     for name, fun in funcs.iteritems():
         if len(fun) == 1:
             properties[name] = fun[0]
@@ -103,5 +103,4 @@ def gather_components(attrs):
 class CompositeAssemble(type):
     def __new__(cls, name, bases, dct):
         properties = gather_components(dct)
-
         return super(CompositeAssemble, cls).__new__(cls, name, bases, properties)
