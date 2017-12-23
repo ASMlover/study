@@ -32,76 +32,76 @@ import sys
 import inspect
 
 def _formatted_path(path, components):
-	if not path:
-		return components
+    if not path:
+        return components
 
-	result = []
-	for comp in components:
-		result.append('.'.join([path, comp]))
-	return result
+    result = []
+    for comp in components:
+        result.append('.'.join([path, comp]))
+    return result
 
 def _gen_sequence_function(funcs):
-	def _caller(*args, **kwargs):
-		for f in funcs:
-			f(*args, **kwargs)
-	return _caller
+    def _caller(*args, **kwargs):
+        for f in funcs:
+            f(*args, **kwargs)
+    return _caller
 
 def _extract_component_units(component, properties, funcs):
-	"""提取模块的属性和函数"""
-	for name, attr in component.iteritems():
-		if name.startswith('__') and name.endswith('__') and name != '__init__':
-			continue
-		if not (inspect.ismethod(attr) or inspect.isfunction(attr)
-				or inspect.ismethoddescriptor(attr)):
-			assert name not in properties, 'name is: %s' % name
-			properties[name] = attr
-			continue
+    """提取模块的属性和函数"""
+    for name, attr in component.iteritems():
+        if name.startswith('__') and name.endswith('__') and name != '__init__':
+            continue
+        if not (inspect.ismethod(attr) or inspect.isfunction(attr)
+                or inspect.ismethoddescriptor(attr)):
+            assert name not in properties, 'name is: %s' % name
+            properties[name] = attr
+            continue
 
-		methods = funcs.setdefault(name, [])
-		methods.append(attr)
+        methods = funcs.setdefault(name, [])
+        methods.append(attr)
 
 def _gather_component_units(components, properties, funcs):
-	"""聚集所有组件的属性和函数等"""
-	for comp in components:
-		token = comp.split('.')
-		module_name = '.'.join(token[:-1])
-		component_name = token[-1]
+    """聚集所有组件的属性和函数等"""
+    for comp in components:
+        token = comp.split('.')
+        module_name = '.'.join(token[:-1])
+        component_name = token[-1]
 
-		__import__(module_name)
-		module = sys.modules[module_name]
-		comp = getattr(module, component_name)
-		_extract_component_units(comp.__dict__, properties, funcs)
+        __import__(module_name)
+        module = sys.modules[module_name]
+        comp = getattr(module, component_name)
+        _extract_component_units(comp.__dict__, properties, funcs)
 
 def _gather_function(properties, funcs):
-	"""生成组合后的函数，同名函数根据定义的components顺序依次调用"""
-	for name, fun in funcs.iteritems():
-		if len(fun) == 1:
-			properties[name] = fun[0]
-		else:
-			properties[name] = _gen_sequence_function(fun)
+    """生成组合后的函数，同名函数根据定义的components顺序依次调用"""
+    for name, fun in funcs.iteritems():
+        if len(fun) == 1:
+            properties[name] = fun[0]
+        else:
+            properties[name] = _gen_sequence_function(fun)
 
 def gather_components(attrs):
-	components = attrs.get('_components')
-	if not components:
-		# TODO: deal with special attrs
-		return attrs
+    components = attrs.get('_components')
+    if not components:
+        # TODO: deal with special attrs
+        return attrs
 
-	path = attrs.get('_component_path')
-	components = _formatted_path(path, components)
+    path = attrs.get('_component_path')
+    components = _formatted_path(path, components)
 
-	funcs = {}
-	properties = {}
-	_extract_component_units(attrs, properties, funcs)
-	properties.update(attrs)
+    funcs = {}
+    properties = {}
+    _extract_component_units(attrs, properties, funcs)
+    properties.update(attrs)
 
-	_gather_component_units(components, properties, funcs)
-	_gather_function(properties, funcs)
+    _gather_component_units(components, properties, funcs)
+    _gather_function(properties, funcs)
 
-	# TODO: deal with special attrs
-	return properties
+    # TODO: deal with special attrs
+    return properties
 
 class CompositeAssemble(type):
-	def __new__(cls, name, bases, dct):
-		properties = gather_components(dct)
+    def __new__(cls, name, bases, dct):
+        properties = gather_components(dct)
 
-		return super(CompositeAssemble, cls).__new__(cls, name, bases, properties)
+        return super(CompositeAssemble, cls).__new__(cls, name, bases, properties)
