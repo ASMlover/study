@@ -32,19 +32,19 @@ import functools
 import traceback
 
 def nothrow(func):
-	@functools.wraps(func)
-	def _nothrow_wrapper(*args, **kwargs):
-		try:
-			return func(*args, **kwargs)
-		except:
-			traceback.print_exc()
-	return _nothrow_wrapper
+    @functools.wraps(func)
+    def _nothrow_wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except:
+            traceback.print_exc()
+    return _nothrow_wrapper
 
 def debug(func):
-	if not __debug__:
-		return func
+    if not __debug__:
+        return func
 
-	@functools.wraps(func)
-	def _nothing_wrapper(*args, **kwargs):
-		pass
-	return _nothing_wrapper
+    @functools.wraps(func)
+    def _nothing_wrapper(*args, **kwargs):
+        pass
+    return _nothing_wrapper
