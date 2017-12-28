@@ -25,11 +25,18 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include "mutex.h"
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
   std::cout << "hello, libco !!!" << std::endl;
+
+  {
+    co::FastMutex m;
+    m.lock();
+    m.unlock();
+  }
 
   return 0;
 }

@@ -58,12 +58,14 @@ struct M_Mutex {
   }
 
   void lock(void) {
-    while (std::atomic_flag_test_and_set_explicit(&m_, std::memory_order_acquire)) {
+    while (std::atomic_flag_test_and_set_explicit(
+          &m_, std::memory_order_acquire)) {
     }
   }
 
   bool try_lock(void) {
-    bool r = !std::atomic_flag_test_and_set_explicit(&m_, std::memory_order_acquire);
+    bool r = !std::atomic_flag_test_and_set_explicit(
+        &m_, std::memory_order_acquire);
     return r;
   }
 
@@ -73,9 +75,9 @@ struct M_Mutex {
 };
 
 #if defined(LIBCO_SINGLE_THREAD)
-# define FastMutex S_Mutex
+using FastMutex = S_Mutex;
 #else
-# define FastMutex M_Mutex
+using FastMutex = M_Mutex;
 #endif
 
 }
