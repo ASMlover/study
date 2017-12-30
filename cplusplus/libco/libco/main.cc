@@ -26,6 +26,22 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include "co_mutex.h"
+#include "ext/lock_free_container.h"
+
+class Data {
+public:
+  Data(void) {
+    std::cout << "Data::Data" << std::endl;
+  }
+
+  ~Data(void) {
+    std::cout << "Data::~Data" << std::endl;
+  }
+
+  void show(void) {
+    std::cout << "Data::show" << std::endl;
+  }
+};
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
@@ -36,6 +52,15 @@ int main(int argc, char* argv[]) {
     co::FastMutex m;
     m.lock();
     m.unlock();
+  }
+
+  {
+    lock_free::Stack<Data> s;
+    s.push(new Data());
+
+    auto n = s.pop();
+    n->value->show();
+    delete n->value;
   }
 
   return 0;
