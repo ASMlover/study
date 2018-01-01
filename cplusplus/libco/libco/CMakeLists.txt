@@ -28,6 +28,12 @@
 set(OUTPUT_NAME "libco.test")
 
 file(GLOB_RECURSE LIBCO_SOURCES *.cc)
+set(LIBCO_SOURCES ${LIBCO_SOURCES}
+  ${PROJECT_SOURCE_DIR}/../../network/3rdparty/asio/asio/src/asio.cpp)
 message(STATUS "[libco.libco] LIBCO_SOURCES: ${LIBCO_SOURCES}")
 
 add_executable(${OUTPUT_NAME} ${LIBCO_SOURCES})
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+else()
+  target_link_libraries(${OUTPUT_NAME} pthread)
+endif()
