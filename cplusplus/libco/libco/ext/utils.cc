@@ -1,4 +1,4 @@
-// Copyright (c) 2017 ASMlover. All rights reserved.
+// Copyright (c) 2018 ASMlover. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -24,49 +24,23 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
-#include "co_mutex.h"
-#include "ext/lock_free_container.h"
-#include "ext/utils.h"
+#include "utils.h"
 
-class Data {
-public:
-  Data(void) {
-    std::cout << "Data::Data" << std::endl;
+namespace ext {
+
+std::string as_hex(const char* s, std::size_t n) {
+  static const char* hex_table = "0123456789abcdef";
+
+  std::string r;
+  for (std::size_t i = 0; i < n; ++i) {
+    r.push_back(hex_table[static_cast<std::uint8_t>(*(s + i)) >> 4]);
+    r.push_back(hex_table[static_cast<std::uint8_t>(*(s + i)) & 0x0f]);
   }
+  return r;
+}
 
-  ~Data(void) {
-    std::cout << "Data::~Data" << std::endl;
-  }
+std::string as_hex(const std::string& s) {
+  return as_hex(s.data(), s.size());
+}
 
-  void show(void) {
-    std::cout << "Data::show" << std::endl;
-  }
-};
-
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
-
-  std::cout << "hello, libco !!!" << std::endl;
-
-  {
-    co::FastMutex m;
-    m.lock();
-    m.unlock();
-  }
-
-  {
-    ext::lock_free::Stack<Data> s;
-    s.push(new Data());
-
-    auto n = s.pop();
-    n->value->show();
-    delete n->value;
-  }
-
-  {
-    std::cout << "HEX output is: " << ext::as_hex("Hello, world") << std::endl;
-  }
-
-  return 0;
 }
