@@ -27,7 +27,7 @@
 
 #include <atomic>
 
-namespace lock_free {
+namespace ext { namespace lock_free {
 
 template <typename T>
 class Stack {
@@ -86,4 +86,4 @@ public:
   }
 };
 
-}
+}}

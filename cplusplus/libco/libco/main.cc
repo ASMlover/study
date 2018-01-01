@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
   }
 
   {
-    lock_free::Stack<Data> s;
+    ext::lock_free::Stack<Data> s;
     s.push(new Data());
 
     auto n = s.pop();
