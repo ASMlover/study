@@ -36,19 +36,19 @@ namespace ext {
 
 class Timer
   : public std::enable_shared_from_this<Timer>
-  , private asio::noncopyable {
+  , private boost::noncopyable {
   std::uint32_t id_{};
   double raw_delay_{};
   bool is_repeat_{};
   bool is_cleared_{};
-  std::chrono::system_clock::duration dealy_;
-  asio::system_timer timer_;
+  boost::asio::deadline_timer::duration_type dealy_;
+  boost::asio::deadline_timer timer_;
   std::mutex mutex_;
 
-  void on_timer(const std::error_code& ec);
+  void on_timer(void);
 public:
-  Timer(std::uint32_t id, double delay,
-      std::int64_t sec, std::int64_t millisec, bool is_repeat);
+  Timer(std::uint32_t id,
+      double delay, long sec, long millisec, bool is_repeat);
   ~Timer(void);
 
   void start(void);

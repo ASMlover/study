@@ -26,5 +26,4 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <asio.hpp>
-#include <asio/system_timer.hpp>
+#include <boost/asio.hpp>

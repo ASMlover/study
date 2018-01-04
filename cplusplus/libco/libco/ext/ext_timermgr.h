@@ -24,57 +24,35 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "ext_timer.h"
-#include "ext_iomgr.h"
-#include "ext_timermgr.h"
+#pragma once
+
+#include <mutex>
+#include <memory>
+#include <unordered_map>
+#include "ext_helper.h"
 
 namespace ext {
 
-Timer::Timer(std::uint32_t id,
-    double delay, long sec, long millisec, bool is_repeat)
-  : id_(id)
-  , raw_delay_(delay)
-  , is_repeat_(is_repeat)
-  , dealy_(boost::posix_time::seconds(sec) + boost::posix_time::milliseconds(millisec))
-  , timer_(IOMgr::instance().get_io_service())
-{
-}
+class Timer;
 
-Timer::~Timer(void) {
-}
+using TimerPtr = std::shared_ptr<Timer>;
+using TimerMap = std::unordered_map<std::uint32_t, TimerPtr>;
 
-void Timer::start(void) {
-  auto self(shared_from_this());
-  timer_.expires_from_now(dealy_);
-  timer_.async_wait([this, self](const boost::system::error_code& ec) {
-        if (!ec) {
-          {
-            std::unique_lock<std::mutex> g(mutex_);
-            if (is_cleared_)
-              return;
+class TimerMgr : private boost::noncopyable {
+  bool stoped_{};
+  std::uint32_t id_{};
+  std::mutex timer_mutex_;
+  TimerMap timers_;
 
-            // TODO:
-
-            if (is_repeat_)
-              start();
-            else
-              is_cleared_ = true;
-          }
-          if (is_cleared_)
-            TimerMgr::instance().unreg(id_);
-        }
-      });
-}
-
-void Timer::stop(void) {
-  std::unique_lock<std::mutex> g(mutex_);
-  if (!is_cleared_) {
-    timer_.cancel();
-    is_cleared_ = true;
+  TimerMgr(void);
+  ~TimerMgr(void);
+public:
+  static TimerMgr& instance(void) {
+    static TimerMgr s;
+    return s;
   }
-}
 
-void Timer::on_timer(void) {
-}
+  void unreg(std::uint32_t id);
+};
 
 }

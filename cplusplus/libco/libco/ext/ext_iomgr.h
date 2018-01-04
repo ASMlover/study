@@ -30,8 +30,8 @@
 
 namespace ext {
 
-class IOMgr : private asio::noncopyable {
-  asio::io_service io_service_;
+class IOMgr : private boost::noncopyable {
+  boost::asio::io_service io_service_;
 
   IOMgr(void) {}
   ~IOMgr(void) {}
@@ -41,7 +41,7 @@ public:
     return s;
   }
 
-  asio::io_service& get_io_service(void) {
+  boost::asio::io_service& get_io_service(void) {
     return io_service_;
   }
 };

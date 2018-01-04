@@ -44,25 +44,23 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     /D_UNICODE
     /D_CRT_SECURE_NO_WARNINGS
     /D_CRT_NONSTDC_NO_WARNINGS
-    /DASIO_STANDALONE
-    /DASIO_SEPARATE_COMPILATION
-    /D_WIN32_WINNT=0x0601
-    /wd4267)
+    /D_WIN32_WINNT=0x0501
+    )
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc")
   set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd")
   set(CMAKE_CXX_FLAGS_RELEASE "/DNDEBUG /MD /Ox")
+
+  include_directories("D:/Tools/boost_1_64_0")
+  link_directories("D:/Tools/boost_1_64_0/stage/x64/lib")
 else()
-  add_definitions(
-    -DASIO_STANDALONE
-    -DASIO_SEPARATE_COMPILATION)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -std=c++1y -march=native")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -O0")
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+
+  include_directories(${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0)
+  link_directories(${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0/stage/lib)
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 message(STATUS "[${LIBCO_PROJECT}] CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")
-
-include_directories(${PROJECT_SOURCE_DIR})
-include_directories(${PROJECT_SOURCE_DIR}/../../network/3rdparty/asio/asio/include)
 
 add_subdirectory(libco)
