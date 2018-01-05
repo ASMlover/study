@@ -166,33 +166,23 @@
     \> D:\Tools\VS2017\VC\Auxiliary\Build\vcvarsall.bat amd64
 ```
 ```shell
-:: for x86 with VS2015
+:: for x86
 :: command to build big Vim with OLE, Perl, Python, Ruby and Tcl
-SET VCDIR="D:\Tools\MSVC2015\VC\bin\"
 SET TOOLDIR=D:\Tools\
-%VCDIR%nmake -f Make_mvc.mak SDK_INCLUDE_DIR="C:\Program Files\Microsoft SDKs\Windows\v7.1A\Include" GUI=yes OLE=yes PYTHON3=%TOOLDIR%python35 DYNAMIC_PYTHON3=yes PYTHON3_VER=35 %1 IME=yes CSCOPE=yes
-```
-```shell
-:: for x86 with VS2017
-:: command to build big Vim with OLE, Perl, Python, Ruby and Tcl
-SET VCDIR="D:\Tools\VS2017\VC\Tools\MSVC\14.10.25017\bin\HostX86\x86\"
-SET TOOLDIR=D:\Tools\
-%VCDIR%nmake -f Make_mvc.mak SDK_INCLUDE_DIR="C:\Program Files\Microsoft SDKs\Windows\v7.1A\Include" GUI=yes OLE=yes PYTHON3=%TOOLDIR%python35 DYNAMIC_PYTHON3=yes PYTHON3_VER=35 %1 IME=yes CSCOPE=yes
+nmake -f Make_mvc.mak SDK_INCLUDE_DIR="C:\Program Files\Microsoft SDKs\Windows\v7.1A\Include" GUI=yes OLE=yes PYTHON3=%TOOLDIR%python35 DYNAMIC_PYTHON3=yes PYTHON3_VER=35 %1 IME=yes CSCOPE=yes
+
+:: build for vim.exe
+:: nmake -f Make_mvc.mak SDK_INCLUDE_DIR="C:\Program Files\Microsoft SDKs\Windows\v7.1A\Include" OLE=yes PYTHON3=%TOOLDIR%python35 DYNAMIC_PYTHON3=yes PYTHON3_VER=35 %1 IME=yes CSCOPE=yes
 ```
 
 ```shell
-:: for x64 with VS2015
+:: for x64
 :: command to build big Vim with OLE, Perl, Python, Ruby and Tcl
-SET VCDIR="D:\Tools\MSVC2015\VC\bin\"
 SET TOOLDIR=D:\Tools\
-%VCDIR%nmake -f Make_mvc.mak SDK_INCLUDE_DIR="C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Include" CPU=AMD64 GUI=yes OLE=yes PYTHON3=%TOOLDIR%python35 DYNAMIC_PYTHON3=yes PYTHON3_VER=35 %1 IME=yes CSCOPE=yes
-```
-```shell
-:: for x64 with VS2017
-:: command to build big Vim with OLE, Perl, Python, Ruby and Tcl
-SET VCDIR="D:\Tools\VS2017\VC\Tools\MSVC\14.10.25017\bin\HostX64\x64\"
-SET TOOLDIR=D:\Tools\
-%VCDIR%nmake -f Make_mvc.mak SDK_INCLUDE_DIR="C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Include" CPU=AMD64 GUI=yes OLE=yes PYTHON3=%TOOLDIR%python35 DYNAMIC_PYTHON3=yes PYTHON3_VER=35 %1 IME=yes CSCOPE=yes
+nmake -f Make_mvc.mak SDK_INCLUDE_DIR="C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Include" CPU=AMD64 GUI=yes OLE=yes PYTHON3=%TOOLDIR%python35 DYNAMIC_PYTHON3=yes PYTHON3_VER=35 %1 IME=yes CSCOPE=yes
+
+:: build for vim.exe
+:: nmake -f Make_mvc.mak SDK_INCLUDE_DIR="C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Include" CPU=AMD64 OLE=yes PYTHON3=%TOOLDIR%python35 DYNAMIC_PYTHON3=yes PYTHON3_VER=35 %1 IME=yes CSCOPE=yes
 ```
 
         \> cd vim\src
