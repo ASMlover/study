@@ -44,8 +44,6 @@ class Timer
   boost::asio::deadline_timer::duration_type dealy_;
   boost::asio::deadline_timer timer_;
   std::mutex mutex_;
-
-  void on_timer(void);
 public:
   Timer(std::uint32_t id,
       double delay, long sec, long millisec, bool is_repeat);

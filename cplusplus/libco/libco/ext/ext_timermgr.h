@@ -29,6 +29,8 @@
 #include <mutex>
 #include <memory>
 #include <unordered_map>
+#include <boost/lockfree/queue.hpp>
+#include <boost/python.hpp>
 #include "ext_helper.h"
 
 namespace ext {
@@ -40,9 +42,11 @@ using TimerMap = std::unordered_map<std::uint32_t, TimerPtr>;
 
 class TimerMgr : private boost::noncopyable {
   bool stoped_{};
-  std::uint32_t id_{};
+  std::uint32_t next_id_{};
   std::mutex timer_mutex_;
   TimerMap timers_;
+  boost::lockfree::queue<std::uint32_t> expires_;
+  boost::python::object handler_;
 
   TimerMgr(void);
   ~TimerMgr(void);
@@ -52,7 +56,16 @@ public:
     return s;
   }
 
-  void unreg(std::uint32_t id);
+  std::uint32_t add_timer(bool is_repeat, double delay);
+  void del_timer(std::uint32_t timer_id);
+  void unreg(std::uint32_t timer_id);
+  void stop_all(void);
+  void set_handler(boost::python::object& handler);
+  std::uint32_t call_expires(void);
+
+  bool append_expire(std::uint32_t timer_id) {
+    return expires_.push(timer_id);
+  }
 };
 
 }

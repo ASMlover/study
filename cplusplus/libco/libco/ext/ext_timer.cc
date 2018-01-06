@@ -74,7 +74,4 @@ void Timer::stop(void) {
   }
 }
 
-void Timer::on_timer(void) {
-}
-
 }

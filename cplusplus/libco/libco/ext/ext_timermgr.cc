@@ -24,19 +24,67 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cassert>
+#include <cmath>
+#include "ext_timer.h"
 #include "ext_timermgr.h"
 
 namespace ext {
 
-TimerMgr::TimerMgr(void) {
+TimerMgr::TimerMgr(void)
+  : expires_(100)
+  , handler_(boost::python::detail::borrowed_reference(Py_None)) {
 }
 
 TimerMgr::~TimerMgr(void) {
+  if (!stoped_)
+    stop_all();
 }
 
-void TimerMgr::unreg(std::uint32_t id) {
+std::uint32_t TimerMgr::add_timer(bool is_repeat, double delay) {
+  assert(handler_.ptr() != Py_None);
+
+  double intpart;
+  double fractpart = std::modf(delay, &intpart);
+  long millisec = std::max((int)(fractpart * 1000), 1);
+
   std::unique_lock<std::mutex> g(timer_mutex_);
-  timers_.erase(id);
+  ++next_id_;
+  TimerPtr timer(new Timer(next_id_, delay, intpart, millisec, is_repeat));
+  timers_[next_id_] = timer;
+  timer->start();
+
+  return next_id_;
+}
+
+void TimerMgr::del_timer(std::uint32_t timer_id) {
+  std::unique_lock<std::mutex> g(timer_mutex_);
+  auto it = timers_.find(timer_id);
+  if (it != timers_.end()) {
+    it->second->stop();
+    timers_.erase(it);
+  }
+}
+
+void TimerMgr::unreg(std::uint32_t timer_id) {
+  std::unique_lock<std::mutex> g(timer_mutex_);
+  timers_.erase(timer_id);
+}
+
+void TimerMgr::stop_all(void) {
+  std::unique_lock<std::mutex> g(timer_mutex_);
+  stoped_ = true;
+  for (auto& t : timers_)
+    t.second->stop();
+  timers_.clear();
+}
+
+void TimerMgr::set_handler(boost::python::object& handler) {
+  handler_ = handler;
+}
+
+std::uint32_t TimerMgr::call_expires(void) {
+  return 0;
 }
 
 }

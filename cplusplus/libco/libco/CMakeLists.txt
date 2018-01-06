@@ -33,7 +33,8 @@ message(STATUS "[libco.libco] LIBCO_SOURCES: ${LIBCO_SOURCES}")
 add_executable(${OUTPUT_NAME} ${LIBCO_SOURCES})
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
   target_link_libraries(${OUTPUT_NAME}
-    debug libboost_system-vc141-mt-gd-1_64 optimized libboost_system-vc141-mt-1_64)
+    debug libboost_system-vc141-mt-gd-1_64 optimized libboost_system-vc141-mt-1_64
+    debug boost_python-vc141-mt-gd-1_64 optimized boost_python-vc141-mt-1_64)
 else()
   target_link_libraries(${OUTPUT_NAME} pthread boost_system)
 endif()
