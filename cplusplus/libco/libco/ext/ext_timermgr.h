@@ -26,11 +26,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <mutex>
 #include <memory>
+#include <mutex>
 #include <unordered_map>
-#include <boost/lockfree/queue.hpp>
-#include <boost/python.hpp>
 #include "ext_helper.h"
 
 namespace ext {
@@ -42,11 +40,13 @@ using TimerMap = std::unordered_map<std::uint32_t, TimerPtr>;
 
 class TimerMgr : private boost::noncopyable {
   bool stoped_{};
-  std::uint32_t next_id_{};
+  id_t next_id_{};
   std::mutex timer_mutex_;
   TimerMap timers_;
-  boost::lockfree::queue<std::uint32_t> expires_;
-  boost::python::object handler_;
+  boost::lockfree::queue<id_t> expires_;
+  boost::python::object callback_;
+
+  static constexpr std::size_t kMaxPerTick = 100;
 
   TimerMgr(void);
   ~TimerMgr(void);
@@ -56,14 +56,14 @@ public:
     return s;
   }
 
-  std::uint32_t add_timer(bool is_repeat, double delay);
-  void del_timer(std::uint32_t timer_id);
-  void unreg(std::uint32_t timer_id);
-  void stop_all(void);
-  void set_handler(boost::python::object& handler);
-  std::uint32_t call_expires(void);
+  id_t add_timer(bool is_repeat, double delay);
+  void del_timer(id_t timer_id);
+  void remove(id_t timer_id);
+  void stop_all_timers(void);
+  void set_callback(boost::python::object& callback);
+  std::size_t call_expired_timers(void);
 
-  bool append_expire(std::uint32_t timer_id) {
+  bool append_expired_timer(id_t timer_id) {
     return expires_.push(timer_id);
   }
 };

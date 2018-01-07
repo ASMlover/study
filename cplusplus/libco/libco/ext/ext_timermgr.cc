@@ -33,16 +33,16 @@ namespace ext {
 
 TimerMgr::TimerMgr(void)
   : expires_(100)
-  , handler_(boost::python::detail::borrowed_reference(Py_None)) {
+  , callback_(boost::python::detail::borrowed_reference(Py_None)) {
 }
 
 TimerMgr::~TimerMgr(void) {
   if (!stoped_)
-    stop_all();
+    stop_all_timers();
 }
 
 std::uint32_t TimerMgr::add_timer(bool is_repeat, double delay) {
-  assert(handler_.ptr() != Py_None);
+  assert(callback_.ptr() != Py_None);
 
   double intpart;
   double fractpart = std::modf(delay, &intpart);
@@ -50,28 +50,29 @@ std::uint32_t TimerMgr::add_timer(bool is_repeat, double delay) {
 
   std::unique_lock<std::mutex> g(timer_mutex_);
   ++next_id_;
-  TimerPtr timer(new Timer(next_id_, delay, intpart, millisec, is_repeat));
+  auto timer = std::make_shared<Timer>(
+      next_id_, delay, intpart, millisec, is_repeat);
   timers_[next_id_] = timer;
   timer->start();
 
   return next_id_;
 }
 
-void TimerMgr::del_timer(std::uint32_t timer_id) {
+void TimerMgr::del_timer(id_t timer_id) {
   std::unique_lock<std::mutex> g(timer_mutex_);
   auto it = timers_.find(timer_id);
   if (it != timers_.end()) {
-    it->second->stop();
+    (*it).second->stop();
     timers_.erase(it);
   }
 }
 
-void TimerMgr::unreg(std::uint32_t timer_id) {
+void TimerMgr::remove(id_t timer_id) {
   std::unique_lock<std::mutex> g(timer_mutex_);
   timers_.erase(timer_id);
 }
 
-void TimerMgr::stop_all(void) {
+void TimerMgr::stop_all_timers(void) {
   std::unique_lock<std::mutex> g(timer_mutex_);
   stoped_ = true;
   for (auto& t : timers_)
@@ -79,12 +80,22 @@ void TimerMgr::stop_all(void) {
   timers_.clear();
 }
 
-void TimerMgr::set_handler(boost::python::object& handler) {
-  handler_ = handler;
+void TimerMgr::set_callback(boost::python::object& callback) {
+  callback_ = callback;
 }
 
-std::uint32_t TimerMgr::call_expires(void) {
-  return 0;
+std::size_t TimerMgr::call_expired_timers(void) {
+  std::size_t count{};
+  id_t timer_id{};
+  while (expires_.pop(timer_id)) {
+    auto* res = PyObject_CallMethod(callback_.ptr(), "on_timer", "I", timer_id);
+    if (BOOST_UNLIKELY(res == nullptr))
+      PyErr_Print();
+
+    if (BOOST_UNLIKELY(++count > kMaxPerTick))
+      break;
+  }
+  return count;
 }
 
 }

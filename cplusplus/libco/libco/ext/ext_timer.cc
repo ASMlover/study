@@ -30,14 +30,13 @@
 
 namespace ext {
 
-Timer::Timer(std::uint32_t id,
-    double delay, long sec, long millisec, bool is_repeat)
+Timer::Timer(id_t id, double delay, long sec, long millisec, bool is_repeat)
   : id_(id)
   , raw_delay_(delay)
   , is_repeat_(is_repeat)
-  , dealy_(boost::posix_time::seconds(sec) + boost::posix_time::milliseconds(millisec))
-  , timer_(IOMgr::instance().get_io_service())
-{
+  , dealy_(boost::posix_time::seconds(sec) +
+      boost::posix_time::milliseconds(millisec))
+  , timer_(IOMgr::instance().get_io_service()) {
 }
 
 Timer::~Timer(void) {
@@ -53,15 +52,14 @@ void Timer::start(void) {
             if (is_cleared_)
               return;
 
-            // TODO:
-
+            TimerMgr::instance().append_expired_timer(id_);
             if (is_repeat_)
               start();
             else
               is_cleared_ = true;
           }
           if (is_cleared_)
-            TimerMgr::instance().unreg(id_);
+            TimerMgr::instance().remove(id_);
         }
       });
 }

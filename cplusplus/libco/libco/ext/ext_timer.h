@@ -26,8 +26,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <cstdint>
-#include <chrono>
 #include <memory>
 #include <mutex>
 #include "ext_helper.h"
@@ -37,7 +35,7 @@ namespace ext {
 class Timer
   : public std::enable_shared_from_this<Timer>
   , private boost::noncopyable {
-  std::uint32_t id_{};
+  id_t id_{};
   double raw_delay_{};
   bool is_repeat_{};
   bool is_cleared_{};
@@ -45,8 +43,7 @@ class Timer
   boost::asio::deadline_timer timer_;
   std::mutex mutex_;
 public:
-  Timer(std::uint32_t id,
-      double delay, long sec, long millisec, bool is_repeat);
+  Timer(id_t id, double delay, long sec, long millisec, bool is_repeat);
   ~Timer(void);
 
   void start(void);

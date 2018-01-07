@@ -26,4 +26,13 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <cstdint>
 #include <boost/asio.hpp>
+#include <boost/lockfree/queue.hpp>
+#include <boost/python.hpp>
+
+namespace ext {
+
+using id_t = std::uint32_t;
+
+}
