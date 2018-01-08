@@ -32,17 +32,32 @@
 namespace ext {
 
 TimerMgr::TimerMgr(void)
-  : expires_(100)
-  , callback_(boost::python::detail::borrowed_reference(Py_None)) {
+  : expires_(new std::vector<id_t>())
+  , expires_copy_(new std::vector<id_t>()) {
 }
 
 TimerMgr::~TimerMgr(void) {
-  if (!stoped_)
-    stop_all_timers();
+  if (!stoped_) {
+    for (auto& t : timers_)
+      t.second->stop();
+    timers_.clear();
+  }
+
+  if (expires_) {
+    delete expires_;
+    expires_ = nullptr;
+  }
+
+  std::unique_lock<std::mutex> g(expires_mutex_);
+  if (expires_copy_) {
+    delete expires_copy_;
+    expires_copy_ = nullptr;
+  }
 }
 
-std::uint32_t TimerMgr::add_timer(bool is_repeat, double delay) {
-  assert(callback_.ptr() != Py_None);
+id_t TimerMgr::add_timer(bool is_repeat, double delay) {
+  if (BOOST_UNLIKELY(callback_ == nullptr))
+    return 0;
 
   double intpart;
   double fractpart = std::modf(delay, &intpart);
@@ -59,6 +74,9 @@ std::uint32_t TimerMgr::add_timer(bool is_repeat, double delay) {
 }
 
 void TimerMgr::del_timer(id_t timer_id) {
+  if (BOOST_UNLIKELY(timer_id == 0))
+    return;
+
   std::unique_lock<std::mutex> g(timer_mutex_);
   auto it = timers_.find(timer_id);
   if (it != timers_.end()) {
@@ -75,26 +93,37 @@ void TimerMgr::remove(id_t timer_id) {
 void TimerMgr::stop_all_timers(void) {
   std::unique_lock<std::mutex> g(timer_mutex_);
   stoped_ = true;
+  boost::python::xdecref(callback_);
+  callback_ = nullptr;
   for (auto& t : timers_)
     t.second->stop();
   timers_.clear();
 }
 
-void TimerMgr::set_callback(boost::python::object& callback) {
+void TimerMgr::set_callback(PyObject* callback) {
+  boost::python::xdecref(callback_);
   callback_ = callback;
+  boost::python::xincref(callback_);
 }
 
 std::size_t TimerMgr::call_expired_timers(void) {
-  std::size_t count{};
-  id_t timer_id{};
-  while (expires_.pop(timer_id)) {
-    auto* res = PyObject_CallMethod(callback_.ptr(), "on_timer", "I", timer_id);
+  if (BOOST_UNLIKELY(stoped_))
+    return 0;
+
+  {
+    std::unique_lock<std::mutex> g(expires_mutex_);
+    if (!expires_copy_->empty())
+      std::swap(expires_, expires_copy_);
+  }
+
+  for (auto& timer_id : *expires_) {
+    auto* res  = PyObject_CallMethod(callback_, "on_timer", "L", timer_id);
     if (BOOST_UNLIKELY(res == nullptr))
       PyErr_Print();
-
-    if (BOOST_UNLIKELY(++count > kMaxPerTick))
-      break;
   }
+  auto count = expires_->size();
+  expires_->clear();
+
   return count;
 }
 

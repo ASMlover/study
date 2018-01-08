@@ -28,6 +28,7 @@
 
 #include <memory>
 #include <mutex>
+#include <vector>
 #include <unordered_map>
 #include "ext_helper.h"
 
@@ -35,18 +36,15 @@ namespace ext {
 
 class Timer;
 
-using TimerPtr = std::shared_ptr<Timer>;
-using TimerMap = std::unordered_map<std::uint32_t, TimerPtr>;
-
 class TimerMgr : private boost::noncopyable {
   bool stoped_{};
   id_t next_id_{};
   std::mutex timer_mutex_;
-  TimerMap timers_;
-  boost::lockfree::queue<id_t> expires_;
-  boost::python::object callback_;
-
-  static constexpr std::size_t kMaxPerTick = 100;
+  std::unordered_map<id_t, std::shared_ptr<Timer>> timers_;
+  std::vector<id_t>* expires_{};
+  std::vector<id_t>* expires_copy_{};
+  std::mutex expires_mutex_;
+  PyObject* callback_{};
 
   TimerMgr(void);
   ~TimerMgr(void);
@@ -60,11 +58,13 @@ public:
   void del_timer(id_t timer_id);
   void remove(id_t timer_id);
   void stop_all_timers(void);
-  void set_callback(boost::python::object& callback);
+  void set_callback(PyObject* callback);
   std::size_t call_expired_timers(void);
 
   bool append_expired_timer(id_t timer_id) {
-    return expires_.push(timer_id);
+    std::unique_lock<std::mutex> g(expires_mutex_);
+    expires_copy_->emplace_back(timer_id);
+    return true;
   }
 };
 

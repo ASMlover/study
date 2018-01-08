@@ -33,6 +33,6 @@
 
 namespace ext {
 
-using id_t = std::uint32_t;
+using id_t = std::int64_t;
 
 }

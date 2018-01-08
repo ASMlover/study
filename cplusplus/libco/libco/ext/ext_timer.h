@@ -46,6 +46,10 @@ public:
   Timer(id_t id, double delay, long sec, long millisec, bool is_repeat);
   ~Timer(void);
 
+  bool is_repeat(void) const {
+    return is_repeat_;
+  }
+
   void start(void);
   void stop(void);
 };
