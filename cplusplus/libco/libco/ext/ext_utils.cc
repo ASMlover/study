@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <chrono>
 #include "ext_utils.h"
 
 namespace ext {
@@ -41,6 +42,11 @@ std::string as_hex(const char* s, std::size_t n) {
 
 std::string as_hex(const std::string& s) {
   return as_hex(s.data(), s.size());
+}
+
+std::int64_t get_microseconds(void) {
+  return std::chrono::duration_cast<std::chrono::microseconds>(
+      std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 }

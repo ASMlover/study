@@ -26,11 +26,14 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 namespace ext {
 
 std::string as_hex(const char* s, std::size_t n);
 std::string as_hex(const std::string& s);
+
+std::int64_t get_microseconds(void);
 
 }
