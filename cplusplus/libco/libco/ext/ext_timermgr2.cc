@@ -96,7 +96,36 @@ void Timer2Mgr::reset_functor(void) {
 }
 
 std::size_t Timer2Mgr::call_expired_timers(void) {
-  return 0;
+  std::size_t count{};
+  std::int64_t now = 0; // TODO: get now millisec
+  std::unique_lock<std::mutex> g(timer_mutex_);
+  while (!timers_set_.empty()) {
+    auto now_timer = *timers_set_.begin();
+    if (!now_timer->is_expired(now))
+      break;
+    timers_set_.erase(now_timer);
+
+    if (BOOST_UNLIKELY(now_timer->is_cancelled())) {
+      timers_.erase(now_timer->get_id());
+      now_timer->clear();
+      continue;
+    }
+    now_timer->do_function();
+
+    if (BOOST_UNLIKELY(!now_timer->is_repeat())) {
+      timers_.erase(now_timer->get_id());
+      now_timer->clear();
+    }
+    else {
+      now_timer->refresh_expire_time(now);
+      timers_set_.insert(now_timer);
+    }
+
+    if (BOOST_UNLIKELY(++count > kMaxPerTick))
+      break;
+  }
+
+  return count;
 }
 
 }
