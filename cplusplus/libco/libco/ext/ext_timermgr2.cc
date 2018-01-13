@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <algorithm>
+#include "ext_utils.h"
 #include "ext_timer2.h"
 #include "ext_timermgr2.h"
 
@@ -48,7 +49,7 @@ id_t Timer2Mgr::add_tiemr_proxy(bool is_repeat, double delay, PyObject* proxy) {
 
   std::int64_t delay_time =
     std::max(std::int64_t(delay * 1000000), std::int64_t(1));
-  std::int64_t now = 0; // TODO: need function for this
+  std::int64_t now = ext::get_microseconds();
 
   std::unique_lock<std::mutex> g(timer_mutex_);
   ++next_id_;
@@ -97,7 +98,7 @@ void Timer2Mgr::reset_functor(void) {
 
 std::size_t Timer2Mgr::call_expired_timers(void) {
   std::size_t count{};
-  std::int64_t now = 0; // TODO: get now millisec
+  std::int64_t now = ext::get_microseconds();
   std::unique_lock<std::mutex> g(timer_mutex_);
   while (!timers_set_.empty()) {
     auto now_timer = *timers_set_.begin();
