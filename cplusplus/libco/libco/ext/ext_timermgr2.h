@@ -28,19 +28,37 @@
 
 #include <memory>
 #include <mutex>
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include "ext_helper.h"
+#include "ext_timer2.h"
 
 namespace ext {
 
 class Timer2;
 
+struct Timer2Cmp {
+  bool operator()(const std::shared_ptr<Timer2>& x,
+      const std::shared_ptr<Timer2>& y) const {
+    if (x->get_id() == y->get_id()) {
+      return false;
+    }
+    else {
+      if (x->get_expire_time() != y->get_expire_time())
+        return x->get_expire_time() < y->get_expire_time();
+      else
+        return x->get_id() < y->get_id();
+    }
+  }
+};
+
 class Timer2Mgr : private boost::noncopyable {
   bool stoped_{};
   id_t next_id_{1};
   std::unordered_map<id_t, std::shared_ptr<Timer2>> timers_;
-  std::unordered_set<std::shared_ptr<Timer2>> timers_set_;
+  std::set<std::shared_ptr<Timer2>, Timer2Cmp> timers_set_;
+  // std::unordered_set<std::shared_ptr<Timer2>, Timer2Cmp> timers_set_;
   std::mutex timer_mutex_;
   boost::python::object func_;
 
