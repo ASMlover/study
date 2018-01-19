@@ -31,6 +31,23 @@
 import sys
 import inspect
 
+class _SuperWrapper(object):
+    def __init__(self, instance):
+        self.instance = instance
+
+    def __getattr__(self, name):
+        def _caller(*args, **kwargs):
+            method = getattr(super(type(self.instance), self.instance), name)
+            return method(*args, **kwargs)
+        return _caller
+
+class _SuperProxy(object):
+    def __set__(self, instance, value):
+        raise AttributeError('Cannot set attribute')
+
+    def __get__(self, instance, owner):
+        return _SuperWrapper(instance)
+
 def _formatted_path(path, components):
     if not path:
         return components
@@ -80,10 +97,14 @@ def _gather_function(properties, funcs):
         else:
             properties[name] = _gen_sequence_function(fun)
 
+def _gather_special_attrs(properties):
+    assert 'super' not in properties
+    properties['super'] = _SuperProxy()
+
 def gather_components(attrs):
     components = attrs.get('_components')
     if not components:
-        # TODO: deal with special attrs
+        _gather_special_attrs(components)
         return attrs
 
     path = attrs.get('_component_path')
@@ -97,7 +118,7 @@ def gather_components(attrs):
     _gather_component_units(components, properties, funcs)
     _gather_function(properties, funcs)
 
-    # TODO: deal with special attrs
+    _gather_special_attrs(properties)
     return properties
 
 class CompositeAssemble(type):
