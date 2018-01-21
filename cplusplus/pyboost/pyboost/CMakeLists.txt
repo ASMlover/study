@@ -25,16 +25,17 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-set(OUTPUT_NAME "pyboost.test")
+set(OUTPUT_NAME "pyboost")
 
 file(GLOB_RECURSE PYBOOST_SOURCES *.cc)
 message(STATUS "<pyboost.pyboost> PYBOOST_SOURCES: ${PYBOOST_SOURCES}")
 
-add_executable(${OUTPUT_NAME} ${PYBOOST_SOURCES})
+add_library(${OUTPUT_NAME} SHARED ${PYBOOST_SOURCES})
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+  set_target_properties(${OUTPUT_NAME} PROPERTIES SUFFIX ".pyd")
   target_link_libraries(${OUTPUT_NAME}
     debug libboost_system-vc141-mt-gd-1_64 optimized libboost_system-vc141-mt-1_64
-    debug boost_python-vc141-mt-gd-1_64 optimized boost_python-vc141-mt-1_64)
+    debug libboost_python-vc141-mt-gd-1_64 optimized libboost_python-vc141-mt-1_64)
 else()
   target_link_libraries(${OUTPUT_NAME} pthread boost_system boost_python)
 endif()
