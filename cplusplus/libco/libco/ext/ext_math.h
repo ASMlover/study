@@ -51,4 +51,16 @@ template <typename T> inline T epsilon(T val) {
     return static_cast<T>(kEpsilon * r);
 }
 
+inline bool fuzzy_zero(float det) {
+  return (det == 0.f) || (abs(det) <= epsilon(0.f));
+}
+
+inline bool fuzzy_eq(float a, float b) {
+  return (a == b) || (abs(a - b) <= epsilon(a));
+}
+
+inline bool fuzzy_ne(float a, float b) {
+  return !fuzzy_eq(a, b);
+}
+
 }
