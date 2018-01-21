@@ -155,15 +155,17 @@ Base* base_factory(void) {
   return new Derived();
 }
 
-struct VirtualBase {
+class VirtualBase {
+public:
   virtual ~VirtualBase(void) {}
   virtual int get_value(void) const {
     return 0;
   }
 };
 
-struct VirtualBaseWrap
+class VirtualBaseWrap
   : public VirtualBase, public boost::python::wrapper<VirtualBase> {
+public:
   virtual int get_value(void) const override {
     if (boost::python::override f = get_override("get_value"))
       return f();
@@ -205,6 +207,5 @@ BOOST_PYTHON_MODULE(pyboost) {
       boost::python::return_value_policy<boost::python::manage_new_object>());
 
   boost::python::class_<VirtualBaseWrap, boost::noncopyable>("VirtualBase")
-    .def("get_value",
-        &VirtualBase::get_value, &VirtualBaseWrap::default_get_value);
+    .def("get_value", &VirtualBase::get_value);
 }
