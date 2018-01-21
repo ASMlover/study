@@ -356,7 +356,8 @@
           }
         * address-mode: address-mode=64如果没有该属性会默认生成32位平台库
     7) 运行bootstrap必须在32位编译，否则会出错；
-    8) 要成功编译Boost.Python需要配置boost源码下的project-config.jam
+    8) 要成功编译Boost.Python需要配置boost源码下的project-config.jam，编译boost.python的时候不能使用--build-type=complete，这样是无效的，应该使用--with-python，如：
+        \> bjam.exe stage --toolset=msvc-14.1 --stagedir=".\stage\x64" --with-python link=static runtime-link=shared threading=multi debug release address-model=64
 ``` bash
 using python
 : 2.7
