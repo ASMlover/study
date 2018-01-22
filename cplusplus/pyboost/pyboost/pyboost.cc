@@ -26,10 +26,29 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <boost/python.hpp>
+#include "component.h"
 
 const char* greet(void) {
   return "Hello, PyBoost";
 }
+
+struct UnitBase {
+  std::string basename;
+
+  UnitBase(void) {
+  }
+
+  UnitBase(const char* name)
+    : basename(name) {
+  }
+
+  virtual ~UnitBase(void) {
+  }
+
+  std::string get_name(void) const {
+    return basename;
+  }
+};
 
 class World {
   std::string message_;
@@ -220,6 +239,11 @@ public:
 BOOST_PYTHON_MODULE(pyboost) {
   boost::python::def("greet", greet);
 
+  boost::python::class_<UnitBase>("UnitBase")
+    .def(boost::python::init<const char*>())
+    .def_readwrite("basename", &UnitBase::basename)
+    .def("get_name", &UnitBase::get_name);
+
   boost::python::class_<World,
     std::shared_ptr<WorldWrapper>, boost::noncopyable>("World")
     .def(boost::python::init<const char*>())
@@ -254,4 +278,11 @@ BOOST_PYTHON_MODULE(pyboost) {
     .def(boost::python::init<int>())
     .def("set", &Int::set)
     .def("get", &Int::get);
+
+  boost::python::class_<ComponentBase>("ComponentBase")
+    .def_readonly("owner", &ComponentBase::get_owner)
+    .def_readwrite("need_tick", &ComponentBase::need_tick)
+    .def_readwrite("is_render_tick", &ComponentBase::is_render_tick)
+    .def("destroy", &ComponentBase::destroy)
+    .def("on_add_to_unit", &ComponentBase::on_add_to_unit);
 }
