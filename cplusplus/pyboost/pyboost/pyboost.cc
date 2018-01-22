@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <boost/python.hpp>
+#include "component.h"
 
 const char* greet(void) {
   return "Hello, PyBoost";
@@ -230,4 +231,11 @@ BOOST_PYTHON_MODULE(pyboost) {
   boost::python::class_<VirtualBaseWrap, boost::noncopyable>("VirtualBase")
     .def("get_value",
         &VirtualBase::get_value, &VirtualBaseWrap::default_get_value);
+
+  boost::python::class_<ComponentBase>("ComponentBase")
+    .def_readonly("owner", &ComponentBase::get_owner)
+    .def_readwrite("need_tick", &ComponentBase::need_tick)
+    .def_readwrite("is_render_tick", &ComponentBase::is_render_tick)
+    .def("destroy", &ComponentBase::destroy)
+    .def("on_add_to_unit", &ComponentBase::on_add_to_unit);
 }
