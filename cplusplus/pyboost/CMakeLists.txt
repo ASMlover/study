@@ -62,8 +62,13 @@ else()
   set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -O0")
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
-  include_directories(${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0)
-  link_directories(${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0/stage/lib)
+  find_package(PythonLibs 2.7 REQUIRED)
+  include_directories(
+    ${PYTHON_INCLUDE_DIRS}
+    ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0)
+  link_directories(
+    ${PYTHON_LIBRARIES}
+    ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0/stage/lib)
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 message(STATUS "<${PYBOOST_PROJECT}> CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")

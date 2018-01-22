@@ -37,5 +37,6 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     debug libboost_system-vc141-mt-gd-1_64 optimized libboost_system-vc141-mt-1_64
     debug libboost_python-vc141-mt-gd-1_64 optimized libboost_python-vc141-mt-1_64)
 else()
+  set_target_properties(${OUTPUT_NAME} PROPERTIES PREFIX "")
   target_link_libraries(${OUTPUT_NAME} pthread boost_system boost_python)
 endif()
