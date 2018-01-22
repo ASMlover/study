@@ -92,6 +92,7 @@ public:
   VarWrapper(PyObject* self, const char* name)
     : Var(name)
     , self_(self) {
+    boost::python::xincref(self_);
   }
 
   ~VarWrapper(void) {
@@ -177,6 +178,45 @@ public:
   }
 };
 
+class Int : private boost::noncopyable {
+  int value_{};
+public:
+  Int(int v = 0)
+    : value_(v) {
+  }
+
+  void set(int v) {
+    value_ = v;
+  }
+
+  int get(void) const {
+    return value_;
+  }
+
+  operator int(void) const {
+    return value_;
+  }
+};
+
+class IntWrapper : public Int {
+  PyObject* self_{};
+public:
+  IntWrapper(PyObject* self)
+    : self_(self) {
+    boost::python::xincref(self_);
+  }
+
+  IntWrapper(PyObject* self, int v)
+    : Int(v)
+    , self_(self) {
+    boost::python::xincref(self_);
+  }
+
+  ~IntWrapper(void) {
+    boost::python::xdecref(self_);
+  }
+};
+
 BOOST_PYTHON_MODULE(pyboost) {
   boost::python::def("greet", greet);
 
@@ -208,4 +248,10 @@ BOOST_PYTHON_MODULE(pyboost) {
 
   boost::python::class_<VirtualBaseWrap, boost::noncopyable>("VirtualBase")
     .def("get_value", &VirtualBase::get_value);
+
+  boost::python::class_<Int,
+    std::shared_ptr<IntWrapper>, boost::noncopyable>("Int")
+    .def(boost::python::init<int>())
+    .def("set", &Int::set)
+    .def("get", &Int::get);
 }
