@@ -29,38 +29,36 @@
 #include <iostream>
 #include <boost/python.hpp>
 
-namespace bp = ::boost::python;
+namespace py = ::boost::python;
 
 struct ComponentBase {
-  bp::object owner_;
+  py::object owner_;
   bool need_tick{};
   bool is_render_tick{};
-
-  inline bp::object as_object(PyObject* ob) {
-    return bp::object(bp::detail::borrowed_reference(ob));
-  }
+  int comp_type{};
 
   ComponentBase(void)
-    : owner_(bp::detail::borrowed_reference(Py_None)) {
+    : owner_() {
   }
 
-  bp::object get_owner(void) {
+  py::object get_owner(void) {
     auto* ref = Py_None;
-    if (owner_.ptr() != Py_None)
+    if (!owner_.is_none())
       ref = PyWeakref_GetObject(owner_.ptr());
 
-    return as_object(ref);
+    return py::object(py::detail::borrowed_reference(ref));
   }
 
   void destroy(void) {
-    owner_ = as_object(Py_None);
+    owner_ = py::object();
+    comp_type = 0;
   }
 
-  void on_add_to_unit(const bp::object& owner) {
+  void on_add_to_unit(const py::object& owner) {
     auto* weakref = PyWeakref_NewRef(owner.ptr(), nullptr);
     if (weakref == nullptr)
       PyErr_Print();
 
-    owner_ = as_object(weakref);
+    owner_ = py::object(py::detail::borrowed_reference(weakref));
   }
 };
