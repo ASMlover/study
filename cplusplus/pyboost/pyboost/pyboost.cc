@@ -28,6 +28,7 @@
 #include <boost/python.hpp>
 #include "component.h"
 #include "unit.h"
+#include "objmgr.h"
 
 const char* greet(void) {
   return "Hello, PyBoost";
@@ -296,4 +297,9 @@ BOOST_PYTHON_MODULE(pyboost) {
     .def_readwrite("camp_type", &UnitBase::camp_type)
     .def_readwrite("unit_name", &UnitBase::unit_name)
     .def("tick", &UnitBase::tick, &UnitBaseWrap::default_tick);
+
+  py::class_<ObjNode,
+    boost::shared_ptr<ObjNodeWrap>, boost::noncopyable>("ObjNode")
+    .def(py::init<int>())
+    .def("show", &ObjNodeWrap::show_default);
 }
