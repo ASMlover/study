@@ -238,7 +238,18 @@ public:
   }
 };
 
+void pyboost_init(void) {
+  PyEval_InitThreads();
+  OBJMGR();
+}
+
+void pyboost_objmgr_add_object(const boost::shared_ptr<ObjNode>& o) {
+  OBJMGR().add_object(o);
+}
+
 BOOST_PYTHON_MODULE(pyboost) {
+  pyboost_init();
+
   boost::python::def("greet", greet);
 
   boost::python::class_<FakeBase>("FakeBase")
@@ -301,5 +312,8 @@ BOOST_PYTHON_MODULE(pyboost) {
   py::class_<ObjNode,
     boost::shared_ptr<ObjNodeWrap>, boost::noncopyable>("ObjNode")
     .def(py::init<int>())
+    .def_readonly("obj_id", &ObjNode::obj_id)
     .def("show", &ObjNodeWrap::show_default);
+
+  py::def("objmgr_add_object", pyboost_objmgr_add_object);
 }

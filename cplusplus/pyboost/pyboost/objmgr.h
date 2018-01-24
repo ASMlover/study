@@ -27,6 +27,7 @@
 #pragma once
 
 #include <iostream>
+#include <map>
 #include <boost/python.hpp>
 namespace py = ::boost::python;
 
@@ -52,9 +53,40 @@ public:
   }
 
   virtual ~ObjNodeWrap(void) {
+    std::cout << "ObjNodeWrap<" << this << ">::~ObjNodeWrap" << std::endl;
   }
 
   void show_default(void) {
     std::cout << "ObjNodeWrap<" << this << ">::show" << std::endl;
   }
 };
+
+class ObjManager : private boost::noncopyable {
+  using ObjNodePtr = boost::shared_ptr<ObjNode>;
+  std::map<int, ObjNodePtr> objdict_;
+
+  ObjManager(void) {}
+
+  ~ObjManager(void) {
+    objdict_.clear();
+  }
+public:
+  static ObjManager& instance(void) {
+    static ObjManager ins;
+    return ins;
+  }
+
+  void add_object(const ObjNodePtr& o) {
+    auto it = objdict_.find(o->obj_id);
+    if (it != objdict_.end()) {
+      std::cout
+        << "ObjManager<" << this << "> "
+        << o->obj_id << " object exists" << std::endl;
+    }
+    else {
+      objdict_[o->obj_id] = o;
+    }
+  }
+};
+
+#define OBJMGR ObjManager::instance
