@@ -329,25 +329,43 @@
 
 ## **24. Boost相关**
 > ### **24.1 Boost编译**
-    1) 打开VS2013开发人员命令提示
+    1) 打开VS2017开发人员命令提示
     2) 进入boost目录
     3) \> bootstrap.bat
-    4) \> bjam.exe stage --toolset=msvc-12.0 --stagedir=".\stage\x86" link=static runtime-link=shared threading=multi debug release
-    5) \> bjam.exe stage --toolset=msvc-12.0 --stagedir=".\stage\x64" link=static runtime-link=shared threading=multi debug release address-model=64
+    4) \> bjam.exe stage --toolset=msvc-14.1 --stagedir=".\stage\x86" --build-type=complete link=static runtime-link=shared threading=multi debug release
+    5) \> bjam.exe stage --toolset=msvc-14.1 --stagedir=".\stage\x64" --build-type=complete link=static runtime-link=shared threading=multi debug release address-model=64
     6) bjam参数说明：
         * stage/install: stage只生成(dll/lib), install还会生成包含头文件的
                          include目录；
-        * toolset: 指定编译器(gcc, clang, msvc-12.0)；
-        * without/with: 选择不编译/编译哪些库，默认全编译；
-        * stagedir/prefix: stage时使用stagedir，install时使用prefix，编译生
+        * --toolset: 指定编译器(gcc, clang, msvc-12.0)；
+        * --without/with: 选择不编译/编译哪些库，默认全编译；
+        * --stagedir/prefix: stage时使用stagedir，install时使用prefix，编译生
                            成文件的路径；
-        * build-dir: 编译生成的中间文件的路径；默认是bin.v2；
+        * --build-dir: 编译生成的中间文件的路径；默认是bin.v2；
         * link: 生成动态链接库/静态链接库；动态库需要使用shared方式；
         * runtime-link: 动态/静态链接C/C++运行时库，也有shared和static两种方
                         式；
         * threading: 单/多线程编译(multi/single)；
         * debug/release: 编译debug/release版本；
+        * --build-type=complete: 编译所有
+          {
+            variant=debug|release: 决定编译什么版本（Debug or Release）
+            link=static|shared: 决定使用静态库还是动态库
+            threading=single|multi: 决定使用单线程还是多线程
+            runtime-link=static|shared: 决定静态还是动态连接C/C++标准库
+          }
+        * address-mode: address-mode=64如果没有该属性会默认生成32位平台库
     7) 运行bootstrap必须在32位编译，否则会出错；
+    8) 要成功编译Boost.Python需要配置boost源码下的project-config.jam，编译boost.python的时候不能使用--build-type=complete，这样是无效的，应该使用--with-python，如：
+        \> bjam.exe stage --toolset=msvc-14.1 --stagedir=".\stage\x64" --with-python link=static runtime-link=shared threading=multi debug release address-model=64
+``` bash
+using python
+: 2.7
+: C:\\Python27
+: C:\\Python27\\include
+: C:\\Python27\\libs
+;
+```
 > ### **24.2 Boost裁剪**
     1) 进入tools\bcp目录
     2) \> ..\..\bjam
