@@ -1,6 +1,76 @@
-project(public_logic)
+# Copyright (c) 2018 ASMlover. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list ofconditions and the following disclaimer.
+#
+#  * Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in
+#    the documentation and/or other materialsprovided with the
+#    distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
-message(STATUS "Configuration public_logic")
+cmake_minimum_required(VERSION 3.0)
+project(public_logic CXX)
+
+message(STATUS "Configuration ${PROJECT_NAME}")
+
+if (NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release")
+endif()
+message(STATUS "${PROJECT_NAME} CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+  add_definitions(
+    /DUNICODE
+    /D_UNICODE
+    /D_CRT_SECURE_NO_WARNINGS
+    /D_CRT_NONSTDC_NO_WARNINGS
+    /DBOOST_PYTHON_STATIC_LIB
+    /wd4244)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc")
+  set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd")
+  set(CMAKE_CXX_FLAGS_RELEASE "/DNDEBUG /MD /Ox")
+
+  include_directories(
+    "C:/Python27amd64/include"
+    "D:/Tools/boost_1_64_0")
+  link_directories(
+    "C:/Python27amd64/libs"
+    "D:/Tools/boost_1_64_0/stage/x64/lib")
+else()
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -std=c++1y -march=native")
+  set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -O0")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+
+  find_package(PythonLibs 2.7 REQUIRED)
+  include_directories(
+    ${PYTHON_INCLUDE_DIRS}
+    ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0)
+  link_directories(
+    ${PYTHON_LIBRARIES}
+    ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0/stage/lib)
+endif()
+string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
+message(STATUS "${PROJECT_NAME} CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")
 
 file(GLOB_RECURSE HEADER_FILES *.h)
 file(GLOB_RECURSE SOURCE_FILES *.cpp)
@@ -8,34 +78,12 @@ file(GLOB_RECURSE SOURCE_FILES *.cpp)
 source_group("Header Files" FILES ${HEADER_FILES})
 source_group("Source Files" FILES ${SOURCE_FILES})
 
-neox_check_threads()
-neox_check_macro(PUBLIC_LOGIC)
-
-set(_TARGET_DEPENDS c_common)
-neox_merge_target_depends(_MERGED_DEPENDS _TARGET_DEPENDS)
-
-set(_THIRD_DEPENDS PYTHON25 BOOST)
-neox_merge_3rd_depends(_THIRD_DEPENDS _MERGED_DEPENDS)
-neox_config_3rd_include_macro(_THIRD_DEPENDS)
-
-include_directories(
-	${CMAKE_CURRENT_SOURCE_DIR}
-	"${CMAKE_CURRENT_SOURCE_DIR}/../"
-	"${CMAKE_CURRENT_SOURCE_DIR}/../.."
-)
-neox_set_device_include()
-
-add_library(${PROJECT_NAME} ${NEOX_INNER_LINK} ${HEADER_FILES} ${SOURCE_FILES})
-if (${NEOX_PLATFORM} STREQUAL ${NEOX_WIN32})
-	set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".pyd")
-elseif (${NEOX_PLATFORM} STREQUAL ${NEOX_MAC})
-	set_target_properties(${PROJECT_NAME} PROPERTIES
-		BUILD_WITH_INSTALL_RPATH ON
-		INSTALL_NAME_DIR "@executable_path/../dylib")
+add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES})
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+  set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".pyd")
+  target_link_libraries(${PROJECT_NAME}
+    debug libboost_python-vc141-mt-gd-1_64 optimized libboost_python-vc141-mt-1_64)
+else()
+  set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
+  target_link_libraries(${PROJECT_NAME} pthread boost_python)
 endif()
-
-neox_set_third_property(${PROJECT_NAME} _THIRD_DEPENDS)
-neox_set_depend_property(${PROJECT_NAME} _MERGED_DEPENDS)
-neox_link_device(${PROJECT_NAME})
-neox_set_output_dir(${PROJECT_NAME} engine)
-
