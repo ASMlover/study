@@ -89,7 +89,7 @@ void register_shared_ptr(void) {
 
 class AcquirePyGIL : private boost::noncopyable {
   PyGILState_STATE state_;
-  public:
+public:
   AcquirePyGIL(void) {
     state_ = PyGILState_Ensure();
   }
