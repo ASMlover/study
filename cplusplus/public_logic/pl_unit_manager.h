@@ -43,7 +43,7 @@ class UnitManager : private boost::noncopyable {
 
   ~UnitManager(void) {
   }
-  public:
+public:
   static UnitManager& instance(void) {
     static UnitManager ins;
     return ins;

@@ -52,7 +52,7 @@ struct UnitBase : public boost::enable_shared_from_this<UnitBase> {
 
 class UnitBaseWrap : public UnitBase {
   PyObject* self_{};
-  public:
+public:
   UnitBaseWrap(PyObject* self)
     : self_(self) {
       py::xincref(self_);

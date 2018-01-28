@@ -67,7 +67,7 @@ struct ComponentBase : public boost::enable_shared_from_this<ComponentBase> {
 
 class ComponentBaseWrap : public ComponentBase {
   PyObject* self_{};
-  public:
+public:
   ComponentBaseWrap(PyObject* self)
     : self_(self) {
       py::xincref(self_);
