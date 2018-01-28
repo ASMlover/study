@@ -115,3 +115,10 @@ class AcquirePyGIL : private boost::noncopyable {
   catch (...) {\
   }\
 }
+
+#define BORROWED_HANDLE(o) py::handle<>(py::borrowed(o))
+#define BORROWED_OBJECT(o) py::object(BORROWED_HANDLE(o))
+#define BORROWED_NEWOBJ(o) py::object(py::detail::new_reference(o))
+#define PY_HANDLE(o) py::handle<>(o)
+#define PY_OBJECT(o) py::object(PY_HANDLE(o))
+#define PY_TYPE(o) ((PyTypeObject*)(o))
