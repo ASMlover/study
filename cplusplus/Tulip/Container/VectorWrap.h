@@ -31,13 +31,19 @@
 
 namespace tulip {
 
-template <typename T>
-struct VectorWrap : public std::vector<T> {
-  inline T& getitem(py::ssize_t i) {
+template <typename _Tp>
+struct VectorWrap : public std::vector<_Tp> {
+  using VectorType = VectorWrap<_Tp>;
+
+  inline bool contains(const _Tp& x) const {
+    return std::find(begin(), end(), x) != end();
+  }
+
+  inline _Tp& getitem(py::ssize_t i) {
     return operator[](tulip::getitem_index(i, size()));
   }
 
-  inline void setitem(py::ssize_t i, const T& x) {
+  inline void setitem(py::ssize_t i, const _Tp& x) {
     operator[](tulip::getitem_index(i, size())) = x;
   }
 
@@ -45,11 +51,11 @@ struct VectorWrap : public std::vector<T> {
     erase(begin() + tulip::getitem_index(i, size()));
   }
 
-  inline void insert_item(py::ssize_t i, const T& x) {
-    insert(begin() + getitem_index(i, size()), x);
+  inline void insert_item(py::ssize_t i, const _Tp& x) {
+    insert(begin() + getitem_index(i, size(), true), x);
   }
 
-  inline void append_item(const T& x) {
+  inline void append_item(const _Tp& x) {
     push_back(x);
   }
 
@@ -60,27 +66,35 @@ struct VectorWrap : public std::vector<T> {
       erase(begin() + tulip::getitem_index(i, size()));
   }
 
-  inline void extend(const VectorWrap<T>& other) {
+  inline void extend(const VectorType& other) {
     insert(end(), other.begin(), other.end());
   }
 
-  inline py::tuple getinitargs(void) {
+  inline py::object as_list(void) const {
+    return vector_as_list(*this);
+  }
+
+  inline py::tuple getinitargs(void) const {
     return py::make_tuple(py::tuple(*this));
   }
 
-  static void wrap(const char* name) {
-    py::class_<VectorWrap<T>, boost::shared_ptr<VectorWrap<T>>>(name)
-      .def(py::init<const VectorWrap<T>&>())
-      .def("size", &VectorWrap<T>::size)
-      .def("__len__", &VectorWrap<T>::size)
-      .def("__getitem__", &VectorWrap<T>::getitem, py::return_value_policy<py::copy_non_const_reference>())
-      .def("__setitem__", &VectorWrap<T>::setitem)
-      .def("__delitem__", &VectorWrap<T>::delitem)
-      .def("clear", &VectorWrap<T>::clear)
-      .def("insert", &VectorWrap<T>::insert_item)
-      .def("pop", &VectorWrap<T>::pop_item, (py::arg("i") = INT_MAX))
-      .def("extend", &VectorWrap<T>::extend)
-      .def("__getinitargs__", &VectorWrap<T>::getinitargs)
+  static void wrap(const std::string& name) {
+    py::class_<VectorType, boost::shared_ptr<VectorType>>(name.c_str())
+      .def(py::init<const VectorType&>())
+      .def("size", &VectorType::size)
+      .def("clear", &VectorType::clear)
+      .def("insert", &VectorType::insert_item)
+      .def("append", &VectorType::append_item)
+      .def("pop", &VectorType::pop_item, (py::arg("i") = INT_MAX))
+      .def("extend", &VectorType::extend)
+      .def("as_list", &VectorType::as_list)
+      .def("__len__", &VectorType::size)
+      .def("__contains__", &VectorType::contains)
+      .def("__getitem__", &VectorType::getitem, py::return_value_policy<py::copy_non_const_reference>())
+      .def("__setitem__", &VectorType::setitem)
+      .def("__delitem__", &VectorType::delitem)
+      .def("__iter__", py::iterator<VectorType>())
+      .def("__getinitargs__", &VectorType::getinitargs)
       ;
   }
 };
