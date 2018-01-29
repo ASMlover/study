@@ -76,16 +76,16 @@ inline void register_shared_ptr(void) {
   py::implicitly_convertible<boost::shared_array<T>, boost::shared_array<const T>>();
 }
 
-std::size_t getitem_index(py::ssize_t i, std::size_t size) {
+inline std::size_t getitem_index(py::ssize_t i, std::size_t n) {
   if (i >= 0) {
     auto r = static_cast<std::size_t>(i);
-    if (r > size)
+    if (r >= n)
       throw std::out_of_range("Index out of range.");
     return r;
   }
-  if (static_cast<std::size_t>(-i) > size)
+  if (static_cast<std::size_t>(-i) >= n)
     throw std::out_of_range("Index out of range.");
-  return size + i;
+  return n + i;
 }
 
 }
