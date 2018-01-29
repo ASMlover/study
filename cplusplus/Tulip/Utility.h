@@ -61,6 +61,14 @@ py::list vector_as_list(const VectorType& v) {
   return r;
 }
 
+template <typename SetType>
+py::list set_as_list(const SetType& s) {
+  py::list r;
+  for (auto& x : s)
+    r.append(x);
+  return r;
+}
+
 template <typename MapType>
 py::dict map_as_dict(const MapType& m) {
   py::dict r;
