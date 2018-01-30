@@ -26,6 +26,11 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/python.hpp>
 #include "Container/VectorWrap.h"
+#include "Container/SetWrap.h"
+#include "Container/MapWrap.h"
 
 BOOST_PYTHON_MODULE(Tulip) {
+  tulip::VectorWrap<int>::wrap("ivec");
+  tulip::SetWrap<int>::wrap("iset");
+  tulip::MapWrap<int, std::string>::wrap("ismap");
 }

@@ -36,38 +36,38 @@ struct VectorWrap : public std::vector<_Tp> {
   using VectorType = VectorWrap<_Tp>;
 
   inline bool contains(const _Tp& x) const {
-    return std::find(begin(), end(), x) != end();
+    return std::find(this->begin(), this->end(), x) != this->end();
   }
 
   inline _Tp& getitem(py::ssize_t i) {
-    return operator[](tulip::getitem_index(i, size()));
+    return this->operator[](tulip::getitem_index(i, this->size()));
   }
 
   inline void setitem(py::ssize_t i, const _Tp& x) {
-    operator[](tulip::getitem_index(i, size())) = x;
+    this->operator[](tulip::getitem_index(i, this->size())) = x;
   }
 
   inline void delitem(py::ssize_t i) {
-    erase(begin() + tulip::getitem_index(i, size()));
+    this->erase(this->begin() + tulip::getitem_index(i, this->size()));
   }
 
   inline void insert_item(py::ssize_t i, const _Tp& x) {
-    insert(begin() + getitem_index(i, size(), true), x);
+    this->insert(this->begin() + getitem_index(i, this->size(), true), x);
   }
 
   inline void append_item(const _Tp& x) {
-    push_back(x);
+    this->push_back(x);
   }
 
   inline void pop_item(py::ssize_t i = INT_MAX) {
     if (i == INT_MAX)
-      pop_back();
+      this->pop_back();
     else
-      erase(begin() + tulip::getitem_index(i, size()));
+      this->erase(this->begin() + tulip::getitem_index(i, this->size()));
   }
 
   inline void extend(const VectorType& other) {
-    insert(end(), other.begin(), other.end());
+    this->insert(this->end(), other.begin(), other.end());
   }
 
   inline py::object as_list(void) const {
@@ -81,6 +81,7 @@ struct VectorWrap : public std::vector<_Tp> {
   static void wrap(const std::string& name) {
     py::class_<VectorType, boost::shared_ptr<VectorType>>(name.c_str())
       .def(py::init<const VectorType&>())
+      .def("empty", &VectorType::empty)
       .def("size", &VectorType::size)
       .def("clear", &VectorType::clear)
       .def("insert", &VectorType::insert_item)

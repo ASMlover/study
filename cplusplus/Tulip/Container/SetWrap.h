@@ -36,15 +36,15 @@ struct SetWrap : public std::set<_Tp> {
   using SetType = SetWrap<_Tp>;
 
   inline bool contains(const _Tp& x) const {
-    return find(x) != end();
+    return this->find(x) != this->end();
   }
 
   inline void insert_item(const _Tp& x) {
-    insert(x);
+    this->insert(x);
   }
 
   inline void extend(const SetType& other) {
-    insert(other.begin(), other.end());
+    this->insert(other.begin(), other.end());
   }
 
   inline py::object as_list(void) const {
@@ -58,6 +58,7 @@ struct SetWrap : public std::set<_Tp> {
   static void wrap(const std::string& name) {
     py::class_<SetType, boost::shared_ptr<SetType>>(name.c_str())
       .def(py::init<const SetType&>())
+      .def("empty", &SetType::empty)
       .def("size", &SetType::size)
       .def("add", &SetType::insert_item)
       .def("append", &SetType::insert_item)
