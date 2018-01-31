@@ -28,9 +28,10 @@
 #include "Container/VectorWrap.h"
 #include "Container/SetWrap.h"
 #include "Container/MapWrap.h"
+#include "Property/Common.h"
 
 BOOST_PYTHON_MODULE(Tulip) {
-  tulip::VectorWrap<int>::wrap("ivec");
-  tulip::SetWrap<int>::wrap("iset");
-  tulip::MapWrap<int, std::string>::wrap("ismap");
+  tulip::VectorWrap<int>::wrap("IVec");
+  tulip::SetWrap<int>::wrap("ISet");
+  tulip::MapWrap<int, std::string>::wrap("ISMap");
 }
