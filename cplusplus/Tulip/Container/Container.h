@@ -30,7 +30,7 @@
 
 namespace tulip {
 
-struct TulipDict : public py::dict {
+class TulipDict : public py::dict {
   PyObject* obj_{};
 public:
   TulipDict(PyObject* o)
@@ -45,12 +45,12 @@ public:
   virtual ~TulipDict(void) {
   }
 
-  py::ssize_t size(void) const {
+  inline py::ssize_t size(void) const {
     return PyDict_Size(ptr());
   }
 
   inline void setattr(const std::string& k, const py::object& v) {
-    operator[](k) = v;
+    PyDict_SetItemString(ptr(), k.c_str(), v.ptr());
   }
 
   inline py::object getattr(const std::string& k) {
@@ -93,11 +93,16 @@ public:
     return _tulip_borrowed_object(res);
   }
 
-  py::object pop_item(const py::object& k, const py::object& d = py::object()) {
-    if (d.is_none())
-      return this->attr("pop")(k);
-    else
-      return this->attr("pop")(k, d);
+  py::object pop_item_1(const py::object& k) {
+    return attr("pop")(k);
+  }
+
+  py::object pop_item_2(const py::object& k, const py::object& d) {
+    return attr("pop")(k, d);
+  }
+
+  inline void update_dict(const py::object& other) {
+    update(other);
   }
 
   static bool is_tulip_dict(const py::object& o) {
@@ -119,6 +124,33 @@ public:
   }
 
   ~TulipDictWrap(void) {
+  }
+
+  static void wrap(void) {
+    py::class_<TulipDict,
+      boost::shared_ptr<TulipDictWrap>, boost::noncopyable>("TulipDict", py::init<>())
+      .def(py::init<const py::object&>())
+      .def("size", &TulipDict::size)
+      .def("clear", &TulipDict::clear)
+      .def("get", &TulipDict::get_item, (py::arg("d") = py::object()))
+      .def("pop", &TulipDict::pop_item_1)
+      .def("pop", &TulipDict::pop_item_2)
+      .def("update", &TulipDict::update_dict)
+      .def("keys", &TulipDict::keys)
+      .def("values", &TulipDict::values)
+      .def("items", &TulipDict::items)
+      .def("iterkeys", &TulipDict::iterkeys)
+      .def("itervalues", &TulipDict::itervalues)
+      .def("iteritems", &TulipDict::iteritems)
+      .def("__len__", &TulipDict::size)
+      .def("__iter__", &TulipDict::iterkeys)
+      .def("__setitem__", &TulipDict::setitem)
+      .def("__getitem__", &TulipDict::setitem)
+      .def("__delitem__", &TulipDict::delitem)
+      .def("__setattr__", &TulipDict::setattr)
+      .def("__getattr__", &TulipDict::getattr)
+      .def("__delattr__", &TulipDict::delattr)
+      ;
   }
 };
 

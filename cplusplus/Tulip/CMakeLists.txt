@@ -35,11 +35,19 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "${PROJECT_NAME} CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
+option(TULIP_DEBUG_MODE "Enable/Disable debug compiling ..." OFF)
+
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+if (NOT TULIP_DEBUG_MODE)
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+  if (TULIP_DEBUG_MODE)
+    add_compile_options(/DTULIP_DEBUG_MODE)
+  endif()
+
   add_definitions(
     /DUNICODE
     /D_UNICODE
@@ -58,6 +66,10 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     "C:/Python27amd64/libs"
     "D:/Tools/boost_1_64_0/stage/x64/lib")
 else()
+  if (TULIP_DEBUG_MODE)
+    add_compile_options(-DTULIP_DEBUG_MODE)
+  endif()
+
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -std=c++1y -march=native")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -O0")
   set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3")

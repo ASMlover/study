@@ -24,14 +24,25 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <boost/python.hpp>
+#include "Utility.h"
 #include "Container/VectorWrap.h"
 #include "Container/SetWrap.h"
 #include "Container/MapWrap.h"
 #include "Property/Common.h"
+#include "Container/Container.h"
 
-BOOST_PYTHON_MODULE(Tulip) {
+#if defined(TULIP_DEBUG_MODE)
+void tulip_debug_wrap(void) {
   tulip::VectorWrap<int>::wrap("IVec");
   tulip::SetWrap<int>::wrap("ISet");
   tulip::MapWrap<int, std::string>::wrap("ISMap");
+}
+#else
+# define tulip_debug_wrap() (void)0
+#endif
+
+BOOST_PYTHON_MODULE(Tulip) {
+  tulip_debug_wrap();
+
+  tulip::TulipDictWrap::wrap();
 }
