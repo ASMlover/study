@@ -30,23 +30,23 @@
 
 namespace tulip {
 
-class TulipDict : public py::dict {
-  PyObject* obj_{};
-public:
-  TulipDict(PyObject* o)
-    : obj_(o) {
+struct TulipDict : public py::dict {
+  TulipDict(void) {
   }
 
-  TulipDict(PyObject* o, const py::object& v)
-    : py::dict(v)
-    , obj_(o) {
+  TulipDict(const py::object& v)
+    : py::dict(v) {
   }
 
-  virtual ~TulipDict(void) {
+  ~TulipDict(void) {
   }
 
   inline py::ssize_t size(void) const {
     return PyDict_Size(ptr());
+  }
+
+  inline bool contains(const py::object& k) const {
+    return attr("has_key")(k);
   }
 
   inline void setattr(const std::string& k, const py::object& v) {
@@ -63,8 +63,9 @@ public:
     return _tulip_borrowed_object(res);
   }
 
-  inline int delattr(const std::string& k) {
-    return PyDict_DelItemString(ptr(), k.c_str());
+  inline void delattr(const std::string& k) {
+    if (PyDict_DelItemString(ptr(), k.c_str()) == -1)
+      py::throw_error_already_set();
   }
 
   inline void setitem(const py::object& k, const py::object& v) {
@@ -82,22 +83,23 @@ public:
     return _tulip_borrowed_object(res);
   }
 
-  inline int delitem(const py::object& k) {
-    return PyDict_DelItem(ptr(), k.ptr());
+  inline void delitem(const py::object& k) {
+    if (PyDict_DelItem(ptr(), k.ptr()) == -1)
+      py::throw_error_already_set();
   }
 
-  py::object get_item(const py::object& k, const py::object& d = py::object()) {
+  inline py::object get(const py::object& k, const py::object& d) {
     auto* res = PyDict_GetItem(ptr(), k.ptr());
     if (res == nullptr)
       return d;
     return _tulip_borrowed_object(res);
   }
 
-  py::object pop_item_1(const py::object& k) {
+  inline py::object pop_1(const py::object& k) {
     return attr("pop")(k);
   }
 
-  py::object pop_item_2(const py::object& k, const py::object& d) {
+  inline py::object pop_2(const py::object& k, const py::object& d) {
     return attr("pop")(k, d);
   }
 
@@ -111,30 +113,16 @@ public:
     py::extract<TulipDict&> td(o);
     return td.check();
   }
-};
-
-class TulipDictWrap : public TulipDict {
-public:
-  TulipDictWrap(PyObject* o)
-    : TulipDict(o) {
-  }
-
-  TulipDictWrap(PyObject* o, const py::object& v)
-    : TulipDict(o, v) {
-  }
-
-  ~TulipDictWrap(void) {
-  }
 
   static void wrap(void) {
-    py::class_<TulipDict,
-      boost::shared_ptr<TulipDictWrap>, boost::noncopyable>("TulipDict", py::init<>())
+    py::class_<TulipDict, boost::shared_ptr<TulipDict>>("TulipDict", py::init<>())
       .def(py::init<const py::object&>())
       .def("size", &TulipDict::size)
+      .def("has_key", &TulipDict::contains)
       .def("clear", &TulipDict::clear)
-      .def("get", &TulipDict::get_item, (py::arg("d") = py::object()))
-      .def("pop", &TulipDict::pop_item_1)
-      .def("pop", &TulipDict::pop_item_2)
+      .def("get", &TulipDict::get, (py::arg("d") = py::object()))
+      .def("pop", &TulipDict::pop_1)
+      .def("pop", &TulipDict::pop_2)
       .def("update", &TulipDict::update_dict)
       .def("keys", &TulipDict::keys)
       .def("values", &TulipDict::values)
@@ -144,8 +132,9 @@ public:
       .def("iteritems", &TulipDict::iteritems)
       .def("__len__", &TulipDict::size)
       .def("__iter__", &TulipDict::iterkeys)
+      .def("__contains__", &TulipDict::contains)
       .def("__setitem__", &TulipDict::setitem)
-      .def("__getitem__", &TulipDict::setitem)
+      .def("__getitem__", &TulipDict::getitem)
       .def("__delitem__", &TulipDict::delitem)
       .def("__setattr__", &TulipDict::setattr)
       .def("__getattr__", &TulipDict::getattr)

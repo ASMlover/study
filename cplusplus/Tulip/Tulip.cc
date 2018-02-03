@@ -44,5 +44,5 @@ void tulip_debug_wrap(void) {
 BOOST_PYTHON_MODULE(Tulip) {
   tulip_debug_wrap();
 
-  tulip::TulipDictWrap::wrap();
+  tulip::TulipDict::wrap();
 }
