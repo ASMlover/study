@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <functional>
 #include "../Utility.h"
 
 namespace tulip {
@@ -107,6 +108,18 @@ struct TulipDict : public py::dict {
     update(other);
   }
 
+  inline void foreach(
+      std::function<void (const py::object&, py::object&)>&& fn) {
+    PyObject* k{};
+    PyObject* v{};
+    py::ssize_t pos{};
+    while (PyDict_Next(ptr(), &pos, &k, &v)) {
+      auto kobj = _tulip_borrowed_object(k);
+      auto vobj = _tulip_borrowed_object(v);
+      fn(kobj, vobj);
+    }
+  }
+
   static bool is_tulip_dict(const py::object& o) {
     if (o.is_none())
       return false;
@@ -115,7 +128,8 @@ struct TulipDict : public py::dict {
   }
 
   static void wrap(void) {
-    py::class_<TulipDict, boost::shared_ptr<TulipDict>>("TulipDict", py::init<>())
+    py::class_<TulipDict, boost::shared_ptr<TulipDict>>("TulipDict")
+      .def(py::init<>())
       .def(py::init<const py::object&>())
       .def("size", &TulipDict::size)
       .def("has_key", &TulipDict::contains)
