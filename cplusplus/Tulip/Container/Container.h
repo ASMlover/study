@@ -31,6 +31,88 @@
 
 namespace tulip {
 
+struct TulipList : public py::list {
+  TulipList(void) {
+  }
+
+  TulipList(const py::object& v)
+    : py::list(v) {
+  }
+
+  ~TulipList(void) {
+  }
+
+  inline py::ssize_t size(void) const {
+    return PyList_Size(ptr());
+  }
+
+  inline void insert_item(py::ssize_t i, const py::object& x) {
+    PyList_Insert(ptr(), i, x.ptr());
+  }
+
+  inline void append_item(const py::object& x) {
+    PyList_Append(ptr(), x.ptr());
+  }
+
+  inline void extend_list(const py::object& l) {
+    extend(l);
+  }
+
+  inline py::object pop_item(py::ssize_t i = INT_MAX) {
+    if (i == INT_MAX)
+      return pop();
+    else
+      return pop(i);
+  }
+
+  inline void clear(void) {
+    auto n = PyList_Size(ptr());
+    slice(0, n).del();
+  }
+
+  inline void setitem(py::ssize_t i, const py::object& x) {
+    if (PyList_SetItem(ptr(), i, x.ptr()) == -1)
+      py::throw_error_already_set();
+  }
+
+  inline py::object getitem(py::ssize_t i) const {
+    return _tulip_borrowed_object(PyList_GetItem(ptr(), i));
+  }
+
+  inline void delitem(const py::ssize_t i) {
+    pop(i);
+  }
+
+  inline py::object iter(void) const {
+    return attr("__iter__")();
+  }
+
+  static bool is_tulip_list(const py::list& o) {
+    if (o.is_none())
+      return false;
+    py::extract<TulipList&> tl(o);
+    return tl.check();
+  }
+
+  static void wrap(void) {
+    py::class_<TulipList, boost::shared_ptr<TulipList>>("TulipList")
+      .def(py::init<>())
+      .def(py::init<const py::object&>())
+      .def("size", &TulipList::size)
+      .def("insert", &TulipList::insert_item)
+      .def("append", &TulipList::append_item)
+      .def("pop", &TulipList::pop_item, (py::arg("i") = INT_MAX))
+      .def("extend", &TulipList::extend_list)
+      .def("clear", &TulipList::clear)
+      .def("__len__", &TulipList::size)
+      .def("__iter__", &TulipList::iter)
+      .def("__setitem__", &TulipList::setitem)
+      .def("__getitem__", &TulipList::getitem)
+      .def("__delitem__", &TulipList::delitem)
+      ;
+  }
+};
+
 struct TulipDict : public py::dict {
   TulipDict(void) {
   }
