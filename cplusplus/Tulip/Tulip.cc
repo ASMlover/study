@@ -28,21 +28,35 @@
 #include "Container/VectorWrap.h"
 #include "Container/SetWrap.h"
 #include "Container/MapWrap.h"
-#include "Property/Common.h"
+// #include "Property/Common.h" // Not implementation
 #include "Container/Container.h"
+#include <iostream>
 
 #if defined(TULIP_DEBUG_MODE)
+static void tulip_run_callscript(const tulip::TulipDict& d) {
+  PyObject* k{};
+  PyObject* v{};
+  py::ssize_t pos{};
+  while (PyDict_Next(d.ptr(), &pos, &k, &v)) {
+    py::call_method<void>(v, "show");
+  }
+}
+
 void tulip_debug_wrap(void) {
   tulip::VectorWrap<int>::wrap("IVec");
   tulip::SetWrap<int>::wrap("ISet");
   tulip::MapWrap<int, std::string>::wrap("ISMap");
+
+  py::def("tulip_run_callscript", tulip_run_callscript);
 }
 #else
 # define tulip_debug_wrap() (void)0
 #endif
 
 BOOST_PYTHON_MODULE(Tulip) {
+  PyEval_InitThreads();
   tulip_debug_wrap();
 
+  tulip::TulipList::wrap();
   tulip::TulipDict::wrap();
 }
