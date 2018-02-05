@@ -46,6 +46,10 @@ struct TulipList : public py::list {
     return PyList_Size(ptr());
   }
 
+  inline bool contains(const py::object& x) const {
+    return attr("__contains__")(x);
+  }
+
   inline void insert_item(py::ssize_t i, const py::object& x) {
     PyList_Insert(ptr(), i, x.ptr());
   }
@@ -106,6 +110,7 @@ struct TulipList : public py::list {
       .def("clear", &TulipList::clear)
       .def("__len__", &TulipList::size)
       .def("__iter__", &TulipList::iter)
+      .def("__contains__", &TulipList::contains)
       .def("__setitem__", &TulipList::setitem)
       .def("__getitem__", &TulipList::getitem)
       .def("__delitem__", &TulipList::delitem)
