@@ -36,12 +36,11 @@ endif()
 message(STATUS "${PROJECT_NAME} CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
 option(TULIP_DEBUG_MODE "Enable/Disable debug compiling ..." OFF)
+option(TULIP_ENABLE_PYD "Enable/Disable generate PYD for win32 ..." OFF)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-if (NOT TULIP_DEBUG_MODE)
-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-endif()
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   if (TULIP_DEBUG_MODE)
@@ -94,10 +93,17 @@ message(STATUS "${PROJECT_NAME} SOURCE_FILES: ${SOURCE_FILES}")
 
 add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES})
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
-  set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".pyd")
   target_link_libraries(${PROJECT_NAME}
     debug libboost_python-vc141-mt-gd-1_64 optimized libboost_python-vc141-mt-1_64)
 else()
   set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
   target_link_libraries(${PROJECT_NAME} pthread boost_python)
+endif()
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+  if (TULIP_ENABLE_PYD)
+    add_custom_command(TARGET ${PROJECT_NAME}
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy
+      "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${PROJECT_NAME}.dll" "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pyd")
+  endif()
 endif()
