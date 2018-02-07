@@ -50,6 +50,12 @@ struct TulipList : public py::list {
     return attr("__contains__")(x);
   }
 
+  inline TulipList copy(void) const {
+    TulipList r;
+    r.extend(*this);
+    return r;
+  }
+
   inline void insert_item(py::ssize_t i, const py::object& x) {
     PyList_Insert(ptr(), i, x.ptr());
   }
@@ -62,11 +68,12 @@ struct TulipList : public py::list {
     extend(l);
   }
 
-  inline py::object pop_item(py::ssize_t i = INT_MAX) {
-    if (i == INT_MAX)
-      return pop();
-    else
-      return pop(i);
+  inline py::object pop_1(void) {
+    return pop();
+  }
+
+  inline py::object pop_2(py::ssize_t i)  {
+    return pop(i);
   }
 
   inline void clear(void) {
@@ -103,9 +110,11 @@ struct TulipList : public py::list {
       .def(py::init<>())
       .def(py::init<const py::object&>())
       .def("size", &TulipList::size)
+      .def("copy", &TulipList::copy)
       .def("insert", &TulipList::insert_item)
       .def("append", &TulipList::append_item)
-      .def("pop", &TulipList::pop_item, (py::arg("i") = INT_MAX))
+      .def("pop", &TulipList::pop_1)
+      .def("pop", &TulipList::pop_2)
       .def("extend", &TulipList::extend_list)
       .def("clear", &TulipList::clear)
       .def("__len__", &TulipList::size)
