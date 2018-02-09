@@ -146,6 +146,12 @@ struct TulipDict : public py::dict {
     return attr("has_key")(k);
   }
 
+  inline TulipDict copy(void) const {
+    TulipDict r;
+    r.update(*this);
+    return r;
+  }
+
   inline void setattr(const std::string& k, const py::object& v) {
     PyDict_SetItemString(ptr(), k.c_str(), v.ptr());
   }
@@ -216,6 +222,14 @@ struct TulipDict : public py::dict {
     }
   }
 
+  static TulipDict fromkeys(const py::object& keys, const py::object& v) {
+    TulipDict r;
+    auto n = keys.attr("__len__")();
+    for (auto i = 0; i < n; ++i)
+      r.setitem(keys.attr("__getitem__")(i), v);
+    return r;
+  }
+
   static bool is_tulip_dict(const py::object& o) {
     if (o.is_none())
       return false;
@@ -230,6 +244,7 @@ struct TulipDict : public py::dict {
       .def("size", &TulipDict::size)
       .def("has_key", &TulipDict::contains)
       .def("clear", &TulipDict::clear)
+      .def("copy", &TulipDict::copy)
       .def("get", &TulipDict::get, (py::arg("d") = py::object()))
       .def("pop", &TulipDict::pop_1)
       .def("pop", &TulipDict::pop_2)
@@ -240,6 +255,7 @@ struct TulipDict : public py::dict {
       .def("iterkeys", &TulipDict::iterkeys)
       .def("itervalues", &TulipDict::itervalues)
       .def("iteritems", &TulipDict::iteritems)
+      .def("fromkeys", &TulipDict::fromkeys).staticmethod("fromkeys")
       .def("__len__", &TulipDict::size)
       .def("__iter__", &TulipDict::iterkeys)
       .def("__contains__", &TulipDict::contains)
