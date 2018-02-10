@@ -98,6 +98,8 @@ struct TulipList : public py::list {
     return attr("__iter__")();
   }
 
+  py::object as_list(void) const;
+
   static bool is_tulip_list(const py::list& o) {
     if (o.is_none())
       return false;
@@ -117,6 +119,7 @@ struct TulipList : public py::list {
       .def("pop", &TulipList::pop_2)
       .def("extend", &TulipList::extend_list)
       .def("clear", &TulipList::clear)
+      .def("as_list", &TulipList::as_list)
       .def("__len__", &TulipList::size)
       .def("__iter__", &TulipList::iter)
       .def("__contains__", &TulipList::contains)
@@ -222,6 +225,8 @@ struct TulipDict : public py::dict {
     }
   }
 
+  py::object as_dict(void) const;
+
   static TulipDict fromkeys(const py::object& keys, const py::object& v) {
     TulipDict r;
     auto n = keys.attr("__len__")();
@@ -255,6 +260,7 @@ struct TulipDict : public py::dict {
       .def("iterkeys", &TulipDict::iterkeys)
       .def("itervalues", &TulipDict::itervalues)
       .def("iteritems", &TulipDict::iteritems)
+      .def("as_dict", &TulipDict::as_dict)
       .def("fromkeys", &TulipDict::fromkeys).staticmethod("fromkeys")
       .def("__len__", &TulipDict::size)
       .def("__iter__", &TulipDict::iterkeys)
