@@ -24,21 +24,36 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "Utility.h"
-// #include "Property/Common.h" // Not implementation
-#include "Container/Container.h"
+#include "../Utility.h"
+#include "../Container/VectorWrap.h"
+#include "../Container/SetWrap.h"
+#include "../Container/MapWrap.h"
+#include "../Container/Container.h"
 
-#if defined(TULIP_DEBUG_MODE)
-  extern void tulip_debug_wrap(void);
-#else
-# define tulip_debug_wrap() (void)0
-#endif
+namespace tulip { namespace test {
 
-BOOST_PYTHON_MODULE(Tulip) {
-  PyEval_InitThreads();
+struct _test {
+  static void call_pyfuns(const tulip::TulipDict& d, const char* method) {
+    PyObject* v{};
+    py::ssize_t pos{};
+    while (PyDict_Next(d.ptr(), &pos, nullptr, &v))
+      py::call_method<void>(v, method);
+  }
 
-  tulip_debug_wrap();
+  static void wrap(void) {
+    py::scope in_test =
+      py::class_<_test>("_test")
+        .def("call_pyfuns", &_test::call_pyfuns).staticmethod("call_pyfuns")
+        ;
 
-  tulip::TulipList::wrap();
-  tulip::TulipDict::wrap();
+    tulip::VectorWrap<int>::wrap("ivec");
+    tulip::SetWrap<int>::wrap("iset");
+    tulip::MapWrap<int, std::string>::wrap("ismap");
+  }
+};
+
+}}
+
+void tulip_debug_wrap(void) {
+  tulip::test::_test::wrap();
 }
