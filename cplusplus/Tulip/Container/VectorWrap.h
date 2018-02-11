@@ -26,76 +26,91 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <vector>
 #include "../Utility.h"
 
 namespace tulip {
 
-template <typename _Tp>
-struct VectorWrap : public std::vector<_Tp> {
-  using VectorType = VectorWrap<_Tp>;
+template <typename Container>
+struct VectorWrap {
+  using ValueType = typename Container::value_type;
+  using SizeType = typename Container::size_type;
 
-  inline bool contains(const _Tp& x) const {
-    return std::find(this->begin(), this->end(), x) != this->end();
+  static Container vector_copy(const Container& self) {
+    Container r;
+    for (auto& x : self)
+      r.push_back(x);
+    return r;
   }
 
-  inline _Tp& getitem(py::ssize_t i) {
-    return this->operator[](tulip::getitem_index(i, this->size()));
+  static bool vector_contains(const Container& self, const ValueType& x) {
+    return std::find(self.begin(), self.end(), x) != self.end();
   }
 
-  inline void setitem(py::ssize_t i, const _Tp& x) {
-    this->operator[](tulip::getitem_index(i, this->size())) = x;
+  static void vector_insert(
+      Container& self, py::ssize_t i, const ValueType& x) {
+    self.insert(self.begin() + getitem_index(i, self.size(), true), x);
   }
 
-  inline void delitem(py::ssize_t i) {
-    this->erase(this->begin() + tulip::getitem_index(i, this->size()));
+  static void vector_append(Container& self, const ValueType& x) {
+    self.push_back(x);
   }
 
-  inline void insert_item(py::ssize_t i, const _Tp& x) {
-    this->insert(this->begin() + getitem_index(i, this->size(), true), x);
+  static void vector_pop_1(Container& self) {
+    self.pop_back();
   }
 
-  inline void append_item(const _Tp& x) {
-    this->push_back(x);
+  static void vector_pop_2(Container& self, py::ssize_t i) {
+    self.erase(self.begin() + getitem_index(i, self.size()));
   }
 
-  inline void pop_item(py::ssize_t i = INT_MAX) {
-    if (i == INT_MAX)
-      this->pop_back();
-    else
-      this->erase(this->begin() + tulip::getitem_index(i, this->size()));
+  static void vector_remove(Container& self, const ValueType& x) {
+    auto pos = std::find(self.begin(), self.end(), x);
+    if (pos != self.end())
+      self.erase(pos);
   }
 
-  inline void extend(const VectorType& other) {
-    this->insert(this->end(), other.begin(), other.end());
+  static void vector_extend(py::object& self, const py::object& other) {
+    auto n = other.attr("__len__")();
+    for (auto i = 0; i < n; ++i)
+      self.attr("append")(other.attr("__getitem__")(i));
   }
 
-  inline py::object as_list(void) const {
-    return vector_as_list(*this);
+  static void vector_setitem(
+      Container& self, py::ssize_t i, const ValueType& x) {
+    self[getitem_index(i, self.size())] = x;
   }
 
-  inline py::tuple getinitargs(void) const {
-    return py::make_tuple(py::tuple(*this));
+  static py::object vector_getitem(const Container& self, py::ssize_t i) {
+    py::object r(self[getitem_index(i, self.size())]);
+    return r;
   }
 
-  static void wrap(const std::string& name) {
-    py::class_<VectorType, boost::shared_ptr<VectorType>>(name.c_str())
-      .def(py::init<const VectorType&>())
-      .def("empty", &VectorType::empty)
-      .def("size", &VectorType::size)
-      .def("clear", &VectorType::clear)
-      .def("insert", &VectorType::insert_item)
-      .def("append", &VectorType::append_item)
-      .def("pop", &VectorType::pop_item, (py::arg("i") = INT_MAX))
-      .def("extend", &VectorType::extend)
-      .def("as_list", &VectorType::as_list)
-      .def("__len__", &VectorType::size)
-      .def("__contains__", &VectorType::contains)
-      .def("__getitem__", &VectorType::getitem, py::return_value_policy<py::copy_non_const_reference>())
-      .def("__setitem__", &VectorType::setitem)
-      .def("__delitem__", &VectorType::delitem)
-      .def("__iter__", py::iterator<VectorType>())
-      .def("__getinitargs__", &VectorType::getinitargs)
+  static void vector_delitem(Container& self, py::ssize_t i) {
+    self.erase(self.begin() + getitem_index(i, self.size()));
+  }
+
+  static py::object as_list(const Container& self) {
+    return vector_as_list(self);
+  }
+
+  static void wrap(const char* name) {
+    py::class_<Container, boost::shared_ptr<Container>>(name, py::init<>())
+      .def(py::init<const Container&>())
+      .def("copy", &VectorWrap::vector_copy)
+      .def("clear", &Container::clear)
+      .def("size", &Container::size)
+      .def("insert", &VectorWrap::vector_insert)
+      .def("append", &VectorWrap::vector_append)
+      .def("pop", &VectorWrap::vector_pop_1)
+      .def("pop", &VectorWrap::vector_pop_2)
+      .def("remove", &VectorWrap::vector_remove)
+      .def("extend", &VectorWrap::vector_extend)
+      .def("as_list", &VectorWrap::as_list)
+      .def("__iter__", py::iterator<Container>())
+      .def("__contains__", &VectorWrap::vector_contains)
+      .def("__setitem__", &VectorWrap::vector_setitem)
+      .def("__getitem__", &VectorWrap::vector_getitem)
+      .def("__delitem__", &VectorWrap::vector_delitem)
       ;
   }
 };
