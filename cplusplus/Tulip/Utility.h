@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <algorithm>
 #include <map>
 #include <vector>
 #include <Python.h>
