@@ -28,65 +28,70 @@
 
 namespace tulip {
 
-py::object TulipList::as_list(void) const {
-  py::list r;
-  auto n = size();
-  for (auto i = 0; i < n; ++i) {
-    auto* v = PyList_GetItem(ptr(), i);
-    if (v == nullptr)
-      continue;
-
-    if (PyInt_Check(v) || PyFloat_Check(v) || PyString_Check(v)) {
-      r.append(_tulip_borrowed_handle(v));
-      continue;
-    }
-
-    py::extract<TulipList&> tl_v(v);
-    if (tl_v.check()) {
-      auto& tl = tl_v();
-      r.append(tl.as_list());
-      continue;
-    }
-
-    py::extract<TulipDict&> td_v(v);
-    if (td_v.check()) {
-      auto& td = td_v();
-      r.append(td.as_dict());
-      continue;
-    }
-  }
-  return r;
+inline bool is_builtin_type(PyObject* o) {
+  return (PyInt_Check(o) || PyFloat_Check(o) || PyString_Check(o) ||
+      PyTuple_Check(o) || PyList_Check(o) || PyDict_Check(o));
 }
 
-py::object TulipDict::as_dict(void) const {
-  py::dict r;
-  PyObject* k{};
-  PyObject* v{};
-  py::ssize_t pos{};
-  while (PyDict_Next(ptr(), &pos, &k, &v)) {
-    if (!PyInt_Check(k) && !PyFloat_Check(k) && !PyString_Check(k))
-      continue;
-
-    if (PyInt_Check(v) || PyFloat_Check(v) || PyString_Check(v)) {
-      r[_tulip_borrowed_handle(k)] = _tulip_borrowed_handle(v);
-      continue;
-    }
-
-    py::extract<TulipList&> tl_v(v);
-    if (tl_v.check()) {
-      auto& tl = tl_v();
-      r[_tulip_borrowed_handle(k)] = tl.as_list();
-      continue;
-    }
-
-    py::extract<TulipDict&> td_v(v);
-    if (td_v.check()) {
-      auto& td = td_v();
-      r[_tulip_borrowed_handle(k)] = td.as_dict();
-      continue;
-    }
-  }
-  return r;
-}
+// py::object TulipList::as_list(void) const {
+//   py::list r;
+//   auto n = size();
+//   for (auto i = 0; i < n; ++i) {
+//     auto* v = PyList_GetItem(ptr(), i);
+//     if (v == nullptr)
+//       continue;
+//
+//     if (is_builtin_type(v)) {
+//       r.append(_tulip_borrowed_handle(v));
+//       continue;
+//     }
+//
+//     py::extract<TulipList&> tl_v(v);
+//     if (tl_v.check()) {
+//       auto& tl = tl_v();
+//       r.append(tl.as_list());
+//       continue;
+//     }
+//
+//     py::extract<TulipDict&> td_v(v);
+//     if (td_v.check()) {
+//       auto& td = td_v();
+//       r.append(td.as_dict());
+//       continue;
+//     }
+//   }
+//   return r;
+// }
+//
+// py::object TulipDict::as_dict(void) const {
+//   py::dict r;
+//   PyObject* k{};
+//   PyObject* v{};
+//   py::ssize_t pos{};
+//   while (PyDict_Next(ptr(), &pos, &k, &v)) {
+//     if (!PyInt_Check(k) && !PyFloat_Check(k) && !PyString_Check(k))
+//       continue;
+//
+//     if (is_builtin_type(v)) {
+//       r[_tulip_borrowed_handle(k)] = _tulip_borrowed_handle(v);
+//       continue;
+//     }
+//
+//     py::extract<TulipList&> tl_v(v);
+//     if (tl_v.check()) {
+//       auto& tl = tl_v();
+//       r[_tulip_borrowed_handle(k)] = tl.as_list();
+//       continue;
+//     }
+//
+//     py::extract<TulipDict&> td_v(v);
+//     if (td_v.check()) {
+//       auto& td = td_v();
+//       r[_tulip_borrowed_handle(k)] = td.as_dict();
+//       continue;
+//     }
+//   }
+//   return r;
+// }
 
 }

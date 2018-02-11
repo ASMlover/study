@@ -42,6 +42,18 @@ struct TulipList : public py::list {
   ~TulipList(void) {
   }
 
+  inline bool is_self(const py::object& x) const {
+    if (x.is_none())
+      return false;
+
+    py::extract<TulipList&> tl_v(x);
+    if (tl_v.check()) {
+      auto& tl = tl_v();
+      return this == &tl;
+    }
+    return false;
+  }
+
   inline py::ssize_t size(void) const {
     return PyList_Size(ptr());
   }
@@ -57,15 +69,29 @@ struct TulipList : public py::list {
   }
 
   inline void insert_item(py::ssize_t i, const py::object& x) {
+    if (is_self(x)) {
+      PyErr_SetString(PyExc_RuntimeError, "can not insert self");
+      py::throw_error_already_set();
+      return;
+    }
     PyList_Insert(ptr(), i, x.ptr());
   }
 
   inline void append_item(const py::object& x) {
+    if (is_self(x)) {
+      PyErr_SetString(PyExc_RuntimeError, "can not append self");
+      py::throw_error_already_set();
+      return;
+    }
     PyList_Append(ptr(), x.ptr());
   }
 
   inline void extend_list(const py::object& l) {
-    extend(l);
+    auto n = l.attr("__len__")();
+    for (auto i = 0; i < n; ++i) {
+      auto* v = PyList_GetItem(l.ptr(), i);
+      append_item(_tulip_borrowed_object(v));
+    }
   }
 
   inline py::object pop_1(void) {
@@ -82,6 +108,12 @@ struct TulipList : public py::list {
   }
 
   inline void setitem(py::ssize_t i, const py::object& x) {
+    if (is_self(x)) {
+      PyErr_Format(PyExc_IndexError, "can not set self:%ld", i);
+      py::throw_error_already_set();
+      return;
+    }
+
     if (PyList_SetItem(ptr(), i, x.ptr()) == -1)
       py::throw_error_already_set();
   }
@@ -98,7 +130,9 @@ struct TulipList : public py::list {
     return attr("__iter__")();
   }
 
-  py::object as_list(void) const;
+  inline py::object as_list(void) const {
+    return py::list(*this);
+  }
 
   static bool is_tulip_list(const py::list& o) {
     if (o.is_none())
@@ -120,6 +154,8 @@ struct TulipList : public py::list {
       .def("extend", &TulipList::extend_list)
       .def("clear", &TulipList::clear)
       .def("as_list", &TulipList::as_list)
+      .def("is_tulip_list",
+          &TulipList::is_tulip_list).staticmethod("is_tulip_list")
       .def("__len__", &TulipList::size)
       .def("__iter__", &TulipList::iter)
       .def("__contains__", &TulipList::contains)
@@ -141,6 +177,18 @@ struct TulipDict : public py::dict {
   ~TulipDict(void) {
   }
 
+  inline bool is_self(const py::object& x) const {
+    if (x.is_none())
+      return false;
+
+    py::extract<TulipDict&> td_v(x);
+    if (td_v.check()) {
+      auto& td = td_v();
+      return this == &td;
+    }
+    return false;
+  }
+
   inline py::ssize_t size(void) const {
     return PyDict_Size(ptr());
   }
@@ -156,6 +204,11 @@ struct TulipDict : public py::dict {
   }
 
   inline void setattr(const std::string& k, const py::object& v) {
+    if (is_self(v)) {
+      PyErr_Format(PyExc_AttributeError, "can not set self:%s", k.c_str());
+      py::throw_error_already_set();
+      return;
+    }
     PyDict_SetItemString(ptr(), k.c_str(), v.ptr());
   }
 
@@ -175,14 +228,20 @@ struct TulipDict : public py::dict {
   }
 
   inline void setitem(const py::object& k, const py::object& v) {
+    if (is_self(v)) {
+      PyErr_Format(PyExc_IndexError,
+          "can not set self:%s", PyString_AsString(PyObject_Repr(v.ptr())));
+      py::throw_error_already_set();
+      return;
+    }
     PyDict_SetItem(ptr(), k.ptr(), v.ptr());
   }
 
   inline py::object getitem(const py::object& k) {
     auto* res = PyDict_GetItem(ptr(), k.ptr());
     if (res == nullptr) {
-      PyErr_Format(PyExc_KeyError,
-          "has no key: %s", PyString_AsString(k.ptr()));
+      PyErr_Format(PyExc_IndexError,
+          "has no key: %s", PyString_AsString(PyObject_Repr(k.ptr())));
       py::throw_error_already_set();
       return py::object();
     }
@@ -225,7 +284,9 @@ struct TulipDict : public py::dict {
     }
   }
 
-  py::object as_dict(void) const;
+  inline py::object as_dict(void) const {
+    return py::dict(*this);
+  }
 
   static TulipDict fromkeys(const py::object& keys, const py::object& v) {
     TulipDict r;
@@ -262,6 +323,8 @@ struct TulipDict : public py::dict {
       .def("iteritems", &TulipDict::iteritems)
       .def("as_dict", &TulipDict::as_dict)
       .def("fromkeys", &TulipDict::fromkeys).staticmethod("fromkeys")
+      .def("is_tulip_dict",
+          &TulipDict::is_tulip_dict).staticmethod("is_tulip_dict")
       .def("__len__", &TulipDict::size)
       .def("__iter__", &TulipDict::iterkeys)
       .def("__contains__", &TulipDict::contains)
