@@ -27,6 +27,7 @@
 #include "Utility.h"
 // #include "Property/Common.h" // Not implementation
 #include "Container/Container.h"
+#include "Container/RawContainer.h"
 
 #if defined(TULIP_DEBUG_MODE)
   extern void tulip_debug_wrap(void);
@@ -36,6 +37,12 @@
 
 BOOST_PYTHON_MODULE(Tulip) {
   PyEval_InitThreads();
+
+  static PyMethodDef tulip_methods[] = {
+    {NULL},
+  };
+  auto* m = Py_InitModule3("Tulip", tulip_methods, "");
+  tulip::PyTulipList::wrap(m);
 
   tulip_debug_wrap();
 
