@@ -74,12 +74,21 @@ else()
   set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3")
 
   find_package(PythonLibs 2.7 REQUIRED)
-  include_directories(
-    ${PYTHON_INCLUDE_DIRS}
-    ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0)
-  link_directories(
-    ${PYTHON_LIBRARIES}
-    ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0/stage/lib)
+  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    include_directories(
+      ${PYTHON_INCLUDE_DIRS}
+      ${PROJECT_SOURCE_DIR}/../../../../Opensource/boost_1_63_0)
+    link_directories(
+      ${PYTHON_LIBRARIES}
+      ${PROJECT_SOURCE_DIR}/../../../../Opensource/boost_1_63_0/stage/lib)
+  else()
+    include_directories(
+      ${PYTHON_INCLUDE_DIRS}
+      ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0)
+    link_directories(
+      ${PYTHON_LIBRARIES}
+      ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0/stage/lib)
+  endif()
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 message(STATUS "${PROJECT_NAME} CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")
@@ -97,7 +106,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     debug libboost_python-vc141-mt-gd-1_64 optimized libboost_python-vc141-mt-1_64)
 else()
   set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
-  target_link_libraries(${PROJECT_NAME} pthread boost_python)
+  target_link_libraries(${PROJECT_NAME} python pthread boost_python)
 endif()
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
   if (TULIP_ENABLE_PYD)
