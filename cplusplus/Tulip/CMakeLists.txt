@@ -79,7 +79,7 @@ else()
       ${PYTHON_INCLUDE_DIRS}
       ${PROJECT_SOURCE_DIR}/../../../../Opensource/boost_1_63_0)
     link_directories(
-      ${PYTHON_LIBRARIES}
+      ${PYTHON_LIBRARIES}/../
       ${PROJECT_SOURCE_DIR}/../../../../Opensource/boost_1_63_0/stage/lib)
   else()
     include_directories(
