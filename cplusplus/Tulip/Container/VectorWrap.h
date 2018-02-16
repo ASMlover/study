@@ -89,6 +89,13 @@ struct VectorWrap {
     self.erase(self.begin() + getitem_index(i, self.size()));
   }
 
+  static void vector_foreach(Container& self, PyObject* callable) {
+    if (callable != nullptr) {
+      for (auto& x : self)
+        py::call<void>(callable, x);
+    }
+  }
+
   static py::object as_list(const Container& self) {
     return vector_as_list(self);
   }
@@ -105,6 +112,7 @@ struct VectorWrap {
       .def("pop", &VectorWrap::vector_pop_2)
       .def("remove", &VectorWrap::vector_remove)
       .def("extend", &VectorWrap::vector_extend)
+      .def("foreach", &VectorWrap::vector_foreach)
       .def("as_list", &VectorWrap::as_list)
       .def("__iter__", py::iterator<Container>())
       .def("__contains__", &VectorWrap::vector_contains)
