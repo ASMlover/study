@@ -25,6 +25,8 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
+#include <set>
+#include <map>
 #include "../Utility.h"
 #include "../Container/VectorWrap.h"
 #include "../Container/SetWrap.h"
@@ -47,9 +49,8 @@ struct _test {
         .def("call_pyfuns", &_test::call_pyfuns).staticmethod("call_pyfuns")
         ;
 
-    // tulip::VectorWrap<int>::wrap("ivec");
     tulip::VectorWrap<std::vector<int>>::wrap("ivec");
-    tulip::SetWrap<int>::wrap("iset");
+    tulip::SetWrap<std::set<int>>::wrap("iset");
     tulip::MapWrap<int, std::string>::wrap("ismap");
   }
 };
