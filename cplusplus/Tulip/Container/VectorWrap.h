@@ -114,6 +114,7 @@ struct VectorWrap {
       .def("extend", &VectorWrap::vector_extend)
       .def("foreach", &VectorWrap::vector_foreach)
       .def("as_list", &VectorWrap::as_list)
+      .def("__len__", &Container::size)
       .def("__iter__", py::iterator<Container>())
       .def("__contains__", &VectorWrap::vector_contains)
       .def("__setitem__", &VectorWrap::vector_setitem)
