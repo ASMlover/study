@@ -26,7 +26,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <set>
 #include "../Utility.h"
 
 namespace tulip {
