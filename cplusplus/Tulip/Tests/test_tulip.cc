@@ -51,7 +51,7 @@ struct _test {
 
     tulip::VectorWrap<std::vector<int>>::wrap("ivec");
     tulip::SetWrap<std::set<int>>::wrap("iset");
-    tulip::MapWrap<int, std::string>::wrap("ismap");
+    tulip::MapWrap<std::map<int, std::string>>::wrap("ismap");
   }
 };
 
