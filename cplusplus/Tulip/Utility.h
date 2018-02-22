@@ -33,6 +33,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/smart_ptr.hpp>
 #include <boost/python.hpp>
+#include <boost/iterator/transform_iterator.hpp>
 
 namespace py = ::boost::python;
 
@@ -96,6 +97,24 @@ inline std::size_t getitem_index(py::ssize_t i, std::size_t n, bool eq_size = fa
     throw std::out_of_range("Index out of range.");
   return n + i;
 }
+
+template <typename Container, typename Transform>
+struct MakeTransform {
+  using ConstIterator = typename Container::const_iterator;
+  using Iterator = boost::transform_iterator<Transform, ConstIterator>;
+
+  static Iterator begin(const Container& m) {
+    return boost::make_transform_iterator(m.begin(), Transform());
+  }
+
+  static Iterator end(const Container& m) {
+    return boost::make_transform_iterator(m.end(), Transform());
+  }
+
+  static py::object make(void) {
+    return py::range(&begin, &end);
+  }
+};
 
 }
 
