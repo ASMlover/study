@@ -26,7 +26,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <boost/iterator/transform_iterator.hpp>
 #include "../Utility.h"
 
 namespace tulip {
@@ -37,11 +36,34 @@ struct MapWrap {
   using ValueType = typename Container::mapped_type;
   using ItemType = typename Container::value_type;
   using SizeType = typename Container::size_type;
-  using ConstIterator = typename Container::const_iterator;
+
+  struct Iterkeys {
+    inline py::object operator()(const ItemType& x) const {
+      return py::object(x.first);
+    }
+  };
+
+  struct Itervalues {
+    inline py::object operator()(const ItemType& x) const {
+      return py::object(x.second);
+    }
+  };
+
+  struct Iteritems {
+    inline py::object operator()(const ItemType& x) const {
+      return py::make_tuple(x.first, x.second);
+    }
+  };
 
   static void wrap(const char* name) {
     py::class_<Container, boost::shared_ptr<Container>>(name, py::init<>())
       .def(py::init<const Container&>())
+      .def("size", &Container::size)
+      .def("iterkeys", MakeTransform<Container, Iterkeys>::make())
+      .def("itervalues", MakeTransform<Container, Itervalues>::make())
+      .def("iteritems", MakeTransform<Container, Iteritems>::make())
+      .def("__len__", &Container::size)
+      .def("__iter__", MakeTransform<Container, Iterkeys>::make())
       ;
   }
 };
