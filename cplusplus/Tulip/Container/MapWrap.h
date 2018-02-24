@@ -102,7 +102,7 @@ struct MapWrap {
   static py::object map_popitem(Container& self) {
     auto pos = self.begin();
     if (pos == self.end()) {
-      PyErr_SetString(PyExc_KeyError, "pop from empty map");
+      PyErr_SetString(PyExc_KeyError, "pop from empty c++ map");
       py::throw_error_already_set();
       return py::object();
     }
@@ -175,6 +175,14 @@ struct MapWrap {
     }
   }
 
+  static py::object map_setdefault(
+      Container& self, const KeyType& k, const ValueType& d) {
+    auto pos = self.find(k);
+    if (pos == self.end())
+      self[k] = d;
+    return py::object(d);
+  }
+
   static py::object as_dict(const Container& self) {
     return map_as_dict(self);
   }
@@ -198,6 +206,7 @@ struct MapWrap {
       .def("iteritems", MakeTransform<Container, Iteritems>::make())
       .def("update", &MapWrap::map_update)
       .def("foreach", &MapWrap::map_foreach)
+      .def("setdefault", &MapWrap::map_setdefault)
       .def("as_dict", &MapWrap::as_dict)
       .def("__len__", &Container::size)
       .def("__iter__", MakeTransform<Container, Iterkeys>::make())

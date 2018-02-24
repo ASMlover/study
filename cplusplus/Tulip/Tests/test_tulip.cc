@@ -45,7 +45,7 @@ struct _test {
 
   static void wrap(void) {
     py::scope in_test =
-      py::class_<_test>("_test")
+      py::class_<_test, boost::shared_ptr<_test>>("_test")
         .def("call_pyfuns", &_test::call_pyfuns).staticmethod("call_pyfuns")
         ;
 
