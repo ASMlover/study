@@ -38,11 +38,11 @@
 BOOST_PYTHON_MODULE(Tulip) {
   PyEval_InitThreads();
 
-  static PyMethodDef tulip_methods[] = {
-    {NULL},
-  };
-  auto* m = Py_InitModule3("Tulip", tulip_methods, "");
-  tulip::PyTulipList::wrap(m);
+  // static PyMethodDef tulip_methods[] = {
+  //   {NULL},
+  // };
+  // auto* m = Py_InitModule3("Tulip", tulip_methods, "");
+  // tulip::PyTulipList::wrap(m);
 
   tulip_debug_wrap();
 
