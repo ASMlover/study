@@ -51,14 +51,6 @@ struct VectorWrap {
     self.insert(self.begin() + getitem_index(i, self.size(), true), x);
   }
 
-  static void vector_append(Container& self, const ValueType& x) {
-    self.push_back(x);
-  }
-
-  static void vector_pop_1(Container& self) {
-    self.pop_back();
-  }
-
   static void vector_pop_2(Container& self, py::ssize_t i) {
     self.erase(self.begin() + getitem_index(i, self.size()));
   }
@@ -107,8 +99,9 @@ struct VectorWrap {
       .def("clear", &Container::clear)
       .def("size", &Container::size)
       .def("insert", &VectorWrap::vector_insert)
-      .def("append", &VectorWrap::vector_append)
-      .def("pop", &VectorWrap::vector_pop_1)
+      .def("append",
+          (void (Container::*)(const ValueType&))&Container::push_back)
+      .def("pop", &Container::pop_back)
       .def("pop", &VectorWrap::vector_pop_2)
       .def("remove", &VectorWrap::vector_remove)
       .def("extend", &VectorWrap::vector_extend)
