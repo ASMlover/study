@@ -58,7 +58,7 @@ struct MapWrap {
   static Container map_copy(const Container& self) {
     Container r;
     for (auto& x : self)
-      r[x.first] = x.second;
+      r.insert(x);
     return r;
   }
 
@@ -78,7 +78,7 @@ struct MapWrap {
   static py::object map_pop_1(Container& self, const KeyType& k) {
     auto pos = self.find(k);
     if (pos == self.end()) {
-      PyErr_SetString(PyExc_KeyError, "key not in c++ map");
+      PyErr_SetString(PyExc_KeyError, "pop(k): key not found.");
       py::throw_error_already_set();
       return py::object();
     }
@@ -102,7 +102,7 @@ struct MapWrap {
   static py::object map_popitem(Container& self) {
     auto pos = self.begin();
     if (pos == self.end()) {
-      PyErr_SetString(PyExc_KeyError, "pop from empty c++ map");
+      PyErr_SetString(PyExc_KeyError, "popitem(): no more items to pop.");
       py::throw_error_already_set();
       return py::object();
     }
@@ -141,7 +141,7 @@ struct MapWrap {
   static py::object map_getitem(const Container& self, const KeyType& k) {
     auto pos = self.find(k);
     if (pos == self.end()) {
-      PyErr_SetString(PyExc_KeyError, "key not found in c++ map");
+      PyErr_SetString(PyExc_KeyError, "__getitem__(k): key not found.");
       py::throw_error_already_set();
       return py::object();
     }
@@ -152,7 +152,7 @@ struct MapWrap {
   static void map_delitem(Container& self, const KeyType& k) {
     auto pos = self.find(k);
     if (pos == self.end()) {
-      PyErr_SetString(PyExc_KeyError, "key not found in c++ map");
+      PyErr_SetString(PyExc_KeyError, "__delitem__(k): key not found.");
       py::throw_error_already_set();
       return;
     }
@@ -183,6 +183,14 @@ struct MapWrap {
     return py::object(d);
   }
 
+  static py::object map_fromkeys(const py::object& keys, const py::object& v) {
+    auto r = py::object(Container());
+    auto n = keys.attr("__len__")();
+    for (auto i = 0; i < n; ++i)
+      r.attr("__setitem__")(keys.attr("__getitem__")(i), v);
+    return r;
+  }
+
   static py::object as_dict(const Container& self) {
     return map_as_dict(self);
   }
@@ -207,6 +215,7 @@ struct MapWrap {
       .def("update", &MapWrap::map_update)
       .def("foreach", &MapWrap::map_foreach)
       .def("setdefault", &MapWrap::map_setdefault)
+      .def("fromkeys", &MapWrap::map_fromkeys).staticmethod("fromkeys")
       .def("as_dict", &MapWrap::as_dict)
       .def("__len__", &Container::size)
       .def("__iter__", MakeTransform<Container, Iterkeys>::make())

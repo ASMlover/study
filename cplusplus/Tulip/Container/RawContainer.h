@@ -88,7 +88,7 @@ struct PyTulipList : public PyObject {
       {NULL, NULL},
     };
 
-    PyTypeObject PyTulipList_Type = {
+    static PyTypeObject PyTulipList_Type = {
       PyObject_HEAD_INIT(NULL)
       0, // ob_size
       "PyTulipList", // tp_name

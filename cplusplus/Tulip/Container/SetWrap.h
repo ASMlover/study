@@ -32,6 +32,7 @@ namespace tulip {
 
 template <typename Container>
 struct SetWrap {
+  using KeyType = typename Container::key_type;
   using ValueType = typename Container::value_type;
   using SizeType = typename Container::size_type;
 
@@ -42,45 +43,42 @@ struct SetWrap {
     return r;
   }
 
-  static bool set_contains(const Container& self, const ValueType& x) {
-    return self.find(x) != self.end();
+  static bool set_contains(const Container& self, const KeyType& k) {
+    return self.find(k) != self.end();
   }
 
   static void set_add(Container& self, const ValueType& x) {
     self.insert(x);
   }
 
-  static void set_discard(Container& self, const ValueType& x) {
-    auto pos = self.find(x);
-    if (pos != self.end())
-      self.erase(pos);
-  }
-
-  static ValueType set_pop(Container& self) {
+  static py::object set_pop(Container& self) {
     auto pos = self.begin();
     if (pos == self.end()) {
-      PyErr_SetString(PyExc_KeyError, "pop from an empty set");
+      PyErr_SetString(PyExc_KeyError, "pop(): pop from an empty set.");
       py::throw_error_already_set();
-      return ValueType();
+      return py::object();
     }
 
-    auto r = *pos;
+    auto r = py::object(*pos);
     self.erase(pos);
     return r;
   }
 
-  static void set_remove(Container& self, const ValueType& x) {
-    auto pos = self.find(x);
+  static void set_remove(Container& self, const KeyType& k) {
+    auto pos = self.find(k);
     if (pos == self.end()) {
-      PyErr_SetString(PyExc_KeyError, "key not in set");
+      PyErr_SetString(PyExc_KeyError, "remove(k): key not found in set.");
       py::throw_error_already_set();
       return;
     }
     self.erase(pos);
   }
 
-  static void set_update(Container& self, const py::object& other) {
-    // TODO:
+  static void set_update(py::object& self, const py::object& other) {
+    auto n = other.attr("__len__")();
+    auto iter = other.attr("__iter__")();
+    for (auto i = 0; i < n; ++i)
+      self.attr("add")(other.attr("next")());
   }
 
   static void set_foreach(Container& self, PyObject* callable) {
@@ -101,7 +99,8 @@ struct SetWrap {
       .def("clear", &Container::clear)
       .def("size", &Container::size)
       .def("add", &SetWrap::set_add)
-      .def("discard", &SetWrap::set_discard)
+      .def("discard",
+          (SizeType (Container::*)(const KeyType&))&Container::erase)
       .def("pop", &SetWrap::set_pop)
       .def("remove", &SetWrap::set_remove)
       .def("update", &SetWrap::set_update)

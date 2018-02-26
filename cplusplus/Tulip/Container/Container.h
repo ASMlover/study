@@ -94,12 +94,8 @@ struct TulipList : public py::list {
     }
   }
 
-  inline py::object pop_1(void) {
-    return pop();
-  }
-
-  inline py::object pop_2(py::ssize_t i)  {
-    return pop(i);
+  inline void remove_item(const py::object& x) {
+    remove(x);
   }
 
   inline void clear(void) {
@@ -149,8 +145,9 @@ struct TulipList : public py::list {
       .def("copy", &TulipList::copy)
       .def("insert", &TulipList::insert_item)
       .def("append", &TulipList::append_item)
-      .def("pop", &TulipList::pop_1)
-      .def("pop", &TulipList::pop_2)
+      .def("pop", (py::object (TulipList::*)())&TulipList::pop)
+      .def("pop", (py::object (TulipList::*)(py::ssize_t))&TulipList::pop)
+      .def("remove", &TulipList::remove_item)
       .def("extend", &TulipList::extend_list)
       .def("clear", &TulipList::clear)
       .def("as_list", &TulipList::as_list)
@@ -194,7 +191,7 @@ struct TulipDict : public py::dict {
   }
 
   inline bool contains(const py::object& k) const {
-    return attr("has_key")(k);
+    return has_key(k);
   }
 
   inline TulipDict copy(void) const {
@@ -314,7 +311,7 @@ struct TulipDict : public py::dict {
       .def("get", &TulipDict::get, (py::arg("d") = py::object()))
       .def("pop", &TulipDict::pop_1)
       .def("pop", &TulipDict::pop_2)
-      .def("update", &TulipDict::update_dict)
+      .def("update", (void (TulipDict::*)(const py::object&))&TulipDict::update)
       .def("keys", &TulipDict::keys)
       .def("values", &TulipDict::values)
       .def("items", &TulipDict::items)
