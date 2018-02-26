@@ -69,7 +69,7 @@ else()
     add_compile_options(-DTULIP_DEBUG_MODE)
   endif()
 
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -std=c++1y -march=native")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++1y -march=native")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -O0")
   set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3")
 
@@ -86,7 +86,7 @@ else()
       ${PYTHON_INCLUDE_DIRS}
       ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0)
     link_directories(
-      ${PYTHON_LIBRARIES}
+      ${PYTHON_LIBRARIES}/../
       ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0/stage/lib)
   endif()
 endif()
@@ -106,7 +106,12 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     debug libboost_python-vc141-mt-gd-1_64 optimized libboost_python-vc141-mt-1_64)
 else()
   set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
-  target_link_libraries(${PROJECT_NAME} python pthread boost_python)
+  target_link_libraries(${PROJECT_NAME} pthread boost_python)
+  if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+    target_link_libraries(${PROJECT_NAME} python2.7)
+  else()
+    target_link_libraries(${PROJECT_NAME} python)
+  endif()
 endif()
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
   if (TULIP_ENABLE_PYD)
