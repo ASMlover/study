@@ -176,11 +176,11 @@ struct MapWrap {
   }
 
   static py::object map_setdefault(
-      Container& self, const KeyType& k, const ValueType& d) {
-    auto pos = self.find(k);
-    if (pos == self.end())
-      self[k] = d;
-    return py::object(d);
+      py::object& self, const py::object& k, const py::object& d) {
+    auto r = self.attr("get")(k);
+    if (r.is_none())
+      self.attr("__setitem__")(k, d);
+    return self.attr("__getitem__")(k);
   }
 
   static py::object map_fromkeys(const py::object& keys, const py::object& v) {
@@ -214,7 +214,8 @@ struct MapWrap {
       .def("iteritems", MakeTransform<Container, Iteritems>::make())
       .def("update", &MapWrap::map_update)
       .def("foreach", &MapWrap::map_foreach)
-      .def("setdefault", &MapWrap::map_setdefault)
+      .def("setdefault",
+          &MapWrap::map_setdefault, (py::arg("d") = py::object()))
       .def("fromkeys", &MapWrap::map_fromkeys).staticmethod("fromkeys")
       .def("as_dict", &MapWrap::as_dict)
       .def("__len__", &Container::size)
