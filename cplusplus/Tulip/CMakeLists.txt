@@ -37,6 +37,7 @@ message(STATUS "${PROJECT_NAME} CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
 option(TULIP_DEBUG_MODE "Enable/Disable debug compiling ..." OFF)
 option(TULIP_ENABLE_PYD "Enable/Disable generate PYD for win32 ..." OFF)
+option(TULIP_ENABLE_RAWBIND "Enable/Disable raw bind for python" OFF)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -45,6 +46,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   if (TULIP_DEBUG_MODE)
     add_compile_options(/DTULIP_DEBUG_MODE)
+  endif()
+  if (TULIP_ENABLE_RAWBIND)
+    add_compile_options(/DTULIP_ENABLE_RAWBIND)
   endif()
 
   add_definitions(
@@ -67,6 +71,9 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 else()
   if (TULIP_DEBUG_MODE)
     add_compile_options(-DTULIP_DEBUG_MODE)
+  endif()
+  if (TULIP_ENABLE_RAWBIND)
+    add_compile_options(-DTULIP_ENABLE_RAWBIND)
   endif()
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++1y -march=native")
