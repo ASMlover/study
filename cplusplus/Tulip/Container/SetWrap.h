@@ -93,7 +93,9 @@ struct SetWrap {
   }
 
   static void wrap(const char* name) {
-    py::class_<Container, boost::shared_ptr<Container>>(name, py::init<>())
+    py::class_<Container, boost::shared_ptr<Container>>(name)
+      .setattr("__hash__", py::object())
+      .def(py::init<>())
       .def(py::init<const Container&>())
       .def("copy", &SetWrap::set_copy)
       .def("clear", &Container::clear)
