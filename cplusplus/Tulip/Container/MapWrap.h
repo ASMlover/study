@@ -192,7 +192,7 @@ struct MapWrap {
   }
 
   static py::object as_dict(const Container& self) {
-    return map_as_dict(self);
+    return tulip::container_utils::as_pydict(self);
   }
 
   static void wrap(const char* name) {

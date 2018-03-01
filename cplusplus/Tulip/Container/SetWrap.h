@@ -88,8 +88,8 @@ struct SetWrap {
     }
   }
 
-  static py::object as_list(const Container& self) {
-    return tulip::set_as_list(self);
+  static py::object as_set(const Container& self) {
+    return tulip::container_utils::as_pyset(self);
   }
 
   static void wrap(const char* name) {
@@ -107,7 +107,7 @@ struct SetWrap {
       .def("remove", &SetWrap::set_remove)
       .def("update", &SetWrap::set_update)
       .def("foreach", &SetWrap::set_foreach)
-      .def("as_list", &SetWrap::as_list)
+      .def("as_set", &SetWrap::as_set)
       .def("__len__", &Container::size)
       .def("__iter__", py::iterator<Container>())
       .def("__contains__", &SetWrap::set_contains)

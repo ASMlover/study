@@ -89,7 +89,7 @@ struct VectorWrap {
   }
 
   static py::object as_list(const Container& self) {
-    return vector_as_list(self);
+    return tulip::container_utils::as_pylist(self);
   }
 
   static void wrap(const char* name) {

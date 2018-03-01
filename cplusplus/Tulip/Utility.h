@@ -51,32 +51,34 @@ public:
   }
 };
 
+namespace container_utils {
+  template <typename Container>
+  py::object as_pylist(const Container& c) {
+    py::list r;
+    for (auto& x : c)
+      r.append(x);
+    return r;
+  }
+
+  template <typename Container>
+  py::object as_pyset(const Container& c) {
+    auto r = py::object(py::detail::new_reference(PySet_New(nullptr)));
+    for (auto& x : c)
+      r.attr("add")(x);
+    return r;
+  }
+
+  template <typename Container>
+  py::object as_pydict(const Container& c) {
+    py::dict r;
+    for (auto& x : c)
+      r[x.first] = x.second;
+    return r;
+  }
+}
+
 inline bool hasattr(const py::object& obj, const std::string& name) {
   return PyObject_HasAttrString(obj.ptr(), name.c_str());
-}
-
-template <typename VectorType>
-py::list vector_as_list(const VectorType& v) {
-  py::list r;
-  for (auto& x : v)
-    r.append(x);
-  return r;
-}
-
-template <typename SetType>
-py::list set_as_list(const SetType& s) {
-  py::list r;
-  for (auto& x : s)
-    r.append(x);
-  return r;
-}
-
-template <typename MapType>
-py::dict map_as_dict(const MapType& m) {
-  py::dict r;
-  for (auto& x : m)
-    r[x.first] = x.second;
-  return r;
 }
 
 template <typename T>
