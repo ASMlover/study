@@ -78,7 +78,7 @@ struct SetWrap {
     auto n = other.attr("__len__")();
     auto iter = other.attr("__iter__")();
     for (auto i = 0; i < n; ++i)
-      self.attr("add")(other.attr("next")());
+      self.attr("add")(iter.attr("next")());
   }
 
   static void set_foreach(Container& self, PyObject* callable) {
