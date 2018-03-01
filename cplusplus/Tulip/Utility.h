@@ -27,8 +27,6 @@
 #pragma once
 
 #include <algorithm>
-#include <map>
-#include <vector>
 #include <Python.h>
 #include <boost/noncopyable.hpp>
 #include <boost/smart_ptr.hpp>
@@ -73,6 +71,49 @@ namespace container_utils {
     py::dict r;
     for (auto& x : c)
       r[x.first] = x.second;
+    return r;
+  }
+
+  template <typename Container>
+  Container as_vector(const py::object& o) {
+    using ValueType = typename Container::value_type;
+
+    auto n = PyList_Size(o.ptr());
+    Container r(n);
+    for (auto i = 0; i < n; ++i) {
+      auto* v = PyList_GetItem(o.ptr(), i);
+      if (v != nullptr)
+        r[i] = py::extract<ValueType>(v)();
+    }
+    return r;
+  }
+
+  template <typename Container>
+  Container as_set(const py::object& o) {
+    using ValueType = typename Container::value_type;
+
+    Container r;
+    auto n = PySet_Size(o.ptr());
+    auto iter = o.attr("__iter__")();
+    for (auto i = 0; i < n; ++i)
+      r.insert(py::extract<ValueType>(iter.attr("next")())());
+    return r;
+  }
+
+  template <typename Container>
+  Container as_map(const py::object& o) {
+    using KeyType = typename Container::key_type;
+    using ValueType = typename Container::mapped_type;
+
+    Container r;
+    PyObject* k{};
+    PyObject* v{};
+    py::ssize_t pos{};
+    while (PyDict_Next(o.ptr(), &pos, &k, &v)) {
+      auto key = py::extract<KeyType>(k)();
+      auto val = py::extract<ValueType>(v)();
+      r[key] = val;
+    }
     return r;
   }
 }
