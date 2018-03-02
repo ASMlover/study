@@ -130,6 +130,10 @@ struct TulipList : public py::list {
     return attr("__iter__")();
   }
 
+  inline py::object repr(void) const {
+    return attr("__repr__")();
+  }
+
   inline py::object as_list(void) const {
     return py::list(*this);
   }
@@ -160,6 +164,7 @@ struct TulipList : public py::list {
           &TulipList::is_tulip_list).staticmethod("is_tulip_list")
       .def("__len__", &TulipList::size)
       .def("__iter__", &TulipList::iter)
+      .def("__repr__", &TulipList::repr)
       .def("__contains__", &TulipList::contains)
       .def("__setitem__", &TulipList::setitem)
       .def("__getitem__", &TulipList::getitem)
@@ -296,6 +301,10 @@ struct TulipDict : public py::dict {
     return py::dict(*this);
   }
 
+  inline py::object repr(void) const {
+    return attr("__repr__")();
+  }
+
   static TulipDict fromkeys(const py::object& keys, const py::object& v) {
     TulipDict r;
     auto n = keys.attr("__len__")();
@@ -336,6 +345,7 @@ struct TulipDict : public py::dict {
           &TulipDict::is_tulip_dict).staticmethod("is_tulip_dict")
       .def("__len__", &TulipDict::size)
       .def("__iter__", &TulipDict::iterkeys)
+      .def("__repr__", &TulipDict::repr)
       .def("__contains__", &TulipDict::contains)
       .def("__setitem__", &TulipDict::setitem)
       .def("__getitem__", &TulipDict::getitem)
