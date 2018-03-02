@@ -192,11 +192,13 @@ struct MapWrap {
   }
 
   static py::object as_dict(const Container& self) {
-    return map_as_dict(self);
+    return tulip::container_utils::as_pydict(self);
   }
 
   static void wrap(const char* name) {
-    py::class_<Container, boost::shared_ptr<Container>>(name, py::init<>())
+    py::class_<Container, boost::shared_ptr<Container>>(name)
+      .setattr("__hash__", py::object())
+      .def(py::init<>())
       .def(py::init<const Container&>())
       .def("copy", &MapWrap::map_copy)
       .def("has_key", &MapWrap::map_contains)

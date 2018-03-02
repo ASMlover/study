@@ -78,7 +78,7 @@ struct SetWrap {
     auto n = other.attr("__len__")();
     auto iter = other.attr("__iter__")();
     for (auto i = 0; i < n; ++i)
-      self.attr("add")(other.attr("next")());
+      self.attr("add")(iter.attr("next")());
   }
 
   static void set_foreach(Container& self, PyObject* callable) {
@@ -88,12 +88,14 @@ struct SetWrap {
     }
   }
 
-  static py::object as_list(const Container& self) {
-    return tulip::set_as_list(self);
+  static py::object as_set(const Container& self) {
+    return tulip::container_utils::as_pyset(self);
   }
 
   static void wrap(const char* name) {
-    py::class_<Container, boost::shared_ptr<Container>>(name, py::init<>())
+    py::class_<Container, boost::shared_ptr<Container>>(name)
+      .setattr("__hash__", py::object())
+      .def(py::init<>())
       .def(py::init<const Container&>())
       .def("copy", &SetWrap::set_copy)
       .def("clear", &Container::clear)
@@ -105,7 +107,7 @@ struct SetWrap {
       .def("remove", &SetWrap::set_remove)
       .def("update", &SetWrap::set_update)
       .def("foreach", &SetWrap::set_foreach)
-      .def("as_list", &SetWrap::as_list)
+      .def("as_set", &SetWrap::as_set)
       .def("__len__", &Container::size)
       .def("__iter__", py::iterator<Container>())
       .def("__contains__", &SetWrap::set_contains)

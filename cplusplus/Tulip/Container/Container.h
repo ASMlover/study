@@ -70,20 +70,24 @@ struct TulipList : public py::list {
 
   inline void insert_item(py::ssize_t i, const py::object& x) {
     if (is_self(x)) {
-      PyErr_SetString(PyExc_RuntimeError, "can not insert self");
+      PyErr_SetString(PyExc_RuntimeError, "insert(i, x): can not insert self");
       py::throw_error_already_set();
       return;
     }
-    PyList_Insert(ptr(), i, x.ptr());
+
+    if (PyList_Insert(ptr(), i, x.ptr()) == -1)
+      py::throw_error_already_set();
   }
 
   inline void append_item(const py::object& x) {
     if (is_self(x)) {
-      PyErr_SetString(PyExc_RuntimeError, "can not append self");
+      PyErr_SetString(PyExc_RuntimeError, "append(x): can not append self");
       py::throw_error_already_set();
       return;
     }
-    PyList_Append(ptr(), x.ptr());
+
+    if (PyList_Append(ptr(), x.ptr()) == -1)
+      py::throw_error_already_set();
   }
 
   inline void extend_list(const py::object& l) {
@@ -126,6 +130,10 @@ struct TulipList : public py::list {
     return attr("__iter__")();
   }
 
+  inline py::object repr(void) const {
+    return attr("__repr__")();
+  }
+
   inline py::object as_list(void) const {
     return py::list(*this);
   }
@@ -139,6 +147,7 @@ struct TulipList : public py::list {
 
   static void wrap(void) {
     py::class_<TulipList, boost::shared_ptr<TulipList>>("TulipList")
+      .setattr("__hash__", py::object())
       .def(py::init<>())
       .def(py::init<const py::object&>())
       .def("size", &TulipList::size)
@@ -155,6 +164,7 @@ struct TulipList : public py::list {
           &TulipList::is_tulip_list).staticmethod("is_tulip_list")
       .def("__len__", &TulipList::size)
       .def("__iter__", &TulipList::iter)
+      .def("__repr__", &TulipList::repr)
       .def("__contains__", &TulipList::contains)
       .def("__setitem__", &TulipList::setitem)
       .def("__getitem__", &TulipList::getitem)
@@ -191,7 +201,7 @@ struct TulipDict : public py::dict {
   }
 
   inline bool contains(const py::object& k) const {
-    return has_key(k);
+    return PyDict_Contains(ptr(), k.ptr());
   }
 
   inline TulipDict copy(void) const {
@@ -202,17 +212,21 @@ struct TulipDict : public py::dict {
 
   inline void setattr(const std::string& k, const py::object& v) {
     if (is_self(v)) {
-      PyErr_Format(PyExc_AttributeError, "can not set self:%s", k.c_str());
+      PyErr_Format(PyExc_RuntimeError,
+          "__setattr__(k, v): can not set self: '%s'", k.c_str());
       py::throw_error_already_set();
       return;
     }
-    PyDict_SetItemString(ptr(), k.c_str(), v.ptr());
+
+    if (PyDict_SetItemString(ptr(), k.c_str(), v.ptr()) == -1)
+      py::throw_error_already_set();
   }
 
   inline py::object getattr(const std::string& k) {
     auto* res = PyDict_GetItemString(ptr(), k.c_str());
     if (res == nullptr) {
-      PyErr_Format(PyExc_AttributeError, "has no attribute: %s", k.c_str());
+      PyErr_Format(PyExc_AttributeError,
+          "__getattr__(k): has no attribute: '%s'", k.c_str());
       py::throw_error_already_set();
       return py::object();
     }
@@ -226,19 +240,21 @@ struct TulipDict : public py::dict {
 
   inline void setitem(const py::object& k, const py::object& v) {
     if (is_self(v)) {
-      PyErr_Format(PyExc_IndexError,
-          "can not set self:%s", PyString_AsString(PyObject_Repr(v.ptr())));
+      PyErr_Format(PyExc_RuntimeError,
+          "__setitem__(k, v): can not set self: '%s'",
+          PyString_AsString(PyObject_Repr(v.ptr())));
       py::throw_error_already_set();
       return;
     }
-    PyDict_SetItem(ptr(), k.ptr(), v.ptr());
+
+    if (PyDict_SetItem(ptr(), k.ptr(), v.ptr()) == -1)
+      py::throw_error_already_set();
   }
 
   inline py::object getitem(const py::object& k) {
     auto* res = PyDict_GetItem(ptr(), k.ptr());
     if (res == nullptr) {
-      PyErr_Format(PyExc_IndexError,
-          "has no key: %s", PyString_AsString(PyObject_Repr(k.ptr())));
+      PyErr_SetObject(PyExc_KeyError, k.ptr());
       py::throw_error_already_set();
       return py::object();
     }
@@ -285,6 +301,10 @@ struct TulipDict : public py::dict {
     return py::dict(*this);
   }
 
+  inline py::object repr(void) const {
+    return attr("__repr__")();
+  }
+
   static TulipDict fromkeys(const py::object& keys, const py::object& v) {
     TulipDict r;
     auto n = keys.attr("__len__")();
@@ -302,6 +322,7 @@ struct TulipDict : public py::dict {
 
   static void wrap(void) {
     py::class_<TulipDict, boost::shared_ptr<TulipDict>>("TulipDict")
+      .setattr("__hash__", py::object())
       .def(py::init<>())
       .def(py::init<const py::object&>())
       .def("size", &TulipDict::size)
@@ -324,6 +345,7 @@ struct TulipDict : public py::dict {
           &TulipDict::is_tulip_dict).staticmethod("is_tulip_dict")
       .def("__len__", &TulipDict::size)
       .def("__iter__", &TulipDict::iterkeys)
+      .def("__repr__", &TulipDict::repr)
       .def("__contains__", &TulipDict::contains)
       .def("__setitem__", &TulipDict::setitem)
       .def("__getitem__", &TulipDict::getitem)

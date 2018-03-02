@@ -27,8 +27,6 @@
 #pragma once
 
 #include <algorithm>
-#include <map>
-#include <vector>
 #include <Python.h>
 #include <boost/noncopyable.hpp>
 #include <boost/smart_ptr.hpp>
@@ -51,32 +49,77 @@ public:
   }
 };
 
+namespace container_utils {
+  template <typename Container>
+  py::object as_pylist(const Container& c) {
+    py::list r;
+    for (auto& x : c)
+      r.append(x);
+    return r;
+  }
+
+  template <typename Container>
+  py::object as_pyset(const Container& c) {
+    auto r = py::object(py::detail::new_reference(PySet_New(nullptr)));
+    for (auto& x : c)
+      r.attr("add")(x);
+    return r;
+  }
+
+  template <typename Container>
+  py::object as_pydict(const Container& c) {
+    py::dict r;
+    for (auto& x : c)
+      r[x.first] = x.second;
+    return r;
+  }
+
+  template <typename Container>
+  Container as_vector(const py::object& o) {
+    using ValueType = typename Container::value_type;
+
+    auto n = PyList_Size(o.ptr());
+    Container r(n);
+    for (auto i = 0; i < n; ++i) {
+      auto* v = PyList_GetItem(o.ptr(), i);
+      if (v != nullptr)
+        r[i] = py::extract<ValueType>(v)();
+    }
+    return r;
+  }
+
+  template <typename Container>
+  Container as_set(const py::object& o) {
+    using ValueType = typename Container::value_type;
+
+    Container r;
+    auto n = PySet_Size(o.ptr());
+    auto iter = o.attr("__iter__")();
+    for (auto i = 0; i < n; ++i)
+      r.insert(py::extract<ValueType>(iter.attr("next")())());
+    return r;
+  }
+
+  template <typename Container>
+  Container as_map(const py::object& o) {
+    using KeyType = typename Container::key_type;
+    using ValueType = typename Container::mapped_type;
+
+    Container r;
+    PyObject* k{};
+    PyObject* v{};
+    py::ssize_t pos{};
+    while (PyDict_Next(o.ptr(), &pos, &k, &v)) {
+      auto key = py::extract<KeyType>(k)();
+      auto val = py::extract<ValueType>(v)();
+      r[key] = val;
+    }
+    return r;
+  }
+}
+
 inline bool hasattr(const py::object& obj, const std::string& name) {
   return PyObject_HasAttrString(obj.ptr(), name.c_str());
-}
-
-template <typename VectorType>
-py::list vector_as_list(const VectorType& v) {
-  py::list r;
-  for (auto& x : v)
-    r.append(x);
-  return r;
-}
-
-template <typename SetType>
-py::list set_as_list(const SetType& s) {
-  py::list r;
-  for (auto& x : s)
-    r.append(x);
-  return r;
-}
-
-template <typename MapType>
-py::dict map_as_dict(const MapType& m) {
-  py::dict r;
-  for (auto& x : m)
-    r[x.first] = x.second;
-  return r;
 }
 
 template <typename T>

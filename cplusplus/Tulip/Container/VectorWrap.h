@@ -89,11 +89,13 @@ struct VectorWrap {
   }
 
   static py::object as_list(const Container& self) {
-    return vector_as_list(self);
+    return tulip::container_utils::as_pylist(self);
   }
 
   static void wrap(const char* name) {
-    py::class_<Container, boost::shared_ptr<Container>>(name, py::init<>())
+    py::class_<Container, boost::shared_ptr<Container>>(name)
+      .setattr("__hash__", py::object())
+      .def(py::init<>())
       .def(py::init<const Container&>())
       .def("copy", &VectorWrap::vector_copy)
       .def("clear", &Container::clear)
