@@ -116,6 +116,23 @@ namespace container_utils {
     }
     return r;
   }
+
+  template <typename Container, typename OutputFun>
+  std::string convert_to_string(const Container& c,
+      OutputFun&& fn, char lbrace = '{', char rbrace = '}') {
+    std::ostringstream oss;
+
+    oss << lbrace;
+    auto first = c.begin();
+    while (first != c.end()) {
+      fn(oss, first);
+      if (++first != c.end())
+        oss << ", ";
+    }
+    oss << rbrace;
+
+    return oss.str();
+  }
 }
 
 inline bool hasattr(const py::object& obj, const std::string& name) {
