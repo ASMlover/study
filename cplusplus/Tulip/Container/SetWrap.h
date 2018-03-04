@@ -35,6 +35,7 @@ struct SetWrap {
   using KeyType = typename Container::key_type;
   using ValueType = typename Container::value_type;
   using SizeType = typename Container::size_type;
+  using ConstIterator = typename Container::const_iterator;
 
   static Container set_copy(const Container& self) {
     Container r;
@@ -88,6 +89,11 @@ struct SetWrap {
     }
   }
 
+  static std::string set_repr(const Container& self) {
+    return tulip::container_utils::convert_to_string(self,
+        [](std::ostringstream& o, ConstIterator i) { o << *i; });
+  }
+
   static py::object as_set(const Container& self) {
     return tulip::container_utils::as_pyset(self);
   }
@@ -110,6 +116,7 @@ struct SetWrap {
       .def("as_set", &SetWrap::as_set)
       .def("__len__", &Container::size)
       .def("__iter__", py::iterator<Container>())
+      .def("__repr__", &SetWrap::set_repr)
       .def("__contains__", &SetWrap::set_contains)
       ;
   }

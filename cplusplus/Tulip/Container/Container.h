@@ -285,6 +285,19 @@ struct TulipDict : public py::dict {
     update(other);
   }
 
+  inline py::object setdefault_item(const py::object& k, const py::object& v) {
+    if (!contains(k)) {
+      if (is_self(v)) {
+        PyErr_Format(PyExc_RuntimeError,
+            "setdefault(k, v): can not set self: '%s'",
+            PyString_AsString(PyObject_Repr(v.ptr())));
+        py::throw_error_already_set();
+        return py::object();
+      }
+    }
+    return setdefault(k, v);
+  }
+
   inline void foreach(
       std::function<void (const py::object&, py::object&)>&& fn) {
     PyObject* k{};
@@ -333,6 +346,8 @@ struct TulipDict : public py::dict {
       .def("pop", &TulipDict::pop_1)
       .def("pop", &TulipDict::pop_2)
       .def("update", (void (TulipDict::*)(const py::object&))&TulipDict::update)
+      .def("setdefault",
+          &TulipDict::setdefault_item, (py::arg("v") = py::object()))
       .def("keys", &TulipDict::keys)
       .def("values", &TulipDict::values)
       .def("items", &TulipDict::items)

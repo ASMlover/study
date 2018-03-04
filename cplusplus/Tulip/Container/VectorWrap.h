@@ -34,6 +34,7 @@ template <typename Container>
 struct VectorWrap {
   using ValueType = typename Container::value_type;
   using SizeType = typename Container::size_type;
+  using ConstIterator = typename Container::const_iterator;
 
   static Container vector_copy(const Container& self) {
     Container r;
@@ -88,6 +89,11 @@ struct VectorWrap {
     }
   }
 
+  static std::string vector_repr(const Container& self) {
+    return tulip::container_utils::convert_to_string(self,
+        [](std::ostringstream& o, ConstIterator i) { o << *i; }, '[', ']');
+  }
+
   static py::object as_list(const Container& self) {
     return tulip::container_utils::as_pylist(self);
   }
@@ -111,6 +117,7 @@ struct VectorWrap {
       .def("as_list", &VectorWrap::as_list)
       .def("__len__", &Container::size)
       .def("__iter__", py::iterator<Container>())
+      .def("__repr__", &VectorWrap::vector_repr)
       .def("__contains__", &VectorWrap::vector_contains)
       .def("__setitem__", &VectorWrap::vector_setitem)
       .def("__getitem__", &VectorWrap::vector_getitem)

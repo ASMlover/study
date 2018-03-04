@@ -36,6 +36,7 @@ struct MapWrap {
   using ValueType = typename Container::mapped_type;
   using ItemType = typename Container::value_type;
   using SizeType = typename Container::size_type;
+  using ConstIterator = typename Container::const_iterator;
 
   struct Iterkeys {
     inline py::object operator()(const ItemType& x) const {
@@ -191,6 +192,13 @@ struct MapWrap {
     return r;
   }
 
+  static std::string map_repr(const Container& self) {
+    return tulip::container_utils::convert_to_string(self,
+        [](std::ostringstream& o, ConstIterator i) {
+          o << i->first << ": " << i->second;
+        });
+  }
+
   static py::object as_dict(const Container& self) {
     return tulip::container_utils::as_pydict(self);
   }
@@ -222,6 +230,7 @@ struct MapWrap {
       .def("as_dict", &MapWrap::as_dict)
       .def("__len__", &Container::size)
       .def("__iter__", MakeTransform<Container, Iterkeys>::make())
+      .def("__repr__", &MapWrap::map_repr)
       .def("__contains__", &MapWrap::map_contains)
       .def("__setitem__", &MapWrap::map_setitem)
       .def("__getitem__", &MapWrap::map_getitem)
