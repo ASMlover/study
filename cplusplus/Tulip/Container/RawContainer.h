@@ -50,17 +50,15 @@ struct PyTulipList : public PyObject {
   std::string py_repr(void) const {
     std::ostringstream oss;
     oss << "[";
-    bool is_first{true};
-    for (auto* x : *elements_) {
-      if (is_first)
-        is_first = false;
+    auto first = elements_->begin();
+    while (first != elements_->end()) {
+      if (PyString_Check(*first))
+        oss << "'" << PyString_AsString(*first) << "'";
       else
-        oss << ", ";
+        oss << PyString_AsString(PyObject_Repr(*first));
 
-      if (PyString_Check(x))
-        oss << "'" << PyString_AsString(x) << "'";
-      else
-        oss << PyString_AsString(PyObject_Str(x));
+      if (++first != elements_->end())
+        oss << ", ";
     }
     oss << "]";
 
