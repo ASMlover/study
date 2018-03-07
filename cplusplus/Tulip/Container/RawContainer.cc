@@ -24,26 +24,21 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "Utility.h"
-// #include "Property/Common.h" // Not implementation
-#include "Container/Container.h"
-#include "Container/RawContainer.h"
+#include <vector>
+#include "RawContainer.h"
 
-#if defined(TULIP_DEBUG_MODE)
-  extern void tulip_debug_wrap(void);
-#else
-# define tulip_debug_wrap() (void)0
-#endif
+namespace tulip {
 
-BOOST_PYTHON_MODULE(Tulip) {
-  PyEval_InitThreads();
+class SequenceImpl {
+  std::vector<PyObject*> vec_;
+public:
+};
 
-#if defined(TULIP_ENABLE_RAWBIND)
-  tulip::PyTulipList::wrap();
-#endif
+static int PySequence_Init(PySequence* self, PyObject* args, PyObject* kwds) {
+  return 0;
+}
 
-  tulip_debug_wrap();
+void Init_PySequence(void) {
+}
 
-  tulip::TulipList::wrap();
-  tulip::TulipDict::wrap();
 }
