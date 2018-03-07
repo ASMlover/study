@@ -43,8 +43,13 @@ struct PyTulipList : public PyObject {
       elements_->clear();
 
       delete elements_;
-      elements_ = nullptr;
     }
+    Py_TYPE(this)->tp_free((PyObject*)this);
+  }
+
+  PyObject* py_size(void) const {
+    auto n = elements_->size();
+    return Py_BuildValue("l", n);
   }
 
   std::string py_repr(void) const {
@@ -65,7 +70,35 @@ struct PyTulipList : public PyObject {
     return oss.str();
   }
 
-  static void pytuliplist_init(PyTulipList* self, PyObject* args) {
+  PyObject* py_append(PyObject* args) {
+    PyObject* x;
+    if (!PyArg_ParseTuple(args, "O", &x)) {
+      PyErr_SetString(PyExc_RuntimeError, "parse arguments failed");
+      py::throw_error_already_set();
+    }
+    else {
+      Py_INCREF(x);
+      elements_->push_back(x);
+    }
+    Py_RETURN_NONE;
+  }
+
+  PyObject* py_insert(PyObject* args) {
+    py::ssize_t i{};
+    PyObject* x;
+    if (!PyArg_ParseTuple(args, "lO", &i, &x)) {
+      PyErr_SetString(PyExc_RuntimeError, "parse arguments failed");
+      py::throw_error_already_set();
+    }
+    else {
+      Py_INCREF(x);
+      elements_->insert(
+          elements_->begin() + getitem_index(i, elements_->size(), true), x);
+    }
+    Py_RETURN_NONE;
+  }
+
+  static void pytuliplist_init(PyTulipList* self) {
     self->py_init();
   }
 
@@ -81,9 +114,24 @@ struct PyTulipList : public PyObject {
     return pytuliplist_repr(self);
   }
 
+  static PyObject* pytuliplist_size(PyTulipList* self) {
+    return self->py_size();
+  }
+
+  static PyObject* pytuliplist_append(PyTulipList* self, PyObject* args) {
+    return self->py_append(args);
+  }
+
+  static PyObject* pytuliplist_insert(PyTulipList* self, PyObject* args) {
+    return self->py_insert(args);
+  }
+
   static void wrap(PyObject* module) {
     static PyMethodDef pytuliplist_methods[] = {
-      {NULL, NULL},
+      {"size", (PyCFunction)pytuliplist_size, METH_NOARGS, "size"},
+      {"append", (PyCFunction)pytuliplist_append, METH_VARARGS, "append"},
+      {"insert", (PyCFunction)pytuliplist_insert, METH_VARARGS, "insert"},
+      {NULL, NULL, NULL, NULL},
     };
 
     static PyTypeObject PyTulipList_Type = {
