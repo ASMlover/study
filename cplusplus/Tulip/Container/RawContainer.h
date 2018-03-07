@@ -29,6 +29,15 @@
 
 namespace tulip {
 
+class SequenceImpl;
+
+struct PySequence {
+  PyObject_HEAD
+  SequenceImpl* c_obj;
+};
+
+void Init_PySequence(void);
+
 struct PyTulipList : public PyObject {
   std::vector<PyObject*>* elements_{};
 
@@ -41,7 +50,6 @@ struct PyTulipList : public PyObject {
       for (auto* x : *elements_)
         Py_DECREF(x);
       elements_->clear();
-
       delete elements_;
     }
     Py_TYPE(this)->tp_free((PyObject*)this);
@@ -98,8 +106,9 @@ struct PyTulipList : public PyObject {
     Py_RETURN_NONE;
   }
 
-  static void pytuliplist_init(PyTulipList* self) {
+  static int pytuliplist_init(PyTulipList* self) {
     self->py_init();
+    return 0;
   }
 
   static void pytuliplist_dealloc(PyTulipList* self) {
@@ -131,7 +140,7 @@ struct PyTulipList : public PyObject {
       {"size", (PyCFunction)pytuliplist_size, METH_NOARGS, "size"},
       {"append", (PyCFunction)pytuliplist_append, METH_VARARGS, "append"},
       {"insert", (PyCFunction)pytuliplist_insert, METH_VARARGS, "insert"},
-      {NULL, NULL, NULL, NULL},
+      {NULL, NULL, NULL, NULL}
     };
 
     static PyTypeObject PyTulipList_Type = {
