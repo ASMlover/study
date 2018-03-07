@@ -39,11 +39,7 @@ BOOST_PYTHON_MODULE(Tulip) {
   PyEval_InitThreads();
 
 #if defined(TULIP_ENABLE_RAWBIND)
-  static PyMethodDef tulip_methods[] = {
-    {NULL, NULL},
-  };
-  auto* m = Py_InitModule3("Tulip", tulip_methods, "Tulip.RawContainer");
-  tulip::PyTulipList::wrap(m);
+  tulip::PyTulipList::wrap();
 #endif
 
   tulip_debug_wrap();

@@ -106,7 +106,7 @@ struct PyTulipList : public PyObject {
     Py_RETURN_NONE;
   }
 
-  static int pytuliplist_init(PyTulipList* self) {
+  static int pytuliplist_init(PyTulipList* self, PyObject* args, PyObject* kwds) {
     self->py_init();
     return 0;
   }
@@ -135,7 +135,12 @@ struct PyTulipList : public PyObject {
     return self->py_insert(args);
   }
 
-  static void wrap(PyObject* module) {
+  static PyObject* pytuliplist_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
+    PyTulipList* tl = (PyTulipList*)type->tp_alloc(type, 0);
+    return (PyObject*)tl;
+  }
+
+  static void wrap(void) {
     static PyMethodDef pytuliplist_methods[] = {
       {"size", (PyCFunction)pytuliplist_size, METH_NOARGS, "size"},
       {"append", (PyCFunction)pytuliplist_append, METH_VARARGS, "append"},
@@ -182,14 +187,18 @@ struct PyTulipList : public PyObject {
       0, // tp_dictoffset
       (initproc)pytuliplist_init, // tp_init
       0, // tp_alloc
-      PyType_GenericNew, // tp_new
+      pytuliplist_new, // tp_new
     };
 
+    PyTulipList_Type.tp_new = PyType_GenericNew;
     if (PyType_Ready(&PyTulipList_Type) < 0)
       return;
 
+    static PyMethodDef tulip_methods[] = { {NULL} };
+    auto m = Py_InitModule3("Tulip", tulip_methods, "raw tulip container.");
+
     Py_INCREF(&PyTulipList_Type);
-    PyModule_AddObject(module, "PyTulipList", (PyObject*)&PyTulipList_Type);
+    PyModule_AddObject(m, "PyTulipList", (PyObject*)&PyTulipList_Type);
   }
 };
 
