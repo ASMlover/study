@@ -29,15 +29,6 @@
 
 namespace tulip {
 
-class SequenceImpl;
-
-struct PySequence {
-  PyObject_HEAD
-  SequenceImpl* c_obj;
-};
-
-void Init_PySequence(void);
-
 struct PyTulipList : public PyObject {
   std::vector<PyObject*>* elements_{};
 
@@ -106,7 +97,7 @@ struct PyTulipList : public PyObject {
     Py_RETURN_NONE;
   }
 
-  static int pytuliplist_init(PyTulipList* self, PyObject* args, PyObject* kwds) {
+  static int pytuliplist_init(PyTulipList* self) {
     self->py_init();
     return 0;
   }
@@ -117,10 +108,6 @@ struct PyTulipList : public PyObject {
 
   static PyObject* pytuliplist_repr(PyTulipList* self) {
     return Py_BuildValue("s", self->py_repr().c_str());
-  }
-
-  static PyObject* pytuliplist_str(PyTulipList* self) {
-    return pytuliplist_repr(self);
   }
 
   static PyObject* pytuliplist_size(PyTulipList* self) {
@@ -165,7 +152,7 @@ struct PyTulipList : public PyObject {
       0, // tp_as_mapping
       0, // tp_hash
       0, // tp_call
-      (reprfunc)pytuliplist_str, // tp_str
+      (reprfunc)pytuliplist_repr, // tp_str
       0, // tp_getattro
       0, // tp_setattro
       0, // tp_as_buffer
@@ -180,7 +167,7 @@ struct PyTulipList : public PyObject {
       pytuliplist_methods, // tp_methods
       0, // tp_members
       0, // tp_getset
-      &PyType_Type, // tp_base
+      0, // tp_base
       0, // tp_dict
       0, // tp_descr_get
       0, // tp_descr_set
