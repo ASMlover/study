@@ -29,39 +29,43 @@
 
 namespace tulip {
 
-struct PyTulipList : public PyObject {
-  std::vector<PyObject*>* elements_{};
+class PyTulipList : public PyObject {
+  using VectorType = std::vector<PyObject*>;
+  VectorType* vec_{};
 
-  void py_init(void) {
-    elements_ = new std::vector<PyObject*>();
+  inline void _init(void) {
+    vec_ = new VectorType();
   }
 
-  void py_dealloc(void) {
-    if (elements_ != nullptr) {
-      for (auto* x : *elements_)
-        Py_DECREF(x);
-      elements_->clear();
-      delete elements_;
+  inline void _dealloc(void) {
+    if (vec_ != nullptr) {
+      _clear();
+      delete vec_;
     }
-    Py_TYPE(this)->tp_free((PyObject*)this);
+    Py_TYPE(this)->tp_free(static_cast<PyObject*>(this));
   }
 
-  PyObject* py_size(void) const {
-    auto n = elements_->size();
-    return Py_BuildValue("l", n);
+  inline void _clear(void) {
+    for (auto* x : *vec_)
+      Py_DECREF(x);
+    vec_->clear();
   }
 
-  std::string py_repr(void) const {
+  inline std::size_t _size(void) const {
+    return vec_->size();
+  }
+
+  std::string _repr(void) const {
     std::ostringstream oss;
     oss << "[";
-    auto first = elements_->begin();
-    while (first != elements_->end()) {
+    auto first = vec_->begin();
+    while (first != vec_->end()) {
       if (PyString_Check(*first))
         oss << "'" << PyString_AsString(*first) << "'";
       else
         oss << PyString_AsString(PyObject_Repr(*first));
 
-      if (++first != elements_->end())
+      if (++first != vec_->end())
         oss << ", ";
     }
     oss << "]";
@@ -69,102 +73,104 @@ struct PyTulipList : public PyObject {
     return oss.str();
   }
 
-  PyObject* py_append(PyObject* args) {
-    PyObject* x;
-    if (!PyArg_ParseTuple(args, "O", &x)) {
-      PyErr_SetString(PyExc_RuntimeError, "parse arguments failed");
-      py::throw_error_already_set();
-    }
-    else {
-      Py_INCREF(x);
-      elements_->push_back(x);
-    }
-    Py_RETURN_NONE;
+  inline void _append(PyObject* x) {
+    vec_->push_back(x);
   }
 
-  PyObject* py_insert(PyObject* args) {
-    py::ssize_t i{};
-    PyObject* x;
-    if (!PyArg_ParseTuple(args, "lO", &i, &x)) {
-      PyErr_SetString(PyExc_RuntimeError, "parse arguments failed");
-      py::throw_error_already_set();
+  inline bool _insert(Py_ssize_t i, PyObject* x) {
+    try {
+      i = getitem_index(i, vec_->size(), true);
+    } catch (...) {
+      return false;
     }
-    else {
-      Py_INCREF(x);
-      elements_->insert(
-          elements_->begin() + getitem_index(i, elements_->size(), true), x);
-    }
-    Py_RETURN_NONE;
-  }
 
-  static int pytuliplist_init(PyTulipList* self) {
-    self->py_init();
+    vec_->insert(vec_->begin() + i, x);
+    return true;
+  }
+private:
+  static int _pytuliplist_init(PyTulipList* self) {
+    self->_init();
     return 0;
   }
 
-  static void pytuliplist_dealloc(PyTulipList* self) {
-    self->py_dealloc();
+  static void _pytuliplist_dealloc(PyTulipList* self) {
+    self->_dealloc();
   }
 
-  static PyObject* pytuliplist_repr(PyTulipList* self) {
-    return Py_BuildValue("s", self->py_repr().c_str());
+  static PyObject* _pytuliplist_clear(PyTulipList* self) {
+    self->_clear();
+    Py_RETURN_NONE;
   }
 
-  static PyObject* pytuliplist_size(PyTulipList* self) {
-    return self->py_size();
+  static PyObject* _pytuliplist_size(PyTulipList* self) {
+    return Py_BuildValue("l", self->_size());
   }
 
-  static PyObject* pytuliplist_append(PyTulipList* self, PyObject* args) {
-    return self->py_append(args);
+  static PyObject* _pytuliplist_repr(PyTulipList* self) {
+    return Py_BuildValue("s", self->_repr().c_str());
   }
 
-  static PyObject* pytuliplist_insert(PyTulipList* self, PyObject* args) {
-    return self->py_insert(args);
+  static PyObject* _pytuliplist_append(PyTulipList* self, PyObject* args) {
+    PyObject* x;
+    if (!PyArg_ParseTuple(args, "O", &x))
+      return nullptr;
+
+    self->_append(x);
+    Py_RETURN_NONE;
   }
 
-  static PyObject* pytuliplist_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
-    PyTulipList* tl = (PyTulipList*)type->tp_alloc(type, 0);
-    return (PyObject*)tl;
-  }
+  static PyObject* _pytuliplist_insert(PyTulipList* self, PyObject* args) {
+    Py_ssize_t i;
+    PyObject* x;
+    if (!PyArg_ParseTuple(args, "lO", &i, &x))
+      return nullptr;
 
+    if (!self->_insert(i, x)) {
+      PyErr_SetString(PyExc_IndexError, "insert(...): index out of range.");
+      return nullptr;
+    }
+    Py_RETURN_NONE;
+  }
+public:
   static void wrap(void) {
-    static PyMethodDef pytuliplist_methods[] = {
-      {"size", (PyCFunction)pytuliplist_size, METH_NOARGS, "size"},
-      {"append", (PyCFunction)pytuliplist_append, METH_VARARGS, "append"},
-      {"insert", (PyCFunction)pytuliplist_insert, METH_VARARGS, "insert"},
-      {NULL, NULL, NULL, NULL}
+    static PyMethodDef _pytuliplist_methods[] = {
+      {"clear", (PyCFunction)_pytuliplist_clear, METH_NOARGS, "clear()"},
+      {"size", (PyCFunction)_pytuliplist_size, METH_NOARGS, "size()"},
+      {"append", (PyCFunction)_pytuliplist_append, METH_VARARGS, "append(...)"},
+      {"insert", (PyCFunction)_pytuliplist_insert, METH_VARARGS, "insert(...)"},
+      {nullptr}
     };
 
-    static PyTypeObject PyTulipList_Type = {
-      PyObject_HEAD_INIT(NULL)
+    static PyTypeObject _PyTulipList_Type = {
+      PyObject_HEAD_INIT(nullptr)
       0, // ob_size
       "PyTulipList", // tp_name
       sizeof(PyTulipList), // tp_basicsize
       0, // tp_itemsize
-      (destructor)pytuliplist_dealloc, // tp_dealloc
+      (destructor)_pytuliplist_dealloc, // tp_dealloc
       0, // tp_print
       0, // tp_getattr
       0, // tp_setattr
       0, // tp_compare
-      (reprfunc)pytuliplist_repr, // tp_repr
+      (reprfunc)_pytuliplist_repr, // tp_repr
       0, // tp_as_number
       0, // tp_as_sequence
       0, // tp_as_mapping
       0, // tp_hash
       0, // tp_call
-      (reprfunc)pytuliplist_repr, // tp_str
+      (reprfunc)_pytuliplist_repr, // tp_str
       0, // tp_getattro
       0, // tp_setattro
       0, // tp_as_buffer
       Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, // tp_flags
-      "no doc", // tp_doc
+      "class PyTulipList", // tp_doc
       0, // tp_traverse
       0, // tp_clear
       0, // tp_richcompare
       0, // tp_weaklistoffset
       0, // tp_iter
       0, // tp_iternext
-      pytuliplist_methods, // tp_methods
+      _pytuliplist_methods, // tp_methods
       0, // tp_members
       0, // tp_getset
       0, // tp_base
@@ -172,20 +178,20 @@ struct PyTulipList : public PyObject {
       0, // tp_descr_get
       0, // tp_descr_set
       0, // tp_dictoffset
-      (initproc)pytuliplist_init, // tp_init
+      (initproc)_pytuliplist_init, // tp_init
       0, // tp_alloc
-      pytuliplist_new, // tp_new
+      PyType_GenericNew, // tp_new
     };
 
-    PyTulipList_Type.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&PyTulipList_Type) < 0)
+    if (PyType_Ready(&_PyTulipList_Type) < 0)
       return;
 
-    static PyMethodDef tulip_methods[] = { {NULL} };
-    auto m = Py_InitModule3("Tulip", tulip_methods, "raw tulip container.");
+    static PyMethodDef _tulip_methods[] = { {NULL} };
+    auto m = Py_InitModule3("Tulip", _tulip_methods, "raw tulip container.");
 
-    Py_INCREF(&PyTulipList_Type);
-    PyModule_AddObject(m, "PyTulipList", (PyObject*)&PyTulipList_Type);
+    auto* _type = reinterpret_cast<PyObject*>(&_PyTulipList_Type);
+    Py_INCREF(_type);
+    PyModule_AddObject(m, "PyTulipList", _type);
   }
 };
 
