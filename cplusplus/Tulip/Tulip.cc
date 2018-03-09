@@ -35,14 +35,23 @@
 # define tulip_debug_wrap() (void)0
 #endif
 
+#if defined(TULIP_ENABLE_RAWBIND)
+  void tulip_rawbind_wrap(void) {
+    static PyMethodDef _tulip_methods[] = { {NULL} };
+    auto* m = Py_InitModule3("Tulip",
+        _tulip_methods, "raw python binding tulip container.");
+
+    tulip::PyTulipList::wrap(m);
+  }
+#else
+# define tulip_rawbind_wrap() (void)0
+#endif
+
 BOOST_PYTHON_MODULE(Tulip) {
   PyEval_InitThreads();
 
-#if defined(TULIP_ENABLE_RAWBIND)
-  tulip::PyTulipList::wrap();
-#endif
-
   tulip_debug_wrap();
+  tulip_rawbind_wrap();
 
   tulip::TulipList::wrap();
   tulip::TulipDict::wrap();

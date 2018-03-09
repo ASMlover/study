@@ -132,7 +132,7 @@ private:
     Py_RETURN_NONE;
   }
 public:
-  static void wrap(void) {
+  static void wrap(PyObject* m) {
     static PyMethodDef _pytuliplist_methods[] = {
       {"clear", (PyCFunction)_pytuliplist_clear, METH_NOARGS, "clear()"},
       {"size", (PyCFunction)_pytuliplist_size, METH_NOARGS, "size()"},
@@ -185,9 +185,6 @@ public:
 
     if (PyType_Ready(&_PyTulipList_Type) < 0)
       return;
-
-    static PyMethodDef _tulip_methods[] = { {NULL} };
-    auto m = Py_InitModule3("Tulip", _tulip_methods, "raw tulip container.");
 
     auto* _type = reinterpret_cast<PyObject*>(&_PyTulipList_Type);
     Py_INCREF(_type);
