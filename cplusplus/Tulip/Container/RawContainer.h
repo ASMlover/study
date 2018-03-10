@@ -115,6 +115,10 @@ private:
     if (!PyArg_ParseTuple(args, "O", &x))
       return nullptr;
 
+    if (self == x) {
+      PyErr_SetString(PyExc_RuntimeError, "append(x): can not append self");
+      return nullptr;
+    }
     self->_append(x);
     Py_RETURN_NONE;
   }
@@ -125,6 +129,10 @@ private:
     if (!PyArg_ParseTuple(args, "lO", &i, &x))
       return nullptr;
 
+    if (self == x) {
+      PyErr_SetString(PyExc_RuntimeError, "insert(i, x): can not insert self");
+      return nullptr;
+    }
     if (!self->_insert(i, x)) {
       PyErr_SetString(PyExc_IndexError, "insert(...): index out of range.");
       return nullptr;
@@ -156,7 +164,7 @@ public:
       0, // tp_as_number
       0, // tp_as_sequence
       0, // tp_as_mapping
-      0, // tp_hash
+      (hashfunc)PyObject_HashNotImplemented, // tp_hash
       0, // tp_call
       (reprfunc)_pytuliplist_repr, // tp_str
       0, // tp_getattro
