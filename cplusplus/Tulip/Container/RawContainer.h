@@ -87,6 +87,15 @@ class PyTulipList : public PyObject {
     vec_->insert(vec_->begin() + i, x);
     return true;
   }
+
+  inline void _foreach(PyObject* callable) {
+    for (auto* x : *vec_) {
+      auto* args = Py_BuildValue("(O)", x);
+      auto* r = PyObject_CallObject(callable, args);
+      Py_DECREF(args);
+      Py_DECREF(r);
+    }
+  }
 private:
   static int _pytuliplist_init(PyTulipList* self) {
     self->_init();
@@ -139,6 +148,16 @@ private:
     }
     Py_RETURN_NONE;
   }
+
+  static PyObject* _pytuliplist_foreach(PyTulipList* self, PyObject* args) {
+    PyObject* callable;
+    if (!PyArg_ParseTuple(args, "O", &callable))
+      return nullptr;
+
+    if (callable != Py_None)
+      self->_foreach(callable);
+    Py_RETURN_NONE;
+  }
 public:
   static void wrap(PyObject* m) {
     static PyMethodDef _pytuliplist_methods[] = {
@@ -146,6 +165,7 @@ public:
       {"size", (PyCFunction)_pytuliplist_size, METH_NOARGS, "size()"},
       {"append", (PyCFunction)_pytuliplist_append, METH_VARARGS, "append(...)"},
       {"insert", (PyCFunction)_pytuliplist_insert, METH_VARARGS, "insert(...)"},
+      {"foreach", (PyCFunction)_pytuliplist_foreach, METH_VARARGS, "foreach(...)"},
       {nullptr}
     };
 
