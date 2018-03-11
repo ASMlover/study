@@ -88,6 +88,12 @@ class PyTulipList : public PyObject {
     return true;
   }
 
+  inline PyObject* _pop(std::size_t i) {
+    auto* v = (*vec_)[i];
+    vec_->erase(vec_->begin() + i);
+    return v;
+  }
+
   inline void _foreach(PyObject* callable) {
     for (auto* x : *vec_) {
       auto* args = Py_BuildValue("(O)", x);
@@ -95,6 +101,16 @@ class PyTulipList : public PyObject {
       Py_DECREF(args);
       Py_DECREF(r);
     }
+  }
+
+  inline int _contains(PyObject* o) const {
+    int cmp{};
+    for (auto* x : *vec_) {
+      cmp = PyObject_RichCompareBool(o, x, Py_EQ);
+      if (cmp != 0)
+        break;
+    }
+    return cmp;
   }
 private:
   static int _pytuliplist_init(PyTulipList* self) {
@@ -113,6 +129,20 @@ private:
 
   static PyObject* _pytuliplist_size(PyTulipList* self) {
     return Py_BuildValue("l", self->_size());
+  }
+
+  static PyObject* _pytuliplist_contains(PyTulipList* self, PyObject* args) {
+    PyObject* x;
+    if (!PyArg_ParseTuple(args, "O", &x))
+      return nullptr;
+
+    auto cmp = self->_contains(x);
+    if (cmp == -1)
+      return nullptr;
+    else if (cmp == 0)
+      Py_RETURN_FALSE;
+    else
+      Py_RETURN_TRUE;
   }
 
   static PyObject* _pytuliplist_repr(PyTulipList* self) {
@@ -143,10 +173,31 @@ private:
       return nullptr;
     }
     if (!self->_insert(i, x)) {
-      PyErr_SetString(PyExc_IndexError, "insert(...): index out of range.");
+      PyErr_SetString(PyExc_IndexError, "insert(...): index out of range");
       return nullptr;
     }
     Py_RETURN_NONE;
+  }
+
+  static PyObject* _pytuliplist_pop(PyTulipList* self, PyObject* args) {
+    Py_ssize_t i = -1;
+
+    if (!PyArg_ParseTuple(args, "|n:pop", &i))
+      return nullptr;
+
+    auto n = self->_size();
+    if (n == 0) {
+      PyErr_SetString(PyExc_IndexError, "pop(...): pop from empty list");
+      return nullptr;
+    }
+    if (i < 0)
+      i += n;
+    if (i < 0 || i >= (Py_ssize_t)n) {
+      PyErr_SetString(PyExc_IndexError, "pop(...): pop index out of range");
+      return nullptr;
+    }
+
+    return self->_pop(i);
   }
 
   static PyObject* _pytuliplist_foreach(PyTulipList* self, PyObject* args) {
@@ -158,14 +209,41 @@ private:
       self->_foreach(callable);
     Py_RETURN_NONE;
   }
+
+  static Py_ssize_t _pytuliplist__len__(PyTulipList* self) {
+    return self->_size();
+  }
+
+  static int _pytuliplist__contains__(PyTulipList* self, PyObject* o) {
+    return self->_contains(o);
+  }
 public:
   static void wrap(PyObject* m) {
+    static PySequenceMethods _pytuliplist_as_sequence = {
+      (lenfunc)_pytuliplist__len__, // sq_length
+      0, // sq_concat
+      0, // sq_repeat
+      0, // sq_item
+      0, // sq_slice
+      0, // sq_ass_item
+      0, // sq_ass_slice
+      (objobjproc)_pytuliplist__contains__, // sq_contains
+      0, // sq_inplace_concat
+      0, // sq_inplace_repeat
+    };
+
     static PyMethodDef _pytuliplist_methods[] = {
       {"clear", (PyCFunction)_pytuliplist_clear, METH_NOARGS, "clear()"},
       {"size", (PyCFunction)_pytuliplist_size, METH_NOARGS, "size()"},
-      {"append", (PyCFunction)_pytuliplist_append, METH_VARARGS, "append(...)"},
-      {"insert", (PyCFunction)_pytuliplist_insert, METH_VARARGS, "insert(...)"},
-      {"foreach", (PyCFunction)_pytuliplist_foreach, METH_VARARGS, "foreach(...)"},
+      {"contains",
+        (PyCFunction)_pytuliplist_contains, METH_VARARGS, "contains(...)"},
+      {"append",
+        (PyCFunction)_pytuliplist_append, METH_VARARGS, "append(...)"},
+      {"insert",
+        (PyCFunction)_pytuliplist_insert, METH_VARARGS, "insert(...)"},
+      {"pop", (PyCFunction)_pytuliplist_pop, METH_VARARGS, "pop(...)"},
+      {"foreach",
+        (PyCFunction)_pytuliplist_foreach, METH_VARARGS, "foreach(...)"},
       {nullptr}
     };
 
@@ -182,7 +260,7 @@ public:
       0, // tp_compare
       (reprfunc)_pytuliplist_repr, // tp_repr
       0, // tp_as_number
-      0, // tp_as_sequence
+      &_pytuliplist_as_sequence, // tp_as_sequence
       0, // tp_as_mapping
       (hashfunc)PyObject_HashNotImplemented, // tp_hash
       0, // tp_call
