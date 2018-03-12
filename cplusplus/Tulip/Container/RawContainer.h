@@ -103,6 +103,10 @@ class PyTulipList : public PyObject {
     }
   }
 
+  inline PyObject* _at(Py_ssize_t i) const {
+    return vec_->at(i);
+  }
+
   inline int _contains(PyObject* o) const {
     int cmp{};
     for (auto* x : *vec_) {
@@ -210,24 +214,35 @@ private:
     Py_RETURN_NONE;
   }
 
-  static Py_ssize_t _pytuliplist__len__(PyTulipList* self) {
+  static Py_ssize_t _pytuliplist__sq_length(PyTulipList* self) {
     return self->_size();
   }
 
-  static int _pytuliplist__contains__(PyTulipList* self, PyObject* o) {
+  static PyObject* _pytuliplist__sq_item(PyTulipList* self, Py_ssize_t i) {
+    if (i < 0 || i >= (Py_ssize_t)self->_size()) {
+      PyErr_SetString(PyExc_IndexError, "list index out of range");
+      return nullptr;
+    }
+
+    auto* x = self->_at(i);
+    Py_INCREF(x);
+    return x;
+  }
+
+  static int _pytuliplist__sq_contains(PyTulipList* self, PyObject* o) {
     return self->_contains(o);
   }
 public:
   static void wrap(PyObject* m) {
     static PySequenceMethods _pytuliplist_as_sequence = {
-      (lenfunc)_pytuliplist__len__, // sq_length
+      (lenfunc)_pytuliplist__sq_length, // sq_length
       0, // sq_concat
       0, // sq_repeat
-      0, // sq_item
+      (ssizeargfunc)_pytuliplist__sq_item, // sq_item
       0, // sq_slice
       0, // sq_ass_item
       0, // sq_ass_slice
-      (objobjproc)_pytuliplist__contains__, // sq_contains
+      (objobjproc)_pytuliplist__sq_contains, // sq_contains
       0, // sq_inplace_concat
       0, // sq_inplace_repeat
     };
