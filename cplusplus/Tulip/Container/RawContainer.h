@@ -107,6 +107,10 @@ class PyTulipList : public PyObject {
     return vec_->at(i);
   }
 
+  inline void _setitem(Py_ssize_t i, PyObject* v) {
+    vec_->at(i) = v;
+  }
+
   inline int _contains(PyObject* o) const {
     int cmp{};
     for (auto* x : *vec_) {
@@ -229,11 +233,29 @@ private:
     return x;
   }
 
+  static int _pytuliplist__fun_ass_item(
+      PyTulipList* self, Py_ssize_t i, PyObject* v) {
+    if (i < 0 || i >= (Py_ssize_t)self->_size()) {
+      PyErr_SetString(PyExc_IndexError, "list assignment index out of range");
+      return -1;
+    }
+    if (v == nullptr || self == v) {
+      PyErr_SetString(PyExc_RuntimeError, "list assignment invalid value");
+      return -1;
+    }
+
+    Py_INCREF(v);
+    auto* old = self->_at(i);
+    self->_setitem(i, v);
+    Py_DECREF(old);
+    return 0;
+  }
+
   static int _pytuliplist__fun_contains(PyTulipList* self, PyObject* o) {
     return self->_contains(o);
   }
 
-  static PyObject* _pytuliplist__fun_getitem(PyTulipList* self, PyObject* index) {
+  static PyObject* _pytuliplist__fun_subscript(PyTulipList* self, PyObject* index) {
     if (PyIndex_Check(index)) {
       auto i = PyNumber_AsSsize_t(index, PyExc_IndexError);
       if (i == -1 && PyErr_Occurred())
@@ -244,9 +266,27 @@ private:
     }
     else {
       PyErr_Format(PyExc_TypeError,
-          "__getitem__(...): list indices must be integers, not %.200s",
+          "subscript(...): list indices must be integers, not %.200s",
           index->ob_type->tp_name);
       return nullptr;
+    }
+  }
+
+  static int _pytuliplist__fun_ass_subscript(
+      PyTulipList* self, PyObject* index, PyObject* v) {
+    if (PyIndex_Check(index)) {
+      Py_ssize_t i = PyNumber_AsSsize_t(index, PyExc_IndexError);
+      if (i == -1 && PyErr_Occurred())
+        return -1;
+      if (i < 0)
+        i += self->_size();
+      return _pytuliplist__fun_ass_item(self, i, v);
+    }
+    else {
+      PyErr_Format(PyExc_TypeError,
+          "ass_subscript(...): list indices must be integers, not %.200s",
+          index->ob_type->tp_name);
+      return -1;
     }
   }
 public:
@@ -257,7 +297,7 @@ public:
       0, // sq_repeat
       (ssizeargfunc)_pytuliplist__fun_item, // sq_item
       0, // sq_slice
-      0, // sq_ass_item
+      (ssizeobjargproc)_pytuliplist__fun_ass_item, // sq_ass_item
       0, // sq_ass_slice
       (objobjproc)_pytuliplist__fun_contains, // sq_contains
       0, // sq_inplace_concat
@@ -266,8 +306,8 @@ public:
 
     static PyMappingMethods _pytuliplist_as_mapping = {
       (lenfunc)_pytuliplist__fun_length, // mp_length
-      (binaryfunc)_pytuliplist__fun_getitem, // mp_subscript
-      0, // mp_ass_subscript
+      (binaryfunc)_pytuliplist__fun_subscript, // mp_subscript
+      (objobjargproc)_pytuliplist__fun_ass_subscript, // mp_ass_subscript
     };
 
     static PyMethodDef _pytuliplist_methods[] = {
@@ -282,7 +322,7 @@ public:
       {"pop", (PyCFunction)_pytuliplist_pop, METH_VARARGS, "pop(...)"},
       {"foreach",
         (PyCFunction)_pytuliplist_foreach, METH_VARARGS, "foreach(...)"},
-      {"__getitem__", (PyCFunction)_pytuliplist__fun_getitem,
+      {"__getitem__", (PyCFunction)_pytuliplist__fun_subscript,
         METH_O | METH_COEXIST, "__getitem__(...)"},
       {nullptr}
     };
