@@ -214,11 +214,11 @@ private:
     Py_RETURN_NONE;
   }
 
-  static Py_ssize_t _pytuliplist__sq_length(PyTulipList* self) {
+  static Py_ssize_t _pytuliplist__fun_length(PyTulipList* self) {
     return self->_size();
   }
 
-  static PyObject* _pytuliplist__sq_item(PyTulipList* self, Py_ssize_t i) {
+  static PyObject* _pytuliplist__fun_item(PyTulipList* self, Py_ssize_t i) {
     if (i < 0 || i >= (Py_ssize_t)self->_size()) {
       PyErr_SetString(PyExc_IndexError, "list index out of range");
       return nullptr;
@@ -229,22 +229,45 @@ private:
     return x;
   }
 
-  static int _pytuliplist__sq_contains(PyTulipList* self, PyObject* o) {
+  static int _pytuliplist__fun_contains(PyTulipList* self, PyObject* o) {
     return self->_contains(o);
+  }
+
+  static PyObject* _pytuliplist__fun_getitem(PyTulipList* self, PyObject* index) {
+    if (PyIndex_Check(index)) {
+      auto i = PyNumber_AsSsize_t(index, PyExc_IndexError);
+      if (i == -1 && PyErr_Occurred())
+        return nullptr;
+      if (i < 0)
+        i += self->_size();
+      return _pytuliplist__fun_item(self, i);
+    }
+    else {
+      PyErr_Format(PyExc_TypeError,
+          "__getitem__(...): list indices must be integers, not %.200s",
+          index->ob_type->tp_name);
+      return nullptr;
+    }
   }
 public:
   static void wrap(PyObject* m) {
     static PySequenceMethods _pytuliplist_as_sequence = {
-      (lenfunc)_pytuliplist__sq_length, // sq_length
+      (lenfunc)_pytuliplist__fun_length, // sq_length
       0, // sq_concat
       0, // sq_repeat
-      (ssizeargfunc)_pytuliplist__sq_item, // sq_item
+      (ssizeargfunc)_pytuliplist__fun_item, // sq_item
       0, // sq_slice
       0, // sq_ass_item
       0, // sq_ass_slice
-      (objobjproc)_pytuliplist__sq_contains, // sq_contains
+      (objobjproc)_pytuliplist__fun_contains, // sq_contains
       0, // sq_inplace_concat
       0, // sq_inplace_repeat
+    };
+
+    static PyMappingMethods _pytuliplist_as_mapping = {
+      (lenfunc)_pytuliplist__fun_length, // mp_length
+      (binaryfunc)_pytuliplist__fun_getitem, // mp_subscript
+      0, // mp_ass_subscript
     };
 
     static PyMethodDef _pytuliplist_methods[] = {
@@ -259,6 +282,8 @@ public:
       {"pop", (PyCFunction)_pytuliplist_pop, METH_VARARGS, "pop(...)"},
       {"foreach",
         (PyCFunction)_pytuliplist_foreach, METH_VARARGS, "foreach(...)"},
+      {"__getitem__", (PyCFunction)_pytuliplist__fun_getitem,
+        METH_O | METH_COEXIST, "__getitem__(...)"},
       {nullptr}
     };
 
@@ -276,11 +301,11 @@ public:
       (reprfunc)_pytuliplist_repr, // tp_repr
       0, // tp_as_number
       &_pytuliplist_as_sequence, // tp_as_sequence
-      0, // tp_as_mapping
+      &_pytuliplist_as_mapping, // tp_as_mapping
       (hashfunc)PyObject_HashNotImplemented, // tp_hash
       0, // tp_call
       (reprfunc)_pytuliplist_repr, // tp_str
-      0, // tp_getattro
+      PyObject_GenericGetAttr, // tp_getattro
       0, // tp_setattro
       0, // tp_as_buffer
       Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, // tp_flags
