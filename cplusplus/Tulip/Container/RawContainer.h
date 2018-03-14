@@ -94,6 +94,19 @@ class PyTulipList : public PyObject {
     return v;
   }
 
+  inline bool _remove(PyObject* o) {
+    bool removed{};
+    for (auto it = vec_->begin(); it != vec_->end(); ++it) {
+      auto cmp = PyObject_RichCompareBool(o, *it, Py_EQ);
+      if (cmp > 0) {
+        vec_->erase(it);
+        removed = true;
+        break;
+      }
+    }
+    return removed;
+  }
+
   inline void _foreach(PyObject* callable) {
     for (auto* x : *vec_) {
       auto* args = Py_BuildValue("(O)", x);
@@ -198,6 +211,16 @@ private:
     }
 
     return self->_pop(i);
+  }
+
+  static PyObject* _pytuliplist_remove(PyTulipList* self, PyObject* o) {
+    if (o == nullptr)
+      return nullptr;
+
+    if (self->_remove(o))
+      Py_RETURN_NONE;
+    PyErr_SetString(PyExc_ValueError, "remove(x): x not in list");
+    return nullptr;
   }
 
   static PyObject* _pytuliplist_foreach(PyTulipList* self, PyObject* callable) {
@@ -305,6 +328,7 @@ public:
       {"append", (PyCFunction)_pytuliplist_append, METH_O, "append(...)"},
       {"insert", (PyCFunction)_pytuliplist_insert, METH_VARARGS, "insert(...)"},
       {"pop", (PyCFunction)_pytuliplist_pop, METH_VARARGS, "pop(...)"},
+      {"remove", (PyCFunction)_pytuliplist_remove, METH_O, "remove(...)"},
       {"foreach", (PyCFunction)_pytuliplist_foreach, METH_O, "foreach(...)"},
       {"__getitem__", (PyCFunction)_pytuliplist__fun_subscript,
         METH_O | METH_COEXIST, "__getitem__(...)"},
