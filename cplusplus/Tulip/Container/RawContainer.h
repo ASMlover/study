@@ -139,11 +139,7 @@ private:
     return Py_BuildValue("l", self->_size());
   }
 
-  static PyObject* _pytuliplist_contains(PyTulipList* self, PyObject* args) {
-    PyObject* x;
-    if (!PyArg_ParseTuple(args, "O", &x))
-      return nullptr;
-
+  static PyObject* _pytuliplist_contains(PyTulipList* self, PyObject* x) {
     auto cmp = self->_contains(x);
     if (cmp == -1)
       return nullptr;
@@ -157,11 +153,7 @@ private:
     return Py_BuildValue("s", self->_repr().c_str());
   }
 
-  static PyObject* _pytuliplist_append(PyTulipList* self, PyObject* args) {
-    PyObject* x;
-    if (!PyArg_ParseTuple(args, "O", &x))
-      return nullptr;
-
+  static PyObject* _pytuliplist_append(PyTulipList* self, PyObject* x) {
     if (self == x) {
       PyErr_SetString(PyExc_RuntimeError, "append(x): can not append self");
       return nullptr;
@@ -173,7 +165,7 @@ private:
   static PyObject* _pytuliplist_insert(PyTulipList* self, PyObject* args) {
     Py_ssize_t i;
     PyObject* x;
-    if (!PyArg_ParseTuple(args, "lO", &i, &x))
+    if (!PyArg_ParseTuple(args, "nO:insert", &i, &x))
       return nullptr;
 
     if (self == x) {
@@ -208,12 +200,8 @@ private:
     return self->_pop(i);
   }
 
-  static PyObject* _pytuliplist_foreach(PyTulipList* self, PyObject* args) {
-    PyObject* callable;
-    if (!PyArg_ParseTuple(args, "O", &callable))
-      return nullptr;
-
-    if (callable != Py_None)
+  static PyObject* _pytuliplist_foreach(PyTulipList* self, PyObject* callable) {
+    if (callable != nullptr && callable != Py_None)
       self->_foreach(callable);
     Py_RETURN_NONE;
   }
@@ -313,15 +301,11 @@ public:
     static PyMethodDef _pytuliplist_methods[] = {
       {"clear", (PyCFunction)_pytuliplist_clear, METH_NOARGS, "clear()"},
       {"size", (PyCFunction)_pytuliplist_size, METH_NOARGS, "size()"},
-      {"contains",
-        (PyCFunction)_pytuliplist_contains, METH_VARARGS, "contains(...)"},
-      {"append",
-        (PyCFunction)_pytuliplist_append, METH_VARARGS, "append(...)"},
-      {"insert",
-        (PyCFunction)_pytuliplist_insert, METH_VARARGS, "insert(...)"},
+      {"contains", (PyCFunction)_pytuliplist_contains, METH_O, "contains(...)"},
+      {"append", (PyCFunction)_pytuliplist_append, METH_O, "append(...)"},
+      {"insert", (PyCFunction)_pytuliplist_insert, METH_VARARGS, "insert(...)"},
       {"pop", (PyCFunction)_pytuliplist_pop, METH_VARARGS, "pop(...)"},
-      {"foreach",
-        (PyCFunction)_pytuliplist_foreach, METH_VARARGS, "foreach(...)"},
+      {"foreach", (PyCFunction)_pytuliplist_foreach, METH_O, "foreach(...)"},
       {"__getitem__", (PyCFunction)_pytuliplist__fun_subscript,
         METH_O | METH_COEXIST, "__getitem__(...)"},
       {nullptr}
