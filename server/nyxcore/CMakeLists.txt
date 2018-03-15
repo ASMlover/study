@@ -26,7 +26,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cmake_minimum_required(VERSION 3.0)
-project(_nxycore CXX)
+project(_nyxcore CXX)
 
 message(STATUS "Configuration for ${PROJECT_NAME}")
 
@@ -35,12 +35,13 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
+option(_NYXCORE_SERVER "comiling shared library for server ..." OFF)
 option(_NYXCORE_ENABLE_TEST "Enable/Disable compiling test ..." OFF)
 option(_NYXCORE_ENABLE_PYD "Eanble/Disable generate PYD for win32 ..." OFF)
 option(_NYXCORE_ENABLE_RAW "Enable/Disable raw Python API bind ..." OFF)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
@@ -56,7 +57,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     /D_UNICODE
     /D_CRT_SECURE_NO_WARNINGS
     /D_CRT_NONSTDC_NO_WARNINGS
-    /D_BOOST_PYTHON_STATIC_LIB
+    /DBOOST_PYTHON_STATIC_LIB
     /wd4244)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc")
   set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd /Od")
