@@ -24,35 +24,12 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <boost/python.hpp>
-#include "nyx_container.h"
+#pragma once
 
-namespace py = ::boost::python;
+#include <Python.h>
 
-#if defined(_NYXCORE_ENABLE_RAW)
-static void _nyxcore_raw_binding(void) {
-  static PyMethodDef _nyxcore_methods[] = { {nullptr} };
-  auto* m = Py_InitModule3("_nyxcore",
-      _nyxcore_methods, "nyx core containers.");
-  nyx::nyx_list_wrap(m);
+namespace nyx {
+
+void nyx_list_wrap(PyObject* m);
+
 }
-#else
-# define _nyxcore_raw_binding() (void)0
-#endif
-
-void _nyxcore_wrap(void) {
-  PyEval_InitThreads();
-
-  _nyxcore_raw_binding();
-}
-
-#if defined(_NYXCORE_SERVER)
-BOOST_PYTHON_MODULE(_nyxcore) {
-  _nyxcore_wrap();
-}
-#else
-PyMODINIT_FUNC init_nyxcore(void) {
-  py::detail::init_module("_nyxcore", _nyxcore_wrap);
-}
-#endif
-
