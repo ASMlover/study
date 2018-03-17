@@ -77,7 +77,7 @@ else()
     add_compile_options(-D_NYXCORE_ENABLE_RAW)
   endif()
 
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-strict-aliasing -std=c++1y -march=native")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-strict-aliasing -Wno-write-strings -std=c++1y -march=native")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -O0")
   set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3")
 
