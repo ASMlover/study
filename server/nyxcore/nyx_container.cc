@@ -86,6 +86,10 @@ public:
   inline void _append(PyObject* x) {
     vec_->push_back(x);
   }
+
+  inline void _insert(Py_ssize_t i, PyObject* x) {
+    vec_->insert(vec_->begin() + i, x);
+  }
 };
 
 static int _nyxlist_init(
@@ -115,12 +119,46 @@ static PyObject* _nyxlist_append(nyx_list* self, PyObject* v) {
   if (v == nullptr)
     return nullptr;
   if (self == v) {
-    PyErr_SetString(PyExc_RuntimeError, "append(v): can not append self");
+    PyErr_SetString(PyExc_RuntimeError, "append(object): can not append self");
     return nullptr;
   }
 
   Py_INCREF(v);
   self->_append(v);
+  Py_RETURN_NONE;
+}
+
+static PyObject* _nyxlist_insert(nyx_list* self, PyObject* args) {
+  Py_ssize_t i;
+  PyObject* v;
+  if (!PyArg_ParseTuple(args, "nO:insert", &i, &v))
+    return nullptr;
+  if (v == nullptr) {
+    PyErr_BadInternalCall();
+    return nullptr;
+  }
+  if (self == v) {
+    PyErr_SetString(PyExc_RuntimeError,
+        "insert(index, object): cannot insert self");
+    return nullptr;
+  }
+
+  auto n = self->_size();
+  if (n == PY_SSIZE_T_MAX) {
+    PyErr_SetString(PyExc_OverflowError,
+        "insert(index, object): cannot add more objects to list");
+    return nullptr;
+  }
+  if (i < 0)
+    i += n;
+  if (i < 0 || i > n) {
+    PyErr_SetString(PyExc_IndexError,
+        "insert(index, object): index out of range");
+    return nullptr;
+  }
+
+  Py_INCREF(v);
+  self->_insert(i, v);
   Py_RETURN_NONE;
 }
 
@@ -141,6 +179,8 @@ PyDoc_STRVAR(__size_doc,
 "L.size() -- return number of L items");
 PyDoc_STRVAR(__append_doc,
 "L.append(object) -- append object to end");
+PyDoc_STRVAR(__insert_doc,
+"L.insert(index, object) -- insert object before index");
 
 static PySequenceMethods _nyxlist_as_sequence = {
   (lenfunc)_nyxlist__meth_length, // sq_length
@@ -165,6 +205,7 @@ static PyMethodDef _nyxlist_methods[] = {
   {"clear", (PyCFunction)_nyxlist_clear, METH_NOARGS, __clear_doc},
   {"size", (PyCFunction)_nyxlist_size, METH_NOARGS, __size_doc},
   {"append", (PyCFunction)_nyxlist_append, METH_O, __append_doc},
+  {"insert", (PyCFunction)_nyxlist_insert, METH_VARARGS, __insert_doc},
   {nullptr}
 };
 
