@@ -45,6 +45,16 @@ public:
     }
   }
 
+  inline int _contains(PyObject* o) const {
+    int cmp{};
+    for (auto* x : *vec_) {
+      cmp = PyObject_RichCompareBool(o, x, Py_EQ);
+      if (cmp != 0)
+        break;
+    }
+    return cmp;
+  }
+
   inline void _clear(void) {
     for (auto* x : *vec_)
       Py_DECREF(x);
@@ -72,6 +82,10 @@ public:
 
     return oss.str();
   }
+
+  inline void _append(PyObject* x) {
+    vec_->push_back(x);
+  }
 };
 
 static int _nyxlist_init(
@@ -97,9 +111,60 @@ static PyObject* _nyxlist_size(nyx_list* self) {
   return Py_BuildValue("l", self->_size());
 }
 
+static PyObject* _nyxlist_append(nyx_list* self, PyObject* v) {
+  if (v == nullptr)
+    return nullptr;
+  if (self == v) {
+    PyErr_SetString(PyExc_RuntimeError, "append(v): can not append self");
+    return nullptr;
+  }
+
+  Py_INCREF(v);
+  self->_append(v);
+  Py_RETURN_NONE;
+}
+
+static Py_ssize_t _nyxlist__meth_length(nyx_list* self) {
+  return self->_size();
+}
+
+static int _nyxlist__meth_contains(nyx_list* self, PyObject* o) {
+  return self->_contains(o);
+}
+
+PyDoc_STRVAR(_nyxlist_doc,
+"nyx_list() -> new empty nyx_list\n"
+"nyx_list(iterable) -> new nyx_list initialized from iterable's items");
+PyDoc_STRVAR(__clear_doc,
+"L.clear() -- clear all L items");
+PyDoc_STRVAR(__size_doc,
+"L.size() -- return number of L items");
+PyDoc_STRVAR(__append_doc,
+"L.append(object) -- append object to end");
+
+static PySequenceMethods _nyxlist_as_sequence = {
+  (lenfunc)_nyxlist__meth_length, // sq_length
+  0, // sq_concat
+  0, // sq_repeat
+  0, // sq_item
+  0, // sq_slice
+  0, // sq_ass_item
+  0, // sq_ass_slice
+  (objobjproc)_nyxlist__meth_contains, // sq_contains
+  0, // sq_inplace_concat
+  0, // sq_inplace_repeat
+};
+
+static PyMappingMethods _nyxlist_as_mapping = {
+  (lenfunc)_nyxlist__meth_length, // mp_length
+  0, // mp_subscript
+  0, // map_ass_subscript
+};
+
 static PyMethodDef _nyxlist_methods[] = {
-  {"clear", (PyCFunction)_nyxlist_clear, METH_NOARGS, "L.clear() -> clear all items"},
-  {"size", (PyCFunction)_nyxlist_size, METH_NOARGS, "L.size() -> return size of list"},
+  {"clear", (PyCFunction)_nyxlist_clear, METH_NOARGS, __clear_doc},
+  {"size", (PyCFunction)_nyxlist_size, METH_NOARGS, __size_doc},
+  {"append", (PyCFunction)_nyxlist_append, METH_O, __append_doc},
   {nullptr}
 };
 
@@ -116,8 +181,8 @@ static PyTypeObject _nyxlist_type = {
   0, // tp_compare
   (reprfunc)_nyxlist_repr, // tp_repr
   0, // tp_as_number
-  0, // tp_as_sequence
-  0, // tp_as_mapping
+  &_nyxlist_as_sequence, // tp_as_sequence
+  &_nyxlist_as_mapping, // tp_as_mapping
   (hashfunc)PyObject_HashNotImplemented, // tp_hash
   0, // tp_call
   (reprfunc)_nyxlist_repr, // tp_str
@@ -125,7 +190,7 @@ static PyTypeObject _nyxlist_type = {
   0, // tp_setattro
   0, // tp_as_buffer
   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, // tp_flags
-  "class nyx_list", // tp_doc
+  _nyxlist_doc, // tp_doc
   0, // tp_traverse
   0, // tp_clear
   0, // tp_richcompare
