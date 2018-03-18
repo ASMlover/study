@@ -35,7 +35,10 @@ class nyx_list : public PyObject {
   ObjectVector* vec_{};
 public:
   inline void _init(void) {
-    vec_ = new ObjectVector();
+    if (vec_ != nullptr)
+      _clear();
+    else
+      vec_ = new ObjectVector();
   }
 
   inline void _dealloc(void) {
@@ -97,10 +100,23 @@ public:
 };
 
 static bool __is_nyxlist(PyObject* o);
+static PyObject* _nyxlist_extend(nyx_list* self, PyObject* other);
 
 static int _nyxlist_init(
-    nyx_list* self, PyObject* /*args*/, PyObject* /*kwargs*/) {
+    nyx_list* self, PyObject* args, PyObject* kwargs) {
+  PyObject* arg{};
+  static char* kwlist[] = {"sequence", 0};
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O:nyx_list", kwlist, &arg))
+    return -1;
+
   self->_init();
+  if (arg != nullptr) {
+    auto* r = _nyxlist_extend(self, arg);
+    if (r == nullptr)
+      return -1;
+    Py_DECREF(r);
+  }
   return 0;
 }
 
