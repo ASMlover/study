@@ -68,6 +68,10 @@ public:
     return vec_->size();
   }
 
+  inline Py_ssize_t _capacity_bytes(void) const {
+    return vec_->capacity() * sizeof(PyObject*);
+  }
+
   std::string _repr(void) const {
     std::ostringstream oss;
     oss << "[";
@@ -135,6 +139,11 @@ static PyObject* _nyxlist_clear(nyx_list* self) {
 
 static PyObject* _nyxlist_size(nyx_list* self) {
   return Py_BuildValue("l", self->_size());
+}
+
+static PyObject* _nyxlist_sizeof(nyx_list* self) {
+  auto s = _PyObject_SIZE(Py_TYPE(self)) + self->_capacity_bytes();
+  return PyInt_FromSsize_t(s);
 }
 
 static PyObject* _nyxlist_append(nyx_list* self, PyObject* v) {
@@ -275,6 +284,8 @@ PyDoc_STRVAR(__extend_doc,
 "L.extend(iterable) -- extend list by appending elements from the iterable");
 PyDoc_STRVAR(__getitem_doc,
 "x.__getitem__(y) <==> x[y]");
+PyDoc_STRVAR(__sizeof_doc,
+"L.__sizeof__() -- size of L in memory, in bytes");
 
 static PySequenceMethods _nyxlist_as_sequence = {
   (lenfunc)_nyxlist__meth_length, // sq_length
@@ -302,6 +313,7 @@ static PyMethodDef _nyxlist_methods[] = {
   {"insert", (PyCFunction)_nyxlist_insert, METH_VARARGS, __insert_doc},
   {"extend", (PyCFunction)_nyxlist_extend, METH_O, __extend_doc},
   {"__getitem__", (PyCFunction)_nyxlist__meth_subscript, METH_O | METH_COEXIST, __getitem_doc},
+  {"__sizeof__", (PyCFunction)_nyxlist_sizeof, METH_NOARGS, __sizeof_doc},
   {nullptr}
 };
 
