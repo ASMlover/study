@@ -107,6 +107,17 @@ public:
     vec_->erase(vec_->begin() + i);
     return v;
   }
+
+  inline bool _remove(PyObject* v) {
+    for (auto it = vec_->begin(); it != vec_->end(); ++it) {
+      if (PyObject_RichCompareBool(v, *it, Py_EQ) > 0) {
+        Py_DECREF(*it);
+        vec_->erase(it);
+        return true;
+      }
+    }
+    return false;
+  }
 };
 
 static bool __is_nyxlist(PyObject* o);
@@ -261,6 +272,14 @@ static PyObject* _nyxlist_pop(nyx_list* self, PyObject* args) {
   return self->_pop(i);
 }
 
+static PyObject* _nyxlist_remove(nyx_list* self, PyObject* v) {
+  if (self->_remove(v))
+    Py_RETURN_NONE;
+
+  PyErr_SetString(PyExc_ValueError, "L.remove(v): v not in list");
+  return nullptr;
+}
+
 static Py_ssize_t _nyxlist__meth_length(nyx_list* self) {
   return self->_size();
 }
@@ -312,6 +331,9 @@ PyDoc_STRVAR(__extend_doc,
 PyDoc_STRVAR(__pop_doc,
 "L.pop([index]) -> item -- remove and return item at index (default last).\n"
 "Raises IndexError if last is empty or index is out of range.");
+PyDoc_STRVAR(__remove_doc,
+"L.remove(value) -- remove first occurrence of value.\n"
+"Raises ValueError if the value is not present.");
 PyDoc_STRVAR(__getitem_doc,
 "x.__getitem__(y) <==> x[y]");
 PyDoc_STRVAR(__sizeof_doc,
@@ -343,6 +365,7 @@ static PyMethodDef _nyxlist_methods[] = {
   {"insert", (PyCFunction)_nyxlist_insert, METH_VARARGS, __insert_doc},
   {"extend", (PyCFunction)_nyxlist_extend, METH_O, __extend_doc},
   {"pop", (PyCFunction)_nyxlist_pop, METH_VARARGS, __pop_doc},
+  {"remove", (PyCFunction)_nyxlist_remove, METH_O, __remove_doc},
   {"__getitem__", (PyCFunction)_nyxlist__meth_subscript, METH_O | METH_COEXIST, __getitem_doc},
   {"__sizeof__", (PyCFunction)_nyxlist_sizeof, METH_NOARGS, __sizeof_doc},
   {nullptr}
