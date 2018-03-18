@@ -90,6 +90,10 @@ public:
   inline void _insert(Py_ssize_t i, PyObject* x) {
     vec_->insert(vec_->begin() + i, x);
   }
+
+  inline PyObject* _at(Py_ssize_t i) const {
+    return vec_->at(i);
+  }
 };
 
 static int _nyxlist_init(
@@ -166,8 +170,35 @@ static Py_ssize_t _nyxlist__meth_length(nyx_list* self) {
   return self->_size();
 }
 
+static PyObject* _nyxlist__meth_item(nyx_list* self, Py_ssize_t i) {
+  if (i < 0 || i >= self->_size()) {
+    PyErr_SetString(PyExc_IndexError, "list index out of range");
+    return nullptr;
+  }
+
+  auto* v = self->_at(i);
+  Py_INCREF(v);
+  return v;
+}
+
 static int _nyxlist__meth_contains(nyx_list* self, PyObject* o) {
   return self->_contains(o);
+}
+
+static PyObject* _nyxlist__meth_subscript(nyx_list* self, PyObject* index) {
+  if (PyIndex_Check(index)) {
+    auto i = PyNumber_AsSsize_t(index, PyExc_IndexError);
+    if (i == -1 && PyErr_Occurred())
+      return nullptr;
+    if (i < 0)
+      i += self->_size();
+    return _nyxlist__meth_item(self, i);
+  }
+  else {
+    PyErr_Format(PyExc_TypeError,
+        "list indices must be integers, not %.200s", index->ob_type->tp_name);
+    return nullptr;
+  }
 }
 
 PyDoc_STRVAR(_nyxlist_doc,
@@ -181,12 +212,14 @@ PyDoc_STRVAR(__append_doc,
 "L.append(object) -- append object to end");
 PyDoc_STRVAR(__insert_doc,
 "L.insert(index, object) -- insert object before index");
+PyDoc_STRVAR(__getitem_doc,
+"x.__getitem__(y) <==> x[y]");
 
 static PySequenceMethods _nyxlist_as_sequence = {
   (lenfunc)_nyxlist__meth_length, // sq_length
   0, // sq_concat
   0, // sq_repeat
-  0, // sq_item
+  (ssizeargfunc)_nyxlist__meth_item, // sq_item
   0, // sq_slice
   0, // sq_ass_item
   0, // sq_ass_slice
@@ -197,7 +230,7 @@ static PySequenceMethods _nyxlist_as_sequence = {
 
 static PyMappingMethods _nyxlist_as_mapping = {
   (lenfunc)_nyxlist__meth_length, // mp_length
-  0, // mp_subscript
+  (binaryfunc)_nyxlist__meth_subscript, // mp_subscript
   0, // map_ass_subscript
 };
 
@@ -206,6 +239,7 @@ static PyMethodDef _nyxlist_methods[] = {
   {"size", (PyCFunction)_nyxlist_size, METH_NOARGS, __size_doc},
   {"append", (PyCFunction)_nyxlist_append, METH_O, __append_doc},
   {"insert", (PyCFunction)_nyxlist_insert, METH_VARARGS, __insert_doc},
+  {"__getitem__", (PyCFunction)_nyxlist__meth_subscript, METH_O | METH_COEXIST, __getitem_doc},
   {nullptr}
 };
 
