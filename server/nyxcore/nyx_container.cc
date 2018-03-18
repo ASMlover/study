@@ -101,6 +101,12 @@ public:
   inline PyObject* _at(Py_ssize_t i) const {
     return vec_->at(i);
   }
+
+  inline PyObject* _pop(Py_ssize_t i) {
+    auto* v = (*vec_)[i];
+    vec_->erase(vec_->begin() + i);
+    return v;
+  }
 };
 
 static bool __is_nyxlist(PyObject* o);
@@ -234,6 +240,27 @@ static PyObject* _nyxlist_extend(nyx_list* self, PyObject* other) {
   Py_RETURN_NONE;
 }
 
+static PyObject* _nyxlist_pop(nyx_list* self, PyObject* args) {
+  Py_ssize_t i{-1};
+
+  if (!PyArg_ParseTuple(args, "|n:pop", &i))
+    return nullptr;
+
+  auto n = self->_size();
+  if (n == 0) {
+    PyErr_SetString(PyExc_IndexError, "pop from empty list");
+    return nullptr;
+  }
+  if (i < 0)
+    i += n;
+  if (i < 0 || i >= n) {
+    PyErr_SetString(PyExc_IndexError, "pop index out of range");
+    return nullptr;
+  }
+
+  return self->_pop(i);
+}
+
 static Py_ssize_t _nyxlist__meth_length(nyx_list* self) {
   return self->_size();
 }
@@ -282,6 +309,9 @@ PyDoc_STRVAR(__insert_doc,
 "L.insert(index, object) -- insert object before index");
 PyDoc_STRVAR(__extend_doc,
 "L.extend(iterable) -- extend list by appending elements from the iterable");
+PyDoc_STRVAR(__pop_doc,
+"L.pop([index]) -> item -- remove and return item at index (default last).\n"
+"Raises IndexError if last is empty or index is out of range.");
 PyDoc_STRVAR(__getitem_doc,
 "x.__getitem__(y) <==> x[y]");
 PyDoc_STRVAR(__sizeof_doc,
@@ -312,6 +342,7 @@ static PyMethodDef _nyxlist_methods[] = {
   {"append", (PyCFunction)_nyxlist_append, METH_O, __append_doc},
   {"insert", (PyCFunction)_nyxlist_insert, METH_VARARGS, __insert_doc},
   {"extend", (PyCFunction)_nyxlist_extend, METH_O, __extend_doc},
+  {"pop", (PyCFunction)_nyxlist_pop, METH_VARARGS, __pop_doc},
   {"__getitem__", (PyCFunction)_nyxlist__meth_subscript, METH_O | METH_COEXIST, __getitem_doc},
   {"__sizeof__", (PyCFunction)_nyxlist_sizeof, METH_NOARGS, __sizeof_doc},
   {nullptr}
