@@ -96,6 +96,8 @@ public:
   }
 };
 
+static bool __is_nyxlist(PyObject* o);
+
 static int _nyxlist_init(
     nyx_list* self, PyObject* /*args*/, PyObject* /*kwargs*/) {
   self->_init();
@@ -166,6 +168,47 @@ static PyObject* _nyxlist_insert(nyx_list* self, PyObject* args) {
   Py_RETURN_NONE;
 }
 
+static PyObject* _nyxlist_extend(nyx_list* self, PyObject* other) {
+  if (self == other) {
+    PyErr_SetString(PyExc_RuntimeError, "extend(iterable): cannot extend self");
+    return nullptr;
+  }
+
+  if (PyTuple_CheckExact(other) || PyList_CheckExact(other)) {
+    other = PySequence_Fast(other, "argument must be iterable");
+    if (other == nullptr)
+      return nullptr;
+    auto n = PySequence_Fast_GET_SIZE(other);
+    if (n == 0) {
+      Py_DECREF(other);
+      Py_RETURN_NONE;
+    }
+
+    auto* src = PySequence_Fast_ITEMS(other);
+    for (auto i = 0; i < n; ++i) {
+      auto* x = src[i];
+      Py_INCREF(x);
+      self->_append(x);
+    }
+    Py_DECREF(other);
+  }
+  else if (__is_nyxlist(other)) {
+    auto* other_self = static_cast<nyx_list*>(other);
+    auto n = other_self->_size();
+    if (n > 0) {
+      for (auto i = 0; i < n; ++i) {
+        auto* x = other_self->_at(i);
+        Py_INCREF(x);
+        self->_append(x);
+      }
+    }
+  }
+  else {
+    return nullptr;
+  }
+  Py_RETURN_NONE;
+}
+
 static Py_ssize_t _nyxlist__meth_length(nyx_list* self) {
   return self->_size();
 }
@@ -205,13 +248,15 @@ PyDoc_STRVAR(_nyxlist_doc,
 "nyx_list() -> new empty nyx_list\n"
 "nyx_list(iterable) -> new nyx_list initialized from iterable's items");
 PyDoc_STRVAR(__clear_doc,
-"L.clear() -- clear all L items");
+"L.clear() -- clear all elements of L");
 PyDoc_STRVAR(__size_doc,
-"L.size() -- return number of L items");
+"L.size() -- return number of elements in L");
 PyDoc_STRVAR(__append_doc,
 "L.append(object) -- append object to end");
 PyDoc_STRVAR(__insert_doc,
 "L.insert(index, object) -- insert object before index");
+PyDoc_STRVAR(__extend_doc,
+"L.extend(iterable) -- extend list by appending elements from the iterable");
 PyDoc_STRVAR(__getitem_doc,
 "x.__getitem__(y) <==> x[y]");
 
@@ -239,6 +284,7 @@ static PyMethodDef _nyxlist_methods[] = {
   {"size", (PyCFunction)_nyxlist_size, METH_NOARGS, __size_doc},
   {"append", (PyCFunction)_nyxlist_append, METH_O, __append_doc},
   {"insert", (PyCFunction)_nyxlist_insert, METH_VARARGS, __insert_doc},
+  {"extend", (PyCFunction)_nyxlist_extend, METH_O, __extend_doc},
   {"__getitem__", (PyCFunction)_nyxlist__meth_subscript, METH_O | METH_COEXIST, __getitem_doc},
   {nullptr}
 };
@@ -284,6 +330,10 @@ static PyTypeObject _nyxlist_type = {
   0, // tp_alloc
   PyType_GenericNew, // tp_new
 };
+
+static bool __is_nyxlist(PyObject* o) {
+  return Py_TYPE(o) == &_nyxlist_type;
+}
 
 void nyx_list_wrap(PyObject* m) {
   if (PyType_Ready(&_nyxlist_type) < 0)
