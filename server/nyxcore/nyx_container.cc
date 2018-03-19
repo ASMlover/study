@@ -118,6 +118,10 @@ public:
     }
     return false;
   }
+
+  inline void _setitem(Py_ssize_t i, PyObject* v) {
+    (*vec_)[i] = v;
+  }
 };
 
 static bool __is_nyxlist(PyObject* o);
@@ -295,6 +299,24 @@ static PyObject* _nyxlist__meth_item(nyx_list* self, Py_ssize_t i) {
   return v;
 }
 
+static int _nyxlist__meth_ass_item(nyx_list* self, Py_ssize_t i, PyObject* v) {
+  if (i < 0 || i >= self->_size()) {
+    PyErr_SetString(PyExc_IndexError, "list assignment index out of range");
+    return -1;
+  }
+
+  if (v == nullptr || self == v) {
+    PyErr_SetString(PyExc_RuntimeError, "list assignment invalid value");
+    return -1;
+  }
+
+  Py_INCREF(v);
+  auto* old = self->_at(i);
+  self->_setitem(i, v);
+  Py_DECREF(old);
+  return 0;
+}
+
 static int _nyxlist__meth_contains(nyx_list* self, PyObject* o) {
   return self->_contains(o);
 }
@@ -345,7 +367,7 @@ static PySequenceMethods _nyxlist_as_sequence = {
   0, // sq_repeat
   (ssizeargfunc)_nyxlist__meth_item, // sq_item
   0, // sq_slice
-  0, // sq_ass_item
+  (ssizeobjargproc)_nyxlist__meth_ass_item, // sq_ass_item
   0, // sq_ass_slice
   (objobjproc)_nyxlist__meth_contains, // sq_contains
   0, // sq_inplace_concat
