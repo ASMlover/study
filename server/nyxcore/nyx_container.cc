@@ -337,6 +337,23 @@ static PyObject* _nyxlist__meth_subscript(nyx_list* self, PyObject* index) {
   }
 }
 
+static int _nyxlist__meth_ass_subscript(
+    nyx_list* self, PyObject* index, PyObject* v) {
+  if (PyIndex_Check(index)) {
+    auto i = PyNumber_AsSsize_t(index, PyExc_IndexError);
+    if (i == -1 && PyErr_Occurred())
+      return -1;
+    if (i < 0)
+      i += self->_size();
+    return _nyxlist__meth_ass_item(self, i, v);
+  }
+  else {
+    PyErr_Format(PyExc_TypeError,
+        "list indices must be integers, not %.200s", index->ob_type->tp_name);
+    return -1;
+  }
+}
+
 PyDoc_STRVAR(_nyxlist_doc,
 "nyx_list() -> new empty nyx_list\n"
 "nyx_list(iterable) -> new nyx_list initialized from iterable's items");
@@ -377,7 +394,7 @@ static PySequenceMethods _nyxlist_as_sequence = {
 static PyMappingMethods _nyxlist_as_mapping = {
   (lenfunc)_nyxlist__meth_length, // mp_length
   (binaryfunc)_nyxlist__meth_subscript, // mp_subscript
-  0, // map_ass_subscript
+  (objobjargproc)_nyxlist__meth_ass_subscript, // map_ass_subscript
 };
 
 static PyMethodDef _nyxlist_methods[] = {
