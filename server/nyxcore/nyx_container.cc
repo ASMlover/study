@@ -122,6 +122,18 @@ public:
   inline void _setitem(Py_ssize_t i, PyObject* v) {
     (*vec_)[i] = v;
   }
+
+  inline Py_ssize_t _count(PyObject* v) const {
+    Py_ssize_t count = 0;
+    for (auto* x : *vec_) {
+      auto cmp = PyObject_RichCompareBool(x, v, Py_EQ);
+      if (cmp > 0)
+        ++count;
+      else if (cmp < 0)
+        return -1;
+    }
+    return count;
+  }
 };
 
 static bool __is_nyxlist(PyObject* o);
@@ -284,6 +296,13 @@ static PyObject* _nyxlist_remove(nyx_list* self, PyObject* v) {
   return nullptr;
 }
 
+static PyObject* _nyxlist_count(nyx_list* self, PyObject* v) {
+  auto count = self->_count(v);
+  if (count < 0)
+    return nullptr;
+  return PyInt_FromSsize_t(count);
+}
+
 static Py_ssize_t _nyxlist__meth_length(nyx_list* self) {
   return self->_size();
 }
@@ -373,6 +392,8 @@ PyDoc_STRVAR(__pop_doc,
 PyDoc_STRVAR(__remove_doc,
 "L.remove(value) -- remove first occurrence of value.\n"
 "Raises ValueError if the value is not present.");
+PyDoc_STRVAR(__count_doc,
+"L.count(value) -> integer -- return number of occurrences of value");
 PyDoc_STRVAR(__getitem_doc,
 "x.__getitem__(y) <==> x[y]");
 PyDoc_STRVAR(__sizeof_doc,
@@ -405,6 +426,7 @@ static PyMethodDef _nyxlist_methods[] = {
   {"extend", (PyCFunction)_nyxlist_extend, METH_O, __extend_doc},
   {"pop", (PyCFunction)_nyxlist_pop, METH_VARARGS, __pop_doc},
   {"remove", (PyCFunction)_nyxlist_remove, METH_O, __remove_doc},
+  {"count", (PyCFunction)_nyxlist_count, METH_O, __count_doc},
   {"__getitem__", (PyCFunction)_nyxlist__meth_subscript, METH_O | METH_COEXIST, __getitem_doc},
   {"__sizeof__", (PyCFunction)_nyxlist_sizeof, METH_NOARGS, __sizeof_doc},
   {nullptr}
