@@ -131,6 +131,17 @@ public:
     (*vec_)[i] = v;
   }
 
+  inline Py_ssize_t _index(PyObject* v, Py_ssize_t start, Py_ssize_t stop) {
+    for (auto i = start; i < stop && i < _size(); ++i) {
+      auto cmp = PyObject_RichCompareBool((*vec_)[i], v, Py_EQ);
+      if (cmp > 0)
+        return i;
+      else if (cmp < 0)
+        return -1;
+    }
+    return 0;
+  }
+
   inline Py_ssize_t _count(PyObject* v) const {
     Py_ssize_t count = 0;
     for (auto* x : *vec_) {
@@ -307,7 +318,37 @@ static PyObject* _nyxlist_remove(nyx_list* self, PyObject* v) {
   if (self->_remove(v))
     Py_RETURN_NONE;
 
-  PyErr_SetString(PyExc_ValueError, "L.remove(v): v not in list");
+  PyErr_SetString(PyExc_ValueError, "L.remove(value): value is not in list");
+  return nullptr;
+}
+
+static PyObject* _nyxlist_index(nyx_list* self, PyObject* args) {
+  PyObject* v;
+  Py_ssize_t start = 0;
+  Py_ssize_t n = self->_size();
+  Py_ssize_t stop = n;
+
+  if (!PyArg_ParseTuple(args, "O|O&O:index", &v,
+        _PyEval_SliceIndex, &start, _PyEval_SliceIndex, &stop))
+    return nullptr;
+
+  if (start < 0) {
+    start += n;
+    if (start < 0)
+      start = 0;
+  }
+  if (stop < 0) {
+    stop += n;
+    if (stop < 0)
+      stop = 0;
+  }
+  auto i = self->_index(v, start, stop);
+  if (i > 0)
+    return PyInt_FromSsize_t(i);
+  else if (i < 0)
+    return nullptr;
+
+  PyErr_SetString(PyExc_ValueError, "index(value): value is not in list");
   return nullptr;
 }
 
@@ -409,6 +450,9 @@ PyDoc_STRVAR(__pop_doc,
 PyDoc_STRVAR(__remove_doc,
 "L.remove(value) -- remove first occurrence of value.\n"
 "Raises ValueError if the value is not present.");
+PyDoc_STRVAR(__index_doc,
+"L.index(value, [start, [stop]]) -> integer -- return first index of value.\n"
+"Raises ValueError if the value is not present.");
 PyDoc_STRVAR(__count_doc,
 "L.count(value) -> integer -- return number of occurrences of value");
 PyDoc_STRVAR(__getitem_doc,
@@ -444,6 +488,7 @@ static PyMethodDef _nyxlist_methods[] = {
   {"extend", (PyCFunction)_nyxlist_extend, METH_O, __extend_doc},
   {"pop", (PyCFunction)_nyxlist_pop, METH_VARARGS, __pop_doc},
   {"remove", (PyCFunction)_nyxlist_remove, METH_O, __remove_doc},
+  {"index", (PyCFunction)_nyxlist_index, METH_VARARGS, __index_doc},
   {"count", (PyCFunction)_nyxlist_count, METH_O, __count_doc},
   {"__getitem__", (PyCFunction)_nyxlist__meth_subscript, METH_O | METH_COEXIST, __getitem_doc},
   {"__sizeof__", (PyCFunction)_nyxlist_sizeof, METH_NOARGS, __sizeof_doc},
