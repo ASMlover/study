@@ -48,6 +48,14 @@ public:
     }
   }
 
+  inline void _copy(nyx_list* other) {
+    other->_clear();
+    for (auto* x : *vec_) {
+      Py_INCREF(x);
+      other->_append(x);
+    }
+  }
+
   inline int _contains(PyObject* o) const {
     int cmp{};
     for (auto* x : *vec_) {
@@ -137,6 +145,7 @@ public:
 };
 
 static bool __is_nyxlist(PyObject* o);
+static PyObject* __nyxlist_new(void);
 static PyObject* _nyxlist_extend(nyx_list* self, PyObject* other);
 
 static int _nyxlist_init(
@@ -163,6 +172,12 @@ static void _nyxlist_dealloc(nyx_list* self) {
 
 static PyObject* _nyxlist_repr(nyx_list* self) {
   return Py_BuildValue("s", self->_repr().c_str());
+}
+
+static PyObject* _nyxlist_copy(nyx_list* self) {
+  nyx_list* copy_self = (nyx_list*)__nyxlist_new();
+  self->_copy(copy_self);
+  return copy_self;
 }
 
 static PyObject* _nyxlist_clear(nyx_list* self) {
@@ -376,6 +391,8 @@ static int _nyxlist__meth_ass_subscript(
 PyDoc_STRVAR(_nyxlist_doc,
 "nyx_list() -> new empty nyx_list\n"
 "nyx_list(iterable) -> new nyx_list initialized from iterable's items");
+PyDoc_STRVAR(__copy_doc,
+"L.copy() -> a shallow copy of L");
 PyDoc_STRVAR(__clear_doc,
 "L.clear() -- clear all elements of L");
 PyDoc_STRVAR(__size_doc,
@@ -419,6 +436,7 @@ static PyMappingMethods _nyxlist_as_mapping = {
 };
 
 static PyMethodDef _nyxlist_methods[] = {
+  {"copy", (PyCFunction)_nyxlist_copy, METH_NOARGS, __copy_doc},
   {"clear", (PyCFunction)_nyxlist_clear, METH_NOARGS, __clear_doc},
   {"size", (PyCFunction)_nyxlist_size, METH_NOARGS, __size_doc},
   {"append", (PyCFunction)_nyxlist_append, METH_O, __append_doc},
@@ -476,6 +494,14 @@ static PyTypeObject _nyxlist_type = {
 
 static bool __is_nyxlist(PyObject* o) {
   return Py_TYPE(o) == &_nyxlist_type;
+}
+
+static PyObject* __nyxlist_new(void) {
+  PyTypeObject* _type = &_nyxlist_type;
+  auto* nl = (nyx_list*)_type->tp_alloc(_type, 0);
+  if (nl != nullptr)
+    nl->_init();
+  return nl;
 }
 
 void nyx_list_wrap(PyObject* m) {
