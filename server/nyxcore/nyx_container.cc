@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <algorithm>
 #include <sstream>
 #include <vector>
 #include "nyx_container.h"
@@ -152,6 +153,10 @@ public:
         return -1;
     }
     return count;
+  }
+
+  inline void _reverse(void) {
+    std::reverse(std::begin(*vec_), std::end(*vec_));
   }
 };
 
@@ -359,6 +364,12 @@ static PyObject* _nyxlist_count(nyx_list* self, PyObject* v) {
   return PyInt_FromSsize_t(count);
 }
 
+static PyObject* _nyxlist_reverse(nyx_list* self) {
+  if (self->_size() > 0)
+    self->_reverse();
+  Py_RETURN_NONE;
+}
+
 static Py_ssize_t _nyxlist__meth_length(nyx_list* self) {
   return self->_size();
 }
@@ -455,6 +466,8 @@ PyDoc_STRVAR(__index_doc,
 "Raises ValueError if the value is not present.");
 PyDoc_STRVAR(__count_doc,
 "L.count(value) -> integer -- return number of occurrences of value");
+PyDoc_STRVAR(__reverse_doc,
+"L.reverse() -- reverse *IN PLACE*");
 PyDoc_STRVAR(__getitem_doc,
 "x.__getitem__(y) <==> x[y]");
 PyDoc_STRVAR(__sizeof_doc,
@@ -490,6 +503,7 @@ static PyMethodDef _nyxlist_methods[] = {
   {"remove", (PyCFunction)_nyxlist_remove, METH_O, __remove_doc},
   {"index", (PyCFunction)_nyxlist_index, METH_VARARGS, __index_doc},
   {"count", (PyCFunction)_nyxlist_count, METH_O, __count_doc},
+  {"reverse", (PyCFunction)_nyxlist_reverse, METH_NOARGS, __reverse_doc},
   {"__getitem__", (PyCFunction)_nyxlist__meth_subscript, METH_O | METH_COEXIST, __getitem_doc},
   {"__sizeof__", (PyCFunction)_nyxlist_sizeof, METH_NOARGS, __sizeof_doc},
   {nullptr}
