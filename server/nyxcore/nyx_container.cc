@@ -158,6 +158,12 @@ public:
   inline void _reverse(void) {
     std::reverse(std::begin(*vec_), std::end(*vec_));
   }
+
+  int _traverse(visitproc visit, void* arg) {
+    for (auto* x : *vec_)
+      Py_VISIT(x);
+    return 0;
+  }
 };
 
 static bool __is_nyxlist(PyObject* o);
@@ -370,6 +376,10 @@ static PyObject* _nyxlist_reverse(nyx_list* self) {
   Py_RETURN_NONE;
 }
 
+static int _nyxlist_traverse(nyx_list* self, visitproc visit, void* arg) {
+  return self->_traverse(visit, arg);
+}
+
 static Py_ssize_t _nyxlist__meth_length(nyx_list* self) {
   return self->_size();
 }
@@ -530,9 +540,9 @@ static PyTypeObject _nyxlist_type = {
   PyObject_GenericGetAttr, // tp_getattro
   0, // tp_setattro
   0, // tp_as_buffer
-  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, // tp_flags
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, // tp_flags
   _nyxlist_doc, // tp_doc
-  0, // tp_traverse
+  (traverseproc)_nyxlist_traverse, // tp_traverse
   0, // tp_clear
   0, // tp_richcompare
   0, // tp_weaklistoffset
@@ -547,8 +557,9 @@ static PyTypeObject _nyxlist_type = {
   0, // tp_descr_set
   0, // tp_dictoffset
   (initproc)_nyxlist_init, // tp_init
-  0, // tp_alloc
+  PyType_GenericAlloc, // tp_alloc
   PyType_GenericNew, // tp_new
+  PyObject_GC_Del, // tp_free
 };
 
 static bool __is_nyxlist(PyObject* o) {
