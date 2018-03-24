@@ -376,8 +376,13 @@ static PyObject* _nyxlist_reverse(nyx_list* self) {
   Py_RETURN_NONE;
 }
 
-static int _nyxlist_traverse(nyx_list* self, visitproc visit, void* arg) {
+static int _nyxlist_tp_traverse(nyx_list* self, visitproc visit, void* arg) {
   return self->_traverse(visit, arg);
+}
+
+static int _nyxlist_tp_clear(nyx_list* self) {
+  self->_clear();
+  return 0;
 }
 
 static Py_ssize_t _nyxlist__meth_length(nyx_list* self) {
@@ -542,8 +547,8 @@ static PyTypeObject _nyxlist_type = {
   0, // tp_as_buffer
   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, // tp_flags
   _nyxlist_doc, // tp_doc
-  (traverseproc)_nyxlist_traverse, // tp_traverse
-  0, // tp_clear
+  (traverseproc)_nyxlist_tp_traverse, // tp_traverse
+  (inquiry)_nyxlist_tp_clear, // tp_clear
   0, // tp_richcompare
   0, // tp_weaklistoffset
   0, // tp_iter
