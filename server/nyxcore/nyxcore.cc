@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/python.hpp>
+#include "utils/nyx_watcher.h"
 #include "nyx_container.h"
 
 namespace py = ::boost::python;
@@ -34,6 +35,7 @@ static void _nyxcore_raw_binding(void) {
   static PyMethodDef _nyxcore_methods[] = { {nullptr} };
   auto* m = Py_InitModule3("_nyxcore",
       _nyxcore_methods, "nyx core containers.");
+  nyx::nyx_watcher_wrap(m);
   nyx::nyx_list_wrap(m);
 }
 #else
