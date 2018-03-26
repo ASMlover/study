@@ -48,6 +48,7 @@ class tree_map {
   __tree_node* root_{};
 
   void rotate_left(__tree_node* node);
+  void rotate_right(__tree_node* node);
 public:
 };
 

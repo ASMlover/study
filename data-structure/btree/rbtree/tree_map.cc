@@ -47,4 +47,23 @@ void tree_map::rotate_left(__tree_node* node) {
   node->parent = r;
 }
 
+void tree_map::rotate_right(__tree_node* node) {
+  if (node == nullptr)
+    return;
+
+  auto l = node->left; // get left child
+  node->left = l->right;
+  if (l->right != nullptr)
+    l->right->parent = node;
+  l->parent = node->parent;
+  if (node->parent == nullptr)
+    root_ = l;
+  else if (node->parent->left == node)
+    node->parent->left = l;
+  else
+    node->parent->right = l;
+  l->right = node;
+  node->parent = l;
+}
+
 }
