@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <sstream>
 #include <vector>
+#include <unordered_map>
 #include "nyx_container.h"
 
 namespace nyx {
@@ -586,6 +587,101 @@ void nyx_list_wrap(PyObject* m) {
   auto* _type = reinterpret_cast<PyObject*>(&_nyxlist_type);
   Py_INCREF(_type);
   PyModule_AddObject(m, "nyx_list", _type);
+}
+
+class nyx_dict : public PyObject {
+  using ObjectMap = std::unordered_map<long, PyObject*>;
+  ObjectMap* map_{};
+public:
+  inline void _init(void) {
+    if (map_ != nullptr)
+      _clear();
+    else
+      map_ = new ObjectMap();
+  }
+
+  inline void _dealloc(void) {
+    if (map_ != nullptr) {
+      _clear();
+      delete map_;
+    }
+  }
+
+  inline void _clear(void) {
+    for (auto& x : *map_)
+      Py_DECREF(x.second);
+    map_->clear();
+  }
+};
+
+static int _nyxdict_init(nyx_dict* self, PyObject* args, PyObject* kwargs) {
+  PyObject* arg{};
+
+  if (!PyArg_UnpackTuple(args, "dict", 0, 1, &arg))
+    return -1;
+
+  self->_init();
+  return 0;
+}
+
+static void _nyxdict_dealloc(nyx_dict* self) {
+  self->_dealloc();
+}
+
+static PyMethodDef _nyxdict_methods[] = {
+  {nullptr}
+};
+
+static PyTypeObject _nyxdict_type = {
+  PyObject_HEAD_INIT(nullptr)
+  0, // ob_size
+  "_nyxcore.nyx_dict", // tp_name
+  sizeof(nyx_dict), // tp_basesize
+  0, // tp_itemsize
+  (destructor)_nyxdict_dealloc, // tp_dealloc
+  0, // tp_print
+  0, // tp_getattr
+  0, // tp_setattr
+  0, // tp_compare
+  0, // tp_repr
+  0, // tp_as_number
+  0, // tp_as_sequence
+  0, // tp_as_mapping
+  (hashfunc)PyObject_HashNotImplemented, // tp_hash
+  0, // tp_call
+  0, // tp_str
+  0, // tp_getattro
+  0, // tp_setattro
+  0, // tp_as_buffer
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, // tp_flags
+  "", // tp_doc
+  0, // tp_traverse
+  0, // tp_clear
+  0, // tp_richcompare
+  0, // tp_weaklistoffset
+  0, // tp_iter
+  0, // tp_iternext
+  _nyxdict_methods, // tp_methods
+  0, // tp_members
+  0, // tp_getset
+  0, // tp_base
+  0, // tp_dict
+  0, // tp_descr_get
+  0, // tp_descr_set
+  0, // tp_dictoffset
+  (initproc)_nyxdict_init, // tp_init
+  0, // tp_alloc
+  PyType_GenericNew, // tp_new
+  0, // tp_free
+};
+
+void nyx_dict_wrap(PyObject* m) {
+  if (PyType_Ready(&_nyxdict_type) < 0)
+    return;
+
+  auto* _type = reinterpret_cast<PyObject*>(&_nyxdict_type);
+  Py_INCREF(_type);
+  PyModule_AddObject(m, "nyx_dict", _type);
 }
 
 }

@@ -37,6 +37,7 @@ static void _nyxcore_raw_binding(void) {
       _nyxcore_methods, "nyx core containers.");
   nyx::nyx_watcher_wrap(m);
   nyx::nyx_list_wrap(m);
+  nyx::nyx_dict_wrap(m);
 }
 #else
 # define _nyxcore_raw_binding() (void)0

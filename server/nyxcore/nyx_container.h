@@ -31,5 +31,6 @@
 namespace nyx {
 
 void nyx_list_wrap(PyObject* m);
+void nyx_dict_wrap(PyObject* m);
 
 }
