@@ -171,8 +171,7 @@ static bool __is_nyxlist(PyObject* o);
 static PyObject* __nyxlist_new(void);
 static PyObject* _nyxlist_extend(nyx_list* self, PyObject* other);
 
-static int _nyxlist_init(
-    nyx_list* self, PyObject* args, PyObject* kwargs) {
+static int _nyxlist_tp_init(nyx_list* self, PyObject* args, PyObject* kwargs) {
   PyObject* arg{};
   static char* kwlist[] = {"sequence", 0};
 
@@ -189,12 +188,21 @@ static int _nyxlist_init(
   return 0;
 }
 
-static void _nyxlist_dealloc(nyx_list* self) {
+static void _nyxlist_tp_dealloc(nyx_list* self) {
   self->_dealloc();
 }
 
-static PyObject* _nyxlist_repr(nyx_list* self) {
+static PyObject* _nyxlist_tp_repr(nyx_list* self) {
   return Py_BuildValue("s", self->_repr().c_str());
+}
+
+static int _nyxlist_tp_traverse(nyx_list* self, visitproc visit, void* arg) {
+  return self->_traverse(visit, arg);
+}
+
+static int _nyxlist_tp_clear(nyx_list* self) {
+  self->_clear();
+  return 0;
 }
 
 static PyObject* _nyxlist_copy(nyx_list* self) {
@@ -377,15 +385,6 @@ static PyObject* _nyxlist_reverse(nyx_list* self) {
   Py_RETURN_NONE;
 }
 
-static int _nyxlist_tp_traverse(nyx_list* self, visitproc visit, void* arg) {
-  return self->_traverse(visit, arg);
-}
-
-static int _nyxlist_tp_clear(nyx_list* self) {
-  self->_clear();
-  return 0;
-}
-
 static Py_ssize_t _nyxlist__meth_length(nyx_list* self) {
   return self->_size();
 }
@@ -459,34 +458,34 @@ static int _nyxlist__meth_ass_subscript(
 PyDoc_STRVAR(_nyxlist_doc,
 "nyx_list() -> new empty nyx_list\n"
 "nyx_list(iterable) -> new nyx_list initialized from iterable's items");
-PyDoc_STRVAR(__copy_doc,
+PyDoc_STRVAR(__nyxlist_copy_doc,
 "L.copy() -> a shallow copy of L");
-PyDoc_STRVAR(__clear_doc,
+PyDoc_STRVAR(__nyxlist_clear_doc,
 "L.clear() -- clear all elements of L");
-PyDoc_STRVAR(__size_doc,
-"L.size() -- return number of elements in L");
-PyDoc_STRVAR(__append_doc,
+PyDoc_STRVAR(__nyxlist_size_doc,
+"L.size() -> integer -- return count of items in L");
+PyDoc_STRVAR(__nyxlist_append_doc,
 "L.append(object) -- append object to end");
-PyDoc_STRVAR(__insert_doc,
+PyDoc_STRVAR(__nyxlist_insert_doc,
 "L.insert(index, object) -- insert object before index");
-PyDoc_STRVAR(__extend_doc,
+PyDoc_STRVAR(__nyxlist_extend_doc,
 "L.extend(iterable) -- extend list by appending elements from the iterable");
-PyDoc_STRVAR(__pop_doc,
+PyDoc_STRVAR(__nyxlist_pop_doc,
 "L.pop([index]) -> item -- remove and return item at index (default last).\n"
 "Raises IndexError if last is empty or index is out of range.");
-PyDoc_STRVAR(__remove_doc,
+PyDoc_STRVAR(__nyxlist_remove_doc,
 "L.remove(value) -- remove first occurrence of value.\n"
 "Raises ValueError if the value is not present.");
-PyDoc_STRVAR(__index_doc,
+PyDoc_STRVAR(__nyxlist_index_doc,
 "L.index(value, [start, [stop]]) -> integer -- return first index of value.\n"
 "Raises ValueError if the value is not present.");
-PyDoc_STRVAR(__count_doc,
+PyDoc_STRVAR(__nyxlist_count_doc,
 "L.count(value) -> integer -- return number of occurrences of value");
-PyDoc_STRVAR(__reverse_doc,
+PyDoc_STRVAR(__nyxlist_reverse_doc,
 "L.reverse() -- reverse *IN PLACE*");
-PyDoc_STRVAR(__getitem_doc,
+PyDoc_STRVAR(__nyxlist_getitem_doc,
 "x.__getitem__(y) <==> x[y]");
-PyDoc_STRVAR(__sizeof_doc,
+PyDoc_STRVAR(__nyxlist_sizeof_doc,
 "L.__sizeof__() -- size of L in memory, in bytes");
 
 static PySequenceMethods _nyxlist_as_sequence = {
@@ -509,19 +508,19 @@ static PyMappingMethods _nyxlist_as_mapping = {
 };
 
 static PyMethodDef _nyxlist_methods[] = {
-  {"copy", (PyCFunction)_nyxlist_copy, METH_NOARGS, __copy_doc},
-  {"clear", (PyCFunction)_nyxlist_clear, METH_NOARGS, __clear_doc},
-  {"size", (PyCFunction)_nyxlist_size, METH_NOARGS, __size_doc},
-  {"append", (PyCFunction)_nyxlist_append, METH_O, __append_doc},
-  {"insert", (PyCFunction)_nyxlist_insert, METH_VARARGS, __insert_doc},
-  {"extend", (PyCFunction)_nyxlist_extend, METH_O, __extend_doc},
-  {"pop", (PyCFunction)_nyxlist_pop, METH_VARARGS, __pop_doc},
-  {"remove", (PyCFunction)_nyxlist_remove, METH_O, __remove_doc},
-  {"index", (PyCFunction)_nyxlist_index, METH_VARARGS, __index_doc},
-  {"count", (PyCFunction)_nyxlist_count, METH_O, __count_doc},
-  {"reverse", (PyCFunction)_nyxlist_reverse, METH_NOARGS, __reverse_doc},
-  {"__getitem__", (PyCFunction)_nyxlist__meth_subscript, METH_O | METH_COEXIST, __getitem_doc},
-  {"__sizeof__", (PyCFunction)_nyxlist_sizeof, METH_NOARGS, __sizeof_doc},
+  {"copy", (PyCFunction)_nyxlist_copy, METH_NOARGS, __nyxlist_copy_doc},
+  {"clear", (PyCFunction)_nyxlist_clear, METH_NOARGS, __nyxlist_clear_doc},
+  {"size", (PyCFunction)_nyxlist_size, METH_NOARGS, __nyxlist_size_doc},
+  {"append", (PyCFunction)_nyxlist_append, METH_O, __nyxlist_append_doc},
+  {"insert", (PyCFunction)_nyxlist_insert, METH_VARARGS, __nyxlist_insert_doc},
+  {"extend", (PyCFunction)_nyxlist_extend, METH_O, __nyxlist_extend_doc},
+  {"pop", (PyCFunction)_nyxlist_pop, METH_VARARGS, __nyxlist_pop_doc},
+  {"remove", (PyCFunction)_nyxlist_remove, METH_O, __nyxlist_remove_doc},
+  {"index", (PyCFunction)_nyxlist_index, METH_VARARGS, __nyxlist_index_doc},
+  {"count", (PyCFunction)_nyxlist_count, METH_O, __nyxlist_count_doc},
+  {"reverse", (PyCFunction)_nyxlist_reverse, METH_NOARGS, __nyxlist_reverse_doc},
+  {"__getitem__", (PyCFunction)_nyxlist__meth_subscript, METH_O | METH_COEXIST, __nyxlist_getitem_doc},
+  {"__sizeof__", (PyCFunction)_nyxlist_sizeof, METH_NOARGS, __nyxlist_sizeof_doc},
   {nullptr}
 };
 
@@ -531,18 +530,18 @@ static PyTypeObject _nyxlist_type = {
   "_nyxcore.nyx_list", // tp_name
   sizeof(nyx_list), // tp_basicsize
   0, // tp_itemsize
-  (destructor)_nyxlist_dealloc, // tp_dealloc
+  (destructor)_nyxlist_tp_dealloc, // tp_dealloc
   0, // tp_print
   0, // tp_getattr
   0, // tp_setattr
   0, // tp_compare
-  (reprfunc)_nyxlist_repr, // tp_repr
+  (reprfunc)_nyxlist_tp_repr, // tp_repr
   0, // tp_as_number
   &_nyxlist_as_sequence, // tp_as_sequence
   &_nyxlist_as_mapping, // tp_as_mapping
   (hashfunc)PyObject_HashNotImplemented, // tp_hash
   0, // tp_call
-  (reprfunc)_nyxlist_repr, // tp_str
+  (reprfunc)_nyxlist_tp_repr, // tp_str
   PyObject_GenericGetAttr, // tp_getattro
   0, // tp_setattro
   0, // tp_as_buffer
@@ -562,7 +561,7 @@ static PyTypeObject _nyxlist_type = {
   0, // tp_descr_get
   0, // tp_descr_set
   0, // tp_dictoffset
-  (initproc)_nyxlist_init, // tp_init
+  (initproc)_nyxlist_tp_init, // tp_init
   PyType_GenericAlloc, // tp_alloc
   PyType_GenericNew, // tp_new
   PyObject_GC_Del, // tp_free
