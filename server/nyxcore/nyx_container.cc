@@ -461,9 +461,9 @@ PyDoc_STRVAR(_nyxlist_doc,
 PyDoc_STRVAR(__nyxlist_copy_doc,
 "L.copy() -> a shallow copy of L");
 PyDoc_STRVAR(__nyxlist_clear_doc,
-"L.clear() -- clear all elements of L");
+"L.clear() -- remove all item of L");
 PyDoc_STRVAR(__nyxlist_size_doc,
-"L.size() -> integer -- return count of items in L");
+"L.size() -> integer -- return number of items in L");
 PyDoc_STRVAR(__nyxlist_append_doc,
 "L.append(object) -- append object to end");
 PyDoc_STRVAR(__nyxlist_insert_doc,
@@ -651,9 +651,9 @@ PyDoc_STRVAR(_nyxdict_doc,
 "nyx_dict(**kwargs) -> new nyx_dict initialized with the name=value pairs\n"
 "        in the keyword argument list. For example:  nyx_dict(one=1, two=2)");
 PyDoc_STRVAR(__nyxdict_clear_doc,
-"D.clear() -> None -- remove all items from D.");
+"D.clear() -> None -- remove all items from D");
 PyDoc_STRVAR(__nyxdict_size_doc,
-"D.size() -> iteger -- return number of items in D.");
+"D.size() -> iteger -- return number of items in D");
 
 static PyMethodDef _nyxdict_methods[] = {
   {"clear", (PyCFunction)_nyxdict_clear, METH_NOARGS, __nyxdict_clear_doc},
