@@ -612,9 +612,13 @@ public:
       Py_DECREF(x.second);
     map_->clear();
   }
+
+  inline Py_ssize_t _size(void) const {
+    return map_->size();
+  }
 };
 
-static int _nyxdict_init(nyx_dict* self, PyObject* args, PyObject* kwargs) {
+static int _nyxdict_tp_init(nyx_dict* self, PyObject* args, PyObject* kwargs) {
   PyObject* arg{};
 
   if (!PyArg_UnpackTuple(args, "dict", 0, 1, &arg))
@@ -624,11 +628,37 @@ static int _nyxdict_init(nyx_dict* self, PyObject* args, PyObject* kwargs) {
   return 0;
 }
 
-static void _nyxdict_dealloc(nyx_dict* self) {
+static void _nyxdict_tp_dealloc(nyx_dict* self) {
   self->_dealloc();
 }
 
+static PyObject* _nyxdict_clear(nyx_dict* self) {
+  self->_clear();
+  Py_RETURN_NONE;
+}
+
+static PyObject* _nyxdict_size(nyx_dict* self) {
+  return Py_BuildValue("l", self->_size());
+}
+
+PyDoc_STRVAR(_nyxdict_doc,
+"nyx_dict() -> new empty nyx_dict\n"
+"nyx_dict(mapping) -> new nyx_dict initialized from a mapping object's\n"
+"        (key, value) pairs\n"
+"nyx_dict(iterable) -> new nyx_dict initialized as if via:\n"
+"        d = {}\n"
+"        for k, v in iterable:\n"
+"            d[k] = v\n"
+"nyx_dict(**kwargs) -> new nyx_dict initialized with the name=value pairs\n"
+"        in the keyword argument list. For example:  nyx_dict(one=1, two=2)");
+PyDoc_STRVAR(__nyxdict_clear_doc,
+"D.clear() -> None -- remove all items from D.");
+PyDoc_STRVAR(__nyxdict_size_doc,
+"D.size() -> iteger -- return number of items in D.");
+
 static PyMethodDef _nyxdict_methods[] = {
+  {"clear", (PyCFunction)_nyxdict_clear, METH_NOARGS, __nyxdict_clear_doc},
+  {"size", (PyCFunction)_nyxdict_size, METH_NOARGS, __nyxdict_size_doc},
   {nullptr}
 };
 
@@ -638,7 +668,7 @@ static PyTypeObject _nyxdict_type = {
   "_nyxcore.nyx_dict", // tp_name
   sizeof(nyx_dict), // tp_basesize
   0, // tp_itemsize
-  (destructor)_nyxdict_dealloc, // tp_dealloc
+  (destructor)_nyxdict_tp_dealloc, // tp_dealloc
   0, // tp_print
   0, // tp_getattr
   0, // tp_setattr
@@ -654,7 +684,7 @@ static PyTypeObject _nyxdict_type = {
   0, // tp_setattro
   0, // tp_as_buffer
   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, // tp_flags
-  "", // tp_doc
+  _nyxdict_doc, // tp_doc
   0, // tp_traverse
   0, // tp_clear
   0, // tp_richcompare
@@ -669,7 +699,7 @@ static PyTypeObject _nyxdict_type = {
   0, // tp_descr_get
   0, // tp_descr_set
   0, // tp_dictoffset
-  (initproc)_nyxdict_init, // tp_init
+  (initproc)_nyxdict_tp_init, // tp_init
   0, // tp_alloc
   PyType_GenericNew, // tp_new
   0, // tp_free
