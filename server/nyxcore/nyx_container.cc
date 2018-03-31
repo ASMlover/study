@@ -589,7 +589,7 @@ void nyx_list_wrap(PyObject* m) {
 }
 
 class nyx_dict : public PyObject {
-  using ObjectMap = std::unordered_map<long, PyObject*>;
+  using ObjectMap = std::unordered_map<long, std::pair<PyObject*, PyObject*>>;
   ObjectMap* map_{};
 public:
   inline void _init(void) {
@@ -606,14 +606,43 @@ public:
     }
   }
 
+  inline std::string __as_string(PyObject* x) const {
+    if (PyString_Check(x))
+      return std::string("'") + PyString_AsString(x) + "'";
+    else
+      return PyString_AsString(PyObject_Repr(x));
+  }
+
+  std::string _repr(void) const {
+    std::ostringstream oss;
+    oss << "{";
+    auto begin = map_->begin();
+    while (begin != map_->end()) {
+      oss << __as_string(begin->second.first) << ": "
+          << __as_string(begin->second.second);
+
+      if (++begin != map_->end())
+        oss << ", ";
+    }
+    oss << "}";
+
+    return oss.str();
+  }
+
   inline void _clear(void) {
-    for (auto& x : *map_)
-      Py_DECREF(x.second);
+    for (auto& x : *map_) {
+      Py_DECREF(x.second.first);
+      Py_DECREF(x.second.second);
+    };
     map_->clear();
   }
 
   inline Py_ssize_t _size(void) const {
     return map_->size();
+  }
+
+  inline bool _contains(long k) const {
+    return map_->find(k) != map_->end();
   }
 };
 
@@ -631,6 +660,10 @@ static void _nyxdict_tp_dealloc(nyx_dict* self) {
   self->_dealloc();
 }
 
+static PyObject* _nyxdict_tp_repr(nyx_dict* self) {
+  return Py_BuildValue("s", self->_repr().c_str());
+}
+
 static PyObject* _nyxdict_clear(nyx_dict* self) {
   self->_clear();
   Py_RETURN_NONE;
@@ -638,6 +671,18 @@ static PyObject* _nyxdict_clear(nyx_dict* self) {
 
 static PyObject* _nyxdict_size(nyx_dict* self) {
   return Py_BuildValue("l", self->_size());
+}
+
+static PyObject* _nyxdict_contains(nyx_dict* self, PyObject* k) {
+  long hash_code{};
+  if (!PyString_CheckExact(k)
+      || (hash_code = ((PyStringObject*)k)->ob_shash) == -1) {
+    hash_code = PyObject_Hash(k);
+    if (hash_code == -1)
+      return nullptr;
+  }
+
+  return PyBool_FromLong(static_cast<long>(self->_contains(hash_code)));
 }
 
 PyDoc_STRVAR(_nyxdict_doc,
@@ -654,10 +699,16 @@ PyDoc_STRVAR(__nyxdict_clear_doc,
 "D.clear() -> None -- remove all items from D");
 PyDoc_STRVAR(__nyxdict_size_doc,
 "D.size() -> iteger -- return number of items in D");
+PyDoc_STRVAR(__nyxdict_haskey_doc,
+"D.hash_key(k) -> boolean -- return True if D has a key k, else False");
+PyDoc_STRVAR(__nyxdict_contains_doc,
+"D.__contains__(k) -> boolean -- return True if D has a key k, else False");
 
 static PyMethodDef _nyxdict_methods[] = {
   {"clear", (PyCFunction)_nyxdict_clear, METH_NOARGS, __nyxdict_clear_doc},
   {"size", (PyCFunction)_nyxdict_size, METH_NOARGS, __nyxdict_size_doc},
+  {"hash_key", (PyCFunction)_nyxdict_contains, METH_O | METH_COEXIST, __nyxdict_haskey_doc},
+  {"__contains__", (PyCFunction)_nyxdict_contains, METH_O | METH_COEXIST, __nyxdict_contains_doc},
   {nullptr}
 };
 
@@ -672,13 +723,13 @@ static PyTypeObject _nyxdict_type = {
   0, // tp_getattr
   0, // tp_setattr
   0, // tp_compare
-  0, // tp_repr
+  (reprfunc)_nyxdict_tp_repr, // tp_repr
   0, // tp_as_number
   0, // tp_as_sequence
   0, // tp_as_mapping
   (hashfunc)PyObject_HashNotImplemented, // tp_hash
   0, // tp_call
-  0, // tp_str
+  (reprfunc)_nyxdict_tp_repr, // tp_str
   0, // tp_getattro
   0, // tp_setattro
   0, // tp_as_buffer
