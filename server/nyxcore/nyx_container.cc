@@ -652,6 +652,22 @@ public:
       v = pos->second.second;
     return v;
   }
+
+  inline PyObject* _setdefault(long hash_code, PyObject* k, PyObject* v) {
+    PyObject* r = v;
+
+    Py_INCREF(k);
+    Py_INCREF(v);
+    auto pos = map_->find(hash_code);
+    if (pos != map_->end()) {
+      r = pos->second.second;
+      Py_DECREF(pos->second.first);
+      Py_DECREF(pos->second.second);
+    }
+    (*map_)[hash_code] = std::pair<PyObject*, PyObject*>(k, v);
+
+    return r;
+  }
 };
 
 static int _nyxdict_tp_init(nyx_dict* self, PyObject* args, PyObject* kwargs) {
@@ -703,6 +719,26 @@ static PyObject* _nyxdict_get(nyx_dict* self, PyObject* args) {
   return v;
 }
 
+static PyObject* _nyxdict_setdefault(nyx_dict* self, PyObject* args) {
+  PyObject* k{};
+  PyObject* failobj = Py_None;
+
+  if (!PyArg_UnpackTuple(args, "setdefault", 1, 2, &k, &failobj))
+    return nullptr;
+
+  long hash_code;
+  if (!PyString_CheckExact(k) ||
+      (hash_code = ((PyStringObject*)k)->ob_shash) == -1) {
+    hash_code = PyObject_Hash(k);
+    if (hash_code == -1)
+      return nullptr;
+  }
+
+  auto* v = self->_setdefault(hash_code, k, failobj);
+  Py_INCREF(v);
+  return v;
+}
+
 static PyObject* _nyxdict_contains(nyx_dict* self, PyObject* k) {
   long hash_code;
   if (!PyString_CheckExact(k) ||
@@ -733,6 +769,8 @@ PyDoc_STRVAR(__nyxdict_haskey_doc,
 "D.hash_key(k) -> boolean -- return True if D has a key k, else False");
 PyDoc_STRVAR(__nyxdict_get_doc,
 "D.get(k[, d]) -- return D[k] if k in D, else d. d defaults to None");
+PyDoc_STRVAR(__nyxdict_setdefault_doc,
+"D.setdefault(k[, d]) -- return D.get(k, d), also set D[k] = d if k not in D");
 PyDoc_STRVAR(__nyxdict_contains_doc,
 "D.__contains__(k) -> boolean -- return True if D has a key k, else False");
 
@@ -741,6 +779,7 @@ static PyMethodDef _nyxdict_methods[] = {
   {"size", (PyCFunction)_nyxdict_size, METH_NOARGS, __nyxdict_size_doc},
   {"hash_key", (PyCFunction)_nyxdict_contains, METH_O | METH_COEXIST, __nyxdict_haskey_doc},
   {"get", (PyCFunction)_nyxdict_get, METH_VARARGS, __nyxdict_get_doc},
+  {"setdefault", (PyCFunction)_nyxdict_setdefault, METH_VARARGS, __nyxdict_setdefault_doc},
   {"__contains__", (PyCFunction)_nyxdict_contains, METH_O | METH_COEXIST, __nyxdict_contains_doc},
   {nullptr}
 };
