@@ -694,6 +694,58 @@ public:
     map_->erase(begin);
     return r;
   }
+
+  PyObject* _keys(void) const {
+    auto* r = PyList_New(_size());
+    if (r == nullptr)
+      return nullptr;
+
+    Py_ssize_t i = 0;
+    for (auto& x : *map_) {
+      auto* k = x.second.first;
+      Py_INCREF(k);
+      PyList_SET_ITEM(r, i++, k);
+    }
+    return r;
+  }
+
+  PyObject* _values(void) const {
+    auto* r = PyList_New(_size());
+    if (r == nullptr)
+      return nullptr;
+
+    Py_ssize_t i = 0;
+    for (auto& x : *map_) {
+      auto* v = x.second.second;
+      Py_INCREF(v);
+      PyList_SET_ITEM(r, i++, v);
+    }
+    return r;
+  }
+
+  PyObject* _items(void) const {
+    auto* r = PyList_New(_size());
+    if (r == nullptr)
+      return nullptr;
+
+    Py_ssize_t i = 0;
+    for (auto& x : *map_) {
+      auto* e = PyTuple_New(2);
+      if (e == nullptr) {
+        Py_DECREF(r);
+        return nullptr;
+      }
+      auto* k = x.second.first;
+      auto* v = x.second.second;
+      Py_INCREF(k);
+      Py_INCREF(v);
+      PyTuple_SET_ITEM(e, 0, k);
+      PyTuple_SET_ITEM(e, 1, v);
+
+      PyList_SET_ITEM(r, i++, e);
+    }
+    return r;
+  }
 };
 
 inline void __nyxdict_set_key_error(PyObject* arg) {
@@ -805,6 +857,18 @@ static PyObject* _nyxdict_popitem(nyx_dict* self) {
   return self->_popitem();
 }
 
+static PyObject* _nyxdict_keys(nyx_dict* self) {
+  return self->_keys();
+}
+
+static PyObject* _nyxdict_values(nyx_dict* self) {
+  return self->_values();
+}
+
+static PyObject* _nyxdict_items(nyx_dict* self) {
+  return self->_items();
+}
+
 static PyObject* _nyxdict_contains(nyx_dict* self, PyObject* k) {
   long hash_code;
   if (!PyString_CheckExact(k) ||
@@ -843,6 +907,12 @@ PyDoc_STRVAR(__nyxdict_pop_doc,
 PyDoc_STRVAR(__nyxdict_popitem_doc,
 "D.popitem() -> tuple -- remove and return some (key, value) pair as a\n"
 "2-tuple; but raise KeyError if D is empty.");
+PyDoc_STRVAR(__nyxdict_keys_doc,
+"D.keys() -> list -- list of D's keys");
+PyDoc_STRVAR(__nyxdict_values_doc,
+"D.values() -> list -- list of D's values");
+PyDoc_STRVAR(__nyxdict_items_doc,
+"D.items() -> list -- list of D's (key, value) pairs, as 2-tuples");
 PyDoc_STRVAR(__nyxdict_contains_doc,
 "D.__contains__(k) -> boolean -- return True if D has a key k, else False");
 
@@ -854,6 +924,9 @@ static PyMethodDef _nyxdict_methods[] = {
   {"setdefault", (PyCFunction)_nyxdict_setdefault, METH_VARARGS, __nyxdict_setdefault_doc},
   {"pop", (PyCFunction)_nyxdict_pop, METH_VARARGS, __nyxdict_pop_doc},
   {"popitem", (PyCFunction)_nyxdict_popitem, METH_NOARGS, __nyxdict_popitem_doc},
+  {"keys", (PyCFunction)_nyxdict_keys, METH_NOARGS, __nyxdict_keys_doc},
+  {"values", (PyCFunction)_nyxdict_values, METH_NOARGS, __nyxdict_values_doc},
+  {"items", (PyCFunction)_nyxdict_items, METH_NOARGS, __nyxdict_items_doc},
   {"__contains__", (PyCFunction)_nyxdict_contains, METH_O | METH_COEXIST, __nyxdict_contains_doc},
   {nullptr}
 };
