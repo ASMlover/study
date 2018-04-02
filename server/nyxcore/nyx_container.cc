@@ -682,6 +682,18 @@ public:
     }
     return v;
   }
+
+  inline PyObject* _popitem(void) {
+    auto* r = PyTuple_New(2);
+    if (r == nullptr)
+      return nullptr;
+
+    auto begin = map_->begin();
+    PyTuple_SET_ITEM(r, 0, begin->second.first);
+    PyTuple_SET_ITEM(r, 1, begin->second.second);
+    map_->erase(begin);
+    return r;
+  }
 };
 
 inline void __nyxdict_set_key_error(PyObject* arg) {
@@ -784,6 +796,15 @@ static PyObject* _nyxdict_pop(nyx_dict* self, PyObject* args) {
   return v;
 }
 
+static PyObject* _nyxdict_popitem(nyx_dict* self) {
+  if (self->_size() == 0) {
+    PyErr_SetString(PyExc_KeyError, "popitem(): nyx_dict is empty");
+    return nullptr;
+  }
+
+  return self->_popitem();
+}
+
 static PyObject* _nyxdict_contains(nyx_dict* self, PyObject* k) {
   long hash_code;
   if (!PyString_CheckExact(k) ||
@@ -819,6 +840,9 @@ PyDoc_STRVAR(__nyxdict_setdefault_doc,
 PyDoc_STRVAR(__nyxdict_pop_doc,
 "D.pop(k[, d]) -- remove specified key and return the corresponding value.\n"
 "If key is not found, d is returned if given, otherwise KeyError is raised");
+PyDoc_STRVAR(__nyxdict_popitem_doc,
+"D.popitem() -> tuple -- remove and return some (key, value) pair as a\n"
+"2-tuple; but raise KeyError if D is empty.");
 PyDoc_STRVAR(__nyxdict_contains_doc,
 "D.__contains__(k) -> boolean -- return True if D has a key k, else False");
 
@@ -829,6 +853,7 @@ static PyMethodDef _nyxdict_methods[] = {
   {"get", (PyCFunction)_nyxdict_get, METH_VARARGS, __nyxdict_get_doc},
   {"setdefault", (PyCFunction)_nyxdict_setdefault, METH_VARARGS, __nyxdict_setdefault_doc},
   {"pop", (PyCFunction)_nyxdict_pop, METH_VARARGS, __nyxdict_pop_doc},
+  {"popitem", (PyCFunction)_nyxdict_popitem, METH_NOARGS, __nyxdict_popitem_doc},
   {"__contains__", (PyCFunction)_nyxdict_contains, METH_O | METH_COEXIST, __nyxdict_contains_doc},
   {nullptr}
 };
