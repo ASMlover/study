@@ -881,6 +881,22 @@ static PyObject* _nyxdict_contains(nyx_dict* self, PyObject* k) {
   return PyBool_FromLong(static_cast<long>(self->_contains(hash_code)));
 }
 
+static int _nyxdict__meth_contains(nyx_dict* self, PyObject* k) {
+  long hash_code;
+  if (!PyString_CheckExact(k) ||
+      (hash_code = ((PyStringObject*)k)->ob_shash) == -1) {
+    hash_code = PyObject_Hash(k);
+    if (hash_code == -1)
+      return -1;
+  }
+
+  return static_cast<int>(self->_contains(hash_code));
+}
+
+static Py_ssize_t _nyxdict__meth_length(nyx_dict* self) {
+  return self->_size();
+}
+
 PyDoc_STRVAR(_nyxdict_doc,
 "nyx_dict() -> new empty nyx_dict\n"
 "nyx_dict(mapping) -> new nyx_dict initialized from a mapping object's\n"
@@ -916,6 +932,25 @@ PyDoc_STRVAR(__nyxdict_items_doc,
 PyDoc_STRVAR(__nyxdict_contains_doc,
 "D.__contains__(k) -> boolean -- return True if D has a key k, else False");
 
+static PySequenceMethods _nyxdict_as_sequence = {
+  0, // sq_length
+  0, // sq_concat
+  0, // sq_repeat
+  0, // sq_item
+  0, // sq_slice
+  0, // sq_ass_item
+  0, // sq_ass_slice
+  (objobjproc)_nyxdict__meth_contains, // sq_contains
+  0, // sq_inplace_concat
+  0, // sq_inplace_repeat
+};
+
+static PyMappingMethods _nyxdict_as_mapping = {
+  (lenfunc)_nyxdict__meth_length, // mp_length
+  0, // mp_subscript
+  0, // mp_ass_subscript
+};
+
 static PyMethodDef _nyxdict_methods[] = {
   {"clear", (PyCFunction)_nyxdict_clear, METH_NOARGS, __nyxdict_clear_doc},
   {"size", (PyCFunction)_nyxdict_size, METH_NOARGS, __nyxdict_size_doc},
@@ -944,8 +979,8 @@ static PyTypeObject _nyxdict_type = {
   0, // tp_compare
   (reprfunc)_nyxdict_tp_repr, // tp_repr
   0, // tp_as_number
-  0, // tp_as_sequence
-  0, // tp_as_mapping
+  &_nyxdict_as_sequence, // tp_as_sequence
+  &_nyxdict_as_mapping, // tp_as_mapping
   (hashfunc)PyObject_HashNotImplemented, // tp_hash
   0, // tp_call
   (reprfunc)_nyxdict_tp_repr, // tp_str
