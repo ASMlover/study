@@ -897,6 +897,24 @@ static Py_ssize_t _nyxdict__meth_length(nyx_dict* self) {
   return self->_size();
 }
 
+static PyObject* _nyxdict__meth_subscript(nyx_dict* self, PyObject* k) {
+  long hash_code;
+  if (!PyString_CheckExact(k) ||
+      (hash_code = ((PyStringObject*)k)->ob_shash) == -1) {
+    hash_code = PyObject_Hash(k);
+    if (hash_code == -1)
+      return nullptr;
+  }
+
+  auto* v = self->_get(hash_code);
+  if (v == nullptr) {
+    __nyxdict_set_key_error(k);
+    return nullptr;
+  }
+  Py_INCREF(v);
+  return v;
+}
+
 PyDoc_STRVAR(_nyxdict_doc,
 "nyx_dict() -> new empty nyx_dict\n"
 "nyx_dict(mapping) -> new nyx_dict initialized from a mapping object's\n"
@@ -931,6 +949,8 @@ PyDoc_STRVAR(__nyxdict_items_doc,
 "D.items() -> list -- list of D's (key, value) pairs, as 2-tuples");
 PyDoc_STRVAR(__nyxdict_contains_doc,
 "D.__contains__(k) -> boolean -- return True if D has a key k, else False");
+PyDoc_STRVAR(__nyxdict_getitem_doc,
+"x.__getitem__(y) <==> x[y]");
 
 static PySequenceMethods _nyxdict_as_sequence = {
   0, // sq_length
@@ -947,7 +967,7 @@ static PySequenceMethods _nyxdict_as_sequence = {
 
 static PyMappingMethods _nyxdict_as_mapping = {
   (lenfunc)_nyxdict__meth_length, // mp_length
-  0, // mp_subscript
+  (binaryfunc)_nyxdict__meth_subscript, // mp_subscript
   0, // mp_ass_subscript
 };
 
