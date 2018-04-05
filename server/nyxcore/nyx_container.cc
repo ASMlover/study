@@ -746,6 +746,29 @@ public:
     }
     return r;
   }
+
+  inline void _setitem(long hash_code, PyObject* k, PyObject* v) {
+    Py_INCREF(k);
+    Py_INCREF(v);
+    auto pos = map_->find(hash_code);
+    if (pos != map_->end()) {
+      Py_DECREF(pos->second.first);
+      Py_DECREF(pos->second.second);
+      map_->erase(pos);
+    }
+    (*map_)[hash_code] = std::pair<PyObject*, PyObject*>(k, v);
+  }
+
+  inline bool _delitem(long hash_code) {
+    auto pos = map_->find(hash_code);
+    if (pos == map_->end())
+      return false;
+
+    Py_DECREF(pos->second.first);
+    Py_DECREF(pos->second.second);
+    map_->erase(pos);
+    return true;
+  }
 };
 
 inline void __nyxdict_set_key_error(PyObject* arg) {
@@ -915,6 +938,42 @@ static PyObject* _nyxdict__meth_subscript(nyx_dict* self, PyObject* k) {
   return v;
 }
 
+static int _nyxdict_setitem(nyx_dict* self, PyObject* k, PyObject* v) {
+  long hash_code;
+  if (!PyString_CheckExact(k) ||
+      (hash_code = ((PyStringObject*)k)->ob_shash) == -1) {
+    hash_code = PyObject_Hash(k);
+    if (hash_code == -1)
+      return -1;
+  }
+  self->_setitem(hash_code, k, v);
+  return 0;
+}
+
+static int _nyxdict_delitem(nyx_dict* self, PyObject* k) {
+  long hash_code;
+  if (!PyString_CheckExact(k) ||
+      (hash_code = ((PyStringObject*)k)->ob_shash) == -1) {
+    hash_code = PyObject_Hash(k);
+    if (hash_code == -1)
+      return -1;
+  }
+
+  if (!self->_delitem(hash_code)) {
+    __nyxdict_set_key_error(k);
+    return -1;
+  }
+  return 0;
+}
+
+static int
+_nyxdict__meth_ass_subscript(nyx_dict* self, PyObject* k, PyObject* v) {
+  if (v == nullptr)
+    return _nyxdict_delitem(self, k);
+  else
+    return _nyxdict_setitem(self, k, v);
+}
+
 PyDoc_STRVAR(_nyxdict_doc,
 "nyx_dict() -> new empty nyx_dict\n"
 "nyx_dict(mapping) -> new nyx_dict initialized from a mapping object's\n"
@@ -968,7 +1027,7 @@ static PySequenceMethods _nyxdict_as_sequence = {
 static PyMappingMethods _nyxdict_as_mapping = {
   (lenfunc)_nyxdict__meth_length, // mp_length
   (binaryfunc)_nyxdict__meth_subscript, // mp_subscript
-  0, // mp_ass_subscript
+  (objobjargproc)_nyxdict__meth_ass_subscript, // mp_ass_subscript
 };
 
 static PyMethodDef _nyxdict_methods[] = {
