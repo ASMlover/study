@@ -851,6 +851,11 @@ static PyObject* _nyxdict_setdefault(nyx_dict* self, PyObject* args) {
 
   if (!PyArg_UnpackTuple(args, "setdefault", 1, 2, &k, &failobj))
     return nullptr;
+  if (self == failobj) {
+    PyErr_SetString(PyExc_SystemError,
+        "setdefault(key, value): cannot set default as self");
+    return nullptr;
+  }
 
   long hash_code;
   if (!PyString_CheckExact(k) ||
@@ -956,6 +961,12 @@ static PyObject* _nyxdict__meth_subscript(nyx_dict* self, PyObject* k) {
 }
 
 static int _nyxdict_setitem(nyx_dict* self, PyObject* k, PyObject* v) {
+  if (self == v) {
+    PyErr_SetString(PyExc_SystemError,
+        "__setitem__(key, value): cannot set item as self");
+    return -1;
+  }
+
   long hash_code;
   if (!PyString_CheckExact(k) ||
       (hash_code = ((PyStringObject*)k)->ob_shash) == -1) {
