@@ -769,6 +769,14 @@ public:
     map_->erase(pos);
     return true;
   }
+
+  inline int _traverse(visitproc visit, void* arg) {
+    for (auto& x : *map_) {
+      Py_VISIT(x.second.first);
+      Py_VISIT(x.second.second);
+    }
+    return 0;
+  }
 };
 
 inline void __nyxdict_set_key_error(PyObject* arg) {
@@ -795,6 +803,15 @@ static void _nyxdict_tp_dealloc(nyx_dict* self) {
 
 static PyObject* _nyxdict_tp_repr(nyx_dict* self) {
   return Py_BuildValue("s", self->_repr().c_str());
+}
+
+static int _nyxdict_tp_clear(nyx_dict* self) {
+  self->_clear();
+  return 0;
+}
+
+static int  _nyxdict_tp_traverse(nyx_dict* self, visitproc visit, void* arg) {
+  return self->_traverse(visit, arg);
 }
 
 static PyObject* _nyxdict_clear(nyx_dict* self) {
@@ -1066,10 +1083,10 @@ static PyTypeObject _nyxdict_type = {
   0, // tp_getattro
   0, // tp_setattro
   0, // tp_as_buffer
-  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, // tp_flags
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, // tp_flags
   _nyxdict_doc, // tp_doc
-  0, // tp_traverse
-  0, // tp_clear
+  (traverseproc)_nyxdict_tp_traverse, // tp_traverse
+  (inquiry)_nyxdict_tp_clear, // tp_clear
   0, // tp_richcompare
   0, // tp_weaklistoffset
   0, // tp_iter
@@ -1083,9 +1100,9 @@ static PyTypeObject _nyxdict_type = {
   0, // tp_descr_set
   0, // tp_dictoffset
   (initproc)_nyxdict_tp_init, // tp_init
-  0, // tp_alloc
+  PyType_GenericAlloc, // tp_alloc
   PyType_GenericNew, // tp_new
-  0, // tp_free
+  PyObject_GC_Del, // tp_free
 };
 
 void nyx_dict_wrap(PyObject* m) {
