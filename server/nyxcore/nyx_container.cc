@@ -747,14 +747,11 @@ public:
     return r;
   }
 
-  inline void _setitem(long hash_code, PyObject* k, PyObject* v) {
-    Py_INCREF(k);
-    Py_INCREF(v);
+  inline void _insert(long hash_code, PyObject* k, PyObject* v) {
     auto pos = map_->find(hash_code);
     if (pos != map_->end()) {
       Py_DECREF(pos->second.first);
       Py_DECREF(pos->second.second);
-      map_->erase(pos);
     }
     (*map_)[hash_code] = std::pair<PyObject*, PyObject*>(k, v);
   }
@@ -777,6 +774,16 @@ public:
     }
     return 0;
   }
+
+  inline void _update(const nyx_dict* other) {
+    for (auto& x : *other->map_) {
+      auto* k = x.second.first;
+      auto* v = x.second.second;
+      Py_INCREF(k);
+      Py_INCREF(v);
+      _insert(x.first, k, v);
+    }
+  }
 };
 
 static bool __is_nyxdict(PyObject* o);
@@ -789,14 +796,115 @@ inline void __nyxdict_set_key_error(PyObject* arg) {
   Py_DECREF(tup);
 }
 
+static int _nyxdict_merge(nyx_dict* self, PyObject* b, bool is_override) {
+  if (self == nullptr || !__is_nyxdict(self) || b == nullptr) {
+    PyErr_BadInternalCall();
+    return -1;
+  }
+
+  if (PyDict_Check(b)) {
+    PyDictObject* other = reinterpret_cast<PyDictObject*>(b);
+    if (self == b || other->ma_used == 0)
+      return 0;
+
+    for (auto i = 0; i <= other->ma_mask; ++i) {
+      auto* entry = &other->ma_table[i];
+      auto hash_code = static_cast<long>(entry->me_hash);
+      if (entry->me_value != nullptr &&
+          (is_override || !self->_contains(hash_code))) {
+        Py_INCREF(entry->me_key);
+        Py_INCREF(entry->me_value);
+        self->_insert(hash_code, entry->me_key, entry->me_value);
+      }
+    }
+  }
+  else if (__is_nyxdict(b)) {
+    if (self == b)
+      return 0;
+    self->_update(reinterpret_cast<nyx_dict*>(b));
+  }
+  return 0;
+}
+
+static int _nyxdict_merge_from_seq(
+    nyx_dict* self, PyObject* seq, bool is_override) {
+  if (self == nullptr || !__is_nyxdict(self) || seq == nullptr)
+    return -1;
+  auto* it = PyObject_GetIter(seq);
+  if (it == nullptr)
+    return -1;
+
+  for (auto i = 0; ; ++i) {
+    auto* item = PyIter_Next(it);
+    if (item == nullptr) {
+      if (PyErr_Occurred())
+        return -1;
+      break;
+    }
+
+    auto* fast = PySequence_Fast(item, "");
+    if (fast == nullptr) {
+      if (PyErr_ExceptionMatches(PyExc_TypeError)) {
+        PyErr_Format(PyExc_TypeError,
+            "cannot convert nyx_dict update sequence "
+            "element #%zd to a sequence", i);
+      }
+      Py_DECREF(item);
+      return -1;
+    }
+    auto n = PySequence_Fast_GET_SIZE(fast);
+    if (n != 2) {
+      PyErr_Format(PyExc_ValueError,
+          "nyx_dict update sequence element #%zd has length %zd; "
+          "2 is required", i, n);
+      Py_DECREF(item);
+      Py_DECREF(fast);
+      return -1;
+    }
+
+    auto* k = PySequence_Fast_GET_ITEM(fast, 0);
+    auto* v = PySequence_Fast_GET_ITEM(fast, 1);
+    long hash_code;
+    if (!PyString_CheckExact(k) ||
+        (hash_code = ((PyStringObject*)k)->ob_shash) == -1) {
+      hash_code = PyObject_Hash(k);
+      if (hash_code == -1) {
+        Py_DECREF(item);
+        Py_DECREF(fast);
+        return -1;
+      }
+    }
+    if (is_override || self->_contains(hash_code))
+      self->_insert(hash_code, k, v);
+    Py_DECREF(item);
+    Py_DECREF(fast);
+  }
+  return 0;
+}
+
+static int _nyxdict_update_common(
+    nyx_dict* self, PyObject* args, PyObject* kwds, const char* methname) {
+  PyObject* arg{};
+  if (!PyArg_UnpackTuple(args, methname, 0, 1, &arg))
+    return -1;
+
+  int r{};
+  if (arg != nullptr) {
+    if (PyObject_HasAttrString(arg, "keys"))
+      r = _nyxdict_merge(self, arg, true);
+    else
+      r = _nyxdict_merge_from_seq(self, arg, true);
+  }
+  if (r == 0 && kwds != nullptr)
+    r = _nyxdict_merge(self, kwds, true);
+  return r;
+}
+
 static int _nyxdict_tp_init(nyx_dict* self, PyObject* args, PyObject* kwargs) {
   PyObject* arg{};
 
-  if (!PyArg_UnpackTuple(args, "dict", 0, 1, &arg))
-    return -1;
-
   self->_init();
-  return 0;
+  return _nyxdict_update_common(self, args, kwargs, "nyx_dict");
 }
 
 static void _nyxdict_tp_dealloc(nyx_dict* self) {
@@ -980,7 +1088,10 @@ static int _nyxdict_setitem(nyx_dict* self, PyObject* k, PyObject* v) {
     if (hash_code == -1)
       return -1;
   }
-  self->_setitem(hash_code, k, v);
+
+  Py_INCREF(k);
+  Py_INCREF(v);
+  self->_insert(hash_code, k, v);
   return 0;
 }
 
