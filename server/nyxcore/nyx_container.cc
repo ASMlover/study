@@ -567,11 +567,11 @@ static PyTypeObject _nyxlist_type = {
   PyObject_GC_Del, // tp_free
 };
 
-static bool __is_nyxlist(PyObject* o) {
+bool __is_nyxlist(PyObject* o) {
   return Py_TYPE(o) == &_nyxlist_type;
 }
 
-static PyObject* __nyxlist_new(void) {
+PyObject* __nyxlist_new(void) {
   PyTypeObject* _type = &_nyxlist_type;
   auto* nl = (nyx_list*)_type->tp_alloc(_type, 0);
   if (nl != nullptr)
@@ -779,6 +779,8 @@ public:
   }
 };
 
+static bool __is_nyxdict(PyObject* o);
+
 inline void __nyxdict_set_key_error(PyObject* arg) {
   auto* tup = PyTuple_Pack(1, arg);
   if (!tup)
@@ -966,6 +968,10 @@ static int _nyxdict_setitem(nyx_dict* self, PyObject* k, PyObject* v) {
         "__setitem__(key, value): cannot set item as self");
     return -1;
   }
+  if (!__is_nyxdict(self)) {
+    PyErr_BadInternalCall();
+    return -1;
+  }
 
   long hash_code;
   if (!PyString_CheckExact(k) ||
@@ -979,6 +985,11 @@ static int _nyxdict_setitem(nyx_dict* self, PyObject* k, PyObject* v) {
 }
 
 static int _nyxdict_delitem(nyx_dict* self, PyObject* k) {
+  if (!__is_nyxdict(self)) {
+    PyErr_BadInternalCall();
+    return -1;
+  }
+
   long hash_code;
   if (!PyString_CheckExact(k) ||
       (hash_code = ((PyStringObject*)k)->ob_shash) == -1) {
@@ -1070,6 +1081,7 @@ static PyMethodDef _nyxdict_methods[] = {
   {"values", (PyCFunction)_nyxdict_values, METH_NOARGS, __nyxdict_values_doc},
   {"items", (PyCFunction)_nyxdict_items, METH_NOARGS, __nyxdict_items_doc},
   {"__contains__", (PyCFunction)_nyxdict_contains, METH_O | METH_COEXIST, __nyxdict_contains_doc},
+  {"__getitem__", (PyCFunction)_nyxdict__meth_subscript, METH_O | METH_COEXIST, __nyxdict_getitem_doc},
   {nullptr}
 };
 
@@ -1115,6 +1127,10 @@ static PyTypeObject _nyxdict_type = {
   PyType_GenericNew, // tp_new
   PyObject_GC_Del, // tp_free
 };
+
+bool __is_nyxdict(PyObject* o) {
+  return Py_TYPE(o) == &_nyxdict_type;
+}
 
 void nyx_dict_wrap(PyObject* m) {
   if (PyType_Ready(&_nyxdict_type) < 0)
