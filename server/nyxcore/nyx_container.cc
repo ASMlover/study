@@ -847,7 +847,7 @@ static int _nyxdict_merge_from_seq(
       if (PyErr_ExceptionMatches(PyExc_TypeError)) {
         PyErr_Format(PyExc_TypeError,
             "cannot convert nyx_dict update sequence "
-            "element #%zd to a sequence", i);
+            "element #%d to a sequence", i);
       }
       Py_DECREF(item);
       return -1;
@@ -855,7 +855,7 @@ static int _nyxdict_merge_from_seq(
     auto n = PySequence_Fast_GET_SIZE(fast);
     if (n != 2) {
       PyErr_Format(PyExc_ValueError,
-          "nyx_dict update sequence element #%zd has length %zd; "
+          "nyx_dict update sequence element #%d has length %zd; "
           "2 is required", i, n);
       Py_DECREF(item);
       Py_DECREF(fast);
@@ -874,7 +874,7 @@ static int _nyxdict_merge_from_seq(
         return -1;
       }
     }
-    if (is_override || self->_contains(hash_code))
+    if (is_override || !self->_contains(hash_code))
       self->_insert(hash_code, k, v);
     Py_DECREF(item);
     Py_DECREF(fast);
@@ -901,8 +901,6 @@ static int _nyxdict_update_common(
 }
 
 static int _nyxdict_tp_init(nyx_dict* self, PyObject* args, PyObject* kwargs) {
-  PyObject* arg{};
-
   self->_init();
   return _nyxdict_update_common(self, args, kwargs, "nyx_dict");
 }
@@ -920,7 +918,7 @@ static int _nyxdict_tp_clear(nyx_dict* self) {
   return 0;
 }
 
-static int  _nyxdict_tp_traverse(nyx_dict* self, visitproc visit, void* arg) {
+static int _nyxdict_tp_traverse(nyx_dict* self, visitproc visit, void* arg) {
   return self->_traverse(visit, arg);
 }
 
