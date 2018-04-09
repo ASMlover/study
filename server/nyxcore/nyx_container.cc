@@ -1212,10 +1212,11 @@ static PyTypeObject _nyxdict_type = {
   (hashfunc)PyObject_HashNotImplemented, // tp_hash
   0, // tp_call
   (reprfunc)_nyxdict_tp_repr, // tp_str
-  0, // tp_getattro
+  PyObject_GenericGetAttr, // tp_getattro
   0, // tp_setattro
   0, // tp_as_buffer
-  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, // tp_flags
+  // Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, // tp_flags
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, // tp_flags
   _nyxdict_doc, // tp_doc
   (traverseproc)_nyxdict_tp_traverse, // tp_traverse
   (inquiry)_nyxdict_tp_clear, // tp_clear
