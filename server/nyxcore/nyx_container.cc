@@ -190,6 +190,7 @@ static int _nyxlist_tp_init(nyx_list* self, PyObject* args, PyObject* kwargs) {
 
 static void _nyxlist_tp_dealloc(nyx_list* self) {
   self->_dealloc();
+  self->ob_type->tp_free(self);
 }
 
 static PyObject* _nyxlist_tp_repr(nyx_list* self) {
@@ -874,8 +875,11 @@ static int _nyxdict_merge_from_seq(
         return -1;
       }
     }
-    if (is_override || !self->_contains(hash_code))
+    if (is_override || !self->_contains(hash_code)) {
+      Py_INCREF(k);
+      Py_INCREF(v);
       self->_insert(hash_code, k, v);
+    }
     Py_DECREF(item);
     Py_DECREF(fast);
   }
@@ -907,6 +911,7 @@ static int _nyxdict_tp_init(nyx_dict* self, PyObject* args, PyObject* kwargs) {
 
 static void _nyxdict_tp_dealloc(nyx_dict* self) {
   self->_dealloc();
+  self->ob_type->tp_free(self);
 }
 
 static PyObject* _nyxdict_tp_repr(nyx_dict* self) {
@@ -1215,8 +1220,7 @@ static PyTypeObject _nyxdict_type = {
   PyObject_GenericGetAttr, // tp_getattro
   0, // tp_setattro
   0, // tp_as_buffer
-  // Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, // tp_flags
-  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, // tp_flags
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, // tp_flags
   _nyxdict_doc, // tp_doc
   (traverseproc)_nyxdict_tp_traverse, // tp_traverse
   (inquiry)_nyxdict_tp_clear, // tp_clear
