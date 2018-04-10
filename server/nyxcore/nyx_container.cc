@@ -591,6 +591,7 @@ void nyx_list_wrap(PyObject* m) {
 
 class nyx_dict : public PyObject {
   using ObjectMap = std::unordered_map<long, std::pair<PyObject*, PyObject*>>;
+  using IterType = ObjectMap::const_iterator;
   ObjectMap* map_{};
 public:
   inline void _init(void) {
@@ -784,6 +785,14 @@ public:
       Py_INCREF(v);
       _insert(x.first, k, v);
     }
+  }
+
+  inline IterType _get_begin(void) const {
+    return map_->begin();
+  }
+
+  inline IterType _get_end(void) const {
+    return map_->end();
   }
 };
 
@@ -1150,6 +1159,112 @@ _nyxdict__meth_ass_subscript(nyx_dict* self, PyObject* k, PyObject* v) {
   else
     return _nyxdict_setitem(self, k, v);
 }
+
+struct nyx_dictiter : public PyObject {
+  using IterType =
+    std::unordered_map<long, std::pair<PyObject*, PyObject*>>::const_iterator;
+  nyx_dict* di_dict{};
+  IterType* di_iter{};
+  PyObject* di_result{};
+};
+
+static PyObject* _nyxdictiter_new(nyx_dict* dict, PyTypeObject* itertype);
+
+PyObject* _nyxdictiter_new(nyx_dict* dict, PyTypeObject* itertype) {
+  auto* di = PyObject_GC_New(nyx_dictiter, itertype);
+  if (di == nullptr)
+    return nullptr;
+  Py_INCREF(dict);
+  di->di_dict = dict;
+  di->di_iter = new nyx_dictiter::IterType();
+  *di->di_iter = dict->_get_begin();
+  if (itertype == NULL) {
+    di->di_result = PyTuple_Pack(2, Py_None, Py_None);
+    if (di->di_result == nullptr) {
+      Py_DECREF(di);
+      return nullptr;
+    }
+  }
+
+  _PyObject_GC_TRACK(di);
+  return static_cast<PyObject*>(di);
+}
+
+static void _nyxdictiter_dealloc(nyx_dictiter* di) {
+  Py_XDECREF(di->di_dict);
+  Py_XDECREF(di->di_result);
+  if (di->di_iter != nullptr)
+    delete di->di_iter;
+  PyObject_GC_Del(di);
+}
+
+static int _nyxdictiter_traverse(nyx_dictiter* di, visitproc visit, void* arg) {
+  Py_VISIT(di->di_dict);
+  Py_VISIT(di->di_result);
+  return 0;
+}
+
+static PyObject* _nyxdictiter_len(nyx_dictiter* di) {
+  Py_ssize_t len = 0;
+  if (di->di_dict != nullptr)
+    len = di->di_dict->_size();
+  return PyInt_FromSsize_t(len);
+}
+
+PyDoc_STRVAR(__nyxdictiter_hint_doc,
+"private method returning an estimate of len(list(it))");
+static PyMethodDef _nyxdictiter_methods[] = {
+  {"__length_hint__", (PyCFunction)_nyxdictiter_len, METH_NOARGS, __nyxdictiter_hint_doc},
+  {nullptr, nullptr}
+};
+
+static PyObject* _nyxdictiter_nextkey(nyx_dictiter* di) {
+  auto* d = di->di_dict;
+
+  if (d == nullptr || !__is_nyxdict(d))
+    return nullptr;
+
+  if (*di->di_iter == d->_get_end()) {
+    di->di_dict = nullptr;
+    Py_DECREF(d);
+    return nullptr;
+  }
+  auto* key = (*di->di_iter)->second.first;
+  Py_INCREF(key);
+  return key;
+}
+
+PyTypeObject _nyxdictiter_keytype = {
+  PyVarObject_HEAD_INIT(&PyType_Type, 0)
+  "nyx_dict-keyiter", // tp_name
+  sizeof(nyx_dictiter), // tp_basicsize
+  0, // tp_itemsize
+  (destructor)_nyxdictiter_dealloc, // tp_dealloc
+  0, // tp_print
+  0, // tp_getattr
+  0, // tp_setattr
+  0, // tp_compare
+  0, // tp_repr
+  0, // tp_as_number
+  0, // tp_as_sequence
+  0, // tp_as_mapping
+  0, // tp_hash
+  0, // tp_call
+  0, // tp_str
+  PyObject_GenericGetAttr, // tp_getattro
+  0, // tp_setattro
+  0, // tp_as_buffer
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, // tp_flags
+  0, // tp_doc
+  (traverseproc)_nyxdictiter_traverse, // tp_traverse
+  0, // tp_clear
+  0, // tp_richcompare
+  0, // tp_weaklistoffset
+  PyObject_SelfIter, // tp_iter
+  (iternextfunc)_nyxdictiter_nextkey, // tp_iternext
+  _nyxdictiter_methods, // tp_methods
+  0,
+};
 
 PyDoc_STRVAR(_nyxdict_doc,
 "nyx_dict() -> new empty nyx_dict\n"
