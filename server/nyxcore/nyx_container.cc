@@ -788,6 +788,7 @@ public:
 };
 
 static bool __is_nyxdict(PyObject* o);
+static PyObject* __nyxdict_new(void);
 
 inline void __nyxdict_set_key_error(PyObject* arg) {
   auto* tup = PyTuple_Pack(1, arg);
@@ -1039,6 +1040,29 @@ static PyObject* _nyxdict_contains(nyx_dict* self, PyObject* k) {
   return PyBool_FromLong(static_cast<long>(self->_contains(hash_code)));
 }
 
+static PyObject* _nyxdict_update(
+    nyx_dict* self, PyObject* args, PyObject* kwds) {
+  if (_nyxdict_update_common(self, args, kwds, "update") == -1)
+    return nullptr;
+  Py_RETURN_NONE;
+}
+
+static PyObject* _nyxdict_copy(nyx_dict* self) {
+  if (self == nullptr || !__is_nyxdict(self)) {
+    PyErr_BadInternalCall();
+    return nullptr;
+  }
+
+  auto* r = static_cast<nyx_dict*>(__nyxdict_new());
+  if (r == nullptr)
+    return nullptr;
+  if (_nyxdict_merge(r, self, true) == -1) {
+    Py_DECREF(r);
+    return nullptr;
+  }
+  return r;
+}
+
 static int _nyxdict__meth_contains(nyx_dict* self, PyObject* k) {
   long hash_code;
   if (!PyString_CheckExact(k) ||
@@ -1159,6 +1183,13 @@ PyDoc_STRVAR(__nyxdict_values_doc,
 "D.values() -> list -- list of D's values");
 PyDoc_STRVAR(__nyxdict_items_doc,
 "D.items() -> list -- list of D's (key, value) pairs, as 2-tuples");
+PyDoc_STRVAR(__nyxdict_update_doc,
+"D.update([E, ]**F) -> None -- update D from dict/iterable E and F.\n"
+"if E present and has a .keys() method, does: for k in E: D[k] = E[k]\n"
+"if E present and lacks .keys() methos, does: for (k, v) in E: D[k] = v\n"
+"in either case, this is followed by: for k in F: D[k] = F[k]");
+PyDoc_STRVAR(__nyxdict_copy_doc,
+"D.copy() -> nyx_dict -- a shallow copy of D");
 PyDoc_STRVAR(__nyxdict_contains_doc,
 "D.__contains__(k) -> boolean -- return True if D has a key k, else False");
 PyDoc_STRVAR(__nyxdict_getitem_doc,
@@ -1194,6 +1225,8 @@ static PyMethodDef _nyxdict_methods[] = {
   {"keys", (PyCFunction)_nyxdict_keys, METH_NOARGS, __nyxdict_keys_doc},
   {"values", (PyCFunction)_nyxdict_values, METH_NOARGS, __nyxdict_values_doc},
   {"items", (PyCFunction)_nyxdict_items, METH_NOARGS, __nyxdict_items_doc},
+  {"update", (PyCFunction)_nyxdict_update, METH_VARARGS | METH_KEYWORDS, __nyxdict_update_doc},
+  {"copy", (PyCFunction)_nyxdict_copy, METH_NOARGS, __nyxdict_copy_doc},
   {"__contains__", (PyCFunction)_nyxdict_contains, METH_O | METH_COEXIST, __nyxdict_contains_doc},
   {"__getitem__", (PyCFunction)_nyxdict__meth_subscript, METH_O | METH_COEXIST, __nyxdict_getitem_doc},
   {nullptr}
@@ -1244,6 +1277,14 @@ static PyTypeObject _nyxdict_type = {
 
 bool __is_nyxdict(PyObject* o) {
   return Py_TYPE(o) == &_nyxdict_type;
+}
+
+PyObject* __nyxdict_new(void) {
+  PyTypeObject* _type = &_nyxdict_type;
+  auto* nd = (nyx_dict*)_type->tp_alloc(_type, 0);
+  if (nd != nullptr)
+    nd->_init();
+  return nd;
 }
 
 void nyx_dict_wrap(PyObject* m) {
