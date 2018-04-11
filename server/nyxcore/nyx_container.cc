@@ -1164,25 +1164,13 @@ struct nyx_dictiter : public PyObject {
   using IterType =
     std::unordered_map<long, std::pair<PyObject*, PyObject*>>::const_iterator;
   nyx_dict* di_dict{};
-  IterType* di_iter{};
   PyObject* di_result{};
+  IterType* di_iter{};
 };
-
-static PyObject* _nyxdictiter_new(nyx_dict* dict, PyTypeObject* itertype) {
-  auto* di = PyObject_GC_New(nyx_dictiter, itertype);
-  if (di == nullptr)
-    return nullptr;
-  Py_INCREF(dict);
-  di->di_dict = dict;
-  di->di_iter = new nyx_dictiter::IterType();
-  *di->di_iter = dict->_get_begin();
-
-  _PyObject_GC_TRACK(di);
-  return static_cast<PyObject*>(di);
-}
 
 static void _nyxdictiter_dealloc(nyx_dictiter* di) {
   Py_XDECREF(di->di_dict);
+  Py_XDECREF(di->di_result);
   if (di->di_iter != nullptr)
     delete di->di_iter;
   PyObject_GC_Del(di);
@@ -1190,6 +1178,7 @@ static void _nyxdictiter_dealloc(nyx_dictiter* di) {
 
 static int _nyxdictiter_traverse(nyx_dictiter* di, visitproc visit, void* arg) {
   Py_VISIT(di->di_dict);
+  Py_VISIT(di->di_result);
   return 0;
 }
 
@@ -1305,12 +1294,103 @@ PyTypeObject _nyxdictiter_valuetype = {
   0,
 };
 
+static PyObject* _nyxdictiter_nextitem(nyx_dictiter* di) {
+  auto* d = di->di_dict;
+
+  if (d == nullptr || !__is_nyxdict(d))
+    return nullptr;
+
+  if (*di->di_iter == d->_get_end()) {
+    di->di_dict = nullptr;
+    Py_DECREF(d);
+    return nullptr;
+  }
+
+  auto* result = di->di_result;
+  if (result->ob_refcnt == 1) {
+    Py_INCREF(result);
+    Py_DECREF(PyTuple_GET_ITEM(result, 0));
+    Py_DECREF(PyTuple_GET_ITEM(result, 1));
+  }
+  else {
+    result = PyTuple_New(2);
+    if (result == nullptr)
+      return nullptr;
+  }
+  auto* k = (*di->di_iter)->second.first;
+  auto* v = (*di->di_iter)->second.second;
+  Py_INCREF(k);
+  Py_INCREF(v);
+  ++(*di->di_iter);
+
+  PyTuple_SET_ITEM(result, 0, k);
+  PyTuple_SET_ITEM(result, 1, v);
+  return result;
+}
+
+PyTypeObject _nyxdictiter_itemtype = {
+  PyVarObject_HEAD_INIT(&PyType_Type, 0)
+  "nyx_dict-itemiter", // tp_name
+  sizeof(nyx_dictiter), // tp_basicsize
+  0, // tp_itemsize
+  (destructor)_nyxdictiter_dealloc, // tp_dealloc
+  0, // tp_print
+  0, // tp_getattr
+  0, // tp_setattr
+  0, // tp_compare
+  0, // tp_repr
+  0, // tp_as_number
+  0, // tp_as_sequence
+  0, // tp_as_mapping
+  0, // tp_hash
+  0, // tp_call
+  0, // tp_str
+  PyObject_GenericGetAttr, // tp_getattro
+  0, // tp_setattro
+  0, // tp_as_buffer
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, // tp_flags
+  0, // tp_doc
+  (traverseproc)_nyxdictiter_traverse, // tp_traverse
+  0, // tp_clear
+  0, // tp_richcompare
+  0, // tp_weaklistoffset
+  PyObject_SelfIter, // tp_iter
+  (iternextfunc)_nyxdictiter_nextitem, // tp_iternext
+  _nyxdictiter_methods, // tp_methods
+  0,
+};
+
+static PyObject* _nyxdictiter_new(nyx_dict* dict, PyTypeObject* itertype) {
+  auto* di = PyObject_GC_New(nyx_dictiter, itertype);
+  if (di == nullptr)
+    return nullptr;
+  Py_INCREF(dict);
+  di->di_dict = dict;
+  di->di_result = nullptr;
+  if (itertype == &_nyxdictiter_itemtype) {
+    di->di_result = PyTuple_Pack(2, Py_None, Py_None);
+    if (di->di_result == nullptr) {
+      Py_DECREF(di);
+      return nullptr;
+    }
+  }
+  di->di_iter = new nyx_dictiter::IterType();
+  *di->di_iter = dict->_get_begin();
+
+  _PyObject_GC_TRACK(di);
+  return static_cast<PyObject*>(di);
+}
+
 static PyObject* _nyxdict_iterkeys(nyx_dict* self) {
   return _nyxdictiter_new(self, &_nyxdictiter_keytype);
 }
 
 static PyObject* _nyxdict_itervalues(nyx_dict* self) {
   return _nyxdictiter_new(self, &_nyxdictiter_valuetype);
+}
+
+static PyObject* _nyxdict_iteritems(nyx_dict* self) {
+  return _nyxdictiter_new(self, &_nyxdictiter_itemtype);
 }
 
 PyDoc_STRVAR(_nyxdict_doc,
@@ -1356,6 +1436,8 @@ PyDoc_STRVAR(__nyxdict_iterkeys_doc,
 "D.iterkeys() -- an iterator over the keys of D");
 PyDoc_STRVAR(__nyxdict_itervalues_doc,
 "D.itervalues() -- an iterator over the values of D");
+PyDoc_STRVAR(__nyxdict_iteritems_doc,
+"D.iteritems() -- an iterator over the (key, value) items of D");
 PyDoc_STRVAR(__nyxdict_contains_doc,
 "D.__contains__(k) -> boolean -- return True if D has a key k, else False");
 PyDoc_STRVAR(__nyxdict_getitem_doc,
@@ -1395,6 +1477,7 @@ static PyMethodDef _nyxdict_methods[] = {
   {"copy", (PyCFunction)_nyxdict_copy, METH_NOARGS, __nyxdict_copy_doc},
   {"iterkeys", (PyCFunction)_nyxdict_iterkeys, METH_NOARGS, __nyxdict_iterkeys_doc},
   {"itervalues", (PyCFunction)_nyxdict_itervalues, METH_NOARGS, __nyxdict_itervalues_doc},
+  {"iteritems", (PyCFunction)_nyxdict_iteritems, METH_NOARGS, __nyxdict_iteritems_doc},
   {"__contains__", (PyCFunction)_nyxdict_contains, METH_O | METH_COEXIST, __nyxdict_contains_doc},
   {"__getitem__", (PyCFunction)_nyxdict__meth_subscript, METH_O | METH_COEXIST, __nyxdict_getitem_doc},
   {nullptr}
