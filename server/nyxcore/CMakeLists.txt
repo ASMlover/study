@@ -109,7 +109,8 @@ message(STATUS "`${PROJECT_NAME}` SOURCE_FILES: ${SOURCE_FILES}")
 add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES})
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
   target_link_libraries(${PROJECT_NAME}
-    debug libboost_python-vc141-mt-gd-1_64 optimized libboost_python-vc141-mt-1_64)
+    debug libboost_python-vc141-mt-gd-1_64 optimized libboost_python-vc141-mt-1_64
+    debug python27 optimized python27)
 else()
   set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
   target_link_libraries(${PROJECT_NAME} pthread boost_python)
