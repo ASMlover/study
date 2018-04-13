@@ -1214,24 +1214,10 @@ std::tuple<bool, PyObject*, PyObject*> _nyxdictiter_iternext(nyx_dictiter* di) {
 }
 
 static PyObject* _nyxdictiter_iternextkey(nyx_dictiter* di) {
-  // auto* d = di->di_dict;
-
-  // if (d == nullptr || !__is_nyxdict(d))
-  //   return nullptr;
-
-  // if (*di->di_iter == d->_get_end()) {
-  //   di->di_dict = nullptr;
-  //   Py_DECREF(d);
-  //   return nullptr;
-  // }
-  // auto* key = (*di->di_iter)->second.first;
-  // Py_INCREF(key);
-  // ++(*di->di_iter);
-  // return key;
-
   auto r = _nyxdictiter_iternext(di);
   if (!std::get<0>(r))
     return nullptr;
+
   auto* k = std::get<1>(r);
   Py_INCREF(k);
   return k;
@@ -1269,21 +1255,14 @@ PyTypeObject _nyxdictiter_keytype = {
   0,
 };
 
-static PyObject* _nyxdictiter_nextvalue(nyx_dictiter* di) {
-  auto* d = di->di_dict;
-
-  if (d == nullptr || !__is_nyxdict(d))
+static PyObject* _nyxdictiter_iternextvalue(nyx_dictiter* di) {
+  auto r = _nyxdictiter_iternext(di);
+  if (!std::get<0>(r))
     return nullptr;
 
-  if (*di->di_iter == d->_get_end()) {
-    di->di_dict = nullptr;
-    Py_DECREF(d);
-    return nullptr;
-  }
-  auto* value = (*di->di_iter)->second.second;
-  Py_INCREF(value);
-  ++(*di->di_iter);
-  return value;
+  auto* v = std::get<2>(r);
+  Py_INCREF(v);
+  return v;
 }
 
 PyTypeObject _nyxdictiter_valuetype = {
@@ -1313,23 +1292,12 @@ PyTypeObject _nyxdictiter_valuetype = {
   0, // tp_richcompare
   0, // tp_weaklistoffset
   PyObject_SelfIter, // tp_iter
-  (iternextfunc)_nyxdictiter_nextvalue, // tp_iternext
+  (iternextfunc)_nyxdictiter_iternextvalue, // tp_iternext
   _nyxdictiter_methods, // tp_methods
   0,
 };
 
-static PyObject* _nyxdictiter_nextitem(nyx_dictiter* di) {
-  auto* d = di->di_dict;
-
-  if (d == nullptr || !__is_nyxdict(d))
-    return nullptr;
-
-  if (*di->di_iter == d->_get_end()) {
-    di->di_dict = nullptr;
-    Py_DECREF(d);
-    return nullptr;
-  }
-
+static PyObject* _nyxdictiter_iternextitem(nyx_dictiter* di) {
   auto* result = di->di_result;
   if (result->ob_refcnt == 1) {
     Py_INCREF(result);
@@ -1341,11 +1309,14 @@ static PyObject* _nyxdictiter_nextitem(nyx_dictiter* di) {
     if (result == nullptr)
       return nullptr;
   }
-  auto* k = (*di->di_iter)->second.first;
-  auto* v = (*di->di_iter)->second.second;
+  auto r = _nyxdictiter_iternext(di);
+  if (!std::get<0>(r))
+    return nullptr;
+
+  auto* k = std::get<1>(r);
+  auto* v = std::get<2>(r);
   Py_INCREF(k);
   Py_INCREF(v);
-  ++(*di->di_iter);
 
   PyTuple_SET_ITEM(result, 0, k);
   PyTuple_SET_ITEM(result, 1, v);
@@ -1379,7 +1350,7 @@ PyTypeObject _nyxdictiter_itemtype = {
   0, // tp_richcompare
   0, // tp_weaklistoffset
   PyObject_SelfIter, // tp_iter
-  (iternextfunc)_nyxdictiter_nextitem, // tp_iternext
+  (iternextfunc)_nyxdictiter_iternextitem, // tp_iternext
   _nyxdictiter_methods, // tp_methods
   0,
 };
