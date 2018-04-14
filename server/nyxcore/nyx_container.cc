@@ -937,6 +937,27 @@ static int _nyxdict_tp_traverse(nyx_dict* self, visitproc visit, void* arg) {
   return self->_traverse(visit, arg);
 }
 
+static PyObject* _nyxdict_tp_getattr(nyx_dict* self, const char* key) {
+  auto* k = PyString_FromString(key);
+  if (k == nullptr)
+    return nullptr;
+
+  auto hash_code = ((PyStringObject*)k)->ob_shash;
+  if (hash_code == -1) {
+    Py_DECREF(k);
+    return nullptr;
+  }
+
+  auto* v = self->_get(hash_code);
+  if (v == nullptr) {
+    __nyxdict_set_key_error(k);
+    Py_DECREF(k);
+    return nullptr;
+  }
+  Py_INCREF(v);
+  return v;
+}
+
 static PyObject* _nyxdict_clear(nyx_dict* self) {
   self->_clear();
   Py_RETURN_NONE;
@@ -1486,7 +1507,7 @@ static PyTypeObject _nyxdict_type = {
   0, // tp_itemsize
   (destructor)_nyxdict_tp_dealloc, // tp_dealloc
   0, // tp_print
-  0, // tp_getattr
+  (getattrfunc)_nyxdict_tp_getattr, // tp_getattr
   0, // tp_setattr
   0, // tp_compare
   (reprfunc)_nyxdict_tp_repr, // tp_repr
@@ -1496,7 +1517,8 @@ static PyTypeObject _nyxdict_type = {
   (hashfunc)PyObject_HashNotImplemented, // tp_hash
   0, // tp_call
   (reprfunc)_nyxdict_tp_repr, // tp_str
-  PyObject_GenericGetAttr, // tp_getattro
+  // PyObject_GenericGetAttr, // tp_getattro
+  0, // tp_getattro
   0, // tp_setattro
   0, // tp_as_buffer
   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, // tp_flags
