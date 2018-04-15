@@ -914,6 +914,52 @@ static int _nyxdict_update_common(
   return r;
 }
 
+static int _nyxdict_setitem(nyx_dict* self, PyObject* k, PyObject* v) {
+  if (self == v) {
+    PyErr_SetString(PyExc_SystemError,
+        "__setitem__(key, value): cannot set item as self");
+    return -1;
+  }
+  if (!__is_nyxdict(self)) {
+    PyErr_BadInternalCall();
+    return -1;
+  }
+
+  long hash_code;
+  if (!PyString_CheckExact(k) ||
+      (hash_code = ((PyStringObject*)k)->ob_shash) == -1) {
+    hash_code = PyObject_Hash(k);
+    if (hash_code == -1)
+      return -1;
+  }
+
+  Py_INCREF(k);
+  Py_INCREF(v);
+  self->_insert(hash_code, k, v);
+  return 0;
+}
+
+static int _nyxdict_delitem(nyx_dict* self, PyObject* k) {
+  if (!__is_nyxdict(self)) {
+    PyErr_BadInternalCall();
+    return -1;
+  }
+
+  long hash_code;
+  if (!PyString_CheckExact(k) ||
+      (hash_code = ((PyStringObject*)k)->ob_shash) == -1) {
+    hash_code = PyObject_Hash(k);
+    if (hash_code == -1)
+      return -1;
+  }
+
+  if (!self->_delitem(hash_code)) {
+    __nyxdict_set_key_error(k);
+    return -1;
+  }
+  return 0;
+}
+
 static int _nyxdict_tp_init(nyx_dict* self, PyObject* args, PyObject* kwargs) {
   self->_init();
   return _nyxdict_update_common(self, args, kwargs, "nyx_dict");
@@ -937,26 +983,43 @@ static int _nyxdict_tp_traverse(nyx_dict* self, visitproc visit, void* arg) {
   return self->_traverse(visit, arg);
 }
 
-static PyObject* _nyxdict_tp_getattr(nyx_dict* self, const char* key) {
-  auto* k = PyString_FromString(key);
-  if (k == nullptr)
-    return nullptr;
-
-  auto hash_code = ((PyStringObject*)k)->ob_shash;
-  if (hash_code == -1) {
-    Py_DECREF(k);
-    return nullptr;
-  }
-
-  auto* v = self->_get(hash_code);
-  if (v == nullptr) {
-    __nyxdict_set_key_error(k);
-    Py_DECREF(k);
-    return nullptr;
-  }
-  Py_INCREF(v);
-  return v;
-}
+// static PyObject* _nyxdict_tp_getattr(nyx_dict* self, const char* key) {
+//   auto* k = PyString_FromString(key);
+//   if (k == nullptr)
+//     return nullptr;
+//
+//   auto hash_code = ((PyStringObject*)k)->ob_shash;
+//   if (hash_code == -1) {
+//     Py_DECREF(k);
+//     return nullptr;
+//   }
+//
+//   auto* v = self->_get(hash_code);
+//   if (v == nullptr) {
+//     __nyxdict_set_key_error(k);
+//     Py_DECREF(k);
+//     return nullptr;
+//   }
+//   Py_INCREF(v);
+//   return v;
+// }
+//
+// static int _nyxdict_tp_setattr(nyx_dict* self, const char* key, PyObject* v) {
+//   auto* k = PyString_FromString(key);
+//   if (k == nullptr)
+//     return -1;
+//
+//   if (v == nullptr) {
+//     auto r = _nyxdict_delitem(self, k);
+//     if (r < 0) {
+//       PyErr_SetString(PyExc_AttributeError,
+//           "delete non-existing nyx_dict attribute");
+//       Py_DECREF(k);
+//     }
+//     return r;
+//   }
+//   return _nyxdict_setitem(self, k, v);
+// }
 
 static PyObject* _nyxdict_clear(nyx_dict* self) {
   self->_clear();
@@ -1125,52 +1188,6 @@ static PyObject* _nyxdict__meth_subscript(nyx_dict* self, PyObject* k) {
   }
   Py_INCREF(v);
   return v;
-}
-
-static int _nyxdict_setitem(nyx_dict* self, PyObject* k, PyObject* v) {
-  if (self == v) {
-    PyErr_SetString(PyExc_SystemError,
-        "__setitem__(key, value): cannot set item as self");
-    return -1;
-  }
-  if (!__is_nyxdict(self)) {
-    PyErr_BadInternalCall();
-    return -1;
-  }
-
-  long hash_code;
-  if (!PyString_CheckExact(k) ||
-      (hash_code = ((PyStringObject*)k)->ob_shash) == -1) {
-    hash_code = PyObject_Hash(k);
-    if (hash_code == -1)
-      return -1;
-  }
-
-  Py_INCREF(k);
-  Py_INCREF(v);
-  self->_insert(hash_code, k, v);
-  return 0;
-}
-
-static int _nyxdict_delitem(nyx_dict* self, PyObject* k) {
-  if (!__is_nyxdict(self)) {
-    PyErr_BadInternalCall();
-    return -1;
-  }
-
-  long hash_code;
-  if (!PyString_CheckExact(k) ||
-      (hash_code = ((PyStringObject*)k)->ob_shash) == -1) {
-    hash_code = PyObject_Hash(k);
-    if (hash_code == -1)
-      return -1;
-  }
-
-  if (!self->_delitem(hash_code)) {
-    __nyxdict_set_key_error(k);
-    return -1;
-  }
-  return 0;
 }
 
 static int
@@ -1393,7 +1410,9 @@ static PyObject* _nyxdictiter_new(nyx_dict* dict, PyTypeObject* itertype) {
   di->di_iter = new nyx_dictiter::IterType();
   *di->di_iter = dict->_get_begin();
 
+#if !defined(_WIN32) && !defined(_WIN64)
   _PyObject_GC_TRACK(di);
+#endif
   return static_cast<PyObject*>(di);
 }
 
@@ -1507,8 +1526,10 @@ static PyTypeObject _nyxdict_type = {
   0, // tp_itemsize
   (destructor)_nyxdict_tp_dealloc, // tp_dealloc
   0, // tp_print
-  (getattrfunc)_nyxdict_tp_getattr, // tp_getattr
-  0, // tp_setattr
+  // (getattrfunc)_nyxdict_tp_getattr, // tp_getattr
+  // (setattrfunc)_nyxdict_tp_setattr, // tp_setattr
+  (getattrfunc)0, // tp_getattr
+  (setattrfunc)0, // tp_setattr
   0, // tp_compare
   (reprfunc)_nyxdict_tp_repr, // tp_repr
   0, // tp_as_number
@@ -1517,8 +1538,7 @@ static PyTypeObject _nyxdict_type = {
   (hashfunc)PyObject_HashNotImplemented, // tp_hash
   0, // tp_call
   (reprfunc)_nyxdict_tp_repr, // tp_str
-  // PyObject_GenericGetAttr, // tp_getattro
-  0, // tp_getattro
+  PyObject_GenericGetAttr, // tp_getattro
   0, // tp_setattro
   0, // tp_as_buffer
   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, // tp_flags
