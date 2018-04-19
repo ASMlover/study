@@ -50,8 +50,9 @@ public:
 
   void start(void);
   void stop(void);
-  void reg_to_manager(void);
-  void unreg_from_mamanger(void);
+  void do_register(void);
+  void do_unregister(void);
+  bool is_alive(void);
 
   inline strand_ptr get_strand(void) {
     return strand_;
@@ -78,16 +79,30 @@ public:
     return local_port_;
   }
 
-  virtual void start_work(void) = 0;
-  virtual bool close_socket(void) = 0;
-  void async_write(const writbuf_ptr& buf);
+  virtual void do_start(void) = 0;
+  virtual bool do_stop(void) = 0;
+
+  inline void async_write(const writbuf_ptr& buf) {
+    auto self(shared_from_this());
+    strand_->post([this, self, buf] { do_async_write(buf); });
+  }
   virtual void do_async_write(const writbuf_ptr& buf) = 0;
-  void async_write(const writbuf_ptr& buf, bool reliable, std::uint8_t channel);
+
+  inline void async_write(
+      const writbuf_ptr& buf, bool reliable, std::uint8_t channel) {
+    auto self(shared_from_this());
+    strand_->post([this, self, buf, reliable, channel] {
+          do_async_write(buf, reliable, channel);
+        });
+  }
   virtual void do_async_write(
       const writbuf_ptr& buf, bool reliable, std::uint8_t channel) = 0;
-  void disconnect(void);
+
+  inline void disconnect(void) {
+    auto self(shared_from_this());
+    strand_->post([this, self] { do_disconnect(); });
+  }
   virtual void do_disconnect(void) = 0;
-  bool is_alive(void);
 
   virtual std::string remote_ip(void) const = 0;
   virtual std::uint16_t remote_port(void) const = 0;
