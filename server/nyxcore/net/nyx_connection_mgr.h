@@ -38,7 +38,7 @@ using connection_ptr = std::shared_ptr<connection>;
 
 class connection_manager : private boost::noncopyable {
   std::unordered_set<connection_ptr> connections_;
-  std::size_t history_num_{};
+  std::size_t nregistered_{};
   mutable std::mutex mutex_;
 
   connection_manager(void);

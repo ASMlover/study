@@ -24,22 +24,21 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "nyx_connection.h"
 #include "nyx_connection_mgr.h"
 
 namespace nyx { namespace net {
 
 connection_manager::connection_manager(void) {
-  // TODO:
 }
 
 connection_manager::~connection_manager(void) {
-  // TODO:
 }
 
 void connection_manager::register_connection(const connection_ptr& c) {
   std::unique_lock<std::mutex> g(mutex_);
   connections_.insert(c);
-  ++history_num_;
+  ++nregistered_;
 }
 
 void connection_manager::unregister_connection(const connection_ptr& c) {
@@ -48,7 +47,9 @@ void connection_manager::unregister_connection(const connection_ptr& c) {
 }
 
 void connection_manager::stop_all(void) {
-  // TODO:
+  std::unique_lock<std::mutex> g(mutex_);
+  for (auto& c : connections_)
+    c->do_stop();
 }
 
 bool connection_manager::has_connection(const connection_ptr& c) const {
