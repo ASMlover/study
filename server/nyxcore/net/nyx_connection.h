@@ -81,6 +81,8 @@ public:
 
   virtual void do_start(void) = 0;
   virtual bool do_stop(void) = 0;
+  virtual std::string remote_ip(void) const = 0;
+  virtual std::uint16_t remote_port(void) const = 0;
 
   inline void async_write(const writbuf_ptr& buf) {
     auto self(shared_from_this());
@@ -103,10 +105,6 @@ public:
     strand_->post([this, self] { do_disconnect(); });
   }
   virtual void do_disconnect(void) = 0;
-
-  virtual std::string remote_ip(void) const = 0;
-  virtual std::uint16_t remote_port(void) const = 0;
-
 };
 
 }}
