@@ -42,7 +42,7 @@ class connection_manager : private boost::noncopyable {
   mutable std::mutex mutex_;
 
   connection_manager(void);
-  virtual ~connection_manager(void);
+  ~connection_manager(void);
 public:
   static connection_manager& instance(void) {
     static connection_manager _ins;
