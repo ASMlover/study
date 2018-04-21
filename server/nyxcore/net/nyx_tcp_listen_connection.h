@@ -44,8 +44,8 @@ class tcp_listen_connection : public connection {
   std::uint32_t data_queue_size_{};
   std::uint32_t send_limit_size_{};
   std::vector<char> buffer_;
-  writbuf_ptr data_queue_;
-  writbuf_ptr send_queue_;
+  writbuf_vec_ptr data_queue_;
+  writbuf_vec_ptr send_queue_;
 public:
   tcp_listen_connection(boost::asio::io_service& io_service);
   virtual ~tcp_listen_connection(void);
@@ -81,12 +81,18 @@ public:
     return ss.str();
   }
 
+  virtual void do_async_write(const writbuf_ptr& buf) override {
+    _do_async_write_impl(buf);
+  }
+
+  virtual void do_async_write(
+      const writbuf_ptr& buf, bool reliable, std::uint8_t channel) override {
+    _do_async_write_impl(buf);
+  }
+
   virtual void do_start(void) override;
   virtual bool do_stop(void) override;
-  virtual bool do_disconnect(void) override;
-  virtual void do_async_write(const writbuf_ptr& buf) override;
-  virtual void do_async_write(
-      const writbuf_ptr& buf, bool reliable, std::uint8_t channel) override;
+  virtual void do_disconnect(void) override;
   virtual std::string remote_ip(void) const override;
   virtual std::uint16_t remote_port(void) const override;
 protected:
@@ -96,7 +102,27 @@ protected:
       const boost::system::error_code& ec, std::size_t bytes);
   virtual void handle_async_write(const boost::system::error_code& ec);
 
-  void _do_async_write_impl(const writbuf_ptr& buf);
+  void _do_async_write_impl(const writbuf_ptr& buf) {
+    if (send_limit_size_ > 0 && data_queue_size_ > send_limit_size_)
+      return;
+    if (closed_.load())
+      return;
+
+    if (is_sending_) {
+      data_queue_->emplace_back(buf);
+      data_queue_size_ += buf->size();
+    }
+    else {
+      is_sending_ = true;
+      send_queue_->emplace_back(buf);
+
+      auto self(shared_from_this());
+      boost::asio::async_write(socket_, *buf,
+          [this, self](const boost::system::error_code& ec, std::size_t /*n*/) {
+            handle_async_write(ec);
+          });
+    }
+  }
 };
 
 }}
