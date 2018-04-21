@@ -41,6 +41,7 @@ using strand_ptr = std::shared_ptr<boost::asio::io_service::strand>;
 class connection
   : public std::enable_shared_from_this<connection>
   , private boost::noncopyable {
+protected:
   strand_ptr strand_;
   std::string local_ip_;
   std::uint16_t local_port_{};
