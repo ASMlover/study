@@ -98,6 +98,7 @@ void tcp_listen_connection::handle_close_socket(void) {
       socket_.lowest_layer().close();
     }
     catch (boost::system::system_error& e) {
+      (void)e;
       // TODO: show ec
       // auto ec = e.code();
     }

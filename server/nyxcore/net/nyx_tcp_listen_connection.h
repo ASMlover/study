@@ -41,8 +41,8 @@ class tcp_listen_connection : public connection {
   bool disconnected_{};
   bool is_sending_{};
   std::atomic<bool> closed_{};
-  std::uint32_t data_queue_size_{};
-  std::uint32_t send_limit_size_{};
+  std::size_t data_queue_size_{};
+  std::size_t send_limit_size_{};
   std::vector<char> buffer_;
   writbuf_vec_ptr data_queue_;
   writbuf_vec_ptr send_queue_;
@@ -67,11 +67,11 @@ public:
     send_limit_size_ = limit_size;
   }
 
-  inline std::uint32_t get_send_limit(void) const {
+  inline std::size_t get_send_limit(void) const {
     return send_limit_size_;
   }
 
-  inline std::uint32_t get_queue_size(void) const {
+  inline std::size_t get_queue_size(void) const {
     return data_queue_size_;
   }
 
