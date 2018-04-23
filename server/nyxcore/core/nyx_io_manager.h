@@ -57,6 +57,10 @@ public:
     thread_num_ = num;
   }
 
+  boost::asio::io_service& get_io_service(void) {
+    return io_service_;
+  }
+
   void set_loop_time(std::uint64_t loop_time) {
     loop_time_ = loop_time;
   }
