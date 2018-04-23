@@ -33,12 +33,13 @@ namespace nyx { namespace net {
 
 class server
   : private boost::noncopyable, public std::enable_shared_from_this<server> {
+public:
   enum Status {
     INIT = 0,
     STARTED,
     STOPPED,
   };
-
+protected:
   boost::asio::io_service& io_service_;
   Status status_{INIT};
 public:
