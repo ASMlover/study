@@ -198,6 +198,7 @@ typedef struct _safeiterdictobject {
 static PySafeIterDictObject* _free_list[PySafeIterDict_MAXFREELIST];
 static int _numfree = 0;
 
+static PyObject* dict_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwds);
 static void dict_tp_dealloc(register PySafeIterDictObject* mp);
 
 PyDoc_STRVAR(dictionary_doc,
@@ -250,11 +251,27 @@ static PyTypeObject _safeiterdict_type = {
   0, // tp_dictoffset
   (initproc)0, // tp_init
   PyType_GenericAlloc, // tp_alloc
-  0, // tp_new
+  dict_tp_new, // tp_new
   PyObject_GC_Del, // tp_free
 };
 
 #define PySafeIterDict_CheckExact(op) (Py_TYPE(op) == &_safeiterdict_type)
+
+PyObject* dict_tp_new(
+    PyTypeObject* /*type*/, PyObject* /*args*/, PyObject* /*kwds*/) {
+  register PySafeIterDictObject* mp;
+  if (_numfree) {
+    mp = _free_list[--_numfree];
+    _Py_NewReference((PyObject*)mp);
+  }
+  else {
+    mp = PyObject_GC_New(PySafeIterDictObject, &_safeiterdict_type);
+    if (mp == nullptr)
+      return nullptr;
+    mp->tb_table = new SafeIterDict();
+  }
+  return (PyObject*)mp;
+}
 
 void dict_tp_dealloc(register PySafeIterDictObject* mp) {
   auto* tb = mp->tb_table;
