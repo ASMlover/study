@@ -198,6 +198,13 @@ typedef struct _safeiterdictobject {
 static PySafeIterDictObject* _free_list[PySafeIterDict_MAXFREELIST];
 static int _numfree = 0;
 
+static PyObject* dict_contains(register PySafeIterDictObject* mp, PyObject* k) {
+  auto key = PyInt_AsLong(k);
+  if (PyErr_Occurred())
+    return nullptr;
+  return PyBool_FromLong(mp->tb_table->has_key(key));
+}
+
 static PyObject* dict_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwds);
 static void dict_tp_dealloc(register PySafeIterDictObject* mp);
 
@@ -211,6 +218,13 @@ PyDoc_STRVAR(dictionary_doc,
 "     d[k] = v\n"
 "SafeIterDict(**kwargs) -> new dictionary initialized with the name=value pairs\n"
 "   in the keyword argument list. For example: SafeIterDict(one=1, two=2)");
+
+PyDoc_STRVAR(contains__doc__,
+"D.__contains__(k) -> True is D has a key k, else False");
+
+static PyMethodDef _mapp_methods[] = {
+  {"__contains__", (PyCFunction)dict_contains, METH_O | METH_COEXIST, contains__doc__},
+};
 
 static PyTypeObject _safeiterdict_type = {
   PyVarObject_HEAD_INIT(&PyType_Type, 0)
@@ -241,7 +255,7 @@ static PyTypeObject _safeiterdict_type = {
   0, // tp_weaklistoffset
   (getiterfunc)0, // tp_iter
   0, // tp_iternext
-  0, // tp_methods
+  _mapp_methods, // tp_methods
   0, // tp_members
   0, // tp_getset
   0, // tp_base
