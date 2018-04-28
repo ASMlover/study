@@ -223,6 +223,7 @@ PyDoc_STRVAR(contains__doc__,
 "D.__contains__(k) -> True is D has a key k, else False");
 
 static PyMethodDef _mapp_methods[] = {
+  {"has_key", (PyCFunction)dict_contains, METH_O, contains__doc__},
   {"__contains__", (PyCFunction)dict_contains, METH_O | METH_COEXIST, contains__doc__},
 };
 
