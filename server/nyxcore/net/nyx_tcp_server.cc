@@ -89,7 +89,7 @@ void tcp_server::handle_start_server(void) {
   acceptor_.set_option(connection::keep_intvl(30));
 #endif
 
-  acceptor_.listen(backlog_);
+  acceptor_.listen(static_cast<int>(backlog_));
   auto self(shared_from_this());
   acceptor_.async_accept(new_connection_->get_socket(),
       [this, self](const boost::system::error_code& ec) {
