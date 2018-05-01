@@ -46,6 +46,12 @@ protected:
   std::string local_ip_;
   std::uint16_t local_port_{};
 public:
+#if defined(__linux__)
+  using keep_idle = boost::asio::detail::socket_option::integer<SOL_TCP, TCP_KEEPIDLE>;
+  using keep_intvl = boost::asio::detail::socket_option::integer<SOL_TCP, TCP_KEEPINTVL>;
+  using keep_cnt = boost::asio::detail::socket_option::integer<SOL_TCP, TCP_KEEPCNT>;
+#endif
+
   explicit connection(boost::asio::io_service& io_service);
   virtual ~connection(void);
 

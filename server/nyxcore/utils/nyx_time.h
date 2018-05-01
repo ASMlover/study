@@ -26,36 +26,26 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <memory>
-#include <boost/asio.hpp>
+#include <chrono>
 
-namespace nyx { namespace net {
+namespace nyx {
 
-class server
-  : private boost::noncopyable, public std::enable_shared_from_this<server> {
-public:
-  enum Status {
-    INIT = 0,
-    STARTED,
-    STOPPED,
-  };
-protected:
-  boost::asio::io_service& io_service_;
-  Status status_{INIT};
-public:
-  server(boost::asio::io_service& io_service);
-  virtual ~server(void);
+inline std::uint32_t chrono_seconds(void) {
+  return static_cast<std::uint32_t>(
+      std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count());
+}
 
-  virtual void start(void);
-  virtual void stop(void);
+inline std::uint64_t chrono_milliseconds(void) {
+  return static_cast<std::uint64_t>(
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count());
+}
 
-  inline Status get_status(void) const {
-    return status_;
-  }
+inline std::uint64_t chrono_microseconds(void) {
+  return static_cast<std::uint64_t>(
+    std::chrono::duration_cast<std::chrono::microseconds>(
+      std::chrono::system_clock::now().time_since_epoch()).count());
+}
 
-  inline bool is_stopped(void) const {
-    return status_ == STOPPED;
-  }
-};
-
-}}
+}

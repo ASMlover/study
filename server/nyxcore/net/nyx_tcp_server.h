@@ -41,7 +41,7 @@ class tcp_server : public server {
   std::string host_{};
   std::uint16_t port_{};
   bool reuse_addr_{};
-  tcp_listen_connection new_connection_;
+  tcp_listen_connection_ptr new_connection_;
 public:
   tcp_server(void);
   virtual ~tcp_server(void);
