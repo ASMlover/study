@@ -198,6 +198,14 @@ typedef struct _safeiterdictobject {
 static PySafeIterDictObject* _free_list[PySafeIterDict_MAXFREELIST];
 static int _numfree = 0;
 
+static void set_key_error(PyObject* arg) {
+  auto* tup = PyTuple_Pack(1, arg);
+  if (tup == nullptr)
+    return;
+  PyErr_SetObject(PyExc_KeyError, tup);
+  Py_DECREF(tup);
+}
+
 static PyObject* dict_contains(register PySafeIterDictObject* mp, PyObject* k) {
   auto key = PyInt_AsLong(k);
   if (PyErr_Occurred())
@@ -218,6 +226,7 @@ static PyObject* dict_get(register PySafeIterDictObject* mp, PyObject* args) {
   auto* v = mp->tb_table->get(key, nullptr);
   if (v == nullptr)
     v = failobj;
+  Py_INCREF(v);
   return v;
 }
 
@@ -237,8 +246,14 @@ static PyObject* dict_setdefault(
   return v;
 }
 
+static PyObject* dict_clear(register PySafeIterDictObject* mp) {
+  mp->tb_table->clear();
+  Py_RETURN_NONE;
+}
+
 static PyObject* dict_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwds);
 static void dict_tp_dealloc(register PySafeIterDictObject* mp);
+static int dict_tp_clear(register PySafeIterDictObject* mp);
 
 PyDoc_STRVAR(dictionary_doc,
 "SafeIterDict() -> new empty dictionary\n"
@@ -255,6 +270,8 @@ PyDoc_STRVAR(get__doc__,
 "D.get(k[, d]) -> D[k] if k in D, else d. d defaults to None");
 PyDoc_STRVAR(setdefault__doc__,
 "D.setdefault(k[, d]) -> D.get(k, d), also set D[k] = d if k not in D");
+PyDoc_STRVAR(clear__doc__,
+"D.clear() -> None. remove all items from D");
 PyDoc_STRVAR(contains__doc__,
 "D.__contains__(k) -> True is D has a key k, else False");
 
@@ -262,6 +279,7 @@ static PyMethodDef _mapp_methods[] = {
   {"has_key", (PyCFunction)dict_contains, METH_O, contains__doc__},
   {"get", (PyCFunction)dict_get, METH_VARARGS, get__doc__},
   {"setdefault", (PyCFunction)dict_setdefault, METH_VARARGS, setdefault__doc__},
+  {"clear", (PyCFunction)dict_clear, METH_NOARGS, clear__doc__},
   {"__contains__", (PyCFunction)dict_contains, METH_O | METH_COEXIST, contains__doc__},
 };
 
@@ -289,7 +307,7 @@ static PyTypeObject _safeiterdict_type = {
     Py_TPFLAGS_BASETYPE | Py_TPFLAGS_DICT_SUBCLASS, // tp_flags
   dictionary_doc, // tp_doc
   (traverseproc)0, // tp_traverse
-  (inquiry)0, // tp_clear
+  (inquiry)dict_tp_clear, // tp_clear
   0, // tp_richcompare
   0, // tp_weaklistoffset
   (getiterfunc)0, // tp_iter
@@ -336,6 +354,13 @@ void dict_tp_dealloc(register PySafeIterDictObject* mp) {
   else
     Py_TYPE(mp)->tp_free((PyObject*)mp);
   Py_TRASHCAN_SAFE_END(mp)
+}
+
+int dict_tp_clear(register PySafeIterDictObject* mp) {
+  if (!PySafeIterDict_CheckExact(mp))
+    return -1;
+  mp->tb_table->clear();
+  return 0;
 }
 
 void nyx_safeiterdict_wrap(PyObject* m) {
