@@ -205,6 +205,38 @@ static PyObject* dict_contains(register PySafeIterDictObject* mp, PyObject* k) {
   return PyBool_FromLong(mp->tb_table->has_key(key));
 }
 
+static PyObject* dict_get(register PySafeIterDictObject* mp, PyObject* args) {
+  PyObject* k{};
+  PyObject* failobj{Py_None};
+
+  if (!PyArg_UnpackTuple(args, "get", 1, 2, &k, &failobj))
+    return nullptr;
+
+  auto key = PyInt_AsLong(k);
+  if (PyErr_Occurred())
+    return nullptr;
+  auto* v = mp->tb_table->get(key, nullptr);
+  if (v == nullptr)
+    v = failobj;
+  return v;
+}
+
+static PyObject* dict_setdefault(
+    register PySafeIterDictObject* mp, PyObject* args) {
+  PyObject* k{};
+  PyObject* failobj{Py_None};
+
+  if (!PyArg_UnpackTuple(args, "setdefault", 1, 2, &k, &failobj))
+    return nullptr;
+
+  auto key = PyInt_AsLong(k);
+  if (PyErr_Occurred())
+    return nullptr;
+  auto* v = mp->tb_table->setdefault(key, failobj);
+  Py_XINCREF(v);
+  return v;
+}
+
 static PyObject* dict_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwds);
 static void dict_tp_dealloc(register PySafeIterDictObject* mp);
 
@@ -219,11 +251,17 @@ PyDoc_STRVAR(dictionary_doc,
 "SafeIterDict(**kwargs) -> new dictionary initialized with the name=value pairs\n"
 "   in the keyword argument list. For example: SafeIterDict(one=1, two=2)");
 
+PyDoc_STRVAR(get__doc__,
+"D.get(k[, d]) -> D[k] if k in D, else d. d defaults to None");
+PyDoc_STRVAR(setdefault__doc__,
+"D.setdefault(k[, d]) -> D.get(k, d), also set D[k] = d if k not in D");
 PyDoc_STRVAR(contains__doc__,
 "D.__contains__(k) -> True is D has a key k, else False");
 
 static PyMethodDef _mapp_methods[] = {
   {"has_key", (PyCFunction)dict_contains, METH_O, contains__doc__},
+  {"get", (PyCFunction)dict_get, METH_VARARGS, get__doc__},
+  {"setdefault", (PyCFunction)dict_setdefault, METH_VARARGS, setdefault__doc__},
   {"__contains__", (PyCFunction)dict_contains, METH_O | METH_COEXIST, contains__doc__},
 };
 
