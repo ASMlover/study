@@ -104,6 +104,14 @@ SafeIterItemPtr SafeIterDict::pop(int key) {
   return item;
 }
 
+SafeIterItemPtr SafeIterDict::popitem(void) {
+  if (items_.empty())
+    return SafeIterItemPtr();
+
+  auto begin = items_.begin();
+  return pop(begin->first);
+}
+
 void SafeIterDict::clear(void) {
   if (first_) {
     items_.clear();
@@ -251,9 +259,63 @@ static PyObject* dict_clear(register PySafeIterDictObject* mp) {
   Py_RETURN_NONE;
 }
 
+static PyObject* dict_pop(register PySafeIterDictObject* mp, PyObject* args) {
+  PyObject* k{};
+  PyObject* failobj{};
+
+  if (!PyArg_UnpackTuple(args, "pop", 1, 2, &k, &failobj))
+    return nullptr;
+  if (mp->tb_table->empty()) {
+    if (failobj != nullptr) {
+      Py_INCREF(failobj);
+      return failobj;
+    }
+    set_key_error(k);
+    return nullptr;
+  }
+
+  auto key = PyInt_AsLong(k);
+  if (PyErr_Occurred())
+    return nullptr;
+
+  auto item = mp->tb_table->pop(key);
+  if (!item) {
+    if (failobj != nullptr) {
+      Py_INCREF(failobj);
+      return failobj;
+    }
+    set_key_error(k);
+    return nullptr;
+  }
+  auto* v = item->value;
+  Py_INCREF(v);
+  return v;
+}
+
+static PyObject* dict_popitem(register PySafeIterDictObject* mp) {
+  auto* r = PyTuple_New(2);
+  if (r == nullptr)
+    return nullptr;
+
+  auto item = mp->tb_table->popitem();
+  if (!item) {
+    Py_DECREF(r);
+    PyErr_SetString(PyExc_KeyError, "popitem(): dictionary is empty");
+    return nullptr;
+  }
+
+  auto* key = PyInt_FromLong(item->key);
+  auto* val = item->value;
+  Py_INCREF(val);
+  PyTuple_SET_ITEM(r, 0, key);
+  PyTuple_SET_ITEM(r, 1, val);
+  return r;
+}
+
 static PyObject* dict_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwds);
 static void dict_tp_dealloc(register PySafeIterDictObject* mp);
 static int dict_tp_clear(register PySafeIterDictObject* mp);
+static int dict_tp_traverse(register PySafeIterDictObject* mp, visitproc visit, void* arg);
 
 PyDoc_STRVAR(dictionary_doc,
 "SafeIterDict() -> new empty dictionary\n"
@@ -272,6 +334,12 @@ PyDoc_STRVAR(setdefault__doc__,
 "D.setdefault(k[, d]) -> D.get(k, d), also set D[k] = d if k not in D");
 PyDoc_STRVAR(clear__doc__,
 "D.clear() -> None. remove all items from D");
+PyDoc_STRVAR(pop__doc__,
+"D.pop(k[, d]) -> v, remove specified key and return the corresponding value.\n"
+"If key is not found, d is returned if given, otherwise KeyError is raised.");
+PyDoc_STRVAR(popitem__doc__,
+"D.popitem() -> (k, v), remove and return some (key, value) pair as a\n"
+"2-tuple; but raise KeyError if D is empty.");
 PyDoc_STRVAR(contains__doc__,
 "D.__contains__(k) -> True is D has a key k, else False");
 
@@ -280,6 +348,8 @@ static PyMethodDef _mapp_methods[] = {
   {"get", (PyCFunction)dict_get, METH_VARARGS, get__doc__},
   {"setdefault", (PyCFunction)dict_setdefault, METH_VARARGS, setdefault__doc__},
   {"clear", (PyCFunction)dict_clear, METH_NOARGS, clear__doc__},
+  {"pop", (PyCFunction)dict_pop, METH_VARARGS, pop__doc__},
+  {"popitem", (PyCFunction)dict_popitem, METH_NOARGS, popitem__doc__},
   {"__contains__", (PyCFunction)dict_contains, METH_O | METH_COEXIST, contains__doc__},
 };
 
@@ -306,7 +376,7 @@ static PyTypeObject _safeiterdict_type = {
   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
     Py_TPFLAGS_BASETYPE | Py_TPFLAGS_DICT_SUBCLASS, // tp_flags
   dictionary_doc, // tp_doc
-  (traverseproc)0, // tp_traverse
+  (traverseproc)dict_tp_traverse, // tp_traverse
   (inquiry)dict_tp_clear, // tp_clear
   0, // tp_richcompare
   0, // tp_weaklistoffset
@@ -361,6 +431,23 @@ int dict_tp_clear(register PySafeIterDictObject* mp) {
     return -1;
   mp->tb_table->clear();
   return 0;
+}
+
+int dict_tp_traverse(
+    register PySafeIterDictObject* mp, visitproc visit, void* arg) {
+  int r{};
+  SafeIterDictIter iter;
+  mp->tb_table->begin(&iter);
+  while (iter.is_valid()) {
+    auto* v = iter.get()->value;
+    if (v != nullptr) {
+      r = visit(v, arg);
+      if (r)
+        break;
+    }
+    iter.next();
+  }
+  return r;
 }
 
 void nyx_safeiterdict_wrap(PyObject* m) {

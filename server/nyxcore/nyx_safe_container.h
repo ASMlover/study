@@ -91,6 +91,7 @@ public:
   PyObject* get(int key, PyObject* d = Py_None) const;
   PyObject* insert(int key, PyObject* value, bool is_override);
   SafeIterItemPtr pop(int key);
+  SafeIterItemPtr popitem(void);
   void clear(void);
   void begin(SafeIterDictIter* iter, bool duplicate = false);
 
