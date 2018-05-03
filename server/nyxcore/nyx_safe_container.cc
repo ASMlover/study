@@ -207,6 +207,7 @@ static PySafeIterDictObject* _free_list[PySafeIterDict_MAXFREELIST];
 static int _numfree = 0;
 
 static PyObject* dict_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwds);
+static int dict_tp_init(PySafeIterDictObject* mp, PyObject* args, PyObject* kwds);
 static void dict_tp_dealloc(register PySafeIterDictObject* mp);
 static int dict_tp_clear(register PySafeIterDictObject* mp);
 static int dict_tp_traverse(register PySafeIterDictObject* mp, visitproc visit, void* arg);
@@ -401,9 +402,15 @@ static int dict_update_common(PySafeIterDictObject* mp,
   return r;
 }
 
-static int dict_tp_init(
+static PyObject* dict_update(
     PySafeIterDictObject* mp, PyObject* args, PyObject* kwds) {
-  return dict_update_common(mp, args, kwds, "SafeIterDict");
+  if (dict_update_common(mp, args, kwds, "update") != -1)
+    Py_RETURN_NONE;
+  return nullptr;
+}
+
+static PyObject* dict_size(PySafeIterDictObject* mp) {
+  return PyInt_FromSsize_t(mp->tb_table->size());
 }
 
 PyDoc_STRVAR(dictionary_doc,
@@ -429,6 +436,13 @@ PyDoc_STRVAR(pop__doc__,
 PyDoc_STRVAR(popitem__doc__,
 "D.popitem() -> (k, v), remove and return some (key, value) pair as a\n"
 "2-tuple; but raise KeyError if D is empty.");
+PyDoc_STRVAR(update__doc__,
+"D.update([E, ]**F) -> None. update D from dict/iterable E and F.\n"
+"If E present and has a .keys() method, does: for k in E: D[k] = E[k]\n"
+"If E present and lacks .keys() method, does: for (k, v) in E: D[k] = v\n"
+"In either case, this is followed by: for k in F: d[k] = F[k]");
+PyDoc_STRVAR(size__doc__,
+"D.size() -> integer, return the number of items of dictionary");
 PyDoc_STRVAR(contains__doc__,
 "D.__contains__(k) -> True is D has a key k, else False");
 
@@ -439,6 +453,8 @@ static PyMethodDef _mapp_methods[] = {
   {"clear", (PyCFunction)dict_clear, METH_NOARGS, clear__doc__},
   {"pop", (PyCFunction)dict_pop, METH_VARARGS, pop__doc__},
   {"popitem", (PyCFunction)dict_popitem, METH_NOARGS, popitem__doc__},
+  {"update", (PyCFunction)dict_update, METH_VARARGS | METH_KEYWORDS, update__doc__},
+  {"size", (PyCFunction)dict_size, METH_NOARGS, size__doc__},
   {"__contains__", (PyCFunction)dict_contains, METH_O | METH_COEXIST, contains__doc__},
 };
 
@@ -501,6 +517,10 @@ PyObject* dict_tp_new(
     mp->tb_table = new SafeIterDict();
   }
   return (PyObject*)mp;
+}
+
+int dict_tp_init(PySafeIterDictObject* mp, PyObject* args, PyObject* kwds) {
+  return dict_update_common(mp, args, kwds, "SafeIterDict");
 }
 
 void dict_tp_dealloc(register PySafeIterDictObject* mp) {
