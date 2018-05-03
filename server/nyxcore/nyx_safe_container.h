@@ -113,6 +113,10 @@ public:
   Py_ssize_t size(void) const {
     return static_cast<Py_ssize_t>(items_.size());
   }
+
+  bool empty(void) const {
+    return items_.empty();
+  }
 };
 
 class SafeIterDictIter {
