@@ -378,7 +378,6 @@ static int pysafeiterdict_merge_fromseq(
     Py_DECREF(fast);
     Py_DECREF(item);
   }
-
   Py_DECREF(it);
   return 0;
 }

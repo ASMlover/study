@@ -848,8 +848,10 @@ static int _nyxdict_merge_from_seq(
   for (auto i = 0; ; ++i) {
     auto* item = PyIter_Next(it);
     if (item == nullptr) {
-      if (PyErr_Occurred())
+      if (PyErr_Occurred()) {
+        Py_DECREF(it);
         return -1;
+      }
       break;
     }
 
@@ -861,6 +863,7 @@ static int _nyxdict_merge_from_seq(
             "element #%d to a sequence", i);
       }
       Py_DECREF(item);
+      Py_DECREF(it);
       return -1;
     }
     auto n = PySequence_Fast_GET_SIZE(fast);
@@ -868,8 +871,9 @@ static int _nyxdict_merge_from_seq(
       PyErr_Format(PyExc_ValueError,
           "nyx_dict update sequence element #%d has length %zd; "
           "2 is required", i, n);
-      Py_DECREF(item);
       Py_DECREF(fast);
+      Py_DECREF(item);
+      Py_DECREF(it);
       return -1;
     }
 
@@ -880,8 +884,9 @@ static int _nyxdict_merge_from_seq(
         (hash_code = ((PyStringObject*)k)->ob_shash) == -1) {
       hash_code = PyObject_Hash(k);
       if (hash_code == -1) {
-        Py_DECREF(item);
         Py_DECREF(fast);
+        Py_DECREF(item);
+        Py_DECREF(it);
         return -1;
       }
     }
@@ -890,9 +895,10 @@ static int _nyxdict_merge_from_seq(
       Py_INCREF(v);
       self->_insert(hash_code, k, v);
     }
-    Py_DECREF(item);
     Py_DECREF(fast);
+    Py_DECREF(item);
   }
+  Py_DECREF(it);
   return 0;
 }
 
