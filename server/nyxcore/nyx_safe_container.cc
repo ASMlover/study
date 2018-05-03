@@ -206,6 +206,13 @@ typedef struct _safeiterdictobject {
 static PySafeIterDictObject* _free_list[PySafeIterDict_MAXFREELIST];
 static int _numfree = 0;
 
+static PyObject* dict_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwds);
+static void dict_tp_dealloc(register PySafeIterDictObject* mp);
+static int dict_tp_clear(register PySafeIterDictObject* mp);
+static int dict_tp_traverse(register PySafeIterDictObject* mp, visitproc visit, void* arg);
+
+static int pysafeiterdict_merge(PySafeIterDictObject* mp, PyObject* b, bool is_override);
+
 static void set_key_error(PyObject* arg) {
   auto* tup = PyTuple_Pack(1, arg);
   if (tup == nullptr)
@@ -312,10 +319,93 @@ static PyObject* dict_popitem(register PySafeIterDictObject* mp) {
   return r;
 }
 
-static PyObject* dict_tp_new(PyTypeObject* type, PyObject* args, PyObject* kwds);
-static void dict_tp_dealloc(register PySafeIterDictObject* mp);
-static int dict_tp_clear(register PySafeIterDictObject* mp);
-static int dict_tp_traverse(register PySafeIterDictObject* mp, visitproc visit, void* arg);
+static int pysafeiterdict_insert(register PySafeIterDictObject* mp,
+    PyObject* k, PyObject* v, bool is_override) {
+  auto key = PyInt_AsLong(k);
+  if (PyErr_Occurred())
+    return -1;
+
+  mp->tb_table->insert(key, v, is_override);
+  return 0;
+}
+
+static int pysafeiterdict_merge_fromseq(
+    PySafeIterDictObject* mp, PyObject* seq2, bool is_override) {
+  auto* it = PyObject_GetIter(seq2);
+  if (it == nullptr)
+    return -1;
+
+  for (auto i = 0; ; ++i) {
+    auto* item = PyIter_Next(it);
+    if (item == nullptr) {
+      if (PyErr_Occurred()) {
+        Py_DECREF(it);
+        return -1;
+      }
+      break;
+    }
+
+    auto* fast = PySequence_Fast(item, "");
+    if (fast == nullptr) {
+      if (PyErr_ExceptionMatches(PyExc_TypeError)) {
+        PyErr_Format(PyExc_TypeError,
+            "cannot convert dictionary update sequence "
+            "element #%d to a sequence", i);
+      }
+      Py_DECREF(item);
+      Py_DECREF(it);
+      return -1;
+    }
+    auto n = PySequence_Fast_GET_SIZE(fast);
+    if (n != 2) {
+      PyErr_Format(PyExc_ValueError,
+          "dictionary update sequence element #%d has length %zd; "
+          "2 is required", i, n);
+      Py_DECREF(fast);
+      Py_DECREF(item);
+      Py_DECREF(it);
+      return -1;
+    }
+
+    auto* k = PySequence_Fast_GET_ITEM(fast, 0);
+    auto* v = PySequence_Fast_GET_ITEM(fast, 1);
+    if (pysafeiterdict_insert(mp, k, v, is_override) < 0) {
+      Py_DECREF(fast);
+      Py_DECREF(item);
+      Py_DECREF(it);
+      return -1;
+    }
+    Py_DECREF(fast);
+    Py_DECREF(item);
+  }
+
+  Py_DECREF(it);
+  return 0;
+}
+
+static int dict_update_common(PySafeIterDictObject* mp,
+    PyObject* args, PyObject* kwds, const char* methname) {
+  PyObject* arg{};
+  int r{};
+
+  if (!PyArg_UnpackTuple(args, methname, 0, 1, &arg)) {
+    r = -1;
+  }
+  else if (arg != nullptr) {
+    if (PyObject_HasAttrString(arg, "keys"))
+      r = pysafeiterdict_merge(mp, arg, true);
+    else
+      r = pysafeiterdict_merge_fromseq(mp, arg, true);
+  }
+  if (r == 0 && kwds != nullptr)
+    r = pysafeiterdict_merge(mp, kwds, true);
+  return r;
+}
+
+static int dict_tp_init(
+    PySafeIterDictObject* mp, PyObject* args, PyObject* kwds) {
+  return dict_update_common(mp, args, kwds, "SafeIterDict");
+}
 
 PyDoc_STRVAR(dictionary_doc,
 "SafeIterDict() -> new empty dictionary\n"
@@ -390,7 +480,7 @@ static PyTypeObject _safeiterdict_type = {
   0, // tp_descr_get
   0, // tp_desct_set
   0, // tp_dictoffset
-  (initproc)0, // tp_init
+  (initproc)dict_tp_init, // tp_init
   PyType_GenericAlloc, // tp_alloc
   dict_tp_new, // tp_new
   PyObject_GC_Del, // tp_free
@@ -448,6 +538,65 @@ int dict_tp_traverse(
     iter.next();
   }
   return r;
+}
+
+int pysafeiterdict_merge(
+    PySafeIterDictObject* mp, PyObject* b, bool is_override) {
+  if (mp == nullptr || b == nullptr) {
+    PyErr_BadInternalCall();
+    return -1;
+  }
+
+  if (PySafeIterDict_CheckExact(b)) {
+    auto* other = reinterpret_cast<PySafeIterDictObject*>(b);
+    if (other == mp || other->tb_table->empty())
+      return 0;
+
+    SafeIterDictIter iter;
+    other->tb_table->begin(&iter, true);
+    while (iter.is_valid()) {
+      auto item = iter.get();
+      mp->tb_table->setitem(item->key, item->value);
+      iter.next();
+    }
+  }
+  else {
+    auto* keys = PyMapping_Keys(b);
+    if (keys == nullptr)
+      return -1;
+
+    auto* iter = PyObject_GetIter(keys);
+    Py_DECREF(keys);
+    if (iter == nullptr)
+      return -1;
+
+    for (auto* k = PyIter_Next(iter); k; k = PyIter_Next(iter)) {
+      auto key = PyInt_AsLong(k);
+      if (PyErr_Occurred()) {
+        Py_DECREF(iter);
+        Py_DECREF(k);
+        return -1;
+      }
+
+      if (!is_override && mp->tb_table->has_key(key)) {
+        Py_DECREF(k);
+        continue;
+      }
+      auto* v = PyObject_GetItem(b, k);
+      if (v == nullptr) {
+        Py_DECREF(iter);
+        Py_DECREF(k);
+        return -1;
+      }
+      mp->tb_table->setitem(key, v);
+      Py_DECREF(k);
+      Py_DECREF(v);
+    }
+    Py_DECREF(iter);
+    if (PyErr_Occurred())
+      return -1;
+  }
+  return 0;
 }
 
 void nyx_safeiterdict_wrap(PyObject* m) {
