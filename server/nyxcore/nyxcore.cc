@@ -27,6 +27,7 @@
 #include <boost/python.hpp>
 #include "utils/nyx_watcher.h"
 #include "nyx_container.h"
+#include "nyx_safe_container.h"
 
 namespace py = ::boost::python;
 
@@ -38,6 +39,7 @@ static void _nyxcore_raw_binding(void) {
   nyx::nyx_watcher_wrap(m);
   nyx::nyx_list_wrap(m);
   nyx::nyx_dict_wrap(m);
+  nyx::safe::nyx_safeiterdict_wrap(m);
 }
 #else
 # define _nyxcore_raw_binding() (void)0
