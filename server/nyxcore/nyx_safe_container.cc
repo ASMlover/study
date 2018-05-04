@@ -413,6 +413,21 @@ static PyObject* dict_size(PySafeIterDictObject* mp) {
   return PyInt_FromSsize_t(mp->tb_table->size());
 }
 
+static PyObject* dict_keys(register PySafeIterDictObject* mp) {
+  auto n = mp->tb_table->size();
+  auto* r = PyList_New(n);
+  if (r == nullptr)
+    return nullptr;
+
+  SafeIterDictIter it;
+  mp->tb_table->begin(&it);
+  for (auto i = 0; i < n && it.is_valid(); ++i, it.next()) {
+    auto* key = PyInt_FromLong(it.get()->key);
+    PyList_SET_ITEM(r, i, key);
+  }
+  return r;
+}
+
 PyDoc_STRVAR(dictionary_doc,
 "SafeIterDict() -> new empty dictionary\n"
 "SafeIterDict(mapping) -> new dictionary initialized from a mapping object's\n"
@@ -443,6 +458,8 @@ PyDoc_STRVAR(update__doc__,
 "In either case, this is followed by: for k in F: d[k] = F[k]");
 PyDoc_STRVAR(size__doc__,
 "D.size() -> integer, return the number of items of dictionary");
+PyDoc_STRVAR(keys__doc__,
+"D.keys() -> list of D's keys");
 PyDoc_STRVAR(contains__doc__,
 "D.__contains__(k) -> True is D has a key k, else False");
 
@@ -455,6 +472,7 @@ static PyMethodDef _mapp_methods[] = {
   {"popitem", (PyCFunction)dict_popitem, METH_NOARGS, popitem__doc__},
   {"update", (PyCFunction)dict_update, METH_VARARGS | METH_KEYWORDS, update__doc__},
   {"size", (PyCFunction)dict_size, METH_NOARGS, size__doc__},
+  {"keys", (PyCFunction)dict_keys, METH_NOARGS, keys__doc__},
   {"__contains__", (PyCFunction)dict_contains, METH_O | METH_COEXIST, contains__doc__},
 };
 
