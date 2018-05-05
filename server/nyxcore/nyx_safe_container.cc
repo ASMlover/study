@@ -554,9 +554,10 @@ static PyMethodDef _mapp_methods[] = {
   {"popitem", (PyCFunction)dict_popitem, METH_NOARGS, popitem__doc__},
   {"keys", (PyCFunction)dict_keys, METH_NOARGS, keys__doc__},
   {"values", (PyCFunction)dict_values, METH_NOARGS, values__doc__},
-  {"items", (PyCFunction)dict_items, METH_NOARGS, items__doc__}, // FIXME: this line cause crash? why?
+  {"items", (PyCFunction)dict_items, METH_NOARGS, items__doc__},
   {"update", (PyCFunction)dict_update, METH_VARARGS | METH_KEYWORDS, update__doc__},
   {"__contains__", (PyCFunction)dict_contains, METH_O | METH_COEXIST, contains__doc__},
+  {nullptr}
 };
 
 static PyTypeObject _safeiterdict_type = {
