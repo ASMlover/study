@@ -212,6 +212,8 @@ static void dict_tp_dealloc(register PySafeIterDictObject* mp);
 static int dict_tp_clear(register PySafeIterDictObject* mp);
 static int dict_tp_traverse(register PySafeIterDictObject* mp, visitproc visit, void* arg);
 
+static PyObject* pysafeiterdict_new(void);
+static PyObject* pysafeiterdict_copy(PyObject* o);
 static int pysafeiterdict_merge(PySafeIterDictObject* mp, PyObject* b, bool is_override);
 
 static void set_key_error(PyObject* arg) {
@@ -471,6 +473,10 @@ static PyObject* dict_items(register PySafeIterDictObject* mp) {
   return r;
 }
 
+static PyObject* dict_copy(register PySafeIterDictObject* mp) {
+  return pysafeiterdict_copy(reinterpret_cast<PyObject*>(mp));
+}
+
 static int dict_sq_contains(PyObject* o, PyObject* k) {
   auto key = PyInt_AsLong(k);
   if (PyErr_Occurred())
@@ -517,6 +523,8 @@ PyDoc_STRVAR(values__doc__,
 "D.values() -> list of D's values");
 PyDoc_STRVAR(items__doc__,
 "D.items() -> list of D's (key, value) pairs, as 2-tuples");
+PyDoc_STRVAR(copy__doc__,
+"D.copy() -> a shallow copy of D");
 PyDoc_STRVAR(update__doc__,
 "D.update([E, ]**F) -> None. update D from dict/iterable E and F.\n"
 "If E present and has a .keys() method, does: for k in E: D[k] = E[k]\n"
@@ -555,6 +563,7 @@ static PyMethodDef _mapp_methods[] = {
   {"keys", (PyCFunction)dict_keys, METH_NOARGS, keys__doc__},
   {"values", (PyCFunction)dict_values, METH_NOARGS, values__doc__},
   {"items", (PyCFunction)dict_items, METH_NOARGS, items__doc__},
+  {"copy", (PyCFunction)dict_copy, METH_NOARGS, copy__doc__},
   {"update", (PyCFunction)dict_update, METH_VARARGS | METH_KEYWORDS, update__doc__},
   {"__contains__", (PyCFunction)dict_contains, METH_O | METH_COEXIST, contains__doc__},
   {nullptr}
@@ -607,18 +616,7 @@ static PyTypeObject _safeiterdict_type = {
 
 PyObject* dict_tp_new(
     PyTypeObject* /*type*/, PyObject* /*args*/, PyObject* /*kwds*/) {
-  register PySafeIterDictObject* mp;
-  if (_numfree) {
-    mp = _free_list[--_numfree];
-    _Py_NewReference((PyObject*)mp);
-  }
-  else {
-    mp = PyObject_GC_New(PySafeIterDictObject, &_safeiterdict_type);
-    if (mp == nullptr)
-      return nullptr;
-    mp->tb_table = new SafeIterDict();
-  }
-  return (PyObject*)mp;
+  return pysafeiterdict_new();
 }
 
 int dict_tp_init(PySafeIterDictObject* mp, PyObject* args, PyObject* kwds) {
@@ -718,6 +716,36 @@ int pysafeiterdict_merge(
       return -1;
   }
   return 0;
+}
+
+PyObject* pysafeiterdict_new(void) {
+  register PySafeIterDictObject* mp;
+  if (_numfree) {
+    mp = _free_list[--_numfree];
+    _Py_NewReference((PyObject*)mp);
+  }
+  else {
+    mp = PyObject_GC_New(PySafeIterDictObject, &_safeiterdict_type);
+    if (mp == nullptr)
+      return nullptr;
+    mp->tb_table = new SafeIterDict();
+  }
+  return reinterpret_cast<PyObject*>(mp);
+}
+
+PyObject* pysafeiterdict_copy(PyObject* o) {
+  if (o == nullptr || !PySafeIterDict_CheckExact(o)) {
+    PyErr_Occurred();
+    return nullptr;
+  }
+  auto* copy = pysafeiterdict_new();
+  if (copy == nullptr)
+    return nullptr;
+  if (pysafeiterdict_merge(
+        reinterpret_cast<PySafeIterDictObject*>(copy), o, true) == 0)
+    return copy;
+  Py_DECREF(copy);
+  return nullptr;
 }
 
 void nyx_safeiterdict_wrap(PyObject* m) {
