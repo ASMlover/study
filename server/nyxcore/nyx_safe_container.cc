@@ -428,6 +428,64 @@ static PyObject* dict_keys(register PySafeIterDictObject* mp) {
   return r;
 }
 
+static PyObject* dict_values(register PySafeIterDictObject* mp) {
+  auto n = mp->tb_table->size();
+  auto* r = PyList_New(n);
+  if (r == nullptr)
+    return nullptr;
+
+  SafeIterDictIter it;
+  mp->tb_table->begin(&it);
+  for (auto i = 0; i < n && it.is_valid(); ++i, it.next()) {
+    auto* val = it.get()->value;
+    Py_INCREF(val);
+    PyList_SET_ITEM(r, i, val);
+  }
+  return r;
+}
+
+static PyObject* dict_items(register PySafeIterDictObject* mp) {
+  auto n = mp->tb_table->size();
+  auto* r = PyList_New(n);
+  if (r == nullptr)
+    return nullptr;
+  for (auto i = 0; i < n; ++i) {
+    auto* item = PyTuple_New(2);
+    if (item == nullptr) {
+      Py_DECREF(r);
+      return nullptr;
+    }
+    PyList_SET_ITEM(r, i, item);
+  }
+
+  SafeIterDictIter it;
+  mp->tb_table->begin(&it);
+  for (auto i = 0; i < n && it.is_valid(); ++i, it.next()) {
+    auto* key = PyInt_FromLong(it.get()->key);
+    auto* val = it.get()->value;
+    Py_INCREF(val);
+    auto* item = PyList_GET_ITEM(r, i);
+    PyTuple_SET_ITEM(item, 0, key);
+    PyTuple_SET_ITEM(item, 1, val);
+  }
+  return r;
+}
+
+static int dict_sq_contains(PyObject* o, PyObject* k) {
+  auto key = PyInt_AsLong(k);
+  if (PyErr_Occurred())
+    return -1;
+  auto* mp = reinterpret_cast<PySafeIterDictObject*>(o);
+  if (mp->tb_table->has_key(key))
+    return 1;
+  else
+    return 0;
+}
+
+static Py_ssize_t dict_mp_length(PySafeIterDictObject* mp) {
+  return mp->tb_table->size();
+}
+
 PyDoc_STRVAR(dictionary_doc,
 "SafeIterDict() -> new empty dictionary\n"
 "SafeIterDict(mapping) -> new dictionary initialized from a mapping object's\n"
@@ -439,40 +497,65 @@ PyDoc_STRVAR(dictionary_doc,
 "SafeIterDict(**kwargs) -> new dictionary initialized with the name=value pairs\n"
 "   in the keyword argument list. For example: SafeIterDict(one=1, two=2)");
 
+PyDoc_STRVAR(size__doc__,
+"D.size() -> integer, return the number of items of dictionary");
+PyDoc_STRVAR(clear__doc__,
+"D.clear() -> None. remove all items from D");
 PyDoc_STRVAR(get__doc__,
 "D.get(k[, d]) -> D[k] if k in D, else d. d defaults to None");
 PyDoc_STRVAR(setdefault__doc__,
 "D.setdefault(k[, d]) -> D.get(k, d), also set D[k] = d if k not in D");
-PyDoc_STRVAR(clear__doc__,
-"D.clear() -> None. remove all items from D");
 PyDoc_STRVAR(pop__doc__,
 "D.pop(k[, d]) -> v, remove specified key and return the corresponding value.\n"
 "If key is not found, d is returned if given, otherwise KeyError is raised.");
 PyDoc_STRVAR(popitem__doc__,
 "D.popitem() -> (k, v), remove and return some (key, value) pair as a\n"
 "2-tuple; but raise KeyError if D is empty.");
+PyDoc_STRVAR(keys__doc__,
+"D.keys() -> list of D's keys");
+PyDoc_STRVAR(values__doc__,
+"D.values() -> list of D's values");
+PyDoc_STRVAR(items__doc__,
+"D.items() -> list of D's (key, value) pairs, as 2-tuples");
 PyDoc_STRVAR(update__doc__,
 "D.update([E, ]**F) -> None. update D from dict/iterable E and F.\n"
 "If E present and has a .keys() method, does: for k in E: D[k] = E[k]\n"
 "If E present and lacks .keys() method, does: for (k, v) in E: D[k] = v\n"
 "In either case, this is followed by: for k in F: d[k] = F[k]");
-PyDoc_STRVAR(size__doc__,
-"D.size() -> integer, return the number of items of dictionary");
-PyDoc_STRVAR(keys__doc__,
-"D.keys() -> list of D's keys");
 PyDoc_STRVAR(contains__doc__,
 "D.__contains__(k) -> True is D has a key k, else False");
 
+static PySequenceMethods _dict_as_sequence = {
+  0, // sq_length
+  0, // sq_concat
+  0, // sq_repeat
+  0, // sq_item
+  0, // sq_slice
+  0, // sq_ass_item
+  0, // sq_ass_slice
+  dict_sq_contains, // sq_contains
+  0, // sq_inplace_concat
+  0, // sq_inplace_repeat
+};
+
+static PyMappingMethods _dict_as_mapping = {
+  (lenfunc)dict_mp_length, // mp_length
+  (binaryfunc)0, // mp_subscript
+  (objobjargproc)0, // mp_ass_subscript
+};
+
 static PyMethodDef _mapp_methods[] = {
   {"has_key", (PyCFunction)dict_contains, METH_O, contains__doc__},
+  {"size", (PyCFunction)dict_size, METH_NOARGS, size__doc__},
+  {"clear", (PyCFunction)dict_clear, METH_NOARGS, clear__doc__},
   {"get", (PyCFunction)dict_get, METH_VARARGS, get__doc__},
   {"setdefault", (PyCFunction)dict_setdefault, METH_VARARGS, setdefault__doc__},
-  {"clear", (PyCFunction)dict_clear, METH_NOARGS, clear__doc__},
   {"pop", (PyCFunction)dict_pop, METH_VARARGS, pop__doc__},
   {"popitem", (PyCFunction)dict_popitem, METH_NOARGS, popitem__doc__},
-  {"update", (PyCFunction)dict_update, METH_VARARGS | METH_KEYWORDS, update__doc__},
-  {"size", (PyCFunction)dict_size, METH_NOARGS, size__doc__},
   {"keys", (PyCFunction)dict_keys, METH_NOARGS, keys__doc__},
+  {"values", (PyCFunction)dict_values, METH_NOARGS, values__doc__},
+  {"items", (PyCFunction)dict_items, METH_NOARGS, items__doc__}, // FIXME: this line cause crash? why?
+  {"update", (PyCFunction)dict_update, METH_VARARGS | METH_KEYWORDS, update__doc__},
   {"__contains__", (PyCFunction)dict_contains, METH_O | METH_COEXIST, contains__doc__},
 };
 
@@ -488,8 +571,8 @@ static PyTypeObject _safeiterdict_type = {
   (cmpfunc)0, // tp_compare
   (reprfunc)0, // tp_repr
   0, // tp_as_number
-  0, // tp_as_sequence
-  0, // tp_as_mapping
+  &_dict_as_sequence, // tp_as_sequence
+  &_dict_as_mapping, // tp_as_mapping
   (hashfunc)PyObject_HashNotImplemented, // tp_hash
   0, // tp_call
   (reprfunc)0, // tp_str
