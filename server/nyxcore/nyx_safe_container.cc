@@ -215,6 +215,8 @@ static int dict_tp_traverse(register PySafeIterDictObject* mp, visitproc visit, 
 static PyObject* pysafeiterdict_new(void);
 static PyObject* pysafeiterdict_copy(PyObject* o);
 static int pysafeiterdict_merge(PySafeIterDictObject* mp, PyObject* b, bool is_override);
+static int pysafeiterdict_delitem(PySafeIterDictObject* mp, PyObject* k);
+static int pysafeiterdict_setitem(PySafeIterDictObject* mp, PyObject* k, PyObject* v);
 
 static void set_key_error(PyObject* arg) {
   auto* tup = PyTuple_Pack(1, arg);
@@ -493,6 +495,14 @@ static Py_ssize_t dict_mp_length(PySafeIterDictObject* mp) {
 }
 static PyObject* dict_mp_subscript(register PySafeIterDictObject* mp, register PyObject* k);
 
+static int dict_mp_ass_subscript(
+    PySafeIterDictObject* mp, PyObject* k, PyObject* v) {
+  if (v == nullptr)
+    return pysafeiterdict_delitem(mp, k);
+  else
+    return pysafeiterdict_setitem(mp, k, v);
+}
+
 PyDoc_STRVAR(dictionary_doc,
 "SafeIterDict() -> new empty dictionary\n"
 "SafeIterDict(mapping) -> new dictionary initialized from a mapping object's\n"
@@ -552,7 +562,7 @@ static PySequenceMethods _dict_as_sequence = {
 static PyMappingMethods _dict_as_mapping = {
   (lenfunc)dict_mp_length, // mp_length
   (binaryfunc)dict_mp_subscript, // mp_subscript
-  (objobjargproc)0, // mp_ass_subscript
+  (objobjargproc)dict_mp_ass_subscript, // mp_ass_subscript
 };
 
 static PyMethodDef _mapp_methods[] = {
@@ -780,6 +790,27 @@ PyObject* pysafeiterdict_copy(PyObject* o) {
     return copy;
   Py_DECREF(copy);
   return nullptr;
+}
+
+int pysafeiterdict_delitem(PySafeIterDictObject* mp, PyObject* k) {
+  auto key = PyInt_AsLong(k);
+  if (PyErr_Occurred())
+    return -1;
+
+  if (!mp->tb_table->pop(key)) {
+    set_key_error(k);
+    return -1;
+  }
+  return 0;
+}
+
+int pysafeiterdict_setitem(PySafeIterDictObject* mp, PyObject* k, PyObject* v) {
+  auto key = PyInt_AsLong(k);
+  if (PyErr_Occurred())
+    return -1;
+
+  mp->tb_table->setitem(key, v);
+  return 0;
 }
 
 void nyx_safeiterdict_wrap(PyObject* m) {
