@@ -491,6 +491,7 @@ static int dict_sq_contains(PyObject* o, PyObject* k) {
 static Py_ssize_t dict_mp_length(PySafeIterDictObject* mp) {
   return mp->tb_table->size();
 }
+static PyObject* dict_mp_subscript(register PySafeIterDictObject* mp, register PyObject* k);
 
 PyDoc_STRVAR(dictionary_doc,
 "SafeIterDict() -> new empty dictionary\n"
@@ -532,6 +533,8 @@ PyDoc_STRVAR(update__doc__,
 "In either case, this is followed by: for k in F: d[k] = F[k]");
 PyDoc_STRVAR(contains__doc__,
 "D.__contains__(k) -> True is D has a key k, else False");
+PyDoc_STRVAR(getitem__doc__,
+"x.__getitem__(y) <==> x[y]");
 
 static PySequenceMethods _dict_as_sequence = {
   0, // sq_length
@@ -548,7 +551,7 @@ static PySequenceMethods _dict_as_sequence = {
 
 static PyMappingMethods _dict_as_mapping = {
   (lenfunc)dict_mp_length, // mp_length
-  (binaryfunc)0, // mp_subscript
+  (binaryfunc)dict_mp_subscript, // mp_subscript
   (objobjargproc)0, // mp_ass_subscript
 };
 
@@ -566,6 +569,7 @@ static PyMethodDef _mapp_methods[] = {
   {"copy", (PyCFunction)dict_copy, METH_NOARGS, copy__doc__},
   {"update", (PyCFunction)dict_update, METH_VARARGS | METH_KEYWORDS, update__doc__},
   {"__contains__", (PyCFunction)dict_contains, METH_O | METH_COEXIST, contains__doc__},
+  {"__getitem__", (PyCFunction)dict_mp_subscript, METH_O | METH_COEXIST, getitem__doc__},
   {nullptr}
 };
 
@@ -657,6 +661,36 @@ int dict_tp_traverse(
     iter.next();
   }
   return r;
+}
+
+PyObject* dict_mp_subscript(
+    register PySafeIterDictObject* mp, register PyObject* k) {
+  auto key = PyInt_AsLong(k);
+  if (PyErr_Occurred())
+    return nullptr;
+
+  auto* v = mp->tb_table->get(key, nullptr);
+  if (v == nullptr) {
+    if (!PySafeIterDict_CheckExact(mp)) {
+      static PyObject* missing_str{};
+      auto* missing = _PyObject_LookupSpecial(
+          reinterpret_cast<PyObject*>(mp), "__missing__", &missing_str);
+      if (missing_str != nullptr) {
+        auto* res = PyObject_CallFunctionObjArgs(missing, k, nullptr);
+        Py_DECREF(missing);
+        return res;
+      }
+      else if (PyErr_Occurred()) {
+        return nullptr;
+      }
+    }
+    set_key_error(k);
+    return nullptr;
+  }
+  else {
+    Py_INCREF(v);
+  }
+  return v;
 }
 
 int pysafeiterdict_merge(
