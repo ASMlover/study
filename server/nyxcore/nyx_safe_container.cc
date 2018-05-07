@@ -708,6 +708,14 @@ static PyObject* dict_iterkeys(PySafeIterDictObject* mp) {
   return dictiter_new(mp, &_safeiterdictiterkey_type);
 }
 
+static PyObject* dict_itervalues(PySafeIterDictObject* mp) {
+  return dictiter_new(mp, &_safeiterdictitervalue_type);
+}
+
+static PyObject* dict_iteritems(PySafeIterDictObject* mp) {
+  return dictiter_new(mp, &_safeiterdictiteritem_type);
+}
+
 static int dict_sq_contains(PyObject* o, PyObject* k) {
   auto key = PyInt_AsLong(k);
   if (PyErr_Occurred())
@@ -765,6 +773,10 @@ PyDoc_STRVAR(items__doc__,
 "D.items() -> list of D's (key, value) pairs, as 2-tuples");
 PyDoc_STRVAR(iterkeys__doc__,
 "D.iterkeys() -> an iterator over the keys of D");
+PyDoc_STRVAR(itervalues__doc__,
+"D.itervalues() -> an iterator over the values of D");
+PyDoc_STRVAR(iteritems__doc__,
+"D.iteritems() -> an iterator over the (key, value) items of D");
 PyDoc_STRVAR(copy__doc__,
 "D.copy() -> a shallow copy of D");
 PyDoc_STRVAR(update__doc__,
@@ -808,6 +820,8 @@ static PyMethodDef _mapp_methods[] = {
   {"values", (PyCFunction)dict_values, METH_NOARGS, values__doc__},
   {"items", (PyCFunction)dict_items, METH_NOARGS, items__doc__},
   {"iterkeys", (PyCFunction)dict_iterkeys, METH_NOARGS, iterkeys__doc__},
+  {"itervalues", (PyCFunction)dict_itervalues, METH_NOARGS, itervalues__doc__},
+  {"iteritems", (PyCFunction)dict_iteritems, METH_NOARGS, iteritems__doc__},
   {"copy", (PyCFunction)dict_copy, METH_NOARGS, copy__doc__},
   {"update", (PyCFunction)dict_update, METH_VARARGS | METH_KEYWORDS, update__doc__},
   {"__contains__", (PyCFunction)dict_contains, METH_O | METH_COEXIST, contains__doc__},
