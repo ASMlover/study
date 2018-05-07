@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <sstream>
 #include "nyx_safe_container.h"
 
 namespace nyx { namespace safe {
@@ -211,6 +212,7 @@ static int dict_tp_init(PySafeIterDictObject* mp, PyObject* args, PyObject* kwds
 static void dict_tp_dealloc(register PySafeIterDictObject* mp);
 static int dict_tp_clear(register PySafeIterDictObject* mp);
 static int dict_tp_traverse(register PySafeIterDictObject* mp, visitproc visit, void* arg);
+static PyObject* dict_tp_repr(PySafeIterDictObject* mp);
 
 static PyObject* pysafeiterdict_new(void);
 static PyObject* pysafeiterdict_copy(PyObject* o);
@@ -593,13 +595,13 @@ static PyTypeObject _safeiterdict_type = {
   0, // tp_getattr
   0, // tp_setattr
   (cmpfunc)0, // tp_compare
-  (reprfunc)0, // tp_repr
+  (reprfunc)dict_tp_repr, // tp_repr
   0, // tp_as_number
   &_dict_as_sequence, // tp_as_sequence
   &_dict_as_mapping, // tp_as_mapping
   (hashfunc)PyObject_HashNotImplemented, // tp_hash
   0, // tp_call
-  (reprfunc)0, // tp_str
+  (reprfunc)dict_tp_repr, // tp_str
   PyObject_GenericGetAttr, // tp_getattro
   0, // tp_setattro
   0, // tp_as_buffer
@@ -670,6 +672,39 @@ int dict_tp_traverse(
     }
     iter.next();
   }
+  return r;
+}
+
+PyObject* dict_tp_repr(PySafeIterDictObject* mp) {
+  auto ir = Py_ReprEnter(reinterpret_cast<PyObject*>(mp));
+  if (ir != 0)
+    return ir > 0 ? PyString_FromString("{...}") : nullptr;
+  if (mp->tb_table->empty()) {
+    Py_ReprLeave(reinterpret_cast<PyObject*>(mp));
+    return PyString_FromString("{}");
+  }
+
+  auto asstr_fn = [](PyObject* x) -> std::string {
+    if (PyString_Check(x))
+      return std::string("'") + PyString_AsString(x) + "'";
+    else
+      return PyString_AsString(PyObject_Repr(x));
+  };
+
+  std::stringstream oss;
+  oss << "{";
+  SafeIterDictIter it;
+  mp->tb_table->begin(&it);
+  auto n = mp->tb_table->size();
+  for (auto i = 0; i < n && it.is_valid(); ++i, it.next()) {
+    oss << it.get()->key << ": " << asstr_fn(it.get()->value);
+    if (i + 1 < n)
+      oss << ", ";
+  }
+  oss << "}";
+  auto* r = Py_BuildValue("s", oss.str().c_str());
+  Py_ReprLeave(reinterpret_cast<PyObject*>(mp));
+
   return r;
 }
 
