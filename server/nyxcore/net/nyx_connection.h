@@ -30,6 +30,7 @@
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
+#include "../nyx_base.h"
 
 namespace nyx { namespace net {
 
@@ -46,7 +47,7 @@ protected:
   std::string local_ip_;
   std::uint16_t local_port_{};
 public:
-#if defined(__linux__)
+#if defined(_NYXCORE_LINUX)
   using keep_idle = boost::asio::detail::socket_option::integer<SOL_TCP, TCP_KEEPIDLE>;
   using keep_intvl = boost::asio::detail::socket_option::integer<SOL_TCP, TCP_KEEPINTVL>;
   using keep_cnt = boost::asio::detail::socket_option::integer<SOL_TCP, TCP_KEEPCNT>;

@@ -84,7 +84,7 @@ void tcp_server::listen(std::size_t backlog) {
 void tcp_server::handle_start_server(void) {
   acceptor_.set_option(boost::asio::ip::tcp::socket::keep_alive(true));
   acceptor_.set_option(boost::asio::ip::tcp::no_delay(true));
-#if defined(__linux__)
+#if defined(_NYXCORE_LINUX)
   acceptor_.set_option(connection::keep_idle(60));
   acceptor_.set_option(connection::keep_intvl(30));
 #endif
