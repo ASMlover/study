@@ -212,6 +212,7 @@ static int dict_tp_init(PySafeIterDictObject* mp, PyObject* args, PyObject* kwds
 static void dict_tp_dealloc(register PySafeIterDictObject* mp);
 static int dict_tp_clear(register PySafeIterDictObject* mp);
 static int dict_tp_traverse(register PySafeIterDictObject* mp, visitproc visit, void* arg);
+static int dict_tp_print(register PySafeIterDictObject* mp, register FILE* fp, register int flags);
 static PyObject* dict_tp_repr(PySafeIterDictObject* mp);
 
 static PyObject* pysafeiterdict_new(void);
@@ -591,7 +592,7 @@ static PyTypeObject _safeiterdict_type = {
   sizeof(PySafeIterDictObject), // tp_basicsize
   0, // tp_itemsize
   (destructor)dict_tp_dealloc, // tp_dealloc
-  (printfunc)0, // tp_print
+  (printfunc)dict_tp_print, // tp_print
   0, // tp_getattr
   0, // tp_setattr
   (cmpfunc)0, // tp_compare
@@ -675,10 +676,58 @@ int dict_tp_traverse(
   return r;
 }
 
+int dict_tp_print(
+    register PySafeIterDictObject* mp, register FILE* fp, register int flags) {
+  auto status = Py_ReprEnter(reinterpret_cast<PyObject*>(mp));
+  if (status != 0) {
+    if (status < 0)
+      return status;
+
+    Py_BEGIN_ALLOW_THREADS
+    fprintf(fp, "{...}");
+    Py_END_ALLOW_THREADS
+    return 0;
+  }
+
+  Py_BEGIN_ALLOW_THREADS
+  fprintf(fp, "{");
+  Py_END_ALLOW_THREADS
+
+  auto n = mp->tb_table->size();
+  SafeIterDictIter it;
+  mp->tb_table->begin(&it);
+  for (auto i = 0; i < n && it.is_valid(); ++i, it.next()) {
+    auto item = it.get();
+    auto* val = item->value;
+    if (val != nullptr) {
+      Py_INCREF(val);
+      Py_BEGIN_ALLOW_THREADS
+      fprintf(fp, "%d: ", item->key);
+      Py_END_ALLOW_THREADS
+      if (PyObject_Print(val, fp, 0) != 0) {
+        Py_DECREF(val);
+        Py_ReprLeave(reinterpret_cast<PyObject*>(mp));
+        return -1;
+      }
+      if (i + 1 < n) {
+        Py_BEGIN_ALLOW_THREADS
+        fprintf(fp, ", ");
+        Py_END_ALLOW_THREADS
+      }
+      Py_DECREF(val);
+    }
+  }
+  Py_BEGIN_ALLOW_THREADS
+  fprintf(fp, "}");
+  Py_END_ALLOW_THREADS
+  Py_ReprLeave(reinterpret_cast<PyObject*>(mp));
+  return 0;
+}
+
 PyObject* dict_tp_repr(PySafeIterDictObject* mp) {
-  auto ir = Py_ReprEnter(reinterpret_cast<PyObject*>(mp));
-  if (ir != 0)
-    return ir > 0 ? PyString_FromString("{...}") : nullptr;
+  auto status = Py_ReprEnter(reinterpret_cast<PyObject*>(mp));
+  if (status != 0)
+    return status > 0 ? PyString_FromString("{...}") : nullptr;
   if (mp->tb_table->empty()) {
     Py_ReprLeave(reinterpret_cast<PyObject*>(mp));
     return PyString_FromString("{}");
