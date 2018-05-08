@@ -1434,6 +1434,10 @@ static PyObject* _nyxdict_iteritems(nyx_dict* self) {
   return _nyxdictiter_new(self, &_nyxdictiter_itemtype);
 }
 
+static PyObject* _nyxdict_tp_iter(nyx_dict* self) {
+  return _nyxdictiter_new(self, &_nyxdictiter_keytype);
+}
+
 PyDoc_STRVAR(_nyxdict_doc,
 "nyx_dict() -> new empty nyx_dict\n"
 "nyx_dict(mapping) -> new nyx_dict initialized from a mapping object's\n"
@@ -1553,7 +1557,7 @@ static PyTypeObject _nyxdict_type = {
   (inquiry)_nyxdict_tp_clear, // tp_clear
   0, // tp_richcompare
   0, // tp_weaklistoffset
-  0, // tp_iter
+  (getiterfunc)_nyxdict_tp_iter, // tp_iter
   0, // tp_iternext
   _nyxdict_methods, // tp_methods
   0, // tp_members
