@@ -631,6 +631,56 @@ public:
     return oss.str();
   }
 
+  int _print(FILE* fp, int flags) {
+    auto status = Py_ReprEnter(dynamic_cast<PyObject*>(this));
+    if (status != 0) {
+      if (status < 0)
+        return status;
+      Py_BEGIN_ALLOW_THREADS
+      fprintf(fp, "{...}");
+      Py_END_ALLOW_THREADS
+      return 0;
+    }
+
+    Py_BEGIN_ALLOW_THREADS
+    fprintf(fp, "{");
+    Py_END_ALLOW_THREADS
+
+    int any{};
+    for (auto begin = map_->begin(); begin != map_->end(); ++begin) {
+      auto* key = begin->second.first;
+      auto* value = begin->second.second;
+      if (value == nullptr)
+        continue;
+
+      Py_INCREF(value);
+      if (any++ > 0) {
+        Py_BEGIN_ALLOW_THREADS
+        fprintf(fp, ", ");
+        Py_END_ALLOW_THREADS
+      }
+      if (PyObject_Print(key, fp, 0) != 0) {
+        Py_DECREF(value);
+        Py_ReprLeave(dynamic_cast<PyObject*>(this));
+        return -1;
+      }
+      Py_BEGIN_ALLOW_THREADS
+      fprintf(fp, ": ");
+      Py_END_ALLOW_THREADS
+      if (PyObject_Print(value, fp, 0) != 0) {
+        Py_DECREF(value);
+        Py_ReprLeave(dynamic_cast<PyObject*>(this));
+        return -1;
+      }
+      Py_DECREF(value);
+    }
+    Py_BEGIN_ALLOW_THREADS
+    fprintf(fp, "}");
+    Py_END_ALLOW_THREADS
+    Py_ReprLeave(dynamic_cast<PyObject*>(this));
+    return 0;
+  }
+
   inline void _clear(void) {
     for (auto& x : *map_) {
       Py_DECREF(x.second.first);
@@ -974,6 +1024,10 @@ static int _nyxdict_tp_init(nyx_dict* self, PyObject* args, PyObject* kwargs) {
 static void _nyxdict_tp_dealloc(nyx_dict* self) {
   self->_dealloc();
   self->ob_type->tp_free(self);
+}
+
+static int _nyxdict_tp_print(nyx_dict* self, FILE* fp, int flags) {
+  return self->_print(fp, flags);
 }
 
 static PyObject* _nyxdict_tp_repr(nyx_dict* self) {
@@ -1535,7 +1589,7 @@ static PyTypeObject _nyxdict_type = {
   sizeof(nyx_dict), // tp_basesize
   0, // tp_itemsize
   (destructor)_nyxdict_tp_dealloc, // tp_dealloc
-  0, // tp_print
+  (printfunc)_nyxdict_tp_print, // tp_print
   // (getattrfunc)_nyxdict_tp_getattr, // tp_getattr
   // (setattrfunc)_nyxdict_tp_setattr, // tp_setattr
   (getattrfunc)0, // tp_getattr
