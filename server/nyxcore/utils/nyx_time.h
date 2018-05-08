@@ -26,9 +26,24 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include "../nyx_base.h"
+#include <time.h>
+#if !defined(_NYXCORE_WINDOWS)
+# include <cpuid.h>
+# include <sys/time.h>
+# include <sys/types.h>
+#else
+# include <intrin.h>
+#endif
 #include <chrono>
 
-namespace nyx {
+namespace nyx { namespace time {
+
+struct tm2 : public ::tm {
+  std::int32_t tm_usec;
+};
+
+constexpr std::uint64_t kStampsPerSecond = 1000000ULL;
 
 inline std::uint32_t chrono_seconds(void) {
   return static_cast<std::uint32_t>(
@@ -48,4 +63,65 @@ inline std::uint64_t chrono_microseconds(void) {
       std::chrono::system_clock::now().time_since_epoch()).count());
 }
 
+inline void localtime(tm2* result) {
+  auto now_miscosec = chrono_microseconds();
+  auto now_seconds = now_miscosec * 0.000001;
+  auto t = static_cast<time_t>(now_seconds);
+  result->tm_usec = static_cast<std::uint32_t>((now_seconds - t) * 1000000);
 }
+
+inline std::uint64_t timestamp(void) {
+  return chrono_microseconds();
+}
+
+inline std::uint64_t milliseconds(void) {
+  return chrono_milliseconds();
+}
+
+inline std::uint64_t microseconds(void) {
+  return chrono_microseconds();
+}
+
+inline constexpr std::uint64_t stamps_per_second(void) {
+  return kStampsPerSecond;
+}
+
+inline std::uint64_t begin_stamp(void) {
+  static std::uint64_t begin = timestamp();
+  return begin;
+}
+
+inline std::uint64_t begin_microseconds(void) {
+  static std::uint64_t begin = microseconds();
+  return begin;
+}
+
+#if !defined(_NYXCORE_WINDOWS)
+inline bool invariant_tsc_support(void) {
+  int _eax, _ebx, _ecx, _edx;
+  __cpuid(0x80000007, _eax, _ebx, _ecx, _edx);
+  return (_edx & (1 << 8)) != 0;
+}
+
+inline std::uint64_t timestamp_rdtscp(void) {
+  std::uint32_t lo, hi;
+  __asm__ __volatile__(
+      "rdtscp" :
+      "=a"(lo), "=d"(hi) : :
+      "%rcx");
+  return static_cast<std::uint64_t>(lo) | (static_cast<std::uint64_t>(hi) << 32);
+}
+#else
+inline bool invariant_tsc_support(void) {
+  int info[4]{};
+  __cpuid(info, 0x80000007);
+  return (info[3] & (1 << 8)) != 0;
+}
+
+inline std::uint64_t timestamp_rdtscp(void) {
+  unsigned int aux{};
+  return __rdtscp(&aux);
+}
+#endif
+
+}}

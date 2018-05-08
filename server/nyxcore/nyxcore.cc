@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/python.hpp>
+#include "utils/nyx_time.h"
 #include "utils/nyx_watcher.h"
 #include "nyx_container.h"
 #include "nyx_safe_container.h"
