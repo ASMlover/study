@@ -124,4 +124,16 @@ inline std::uint64_t timestamp_rdtscp(void) {
 }
 #endif
 
+inline std::uint32_t stamp_seconds(void) {
+  return chrono_seconds();
+}
+
+inline std::uint64_t stamp_milliseconds(void) {
+  return chrono_milliseconds();
+}
+
+inline std::uint64_t stamp_microseconds(void) {
+  return chrono_microseconds();
+}
+
 }}
