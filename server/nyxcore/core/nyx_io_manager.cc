@@ -27,11 +27,13 @@
 #include <functional>
 #include <vector>
 #include <Python.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include "nyx_io_manager.h"
 
 namespace nyx { namespace core {
 
 static constexpr std::size_t kDefaultThreadNum = 3;
+static constexpr long kSleepInterval = 100;
 
 io_manager::io_manager(void)
   : thread_num_(kDefaultThreadNum) {
@@ -79,8 +81,18 @@ void io_manager::stop(void) {
 }
 
 bool io_manager::poll(bool no_sleep) {
+  namespace bt = ::boost::posix_time;
   if (running_) {
-    // TODO:
+    auto begin = bt::microsec_clock::local_time();
+    // TODO: services poll
+    auto interval = (bt::microsec_clock::local_time() - begin).total_microseconds();
+    loop_time_ += interval;
+
+    if (!no_sleep && interval < kSleepInterval) {
+      Py_BEGIN_ALLOW_THREADS
+      // TODO: task_wait
+      Py_END_ALLOW_THREADS
+    }
   }
 
   return running_;
