@@ -36,6 +36,10 @@ class nyx_list : public PyObject {
   using ObjectVector = std::vector<PyObject*>;
   ObjectVector* vec_{};
 public:
+  inline void _new_initialize(void) {
+    vec_ = nullptr;
+  }
+
   inline void _init(void) {
     if (vec_ != nullptr)
       _clear();
@@ -47,6 +51,7 @@ public:
     if (vec_ != nullptr) {
       _clear();
       delete vec_;
+      vec_ = nullptr;
     }
   }
 
@@ -167,6 +172,12 @@ public:
   }
 };
 
+#ifndef _nyxlist_MAXFREELIST
+# define _nyxlist_MAXFREELIST (80)
+#endif
+static nyx_list* _nyxlist_freelist[_nyxlist_MAXFREELIST];
+static int _nyxlist_numfree = 0;
+
 static bool __is_nyxlist(PyObject* o);
 static PyObject* __nyxlist_new(void);
 static PyObject* _nyxlist_extend(nyx_list* self, PyObject* other);
@@ -189,8 +200,14 @@ static int _nyxlist_tp_init(nyx_list* self, PyObject* args, PyObject* kwargs) {
 }
 
 static void _nyxlist_tp_dealloc(nyx_list* self) {
+  PyObject_GC_UnTrack(self);
+  Py_TRASHCAN_SAFE_BEGIN(self);
   self->_dealloc();
-  self->ob_type->tp_free(self);
+  if (_nyxlist_numfree < _nyxlist_MAXFREELIST && __is_nyxlist(self))
+    _nyxlist_freelist[_nyxlist_numfree++] = self;
+  else
+    Py_TYPE(self)->tp_free(self);
+  Py_TRASHCAN_SAFE_END(self);
 }
 
 static PyObject* _nyxlist_tp_repr(nyx_list* self) {
@@ -573,10 +590,20 @@ bool __is_nyxlist(PyObject* o) {
 }
 
 PyObject* __nyxlist_new(void) {
-  PyTypeObject* _type = &_nyxlist_type;
-  auto* nl = (nyx_list*)_type->tp_alloc(_type, 0);
-  if (nl != nullptr)
-    nl->_init();
+  nyx_list* nl{};
+  if (_nyxlist_numfree > 0) {
+    --_nyxlist_numfree;
+    nl = _nyxlist_freelist[_nyxlist_numfree];
+    _Py_NewReference(reinterpret_cast<PyObject*>(nl));
+  }
+  else {
+    nl = PyObject_GC_New(nyx_list, &_nyxlist_type);
+    if (nl == nullptr)
+      return nullptr;
+    nl->_new_initialize();
+  }
+  nl->_init();
+  _PyObject_GC_TRACK(nl);
   return nl;
 }
 
