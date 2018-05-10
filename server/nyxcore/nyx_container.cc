@@ -223,6 +223,58 @@ static int _nyxlist_tp_clear(nyx_list* self) {
   return 0;
 }
 
+static PyObject* _nyxlist_tp_richcompare(PyObject* x, PyObject* y, int op) {
+  if (!__is_nyxlist(x) || !__is_nyxlist(y)) {
+    Py_INCREF(Py_NotImplemented);
+    return Py_NotImplemented;
+  }
+
+  auto* xl = reinterpret_cast<nyx_list*>(x);
+  auto* yl = reinterpret_cast<nyx_list*>(y);
+  auto xn = xl->_size();
+  auto yn = yl->_size();
+  if (xn != yn && (op == Py_EQ || op == Py_NE)) {
+    PyObject* r = op == Py_EQ ? Py_False : Py_True;
+    Py_INCREF(r);
+    return r;
+  }
+
+  Py_ssize_t i{};
+  for (i = 0; i < xn && i < yn; ++i) {
+    auto r = PyObject_RichCompareBool(xl->_at(i), yl->_at(i), Py_EQ);
+    if (r < 0)
+      return nullptr;
+    if (!r)
+      break;
+  }
+  if (i >= xn || i >= yn) {
+    int cmp;
+    switch (op) {
+    case Py_LT: cmp = xn < yn; break;
+    case Py_LE: cmp = xn <= yn; break;
+    case Py_EQ: cmp = xn == yn; break;
+    case Py_NE: cmp = xn != yn; break;
+    case Py_GT: cmp = xn > yn; break;
+    case Py_GE: cmp = xn >= yn; break;
+    default: return nullptr;
+    }
+    auto* r = cmp ? Py_True : Py_False;
+    Py_INCREF(r);
+    return r;
+  }
+
+  if (op == Py_EQ) {
+    Py_INCREF(Py_False);
+    return Py_False;
+  }
+  if (op == Py_NE) {
+    Py_INCREF(Py_True);
+    return Py_True;
+  }
+
+  return PyObject_RichCompare(xl->_at(i), yl->_at(i), op);
+}
+
 static PyObject* _nyxlist_copy(nyx_list* self) {
   nyx_list* copy_self = (nyx_list*)__nyxlist_new();
   self->_copy(copy_self);
@@ -567,7 +619,7 @@ static PyTypeObject _nyxlist_type = {
   _nyxlist_doc, // tp_doc
   (traverseproc)_nyxlist_tp_traverse, // tp_traverse
   (inquiry)_nyxlist_tp_clear, // tp_clear
-  0, // tp_richcompare
+  _nyxlist_tp_richcompare, // tp_richcompare
   0, // tp_weaklistoffset
   0, // tp_iter
   0, // tp_iternext
