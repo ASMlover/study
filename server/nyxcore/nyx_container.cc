@@ -36,7 +36,7 @@ class nyx_list : public PyObject {
   using ObjectVector = std::vector<PyObject*>;
   ObjectVector* vec_{};
 public:
-  inline void _new_initialize(void) {
+  inline void _init_zero(void) {
     vec_ = nullptr;
   }
 
@@ -595,12 +595,13 @@ PyObject* __nyxlist_new(void) {
     --_nyxlist_numfree;
     nl = _nyxlist_freelist[_nyxlist_numfree];
     _Py_NewReference(reinterpret_cast<PyObject*>(nl));
+    nl->_init_zero();
   }
   else {
     nl = PyObject_GC_New(nyx_list, &_nyxlist_type);
     if (nl == nullptr)
       return nullptr;
-    nl->_new_initialize();
+    nl->_init_zero();
   }
   nl->_init();
   _PyObject_GC_TRACK(nl);
@@ -621,6 +622,10 @@ class nyx_dict : public PyObject {
   using IterType = ObjectMap::const_iterator;
   ObjectMap* map_{};
 public:
+  inline void _init_zero(void) {
+    map_ = nullptr;
+  }
+
   inline void _init(void) {
     if (map_ != nullptr)
       _clear();
@@ -632,6 +637,7 @@ public:
     if (map_ != nullptr) {
       _clear();
       delete map_;
+      map_ = nullptr;
     }
   }
 
@@ -873,6 +879,12 @@ public:
   }
 };
 
+#ifndef _nyxdict_MAXFREELIST
+# define _nyxdict_MAXFREELIST (80)
+#endif
+static nyx_dict* _nyxdict_freelist[_nyxdict_MAXFREELIST];
+static int _nyxdict_numfree = 0;
+
 static bool __is_nyxdict(PyObject* o);
 static PyObject* __nyxdict_new(void);
 
@@ -1049,8 +1061,14 @@ static int _nyxdict_tp_init(nyx_dict* self, PyObject* args, PyObject* kwargs) {
 }
 
 static void _nyxdict_tp_dealloc(nyx_dict* self) {
+  PyObject_GC_UnTrack(self);
+  Py_TRASHCAN_SAFE_BEGIN(self);
   self->_dealloc();
-  self->ob_type->tp_free(self);
+  if (_nyxdict_numfree < _nyxdict_MAXFREELIST && __is_nyxdict(self))
+    _nyxdict_freelist[_nyxdict_numfree++] = self;
+  else
+    Py_TYPE(self)->tp_free(self);
+  Py_TRASHCAN_SAFE_END(self);
 }
 
 static int _nyxdict_tp_print(nyx_dict* self, FILE* fp, int flags) {
@@ -1659,10 +1677,19 @@ bool __is_nyxdict(PyObject* o) {
 }
 
 PyObject* __nyxdict_new(void) {
-  PyTypeObject* _type = &_nyxdict_type;
-  auto* nd = (nyx_dict*)_type->tp_alloc(_type, 0);
-  if (nd != nullptr)
-    nd->_init();
+  nyx_dict* nd{};
+  if (_nyxdict_numfree > 0) {
+    nd = _nyxdict_freelist[--_nyxdict_numfree];
+    _Py_NewReference(reinterpret_cast<PyObject*>(nd));
+    nd->_init_zero();
+  }
+  else {
+    nd = PyObject_GC_New(nyx_dict, &_nyxdict_type);
+    if (nd == nullptr)
+      return nullptr;
+    nd->_init_zero();
+  }
+  nd->_init();
   return nd;
 }
 
