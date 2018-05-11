@@ -34,6 +34,7 @@ namespace nyx {
 
 class nyx_list : public PyObject {
   using ObjectVector = std::vector<PyObject*>;
+  using IterType = ObjectVector::const_iterator;
   ObjectVector* vec_{};
 public:
   inline void _init_zero(void) {
@@ -169,6 +170,14 @@ public:
     for (auto* x : *vec_)
       Py_VISIT(x);
     return 0;
+  }
+
+  inline IterType _get_begin(void) const {
+    return vec_->begin();
+  }
+
+  inline IterType _get_end(void) const {
+    return vec_->end();
   }
 };
 
@@ -525,6 +534,106 @@ static int _nyxlist__meth_ass_subscript(
   }
 }
 
+struct nyx_listiter : public PyObject {
+  using IterType = std::vector<PyObject*>::const_iterator;
+  nyx_list* li_list;
+  IterType* li_iter;
+};
+
+static void _nyxlistiter_dealloc(nyx_listiter* it) {
+  _PyObject_GC_UNTRACK(it);
+  Py_XDECREF(it->li_list);
+  if (it->li_iter != nullptr)
+    delete it->li_iter;
+  PyObject_GC_Del(it);
+}
+
+static int _nyxlistiter_traverse(nyx_listiter* it, visitproc visit, void* arg) {
+  Py_VISIT(it->li_list);
+  return 0;
+}
+
+static PyObject* _nyxlistiter_iternext(nyx_listiter* it) {
+  auto* l = it->li_list;
+  if (l == nullptr || !__is_nyxlist(l)) {
+    return nullptr;
+  }
+
+  if (*it->li_iter == l->_get_end()) {
+    Py_DECREF(l);
+    it->li_list = nullptr;
+    return nullptr;
+  }
+
+  auto* v = *(*it->li_iter);
+  ++(*it->li_iter);
+  Py_INCREF(v);
+  return v;
+}
+
+static PyObject* _nyxlistiter_len(nyx_listiter* it) {
+  auto n = it->li_list != nullptr ? it->li_list->_size() : 0;
+  return PyInt_FromSsize_t(n);
+}
+
+PyDoc_STRVAR(__nyxlistiter_hint_doc,
+"Private method returning an estimate of len(list(it))");
+static PyMethodDef _nyxlistiter_methods[] = {
+  {"__length_hint__", (PyCFunction)_nyxlistiter_len, METH_NOARGS, __nyxlistiter_hint_doc},
+  {nullptr}
+};
+
+static PyTypeObject _nyxlistiter_type = {
+  PyVarObject_HEAD_INIT(&PyType_Type, 0)
+  "listiterator", // tp_name
+  sizeof(nyx_listiter), // tp_basicsize
+  0, // tp_itemsize
+  (destructor)_nyxlistiter_dealloc, // tp_dealloc
+  0, // tp_print
+  0, // tp_getattr
+  0, // tp_setattr
+  0, // tp_compare
+  0, // repr
+  0, // tp_as_number
+  0, // tp_as_sequence
+  0, // tp_as_mapping
+  0, // tp_hash
+  0, // tp_call
+  0, // tp_str
+  PyObject_GenericGetAttr, // tp_getattro
+  0, // tp_setattro
+  0, // tp_as_buffer
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, // tp_flags
+  0, // tp_doc
+  (traverseproc)_nyxlistiter_traverse, // tp_traverse
+  0, // tp_clear
+  0, // tp_richcompare
+  0, // tp_weaklistoffset
+  PyObject_SelfIter, // tp_iter
+  (iternextfunc)_nyxlistiter_iternext, // tp_iternext
+  _nyxlistiter_methods, // tp_methods
+  0, // tp_members
+};
+
+static PyObject* _nyxlist_tp_iter(nyx_list* l) {
+  if (!__is_nyxlist(l)) {
+    PyErr_BadInternalCall();
+    return nullptr;
+  }
+  auto* it = PyObject_GC_New(nyx_listiter, &_nyxlistiter_type);
+  if (it == nullptr)
+    return nullptr;
+  Py_INCREF(l);
+  it->li_list = l;
+  it->li_iter = new nyx_listiter::IterType();
+  *it->li_iter = l->_get_begin();
+
+#if !defined(_WIN32) && !defined(_WIN64)
+  _PyObject_GC_TRACK(it);
+#endif
+  return static_cast<PyObject*>(it);
+}
+
 PyDoc_STRVAR(_nyxlist_doc,
 "nyx_list() -> new empty nyx_list\n"
 "nyx_list(iterable) -> new nyx_list initialized from iterable's items");
@@ -621,7 +730,7 @@ static PyTypeObject _nyxlist_type = {
   (inquiry)_nyxlist_tp_clear, // tp_clear
   _nyxlist_tp_richcompare, // tp_richcompare
   0, // tp_weaklistoffset
-  0, // tp_iter
+  (getiterfunc)_nyxlist_tp_iter, // tp_iter
   0, // tp_iternext
   _nyxlist_methods, // tp_methods
   0, // tp_members
