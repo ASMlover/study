@@ -39,10 +39,14 @@ if __WINDOWS_PLATFORM:
     __STD_OUTPUTHANDLE = -11
     __STD_ERRORHANDLE = -12
     __FOREGROUND_INTENSITY = 0x08
-    __FOREGROUND_BLUE = 0x09
-    __FOREGROUND_GREEN = 0x0a
-    __FOREGROUND_RED = 0x0c
-    __FOREGROUND_YELLOW = 0x0e
+    __FOREGROUND_BLUE = 0x01
+    __FOREGROUND_GREEN = 0x02
+    __FOREGROUND_RED = 0x04
+    __FOREGROUND_YELLOW = 0x06
+    __FOREGROUND_LIGHTBLUE = __FOREGROUND_BLUE | __FOREGROUND_INTENSITY
+    __FOREGROUND_LIGHTGREEN = __FOREGROUND_GREEN | __FOREGROUND_INTENSITY
+    __FOREGROUND_LIGHTRED = __FOREGROUND_RED | __FOREGROUND_INTENSITY
+    __FOREGROUND_LIGHTYELLOW = __FOREGROUND_YELLOW | __FOREGROUND_INTENSITY
 
     __stdout_handle = ctypes.windll.kernel32.GetStdHandle(__STD_OUTPUTHANDLE)
     def __set_terminal_color(c, h=__stdout_handle):
@@ -56,11 +60,15 @@ if __WINDOWS_PLATFORM:
         sys.stdout.write(msg + '\n')
         __reset_ternimal_color()
 else:
+    __FOREGROUND_RESET = '\033[0m'
     __FOREGROUND_BLUE = '\033[34m'
     __FOREGROUND_GREEN = '\033[32m'
     __FOREGROUND_RED = '\033[31m'
     __FOREGROUND_YELLOW = '\033[33m'
-    __FOREGROUND_RESET = '\033[0m'
+    __FOREGROUND_LIGHTBLUE = '\033[94m'
+    __FOREGROUND_LIGHTGREEN = '\033[92m'
+    __FOREGROUND_LIGHTRED = '\033[91m'
+    __FOREGROUND_LIGHTYELLOW = '\033[93m'
 
     def color_print(msg, c):
         sys.stdout.write(c)
@@ -72,3 +80,7 @@ if __name__ == '__main__':
     color_print("Hello, world!", __FOREGROUND_GREEN)
     color_print("Hello, world!", __FOREGROUND_BLUE)
     color_print("Hello, world!", __FOREGROUND_YELLOW)
+    color_print("Hello, world!", __FOREGROUND_LIGHTRED)
+    color_print("Hello, world!", __FOREGROUND_LIGHTGREEN)
+    color_print("Hello, world!", __FOREGROUND_LIGHTBLUE)
+    color_print("Hello, world!", __FOREGROUND_LIGHTYELLOW)
