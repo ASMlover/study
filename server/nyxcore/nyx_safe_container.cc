@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <sstream>
 #include "nyx_safe_container.h"
 
 namespace nyx { namespace safe {
@@ -211,6 +212,9 @@ static int dict_tp_init(PySafeIterDictObject* mp, PyObject* args, PyObject* kwds
 static void dict_tp_dealloc(register PySafeIterDictObject* mp);
 static int dict_tp_clear(register PySafeIterDictObject* mp);
 static int dict_tp_traverse(register PySafeIterDictObject* mp, visitproc visit, void* arg);
+static int dict_tp_print(register PySafeIterDictObject* mp, register FILE* fp, register int flags);
+static PyObject* dict_tp_repr(PySafeIterDictObject* mp);
+static PyObject* dict_tp_iter(PySafeIterDictObject* mp);
 
 static PyObject* pysafeiterdict_new(void);
 static PyObject* pysafeiterdict_copy(PyObject* o);
@@ -479,6 +483,239 @@ static PyObject* dict_copy(register PySafeIterDictObject* mp) {
   return pysafeiterdict_copy(reinterpret_cast<PyObject*>(mp));
 }
 
+typedef struct {
+  PyObject_HEAD
+  PySafeIterDictObject* di_dict;
+  SafeIterDictIter* di_iter;
+  PyObject* di_result;
+} PySafeIterDictIterObject;
+
+static void dictiter_tp_dealloc(PySafeIterDictIterObject* di) {
+  Py_XDECREF(di->di_dict);
+  Py_XDECREF(di->di_result);
+  if (di->di_iter != nullptr) {
+    di->di_iter->clear();
+    delete di->di_iter;
+  }
+  PyObject_GC_Del(di);
+}
+
+static int dictiter_tp_traverse(
+    PySafeIterDictIterObject* di, visitproc visit, void* arg) {
+  Py_VISIT(di->di_dict);
+  Py_VISIT(di->di_result);
+  return 0;
+}
+
+static PyObject* dictiter_len(PySafeIterDictIterObject* di) {
+  Py_ssize_t len = 0;
+  if (di->di_dict != nullptr)
+    len = di->di_dict->tb_table->size();
+  return PyInt_FromSize_t(len);
+}
+
+PyDoc_STRVAR(length_hint__doc__,
+"private method returning an estimate of len(list(it))");
+static PyMethodDef _dictiter_methods[] = {
+  {"__length_hint__", (PyCFunction)dictiter_len, METH_NOARGS, length_hint__doc__},
+  {nullptr}
+};
+
+static PyObject* dictiter_iternextkey(PySafeIterDictIterObject* di) {
+  if (di->di_dict == nullptr)
+    return nullptr;
+
+  if (di->di_iter->is_valid()) {
+    auto* r = PyInt_FromLong(di->di_iter->get()->key);
+    di->di_iter->next();
+    return r;
+  }
+
+  Py_DECREF(di->di_dict);
+  di->di_dict = nullptr;
+  return nullptr;
+}
+
+static PyTypeObject _safeiterdictiterkey_type = {
+  PyVarObject_HEAD_INIT(&PyType_Type, 0)
+  "SafeIterDict-keyiterator", // tp_name
+  sizeof(PySafeIterDictIterObject), // tp_basicsize
+  0, // tp_itemsize
+  (destructor)dictiter_tp_dealloc, // tp_dealloc
+  0, // tp_print
+  0, // tp_getattr
+  0, // tp_setattr
+  0, // tp_compare
+  0, // tp_repr
+  0, // tp_as_number
+  0, // tp_as_sequence
+  0, // tp_as_mapping
+  0, // tp_hash
+  0, // tp_call
+  0, // tp_str
+  PyObject_GenericGetAttr, // tp_getattro
+  0, // tp_setattro
+  0, // tp_as_buffer
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, // tp_flags
+  0, // tp_doc
+  (traverseproc)dictiter_tp_traverse, // tp_traverse
+  0, // tp_clear
+  0, // tp_richcompare
+  0, // tp_weaklistoffset
+  PyObject_SelfIter, // tp_iter
+  (iternextfunc)dictiter_iternextkey, // tp_iternext
+  _dictiter_methods, // tp_methods
+  0,
+};
+
+static PyObject* dictiter_iternextvalue(PySafeIterDictIterObject* di) {
+  if (di->di_dict == nullptr)
+    return nullptr;
+
+  if (di->di_iter->is_valid()) {
+    auto* value = di->di_iter->get()->value;
+    Py_INCREF(value);
+    di->di_iter->next();
+    return value;
+  }
+
+  Py_DECREF(di->di_dict);
+  di->di_dict = nullptr;
+  return nullptr;
+}
+
+static PyTypeObject _safeiterdictitervalue_type = {
+  PyVarObject_HEAD_INIT(&PyType_Type, 0)
+  "SafeIterDict-valueiterator", // tp_name
+  sizeof(PySafeIterDictIterObject), // tp_basicsize
+  0, // tp_itemsize
+  (destructor)dictiter_tp_dealloc, // tp_dealloc
+  0, // tp_print
+  0, // tp_getattr
+  0, // tp_setattr
+  0, // tp_compare
+  0, // tp_repr
+  0, // tp_as_number
+  0, // tp_as_sequence
+  0, // tp_as_mapping
+  0, // tp_hash
+  0, // tp_call
+  0, // tp_str
+  PyObject_GenericGetAttr, // tp_getattro
+  0, // tp_setattro
+  0, // tp_as_buffer
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, // tp_flags
+  0, // tp_doc
+  (traverseproc)dictiter_tp_traverse, // tp_traverse
+  0, // tp_clear
+  0, // tp_richcompare
+  0, // tp_weaklistoffset
+  PyObject_SelfIter, // tp_iter
+  (iternextfunc)dictiter_iternextvalue, // tp_iternext
+  _dictiter_methods, // tp_methods
+  0,
+};
+
+static PyObject* dictiter_iternextitem(PySafeIterDictIterObject* di) {
+  if (di->di_dict == nullptr)
+    return nullptr;
+
+  if (di->di_iter->is_valid()) {
+    auto* result = di->di_result;
+    if (result->ob_refcnt == 1) {
+      Py_INCREF(result);
+      Py_DECREF(PyTuple_GET_ITEM(result, 0));
+      Py_DECREF(PyTuple_GET_ITEM(result, 1));
+    }
+    else {
+      result = PyTuple_New(2);
+      if (result == nullptr)
+        return nullptr;
+    }
+
+    auto item = di->di_iter->get();
+    di->di_iter->next();
+    auto* key = PyInt_FromLong(item->key);
+    auto* val = item->value;
+    Py_INCREF(val);
+    PyTuple_SET_ITEM(result, 0, key);
+    PyTuple_SET_ITEM(result, 1, val);
+    return result;
+  }
+
+  Py_DECREF(di->di_dict);
+  di->di_dict = nullptr;
+  return nullptr;
+}
+
+static PyTypeObject _safeiterdictiteritem_type = {
+  PyVarObject_HEAD_INIT(&PyType_Type, 0)
+  "SafeIterDict-itemiterator", // tp_name
+  sizeof(PySafeIterDictIterObject), // tp_basicsize
+  0, // tp_itemsize
+  (destructor)dictiter_tp_dealloc, // tp_dealloc
+  0, // tp_print
+  0, // tp_getattr
+  0, // tp_setattr
+  0, // tp_compare
+  0, // tp_repr
+  0, // tp_as_number
+  0, // tp_as_sequence
+  0, // tp_as_mapping
+  0, // tp_hash
+  0, // tp_call
+  0, // tp_str
+  PyObject_GenericGetAttr, // tp_getattro
+  0, // tp_setattro
+  0, // tp_as_buffer
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, // tp_flags
+  0, // tp_doc
+  (traverseproc)dictiter_tp_traverse, // tp_traverse
+  0, // tp_clear
+  0, // tp_richcompare
+  0, // tp_weaklistoffset
+  PyObject_SelfIter, // tp_iter
+  (iternextfunc)dictiter_iternextitem, // tp_iternext
+  _dictiter_methods, // tp_methods
+  0,
+};
+
+static PyObject* dictiter_new(
+    PySafeIterDictObject* dict, PyTypeObject* itertype) {
+  auto* di = PyObject_GC_New(PySafeIterDictIterObject, itertype);
+  if (di == nullptr)
+    return nullptr;
+  Py_INCREF(dict);
+
+  di->di_dict = dict;
+  di->di_iter = new SafeIterDictIter();
+  dict->tb_table->begin(di->di_iter);
+  if (itertype == &_safeiterdictiteritem_type) {
+    di->di_result = PyTuple_Pack(2, Py_None, Py_None);
+    if (di->di_result == nullptr) {
+      Py_DECREF(di);
+      return nullptr;
+    }
+  }
+  else {
+    di->di_result = nullptr;
+  }
+  PyObject_GC_Track(di);
+  return reinterpret_cast<PyObject*>(di);
+}
+
+static PyObject* dict_iterkeys(PySafeIterDictObject* mp) {
+  return dictiter_new(mp, &_safeiterdictiterkey_type);
+}
+
+static PyObject* dict_itervalues(PySafeIterDictObject* mp) {
+  return dictiter_new(mp, &_safeiterdictitervalue_type);
+}
+
+static PyObject* dict_iteritems(PySafeIterDictObject* mp) {
+  return dictiter_new(mp, &_safeiterdictiteritem_type);
+}
+
 static int dict_sq_contains(PyObject* o, PyObject* k) {
   auto key = PyInt_AsLong(k);
   if (PyErr_Occurred())
@@ -534,6 +771,12 @@ PyDoc_STRVAR(values__doc__,
 "D.values() -> list of D's values");
 PyDoc_STRVAR(items__doc__,
 "D.items() -> list of D's (key, value) pairs, as 2-tuples");
+PyDoc_STRVAR(iterkeys__doc__,
+"D.iterkeys() -> an iterator over the keys of D");
+PyDoc_STRVAR(itervalues__doc__,
+"D.itervalues() -> an iterator over the values of D");
+PyDoc_STRVAR(iteritems__doc__,
+"D.iteritems() -> an iterator over the (key, value) items of D");
 PyDoc_STRVAR(copy__doc__,
 "D.copy() -> a shallow copy of D");
 PyDoc_STRVAR(update__doc__,
@@ -576,6 +819,9 @@ static PyMethodDef _mapp_methods[] = {
   {"keys", (PyCFunction)dict_keys, METH_NOARGS, keys__doc__},
   {"values", (PyCFunction)dict_values, METH_NOARGS, values__doc__},
   {"items", (PyCFunction)dict_items, METH_NOARGS, items__doc__},
+  {"iterkeys", (PyCFunction)dict_iterkeys, METH_NOARGS, iterkeys__doc__},
+  {"itervalues", (PyCFunction)dict_itervalues, METH_NOARGS, itervalues__doc__},
+  {"iteritems", (PyCFunction)dict_iteritems, METH_NOARGS, iteritems__doc__},
   {"copy", (PyCFunction)dict_copy, METH_NOARGS, copy__doc__},
   {"update", (PyCFunction)dict_update, METH_VARARGS | METH_KEYWORDS, update__doc__},
   {"__contains__", (PyCFunction)dict_contains, METH_O | METH_COEXIST, contains__doc__},
@@ -589,17 +835,17 @@ static PyTypeObject _safeiterdict_type = {
   sizeof(PySafeIterDictObject), // tp_basicsize
   0, // tp_itemsize
   (destructor)dict_tp_dealloc, // tp_dealloc
-  (printfunc)0, // tp_print
+  (printfunc)dict_tp_print, // tp_print
   0, // tp_getattr
   0, // tp_setattr
   (cmpfunc)0, // tp_compare
-  (reprfunc)0, // tp_repr
+  (reprfunc)dict_tp_repr, // tp_repr
   0, // tp_as_number
   &_dict_as_sequence, // tp_as_sequence
   &_dict_as_mapping, // tp_as_mapping
   (hashfunc)PyObject_HashNotImplemented, // tp_hash
   0, // tp_call
-  (reprfunc)0, // tp_str
+  (reprfunc)dict_tp_repr, // tp_str
   PyObject_GenericGetAttr, // tp_getattro
   0, // tp_setattro
   0, // tp_as_buffer
@@ -610,7 +856,7 @@ static PyTypeObject _safeiterdict_type = {
   (inquiry)dict_tp_clear, // tp_clear
   0, // tp_richcompare
   0, // tp_weaklistoffset
-  (getiterfunc)0, // tp_iter
+  (getiterfunc)dict_tp_iter, // tp_iter
   0, // tp_iternext
   _mapp_methods, // tp_methods
   0, // tp_members
@@ -671,6 +917,91 @@ int dict_tp_traverse(
     iter.next();
   }
   return r;
+}
+
+int dict_tp_print(
+    register PySafeIterDictObject* mp, register FILE* fp, register int flags) {
+  auto status = Py_ReprEnter(reinterpret_cast<PyObject*>(mp));
+  if (status != 0) {
+    if (status < 0)
+      return status;
+
+    Py_BEGIN_ALLOW_THREADS
+    fprintf(fp, "{...}");
+    Py_END_ALLOW_THREADS
+    return 0;
+  }
+
+  Py_BEGIN_ALLOW_THREADS
+  fprintf(fp, "{");
+  Py_END_ALLOW_THREADS
+
+  auto n = mp->tb_table->size();
+  SafeIterDictIter it;
+  mp->tb_table->begin(&it);
+  for (auto i = 0; i < n && it.is_valid(); ++i, it.next()) {
+    auto item = it.get();
+    auto* val = item->value;
+    if (val != nullptr) {
+      Py_INCREF(val);
+      Py_BEGIN_ALLOW_THREADS
+      fprintf(fp, "%d: ", item->key);
+      Py_END_ALLOW_THREADS
+      if (PyObject_Print(val, fp, 0) != 0) {
+        Py_DECREF(val);
+        Py_ReprLeave(reinterpret_cast<PyObject*>(mp));
+        return -1;
+      }
+      if (i + 1 < n) {
+        Py_BEGIN_ALLOW_THREADS
+        fprintf(fp, ", ");
+        Py_END_ALLOW_THREADS
+      }
+      Py_DECREF(val);
+    }
+  }
+  Py_BEGIN_ALLOW_THREADS
+  fprintf(fp, "}");
+  Py_END_ALLOW_THREADS
+  Py_ReprLeave(reinterpret_cast<PyObject*>(mp));
+  return 0;
+}
+
+PyObject* dict_tp_repr(PySafeIterDictObject* mp) {
+  auto status = Py_ReprEnter(reinterpret_cast<PyObject*>(mp));
+  if (status != 0)
+    return status > 0 ? PyString_FromString("{...}") : nullptr;
+  if (mp->tb_table->empty()) {
+    Py_ReprLeave(reinterpret_cast<PyObject*>(mp));
+    return PyString_FromString("{}");
+  }
+
+  auto asstr_fn = [](PyObject* x) -> std::string {
+    if (PyString_Check(x))
+      return std::string("'") + PyString_AsString(x) + "'";
+    else
+      return PyString_AsString(PyObject_Repr(x));
+  };
+
+  std::stringstream oss;
+  oss << "{";
+  SafeIterDictIter it;
+  mp->tb_table->begin(&it);
+  auto n = mp->tb_table->size();
+  for (auto i = 0; i < n && it.is_valid(); ++i, it.next()) {
+    oss << it.get()->key << ": " << asstr_fn(it.get()->value);
+    if (i + 1 < n)
+      oss << ", ";
+  }
+  oss << "}";
+  auto* r = Py_BuildValue("s", oss.str().c_str());
+  Py_ReprLeave(reinterpret_cast<PyObject*>(mp));
+
+  return r;
+}
+
+PyObject* dict_tp_iter(PySafeIterDictObject* mp) {
+  return dictiter_new(mp, &_safeiterdictiterkey_type);
 }
 
 PyObject* dict_mp_subscript(

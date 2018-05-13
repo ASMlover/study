@@ -44,7 +44,7 @@
 #if defined(i386) || defined (__i386__) || defined(__i486__) || \
   defined(__i586__) || defined (__i686__) || defined(__i386) || \
   defined(_M_IX86) || defined(_X86__) || defined(__THW_INTEL__) || \
-  defined(__I86__) || edfined(__INTEL__)
+  defined(__I86__) || defined(__INTEL__)
 # define _NYXCORE_ARCH32
 #elif defined(__x86_64) || defined(__x86_64__) || defined(__amd64) || \
   defined(__amd64__) || defined(_M_X64)

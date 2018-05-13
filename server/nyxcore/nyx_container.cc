@@ -34,8 +34,13 @@ namespace nyx {
 
 class nyx_list : public PyObject {
   using ObjectVector = std::vector<PyObject*>;
+  using IterType = ObjectVector::const_iterator;
   ObjectVector* vec_{};
 public:
+  inline void _init_zero(void) {
+    vec_ = nullptr;
+  }
+
   inline void _init(void) {
     if (vec_ != nullptr)
       _clear();
@@ -47,6 +52,7 @@ public:
     if (vec_ != nullptr) {
       _clear();
       delete vec_;
+      vec_ = nullptr;
     }
   }
 
@@ -165,7 +171,21 @@ public:
       Py_VISIT(x);
     return 0;
   }
+
+  inline IterType _get_begin(void) const {
+    return vec_->begin();
+  }
+
+  inline IterType _get_end(void) const {
+    return vec_->end();
+  }
 };
+
+#ifndef _nyxlist_MAXFREELIST
+# define _nyxlist_MAXFREELIST (80)
+#endif
+static nyx_list* _nyxlist_freelist[_nyxlist_MAXFREELIST];
+static int _nyxlist_numfree = 0;
 
 static bool __is_nyxlist(PyObject* o);
 static PyObject* __nyxlist_new(void);
@@ -189,8 +209,14 @@ static int _nyxlist_tp_init(nyx_list* self, PyObject* args, PyObject* kwargs) {
 }
 
 static void _nyxlist_tp_dealloc(nyx_list* self) {
+  PyObject_GC_UnTrack(self);
+  Py_TRASHCAN_SAFE_BEGIN(self);
   self->_dealloc();
-  self->ob_type->tp_free(self);
+  if (_nyxlist_numfree < _nyxlist_MAXFREELIST && __is_nyxlist(self))
+    _nyxlist_freelist[_nyxlist_numfree++] = self;
+  else
+    Py_TYPE(self)->tp_free(self);
+  Py_TRASHCAN_SAFE_END(self);
 }
 
 static PyObject* _nyxlist_tp_repr(nyx_list* self) {
@@ -204,6 +230,58 @@ static int _nyxlist_tp_traverse(nyx_list* self, visitproc visit, void* arg) {
 static int _nyxlist_tp_clear(nyx_list* self) {
   self->_clear();
   return 0;
+}
+
+static PyObject* _nyxlist_tp_richcompare(PyObject* x, PyObject* y, int op) {
+  if (!__is_nyxlist(x) || !__is_nyxlist(y)) {
+    Py_INCREF(Py_NotImplemented);
+    return Py_NotImplemented;
+  }
+
+  auto* xl = reinterpret_cast<nyx_list*>(x);
+  auto* yl = reinterpret_cast<nyx_list*>(y);
+  auto xn = xl->_size();
+  auto yn = yl->_size();
+  if (xn != yn && (op == Py_EQ || op == Py_NE)) {
+    PyObject* r = op == Py_EQ ? Py_False : Py_True;
+    Py_INCREF(r);
+    return r;
+  }
+
+  Py_ssize_t i{};
+  for (i = 0; i < xn && i < yn; ++i) {
+    auto r = PyObject_RichCompareBool(xl->_at(i), yl->_at(i), Py_EQ);
+    if (r < 0)
+      return nullptr;
+    if (!r)
+      break;
+  }
+  if (i >= xn || i >= yn) {
+    int cmp;
+    switch (op) {
+    case Py_LT: cmp = xn < yn; break;
+    case Py_LE: cmp = xn <= yn; break;
+    case Py_EQ: cmp = xn == yn; break;
+    case Py_NE: cmp = xn != yn; break;
+    case Py_GT: cmp = xn > yn; break;
+    case Py_GE: cmp = xn >= yn; break;
+    default: return nullptr;
+    }
+    auto* r = cmp ? Py_True : Py_False;
+    Py_INCREF(r);
+    return r;
+  }
+
+  if (op == Py_EQ) {
+    Py_INCREF(Py_False);
+    return Py_False;
+  }
+  if (op == Py_NE) {
+    Py_INCREF(Py_True);
+    return Py_True;
+  }
+
+  return PyObject_RichCompare(xl->_at(i), yl->_at(i), op);
 }
 
 static PyObject* _nyxlist_copy(nyx_list* self) {
@@ -456,6 +534,106 @@ static int _nyxlist__meth_ass_subscript(
   }
 }
 
+struct nyx_listiter : public PyObject {
+  using IterType = std::vector<PyObject*>::const_iterator;
+  nyx_list* li_list;
+  IterType* li_iter;
+};
+
+static void _nyxlistiter_dealloc(nyx_listiter* it) {
+  _PyObject_GC_UNTRACK(it);
+  Py_XDECREF(it->li_list);
+  if (it->li_iter != nullptr)
+    delete it->li_iter;
+  PyObject_GC_Del(it);
+}
+
+static int _nyxlistiter_traverse(nyx_listiter* it, visitproc visit, void* arg) {
+  Py_VISIT(it->li_list);
+  return 0;
+}
+
+static PyObject* _nyxlistiter_iternext(nyx_listiter* it) {
+  auto* l = it->li_list;
+  if (l == nullptr || !__is_nyxlist(l)) {
+    return nullptr;
+  }
+
+  if (*it->li_iter == l->_get_end()) {
+    Py_DECREF(l);
+    it->li_list = nullptr;
+    return nullptr;
+  }
+
+  auto* v = *(*it->li_iter);
+  ++(*it->li_iter);
+  Py_INCREF(v);
+  return v;
+}
+
+static PyObject* _nyxlistiter_len(nyx_listiter* it) {
+  auto n = it->li_list != nullptr ? it->li_list->_size() : 0;
+  return PyInt_FromSsize_t(n);
+}
+
+PyDoc_STRVAR(__nyxlistiter_hint_doc,
+"Private method returning an estimate of len(list(it))");
+static PyMethodDef _nyxlistiter_methods[] = {
+  {"__length_hint__", (PyCFunction)_nyxlistiter_len, METH_NOARGS, __nyxlistiter_hint_doc},
+  {nullptr}
+};
+
+static PyTypeObject _nyxlistiter_type = {
+  PyVarObject_HEAD_INIT(&PyType_Type, 0)
+  "listiterator", // tp_name
+  sizeof(nyx_listiter), // tp_basicsize
+  0, // tp_itemsize
+  (destructor)_nyxlistiter_dealloc, // tp_dealloc
+  0, // tp_print
+  0, // tp_getattr
+  0, // tp_setattr
+  0, // tp_compare
+  0, // repr
+  0, // tp_as_number
+  0, // tp_as_sequence
+  0, // tp_as_mapping
+  0, // tp_hash
+  0, // tp_call
+  0, // tp_str
+  PyObject_GenericGetAttr, // tp_getattro
+  0, // tp_setattro
+  0, // tp_as_buffer
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, // tp_flags
+  0, // tp_doc
+  (traverseproc)_nyxlistiter_traverse, // tp_traverse
+  0, // tp_clear
+  0, // tp_richcompare
+  0, // tp_weaklistoffset
+  PyObject_SelfIter, // tp_iter
+  (iternextfunc)_nyxlistiter_iternext, // tp_iternext
+  _nyxlistiter_methods, // tp_methods
+  0, // tp_members
+};
+
+static PyObject* _nyxlist_tp_iter(nyx_list* l) {
+  if (!__is_nyxlist(l)) {
+    PyErr_BadInternalCall();
+    return nullptr;
+  }
+  auto* it = PyObject_GC_New(nyx_listiter, &_nyxlistiter_type);
+  if (it == nullptr)
+    return nullptr;
+  Py_INCREF(l);
+  it->li_list = l;
+  it->li_iter = new nyx_listiter::IterType();
+  *it->li_iter = l->_get_begin();
+
+#if !defined(_WIN32) && !defined(_WIN64)
+  _PyObject_GC_TRACK(it);
+#endif
+  return static_cast<PyObject*>(it);
+}
+
 PyDoc_STRVAR(_nyxlist_doc,
 "nyx_list() -> new empty nyx_list\n"
 "nyx_list(iterable) -> new nyx_list initialized from iterable's items");
@@ -550,9 +728,9 @@ static PyTypeObject _nyxlist_type = {
   _nyxlist_doc, // tp_doc
   (traverseproc)_nyxlist_tp_traverse, // tp_traverse
   (inquiry)_nyxlist_tp_clear, // tp_clear
-  0, // tp_richcompare
+  _nyxlist_tp_richcompare, // tp_richcompare
   0, // tp_weaklistoffset
-  0, // tp_iter
+  (getiterfunc)_nyxlist_tp_iter, // tp_iter
   0, // tp_iternext
   _nyxlist_methods, // tp_methods
   0, // tp_members
@@ -573,10 +751,21 @@ bool __is_nyxlist(PyObject* o) {
 }
 
 PyObject* __nyxlist_new(void) {
-  PyTypeObject* _type = &_nyxlist_type;
-  auto* nl = (nyx_list*)_type->tp_alloc(_type, 0);
-  if (nl != nullptr)
-    nl->_init();
+  nyx_list* nl{};
+  if (_nyxlist_numfree > 0) {
+    --_nyxlist_numfree;
+    nl = _nyxlist_freelist[_nyxlist_numfree];
+    _Py_NewReference(reinterpret_cast<PyObject*>(nl));
+    nl->_init_zero();
+  }
+  else {
+    nl = PyObject_GC_New(nyx_list, &_nyxlist_type);
+    if (nl == nullptr)
+      return nullptr;
+    nl->_init_zero();
+  }
+  nl->_init();
+  _PyObject_GC_TRACK(nl);
   return nl;
 }
 
@@ -594,6 +783,10 @@ class nyx_dict : public PyObject {
   using IterType = ObjectMap::const_iterator;
   ObjectMap* map_{};
 public:
+  inline void _init_zero(void) {
+    map_ = nullptr;
+  }
+
   inline void _init(void) {
     if (map_ != nullptr)
       _clear();
@@ -605,6 +798,7 @@ public:
     if (map_ != nullptr) {
       _clear();
       delete map_;
+      map_ = nullptr;
     }
   }
 
@@ -629,6 +823,56 @@ public:
     oss << "}";
 
     return oss.str();
+  }
+
+  int _print(FILE* fp, int flags) {
+    auto status = Py_ReprEnter(dynamic_cast<PyObject*>(this));
+    if (status != 0) {
+      if (status < 0)
+        return status;
+      Py_BEGIN_ALLOW_THREADS
+      fprintf(fp, "{...}");
+      Py_END_ALLOW_THREADS
+      return 0;
+    }
+
+    Py_BEGIN_ALLOW_THREADS
+    fprintf(fp, "{");
+    Py_END_ALLOW_THREADS
+
+    int any{};
+    for (auto begin = map_->begin(); begin != map_->end(); ++begin) {
+      auto* key = begin->second.first;
+      auto* value = begin->second.second;
+      if (value == nullptr)
+        continue;
+
+      Py_INCREF(value);
+      if (any++ > 0) {
+        Py_BEGIN_ALLOW_THREADS
+        fprintf(fp, ", ");
+        Py_END_ALLOW_THREADS
+      }
+      if (PyObject_Print(key, fp, 0) != 0) {
+        Py_DECREF(value);
+        Py_ReprLeave(dynamic_cast<PyObject*>(this));
+        return -1;
+      }
+      Py_BEGIN_ALLOW_THREADS
+      fprintf(fp, ": ");
+      Py_END_ALLOW_THREADS
+      if (PyObject_Print(value, fp, 0) != 0) {
+        Py_DECREF(value);
+        Py_ReprLeave(dynamic_cast<PyObject*>(this));
+        return -1;
+      }
+      Py_DECREF(value);
+    }
+    Py_BEGIN_ALLOW_THREADS
+    fprintf(fp, "}");
+    Py_END_ALLOW_THREADS
+    Py_ReprLeave(dynamic_cast<PyObject*>(this));
+    return 0;
   }
 
   inline void _clear(void) {
@@ -795,6 +1039,12 @@ public:
     return map_->end();
   }
 };
+
+#ifndef _nyxdict_MAXFREELIST
+# define _nyxdict_MAXFREELIST (80)
+#endif
+static nyx_dict* _nyxdict_freelist[_nyxdict_MAXFREELIST];
+static int _nyxdict_numfree = 0;
 
 static bool __is_nyxdict(PyObject* o);
 static PyObject* __nyxdict_new(void);
@@ -972,8 +1222,18 @@ static int _nyxdict_tp_init(nyx_dict* self, PyObject* args, PyObject* kwargs) {
 }
 
 static void _nyxdict_tp_dealloc(nyx_dict* self) {
+  PyObject_GC_UnTrack(self);
+  Py_TRASHCAN_SAFE_BEGIN(self);
   self->_dealloc();
-  self->ob_type->tp_free(self);
+  if (_nyxdict_numfree < _nyxdict_MAXFREELIST && __is_nyxdict(self))
+    _nyxdict_freelist[_nyxdict_numfree++] = self;
+  else
+    Py_TYPE(self)->tp_free(self);
+  Py_TRASHCAN_SAFE_END(self);
+}
+
+static int _nyxdict_tp_print(nyx_dict* self, FILE* fp, int flags) {
+  return self->_print(fp, flags);
 }
 
 static PyObject* _nyxdict_tp_repr(nyx_dict* self) {
@@ -1434,6 +1694,10 @@ static PyObject* _nyxdict_iteritems(nyx_dict* self) {
   return _nyxdictiter_new(self, &_nyxdictiter_itemtype);
 }
 
+static PyObject* _nyxdict_tp_iter(nyx_dict* self) {
+  return _nyxdictiter_new(self, &_nyxdictiter_keytype);
+}
+
 PyDoc_STRVAR(_nyxdict_doc,
 "nyx_dict() -> new empty nyx_dict\n"
 "nyx_dict(mapping) -> new nyx_dict initialized from a mapping object's\n"
@@ -1531,7 +1795,7 @@ static PyTypeObject _nyxdict_type = {
   sizeof(nyx_dict), // tp_basesize
   0, // tp_itemsize
   (destructor)_nyxdict_tp_dealloc, // tp_dealloc
-  0, // tp_print
+  (printfunc)_nyxdict_tp_print, // tp_print
   // (getattrfunc)_nyxdict_tp_getattr, // tp_getattr
   // (setattrfunc)_nyxdict_tp_setattr, // tp_setattr
   (getattrfunc)0, // tp_getattr
@@ -1553,7 +1817,7 @@ static PyTypeObject _nyxdict_type = {
   (inquiry)_nyxdict_tp_clear, // tp_clear
   0, // tp_richcompare
   0, // tp_weaklistoffset
-  0, // tp_iter
+  (getiterfunc)_nyxdict_tp_iter, // tp_iter
   0, // tp_iternext
   _nyxdict_methods, // tp_methods
   0, // tp_members
@@ -1574,10 +1838,19 @@ bool __is_nyxdict(PyObject* o) {
 }
 
 PyObject* __nyxdict_new(void) {
-  PyTypeObject* _type = &_nyxdict_type;
-  auto* nd = (nyx_dict*)_type->tp_alloc(_type, 0);
-  if (nd != nullptr)
-    nd->_init();
+  nyx_dict* nd{};
+  if (_nyxdict_numfree > 0) {
+    nd = _nyxdict_freelist[--_nyxdict_numfree];
+    _Py_NewReference(reinterpret_cast<PyObject*>(nd));
+    nd->_init_zero();
+  }
+  else {
+    nd = PyObject_GC_New(nyx_dict, &_nyxdict_type);
+    if (nd == nullptr)
+      return nullptr;
+    nd->_init_zero();
+  }
+  nd->_init();
   return nd;
 }
 
