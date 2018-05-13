@@ -21,7 +21,7 @@ public:
   struct _typeobject* ob_type;
 };
 
-class PyIntObject : private PyObject {
+class PyIntObject : public PyObject {
   long ob_val;
 };
 ```
