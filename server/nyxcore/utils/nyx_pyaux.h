@@ -52,4 +52,30 @@ namespace container_aux {
   }
 }
 
+class acquire_pygil : private boost::noncopyable {
+  PyGILState_STATE state_;
+public:
+  acquire_pygil(void) {
+    state_ = PyGILState_Ensure();
+  }
+
+  ~acquire_pygil(void) {
+    PyGILState_Release(state_);
+  }
+};
+
+}
+
+#define _NYXCORE_TRY {\
+  nyx::acquire_pygil gil;\
+  try
+#define _NYXCORE_NOGIL_TRY {\
+  try
+
+#define _NYXCORE_CATCH\
+  catch (const py::error_already_set&) {\
+    PyErr_Print();\
+  }\
+  catch (...) {\
+  }\
 }
