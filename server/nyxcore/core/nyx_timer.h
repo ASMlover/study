@@ -29,13 +29,12 @@
 #include <cstdint>
 #include <Python.h>
 #include <boost/python.hpp>
+#include <boost/noncopyable.hpp>
 #include "../utils/nyx_pyaux.h"
-
-namespace py = ::boost::python;
 
 namespace nyx { namespace core {
 
-class timer {
+class timer : private boost::noncopyable {
   std::uint32_t timer_id_{};
   std::int64_t delay_time_{};
   std::int64_t expire_time_{};
@@ -63,10 +62,10 @@ public:
   }
 
   bool is_expired(std::int64_t now) const {
-    return now >= expire_time_;
+    return expire_time_ < now;
   }
 
-  std::int64_t time_remaining(std::int64_t now) const {
+  std::int64_t remain_time(std::int64_t now) const {
     return expire_time_ <= now ? 0 : expire_time_ - now;
   }
 
@@ -99,9 +98,9 @@ public:
     }
   }
 
-  void do_callback(void) {
+  void call_proxy(void) {
     calling_ = true;
-    if (callback_ != nullptr) {
+    if (proxy_ != nullptr) {
       _NYXCORE_TRY {
         py::call_method<void>(proxy_, "tick");
       } _NYXCORE_CATCH
