@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <Python.h>
 #include <boost/python.hpp>
+#include "../utils/nyx_pyaux.h"
 
 namespace py = ::boost::python;
 
@@ -41,9 +42,7 @@ class timer {
   bool repeat_{};
   bool cancelled_{};
   bool calling_{};
-  PyObject* callback_{};
-  PyObject* args_{};
-  PyObject* kwds_{};
+  PyObject* proxy_{};
 public:
   timer(std::uint32_t id, std::int64_t delay, bool repeat)
     : timer_id_(id)
@@ -89,27 +88,23 @@ public:
 
   void set_timer_proxy(PyObject* proxy) {
     clear_timer_proxy();
-    callback_ = PyObject_GetAttrString(proxy, "func");
-    args_ = PyObject_GetAttrString(proxy, "args");
-    kwds_ = PyObject_GetAttrString(proxy, "kwds");
+    Py_INCREF(proxy);
+    proxy_ = proxy;
   }
 
   void clear_timer_proxy(void) {
-    if (callback_ != nullptr) {
-      py::decref(args_);
-      py::decref(kwds_);
-      py::decref(callback_);
-      callback_ = nullptr;
-      args_ = nullptr;
-      kwds_ = nullptr;
+    if (proxy_ != nullptr) {
+      Py_DECREF(proxy_);
+      proxy_ = nullptr;
     }
   }
 
   void do_callback(void) {
     calling_ = true;
     if (callback_ != nullptr) {
-      // TODO: some protected for calling script
-      PyObject_Call(callback_, args_, kwds_);
+      _NYXCORE_TRY {
+        py::call_method<void>(proxy_, "tick");
+      } _NYXCORE_CATCH
     }
     calling_ = false;
   }
