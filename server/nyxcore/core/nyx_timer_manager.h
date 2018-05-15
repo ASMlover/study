@@ -26,56 +26,12 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <Python.h>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/python.hpp>
+#include <unordered_map>
+#include <boost/noncopyable.hpp>
 
-namespace py = ::boost::python;
+namespace nyx { namespace core {
 
-namespace nyx {
-
-namespace container_aux {
-  template <typename Container>
-  py::object as_pylist(const Container& c) {
-    py::list r;
-    for (auto& x : c)
-      r.append(x);
-    return r;
-  }
-
-  template <typename Container>
-  py::object as_pydict(const Container& c) {
-    py::dict r;
-    for (auto& x : c)
-      r[x.first] = x.second;
-    return r;
-  }
-}
-
-class acquire_pygil : private boost::noncopyable {
-  PyGILState_STATE state_;
-public:
-  acquire_pygil(void) {
-    state_ = PyGILState_Ensure();
-  }
-
-  ~acquire_pygil(void) {
-    PyGILState_Release(state_);
-  }
+class timer_manager : private boost::noncopyable {
 };
 
-}
-
-#define _NYXCORE_TRY {\
-  nyx::acquire_pygil gil;\
-  try
-#define _NYXCORE_NOGIL_TRY {\
-  try
-
-#define _NYXCORE_CATCH\
-  catch (const py::error_already_set&) {\
-    PyErr_Print();\
-  }\
-  catch (...) {\
-  }\
-}
+}}

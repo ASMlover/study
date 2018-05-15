@@ -80,6 +80,10 @@ public:
     vec_->clear();
   }
 
+  inline bool _empty(void) const {
+    return vec_->empty();
+  }
+
   inline Py_ssize_t _size(void) const {
     return vec_->size();
   }
@@ -293,6 +297,13 @@ static PyObject* _nyxlist_copy(nyx_list* self) {
 static PyObject* _nyxlist_clear(nyx_list* self) {
   self->_clear();
   Py_RETURN_NONE;
+}
+
+static PyObject* _nyxlist_empty(nyx_list* self) {
+  if (self->_empty())
+    Py_RETURN_TRUE;
+  else
+    Py_RETURN_FALSE;
 }
 
 static PyObject* _nyxlist_size(nyx_list* self) {
@@ -641,6 +652,8 @@ PyDoc_STRVAR(__nyxlist_copy_doc,
 "L.copy() -> a shallow copy of L");
 PyDoc_STRVAR(__nyxlist_clear_doc,
 "L.clear() -- remove all item of L");
+PyDoc_STRVAR(__nyxlist_empty_doc,
+"L.empty() -> boolean -- return True if L is empty, else False");
 PyDoc_STRVAR(__nyxlist_size_doc,
 "L.size() -> integer -- return number of items in L");
 PyDoc_STRVAR(__nyxlist_append_doc,
@@ -689,6 +702,7 @@ static PyMappingMethods _nyxlist_as_mapping = {
 static PyMethodDef _nyxlist_methods[] = {
   {"copy", (PyCFunction)_nyxlist_copy, METH_NOARGS, __nyxlist_copy_doc},
   {"clear", (PyCFunction)_nyxlist_clear, METH_NOARGS, __nyxlist_clear_doc},
+  {"empty", (PyCFunction)_nyxlist_empty, METH_NOARGS, __nyxlist_empty_doc},
   {"size", (PyCFunction)_nyxlist_size, METH_NOARGS, __nyxlist_size_doc},
   {"append", (PyCFunction)_nyxlist_append, METH_O, __nyxlist_append_doc},
   {"insert", (PyCFunction)_nyxlist_insert, METH_VARARGS, __nyxlist_insert_doc},
@@ -881,6 +895,10 @@ public:
       Py_DECREF(x.second.second);
     };
     map_->clear();
+  }
+
+  inline bool _empty(void) const {
+    return map_->empty();
   }
 
   inline Py_ssize_t _size(void) const {
@@ -1290,6 +1308,13 @@ static int _nyxdict_tp_traverse(nyx_dict* self, visitproc visit, void* arg) {
 static PyObject* _nyxdict_clear(nyx_dict* self) {
   self->_clear();
   Py_RETURN_NONE;
+}
+
+static PyObject* _nyxdict_empty(nyx_dict* self) {
+  if (self->_empty())
+    Py_RETURN_TRUE;
+  else
+    Py_RETURN_FALSE;
 }
 
 static PyObject* _nyxdict_size(nyx_dict* self) {
@@ -1710,8 +1735,10 @@ PyDoc_STRVAR(_nyxdict_doc,
 "        in the keyword argument list. For example:  nyx_dict(one=1, two=2)");
 PyDoc_STRVAR(__nyxdict_clear_doc,
 "D.clear() -> None -- remove all items from D");
+PyDoc_STRVAR(__nyxdict_empty_doc,
+"D.empty() -> boolean -- return True if D is empty, else False");
 PyDoc_STRVAR(__nyxdict_size_doc,
-"D.size() -> iteger -- return number of items in D");
+"D.size() -> integer -- return number of items in D");
 PyDoc_STRVAR(__nyxdict_haskey_doc,
 "D.hash_key(k) -> boolean -- return True if D has a key k, else False");
 PyDoc_STRVAR(__nyxdict_get_doc,
@@ -1769,6 +1796,7 @@ static PyMappingMethods _nyxdict_as_mapping = {
 
 static PyMethodDef _nyxdict_methods[] = {
   {"clear", (PyCFunction)_nyxdict_clear, METH_NOARGS, __nyxdict_clear_doc},
+  {"empty", (PyCFunction)_nyxdict_empty, METH_NOARGS, __nyxdict_empty_doc},
   {"size", (PyCFunction)_nyxdict_size, METH_NOARGS, __nyxdict_size_doc},
   {"hash_key", (PyCFunction)_nyxdict_contains, METH_O | METH_COEXIST, __nyxdict_haskey_doc},
   {"get", (PyCFunction)_nyxdict_get, METH_VARARGS, __nyxdict_get_doc},
