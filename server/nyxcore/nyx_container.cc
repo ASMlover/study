@@ -28,6 +28,7 @@
 #include <sstream>
 #include <vector>
 #include <unordered_map>
+#include "nyx_base.h"
 #include "nyx_container.h"
 
 namespace nyx {
@@ -639,7 +640,7 @@ static PyObject* _nyxlist_tp_iter(nyx_list* l) {
   it->li_iter = new nyx_listiter::IterType();
   *it->li_iter = l->_get_begin();
 
-#if !defined(_WIN32) && !defined(_WIN64)
+#if !defined(_NYXCORE_WINDOWS)
   _PyObject_GC_TRACK(it);
 #endif
   return static_cast<PyObject*>(it);
@@ -779,7 +780,9 @@ PyObject* __nyxlist_new(void) {
     nl->_init_zero();
   }
   nl->_init();
+#if !defined(_NYXCORE_WINDOWS)
   _PyObject_GC_TRACK(nl);
+#endif
   return nl;
 }
 
@@ -1701,7 +1704,7 @@ static PyObject* _nyxdictiter_new(nyx_dict* dict, PyTypeObject* itertype) {
   di->di_iter = new nyx_dictiter::IterType();
   *di->di_iter = dict->_get_begin();
 
-#if !defined(_WIN32) && !defined(_WIN64)
+#if !defined(_NYXCORE_WINDOWS)
   _PyObject_GC_TRACK(di);
 #endif
   return static_cast<PyObject*>(di);
