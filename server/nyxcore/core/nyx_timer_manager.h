@@ -58,8 +58,8 @@ class timer_manager : private boost::noncopyable {
   bool stopped_{};
   std::uint32_t next_timer_id_{1};
   __timer_map timers_map_;
-  __timer_set tiemrs_set_;
-  std::mutex timer_mutex_;
+  __timer_set timers_set_;
+  mutable std::mutex timer_mutex_;
   py::object func_;
   static std::int64_t tick_interval_;
 public:
