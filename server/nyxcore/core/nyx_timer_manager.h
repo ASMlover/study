@@ -62,11 +62,13 @@ class timer_manager : private boost::noncopyable {
   std::mutex timer_mutex_;
   py::object func_;
   static std::int64_t tick_interval_;
-
-  static constexpr std::int64_t kMaxPerTick = 100;
 public:
-  timer_manager(void);
-  ~timer_manager(void);
+  timer_manager(void)
+    : func_(py::detail::borrowed_reference(Py_None)) {
+  }
+
+  ~timer_manager(void) {
+  }
 
   static void set_tick_interval(std::int64_t interval) {
     tick_interval_ = interval;
@@ -76,11 +78,17 @@ public:
     return nyx::time::chrono_microseconds();
   }
 
+  void set_functor(const py::object& func) {
+    func_ = func;
+  }
+
+  void reset_functor(void) {
+    func_ = py::object();
+  }
+
   std::uint32_t add_timer_proxy(PyObject* proxy, double delay, bool repeat);
   void del_timer(std::uint32_t timer_id);
   void stop_all_timers(void);
-  void set_functor(const py::object& handler);
-  void reset_functor(void);
   std::size_t call_expired_timers(void);
   std::int64_t get_nearest(void) const;
 };

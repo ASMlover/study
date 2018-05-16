@@ -28,4 +28,7 @@
 
 namespace nyx { namespace core {
 
+static constexpr std::int64_t kMaxPerTick = 100;
+std::int64_t timer_manager::tick_interval_ = kMaxPerTick;
+
 }}
