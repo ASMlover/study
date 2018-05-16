@@ -79,3 +79,10 @@ public:
   catch (...) {\
   }\
 }
+
+#define _NYXCORE_BORROWED_HANDLE(o) py::handle<>(py::borrowed(o))
+#define _NYXCORE_BORROWED_OBJECT(o) py::object(_NYXCORE_BORROWED_HANDLE(o))
+#define _NYXCORE_BORROWED_NEWOBJ(o) py::object(py::detail::new_reference(o))
+#define _NYXCORE_PYHANDLE(o) py::handle<>(o)
+#define _NYXCORE_PYOBJECT(o) py::object(_NYXCORE_PYHANDLE(o))
+#define _NYXCORE_PYTYPE(o) ((PyTypeObject*)(o))
