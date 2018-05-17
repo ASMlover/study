@@ -27,9 +27,7 @@
 #include <iostream>
 #include "hashring.h"
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
-
+static void test_consistent_hash(void) {
   consistent_hash::HashRing hr;
   for (auto i = 0; i < 10; ++i) {
     std::string s("Node");
@@ -39,6 +37,30 @@ int main(int argc, char* argv[]) {
 
   auto n = hr.get_node("Node3");
   std::cout << "n.name: " << n.get_name() << ", n.replicas: " << n.get_replicas() << std::endl;
+}
+
+static std::int32_t jump_consistent_hash(std::uint64_t key, std::int32_t num_buckets) {
+  std::int64_t b = -1;
+  std::int64_t j = 0;
+  while (j < num_buckets) {
+    b = j;
+    key = key * 2862933555777941757ULL + 1;
+    j = (b + 1) * (double(1LL << 31) / double((key >> 33) + 1));
+  }
+  return b;
+}
+
+int main(int argc, char* argv[]) {
+  (void)argc, (void)argv;
+
+  test_consistent_hash();
+
+  for (auto i = 0; i < 10; ++i)
+    std::cout << "[" << i << "] => " << jump_consistent_hash(i, 5) << std::endl;
+
+  std::cout << "######################################" << std::endl;
+  for (auto i = 0; i < 10; ++i)
+    std::cout << "[" << i << "] => " << jump_consistent_hash(i, 4) << std::endl;
 
   return 0;
 }
