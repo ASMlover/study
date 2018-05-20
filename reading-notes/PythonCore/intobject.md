@@ -25,5 +25,17 @@ PyObject* PyInt_FromUnicode(Py_UNICODE* s, int length, int base);
 ```
 `PyInt_FromString`和`PyInt_FromUnicode`都先将字符串或`Py_UNICODE`对象转换成浮点数再调用`PyInt_FromLong`来创建int对象的；
 
-## **2、小整数对象**
+## **2、整数对象存放**
 小整数对象使用了对象池技术，PyIntObject是不可变对象，表示对象池中的每个PyIntObject对象都能被任意共享；在Python中小整数集合范围默认设定为[-5, 257)；
+
+大整数对象存放在PyIntBlock结构指定的单向列表中：
+```C++
+struct PyIntBlock {
+  PyIntBlock* next;
+  PyIntObject objects[N_INTOBJECTS];
+};
+
+PyIntBlock* block_list = nullptr;
+PyIntBlock* free_list = nullptr;
+```
+PyIntBlock的单向链表由`block_list`维护，每个block中都维护了一个PyIntObject数组——objects，用于存储被缓存的PyIntObject对象；`free_list`管理全部block的objects中所有的空闲内存；
