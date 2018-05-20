@@ -24,3 +24,6 @@ PyObject* PyInt_FromUnicode(Py_UNICODE* s, int length, int base);
 #endif
 ```
 `PyInt_FromString`和`PyInt_FromUnicode`都先将字符串或`Py_UNICODE`对象转换成浮点数再调用`PyInt_FromLong`来创建int对象的；
+
+## **2、小整数对象**
+小整数对象使用了对象池技术，PyIntObject是不可变对象，表示对象池中的每个PyIntObject对象都能被任意共享；在Python中小整数集合范围默认设定为[-5, 257)；
