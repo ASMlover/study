@@ -24,65 +24,43 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#include <iostream>
+#include "hashring.h"
 
-#include <Python.h>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/python.hpp>
-
-namespace py = ::boost::python;
-
-namespace nyx {
-
-namespace container_aux {
-  template <typename Container>
-  py::object as_pylist(const Container& c) {
-    py::list r;
-    for (auto& x : c)
-      r.append(x);
-    return r;
+static void test_consistent_hash(void) {
+  consistent_hash::HashRing hr;
+  for (auto i = 0; i < 10; ++i) {
+    std::string s("Node");
+    consistent_hash::HashNode n(i + 5, s + std::to_string(i));
+    hr.insert_node(n);
   }
 
-  template <typename Container>
-  py::object as_pydict(const Container& c) {
-    py::dict r;
-    for (auto& x : c)
-      r[x.first] = x.second;
-    return r;
-  }
+  auto n = hr.get_node("Node3");
+  std::cout << "n.name: " << n.get_name() << ", n.replicas: " << n.get_replicas() << std::endl;
 }
 
-class acquire_pygil : private boost::noncopyable {
-  PyGILState_STATE state_;
-public:
-  acquire_pygil(void) {
-    state_ = PyGILState_Ensure();
+static std::int32_t jump_consistent_hash(std::uint64_t key, std::int32_t num_buckets) {
+  std::int64_t b = -1;
+  std::int64_t j = 0;
+  while (j < num_buckets) {
+    b = j;
+    key = key * 2862933555777941757ULL + 1;
+    j = (b + 1) * (double(1LL << 31) / double((key >> 33) + 1));
   }
-
-  ~acquire_pygil(void) {
-    PyGILState_Release(state_);
-  }
-};
-
+  return b;
 }
 
-#define _NYXCORE_TRY {\
-  nyx::acquire_pygil gil;\
-  try
-#define _NYXCORE_NOGIL_TRY {\
-  try
+int main(int argc, char* argv[]) {
+  (void)argc, (void)argv;
 
-#define _NYXCORE_CATCH\
-  catch (const py::error_already_set&) {\
-    PyErr_Print();\
-  }\
-  catch (...) {\
-  }\
+  test_consistent_hash();
+
+  for (auto i = 0; i < 10; ++i)
+    std::cout << "[" << i << "] => " << jump_consistent_hash(i, 5) << std::endl;
+
+  std::cout << "######################################" << std::endl;
+  for (auto i = 0; i < 10; ++i)
+    std::cout << "[" << i << "] => " << jump_consistent_hash(i, 4) << std::endl;
+
+  return 0;
 }
-
-#define _NYXCORE_BORROWED_HANDLE(o) py::handle<>(py::borrowed(o))
-#define _NYXCORE_BORROWED_OBJECT(o) py::object(_NYXCORE_BORROWED_HANDLE(o))
-#define _NYXCORE_BORROWED_NEWOBJ(o) py::object(py::detail::new_reference(o))
-#define _NYXCORE_PYHANDLE(o) py::handle<>(o)
-#define _NYXCORE_PYOBJECT(o) py::object(_NYXCORE_PYHANDLE(o))
-#define _NYXCORE_PYTYPE(o) ((PyTypeObject*)(o))
