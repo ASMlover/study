@@ -39,3 +39,5 @@ PyIntBlock* block_list = nullptr;
 PyIntBlock* free_list = nullptr;
 ```
 PyIntBlock的单向链表由`block_list`维护，每个block中都维护了一个PyIntObject数组——objects，用于存储被缓存的PyIntObject对象；`free_list`管理全部block的objects中所有的空闲内存；
+
+首次调用`PyInt_FromLong`或所有block空闲内存都用完的时候，`free_list`为NULL，则会触发申请新的PyIntBlock；新申请的PyIntBlock和已有的`block_list`建立连接，`free_list`指向剩余的PyIntObject；
