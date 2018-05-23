@@ -28,8 +28,8 @@
 
 namespace nyx { namespace core {
 
-static constexpr std::int64_t kMaxPerTick = 100;
-std::int64_t timer_manager::tick_interval_ = kMaxPerTick;
+static constexpr std::size_t kMaxPerTick = 100;
+std::size_t timer_manager::tick_interval_ = kMaxPerTick;
 
 
 std::uint32_t timer_manager::add_timer_proxy(
@@ -86,7 +86,36 @@ void timer_manager::stop_all_timers(void) {
 }
 
 std::size_t timer_manager::call_expired_timers(void) {
-  return 0;
+  std::size_t count{};
+  auto current = now();
+  std::unique_lock<std::mutex> g(timer_mutex_);
+  while (!timers_set_.empty()) {
+    auto now_timer = *timers_set_.begin();
+    if (!now_timer->is_expired(current))
+      break;
+    timers_set_.erase(now_timer);
+
+    if (BOOST_UNLIKELY(now_timer->is_cancelled())) {
+      timers_map_.erase(now_timer->get_id());
+      now_timer->clear_timer_proxy();
+      continue;
+    }
+    now_timer->call_proxy();
+
+    if (BOOST_UNLIKELY(!now_timer->is_repeat())
+        || BOOST_UNLIKELY(now_timer->is_cancelled())) {
+      timers_map_.erase(now_timer->get_id());
+      now_timer->clear_timer_proxy();
+    }
+    else {
+      now_timer->update_expire_time(current);
+      timers_set_.insert(now_timer);
+    }
+
+    if (BOOST_UNLIKELY(++count > tick_interval_))
+      break;
+  }
+  return count;
 }
 
 std::int64_t timer_manager::get_nearest(void) const {
