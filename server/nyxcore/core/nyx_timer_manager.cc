@@ -61,6 +61,19 @@ std::uint32_t timer_manager::add_timer_proxy(
 }
 
 void timer_manager::del_timer(std::uint32_t timer_id) {
+  std::unique_lock<std::mutex> g(timer_mutex_);
+  auto it = timers_map_.find(timer_id);
+  if (it != timers_map_.end()) {
+    if (BOOST_UNLIKELY(it->second->is_calling())) {
+      it->second->cancel();
+    }
+    else {
+      it->second->cancel();
+      it->second->clear_timer_proxy();
+      timers_set_.erase(it->second);
+      timers_map_.erase(it);
+    }
+  }
 }
 
 void timer_manager::stop_all_timers(void) {
