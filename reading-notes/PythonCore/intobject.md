@@ -54,3 +54,4 @@ static void int_dealloc(PyIntObject* v) {
   }
 }
 ```
+`small_ints`中维护的PyIntObject对象在`_PyInt_Init`中完成初始化；这些对象也由`block_list`维护，在Python初始化的时候这些小整数被创建；
