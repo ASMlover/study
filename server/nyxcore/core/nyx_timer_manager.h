@@ -61,16 +61,21 @@ class timer_manager : private boost::noncopyable {
   __timer_set timers_set_;
   mutable std::mutex timer_mutex_;
   py::object func_;
-  static std::int64_t tick_interval_;
-public:
+  static std::size_t tick_interval_;
+
   timer_manager(void)
     : func_(py::detail::borrowed_reference(Py_None)) {
   }
 
   ~timer_manager(void) {
   }
+public:
+  static timer_manager& instance(void) {
+    static timer_manager ins;
+    return ins;
+  }
 
-  static void set_tick_interval(std::int64_t interval) {
+  static void set_tick_interval(std::size_t interval) {
     tick_interval_ = interval;
   }
 

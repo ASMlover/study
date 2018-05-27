@@ -28,6 +28,7 @@
 #include <vector>
 #include <Python.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include "nyx_timer_manager.h"
 #include "nyx_io_manager.h"
 
 namespace nyx { namespace core {
@@ -84,7 +85,10 @@ bool io_manager::poll(bool no_sleep) {
   namespace bt = ::boost::posix_time;
   if (running_) {
     auto begin = bt::microsec_clock::local_time();
+
     // TODO: services poll
+    timer_manager::instance().call_expired_timers();
+
     auto interval = (bt::microsec_clock::local_time() - begin).total_microseconds();
     loop_time_ += interval;
 
