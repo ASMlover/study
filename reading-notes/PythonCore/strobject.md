@@ -28,3 +28,6 @@ static long string_hash(PyStringObject* s) {
 }
 ```
 PyStringObject内部维护的字符串在末尾以'\0'结尾，但实际长度是由`ob_size`维护，所以PyStringObject表示的字符串对象中间可能也出现'\0'，所以指向的是一段长度为`ob_size+1`个字节的内存；
+
+## **2、创建PyStringObject**
+在`PyString_FromString`中创建对象，如果传入的字符串为空串则传回nullstring指向的对象，在第一次创建nullstring的时候会通过intern机制进行共享；如果不是空串则申请内存创建对象，将hash缓存位-1，intern表示设置为`SSTATE_NOT_INTERNED`，将str指向的字符数组拷贝到PyStringObject所维护的空间；
