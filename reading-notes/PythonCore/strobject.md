@@ -31,3 +31,6 @@ PyStringObject内部维护的字符串在末尾以'\0'结尾，但实际长度�
 
 ## **2、创建PyStringObject**
 在`PyString_FromString`中创建对象，如果传入的字符串为空串则传回nullstring指向的对象，在第一次创建nullstring的时候会通过intern机制进行共享；如果不是空串则申请内存创建对象，将hash缓存位-1，intern表示设置为`SSTATE_NOT_INTERNED`，将str指向的字符数组拷贝到PyStringObject所维护的空间；
+
+## **3、intern机制**
+PyStringObject引入intern机制，对某个string对象应用了intern机制，之后再创建相同的字符串对象的时候会先在系统中记录的已经被intern机制处理了的PyStringObject对象中查找，如果已经存在则将该对象的引用返回，不用再重新创建一个PyStringObject对象；
