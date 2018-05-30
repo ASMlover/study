@@ -24,3 +24,34 @@ PyObject* PyInt_FromUnicode(Py_UNICODE* s, int length, int base);
 #endif
 ```
 `PyInt_FromString`和`PyInt_FromUnicode`都先将字符串或`Py_UNICODE`对象转换成浮点数再调用`PyInt_FromLong`来创建int对象的；
+
+## **2、整数对象存放**
+小整数对象使用了对象池技术，PyIntObject是不可变对象，表示对象池中的每个PyIntObject对象都能被任意共享；在Python中小整数集合范围默认设定为[-5, 257)；
+
+大整数对象存放在PyIntBlock结构指定的单向列表中：
+```C++
+struct PyIntBlock {
+  PyIntBlock* next;
+  PyIntObject objects[N_INTOBJECTS];
+};
+
+PyIntBlock* block_list = nullptr;
+PyIntBlock* free_list = nullptr;
+```
+PyIntBlock的单向链表由`block_list`维护，每个block中都维护了一个PyIntObject数组——objects，用于存储被缓存的PyIntObject对象；`free_list`管理全部block的objects中所有的空闲内存；
+
+首次调用`PyInt_FromLong`或所有block空闲内存都用完的时候，`free_list`为NULL，则会触发申请新的PyIntBlock；新申请的PyIntBlock和已有的`block_list`建立连接，`free_list`指向剩余的PyIntObject；
+
+不同的PyIntObject对象的objects中的空闲内存块是被连接在一起的，形成一个单向链表，表头的指针就是`free_list`；而将这些释放的对象连接到一起的是类对象中的`tp_dealloc`：
+```C++
+static void int_dealloc(PyIntObject* v) {
+  if (PyInt_CheckExact(v)) {
+    v->ob_type = (sturct _typeobject*)free_list;
+    free_list = v;
+  }
+  else {
+    v->ob_type->tp_free((PyObject*)v);
+  }
+}
+```
+`small_ints`中维护的PyIntObject对象在`_PyInt_Init`中完成初始化；这些对象也由`block_list`维护，在Python初始化的时候这些小整数被创建；
