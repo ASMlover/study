@@ -34,3 +34,6 @@ PyStringObject内部维护的字符串在末尾以'\0'结尾，但实际长度�
 
 ## **3、intern机制**
 PyStringObject引入intern机制，对某个string对象应用了intern机制，之后再创建相同的字符串对象的时候会先在系统中记录的已经被intern机制处理了的PyStringObject对象中查找，如果已经存在则将该对象的引用返回，不用再重新创建一个PyStringObject对象；
+
+## **4、字符缓冲池**
+PyObjectString中的一个字节的字符对应的PyStringObject对象保存在characters中，其大小位`UCHAR_MAX(0xff)`，当字符串对象为一个字符时先对所创建的字符串对象进行intern操作然后将intern的结果缓存到characters中；当然在创建string对象的时候会先判断其是否只有一个字符，然后在缓冲池中查找，如果找到则直接返回；
