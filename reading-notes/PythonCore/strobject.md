@@ -37,3 +37,6 @@ PyStringObject引入intern机制，对某个string对象应用了intern机制，
 
 ## **4、字符缓冲池**
 PyObjectString中的一个字节的字符对应的PyStringObject对象保存在characters中，其大小位`UCHAR_MAX(0xff)`，当字符串对象为一个字符时先对所创建的字符串对象进行intern操作然后将intern的结果缓存到characters中；当然在创建string对象的时候会先判断其是否只有一个字符，然后在缓冲池中查找，如果找到则直接返回；
+
+## **5、效率相关**
+通过'+'来拼接字符串的方式效率是很低下的，是由于string是不可变对象，这样拼接的时候必须创建一个新的string对象，这样N个string对象拼接则需要进行N-1次内存申请和内存拷贝工作；所以应该使用join来对存储在list或tuple中的一组string对象进行拼接操作，这样只需要分配一次内存；
