@@ -25,3 +25,5 @@ static PyListObject* free_lists[MAXFREELISTS];
 statit int num_free_lists = 0;
 ```
 根据传递进`PyList_New`的size参数创建PyListObject对象所维护的元素列表，每个元素初始化为NULL；同时调整`ob_size`和`allocated`；
+
+设置元素的时候根据索引校验索引的有效性，通过后将要加入的`PyObject*`指针放到指定为止，然后调整计数，将这个位置原来存放的对象引用计数减1；
