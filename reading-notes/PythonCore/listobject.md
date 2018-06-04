@@ -27,3 +27,9 @@ statit int num_free_lists = 0;
 根据传递进`PyList_New`的size参数创建PyListObject对象所维护的元素列表，每个元素初始化为NULL；同时调整`ob_size`和`allocated`；
 
 设置元素的时候根据索引校验索引的有效性，通过后将要加入的`PyObject*`指针放到指定为止，然后调整计数，将这个位置原来存放的对象引用计数减1；
+
+插入元素的时候会涉及重新分配所维护列表的内存，重新调整后的内存空间计算公式为：`new_allocated = (newsize >> 3) + (newsize < 9 ? 3:6) + newsize;`；分两种情况来处理：
+  - allocated >= newsize && newsize >= (allocated >> 1)：简单调整`ob_size`的值
+  - 其他情况则调用realloc重新分配内存空间（在newsize < allocated / 2的情况也会通过realloc来收缩列表内存空间）
+
+同时list对象经常使用的append操作，插入的元素是添加在`ob_size+1`位置上而不是`allocated`上；同时append也可能遇到重新分配列表所维护的内存空间的情况；
