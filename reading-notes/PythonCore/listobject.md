@@ -33,3 +33,7 @@ statit int num_free_lists = 0;
   - 其他情况则调用realloc重新分配内存空间（在newsize < allocated / 2的情况也会通过realloc来收缩列表内存空间）
 
 同时list对象经常使用的append操作，插入的元素是添加在`ob_size+1`位置上而不是`allocated`上；同时append也可能遇到重新分配列表所维护的内存空间的情况；
+
+list对象调用remove接口删除元素的时候会调用到listremove，会遍历整个列表与待删除元素进行一一对比，由`PyObject_RichCompareBool`完成，如果返回大于0则调用`list_ass_slice`删除该元素；`list_ass_slice`的功能如下：
+  - `list[low:high] = v if v != None`
+  - `del list[low:high] if v == None`
