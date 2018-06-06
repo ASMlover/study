@@ -17,7 +17,7 @@ len(list) == ob_size
 ob_item == NULL => ob_size == allocated == 0
 ```
 
-## **1、创建PyListObject对象**
+## **1、PyListObject对象创建与操作**
 list对象表现为PyListObject对象本身和所维护的元素列表，是分离的内存，通过`ob_item`建立联系；创建list对象时会先查看缓存池`free_lists`中是否有可用的对象，如有则直接使用，没有才通过`PyObject_GC_New`申请内存创建新的PyListObject对象；默认情况下`free_lists`最多维护80个PyListObject对象；
 ```C++
 #define MAXFREELISTS 80
@@ -37,3 +37,5 @@ statit int num_free_lists = 0;
 list对象调用remove接口删除元素的时候会调用到listremove，会遍历整个列表与待删除元素进行一一对比，由`PyObject_RichCompareBool`完成，如果返回大于0则调用`list_ass_slice`删除该元素；`list_ass_slice`的功能如下：
   - `list[low:high] = v if v != None`
   - `del list[low:high] if v == None`
+
+`list_ass_slice`进行删除操作的时候是通过memmove来进行内存搬移的，说明调用list的remove操作的时候一定会触发内存搬移操作；
