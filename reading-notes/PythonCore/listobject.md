@@ -39,3 +39,21 @@ list对象调用remove接口删除元素的时候会调用到listremove，会遍
   - `del list[low:high] if v == None`
 
 `list_ass_slice`进行删除操作的时候是通过memmove来进行内存搬移的，说明调用list的remove操作的时候一定会触发内存搬移操作；
+
+## **2、PyListObject对象缓冲池**
+在销毁list对象的时候会对list对象所维护的元素列表进行销毁，对list中的每个元素改变其引用计数然后释放内存；在回收list对象本身时会检查缓存的PyListObject数量是否已满，如果没有就将该待删除的对象放到缓冲池中；
+```C++
+static void list_dealloc(PyListObject* op) {
+  if (op->ob_item != nullptr) {
+    auto i = op->ob_size;
+    while (--i >= 0)
+      Py_XDECREF(op->ob_item[i]);
+    PyMem_FREE(op->ob_item);
+  }
+  if (num_free_lists < MAXFREELISTS && PyList_CheckExact(op))
+    free_lists[num_free_lists++] = op;
+  else
+    op->ob_type->tp_free((PyObject*)op);
+}
+```
+下次再创建新list的时候，这个缓存的PyListObject会被重新唤醒，重新分配列表元素的内存；
