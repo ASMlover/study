@@ -9,3 +9,17 @@
 解决冲突的方法很多，SGI STL使用的开链法；Python中使用的开放定址法，当发生冲突的时候通过一个二次探测函数f，计算下一个候选位置addr，如果可用则将待插入元素放到addr，如果不可用则继续使用探测函数f直到找到一个可用的位置为止；
 
 但是多次使用探测函数从一个位置达到多个位置，这就形成来“冲突探测链”；当需要删除位于探测链中间的元素的时候，如果直接删除就永远不能到达位于探测链尾部的元素；所以使用开发定址的冲突解决方案的散列表，删除某条探测链上的元素时不能真正的删除而要进行一种“假删除”的操作；
+
+## **2、PyDictObject**
+关联容器中的一个（键、值）对称为一个entry或slot，其定义如下：
+```C++
+struct PyDictEntry {
+  Py_ssize_t me_hash;
+  PyObject* me_key;
+  PyObject* me_value;
+};
+```
+在一个PyDictObject生存变化的过程中，entry会在Unused状态、Active状态和Dummy状态之间转换；
+  - entry的`me_key`和`me_value`都为NULL的时候处于Unused状态，表明该entry当前和之前都没有存储(key,value)对；
+  - entry中存储了一个(key,value)对就处于Active状态，`me_key`和`me_value`都不能为NULL且`me_key`不能时dummy对象；
+  - entry中存储的(key,value)对被删除后，entry不能直接从Active状态转换为Unused状态，否则会导致冲突链的中断；将`me_key`和`me_value`指向dummy对象，entry进入Dummy状态；当沿某条冲突链搜索时发现一个entry处于Dummy状态说明该entry虽然无效但其后的entry可能有效，这样保证了冲突链的连续性；
