@@ -23,3 +23,16 @@ struct PyDictEntry {
   - entry的`me_key`和`me_value`都为NULL的时候处于Unused状态，表明该entry当前和之前都没有存储(key,value)对；
   - entry中存储了一个(key,value)对就处于Active状态，`me_key`和`me_value`都不能为NULL且`me_key`不能时dummy对象；
   - entry中存储的(key,value)对被删除后，entry不能直接从Active状态转换为Unused状态，否则会导致冲突链的中断；将`me_key`和`me_value`指向dummy对象，entry进入Dummy状态；当沿某条冲突链搜索时发现一个entry处于Dummy状态说明该entry虽然无效但其后的entry可能有效，这样保证了冲突链的连续性；
+
+PyDictObject定义如下：
+```C++
+#define PyDict_MINSIZE 8
+class PyDictObject : public PyObject {
+  Py_ssize_t ma_fill; // 元素个数：Active + Dummy
+  Py_ssize_t ma_used; // 元素个数：Active
+  Py_ssize_t ma_mask;
+  PyDictEntry* ma_table;
+  PyDictEntry* (*ma_lookup)(PyDictObject* mp, PyObject* key, long hash);
+  PyDictEntry ma_smalltable[PyDict_MINSIZE];
+};
+```
