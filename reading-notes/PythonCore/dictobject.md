@@ -36,3 +36,4 @@ class PyDictObject : public PyObject {
   PyDictEntry ma_smalltable[PyDict_MINSIZE];
 };
 ```
+当创建一个PyDictObject的时候至少有`PyDict_MINSIZE`个entry被同时创建，`me_table`指向可以作为PyDictEntry集合的内存的开始位置；当dict的entry数量少于8个时`ma_table`指向`ma_smalltable`，当超过8个时，会申请额外的内存空间，并将`ma_table`指向这块空间；这样`ma_table`永远不会为NULL；
