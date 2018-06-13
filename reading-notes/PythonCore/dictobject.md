@@ -37,3 +37,20 @@ class PyDictObject : public PyObject {
 };
 ```
 当创建一个PyDictObject的时候至少有`PyDict_MINSIZE`个entry被同时创建，`me_table`指向可以作为PyDictEntry集合的内存的开始位置；当dict的entry数量少于8个时`ma_table`指向`ma_smalltable`，当超过8个时，会申请额外的内存空间，并将`ma_table`指向这块空间；这样`ma_table`永远不会为NULL；
+
+PyDictObject初始化操作：
+```C++
+#define INIT_NONZERO_DICT_SLOTS(mp) do {\
+  (mp)->ma_table = (mp)->ma_smalltable;\
+  (mp)->ma_mask = PyDict_MINSIZE - 1;\
+} while (0)
+
+#define EMPTY_TO_MISIZE(mp) do {\
+  memset((mp)->ma_smalltable, 0, sizeof((mp)->ma_smalltable));\
+  (mp)->ma_used = (mp)->ma_fill = 0;\
+  INIT_NONZERO_DICT_SLOTS(mp);\
+} while (0)
+```
+第一次调用`PyDict_New`的时候创建的dummy对象是一个PyStringObject对象，dummy只是用来作为一种指示标志的；如果对象缓存池不可用则从系统申请合适的内存空间，然后通过两个宏完成初始化工作：
+  - `EMPTY_TO_MISIZE`：将`ma_smalltable`清零，同时设置`ma_used`和`ma_fill`，在一个PyDictObject刚创建的时候，这两个变量都为0；
+  - `INIT_NONZERO_DICT_SLOTS`：将`ma_table`指向`ma_smalltable`，将`ma_mask`设置为7；
