@@ -70,10 +70,12 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 
   include_directories(
     "C:/Python27amd64/include"
-    "D:/Tools/boost_1_64_0")
+    "D:/Tools/boost_1_64_0"
+    "D:/Tools/protobuf/src")
   link_directories(
     "C:/Python27amd64/libs"
-    "D:/Tools/boost_1_64_0/stage/x64/lib")
+    "D:/Tools/boost_1_64_0/stage/x64/lib"
+    "D:/Tools/protobuf/cmake/cmake-build")
 else()
   if (_NYXCORE_ENABLE_TEST)
     add_compile_options(-D_NYXCORE_ENABLE_TEST)
@@ -92,10 +94,12 @@ else()
   find_package(PythonLibs 2.7 REQUIRED)
   include_directories(
     ${PYTHON_INCLUDE_DIRS}
-    ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0)
+    ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0
+    ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/protobuf/src)
   link_directories(
     ${PYTHON_LIBRARIES}/../
-    ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0/stage/lib)
+    ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0/stage/lib
+    ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/protobuf/cmake/cmake-build)
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 message(STATUS "`${PROJECT_NAME}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")
@@ -111,10 +115,11 @@ add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES})
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
   target_link_libraries(${PROJECT_NAME}
     debug libboost_python-vc141-mt-gd-1_64 optimized libboost_python-vc141-mt-1_64
-    debug python27 optimized python27)
+    debug python27 optimized python27
+    debug libprotobufd optimized libprotobuf)
 else()
   set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
-  target_link_libraries(${PROJECT_NAME} pthread boost_python boost_system)
+  target_link_libraries(${PROJECT_NAME} pthread boost_python boost_system protobuf)
   if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_libraries(${PROJECT_NAME} python2.7)
   else()

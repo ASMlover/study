@@ -26,35 +26,40 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <memory>
-#include <string>
-#include <vector>
-#include <boost/asio.hpp>
+#include <tuple>
+#include <boost/noncopyable.hpp>
+#include <boost/logic/tribool.hpp>
+#include "nyx_rpc_request.h"
 
 namespace nyx { namespace rpc {
 
-class rpc_traverse_msg {
-  using string_ptr = std::shared_ptr<std::string>;
+class rpc_request_parser : private boost::noncopyable {
+  static constexpr std::uint32_t kRecvLimit = 0xFFFFFF;
+  enum parse_state {
+    STATE_SIZE = 0,
+    STATE_DATA,
+  };
 
-  string_ptr msg_;
+  parse_state state_{};
+  std::size_t need_bytes_{};
+  std::size_t recv_limit_{};
 public:
-  void set_msg(const string_ptr& msg) {
-    msg_ = msg;
+  rpc_request_parser(void);
+  std::tuple<boost::tribool, std::size_t> parse(
+      rpc_request& request, const void* data, std::size_t size);
+  void reset(void);
+
+  parse_state get_state(void) const {
+    return state_;
   }
 
-  string_ptr get_msg(void) const {
-    return msg_;
+  std::size_t get_need_bytes(void) const {
+    return need_bytes_;
   }
 
-  bool empty(void) const {
-    return !msg_;
+  void set_recv_limit(std::size_t recv_limit) {
+    recv_limit_ = recv_limit;
   }
 };
-
-using rpc_traverse_msg_ptr = std::shared_ptr<rpc_traverse_msg>;
-using writbuf_ptr = std::shared_ptr<boost::asio::streambuf>;
-using writbuf_vector_ptr = std::shared_ptr<std::vector<writbuf_ptr>>;
-
-static constexpr std::uint16_t kRpcDataLenBytes = 4;
 
 }}

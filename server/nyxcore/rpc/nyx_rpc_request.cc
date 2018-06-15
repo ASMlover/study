@@ -24,37 +24,12 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include <memory>
-#include <string>
-#include <vector>
-#include <boost/asio.hpp>
+#include "nyx_rpc_request.h"
 
 namespace nyx { namespace rpc {
 
-class rpc_traverse_msg {
-  using string_ptr = std::shared_ptr<std::string>;
-
-  string_ptr msg_;
-public:
-  void set_msg(const string_ptr& msg) {
-    msg_ = msg;
-  }
-
-  string_ptr get_msg(void) const {
-    return msg_;
-  }
-
-  bool empty(void) const {
-    return !msg_;
-  }
-};
-
-using rpc_traverse_msg_ptr = std::shared_ptr<rpc_traverse_msg>;
-using writbuf_ptr = std::shared_ptr<boost::asio::streambuf>;
-using writbuf_vector_ptr = std::shared_ptr<std::vector<writbuf_ptr>>;
-
-static constexpr std::uint16_t kRpcDataLenBytes = 4;
+std::uint32_t rpc_request::get_size(void) {
+  return *reinterpret_cast<std::uint32_t*>(size_.data());
+}
 
 }}

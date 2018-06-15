@@ -24,37 +24,24 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include <memory>
-#include <string>
-#include <vector>
-#include <boost/asio.hpp>
+#include "nyx_rpc_request_parser.h"
 
 namespace nyx { namespace rpc {
 
-class rpc_traverse_msg {
-  using string_ptr = std::shared_ptr<std::string>;
+rpc_request_parser::rpc_request_parser(void)
+  : need_bytes_(kRpcDataLenBytes)
+  , recv_limit_(kRecvLimit) {
+}
 
-  string_ptr msg_;
-public:
-  void set_msg(const string_ptr& msg) {
-    msg_ = msg;
-  }
+std::tuple<boost::tribool, std::size_t> rpc_request_parser::parse(
+    rpc_request& request, const void* data, std::size_t size) {
+  boost::tribool result;
+  return std::make_tuple(result, 0);
+}
 
-  string_ptr get_msg(void) const {
-    return msg_;
-  }
-
-  bool empty(void) const {
-    return !msg_;
-  }
-};
-
-using rpc_traverse_msg_ptr = std::shared_ptr<rpc_traverse_msg>;
-using writbuf_ptr = std::shared_ptr<boost::asio::streambuf>;
-using writbuf_vector_ptr = std::shared_ptr<std::vector<writbuf_ptr>>;
-
-static constexpr std::uint16_t kRpcDataLenBytes = 4;
+void rpc_request_parser::reset(void) {
+  state_ = STATE_SIZE;
+  need_bytes_ = kRpcDataLenBytes;
+}
 
 }}

@@ -26,35 +26,52 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <memory>
-#include <string>
-#include <vector>
-#include <boost/asio.hpp>
+#include <array>
+#include <sstream>
+#include <boost/noncopyable.hpp>
+#include "nyx_rpc_common.h"
 
 namespace nyx { namespace rpc {
 
-class rpc_traverse_msg {
-  using string_ptr = std::shared_ptr<std::string>;
+class rpc_request : private boost::noncopyable {
+  using size_buffer = std::array<char, kRpcDataLenBytes>;
 
-  string_ptr msg_;
+  std::stringstream data_;
+  size_buffer size_;
+
+  void reset_size(void) {
+    for (auto i = 0u; i < size_.size(); ++i)
+      size_[i] = 0;
+  }
 public:
-  void set_msg(const string_ptr& msg) {
-    msg_ = msg;
+  rpc_request(void)
+    : data_(std::ios_base::out | std::ios_base::in | std::ios_base::binary) {
+    reset_size();
   }
 
-  string_ptr get_msg(void) const {
-    return msg_;
+  size_buffer& size_buff(void) {
+    return size_;
   }
 
-  bool empty(void) const {
-    return !msg_;
+  std::istream& data_rbuffer(void) {
+    return data_;
   }
+
+  std::ostream& data_wbuffer(void) {
+    return data_;
+  }
+
+  std::stringstream& buffer(void) {
+    return data_;
+  }
+
+  void reset(void) {
+    reset_size();
+    data_.str("");
+    data_.clear();
+  }
+
+  std::uint32_t get_size(void);
 };
-
-using rpc_traverse_msg_ptr = std::shared_ptr<rpc_traverse_msg>;
-using writbuf_ptr = std::shared_ptr<boost::asio::streambuf>;
-using writbuf_vector_ptr = std::shared_ptr<std::vector<writbuf_ptr>>;
-
-static constexpr std::uint16_t kRpcDataLenBytes = 4;
 
 }}
