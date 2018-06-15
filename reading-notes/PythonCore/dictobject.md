@@ -54,3 +54,11 @@ PyDictObject初始化操作：
 第一次调用`PyDict_New`的时候创建的dummy对象是一个PyStringObject对象，dummy只是用来作为一种指示标志的；如果对象缓存池不可用则从系统申请合适的内存空间，然后通过两个宏完成初始化工作：
   - `EMPTY_TO_MISIZE`：将`ma_smalltable`清零，同时设置`ma_used`和`ma_fill`，在一个PyDictObject刚创建的时候，这两个变量都为0；
   - `INIT_NONZERO_DICT_SLOTS`：将`ma_table`指向`ma_smalltable`，将`ma_mask`设置为7；
+
+Python有2种搜索策略，`lookdict/lookdict_string`，`lookdict_string`只是`lookdict`的一种针对PyStringObject的特殊形式；
+  * 根据hash值获得entry的索引，这是冲突探测链上的第一个entry的索引
+  * 下面2种情况，搜索结束：
+    - entry处于Unused状态，冲突探测链搜索完成，搜索失败：
+    - `ep->me_key == key`，表明entry的key与待搜索的可以匹配，搜索成功；
+  * 若当前entry处于Dummy状态，设置freeslot；
+  * 检测Active状态的entry中的key与待查找的key是否“值相等”，相等则搜索成功；
