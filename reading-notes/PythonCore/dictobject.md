@@ -62,3 +62,10 @@ Python有2种搜索策略，`lookdict/lookdict_string`，`lookdict_string`只是
     - `ep->me_key == key`，表明entry的key与待搜索的可以匹配，搜索成功；
   * 若当前entry处于Dummy状态，设置freeslot；
   * 检测Active状态的entry中的key与待查找的key是否“值相等”，相等则搜索成功；
+  * 根据Python所采用的探测函数，获取探测链下一个待检查的entry；
+  * 检测到一个Unused状态的entry，搜索失败，有2中情况：
+    - 如果freeslot不为空，则返回freeslot所指的entry；
+    - 如果freeslot为空，则返回该Unused状态的entry；
+  * 检查entry中的key与待查找的key是否符合“引用相同”规则；
+  * 检查entry中的key与待查找的key是否符合“值相同”规则；
+  * 在遍历过程中，发现Dummy状态的entry且freeslot未设置，则设置freeslot；
