@@ -69,3 +69,5 @@ Python有2种搜索策略，`lookdict/lookdict_string`，`lookdict_string`只是
   * 检查entry中的key与待查找的key是否符合“引用相同”规则；
   * 检查entry中的key与待查找的key是否符合“值相同”规则；
   * 在遍历过程中，发现Dummy状态的entry且freeslot未设置，则设置freeslot；
+
+`lookdict_string`的搜索过程与`lookdict`类似，只是假设来需要搜索的key是一个PyStringObject对象；这里只对key进行了假设，没对参与搜索的dict做出假设，当参数搜索的dict中所有entry的key都是PyIntObject对象时都会采用`lookdict_string`进行搜索，`_PyString_Eq`将保证能处理非PyStringObject的参数；
