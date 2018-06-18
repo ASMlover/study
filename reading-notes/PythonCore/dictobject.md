@@ -75,3 +75,13 @@ Python有2种搜索策略，`lookdict/lookdict_string`，`lookdict_string`只是
 dict的插入中在insertdict的操作，进行key搜索之后：
   * 搜索成功，返回处于Active状态的entry，直接替换`me_value`；
   * 搜索失败，返回Unused状态和Dummy状态的entry，完整设置`me_key`、`me_hash`和`me_value`；
+
+insertdict在插入之后，当table的装载率大于2/3时，后续的插入遇到冲突的可能性会非常大，所以装载率是否大于或等于2/3就是判断是否需要改变table大小的准则，判断的算法如下：
+```C++
+if (!(mp->ma_used > n_used && mp->ma_fill*3 >= (mp->ma_mask+1)*2))
+  return 0;
+
+// 实际转换后为：
+(mp->ma_fill) / (mp->ma_mask + 1) >= 2/ 3
+```
+在确定新table大小的时候，通常是现在table中Active状态entry数量的4倍；这样能让让处于Active状态的entry分布更稀疏，减少插入元素时的冲突概率；当table中Active状态的entry数量非常大（一般定为50000）时，只会要求2倍的空间；
