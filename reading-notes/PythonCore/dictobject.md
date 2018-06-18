@@ -85,3 +85,30 @@ if (!(mp->ma_used > n_used && mp->ma_fill*3 >= (mp->ma_mask+1)*2))
 (mp->ma_fill) / (mp->ma_mask + 1) >= 2/ 3
 ```
 在确定新table大小的时候，通常是现在table中Active状态entry数量的4倍；这样能让让处于Active状态的entry分布更稀疏，减少插入元素时的冲突概率；当table中Active状态的entry数量非常大（一般定为50000）时，只会要求2倍的空间；
+
+删除一个元素的操作，先计算hash值再搜索对应的entry，最后删除entry中维护的元素，并将entry从Active状态转换为Dummy状态，同时调整维护的table使用情况的变量；
+```C++
+int PyDict_DelItem(PyObject* mp, PyObject* key) {
+  // ...
+
+  if (!PyString_CheckExact(key) ||
+    (hash = ((PyStringObject*)key)->ob_shash) == -1) {
+    hash = PyObject_Hash(key);
+    if (hash == -1)
+      return -1;
+  }
+
+  ep = (mp->ma_lookup)(mp, key, hash);
+  if (ep->me_value == nullptr)
+    return -1;
+
+  old_key = ep->me_key;
+  ep->me_key = dummy;
+  old_value = ep->me_value;
+  ep->me_value = nullptr;
+  --mp->ma_used;
+  Py_DECREF(old_key);
+  Py_DECREF(old_value);
+  return 0;
+}
+```
