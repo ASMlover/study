@@ -71,3 +71,7 @@ Python有2种搜索策略，`lookdict/lookdict_string`，`lookdict_string`只是
   * 在遍历过程中，发现Dummy状态的entry且freeslot未设置，则设置freeslot；
 
 `lookdict_string`的搜索过程与`lookdict`类似，只是假设来需要搜索的key是一个PyStringObject对象；这里只对key进行了假设，没对参与搜索的dict做出假设，当参数搜索的dict中所有entry的key都是PyIntObject对象时都会采用`lookdict_string`进行搜索，`_PyString_Eq`将保证能处理非PyStringObject的参数；
+
+dict的插入中在insertdict的操作，进行key搜索之后：
+  * 搜索成功，返回处于Active状态的entry，直接替换`me_value`；
+  * 搜索失败，返回Unused状态和Dummy状态的entry，完整设置`me_key`、`me_hash`和`me_value`；
