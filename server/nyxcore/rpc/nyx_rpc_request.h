@@ -49,7 +49,7 @@ public:
     reset_size();
   }
 
-  size_buffer& size_buff(void) {
+  size_buffer& size_buf(void) {
     return size_;
   }
 
