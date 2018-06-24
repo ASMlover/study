@@ -112,3 +112,12 @@ int PyDict_DelItem(PyObject* mp, PyObject* key) {
   return 0;
 }
 ```
+
+## **PyDictObject对象缓冲池**
+dict的缓冲池相关:
+```C++
+#define MAXFREEDICTS 80
+static PyDictObject* free_dicts[MAXFREEDICTS];
+static int num_free_dicts = 0;
+```
+dict对象中使用的缓冲池机制与list中的一致，直到第一个dict对象销毁的时候缓冲池才开始接纳被缓冲的对象；缓冲池只保留PyDictObject独享，如果`ma_table`维护的是从系统堆上申请的内存空间，python将释放这块内存归还给系统堆；如果`ma_table`指向固有的`ma_smalltable`那么只需要调整`ma_smalltable`中的对象的引用计数即可；新创建dict对象的时候如果缓冲池中有可以使用的对象则直接从缓冲池中取；
