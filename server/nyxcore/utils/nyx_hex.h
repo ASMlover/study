@@ -26,52 +26,11 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <array>
-#include <sstream>
-#include <boost/noncopyable.hpp>
-#include "nyx_rpc_common.h"
+#include <string>
 
-namespace nyx { namespace rpc {
+namespace nyx::utils {
 
-class rpc_request : private boost::noncopyable {
-  using size_buffer = std::array<char, kRpcDataLenBytes>;
+std::string hex(const char* s, std::size_t n);
+std::string hex(const std::string& s);
 
-  std::stringstream data_;
-  size_buffer size_;
-
-  void reset_size(void) {
-    for (auto i = 0u; i < size_.size(); ++i)
-      size_[i] = 0;
-  }
-public:
-  rpc_request(void)
-    : data_(std::ios_base::out | std::ios_base::in | std::ios_base::binary) {
-    reset_size();
-  }
-
-  size_buffer& size_buf(void) {
-    return size_;
-  }
-
-  std::istream& data_rbuffer(void) {
-    return data_;
-  }
-
-  std::ostream& data_wbuffer(void) {
-    return data_;
-  }
-
-  std::stringstream& buffer(void) {
-    return data_;
-  }
-
-  void reset(void) {
-    reset_size();
-    data_.str("");
-    data_.clear();
-  }
-
-  std::uint32_t get_size(void);
-};
-
-}}
+}

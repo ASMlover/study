@@ -87,7 +87,13 @@ else()
     add_compile_options(-D_NYXCORE_ENABLE_WATCHER)
   endif()
 
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-strict-aliasing -Wno-write-strings -std=c++1y -march=native")
+  add_definitions(
+    -Wno-strict-aliasing
+    -Wno-write-strings
+    -Wno-register
+    -Wno-parentheses
+    -Wno-deprecated-declarations)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++1z -march=native")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -O0")
   set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3")
 
@@ -119,6 +125,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     debug libprotobufd optimized libprotobuf)
 else()
   set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
+  set(CMAKE_SHARED_LINKER_FLAGS "-static-libgcc -static-libstdc++")
   target_link_libraries(${PROJECT_NAME} pthread boost_python boost_system protobuf)
   if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_libraries(${PROJECT_NAME} python2.7)

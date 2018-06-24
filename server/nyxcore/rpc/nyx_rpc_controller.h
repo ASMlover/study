@@ -26,52 +26,50 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <array>
-#include <sstream>
-#include <boost/noncopyable.hpp>
-#include "nyx_rpc_common.h"
+#include <string>
+#include <google/protobuf/service.h>
+
+namespace pb = ::google::protobuf;
 
 namespace nyx { namespace rpc {
 
-class rpc_request : private boost::noncopyable {
-  using size_buffer = std::array<char, kRpcDataLenBytes>;
+class rpc_controller : public pb::RpcController {
+  static constexpr unsigned int kChannelCount = 2;
+  static constexpr unsigned char kDefaultChannelId = 0;
 
-  std::stringstream data_;
-  size_buffer size_;
-
-  void reset_size(void) {
-    for (auto i = 0u; i < size_.size(); ++i)
-      size_[i] = 0;
-  }
+  bool reliable_{};
+  unsigned char channel_{};
 public:
-  rpc_request(void)
-    : data_(std::ios_base::out | std::ios_base::in | std::ios_base::binary) {
-    reset_size();
+  rpc_controller(void)
+    : reliable_(true)
+    , channel_(kDefaultChannelId) {
   }
 
-  size_buffer& size_buf(void) {
-    return size_;
+  virtual ~rpc_controller(void) {}
+
+  virtual void Reset(void) override {}
+  virtual bool Failed(void) const override { return false; }
+  virtual std::string ErrorText(void) const override { return ""; }
+  virtual void StartCancel(void) override {}
+  virtual void SetFailed(const std::string& reason) override {}
+  virtual bool IsCanceled(void) const override { return false; }
+  virtual void NotifyOnCancel(pb::Closure* callback) override {}
+
+  void set_reliable(bool r) {
+    reliable_ = r;
   }
 
-  std::istream& data_rbuffer(void) {
-    return data_;
+  bool get_reliable(void) const {
+    return reliable_;
   }
 
-  std::ostream& data_wbuffer(void) {
-    return data_;
+  void set_channel(unsigned char c) {
+    channel_ = c;
   }
 
-  std::stringstream& buffer(void) {
-    return data_;
+  unsigned char get_channel(void) const {
+    return channel_;
   }
-
-  void reset(void) {
-    reset_size();
-    data_.str("");
-    data_.clear();
-  }
-
-  std::uint32_t get_size(void);
 };
 
 }}

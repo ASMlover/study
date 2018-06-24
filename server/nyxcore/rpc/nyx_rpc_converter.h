@@ -26,52 +26,49 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <array>
-#include <sstream>
+#include <string>
+#include <memory>
 #include <boost/noncopyable.hpp>
-#include "nyx_rpc_common.h"
 
-namespace nyx { namespace rpc {
+namespace nyx {
 
-class rpc_request : private boost::noncopyable {
-  using size_buffer = std::array<char, kRpcDataLenBytes>;
+class base_crypter;
+class base_compressor;
 
-  std::stringstream data_;
-  size_buffer size_;
+using base_crypter_ptr = std::shared_ptr<base_crypter>;
+using base_compressor_ptr = std::shared_ptr<base_compressor>;
 
-  void reset_size(void) {
-    for (auto i = 0u; i < size_.size(); ++i)
-      size_[i] = 0;
-  }
+namespace rpc {
+
+class rpc_converter : private boost::noncopyable {
+  base_crypter_ptr encrypter_;
+  base_crypter_ptr decrypter_;
+  base_compressor_ptr compressor_;
 public:
-  rpc_request(void)
-    : data_(std::ios_base::out | std::ios_base::in | std::ios_base::binary) {
-    reset_size();
+  rpc_converter(void);
+  ~rpc_converter(void);
+
+  void handle_istream_data(const std::string& data, std::string& output);
+  void handle_ostream_data(const std::string& data, std::string& output);
+
+  void set_crypter(
+      const base_crypter_ptr& encrypter, const base_crypter_ptr& decrypter) {
+    encrypter_ = encrypter;
+    decrypter_ = decrypter_;
   }
 
-  size_buffer& size_buf(void) {
-    return size_;
+  void set_compressor(const base_compressor_ptr& compressor) {
+    compressor_ = compressor;
   }
 
-  std::istream& data_rbuffer(void) {
-    return data_;
+  void reset_crypter(void) {
+    encrypter_.reset();
+    decrypter_.reset();
   }
 
-  std::ostream& data_wbuffer(void) {
-    return data_;
+  void reset_compressor(void) {
+    compressor_.reset();
   }
-
-  std::stringstream& buffer(void) {
-    return data_;
-  }
-
-  void reset(void) {
-    reset_size();
-    data_.str("");
-    data_.clear();
-  }
-
-  std::uint32_t get_size(void);
 };
 
 }}

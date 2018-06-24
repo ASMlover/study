@@ -24,54 +24,23 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#include "nyx_hex.h"
 
-#include <array>
-#include <sstream>
-#include <boost/noncopyable.hpp>
-#include "nyx_rpc_common.h"
+namespace nyx::utils {
 
-namespace nyx { namespace rpc {
+std::string hex(const char* s, std::size_t n) {
+  constexpr char* hextbl = "0123456789abcdef";
 
-class rpc_request : private boost::noncopyable {
-  using size_buffer = std::array<char, kRpcDataLenBytes>;
-
-  std::stringstream data_;
-  size_buffer size_;
-
-  void reset_size(void) {
-    for (auto i = 0u; i < size_.size(); ++i)
-      size_[i] = 0;
+  std::string r;
+  for (auto i = 0u; i < n; ++i) {
+    r.push_back(hextbl[static_cast<unsigned char>(*(s + i)) >> 4]);
+    r.push_back(hextbl[static_cast<unsigned char>(*(s + i)) & 0x0f]);
   }
-public:
-  rpc_request(void)
-    : data_(std::ios_base::out | std::ios_base::in | std::ios_base::binary) {
-    reset_size();
-  }
+  return r;
+}
 
-  size_buffer& size_buf(void) {
-    return size_;
-  }
+std::string hex(const std::string& s) {
+  return hex(s.data(), s.size());
+}
 
-  std::istream& data_rbuffer(void) {
-    return data_;
-  }
-
-  std::ostream& data_wbuffer(void) {
-    return data_;
-  }
-
-  std::stringstream& buffer(void) {
-    return data_;
-  }
-
-  void reset(void) {
-    reset_size();
-    data_.str("");
-    data_.clear();
-  }
-
-  std::uint32_t get_size(void);
-};
-
-}}
+}

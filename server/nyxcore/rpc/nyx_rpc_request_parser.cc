@@ -35,7 +35,55 @@ rpc_request_parser::rpc_request_parser(void)
 
 std::tuple<boost::tribool, std::size_t> rpc_request_parser::parse(
     rpc_request& request, const void* data, std::size_t size) {
-  boost::tribool result;
+  boost::tribool result{false};
+
+  char* pdata = static_cast<char*>(const_cast<void*>(data));
+  switch (state_) {
+  case STATE_SIZE:
+    {
+      auto insert_size = size;
+      auto buffer_size = request.size_buf().size();
+
+      if (need_bytes_ > size) {
+        for (auto i = buffer_size - need_bytes_;
+            i < buffer_size - need_bytes_ + insert_size; ++i) {
+          request.size_buf()[i] = *pdata;
+          ++pdata;
+        }
+        need_bytes_ -= insert_size;
+        return std::make_tuple(boost::indeterminate, insert_size);
+      }
+      else {
+        for (auto i = buffer_size - need_bytes_; i < buffer_size; ++i) {
+          request.size_buf()[i] = *pdata;
+          ++pdata;
+        }
+
+        state_ = STATE_DATA;
+        need_bytes_ = request.get_size();
+        if (need_bytes_ == 0 || need_bytes_ > recv_limit_) {
+          return std::make_tuple(false, insert_size);
+        }
+        return std::make_tuple(boost::indeterminate, insert_size);
+      }
+    } break;
+  case STATE_DATA:
+    if (need_bytes_ > size) {
+      auto insert_size = size;
+      request.data_wbuffer().write(pdata, insert_size);
+      need_bytes_ -= insert_size;
+      return std::make_tuple(boost::indeterminate, insert_size);
+    }
+    else {
+      auto insert_size = need_bytes_;
+      request.data_wbuffer().write(pdata, insert_size);
+      reset();
+
+      result = true;
+      return std::make_tuple(result, insert_size);
+    }
+    break;
+  }
   return std::make_tuple(result, 0);
 }
 
