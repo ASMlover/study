@@ -62,3 +62,62 @@ Python有2种搜索策略，`lookdict/lookdict_string`，`lookdict_string`只是
     - `ep->me_key == key`，表明entry的key与待搜索的可以匹配，搜索成功；
   * 若当前entry处于Dummy状态，设置freeslot；
   * 检测Active状态的entry中的key与待查找的key是否“值相等”，相等则搜索成功；
+  * 根据Python所采用的探测函数，获取探测链下一个待检查的entry；
+  * 检测到一个Unused状态的entry，搜索失败，有2中情况：
+    - 如果freeslot不为空，则返回freeslot所指的entry；
+    - 如果freeslot为空，则返回该Unused状态的entry；
+  * 检查entry中的key与待查找的key是否符合“引用相同”规则；
+  * 检查entry中的key与待查找的key是否符合“值相同”规则；
+  * 在遍历过程中，发现Dummy状态的entry且freeslot未设置，则设置freeslot；
+
+`lookdict_string`的搜索过程与`lookdict`类似，只是假设来需要搜索的key是一个PyStringObject对象；这里只对key进行了假设，没对参与搜索的dict做出假设，当参数搜索的dict中所有entry的key都是PyIntObject对象时都会采用`lookdict_string`进行搜索，`_PyString_Eq`将保证能处理非PyStringObject的参数；
+
+dict的插入中在insertdict的操作，进行key搜索之后：
+  * 搜索成功，返回处于Active状态的entry，直接替换`me_value`；
+  * 搜索失败，返回Unused状态和Dummy状态的entry，完整设置`me_key`、`me_hash`和`me_value`；
+
+insertdict在插入之后，当table的装载率大于2/3时，后续的插入遇到冲突的可能性会非常大，所以装载率是否大于或等于2/3就是判断是否需要改变table大小的准则，判断的算法如下：
+```C++
+if (!(mp->ma_used > n_used && mp->ma_fill*3 >= (mp->ma_mask+1)*2))
+  return 0;
+
+// 实际转换后为：
+(mp->ma_fill) / (mp->ma_mask + 1) >= 2/ 3
+```
+在确定新table大小的时候，通常是现在table中Active状态entry数量的4倍；这样能让让处于Active状态的entry分布更稀疏，减少插入元素时的冲突概率；当table中Active状态的entry数量非常大（一般定为50000）时，只会要求2倍的空间；
+
+删除一个元素的操作，先计算hash值再搜索对应的entry，最后删除entry中维护的元素，并将entry从Active状态转换为Dummy状态，同时调整维护的table使用情况的变量；
+```C++
+int PyDict_DelItem(PyObject* mp, PyObject* key) {
+  // ...
+
+  if (!PyString_CheckExact(key) ||
+    (hash = ((PyStringObject*)key)->ob_shash) == -1) {
+    hash = PyObject_Hash(key);
+    if (hash == -1)
+      return -1;
+  }
+
+  ep = (mp->ma_lookup)(mp, key, hash);
+  if (ep->me_value == nullptr)
+    return -1;
+
+  old_key = ep->me_key;
+  ep->me_key = dummy;
+  old_value = ep->me_value;
+  ep->me_value = nullptr;
+  --mp->ma_used;
+  Py_DECREF(old_key);
+  Py_DECREF(old_value);
+  return 0;
+}
+```
+
+## **PyDictObject对象缓冲池**
+dict的缓冲池相关:
+```C++
+#define MAXFREEDICTS 80
+static PyDictObject* free_dicts[MAXFREEDICTS];
+static int num_free_dicts = 0;
+```
+dict对象中使用的缓冲池机制与list中的一致，直到第一个dict对象销毁的时候缓冲池才开始接纳被缓冲的对象；缓冲池只保留PyDictObject独享，如果`ma_table`维护的是从系统堆上申请的内存空间，python将释放这块内存归还给系统堆；如果`ma_table`指向固有的`ma_smalltable`那么只需要调整`ma_smalltable`中的对象的引用计数即可；新创建dict对象的时候如果缓冲池中有可以使用的对象则直接从缓冲池中取；
