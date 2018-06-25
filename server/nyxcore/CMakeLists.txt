@@ -100,10 +100,12 @@ else()
   find_package(PythonLibs 2.7 REQUIRED)
   include_directories(
     ${PYTHON_INCLUDE_DIRS}
+    ${PROJECT_SOURCE_DIR}/3rdparty/include
     ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0
     ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/protobuf/src)
   link_directories(
     ${PYTHON_LIBRARIES}/../
+    ${PROJECT_SOURCE_DIR}/3rdparty/libs
     ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0/stage/lib
     ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/protobuf/cmake/cmake-build)
 endif()
@@ -126,7 +128,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
 else()
   set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
   set(CMAKE_SHARED_LINKER_FLAGS "-static-libgcc -static-libstdc++")
-  target_link_libraries(${PROJECT_NAME} pthread boost_python boost_system protobuf)
+  target_link_libraries(${PROJECT_NAME} pthread boost_python boost_system protobuf z)
   if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_libraries(${PROJECT_NAME} python2.7)
   else()
