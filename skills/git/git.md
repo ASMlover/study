@@ -189,17 +189,22 @@
   * :tada: - `:tada:` 初次提交
   * :white_check_mark: - `:white_check_mark:` 增加测试
   * :lock: - `:lock:` 修复安全问题
-  * :apple:/:penguin:/:checkered_flag: - `:apple:/:penguin:/:checkered_flag:` 修复macOS/Linux/Windows下的问题
+  * :apple:/:penguin:/:checkered_flag:/:robot:/:green_apple: - `:apple:/:penguin:/:checkered_flag:/:robot:/:green_apple:` 修复macOS/Linux/Windows/Android/iOS下的问题
   * :bookmark: - `:bookmark:` 发行/版本标签
   * :rotating_light: - `:rotating_light:` 移除linter警告
   * :construction: - `:construction:` 工作进行中
   * :green_heart: - `:green_heart:` 修复CI构建问题
   * :arrow_down:/:arrow_up: - `:arrow_down:/:arrow_up:` 降级/升级依赖
+  * :pushpin: - `:pushpin:` 为特殊版本打依赖补丁
   * :construction_worker: - `:construction_worker:` 添加CI构建系统
   * :chart_with_upwards_trend: - `:chart_with_upwards_trend:` 添加分析或跟踪代码
+  * :recycle: - `:recycle:` 代码重构
   * :hammer: - `:hammer:` 重大重构
   * :heavy_plus_sign:/:heavy_minus_sign: - `:heavy_plus_sign:/:heavy_minus_sign:` 增加/减少一个依赖
   * :whale: - `:whale:` docker相关工作
   * :wrench: - `:wrench:` 修改配置文件
   * :globe_with_meridians: - `:globe_with_meridians:` 国际化与本地化
   * :pencil2: - `:pencil2:` 修复typo
+  * :hankey: - `:hankey:` 需要改进的bad code
+  * :rewind: - `:rewind:` 回滚修改
+  * :twisted_rightwards_arrows: - `:twisted_rightwards_arrows:` 分支合并
