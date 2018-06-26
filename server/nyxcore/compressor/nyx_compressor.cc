@@ -57,6 +57,17 @@ zlib_compress_handler::~zlib_compress_handler(void) {
 
 bool zlib_compress_handler::init(
     int level, int method, int wbits, int memlevel, int strategy) {
+  stream_.zalloc = static_cast<alloc_func>(Z_NULL);
+  stream_.zfree = static_cast<free_func>(Z_NULL);
+  stream_.next_in = nullptr;
+  stream_.avail_in = 0;
+
+  auto err = deflateInit2(&stream_, level, method, wbits, memlevel, strategy);
+  if (err == Z_OK) {
+    initialized_ = true;
+    return true;
+  }
+  zlib_error(stream_, err);
   return false;
 }
 
@@ -66,6 +77,32 @@ int zlib_compress_handler::compress(
 }
 
 int zlib_compress_handler::flush(std::string& odata, int flushmode) {
+  return 0;
+}
+
+zlib_decompress_handler::zlib_decompress_handler(int wbits) {
+  stream_.zalloc = static_cast<alloc_func>(Z_NULL);
+  stream_.zfree = static_cast<free_func>(Z_NULL);
+  stream_.next_in = nullptr;
+  stream_.avail_in = 0;
+  inflateInit2(&stream_, wbits);
+}
+
+zlib_decompress_handler::~zlib_decompress_handler(void) {
+  if (initialized_)
+    inflateEnd(&stream_);
+}
+
+int zlib_decompress_handler::_flush_unconsumed_input(int err) {
+  return 0;
+}
+
+int zlib_decompress_handler::decompress(
+    const std::string& idata, std::string& odata) {
+  return 0;
+}
+
+int zlib_decompress_handler::flush(std::string& odata, int len) {
   return 0;
 }
 

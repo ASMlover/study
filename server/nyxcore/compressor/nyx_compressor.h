@@ -65,9 +65,9 @@ public:
 };
 
 class zlib_decompress_handler : private boost::noncopyable {
-  bool initialized_{};
-  std::string unused_;
-  std::string unconsumed_;
+  bool initialized_{true};
+  std::string unused_{};
+  std::string unconsumed_{};
   z_stream stream_;
 
   int _flush_unconsumed_input(int err);
