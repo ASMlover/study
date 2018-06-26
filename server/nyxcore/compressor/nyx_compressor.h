@@ -27,6 +27,7 @@
 #pragma once
 
 #include <sstream>
+#include <memory>
 #include <zlib.h>
 #include <boost/noncopyable.hpp>
 
@@ -80,8 +81,8 @@ public:
 };
 
 class zlib_compressor : public base_compressor {
-  zlib_compress_handler* compress_{};
-  zlib_decompress_handler* decompress_{};
+  std::unique_ptr<zlib_compress_handler> compress_;
+  std::unique_ptr<zlib_decompress_handler> decompress_;
 public:
   zlib_compressor(int wbits = MAX_WBITS, int memlevel = DEF_MEM_LEVEL);
   virtual ~zlib_compressor(void);

@@ -106,4 +106,25 @@ int zlib_decompress_handler::flush(std::string& odata, int len) {
   return 0;
 }
 
+zlib_compressor::zlib_compressor(int wbits, int memlevel)
+  : compress_(new zlib_compress_handler())
+  , decompress_(new zlib_decompress_handler()) {
+  compress_->init(Z_DEFAULT_COMPRESSION, DEFLATED, wbits, memlevel, 0);
+}
+
+zlib_compressor::~zlib_compressor(void) {
+}
+
+void zlib_compressor::compress(const std::string& idata, std::string& odata) {
+  if (idata.size() > 0) {
+    compress_->compress(idata, odata);
+    compress_->flush(odata, Z_SYNC_FLUSH);
+  }
+}
+
+void zlib_compressor::decompress(const std::string& idata, std::string& odata) {
+  if (idata.size() > 0)
+    decompress_->decompress(idata, odata);
+}
+
 }}
