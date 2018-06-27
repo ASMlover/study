@@ -157,16 +157,43 @@ zlib_decompress_handler::~zlib_decompress_handler(void) {
 }
 
 int zlib_decompress_handler::_flush_unconsumed_input(int err) {
+  if (err == Z_STREAM_END) {
+    if (stream_.avail_in > 0) {
+      unused_.append(
+          reinterpret_cast<char*>(stream_.next_in), stream_.avail_in);
+      stream_.avail_in = 0;
+    }
+  }
+  if (stream_.avail_in > 0 || unconsumed_.size() > 0) {
+    unconsumed_.assign(
+        reinterpret_cast<char*>(stream_.next_in), stream_.avail_in);
+  }
   return 0;
 }
 
 int zlib_decompress_handler::decompress(
     const std::string& idata, std::string& odata) {
-  return 0;
-}
+  odata.resize(idata.size() * ZIP_RATE);
 
-int zlib_decompress_handler::flush(std::string& odata, int len) {
-  return 0;
+  auto out_len = static_cast<uInt>(odata.size());
+  auto total_out = stream_.total_out;
+  stream_.avail_in = static_cast<uInt>(idata.size());
+  stream_.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(idata.data()));
+  stream_.avail_out = out_len;
+  stream_.next_out = reinterpret_cast<unsigned char*>(odata.data());
+
+  auto err = inflate(&stream_, Z_SYNC_FLUSH);
+  while (err == Z_OK && stream_.avail_out == 0) {
+    odata.resize(odata.size() + DEFAULTALLOC);
+    stream_.next_out = reinterpret_cast<unsigned char*>(
+        odata.data() + stream_.total_out - total_out);
+    out_len = DEFAULTALLOC;
+    stream_.avail_out = out_len;
+    err = inflate(&stream_, Z_SYNC_FLUSH);
+  }
+  _flush_unconsumed_input(err);
+  odata.resize(static_cast<std::size_t>(stream_.total_out - total_out));
+  return err;
 }
 
 zlib_compressor::zlib_compressor(int wbits, int memlevel)

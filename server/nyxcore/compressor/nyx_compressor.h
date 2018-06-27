@@ -77,7 +77,6 @@ public:
   ~zlib_decompress_handler(void);
 
   int decompress(const std::string& idata, std::string& odata);
-  int flush(std::string& odata, int len = DEFAULTALLOC);
 };
 
 class zlib_compressor : public base_compressor {
