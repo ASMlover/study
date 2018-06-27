@@ -73,11 +73,74 @@ bool zlib_compress_handler::init(
 
 int zlib_compress_handler::compress(
     const std::string& idata, std::string& odata) {
-  return 0;
+  odata.resize(idata.size() + idata.size() / 1000 + MIN_BUFFER);
+
+  auto out_len = static_cast<uInt>(odata.size());
+  auto total_out = stream_.total_out;
+  stream_.avail_in = static_cast<uInt>(idata.size());
+  stream_.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(idata.data()));
+  stream_.avail_out = out_len;
+  stream_.next_out = reinterpret_cast<unsigned char*>(odata.data());
+
+  auto err = deflate(&stream_, Z_NO_FLUSH);
+  while (err == Z_OK && stream_.avail_out == 0) {
+    odata.resize(odata.size() + DEFAULTALLOC);
+    stream_.next_out = reinterpret_cast<unsigned char*>(
+        odata.data() + stream_.total_out + total_out);
+    out_len = DEFAULTALLOC;
+    stream_.avail_out = out_len;
+    err = deflate(&stream_, Z_NO_FLUSH);
+  }
+  if (err != Z_OK && err != Z_BUF_ERROR) {
+    zlib_error(stream_, err, "while compressing");
+    return err;
+  }
+
+  odata.resize(static_cast<std::size_t>(stream_.total_out - total_out));
+  return err;
 }
 
 int zlib_compress_handler::flush(std::string& odata, int flushmode) {
-  return 0;
+  if (flushmode == Z_NO_FLUSH)
+    return 0;
+
+  auto old_size = odata.size();
+  auto free_space = odata.capacity() - odata.size();
+  if (free_space >= MIN_BUFFER)
+    odata.resize(odata.capacity());
+  else
+    odata.resize(odata.size() + MIN_BUFFER);
+  auto out_len = static_cast<uInt>(odata.size() - old_size);
+
+  auto total_out = stream_.total_out;
+  stream_.avail_in = 0;
+  stream_.next_out = reinterpret_cast<unsigned char*>(odata.data()) + old_size;
+  stream_.avail_out = out_len;
+
+  auto err = deflate(&stream_, flushmode);
+  while (err == Z_OK && stream_.avail_out == 0) {
+    odata.resize(odata.size() + DEFAULTALLOC);
+    stream_.next_out = reinterpret_cast<unsigned char*>(
+        odata.data() + stream_.total_out - total_out + old_size);
+    out_len = DEFAULTALLOC;
+    stream_.avail_out = out_len;
+    err = deflate(&stream_, flushmode);
+  }
+  if (err == Z_STREAM_END && flushmode == Z_FINISH) {
+    if (err = deflateEnd(&stream_); err != Z_OK) {
+      zlib_error(stream_, err, "from deflateEnd");
+      return err;
+    }
+    initialized_ = false;
+  }
+  else if (err != Z_OK && err != Z_BUF_ERROR) {
+    zlib_error(stream_, err, "while flushing");
+    return err;
+  }
+
+  odata.resize(
+      static_cast<std::size_t>(stream_.total_out - total_out) + old_size);
+  return err;
 }
 
 zlib_decompress_handler::zlib_decompress_handler(int wbits) {
