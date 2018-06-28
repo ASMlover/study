@@ -43,11 +43,6 @@ public:
   virtual int decrypt(const std::string& idata, std::string& odata) = 0;
 };
 
-class base_hash_algorithm : private boost::noncopyable {
-  virtual ~base_hash_algorithm(void) {}
-  static std::string digest(const std::string& seed);
-};
-
 class algorithm_rc4 : public base_encrypt_algorithm {
   RC4_KEY* key_rc4_{};
 
@@ -77,10 +72,10 @@ public:
   virtual int decrypt(const std::string& idata, std::string& odata) override;
 };
 
-class algorithm_sha : public base_hash_algorithm {
+class algorithm_sha : private boost::noncopyable {
 public:
-  algorithm_sha(void);
-  virtual ~algorithm_sha(void);
+  algorithm_sha(void) {}
+  virtual ~algorithm_sha(void) {}
 
   static std::string digest(const std::string& seed);
 };

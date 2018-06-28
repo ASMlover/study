@@ -28,5 +28,13 @@
 
 namespace nyx { namespace encrypter {
 
+std::string algorithm_sha::digest(const std::string& seed) {
+  SHA_CTX c;
+  unsigned char md[21]{};
+  SHA1_Init(&c);
+  SHA1_Update(&c, seed.c_str(), seed.size());
+  SHA1_Final(md, &c);
+  return std::string(reinterpret_cast<const char*>(md));
+}
 
 }}
