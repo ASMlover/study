@@ -28,6 +28,48 @@
 
 namespace nyx { namespace encrypter {
 
+algorithm_rc4::algorithm_rc4(const std::string& key) {
+  _import_key(key);
+}
+
+algorithm_rc4::~algorithm_rc4(void) {
+  if (key_rc4_ != nullptr)
+    delete key_rc4_;
+}
+
+bool algorithm_rc4::_import_key(const std::string& key) {
+  key_rc4_ = new RC4_KEY();
+  RC4_set_key(key_rc4_,
+      key.size(), reinterpret_cast<const unsigned char*>(key.data()));
+  return true;
+}
+
+int algorithm_rc4::encrypt(const char* idata, std::size_t size, char* odata) {
+  if (key_rc4_ == nullptr)
+    return -1;
+  RC4(key_rc4_,
+      size,
+      reinterpret_cast<const unsigned char*>(idata),
+      reinterpret_cast<unsigned char*>(odata));
+  return size;
+}
+
+int algorithm_rc4::decrypt(const char* idata, std::size_t size, char* odata) {
+  return encrypt(idata, size, odata);
+}
+
+int algorithm_rc4::encrypt(const std::string& idata, std::string& odata) {
+  if (odata.size() < idata.size())
+    odata.resize(idata.size());
+  return encrypt(idata.data(), idata.size(), const_cast<char*>(odata.data()));
+}
+
+int algorithm_rc4::decrypt(const std::string& idata, std::string& odata) {
+  if (odata.size() < idata.size())
+    odata.resize(idata.size());
+  return decrypt(idata.data(), idata.size(), const_cast<char*>(odata.data()));
+}
+
 std::string algorithm_sha::digest(const std::string& seed) {
   SHA_CTX c;
   unsigned char md[21]{};
