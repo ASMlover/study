@@ -24,6 +24,9 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstdio>
+#include <memory>
+#include <openssl/pem.h>
 #include "nyx_encrypt_algorithm.h"
 
 namespace nyx { namespace encrypter {
@@ -68,6 +71,67 @@ int algorithm_rc4::decrypt(const std::string& idata, std::string& odata) {
   if (odata.size() < idata.size())
     odata.resize(idata.size());
   return decrypt(idata.data(), idata.size(), const_cast<char*>(odata.data()));
+}
+
+algorithm_rsa::algorithm_rsa(const std::string& keypath) {
+  _import_keypath(keypath);
+}
+
+algorithm_rsa::~algorithm_rsa(void) {
+  if (key_rsa_ != nullptr)
+    RSA_free(key_rsa_);
+}
+
+bool algorithm_rsa::_import_keypath(const std::string& keypath) {
+  std::unique_ptr<std::FILE, int (*)(std::FILE*)> fp(
+      std::fopen(keypath.c_str(), "r"), &std::fclose);
+
+  if (!fp)
+    return false;
+  if (key_rsa_ = PEM_read_RSAPrivateKey(fp.get(), nullptr, nullptr, nullptr);
+      key_rsa_ == nullptr)
+    return false;
+  keylen_ = RSA_size(key_rsa_);
+
+  return true;
+}
+
+int algorithm_rsa::encrypt(const char* idata, std::size_t size, char* odata) {
+  if (key_rsa_ == nullptr)
+    return -1;
+
+  return RSA_public_encrypt(size,
+      reinterpret_cast<unsigned char*>(const_cast<char*>(idata)),
+      reinterpret_cast<unsigned char*>(odata), key_rsa_, RSA_PKCS1_OAEP_PADDING);
+}
+
+int algorithm_rsa::decrypt(const char* idata, std::size_t size, char* odata) {
+  if (key_rsa_ == nullptr)
+    return -1;
+
+  return RSA_private_decrypt(keylen_,
+      reinterpret_cast<unsigned char*>(const_cast<char*>(idata)),
+      reinterpret_cast<unsigned char*>(odata), key_rsa_, RSA_PKCS1_OAEP_PADDING);
+}
+
+int algorithm_rsa::encrypt(const std::string& idata, std::string& odata) {
+  if (odata.size() < keylen_)
+    odata.resize(keylen_);
+
+  auto r = encrypt(idata.data(), idata.size(), const_cast<char*>(odata.data()));
+  if (r > 0)
+    odata.resize(r);
+  return r;
+}
+
+int algorithm_rsa::decrypt(const std::string& idata, std::string& odata) {
+  if (odata.size() < keylen_)
+    odata.resize(keylen_);
+
+  auto r = decrypt(idata.data(), idata.size(), const_cast<char*>(odata.data()));
+  if (r > 0)
+    odata.resize(r);
+  return r;
 }
 
 std::string algorithm_sha::digest(const std::string& seed) {
