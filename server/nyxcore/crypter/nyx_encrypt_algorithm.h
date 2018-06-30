@@ -59,7 +59,7 @@ public:
 
 class algorithm_rsa : public base_encrypt_algorithm {
   std::size_t keylen_{};
-  RSA* key_rsa_{};
+  std::unique_ptr<RSA, void (*)(RSA*)> key_rsa_;
 
   virtual bool _import_keypath(const std::string& keypath);
 public:

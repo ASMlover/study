@@ -68,45 +68,46 @@ int algorithm_rc4::decrypt(const std::string& idata, std::string& odata) {
   return decrypt(idata.data(), idata.size(), const_cast<char*>(odata.data()));
 }
 
-algorithm_rsa::algorithm_rsa(const std::string& keypath) {
+algorithm_rsa::algorithm_rsa(const std::string& keypath)
+  : key_rsa_(nullptr, &RSA_free) {
   _import_keypath(keypath);
 }
 
 algorithm_rsa::~algorithm_rsa(void) {
-  if (key_rsa_ != nullptr)
-    RSA_free(key_rsa_);
+  if (key_rsa_)
+    RSA_free(key_rsa_.get());
 }
 
 bool algorithm_rsa::_import_keypath(const std::string& keypath) {
   std::unique_ptr<std::FILE, int (*)(std::FILE*)> fp(
       std::fopen(keypath.c_str(), "r"), &std::fclose);
-
   if (!fp)
     return false;
-  if (key_rsa_ = PEM_read_RSAPrivateKey(fp.get(), nullptr, nullptr, nullptr);
-      key_rsa_ == nullptr)
+
+  if (key_rsa_.reset(
+        PEM_read_RSAPrivateKey(fp.get(), nullptr, nullptr, nullptr)); !key_rsa_)
     return false;
-  keylen_ = RSA_size(key_rsa_);
+  keylen_ = RSA_size(key_rsa_.get());
 
   return true;
 }
 
 int algorithm_rsa::encrypt(const char* idata, std::size_t size, char* odata) {
-  if (key_rsa_ == nullptr)
+  if (!key_rsa_)
     return -1;
 
   return RSA_public_encrypt(size,
       reinterpret_cast<unsigned char*>(const_cast<char*>(idata)),
-      reinterpret_cast<unsigned char*>(odata), key_rsa_, RSA_PKCS1_OAEP_PADDING);
+      reinterpret_cast<unsigned char*>(odata), key_rsa_.get(), RSA_PKCS1_OAEP_PADDING);
 }
 
 int algorithm_rsa::decrypt(const char* idata, std::size_t size, char* odata) {
-  if (key_rsa_ == nullptr)
+  if (!key_rsa_)
     return -1;
 
   return RSA_private_decrypt(keylen_,
       reinterpret_cast<unsigned char*>(const_cast<char*>(idata)),
-      reinterpret_cast<unsigned char*>(odata), key_rsa_, RSA_PKCS1_OAEP_PADDING);
+      reinterpret_cast<unsigned char*>(odata), key_rsa_.get(), RSA_PKCS1_OAEP_PADDING);
 }
 
 int algorithm_rsa::encrypt(const std::string& idata, std::string& odata) {
