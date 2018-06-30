@@ -25,32 +25,27 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cstdio>
-#include <memory>
 #include <openssl/pem.h>
 #include "nyx_encrypt_algorithm.h"
 
 namespace nyx { namespace crypter {
 
-algorithm_rc4::algorithm_rc4(const std::string& key) {
-  _import_key(key);
-}
-
-algorithm_rc4::~algorithm_rc4(void) {
-  if (key_rc4_ != nullptr)
-    delete key_rc4_;
+algorithm_rc4::algorithm_rc4(const std::string& key)
+  : key_rc4_(new RC4_KEY()) {
+  if (key_rc4_)
+    _import_key(key);
 }
 
 bool algorithm_rc4::_import_key(const std::string& key) {
-  key_rc4_ = new RC4_KEY();
-  RC4_set_key(key_rc4_,
+  RC4_set_key(key_rc4_.get(),
       key.size(), reinterpret_cast<const unsigned char*>(key.data()));
   return true;
 }
 
 int algorithm_rc4::encrypt(const char* idata, std::size_t size, char* odata) {
-  if (key_rc4_ == nullptr)
+  if (!key_rc4_)
     return -1;
-  RC4(key_rc4_,
+  RC4(key_rc4_.get(),
       size,
       reinterpret_cast<const unsigned char*>(idata),
       reinterpret_cast<unsigned char*>(odata));

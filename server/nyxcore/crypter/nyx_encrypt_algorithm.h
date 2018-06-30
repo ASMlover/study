@@ -27,6 +27,7 @@
 #pragma once
 
 #include <string>
+#include <memory>
 #include <boost/noncopyable.hpp>
 #include <openssl/rc4.h>
 #include <openssl/rsa.h>
@@ -44,12 +45,11 @@ public:
 };
 
 class algorithm_rc4 : public base_encrypt_algorithm {
-  RC4_KEY* key_rc4_{};
+  std::unique_ptr<RC4_KEY> key_rc4_;
 
   virtual bool _import_key(const std::string& key);
 public:
   algorithm_rc4(const std::string& key);
-  virtual ~algorithm_rc4(void);
 
   virtual int encrypt(const char* idata, std::size_t size, char* odata) override;
   virtual int decrypt(const char* idata, std::size_t size, char* odata) override;
