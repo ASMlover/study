@@ -24,8 +24,42 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "nyx_encrypt_algorithm.h"
 #include "nyx_crypter.h"
 
 namespace nyx { namespace crypter {
+
+base_crypter::base_crypter(base_encrypt_algorithm* algorithm)
+  : algorithm_(algorithm) {
+}
+
+base_crypter::~base_crypter(void) {
+  if (algorithm_ != nullptr)
+    delete algorithm_;
+}
+
+int base_crypter::encrypt(const char* idata, std::size_t size, char* odata) {
+  return algorithm_->encrypt(idata, size, odata);
+}
+
+int base_crypter::decrypt(const char* idata, std::size_t size, char* odata) {
+  return algorithm_->decrypt(idata, size, odata);
+}
+
+int base_crypter::encrypt(const std::string& idata, std::string& odata) {
+  return algorithm_->encrypt(idata, odata);
+}
+
+int base_crypter::decrypt(const std::string& idata, std::string& odata) {
+  return algorithm_->decrypt(idata, odata);
+}
+
+key_crypter::key_crypter(const std::string& keypath)
+  : base_crypter(new algorithm_rsa(keypath)) {
+}
+
+rc4_crypter::rc4_crypter(const std::string& key)
+  : base_crypter(new algorithm_rc4(key)) {
+}
 
 }}
