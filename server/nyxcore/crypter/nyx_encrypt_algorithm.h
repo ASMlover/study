@@ -32,7 +32,7 @@
 #include <openssl/rsa.h>
 #include <openssl/sha.h>
 
-namespace nyx { namespace encrypter {
+namespace nyx { namespace crypter {
 
 class base_encrypt_algorithm : private boost::noncopyable {
 public:

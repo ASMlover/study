@@ -29,7 +29,7 @@
 #include <string>
 #include <boost/noncopyable.hpp>
 
-namespace nyx { namespace encrypter {
+namespace nyx { namespace crypter {
 
 class base_encrypt_algorithm;
 

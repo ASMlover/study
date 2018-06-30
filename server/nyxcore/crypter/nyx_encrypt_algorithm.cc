@@ -29,7 +29,7 @@
 #include <openssl/pem.h>
 #include "nyx_encrypt_algorithm.h"
 
-namespace nyx { namespace encrypter {
+namespace nyx { namespace crypter {
 
 algorithm_rc4::algorithm_rc4(const std::string& key) {
   _import_key(key);

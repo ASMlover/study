@@ -26,6 +26,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include "nyx_crypter.h"
 
-namespace nyx { namespace encrypter {
+namespace nyx { namespace crypter {
 
 }}
