@@ -32,13 +32,9 @@ namespace pysmall {
 IntObejct::IntObejct(int v)
   : Object()
   , value_(v) {
-  set_objecttype();
 }
 
-IntObejct::~IntObejct(void) {
-}
-
-void IntObejct::set_objecttype(void) {
+TypeObject* IntObejct::set_objecttype(void) {
   static TypeObject _inttype(0, "int");
   _inttype.set_printfunc([this](Object* o) {
         auto io = dynamic_cast<IntObejct*>(o);
@@ -47,7 +43,7 @@ void IntObejct::set_objecttype(void) {
   _inttype.set_plusfunc([this](Object* x, Object* y) -> Object* {
         auto* lo = dynamic_cast<IntObejct*>(x);
         auto* ro = dynamic_cast<IntObejct*>(y);
-        auto* r = new IntObejct(0);
+        auto* r = new IntObejct();
         if (r == nullptr) {
           std::cerr << "have no enough memory !!!" << std::endl;
           std::abort();
@@ -61,8 +57,7 @@ void IntObejct::set_objecttype(void) {
   _inttype.set_hashfunc([this](Object* o) -> long {
         return static_cast<long>(dynamic_cast<IntObejct*>(o)->value_);
       });
-
-  type = &_inttype;
+  return &_inttype;
 }
 
 }
