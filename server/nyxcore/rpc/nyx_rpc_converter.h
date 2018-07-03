@@ -32,11 +32,11 @@
 
 namespace nyx {
 
-class base_crypter;
-class base_compressor;
+namespace crypter { class base_crypter; }
+namespace compressor { class base_compressor; }
 
-using base_crypter_ptr = std::shared_ptr<base_crypter>;
-using base_compressor_ptr = std::shared_ptr<base_compressor>;
+using base_crypter_ptr = std::shared_ptr<crypter::base_crypter>;
+using base_compressor_ptr = std::shared_ptr<compressor::base_compressor>;
 
 namespace rpc {
 
@@ -48,8 +48,8 @@ public:
   rpc_converter(void);
   ~rpc_converter(void);
 
-  void handle_istream_data(const std::string& data, std::string& output);
-  void handle_ostream_data(const std::string& data, std::string& output);
+  void handle_istream_data(const std::string& idata, std::string& odata);
+  void handle_ostream_data(const std::string& idata, std::string& odata);
 
   void set_crypter(
       const base_crypter_ptr& encrypter, const base_crypter_ptr& decrypter) {
