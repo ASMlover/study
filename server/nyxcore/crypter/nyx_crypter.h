@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <memory>
 #include <string>
 #include <boost/noncopyable.hpp>
 
@@ -34,10 +35,14 @@ namespace nyx { namespace crypter {
 class base_encrypt_algorithm;
 
 class base_crypter : private boost::noncopyable {
-  base_encrypt_algorithm* algorithm_{};
+  std::unique_ptr<base_encrypt_algorithm> algorithm_;
 public:
-  explicit base_crypter(base_encrypt_algorithm* algorithm);
-  virtual ~base_crypter(void);
+  explicit base_crypter(base_encrypt_algorithm* algorithm)
+    : algorithm_(algorithm) {
+  }
+
+  virtual ~base_crypter(void) {
+  }
 
   virtual int encrypt(const char* idata, std::size_t size, char* odata);
   virtual int decrypt(const char* idata, std::size_t size, char* odata);

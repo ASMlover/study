@@ -29,15 +29,6 @@
 
 namespace nyx { namespace crypter {
 
-base_crypter::base_crypter(base_encrypt_algorithm* algorithm)
-  : algorithm_(algorithm) {
-}
-
-base_crypter::~base_crypter(void) {
-  if (algorithm_ != nullptr)
-    delete algorithm_;
-}
-
 int base_crypter::encrypt(const char* idata, std::size_t size, char* odata) {
   return algorithm_->encrypt(idata, size, odata);
 }
