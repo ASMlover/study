@@ -38,7 +38,7 @@ public:
 
   virtual bool done(int v) override;
   virtual bool done(float v) override;
-  virtual void print(std::ostringstream& oss, bool is_root) override;
+  virtual void print_value(std::ostringstream& oss) override;
 };
 
 }}

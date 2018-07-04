@@ -60,23 +60,8 @@ bool float_filter::done(float v) {
   return false;
 }
 
-void float_filter::print(std::ostringstream& oss, bool is_root) {
-  if (!is_root) {
-    if (get_relation() == filter_relation::r_and)
-      oss << " and ";
-    else
-      oss << " or ";
-  }
-
-  if (sub_)
-    oss << "(";
-  oss << "(" << static_cast<int>(type_) << "," << key_ << "," << value_ << ")";
-  if (sub_) {
-    sub_->print(oss, is_root);
-    oss << ")";
-  }
-  if (next_)
-    next_->print(oss, is_root);
+void float_filter::print_value(std::ostringstream& oss) {
+  oss << value_;
 }
 
 }}

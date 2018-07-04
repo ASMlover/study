@@ -68,10 +68,32 @@ public:
   virtual bool done(float v) { return false; }
   virtual bool done(key_ref& v) { return false; }
 
-  virtual void print(std::ostringstream& oss, bool is_root) = 0;
-  virtual void print(void) {
+  virtual void print_value(std::ostringstream& oss) = 0;
+
+  void print(bool is_root = false) {
     std::ostringstream oss;
-    print(oss, true);
+    __print(oss, is_root);
+  }
+private:
+  void __print(std::ostringstream& oss, bool is_root) {
+    if (!is_root) {
+      if (get_relation() == filter_relation::r_and)
+        oss << " and ";
+      else
+        oss << " or ";
+    }
+
+    if (sub_)
+      oss << "(";
+    oss << "(" << static_cast<int>(type_) << "," << key_ << ",";
+    print_value(oss);
+    oss << ")";
+    if (sub_) {
+      sub_->__print(oss, is_root);
+      oss << ")";
+    }
+    if (next_)
+      next_->__print(oss, is_root);
   }
 
 };
