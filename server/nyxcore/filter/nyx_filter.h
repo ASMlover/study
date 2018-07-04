@@ -36,13 +36,14 @@ class filter;
 using filter_ptr = std::shared_ptr<filter>;
 
 class filter : private boost::noncopyable {
-  enum filter_relation {r_and, r_or};
-  enum filter_type {eq = 0, ne, gt, ge, lt, le};
+public:
+  enum class filter_relation : int {r_and, r_or};
+  enum class filter_type : int {eq = 0, ne, gt, ge, lt, le};
   using key_type = std::string;
   using key_ref = const std::string&;
-
-  filter_type type_{};
-  filter_relation relation_{r_and};
+protected:
+  filter_type type_{filter_type::eq};
+  filter_relation relation_{filter_relation::r_and};
   key_type key_;
   filter_ptr sub_;
   filter_ptr next_;
