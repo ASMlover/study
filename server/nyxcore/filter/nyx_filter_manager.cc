@@ -28,12 +28,6 @@
 
 namespace nyx { namespace filter {
 
-filter_manager::filter_manager(void) {
-}
-
-filter_manager::~filter_manager(void) {
-}
-
 void filter_manager::delete_filter_randomly(void) {
 }
 
@@ -62,21 +56,33 @@ int filter_manager::add_str_filter(
 }
 
 void filter_manager::del_filter(int filter) {
+  filters_.erase(filter);
+  auto it = int_filters_.find(filter);
+  if (it != int_filters_.end()) {
+    str_filters_.erase(it->second);
+    int_filters_.erase(it);
+  }
 }
 
 filter_ptr filter_manager::get_filter(int index) const {
   filter_ptr filter;
+  auto it = filters_.find(index);
+  if (it != filters_.end())
+    filter = it->second;
   return filter;
 }
 
 int filter_manager::get_filter_index(const std::string& s) const {
-  return 0;
-}
-
-void filter_manager::set_maxsize(int size) {
+  auto it = str_filters_.find(s);
+  if (it != str_filters_.end())
+    return it->second;
+  return -1;
 }
 
 void filter_manager::print_filter(int index) {
+  auto it = filters_.find(index);
+  if (it != filters_.end())
+    it->second->print();
 }
 
 }}

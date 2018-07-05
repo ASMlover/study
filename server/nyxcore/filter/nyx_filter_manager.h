@@ -47,8 +47,8 @@ class filter_manager : private boost::noncopyable {
   filter_strint_map str_filters_;
   filter_intstr_map int_filters_;
 
-  filter_manager(void);
-  ~filter_manager(void);
+  filter_manager(void) {}
+  ~filter_manager(void) {}
 
   void delete_filter_randomly(void);
   filter_ptr from_object(PyObject* v);
@@ -60,13 +60,16 @@ public:
     return ins;
   }
 
+  void set_maxsize(int size) {
+    maxsz_ = size;
+  }
+
   int add_filter(const py::object& args);
   int add_str_filter(const std::string& s, const py::object& args);
   void del_filter(int filter);
 
   filter_ptr get_filter(int index) const;
   int get_filter_index(const std::string& s) const;
-  void set_maxsize(int size);
   void print_filter(int index);
 };
 
