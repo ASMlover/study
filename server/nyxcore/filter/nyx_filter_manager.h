@@ -42,7 +42,7 @@ using filter_intstr_map = std::unordered_map<int, std::string>;
 
 class filter_manager : private boost::noncopyable {
   int index_{};
-  int maxsz_{};
+  std::size_t maxsz_{};
   filter_map filters_;
   filter_strint_map str_filters_;
   filter_intstr_map int_filters_;
@@ -60,7 +60,7 @@ public:
     return ins;
   }
 
-  void set_maxsize(int size) {
+  void set_maxsize(std::size_t size) {
     maxsz_ = size;
   }
 

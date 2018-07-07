@@ -105,21 +105,122 @@ filter_ptr filter_manager::from_object(PyObject* v) {
 
 filter_ptr filter_manager::from_tuple(PyObject* v) {
   filter_ptr filter;
+  auto* arg = PyTuple_GetItem(v, 0);
+  if (arg == nullptr)
+    return filter;
+
+  if (PyInt_Check(arg)) {
+    return from_object(v);
+  }
+  else if (PyTuple_Check(arg) || PyList_Check(arg)) {
+    auto n = Py_SIZE(v);
+    if (n > 0) {
+      filter_ptr parent;
+      for (auto i = 0; i < n; ++i) {
+        arg = PyTuple_GET_ITEM(v, i);
+        filter_ptr tmp;
+        if (PyTuple_Check(arg))
+          tmp = from_tuple(arg);
+        else if (PyList_Check(arg))
+          tmp = from_list(arg);
+        if (!tmp)
+          return tmp;
+
+        if (!filter) {
+          filter = tmp;
+          parent = filter;
+        }
+        else {
+          tmp->set_relation(filter::filter_relation::r_and);
+          if (parent->get_sub() || tmp->is_group())
+            parent->add_next(tmp);
+          else
+            parent->add_sub(tmp);
+          parent = tmp;
+        }
+      }
+    }
+    return filter;
+  }
   return filter;
 }
 
 filter_ptr filter_manager::from_list(PyObject* v) {
   filter_ptr filter;
+  auto* arg = PyList_GetItem(v, 0);
+  if (arg == nullptr)
+    return filter;
+
+  if (PyInt_Check(arg)) {
+    return from_object(v);
+  }
+  else if (PyTuple_Check(arg) || PyList_Check(arg)) {
+    auto n = Py_SIZE(v);
+    if (v > 0) {
+      filter_ptr parent;
+      for (auto i = 0; i < n; ++i) {
+        arg = PyList_GET_ITEM(v, i);
+        filter_ptr tmp;
+        if (PyTuple_Check(arg))
+          tmp = from_tuple(arg);
+        else if (PyList_Check(arg))
+          tmp = from_list(arg);
+        if (!tmp)
+          return tmp;
+
+        if (!filter) {
+          filter = tmp;
+          parent = filter;
+        }
+        else {
+          tmp->set_relation(filter::filter_relation::r_or);
+          if (parent->get_sub() || tmp->is_group())
+            parent->add_next(tmp);
+          else
+            parent->add_sub(tmp);
+          parent = tmp;
+        }
+      }
+    }
+    return filter;
+  }
   return filter;
 }
 
 int filter_manager::add_filter(const py::object& args) {
-  return 0;
+  if (PyTuple_Check(args.ptr())) {
+    auto root = from_tuple(args.ptr());
+    if (!root)
+      return -1;
+    auto index = ++index_;
+    filters_[index] = root;
+    return index;
+  }
+  else if (PyList_Check(args.ptr())) {
+    auto root = from_list(args.ptr());
+    if (!root)
+      return -1;
+    auto index = ++index_;
+    filters_[index] = root;
+    return index;
+  }
+  else {
+    PyErr_SetString(PyExc_TypeError, kUsageError);
+  }
+  return -1;
 }
 
 int filter_manager::add_str_filter(
     const std::string& s, const py::object& args) {
-  return 0;
+  if (str_filters_.size() > maxsz_)
+    delete_filter_randomly();
+
+  auto index = add_filter(args);
+  if (index > 0) {
+    str_filters_[s] = index;
+    int_filters_[index] = s;
+  }
+  return index;
 }
 
 void filter_manager::del_filter(int filter) {
