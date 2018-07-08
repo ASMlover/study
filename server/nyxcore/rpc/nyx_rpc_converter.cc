@@ -24,6 +24,10 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
+#include "../utils/nyx_hex.h"
+#include "../compressor/nyx_compressor.h"
+#include "../crypter/nyx_crypter.h"
 #include "nyx_rpc_converter.h"
 
 namespace nyx { namespace rpc {
@@ -35,13 +39,42 @@ rpc_converter::~rpc_converter(void) {
 }
 
 void rpc_converter::handle_istream_data(
-    const std::string& data, std::string& output) {
-  // TODO:
+    const std::string& idata, std::string& odata) {
+  if (decrypter_) {
+    if (decrypter_->decrypt(idata, odata) <= 0) {
+      std::cerr << "input data decrypt failed ..." << std::endl;
+      return;
+    }
+  }
+  if (compressor_) {
+    if (decrypter_) {
+      auto decrypted_data = odata;
+      compressor_->decompress(decrypted_data, odata);
+    }
+    else {
+      compressor_->decompress(idata, odata);
+    }
+  }
 }
 
 void rpc_converter::handle_ostream_data(
-    const std::string& data, std::string& output) {
-  // TODO:
+    const std::string& idata, std::string& odata) {
+  if (compressor_)
+    compressor_->compress(idata, odata);
+
+  if (encrypter_) {
+    int r = 0;
+    if (compressor_) {
+      auto compressed_data = odata;
+      r = encrypter_->encrypt(compressed_data, odata);
+    }
+    else {
+      r = encrypter_->encrypt(idata, odata);
+    }
+
+    if (r <= 0)
+      std::cerr << "output data encrypt failed ..." << std::endl;
+  }
 }
 
 }}

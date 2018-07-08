@@ -26,49 +26,34 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <string>
 #include <memory>
+#include <string>
 #include <boost/noncopyable.hpp>
 
-namespace nyx {
+namespace nyx { namespace crypter {
 
-namespace crypter { class base_crypter; }
-namespace compressor { class base_compressor; }
+class base_encrypt_algorithm;
 
-using base_crypter_ptr = std::shared_ptr<crypter::base_crypter>;
-using base_compressor_ptr = std::shared_ptr<compressor::base_compressor>;
-
-namespace rpc {
-
-class rpc_converter : private boost::noncopyable {
-  base_crypter_ptr encrypter_;
-  base_crypter_ptr decrypter_;
-  base_compressor_ptr compressor_;
+class base_crypter : private boost::noncopyable {
+  std::unique_ptr<base_encrypt_algorithm> algorithm_;
 public:
-  rpc_converter(void);
-  ~rpc_converter(void);
+  explicit base_crypter(base_encrypt_algorithm* algorithm);
+  virtual ~base_crypter(void);
 
-  void handle_istream_data(const std::string& idata, std::string& odata);
-  void handle_ostream_data(const std::string& idata, std::string& odata);
+  virtual int encrypt(const char* idata, std::size_t size, char* odata);
+  virtual int decrypt(const char* idata, std::size_t size, char* odata);
+  virtual int encrypt(const std::string& idata, std::string& odata);
+  virtual int decrypt(const std::string& idata, std::string& odata);
+};
 
-  void set_crypter(
-      const base_crypter_ptr& encrypter, const base_crypter_ptr& decrypter) {
-    encrypter_ = encrypter;
-    decrypter_ = decrypter_;
-  }
+class key_crypter : public base_crypter {
+public:
+  explicit key_crypter(const std::string& keypath);
+};
 
-  void set_compressor(const base_compressor_ptr& compressor) {
-    compressor_ = compressor;
-  }
-
-  void reset_crypter(void) {
-    encrypter_.reset();
-    decrypter_.reset();
-  }
-
-  void reset_compressor(void) {
-    compressor_.reset();
-  }
+class rc4_crypter : public base_crypter {
+public:
+  explicit rc4_crypter(const std::string& key);
 };
 
 }}

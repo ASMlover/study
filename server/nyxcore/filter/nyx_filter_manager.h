@@ -26,49 +26,51 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <string>
 #include <memory>
+#include <map>
+#include <unordered_map>
 #include <boost/noncopyable.hpp>
 
-namespace nyx {
+#include "../utils/nyx_pyaux.h"
+#include "nyx_filter.h"
 
-namespace crypter { class base_crypter; }
-namespace compressor { class base_compressor; }
+namespace nyx { namespace filter {
 
-using base_crypter_ptr = std::shared_ptr<crypter::base_crypter>;
-using base_compressor_ptr = std::shared_ptr<compressor::base_compressor>;
+using filter_map = std::map<int, filter_ptr>;
+using filter_strint_map = std::unordered_map<std::string, int>;
+using filter_intstr_map = std::unordered_map<int, std::string>;
 
-namespace rpc {
+class filter_manager : private boost::noncopyable {
+  int index_{};
+  std::size_t maxsz_{};
+  filter_map filters_;
+  filter_strint_map str_filters_;
+  filter_intstr_map int_filters_;
 
-class rpc_converter : private boost::noncopyable {
-  base_crypter_ptr encrypter_;
-  base_crypter_ptr decrypter_;
-  base_compressor_ptr compressor_;
+  filter_manager(void) {}
+  ~filter_manager(void) {}
+
+  void delete_filter_randomly(void);
+  filter_ptr from_object(PyObject* v);
+  filter_ptr from_tuple(PyObject* v);
+  filter_ptr from_list(PyObject* v);
 public:
-  rpc_converter(void);
-  ~rpc_converter(void);
-
-  void handle_istream_data(const std::string& idata, std::string& odata);
-  void handle_ostream_data(const std::string& idata, std::string& odata);
-
-  void set_crypter(
-      const base_crypter_ptr& encrypter, const base_crypter_ptr& decrypter) {
-    encrypter_ = encrypter;
-    decrypter_ = decrypter_;
+  static filter_manager& instance(void) {
+    static filter_manager ins;
+    return ins;
   }
 
-  void set_compressor(const base_compressor_ptr& compressor) {
-    compressor_ = compressor;
+  void set_maxsize(std::size_t size) {
+    maxsz_ = size;
   }
 
-  void reset_crypter(void) {
-    encrypter_.reset();
-    decrypter_.reset();
-  }
+  int add_filter(const py::object& args);
+  int add_str_filter(const std::string& s, const py::object& args);
+  void del_filter(int filter);
 
-  void reset_compressor(void) {
-    compressor_.reset();
-  }
+  filter_ptr get_filter(int index) const;
+  int get_filter_index(const std::string& s) const;
+  void print_filter(int index);
 };
 
 }}

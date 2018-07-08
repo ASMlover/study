@@ -24,51 +24,44 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#include "nyx_int_filter.h"
 
-#include <string>
-#include <memory>
-#include <boost/noncopyable.hpp>
+namespace nyx { namespace filter {
 
-namespace nyx {
+int_filter::int_filter(filter_type t, key_ref key, int v)
+  : filter(t, key)
+  , value_(v) {
+}
 
-namespace crypter { class base_crypter; }
-namespace compressor { class base_compressor; }
+int_filter::~int_filter(void) {
+}
 
-using base_crypter_ptr = std::shared_ptr<crypter::base_crypter>;
-using base_compressor_ptr = std::shared_ptr<compressor::base_compressor>;
-
-namespace rpc {
-
-class rpc_converter : private boost::noncopyable {
-  base_crypter_ptr encrypter_;
-  base_crypter_ptr decrypter_;
-  base_compressor_ptr compressor_;
-public:
-  rpc_converter(void);
-  ~rpc_converter(void);
-
-  void handle_istream_data(const std::string& idata, std::string& odata);
-  void handle_ostream_data(const std::string& idata, std::string& odata);
-
-  void set_crypter(
-      const base_crypter_ptr& encrypter, const base_crypter_ptr& decrypter) {
-    encrypter_ = encrypter;
-    decrypter_ = decrypter_;
+bool int_filter::done(int v) {
+  switch (type_) {
+  case filter_type::eq: return v == value_;
+  case filter_type::ne: return v != value_;
+  case filter_type::gt: return v > value_;
+  case filter_type::ge: return v >= value_;
+  case filter_type::lt: return v < value_;
+  case filter_type::le: return v <= value_;
   }
+  return false;
+}
 
-  void set_compressor(const base_compressor_ptr& compressor) {
-    compressor_ = compressor;
+bool int_filter::done(float v) {
+  switch (type_) {
+  case filter_type::eq: return v == static_cast<float>(value_);
+  case filter_type::ne: return v != static_cast<float>(value_);
+  case filter_type::gt: return v > static_cast<float>(value_);
+  case filter_type::ge: return v >= static_cast<float>(value_);
+  case filter_type::lt: return v < static_cast<float>(value_);
+  case filter_type::le: return v <= static_cast<float>(value_);
   }
+  return false;
+}
 
-  void reset_crypter(void) {
-    encrypter_.reset();
-    decrypter_.reset();
-  }
-
-  void reset_compressor(void) {
-    compressor_.reset();
-  }
-};
+void int_filter::print_value(std::ostringstream& oss) {
+  oss << value_;
+}
 
 }}

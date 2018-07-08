@@ -24,51 +24,40 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#include "nyx_encrypt_algorithm.h"
+#include "nyx_crypter.h"
 
-#include <string>
-#include <memory>
-#include <boost/noncopyable.hpp>
+namespace nyx { namespace crypter {
 
-namespace nyx {
+base_crypter::base_crypter(base_encrypt_algorithm* algorithm)
+  : algorithm_(algorithm) {
+}
 
-namespace crypter { class base_crypter; }
-namespace compressor { class base_compressor; }
+base_crypter::~base_crypter(void) {
+}
 
-using base_crypter_ptr = std::shared_ptr<crypter::base_crypter>;
-using base_compressor_ptr = std::shared_ptr<compressor::base_compressor>;
+int base_crypter::encrypt(const char* idata, std::size_t size, char* odata) {
+  return algorithm_->encrypt(idata, size, odata);
+}
 
-namespace rpc {
+int base_crypter::decrypt(const char* idata, std::size_t size, char* odata) {
+  return algorithm_->decrypt(idata, size, odata);
+}
 
-class rpc_converter : private boost::noncopyable {
-  base_crypter_ptr encrypter_;
-  base_crypter_ptr decrypter_;
-  base_compressor_ptr compressor_;
-public:
-  rpc_converter(void);
-  ~rpc_converter(void);
+int base_crypter::encrypt(const std::string& idata, std::string& odata) {
+  return algorithm_->encrypt(idata, odata);
+}
 
-  void handle_istream_data(const std::string& idata, std::string& odata);
-  void handle_ostream_data(const std::string& idata, std::string& odata);
+int base_crypter::decrypt(const std::string& idata, std::string& odata) {
+  return algorithm_->decrypt(idata, odata);
+}
 
-  void set_crypter(
-      const base_crypter_ptr& encrypter, const base_crypter_ptr& decrypter) {
-    encrypter_ = encrypter;
-    decrypter_ = decrypter_;
-  }
+key_crypter::key_crypter(const std::string& keypath)
+  : base_crypter(new algorithm_rsa(keypath)) {
+}
 
-  void set_compressor(const base_compressor_ptr& compressor) {
-    compressor_ = compressor;
-  }
-
-  void reset_crypter(void) {
-    encrypter_.reset();
-    decrypter_.reset();
-  }
-
-  void reset_compressor(void) {
-    compressor_.reset();
-  }
-};
+rc4_crypter::rc4_crypter(const std::string& key)
+  : base_crypter(new algorithm_rc4(key)) {
+}
 
 }}

@@ -26,49 +26,18 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <string>
-#include <memory>
-#include <boost/noncopyable.hpp>
+#include "nyx_filter.h"
 
-namespace nyx {
+namespace nyx { namespace filter {
 
-namespace crypter { class base_crypter; }
-namespace compressor { class base_compressor; }
-
-using base_crypter_ptr = std::shared_ptr<crypter::base_crypter>;
-using base_compressor_ptr = std::shared_ptr<compressor::base_compressor>;
-
-namespace rpc {
-
-class rpc_converter : private boost::noncopyable {
-  base_crypter_ptr encrypter_;
-  base_crypter_ptr decrypter_;
-  base_compressor_ptr compressor_;
+class str_filter : public filter {
+  const std::string& value_{};
 public:
-  rpc_converter(void);
-  ~rpc_converter(void);
+  str_filter(filter_type t, key_ref key, const std::string& v);
+  virtual ~str_filter(void);
 
-  void handle_istream_data(const std::string& idata, std::string& odata);
-  void handle_ostream_data(const std::string& idata, std::string& odata);
-
-  void set_crypter(
-      const base_crypter_ptr& encrypter, const base_crypter_ptr& decrypter) {
-    encrypter_ = encrypter;
-    decrypter_ = decrypter_;
-  }
-
-  void set_compressor(const base_compressor_ptr& compressor) {
-    compressor_ = compressor;
-  }
-
-  void reset_crypter(void) {
-    encrypter_.reset();
-    decrypter_.reset();
-  }
-
-  void reset_compressor(void) {
-    compressor_.reset();
-  }
+  virtual bool done(const std::string& v) override;
+  virtual void print_value(std::ostringstream& oss);
 };
 
 }}
