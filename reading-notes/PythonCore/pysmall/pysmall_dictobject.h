@@ -37,6 +37,9 @@ class DictObject : public Object {
   virtual TypeObject* set_objecttype(void) override;
 public:
   DictObject(void);
+
+  Object* getitem(Object* k) const;
+  void setitem(Object* k, Object* v);
 };
 
 }

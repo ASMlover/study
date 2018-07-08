@@ -48,4 +48,17 @@ TypeObject* DictObject::set_objecttype(void) {
   return &_dicttype;
 }
 
+Object* DictObject::getitem(Object* k) const {
+  auto key = k->type->hash_fn(k);
+  auto it = dict_.find(key);
+  if (it != dict_.end())
+    return it->second;
+  return nullptr;
+}
+
+void DictObject::setitem(Object* k, Object* v) {
+  auto key = k->type->hash_fn(k);
+  dict_[key] = v;
+}
+
 }
