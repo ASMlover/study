@@ -30,13 +30,12 @@
 
 namespace pysmall {
 
-class IntObejct : public Object {
+class IntObject : public Object {
   int value_{};
 
-  void set_objecttype(void);
+  virtual TypeObject* set_objecttype(void) override;
 public:
-  IntObejct(int v = 0);
-  virtual ~IntObejct(void);
+  IntObject(int v = 0);
 };
 
 }

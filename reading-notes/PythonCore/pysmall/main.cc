@@ -24,7 +24,61 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cctype>
 #include <iostream>
+#include <memory>
+#include <string>
+#include "pysmall_object.h"
+#include "pysmall_intobject.h"
+#include "pysmall_strobject.h"
+#include "pysmall_dictobject.h"
+
+static std::unique_ptr<pysmall::DictObject> g_ENV(new pysmall::DictObject());
+
+static bool __isdigit(const std::string& s) {
+  for (auto c : s) {
+    if (!std::isdigit(c))
+      return false;
+  }
+  return true;
+}
+
+static pysmall::Object* symbol_as_object(const std::string& symbol) {
+  auto* key = new pysmall::StrObject(symbol.c_str());
+  auto* val = g_ENV->getitem(key);
+  if (val == nullptr)
+    std::cerr << "[ERROR]: " << symbol << " is not defined!!!" << std::endl;
+  return val;
+}
+
+static void pysmall_exec_print(const std::string& symbol) {
+  auto* x = symbol_as_object(symbol);
+  if (x != nullptr)
+    x->type->print_fn(x);
+}
+
+static void pysmall_exec_add(const std::string& t, const std::string& s) {
+  if (__isdigit(s)) {
+    auto* val = new pysmall::IntObject(std::atoi(s.c_str()));
+    auto* key = new pysmall::StrObject(t.c_str());
+    g_ENV->setitem(key, val);
+  }
+  else if (s.find("\"") != std::string::npos) {
+    auto* val = new pysmall::StrObject(s.substr(1, s.size() - 2).c_str());
+    auto* key = new pysmall::StrObject(t.c_str());
+    g_ENV->setitem(key, val);
+  }
+  else if (auto pos = s.find("+"); pos != std::string::npos) {
+    auto* lobj = symbol_as_object(s.substr(0, pos));
+    auto* robj = symbol_as_object(s.substr(pos + 1));
+    if (lobj != nullptr && robj != nullptr && lobj->type == robj->type) {
+      auto* val = lobj->type->plus_fn(lobj, robj);
+      auto* key = new pysmall::StrObject(t.c_str());
+      g_ENV->setitem(key, val);
+    }
+    g_ENV->type->print_fn(g_ENV.get());
+  }
+}
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;

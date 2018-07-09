@@ -24,42 +24,41 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include <functional>
+#include <iostream>
+#include "pysmall_dictobject.h"
 
 namespace pysmall {
 
-struct TypeObject;
+DictObject::DictObject(void)
+  : Object() {
+}
 
-struct Object {
-  int refcount{};
-  TypeObject* type{};
+TypeObject* DictObject::set_objecttype(void) {
+  static TypeObject _dicttype(0, "dict");
+  _dicttype.set_printfunc([this](Object* o) {
+        auto* r = dynamic_cast<DictObject*>(o);
+        std::cout << "{";
+        for (auto& x : r->dict_) {
+          std::cout << x.first << ": ";
+          x.second->type->print_fn(x.second);
+          std::cout << ", ";
+        }
+        std::cout << "}" << std::endl;
+      });
+  return &_dicttype;
+}
 
-  Object(int rc = 1) : refcount(rc) { type = set_objecttype(); }
-  virtual ~Object(void) {}
+Object* DictObject::getitem(Object* k) const {
+  auto key = k->type->hash_fn(k);
+  auto it = dict_.find(key);
+  if (it != dict_.end())
+    return it->second;
+  return nullptr;
+}
 
-  virtual TypeObject* set_objecttype(void) { return nullptr; }
-};
-
-struct TypeObject : public Object {
-  using printfunc = std::function<void (Object*)>;
-  using plusfunc = std::function<Object* (Object*, Object*)>;
-  using hashfunc = std::function<long (Object*)>;
-
-  const char* name{};
-  printfunc print_fn{};
-  plusfunc plus_fn{};
-  hashfunc hash_fn{};
-
-  TypeObject(int rc = 0, const char* n = "type")
-    : Object(rc)
-    , name(n) {
-  }
-
-  void set_printfunc(printfunc&& fn) { print_fn = std::move(fn); }
-  void set_plusfunc(plusfunc&& fn) { plus_fn = std::move(fn); }
-  void set_hashfunc(hashfunc&& fn) { hash_fn = std::move(fn); }
-};
+void DictObject::setitem(Object* k, Object* v) {
+  auto key = k->type->hash_fn(k);
+  dict_[key] = v;
+}
 
 }

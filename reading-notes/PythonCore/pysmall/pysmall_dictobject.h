@@ -26,40 +26,20 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <functional>
+#include <unordered_map>
+#include "pysmall_object.h"
 
 namespace pysmall {
 
-struct TypeObject;
+class DictObject : public Object {
+  std::unordered_map<long, Object*> dict_;
 
-struct Object {
-  int refcount{};
-  TypeObject* type{};
+  virtual TypeObject* set_objecttype(void) override;
+public:
+  DictObject(void);
 
-  Object(int rc = 1) : refcount(rc) { type = set_objecttype(); }
-  virtual ~Object(void) {}
-
-  virtual TypeObject* set_objecttype(void) { return nullptr; }
-};
-
-struct TypeObject : public Object {
-  using printfunc = std::function<void (Object*)>;
-  using plusfunc = std::function<Object* (Object*, Object*)>;
-  using hashfunc = std::function<long (Object*)>;
-
-  const char* name{};
-  printfunc print_fn{};
-  plusfunc plus_fn{};
-  hashfunc hash_fn{};
-
-  TypeObject(int rc = 0, const char* n = "type")
-    : Object(rc)
-    , name(n) {
-  }
-
-  void set_printfunc(printfunc&& fn) { print_fn = std::move(fn); }
-  void set_plusfunc(plusfunc&& fn) { plus_fn = std::move(fn); }
-  void set_hashfunc(hashfunc&& fn) { hash_fn = std::move(fn); }
+  Object* getitem(Object* k) const;
+  void setitem(Object* k, Object* v);
 };
 
 }

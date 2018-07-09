@@ -24,42 +24,52 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include <functional>
+#include <iostream>
+#include "pysmall_strobject.h"
 
 namespace pysmall {
 
-struct TypeObject;
+StrObject::StrObject(const char* v)
+  : Object()
+  , value_(v) {
+}
 
-struct Object {
-  int refcount{};
-  TypeObject* type{};
+TypeObject* StrObject::set_objecttype(void) {
+  static TypeObject _strtype(0, "str");
+  _strtype.set_printfunc([this](Object* o) {
+        auto* so = dynamic_cast<StrObject*>(o);
+        std::cout << so->value_ << std::endl;
+      });
+  _strtype.set_plusfunc([this](Object* x, Object* y) -> Object* {
+        auto* lo = dynamic_cast<StrObject*>(x);
+        auto* ro = dynamic_cast<StrObject*>(y);
+        auto* r = new StrObject();
+        if (r == nullptr) {
+          std::cerr << "have no enough memory !!!" << std::endl;
+          std::abort();
+        }
+        else {
+          r->value_ = lo->value_ + ro->value_;
+        }
+        return r;
+      });
+  _strtype.set_hashfunc([this](Object* o) -> long {
+        auto* so = dynamic_cast<StrObject*>(o);
+        if (so->hash_value_ != -1)
+          return so->hash_value_;
 
-  Object(int rc = 1) : refcount(rc) { type = set_objecttype(); }
-  virtual ~Object(void) {}
-
-  virtual TypeObject* set_objecttype(void) { return nullptr; }
-};
-
-struct TypeObject : public Object {
-  using printfunc = std::function<void (Object*)>;
-  using plusfunc = std::function<Object* (Object*, Object*)>;
-  using hashfunc = std::function<long (Object*)>;
-
-  const char* name{};
-  printfunc print_fn{};
-  plusfunc plus_fn{};
-  hashfunc hash_fn{};
-
-  TypeObject(int rc = 0, const char* n = "type")
-    : Object(rc)
-    , name(n) {
-  }
-
-  void set_printfunc(printfunc&& fn) { print_fn = std::move(fn); }
-  void set_plusfunc(plusfunc&& fn) { plus_fn = std::move(fn); }
-  void set_hashfunc(hashfunc&& fn) { hash_fn = std::move(fn); }
-};
+        auto n = so->value_.size();
+        auto* s = reinterpret_cast<const unsigned char*>(so->value_.c_str());
+        auto r = *s << 7;
+        while (--n >= 0)
+          r = (1000003 * r) ^ *s++;
+        r ^= so->value_.size();
+        if (r == -1)
+          r = -2;
+        so->hash_value_ = r;
+        return r;
+      });
+  return &_strtype;
+}
 
 }
