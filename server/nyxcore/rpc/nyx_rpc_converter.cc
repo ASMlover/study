@@ -32,12 +32,6 @@
 
 namespace nyx { namespace rpc {
 
-rpc_converter::rpc_converter(void) {
-}
-
-rpc_converter::~rpc_converter(void) {
-}
-
 void rpc_converter::handle_istream_data(
     const std::string& idata, std::string& odata) {
   if (decrypter_) {
