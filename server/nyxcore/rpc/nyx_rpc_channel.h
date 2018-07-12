@@ -68,17 +68,19 @@ public:
       pb::Message* response,
       pb::Closure* done) override;
 
-  void set_service(base_service* service);
-  void set_recv_limit(std::size_t limit);
-
   bool handle_data(
       const char* data, std::size_t size, bool reliable, unsigned char channel);
+  void set_recv_limit(std::size_t limit);
   void enable_compressor(bool enabled, unsigned char channel);
   void enable_encrypter(const std::string& key, unsigned char channel);
   void call_traverse(const rpc_traverse_msg_ptr& msg);
 
   bool handle_data(const char* data, std::size_t size) {
     return handle_data(data, size, true, kDefaultChannelId);
+  }
+
+  void set_service(base_service* service) {
+    service_ = service;
   }
 
   void set_wbits(int wbits) {
