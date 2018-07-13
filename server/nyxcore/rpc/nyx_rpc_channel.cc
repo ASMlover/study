@@ -24,6 +24,13 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <sstream>
+#include <google/protobuf/message.h>
+#include <google/protobuf/descriptor.h>
+#include "../compressor/nyx_compressor.h"
+#include "../crypter/nyx_crypter.h"
+#include "../nyx_service.h"
+#include "nyx_rpc_converter.h"
 #include "nyx_rpc_channel.h"
 
 namespace nyx { namespace rpc {
@@ -47,6 +54,53 @@ void rpc_channel::CallMethod(
     const pb::Message* request,
     pb::Message* response,
     pb::Closure* done) {
+  std::ostringstream oss;
+  unsigned int total_len = 0;
+  oss.write(reinterpret_cast<const char*>(&total_len), sizeof(total_len));
+  method_index_type index = method->index();
+  oss.write(reinterpret_cast<const char*>(&index), sizeof(index));
+  if (!request->SerializeToOstream(&oss)) {
+    service_->disconnect();
+    return;
+  }
+
+  total_len = oss.tellp();
+  auto data_len = total_len - sizeof(total_len);
+  oss.seekp(0, std::ios_base::beg);
+  oss.write(reinterpret_cast<const char*>(&data_len), sizeof(data_len));
+  oss.seekp(total_len);
+
+  auto str_data = std::make_shared<std::string>(oss.str());
+  if (traverse_) {
+    traverse_->set_msg(str_data);
+    traverse_.reset();
+  }
+
+  bool reliable{true};
+  unsigned char channel = kDefaultChannelId;
+  if (controller) {
+    auto* ctrl = pb::down_cast<rpc_controller*>(controller);
+    reliable |= ctrl->get_reliable();
+    channel = ctrl->get_channel();
+    if (BOOST_UNLIKELY(channel >= kChannelCount))
+      return;
+  }
+
+  auto buf = std::make_shared<boost::asio::streambuf>();
+  std::ostream os(buf.get());
+
+  auto& converter = converters_[channel];
+  if (reliable && converter) {
+    std::string encrypted_data;
+    converter->handle_ostream_data(*str_data.get(), encrypted_data);
+    os.write(encrypted_data.data(), encrypted_data.size());
+    // send_count = encrypted_data.size();
+  }
+  else {
+    os.write(str_data->data(), str_data->size());
+    // send_count = str_data->size();
+  }
+  service_->async_write(buf, reliable, channel);
 }
 
 bool rpc_channel::handle_data(
@@ -55,13 +109,42 @@ bool rpc_channel::handle_data(
 }
 
 void rpc_channel::set_recv_limit(std::size_t limit) {
+  for (auto i = 0u; i < kChannelCount; ++i)
+    request_parsers_[i].set_recv_limit(limit);
 }
 
 void rpc_channel::enable_compressor(bool enabled, unsigned char channel) {
+  if (BOOST_UNLIKELY(channel >= kChannelCount))
+    return;
+
+  auto& converter = converters_[channel];
+  if (!converter)
+    converter.reset(new rpc_converter());
+  if (enabled) {
+    converter->set_compressor(
+        std::make_shared<nyx::compressor::zlib_compressor>(wbits_, memlevel_));
+  }
+  else {
+    converter->reset_compressor();
+  }
 }
 
 void rpc_channel::enable_encrypter(
     const std::string& key, unsigned char channel) {
+  if (BOOST_UNLIKELY(channel >= kChannelCount))
+    return;
+
+  auto& converter = converters_[channel];
+  if (!converter)
+    converter.reset(new rpc_converter());
+  if (key != "") {
+    converter->set_crypter(
+        std::make_shared<nyx::crypter::rc4_crypter>(key),
+        std::make_shared<nyx::crypter::rc4_crypter>(key));
+  }
+  else {
+    converter->reset_crypter();
+  }
 }
 
 void rpc_channel::call_traverse(const rpc_traverse_msg_ptr& msg) {
