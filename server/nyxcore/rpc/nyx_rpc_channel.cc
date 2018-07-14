@@ -200,6 +200,21 @@ void rpc_channel::enable_encrypter(
 }
 
 void rpc_channel::call_traverse(const rpc_traverse_msg_ptr& msg) {
+  if (!msg || msg->empty())
+    return;
+
+  auto buf = std::make_shared<boost::asio::streambuf>();
+  std::ostream os(buf.get());
+  auto& converter = converters_[kDefaultChannelId];
+  if (converter) {
+    std::string encrypted_data;
+    converter->handle_ostream_data(*(msg->get_msg().get()), encrypted_data);
+    os.write(encrypted_data.data(), encrypted_data.size());
+  }
+  else {
+    os.write(msg->get_msg()->data(), msg->get_msg()->size());
+  }
+  service_->async_write(buf);
 }
 
 }}
