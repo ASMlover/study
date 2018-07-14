@@ -45,7 +45,28 @@ rpc_channel::~rpc_channel(void) {
 }
 
 bool rpc_channel::on_request(unsigned char channel) {
-  return false;
+  auto& request = requests_[channel];
+  if (request.get_size() < sizeof(method_index_type)) {
+    service_->disconnect();
+    return false;
+  }
+
+  method_index_type index;
+  request.data_rbuffer().read(reinterpret_cast<char*>(&index), sizeof(index));
+  if (index >= service_->get_descriptor()->method_count()) {
+    service_->disconnect();
+    return false;
+  }
+
+  auto* method = service_->get_descriptor()->method(index);
+  auto* msg = service_->get_request_prototype(method).New();
+  if (!msg->ParseFromIstream(&request.data_rbuffer())) {
+    service_->disconnect();
+    return false;
+  }
+
+  service_->call_method(method, nullptr, msg, nullptr, nullptr);
+  return true;
 }
 
 void rpc_channel::CallMethod(
@@ -105,7 +126,38 @@ void rpc_channel::CallMethod(
 
 bool rpc_channel::handle_data(
     const char* data, std::size_t size, bool reliable, unsigned char channel) {
-  return false;
+  if (BOOST_UNLIKELY(channel >= kChannelCount))
+    return false;
+
+  auto input_size = size;
+  auto left_size = size;
+  std::string decrypted_data;
+  auto& converter = converters_[channel];
+  if (converter) {
+    converter->handle_istream_data(std::string(data, size), decrypted_data);
+    data = const_cast<const char*>(decrypted_data.data());
+    input_size = decrypted_data.size();
+    left_size = input_size;
+  }
+  std::size_t total_consume_size = 0;
+  while (input_size > total_consume_size) {
+    auto [result, consume_size] = request_parsers_[channel].parse(
+        requests_[channel], static_cast<const void*>(data), left_size);
+    total_consume_size += consume_size;
+    data += consume_size;
+    left_size -= consume_size;
+    if (result) {
+      auto succ = on_request(channel);
+      requests_[channel].reset();
+      if (!succ)
+        return false;
+      continue;
+    }
+    else {
+      return false;
+    }
+  }
+  return true;
 }
 
 void rpc_channel::set_recv_limit(std::size_t limit) {
