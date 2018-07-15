@@ -32,6 +32,7 @@ namespace pysmall {
 StrObject::StrObject(const char* v)
   : Object()
   , value_(v) {
+  type = set_objecttype();
 }
 
 TypeObject* StrObject::set_objecttype(void) {
@@ -58,7 +59,7 @@ TypeObject* StrObject::set_objecttype(void) {
         if (so->hash_value_ != -1)
           return so->hash_value_;
 
-        auto n = so->value_.size();
+        auto n = static_cast<int>(so->value_.size());
         auto* s = reinterpret_cast<const unsigned char*>(so->value_.c_str());
         auto r = *s << 7;
         while (--n >= 0)

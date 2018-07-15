@@ -32,6 +32,7 @@ namespace pysmall {
 IntObject::IntObject(int v)
   : Object()
   , value_(v) {
+  type = set_objecttype();
 }
 
 TypeObject* IntObject::set_objecttype(void) {
