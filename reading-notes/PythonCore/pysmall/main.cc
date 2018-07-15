@@ -68,9 +68,9 @@ static void pysmall_exec_add(const std::string& t, const std::string& s) {
     auto* key = new pysmall::StrObject(t.c_str());
     g_ENV->setitem(key, val);
   }
-  else if (auto pos = s.find("+"); pos != std::string::npos) {
+  else if (auto pos = s.find(" + "); pos != std::string::npos) {
     auto* lobj = symbol_as_object(s.substr(0, pos));
-    auto* robj = symbol_as_object(s.substr(pos + 1));
+    auto* robj = symbol_as_object(s.substr(pos + 3));
     if (lobj != nullptr && robj != nullptr && lobj->type == robj->type) {
       auto* val = lobj->type->plus_fn(lobj, robj);
       auto* key = new pysmall::StrObject(t.c_str());
@@ -80,8 +80,45 @@ static void pysmall_exec_add(const std::string& t, const std::string& s) {
   }
 }
 
+static void pysmall_exec_command(const std::string& s) {
+  std::size_t pos{};
+  if ((pos = s.find("print ")) != std::string::npos) {
+    pysmall_exec_print(s.substr(6));
+  }
+  else if ((pos = s.find(" = ")) != std::string::npos) {
+    auto x = s.substr(0, pos);
+    auto y = s.substr(pos + 3);
+    pysmall_exec_add(x, y);
+  }
+}
+
+static void pysmall_exec(void) {
+  static const char* info = "********* pysmall research *********";
+  static const char* prompt = ">>> ";
+
+  std::string s;
+
+  std::cout << info << std::endl;
+  std::cout << prompt;
+  while (std::getline(std::cin, s)) {
+    if (s.empty()) {
+      std::cout << prompt;
+      continue;
+    }
+    else if (s == "exit") {
+      break;
+    }
+    else {
+      pysmall_exec_command(s);
+    }
+    std::cout << prompt;
+  }
+}
+
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
+
+  pysmall_exec();
 
   return 0;
 }
