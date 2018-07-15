@@ -45,9 +45,6 @@ class rpc_converter : private boost::noncopyable {
   base_crypter_ptr decrypter_;
   base_compressor_ptr compressor_;
 public:
-  rpc_converter(void);
-  ~rpc_converter(void);
-
   void handle_istream_data(const std::string& idata, std::string& odata);
   void handle_ostream_data(const std::string& idata, std::string& odata);
 

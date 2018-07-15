@@ -101,13 +101,11 @@ else()
   include_directories(
     ${PYTHON_INCLUDE_DIRS}
     ${PROJECT_SOURCE_DIR}/3rdparty/include
-    ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0
-    ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/protobuf/src)
+    ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0)
   link_directories(
     ${PYTHON_LIBRARIES}/../
     ${PROJECT_SOURCE_DIR}/3rdparty/libs
-    ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0/stage/lib
-    ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/protobuf/cmake/cmake-build)
+    ${PROJECT_SOURCE_DIR}/../../../../../OpenLib/boost_1_63_0/stage/lib)
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 message(STATUS "`${PROJECT_NAME}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")
@@ -128,7 +126,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
 else()
   set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
   set(CMAKE_SHARED_LINKER_FLAGS "-static-libgcc -static-libstdc++")
-  target_link_libraries(${PROJECT_NAME} pthread boost_python boost_system protobuf z ssl)
+  target_link_libraries(${PROJECT_NAME} pthread boost_python boost_system protobuf crypto ssl z)
   if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_libraries(${PROJECT_NAME} python2.7)
   else()

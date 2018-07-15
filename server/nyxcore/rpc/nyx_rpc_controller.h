@@ -33,10 +33,10 @@ namespace pb = ::google::protobuf;
 
 namespace nyx { namespace rpc {
 
-class rpc_controller : public pb::RpcController {
-  static constexpr unsigned int kChannelCount = 2;
-  static constexpr unsigned char kDefaultChannelId = 0;
+inline constexpr unsigned int kChannelCount = 2;
+inline constexpr unsigned char kDefaultChannelId = 0;
 
+class rpc_controller : public pb::RpcController {
   bool reliable_{};
   unsigned char channel_{};
 public:
