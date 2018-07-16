@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "../filter/nyx_filter_manager.h"
 #include "nyx_rpc_handler.h"
 #include "nyx_rpc_handler_manager.h"
 
@@ -45,7 +46,45 @@ void rpc_handler_manager::unregister_handler(rpc_handler* handler) {
 
 std::size_t rpc_handler_manager::dispatch_rpc(service_type type,
     std::size_t filter, const std::string& method, const py::tuple& args) {
-  return 0;
+  if (type < service_type::type_none || type >= service_type::type_end)
+    return 0;
+
+  auto& hs = handlers_[static_cast<int>(type)];
+  std::size_t counter{};
+  if (filter > 0) {
+    auto fp = nyx::filter::filter_manager::instance().get_filter(filter);
+    if (!fp)
+      return 0;
+    auto msg = std::make_shared<rpc_traverse_msg>();
+    for (auto* h : hs) {
+      if (!h->filter(fp))
+        continue;
+
+      if (msg->empty()) {
+        h->traverse(msg);
+        h->dispatch_rpc(method, args);
+      }
+      else {
+        h->call_traverse(msg);
+      }
+      ++counter;
+    }
+  }
+  else {
+    auto msg = std::make_shared<rpc_traverse_msg>();
+    for (auto* h : hs) {
+      if (msg->empty()) {
+        h->traverse(msg);
+        h->dispatch_rpc(method, args);
+      }
+      else {
+        h->call_traverse(msg);
+      }
+    }
+    counter = hs.size();
+  }
+
+  return counter;
 }
 
 void rpc_handler_manager::broadcast_rpc(
