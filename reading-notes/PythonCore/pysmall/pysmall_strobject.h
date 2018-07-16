@@ -35,7 +35,7 @@ class StrObject : public Object {
   long hash_value_{-1};
   std::string value_;
 
-  virtual TypeObject* set_objecttype(void) override;
+  TypeObject* set_objecttype(void);
 public:
   StrObject(const char* v = "");
 };

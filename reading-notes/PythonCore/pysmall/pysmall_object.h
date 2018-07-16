@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <iostream>
 #include <functional>
 
 namespace pysmall {
@@ -36,10 +37,8 @@ struct Object {
   int refcount{};
   TypeObject* type{};
 
-  Object(int rc = 1) : refcount(rc) { type = set_objecttype(); }
+  Object(int rc = 1) : refcount(rc) {}
   virtual ~Object(void) {}
-
-  virtual TypeObject* set_objecttype(void) { return nullptr; }
 };
 
 struct TypeObject : public Object {

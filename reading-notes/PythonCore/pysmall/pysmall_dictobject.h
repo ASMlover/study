@@ -34,7 +34,7 @@ namespace pysmall {
 class DictObject : public Object {
   std::unordered_map<long, Object*> dict_;
 
-  virtual TypeObject* set_objecttype(void) override;
+  TypeObject* set_objecttype(void);
 public:
   DictObject(void);
 

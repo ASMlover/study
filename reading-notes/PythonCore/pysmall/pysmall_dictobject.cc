@@ -31,6 +31,7 @@ namespace pysmall {
 
 DictObject::DictObject(void)
   : Object() {
+  type = set_objecttype();
 }
 
 TypeObject* DictObject::set_objecttype(void) {
