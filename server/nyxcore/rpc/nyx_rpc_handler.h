@@ -54,7 +54,7 @@ public:
   void register_to_manager(void);
   void traverse(const rpc_traverse_msg_ptr& msg);
   void call_traverse(const rpc_traverse_msg_ptr& msg);
-  virtual bool dispatch_rpc(const std::string& method, const py::tuple& args);
+  virtual bool dispatch_rpc(const std::string& method, const py::tuple& args) = 0;
 
   base_service* get_service(void) const {
     return service_;
