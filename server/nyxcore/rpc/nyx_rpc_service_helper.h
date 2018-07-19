@@ -39,8 +39,8 @@ using channel_callback = std::function<void (void)>;
 
 class service_call_helper : private boost::noncopyable {
 public:
-  service_call_helper(void);
-  virtual ~service_call_helper(void);
+  service_call_helper(void) {}
+  virtual ~service_call_helper(void) {}
   virtual void call_method(void) = 0;
 };
 
