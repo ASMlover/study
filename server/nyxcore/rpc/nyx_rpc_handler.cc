@@ -24,7 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "../nyx_service.h"
+#include "../nyx_base_service.h"
 #include "nyx_rpc_handler_manager.h"
 #include "nyx_rpc_handler.h"
 

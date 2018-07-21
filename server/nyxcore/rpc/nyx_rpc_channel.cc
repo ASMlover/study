@@ -29,7 +29,7 @@
 #include <google/protobuf/descriptor.h>
 #include "../compressor/nyx_compressor.h"
 #include "../crypter/nyx_crypter.h"
-#include "../nyx_service.h"
+#include "../nyx_base_service.h"
 #include "nyx_rpc_converter.h"
 #include "nyx_rpc_channel.h"
 
