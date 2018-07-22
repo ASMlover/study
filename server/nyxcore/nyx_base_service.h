@@ -64,7 +64,7 @@ public:
       const pb::Message* request,
       pb::Message* response,
       pb::Closure* done) = 0;
-  virtual void dispatch_rpc(const std::string& method, const py::tuple& args) = 0;
+  virtual bool dispatch_rpc(const std::string& method, const py::tuple& args) = 0;
 
   virtual void on_guard_destroy(bool connected) = 0;
   virtual void set_service(base_service* service) = 0;
