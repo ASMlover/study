@@ -47,3 +47,4 @@ file(GLOB_RECURSE SOURCE_FILES *.cc)
 source_group("Sources" FILES ${SOURCE_FILES})
 
 add_executable(${PROJECT_NAME} WIN32 ${SOURCE_FILES})
+target_link_libraries(${PROJECT_NAME} ddraw.lib dxguid.lib)
