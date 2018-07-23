@@ -24,11 +24,11 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "../utils/nyx_utils.h"
 #include "nyx_timer_manager.h"
 
 namespace nyx { namespace core {
 
-static constexpr std::size_t kMaxPerTick = 100;
 std::size_t timer_manager::tick_interval_ = kMaxPerTick;
 
 

@@ -26,7 +26,11 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <cstdint>
+
 namespace nyx {
+
+inline constexpr std::size_t kMaxPerTick = 100;
 
 enum class service_type : int {
   type_none = 0,
