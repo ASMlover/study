@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "utils/nyx_utils.h"
+#include "utils/nyx_task_helper.h"
 #include "nyx_service_manager.h"
 
 namespace nyx {
@@ -37,7 +38,7 @@ service_ptr service_manager::get_service(
 
 void service_manager::push_request(rpc::service_call_helper* call_helper) {
   requests_.push(call_helper);
-  // task_notify();
+  task_notify();
 }
 
 std::size_t service_manager::call_request(void) {
