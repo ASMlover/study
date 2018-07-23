@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "utils/nyx_utils.h"
 #include "nyx_service_manager.h"
 
 namespace nyx {
@@ -45,7 +46,8 @@ std::size_t service_manager::call_request(void) {
   while (requests_.pop(call_helper)) {
     call_helper->call_method();
     delete call_helper;
-    // TODO:
+    if (BOOST_UNLIKELY(++counter > kMaxPerTick))
+      break;
   }
   return counter;
 }
