@@ -30,7 +30,8 @@
 
 namespace nyx {
 
-inline constexpr std::size_t kMaxPerTick = 100;
+static constexpr std::size_t kMaxPerTick = 100;
+static constexpr long kTimePerTick = 10000;
 
 enum class service_type : int {
   type_none = 0,
