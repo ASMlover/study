@@ -33,9 +33,7 @@
 namespace nyx {
 
 class base_service;
-namespace net {
-  class connection;
-}
+namespace net { class connection; }
 
 using service_ptr = std::shared_ptr<base_service>;
 
