@@ -48,17 +48,7 @@ protected:
 public:
   service(void);
   virtual ~service(void);
-
   virtual void on_guard_destroy(bool connected) override;
-  virtual void set_service(base_service* service) override;
-  virtual void set_handler(const py::object& handler) override;
-  virtual void enable_compressor(bool enabled, unsigned char channel) override;
-  virtual void enable_encrypter(const std::string& key, unsigned char channel) override;
-  virtual void set_recv_limit(std::size_t limit) override;
-  virtual void set_wbits(int wbits) override;
-  virtual void set_memlevel(int memlevel) override;
-  virtual void traverse(const nyx::rpc::rpc_traverse_msg_ptr& msg) override;
-  virtual void call_traverse(const nyx::rpc::rpc_traverse_msg_ptr& msg) override;
 
   virtual void set_delay_encrypt_key(const std::string& key) override {
     delay_encrypt_key_ = key;
@@ -66,6 +56,45 @@ public:
 
   virtual void set_delay_enable_compress(void) override {
     delay_compress_ = true;
+  }
+
+  virtual void set_service(base_service* service) override {
+    channel_.set_service(service);
+    delegate_ = service;
+  }
+
+  virtual void set_handler(const py::object& handler) override {
+    handler_ = handler;
+  }
+
+  virtual void enable_compressor(bool enabled, unsigned char channel) override {
+    channel_.enable_compressor(enabled, channel);
+  }
+
+  virtual void enable_encrypter(
+      const std::string& key, unsigned char channel) override {
+    channel_.enable_encrypter(key, channel);
+  }
+
+  virtual void set_recv_limit(std::size_t limit) override {
+    channel_.set_recv_limit(limit);
+  }
+
+  virtual void set_wbits(int wbits) override {
+    channel_.set_wbits(wbits);
+  }
+
+  virtual void set_memlevel(int memlevel) override {
+    channel_.set_memlevel(memlevel);
+  }
+
+  virtual void traverse(const nyx::rpc::rpc_traverse_msg_ptr& msg) override {
+    channel_.set_traverse(msg);
+  }
+
+  virtual void call_traverse(
+      const nyx::rpc::rpc_traverse_msg_ptr& msg) override {
+    channel_.call_traverse(msg);
   }
 };
 
