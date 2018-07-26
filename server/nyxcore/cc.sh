@@ -29,15 +29,16 @@
 
 if [ ! -n "$1" ]; then
   echo "Usage: crypter_codes.sh <password> <encrypt>: miss password"
+  echo "  passord -> setting encoding password"
+  echo "  encrypt -> true(for encode)/false(for decode)"
   exit
 fi
 if [ ! -n "$2" ]; then
   echo "Usage: crypter_codes.sh <password> <encrypt>: miss encrypt flag"
+  echo "  passord -> setting encoding password"
+  echo "  encrypt -> true(for encode)/false(for decode)"
   exit
 fi
-
-echo "#################### $1"
-echo "#################### $2"
 
 CRYPTER_EXCLUDE=".svn,.git,.idea,3rdparty,cmake-build"
 if [ "$2" == "true" ]; then
