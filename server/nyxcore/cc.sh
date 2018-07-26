@@ -28,13 +28,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 if [ ! -n "$1" ]; then
-  echo "Usage: crypter_codes.sh <password> <encrypt>: miss password"
+  echo "Usage: sh cc.sh <password> <encrypt>: miss password"
   echo "  passord -> setting encoding password"
   echo "  encrypt -> true(for encode)/false(for decode)"
   exit
 fi
 if [ ! -n "$2" ]; then
-  echo "Usage: crypter_codes.sh <password> <encrypt>: miss encrypt flag"
+  echo "Usage: sh cc.sh <password> <encrypt>: miss encrypt flag"
   echo "  passord -> setting encoding password"
   echo "  encrypt -> true(for encode)/false(for decode)"
   exit
@@ -42,7 +42,7 @@ fi
 
 CRYPTER_EXCLUDE=".svn,.git,.idea,3rdparty,cmake-build"
 if [ "$2" == "true" ]; then
-  python crypter_codes.py --root=./ --exclude=$CRYPTER_EXCLUDE --password=$1 --encrypt
+  python cc.py --root=./ --exclude=$CRYPTER_EXCLUDE --password=$1 --encrypt
 else
-  python crypter_codes.py --root=./ --exclude=$CRYPTER_EXCLUDE --password=$1
+  python cc.py --root=./ --exclude=$CRYPTER_EXCLUDE --password=$1
 fi

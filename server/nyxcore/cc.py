@@ -29,6 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import base64
+import codecs
 import getopt
 import os
 import sys
@@ -111,7 +112,7 @@ def _crypter_codes(password, root_dir, exclude_dirs, is_encrypt=True):
                 outfile = '%s.enc' % fname if is_encrypt else os.path.splitext(fname)[0]
                 with open(fname, 'rb') as fp:
                     outstr = crypter_fun(password, fp.read())
-                with open(outfile, 'wb') as fp:
+                with codecs.open(outfile, 'wb', 'utf-8') as fp:
                     fp.write(outstr)
                 os.remove(fname)
 
