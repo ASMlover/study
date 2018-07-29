@@ -64,3 +64,15 @@ def get_sin(calc=True):
   print value
 ```
 Python的名字是按照**LGB**的规则来搜索的，也就是(Local Scope -> Global Scope -> Builtin Scope)。
+
+## **内存辅助工具**
+`objgraph`, `pytracemalloc`, `guppy`
+
+1、guppy需要单独安装：
+    $ pip install guppy
+    >>> from guppy impory hpy
+    >>> heap = hpy().heap()
+    >>> print heap
+    >>> print heap[0].byvia
+2、pytracemalloc需要给python打上patch（python3.5+为内置）
+    http://pytracemalloc.readthedocs.io/install.html#manual-installation
