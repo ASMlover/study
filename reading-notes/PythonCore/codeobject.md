@@ -31,3 +31,5 @@ class PyCodeObject : public PyObject {
 对于代码中的一个Code Block，会有一个PyCodeObject与之对应；当进入一个新的名字空间的时候，或进入一个新的作用域的时候就进入了一个新的Code Block；
 
 在一个名字空间中一个符号只能有一种意义，名字空间可以一个套一个形成一条名字空间链；Code Block对应一个名字空间，对应一个PyCodeObject对象；在Python中类、函数、module都对应一个独立的名字空间；
+
+如在`import abc`这样语句中，python会到设定好的path中寻找abc.pyc或abc.so(abc.dll)，如果没有这些文件而只有abc.py的时候会先编译出对应的PyCodeObject的中间结果，然后创建abc.pyc并将中间结果写入该文件；
