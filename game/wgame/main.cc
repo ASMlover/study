@@ -26,8 +26,15 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <Windows.h>
 #include <tchar.h>
+#include <ddraw.h>
+#include "ddutils.h"
 
-LRESULT CALLBACK wndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
+LPDIRECTDRAW7 lpdd; // DirectDraw pointer
+LPDIRECTDRAWSURFACE7 lpddPrimary; // DirectDraw main surface
+LPDIRECTDRAWSURFACE7 lpddBuffer; // DirectDraw background surface
+LPDIRECTDRAWSURFACE7 lpddBack;
+
+static LRESULT CALLBACK wndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp) {
   switch (msg) {
   case WM_CREATE:
     {
@@ -78,6 +85,37 @@ static BOOL initWindow(HINSTANCE hInst, int cmdShow) {
   ShowWindow(hWnd, cmdShow);
   UpdateWindow(hWnd);
   return TRUE;
+}
+
+static void initDDraw(HWND hWnd) {
+  DirectDrawCreateEx(NULL, (void**)&lpdd, IID_IDirectDraw7, NULL);
+  lpdd->SetCooperativeLevel(hWnd, DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN);
+  lpdd->SetDisplayMode(800, 600, 32, 0, DDSDM_STANDARDVGAMODE);
+
+  DDSURFACEDESC2 ddsd{};
+  ddsd.dwSize = sizeof(ddsd);
+  ddsd.dwFlags = DDSD_CAPS | DDSD_BACKBUFFERCOUNT;
+  ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE | DDSCAPS_FLIP | DDSCAPS_COMPLEX;
+  ddsd.dwBackBufferCount = 1;
+  lpdd->CreateSurface(&ddsd, &lpddPrimary, NULL);
+
+  ddsd.ddsCaps.dwCaps = DDSCAPS_BACKBUFFER;
+  lpddPrimary->GetAttachedSurface(&ddsd.ddsCaps, &lpddBuffer);
+
+  DDBLTFX bltfx{};
+  bltfx.dwSize = sizeof(bltfx);
+  bltfx.dwFillColor = RGB(0, 0, 0);
+  lpddPrimary->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &bltfx);
+  lpddBuffer->Blt(NULL, NULL, NULL, DDBLT_WAIT | DDBLT_COLORFILL, &bltfx);
+
+  ddsd.dwSize = sizeof(ddsd);
+  ddsd.dwFlags = DDSD_CAPS | DDSD_WIDTH | DDSD_HEIGHT;
+  ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
+  ddsd.dwHeight = 16;
+  ddsd.dwWidth = 16;
+  lpdd->CreateSurface(&ddsd, &lpddBack, NULL);
+  dd_reloadBitmap(lpddBack, TEXT("ball.bmp")); // need ball.bmp resource
+  dd_setColorKey(lpddBack, RGB(255, 255, 255));
 }
 
 int CALLBACK _tWinMain(
