@@ -33,3 +33,18 @@ class PyCodeObject : public PyObject {
 在一个名字空间中一个符号只能有一种意义，名字空间可以一个套一个形成一条名字空间链；Code Block对应一个名字空间，对应一个PyCodeObject对象；在Python中类、函数、module都对应一个独立的名字空间；
 
 如在`import abc`这样语句中，python会到设定好的path中寻找abc.pyc或abc.so(abc.dll)，如果没有这些文件而只有abc.py的时候会先编译出对应的PyCodeObject的中间结果，然后创建abc.pyc并将中间结果写入该文件；
+
+`co_argcount`: Code Block的位置参数的个数（比如一个函数的位置参数个数）
+`co_nlocaks`: Code Block中局部变量的个数，包括其位置参数的个数
+`co_stacksize`: 执行该段Code Block需要的栈空间
+`co_flags`: N/A
+`co_code`: Code Block编译所得到的字节码指令序列，以PyStringObject的形式存在
+`co_consts`: PyTupleObject对象，保存Code Block中的所有常量
+`co_names`: PyTupleObject对象，保存Code Block中的所有符号
+`co_varnames`: Code Block中的局部变量名集合
+`co_freevars`: Python实现闭包需要用到的东西
+`co_cellvars`: Code Block中内部嵌套函数所引用的局部变量名集合
+`co_filename`: Code Block所对应的.py文件的完整路径
+`co_name`: Code Block名字，通常是函数名或者类名
+`co_firstlineno`: Code Block在对应.py文件中的起始行
+`co_lnotab`: 字节码指令与.py文件中source code行号的对应关系，以PyStringObject的形式存在
