@@ -72,3 +72,5 @@ pyc写入的时候记录的WFILE.strings是一个dict，这是为了在二次记
     - 将（字符串、序号）添加到strings中
     - 将类型标识`TYPE_INTERN`和字符串本身写入pyc文件
   * 查找成功，进入intern字符串的非首次写入，仅只将类型标识`TYPE_STRINGREF`和查找的需要写入pyc
+
+在对一个PyCodeObject进行写入pyc操作的时候，如果它包含另一个PyCodeObject对象，则继续递归进行写入PyCodeObject操作；一般一个全局域内的PyCodeObject都包含在`co_consts`种；
