@@ -66,3 +66,9 @@ static void write_compiled_module(...) {
   * 不同版本的Python会有不同的magic number，用来保证Python的兼容性；因为不同版本的python存在字节码指令不一样的情况；
   * 在pyc中包含时间信息可以使Python自动将pyc文件与最新的py文件进行同步（当import的时候，加载pyc过程中，发现pyc文件的时间早于py文件的时间，会自动重新编译py文件，重新生存pyc）；
   * 最后将PyCodeObject对象写入pyc文件；
+
+pyc写入的时候记录的WFILE.strings是一个dict，这是为了在二次记录相同str对象的时候直接记录写入的序号，而在读入pyc的时候WFILE.stirngs是个list，这样记录为`TYPE_STRINGREF`的字符串可以直接根据需要构建对应的字符串；对于一个intern字符串，Python（WFILE的strings）会查找其中是否已经记录来该字符串，导致两种情况：
+  * 查找失败，进入intern字符串的首次写入，会进行2个独立动作：
+    - 将（字符串、序号）添加到strings中
+    - 将类型标识`TYPE_INTERN`和字符串本身写入pyc文件
+  * 查找成功，进入intern字符串的非首次写入，仅只将类型标识`TYPE_STRINGREF`和查找的需要写入pyc
