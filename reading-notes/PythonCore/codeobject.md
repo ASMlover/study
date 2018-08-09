@@ -76,7 +76,7 @@ pyc写入的时候记录的WFILE.strings是一个dict，这是为了在二次记
 在对一个PyCodeObject进行写入pyc操作的时候，如果它包含另一个PyCodeObject对象，则继续递归进行写入PyCodeObject操作；一般一个全局域内的PyCodeObject都包含在`co_consts`种；
 
 ### **PyFrameObject**
-PyFrameObject的定义如下：
+> PyFrameObject的定义如下：
 ```C++
 class PyFrameObject : public PyVarObject {
   PyFrameObject* f_back; // 执行环境链上的前一个frame
@@ -93,3 +93,16 @@ class PyFrameObject : public PyVarObject {
   PyObject* f_localsplus[1]; // 动态内存，维护（局部变量+cell对象集+free对象集+运行时栈）所需的空间
 };
 ```
+
+Python中赋值语句行为的共同点（a=1/def f():/class A:/import abc也是赋值行为）：
+  * 创建一个对象object
+  * 将object“赋值”为一个名字name
+
+赋值语句执行后，会得到一个(name, obj)的关联关系，也就是约束，约束的容身之处也就是名字空间，在Python内部是使用dict来管理的；一个对象的名字空间中的所有名字都是该对象的属性（前面看到的那些具有赋值行为的语句也是“拥有设置对象属性的行为”）；Python中还有“拥有访问对象属性的行为”这就是属性引用；
+  * 属性引用就是使用另一个名字空间中的名字（一个module定义了一个独立的名字空间，在另一个module中需要使用别的module中的名字，只能通过属性访问的方式访问）
+
+一个module内部，可能存在多个名字空间，每个名字空间都与一个作用域与之对应；它仅仅由源程序的文本决定的，在Python中一个约束在程序正文的某个位置是否起作用由该约束在文本终中的位置是否唯一决定的，不是运行时动态决定的；Python具有**静态作用域**；Python支持嵌套作用域（在当前作用域找不到的时候就到更高层的作用域寻找）
+
+找某个给定名字所引用的对象：
+  * 在当前作用域（名字空间）中查找，找到则结束
+  * 在直接的外围作用域（名字空间）去查找，并继续向外顺序地检查外围作用域，直到达到最外的嵌套层次（也就是module自身所定义的作用域）
