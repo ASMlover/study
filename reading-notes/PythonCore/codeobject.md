@@ -1,7 +1,7 @@
 # **Python编译结果——Code对象与pyc文件**
 ***
 
-## **1、编译**
+## **编译**
 编译中，包含在源代码中的静态信息会被编译器收集起来，编译结果包含字符串、常量值、字节码等在源代码中出现的一切有用的静态信息；
 
 python运行期，源文件中提供的静态信息最终会被存储在一个运行时对象；运行结束后该运行时对象中所包含的信息会被存储在pyc文件中（这个运行时对象就是PyCodeObject）；
@@ -34,17 +34,35 @@ class PyCodeObject : public PyObject {
 
 如在`import abc`这样语句中，python会到设定好的path中寻找abc.pyc或abc.so(abc.dll)，如果没有这些文件而只有abc.py的时候会先编译出对应的PyCodeObject的中间结果，然后创建abc.pyc并将中间结果写入该文件；
 
-`co_argcount`: Code Block的位置参数的个数（比如一个函数的位置参数个数）
-`co_nlocaks`: Code Block中局部变量的个数，包括其位置参数的个数
-`co_stacksize`: 执行该段Code Block需要的栈空间
-`co_flags`: N/A
-`co_code`: Code Block编译所得到的字节码指令序列，以PyStringObject的形式存在
-`co_consts`: PyTupleObject对象，保存Code Block中的所有常量
-`co_names`: PyTupleObject对象，保存Code Block中的所有符号
-`co_varnames`: Code Block中的局部变量名集合
-`co_freevars`: Python实现闭包需要用到的东西
-`co_cellvars`: Code Block中内部嵌套函数所引用的局部变量名集合
-`co_filename`: Code Block所对应的.py文件的完整路径
-`co_name`: Code Block名字，通常是函数名或者类名
-`co_firstlineno`: Code Block在对应.py文件中的起始行
-`co_lnotab`: 字节码指令与.py文件中source code行号的对应关系，以PyStringObject的形式存在
+PyCodeObject对象成员:
+  * `co_argcount`: Code Block的位置参数的个数（比如一个函数的位置参数个数）
+  * `co_nlocaks`: Code Block中局部变量的个数，包括其位置参数的个数
+  * `co_stacksize`: 执行该段Code Block需要的栈空间
+  * `co_flags`: N/A
+  * `co_code`: Code Block编译所得到的字节码指令序列，以PyStringObject的形式存在
+  * `co_consts`: PyTupleObject对象，保存Code Block中的所有常量
+  * `co_names`: PyTupleObject对象，保存Code Block中的所有符号
+  * `co_varnames`: Code Block中的局部变量名集合
+  * `co_freevars`: Python实现闭包需要用到的东西
+  * `co_cellvars`: Code Block中内部嵌套函数所引用的局部变量名集合
+  * `co_filename`: Code Block所对应的.py文件的完整路径
+  * `co_name`: Code Block名字，通常是函数名或者类名
+  * `co_firstlineno`: Code Block在对应.py文件中的起始行
+  * `co_lnotab`: 字节码指令与.py文件中source code行号的对应关系，以PyStringObject的形式存在
+
+Python在import对module进行动态加载的时候，如果没有找到对应的pyc或dll文件就会在py文件的基础上自动创建pyc文件；
+```c++
+static void write_compiled_module(...) {
+  ...
+  fp = open_exclusive(pathname); // 排他性打开文件
+  PyMarshal_WriteLongToFile(pyc_magic, fp, Py_MARSHAL_VERSION); // 写入magic number
+  PyMarshal_WriteLongToFile(mtime, fp, Py_MARSHAL_VERSION); // 写入时间信息
+  PyMarshal_WriteObjectToFile(o, fp, Py_MARSHAL_VERSION); // 写入PyCodeObject对象
+  ...
+}
+```
+
+一个pyc文件实际包含了3个独立信息：Python的magic number，pyc文件的创建时间信息，PyCodeObject对象
+  * 不同版本的Python会有不同的magic number，用来保证Python的兼容性；因为不同版本的python存在字节码指令不一样的情况；
+  * 在pyc中包含时间信息可以使Python自动将pyc文件与最新的py文件进行同步（当import的时候，加载pyc过程中，发现pyc文件的时间早于py文件的时间，会自动重新编译py文件，重新生存pyc）；
+  * 最后将PyCodeObject对象写入pyc文件；
