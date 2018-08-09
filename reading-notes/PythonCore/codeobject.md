@@ -74,3 +74,22 @@ pyc写入的时候记录的WFILE.strings是一个dict，这是为了在二次记
   * 查找成功，进入intern字符串的非首次写入，仅只将类型标识`TYPE_STRINGREF`和查找的需要写入pyc
 
 在对一个PyCodeObject进行写入pyc操作的时候，如果它包含另一个PyCodeObject对象，则继续递归进行写入PyCodeObject操作；一般一个全局域内的PyCodeObject都包含在`co_consts`种；
+
+### **PyFrameObject**
+PyFrameObject的定义如下：
+```C++
+class PyFrameObject : public PyVarObject {
+  PyFrameObject* f_back; // 执行环境链上的前一个frame
+  PyCodeObject* f_code; // code object对象
+  PyObject* f_builtins; // builtin名字空间
+  PyObject* f_globals; // global名字空间
+  PyObject* f_locals; // local名字空间
+  PyObject** f_valuestack; // 运行时栈的栈底位置
+  PyObject** f_stacktop; // 运行时栈的栈顶位置
+  ...
+  int f_lasti; // 上一条字节码指令在f_code中的偏移的位置
+  int f_lineno; // 当前字节码对应的源代码行
+  ...
+  PyObject* f_localsplus[1]; // 动态内存，维护（局部变量+cell对象集+free对象集+运行时栈）所需的空间
+};
+```
