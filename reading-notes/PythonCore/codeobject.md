@@ -106,3 +106,24 @@ Python中赋值语句行为的共同点（a=1/def f():/class A:/import abc也是
 找某个给定名字所引用的对象：
   * 在当前作用域（名字空间）中查找，找到则结束
   * 在直接的外围作用域（名字空间）去查找，并继续向外顺序地检查外围作用域，直到达到最外的嵌套层次（也就是module自身所定义的作用域）
+
+LGB规则：
+  * 一个函数对应了一个local作用域（local名字空间）
+  * 一个module对应源文件定义了一个global作用域（global名字空间）
+  * Python自身还定义了一个最顶层的builtin作用域（对应builtin名字空间，定义了Python的builtin函数等）
+  * 查找规则就是：L(local) -> G(global) -> B(builtin)这样从内到外的查找
+
+LEGB规则：
+```Python
+a = 1
+def f():
+    a = 2
+    def g():
+        print a # [1]
+    return g
+
+fun = f()
+fun() # [2]
+```
+虽然在[2]这个地方“a = 2”已经不起左右来，但是Python执行“fun = f()”的时候会执行函数中的“def g():”，这时会将约束“a = 2”和g绑定在一起将绑定的结果返回，这就是**闭包**；实现闭包是为了实现最内嵌套作用域规则：
+  * LEGB中新增了“直接外围作用域”E（enclosing）
