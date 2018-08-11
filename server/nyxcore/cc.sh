@@ -27,21 +27,23 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+usage_help() {
+  echo "USAGE: sh cc.sh {password} {encrypt}: $1"
+  echo "       passord - setting encoding password"
+  echo "       encrypt - {encode|decode}"
+}
+
 if [ ! -n "$1" ]; then
-  echo "Usage: sh cc.sh <password> <encrypt>: miss password"
-  echo "  passord -> setting encoding password"
-  echo "  encrypt -> true(for encode)/false(for decode)"
-  exit
+  usage_help "miss password"
+  exit 0
 fi
 if [ ! -n "$2" ]; then
-  echo "Usage: sh cc.sh <password> <encrypt>: miss encrypt flag"
-  echo "  passord -> setting encoding password"
-  echo "  encrypt -> true(for encode)/false(for decode)"
-  exit
+  usage_help "miss encrypt flag"
+  exit 0
 fi
 
 CRYPTER_EXCLUDE=".svn,.git,.idea,3rdparty,cmake-build"
-if [ "$2" == "true" ]; then
+if [ "$2" == "encode" ]; then
   python cc.py --root=./ --exclude=$CRYPTER_EXCLUDE --password=$1 --encrypt
 else
   python cc.py --root=./ --exclude=$CRYPTER_EXCLUDE --password=$1
