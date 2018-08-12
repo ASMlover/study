@@ -131,3 +131,30 @@ fun() # [2]
 属性引用本质上也是一种名字引用，是到名字空间中去查找一个名字所引用的对象，不受LEGB规则的限制；
   * 属性引用时一定会有对象存在
   * 属性引用是到对象的名字空间中查找名字，没有嵌套作用域
+
+Python通过全局解释器锁GIL来实现线程同步：
+```C++
+class PyInterpreterState {
+  using _is = PyInterpreterState;
+  using _ts = PyThreadState;
+
+  _is* next;
+  _ts* tstate_head; // 模拟进程环境中的线程集合
+  PyObject* modules;
+  PyObject* sysdict;
+  PyObject* builtins;
+  ...
+};
+
+class PyThreadState {
+  using _ts = PyThreadState;
+  _ts* next;
+  PyInterpreterState* interp;
+  struct _frame* frame; // 模拟线程中的函数调用堆栈
+  int recursion_depth;
+  ...
+  PyObject* dict;
+  ...
+  long thread_id;
+};
+```
