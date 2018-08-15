@@ -37,3 +37,10 @@ if ((x = f->f_locals) != NULL) {
   Py_DECREF(v);
 }
 ```
+
+**`BUILD_MAP`**
+会在执行指令的时候创建一个空的PyDictObject独享，并把这个对象压入运行时栈中：
+```C++
+x = PyDict_New();
+PUSH(x);
+```
