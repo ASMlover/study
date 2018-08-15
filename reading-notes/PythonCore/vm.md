@@ -22,3 +22,18 @@ x = GETITEM(consts, oparg);
 Py_INCREF(x);
 PUSH(x);
 ```
+
+**`STORE_NAME`**
+通过执行字节码指令`STORE_NAME`来改变local名字空间
+```C++
+w = GETITEM(names, oparg); // 从符号表获得符号
+v = POP(); // 从运行时栈获得值
+if ((x = f->f_locals) != NULL) {
+  // 将（符号、值）的映射关系存储到local名字空间中
+  if (PyDict_CheckExact(x))
+    PyDict_SetItem(x, w, v);
+  else
+    PyObject_SetItem(x, w, v);
+  Py_DECREF(v);
+}
+```
