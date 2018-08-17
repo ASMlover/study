@@ -44,3 +44,16 @@ if ((x = f->f_locals) != NULL) {
 x = PyDict_New();
 PUSH(x);
 ```
+
+**`BUILD_LIST`**
+与`BUILD_MAP`功能类似，但是它利用来这个指令的参数:
+```C++
+x = PyList_New(oparg);
+if (x != nullptr) {
+  for (; --oparg >= 0;) {
+    w = POP();
+    PyList_SET_ITEM(x, oparg, w);
+  }
+  PUSH(x);
+}
+```
