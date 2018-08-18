@@ -14,6 +14,11 @@
 // 出栈操作
 #define BASIC_POP() (*--stack_pointer)
 #define POP() BASIC_POP()
+
+#define TOP() (stack_pointer[-1])
+#define SECOND() (stack_pointer[-2])
+#define SET_TOP(v) (stack_pointer[-1] = (v))
+#define SET_SECOND(v) (stack_pointer[-2] = (v))
 ```
 
 **`LOAD_CONST`**
@@ -57,3 +62,17 @@ if (x != nullptr) {
   PUSH(x);
 }
 ```
+
+**`STORE_SUBSCR`**
+```C++
+w = TOP();
+v = SECOND();
+u = THIRD();
+STACKADJ(-3);
+// v[w] = u, => dict['key'] = val
+PyObject_SetItem(v, w, u);
+Py_DECREF(u);
+Py_DECREF(v);
+Py_DECREF(w);
+```
+STACKADJ执行后，栈顶指针回退3格，所以`STORE_SUBSCR`指令执行完后，运行时栈里就只剩下最初由`BUILD_MAP`创建的PyDictObject对象；
