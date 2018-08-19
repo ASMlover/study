@@ -136,3 +136,17 @@ skip_decref_vx:
   * 参与计算的两个对象是PyIntObject对象，会直接将PyIntObject的value提取出来相加，然后根据相加的结果创建新的PyIntObject对象作为结果返回；
   * 如果是PyStringObject对象之间相加，Python虚拟机会选择`string_concatenate`以加快速度；
   * 如果在这两种情况之外则只能走慢速通道`PyNumber_Add`完成运算；虚拟机会进行大量的类型判断，寻找与对象相对应的计算操作函数等额外工作；1）先检查参与运算的对象的类型对象，检查PyNumberMethods中的`nb_add`能否完成v和w上的加法运算；2）如果不能则会检查PySequenceMethods中的`sq_concat`能否完成，如果不能则只能报告错误；
+
+**`PRINT_ITEM`**
+```C++
+v = POP(); // 获得要输出的对象
+if (stream == nullpter || stream == Py_None)
+  w = PySys_GetObject("stdout");
+Py_XINCREF(w);
+if (w != nullptr && PyFile_SoftSpace(w, 0))
+  err = PyFile_WriteString(" ", w);
+if (err == 0)
+  err = PyFile_WriteObject(v, w, Py_PRINT_RAW);
+...
+stream = nullptr;
+```
