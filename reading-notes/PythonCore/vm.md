@@ -102,3 +102,37 @@ if (x == nullptr) {
 PUSH(x);
 ```
 `LOAD_NAME`符合LGB的规则，先在locals名字空间中查找，再在globals名字空间中查找，最后再从builtins名字空间中查找；
+
+**`BINARY_ADD`**
+```C++
+  w = POP();
+  v = TOP();
+  if (PyInt_CheckExact(v) && PyInt_CheckExact(w)) {
+    // PyIntObject对象相加的快速通道
+    atuo a = PyInt_AS_LONG(v);
+    auto b = PyInt_AS_LONG(w);
+    auto i = a = b;
+    // 检查如果加法运算溢出，转向慢速通道进行计算
+    if ((i ^ a) < 0 && (i ^ b) < 0)
+      goto slow_add;
+    x = PyInt_FromLong(i);
+  }
+  else if (PyString_CheckExact(v) && PyString_CheckExact(w)) {
+    // str对象相加的快速通道
+    x = string_concatenate(v, w, f, next_instr);
+    goto skip_decref_vx;
+  }
+  else {
+    // 一般对象相加的慢速通道
+slow_add:
+    x = PyNumber_Add(v, w);
+  }
+  Py_DECREF(v);
+skip_decref_vx:
+  Py_DECREF(w);
+  SET_TOP(x);
+```
+计算方式：
+  * 参与计算的两个对象是PyIntObject对象，会直接将PyIntObject的value提取出来相加，然后根据相加的结果创建新的PyIntObject对象作为结果返回；
+  * 如果是PyStringObject对象之间相加，Python虚拟机会选择`string_concatenate`以加快速度；
+  * 如果在这两种情况之外则只能走慢速通道`PyNumber_Add`完成运算；虚拟机会进行大量的类型判断，寻找与对象相对应的计算操作函数等额外工作；1）先检查参与运算的对象的类型对象，检查PyNumberMethods中的`nb_add`能否完成v和w上的加法运算；2）如果不能则会检查PySequenceMethods中的`sq_concat`能否完成，如果不能则只能报告错误；
