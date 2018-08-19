@@ -76,3 +76,29 @@ Py_DECREF(v);
 Py_DECREF(w);
 ```
 STACKADJ执行后，栈顶指针回退3格，所以`STORE_SUBSCR`指令执行完后，运行时栈里就只剩下最初由`BUILD_MAP`创建的PyDictObject对象；
+
+**`LOAD_NAME`**
+```C++
+// 获得变量名
+w = GETITEM(names, oparg);
+// 在local名字空间中查找变量名对应的变量值
+v = f->f_locals;
+x = PyDict_GetItem(v, w);
+Py_XINCREF(x);
+if (x == nullptr) {
+  // 在global名字空间中查找变量名对应的变量值
+  x = PyDict_GetItem(f->f_globals, w);
+  if (x == nullptr) {
+    // 在builtin名字空间中查找变量名对应的变量值
+    x = PyDict_GetItem(f->f_builtins, w);
+    if (x == nullptr) {
+      // 查找变量名失败，抛出异常
+      format_exc_check_arg(PyExc_NameError, NAME_ERROR_MSG, w);
+      break;
+    }
+  }
+  Py_INCREF(x);
+}
+PUSH(x);
+```
+`LOAD_NAME`符合LGB的规则，先在locals名字空间中查找，再在globals名字空间中查找，最后再从builtins名字空间中查找；
