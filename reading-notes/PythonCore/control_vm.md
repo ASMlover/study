@@ -6,3 +6,63 @@
   * 执行`LOAD_CONST`指令，从常量表consts中读取参与该分支判断操作的常量对象；
   * 执行`COMPARE_OP`指令，对前面两条指令取得的变量值和常量对象进行比较操作；
   * 指向某`JUMP_*`指令，根据`COMPARE_OP`指令的运行结果进行字节码指令跳跃;
+
+**`COMPARE_OP`**
+```C++
+  w = POP();
+  v = TOP();
+  // PyIntObject的快速通道处理
+  if (PyInt_CheckExact(w) && PyInt_CheckExact(v)) {
+    register int res;
+    auto a = PyInt_AS_LONG(v);
+    auto b = PyInt_AS_LONG(w);
+    // 根据字节码指令的指令参数选择不同的比较操作
+    switch (oparg) {
+    case PyCmp_LT: res = a < b; break;
+    case PyCmp_LE: res = a <= b; break;
+    case PyCmp_EQ: res = a == b; break;
+    case PyCmp_NE: res = a != b; break;
+    case PyCmp_GT: res = a > b; break;
+    case PyCmp_GE: res = a >= b; break;
+    case PyCmp_IS: res = v == w; break;
+    case PyCmp_IS_NOT: res = v != w; break;
+    default: goto slow_compare;
+    }
+    x = res ? Py_True : Py_False;
+    Py_INCREF(x);
+  }
+  else {
+    // 一般对象的慢速通道
+slow_compare:
+    x = cmp_outcome(oparg, v, w);
+  }
+  Py_DECREF(v);
+  Py_DECREF(w);
+  // 将比较结果压入到运行时栈中
+  SET_TOP(x);
+  if (x == nullptr)
+    break;
+  PREDICT(JUMP_IF_FALSE);
+  PREDICT(JUMP_IF_TRUE);
+
+///////////////////////////////////////////////
+// ceval.c
+static PyObject* cmp_outcome(int op, PyObject* v, PyObject* w) {
+  int res = 0;
+  switch (op) {
+  case PyCmp_IS: res = (v == w); break;
+  case PyCmp_IS_NOT: res = (v != w); break;
+  case PyCmp_NOT_IN:
+    res = PySequence_Contains(w, v);
+    if (res < 0)
+      return nullptr;
+    res = !res;
+    break;
+  case PyCmp_EXC_MATCH: res = PyErr_GivenExceptionMatches(v, w); break;
+  default: return PyObject_RichCompare(v, w, op);
+  }
+  v = res ? Py_True : Py_False;
+  Py_INCREF(v);
+  return v;
+}
+```
