@@ -66,3 +66,34 @@ static PyObject* cmp_outcome(int op, PyObject* v, PyObject* w) {
   return v;
 }
 ```
+
+在python中bool对象是PyObject对象：
+```C++
+// boolobject.h
+// do't ues these directly
+PyIntObject _Py_ZeroStruct, _Py_TrueStruct;
+
+// use these macros
+#define Py_False ((PyObject*)&_Py_ZeroStruct)
+#define Py_True ((PyObject*)&_Py_TrueStruct)
+
+// boolobject.c
+// the type object for bool, note that this cannot be subclassed
+PyTypeObject PyBool_Type = {
+  PyObject_HEAD_INIT(&PyType_Type)
+  0,
+  "bool",
+  sizeof(PyIntObject),
+  ...
+};
+
+PyIntObject _Py_ZeroStruct = {
+  PyObject_HEAD_INIT(&PyBool_Type)
+  0
+};
+
+PyIntObject _Py_TrueStruct = {
+  PyObject_HEAD_INIT(&PyBool_Type)
+  1
+};
+```
