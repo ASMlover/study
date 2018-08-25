@@ -97,3 +97,16 @@ PyIntObject _Py_TrueStruct = {
   1
 };
 ```
+
+**PREDICT**
+虚拟机中字节码指令跳跃的实现在PREDICT宏：
+```C++
+// ceval.c
+#define PREDICT(op) if (*next_instr == op) goto PRED_##op
+#define PREDICTED(op) PRED_##op: next_instr++
+#define PREDICTED_WITH_ARG(op) PRED_##op: oparg = PEEKARG(); next_instr += 3
+#define PEEKARG() ((next_instr[2] << 8) + next_instr[1])
+
+#define JUMPBY(x) (next_instr += (x))
+```
+`PREDICT(JUMP_IF_FALSE)`实际检查下一条待处理的字节码是否是`JUMP_IF_FALSE`，如果是，则程序流程跳转到`PRED_JUMP_IF_FALSE`标识符对应的代码处；
