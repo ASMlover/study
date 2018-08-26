@@ -99,6 +99,7 @@ PyIntObject _Py_TrueStruct = {
 ```
 
 **PREDICT**
+
 虚拟机中字节码指令跳跃的实现在PREDICT宏：
 ```C++
 // ceval.c
@@ -128,6 +129,7 @@ void PyFrame_BlockStep(PyFrameObject* f, int type, int handler, int level) {
 ```
 
 **PyTryBlock**
+
 `f_blockstack`的结构如下：
 ```C++
 #define CO_MAXBLOCKS 20
