@@ -145,3 +145,44 @@ typedef srtuct {
 } PyTryBlock;
 ```
 `SETUP_LOOP`指令所做的就是从`f_blockstack`这个数组中获取一块PyTryBlock结构并存放一些Python虚拟机当前的状态信息；
+
+**`GET_ITER`**
+```C++
+// 从运行时栈获得PyListObject对象
+v = TOP();
+// 获得PyListObject对象的iterator
+x = PyObject_GetIter(v);
+Py_DECREF(v);
+if (x != nullptr) {
+  // 将PyListObject对象的iterator压入堆栈
+  SET_TOP(x);
+  PREDICT(FOR_ITER);
+  continue;
+}
+STACKADJ(-1);
+```
+虽然Python中list对象在内存布局上与C++的vector相同，但是其对应的迭代器却和STL的list一致，只要拥有迭代器对象，这些迭代器都是一个实实在在的对象：
+```C++
+// in listobject.c
+class listiterobject : public PyObject {
+public:
+  long it_index;
+  PyListObject* it_seq; // set to nullptr, when iterator is exhasusted
+};
+
+// 迭代器listiterobject对象所对应的类型对象就是PyListIter_Type
+PyTypeObject PyListIter_Type = {
+  PyObject_HEAD_INIT(&PyType_Type)
+  0, // ob_size
+  "listiterator", // tp_name
+  sizeof(listiterobject), // tp_basicsize
+  0, // tp_itemsize
+  // methods
+  ...
+  PyObject_SelfIter, // tp_iter
+  (iternextfunc)listiter_next, // tp_iternext
+  0, // tp_methods
+  ...
+};
+```
+PyListObject对象的迭代器只是对PyListObject对象做来一个简单的包装，在迭代器中维护了当前访问的元素在PyListObject对象中的序号`it_index`，这样就可以实现对PyListObject的遍历；在`GET_ITER`指令完成之后会开始对`FOR_ITER`指令的预测动作，这样是为了提高执行效率；
