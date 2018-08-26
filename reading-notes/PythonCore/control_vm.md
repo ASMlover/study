@@ -110,3 +110,38 @@ PyIntObject _Py_TrueStruct = {
 #define JUMPBY(x) (next_instr += (x))
 ```
 `PREDICT(JUMP_IF_FALSE)`实际检查下一条待处理的字节码是否是`JUMP_IF_FALSE`，如果是，则程序流程跳转到`PRED_JUMP_IF_FALSE`标识符对应的代码处；
+
+**`SETUP_LOOP`**
+```C++
+case SETUP_LOOP:
+case SETUP_EXCEPT:
+case SETUP_FINALLY:
+  PyFrame_BlockStep(f, opcode, INSTR_OFFSET() + oparg, STACK_LEVEL());
+
+// in frameobject.c
+void PyFrame_BlockStep(PyFrameObject* f, int type, int handler, int level) {
+  auto* b = &f->f_blockstack[f->f_iblock++];
+  b->b_type = type;
+  b->b_level = level;
+  b->b_handler = handler;
+}
+```
+
+**PyTryBlock**
+`f_blockstack`的结构如下：
+```C++
+#define CO_MAXBLOCKS 20
+
+typedef struct _frame {
+  ...
+  int f_iblock; // index in f_blockstack
+  PyTryBlock f_blockstack[CO_MAXBLOCKS]; // for try and loop blocks
+} PyFrameObject;
+
+typedef srtuct {
+  int b_type; // what kind of block this is
+  int b_handler; // where to jump to find handler
+  int b_level; // value stack level to pop to
+} PyTryBlock;
+```
+`SETUP_LOOP`指令所做的就是从`f_blockstack`这个数组中获取一块PyTryBlock结构并存放一些Python虚拟机当前的状态信息；
