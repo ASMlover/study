@@ -188,3 +188,35 @@ PyTypeObject PyListIter_Type = {
 };
 ```
 PyListObject对象的迭代器只是对PyListObject对象做来一个简单的包装，在迭代器中维护了当前访问的元素在PyListObject对象中的序号`it_index`，这样就可以实现对PyListObject的遍历；在`GET_ITER`指令完成之后会开始对`FOR_ITER`指令的预测动作，这样是为了提高执行效率；
+
+**`FOR_ITER`**
+
+在`GET_ITER`指令之后，虚拟机应该进入一个与源代码对应的循环控制结构
+```C++
+PREDICTED_WITH_ARG(FOR_ITER);
+case FOR_ITER:
+  // 从运行时栈的栈顶获得iterator对象
+  v = TOP();
+  // 通过iterator对象获得集合中下一个元素对象
+  x = (*v->ob_type->tp_iternext)(v);
+  if (x != nullptr) {
+    // 将获得的元素压入运行时栈
+    PUSH(x);
+    PREDICTED(STORE_FAST);
+    PREDICT(UNPACK_SEQUENCE);
+    continue;
+  }
+  // iterator ended normally, x == nullptr标识iterator的迭代已经结束
+  x = v = POP();
+  Py_DECREF(v);
+  JUMPBY(oparg);
+  continue;
+```
+
+**`JUMP_ABSOLUTE`**
+```C++
+#define JUMPTO(x) (next_instr = first_instr + (x))
+
+JUMPTO(oparg);
+```
+`JUMP_ABSOLUTE`指令的行为是强制设定`next_instr`的值，将IP设定到距离`f->f_code->co_code`开始地址的某一特定偏移的位置；
