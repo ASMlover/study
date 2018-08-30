@@ -220,3 +220,25 @@ case FOR_ITER:
 JUMPTO(oparg);
 ```
 `JUMP_ABSOLUTE`指令的行为是强制设定`next_instr`的值，将IP设定到距离`f->f_code->co_code`开始地址的某一特定偏移的位置；
+
+**`POP_BLOCK`**
+```C++
+#define JUMPBY(x) (next_instr += (x))
+
+// [POP_BLOCK]
+{
+  // 将运行时栈恢复为迭代前的状态
+  PyTryBlock* b = PyFrame_BlockPop(f);
+  while (STACK_LEVEL() > b->b_level) {
+    v = POP();
+    Py_DECREF(v);
+  }
+}
+
+// frameobject.c
+// PyFrame_BlockPop的实现如下：
+PyTryBlock* PyFrame_BlockPop(PyFrameObject* f) {
+  // 向f_blockstack中归还PyTryBlock
+  return &f->f_blockstack[--f->f_iblock];
+}
+```
