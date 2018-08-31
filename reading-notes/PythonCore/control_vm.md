@@ -242,3 +242,30 @@ PyTryBlock* PyFrame_BlockPop(PyFrameObject* f) {
   return &f->f_blockstack[--f->f_iblock];
 }
 ```
+
+**`BREAK_LOOP`**
+```C++
+// [BREAK_LOOP]
+  why = WHY_BREAK;
+  goto fast_block_end;
+
+// fast_block_end in PyEval_EvalFrameEx
+fast_block_end:
+  while (why != WHY_NOT && f->f_iblock > 0) {
+    // 取得与当前while循环对应的PyTryBlock
+    PyTryBlock* b = PyFrame_BlockPop(f);
+    ...
+    // 将运行时栈恢复到while循环之前的状态
+    while (STACK_LEVEL() > b->b_level) {
+      v = POP();
+      Py_XDECREF(v);
+    }
+    // 处理break语义动作
+    if (b->b_type == SETUP_LOOP && why == WHY_BREAK) {
+      why = WHY_NOT;
+      JUMPTO(b->b_handler);
+      break;
+    }
+    ...
+  }
+```
