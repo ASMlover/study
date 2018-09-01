@@ -300,3 +300,50 @@ void PyErr_SetString(PyObject* exception, const char* string) {
   Py_XDECREF(value);
 }
 ```
+
+traceback对象的结构如下：
+```C++
+class PyTracebackObject : public PyObject {
+  using _traceback = PyTracebackObject;
+
+  _traceback* tb_next;
+  _frame* tb_frame;
+  int tb_lasti;
+  int tb_lineno;
+};
+```'
+可以看见PyTracebackObject是一个链表结构；
+```C++
+PyTracebackObject* newtracebackobject(PyTracebackObject* next, PyFrameObject* frame) {
+  // 申请内存，创建对象
+  auto* tb = PyObject_GC_New(PyTracebackObject, &PyTraceBack_Type);
+  if (tb != nullptr) {
+    // 建立链表
+    tb->tb_next = next;
+    tb->tb_frame = frame;
+    tb->tb_lasti = frame->f_lasti;
+    tb->tb_lineno = PyCode_Addr2Line(frame->f_code, frame->f_lasti);
+    PyObject_GC_Track(tb);
+  }
+  return tb;
+}
+```
+Python抛出异常的时候，创建traceback之后，会在当前栈帧中寻找exception语句，以寻找开发人员指定的捕获异常的动作，如没有则退出当前的活动栈帧，并沿着栈帧链表向上回退到上一个栈帧；
+```C++
+PyObject* PyEval_EvalFrameEx(PyFrameObject* f) {
+  ...
+  for (;;) {
+    // 尝试捕获异常
+    if (why != WHY_NOT)
+      break;
+  }
+  ...
+  if (why != WHY_RETURN)
+    rval = nullptr; // 利用rval通知前一个栈帧有异常的出现
+  ...
+  // 将线程状态中活动的栈帧设置为当前栈帧的上一个栈帧，完成栈帧回退的动作
+  tstate->frame = f->f_back;
+  return rval;
+}
+```
+这样`PyEval_EvalFrameEx`就返回到上一层的`PyEval_EvalFrameEx`，根据rval是否是nullptr继续回溯整个异常栈帧；
