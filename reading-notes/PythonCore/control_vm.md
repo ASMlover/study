@@ -269,3 +269,34 @@ fast_block_end:
     ...
   }
 ```
+
+出现异常时，Python的执行路径会沿着`PyErr_SetString`，`PyErr_SetObject`一直到`PyErr_Restore`，在`PyErr_Restore`中会将这个异常放到一个安全的地方：
+```C++
+void PyErr_Restore(PyObject* type, PyObject* value, PyObject* traceback) {
+  PyThreadState* tstate = PyThreadState_GET();
+  // 保存以前的异常信息
+  auto* oldtype = tstate->curexc_type;
+  auto* oldvalue = tstate->curexc_value;
+  auto* oldtraceback = tstate->curexc_traceback;
+  // 设置当前的异常信息
+  tstate->curexc_type = type;
+  tstate->curexc_value = value;
+  tstate->curexc_traceback = traceback;
+  // 回收旧的异常信息
+  Py_XDECREF(oldtype);
+  Py_XDECREF(oldvalue);
+  Py_XDECREF(oldtraceback);
+}
+
+void PyErr_SetObject(PyObject* exception, PyObject* value) {
+  Py_XINCREF(exception);
+  Py_XINCREF(value);
+  PyErr_Restore(exception, value, nullptr);
+}
+
+void PyErr_SetString(PyObject* exception, const char* string) {
+  auto* value = PyString_FromString(string);
+  PyErr_SetObject(exception, value);
+  Py_XDECREF(value);
+}
+```
