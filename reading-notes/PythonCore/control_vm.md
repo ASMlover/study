@@ -372,3 +372,18 @@ PyObject* PyEval_EvalFrameEx(PyFrameObject* f) {
   }
   break;
 ```
+
+**`END_FINALLY`**
+```C++
+  v = POP();
+  if (PyExceptionClass_Check(v)) || PyString_Check(v)) {
+    w = POP();
+    u = POP();
+    PyErr_Restore(v, w, u);
+    why = WHY_RERAISE;
+    break;
+  }
+```
+虚拟机通过`PyErr_Restore`重新设置了异常信息，并将why的状态设置为`WHY_RERAISE`；
+
+Python的异常机制的实现中，最重要的是why所表示的虚拟机状态及PyFrameObject对象中`f_blockstack`里存放的PyTryBlock对象，变量why将指示虚拟机当前是否发生了异常，而PyTryBlock对象则指示虚拟机是否为异常设置来except代码块和finally代码块；虚拟机处理异常的过程就是在why和PyTryBlock的共同作用下完成的；
