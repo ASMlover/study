@@ -347,3 +347,28 @@ PyObject* PyEval_EvalFrameEx(PyFrameObject* f) {
 }
 ```
 这样`PyEval_EvalFrameEx`就返回到上一层的`PyEval_EvalFrameEx`，根据rval是否是nullptr继续回溯整个异常栈帧；
+
+`SETUP_FINALLY`和`SETUP_EXCEPT`一样，它们都调用了`PyFrame_BlockSetup`，而这两条指令不过是从`f_blockstack`中分走的两块PyTryBlock而已；
+
+**`RAISE_VARARGS`**
+```C++
+  u = v = w = nullptr;
+  switch (oparg) {
+  case 3:
+    u = POP(); // traceback
+    // fallthrough
+  case 2:
+    v = POP(); // value
+    // fallthrough
+  case 1:
+    w = POP(); // exc
+  case 0:
+    why = do_raise(w, v, u);
+    break;
+  default:
+    PyErr_SetString(PyExc_SystemError, "bad RAISE_VARARGS oparg");
+    why = WHY_EXCEPTION;
+    break;
+  }
+  break;
+```
