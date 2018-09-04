@@ -30,3 +30,15 @@ PyCodeObject和PyFunctionObject都和函数相关：PyCodeObject是对一段Pyth
   break;
 ```
 `MAKE_FUNCTION`执行时，会将PyCodeObject对象弹出运行时栈，然后以该对象和当前PyFrameObject对象中威化的globals名字空间`f_globals`对象为参数，通过`PyFunction_New`创建一个新的PyFunctionObject对象，这个`f_globals`将称为函数在运行时的globals名字空间；
+
+**`CALL_FUNCTION`**
+```C++
+  PyObject** sp = stack_pointer;
+  x = call_function(&sp, oparg);
+  stack_pointer = sp;
+  PUSH(x);
+  if (x != nullptr)
+    continue;
+  break;
+```
+function、cfunction和method的调用也会进入这个`call_function`；
