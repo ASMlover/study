@@ -42,3 +42,22 @@ PyCodeObject和PyFunctionObject都和函数相关：PyCodeObject是对一段Pyth
   break;
 ```
 function、cfunction和method的调用也会进入这个`call_function`；
+
+在Python中，函数的参数类型可分为：
+  * 位置参数（positional argument）；f(a, b)、a和b为位置参数；
+  * 键参数（key argument）：f(a, b, name='Python')，其中name='Python'为键参数；
+  * 扩展位置参数（excess positional argument）：f(a, b, *args)，其中*args为扩展位置参数；
+  * 扩展键参数（excess key argument）：f(a, b, **kwds)，其中**kwds为扩展键参数；
+```C++
+static PyObject* call_function(PyObject** pp_stack, int oparg) {
+  // 处理函数参数信息
+  int na = oparg & 0xff;
+  int nk = (oparg>>8) & 0xff;
+  int n = na + 2 * nk;
+  // 获得PyFunctionObject对象
+  PyObject** pfunc = (*pp_stack) - n - 1;
+  PyObject* func = *pfunc;
+  ...
+}
+```
+扩展位置参数在Python内部作为一个PyListObject对待的，扩展键参数在Python内部作为一个PyDictObject对待；
