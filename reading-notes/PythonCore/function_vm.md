@@ -61,3 +61,26 @@ static PyObject* call_function(PyObject** pp_stack, int oparg) {
 }
 ```
 扩展位置参数在Python内部作为一个PyListObject对待的，扩展键参数在Python内部作为一个PyDictObject对待；
+
+**`LOAD_FAST` & `STORE_FAST`**
+```C++
+#define GETLOCAL(i) (fastlocals[i])
+#define SETLOCAL(i, value) do {\
+  PyObject* tmp = GETLOCAL(i);\
+  GETLOCAL(i) = value;\
+  Py_XDECREF(tmp);\
+} while (0)
+
+// [LOAD_FAST]
+  x = GETLOCAL(oparg);
+  if (x != nullptr) {
+    Py_INCREF(x);
+    PUSH(x);
+    goto fast_next_opcode;
+  }
+
+// [STORE_FAST]
+  v = POP();
+  SETLOCAL(oparg, v);
+  goto fast_next_opcode;
+```
