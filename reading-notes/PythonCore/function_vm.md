@@ -84,3 +84,31 @@ static PyObject* call_function(PyObject** pp_stack, int oparg) {
   SETLOCAL(oparg, v);
   goto fast_next_opcode;
 ```
+
+无论函数是否有参数，def语句编译后的结果都是一样的，差别在进行函数调用的时候产生，无参函数在调用前仅将PyFunctionObject对象压入运行时栈，带参函数还需要将参数也压入运行时栈；
+```C++
+// [MAKE_FUNCTION]
+  // 获得PyCodeObject对象，并创建PyFunctionObject
+  v = POP();
+  x = PyFunction_New(v, f->f_globals);
+  Py_DECREF(v);
+  // 处理带默认值的函数参数
+  if (x != nullptr && oparg > 0) {
+    v = PyTuple_New(oparg);
+    while (--oparg >= 0) {
+      w = POP();
+      PyTuple_SET_ITEM(v, oparg, w);
+    }
+    err = PyFunction_SetDefaults(x, v);
+    Py_DECREF(v);
+  }
+  PUSH(x);
+```
+`MAKE_FUNCTION`指令的参数表示当前运行时栈中有几个函数参数的默认值，该指令会将指令参数指定的所有函数参数的默认值从运行时栈中弹出，放到一个PyTupleObject对象中，然后调用`PyFunction_SetDefaults`将该对象设置为`PyFunctionObject.func_defaults`的值，这样就称为PyFunctionObject的一部分；
+```C++
+// funcobject.c
+int PyFunction_SetDefaults(PyObject* op, PyObject* defaults) {
+  ((PyFunctionObject*)op)->func_defaults = defaults;
+  return 0;
+}
+```
