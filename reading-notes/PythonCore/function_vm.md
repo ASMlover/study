@@ -111,4 +111,33 @@ int PyFunction_SetDefaults(PyObject* op, PyObject* defaults) {
   ((PyFunctionObject*)op)->func_defaults = defaults;
   return 0;
 }
+
+// in fast_function in ceval.c
+static PyObject*
+fast_function(PyObject* func, PyObject*** pp_stack, int n, int na, int nk) {
+  PyCodeObject* co = (PyCodeObject*)PyFunction_GET_CODE(func);
+  PyObject* globals = PyFunction_GET_GLOBALS(func);
+  // 获得函数对应的PyFunctionObject中的func_defaults
+  PyObject* argdefs = PyFunction_GET_DEFAULTS(func);
+  PyObject** d{};
+  int nd{};
+
+  // 判断是否进入快速通道，argdefs != nullptr导致判断失败
+  if (argdefs == nullptr && co->co_argcount == n && nk == 0 &&
+      co->co_flags == (CO_OPTIMIZED | CO_NEWLOCALS | CO_NOFREE)) {
+    ...
+  }
+
+  // 获得函数参数的默认值信息（1.第一个默认参数的地址，2.默认值的个数）
+  if (argdefs != nullptr) {
+    d = &PyTuple_GET_ITEM(argdefs, 0);
+    nd = ((PyTupleObject*)argdefs)->ob_size;
+  }
+  return PyEval_EvalCodeEx(co, globals, (PyObject*)nullptr,
+            (*pp_stack)-n, na, // 位置参数的信息
+            (*pp_stack)-2*nk, nk, // 键参数的信息
+            d, nd, // 函数默认参数的信息
+            PyFunction_GET_CLOSURE(func));
+}
 ```
+**默认位置参数**是指定了默认值的位置参数，没有指定默认值的则是**一般位置参数**；当调用函数传递的位置参数的个数小于函数编译后的PyCodeObject对象中的`co_argcount`指定的参数个数则说明Python虚拟机需要为函数设定默认参数；函数参数的默认值从函数参数列表的最右端开始，必须连续设置；
