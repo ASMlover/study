@@ -141,3 +141,7 @@ fast_function(PyObject* func, PyObject*** pp_stack, int n, int na, int nk) {
 }
 ```
 **默认位置参数**是指定了默认值的位置参数，没有指定默认值的则是**一般位置参数**；当调用函数传递的位置参数的个数小于函数编译后的PyCodeObject对象中的`co_argcount`指定的参数个数则说明Python虚拟机需要为函数设定默认参数；函数参数的默认值从函数参数列表的最右端开始，必须连续设置；
+
+在PyCodeObject中，与嵌套函数相关的属性是`co_cellvars`和`co_freevars`，具体含义是：
+  * `co_cellvars`：通常是一个tuple，保存嵌套的作用域中使用的变量名集合；
+  * `co_freevars`：通常是一个tuple，保存使用了的外层作用域中的变量名集合；
