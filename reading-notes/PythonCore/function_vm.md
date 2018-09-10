@@ -145,3 +145,31 @@ fast_function(PyObject* func, PyObject*** pp_stack, int n, int na, int nk) {
 在PyCodeObject中，与嵌套函数相关的属性是`co_cellvars`和`co_freevars`，具体含义是：
   * `co_cellvars`：通常是一个tuple，保存嵌套的作用域中使用的变量名集合；
   * `co_freevars`：通常是一个tuple，保存使用了的外层作用域中的变量名集合；
+
+当PyCodeObject的`co_cellvars`中有东西，在`PyEval_EvalCodeEx`中，Python虚拟机会同处理默认参数一样将`co_cellvars`中的东西拷贝到新创建的PyFrameObject的`f_localplus`中：
+```C++
+PyObject* PyEval_EvalCodeEx(...) {
+  ...
+  if (PyTuple_GET_SIZE(co->co_cellvars)) {
+    bool found{}; // 标识被内层嵌套函数引用的符号是否已经与某个值绑定的标识，
+                  // 与某个对象建立约束关系，只有在内层嵌套函数引用的是外层
+                  // 函数的一个有默认值的参数时这个标识才能为True
+    char* cellname;
+    char* argname;
+    PyObject* c;
+    ...
+    for (int i = 0; i < PyTuple_GET_SIZE(co->co_cellvars); ++i) {
+      // 获得被嵌套函数共享的符号名
+      cellname = PyString_AS_STRING(PyTuple_GET_ITEM(co->co_cellvars, i));
+      found = false;
+      ... // 处理被嵌套共享外层函数的默认参数
+      if (!found) {
+        c = PyCell_New(nullptr);
+        if (c == nullptr)
+          goto fail;
+        SETLOCAL(co->co_nlocals + i, c);
+      }
+    }
+  }
+}
+```
