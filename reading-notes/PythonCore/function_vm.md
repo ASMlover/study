@@ -173,3 +173,42 @@ PyObject* PyEval_EvalCodeEx(...) {
   }
 }
 ```
+
+**PyCellObject**
+```C++
+class PyCellObject : public PyObject {
+  PyObject* ob_ref; // content of the cell or nullptr when empty
+};
+
+// in cellobject.c
+PyObject* PyCell_New(PyObject* obj) {
+  auto* op = (PyCellObject*)PyObject_GC_New(PyCodeObject, &PyCell_Type);
+  op->ob_ref = obj;
+  Py_XINCREF(obj);
+  _PyObject_GC_TRACK(op);
+  return (PyObject*)op;
+}
+```
+
+**`STORE_DEREF`**
+```C++
+// [PyEval_EvalFrameEx]
+freevars = f->f_localplus + co->co_nlocals;
+
+// [STORE_DEREF]
+  w = POP();
+  x = freevars[oparg];
+  PyCell_Set(x, w);
+  Py_DECREF(w);
+
+// cellobject.h
+#define PyCell_SET(op, v) (((PyCellObject*)(op))->ob_ref = v)
+
+// cellobject.c
+int PyCell_Set(PyObject* op, PyObject* obj) {
+  Py_XDECREF(((PyCellObject*)op)->ob_ref);
+  Py_XINCREF(obj);
+  PyCell_SET(op, obj);
+  return 0;
+}
+```
