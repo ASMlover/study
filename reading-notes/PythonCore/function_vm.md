@@ -212,3 +212,22 @@ int PyCell_Set(PyObject* op, PyObject* obj) {
   return 0;
 }
 ```
+
+**`LOAD_CLOSURE`**
+```C++
+  x = freevars[oparg];
+  Py_INCREF(x);
+  PUSH(x);
+```
+
+**`MAKE_CLOSURE`**
+```C++
+  {
+    v = POP(); // 获得PyCodeObject对象
+    x = PyFunction_New(v, f->f_globals); // 绑定global名字空间
+    v = POP(); // 获得tuple，其中包含PyCellObject对象的集合
+    err = PyFunction_SetClosur(x, v); // 绑定约束集合
+    ... // 处理拥有默认值的参数
+    PUSH(x);
+  }
+```
