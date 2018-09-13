@@ -231,3 +231,38 @@ int PyCell_Set(PyObject* op, PyObject* obj) {
     PUSH(x);
   }
 ```
+
+`inner_func`对应的PyCodeObject中的`co_freevars`里有引用的外层作用域中符号名，在`PyEval_EvalCodeEx`就会对这个`co_freevars`进行处理：
+```c++
+// closure变量作为一个参数传递到PyEval_EvalCodeEx之中
+// [funcobject.h]
+#define PyFunction_GET_CLOSURE(func) (((PyFunctionObject*)func)->func_closure)
+
+// [ceval.c]
+PyObject* fast_function(...) {
+  ...
+  return PyEval_EvalCodeEx(..., PyFunction_GET_CLOSURE(func));
+}
+
+PyObject* PyEval_EvalCodeEx(...) {
+  ...
+  if (PyTuple_GET_SIZE(co->co_freevars)) {
+    for (int i = 0; i < PyTuple_GET_SIZE(co->co_freevars); ++i) {
+      auto* o = PyTuple_GET_ITEM(closure, i);
+      freevars[PyTuple_GET_SIZE(co->co_cellvars) + i] = o;
+    }
+  }
+  ...
+}
+```
+
+**`LOAD_DEREF`**
+```c++
+  x = freevars[oparg]; // 获得PyCellObject对象
+  w = PyCell_Get(x); // 获得PyCodeObject.ob_obj指向的对象
+  if (w != nullptr) {
+    PUSH(w);
+    continue;
+  }
+  ...
+```
