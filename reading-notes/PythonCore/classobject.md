@@ -19,4 +19,24 @@ int对象的加法操作，在Python虚拟机需要调用`int.__add__`时，可�
 
 只要一个对象对应的calss对象中实现了`__call__`操作（PyTypeObject中的`tp_call`不为空）那这个对象就是一个可调用对象；一个对象是否可调用并不在编译期能确定，必须在运行时才能在`PyObject_CallFunctionObjArgs`中确定；
 
-Python启动的时候，会对类型（对象模型）进行初始化动作，这个初始化动作会动态地的内置类型对应的PyTypeObejct中填充一些重要的数据（包括填充`tp_dict`），从而完成内置类型从type对象到class对象的转变（从`_Py_ReadyTypes`开始）；
+Python启动的时候，会对类型（对象模型）进行初始化动作，这个初始化动作会动态地的内置类型对应的PyTypeObject中填充一些重要的数据（包括填充`tp_dict`），从而完成内置类型从type对象到class对象的转变（从`_Py_ReadyTypes`开始）；
+
+处理基类和type信息
+```c++
+int PyType_Ready(PyTypeObject* type) {
+  // 尝试获得type的tp_base中指定的基类（super type）
+  PyTypeObject* base = type->tp_base;
+  if (base == nullptr && type != &PyBaseObject_Type)
+    base = type->tp_base = &PyBaseObject_Type;
+
+  // 如果基类没有初始化，先初始化基类
+  if (base && base->tp_dict == nullptr)
+    PyType_Ready(base);
+
+  // 设置type信息
+  if (type->ob_type == nullptr && base != nullptr)
+    type->ob_type = base->ob_type;
+  ...
+}
+```
+指定了`tp_base`的内置class对象，就使用指定的基类；没有指定`tp_base`的内置class对象，python将为其指定一个默认的基类(`PyBaseObject_Type`)；设置的`ob_type`就是metaclass，python虚拟机是将基类的metaclass作为子类的metaclass；对于`PyType_Type`而言其metaclass就是`<type 'object'>`的metaclass；
