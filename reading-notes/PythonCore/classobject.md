@@ -40,3 +40,27 @@ int PyType_Ready(PyTypeObject* type) {
 }
 ```
 指定了`tp_base`的内置class对象，就使用指定的基类；没有指定`tp_base`的内置class对象，python将为其指定一个默认的基类(`PyBaseObject_Type`)；设置的`ob_type`就是metaclass，python虚拟机是将基类的metaclass作为子类的metaclass；对于`PyType_Type`而言其metaclass就是`<type 'object'>`的metaclass；
+
+虚拟机处理基类列表，由于Python支持多重继承，所以每个Python的class对象会有一个基类列表：
+```c++
+int PyType_Ready(PyTypeObject* type) {
+  ...
+
+  // 尝试获得type的tp_base中指定基类（super typh）
+  PyTypeObject* base = type->tp_base;
+  if (base == nullptr && type != &PyBaseObject_Type)
+    base = type->tp_base = &PyBaseObject_Type;
+
+  ...
+  // 处理bases，基类列表
+  PyObject* bases = type->tp_bases;
+  if (bases == nullptr) {
+    // 如果bases为空，则根据base的情况设定bases
+    if (base == nullptr)
+      bases = PyTuple_New(0);
+    else
+      bases = PyTuple_Pack(1, base);
+    type->tp_bases = bases;
+  }
+}
+```
