@@ -64,3 +64,27 @@ int PyType_Ready(PyTypeObject* type) {
   }
 }
 ```
+
+**填充`tp_dict`**
+```c++
+int PyType_Ready(PyTypeObject* type) {
+  ...
+  // 设定tp_dict
+  PyObject* dict = type->tp_dict;
+  if (dict == nullptr) {
+    dict = PyDict_New();
+    type->tp_dict = dict;
+  }
+
+  // 将与type相关的descriptor加入到tp_dict中
+  add_operators(type);
+  if (type->tp_methods != nullptr)
+    add_methods(type, type->tp_methods);
+  if (type->tp_members != nullptr)
+    add_members(type, type->tp_members);
+  if (type->tp_getset != nullptr)
+    add_getset(type, type->tp_getset);
+  ...
+}
+```
+这里完成将`("__add__", &nb_add)`加入到`tp_dict`的过程，这个阶段的`add_operators`、`add_methods`、`add_members`、`add_getset`都是完成这样的填充`tp_dict`的动作；
