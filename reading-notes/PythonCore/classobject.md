@@ -88,3 +88,58 @@ int PyType_Ready(PyTypeObject* type) {
 }
 ```
 这里完成将`("__add__", &nb_add)`加入到`tp_dict`的过程，这个阶段的`add_operators`、`add_methods`、`add_members`、`add_getset`都是完成这样的填充`tp_dict`的动作；
+
+slot在Python内部是表示PyTypeObject中定义的操作，一个操作对应一个slot，slot不仅包含一个函数指针，还包含其他一些信息，slot是通过slotdef这个结构体来实现；
+```c++
+// [typeobject.c]
+typedef struct wrapperbase slotdef;
+
+// [descrobject.h]
+struct wrapperbase {
+  char* name;
+  int offset;
+  void* function;
+  wrapperbase wrapper;
+  char* doc;
+  int flags;
+  PyObject* name_strobj;
+};
+```
+在一个slot中存储着与PyTypeObject中一种操作相对应的各种信息；offset则是操作的函数地址在PyHeapTypeObject中的偏移量；function指向一种slot function的函数；由于object的member function在`tp_as_number`等的指针上，没法极端在PyTypeObject中的偏移量，只能计算其在PyHeapTypeObject中的偏移量；
+```c++
+typedef struct _heaptypeobject {
+  PyTypeObject ht_type;
+  PyNumberMethods as_number;
+  PyMappingMethods as_mapping;
+  PySequenceMethods as_sequence;
+  PyBufferProcs as_buffer;
+  PyObject* ht_name;
+  PyObject* ht_slots;
+} PyHeapTypeObject;
+```
+对slotdefs的排序在`init_slotdefs`中完成的：
+```c++
+static void init_slotdefs(void) {
+  static bool initialized{};
+  // init_slotdefs只会进行一次
+  if (initialized)
+    return;
+  for (auto* p = slotdefs; p->name; p++) {
+    // 填充slotdef结构体中的name_strobj
+    p->name_strobj = PyString_InternFromString(p->name);
+  }
+  // 对slotdefs中的slotdef进行排序
+  qsort((void*)slotdefs, (size_t)(p-slotdefs), sizeof(slotdef), slotdef_cmp);
+  initialized = true;
+}
+
+// slot排序的比较策略
+static int slotdef_cmp(const void* aa, const void* bb) {
+  const slotdef* a = (const slotdef*)aa;
+  const slotdef* b = (const slotdef*)bb;
+  if (c != nullptr)
+    return c;
+  else
+    return (a > b) ? 1 : (a < b) ? -1 : 0;
+}
+```
