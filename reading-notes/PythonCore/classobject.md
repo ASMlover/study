@@ -143,3 +143,35 @@ static int slotdef_cmp(const void* aa, const void* bb) {
     return (a > b) ? 1 : (a < b) ? -1 : 0;
 }
 ```
+
+`tp_dict`中与`__getitem__`对应的是一个包装了slot的PyObject，这就是descriptor；与PyTypeObject中的操作对应的是PyWrapperDescrObject；一个descriptor包含一个slot，其创建是通过`PyDescr_NewWrapper`完成的：
+```c++
+#define PyDescr_COMMON\
+  PyObject_HEAD\
+  PyTypeObject* d_type;\
+  PyObject* d_name
+
+typedef struct {
+  PyDescr_COMMON;
+  struct wrapperbase* d_base;
+  void* d_wrapped; // this can be any function pointer
+} PyWrapperDescrObject;
+
+static PyDescrObject*
+descr_new(PyTypeObject* descrtype, PyTypeObject* type, char* name) {
+  auto* descr = (PyDescrObject*)PyType_GenericAlloc(descrtype, 0);
+  descr->d_type = type;
+  descr->d_name = PyString_InternFromString(name);
+  return descr;
+}
+
+PyObject*
+PyDescr_NewWrapper(
+  PyTypeObject* type, struct wrapperbase* base, void* wrapped) {
+  PyWrapperDescrObject* descr = descr_new(
+      &PyWrapperDescr_Type, type, base->name);
+  descr->d_base = base;
+  descr->d_wrapped = wrapped;
+  return (PyObject*)descr;
+}
+```
