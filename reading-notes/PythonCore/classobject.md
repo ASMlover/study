@@ -175,3 +175,31 @@ PyDescr_NewWrapper(
   return (PyObject*)descr;
 }
 ```
+Python内部各种descriptor都包含`PyDescr_COMMON`，`d_type`被设置为`PyDescr_NewWrapper`的参数type，`d_wrapped`存放着重要的信息（操作对应的函数指针，对list来说`tp_dict["__getitem__"].d_wrapped`对应的就是`&mp_subscript`）；slot存放在`d_base`中；
+
+排序后的结果存在slotdefs中，虚拟机可以从头到尾遍历slotdefs，基于每个slot建立一个descriptor，然后在`tp_dict`中建立从操作名到descriptor的关联；这个过程在`add_operators`中完成：
+```c++
+static int add_operators(PyTypeObject* type) {
+  auto* dict = type->tp_dict;
+  PyObject* descr;
+  void** ptr;
+
+  // 对slotdefs进行排序
+  init_slotdefs();
+  for (auto* p = slotdefs; p->name; p++) {
+    // 如果slot中没有指定wrapper，则不处理
+    if (p->wrapper == nullptr)
+      continue;
+    // 获得slot对应的操作在PyTypeObject中的函数指针
+    ptr = slotptr(type, p->offset);
+    // 如果tp_dict中已经存在操作名，则放弃
+    if (PyDict_GetItem(dict, p->name_strobj))
+      continue;
+    // 创建descriptor
+    descr = PyDescr_NewWrapper(type, p, *ptr);
+    // 将（操作名，descriptor）放入tp_dict中
+    PyDict_SetItem(dict, p->name_strobj, descr);
+  }
+  return 0;
+}
+```
