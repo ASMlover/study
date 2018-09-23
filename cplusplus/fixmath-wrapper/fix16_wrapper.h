@@ -24,4 +24,41 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "fix16_wrapper.h"
+#pragma once
+
+#include <cstdint>
+#include <sstream>
+#include <string>
+#include <libfixmath/fixmath.h>
+#include "fixmath_utils.h"
+
+namespace fixmath_wrapper {
+
+class fix16 : public Copyable {
+  fix16_t value_{};
+public:
+  fix16(void) noexcept {
+  }
+
+  explicit fix16(fix16_t v) noexcept
+    : value_(v) {
+  }
+
+  explicit fix16(std::int16_t v) noexcept
+    : value_(fix16_from_int(v)) {
+  }
+
+  explicit fix16(float v) noexcept
+    : value_(fix16_from_float(v)) {
+  }
+
+  explicit fix16(double v) noexcept
+    : value_(fix16_from_dbl(v)) {
+  }
+
+  explicit fix16(const fix16& o) noexcept
+    : value_(o.value_) {
+  }
+};
+
+}

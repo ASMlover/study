@@ -24,4 +24,22 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "fix16_wrapper.h"
+#pragma once
+
+namespace fixmath_wrapper {
+
+class Copyable {
+protected:
+  Copyable(void) = default;
+  ~Copyable(void) = default;
+};
+
+class UnCopyable {
+  UnCopyable(const UnCopyable&) = delete;
+  UnCopyable& operator=(const UnCopyable&) = delete;
+protected:
+  UnCopyable(void) {}
+  ~UnCopyable(void) {}
+};
+
+}
