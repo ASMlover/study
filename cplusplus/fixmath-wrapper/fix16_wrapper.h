@@ -241,6 +241,216 @@ public:
     r += x;
     return r;
   }
+
+  fix16 operator-(const fix16& x) const noexcept {
+    auto r = *this;
+    r -= x;
+    return r;
+  }
+
+  fix16 operator-(fix16_t x) const noexcept {
+    auto r = *this;
+    r -= x;
+    return x;
+  }
+
+  fix16 operator-(std::int16_t x) const noexcept {
+    auto r = *this;
+    r -= x;
+    return r;
+  }
+
+  fix16 operator-(float x) const noexcept {
+    auto r = *this;
+    r -= x;
+    return r;
+  }
+
+  fix16 operator-(double x) const noexcept {
+    auto r = *this;
+    r -= x;
+    return r;
+  }
+
+  fix16 operator*(const fix16& x) const noexcept {
+    auto r = *this;
+    r *= x;
+    return r;
+  }
+
+  fix16 operator*(fix16_t x) const noexcept {
+    auto r = *this;
+    r *= x;
+    return r;
+  }
+
+  fix16 operator*(std::int16_t x) const noexcept {
+    auto r = *this;
+    r *= x;
+    return r;
+  }
+
+  fix16 operator*(float x) const noexcept {
+    auto r = *this;
+    r *= x;
+    return r;
+  }
+
+  fix16 operator*(double x) const noexcept {
+    auto r = *this;
+    r *= x;
+    return r;
+  }
+
+  fix16 operator/(const fix16& x) const noexcept {
+    auto r = *this;
+    r /= x;
+    return r;
+  }
+
+  fix16 operator/(fix16_t x) const noexcept {
+    auto r = *this;
+    r /= x;
+    return r;
+  }
+
+  fix16 operator/(std::int16_t x) const noexcept {
+    auto r = *this;
+    r /= x;
+    return r;
+  }
+
+  fix16 operator/(float x) const noexcept {
+    auto r = *this;
+    r /= x;
+    return r;
+  }
+
+  fix16 operator/(double x) const noexcept {
+    auto r = *this;
+    r /= x;
+    return r;
+  }
+
+  bool operator==(const fix16& r) const noexcept {
+    return value_ == r.value_;
+  }
+
+  bool operator==(fix16_t r) const noexcept {
+    return value_ == r;
+  }
+
+  bool operator==(std::int16_t r) const noexcept {
+    return value_ == fix16_from_int(r);
+  }
+
+  bool operator==(float r) const noexcept {
+    return value_ == fix16_from_float(r);
+  }
+
+  bool operator==(double r) const noexcept {
+    return value_ == fix16_from_dbl(r);
+  }
+
+  bool operator!=(const fix16& r) const noexcept {
+    return value_ != r.value_;
+  }
+
+  bool operator!=(fix16_t r) const noexcept {
+    return value_ != r;
+  }
+
+  bool operator!=(std::int16_t r) const noexcept {
+    return value_ != fix16_from_int(r);
+  }
+
+  bool operator!=(float r) const noexcept {
+    return value_ != fix16_from_float(r);
+  }
+
+  bool operator!=(double r) const noexcept {
+    return value_ != fix16_from_dbl(r);
+  }
+
+  bool operator>(const fix16& r) const noexcept {
+    return value_ > r.value_;
+  }
+
+  bool operator>(fix16_t r) const noexcept {
+    return value_ > r;
+  }
+
+  bool operator>(std::int16_t r) const noexcept {
+    return value_ > fix16_from_int(r);
+  }
+
+  bool operator>(float r) const noexcept {
+    return value_ > fix16_from_float(r);
+  }
+
+  bool operator>(double r) const noexcept {
+    return value_ > fix16_from_dbl(r);
+  }
+
+  bool operator>=(const fix16& r) const noexcept {
+    return value_ >= r.value_;
+  }
+
+  bool operator>=(fix16_t r) const noexcept {
+    return value_ >= r;
+  }
+
+  bool operator>=(std::int16_t r) const noexcept {
+    return value_ >= fix16_from_int(r);
+  }
+
+  bool operator>=(float r) const noexcept {
+    return value_ >= fix16_from_float(r);
+  }
+
+  bool operator>=(double r) const noexcept {
+    return value_ >= fix16_from_dbl(r);
+  }
+
+  bool operator<(const fix16& r) const noexcept {
+    return value_ < r.value_;
+  }
+
+  bool operator<(fix16_t r) const noexcept {
+    return value_ < r;
+  }
+
+  bool operator<(std::int16_t r) const noexcept {
+    return value_ < fix16_from_int(r);
+  }
+
+  bool operator<(float r) const noexcept {
+    return value_ < fix16_from_float(r);
+  }
+
+  bool operator<(double r) const noexcept {
+    return value_ < fix16_from_dbl(r);
+  }
+
+  bool operator<=(const fix16& r) const noexcept {
+    return value_ <= r.value_;
+  }
+
+  bool operator<=(fix16_t r) const noexcept {
+    return value_ <= r;
+  }
+
+  bool operator<=(std::int16_t r) const noexcept {
+    return value_ <= fix16_from_int(r);
+  }
+
+  bool operator<=(float r) const noexcept {
+    return value_ <= fix16_from_float(r);
+  }
+
+  bool operator<=(double r) const noexcept {
+    return value_ <= fix16_from_dbl(r);
+  }
 };
 
 }
