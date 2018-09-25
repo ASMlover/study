@@ -31,3 +31,4 @@ aux_source_directory(. NYXNETTEST_SOURCEFILES)
 message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` NYXNETTEST_SOURCEFILES: ${NYXNETTEST_SOURCEFILES}")
 
 add_executable(${OUTPUT_NAME} ${NYXNETTEST_SOURCEFILES})
+target_link_libraries(${OUTPUT_NAME} nyxcore.static)
