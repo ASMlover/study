@@ -26,36 +26,18 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <memory>
-#include <vector>
-#include <asio.hpp>
-#include "BaseSession.h"
+#include <string>
 
 namespace nyx {
 
-using asio::ip::tcp;
-
-class TcpSession
-  : public BaseSession, public std::enable_shared_from_this<TcpSession> {
-  tcp::socket socket_;
-  std::vector<char> buffer_;
-
-  void handle_data(std::vector<char>& buf);
+class BaseSession {
+  BaseSession(const BaseSession&) = delete;
+  BaseSession& operator=(const BaseSession&) = delete;
 public:
-  explicit TcpSession(tcp::socket&& socket);
-  ~TcpSession(void);
+  BaseSession(void) {}
+  virtual ~BaseSession(void) {}
 
-  void do_read(void);
-  void do_write(const std::string& buf);
-  void do_write(const char* buf, std::size_t len);
-
-  virtual void write(const std::string& buf) override {
-    do_write(buf);
-  }
-
-  tcp::socket& get_socket(void) {
-    return socket_;
-  }
+  virtual void write(const std::string& buf) {}
 };
 
 }
