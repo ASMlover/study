@@ -26,11 +26,14 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include "TcpSession.h"
+#include <asio.hpp>
 
 namespace nyx {
 
+class BaseSession;
+
 class TcpClient {
+  using SessionPtr = std::shared_ptr<BaseSession>;
   std::shared_ptr<TcpSession> conn_;
 
   TcpClient(const TcpClient&) = delete;

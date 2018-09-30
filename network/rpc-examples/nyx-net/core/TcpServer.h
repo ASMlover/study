@@ -26,17 +26,21 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <asio.hpp>
+#include <vector>
 #include "TcpSession.h"
 
 namespace nyx {
 
-using TcpSessionPtr = std::shared_ptr<TcpSession>;
+class BaseSession;
 
 class TcpServer {
+  using SessionPtr = std::shared_ptr<BaseSession>;
+
   asio::io_context& context_;
   tcp::acceptor acceptor_;
   tcp::socket socket_;
-  std::vector<TcpSessionPtr> connections_;
+  std::vector<SessionPtr> connections_;
 
   TcpServer(const TcpServer&) = delete;
   TcpServer& operator=(const TcpServer&) = delete;
