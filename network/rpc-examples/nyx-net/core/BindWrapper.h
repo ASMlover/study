@@ -26,45 +26,24 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <memory>
-#include <vector>
-#include <asio.hpp>
-#include "BaseSession.h"
 #include "MessageDefs.h"
 
 namespace nyx {
 
-using asio::ip::tcp;
-
-class TcpSession
-  : public BaseSession, public std::enable_shared_from_this<TcpSession> {
-  tcp::socket socket_;
-  std::vector<char> buffer_;
+class BindWrapper {
+  BindWrapper(const BindWrapper&) = delete;
+  BindWrapper& operator=(const BindWrapper&) = delete;
 
   MessageFunction message_fn_{};
-
-  void handle_data(std::vector<char>& buf, std::size_t n);
 public:
-  explicit TcpSession(tcp::socket&& socket);
-  ~TcpSession(void);
-
-  void do_read(void);
-  void do_write(const std::string& buf);
-  void do_write(const char* buf, std::size_t len);
-
-  virtual void write(const std::string& buf) override {
-    do_write(buf);
-  }
-
-  tcp::socket& get_socket(void) {
-    return socket_;
-  }
+  BindWrapper(void) = default;
+  ~BindWrapper(void) = default;
 
   void set_message_functor(const MessageFunction& fn) {
     message_fn_ = fn;
   }
 
-  void set_message_functor(MessageFunction&& fn) {
+  void set_message_functor(MessageFunction& fn) {
     message_fn_ = std::move(fn);
   }
 };

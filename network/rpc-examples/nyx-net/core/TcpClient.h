@@ -27,17 +27,15 @@
 #pragma once
 
 #include <asio.hpp>
+#include "BindWrapper.h"
 
 namespace nyx {
 
 class BaseSession;
 
-class TcpClient {
+class TcpClient : public BindWrapper {
   using SessionPtr = std::shared_ptr<BaseSession>;
   std::shared_ptr<TcpSession> conn_;
-
-  TcpClient(const TcpClient&) = delete;
-  TcpClient& operator=(const TcpClient&) = delete;
 public:
   TcpClient(asio::io_context& context);
   ~TcpClient(void);

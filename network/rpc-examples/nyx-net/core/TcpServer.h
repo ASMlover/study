@@ -28,22 +28,19 @@
 
 #include <asio.hpp>
 #include <vector>
-#include "TcpSession.h"
+#include "BindWrapper.h"
 
 namespace nyx {
 
 class BaseSession;
 
-class TcpServer {
+class TcpServer : public BindWrapper {
   using SessionPtr = std::shared_ptr<BaseSession>;
 
   asio::io_context& context_;
   tcp::acceptor acceptor_;
   tcp::socket socket_;
   std::vector<SessionPtr> connections_;
-
-  TcpServer(const TcpServer&) = delete;
-  TcpServer& operator=(const TcpServer&) = delete;
 
   void do_accept(void);
 public:
