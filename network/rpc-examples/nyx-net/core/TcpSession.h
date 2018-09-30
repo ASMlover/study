@@ -30,6 +30,7 @@
 #include <vector>
 #include <asio.hpp>
 #include "BaseSession.h"
+#include "MessageBinder.h"
 
 namespace nyx {
 
@@ -40,7 +41,9 @@ class TcpSession
   tcp::socket socket_;
   std::vector<char> buffer_;
 
-  void handle_data(std::vector<char>& buf);
+  MessageFunction message_fn_{};
+
+  void handle_data(std::vector<char>& buf, std::size_t n);
 public:
   explicit TcpSession(tcp::socket&& socket);
   ~TcpSession(void);
@@ -55,6 +58,14 @@ public:
 
   tcp::socket& get_socket(void) {
     return socket_;
+  }
+
+  void set_message_functor(const MessageFunction& fn) {
+    message_fn_ = fn;
+  }
+
+  void set_message_functor(MessageFunction&& fn) {
+    message_fn_ = std::move(fn);
   }
 };
 

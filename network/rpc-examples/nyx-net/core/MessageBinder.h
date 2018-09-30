@@ -26,4 +26,14 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <memory>
 #include <functional>
+#include "BaseSession.h"
+
+namespace nyx {
+
+using SessionPtr = std::shared_ptr<BaseSession>;
+
+using MessageFunction = std::function<void (const SessionPtr&, const char*, std::size_t)>;
+
+}

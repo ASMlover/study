@@ -38,11 +38,12 @@ TcpSession::~TcpSession(void) {
 }
 
 void TcpSession::do_read(void) {
+  buffer_.clear();
   auto self(shared_from_this());
   socket_.async_read_some(asio::buffer(buffer_),
-      [this, self](const std::error_code& ec, std::size_t /*n*/) {
+      [this, self](const std::error_code& ec, std::size_t n) {
         if (!ec) {
-          handle_data(buffer_);
+          handle_data(buffer_, n);
           do_read();
         }
         else {
@@ -63,7 +64,9 @@ void TcpSession::do_write(const char* buf, std::size_t len) {
       });
 }
 
-void TcpSession::handle_data(std::vector<char>& buf) {
+void TcpSession::handle_data(std::vector<char>& buf, std::size_t n) {
+  if (message_fn_)
+    message_fn_(shared_from_this(), &buf[0], n);
 }
 
 }
