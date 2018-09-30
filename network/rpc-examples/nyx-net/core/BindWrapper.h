@@ -33,9 +33,9 @@ namespace nyx {
 class BindWrapper {
   BindWrapper(const BindWrapper&) = delete;
   BindWrapper& operator=(const BindWrapper&) = delete;
-
+protected:
   MessageFunction message_fn_{};
-public:
+
   BindWrapper(void) = default;
   ~BindWrapper(void) = default;
 

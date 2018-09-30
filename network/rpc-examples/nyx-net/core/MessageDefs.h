@@ -28,10 +28,10 @@
 
 #include <memory>
 #include <functional>
-#include "BaseSession.h"
 
 namespace nyx {
 
+class BaseSession;
 using SessionPtr = std::shared_ptr<BaseSession>;
 
 using MessageFunction = std::function<void (const SessionPtr&, const char*, std::size_t)>;

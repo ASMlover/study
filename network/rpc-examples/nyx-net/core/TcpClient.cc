@@ -40,8 +40,10 @@ TcpClient::~TcpClient(void) {
 void TcpClient::connect(const char* host, std::uint16_t port) {
   tcp::endpoint ep(asio::ip::address::from_string(host), port);
   conn_->get_socket().async_connect(ep, [this](const std::error_code& ec) {
-        if (!ec)
+        if (!ec) {
+          conn_->set_message_functor(message_fn_);
           conn_->do_read();
+        }
       });
 }
 

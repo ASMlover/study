@@ -27,17 +27,28 @@
 #pragma once
 
 #include <string>
+#include "MessageDefs.h"
 
 namespace nyx {
 
 class BaseSession {
   BaseSession(const BaseSession&) = delete;
   BaseSession& operator=(const BaseSession&) = delete;
+protected:
+  MessageFunction message_fn_{};
 public:
   BaseSession(void) {}
   virtual ~BaseSession(void) {}
 
   virtual void write(const std::string& buf) {}
+
+  void set_message_functor(const MessageFunction& fn) {
+    message_fn_ = fn;
+  }
+
+  void set_message_functor(MessageFunction&& fn) {
+    message_fn_ = std::move(fn);
+  }
 };
 
 }

@@ -30,7 +30,6 @@
 #include <vector>
 #include <asio.hpp>
 #include "BaseSession.h"
-#include "MessageDefs.h"
 
 namespace nyx {
 
@@ -40,8 +39,6 @@ class TcpSession
   : public BaseSession, public std::enable_shared_from_this<TcpSession> {
   tcp::socket socket_;
   std::vector<char> buffer_;
-
-  MessageFunction message_fn_{};
 
   void handle_data(std::vector<char>& buf, std::size_t n);
 public:
@@ -58,14 +55,6 @@ public:
 
   tcp::socket& get_socket(void) {
     return socket_;
-  }
-
-  void set_message_functor(const MessageFunction& fn) {
-    message_fn_ = fn;
-  }
-
-  void set_message_functor(MessageFunction&& fn) {
-    message_fn_ = std::move(fn);
   }
 };
 
