@@ -35,9 +35,11 @@ message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` NYXNETCORE_SOURCEFILES: ${NYXNE
 
 add_library(${OUTPUT_NAME} SHARED ${NYXNETCORE_SOURCEFILES})
 add_library(${OUTPUT_NAME_STATIC} STATIC ${NYXNETCORE_SOURCEFILES})
+
+set_target_properties(${OUTPUT_NAME} PROPERTIES PREFIX "")
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+  set_target_properties(${OUTPUT_NAME} PROPERTIES SUFFIX ".pyd")
 else()
-  set_target_properties(${OUTPUT_NAME} PROPERTIES PREFIX "")
   set_target_properties(${OUTPUT_NAME} PROPERTIES SUFFIX ".so")
   target_link_libraries(${OUTPUT_NAME} pthread)
 endif()
