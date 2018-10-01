@@ -26,24 +26,28 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <asio.hpp>
-#include "BindWrapper.h"
+#include <string>
+#include "MessageDefs.h"
 
 namespace nyx {
 
-class BaseSession;
-
-class TcpClient : public BindWrapper {
-  using SessionPtr = std::shared_ptr<BaseSession>;
-  std::shared_ptr<TcpSession> conn_;
+class BaseSession {
+  BaseSession(const BaseSession&) = delete;
+  BaseSession& operator=(const BaseSession&) = delete;
+protected:
+  MessageFunction message_fn_{};
 public:
-  TcpClient(asio::io_context& context);
-  ~TcpClient(void);
+  BaseSession(void) {}
+  virtual ~BaseSession(void) {}
 
-  void connect(const char* host = "127.0.0.1", std::uint16_t port = 5555);
+  virtual void write(const std::string& buf) {}
 
-  TcpSession* get_session(void) const {
-    return conn_.get();
+  void set_message_functor(const MessageFunction& fn) {
+    message_fn_ = fn;
+  }
+
+  void set_message_functor(MessageFunction&& fn) {
+    message_fn_ = std::move(fn);
   }
 };
 

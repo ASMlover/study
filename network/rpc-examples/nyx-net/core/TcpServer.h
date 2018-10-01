@@ -27,24 +27,25 @@
 #pragma once
 
 #include <asio.hpp>
+#include <vector>
 #include "BindWrapper.h"
 
 namespace nyx {
 
 class BaseSession;
 
-class TcpClient : public BindWrapper {
+class TcpServer : public BindWrapper {
   using SessionPtr = std::shared_ptr<BaseSession>;
-  std::shared_ptr<TcpSession> conn_;
+
+  asio::io_context& context_;
+  tcp::acceptor acceptor_;
+  tcp::socket socket_;
+  std::vector<SessionPtr> connections_;
+
+  void do_accept(void);
 public:
-  TcpClient(asio::io_context& context);
-  ~TcpClient(void);
-
-  void connect(const char* host = "127.0.0.1", std::uint16_t port = 5555);
-
-  TcpSession* get_session(void) const {
-    return conn_.get();
-  }
+  TcpServer(asio::io_context& context, std::uint16_t port = 5555);
+  ~TcpServer(void);
 };
 
 }

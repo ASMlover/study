@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "TcpSession.h"
 #include "TcpClient.h"
 
 namespace nyx {
@@ -39,8 +40,10 @@ TcpClient::~TcpClient(void) {
 void TcpClient::connect(const char* host, std::uint16_t port) {
   tcp::endpoint ep(asio::ip::address::from_string(host), port);
   conn_->get_socket().async_connect(ep, [this](const std::error_code& ec) {
-        if (!ec)
+        if (!ec) {
+          conn_->set_message_functor(message_fn_);
           conn_->do_read();
+        }
       });
 }
 

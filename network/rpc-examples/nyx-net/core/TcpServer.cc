@@ -24,27 +24,31 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include <asio.hpp>
-#include "BindWrapper.h"
+#include "TcpSession.h"
+#include "TcpServer.h"
 
 namespace nyx {
 
-class BaseSession;
+TcpServer::TcpServer(asio::io_context& context, std::uint16_t port)
+  : context_(context)
+  , acceptor_(context_, tcp::endpoint(tcp::v4(), port))
+  , socket_(context_) {
+}
 
-class TcpClient : public BindWrapper {
-  using SessionPtr = std::shared_ptr<BaseSession>;
-  std::shared_ptr<TcpSession> conn_;
-public:
-  TcpClient(asio::io_context& context);
-  ~TcpClient(void);
+TcpServer::~TcpServer(void) {
+}
 
-  void connect(const char* host = "127.0.0.1", std::uint16_t port = 5555);
+void TcpServer::do_accept(void) {
+  acceptor_.async_accept(socket_,
+      [this](const std::error_code& ec) {
+        if (!ec) {
+          auto conn = std::make_shared<TcpSession>(std::move(socket_));
+          connections_.push_back(conn);
 
-  TcpSession* get_session(void) const {
-    return conn_.get();
-  }
-};
+          conn->do_read();
+        }
+        do_accept();
+      });
+}
 
 }
