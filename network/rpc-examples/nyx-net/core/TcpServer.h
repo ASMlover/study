@@ -32,6 +32,7 @@
 
 namespace nyx {
 
+using asio::ip::tcp;
 class BaseSession;
 
 class TcpServer : public BindWrapper {

@@ -38,7 +38,7 @@ protected:
 
   BindWrapper(void) = default;
   ~BindWrapper(void) = default;
-
+public:
   void set_message_functor(const MessageFunction& fn) {
     message_fn_ = fn;
   }
