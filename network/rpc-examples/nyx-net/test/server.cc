@@ -25,18 +25,24 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <thread>
+#include <asio.hpp>
+#include "../core/TcpServer.h"
 
-extern void run_server(void);
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
+void run_server(void) {
+  asio::io_context context;
 
-  std::cout << "hello, nyx-networking !!!" << std::endl;
+  nyx::TcpServer server(context);
+  server.set_message_functor(
+      [](const nyx::SessionPtr& conn, const char* buf, std::size_t len) {
+      });
 
-  if (argc < 2)
-    return -1;
-
-  if (argv[1][0] == 's')
-    run_server();
-
-  return 0;
+  std::thread t([&context] { context.run(); });
+  while (true) {
+    std::string in;
+    std::cin >> in;
+    if (in == "exit")
+      break;
+  }
+  t.join();
 }
