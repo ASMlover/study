@@ -451,6 +451,100 @@ public:
   bool operator<=(double r) const noexcept {
     return value_ <= fix16_from_dbl(r);
   }
+
+  fix16 sin(void) const noexcept {
+    return fix16(fix16_sin(value_));
+  }
+
+  fix16 cos(void) const noexcept {
+    return fix16(fix16_cos(value_));
+  }
+
+  fix16 tan(void) const noexcept {
+    return fix16(fix16_tan(value_));
+  }
+
+  fix16 asin(void) const noexcept {
+    return fix16(fix16_asin(value_));
+  }
+
+  fix16 acos(void) const noexcept {
+    return fix16(fix16_acos(value_));
+  }
+
+  fix16 atan(void) const noexcept {
+    return fix16(fix16_atan(value_));
+  }
+
+  fix16 atan2(const fix16& y) const noexcept {
+    return fix16(fix16_atan2(value_, y.value_));
+  }
+
+  fix16 sin_parabola(void) const noexcept {
+    return fix16(fix16_sin_parabola(value_));
+  }
+
+  fix16 rad2deg(void) const noexcept {
+    return fix16(fix16_rad_to_deg(value_));
+  }
+
+  fix16 deg2rad(void) const noexcept {
+    return fix16(fix16_deg_to_rad(value_));
+  }
+
+  fix16 sqrt(void) const noexcept {
+    return fix16(fix16_sqrt(value_));
+  }
+
+  fix16 square(void) const noexcept {
+    return fix16(fix16_sq(value_));
+  }
+
+  fix16 exp(void) const noexcept {
+    return fix16(fix16_exp(value_));
+  }
+
+  fix16 log(void) const noexcept {
+    return fix16(fix16_log(value_));
+  }
+
+  fix16 log2(void) const noexcept {
+    return fix16(fix16_log2(value_));
+  }
+
+  fix16 abs(void) const noexcept {
+    return fix16(fix16_abs(value_));
+  }
+
+  fix16 floor(void) const noexcept {
+    return fix16(fix16_floor(value_));
+  }
+
+  fix16 ceil(void) const noexcept {
+    return fix16(fix16_ceil(value_));
+  }
+
+  fix16 min(const fix16& r) const noexcept {
+    return fix16_min(value_, r.value_);
+  }
+
+  fix16 max(const fix16& r) const noexcept {
+    return fix16_max(value_, r.value_);
+  }
+};
+
+template <typename _Scalar, typename _Vector, std::size_t N>
+class vector_base {
+  vector_base(void) {
+  }
+
+  _Scalar* get_scaler(void) {
+    return reinterpret_cast<_Scalar*>(this);
+  }
+
+  const _Scalar* get_scaler(void) const {
+    return reinterpret_cast<const _Scalar*>(this);
+  }
 };
 
 }
