@@ -36,16 +36,18 @@ class BaseSession;
 
 class TcpClient : public BindWrapper {
   using SessionPtr = std::shared_ptr<BaseSession>;
-  std::shared_ptr<TcpSession> conn_;
+  SessionPtr conn_;
 public:
   TcpClient(asio::io_context& context);
   ~TcpClient(void);
 
   void connect(const char* host = "127.0.0.1", std::uint16_t port = 5555);
+  void write(const std::string& buf);
 
-  TcpSession* get_session(void) const {
+  BaseSession* get_session(void) const {
     return conn_.get();
   }
+
 };
 
 }

@@ -39,12 +39,17 @@ TcpClient::~TcpClient(void) {
 
 void TcpClient::connect(const char* host, std::uint16_t port) {
   tcp::endpoint ep(asio::ip::address::from_string(host), port);
-  conn_->get_socket().async_connect(ep, [this](const std::error_code& ec) {
+  auto conn = dynamic_cast<TcpSession*>(conn_.get());
+  conn->get_socket().async_connect(ep, [this, conn](const std::error_code& ec) {
         if (!ec) {
-          conn_->set_message_functor(message_fn_);
-          conn_->do_read();
+          conn->set_message_functor(message_fn_);
+          conn->do_read();
         }
       });
+}
+
+void TcpClient::write(const std::string& buf) {
+  conn_->write(buf);
 }
 
 }
