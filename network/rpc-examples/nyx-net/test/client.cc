@@ -33,6 +33,9 @@ void run_client(void) {
   asio::io_context context;
 
   nyx::TcpClient client(context);
+  client.set_connect_functor([](const nyx::SessionPtr& conn) {
+        std::cout << "connect server success ..." << std::endl;
+      });
   client.set_message_functor(
       [](const nyx::SessionPtr& conn, const char* buf, std::size_t len) {
       });
