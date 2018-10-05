@@ -38,7 +38,6 @@ TcpSession::~TcpSession(void) {
 }
 
 void TcpSession::do_read(void) {
-  buffer_.clear();
   auto self(shared_from_this());
   socket_.async_read_some(asio::buffer(buffer_),
       [this, self](const std::error_code& ec, std::size_t n) {

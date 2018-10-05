@@ -34,11 +34,20 @@ class BindWrapper {
   BindWrapper(const BindWrapper&) = delete;
   BindWrapper& operator=(const BindWrapper&) = delete;
 protected:
+  ConnectFunction connect_fn_{};
   MessageFunction message_fn_{};
 
   BindWrapper(void) = default;
   ~BindWrapper(void) = default;
 public:
+  void set_connect_functor(const ConnectFunction& fn) {
+    connect_fn_ = fn;
+  }
+
+  void set_connect_functor(ConnectFunction&& fn) {
+    connect_fn_ = std::move(fn);
+  }
+
   void set_message_functor(const MessageFunction& fn) {
     message_fn_ = fn;
   }
