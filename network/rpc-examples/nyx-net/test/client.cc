@@ -42,6 +42,10 @@ void run_client(void) {
   while (true) {
     std::string in;
     std::cin >> in;
+    if (in == "exit")
+      break;
+
+    client.write(in);
   }
   t.join();
 

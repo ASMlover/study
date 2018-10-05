@@ -27,6 +27,8 @@
 #include <iostream>
 
 extern void run_server(void);
+extern void run_client(void);
+
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
@@ -37,6 +39,8 @@ int main(int argc, char* argv[]) {
 
   if (argv[1][0] == 's')
     run_server();
+  else if (argv[1][0] == 'c')
+    run_client();
 
   return 0;
 }

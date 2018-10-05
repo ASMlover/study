@@ -35,6 +35,7 @@ void run_server(void) {
   nyx::TcpServer server(context);
   server.set_message_functor(
       [](const nyx::SessionPtr& conn, const char* buf, std::size_t len) {
+        std::cout << "recv message: " << buf << ", len: " << len << std::endl;
       });
 
   std::thread t([&context] { context.run(); });
