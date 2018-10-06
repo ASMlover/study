@@ -42,9 +42,9 @@ void TcpClient::connect(const char* host, std::uint16_t port) {
   auto conn = dynamic_cast<TcpSession*>(conn_.get());
   conn->get_socket().async_connect(ep, [this, conn](const std::error_code& ec) {
         if (!ec) {
-          if (connect_fn_)
-            connect_fn_(conn_);
-          conn->set_message_functor(message_fn_);
+          if (connected_fn_)
+            connected_fn_(conn_);
+          conn->set_message_callback(message_fn_);
           conn->do_read();
         }
       });
