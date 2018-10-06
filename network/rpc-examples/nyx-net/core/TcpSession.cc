@@ -65,7 +65,7 @@ void TcpSession::do_write(const char* buf, std::size_t len) {
 
 void TcpSession::handle_data(std::vector<char>& buf, std::size_t n) {
   if (message_fn_)
-    message_fn_(shared_from_this(), &buf[0], n);
+    message_fn_(shared_from_this(), std::string(&buf[0], n));
 }
 
 }

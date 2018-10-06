@@ -33,18 +33,19 @@ TcpServer::TcpServer(asio::io_context& context, std::uint16_t port)
   : context_(context)
   , acceptor_(context_, tcp::endpoint(tcp::v4(), port))
   , socket_(context_) {
+  do_accept();
 }
 
 TcpServer::~TcpServer(void) {
 }
 
 void TcpServer::do_accept(void) {
-  acceptor_.async_accept(socket_,
-      [this](const std::error_code& ec) {
+  acceptor_.async_accept(socket_, [this](const std::error_code& ec) {
         if (!ec) {
           auto conn = std::make_shared<TcpSession>(std::move(socket_));
           connections_.push_back(conn);
 
+          conn->set_message_functor(message_fn_);
           conn->do_read();
         }
         do_accept();

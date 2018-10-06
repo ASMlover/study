@@ -26,8 +26,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <memory>
 #include <functional>
+#include <memory>
+#include <string>
 
 namespace nyx {
 
@@ -35,6 +36,6 @@ class BaseSession;
 using SessionPtr = std::shared_ptr<BaseSession>;
 
 using ConnectFunction = std::function<void (const SessionPtr&)>;
-using MessageFunction = std::function<void (const SessionPtr&, const char*, std::size_t)>;
+using MessageFunction = std::function<void (const SessionPtr&, const std::string&)>;
 
 }
