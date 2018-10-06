@@ -33,7 +33,7 @@ void run_server(void) {
   asio::io_context context;
 
   nyx::TcpServer server(context);
-  server.set_message_functor(
+  server.set_message_callback(
       [](const nyx::SessionPtr& conn, const std::string& buf) {
         std::cout << "recv message: " << buf << ", len: " << buf.size() << std::endl;
       });
