@@ -53,6 +53,10 @@ public:
     do_write(buf);
   }
 
+  virtual void close(void) override {
+    socket_.close();
+  }
+
   tcp::socket& get_socket(void) {
     return socket_;
   }

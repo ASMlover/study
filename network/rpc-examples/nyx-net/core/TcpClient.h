@@ -43,6 +43,7 @@ public:
 
   void connect(const char* host = "127.0.0.1", std::uint16_t port = 5555);
   void write(const std::string& buf);
+  void close(void);
 
   BaseSession* get_session(void) const {
     return conn_.get();
