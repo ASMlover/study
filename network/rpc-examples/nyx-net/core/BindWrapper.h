@@ -35,25 +35,40 @@ class BindWrapper {
   BindWrapper& operator=(const BindWrapper&) = delete;
 protected:
   ConnectedCallback connected_fn_{};
+  NewConnectionCallback newconnection_fn_{};
   MessageCallback message_fn_{};
 
   BindWrapper(void) = default;
   ~BindWrapper(void) = default;
 public:
-  void set_connected_callback(const ConnectedCallback& fn) {
+  BindWrapper& set_connected_callback(const ConnectedCallback& fn) {
     connected_fn_ = fn;
+    return *this;
   }
 
-  void set_connected_callback(ConnectedCallback&& fn) {
+  BindWrapper& set_connected_callback(ConnectedCallback&& fn) {
     connected_fn_ = std::move(fn);
+    return *this;
   }
 
-  void set_message_callback(const MessageCallback& fn) {
+  BindWrapper& set_newconnection_callback(const NewConnectionCallback& fn) {
+    newconnection_fn_ = fn;
+    return *this;
+  }
+
+  BindWrapper& set_newconnection_callback(NewConnectionCallback&& fn) {
+    newconnection_fn_ = std::move(fn);
+    return *this;
+  }
+
+  BindWrapper& set_message_callback(const MessageCallback& fn) {
     message_fn_ = fn;
+    return *this;
   }
 
-  void set_message_callback(MessageCallback& fn) {
+  BindWrapper& set_message_callback(MessageCallback& fn) {
     message_fn_ = std::move(fn);
+    return *this;
   }
 };
 

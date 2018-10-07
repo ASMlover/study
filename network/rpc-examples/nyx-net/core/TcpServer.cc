@@ -45,6 +45,8 @@ void TcpServer::do_accept(void) {
           auto conn = std::make_shared<TcpSession>(std::move(socket_));
           connections_.push_back(conn);
 
+          if (newconnection_fn_)
+            newconnection_fn_(conn);
           conn->set_message_callback(message_fn_);
           conn->do_read();
         }
