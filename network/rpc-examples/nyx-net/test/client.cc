@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <string>
 #include <thread>
 #include <asio.hpp>
 #include "../core/TcpClient.h"
@@ -41,13 +42,15 @@ void run_client(void) {
   client.connect();
 
   std::thread t([&context] { context.run(); });
-  while (true) {
-    std::string in;
-    std::cin >> in;
-    if (in == "exit")
+  std::string line;
+  while (std::getline(std::cin, line)) {
+    if (line == "exit") {
+      client.close();
       break;
+    }
 
-    client.write(in);
+    client.write(line);
+    line.clear();
   }
   t.join();
 
