@@ -35,9 +35,8 @@ void run_client(void) {
   nyx::TcpClient client(context);
   client.set_connected_callback([](const nyx::SessionPtr& conn) {
         std::cout << "connect server success ..." << std::endl;
-      });
-  client.set_message_callback(
-      [](const nyx::SessionPtr& conn, const std::string& buf) {
+      }).set_message_callback(
+        [](const nyx::SessionPtr& conn, const std::string& buf) {
       });
   client.connect();
 
