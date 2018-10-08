@@ -49,12 +49,9 @@ public:
   void do_write(const std::string& buf);
   void do_write(const char* buf, std::size_t len);
 
+  virtual void close(void) override;
   virtual void write(const std::string& buf) override {
     do_write(buf);
-  }
-
-  virtual void close(void) override {
-    socket_.close();
   }
 
   tcp::socket& get_socket(void) {

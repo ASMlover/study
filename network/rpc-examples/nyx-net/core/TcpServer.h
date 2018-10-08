@@ -27,7 +27,6 @@
 #pragma once
 
 #include <asio.hpp>
-#include <vector>
 #include "BindWrapper.h"
 
 namespace nyx {
@@ -41,7 +40,6 @@ class TcpServer : public BindWrapper {
   asio::io_context& context_;
   tcp::acceptor acceptor_;
   tcp::socket socket_;
-  std::vector<SessionPtr> connections_;
 
   void do_accept(void);
 public:

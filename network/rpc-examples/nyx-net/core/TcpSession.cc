@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include "SessionManager.h"
 #include "TcpSession.h"
 
 namespace nyx {
@@ -61,6 +62,11 @@ void TcpSession::do_write(const char* buf, std::size_t len) {
   asio::async_write(socket_, asio::buffer(buf, len),
       [this, self](const std::error_code& /*ec*/, std::size_t /*n*/) {
       });
+}
+
+void TcpSession::close(void) {
+  socket_.close();
+  SessionManager::get_instance().unreg_session(shared_from_this());
 }
 
 void TcpSession::handle_data(std::vector<char>& buf, std::size_t n) {

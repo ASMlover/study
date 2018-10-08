@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "SessionManager.h"
 #include "TcpSession.h"
 #include "TcpServer.h"
 
@@ -43,7 +44,7 @@ void TcpServer::do_accept(void) {
   acceptor_.async_accept(socket_, [this](const std::error_code& ec) {
         if (!ec) {
           auto conn = std::make_shared<TcpSession>(std::move(socket_));
-          connections_.push_back(conn);
+          SessionManager::get_instance().reg_session(conn);
 
           if (newconnection_fn_)
             newconnection_fn_(conn);
