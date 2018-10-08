@@ -47,8 +47,7 @@ void TcpSession::do_read(void) {
           do_read();
         }
         else {
-          std::cerr << "TcpSession::do_read - read data error" << std::endl;
-          socket_.close();
+          close();
         }
       });
 }
@@ -65,6 +64,13 @@ void TcpSession::do_write(const char* buf, std::size_t len) {
 }
 
 void TcpSession::close(void) {
+  if (closed_)
+    return;
+  closed_ = true;
+
+  if (closed_fn_)
+    closed_fn_(shared_from_this());
+
   socket_.close();
   SessionManager::get_instance().unreg_session(shared_from_this());
 }

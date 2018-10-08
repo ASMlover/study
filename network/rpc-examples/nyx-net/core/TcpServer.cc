@@ -49,6 +49,7 @@ void TcpServer::do_accept(void) {
           if (newconnection_fn_)
             newconnection_fn_(conn);
           conn->set_message_callback(message_fn_);
+          conn->set_closed_callback(closed_fn_);
           conn->do_read();
         }
         do_accept();

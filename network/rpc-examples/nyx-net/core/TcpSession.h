@@ -37,6 +37,7 @@ using asio::ip::tcp;
 
 class TcpSession
   : public BaseSession, public std::enable_shared_from_this<TcpSession> {
+  bool closed_{};
   tcp::socket socket_;
   std::vector<char> buffer_;
 

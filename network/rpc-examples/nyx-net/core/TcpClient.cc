@@ -45,6 +45,7 @@ void TcpClient::connect(const char* host, std::uint16_t port) {
           if (connected_fn_)
             connected_fn_(conn_);
           conn->set_message_callback(message_fn_);
+          conn->set_closed_callback(closed_fn_);
           conn->do_read();
         }
       });
