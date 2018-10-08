@@ -34,10 +34,12 @@ void run_server(void) {
 
   nyx::TcpServer server(context);
   server.set_newconnection_callback([](const nyx::SessionPtr& conn) {
-        std::cout << "accept an new connection" << std::endl;
+        std::cout << "accept a new connection ..." << std::endl;
       }).set_message_callback(
         [](const nyx::SessionPtr& conn, const std::string& buf) {
           std::cout << "recv message: " << buf << ", len: " << buf.size() << std::endl;
+      }).set_closed_callback([](const nyx::SessionPtr& conn) {
+        std::cout << "connection closed ..." << std::endl;
       });
 
   std::thread t([&context] { context.run(); });

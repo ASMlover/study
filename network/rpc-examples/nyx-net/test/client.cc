@@ -38,6 +38,8 @@ void run_client(void) {
         std::cout << "connect server success ..." << std::endl;
       }).set_message_callback(
         [](const nyx::SessionPtr& conn, const std::string& buf) {
+      }).set_closed_callback([](const nyx::SessionPtr& conn) {
+        std::cout << "connection closed ..." << std::endl;
       });
   client.connect();
 
