@@ -32,3 +32,6 @@ message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` NYXNETTEST_SOURCEFILES: ${NYXNE
 
 add_executable(${OUTPUT_NAME} ${NYXNETTEST_SOURCEFILES})
 target_link_libraries(${OUTPUT_NAME} nyxcore.static)
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+  target_link_libraries(${OUTPUT_NAME} pthread)
+endif()
