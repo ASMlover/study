@@ -32,6 +32,7 @@ namespace nyx {
 
 TcpSession::TcpSession(tcp::socket&& socket)
   : socket_(std::move(socket))
+  , strand_(socket_.get_io_context())
   , buffer_(1024) {
 }
 
@@ -53,14 +54,12 @@ void TcpSession::do_read(void) {
 }
 
 void TcpSession::do_write(const std::string& buf) {
-  do_write(buf.data(), buf.size());
-}
-
-void TcpSession::do_write(const char* buf, std::size_t len) {
   auto self(shared_from_this());
-  asio::async_write(socket_, asio::buffer(buf, len),
-      [this, self](const std::error_code& /*ec*/, std::size_t /*n*/) {
-      });
+  strand_.post([this, self, buf] {
+      asio::async_write(socket_, asio::buffer(buf),
+        [this, self](const std::error_code& /*ec*/, std::size_t /*n*/) {
+        });
+    });
 }
 
 void TcpSession::close(void) {

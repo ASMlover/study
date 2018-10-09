@@ -39,6 +39,7 @@ class TcpSession
   : public BaseSession, public std::enable_shared_from_this<TcpSession> {
   bool closed_{};
   tcp::socket socket_;
+  asio::io_context::strand strand_;
   std::vector<char> buffer_;
 
   void handle_data(std::vector<char>& buf, std::size_t n);
@@ -48,7 +49,6 @@ public:
 
   void do_read(void);
   void do_write(const std::string& buf);
-  void do_write(const char* buf, std::size_t len);
 
   virtual void close(void) override;
   virtual void write(const std::string& buf) override {
