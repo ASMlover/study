@@ -56,7 +56,7 @@ void TcpClient::write(const std::string& buf) {
 }
 
 void TcpClient::close(void) {
-  conn_->close();
+  conn_->disconnect();
 }
 
 }

@@ -42,7 +42,7 @@ public:
   virtual ~BaseSession(void) {}
 
   virtual void write(const std::string& buf) {}
-  virtual void close(void) {}
+  virtual void disconnect(void) {}
 
   void set_message_callback(const MessageCallback& fn) {
     message_fn_ = fn;

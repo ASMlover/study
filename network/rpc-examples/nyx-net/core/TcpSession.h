@@ -50,7 +50,7 @@ public:
   void do_read(void);
   void do_write(const std::string& buf);
 
-  virtual void close(void) override;
+  virtual void disconnect(void) override;
   virtual void write(const std::string& buf) override {
     do_write(buf);
   }

@@ -42,7 +42,7 @@ void SessionManager::unreg_session(const SessionPtr& s) {
 void SessionManager::close_all(void) {
   std::unique_lock<std::mutex> guard(mtx_);
   for (auto& s : sesstions_)
-    s->close();
+    s->disconnect();
 }
 
 }

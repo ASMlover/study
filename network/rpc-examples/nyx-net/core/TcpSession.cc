@@ -48,7 +48,7 @@ void TcpSession::do_read(void) {
           do_read();
         }
         else {
-          close();
+          disconnect();
         }
       });
 }
@@ -62,7 +62,7 @@ void TcpSession::do_write(const std::string& buf) {
     });
 }
 
-void TcpSession::close(void) {
+void TcpSession::disconnect(void) {
   if (closed_)
     return;
   closed_ = true;
