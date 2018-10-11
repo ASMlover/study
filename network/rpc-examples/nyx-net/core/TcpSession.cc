@@ -63,15 +63,18 @@ void TcpSession::do_write(const std::string& buf) {
 }
 
 void TcpSession::disconnect(void) {
-  if (closed_)
-    return;
-  closed_ = true;
+  auto self(shared_from_this());
+  strand_.post([this, self] {
+        if (closed_)
+          return;
+        closed_ = true;
 
-  if (closed_fn_)
-    closed_fn_(shared_from_this());
+        if (closed_fn_)
+          closed_fn_(shared_from_this());
 
-  socket_.close();
-  SessionManager::get_instance().unreg_session(shared_from_this());
+        socket_.close();
+        SessionManager::get_instance().unreg_session(shared_from_this());
+      });
 }
 
 void TcpSession::handle_data(std::vector<char>& buf, std::size_t n) {
