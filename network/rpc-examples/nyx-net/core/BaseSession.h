@@ -42,6 +42,7 @@ public:
   virtual ~BaseSession(void) {}
 
   virtual void write(const std::string& buf) {}
+  virtual void write(const char* buf, std::size_t len) {}
   virtual void disconnect(void) {}
 
   void set_message_callback(const MessageCallback& fn) {

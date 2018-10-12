@@ -62,6 +62,10 @@ void TcpSession::do_write(const std::string& buf) {
     });
 }
 
+void TcpSession::do_write(const char* buf, std::size_t len) {
+  do_write(std::string(buf, len));
+}
+
 void TcpSession::disconnect(void) {
   auto self(shared_from_this());
   strand_.post([this, self] {
