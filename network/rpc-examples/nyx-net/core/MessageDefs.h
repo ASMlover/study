@@ -38,6 +38,7 @@ using SessionPtr = std::shared_ptr<BaseSession>;
 using NewConnectionCallback = std::function<void (const SessionPtr&)>;
 using ConnectedCallback = std::function<void (const SessionPtr&)>;
 using MessageCallback = std::function<void (const SessionPtr&, const std::string&)>;
+using RMessageCallback = std::function<void (const SessionPtr&, const char*, std::size_t)>;
 using ClosedCallback = std::function<void (const SessionPtr&)>;
 
 }
