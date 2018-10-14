@@ -37,7 +37,6 @@ protected:
   ConnectedCallback connected_fn_{};
   NewConnectionCallback newconnection_fn_{};
   MessageCallback message_fn_{};
-  RMessageCallback raw_message_fn_{};
   ClosedCallback closed_fn_{};
 
   BindWrapper(void) = default;
@@ -70,16 +69,6 @@ public:
 
   BindWrapper& set_message_callback(MessageCallback& fn) {
     message_fn_ = std::move(fn);
-    return *this;
-  }
-
-  BindWrapper& set_message_callback(const RMessageCallback& fn) {
-    raw_message_fn_ = fn;
-    return *this;
-  }
-
-  BindWrapper& set_message_callback(RMessageCallback&& fn) {
-    raw_message_fn_ = std::move(fn);
     return *this;
   }
 

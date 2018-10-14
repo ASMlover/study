@@ -36,7 +36,6 @@ class BaseSession {
   BaseSession& operator=(const BaseSession&) = delete;
 protected:
   MessageCallback message_fn_{};
-  RMessageCallback raw_message_fn_{};
   ClosedCallback closed_fn_{};
 public:
   BaseSession(void) {}
@@ -52,14 +51,6 @@ public:
 
   void set_message_callback(MessageCallback&& fn) {
     message_fn_ = std::move(fn);
-  }
-
-  void set_message_callback(const RMessageCallback& fn) {
-    raw_message_fn_ = fn;
-  }
-
-  void set_message_callback(RMessageCallback&& fn) {
-    raw_message_fn_ = std::move(fn);
   }
 
   void set_closed_callback(const ClosedCallback& fn) {
