@@ -538,12 +538,52 @@ class vector_base {
   vector_base(void) {
   }
 
-  _Scalar* get_scaler(void) {
+  _Scalar* get_scalar(void) {
     return reinterpret_cast<_Scalar*>(this);
   }
 
-  const _Scalar* get_scaler(void) const {
+  const _Scalar* get_scalar(void) const {
     return reinterpret_cast<const _Scalar*>(this);
+  }
+
+  void set_scaler(_Scalar s) {
+    auto* ss = get_scalar();
+    for (auto i = 0; i < N; ++i)
+      ss[i] = s;
+  }
+
+  _Scalar get_length_squared(void) const {
+    const auto* ss = get_scalar();
+    _Scalar r = 0;
+    for (auto i = 0; i < N; ++i)
+      r += ss[i] * ss[i];
+    return r;
+  }
+
+  _Scalar get_length(void) const {
+    return get_length_squared().sqrt();
+  }
+
+  void normalize(void) {
+    // *this /= get_length();
+  }
+
+  void set_length(_Scalar o) {
+    normalize();
+    // (*this) *= o;
+  }
+
+  bool operator==(const _Vector& o) const {
+    const auto* left = get_scalar();
+    const auto* right = get_scalar();
+    bool r{true};
+    for (auto i = 0; i < N; ++i)
+      r &= left[i] == right[i];
+    return r;
+  }
+
+  bool operator!=(const _Vector& o) const {
+    return !(*this == o);
   }
 };
 
