@@ -565,17 +565,26 @@ class vector_base {
   }
 
   void normalize(void) {
-    // *this /= get_length();
+    *this /= get_length();
   }
 
   void set_length(_Scalar o) {
     normalize();
-    // (*this) *= o;
+    (*this) *= o;
+  }
+
+  _Scalar dot(const _Vector& o) {
+    _Scalar* x = get_scalar();
+    const auto* y = o.get_scalar();
+    _Scalar r{0};
+    for (auto i = 0; i < N; ++i)
+      r += x[i] * y[i];
+    return r;
   }
 
   bool operator==(const _Vector& o) const {
     const auto* left = get_scalar();
-    const auto* right = get_scalar();
+    const auto* right = o.get_scalar();
     bool r{true};
     for (auto i = 0; i < N; ++i)
       r &= left[i] == right[i];
@@ -584,6 +593,114 @@ class vector_base {
 
   bool operator!=(const _Vector& o) const {
     return !(*this == o);
+  }
+
+  _Vector operator+(const _Vector& o) const {
+    _Vector r;
+    _Scalar* ss = r.get_scalar();
+    const auto* x = get_scalar();
+    const auto* y = o.get_scalar();
+    for (auto i = 0; i < N; ++i)
+      ss[i] = x[i] + y[i];
+    return r;
+  }
+
+  _Vector operator-(const _Vector& o) const {
+    _Vector r;
+    _Scalar* ss = r.get_scalar();
+    const auto* x = get_scalar();
+    const auto* y = o.get_scalar();
+    for (auto i = 0; i < N; ++i)
+      ss[i] = x[i] - y[i];
+    return r;
+  }
+
+  _Vector operator*(const _Vector& o) const {
+    _Vector r;
+    _Scalar* ss = r.get_scalar();
+    const auto* x = get_scalar();
+    const auto* y = o.get_scalar();
+    for (auto i = 0; i < N; ++i)
+      ss[i] = x[i] * y[i];
+    return r;
+  }
+
+  _Vector operator/(const _Vector& o) const {
+    _Vector r;
+    _Scalar* ss = r.get_scalar();
+    const auto* x = get_scalar();
+    const auto* y = o.get_scalar();
+    for (auto i = 0; i < N; ++i)
+      ss[i] = x[i] / y[i];
+    return r;
+  }
+
+  _Vector& operator+=(const _Vector& o) {
+    _Scalar* ss = get_scalar();
+    const auto* x = o.get_scalar();
+    for (auto i = 0; i < N; ++i)
+      ss[i] += x[i];
+    return *reinterpret_cast<_Vector*>(this);
+  }
+
+  _Vector& operator+=(_Scalar o) {
+    _Scalar* ss = get_scalar();
+    for (auto i = 0; i < N; ++i)
+      ss[i] += o;
+    return *reinterpret_cast<_Vector*>(this);
+  }
+
+  _Vector& operator-=(const _Vector& o) {
+    _Scalar* ss = get_scalar();
+    const auto* x = o.get_scalar();
+    for (auto i = 0; i < N; ++i)
+      ss[i] -= x[i];
+    return *reinterpret_cast<_Vector*>(this);
+  }
+
+  _Vector& operator-=(_Scalar o) {
+    _Scalar* ss = get_scalar();
+    for (auto i = 0; i < N; ++i)
+      ss[i] -= o;
+    return *reinterpret_cast<_Vector*>(this);
+  }
+
+  _Vector& operator*=(const _Vector& o) {
+    _Scalar* ss = get_scalar();
+    const auto* x = o.get_scalar();
+    for (auto i = 0; i < N; ++i)
+      ss[i] *= x[i];
+    return *reinterpret_cast<_Vector*>(this);
+  }
+
+  _Vector& operator*=(_Scalar o) {
+    _Scalar* ss = get_scalar();
+    for (auto i = 0; i < N; ++i)
+      ss[i] *= o;
+    return *reinterpret_cast<_Vector*>(this);
+  }
+
+  _Vector& operator/=(const _Vector& o) {
+    _Scalar* ss = get_scalar();
+    const auto* x = o.get_scalar();
+    for (auto i = 0; i < N; ++i)
+      ss[i] /= x[i];
+    return *reinterpret_cast<_Vector*>(this);
+  }
+
+  _Vector& operator/=(_Scalar o) {
+    _Scalar* ss = get_scalar();
+    for (auto i = 0; i < N; ++i)
+      ss[i] /= o;
+    return *reinterpret_cast<_Vector*>(this);
+  }
+
+  _Vector& operator=(const _Vector& o) {
+    _Scalar* ss = get_scalar();
+     const auto* x = o.get_scalar();
+     for (auto i = 0; i < N; ++i)
+       ss[i] = x[i];
+     return *reinterpret_cast<_Vector*>(this);
   }
 };
 
