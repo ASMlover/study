@@ -27,6 +27,8 @@
 #pragma once
 
 #include <cstdint>
+#include <iomanip>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <libfixmath/fixmath.h>
@@ -535,6 +537,7 @@ public:
 
 template <typename _Scalar, typename _Vector, std::size_t N>
 class vector_base {
+public:
   vector_base(void) {
   }
 
@@ -701,6 +704,50 @@ class vector_base {
      for (auto i = 0; i < N; ++i)
        ss[i] = x[i];
      return *reinterpret_cast<_Vector*>(this);
+  }
+};
+
+class vector2 : public vector_base<fix16, vector2, 2> {
+public:
+  fix16 x_{};
+  fix16 y_{};
+
+  vector2(void) noexcept
+    : x_(0)
+    , y_(0) {
+  }
+
+  vector2(const vector2& o) noexcept
+    : x_(o.x_)
+    , y_(o.y_) {
+  }
+
+  vector2(const fix16& x, const fix16& y) noexcept
+    : x_(x)
+    , y_(y) {
+  }
+
+  vector2(const fix16& x) noexcept
+    : x_(x)
+    , y_(x) {
+  }
+
+  vector2 copy(void) const noexcept {
+    return *this;
+  }
+
+  std::string as_repr(void) const noexcept {
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(4)
+       << "fix.vector2<" << (float)x_ << ", " << (float)y_ << ">";
+    return ss.str();
+  }
+
+  std::string as_str(void) const noexcept {
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(4)
+       << "(" << (float)x_ << ", " << (float)y_ << ")";
+    return ss.str();
   }
 };
 
