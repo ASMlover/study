@@ -751,4 +751,53 @@ public:
   }
 };
 
+class vector3 : public vector_base<fix16, vector3, 3> {
+public:
+  fix16 x_{};
+  fix16 y_{};
+  fix16 z_{};
+
+  vector3(void) noexcept
+    : x_(0)
+    , y_(0)
+    , z_(0) {
+  }
+
+  vector3(const vector3& o) noexcept
+    : x_(o.x_)
+    , y_(o.y_)
+    , z_(o.z_) {
+  }
+
+  vector3(const fix16& x, const fix16& y, const fix16& z) noexcept
+    : x_(x)
+    , y_(y)
+    , z_(z) {
+  }
+
+  vector3(const fix16& v) noexcept
+    : x_(v)
+    , y_(v)
+    , z_(v) {
+  }
+
+  vector3 copy(void) const noexcept {
+    return *this;
+  }
+
+  std::string as_repr(void) const noexcept {
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(4) << "fix.vector3<"
+       << (float)x_ << ", " << (float)y_ << ", " << (float)z_ << ">";
+    return ss.str();
+  }
+
+  std::string as_str(void) const noexcept {
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(4)
+       << "(" << (float)x_ << ", " << (float)y_ << ", " << (float)z_ << ")";
+    return ss.str();
+  }
+};
+
 }
