@@ -82,6 +82,12 @@ public:
     return fix16_to_dbl(value_);
   }
 
+  fix16 operator-(void) const noexcept {
+    fix16 r{0};
+    r -= *this;
+    return r;
+  }
+
   fix16& operator=(const fix16& r) noexcept {
     if (this != &r)
       value_ = r.value_;
@@ -797,6 +803,32 @@ public:
     ss << std::fixed << std::setprecision(4)
        << "(" << (float)x_ << ", " << (float)y_ << ", " << (float)z_ << ")";
     return ss.str();
+  }
+
+  void set_pitch_yaw(const fix16& p, const fix16& y) noexcept {
+    auto p_cos = p.cos();
+    auto p_sin = -p.sin();
+    auto y_cos = y.cos();
+    auto y_sin = y.sin();
+    x_ = p_cos * y_sin;
+    y_ = p_sin;
+    z_ = p_cos * y_cos;
+  }
+
+  void set_yaw(const fix16& y) {
+    set_pitch_yaw(get_pitch(), y);
+  }
+
+  fix16 get_yaw(void) const noexcept {
+    return x_.atan2(z_);
+  }
+
+  void set_pitch(const fix16& p) {
+    set_pitch_yaw(p, get_yaw());
+  }
+
+  fix16 get_pitch(void) const noexcept {
+    return -y_.atan2((x_ * x_ + z_ * z_).sqrt());
   }
 };
 
