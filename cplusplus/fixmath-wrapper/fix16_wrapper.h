@@ -539,6 +539,31 @@ public:
   fix16 max(const fix16& r) const noexcept {
     return fix16_max(value_, r.value_);
   }
+
+  std::string as_repr(void) const noexcept {
+    std::stringstream ss;
+    ss << "fix16<"
+       << std::hex << std::setw(8) << std::setfill('0') << value_ << ">";
+    return ss.str();
+  }
+
+  std::string as_str(void) const noexcept {
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(4) << fix16_to_float(value_);
+    return ss.str();
+  }
+
+  int as_int(void) const noexcept {
+    return fix16_to_int(value_);
+  }
+
+  float as_float(void) const noexcept {
+    return fix16_to_float(value_);
+  }
+
+  fix16 copy(void) const noexcept {
+    return fix16(value_);
+  }
 };
 
 template <typename _Scalar, typename _Vector, std::size_t N>
