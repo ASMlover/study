@@ -43,10 +43,18 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     /D_UNICODE
     /D_CRT_SECURE_NO_WARNINGS
     /D_CRT_NONSTDC_NO_WARNINGS
+    /DBOOST_PYTHON_STATIC_LIB
     /wd4244)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc")
   set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd /Od")
   set(CMAKE_CXX_FLAGS_RELEASE "/DNDEBUG /MD /Ox")
+
+  include_directories(
+    "C:/Python27amd64/include"
+    "D:/Tools/boost_1_64_0")
+  link_directories(
+    "C:/Python27amd64/libs"
+    "D:/Tools/boost_1_64_0/stage/x64/lib")
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 message(STATUS "`${PROJECT_NAME}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")
@@ -58,6 +66,8 @@ message(STATUS "`${PROJECT_NAME}` SOURCE_FILES: ${SOURCE_FILES}")
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+  target_link_libraries(${PROJECT_NAME}
+    debug libboost_python-vc141-mt-gd-1_64 optimized libboost_python-vc141-mt-1_64)
   if (_FIXMATH_WRAPPER_PYD)
     add_custom_command(TARGET ${PROJECT_NAME}
       POST_BUILD
