@@ -24,4 +24,61 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <boost/python.hpp>
 #include "fix16_wrapper.h"
+
+namespace py = ::boost::python;
+
+namespace fixmath_wrapper {
+
+void fixmath_wrap(void) {
+  PyEval_InitThreads();
+
+  py::class_<fixmath_wrapper::fix16>("fix16", py::init<>())
+    .def(py::init<std::int16_t>())
+    .def(py::init<float>())
+    .def(py::init<double>())
+    .def(py::self + py::self)
+    .def(py::self - py::self)
+    .def(py::self * py::self)
+    .def(py::self / py::self)
+    .def(py::self > py::self)
+    .def(py::self >= py::self)
+    .def(py::self < py::self)
+    .def(py::self <= py::self)
+    .def(py::self == py::self)
+    .def(py::self != py::self)
+    .def("__repr__", &fixmath_wrapper::fix16::as_repr)
+    .def("__str__", &fixmath_wrapper::fix16::as_str)
+    .def("__int__", &fixmath_wrapper::fix16::as_int)
+    .def("__float__", &fixmath_wrapper::fix16::as_float)
+    .def("__copy__", &fixmath_wrapper::fix16::copy)
+    .def("clone", &fixmath_wrapper::fix16::copy)
+    .def("sin", &fixmath_wrapper::fix16::sin)
+    .def("cos", &fixmath_wrapper::fix16::cos)
+    .def("tan", &fixmath_wrapper::fix16::tan)
+    .def("asin", &fixmath_wrapper::fix16::asin)
+    .def("acos", &fixmath_wrapper::fix16::acos)
+    .def("atan", &fixmath_wrapper::fix16::atan)
+    .def("atan2", &fixmath_wrapper::fix16::atan2)
+    .def("sin_parabola", &fixmath_wrapper::fix16::sin_parabola)
+    .def("rad2deg", &fixmath_wrapper::fix16::rad2deg)
+    .def("deg2rad", &fixmath_wrapper::fix16::deg2rad)
+    .def("sqrt", &fixmath_wrapper::fix16::sqrt)
+    .def("square", &fixmath_wrapper::fix16::square)
+    .def("exp", &fixmath_wrapper::fix16::exp)
+    .def("log", &fixmath_wrapper::fix16::log)
+    .def("log2", &fixmath_wrapper::fix16::log2)
+    .def("abs", &fixmath_wrapper::fix16::abs)
+    .def("floor", &fixmath_wrapper::fix16::floor)
+    .def("ceil", &fixmath_wrapper::fix16::ceil)
+    .def("min", &fixmath_wrapper::fix16::min)
+    .def("max", &fixmath_wrapper::fix16::max)
+    ;
+}
+
+}
+
+BOOST_PYTHON_MODULE(_fixmath) {
+  fixmath_wrapper::fixmath_wrap();
+}
