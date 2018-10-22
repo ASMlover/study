@@ -75,6 +75,30 @@ void fixmath_wrap(void) {
     .def("min", &fixmath_wrapper::fix16::min)
     .def("max", &fixmath_wrapper::fix16::max)
     ;
+
+  py::class_<fixmath_wrapper::vector2>("vector2", py::init<>())
+    .def(py::init<const fixmath_wrapper::fix16&,
+        const fixmath_wrapper::fix16&>())
+    .def(py::init<const fixmath_wrapper::fix16&>())
+    .def_readwrite("x", &fixmath_wrapper::vector2::x_)
+    .def_readwrite("y", &fixmath_wrapper::vector2::y_)
+    .def(py::self + py::self)
+    .def(py::self - py::self)
+    .def(py::self * py::self)
+    .def(py::self / py::self)
+    .def(py::self == py::self)
+    .def(py::self != py::self)
+    .def(py::self * py::other<fixmath_wrapper::fix16>())
+    .def("__repr__", &fixmath_wrapper::vector2::as_repr)
+    .def("__str__", &fixmath_wrapper::vector2::as_str)
+    .def("__copy__", &fixmath_wrapper::vector2::copy)
+    .def("clone", &fixmath_wrapper::vector2::copy)
+    .add_property("length_squared",
+        &fixmath_wrapper::vector2::get_length_squared)
+    .add_property("length",
+        &fixmath_wrapper::vector2::get_length,
+        &fixmath_wrapper::vector2::set_length)
+    ;
 }
 
 }
