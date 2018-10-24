@@ -99,6 +99,38 @@ void fixmath_wrap(void) {
         &fixmath_wrapper::vector2::get_length,
         &fixmath_wrapper::vector2::set_length)
     ;
+
+  py::class_<fixmath_wrapper::vector3>("vector3", py::init<>())
+    .def(py::init<const fixmath_wrapper::fix16&,
+        const fixmath_wrapper::fix16&, const fixmath_wrapper::fix16&>())
+    .def(py::init<const fixmath_wrapper::fix16&>())
+    .def_readwrite("x", &fixmath_wrapper::vector3::x_)
+    .def_readwrite("y", &fixmath_wrapper::vector3::y_)
+    .def_readwrite("z", &fixmath_wrapper::vector3::z_)
+    .def(py::self + py::self)
+    .def(py::self - py::self)
+    .def(py::self * py::self)
+    .def(py::self / py::self)
+    .def(py::self == py::self)
+    .def(py::self != py::self)
+    .def(py::self * py::other<fixmath_wrapper::fix16>())
+    .def("__repr__", &fixmath_wrapper::vector3::as_repr)
+    .def("__str__", &fixmath_wrapper::vector3::as_str)
+    .def("__copy__", &fixmath_wrapper::vector3::copy)
+    .def("clone", &fixmath_wrapper::vector3::copy)
+    .def("dot", &fixmath_wrapper::vector3::dot)
+    .def("set_pitch_yaw", &fixmath_wrapper::vector3::set_pitch_yaw)
+    .add_property("length_squared",
+        &fixmath_wrapper::vector3::get_length_squared)
+    .add_property("length",
+        &fixmath_wrapper::vector3::get_length,
+        &fixmath_wrapper::vector3::set_length)
+    .add_property("pitch",
+        &fixmath_wrapper::vector3::get_pitch,
+        &fixmath_wrapper::vector3::set_pitch)
+    .add_property("yaw",
+        &fixmath_wrapper::vector3::get_yaw, &fixmath_wrapper::vector3::set_yaw)
+    ;
 }
 
 }
