@@ -32,10 +32,7 @@
 #include <sstream>
 #include <string>
 #include <libfixmath/fixmath.h>
-#include <boost/python.hpp>
 #include "fixmath_utils.h"
-
-namespace py = ::boost::python;
 
 namespace fixmath_wrapper {
 
@@ -566,50 +563,6 @@ public:
 
   fix16 copy(void) const noexcept {
     return fix16(value_);
-  }
-
-  static void wraps(void) {
-    py::class_<fix16>("fix16", py::init<>())
-      .def(py::init<std::int16_t>())
-      .def(py::init<float>())
-      .def(py::init<double>())
-      .def(py::self + py::self)
-      .def(py::self - py::self)
-      .def(py::self * py::self)
-      .def(py::self / py::self)
-      .def(py::self > py::self)
-      .def(py::self >= py::self)
-      .def(py::self < py::self)
-      .def(py::self <= py::self)
-      .def(py::self == py::self)
-      .def(py::self != py::self)
-      .def("__repr__", &fix16::as_repr)
-      .def("__str__", &fix16::as_str)
-      .def("__int__", &fix16::as_int)
-      .def("__float__", &fix16::as_float)
-      .def("__copy__", &fix16::copy)
-      .def("clone", &fix16::copy)
-      .def("sin", &fix16::sin)
-      .def("cos", &fix16::cos)
-      .def("tan", &fix16::tan)
-      .def("asin", &fix16::asin)
-      .def("acos", &fix16::acos)
-      .def("atan", &fix16::atan)
-      .def("atan2", &fix16::atan2)
-      .def("sin_parabola", &fix16::sin_parabola)
-      .def("rad2deg", &fix16::rad2deg)
-      .def("deg2rad", &fix16::deg2rad)
-      .def("sqrt", &fix16::sqrt)
-      .def("square", &fix16::square)
-      .def("exp", &fix16::exp)
-      .def("log", &fix16::log)
-      .def("log2", &fix16::log2)
-      .def("abs", &fix16::abs)
-      .def("floor", &fix16::floor)
-      .def("ceil", &fix16::ceil)
-      .def("min", &fix16::min)
-      .def("max", &fix16::max)
-      ;
   }
 };
 
