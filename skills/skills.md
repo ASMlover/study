@@ -56,6 +56,8 @@
 > ### **3.3 配置用户信息**
     git config --global user.name "your name"
     git config --global user.email you@example.com
+    # 保存http/https帐号密码到本地
+    git config --global credential.helper store
 > ### **3.4 crlf换行符**
     Windows/Dos下换行为CRLF \r\n(CR回车, LF换行)
     Linux/Unix下换行为LF \n
@@ -98,6 +100,8 @@
       prompt = false
     [push]
       default = current
+    [credential]
+      helper = store
 
 ## **4. 好玩儿**
 > ### **4.1 一行代码将浏览器变为记事本**
