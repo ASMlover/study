@@ -26,13 +26,12 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include "UnCopyable.h"
 #include "MessageDefs.h"
 
 namespace nyx {
 
-class BindWrapper {
-  BindWrapper(const BindWrapper&) = delete;
-  BindWrapper& operator=(const BindWrapper&) = delete;
+class BindWrapper : private UnCopyable {
 protected:
   ConnectedCallback connected_fn_{};
   NewConnectionCallback newconnection_fn_{};

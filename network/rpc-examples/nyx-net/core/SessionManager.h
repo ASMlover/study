@@ -29,18 +29,16 @@
 #include <memory>
 #include <unordered_set>
 #include <mutex>
+#include "UnCopyable.h"
 
 namespace nyx {
 
 class BaseSession;
 using SessionPtr = std::shared_ptr<BaseSession>;
 
-class SessionManager {
+class SessionManager : private UnCopyable {
   std::unordered_set<SessionPtr> sesstions_;
   mutable std::mutex mtx_;
-
-  SessionManager(const SessionManager&) = delete;
-  SessionManager& operator=(const SessionManager&) = delete;
 
   SessionManager(void) {}
   ~SessionManager(void) {}

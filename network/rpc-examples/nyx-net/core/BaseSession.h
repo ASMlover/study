@@ -27,13 +27,12 @@
 #pragma once
 
 #include <string>
+#include "UnCopyable.h"
 #include "MessageDefs.h"
 
 namespace nyx {
 
-class BaseSession {
-  BaseSession(const BaseSession&) = delete;
-  BaseSession& operator=(const BaseSession&) = delete;
+class BaseSession : private UnCopyable {
 protected:
   MessageCallback message_fn_{};
   ClosedCallback closed_fn_{};
