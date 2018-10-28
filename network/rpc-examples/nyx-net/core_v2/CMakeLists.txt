@@ -25,44 +25,21 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cmake_minimum_required(VERSION 3.0)
-project(nyxnet CXX)
+set(OUTPUT_NAME "_nyxcore_v2")
+set(OUTPUT_NAME_STATIC "nyxcore_v2.static")
 
-if (NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
-endif()
-message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+aux_source_directory(. NYXCORE_SOURCEFILES)
+set(NYXCORE_SOURCEFILES ${NYXCORE_SOURCEFILES}
+  ${PROJECT_SOURCE_DIR}/../../3rdparty/asio/asio/src/asio.cpp)
+message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` NYXCORE_SOURCEFILES: ${NYXCORE_SOURCEFILES}")
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-  add_definitions(
-    /DUNICODE
-    /D_UNICODE
-    /D_CRT_SECURE_NO_WARNINGS
-    /D_CRT_NONSTDC_NO_WARNINGS
-    /DASIO_STANDALONE
-    /DASIO_SEPARATE_COMPILATION
-    /D_WIN32_WINNT=0x0601
-    /wd4267
-    /wd4834
-    /wd4996)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc /std:c++latest")
-  set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd /Od")
-  set(CMAKE_CXX_FLAGS_RELEASE "/DNDEBUG /MD /Ox")
+add_library(${OUTPUT_NAME} SHARED ${NYXCORE_SOURCEFILES})
+add_library(${OUTPUT_NAME_STATIC} STATIC ${NYXCORE_SOURCEFILES})
+
+set_target_properties(${OUTPUT_NAME} PROPERTIES PREFIX "")
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+  set_target_properties(${OUTPUT_NAME} PROPERTIES SUFFIX ".pyd")
 else()
-  add_definitions(
-    -DASIO_STANDALONE
-    -DASIO_SEPARATE_COMPILATION)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -std=c++1z -static-libgcc -static-libstdc++ -march=native")
-  set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -O0")
-  set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3")
+  set_target_properties(${OUTPUT_NAME} PROPERTIES SUFFIX ".so")
+  target_link_libraries(${OUTPUT_NAME} pthread)
 endif()
-string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
-message(STATUS "`${PROJECT_NAME}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")
-
-include_directories(
-  ${PROJECT_SOURCE_DIR}
-  ${PROJECT_SOURCE_DIR}/../../3rdparty/asio/asio/include)
-
-add_subdirectory(core)
-add_subdirectory(core_v2)
-add_subdirectory(test)
