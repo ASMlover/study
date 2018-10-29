@@ -47,6 +47,9 @@ public:
   void register_session(void);
   void unregister_session(void);
 
+  virtual const std::string get_remote_addr(void) const = 0;
+  virtual std::uint16_t get_remote_port(void) const = 0;
+
   void start(void) {
     start_impl();
   }
