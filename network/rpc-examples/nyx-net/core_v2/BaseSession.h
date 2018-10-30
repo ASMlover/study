@@ -34,7 +34,7 @@
 namespace nyx {
 
 class BaseSession
-  : private UnCopyable, std::enable_shared_from_this<BaseSession> {
+  : private UnCopyable, public std::enable_shared_from_this<BaseSession> {
 protected:
   asio::io_context::strand strand_;
   std::string local_addr_{};
