@@ -39,13 +39,10 @@ class TcpSession : public BaseSession {
   bool is_disconnected_{};
   bool is_writing_{};
   std::atomic<bool> is_closed_{false};
-  std::uint32_t data_queue_count_{};
+  std::uint32_t data_queue_size_{};
   std::uint32_t nwrite_limit_{};
   std::vector<char> buffer_;
   std::deque<std::string> write_queue_;
-
-  void do_async_write_impl(const std::string& buf);
-  void handle_async_write(const std::string& buf);
 public:
   TcpSession(asio::io_context& context);
   ~TcpSession(void);
@@ -70,8 +67,8 @@ public:
     return nwrite_limit_;
   }
 
-  std::uint32_t get_data_queue_count(void) const {
-    return data_queue_count_;
+  std::uint32_t get_data_queue_size(void) const {
+    return data_queue_size_;
   }
 
   const std::string get_local_addr(void) const {
@@ -90,6 +87,9 @@ public:
     return socket_.lowest_layer().remote_endpoint().port();
   }
 private:
+  void do_async_write_impl(const std::string& buf);
+  void handle_async_write(const std::string& buf);
+
   virtual void start_impl(void) override;
   virtual bool stop_impl(void) override;
   virtual void disconnect_impl(void) override;
