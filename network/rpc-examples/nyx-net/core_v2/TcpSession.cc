@@ -52,6 +52,21 @@ void TcpSession::do_async_write_impl(const std::string& buf) {
 }
 
 void TcpSession::handle_async_write(const std::string& buf) {
+  auto self(shared_from_this());
+  asio::async_write(socket_, asio::buffer(buf),
+      [this, self](const std::error_code& ec, std::size_t /*n*/) {
+        if (!write_queue_.empty()) {
+          auto wbuf = write_queue_.front();
+          write_queue_.pop_front();
+          data_queue_size_ -= wbuf.size();
+          handle_async_write(wbuf);
+        }
+        else {
+          is_writing_ = false;
+          if (is_disconnected_ && stop_impl())
+            unregister_session();
+        }
+      });
 }
 
 void TcpSession::start_impl(void) {
@@ -83,6 +98,7 @@ void TcpSession::disconnect_impl(void) {
 }
 
 void TcpSession::async_write_impl(const std::string& buf) {
+  do_async_write_impl(buf);
 }
 
 }
