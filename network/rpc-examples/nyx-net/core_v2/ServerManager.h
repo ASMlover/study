@@ -24,25 +24,54 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "BaseServer.h"
-#include "ServerManager.h"
+#pragma once
+
+#include <memory>
+#include <mutex>
+#include <unordered_set>
+#include "Nyx.h"
 
 namespace nyx {
 
-BaseServer::BaseServer(asio::io_context& context)
-  : context_(context) {
-}
+class BaseServer;
 
-BaseServer::~BaseServer(void) {
-}
+using WorkerPtr = std::shared_ptr<asio::io_context::work>;
+using ServerPtr = std::shared_ptr<BaseServer>;
 
-void BaseServer::start_impl(void) {
-  status_ = Status::STARTED;
-  ServerManager::get_instance().add_server(shared_from_this());
-}
+class ServerManager : private UnCopyable {
+  asio::io_context context_;
+  std::size_t nthreads_{};
+  WorkerPtr worker_;
+  mutable std::mutex mutex_;
+  std::unordered_set<ServerPtr> servers_;
 
-void BaseServer::stop_impl(void) {
-  status_ = Status::STOPED;
-}
+  static constexpr std::size_t kDefaultThreads = 4;
+
+  ServerManager(void);
+  ~ServerManager(void);
+public:
+  static ServerManager& get_instance(void) {
+    static ServerManager ins;
+    return ins;
+  }
+
+  void add_server(const ServerPtr& s);
+  void start(void);
+  void stop(void);
+  void set_worker(void);
+  void unset_worker(void);
+
+  void set_nthreads(std::size_t nthreads) {
+    nthreads_ = nthreads;
+  }
+
+  std::size_t get_nthreads(void) const {
+    return nthreads_;
+  }
+
+  asio::io_context& get_context(void) {
+    return context_;
+  }
+};
 
 }

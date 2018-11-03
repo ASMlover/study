@@ -24,25 +24,51 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <thread>
+#include <vector>
 #include "BaseServer.h"
 #include "ServerManager.h"
 
 namespace nyx {
 
-BaseServer::BaseServer(asio::io_context& context)
-  : context_(context) {
+using ThreadPtr = std::shared_ptr<std::thread>;
+
+ServerManager::ServerManager(void)
+  : nthreads_(kDefaultThreads) {
 }
 
-BaseServer::~BaseServer(void) {
+ServerManager::~ServerManager(void) {
 }
 
-void BaseServer::start_impl(void) {
-  status_ = Status::STARTED;
-  ServerManager::get_instance().add_server(shared_from_this());
+void ServerManager::add_server(const ServerPtr& s) {
+  std::unique_lock<std::mutex> guard(mutex_);
+  servers_.insert(s);
 }
 
-void BaseServer::stop_impl(void) {
-  status_ = Status::STOPED;
+void ServerManager::start(void) {
+  std::vector<ThreadPtr> threads;
+  for (auto i = 0u; i < nthreads_; ++i)
+    threads.emplace_back(new std::thread([this] { context_.run(); }));
+
+  for (auto& t : threads)
+    t->join();
+}
+
+void ServerManager::stop(void) {
+  std::unique_lock<std::mutex> guard(mutex_);
+  for (auto& s : servers_)
+    s->stop_impl();
+  servers_.clear();
+}
+
+void ServerManager::set_worker(void) {
+  std::unique_lock<std::mutex> guard(mutex_);
+  worker_.reset(new asio::io_context::work(context_));
+}
+
+void ServerManager::unset_worker(void) {
+  std::unique_lock<std::mutex> guard(mutex_);
+  worker_.reset();
 }
 
 }
