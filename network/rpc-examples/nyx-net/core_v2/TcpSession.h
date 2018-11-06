@@ -35,6 +35,7 @@
 namespace nyx {
 
 class TcpSession : public BaseSession {
+protected:
   tcp::socket socket_;
   bool is_disconnected_{};
   bool is_writing_{};
@@ -86,14 +87,14 @@ public:
   virtual std::uint16_t get_remote_port(void) const override {
     return socket_.lowest_layer().remote_endpoint().port();
   }
-private:
-  void do_async_write_impl(const std::string& buf);
-  void handle_async_write(const std::string& buf);
-
+protected:
   virtual void start_impl(void) override;
   virtual bool stop_impl(void) override;
   virtual void disconnect_impl(void) override;
   virtual void async_write_impl(const std::string& buf) override;
+private:
+  void do_async_write_impl(const std::string& buf);
+  void handle_async_write(const std::string& buf);
 };
 
 }
