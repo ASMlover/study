@@ -69,6 +69,10 @@ void TcpSession::handle_async_write(const std::string& buf) {
       });
 }
 
+void TcpSession::cleanup(void) {
+  unregister_session();
+}
+
 void TcpSession::start_impl(void) {
   auto self(shared_from_this());
   socket_.async_write_some(asio::buffer(buffer_),

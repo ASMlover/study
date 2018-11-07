@@ -88,6 +88,7 @@ public:
     return socket_.lowest_layer().remote_endpoint().port();
   }
 protected:
+  virtual void cleanup(void);
   virtual void start_impl(void) override;
   virtual bool stop_impl(void) override;
   virtual void disconnect_impl(void) override;

@@ -37,12 +37,15 @@ TcpClient::~TcpClient(void) {
 }
 
 void TcpClient::async_connect(const std::string& host, std::uint16_t port) {
+  tcp::endpoint ep(asio::ip::address::from_string(host), port);
 }
 
 void TcpClient::async_write(const std::string& buf) {
+  conn_->async_write(buf);
 }
 
 void TcpClient::disconnect(void) {
+  conn_->disconnect();
 }
 
 }
