@@ -125,6 +125,11 @@
         * 首先得到某个提交的 commit_hash
         * 切换到想要使用该提交的分支
         * $ git cherry-pick [commit_hash]
+    8) git pull : unable to update local ref
+       解决方法：
+       $ git gc --prune=now
+       $ git remote prune origin
+       $ git pull
 
 ## **4. github只clone一个repository的subdirectory**
 ``` bash
