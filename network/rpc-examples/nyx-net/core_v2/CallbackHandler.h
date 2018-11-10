@@ -49,52 +49,69 @@ struct CallbackHandler {
   MessageCallback on_message{};
   DisconnetedCallback on_disconnected{};
 
-  void set_resolve_error_callback(const ResolveErrorCallback& fn) {
+  auto get_shared_callback(void) const {
+    return std::make_shared<CallbackHandler>(*this);
+  }
+
+  CallbackHandler& set_resolve_error_callback(const ResolveErrorCallback& fn) {
     on_resolve_error = fn;
+    return *this;
   }
 
-  void set_resolve_error_callback(ResolveErrorCallback&& fn) {
+  CallbackHandler& set_resolve_error_callback(ResolveErrorCallback&& fn) {
     on_resolve_error = std::move(fn);
+    return *this;
   }
 
-  void set_connected_callback(const ConnectedCallback& fn) {
+  CallbackHandler& set_connected_callback(const ConnectedCallback& fn) {
     on_connected = fn;
+    return *this;
   }
 
-  void set_connected_callback(ConnectedCallback&& fn) {
+  CallbackHandler& set_connected_callback(ConnectedCallback&& fn) {
     on_connected = std::move(fn);
+    return *this;
   }
 
-  void set_connect_error_callback(const ConnectErrorCallback& fn) {
+  CallbackHandler& set_connect_error_callback(const ConnectErrorCallback& fn) {
     on_connect_error = fn;
+    return *this;
   }
 
-  void set_connect_error_callback(ConnectErrorCallback&& fn) {
+  CallbackHandler& set_connect_error_callback(ConnectErrorCallback&& fn) {
     on_connect_error = std::move(fn);
+    return *this;
   }
 
-  void set_new_connection_callback(const NewConnectionCallback& fn) {
+  CallbackHandler& set_new_connection_callback(
+      const NewConnectionCallback& fn) {
     on_new_connection = fn;
+    return *this;
   }
 
-  void set_new_connection_callback(NewConnectionCallback&& fn) {
+  CallbackHandler& set_new_connection_callback(NewConnectionCallback&& fn) {
     on_new_connection = std::move(fn);
+    return *this;
   }
 
-  void set_message_callback(const MessageCallback& fn) {
+  CallbackHandler& set_message_callback(const MessageCallback& fn) {
     on_message = fn;
+    return *this;
   }
 
-  void set_message_callback(MessageCallback&& fn) {
+  CallbackHandler& set_message_callback(MessageCallback&& fn) {
     on_message = std::move(fn);
+    return *this;
   }
 
-  void set_disconnected_callback(const DisconnetedCallback& fn) {
+  CallbackHandler& set_disconnected_callback(const DisconnetedCallback& fn) {
     on_disconnected = fn;
+    return *this;
   }
 
-  void set_disconnected_callback(DisconnetedCallback&& fn) {
+  CallbackHandler& set_disconnected_callback(DisconnetedCallback&& fn) {
     on_disconnected = std::move(fn);
+    return *this;
   }
 };
 
