@@ -34,6 +34,7 @@ namespace nyx {
 class BaseSession;
 using SessionPtr = std::shared_ptr<BaseSession>;
 
+using ResolveErrorCallback = std::function<void (const SessionPtr&)>;
 using ConnectedCallback = std::function<void (const SessionPtr&)>;
 using ConnectErrorCallback = std::function<void (const SessionPtr&)>;
 using NewConnectionCallback = std::function<void (const SessionPtr&)>;
@@ -41,50 +42,59 @@ using MessageCallback = std::function<void (const SessionPtr&, const std::string
 using DisconnetedCallback = std::function<void (const SessionPtr&)>;
 
 struct CallbackHandler {
-  ConnectedCallback on_connected_{};
-  ConnectErrorCallback on_connect_error_{};
-  NewConnectionCallback on_new_connection_{};
-  MessageCallback on_message_{};
-  DisconnetedCallback on_disconnected_{};
+  ResolveErrorCallback on_resolve_error{};
+  ConnectedCallback on_connected{};
+  ConnectErrorCallback on_connect_error{};
+  NewConnectionCallback on_new_connection{};
+  MessageCallback on_message{};
+  DisconnetedCallback on_disconnected{};
+
+  void set_resolve_error_callback(const ResolveErrorCallback& fn) {
+    on_resolve_error = fn;
+  }
+
+  void set_resolve_error_callback(ResolveErrorCallback&& fn) {
+    on_resolve_error = std::move(fn);
+  }
 
   void set_connected_callback(const ConnectedCallback& fn) {
-    on_connected_ = fn;
+    on_connected = fn;
   }
 
   void set_connected_callback(ConnectedCallback&& fn) {
-    on_connected_ = std::move(fn);
+    on_connected = std::move(fn);
   }
 
   void set_connect_error_callback(const ConnectErrorCallback& fn) {
-    on_connect_error_ = fn;
+    on_connect_error = fn;
   }
 
   void set_connect_error_callback(ConnectErrorCallback&& fn) {
-    on_connect_error_ = std::move(fn);
+    on_connect_error = std::move(fn);
   }
 
   void set_new_connection_callback(const NewConnectionCallback& fn) {
-    on_new_connection_ = fn;
+    on_new_connection = fn;
   }
 
   void set_new_connection_callback(NewConnectionCallback&& fn) {
-    on_new_connection_ = std::move(fn);
+    on_new_connection = std::move(fn);
   }
 
   void set_message_callback(const MessageCallback& fn) {
-    on_message_ = fn;
+    on_message = fn;
   }
 
   void set_message_callback(MessageCallback&& fn) {
-    on_message_ = std::move(fn);
+    on_message = std::move(fn);
   }
 
   void set_disconnected_callback(const DisconnetedCallback& fn) {
-    on_disconnected_ = fn;
+    on_disconnected = fn;
   }
 
   void set_disconnected_callback(DisconnetedCallback&& fn) {
-    on_disconnected_ = std::move(fn);
+    on_disconnected = std::move(fn);
   }
 };
 
