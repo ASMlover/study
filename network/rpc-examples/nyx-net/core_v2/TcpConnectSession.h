@@ -32,11 +32,16 @@
 
 namespace nyx {
 
+struct CallbackHandler;
+
 class TcpConnectSession : public TcpSession {
+  using HandlerPtr = std::shared_ptr<CallbackHandler>;
+
   std::atomic<bool> is_connected_{};
   std::string host_{};
   std::uint16_t port_{};
   asio::ip::tcp::resolver resolver_;
+  HandlerPtr handler_;
 public:
   TcpConnectSession(asio::io_context& context);
   virtual ~TcpConnectSession(void);
@@ -44,6 +49,7 @@ public:
   void async_connect(const std::string& host, std::uint16_t port);
   void async_write(const std::string& buf);
   void set_option(void);
+  void set_callback_handler(const HandlerPtr& handler);
 
   virtual void start_impl(void) override;
   virtual bool stop_impl(void) override;

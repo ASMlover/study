@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "CallbackHandler.h"
 #include "TcpConnectSession.h"
 
 namespace nyx {
@@ -54,7 +55,8 @@ void TcpConnectSession::async_connect(
               });
         }
         else {
-          // TODO: on_resolve_error(...)
+          if (handler_ && handler_->on_resolve_error)
+            handler_->on_resolve_error(shared_from_this());
           if (stop_impl())
             cleanup();
         }
@@ -72,6 +74,10 @@ void TcpConnectSession::set_option(void) {
   socket_.set_option(asio::ip::tcp::acceptor::reuse_address(true));
   socket_.set_option(asio::ip::tcp::socket::keep_alive(true));
   socket_.set_option(asio::ip::tcp::no_delay(true));
+}
+
+void TcpConnectSession::set_callback_handler(const HandlerPtr& handler) {
+  handler_ =  handler;
 }
 
 void TcpConnectSession::start_impl(void) {
@@ -93,7 +99,9 @@ void TcpConnectSession::handle_async_connect(
     const std::error_code& ec, tcp::resolver::iterator epiter) {
   if (!ec) {
     set_option();
-    // TODO: notify connected, on_connected(...)
+    is_connected_ = true;
+    if (handler_ && handler_->on_connected)
+      handler_->on_connected(shared_from_this());
 
     auto self(shared_from_this());
     socket_.async_read_some(asio::buffer(buffer_),
@@ -113,7 +121,8 @@ void TcpConnectSession::handle_async_connect(
         });
   }
   else {
-    // TODO: notify connect error
+    if (handler_ && handler_->on_connect_error)
+      handler_->on_connect_error(shared_from_this());
     if (stop_impl())
       cleanup();
   }
@@ -122,7 +131,8 @@ void TcpConnectSession::handle_async_connect(
 void TcpConnectSession::handle_async_read(
     const std::error_code& ec, std::size_t n) {
   if (!ec) {
-    // TODO: handle data
+    if (handler_ && handler_->on_message)
+      handler_->on_message(shared_from_this(), std::string(buffer_.data(), n));
 
     auto self(shared_from_this());
     socket_.async_read_some(asio::buffer(buffer_),
