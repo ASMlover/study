@@ -24,20 +24,21 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "TcpSession.h"
+#include "TcpConnectSession.h"
 #include "TcpClient.h"
 
 namespace nyx {
 
 TcpClient::TcpClient(asio::io_context& context) {
-  conn_.reset(new TcpSession(context));
+  conn_ = std::make_unique<TcpConnectSession>(context);
 }
 
 TcpClient::~TcpClient(void) {
 }
 
 void TcpClient::async_connect(const std::string& host, std::uint16_t port) {
-  tcp::endpoint ep(asio::ip::address::from_string(host), port);
+  conn_->set_callback_handler(get_shared_callback());
+  conn_->async_connect(host, port);
 }
 
 void TcpClient::async_write(const std::string& buf) {

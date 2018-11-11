@@ -28,15 +28,14 @@
 
 #include <memory>
 #include "Nyx.h"
+#include "CallbackHandler.h"
 
 namespace nyx {
 
-class BaseSession;
+class TcpConnectSession;
 
-class TcpClient : private UnCopyable {
-  using SessionPtr = std::shared_ptr<BaseSession>;
-
-  SessionPtr conn_;
+class TcpClient : private UnCopyable, public CallbackHandler {
+  std::unique_ptr<TcpConnectSession> conn_;
 public:
   TcpClient(asio::io_context& context);
   ~TcpClient(void);
