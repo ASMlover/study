@@ -46,7 +46,7 @@ protected:
   std::deque<std::string> write_queue_;
 public:
   TcpSession(asio::io_context& context);
-  ~TcpSession(void);
+  virtual ~TcpSession(void);
 
   tcp::socket& get_socket(void) {
     return socket_;
