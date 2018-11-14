@@ -24,14 +24,15 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "ServerManager.h"
 #include "TcpListenSession.h"
 #include "TcpServer.h"
 
 namespace nyx {
 
-TcpServer::TcpServer(asio::io_context& context)
-  : BaseServer(context)
-  , acceptor_(context) {
+TcpServer::TcpServer(void)
+  : BaseServer(ServerManager::get_instance().get_context())
+  , acceptor_(context_) {
 }
 
 TcpServer::~TcpServer(void) {
@@ -42,9 +43,6 @@ void TcpServer::start_impl(void) {
 
   auto self(shared_from_this());
   context_.post([this, self] {
-        acceptor_.set_option(tcp::socket::keep_alive(true));
-        acceptor_.set_option(tcp::no_delay(true));
-
         acceptor_.listen(backlog_);
         acceptor_.async_accept(new_conn_->get_socket(),
             [this, self](const std::error_code& ec) {
@@ -59,7 +57,7 @@ void TcpServer::stop_impl(void) {
 }
 
 void TcpServer::bind(const std::string& host, std::uint16_t port) {
-  if (get_status() == Status::INIT)
+  if (get_status() != Status::INIT)
     return;
 
   if (host_ == host && port_ == port)
@@ -75,6 +73,8 @@ void TcpServer::bind(const std::string& host, std::uint16_t port) {
     acceptor_.close();
   acceptor_.open(ep.protocol());
   acceptor_.set_option(tcp::acceptor::reuse_address(reuse_addr_));
+  acceptor_.set_option(tcp::socket::keep_alive(true));
+  acceptor_.set_option(tcp::no_delay(true));
   acceptor_.bind(ep);
 }
 

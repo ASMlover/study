@@ -44,7 +44,7 @@ class TcpServer : public BaseServer, public CallbackHandler {
   int backlog_{};
   SessionPtr new_conn_;
 public:
-  TcpServer(asio::io_context& context);
+  TcpServer(void);
   ~TcpServer(void);
 
   virtual void start_impl(void) override;
