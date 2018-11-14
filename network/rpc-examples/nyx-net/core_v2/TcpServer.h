@@ -28,13 +28,14 @@
 
 #include "Nyx.h"
 #include "BaseServer.h"
+#include "CallbackHandler.h"
 
 namespace nyx {
 
-class TcpSession;
+class TcpListenSession;
 
-class TcpServer : public BaseServer {
-  using SessionPtr = std::shared_ptr<TcpSession>;
+class TcpServer : public BaseServer, public CallbackHandler {
+  using SessionPtr = std::shared_ptr<TcpListenSession>;
 
   tcp::acceptor acceptor_;
   std::string host_{};
@@ -54,6 +55,10 @@ public:
 
   void enable_reuse_addr(bool reuse) {
     reuse_addr_ = reuse;
+  }
+
+  bool is_open(void) const {
+    return acceptor_.is_open();
   }
 private:
   void reset_connection(void);

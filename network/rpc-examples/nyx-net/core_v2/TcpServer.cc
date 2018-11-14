@@ -24,7 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "TcpSession.h"
+#include "TcpListenSession.h"
 #include "TcpServer.h"
 
 namespace nyx {
@@ -85,13 +85,14 @@ void TcpServer::listen(int backlog) {
 }
 
 void TcpServer::reset_connection(void) {
-  new_conn_.reset(new TcpSession(context_));
+  new_conn_.reset(new TcpListenSession(context_));
   new_conn_->set_local_endpoint(host_, port_);
   new_conn_->register_session();
 }
 
 void TcpServer::handle_async_accept(const std::error_code& ec) {
   if (!ec) {
+    new_conn_->set_callback_handler(get_shared_callback());
     new_conn_->start();
     reset_connection();
 
