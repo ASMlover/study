@@ -24,45 +24,28 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
 #include "Nyx.h"
-#include "BaseServer.h"
-#include "CallbackHandler.h"
+#include "TcpServer.h"
+#include "ServerManager.h"
 
 namespace nyx {
 
-class TcpListenSession;
+ServerPtr make_new_server(void) {
+  return std::make_shared<TcpServer>();
+}
 
-class TcpServer : public BaseServer {
-  using SessionPtr = std::shared_ptr<TcpListenSession>;
+void run_server(const ServerPtr& s,
+    const std::string& host, std::uint16_t port, int backlog) {
+  if (!s)
+    return;
 
-  tcp::acceptor acceptor_;
-  std::string host_{};
-  std::uint16_t port_{};
-  bool reuse_addr_{};
-  int backlog_{};
-  SessionPtr new_conn_;
-public:
-  TcpServer(void);
-  ~TcpServer(void);
+  auto server = std::dynamic_pointer_cast<TcpServer>(s);
+  server->enable_reuse_addr(true);
+  server->bind(host, port);
+  server->listen(backlog);
 
-  virtual void start_impl(void) override;
-  virtual void stop_impl(void) override;
-
-  void bind(const std::string& host, std::uint16_t port);
-  void listen(int backlog);
-
-  void enable_reuse_addr(bool reuse) {
-    reuse_addr_ = reuse;
-  }
-
-  bool is_open(void) const {
-    return acceptor_.is_open();
-  }
-private:
-  void reset_connection(void);
-  void handle_async_accept(const std::error_code& ec);
-};
+  ServerManager::get_instance().set_worker();
+  ServerManager::get_instance().start();
+}
 
 }

@@ -26,8 +26,25 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <memory>
 #include <asio.hpp>
 #include "../utils/Copyable.h"
 #include "../utils/UnCopyable.h"
+#include "BaseSession.h"
+#include "BaseServer.h"
 
 using asio::ip::tcp;
+
+namespace nyx {
+
+class BaseSession;
+class BaseServer;
+
+using SessionPtr = std::shared_ptr<BaseSession>;
+using ServerPtr = std::shared_ptr<BaseServer>;
+
+ServerPtr make_new_server(void);
+void run_server(const ServerPtr& s,
+    const std::string& host, std::uint16_t port, int backlog = 5);
+
+}

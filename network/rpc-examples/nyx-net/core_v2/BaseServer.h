@@ -28,11 +28,14 @@
 
 #include <memory>
 #include "Nyx.h"
+#include "CallbackHandler.h"
 
 namespace nyx {
 
 class BaseServer
-  : private UnCopyable, public std::enable_shared_from_this<BaseServer> {
+  : private UnCopyable
+  , public CallbackHandler
+  , public std::enable_shared_from_this<BaseServer> {
 public:
   enum class Status : int {
     INIT,
