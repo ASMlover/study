@@ -40,6 +40,11 @@ void TcpListenSession::set_callback_handler(const HandlerPtr& handler) {
   handler_ = handler;
 }
 
+void TcpListenSession::notify_new_connection(void) {
+  if (handler_ && handler_->on_new_connection)
+    handler_->on_new_connection(shared_from_this());
+}
+
 void TcpListenSession::handle_async_read(
     const std::error_code& ec, std::size_t n) {
   if (!ec) {

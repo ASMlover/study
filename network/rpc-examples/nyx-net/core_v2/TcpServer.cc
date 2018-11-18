@@ -93,6 +93,7 @@ void TcpServer::reset_connection(void) {
 void TcpServer::handle_async_accept(const std::error_code& ec) {
   if (!ec) {
     new_conn_->set_callback_handler(get_shared_callback());
+    new_conn_->notify_new_connection();
     new_conn_->start();
     reset_connection();
 

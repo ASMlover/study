@@ -49,7 +49,7 @@ void TcpConnectSession::async_connect(
         if (!ec) {
           auto ep = *epiter;
           ++epiter;
-          socket_.async_connect(*epiter,
+          socket_.async_connect(ep,
               [this, self, epiter](const std::error_code& ec) {
                 handle_async_connect(ec, epiter);
               });

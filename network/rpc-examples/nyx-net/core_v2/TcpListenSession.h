@@ -42,6 +42,7 @@ public:
   virtual ~TcpListenSession(void);
 
   void set_callback_handler(const HandlerPtr& handler);
+  void notify_new_connection(void);
 private:
   void handle_async_read(const std::error_code& ec, std::size_t n);
 };

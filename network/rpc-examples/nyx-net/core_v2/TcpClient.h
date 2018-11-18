@@ -35,7 +35,7 @@ namespace nyx {
 class TcpConnectSession;
 
 class TcpClient : private UnCopyable, public CallbackHandler {
-  std::unique_ptr<TcpConnectSession> conn_;
+  std::shared_ptr<TcpConnectSession> conn_;
 public:
   TcpClient(asio::io_context& context);
   ~TcpClient(void);

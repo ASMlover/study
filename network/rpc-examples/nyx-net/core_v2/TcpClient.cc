@@ -30,7 +30,7 @@
 namespace nyx {
 
 TcpClient::TcpClient(asio::io_context& context) {
-  conn_ = std::make_unique<TcpConnectSession>(context);
+  conn_ = std::make_shared<TcpConnectSession>(context);
 }
 
 TcpClient::~TcpClient(void) {
