@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 
+extern void run_client(void);
 extern void run_server(void);
 
 int main(int argc, char* argv[]) {
@@ -37,6 +38,8 @@ int main(int argc, char* argv[]) {
 
   if (argv[1][0] == 's')
     run_server();
+  else if (argv[1][0] == 'c')
+    run_client();
 
   return 0;
 }

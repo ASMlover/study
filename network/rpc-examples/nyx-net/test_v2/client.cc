@@ -25,15 +25,34 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <thread>
+#include <asio.hpp>
 #include "../core_v2/Nyx.h"
+#include "../core_v2/TcpClient.h"
 
-void run_server(void) {
-  auto server = nyx::make_new_server();
-  server->set_new_connection_callback([](const nyx::SessionPtr& conn) {
-        std::cout << "accept new connection" << std::endl;
+void run_client(void) {
+  asio::io_context context;
+
+  nyx::TcpClient client(context);
+  client.set_connected_callback([](const nyx::SessionPtr& conn) {
+        std::cout << "connect server success ..." << std::endl;
+      }).set_connect_error_callback([](const nyx::SessionPtr& conn) {
       }).set_message_callback(
         [](const nyx::SessionPtr& conn, const std::string& buf) {
-        std::cout << "receive message from client: " << buf << std::endl;
+      }).set_disconnected_callback([](const nyx::SessionPtr& conn) {
       });
-  nyx::run_server(server, "127.0.0.1", 5555);
+  client.async_connect("127.0.0.1", 5555);
+
+  std::thread t([&context] { context.run(); });
+  std::string line;
+  while (std::getline(std::cin, line)) {
+    if (line == "exit") {
+      client.disconnect();
+      break;
+    }
+
+    client.async_write(line);
+    line.clear();
+  }
+  t.join();
 }
