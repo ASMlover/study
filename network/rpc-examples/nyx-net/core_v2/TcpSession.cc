@@ -75,10 +75,9 @@ void TcpSession::cleanup(void) {
 
 void TcpSession::start_impl(void) {
   auto self(shared_from_this());
-  socket_.async_write_some(asio::buffer(buffer_),
-      [this, self](const std::error_code& ec, std::size_t /*n*/) {
-        if (!ec)
-          start_impl();
+  socket_.async_read_some(asio::buffer(buffer_),
+      [this, self](const std::error_code& ec, std::size_t n) {
+        handle_async_read(ec, n);
       });
 }
 
@@ -98,6 +97,20 @@ void TcpSession::disconnect_impl(void) {
     is_disconnected_ = true;
     if (!is_writing_ && stop_impl())
       unregister_session();
+  }
+}
+
+void TcpSession::handle_async_read(const std::error_code& ec, std::size_t n) {
+  if (!ec) {
+    auto self(shared_from_this());
+    socket_.async_read_some(asio::buffer(buffer_),
+        [this, self](const std::error_code& ec, std::size_t n) {
+          handle_async_read(ec, n);
+        });
+  }
+  else {
+    if (stop_impl())
+      cleanup();
   }
 }
 
