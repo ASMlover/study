@@ -53,7 +53,7 @@ void TcpSession::do_async_write_impl(const std::string& buf) {
 
 void TcpSession::handle_async_write(const std::string& buf) {
   auto self(shared_from_this());
-  asio::async_write(socket_, asio::buffer(buf),
+  asio::async_write(socket_, asio::buffer(buf.data(), buf.size()),
       [this, self](const std::error_code& ec, std::size_t /*n*/) {
         if (!write_queue_.empty()) {
           auto wbuf = write_queue_.front();
