@@ -44,6 +44,7 @@ public:
   void set_callback_handler(const HandlerPtr& handler);
   void notify_new_connection(void);
 private:
+  virtual bool stop_impl(void) override;
   virtual void handle_async_read(
       const std::error_code& ec, std::size_t n) override;
 };

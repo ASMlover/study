@@ -45,6 +45,12 @@ void TcpListenSession::notify_new_connection(void) {
     handler_->on_new_connection(shared_from_this());
 }
 
+bool TcpListenSession::stop_impl(void) {
+  if (handler_ && handler_->on_disconnected)
+    handler_->on_disconnected(shared_from_this());
+  return TcpSession::stop_impl();
+}
+
 void TcpListenSession::handle_async_read(
     const std::error_code& ec, std::size_t n) {
   if (!ec) {

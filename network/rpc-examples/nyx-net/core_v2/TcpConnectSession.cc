@@ -81,11 +81,12 @@ void TcpConnectSession::set_callback_handler(const HandlerPtr& handler) {
 }
 
 void TcpConnectSession::start_impl(void) {
-  // TODO: need notify connected
   TcpSession::start_impl();
 }
 
 bool TcpConnectSession::stop_impl(void) {
+  if (handler_ && handler_->on_disconnected)
+    handler_->on_disconnected(shared_from_this());
   return TcpSession::stop_impl();
 }
 
