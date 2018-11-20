@@ -30,10 +30,12 @@
 void run_server(void) {
   auto server = nyx::make_new_server();
   server->set_new_connection_callback([](const nyx::SessionPtr& conn) {
-        std::cout << "accept new connection" << std::endl;
+        std::cout << "server: accept new connection ..." << std::endl;
       }).set_message_callback(
         [](const nyx::SessionPtr& conn, const std::string& buf) {
-        std::cout << "receive message from client: " << buf << std::endl;
+        std::cout << "server: recv message from client: " << buf << std::endl;
+      }).set_disconnected_callback([](const nyx::SessionPtr& conn) {
+        std::cout << "server: session disconnected ..." << std::endl;
       });
   nyx::run_server(server, "127.0.0.1", 5555);
 }

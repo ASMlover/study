@@ -35,11 +35,13 @@ void run_client(void) {
 
   nyx::TcpClient client(context);
   client.set_connected_callback([](const nyx::SessionPtr& conn) {
-        std::cout << "connect server success ..." << std::endl;
+        std::cout << "client: connect to server success ..." << std::endl;
       }).set_connect_error_callback([](const nyx::SessionPtr& conn) {
+        std::cout << "client: connect to server failed ..." << std::endl;
       }).set_message_callback(
         [](const nyx::SessionPtr& conn, const std::string& buf) {
       }).set_disconnected_callback([](const nyx::SessionPtr& conn) {
+        std::cout << "client: on disconnected ..." << std::endl;
       });
   client.async_connect("127.0.0.1", 5555);
 
