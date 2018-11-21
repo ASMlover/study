@@ -57,14 +57,14 @@ void TcpConnectSession::async_connect(
         else {
           if (handler_ && handler_->on_resolve_error)
             handler_->on_resolve_error(shared_from_this());
-          if (stop_impl())
+          if (invoke_shutoff())
             cleanup();
         }
       });
 }
 
 void TcpConnectSession::async_write(const std::string& buf) {
-  async_write_impl(buf);
+  invoke_async_write(buf);
 }
 
 void TcpConnectSession::set_option(void) {
@@ -80,14 +80,14 @@ void TcpConnectSession::set_callback_handler(const HandlerPtr& handler) {
   handler_ =  handler;
 }
 
-void TcpConnectSession::start_impl(void) {
-  TcpSession::start_impl();
+void TcpConnectSession::invoke_launch(void) {
+  TcpSession::invoke_launch();
 }
 
-bool TcpConnectSession::stop_impl(void) {
+bool TcpConnectSession::invoke_shutoff(void) {
   if (handler_ && handler_->on_disconnected)
     handler_->on_disconnected(shared_from_this());
-  return TcpSession::stop_impl();
+  return TcpSession::invoke_shutoff();
 }
 
 void TcpConnectSession::cleanup(void) {
@@ -124,7 +124,7 @@ void TcpConnectSession::handle_async_connect(
   else {
     if (handler_ && handler_->on_connect_error)
       handler_->on_connect_error(shared_from_this());
-    if (stop_impl())
+    if (invoke_shutoff())
       cleanup();
   }
 }
@@ -142,7 +142,7 @@ void TcpConnectSession::handle_async_read(
         });
   }
   else {
-    if (stop_impl())
+    if (invoke_shutoff())
       cleanup();
   }
 }

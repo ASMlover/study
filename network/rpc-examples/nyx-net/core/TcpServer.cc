@@ -94,7 +94,7 @@ void TcpServer::handle_async_accept(const std::error_code& ec) {
   if (!ec) {
     new_conn_->set_callback_handler(get_shared_callback());
     new_conn_->notify_new_connection();
-    new_conn_->start();
+    new_conn_->launch();
     reset_connection();
 
     auto self(shared_from_this());

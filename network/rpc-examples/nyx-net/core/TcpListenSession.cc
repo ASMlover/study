@@ -45,10 +45,10 @@ void TcpListenSession::notify_new_connection(void) {
     handler_->on_new_connection(shared_from_this());
 }
 
-bool TcpListenSession::stop_impl(void) {
+bool TcpListenSession::invoke_shutoff(void) {
   if (handler_ && handler_->on_disconnected)
     handler_->on_disconnected(shared_from_this());
-  return TcpSession::stop_impl();
+  return TcpSession::invoke_shutoff();
 }
 
 void TcpListenSession::handle_async_read(
@@ -64,7 +64,7 @@ void TcpListenSession::handle_async_read(
         });
   }
   else {
-    if (stop_impl())
+    if (invoke_shutoff())
       cleanup();
   }
 }

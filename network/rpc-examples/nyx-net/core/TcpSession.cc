@@ -63,7 +63,7 @@ void TcpSession::handle_async_write(const std::string& buf) {
         }
         else {
           is_writing_ = false;
-          if (is_disconnected_ && stop_impl())
+          if (is_disconnected_ && invoke_shutoff())
             unregister_session();
         }
       });
@@ -73,7 +73,7 @@ void TcpSession::cleanup(void) {
   unregister_session();
 }
 
-void TcpSession::start_impl(void) {
+void TcpSession::invoke_launch(void) {
   auto self(shared_from_this());
   socket_.async_read_some(asio::buffer(buffer_),
       [this, self](const std::error_code& ec, std::size_t n) {
@@ -81,7 +81,7 @@ void TcpSession::start_impl(void) {
       });
 }
 
-bool TcpSession::stop_impl(void) {
+bool TcpSession::invoke_shutoff(void) {
   bool false_value{};
   if (!is_closed_.compare_exchange_strong(false_value,
         true, std::memory_order_release, std::memory_order_relaxed))
@@ -92,12 +92,16 @@ bool TcpSession::stop_impl(void) {
   return true;
 }
 
-void TcpSession::disconnect_impl(void) {
+void TcpSession::invoke_disconnect(void) {
   if (!is_disconnected_) {
     is_disconnected_ = true;
-    if (!is_writing_ && stop_impl())
+    if (!is_writing_ && invoke_shutoff())
       unregister_session();
   }
+}
+
+void TcpSession::invoke_async_write(const std::string& buf) {
+  do_async_write_impl(buf);
 }
 
 void TcpSession::handle_async_read(const std::error_code& ec, std::size_t n) {
@@ -109,13 +113,9 @@ void TcpSession::handle_async_read(const std::error_code& ec, std::size_t n) {
         });
   }
   else {
-    if (stop_impl())
+    if (invoke_shutoff())
       cleanup();
   }
-}
-
-void TcpSession::async_write_impl(const std::string& buf) {
-  do_async_write_impl(buf);
 }
 
 }

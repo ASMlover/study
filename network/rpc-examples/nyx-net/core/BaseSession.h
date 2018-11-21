@@ -50,22 +50,22 @@ public:
   virtual const std::string get_remote_addr(void) const = 0;
   virtual std::uint16_t get_remote_port(void) const = 0;
 
-  void start(void) {
-    start_impl();
+  void launch(void) {
+    invoke_launch();
   }
 
-  void stop(void) {
-    stop_impl();
+  void shutoff(void) {
+    invoke_shutoff();
   }
 
   void disconnect(void) {
     auto self(shared_from_this());
-    strand_.post([this, self] { disconnect_impl(); });
+    strand_.post([this, self] { invoke_disconnect(); });
   }
 
   void async_write(const std::string& buf) {
     auto self(shared_from_this());
-    strand_.post([this, self, buf] { async_write_impl(buf); });
+    strand_.post([this, self, buf] { invoke_async_write(buf); });
   }
 
   void async_write(const char* buf, std::size_t len) {
@@ -93,12 +93,10 @@ public:
     return local_port_;
   }
 private:
-  virtual void start_impl(void) = 0;
-  virtual bool stop_impl(void) = 0;
-  virtual void disconnect_impl(void) = 0;
-  virtual void async_write_impl(const std::string& buf) = 0;
+  virtual void invoke_launch(void) = 0;
+  virtual bool invoke_shutoff(void) = 0;
+  virtual void invoke_disconnect(void) = 0;
+  virtual void invoke_async_write(const std::string& buf) = 0;
 };
-
-using SessionPtr = std::shared_ptr<BaseSession>;
 
 }

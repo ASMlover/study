@@ -51,8 +51,8 @@ public:
   void set_option(void);
   void set_callback_handler(const HandlerPtr& handler);
 
-  virtual void start_impl(void) override;
-  virtual bool stop_impl(void) override;
+  virtual void invoke_launch(void) override;
+  virtual bool invoke_shutoff(void) override;
   virtual void cleanup(void) override;
 private:
   void handle_async_connect(

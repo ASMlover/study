@@ -89,10 +89,10 @@ public:
   }
 protected:
   virtual void cleanup(void);
-  virtual void start_impl(void) override;
-  virtual bool stop_impl(void) override;
-  virtual void disconnect_impl(void) override;
-  virtual void async_write_impl(const std::string& buf) override;
+  virtual void invoke_launch(void) override;
+  virtual bool invoke_shutoff(void) override;
+  virtual void invoke_disconnect(void) override;
+  virtual void invoke_async_write(const std::string& buf) override;
   virtual void handle_async_read(const std::error_code& ec, std::size_t n);
 private:
   void do_async_write_impl(const std::string& buf);
