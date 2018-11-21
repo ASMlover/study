@@ -24,9 +24,9 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "Nyx.h"
-#include "TcpServer.h"
-#include "ServerManager.h"
+#include <core/TcpServer.h>
+#include <core/ServerManager.h>
+#include <core/NyxInternal.h>
 
 namespace nyx {
 
