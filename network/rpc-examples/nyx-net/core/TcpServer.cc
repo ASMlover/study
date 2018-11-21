@@ -24,9 +24,9 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "ServerManager.h"
-#include "TcpListenSession.h"
-#include "TcpServer.h"
+#include <core/ServerManager.h>
+#include <core/TcpListenSession.h>
+#include <core/TcpServer.h>
 
 namespace nyx {
 
@@ -38,8 +38,8 @@ TcpServer::TcpServer(void)
 TcpServer::~TcpServer(void) {
 }
 
-void TcpServer::start_impl(void) {
-  BaseServer::start_impl();
+void TcpServer::invoke_launch(void) {
+  BaseServer::invoke_launch();
 
   auto self(shared_from_this());
   context_.post([this, self] {
@@ -51,8 +51,8 @@ void TcpServer::start_impl(void) {
       });
 }
 
-void TcpServer::stop_impl(void) {
-  BaseServer::stop_impl();
+void TcpServer::invoke_shutoff(void) {
+  BaseServer::invoke_shutoff();
   acceptor_.close();
 }
 
@@ -81,7 +81,7 @@ void TcpServer::bind(const std::string& host, std::uint16_t port) {
 void TcpServer::listen(int backlog) {
   backlog_ = backlog;
   reset_connection();
-  start_impl();
+  invoke_launch();
 }
 
 void TcpServer::reset_connection(void) {

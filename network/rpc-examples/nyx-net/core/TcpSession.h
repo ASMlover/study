@@ -29,8 +29,8 @@
 #include <atomic>
 #include <deque>
 #include <vector>
-#include "Nyx.h"
-#include "BaseSession.h"
+#include <core/NyxInternal.h>
+#include <core/BaseSession.h>
 
 namespace nyx {
 

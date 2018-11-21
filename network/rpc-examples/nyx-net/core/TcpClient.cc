@@ -24,8 +24,8 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "TcpConnectSession.h"
-#include "TcpClient.h"
+#include <core/TcpConnectSession.h>
+#include <core/TcpClient.h>
 
 namespace nyx {
 

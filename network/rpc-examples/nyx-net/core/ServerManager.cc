@@ -26,8 +26,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <thread>
 #include <vector>
-#include "BaseServer.h"
-#include "ServerManager.h"
+#include <core/BaseServer.h>
+#include <core/ServerManager.h>
 
 namespace nyx {
 
@@ -57,7 +57,7 @@ void ServerManager::start(void) {
 void ServerManager::stop(void) {
   std::unique_lock<std::mutex> guard(mutex_);
   for (auto& s : servers_)
-    s->stop_impl();
+    s->invoke_shutoff();
   servers_.clear();
 }
 

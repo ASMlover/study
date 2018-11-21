@@ -26,8 +26,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include "Nyx.h"
-#include "TcpSession.h"
+#include <core/NyxInternal.h>
+#include <core/TcpSession.h>
 
 namespace nyx {
 

@@ -26,9 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <memory>
-#include "Nyx.h"
-#include "CallbackHandler.h"
+#include <core/NyxInternal.h>
 
 namespace nyx {
 
@@ -49,8 +47,8 @@ public:
   BaseServer(asio::io_context& context);
   virtual ~BaseServer(void);
 
-  virtual void start_impl(void);
-  virtual void stop_impl(void);
+  virtual void invoke_launch(void);
+  virtual void invoke_shutoff(void);
 
   Status get_status(void) const {
     return status_;

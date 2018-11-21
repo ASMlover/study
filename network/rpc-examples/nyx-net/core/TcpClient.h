@@ -26,9 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <memory>
-#include "Nyx.h"
-#include "CallbackHandler.h"
+#include <core/NyxInternal.h>
 
 namespace nyx {
 

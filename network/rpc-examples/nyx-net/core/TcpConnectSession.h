@@ -27,8 +27,8 @@
 #pragma once
 
 #include <atomic>
-#include "Nyx.h"
-#include "TcpSession.h"
+#include <core/NyxInternal.h>
+#include <core/TcpSession.h>
 
 namespace nyx {
 

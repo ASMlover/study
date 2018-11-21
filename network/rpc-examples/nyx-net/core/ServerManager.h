@@ -26,10 +26,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <memory>
 #include <mutex>
 #include <unordered_set>
-#include "Nyx.h"
+#include <core/NyxInternal.h>
 
 namespace nyx {
 

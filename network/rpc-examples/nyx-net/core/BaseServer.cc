@@ -24,8 +24,8 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "BaseServer.h"
-#include "ServerManager.h"
+#include <core/BaseServer.h>
+#include <core/ServerManager.h>
 
 namespace nyx {
 
@@ -36,12 +36,12 @@ BaseServer::BaseServer(asio::io_context& context)
 BaseServer::~BaseServer(void) {
 }
 
-void BaseServer::start_impl(void) {
+void BaseServer::invoke_launch(void) {
   status_ = Status::STARTED;
   ServerManager::get_instance().add_server(shared_from_this());
 }
 
-void BaseServer::stop_impl(void) {
+void BaseServer::invoke_shutoff(void) {
   status_ = Status::STOPED;
 }
 

@@ -26,9 +26,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include "Nyx.h"
-#include "BaseServer.h"
-#include "CallbackHandler.h"
+#include <core/NyxInternal.h>
+#include <core/BaseServer.h>
 
 namespace nyx {
 
@@ -47,8 +46,8 @@ public:
   TcpServer(void);
   ~TcpServer(void);
 
-  virtual void start_impl(void) override;
-  virtual void stop_impl(void) override;
+  virtual void invoke_launch(void) override;
+  virtual void invoke_shutoff(void) override;
 
   void bind(const std::string& host, std::uint16_t port);
   void listen(int backlog);

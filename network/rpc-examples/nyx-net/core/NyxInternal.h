@@ -26,10 +26,13 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <cstdint>
+#include <functional>
 #include <memory>
 #include <asio.hpp>
 #include <utils/Copyable.h>
 #include <utils/UnCopyable.h>
+#include <core/CallbackHandler.h>
 
 using asio::ip::tcp;
 
