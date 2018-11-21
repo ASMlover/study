@@ -64,6 +64,4 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/../../3rdparty/asio/asio/include)
 
 add_subdirectory(core)
-add_subdirectory(core_v2)
 add_subdirectory(test)
-add_subdirectory(test_v2)

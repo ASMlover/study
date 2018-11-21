@@ -25,7 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
-#include "../core_v2/Nyx.h"
+#include "../core/Nyx.h"
 
 void run_server(void) {
   auto server = nyx::make_new_server();

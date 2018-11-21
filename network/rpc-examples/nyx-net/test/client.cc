@@ -27,8 +27,8 @@
 #include <iostream>
 #include <thread>
 #include <asio.hpp>
-#include "../core_v2/Nyx.h"
-#include "../core_v2/TcpClient.h"
+#include "../core/Nyx.h"
+#include "../core/TcpClient.h"
 
 void run_client(void) {
   asio::io_context context;
