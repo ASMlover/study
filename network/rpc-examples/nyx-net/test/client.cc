@@ -26,15 +26,16 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <thread>
-#include <asio.hpp>
-#include "../core/Nyx.h"
-#include "../core/TcpClient.h"
+#include <core/Nyx.h>
+#include <core/TcpClient.h>
 
 void run_client(void) {
   asio::io_context context;
 
   nyx::TcpClient client(context);
-  client.set_connected_callback([](const nyx::SessionPtr& conn) {
+  client.set_resolve_error_callback([](const nyx::SessionPtr& conn) {
+        std::cout << "client: resolve connect endpoint failed ..." << std::endl;
+      }).set_connected_callback([](const nyx::SessionPtr& conn) {
         std::cout << "client: connect to server success ..." << std::endl;
       }).set_connect_error_callback([](const nyx::SessionPtr& conn) {
         std::cout << "client: connect to server failed ..." << std::endl;
