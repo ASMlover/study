@@ -72,7 +72,7 @@ public:
     return data_queue_size_;
   }
 
-  const std::string get_local_addr(void) const {
+  const std::string get_local_host(void) const {
     return socket_.lowest_layer().local_endpoint().address().to_string();
   }
 
@@ -80,7 +80,7 @@ public:
     return socket_.lowest_layer().local_endpoint().port();
   }
 
-  virtual const std::string get_remote_addr(void) const override {
+  virtual const std::string get_remote_host(void) const override {
     return socket_.lowest_layer().remote_endpoint().address().to_string();
   }
 

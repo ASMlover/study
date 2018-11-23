@@ -34,7 +34,7 @@ class BaseSession
   : private UnCopyable, public std::enable_shared_from_this<BaseSession> {
 protected:
   asio::io_context::strand strand_;
-  std::string local_addr_{};
+  std::string local_host_{};
   std::uint16_t local_port_{};
 public:
   explicit BaseSession(asio::io_context& context);
@@ -44,7 +44,7 @@ public:
   void register_session(void);
   void unregister_session(void);
 
-  virtual const std::string get_remote_addr(void) const = 0;
+  virtual const std::string get_remote_host(void) const = 0;
   virtual std::uint16_t get_remote_port(void) const = 0;
 
   void launch(void) {
@@ -69,21 +69,21 @@ public:
     async_write(std::string(buf, len));
   }
 
-  void set_local_endpoint(const std::string& addr, std::uint16_t port) {
-    local_addr_ = addr;
+  void set_local_endpoint(const std::string& host, std::uint16_t port) {
+    local_host_ = host;
     local_port_ = port;
   }
 
-  void set_local_addr(const std::string& addr) {
-    local_addr_ = addr;
+  void set_local_host(const std::string& host) {
+    local_host_ = host;
   }
 
   void set_local_port(std::uint16_t port) {
     local_port_ = port;
   }
 
-  const std::string& get_local_addr(void) const {
-    return local_addr_;
+  const std::string& get_local_host(void) const {
+    return local_host_;
   }
 
   std::uint16_t get_local_port(void) const {
