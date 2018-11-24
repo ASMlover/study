@@ -30,5 +30,7 @@
 int main(int argc, char* argv[]) {
   _MEVO_UNUSED(argc), _MEVO_UNUSED(argv);
 
+  std::cout << "Welcome to MemoryEvolve !!!" << std::endl;
+
   return 0;
 }
