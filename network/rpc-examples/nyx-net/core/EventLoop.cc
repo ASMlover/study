@@ -32,7 +32,8 @@
 namespace nyx {
 
 static constexpr std::chrono::microseconds kPollTick(10000);
-inline std::uint64_t get_current_microseconds(void) {
+
+inline std::uint64_t now_as_microseconds(void) {
   return std::chrono::duration_cast<std::chrono::microseconds>(
       std::chrono::system_clock::now().time_since_epoch()).count();
 }
@@ -63,9 +64,9 @@ void EventLoop::run(void) {
 
 bool EventLoop::poll(void) {
   if (is_running_) {
-    auto begin = get_current_microseconds();
+    auto begin = now_as_microseconds();
     // call service call back
-    auto one_poll = get_current_microseconds() - begin;
+    auto one_poll = now_as_microseconds() - begin;
 
     if (one_poll < 100)
       std::this_thread::sleep_for(kPollTick);
