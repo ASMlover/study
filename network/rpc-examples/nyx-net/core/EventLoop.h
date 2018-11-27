@@ -27,30 +27,34 @@
 #pragma once
 
 #include <thread>
+#include <vector>
 #include <core/NyxInternal.h>
 
 namespace nyx {
 
 class EventLoop : private UnCopyable {
   using WorkerPtr = std::shared_ptr<asio::io_context::work>;
+  using ThreadPtr = std::unique_ptr<std::thread>;
 
   bool is_running_{};
   std::size_t thread_num_{};
   asio::io_context& context_;
   WorkerPtr worker_;
-  std::unique_ptr<std::thread> thread_;
+  std::vector<ThreadPtr> threads_;
 
   static constexpr std::size_t kDefThreadNum = 4;
 
   EventLoop(void);
   ~EventLoop(void);
+
+  void launch_threads(void);
+  void shutoff_threads(void);
 public:
   static EventLoop& get_instance(void) {
     static EventLoop ins;
     return ins;
   }
 
-  void run(void);
   bool poll(void);
   void launch(void);
   void shutoff(void);

@@ -25,7 +25,6 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <chrono>
-#include <vector>
 #include <core/ServerManager.h>
 #include <core/EventLoop.h>
 
@@ -47,18 +46,17 @@ EventLoop::~EventLoop(void) {
   if (is_running_) {
     is_running_ = false;
     enable_worker(false);
-
-    if (thread_)
-      thread_->join();
+    shutoff_threads();
   }
 }
 
-void EventLoop::run(void) {
-  std::vector<std::unique_ptr<std::thread>> threads;
+void EventLoop::launch_threads(void) {
   for (auto i = 0u; i < thread_num_; ++i)
-    threads.emplace_back(new std::thread([this] { context_.run(); }));
+    threads_.emplace_back(new std::thread([this] { context_.run(); }));
+}
 
-  for (auto& t : threads)
+void EventLoop::shutoff_threads(void) {
+  for (auto& t : threads_)
     t->join();
 }
 
@@ -80,16 +78,14 @@ void EventLoop::launch(void) {
 
   is_running_ = true;
   enable_worker(true);
-  thread_.reset(new std::thread([this]{ context_.run(); }));
+  launch_threads();
 }
 
 void EventLoop::shutoff(void) {
   is_running_ = false;
   enable_worker(false);
   context_.stop();
-
-  if (thread_)
-    thread_->join();
+  shutoff_threads();
 }
 
 void EventLoop::enable_worker(bool enable) {
