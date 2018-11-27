@@ -44,7 +44,7 @@ class TcpServer : public BaseServer {
   SessionPtr new_conn_;
 public:
   TcpServer(void);
-  ~TcpServer(void);
+  virtual ~TcpServer(void);
 
   virtual void invoke_launch(void) override;
   virtual void invoke_shutoff(void) override;
