@@ -208,5 +208,5 @@ nmake -f Make_mvc.mak SDK_INCLUDE_DIR="C:\Program Files (x86)\Microsoft SDKs\Win
   \> git pull
   \> git submodule update --init --recursive
   \> call gvim -u "%HOME%\.vim\evil-vimrc\evil-install.vim" +PlugUpdate
-  \> python install.py --clang --completer
+  \> python install.py --clang-completer --go-completer
 ```
