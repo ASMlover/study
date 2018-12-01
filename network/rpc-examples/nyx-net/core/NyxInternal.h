@@ -39,11 +39,14 @@ using asio::ip::tcp;
 namespace nyx {
 
 class BaseSession;
+class BaseClient;
 class BaseServer;
 
 using SessionPtr = std::shared_ptr<BaseSession>;
+using ClientPtr = std::shared_ptr<BaseClient>;
 using ServerPtr = std::shared_ptr<BaseServer>;
 
+ClientPtr make_new_client(void);
 ServerPtr make_new_server(void);
 void run_server(const ServerPtr& s,
     const std::string& host, std::uint16_t port, int backlog = 5);
