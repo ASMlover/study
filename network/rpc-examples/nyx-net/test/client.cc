@@ -26,14 +26,11 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <thread>
-#include <core/Nyx.h>
-#include <core/TcpClient.h>
+#include "../core/Nyx.h"
 
 void run_client(void) {
-  asio::io_context context;
-
-  nyx::TcpClient client(context);
-  client.set_resolve_error_callback([](const nyx::SessionPtr& conn) {
+  auto client = nyx::make_new_client();
+  client->set_resolve_error_callback([](const nyx::SessionPtr& conn) {
         std::cout << "client: resolve connect endpoint failed ..." << std::endl;
       }).set_connected_callback([](const nyx::SessionPtr& conn) {
         std::cout << "client: connect to server success ..." << std::endl;
@@ -41,20 +38,29 @@ void run_client(void) {
         std::cout << "client: connect to server failed ..." << std::endl;
       }).set_message_callback(
         [](const nyx::SessionPtr& conn, const std::string& buf) {
+        std::cout << "client: recv message from server: " << buf << std::endl;
       }).set_disconnected_callback([](const nyx::SessionPtr& conn) {
         std::cout << "client: on disconnected ..." << std::endl;
       });
-  client.async_connect("127.0.0.1", 5555);
+  client->async_connect("127.0.0.1", 5555);
 
-  std::thread t([&context] { context.run(); });
+  bool running{true};
+  std::thread t([&running] {
+        nyx::launch();
+        while (running)
+          nyx::poll();
+        nyx::shutoff();
+      });
+
   std::string line;
   while (std::getline(std::cin, line)) {
     if (line == "exit") {
-      client.disconnect();
+      client->disconnect();
+      running = false;
       break;
     }
 
-    client.async_write(line);
+    client->async_write(line);
     line.clear();
   }
   t.join();

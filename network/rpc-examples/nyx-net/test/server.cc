@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <thread>
 #include "../core/Nyx.h"
 
 void run_server(void) {
@@ -34,8 +35,26 @@ void run_server(void) {
       }).set_message_callback(
         [](const nyx::SessionPtr& conn, const std::string& buf) {
         std::cout << "server: recv message from client: " << buf << std::endl;
+        // conn->async_write(buf);
       }).set_disconnected_callback([](const nyx::SessionPtr& conn) {
         std::cout << "server: session disconnected ..." << std::endl;
       });
-  nyx::run_server(server, "127.0.0.1", 5555);
+  server->launch_accept("0.0.0.0", 5555, 5);
+
+  bool running{true};
+  std::thread t([&running] {
+    nyx::launch();
+    while (running)
+      nyx::poll();
+    nyx::shutoff();
+  });
+
+  std::string line;
+  while (std::getline(std::cin, line)) {
+    if (line == "exit") {
+      running = false;
+      break;
+    }
+  }
+  t.join();
 }
