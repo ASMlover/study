@@ -31,44 +31,16 @@
 
 namespace nyx {
 
-using ThreadPtr = std::shared_ptr<std::thread>;
-
-ServerManager::ServerManager(void)
-  : nthreads_(kDefaultThreads) {
-}
-
-ServerManager::~ServerManager(void) {
-}
-
 void ServerManager::add_server(const ServerPtr& s) {
   std::unique_lock<std::mutex> guard(mutex_);
   servers_.insert(s);
 }
 
-void ServerManager::start(void) {
-  std::vector<ThreadPtr> threads;
-  for (auto i = 0u; i < nthreads_; ++i)
-    threads.emplace_back(new std::thread([this] { context_.run(); }));
-
-  for (auto& t : threads)
-    t->join();
-}
-
-void ServerManager::stop(void) {
+void ServerManager::stop_all(void) {
   std::unique_lock<std::mutex> guard(mutex_);
   for (auto& s : servers_)
     s->invoke_shutoff();
   servers_.clear();
-}
-
-void ServerManager::set_worker(void) {
-  std::unique_lock<std::mutex> guard(mutex_);
-  worker_.reset(new asio::io_context::work(context_));
-}
-
-void ServerManager::unset_worker(void) {
-  std::unique_lock<std::mutex> guard(mutex_);
-  worker_.reset();
 }
 
 }

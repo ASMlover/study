@@ -48,6 +48,8 @@ public:
 
   virtual void invoke_launch(void) override;
   virtual void invoke_shutoff(void) override;
+  virtual void launch_accept(
+      const std::string& host, std::uint16_t port, int backlog) override;
 
   void bind(const std::string& host, std::uint16_t port);
   void listen(int backlog);

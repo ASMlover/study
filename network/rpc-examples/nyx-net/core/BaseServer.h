@@ -49,6 +49,8 @@ public:
 
   virtual void invoke_launch(void);
   virtual void invoke_shutoff(void);
+  virtual void launch_accept(
+      const std::string& host, std::uint16_t port, int backlog) = 0;
 
   Status get_status(void) const {
     return status_;

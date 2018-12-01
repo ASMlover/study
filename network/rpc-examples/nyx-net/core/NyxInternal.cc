@@ -26,6 +26,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <core/TcpClient.h>
 #include <core/TcpServer.h>
+#include <core/EventLoop.h>
+#include <core/SessionManager.h>
 #include <core/ServerManager.h>
 #include <core/NyxInternal.h>
 
@@ -39,18 +41,18 @@ ServerPtr make_new_server(void) {
   return std::make_shared<TcpServer>();
 }
 
-void run_server(const ServerPtr& s,
-    const std::string& host, std::uint16_t port, int backlog) {
-  if (!s)
-    return;
+void launch(void) {
+  EventLoop::get_instance().launch();
+}
 
-  auto server = std::dynamic_pointer_cast<TcpServer>(s);
-  server->enable_reuse_addr(true);
-  server->bind(host, port);
-  server->listen(backlog);
+void shutoff(void) {
+  SessionManager::get_instance().disconnect_all();
+  ServerManager::get_instance().stop_all();
+  EventLoop::get_instance().shutoff();
+}
 
-  ServerManager::get_instance().set_worker();
-  ServerManager::get_instance().start();
+void poll(void) {
+  EventLoop::get_instance().poll();
 }
 
 }

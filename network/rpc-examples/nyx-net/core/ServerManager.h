@@ -39,15 +39,13 @@ using ServerPtr = std::shared_ptr<BaseServer>;
 
 class ServerManager : private UnCopyable {
   asio::io_context context_;
-  std::size_t nthreads_{};
-  WorkerPtr worker_;
   mutable std::mutex mutex_;
   std::unordered_set<ServerPtr> servers_;
 
   static constexpr std::size_t kDefaultThreads = 4;
 
-  ServerManager(void);
-  ~ServerManager(void);
+  ServerManager(void) {}
+  ~ServerManager(void) {}
 public:
   static ServerManager& get_instance(void) {
     static ServerManager ins;
@@ -55,18 +53,7 @@ public:
   }
 
   void add_server(const ServerPtr& s);
-  void start(void);
-  void stop(void);
-  void set_worker(void);
-  void unset_worker(void);
-
-  void set_nthreads(std::size_t nthreads) {
-    nthreads_ = nthreads;
-  }
-
-  std::size_t get_nthreads(void) const {
-    return nthreads_;
-  }
+  void stop_all(void);
 
   asio::io_context& get_context(void) {
     return context_;

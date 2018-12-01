@@ -48,7 +48,9 @@ using ServerPtr = std::shared_ptr<BaseServer>;
 
 ClientPtr make_new_client(void);
 ServerPtr make_new_server(void);
-void run_server(const ServerPtr& s,
-    const std::string& host, std::uint16_t port, int backlog = 5);
+
+void launch(void);
+void shutoff(void);
+void poll(void);
 
 }

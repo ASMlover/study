@@ -56,6 +56,13 @@ void TcpServer::invoke_shutoff(void) {
   acceptor_.close();
 }
 
+void TcpServer::launch_accept(
+    const std::string& host, std::uint16_t port, int backlog) {
+  enable_reuse_addr(true);
+  bind(host, port);
+  listen(backlog);
+}
+
 void TcpServer::bind(const std::string& host, std::uint16_t port) {
   if (get_status() != Status::INIT)
     return;
