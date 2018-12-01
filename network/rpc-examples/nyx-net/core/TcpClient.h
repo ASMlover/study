@@ -26,21 +26,22 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <core/NyxInternal.h>
+#include <core/BaseClient.h>
 
 namespace nyx {
 
 class TcpConnectSession;
 
-class TcpClient : private UnCopyable, public CallbackHandler {
+class TcpClient : public BaseClient {
   std::shared_ptr<TcpConnectSession> conn_;
 public:
-  TcpClient(asio::io_context& context);
-  ~TcpClient(void);
+  TcpClient(void);
+  virtual ~TcpClient(void);
 
-  void async_connect(const std::string& host, std::uint16_t port);
-  void async_write(const std::string& buf);
-  void disconnect(void);
+  virtual void async_connect(
+      const std::string& host, std::uint16_t port) override;
+  virtual void async_write(const std::string& buf) override;
+  virtual void disconnect(void) override;
 };
 
 }

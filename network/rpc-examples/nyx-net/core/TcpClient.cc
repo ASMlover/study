@@ -24,13 +24,15 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <core/EventLoop.h>
 #include <core/TcpConnectSession.h>
 #include <core/TcpClient.h>
 
 namespace nyx {
 
-TcpClient::TcpClient(asio::io_context& context) {
-  conn_ = std::make_shared<TcpConnectSession>(context);
+TcpClient::TcpClient(void) {
+  conn_ = std::make_shared<TcpConnectSession>(
+      EventLoop::get_instance().get_context());
 }
 
 TcpClient::~TcpClient(void) {

@@ -24,7 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <core/TcpClient2.h>
+#include <core/TcpClient.h>
 #include <core/TcpServer.h>
 #include <core/ServerManager.h>
 #include <core/NyxInternal.h>
@@ -32,7 +32,7 @@
 namespace nyx {
 
 ClientPtr make_new_client(void) {
-  return std::make_shared<TcpClient2>();
+  return std::make_shared<TcpClient>();
 }
 
 ServerPtr make_new_server(void) {
