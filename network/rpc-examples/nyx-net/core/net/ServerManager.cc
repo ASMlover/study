@@ -24,40 +24,23 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#include <thread>
+#include <vector>
+#include <core/net/BaseServer.h>
+#include <core/net/ServerManager.h>
 
-#include <atomic>
-#include <core/NyxInternal.h>
-#include <core/TcpSession.h>
+namespace nyx::net {
 
-namespace nyx {
+void ServerManager::add_server(const ServerPtr& s) {
+  std::unique_lock<std::mutex> guard(mutex_);
+  servers_.insert(s);
+}
 
-struct CallbackHandler;
-
-class TcpConnectSession : public TcpSession {
-  using HandlerPtr = std::shared_ptr<CallbackHandler>;
-
-  std::atomic<bool> is_connected_{};
-  std::string host_{};
-  std::uint16_t port_{};
-  asio::ip::tcp::resolver resolver_;
-  HandlerPtr handler_;
-public:
-  TcpConnectSession(asio::io_context& context);
-  virtual ~TcpConnectSession(void);
-
-  void async_connect(const std::string& host, std::uint16_t port);
-  void async_write(const std::string& buf);
-  void set_option(void);
-  void set_callback_handler(const HandlerPtr& handler);
-
-  virtual void invoke_launch(void) override;
-  virtual bool invoke_shutoff(void) override;
-  virtual void cleanup(void) override;
-private:
-  void handle_async_connect(
-      const std::error_code& ec, tcp::resolver::iterator epiter);
-  void handle_async_read(const std::error_code& ec, std::size_t n);
-};
+void ServerManager::shutoff_all(void) {
+  std::unique_lock<std::mutex> guard(mutex_);
+  for (auto& s : servers_)
+    s->invoke_shutoff();
+  servers_.clear();
+}
 
 }

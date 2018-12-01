@@ -25,7 +25,6 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <chrono>
-#include <core/ServerManager.h>
 #include <core/EventLoop.h>
 
 namespace nyx {

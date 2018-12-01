@@ -29,7 +29,7 @@
 #include <functional>
 #include <memory>
 
-namespace nyx {
+namespace nyx::net {
 
 class BaseSession;
 using SessionPtr = std::shared_ptr<BaseSession>;

@@ -24,31 +24,38 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <core/EventLoop.h>
-#include <core/TcpConnectSession.h>
-#include <core/TcpClient.h>
+#pragma once
 
-namespace nyx {
+#include <atomic>
+#include <core/NyxInternal.h>
+#include <core/net/TcpSession.h>
 
-TcpClient::TcpClient(void) {
-  conn_ = std::make_shared<TcpConnectSession>(
-      EventLoop::get_instance().get_context());
-}
+namespace nyx::net {
 
-TcpClient::~TcpClient(void) {
-}
+class TcpConnectSession : public TcpSession {
+  using HandlerPtr = std::shared_ptr<CallbackHandler>;
 
-void TcpClient::async_connect(const std::string& host, std::uint16_t port) {
-  conn_->set_callback_handler(get_shared_callback());
-  conn_->async_connect(host, port);
-}
+  std::atomic<bool> is_connected_{};
+  std::string host_{};
+  std::uint16_t port_{};
+  asio::ip::tcp::resolver resolver_;
+  HandlerPtr handler_;
+public:
+  TcpConnectSession(asio::io_context& context);
+  virtual ~TcpConnectSession(void);
 
-void TcpClient::async_write(const std::string& buf) {
-  conn_->async_write(buf);
-}
+  void async_connect(const std::string& host, std::uint16_t port);
+  void async_write(const std::string& buf);
+  void set_option(void);
+  void set_callback_handler(const HandlerPtr& handler);
 
-void TcpClient::disconnect(void) {
-  conn_->disconnect();
-}
+  virtual void invoke_launch(void) override;
+  virtual bool invoke_shutoff(void) override;
+  virtual void cleanup(void) override;
+private:
+  void handle_async_connect(
+      const std::error_code& ec, tcp::resolver::iterator epiter);
+  void handle_async_read(const std::error_code& ec, std::size_t n);
+};
 
 }

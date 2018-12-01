@@ -24,35 +24,48 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#include <core/net/TcpListenSession.h>
 
-#include <mutex>
-#include <unordered_set>
-#include <core/NyxInternal.h>
+namespace nyx::net {
 
-namespace nyx {
+TcpListenSession::TcpListenSession(asio::io_context& context)
+  : TcpSession(context) {
+}
 
-class BaseServer;
+TcpListenSession::~TcpListenSession(void) {
+}
 
-using WorkerPtr = std::shared_ptr<asio::io_context::work>;
-using ServerPtr = std::shared_ptr<BaseServer>;
+void TcpListenSession::set_callback_handler(const HandlerPtr& handler) {
+  handler_ = handler;
+}
 
-class ServerManager : private UnCopyable {
-  mutable std::mutex mutex_;
-  std::unordered_set<ServerPtr> servers_;
+void TcpListenSession::notify_new_connection(void) {
+  if (handler_ && handler_->on_new_connection)
+    handler_->on_new_connection(shared_from_this());
+}
 
-  static constexpr std::size_t kDefaultThreads = 4;
+bool TcpListenSession::invoke_shutoff(void) {
+  if (handler_ && handler_->on_disconnected)
+    handler_->on_disconnected(shared_from_this());
+  return TcpSession::invoke_shutoff();
+}
 
-  ServerManager(void) {}
-  ~ServerManager(void) {}
-public:
-  static ServerManager& get_instance(void) {
-    static ServerManager ins;
-    return ins;
+void TcpListenSession::handle_async_read(
+    const std::error_code& ec, std::size_t n) {
+  if (!ec) {
+    if (handler_ && handler_->on_message)
+      handler_->on_message(shared_from_this(), std::string(buffer_.data(), n));
+
+    auto self(shared_from_this());
+    socket_.async_read_some(asio::buffer(buffer_),
+        [this, self](const std::error_code& ec, std::size_t n) {
+          handle_async_read(ec, n);
+        });
   }
-
-  void add_server(const ServerPtr& s);
-  void shutoff_all(void);
-};
+  else {
+    if (invoke_shutoff())
+      cleanup();
+  }
+}
 
 }

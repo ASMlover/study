@@ -24,29 +24,28 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#include <core/net/BaseSession.h>
+#include <core/net/SessionManager.h>
 
-#include <core/NyxInternal.h>
-#include <core/TcpSession.h>
+namespace nyx::net {
 
-namespace nyx {
+BaseSession::BaseSession(asio::io_context& context)
+  : strand_(context) {
+}
 
-struct CallbackHandler;
+BaseSession::~BaseSession(void) {
+}
 
-class TcpListenSession : public TcpSession {
-  using HandlerPtr = std::shared_ptr<CallbackHandler>;
+bool BaseSession::is_alive(void) {
+  return SessionManager::get_instance().has_session(shared_from_this());
+}
 
-  HandlerPtr handler_;
-public:
-  TcpListenSession(asio::io_context& context);
-  virtual ~TcpListenSession(void);
+void BaseSession::register_session(void) {
+  SessionManager::get_instance().register_session(shared_from_this());
+}
 
-  void set_callback_handler(const HandlerPtr& handler);
-  void notify_new_connection(void);
-private:
-  virtual bool invoke_shutoff(void) override;
-  virtual void handle_async_read(
-      const std::error_code& ec, std::size_t n) override;
-};
+void BaseSession::unregister_session(void) {
+  SessionManager::get_instance().unregister_session(shared_from_this());
+}
 
 }

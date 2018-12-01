@@ -24,46 +24,31 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#include <core/EventLoop.h>
+#include <core/net/TcpConnectSession.h>
+#include <core/net/TcpClient.h>
 
-#include <core/NyxInternal.h>
-#include <core/BaseServer.h>
+namespace nyx::net {
 
-namespace nyx {
+TcpClient::TcpClient(void) {
+  conn_ = std::make_shared<TcpConnectSession>(
+      EventLoop::get_instance().get_context());
+}
 
-class TcpListenSession;
+TcpClient::~TcpClient(void) {
+}
 
-class TcpServer : public BaseServer {
-  using SessionPtr = std::shared_ptr<TcpListenSession>;
+void TcpClient::async_connect(const std::string& host, std::uint16_t port) {
+  conn_->set_callback_handler(get_shared_callback());
+  conn_->async_connect(host, port);
+}
 
-  tcp::acceptor acceptor_;
-  std::string host_{};
-  std::uint16_t port_{};
-  bool reuse_addr_{};
-  int backlog_{};
-  SessionPtr new_conn_;
-public:
-  TcpServer(void);
-  virtual ~TcpServer(void);
+void TcpClient::async_write(const std::string& buf) {
+  conn_->async_write(buf);
+}
 
-  virtual void invoke_launch(void) override;
-  virtual void invoke_shutoff(void) override;
-  virtual void launch_accept(
-      const std::string& host, std::uint16_t port, int backlog) override;
-
-  void bind(const std::string& host, std::uint16_t port);
-  void listen(int backlog);
-
-  void enable_reuse_addr(bool reuse) {
-    reuse_addr_ = reuse;
-  }
-
-  bool is_open(void) const {
-    return acceptor_.is_open();
-  }
-private:
-  void reset_connection(void);
-  void handle_async_accept(const std::error_code& ec);
-};
+void TcpClient::disconnect(void) {
+  conn_->disconnect();
+}
 
 }

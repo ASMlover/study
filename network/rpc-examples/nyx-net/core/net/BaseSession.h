@@ -28,7 +28,7 @@
 
 #include <core/NyxInternal.h>
 
-namespace nyx {
+namespace nyx::net {
 
 class BaseSession
   : private UnCopyable, public std::enable_shared_from_this<BaseSession> {

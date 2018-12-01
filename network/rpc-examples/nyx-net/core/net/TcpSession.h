@@ -30,9 +30,9 @@
 #include <deque>
 #include <vector>
 #include <core/NyxInternal.h>
-#include <core/BaseSession.h>
+#include <core/net/BaseSession.h>
 
-namespace nyx {
+namespace nyx::net {
 
 class TcpSession : public BaseSession {
 protected:

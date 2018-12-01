@@ -24,28 +24,25 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <core/BaseSession.h>
-#include <core/SessionManager.h>
+#include <core/net/BaseServer.h>
+#include <core/net/ServerManager.h>
 
-namespace nyx {
+namespace nyx::net {
 
-BaseSession::BaseSession(asio::io_context& context)
-  : strand_(context) {
+BaseServer::BaseServer(asio::io_context& context)
+  : context_(context) {
 }
 
-BaseSession::~BaseSession(void) {
+BaseServer::~BaseServer(void) {
 }
 
-bool BaseSession::is_alive(void) {
-  return SessionManager::get_instance().has_session(shared_from_this());
+void BaseServer::invoke_launch(void) {
+  status_ = Status::STARTED;
+  ServerManager::get_instance().add_server(shared_from_this());
 }
 
-void BaseSession::register_session(void) {
-  SessionManager::get_instance().register_session(shared_from_this());
-}
-
-void BaseSession::unregister_session(void) {
-  SessionManager::get_instance().unregister_session(shared_from_this());
+void BaseServer::invoke_shutoff(void) {
+  status_ = Status::STOPED;
 }
 
 }

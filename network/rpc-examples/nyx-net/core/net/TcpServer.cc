@@ -25,10 +25,10 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <core/EventLoop.h>
-#include <core/TcpListenSession.h>
-#include <core/TcpServer.h>
+#include <core/net/TcpListenSession.h>
+#include <core/net/TcpServer.h>
 
-namespace nyx {
+namespace nyx::net {
 
 TcpServer::TcpServer(void)
   : BaseServer(EventLoop::get_instance().get_context())

@@ -27,38 +27,43 @@
 #pragma once
 
 #include <core/NyxInternal.h>
+#include <core/net/BaseServer.h>
 
-namespace nyx {
+namespace nyx::net {
 
-class BaseServer
-  : private UnCopyable
-  , public CallbackHandler
-  , public std::enable_shared_from_this<BaseServer> {
+class TcpListenSession;
+
+class TcpServer : public BaseServer {
+  using SessionPtr = std::shared_ptr<TcpListenSession>;
+
+  tcp::acceptor acceptor_;
+  std::string host_{};
+  std::uint16_t port_{};
+  bool reuse_addr_{};
+  int backlog_{};
+  SessionPtr new_conn_;
 public:
-  enum class Status : int {
-    INIT,
-    STARTED,
-    STOPED,
-  };
-protected:
-  asio::io_context& context_;
-  Status status_{Status::INIT};
-public:
-  BaseServer(asio::io_context& context);
-  virtual ~BaseServer(void);
+  TcpServer(void);
+  virtual ~TcpServer(void);
 
-  virtual void invoke_launch(void);
-  virtual void invoke_shutoff(void);
+  virtual void invoke_launch(void) override;
+  virtual void invoke_shutoff(void) override;
   virtual void launch_accept(
-      const std::string& host, std::uint16_t port, int backlog) = 0;
+      const std::string& host, std::uint16_t port, int backlog) override;
 
-  Status get_status(void) const {
-    return status_;
+  void bind(const std::string& host, std::uint16_t port);
+  void listen(int backlog);
+
+  void enable_reuse_addr(bool reuse) {
+    reuse_addr_ = reuse;
   }
 
-  bool is_stoped(void) const {
-    return status_ == Status::STOPED;
+  bool is_open(void) const {
+    return acceptor_.is_open();
   }
+private:
+  void reset_connection(void);
+  void handle_async_accept(const std::error_code& ec);
 };
 
 }

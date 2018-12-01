@@ -24,25 +24,51 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <core/BaseServer.h>
-#include <core/ServerManager.h>
+#pragma once
 
-namespace nyx {
+#include <functional>
+#include <thread>
+#include <vector>
+#include <core/NyxInternal.h>
 
-BaseServer::BaseServer(asio::io_context& context)
-  : context_(context) {
-}
+namespace nyx::utils {
 
-BaseServer::~BaseServer(void) {
-}
+class ThreadPool : private UnCopyable {
+  using ThreadPtr = std::unique_ptr<std::thread>;
 
-void BaseServer::invoke_launch(void) {
-  status_ = Status::STARTED;
-  ServerManager::get_instance().add_server(shared_from_this());
-}
+  bool stopped_{};
+  int thread_num_{};
+  std::vector<ThreadPtr> threads_;
+  asio::io_context context_;
+  asio::io_context::work work_;
 
-void BaseServer::invoke_shutoff(void) {
-  status_ = Status::STOPED;
-}
+  static constexpr int kDefThreadNum = 4;
+public:
+  ThreadPool(int thread_num = kDefThreadNum)
+    : thread_num_(thread_num)
+    , work_(context_) {
+    for (auto i = 0; i < thread_num_; ++i)
+      threads_.emplace_back(new std::thread([this] { context_.run(); }));
+  }
+
+  ~ThreadPool(void) {
+    stop();
+  }
+
+  void shutoff(void) {
+    if (!stopped_) {
+      context_.stop();
+      for (auto& t : threads_)
+        t->join();
+      stopped_ = true;
+    }
+  }
+
+  template <typename Function, typename... Args>
+  void post(Function&& fn, Args&&... args) {
+    context_.post(
+        std::bind(std::forward<Function>(fn), std::forward<Args>(args)...));
+  }
+};
 
 }

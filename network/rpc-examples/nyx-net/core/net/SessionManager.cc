@@ -24,23 +24,30 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#include <core/net/BaseSession.h>
+#include <core/net/SessionManager.h>
 
-#include <core/NyxInternal.h>
+namespace nyx::net {
 
-namespace nyx {
+bool SessionManager::has_session(const SessionPtr& s) const {
+  std::unique_lock<std::mutex> guard(mtx_);
+  return sessions_.find(s) != sessions_.end();
+}
 
-class BaseClient
-  : private UnCopyable
-  , public CallbackHandler
-  , public std::enable_shared_from_this<BaseClient> {
-public:
-  BaseClient(void) {}
-  virtual ~BaseClient(void) {}
+void SessionManager::register_session(const SessionPtr& s) {
+  std::unique_lock<std::mutex> guard(mtx_);
+  sessions_.insert(s);
+}
 
-  virtual void async_connect(const std::string& host, std::uint16_t port) = 0;
-  virtual void async_write(const std::string& buf) = 0;
-  virtual void disconnect(void) = 0;
-};
+void SessionManager::unregister_session(const SessionPtr& s) {
+  std::unique_lock<std::mutex> guard(mtx_);
+  sessions_.erase(s);
+}
+
+void SessionManager::disconnect_all(void) {
+  std::unique_lock<std::mutex> guard(mtx_);
+  for (auto& s : sessions_)
+    s->disconnect();
+}
 
 }

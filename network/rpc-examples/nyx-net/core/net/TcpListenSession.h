@@ -24,48 +24,27 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <core/TcpListenSession.h>
+#pragma once
 
-namespace nyx {
+#include <core/NyxInternal.h>
+#include <core/net/TcpSession.h>
 
-TcpListenSession::TcpListenSession(asio::io_context& context)
-  : TcpSession(context) {
-}
+namespace nyx::net {
 
-TcpListenSession::~TcpListenSession(void) {
-}
+class TcpListenSession : public TcpSession {
+  using HandlerPtr = std::shared_ptr<CallbackHandler>;
 
-void TcpListenSession::set_callback_handler(const HandlerPtr& handler) {
-  handler_ = handler;
-}
+  HandlerPtr handler_;
+public:
+  TcpListenSession(asio::io_context& context);
+  virtual ~TcpListenSession(void);
 
-void TcpListenSession::notify_new_connection(void) {
-  if (handler_ && handler_->on_new_connection)
-    handler_->on_new_connection(shared_from_this());
-}
-
-bool TcpListenSession::invoke_shutoff(void) {
-  if (handler_ && handler_->on_disconnected)
-    handler_->on_disconnected(shared_from_this());
-  return TcpSession::invoke_shutoff();
-}
-
-void TcpListenSession::handle_async_read(
-    const std::error_code& ec, std::size_t n) {
-  if (!ec) {
-    if (handler_ && handler_->on_message)
-      handler_->on_message(shared_from_this(), std::string(buffer_.data(), n));
-
-    auto self(shared_from_this());
-    socket_.async_read_some(asio::buffer(buffer_),
-        [this, self](const std::error_code& ec, std::size_t n) {
-          handle_async_read(ec, n);
-        });
-  }
-  else {
-    if (invoke_shutoff())
-      cleanup();
-  }
-}
+  void set_callback_handler(const HandlerPtr& handler);
+  void notify_new_connection(void);
+private:
+  virtual bool invoke_shutoff(void) override;
+  virtual void handle_async_read(
+      const std::error_code& ec, std::size_t n) override;
+};
 
 }

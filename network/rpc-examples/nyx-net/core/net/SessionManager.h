@@ -26,49 +26,31 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <functional>
-#include <thread>
-#include <vector>
+#include <unordered_set>
+#include <mutex>
 #include <core/NyxInternal.h>
 
-namespace nyx {
+namespace nyx::net {
 
-class ThreadPool : private UnCopyable {
-  using ThreadPtr = std::unique_ptr<std::thread>;
+class BaseSession;
+using SessionPtr = std::shared_ptr<BaseSession>;
 
-  bool stopped_{};
-  int thread_num_{};
-  std::vector<ThreadPtr> threads_;
-  asio::io_context context_;
-  asio::io_context::work work_;
+class SessionManager : private UnCopyable {
+  std::unordered_set<SessionPtr> sessions_;
+  mutable std::mutex mtx_;
 
-  static constexpr int kDefThreadNum = 4;
+  SessionManager(void) {}
+  ~SessionManager(void) {}
 public:
-  ThreadPool(int thread_num = kDefThreadNum)
-    : thread_num_(thread_num)
-    , work_(context_) {
-    for (auto i = 0; i < thread_num_; ++i)
-      threads_.emplace_back(new std::thread([this] { context_.run(); }));
+  static SessionManager& get_instance(void) {
+    static SessionManager ins;
+    return ins;
   }
 
-  ~ThreadPool(void) {
-    stop();
-  }
-
-  void stop(void) {
-    if (!stopped_) {
-      context_.stop();
-      for (auto& t : threads_)
-        t->join();
-      stopped_ = true;
-    }
-  }
-
-  template <typename Function, typename... Args>
-  void post(Function&& fn, Args&&... args) {
-    context_.post(
-        std::bind(std::forward<Function>(fn), std::forward<Args>(args)...));
-  }
+  bool has_session(const SessionPtr& s) const;
+  void register_session(const SessionPtr& s);
+  void unregister_session(const SessionPtr& s);
+  void disconnect_all(void);
 };
 
 }

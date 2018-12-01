@@ -26,31 +26,22 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <unordered_set>
-#include <mutex>
-#include <core/NyxInternal.h>
+#include <core/net/BaseClient.h>
 
-namespace nyx {
+namespace nyx::net {
 
-class BaseSession;
-using SessionPtr = std::shared_ptr<BaseSession>;
+class TcpConnectSession;
 
-class SessionManager : private UnCopyable {
-  std::unordered_set<SessionPtr> sessions_;
-  mutable std::mutex mtx_;
-
-  SessionManager(void) {}
-  ~SessionManager(void) {}
+class TcpClient : public BaseClient {
+  std::shared_ptr<TcpConnectSession> conn_;
 public:
-  static SessionManager& get_instance(void) {
-    static SessionManager ins;
-    return ins;
-  }
+  TcpClient(void);
+  virtual ~TcpClient(void);
 
-  bool has_session(const SessionPtr& s) const;
-  void register_session(const SessionPtr& s);
-  void unregister_session(const SessionPtr& s);
-  void disconnect_all(void);
+  virtual void async_connect(
+      const std::string& host, std::uint16_t port) override;
+  virtual void async_write(const std::string& buf) override;
+  virtual void disconnect(void) override;
 };
 
 }

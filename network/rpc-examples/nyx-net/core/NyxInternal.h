@@ -30,21 +30,23 @@
 #include <functional>
 #include <memory>
 #include <asio.hpp>
-#include <utils/Copyable.h>
-#include <utils/UnCopyable.h>
-#include <core/CallbackHandler.h>
+#include <core/utils/Copyable.h>
+#include <core/utils/UnCopyable.h>
+#include <core/net/CallbackHandler.h>
 
 using asio::ip::tcp;
 
+namespace nyx::net {
+  class BaseSession;
+  class BaseClient;
+  class BaseServer;
+}
+
 namespace nyx {
 
-class BaseSession;
-class BaseClient;
-class BaseServer;
-
-using SessionPtr = std::shared_ptr<BaseSession>;
-using ClientPtr = std::shared_ptr<BaseClient>;
-using ServerPtr = std::shared_ptr<BaseServer>;
+using SessionPtr = std::shared_ptr<net::BaseSession>;
+using ClientPtr = std::shared_ptr<net::BaseClient>;
+using ServerPtr = std::shared_ptr<net::BaseServer>;
 
 ClientPtr make_new_client(void);
 ServerPtr make_new_server(void);

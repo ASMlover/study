@@ -24,30 +24,41 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <core/BaseSession.h>
-#include <core/SessionManager.h>
+#pragma once
 
-namespace nyx {
+#include <core/NyxInternal.h>
 
-bool SessionManager::has_session(const SessionPtr& s) const {
-  std::unique_lock<std::mutex> guard(mtx_);
-  return sessions_.find(s) != sessions_.end();
-}
+namespace nyx::net {
 
-void SessionManager::register_session(const SessionPtr& s) {
-  std::unique_lock<std::mutex> guard(mtx_);
-  sessions_.insert(s);
-}
+class BaseServer
+  : private UnCopyable
+  , public CallbackHandler
+  , public std::enable_shared_from_this<BaseServer> {
+public:
+  enum class Status : int {
+    INIT,
+    STARTED,
+    STOPED,
+  };
+protected:
+  asio::io_context& context_;
+  Status status_{Status::INIT};
+public:
+  BaseServer(asio::io_context& context);
+  virtual ~BaseServer(void);
 
-void SessionManager::unregister_session(const SessionPtr& s) {
-  std::unique_lock<std::mutex> guard(mtx_);
-  sessions_.erase(s);
-}
+  virtual void invoke_launch(void);
+  virtual void invoke_shutoff(void);
+  virtual void launch_accept(
+      const std::string& host, std::uint16_t port, int backlog) = 0;
 
-void SessionManager::disconnect_all(void) {
-  std::unique_lock<std::mutex> guard(mtx_);
-  for (auto& s : sessions_)
-    s->disconnect();
-}
+  Status get_status(void) const {
+    return status_;
+  }
+
+  bool is_stoped(void) const {
+    return status_ == Status::STOPED;
+  }
+};
 
 }

@@ -27,6 +27,6 @@
 #pragma once
 
 #include <core/NyxInternal.h>
-#include <core/BaseSession.h>
-#include <core/BaseClient.h>
-#include <core/BaseServer.h>
+#include <core/net/BaseSession.h>
+#include <core/net/BaseClient.h>
+#include <core/net/BaseServer.h>

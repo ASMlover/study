@@ -24,21 +24,21 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <core/TcpClient.h>
-#include <core/TcpServer.h>
 #include <core/EventLoop.h>
-#include <core/SessionManager.h>
-#include <core/ServerManager.h>
 #include <core/NyxInternal.h>
+#include <core/net/TcpClient.h>
+#include <core/net/TcpServer.h>
+#include <core/net/SessionManager.h>
+#include <core/net/ServerManager.h>
 
 namespace nyx {
 
 ClientPtr make_new_client(void) {
-  return std::make_shared<TcpClient>();
+  return std::make_shared<net::TcpClient>();
 }
 
 ServerPtr make_new_server(void) {
-  return std::make_shared<TcpServer>();
+  return std::make_shared<net::TcpServer>();
 }
 
 void launch(void) {
@@ -46,8 +46,8 @@ void launch(void) {
 }
 
 void shutoff(void) {
-  SessionManager::get_instance().disconnect_all();
-  ServerManager::get_instance().shutoff_all();
+  net::SessionManager::get_instance().disconnect_all();
+  net::ServerManager::get_instance().shutoff_all();
   EventLoop::get_instance().shutoff();
 }
 

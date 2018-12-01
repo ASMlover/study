@@ -24,23 +24,35 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <thread>
-#include <vector>
-#include <core/BaseServer.h>
-#include <core/ServerManager.h>
+#pragma once
 
-namespace nyx {
+#include <mutex>
+#include <unordered_set>
+#include <core/NyxInternal.h>
 
-void ServerManager::add_server(const ServerPtr& s) {
-  std::unique_lock<std::mutex> guard(mutex_);
-  servers_.insert(s);
-}
+namespace nyx::net {
 
-void ServerManager::shutoff_all(void) {
-  std::unique_lock<std::mutex> guard(mutex_);
-  for (auto& s : servers_)
-    s->invoke_shutoff();
-  servers_.clear();
-}
+class BaseServer;
+
+using WorkerPtr = std::shared_ptr<asio::io_context::work>;
+using ServerPtr = std::shared_ptr<BaseServer>;
+
+class ServerManager : private UnCopyable {
+  mutable std::mutex mutex_;
+  std::unordered_set<ServerPtr> servers_;
+
+  static constexpr std::size_t kDefaultThreads = 4;
+
+  ServerManager(void) {}
+  ~ServerManager(void) {}
+public:
+  static ServerManager& get_instance(void) {
+    static ServerManager ins;
+    return ins;
+  }
+
+  void add_server(const ServerPtr& s);
+  void shutoff_all(void);
+};
 
 }
