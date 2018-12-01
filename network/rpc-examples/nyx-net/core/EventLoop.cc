@@ -38,8 +38,7 @@ inline std::uint64_t now_as_microseconds(void) {
 }
 
 EventLoop::EventLoop(void)
-  : thread_num_(kDefThreadNum)
-  , context_(ServerManager::get_instance().get_context()) {
+  : thread_num_(kDefThreadNum) {
 }
 
 EventLoop::~EventLoop(void) {
@@ -63,7 +62,7 @@ void EventLoop::shutoff_threads(void) {
 bool EventLoop::poll(void) {
   if (is_running_) {
     auto begin = now_as_microseconds();
-    // call service call back
+    // TODO: call service callback bindings
     auto one_poll = now_as_microseconds() - begin;
 
     if (one_poll < 100)

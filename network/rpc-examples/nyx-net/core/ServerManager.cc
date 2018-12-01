@@ -36,7 +36,7 @@ void ServerManager::add_server(const ServerPtr& s) {
   servers_.insert(s);
 }
 
-void ServerManager::stop_all(void) {
+void ServerManager::shutoff_all(void) {
   std::unique_lock<std::mutex> guard(mutex_);
   for (auto& s : servers_)
     s->invoke_shutoff();

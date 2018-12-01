@@ -47,7 +47,7 @@ void launch(void) {
 
 void shutoff(void) {
   SessionManager::get_instance().disconnect_all();
-  ServerManager::get_instance().stop_all();
+  ServerManager::get_instance().shutoff_all();
   EventLoop::get_instance().shutoff();
 }
 

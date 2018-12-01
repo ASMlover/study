@@ -38,7 +38,6 @@ using WorkerPtr = std::shared_ptr<asio::io_context::work>;
 using ServerPtr = std::shared_ptr<BaseServer>;
 
 class ServerManager : private UnCopyable {
-  asio::io_context context_;
   mutable std::mutex mutex_;
   std::unordered_set<ServerPtr> servers_;
 
@@ -53,11 +52,7 @@ public:
   }
 
   void add_server(const ServerPtr& s);
-  void stop_all(void);
-
-  asio::io_context& get_context(void) {
-    return context_;
-  }
+  void shutoff_all(void);
 };
 
 }

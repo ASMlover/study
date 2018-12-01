@@ -38,7 +38,7 @@ class EventLoop : private UnCopyable {
 
   bool is_running_{};
   std::size_t thread_num_{};
-  asio::io_context& context_;
+  asio::io_context context_;
   WorkerPtr worker_;
   std::vector<ThreadPtr> threads_;
 

@@ -24,14 +24,14 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <core/ServerManager.h>
+#include <core/EventLoop.h>
 #include <core/TcpListenSession.h>
 #include <core/TcpServer.h>
 
 namespace nyx {
 
 TcpServer::TcpServer(void)
-  : BaseServer(ServerManager::get_instance().get_context())
+  : BaseServer(EventLoop::get_instance().get_context())
   , acceptor_(context_) {
 }
 
