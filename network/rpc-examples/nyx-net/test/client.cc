@@ -27,8 +27,10 @@
 #include <iostream>
 #include <thread>
 #include "../core/Nyx.h"
+#include "../core/utils/Traceback.h"
 
 void run_client(void) {
+  bool running{true};
   auto client = nyx::make_new_client();
   client->set_resolve_error_callback([](const nyx::SessionPtr& conn) {
         std::cout << "client: resolve connect endpoint failed ..." << std::endl;
@@ -39,12 +41,13 @@ void run_client(void) {
       }).set_message_callback(
         [](const nyx::SessionPtr& conn, const std::string& buf) {
         std::cout << "client: recv message from server: " << buf << std::endl;
-      }).set_disconnected_callback([](const nyx::SessionPtr& conn) {
+      }).set_disconnected_callback([&running](const nyx::SessionPtr& conn) {
         std::cout << "client: on disconnected ..." << std::endl;
+        running = false;
+        nyx::utils::print_traceback();
       });
   client->async_connect("127.0.0.1", 5555);
 
-  bool running{true};
   std::thread t([&running] {
         nyx::launch();
         while (running)
@@ -53,7 +56,7 @@ void run_client(void) {
       });
 
   std::string line;
-  while (std::getline(std::cin, line)) {
+  while (running && std::getline(std::cin, line)) {
     if (line == "exit") {
       client->disconnect();
       running = false;

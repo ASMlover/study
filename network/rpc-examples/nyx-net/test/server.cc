@@ -35,7 +35,7 @@ void run_server(void) {
       }).set_message_callback(
         [](const nyx::SessionPtr& conn, const std::string& buf) {
         std::cout << "server: recv message from client: " << buf << std::endl;
-        // conn->async_write(buf);
+        conn->async_write(buf);
       }).set_disconnected_callback([](const nyx::SessionPtr& conn) {
         std::cout << "server: session disconnected ..." << std::endl;
       });
@@ -50,7 +50,7 @@ void run_server(void) {
   });
 
   std::string line;
-  while (std::getline(std::cin, line)) {
+  while (running && std::getline(std::cin, line)) {
     if (line == "exit") {
       running = false;
       break;
