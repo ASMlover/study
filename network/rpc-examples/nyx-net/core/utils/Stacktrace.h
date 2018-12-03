@@ -28,6 +28,6 @@
 
 namespace nyx::utils {
 
-void print_traceback(void);
+void print_stacktrace(void);
 
 }

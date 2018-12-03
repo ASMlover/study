@@ -34,24 +34,24 @@
 #include <cstdlib>
 #include <string>
 #include <iostream>
-#include <core/utils/Traceback.h>
+#include <core/utils/Stacktrace.h>
 
 namespace nyx::utils {
 
-static constexpr int kMaxTraceback = 256;
+static constexpr int kMaxStacktrace = 256;
 
 #if defined(_WINDOWS_) || defined(_MSC_VER)
 
-void print_traceback(void) {
+void print_stacktrace(void) {
   HANDLE hProc = GetCurrentProcess();
   SymInitialize(hProc, NULL, TRUE);
 
-  void* stack[kMaxTraceback];
-  int frames = CaptureStackBackTrace(0, kMaxTraceback, stack, NULL);
+  void* stack[kMaxStacktrace];
+  int frames = CaptureStackBackTrace(0, kMaxStacktrace, stack, NULL);
 
-  char symbol_buff[sizeof(SYMBOL_INFO) * kMaxTraceback * sizeof(char)];
+  char symbol_buff[sizeof(SYMBOL_INFO) * kMaxStacktrace * sizeof(char)];
   PSYMBOL_INFO symbol = (PSYMBOL_INFO)symbol_buff;
-  symbol->MaxNameLen = kMaxTraceback;
+  symbol->MaxNameLen = kMaxStacktrace;
   symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
 
   for (int i = 0; i < frames; ++i) {
@@ -62,9 +62,9 @@ void print_traceback(void) {
   }
 }
 #else
-void print_traceback(void) {
-  void* buff[kMaxTraceback];
-  int nptrs = backtrace(buff, kMaxTraceback);
+void print_stacktrace(void) {
+  void* buff[kMaxStacktrace];
+  int nptrs = backtrace(buff, kMaxStacktrace);
   char** messages = backtrace_symbols(buff, nptrs);
   if (messages) {
     for (int i = 0; i < nptrs; ++i)
