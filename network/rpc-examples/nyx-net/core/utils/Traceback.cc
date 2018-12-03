@@ -67,7 +67,8 @@ void print_traceback(void) {
   int nptrs = backtrace(buff, kMaxTraceback);
   char** messages = backtrace_symbols(buff, nptrs);
   if (messages) {
-    std::cout << nptrs - i - 1 << ": " << messages[i] << std::endl;
+    for (int i = 0; i < nptrs; ++i)
+        std::cout << nptrs - i - 1 << ": " << messages[i] << std::endl;
     std::free(messages);
   }
 }
