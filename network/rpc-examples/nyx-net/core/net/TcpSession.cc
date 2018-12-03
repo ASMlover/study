@@ -52,6 +52,9 @@ void TcpSession::do_async_write_impl(const std::string& buf) {
 }
 
 void TcpSession::handle_async_write(const std::string& buf) {
+  if (is_closed())
+    return;
+
   auto self(shared_from_this());
   asio::async_write(socket_, asio::buffer(buf.data(), buf.size()),
       [this, self](const std::error_code& ec, std::size_t /*n*/) {
@@ -64,7 +67,7 @@ void TcpSession::handle_async_write(const std::string& buf) {
         else {
           is_writing_ = false;
           if (is_disconnected_ && invoke_shutoff())
-            unregister_session();
+            cleanup();
         }
       });
 }
@@ -74,6 +77,9 @@ void TcpSession::cleanup(void) {
 }
 
 void TcpSession::invoke_launch(void) {
+  if (is_closed())
+    return;
+
   auto self(shared_from_this());
   socket_.async_read_some(asio::buffer(buffer_),
       [this, self](const std::error_code& ec, std::size_t n) {
@@ -88,7 +94,10 @@ bool TcpSession::invoke_shutoff(void) {
     return false;
 
   auto self(shared_from_this());
-  strand_.post([this, self] { socket_.close(); });
+  strand_.post([this, self] {
+		if (socket_.lowest_layer().is_open())
+			socket_.lowest_layer().close();
+	});
   return true;
 }
 
@@ -96,7 +105,7 @@ void TcpSession::invoke_disconnect(void) {
   if (!is_disconnected_) {
     is_disconnected_ = true;
     if (!is_writing_ && invoke_shutoff())
-      unregister_session();
+      cleanup();
   }
 }
 
@@ -105,6 +114,9 @@ void TcpSession::invoke_async_write(const std::string& buf) {
 }
 
 void TcpSession::handle_async_read(const std::error_code& ec, std::size_t n) {
+  if (is_closed())
+    return;
+
   if (!ec) {
     auto self(shared_from_this());
     socket_.async_read_some(asio::buffer(buffer_),

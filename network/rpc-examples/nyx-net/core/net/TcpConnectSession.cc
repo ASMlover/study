@@ -130,6 +130,9 @@ void TcpConnectSession::handle_async_connect(
 
 void TcpConnectSession::handle_async_read(
     const std::error_code& ec, std::size_t n) {
+  if (is_closed())
+    return;
+
   if (!ec) {
     if (handler_ && handler_->on_message)
       handler_->on_message(shared_from_this(), std::string(buffer_.data(), n));

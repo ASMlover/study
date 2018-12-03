@@ -52,6 +52,10 @@ public:
     return socket_;
   }
 
+  bool is_closed(void) const {
+    return is_closed_.load();
+  }
+
   void set_buffer_size(std::size_t len) {
     std::vector<char>(len).swap(buffer_);
   }
