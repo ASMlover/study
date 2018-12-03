@@ -27,7 +27,6 @@
 #include <iostream>
 #include <thread>
 #include "../core/Nyx.h"
-#include "../core/utils/Traceback.h"
 
 void run_client(void) {
   bool running{true};
@@ -44,7 +43,6 @@ void run_client(void) {
       }).set_disconnected_callback([&running](const nyx::SessionPtr& conn) {
         std::cout << "client: on disconnected ..." << std::endl;
         running = false;
-        nyx::utils::print_traceback();
       });
   client->async_connect("127.0.0.1", 5555);
 
