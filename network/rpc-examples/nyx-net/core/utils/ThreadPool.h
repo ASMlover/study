@@ -52,7 +52,7 @@ public:
   }
 
   ~ThreadPool(void) {
-    stop();
+    shutoff();
   }
 
   void shutoff(void) {

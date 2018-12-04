@@ -32,6 +32,7 @@
 #include <asio.hpp>
 #include <core/utils/Copyable.h>
 #include <core/utils/UnCopyable.h>
+#include <core/utils/Stacktrace.h>
 #include <core/net/CallbackHandler.h>
 
 using asio::ip::tcp;
