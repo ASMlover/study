@@ -26,12 +26,28 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 set(OUTPUT_NAME "nyxnet.test")
+set(OUTPUT_TEST "nyxtest")
 
-aux_source_directory(. NYXNETTEST_SOURCEFILES)
+set(NYXNETTEST_SOURCEFILES
+  main.cc
+  client.cc
+  server.cc
+  )
 message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` NYXNETTEST_SOURCEFILES: ${NYXNETTEST_SOURCEFILES}")
+
+set(NYXTEST_SOURCEFILES
+  test.cc
+  )
+message(STATUS "`${PROJECT_NAME}.${OUTPUT_TEST}` NYXTEST_SOURCEFILES: ${NYXTEST_SOURCEFILES}")
 
 add_executable(${OUTPUT_NAME} ${NYXNETTEST_SOURCEFILES})
 target_link_libraries(${OUTPUT_NAME} nyxcore.static)
-if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+
+add_executable(${OUTPUT_TEST} ${NYXTEST_SOURCEFILES})
+target_link_libraries(${OUTPUT_TEST} nyxcore.static)
+
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+else()
   target_link_libraries(${OUTPUT_NAME} pthread)
+  target_link_libraries(${OUTPUT_TEST} pthread)
 endif()
