@@ -95,9 +95,9 @@ bool TcpSession::invoke_shutoff(void) {
 
   auto self(shared_from_this());
   strand_.post([this, self] {
-		if (socket_.lowest_layer().is_open())
-			socket_.lowest_layer().close();
-	});
+        if (socket_.lowest_layer().is_open())
+          socket_.lowest_layer().close();
+      });
   return true;
 }
 
