@@ -62,9 +62,19 @@ message(STATUS "`${PROJECT_NAME}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CX
 include_directories(
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/../../../3rdparty/boost/include)
+
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+  if (CMAKE_BUILD_TYPE MATCHES "Debug")
+    link_directories(${PROJECT_SOURCE_DIR}/../../../3rdparty/boost/lib/windows/debug)
+  else()
+    link_directories(${PROJECT_SOURCE_DIR}/../../../3rdparty/boost/lib/windows/release)
+  endif()
 else()
-  link_directories(${PROJECT_SOURCE_DIR}/../../../3rdparty/boost/lib/linux/release)
+  if (CMAKE_BUILD_TYPE MATCHES "Debug")
+    link_directories(${PROJECT_SOURCE_DIR}/../../../3rdparty/boost/lib/linux/debug)
+  else()
+    link_directories(${PROJECT_SOURCE_DIR}/../../../3rdparty/boost/lib/linux/release)
+  endif()
 endif()
 
 add_subdirectory(core)
