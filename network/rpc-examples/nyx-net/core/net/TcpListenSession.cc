@@ -28,7 +28,7 @@
 
 namespace nyx::net {
 
-TcpListenSession::TcpListenSession(asio::io_context& context)
+TcpListenSession::TcpListenSession(boost::asio::io_context& context)
   : TcpSession(context) {
 }
 
@@ -60,7 +60,7 @@ void TcpListenSession::handle_async_read(
       handler_->on_message(shared_from_this(), std::string(buffer_.data(), n));
 
     auto self(shared_from_this());
-    socket_.async_read_some(asio::buffer(buffer_),
+    socket_.async_read_some(boost::asio::buffer(buffer_),
         [this, self](const std::error_code& ec, std::size_t n) {
           handle_async_read(ec, n);
         });

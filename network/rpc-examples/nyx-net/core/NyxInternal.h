@@ -29,13 +29,13 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include <asio.hpp>
+#include <boost/asio.hpp>
 #include <core/utils/Copyable.h>
 #include <core/utils/UnCopyable.h>
 #include <core/utils/Stacktrace.h>
 #include <core/net/CallbackHandler.h>
 
-using asio::ip::tcp;
+using ::boost::asio::ip::tcp;
 
 namespace nyx::net {
   class BaseSession;

@@ -387,7 +387,7 @@ using python
     2) ./bootstrap.sh
     3) ./b2 --help
     4) 自行选择debug或release，通过variant来设置
-    5) ./b2 --toolset=gcc --stagedir="./stage/x64" link=static runtime-link=shared threading=multi variant=release address-model=64
+    5) ./b2 --toolset=gcc --stagedir="./stage/x64" cxxflags=-fPIC link=static runtime-link=shared threading=multi variant=release address-model=64
 
 ## **25. 两个客户端保证随机数一致**
     要让多个客户端保存随机数一致，只需要传递相同的随机数种子即可

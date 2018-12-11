@@ -39,8 +39,8 @@ class ThreadPool : private UnCopyable {
   bool stopped_{};
   int thread_num_{};
   std::vector<ThreadPtr> threads_;
-  asio::io_context context_;
-  asio::io_context::work work_;
+  boost::asio::io_context context_;
+  boost::asio::io_context::work work_;
 
   static constexpr int kDefThreadNum = 4;
 public:

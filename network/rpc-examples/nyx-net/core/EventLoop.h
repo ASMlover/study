@@ -33,12 +33,12 @@
 namespace nyx {
 
 class EventLoop : private UnCopyable {
-  using WorkerPtr = std::shared_ptr<asio::io_context::work>;
+  using WorkerPtr = std::shared_ptr<boost::asio::io_context::work>;
   using ThreadPtr = std::unique_ptr<std::thread>;
 
   bool is_running_{};
   std::size_t thread_num_{};
-  asio::io_context context_;
+  boost::asio::io_context context_;
   WorkerPtr worker_;
   std::vector<ThreadPtr> threads_;
 
@@ -68,7 +68,7 @@ public:
     return thread_num_;
   }
 
-  asio::io_context& get_context(void) {
+  boost::asio::io_context& get_context(void) {
     return context_;
   }
 };
