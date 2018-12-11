@@ -28,7 +28,7 @@
 
 namespace nyx::net {
 
-TcpConnectSession::TcpConnectSession(asio::io_context& context)
+TcpConnectSession::TcpConnectSession(boost::asio::io_context& context)
   : TcpSession(context)
   , resolver_(context) {
 }
@@ -43,7 +43,7 @@ void TcpConnectSession::async_connect(
 
   auto self(shared_from_this());
   resolver_.async_resolve(
-      asio::ip::tcp::resolver::query(host_, std::to_string(port_)),
+      boost::asio::ip::tcp::resolver::query(host_, std::to_string(port_)),
       [this, self](const std::error_code& ec, tcp::resolver::iterator epiter) {
         if (!ec) {
           auto ep = *epiter;
@@ -68,11 +68,11 @@ void TcpConnectSession::async_write(const std::string& buf) {
 
 void TcpConnectSession::set_option(void) {
   if (!socket_.is_open())
-    socket_.open(asio::ip::tcp::v4());
+    socket_.open(boost::asio::ip::tcp::v4());
 
-  socket_.set_option(asio::ip::tcp::acceptor::reuse_address(true));
-  socket_.set_option(asio::ip::tcp::socket::keep_alive(true));
-  socket_.set_option(asio::ip::tcp::no_delay(true));
+  socket_.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+  socket_.set_option(boost::asio::ip::tcp::socket::keep_alive(true));
+  socket_.set_option(boost::asio::ip::tcp::no_delay(true));
 }
 
 void TcpConnectSession::set_callback_handler(const HandlerPtr& handler) {
@@ -104,7 +104,7 @@ void TcpConnectSession::handle_async_connect(
       handler_->on_connected(shared_from_this());
 
     auto self(shared_from_this());
-    socket_.async_read_some(asio::buffer(buffer_),
+    socket_.async_read_some(boost::asio::buffer(buffer_),
         [this, self](const std::error_code& ec, std::size_t n) {
           handle_async_read(ec, n);
         });
@@ -138,7 +138,7 @@ void TcpConnectSession::handle_async_read(
       handler_->on_message(shared_from_this(), std::string(buffer_.data(), n));
 
     auto self(shared_from_this());
-    socket_.async_read_some(asio::buffer(buffer_),
+    socket_.async_read_some(boost::asio::buffer(buffer_),
         [this, self](const std::error_code& ec, std::size_t n) {
           handle_async_read(ec, n);
         });

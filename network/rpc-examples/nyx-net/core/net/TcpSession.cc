@@ -28,7 +28,7 @@
 
 namespace nyx::net {
 
-TcpSession::TcpSession(asio::io_context& context)
+TcpSession::TcpSession(boost::asio::io_context& context)
   : BaseSession(context)
   , socket_(context)
   , buffer_(128) {
@@ -56,7 +56,7 @@ void TcpSession::handle_async_write(const std::string& buf) {
     return;
 
   auto self(shared_from_this());
-  asio::async_write(socket_, asio::buffer(buf.data(), buf.size()),
+  boost::asio::async_write(socket_, boost::asio::buffer(buf.data(), buf.size()),
       [this, self](const std::error_code& ec, std::size_t /*n*/) {
         if (!write_queue_.empty()) {
           auto wbuf = write_queue_.front();
@@ -81,7 +81,7 @@ void TcpSession::invoke_launch(void) {
     return;
 
   auto self(shared_from_this());
-  socket_.async_read_some(asio::buffer(buffer_),
+  socket_.async_read_some(boost::asio::buffer(buffer_),
       [this, self](const std::error_code& ec, std::size_t n) {
         handle_async_read(ec, n);
       });
@@ -119,7 +119,7 @@ void TcpSession::handle_async_read(const std::error_code& ec, std::size_t n) {
 
   if (!ec) {
     auto self(shared_from_this());
-    socket_.async_read_some(asio::buffer(buffer_),
+    socket_.async_read_some(boost::asio::buffer(buffer_),
         [this, self](const std::error_code& ec, std::size_t n) {
           handle_async_read(ec, n);
         });

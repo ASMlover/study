@@ -88,7 +88,7 @@ void EventLoop::shutoff(void) {
 
 void EventLoop::enable_worker(bool enable) {
   if (enable)
-    worker_.reset(new asio::io_context::work(context_));
+    worker_.reset(new boost::asio::io_context::work(context_));
   else
     worker_.reset();
 }

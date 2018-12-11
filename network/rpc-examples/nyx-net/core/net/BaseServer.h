@@ -41,10 +41,10 @@ public:
     STOPED,
   };
 protected:
-  asio::io_context& context_;
+  boost::asio::io_context& context_;
   Status status_{Status::INIT};
 public:
-  BaseServer(asio::io_context& context);
+  BaseServer(boost::asio::io_context& context);
   virtual ~BaseServer(void);
 
   virtual void invoke_launch(void);

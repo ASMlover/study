@@ -36,7 +36,7 @@ class TcpListenSession : public TcpSession {
 
   HandlerPtr handler_;
 public:
-  TcpListenSession(asio::io_context& context);
+  TcpListenSession(boost::asio::io_context& context);
   virtual ~TcpListenSession(void);
 
   void set_callback_handler(const HandlerPtr& handler);

@@ -33,11 +33,11 @@ namespace nyx::net {
 class BaseSession
   : private UnCopyable, public std::enable_shared_from_this<BaseSession> {
 protected:
-  asio::io_context::strand strand_;
+  boost::asio::io_context::strand strand_;
   std::string local_host_{};
   std::uint16_t local_port_{};
 public:
-  explicit BaseSession(asio::io_context& context);
+  explicit BaseSession(boost::asio::io_context& context);
   virtual ~BaseSession(void);
 
   bool is_alive(void);

@@ -61,7 +61,11 @@ message(STATUS "`${PROJECT_NAME}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CX
 
 include_directories(
   ${PROJECT_SOURCE_DIR}
-  ${PROJECT_SOURCE_DIR}/../../3rdparty/asio/asio/include)
+  ${PROJECT_SOURCE_DIR}/../../../3rdparty/boost/include)
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+else()
+  link_directories(${PROJECT_SOURCE_DIR}/../../../3rdparty/boost/lib/linux/release)
+endif()
 
 add_subdirectory(core)
 add_subdirectory(test)

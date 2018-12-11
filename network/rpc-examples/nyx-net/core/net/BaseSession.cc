@@ -29,7 +29,7 @@
 
 namespace nyx::net {
 
-BaseSession::BaseSession(asio::io_context& context)
+BaseSession::BaseSession(boost::asio::io_context& context)
   : strand_(context) {
 }
 

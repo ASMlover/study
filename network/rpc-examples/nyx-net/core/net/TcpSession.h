@@ -45,7 +45,7 @@ protected:
   std::vector<char> buffer_;
   std::deque<std::string> write_queue_;
 public:
-  TcpSession(asio::io_context& context);
+  TcpSession(boost::asio::io_context& context);
   virtual ~TcpSession(void);
 
   tcp::socket& get_socket(void) {

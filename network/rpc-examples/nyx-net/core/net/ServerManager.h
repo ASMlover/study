@@ -34,7 +34,7 @@ namespace nyx::net {
 
 class BaseServer;
 
-using WorkerPtr = std::shared_ptr<asio::io_context::work>;
+using WorkerPtr = std::shared_ptr<boost::asio::io_context::work>;
 using ServerPtr = std::shared_ptr<BaseServer>;
 
 class ServerManager : private UnCopyable {

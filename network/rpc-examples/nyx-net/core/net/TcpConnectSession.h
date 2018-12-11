@@ -38,10 +38,10 @@ class TcpConnectSession : public TcpSession {
   std::atomic<bool> is_connected_{};
   std::string host_{};
   std::uint16_t port_{};
-  asio::ip::tcp::resolver resolver_;
+  boost::asio::ip::tcp::resolver resolver_;
   HandlerPtr handler_;
 public:
-  TcpConnectSession(asio::io_context& context);
+  TcpConnectSession(boost::asio::io_context& context);
   virtual ~TcpConnectSession(void);
 
   void async_connect(const std::string& host, std::uint16_t port);
