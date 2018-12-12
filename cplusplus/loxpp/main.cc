@@ -30,6 +30,20 @@
 #include <sstream>
 #include <string>
 
+static bool had_error{};
+
+static void report(
+    int line, const std::string& where, const std::string& message) {
+  std::cerr
+    << "[line " << line << "] ERROR " << where << ": "
+    << message << std::endl;
+  had_error = true;
+}
+
+static void error(int line, const std::string& message) {
+  report(line, "", message);
+}
+
 static void repl(void) {
   std::string line;
   for (;;) {
@@ -41,6 +55,7 @@ static void repl(void) {
     }
 
     // interpret(line);
+    had_error = false;
   }
 }
 
@@ -61,6 +76,9 @@ static void run(const std::string& source) {
 static void run_file(const std::string& path) {
   auto bytes = read_file(path);
   // run(bytes);
+
+  if (had_error)
+    std::exit(1);
 }
 
 int main(int argc, char* argv[]) {
