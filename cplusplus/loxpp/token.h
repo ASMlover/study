@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <iomanip>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -33,10 +34,10 @@
 
 class Token {
   TokenType type_;
-  std::string_view lexeme_;
+  std::string lexeme_;
   int line_;
 public:
-  Token(TokenType type, std::string_view lexeme, int line)
+  Token(TokenType type, const std::string& lexeme, int line)
     : type_(type)
     , lexeme_(lexeme)
     , line_(line) {
@@ -46,14 +47,24 @@ public:
     return type_;
   }
 
-  std::string_view get_lexeme(void) const {
+  std::string get_lexeme(void) const {
     return lexeme_;
   }
 
   std::string as_string(void) const {
+    return lexeme_;
+  }
+
+  double as_number(void) const {
+    return std::atof(lexeme_.c_str());
+  }
+
+  std::string repr(void) const {
     std::stringstream ss;
 
-    ss << type_as_string(type_) << "|" << lexeme_ << "|" << line_;
+    ss << std::left << std::setw(16) << type_as_string(type_) << ":"
+      << std::right << std::setw(16) << lexeme_ << "|"
+      << std::right << std::setw(4) << line_;
     return ss.str();
   }
 };
