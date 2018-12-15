@@ -28,6 +28,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include "token.h"
 
 class Scanner {
@@ -37,14 +38,25 @@ class Scanner {
   int line_{1};
 
   std::vector<Token> tokens_;
+  std::unordered_map<std::string, TokenType> keywords_;
+
+  double str2number(const std::string& s);
+  bool is_alpha(char c) const;
+  bool is_alnum(char c) const;
+  std::string get_lexeme(const std::string& s, std::size_t beg, std::size_t end);
 
   bool is_at_end(void) const;
   char advance(void);
   bool match(char expected);
-  char peek(void);
+  char peek(void) const;
+  char peek_next(void) const;
   void add_string(void);
+  void add_number(void);
+  void add_identifier(void);
   void add_token(TokenType type);
   void scan_token(void);
 public:
+  Scanner(const std::string& source);
+
   std::vector<Token> scan_tokens(void);
 };

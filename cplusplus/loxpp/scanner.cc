@@ -24,8 +24,30 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cctype>
 #include <iostream>
+#include <sstream>
 #include "scanner.h"
+
+double Scanner::str2number(const std::string& s) {
+  double r{};
+  std::stringstream ss(s);
+  ss >> r;
+  return r;
+}
+
+bool Scanner::is_alpha(char c) const {
+  return std::isalpha(c) || c == '_';
+}
+
+bool Scanner::is_alnum(char c) const {
+  return std::isalnum(c) || c == '_';
+}
+
+std::string Scanner::get_lexeme(
+    const std::string& s, std::size_t beg, std::size_t end) {
+  return s.substr(beg, end - beg);
+}
 
 bool Scanner::is_at_end(void) const {
   return current_ >= source_.size();
@@ -45,8 +67,14 @@ bool Scanner::match(char expected) {
   return true;
 }
 
-char Scanner::peek(void) {
+char Scanner::peek(void) const {
   return source_[current_];
+}
+
+char Scanner::peek_next(void) const {
+  if (current_ + 1 >= source_.size())
+    return 0;
+  return source_[current_ + 1];
 }
 
 void Scanner::add_string(void) {
@@ -66,12 +94,40 @@ void Scanner::add_string(void) {
   advance();
 
   // trim the surround quotes
-  auto lexeme = source_.substr(start_ + 1, current_ - 1);
+  auto lexeme = get_lexeme(source_, start_ + 1, current_ - 1);
   tokens_.push_back(Token(TOKEN_STRING, lexeme, line_));
 }
 
+void Scanner::add_number(void) {
+  while (std::isdigit(peek()))
+    advance();
+
+  // look for a fractional part
+  if (peek() == '.' && std::isdigit(peek_next())) {
+    // consume the `.`
+    advance();
+
+    while (std::isdigit(peek()))
+      advance();
+  }
+
+  add_token(TOKEN_NUMBER);
+}
+
+void Scanner::add_identifier(void) {
+  while (is_alnum(peek()))
+    advance();
+
+  // see if the identifier is a reserved word
+  auto type = keywords_.find(get_lexeme(source_, start_, current_));
+  if (type == keywords_.end())
+    add_token(TOKEN_IDENTIFIER);
+  else
+    add_token(type->second);
+}
+
 void Scanner::add_token(TokenType type) {
-  auto lexeme = source_.substr(start_, current_);
+  auto lexeme = get_lexeme(source_, start_, current_);
   tokens_.push_back(Token(type, lexeme, line_));
 }
 
@@ -110,9 +166,34 @@ void Scanner::scan_token(void) {
   case '\n': ++line_; break;
   case '"': add_string(); break;
   default:
-    std::cerr << "unexpected character, at: " << line_ << std::endl;
+    if (std::isdigit(c))
+      add_number();
+    else if (is_alpha(c))
+      add_identifier();
+    else
+      std::cerr << "unexpected character, at: " << line_ << std::endl;
     break;
   }
+}
+
+Scanner::Scanner(const std::string& source)
+  : source_(source) {
+  keywords_["and"] = TOKEN_AND;
+  keywords_["class"] = TOKEN_CLASS;
+  keywords_["else"] = TOKEN_ELSE;
+  keywords_["false"] = TOKEN_FALSE;
+  keywords_["fun"] = TOKEN_FUN;
+  keywords_["for"] = TOKEN_FOR;
+  keywords_["if"] = TOKEN_IF;
+  keywords_["nil"] = TOKEN_NIL;
+  keywords_["or"] = TOKEN_OR;
+  keywords_["print"] = TOKEN_PRINT;
+  keywords_["return"] = TOKEN_RETURN;
+  keywords_["super"] = TOKEN_SUPER;
+  keywords_["this"] = TOKEN_THIS;
+  keywords_["true"] = TOKEN_TRUE;
+  keywords_["var"] = TOKEN_VAR;
+  keywords_["while"] = TOKEN_WHILE;
 }
 
 std::vector<Token> Scanner::scan_tokens(void) {
