@@ -41,12 +41,23 @@ class Scanner {
   std::string current_lexeme(std::size_t begpos, std::size_t endpos);
 
   bool is_eof(void) const;
+  bool is_alpha(char c) const;
+  bool is_alnum(char c) const;
   char advance(void);
   bool match(char expected);
   char peek(void) const;
   char peek_next(void) const;
   void add_token(TokenType type);
   void scan_token(void);
+
+  void resolve_char(bool wchar = false);
+  void resolve_string(bool wstr = false);
+  void resolve_number(void);
+  void resolve_macro(void);
+  void resolve_identifier(char begchar = 0);
+  void resolve_dot_start(void);
+  void resolve_greater_start(void);
+  void resolve_less_start(void);
 public:
   Scanner(const std::string& source);
   std::vector<Token> scan_tokens(void);

@@ -110,7 +110,7 @@ const char* token_type_as_string(TokenType type) {
   case TOKEN_MINUS: return "MINUS `-`";
   case TOKEN_MINUS_EQUAL: return "MINUS_EQUAL `-=`";
   case TOKEN_MINUS_MINUS: return "MINUS_MINUS `--`";
-  case TOLEN_MINUS_GREATER: return "MINUS_GREATER `->`";
+  case TOKEN_MINUS_GREATER: return "MINUS_GREATER `->`";
   case TOKEN_STAR: return "STAR `*`";
   case TOKEN_STAR_EQUAL: return "STAR_EQUAL `*=`";
   case TOKEN_SLASH: return "SLASH `/`";

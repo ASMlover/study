@@ -45,7 +45,7 @@ enum TokenType {
   TOKEN_MINUS, // -
   TOKEN_MINUS_EQUAL, // -=
   TOKEN_MINUS_MINUS, // --
-  TOLEN_MINUS_GREATER, // ->
+  TOKEN_MINUS_GREATER, // ->
   TOKEN_STAR, // *
   TOKEN_STAR_EQUAL, // *=
   TOKEN_SLASH, // /
