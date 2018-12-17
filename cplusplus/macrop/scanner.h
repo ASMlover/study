@@ -50,6 +50,7 @@ class Scanner {
   void add_token(TokenType type);
   void scan_token(void);
 
+  void resolve_slash(void);
   void resolve_char(bool wchar = false);
   void resolve_string(bool wstr = false);
   void resolve_number(void);

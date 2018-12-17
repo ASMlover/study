@@ -41,6 +41,7 @@ class Token {
   std::string lexeme_;
   int line_;
   NumberType ntype_{};
+  bool is_wide_{};
 public:
   Token(TokenType type, const std::string& lexeme, int line)
     : type_(type)
@@ -54,6 +55,14 @@ public:
 
   NumberType get_number_type(void) const {
     return ntype_;
+  }
+
+  void set_wide(void) {
+    is_wide_ = true;
+  }
+
+  bool is_wide(void) const {
+    return is_wide_;
   }
 
   TokenType get_type(void) const {

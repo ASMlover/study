@@ -118,7 +118,7 @@ void Scanner::scan_token(void) {
       add_token(TOKEN_MINUS);
     break;
   case '*': add_token(match('=') ? TOKEN_STAR_EQUAL : TOKEN_STAR); break;
-  case '/': add_token(match('=') ? TOKEN_SLASH_EQUAL : TOKEN_SLASH); break;
+  case '/': resolve_slash(); break;
   case '~': add_token(TOKEN_COMPLEMENT); break;
   case '%': add_token(match('=') ? TOKEN_MODULO_EQUAL : TOKEN_MODULO); break;
   case '#': resolve_macro(); break;
@@ -151,6 +151,22 @@ void Scanner::scan_token(void) {
       resolve_identifier();
     else
       std::cerr << "unexpected character ..." << std::endl;
+  }
+}
+
+void Scanner::resolve_slash(void) {
+  if (match('=')) {
+    add_token(TOKEN_SLASH_EQUAL);
+  }
+  else if (match('/')) {
+    while (!is_eof() && peek() != '\n')
+      advance();
+  }
+  else if (match('*')) {
+    // TODO: block comments
+  }
+  else {
+    add_token(TOKEN_SLASH);
   }
 }
 
