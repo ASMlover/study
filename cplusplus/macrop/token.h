@@ -81,6 +81,10 @@ public:
     return lexeme_;
   }
 
+  char as_char(void) const {
+    return lexeme_[0];
+  }
+
   int as_int(void) const {
     return std::atoi(lexeme_.c_str());
   }

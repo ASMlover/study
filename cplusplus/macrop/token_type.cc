@@ -131,7 +131,7 @@ const char* token_type_as_string(TokenType type) {
   case TOKEN_EQUAL: return "EQUAL `=`";
   case TOKEN_EQUAL_EQUAL: return "EQUAL_EQUAL `==`";
   case TOKEN_GREATER: return "GREATER `>`";
-  case TOOEN_RSHIFT: return "RSHIFT `>>`";
+  case TOKEN_RSHIFT: return "RSHIFT `>>`";
   case TOKEN_RSHIFT_EQUAL: return "RSHIFT_EQUAL `>>=`";
   case TOKEN_GREATER_EQUAL: return "GREATER_EQUAL `>=`";
   case TOKEN_LESS: return "LESS `<`";
@@ -140,7 +140,14 @@ const char* token_type_as_string(TokenType type) {
   case TOKEN_LESS_EQUAL: return "LESS_EQUAL `<=`";
   case TOKEN_IDENTIFILER: return "IDENTIFIER `identifier`";
   case TOKEN_INT_CONST: return "INT_CONST `integer-constant`";
+  case TOKEN_UINT_CONST: return "UINT_CONST `unsigned-integer-constant`";
+  case TOKEN_LONG_CONST: return "LONG_CONST `long-integer-constant`";
+  case TOKEN_ULONG_CONST: return "ULONG_CONST `unsigned-long-integer-constant`";
+  case TOKEN_LONGLONG_CONST: return "LONGLONG_CONST `longlong-integer-constant`";
+  case TOKEN_ULONGLONG_CONST: return "ULONGLONG_CONST `unsigned-longlong-integer-constant`";
   case TOKEN_FLOAT_CONST: return "FLOAT_CONST `floating-constant`";
+  case TOKEN_DOUBLE_CONST: return "DOUBLE_CONST `double-floating-constant`";
+  case TOKEN_LONGDOUBLE_CONST: return "LONGDOUBLE_CONST `long-double-floating-constant`";
   case TOKEN_CHAR_CONST: return "CHAR_CONST `'c-char'`";
   case TOKEN_WCHAR_CONST: return "WCHAR_CONST `L'c-char'`";
   case TOKEN_STR_CONST: return "STR_CONST `\"s-char-sequence\"`";

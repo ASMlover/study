@@ -53,7 +53,7 @@ class Scanner {
   void resolve_slash(void);
   void resolve_char(bool wchar = false);
   void resolve_string(bool wstr = false);
-  void resolve_number(void);
+  void resolve_number(bool real = false);
   void resolve_macro(void);
   void resolve_identifier(char begchar = 0);
   void resolve_dot_start(void);

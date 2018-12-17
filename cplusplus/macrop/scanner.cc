@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cctype>
+#include <cstdlib>
 #include <iostream>
 #include "scanner.h"
 
@@ -145,12 +146,16 @@ void Scanner::scan_token(void) {
   case '\'': resolve_char(); break;
   case '"': resolve_string(); break;
   default:
-    if (std::isdigit(c))
+    if (std::isdigit(c)) {
       resolve_number();
-    else if (is_alpha(c))
+    }
+    else if (is_alpha(c)) {
       resolve_identifier();
-    else
-      std::cerr << "unexpected character ..." << std::endl;
+    }
+    else {
+      std::cerr << "unexpected character: " << c << std::endl;
+      std::abort();
+    }
   }
 }
 
@@ -163,7 +168,19 @@ void Scanner::resolve_slash(void) {
       advance();
   }
   else if (match('*')) {
-    // TODO: block comments
+    while (!is_eof() && !(peek() == '*' && peek_next() == '/')) {
+      if (peek() == '\n')
+        ++line_;
+      advance();
+    }
+
+    if (peek() == '*' && peek_next() == '/') {
+      advance();
+    }
+    else {
+      std::cerr << "invalid block comments" << std::endl;
+      std::abort();
+    }
   }
   else {
     add_token(TOKEN_SLASH);
@@ -171,15 +188,105 @@ void Scanner::resolve_slash(void) {
 }
 
 void Scanner::resolve_char(bool wchar) {
-  // TODO: s-char
+  if (peek_next() == '\'') {
+    advance();
+
+    auto lexeme = current_lexeme(start_ + 1, current_ - 1);
+    Token t(wchar ? TOKEN_WCHAR_CONST : TOKEN_CHAR_CONST, lexeme, line_);
+    t.set_wide();
+    tokens_.push_back(t);
+  }
+  else {
+    std::cerr << "invalid char token ..." << std::endl;
+    std::abort();
+  }
 }
 
 void Scanner::resolve_string(bool wstr) {
-  // TODO: s-char-sequence
+  while (!is_eof() && peek() != '"') {
+    if (peek() == '\n')
+      ++line_;
+    advance();
+  }
+
+  if (is_eof()) {
+    std::cerr << "invalid string at line: " << line_ << std::endl;
+    std::abort();
+  }
+  advance();
+
+  auto lexeme = current_lexeme(start_ + 1, current_ - 1);
+  Token t(wstr ? TOKEN_WSTR_CONST : TOKEN_STR_CONST, lexeme, line_);
+  t.set_wide();
+  tokens_.push_back(t);
 }
 
-void Scanner::resolve_number(void) {
-  // TODO: integer-number or floating-point-number
+void Scanner::resolve_number(bool real) {
+  auto floating_fn = [this]{
+    if (peek() == 'f' || peek() == 'F') {
+      advance();
+      add_token(TOKEN_DOUBLE_CONST);
+    }
+    else if (peek() == 'l' || peek() == 'L') {
+      advance();
+      add_token(TOKEN_LONGDOUBLE_CONST);
+    }
+    add_token(TOKEN_FLOAT_CONST);
+  };
+
+  while (std::isdigit(peek()))
+    advance();
+
+  if (peek() == '.') {
+    if (real) {
+      std::cerr << "invalid floating-point number ..." << std::endl;
+      std::abort();
+    }
+
+    if (std::isdigit(peek_next())) {
+      advance();
+      while (std::isdigit(peek()))
+        advance();
+    }
+
+    floating_fn();
+    return;
+  }
+
+  if (real) {
+    floating_fn();
+  }
+  else {
+    if (peek() == 'u' || peek() == 'U') {
+      advance();
+      if (peek() == 'l' || peek() == 'L') {
+        advance();
+        if (peek() == 'l' || peek() == 'L') {
+          advance();
+          add_token(TOKEN_ULONGLONG_CONST);
+        }
+        else {
+          add_token(TOKEN_ULONG_CONST);
+        }
+      }
+      else {
+        add_token(TOKEN_UINT_CONST);
+      }
+    }
+    else if (peek() == 'l' || peek() == 'L') {
+      advance();
+      if (peek() == 'l' || peek() == 'L') {
+        advance();
+        add_token(TOKEN_LONGLONG_CONST);
+      }
+      else {
+        add_token(TOKEN_LONG_CONST);
+      }
+    }
+    else {
+      add_token(TOKEN_INT_CONST);
+    }
+  }
 }
 
 void Scanner::resolve_macro(void) {
@@ -210,15 +317,17 @@ void Scanner::resolve_identifier(char begchar) {
 
 void Scanner::resolve_dot_start(void) {
   if (std::isdigit(peek())) {
-    resolve_number(); // TODO: need pass dot ?
+    resolve_number(true);
     return;
   }
 
   if (peek() == '.') {
-    if (peek_next() == '.')
+    if (peek_next() == '.') {
       add_token(TOKEN_VARARGS);
-    else
-      std::cerr << "unexpected character ..." << std::endl;
+    }
+    else {
+      std::cerr << "unexpected character: " << peek_next() << std::endl;
+    }
   }
   else {
     add_token(TOKEN_DOT);
@@ -226,9 +335,19 @@ void Scanner::resolve_dot_start(void) {
 }
 
 void Scanner::resolve_greater_start(void) {
-  // TODO: solve > about operators, >>, >>=, >=
+  if (match('='))
+    add_token(TOKEN_GREATER_EQUAL);
+  else if (match('>'))
+    add_token(match('=') ? TOKEN_RSHIFT_EQUAL : TOKEN_RSHIFT);
+  else
+    add_token(TOKEN_GREATER);
 }
 
 void Scanner::resolve_less_start(void) {
-  // TODO: solve < abotu operators, <<, <<=, <=
+  if (match('='))
+    add_token(TOKEN_LESS_EQUAL);
+  else if (match('<'))
+    add_token(match('=') ? TOKEN_LSHIFT_EQUAL : TOKEN_LSHIFT);
+  else
+    add_token(TOKEN_LESS);
 }
