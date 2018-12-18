@@ -290,7 +290,39 @@ void Scanner::resolve_number(bool real) {
 }
 
 void Scanner::resolve_macro(void) {
-  // TODO: ## or precompile-macros
+  if (peek() == '#') {
+    if (peek_next() == '#') {
+      std::cerr << "invalid macro joint ..." << std::endl;
+      std::abort();
+    }
+    else {
+      advance();
+      add_token(TOKEN_MACRO_JOINT);
+    }
+  }
+  else {
+    while (peek() == ' ' || peek() == '\t')
+      advance();
+
+    if (is_alpha(peek())) {
+      start_ = current_;
+
+      advance();
+      while (is_alnum(peek()))
+        advance();
+
+      auto lexeme = (std::string("#") + current_lexeme(start_, current_));
+      if (is_macro_keyword(lexeme.c_str())) {
+        auto type = get_macro_keyword_type(lexeme.c_str());
+        Token t(type, lexeme, line_);
+        tokens_.push_back(t);
+      }
+      else {
+        std::cerr << "invlaid macro identifier ..." << std::endl;
+        std::abort();
+      }
+    }
+  }
 }
 
 void Scanner::resolve_identifier(char begchar) {
@@ -299,10 +331,12 @@ void Scanner::resolve_identifier(char begchar) {
 
   if (begchar == 'L') {
     if (peek() == '\'') {
+      advance();
       resolve_char(true);
       return;
     }
     else if (peek() == '"') {
+      advance();
       resolve_string(true);
       return;
     }

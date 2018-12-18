@@ -29,6 +29,12 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include "scanner.h"
+
+static void print_tokens(const std::vector<Token>& tokens) {
+  for (auto& t : tokens)
+    std::cout << t.repr() << std::endl;
+}
 
 static void run_with_file(const std::string& filepath) {
   std::ifstream fp(filepath);
@@ -52,6 +58,8 @@ static void run_with_repl(void) {
     }
 
     // run(line);
+    Scanner s(line);
+    print_tokens(s.scan_tokens());
   }
 }
 

@@ -28,6 +28,7 @@
 
 #include <cstdlib>
 #include <string>
+#include <sstream>
 #include "token_type.h"
 
 enum NumberType {
@@ -103,5 +104,11 @@ public:
 
   double as_double(void) const {
     return std::atof(lexeme_.c_str());
+  }
+
+  std::string repr(void) const {
+    std::stringstream ss;
+    ss << token_type_as_string(type_) << "|" << lexeme_ << "|" << line_;
+    return ss.str();
   }
 };

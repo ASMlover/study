@@ -143,6 +143,7 @@ enum TokenType {
   TOKEN_MACRO_ENDIF, // #endif
   TOKEN_MACRO_DEFINED, // #defined
   TOKEN_MACRO_IFDEF, // #ifdef
+  TOKEN_MACRO_IFNDEF, // #ifndef
   TOKEN_MACRO_DEFINE, // #define
   TOKEN_MACRO_UNDEF, // #undef
   TOKEN_MACRO_INCLUDE, // #include

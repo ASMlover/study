@@ -24,11 +24,10 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <string_view>
 #include <unordered_map>
 #include "token_type.h"
 
-static std::unordered_map<std::string_view, TokenType> _keywords = {
+static std::unordered_map<std::string, TokenType> _keywords = {
   {"auto", TOKEN_AUTO},
   {"break", TOKEN_BREAK},
   {"case", TOKEN_CASE},
@@ -75,13 +74,14 @@ static std::unordered_map<std::string_view, TokenType> _keywords = {
   {"_Thread_local", TOKEN_THREAD_LOCAL}
 };
 
-static std::unordered_map<std::string_view, TokenType> _macroKeywords = {
+static std::unordered_map<std::string, TokenType> _macroKeywords = {
   {"#if", TOKEN_MACRO_IF},
   {"#elif", TOKEN_MACRO_ELIF},
   {"#else", TOKEN_MACRO_ELSE},
   {"#endif", TOKEN_MACRO_ENDIF},
   {"#defined", TOKEN_MACRO_DEFINED},
   {"#ifdef", TOKEN_MACRO_IFDEF},
+  {"#ifndef", TOKEN_MACRO_IFNDEF},
   {"#define", TOKEN_MACRO_DEFINE},
   {"#undef", TOKEN_MACRO_UNDEF},
   {"#include", TOKEN_MACRO_INCLUDE},
@@ -203,6 +203,7 @@ const char* token_type_as_string(TokenType type) {
   case TOKEN_MACRO_ENDIF: return "MACRO_ENDIF `#endif`";
   case TOKEN_MACRO_DEFINED: return "MACRO_DEFINED `#defined`";
   case TOKEN_MACRO_IFDEF: return "MACRO_IFDEF `#ifdef`";
+  case TOKEN_MACRO_IFNDEF: return "MACRO_IFNDEF `#ifndef`";
   case TOKEN_MACRO_DEFINE: return "MACRO_DEFINE `#define`";
   case TOKEN_MACRO_UNDEF: return "MACRO_UNDEF `#undef`";
   case TOKEN_MACRO_INCLUDE: return "MACRO_INCLUDE `#include`";
@@ -215,11 +216,11 @@ const char* token_type_as_string(TokenType type) {
 }
 
 bool is_keyword(const char* s) {
-  return _keywords.find(s) == _keywords.end();
+  return _keywords.find(s) != _keywords.end();
 }
 
 bool is_macro_keyword(const char* s) {
-  return _macroKeywords.find(s) == _macroKeywords.end();
+  return _macroKeywords.find(s) != _macroKeywords.end();
 }
 
 TokenType get_keyword_type(const char* s) {
