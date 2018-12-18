@@ -44,6 +44,8 @@ static void run_with_file(const std::string& filepath) {
     ss << fp.rdbuf();
 
     // run(ss.str());
+    Scanner s(ss.str());
+    print_tokens(s.scan_tokens());
   }
 }
 
