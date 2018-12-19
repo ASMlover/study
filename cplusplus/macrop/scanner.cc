@@ -120,6 +120,7 @@ void Scanner::scan_token(void) {
     break;
   case '*': add_token(match('=') ? TOKEN_STAR_EQUAL : TOKEN_STAR); break;
   case '/': resolve_slash(); break;
+  case '\\': add_token(TOKEN_BACKSLASH); break;
   case '~': add_token(TOKEN_COMPLEMENT); break;
   case '%': add_token(match('=') ? TOKEN_MODULO_EQUAL : TOKEN_MODULO); break;
   case '#': resolve_macro(); break;

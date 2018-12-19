@@ -138,6 +138,7 @@ const char* token_type_as_string(TokenType type) {
   case TOKEN_LSHIFT: return "LSHIFT `<<`";
   case TOKEN_LSHIFT_EQUAL: return "LSHIFT_EQUAL `<<=`";
   case TOKEN_LESS_EQUAL: return "LESS_EQUAL `<=`";
+  case TOKEN_BACKSLASH: return "BACKSLASH `\\`";
   case TOKEN_IDENTIFILER: return "IDENTIFIER `identifier`";
   case TOKEN_INT_CONST: return "INT_CONST `integer-constant`";
   case TOKEN_UINT_CONST: return "UINT_CONST `unsigned-integer-constant`";
