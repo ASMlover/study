@@ -38,3 +38,30 @@ const char* get_token_name(TokenKind kind) {
     return kTokenNames[kind];
   return nullptr;
 }
+
+const char* get_keyword_spelling(TokenKind kind) {
+  switch (kind) {
+#define KEYWORD(K, S) case KW_##K: return S;
+#include "token_defs.h"
+  default: break;
+  }
+  return nullptr;
+}
+
+const char* get_ppkeyword_spelling(TokenKind kind) {
+  switch (kind) {
+#define PPKEYWORD(K, S) case PP_##K: return S;
+#include "token_defs.h"
+  default: break;
+  }
+  return nullptr;
+}
+
+const char* get_punctuator_spelling(TokenKind kind) {
+  switch (kind) {
+#define PUNCTUATOR(K, S) case K: return S;
+#include "token_defs.h"
+  default: break;
+  }
+  return nullptr;
+}

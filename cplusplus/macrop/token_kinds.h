@@ -34,3 +34,6 @@ enum TokenKind {
 };
 
 const char* get_token_name(TokenKind kind);
+const char* get_keyword_spelling(TokenKind kind);
+const char* get_ppkeyword_spelling(TokenKind kind);
+const char* get_punctuator_spelling(TokenKind kind);
