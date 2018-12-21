@@ -33,7 +33,8 @@
 
 static void print_tokens(const std::vector<Token>& tokens) {
   for (auto& t : tokens)
-    std::cout << t.repr() << std::endl;
+    std::cout << t.get_name() << "|"
+      << t.get_lexeme() << "|" << t.get_line() << std::endl;
 }
 
 static void run_with_file(const std::string& filepath) {

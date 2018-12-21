@@ -24,6 +24,8 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <string>
+#include <unordered_map>
 #include "token_kinds.h"
 
 static const char* const kTokenNames[] = {
@@ -64,4 +66,28 @@ const char* get_punctuator_spelling(TokenKind kind) {
   default: break;
   }
   return nullptr;
+}
+
+TokenKind get_keyword_kind(const char* k) {
+  static std::unordered_map<std::string, TokenKind> kKeywords = {
+#define KEYWORD(K, S) {S, KW_##K},
+#include "token_defs.h"
+  };
+
+  auto find = kKeywords.find(k);
+  if (find != kKeywords.end())
+    return find->second;
+  return TokenKind::IDENTIFILER;
+}
+
+TokenKind get_ppkeyword_kind(const char* k) {
+  static std::unordered_map<std::string, TokenKind> kPPKeywords = {
+#define PPKEYWORD(K, S) {S, PP_##K},
+#include "token_defs.h"
+  };
+
+  auto find = kPPKeywords.find(k);
+  if (find != kPPKeywords.end())
+    return find->second;
+  return TokenKind::UNKNOWN;
 }

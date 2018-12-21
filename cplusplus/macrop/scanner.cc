@@ -39,7 +39,11 @@ std::vector<Token> Scanner::scan_tokens(void) {
     scan_token();
   }
 
-  tokens_.push_back(Token(TOKEN_EOF, "", line_));
+  Token tok;
+  tok.set_kind(TokenKind::ENDF);
+  tok.set_line(line_);
+  tokens_.push_back(tok);
+
   return tokens_;
 }
 
@@ -85,58 +89,65 @@ char Scanner::peek_next(void) const {
   return source_bytes_[current_ + 1];
 }
 
-void Scanner::add_token(TokenType type) {
-  auto lexeme = current_lexeme(start_, current_);
-  tokens_.push_back(Token(type, lexeme, line_));
+void Scanner::add_token(TokenKind k) {
+  Token tok;
+  tok.set_kind(k);
+  tok.set_line(line_);
+  tok.set_lexeme(current_lexeme(start_, current_));
+
+  tokens_.push_back(tok);
 }
 
 void Scanner::scan_token(void) {
   char c = advance();
   switch (c) {
-  case '(': add_token(TOKEN_LPAREN); break;
-  case ')': add_token(TOKEN_RPAREN); break;
-  case '[': add_token(TOKEN_LBRACKET); break;
-  case ']': add_token(TOKEN_RBRACKET); break;
-  case '{': add_token(TOKEN_LBRACE); break;
-  case '}': add_token(TOKEN_RBRACE); break;
-  case ',': add_token(TOKEN_COMMA); break;
-  case ';': add_token(TOKEN_SEMICOLON); break;
-  case '?': add_token(TOKEN_QUESTION); break;
-  case ':': add_token(TOKEN_COLON); break;
+  case '[': add_token(TokenKind::LSQUARE); break;
+  case ']': add_token(TokenKind::RSQUARE); break;
+  case '(': add_token(TokenKind::LPAREN); break;
+  case ')': add_token(TokenKind::RPAREN); break;
+  case '{': add_token(TokenKind::LBRACE); break;
+  case '}': add_token(TokenKind::RBRACE); break;
   case '.': resolve_dot_start(); break;
-  case '+':
-    add_token(match('=') ?
-        TOKEN_PLUS_EQUAL : (match('+') ? TOKEN_PLUS_PLUS : TOKEN_PLUS));
-    break;
-  case '-':
-    if (match('='))
-      add_token(TOKEN_MINUS_EQUAL);
-    else if (match('-'))
-      add_token(TOKEN_MINUS_MINUS);
-    else if (match('>'))
-      add_token(TOKEN_MINUS_GREATER);
-    else
-      add_token(TOKEN_MINUS);
-    break;
-  case '*': add_token(match('=') ? TOKEN_STAR_EQUAL : TOKEN_STAR); break;
-  case '/': resolve_slash(); break;
-  case '\\': add_token(TOKEN_BACKSLASH); break;
-  case '~': add_token(TOKEN_COMPLEMENT); break;
-  case '%': add_token(match('=') ? TOKEN_MODULO_EQUAL : TOKEN_MODULO); break;
-  case '#': resolve_macro(); break;
   case '&':
     add_token(match('=') ?
-        TOKEN_AND_EQUAL : (match('&') ? TOKEN_LOGIC_AND : TOKEN_AND));
+        TokenKind::AMPEQUAL :
+        (match('&') ? TokenKind::AMPAMP : TokenKind::AMP));
     break;
+  case '*':
+    add_token(match('=') ? TokenKind::STAREQUAL : TokenKind::STAR); break;
+  case '+':
+    add_token(match('=') ?
+        TokenKind::PLUSEQUAL :
+        (match('+') ? TokenKind::PLUSPLUS : TokenKind::PLUS));
+    break;
+  case '-':
+    if (match('=')) add_token(TokenKind::MINUSEQUAL);
+    else if (match('-')) add_token(TokenKind::MINUSMINUS);
+    else if (match('>')) add_token(TokenKind::ARROW);
+    else add_token(TokenKind::MINUS);
+    break;
+  case '~': add_token(TokenKind::TILDE); break;
+  case '!':
+    add_token(match('=') ? TokenKind::EXCLAIMEQUAL : TokenKind::EXCLAIM); break;
+  case '/': resolve_slash(); break;
+  case '%':
+    add_token(match('=') ? TokenKind::PERCENTEQUAL : TokenKind::PERCENT); break;
+  case '<': resolve_less_start(); break;
+  case '>': resolve_greater_start(); break;
+  case '^':
+    add_token(match('=') ? TokenKind::CARETEQUAL : TokenKind::CARET); break;
   case '|':
     add_token(match('=') ?
-        TOKEN_OR_EQUAL : (match('|') ? TOKEN_LOGIC_OR : TOKEN_OR));
+        TokenKind::PIPEEQUAL :
+        (match('|') ? TokenKind::PIPEPIPE : TokenKind::PIPE));
     break;
-  case '^': add_token(match('=') ? TOKEN_XOR_EQUAL : TOKEN_XOR); break;
-  case '!': add_token(match('=') ? TOKEN_NOT_EQUAL : TOKEN_LOGIC_NOT); break;
-  case '=': add_token(match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL); break;
-  case '>': resolve_greater_start(); break;
-  case '<': resolve_less_start(); break;
+  case '?': add_token(TokenKind::QUESTION); break;
+  case ':': add_token(TokenKind::COLON); break;
+  case ';': add_token(TokenKind::SEMI); break;
+  case '=':
+    add_token(match('=') ? TokenKind::EQUALEQUAL : TokenKind::EQUAL); break;
+  case ',': add_token(TokenKind::COMMA); break;
+  case '#': resolve_macro(); break;
   case ' ':
   case '\t':
   case '\r':
@@ -162,7 +173,7 @@ void Scanner::scan_token(void) {
 
 void Scanner::resolve_slash(void) {
   if (match('=')) {
-    add_token(TOKEN_SLASH_EQUAL);
+    add_token(TokenKind::SLASHEQUAL);
   }
   else if (match('/')) {
     while (!is_eof() && peek() != '\n')
@@ -184,7 +195,7 @@ void Scanner::resolve_slash(void) {
     }
   }
   else {
-    add_token(TOKEN_SLASH);
+    add_token(TokenKind::SLASH);
   }
 }
 
@@ -192,10 +203,12 @@ void Scanner::resolve_char(bool wchar) {
   if (peek_next() == '\'') {
     advance();
 
-    auto lexeme = current_lexeme(start_ + 1, current_ - 1);
-    Token t(wchar ? TOKEN_WCHAR_CONST : TOKEN_CHAR_CONST, lexeme, line_);
-    t.set_wide();
-    tokens_.push_back(t);
+    Token tok;
+    tok.set_kind(wchar ? TokenKind::WCHARCONST : TokenKind::CHARCONST);
+    tok.set_lexeme(current_lexeme(start_ + 1, current_ - 1));
+    tok.set_line(line_);
+
+    tokens_.push_back(tok);
   }
   else {
     std::cerr << "invalid char token ..." << std::endl;
@@ -216,23 +229,25 @@ void Scanner::resolve_string(bool wstr) {
   }
   advance();
 
-  auto lexeme = current_lexeme(start_ + 1, current_ - 1);
-  Token t(wstr ? TOKEN_WSTR_CONST : TOKEN_STR_CONST, lexeme, line_);
-  t.set_wide();
-  tokens_.push_back(t);
+  Token tok;
+  tok.set_kind(wstr ? TokenKind::WSTRINGLITERAL : TokenKind::STRINGLITERAL);
+  tok.set_lexeme(current_lexeme(start_ + 1, current_ - 1));
+  tok.set_line(line_);
+
+  tokens_.push_back(tok);
 }
 
 void Scanner::resolve_number(bool real) {
   auto floating_fn = [this]{
     if (peek() == 'f' || peek() == 'F') {
       advance();
-      add_token(TOKEN_DOUBLE_CONST);
+      add_token(TokenKind::DOUBLECONST);
     }
     else if (peek() == 'l' || peek() == 'L') {
       advance();
-      add_token(TOKEN_LONGDOUBLE_CONST);
+      add_token(TokenKind::LDOUBLECONST);
     }
-    add_token(TOKEN_FLOAT_CONST);
+    add_token(TokenKind::FLOATCONST);
   };
 
   while (std::isdigit(peek()))
@@ -264,28 +279,28 @@ void Scanner::resolve_number(bool real) {
         advance();
         if (peek() == 'l' || peek() == 'L') {
           advance();
-          add_token(TOKEN_ULONGLONG_CONST);
+          add_token(TokenKind::ULLONGCONST);
         }
         else {
-          add_token(TOKEN_ULONG_CONST);
+          add_token(TokenKind::ULONGCONST);
         }
       }
       else {
-        add_token(TOKEN_UINT_CONST);
+        add_token(TokenKind::UINTCONST);
       }
     }
     else if (peek() == 'l' || peek() == 'L') {
       advance();
       if (peek() == 'l' || peek() == 'L') {
         advance();
-        add_token(TOKEN_LONGLONG_CONST);
+        add_token(TokenKind::LLONGCONST);
       }
       else {
-        add_token(TOKEN_LONG_CONST);
+        add_token(TokenKind::LONGCONST);
       }
     }
     else {
-      add_token(TOKEN_INT_CONST);
+      add_token(TokenKind::INTCONST);
     }
   }
 }
@@ -298,7 +313,7 @@ void Scanner::resolve_macro(void) {
     }
     else {
       advance();
-      add_token(TOKEN_MACRO_JOINT);
+      add_token(TokenKind::HASHHASH);
     }
   }
   else {
@@ -313,13 +328,17 @@ void Scanner::resolve_macro(void) {
         advance();
 
       auto lexeme = (std::string("#") + current_lexeme(start_, current_));
-      if (is_macro_keyword(lexeme.c_str())) {
-        auto type = get_macro_keyword_type(lexeme.c_str());
-        Token t(type, lexeme, line_);
-        tokens_.push_back(t);
+      auto kind = get_ppkeyword_kind(lexeme.c_str());
+      if (kind != TokenKind::UNKNOWN) {
+        Token tok;
+        tok.set_kind(kind);
+        tok.set_lexeme(lexeme);
+        tok.set_line(line_);
+
+        tokens_.push_back(tok);
       }
       else {
-        std::cerr << "invlaid macro identifier ..." << std::endl;
+        std::cerr << "invlaid macro identifier ..." << lexeme << std::endl;
         std::abort();
       }
     }
@@ -343,11 +362,9 @@ void Scanner::resolve_identifier(char begchar) {
     }
   }
 
-  auto lexeme = current_lexeme(start_, current_).c_str();
-  auto type = TOKEN_IDENTIFILER;
-  if (is_keyword(lexeme))
-    type = get_keyword_type(lexeme);
-  add_token(type);
+  auto lexeme = current_lexeme(start_, current_);
+  auto kind = get_keyword_kind(lexeme.c_str());
+  add_token(kind);
 }
 
 void Scanner::resolve_dot_start(void) {
@@ -358,31 +375,32 @@ void Scanner::resolve_dot_start(void) {
 
   if (peek() == '.') {
     if (peek_next() == '.') {
-      add_token(TOKEN_VARARGS);
+      add_token(TokenKind::ELLIPSIS);
     }
     else {
       std::cerr << "unexpected character: " << peek_next() << std::endl;
     }
   }
   else {
-    add_token(TOKEN_DOT);
+    add_token(TokenKind::PERIOD);
   }
 }
 
 void Scanner::resolve_greater_start(void) {
   if (match('='))
-    add_token(TOKEN_GREATER_EQUAL);
+    add_token(TokenKind::GREATEREQUAL);
   else if (match('>'))
-    add_token(match('=') ? TOKEN_RSHIFT_EQUAL : TOKEN_RSHIFT);
+    add_token(match('=') ?
+        TokenKind::GREATERGREATEREQUAL : TokenKind::GREATERGREATER);
   else
-    add_token(TOKEN_GREATER);
+    add_token(TokenKind::GREATER);
 }
 
 void Scanner::resolve_less_start(void) {
   if (match('='))
-    add_token(TOKEN_LESS_EQUAL);
+    add_token(TokenKind::LESSEQUAL);
   else if (match('<'))
-    add_token(match('=') ? TOKEN_LSHIFT_EQUAL : TOKEN_LSHIFT);
+    add_token(match('=') ? TokenKind::LESSLESSEQUAL : TokenKind::LESSLESS);
   else
-    add_token(TOKEN_LESS);
+    add_token(TokenKind::LESS);
 }

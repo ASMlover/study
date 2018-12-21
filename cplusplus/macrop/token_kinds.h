@@ -37,3 +37,5 @@ const char* get_token_name(TokenKind kind);
 const char* get_keyword_spelling(TokenKind kind);
 const char* get_ppkeyword_spelling(TokenKind kind);
 const char* get_punctuator_spelling(TokenKind kind);
+TokenKind get_keyword_kind(const char* k);
+TokenKind get_ppkeyword_kind(const char* k);

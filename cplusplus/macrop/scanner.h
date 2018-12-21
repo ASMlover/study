@@ -47,7 +47,7 @@ class Scanner {
   bool match(char expected);
   char peek(void) const;
   char peek_next(void) const;
-  void add_token(TokenType type);
+  void add_token(TokenKind k);
   void scan_token(void);
 
   void resolve_slash(void);

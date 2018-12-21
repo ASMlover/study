@@ -26,89 +26,25 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <cstdlib>
 #include <string>
-#include <sstream>
-#include "token_type.h"
-
-enum NumberType {
-  NUMBER_DEFAULT,
-  NUMBER_8SYSTEM,
-  NUMBER_16SYSTEM,
-};
+#include "token_kinds.h"
 
 class Token {
-  TokenType type_;
+  TokenKind kind_{TokenKind::UNKNOWN};
   std::string lexeme_;
-  int line_;
-  NumberType ntype_{};
-  bool is_wide_{};
+  int line_{1};
 public:
-  Token(TokenType type, const std::string& lexeme, int line)
-    : type_(type)
-    , lexeme_(lexeme)
-    , line_(line) {
+  bool is(TokenKind k) const { return kind_ == k; }
+  bool is_not(TokenKind k) const { return kind_ != k; }
+  bool is_literal(void) const {
+    return kind_ >= TokenKind::INTCONST && kind_ <= TokenKind::U32STRINGLITERAL;
   }
 
-  void set_number_type(NumberType type) {
-    ntype_ = type;
-  }
-
-  NumberType get_number_type(void) const {
-    return ntype_;
-  }
-
-  void set_wide(void) {
-    is_wide_ = true;
-  }
-
-  bool is_wide(void) const {
-    return is_wide_;
-  }
-
-  TokenType get_type(void) const {
-    return type_;
-  }
-
-  std::string get_lexeme(void) const {
-    return lexeme_;
-  }
-
-  int get_line(void) const {
-    return line_;
-  }
-
-  std::string as_string(void) const {
-    return lexeme_;
-  }
-
-  char as_char(void) const {
-    return lexeme_[0];
-  }
-
-  int as_int(void) const {
-    return std::atoi(lexeme_.c_str());
-  }
-
-  long as_long(void) const {
-    return std::atol(lexeme_.c_str());
-  }
-
-  long long as_long_long(void) const {
-    return std::atoll(lexeme_.c_str());
-  }
-
-  float as_float(void) const {
-    return static_cast<float>(std::atof(lexeme_.c_str()));
-  }
-
-  double as_double(void) const {
-    return std::atof(lexeme_.c_str());
-  }
-
-  std::string repr(void) const {
-    std::stringstream ss;
-    ss << token_type_as_string(type_) << "|" << lexeme_ << "|" << line_;
-    return ss.str();
-  }
+  TokenKind get_kind(void) const { return kind_; }
+  void set_kind(TokenKind k) { kind_ = k; }
+  std::string get_lexeme(void) const { return lexeme_; }
+  void set_lexeme(const std::string& s) { lexeme_ = s; }
+  int get_line(void) const { return line_; }
+  void set_line(int l) { line_ = l; }
+  const char* get_name(void) const { return get_token_name(kind_); }
 };
