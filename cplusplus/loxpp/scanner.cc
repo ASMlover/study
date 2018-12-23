@@ -126,6 +126,12 @@ void Scanner::add_identifier(void) {
     add_token(type->second);
 }
 
+void Scanner::skip_comments(void) {
+  // a comment goes until the end of the line
+  while (!is_at_end() && peek() != '\n')
+    advance();
+}
+
 void Scanner::add_token(TokenType type) {
   auto lexeme = get_lexeme(source_, start_, current_);
   tokens_.push_back(Token(type, lexeme, line_));
@@ -149,14 +155,10 @@ void Scanner::scan_token(void) {
   case '<': add_token(match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS); break;
   case '>': add_token(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER); break;
   case '/':
-    if (match('/')) {
-      // a comment goes until the end of the line
-      while (peek() != '\n' && !is_at_end())
-        advance();
-    }
-    else {
+    if (match('/'))
+      skip_comments();
+    else
       add_token(TOKEN_SLASH);
-    }
     break;
   case ' ':
   case '\r':
@@ -165,6 +167,7 @@ void Scanner::scan_token(void) {
     break;
   case '\n': ++line_; break;
   case '"': add_string(); break;
+  case '#': skip_comments(); break;
   default:
     if (std::isdigit(c))
       add_number();

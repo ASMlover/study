@@ -29,6 +29,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include "scanner.h"
 
 static bool had_error{};
 
@@ -44,17 +45,25 @@ static void error(int line, const std::string& message) {
   report(line, "", message);
 }
 
+static void print_tokens(const std::string& source) {
+  Scanner s(source);
+  auto tokens = s.scan_tokens();
+  for (auto& t : tokens)
+    std::cout << t.repr() << std::endl;
+}
+
 static void repl(void) {
   std::string line;
   for (;;) {
     std::cout << ">>> ";
 
-    if (!std::getline(std::cin, line)) {
+    if (!std::getline(std::cin, line) || line == "exit") {
       std::cout << std::endl;
       break;
     }
 
     // interpret(line);
+    print_tokens(line);
     had_error = false;
   }
 }
@@ -76,6 +85,8 @@ static void run(const std::string& source) {
 static void run_file(const std::string& path) {
   auto bytes = read_file(path);
   // run(bytes);
+
+  print_tokens(bytes);
 
   if (had_error)
     std::exit(1);

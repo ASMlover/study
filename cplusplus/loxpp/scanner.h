@@ -53,6 +53,7 @@ class Scanner {
   void add_string(void);
   void add_number(void);
   void add_identifier(void);
+  void skip_comments(void);
   void add_token(TokenType type);
   void scan_token(void);
 public:
