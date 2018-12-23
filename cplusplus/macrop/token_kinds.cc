@@ -91,3 +91,7 @@ TokenKind get_ppkeyword_kind(const char* k) {
     return find->second;
   return TokenKind::UNKNOWN;
 }
+
+bool is_valid_ppkeyworkd(TokenKind kind) {
+  return kind >= TokenKind::PP_IF && kind <= TokenKind::PP_PRAGMA;
+}

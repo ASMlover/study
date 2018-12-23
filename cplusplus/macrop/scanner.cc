@@ -51,6 +51,11 @@ std::string Scanner::current_lexeme(std::size_t begpos, std::size_t endpos) {
   return source_bytes_.substr(begpos, endpos - begpos);
 }
 
+void Scanner::report_error(const std::string& err) {
+  std::cerr << "at " << line_ << ": " << err << std::endl;
+  std::abort();
+}
+
 bool Scanner::is_eof(void) const {
   return current_ >= source_bytes_.size();
 }
@@ -158,16 +163,12 @@ void Scanner::scan_token(void) {
   case '\'': resolve_char(); break;
   case '"': resolve_string(); break;
   default:
-    if (std::isdigit(c)) {
-      resolve_number();
-    }
-    else if (is_alpha(c)) {
+    if (std::isdigit(c))
+      resolve_numeric(c);
+    else if (is_alpha(c))
       resolve_identifier();
-    }
-    else {
-      std::cerr << "unexpected character: " << c << std::endl;
-      std::abort();
-    }
+    else
+      report_error("unexpected character ...");
   }
 }
 
@@ -186,58 +187,64 @@ void Scanner::resolve_slash(void) {
       advance();
     }
 
-    if (peek() == '*' && peek_next() == '/') {
+    if (peek() == '*' && peek_next() == '/')
       advance();
-    }
-    else {
-      std::cerr << "invalid block comments" << std::endl;
-      std::abort();
-    }
+    else
+      report_error("invalid block comments ...");
   }
   else {
     add_token(TokenKind::SLASH);
   }
 }
 
-void Scanner::resolve_char(bool wchar) {
+void Scanner::resolve_char(TokenKind kind) {
   if (peek_next() == '\'') {
     advance();
 
     Token tok;
-    tok.set_kind(wchar ? TokenKind::WCHARCONST : TokenKind::CHARCONST);
+    tok.set_kind(kind);
     tok.set_lexeme(current_lexeme(start_ + 1, current_ - 1));
     tok.set_line(line_);
 
     tokens_.push_back(tok);
   }
   else {
-    std::cerr << "invalid char token ..." << std::endl;
-    std::abort();
+    report_error("invalid char token ...");
   }
 }
 
-void Scanner::resolve_string(bool wstr) {
-  while (!is_eof() && peek() != '"') {
+void Scanner::resolve_string(TokenKind kind, char separator) {
+  while (!is_eof() && peek() != separator) {
     if (peek() == '\n')
       ++line_;
     advance();
   }
 
-  if (is_eof()) {
-    std::cerr << "invalid string at line: " << line_ << std::endl;
-    std::abort();
-  }
+  if (is_eof())
+    report_error("invalid string token ...");
   advance();
 
   Token tok;
-  tok.set_kind(wstr ? TokenKind::WSTRINGLITERAL : TokenKind::STRINGLITERAL);
-  tok.set_lexeme(current_lexeme(start_ + 1, current_ - 1));
+  auto lexeme = current_lexeme(start_ + 1, current_ - 1);
+  if (separator == '>') {
+    tok.set_kind(TokenKind::ANGLESTRINGLITERAL);
+  }
+  else {
+    if (kind == TokenKind::STRINGLITERAL && !tokens_.empty() &&
+        tokens_.back().get_kind() == TokenKind::STRINGLITERAL) {
+      auto& back = tokens_.back();
+      back.set_lexeme(back.get_lexeme() + lexeme);
+      back.set_line(line_);
+      return;
+    }
+    tok.set_kind(kind);
+  }
+  tok.set_lexeme(lexeme);
   tok.set_line(line_);
-
   tokens_.push_back(tok);
 }
 
-void Scanner::resolve_number(bool real) {
+void Scanner::resolve_numeric(char c, bool is_float) {
   auto floating_fn = [this]{
     if (peek() == 'f' || peek() == 'F') {
       advance();
@@ -247,17 +254,27 @@ void Scanner::resolve_number(bool real) {
       advance();
       add_token(TokenKind::LDOUBLECONST);
     }
+    else if (peek() == 'e' || peek() == 'L') {
+    }
+    else if (peek() == 'p' || peek() == 'P') {
+    }
+    else {
+      report_error("invalid floating numeric ...");
+    }
     add_token(TokenKind::FLOATCONST);
   };
+
+  if (c == '0') {
+    // solve hex or 8bit
+    return;
+  }
 
   while (std::isdigit(peek()))
     advance();
 
   if (peek() == '.') {
-    if (real) {
-      std::cerr << "invalid floating-point number ..." << std::endl;
-      std::abort();
-    }
+    if (is_float)
+      report_error("invalid floating-point numeric ...");
 
     if (std::isdigit(peek_next())) {
       advance();
@@ -269,7 +286,7 @@ void Scanner::resolve_number(bool real) {
     return;
   }
 
-  if (real) {
+  if (is_float) {
     floating_fn();
   }
   else {
@@ -299,8 +316,14 @@ void Scanner::resolve_number(bool real) {
         add_token(TokenKind::LONGCONST);
       }
     }
+    else if (peek() == 'e' || peek() == 'E') {
+      // TODO:
+    }
     else {
-      add_token(TokenKind::INTCONST);
+      if (is_alnum(peek()))
+        report_error("invalid numeric ...");
+      else
+        add_token(TokenKind::INTCONST);
     }
   }
 }
@@ -308,8 +331,7 @@ void Scanner::resolve_number(bool real) {
 void Scanner::resolve_macro(void) {
   if (peek() == '#') {
     if (peek_next() == '#') {
-      std::cerr << "invalid macro joint ..." << std::endl;
-      std::abort();
+      report_error("invalid macro hashhash ...");
     }
     else {
       advance();
@@ -338,29 +360,53 @@ void Scanner::resolve_macro(void) {
         tokens_.push_back(tok);
       }
       else {
-        std::cerr << "invlaid macro identifier ..." << lexeme << std::endl;
-        std::abort();
+        report_error("invalid macro PPKEYWORD ...");
       }
     }
   }
 }
 
 void Scanner::resolve_identifier(char begchar) {
+  auto special_char = [this](char c, TokenKind char_kind, TokenKind str_kind) {
+    if (c == '\'') {
+      advance();
+      resolve_char(char_kind);
+    }
+    else if (c == '"') {
+      advance();
+      resolve_char(str_kind);
+    }
+  };
+
+  if (begchar == 'L' || begchar == 'u' || begchar == 'U') {
+    switch (begchar) {
+    case 'L':
+      special_char(peek(), TokenKind::WCHARCONST, TokenKind::WSTRINGLITERAL);
+      break;
+    case 'u':
+      if (peek() == '8') {
+        char c = peek_next();
+        if (c == '\'' || c == '"') {
+          advance();
+          special_char(c, TokenKind::U8CHARCONST, TokenKind::U8STRINGLITERAL);
+        }
+      }
+      else {
+        special_char(
+            peek(), TokenKind::U16CHARCONST, TokenKind::U16STRINGLITERAL);
+      }
+      break;
+    case 'U':
+      special_char(
+          peek(), TokenKind::U32CHARCONST, TokenKind::U32STRINGLITERAL);
+      break;
+    }
+
+    return;
+  }
+
   while (is_alnum(peek()))
     advance();
-
-  if (begchar == 'L') {
-    if (peek() == '\'') {
-      advance();
-      resolve_char(true);
-      return;
-    }
-    else if (peek() == '"') {
-      advance();
-      resolve_string(true);
-      return;
-    }
-  }
 
   auto lexeme = current_lexeme(start_, current_);
   auto kind = get_keyword_kind(lexeme.c_str());
@@ -369,17 +415,15 @@ void Scanner::resolve_identifier(char begchar) {
 
 void Scanner::resolve_dot_start(void) {
   if (std::isdigit(peek())) {
-    resolve_number(true);
+    resolve_numeric('.', true);
     return;
   }
 
   if (peek() == '.') {
-    if (peek_next() == '.') {
+    if (peek_next() == '.')
       add_token(TokenKind::ELLIPSIS);
-    }
-    else {
-      std::cerr << "unexpected character: " << peek_next() << std::endl;
-    }
+    else
+      report_error("unexpected character ...");
   }
   else {
     add_token(TokenKind::PERIOD);
@@ -397,10 +441,16 @@ void Scanner::resolve_greater_start(void) {
 }
 
 void Scanner::resolve_less_start(void) {
-  if (match('='))
+  if (match('=')) {
     add_token(TokenKind::LESSEQUAL);
-  else if (match('<'))
+  }
+  else if (match('<')) {
     add_token(match('=') ? TokenKind::LESSLESSEQUAL : TokenKind::LESSLESS);
-  else
-    add_token(TokenKind::LESS);
+  }
+  else {
+    if (!tokens_.empty() && tokens_.back().get_kind() == TokenKind::PP_INCLUDE)
+      resolve_string(TokenKind::STRINGLITERAL, '>');
+    else
+      add_token(TokenKind::LESS);
+  }
 }
