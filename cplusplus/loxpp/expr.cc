@@ -83,7 +83,7 @@ void Grouping::accept(const VisitorPtr& visitor) {
   visitor->visit_grouping_expr(shared_from_this());
 }
 
-Literal::Literal(const Token& value)
+Literal::Literal(const Value& value)
   : value_(value) {
 }
 

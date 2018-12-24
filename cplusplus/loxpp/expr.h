@@ -29,6 +29,7 @@
 #include <memory>
 #include <vector>
 #include "token.h"
+#include "value.h"
 
 template <typename T>
 using Visitable = std::enable_shared_from_this<T>;
@@ -95,9 +96,9 @@ public:
 };
 
 class Literal : public Expr, public Visitable<Literal> {
-  Token value_;
+  Value value_;
 public:
-  Literal(const Token& value);
+  Literal(const Value& value);
   virtual void accept(const VisitorPtr& visitor) override;
 };
 
