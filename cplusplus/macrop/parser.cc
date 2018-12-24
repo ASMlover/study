@@ -25,67 +25,53 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cstdlib>
-#include <fstream>
 #include <iostream>
-#include <sstream>
-#include <string>
-#include "scanner.h"
 #include "parser.h"
 
-static void print_tokens(const std::vector<Token>& tokens) {
-  for (auto& t : tokens)
-    std::cout << t.get_name() << "|"
-      << t.get_lexeme() << "|" << t.get_line() << std::endl;
+void Parser::dump_macros(void) {
+  while (!is_eof())
+    dump_macro();
 }
 
-static void run_with_file(const std::string& filepath) {
-  std::ifstream fp(filepath);
+void Parser::report_error(const std::string& err, const Token& tok) {
+  std::cerr << err << " : " << tok.get_lexeme() << std::endl;
+  std::abort();
+}
 
-  if (fp.is_open()) {
-    std::stringstream ss;
-    ss << fp.rdbuf();
+bool Parser::is_eof(void) const {
+  return pos_ >= tokens_ref_.size();
+}
 
-    // run(ss.str());
-    Scanner s(ss.str());
-    auto tokens = s.scan_tokens();
-    print_tokens(tokens);
-    Parser p(tokens);
-    p.dump_macros();
+const Token& Parser::peek(void) const {
+  if (is_eof())
+    return tokens_ref_.back();
+  return tokens_ref_[pos_];
+}
+
+const Token& Parser::advance(void) {
+  return tokens_ref_[pos_++];
+}
+
+void Parser::dump_macro(void) {
+  auto& tok = advance();
+  switch (tok.get_kind()) {
+  case TokenKind::PP_IF:
+    break;
   }
 }
 
-static void run_with_repl(void) {
-  std::string line;
-  for (;;) {
-    std::cout << ">>> ";
-
-    if (!std::getline(std::cin, line) || line == "exit") {
-      std::cout << std::endl;
-      break;
+void Parser::resolve_macro_if(void) {
+  auto& tok = peek();
+  if (tok.get_kind() == TokenKind::IDENTIFILER) {
+    auto it = valid_macros_.find(tok.get_lexeme());
+    if (it != valid_macros_.end()) {
+      auto kind = it->second.get_kind();
     }
-
-    // run(line);
-    Scanner s(line);
-    auto tokens = s.scan_tokens();
-    print_tokens(tokens);
-    Parser p(tokens);
-    p.dump_macros();
-  }
-}
-
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
-
-  if (argc < 2) {
-    run_with_repl();
-  }
-  else if (argc == 2) {
-    run_with_file(argv[1]);
+    else {
+      // TODO: scan to endif
+    }
   }
   else {
-    std::cerr << "USAGE: " << argv[0] << " [file] ..." << std::endl;
-    std::exit(1);
+    report_error("invalid #if macro", tok);
   }
-
-  return 0;
 }

@@ -24,68 +24,30 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <cstdlib>
-#include <fstream>
-#include <iostream>
-#include <sstream>
+#pragma once
+
 #include <string>
-#include "scanner.h"
-#include "parser.h"
+#include <vector>
+#include <unordered_map>
+#include "token.h"
 
-static void print_tokens(const std::vector<Token>& tokens) {
-  for (auto& t : tokens)
-    std::cout << t.get_name() << "|"
-      << t.get_lexeme() << "|" << t.get_line() << std::endl;
-}
+class Parser {
+  std::size_t pos_{0};
+  const std::vector<Token>& tokens_ref_;
+  std::unordered_map<std::string, Token> valid_macros_;
 
-static void run_with_file(const std::string& filepath) {
-  std::ifstream fp(filepath);
+  void report_error(const std::string& err, const Token& tok);
+  bool is_eof(void) const;
+  const Token& peek(void) const;
+  const Token& advance(void);
 
-  if (fp.is_open()) {
-    std::stringstream ss;
-    ss << fp.rdbuf();
+  void dump_macro(void);
 
-    // run(ss.str());
-    Scanner s(ss.str());
-    auto tokens = s.scan_tokens();
-    print_tokens(tokens);
-    Parser p(tokens);
-    p.dump_macros();
-  }
-}
-
-static void run_with_repl(void) {
-  std::string line;
-  for (;;) {
-    std::cout << ">>> ";
-
-    if (!std::getline(std::cin, line) || line == "exit") {
-      std::cout << std::endl;
-      break;
-    }
-
-    // run(line);
-    Scanner s(line);
-    auto tokens = s.scan_tokens();
-    print_tokens(tokens);
-    Parser p(tokens);
-    p.dump_macros();
-  }
-}
-
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
-
-  if (argc < 2) {
-    run_with_repl();
-  }
-  else if (argc == 2) {
-    run_with_file(argv[1]);
-  }
-  else {
-    std::cerr << "USAGE: " << argv[0] << " [file] ..." << std::endl;
-    std::exit(1);
+  void resolve_macro_if(void);
+public:
+  Parser(const std::vector<Token>& tokens)
+    : tokens_ref_(tokens) {
   }
 
-  return 0;
-}
+  void dump_macros(void);
+};
