@@ -77,4 +77,5 @@ public:
   }
 
   std::string stringify(void) const;
+  bool is_truthy(void) const;
 };

@@ -33,6 +33,16 @@ struct ValueStringify {
   std::string operator() (const std::string& s) const { return s; }
 };
 
+struct ValueTruthy {
+  bool operator() (const std::nullptr_t) const { return false; }
+  bool operator() (bool b) const { return b; }
+  template <typename T> bool operator() (const T&) const { return true; }
+};
+
 std::string Value::stringify(void) const {
   return std::visit(ValueStringify{}, t_);
+}
+
+bool Value::is_truthy(void) const {
+  return std::visit(ValueTruthy{}, t_);
 }
