@@ -25,3 +25,14 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "value.h"
+
+struct ValueStringify {
+  std::string operator() (std::nullptr_t) const { return "nil"; }
+  std::string operator() (bool b) const { return b ? "true": "false"; }
+  std::string operator() (double d) const { return std::to_string(d); }
+  std::string operator() (const std::string& s) const { return s; }
+};
+
+std::string Value::stringify(void) const {
+  return std::visit(ValueStringify{}, t_);
+}

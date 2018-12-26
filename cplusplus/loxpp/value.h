@@ -75,4 +75,6 @@ public:
   std::string to_string(void) const {
     return std::get<std::string>(t_);
   }
+
+  std::string stringify(void) const;
 };
