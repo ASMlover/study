@@ -45,6 +45,7 @@ struct Expr {
 };
 
 class Assign : public Expr, public Visitable<Assign> {
+public:
   Token name_;
   ExprPtr value_;
 public:
@@ -53,6 +54,7 @@ public:
 };
 
 class Binary : public Expr, public Visitable<Binary> {
+public:
   ExprPtr left_;
   Token operator_;
   ExprPtr right_;
@@ -62,6 +64,7 @@ public:
 };
 
 class Call : public Expr, public Visitable<Call> {
+public:
   ExprPtr callee_;
   Token paren_;
   std::vector<ExprPtr> arguments_;
@@ -72,6 +75,7 @@ public:
 };
 
 class Get : public Expr, public Visitable<Get> {
+public:
   ExprPtr object_;
   Token name_;
 public:
@@ -80,6 +84,7 @@ public:
 };
 
 class Set : public Expr, public Visitable<Set> {
+public:
   ExprPtr object_;
   Token name_;
   ExprPtr value_;
@@ -89,6 +94,7 @@ public:
 };
 
 class Grouping : public Expr, public Visitable<Grouping> {
+public:
   ExprPtr expression_;
 public:
   Grouping(const ExprPtr& expression);
@@ -96,6 +102,7 @@ public:
 };
 
 class Literal : public Expr, public Visitable<Literal> {
+public:
   Value value_;
 public:
   Literal(const Value& value);
@@ -103,6 +110,7 @@ public:
 };
 
 class Logical : public Expr, public Visitable<Logical> {
+public:
   ExprPtr left_;
   Token operator_;
   ExprPtr right_;
@@ -112,6 +120,7 @@ public:
 };
 
 class Super : public Expr, public Visitable<Super> {
+public:
   Token keyword_;
   Token method_;
 public:
@@ -120,6 +129,7 @@ public:
 };
 
 class This : public Expr, public Visitable<This> {
+public:
   Token keyword_;
 public:
   This(const Token& keyword);
@@ -127,6 +137,7 @@ public:
 };
 
 class Unary : public Expr, public Visitable<Unary> {
+public:
   Token operator_;
   ExprPtr right_;
 public:
@@ -135,6 +146,7 @@ public:
 };
 
 class Variable : public Expr, public Visitable<Variable> {
+public:
   Token name_;
 public:
   Variable(const Token& name);
