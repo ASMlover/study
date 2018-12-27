@@ -25,13 +25,33 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include "value.h"
 
-extern void value_test(void);
+void value_test(void) {
+  auto values_repr = [](const std::initializer_list<lox::Value>& vs) {
+    for (auto& v : vs) {
+      std::cout
+        << "Value<" << &v << "> "
+        << "truthy(" << (v.is_truthy() ? "true" : "false") << ") "
+        << "stringify(" << v.stringify() << ")"
+        << std::endl;
+    }
+  };
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
-
-  value_test();
-
-  return 0;
+  values_repr({
+      lox::Value(),
+      lox::Value(true),
+      lox::Value(false),
+      lox::Value(22),
+      lox::Value(0),
+      lox::Value(1000111l),
+      lox::Value(0l),
+      lox::Value(78787878ll),
+      lox::Value(-67676ll),
+      lox::Value(0ll),
+      lox::Value(33.456),
+      lox::Value(0.0),
+      lox::Value("loxpp"),
+      lox::Value("")
+    });
 }
