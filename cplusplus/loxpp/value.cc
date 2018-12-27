@@ -26,23 +26,23 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include "value.h"
 
-struct ValueStringify {
-  std::string operator() (std::nullptr_t) const { return "nil"; }
-  std::string operator() (bool b) const { return b ? "true": "false"; }
-  std::string operator() (double d) const { return std::to_string(d); }
-  std::string operator() (const std::string& s) const { return s; }
-};
-
-struct ValueTruthy {
-  bool operator() (const std::nullptr_t) const { return false; }
-  bool operator() (bool b) const { return b; }
-  template <typename T> bool operator() (const T&) const { return true; }
-};
+template <typename... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template <typename... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 std::string Value::stringify(void) const {
-  return std::visit(ValueStringify{}, t_);
+  return std::visit(overloaded {
+        [](std::nullptr_t) -> std::string { return "nil"; },
+        [](bool b) -> std::string { return b ? "true" : "false"; },
+        [](double d) -> std::string { return std::to_string(d); },
+        [](const std::string& s) -> std::string { return s; },
+      }, v_);
 }
 
 bool Value::is_truthy(void) const {
-  return std::visit(ValueTruthy{}, t_);
+  return std::visit(overloaded {
+        [](std::nullptr_t) -> bool { return false; },
+        [](bool b) -> bool { return b; },
+        [](double) -> bool { return true; },
+        [](const std::string&) -> bool { return true; },
+      }, v_);
 }

@@ -30,50 +30,103 @@
 #include <variant>
 
 class Value {
-  std::variant<std::nullptr_t, bool, double, std::string> t_;
+  using VariantType = std::variant<std::nullptr_t, bool, double, std::string>;
+
+  VariantType v_{};
 public:
-  Value(void)
-    : t_(nullptr) {
+  Value(void) noexcept : v_(nullptr) {}
+  Value(bool b) noexcept : v_(b) {}
+  Value(int i) noexcept : v_(static_cast<double>(i)) {}
+  Value(unsigned int ui) noexcept : v_(static_cast<double>(ui)) {}
+  Value(long l) noexcept : v_(static_cast<double>(l)) {}
+  Value(unsigned long ul) noexcept : v_(static_cast<double>(ul)) {}
+  Value(long long ll) noexcept : v_(static_cast<double>(ll)) {}
+  Value(unsigned long long ull) noexcept : v_(static_cast<double>(ull)) {}
+  Value(double d) noexcept : v_(d) {}
+  Value(const char* s) noexcept : v_(std::string(s)) {}
+  Value(const std::string& s) noexcept : v_(s) {}
+  Value(const Value& r) noexcept : v_(r.v_) {}
+  Value(Value&& r) noexcept : v_(std::move(r.v_)) {}
+
+  bool is_nil(void) const { return std::holds_alternative<std::nullptr_t>(v_); }
+  bool is_boolean(void) const { return std::holds_alternative<bool>(v_); }
+  bool is_numeric(void) const { return std::holds_alternative<double>(v_); }
+  bool is_string(void) const { return std::holds_alternative<std::string>(v_); }
+
+  bool to_boolean(void) const { return std::get<bool>(v_); }
+  double to_numeric(void) const { return std::get<double>(v_); }
+  std::string to_string(void) const { return std::get<std::string>(v_); }
+
+  bool operator==(const Value& r) const { return v_ == r.v_; }
+  bool operator!=(const Value& r) const { return v_ != r.v_; }
+  bool operator<(const Value& r) const { return v_ < r.v_; }
+  bool operator<=(const Value& r) const { return v_ <= r.v_; }
+  bool operator>(const Value& r) const { return v_ > r.v_; }
+  bool operator>=(const Value& r) const { return v_ >= r.v_; }
+
+  Value& operator=(const Value& r) noexcept {
+    v_ = r.v_;
+    return *this;
   }
 
-  Value(bool v)
-    : t_(v) {
+  Value& operator=(Value&& r) noexcept {
+    v_ = std::move(r.v_);
+    return *this;
   }
 
-  Value(double v)
-    : t_(v) {
+  Value& operator=(std::nullptr_t) noexcept {
+    v_.emplace<std::nullptr_t>(nullptr);
+    return *this;
   }
 
-  Value(const std::string& v)
-    : t_(v) {
+  Value& operator=(bool b) noexcept {
+    v_.emplace<bool>(b);
+    return *this;
   }
 
-  bool is_null(void) const {
-    return std::holds_alternative<std::nullptr_t>(t_);
+  Value& operator=(int i) noexcept {
+    v_.emplace<double>(i);
+    return *this;
   }
 
-  bool is_boolean(void) const {
-    return std::holds_alternative<bool>(t_);
+  Value& operator=(unsigned int ui) noexcept {
+    v_.emplace<double>(ui);
+    return *this;
   }
 
-  bool is_numeric(void) const {
-    return std::holds_alternative<double>(t_);
+  Value& operator=(long l) noexcept {
+    v_.emplace<double>(l);
+    return *this;
   }
 
-  bool is_string(void) const {
-    return std::holds_alternative<std::string>(t_);
+  Value& operator=(unsigned long ul) noexcept {
+    v_.emplace<double>(ul);
+    return *this;
   }
 
-  bool to_boolean(void) const {
-    return std::get<bool>(t_);
+  Value& operator=(long long ll) noexcept {
+    v_.emplace<double>(static_cast<double>(ll));
+    return *this;
   }
 
-  double to_numeric(void) const {
-    return std::get<double>(t_);
+  Value& operator=(unsigned long long ull) noexcept {
+    v_.emplace<double>(static_cast<double>(ull));
+    return *this;
   }
 
-  std::string to_string(void) const {
-    return std::get<std::string>(t_);
+  Value& operator=(double d) noexcept {
+    v_.emplace<double>(d);
+    return *this;
+  }
+
+  Value& operator=(const char* s) noexcept {
+    v_.emplace<std::string>(s);
+    return *this;
+  }
+
+  Value& operator=(const std::string& s) noexcept {
+    v_.emplace<std::string>(s);
+    return *this;
   }
 
   std::string stringify(void) const;
