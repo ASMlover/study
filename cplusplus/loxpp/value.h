@@ -63,6 +63,21 @@ public:
   double to_numeric(void) const { return std::get<double>(v_); }
   std::string to_string(void) const { return std::get<std::string>(v_); }
 
+  operator bool(void) const { return std::get<bool>(v_); }
+  operator double(void) const { return std::get<double>(v_); }
+  operator std::string(void) const { return std::get<std::string>(v_); }
+
+  double operator+(const Value& r) const { return (double)(*this) + (double)r; }
+  double operator-(const Value& r) const { return (double)(*this) - (double)r; }
+  double operator*(const Value& r) const { return (double)(*this) * (double)r; }
+  double operator/(const Value& r) const { return (double)(*this) / (double)r; }
+  Value& operator+=(const Value& r) { return *this = *this + r, *this; }
+  Value& operator-=(const Value& r) { return *this = *this - r, *this; }
+  Value& operator*=(const Value& r) { return *this = *this * r, *this; }
+  Value& operator/=(const Value& r) { return *this = *this / r, *this; }
+  double operator-(void) const { return -to_numeric(); }
+  bool operator!(void) const { return !is_truthy(); }
+
   bool operator==(const Value& r) const { return v_ == r.v_; }
   bool operator!=(const Value& r) const { return v_ != r.v_; }
   bool operator<(const Value& r) const { return v_ < r.v_; }
