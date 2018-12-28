@@ -32,33 +32,24 @@
 
 namespace lox {
 
-class Value : private UnCopyable {
+class Value : private Copyable {
   using VariantType = std::variant<std::nullptr_t, bool, double, std::string>;
 
   VariantType v_{};
 public:
   Value(void) noexcept : v_(nullptr) {}
-  Value(std::nullptr_t) noexcept : v_(nullptr) {}
   Value(bool b) noexcept : v_(b) {}
   Value(int i) noexcept : v_(static_cast<double>(i)) {}
+  Value(unsigned int ui) noexcept : v_(static_cast<double>(ui)) {}
   Value(long l) noexcept : v_(static_cast<double>(l)) {}
+  Value(unsigned long ul) noexcept : v_(static_cast<double>(ul)) {}
   Value(long long ll) noexcept : v_(static_cast<double>(ll)) {}
+  Value(unsigned long long ull) noexcept : v_(static_cast<double>(ull)) {}
   Value(double d) noexcept : v_(d) {}
   Value(const char* s) noexcept : v_(std::string(s)) {}
   Value(const std::string& s) noexcept : v_(s) {}
   Value(const Value& r) noexcept : v_(r.v_) {}
-  Value(Value&& r) noexcept { v_.swap(r.v_); }
-
-  Value& operator=(const Value& r) {
-    if (this != &r)
-      VariantType(r.v_).swap(v_);
-    return *this;
-  }
-
-  Value& operator=(Value&& r) {
-    VariantType().swap(v_);
-    return *this;
-  }
+  Value(Value&& r) noexcept : v_(std::move(r.v_)) {}
 
   bool is_nil(void) const { return std::holds_alternative<std::nullptr_t>(v_); }
   bool is_boolean(void) const { return std::holds_alternative<bool>(v_); }
@@ -75,6 +66,20 @@ public:
   bool operator<=(const Value& r) const { return v_ <= r.v_; }
   bool operator>(const Value& r) const { return v_ > r.v_; }
   bool operator>=(const Value& r) const { return v_ >= r.v_; }
+
+  Value& operator=(const Value& r) noexcept { return v_ = r.v_, *this; }
+  Value& operator=(Value&& r) noexcept { return v_ = std::move(r.v_), *this; }
+  Value& operator=(std::nullptr_t) noexcept { return v_ = nullptr, *this; }
+  Value& operator=(bool b) noexcept { return v_ = b, *this; }
+  Value& operator=(int i) noexcept { return operator=(static_cast<double>(i)); }
+  Value& operator=(unsigned int ui) noexcept { return operator=(static_cast<double>(ui)); }
+  Value& operator=(long l) noexcept { return operator=(static_cast<double>(l)); }
+  Value& operator=(unsigned long ul) noexcept { return operator=(static_cast<double>(ul)); }
+  Value& operator=(long long ll) noexcept { return operator=(static_cast<double>(ll)); }
+  Value& operator=(unsigned long long ull) noexcept { return operator=(static_cast<double>(ull)); }
+  Value& operator=(double d) noexcept { return v_ = d, *this; }
+  Value& operator=(const char* s) noexcept { return operator=(static_cast<const std::string&>(s)); }
+  Value& operator=(const std::string& s) noexcept { return v_ = s, *this; }
 
   bool is_truthy(void) const;
   std::string stringify(void) const;
