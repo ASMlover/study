@@ -33,6 +33,12 @@ class Value {
   using VariantType = std::variant<std::nullptr_t, bool, double, std::string>;
 
   VariantType v_{};
+
+  template <typename Target, typename From>
+  Value& setvalue(From&& x) noexcept {
+    v_ = static_cast<Target>(x);
+    return *this;
+  }
 public:
   Value(void) noexcept : v_(nullptr) {}
   Value(bool b) noexcept : v_(b) {}
@@ -64,70 +70,19 @@ public:
   bool operator>(const Value& r) const { return v_ > r.v_; }
   bool operator>=(const Value& r) const { return v_ >= r.v_; }
 
-  Value& operator=(const Value& r) noexcept {
-    v_ = r.v_;
-    return *this;
-  }
-
-  Value& operator=(Value&& r) noexcept {
-    v_ = std::move(r.v_);
-    return *this;
-  }
-
-  Value& operator=(std::nullptr_t) noexcept {
-    v_.emplace<std::nullptr_t>(nullptr);
-    return *this;
-  }
-
-  Value& operator=(bool b) noexcept {
-    v_.emplace<bool>(b);
-    return *this;
-  }
-
-  Value& operator=(int i) noexcept {
-    v_.emplace<double>(i);
-    return *this;
-  }
-
-  Value& operator=(unsigned int ui) noexcept {
-    v_.emplace<double>(ui);
-    return *this;
-  }
-
-  Value& operator=(long l) noexcept {
-    v_.emplace<double>(l);
-    return *this;
-  }
-
-  Value& operator=(unsigned long ul) noexcept {
-    v_.emplace<double>(ul);
-    return *this;
-  }
-
-  Value& operator=(long long ll) noexcept {
-    v_.emplace<double>(static_cast<double>(ll));
-    return *this;
-  }
-
-  Value& operator=(unsigned long long ull) noexcept {
-    v_.emplace<double>(static_cast<double>(ull));
-    return *this;
-  }
-
-  Value& operator=(double d) noexcept {
-    v_.emplace<double>(d);
-    return *this;
-  }
-
-  Value& operator=(const char* s) noexcept {
-    v_.emplace<std::string>(s);
-    return *this;
-  }
-
-  Value& operator=(const std::string& s) noexcept {
-    v_.emplace<std::string>(s);
-    return *this;
-  }
+  Value& operator=(const Value& r) noexcept { return v_ = r.v_, *this; }
+  Value& operator=(Value&& r) noexcept { return v_ = std::move(r.v_), *this; }
+  Value& operator=(std::nullptr_t) noexcept { return v_ = nullptr, *this; }
+  Value& operator=(bool b) noexcept { return v_ = b, *this; }
+  Value& operator=(int i) noexcept { return setvalue<double>(i); }
+  Value& operator=(unsigned int ui) noexcept { return setvalue<double>(ui); }
+  Value& operator=(long l) noexcept { return setvalue<double>(l); }
+  Value& operator=(unsigned long ul) noexcept { return setvalue<double>(ul); }
+  Value& operator=(long long ll) noexcept { return setvalue<double>(ll); }
+  Value& operator=(unsigned long long ull) noexcept { return setvalue<double>(ull); }
+  Value& operator=(double d) noexcept { return v_ = d, *this; }
+  Value& operator=(const char* s) noexcept { return setvalue<std::string>(s); }
+  Value& operator=(const std::string& s) noexcept { return v_ = s, *this; }
 
   std::string stringify(void) const;
   bool is_truthy(void) const;
