@@ -42,7 +42,6 @@ bool Value::is_truthy(void) const {
   return std::visit(overloaded {
         [](std::nullptr_t) -> bool { return false; },
         [](bool b) -> bool { return b; },
-        [](double) -> bool { return true; },
-        [](const std::string&) -> bool { return true; },
+        [](const auto&) -> bool { return true; },
       }, v_);
 }

@@ -39,6 +39,14 @@ class Value {
     v_ = static_cast<Target>(x);
     return *this;
   }
+
+  Value addvalue(const Value& r) const noexcept {
+    if (is_numeric() && r.is_numeric())
+      return (double)*this + (double)r;
+    else if (is_string() && r.is_string())
+      return (std::string)*this + (std::string)r;
+    return nullptr;
+  }
 public:
   Value(void) noexcept : v_(nullptr) {}
   Value(bool b) noexcept : v_(b) {}
@@ -67,15 +75,15 @@ public:
   operator double(void) const { return std::get<double>(v_); }
   operator std::string(void) const { return std::get<std::string>(v_); }
 
-  double operator+(const Value& r) const { return (double)(*this) + (double)r; }
-  double operator-(const Value& r) const { return (double)(*this) - (double)r; }
-  double operator*(const Value& r) const { return (double)(*this) * (double)r; }
-  double operator/(const Value& r) const { return (double)(*this) / (double)r; }
+  Value operator+(const Value& r) const { return addvalue(r); }
+  Value operator-(const Value& r) const { return (double)(*this) - (double)r; }
+  Value operator*(const Value& r) const { return (double)(*this) * (double)r; }
+  Value operator/(const Value& r) const { return (double)(*this) / (double)r; }
   Value& operator+=(const Value& r) { return *this = *this + r, *this; }
   Value& operator-=(const Value& r) { return *this = *this - r, *this; }
   Value& operator*=(const Value& r) { return *this = *this * r, *this; }
   Value& operator/=(const Value& r) { return *this = *this / r, *this; }
-  double operator-(void) const { return -to_numeric(); }
+  Value operator-(void) const { return -to_numeric(); }
   bool operator!(void) const { return !is_truthy(); }
 
   bool operator==(const Value& r) const { return v_ == r.v_; }
