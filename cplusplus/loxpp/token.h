@@ -51,6 +51,10 @@ public:
     return lexeme_;
   }
 
+  int get_line(void) const {
+    return line_;
+  }
+
   std::string as_string(void) const {
     return lexeme_;
   }
