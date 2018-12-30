@@ -51,4 +51,5 @@ public:
   virtual void visit_this_expr(const ThisPtr& expr) override;
   virtual void visit_unary_expr(const UnaryPtr& expr) override;
   virtual void visit_variable_expr(const VariablePtr& expr) override;
+  virtual void visit_function_expr(const FunctionPtr& expr) override;
 };

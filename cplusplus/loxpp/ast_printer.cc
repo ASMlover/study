@@ -90,3 +90,7 @@ void AstPrinter::visit_unary_expr(const UnaryPtr& expr) {
 void AstPrinter::visit_variable_expr(const VariablePtr& expr) {
   // TODO:
 }
+
+void AstPrinter::visit_function_expr(const FunctionPtr& expr) {
+  // TODO:
+}
