@@ -36,9 +36,11 @@ using Visitable = std::enable_shared_from_this<T>;
 
 struct Visitor;
 struct Expr;
+struct Stmt;
 
 using VisitorPtr = std::shared_ptr<Visitor>;
 using ExprPtr = std::shared_ptr<Expr>;
+using StmtPtr = std::shared_ptr<Stmt>;
 
 struct Expr {
   virtual void accept(const VisitorPtr& visitor) = 0;
@@ -153,6 +155,15 @@ public:
   virtual void accept(const VisitorPtr& visitor) override;
 };
 
+class Function : public Expr, public Visitable<Function> {
+public:
+  std::vector<Token> params_;
+  std::vector<StmtPtr> body_;
+public:
+  Function(const std::vector<Token>& params, const std::vector<StmtPtr>& body);
+  virtual void accept(const VisitorPtr& visitor) override;
+};
+
 struct Visitor {
   using AssignPtr = std::shared_ptr<Assign>;
   using BinaryPtr = std::shared_ptr<Binary>;
@@ -166,6 +177,7 @@ struct Visitor {
   using ThisPtr = std::shared_ptr<This>;
   using UnaryPtr = std::shared_ptr<Unary>;
   using VariablePtr = std::shared_ptr<Variable>;
+  using FunctionPtr = std::shared_ptr<Function>;
 
   virtual void visit_assign_expr(const AssignPtr& expr) = 0;
   virtual void visit_binary_expr(const BinaryPtr& expr) = 0;
@@ -179,4 +191,5 @@ struct Visitor {
   virtual void visit_this_expr(const ThisPtr& expr) = 0;
   virtual void visit_unary_expr(const UnaryPtr& expr) = 0;
   virtual void visit_variable_expr(const VariablePtr& expr) = 0;
+  virtual void visit_function_expr(const FunctionPtr& expr) = 0;
 };

@@ -134,3 +134,13 @@ Variable::Variable(const Token& name)
 void Variable::accept(const VisitorPtr& visitor) {
   visitor->visit_variable_expr(shared_from_this());
 }
+
+Function::Function(
+    const std::vector<Token>& params, const std::vector<StmtPtr>& body)
+  : params_(params)
+  , body_(body) {
+}
+
+void Function::accept(const VisitorPtr& visitor) {
+  visitor->visit_function_expr(shared_from_this());
+}
