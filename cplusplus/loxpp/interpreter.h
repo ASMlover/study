@@ -27,15 +27,24 @@
 #pragma once
 
 #include <memory>
+#include "error_reporter.h"
 #include "expr.h"
 #include "value.h"
 
 class Interpreter
   : public Visitor, public std::enable_shared_from_this<Interpreter> {
   Value value_;
+  ErrorReporter& err_report_;
 
   Value evaluate(const ExprPtr& expr);
+  void check_numeric_operand(const Token& oper, const Value& operand);
+  void check_numeric_operands(
+      const Token& oper, const Value& left, const Value& right);
 public:
+  Interpreter(ErrorReporter& err_report)
+    : err_report_(err_report) {
+  }
+
   virtual void visit_assign_expr(const AssignPtr& expr) override;
   virtual void visit_binary_expr(const BinaryPtr& expr) override;
   virtual void visit_call_expr(const CallPtr& expr) override;
@@ -48,4 +57,6 @@ public:
   virtual void visit_this_expr(const ThisPtr& expr) override;
   virtual void visit_unary_expr(const UnaryPtr& expr) override;
   virtual void visit_variable_expr(const VariablePtr& expr) override;
+
+  void interpret(const ExprPtr& expr);
 };

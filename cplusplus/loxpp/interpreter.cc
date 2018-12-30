@@ -24,11 +24,25 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
+#include "runtime_error.h"
 #include "interpreter.h"
 
 Value Interpreter::evaluate(const ExprPtr& expr) {
   expr->accept(shared_from_this());
   return value_;
+}
+
+void Interpreter::check_numeric_operand(
+    const Token& oper, const Value& operand) {
+  if (!operand.is_numeric())
+    throw new RuntimeError(oper, "operand must be a numeric object ...");
+}
+
+void Interpreter::check_numeric_operands(
+    const Token& oper, const Value& left, const Value& right) {
+  if (!left.is_numeric() || !right.is_numeric())
+    throw new RuntimeError(oper, "operands must be numeric objects ...");
 }
 
 void Interpreter::visit_assign_expr(const AssignPtr& expr) {
@@ -39,9 +53,46 @@ void Interpreter::visit_binary_expr(const BinaryPtr& expr) {
   Value right = evaluate(expr->right_);
 
   switch (expr->operator_.get_type()) {
-  case TOKEN_MINUS: value_ = left - right; break;
-  case TOKEN_STAR: value_ = left * right; break;
-  case TOKEN_SLASH: value_ = left / right; break;
+  case TOKEN_GREATER:
+    check_numeric_operands(expr->operator_, left, right);
+    value_ = left > right;
+    break;
+  case TOKEN_GREATER_EQUAL:
+    check_numeric_operands(expr->operator_, left, right);
+    value_ = left >= right;
+    break;
+  case TOKEN_LESS:
+    check_numeric_operands(expr->operator_, left, right);
+    value_ = left < right;
+    break;
+  case TOKEN_LESS_EQUAL:
+    check_numeric_operands(expr->operator_, left, right);
+    value_ = left <= right;
+    break;
+  case TOKEN_PLUS:
+    if ((left.is_numeric() && right.is_numeric()) ||
+        (left.is_string() && right.is_string())) {
+      value_ = left + right;
+    }
+    else {
+      throw new RuntimeError(expr->operator_,
+          "operands must be two numeric objects or string objects ...");
+    }
+    break;
+  case TOKEN_MINUS:
+    check_numeric_operands(expr->operator_, left, right);
+    value_ = left - right;
+    break;
+  case TOKEN_STAR:
+    check_numeric_operands(expr->operator_, left, right);
+    value_ = left * right;
+    break;
+  case TOKEN_SLASH:
+    check_numeric_operands(expr->operator_, left, right);
+    value_ = left / right;
+    break;
+  case TOKEN_BANG_EQUAL: value_ = left != right; break;
+  case TOKEN_EQUAL_EQUAL: value_ = left == right; break;
   }
 }
 
@@ -75,10 +126,22 @@ void Interpreter::visit_unary_expr(const UnaryPtr& expr) {
   Value right = evaluate(expr->right_);
 
   switch (expr->operator_.get_type()) {
-  case TOKEN_MINUS: value_ = -right; break;
+  case TOKEN_MINUS:
+    check_numeric_operand(expr->operator_, right);
+    value_ = -right; break;
   case TOKEN_BANG: value_ = !right; break;
   }
 }
 
 void Interpreter::visit_variable_expr(const VariablePtr& expr) {
+}
+
+void Interpreter::interpret(const ExprPtr& expr) {
+  try {
+    Value v = evaluate(expr);
+    std::cout << v.stringify() << std::endl;
+  }
+  catch (const RuntimeError& e) {
+    err_report_.error(e.get_token(), e.get_message());
+  }
 }
