@@ -34,6 +34,7 @@
 class Environment {
   std::unordered_map<std::string, Value> values_;
 public:
+  void assign(const Token& name, const Value& value);
   void define_var(const std::string& name, const Value& value);
   Value get(const Token& name) const;
 };

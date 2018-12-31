@@ -27,6 +27,16 @@
 #include "runtime_error.h"
 #include "environment.h"
 
+void Environment::assign(const Token& name, const Value& value) {
+  std::string key = name.get_lexeme();
+  if (values_.find(key) != values_.end()) {
+    values_[key] = value;
+    return;
+  }
+
+  throw new RuntimeError(name, "undefined variable `" + key + "` ...");
+}
+
 void Environment::define_var(const std::string& name, const Value& value) {
   values_[name] = value;
 }
