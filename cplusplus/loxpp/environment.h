@@ -26,14 +26,22 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include "value.h"
 #include "token.h"
 
 class Environment {
+  using EnvironmentPtr = std::shared_ptr<Environment>;
+
+  EnvironmentPtr enclosing_{};
   std::unordered_map<std::string, Value> values_;
 public:
+  Environment(const EnvironmentPtr& enclosing)
+    : enclosing_(enclosing) {
+  }
+
   void assign(const Token& name, const Value& value);
   void define_var(const std::string& name, const Value& value);
   Value get(const Token& name) const;

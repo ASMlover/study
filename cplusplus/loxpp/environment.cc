@@ -34,6 +34,11 @@ void Environment::assign(const Token& name, const Value& value) {
     return;
   }
 
+  if (enclosing_) {
+    enclosing_->assign(name, value);
+    return;
+  }
+
   throw new RuntimeError(name, "undefined variable `" + key + "` ...");
 }
 
@@ -45,6 +50,9 @@ Value Environment::get(const Token& name) const {
   auto valit = values_.find(name.get_lexeme());
   if (valit != values_.end())
     return valit->second;
+
+  if (enclosing_)
+    return enclosing_->get(name);
 
   throw new RuntimeError(name,
       "undefined variable `" + name.get_lexeme() + "` ...");
