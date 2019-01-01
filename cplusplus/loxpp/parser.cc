@@ -272,12 +272,14 @@ StmtPtr Parser::var_declaration(void) {
 }
 
 StmtPtr Parser::statement(void) {
-  // statement -> expr_stmt | if_stmt | print_stmt | block;
+  // statement -> expr_stmt | if_stmt | print_stmt | while_stmt | block;
 
   if (match({TOKEN_IF}))
     return if_statement();
   if (match({TOKEN_PRINT}))
     return print_statement();
+  if (match({TOKEN_WHILE}))
+    return while_statement();
   if (match({TOKEN_LEFT_BRACE}))
     return std::make_shared<BlockStmt>(block());
   return expression_statement();
@@ -302,6 +304,17 @@ StmtPtr Parser::print_statement(void) {
   auto value = expression();
   consume(TOKEN_SEMICOLON, "expect `;` after value ...");
   return std::make_shared<PrintStmt>(value);
+}
+
+StmtPtr Parser::while_statement(void) {
+  // while_stmt -> "while" "(" expression ")" statement;
+
+  consume(TOKEN_LEFT_PAREN, "expect `(` after `while` ...");
+  ExprPtr cond = expression();
+  consume(TOKEN_RIGHT_PAREN, "expect `)` after while condition ...");
+
+  StmtPtr body = statement();
+  return std::make_shared<WhileStmt>(cond, body);
 }
 
 std::vector<StmtPtr> Parser::block(void) {

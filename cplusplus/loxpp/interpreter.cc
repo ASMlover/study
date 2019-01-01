@@ -212,7 +212,8 @@ void Interpreter::visit_if_stmt(const IfStmtPtr& stmt) {
 }
 
 void Interpreter::visit_while_stmt(const WhileStmtPtr& stmt) {
-  // TODO:
+  while(evaluate(stmt->cond_).is_truthy())
+    evaluate(stmt->body_);
 }
 
 void Interpreter::visit_function_stmt(const FunctionStmtPtr& stmt) {
