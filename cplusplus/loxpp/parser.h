@@ -67,6 +67,7 @@ class Parser {
   StmtPtr declaration(void);
   StmtPtr var_declaration(void);
   StmtPtr statement(void);
+  StmtPtr for_statement(void);
   StmtPtr if_statement(void);
   StmtPtr print_statement(void);
   StmtPtr while_statement(void);

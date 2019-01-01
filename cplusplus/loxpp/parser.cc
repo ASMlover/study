@@ -272,8 +272,15 @@ StmtPtr Parser::var_declaration(void) {
 }
 
 StmtPtr Parser::statement(void) {
-  // statement -> expr_stmt | if_stmt | print_stmt | while_stmt | block;
+  // statement -> expr_stmt
+  //              | for_stmt
+  //              | if_stmt
+  //              | print_stmt
+  //              | while_stmt
+  //              | block;
 
+  if (match({TOKEN_FOR}))
+    return for_statement();
   if (match({TOKEN_IF}))
     return if_statement();
   if (match({TOKEN_PRINT}))
@@ -283,6 +290,43 @@ StmtPtr Parser::statement(void) {
   if (match({TOKEN_LEFT_BRACE}))
     return std::make_shared<BlockStmt>(block());
   return expression_statement();
+}
+
+StmtPtr Parser::for_statement(void) {
+  // for_stmt -> "for" "(" (var_decl | expr_stmt | ";")
+  //                        expression? ";"
+  //                        expression? ")" statement ;
+
+  consume(TOKEN_LEFT_PAREN, "expect `(` after `for` ...");
+
+  StmtPtr init;
+  if (match({TOKEN_SEMICOLON}))
+    init = nullptr;
+  else if (match({TOKEN_VAR}))
+    init = var_declaration();
+  else
+    init = expression_statement();
+  ExprPtr cond;
+  if (!check(TOKEN_SEMICOLON))
+    cond = expression();
+  consume(TOKEN_SEMICOLON, "expect `;` after for loop condition ...");
+  ExprPtr step;
+  if (!check(TOKEN_RIGHT_PAREN))
+    step = expression();
+  consume(TOKEN_RIGHT_PAREN, "expect `)` after for loop clauses ...");
+
+  StmtPtr body = statement();
+  if (step) {
+    body = std::make_shared<BlockStmt>(
+        std::vector<StmtPtr>{body, std::make_shared<ExprStmt>(step)});
+  }
+  if (!cond)
+    cond = std::make_shared<Literal>(true);
+  body = std::make_shared<WhileStmt>(cond, body);
+  if (init)
+    body = std::make_shared<BlockStmt>(std::vector<StmtPtr>{init, body});
+
+  return body;
 }
 
 StmtPtr Parser::if_statement(void) {
