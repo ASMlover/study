@@ -1,7 +1,15 @@
 
+/////////////////////////////////////////////////
+// test assignment and print
+/////////////////////////////////////////////////
+print ">>>>>>>>>>>>>>>>>> ASSIGNMENT TEST";
 var s = "Hello, world!";
 print s;
 
+/////////////////////////////////////////////////
+// test block
+/////////////////////////////////////////////////
+print ">>>>>>>>>>>>>>>>>> BLOCKS TEST";
 {
   var s = "in first block";
   print s;
@@ -23,6 +31,10 @@ var b = 4;
 print a;
 print b;
 
+/////////////////////////////////////////////////
+// test `if` statement condition logical
+/////////////////////////////////////////////////
+print ">>>>>>>>>>>>>>>>>> IF CONDITION TEST";
 if (true) {
   print "IF BRANCH";
   if (a + b)
@@ -36,3 +48,12 @@ if (false) {
 } else {
   print "ELSE BRANCH";
 }
+
+/////////////////////////////////////////////////
+// test `and` and `or` logical operators
+/////////////////////////////////////////////////
+print ">>>>>>>>>>>>>>>>>> LOGICAL OPERATORS TEST";
+print "Hello" or "world!";
+print nil or "yes";
+print "Hello" and "world!";
+print nil and "yes" or "no";
