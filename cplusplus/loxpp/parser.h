@@ -31,6 +31,7 @@
 #include <vector>
 #include "token.h"
 #include "expr.h"
+#include "stmt.h"
 
 class ParseError : public std::exception {
   virtual const char* what(void) const throw() override {
@@ -53,13 +54,26 @@ class Parser {
   void synchronize(void);
 
   ExprPtr expression(void);
+  ExprPtr assignment(void);
+  ExprPtr logical_or(void);
+  ExprPtr logical_and(void);
   ExprPtr equality(void);
   ExprPtr comparison(void);
   ExprPtr addition(void);
   ExprPtr multiplication(void);
   ExprPtr unary(void);
   ExprPtr primary(void);
+
+  StmtPtr declaration(void);
+  StmtPtr var_declaration(void);
+  StmtPtr statement(void);
+  StmtPtr if_statement(void);
+  StmtPtr print_statement(void);
+  std::vector<StmtPtr> block(void);
+  StmtPtr expression_statement(void);
 public:
   Parser(const std::vector<Token>& tokens);
   ExprPtr parse(void);
+
+  std::vector<StmtPtr> parse_stmt(void);
 };
