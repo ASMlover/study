@@ -33,6 +33,25 @@ Value Interpreter::evaluate(const ExprPtr& expr) {
   return value_;
 }
 
+void Interpreter::evaluate(const StmtPtr& stmt) {
+  stmt->accept(shared_from_this());
+}
+
+void Interpreter::evaluate_block(
+    const std::vector<StmtPtr>& stmts, const EnvironmentPtr& environment) {
+  EnvironmentPtr origin_env = environment_;
+  try {
+    environment_ = environment;
+    for (auto& stmt : stmts)
+      evaluate(stmt);
+  }
+  catch (const RuntimeError& e) {
+    environment_ = origin_env;
+    throw e;
+  }
+  environment_ = origin_env;
+}
+
 void Interpreter::check_numeric_operand(
     const Token& oper, const Value& operand) {
   if (!operand.is_numeric())
@@ -46,6 +65,8 @@ void Interpreter::check_numeric_operands(
 }
 
 void Interpreter::visit_assign_expr(const AssignPtr& expr) {
+  Value value = evaluate(expr->value_);
+  environment_->assign(expr->name_, value);
 }
 
 void Interpreter::visit_binary_expr(const BinaryPtr& expr) {
@@ -97,12 +118,15 @@ void Interpreter::visit_binary_expr(const BinaryPtr& expr) {
 }
 
 void Interpreter::visit_call_expr(const CallPtr& expr) {
+  // TODO:
 }
 
 void Interpreter::visit_get_expr(const GetPtr& expr) {
+  // TODO:
 }
 
 void Interpreter::visit_set_expr(const SetPtr& expr) {
+  // TODO:
 }
 
 void Interpreter::visit_grouping_expr(const GroupingPtr& expr) {
@@ -114,12 +138,29 @@ void Interpreter::visit_literal_expr(const LiteralPtr& expr) {
 }
 
 void Interpreter::visit_logical_expr(const LogicalPtr& expr) {
+  Value left = evaluate(expr->left_);
+
+  if (expr->operator_.get_type() == TOKEN_OR) {
+    if (left.is_truthy()) {
+      value_ = left;
+      return;
+    }
+  }
+  else {
+    if (!left.is_truthy()) {
+      value_ = left;
+      return;
+    }
+  }
+  value_ = evaluate(expr->right_);
 }
 
 void Interpreter::visit_super_expr(const SuperPtr& expr) {
+  // TODO:
 }
 
 void Interpreter::visit_this_expr(const ThisPtr& expr) {
+  // TODO:
 }
 
 void Interpreter::visit_unary_expr(const UnaryPtr& expr) {
@@ -134,12 +175,72 @@ void Interpreter::visit_unary_expr(const UnaryPtr& expr) {
 }
 
 void Interpreter::visit_variable_expr(const VariablePtr& expr) {
+  value_ = environment_->get(expr->name_);
+}
+
+void Interpreter::visit_function_expr(const FunctionPtr& expr) {
+  // TODO:
+}
+
+void Interpreter::visit_expr_stmt(const ExprStmtPtr& stmt) {
+  evaluate(stmt->expr_);
+}
+
+void Interpreter::visit_print_stmt(const PrintStmtPtr& stmt) {
+  Value val = evaluate(stmt->expr_);
+  std::cout << val.stringify() << std::endl;
+}
+
+void Interpreter::visit_var_stmt(const VarStmtPtr& stmt) {
+  Value value;
+  if (stmt->expr_)
+    value = evaluate(stmt->expr_);
+  environment_->define_var(stmt->name_.get_lexeme(), value);
+}
+
+void Interpreter::visit_block_stmt(const BlockStmtPtr& stmt) {
+  auto env = std::make_shared<Environment>(environment_);
+  evaluate_block(stmt->stmts_, env);
+}
+
+void Interpreter::visit_if_stmt(const IfStmtPtr& stmt) {
+  Value cond = evaluate(stmt->cond_);
+  if (cond.is_truthy())
+    evaluate(stmt->then_branch_);
+  else if (stmt->else_branch_)
+    evaluate(stmt->else_branch_);
+}
+
+void Interpreter::visit_while_stmt(const WhileStmtPtr& stmt) {
+  // TODO:
+}
+
+void Interpreter::visit_function_stmt(const FunctionStmtPtr& stmt) {
+  // TODO:
+}
+
+void Interpreter::visit_return_stmt(const ReturnStmtPtr& stmt) {
+  // TODO:
+}
+
+void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {
+  // TODO:
 }
 
 void Interpreter::interpret(const ExprPtr& expr) {
   try {
     Value v = evaluate(expr);
     std::cout << v.stringify() << std::endl;
+  }
+  catch (const RuntimeError& e) {
+    err_report_.error(e.get_token(), e.get_message());
+  }
+}
+
+void Interpreter::interpret(const std::vector<StmtPtr>& stmts) {
+  try {
+    for (auto& stmt : stmts)
+      evaluate(stmt);
   }
   catch (const RuntimeError& e) {
     err_report_.error(e.get_token(), e.get_message());

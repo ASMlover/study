@@ -28,21 +28,32 @@
 
 #include <memory>
 #include "error_reporter.h"
-#include "expr.h"
 #include "value.h"
+#include "expr.h"
+#include "stmt.h"
+#include "environment.h"
 
 class Interpreter
-  : public Visitor, public std::enable_shared_from_this<Interpreter> {
-  Value value_;
+  : public Visitor
+  , public StmtVisitor
+  , public std::enable_shared_from_this<Interpreter> {
+  using EnvironmentPtr = std::shared_ptr<Environment>;
+
   ErrorReporter& err_report_;
+  Value value_;
+  EnvironmentPtr environment_;
 
   Value evaluate(const ExprPtr& expr);
+  void evaluate(const StmtPtr& stmt);
+  void evaluate_block(
+      const std::vector<StmtPtr>& stmts, const EnvironmentPtr& environment);
   void check_numeric_operand(const Token& oper, const Value& operand);
   void check_numeric_operands(
       const Token& oper, const Value& left, const Value& right);
 public:
   Interpreter(ErrorReporter& err_report)
-    : err_report_(err_report) {
+    : err_report_(err_report)
+    , environment_(std::make_shared<Environment>(nullptr)) {
   }
 
   virtual void visit_assign_expr(const AssignPtr& expr) override;
@@ -57,6 +68,18 @@ public:
   virtual void visit_this_expr(const ThisPtr& expr) override;
   virtual void visit_unary_expr(const UnaryPtr& expr) override;
   virtual void visit_variable_expr(const VariablePtr& expr) override;
+  virtual void visit_function_expr(const FunctionPtr& expr) override;
+
+  virtual void visit_expr_stmt(const ExprStmtPtr& stmt) override;
+  virtual void visit_print_stmt(const PrintStmtPtr& stmt) override;
+  virtual void visit_var_stmt(const VarStmtPtr& stmt) override;
+  virtual void visit_block_stmt(const BlockStmtPtr& stmt) override;
+  virtual void visit_if_stmt(const IfStmtPtr& stmt) override;
+  virtual void visit_while_stmt(const WhileStmtPtr& stmt) override;
+  virtual void visit_function_stmt(const FunctionStmtPtr& stmt) override;
+  virtual void visit_return_stmt(const ReturnStmtPtr& stmt) override;
+  virtual void visit_class_stmt(const ClassStmtPtr& stmt) override;
 
   void interpret(const ExprPtr& expr);
+  void interpret(const std::vector<StmtPtr>& stmts);
 };
