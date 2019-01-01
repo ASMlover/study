@@ -27,29 +27,39 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
+#include "error_reporter.h"
 #include "scanner.h"
+#include "parser.h"
+#include "ast_printer.h"
+#include "interpreter.h"
 
-static bool had_error{};
+static ErrorReporter err_reporter;
+static std::shared_ptr<Interpreter> interp = std::make_shared<Interpreter>(err_reporter);
 
-static void report(
-    int line, const std::string& where, const std::string& message) {
-  std::cerr
-    << "[line " << line << "] ERROR " << where << ": "
-    << message << std::endl;
-  had_error = true;
-}
-
-static void error(int line, const std::string& message) {
-  report(line, "", message);
-}
-
-static void print_tokens(const std::string& source) {
+static void run(const std::string& source) {
   Scanner s(source);
   auto tokens = s.scan_tokens();
-  for (auto& t : tokens)
-    std::cout << t.repr() << std::endl;
+  // for (auto& t : tokens)
+  //   std::cout << t.repr() << std::endl;
+
+  // Parser p(tokens);
+  // auto expr = p.parse();
+  // std::cout << std::make_shared<AstPrinter>()->as_string(expr) << std::endl;
+
+  // auto interp = std::make_shared<Interpreter>(err_reporter);
+  // interp->interpret(expr);
+
+  Parser p(tokens);
+  auto stmts = p.parse_stmt();
+
+  // auto interp = std::make_shared<Interpreter>(err_reporter);
+  interp->interpret(stmts);
+
+  if (err_reporter.had_error())
+    std::abort();
 }
 
 static void repl(void) {
@@ -62,9 +72,7 @@ static void repl(void) {
       break;
     }
 
-    // interpret(line);
-    print_tokens(line);
-    had_error = false;
+    run(line);
   }
 }
 
@@ -79,17 +87,9 @@ static std::string read_file(const std::string& path) {
   return "";
 }
 
-static void run(const std::string& source) {
-}
-
 static void run_file(const std::string& path) {
   auto bytes = read_file(path);
-  // run(bytes);
-
-  print_tokens(bytes);
-
-  if (had_error)
-    std::exit(1);
+  run(bytes);
 }
 
 int main(int argc, char* argv[]) {
