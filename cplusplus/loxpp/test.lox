@@ -1,0 +1,38 @@
+
+var s = "Hello, world!";
+print s;
+
+{
+  var s = "in first block";
+  print s;
+}
+
+print s;
+
+var a = 3;
+var b = 4;
+{
+  var a = 33;
+  var b = 44;
+  {
+    var a = 333;
+    print a + b;
+  }
+  print a + b;
+}
+print a;
+print b;
+
+if (true) {
+  print "IF BRANCH";
+  if (a + b)
+    print "a + b";
+} else {
+  print "ELSE BRANCH";
+}
+
+if (false) {
+  print "IF BRANCH";
+} else {
+  print "ELSE BRANCH";
+}
