@@ -57,3 +57,19 @@ print "Hello" or "world!";
 print nil or "yes";
 print "Hello" and "world!";
 print nil and "yes" or "no";
+
+/////////////////////////////////////////////////
+// test `while` logical
+/////////////////////////////////////////////////
+print ">>>>>>>>>>>>>>>>>> WHILE LOGICAL TEST";
+var count = 10;
+var while_cond = true;
+while (while_cond) {
+  if (count == 0) {
+    while_cond = false;
+  }
+  else {
+    print count;
+  }
+  count = count - 1;
+}
