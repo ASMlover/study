@@ -29,6 +29,7 @@
 #include <memory>
 #include "error_reporter.h"
 #include "value.h"
+#include "native_function.h"
 #include "expr.h"
 #include "stmt.h"
 #include "environment.h"
@@ -41,6 +42,7 @@ class Interpreter
 
   ErrorReporter& err_report_;
   Value value_;
+  EnvironmentPtr globals_;
   EnvironmentPtr environment_;
 
   Value evaluate(const ExprPtr& expr);
@@ -53,7 +55,18 @@ class Interpreter
 public:
   Interpreter(ErrorReporter& err_report)
     : err_report_(err_report)
-    , environment_(std::make_shared<Environment>(nullptr)) {
+    , globals_(std::make_shared<Environment>(nullptr))
+    , environment_(globals_) {
+    globals_->define_var("clock", Value(std::make_shared<ClockFunction>()));
+  }
+
+  EnvironmentPtr get_globals(void) const {
+    return globals_;
+  }
+
+  void invoke_evaluate_block(
+      const std::vector<StmtPtr>& stmts, const EnvironmentPtr& environment) {
+    evaluate_block(stmts, environment);
   }
 
   virtual void visit_assign_expr(const AssignPtr& expr) override;

@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include "runtime_error.h"
+#include "function.h"
 #include "interpreter.h"
 
 Value Interpreter::evaluate(const ExprPtr& expr) {
@@ -118,7 +119,21 @@ void Interpreter::visit_binary_expr(const BinaryPtr& expr) {
 }
 
 void Interpreter::visit_call_expr(const CallPtr& expr) {
-  // TODO:
+  Value callee = evaluate(expr->callee_);
+  if (!callee.is_callable())
+    throw RuntimeError(expr->paren_, "can only call functions and classes ...");
+
+  std::vector<Value> arguments;
+  for (auto& arg : expr->arguments_)
+    arguments.push_back(evaluate(arg));
+  auto callable = callee.to_callable();
+  if (arguments.size() != callable->arity()) {
+    throw RuntimeError(expr->paren_,
+        "expected " + std::to_string(callable->arity()) +
+        " arguments but got " + std::to_string(arguments.size()) + " ...");
+  }
+
+  value_ = callable->call(shared_from_this(), arguments);
 }
 
 void Interpreter::visit_get_expr(const GetPtr& expr) {
@@ -217,7 +232,8 @@ void Interpreter::visit_while_stmt(const WhileStmtPtr& stmt) {
 }
 
 void Interpreter::visit_function_stmt(const FunctionStmtPtr& stmt) {
-  // TODO:
+  auto fun = std::make_shared<LoxFunction>(stmt);
+  environment_->define_var(stmt->name_.get_lexeme(), Value(fun));
 }
 
 void Interpreter::visit_return_stmt(const ReturnStmtPtr& stmt) {

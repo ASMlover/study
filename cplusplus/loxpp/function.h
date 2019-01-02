@@ -26,12 +26,21 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <memory>
 #include "callable.h"
+#include "stmt.h"
 
-class Function : public Callable {
+class LoxFunction : public Callable {
+  using FunctionStmtPtr = std::shared_ptr<FunctionStmt>;
+
+  FunctionStmtPtr declaration_;
 public:
+  LoxFunction(const FunctionStmtPtr& fun)
+    : declaration_(fun) {
+  }
+
   virtual Value call(
-      const InterpreterPtr& Interp, const std::vector<Value>& args) override;
+      const InterpreterPtr& interp, const std::vector<Value>& args) override;
   virtual int arity(void) const override;
   virtual std::string to_string(void) const override;
 };

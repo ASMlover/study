@@ -212,14 +212,43 @@ ExprPtr Parser::multiplication(void) {
 }
 
 ExprPtr Parser::unary(void) {
-  // unary -> ("!"|"-") unary | primary;
+  // unary -> ("!" | "-") unary | call;
 
   if (match({TOKEN_BANG, TOKEN_MINUS})) {
     auto oper = prev();
     auto right = unary();
     return std::make_shared<Unary>(oper, right);
   }
-  return primary();
+  return call();
+}
+
+ExprPtr Parser::call(void) {
+  // call -> primary ( "(" arguments? ")" )* ;
+
+  ExprPtr expr = primary();
+  while (true) {
+    if (match({TOKEN_LEFT_PAREN}))
+      expr = finish_call(expr);
+    else
+      break;
+  }
+
+  return expr;
+}
+
+ExprPtr Parser::finish_call(const ExprPtr& callee) {
+  std::vector<ExprPtr> arguments;
+  if (!check(TOKEN_RIGHT_PAREN)) {
+    do {
+      if (arguments.size() >= 64)
+        error(peek(), "cannot have more than 64 arguments ...");
+      arguments.push_back(expression());
+    } while (match({TOKEN_COMMA}));
+  }
+  Token paren = consume(TOKEN_RIGHT_PAREN,
+      "expect `)` after function call arguments ...");
+
+  return std::make_shared<Call>(callee, paren, arguments);
 }
 
 ExprPtr Parser::primary(void) {
@@ -248,8 +277,18 @@ ExprPtr Parser::primary(void) {
   throw error(peek(), "expect expression in primary ...");
 }
 
+ExprPtr Parser::arguments(void) {
+  // arguments -> expression ( "," expression )* ;
+
+  return nullptr;
+}
+
 StmtPtr Parser::declaration(void) {
+  // declaration -> fun_decl | var_decl | statement ;
+
   try {
+    if (match({TOKEN_FUN}))
+      return fun_declaration("function");
     if (match({TOKEN_VAR}))
       return var_declaration();
 
@@ -259,6 +298,38 @@ StmtPtr Parser::declaration(void) {
     synchronize();
     return nullptr;
   }
+}
+
+StmtPtr Parser::fun_declaration(const std::string& kind) {
+  // fun_decl -> "fun" function ;
+
+  Token fun_name = consume(TOKEN_IDENTIFIER, "expect " + kind + " name ...");
+  return std::make_shared<FunctionStmt>(fun_name, function(kind));
+}
+
+FunctionPtr Parser::function(const std::string& kind) {
+  // function -> IDENTIFILER "(" parameters? ")" block ;
+
+  consume(TOKEN_LEFT_PAREN, "expect `(` after " + kind + " name ...");
+  std::vector<Token> params;
+  if (!check(TOKEN_RIGHT_PAREN)) {
+    do {
+      if (params.size() >= 64)
+        error(peek(), "cannot have more than 64 parameters ...");
+
+      params.push_back(consume(TOKEN_IDENTIFIER, "expect parameter name ..."));
+    } while (match({TOKEN_COMMA}));
+  }
+  consume(TOKEN_RIGHT_PAREN, "expect `)` after " + kind + " parameters ...");
+
+  consume(TOKEN_LEFT_BRACE, "expect `{` before " + kind + " body ...");
+  return std::make_shared<Function>(params, block());
+}
+
+StmtPtr Parser::parameters(void) {
+  // parameters -> IDENTIFILER ( "," IDENTIFILER )* ;
+
+  return nullptr;
 }
 
 StmtPtr Parser::var_declaration(void) {

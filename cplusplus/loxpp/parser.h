@@ -39,6 +39,7 @@ class ParseError : public std::exception {
   }
 };
 
+using FunctionPtr = std::shared_ptr<Function>;
 class Parser {
   std::vector<Token> tokens_;
   int current_{0};
@@ -62,9 +63,15 @@ class Parser {
   ExprPtr addition(void);
   ExprPtr multiplication(void);
   ExprPtr unary(void);
+  ExprPtr call(void);
+  ExprPtr finish_call(const ExprPtr& callee);
   ExprPtr primary(void);
+  ExprPtr arguments(void);
 
   StmtPtr declaration(void);
+  StmtPtr fun_declaration(const std::string& kind);
+  FunctionPtr function(const std::string& kind);
+  StmtPtr parameters(void);
   StmtPtr var_declaration(void);
   StmtPtr statement(void);
   StmtPtr for_statement(void);

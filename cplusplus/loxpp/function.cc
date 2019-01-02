@@ -24,20 +24,27 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "environment.h"
+#include "interpreter.h"
 #include "function.h"
 
-Value Function::call(
-    const InterpreterPtr& Interp, const std::vector<Value>& args) {
-  // TODO:
-  return 0;
+Value LoxFunction::call(
+    const InterpreterPtr& interp, const std::vector<Value>& args) {
+  auto env = std::make_shared<Environment>(interp->get_globals());
+  auto& params = declaration_->function_->params_;
+  std::size_t n = params.size();
+  for (std::size_t i = 0; i < n; ++i)
+    env->define_var(params[i].get_lexeme(), args[i]);
+
+  interp->invoke_evaluate_block(declaration_->function_->body_, env);
+
+  return Value();
 }
 
-int Function::arity(void) const {
-  // TODO:
-  return 0;
+int LoxFunction::arity(void) const {
+  return static_cast<int>(declaration_->function_->params_.size());
 }
 
-std::string Function::to_string(void) const {
-  // TODO:
-  return "<fn>";
+std::string LoxFunction::to_string(void) const {
+  return "<fn " + declaration_->name_.get_lexeme() + ">";
 }
