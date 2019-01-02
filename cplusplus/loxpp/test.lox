@@ -61,7 +61,7 @@ print nil and "yes" or "no";
 /////////////////////////////////////////////////
 // test `while` logical
 /////////////////////////////////////////////////
-print ">>>>>>>>>>>>>>>>>> WHILE LOGICAL TEST";
+print ">>>>>>>>>>>>>>>>>> WHILE LOOP LOGICAL TEST";
 var count = 10;
 var while_cond = true;
 while (while_cond) {
@@ -73,3 +73,43 @@ while (while_cond) {
   }
   count = count - 1;
 }
+
+/////////////////////////////////////////////////
+// test `for` logical
+/////////////////////////////////////////////////
+print ">>>>>>>>>>>>>>>>>> FOR LOOP LOGICAL TEST";
+for (var i = 0; i < 10; i = i + 1) {
+  print i * i;
+}
+
+/////////////////////////////////////////////////
+// test native function
+/////////////////////////////////////////////////
+print ">>>>>>>>>>>>>>>>>> NATIVE FUNCTION TEST";
+var beg = clock();
+for (var i = 0; i < 10; i = i + 1) {
+  print i * i * i;
+}
+print clock() - beg;
+
+/////////////////////////////////////////////////
+// test function
+/////////////////////////////////////////////////
+print ">>>>>>>>>>>>>>>>>> FUNCTION TEST";
+fun count(n) {
+  if (n > 1)
+    count(n - 1);
+  print n;
+}
+count(3);
+
+fun add(a, b, c) {
+  print a + b + c;
+}
+print add;
+add(1, 2, 3);
+
+fun say_hello(first, last) {
+  print "Hello, " + first + " " + last + "!";
+}
+say_hello("Dear", "LOX");
