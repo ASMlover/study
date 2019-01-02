@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "callable.h"
 #include "value.h"
 
 template <typename... Ts> struct overloaded : Ts... { using Ts::operator()...; };
@@ -35,6 +36,7 @@ std::string Value::stringify(void) const {
         [](bool b) -> std::string { return b ? "true" : "false"; },
         [](double d) -> std::string { return std::to_string(d); },
         [](const std::string& s) -> std::string { return s; },
+        [](const CallablePtr& c) -> std::string { return c->to_string(); },
       }, v_);
 }
 

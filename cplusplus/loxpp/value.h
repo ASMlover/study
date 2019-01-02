@@ -26,11 +26,16 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <memory>
 #include <string>
 #include <variant>
 
+struct Callable;
+
 class Value {
-  using VariantType = std::variant<std::nullptr_t, bool, double, std::string>;
+  using CallablePtr = std::shared_ptr<Callable>;
+  using VariantType = std::variant<
+    std::nullptr_t, bool, double, std::string, CallablePtr>;
 
   VariantType v_{};
 
@@ -59,6 +64,7 @@ public:
   Value(double d) noexcept : v_(d) {}
   Value(const char* s) noexcept : v_(std::string(s)) {}
   Value(const std::string& s) noexcept : v_(s) {}
+  Value(const CallablePtr& callable) noexcept : v_(callable) {}
   Value(const Value& r) noexcept : v_(r.v_) {}
   Value(Value&& r) noexcept : v_(std::move(r.v_)) {}
 
@@ -66,10 +72,12 @@ public:
   bool is_boolean(void) const { return std::holds_alternative<bool>(v_); }
   bool is_numeric(void) const { return std::holds_alternative<double>(v_); }
   bool is_string(void) const { return std::holds_alternative<std::string>(v_); }
+  bool is_callable(void) const { return std::holds_alternative<CallablePtr>(v_); }
 
   bool to_boolean(void) const { return std::get<bool>(v_); }
   double to_numeric(void) const { return std::get<double>(v_); }
   std::string to_string(void) const { return std::get<std::string>(v_); }
+  CallablePtr to_callable(void) const { return std::get<CallablePtr>(v_); }
 
   operator bool(void) const { return std::get<bool>(v_); }
   operator double(void) const { return std::get<double>(v_); }
