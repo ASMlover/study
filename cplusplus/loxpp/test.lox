@@ -113,3 +113,16 @@ fun say_hello(first, last) {
   print "Hello, " + first + " " + last + "!";
 }
 say_hello("Dear", "LOX");
+
+/////////////////////////////////////////////////
+// test function return
+/////////////////////////////////////////////////
+print ">>>>>>>>>>>>>>>>>> FUNCTION RETURN TEST";
+fun fibonacci(n) {
+  if (n <= 1)
+    return n;
+  return fibonacci(n - 2) + fibonacci(n - 1);
+}
+ for (var i = 0; i < 10; i = i + 1) {
+   print fibonacci(i);
+ }
