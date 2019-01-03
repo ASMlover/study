@@ -64,6 +64,10 @@ public:
     return globals_;
   }
 
+  EnvironmentPtr get_envp(void) const {
+    return environment_;
+  }
+
   void invoke_evaluate_block(
       const std::vector<StmtPtr>& stmts, const EnvironmentPtr& environment) {
     evaluate_block(stmts, environment);

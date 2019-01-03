@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include "return.h"
 #include "runtime_error.h"
 #include "function.h"
 #include "interpreter.h"
@@ -46,10 +47,18 @@ void Interpreter::evaluate_block(
     for (auto& stmt : stmts)
       evaluate(stmt);
   }
-  catch (const RuntimeError& e) {
+  catch (...) {
     environment_ = origin_env;
-    throw e;
+    throw;
   }
+  // catch (const RuntimeError& e) {
+  //   environment_ = origin_env;
+  //   throw e;
+  // }
+  // catch (const Return& e) {
+  //   environment_ = origin_env;
+  //   throw e;
+  // }
   environment_ = origin_env;
 }
 
@@ -237,7 +246,11 @@ void Interpreter::visit_function_stmt(const FunctionStmtPtr& stmt) {
 }
 
 void Interpreter::visit_return_stmt(const ReturnStmtPtr& stmt) {
-  // TODO:
+  Value value;
+  if (stmt->value_)
+    value = evaluate(stmt->value_);
+
+  throw Return(value);
 }
 
 void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {

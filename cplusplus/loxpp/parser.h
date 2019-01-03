@@ -77,6 +77,7 @@ class Parser {
   StmtPtr for_statement(void);
   StmtPtr if_statement(void);
   StmtPtr print_statement(void);
+  StmtPtr return_statement(void);
   StmtPtr while_statement(void);
   std::vector<StmtPtr> block(void);
   StmtPtr expression_statement(void);

@@ -347,6 +347,7 @@ StmtPtr Parser::statement(void) {
   //              | for_stmt
   //              | if_stmt
   //              | print_stmt
+  //              | return_stmt
   //              | while_stmt
   //              | block;
 
@@ -356,6 +357,8 @@ StmtPtr Parser::statement(void) {
     return if_statement();
   if (match({TOKEN_PRINT}))
     return print_statement();
+  if (match({TOKEN_RETURN}))
+    return return_statement();
   if (match({TOKEN_WHILE}))
     return while_statement();
   if (match({TOKEN_LEFT_BRACE}))
@@ -419,6 +422,18 @@ StmtPtr Parser::print_statement(void) {
   auto value = expression();
   consume(TOKEN_SEMICOLON, "expect `;` after value ...");
   return std::make_shared<PrintStmt>(value);
+}
+
+StmtPtr Parser::return_statement(void) {
+  // return_stmt -> "return" expression? ";" ;
+
+  Token keyword = prev();
+  ExprPtr value;
+  if (!check(TOKEN_SEMICOLON))
+    value = expression();
+  consume(TOKEN_SEMICOLON, "expect `;` after `return` value ...");
+
+  return std::make_shared<ReturnStmt>(keyword, value);
 }
 
 StmtPtr Parser::while_statement(void) {

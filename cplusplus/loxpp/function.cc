@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "return.h"
 #include "environment.h"
 #include "interpreter.h"
 #include "function.h"
@@ -36,7 +37,12 @@ Value LoxFunction::call(
   for (std::size_t i = 0; i < n; ++i)
     env->define_var(params[i].get_lexeme(), args[i]);
 
-  interp->invoke_evaluate_block(declaration_->function_->body_, env);
+  try {
+    interp->invoke_evaluate_block(declaration_->function_->body_, env);
+  }
+  catch (const Return& r) {
+    return r.value_;
+  }
 
   return Value();
 }
