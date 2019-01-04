@@ -91,6 +91,8 @@ public:
   std::string to_string(void) const { return std::get<std::string>(v_); }
 
   operator bool(void) const { return to_boolean(); }
+  operator double(void) const { return to_numeric(); }
+  operator std::string(void) const { return to_string(); }
 
   bool operator==(const Value& r) const { return v_ == r.v_; }
   bool operator!=(const Value& r) const { return v_ != r.v_; }
