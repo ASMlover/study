@@ -40,10 +40,12 @@ class Resolver
   , public StmtVisitor
   , public std::enable_shared_from_this<Resolver> {
   using InterpreterPtr = std::shared_ptr<Interpreter>;
-  enum class FunType { NONE, FUNCTION, METHOD };
+  enum class FunType { NONE, FUNCTION, CTOR, METHOD };
+  enum class ClassType { NONE, CLASS };
 
   std::vector<std::unordered_map<std::string, bool>> scopes_;
-  FunType curr_fun{FunType::NONE};
+  FunType curr_fun_{FunType::NONE};
+  ClassType curr_class_{ClassType::NONE};
   ErrorReporter& err_report_;
   InterpreterPtr interp_;
 

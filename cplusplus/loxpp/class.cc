@@ -31,10 +31,15 @@
 Value LoxClass::call(
     const InterpreterPtr& interp, const std::vector<Value>& args) {
   auto inst = std::make_shared<LoxInstance>(shared_from_this());
+  auto ctor = get_method(inst, "ctor");
+  if (ctor)
+    ctor->call(interp, args);
   return Value(inst);
 }
 
 int LoxClass::arity(void) const {
+  if (methods_.count("ctor"))
+    return methods_.at("ctor")->arity();
   return 0;
 }
 

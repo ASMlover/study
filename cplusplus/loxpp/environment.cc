@@ -70,6 +70,21 @@ Value Environment::get(const Token& name) const {
       "undefined variable `" + name.get_lexeme() + "` ...");
 }
 
+Value Environment::get(const std::string& name) const {
+  auto valit = values_.find(name);
+  if (valit != values_.end())
+    return valit->second;
+
+  if (enclosing_)
+    return enclosing_->get(name);
+
+  return Value();
+}
+
 Value Environment::get_at(int distance, const Token& name) {
+  return ancestor(distance)->get(name);
+}
+
+Value Environment::get_at(int distance, const std::string& name) {
   return ancestor(distance)->get(name);
 }

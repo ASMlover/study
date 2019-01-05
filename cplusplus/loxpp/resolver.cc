@@ -70,6 +70,12 @@ void Resolver::visit_super_expr(const SuperPtr& expr) {
 }
 
 void Resolver::visit_this_expr(const ThisPtr& expr) {
+  if (curr_class_ == ClassType::NONE) {
+    err_report_.error(expr->keyword_,
+        "cannot use `this` outside of a class ...");
+    return;
+  }
+
   resolve_local(expr, expr->keyword_);
 }
 
@@ -135,14 +141,23 @@ void Resolver::visit_function_stmt(const FunctionStmtPtr& stmt) {
 }
 
 void Resolver::visit_return_stmt(const ReturnStmtPtr& stmt) {
-  if (curr_fun == FunType::NONE)
+  if (curr_fun_ == FunType::NONE)
     err_report_.error(stmt->keyword_, "cannot return from top-level code ...");
 
-  if (stmt->value_)
+  if (stmt->value_) {
+    if (curr_fun_ == FunType::CTOR) {
+      err_report_.error(
+          stmt->keyword_, "cannot return a value from an ctor ...");
+    }
+
     resolve(stmt->value_);
+  }
 }
 
 void Resolver::visit_class_stmt(const ClassStmtPtr& stmt) {
+  ClassType enclosing_class = curr_class_;
+  curr_class_ = ClassType::CLASS;
+
   declare(stmt->name_);
   define_token(stmt->name_);
 
@@ -150,10 +165,15 @@ void Resolver::visit_class_stmt(const ClassStmtPtr& stmt) {
   scopes_.back()["this"] = true;
 
   for (auto& meth : stmt->methods_) {
-    resolve_function(meth, FunType::METHOD);
+    FunType ft = FunType::METHOD;
+    if (meth->name_.get_lexeme() == "ctor")
+      ft = FunType::CTOR;
+    resolve_function(meth, ft);
   }
 
   end_scope();
+
+  curr_class_ = enclosing_class;
 }
 
 void Resolver::resolve(const ExprPtr& expr) {
@@ -178,8 +198,8 @@ void Resolver::resolve_local(const ExprPtr& expr, const Token& name) {
 }
 
 void Resolver::resolve_function(const FunctionStmtPtr& fun, FunType type) {
-  FunType enclosing_fun = curr_fun;
-  curr_fun = type;
+  FunType enclosing_fun = curr_fun_;
+  curr_fun_ = type;
 
   begin_scope();
   for (auto& param : fun->function_->params_) {
@@ -189,7 +209,7 @@ void Resolver::resolve_function(const FunctionStmtPtr& fun, FunType type) {
   resolve(fun->function_->body_);
   end_scope();
 
-  curr_fun = enclosing_fun;
+  curr_fun_ = enclosing_fun;
 }
 
 void Resolver::begin_scope(void) {

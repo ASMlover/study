@@ -49,5 +49,7 @@ public:
   void assign_at(int distance, const Token& name, const Value& value);
   void define_var(const std::string& name, const Value& value);
   Value get(const Token& name) const;
+  Value get(const std::string& name) const;
   Value get_at(int distance, const Token& name);
+  Value get_at(int distance, const std::string& name);
 };

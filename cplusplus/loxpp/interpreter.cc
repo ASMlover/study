@@ -285,7 +285,8 @@ void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {
 
   std::unordered_map<std::string, LoxFunctionPtr> methods;
   for (auto& meth : stmt->methods_) {
-    LoxFunctionPtr fun = std::make_shared<LoxFunction>(meth, environment_);
+    bool is_ctor = meth->name_.get_lexeme() == "ctor";
+    LoxFunctionPtr fun = std::make_shared<LoxFunction>(meth, environment_, is_ctor);
     methods[meth->name_.get_lexeme()] = fun;
   }
 

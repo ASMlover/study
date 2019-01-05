@@ -42,8 +42,14 @@ Value LoxFunction::call(
     interp->invoke_evaluate_block(declaration_->function_->body_, env);
   }
   catch (const Return& r) {
+    if (is_ctor_)
+      return closure_->get_at(0, "this");
+
     return r.value_;
   }
+
+  if (is_ctor_)
+    return closure_->get_at(0, "this");
 
   return Value();
 }
@@ -59,5 +65,5 @@ std::string LoxFunction::to_string(void) const {
 LoxFunction::LoxFunctionPtr LoxFunction::bind(const LoxInstancePtr& inst) {
   EnvironmentPtr envp = std::make_shared<Environment>(closure_);
   envp->define_var("this", inst);
-  return std::make_shared<LoxFunction>(declaration_, envp);
+  return std::make_shared<LoxFunction>(declaration_, envp, is_ctor_);
 }
