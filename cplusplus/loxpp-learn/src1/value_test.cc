@@ -32,6 +32,7 @@ void value_test(void) {
     for (auto& v : vs) {
       std::cout
         << "Value<" << &v << "> "
+        << "type(" << v.type() << ") "
         << "truthy(" << (v.is_truthy() ? "true" : "false") << ") "
         << "stringify(" << v.stringify() << ")"
         << std::endl;
@@ -40,6 +41,7 @@ void value_test(void) {
 
   values_repr({
       lox::Value(),
+      lox::Value(nullptr),
       lox::Value(true),
       lox::Value(false),
       lox::Value(22),

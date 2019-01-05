@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <variant>
 #include "common.h"
@@ -33,13 +34,21 @@
 namespace lox {
 
 class Value : private Copyable {
-  using VariantType = std::variant<std::nullptr_t, bool, double, std::string>;
+  using VariantType = std::variant<
+    std::nullptr_t,
+    bool,
+    std::int64_t,
+    double,
+    std::string>;
 
   VariantType v_{};
 
-  template <typename T>
-  Value& set_numeric(T r) noexcept {
-    return v_ = static_cast<double>(r), *this;
+  template <typename T> std::int64_t integer_cast(T x) noexcept {
+    return static_cast<std::int64_t>(x);
+  }
+
+  template <typename T> Value& set_integer(T x) noexcept {
+    return v_ = static_cast<std::int64_t>(x), *this;
   }
 
   Value& set_string(const std::string& s) noexcept {
@@ -50,31 +59,61 @@ class Value : private Copyable {
     if (is_string() && r.is_string())
       return to_string() + r.to_string();
     else if (is_numeric() && r.is_numeric())
-      return to_numeric() + r.to_numeric();
-    return Value();
+      return binary_numeric(add(), r);
+    return nullptr;
   }
 
   Value add_string(const std::string& s) const {
     return to_string() + s;
   }
 
-  template <typename T>
-  Value add_numeric(T r) const { return to_numeric() + static_cast<double>(r); }
-  template <typename T>
-  Value sub_numeric(T r) const { return to_numeric() - static_cast<double>(r); }
-  template <typename T>
-  Value mul_numeric(T r) const { return to_numeric() * static_cast<double>(r); }
-  template <typename T>
-  Value div_numeric(T r) const { return to_numeric() / static_cast<double>(r); }
+  struct add {
+    template <typename X, typename Y>
+    Value operator()(X x, Y y) const { return x + y; }
+  };
+
+  struct sub {
+    template <typename X, typename Y>
+    Value operator()(X x, Y y) const { return x - y; }
+  };
+
+  struct mul {
+    template <typename X, typename Y>
+    Value operator()(X x, Y y) const { return x * y; }
+  };
+
+  struct div {
+    template <typename X, typename Y>
+    Value operator()(X x, Y y) const { return x / y; }
+  };
+
+  template <typename BinOp>
+  Value binary_numeric(BinOp&& op, const Value& r) const {
+    if (is_integer() && r.is_integer())
+      return op(to_integer(), r.to_integer());
+    else if (is_integer() && r.is_decimal())
+      return op(to_integer(), r.to_decimal());
+    else if (is_decimal() && r.is_integer())
+      return op(to_decimal(), r.to_integer());
+    else
+      return op(to_decimal(), r.to_decimal());
+  }
+
+  Value mod_numeric(const Value& r) const {
+    return to_integer() % r.to_integer();
+  }
 public:
   Value(void) noexcept : v_(nullptr) {}
+  Value(std::nullptr_t) noexcept : v_(nullptr) {}
   Value(bool b) noexcept : v_(b) {}
-  Value(int i) noexcept : v_(static_cast<double>(i)) {}
-  Value(unsigned int ui) noexcept : v_(static_cast<double>(ui)) {}
-  Value(long l) noexcept : v_(static_cast<double>(l)) {}
-  Value(unsigned long ul) noexcept : v_(static_cast<double>(ul)) {}
-  Value(long long ll) noexcept : v_(static_cast<double>(ll)) {}
-  Value(unsigned long long ull) noexcept : v_(static_cast<double>(ull)) {}
+  Value(std::int8_t i8) noexcept : v_(integer_cast(i8)) {}
+  Value(std::uint8_t u8) noexcept : v_(integer_cast(u8)) {}
+  Value(std::int16_t i16) noexcept : v_(integer_cast(i16)) {}
+  Value(std::uint16_t u16) noexcept : v_(integer_cast(u16)) {}
+  Value(std::int32_t i32) noexcept : v_(integer_cast(i32)) {}
+  Value(std::uint32_t u32) noexcept : v_(integer_cast(u32)) {}
+  Value(std::int64_t i64) noexcept : v_(i64) {}
+  Value(std::uint64_t u64) noexcept : v_(integer_cast(u64)) {}
   Value(double d) noexcept : v_(d) {}
   Value(const char* s) noexcept : v_(std::string(s)) {}
   Value(const std::string& s) noexcept : v_(s) {}
@@ -83,15 +122,20 @@ public:
 
   bool is_nil(void) const { return std::holds_alternative<std::nullptr_t>(v_); }
   bool is_boolean(void) const { return std::holds_alternative<bool>(v_); }
-  bool is_numeric(void) const { return std::holds_alternative<double>(v_); }
+  bool is_integer(void) const { return std::holds_alternative<std::int64_t>(v_); }
+  bool is_decimal(void) const { return std::holds_alternative<double>(v_); }
   bool is_string(void) const { return std::holds_alternative<std::string>(v_); }
 
+  bool is_numeric(void) const { return is_integer() || is_decimal(); }
+
   bool to_boolean(void) const { return std::get<bool>(v_); }
-  double to_numeric(void) const { return std::get<double>(v_); }
+  std::int64_t to_integer(void) const { return std::get<std::int64_t>(v_); }
+  double to_decimal(void) const { return std::get<double>(v_); }
   std::string to_string(void) const { return std::get<std::string>(v_); }
 
   operator bool(void) const { return to_boolean(); }
-  operator double(void) const { return to_numeric(); }
+  operator std::int64_t(void) const { return to_integer(); }
+  operator double(void) const { return to_decimal(); }
   operator std::string(void) const { return to_string(); }
 
   bool operator==(const Value& r) const { return v_ == r.v_; }
@@ -102,60 +146,37 @@ public:
   bool operator>=(const Value& r) const { return v_ >= r.v_; }
 
   Value operator+(const Value& r) const { return add_operation(r); }
-  Value operator+(int i) const { return add_numeric(i); }
-  Value operator+(unsigned int ui) const { return add_numeric(ui); }
-  Value operator+(long l) const { return add_numeric(l); }
-  Value operator+(unsigned long ul) const { return add_numeric(ul); }
-  Value operator+(long long ll) const { return add_numeric(ll); }
-  Value operator+(unsigned long long ull) const { return add_numeric(ull); }
-  Value operator+(double d) const { return add_numeric(d); }
-  Value operator+(const char* s) const { return add_string(s); }
-  Value operator+(const std::string& s) const { return add_string(s); }
-  Value operator-(const Value& r) const { return to_numeric() - r.to_numeric(); }
-  Value operator-(int i) const { return sub_numeric(i); }
-  Value operator-(unsigned int ui) const { return sub_numeric(ui); }
-  Value operator-(long l) const { return sub_numeric(l); }
-  Value operator-(unsigned long ul) const { return sub_numeric(ul); }
-  Value operator-(long long ll) const { return sub_numeric(ll); }
-  Value operator-(unsigned long long ull) const { return sub_numeric(ull); }
-  Value operator-(double d) const { return sub_numeric(d); }
-  Value operator*(const Value& r) const { return to_numeric() * r.to_numeric(); }
-  Value operator*(int i) const { return mul_numeric(i); }
-  Value operator*(unsigned int ui) const { return mul_numeric(ui); }
-  Value operator*(long l) const { return mul_numeric(l); }
-  Value operator*(unsigned long ul) const { return mul_numeric(ul); }
-  Value operator*(long long ll) const { return mul_numeric(ll); }
-  Value operator*(unsigned long long ull) const { return mul_numeric(ull); }
-  Value operator*(double d) const { return mul_numeric(d); }
-  Value operator/(const Value& r) const { return to_numeric() / r.to_numeric(); }
-  Value operator/(int i) const { return div_numeric(i); }
-  Value operator/(unsigned int ui) const { return div_numeric(ui); }
-  Value operator/(long l) const { return div_numeric(l); }
-  Value operator/(unsigned long ul) const { return div_numeric(ul); }
-  Value operator/(long long ll) const { return div_numeric(ll); }
-  Value operator/(unsigned long long ull) const { return div_numeric(ull); }
-  Value operator/(double d) const { return div_numeric(d); }
-  Value& operator+=(const Value& r) { *this = *this + r; return *this; }
-  Value& operator-=(const Value& r) { *this = *this - r; return *this; }
-  Value& operator*=(const Value& r) { *this = *this * r; return *this; }
-  Value& operator/=(const Value& r) { *this = *this / r; return *this; }
+  Value operator-(const Value& r) const { return binary_numeric(sub(), r); }
+  Value operator*(const Value& r) const { return binary_numeric(mul(), r); }
+  Value operator/(const Value& r) const { return binary_numeric(div(), r); }
+  Value operator%(const Value& r) const { return mod_numeric(r); }
+  Value& operator+=(const Value& r) { return *this = *this + r, *this; }
+  Value& operator-=(const Value& r) { return *this = *this - r, *this; }
+  Value& operator*=(const Value& r) { return *this = *this * r, *this; }
+  Value& operator/=(const Value& r) { return *this = *this / r, *this; }
+  Value& operator%=(const Value& r) { return *this = *this % r, *this; }
 
   Value& operator=(const Value& r) noexcept { return v_ = r.v_, *this; }
   Value& operator=(Value&& r) noexcept { return v_ = std::move(r.v_), *this; }
   Value& operator=(std::nullptr_t) noexcept { return v_ = nullptr, *this; }
   Value& operator=(bool b) noexcept { return v_ = b, *this; }
-  Value& operator=(int i) noexcept { return set_numeric(i); }
-  Value& operator=(unsigned int ui) noexcept { return set_numeric(ui); }
-  Value& operator=(long l) noexcept { return set_numeric(l); }
-  Value& operator=(unsigned long ul) noexcept { return set_numeric(ul); }
-  Value& operator=(long long ll) noexcept { return set_numeric(ll); }
-  Value& operator=(unsigned long long ull) noexcept { return set_numeric(ull); }
+  Value& operator=(std::int8_t i8) noexcept { return set_integer(i8); }
+  Value& operator=(std::uint8_t u8) noexcept { return set_integer(u8); }
+  Value& operator=(std::int16_t i16) noexcept { return set_integer(i16); }
+  Value& operator=(std::uint16_t u16) noexcept { return set_integer(u16); }
+  Value& operator=(std::int32_t i32) noexcept { return set_integer(i32); }
+  Value& operator=(std::uint32_t u32) noexcept { return set_integer(u32); }
+  Value& operator=(std::int64_t i64) noexcept { return set_integer(i64); }
+  Value& operator=(std::uint64_t u64) noexcept { return set_integer(u64); }
   Value& operator=(double d) noexcept { return v_ = d, *this; }
   Value& operator=(const char* s) noexcept { return set_string(s); }
-  Value& operator=(const std::string& s) noexcept { return v_ = s, *this; }
+  Value& operator=(const std::string& s) noexcept { return set_string(s); }
 
   bool is_truthy(void) const;
   std::string stringify(void) const;
+  std::string type(void) const;
 };
+
+std::ostream& operator<<(std::ostream& out, const Value& r);
 
 }
