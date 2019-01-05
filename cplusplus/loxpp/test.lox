@@ -179,3 +179,50 @@ var a = "global";
 // {
 //   var a = a;
 // }
+
+/////////////////////////////////////////////////
+// test class
+/////////////////////////////////////////////////
+print "\n>>>>>>>>>>>>>>>>>> CLASS TEST";
+class Breakfast {
+  cook() {
+    print "Eggs a fryin!";
+  }
+
+  serve(who) {
+    print "Enjoy your Breakfast, " + who + " ...";
+  }
+}
+print Breakfast;
+
+var bf = Breakfast();
+print bf;
+
+bf.name = "<bf>";
+print bf.name;
+bf.cook();
+bf.serve("Jack");
+
+class English {
+  speak() {
+    this.x = 100;
+    this.y = 200;
+    this.speak_msg("This is a test !!!");
+  }
+
+  speak_msg(msg) {
+    print "English - " + msg;
+    print this.x;
+    print this.y;
+  }
+}
+var eng = English();
+eng.speak();
+
+class Foo {
+  ctor() {
+    print this;
+  }
+}
+var foo = Foo();
+print foo.ctor();
