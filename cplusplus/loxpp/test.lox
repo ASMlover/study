@@ -226,3 +226,43 @@ class Foo {
 }
 var foo = Foo();
 print foo.ctor();
+
+/////////////////////////////////////////////////
+// test class inheritance
+/////////////////////////////////////////////////
+print "\n>>>>>>>>>>>>>>>>>> CLASS INHERITANCE TEST";
+class Base {
+  show() {
+    print "This is show function in class <Base>";
+  }
+}
+var NotClass = "It's not a class";
+class Child < Base {
+  show() {
+    super.show();
+    print "This is show function in class <Child>";
+  }
+}
+
+var c = Child();
+c.show();
+
+class A {
+  method() {
+    print "class A method";
+  }
+}
+
+class B < A {
+  method() {
+    super.method();
+    print "class B method";
+  }
+  test() {
+    super.method();
+  }
+}
+
+class C < B {}
+C().test();
+C().method();
