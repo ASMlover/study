@@ -44,11 +44,13 @@ class Interpreter
   Value value_;
   EnvironmentPtr globals_;
   EnvironmentPtr environment_;
+  std::unordered_map<ExprPtr, int> locals_;
 
   Value evaluate(const ExprPtr& expr);
   void evaluate(const StmtPtr& stmt);
   void evaluate_block(
       const std::vector<StmtPtr>& stmts, const EnvironmentPtr& environment);
+  Value lookup_variable(const Token& name, const ExprPtr& expr);
   void check_numeric_operand(const Token& oper, const Value& operand);
   void check_numeric_operands(
       const Token& oper, const Value& left, const Value& right);
@@ -99,4 +101,5 @@ public:
 
   void interpret(const ExprPtr& expr);
   void interpret(const std::vector<StmtPtr>& stmts);
+  void resolve(const ExprPtr& expr, int depth);
 };

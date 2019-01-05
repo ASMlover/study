@@ -30,13 +30,18 @@
 #include "callable.h"
 #include "stmt.h"
 
+class Environment;
+
 class LoxFunction : public Callable {
   using FunctionStmtPtr = std::shared_ptr<FunctionStmt>;
+  using EnvironmentPtr = std::shared_ptr<Environment>;
 
   FunctionStmtPtr declaration_;
+  EnvironmentPtr closure_;
 public:
-  LoxFunction(const FunctionStmtPtr& fun)
-    : declaration_(fun) {
+  LoxFunction(const FunctionStmtPtr& decl, const EnvironmentPtr& closure)
+    : declaration_(decl)
+    , closure_(closure) {
   }
 
   virtual Value call(

@@ -62,6 +62,13 @@ void Interpreter::evaluate_block(
   environment_ = origin_env;
 }
 
+Value Interpreter::lookup_variable(const Token& name, const ExprPtr& expr) {
+  if (locals_.count(expr))
+    return environment_->get_at(locals_[expr], name);
+  else
+    return globals_->get(name);
+}
+
 void Interpreter::check_numeric_operand(
     const Token& oper, const Value& operand) {
   if (!operand.is_numeric())
@@ -76,7 +83,11 @@ void Interpreter::check_numeric_operands(
 
 void Interpreter::visit_assign_expr(const AssignPtr& expr) {
   Value value = evaluate(expr->value_);
-  environment_->assign(expr->name_, value);
+
+  if (locals_.count(expr))
+    environment_->assign_at(locals_[expr], expr->name_, value);
+  else
+    environment_->assign(expr->name_, value);
 }
 
 void Interpreter::visit_binary_expr(const BinaryPtr& expr) {
@@ -199,7 +210,7 @@ void Interpreter::visit_unary_expr(const UnaryPtr& expr) {
 }
 
 void Interpreter::visit_variable_expr(const VariablePtr& expr) {
-  value_ = environment_->get(expr->name_);
+  value_ = lookup_variable(expr->name_, expr);
 }
 
 void Interpreter::visit_function_expr(const FunctionPtr& expr) {
@@ -241,7 +252,7 @@ void Interpreter::visit_while_stmt(const WhileStmtPtr& stmt) {
 }
 
 void Interpreter::visit_function_stmt(const FunctionStmtPtr& stmt) {
-  auto fun = std::make_shared<LoxFunction>(stmt);
+  auto fun = std::make_shared<LoxFunction>(stmt, environment_);
   environment_->define_var(stmt->name_.get_lexeme(), Value(fun));
 }
 
@@ -275,4 +286,8 @@ void Interpreter::interpret(const std::vector<StmtPtr>& stmts) {
   catch (const RuntimeError& e) {
     err_report_.error(e.get_token(), e.get_message());
   }
+}
+
+void Interpreter::resolve(const ExprPtr& expr, int depth) {
+  locals_[expr] = depth;
 }

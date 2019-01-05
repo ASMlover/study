@@ -27,6 +27,13 @@
 #include "runtime_error.h"
 #include "environment.h"
 
+EnvironmentPtr Environment::ancestor(int distance) {
+  EnvironmentPtr envp(shared_from_this());
+  for (int i = 0; i < distance; ++i)
+    envp = envp->enclosing_;
+  return envp;
+}
+
 void Environment::assign(const Token& name, const Value& value) {
   std::string key = name.get_lexeme();
   if (values_.find(key) != values_.end()) {
@@ -40,6 +47,11 @@ void Environment::assign(const Token& name, const Value& value) {
   }
 
   throw new RuntimeError(name, "undefined variable `" + key + "` ...");
+}
+
+void Environment::assign_at(
+    int distance, const Token& name, const Value& value) {
+  ancestor(distance)->assign(name, value);
 }
 
 void Environment::define_var(const std::string& name, const Value& value) {
@@ -56,4 +68,8 @@ Value Environment::get(const Token& name) const {
 
   throw new RuntimeError(name,
       "undefined variable `" + name.get_lexeme() + "` ...");
+}
+
+Value Environment::get_at(int distance, const Token& name) {
+  return ancestor(distance)->get(name);
 }

@@ -35,6 +35,7 @@
 #include "parser.h"
 #include "ast_printer.h"
 #include "interpreter.h"
+#include "resolver.h"
 
 static ErrorReporter err_reporter;
 static std::shared_ptr<Interpreter> interp = std::make_shared<Interpreter>(err_reporter);
@@ -55,11 +56,17 @@ static void run(const std::string& source) {
   Parser p(tokens);
   auto stmts = p.parse_stmt();
 
-  // auto interp = std::make_shared<Interpreter>(err_reporter);
+  auto resolver = std::make_shared<Resolver>(err_reporter, interp);
+  resolver->resolve(stmts);
+  if (err_reporter.had_error())
+    return;
+    // std::abort();
+
   interp->interpret(stmts);
 
   if (err_reporter.had_error())
-    std::abort();
+    return;
+    // std::abort();
 }
 
 static void repl(void) {

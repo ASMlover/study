@@ -31,7 +31,7 @@
 
 Value LoxFunction::call(
     const InterpreterPtr& interp, const std::vector<Value>& args) {
-  auto env = std::make_shared<Environment>(interp->get_globals());
+  auto env = std::make_shared<Environment>(closure_);
   auto& params = declaration_->function_->params_;
   std::size_t n = params.size();
   for (std::size_t i = 0; i < n; ++i)

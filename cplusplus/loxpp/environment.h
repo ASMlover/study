@@ -32,17 +32,22 @@
 #include "value.h"
 #include "token.h"
 
-class Environment {
-  using EnvironmentPtr = std::shared_ptr<Environment>;
+class Environment;
+using EnvironmentPtr = std::shared_ptr<Environment>;
 
+class Environment : public std::enable_shared_from_this<Environment> {
   EnvironmentPtr enclosing_{};
   std::unordered_map<std::string, Value> values_;
+
+  EnvironmentPtr ancestor(int distance);
 public:
   Environment(const EnvironmentPtr& enclosing)
     : enclosing_(enclosing) {
   }
 
   void assign(const Token& name, const Value& value);
+  void assign_at(int distance, const Token& name, const Value& value);
   void define_var(const std::string& name, const Value& value);
   Value get(const Token& name) const;
+  Value get_at(int distance, const Token& name);
 };
