@@ -78,9 +78,28 @@ char Scanner::peek_next(void) const {
 }
 
 void Scanner::add_string(void) {
+  std::string literal;
   while (peek() != '"' && !is_at_end()) {
-    if (peek() == '\n')
-      ++line_;
+    char c = peek();
+    switch (c) {
+    case '\n': ++line_; break;
+    case '\\':
+      switch (peek_next()) {
+      case '"': c = '"';  advance(); break;
+      case '\\': c = '\\'; advance(); break;
+      case '%': c = '%'; advance(); break;
+      case '0': c = '\0'; advance(); break;
+      case 'a': c = '\a'; advance(); break;
+      case 'b': c = '\b'; advance(); break;
+      case 'f': c = '\f'; advance(); break;
+      case 'n': c = '\n'; advance(); break;
+      case 'r': c = '\r'; advance(); break;
+      case 't': c = '\t'; advance(); break;
+      case 'v': c = '\v'; advance(); break;
+      }
+      break;
+    }
+    literal.push_back(c);
     advance();
   }
 
@@ -94,8 +113,7 @@ void Scanner::add_string(void) {
   advance();
 
   // trim the surround quotes
-  auto lexeme = get_lexeme(source_, start_ + 1, current_ - 1);
-  tokens_.push_back(Token(TOKEN_STRING, lexeme, line_));
+  tokens_.push_back(Token(TOKEN_STRING, literal, line_));
 }
 
 void Scanner::add_number(void) {
