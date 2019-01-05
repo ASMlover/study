@@ -46,7 +46,7 @@ std::string LoxClass::to_string(void) const {
 std::shared_ptr<LoxFunction> LoxClass::get_method(
     const std::shared_ptr<LoxInstance>& inst, const std::string& name) {
   if (methods_.count(name))
-    return methods_[name];
+    return methods_[name]->bind(inst);
 
   return nullptr;
 }

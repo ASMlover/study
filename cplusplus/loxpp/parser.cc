@@ -276,6 +276,8 @@ ExprPtr Parser::primary(void) {
     return std::make_shared<Literal>(Value(prev().as_number()));
   if (match({TOKEN_STRING}))
     return std::make_shared<Literal>(Value(prev().as_string()));
+  if (match({TOKEN_THIS}))
+    return std::make_shared<This>(prev());
   if (match({TOKEN_IDENTIFIER}))
     return std::make_shared<Variable>(prev());
 

@@ -208,7 +208,7 @@ void Interpreter::visit_super_expr(const SuperPtr& expr) {
 }
 
 void Interpreter::visit_this_expr(const ThisPtr& expr) {
-  // TODO:
+  value_ = lookup_variable(expr->keyword_, expr);
 }
 
 void Interpreter::visit_unary_expr(const UnaryPtr& expr) {

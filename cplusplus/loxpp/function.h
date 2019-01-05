@@ -31,10 +31,13 @@
 #include "stmt.h"
 
 class Environment;
+class LoxInstance;
 
 class LoxFunction : public Callable {
   using FunctionStmtPtr = std::shared_ptr<FunctionStmt>;
   using EnvironmentPtr = std::shared_ptr<Environment>;
+  using LoxFunctionPtr = std::shared_ptr<LoxFunction>;
+  using LoxInstancePtr = std::shared_ptr<LoxInstance>;
 
   FunctionStmtPtr declaration_;
   EnvironmentPtr closure_;
@@ -48,4 +51,6 @@ public:
       const InterpreterPtr& interp, const std::vector<Value>& args) override;
   virtual int arity(void) const override;
   virtual std::string to_string(void) const override;
+
+  LoxFunctionPtr bind(const LoxInstancePtr& inst);
 };

@@ -27,6 +27,7 @@
 #include "return.h"
 #include "environment.h"
 #include "interpreter.h"
+#include "instance.h"
 #include "function.h"
 
 Value LoxFunction::call(
@@ -53,4 +54,10 @@ int LoxFunction::arity(void) const {
 
 std::string LoxFunction::to_string(void) const {
   return "<fn " + declaration_->name_.get_lexeme() + ">";
+}
+
+LoxFunction::LoxFunctionPtr LoxFunction::bind(const LoxInstancePtr& inst) {
+  EnvironmentPtr envp = std::make_shared<Environment>(closure_);
+  envp->define_var("this", inst);
+  return std::make_shared<LoxFunction>(declaration_, envp);
 }

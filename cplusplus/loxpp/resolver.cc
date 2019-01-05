@@ -70,7 +70,7 @@ void Resolver::visit_super_expr(const SuperPtr& expr) {
 }
 
 void Resolver::visit_this_expr(const ThisPtr& expr) {
-  // TODO:
+  resolve_local(expr, expr->keyword_);
 }
 
 void Resolver::visit_unary_expr(const UnaryPtr& expr) {
@@ -146,9 +146,14 @@ void Resolver::visit_class_stmt(const ClassStmtPtr& stmt) {
   declare(stmt->name_);
   define_token(stmt->name_);
 
+  begin_scope();
+  scopes_.back()["this"] = true;
+
   for (auto& meth : stmt->methods_) {
     resolve_function(meth, FunType::METHOD);
   }
+
+  end_scope();
 }
 
 void Resolver::resolve(const ExprPtr& expr) {
