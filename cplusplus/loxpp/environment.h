@@ -45,6 +45,10 @@ public:
     : enclosing_(enclosing) {
   }
 
+  EnvironmentPtr get_enclosing(void) const {
+    return enclosing_;
+  }
+
   void assign(const Token& name, const Value& value);
   void assign_at(int distance, const Token& name, const Value& value);
   void define_var(const std::string& name, const Value& value);

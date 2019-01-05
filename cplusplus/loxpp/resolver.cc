@@ -66,7 +66,16 @@ void Resolver::visit_logical_expr(const LogicalPtr& expr) {
 }
 
 void Resolver::visit_super_expr(const SuperPtr& expr) {
-  // TODO:
+  if (curr_class_ == ClassType::NONE) {
+    err_report_.error(expr->keyword_,
+        "cannot use `super` out of a class ...");
+  }
+  else if (curr_class_ != ClassType::SUBCLASS) {
+    err_report_.error(expr->keyword_,
+        "cannot use `super` in a class with no superclass ...");
+  }
+
+  resolve_local(expr, expr->keyword_);
 }
 
 void Resolver::visit_this_expr(const ThisPtr& expr) {
@@ -159,21 +168,29 @@ void Resolver::visit_class_stmt(const ClassStmtPtr& stmt) {
   curr_class_ = ClassType::CLASS;
 
   declare(stmt->name_);
-  define_token(stmt->name_);
+  if (stmt->super_class_) {
+    curr_class_ = ClassType::SUBCLASS;
+    resolve(stmt->super_class_);
+
+    begin_scope();
+    scopes_.back()["super"] = true;
+  }
 
   begin_scope();
   scopes_.back()["this"] = true;
-
   for (auto& meth : stmt->methods_) {
     FunType ft = FunType::METHOD;
     if (meth->name_.get_lexeme() == "ctor")
       ft = FunType::CTOR;
     resolve_function(meth, ft);
   }
-
   end_scope();
 
+  if (stmt->super_class_)
+    end_scope();
+
   curr_class_ = enclosing_class;
+  define_token(stmt->name_);
 }
 
 void Resolver::resolve(const ExprPtr& expr) {

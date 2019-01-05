@@ -204,7 +204,23 @@ void Interpreter::visit_logical_expr(const LogicalPtr& expr) {
 }
 
 void Interpreter::visit_super_expr(const SuperPtr& expr) {
-  // TODO:
+  using LoxClassPtr = std::shared_ptr<LoxClass>;
+  using LoxInstancePtr = std::shared_ptr<LoxInstance>;
+  using LoxFunctionPtr = std::shared_ptr<LoxFunction>;
+
+  int distance = locals_[expr];
+  LoxClassPtr super_class = std::static_pointer_cast<LoxClass>(
+      environment_->get_at(distance, "super").to_callable());
+  LoxInstancePtr object = std::static_pointer_cast<LoxInstance>(
+      environment_->get_at(distance - 1, "this").to_instance());
+  LoxFunctionPtr method =
+    super_class->get_method(object, expr->method_.get_lexeme());
+
+  if (!method) {
+    throw new RuntimeError(expr->method_,
+        "undefined property `" + expr->method_.get_lexeme() + "` ...");
+  }
+  value_ = Value(method);
 }
 
 void Interpreter::visit_this_expr(const ThisPtr& expr) {
@@ -279,9 +295,28 @@ void Interpreter::visit_return_stmt(const ReturnStmtPtr& stmt) {
 
 void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {
   using LoxFunctionPtr = std::shared_ptr<LoxFunction>;
+  using LoxClassPtr = std::shared_ptr<LoxClass>;
+
+  Value super_class_val;
+  LoxClassPtr super_class;
+  if (stmt->super_class_) {
+    super_class_val = evaluate(stmt->super_class_);
+    if (super_class_val.is_callable()
+        && std::dynamic_pointer_cast<LoxClass>(super_class_val.to_callable())) {
+      super_class = std::static_pointer_cast<LoxClass>(super_class_val.to_callable());
+    }
+    else {
+      throw new RuntimeError(stmt->name_, "super class must be a class ...");
+    }
+  }
 
   std::string class_name = stmt->name_.get_lexeme();
   environment_->define_var(class_name, Value());
+
+  if (stmt->super_class_) {
+    environment_ = std::make_shared<Environment>(environment_);
+    environment_->define_var("super", super_class_val);
+  }
 
   std::unordered_map<std::string, LoxFunctionPtr> methods;
   for (auto& meth : stmt->methods_) {
@@ -290,7 +325,9 @@ void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {
     methods[meth->name_.get_lexeme()] = fun;
   }
 
-  auto klass = std::make_shared<LoxClass>(class_name, methods);
+  auto klass = std::make_shared<LoxClass>(class_name, super_class, methods);
+  if (!super_class_val.is_nil())
+    environment_ = environment_->get_enclosing();
   environment_->assign(stmt->name_, Value(klass));
 }
 

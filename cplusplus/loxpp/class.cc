@@ -53,5 +53,8 @@ std::shared_ptr<LoxFunction> LoxClass::get_method(
   if (methods_.count(name))
     return methods_[name]->bind(inst);
 
+  if (super_class_)
+    return super_class_->get_method(inst, name);
+
   return nullptr;
 }

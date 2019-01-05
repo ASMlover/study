@@ -264,7 +264,7 @@ ExprPtr Parser::finish_call(const ExprPtr& callee) {
 
 ExprPtr Parser::primary(void) {
   // primary -> NUMBER | STRING | "true" | "false" | "nil" | "this"
-  //            |"(" expression ")" | IDENTIFILER;
+  //            |"(" expression ")" | "super" "." IDENTIFILER ;
 
   if (match({TOKEN_FALSE}))
     return std::make_shared<Literal>(Value(false));
@@ -276,6 +276,13 @@ ExprPtr Parser::primary(void) {
     return std::make_shared<Literal>(Value(prev().as_number()));
   if (match({TOKEN_STRING}))
     return std::make_shared<Literal>(Value(prev().as_string()));
+  if (match({TOKEN_SUPER})) {
+    Token keyword = prev();
+    consume(TOKEN_DOT, "expect `.` after keyword `super` ...");
+    Token method = consume(TOKEN_IDENTIFIER,
+        "expect superclass method name ...");
+    return std::make_shared<Super>(keyword, method);
+  }
   if (match({TOKEN_THIS}))
     return std::make_shared<This>(prev());
   if (match({TOKEN_IDENTIFIER}))
@@ -316,13 +323,19 @@ StmtPtr Parser::declaration(void) {
 }
 
 StmtPtr Parser::class_declaration(void) {
-  // class_decl -> "class" IDENTIFILER "{" function* "}" ;
+  // class_decl -> "class" IDENTIFILER ( "<" IDENTIFILER )? "{" function* "}" ;
 
   using FunctionStmtPtr = std::shared_ptr<FunctionStmt>;
+  using VariablePtr = std::shared_ptr<Variable>;
 
   Token name = consume(TOKEN_IDENTIFIER, "expect class name ...");
-  consume(TOKEN_LEFT_BRACE, "expect `{` before class body ...");
+  VariablePtr super_class;
+  if (match({TOKEN_LESS})) {
+    consume(TOKEN_IDENTIFIER, "expect superclass name ...");
+    super_class = std::make_shared<Variable>(prev());
+  }
 
+  consume(TOKEN_LEFT_BRACE, "expect `{` before class body ...");
   std::vector<FunctionStmtPtr> methods;
   while (!is_end() && !check(TOKEN_RIGHT_BRACE)) {
     methods.push_back(
@@ -330,7 +343,7 @@ StmtPtr Parser::class_declaration(void) {
   }
   consume(TOKEN_RIGHT_BRACE, "expect `}` after class body ...");
 
-  return std::make_shared<ClassStmt>(name, nullptr, methods);
+  return std::make_shared<ClassStmt>(name, super_class, methods);
 }
 
 StmtPtr Parser::fun_declaration(const std::string& kind) {

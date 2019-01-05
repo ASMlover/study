@@ -37,12 +37,16 @@ class LoxInstance;
 class LoxClass
   : public Callable, public std::enable_shared_from_this<LoxClass> {
   using MethodMap = std::unordered_map<std::string, std::shared_ptr<LoxFunction>>;
+  using LoxClassPtr = std::shared_ptr<LoxClass>;
 
   std::string name_;
+  LoxClassPtr super_class_;
   MethodMap methods_;
 public:
-  LoxClass(const std::string& name, const MethodMap& methods)
+  LoxClass(const std::string& name,
+      const LoxClassPtr& super_class, const MethodMap& methods)
     : name_(name)
+    , super_class_(super_class)
     , methods_(methods) {
   }
 
