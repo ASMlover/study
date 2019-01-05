@@ -69,6 +69,7 @@ class Parser {
   ExprPtr arguments(void);
 
   StmtPtr declaration(void);
+  StmtPtr class_declaration(void);
   StmtPtr fun_declaration(const std::string& kind);
   FunctionPtr function(const std::string& kind);
   StmtPtr parameters(void);

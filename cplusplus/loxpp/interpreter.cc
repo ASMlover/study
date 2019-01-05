@@ -28,6 +28,8 @@
 #include "return.h"
 #include "runtime_error.h"
 #include "function.h"
+#include "class.h"
+#include "instance.h"
 #include "interpreter.h"
 
 Value Interpreter::evaluate(const ExprPtr& expr) {
@@ -157,11 +159,22 @@ void Interpreter::visit_call_expr(const CallPtr& expr) {
 }
 
 void Interpreter::visit_get_expr(const GetPtr& expr) {
-  // TODO:
+  Value object = evaluate(expr->object_);
+  if (object.is_instance())
+    value_ = object.to_instance()->get_attr(expr->name_);
+  else
+    throw new RuntimeError(expr->name_, "only instances have properties ...");
 }
 
 void Interpreter::visit_set_expr(const SetPtr& expr) {
-  // TODO:
+  Value object = evaluate(expr->object_);
+  if (object.is_instance()) {
+    Value value = evaluate(expr->value_);
+    object.to_instance()->set_attr(expr->name_, value);
+  }
+  else {
+    throw new RuntimeError(expr->name_, "only instances have fields ...");
+  }
 }
 
 void Interpreter::visit_grouping_expr(const GroupingPtr& expr) {
@@ -265,7 +278,19 @@ void Interpreter::visit_return_stmt(const ReturnStmtPtr& stmt) {
 }
 
 void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {
-  // TODO:
+  using LoxFunctionPtr = std::shared_ptr<LoxFunction>;
+
+  std::string class_name = stmt->name_.get_lexeme();
+  environment_->define_var(class_name, Value());
+
+  std::unordered_map<std::string, LoxFunctionPtr> methods;
+  for (auto& meth : stmt->methods_) {
+    LoxFunctionPtr fun = std::make_shared<LoxFunction>(meth, environment_);
+    methods[meth->name_.get_lexeme()] = fun;
+  }
+
+  auto klass = std::make_shared<LoxClass>(class_name, methods);
+  environment_->assign(stmt->name_, Value(klass));
 }
 
 void Interpreter::interpret(const ExprPtr& expr) {

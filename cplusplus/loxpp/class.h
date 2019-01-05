@@ -28,14 +28,22 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include "callable.h"
+
+class LoxFunction;
+class LoxInstance;
 
 class LoxClass
   : public Callable, public std::enable_shared_from_this<LoxClass> {
+  using MethodMap = std::unordered_map<std::string, std::shared_ptr<LoxFunction>>;
+
   std::string name_;
+  MethodMap methods_;
 public:
-  LoxClass(const std::string& name)
-    : name_(name) {
+  LoxClass(const std::string& name, const MethodMap& methods)
+    : name_(name)
+    , methods_(methods) {
   }
 
   std::string get_name(void) const {
@@ -46,4 +54,7 @@ public:
       const InterpreterPtr& interp, const std::vector<Value>& args) override;
   virtual int arity(void) const override;
   virtual std::string to_string(void) const override;
+
+  std::shared_ptr<LoxFunction> get_method(
+      const std::shared_ptr<LoxInstance>& inst, const std::string& name);
 };

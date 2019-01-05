@@ -28,6 +28,9 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include "token.h"
+#include "value.h"
 
 class LoxClass;
 
@@ -35,10 +38,13 @@ class LoxInstance : public std::enable_shared_from_this<LoxInstance> {
   using ClassPtr = std::shared_ptr<LoxClass>;
 
   ClassPtr class_;
+  std::unordered_map<std::string, Value> fields_;
 public:
   LoxInstance(const ClassPtr& cls)
     : class_(cls) {
   }
 
   std::string to_string(void) const;
+  void set_attr(const Token& name, const Value& value);
+  Value get_attr(const Token& name);
 };

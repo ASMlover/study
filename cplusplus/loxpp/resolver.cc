@@ -44,11 +44,12 @@ void Resolver::visit_call_expr(const CallPtr& expr) {
 }
 
 void Resolver::visit_get_expr(const GetPtr& expr) {
-  // TODO:
+  resolve(expr->object_);
 }
 
 void Resolver::visit_set_expr(const SetPtr& expr) {
-  // TODO:
+  resolve(expr->value_);
+  resolve(expr->object_);
 }
 
 void Resolver::visit_grouping_expr(const GroupingPtr& expr) {
@@ -142,7 +143,12 @@ void Resolver::visit_return_stmt(const ReturnStmtPtr& stmt) {
 }
 
 void Resolver::visit_class_stmt(const ClassStmtPtr& stmt) {
-  // TODO:
+  declare(stmt->name_);
+  define_token(stmt->name_);
+
+  for (auto& meth : stmt->methods_) {
+    resolve_function(meth, FunType::METHOD);
+  }
 }
 
 void Resolver::resolve(const ExprPtr& expr) {

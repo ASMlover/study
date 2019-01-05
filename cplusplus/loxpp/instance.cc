@@ -25,6 +25,8 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <sstream>
+#include "runtime_error.h"
+#include "function.h"
 #include "class.h"
 #include "instance.h"
 
@@ -32,4 +34,21 @@ std::string LoxInstance::to_string(void) const {
   std::stringstream ss;
   ss << "<instance `" << this << "` of " << class_->get_name() << ">";
   return ss.str();
+}
+
+void LoxInstance::set_attr(const Token& name, const Value& value) {
+  fields_[name.get_lexeme()] = value;
+}
+
+Value LoxInstance::get_attr(const Token& name) {
+  std::string key = name.get_lexeme();
+  auto it = fields_.find(key);
+  if (it != fields_.end())
+    return it->second;
+
+  auto method = class_->get_method(shared_from_this(), key);
+  if (method)
+    return Value(method);
+
+  throw new RuntimeError(name, "undefined property `" + key + "` ...");
 }

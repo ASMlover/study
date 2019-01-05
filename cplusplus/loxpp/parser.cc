@@ -122,7 +122,7 @@ ExprPtr Parser::expression(void) {
 }
 
 ExprPtr Parser::assignment(void) {
-  // assignment -> IDENTIFILER "=" assignment | logical_or;
+  // assignment -> ( call "." )? IDENTIFILER "=" assignment | logical_or;
 
   ExprPtr expr = logical_or();
   if (match({TOKEN_EQUAL})) {
@@ -132,6 +132,10 @@ ExprPtr Parser::assignment(void) {
     if (std::dynamic_pointer_cast<Variable>(expr)) {
       Token name = std::static_pointer_cast<Variable>(expr)->name_;
       return std::make_shared<Assign>(name, value);
+    }
+    else if (std::dynamic_pointer_cast<Get>(expr)) {
+      auto get = std::static_pointer_cast<Get>(expr);
+      return std::make_shared<Set>(get->object_, get->name_, value);
     }
 
     this->error(equals, "invalid assignment target ...");
@@ -223,14 +227,21 @@ ExprPtr Parser::unary(void) {
 }
 
 ExprPtr Parser::call(void) {
-  // call -> primary ( "(" arguments? ")" )* ;
+  // call -> primary ( "(" arguments? ")" | "." IDENTIFILER )* ;
 
   ExprPtr expr = primary();
   while (true) {
-    if (match({TOKEN_LEFT_PAREN}))
+    if (match({TOKEN_LEFT_PAREN})) {
       expr = finish_call(expr);
-    else
+    }
+    else if (match({TOKEN_DOT})) {
+      Token name = consume(TOKEN_IDENTIFIER,
+          "expect property name after `.` ...");
+      expr = std::make_shared<Get>(expr, name);
+    }
+    else {
       break;
+    }
   }
 
   return expr;
@@ -284,9 +295,11 @@ ExprPtr Parser::arguments(void) {
 }
 
 StmtPtr Parser::declaration(void) {
-  // declaration -> fun_decl | var_decl | statement ;
+  // declaration -> class_decl | fun_decl | var_decl | statement ;
 
   try {
+    if (match({TOKEN_CLASS}))
+      return class_declaration();
     if (match({TOKEN_FUN}))
       return fun_declaration("function");
     if (match({TOKEN_VAR}))
@@ -300,6 +313,24 @@ StmtPtr Parser::declaration(void) {
   }
 }
 
+StmtPtr Parser::class_declaration(void) {
+  // class_decl -> "class" IDENTIFILER "{" function* "}" ;
+
+  using FunctionStmtPtr = std::shared_ptr<FunctionStmt>;
+
+  Token name = consume(TOKEN_IDENTIFIER, "expect class name ...");
+  consume(TOKEN_LEFT_BRACE, "expect `{` before class body ...");
+
+  std::vector<FunctionStmtPtr> methods;
+  while (!is_end() && !check(TOKEN_RIGHT_BRACE)) {
+    methods.push_back(
+        std::static_pointer_cast<FunctionStmt>(fun_declaration("method")));
+  }
+  consume(TOKEN_RIGHT_BRACE, "expect `}` after class body ...");
+
+  return std::make_shared<ClassStmt>(name, nullptr, methods);
+}
+
 StmtPtr Parser::fun_declaration(const std::string& kind) {
   // fun_decl -> "fun" function ;
 
@@ -309,6 +340,7 @@ StmtPtr Parser::fun_declaration(const std::string& kind) {
 
 FunctionPtr Parser::function(const std::string& kind) {
   // function -> IDENTIFILER "(" parameters? ")" block ;
+  // parameters -> IDENTIFILER ( "," IDENTIFILER )* ;
 
   consume(TOKEN_LEFT_PAREN, "expect `(` after " + kind + " name ...");
   std::vector<Token> params;

@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "function.h"
 #include "instance.h"
 #include "class.h"
 
@@ -39,4 +40,13 @@ int LoxClass::arity(void) const {
 
 std::string LoxClass::to_string(void) const {
   return "<class " + name_ + ">";
+}
+
+
+std::shared_ptr<LoxFunction> LoxClass::get_method(
+    const std::shared_ptr<LoxInstance>& inst, const std::string& name) {
+  if (methods_.count(name))
+    return methods_[name];
+
+  return nullptr;
 }
