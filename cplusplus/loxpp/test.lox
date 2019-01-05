@@ -2,14 +2,14 @@
 /////////////////////////////////////////////////
 // test assignment and print
 /////////////////////////////////////////////////
-print ">>>>>>>>>>>>>>>>>> ASSIGNMENT TEST";
+print "\n>>>>>>>>>>>>>>>>>> ASSIGNMENT TEST";
 var s = "Hello, world!";
 print s;
 
 /////////////////////////////////////////////////
 // test block
 /////////////////////////////////////////////////
-print ">>>>>>>>>>>>>>>>>> BLOCKS TEST";
+print "\n>>>>>>>>>>>>>>>>>> BLOCKS TEST";
 {
   var s = "in first block";
   print s;
@@ -34,7 +34,7 @@ print b;
 /////////////////////////////////////////////////
 // test `if` statement condition logical
 /////////////////////////////////////////////////
-print ">>>>>>>>>>>>>>>>>> IF CONDITION TEST";
+print "\n>>>>>>>>>>>>>>>>>> IF CONDITION TEST";
 if (true) {
   print "IF BRANCH";
   if (a + b)
@@ -52,7 +52,7 @@ if (false) {
 /////////////////////////////////////////////////
 // test `and` and `or` logical operators
 /////////////////////////////////////////////////
-print ">>>>>>>>>>>>>>>>>> LOGICAL OPERATORS TEST";
+print "\n>>>>>>>>>>>>>>>>>> LOGICAL OPERATORS TEST";
 print "Hello" or "world!";
 print nil or "yes";
 print "Hello" and "world!";
@@ -61,7 +61,7 @@ print nil and "yes" or "no";
 /////////////////////////////////////////////////
 // test `while` logical
 /////////////////////////////////////////////////
-print ">>>>>>>>>>>>>>>>>> WHILE LOOP LOGICAL TEST";
+print "\n>>>>>>>>>>>>>>>>>> WHILE LOOP LOGICAL TEST";
 var count = 10;
 var while_cond = true;
 while (while_cond) {
@@ -77,7 +77,7 @@ while (while_cond) {
 /////////////////////////////////////////////////
 // test `for` logical
 /////////////////////////////////////////////////
-print ">>>>>>>>>>>>>>>>>> FOR LOOP LOGICAL TEST";
+print "\n>>>>>>>>>>>>>>>>>> FOR LOOP LOGICAL TEST";
 for (var i = 0; i < 10; i = i + 1) {
   print i * i;
 }
@@ -85,7 +85,7 @@ for (var i = 0; i < 10; i = i + 1) {
 /////////////////////////////////////////////////
 // test native function
 /////////////////////////////////////////////////
-print ">>>>>>>>>>>>>>>>>> NATIVE FUNCTION TEST";
+print "\n>>>>>>>>>>>>>>>>>> NATIVE FUNCTION TEST";
 var beg = clock();
 for (var i = 0; i < 10; i = i + 1) {
   print i * i * i;
@@ -95,7 +95,7 @@ print clock() - beg;
 /////////////////////////////////////////////////
 // test function
 /////////////////////////////////////////////////
-print ">>>>>>>>>>>>>>>>>> FUNCTION TEST";
+print "\n>>>>>>>>>>>>>>>>>> FUNCTION TEST";
 fun count(n) {
   if (n > 1)
     count(n - 1);
@@ -117,12 +117,65 @@ say_hello("Dear", "LOX");
 /////////////////////////////////////////////////
 // test function return
 /////////////////////////////////////////////////
-print ">>>>>>>>>>>>>>>>>> FUNCTION RETURN TEST";
+print "\n>>>>>>>>>>>>>>>>>> FUNCTION RETURN TEST";
 fun fibonacci(n) {
   if (n <= 1)
     return n;
   return fibonacci(n - 2) + fibonacci(n - 1);
 }
- for (var i = 0; i < 10; i = i + 1) {
-   print fibonacci(i);
- }
+for (var i = 0; i < 10; i = i + 1) {
+  print fibonacci(i);
+}
+
+/////////////////////////////////////////////////
+// test function closure
+/////////////////////////////////////////////////
+print "\n>>>>>>>>>>>>>>>>>> FUNCTION CLOSURE TEST";
+fun make_counter() {
+  var i = 0;
+  fun _count() {
+    i = i + 1;
+    print i;
+  }
+  return _count;
+}
+var counter = make_counter();
+counter();
+counter();
+
+fun make_point(x, y) {
+  fun _closure(method) {
+    if (method == "x")
+      return x;
+    if (method == "y")
+      return y;
+    return "unknown method <fn argument: " + method + ">";
+  }
+  return _closure;
+}
+
+var point = make_point(2, 3);
+print point("x");
+print point("y");
+print point("z");
+
+/////////////////////////////////////////////////
+// test static scope
+/////////////////////////////////////////////////
+print "\n>>>>>>>>>>>>>>>>>> STATIC SCOPE TEST";
+var a = "global";
+{
+  fun showA() {
+    print a;
+  }
+
+  showA();
+  var a = "block";
+  showA();
+}
+
+// // this will checking error for this scope
+// var a = "outer";
+// {
+//   var a = a;
+// }
