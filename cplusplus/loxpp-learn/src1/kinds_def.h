@@ -27,7 +27,7 @@
 #pragma once
 
 #ifndef TOKDEF
-# TOKDEF(k, s)
+# define TOKDEF(k, s)
 #endif
 
 #ifndef TOKEN
@@ -45,10 +45,11 @@
 // language tokens
 TOKEN(UNKNOWN, "unknown") // unknown token
 TOKEN(EOF, "eof") // end of file
+TOKEN(NEWLINE, "newline") // new line
 TOKEN(COMMENT, "comment") // comment
 TOKEN(IDENTIFILER, "identifiler")
-TOKEN(INTCONST, "int_constant")
-TOKEN(FLOATCONST, "float_constant")
+TOKEN(INTEGERCONST, "integer_constant")
+TOKEN(DECIMALCONST, "decimal_constant")
 TOKEN(STRINGLITERAL, "string_literal")
 
 // punctuators
@@ -80,8 +81,10 @@ PUNCTUATOR(EXCLAIM, "!")
 PUNCTUATOR(EXCLAIMEQUAL, "!=")
 PUNCTUATOR(EQUAL, "=")
 PUNCTUATOR(EQUALEQUAL, "==")
+PUNCTUATOR(EQUALGREATER, "=>")
 
 // keywords
+KEYWORD(VAR, "var")
 KEYWORD(AND, "and")
 KEYWORD(OR, "or")
 KEYWORD(NOT, "not")
@@ -92,7 +95,7 @@ KEYWORD(FOR, "for")
 KEYWORD(WHILE, "while")
 KEYWORD(BREAK, "break")
 KEYWORD(RETURN, "return")
-KEYWORD(FUN, "fun")
+KEYWORD(FN, "fn")
 KEYWORD(CLASS, "class")
 KEYWORD(SUPER, "super")
 KEYWORD(SELF, "self")
