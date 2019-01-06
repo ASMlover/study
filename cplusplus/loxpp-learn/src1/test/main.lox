@@ -1,0 +1,27 @@
+#!/usr/bin/env loxpp
+
+###############################################
+# TEST FOR LOX SCRIPT
+
+class Lox {
+  fn ctor(msg) {
+    self.msg = msg
+  }
+
+  fn say(who) {
+    if who != nil {
+      print "Hi, " + who + ", welcome to Lox !"
+    } else {
+      print self.msg
+    }
+  }
+}
+
+class MyLox : Lox {}
+
+fn main() {
+  let lox = MyLox("Hello, world!")
+  lox.say()
+}
+
+main()
