@@ -32,6 +32,7 @@ enum TokenKind {
 #define TOKDEF(k, s) k,
 #include "kinds_def.h"
   NUM_TOKENS
+#undef TOKDEF
 };
 
 const char* get_token_name(TokenKind kind);
