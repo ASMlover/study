@@ -1,4 +1,4 @@
-// Copyright (c) 2018 ASMlover. All rights reserved.
+// Copyright (c) 2019 ASMlover. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -24,47 +24,23 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include <string>
-#include "common.h"
-#include "token_kinds.h"
+#include <iomanip>
+#include <sstream>
+#include "token.h"
 
 namespace lox {
 
-class Token : public Copyable {
-  TokenKind kind_;
-  std::string lexeme_;
-  const std::string& fname_;
-  int lineno_{1};
-public:
-  Token(TokenKind kind,
-      const std::string& lexeme, const std::string& fname, int lineno)
-    : kind_(kind)
-    , lexeme_(lexeme)
-    , fname_(fname)
-    , lineno_(lineno) {
-  }
+std::string Token::stringify(void) const {
+  std::stringstream ss;
 
-  std::string get_fname(void) const {
-    return fname_;
-  }
+  ss << std::left << std::setw(16) << get_token_name(kind_) << ":"
+    << std::right << std::setw(16) << lexeme_ << "|"
+    << std::right << std::setw(4) << lineno_;
+  return ss.str();
+}
 
-  TokenKind get_kind(void) const {
-    return kind_;
-  }
-
-  std::string get_lexeme(void) const {
-    return lexeme_;
-  }
-
-  int get_lineno(void) const {
-    return lineno_;
-  }
-
-  std::string stringify(void) const;
-};
-
-std::ostream& operator<<(std::ostream& out, const Token& tok);
+std::ostream& operator<<(std::ostream& out, const Token& tok) {
+  return out << tok.stringify();
+}
 
 }
