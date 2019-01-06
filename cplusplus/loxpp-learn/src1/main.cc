@@ -24,14 +24,12 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
-
-extern void value_test(void);
+#include "lox.h"
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
-  value_test();
+  lox::Lox().eval(argc, argv);
 
   return 0;
 }

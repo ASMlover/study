@@ -33,8 +33,8 @@ namespace lox {
 std::string Token::stringify(void) const {
   std::stringstream ss;
 
-  ss << std::left << std::setw(16) << get_token_name(kind_) << ":"
-    << std::right << std::setw(16) << lexeme_ << "|"
+  ss << std::left << std::setw(20) << get_token_name(kind_) << ":"
+    << std::right << std::setw(24) << lexeme_ << "|"
     << std::right << std::setw(4) << lineno_;
   return ss.str();
 }
