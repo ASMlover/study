@@ -87,16 +87,16 @@ class Value : private Copyable {
     Value operator()(X x, Y y) const { return x / y; }
   };
 
-  template <typename BinOp>
-  Value binary_numeric(BinOp&& op, const Value& r) const {
+  template <typename BinaryFun>
+  Value binary_numeric(BinaryFun&& fn, const Value& r) const {
     if (is_integer() && r.is_integer())
-      return op(to_integer(), r.to_integer());
+      return fn(to_integer(), r.to_integer());
     else if (is_integer() && r.is_decimal())
-      return op(to_integer(), r.to_decimal());
+      return fn(to_integer(), r.to_decimal());
     else if (is_decimal() && r.is_integer())
-      return op(to_decimal(), r.to_integer());
+      return fn(to_decimal(), r.to_integer());
     else
-      return op(to_decimal(), r.to_decimal());
+      return fn(to_decimal(), r.to_decimal());
   }
 
   Value mod_numeric(const Value& r) const {
