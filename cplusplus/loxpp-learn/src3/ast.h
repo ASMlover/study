@@ -270,6 +270,8 @@ public:
 using FunctionExprPtr = std::shared_ptr<FunctionExpr>;
 
 struct ExprVisitor : private UnCopyable {
+  virtual ~ExprVisitor(void) {}
+
   virtual void visit_assign_expr(const AssignExprPtr& expr) = 0;
   virtual void visit_binary_expr(const BinaryExprPtr& expr) = 0;
   virtual void visit_call_expr(const CallExprPtr& expr) = 0;
