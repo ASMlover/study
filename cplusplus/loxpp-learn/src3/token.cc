@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstdlib>
 #include <iomanip>
 #include <sstream>
 #include "token.h"
@@ -37,6 +38,18 @@ std::string Token::stringify(void) const {
     << std::right << std::setw(24) << literal_ << "|"
     << std::right << std::setw(4) << lineno_;
   return ss.str();
+}
+
+std::int64_t Token::as_integer(void) const {
+  return std::atoll(literal_.c_str());
+}
+
+double Token::as_decimal(void) const {
+  return std::atof(literal_.c_str());
+}
+
+std::string Token::as_string(void) const {
+  return literal_;
 }
 
 std::ostream& operator<<(std::ostream& out, const Token& tok) {

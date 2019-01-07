@@ -54,7 +54,7 @@ std::string Value::stringify(void) const {
         [](bool b) -> std::string { return b ? "true" : "false"; },
         [](std::int64_t i64) -> std::string { return std::to_string(i64); },
         [](double d) -> std::string { return decimal2str(d); },
-        [](const std::string& s) -> std::string { return s; },
+        [](const std::string& s) -> std::string { return "\"" + s + "\""; },
       }, v_);
 }
 
