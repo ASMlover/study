@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <exception>
 #include <string>
 #include "common.h"
 
@@ -49,6 +50,22 @@ public:
 
   void error(const std::string& fname, int lineno, const std::string& message);
   void error(const Token& tok, const std::string& message);
+};
+
+class RuntimeError : public Copyable, public std::exception {
+  const Token& token_;
+  std::string message_;
+
+  const char* what(void) const throw() {
+    return message_.c_str();
+  }
+public:
+  RuntimeError(const Token& tok, const std::string& msg)
+    : token_(tok), message_(msg) {
+  }
+
+  const Token& get_token(void) const { return token_; }
+  std::string get_message(void) const { return message_; }
 };
 
 }
