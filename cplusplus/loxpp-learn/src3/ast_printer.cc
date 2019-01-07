@@ -24,7 +24,6 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "value.h"
 #include "token.h"
 #include "ast_printer.h"
 
@@ -47,9 +46,6 @@ std::string AstPrinter::stringify(const ExprPtr& expr) {
 }
 
 void AstPrinter::visit_assign_expr(const AssignExprPtr& expr) {
-  std::string name("= ");
-  name += expr->name().get_literal();
-  parenthesize(name, {expr->value()});
 }
 
 void AstPrinter::visit_binary_expr(const BinaryExprPtr& expr) {
