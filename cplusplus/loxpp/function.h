@@ -39,9 +39,9 @@ class LoxFunction : public Callable {
   using LoxFunctionPtr = std::shared_ptr<LoxFunction>;
   using LoxInstancePtr = std::shared_ptr<LoxInstance>;
 
-  bool is_ctor_{};
   FunctionStmtPtr declaration_;
   EnvironmentPtr closure_;
+  bool is_ctor_{};
 public:
   LoxFunction(const FunctionStmtPtr& decl,
       const EnvironmentPtr& closure, bool is_ctor = false)
