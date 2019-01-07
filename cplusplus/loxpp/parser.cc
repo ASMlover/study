@@ -218,7 +218,7 @@ ExprPtr Parser::multiplication(void) {
 ExprPtr Parser::unary(void) {
   // unary -> ("!" | "-") unary | call;
 
-  if (match({TOKEN_BANG, TOKEN_MINUS})) {
+  if (match({TOKEN_BANG, TOKEN_MINUS, TOKEN_NOT})) {
     auto oper = prev();
     auto right = unary();
     return std::make_shared<Unary>(oper, right);
