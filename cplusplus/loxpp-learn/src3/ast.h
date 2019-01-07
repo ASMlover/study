@@ -29,19 +29,19 @@
 #include <memory>
 #include <vector>
 #include "common.h"
+#include "value.h"
 
 namespace lox {
 
 // expression -> literal | unary | binary | grouping ;
 // literal    -> INTEGER | DECIMAL | STRING | "true" | "false" | "nil" ;
 // grouping   -> "(" expression ")" ;
-// unary      -> ( "-" | "!" ) expression ;
+// unary      -> ( "-" | "!" | "not" ) expression ;
 // binary     -> expression operator expression ;
-// operator   -> "==" | "!=" | "<" | "<=" | ">" | ">="
+// operator   -> "is" | "==" | "!=" | "<" | "<=" | ">" | ">="
 //            | "+" | "-" | "*" | "/" | "%"
 //            | "+=" | "-=" | "*=" | "/=" | "%=" ;
 
-class Value;
 class Token;
 
 struct Expr;
@@ -55,13 +55,14 @@ using ExprVisitorPtr = std::shared_ptr<ExprVisitor>;
 using StmtVisitorPtr = std::shared_ptr<StmtVisitor>;
 
 struct Expr : private UnCopyable {
+  virtual ~Expr(void) {}
   virtual void accept(const ExprVisitorPtr& visitor) = 0;
 };
 
 class AssignExpr
   : public Expr, public std::enable_shared_from_this<AssignExpr> {
   const Token& name_;
-  const ExprPtr& value_;
+  ExprPtr value_;
 public:
   const Token& name(void) const { return name_; }
   const ExprPtr& value(void) const { return value_; }
@@ -76,9 +77,9 @@ using AssignExprPtr = std::shared_ptr<AssignExpr>;
 
 class BinaryExpr
   : public Expr, public std::enable_shared_from_this<BinaryExpr> {
-  const ExprPtr& left_;
+  ExprPtr left_;
   const Token& oper_;
-  const ExprPtr& right_;
+  ExprPtr right_;
 public:
   const ExprPtr& left(void) const { return left_; }
   const Token& oper(void) const { return oper_; }
@@ -94,7 +95,7 @@ using BinaryExprPtr = std::shared_ptr<BinaryExpr>;
 
 class CallExpr
   : public Expr, public std::enable_shared_from_this<CallExpr> {
-  const ExprPtr& callee_;
+  ExprPtr callee_;
   const Token& paren_;
   const std::vector<ExprPtr>& arguments_;
 public:
@@ -113,9 +114,9 @@ using CallExprPtr = std::shared_ptr<CallExpr>;
 
 class SetExpr
   : public Expr, public std::enable_shared_from_this<SetExpr> {
-  const ExprPtr& object_;
+  ExprPtr object_;
   const Token& name_;
-  const ExprPtr& value_;
+  ExprPtr value_;
 public:
   const ExprPtr& object(void) const { return object_; }
   const Token& name(void) const { return name_; }
@@ -131,7 +132,7 @@ using SetExprPtr = std::shared_ptr<SetExpr>;
 
 class GetExpr
   : public Expr, public std::enable_shared_from_this<GetExpr> {
-  const ExprPtr& object_;
+  ExprPtr object_;
   const Token& name_;
 public:
   const ExprPtr& object(void) const { return object_; }
@@ -147,7 +148,7 @@ using GetExprPtr = std::shared_ptr<GetExpr>;
 
 class GroupingExpr
   : public Expr, public std::enable_shared_from_this<GroupingExpr> {
-  const ExprPtr& expression_;
+  ExprPtr expression_;
 public:
   const ExprPtr& expression(void) const { return expression_; }
 
@@ -161,7 +162,7 @@ using GroupingExprPtr = std::shared_ptr<GroupingExpr>;
 
 class LiteralExpr
   : public Expr, public std::enable_shared_from_this<LiteralExpr> {
-  const Value& value_;
+  Value value_;
 public:
   const Value& value(void) const { return value_; }
 
@@ -175,9 +176,9 @@ using LiteralExprPtr = std::shared_ptr<LiteralExpr>;
 
 class LogicalExpr
   : public Expr, public std::enable_shared_from_this<LogicalExpr> {
-  const ExprPtr& left_;
+  ExprPtr left_;
   const Token& oper_;
-  const ExprPtr& right_;
+  ExprPtr right_;
 public:
   const ExprPtr& left(void) const { return left_; }
   const Token& oper(void) const { return oper_; }
@@ -224,7 +225,7 @@ using SuperExprPtr = std::shared_ptr<SuperExpr>;
 class UnaryExpr
   : public Expr, public std::enable_shared_from_this<UnaryExpr> {
   const Token& oper_;
-  const ExprPtr& right_;
+  ExprPtr right_;
 public:
   const Token& oper(void) const { return oper_; }
   const ExprPtr& right(void) const { return right_; }
