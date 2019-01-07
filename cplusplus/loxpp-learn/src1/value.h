@@ -114,8 +114,10 @@ public:
   Value(std::uint32_t u32) noexcept : v_(integer_cast(u32)) {}
   Value(std::int64_t i64) noexcept : v_(i64) {}
   Value(std::uint64_t u64) noexcept : v_(integer_cast(u64)) {}
+#if defined(__GNUC__)
   Value(long long ll) noexcept : v_(integer_cast(ll)) {}
   Value(unsigned long long ull) noexcept : v_(integer_cast(ull)) {}
+#endif
   Value(double d) noexcept : v_(d) {}
   Value(const char* s) noexcept : v_(std::string(s)) {}
   Value(const std::string& s) noexcept : v_(s) {}
@@ -170,8 +172,10 @@ public:
   Value& operator=(std::uint32_t u32) noexcept { return set_integer(u32); }
   Value& operator=(std::int64_t i64) noexcept { return set_integer(i64); }
   Value& operator=(std::uint64_t u64) noexcept { return set_integer(u64); }
+#if defined(__GNUC__)
   Value& operator=(long long ll) noexcept { return set_integer(ll); }
   Value& operator=(unsigned long long ull) noexcept { return set_integer(ull); }
+#endif
   Value& operator=(double d) noexcept { return v_ = d, *this; }
   Value& operator=(const char* s) noexcept { return set_string(s); }
   Value& operator=(const std::string& s) noexcept { return set_string(s); }
