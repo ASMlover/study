@@ -207,6 +207,7 @@ Scanner::Scanner(const std::string& source)
   keywords_["for"] = TOKEN_FOR;
   keywords_["if"] = TOKEN_IF;
   keywords_["nil"] = TOKEN_NIL;
+  keywords_["not"] = TOKEN_NOT;
   keywords_["or"] = TOKEN_OR;
   keywords_["print"] = TOKEN_PRINT;
   keywords_["return"] = TOKEN_RETURN;

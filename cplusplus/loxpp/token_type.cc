@@ -42,7 +42,7 @@ static const char* s_token_mapping[] = {
   "IDENTIFIER", "STRING", "NUMBER",
 
   // keywords
-  "AND", "CLASS", "ELSE", "FALSE", "FUN", "FOR", "IF", "NIL", "OR",
+  "AND", "CLASS", "ELSE", "FALSE", "FUN", "FOR", "IF", "NIL", "NOT", "OR",
   "PRINT", "RETURN", "SUPER", "THIS", "TRUE", "VAR", "WHILE",
 
   "EOF",
