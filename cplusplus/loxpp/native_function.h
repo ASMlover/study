@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <iostream>
 #include <chrono>
 #include "callable.h"
 
@@ -34,7 +35,7 @@ public:
   ClockFunction(void) {}
 
   virtual Value call(
-      const InterpreterPtr& Interp, const std::vector<Value>& args) override {
+      const InterpreterPtr& interp, const std::vector<Value>& args) override {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
   }
@@ -44,6 +45,30 @@ public:
   }
 
   virtual std::string to_string(void) const override {
-    return "<native fn>";
+    return "<native fn: clock>";
+  }
+};
+
+class WriteFunction : public Callable {
+public:
+  virtual Value call(
+      const InterpreterPtr& interp, const std::vector<Value>& args) override {
+    for (auto& v : args)
+      std::cout << v.stringify() << " ";
+    std::cout << std::endl;
+
+    return Value();
+  }
+
+  virtual int arity(void) const override {
+    return 0;
+  }
+
+  virtual std::string to_string(void) const override {
+    return "<native fn: write>";
+  }
+
+  virtual std::string name(void) const override {
+    return "write";
   }
 };

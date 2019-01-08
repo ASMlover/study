@@ -38,4 +38,6 @@ struct Callable {
       const InterpreterPtr& Interp, const std::vector<Value>& args) = 0;
   virtual int arity(void) const = 0;
   virtual std::string to_string(void) const = 0;
+
+  virtual std::string name(void) const { return "callable"; }
 };

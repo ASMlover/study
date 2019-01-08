@@ -220,7 +220,6 @@ Scanner::Scanner(const std::string& source)
 
 std::vector<Token> Scanner::scan_tokens(void) {
   while (!is_at_end()) {
-    // TODO:
     start_ = current_;
     scan_token();
   }
