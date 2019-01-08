@@ -159,6 +159,8 @@ public:
   Value& operator*=(const Value& r) { return *this = *this * r, *this; }
   Value& operator/=(const Value& r) { return *this = *this / r, *this; }
   Value& operator%=(const Value& r) { return *this = *this % r, *this; }
+  Value operator-(void) const { return negative_numeric(); }
+  Value operator!(void) const { return !is_truthy(); }
 
   Value& operator=(const Value& r) noexcept { return v_ = r.v_, *this; }
   Value& operator=(Value&& r) noexcept { return v_ = std::move(r.v_), *this; }
@@ -179,6 +181,10 @@ public:
   Value& operator=(double d) noexcept { return v_ = d, *this; }
   Value& operator=(const char* s) noexcept { return set_string(s); }
   Value& operator=(const std::string& s) noexcept { return set_string(s); }
+
+  Value negative_numeric(void) const {
+    return is_integer() ? -to_integer() : -to_decimal();
+  }
 
   bool is_truthy(void) const;
   std::string stringify(void) const;
