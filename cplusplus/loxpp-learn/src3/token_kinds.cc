@@ -29,7 +29,7 @@
 
 namespace lox {
 
-static constexpr char* const kTokenNames[] = {
+static constexpr const char* const kTokenNames[] = {
 #define TOKDEF(k, s) s,
 #include "kinds_def.h"
 #undef TOKDEF
