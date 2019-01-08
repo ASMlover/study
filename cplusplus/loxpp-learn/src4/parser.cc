@@ -139,7 +139,7 @@ ExprPtr Parser::multiplication(void) {
 ExprPtr Parser::unary(void) {
   // unary -> ( "-" | "!" | "not" ) unary | primary ;
 
-  if (match({TokenKind::TK_PLUS, TokenKind::TK_EXCLAIM, TokenKind::KW_NOT})) {
+  if (match({TokenKind::TK_MINUS, TokenKind::TK_EXCLAIM, TokenKind::KW_NOT})) {
     const Token& oper = prev();
     ExprPtr right = unary();
     return std::make_shared<UnaryExpr>(oper, right);
