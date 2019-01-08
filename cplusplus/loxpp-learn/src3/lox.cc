@@ -28,6 +28,8 @@
 #include <iostream>
 #include <sstream>
 #include "lexer.h"
+#include "parser.h"
+#include "ast_printer.h"
 #include "lox.h"
 
 namespace lox {
@@ -68,16 +70,21 @@ void Lox::eval_with_repl(void) {
 }
 
 void Lox::run(const std::string& sources, const std::string& fname) {
-  // std::cout << sources << std::endl;
-
-  lox::Lexer lex(err_report_, sources, fname);
-
+  Lexer lex(err_report_, sources, fname);
   const auto& tokens = lex.parse_tokens();
   if (err_report_.had_error())
-    return;
+    std::abort();
 
   for (auto& tok : tokens)
     std::cout << tok << std::endl;
+
+  Parser parser(err_report_, tokens);
+  auto expr = parser.parse();
+  auto astp = std::make_shared<AstPrinter>();
+  if (err_report_.had_error())
+    std::abort();
+
+  std::cout << astp->stringify(expr) << std::endl;
 }
 
 }
