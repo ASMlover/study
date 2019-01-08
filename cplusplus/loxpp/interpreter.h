@@ -60,6 +60,7 @@ public:
     , globals_(std::make_shared<Environment>(nullptr))
     , environment_(globals_) {
     globals_->define_var("clock", Value(std::make_shared<ClockFunction>()));
+    globals_->define_var("write", Value(std::make_shared<WriteFunction>()));
   }
 
   EnvironmentPtr get_globals(void) const {

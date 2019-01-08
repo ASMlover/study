@@ -149,10 +149,13 @@ void Interpreter::visit_call_expr(const CallPtr& expr) {
   for (auto& arg : expr->arguments_)
     arguments.push_back(evaluate(arg));
   auto callable = callee.to_callable();
-  if (arguments.size() != static_cast<std::size_t>(callable->arity())) {
-    throw RuntimeError(expr->paren_,
-        "expected " + std::to_string(callable->arity()) +
-        " arguments but got " + std::to_string(arguments.size()) + " ...");
+
+  if (callable->name() != "write") {
+    if (arguments.size() != static_cast<std::size_t>(callable->arity())) {
+      throw RuntimeError(expr->paren_,
+          "expected " + std::to_string(callable->arity()) +
+          " arguments but got " + std::to_string(arguments.size()) + " ...");
+    }
   }
 
   value_ = callable->call(shared_from_this(), arguments);
