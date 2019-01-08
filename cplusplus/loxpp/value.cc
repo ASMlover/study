@@ -24,9 +24,16 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <sstream>
 #include "callable.h"
 #include "instance.h"
 #include "value.h"
+
+inline std::string numeric_to_string(double d) {
+  std::ostringstream oss;
+  oss << d;
+  return oss.str();
+}
 
 template <typename... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template <typename... Ts> overloaded(Ts...) -> overloaded<Ts...>;
@@ -35,7 +42,7 @@ std::string Value::stringify(void) const {
   return std::visit(overloaded {
         [](std::nullptr_t) -> std::string { return "nil"; },
         [](bool b) -> std::string { return b ? "true" : "false"; },
-        [](double d) -> std::string { return std::to_string(d); },
+        [](double d) -> std::string { return numeric_to_string(d); },
         [](const std::string& s) -> std::string { return s; },
         [](const CallablePtr& c) -> std::string { return c->to_string(); },
         [](const InstancePtr& i) -> std::string { return i->to_string(); },
