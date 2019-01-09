@@ -30,6 +30,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "ast_printer.h"
+#include "interpreter.h"
 #include "lox.h"
 
 namespace lox {
@@ -85,6 +86,11 @@ void Lox::run(const std::string& sources, const std::string& fname) {
     std::abort();
 
   std::cout << astp->stringify(expr) << std::endl;
+
+  auto interp = std::make_shared<Interpreter>(err_report_);
+  interp->interpret(expr);
+  if (err_report_.had_error())
+    std::abort();
 }
 
 }
