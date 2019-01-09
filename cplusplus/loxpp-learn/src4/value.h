@@ -183,7 +183,10 @@ public:
   Value& operator=(const std::string& s) noexcept { return set_string(s); }
 
   Value negative_numeric(void) const {
-    return is_integer() ? -to_integer() : -to_decimal();
+    if (is_integer())
+      return -to_integer();
+    else
+      return -to_decimal();
   }
 
   bool is_truthy(void) const;
