@@ -40,6 +40,14 @@ ExprPtr Parser::parse(void) {
   }
 }
 
+std::vector<StmtPtr> Parser::parse_stmt(void) {
+  std::vector<StmtPtr> stmts;
+  while (!is_end())
+    stmts.push_back(statement());
+
+  return stmts;
+}
+
 bool Parser::is_end(void) const {
   return peek().get_kind() == TokenKind::TK_EOF;
 }
@@ -75,6 +83,16 @@ bool Parser::match(const std::initializer_list<TokenKind>& kinds) {
 const Token& Parser::consume(TokenKind kind, const std::string& message) {
   if (check(kind))
     return advance();
+
+  throw RuntimeError(peek(), message);
+}
+
+const Token& Parser::consume(
+    const std::initializer_list<TokenKind>& kinds, const std::string& message) {
+  for (auto kind : kinds) {
+    if (check(kind))
+      return advance();
+  }
 
   throw RuntimeError(peek(), message);
 }
@@ -173,6 +191,30 @@ ExprPtr Parser::primary(void) {
   }
 
   throw RuntimeError(peek(), "expect expression ...");
+}
+
+StmtPtr Parser::statement(void) {
+  // statement -> expr_stmt | print_stmt ;
+
+  if (match({TokenKind::KW_PRINT}))
+    return print_stmt();
+  return expr_stmt();
+}
+
+StmtPtr Parser::expr_stmt(void) {
+  // expr_stmt -> expression NEWLINE ;
+
+  ExprPtr expr = expression();
+  consume(TokenKind::TK_NEWLINE, "expect `NL` after expression ...");
+  return std::make_shared<ExprStmt>(expr);
+}
+
+StmtPtr Parser::print_stmt(void) {
+  // print_stmt -> "print" expression NEWLINE ;
+
+  ExprPtr expr = expression();
+  consume(TokenKind::TK_NEWLINE, "expect `NL` after `print` expression ...");
+  return std::make_shared<PrintStmt>(expr);
 }
 
 }

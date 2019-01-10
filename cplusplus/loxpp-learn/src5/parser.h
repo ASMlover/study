@@ -33,6 +33,11 @@
 
 namespace lox {
 
+// program        -> statement* EOF ;
+// statement      -> expr_stmt | print_stmt ;
+// expr_stmt      -> expression NEWLINE ;
+// print_stmt     -> "print" expression NEWLINE ;
+
 // expression     -> equality ;
 // equality       -> comparison ( ( "is" | "==" | "!=" ) comparison )* ;
 // comparison     -> addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
@@ -58,6 +63,8 @@ class Parser : private UnCopyable {
   bool check(TokenKind kind) const;
   bool match(const std::initializer_list<TokenKind>& kinds);
   const Token& consume(TokenKind kind, const std::string& message);
+  const Token& consume(const std::initializer_list<TokenKind>& kinds,
+      const std::string& message);
 
   ExprPtr expression(void);
   ExprPtr equality(void);
@@ -66,12 +73,17 @@ class Parser : private UnCopyable {
   ExprPtr multiplication(void);
   ExprPtr unary(void);
   ExprPtr primary(void);
+
+  StmtPtr statement(void);
+  StmtPtr expr_stmt(void);
+  StmtPtr print_stmt(void);
 public:
   Parser(ErrorReport& err_report, const std::vector<Token>& tokens)
     : err_report_(err_report), tokens_(tokens) {
   }
 
   ExprPtr parse(void);
+  std::vector<StmtPtr> parse_stmt(void);
 };
 
 }
