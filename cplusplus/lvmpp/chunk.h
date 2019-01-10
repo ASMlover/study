@@ -30,12 +30,23 @@
 #include <vector>
 
 enum OpCode {
+  OP_CONSTANT,
   OP_RETURN
 };
 
+using Value = double;
+
 class Chunk {
-  std::vector<std::int8_t> chunk_;
+  std::vector<std::uint8_t> chunk_;
+  std::vector<Value> constants_;
+
+  std::size_t simple_instruction(const char* name, std::size_t offset);
+  std::size_t constant_instruction(const char* name, std::size_t offset);
+  std::size_t disassemble_instruction(std::size_t offset);
 public:
-  void write(std::int8_t byte);
-  void free(void);
+  void write_chunk(std::uint8_t byte);
+  std::size_t add_constant(Value value);
+  void free_chunk(void);
+
+  void disassemble(const char* name);
 };

@@ -24,12 +24,56 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstdio>
+#include <iomanip>
+#include <iostream>
 #include "chunk.h"
 
-void Chunk::write(std::int8_t byte) {
+std::size_t Chunk::simple_instruction(const char* name, std::size_t offset) {
+  std::fprintf(stdout, "\t%s\n", name);
+  return offset + 1;
+}
+
+std::size_t Chunk::constant_instruction(const char* name, std::size_t offset) {
+  auto constant = chunk_[offset + 1];
+  std::fprintf(stdout, "\t%-16s %4u %lf\n",
+      name, constant, constants_[constant]);
+  return offset + 2;
+}
+
+std::size_t Chunk::disassemble_instruction(std::size_t offset) {
+  std::fprintf(stdout, "%04lu", offset);
+
+  std::uint8_t inst = chunk_[offset];
+  switch (inst) {
+  case OP_CONSTANT:
+    return constant_instruction("OP_CONSTANT", offset);
+  case OP_RETURN:
+    return simple_instruction("OP_RETURN", offset);
+  default:
+    std::cout << "unknown opcode: " << inst << std::endl;
+    return offset;
+  }
+}
+
+void Chunk::write_chunk(std::uint8_t byte) {
   chunk_.push_back(byte);
 }
 
-void Chunk::free(void) {
+std::size_t Chunk::add_constant(Value value) {
+  constants_.push_back(value);
+  return constants_.size() - 1;
+}
+
+void Chunk::free_chunk(void) {
   chunk_.clear();
+  constants_.clear();
+}
+
+void Chunk::disassemble(const char* name) {
+  std::cout << "====== " << name << " ======" << std::endl;
+
+  auto n = chunk_.size();
+  for (auto i = 0u; i < n;)
+    i = disassemble_instruction(i);
 }
