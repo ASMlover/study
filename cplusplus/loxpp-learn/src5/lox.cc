@@ -66,6 +66,7 @@ void Lox::eval_with_repl(void) {
     if (!std::getline(std::cin, line) || line == "exit") {
       break;
     }
+    line += "\n";
     run(line);
   }
 }
@@ -79,16 +80,28 @@ void Lox::run(const std::string& sources, const std::string& fname) {
   for (auto& tok : tokens)
     std::cout << tok << std::endl;
 
+  //////////////////// OLD INTERPRETER TEST ////////////////////
+  // Parser parser(err_report_, tokens);
+  // auto expr = parser.parse();
+  // auto astp = std::make_shared<AstPrinter>();
+  // if (err_report_.had_error())
+  //   std::abort();
+
+  // std::cout << astp->stringify(expr) << std::endl;
+
+  // auto interp = std::make_shared<Interpreter>(err_report_);
+  // interp->interpret(expr);
+  // if (err_report_.had_error())
+  //   std::abort();
+  //////////////////////////////////////////////////////////////
+
   Parser parser(err_report_, tokens);
-  auto expr = parser.parse();
-  auto astp = std::make_shared<AstPrinter>();
+  auto stmts = parser.parse_stmt();
   if (err_report_.had_error())
     std::abort();
 
-  std::cout << astp->stringify(expr) << std::endl;
-
   auto interp = std::make_shared<Interpreter>(err_report_);
-  interp->interpret(expr);
+  interp->interpret(stmts);
   if (err_report_.had_error())
     std::abort();
 }
