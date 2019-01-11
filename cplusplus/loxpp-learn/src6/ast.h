@@ -62,13 +62,15 @@ struct Expr : private UnCopyable {
 class AssignExpr
   : public Expr, public std::enable_shared_from_this<AssignExpr> {
   const Token& name_;
+  const Token& oper_;
   ExprPtr value_;
 public:
   const Token& name(void) const { return name_; }
+  const Token& oper(void) const { return oper_; }
   const ExprPtr& value(void) const { return value_; }
 
-  AssignExpr(const Token& name, const ExprPtr& value)
-    : name_(name), value_(value) {
+  AssignExpr(const Token& name, const Token& oper, const ExprPtr& value)
+    : name_(name), oper_(oper), value_(value) {
   }
 
   virtual void accept(const ExprVisitorPtr& visitor) override;
