@@ -41,7 +41,9 @@ class Environment
 public:
   void define(const std::string& name, const Value& value);
   void define(const Token& name, const Value& value);
+  const Value& get(const std::string& name) const;
   const Value& get(const Token& name) const;
+  void assign(const Token& name, const Value& value);
 };
 
 }
