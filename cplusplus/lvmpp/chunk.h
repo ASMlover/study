@@ -38,13 +38,14 @@ using Value = double;
 
 class Chunk {
   std::vector<std::uint8_t> chunk_;
+  std::vector<int> lines_;
   std::vector<Value> constants_;
 
   std::size_t simple_instruction(const char* name, std::size_t offset);
   std::size_t constant_instruction(const char* name, std::size_t offset);
   std::size_t disassemble_instruction(std::size_t offset);
 public:
-  void write_chunk(std::uint8_t byte);
+  void write_chunk(std::uint8_t byte, int line);
   std::size_t add_constant(Value value);
   void free_chunk(void);
 
