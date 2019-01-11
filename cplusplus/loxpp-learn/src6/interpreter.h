@@ -33,6 +33,9 @@
 namespace lox {
 
 class ErrorReport;
+class Environment;
+
+using EnvironmentPtr = std::shared_ptr<Environment>;
 
 class Interpreter
   : public ExprVisitor
@@ -40,6 +43,7 @@ class Interpreter
   , public std::enable_shared_from_this<Interpreter> {
   ErrorReport& err_report_;
   Value value_{};
+  EnvironmentPtr environment_;
 
   Value evaluate(const ExprPtr& expr);
   void evaluate(const StmtPtr& stmt);
@@ -51,9 +55,7 @@ class Interpreter
   void check_modulo_operands(
       const Token& oper, const Value& lvalue, const Value& rvalue);
 public:
-  Interpreter(ErrorReport& err_report)
-    : err_report_(err_report) {
-  }
+  Interpreter(ErrorReport& err_report);
 
   virtual void visit_assign_expr(const AssignExprPtr& expr) override;
   virtual void visit_binary_expr(const BinaryExprPtr& expr) override;

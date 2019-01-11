@@ -43,8 +43,7 @@ ExprPtr Parser::parse(void) {
 std::vector<StmtPtr> Parser::parse_stmt(void) {
   std::vector<StmtPtr> stmts;
   while (!is_end())
-    stmts.push_back(statement());
-
+    stmts.push_back(declaration());
   return stmts;
 }
 
@@ -97,10 +96,52 @@ const Token& Parser::consume(
   throw RuntimeError(peek(), message);
 }
 
+void Parser::synchronize(void) {
+  advance();
+  while (!is_end()) {
+    if(prev().get_kind() == TokenKind::TK_NEWLINE)
+      return;
+
+    switch (prev().get_kind()) {
+    case TokenKind::KW_IF:
+    case TokenKind::KW_FOR:
+    case TokenKind::KW_WHILE:
+    case TokenKind::KW_BREAK:
+    case TokenKind::KW_RETURN:
+    case TokenKind::KW_FN:
+    case TokenKind::KW_CLASS:
+    case TokenKind::KW_LET:
+    case TokenKind::KW_IMPORT:
+    case TokenKind::KW_PRINT:
+      return;
+    }
+    advance();
+  }
+}
+
 ExprPtr Parser::expression(void) {
   // expression -> equality ;
 
-  return equality();
+  return assignment();
+}
+
+ExprPtr Parser::assignment(void) {
+  // assignment   -> IDENTIFILER ( assign_oper ) assignment | equality ;
+  // assign_oper  -> "=" | "+=" | "-=" | "*=" | "/=" | "%=" ;
+
+  ExprPtr expr = equality();
+  if (match({TokenKind::TK_EQUAL, TokenKind::TK_PLUSEQUAL,
+        TokenKind::TK_MINUSEQUAL, TokenKind::TK_STAREQUAL,
+        TokenKind::TK_SLASHEQUAL, TokenKind::TK_PERCENTEQUAL})) {
+    const Token& oper = prev();
+    ExprPtr value = assignment();
+    if (std::dynamic_pointer_cast<VariableExpr>(expr)) {
+      const Token& name = std::static_pointer_cast<VariableExpr>(expr)->name();
+      return std::make_shared<AssignExpr>(name, oper, value);
+    }
+    throw RuntimeError(oper, "invalid assignment target ...");
+  }
+  return expr;
 }
 
 ExprPtr Parser::equality(void) {
@@ -168,7 +209,7 @@ ExprPtr Parser::unary(void) {
 
 ExprPtr Parser::primary(void) {
   // primary  -> INTEGER | DECIMAL | STRING | "true" | "false" | "nil"
-  //          | "(" expression ")" ;
+  //          | "(" expression ")" | IDENTIFILER ;
 
   if (match({TokenKind::KW_TRUE}))
     return std::make_shared<LiteralExpr>(true);
@@ -190,7 +231,38 @@ ExprPtr Parser::primary(void) {
     return std::make_shared<GroupingExpr>(expr);
   }
 
+  if (match({TokenKind::TK_IDENTIFILER}))
+    return std::make_shared<VariableExpr>(prev());
+
   throw RuntimeError(peek(), "expect expression ...");
+}
+
+StmtPtr Parser::declaration(void) {
+  // declaration -> let_decl | statement ;
+
+  try {
+    if (match({TokenKind::KW_LET}))
+      return let_decl();
+
+    return statement();
+  }
+  catch (const RuntimeError& e) {
+    err_report_.error(e.get_token(), e.get_message());
+    synchronize();
+
+    return nullptr;
+  }
+}
+
+StmtPtr Parser::let_decl(void) {
+  // let_decl -> "let" IDENTIFILER ( "=" expression? ) NEWLINE ;
+
+  const Token& name = consume(TokenKind::TK_IDENTIFILER, "expect variable name ...");
+  ExprPtr expr;
+  if (match({TokenKind::TK_EQUAL}))
+    expr = expression();
+  consume(TokenKind::TK_NEWLINE, "expect `NL` after variable declaration ...");
+  return std::make_shared<LetStmt>(name, expr);
 }
 
 StmtPtr Parser::statement(void) {

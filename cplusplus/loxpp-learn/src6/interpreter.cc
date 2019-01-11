@@ -27,9 +27,15 @@
 #include <iostream>
 #include "errors.h"
 #include "token.h"
+#include "environment.h"
 #include "interpreter.h"
 
 namespace lox {
+
+Interpreter::Interpreter(ErrorReport& err_report)
+  : err_report_(err_report)
+  , environment_(std::make_shared<Environment>()) {
+}
 
 Value Interpreter::evaluate(const ExprPtr& expr) {
   expr->accept(shared_from_this());
@@ -69,6 +75,31 @@ void Interpreter::check_modulo_operands(
 }
 
 void Interpreter::visit_assign_expr(const AssignExprPtr& expr) {
+  const Token& name = expr->name();
+  const Token& oper = expr->oper();
+  Value left = environment_->get(name);
+  Value right = evaluate(expr->value());
+
+  switch (oper.get_kind()) {
+  case TokenKind::TK_PLUSEQUAL:
+    check_numeric_operands(oper, left, right);
+    value_ = left + right; break;
+  case TokenKind::TK_MINUSEQUAL:
+    check_numeric_operands(oper, left, right);
+    value_ = left - right; break;
+  case TokenKind::TK_STAREQUAL:
+    check_numeric_operands(oper, left, right);
+    value_ = left * right; break;
+  case TokenKind::TK_SLASHEQUAL:
+    check_numeric_operands(oper, left, right);
+    value_ = left / right; break;
+  case TokenKind::TK_PERCENTEQUAL:
+    check_modulo_operands(oper, left, right);
+    value_ = left % right; break;
+  default:
+    value_ = right; break;
+  }
+  environment_->assign(name, value_);
 }
 
 void Interpreter::visit_binary_expr(const BinaryExprPtr& expr) {
@@ -151,6 +182,7 @@ void Interpreter::visit_unary_expr(const UnaryExprPtr& expr) {
 }
 
 void Interpreter::visit_variable_expr(const VariableExprPtr& expr) {
+  value_ = environment_->get(expr->name());
 }
 
 void Interpreter::visit_function_expr(const FunctionExprPtr& expr) {
@@ -166,6 +198,10 @@ void Interpreter::visit_print_stmt(const PrintStmtPtr& stmt) {
 }
 
 void Interpreter::visit_let_stmt(const LetStmtPtr& stmt) {
+  Value value;
+  if (stmt->expr())
+    value = evaluate(stmt->expr());
+  environment_->define(stmt->name(), value);
 }
 
 void Interpreter::visit_block_stmt(const BlockStmtPtr& stmt) {

@@ -26,19 +26,25 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <memory>
 #include <string>
 #include "common.h"
 #include "errors.h"
 
 namespace lox {
 
+class Interpreter;
+using InterpreterPtr = std::shared_ptr<Interpreter>;
+
 class Lox : private UnCopyable {
   ErrorReport err_report_;
+  InterpreterPtr interp_;
 
   void eval_with_file(const std::string& fname);
   void eval_with_repl(void);
   void run(const std::string& sources, const std::string& fname = "");
 public:
+  Lox(void);
   void eval(int argc, char* argv[]);
 };
 

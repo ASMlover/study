@@ -33,19 +33,23 @@
 
 namespace lox {
 
-// program        -> statement* EOF ;
+// program        -> declaration* EOF ;
+// declaration    -> let_decl | statement ;
+// let_decl       -> "let" IDENTIFILER ( "=" expression? ) NEWLINE ;
 // statement      -> expr_stmt | print_stmt ;
 // expr_stmt      -> expression NEWLINE ;
 // print_stmt     -> "print" expression NEWLINE ;
 
-// expression     -> equality ;
+// expression     -> assignment ;
+// assignment     -> IDENTIFILER ( assign_oper ) assignment | equality ;
+// assign_oper    -> "=" | "+=" | "-=" | "*=" | "/=" | "%=" ;
 // equality       -> comparison ( ( "is" | "==" | "!=" ) comparison )* ;
 // comparison     -> addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
 // addition       -> multiplication ( ( "+" | "-" ) multiplication )* ;
 // multiplication -> unary ( ( "*" | "/" | "%" ) unary )* ;
 // unary          -> ( "-" | "!" | "not" ) unary | primary ;
 // primary        -> INTEGER | DECIMAL | STRING | "true" | "false" | "nil"
-//                | "(" expression ")" ;
+//                | "(" expression ")" | IDENTIFILER ;
 
 class Token;
 class ErrorReport;
@@ -65,8 +69,10 @@ class Parser : private UnCopyable {
   const Token& consume(TokenKind kind, const std::string& message);
   const Token& consume(const std::initializer_list<TokenKind>& kinds,
       const std::string& message);
+  void synchronize(void);
 
   ExprPtr expression(void);
+  ExprPtr assignment(void);
   ExprPtr equality(void);
   ExprPtr comparison(void);
   ExprPtr addition(void);
@@ -74,6 +80,8 @@ class Parser : private UnCopyable {
   ExprPtr unary(void);
   ExprPtr primary(void);
 
+  StmtPtr declaration(void);
+  StmtPtr let_decl(void);
   StmtPtr statement(void);
   StmtPtr expr_stmt(void);
   StmtPtr print_stmt(void);

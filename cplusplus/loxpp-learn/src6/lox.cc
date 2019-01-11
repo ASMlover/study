@@ -35,6 +35,11 @@
 
 namespace lox {
 
+Lox::Lox(void)
+  : err_report_()
+  , interp_(std::make_shared<Interpreter>(err_report_)) {
+}
+
 void Lox::eval(int argc, char* argv[]) {
   if (argc < 2) {
     eval_with_repl();
@@ -100,8 +105,7 @@ void Lox::run(const std::string& sources, const std::string& fname) {
   if (err_report_.had_error())
     std::abort();
 
-  auto interp = std::make_shared<Interpreter>(err_report_);
-  interp->interpret(stmts);
+  interp_->interpret(stmts);
   if (err_report_.had_error())
     std::abort();
 }
