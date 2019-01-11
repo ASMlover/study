@@ -32,9 +32,9 @@ int main(int argc, char* argv[]) {
 
   Chunk c;
   auto i = c.add_constant(1.2);
-  c.write_chunk(OP_CONSTANT);
-  c.write_chunk(i);
-  c.write_chunk(OP_RETURN);
+  c.write_chunk(OP_CONSTANT, 123);
+  c.write_chunk(i, 123);
+  c.write_chunk(OP_RETURN, 123);
   c.disassemble("test chunk");
   c.free_chunk();
 

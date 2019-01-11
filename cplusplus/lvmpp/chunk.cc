@@ -43,6 +43,10 @@ std::size_t Chunk::constant_instruction(const char* name, std::size_t offset) {
 
 std::size_t Chunk::disassemble_instruction(std::size_t offset) {
   std::fprintf(stdout, "%04lu", offset);
+  if (offset > 0 && lines_[offset] == lines_[offset - 1])
+    std::fprintf(stdout, "%9c ", '|');
+  else
+    std::fprintf(stdout, "%8d| ", lines_[offset]);
 
   std::uint8_t inst = chunk_[offset];
   switch (inst) {
@@ -56,8 +60,9 @@ std::size_t Chunk::disassemble_instruction(std::size_t offset) {
   }
 }
 
-void Chunk::write_chunk(std::uint8_t byte) {
+void Chunk::write_chunk(std::uint8_t byte, int line) {
   chunk_.push_back(byte);
+  lines_.push_back(line);
 }
 
 std::size_t Chunk::add_constant(Value value) {
@@ -67,6 +72,7 @@ std::size_t Chunk::add_constant(Value value) {
 
 void Chunk::free_chunk(void) {
   chunk_.clear();
+  lines_.clear();
   constants_.clear();
 }
 
