@@ -193,8 +193,11 @@ void Interpreter::visit_expr_stmt(const ExprStmtPtr& stmt) {
 }
 
 void Interpreter::visit_print_stmt(const PrintStmtPtr& stmt) {
-  auto value = evaluate(stmt->expr());
-  std::cout << value << std::endl;
+  for (auto& expr : stmt->exprs()) {
+    auto value = evaluate(expr);
+    std::cout << value << " ";
+  }
+  std::cout << std::endl;
 }
 
 void Interpreter::visit_let_stmt(const LetStmtPtr& stmt) {

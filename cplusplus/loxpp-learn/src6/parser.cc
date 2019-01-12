@@ -282,11 +282,16 @@ StmtPtr Parser::expr_stmt(void) {
 }
 
 StmtPtr Parser::print_stmt(void) {
-  // print_stmt -> "print" expression NEWLINE ;
+  // print_stmt -> "print" ( expression ( "," expression )* )? NEWLINE ;
 
-  ExprPtr expr = expression();
-  consume(TokenKind::TK_NEWLINE, "expect `NL` after `print` expression ...");
-  return std::make_shared<PrintStmt>(expr);
+  std::vector<ExprPtr> exprs;
+  if (!match({TokenKind::TK_NEWLINE})) {
+    do {
+      exprs.push_back(expression());
+    } while (match({TokenKind::TK_COMMA}));
+    consume(TokenKind::TK_NEWLINE, "expect `NL` after `print` expression ...");
+  }
+  return std::make_shared<PrintStmt>(exprs);
 }
 
 }

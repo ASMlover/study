@@ -315,12 +315,12 @@ using ExprStmtPtr = std::shared_ptr<ExprStmt>;
 
 class PrintStmt
   : public Stmt, public std::enable_shared_from_this<PrintStmt> {
-  ExprPtr expr_;
+  std::vector<ExprPtr> exprs_;
 public:
-  const ExprPtr& expr(void) const { return expr_; }
+  const std::vector<ExprPtr>& exprs(void) const { return exprs_; }
 
-  PrintStmt(const ExprPtr& expr)
-    : expr_(expr) {
+  PrintStmt(const std::vector<ExprPtr>& exprs)
+    : exprs_(exprs) {
   }
 
   virtual void accept(const StmtVisitorPtr& visitor) override;

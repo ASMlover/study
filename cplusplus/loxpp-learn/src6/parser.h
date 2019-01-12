@@ -38,7 +38,7 @@ namespace lox {
 // let_decl       -> "let" IDENTIFILER ( "=" expression? ) NEWLINE ;
 // statement      -> expr_stmt | print_stmt ;
 // expr_stmt      -> expression NEWLINE ;
-// print_stmt     -> "print" expression NEWLINE ;
+// print_stmt     -> "print" ( expression ( "," expression )* )? NEWLINE ;
 
 // expression     -> assignment ;
 // assignment     -> IDENTIFILER ( assign_oper ) assignment | equality ;
