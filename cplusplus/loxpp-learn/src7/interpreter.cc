@@ -46,6 +46,21 @@ void Interpreter::evaluate(const StmtPtr& stmt) {
   stmt->accept(shared_from_this());
 }
 
+void Interpreter::evaluate_block(
+    const std::vector<StmtPtr>& stmts, const EnvironmentPtr& env) {
+  auto origin_environment = environment_;
+  try {
+    environment_ = env;
+    for (auto& stmt : stmts)
+      evaluate(stmt);
+  }
+  catch (...) {
+    environment_ = origin_environment;
+    throw;
+  }
+  environment_ = origin_environment;
+}
+
 void Interpreter::check_numeric_operand(const Token& oper, const Value& value) {
   if (value.is_numeric())
     return;
@@ -208,6 +223,7 @@ void Interpreter::visit_let_stmt(const LetStmtPtr& stmt) {
 }
 
 void Interpreter::visit_block_stmt(const BlockStmtPtr& stmt) {
+  evaluate_block(stmt->stmts(), std::make_shared<Environment>(environment_));
 }
 
 void Interpreter::visit_if_stmt(const IfStmtPtr& stmt) {

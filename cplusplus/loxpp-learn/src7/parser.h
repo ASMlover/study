@@ -36,9 +36,10 @@ namespace lox {
 // program        -> declaration* EOF ;
 // declaration    -> let_decl | statement ;
 // let_decl       -> "let" IDENTIFILER ( "=" expression? ) NEWLINE ;
-// statement      -> expr_stmt | print_stmt ;
+// statement      -> expr_stmt | print_stmt | block_stmt ;
 // expr_stmt      -> expression NEWLINE ;
 // print_stmt     -> "print" ( expression ( "," expression )* )? NEWLINE ;
+// block_stmt     -> "{" declaration* "}" ;
 
 // expression     -> assignment ;
 // assignment     -> IDENTIFILER ( assign_oper ) assignment | equality ;
@@ -69,6 +70,7 @@ class Parser : private UnCopyable {
   const Token& consume(TokenKind kind, const std::string& message);
   const Token& consume(const std::initializer_list<TokenKind>& kinds,
       const std::string& message);
+  bool ignore_newlines(void);
   void synchronize(void);
 
   ExprPtr expression(void);
@@ -85,6 +87,7 @@ class Parser : private UnCopyable {
   StmtPtr statement(void);
   StmtPtr expr_stmt(void);
   StmtPtr print_stmt(void);
+  std::vector<StmtPtr> block_stmt(void);
 public:
   Parser(ErrorReport& err_report, const std::vector<Token>& tokens)
     : err_report_(err_report), tokens_(tokens) {

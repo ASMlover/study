@@ -34,11 +34,22 @@ namespace lox {
 
 class Token;
 class Value;
+class Environment;
+
+using EnvironmentPtr = std::shared_ptr<Environment>;
 
 class Environment
   : private UnCopyable, public std::enable_shared_from_this<Environment> {
+  EnvironmentPtr enclosing_{};
   std::unordered_map<std::string, Value> values_;
 public:
+  Environment(void) {
+  }
+
+  Environment(const EnvironmentPtr& enclosing)
+    : enclosing_(enclosing) {
+  }
+
   void define(const std::string& name, const Value& value);
   void define(const Token& name, const Value& value);
   const Value& get(const std::string& name) const;

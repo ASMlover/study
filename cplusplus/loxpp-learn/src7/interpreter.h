@@ -47,6 +47,8 @@ class Interpreter
 
   Value evaluate(const ExprPtr& expr);
   void evaluate(const StmtPtr& stmt);
+  void evaluate_block(
+      const std::vector<StmtPtr>& stmts, const EnvironmentPtr& env);
   void check_numeric_operand(const Token& oper, const Value& value);
   void check_numeric_operands(
       const Token& oper, const Value& lvalue, const Value& rvalue);

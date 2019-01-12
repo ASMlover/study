@@ -46,6 +46,9 @@ const Value& Environment::get(const std::string& name) const {
   if (value_iter != values_.end())
     return value_iter->second;
 
+  if (enclosing_)
+    return enclosing_->get(name);
+
   return kNil;
 }
 
@@ -53,6 +56,9 @@ const Value& Environment::get(const Token& name) const {
   auto value_iter = values_.find(name.get_literal());
   if (value_iter != values_.end())
     return value_iter->second;
+
+  if (enclosing_)
+    return enclosing_->get(name);
 
   throw RuntimeError(name,
       "undefined variable `" + name.get_literal() + "` ...");
@@ -62,6 +68,11 @@ void Environment::assign(const Token& name, const Value& value) {
   auto value_iter = values_.find(name.get_literal());
   if (value_iter != values_.end()) {
     value_iter->second = value;
+    return;
+  }
+
+  if (enclosing_) {
+    enclosing_->assign(name, value);
     return;
   }
 

@@ -42,8 +42,10 @@ ExprPtr Parser::parse(void) {
 
 std::vector<StmtPtr> Parser::parse_stmt(void) {
   std::vector<StmtPtr> stmts;
-  while (!is_end())
-    stmts.push_back(declaration());
+  while (!is_end()) {
+    if (!ignore_newlines())
+      stmts.push_back(declaration());
+  }
   return stmts;
 }
 
@@ -94,6 +96,15 @@ const Token& Parser::consume(
   }
 
   throw RuntimeError(peek(), message);
+}
+
+bool Parser::ignore_newlines(void) {
+  if (!match({TokenKind::TK_NEWLINE}))
+    return false;
+
+  while (match({TokenKind::TK_NEWLINE})) {
+  }
+  return true;
 }
 
 void Parser::synchronize(void) {
@@ -266,10 +277,12 @@ StmtPtr Parser::let_decl(void) {
 }
 
 StmtPtr Parser::statement(void) {
-  // statement -> expr_stmt | print_stmt ;
+  // statement -> expr_stmt | print_stmt | block_stmt ;
 
   if (match({TokenKind::KW_PRINT}))
     return print_stmt();
+  if (match({TokenKind::TK_LBRACE}))
+    return std::make_shared<BlockStmt>(block_stmt());
   return expr_stmt();
 }
 
@@ -292,6 +305,18 @@ StmtPtr Parser::print_stmt(void) {
     consume(TokenKind::TK_NEWLINE, "expect `NL` after `print` expression ...");
   }
   return std::make_shared<PrintStmt>(exprs);
+}
+
+std::vector<StmtPtr> Parser::block_stmt(void) {
+  // block_stmt -> "{" declaration* "}" ;
+
+  std::vector<StmtPtr> stmts;
+  while (!is_end() && !check(TokenKind::TK_RBRACE)) {
+    if (!ignore_newlines())
+      stmts.push_back(declaration());
+  }
+  consume(TokenKind::TK_RBRACE, "expect `}` after block statement ...");
+  return stmts;
 }
 
 }
