@@ -277,8 +277,10 @@ StmtPtr Parser::let_decl(void) {
 }
 
 StmtPtr Parser::statement(void) {
-  // statement -> expr_stmt | print_stmt | block_stmt ;
+  // statement -> expr_stmt | if_stmt | print_stmt | block_stmt ;
 
+  if (match({TokenKind::KW_IF}))
+    return if_stmt();
   if (match({TokenKind::KW_PRINT}))
     return print_stmt();
   if (match({TokenKind::TK_LBRACE}))
@@ -292,6 +294,22 @@ StmtPtr Parser::expr_stmt(void) {
   ExprPtr expr = expression();
   consume(TokenKind::TK_NEWLINE, "expect `NL` after expression ...");
   return std::make_shared<ExprStmt>(expr);
+}
+
+StmtPtr Parser::if_stmt(void) {
+  // if_stmt -> "if" "(" expression ")" statement ( "else" statement )? ;
+
+  consume(TokenKind::TK_LPAREN, "expect `(` after `if` keyword ...");
+  ExprPtr cond = expression();
+  consume(TokenKind::TK_RPAREN, "expect `)` after if condition ...");
+  ignore_newlines(); // skip NL before if statement
+  StmtPtr then_branch = statement();
+  StmtPtr else_branch;
+  if (match({TokenKind::KW_ELSE})) {
+    ignore_newlines(); // skip NL before else statement
+    else_branch = statement();
+  }
+  return std::make_shared<IfStmt>(cond, then_branch, else_branch);
 }
 
 StmtPtr Parser::print_stmt(void) {

@@ -36,8 +36,9 @@ namespace lox {
 // program        -> declaration* EOF ;
 // declaration    -> let_decl | statement ;
 // let_decl       -> "let" IDENTIFILER ( "=" expression? ) NEWLINE ;
-// statement      -> expr_stmt | print_stmt | block_stmt ;
+// statement      -> expr_stmt | if_stmt | print_stmt | block_stmt ;
 // expr_stmt      -> expression NEWLINE ;
+// if_stmt        -> "if" "(" expression ")" statement ( "else" statement )? ;
 // print_stmt     -> "print" ( expression ( "," expression )* )? NEWLINE ;
 // block_stmt     -> "{" declaration* "}" ;
 
@@ -86,6 +87,7 @@ class Parser : private UnCopyable {
   StmtPtr let_decl(void);
   StmtPtr statement(void);
   StmtPtr expr_stmt(void);
+  StmtPtr if_stmt(void);
   StmtPtr print_stmt(void);
   std::vector<StmtPtr> block_stmt(void);
 public:

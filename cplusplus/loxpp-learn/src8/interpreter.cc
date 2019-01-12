@@ -227,6 +227,14 @@ void Interpreter::visit_block_stmt(const BlockStmtPtr& stmt) {
 }
 
 void Interpreter::visit_if_stmt(const IfStmtPtr& stmt) {
+  Value cond = evaluate(stmt->cond());
+  if (cond.is_truthy()) {
+    evaluate(stmt->then_branch());
+  }
+  else {
+    if (stmt->else_branch())
+      evaluate(stmt->else_branch());
+  }
 }
 
 void Interpreter::visit_while_stmt(const WhileStmtPtr& stmt) {
