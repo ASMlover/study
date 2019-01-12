@@ -84,6 +84,7 @@ void Lox::run(const std::string& sources, const std::string& fname) {
 
   for (auto& tok : tokens)
     std::cout << tok << std::endl;
+  std::cout << std::endl;
 
   //////////////////// OLD INTERPRETER TEST ////////////////////
   // Parser parser(err_report_, tokens);
