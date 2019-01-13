@@ -15,8 +15,10 @@ print_stmt  -> "print" ( expression ( "," expression )* )? NEWLINE ;
 block_stmt  -> "{" declararion* "}" ;
 
 expression  -> assignment ;
-assignment  -> IDENTIFILER ( assign_oper ) assignment | equality ;
+assignment  -> IDENTIFILER ( assign_oper ) assignment | logical_or ;
 assign_oper -> "=" | "+=" | "-=" | "*=" | "/=" | "%=" ;
+logical_or  -> logical_and ( "or" logical_and )* ;
+logical_and -> equality ( "and" equality )* ;
 ...
 equality    -> ... ;
 ```

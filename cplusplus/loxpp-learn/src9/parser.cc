@@ -137,10 +137,10 @@ ExprPtr Parser::expression(void) {
 }
 
 ExprPtr Parser::assignment(void) {
-  // assignment   -> IDENTIFILER ( assign_oper ) assignment | equality ;
+  // assignment   -> IDENTIFILER ( assign_oper ) assignment | logical_or ;
   // assign_oper  -> "=" | "+=" | "-=" | "*=" | "/=" | "%=" ;
 
-  ExprPtr expr = equality();
+  ExprPtr expr = logical_or();
   if (match({TokenKind::TK_EQUAL, TokenKind::TK_PLUSEQUAL,
         TokenKind::TK_MINUSEQUAL, TokenKind::TK_STAREQUAL,
         TokenKind::TK_SLASHEQUAL, TokenKind::TK_PERCENTEQUAL})) {
@@ -151,6 +151,30 @@ ExprPtr Parser::assignment(void) {
       return std::make_shared<AssignExpr>(name, oper, value);
     }
     throw RuntimeError(oper, "invalid assignment target ...");
+  }
+  return expr;
+}
+
+ExprPtr Parser::logical_or(void) {
+  // logical_or -> logical_and ( "or" logical_and )* ;
+
+  ExprPtr expr = logical_and();
+  while (match({TokenKind::KW_OR})) {
+    const Token& oper = prev();
+    ExprPtr right = logical_and();
+    expr = std::make_shared<LogicalExpr>(expr, oper, right);
+  }
+  return expr;
+}
+
+ExprPtr Parser::logical_and(void) {
+  // logical_and -> equality ( "and" equality )*;
+
+  ExprPtr expr = equality();
+  while (match({TokenKind::KW_AND})) {
+    const Token& oper = prev();
+    ExprPtr right = equality();
+    expr = std::make_shared<LogicalExpr>(expr, oper, right);
   }
   return expr;
 }

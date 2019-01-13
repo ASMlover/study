@@ -177,6 +177,20 @@ void Interpreter::visit_literal_expr(const LiteralExprPtr& expr) {
 }
 
 void Interpreter::visit_logical_expr(const LogicalExprPtr& expr) {
+  Value left = evaluate(expr->left());
+  if (expr->oper().get_kind() == TokenKind::KW_OR) {
+    if (left.is_truthy()) {
+      value_ = left;
+      return;
+    }
+  }
+  else {
+    if (!left.is_truthy()) {
+      value_ = left;
+      return;
+    }
+  }
+  value_ = evaluate(expr->right());
 }
 
 void Interpreter::visit_self_expr(const SelfExprPtr& expr) {

@@ -43,8 +43,10 @@ namespace lox {
 // block_stmt     -> "{" declaration* "}" ;
 
 // expression     -> assignment ;
-// assignment     -> IDENTIFILER ( assign_oper ) assignment | equality ;
+// assignment     -> IDENTIFILER ( assign_oper ) assignment | logical_or ;
 // assign_oper    -> "=" | "+=" | "-=" | "*=" | "/=" | "%=" ;
+// logical_or     -> logical_and ( "or" logical_and )* ;
+// logical_and    -> equality ( "and" equality )*;
 // equality       -> comparison ( ( "is" | "==" | "!=" ) comparison )* ;
 // comparison     -> addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
 // addition       -> multiplication ( ( "+" | "-" ) multiplication )* ;
@@ -76,6 +78,8 @@ class Parser : private UnCopyable {
 
   ExprPtr expression(void);
   ExprPtr assignment(void);
+  ExprPtr logical_or(void);
+  ExprPtr logical_and(void);
   ExprPtr equality(void);
   ExprPtr comparison(void);
   ExprPtr addition(void);
