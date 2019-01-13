@@ -301,12 +301,17 @@ StmtPtr Parser::let_decl(void) {
 }
 
 StmtPtr Parser::statement(void) {
-  // statement -> expr_stmt | if_stmt | print_stmt | block_stmt ;
+  // statement -> expr_stmt | for_stmt | if_stmt
+  //            | print_stmt | while_stmt | block_stmt ;
 
+  if (match({TokenKind::KW_FOR}))
+    return for_stmt();
   if (match({TokenKind::KW_IF}))
     return if_stmt();
   if (match({TokenKind::KW_PRINT}))
     return print_stmt();
+  if (match({TokenKind::KW_WHILE}))
+    return while_stmt();
   if (match({TokenKind::TK_LBRACE}))
     return std::make_shared<BlockStmt>(block_stmt());
   return expr_stmt();
@@ -318,6 +323,64 @@ StmtPtr Parser::expr_stmt(void) {
   ExprPtr expr = expression();
   consume(TokenKind::TK_NEWLINE, "expect `NL` after expression ...");
   return std::make_shared<ExprStmt>(expr);
+}
+
+StmtPtr Parser::for_stmt(void) {
+  // for_stmt     -> "for" "(" init_clause cond_expr iter_expr ")" statement ;
+
+  // for_stmt     -> "for" "(" init_clause expression? ";" expression? ")" statement ;
+  // init_clause  -> loop_let | loop_expr | ";" ;
+  // loop_let     -> "let" IDENTIFILER ( "=" expression? ) ";" ;
+  // loop_expr    -> expression ";" ;
+
+  auto loop_let = [this](void) -> StmtPtr {
+    const Token& name = consume(TokenKind::TK_IDENTIFILER,
+        "expect variable name in `for` variable declaration ... ");
+    ExprPtr expr;
+    if (match({TokenKind::TK_EQUAL}))
+      expr = expression();
+    consume(TokenKind::TK_SEMI, "expect `;` in `for` variable declaration ...");
+    return std::make_shared<LetStmt>(name, expr);
+  };
+  auto loop_expr = [this](void) -> StmtPtr {
+    ExprPtr expr = expression();
+    consume(TokenKind::TK_SEMI, "expect `;` in `for` expression statement ...");
+    return std::make_shared<ExprStmt>(expr);
+  };
+
+  // `for` loop operator parsing
+  consume(TokenKind::TK_LPAREN, "expect `(` after `for` keyword ...");
+  StmtPtr init_clause;
+  if (match({TokenKind::TK_SEMI}))
+    init_clause = nullptr;
+  else if (match({TokenKind::KW_LET}))
+    init_clause = loop_let();
+  else
+    init_clause = loop_expr();
+  ExprPtr cond_expr;
+  if (!check(TokenKind::TK_SEMI))
+    cond_expr = expression();
+  consume(TokenKind::TK_SEMI, "expect `;` after `for` loop condition ...");
+  ExprPtr iter_expr;
+  if (!check(TokenKind::TK_RPAREN))
+    iter_expr = expression();
+  consume(TokenKind::TK_RPAREN, "expect `)` after `for` loop clauses ...");
+  ignore_newlines(); // skip NL before for statement
+  StmtPtr body = statement();
+
+  if (iter_expr) {
+    std::vector<StmtPtr> stmts{body, std::make_shared<ExprStmt>(iter_expr)};
+    body = std::make_shared<BlockStmt>(stmts);
+  }
+  if (!cond_expr)
+    cond_expr = std::make_shared<LiteralExpr>(true);
+  body = std::make_shared<WhileStmt>(cond_expr, body);
+  if (init_clause) {
+    std::vector<StmtPtr> stmts{init_clause, body};
+    body = std::make_shared<BlockStmt>(stmts);
+  }
+
+  return body;
 }
 
 StmtPtr Parser::if_stmt(void) {
@@ -347,6 +410,17 @@ StmtPtr Parser::print_stmt(void) {
     consume(TokenKind::TK_NEWLINE, "expect `NL` after `print` expression ...");
   }
   return std::make_shared<PrintStmt>(exprs);
+}
+
+StmtPtr Parser::while_stmt(void) {
+  // while_stmt -> "while" "(" expression ")" statement ;
+
+  consume(TokenKind::TK_LPAREN, "expect `(` after `while` keyword ...");
+  ExprPtr cond = expression();
+  consume(TokenKind::TK_RPAREN, "expect `)` after while condition ...");
+  ignore_newlines(); // skip NL before while statement
+  StmtPtr body = statement();
+  return std::make_shared<WhileStmt>(cond, body);
 }
 
 std::vector<StmtPtr> Parser::block_stmt(void) {

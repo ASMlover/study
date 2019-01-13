@@ -109,6 +109,7 @@ void Lexer::next_token(void) {
     break;
   case ',': make_token(TokenKind::TK_COMMA); break;
   case ':': make_token(TokenKind::TK_COLON); break;
+  case ';': make_token(TokenKind::TK_SEMI); break;
   case '+':
     make_token(match('=') ? TokenKind::TK_PLUSEQUAL : TokenKind::TK_PLUS);
     break;
