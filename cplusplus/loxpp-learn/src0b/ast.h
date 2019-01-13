@@ -30,10 +30,9 @@
 #include <vector>
 #include "common.h"
 #include "value.h"
+#include "token.h"
 
 namespace lox {
-
-class Token;
 
 struct Expr;
 struct Stmt;
@@ -99,7 +98,7 @@ class CallExpr
   : public Expr, public std::enable_shared_from_this<CallExpr> {
   ExprPtr callee_;
   const Token& paren_;
-  const std::vector<ExprPtr>& arguments_;
+  std::vector<ExprPtr> arguments_;
 public:
   const ExprPtr& callee(void) const { return callee_; }
   const Token& paren(void) const { return paren_; }
@@ -256,8 +255,8 @@ using VariableExprPtr = std::shared_ptr<VariableExpr>;
 
 class FunctionExpr
   : public Expr, public std::enable_shared_from_this<FunctionExpr> {
-  const std::vector<Token>& params_;
-  const std::vector<StmtPtr>& body_;
+  const std::vector<Token> params_;
+  const std::vector<StmtPtr> body_;
 public:
   const std::vector<Token>& params(void) const { return params_; }
   const std::vector<StmtPtr>& body(void) const { return body_; }
