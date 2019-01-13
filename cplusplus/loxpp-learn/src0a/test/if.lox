@@ -1,0 +1,11 @@
+
+print ">>>>>>>>> if statement testing >>>>>>>>>"
+
+let first = false
+let second = false
+
+if (first)
+  if (second)
+    print "second is true"
+  else
+    print "second is false"
