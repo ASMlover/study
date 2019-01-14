@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <sstream>
+#include "callable.h"
 #include "value.h"
 
 namespace lox {
@@ -45,6 +46,7 @@ bool Value::is_truthy(void) const {
         [](std::int64_t i64) -> bool { return i64 != 0; },
         [](double d) -> bool { return d != 0.f; },
         [](const std::string& s) -> bool { return !s.empty(); },
+        [](const CallablePtr& c) -> bool { return true; },
       }, v_);
 }
 
@@ -55,6 +57,7 @@ std::string Value::stringify(void) const {
         [](std::int64_t i64) -> std::string { return std::to_string(i64); },
         [](double d) -> std::string { return decimal2str(d); },
         [](const std::string& s) -> std::string { return s; },
+        [](const CallablePtr& c) -> std::string { return c->to_string(); },
       }, v_);
 }
 
@@ -65,6 +68,7 @@ std::string Value::type(void) const {
         [](std::int64_t) -> std::string { return "integer"; },
         [](double) -> std::string { return "decimal"; },
         [](const std::string&) -> std::string { return "string"; },
+        [](const CallablePtr&) -> std::string { return "callable"; },
       }, v_);
 }
 
