@@ -307,6 +307,8 @@ StmtPtr Parser::declaration(void) {
   // declaration -> func_decl | let_decl | statement ;
 
   try {
+    if (match({TokenKind::KW_FN}))
+      return func_decl("function");
     if (match({TokenKind::KW_LET}))
       return let_decl();
 
@@ -320,12 +322,30 @@ StmtPtr Parser::declaration(void) {
   }
 }
 
-StmtPtr Parser::func_decl(void) {
+StmtPtr Parser::func_decl(const std::string& kind) {
   // func_decl  -> "fn" function ;
   // function   -> IDENTIFILER "(" parameters? ")" block_stmt ;
   // parameters -> IDENTIFILER ( "," IDENTIFILER )* ;
 
-  return nullptr;
+  const Token& name = consume(
+      TokenKind::TK_IDENTIFILER, "expect " + kind + " name ...");
+  consume(TokenKind::TK_LPAREN, "expect `(` after " + kind + " name ...");
+  std::vector<Token> parameters;
+  if (!check(TokenKind::TK_RPAREN)) {
+    do {
+      if (parameters.size() >= kMaxArguments) {
+        throw RuntimeError(peek(),
+            "cannot have move than "
+            + std::to_string(kMaxArguments) + " parameters ...");
+      }
+      parameters.push_back(
+          consume(TokenKind::TK_IDENTIFILER, "expect parameter name ..."));
+    } while (match({TokenKind::TK_COMMA}));
+  }
+  consume(TokenKind::TK_RPAREN, "expect `)` after " + kind + " parameters ...");
+  consume(TokenKind::TK_LBRACE, "expect `{` before " + kind + " body ...");
+  auto body = block_stmt();
+  return std::make_shared<FunctionStmt>(name, parameters, body);
 }
 
 StmtPtr Parser::let_decl(void) {

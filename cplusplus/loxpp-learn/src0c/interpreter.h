@@ -60,6 +60,13 @@ class Interpreter
 public:
   Interpreter(ErrorReport& err_report);
 
+  EnvironmentPtr get_globals(void) const { return globals_; }
+
+  void invoke_evaluate_block(
+      const std::vector<StmtPtr>& stmts, const EnvironmentPtr& env) {
+    evaluate_block(stmts, env);
+  }
+
   virtual void visit_assign_expr(const AssignExprPtr& expr) override;
   virtual void visit_binary_expr(const BinaryExprPtr& expr) override;
   virtual void visit_call_expr(const CallExprPtr& expr) override;

@@ -102,7 +102,7 @@ class Parser : private UnCopyable {
   ExprPtr primary(void);
 
   StmtPtr declaration(void);
-  StmtPtr func_decl(void);
+  StmtPtr func_decl(const std::string& kind);
   StmtPtr let_decl(void);
   StmtPtr statement(void);
   StmtPtr expr_stmt(void);

@@ -29,6 +29,7 @@
 #include "token.h"
 #include "builtins.h"
 #include "environment.h"
+#include "callable.h"
 #include "interpreter.h"
 
 namespace lox {
@@ -274,6 +275,8 @@ void Interpreter::visit_while_stmt(const WhileStmtPtr& stmt) {
 }
 
 void Interpreter::visit_function_stmt(const FunctionStmtPtr& stmt) {
+  auto fn = std::make_shared<Function>(stmt);
+  environment_->define(stmt->name(), Value(fn));
 }
 
 void Interpreter::visit_return_stmt(const ReturnStmtPtr& stmt) {
