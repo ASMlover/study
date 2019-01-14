@@ -24,41 +24,28 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include <memory>
-#include <vector>
-#include "common.h"
-#include "value.h"
-#include "ast.h"
+#include "environment.h"
+#include "interpreter.h"
+#include "callable.h"
 
 namespace lox {
 
-class Interpreter;
-using InterpreterPtr = std::shared_ptr<Interpreter>;
+Value Function::call(
+    const InterpreterPtr& interp, const std::vector<Value>& arguments) {
+  auto envp = std::make_shared<Environment>(interp->get_globals());
+  for (auto i = 0u; i < arguments.size(); ++i)
+    envp->define(decl_->params()[i], arguments[i]);
+  interp->invoke_evaluate_block(decl_->body(), envp);
 
-struct Callable : private UnCopyable {
-  virtual ~Callable(void) {}
-  virtual bool check_arity(void) const { return true; }
+  return nullptr;
+}
 
-  virtual Value call(
-      const InterpreterPtr& interp, const std::vector<Value>& arguments) = 0;
-  virtual std::size_t arity(void) const = 0;
-  virtual std::string to_string(void) const = 0;
-};
+std::size_t Function::arity(void) const {
+  return decl_->params().size();
+}
 
-class Function
-  : public Callable, public std::enable_shared_from_this<Function> {
-  FunctionStmtPtr decl_;
-public:
-  Function(const FunctionStmtPtr& decl)
-    : decl_(decl) {
-  }
-
-  virtual Value call(const InterpreterPtr& interp,
-      const std::vector<Value>& arguments) override;
-  virtual std::size_t arity(void) const override;
-  virtual std::string to_string(void) const override;
-};
+std::string Function::to_string(void) const {
+  return "<fn `" + decl_->name().get_literal() + "`>";
+}
 
 }
