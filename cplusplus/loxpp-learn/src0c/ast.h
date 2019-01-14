@@ -394,13 +394,16 @@ using WhileStmtPtr = std::shared_ptr<WhileStmt>;
 class FunctionStmt
   : public Stmt, public std::enable_shared_from_this<FunctionStmt> {
   const Token& name_;
-  FunctionExprPtr func_;
+  std::vector<Token> params_;
+  std::vector<StmtPtr> body_;
 public:
   const Token& name(void) const { return name_; }
-  const FunctionExprPtr& func(void) const { return func_; }
+  const std::vector<Token>& params(void) const { return params_; }
+  const std::vector<StmtPtr>& body(void) const { return body_; }
 
-  FunctionStmt(const Token& name, const FunctionExprPtr& func)
-    : name_(name), func_(func) {
+  FunctionStmt(const Token& name,
+      const std::vector<Token>& params, const std::vector<StmtPtr>& body)
+    : name_(name), params_(params), body_(body) {
   }
 
   virtual void accept(const StmtVisitorPtr& visitor) override;
