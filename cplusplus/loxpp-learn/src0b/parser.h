@@ -57,7 +57,9 @@ namespace lox {
 // comparison     -> addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
 // addition       -> multiplication ( ( "+" | "-" ) multiplication )* ;
 // multiplication -> unary ( ( "*" | "/" | "%" ) unary )* ;
-// unary          -> ( "-" | "!" | "not" ) unary | primary ;
+// unary          -> ( "-" | "!" | "not" ) unary | call ;
+// call           -> primary ( "(" arguments? ")" )* ;
+// arguments      -> expression ( "," expression )* ;
 // primary        -> INTEGER | DECIMAL | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" | IDENTIFILER ;
 
@@ -69,6 +71,8 @@ class Parser : private UnCopyable {
   ErrorReport& err_report_;
   const std::vector<Token>& tokens_;
   std::size_t curpos_{};
+
+  static constexpr std::size_t kMaxArguments = 64;
 
   bool is_end(void) const;
   const Token& advance(void);
@@ -91,6 +95,7 @@ class Parser : private UnCopyable {
   ExprPtr addition(void);
   ExprPtr multiplication(void);
   ExprPtr unary(void);
+  ExprPtr call(void);
   ExprPtr primary(void);
 
   StmtPtr declaration(void);

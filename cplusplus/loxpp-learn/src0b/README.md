@@ -26,4 +26,9 @@ logical_or  -> logical_and ( "or" logical_and )* ;
 logical_and -> equality ( "and" equality )* ;
 ...
 equality    -> ... ;
+...
+unary       -> ( "-" | "!" | "not" ) unary | call ;
+call        -> primary ( "(" arguments? ")" )* ;
+arguments   -> expression ( "," expression )* ;
+primary     -> ... ;
 ```

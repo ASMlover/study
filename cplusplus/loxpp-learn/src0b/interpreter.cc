@@ -27,6 +27,7 @@
 #include <iostream>
 #include "errors.h"
 #include "token.h"
+#include "builtins.h"
 #include "environment.h"
 #include "interpreter.h"
 
@@ -34,7 +35,9 @@ namespace lox {
 
 Interpreter::Interpreter(ErrorReport& err_report)
   : err_report_(err_report)
-  , environment_(std::make_shared<Environment>()) {
+  , globals_(std::make_shared<Environment>())
+  , environment_(globals_) {
+  globals_->define("clock", Value(std::make_shared<NatClock>()));
 }
 
 Value Interpreter::evaluate(const ExprPtr& expr) {
@@ -160,6 +163,20 @@ void Interpreter::visit_binary_expr(const BinaryExprPtr& expr) {
 }
 
 void Interpreter::visit_call_expr(const CallExprPtr& expr) {
+  Value callee = evaluate(expr->callee());
+  if (!callee.is_callable())
+    throw RuntimeError(expr->paren(), "can only call functions and classes ...");
+
+  std::vector<Value> arguments;
+  for (auto& arg : expr->arguments())
+    arguments.push_back(evaluate(arg));
+  auto callable = callee.to_callable();
+  if (callable->check_arity() && callable->arity() != arguments.size()) {
+    throw RuntimeError(expr->paren(),
+        "expected " + std::to_string(callable->arity()) +
+        " arguments but got " + std::to_string(arguments.size()) + " ...");
+  }
+  value_ = callable->call(shared_from_this(), arguments);
 }
 
 void Interpreter::visit_set_expr(const SetExprPtr& expr) {
