@@ -360,8 +360,8 @@ StmtPtr Parser::let_decl(void) {
 }
 
 StmtPtr Parser::statement(void) {
-  // statement -> expr_stmt | for_stmt | if_stmt
-  //            | print_stmt | while_stmt | block_stmt ;
+  // statement -> expr_stmt | for_stmt | if_stmt | print_stmt
+  //            | return_stmt | while_stmt | block_stmt ;
 
   if (match({TokenKind::KW_FOR}))
     return for_stmt();
@@ -369,6 +369,8 @@ StmtPtr Parser::statement(void) {
     return if_stmt();
   if (match({TokenKind::KW_PRINT}))
     return print_stmt();
+  if (match({TokenKind::KW_RETURN}))
+    return return_stmt();
   if (match({TokenKind::KW_WHILE}))
     return while_stmt();
   if (match({TokenKind::TK_LBRACE}))
@@ -469,6 +471,17 @@ StmtPtr Parser::print_stmt(void) {
     consume(TokenKind::TK_NEWLINE, "expect `NL` after `print` expression ...");
   }
   return std::make_shared<PrintStmt>(exprs);
+}
+
+StmtPtr Parser::return_stmt(void) {
+  // return_stmt -> "return" expression? NEWLINE ;
+
+  const Token& keyword = prev();
+  ExprPtr value;
+  if (!check(TokenKind::TK_NEWLINE))
+    value = expression();
+  consume(TokenKind::TK_NEWLINE, "expect `NL` after return value ...");
+  return std::make_shared<ReturnStmt>(keyword, value);
 }
 
 StmtPtr Parser::while_stmt(void) {

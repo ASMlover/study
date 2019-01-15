@@ -29,6 +29,7 @@
 #include "token.h"
 #include "builtins.h"
 #include "environment.h"
+#include "return.h"
 #include "callable.h"
 #include "interpreter.h"
 
@@ -280,6 +281,8 @@ void Interpreter::visit_function_stmt(const FunctionStmtPtr& stmt) {
 }
 
 void Interpreter::visit_return_stmt(const ReturnStmtPtr& stmt) {
+  auto value_expr = stmt->value();
+  throw Return(value_expr ? evaluate(value_expr) : Value());
 }
 
 void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {

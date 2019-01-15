@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "return.h"
 #include "environment.h"
 #include "interpreter.h"
 #include "callable.h"
@@ -35,7 +36,13 @@ Value Function::call(
   auto envp = std::make_shared<Environment>(interp->get_globals());
   for (auto i = 0u; i < arguments.size(); ++i)
     envp->define(decl_->params()[i], arguments[i]);
-  interp->invoke_evaluate_block(decl_->body(), envp);
+
+  try {
+    interp->invoke_evaluate_block(decl_->body(), envp);
+  }
+  catch (const Return& r) {
+    return r.value();
+  }
 
   return nullptr;
 }
