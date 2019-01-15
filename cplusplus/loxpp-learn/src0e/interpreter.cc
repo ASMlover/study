@@ -276,7 +276,7 @@ void Interpreter::visit_while_stmt(const WhileStmtPtr& stmt) {
 }
 
 void Interpreter::visit_function_stmt(const FunctionStmtPtr& stmt) {
-  auto fn = std::make_shared<Function>(stmt);
+  auto fn = std::make_shared<Function>(stmt, environment_);
   environment_->define(stmt->name(), Value(fn));
 }
 

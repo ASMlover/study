@@ -33,7 +33,7 @@ namespace lox {
 
 Value Function::call(
     const InterpreterPtr& interp, const std::vector<Value>& arguments) {
-  auto envp = std::make_shared<Environment>(interp->get_globals());
+  auto envp = std::make_shared<Environment>(closure_);
   for (auto i = 0u; i < arguments.size(); ++i)
     envp->define(decl_->params()[i], arguments[i]);
 

@@ -34,7 +34,10 @@
 
 namespace lox {
 
+class Environment;
 class Interpreter;
+
+using EnvironmentPtr = std::shared_ptr<Environment>;
 using InterpreterPtr = std::shared_ptr<Interpreter>;
 
 struct Callable : private UnCopyable {
@@ -50,9 +53,11 @@ struct Callable : private UnCopyable {
 class Function
   : public Callable, public std::enable_shared_from_this<Function> {
   FunctionStmtPtr decl_;
+  EnvironmentPtr closure_;
 public:
-  Function(const FunctionStmtPtr& decl)
-    : decl_(decl) {
+  Function(const FunctionStmtPtr& decl, const EnvironmentPtr& closure)
+    : decl_(decl)
+    , closure_(closure) {
   }
 
   virtual Value call(const InterpreterPtr& interp,
