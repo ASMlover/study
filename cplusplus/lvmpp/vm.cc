@@ -24,24 +24,37 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
 #include "chunk.h"
 #include "vm.h"
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
+VM::VM(void)
+  : chunk_(new Chunk()) {
+}
 
-  Chunk c;
-  VM vm;
-  vm.init();
-  auto i = c.add_constant(1.2);
-  c.write_chunk(OP_CONSTANT, 123);
-  c.write_chunk(i, 123);
-  c.write_chunk(OP_RETURN, 123);
-  c.disassemble("test chunk");
-  vm.interpret(&c);
-  vm.destroy();
-  c.free_chunk();
+void VM::init(void) {
+}
 
+void VM::destroy(void) {
+}
+
+int VM::interpret(Chunk* chunk) {
+  chunk_.reset(chunk);
+  ip_ = const_cast<std::uint8_t*>(chunk_->get_bytes());
+
+  return run();
+}
+
+int VM::run(void) {
+#define READ_BYTE() (*ip_++)
+
+  for (;;) {
+    std::uint8_t inst;
+    switch (inst = READ_BYTE()) {
+    case OP_RETURN:
+      return INTERPRET_OK;
+    }
+  }
+
+#undef READ_BYTE
   return 0;
 }
