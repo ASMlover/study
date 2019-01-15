@@ -45,6 +45,8 @@ class Chunk {
   std::size_t constant_instruction(const char* name, std::size_t offset);
   std::size_t disassemble_instruction(std::size_t offset);
 public:
+  const std::uint8_t* get_bytes(void) const { return chunk_.data(); }
+
   void write_chunk(std::uint8_t byte, int line);
   std::size_t add_constant(Value value);
   void free_chunk(void);
