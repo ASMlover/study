@@ -1,0 +1,13 @@
+
+print ">>>>>>>>> logical operators testing >>>>>>>>>"
+
+print "hi" or 2
+print nil or "yes"
+
+let a = 45
+a = (nil or "value is : 45")
+print "value of a is : ", a
+
+let b = 10
+b *= (true and 10)
+print "value of b is : ", b

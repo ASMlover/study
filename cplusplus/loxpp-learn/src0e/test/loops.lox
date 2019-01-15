@@ -1,0 +1,13 @@
+
+print ">>>>>>>>> while loops and for loops testing >>>>>>>>>"
+
+let count = 5
+while (count > 0) {
+  print "[while] count value is : ", count
+  count -= 1
+}
+
+for (let count = 0; count < 5; count += 1) {
+  print "[loop] count value is : ", count
+}
+print "global count value is : ", count
