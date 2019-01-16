@@ -1,0 +1,12 @@
+
+print ">>>>>>>>> class instance testing >>>>>>>>>"
+
+class ClassDemo {
+
+  fun() {
+    print "ClassDemo.fun"
+  }
+
+}
+let d = ClassDemo()
+print d
