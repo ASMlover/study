@@ -74,10 +74,24 @@ public:
     : name_(name) {
   }
 
+  const std::string name(void) const { return name_; }
+
   virtual Value call(const InterpreterPtr& interp,
       const std::vector<Value>& arguments) override;
   virtual std::size_t arity(void) const override;
   virtual std::string to_string(void) const override;
+};
+using ClassPtr = std::shared_ptr<Class>;
+
+class Instance
+  : private UnCopyable, public std::enable_shared_from_this<Instance> {
+  ClassPtr class_;
+public:
+  Instance(const ClassPtr& cls)
+    : class_(cls) {
+  }
+
+  std::string to_string(void) const;
 };
 
 }

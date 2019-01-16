@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <sstream>
 #include "return.h"
 #include "environment.h"
 #include "interpreter.h"
@@ -57,7 +58,8 @@ std::string Function::to_string(void) const {
 
 Value Class::call(
     const InterpreterPtr& interp, const std::vector<Value>& arguments) {
-  return nullptr;
+  auto inst = std::make_shared<Instance>(shared_from_this());
+  return inst;
 }
 
 std::size_t Class::arity(void) const {
@@ -66,6 +68,12 @@ std::size_t Class::arity(void) const {
 
 std::string Class::to_string(void) const {
   return "<class " + name_ + ">";
+}
+
+std::string Instance::to_string(void) const {
+  std::stringstream ss;
+  ss << "<" << class_->name() << " instance at " << this << ">";
+  return ss.str();
 }
 
 }
