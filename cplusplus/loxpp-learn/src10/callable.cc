@@ -55,4 +55,17 @@ std::string Function::to_string(void) const {
   return "<fn `" + decl_->name().get_literal() + "`>";
 }
 
+Value Class::call(
+    const InterpreterPtr& interp, const std::vector<Value>& arguments) {
+  return nullptr;
+}
+
+std::size_t Class::arity(void) const {
+  return 0;
+}
+
+std::string Class::to_string(void) const {
+  return "<class " + name_ + ">";
+}
+
 }
