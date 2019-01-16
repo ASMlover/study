@@ -94,6 +94,14 @@ void Interpreter::check_modulo_operands(
   throw RuntimeError(oper, "operands must be two integers ...");
 }
 
+Value Interpreter::lookup_variable(const Token& name, const ExprPtr& expr) {
+  auto distance_iter = locals_.find(expr);
+  if (distance_iter != locals_.end())
+    return environment_->get_at(distance_iter->second, name);
+  else
+    return globals_->get(name);
+}
+
 void Interpreter::visit_assign_expr(const AssignExprPtr& expr) {
   const Token& name = expr->name();
   const Token& oper = expr->oper();
@@ -119,7 +127,12 @@ void Interpreter::visit_assign_expr(const AssignExprPtr& expr) {
   default:
     value_ = right; break;
   }
-  environment_->assign(name, value_);
+
+  auto distance_iter = locals_.find(expr);
+  if (distance_iter != locals_.end())
+    environment_->assign_at(distance_iter->second, name, value_);
+  else
+    environment_->assign(name, value_);
 }
 
 void Interpreter::visit_binary_expr(const BinaryExprPtr& expr) {
@@ -230,7 +243,7 @@ void Interpreter::visit_unary_expr(const UnaryExprPtr& expr) {
 }
 
 void Interpreter::visit_variable_expr(const VariableExprPtr& expr) {
-  value_ = environment_->get(expr->name());
+  value_ = lookup_variable(expr->name(), expr);
 }
 
 void Interpreter::visit_function_expr(const FunctionExprPtr& expr) {

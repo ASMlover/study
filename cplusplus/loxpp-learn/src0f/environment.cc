@@ -64,6 +64,10 @@ const Value& Environment::get(const Token& name) const {
       "undefined variable `" + name.get_literal() + "` ...");
 }
 
+const Value& Environment::get_at(int distance, const Token& name) {
+  return ancestor(distance)->get(name);
+}
+
 void Environment::assign(const Token& name, const Value& value) {
   auto value_iter = values_.find(name.get_literal());
   if (value_iter != values_.end()) {
@@ -78,6 +82,18 @@ void Environment::assign(const Token& name, const Value& value) {
 
   throw RuntimeError(name,
       "undefined variable `" + name.get_literal() + "` ...");
+}
+
+void Environment::assign_at(
+    int distance, const Token& name, const Value& value) {
+  ancestor(distance)->assign(name, value);
+}
+
+EnvironmentPtr Environment::ancestor(int distance) {
+  auto envp(shared_from_this());
+  for (int i = 0; i < distance; ++i)
+    envp = envp->enclosing_;
+  return envp;
 }
 
 }

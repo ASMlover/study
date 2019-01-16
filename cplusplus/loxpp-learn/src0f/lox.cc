@@ -29,6 +29,7 @@
 #include <sstream>
 #include "lexer.h"
 #include "parser.h"
+#include "resolver.h"
 #include "ast_printer.h"
 #include "interpreter.h"
 #include "lox.h"
@@ -103,6 +104,11 @@ void Lox::run(const std::string& sources, const std::string& fname) {
 
   Parser parser(err_report_, tokens);
   auto stmts = parser.parse_stmt();
+  if (err_report_.had_error())
+    std::abort();
+
+  auto resolver = std::make_shared<Resolver>(err_report_, interp_);
+  resolver->invoke_resolve(stmts);
   if (err_report_.had_error())
     std::abort();
 
