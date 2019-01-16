@@ -34,7 +34,7 @@ logical_and -> equality ( "and" equality )* ;
 equality    -> ... ;
 ...
 unary       -> ( "-" | "!" | "not" ) unary | call ;
-call        -> primary ( "(" arguments? ")" )* ;
+call        -> primary ( "(" arguments? ")" | "." IDENTIFILER )* ;
 arguments   -> expression ( "," expression )* ;
 primary     -> ... ;
 ```

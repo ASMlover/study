@@ -25,7 +25,9 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <sstream>
+#include "errors.h"
 #include "return.h"
+#include "token.h"
 #include "environment.h"
 #include "interpreter.h"
 #include "callable.h"
@@ -74,6 +76,15 @@ std::string Instance::to_string(void) const {
   std::stringstream ss;
   ss << "<" << class_->name() << " instance at " << this << ">";
   return ss.str();
+}
+
+Value Instance::get(const Token& name) const {
+  auto prop_iter = properties_.find(name.get_literal());
+  if (prop_iter != properties_.end())
+    return prop_iter->second;
+
+  throw RuntimeError(name,
+      "undefined property `" + name.get_literal() + "` ...");
 }
 
 }

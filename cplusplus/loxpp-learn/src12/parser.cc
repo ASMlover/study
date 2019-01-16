@@ -243,7 +243,7 @@ ExprPtr Parser::unary(void) {
 }
 
 ExprPtr Parser::call(void) {
-  // call       -> primary ( "(" arguments? ")" )* ;
+  // call       -> primary ( "(" arguments? ")" | "." IDENTIFILER )* ;
   // arguments  -> expression ( "," expression )* ;
 
   auto finish_call = [this](const ExprPtr& callee) -> ExprPtr {
@@ -265,10 +265,17 @@ ExprPtr Parser::call(void) {
 
   ExprPtr expr = primary();
   while (true) {
-    if (match({TokenKind::TK_LPAREN}))
+    if (match({TokenKind::TK_LPAREN})) {
       expr = finish_call(expr);
-    else
+    }
+    else if (match({TokenKind::TK_PERIOD})) {
+      const Token& name = consume(TokenKind::TK_IDENTIFILER,
+          "expect property name after `.` of class instance ...");
+      expr = std::make_shared<GetExpr>(expr, name);
+    }
+    else {
       break;
+    }
   }
   return expr;
 }
@@ -333,8 +340,8 @@ StmtPtr Parser::class_decl(void) {
       TokenKind::TK_IDENTIFILER, "expect class name ...");
   consume(TokenKind::TK_LBRACE, "expect `{` before class body ...");
   std::vector<FunctionStmtPtr> methods;
+  ignore_newlines();
   while (!is_end() && !check(TokenKind::TK_RBRACE)) {
-    ignore_newlines();
     auto meth = std::static_pointer_cast<FunctionStmt>(func_decl("method"));
     methods.push_back(meth);
     ignore_newlines();

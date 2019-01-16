@@ -49,6 +49,7 @@ void Resolver::visit_set_expr(const SetExprPtr& expr) {
 }
 
 void Resolver::visit_get_expr(const GetExprPtr& expr) {
+  resolve(expr->object());
 }
 
 void Resolver::visit_grouping_expr(const GroupingExprPtr& expr) {

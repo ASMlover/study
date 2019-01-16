@@ -63,7 +63,7 @@ namespace lox {
 // addition       -> multiplication ( ( "+" | "-" ) multiplication )* ;
 // multiplication -> unary ( ( "*" | "/" | "%" ) unary )* ;
 // unary          -> ( "-" | "!" | "not" ) unary | call ;
-// call           -> primary ( "(" arguments? ")" )* ;
+// call           -> primary ( "(" arguments? ")" | "." IDENTIFILER )* ;
 // arguments      -> expression ( "," expression )* ;
 // primary        -> INTEGER | DECIMAL | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" | IDENTIFILER ;

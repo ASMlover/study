@@ -28,12 +28,14 @@
 
 #include <memory>
 #include <vector>
+#include <unordered_map>
 #include "common.h"
 #include "value.h"
 #include "ast.h"
 
 namespace lox {
 
+class Token;
 class Environment;
 class Interpreter;
 
@@ -86,12 +88,14 @@ using ClassPtr = std::shared_ptr<Class>;
 class Instance
   : private UnCopyable, public std::enable_shared_from_this<Instance> {
   ClassPtr class_;
+  std::unordered_map<std::string, Value> properties_;
 public:
   Instance(const ClassPtr& cls)
     : class_(cls) {
   }
 
   std::string to_string(void) const;
+  Value get(const Token& name) const;
 };
 
 }
