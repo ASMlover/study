@@ -138,6 +138,8 @@ void Resolver::visit_return_stmt(const ReturnStmtPtr& stmt) {
 }
 
 void Resolver::visit_class_stmt(const ClassStmtPtr& stmt) {
+  declare(stmt->name());
+  define(stmt->name());
 }
 
 void Resolver::resolve(const ExprPtr& expr) {

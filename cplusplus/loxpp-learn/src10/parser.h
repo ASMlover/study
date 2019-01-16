@@ -34,7 +34,8 @@
 namespace lox {
 
 // program        -> declaration* EOF ;
-// declaration    -> func_decl | let_decl | statement ;
+// declaration    -> class_decl | func_decl | let_decl | statement ;
+// class_decl     -> "class" IDENTIFILER "{" function* "}" ;
 // func_decl      -> "fn" function ;
 // function       -> IDENTIFILER "(" parameters? ")" block_stmt ;
 // parameters     -> IDENTIFILER ( "," IDENTIFILER )* ;
@@ -103,6 +104,7 @@ class Parser : private UnCopyable {
   ExprPtr primary(void);
 
   StmtPtr declaration(void);
+  StmtPtr class_decl(void);
   StmtPtr func_decl(const std::string& kind);
   StmtPtr let_decl(void);
   StmtPtr statement(void);

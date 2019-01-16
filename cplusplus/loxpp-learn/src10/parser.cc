@@ -307,6 +307,8 @@ StmtPtr Parser::declaration(void) {
   // declaration -> func_decl | let_decl | statement ;
 
   try {
+    if (match({TokenKind::KW_CLASS}))
+      return class_decl();
     if (match({TokenKind::KW_FN}))
       return func_decl("function");
     if (match({TokenKind::KW_LET}))
@@ -320,6 +322,25 @@ StmtPtr Parser::declaration(void) {
 
     return nullptr;
   }
+}
+
+StmtPtr Parser::class_decl(void) {
+  // class_decl -> "class" IDENTIFILER "{" function* "}" ;
+  // function   -> IDENTIFILER "(" parameters? ")" block_stmt ;
+  // parameters -> IDENTIFILER ( "," IDENTIFILER )* ;
+
+  const Token& name = consume(
+      TokenKind::TK_IDENTIFILER, "expect class name ...");
+  consume(TokenKind::TK_LBRACE, "expect `{` before class body ...");
+  std::vector<FunctionStmtPtr> methods;
+  while (!is_end() && !check(TokenKind::TK_RBRACE)) {
+    ignore_newlines();
+    auto meth = std::static_pointer_cast<FunctionStmt>(func_decl("method"));
+    methods.push_back(meth);
+    ignore_newlines();
+  }
+  consume(TokenKind::TK_RBRACE, "expect `}` after class body ...");
+  return std::make_shared<ClassStmt>(name, nullptr, methods);
 }
 
 StmtPtr Parser::func_decl(const std::string& kind) {

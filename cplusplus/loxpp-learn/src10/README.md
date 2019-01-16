@@ -6,7 +6,8 @@
 
 ```
 program     -> declararion* EOF ;
-declararion -> func_decl | let_decl | statement ;
+declararion -> class_decl | func_decl | let_decl | statement ;
+class_decl  -> "class" IDENTIFILER "{" function* "}" ;
 func_decl   -> "fn" function ;
 function    -> IDENTIFILER "(" parameters? ")" block_stmt ;
 parameters  -> IDENTIFILER ( "," IDENTIFILER )* ;

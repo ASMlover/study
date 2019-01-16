@@ -299,6 +299,8 @@ void Interpreter::visit_return_stmt(const ReturnStmtPtr& stmt) {
 }
 
 void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {
+  auto cls = std::make_shared<Class>(stmt->name().get_literal());
+  environment_->define(stmt->name(), Value(cls));
 }
 
 void Interpreter::interpret(const ExprPtr& expression) {
