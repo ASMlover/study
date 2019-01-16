@@ -1,0 +1,30 @@
+
+print ">>>>>>>>> function return testing >>>>>>>>>"
+
+fn foo_1() {
+  print "return nothing"
+}
+let r = foo_1()
+print "return of function <foo_1>: ", r
+
+fn foo_2(n) {
+  while (n < 100) {
+    if (n == 5)
+      return n
+    print "in function <foo_2>: n is: ", n
+    n += 1
+  }
+}
+foo_2(1)
+
+fn fib(n) {
+  if (n <= 1)
+    return n
+  return fib(n - 2) + fib(n - 1)
+}
+
+let beg = clock()
+for (let i = 0; i < 15; i += 1) {
+  print "fibonacci value is: ", fib(i)
+}
+print "calculate fibonacci use: ", clock() - beg

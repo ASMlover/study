@@ -1,0 +1,29 @@
+
+print ">>>>>>>>> function closure testing >>>>>>>>>"
+
+fn make_counter() {
+  let i = 0
+  fn _wrapper() {
+    i += 1
+    print "make_counter._wrapper: i = ", i
+  }
+  return _wrapper
+}
+let counter = make_counter()
+counter()
+counter()
+
+fn make_point(x, y) {
+  fn _wrapper(key) {
+    if (key == "x")
+      return x
+    if (key == "y")
+      return y
+    print "make_point._wrapper: unknown key ", key
+  }
+  return _wrapper
+}
+let pointer = make_point(45, 69)
+print "make point with x is:", pointer("x")
+print "make point with y is:", pointer("y")
+print "make point with z is:", pointer("z")
