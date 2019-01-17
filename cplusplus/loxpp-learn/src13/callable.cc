@@ -72,6 +72,14 @@ std::string Class::to_string(void) const {
   return "<class " + name_ + ">";
 }
 
+FunctionPtr Class::get_method(
+    const InstancePtr& inst, const std::string& name) {
+  auto meth_iter = methods_.find(name);
+  if (meth_iter != methods_.end())
+    return meth_iter->second;
+  return nullptr;
+}
+
 std::string Instance::to_string(void) const {
   std::stringstream ss;
   ss << "<" << class_->name() << " instance at " << this << ">";
@@ -82,10 +90,14 @@ void Instance::set_property(const Token& name, const Value& value) {
   properties_[name.get_literal()] = value;
 }
 
-Value Instance::get_property(const Token& name) const {
+Value Instance::get_property(const Token& name) {
   auto prop_iter = properties_.find(name.get_literal());
   if (prop_iter != properties_.end())
     return prop_iter->second;
+
+  auto method = class_->get_method(shared_from_this(), name.get_literal());
+  if (method)
+    return method;
 
   throw RuntimeError(name,
       "undefined property `" + name.get_literal() + "` ...");

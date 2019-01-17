@@ -312,7 +312,15 @@ void Interpreter::visit_return_stmt(const ReturnStmtPtr& stmt) {
 }
 
 void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {
-  auto cls = std::make_shared<Class>(stmt->name().get_literal());
+  environment_->define(stmt->name(), Value());
+
+  std::unordered_map<std::string, FunctionPtr> methods;
+  for (auto& meth : stmt->methods()) {
+    auto method_fn = std::make_shared<Function>(meth, environment_);
+    methods[meth->name().get_literal()] = method_fn;
+  }
+
+  auto cls = std::make_shared<Class>(stmt->name().get_literal(), methods);
   environment_->define(stmt->name(), Value(cls));
 }
 

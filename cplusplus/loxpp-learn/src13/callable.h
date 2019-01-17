@@ -67,13 +67,17 @@ public:
   virtual std::size_t arity(void) const override;
   virtual std::string to_string(void) const override;
 };
+using FunctionPtr = std::shared_ptr<Function>;
 
 class Class
   : public Callable, public std::enable_shared_from_this<Class> {
   std::string name_;
+  std::unordered_map<std::string, FunctionPtr> methods_;
 public:
-  Class(const std::string& name)
-    : name_(name) {
+  Class(const std::string& name,
+      const std::unordered_map<std::string, FunctionPtr>& methods)
+    : name_(name)
+    , methods_(methods) {
   }
 
   const std::string name(void) const { return name_; }
@@ -82,6 +86,8 @@ public:
       const std::vector<Value>& arguments) override;
   virtual std::size_t arity(void) const override;
   virtual std::string to_string(void) const override;
+
+  FunctionPtr get_method(const InstancePtr& inst, const std::string& name);
 };
 using ClassPtr = std::shared_ptr<Class>;
 
@@ -96,7 +102,8 @@ public:
 
   std::string to_string(void) const;
   void set_property(const Token& name, const Value& value);
-  Value get_property(const Token& name) const;
+  Value get_property(const Token& name);
 };
+using InstancePtr = std::shared_ptr<Instance>;
 
 }
