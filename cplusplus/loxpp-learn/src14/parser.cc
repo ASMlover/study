@@ -285,7 +285,7 @@ ExprPtr Parser::call(void) {
 }
 
 ExprPtr Parser::primary(void) {
-  // primary  -> INTEGER | DECIMAL | STRING | "true" | "false" | "nil"
+  // primary  -> INTEGER | DECIMAL | STRING | "true" | "false" | "nil" | "self"
   //          | "(" expression ")" | IDENTIFILER ;
 
   if (match({TokenKind::KW_TRUE}))
@@ -308,6 +308,8 @@ ExprPtr Parser::primary(void) {
     return std::make_shared<GroupingExpr>(expr);
   }
 
+  if (match({TokenKind::KW_SELF}))
+    return std::make_shared<SelfExpr>(prev());
   if (match({TokenKind::TK_IDENTIFILER}))
     return std::make_shared<VariableExpr>(prev());
 

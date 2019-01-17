@@ -42,6 +42,14 @@ class Interpreter;
 using EnvironmentPtr = std::shared_ptr<Environment>;
 using InterpreterPtr = std::shared_ptr<Interpreter>;
 
+class Function;
+class Class;
+class Instance;
+
+using FunctionPtr = std::shared_ptr<Function>;
+using ClassPtr = std::shared_ptr<Class>;
+using InstancePtr = std::shared_ptr<Instance>;
+
 struct Callable : private UnCopyable {
   virtual ~Callable(void) {}
   virtual bool check_arity(void) const { return true; }
@@ -66,8 +74,9 @@ public:
       const std::vector<Value>& arguments) override;
   virtual std::size_t arity(void) const override;
   virtual std::string to_string(void) const override;
+
+  FunctionPtr bind(const InstancePtr& inst);
 };
-using FunctionPtr = std::shared_ptr<Function>;
 
 class Class
   : public Callable, public std::enable_shared_from_this<Class> {
@@ -89,7 +98,6 @@ public:
 
   FunctionPtr get_method(const InstancePtr& inst, const std::string& name);
 };
-using ClassPtr = std::shared_ptr<Class>;
 
 class Instance
   : private UnCopyable, public std::enable_shared_from_this<Instance> {
@@ -104,6 +112,5 @@ public:
   void set_property(const Token& name, const Value& value);
   Value get_property(const Token& name);
 };
-using InstancePtr = std::shared_ptr<Instance>;
 
 }

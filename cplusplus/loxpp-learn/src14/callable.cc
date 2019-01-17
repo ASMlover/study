@@ -46,7 +46,6 @@ Value Function::call(
   catch (const Return& r) {
     return r.value();
   }
-
   return nullptr;
 }
 
@@ -56,6 +55,12 @@ std::size_t Function::arity(void) const {
 
 std::string Function::to_string(void) const {
   return "<fn `" + decl_->name().get_literal() + "`>";
+}
+
+FunctionPtr Function::bind(const InstancePtr& inst) {
+  auto envp = std::make_shared<Environment>(closure_);
+  envp->define("self", Value(inst));
+  return std::make_shared<Function>(decl_, envp);
 }
 
 Value Class::call(
@@ -76,7 +81,7 @@ FunctionPtr Class::get_method(
     const InstancePtr& inst, const std::string& name) {
   auto meth_iter = methods_.find(name);
   if (meth_iter != methods_.end())
-    return meth_iter->second;
+    return meth_iter->second->bind(inst);
   return nullptr;
 }
 

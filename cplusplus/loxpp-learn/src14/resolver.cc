@@ -67,6 +67,7 @@ void Resolver::visit_logical_expr(const LogicalExprPtr& expr) {
 }
 
 void Resolver::visit_self_expr(const SelfExprPtr& expr) {
+  resolve_local(expr->keyword(), expr);
 }
 
 void Resolver::visit_super_expr(const SuperExprPtr& expr) {
@@ -144,10 +145,15 @@ void Resolver::visit_class_stmt(const ClassStmtPtr& stmt) {
   declare(stmt->name());
   define(stmt->name());
 
+  begin_scope();
+  scopes_.back()["self"] = true;
+
   for (auto& meth : stmt->methods()) {
     FunKind kind = FunKind::METHOD;
     resolve_function(meth, kind);
   }
+
+  finish_scope();
 }
 
 void Resolver::resolve(const ExprPtr& expr) {

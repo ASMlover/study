@@ -239,6 +239,7 @@ void Interpreter::visit_logical_expr(const LogicalExprPtr& expr) {
 }
 
 void Interpreter::visit_self_expr(const SelfExprPtr& expr) {
+  value_ = lookup_variable(expr->keyword(), expr);
 }
 
 void Interpreter::visit_super_expr(const SuperExprPtr& expr) {

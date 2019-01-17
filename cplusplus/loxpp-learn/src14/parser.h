@@ -66,7 +66,7 @@ namespace lox {
 // call           -> primary ( "(" arguments? ")" | "." IDENTIFILER )* ;
 // arguments      -> expression ( "," expression )* ;
 // primary        -> INTEGER | DECIMAL | STRING | "true" | "false" | "nil"
-//                | "(" expression ")" | IDENTIFILER ;
+//                | "self" | "(" expression ")" | IDENTIFILER ;
 
 class Token;
 class ErrorReport;

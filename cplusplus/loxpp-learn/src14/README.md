@@ -36,5 +36,6 @@ equality    -> ... ;
 unary       -> ( "-" | "!" | "not" ) unary | call ;
 call        -> primary ( "(" arguments? ")" | "." IDENTIFILER )* ;
 arguments   -> expression ( "," expression )* ;
-primary     -> ... ;
+primary     -> INTEGER | DECIMAL | STRING | "true" | "false" | "nil" | "self"
+            | "(" expression ")" | IDENTIFILER ;
 ```
