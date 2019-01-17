@@ -56,6 +56,7 @@ public:
   void define(const Token& name, const Value& value);
   const Value& get(const std::string& name) const;
   const Value& get(const Token& name) const;
+  const Value& get_at(int distance, const std::string& name);
   const Value& get_at(int distance, const Token& name);
   void assign(const Token& name, const Value& value);
   void assign_at(int distance, const Token& name, const Value& value);

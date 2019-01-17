@@ -64,6 +64,10 @@ const Value& Environment::get(const Token& name) const {
       "undefined variable `" + name.get_literal() + "` ...");
 }
 
+const Value& Environment::get_at(int distance, const std::string& name) {
+  return ancestor(distance)->get(name);
+}
+
 const Value& Environment::get_at(int distance, const Token& name) {
   return ancestor(distance)->get(name);
 }
