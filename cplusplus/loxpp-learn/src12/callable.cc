@@ -78,7 +78,11 @@ std::string Instance::to_string(void) const {
   return ss.str();
 }
 
-Value Instance::get(const Token& name) const {
+void Instance::set_property(const Token& name, const Value& value) {
+  properties_[name.get_literal()] = value;
+}
+
+Value Instance::get_property(const Token& name) const {
   auto prop_iter = properties_.find(name.get_literal());
   if (prop_iter != properties_.end())
     return prop_iter->second;

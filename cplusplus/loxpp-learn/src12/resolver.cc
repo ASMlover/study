@@ -46,6 +46,8 @@ void Resolver::visit_call_expr(const CallExprPtr& expr) {
 }
 
 void Resolver::visit_set_expr(const SetExprPtr& expr) {
+  resolve(expr->value());
+  resolve(expr->object());
 }
 
 void Resolver::visit_get_expr(const GetExprPtr& expr) {

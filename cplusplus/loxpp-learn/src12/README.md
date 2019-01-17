@@ -26,7 +26,7 @@ while_stmt  -> "while" "(" expression ")" statement ;
 block_stmt  -> "{" declararion* "}" ;
 
 expression  -> assignment ;
-assignment  -> IDENTIFILER ( assign_oper ) assignment | logical_or ;
+assignment  -> ( call "." )? IDENTIFILER ( assign_oper ) assignment | logical_or ;
 assign_oper -> "=" | "+=" | "-=" | "*=" | "/=" | "%=" ;
 logical_or  -> logical_and ( "or" logical_and )* ;
 logical_and -> equality ( "and" equality )* ;

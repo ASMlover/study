@@ -137,7 +137,7 @@ ExprPtr Parser::expression(void) {
 }
 
 ExprPtr Parser::assignment(void) {
-  // assignment   -> IDENTIFILER ( assign_oper ) assignment | logical_or ;
+  // assignment   -> ( call "." )? IDENTIFILER ( assign_oper ) assignment | logical_or ;
   // assign_oper  -> "=" | "+=" | "-=" | "*=" | "/=" | "%=" ;
 
   ExprPtr expr = logical_or();
@@ -149,6 +149,10 @@ ExprPtr Parser::assignment(void) {
     if (std::dynamic_pointer_cast<VariableExpr>(expr)) {
       const Token& name = std::static_pointer_cast<VariableExpr>(expr)->name();
       return std::make_shared<AssignExpr>(name, oper, value);
+    }
+    else if (std::dynamic_pointer_cast<GetExpr>(expr)) {
+      GetExprPtr get = std::static_pointer_cast<GetExpr>(expr);
+      return std::make_shared<SetExpr>(get->object(), get->name(), value);
     }
     throw RuntimeError(oper, "invalid assignment target ...");
   }

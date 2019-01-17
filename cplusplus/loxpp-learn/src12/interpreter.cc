@@ -195,14 +195,22 @@ void Interpreter::visit_call_expr(const CallExprPtr& expr) {
 }
 
 void Interpreter::visit_set_expr(const SetExprPtr& expr) {
+  Value object = evaluate(expr->object());
+  if (object.is_instance()) {
+    Value value = evaluate(expr->value());
+    object.to_instance()->set_property(expr->name(), value);
+  }
+  else {
+    throw RuntimeError(expr->name(), "only instances have properties ...");
+  }
 }
 
 void Interpreter::visit_get_expr(const GetExprPtr& expr) {
   Value object = evaluate(expr->object());
   if (object.is_instance())
-    value_ = object.to_instance()->get(expr->name());
-
-  throw RuntimeError(expr->name(), "only instances have properties ...");
+    value_ = object.to_instance()->get_property(expr->name());
+  else
+    throw RuntimeError(expr->name(), "only instances have properties ...");
 }
 
 void Interpreter::visit_grouping_expr(const GroupingExprPtr& expr) {

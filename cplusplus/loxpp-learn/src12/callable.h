@@ -95,7 +95,8 @@ public:
   }
 
   std::string to_string(void) const;
-  Value get(const Token& name) const;
+  void set_property(const Token& name, const Value& value);
+  Value get_property(const Token& name) const;
 };
 
 }
