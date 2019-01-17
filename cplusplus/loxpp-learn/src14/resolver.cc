@@ -67,6 +67,10 @@ void Resolver::visit_logical_expr(const LogicalExprPtr& expr) {
 }
 
 void Resolver::visit_self_expr(const SelfExprPtr& expr) {
+  if (curr_class_ == ClassKind::NONE) {
+    throw RuntimeError(expr->keyword(),
+        "cannot use `self` outside of a class ...");
+  }
   resolve_local(expr->keyword(), expr);
 }
 
@@ -142,6 +146,9 @@ void Resolver::visit_return_stmt(const ReturnStmtPtr& stmt) {
 }
 
 void Resolver::visit_class_stmt(const ClassStmtPtr& stmt) {
+  ClassKind enclosing_class = curr_class_;
+  curr_class_ = ClassKind::CLASS;
+
   declare(stmt->name());
   define(stmt->name());
 
@@ -154,6 +161,7 @@ void Resolver::visit_class_stmt(const ClassStmtPtr& stmt) {
   }
 
   finish_scope();
+  curr_class_ = enclosing_class;
 }
 
 void Resolver::resolve(const ExprPtr& expr) {
