@@ -1,0 +1,9 @@
+
+print ">>>>>>>>> class instance properties >>>>>>>>>"
+
+class ClassDemo {
+}
+
+let c = ClassDemo()
+c.some_prop = 23
+print "setting property: ", c, " - property value is: ", c.some_prop

@@ -1,0 +1,19 @@
+
+print ">>>>>>>>> function testing >>>>>>>>>"
+
+let beg = clock()
+for (let i = 0; i < 100; i += 1) {
+  let x = i * i
+}
+print "traverse used : ", clock() - beg, "seconds ..."
+
+fn add_fn(a, b) {
+  print "add result is : ", a + b
+}
+
+fn say_hello(name) {
+  print "Hello,", name, ", welcome to use function !!!"
+  print add_fn
+  add_fn(100, 200)
+}
+say_hello("John")
