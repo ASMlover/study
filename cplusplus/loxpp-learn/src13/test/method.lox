@@ -1,0 +1,25 @@
+
+print ">>>>>>>>> class methods testing >>>>>>>>>"
+
+class Box {}
+fn box_method(arg) {
+  print "box_method: ", Box, " - argument is:", arg
+}
+let box = Box()
+box.method = box_method
+box.method("arguments testing")
+
+class Person {
+  show() {
+    print Person, "in function show"
+  }
+}
+let p = Person()
+p.show()
+
+class Demo {
+  show() {
+    print "Demo::show function call"
+  }
+}
+Demo().show()
