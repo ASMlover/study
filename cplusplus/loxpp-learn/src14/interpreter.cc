@@ -317,7 +317,8 @@ void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {
 
   std::unordered_map<std::string, FunctionPtr> methods;
   for (auto& meth : stmt->methods()) {
-    auto method_fn = std::make_shared<Function>(meth, environment_);
+    bool is_ctor = meth->name().get_literal() == "ctor";
+    auto method_fn = std::make_shared<Function>(meth, environment_, is_ctor);
     methods[meth->name().get_literal()] = method_fn;
   }
 

@@ -46,6 +46,8 @@ Value Function::call(
   catch (const Return& r) {
     return r.value();
   }
+  if (is_ctor_)
+    return closure_->get_at(0, "self");
   return nullptr;
 }
 
@@ -60,16 +62,22 @@ std::string Function::to_string(void) const {
 FunctionPtr Function::bind(const InstancePtr& inst) {
   auto envp = std::make_shared<Environment>(closure_);
   envp->define("self", Value(inst));
-  return std::make_shared<Function>(decl_, envp);
+  return std::make_shared<Function>(decl_, envp, is_ctor_);
 }
 
 Value Class::call(
     const InterpreterPtr& interp, const std::vector<Value>& arguments) {
   auto inst = std::make_shared<Instance>(shared_from_this());
+  auto ctor = get_method(inst, "ctor");
+  if (ctor)
+    ctor->call(interp, arguments);
   return inst;
 }
 
 std::size_t Class::arity(void) const {
+  auto ctor_iter = methods_.find("ctor");
+  if (ctor_iter != methods_.end())
+    return ctor_iter->second->arity();
   return 0;
 }
 
