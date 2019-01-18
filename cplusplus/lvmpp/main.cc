@@ -25,23 +25,9 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
-#include "chunk.h"
-#include "vm.h"
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
-
-  Chunk c;
-  VM vm;
-  vm.init();
-  auto i = c.add_constant(1.2);
-  c.write_chunk(OP_CONSTANT, 123);
-  c.write_chunk(i, 123);
-  c.write_chunk(OP_RETURN, 123);
-  c.disassemble("test chunk");
-  vm.interpret(&c);
-  vm.destroy();
-  c.free_chunk();
 
   return 0;
 }
