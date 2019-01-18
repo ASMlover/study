@@ -313,6 +313,20 @@ void Interpreter::visit_return_stmt(const ReturnStmtPtr& stmt) {
 }
 
 void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {
+  ClassPtr superclass;
+  if (stmt->superclass()) {
+    auto superexp = stmt->superclass();
+    auto superval = evaluate(superexp);
+    if (superval.is_callable() &&
+        std::dynamic_pointer_cast<Class>(superval.to_callable())) {
+      superclass = std::dynamic_pointer_cast<Class>(superval.to_callable());
+    }
+    else {
+      auto supertok = std::static_pointer_cast<VariableExpr>(superexp)->name();
+      throw RuntimeError(supertok, "superclass must be a class ...");
+    }
+  }
+
   environment_->define(stmt->name(), Value());
 
   std::unordered_map<std::string, FunctionPtr> methods;
@@ -322,7 +336,8 @@ void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {
     methods[meth->name().get_literal()] = method_fn;
   }
 
-  auto cls = std::make_shared<Class>(stmt->name().get_literal(), methods);
+  auto cls = std::make_shared<Class>(
+      stmt->name().get_literal(), superclass, methods);
   environment_->define(stmt->name(), Value(cls));
 }
 

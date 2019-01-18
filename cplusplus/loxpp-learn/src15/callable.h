@@ -83,11 +83,13 @@ public:
 class Class
   : public Callable, public std::enable_shared_from_this<Class> {
   std::string name_;
+  ClassPtr superclass_;
   std::unordered_map<std::string, FunctionPtr> methods_;
 public:
-  Class(const std::string& name,
+  Class(const std::string& name, const ClassPtr& superclass,
       const std::unordered_map<std::string, FunctionPtr>& methods)
     : name_(name)
+    , superclass_(superclass)
     , methods_(methods) {
   }
 

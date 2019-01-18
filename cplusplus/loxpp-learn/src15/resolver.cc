@@ -155,6 +155,8 @@ void Resolver::visit_class_stmt(const ClassStmtPtr& stmt) {
   curr_class_ = ClassKind::CLASS;
 
   declare(stmt->name());
+  if (stmt->superclass())
+    resolve(stmt->superclass());
   define(stmt->name());
 
   begin_scope();
