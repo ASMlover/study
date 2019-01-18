@@ -75,6 +75,15 @@ void Resolver::visit_self_expr(const SelfExprPtr& expr) {
 }
 
 void Resolver::visit_super_expr(const SuperExprPtr& expr) {
+  if (curr_class_ == ClassKind::NONE) {
+    throw RuntimeError(expr->keyword(),
+        "cannot use `super` outside of a class ...");
+  }
+  else if (curr_class_ != ClassKind::SUBCLASS) {
+    throw RuntimeError(expr->keyword(),
+        "cannot use `super` in a class without superclass ...");
+  }
+  resolve_local(expr->keyword(), expr);
 }
 
 void Resolver::visit_unary_expr(const UnaryExprPtr& expr) {
@@ -155,10 +164,16 @@ void Resolver::visit_class_stmt(const ClassStmtPtr& stmt) {
   curr_class_ = ClassKind::CLASS;
 
   declare(stmt->name());
-  if (stmt->superclass())
+  if (stmt->superclass()) {
+    curr_class_ = ClassKind::SUBCLASS;
     resolve(stmt->superclass());
+  }
   define(stmt->name());
 
+  if (stmt->superclass()) {
+    begin_scope();
+    scopes_.back()["super"] = true;
+  }
   begin_scope();
   scopes_.back()["self"] = true;
 
@@ -170,6 +185,9 @@ void Resolver::visit_class_stmt(const ClassStmtPtr& stmt) {
   }
 
   finish_scope();
+  if (stmt->superclass())
+    finish_scope();
+
   curr_class_ = enclosing_class;
 }
 

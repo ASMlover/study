@@ -42,7 +42,7 @@ class Resolver
   , public StmtVisitor
   , public std::enable_shared_from_this<Resolver> {
   enum class FunKind { NONE, FUNCTION, CTOR, METHOD };
-  enum class ClassKind { NONE, CLASS };
+  enum class ClassKind { NONE, CLASS, SUBCLASS };
 
   ErrorReport& err_report_;
   InterpreterPtr interp_;

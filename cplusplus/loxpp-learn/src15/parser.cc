@@ -286,7 +286,7 @@ ExprPtr Parser::call(void) {
 
 ExprPtr Parser::primary(void) {
   // primary  -> INTEGER | DECIMAL | STRING | "true" | "false" | "nil" | "self"
-  //          | "(" expression ")" | IDENTIFILER ;
+  //          | "(" expression ")" | "super" "." IDENTIFILER ;
 
   if (match({TokenKind::KW_TRUE}))
     return std::make_shared<LiteralExpr>(true);
@@ -308,6 +308,13 @@ ExprPtr Parser::primary(void) {
     return std::make_shared<GroupingExpr>(expr);
   }
 
+  if (match({TokenKind::KW_SUPER})) {
+    const Token& keyword = prev();
+    consume(TokenKind::TK_PERIOD, "expect `.` after `super` keyword ...");
+    const Token& method = consume(
+        TokenKind::TK_IDENTIFILER, "expect superclass method name ...");
+    return std::make_shared<SuperExpr>(keyword, method);
+  }
   if (match({TokenKind::KW_SELF}))
     return std::make_shared<SelfExpr>(prev());
   if (match({TokenKind::TK_IDENTIFILER}))

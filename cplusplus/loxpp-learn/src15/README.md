@@ -37,5 +37,5 @@ unary       -> ( "-" | "!" | "not" ) unary | call ;
 call        -> primary ( "(" arguments? ")" | "." IDENTIFILER )* ;
 arguments   -> expression ( "," expression )* ;
 primary     -> INTEGER | DECIMAL | STRING | "true" | "false" | "nil" | "self"
-            | "(" expression ")" | IDENTIFILER ;
+            | "(" expression ")" | "super" "." IDENTIFILER ;
 ```

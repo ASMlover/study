@@ -243,6 +243,23 @@ void Interpreter::visit_self_expr(const SelfExprPtr& expr) {
 }
 
 void Interpreter::visit_super_expr(const SuperExprPtr& expr) {
+  int distance = 0;
+  auto super_iter = locals_.find(expr);
+  if (super_iter != locals_.end())
+    distance = super_iter->second;
+
+  ClassPtr superclass = std::static_pointer_cast<Class>(
+      environment_->get_at(distance, "super").to_callable());
+  InstancePtr object = std::static_pointer_cast<Instance>(
+      environment_->get_at(distance - 1, "self").to_instance());
+  FunctionPtr method =
+    superclass->get_method(object, expr->method().get_literal());
+
+  if (!method) {
+    throw RuntimeError(expr->method(),
+        "undefined property `" + expr->method().get_literal() + "` ...");
+  }
+  value_ = Value(method);
 }
 
 void Interpreter::visit_unary_expr(const UnaryExprPtr& expr) {
@@ -314,9 +331,10 @@ void Interpreter::visit_return_stmt(const ReturnStmtPtr& stmt) {
 
 void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {
   ClassPtr superclass;
-  if (stmt->superclass()) {
-    auto superexp = stmt->superclass();
-    auto superval = evaluate(superexp);
+  Value superval;
+  auto& superexp = stmt->superclass();
+  if (superexp) {
+    superval = evaluate(superexp);
     if (superval.is_callable() &&
         std::dynamic_pointer_cast<Class>(superval.to_callable())) {
       superclass = std::dynamic_pointer_cast<Class>(superval.to_callable());
@@ -328,6 +346,10 @@ void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {
   }
 
   environment_->define(stmt->name(), Value());
+  if (superexp) {
+    environment_ = std::make_shared<Environment>(environment_);
+    environment_->define("super", superval);
+  }
 
   std::unordered_map<std::string, FunctionPtr> methods;
   for (auto& meth : stmt->methods()) {
@@ -338,6 +360,8 @@ void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {
 
   auto cls = std::make_shared<Class>(
       stmt->name().get_literal(), superclass, methods);
+  if (!superval.is_nil())
+    environment_ = environment_->get_enclosing();
   environment_->define(stmt->name(), Value(cls));
 }
 
