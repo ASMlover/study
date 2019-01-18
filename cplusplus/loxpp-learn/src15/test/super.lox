@@ -6,3 +6,29 @@ class Child : Base {}
 
 let NotClass = "Not a superclass type"
 # class Subclass : NotClass {} # superclass must be a class
+
+print "\n>>>>>>>>> inheriting superclass methods testing >>>>>>>>>"
+class Base1 {
+  fun1() {
+    print self, "Base1.fun1"
+  }
+}
+class Child1 : Base1 {}
+Child1().fun1()
+
+print "\n>>>>>>>>> call superclass methods testing >>>>>>>>>"
+class Base2 {
+  fun2() {
+    # super.fun2() # cannot use in a class without superclass
+    print self, "Base2.fun2"
+  }
+}
+class Child2 : Base2 {
+  fun2() {
+    super.fun2()
+    print self, "Child2.fun2"
+  }
+}
+Child2().fun2()
+
+# print super.not_in_class() # cannot use outside of a class
