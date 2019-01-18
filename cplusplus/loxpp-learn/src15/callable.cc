@@ -92,6 +92,8 @@ FunctionPtr Class::get_method(
   auto meth_iter = methods_.find(name);
   if (meth_iter != methods_.end())
     return meth_iter->second->bind(inst);
+  if (superclass_)
+    return superclass_->get_method(inst, name);
   return nullptr;
 }
 
