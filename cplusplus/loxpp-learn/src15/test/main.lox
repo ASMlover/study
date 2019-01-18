@@ -9,7 +9,7 @@ class Lox {
   }
 
   say(who) {
-    if who != nil {
+    if (who != nil) {
       print "Hi, " + who + ", welcome to Lox !"
     } else {
       print self.msg
@@ -17,11 +17,15 @@ class Lox {
   }
 }
 
-class MyLox : Lox {}
+class MyLox : Lox {
+  ctor(msg) {
+    super.ctor(msg)
+  }
+}
 
 fn main() {
   let lox = MyLox("Hello, world!")
-  lox.say()
+  lox.say("Mike")
 }
 
 main()
