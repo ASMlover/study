@@ -1,0 +1,8 @@
+
+print ">>>>>>>>> superclass testing >>>>>>>>>"
+
+class Base {}
+class Child : Base {}
+
+let NotClass = "Not a superclass type"
+# class Subclass : NotClass {} # superclass must be a class
