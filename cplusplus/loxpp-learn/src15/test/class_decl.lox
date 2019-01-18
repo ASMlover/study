@@ -1,0 +1,18 @@
+
+print ">>>>>>>>> class declaration testing >>>>>>>>>"
+
+class ClassDemo1 {
+
+  fun1() {
+    print "ClassDemo1.fun1 !!!"
+  }
+
+  fun2(msg) {
+    print "ClassDemo1.fun2: message is: ", msg
+  }
+
+}
+print ClassDemo1
+
+class ClassDemo2 {}
+print ClassDemo2

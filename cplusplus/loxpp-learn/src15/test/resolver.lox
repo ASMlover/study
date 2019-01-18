@@ -1,0 +1,21 @@
+
+print ">>>>>>>>> resolver testing >>>>>>>>>"
+
+let a = "global"
+{
+  fn show() {
+    print "value of a: ", a
+  }
+
+  # let a = a # a cannot read in its own initializer ...
+  show() # a -> "global"
+  let a = "block"
+  show() # a -> "global"
+
+  # let a = a # a is already declared ...
+}
+
+fn bad_fun() {
+  let a = "first"
+  # let a = "second" # a ia already declared in this scope
+}
