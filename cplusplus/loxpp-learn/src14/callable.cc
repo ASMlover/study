@@ -44,6 +44,8 @@ Value Function::call(
     interp->invoke_evaluate_block(decl_->body(), envp);
   }
   catch (const Return& r) {
+    if (is_ctor_)
+      return closure_->get_at(0, "self");
     return r.value();
   }
   if (is_ctor_)

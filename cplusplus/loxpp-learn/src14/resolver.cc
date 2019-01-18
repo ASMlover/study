@@ -141,8 +141,13 @@ void Resolver::visit_return_stmt(const ReturnStmtPtr& stmt) {
         "cannot return from top-level code ...");
   }
 
-  if (stmt->value())
+  if (stmt->value()) {
+    if (curr_fun_ == FunKind::CTOR) {
+      throw RuntimeError(stmt->keyword(),
+          "cannot return a value from `ctor` of class ...");
+    }
     resolve(stmt->value());
+  }
 }
 
 void Resolver::visit_class_stmt(const ClassStmtPtr& stmt) {
@@ -157,6 +162,8 @@ void Resolver::visit_class_stmt(const ClassStmtPtr& stmt) {
 
   for (auto& meth : stmt->methods()) {
     FunKind kind = FunKind::METHOD;
+    if (meth->name().get_literal() == "ctor")
+      kind = FunKind::CTOR;
     resolve_function(meth, kind);
   }
 
