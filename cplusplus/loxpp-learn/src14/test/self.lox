@@ -1,0 +1,49 @@
+
+print ">>>>>>>>> class self testing >>>>>>>>>"
+
+class Demo1 {
+  speak() {
+    print self
+  }
+}
+let d1 = Demo1()
+d1.speak()
+
+class Demo2 {
+  speak(msg) {
+    self.msg = msg
+    print "in Demo2.speak: ", msg
+  }
+}
+let d2 = Demo2()
+d2.speak("Hello, world!")
+
+class Demo3 {
+  get_fn() {
+    fn _wrapper() {
+      print self
+    }
+    return _wrapper
+  }
+}
+let d3_fn = Demo3().get_fn()
+d3_fn()
+
+# ERROR: cannot use `self` keyword outside of a class
+# fn demo3_method() {
+#   print self
+# }
+# print self
+
+class Point {
+  ctor(x, y) {
+    self.x = x
+    self.y = y
+  }
+
+  show() {
+    print "Point.show: {", self.x, ",", self.y, "}"
+  }
+}
+let p = Point(34, 56)
+p.show()
