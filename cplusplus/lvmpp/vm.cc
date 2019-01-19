@@ -43,6 +43,18 @@ InterpretRet VM::run(void) {
     return chunk_.get_constant(_rdbyte());
   };
 
+#define BINARY_OP(op) do {\
+  double b = pop();\
+  double a = pop();\
+  push(a op b);\
+} while (false)
+
+#define BINARY_MOD() do {\
+  int b = static_cast<int>(pop());\
+  int a = static_cast<int>(pop());\
+  push(a % b);\
+} while (false)
+
   for (;;) {
 #if defined(DEBUG_TRACE_EXECUTION)
     std::cout << "          ";
@@ -59,12 +71,21 @@ InterpretRet VM::run(void) {
         Value constant = _rdconstant();
         push(constant);
       } break;
+    case OpCode::OP_NEGATIVE: push(-pop()); break;
+    case OpCode::OP_ADD: BINARY_OP(+); break;
+    case OpCode::OP_SUBTRACT: BINARY_OP(-); break;
+    case OpCode::OP_MULTIPLY: BINARY_OP(*); break;
+    case OpCode::OP_DIVIDE: BINARY_OP(/); break;
+    case OpCode::OP_MODULO: BINARY_MOD(); break;
     case OpCode::OP_RETURN:
       std::cout << pop() << std::endl;
       return InterpretRet::OK;
     }
   }
   return InterpretRet::OK;
+
+#undef BINARY_MOD
+#undef BINARY_OP
 }
 
 }
