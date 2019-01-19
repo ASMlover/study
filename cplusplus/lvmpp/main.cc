@@ -31,6 +31,9 @@ int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
   lox::Chunk chunk;
+  int constant = chunk.add_constant(1.2);
+  chunk.write(lox::OP_CONSTANT);
+  chunk.write(constant);
   chunk.write(lox::OP_RETURN);
   chunk.disassemble("test chunk");
 

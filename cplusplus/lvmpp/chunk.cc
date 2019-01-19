@@ -35,8 +35,23 @@ static int simple_instruction(const std::string& name, int offset) {
   return offset + 1;
 }
 
+static int constant_instruction(
+    const std::string& name, const Chunk& chunk, int offset) {
+  std::uint8_t constant = chunk.get_code(offset + 1);
+  fprintf(stdout, "%-16s %4d `", name.c_str(), constant);
+  std::cout << chunk.get_constant(constant);
+  fprintf(stdout, "`\n");
+
+  return offset + 2;
+}
+
 void Chunk::write(std::uint8_t byte) {
   code_.push_back(byte);
+}
+
+int Chunk::add_constant(const Value& value) {
+  constants_.push_back(value);
+  return static_cast<int>(constants_.size() - 1);
 }
 
 void Chunk::disassemble(const std::string& name) {
@@ -50,7 +65,9 @@ int Chunk::disassemble_instruction(int offset) {
 
   std::uint8_t instruction = code_[offset];
   switch (instruction) {
-  case OP_RETURN:
+  case OpCode::OP_CONSTANT:
+    return constant_instruction("OP_CONSTANT", *this, offset);
+  case OpCode::OP_RETURN:
     return simple_instruction("OP_RETURN", offset);
   default:
     break;

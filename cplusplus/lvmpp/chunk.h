@@ -33,17 +33,25 @@
 
 namespace lox {
 
+using Value = double;
+
 enum OpCode {
+  OP_CONSTANT,
   OP_RETURN
 };
 
 class Chunk : private UnCopyable {
   std::vector<std::uint8_t> code_;
+  std::vector<Value> constants_;
 public:
   void write(std::uint8_t byte);
+  int add_constant(const Value& value);
 
   void disassemble(const std::string& name);
   int disassemble_instruction(int offset);
+
+  std::uint8_t get_code(int offset) const { return code_[offset]; }
+  Value get_constant(int constant) const { return constants_[constant]; }
 };
 
 }
