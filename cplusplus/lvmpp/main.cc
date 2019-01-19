@@ -32,9 +32,9 @@ int main(int argc, char* argv[]) {
 
   lox::Chunk chunk;
   int constant = chunk.add_constant(1.2);
-  chunk.write(lox::OP_CONSTANT);
-  chunk.write(constant);
-  chunk.write(lox::OP_RETURN);
+  chunk.write(lox::OP_CONSTANT, 123);
+  chunk.write(constant, 123);
+  chunk.write(lox::OP_RETURN, 123);
   chunk.disassemble("test chunk");
 
   return 0;

@@ -41,16 +41,17 @@ enum OpCode {
 };
 
 class Chunk : private UnCopyable {
-  std::vector<std::uint8_t> code_;
+  std::vector<std::uint8_t> codes_;
   std::vector<Value> constants_;
+  std::vector<int> lines_;
 public:
-  void write(std::uint8_t byte);
+  void write(std::uint8_t byte, int line);
   int add_constant(const Value& value);
 
   void disassemble(const std::string& name);
   int disassemble_instruction(int offset);
 
-  std::uint8_t get_code(int offset) const { return code_[offset]; }
+  std::uint8_t get_code(int offset) const { return codes_[offset]; }
   Value get_constant(int constant) const { return constants_[constant]; }
 };
 

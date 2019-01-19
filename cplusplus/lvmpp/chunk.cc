@@ -45,8 +45,9 @@ static int constant_instruction(
   return offset + 2;
 }
 
-void Chunk::write(std::uint8_t byte) {
-  code_.push_back(byte);
+void Chunk::write(std::uint8_t byte, int line) {
+  codes_.push_back(byte);
+  lines_.push_back(line);
 }
 
 int Chunk::add_constant(const Value& value) {
@@ -56,14 +57,18 @@ int Chunk::add_constant(const Value& value) {
 
 void Chunk::disassemble(const std::string& name) {
   std::cout << "========= " << name << " =========" << std::endl;
-  for (auto offset = 0; offset < static_cast<int>(code_.size());)
+  for (auto offset = 0; offset < static_cast<int>(codes_.size());)
     offset = disassemble_instruction(offset);
 }
 
 int Chunk::disassemble_instruction(int offset) {
   fprintf(stdout, "%04d ", offset);
+  if (offset > 0 && lines_[offset] == lines_[offset - 1])
+    fprintf(stdout, "   | ");
+  else
+    fprintf(stdout, "%4d ", lines_[offset]);
 
-  std::uint8_t instruction = code_[offset];
+  std::uint8_t instruction = codes_[offset];
   switch (instruction) {
   case OpCode::OP_CONSTANT:
     return constant_instruction("OP_CONSTANT", *this, offset);
