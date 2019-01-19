@@ -27,6 +27,7 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 #include "common.h"
 
 namespace lox {
@@ -42,6 +43,15 @@ enum InterpretRet {
 class VM : private UnCopyable {
   Chunk& chunk_;
   int ip_{};
+  std::vector<Value> stack_;
+
+  void reset_stack(void) { stack_.clear(); }
+  void push(const Value& value) { stack_.push_back(value); }
+  Value pop(void) {
+    auto value = stack_.back();
+    stack_.pop_back();
+    return value;
+  }
 public:
   VM(Chunk& c)
     : chunk_(c) {

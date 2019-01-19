@@ -33,8 +33,6 @@
 
 namespace lox {
 
-using Value = double;
-
 enum OpCode {
   OP_CONSTANT,
   OP_RETURN

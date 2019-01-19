@@ -30,6 +30,8 @@
 
 namespace lox {
 
+using Value = double;
+
 class Copyable {
 protected:
   Copyable(void) = default;
