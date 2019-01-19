@@ -24,15 +24,40 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstdio>
 #include <iostream>
 #include "chunk.h"
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
+namespace lox {
 
-  lox::Chunk chunk;
-  chunk.write(lox::OP_RETURN);
-  chunk.disassemble("test chunk");
+static int simple_instruction(const std::string& name, int offset) {
+  std::cout << name << std::endl;
+  return offset + 1;
+}
 
-  return 0;
+void Chunk::write(std::uint8_t byte) {
+  code_.push_back(byte);
+}
+
+void Chunk::disassemble(const std::string& name) {
+  std::cout << "========= " << name << " =========" << std::endl;
+  for (auto offset = 0; offset < static_cast<int>(code_.size());)
+    offset = disassemble_instruction(offset);
+}
+
+int Chunk::disassemble_instruction(int offset) {
+  fprintf(stdout, "%04d ", offset);
+
+  std::uint8_t instruction = code_[offset];
+  switch (instruction) {
+  case OP_RETURN:
+    return simple_instruction("OP_RETURN", offset);
+  default:
+    break;
+  }
+
+  std::cout << "unknown opcode: " << instruction << std::endl;
+  return offset + 1;
+}
+
 }

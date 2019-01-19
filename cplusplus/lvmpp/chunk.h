@@ -24,15 +24,26 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
-#include "chunk.h"
+#pragma once
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
+#include <cstdint>
+#include <string>
+#include <vector>
+#include "common.h"
 
-  lox::Chunk chunk;
-  chunk.write(lox::OP_RETURN);
-  chunk.disassemble("test chunk");
+namespace lox {
 
-  return 0;
+enum OpCode {
+  OP_RETURN
+};
+
+class Chunk : private UnCopyable {
+  std::vector<std::uint8_t> code_;
+public:
+  void write(std::uint8_t byte);
+
+  void disassemble(const std::string& name);
+  int disassemble_instruction(int offset);
+};
+
 }
