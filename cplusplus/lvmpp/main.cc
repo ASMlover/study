@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include "chunk.h"
+#include "vm.h"
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
@@ -36,6 +37,10 @@ int main(int argc, char* argv[]) {
   chunk.write(constant, 123);
   chunk.write(lox::OP_RETURN, 123);
   chunk.disassemble("test chunk");
+  std::cout << std::endl;
+
+  lox::VM vm(chunk);
+  vm.interpret();
 
   return 0;
 }

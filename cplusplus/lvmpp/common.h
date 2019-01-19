@@ -26,6 +26,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#define DEBUG_TRACE_EXECUTION
+
 namespace lox {
 
 class Copyable {
