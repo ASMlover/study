@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include "compiler.h"
 #include "chunk.h"
 #include "vm.h"
 
@@ -86,6 +87,13 @@ InterpretRet VM::run(void) {
 
 #undef BINARY_MOD
 #undef BINARY_OP
+}
+
+InterpretRet VM::interpret(const std::string& source_bytes) {
+  Compiler c;
+
+  c.compile(source_bytes);
+  return InterpretRet::OK;
 }
 
 }

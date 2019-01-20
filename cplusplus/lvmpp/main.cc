@@ -24,7 +24,11 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstdlib>
+#include <fstream>
 #include <iostream>
+#include <sstream>
+#include <string>
 #include "chunk.h"
 #include "vm.h"
 
@@ -110,10 +114,51 @@ static void chunk_sample(void) {
   }
 }
 
+static void repl(lox::VM& vm) {
+  std::string line;
+  for (;;) {
+    std::cout << ">>> ";
+    if (!std::getline(std::cin, line) || line == "exit") {
+      std::cout << std::endl;
+      break;
+    }
+
+    vm.interpret(line);
+  }
+}
+
+static void run_file(lox::VM& vm, const std::string& fname) {
+  std::ifstream fp(fname);
+  if (fp.is_open()) {
+    std::stringstream ss;
+    ss << fp.rdbuf();
+
+    auto r = vm.interpret(ss.str());
+    if (r == lox::InterpretRet::COMPILE_ERROR)
+      std::exit(65);
+    if (r == lox::InterpretRet::RUNTIME_ERROR)
+      std::exit(70);
+  }
+}
+
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
-  chunk_sample();
+  // chunk_sample();
+
+  lox::Chunk chunk;
+  lox::VM vm(chunk);
+
+  if (argc == 1) {
+    repl(vm);
+  }
+  else if (argc == 2) {
+    run_file(vm, argv[1]);
+  }
+  else {
+    std::cerr << "USAGE: " << argv[0] << " {FILE_PATH}" << std::endl;
+    std::exit(64);
+  }
 
   return 0;
 }
