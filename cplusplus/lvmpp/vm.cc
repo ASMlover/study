@@ -90,10 +90,13 @@ InterpretRet VM::run(void) {
 }
 
 InterpretRet VM::interpret(const std::string& source_bytes) {
+  Chunk chunk;
   Compiler c;
+  if (!c.compile(chunk, source_bytes))
+    return InterpretRet::COMPILE_ERROR;
 
-  c.compile(source_bytes);
-  return InterpretRet::OK;
+  chunk_ = chunk;
+  return run();
 }
 
 }

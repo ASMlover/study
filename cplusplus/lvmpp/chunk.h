@@ -44,7 +44,7 @@ enum OpCode {
   OP_RETURN
 };
 
-class Chunk : private UnCopyable {
+class Chunk : private Copyable {
   std::vector<std::uint8_t> codes_;
   std::vector<Value> constants_;
   std::vector<int> lines_;

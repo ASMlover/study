@@ -26,14 +26,19 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <memory>
 #include <string>
 #include "common.h"
 
 namespace lox {
 
+class Chunk;
+class Parser;
+
 class Compiler : private UnCopyable {
+  std::shared_ptr<Parser> parser_;
 public:
-  void compile(const std::string& source_bytes);
+  bool compile(Chunk& chunk, const std::string& source_bytes);
 };
 
 }
