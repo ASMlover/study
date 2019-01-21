@@ -24,11 +24,31 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstdio>
+#include <iostream>
+#include "scanner.h"
 #include "compiler.h"
 
 namespace lox {
 
 void Compiler::compile(const std::string& source_bytes) {
+  Scanner s(source_bytes);
+
+  int lineno = -1;
+  for (;;) {
+    Token token = s.scan_token();
+    if (token.get_lineno() != lineno) {
+      fprintf(stdout, "%4d ", token.get_lineno());
+      lineno = token.get_lineno();
+    }
+    else {
+      std::cout << "   | ";
+    }
+    fprintf(stdout, "%2d `%s`\n", token.get_kind(), token.get_literal().c_str());
+
+    if (token.get_kind() == TokenKind::TK_EOF)
+      break;
+  }
 }
 
 }

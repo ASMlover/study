@@ -36,6 +36,18 @@ bool Scanner::is_end(void) const {
   return curpos_ >= source_bytes_.size();
 }
 
+char Scanner::advance(void) {
+  return source_bytes_[curpos_++];
+}
+
+bool Scanner::match(char expected) {
+  if (is_end() || source_bytes_[curpos_] != expected)
+    return false;
+
+  ++curpos_;
+  return true;
+}
+
 Token Scanner::make_token(TokenKind kind) {
   auto literal = gen_literal(begpos_, curpos_);
   return Token(kind, literal, lineno_);
@@ -50,6 +62,35 @@ Token Scanner::scan_token(void) {
 
   if (is_end())
     return make_token(TokenKind::TK_EOF);
+
+  char c = advance();
+  switch (c) {
+  case '(': return make_token(TokenKind::TK_LPAREN);
+  case ')': return make_token(TokenKind::TK_RPAREN);
+  case '{': return make_token(TokenKind::TK_LBRACE);
+  case '}': return make_token(TokenKind::TK_RBRACE);
+  case ';': return make_token(TokenKind::TK_SEMI);
+  case ',': return make_token(TokenKind::TK_COMMA);
+  case '.': return make_token(TokenKind::TK_DOT);
+  case '+': return make_token(TokenKind::TK_PLUS);
+  case '-': return make_token(TokenKind::TK_MINUS);
+  case '*': return make_token(TokenKind::TK_STAR);
+  case '/': return make_token(TokenKind::TK_SLASH);
+  case '%': return make_token(TokenKind::TK_PERCENT);
+  case '!':
+    return make_token(match('=') ?
+        TokenKind::TK_BANGEQUAL : TokenKind::TK_BANG);
+  case '=':
+    return make_token(match('=') ?
+        TokenKind::TK_EQUALEQUAL : TokenKind::TK_EQUAL);
+  case '>':
+    return make_token(match('=') ?
+        TokenKind::TK_GREATEREQUAL : TokenKind::TK_GREATER);
+  case '<':
+    return make_token(match('=') ?
+        TokenKind::TK_LESSEQUAL : TokenKind::TK_LESS);
+  }
+
   return error_token("unexpected character ...");
 }
 

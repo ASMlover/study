@@ -40,6 +40,8 @@ class Scanner : private UnCopyable {
 
   std::string gen_literal(std::size_t begpos, std::size_t endpos) const;
   bool is_end(void) const;
+  char advance(void);
+  bool match(char expected);
 
   Token make_token(TokenKind kind);
   Token error_token(const std::string& message);
