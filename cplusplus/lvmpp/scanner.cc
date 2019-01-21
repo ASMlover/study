@@ -24,9 +24,18 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cctype>
 #include "scanner.h"
 
 namespace lox {
+
+bool Scanner::is_alpha(char c) const {
+  return std::isalpha(c) || c == '_';
+}
+
+bool Scanner::is_alnum(char c) const {
+  return std::isalnum(c) || c == '_';
+}
 
 std::string Scanner::gen_literal(std::size_t begpos, std::size_t endpos) const {
   return source_bytes_.substr(begpos, endpos - begpos);
@@ -65,6 +74,10 @@ Token Scanner::make_token(TokenKind kind) {
   return Token(kind, literal, lineno_);
 }
 
+Token Scanner::make_token(TokenKind kind, const std::string& literal) {
+  return Token(kind, literal, lineno_);
+}
+
 Token Scanner::error_token(const std::string& message) {
   return Token(TokenKind::TK_ERROR, message, lineno_);
 }
@@ -95,6 +108,63 @@ void Scanner::skip_whitespaces(void) {
   }
 }
 
+Token Scanner::make_string(void) {
+  std::string literal;
+  while (!is_end() && peek() != '"') {
+    char c = peek();
+    switch (c) {
+    case '\n': ++lineno_; break;
+    case '\\':
+      switch (peek_next()) {
+      case '"': c = '"'; advance(); break;
+      case '\\': c = '\\'; advance(); break;
+      case '%': c = '%'; advance(); break;
+      case '0': c = '\0'; advance(); break;
+      case 'a': c = '\a'; advance(); break;
+      case 'b': c = '\b'; advance(); break;
+      case 'f': c = '\f'; advance(); break;
+      case 'n': c = '\n'; advance(); break;
+      case 'r': c = '\r'; advance(); break;
+      case 't': c = '\t'; advance(); break;
+      case 'v': c = '\v'; advance(); break;
+      }
+      break;
+    }
+    literal.push_back(c);
+    advance();
+  }
+  if (is_end())
+    return error_token("unterminated string ...");
+  // the closing "
+  advance();
+
+  return make_token(TokenKind::TK_STRINGLITERAL, literal);
+}
+
+Token Scanner::make_numeric(void) {
+  while (std::isdigit(peek()))
+    advance();
+
+  // look for a fractional part
+  if (peek() == '.' && std::isdigit(peek_next())) {
+    // consume the "."
+    advance();
+    while (std::isdigit(peek()))
+      advance();
+  }
+
+  return make_token(TokenKind::TK_NUMERICCONST);
+}
+
+Token Scanner::make_identifiler(void) {
+  while (is_alnum(peek()))
+    advance();
+
+  auto literal = gen_literal(begpos_, curpos_);
+  auto kind = get_keyword_kind(literal.c_str());
+  return make_token(kind, literal);
+}
+
 Token Scanner::scan_token(void) {
   skip_whitespaces();
 
@@ -103,6 +173,11 @@ Token Scanner::scan_token(void) {
     return make_token(TokenKind::TK_EOF);
 
   char c = advance();
+  if (is_alpha(c))
+    return make_identifiler();
+  if (std::isdigit(c))
+    return make_numeric();
+
   switch (c) {
   case '(': return make_token(TokenKind::TK_LPAREN);
   case ')': return make_token(TokenKind::TK_RPAREN);
@@ -128,6 +203,7 @@ Token Scanner::scan_token(void) {
   case '<':
     return make_token(match('=') ?
         TokenKind::TK_LESSEQUAL : TokenKind::TK_LESS);
+  case '"': return make_string();
   }
 
   return error_token("unexpected character ...");

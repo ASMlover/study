@@ -38,6 +38,8 @@ class Scanner : private UnCopyable {
   std::size_t curpos_{};
   int lineno_{1};
 
+  bool is_alpha(char c) const;
+  bool is_alnum(char c) const;
   std::string gen_literal(std::size_t begpos, std::size_t endpos) const;
   bool is_end(void) const;
   char advance(void);
@@ -46,8 +48,12 @@ class Scanner : private UnCopyable {
   char peek_next(void) const;
 
   Token make_token(TokenKind kind);
+  Token make_token(TokenKind kind, const std::string& literal);
   Token error_token(const std::string& message);
   void skip_whitespaces(void);
+  Token make_string(void);
+  Token make_numeric(void);
+  Token make_identifiler(void);
 public:
   Scanner(const std::string& source_bytes)
     : source_bytes_(source_bytes) {

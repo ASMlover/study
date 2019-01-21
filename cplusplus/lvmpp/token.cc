@@ -27,6 +27,7 @@
 #include <cstdlib>
 #include <iomanip>
 #include <sstream>
+#include <unordered_map>
 #include "token.h"
 
 namespace lox {
@@ -38,10 +39,27 @@ static constexpr const char* const kTokenNames[] = {
   nullptr
 };
 
+static const std::unordered_map<std::string, TokenKind> kTokenKeywords = {
+#define KEYWORD(k, s) {s, TokenKind::KW_##k},
+#include "kind_defs.h"
+#undef KEYWORD
+};
+
 const char* get_token_name(TokenKind kind) {
   if (kind < TokenKind::NUM_TOKENS)
     return kTokenNames[kind];
   return nullptr;
+}
+
+bool contains_in_keywords(TokenKind kind) {
+  return kind >= TokenKind::KW_AND && kind <= TokenKind::KW_WHILE;
+}
+
+TokenKind get_keyword_kind(const char* key) {
+  auto kind_iter = kTokenKeywords.find(key);
+  if (kind_iter != kTokenKeywords.end())
+    return kind_iter->second;
+  return TokenKind::TK_IDENTIFILER;
 }
 
 std::string Token::stringify(void) const {

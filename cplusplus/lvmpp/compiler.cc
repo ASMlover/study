@@ -44,7 +44,9 @@ void Compiler::compile(const std::string& source_bytes) {
     else {
       std::cout << "   | ";
     }
-    fprintf(stdout, "%2d `%s`\n", token.get_kind(), token.get_literal().c_str());
+    fprintf(stdout, "%2d %-16s `%s`\n",
+        token.get_kind(),
+        get_token_name(token.get_kind()), token.get_literal().c_str());
 
     if (token.get_kind() == TokenKind::TK_EOF)
       break;

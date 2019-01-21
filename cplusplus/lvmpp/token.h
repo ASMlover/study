@@ -38,6 +38,8 @@ enum TokenKind {
 };
 
 const char* get_token_name(TokenKind kind);
+bool contains_in_keywords(TokenKind kind);
+TokenKind get_keyword_kind(const char* key);
 
 class Token {
   TokenKind kind_;
