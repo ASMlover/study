@@ -48,6 +48,18 @@ bool Scanner::match(char expected) {
   return true;
 }
 
+char Scanner::peek(void) const {
+  if (curpos_ >= source_bytes_.size())
+    return 0;
+  return source_bytes_[curpos_];
+}
+
+char Scanner::peek_next(void) const {
+  if (curpos_ + 1 >= source_bytes_.size())
+    return 0;
+  return source_bytes_[curpos_ + 1];
+}
+
 Token Scanner::make_token(TokenKind kind) {
   auto literal = gen_literal(begpos_, curpos_);
   return Token(kind, literal, lineno_);
@@ -57,9 +69,36 @@ Token Scanner::error_token(const std::string& message) {
   return Token(TokenKind::TK_ERROR, message, lineno_);
 }
 
-Token Scanner::scan_token(void) {
-  begpos_ = curpos_;
+void Scanner::skip_whitespaces(void) {
+  for (;;) {
+    char c = peek();
+    switch (c) {
+    case ' ':
+    case '\r':
+    case '\t':
+      advance(); break;
+    case '\n':
+      ++lineno_; advance(); break;
+    case '/':
+      if (peek_next() == '/') {
+        // a comment goes until the end of the line
+        while (!is_end() && peek() != '\n')
+          advance();
+      }
+      else {
+        return;
+      }
+      break;
+    default:
+      return;
+    }
+  }
+}
 
+Token Scanner::scan_token(void) {
+  skip_whitespaces();
+
+  begpos_ = curpos_;
   if (is_end())
     return make_token(TokenKind::TK_EOF);
 
