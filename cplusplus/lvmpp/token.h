@@ -42,10 +42,13 @@ bool contains_in_keywords(TokenKind kind);
 TokenKind get_keyword_kind(const char* key);
 
 class Token {
-  TokenKind kind_;
+  TokenKind kind_{TokenKind::TK_UNKNOWN};
   std::string literal_;
-  int lineno_;
+  int lineno_{1};
 public:
+  Token(void) {
+  }
+
   Token(TokenKind kind, const std::string& literal, int lineno)
     : kind_(kind), literal_(literal), lineno_(lineno) {
   }
