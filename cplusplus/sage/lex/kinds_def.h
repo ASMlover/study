@@ -47,7 +47,7 @@ TOKEN(ERROR, "error") // error token
 TOKEN(EOF, "eof") // end of file
 TOKEN(NL, "newline") // newline
 TOKEN(COMMENT, "comment") // comment
-TOKEN(IDENTIFILER, "identifiler")
+TOKEN(IDENTIFIER, "identifier")
 TOKEN(INTEGERCONST, "integer_constant")
 TOKEN(DECIMALCONST, "decimal_constant")
 TOKEN(STRINGLITERAL, "string_literal")
