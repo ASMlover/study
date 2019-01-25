@@ -96,6 +96,7 @@ InterpretRet VM::interpret(const std::string& source_bytes) {
     return InterpretRet::COMPILE_ERROR;
 
   chunk_ = chunk;
+  ip_ = 0;
   return run();
 }
 

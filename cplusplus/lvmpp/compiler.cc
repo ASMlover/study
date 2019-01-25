@@ -92,7 +92,7 @@ class Parser
 
   std::uint8_t make_constant(const Value& value) {
     int constant = compiling_chunk_.add_constant(value);
-    if (constant >= UINT8_MAX) {
+    if (constant > UINT8_MAX) {
       error("too many constants in one chunk ...");
       return 0;
     }
@@ -210,6 +210,11 @@ public:
 
   void end_compiler(void) {
     emit_return();
+#if defined(DEBUG_PRINT_CODE)
+    if (!had_error_) {
+      compiling_chunk_.disassemble("code");
+    }
+#endif
   }
 
   void expression(void) {
@@ -237,7 +242,8 @@ public:
     TokenKind oper_kind = prev_.get_kind();
 
     // compile the right operand
-    // TODO:
+    auto rule = get_rule(oper_kind);
+    parse_precedence(static_cast<Precedence>(static_cast<int>(rule.precedence) + 1));
 
     // emit the operator instruction
     switch (oper_kind) {

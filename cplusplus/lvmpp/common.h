@@ -26,11 +26,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#define DEBUG_PRINT_CODE
 #define DEBUG_TRACE_EXECUTION
 
 namespace lox {
-
-using Value = double;
 
 class Copyable {
 protected:

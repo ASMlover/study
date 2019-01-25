@@ -30,6 +30,7 @@
 #include <string>
 #include <vector>
 #include "common.h"
+#include "value.h"
 
 namespace lox {
 
