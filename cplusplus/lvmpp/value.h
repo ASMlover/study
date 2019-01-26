@@ -26,24 +26,123 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <cstdint>
+#include <ostream>
 #include "common.h"
 
 namespace lox {
 
-enum ValueType {
-  BOOLEAN,
+enum class ValueType {
   NIL,
+  BOOLEAN,
   NUMERIC
 };
 
-using Value = double;
+class Value : public Copyable {
+  ValueType type_;
+  union {
+    bool boolean;
+    double numeric;
+  } as_;
 
-// class Value {
-//   ValueType type_;
-//   union {
-//     bool boolean;
-//     double numeric;
-//   } as_;
-// };
+  template <typename T> inline double decimal_cast(T x) noexcept {
+    return static_cast<double>(x);
+  }
+
+  template <typename T> inline void set_numeric(T x) noexcept {
+    type_ = ValueType::NUMERIC;
+    as_.numeric = static_cast<double>(x);
+  }
+
+  inline Value add_numeric(const Value& r) const noexcept {
+    return as_numeric() + r.as_numeric();
+  }
+
+  inline Value sub_numeric(const Value& r) const noexcept {
+    return as_numeric() - r.as_numeric();
+  }
+
+  inline Value mul_numeric(const Value& r) const noexcept {
+    return as_numeric() * r.as_numeric();
+  }
+
+  inline Value div_numeric(const Value& r) const noexcept {
+    return as_numeric() / r.as_numeric();
+  }
+public:
+  Value(void) noexcept : type_(ValueType::NIL) { as_.numeric = 0; }
+  Value(std::nullptr_t) noexcept : type_(ValueType::NIL) { as_.numeric = 0; }
+  Value(bool b) noexcept : type_(ValueType::BOOLEAN) { as_.boolean = b; }
+  Value(std::int8_t i8) noexcept : type_(ValueType::NUMERIC) { as_.numeric = decimal_cast(i8); }
+  Value(std::uint8_t u8) noexcept : type_(ValueType::NUMERIC) { as_.numeric = decimal_cast(u8); }
+  Value(std::int16_t i16) noexcept : type_(ValueType::NUMERIC) { as_.numeric = decimal_cast(i16); }
+  Value(std::uint16_t u16) noexcept : type_(ValueType::NUMERIC) { as_.numeric = decimal_cast(u16); }
+  Value(std::int32_t i32) noexcept : type_(ValueType::NUMERIC) { as_.numeric = decimal_cast(i32); }
+  Value(std::uint32_t u32) noexcept : type_(ValueType::NUMERIC) { as_.numeric = decimal_cast(u32); }
+  Value(std::int64_t i64) noexcept : type_(ValueType::NUMERIC) { as_.numeric = decimal_cast(i64); }
+  Value(std::uint64_t u64) noexcept : type_(ValueType::NUMERIC) { as_.numeric = decimal_cast(u64); }
+#if defined(__GNUC__)
+  Value(long long ll) noexcept : type_(ValueType::NUMERIC) { as_.numeric = decimal_cast(ll); }
+  Value(unsigned long long ull) noexcept : type_(ValueType::NUMERIC) { as_.numeric = decimal_cast(ull); }
+#endif
+  Value(float f) noexcept : type_(ValueType::NUMERIC) { as_.numeric = decimal_cast(f); }
+  Value(double d) noexcept : type_(ValueType::NUMERIC) { as_.numeric = d; }
+  Value(const Value& v) : type_(v.type_) { as_.numeric = v.as_.numeric; }
+  Value(Value&& v) : type_(std::move(v.type_)) { as_.numeric = std::move(v.as_.numeric); }
+
+  Value& operator=(std::nullptr_t) noexcept { return type_ = ValueType::NIL, as_.numeric = 0, *this; }
+  Value& operator=(bool b) noexcept { return type_ = ValueType::BOOLEAN, as_.boolean = b, *this; }
+  Value& operator=(std::int8_t i8) noexcept { return set_numeric(i8), *this; }
+  Value& operator=(std::uint8_t u8) noexcept { return set_numeric(u8), *this; }
+  Value& operator=(std::int16_t i16) noexcept { return set_numeric(i16), *this; }
+  Value& operator=(std::uint16_t u16) noexcept { return set_numeric(u16), *this; }
+  Value& operator=(std::int32_t i32) noexcept { return set_numeric(i32), *this; }
+  Value& operator=(std::uint32_t u32) noexcept { return set_numeric(u32), *this; }
+  Value& operator=(std::int64_t i64) noexcept { return set_numeric(i64), *this; }
+  Value& operator=(std::uint64_t u64) noexcept { return set_numeric(u64), *this; }
+#if defined(__GNUC__)
+  Value& operator=(long long ll) noexcept { return set_numeric(ll), *this; }
+  Value& operator=(unsigned long long ull) noexcept { return set_numeric(ull), *this; }
+#endif
+  Value& operator=(float f) noexcept { return set_numeric(f), *this; }
+  Value& operator=(double d) noexcept { type_ = ValueType::NUMERIC, as_.numeric = d, *this; }
+
+  Value& operator=(const Value& v) noexcept {
+    if (this != &v) {
+      type_ = v.type_;
+      as_.numeric = v.as_.numeric;
+    }
+    return *this;
+  }
+
+  Value& operator=(Value&& v) noexcept {
+    if (this != &v) {
+      type_ = std::move(v.type_);
+      as_.numeric = std::move(v.as_.numeric);
+    }
+    return *this;
+  }
+
+  Value operator+(const Value& r) const noexcept { return add_numeric(r); }
+  Value operator-(const Value& r) const noexcept { return sub_numeric(r); }
+  Value operator*(const Value& r) const noexcept { return mul_numeric(r); }
+  Value operator/(const Value& r) const noexcept { return div_numeric(r); }
+
+  bool is_nil(void) const noexcept { return type_ == ValueType::NIL; }
+  bool is_boolean(void) const noexcept { return type_ == ValueType::BOOLEAN; }
+  bool is_numeric(void) const noexcept { return type_ == ValueType::NUMERIC; }
+
+  bool as_boolean(void) const noexcept { return as_.boolean; }
+  double as_numeric(void) const noexcept { return as_.numeric; }
+
+  operator bool(void) const noexcept { return as_boolean(); }
+  operator double(void) const noexcept { return as_numeric(); }
+
+  Value operator-(void) const noexcept { return -as_numeric(); }
+
+  std::string stringify(void) const;
+};
+
+std::ostream& operator<<(std::ostream& out, const Value& value);
 
 }
