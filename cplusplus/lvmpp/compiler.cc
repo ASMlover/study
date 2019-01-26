@@ -140,6 +140,7 @@ class Parser
     auto grouping_fn = [](const ParserPtr& p) { p->grouping(); };
     auto binary_fn = [](const ParserPtr& p) { p->binary(); };
     auto unary_fn = [](const ParserPtr& p) { p->unary(); };
+    auto literal_fn = [](const ParserPtr& p) { p->literal(); };
 
     static ParseRule rules[] = {
       {nullptr, nullptr, Precedence::NONE}, // TK_ERROR
@@ -170,17 +171,17 @@ class Parser
       {nullptr, nullptr, Precedence::AND}, // KW_AND
       {nullptr, nullptr, Precedence::NONE}, // KW_CLASS
       {nullptr, nullptr, Precedence::NONE}, // KW_ELSE
-      {nullptr, nullptr, Precedence::NONE}, // KW_FLASE
+      {literal_fn, nullptr, Precedence::NONE}, // KW_FLASE
       {nullptr, nullptr, Precedence::NONE}, // KW_FOR
       {nullptr, nullptr, Precedence::NONE}, // KW_FUN
       {nullptr, nullptr, Precedence::NONE}, // KW_IF
-      {nullptr, nullptr, Precedence::NONE}, // KW_NIL
+      {literal_fn, nullptr, Precedence::NONE}, // KW_NIL
       {nullptr, nullptr, Precedence::OR}, // KW_OR
       {nullptr, nullptr, Precedence::NONE}, // KW_PRINT
       {nullptr, nullptr, Precedence::NONE}, // KW_RETURN
       {nullptr, nullptr, Precedence::NONE}, // KW_SUPER
       {nullptr, nullptr, Precedence::NONE}, // KW_THIS
-      {nullptr, nullptr, Precedence::NONE}, // KW_TRUE
+      {literal_fn, nullptr, Precedence::NONE}, // KW_TRUE
       {nullptr, nullptr, Precedence::NONE}, // KW_VAR
       {nullptr, nullptr, Precedence::NONE}, // KW_WHILE
       {nullptr, nullptr, Precedence::NONE}, // NUM_TOKENS
@@ -286,6 +287,15 @@ public:
       emit_byte(OpCode::OP_NEGATIVE); break;
     default:
       return; // unreachable
+    }
+  }
+
+  void literal(void) {
+    switch (prev_.get_kind()) {
+    case TokenKind::KW_TRUE: emit_byte(OpCode::OP_TRUE); break;
+    case TokenKind::KW_FALSE: emit_byte(OpCode::OP_FALSE); break;
+    case TokenKind::KW_NIL: emit_byte(OpCode::OP_NIL); break;
+    default: return; // unreachable
     }
   }
 };
