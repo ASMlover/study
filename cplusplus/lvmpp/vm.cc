@@ -56,6 +56,10 @@ InterpretRet VM::run(void) {
   };
 
 #define BINARY_OP(op) do {\
+  if (!peek(0).is_numeric() || !peek(1).is_numeric()) {\
+    runtime_error("operands must be numerics ...");\
+    return InterpretRet::RUNTIME_ERROR;\
+  }\
   double b = pop();\
   double a = pop();\
   push(a op b);\
