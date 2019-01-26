@@ -41,7 +41,7 @@ enum class Precedence {
   EQUALITY, // == !=
   COMPARISON, // < <= > >=
   TERM, // + -
-  FACTOR, // * / %
+  FACTOR, // * /
   UNARY, // ! - +
   CALL, // . () []
   PRIMARY
@@ -153,7 +153,6 @@ class Parser
       {BFN(unary), BFN(binary), Precedence::TERM}, // TK_MINUS
       {nullptr, BFN(binary), Precedence::FACTOR}, // TK_STAR
       {nullptr, BFN(binary), Precedence::FACTOR}, // TK_SLASH
-      {nullptr, BFN(binary), Precedence::FACTOR}, // TK_PERCENT
       {nullptr, nullptr, Precedence::NONE}, // TK_BANG
       {nullptr, nullptr, Precedence::EQUALITY}, // TK_BANGEQUAL
       {nullptr, nullptr, Precedence::NONE}, // TK_EQUAL
@@ -251,7 +250,6 @@ public:
     case TokenKind::TK_MINUS: emit_byte(OpCode::OP_SUBTRACT); break;
     case TokenKind::TK_STAR: emit_byte(OpCode::OP_MULTIPLY); break;
     case TokenKind::TK_SLASH: emit_byte(OpCode::OP_DIVIDE); break;
-    case TokenKind::TK_PERCENT: emit_byte(OpCode::OP_MODULO); break;
     default:
       return; // unreachable
     }

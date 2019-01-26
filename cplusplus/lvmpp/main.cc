@@ -103,8 +103,6 @@ static void chunk_sample(void) {
     constant = chunk.add_constant(7);
     chunk.write(lox::OpCode::OP_CONSTANT, 125);
     chunk.write(constant, 125);
-    // binary %
-    chunk.write(lox::OpCode::OP_MODULO, 125);
     chunk.write(lox::OpCode::OP_RETURN, 125);
 
     chunk.disassemble("test chunk");

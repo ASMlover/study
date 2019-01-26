@@ -50,12 +50,6 @@ InterpretRet VM::run(void) {
   push(a op b);\
 } while (false)
 
-#define BINARY_MOD() do {\
-  int b = static_cast<int>(pop());\
-  int a = static_cast<int>(pop());\
-  push(a % b);\
-} while (false)
-
   for (;;) {
 #if defined(DEBUG_TRACE_EXECUTION)
     std::cout << "          ";
@@ -77,7 +71,6 @@ InterpretRet VM::run(void) {
     case OpCode::OP_SUBTRACT: BINARY_OP(-); break;
     case OpCode::OP_MULTIPLY: BINARY_OP(*); break;
     case OpCode::OP_DIVIDE: BINARY_OP(/); break;
-    case OpCode::OP_MODULO: BINARY_MOD(); break;
     case OpCode::OP_RETURN:
       std::cout << pop() << std::endl;
       return InterpretRet::OK;
