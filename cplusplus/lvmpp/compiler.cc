@@ -47,9 +47,12 @@ enum class Precedence {
   PRIMARY
 };
 
+class Parser;
+using ParserPtr = std::shared_ptr<Parser>;
+
 struct ParseRule {
-  std::function<void ()> prefix;
-  std::function<void ()> infix;
+  std::function<void (const ParserPtr&)> prefix;
+  std::function<void (const ParserPtr&)> infix;
   Precedence precedence;
 };
 
@@ -123,36 +126,39 @@ class Parser
       error("expect expression ...");
       return;
     }
-    prefix_rule();
+    prefix_rule(shared_from_this());
 
     while (prec <= get_rule(curr_.get_kind()).precedence) {
       advance();
       auto infix_rule = get_rule(prev_.get_kind()).infix;
-      infix_rule();
+      infix_rule(shared_from_this());
     }
   }
 
   ParseRule& get_rule(TokenKind kind) {
-#define BFN(fn) std::bind(&Parser::fn, this)
+    auto numeric_fn = [](const ParserPtr& p) { p->numeric(); };
+    auto grouping_fn = [](const ParserPtr& p) { p->grouping(); };
+    auto binary_fn = [](const ParserPtr& p) { p->binary(); };
+    auto unary_fn = [](const ParserPtr& p) { p->unary(); };
 
     static ParseRule rules[] = {
       {nullptr, nullptr, Precedence::NONE}, // TK_ERROR
       {nullptr, nullptr, Precedence::NONE}, // TK_EOF
       {nullptr, nullptr, Precedence::NONE}, // TK_UNKNOWN
       {nullptr, nullptr, Precedence::NONE}, // TK_IDENTIFIER
-      {BFN(numeric), nullptr, Precedence::NONE}, // TK_NUMERICCONST
+      {numeric_fn, nullptr, Precedence::NONE}, // TK_NUMERICCONST
       {nullptr, nullptr, Precedence::NONE}, // TK_STRINGLITERAL
-      {BFN(grouping), nullptr, Precedence::CALL}, // TK_LPAREN
+      {grouping_fn, nullptr, Precedence::CALL}, // TK_LPAREN
       {nullptr, nullptr, Precedence::NONE}, // TK_RPAREN
       {nullptr, nullptr, Precedence::NONE}, // TK_LBRACE
       {nullptr, nullptr, Precedence::NONE}, // TK_RBRACE
       {nullptr, nullptr, Precedence::NONE}, // TK_COMMA
       {nullptr, nullptr, Precedence::CALL}, // TK_DOT
       {nullptr, nullptr, Precedence::NONE}, // TK_SEMI
-      {nullptr, BFN(binary), Precedence::TERM}, // TK_PLUS
-      {BFN(unary), BFN(binary), Precedence::TERM}, // TK_MINUS
-      {nullptr, BFN(binary), Precedence::FACTOR}, // TK_STAR
-      {nullptr, BFN(binary), Precedence::FACTOR}, // TK_SLASH
+      {nullptr, binary_fn, Precedence::TERM}, // TK_PLUS
+      {unary_fn, binary_fn, Precedence::TERM}, // TK_MINUS
+      {nullptr, binary_fn, Precedence::FACTOR}, // TK_STAR
+      {nullptr, binary_fn, Precedence::FACTOR}, // TK_SLASH
       {nullptr, nullptr, Precedence::NONE}, // TK_BANG
       {nullptr, nullptr, Precedence::EQUALITY}, // TK_BANGEQUAL
       {nullptr, nullptr, Precedence::NONE}, // TK_EQUAL
@@ -181,7 +187,6 @@ class Parser
     };
 
     return rules[static_cast<int>(kind)];
-#undef BFN
   }
 public:
   Parser(Chunk& c, Scanner& s) : compiling_chunk_(c), scan_(s) {}
