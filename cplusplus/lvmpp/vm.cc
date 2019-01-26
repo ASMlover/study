@@ -24,12 +24,23 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstdarg>
 #include <iostream>
 #include "compiler.h"
 #include "chunk.h"
 #include "vm.h"
 
 namespace lox {
+
+void VM::runtime_error(const char* format, ...) {
+  va_list ap;
+  va_start(ap, format);
+  std::vfprintf(stderr, format, ap);
+  va_end(ap);
+  std::cerr << std::endl;
+
+  std::cerr << "line(" << chunk_.get_line(ip_) << ") in script" << std::endl;
+}
 
 InterpretRet VM::interpret(void) {
   ip_ = 0;
@@ -66,7 +77,12 @@ InterpretRet VM::run(void) {
         Value constant = _rdconstant();
         push(constant);
       } break;
-    case OpCode::OP_NEGATIVE: push(-pop()); break;
+    case OpCode::OP_NEGATIVE:
+      if (!peek(0).is_numeric()) {
+        runtime_error("operand must be a numeric ...");
+        return InterpretRet::RUNTIME_ERROR;
+      }
+      push(-pop()); break;
     case OpCode::OP_ADD: BINARY_OP(+); break;
     case OpCode::OP_SUBTRACT: BINARY_OP(-); break;
     case OpCode::OP_MULTIPLY: BINARY_OP(*); break;

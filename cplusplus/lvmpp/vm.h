@@ -54,6 +54,9 @@ class VM : private UnCopyable {
     stack_.pop_back();
     return value;
   }
+  Value peek(int distance = 0) const { return stack_[stack_.size() - 1 - distance]; }
+
+  void runtime_error(const char* format, ...);
 public:
   VM(Chunk& c)
     : chunk_(c) {

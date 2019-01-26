@@ -57,6 +57,7 @@ public:
 
   std::uint8_t get_code(int offset) const { return codes_[offset]; }
   Value get_constant(int constant) const { return constants_[constant]; }
+  int get_line(int instruction) const { return lines_[instruction]; }
 };
 
 }
