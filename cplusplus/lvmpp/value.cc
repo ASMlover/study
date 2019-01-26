@@ -35,16 +35,22 @@ static inline std::string numeric_to_string(double d) {
   return oss.str();
 }
 
+bool Value::is_truthy(void) const {
+  switch (type_) {
+  case ValueType::NIL: return false;
+  case ValueType::BOOLEAN: return as_.boolean;
+  case ValueType::NUMERIC: return as_.numeric != 0;
+  default: break;
+  }
+  return false;
+}
+
 std::string Value::stringify(void) const {
   switch (type_) {
-  case ValueType::BOOLEAN:
-    return as_.boolean ? "true" : "false";
-  case ValueType::NIL:
-    return "nil";
-  case ValueType::NUMERIC:
-    return numeric_to_string(as_.numeric);
-  default:
-    break;
+  case ValueType::NIL: return "nil";
+  case ValueType::BOOLEAN: return as_.boolean ? "true" : "false";
+  case ValueType::NUMERIC: return numeric_to_string(as_.numeric);
+  default: break;
   }
   return "";
 };

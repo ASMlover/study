@@ -74,6 +74,8 @@ int Chunk::disassemble_instruction(int offset) {
     return constant_instruction("OP_CONSTANT", *this, offset);
   case OpCode::OP_NEGATIVE:
     return simple_instruction("OP_NEGATIVE", offset);
+  case OpCode::OP_NOT:
+    return simple_instruction("OP_NOT", offset);
   case OpCode::OP_NIL:
     return simple_instruction("OP_NIL", offset);
   case OpCode::OP_TRUE:

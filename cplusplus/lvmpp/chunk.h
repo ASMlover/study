@@ -37,6 +37,7 @@ namespace lox {
 enum OpCode {
   OP_CONSTANT,
   OP_NEGATIVE, // -
+  OP_NOT, // not
   OP_NIL, // nil
   OP_TRUE, // true
   OP_FALSE, // false

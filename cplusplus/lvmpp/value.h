@@ -140,6 +140,7 @@ public:
 
   Value operator-(void) const noexcept { return -as_numeric(); }
 
+  bool is_truthy(void) const;
   std::string stringify(void) const;
 };
 

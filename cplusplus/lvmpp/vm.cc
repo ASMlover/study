@@ -87,6 +87,7 @@ InterpretRet VM::run(void) {
         return InterpretRet::RUNTIME_ERROR;
       }
       push(-pop()); break;
+    case OpCode::OP_NOT: push(!pop().is_truthy()); break;
     case OpCode::OP_NIL: push(nullptr); break;
     case OpCode::OP_TRUE: push(true); break;
     case OpCode::OP_FALSE: push(false); break;

@@ -160,7 +160,7 @@ class Parser
       {unary_fn, binary_fn, Precedence::TERM}, // TK_MINUS
       {nullptr, binary_fn, Precedence::FACTOR}, // TK_STAR
       {nullptr, binary_fn, Precedence::FACTOR}, // TK_SLASH
-      {nullptr, nullptr, Precedence::NONE}, // TK_BANG
+      {unary_fn, nullptr, Precedence::NONE}, // TK_BANG
       {nullptr, nullptr, Precedence::EQUALITY}, // TK_BANGEQUAL
       {nullptr, nullptr, Precedence::NONE}, // TK_EQUAL
       {nullptr, nullptr, Precedence::EQUALITY}, // TK_EQUALEQUAL
@@ -283,8 +283,8 @@ public:
     parse_precedence(Precedence::UNARY);
     // emit the operator instruction
     switch (oper_kind) {
-    case TokenKind::TK_MINUS:
-      emit_byte(OpCode::OP_NEGATIVE); break;
+    case TokenKind::TK_MINUS: emit_byte(OpCode::OP_NEGATIVE); break;
+    case TokenKind::TK_BANG: emit_byte(OpCode::OP_NOT); break;
     default:
       return; // unreachable
     }
