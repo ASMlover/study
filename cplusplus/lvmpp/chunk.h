@@ -41,6 +41,9 @@ enum OpCode {
   OP_NIL, // nil
   OP_TRUE, // true
   OP_FALSE, // false
+  OP_EQUAL, // logical =
+  OP_GREATER, // logical >
+  OP_LESS, // logical <
   OP_ADD, // binary +
   OP_SUBTRACT, // binary -
   OP_MULTIPLY, // binary *

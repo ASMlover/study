@@ -161,13 +161,13 @@ class Parser
       {nullptr, binary_fn, Precedence::FACTOR}, // TK_STAR
       {nullptr, binary_fn, Precedence::FACTOR}, // TK_SLASH
       {unary_fn, nullptr, Precedence::NONE}, // TK_BANG
-      {nullptr, nullptr, Precedence::EQUALITY}, // TK_BANGEQUAL
+      {nullptr, binary_fn, Precedence::EQUALITY}, // TK_BANGEQUAL
       {nullptr, nullptr, Precedence::NONE}, // TK_EQUAL
-      {nullptr, nullptr, Precedence::EQUALITY}, // TK_EQUALEQUAL
-      {nullptr, nullptr, Precedence::COMPARISON}, // TK_GREATER
-      {nullptr, nullptr, Precedence::COMPARISON}, // TK_GREATEREQUAL
-      {nullptr, nullptr, Precedence::COMPARISON}, // TK_LESS
-      {nullptr, nullptr, Precedence::COMPARISON}, // TK_LESSEQUAL
+      {nullptr, binary_fn, Precedence::EQUALITY}, // TK_EQUALEQUAL
+      {nullptr, binary_fn, Precedence::COMPARISON}, // TK_GREATER
+      {nullptr, binary_fn, Precedence::COMPARISON}, // TK_GREATEREQUAL
+      {nullptr, binary_fn, Precedence::COMPARISON}, // TK_LESS
+      {nullptr, binary_fn, Precedence::COMPARISON}, // TK_LESSEQUAL
       {nullptr, nullptr, Precedence::AND}, // KW_AND
       {nullptr, nullptr, Precedence::NONE}, // KW_CLASS
       {nullptr, nullptr, Precedence::NONE}, // KW_ELSE
@@ -256,6 +256,12 @@ public:
     case TokenKind::TK_MINUS: emit_byte(OpCode::OP_SUBTRACT); break;
     case TokenKind::TK_STAR: emit_byte(OpCode::OP_MULTIPLY); break;
     case TokenKind::TK_SLASH: emit_byte(OpCode::OP_DIVIDE); break;
+    case TokenKind::TK_BANGEQUAL: emit_bytes(OpCode::OP_EQUAL, OpCode::OP_NOT); break;
+    case TokenKind::TK_EQUALEQUAL: emit_byte(OpCode::OP_EQUAL); break;
+    case TokenKind::TK_GREATER: emit_byte(OpCode::OP_GREATER); break;
+    case TokenKind::TK_GREATEREQUAL: emit_bytes(OpCode::OP_LESS, OpCode::OP_NOT); break;
+    case TokenKind::TK_LESS: emit_byte(OpCode::OP_LESS); break;
+    case TokenKind::TK_LESSEQUAL: emit_bytes(OpCode::OP_GREATER, OpCode::OP_NOT); break;
     default:
       return; // unreachable
     }

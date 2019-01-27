@@ -128,6 +128,12 @@ public:
   Value operator*(const Value& r) const noexcept { return mul_numeric(r); }
   Value operator/(const Value& r) const noexcept { return div_numeric(r); }
 
+  bool operator==(const Value& r) const { return is_equal(r); }
+  bool operator>(const Value& r) const { return as_numeric() > r.as_numeric(); }
+  bool operator>=(const Value& r) const { return as_numeric() >= r.as_numeric(); }
+  bool operator<(const Value& r) const { return as_numeric() < r.as_numeric(); }
+  bool operator<=(const Value& r) const { return as_numeric() <= r.as_numeric(); }
+
   bool is_nil(void) const noexcept { return type_ == ValueType::NIL; }
   bool is_boolean(void) const noexcept { return type_ == ValueType::BOOLEAN; }
   bool is_numeric(void) const noexcept { return type_ == ValueType::NUMERIC; }
@@ -140,6 +146,7 @@ public:
 
   Value operator-(void) const noexcept { return -as_numeric(); }
 
+  bool is_equal(const Value& r) const;
   bool is_truthy(void) const;
   std::string stringify(void) const;
 };

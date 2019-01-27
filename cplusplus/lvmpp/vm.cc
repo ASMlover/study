@@ -91,6 +91,14 @@ InterpretRet VM::run(void) {
     case OpCode::OP_NIL: push(nullptr); break;
     case OpCode::OP_TRUE: push(true); break;
     case OpCode::OP_FALSE: push(false); break;
+    case OpCode::OP_EQUAL:
+      {
+        Value b = pop();
+        Value a = pop();
+        push(a == b);
+      } break;
+    case OpCode::OP_GREATER: BINARY_OP(>); break;
+    case OpCode::OP_LESS: BINARY_OP(<); break;
     case OpCode::OP_ADD: BINARY_OP(+); break;
     case OpCode::OP_SUBTRACT: BINARY_OP(-); break;
     case OpCode::OP_MULTIPLY: BINARY_OP(*); break;
@@ -109,6 +117,7 @@ InterpretRet VM::run(void) {
 InterpretRet VM::interpret(const std::string& source_bytes) {
   Chunk chunk;
   Compiler c;
+  stack_.clear();
   if (!c.compile(chunk, source_bytes))
     return InterpretRet::COMPILE_ERROR;
 

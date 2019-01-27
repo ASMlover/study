@@ -35,6 +35,19 @@ static inline std::string numeric_to_string(double d) {
   return oss.str();
 }
 
+bool Value::is_equal(const Value& r) const {
+  if (type_ != r.type_)
+    return false;
+
+  switch (type_) {
+  case ValueType::NIL: return true;
+  case ValueType::BOOLEAN: return as_boolean() == r.as_boolean();
+  case ValueType::NUMERIC: return as_numeric() == r.as_numeric();
+  default: break;
+  }
+  return false;
+}
+
 bool Value::is_truthy(void) const {
   switch (type_) {
   case ValueType::NIL: return false;
