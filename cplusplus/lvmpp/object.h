@@ -34,6 +34,8 @@ enum class ObjType {
   STRING
 };
 
+class StringObject;
+
 class Object {
   ObjType type_;
 public:
@@ -42,14 +44,29 @@ public:
   ObjType get_type(void) const { return type_; }
   bool is_string(void) const { return type_ == ObjType::STRING; }
 
+  virtual bool is_equal(const Object* r) const { return this == r; }
   virtual bool is_truthy(void) const { return false; }
   virtual std::string stringify(void) const { return "object"; }
+
+  StringObject* as_string(void);
+  const char* as_cstring(void);
 };
 
 class StringObject : public Object {
   int length_{};
   char* chars_{};
 public:
+  StringObject(const std::string& s);
+  ~StringObject(void);
+
+  StringObject(const StringObject& s);
+  StringObject(StringObject&& s);
+  StringObject& operator=(const StringObject& s);
+  StringObject& operator=(StringObject&& s);
+
+  const char* c_str(void) const { return chars_; }
+
+  virtual bool is_equal(const Object* r) const override;
   virtual bool is_truthy(void) const override;
   virtual std::string stringify(void) const override;
 };

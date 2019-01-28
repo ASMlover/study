@@ -24,9 +24,74 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstring>
 #include "object.h"
 
 namespace lox {
+
+StringObject* Object::as_string(void) {
+  return dynamic_cast<StringObject*>(this);
+}
+
+const char* Object::as_cstring(void) {
+  return dynamic_cast<StringObject*>(this)->c_str();
+}
+
+StringObject::StringObject(const std::string& s)
+  : length_(static_cast<int>(s.size()))
+  , chars_(new char[length_ + 1]) {
+  std::memcpy(chars_, s.c_str(), length_);
+  chars_[length_] = 0;
+}
+
+StringObject::~StringObject(void) {
+  if (chars_ != nullptr) {
+    delete [] chars_;
+    chars_ = nullptr;
+    length_ = 0;
+  }
+}
+
+StringObject::StringObject(const StringObject& s)
+  : length_(s.length_)
+  , chars_(new char[length_ + 1]) {
+  std::memcpy(chars_, s.chars_, length_);
+  chars_[length_] = 0;
+}
+
+StringObject::StringObject(StringObject&& s) {
+  std::swap(length_, s.length_);
+  std::swap(chars_, s.chars_);
+}
+
+StringObject& StringObject::operator=(const StringObject& s) {
+  if (this != &s) {
+    if (chars_ != nullptr)
+      delete chars_;
+
+    length_ = s.length_;
+    chars_ = new char[length_ + 1];
+    std::memcpy(chars_, s.chars_, length_);
+    chars_[length_] = 0;
+  }
+  return *this;
+}
+
+StringObject& StringObject::operator=(StringObject&& s) {
+  if (this != &s) {
+    std::swap(length_, s.length_);
+    std::swap(chars_, s.chars_);
+  }
+  return *this;
+}
+
+bool StringObject::is_equal(const Object* o) const {
+  auto* r = dynamic_cast<StringObject*>(const_cast<Object*>(o));
+  if (this == r)
+    return true;
+  return r != nullptr && length_ == r->length_
+    && std::memcmp(chars_, r->chars_, length_) == 0;
+}
 
 bool StringObject::is_truthy(void) const {
   return length_ != 0;
