@@ -43,6 +43,7 @@ bool Value::is_equal(const Value& r) const {
   case ValueType::NIL: return true;
   case ValueType::BOOLEAN: return as_boolean() == r.as_boolean();
   case ValueType::NUMERIC: return as_numeric() == r.as_numeric();
+  case ValueType::OBJECT: return as_object()->is_equal(r.as_object());
   default: break;
   }
   return false;
