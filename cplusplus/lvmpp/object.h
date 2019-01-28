@@ -30,7 +30,7 @@
 
 namespace lox {
 
-enum ObjType {
+enum class ObjType {
   STRING
 };
 
@@ -40,6 +40,8 @@ public:
   virtual ~Object(void) {}
 
   ObjType get_type(void) const { return type_; }
+  bool is_string(void) const { return type_ == ObjType::STRING; }
+
   virtual bool is_truthy(void) const { return false; }
   virtual std::string stringify(void) const { return "object"; }
 };

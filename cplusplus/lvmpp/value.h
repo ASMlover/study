@@ -29,13 +29,15 @@
 #include <cstdint>
 #include <ostream>
 #include "common.h"
+#include "object.h"
 
 namespace lox {
 
 enum class ValueType {
   NIL,
   BOOLEAN,
-  NUMERIC
+  NUMERIC,
+  OBJECT
 };
 
 class Value : public Copyable {
@@ -43,6 +45,7 @@ class Value : public Copyable {
   union {
     bool boolean;
     double numeric;
+    Object* object;
   } as_;
 
   template <typename T> inline double decimal_cast(T x) noexcept {
@@ -87,6 +90,7 @@ public:
 #endif
   Value(float f) noexcept : type_(ValueType::NUMERIC) { as_.numeric = decimal_cast(f); }
   Value(double d) noexcept : type_(ValueType::NUMERIC) { as_.numeric = d; }
+  Value(Object* o) noexcept : type_(ValueType::OBJECT) { as_.object = o; }
   Value(const Value& v) : type_(v.type_) { as_.numeric = v.as_.numeric; }
   Value(Value&& v) : type_(std::move(v.type_)) { as_.numeric = std::move(v.as_.numeric); }
 
@@ -105,12 +109,17 @@ public:
   Value& operator=(unsigned long long ull) noexcept { return set_numeric(ull), *this; }
 #endif
   Value& operator=(float f) noexcept { return set_numeric(f), *this; }
-  Value& operator=(double d) noexcept { type_ = ValueType::NUMERIC, as_.numeric = d, *this; }
+  Value& operator=(double d) noexcept { return type_ = ValueType::NUMERIC, as_.numeric = d, *this; }
+  Value& operator=(Object* o) noexcept { return type_ = ValueType::OBJECT, as_.object = o, *this; }
 
   Value& operator=(const Value& v) noexcept {
     if (this != &v) {
       type_ = v.type_;
-      as_.numeric = v.as_.numeric;
+
+      if (type_ == ValueType::OBJECT)
+        as_.object = v.as_.object;
+      else
+        as_.numeric = v.as_.numeric;
     }
     return *this;
   }
@@ -118,7 +127,11 @@ public:
   Value& operator=(Value&& v) noexcept {
     if (this != &v) {
       type_ = std::move(v.type_);
-      as_.numeric = std::move(v.as_.numeric);
+
+      if (type_ == ValueType::OBJECT)
+        as_.object = std::move(v.as_.object);
+      else
+        as_.numeric = std::move(v.as_.numeric);
     }
     return *this;
   }
@@ -137,12 +150,16 @@ public:
   bool is_nil(void) const noexcept { return type_ == ValueType::NIL; }
   bool is_boolean(void) const noexcept { return type_ == ValueType::BOOLEAN; }
   bool is_numeric(void) const noexcept { return type_ == ValueType::NUMERIC; }
+  bool is_object(void) const noexcept { return type_ == ValueType::OBJECT; }
+  bool is_object(ObjType t) const noexcept { return is_object() && as_.object->get_type() == t; }
 
   bool as_boolean(void) const noexcept { return as_.boolean; }
   double as_numeric(void) const noexcept { return as_.numeric; }
+  Object* as_object(void) const noexcept { return as_.object; }
 
   operator bool(void) const noexcept { return as_boolean(); }
   operator double(void) const noexcept { return as_numeric(); }
+  operator Object*(void) const noexcept { return as_object(); }
 
   Value operator-(void) const noexcept { return -as_numeric(); }
 

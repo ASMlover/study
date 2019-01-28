@@ -53,6 +53,7 @@ bool Value::is_truthy(void) const {
   case ValueType::NIL: return false;
   case ValueType::BOOLEAN: return as_.boolean;
   case ValueType::NUMERIC: return as_.numeric != 0;
+  case ValueType::OBJECT: return as_.object->is_truthy();
   default: break;
   }
   return false;
@@ -63,6 +64,7 @@ std::string Value::stringify(void) const {
   case ValueType::NIL: return "nil";
   case ValueType::BOOLEAN: return as_.boolean ? "true" : "false";
   case ValueType::NUMERIC: return numeric_to_string(as_.numeric);
+  case ValueType::OBJECT: return as_.object->stringify();
   default: break;
   }
   return "";
