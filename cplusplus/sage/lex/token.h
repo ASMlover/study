@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include "../common/common.h"
 #include "token_kinds.h"
@@ -59,6 +60,9 @@ public:
   }
 
   std::string stringify(void) const;
+  std::int64_t as_integer(void) const;
+  double as_decimal(void) const;
+  std::string as_string(void) const;
 };
 
 std::ostream& operator<<(std::ostream& out, const Token& tok);
