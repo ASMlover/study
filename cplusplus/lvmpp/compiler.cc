@@ -29,6 +29,7 @@
 #include <iostream>
 #include "chunk.h"
 #include "scanner.h"
+#include "object.h"
 #include "compiler.h"
 
 namespace lox {
@@ -141,6 +142,7 @@ class Parser
     auto binary_fn = [](const ParserPtr& p) { p->binary(); };
     auto unary_fn = [](const ParserPtr& p) { p->unary(); };
     auto literal_fn = [](const ParserPtr& p) { p->literal(); };
+    auto string_fn = [](const ParserPtr& p) { p->string(); };
 
     static ParseRule rules[] = {
       {nullptr, nullptr, Precedence::NONE}, // TK_ERROR
@@ -148,7 +150,7 @@ class Parser
       {nullptr, nullptr, Precedence::NONE}, // TK_UNKNOWN
       {nullptr, nullptr, Precedence::NONE}, // TK_IDENTIFIER
       {numeric_fn, nullptr, Precedence::NONE}, // TK_NUMERICCONST
-      {nullptr, nullptr, Precedence::NONE}, // TK_STRINGLITERAL
+      {string_fn, nullptr, Precedence::NONE}, // TK_STRINGLITERAL
       {grouping_fn, nullptr, Precedence::CALL}, // TK_LPAREN
       {nullptr, nullptr, Precedence::NONE}, // TK_RPAREN
       {nullptr, nullptr, Precedence::NONE}, // TK_LBRACE
@@ -303,6 +305,10 @@ public:
     case TokenKind::KW_NIL: emit_byte(OpCode::OP_NIL); break;
     default: return; // unreachable
     }
+  }
+
+  void string(void) {
+    emit_constant(new StringObject(prev_.get_literal()));
   }
 };
 

@@ -39,6 +39,7 @@ class StringObject;
 class Object {
   ObjType type_;
 public:
+  Object(ObjType t) : type_(t) {}
   virtual ~Object(void) {}
 
   ObjType get_type(void) const { return type_; }
@@ -48,14 +49,17 @@ public:
   virtual bool is_truthy(void) const { return false; }
   virtual std::string stringify(void) const { return "object"; }
 
-  StringObject* as_string(void);
-  const char* as_cstring(void);
+  StringObject* as_string(void) const;
+  const char* as_cstring(void) const;
 };
+
+StringObject* concat(const Object* x, const Object* y);
 
 class StringObject : public Object {
   int length_{};
   char* chars_{};
 public:
+  StringObject(void) : Object(ObjType::STRING) {}
   StringObject(const std::string& s);
   ~StringObject(void);
 
@@ -64,7 +68,10 @@ public:
   StringObject& operator=(const StringObject& s);
   StringObject& operator=(StringObject&& s);
 
+  int length(void) const { return length_; }
+  const char* data(void) const { return chars_; }
   const char* c_str(void) const { return chars_; }
+  void reset(const char* s, int n);
 
   virtual bool is_equal(const Object* r) const override;
   virtual bool is_truthy(void) const override;

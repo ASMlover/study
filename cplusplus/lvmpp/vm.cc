@@ -99,7 +99,23 @@ InterpretRet VM::run(void) {
       } break;
     case OpCode::OP_GREATER: BINARY_OP(>); break;
     case OpCode::OP_LESS: BINARY_OP(<); break;
-    case OpCode::OP_ADD: BINARY_OP(+); break;
+    case OpCode::OP_ADD:
+      if (peek(0).is_object(ObjType::STRING)
+          && peek(1).is_object(ObjType::STRING)) {
+        Value b = pop();
+        Value a = pop();
+        push(concat(a.as_object(), b.as_object()));
+      }
+      else if (peek(0).is_numeric() && peek(1).is_numeric()) {
+        double b = pop();
+        double a = pop();
+        push(a + b);
+      }
+      else {
+        runtime_error("operands must be two numbers or two strings ...");
+        return InterpretRet::RUNTIME_ERROR;
+      }
+      break;
     case OpCode::OP_SUBTRACT: BINARY_OP(-); break;
     case OpCode::OP_MULTIPLY: BINARY_OP(*); break;
     case OpCode::OP_DIVIDE: BINARY_OP(/); break;

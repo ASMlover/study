@@ -29,16 +29,33 @@
 
 namespace lox {
 
-StringObject* Object::as_string(void) {
-  return dynamic_cast<StringObject*>(this);
+StringObject* Object::as_string(void) const {
+  return dynamic_cast<StringObject*>(const_cast<Object*>(this));
 }
 
-const char* Object::as_cstring(void) {
-  return dynamic_cast<StringObject*>(this)->c_str();
+const char* Object::as_cstring(void) const {
+  return dynamic_cast<StringObject*>(const_cast<Object*>(this))->c_str();
+}
+
+StringObject* concat(const Object* x, const Object* y) {
+  auto* a = x->as_string();
+  auto* b = y->as_string();
+
+  int length = a->length() + b->length();
+  char* chars = new char[length + 1];
+  std::memcpy(chars, a->c_str(), a->length());
+  std::memcpy(chars + a->length(), b->c_str(), b->length());
+  chars[length] = 0;
+
+  auto* s = new StringObject();
+  s->reset(chars, length);
+
+  return s;
 }
 
 StringObject::StringObject(const std::string& s)
-  : length_(static_cast<int>(s.size()))
+  : Object(ObjType::STRING)
+  , length_(static_cast<int>(s.size()))
   , chars_(new char[length_ + 1]) {
   std::memcpy(chars_, s.c_str(), length_);
   chars_[length_] = 0;
@@ -53,13 +70,15 @@ StringObject::~StringObject(void) {
 }
 
 StringObject::StringObject(const StringObject& s)
-  : length_(s.length_)
+  : Object(ObjType::STRING)
+  , length_(s.length_)
   , chars_(new char[length_ + 1]) {
   std::memcpy(chars_, s.chars_, length_);
   chars_[length_] = 0;
 }
 
-StringObject::StringObject(StringObject&& s) {
+StringObject::StringObject(StringObject&& s)
+  : Object(ObjType::STRING) {
   std::swap(length_, s.length_);
   std::swap(chars_, s.chars_);
 }
@@ -67,7 +86,7 @@ StringObject::StringObject(StringObject&& s) {
 StringObject& StringObject::operator=(const StringObject& s) {
   if (this != &s) {
     if (chars_ != nullptr)
-      delete chars_;
+      delete [] chars_;
 
     length_ = s.length_;
     chars_ = new char[length_ + 1];
@@ -83,6 +102,13 @@ StringObject& StringObject::operator=(StringObject&& s) {
     std::swap(chars_, s.chars_);
   }
   return *this;
+}
+
+void StringObject::reset(const char* s, int n) {
+  if (chars_ != nullptr)
+    delete [] chars_;
+  chars_ = const_cast<char*>(s);
+  length_ = n;
 }
 
 bool StringObject::is_equal(const Object* o) const {
