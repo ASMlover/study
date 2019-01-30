@@ -308,7 +308,7 @@ public:
   }
 
   void string(void) {
-    emit_constant(new StringObject(prev_.get_literal()));
+    emit_constant(create_string(prev_.get_literal()));
   }
 };
 

@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include "common.h"
 #include "value.h"
 
@@ -36,6 +37,7 @@ namespace lox {
 
 class Chunk;
 class Object;
+class StringObject;
 
 enum InterpretRet {
   OK,
@@ -48,6 +50,7 @@ class VM : private UnCopyable {
   int ip_{};
   std::vector<Value> stack_;
   std::vector<Object*> objects_;
+  std::unordered_map<std::uint32_t, StringObject*> strings_;
 
   void reset_stack(void) { stack_.clear(); }
   void push(const Value& value) { stack_.push_back(value); }
@@ -64,6 +67,8 @@ public:
   ~VM(void);
 
   void put_in(Object* o) { objects_.push_back(o); }
+  void put_in(std::uint32_t code, StringObject* s) { strings_[code] = s; }
+  StringObject* fetch_out(std::uint32_t code) const;
 
   InterpretRet interpret(void);
   InterpretRet run(void);

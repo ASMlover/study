@@ -53,14 +53,18 @@ public:
   const char* as_cstring(void) const;
 };
 
+StringObject* create_string(const std::string& s);
+StringObject* create_string(const char* s, int n, bool placement = false);
 StringObject* concat(const Object* x, const Object* y);
 
 class StringObject : public Object {
   int length_{};
   char* chars_{};
+  std::uint32_t hash_{};
 public:
   StringObject(void) : Object(ObjType::STRING) {}
   StringObject(const std::string& s);
+  StringObject(const char* s, int n);
   ~StringObject(void);
 
   StringObject(const StringObject& s);
@@ -71,6 +75,7 @@ public:
   int length(void) const { return length_; }
   const char* data(void) const { return chars_; }
   const char* c_str(void) const { return chars_; }
+  std::uint32_t hash_code(void) const { return hash_; }
   void reset(const char* s, int n);
 
   virtual bool is_equal(const Object* r) const override;

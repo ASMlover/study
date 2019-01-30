@@ -60,6 +60,11 @@ void VM::runtime_error(const char* format, ...) {
   std::cerr << "line(" << chunk_.get_line(ip_) << ") in script" << std::endl;
 }
 
+StringObject* VM::fetch_out(std::uint32_t code) const {
+  auto str_iter = strings_.find(code);
+  return str_iter != strings_.end() ? str_iter->second : nullptr;
+}
+
 InterpretRet VM::interpret(void) {
   ip_ = 0;
   return run();

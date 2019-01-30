@@ -24,12 +24,20 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
 #include <cstring>
 #include "vm.h"
 #include "object.h"
 
 namespace lox {
+
+static std::uint32_t hash_fn(const char* key, int length) {
+  std::uint32_t hash = 2166136261u;
+  for (int i = 0; i < length; ++i) {
+    hash ^= key[i];
+    hash *= 16777619;
+  }
+  return hash;
+}
 
 Object::Object(ObjType t)
   : type_(t) {
@@ -46,6 +54,32 @@ const char* Object::as_cstring(void) const {
   return dynamic_cast<StringObject*>(const_cast<Object*>(this))->c_str();
 }
 
+StringObject* create_string(const std::string& s) {
+  return create_string(s.c_str(), static_cast<int>(s.size()));
+}
+
+StringObject* create_string(const char* s, int n, bool placement) {
+  auto code = hash_fn(s, n);
+  auto* vm = global_vm();
+  if (vm != nullptr) {
+    auto* interned = global_vm()->fetch_out(code);
+    if (interned != nullptr)
+      return interned;
+  }
+
+  StringObject* sobj;
+  if (placement) {
+    sobj = new StringObject();
+    sobj->reset(s, n);
+  }
+  else {
+    sobj = new StringObject(s, n);
+  }
+  if (vm != nullptr && sobj != nullptr)
+    vm->put_in(sobj->hash_code(), sobj);
+  return sobj;
+}
+
 StringObject* concat(const Object* x, const Object* y) {
   auto* a = x->as_string();
   auto* b = y->as_string();
@@ -56,10 +90,7 @@ StringObject* concat(const Object* x, const Object* y) {
   std::memcpy(chars + a->length(), b->c_str(), b->length());
   chars[length] = 0;
 
-  auto* s = new StringObject();
-  s->reset(chars, length);
-
-  return s;
+  return create_string(chars, length, true);
 }
 
 StringObject::StringObject(const std::string& s)
@@ -68,6 +99,16 @@ StringObject::StringObject(const std::string& s)
   , chars_(new char[length_ + 1]) {
   std::memcpy(chars_, s.c_str(), length_);
   chars_[length_] = 0;
+  hash_ = hash_fn(chars_, length_);
+}
+
+StringObject::StringObject(const char* s, int n)
+  : Object(ObjType::STRING)
+  , length_(n)
+  , chars_(new char[length_ + 1]) {
+  std::memcpy(chars_, s, length_);
+  chars_[length_] = 0;
+  hash_ = hash_fn(chars_, length_);
 }
 
 StringObject::~StringObject(void) {
@@ -75,13 +116,15 @@ StringObject::~StringObject(void) {
     delete [] chars_;
     chars_ = nullptr;
     length_ = 0;
+    hash_ = 0;
   }
 }
 
 StringObject::StringObject(const StringObject& s)
   : Object(ObjType::STRING)
   , length_(s.length_)
-  , chars_(new char[length_ + 1]) {
+  , chars_(new char[length_ + 1])
+  , hash_(s.hash_) {
   std::memcpy(chars_, s.chars_, length_);
   chars_[length_] = 0;
 }
@@ -90,6 +133,7 @@ StringObject::StringObject(StringObject&& s)
   : Object(ObjType::STRING) {
   std::swap(length_, s.length_);
   std::swap(chars_, s.chars_);
+  std::swap(hash_, s.hash_);
 }
 
 StringObject& StringObject::operator=(const StringObject& s) {
@@ -101,6 +145,7 @@ StringObject& StringObject::operator=(const StringObject& s) {
     chars_ = new char[length_ + 1];
     std::memcpy(chars_, s.chars_, length_);
     chars_[length_] = 0;
+    hash_ = s.hash_;
   }
   return *this;
 }
@@ -109,6 +154,7 @@ StringObject& StringObject::operator=(StringObject&& s) {
   if (this != &s) {
     std::swap(length_, s.length_);
     std::swap(chars_, s.chars_);
+    std::swap(hash_, s.hash_);
   }
   return *this;
 }
@@ -118,6 +164,7 @@ void StringObject::reset(const char* s, int n) {
     delete [] chars_;
   chars_ = const_cast<char*>(s);
   length_ = n;
+  hash_ = hash_fn(chars_, length_);
 }
 
 bool StringObject::is_equal(const Object* o) const {
