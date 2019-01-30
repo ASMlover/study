@@ -35,6 +35,7 @@
 namespace lox {
 
 class Chunk;
+class Object;
 
 enum InterpretRet {
   OK,
@@ -46,6 +47,7 @@ class VM : private UnCopyable {
   Chunk& chunk_;
   int ip_{};
   std::vector<Value> stack_;
+  std::vector<Object*> objects_;
 
   void reset_stack(void) { stack_.clear(); }
   void push(const Value& value) { stack_.push_back(value); }
@@ -58,14 +60,17 @@ class VM : private UnCopyable {
 
   void runtime_error(const char* format, ...);
 public:
-  VM(Chunk& c)
-    : chunk_(c) {
-  }
+  VM(Chunk& c);
+  ~VM(void);
+
+  void put_in(Object* o) { objects_.push_back(o); }
 
   InterpretRet interpret(void);
   InterpretRet run(void);
 
   InterpretRet interpret(const std::string& source_bytes);
 };
+
+VM* global_vm(void);
 
 }

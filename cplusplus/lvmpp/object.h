@@ -39,7 +39,7 @@ class StringObject;
 class Object {
   ObjType type_;
 public:
-  Object(ObjType t) : type_(t) {}
+  Object(ObjType t);
   virtual ~Object(void) {}
 
   ObjType get_type(void) const { return type_; }

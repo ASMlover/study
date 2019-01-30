@@ -26,11 +26,29 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cstdarg>
 #include <iostream>
+#include "object.h"
 #include "compiler.h"
 #include "chunk.h"
 #include "vm.h"
 
 namespace lox {
+
+static VM* _vm_object = nullptr;
+
+VM* global_vm(void) {
+  return _vm_object;
+}
+
+VM::VM(Chunk& c)
+  : chunk_(c) {
+  _vm_object = this;
+}
+
+VM::~VM(void) {
+  for (auto* o : objects_)
+    delete o;
+  objects_.clear();
+}
 
 void VM::runtime_error(const char* format, ...) {
   va_list ap;

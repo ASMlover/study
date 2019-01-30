@@ -24,10 +24,19 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include <cstring>
+#include "vm.h"
 #include "object.h"
 
 namespace lox {
+
+Object::Object(ObjType t)
+  : type_(t) {
+  auto* vm = global_vm();
+  if (vm != nullptr)
+    vm->put_in(this);
+}
 
 StringObject* Object::as_string(void) const {
   return dynamic_cast<StringObject*>(const_cast<Object*>(this));
