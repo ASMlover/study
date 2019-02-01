@@ -142,8 +142,11 @@ InterpretRet VM::run(void) {
     case OpCode::OP_SUBTRACT: BINARY_OP(-); break;
     case OpCode::OP_MULTIPLY: BINARY_OP(*); break;
     case OpCode::OP_DIVIDE: BINARY_OP(/); break;
-    case OpCode::OP_RETURN:
+    case OpCode::OP_PRINT:
       std::cout << pop() << std::endl;
+      break;
+    case OpCode::OP_RETURN:
+      // std::cout << pop() << std::endl;
       return InterpretRet::OK;
     }
   }

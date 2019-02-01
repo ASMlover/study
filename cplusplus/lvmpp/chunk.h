@@ -48,6 +48,7 @@ enum OpCode {
   OP_SUBTRACT, // binary -
   OP_MULTIPLY, // binary *
   OP_DIVIDE, // binary /
+  OP_PRINT, // print
   OP_RETURN
 };
 

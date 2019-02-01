@@ -215,6 +215,17 @@ public:
     error_at_current(message);
   }
 
+  bool check(TokenKind kind) const {
+    return curr_.get_kind() == kind;
+  }
+
+  bool match(TokenKind kind) {
+    if (!check(kind))
+      return false;
+    advance();
+    return true;
+  }
+
   void end_compiler(void) {
     emit_return();
 #if defined(DEBUG_PRINT_CODE)
@@ -310,6 +321,32 @@ public:
   void string(void) {
     emit_constant(create_string(prev_.get_literal()));
   }
+
+  void declaration(void) {
+    // declaration -> val_decl | statement ;
+
+    statement();
+  }
+
+  void statement(void) {
+    // statement -> expr_stmt | print_stmt ;
+
+    if (match(TokenKind::KW_PRINT)) {
+      print_stmt();
+    }
+    else {
+      expr_stmt();
+    }
+  }
+
+  void print_stmt(void) {
+    expression();
+    consume(TokenKind::TK_SEMI, "expect `;` after expression ...");
+    emit_byte(OpCode::OP_PRINT);
+  }
+
+  void expr_stmt(void) {
+  }
 };
 
 bool Compiler::compile(Chunk& chunk, const std::string& source_bytes) {
@@ -332,10 +369,19 @@ bool Compiler::compile(Chunk& chunk, const std::string& source_bytes) {
   //     break;
   // }
 
+  // statement    -> expr_stmt | for_stmt | if_stmt | print_stmt
+  //              | return_stmt | while_stmt | block_stmt ;
+  // declaration  -> class_decl | fun_decl | var_decl | statement ;
+
   auto p = std::make_shared<Parser>(chunk, s);
   p->advance();
-  p->expression();
-  p->consume(TokenKind::TK_EOF, "expect end of expression ...");
+
+  while (!p->match(TokenKind::TK_EOF)) {
+    p->declaration();
+  }
+  // p->expression();
+  // p->consume(TokenKind::TK_EOF, "expect end of expression ...");
+
   p->end_compiler();
 
   return !p->had_error();
