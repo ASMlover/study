@@ -59,7 +59,7 @@ TokenKind get_keyword_kind(const char* key) {
   auto kind_iter = kTokenKeywords.find(key);
   if (kind_iter != kTokenKeywords.end())
     return kind_iter->second;
-  return TokenKind::TK_IDENTIFILER;
+  return TokenKind::TK_IDENTIFIER;
 }
 
 std::string Token::stringify(void) const {

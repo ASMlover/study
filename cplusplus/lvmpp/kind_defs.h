@@ -45,7 +45,7 @@
 TOKEN(ERROR, "ERROR") // error token
 TOKEN(EOF, "EOF") // end of file
 TOKEN(UNKNOWN, "UNKNOWN") // unknown
-TOKEN(IDENTIFILER, "identifiler")
+TOKEN(IDENTIFIER, "identifier")
 TOKEN(NUMERICCONST, "numeric_const")
 TOKEN(STRINGLITERAL, "string_literal")
 
