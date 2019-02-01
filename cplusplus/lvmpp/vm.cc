@@ -114,6 +114,14 @@ InterpretRet VM::run(void) {
     case OpCode::OP_NIL: push(nullptr); break;
     case OpCode::OP_TRUE: push(true); break;
     case OpCode::OP_FALSE: push(false); break;
+    case OpCode::OP_POP: pop(); break;
+    case OpCode::OP_DEFINE_GLOBAL:
+      {
+        StringObject* name = dynamic_cast<StringObject*>(
+            _rdconstant().as_object());
+        globals_[name->hash_code()] = peek(0);
+        pop();
+      } break;
     case OpCode::OP_EQUAL:
       {
         Value b = pop();
@@ -146,7 +154,6 @@ InterpretRet VM::run(void) {
       std::cout << pop() << std::endl;
       break;
     case OpCode::OP_RETURN:
-      // std::cout << pop() << std::endl;
       return InterpretRet::OK;
     }
   }

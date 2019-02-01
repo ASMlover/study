@@ -94,6 +94,31 @@ class Parser
     had_error_ = true;
   }
 
+  void synchronize(void) {
+    panic_mode_ = false;
+
+    while (curr_.get_kind() != TokenKind::TK_EOF) {
+      if (prev_.get_kind() == TokenKind::TK_SEMI)
+        return;
+
+      switch (curr_.get_kind()) {
+      case TokenKind::KW_CLASS:
+      case TokenKind::KW_FUN:
+      case TokenKind::KW_VAR:
+      case TokenKind::KW_FOR:
+      case TokenKind::KW_IF:
+      case TokenKind::KW_WHILE:
+      case TokenKind::KW_PRINT:
+      case TokenKind::KW_RETURN:
+        return;
+      default:
+        break;
+      }
+
+      advance();
+    }
+  }
+
   std::uint8_t make_constant(const Value& value) {
     int constant = compiling_chunk_.add_constant(value);
     if (constant > UINT8_MAX) {
@@ -118,6 +143,19 @@ class Parser
 
   void emit_constant(const Value& value) {
     emit_bytes(OpCode::OP_CONSTANT, make_constant(value));
+  }
+
+  std::uint8_t parse_variable(const std::string& err_msg) {
+    consume(TokenKind::TK_IDENTIFIER, err_msg);
+    return identifier_constant(prev_);
+  }
+
+  std::uint8_t identifier_constant(const Token& name) {
+    return make_constant(create_string(name.get_literal()));
+  }
+
+  void define_variable(std::uint8_t global) {
+    emit_bytes(OpCode::OP_DEFINE_GLOBAL, global);
   }
 
   void parse_precedence(Precedence prec) {
@@ -237,7 +275,7 @@ public:
 
   void expression(void) {
     // expression     -> assignment ;
-    // assignment     -> ( call "." )? IDENTIFILER "=" assignment | logic_or ;
+    // assignment     -> ( call "." )? IDENTIFIER "=" assignment | logic_or ;
     // logic_or       -> logic_and ( "or" logic_and )* ;
     // logic_and      -> equality ( "and" equality )* ;
     // equality       -> comparison ( ( "!=" | "==" ) comparison )* ;
@@ -245,10 +283,10 @@ public:
     // addition       -> multiplication ( ( "-" | "+" ) multiplication )* ;
     // multiplication -> unary ( ( "*" | "/" | "%" ) unary )* ;
     // unary          -> ( "!" | "-" ) unary | call ;
-    // call           -> primary ( "(" arguments? ")" | "." IDENTIFILER )* ;
+    // call           -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
     // primary        -> "true" | "false" | "nil" | "this"
-    //                | NUMERIC | STRING | IDENTIFILER | "(" expression ")"
-    //                | "super" "." IDENTIFILER ;
+    //                | NUMERIC | STRING | IDENTIFIER | "(" expression ")"
+    //                | "super" "." IDENTIFIER ;
     //
     // arguments      -> expression ( "," expression )* ;
 
@@ -325,7 +363,24 @@ public:
   void declaration(void) {
     // declaration -> val_decl | statement ;
 
-    statement();
+    if (match(TokenKind::KW_VAR)) {
+      var_decl();
+    }
+    else {
+      statement();
+    }
+
+    if (panic_mode_)
+      synchronize();
+  }
+
+  void var_decl(void) {
+    std::uint8_t global = parse_variable("expect variable name ...");
+    if (match(TokenKind::TK_EQUAL))
+      expression();
+    else
+      emit_byte(OpCode::OP_NIL);
+    consume(TokenKind::TK_SEMI, "expect `;` after variable declaration ...");
   }
 
   void statement(void) {
@@ -341,11 +396,14 @@ public:
 
   void print_stmt(void) {
     expression();
-    consume(TokenKind::TK_SEMI, "expect `;` after expression ...");
+    consume(TokenKind::TK_SEMI, "expect `;` after print expression ...");
     emit_byte(OpCode::OP_PRINT);
   }
 
   void expr_stmt(void) {
+    expression();
+    emit_byte(OpCode::OP_POP);
+    consume(TokenKind::TK_SEMI, "expect `;` after expression ...");
   }
 };
 

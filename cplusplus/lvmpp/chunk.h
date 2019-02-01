@@ -41,6 +41,8 @@ enum OpCode {
   OP_NIL, // nil
   OP_TRUE, // true
   OP_FALSE, // false
+  OP_POP, // pop operator
+  OP_DEFINE_GLOBAL, // define global variable
   OP_EQUAL, // logical =
   OP_GREATER, // logical >
   OP_LESS, // logical <

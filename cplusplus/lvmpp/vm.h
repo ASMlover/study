@@ -51,6 +51,7 @@ class VM : private UnCopyable {
   std::vector<Value> stack_;
   std::vector<Object*> objects_;
   std::unordered_map<std::uint32_t, StringObject*> strings_;
+  std::unordered_map<std::uint32_t, Value> globals_;
 
   void reset_stack(void) { stack_.clear(); }
   void push(const Value& value) { stack_.push_back(value); }
