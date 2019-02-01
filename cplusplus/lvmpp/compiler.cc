@@ -181,12 +181,13 @@ class Parser
     auto unary_fn = [](const ParserPtr& p) { p->unary(); };
     auto literal_fn = [](const ParserPtr& p) { p->literal(); };
     auto string_fn = [](const ParserPtr& p) { p->string(); };
+    auto variable_fn = [](const ParserPtr& p) { p->variable(); };
 
     static ParseRule rules[] = {
       {nullptr, nullptr, Precedence::NONE}, // TK_ERROR
       {nullptr, nullptr, Precedence::NONE}, // TK_EOF
       {nullptr, nullptr, Precedence::NONE}, // TK_UNKNOWN
-      {nullptr, nullptr, Precedence::NONE}, // TK_IDENTIFIER
+      {variable_fn, nullptr, Precedence::NONE}, // TK_IDENTIFIER
       {numeric_fn, nullptr, Precedence::NONE}, // TK_NUMERICCONST
       {string_fn, nullptr, Precedence::NONE}, // TK_STRINGLITERAL
       {grouping_fn, nullptr, Precedence::CALL}, // TK_LPAREN
@@ -360,6 +361,21 @@ public:
     emit_constant(create_string(prev_.get_literal()));
   }
 
+  void variable(void) {
+    named_variable(prev_);
+  }
+
+  void named_variable(const Token& name) {
+    std::uint8_t arg = identifier_constant(name);
+    if (match(TokenKind::TK_EQUAL)) {
+      expression();
+      emit_bytes(OpCode::OP_SET_GLOBAL, arg);
+    }
+    else {
+      emit_bytes(OpCode::OP_GET_GLOBAL, arg);
+    }
+  }
+
   void declaration(void) {
     // declaration -> val_decl | statement ;
 
@@ -381,6 +397,8 @@ public:
     else
       emit_byte(OpCode::OP_NIL);
     consume(TokenKind::TK_SEMI, "expect `;` after variable declaration ...");
+
+    define_variable(global);
   }
 
   void statement(void) {

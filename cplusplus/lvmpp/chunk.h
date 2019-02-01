@@ -42,6 +42,8 @@ enum OpCode {
   OP_TRUE, // true
   OP_FALSE, // false
   OP_POP, // pop operator
+  OP_GET_GLOBAL, // get global variable
+  OP_SET_GLOBAL, // set global variable
   OP_DEFINE_GLOBAL, // define global variable
   OP_EQUAL, // logical =
   OP_GREATER, // logical >

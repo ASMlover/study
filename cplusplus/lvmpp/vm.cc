@@ -77,6 +77,9 @@ InterpretRet VM::run(void) {
   auto _rdconstant = [this, _rdbyte]() -> Value {
     return chunk_.get_constant(_rdbyte());
   };
+  auto _rdstring = [this, _rdconstant]() -> StringObject* {
+    return dynamic_cast<StringObject*>(_rdconstant().as_object());
+  };
 
 #define BINARY_OP(op) do {\
   if (!peek(0).is_numeric() || !peek(1).is_numeric()) {\
@@ -115,10 +118,29 @@ InterpretRet VM::run(void) {
     case OpCode::OP_TRUE: push(true); break;
     case OpCode::OP_FALSE: push(false); break;
     case OpCode::OP_POP: pop(); break;
+    case OpCode::OP_GET_GLOBAL:
+      {
+        StringObject* name = _rdstring();
+        auto value_iter = globals_.find(name->hash_code());
+        if (value_iter ==  globals_.end()) {
+          runtime_error("undefined variable `%s` ...", name->c_str());
+          return InterpretRet::RUNTIME_ERROR;
+        }
+        push(value_iter->second);
+      } break;
+    case OpCode::OP_SET_GLOBAL:
+      {
+        StringObject* name = _rdstring();
+        auto value_iter = globals_.find(name->hash_code());
+        if (value_iter == globals_.end()) {
+          runtime_error("undefined variable `%s` ...", name->c_str());
+          return InterpretRet::RUNTIME_ERROR;
+        }
+        globals_[name->hash_code()] = peek(0);
+      } break;
     case OpCode::OP_DEFINE_GLOBAL:
       {
-        StringObject* name = dynamic_cast<StringObject*>(
-            _rdconstant().as_object());
+        StringObject* name = _rdstring();
         globals_[name->hash_code()] = peek(0);
         pop();
       } break;
