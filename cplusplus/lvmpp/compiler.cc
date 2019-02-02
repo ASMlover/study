@@ -52,8 +52,8 @@ class Parser;
 using ParserPtr = std::shared_ptr<Parser>;
 
 struct ParseRule {
-  std::function<void (const ParserPtr&)> prefix;
-  std::function<void (const ParserPtr&)> infix;
+  std::function<void (const ParserPtr&, bool)> prefix;
+  std::function<void (const ParserPtr&, bool)> infix;
   Precedence precedence;
 };
 
@@ -165,23 +165,29 @@ class Parser
       error("expect expression ...");
       return;
     }
-    prefix_rule(shared_from_this());
+    bool can_assign = prec <= Precedence::ASSIGNMENT;
+    prefix_rule(shared_from_this(), can_assign);
 
     while (prec <= get_rule(curr_.get_kind()).precedence) {
       advance();
       auto infix_rule = get_rule(prev_.get_kind()).infix;
-      infix_rule(shared_from_this());
+      infix_rule(shared_from_this(), can_assign);
+    }
+
+    if (can_assign && match(TokenKind::TK_EQUAL)) {
+      error("invalid assignment target ...");
+      expression();
     }
   }
 
   ParseRule& get_rule(TokenKind kind) {
-    auto numeric_fn = [](const ParserPtr& p) { p->numeric(); };
-    auto grouping_fn = [](const ParserPtr& p) { p->grouping(); };
-    auto binary_fn = [](const ParserPtr& p) { p->binary(); };
-    auto unary_fn = [](const ParserPtr& p) { p->unary(); };
-    auto literal_fn = [](const ParserPtr& p) { p->literal(); };
-    auto string_fn = [](const ParserPtr& p) { p->string(); };
-    auto variable_fn = [](const ParserPtr& p) { p->variable(); };
+    auto numeric_fn = [](const ParserPtr& p, bool) { p->numeric(); };
+    auto grouping_fn = [](const ParserPtr& p, bool) { p->grouping(); };
+    auto binary_fn = [](const ParserPtr& p, bool) { p->binary(); };
+    auto unary_fn = [](const ParserPtr& p, bool) { p->unary(); };
+    auto literal_fn = [](const ParserPtr& p, bool) { p->literal(); };
+    auto string_fn = [](const ParserPtr& p, bool) { p->string(); };
+    auto variable_fn = [](const ParserPtr& p, bool b) { p->variable(b); };
 
     static ParseRule rules[] = {
       {nullptr, nullptr, Precedence::NONE}, // TK_ERROR
@@ -361,13 +367,13 @@ public:
     emit_constant(create_string(prev_.get_literal()));
   }
 
-  void variable(void) {
-    named_variable(prev_);
+  void variable(bool can_assign) {
+    named_variable(prev_, can_assign);
   }
 
-  void named_variable(const Token& name) {
+  void named_variable(const Token& name, bool can_assign) {
     std::uint8_t arg = identifier_constant(name);
-    if (match(TokenKind::TK_EQUAL)) {
+    if (can_assign && match(TokenKind::TK_EQUAL)) {
       expression();
       emit_bytes(OpCode::OP_SET_GLOBAL, arg);
     }
