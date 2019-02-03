@@ -48,10 +48,6 @@ bool Value::is_truthy(void) const {
       }, v_);
 }
 
-bool Value::is_equal(void) const {
-  return false;
-}
-
 std::string Value::stringify(void) const {
   return std::visit(overloaded {
         [](std::nullptr_t) -> std::string { return "nil"; },

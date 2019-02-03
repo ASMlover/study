@@ -56,10 +56,16 @@ class Value : public Copyable {
     return v_ = static_cast<std::int64_t>(x), *this;
   }
 
+  template <typename T> Value& set_decimal(T x) noexcept {
+    return v_ = static_cast<double>(x), *this;
+  }
+
   Value& set_string(const std::string& s) noexcept {
     return v_ = s, *this;
   }
 public:
+  Value(const Value& r) noexcept : v_(r.v_) {}
+  Value(Value&& r) noexcept : v_(std::move(r.v_)) {}
   Value(void) noexcept : v_(nullptr) {}
   Value(std::nullptr_t) noexcept : v_(nullptr) {}
   Value(bool b) noexcept : v_(b) {}
@@ -79,8 +85,6 @@ public:
   Value(double d) noexcept : v_(d) {}
   Value(const char* s) noexcept : v_(std::string(s)) {}
   Value(const std::string& s) noexcept : v_(s) {}
-  Value(const Value& r) noexcept : v_(r.v_) {}
-  Value(Value&& r) noexcept : v_(std::move(r.v_)) {}
 
   bool is_nil(void) const { return std::holds_alternative<std::nullptr_t>(v_); }
   bool is_boolean(void) const { return std::holds_alternative<bool>(v_); }
@@ -100,8 +104,28 @@ public:
   operator double(void) const { return to_decimal(); }
   operator std::string(void) const { return to_string(); }
 
+  Value& operator=(const Value& r) noexcept { return v_ = r.v_, *this; }
+  Value& operator=(Value&& r) noexcept { return v_ = std::move(r.v_), *this; }
+  Value& operator=(std::nullptr_t) noexcept { return v_ = nullptr, *this; }
+  Value& operator=(bool b) noexcept { return v_ = b, *this; }
+  Value& operator=(std::int8_t i8) noexcept { return set_integer(i8); }
+  Value& operator=(std::uint8_t u8) noexcept { return set_integer(u8); }
+  Value& operator=(std::int16_t i16) noexcept { return set_integer(i16); }
+  Value& operator=(std::uint16_t u16) noexcept { return set_integer(u16); }
+  Value& operator=(std::int32_t i32) noexcept { return set_integer(i32); }
+  Value& operator=(std::uint32_t u32) noexcept { return set_integer(u32); }
+  Value& operator=(std::int64_t i64) noexcept { return set_integer(i64); }
+  Value& operator=(std::uint64_t u64) noexcept { return set_integer(u64); }
+#if defined(__GNUC__)
+  Value& operator=(long long ll) noexcept { return set_integer(ll); }
+  Value& operator=(unsigned long long ull) noexcept { return set_integer(ull); }
+#endif
+  Value& operator=(float f) noexcept { return set_decimal(f); }
+  Value& operator=(double d) noexcept { return v_ = d, *this; }
+  Value& operator=(const char* s) noexcept { return set_string(s); }
+  Value& operator=(const std::string& s) noexcept { return v_ = s, *this; }
+
   bool is_truthy(void) const;
-  bool is_equal(void) const;
   std::string stringify(void) const;
   std::string type(void) const;
 };
