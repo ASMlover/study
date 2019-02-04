@@ -125,6 +125,13 @@ public:
   Value& operator=(const char* s) noexcept { return set_string(s); }
   Value& operator=(const std::string& s) noexcept { return v_ = s, *this; }
 
+  bool operator==(const Value& r) const { return v_ == r.v_; }
+  bool operator!=(const Value& r) const { return v_ != r.v_; }
+  bool operator<(const Value& r) const { return v_ < r.v_; }
+  bool operator<=(const Value& r) const { return v_ <= r.v_; }
+  bool operator>(const Value& r) const { return v_ > r.v_; }
+  bool operator>=(const Value& r) const { return v_ >= r.v_; }
+
   bool is_truthy(void) const;
   std::string stringify(void) const;
   std::string type(void) const;
