@@ -63,6 +63,33 @@ class Value : public Copyable {
   Value& set_string(const std::string& s) noexcept {
     return v_ = s, *this;
   }
+
+  template <typename Function>
+  Value binary_numeric(Function&& fn, const Value& r) const {
+    if (is_integer() && r.is_integer())
+      return fn(to_integer(), r.to_integer());
+    else if (is_integer() && r.is_decimal())
+      return fn(to_integer(), r.to_decimal());
+    else if (is_decimal() && r.is_integer())
+      return fn(to_decimal(), r.to_integer());
+    else
+      return fn(to_decimal(), r.to_decimal());
+  }
+
+  Value binary_add(const Value& r) const {
+    // only support string concat and numeric add
+
+    if (is_string() && r.is_string())
+      return to_string() + r.to_string();
+    else
+      return binary_numeric([](auto x, auto y) -> Value { return x + y; }, r);
+  }
+
+  Value binary_mod(const Value& r) const {
+    // only support integer modulo
+
+    return to_integer() % r.to_integer();
+  }
 public:
   Value(const Value& r) noexcept : v_(r.v_) {}
   Value(Value&& r) noexcept : v_(std::move(r.v_)) {}
@@ -131,6 +158,24 @@ public:
   bool operator<=(const Value& r) const { return v_ <= r.v_; }
   bool operator>(const Value& r) const { return v_ > r.v_; }
   bool operator>=(const Value& r) const { return v_ >= r.v_; }
+
+  Value operator+(const Value& r) const { return binary_add(r); }
+  Value operator-(const Value& r) const { return binary_numeric([](auto x, auto y) -> Value { return x - y; }, r); }
+  Value operator*(const Value& r) const { return binary_numeric([](auto x, auto y) -> Value { return x * y; }, r); }
+  Value operator/(const Value& r) const { return binary_numeric([](auto x, auto y) -> Value { return x / y; }, r); }
+  Value operator%(const Value& r) const { return binary_mod(r); }
+  Value& operator+=(const Value& r) { return *this = *this + r, *this; }
+  Value& operator-=(const Value& r) { return *this = *this - r, *this; }
+  Value& operator*=(const Value& r) { return *this = *this * r, *this; }
+  Value& operator/=(const Value& r) { return *this = *this / r, *this; }
+  Value& operator%=(const Value& r) { return *this = *this % r, *this; }
+
+  Value negative_numeric(void) const {
+    if (is_integer())
+      return -to_integer();
+    else
+      return -to_decimal();
+  }
 
   bool is_truthy(void) const;
   std::string stringify(void) const;
