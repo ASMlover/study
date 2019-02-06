@@ -169,6 +169,8 @@ public:
   Value& operator*=(const Value& r) { return *this = *this * r, *this; }
   Value& operator/=(const Value& r) { return *this = *this / r, *this; }
   Value& operator%=(const Value& r) { return *this = *this % r, *this; }
+  Value operator-(void) const { return negative_numeric(); }
+  Value operator!(void) const { return !is_truthy(); }
 
   Value negative_numeric(void) const {
     if (is_integer())
@@ -176,6 +178,8 @@ public:
     else
       return -to_decimal();
   }
+
+  bool is_equal(const Value& r) const { return (this == &r) || (*this == r); }
 
   bool is_truthy(void) const;
   std::string stringify(void) const;
