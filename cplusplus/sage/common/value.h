@@ -90,6 +90,25 @@ class Value : public Copyable {
 
     return to_integer() % r.to_integer();
   }
+
+  template <typename Function>
+  bool compare_numeric(Function&& fn, const Value& r) const {
+    if (is_integer() && r.is_integer())
+      return fn(to_integer(), r.to_integer());
+    else if (is_integer() && r.is_decimal())
+      return fn(to_integer(), r.to_decimal());
+    else if (is_decimal() && r.is_integer())
+      return fn(to_decimal(), r.to_integer());
+    else
+      return fn(to_decimal(), r.to_decimal());
+  }
+
+  bool compare_equal(const Value& r) const {
+    if (is_numeric() && r.is_numeric())
+      return compare_numeric([](auto x, auto y) -> bool { return x == y; }, r);
+    else
+      return v_ == r.v_;
+  }
 public:
   Value(const Value& r) noexcept : v_(r.v_) {}
   Value(Value&& r) noexcept : v_(std::move(r.v_)) {}
@@ -152,12 +171,12 @@ public:
   Value& operator=(const char* s) noexcept { return set_string(s); }
   Value& operator=(const std::string& s) noexcept { return v_ = s, *this; }
 
-  bool operator==(const Value& r) const { return v_ == r.v_; }
-  bool operator!=(const Value& r) const { return v_ != r.v_; }
-  bool operator<(const Value& r) const { return v_ < r.v_; }
-  bool operator<=(const Value& r) const { return v_ <= r.v_; }
-  bool operator>(const Value& r) const { return v_ > r.v_; }
-  bool operator>=(const Value& r) const { return v_ >= r.v_; }
+  bool operator==(const Value& r) const { return compare_equal(r); }
+  bool operator!=(const Value& r) const { return !compare_equal(r); }
+  bool operator<(const Value& r) const { return compare_numeric([](auto x, auto y) -> bool { return x < y; }, r); }
+  bool operator<=(const Value& r) const { return compare_numeric([](auto x, auto y) -> bool { return x <= y; }, r); }
+  bool operator>(const Value& r) const { return compare_numeric([](auto x, auto y) -> bool { return x > y; }, r); }
+  bool operator>=(const Value& r) const { return compare_numeric([](auto x, auto y) -> bool { return x >= y; }, r); }
 
   Value operator+(const Value& r) const { return binary_add(r); }
   Value operator-(const Value& r) const { return binary_numeric([](auto x, auto y) -> Value { return x - y; }, r); }
