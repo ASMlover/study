@@ -198,6 +198,7 @@ public:
       return -to_decimal();
   }
 
+  bool is_abs_equal(const Value& r) const { return v_ == r.v_; }
   bool is_equal(const Value& r) const { return (this == &r) || (*this == r); }
 
   bool is_truthy(void) const;
