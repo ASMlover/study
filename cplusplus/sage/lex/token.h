@@ -59,6 +59,10 @@ public:
     return lineno_;
   }
 
+  std::string get_fname(void) const {
+    return fname_;
+  }
+
   std::string stringify(void) const;
   std::int64_t as_integer(void) const;
   double as_decimal(void) const;
