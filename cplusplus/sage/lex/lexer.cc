@@ -91,21 +91,85 @@ void Lexer::next_token(void) {
 }
 
 void Lexer::make_token(TokenKind kind) {
+  auto literal = gen_literal(begpos_, curpos_);
+  tokens_.push_back(Token(kind, literal, fname_, lineno_));
 }
 
 void Lexer::make_token(TokenKind kind, const std::string& literal) {
+  tokens_.push_back(Token(kind, literal, fname_, lineno_));
 }
 
 void Lexer::skip_comment(void) {
+  while (!is_end() && peek() != '\n')
+    advance();
 }
 
 void Lexer::make_string(void) {
+  std::string literal;
+  while (!is_end() && peek() != '"') {
+    char c = peek();
+    switch (c) {
+    case '\n': ++lineno_; break;
+    case '\\':
+      switch (peek_next()) {
+      case '"': c = '"'; advance(); break;
+      case '\\': c = '\\'; advance(); break;
+      case '%': c = '%'; advance(); break;
+      case '0': c = '\0'; advance(); break;
+      case 'a': c = '\a'; advance(); break;
+      case 'b': c = '\b'; advance(); break;
+      case 'f': c = '\f'; advance(); break;
+      case 'n': c = '\n'; advance(); break;
+      case 'r': c = '\r'; advance(); break;
+      case 't': c = '\t'; advance(); break;
+      case 'v': c = '\v'; advance(); break;
+      }
+      break;
+    }
+    literal.push_back(c);
+    advance();
+  }
+
+  // unterminated string
+  if (is_end()) {
+    err_report_.error(fname_, lineno_, "unterminated string");
+    return;
+  }
+
+  // the closing "
+  advance();
+
+  // trim the surrounding string
+  make_token(TokenKind::TK_STRINGLITERAL, literal);
 }
 
 void Lexer::make_numeric(void) {
+  while (std::isdigit(peek()))
+    advance();
+
+  TokenKind kind{TokenKind::TK_INTEGERCONST};
+  if (peek() == '.' && std::isdigit(peek_next())) {
+    advance();
+    while (std::isdigit(peek()))
+      advance();
+
+    kind = TokenKind::TK_DECIMALCONST;
+  }
+
+  if (is_alpha(peek())) {
+    err_report_.error(fname_, lineno_, "invalid numeric or identifier");
+    return;
+  }
+
+  make_token(kind);
 }
 
 void Lexer::make_identifier(void) {
+  while (is_alnum(peek()))
+    advance();
+
+  auto literal = gen_literal(begpos_, curpos_);
+  make_token(get_keyword_kind(literal.c_str()), literal);
 }
 
 }
