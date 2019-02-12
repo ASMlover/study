@@ -88,6 +88,75 @@ char Lexer::peek_next(void) const {
 }
 
 void Lexer::next_token(void) {
+  char c = advance();
+  switch (c) {
+  case '[': make_token(TokenKind::TK_LSQUARE); break;
+  case ']': make_token(TokenKind::TK_RSQUARE); break;
+  case '(': make_token(TokenKind::TK_LPAREN); break;
+  case ')': make_token(TokenKind::TK_RPAREN); break;
+  case '{': make_token(TokenKind::TK_LBRACE); break;
+  case '}': make_token(TokenKind::TK_RBRACE); break;
+  case '.':
+    if (match('.')) {
+      make_token(match('.')
+          ? TokenKind::TK_PERIODPERIODPERIOD
+          : TokenKind::TK_PERIODPERIOD);
+    }
+    else {
+      make_token(TokenKind::TK_PERIOD);
+    }
+    break;
+  case ',': make_token(TokenKind::TK_COMMA); break;
+  case ':': make_token(TokenKind::TK_COLON); break;
+  case ';': make_token(TokenKind::TK_SEMI); break;
+  case '+':
+    make_token(match('=') ? TokenKind::TK_PLUSEQUAL : TokenKind::TK_PLUS);
+    break;
+  case '-':
+    make_token(match('=') ? TokenKind::TK_MINUSEQUAL : TokenKind::TK_MINUS);
+    break;
+  case '*':
+    make_token(match('=') ? TokenKind::TK_STAREQUAL : TokenKind::TK_STAR);
+    break;
+  case '/':
+    make_token(match('=') ? TokenKind::TK_SLASHEQUAL : TokenKind::TK_SLASH);
+    break;
+  case '%':
+    make_token(match('=') ? TokenKind::TK_PERCENTEQUAL : TokenKind::TK_PERCENT);
+    break;
+  case '<':
+    make_token(match('=') ? TokenKind::TK_LESSEQUAL : TokenKind::TK_LESS);
+    break;
+  case '>':
+    make_token(match('=') ? TokenKind::TK_GREATEREQUAL : TokenKind::TK_GREATER);
+    break;
+  case '!':
+    make_token(match('=') ? TokenKind::TK_EXCLAIMEQUAL : TokenKind::TK_EXCLAIM);
+    break;
+  case '=':
+    make_token(match('=') ? TokenKind::TK_EQUALEQUAL : TokenKind::TK_EQUAL);
+    break;
+  case '#': skip_comment(); break;
+  case ' ':
+  case '\r':
+  case '\t':
+    // ignore whitespaces
+    break;
+  case '\n': make_token(TokenKind::TK_NL, "NL"); ++lineno_; break;
+  case '"': make_string(); break;
+  default:
+    if (std::isdigit(c)) {
+      make_numeric();
+    }
+    else if (is_alpha(c)) {
+      make_identifier();
+    }
+    else {
+      err_report_.error(fname_, lineno_, "unexpected charactor");
+      return;
+    }
+    break;
+  }
 }
 
 void Lexer::make_token(TokenKind kind) {
