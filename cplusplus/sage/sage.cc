@@ -27,6 +27,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include "./lex/lexer.h"
 #include "sage.h"
 
 namespace sage {
@@ -72,6 +73,14 @@ void Sage::eval_with_repl(void) {
 }
 
 void Sage::run(const std::string& source_bytes, const std::string& fname) {
+  Lexer lex(err_report_, source_bytes, fname);
+  const auto& tokens = lex.parse_tokens();
+  if (err_report_.had_error())
+    std::abort();
+
+  for (auto& tok : tokens)
+    std::cout << tok << std::endl;
+  std::cout << std::endl;
 }
 
 }
