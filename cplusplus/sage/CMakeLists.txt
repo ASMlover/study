@@ -68,7 +68,7 @@ macro(source_group_by_dir source_files)
   endforeach()
 endmacro()
 
-file(GLOB_RECURSE SAGE_HEADERS *.h)
+file(GLOB_RECURSE SAGE_HEADERS *.h *.hh)
 file(GLOB_RECURSE SAGE_SOURCES *.cc)
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   set(SAGE_ALL_FILES ${SAGE_HEADERS} ${SAGE_SOURCES})
