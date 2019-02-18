@@ -279,4 +279,175 @@ struct ExprVisitor : private UnCopyable {
   virtual void visit_function_expr(const FunctionExprPtr& expr) = 0;
 };
 
+// program    -> statement* EOF ;
+// statement  -> expr_stmt | print_stmt ;
+// expr_stmt  -> expression NL ;
+// print_stmt -> "print" expression NL ;
+
+struct Stmt : private UnCopyable {
+  virtual ~Stmt(void) {}
+  virtual void accept(const StmtVisitorPtr& visitor) = 0;
+};
+
+class ExprStmt
+  : public Stmt, public std::enable_shared_from_this<ExprStmt> {
+  ExprPtr expr_;
+public:
+  const ExprPtr& expr(void) const { return expr_; }
+
+  ExprStmt(const ExprPtr& expr)
+    : expr_(expr) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
+};
+using ExprStmtPtr = std::shared_ptr<ExprStmt>;
+
+class PrintStmt
+  : public Stmt, public std::enable_shared_from_this<PrintStmt> {
+  std::vector<ExprPtr> exprs_;
+public:
+  const std::vector<ExprPtr>& exprs(void) const { return exprs_; }
+
+  PrintStmt(const std::vector<ExprPtr>& exprs)
+    : exprs_(exprs) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
+};
+using PrintStmtPtr = std::shared_ptr<PrintStmt>;
+
+class LetStmt
+  : public Stmt, public std::enable_shared_from_this<LetStmt> {
+  Token name_;
+  ExprPtr expr_;
+public:
+  const Token& name(void) const { return name_; }
+  const ExprPtr& expr(void) const { return expr_; }
+
+  LetStmt(const Token& name, const ExprPtr& expr)
+    : name_(name), expr_(expr) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
+};
+using LetStmtPtr = std::shared_ptr<LetStmt>;
+
+class BlockStmt
+  : public Stmt, public std::enable_shared_from_this<BlockStmt> {
+  std::vector<StmtPtr> stmts_;
+public:
+  const std::vector<StmtPtr>& stmts(void) const { return stmts_; }
+
+  BlockStmt(const std::vector<StmtPtr>& stmts)
+    : stmts_(stmts) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
+};
+using BlockStmtPtr = std::shared_ptr<BlockStmt>;
+
+class IfStmt
+  : public Stmt, public std::enable_shared_from_this<IfStmt> {
+  ExprPtr cond_;
+  StmtPtr then_branch_;
+  StmtPtr else_branch_;
+public:
+  const ExprPtr& cond(void) const { return cond_; }
+  const StmtPtr& then_branch(void) const { return then_branch_; }
+  const StmtPtr& else_branch(void) const { return else_branch_; }
+
+  IfStmt(const ExprPtr& cond,
+      const StmtPtr& then_branch, const StmtPtr& else_branch)
+    : cond_(cond_), then_branch_(then_branch), else_branch_(else_branch) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
+};
+using IfStmtPtr = std::shared_ptr<IfStmt>;
+
+class WhileStmt
+  : public Stmt, public std::enable_shared_from_this<WhileStmt> {
+  ExprPtr cond_;
+  StmtPtr body_;
+public:
+  const ExprPtr& cond(void) const { return cond_; }
+  const StmtPtr& body(void) const { return body_; }
+
+  WhileStmt(const ExprPtr& cond, const StmtPtr& body)
+    : cond_(cond), body_(body) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
+};
+using WhileStmtPtr = std::shared_ptr<WhileStmt>;
+
+class FunctionStmt
+  : public Stmt, public std::enable_shared_from_this<FunctionStmt> {
+  Token name_;
+  std::vector<Token> params_;
+  std::vector<StmtPtr> body_;
+public:
+  const Token& name(void) const { return name_; }
+  const std::vector<Token>& params(void) const { return params_; }
+  const std::vector<StmtPtr>& body(void) const { return body_; }
+
+  FunctionStmt(const Token& name,
+      const std::vector<Token>& params, const std::vector<StmtPtr>& body)
+    : name_(name), params_(params), body_(body) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
+};
+using FunctionStmtPtr = std::shared_ptr<FunctionStmt>;
+
+class ReturnStmt
+  : public Stmt, public std::enable_shared_from_this<ReturnStmt> {
+  Token keyword_;
+  ExprPtr value_;
+public:
+  const Token& keyword(void) const { return keyword_; }
+  const ExprPtr& value(void) const { return value_; }
+
+  ReturnStmt(const Token& keyword, const ExprPtr& value)
+    : keyword_(keyword), value_(value) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
+};
+using ReturnStmtPtr = std::shared_ptr<ReturnStmt>;
+
+class ClassStmt
+  : public Stmt, public std::enable_shared_from_this<ClassStmt> {
+  Token name_;
+  ExprPtr superclass_;
+  std::vector<FunctionStmtPtr> methods_;
+public:
+  const Token& name(void) const { return name_; }
+  const ExprPtr& superclass(void) const { return superclass_; }
+  const std::vector<FunctionStmtPtr>& methods(void) const { return methods_; }
+
+  ClassStmt(const Token& name,
+      const ExprPtr& superclass, const std::vector<FunctionStmtPtr>& methods)
+    : name_(name), superclass_(superclass), methods_(methods) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
+};
+using ClassStmtPtr = std::shared_ptr<ClassStmt>;
+
+struct StmtVisitor : private UnCopyable {
+  virtual ~StmtVisitor(void) {}
+
+  virtual void visit_expr_stmt(const ExprStmtPtr& visitor) = 0;
+  virtual void visit_print_stmt(const PrintStmtPtr& visitor) = 0;
+  virtual void visit_let_stmt(const LetStmtPtr& visitor) = 0;
+  virtual void visit_block_stmt(const BlockStmtPtr& visitor) = 0;
+  virtual void visit_if_stmt(const IfStmtPtr& visitor) = 0;
+  virtual void visit_while_stmt(const WhileStmtPtr& visitor) = 0;
+  virtual void visit_function_stmt(const FunctionStmtPtr& visitor) = 0;
+  virtual void visit_return_stmt(const ReturnStmtPtr& visitor) = 0;
+  virtual void visit_class_stmt(const ClassStmtPtr& visitor) = 0;
+};
+
 }
