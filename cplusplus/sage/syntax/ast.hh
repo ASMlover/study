@@ -282,7 +282,7 @@ struct ExprVisitor : private UnCopyable {
 // program    -> statement* EOF ;
 // statement  -> expr_stmt | print_stmt ;
 // expr_stmt  -> expression NL ;
-// print_stmt -> "print" expression NL ;
+// print_stmt -> "print" ( expression ( "," expression )* )? NL ;
 
 struct Stmt : private UnCopyable {
   virtual ~Stmt(void) {}
