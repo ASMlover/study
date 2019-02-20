@@ -46,6 +46,7 @@ class Token;
 class ErrorReport;
 
 class Parser : private UnCopyable {
+  ErrorReport& err_report_;
   std::vector<Token> tokens_;
   std::size_t curpos_{};
 
@@ -66,6 +67,10 @@ class Parser : private UnCopyable {
   ExprPtr multiplication(void);
   ExprPtr unary(void);
   ExprPtr primary(void);
+public:
+  Parser(ErrorReport& err_report, const std::vector<Token>& tokens);
+
+  ExprPtr parse(void);
 };
 
 }

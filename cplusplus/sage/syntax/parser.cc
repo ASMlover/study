@@ -30,6 +30,20 @@
 
 namespace sage {
 
+Parser::Parser(ErrorReport& err_report, const std::vector<Token>& tokens)
+  : err_report_(err_report), tokens_(tokens) {
+}
+
+ExprPtr Parser::parse(void) {
+  try {
+    return expression();
+  }
+  catch (const RuntimeError& e) {
+    err_report_.error(e.get_token(), e.get_message());
+    return nullptr;
+  }
+}
+
 bool Parser::is_end(void) const {
   return peek().get_kind() == TokenKind::TK_EOF;
 }

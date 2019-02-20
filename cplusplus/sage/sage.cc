@@ -28,7 +28,8 @@
 #include <iostream>
 #include <sstream>
 #include "./lex/lexer.h"
-#include "sage.h"
+#include "./syntax/parser.hh"
+#include "sage.hh"
 
 namespace sage {
 
@@ -81,6 +82,11 @@ void Sage::run(const std::string& source_bytes, const std::string& fname) {
   for (auto& tok : tokens)
     std::cout << tok << std::endl;
   std::cout << std::endl;
+
+  Parser parser(err_report_, tokens);
+  ExprPtr expr = parser.parse();
+  if (err_report_.had_error())
+    std::abort();
 }
 
 }
