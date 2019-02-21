@@ -30,7 +30,7 @@
 #include <memory>
 #include <string>
 #include <variant>
-#include "common.h"
+#include "common.hh"
 
 namespace sage {
 

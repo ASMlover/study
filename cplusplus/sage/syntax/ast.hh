@@ -28,7 +28,7 @@
 
 #include <memory>
 #include <vector>
-#include "../common/common.h"
+#include "../common/common.hh"
 #include "../common/value.h"
 #include "../lex/token.h"
 

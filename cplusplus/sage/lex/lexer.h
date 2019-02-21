@@ -28,7 +28,7 @@
 
 #include <string>
 #include <vector>
-#include "../common/common.h"
+#include "../common/common.hh"
 #include "token.h"
 
 namespace sage {

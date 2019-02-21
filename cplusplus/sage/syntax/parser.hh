@@ -27,7 +27,7 @@
 #pragma once
 
 #include <vector>
-#include "../common/common.h"
+#include "../common/common.hh"
 #include "../lex/token_kinds.h"
 #include "ast.hh"
 

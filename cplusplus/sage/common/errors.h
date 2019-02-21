@@ -28,7 +28,7 @@
 
 #include <exception>
 #include <string>
-#include "common.h"
+#include "common.hh"
 #include "../lex/token.h"
 
 namespace sage {
