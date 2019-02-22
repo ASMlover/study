@@ -33,6 +33,11 @@
 
 namespace sage {
 
+// parogram       -> statement* EOF ;
+// statement      -> print_stmt | expr_stmt ;
+// print_stmt     -> "print" ( expression ( "," expression )* )? NL ;
+// expr_stmt      -> expression NL ;
+
 // expression     -> equality ;
 // equality       -> comparison ( ( "is" | "!=" | "==" ) comparison )* ;
 // comparison     -> addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
@@ -60,6 +65,12 @@ class Parser : private UnCopyable {
   const Token& consume(const std::initializer_list<TokenKind>& kinds,
       const std::string& message);
 
+  void synchronize(void);
+
+  StmtPtr statement(void);
+  StmtPtr print_stmt(void);
+  StmtPtr expr_stmt(void);
+
   ExprPtr expression(void);
   ExprPtr equality(void);
   ExprPtr comparison(void);
@@ -71,6 +82,7 @@ public:
   Parser(ErrorReport& err_report, const std::vector<Token>& tokens);
 
   ExprPtr parse(void);
+  std::vector<StmtPtr> parse_stmts(void);
 };
 
 }

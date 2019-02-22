@@ -44,6 +44,13 @@ ExprPtr Parser::parse(void) {
   }
 }
 
+std::vector<StmtPtr> Parser::parse_stmts(void) {
+  std::vector<StmtPtr> stmts;
+  while (!is_end())
+    stmts.push_back(statement());
+  return stmts;
+}
+
 bool Parser::is_end(void) const {
   return peek().get_kind() == TokenKind::TK_EOF;
 }
@@ -91,6 +98,55 @@ const Token& Parser::consume(
   }
 
   throw RuntimeError(peek(), message);
+}
+
+void Parser::synchronize(void) {
+  advance();
+
+  while (!is_end()) {
+    auto prev_kind = prev().get_kind();
+    if (prev_kind == TokenKind::TK_NL)
+      return;
+
+    switch (prev_kind) {
+    case TokenKind::KW_IF:
+    case TokenKind::KW_WHILE:
+    case TokenKind::KW_FOR:
+    case TokenKind::KW_BREAK:
+    case TokenKind::KW_FN:
+    case TokenKind::KW_RETURN:
+    case TokenKind::KW_CLASS:
+    case TokenKind::KW_LET:
+    case TokenKind::KW_IMPORT:
+    case TokenKind::KW_PRINT:
+      return;
+    }
+  }
+}
+
+StmtPtr Parser::statement(void) {
+  // statement -> print_stmt | expr_stmt ;
+
+  if (match({TokenKind::KW_PRINT}))
+    return print_stmt();
+  return expr_stmt();
+}
+
+StmtPtr Parser::print_stmt(void) {
+  // print_stmt -> "print" ( expression ( "," expression )* )? NL ;
+
+  std::vector<ExprPtr> exprs;
+  if (!match({TokenKind::TK_NL})) {
+    do {
+      exprs.push_back(expression());
+    } while (match({TokenKind::TK_COMMA}));
+    consume(TokenKind::TK_NL, "expect `NL` after `print` expressions");
+  }
+  return std::make_shared<PrintStmt>(exprs);
+}
+
+StmtPtr Parser::expr_stmt(void) {
+  return nullptr;
 }
 
 ExprPtr Parser::expression(void) {
