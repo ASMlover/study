@@ -35,7 +35,8 @@
 namespace sage {
 
 Sage::Sage(void)
-  : err_report_() {
+  : err_report_()
+  , interp_(new Interpreter(err_report_)) {
 }
 
 void Sage::eval(int argc, char* argv[]) {
@@ -84,13 +85,12 @@ void Sage::run(const std::string& source_bytes, const std::string& fname) {
     std::cout << tok << std::endl;
   std::cout << std::endl;
 
-  auto interp = std::make_shared<Interpreter>(err_report_);
   Parser parser(err_report_, tokens);
   auto stmts = parser.parse_stmts();
   if (err_report_.had_error())
     std::abort();
 
-  interp->interpret(stmts);
+  interp_->interpret(stmts);
   if (err_report_.had_error())
     std::abort();
 }

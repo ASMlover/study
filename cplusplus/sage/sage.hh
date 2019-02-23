@@ -33,8 +33,11 @@
 
 namespace sage {
 
+class Interpreter;
+
 class Sage : private UnCopyable {
   ErrorReport err_report_;
+  std::shared_ptr<Interpreter> interp_;
 
   void eval_with_file(const std::string& fname);
   void eval_with_repl(void);
