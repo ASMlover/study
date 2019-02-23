@@ -81,9 +81,11 @@ void Sage::run(const std::string& source_bytes, const std::string& fname) {
   if (err_report_.had_error())
     std::abort();
 
+#if defined(DEBUG_TRACE_LEXER)
   for (auto& tok : tokens)
     std::cout << tok << std::endl;
   std::cout << std::endl;
+#endif
 
   Parser parser(err_report_, tokens);
   auto stmts = parser.parse_stmts();

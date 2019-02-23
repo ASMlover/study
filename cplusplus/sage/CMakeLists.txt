@@ -33,6 +33,12 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
+option(TRACE_LEXER "Enable/Disable tracing lexer" OFF)
+
+if (TRACE_LEXER)
+  add_compile_options(-DDEBUG_TRACE_LEXER)
+endif()
+
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   add_definitions(
     /DUNICODE
