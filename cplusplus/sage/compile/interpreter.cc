@@ -44,9 +44,23 @@ void Interpreter::interpret(const ExprPtr& expression) {
   }
 }
 
+void Interpreter::interpret(const std::vector<StmtPtr>& statements) {
+  try {
+    for (auto& stmt : statements)
+      evaluate(stmt);
+  }
+  catch (const RuntimeError& e) {
+    err_report_.error(e.get_token(), e.get_message());
+  }
+}
+
 Value Interpreter::evaluate(const ExprPtr& expr) {
   expr->accept(shared_from_this());
   return value_;
+}
+
+void Interpreter::evaluate(const StmtPtr& stmt) {
+  stmt->accept(shared_from_this());
 }
 
 void Interpreter::check_numeric_operand(const Token& oper, const Value& value) {
@@ -166,6 +180,37 @@ void Interpreter::visit_variable_expr(const VariableExprPtr& expr) {
 }
 
 void Interpreter::visit_function_expr(const FunctionExprPtr& expr) {
+}
+
+void Interpreter::visit_expr_stmt(const ExprStmtPtr& stmt) {
+  evaluate(stmt->expr());
+}
+
+void Interpreter::visit_print_stmt(const PrintStmtPtr& stmt) {
+  for (auto& expr : stmt->exprs())
+    std::cout << evaluate(expr) << " ";
+  std::cout << std::endl;
+}
+
+void Interpreter::visit_let_stmt(const LetStmtPtr& stmt) {
+}
+
+void Interpreter::visit_block_stmt(const BlockStmtPtr& stmt) {
+}
+
+void Interpreter::visit_if_stmt(const IfStmtPtr& stmt) {
+}
+
+void Interpreter::visit_while_stmt(const WhileStmtPtr& stmt) {
+}
+
+void Interpreter::visit_function_stmt(const FunctionStmtPtr& stmt) {
+}
+
+void Interpreter::visit_return_stmt(const ReturnStmtPtr& stmt) {
+}
+
+void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {
 }
 
 }

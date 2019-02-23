@@ -439,15 +439,15 @@ using ClassStmtPtr = std::shared_ptr<ClassStmt>;
 struct StmtVisitor : private UnCopyable {
   virtual ~StmtVisitor(void) {}
 
-  virtual void visit_expr_stmt(const ExprStmtPtr& visitor) = 0;
-  virtual void visit_print_stmt(const PrintStmtPtr& visitor) = 0;
-  virtual void visit_let_stmt(const LetStmtPtr& visitor) = 0;
-  virtual void visit_block_stmt(const BlockStmtPtr& visitor) = 0;
-  virtual void visit_if_stmt(const IfStmtPtr& visitor) = 0;
-  virtual void visit_while_stmt(const WhileStmtPtr& visitor) = 0;
-  virtual void visit_function_stmt(const FunctionStmtPtr& visitor) = 0;
-  virtual void visit_return_stmt(const ReturnStmtPtr& visitor) = 0;
-  virtual void visit_class_stmt(const ClassStmtPtr& visitor) = 0;
+  virtual void visit_expr_stmt(const ExprStmtPtr& stmt) = 0;
+  virtual void visit_print_stmt(const PrintStmtPtr& stmt) = 0;
+  virtual void visit_let_stmt(const LetStmtPtr& stmt) = 0;
+  virtual void visit_block_stmt(const BlockStmtPtr& stmt) = 0;
+  virtual void visit_if_stmt(const IfStmtPtr& stmt) = 0;
+  virtual void visit_while_stmt(const WhileStmtPtr& stmt) = 0;
+  virtual void visit_function_stmt(const FunctionStmtPtr& stmt) = 0;
+  virtual void visit_return_stmt(const ReturnStmtPtr& stmt) = 0;
+  virtual void visit_class_stmt(const ClassStmtPtr& stmt) = 0;
 };
 
 }

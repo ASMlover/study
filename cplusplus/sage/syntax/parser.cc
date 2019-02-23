@@ -146,7 +146,11 @@ StmtPtr Parser::print_stmt(void) {
 }
 
 StmtPtr Parser::expr_stmt(void) {
-  return nullptr;
+  // expr_stmt -> expression NL ;
+
+  ExprPtr expr = expression();
+  consume(TokenKind::TK_NL, "expect `NL` after expression");
+  return std::make_shared<ExprStmt>(expr);
 }
 
 ExprPtr Parser::expression(void) {

@@ -28,7 +28,7 @@
 
 #include <memory>
 #include <string>
-#include "./common/common.h"
+#include "./common/common.hh"
 #include "./common/errors.h"
 
 namespace sage {

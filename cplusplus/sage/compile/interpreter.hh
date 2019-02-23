@@ -36,11 +36,13 @@ class ErrorReport;
 
 class Interpreter
   : public ExprVisitor
+  , public StmtVisitor
   , public std::enable_shared_from_this<Interpreter> {
   ErrorReport& err_report_;
   Value value_{};
 
   Value evaluate(const ExprPtr& expr);
+  void evaluate(const StmtPtr& stmt);
   void check_numeric_operand(const Token& oper, const Value& value);
   void check_numeric_operands(
       const Token& oper, const Value& lvalue, const Value& rvalue);
@@ -62,10 +64,21 @@ class Interpreter
   virtual void visit_unary_expr(const UnaryExprPtr& expr) override;
   virtual void visit_variable_expr(const VariableExprPtr& expr) override;
   virtual void visit_function_expr(const FunctionExprPtr& expr) override;
+
+  virtual void visit_expr_stmt(const ExprStmtPtr& stmt) override;
+  virtual void visit_print_stmt(const PrintStmtPtr& stmt) override;
+  virtual void visit_let_stmt(const LetStmtPtr& stmt) override;
+  virtual void visit_block_stmt(const BlockStmtPtr& stmt) override;
+  virtual void visit_if_stmt(const IfStmtPtr& stmt) override;
+  virtual void visit_while_stmt(const WhileStmtPtr& stmt) override;
+  virtual void visit_function_stmt(const FunctionStmtPtr& stmt) override;
+  virtual void visit_return_stmt(const ReturnStmtPtr& stmt) override;
+  virtual void visit_class_stmt(const ClassStmtPtr& stmt) override;
 public:
   Interpreter(ErrorReport& err_report);
 
   void interpret(const ExprPtr& expression);
+  void interpret(const std::vector<StmtPtr>& statements);
 };
 
 }
