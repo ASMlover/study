@@ -47,4 +47,8 @@ void ErrorReport::error(const Token& tok, const std::string& message) {
   report(tok.get_fname(), tok.get_lineno(), tok.get_literal(), message);
 }
 
+Token RuntimeError::virtual_token(const std::string& literal) {
+  return Token(TokenKind::TK_UNKNOWN, literal, "", 0);
+}
+
 }

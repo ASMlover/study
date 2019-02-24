@@ -58,6 +58,8 @@ public:
 
   const Token get_token(void) const { return token_; }
   std::string get_message(void) const { return message_; }
+
+  static Token virtual_token(const std::string& literal);
 };
 
 }
