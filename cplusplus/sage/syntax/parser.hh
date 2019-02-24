@@ -33,7 +33,9 @@
 
 namespace sage {
 
-// parogram       -> statement* EOF ;
+// parogram       -> declaration* EOF ;
+// declaration    -> let_decl | statement ;
+// let_decl       -> "let" IDENTIFIER ( "=" expression )? NL ;
 // statement      -> print_stmt | expr_stmt ;
 // print_stmt     -> "print" ( expression ( "," expression )* )? NL ;
 // expr_stmt      -> expression NL ;
@@ -45,7 +47,7 @@ namespace sage {
 // multiplication -> unary ( ( "*" | "/" | "%" ) unary )* ;
 // unary          -> ( "not" | "!" | "-" ) unary | primary ;
 // primary        -> INTEGER | DECIMAL | STRING | "true" | "false" | "nil"
-//                | "(" expression ")" ;
+//                | "(" expression ")" | IDENTIFIER ;
 
 class Token;
 class ErrorReport;
@@ -67,6 +69,8 @@ class Parser : private UnCopyable {
 
   void synchronize(void);
 
+  StmtPtr declaration(void);
+  StmtPtr let_decl(void);
   StmtPtr statement(void);
   StmtPtr print_stmt(void);
   StmtPtr expr_stmt(void);

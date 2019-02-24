@@ -26,12 +26,14 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include "../common/errors.h"
+#include "environment.hh"
 #include "interpreter.hh"
 
 namespace sage {
 
 Interpreter::Interpreter(ErrorReport& err_report)
-  : err_report_(err_report) {
+  : err_report_(err_report)
+  , environment_(new Environment()) {
 }
 
 void Interpreter::interpret(const ExprPtr& expression) {
@@ -177,6 +179,7 @@ void Interpreter::visit_unary_expr(const UnaryExprPtr& expr) {
 }
 
 void Interpreter::visit_variable_expr(const VariableExprPtr& expr) {
+  value_ = environment_->get(expr->name());
 }
 
 void Interpreter::visit_function_expr(const FunctionExprPtr& expr) {
@@ -193,6 +196,10 @@ void Interpreter::visit_print_stmt(const PrintStmtPtr& stmt) {
 }
 
 void Interpreter::visit_let_stmt(const LetStmtPtr& stmt) {
+  Value value;
+  if (stmt->expr())
+    value = evaluate(stmt->expr());
+  environment_->define(stmt->name(), value);
 }
 
 void Interpreter::visit_block_stmt(const BlockStmtPtr& stmt) {

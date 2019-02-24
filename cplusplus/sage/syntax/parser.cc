@@ -45,9 +45,11 @@ ExprPtr Parser::parse(void) {
 }
 
 std::vector<StmtPtr> Parser::parse_stmts(void) {
+  // program -> declaration* EOF ;
+
   std::vector<StmtPtr> stmts;
   while (!is_end())
-    stmts.push_back(statement());
+    stmts.push_back(declaration());
   return stmts;
 }
 
@@ -122,6 +124,34 @@ void Parser::synchronize(void) {
       return;
     }
   }
+}
+
+StmtPtr Parser::declaration(void) {
+  // declaration -> let_decl | statement ;
+
+  try {
+    if (match({TokenKind::KW_LET}))
+      return let_decl();
+
+    return statement();
+  }
+  catch (const RuntimeError& e) {
+    err_report_.error(e.get_token(), e.get_message());
+    synchronize();
+
+    return nullptr;
+  }
+}
+
+StmtPtr Parser::let_decl(void) {
+  // let_decl -> "let" IDENTIFIER ( "=" expression )? NL ;
+
+  const Token& name = consume(TokenKind::TK_IDENTIFIER, "expect variable name");
+  ExprPtr expr;
+  if (match({TokenKind::TK_EQUAL}))
+    expr = expression();
+  consume(TokenKind::TK_NL, "expect `NL` after varibale declaration");
+  return std::make_shared<LetStmt>(name, expr);
 }
 
 StmtPtr Parser::statement(void) {
@@ -223,7 +253,7 @@ ExprPtr Parser::unary(void) {
 
 ExprPtr Parser::primary(void) {
   // primary -> INTEGER | DECIMAL | STRICT | "true" | "false" | "nil"
-  //          | "(" expression ")" ;
+  //          | "(" expression ")" | IDENTIFIER ;
 
   if (match({TokenKind::TK_INTEGERCONST}))
     return std::make_shared<LiteralExpr>(prev().as_integer());
@@ -243,6 +273,9 @@ ExprPtr Parser::primary(void) {
     consume(TokenKind::TK_RPAREN, "expect `)` after expression");
     return std::make_shared<GroupingExpr>(expr);
   }
+
+  if (match({TokenKind::TK_IDENTIFIER}))
+    return std::make_shared<VariableExpr>(prev());
 
   throw RuntimeError(peek(), "expect expression");
 }

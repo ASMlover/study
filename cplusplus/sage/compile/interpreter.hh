@@ -33,6 +33,9 @@
 namespace sage {
 
 class ErrorReport;
+class Environment;
+
+using EnvironmentPtr = std::shared_ptr<Environment>;
 
 class Interpreter
   : public ExprVisitor
@@ -40,6 +43,7 @@ class Interpreter
   , public std::enable_shared_from_this<Interpreter> {
   ErrorReport& err_report_;
   Value value_{};
+  EnvironmentPtr environment_;
 
   Value evaluate(const ExprPtr& expr);
   void evaluate(const StmtPtr& stmt);
