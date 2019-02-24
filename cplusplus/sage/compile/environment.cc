@@ -31,8 +31,6 @@
 
 namespace sage {
 
-static const Value kNil;
-
 void Environment::define(const std::string& name, const Value& value) {
   values_[name] = value;
 }
@@ -42,17 +40,27 @@ void Environment::define(const Token& name, const Value& value) {
 }
 
 const Value& Environment::get(const std::string& name) const {
-  auto value_iter = values_.find(name);
-  if (value_iter != values_.end())
-    return value_iter->second;
-
-  return kNil;
+  return get(RuntimeError::virtual_token(name));
 }
 
 const Value& Environment::get(const Token& name) const {
   auto value_iter = values_.find(name.get_literal());
   if (value_iter != values_.end())
     return value_iter->second;
+
+  throw RuntimeError(name, "undefined variable `" + name.get_literal() + "`");
+}
+
+void Environment::assign(const std::string& name, const Value& value) {
+  assign(RuntimeError::virtual_token(name), value);
+}
+
+void Environment::assign(const Token& name, const Value& value) {
+  auto value_iter = values_.find(name.get_literal());
+  if (value_iter != values_.end()) {
+    value_iter->second = value;
+    return;
+  }
 
   throw RuntimeError(name, "undefined variable `" + name.get_literal() + "`");
 }
