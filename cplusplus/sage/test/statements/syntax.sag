@@ -1,0 +1,13 @@
+# Test for statements syntax
+
+print ">>>>>>>>> statements syntax"
+
+let a = "before"
+print "variable a is: ", a # expect: let
+
+a = "after"
+print "variable a is: ", a # expect: assignment
+
+let b = a = "new string value"
+print "variable a is: ", a # expect: let
+print "variable b is: ", b # expect: let
