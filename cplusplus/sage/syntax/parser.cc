@@ -184,9 +184,29 @@ StmtPtr Parser::expr_stmt(void) {
 }
 
 ExprPtr Parser::expression(void) {
-  // expression -> equality ;
+  // expression -> assignment ;
 
-  return equality();
+  return assignment();
+}
+
+ExprPtr Parser::assignment(void) {
+  // assignment   -> IDENTIFIER ( assign_oper ) assignment | equality ;
+  // assign_oper  -> "=" | "+=" | "-=" | "*=" | "/=" | "%=" ;
+
+  ExprPtr expr = equality();
+  if (match({TokenKind::TK_EQUAL, TokenKind::TK_PLUSEQUAL,
+        TokenKind::TK_MINUSEQUAL, TokenKind::TK_STAREQUAL,
+        TokenKind::TK_SLASHEQUAL, TokenKind::TK_PERCENTEQUAL})) {
+    const Token& oper = prev();
+    ExprPtr value = assignment();
+    if (std::dynamic_pointer_cast<VariableExpr>(expr)) {
+      const Token& name = std::static_pointer_cast<VariableExpr>(expr)->name();
+      return std::make_shared<AssignExpr>(name, oper, value);
+    }
+
+    throw RuntimeError(oper, "invalid assignment target");
+  }
+  return expr;
 }
 
 ExprPtr Parser::equality(void) {

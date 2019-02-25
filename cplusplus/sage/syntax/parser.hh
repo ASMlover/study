@@ -40,7 +40,9 @@ namespace sage {
 // print_stmt     -> "print" ( expression ( "," expression )* )? NL ;
 // expr_stmt      -> expression NL ;
 
-// expression     -> equality ;
+// expression     -> assignment ;
+// assignment     -> IDENTIFIER ( assign_oper ) assignment | equality ;
+// assign_oper    -> "=" | "+=" | "-=" | "*=" | "/=" | "%=" ;
 // equality       -> comparison ( ( "is" | "!=" | "==" ) comparison )* ;
 // comparison     -> addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
 // addition       -> multiplication ( ( "+" | "-" ) multiplication )* ;
@@ -76,6 +78,7 @@ class Parser : private UnCopyable {
   StmtPtr expr_stmt(void);
 
   ExprPtr expression(void);
+  ExprPtr assignment(void);
   ExprPtr equality(void);
   ExprPtr comparison(void);
   ExprPtr addition(void);

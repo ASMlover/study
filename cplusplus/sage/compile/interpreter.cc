@@ -94,6 +94,32 @@ void Interpreter::check_modulo_operands(
 }
 
 void Interpreter::visit_assign_expr(const AssignExprPtr& expr) {
+  const Token& name = expr->name();
+  const Token& oper = expr->oper();
+  Value left = environment_->get(name);
+  Value right = evaluate(expr->value());
+
+  switch (oper.get_kind()) {
+  case TokenKind::TK_PLUSEQUAL:
+    check_plus_operands(oper, left, right);
+    value_ = left + right; break;
+  case TokenKind::TK_MINUSEQUAL:
+    check_numeric_operands(oper, left, right);
+    value_ = left - right; break;
+  case TokenKind::TK_STAREQUAL:
+    check_numeric_operands(oper, left, right);
+    value_ = left * right; break;
+  case TokenKind::TK_SLASHEQUAL:
+    check_numeric_operands(oper, left, right);
+    value_ = left / right; break;
+  case TokenKind::TK_PERCENTEQUAL:
+    check_modulo_operands(oper, left, right);
+    value_ = left % right; break;
+  default:
+    value_ = right; break;
+  }
+
+  environment_->assign(name, value_);
 }
 
 void Interpreter::visit_binary_expr(const BinaryExprPtr& expr) {
