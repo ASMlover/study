@@ -359,7 +359,7 @@ public:
 
   IfStmt(const ExprPtr& cond,
       const StmtPtr& then_branch, const StmtPtr& else_branch)
-    : cond_(cond_), then_branch_(then_branch), else_branch_(else_branch) {
+    : cond_(cond), then_branch_(then_branch), else_branch_(else_branch) {
   }
 
   virtual void accept(const StmtVisitorPtr& visitor) override;
