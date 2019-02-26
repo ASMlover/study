@@ -1,0 +1,22 @@
+
+# Test for scope
+
+print ">>>>>>>>> test for scope"
+
+let a = "global-a"
+let b = "global-b"
+let c = "global-c"
+
+{
+  let a = "outer-a"
+  let b = "outer-b"
+
+  {
+    let a = "inner-a"
+    print a, b, c
+  }
+
+  print a, b, c
+}
+
+print a, b, c
