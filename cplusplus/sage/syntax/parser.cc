@@ -48,8 +48,10 @@ std::vector<StmtPtr> Parser::parse_stmts(void) {
   // program -> declaration* EOF ;
 
   std::vector<StmtPtr> stmts;
-  while (!is_end())
-    stmts.push_back(declaration());
+  while (!is_end()) {
+    if (!ignore_newlines())
+      stmts.push_back(declaration());
+  }
   return stmts;
 }
 
@@ -126,6 +128,15 @@ void Parser::synchronize(void) {
   }
 }
 
+bool Parser::ignore_newlines(void) {
+  if (!match({TokenKind::TK_NL}))
+    return false;
+
+  while (match({TokenKind::TK_NL})) {
+  }
+  return true;
+}
+
 StmtPtr Parser::declaration(void) {
   // declaration -> let_decl | statement ;
 
@@ -155,10 +166,12 @@ StmtPtr Parser::let_decl(void) {
 }
 
 StmtPtr Parser::statement(void) {
-  // statement -> print_stmt | expr_stmt ;
+  // statement -> print_stmt | expr_stmt | block_stmt ;
 
   if (match({TokenKind::KW_PRINT}))
     return print_stmt();
+  if (match({TokenKind::TK_LBRACE}))
+    return std::make_shared<BlockStmt>(block_stmt());
   return expr_stmt();
 }
 
@@ -181,6 +194,22 @@ StmtPtr Parser::expr_stmt(void) {
   ExprPtr expr = expression();
   consume(TokenKind::TK_NL, "expect `NL` after expression");
   return std::make_shared<ExprStmt>(expr);
+}
+
+std::vector<StmtPtr> Parser::block_stmt(void) {
+  // block_stmt -> "{" NL declaration* "}" NL ;
+
+  consume(TokenKind::TK_NL, "expect `NL` after block `{`");
+
+  std::vector<StmtPtr> stmts;
+  while (!is_end() && !check(TokenKind::TK_RBRACE)) {
+    if (!ignore_newlines())
+      stmts.push_back(declaration());
+  }
+  consume(TokenKind::TK_RBRACE, "expect `}` after block statements");
+  consume(TokenKind::TK_NL, "expect `NL` after block `}`");
+
+  return stmts;
 }
 
 ExprPtr Parser::expression(void) {
