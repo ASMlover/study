@@ -1,0 +1,21 @@
+
+print ">>>>>>>>> test for while control-flow"
+
+let cond = 5
+let count = 1
+while cond > 0 {
+  count *= cond
+  print "count value is: ", count
+
+  {
+    # inner block statement
+
+    let count = 1
+    count *= cond
+    print "\tinner count value is: ", count
+  }
+
+  cond -= 1
+  print "cond value is: ", cond
+  print
+}
