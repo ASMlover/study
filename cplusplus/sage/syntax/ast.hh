@@ -350,15 +350,16 @@ using BlockStmtPtr = std::shared_ptr<BlockStmt>;
 class IfStmt
   : public Stmt, public std::enable_shared_from_this<IfStmt> {
   ExprPtr cond_;
-  StmtPtr then_branch_;
-  StmtPtr else_branch_;
+  std::vector<StmtPtr> then_branch_;
+  std::vector<StmtPtr> else_branch_;
 public:
   const ExprPtr& cond(void) const { return cond_; }
-  const StmtPtr& then_branch(void) const { return then_branch_; }
-  const StmtPtr& else_branch(void) const { return else_branch_; }
+  const std::vector<StmtPtr>& then_branch(void) const { return then_branch_; }
+  const std::vector<StmtPtr>& else_branch(void) const { return else_branch_; }
 
   IfStmt(const ExprPtr& cond,
-      const StmtPtr& then_branch, const StmtPtr& else_branch)
+      const std::vector<StmtPtr>& then_branch,
+      const std::vector<StmtPtr>& else_branch)
     : cond_(cond), then_branch_(then_branch), else_branch_(else_branch) {
   }
 
