@@ -166,13 +166,40 @@ StmtPtr Parser::let_decl(void) {
 }
 
 StmtPtr Parser::statement(void) {
-  // statement -> print_stmt | expr_stmt | block_stmt ;
+  // statement -> if_stmt | print_stmt | block_stmt | expr_stmt ;
 
+  if (match({TokenKind::KW_IF}))
+    return if_stmt();
   if (match({TokenKind::KW_PRINT}))
     return print_stmt();
   if (match({TokenKind::TK_LBRACE}))
     return std::make_shared<BlockStmt>(block_stmt());
   return expr_stmt();
+}
+
+StmtPtr Parser::if_stmt(void) {
+  // if_stmt -> "if" expression "{" NL statement "}" ( "else" "{" NL statement "}" )? NL ;
+
+  ExprPtr cond = expression();
+  consume(TokenKind::TK_LBRACE, "expect `{` after `if` condition");
+  consume(TokenKind::TK_NL, "expect `NL` after `{`");
+  ignore_newlines(); // skip NL before if statement
+  StmtPtr then_branch = statement();
+  ignore_newlines();
+  consume(TokenKind::TK_RBRACE, "expect `}` after `then-branch` statement");
+
+  StmtPtr else_branch;
+  if (match({TokenKind::KW_ELSE})) {
+    consume(TokenKind::TK_LBRACE, "expect `{` after `else` keyword");
+    consume(TokenKind::TK_NL, "expect `NL` after `{`");
+    ignore_newlines(); // skip NL before else statement
+    else_branch = statement();
+    ignore_newlines();
+    consume(TokenKind::TK_RBRACE, "expect `}` after `else-branch` statement");
+  }
+  consume(TokenKind::TK_NL, "expect `NL` after `}`");
+
+  return std::make_shared<IfStmt>(cond, then_branch, else_branch);
 }
 
 StmtPtr Parser::print_stmt(void) {
@@ -186,14 +213,6 @@ StmtPtr Parser::print_stmt(void) {
     consume(TokenKind::TK_NL, "expect `NL` after `print` expressions");
   }
   return std::make_shared<PrintStmt>(exprs);
-}
-
-StmtPtr Parser::expr_stmt(void) {
-  // expr_stmt -> expression NL ;
-
-  ExprPtr expr = expression();
-  consume(TokenKind::TK_NL, "expect `NL` after expression");
-  return std::make_shared<ExprStmt>(expr);
 }
 
 std::vector<StmtPtr> Parser::block_stmt(void) {
@@ -210,6 +229,14 @@ std::vector<StmtPtr> Parser::block_stmt(void) {
   consume(TokenKind::TK_NL, "expect `NL` after block `}`");
 
   return stmts;
+}
+
+StmtPtr Parser::expr_stmt(void) {
+  // expr_stmt -> expression NL ;
+
+  ExprPtr expr = expression();
+  consume(TokenKind::TK_NL, "expect `NL` after expression");
+  return std::make_shared<ExprStmt>(expr);
 }
 
 ExprPtr Parser::expression(void) {

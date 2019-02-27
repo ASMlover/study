@@ -1,0 +1,25 @@
+# Test for if condition execution
+
+print ">>>>>>>>> test for if condition"
+
+if true {
+  # before execute then branch
+  print "1.1) then-branch"
+  # after execute then branch
+} else {
+  print "1.2) else-branch"
+}
+
+if false {
+  print "2.1) then-branch"
+} else {
+  # before execute else branch
+  print "2.2) else-branch"
+  # after execute else branch
+}
+
+let cond = 0
+cond += 1
+if cond {
+  print "3.1) condition value is: ", cond
+}

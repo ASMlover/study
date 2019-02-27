@@ -36,10 +36,11 @@ namespace sage {
 // parogram       -> declaration* EOF ;
 // declaration    -> let_decl | statement ;
 // let_decl       -> "let" IDENTIFIER ( "=" expression )? NL ;
-// statement      -> print_stmt | expr_stmt | block_stmt;
+// statement      -> if_stmt | print_stmt | block_stmt | expr_stmt ;
+// if_stmt        -> "if" expression "{" NL statement "}" ( "else" "{" NL statement "}" )? NL ;
 // print_stmt     -> "print" ( expression ( "," expression )* )? NL ;
-// expr_stmt      -> expression NL ;
 // block_stmt     -> "{" NL declaration* "}" NL ;
+// expr_stmt      -> expression NL ;
 
 // expression     -> assignment ;
 // assignment     -> IDENTIFIER ( assign_oper ) assignment | equality ;
@@ -76,9 +77,10 @@ class Parser : private UnCopyable {
   StmtPtr declaration(void);
   StmtPtr let_decl(void);
   StmtPtr statement(void);
+  StmtPtr if_stmt(void);
   StmtPtr print_stmt(void);
-  StmtPtr expr_stmt(void);
   std::vector<StmtPtr> block_stmt(void);
+  StmtPtr expr_stmt(void);
 
   ExprPtr expression(void);
   ExprPtr assignment(void);
