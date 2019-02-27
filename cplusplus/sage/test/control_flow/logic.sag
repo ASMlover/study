@@ -1,0 +1,8 @@
+
+print ">>>>>>>>> test for logical operators"
+
+print "1.1) logical-or" or 256
+print nil or "1.2) logical-or"
+
+print true and "2.1) logical-and"
+print false and "2.2) logical-and"

@@ -43,8 +43,10 @@ namespace sage {
 // expr_stmt      -> expression NL ;
 
 // expression     -> assignment ;
-// assignment     -> IDENTIFIER ( assign_oper ) assignment | equality ;
+// assignment     -> IDENTIFIER ( assign_oper ) assignment | logic_or ;
 // assign_oper    -> "=" | "+=" | "-=" | "*=" | "/=" | "%=" ;
+// logic_or       -> logic_and ( "or" logic_and )* ;
+// logic_and      -> equality ( "and" equality )* ;
 // equality       -> comparison ( ( "is" | "!=" | "==" ) comparison )* ;
 // comparison     -> addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
 // addition       -> multiplication ( ( "+" | "-" ) multiplication )* ;
@@ -84,6 +86,8 @@ class Parser : private UnCopyable {
 
   ExprPtr expression(void);
   ExprPtr assignment(void);
+  ExprPtr logic_or(void);
+  ExprPtr logic_and(void);
   ExprPtr equality(void);
   ExprPtr comparison(void);
   ExprPtr addition(void);
