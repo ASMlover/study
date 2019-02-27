@@ -6,13 +6,17 @@
 program         -> declaration* EOF ;
 declaration     -> let_decl | statement ;
 let_decl        -> "let" IDENTIFIER ( "=" expression )? NL ;
-statement       -> print_stmt | expr_stmt ;
+statement       -> if_stmt | print_stmt | block_stmt | expr_stmt ;
+if_stmt         -> "if" expression "{" NL statement "}" ( "else" "{" NL statement "}" )? NL ;
 print_stmt      -> "print" ( expression ( "," expression )* )? NL ;
+block_stmt      -> "{" NL declaration* "}" NL ;
 expr_stmt       -> expression NL ;
 
 expression      -> assignment ;
-assignment      -> IDENTIFIER ( assign_oper ) assignment | equality ;
+assignment      -> IDENTIFIER ( assign_oper ) assignment | logic_or ;
 assign_oper     -> "=" | "+=" | "-=" | "*=" | "/=" | "%=" ;
+logic_or        -> logic_and ( "or" logic_and )* ;
+logic_and       -> equality ( "and" equality )* ;
 equality        -> comparison ( ( "is" | "!=" | "==" ) comparison )* ;
 comparison      -> addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
 addition        -> multiplication ( ( "+" | "-" ) multiplication )* ;
