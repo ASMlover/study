@@ -369,12 +369,12 @@ using IfStmtPtr = std::shared_ptr<IfStmt>;
 class WhileStmt
   : public Stmt, public std::enable_shared_from_this<WhileStmt> {
   ExprPtr cond_;
-  StmtPtr body_;
+  std::vector<StmtPtr> body_;
 public:
   const ExprPtr& cond(void) const { return cond_; }
-  const StmtPtr& body(void) const { return body_; }
+  const std::vector<StmtPtr>& body(void) const { return body_; }
 
-  WhileStmt(const ExprPtr& cond, const StmtPtr& body)
+  WhileStmt(const ExprPtr& cond, const std::vector<StmtPtr>& body)
     : cond_(cond), body_(body) {
   }
 

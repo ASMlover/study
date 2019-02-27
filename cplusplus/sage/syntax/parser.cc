@@ -170,6 +170,8 @@ StmtPtr Parser::statement(void) {
 
   if (match({TokenKind::KW_IF}))
     return if_stmt();
+  if (match({TokenKind::KW_WHILE}))
+    return while_stmt();
   if (match({TokenKind::KW_PRINT}))
     return print_stmt();
   if (match({TokenKind::TK_LBRACE}))
@@ -200,6 +202,15 @@ StmtPtr Parser::if_stmt(void) {
   consume(TokenKind::TK_NL, "expect `NL` after `}`");
 
   return std::make_shared<IfStmt>(cond, then_branch, else_branch);
+}
+
+StmtPtr Parser::while_stmt(void) {
+  // while_stmt -> "while" expression block_stmt ;
+
+  ExprPtr cond = expression();
+  consume(TokenKind::TK_LBRACE, "expect `{` after `while` condition");
+  auto body = block_stmt();
+  return std::make_shared<WhileStmt>(cond, body);
 }
 
 StmtPtr Parser::print_stmt(void) {

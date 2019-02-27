@@ -273,6 +273,12 @@ void Interpreter::visit_if_stmt(const IfStmtPtr& stmt) {
 }
 
 void Interpreter::visit_while_stmt(const WhileStmtPtr& stmt) {
+  EnvironmentPtr envp;
+  while (evaluate(stmt->cond()).is_truthy()) {
+    if (!envp)
+      envp = std::make_shared<Environment>(environment_);
+    evaluate_block(stmt->body(), envp);
+  }
 }
 
 void Interpreter::visit_function_stmt(const FunctionStmtPtr& stmt) {
