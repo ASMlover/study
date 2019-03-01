@@ -6,20 +6,36 @@ if true {
   # before execute then branch
   print "1.1) then-branch"
   # after execute then branch
-} else {
+
+  let then_val1 = 5
+  print "1.1-1) then-branch: ", then_val1 * then_val1
+}
+else {
   print "1.2) else-branch"
 }
 
 if false {
   print "2.1) then-branch"
-} else {
+}
+else {
   # before execute else branch
   print "2.2) else-branch"
   # after execute else branch
+
+  let else_val2 = 35
+  print "2.2-1) else-branch: ", else_val2 * else_val2
 }
 
 let cond = 0
-cond += 1
+cond += 5
 if cond {
   print "3.1) condition value is: ", cond
+  cond *= 5
+  print "3.2) condition value is: ", cond
+
+  {
+    let inner = "inner string"
+    print cond, inner
+  }
+
 }
