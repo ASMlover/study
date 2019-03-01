@@ -6,8 +6,9 @@
 program         -> declaration* EOF ;
 declaration     -> let_decl | statement ;
 let_decl        -> "let" IDENTIFIER ( "=" expression )? NL ;
-statement       -> if_stmt | print_stmt | block_stmt | expr_stmt ;
-if_stmt         -> "if" expression "{" NL statement "}" ( "else" "{" NL statement "}" )? NL ;
+statement       -> if_stmt | while_stmt | print_stmt | block_stmt | expr_stmt ;
+if_stmt         -> "if" expression block_stmt ( "else" block_stmt )? ;
+while_stmt      -> "while" expression block_stmt ;
 print_stmt      -> "print" ( expression ( "," expression )* )? NL ;
 block_stmt      -> "{" NL declaration* "}" NL ;
 expr_stmt       -> expression NL ;
