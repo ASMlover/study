@@ -29,7 +29,7 @@
 #include <memory>
 #include <vector>
 #include "../common/common.hh"
-#include "../common/value.h"
+#include "../common/value.hh"
 #include "../lex/token.h"
 
 namespace sage {

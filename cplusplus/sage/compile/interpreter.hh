@@ -27,7 +27,7 @@
 #pragma once
 
 #include <memory>
-#include "../common/value.h"
+#include "../common/value.hh"
 #include "../syntax/ast.hh"
 
 namespace sage {
