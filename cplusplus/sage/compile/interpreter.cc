@@ -264,11 +264,14 @@ void Interpreter::visit_block_stmt(const BlockStmtPtr& stmt) {
 void Interpreter::visit_if_stmt(const IfStmtPtr& stmt) {
   Value cond = evaluate(stmt->cond());
   if (cond.is_truthy()) {
-    evaluate(stmt->then_branch());
+    const auto& then_branch = stmt->then_branch();
+    if (!then_branch.empty())
+      evaluate_block(then_branch, std::make_shared<Environment>(environment_));
   }
   else {
-    if (stmt->else_branch())
-      evaluate(stmt->else_branch());
+    const auto& else_branch = stmt->else_branch();
+    if (!else_branch.empty())
+      evaluate_block(else_branch, std::make_shared<Environment>(environment_));
   }
 }
 

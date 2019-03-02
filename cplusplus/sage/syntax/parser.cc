@@ -180,26 +180,17 @@ StmtPtr Parser::statement(void) {
 }
 
 StmtPtr Parser::if_stmt(void) {
-  // if_stmt -> "if" expression "{" NL statement "}" ( "else" "{" NL statement "}" )? NL ;
+  // if_stmt -> "if" expression block_stmt ( "else" block_stmt )? ;
 
   ExprPtr cond = expression();
   consume(TokenKind::TK_LBRACE, "expect `{` after `if` condition");
-  consume(TokenKind::TK_NL, "expect `NL` after `{`");
-  ignore_newlines(); // skip NL before if statement
-  StmtPtr then_branch = statement();
-  ignore_newlines();
-  consume(TokenKind::TK_RBRACE, "expect `}` after `then-branch` statement");
+  auto then_branch = block_stmt();
 
-  StmtPtr else_branch;
+  std::vector<StmtPtr> else_branch;
   if (match({TokenKind::KW_ELSE})) {
     consume(TokenKind::TK_LBRACE, "expect `{` after `else` keyword");
-    consume(TokenKind::TK_NL, "expect `NL` after `{`");
-    ignore_newlines(); // skip NL before else statement
-    else_branch = statement();
-    ignore_newlines();
-    consume(TokenKind::TK_RBRACE, "expect `}` after `else-branch` statement");
+    else_branch = block_stmt();
   }
-  consume(TokenKind::TK_NL, "expect `NL` after `}`");
 
   return std::make_shared<IfStmt>(cond, then_branch, else_branch);
 }
