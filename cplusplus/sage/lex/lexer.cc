@@ -25,7 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cctype>
-#include "../common/errors.h"
+#include "../common/errors.hh"
 #include "lexer.h"
 
 namespace sage {

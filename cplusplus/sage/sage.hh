@@ -29,7 +29,7 @@
 #include <memory>
 #include <string>
 #include "./common/common.hh"
-#include "./common/errors.h"
+#include "./common/errors.hh"
 
 namespace sage {
 
