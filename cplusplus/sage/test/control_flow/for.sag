@@ -1,0 +1,23 @@
+
+print ">>>>>>>>> test for for statement"
+
+# test for common for loop
+let global_value = 0
+for let i = 0; i < 10; i += 1 {
+  global_value += i
+
+  print "calculate index: ", i, ", calculate value is: ", global_value
+}
+
+for ; global_value > 0; {
+  print "global_value is: ", global_value
+
+  global_value /= 2
+}
+
+let rang_beg = 100
+let rang_end = 200
+let index
+for index = rang_beg * rang_end; index > 0; index /= 2 {
+  print "index value is: ", index
+}
