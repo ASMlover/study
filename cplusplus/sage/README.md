@@ -4,10 +4,12 @@
 ## **GRAMMER**
 ```
 program         -> declaration* EOF ;
-declaration     -> let_decl | statement ;
+declaration     -> func_decl | let_decl | statement ;
+func_decl       -> "fn" IDENTIFIER "(" parameters? ")" block_stmt ;
+parameters      -> IDENTIFIER ( "," IDENTIFIER )* ;
 let_decl        -> "let" IDENTIFIER ( "=" expression )? NL ;
 statement       -> if_stmt | while_stmt | for_stmt
-                | print_stmt | block_stmt | expr_stmt ;
+                 | print_stmt | block_stmt | expr_stmt ;
 if_stmt         -> "if" expression block_stmt ( "else" block_stmt )? ;
 while_stmt      -> "while" expression block_stmt ;
 for_stmt        -> "for" init_clause expression? ";" expression? block_stmt ;
@@ -31,5 +33,5 @@ unary           -> ( "not" | "!" | "-" ) unary | call ;
 call            -> primary ( "(" arguments? ")" )* ;
 arguments       -> expression ( "," expression )* ;
 primary         -> INTEGER | DECIMAL | STRING | "true" | "false" | "nil"
-                | "(" expression ")" | IDENTIFIER ;
+                 | "(" expression ")" | IDENTIFIER ;
 ```
