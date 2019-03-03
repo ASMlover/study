@@ -29,7 +29,7 @@
 #include <exception>
 #include <string>
 #include "common.hh"
-#include "../lex/token.h"
+#include "../lex/token.hh"
 
 namespace sage {
 

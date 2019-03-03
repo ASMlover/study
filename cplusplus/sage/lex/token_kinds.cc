@@ -25,20 +25,20 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <unordered_map>
-#include "token_kinds.h"
+#include "token_kinds.hh"
 
 namespace sage {
 
 static constexpr const char* const kTokenNames[] = {
 #define TOKDEF(k, s) s,
-#include "kinds_def.h"
+#include "kinds_def.hh"
 #undef TOKDEF
   nullptr
 };
 
 static const std::unordered_map<std::string, TokenKind> kTokenKeywords = {
 #define KEYWORD(k, s) {s, TokenKind::KW_##k},
-#include "kinds_def.h"
+#include "kinds_def.hh"
 #undef KEYWORD
 };
 

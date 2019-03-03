@@ -28,7 +28,7 @@
 
 #include <vector>
 #include "../common/common.hh"
-#include "../lex/token_kinds.h"
+#include "../lex/token_kinds.hh"
 #include "ast.hh"
 
 namespace sage {
@@ -37,7 +37,7 @@ namespace sage {
 // declaration    -> let_decl | statement ;
 // let_decl       -> "let" IDENTIFIER ( "=" expression )? NL ;
 // statement      -> if_stmt | while_stmt | for_stmt
-//                | print_stmt | block_stmt | expr_stmt ;
+//                 | print_stmt | block_stmt | expr_stmt ;
 // if_stmt        -> "if" expression block_stmt ( "else" block_stmt )? ;
 // while_stmt     -> "while" expression block_stmt ;
 // for_stmt       -> "for" init_clause expression? ";" expression? block_stmt ;
@@ -59,7 +59,7 @@ namespace sage {
 // multiplication -> unary ( ( "*" | "/" | "%" ) unary )* ;
 // unary          -> ( "not" | "!" | "-" ) unary | primary ;
 // primary        -> INTEGER | DECIMAL | STRING | "true" | "false" | "nil"
-//                | "(" expression ")" | IDENTIFIER ;
+//                 | "(" expression ")" | IDENTIFIER ;
 
 class Token;
 class ErrorReport;

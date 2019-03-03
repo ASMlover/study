@@ -26,46 +26,16 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <string>
-#include <vector>
-#include "../common/common.hh"
-#include "token.h"
-
 namespace sage {
 
-class ErrorReport;
-
-class Lexer : private UnCopyable {
-  ErrorReport& err_report_;
-
-  const std::string& source_bytes_;
-  std::string fname_;
-  std::size_t begpos_{};
-  std::size_t curpos_{};
-  int lineno_{1};
-  std::vector<Token> tokens_;
-
-  bool is_alpha(char c) const;
-  bool is_alnum(char c) const;
-  std::string gen_literal(std::size_t begpos, std::size_t endpos) const;
-  bool is_end(void) const;
-  char advance(void);
-  bool match(char expected);
-  char peek(void) const;
-  char peek_next(void) const;
-
-  void next_token(void);
-  void make_token(TokenKind kind);
-  void make_token(TokenKind kind, const std::string& literal);
-  void skip_comment(void);
-  void make_string(void);
-  void make_numeric(void);
-  void make_identifier(void);
-public:
-  Lexer(ErrorReport& err_report,
-      const std::string& source_bytes, const std::string& fname = "");
-
-  std::vector<Token>& parse_tokens(void);
+enum class TokenKind {
+#define TOKDEF(k, s) k,
+#include "kinds_def.hh"
+#undef TOKDEF
+  NUM_TOKENS
 };
+
+const char* get_token_name(TokenKind kind);
+TokenKind get_keyword_kind(const char* k);
 
 }

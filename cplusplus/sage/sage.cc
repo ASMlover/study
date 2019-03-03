@@ -27,7 +27,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include "./lex/lexer.h"
+#include "./lex/lexer.hh"
 #include "./syntax/parser.hh"
 #include "./compile/interpreter.hh"
 #include "sage.hh"

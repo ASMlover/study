@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include "../common/errors.hh"
 #include "../common/value.hh"
-#include "../lex/token.h"
+#include "../lex/token.hh"
 #include "environment.hh"
 
 namespace sage {

@@ -29,7 +29,7 @@
 #include <cstdint>
 #include <string>
 #include "../common/common.hh"
-#include "token_kinds.h"
+#include "token_kinds.hh"
 
 namespace sage {
 

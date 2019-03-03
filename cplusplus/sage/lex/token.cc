@@ -27,7 +27,7 @@
 #include <cstdlib>
 #include <iomanip>
 #include <sstream>
-#include "token.h"
+#include "token.hh"
 
 namespace sage {
 

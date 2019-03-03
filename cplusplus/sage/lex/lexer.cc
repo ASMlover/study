@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cctype>
 #include "../common/errors.hh"
-#include "lexer.h"
+#include "lexer.hh"
 
 namespace sage {
 
