@@ -34,13 +34,18 @@
 
 namespace sage {
 
+struct Callable;
+
+using CallablePtr = std::shared_ptr<Callable>;
+
 class Value : public Copyable {
   using VariantType = std::variant<
     std::nullptr_t,
     bool,
     std::int64_t,
     double,
-    std::string>;
+    std::string,
+    CallablePtr>;
 
   VariantType v_{};
 
@@ -131,12 +136,14 @@ public:
   Value(double d) noexcept : v_(d) {}
   Value(const char* s) noexcept : v_(std::string(s)) {}
   Value(const std::string& s) noexcept : v_(s) {}
+  Value(const CallablePtr& c) noexcept : v_(c) {}
 
   bool is_nil(void) const { return std::holds_alternative<std::nullptr_t>(v_); }
   bool is_boolean(void) const { return std::holds_alternative<bool>(v_); }
   bool is_integer(void) const { return std::holds_alternative<std::int64_t>(v_); }
   bool is_decimal(void) const { return std::holds_alternative<double>(v_); }
   bool is_string(void) const { return std::holds_alternative<std::string>(v_); }
+  bool is_callable(void) const { return std::holds_alternative<CallablePtr>(v_); }
 
   bool is_numeric(void) const { return is_integer() || is_decimal(); }
 
@@ -144,11 +151,13 @@ public:
   std::int64_t to_integer(void) const { return std::get<std::int64_t>(v_); }
   double to_decimal(void) const { return std::get<double>(v_); }
   std::string to_string(void) const { return std::get<std::string>(v_); }
+  CallablePtr to_callable(void) const { return std::get<CallablePtr>(v_); }
 
   operator bool(void) const { return to_boolean(); }
   operator std::int64_t(void) const { return to_integer(); }
   operator double(void) const { return to_decimal(); }
   operator std::string(void) const { return to_string(); }
+  operator CallablePtr(void) const { return to_callable(); }
 
   Value& operator=(const Value& r) noexcept { return v_ = r.v_, *this; }
   Value& operator=(Value&& r) noexcept { return v_ = std::move(r.v_), *this; }
@@ -170,6 +179,7 @@ public:
   Value& operator=(double d) noexcept { return v_ = d, *this; }
   Value& operator=(const char* s) noexcept { return set_string(s); }
   Value& operator=(const std::string& s) noexcept { return v_ = s, *this; }
+  Value& operator=(const CallablePtr& c) noexcept { return v_ = c, *this; }
 
   bool operator==(const Value& r) const { return compare_equal(r); }
   bool operator!=(const Value& r) const { return !compare_equal(r); }
