@@ -397,14 +397,45 @@ ExprPtr Parser::multiplication(void) {
 }
 
 ExprPtr Parser::unary(void) {
-  // unary -> ( "not" | "!" | "-" ) unary | primary ;
+  // unary -> ( "not" | "!" | "-" ) unary | call ;
 
   if (match({TokenKind::KW_NOT, TokenKind::TK_EXCLAIM, TokenKind::TK_MINUS})) {
     const Token& oper = prev();
     ExprPtr right = unary();
     return std::make_shared<UnaryExpr>(oper, right);
   }
-  return primary();
+  return call();
+}
+
+ExprPtr Parser::call(void) {
+  // call       -> primary ( "(" arguments? ")" )* ;
+  // arguments  -> expression ( "," expression )* ;
+
+  auto finish_call = [&](const ExprPtr& callee) -> ExprPtr {
+    std::vector<ExprPtr> arguments;
+    if (!check(TokenKind::TK_RPAREN)) {
+      do {
+        if (arguments.size() >= kMaxArguments) {
+          throw RuntimeError(peek(),
+              "cannot have more than " +
+              std::to_string(kMaxArguments) + " arguments");
+        }
+        arguments.push_back(expression());
+      } while (match({TokenKind::TK_COMMA}));
+    }
+    const Token& paren = consume(
+        TokenKind::TK_RPAREN, "expect `)` after arguments");
+    return std::make_shared<CallExpr>(callee, paren, arguments);
+  };
+
+  ExprPtr expr = primary();
+  while (true) {
+    if (match({TokenKind::TK_LPAREN}))
+      expr = finish_call(expr);
+    else
+      break;
+  }
+  return expr;
 }
 
 ExprPtr Parser::primary(void) {
