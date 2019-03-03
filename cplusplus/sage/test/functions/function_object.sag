@@ -1,0 +1,16 @@
+
+print ">>>>>>>>> test for function object, call function"
+
+fn counter(n) {
+  if n > 1 {
+    counter(n - 1)
+  }
+  print "counter value is:", n
+}
+
+fn pass_arguments(message, x, y) {
+  print "pass_arguments, message:", message, ", function:", counter
+  counter(x * y)
+}
+
+pass_arguments("Test for function call", 4, 5)
