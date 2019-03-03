@@ -1,0 +1,13 @@
+
+# Test for function declaration
+
+print ">>>>>>>>> test for function declaration"
+
+fn foo() {
+  print "call in `foo` function"
+}
+
+fn foo2(arg1, arg2, arg3) {
+  print "call in `foo2` function"
+  print "arguments is:", arg1, arg2, arg3
+}
