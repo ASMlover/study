@@ -30,6 +30,7 @@
 #include <vector>
 #include "../common/common.hh"
 #include "../common/value.hh"
+#include "../syntax/ast.hh"
 
 namespace sage {
 
@@ -48,6 +49,18 @@ struct Callable : private UnCopyable {
       const InterpreterPtr& interp, const std::vector<Value>& arguments) = 0;
   virtual std::size_t arity(void) const = 0;
   virtual std::string to_string(void) const = 0;
+};
+
+class Function
+  : public Callable, public std::enable_shared_from_this<Function> {
+  FunctionStmtPtr decl_;
+public:
+  Function(const FunctionStmtPtr& decl);
+
+  virtual Value call(const InterpreterPtr& interp,
+      const std::vector<Value>& arguments) override;
+  virtual std::size_t arity(void) const override;
+  virtual std::string to_string(void) const override;
 };
 
 }

@@ -41,7 +41,7 @@ std::size_t NatClock::arity(void) const {
 }
 
 std::string NatClock::to_string(void) const {
-  return "<native fn: clock>";
+  return "<native fn: `clock`>";
 }
 
 }

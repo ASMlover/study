@@ -86,6 +86,15 @@ public:
 
   void interpret(const ExprPtr& expression);
   void interpret(const std::vector<StmtPtr>& statements);
+
+  EnvironmentPtr get_globals(void) const {
+    return globals_;
+  }
+
+  void invoke_evaluate_block(
+      const std::vector<StmtPtr>& stmts, const EnvironmentPtr& envp) {
+    evaluate_block(stmts, envp);
+  }
 };
 
 }

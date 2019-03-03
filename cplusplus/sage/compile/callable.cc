@@ -24,4 +24,34 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "environment.hh"
+#include "interpreter.hh"
 #include "callable.hh"
+
+namespace sage {
+
+Function::Function(const FunctionStmtPtr& decl)
+  : decl_(decl) {
+}
+
+Value Function::call(
+    const InterpreterPtr& interp, const std::vector<Value>& arguments) {
+  auto envp = std::make_shared<Environment>(interp->get_globals());
+  auto& params = decl_->params();
+  std::size_t n{params.size()};
+  for (std::size_t i = 0; i < n; ++i)
+    envp->define(params[i].get_literal(), arguments[i]);
+
+  interp->invoke_evaluate_block(decl_->body(), envp);
+  return nullptr;
+}
+
+std::size_t Function::arity(void) const {
+  return decl_->params().size();
+}
+
+std::string Function::to_string(void) const {
+  return "<script fn `" + decl_->name().get_literal() + "`>";
+}
+
+}
