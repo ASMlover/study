@@ -1,0 +1,10 @@
+
+print ">>>>>>>>> test for native funcitons"
+
+let beg = clock()
+let i = 0
+while i < 100 {
+  print "while loops counter is:", i
+  i += 1
+}
+print "while loops used time is:", clock() - beg, "seconds"
