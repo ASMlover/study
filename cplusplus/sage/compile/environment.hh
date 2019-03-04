@@ -29,11 +29,11 @@
 #include <memory>
 #include <unordered_map>
 #include "../common/common.hh"
+#include "../common/value.hh"
 
 namespace sage {
 
 class Token;
-class Value;
 
 class Environment
   : private UnCopyable, public std::enable_shared_from_this<Environment> {
