@@ -24,59 +24,18 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "../common/errors.hh"
-#include "../lex/token.hh"
-#include "environment.hh"
+#pragma once
+
+#include <exception>
+#include "../common/value.hh"
 
 namespace sage {
 
-Environment::Environment(void) {
-}
-
-Environment::Environment(const EnvironmentPtr& enclosing)
-  : enclosing_(enclosing) {
-}
-
-void Environment::define(const std::string& name, const Value& value) {
-  values_[name] = value;
-}
-
-void Environment::define(const Token& name, const Value& value) {
-  values_[name.get_literal()] = value;
-}
-
-const Value& Environment::get(const std::string& name) const {
-  return get(RuntimeError::virtual_token(name));
-}
-
-const Value& Environment::get(const Token& name) const {
-  auto value_iter = values_.find(name.get_literal());
-  if (value_iter != values_.end())
-    return value_iter->second;
-
-  if (enclosing_)
-    return enclosing_->get(name);
-
-  throw RuntimeError(name, "undefined variable `" + name.get_literal() + "`");
-}
-
-void Environment::assign(const std::string& name, const Value& value) {
-  assign(RuntimeError::virtual_token(name), value);
-}
-
-void Environment::assign(const Token& name, const Value& value) {
-  auto value_iter = values_.find(name.get_literal());
-  if (value_iter != values_.end()) {
-    value_iter->second = value;
-    return;
-  }
-
-  if (enclosing_) {
-    enclosing_->assign(name, value);
-    return;
-  }
-
-  throw RuntimeError(name, "undefined variable `" + name.get_literal() + "`");
-}
+class Return : public std::exception {
+  Value value_;
+public:
+  Return(const Value& v) : value_(v) {}
+  Value value(void) const { return value_; }
+};
 
 }

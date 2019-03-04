@@ -194,7 +194,7 @@ StmtPtr Parser::let_decl(void) {
 }
 
 StmtPtr Parser::statement(void) {
-  // statement -> if_stmt | while_stmt | for_stmt
+  // statement -> if_stmt | while_stmt | for_stmt | return_stmt
   //            | print_stmt | block_stmt | expr_stmt ;
 
   if (match({TokenKind::KW_IF}))
@@ -203,6 +203,8 @@ StmtPtr Parser::statement(void) {
     return while_stmt();
   if (match({TokenKind::KW_FOR}))
     return for_stmt();
+  if (match({TokenKind::KW_RETURN}))
+    return return_stmt();
   if (match({TokenKind::KW_PRINT}))
     return print_stmt();
   if (match({TokenKind::TK_LBRACE}))
@@ -284,6 +286,17 @@ StmtPtr Parser::for_stmt(void) {
     body = std::make_shared<BlockStmt>(stmts);
   }
   return body;
+}
+
+StmtPtr Parser::return_stmt(void) {
+  // return_stmt -> "return" expression? NL ;
+
+  const Token& keyword = prev();
+  ExprPtr value;
+  if (!check({TokenKind::TK_NL}))
+    value = expression();
+  consume(TokenKind::TK_NL, "expect `NL` after return value");
+  return std::make_shared<ReturnStmt>(keyword, value);
 }
 
 StmtPtr Parser::print_stmt(void) {

@@ -29,6 +29,7 @@
 #include "callable.hh"
 #include "builtins.hh"
 #include "environment.hh"
+#include "return.hh"
 #include "interpreter.hh"
 
 namespace sage {
@@ -308,6 +309,11 @@ void Interpreter::visit_function_stmt(const FunctionStmtPtr& stmt) {
 }
 
 void Interpreter::visit_return_stmt(const ReturnStmtPtr& stmt) {
+  Value value;
+  if (stmt->value())
+    value = evaluate(stmt->value());
+
+  throw Return(value);
 }
 
 void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {

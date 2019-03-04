@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "environment.hh"
+#include "return.hh"
 #include "interpreter.hh"
 #include "callable.hh"
 
@@ -42,7 +43,12 @@ Value Function::call(
   for (std::size_t i = 0; i < n; ++i)
     envp->define(params[i].get_literal(), arguments[i]);
 
-  interp->invoke_evaluate_block(decl_->body(), envp);
+  try {
+    interp->invoke_evaluate_block(decl_->body(), envp);
+  }
+  catch (const Return& r) {
+    return r.value();
+  }
   return nullptr;
 }
 
