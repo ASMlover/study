@@ -112,6 +112,10 @@ void ReturnStmt::accept(const StmtVisitorPtr& visitor) {
   visitor->visit_return_stmt(shared_from_this());
 }
 
+void BreakStmt::accept(const StmtVisitorPtr& visitor) {
+  visitor->visit_break_stmt(shared_from_this());
+}
+
 void ClassStmt::accept(const StmtVisitorPtr& visitor) {
   visitor->visit_class_stmt(shared_from_this());
 }

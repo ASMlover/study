@@ -418,6 +418,20 @@ public:
 };
 using ReturnStmtPtr = std::shared_ptr<ReturnStmt>;
 
+class BreakStmt
+  : public Stmt, public std::enable_shared_from_this<BreakStmt> {
+  Token keyword_;
+public:
+  const Token& keyword(void) const { return keyword_; }
+
+  BreakStmt(const Token& keyword)
+    : keyword_(keyword) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
+};
+using BreakStmtPtr = std::shared_ptr<BreakStmt>;
+
 class ClassStmt
   : public Stmt, public std::enable_shared_from_this<ClassStmt> {
   Token name_;
@@ -448,6 +462,7 @@ struct StmtVisitor : private UnCopyable {
   virtual void visit_while_stmt(const WhileStmtPtr& stmt) = 0;
   virtual void visit_function_stmt(const FunctionStmtPtr& stmt) = 0;
   virtual void visit_return_stmt(const ReturnStmtPtr& stmt) = 0;
+  virtual void visit_break_stmt(const BreakStmtPtr& stmt) = 0;
   virtual void visit_class_stmt(const ClassStmtPtr& stmt) = 0;
 };
 
