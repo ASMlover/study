@@ -25,7 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "environment.hh"
-#include "return.hh"
+#include "interpret_helper.hh"
 #include "interpreter.hh"
 #include "callable.hh"
 

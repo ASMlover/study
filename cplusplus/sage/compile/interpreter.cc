@@ -29,7 +29,7 @@
 #include "callable.hh"
 #include "builtins.hh"
 #include "environment.hh"
-#include "return.hh"
+#include "interpret_helper.hh"
 #include "interpreter.hh"
 
 namespace sage {
@@ -299,7 +299,13 @@ void Interpreter::visit_while_stmt(const WhileStmtPtr& stmt) {
   while (evaluate(stmt->cond()).is_truthy()) {
     if (!envp)
       envp = std::make_shared<Environment>(environment_);
-    evaluate_block(stmt->body(), envp);
+
+    try {
+      evaluate_block(stmt->body(), envp);
+    }
+    catch (const Break&) {
+      break;
+    }
   }
 }
 
@@ -314,6 +320,10 @@ void Interpreter::visit_return_stmt(const ReturnStmtPtr& stmt) {
     value = evaluate(stmt->value());
 
   throw Return(value);
+}
+
+void Interpreter::visit_break_stmt(const BreakStmtPtr& stmt) {
+  throw Break();
 }
 
 void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {

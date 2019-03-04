@@ -80,6 +80,7 @@ class Interpreter
   virtual void visit_while_stmt(const WhileStmtPtr& stmt) override;
   virtual void visit_function_stmt(const FunctionStmtPtr& stmt) override;
   virtual void visit_return_stmt(const ReturnStmtPtr& stmt) override;
+  virtual void visit_break_stmt(const BreakStmtPtr& stmt) override;
   virtual void visit_class_stmt(const ClassStmtPtr& stmt) override;
 public:
   Interpreter(ErrorReport& err_report);

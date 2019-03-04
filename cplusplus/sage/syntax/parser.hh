@@ -38,7 +38,7 @@ namespace sage {
 // func_decl      -> "fn" IDENTIFIER "(" parameters? ")" block_stmt ;
 // parameters     -> IDENTIFIER ( "," IDENTIFIER )* ;
 // let_decl       -> "let" IDENTIFIER ( "=" expression )? NL ;
-// statement      -> if_stmt | while_stmt | for_stmt | return_stmt
+// statement      -> if_stmt | while_stmt | for_stmt | return_stmt | break_stmt
 //                 | print_stmt | block_stmt | expr_stmt ;
 // if_stmt        -> "if" expression block_stmt ( "else" block_stmt )? ;
 // while_stmt     -> "while" expression block_stmt ;
@@ -47,6 +47,7 @@ namespace sage {
 // loop_let       -> "let" IDENTIFIER ( "=" expression )? ";" ;
 // loop_expr      -> expression ";" ;
 // return_stmt    -> "return" expression? NL ;
+// break_stmt     -> "break" NL ;
 // print_stmt     -> "print" ( expression ( "," expression )* )? NL ;
 // block_stmt     -> "{" NL declaration* "}" NL ;
 // expr_stmt      -> expression NL ;
@@ -97,6 +98,7 @@ class Parser : private UnCopyable {
   StmtPtr while_stmt(void);
   StmtPtr for_stmt(void);
   StmtPtr return_stmt(void);
+  StmtPtr break_stmt(void);
   StmtPtr print_stmt(void);
   std::vector<StmtPtr> block_stmt(void);
   StmtPtr expr_stmt(void);
