@@ -1,0 +1,21 @@
+
+print ">>>>>>>> test for closure"
+
+fn make_point(x, y) {
+  fn _wrapper(method) {
+    if method == "x" {
+      return x
+    }
+    if method == "y" {
+      return y
+    }
+    print "unknown method:", method
+  }
+
+  return _wrapper
+}
+
+let mkp_fn = make_point(23, 45)
+mkp_fn("ERR")
+print mkp_fn("x")
+print mkp_fn("y")
