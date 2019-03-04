@@ -54,8 +54,9 @@ struct Callable : private UnCopyable {
 class Function
   : public Callable, public std::enable_shared_from_this<Function> {
   FunctionStmtPtr decl_;
+  EnvironmentPtr closure_;
 public:
-  Function(const FunctionStmtPtr& decl);
+  Function(const FunctionStmtPtr& decl, const EnvironmentPtr& closure);
 
   virtual Value call(const InterpreterPtr& interp,
       const std::vector<Value>& arguments) override;

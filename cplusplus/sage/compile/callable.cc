@@ -31,13 +31,14 @@
 
 namespace sage {
 
-Function::Function(const FunctionStmtPtr& decl)
-  : decl_(decl) {
+Function::Function(const FunctionStmtPtr& decl, const EnvironmentPtr& closure)
+  : decl_(decl)
+  , closure_(closure) {
 }
 
 Value Function::call(
     const InterpreterPtr& interp, const std::vector<Value>& arguments) {
-  auto envp = std::make_shared<Environment>(interp->get_globals());
+  auto envp = std::make_shared<Environment>(closure_);
   auto& params = decl_->params();
   std::size_t n{params.size()};
   for (std::size_t i = 0; i < n; ++i)
