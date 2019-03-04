@@ -1,0 +1,24 @@
+
+print ">>>>>>>>> test for return of function"
+
+fn counter(n) {
+  while n < 100 {
+    if n == 5 {
+      return n
+    }
+    print "counter n:", n
+    n += 1
+  }
+}
+print counter(0)
+
+fn fibonacci(n) {
+  if n <= 1 {
+    return n
+  }
+  return fibonacci(n - 1) + fibonacci(n - 2)
+}
+
+for let i = 0; i < 10; i += 1 {
+  print "calculate fibonacci value is:", fibonacci(i)
+}
