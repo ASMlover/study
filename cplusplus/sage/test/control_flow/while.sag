@@ -18,4 +18,9 @@ while cond > 0 {
   cond -= 1
   print "cond value is: ", cond
   print
+
+  if cond % 3 == 0 {
+    print "break while loops"
+    break
+  }
 }

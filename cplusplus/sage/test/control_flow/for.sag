@@ -20,4 +20,9 @@ let rang_end = 200
 let index
 for index = rang_beg * rang_end; index > 0; index /= 2 {
   print "index value is: ", index
+
+  if index % 9 == 0 {
+    print "break for loops"
+    break
+  }
 }
