@@ -29,95 +29,95 @@
 namespace sage {
 
 void AssignExpr::accept(const ExprVisitorPtr& visitor) {
-  visitor->visit_assign_expr(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void BinaryExpr::accept(const ExprVisitorPtr& visitor) {
-  visitor->visit_binary_expr(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void CallExpr::accept(const ExprVisitorPtr& visitor) {
-  visitor->visit_call_expr(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void SetExpr::accept(const ExprVisitorPtr& visitor) {
-  visitor->visit_set_expr(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void GetExpr::accept(const ExprVisitorPtr& visitor) {
-  visitor->visit_get_expr(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void GroupingExpr::accept(const ExprVisitorPtr& visitor) {
-  visitor->visit_grouping_expr(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void LiteralExpr::accept(const ExprVisitorPtr& visitor) {
-  visitor->visit_literal_expr(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void LogicalExpr::accept(const ExprVisitorPtr& visitor) {
-  visitor->visit_logical_expr(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void SelfExpr::accept(const ExprVisitorPtr& visitor) {
-  visitor->visit_self_expr(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void SuperExpr::accept(const ExprVisitorPtr& visitor) {
-  visitor->visit_super_expr(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void UnaryExpr::accept(const ExprVisitorPtr& visitor) {
-  visitor->visit_unary_expr(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void VariableExpr::accept(const ExprVisitorPtr& visitor) {
-  visitor->visit_variable_expr(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void FunctionExpr::accept(const ExprVisitorPtr& visitor) {
-  visitor->visit_function_expr(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void ExprStmt::accept(const StmtVisitorPtr& visitor) {
-  visitor->visit_expr_stmt(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void PrintStmt::accept(const StmtVisitorPtr& visitor) {
-  visitor->visit_print_stmt(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void LetStmt::accept(const StmtVisitorPtr& visitor) {
-  visitor->visit_let_stmt(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void BlockStmt::accept(const StmtVisitorPtr& visitor) {
-  visitor->visit_block_stmt(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void IfStmt::accept(const StmtVisitorPtr& visitor) {
-  visitor->visit_if_stmt(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void WhileStmt::accept(const StmtVisitorPtr& visitor) {
-  visitor->visit_while_stmt(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void FunctionStmt::accept(const StmtVisitorPtr& visitor) {
-  visitor->visit_function_stmt(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void ReturnStmt::accept(const StmtVisitorPtr& visitor) {
-  visitor->visit_return_stmt(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void BreakStmt::accept(const StmtVisitorPtr& visitor) {
-  visitor->visit_break_stmt(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 void ClassStmt::accept(const StmtVisitorPtr& visitor) {
-  visitor->visit_class_stmt(shared_from_this());
+  visitor->visit(shared_from_this());
 }
 
 }

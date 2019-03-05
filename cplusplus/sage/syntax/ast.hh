@@ -264,19 +264,19 @@ using FunctionExprPtr = std::shared_ptr<FunctionExpr>;
 struct ExprVisitor : private UnCopyable {
   virtual ~ExprVisitor(void) {}
 
-  virtual void visit_assign_expr(const AssignExprPtr& expr) = 0;
-  virtual void visit_binary_expr(const BinaryExprPtr& expr) = 0;
-  virtual void visit_call_expr(const CallExprPtr& expr) = 0;
-  virtual void visit_set_expr(const SetExprPtr& expr) = 0;
-  virtual void visit_get_expr(const GetExprPtr& expr) = 0;
-  virtual void visit_grouping_expr(const GroupingExprPtr& expr) = 0;
-  virtual void visit_literal_expr(const LiteralExprPtr& expr) = 0;
-  virtual void visit_logical_expr(const LogicalExprPtr& expr) = 0;
-  virtual void visit_self_expr(const SelfExprPtr& expr) = 0;
-  virtual void visit_super_expr(const SuperExprPtr& expr) = 0;
-  virtual void visit_unary_expr(const UnaryExprPtr& expr) = 0;
-  virtual void visit_variable_expr(const VariableExprPtr& expr) = 0;
-  virtual void visit_function_expr(const FunctionExprPtr& expr) = 0;
+  virtual void visit(const AssignExprPtr& expr) = 0;
+  virtual void visit(const BinaryExprPtr& expr) = 0;
+  virtual void visit(const CallExprPtr& expr) = 0;
+  virtual void visit(const SetExprPtr& expr) = 0;
+  virtual void visit(const GetExprPtr& expr) = 0;
+  virtual void visit(const GroupingExprPtr& expr) = 0;
+  virtual void visit(const LiteralExprPtr& expr) = 0;
+  virtual void visit(const LogicalExprPtr& expr) = 0;
+  virtual void visit(const SelfExprPtr& expr) = 0;
+  virtual void visit(const SuperExprPtr& expr) = 0;
+  virtual void visit(const UnaryExprPtr& expr) = 0;
+  virtual void visit(const VariableExprPtr& expr) = 0;
+  virtual void visit(const FunctionExprPtr& expr) = 0;
 };
 
 // program    -> statement* EOF ;
@@ -454,16 +454,16 @@ using ClassStmtPtr = std::shared_ptr<ClassStmt>;
 struct StmtVisitor : private UnCopyable {
   virtual ~StmtVisitor(void) {}
 
-  virtual void visit_expr_stmt(const ExprStmtPtr& stmt) = 0;
-  virtual void visit_print_stmt(const PrintStmtPtr& stmt) = 0;
-  virtual void visit_let_stmt(const LetStmtPtr& stmt) = 0;
-  virtual void visit_block_stmt(const BlockStmtPtr& stmt) = 0;
-  virtual void visit_if_stmt(const IfStmtPtr& stmt) = 0;
-  virtual void visit_while_stmt(const WhileStmtPtr& stmt) = 0;
-  virtual void visit_function_stmt(const FunctionStmtPtr& stmt) = 0;
-  virtual void visit_return_stmt(const ReturnStmtPtr& stmt) = 0;
-  virtual void visit_break_stmt(const BreakStmtPtr& stmt) = 0;
-  virtual void visit_class_stmt(const ClassStmtPtr& stmt) = 0;
+  virtual void visit(const ExprStmtPtr& stmt) = 0;
+  virtual void visit(const PrintStmtPtr& stmt) = 0;
+  virtual void visit(const LetStmtPtr& stmt) = 0;
+  virtual void visit(const BlockStmtPtr& stmt) = 0;
+  virtual void visit(const IfStmtPtr& stmt) = 0;
+  virtual void visit(const WhileStmtPtr& stmt) = 0;
+  virtual void visit(const FunctionStmtPtr& stmt) = 0;
+  virtual void visit(const ReturnStmtPtr& stmt) = 0;
+  virtual void visit(const BreakStmtPtr& stmt) = 0;
+  virtual void visit(const ClassStmtPtr& stmt) = 0;
 };
 
 }

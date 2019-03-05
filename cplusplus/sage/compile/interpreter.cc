@@ -113,7 +113,7 @@ void Interpreter::check_modulo_operands(
   throw RuntimeError(oper, "operands must be two integers");
 }
 
-void Interpreter::visit_assign_expr(const AssignExprPtr& expr) {
+void Interpreter::visit(const AssignExprPtr& expr) {
   const Token& name = expr->name();
   const Token& oper = expr->oper();
   Value left = environment_->get(name);
@@ -142,7 +142,7 @@ void Interpreter::visit_assign_expr(const AssignExprPtr& expr) {
   environment_->assign(name, value_);
 }
 
-void Interpreter::visit_binary_expr(const BinaryExprPtr& expr) {
+void Interpreter::visit(const BinaryExprPtr& expr) {
   Value left = evaluate(expr->left());
   Value right = evaluate(expr->right());
   const Token& oper = expr->oper();
@@ -184,7 +184,7 @@ void Interpreter::visit_binary_expr(const BinaryExprPtr& expr) {
   }
 }
 
-void Interpreter::visit_call_expr(const CallExprPtr& expr) {
+void Interpreter::visit(const CallExprPtr& expr) {
   Value callee = evaluate(expr->callee());
   if (!callee.is_callable())
     throw RuntimeError(expr->paren(), "can only call functions and classes");
@@ -201,21 +201,21 @@ void Interpreter::visit_call_expr(const CallExprPtr& expr) {
   value_ = callable->call(shared_from_this(), arguments);
 }
 
-void Interpreter::visit_set_expr(const SetExprPtr& expr) {
+void Interpreter::visit(const SetExprPtr& expr) {
 }
 
-void Interpreter::visit_get_expr(const GetExprPtr& expr) {
+void Interpreter::visit(const GetExprPtr& expr) {
 }
 
-void Interpreter::visit_grouping_expr(const GroupingExprPtr& expr) {
+void Interpreter::visit(const GroupingExprPtr& expr) {
   evaluate(expr->expression());
 }
 
-void Interpreter::visit_literal_expr(const LiteralExprPtr& expr) {
+void Interpreter::visit(const LiteralExprPtr& expr) {
   value_ = expr->value();
 }
 
-void Interpreter::visit_logical_expr(const LogicalExprPtr& expr) {
+void Interpreter::visit(const LogicalExprPtr& expr) {
   Value left = evaluate(expr->left());
   if (expr->oper().get_kind() == TokenKind::KW_OR) {
     if (left.is_truthy()) {
@@ -232,13 +232,13 @@ void Interpreter::visit_logical_expr(const LogicalExprPtr& expr) {
   value_ = evaluate(expr->right());
 }
 
-void Interpreter::visit_self_expr(const SelfExprPtr& expr) {
+void Interpreter::visit(const SelfExprPtr& expr) {
 }
 
-void Interpreter::visit_super_expr(const SuperExprPtr& expr) {
+void Interpreter::visit(const SuperExprPtr& expr) {
 }
 
-void Interpreter::visit_unary_expr(const UnaryExprPtr& expr) {
+void Interpreter::visit(const UnaryExprPtr& expr) {
   Value right = evaluate(expr->right());
   const Token& oper = expr->oper();
 
@@ -252,35 +252,35 @@ void Interpreter::visit_unary_expr(const UnaryExprPtr& expr) {
   }
 }
 
-void Interpreter::visit_variable_expr(const VariableExprPtr& expr) {
+void Interpreter::visit(const VariableExprPtr& expr) {
   value_ = environment_->get(expr->name());
 }
 
-void Interpreter::visit_function_expr(const FunctionExprPtr& expr) {
+void Interpreter::visit(const FunctionExprPtr& expr) {
 }
 
-void Interpreter::visit_expr_stmt(const ExprStmtPtr& stmt) {
+void Interpreter::visit(const ExprStmtPtr& stmt) {
   evaluate(stmt->expr());
 }
 
-void Interpreter::visit_print_stmt(const PrintStmtPtr& stmt) {
+void Interpreter::visit(const PrintStmtPtr& stmt) {
   for (auto& expr : stmt->exprs())
     std::cout << evaluate(expr) << " ";
   std::cout << std::endl;
 }
 
-void Interpreter::visit_let_stmt(const LetStmtPtr& stmt) {
+void Interpreter::visit(const LetStmtPtr& stmt) {
   Value value;
   if (stmt->expr())
     value = evaluate(stmt->expr());
   environment_->define(stmt->name(), value);
 }
 
-void Interpreter::visit_block_stmt(const BlockStmtPtr& stmt) {
+void Interpreter::visit(const BlockStmtPtr& stmt) {
   evaluate_block(stmt->stmts(), std::make_shared<Environment>(environment_));
 }
 
-void Interpreter::visit_if_stmt(const IfStmtPtr& stmt) {
+void Interpreter::visit(const IfStmtPtr& stmt) {
   Value cond = evaluate(stmt->cond());
   if (cond.is_truthy()) {
     const auto& then_branch = stmt->then_branch();
@@ -294,7 +294,7 @@ void Interpreter::visit_if_stmt(const IfStmtPtr& stmt) {
   }
 }
 
-void Interpreter::visit_while_stmt(const WhileStmtPtr& stmt) {
+void Interpreter::visit(const WhileStmtPtr& stmt) {
   EnvironmentPtr envp;
   while (evaluate(stmt->cond()).is_truthy()) {
     if (!envp)
@@ -309,12 +309,12 @@ void Interpreter::visit_while_stmt(const WhileStmtPtr& stmt) {
   }
 }
 
-void Interpreter::visit_function_stmt(const FunctionStmtPtr& stmt) {
+void Interpreter::visit(const FunctionStmtPtr& stmt) {
   auto fn = std::make_shared<Function>(stmt, environment_);
   environment_->define(stmt->name(), Value(fn));
 }
 
-void Interpreter::visit_return_stmt(const ReturnStmtPtr& stmt) {
+void Interpreter::visit(const ReturnStmtPtr& stmt) {
   Value value;
   if (stmt->value())
     value = evaluate(stmt->value());
@@ -322,11 +322,11 @@ void Interpreter::visit_return_stmt(const ReturnStmtPtr& stmt) {
   throw Return(value);
 }
 
-void Interpreter::visit_break_stmt(const BreakStmtPtr& stmt) {
+void Interpreter::visit(const BreakStmtPtr& stmt) {
   throw Break();
 }
 
-void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {
+void Interpreter::visit(const ClassStmtPtr& stmt) {
 }
 
 }

@@ -58,30 +58,30 @@ class Interpreter
   void check_modulo_operands(
       const Token& oper, const Value& lvalue, const Value& rvalue);
 
-  virtual void visit_assign_expr(const AssignExprPtr& expr) override;
-  virtual void visit_binary_expr(const BinaryExprPtr& expr) override;
-  virtual void visit_call_expr(const CallExprPtr& expr) override;
-  virtual void visit_set_expr(const SetExprPtr& expr) override;
-  virtual void visit_get_expr(const GetExprPtr& expr) override;
-  virtual void visit_grouping_expr(const GroupingExprPtr& expr) override;
-  virtual void visit_literal_expr(const LiteralExprPtr& expr) override;
-  virtual void visit_logical_expr(const LogicalExprPtr& expr) override;
-  virtual void visit_self_expr(const SelfExprPtr& expr) override;
-  virtual void visit_super_expr(const SuperExprPtr& expr) override;
-  virtual void visit_unary_expr(const UnaryExprPtr& expr) override;
-  virtual void visit_variable_expr(const VariableExprPtr& expr) override;
-  virtual void visit_function_expr(const FunctionExprPtr& expr) override;
+  virtual void visit(const AssignExprPtr& expr) override;
+  virtual void visit(const BinaryExprPtr& expr) override;
+  virtual void visit(const CallExprPtr& expr) override;
+  virtual void visit(const SetExprPtr& expr) override;
+  virtual void visit(const GetExprPtr& expr) override;
+  virtual void visit(const GroupingExprPtr& expr) override;
+  virtual void visit(const LiteralExprPtr& expr) override;
+  virtual void visit(const LogicalExprPtr& expr) override;
+  virtual void visit(const SelfExprPtr& expr) override;
+  virtual void visit(const SuperExprPtr& expr) override;
+  virtual void visit(const UnaryExprPtr& expr) override;
+  virtual void visit(const VariableExprPtr& expr) override;
+  virtual void visit(const FunctionExprPtr& expr) override;
 
-  virtual void visit_expr_stmt(const ExprStmtPtr& stmt) override;
-  virtual void visit_print_stmt(const PrintStmtPtr& stmt) override;
-  virtual void visit_let_stmt(const LetStmtPtr& stmt) override;
-  virtual void visit_block_stmt(const BlockStmtPtr& stmt) override;
-  virtual void visit_if_stmt(const IfStmtPtr& stmt) override;
-  virtual void visit_while_stmt(const WhileStmtPtr& stmt) override;
-  virtual void visit_function_stmt(const FunctionStmtPtr& stmt) override;
-  virtual void visit_return_stmt(const ReturnStmtPtr& stmt) override;
-  virtual void visit_break_stmt(const BreakStmtPtr& stmt) override;
-  virtual void visit_class_stmt(const ClassStmtPtr& stmt) override;
+  virtual void visit(const ExprStmtPtr& stmt) override;
+  virtual void visit(const PrintStmtPtr& stmt) override;
+  virtual void visit(const LetStmtPtr& stmt) override;
+  virtual void visit(const BlockStmtPtr& stmt) override;
+  virtual void visit(const IfStmtPtr& stmt) override;
+  virtual void visit(const WhileStmtPtr& stmt) override;
+  virtual void visit(const FunctionStmtPtr& stmt) override;
+  virtual void visit(const ReturnStmtPtr& stmt) override;
+  virtual void visit(const BreakStmtPtr& stmt) override;
+  virtual void visit(const ClassStmtPtr& stmt) override;
 public:
   Interpreter(ErrorReport& err_report);
 
