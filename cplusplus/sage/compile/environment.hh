@@ -34,13 +34,16 @@
 namespace sage {
 
 class Token;
+class Environment;
+
+using EnvironmentPtr = std::shared_ptr<Environment>;
 
 class Environment
   : private UnCopyable, public std::enable_shared_from_this<Environment> {
-  using EnvironmentPtr = std::shared_ptr<Environment>;
-
   EnvironmentPtr enclosing_{};
   std::unordered_map<std::string, Value> values_;
+
+  EnvironmentPtr ancestor(int distance);
 public:
   Environment(void);
   Environment(const EnvironmentPtr& enclosing);
@@ -49,8 +52,12 @@ public:
   void define(const Token& name, const Value& value);
   const Value& get(const std::string& name) const;
   const Value& get(const Token& name) const;
+  const Value& get_at(int distance, const std::string& name);
+  const Value& get_at(int distance, const Token& name);
   void assign(const std::string& name, const Value& value);
   void assign(const Token& name, const Value& value);
+  void assign_at(int distance, const std::string& name, const Value& value);
+  void assign_at(int distance, const Token& name, const Value& value);
 };
 
 }

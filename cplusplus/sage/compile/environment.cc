@@ -37,6 +37,13 @@ Environment::Environment(const EnvironmentPtr& enclosing)
   : enclosing_(enclosing) {
 }
 
+EnvironmentPtr Environment::ancestor(int distance) {
+  auto envp(shared_from_this());
+  for (int i = 0; i < distance; ++i)
+    envp = envp->enclosing_;
+  return envp;
+}
+
 void Environment::define(const std::string& name, const Value& value) {
   values_[name] = value;
 }
@@ -60,6 +67,14 @@ const Value& Environment::get(const Token& name) const {
   throw RuntimeError(name, "undefined variable `" + name.get_literal() + "`");
 }
 
+const Value& Environment::get_at(int distance, const std::string& name) {
+  return ancestor(distance)->get(name);
+}
+
+const Value& Environment::get_at(int distance, const Token& name) {
+  return ancestor(distance)->get(name);
+}
+
 void Environment::assign(const std::string& name, const Value& value) {
   assign(RuntimeError::virtual_token(name), value);
 }
@@ -77,6 +92,16 @@ void Environment::assign(const Token& name, const Value& value) {
   }
 
   throw RuntimeError(name, "undefined variable `" + name.get_literal() + "`");
+}
+
+void Environment::assign_at(
+    int distance, const std::string& name, const Value& value) {
+  ancestor(distance)->assign(name, value);
+}
+
+void Environment::assign_at(
+    int distance, const Token& name, const Value& value) {
+  ancestor(distance)->assign(name, value);
 }
 
 }
