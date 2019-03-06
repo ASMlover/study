@@ -1,16 +1,20 @@
 
 print ">>>>>>>>> test for class declaration"
 
-class Demo {
+class Entity {
 
-  fn foo1() {
-    print "Demo.foo1"
+  fn repr() {
+    print "<class Entity>"
   }
 
-  fn foo2(arg) {
-    print "Demo.foo2: arg is:", arg
+  fn call_method(args) {
+    print "call_method:", args
   }
 
 }
 
-print "display the class: ", Demo
+print "display the class: ", Entity
+
+class Dummy {
+}
+print Dummy
