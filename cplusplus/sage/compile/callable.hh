@@ -64,4 +64,16 @@ public:
   virtual std::string to_string(void) const override;
 };
 
+class Class
+  : public Callable, public std::enable_shared_from_this<Class> {
+  std::string name_;
+public:
+  Class(const std::string& name);
+
+  virtual Value call(const InterpreterPtr& interp,
+      const std::vector<Value>& arguments) override;
+  virtual std::size_t arity(void) const override;
+  virtual std::string to_string(void) const override;
+};
+
 }

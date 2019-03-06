@@ -61,4 +61,21 @@ std::string Function::to_string(void) const {
   return "<script fn `" + decl_->name().get_literal() + "`>";
 }
 
+Class::Class(const std::string& name)
+  : name_(name) {
+}
+
+Value Class::call(
+    const InterpreterPtr& interp, const std::vector<Value>& arguments) {
+  return nullptr;
+}
+
+std::size_t Class::arity(void) const {
+  return 0;
+}
+
+std::string Class::to_string(void) const {
+  return "<script class `" + name_ + "`>";
+}
+
 }
