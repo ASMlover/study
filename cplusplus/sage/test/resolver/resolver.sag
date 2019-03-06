@@ -1,0 +1,9 @@
+
+print ">>>>>>>>> test for resolver with bad syntax"
+
+return "return value"
+
+fn bad_fun()  {
+  let v1 = "1 - value"
+  let v1 = "2 - value"
+}
