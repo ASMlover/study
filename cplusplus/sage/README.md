@@ -4,7 +4,8 @@
 ## **GRAMMER**
 ```
 program         -> declaration* EOF ;
-declaration     -> func_decl | let_decl | statement ;
+declaration     -> class_decl | func_decl | let_decl | statement ;
+class_decl      -> "class" IDENTIFIER "{" NL func_decl* "}" NL ;
 func_decl       -> "fn" IDENTIFIER "(" parameters? ")" block_stmt ;
 parameters      -> IDENTIFIER ( "," IDENTIFIER )* ;
 let_decl        -> "let" IDENTIFIER ( "=" expression )? NL ;

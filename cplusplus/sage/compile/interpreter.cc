@@ -339,6 +339,9 @@ void Interpreter::visit(const BreakStmtPtr& stmt) {
 }
 
 void Interpreter::visit(const ClassStmtPtr& stmt) {
+  environment_->define(stmt->name(), Value());
+  auto cls = std::make_shared<Class>(stmt->name().get_literal());
+  environment_->assign(stmt->name(), Value(cls));
 }
 
 }

@@ -138,9 +138,11 @@ bool Parser::ignore_newlines(void) {
 }
 
 StmtPtr Parser::declaration(void) {
-  // declaration -> func_decl | let_decl | statement ;
+  // declaration -> class_decl | func_decl | let_decl | statement ;
 
   try {
+    if (match({TokenKind::KW_CLASS}))
+      return class_decl();
     if (match({TokenKind::KW_FN}))
       return func_decl("function");
     if (match({TokenKind::KW_LET}))
@@ -154,6 +156,28 @@ StmtPtr Parser::declaration(void) {
 
     return nullptr;
   }
+}
+
+StmtPtr Parser::class_decl(void) {
+  // class_decl -> "class" IDENTIFIER "{" NL func_decl* "}" NL ;
+
+  const Token& name = consume(TokenKind::TK_IDENTIFIER, "expect class name");
+  consume(TokenKind::TK_LBRACE, "expect `{` after class name");
+  consume(TokenKind::TK_NL, "expect `NL` before class body");
+
+  std::vector<FunctionStmtPtr> methods;
+  while (!is_end() && !check(TokenKind::TK_RBRACE)) {
+    if (!ignore_newlines()) {
+      consume(TokenKind::KW_FN,
+          "expect miss `fn` keyword before methods declaration");
+      auto meth = std::static_pointer_cast<FunctionStmt>(func_decl("method"));
+      methods.push_back(meth);
+    }
+  }
+  consume(TokenKind::TK_RBRACE, "expect `}` after class body");
+  consume(TokenKind::TK_NL, "expect `NL` after class declaration");
+
+  return std::make_shared<ClassStmt>(name, nullptr, methods);
 }
 
 StmtPtr Parser::func_decl(const std::string& kind) {

@@ -233,6 +233,8 @@ void Resolver::visit(const BreakStmtPtr& stmt) {
 }
 
 void Resolver::visit(const ClassStmtPtr& stmt) {
+  declare(stmt->name());
+  define(stmt->name());
 }
 
 }

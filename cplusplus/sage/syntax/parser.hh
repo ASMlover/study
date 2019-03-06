@@ -34,7 +34,8 @@
 namespace sage {
 
 // parogram       -> declaration* EOF ;
-// declaration    -> func_decl | let_decl | statement ;
+// declaration    -> class_decl | func_decl | let_decl | statement ;
+// class_decl     -> "class" IDENTIFIER "{" NL func_decl* "}" NL ;
 // func_decl      -> "fn" IDENTIFIER "(" parameters? ")" block_stmt ;
 // parameters     -> IDENTIFIER ( "," IDENTIFIER )* ;
 // let_decl       -> "let" IDENTIFIER ( "=" expression )? NL ;
@@ -91,6 +92,7 @@ class Parser : private UnCopyable {
   bool ignore_newlines(void);
 
   StmtPtr declaration(void);
+  StmtPtr class_decl(void);
   StmtPtr func_decl(const std::string& kind);
   StmtPtr let_decl(void);
   StmtPtr statement(void);
