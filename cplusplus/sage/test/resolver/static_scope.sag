@@ -1,0 +1,25 @@
+
+print ">>>>>>>>> test for static scope"
+
+let a = "outer-a"
+{
+  let a = "inner-a"
+  print a
+}
+
+let b = "outer-b"
+{
+  print b
+  let b = "inner-b"
+}
+
+let v = "global-value"
+{
+  fn show_closure() {
+    print v
+  }
+
+  show_closure()
+  let v = "block-value"
+  show_closure()
+}
