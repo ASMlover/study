@@ -27,6 +27,7 @@
 #pragma once
 
 #include <memory>
+#include <unordered_map>
 #include "../common/value.hh"
 #include "../syntax/ast.hh"
 
@@ -45,6 +46,7 @@ class Interpreter
   Value value_{};
   EnvironmentPtr globals_;
   EnvironmentPtr environment_;
+  std::unordered_map<ExprPtr, int> locals_;
 
   Value evaluate(const ExprPtr& expr);
   void evaluate(const StmtPtr& stmt);
@@ -57,6 +59,7 @@ class Interpreter
       const Token& oper, const Value& lvalue, const Value& rvalue);
   void check_modulo_operands(
       const Token& oper, const Value& lvalue, const Value& rvalue);
+  Value lookup_variable(const Token& name, const ExprPtr& expr);
 
   virtual void visit(const AssignExprPtr& expr) override;
   virtual void visit(const BinaryExprPtr& expr) override;
@@ -95,6 +98,10 @@ public:
   void invoke_evaluate_block(
       const std::vector<StmtPtr>& stmts, const EnvironmentPtr& envp) {
     evaluate_block(stmts, envp);
+  }
+
+  void resolve(const ExprPtr& expr, int depth) {
+    locals_[expr] = depth;
   }
 };
 

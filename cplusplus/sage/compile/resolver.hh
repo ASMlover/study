@@ -41,16 +41,25 @@ class Resolver
   : public ExprVisitor
   , public StmtVisitor
   , public std::enable_shared_from_this<Resolver> {
+  enum class FunKind { NONE, FUNCTION };
 
   ErrorReport& err_report_;
   InterpreterPtr interp_;
+  int loops_level_{0};
   std::vector<std::unordered_map<std::string, bool>> scopes_;
+  FunKind curr_fn_{FunKind::NONE};
 
+  void resolve(const ExprPtr& expr);
+  void resolve(const std::vector<ExprPtr>& exprs);
   void resolve(const StmtPtr& stmt);
   void resolve(const std::vector<StmtPtr>& stmts);
+  void resolve_local(const Token& name, const ExprPtr& expr);
+  void resolve_function(const FunctionStmtPtr& fn, FunKind kind);
 
   void enter_scope(void);
   void leave_scope(void);
+  void declare(const Token& name);
+  void define(const Token& name);
 
   virtual void visit(const AssignExprPtr& expr) override;
   virtual void visit(const BinaryExprPtr& expr) override;
@@ -78,6 +87,8 @@ class Resolver
   virtual void visit(const ClassStmtPtr& stmt) override;
 public:
   Resolver(ErrorReport& err_report, const InterpreterPtr& interp);
+
+  void invoke_resolve(const std::vector<StmtPtr>& stmts);
 };
 
 }

@@ -35,6 +35,24 @@ Resolver::Resolver(ErrorReport& err_report, const InterpreterPtr& interp)
   , interp_(interp) {
 }
 
+void Resolver::invoke_resolve(const std::vector<StmtPtr>& stmts) {
+  try {
+    resolve(stmts);
+  }
+  catch (const RuntimeError& r) {
+    err_report_.error(r.get_token(), r.get_message());
+  }
+}
+
+void Resolver::resolve(const ExprPtr& expr) {
+  expr->accept(shared_from_this());
+}
+
+void Resolver::resolve(const std::vector<ExprPtr>& exprs) {
+  for (auto& expr : exprs)
+    resolve(expr);
+}
+
 void Resolver::resolve(const StmtPtr& stmt) {
   stmt->accept(shared_from_this());
 }
@@ -42,6 +60,33 @@ void Resolver::resolve(const StmtPtr& stmt) {
 void Resolver::resolve(const std::vector<StmtPtr>& stmts) {
   for (auto& stmt : stmts)
     resolve(stmt);
+}
+
+void Resolver::resolve_local(const Token& name, const ExprPtr& expr) {
+  int n = static_cast<int>(scopes_.size()) - 1;
+  for (int i = n; i >= 0; --i) {
+    auto& scope = scopes_[i];
+    if (scope.find(name.get_literal()) != scope.end()) {
+      interp_->resolve(expr, n - 1);
+      return;
+    }
+  }
+  // not found, assume it is global
+}
+
+void Resolver::resolve_function(const FunctionStmtPtr& fn, FunKind kind) {
+  FunKind enclosing_fn = curr_fn_;
+  curr_fn_ = kind;
+
+  enter_scope();
+  for (auto& param : fn->params()) {
+    declare(param);
+    define(param);
+  }
+  resolve(fn->body());
+  leave_scope();
+
+  curr_fn_ = enclosing_fn;
 }
 
 void Resolver::enter_scope(void) {
@@ -52,13 +97,39 @@ void Resolver::leave_scope(void) {
   scopes_.pop_back();
 }
 
+void Resolver::declare(const Token& name) {
+  if (!scopes_.empty()) {
+    auto& scope = scopes_.back();
+    auto name_key = name.get_literal();
+    if (scope.find(name_key) != scope.end()) {
+      throw RuntimeError(name,
+          "variable with this name already declared in this scope");
+    }
+    scope[name_key] = false;
+  }
+}
+
+void Resolver::define(const Token& name) {
+  if (!scopes_.empty()) {
+    auto& scope = scopes_.back();
+    scope[name.get_literal()] = true;
+  }
+}
+
 void Resolver::visit(const AssignExprPtr& expr) {
+  resolve(expr->value());
+  resolve_local(expr->name(), expr);
 }
 
 void Resolver::visit(const BinaryExprPtr& expr) {
+  resolve(expr->left());
+  resolve(expr->right());
 }
 
 void Resolver::visit(const CallExprPtr& expr) {
+  resolve(expr->callee());
+  for (auto& arg : expr->arguments())
+    resolve(arg);
 }
 
 void Resolver::visit(const SetExprPtr& expr) {
@@ -68,12 +139,15 @@ void Resolver::visit(const GetExprPtr& expr) {
 }
 
 void Resolver::visit(const GroupingExprPtr& expr) {
+  resolve(expr->expression());
 }
 
 void Resolver::visit(const LiteralExprPtr& expr) {
 }
 
 void Resolver::visit(const LogicalExprPtr& expr) {
+  resolve(expr->left());
+  resolve(expr->right());
 }
 
 void Resolver::visit(const SelfExprPtr& expr) {
@@ -83,21 +157,37 @@ void Resolver::visit(const SuperExprPtr& expr) {
 }
 
 void Resolver::visit(const UnaryExprPtr& expr) {
+  resolve(expr->right());
 }
 
 void Resolver::visit(const VariableExprPtr& expr) {
+  if (!scopes_.empty()) {
+    auto& scope = scopes_.back();
+    auto name = expr->name().get_literal();
+    if (scope.find(name) != scope.end() && !scope[name]) {
+      throw RuntimeError(expr->name(),
+          "cannot read local variable in its own initializer");
+    }
+  }
+  resolve_local(expr->name(), expr);
 }
 
 void Resolver::visit(const FunctionExprPtr& expr) {
 }
 
 void Resolver::visit(const ExprStmtPtr& stmt) {
+  resolve(stmt->expr());
 }
 
 void Resolver::visit(const PrintStmtPtr& stmt) {
+  resolve(stmt->exprs());
 }
 
 void Resolver::visit(const LetStmtPtr& stmt) {
+  declare(stmt->name());
+  if (stmt->expr())
+    resolve(stmt->expr());
+  define(stmt->name());
 }
 
 void Resolver::visit(const BlockStmtPtr& stmt) {
@@ -107,18 +197,39 @@ void Resolver::visit(const BlockStmtPtr& stmt) {
 }
 
 void Resolver::visit(const IfStmtPtr& stmt) {
+  resolve(stmt->cond());
+  resolve(stmt->then_branch());
+  if (!stmt->else_branch().empty())
+    resolve(stmt->else_branch());
 }
 
 void Resolver::visit(const WhileStmtPtr& stmt) {
+  resolve(stmt->cond());
+
+  ++loops_level_;
+  resolve(stmt->body());
+  --loops_level_;
 }
 
 void Resolver::visit(const FunctionStmtPtr& stmt) {
+  declare(stmt->name());
+  define(stmt->name());
+  resolve_function(stmt, FunKind::FUNCTION);
 }
 
 void Resolver::visit(const ReturnStmtPtr& stmt) {
+  if (curr_fn_ == FunKind::NONE)
+    throw RuntimeError(stmt->keyword(), "cannot return from top-level code");
+
+  if (stmt->value())
+    resolve(stmt->value());
 }
 
 void Resolver::visit(const BreakStmtPtr& stmt) {
+  if (loops_level_ == 0) {
+    throw RuntimeError(stmt->keyword(),
+        "a `break` can only appear within the body of a loop");
+  }
 }
 
 void Resolver::visit(const ClassStmtPtr& stmt) {

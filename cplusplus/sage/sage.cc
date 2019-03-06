@@ -29,6 +29,7 @@
 #include <sstream>
 #include "./lex/lexer.hh"
 #include "./syntax/parser.hh"
+#include "./compile/resolver.hh"
 #include "./compile/interpreter.hh"
 #include "sage.hh"
 
@@ -89,6 +90,11 @@ void Sage::run(const std::string& source_bytes, const std::string& fname) {
 
   Parser parser(err_report_, tokens);
   auto stmts = parser.parse_stmts();
+  if (err_report_.had_error())
+    std::abort();
+
+  auto resolver = std::make_shared<Resolver>(err_report_, interp_);
+  resolver->invoke_resolve(stmts);
   if (err_report_.had_error())
     std::abort();
 
