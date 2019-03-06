@@ -35,8 +35,10 @@
 namespace sage {
 
 struct Callable;
+class Instance;
 
 using CallablePtr = std::shared_ptr<Callable>;
+using InstancePtr = std::shared_ptr<Instance>;
 
 class Value : public Copyable {
   using VariantType = std::variant<
@@ -45,7 +47,8 @@ class Value : public Copyable {
     std::int64_t,
     double,
     std::string,
-    CallablePtr>;
+    CallablePtr,
+    InstancePtr>;
 
   VariantType v_{};
 
@@ -137,6 +140,7 @@ public:
   Value(const char* s) noexcept : v_(std::string(s)) {}
   Value(const std::string& s) noexcept : v_(s) {}
   Value(const CallablePtr& c) noexcept : v_(c) {}
+  Value(const InstancePtr& i) noexcept : v_(i) {}
 
   bool is_nil(void) const { return std::holds_alternative<std::nullptr_t>(v_); }
   bool is_boolean(void) const { return std::holds_alternative<bool>(v_); }
@@ -144,6 +148,7 @@ public:
   bool is_decimal(void) const { return std::holds_alternative<double>(v_); }
   bool is_string(void) const { return std::holds_alternative<std::string>(v_); }
   bool is_callable(void) const { return std::holds_alternative<CallablePtr>(v_); }
+  bool is_instance(void) const { return std::holds_alternative<InstancePtr>(v_); }
 
   bool is_numeric(void) const { return is_integer() || is_decimal(); }
 
@@ -152,12 +157,14 @@ public:
   double to_decimal(void) const { return std::get<double>(v_); }
   std::string to_string(void) const { return std::get<std::string>(v_); }
   CallablePtr to_callable(void) const { return std::get<CallablePtr>(v_); }
+  InstancePtr to_instance(void) const { return std::get<InstancePtr>(v_); }
 
   operator bool(void) const { return to_boolean(); }
   operator std::int64_t(void) const { return to_integer(); }
   operator double(void) const { return to_decimal(); }
   operator std::string(void) const { return to_string(); }
   operator CallablePtr(void) const { return to_callable(); }
+  operator InstancePtr(void) const { return to_instance(); }
 
   Value& operator=(const Value& r) noexcept { return v_ = r.v_, *this; }
   Value& operator=(Value&& r) noexcept { return v_ = std::move(r.v_), *this; }
@@ -180,6 +187,7 @@ public:
   Value& operator=(const char* s) noexcept { return set_string(s); }
   Value& operator=(const std::string& s) noexcept { return v_ = s, *this; }
   Value& operator=(const CallablePtr& c) noexcept { return v_ = c, *this; }
+  Value& operator=(const InstancePtr& i) noexcept { return v_ = i, *this; }
 
   bool operator==(const Value& r) const { return compare_equal(r); }
   bool operator!=(const Value& r) const { return !compare_equal(r); }

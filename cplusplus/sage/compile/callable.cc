@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <sstream>
 #include "environment.hh"
 #include "interpret_helper.hh"
 #include "interpreter.hh"
@@ -34,6 +35,10 @@ namespace sage {
 Function::Function(const FunctionStmtPtr& decl, const EnvironmentPtr& closure)
   : decl_(decl)
   , closure_(closure) {
+}
+
+std::string Function::name(void) const {
+  return decl_->name().get_literal();
 }
 
 Value Function::call(
@@ -65,9 +70,14 @@ Class::Class(const std::string& name)
   : name_(name) {
 }
 
+std::string Class::name(void) const {
+  return name_;
+}
+
 Value Class::call(
     const InterpreterPtr& interp, const std::vector<Value>& arguments) {
-  return nullptr;
+  auto inst = std::make_shared<Instance>(shared_from_this());
+  return inst;
 }
 
 std::size_t Class::arity(void) const {
@@ -76,6 +86,28 @@ std::size_t Class::arity(void) const {
 
 std::string Class::to_string(void) const {
   return "<script class `" + name_ + "`>";
+}
+
+Instance::Instance(const ClassPtr& cls)
+  : class_(cls) {
+}
+
+bool Instance::is_truthy(void) const {
+  // TODO: default is true
+  return true;
+}
+
+std::string Instance::to_string(void) const {
+  std::stringstream ss;
+  ss << "<`" << class_->name() << "` instance at " << this << ">";
+  return ss.str();
+}
+
+void Instance::set_property(const Token& name, const Value& value) {
+}
+
+Value Instance::get_property(const Token& name) {
+  return nullptr;
 }
 
 }

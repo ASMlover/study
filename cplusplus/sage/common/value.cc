@@ -47,6 +47,7 @@ bool Value::is_truthy(void) const {
         [](double d) -> bool { return d != 0.f; },
         [](const std::string& s) -> bool { return !s.empty(); },
         [](const CallablePtr& c) -> bool { return true; },
+        [](const InstancePtr& i) -> bool { return i->is_truthy(); },
       }, v_);
 }
 
@@ -58,6 +59,7 @@ std::string Value::stringify(void) const {
         [](double d) -> std::string { return decimal_to_string(d); },
         [](const std::string& s) -> std::string { return s; },
         [](const CallablePtr& c) -> std::string { return c->to_string(); },
+        [](const InstancePtr& i) -> std::string { return i->to_string(); },
       }, v_);
 }
 
@@ -69,6 +71,7 @@ std::string Value::type(void) const {
         [](double) -> std::string { return "decimal"; },
         [](const std::string&) -> std::string { return "string"; },
         [](const CallablePtr&) -> std::string { return "callable"; },
+        [](const InstancePtr&) -> std::string { return "instance"; },
       }, v_);
 }
 
