@@ -377,7 +377,8 @@ ExprPtr Parser::expression(void) {
 }
 
 ExprPtr Parser::assignment(void) {
-  // assignment   -> IDENTIFIER ( assign_oper ) assignment | logic_or ;
+  // assignment   -> ( call "." )? IDENTIFIER ( assign_oper ) assignment
+  //               | logic_or ;
   // assign_oper  -> "=" | "+=" | "-=" | "*=" | "/=" | "%=" ;
 
   ExprPtr expr = logic_or();
@@ -390,7 +391,10 @@ ExprPtr Parser::assignment(void) {
       const Token& name = std::static_pointer_cast<VariableExpr>(expr)->name();
       return std::make_shared<AssignExpr>(name, oper, value);
     }
-
+    else if (std::dynamic_pointer_cast<GetExpr>(expr)) {
+      GetExprPtr get = std::static_pointer_cast<GetExpr>(expr);
+      return std::make_shared<SetExpr>(get->object(), get->name(), value);
+    }
     throw RuntimeError(oper, "invalid assignment target");
   }
   return expr;
@@ -483,7 +487,7 @@ ExprPtr Parser::unary(void) {
 }
 
 ExprPtr Parser::call(void) {
-  // call       -> primary ( "(" arguments? ")" )* ;
+  // call       -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
   // arguments  -> expression ( "," expression )* ;
 
   auto finish_call = [&](const ExprPtr& callee) -> ExprPtr {
@@ -505,10 +509,17 @@ ExprPtr Parser::call(void) {
 
   ExprPtr expr = primary();
   while (true) {
-    if (match({TokenKind::TK_LPAREN}))
+    if (match({TokenKind::TK_LPAREN})) {
       expr = finish_call(expr);
-    else
+    }
+    else if (match({TokenKind::TK_PERIOD})) {
+      const Token& name = consume(
+          TokenKind::TK_IDENTIFIER, "expect property name after `.`");
+      return std::make_shared<GetExpr>(expr, name);
+    }
+    else {
       break;
+    }
   }
   return expr;
 }

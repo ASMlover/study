@@ -133,9 +133,12 @@ void Resolver::visit(const CallExprPtr& expr) {
 }
 
 void Resolver::visit(const SetExprPtr& expr) {
+  resolve(expr->value());
+  resolve(expr->object());
 }
 
 void Resolver::visit(const GetExprPtr& expr) {
+  resolve(expr->object());
 }
 
 void Resolver::visit(const GroupingExprPtr& expr) {

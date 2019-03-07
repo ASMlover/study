@@ -54,7 +54,8 @@ namespace sage {
 // expr_stmt      -> expression NL ;
 
 // expression     -> assignment ;
-// assignment     -> IDENTIFIER ( assign_oper ) assignment | logic_or ;
+// assignment     -> ( call "." )? IDENTIFIER ( assign_oper ) assignment
+//                 | logic_or ;
 // assign_oper    -> "=" | "+=" | "-=" | "*=" | "/=" | "%=" ;
 // logic_or       -> logic_and ( "or" logic_and )* ;
 // logic_and      -> equality ( "and" equality )* ;
@@ -63,7 +64,7 @@ namespace sage {
 // addition       -> multiplication ( ( "+" | "-" ) multiplication )* ;
 // multiplication -> unary ( ( "*" | "/" | "%" ) unary )* ;
 // unary          -> ( "not" | "!" | "-" ) unary | call ;
-// call           -> primary ( "(" arguments? ")" )* ;
+// call           -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 // arguments      -> expression ( "," expression )* ;
 // primary        -> INTEGER | DECIMAL | STRING | "true" | "false" | "nil"
 //                 | "(" expression ")" | IDENTIFIER ;
