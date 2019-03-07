@@ -28,6 +28,7 @@
 
 #include <memory>
 #include <vector>
+#include <unordered_map>
 #include "../common/common.hh"
 #include "../common/value.hh"
 #include "../syntax/ast.hh"
@@ -88,13 +89,14 @@ public:
 class Instance
   : private UnCopyable, public std::enable_shared_from_this<Instance> {
   ClassPtr class_;
+  std::unordered_map<std::string, Value> attributes_;
 public:
   Instance(const ClassPtr& cls);
 
   bool is_truthy(void) const;
   std::string to_string(void) const;
-  void set_property(const Token& name, const Value& value);
-  Value get_property(const Token& name);
+  void set_attribute(const Token& name, const Value& value);
+  Value get_attribute(const Token& name);
 };
 
 }

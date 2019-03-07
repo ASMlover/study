@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <sstream>
+#include "../common/errors.hh"
 #include "environment.hh"
 #include "interpret_helper.hh"
 #include "interpreter.hh"
@@ -103,11 +104,16 @@ std::string Instance::to_string(void) const {
   return ss.str();
 }
 
-void Instance::set_property(const Token& name, const Value& value) {
+void Instance::set_attribute(const Token& name, const Value& value) {
+  attributes_[name.get_literal()] = value;
 }
 
-Value Instance::get_property(const Token& name) {
-  return nullptr;
+Value Instance::get_attribute(const Token& name) {
+  auto attr_iter = attributes_.find(name.get_literal());
+  if (attr_iter != attributes_.end())
+    return attr_iter->second;
+
+  throw RuntimeError(name, "undefined attribute `" + name.get_literal() + "`");
 }
 
 }
