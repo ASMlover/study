@@ -1,0 +1,19 @@
+
+print ">>>>>>>>> test for self of class"
+
+class Entity {
+
+  fn func_callback() {
+    print self
+  }
+
+}
+
+let fn_cb = Entity().func_callback
+fn_cb()
+
+# error: invalid syntax
+# print self
+# fn print_self() {
+#   print self
+# }
