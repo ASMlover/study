@@ -67,8 +67,18 @@ std::string Function::to_string(void) const {
   return "<script fn `" + decl_->name().get_literal() + "`>";
 }
 
-Class::Class(const std::string& name)
-  : name_(name) {
+Class::Class(const std::string& name
+    , const std::unordered_map<std::string, FunctionPtr>& methods)
+  : name_(name)
+  , methods_(methods) {
+}
+
+FunctionPtr Class::get_method(
+    const InstancePtr& inst, const std::string& name) {
+  auto method_iter = methods_.find(name);
+  if (method_iter != methods_.end())
+    return method_iter->second;
+  return nullptr;
 }
 
 std::string Class::name(void) const {
@@ -112,6 +122,10 @@ Value Instance::get_attribute(const Token& name) {
   auto attr_iter = attributes_.find(name.get_literal());
   if (attr_iter != attributes_.end())
     return attr_iter->second;
+
+  auto method = class_->get_method(shared_from_this(), name.get_literal());
+  if (method)
+    return method;
 
   throw RuntimeError(name, "undefined attribute `" + name.get_literal() + "`");
 }

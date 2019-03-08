@@ -76,8 +76,12 @@ public:
 class Class
   : public Callable, public std::enable_shared_from_this<Class> {
   std::string name_;
+  std::unordered_map<std::string, FunctionPtr> methods_;
 public:
-  Class(const std::string& name);
+  Class(const std::string& name,
+      const std::unordered_map<std::string, FunctionPtr>& methods);
+
+  FunctionPtr get_method(const InstancePtr& inst, const std::string& name);
 
   virtual std::string name(void) const override;
   virtual Value call(const InterpreterPtr& interp,
