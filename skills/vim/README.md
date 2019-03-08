@@ -210,3 +210,12 @@ nmake -f Make_mvc.mak SDK_INCLUDE_DIR="C:\Program Files (x86)\Microsoft SDKs\Win
   \> call gvim -u "%HOME%\.vim\evil-vimrc\evil-install.vim" +PlugUpdate
   \> python install.py --clang-completer --go-completer
 ```
+
+
+## **vim diff相关操作**
+  * 启动 `vim -d FILE_LEFT FILE_RIGHT`
+  * 文件合并
+```vimscript
+  dp ; (diff "put") 将当前文件的差异内容复制到另一个文件
+  do ; (diff "get") 把另一个文件中的内容复制到当前文件行
+```
