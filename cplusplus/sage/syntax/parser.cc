@@ -515,7 +515,7 @@ ExprPtr Parser::call(void) {
     else if (match({TokenKind::TK_PERIOD})) {
       const Token& name = consume(
           TokenKind::TK_IDENTIFIER, "expect property name after `.`");
-      return std::make_shared<GetExpr>(expr, name);
+      expr = std::make_shared<GetExpr>(expr, name);
     }
     else {
       break;

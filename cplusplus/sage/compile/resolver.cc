@@ -238,6 +238,11 @@ void Resolver::visit(const BreakStmtPtr& stmt) {
 void Resolver::visit(const ClassStmtPtr& stmt) {
   declare(stmt->name());
   define(stmt->name());
+
+  for (auto& meth : stmt->methods()) {
+    FunKind kind = FunKind::METHOD;
+    resolve_function(meth, kind);
+  }
 }
 
 }
