@@ -1,0 +1,13 @@
+
+print ">>>>>>>>> test for class methods"
+
+class Entity {
+
+  fn show_fn() {
+    print "Entity.show_fn"
+  }
+
+}
+
+let ent = Entity()
+ent.show_fn()

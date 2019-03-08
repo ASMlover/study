@@ -1,0 +1,11 @@
+
+print ">>>>>>>>> test for class properties"
+
+class Entity {
+}
+
+let ent = Entity()
+print ent
+
+ent._property = "dummy value"
+print ent, ent._property
