@@ -67,18 +67,16 @@ std::string Function::to_string(void) const {
   return "<script fn `" + decl_->name().get_literal() + "`>";
 }
 
+FunctionPtr Function::bind(const InstancePtr& inst) {
+  auto envp = std::make_shared<Environment>(closure_);
+  envp->define("self", Value(inst));
+  return std::make_shared<Function>(decl_, envp);
+}
+
 Class::Class(const std::string& name
     , const std::unordered_map<std::string, FunctionPtr>& methods)
   : name_(name)
   , methods_(methods) {
-}
-
-FunctionPtr Class::get_method(
-    const InstancePtr& inst, const std::string& name) {
-  auto method_iter = methods_.find(name);
-  if (method_iter != methods_.end())
-    return method_iter->second;
-  return nullptr;
 }
 
 std::string Class::name(void) const {
@@ -97,6 +95,14 @@ std::size_t Class::arity(void) const {
 
 std::string Class::to_string(void) const {
   return "<script class `" + name_ + "`>";
+}
+
+FunctionPtr Class::get_method(
+    const InstancePtr& inst, const std::string& name) {
+  auto method_iter = methods_.find(name);
+  if (method_iter != methods_.end())
+    return method_iter->second->bind(inst);
+  return nullptr;
 }
 
 Instance::Instance(const ClassPtr& cls)

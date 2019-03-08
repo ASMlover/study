@@ -42,12 +42,14 @@ class Resolver
   , public StmtVisitor
   , public std::enable_shared_from_this<Resolver> {
   enum class FunKind { NONE, FUNCTION, METHOD };
+  enum class ClassKind { NONE, CLASS };
 
   ErrorReport& err_report_;
   InterpreterPtr interp_;
   int loops_level_{0};
   std::vector<std::unordered_map<std::string, bool>> scopes_;
   FunKind curr_fn_{FunKind::NONE};
+  ClassKind curr_class_{ClassKind::NONE};
 
   void resolve(const ExprPtr& expr);
   void resolve(const std::vector<ExprPtr>& exprs);

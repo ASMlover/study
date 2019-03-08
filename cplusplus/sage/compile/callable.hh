@@ -71,6 +71,8 @@ public:
       const std::vector<Value>& arguments) override;
   virtual std::size_t arity(void) const override;
   virtual std::string to_string(void) const override;
+
+  FunctionPtr bind(const InstancePtr& inst);
 };
 
 class Class
@@ -81,13 +83,13 @@ public:
   Class(const std::string& name,
       const std::unordered_map<std::string, FunctionPtr>& methods);
 
-  FunctionPtr get_method(const InstancePtr& inst, const std::string& name);
-
   virtual std::string name(void) const override;
   virtual Value call(const InterpreterPtr& interp,
       const std::vector<Value>& arguments) override;
   virtual std::size_t arity(void) const override;
   virtual std::string to_string(void) const override;
+
+  FunctionPtr get_method(const InstancePtr& inst, const std::string& name);
 };
 
 class Instance

@@ -525,7 +525,7 @@ ExprPtr Parser::call(void) {
 }
 
 ExprPtr Parser::primary(void) {
-  // primary -> INTEGER | DECIMAL | STRICT | "true" | "false" | "nil"
+  // primary -> INTEGER | DECIMAL | STRICT | "true" | "false" | "nil" | "self"
   //          | "(" expression ")" | IDENTIFIER ;
 
   if (match({TokenKind::TK_INTEGERCONST}))
@@ -540,6 +540,8 @@ ExprPtr Parser::primary(void) {
     return std::make_shared<LiteralExpr>(false);
   if (match({TokenKind::KW_NIL}))
     return std::make_shared<LiteralExpr>(nullptr);
+  if (match({TokenKind::KW_SELF}))
+    return std::make_shared<SelfExpr>(prev());
 
   if (match({TokenKind::TK_LPAREN})) {
     ExprPtr expr = expression();

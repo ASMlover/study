@@ -36,6 +36,6 @@ multiplication  -> unary ( ( "*" | "/" | "%" ) unary )* ;
 unary           -> ( "not" | "!" | "-" ) unary | call ;
 call            -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 arguments       -> expression ( "," expression )* ;
-primary         -> INTEGER | DECIMAL | STRING | "true" | "false" | "nil"
+primary         -> INTEGER | DECIMAL | STRING | "true" | "false" | "nil" | "self"
                  | "(" expression ")" | IDENTIFIER ;
 ```

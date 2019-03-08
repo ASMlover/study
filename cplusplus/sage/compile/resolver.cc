@@ -154,6 +154,10 @@ void Resolver::visit(const LogicalExprPtr& expr) {
 }
 
 void Resolver::visit(const SelfExprPtr& expr) {
+  if (curr_class_ != ClassKind::CLASS)
+    throw RuntimeError(expr->keyword(), "cannot use `self` outside of a class");
+
+  resolve_local(expr->keyword(), expr);
 }
 
 void Resolver::visit(const SuperExprPtr& expr) {
@@ -236,13 +240,22 @@ void Resolver::visit(const BreakStmtPtr& stmt) {
 }
 
 void Resolver::visit(const ClassStmtPtr& stmt) {
+  ClassKind enclosing_class = curr_class_;
+  curr_class_ = ClassKind::CLASS;
+
   declare(stmt->name());
   define(stmt->name());
+
+  enter_scope();
+  scopes_.back()["self"] = true;
 
   for (auto& meth : stmt->methods()) {
     FunKind kind = FunKind::METHOD;
     resolve_function(meth, kind);
   }
+  leave_scope();
+
+  curr_class_ = enclosing_class;
 }
 
 }
