@@ -159,12 +159,17 @@ StmtPtr Parser::declaration(void) {
 }
 
 StmtPtr Parser::class_decl(void) {
-  // class_decl -> "class" IDENTIFIER "{" NL func_decl* "}" NL ;
+  // class_decl -> "class" IDENTIFIER ( "(" IDENTIFIER ")" )? "{" NL func_decl* "}" NL ;
 
   const Token& name = consume(TokenKind::TK_IDENTIFIER, "expect class name");
+  VariableExprPtr superclass;
+  if (match({TokenKind::TK_LPAREN})) {
+    consume(TokenKind::TK_IDENTIFIER, "expect superclass name");
+    superclass = std::make_shared<VariableExpr>(prev());
+    consume(TokenKind::TK_RPAREN, "expect `)` after superclass name");
+  }
   consume(TokenKind::TK_LBRACE, "expect `{` after class name");
   consume(TokenKind::TK_NL, "expect `NL` before class body");
-
   std::vector<FunctionStmtPtr> methods;
   while (!is_end() && !check(TokenKind::TK_RBRACE)) {
     if (!ignore_newlines()) {
@@ -177,7 +182,7 @@ StmtPtr Parser::class_decl(void) {
   consume(TokenKind::TK_RBRACE, "expect `}` after class body");
   consume(TokenKind::TK_NL, "expect `NL` after class declaration");
 
-  return std::make_shared<ClassStmt>(name, nullptr, methods);
+  return std::make_shared<ClassStmt>(name, superclass, methods);
 }
 
 StmtPtr Parser::func_decl(const std::string& kind) {

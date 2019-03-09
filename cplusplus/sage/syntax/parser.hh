@@ -35,7 +35,7 @@ namespace sage {
 
 // parogram       -> declaration* EOF ;
 // declaration    -> class_decl | func_decl | let_decl | statement ;
-// class_decl     -> "class" IDENTIFIER "{" NL func_decl* "}" NL ;
+// class_decl     -> "class" IDENTIFIER ( "(" IDENTIFIER ")" )? "{" NL func_decl* "}" NL ;
 // func_decl      -> "fn" IDENTIFIER "(" parameters? ")" block_stmt ;
 // parameters     -> IDENTIFIER ( "," IDENTIFIER )* ;
 // let_decl       -> "let" IDENTIFIER ( "=" expression )? NL ;

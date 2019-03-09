@@ -249,6 +249,8 @@ void Resolver::visit(const ClassStmtPtr& stmt) {
   curr_class_ = ClassKind::CLASS;
 
   declare(stmt->name());
+  if (stmt->superclass())
+    resolve(stmt->superclass());
   define(stmt->name());
 
   enter_scope();

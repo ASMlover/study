@@ -79,9 +79,11 @@ FunctionPtr Function::bind(const InstancePtr& inst) {
   return std::make_shared<Function>(decl_, envp, is_ctor_);
 }
 
-Class::Class(const std::string& name
-    , const std::unordered_map<std::string, FunctionPtr>& methods)
+Class::Class(const std::string& name,
+    const ClassPtr& superclass,
+    const std::unordered_map<std::string, FunctionPtr>& methods)
   : name_(name)
+  , superclass_(superclass)
   , methods_(methods) {
 }
 
