@@ -1,0 +1,13 @@
+
+print ">>>>>>>>> test for superclass of class"
+
+class BaseEntity {
+}
+
+class Entity(BaseEntity) {
+}
+
+print BaseEntity, Entity
+
+let ent = Entity()
+print ent
