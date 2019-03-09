@@ -1,0 +1,14 @@
+
+print ">>>>>>>>> test for inheriting methods"
+
+class BaseEntity {
+  fn repr() {
+    print "BaseEntity.repr", self
+  }
+}
+
+class Entity(BaseEntity) {
+}
+
+let ent = Entity()
+ent.repr()
