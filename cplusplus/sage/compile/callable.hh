@@ -63,8 +63,10 @@ class Function
   : public Callable, public std::enable_shared_from_this<Function> {
   FunctionStmtPtr decl_;
   EnvironmentPtr closure_;
+  bool is_ctor_{};
 public:
-  Function(const FunctionStmtPtr& decl, const EnvironmentPtr& closure);
+  Function(const FunctionStmtPtr& decl,
+      const EnvironmentPtr& closure, bool is_ctor = false);
 
   virtual std::string name(void) const override;
   virtual Value call(const InterpreterPtr& interp,

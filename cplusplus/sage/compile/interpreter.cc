@@ -336,7 +336,7 @@ void Interpreter::visit(const WhileStmtPtr& stmt) {
 }
 
 void Interpreter::visit(const FunctionStmtPtr& stmt) {
-  auto fn = std::make_shared<Function>(stmt, environment_);
+  auto fn = std::make_shared<Function>(stmt, environment_, false);
   environment_->define(stmt->name(), Value(fn));
 }
 
@@ -357,7 +357,8 @@ void Interpreter::visit(const ClassStmtPtr& stmt) {
 
   std::unordered_map<std::string, FunctionPtr> methods;
   for (auto& meth : stmt->methods()) {
-    auto method_fn = std::make_shared<Function>(meth, environment_);
+    bool is_ctor = meth->name().get_literal() == "ctor";
+    auto method_fn = std::make_shared<Function>(meth, environment_, is_ctor);
     methods[meth->name().get_literal()] = method_fn;
   }
 
