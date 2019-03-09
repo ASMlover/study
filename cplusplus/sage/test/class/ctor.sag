@@ -1,0 +1,18 @@
+
+print ">>>>>>>>> test for constructor of class"
+
+class Entity {
+
+  fn ctor(id, name) {
+    self.id = id
+    self.name = name
+  }
+
+  fn repr() {
+    print self, "id=", self.id, ", name=", self.name
+  }
+
+}
+
+let ent = Entity(1001, "Tim")
+ent.repr()
