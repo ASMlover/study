@@ -1,0 +1,34 @@
+
+print ">>>>>>>>> test for calling superclass methods"
+
+class BaseEntity {
+
+  fn ctor(id) {
+    if id is nil {
+      self.id = 1001
+    }
+    else {
+      self.id = id
+    }
+  }
+
+  fn show() {
+    print "entity id is:", self.id
+  }
+
+}
+
+class Entity(BaseEntity) {
+  fn ctor(id, name) {
+    super.ctor(id)
+    self.name = name
+  }
+
+  fn show() {
+    super.show()
+    print "entity name is:", self.name
+  }
+}
+
+let ent = Entity(nil, "Tim")
+ent.show()
