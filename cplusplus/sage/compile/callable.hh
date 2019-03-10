@@ -94,6 +94,7 @@ public:
   virtual std::string to_string(void) const override;
 
   FunctionPtr get_method(const InstancePtr& inst, const std::string& name);
+  FunctionPtr get_method(const InstancePtr& inst, const Token& name);
 };
 
 class Instance

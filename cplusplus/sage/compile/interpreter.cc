@@ -262,6 +262,23 @@ void Interpreter::visit(const SelfExprPtr& expr) {
 }
 
 void Interpreter::visit(const SuperExprPtr& expr) {
+  int distance = 0;
+  auto super_iter = locals_.find(expr);
+  if (super_iter != locals_.end())
+    distance = super_iter->second;
+
+  const Token& meth = expr->method();
+  ClassPtr superclass = std::static_pointer_cast<Class>(
+      environment_->get_at(distance, "super").to_callable());
+  InstancePtr object = std::static_pointer_cast<Instance>(
+      environment_->get_at(distance - 1, "self").to_instance());
+  FunctionPtr method = superclass->get_method(object, meth);
+
+  if (!method) {
+    throw RuntimeError(expr->method(),
+        "undefined method `" + meth.get_literal() + "`");
+  }
+  value_ = method;
 }
 
 void Interpreter::visit(const UnaryExprPtr& expr) {
@@ -369,6 +386,11 @@ void Interpreter::visit(const ClassStmtPtr& stmt) {
 
   environment_->define(stmt->name(), Value());
 
+  if (superexp) {
+    environment_ = std::make_shared<Environment>(environment_);
+    environment_->define("super", superval);
+  }
+
   std::unordered_map<std::string, FunctionPtr> methods;
   for (auto& meth : stmt->methods()) {
     bool is_ctor = meth->name().get_literal() == "ctor";
@@ -378,6 +400,8 @@ void Interpreter::visit(const ClassStmtPtr& stmt) {
 
   auto cls = std::make_shared<Class>(
       stmt->name().get_literal(), superclass, methods);
+  if (!superval.is_nil())
+    environment_ = environment_->get_enclosing();
   environment_->assign(stmt->name(), Value(cls));
 }
 

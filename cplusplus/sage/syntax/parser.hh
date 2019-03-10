@@ -66,8 +66,9 @@ namespace sage {
 // unary          -> ( "not" | "!" | "-" ) unary | call ;
 // call           -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 // arguments      -> expression ( "," expression )* ;
-// primary        -> INTEGER | DECIMAL | STRING | "true" | "false" | "nil" | "self"
-//                 | "(" expression ")" | IDENTIFIER ;
+// primary        -> INTEGER | DECIMAL | STRING
+//                 | "true" | "false" | "nil" | "self"
+//                 | "(" expression ")" | "super" "." IDENTIFIER ;
 
 class Token;
 class ErrorReport;

@@ -531,7 +531,7 @@ ExprPtr Parser::call(void) {
 
 ExprPtr Parser::primary(void) {
   // primary -> INTEGER | DECIMAL | STRICT | "true" | "false" | "nil" | "self"
-  //          | "(" expression ")" | IDENTIFIER ;
+  //          | "(" expression ")" | "super" "." IDENTIFIER ;
 
   if (match({TokenKind::TK_INTEGERCONST}))
     return std::make_shared<LiteralExpr>(prev().as_integer());
@@ -552,6 +552,14 @@ ExprPtr Parser::primary(void) {
     ExprPtr expr = expression();
     consume(TokenKind::TK_RPAREN, "expect `)` after expression");
     return std::make_shared<GroupingExpr>(expr);
+  }
+
+  if (match({TokenKind::KW_SUPER})) {
+    const Token& keyword = prev();
+    consume(TokenKind::TK_PERIOD, "expect `.` after `super` keyword");
+    const Token& method = consume(
+        TokenKind::TK_IDENTIFIER, "expect superclass method name");
+    return std::make_shared<SuperExpr>(keyword, method);
   }
 
   if (match({TokenKind::TK_IDENTIFIER}))

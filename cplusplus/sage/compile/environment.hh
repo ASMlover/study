@@ -48,6 +48,8 @@ public:
   Environment(void);
   Environment(const EnvironmentPtr& enclosing);
 
+  EnvironmentPtr get_enclosing(void) const;
+
   void define(const std::string& name, const Value& value);
   void define(const Token& name, const Value& value);
   const Value& get(const std::string& name) const;

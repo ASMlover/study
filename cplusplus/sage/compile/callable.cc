@@ -121,6 +121,10 @@ FunctionPtr Class::get_method(
   return nullptr;
 }
 
+FunctionPtr Class::get_method(const InstancePtr& inst, const Token& name) {
+  return get_method(inst, name.get_literal());
+}
+
 Instance::Instance(const ClassPtr& cls)
   : class_(cls) {
 }

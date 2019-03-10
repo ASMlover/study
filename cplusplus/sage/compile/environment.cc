@@ -44,6 +44,10 @@ EnvironmentPtr Environment::ancestor(int distance) {
   return envp;
 }
 
+EnvironmentPtr Environment::get_enclosing(void) const {
+  return enclosing_;
+}
+
 void Environment::define(const std::string& name, const Value& value) {
   values_[name] = value;
 }

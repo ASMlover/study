@@ -154,13 +154,23 @@ void Resolver::visit(const LogicalExprPtr& expr) {
 }
 
 void Resolver::visit(const SelfExprPtr& expr) {
-  if (curr_class_ != ClassKind::CLASS)
+  if (curr_class_ != ClassKind::CLASS && curr_class_ != ClassKind::SUBCLASS)
     throw RuntimeError(expr->keyword(), "cannot use `self` outside of a class");
 
   resolve_local(expr->keyword(), expr);
 }
 
 void Resolver::visit(const SuperExprPtr& expr) {
+  if (curr_class_ == ClassKind::NONE) {
+    throw RuntimeError(expr->keyword(),
+        "cannot use `super` outside of a class");
+  }
+  else if (curr_class_ != ClassKind::SUBCLASS) {
+    throw RuntimeError(expr->keyword(),
+        "cannot use `super` in a class without superclass");
+  }
+
+  resolve_local(expr->keyword(), expr);
 }
 
 void Resolver::visit(const UnaryExprPtr& expr) {
@@ -247,12 +257,19 @@ void Resolver::visit(const BreakStmtPtr& stmt) {
 void Resolver::visit(const ClassStmtPtr& stmt) {
   ClassKind enclosing_class = curr_class_;
   curr_class_ = ClassKind::CLASS;
+  const auto& superclass = stmt->superclass();
 
   declare(stmt->name());
-  if (stmt->superclass())
-    resolve(stmt->superclass());
+  if (superclass) {
+    curr_class_ = ClassKind::SUBCLASS;
+    resolve(superclass);
+  }
   define(stmt->name());
 
+  if (superclass) {
+    enter_scope();
+    scopes_.back()["super"] = true;
+  }
   enter_scope();
   scopes_.back()["self"] = true;
 
@@ -263,6 +280,8 @@ void Resolver::visit(const ClassStmtPtr& stmt) {
     resolve_function(meth, kind);
   }
   leave_scope();
+  if (superclass)
+    leave_scope();
 
   curr_class_ = enclosing_class;
 }
