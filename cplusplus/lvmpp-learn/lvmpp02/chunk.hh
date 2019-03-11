@@ -29,10 +29,12 @@
 #include <string>
 #include <vector>
 #include "common.hh"
+#include "value.hh"
 
 namespace lvm {
 
 enum class OpCode : int {
+  OP_CONSTANT,
   OP_RETURN
 };
 
@@ -40,11 +42,17 @@ std::ostream& operator<<(std::ostream& out, OpCode code);
 
 class Chunk : public Copyable {
   std::vector<OpCode> codes_;
+  std::vector<Value> constants_;
 public:
-  void write(OpCode byte);
+  void write(OpCode code);
+  OpCode add_constant(const Value& value);
+  void write_constant(const Value& value);
 
   void disassemble(const std::string& name);
   int disassemble_instruction(int offset);
+
+  OpCode get_code(int offset) const { return codes_[offset]; }
+  Value get_constant(int constant) const { return constants_[constant]; }
 };
 
 }
