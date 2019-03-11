@@ -145,11 +145,12 @@ void Instance::set_attribute(const Token& name, const Value& value) {
 }
 
 Value Instance::get_attribute(const Token& name) {
-  auto attr_iter = attributes_.find(name.get_literal());
+  auto name_literal = name.get_literal();
+  auto attr_iter = attributes_.find(name_literal);
   if (attr_iter != attributes_.end())
     return attr_iter->second;
 
-  auto method = class_->get_method(shared_from_this(), name.get_literal());
+  CallablePtr method = class_->get_method(shared_from_this(), name_literal);
   if (method)
     return method;
 
