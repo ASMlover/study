@@ -24,19 +24,43 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstdio>
+#include <iostream>
 #include "chunk.hh"
 
 namespace lvm {
+
+std::ostream& operator<<(std::ostream& out, OpCode code) {
+  return out << EnumUtil<OpCode>::as_int(code);
+}
 
 void Chunk::write(OpCode byte) {
   codes_.push_back(byte);
 }
 
 void Chunk::disassemble(const std::string& name) {
+  std::cout << "=========" << name << "=========" << std::endl;
+  for (auto offset = 0; offset < static_cast<int>(codes_.size());)
+    offset = disassemble_instruction(offset);
 }
 
 int Chunk::disassemble_instruction(int offset) {
-  return offset;
+  auto simple_instruction = [](const std::string& name, int offset) -> int {
+    std::cout << name << std::endl;
+    return offset + 1;
+  };
+
+  fprintf(stdout, "%04d ", offset);
+  OpCode instruction = codes_[offset];
+  switch (instruction) {
+  case OpCode::OP_RETURN:
+    return simple_instruction("OP_RETURN", offset);
+  default:
+    break;
+  }
+
+  std::cout << "unknown opcode: " << instruction << std::endl;
+  return offset + 1;
 }
 
 }

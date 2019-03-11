@@ -27,13 +27,15 @@
 #include <iostream>
 #include "chunk.hh"
 
-static void use_chunk(void) {
+static void use_disassembler(void) {
   lvm::Chunk chunk;
   chunk.write(lvm::OpCode::OP_RETURN);
+
+  chunk.disassemble("test chunk");
 }
 
 int main(int argc, char* argv[]) {
-  use_chunk();
+  use_disassembler();
 
   return 0;
 }

@@ -36,6 +36,8 @@ enum class OpCode : int {
   OP_RETURN
 };
 
+std::ostream& operator<<(std::ostream& out, OpCode code);
+
 class Chunk : public Copyable {
   std::vector<OpCode> codes_;
 public:
