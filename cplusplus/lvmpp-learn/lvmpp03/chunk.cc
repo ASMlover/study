@@ -34,19 +34,20 @@ std::ostream& operator<<(std::ostream& out, OpCode code) {
   return out << EnumUtil<OpCode>::as_int(code);
 }
 
-void Chunk::write(OpCode code) {
-  codes_.push_back(code);
-}
-
 OpCode Chunk::add_constant(const Value& value) {
   constants_.push_back(value);
   return EnumUtil<OpCode>::as_enum(static_cast<int>(constants_.size() - 1));
 }
 
-void Chunk::write_constant(const Value& value) {
+void Chunk::write(OpCode code, int line) {
+  codes_.push_back(code);
+  lines_.push_back(line);
+}
+
+void Chunk::write_constant(const Value& value, int line) {
   auto const_code = add_constant(value);
-  codes_.push_back(OpCode::OP_CONSTANT);
-  codes_.push_back(const_code);
+  write(OpCode::OP_CONSTANT, line);
+  write(const_code, line);
 }
 
 void Chunk::disassemble(const std::string& name) {
@@ -68,6 +69,10 @@ int Chunk::disassemble_instruction(int offset) {
   };
 
   fprintf(stdout, "%04d ", offset);
+  if (offset > 0 && lines_[offset] == lines_[offset - 1])
+    fprintf(stdout, "   | ");
+  else
+    fprintf(stdout, "%4d ", lines_[offset]);
   OpCode instruction = codes_[offset];
   switch (instruction) {
   case OpCode::OP_CONSTANT:

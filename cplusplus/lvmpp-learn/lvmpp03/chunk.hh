@@ -43,16 +43,19 @@ std::ostream& operator<<(std::ostream& out, OpCode code);
 class Chunk : public Copyable {
   std::vector<OpCode> codes_;
   std::vector<Value> constants_;
+  std::vector<int> lines_;
 public:
-  void write(OpCode code);
   OpCode add_constant(const Value& value);
-  void write_constant(const Value& value);
+
+  void write(OpCode code, int line);
+  void write_constant(const Value& value, int line);
 
   void disassemble(const std::string& name);
   int disassemble_instruction(int offset);
 
   OpCode get_code(int offset) const { return codes_[offset]; }
   Value get_constant(int constant) const { return constants_[constant]; }
+  int get_line(int instruction) const { return lines_[instruction]; }
 };
 
 }

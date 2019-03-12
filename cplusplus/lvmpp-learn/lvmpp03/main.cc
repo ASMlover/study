@@ -29,8 +29,8 @@
 static void use_disassembler(void) {
   lvm::Chunk chunk;
 
-  chunk.write_constant(3.12);
-  chunk.write(lvm::OpCode::OP_RETURN);
+  chunk.write_constant(3.12, 100);
+  chunk.write(lvm::OpCode::OP_RETURN, 100);
 
   chunk.disassemble("test chunk");
 }
