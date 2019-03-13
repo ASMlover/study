@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include "chunk.hh"
 #include "vm.hh"
 
@@ -34,6 +35,40 @@ VM::VM(Chunk& c)
 }
 
 VM::~VM(void) {
+}
+
+InterpretRet VM::interpret(void) {
+  ip_ = chunk_.get_codes();
+  return run();
+}
+
+InterpretRet VM::run(void) {
+  auto _rdbyte = [this](void) -> OpCode {
+    return *ip_++;
+  };
+  auto _rdconstant = [this, _rdbyte](void) -> Value {
+    return chunk_.get_constant(EnumUtil<OpCode>::as_int(_rdbyte()));
+  };
+
+  for (;;) {
+#if defined(LVM_TRACE_EXECUTION)
+    int offset = static_cast<int>(ip_ - chunk_.get_codes());
+    chunk_.disassemble_instruction(offset);
+#endif
+
+    OpCode instruction = _rdbyte();
+    switch (instruction) {
+    case OpCode::OP_CONSTANT:
+      {
+        Value constant = _rdconstant();
+        std::cout << constant << std::endl;
+      } break;
+    case OpCode::OP_RETURN:
+      return InterpretRet::OK;
+    }
+  }
+
+  return InterpretRet::OK;
 }
 
 }

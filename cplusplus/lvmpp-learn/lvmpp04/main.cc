@@ -24,15 +24,21 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include "chunk.hh"
+#include "vm.hh"
 
 static void use_disassembler(void) {
   lvm::Chunk chunk;
+  lvm::VM vm(chunk);
 
   chunk.write_constant(3.12, 100);
   chunk.write(lvm::OpCode::OP_RETURN, 100);
 
   chunk.disassemble("test chunk");
+
+  std::cout << "========= run vm =========" << std::endl;
+  vm.interpret();
 }
 
 int main(int argc, char* argv[]) {

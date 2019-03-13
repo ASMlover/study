@@ -27,16 +27,26 @@
 #pragma once
 
 #include "common.hh"
+#include "chunk.hh"
 
 namespace lvm {
 
-class Chunk;
+enum class InterpretRet {
+  OK,
+  COMPILE_ERROR,
+  RUNTIME_ERROR
+};
 
 class VM : private UnCopyable {
   Chunk& chunk_;
+  const OpCode* ip_{};
+
+  InterpretRet run(void);
 public:
   VM(Chunk& c);
   ~VM(void);
+
+  InterpretRet interpret(void);
 };
 
 }
