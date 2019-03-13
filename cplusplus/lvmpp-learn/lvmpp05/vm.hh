@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <vector>
 #include "common.hh"
 #include "chunk.hh"
 
@@ -40,8 +41,13 @@ enum class InterpretRet {
 class VM : private UnCopyable {
   Chunk& chunk_;
   const OpCode* ip_{};
+  std::vector<Value> stack_;
 
   InterpretRet run(void);
+
+  void reset_stack(void);
+  void push(const Value& value);
+  Value pop(void);
 public:
   VM(Chunk& c);
   ~VM(void);

@@ -52,6 +52,10 @@ InterpretRet VM::run(void) {
 
   for (;;) {
 #if defined(LVM_TRACE_EXECUTION)
+    std::cout << "          ";
+    for (auto& v : stack_)
+      std::cout << "[" << v << "]";
+    std::cout << std::endl;
     int offset = static_cast<int>(ip_ - chunk_.get_codes());
     chunk_.disassemble_instruction(offset);
 #endif
@@ -61,14 +65,31 @@ InterpretRet VM::run(void) {
     case OpCode::OP_CONSTANT:
       {
         Value constant = _rdconstant();
-        std::cout << constant << std::endl;
+        push(constant);
       } break;
     case OpCode::OP_RETURN:
+      {
+        std::cout << pop() << std::endl;
+      }
       return InterpretRet::OK;
     }
   }
 
   return InterpretRet::OK;
+}
+
+void VM::reset_stack(void) {
+  stack_.clear();
+}
+
+void VM::push(const Value& value) {
+  stack_.push_back(value);
+}
+
+Value VM::pop(void) {
+  auto value = stack_.back();
+  stack_.pop_back();
+  return value;
 }
 
 }
