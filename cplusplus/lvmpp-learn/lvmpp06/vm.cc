@@ -50,6 +50,12 @@ InterpretRet VM::run(void) {
     return chunk_.get_constant(EnumUtil<OpCode>::as_int(_rdbyte()));
   };
 
+#define BINARY_OP(op) do {\
+  double b = pop();\
+  double a = pop();\
+  push(a op b);\
+} while (false)
+
   for (;;) {
 #if defined(LVM_TRACE_EXECUTION)
     std::cout << "          ";
@@ -62,10 +68,12 @@ InterpretRet VM::run(void) {
 
     OpCode instruction = _rdbyte();
     switch (instruction) {
-    case OpCode::OP_CONSTANT:
-      push(_rdconstant()); break;
-    case OpCode::OP_NEGATE:
-      push(-pop()); break;
+    case OpCode::OP_CONSTANT: push(_rdconstant()); break;
+    case OpCode::OP_ADD: BINARY_OP(+); break;
+    case OpCode::OP_SUB: BINARY_OP(-); break;
+    case OpCode::OP_MUL: BINARY_OP(*); break;
+    case OpCode::OP_DIV: BINARY_OP(/); break;
+    case OpCode::OP_NEGATE: push(-pop()); break;
     case OpCode::OP_RETURN:
       {
         std::cout << pop() << std::endl;
@@ -73,8 +81,9 @@ InterpretRet VM::run(void) {
       return InterpretRet::OK;
     }
   }
-
   return InterpretRet::OK;
+
+#undef BINARY_OP
 }
 
 void VM::reset_stack(void) {
