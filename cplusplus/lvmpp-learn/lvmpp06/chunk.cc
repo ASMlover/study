@@ -77,6 +77,8 @@ int Chunk::disassemble_instruction(int offset) {
   switch (instruction) {
   case OpCode::OP_CONSTANT:
     return constant_instruction("OP_CONSTANT", offset);
+  case OpCode::OP_NEGATE:
+    return simple_instruction("OP_NEGATE", offset);
   case OpCode::OP_RETURN:
     return simple_instruction("OP_RETURN", offset);
   default:

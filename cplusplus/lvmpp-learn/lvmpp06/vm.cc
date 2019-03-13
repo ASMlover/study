@@ -63,10 +63,9 @@ InterpretRet VM::run(void) {
     OpCode instruction = _rdbyte();
     switch (instruction) {
     case OpCode::OP_CONSTANT:
-      {
-        Value constant = _rdconstant();
-        push(constant);
-      } break;
+      push(_rdconstant()); break;
+    case OpCode::OP_NEGATE:
+      push(-pop()); break;
     case OpCode::OP_RETURN:
       {
         std::cout << pop() << std::endl;

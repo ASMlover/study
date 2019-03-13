@@ -33,6 +33,7 @@ static void use_disassembler(void) {
   lvm::VM vm(chunk);
 
   chunk.write_constant(3.12, 100);
+  chunk.write(lvm::OpCode::OP_NEGATE, 100);
   chunk.write(lvm::OpCode::OP_RETURN, 100);
 
   chunk.disassemble("test chunk");
