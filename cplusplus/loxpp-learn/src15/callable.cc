@@ -114,7 +114,7 @@ Value Instance::get_property(const Token& name) {
 
   auto method = class_->get_method(shared_from_this(), name.get_literal());
   if (method)
-    return method;
+    return Value(method);
 
   throw RuntimeError(name,
       "undefined property `" + name.get_literal() + "` ...");

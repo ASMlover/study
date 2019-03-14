@@ -337,11 +337,10 @@ void Interpreter::visit_class_stmt(const ClassStmtPtr& stmt) {
     superval = evaluate(superexp);
     if (superval.is_callable() &&
         std::dynamic_pointer_cast<Class>(superval.to_callable())) {
-      superclass = std::dynamic_pointer_cast<Class>(superval.to_callable());
+      superclass = std::static_pointer_cast<Class>(superval.to_callable());
     }
     else {
-      auto supertok = std::static_pointer_cast<VariableExpr>(superexp)->name();
-      throw RuntimeError(supertok, "superclass must be a class ...");
+      throw RuntimeError(stmt->name(), "superclass must be a class ...");
     }
   }
 
