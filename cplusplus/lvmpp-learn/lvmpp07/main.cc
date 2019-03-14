@@ -25,6 +25,8 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include "chunk.hh"
 #include "vm.hh"
 
@@ -44,8 +46,55 @@ static void use_disassembler(void) {
   vm.interpret();
 }
 
+static void eval_with_repl(lvm::VM& vm) {
+  std::string line;
+  for (;;) {
+    std::cout << ">>> ";
+    if (!std::getline(std::cin, line) || line == "exit")
+      break;
+
+    vm.interpret(line);
+  }
+}
+
+static void eval_with_file(lvm::VM& vm, const std::string& fname) {
+  std::ifstream fp(fname);
+  if (fp.is_open()) {
+    std::stringstream ss;
+    ss << fp.rdbuf();
+
+    auto r = vm.interpret(ss.str());
+    if (r == lvm::InterpretRet::COMPILE_ERROR)
+      std::exit(65);
+    else if (r == lvm::InterpretRet::RUNTIME_ERROR)
+      std::exit(70);
+  }
+  else {
+    std::cerr << "could not open file \"" << fname << "\"" << std::endl;
+    std::exit(74);
+  }
+}
+
 int main(int argc, char* argv[]) {
+  (void)argc, (void)argv;
+
+#if defined(LVM_DEBUG_DIS)
   use_disassembler();
+#endif
+
+  lvm::Chunk chunk;
+  lvm::VM vm(chunk);
+
+  if (argc == 1) {
+    eval_with_repl(vm);
+  }
+  else if (argc == 2) {
+    eval_with_file(vm, argv[1]);
+  }
+  else {
+    std::cerr << "USAGE: " << argv[0] << " {FILE_PATH}" << std::endl;
+    std::exit(1);
+  }
 
   return 0;
 }

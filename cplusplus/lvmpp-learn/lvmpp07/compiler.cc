@@ -24,11 +24,13 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "scanner.hh"
 #include "compiler.hh"
 
 namespace lvm {
 
 void Compiler::compile(const std::string& source_bytes) {
+  Scanner s(source_bytes);
 }
 
 }

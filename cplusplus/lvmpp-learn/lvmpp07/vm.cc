@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include "chunk.hh"
+#include "compiler.hh"
 #include "vm.hh"
 
 namespace lvm {
@@ -40,6 +41,12 @@ VM::~VM(void) {
 InterpretRet VM::interpret(void) {
   ip_ = chunk_.get_codes();
   return run();
+}
+
+InterpretRet VM::interpret(const std::string& source_bytes) {
+  Compiler c;
+  c.compile(source_bytes);
+  return InterpretRet::OK;
 }
 
 InterpretRet VM::run(void) {

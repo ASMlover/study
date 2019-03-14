@@ -53,6 +53,7 @@ public:
   ~VM(void);
 
   InterpretRet interpret(void);
+  InterpretRet interpret(const std::string& source_bytes);
 };
 
 }
