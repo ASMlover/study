@@ -86,3 +86,8 @@ KEYWORD(THIS, "this")
 KEYWORD(TRUE, "true")
 KEYWORD(VAR, "var")
 KEYWORD(WHILE, "while")
+
+#undef KEYWORD
+#undef PUNCTUATOR
+#undef TOKEN
+#undef TOKDEF
