@@ -54,6 +54,7 @@ class Scanner : private UnCopyable {
   void skip_whitespace(void);
   Token make_string(void);
   Token make_numeric(void);
+  Token make_identifier(void);
 public:
   Scanner(const std::string& source_bytes);
 

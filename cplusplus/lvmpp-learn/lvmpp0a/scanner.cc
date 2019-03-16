@@ -42,6 +42,8 @@ Token Scanner::scan_token(void) {
 
   char c = advance();
 
+  if (is_alpha(c))
+    return make_identifier();
   if (std::isdigit(c))
     return make_numeric();
 
@@ -195,6 +197,15 @@ Token Scanner::make_numeric(void) {
   }
 
   return make_token(TokenKind::TK_NUMERICCONST);
+}
+
+Token Scanner::make_identifier(void) {
+  while (is_alnum(peek()))
+    advance();
+
+  auto literal = gen_literal(begpos_, curpos_);
+  auto kind = get_keyword_kind(literal.c_str());
+  return make_token(kind, literal);
 }
 
 }
