@@ -50,7 +50,10 @@ class Scanner : private UnCopyable {
 
   Token error_token(const std::string& message);
   Token make_token(TokenKind kind);
+  Token make_token(TokenKind kind, const std::string& literal);
   void skip_whitespace(void);
+  Token make_string(void);
+  Token make_numeric(void);
 public:
   Scanner(const std::string& source_bytes);
 

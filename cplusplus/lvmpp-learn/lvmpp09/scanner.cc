@@ -41,6 +41,10 @@ Token Scanner::scan_token(void) {
     return make_token(TokenKind::TK_EOF);
 
   char c = advance();
+
+  if (std::isdigit(c))
+    return make_numeric();
+
   switch (c) {
   case '(': return make_token(TokenKind::TK_LPAREN);
   case ')': return make_token(TokenKind::TK_RPAREN);
@@ -65,6 +69,7 @@ Token Scanner::scan_token(void) {
   case '>':
     return make_token(match('>') ?
         TokenKind::TK_GREATEREQUAL : TokenKind::TK_GREATER);
+  case '"': return make_string();
   }
 
   return error_token("unexpected character");
@@ -118,6 +123,10 @@ Token Scanner::make_token(TokenKind kind) {
   return Token(kind, gen_literal(begpos_, curpos_), lineno_);
 }
 
+Token Scanner::make_token(TokenKind kind, const std::string& literal) {
+  return Token(kind, literal, lineno_);
+}
+
 void Scanner::skip_whitespace(void) {
   for (;;) {
     char c = peek();
@@ -141,6 +150,51 @@ void Scanner::skip_whitespace(void) {
       return;
     }
   }
+}
+
+Token Scanner::make_string(void) {
+  std::string literal;
+  while (!is_end() && peek() != '"') {
+    char c = peek();
+    switch (c) {
+    case '\n': ++lineno_; break;
+    case '\\':
+      switch (peek_next()) {
+      case '"': c = '"'; advance(); break;
+      case '\\': c = '\\'; advance(); break;
+      case '%': c = '%'; advance(); break;
+      case '0': c = '\0'; advance(); break;
+      case 'a': c = '\a'; advance(); break;
+      case 'b': c = '\b'; advance(); break;
+      case 'f': c = '\f'; advance(); break;
+      case 'n': c = '\n'; advance(); break;
+      case 'r': c = '\r'; advance(); break;
+      case 't': c = '\t'; advance(); break;
+      case 'v': c = '\v'; advance(); break;
+      }
+      break;
+    }
+    literal.push_back(c);
+    advance();
+  }
+
+  if (is_end())
+    return error_token("unterminated string");
+
+  advance();
+  return make_token(TokenKind::TK_STRINGLITERAL, literal);
+}
+
+Token Scanner::make_numeric(void) {
+  while (std::isdigit(peek()))
+    advance();
+  if (peek() == '.' && std::isdigit(peek_next())) {
+    advance();
+    while (std::isdigit(peek()))
+      advance();
+  }
+
+  return make_token(TokenKind::TK_NUMERICCONST);
 }
 
 }
