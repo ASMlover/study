@@ -45,9 +45,12 @@ class Scanner : private UnCopyable {
   bool is_end(void) const;
   char advance(void);
   bool match(char expected);
+  char peek(void) const;
+  char peek_next(void) const;
 
   Token error_token(const std::string& message);
   Token make_token(TokenKind kind);
+  void skip_whitespace(void);
 public:
   Scanner(const std::string& source_bytes);
 
