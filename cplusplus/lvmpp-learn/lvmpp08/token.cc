@@ -24,6 +24,8 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iomanip>
+#include <sstream>
 #include <unordered_map>
 #include "token.hh"
 
@@ -53,6 +55,27 @@ TokenKind get_keyword_kind(const char* key) {
   if (kind_iter != kTokenKeywords.end())
     return kind_iter->second;
   return TokenKind::TK_IDENTIFIER;
+}
+
+std::string Token::stringify(void) const {
+  std::stringstream ss;
+
+  ss << std::left << std::setw(20) << get_token_name(kind_) << ":"
+    << std::right << std::setw(24) << literal_ << "|"
+    << std::right << std::setw(4) << lineno_;
+  return ss.str();
+}
+
+double Token::as_numeric(void) const {
+  return std::atof(literal_.c_str());
+}
+
+std::string Token::as_string(void) const {
+  return literal_;
+}
+
+std::ostream& operator<<(std::ostream& out, const Token& tok) {
+  return out << tok.stringify();
 }
 
 }

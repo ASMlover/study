@@ -41,4 +41,27 @@ enum class TokenKind {
 const char* get_token_name(TokenKind kind);
 TokenKind get_keyword_kind(const char* key);
 
+class Token : public Copyable {
+  TokenKind kind_{TokenKind::TK_ERROR};
+  std::string literal_;
+  int lineno_{1};
+public:
+  Token(void) {
+  }
+
+  Token(TokenKind kind, const std::string& literal, int lineno)
+    : kind_(kind), literal_(literal), lineno_(lineno) {
+  }
+
+  TokenKind get_kind(void) const { return kind_; }
+  std::string get_literal(void) const { return literal_; }
+  int get_lineno(void) const { return lineno_; }
+
+  std::string stringify(void) const;
+  double as_numeric(void) const;
+  std::string as_string(void) const;
+};
+
+std::ostream& operator<<(std::ostream& out, const Token& tok);
+
 }
