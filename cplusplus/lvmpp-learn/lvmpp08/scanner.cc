@@ -24,12 +24,44 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cctype>
 #include "scanner.hh"
 
 namespace lvm {
 
 Scanner::Scanner(const std::string& source_bytes)
   : source_bytes_(source_bytes) {
+}
+
+Token Scanner::scan_token(void) {
+  begpos_ = curpos_;
+  if (is_end())
+    return make_token(TokenKind::TK_EOF);
+  return error_token("unexpected character");
+}
+
+bool Scanner::is_alpha(char c) const {
+  return std::isalpha(c) || c == '_';
+}
+
+bool Scanner::is_alnum(char c) const {
+  return std::isalnum(c) || c == '_';
+}
+
+std::string Scanner::gen_literal(std::size_t begpos, std::size_t endpos) const {
+  return source_bytes_.substr(begpos, endpos - begpos);
+}
+
+bool Scanner::is_end(void) const {
+  return curpos_ >= source_bytes_.size();
+}
+
+Token Scanner::error_token(const std::string& message) {
+  return Token(TokenKind::TK_ERROR, message, lineno_);
+}
+
+Token Scanner::make_token(TokenKind kind) {
+  return Token(kind, gen_literal(begpos_, curpos_), lineno_);
 }
 
 }

@@ -28,16 +28,28 @@
 
 #include <string>
 #include "common.hh"
+#include "token.hh"
 
 namespace lvm {
 
 class Scanner : private UnCopyable {
   const std::string source_bytes_;
   std::size_t begpos_{};
-  std::size_t endpos_{};
+  std::size_t curpos_{};
   int lineno_{1};
+
+  bool is_alpha(char c) const;
+  bool is_alnum(char c) const;
+  std::string gen_literal(std::size_t begpos, std::size_t endpos) const;
+
+  bool is_end(void) const;
+
+  Token error_token(const std::string& message);
+  Token make_token(TokenKind kind);
 public:
   Scanner(const std::string& source_bytes);
+
+  Token scan_token(void);
 };
 
 }

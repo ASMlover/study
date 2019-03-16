@@ -24,6 +24,8 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstdio>
+#include <iostream>
 #include "scanner.hh"
 #include "compiler.hh"
 
@@ -31,6 +33,14 @@ namespace lvm {
 
 void Compiler::compile(const std::string& source_bytes) {
   Scanner s(source_bytes);
+
+  for (;;) {
+    Token t = s.scan_token();
+    std::cout << t << std::endl;
+
+    if (t.get_kind() == TokenKind::TK_EOF)
+      break;
+  }
 }
 
 }
