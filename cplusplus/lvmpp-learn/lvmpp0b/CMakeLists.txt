@@ -35,12 +35,16 @@ message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
 option(LVM_TRACE_EXECUTION "Enable/Disable disassembles instruction execution" ON)
 option(LVM_DEBUG_DIS "Enable/Disable debug use disassemble" OFF)
+option(LVM_TRACE_SCANNING "Enable/Disable scanning debug demo" OFF)
 
 if (LVM_TRACE_EXECUTION)
   add_compile_options(-DLVM_TRACE_EXECUTION)
 endif()
 if (LVM_DEBUG_DIS)
   add_compile_options(-DLVM_DEBUG_DIS)
+endif()
+if (LVM_TRACE_SCANNING)
+  add_compile_options(-DLVM_TRACE_SCANNING)
 endif()
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   add_definitions(
