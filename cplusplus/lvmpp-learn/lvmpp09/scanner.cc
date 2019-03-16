@@ -128,6 +128,15 @@ void Scanner::skip_whitespace(void) {
       advance(); break;
     case '\n':
       ++lineno_; advance(); break;
+    case '/':
+      if (peek_next() == '/') {
+        while (!is_end() && peek() != '\n')
+          advance();
+      }
+      else {
+        return;
+      }
+      break;
     default:
       return;
     }
