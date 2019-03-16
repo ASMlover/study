@@ -45,8 +45,16 @@ InterpretRet VM::interpret(void) {
 
 InterpretRet VM::interpret(const std::string& source_bytes) {
   Compiler c;
-  c.compile(source_bytes);
-  return InterpretRet::OK;
+  Chunk chunk;
+  if (!c.compile(chunk, source_bytes))
+    return InterpretRet::COMPILE_ERROR;
+
+  if (!chunk.is_valid())
+    return InterpretRet::OK;
+
+  chunk_ = chunk;
+  ip_ = chunk_.get_codes();
+  return run();
 }
 
 InterpretRet VM::run(void) {

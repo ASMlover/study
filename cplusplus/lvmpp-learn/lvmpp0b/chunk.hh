@@ -58,6 +58,7 @@ public:
   void disassemble(const std::string& name);
   int disassemble_instruction(int offset);
 
+  bool is_valid(void) const { return !codes_.empty(); }
   const OpCode* get_codes(void) const { return &codes_[0]; }
   OpCode get_code(int offset) const { return codes_[offset]; }
   Value get_constant(int constant) const { return constants_[constant]; }

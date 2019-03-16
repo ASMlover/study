@@ -27,20 +27,94 @@
 #include <cstdio>
 #include <iostream>
 #include "scanner.hh"
+#include "chunk.hh"
 #include "compiler.hh"
 
 namespace lvm {
 
-void Compiler::compile(const std::string& source_bytes) {
-  Scanner s(source_bytes);
+class Parser
+  : private UnCopyable, public std::enable_shared_from_this<Parser> {
+  Chunk& compiling_chunk_;
+  Scanner& scanner_;
+  Token prev_; // previous token
+  Token curr_; // current token
+  bool had_error_{};
+  bool panic_mode_{};
 
-  for (;;) {
-    Token t = s.scan_token();
-    std::cout << t << std::endl;
+  void error_at(const Token& tok, const std::string& message) {
+    if (panic_mode_)
+      return;
+    panic_mode_ = true;
 
-    if (t.get_kind() == TokenKind::TK_EOF)
-      break;
+    std::cerr << "line(" << tok.get_lineno() << "): ERROR: ";
+    auto kind = tok.get_kind();
+    if (kind == TokenKind::TK_EOF) {
+      std::cerr << "at end";
+    }
+    else if (kind == TokenKind::TK_ERROR) {
+      // do nothing
+    }
+    else {
+      std::cerr << "at " << tok.get_literal();
+    }
+    std::cerr << ": " << message << std::endl;
+
+    had_error_ = true;
   }
+
+  void error_at_current(const std::string& message) {
+    error_at(curr_, message);
+  }
+
+  void error(const std::string& message) {
+    error_at(prev_, message);
+  }
+public:
+  Parser(Chunk& c, Scanner& s) : compiling_chunk_(c), scanner_(s) {}
+  bool had_error(void) const { return had_error_; }
+
+  void advance(void) {
+    prev_ = curr_;
+
+    for (;;) {
+      curr_ = scanner_.scan_token();
+      if (curr_.get_kind() != TokenKind::TK_ERROR)
+        break;
+
+      error_at_current(curr_.get_literal());
+    }
+  }
+
+  void consume(TokenKind kind, const std::string& message) {
+    if (curr_.get_kind() == kind)
+      advance();
+    else
+      error_at_current(message);
+  }
+};
+
+bool Compiler::compile(Chunk& chunk, const std::string& source_bytes) {
+#if defined(LVM_TRACE_SCANNING)
+  {
+    Scanner s(source_bytes);
+    for (;;) {
+      Token t = s.scan_token();
+      std::cout << t << std::endl;
+
+      if (t.get_kind() == TokenKind::TK_EOF)
+        break;
+    }
+  }
+#endif
+
+  Scanner scanner(source_bytes);
+  auto p = std::make_shared<Parser>(chunk, scanner);
+
+  p->advance();
+  // p->expression();
+  p->consume(TokenKind::TK_EOF, "expect end of expression");
+
+  return !p->had_error();
 }
 
 }

@@ -26,14 +26,17 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <memory>
 #include <string>
 #include "common.hh"
 
 namespace lvm {
 
+class Chunk;
+
 class Compiler : private UnCopyable {
 public:
-  void compile(const std::string& source_bytes);
+  bool compile(Chunk& chunk, const std::string& source_bytes);
 };
 
 }
