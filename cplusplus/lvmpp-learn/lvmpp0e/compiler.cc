@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cstdio>
+#include <functional>
 #include <iostream>
 #include "scanner.hh"
 #include "chunk.hh"
@@ -44,6 +45,15 @@ enum class Precedence {
   UNARY, // ! - +
   CALL, // . () []
   PRIMARY
+};
+
+class Parser;
+using ParserPtr = std::shared_ptr<Parser>;
+
+struct ParseRule {
+  std::function<void (const ParserPtr&)> prefix;
+  std::function<void (const ParserPtr&)> infix;
+  Precedence precedence;
 };
 
 class Parser
@@ -115,7 +125,73 @@ class Parser
     emit_codes(OpCode::OP_CONSTANT, make_constant(v));
   }
 
+  const ParseRule& get_rule(TokenKind kind) const {
+    static auto numeric_fn = [](const ParserPtr& p) { p->numeric(); };
+    static auto binary_fn = [](const ParserPtr& p) { p->binary(); };
+    static auto unary_fn = [](const ParserPtr& p) { p->unary(); };
+    static auto grouping_fn = [](const ParserPtr& p) { p->grouping(); };
+
+    static const ParseRule _rules[] = {
+      {nullptr, nullptr, Precedence::NONE}, // TK_ERROR
+      {nullptr, nullptr, Precedence::NONE}, // TK_EOF
+      {nullptr, nullptr, Precedence::NONE}, // TK_IDENTIFIER
+      {numeric_fn, nullptr, Precedence::NONE}, // TK_NUMERICCONST
+      {nullptr, nullptr, Precedence::NONE}, // TK_STRINGLITERAL
+      {grouping_fn, nullptr, Precedence::CALL}, // TK_LPAREN
+      {nullptr, nullptr, Precedence::NONE}, // TK_RPAREN
+      {nullptr, nullptr, Precedence::NONE}, // TK_LBRACE
+      {nullptr, nullptr, Precedence::NONE}, // TK_RBRACE
+      {nullptr, nullptr, Precedence::NONE}, // TK_COMMA
+      {nullptr, nullptr, Precedence::CALL}, // TK_DOT
+      {nullptr, nullptr, Precedence::NONE}, // TK_SEMI
+      {nullptr, binary_fn, Precedence::TERM}, // TK_PLUS
+      {unary_fn, binary_fn, Precedence::TERM}, // TK_MINUS
+      {nullptr, binary_fn, Precedence::FACTOR}, // TK_STAR
+      {nullptr, binary_fn, Precedence::FACTOR}, // TK_SLASH
+      {nullptr, nullptr, Precedence::NONE}, // TK_BANG
+      {nullptr, nullptr, Precedence::EQUALITY}, // TK_BANGEQUAL
+      {nullptr, nullptr, Precedence::NONE}, // TK_EQUAL
+      {nullptr, nullptr, Precedence::EQUALITY}, // TK_EQUALEQUAL
+      {nullptr, nullptr, Precedence::COMPARISON}, // TK_GREATER
+      {nullptr, nullptr, Precedence::COMPARISON}, // TK_GREATEREQUAL
+      {nullptr, nullptr, Precedence::COMPARISON}, // TK_LESS
+      {nullptr, nullptr, Precedence::COMPARISON}, // TK_LESSEQUAL
+      {nullptr, nullptr, Precedence::AND}, // KW_AND
+      {nullptr, nullptr, Precedence::NONE}, // KW_CLASS
+      {nullptr, nullptr, Precedence::NONE}, // KW_ELSE
+      {nullptr, nullptr, Precedence::NONE}, // KW_FALSE
+      {nullptr, nullptr, Precedence::NONE}, // KW_FOR
+      {nullptr, nullptr, Precedence::NONE}, // KW_FUN
+      {nullptr, nullptr, Precedence::NONE}, // KW_IF
+      {nullptr, nullptr, Precedence::NONE}, // KW_NIL
+      {nullptr, nullptr, Precedence::OR}, // KW_OR
+      {nullptr, nullptr, Precedence::NONE}, // KW_PRINT
+      {nullptr, nullptr, Precedence::NONE}, // KW_RETURN
+      {nullptr, nullptr, Precedence::NONE}, // KW_SUPER
+      {nullptr, nullptr, Precedence::NONE}, // KW_THIS
+      {nullptr, nullptr, Precedence::NONE}, // KW_TRUE
+      {nullptr, nullptr, Precedence::NONE}, // KW_VAR
+      {nullptr, nullptr, Precedence::NONE}, // KW_WHILE
+    };
+
+    return _rules[EnumUtil<TokenKind>::as_int(kind)];
+  }
+
   void parse_precedence(Precedence prec) {
+    advance();
+
+    auto prefix_rule = get_rule(prev_.get_kind()).prefix;
+    if (!prefix_rule) {
+      error("expect expression");
+      return;
+    }
+    prefix_rule(shared_from_this());
+
+    while (prec <= get_rule(curr_.get_kind()).precedence) {
+      advance();
+      auto infix_rule = get_rule(prev_.get_kind()).infix;
+      infix_rule(shared_from_this());
+    }
   }
 public:
   Parser(Chunk& c, Scanner& s) : compiling_chunk_(c), scanner_(s) {}
@@ -142,6 +218,25 @@ public:
 
   void end_compiler(void) {
     emit_return();
+  }
+
+  void binary(void) {
+    // remember the operator
+    auto oper_kind = prev_.get_kind();
+
+    // compile the right operand
+    const auto& rule = get_rule(oper_kind);
+    parse_precedence(EnumUtil<Precedence>::as_enum(
+        EnumUtil<Precedence>::as_int(rule.precedence) + 1));
+
+    // emit the operator instruction
+    switch (oper_kind) {
+    case TokenKind::TK_PLUS: emit_code(OpCode::OP_ADD); break;
+    case TokenKind::TK_MINUS: emit_code(OpCode::OP_SUB); break;
+    case TokenKind::TK_STAR: emit_code(OpCode::OP_MUL); break;
+    case TokenKind::TK_SLASH: emit_code(OpCode::OP_DIV); break;
+    default: return; // unreachable
+    }
   }
 
   void expression(void) {
