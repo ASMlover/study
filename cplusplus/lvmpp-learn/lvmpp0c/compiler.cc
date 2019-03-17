@@ -69,6 +69,24 @@ class Parser
   void error(const std::string& message) {
     error_at(prev_, message);
   }
+
+  void emit_code(OpCode code) {
+    compiling_chunk_.write(code, prev_.get_lineno());
+  }
+
+  void emit_codes(OpCode code1, OpCode code2) {
+    emit_code(code1);
+    emit_code(code2);
+  }
+
+  void emit_codes(const std::initializer_list<OpCode>& codes) {
+    for (auto c : codes)
+      emit_code(c);
+  }
+
+  void emit_return(void) {
+    emit_code(OpCode::OP_RETURN);
+  }
 public:
   Parser(Chunk& c, Scanner& s) : compiling_chunk_(c), scanner_(s) {}
   bool had_error(void) const { return had_error_; }
@@ -91,6 +109,13 @@ public:
     else
       error_at_current(message);
   }
+
+  void end_compiler(void) {
+    emit_return();
+  }
+
+  void expression(void) {
+  }
 };
 
 bool Compiler::compile(Chunk& chunk, const std::string& source_bytes) {
@@ -111,8 +136,9 @@ bool Compiler::compile(Chunk& chunk, const std::string& source_bytes) {
   auto p = std::make_shared<Parser>(chunk, scanner);
 
   p->advance();
-  // p->expression();
+  p->expression();
   p->consume(TokenKind::TK_EOF, "expect end of expression");
+  p->end_compiler();
 
   return !p->had_error();
 }
