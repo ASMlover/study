@@ -32,6 +32,20 @@
 
 namespace lvm {
 
+enum class Precedence {
+  NONE,
+  ASSIGNMENT, // =
+  OR, // or
+  AND, // and
+  EQUALITY, // == !=
+  COMPARISON, // < > <= >=
+  TERM, // + -
+  FACTOR, // * /
+  UNARY, // ! - +
+  CALL, // . () []
+  PRIMARY
+};
+
 class Parser
   : private UnCopyable, public std::enable_shared_from_this<Parser> {
   Chunk& compiling_chunk_;
@@ -70,6 +84,15 @@ class Parser
     error_at(prev_, message);
   }
 
+  OpCode make_constant(const Value& value) {
+    auto constant = compiling_chunk_.add_constant(value);
+    if (static_cast<std::uint8_t>(constant) > UINT8_MAX) {
+      error("too many constants in one chunk");
+      return EnumUtil<OpCode>::as_enum(0);
+    }
+    return constant;
+  }
+
   void emit_code(OpCode code) {
     compiling_chunk_.write(code, prev_.get_lineno());
   }
@@ -86,6 +109,13 @@ class Parser
 
   void emit_return(void) {
     emit_code(OpCode::OP_RETURN);
+  }
+
+  void emit_constant(const Value& v) {
+    emit_codes(OpCode::OP_CONSTANT, make_constant(v));
+  }
+
+  void parse_precedence(Precedence prec) {
   }
 public:
   Parser(Chunk& c, Scanner& s) : compiling_chunk_(c), scanner_(s) {}
@@ -115,6 +145,26 @@ public:
   }
 
   void expression(void) {
+    parse_precedence(Precedence::ASSIGNMENT);
+  }
+
+  void numeric(void) {
+    emit_constant(prev_.as_numeric());
+  }
+
+  void grouping(void) {
+    expression();
+    consume(TokenKind::TK_RPAREN, "expect `)` after expression");
+  }
+
+  void unary(void) {
+    auto oper_kind = prev_.get_kind();
+    parse_precedence(Precedence::UNARY);
+    switch (oper_kind) {
+    case TokenKind::TK_MINUS: emit_code(OpCode::OP_NEGATE); break;
+    default:
+      return; // unreachable
+    }
   }
 };
 
