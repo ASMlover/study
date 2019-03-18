@@ -218,6 +218,10 @@ public:
 
   void end_compiler(void) {
     emit_return();
+#if defined(LVM_TRACE_CODE)
+    if (!had_error())
+      compiling_chunk_.disassemble("code");
+#endif
   }
 
   void binary(void) {
