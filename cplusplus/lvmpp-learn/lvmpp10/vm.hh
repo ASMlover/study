@@ -48,6 +48,9 @@ class VM : private UnCopyable {
   void reset_stack(void);
   void push(const Value& value);
   Value pop(void);
+  Value peek(int distance = 0) const;
+
+  void runtime_error(const char* format, ...);
 public:
   VM(Chunk& c);
   ~VM(void);

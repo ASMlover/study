@@ -24,6 +24,8 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstdarg>
+#include <cstdio>
 #include <iostream>
 #include "chunk.hh"
 #include "compiler.hh"
@@ -66,8 +68,12 @@ InterpretRet VM::run(void) {
   };
 
 #define BINARY_OP(op) do {\
-  double b = pop();\
-  double a = pop();\
+  if (!peek(0).is_numeric() || !peek(1).is_numeric()) {\
+    runtime_error("operands must be numerics");\
+    return InterpretRet::RUNTIME_ERROR;\
+  }\
+  Value b = pop();\
+  Value a = pop();\
   push(a op b);\
 } while (false)
 
@@ -88,7 +94,12 @@ InterpretRet VM::run(void) {
     case OpCode::OP_SUB: BINARY_OP(-); break;
     case OpCode::OP_MUL: BINARY_OP(*); break;
     case OpCode::OP_DIV: BINARY_OP(/); break;
-    case OpCode::OP_NEGATE: push(-pop()); break;
+    case OpCode::OP_NEGATE:
+      if (!peek().is_numeric()) {
+        runtime_error("operand must be a numeric");
+        return InterpretRet::RUNTIME_ERROR;
+      }
+      push(-pop()); break;
     case OpCode::OP_RETURN:
       {
         std::cout << pop() << std::endl;
@@ -113,6 +124,21 @@ Value VM::pop(void) {
   auto value = stack_.back();
   stack_.pop_back();
   return value;
+}
+
+Value VM::peek(int distance) const {
+  return stack_[stack_.size() - 1 - distance];
+}
+
+void VM::runtime_error(const char* format, ...) {
+  va_list ap;
+  va_start(ap, format);
+  std::vfprintf(stderr, format, ap);
+  va_end(ap);
+  std::cerr << std::endl;
+
+  int offset = static_cast<int>(ip_ - chunk_.get_codes());
+  std::cerr << "line(" << chunk_.get_line(offset) << ") in script" << std::endl;
 }
 
 }
