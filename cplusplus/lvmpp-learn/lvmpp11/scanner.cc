@@ -66,10 +66,10 @@ Token Scanner::scan_token(void) {
     return make_token(match('=') ?
         TokenKind::TK_EQUALEQUAL : TokenKind::TK_EQUAL);
   case '<':
-    return make_token(match('<') ?
+    return make_token(match('=') ?
         TokenKind::TK_LESSEQUAL : TokenKind::TK_LESS);
   case '>':
-    return make_token(match('>') ?
+    return make_token(match('=') ?
         TokenKind::TK_GREATEREQUAL : TokenKind::TK_GREATER);
   case '"': return make_string();
   }
