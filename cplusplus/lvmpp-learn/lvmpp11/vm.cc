@@ -94,10 +94,27 @@ InterpretRet VM::run(void) {
     case OpCode::OP_NIL: push(nullptr); break;
     case OpCode::OP_TRUE: push(true); break;
     case OpCode::OP_FALSE: push(false); break;
+    case OpCode::OP_EQ:
+      {
+        Value b = pop();
+        Value a = pop();
+        push(a == b);
+      } break;
+    case OpCode::OP_NE:
+      {
+        Value b = pop();
+        Value a = pop();
+        push(a != b);
+      } break;
+    case OpCode::OP_GT: BINARY_OP(>); break;
+    case OpCode::OP_GE: BINARY_OP(>=); break;
+    case OpCode::OP_LT: BINARY_OP(<); break;
+    case OpCode::OP_LE: BINARY_OP(<=); break;
     case OpCode::OP_ADD: BINARY_OP(+); break;
     case OpCode::OP_SUB: BINARY_OP(-); break;
     case OpCode::OP_MUL: BINARY_OP(*); break;
     case OpCode::OP_DIV: BINARY_OP(/); break;
+    case OpCode::OP_NOT: push(!pop()); break;
     case OpCode::OP_NEGATE:
       if (!peek().is_numeric()) {
         runtime_error("operand must be a numeric");

@@ -38,10 +38,17 @@ enum class OpCode : int {
   OP_NIL, // nil
   OP_TRUE, // true
   OP_FALSE, // false
+  OP_EQ, // logical ==
+  OP_NE, // logical !=
+  OP_GT, // logical >
+  OP_GE, // logical >=
+  OP_LT, // logical <
+  OP_LE, // logical <=
   OP_ADD, // +
   OP_SUB, // -
   OP_MUL, // *
   OP_DIV, // /
+  OP_NOT, // !
   OP_NEGATE, // -
   OP_RETURN
 };

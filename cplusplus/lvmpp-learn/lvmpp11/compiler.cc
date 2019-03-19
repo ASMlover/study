@@ -149,14 +149,14 @@ class Parser
       {unary_fn, binary_fn, Precedence::TERM}, // TK_MINUS
       {nullptr, binary_fn, Precedence::FACTOR}, // TK_STAR
       {nullptr, binary_fn, Precedence::FACTOR}, // TK_SLASH
-      {nullptr, nullptr, Precedence::NONE}, // TK_BANG
-      {nullptr, nullptr, Precedence::EQUALITY}, // TK_BANGEQUAL
+      {unary_fn, nullptr, Precedence::NONE}, // TK_BANG
+      {nullptr, binary_fn, Precedence::EQUALITY}, // TK_BANGEQUAL
       {nullptr, nullptr, Precedence::NONE}, // TK_EQUAL
-      {nullptr, nullptr, Precedence::EQUALITY}, // TK_EQUALEQUAL
-      {nullptr, nullptr, Precedence::COMPARISON}, // TK_GREATER
-      {nullptr, nullptr, Precedence::COMPARISON}, // TK_GREATEREQUAL
-      {nullptr, nullptr, Precedence::COMPARISON}, // TK_LESS
-      {nullptr, nullptr, Precedence::COMPARISON}, // TK_LESSEQUAL
+      {nullptr, binary_fn, Precedence::EQUALITY}, // TK_EQUALEQUAL
+      {nullptr, binary_fn, Precedence::COMPARISON}, // TK_GREATER
+      {nullptr, binary_fn, Precedence::COMPARISON}, // TK_GREATEREQUAL
+      {nullptr, binary_fn, Precedence::COMPARISON}, // TK_LESS
+      {nullptr, binary_fn, Precedence::COMPARISON}, // TK_LESSEQUAL
       {nullptr, nullptr, Precedence::AND}, // KW_AND
       {nullptr, nullptr, Precedence::NONE}, // KW_CLASS
       {nullptr, nullptr, Precedence::NONE}, // KW_ELSE
@@ -236,6 +236,12 @@ public:
 
     // emit the operator instruction
     switch (oper_kind) {
+    case TokenKind::TK_EQUALEQUAL: emit_code(OpCode::OP_EQ); break;
+    case TokenKind::TK_BANGEQUAL: emit_code(OpCode::OP_NE); break;
+    case TokenKind::TK_GREATER: emit_code(OpCode::OP_GT); break;
+    case TokenKind::TK_GREATEREQUAL: emit_code(OpCode::OP_GE); break;
+    case TokenKind::TK_LESS: emit_code(OpCode::OP_LT); break;
+    case TokenKind::TK_LESSEQUAL: emit_code(OpCode::OP_LE); break;
     case TokenKind::TK_PLUS: emit_code(OpCode::OP_ADD); break;
     case TokenKind::TK_MINUS: emit_code(OpCode::OP_SUB); break;
     case TokenKind::TK_STAR: emit_code(OpCode::OP_MUL); break;
@@ -270,9 +276,9 @@ public:
     auto oper_kind = prev_.get_kind();
     parse_precedence(Precedence::UNARY);
     switch (oper_kind) {
+    case TokenKind::TK_BANG: emit_code(OpCode::OP_NOT); break;
     case TokenKind::TK_MINUS: emit_code(OpCode::OP_NEGATE); break;
-    default:
-      return; // unreachable
+    default: return; // unreachable
     }
   }
 };
