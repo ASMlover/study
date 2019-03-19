@@ -48,6 +48,7 @@ InterpretRet VM::interpret(void) {
 InterpretRet VM::interpret(const std::string& source_bytes) {
   Compiler c;
   Chunk chunk;
+  stack_.clear();
   if (!c.compile(chunk, source_bytes))
     return InterpretRet::COMPILE_ERROR;
 
@@ -90,6 +91,9 @@ InterpretRet VM::run(void) {
     OpCode instruction = _rdbyte();
     switch (instruction) {
     case OpCode::OP_CONSTANT: push(_rdconstant()); break;
+    case OpCode::OP_NIL: push(nullptr); break;
+    case OpCode::OP_TRUE: push(true); break;
+    case OpCode::OP_FALSE: push(false); break;
     case OpCode::OP_ADD: BINARY_OP(+); break;
     case OpCode::OP_SUB: BINARY_OP(-); break;
     case OpCode::OP_MUL: BINARY_OP(*); break;

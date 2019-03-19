@@ -35,6 +35,9 @@ namespace lvm {
 
 enum class OpCode : int {
   OP_CONSTANT,
+  OP_NIL, // nil
+  OP_TRUE, // true
+  OP_FALSE, // false
   OP_ADD, // +
   OP_SUB, // -
   OP_MUL, // *

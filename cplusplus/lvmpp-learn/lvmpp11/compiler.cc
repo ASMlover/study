@@ -127,6 +127,7 @@ class Parser
 
   const ParseRule& get_rule(TokenKind kind) const {
     static auto numeric_fn = [](const ParserPtr& p) { p->numeric(); };
+    static auto literal_fn = [](const ParserPtr& p) { p->literal(); };
     static auto binary_fn = [](const ParserPtr& p) { p->binary(); };
     static auto unary_fn = [](const ParserPtr& p) { p->unary(); };
     static auto grouping_fn = [](const ParserPtr& p) { p->grouping(); };
@@ -159,17 +160,17 @@ class Parser
       {nullptr, nullptr, Precedence::AND}, // KW_AND
       {nullptr, nullptr, Precedence::NONE}, // KW_CLASS
       {nullptr, nullptr, Precedence::NONE}, // KW_ELSE
-      {nullptr, nullptr, Precedence::NONE}, // KW_FALSE
+      {literal_fn, nullptr, Precedence::NONE}, // KW_FALSE
       {nullptr, nullptr, Precedence::NONE}, // KW_FOR
       {nullptr, nullptr, Precedence::NONE}, // KW_FUN
       {nullptr, nullptr, Precedence::NONE}, // KW_IF
-      {nullptr, nullptr, Precedence::NONE}, // KW_NIL
+      {literal_fn, nullptr, Precedence::NONE}, // KW_NIL
       {nullptr, nullptr, Precedence::OR}, // KW_OR
       {nullptr, nullptr, Precedence::NONE}, // KW_PRINT
       {nullptr, nullptr, Precedence::NONE}, // KW_RETURN
       {nullptr, nullptr, Precedence::NONE}, // KW_SUPER
       {nullptr, nullptr, Precedence::NONE}, // KW_THIS
-      {nullptr, nullptr, Precedence::NONE}, // KW_TRUE
+      {literal_fn, nullptr, Precedence::NONE}, // KW_TRUE
       {nullptr, nullptr, Precedence::NONE}, // KW_VAR
       {nullptr, nullptr, Precedence::NONE}, // KW_WHILE
     };
@@ -239,6 +240,15 @@ public:
     case TokenKind::TK_MINUS: emit_code(OpCode::OP_SUB); break;
     case TokenKind::TK_STAR: emit_code(OpCode::OP_MUL); break;
     case TokenKind::TK_SLASH: emit_code(OpCode::OP_DIV); break;
+    default: return; // unreachable
+    }
+  }
+
+  void literal(void) {
+    switch (prev_.get_kind()) {
+    case TokenKind::KW_NIL: emit_code(OpCode::OP_NIL); break;
+    case TokenKind::KW_TRUE: emit_code(OpCode::OP_TRUE); break;
+    case TokenKind::KW_FALSE: emit_code(OpCode::OP_FALSE); break;
     default: return; // unreachable
     }
   }
