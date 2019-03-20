@@ -166,6 +166,14 @@ public:
   bool operator<(const Value& r) const { return as_numeric() < r.as_numeric(); }
   bool operator<=(const Value& r) const { return as_numeric() <= r.as_numeric(); }
 
+  bool is_object(ObjType expected) const noexcept {
+    return is_object() && as_object()->get_type() == expected;
+  }
+
+  bool is_string(void) const noexcept {
+    return is_object(ObjType::STRING);
+  }
+
   bool is_equal(const Value& r) const;
   bool is_truthy(void) const;
   std::string stringify(void) const;
