@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <ostream>
 #include "common.hh"
+#include "object.hh"
 
 namespace lvm {
 
@@ -36,6 +37,7 @@ enum class ValueType {
   NIL,
   BOOLEAN,
   NUMERIC,
+  OBJECT
 };
 
 class Value : public Copyable {
@@ -43,6 +45,7 @@ class Value : public Copyable {
   union {
     bool boolean;
     double numeric;
+    Object* object;
   } as_;
 
   template <typename T> inline double decimal_cast(T x) noexcept {
@@ -88,6 +91,7 @@ public:
 #endif
   Value(float f) noexcept : type_(ValueType::NUMERIC) { as_.numeric = decimal_cast(f); }
   Value(double d) noexcept : type_(ValueType::NUMERIC) { as_.numeric = d; }
+  Value(Object* o) noexcept : type_(ValueType::OBJECT) { as_.object = o; }
   Value(const Value& r) : type_(r.type_) { as_.numeric = r.as_.numeric; }
   Value(Value&& r) : type_(std::move(r.type_)) { as_.numeric = std::move(r.as_.numeric); }
 
@@ -107,11 +111,17 @@ public:
 #endif
   Value& operator=(float f) noexcept { return set_numeric(f); }
   Value& operator=(double d) noexcept { return type_ = ValueType::NUMERIC, as_.numeric = d, *this; }
+  Value& operator=(Object* o) noexcept { return type_ = ValueType::OBJECT, as_.object = o, *this; }
 
   Value& operator=(const Value& r) noexcept {
     if (this != &r) {
       type_ = r.type_;
-      as_.numeric = r.as_.numeric;
+      switch (type_) {
+      case ValueType::BOOLEAN: as_.boolean = r.as_.boolean; break;
+      case ValueType::NUMERIC: as_.numeric = r.as_.numeric; break;
+      case ValueType::OBJECT: as_.object = r.as_.object; break;
+      default: as_.numeric = r.as_.numeric; break;
+      }
     }
     return *this;
   }
@@ -119,7 +129,12 @@ public:
   Value& operator=(Value&& r) noexcept {
     if (this != &r) {
       type_ = std::move(r.type_);
-      as_.numeric = std::move(r.as_.numeric);
+      switch (type_) {
+      case ValueType::BOOLEAN: as_.boolean = std::move(r.as_.boolean); break;
+      case ValueType::NUMERIC: as_.numeric = std::move(r.as_.numeric); break;
+      case ValueType::OBJECT: as_.object = std::move(r.as_.object); break;
+      default: as_.numeric = std::move(r.as_.numeric); break;
+      }
     }
     return *this;
   }
@@ -127,12 +142,15 @@ public:
   bool is_nil(void) const noexcept { return type_ == ValueType::NIL; }
   bool is_boolean(void) const noexcept { return type_ == ValueType::BOOLEAN; }
   bool is_numeric(void) const noexcept { return type_ == ValueType::NUMERIC; }
+  bool is_object(void) const noexcept { return type_ == ValueType::OBJECT; }
 
   bool as_boolean(void) const noexcept { return as_.boolean; }
   double as_numeric(void) const noexcept { return as_.numeric; }
+  Object* as_object(void) const noexcept { return as_.object; }
 
   operator bool(void) const noexcept { return as_boolean(); }
   operator double(void) const noexcept { return as_numeric(); }
+  operator Object*(void) const noexcept { return as_object(); }
 
   Value operator-(void) const noexcept { return -as_numeric(); }
   Value operator!(void) const noexcept { return !is_truthy(); }
