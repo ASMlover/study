@@ -35,6 +35,8 @@ enum class ObjType {
   STRING
 };
 
+class StringObject;
+
 class Object : public Copyable {
   ObjType type_;
 public:
@@ -47,9 +49,44 @@ public:
   virtual bool is_equal(const Object* r) const { return this == r; }
   virtual bool is_truthy(void) const { return false; }
   virtual std::string stringify(void) const { return "object"; }
+
+  StringObject* as_string(void) const;
+  const char* as_cstring(void) const;
 };
 
 class StringObject : public Object {
+  int length_{};
+  char* chars_{};
+
+  void release_object(void);
+public:
+  StringObject(void);
+  ~StringObject(void);
+
+  StringObject(const char* s);
+  StringObject(const char* s, int n);
+  StringObject(const std::string& s);
+  StringObject(const StringObject& s);
+  StringObject(StringObject&& s);
+
+  StringObject& operator=(const std::string& s);
+  StringObject& operator=(const StringObject& s);
+  StringObject& operator=(StringObject&& s);
+
+  void reset(void);
+  void reset(const char* s);
+  void reset(const char* s, int n);
+  void reset(const std::string& s);
+  void reset(const StringObject& s);
+  void reset(StringObject&& s);
+
+  virtual bool is_equal(const Object* r) const override;
+  virtual bool is_truthy(void) const override;
+  virtual std::string stringify(void) const override;
+
+  int length(void) const { return length_; }
+  const char* data(void) const { return chars_; }
+  const char* c_str(void) const { return chars_; }
 };
 
 }
