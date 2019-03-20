@@ -41,15 +41,19 @@ const char* Object::as_cstring(void) const {
   return as_string()->c_str();
 }
 
+StringObject* Object::create_string(const std::string& s) {
+  return new StringObject(s);
+}
+
 StringObject::StringObject(void)
   : Object(ObjType::STRING) {
 }
 
 StringObject::~StringObject(void) {
-  release_object();
+  release_string();
 }
 
-void StringObject::release_object(void) {
+void StringObject::release_string(void) {
   if (chars_ != nullptr) {
     delete [] chars_;
     chars_ = nullptr;
@@ -114,7 +118,7 @@ StringObject& StringObject::operator=(const StringObject& s) {
 
 StringObject& StringObject::operator=(StringObject&& s) {
   if (this != &s) {
-    release_object();
+    release_string();
 
     std::swap(length_, s.length_);
     std::swap(chars_, s.chars_);
@@ -123,7 +127,7 @@ StringObject& StringObject::operator=(StringObject&& s) {
 }
 
 void StringObject::reset(void) {
-  release_object();
+  release_string();
 }
 
 void StringObject::reset(const char* s) {
@@ -131,7 +135,7 @@ void StringObject::reset(const char* s) {
 }
 
 void StringObject::reset(const char* s, int n) {
-  release_object();
+  release_string();
 
   length_ = n;
   chars_ = new char[length_ + 1];
@@ -157,7 +161,7 @@ void StringObject::reset(const StringObject& s) {
 
 void StringObject::reset(StringObject&& s) {
   if (this != &s) {
-    release_object();
+    release_string();
 
     std::swap(length_, s.length_);
     std::swap(chars_, s.chars_);

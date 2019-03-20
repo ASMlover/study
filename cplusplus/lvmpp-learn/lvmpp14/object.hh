@@ -52,13 +52,15 @@ public:
 
   StringObject* as_string(void) const;
   const char* as_cstring(void) const;
+
+  static StringObject* create_string(const std::string& s);
 };
 
 class StringObject : public Object {
   int length_{};
   char* chars_{};
 
-  void release_object(void);
+  void release_string(void);
 public:
   StringObject(void);
   ~StringObject(void);
