@@ -62,7 +62,6 @@ int main(int argc, char* argv[]) {
     return -1;
   }
 
-  // ::glViewport(0, 0, kDefWidth, kDefHeight);
   ::glfwSetFramebufferSizeCallback(window,
       [](GLFWwindow*, int w, int h) { ::glViewport(0, 0, w, h); });
 
