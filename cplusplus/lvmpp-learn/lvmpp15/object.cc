@@ -42,7 +42,32 @@ const char* Object::as_cstring(void) const {
 }
 
 StringObject* Object::create_string(const std::string& s) {
-  return new StringObject(s);
+  return create_string(s.data(), static_cast<int>(s.size()));
+}
+
+StringObject* Object::create_string(const char* s, int n, bool placement) {
+  StringObject* strobj;
+  if (placement) {
+    strobj = new StringObject();
+    strobj->init_from_string(s, n);
+  }
+  else {
+    strobj = new StringObject(s, n);
+  }
+  return strobj;
+}
+
+StringObject* Object::concat_string(const Object* x, const Object* y) {
+  auto* a = x->as_string();
+  auto* b = y->as_string();
+
+  int length = a->length() + b->length();
+  char* chars = new char[length + 1];
+  std::memcpy(chars, a->c_str(), a->length());
+  std::memcpy(chars + a->length(), b->c_str(), b->length());
+  chars[length] = 0;
+
+  return create_string(chars, length);
 }
 
 StringObject::StringObject(void)
@@ -166,6 +191,24 @@ void StringObject::reset(StringObject&& s) {
     std::swap(length_, s.length_);
     std::swap(chars_, s.chars_);
   }
+}
+
+void StringObject::init_from_string(const char* s) {
+  init_from_string(s, static_cast<int>(std::strlen(s)));
+}
+
+void StringObject::init_from_string(const char* s, int n) {
+  if (chars_ != s || length_ != n) {
+    if (chars_ != nullptr)
+      delete [] chars_;
+
+    length_ = n;
+    chars_ = const_cast<char*>(s);
+  }
+}
+
+void StringObject::init_from_string(const std::string& s) {
+  init_from_string(s.data(), static_cast<int>(s.size()));
 }
 
 bool StringObject::is_equal(const Object* r) const {

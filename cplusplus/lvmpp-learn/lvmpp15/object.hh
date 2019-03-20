@@ -54,6 +54,8 @@ public:
   const char* as_cstring(void) const;
 
   static StringObject* create_string(const std::string& s);
+  static StringObject* create_string(const char* s, int n, bool placement = false);
+  static StringObject* concat_string(const Object* x, const Object* y);
 };
 
 class StringObject : public Object {
@@ -81,6 +83,10 @@ public:
   void reset(const std::string& s);
   void reset(const StringObject& s);
   void reset(StringObject&& s);
+
+  void init_from_string(const char* s);
+  void init_from_string(const char* s, int n);
+  void init_from_string(const std::string& s);
 
   virtual bool is_equal(const Object* r) const override;
   virtual bool is_truthy(void) const override;
