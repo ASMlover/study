@@ -110,7 +110,23 @@ InterpretRet VM::run(void) {
     case OpCode::OP_GE: BINARY_OP(>=); break;
     case OpCode::OP_LT: BINARY_OP(<); break;
     case OpCode::OP_LE: BINARY_OP(<=); break;
-    case OpCode::OP_ADD: BINARY_OP(+); break;
+    case OpCode::OP_ADD:
+      {
+        if (peek(0).is_string() && peek(1).is_string()) {
+          Value b = pop();
+          Value a = pop();
+          push(Object::concat_string(a.as_object(), b.as_object()));
+        }
+        else if (peek(0).is_numeric() && peek(1).is_numeric()) {
+          Value b = pop();
+          Value a = pop();
+          push(a + b);
+        }
+        else {
+          runtime_error("operands must be two numerics and two strings");
+          return InterpretRet::RUNTIME_ERROR;
+        }
+      } break;
     case OpCode::OP_SUB: BINARY_OP(-); break;
     case OpCode::OP_MUL: BINARY_OP(*); break;
     case OpCode::OP_DIV: BINARY_OP(/); break;
