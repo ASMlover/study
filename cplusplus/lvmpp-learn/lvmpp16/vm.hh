@@ -28,6 +28,7 @@
 
 #include <vector>
 #include "common.hh"
+#include "value.hh"
 #include "chunk.hh"
 
 namespace lvm {
@@ -42,6 +43,7 @@ class VM : private UnCopyable {
   Chunk& chunk_;
   const OpCode* ip_{};
   std::vector<Value> stack_;
+  std::vector<Object*> objects_;
 
   InterpretRet run(void);
 
@@ -57,6 +59,10 @@ public:
 
   InterpretRet interpret(void);
   InterpretRet interpret(const std::string& source_bytes);
+
+  void put_in(Object* o);
 };
+
+VM* get_running_vm(void);
 
 }

@@ -25,12 +25,16 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cstring>
+#include "vm.hh"
 #include "object.hh"
 
 namespace lvm {
 
 Object::Object(ObjType t)
   : type_(t) {
+  auto* vm = get_running_vm();
+  if (vm != nullptr)
+    vm->put_in(this);
 }
 
 StringObject* Object::as_string(void) const {

@@ -33,11 +33,21 @@
 
 namespace lvm {
 
+static VM* _running_vm = nullptr;
+
+VM* get_running_vm(void) {
+  return _running_vm;
+}
+
 VM::VM(Chunk& c)
   : chunk_(c) {
+  _running_vm = this;
 }
 
 VM::~VM(void) {
+  for (auto* o : objects_)
+    delete o;
+  objects_.clear();
 }
 
 InterpretRet VM::interpret(void) {
@@ -58,6 +68,10 @@ InterpretRet VM::interpret(const std::string& source_bytes) {
   chunk_ = chunk;
   ip_ = chunk_.get_codes();
   return run();
+}
+
+void VM::put_in(Object* o) {
+  objects_.push_back(o);
 }
 
 InterpretRet VM::run(void) {
