@@ -45,6 +45,15 @@ const char* Object::as_cstring(void) const {
   return as_string()->c_str();
 }
 
+std::uint32_t Object::hash_fn(const char* key, int len) {
+  std::uint32_t hash{2166136261u};
+  for (int i = 0; i < len; ++i) {
+    hash ^= key[i];
+    hash *= 16777619;
+  }
+  return hash;
+}
+
 StringObject* Object::create_string(const std::string& s) {
   return create_string(s.data(), static_cast<int>(s.size()));
 }
@@ -88,6 +97,7 @@ void StringObject::release_string(void) {
     chars_ = nullptr;
   }
   length_ = 0;
+  hash_ = 0;
 }
 
 StringObject::StringObject(const char* s)
@@ -96,6 +106,7 @@ StringObject::StringObject(const char* s)
   , chars_(new char[length_ + 1]) {
   std::memcpy(chars_, s, length_);
   chars_[length_] = 0;
+  hash_ = Object::hash_fn(chars_, length_);
 }
 
 StringObject::StringObject(const char* s, int n)
@@ -104,6 +115,7 @@ StringObject::StringObject(const char* s, int n)
   , chars_(new char[length_ + 1]) {
   std::memcpy(chars_, s, length_);
   chars_[length_] = 0;
+  hash_ = Object::hash_fn(chars_, length_);
 }
 
 StringObject::StringObject(const std::string& s)
@@ -112,6 +124,7 @@ StringObject::StringObject(const std::string& s)
   , chars_(new char[length_ + 1]) {
   std::memcpy(chars_, s.data(), length_);
   chars_[length_] = 0;
+  hash_ = Object::hash_fn(chars_, length_);
 }
 
 StringObject::StringObject(const StringObject& s)
@@ -120,12 +133,14 @@ StringObject::StringObject(const StringObject& s)
   , chars_(new char[length_ + 1]) {
   std::memcpy(chars_, s.chars_, length_);
   chars_[length_] = 0;
+  hash_ = Object::hash_fn(chars_, length_);
 }
 
 StringObject::StringObject(StringObject&& s)
   : Object(ObjType::STRING) {
   std::swap(length_, s.length_);
   std::swap(chars_, s.chars_);
+  std::swap(hash_, s.hash_);
 }
 
 StringObject& StringObject::operator=(const std::string& s) {
@@ -141,6 +156,7 @@ StringObject& StringObject::operator=(const StringObject& s) {
     chars_ = new char[length_ + 1];
     std::memcpy(chars_, s.chars_, length_);
     chars_[length_] = 0;
+    hash_ = s.hash_;
   }
   return *this;
 }
@@ -151,6 +167,7 @@ StringObject& StringObject::operator=(StringObject&& s) {
 
     std::swap(length_, s.length_);
     std::swap(chars_, s.chars_);
+    std::swap(hash_, s.hash_);
   }
   return *this;
 }
@@ -170,6 +187,7 @@ void StringObject::reset(const char* s, int n) {
   chars_ = new char[length_ + 1];
   std::memcpy(chars_, s, length_);
   chars_[length_] = 0;
+  hash_ = Object::hash_fn(chars_, length_);
 }
 
 void StringObject::reset(const std::string& s) {
@@ -185,6 +203,7 @@ void StringObject::reset(const StringObject& s) {
     chars_ = new char[length_ + 1];
     std::memcpy(chars_, s.chars_, length_);
     chars_[length_] = 0;
+    hash_ = s.hash_;
   }
 }
 
@@ -194,6 +213,7 @@ void StringObject::reset(StringObject&& s) {
 
     std::swap(length_, s.length_);
     std::swap(chars_, s.chars_);
+    std::swap(hash_, s.hash_);
   }
 }
 
@@ -208,6 +228,7 @@ void StringObject::init_from_string(const char* s, int n) {
 
     length_ = n;
     chars_ = const_cast<char*>(s);
+    hash_ = Object::hash_fn(chars_, length_);
   }
 }
 

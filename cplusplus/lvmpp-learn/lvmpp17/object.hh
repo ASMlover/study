@@ -53,6 +53,7 @@ public:
   StringObject* as_string(void) const;
   const char* as_cstring(void) const;
 
+  static std::uint32_t hash_fn(const char* key, int len);
   static StringObject* create_string(const std::string& s);
   static StringObject* create_string(const char* s, int n, bool placement = false);
   static StringObject* concat_string(const Object* x, const Object* y);
@@ -61,6 +62,7 @@ public:
 class StringObject : public Object {
   int length_{};
   char* chars_{};
+  std::uint32_t hash_{};
 
   void release_string(void);
 public:
@@ -95,6 +97,7 @@ public:
   int length(void) const { return length_; }
   const char* data(void) const { return chars_; }
   const char* c_str(void) const { return chars_; }
+  std::uint32_t hash_code(void) const { return hash_; }
 };
 
 }
