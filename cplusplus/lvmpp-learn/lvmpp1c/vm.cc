@@ -127,6 +127,16 @@ InterpretRet VM::run(void) {
         global_variables_[name->hash_code()] = peek(0);
         pop();
       } break;
+    case OpCode::OP_SET_GLOBAL:
+      {
+        StringObject* name = _rdstring();
+        auto value_iter = global_variables_.find(name->hash_code());
+        if (value_iter == global_variables_.end()) {
+          runtime_error("undefined variable `%s`", name->c_str());
+          return InterpretRet::RUNTIME_ERROR;
+        }
+        value_iter->second = peek(0);
+      } break;
     case OpCode::OP_GET_GLOBAL:
       {
         StringObject* name = _rdstring();

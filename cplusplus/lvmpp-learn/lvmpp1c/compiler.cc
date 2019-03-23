@@ -373,7 +373,14 @@ public:
 
   void named_varibale(const Token& name) {
     OpCode arg = identifier_constant(name);
-    emit_codes(OpCode::OP_GET_GLOBAL, arg);
+
+    if (match(TokenKind::TK_EQUAL)) {
+      expression();
+      emit_codes(OpCode::OP_SET_GLOBAL, arg);
+    }
+    else {
+      emit_codes(OpCode::OP_GET_GLOBAL, arg);
+    }
   }
 
   void grouping(void) {

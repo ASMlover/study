@@ -40,6 +40,7 @@ enum class OpCode : int {
   OP_FALSE, // false
   OP_POP, // pop
   OP_DEFINE_GLOBAL, // define global variable
+  OP_SET_GLOBAL, // set global variable
   OP_GET_GLOBAL, // get global variable
   OP_EQ, // logical ==
   OP_NE, // logical !=
