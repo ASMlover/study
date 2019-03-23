@@ -201,6 +201,28 @@ class Parser
       infix_rule(shared_from_this());
     }
   }
+
+  void synchronize(void) {
+    panic_mode_ = false;
+    while (curr_.get_kind() == TokenKind::TK_EOF) {
+      if (prev_.get_kind() == TokenKind::TK_SEMI)
+        return;
+
+      switch (curr_.get_kind()) {
+      case TokenKind::KW_CLASS:
+      case TokenKind::KW_FUN:
+      case TokenKind::KW_VAR:
+      case TokenKind::KW_FOR:
+      case TokenKind::KW_IF:
+      case TokenKind::KW_WHILE:
+      case TokenKind::KW_PRINT:
+      case TokenKind::KW_RETURN:
+        return;
+      default: break;
+      }
+      advance();
+    }
+  }
 public:
   Parser(Chunk& c, Scanner& s) : compiling_chunk_(c), scanner_(s) {}
   bool had_error(void) const { return had_error_; }
@@ -271,6 +293,9 @@ public:
 
   void declaration(void) {
     statement();
+
+    if (panic_mode_)
+      synchronize();
   }
 
   void statement(void) {
