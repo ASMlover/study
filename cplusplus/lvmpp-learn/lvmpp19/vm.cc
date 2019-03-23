@@ -117,6 +117,7 @@ InterpretRet VM::run(void) {
     case OpCode::OP_NIL: push(nullptr); break;
     case OpCode::OP_TRUE: push(true); break;
     case OpCode::OP_FALSE: push(false); break;
+    case OpCode::OP_POP: pop(); break;
     case OpCode::OP_EQ:
       {
         Value b = pop();
@@ -160,10 +161,9 @@ InterpretRet VM::run(void) {
         return InterpretRet::RUNTIME_ERROR;
       }
       push(-pop()); break;
+    case OpCode::OP_PRINT:
+      std::cout << pop() << std::endl; break;
     case OpCode::OP_RETURN:
-      {
-        std::cout << pop() << std::endl;
-      }
       return InterpretRet::OK;
     }
   }

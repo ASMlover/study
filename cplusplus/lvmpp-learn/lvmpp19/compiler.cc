@@ -56,6 +56,12 @@ struct ParseRule {
   Precedence precedence;
 };
 
+// [G R A M M E R]
+//
+// declaration  -> var_decl | statement ;
+//
+// statement    -> print_stmt | expr_stmt ;
+
 class Parser
   : private UnCopyable, public std::enable_shared_from_this<Parser> {
   Chunk& compiling_chunk_;
@@ -218,6 +224,18 @@ public:
       error_at_current(message);
   }
 
+  bool check(TokenKind kind) const {
+    return curr_.get_kind() == kind;
+  }
+
+  bool match(TokenKind kind) {
+    if (check(kind)) {
+      advance();
+      return true;
+    }
+    return false;
+  }
+
   void end_compiler(void) {
     emit_return();
 #if defined(LVM_TRACE_CODE)
@@ -251,6 +269,33 @@ public:
     }
   }
 
+  void declaration(void) {
+    statement();
+  }
+
+  void statement(void) {
+    if (match(TokenKind::KW_PRINT))
+      print_stmt();
+    else
+      expr_stmt();
+  }
+
+  void print_stmt(void) {
+    expression();
+    consume(TokenKind::TK_SEMI, "expect `;` after value");
+    emit_code(OpCode::OP_PRINT);
+  }
+
+  void expr_stmt(void) {
+    expression();
+    emit_code(OpCode::OP_POP);
+    consume(TokenKind::TK_SEMI, "expect `;` after expression");
+  }
+
+  void expression(void) {
+    parse_precedence(Precedence::ASSIGNMENT);
+  }
+
   void literal(void) {
     switch (prev_.get_kind()) {
     case TokenKind::KW_NIL: emit_code(OpCode::OP_NIL); break;
@@ -258,10 +303,6 @@ public:
     case TokenKind::KW_FALSE: emit_code(OpCode::OP_FALSE); break;
     default: return; // unreachable
     }
-  }
-
-  void expression(void) {
-    parse_precedence(Precedence::ASSIGNMENT);
   }
 
   void numeric(void) {
@@ -306,8 +347,9 @@ bool Compiler::compile(Chunk& chunk, const std::string& source_bytes) {
   auto p = std::make_shared<Parser>(chunk, scanner);
 
   p->advance();
-  p->expression();
-  p->consume(TokenKind::TK_EOF, "expect end of expression");
+
+  while (!p->match(TokenKind::TK_EOF))
+    p->declaration();
   p->end_compiler();
 
   return !p->had_error();

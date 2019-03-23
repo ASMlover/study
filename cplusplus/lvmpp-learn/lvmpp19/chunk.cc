@@ -83,6 +83,8 @@ int Chunk::disassemble_instruction(int offset) {
     return simple_instruction("OP_TRUE", offset);
   case OpCode::OP_FALSE:
     return simple_instruction("OP_FALSE", offset);
+  case OpCode::OP_POP:
+    return simple_instruction("OP_POP", offset);
   case OpCode::OP_EQ:
     return simple_instruction("OP_EQ", offset);
   case OpCode::OP_NE:
@@ -107,6 +109,8 @@ int Chunk::disassemble_instruction(int offset) {
     return simple_instruction("OP_NOT", offset);
   case OpCode::OP_NEGATE:
     return simple_instruction("OP_NEGATE", offset);
+  case OpCode::OP_PRINT:
+    return simple_instruction("OP_PRINT", offset);
   case OpCode::OP_RETURN:
     return simple_instruction("OP_RETURN", offset);
   default:

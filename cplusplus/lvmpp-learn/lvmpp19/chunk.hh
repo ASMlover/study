@@ -38,6 +38,7 @@ enum class OpCode : int {
   OP_NIL, // nil
   OP_TRUE, // true
   OP_FALSE, // false
+  OP_POP, // pop
   OP_EQ, // logical ==
   OP_NE, // logical !=
   OP_GT, // logical >
@@ -50,6 +51,7 @@ enum class OpCode : int {
   OP_DIV, // /
   OP_NOT, // !
   OP_NEGATE, // -
+  OP_PRINT, // print
   OP_RETURN
 };
 
