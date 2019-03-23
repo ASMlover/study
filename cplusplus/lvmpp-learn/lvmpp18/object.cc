@@ -59,6 +59,14 @@ StringObject* Object::create_string(const std::string& s) {
 }
 
 StringObject* Object::create_string(const char* s, int n, bool placement) {
+  auto hash_code = hash_fn(s, n);
+  auto* vm = get_running_vm();
+  if (vm != nullptr) {
+    StringObject* interned = vm->get_interned_string(hash_code);
+    if (interned != nullptr)
+      return interned;
+  }
+
   StringObject* strobj;
   if (placement) {
     strobj = new StringObject();
@@ -67,6 +75,10 @@ StringObject* Object::create_string(const char* s, int n, bool placement) {
   else {
     strobj = new StringObject(s, n);
   }
+
+  if (vm != nullptr && strobj != nullptr)
+    vm->set_interned_string(hash_code, strobj);
+
   return strobj;
 }
 
@@ -240,9 +252,12 @@ bool StringObject::is_equal(const Object* r) const {
   if (this == r)
     return true;
 
-  auto* o = r->as_string();
-  return o != nullptr && length_ == o->length_
-    && std::memcmp(chars_, o->chars_, length_) == 0;
+  if (r == nullptr)
+    return false;
+  StringObject* o = r->as_string();
+  return o != nullptr && (
+      (hash_ == o->hash_) ||
+      (length_ == o->length_ && std::memcmp(chars_, o->chars_, length_) == 0));
 }
 
 bool StringObject::is_truthy(void) const {
