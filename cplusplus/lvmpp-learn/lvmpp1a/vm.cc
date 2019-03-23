@@ -90,6 +90,9 @@ InterpretRet VM::run(void) {
   auto _rdconstant = [this, _rdbyte](void) -> Value {
     return chunk_.get_constant(EnumUtil<OpCode>::as_int(_rdbyte()));
   };
+  auto _rdstring = [this, _rdconstant](void) -> StringObject* {
+    return dynamic_cast<StringObject*>(_rdconstant().as_object());
+  };
 
 #define BINARY_OP(op) do {\
   if (!peek(0).is_numeric() || !peek(1).is_numeric()) {\
@@ -118,6 +121,12 @@ InterpretRet VM::run(void) {
     case OpCode::OP_TRUE: push(true); break;
     case OpCode::OP_FALSE: push(false); break;
     case OpCode::OP_POP: pop(); break;
+    case OpCode::OP_DEFINE_GLOBAL:
+      {
+        StringObject* name = _rdstring();
+        global_variables_[name->hash_code()] = peek(0);
+        pop();
+      } break;
     case OpCode::OP_EQ:
       {
         Value b = pop();

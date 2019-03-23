@@ -85,6 +85,8 @@ int Chunk::disassemble_instruction(int offset) {
     return simple_instruction("OP_FALSE", offset);
   case OpCode::OP_POP:
     return simple_instruction("OP_POP", offset);
+  case OpCode::OP_DEFINE_GLOBAL:
+    return constant_instruction("OP_DEFINE_GLOBAL", offset);
   case OpCode::OP_EQ:
     return simple_instruction("OP_EQ", offset);
   case OpCode::OP_NE:

@@ -223,6 +223,19 @@ class Parser
       advance();
     }
   }
+
+  OpCode parse_variable(const std::string& message) {
+    consume(TokenKind::TK_IDENTIFIER, message);
+    return identifier_constant(prev_);
+  }
+
+  OpCode identifier_constant(const Token& name) {
+    return make_constant(Object::create_string(name.get_literal()));
+  }
+
+  void define_variable(OpCode global) {
+    emit_codes(OpCode::OP_DEFINE_GLOBAL, global);
+  }
 public:
   Parser(Chunk& c, Scanner& s) : compiling_chunk_(c), scanner_(s) {}
   bool had_error(void) const { return had_error_; }
@@ -292,10 +305,25 @@ public:
   }
 
   void declaration(void) {
-    statement();
+    if (match(TokenKind::KW_VAR))
+      var_decl();
+    else
+      statement();
 
     if (panic_mode_)
       synchronize();
+  }
+
+  void var_decl(void) {
+    OpCode global = parse_variable("expect variable name");
+
+    if (match(TokenKind::TK_EQUAL))
+      expression();
+    else
+      emit_code(OpCode::OP_NIL);
+    consume(TokenKind::TK_SEMI, "expect `;` after variable declaration");
+
+    define_variable(global);
   }
 
   void statement(void) {

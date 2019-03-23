@@ -46,6 +46,7 @@ class VM : private UnCopyable {
   std::vector<Value> stack_;
   std::vector<Object*> objects_;
   std::unordered_map<std::uint32_t, StringObject*> interned_strings_;
+  std::unordered_map<std::uint32_t, Value> global_variables_;
 
   InterpretRet run(void);
 

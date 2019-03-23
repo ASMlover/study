@@ -39,6 +39,7 @@ enum class OpCode : int {
   OP_TRUE, // true
   OP_FALSE, // false
   OP_POP, // pop
+  OP_DEFINE_GLOBAL, // define global variable
   OP_EQ, // logical ==
   OP_NE, // logical !=
   OP_GT, // logical >
