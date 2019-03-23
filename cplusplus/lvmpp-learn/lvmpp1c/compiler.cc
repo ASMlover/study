@@ -51,8 +51,8 @@ class Parser;
 using ParserPtr = std::shared_ptr<Parser>;
 
 struct ParseRule {
-  std::function<void (const ParserPtr&)> prefix;
-  std::function<void (const ParserPtr&)> infix;
+  std::function<void (const ParserPtr&, bool)> prefix;
+  std::function<void (const ParserPtr&, bool)> infix;
   Precedence precedence;
 };
 
@@ -132,13 +132,13 @@ class Parser
   }
 
   const ParseRule& get_rule(TokenKind kind) const {
-    static auto numeric_fn = [](const ParserPtr& p) { p->numeric(); };
-    static auto string_fn = [](const ParserPtr& p) { p->string(); };
-    static auto variable_fn = [](const ParserPtr& p) { p->variable(); };
-    static auto literal_fn = [](const ParserPtr& p) { p->literal(); };
-    static auto binary_fn = [](const ParserPtr& p) { p->binary(); };
-    static auto unary_fn = [](const ParserPtr& p) { p->unary(); };
-    static auto grouping_fn = [](const ParserPtr& p) { p->grouping(); };
+    static auto numeric_fn = [](const ParserPtr& p, bool) { p->numeric(); };
+    static auto string_fn = [](const ParserPtr& p, bool) { p->string(); };
+    static auto variable_fn = [](const ParserPtr& p, bool b) { p->variable(b); };
+    static auto literal_fn = [](const ParserPtr& p, bool) { p->literal(); };
+    static auto binary_fn = [](const ParserPtr& p, bool) { p->binary(); };
+    static auto unary_fn = [](const ParserPtr& p, bool) { p->unary(); };
+    static auto grouping_fn = [](const ParserPtr& p, bool) { p->grouping(); };
 
     static const ParseRule _rules[] = {
       {nullptr, nullptr, Precedence::NONE}, // TK_ERROR
@@ -194,12 +194,18 @@ class Parser
       error("expect expression");
       return;
     }
-    prefix_rule(shared_from_this());
+    bool can_assign = prec <= Precedence::ASSIGNMENT;
+    prefix_rule(shared_from_this(), can_assign);
 
     while (prec <= get_rule(curr_.get_kind()).precedence) {
       advance();
       auto infix_rule = get_rule(prev_.get_kind()).infix;
-      infix_rule(shared_from_this());
+      infix_rule(shared_from_this(), can_assign);
+    }
+
+    if (can_assign && match(TokenKind::TK_EQUAL)) {
+      error("invalid assignment target");
+      expression();
     }
   }
 
@@ -367,14 +373,14 @@ public:
     emit_constant(Object::create_string(prev_.get_literal()));
   }
 
-  void variable(void) {
-    named_varibale(prev_);
+  void variable(bool can_assign) {
+    named_varibale(prev_, can_assign);
   }
 
-  void named_varibale(const Token& name) {
+  void named_varibale(const Token& name, bool can_assign) {
     OpCode arg = identifier_constant(name);
 
-    if (match(TokenKind::TK_EQUAL)) {
+    if (can_assign && match(TokenKind::TK_EQUAL)) {
       expression();
       emit_codes(OpCode::OP_SET_GLOBAL, arg);
     }

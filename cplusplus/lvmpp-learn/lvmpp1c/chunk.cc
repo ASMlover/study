@@ -119,8 +119,7 @@ int Chunk::disassemble_instruction(int offset) {
     return simple_instruction("OP_PRINT", offset);
   case OpCode::OP_RETURN:
     return simple_instruction("OP_RETURN", offset);
-  default:
-    break;
+  default: break;
   }
 
   std::cout << "unknown opcode: " << instruction << std::endl;
