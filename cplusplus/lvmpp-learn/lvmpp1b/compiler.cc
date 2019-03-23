@@ -134,6 +134,7 @@ class Parser
   const ParseRule& get_rule(TokenKind kind) const {
     static auto numeric_fn = [](const ParserPtr& p) { p->numeric(); };
     static auto string_fn = [](const ParserPtr& p) { p->string(); };
+    static auto variable_fn = [](const ParserPtr& p) { p->variable(); };
     static auto literal_fn = [](const ParserPtr& p) { p->literal(); };
     static auto binary_fn = [](const ParserPtr& p) { p->binary(); };
     static auto unary_fn = [](const ParserPtr& p) { p->unary(); };
@@ -142,7 +143,7 @@ class Parser
     static const ParseRule _rules[] = {
       {nullptr, nullptr, Precedence::NONE}, // TK_ERROR
       {nullptr, nullptr, Precedence::NONE}, // TK_EOF
-      {nullptr, nullptr, Precedence::NONE}, // TK_IDENTIFIER
+      {variable_fn, nullptr, Precedence::NONE}, // TK_IDENTIFIER
       {numeric_fn, nullptr, Precedence::NONE}, // TK_NUMERICCONST
       {string_fn, nullptr, Precedence::NONE}, // TK_STRINGLITERAL
       {grouping_fn, nullptr, Precedence::CALL}, // TK_LPAREN
@@ -364,6 +365,15 @@ public:
 
   void string(void) {
     emit_constant(Object::create_string(prev_.get_literal()));
+  }
+
+  void variable(void) {
+    named_varibale(prev_);
+  }
+
+  void named_varibale(const Token& name) {
+    OpCode arg = identifier_constant(name);
+    emit_codes(OpCode::OP_GET_GLOBAL, arg);
   }
 
   void grouping(void) {
