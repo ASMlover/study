@@ -29,6 +29,45 @@
 namespace nyx {
 
 Token Lexer::next_token(void) {
+  skip_whitespace();
+
+  begpos_ = curpos_;
+  if (is_end())
+    return make_token(TokenKind::TK_EOF);
+
+  char c = advance();
+  if (std::isdigit(c))
+    return make_numeric();
+  if (is_alpha(c))
+    return make_identifier();
+
+  switch (c) {
+  case '(': return make_token(TokenKind::TK_LPAREN);
+  case ')': return make_token(TokenKind::TK_RPAREN);
+  case '{': return make_token(TokenKind::TK_LBRACE);
+  case '}': return make_token(TokenKind::TK_RBRACE);
+  case ',': return make_token(TokenKind::TK_COMMA);
+  case '.': return make_token(TokenKind::TK_DOT);
+  case ';': return make_token(TokenKind::TK_SEMI);
+  case '+': return make_token(TokenKind::TK_PLUS);
+  case '-': return make_token(TokenKind::TK_MINUS);
+  case '*': return make_token(TokenKind::TK_STAR);
+  case '/': return make_token(TokenKind::TK_SLASH);
+  case '!':
+    return make_token(match('=')
+        ?  TokenKind::TK_BANGEQUAL : TokenKind::TK_BANG);
+  case '=':
+    return make_token(match('=')
+        ? TokenKind::TK_EQUALEQUAL : TokenKind::TK_EQUAL);
+  case '>':
+    return make_token(match('=')
+        ? TokenKind::TK_GREATEREQUAL : TokenKind::TK_GREATER);
+  case '<':
+    return make_token(match('=')
+        ? TokenKind::TK_LESSEQUAL : TokenKind::TK_LESS);
+  case '"': return make_string();
+  }
+
   return error_token("unexpected charactor");
 }
 
@@ -41,6 +80,23 @@ bool Lexer::match(char expected) {
 }
 
 void Lexer::skip_whitespace(void) {
+  for (;;) {
+    char c = peek();
+    switch (c) {
+    case ' ': case '\r': case '\t': advance(); break;
+    case '\n': ++lineno_; advance(); break;
+    case '/':
+      if (peek_next() == '/') {
+        while (!is_end() && peek() != '\n')
+          advance();
+      }
+      else {
+        return;
+      }
+      break;
+    default: return;
+    }
+  }
 }
 
 Token Lexer::make_token(TokenKind kind) const {
