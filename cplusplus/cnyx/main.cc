@@ -24,12 +24,38 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <fstream>
 #include <iostream>
+#include <sstream>
+#include "lexer.hh"
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
   std::cout << "Welcome to NYX !" << std::endl;
+
+  if (argc < 2) {
+    std::cerr << "USAGE: " << argv[0] << " {FILE_NAME}" << std::endl;
+    return -1;
+  }
+
+  std::ifstream fp(argv[1]);
+  if (!fp.is_open()) {
+    std::cerr << "open file \"" << argv[1] << "\" failed" << std::endl;
+    return -1;
+  }
+  std::stringstream ss;
+  ss << fp.rdbuf();
+  std::string source_bytes(ss.str());
+
+  nyx::Lexer lex(source_bytes);
+  while (true) {
+    auto tok = lex.next_token();
+    std::cout << tok << std::endl;
+
+    if (tok.get_kind() == nyx::TokenKind::TK_EOF)
+      break;
+  }
 
   return 0;
 }
