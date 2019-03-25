@@ -1,0 +1,9 @@
+
+// test comment
+
+// do nothing
+
+print "Hello, world!";
+
+var a = 34.56;
+print a * 100 ;
