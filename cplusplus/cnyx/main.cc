@@ -28,21 +28,18 @@
 #include <iostream>
 #include <sstream>
 #include "lexer.hh"
+#include "vm.hh"
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
-
-  std::cout << "Welcome to NYX !" << std::endl;
-
+static void test_lexer(int argc, char** argv) {
   if (argc < 2) {
     std::cerr << "USAGE: " << argv[0] << " {FILE_NAME}" << std::endl;
-    return -1;
+    return;
   }
 
   std::ifstream fp(argv[1]);
   if (!fp.is_open()) {
     std::cerr << "open file \"" << argv[1] << "\" failed" << std::endl;
-    return -1;
+    return;
   }
   std::stringstream ss;
   ss << fp.rdbuf();
@@ -56,6 +53,37 @@ int main(int argc, char* argv[]) {
     if (tok.get_kind() == nyx::TokenKind::TK_EOF)
       break;
   }
+}
+
+void test_vm(void) {
+  nyx::VM vm;
+  for (auto d = 100.0; d < 200.0; ++d) {
+    vm.push_numeric(d);
+    vm.pop();
+  }
+
+  {
+    vm.push_numeric(1.0);
+    vm.push_numeric(2.0);
+    vm.push_pair();
+
+    vm.push_numeric(3.0);
+    vm.push_numeric(4.0);
+    vm.push_pair();
+
+    vm.push_pair();
+  }
+
+  vm.collect();
+  vm.print_stack();
+}
+
+int main(int argc, char* argv[]) {
+  (void)argc, (void)argv;
+
+  std::cout << "Welcome to NYX !" << std::endl;
+  // test_lexer(argc, argv);
+  test_vm();
 
   return 0;
 }
