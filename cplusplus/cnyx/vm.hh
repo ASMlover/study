@@ -46,16 +46,26 @@ public:
   virtual ~Object(void) {}
 
   inline ObjType get_type(void) const { return type_; }
+  inline void set_type(ObjType t) { type_ = t; }
+  inline void* address(void) const { return (void*)this; }
+  inline byte_t* as_byte(void) { return reinterpret_cast<byte_t*>(this); }
+
+  template <typename Target> inline Target cast_to(void) {
+    return static_cast<Target>(this);
+  }
 
   virtual std::size_t size(void) const = 0;
   virtual std::string stringify(void) const = 0;
 };
 using Value = Object*;
 
-class Froward : public Object {
+std::ostream& operator<<(std::ostream& out, Object* o);
+
+class Forward : public Object {
   Object* to_{};
 public:
-  Froward(void) : Object(ObjType::FORWARD) {}
+  Forward(void) : Object(ObjType::FORWARD) {}
+  Forward(Forward&& r) : Object(ObjType::FORWARD), to_(std::move(r.to_)) {}
 
   inline void set_to(Object* v) { to_ = v; }
   inline Object* to(void) const { return to_; }
@@ -68,6 +78,7 @@ class Numeric : public Object {
   double value_{};
 public:
   Numeric(void) : Object(ObjType::NUMERIC) {}
+  Numeric(Numeric&& r) : Object(ObjType::NUMERIC), value_(std::move(r.value_)) {}
 
   inline void set_value(double v) { value_ = v; }
   inline double value(void) const { return value_; }
@@ -81,6 +92,11 @@ class Pair : public Object {
   Value second_{};
 public:
   Pair(void) : Object(ObjType::PAIR) {}
+  Pair(Pair&& r)
+    : Object(ObjType::PAIR)
+    , first_(std::move(r.first_))
+    , second_(std::move(r.second_)) {
+  }
 
   inline void set_first(Value v) { first_ = v; }
   inline Value first(void) const { return first_; }
@@ -100,15 +116,23 @@ class VM : private UnCopyable {
 
   static constexpr std::size_t kMaxHeap = 10 * 1024 * 1024;
 
+  template <typename Source> inline Object* as_object(Source* x) const {
+    return reinterpret_cast<Object*>(x);
+  }
+
   void initialize(void);
+  Value copy(Value value);
+  void copy_references(Object* obj);
+  void* allocate(std::size_t n);
 public:
   VM(void);
+  ~VM(void);
 
   void collect(void);
 
-  void push(double value);
-  void push(void);
-  void pop(void);
+  void push_numeric(double value);
+  void push_pair(void);
+  Value pop(void);
 
   void print_stack(void);
 };
