@@ -57,22 +57,6 @@ static void test_lexer(int argc, char** argv) {
 
 void test_vm(void) {
   nyx::VM vm;
-  for (auto d = 1.0; d < 100000.0; ++d) {
-    vm.push_numeric(d);
-    vm.pop();
-  }
-
-  {
-    vm.push_numeric(1.0);
-    vm.push_numeric(2.0);
-    vm.push_pair();
-
-    vm.push_numeric(3.0);
-    vm.push_numeric(4.0);
-    vm.push_pair();
-
-    vm.push_pair();
-  }
 
   vm.collect();
   vm.print_stack();
