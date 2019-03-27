@@ -35,26 +35,6 @@ std::ostream& operator<<(std::ostream& out, Object* o) {
   return out << o->stringify();
 }
 
-std::size_t Forward::size(void) const {
-  return sizeof(*this);
-}
-
-std::string Forward::stringify(void) const {
-  std::stringstream ss;
-  ss << "fwd->" << to_->address();
-  return ss.str();
-}
-
-std::size_t Numeric::size(void) const {
-  return sizeof(*this);
-}
-
-std::string Numeric::stringify(void) const {
-  std::stringstream ss;
-  ss << value_;
-  return ss.str();
-}
-
 std::size_t Pair::size(void) const {
   return sizeof(*this);
 }

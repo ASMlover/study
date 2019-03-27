@@ -28,64 +28,11 @@
 
 #include <vector>
 #include "common.hh"
+#include "object.hh"
 
 namespace nyx {
 
-using byte_t = std::uint8_t;
-
-enum class ObjType {
-  FORWARD,
-  NUMERIC,
-  PAIR
-};
-
-class Object : private UnCopyable {
-  ObjType type_;
-public:
-  Object(ObjType t) : type_(t) {}
-  virtual ~Object(void) {}
-
-  inline ObjType get_type(void) const { return type_; }
-  inline void set_type(ObjType t) { type_ = t; }
-  inline void* address(void) const { return (void*)this; }
-  inline byte_t* as_byte(void) { return reinterpret_cast<byte_t*>(this); }
-
-  template <typename Target> inline Target cast_to(void) {
-    return static_cast<Target>(this);
-  }
-
-  virtual std::size_t size(void) const = 0;
-  virtual std::string stringify(void) const = 0;
-};
-using Value = Object*;
-
 std::ostream& operator<<(std::ostream& out, Object* o);
-
-class Forward : public Object {
-  Object* to_{};
-public:
-  Forward(void) : Object(ObjType::FORWARD) {}
-  Forward(Forward&& r) : Object(ObjType::FORWARD), to_(std::move(r.to_)) {}
-
-  inline void set_to(Object* v) { to_ = v; }
-  inline Object* to(void) const { return to_; }
-
-  virtual std::size_t size(void) const override;
-  virtual std::string stringify(void) const override;
-};
-
-class Numeric : public Object {
-  double value_{};
-public:
-  Numeric(void) : Object(ObjType::NUMERIC) {}
-  Numeric(Numeric&& r) : Object(ObjType::NUMERIC), value_(std::move(r.value_)) {}
-
-  inline void set_value(double v) { value_ = v; }
-  inline double value(void) const { return value_; }
-
-  virtual std::size_t size(void) const override;
-  virtual std::string stringify(void) const override;
-};
 
 class Pair : public Object {
   Value first_{};
