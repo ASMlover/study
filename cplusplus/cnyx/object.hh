@@ -43,6 +43,8 @@ enum class ObjType {
   PAIR, // NEED TO DELETE
 };
 
+class VM;
+
 class Object : private UnCopyable {
   ObjType type_;
 public:
@@ -58,8 +60,15 @@ public:
     return static_cast<Target>(this);
   }
 
+  template <typename Target> inline Target* down_to(void) {
+    // this must be Object type
+    return dynamic_cast<Target*>(this);
+  }
+
   virtual std::size_t size(void) const = 0;
   virtual std::string stringify(void) const = 0;
+  virtual void traverse(VM* vm) = 0;
+  virtual Object* move_to(void* p) = 0;
 };
 using Value = Object*;
 
@@ -68,10 +77,15 @@ class Array : public Object {
   Value* elements_{};
 public:
   Array(void) : Object(ObjType::ARRAY) {}
+  Array(int count);
   Array(Array&& r)
     : Object(ObjType::ARRAY)
     , count_(std::move(r.count_))
     , elements_(std::move(r.elements_)) {
+  }
+
+  static std::size_t alloc_size(int count) {
+    return sizeof(Array) + count * sizeof(Value);
   }
 
   inline int count(void) const { return count_; }
@@ -79,6 +93,8 @@ public:
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
+  virtual void traverse(VM* vm) override;
+  virtual Object* move_to(void* p) override;
 };
 
 class Forward : public Object {
@@ -92,6 +108,8 @@ public:
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
+  virtual void traverse(VM* vm) override;
+  virtual Object* move_to(void* p) override;
 };
 
 class Function : public Object {
@@ -113,6 +131,8 @@ public:
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
+  virtual void traverse(VM* vm) override;
+  virtual Object* move_to(void* p) override;
 };
 
 class Numeric : public Object {
@@ -126,6 +146,8 @@ public:
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
+  virtual void traverse(VM* vm) override;
+  virtual Object* move_to(void* p) override;
 };
 
 class String : public Object {
@@ -133,10 +155,15 @@ class String : public Object {
   char* chars_{};
 public:
   String(void) : Object(ObjType::STRING) {}
+  String(const char* s, int n);
   String(String&& r)
     : Object(ObjType::STRING)
     , count_(std::move(r.count_))
     , chars_(std::move(r.chars_)) {
+  }
+
+  static std::size_t alloc_size(int count) {
+    return sizeof(String) + (count + 1) * sizeof(char);
   }
 
   inline int count(void) const { return count_; }
@@ -145,6 +172,8 @@ public:
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
+  virtual void traverse(VM* vm) override;
+  virtual Object* move_to(void* p) override;
 };
 
 struct TableEntry { Value key, value; };
@@ -165,6 +194,8 @@ public:
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
+  virtual void traverse(VM* vm) override;
+  virtual Object* move_to(void* p) override;
 };
 
 class Table : public Object {
@@ -183,6 +214,8 @@ public:
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
+  virtual void traverse(VM* vm) override;
+  virtual Object* move_to(void* p) override;
 };
 
 }

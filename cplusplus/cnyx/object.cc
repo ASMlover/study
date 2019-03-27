@@ -24,10 +24,19 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cassert>
 #include <sstream>
 #include "object.hh"
+#include "vm.hh"
 
 namespace nyx {
+
+Array::Array(int count)
+  : Object(ObjType::ARRAY)
+  , count_(count) {
+  for (int i = 0; i < count_; ++i)
+    elements_[i] = nullptr;
+}
 
 std::size_t Array::size(void) const {
   return sizeof(*this) + count_ * sizeof(Value);
@@ -36,6 +45,15 @@ std::size_t Array::size(void) const {
 std::string Array::stringify(void) const {
   // TODO:
   return "array";
+}
+
+void Array::traverse(VM* vm) {
+  for (int i = 0; i < count_; ++i)
+    elements_[i] = vm->move_object(elements_[i]);
+}
+
+Object* Array::move_to(void* p) {
+  return new (p) Array(std::move(*this));
 }
 
 std::size_t Forward::size(void) const {
@@ -48,6 +66,14 @@ std::string Forward::stringify(void) const {
   return ss.str();
 }
 
+void Forward::traverse(VM* vm) {
+  assert(false);
+}
+
+Object* Forward::move_to(void* p) {
+  return new (p) Forward(std::move(*this));
+}
+
 std::size_t Function::size(void) const {
   return sizeof(*this) + code_size_;
 }
@@ -55,6 +81,14 @@ std::size_t Function::size(void) const {
 std::string Function::stringify(void) const {
   // TODO:
   return "function";
+}
+
+void Function::traverse(VM* vm) {
+  constants_ = vm->move_object(constants_)->down_to<Array>();
+}
+
+Object* Function::move_to(void* p) {
+  return new (p) Function(std::move(*this));
 }
 
 std::size_t Numeric::size(void) const {
@@ -67,12 +101,33 @@ std::string Numeric::stringify(void) const {
   return ss.str();
 }
 
+void Numeric::traverse(VM*) {
+}
+
+Object* Numeric::move_to(void* p) {
+  return new (p) Numeric(std::move(*this));
+}
+
+String::String(const char* s, int n)
+  : Object(ObjType::STRING)
+  , count_(n) {
+  std::memcpy(chars_, s, n);
+  chars_[count_] = 0;
+}
+
 std::size_t String::size(void) const {
   return sizeof(*this) + count_;
 }
 
 std::string String::stringify(void) const {
   return chars_;
+}
+
+void String::traverse(VM*) {
+}
+
+Object* String::move_to(void* p) {
+  return new (p) String(std::move(*this));
 }
 
 std::size_t TableEntries::size(void) const {
@@ -84,6 +139,18 @@ std::string TableEntries::stringify(void) const {
   return "table entries";
 }
 
+void TableEntries::traverse(VM* vm) {
+  for (int i = 0; i < count_; ++i) {
+    auto& entry = entries_[i];
+    entry.key = vm->move_object(entry.key);
+    entry.value = vm->move_object(entry.value);
+  }
+}
+
+Object* TableEntries::move_to(void* p) {
+  return new (p) TableEntries(std::move(*this));
+}
+
 std::size_t Table::size(void) const {
   return sizeof(*this);
 }
@@ -91,6 +158,14 @@ std::size_t Table::size(void) const {
 std::string Table::stringify(void) const {
   // TODO:
   return "table";
+}
+
+void Table::traverse(VM* vm) {
+  entries_ = vm->move_object(entries_)->down_to<TableEntries>();
+}
+
+Object* Table::move_to(void* p) {
+  return new (p) Table(std::move(*this));
 }
 
 }
