@@ -57,7 +57,7 @@ static void test_lexer(int argc, char** argv) {
 
 void test_vm(void) {
   nyx::VM vm;
-  for (auto d = 100.0; d < 200.0; ++d) {
+  for (auto d = 1.0; d < 100000.0; ++d) {
     vm.push_numeric(d);
     vm.pop();
   }

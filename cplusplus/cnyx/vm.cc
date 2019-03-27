@@ -124,6 +124,8 @@ void VM::copy_references(Object* obj) {
 }
 
 void VM::collect(void) {
+  std::cout << "********* collect: starting *********" << std::endl;
+
   std::swap(fromspace_, tospace_);
   allocptr_ = fromspace_;
 
@@ -136,6 +138,8 @@ void VM::collect(void) {
     copy_references(obj);
     p += obj->size();
   }
+
+  std::cout << "********* collect: finished *********" << std::endl;
 }
 
 void* VM::allocate(std::size_t n) {
@@ -178,7 +182,7 @@ Value VM::pop(void) {
 void VM::print_stack(void) {
   int i{};
   for (auto* o : stack_)
-    std::cout << i++ << ":" << o << std::endl;
+    std::cout << i++ << " : " << o << std::endl;
 }
 
 }
