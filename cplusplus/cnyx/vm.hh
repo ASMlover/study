@@ -34,26 +34,6 @@ namespace nyx {
 
 std::ostream& operator<<(std::ostream& out, Object* o);
 
-class Pair : public Object {
-  Value first_{};
-  Value second_{};
-public:
-  Pair(void) : Object(ObjType::PAIR) {}
-  Pair(Pair&& r)
-    : Object(ObjType::PAIR)
-    , first_(std::move(r.first_))
-    , second_(std::move(r.second_)) {
-  }
-
-  inline void set_first(Value v) { first_ = v; }
-  inline Value first(void) const { return first_; }
-  inline void set_second(Value v) { second_ = v; }
-  inline Value second(void) const { return second_; }
-
-  virtual std::size_t size(void) const override;
-  virtual std::string stringify(void) const override;
-};
-
 class VM : private UnCopyable {
   byte_t* heaptr_{};
   byte_t* fromspace_{};
@@ -67,18 +47,21 @@ class VM : private UnCopyable {
     return reinterpret_cast<Object*>(x);
   }
 
+  template <typename Source> inline void* as_address(Source* x) const {
+    return reinterpret_cast<void*>(x);
+  }
+
   void initialize(void);
-  Value copy(Value value);
-  void copy_references(Object* obj);
-  void* allocate(std::size_t n);
 public:
   VM(void);
   ~VM(void);
 
+  Value move_object(Value from_ref);
+  void* allocate(std::size_t n);
   void collect(void);
 
-  void push_numeric(double value);
-  void push_pair(void);
+  // void push_numeric(double value);
+  // void push_pair(void);
   Value pop(void);
 
   void print_stack(void);

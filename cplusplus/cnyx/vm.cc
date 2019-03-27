@@ -35,16 +35,6 @@ std::ostream& operator<<(std::ostream& out, Object* o) {
   return out << o->stringify();
 }
 
-std::size_t Pair::size(void) const {
-  return sizeof(*this);
-}
-
-std::string Pair::stringify(void) const {
-  std::stringstream ss;
-  ss << "(" << first_ << ", " << second_ << ")";
-  return ss.str();
-}
-
 VM::VM(void) {
   initialize();
 }
@@ -60,66 +50,24 @@ void VM::initialize(void) {
   allocptr_ = fromspace_;
 }
 
-Value VM::copy(Value from_ref) {
+Value VM::move_object(Value from_ref) {
+  if (from_ref == nullptr)
+    return nullptr;
   if (from_ref->get_type() == ObjType::FORWARD)
-    return from_ref->cast_to<Forward*>()->to();
+    return from_ref->down_to<Forward>()->to();
 
   auto* p = allocptr_;
   allocptr_ += from_ref->size();
 
   std::cout
     << "copy " << from_ref << " from " << from_ref->address()
-    << " to " << reinterpret_cast<void*>(p) << std::endl;
+    << " to " << as_address(p) << std::endl;
 
-  Object* to_ref{};
-  switch (from_ref->get_type()) {
-  case ObjType::NUMERIC:
-    to_ref = new (p) Numeric(std::move(*from_ref->cast_to<Numeric*>()));
-    break;
-  case ObjType::FORWARD:
-    to_ref = new (p) Forward(std::move(*from_ref->cast_to<Forward*>()));
-    break;
-  case ObjType::PAIR:
-    to_ref = new (p) Pair(std::move(*from_ref->cast_to<Pair*>()));
-    break;
-  }
-
+  Object* to_ref = from_ref->move_to(p);
   auto* old = new (from_ref->address()) Forward();
   old->set_to(to_ref);
 
   return to_ref;
-}
-
-void VM::copy_references(Object* obj) {
-  switch (obj->get_type()) {
-  case ObjType::FORWARD: assert(false); break;
-  case ObjType::NUMERIC: break;
-  case ObjType::PAIR:
-    {
-      auto* pair = obj->cast_to<Pair*>();
-      pair->set_first(copy(pair->first()));
-      pair->set_second(copy(pair->second()));
-    } break;
-  }
-}
-
-void VM::collect(void) {
-  std::cout << "********* collect: starting *********" << std::endl;
-
-  std::swap(fromspace_, tospace_);
-  allocptr_ = fromspace_;
-
-  for (auto i = 0u; i < stack_.size(); ++i)
-    stack_[i] = copy(stack_[i]);
-
-  byte_t* p = fromspace_;
-  while (p < allocptr_) {
-    auto* obj = as_object(p);
-    copy_references(obj);
-    p += obj->size();
-  }
-
-  std::cout << "********* collect: finished *********" << std::endl;
 }
 
 void* VM::allocate(std::size_t n) {
@@ -140,17 +88,23 @@ void* VM::allocate(std::size_t n) {
   return r;
 }
 
-void VM::push_numeric(double value) {
-  auto* obj = new (allocate(sizeof(Numeric))) Numeric();
-  obj->set_value(value);
-  stack_.push_back(obj);
-}
+void VM::collect(void) {
+  std::cout << "********* collect: starting *********" << std::endl;
 
-void VM::push_pair(void) {
-  auto* obj = new (allocate(sizeof(Pair))) Pair();
-  obj->set_second(pop());
-  obj->set_first(pop());
-  stack_.push_back(obj);
+  std::swap(fromspace_, tospace_);
+  allocptr_ = fromspace_;
+
+  for (auto i = 0u; i < stack_.size(); ++i)
+    stack_[i] = move_object(stack_[i]);
+
+  byte_t* p = fromspace_;
+  while (p < allocptr_) {
+    auto* obj = as_object(p);
+    obj->traverse(this);
+    p += obj->size();
+  }
+
+  std::cout << "********* collect: finished *********" << std::endl;
 }
 
 Value VM::pop(void) {
