@@ -24,30 +24,73 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#include <sstream>
+#include "object.hh"
 
 namespace nyx {
 
-class Copyable {
-protected:
-  Copyable(void) = default;
-  ~Copyable(void) = default;
-};
+std::size_t Array::size(void) const {
+  return sizeof(*this) + count_ * sizeof(Value);
+}
 
-class UnCopyable {
-  UnCopyable(const UnCopyable&) = delete;
-  UnCopyable& operator=(const UnCopyable&) = delete;
-protected:
-  UnCopyable(void) = default;
-  ~UnCopyable(void) = default;
-};
+std::string Array::stringify(void) const {
+  // TODO:
+  return "array";
+}
 
-template <typename Enum> class EnumUtil : private UnCopyable {
-public:
-  static int as_int(Enum x) { return static_cast<int>(x); }
-  static Enum as_enum(int x) { return static_cast<Enum>(x); }
-};
+std::size_t Forward::size(void) const {
+  return sizeof(*this);
+}
 
-using byte_t = unsigned char;
+std::string Forward::stringify(void) const {
+  std::stringstream ss;
+  ss << "fwd->" << to_->address();
+  return ss.str();
+}
+
+std::size_t Function::size(void) const {
+  return sizeof(*this) + code_size_;
+}
+
+std::string Function::stringify(void) const {
+  // TODO:
+  return "function";
+}
+
+std::size_t Numeric::size(void) const {
+  return sizeof(*this);
+}
+
+std::string Numeric::stringify(void) const {
+  std::stringstream ss;
+  ss << value_;
+  return ss.str();
+}
+
+std::size_t String::size(void) const {
+  return sizeof(*this) + count_;
+}
+
+std::string String::stringify(void) const {
+  return chars_;
+}
+
+std::size_t TableEntries::size(void) const {
+  return sizeof(*this) + count_ * sizeof(TableEntry);
+}
+
+std::string TableEntries::stringify(void) const {
+  // TODO:
+  return "table entries";
+}
+
+std::size_t Table::size(void) const {
+  return sizeof(*this);
+}
+
+std::string Table::stringify(void) const {
+  // TODO:
+  return "table";
+}
 
 }
