@@ -70,42 +70,42 @@ VM::VM(void) {
 }
 
 VM::~VM(void) {
-  delete [] from_beg_;
-  delete [] to_beg_;
+  delete [] heaptr_;
 }
 
 void VM::initialize(void) {
-  from_beg_ = new byte_t[kMaxHeap];
-  from_end_ = from_beg_;
-  to_beg_ = new byte_t[kMaxHeap];
-  to_end_ = to_beg_;
+  heaptr_ = new byte_t[kMaxHeap << 1];
+  fromspace_ = heaptr_;
+  tospace_ = heaptr_ + kMaxHeap;
+  allocptr_ = fromspace_;
 }
 
 Value VM::copy(Value from_ref) {
   if (from_ref->get_type() == ObjType::FORWARD)
     return from_ref->cast_to<Forward*>()->to();
 
+  auto* p = allocptr_;
+  allocptr_ += from_ref->size();
+
   std::cout
     << "copy " << from_ref << " from " << from_ref->address()
-    << " to " << reinterpret_cast<void*>(to_end_) << std::endl;
+    << " to " << reinterpret_cast<void*>(p) << std::endl;
 
-  auto size = from_ref->size();
   Object* to_ref{};
   switch (from_ref->get_type()) {
   case ObjType::NUMERIC:
-    to_ref = new (to_end_) Numeric(std::move(*from_ref->cast_to<Numeric*>()));
+    to_ref = new (p) Numeric(std::move(*from_ref->cast_to<Numeric*>()));
     break;
   case ObjType::FORWARD:
-    to_ref = new (to_end_) Forward(std::move(*from_ref->cast_to<Forward*>()));
+    to_ref = new (p) Forward(std::move(*from_ref->cast_to<Forward*>()));
     break;
   case ObjType::PAIR:
-    to_ref = new (to_end_) Pair(std::move(*from_ref->cast_to<Pair*>()));
+    to_ref = new (p) Pair(std::move(*from_ref->cast_to<Pair*>()));
     break;
   }
 
   auto* old = new (from_ref->address()) Forward();
   old->set_to(to_ref);
-  to_end_ += size;
 
   return to_ref;
 }
@@ -124,37 +124,35 @@ void VM::copy_references(Object* obj) {
 }
 
 void VM::collect(void) {
+  std::swap(fromspace_, tospace_);
+  allocptr_ = fromspace_;
+
   for (auto i = 0u; i < stack_.size(); ++i)
     stack_[i] = copy(stack_[i]);
 
-  byte_t* ptr = to_beg_;
-  while (ptr < to_end_) {
-    auto* obj = as_object(ptr);
+  byte_t* p = fromspace_;
+  while (p < allocptr_) {
+    auto* obj = as_object(p);
     copy_references(obj);
-    ptr += obj->size();
+    p += obj->size();
   }
-
-  byte_t* tmp = from_beg_;
-  from_beg_ = to_beg_;
-  from_end_ = to_end_;
-  to_beg_ = to_end_ = tmp;
 }
 
 void* VM::allocate(std::size_t n) {
-  if (from_end_ + n > from_beg_ + kMaxHeap) {
+  if (allocptr_ + n > fromspace_ + kMaxHeap) {
     collect();
 
-    if (from_end_ + n > from_beg_ + kMaxHeap) {
+    if (allocptr_ + n > fromspace_ + kMaxHeap) {
       std::cerr
         << "Heap full, need " << n
-        << " bytes, but only " << (kMaxHeap - (from_end_ - from_beg_))
+        << " bytes, but only " << (kMaxHeap - (allocptr_ - fromspace_))
         << " available" << std::endl;
       std::exit(-1);
     }
   }
 
-  auto* r = from_end_;
-  from_end_ += n;
+  auto* r = allocptr_;
+  allocptr_ += n;
   return r;
 }
 

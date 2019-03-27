@@ -108,13 +108,13 @@ public:
 };
 
 class VM : private UnCopyable {
-  byte_t* from_beg_{};
-  byte_t* from_end_{};
-  byte_t* to_beg_{};
-  byte_t* to_end_{};
+  byte_t* heaptr_{};
+  byte_t* fromspace_{};
+  byte_t* tospace_{};
+  byte_t* allocptr_{};
   std::vector<Value> stack_;
 
-  static constexpr std::size_t kMaxHeap = 10 * 1024 * 1024;
+  static constexpr std::size_t kMaxHeap = (1 << 20) * 10;
 
   template <typename Source> inline Object* as_object(Source* x) const {
     return reinterpret_cast<Object*>(x);
