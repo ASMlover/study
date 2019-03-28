@@ -57,10 +57,26 @@ struct ParseRule {
   Precedence precedence;
 };
 
+struct Local {
+  Token name;
+  int depth{};
+};
+
+class InnerCompiler : private UnCopyable {
+  static constexpr std::size_t kLocalCount = 256;
+
+  std::vector<Local> locals_{kLocalCount};
+  int local_count_{};
+  int scope_depth_{};
+public:
+  InnerCompiler(void) {}
+};
+
 class Parser
   : private UnCopyable, public std::enable_shared_from_this<Parser> {
   Chunk& compiling_chunk_;
   Scanner& scan_;
+  InnerCompiler& compiler_;
   Token prev_; // previous token
   Token curr_; // current token
   bool had_error_{};
@@ -237,7 +253,8 @@ class Parser
     return rules[static_cast<int>(kind)];
   }
 public:
-  Parser(Chunk& c, Scanner& s) : compiling_chunk_(c), scan_(s) {}
+  Parser(Chunk& c, Scanner& s, InnerCompiler& ic)
+    : compiling_chunk_(c), scan_(s), compiler_(ic) {}
   bool had_error(void) const { return had_error_; }
 
   void advance(void) {
@@ -408,10 +425,12 @@ public:
   }
 
   void statement(void) {
-    // statement -> expr_stmt | print_stmt ;
+    // statement -> expr_stmt | print_stmt | block_stmt ;
 
     if (match(TokenKind::KW_PRINT)) {
       print_stmt();
+    }
+    else if (match(TokenKind::TK_LBRACE)) {
     }
     else {
       expr_stmt();
@@ -429,41 +448,25 @@ public:
     emit_byte(OpCode::OP_POP);
     consume(TokenKind::TK_SEMI, "expect `;` after expression ...");
   }
+
+  void block_stmt(void) {
+  }
 };
 
 bool Compiler::compile(Chunk& chunk, const std::string& source_bytes) {
+  // declaration  -> var_decl | statement ;
+  // statement    -> expr_stmt | print_stmt | block_stmt ;
+  // block_stmt   -> "{" declaration* "}" ;
+
   Scanner s(source_bytes);
+  InnerCompiler ic;
+  auto p = std::make_shared<Parser>(chunk, s, ic);
 
-  // int lineno = -1;
-  // for (;;) {
-  //   Token token = s.scan_token();
-  //   if (token.get_lineno() != lineno) {
-  //     fprintf(stdout, "%4d ", token.get_lineno());
-  //     lineno = token.get_lineno();
-  //   }
-  //   else {
-  //     std::cout << "   | ";
-  //   }
-  //   fprintf(stdout, "%2d %-16s `%s`\n",
-  //       token.get_kind(),
-  //       get_token_name(token.get_kind()), token.get_literal().c_str());
-  //   if (token.get_kind() == TokenKind::TK_EOF)
-  //     break;
-  // }
-
-  // statement    -> expr_stmt | for_stmt | if_stmt | print_stmt
-  //              | return_stmt | while_stmt | block_stmt ;
-  // declaration  -> class_decl | fun_decl | var_decl | statement ;
-
-  auto p = std::make_shared<Parser>(chunk, s);
   p->advance();
 
   while (!p->match(TokenKind::TK_EOF)) {
     p->declaration();
   }
-  // p->expression();
-  // p->consume(TokenKind::TK_EOF, "expect end of expression ...");
-
   p->end_compiler();
 
   return !p->had_error();
