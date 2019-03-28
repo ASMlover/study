@@ -31,6 +31,10 @@
 
 namespace nyx {
 
+std::ostream& operator<<(std::ostream& out, Object* o) {
+  return out << o->stringify();
+}
+
 Array::Array(int count)
   : Object(ObjType::ARRAY)
   , count_(count) {

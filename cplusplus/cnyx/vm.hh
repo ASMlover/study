@@ -32,8 +32,6 @@
 
 namespace nyx {
 
-std::ostream& operator<<(std::ostream& out, Object* o);
-
 class VM : private UnCopyable {
   byte_t* heaptr_{};
   byte_t* fromspace_{};

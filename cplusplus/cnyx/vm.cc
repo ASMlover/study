@@ -31,10 +31,6 @@
 
 namespace nyx {
 
-std::ostream& operator<<(std::ostream& out, Object* o) {
-  return out << o->stringify();
-}
-
 VM::VM(void) {
   initialize();
 }

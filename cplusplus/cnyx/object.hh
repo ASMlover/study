@@ -56,8 +56,8 @@ public:
   inline void* address(void) const { return (void*)this; }
   inline byte_t* as_byte(void) { return reinterpret_cast<byte_t*>(this); }
 
-  template <typename Target> inline Target cast_to(void) {
-    return static_cast<Target>(this);
+  template <typename Target> inline Target* cast_to(void) {
+    return static_cast<Target*>(this);
   }
 
   template <typename Target> inline Target* down_to(void) {
@@ -71,6 +71,8 @@ public:
   virtual Object* move_to(void* p) = 0;
 };
 using Value = Object*;
+
+std::ostream& operator<<(std::ostream& out, Object* o);
 
 class Array : public Object {
   int count_{};
