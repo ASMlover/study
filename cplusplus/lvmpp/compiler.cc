@@ -183,6 +183,15 @@ class Parser
     return make_constant(create_string(name.get_literal()));
   }
 
+  int resolve_local(const Token& name) {
+    for (int i = curr_compiler_.local_count - 1; i >= 0; --i) {
+      auto& local = curr_compiler_.locals[i];
+      if (name.literal_equal(local.name))
+        return i;
+    }
+    return -1;
+  }
+
   void add_local(const Token& name) {
     if (curr_compiler_.local_count >= kLocalLimit) {
       error("too many local variables in functions ...");
@@ -201,7 +210,7 @@ class Parser
       auto& local = curr_compiler_.locals[i];
       if (local.depth != -1 && local.depth < curr_compiler_.scope_depth)
         break;
-      if (name.get_literal() == local.name.get_literal()) {
+      if (name.literal_equal(local.name)) {
         error("variable with this name already declared in this scope ...");
       }
     }
@@ -446,13 +455,20 @@ public:
   }
 
   void named_variable(const Token& name, bool can_assign) {
-    std::uint8_t arg = identifier_constant(name);
+    std::uint8_t getop{OpCode::OP_GET_LOCAL}, setop{OpCode::OP_SET_LOCAL};
+    int arg = resolve_local(name);
+    if (arg == -1) {
+      arg = identifier_constant(name);
+      getop = OpCode::OP_GET_GLOBAL;
+      setop = OpCode::OP_SET_GLOBAL;
+    }
+
     if (can_assign && match(TokenKind::TK_EQUAL)) {
       expression();
-      emit_bytes(OpCode::OP_SET_GLOBAL, arg);
+      emit_bytes(setop, arg);
     }
     else {
-      emit_bytes(OpCode::OP_GET_GLOBAL, arg);
+      emit_bytes(getop, arg);
     }
   }
 

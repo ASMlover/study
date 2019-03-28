@@ -102,11 +102,10 @@ InterpretRet VM::run(void) {
 
     std::uint8_t instruction = _rdbyte();
     switch (instruction) {
-    case OpCode::OP_CONSTANT:
-      {
-        Value constant = _rdconstant();
-        push(constant);
-      } break;
+    case OpCode::OP_CONSTANT: {
+      Value constant = _rdconstant();
+      push(constant);
+    } break;
     case OpCode::OP_NEGATIVE:
       if (!peek(0).is_numeric()) {
         runtime_error("operand must be a numeric ...");
@@ -118,38 +117,42 @@ InterpretRet VM::run(void) {
     case OpCode::OP_TRUE: push(true); break;
     case OpCode::OP_FALSE: push(false); break;
     case OpCode::OP_POP: pop(); break;
-    case OpCode::OP_GET_GLOBAL:
-      {
-        StringObject* name = _rdstring();
-        auto value_iter = globals_.find(name->hash_code());
-        if (value_iter ==  globals_.end()) {
-          runtime_error("undefined variable `%s` ...", name->c_str());
-          return InterpretRet::RUNTIME_ERROR;
-        }
-        push(value_iter->second);
-      } break;
-    case OpCode::OP_SET_GLOBAL:
-      {
-        StringObject* name = _rdstring();
-        auto value_iter = globals_.find(name->hash_code());
-        if (value_iter == globals_.end()) {
-          runtime_error("undefined variable `%s` ...", name->c_str());
-          return InterpretRet::RUNTIME_ERROR;
-        }
-        globals_[name->hash_code()] = peek(0);
-      } break;
-    case OpCode::OP_DEFINE_GLOBAL:
-      {
-        StringObject* name = _rdstring();
-        globals_[name->hash_code()] = peek(0);
-        pop();
-      } break;
-    case OpCode::OP_EQUAL:
-      {
-        Value b = pop();
-        Value a = pop();
-        push(a == b);
-      } break;
+    case OpCode::OP_GET_LOCAL: {
+      auto slot = _rdbyte();
+      push(stack_[slot]);
+    } break;
+    case OpCode::OP_SET_LOCAL: {
+      auto slot = _rdbyte();
+      stack_[slot] = peek(0);
+    } break;
+    case OpCode::OP_GET_GLOBAL: {
+      StringObject* name = _rdstring();
+      auto value_iter = globals_.find(name->hash_code());
+      if (value_iter ==  globals_.end()) {
+        runtime_error("undefined variable `%s` ...", name->c_str());
+        return InterpretRet::RUNTIME_ERROR;
+      }
+      push(value_iter->second);
+    } break;
+    case OpCode::OP_SET_GLOBAL: {
+      StringObject* name = _rdstring();
+      auto value_iter = globals_.find(name->hash_code());
+      if (value_iter == globals_.end()) {
+        runtime_error("undefined variable `%s` ...", name->c_str());
+        return InterpretRet::RUNTIME_ERROR;
+      }
+      globals_[name->hash_code()] = peek(0);
+    } break;
+    case OpCode::OP_DEFINE_GLOBAL: {
+      StringObject* name = _rdstring();
+      globals_[name->hash_code()] = peek(0);
+      pop();
+    } break;
+    case OpCode::OP_EQUAL: {
+      Value b = pop();
+      Value a = pop();
+      push(a == b);
+    } break;
     case OpCode::OP_GREATER: BINARY_OP(>); break;
     case OpCode::OP_LESS: BINARY_OP(<); break;
     case OpCode::OP_ADD:

@@ -45,6 +45,13 @@ static int constant_instruction(
   return offset + 2;
 }
 
+static int byte_instruction(
+    const std::string& name, const Chunk& chunk, int offset) {
+  std::uint8_t slot = chunk.get_code(offset + 1);
+  fprintf(stdout, "%-16s %4d\n", name.c_str(), slot);
+  return offset + 2;
+}
+
 void Chunk::write(std::uint8_t byte, int line) {
   codes_.push_back(byte);
   lines_.push_back(line);
@@ -84,6 +91,10 @@ int Chunk::disassemble_instruction(int offset) {
     return simple_instruction("OP_FALSE", offset);
   case OpCode::OP_POP:
     return simple_instruction("OP_POP", offset);
+  case OpCode::OP_GET_LOCAL:
+    return byte_instruction("OP_GET_LOCAL", *this, offset);
+  case OpCode::OP_SET_LOCAL:
+    return byte_instruction("OP_SET_LOCAL", *this, offset);
   case OpCode::OP_GET_GLOBAL:
     return constant_instruction("OP_GET_GLOBAL", *this, offset);
   case OpCode::OP_SET_GLOBAL:
