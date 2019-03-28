@@ -70,6 +70,9 @@ class InnerCompiler : private UnCopyable {
   int scope_depth_{};
 public:
   InnerCompiler(void) {}
+
+  inline void enter_scope(void) { ++scope_depth_; }
+  inline void leave_scope(void) { --scope_depth_; }
 };
 
 class Parser
@@ -431,6 +434,9 @@ public:
       print_stmt();
     }
     else if (match(TokenKind::TK_LBRACE)) {
+      compiler_.enter_scope();
+      block_stmt();
+      compiler_.leave_scope();
     }
     else {
       expr_stmt();
@@ -450,6 +456,11 @@ public:
   }
 
   void block_stmt(void) {
+    while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE)) {
+      declaration();
+    }
+
+    consume(TokenKind::TK_RBRACE, "expect `}` after block ...");
   }
 };
 
