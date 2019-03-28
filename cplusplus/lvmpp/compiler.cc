@@ -27,6 +27,7 @@
 #include <cstdio>
 #include <functional>
 #include <iostream>
+#include <vector>
 #include "chunk.h"
 #include "scanner.h"
 #include "object.h"
@@ -60,26 +61,30 @@ struct ParseRule {
 struct Local {
   Token name;
   int depth{};
+
+  inline void set_local(const Token& lname, int ldepth) {
+    name = lname;
+    depth = ldepth;
+  }
 };
 
-class InnerCompiler : private UnCopyable {
-  static constexpr std::size_t kLocalCount = 256;
+static constexpr std::size_t kLocalLimit = 256;
+struct CompilerImp {
+  std::vector<Local> locals{kLocalLimit};
+  int local_count{};
+  int scope_depth{};
 
-  std::vector<Local> locals_{kLocalCount};
-  int local_count_{};
-  int scope_depth_{};
-public:
-  InnerCompiler(void) {}
-
-  inline void enter_scope(void) { ++scope_depth_; }
-  inline void leave_scope(void) { --scope_depth_; }
+  inline void append_local(const Token& name) {
+    auto& local = locals[local_count++];
+    local.set_local(name, scope_depth);
+  }
 };
 
 class Parser
   : private UnCopyable, public std::enable_shared_from_this<Parser> {
   Chunk& compiling_chunk_;
   Scanner& scan_;
-  InnerCompiler& compiler_;
+  CompilerImp& curr_compiler_;
   Token prev_; // previous token
   Token curr_; // current token
   bool had_error_{};
@@ -166,6 +171,11 @@ class Parser
 
   std::uint8_t parse_variable(const std::string& err_msg) {
     consume(TokenKind::TK_IDENTIFIER, err_msg);
+
+    declare_variable();
+    if (curr_compiler_.scope_depth > 0)
+      return 0;
+
     return identifier_constant(prev_);
   }
 
@@ -173,7 +183,51 @@ class Parser
     return make_constant(create_string(name.get_literal()));
   }
 
+  void add_local(const Token& name) {
+    if (curr_compiler_.local_count >= kLocalLimit) {
+      error("too many local variables in functions ...");
+      return;
+    }
+    curr_compiler_.append_local(name);
+  }
+
+  void declare_variable(void) {
+    // global variable are implicitly declared
+    if (curr_compiler_.scope_depth == 0)
+      return;
+
+    auto& name = prev_;
+    for (int i = curr_compiler_.local_count - 1; i >= 0; --i) {
+      auto& local = curr_compiler_.locals[i];
+      if (local.depth != -1 && local.depth < curr_compiler_.scope_depth)
+        break;
+      if (name.get_literal() == local.name.get_literal()) {
+        error("variable with this name already declared in this scope ...");
+      }
+    }
+
+    add_local(name);
+  }
+
+  void enter_scope(void) {
+    ++curr_compiler_.scope_depth;
+  }
+
+  void leave_scope(void) {
+    --curr_compiler_.scope_depth;
+
+    while (curr_compiler_.local_count > 0 &&
+        (curr_compiler_.locals[curr_compiler_.local_count - 1].depth >
+         curr_compiler_.scope_depth)) {
+      emit_byte(OpCode::OP_POP);
+      --curr_compiler_.local_count;
+    }
+  }
+
   void define_variable(std::uint8_t global) {
+    if (curr_compiler_.scope_depth > 0)
+      return;
+
     emit_bytes(OpCode::OP_DEFINE_GLOBAL, global);
   }
 
@@ -256,8 +310,8 @@ class Parser
     return rules[static_cast<int>(kind)];
   }
 public:
-  Parser(Chunk& c, Scanner& s, InnerCompiler& ic)
-    : compiling_chunk_(c), scan_(s), compiler_(ic) {}
+  Parser(Chunk& c, Scanner& s, CompilerImp& cimp)
+    : compiling_chunk_(c), scan_(s), curr_compiler_(cimp) {}
   bool had_error(void) const { return had_error_; }
 
   void advance(void) {
@@ -434,9 +488,9 @@ public:
       print_stmt();
     }
     else if (match(TokenKind::TK_LBRACE)) {
-      compiler_.enter_scope();
+      enter_scope();
       block_stmt();
-      compiler_.leave_scope();
+      leave_scope();
     }
     else {
       expr_stmt();
@@ -470,8 +524,8 @@ bool Compiler::compile(Chunk& chunk, const std::string& source_bytes) {
   // block_stmt   -> "{" declaration* "}" ;
 
   Scanner s(source_bytes);
-  InnerCompiler ic;
-  auto p = std::make_shared<Parser>(chunk, s, ic);
+  CompilerImp cimp;
+  auto p = std::make_shared<Parser>(chunk, s, cimp);
 
   p->advance();
 
