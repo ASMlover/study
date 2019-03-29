@@ -53,6 +53,10 @@ public:
     : kind_(kind), literal_(literal), lineno_(lineno) {
   }
 
+  bool literal_equal(const Token& r) const {
+    return literal_ == r.literal_;
+  }
+
   TokenKind get_kind(void) const { return kind_; }
   std::string get_literal(void) const { return literal_; }
   int get_lineno(void) const { return lineno_; }
