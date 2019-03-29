@@ -74,9 +74,9 @@ struct CompilerImp {
   int local_count{};
   int scope_depth{};
 
-  inline void append_local(const Token& name) {
+  inline void append_local(const Token& name, int depth) {
     auto& local = locals[local_count++];
-    local.set_local(name, scope_depth);
+    local.set_local(name, depth);
   }
 };
 
@@ -179,6 +179,14 @@ class Parser
     return identifier_constant(prev_);
   }
 
+  void make_initialized(void) {
+    if (curr_compiler_.scope_depth == 0)
+      return;
+
+    curr_compiler_.locals[curr_compiler_.local_count - 1].depth
+      = curr_compiler_.scope_depth;
+  }
+
   std::uint8_t identifier_constant(const Token& name) {
     return make_constant(create_string(name.get_literal()));
   }
@@ -186,8 +194,11 @@ class Parser
   int resolve_local(const Token& name) {
     for (int i = curr_compiler_.local_count - 1; i >= 0; --i) {
       auto& local = curr_compiler_.locals[i];
-      if (name.literal_equal(local.name))
+      if (name.literal_equal(local.name)) {
+        if (local.depth == -1)
+          error("cannot read local variable in its own initializer ...");
         return i;
+      }
     }
     return -1;
   }
@@ -197,7 +208,7 @@ class Parser
       error("too many local variables in functions ...");
       return;
     }
-    curr_compiler_.append_local(name);
+    curr_compiler_.append_local(name, -1);
   }
 
   void declare_variable(void) {
@@ -234,8 +245,10 @@ class Parser
   }
 
   void define_variable(std::uint8_t global) {
-    if (curr_compiler_.scope_depth > 0)
+    if (curr_compiler_.scope_depth > 0) {
+      make_initialized();
       return;
+    }
 
     emit_bytes(OpCode::OP_DEFINE_GLOBAL, global);
   }
