@@ -82,8 +82,12 @@ public:
 // [G R A M M E R]
 //
 // declaration  -> var_decl | statement ;
+// var_decl     -> "var" IDENTIFIER ( "=" expression )? ";" ;
 //
-// statement    -> print_stmt | expr_stmt ;
+// statement    -> print_stmt | block_stmt | expr_stmt ;
+// print_stmt   -> "print" expression ";" ;
+// block_stmt   -> "{" declaration* "}" ;
+// expr_stmt    -> expression ";" ;
 
 class Parser
   : private UnCopyable, public std::enable_shared_from_this<Parser> {
@@ -267,6 +271,14 @@ class Parser
   void define_variable(OpCode global) {
     emit_codes(OpCode::OP_DEFINE_GLOBAL, global);
   }
+
+  void enter_scope(void) {
+    curr_compiler_.inc_depth();
+  }
+
+  void leave_scope(void) {
+    curr_compiler_.dec_depth();
+  }
 public:
   Parser(Chunk& c, Scanner& s, ParseCompiler& p)
     : compiling_chunk_(c), scanner_(s), curr_compiler_(p) {}
@@ -337,6 +349,8 @@ public:
   }
 
   void declaration(void) {
+    // declaration -> var_decl | statement ;
+
     if (match(TokenKind::KW_VAR))
       var_decl();
     else
@@ -347,6 +361,8 @@ public:
   }
 
   void var_decl(void) {
+    // var_decl -> "var" IDENTIFIER ( "=" expression )? ";" ;
+
     OpCode global = parse_variable("expect variable name");
 
     if (match(TokenKind::TK_EQUAL))
@@ -359,19 +375,41 @@ public:
   }
 
   void statement(void) {
-    if (match(TokenKind::KW_PRINT))
+    // statement -> print_stmt | block_stmt | expr_stmt ;
+
+    if (match(TokenKind::KW_PRINT)) {
       print_stmt();
-    else
+    }
+    else if (match(TokenKind::TK_LBRACE)) {
+      enter_scope();
+      block_stmt();
+      leave_scope();
+    }
+    else {
       expr_stmt();
+    }
   }
 
   void print_stmt(void) {
+    // print_stmt -> "print" expression ";" ;
+
     expression();
     consume(TokenKind::TK_SEMI, "expect `;` after value");
     emit_code(OpCode::OP_PRINT);
   }
 
+  void block_stmt(void) {
+    // block_stmt -> "{" declaration* "}" ;
+
+    while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE)) {
+      declaration();
+    }
+    consume(TokenKind::TK_RBRACE, "expect `}` after block");
+  }
+
   void expr_stmt(void) {
+    // expr_stmt -> expression ";" ;
+
     expression();
     emit_code(OpCode::OP_POP);
     consume(TokenKind::TK_SEMI, "expect `;` after expression");
