@@ -62,21 +62,35 @@ public:
   struct Local {
     Token name;
     int depth{};
+
+    inline void set(const Token& lname, int ldepth) {
+      name = lname;
+      depth = ldepth;
+    }
   };
 private:
   static constexpr std::size_t kLocalLimit = 256;
   std::vector<Local> locals_{kLocalLimit};
+  int local_count_{};
   int scope_depth_{};
 public:
   ParseCompiler(void) {}
 
   inline Local& get(std::size_t i) { return locals_[i]; }
-  inline Local& peek(void) { return locals_.back(); }
-  inline int local_count(void) const { return static_cast<int>(locals_.size()); }
+  inline const Local& get(std::size_t i) const { return locals_[i]; }
+  inline Local& peek(void) { return locals_[local_count_ - 1]; }
+  inline const Local& peek(void) const { return locals_[local_count_ - 1]; }
+  inline int local_count(void) const { return local_count_; }
   inline int scope_depth(void) const { return scope_depth_; }
 
   inline int inc_depth(void) { return ++scope_depth_; }
   inline int dec_depth(void) { return --scope_depth_; }
+
+  inline void push_local(const Token& name) {
+    auto& local = locals_[local_count_++];
+    local.set(name, scope_depth_);
+  }
+  inline void pop_local(void) { --local_count_; }
 };
 
 // [G R A M M E R]
@@ -261,6 +275,12 @@ class Parser
 
   OpCode parse_variable(const std::string& message) {
     consume(TokenKind::TK_IDENTIFIER, message);
+
+    declare_variable();
+    // exit function if in a local scope, locals are't looked up by name.
+    if (curr_compiler_.scope_depth() > 0)
+      return EnumUtil<OpCode>::as_enum(0);
+
     return identifier_constant(prev_);
   }
 
@@ -268,7 +288,32 @@ class Parser
     return make_constant(Object::create_string(name.get_literal()));
   }
 
+  void add_local(const Token& name) {
+    curr_compiler_.push_local(name);
+  }
+
+  void declare_variable(void) {
+    // global variables are implicitly declared
+    if (curr_compiler_.scope_depth() == 0)
+      return;
+
+    auto& name = prev_;
+    for (int i = curr_compiler_.local_count() - 1; i >= 0; --i) {
+      auto& local = curr_compiler_.get(i);
+      if (local.depth != -1 && local.depth < curr_compiler_.scope_depth())
+        break;
+      if (name.literal_equal(local.name))
+        error("variable with this name already declared in this scope");
+    }
+    add_local(name);
+  }
+
   void define_variable(OpCode global) {
+    if (curr_compiler_.scope_depth() > 0) {
+      // emit the code to store a local variable if in a local scope
+      return;
+    }
+
     emit_codes(OpCode::OP_DEFINE_GLOBAL, global);
   }
 
@@ -278,6 +323,12 @@ class Parser
 
   void leave_scope(void) {
     curr_compiler_.dec_depth();
+
+    while (curr_compiler_.local_count() > 0 &&
+        curr_compiler_.peek().depth > curr_compiler_.scope_depth()) {
+      emit_code(OpCode::OP_POP);
+      curr_compiler_.pop_local();
+    }
   }
 public:
   Parser(Chunk& c, Scanner& s, ParseCompiler& p)
