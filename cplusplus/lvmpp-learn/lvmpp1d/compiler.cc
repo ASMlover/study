@@ -27,6 +27,7 @@
 #include <cstdio>
 #include <functional>
 #include <iostream>
+#include <vector>
 #include "scanner.hh"
 #include "chunk.hh"
 #include "compiler.hh"
@@ -56,6 +57,28 @@ struct ParseRule {
   Precedence precedence;
 };
 
+class ParseCompiler : private UnCopyable {
+public:
+  struct Local {
+    Token name;
+    int depth{};
+  };
+private:
+  static constexpr std::size_t kLocalLimit = 256;
+  std::vector<Local> locals_{kLocalLimit};
+  int scope_depth_{};
+public:
+  ParseCompiler(void) {}
+
+  inline Local& get(std::size_t i) { return locals_[i]; }
+  inline Local& peek(void) { return locals_.back(); }
+  inline int local_count(void) const { return static_cast<int>(locals_.size()); }
+  inline int scope_depth(void) const { return scope_depth_; }
+
+  inline int inc_depth(void) { return ++scope_depth_; }
+  inline int dec_depth(void) { return --scope_depth_; }
+};
+
 // [G R A M M E R]
 //
 // declaration  -> var_decl | statement ;
@@ -66,6 +89,7 @@ class Parser
   : private UnCopyable, public std::enable_shared_from_this<Parser> {
   Chunk& compiling_chunk_;
   Scanner& scanner_;
+  ParseCompiler& curr_compiler_;
   Token prev_; // previous token
   Token curr_; // current token
   bool had_error_{};
@@ -244,7 +268,8 @@ class Parser
     emit_codes(OpCode::OP_DEFINE_GLOBAL, global);
   }
 public:
-  Parser(Chunk& c, Scanner& s) : compiling_chunk_(c), scanner_(s) {}
+  Parser(Chunk& c, Scanner& s, ParseCompiler& p)
+    : compiling_chunk_(c), scanner_(s), curr_compiler_(p) {}
   bool had_error(void) const { return had_error_; }
 
   void advance(void) {
@@ -420,7 +445,8 @@ bool Compiler::compile(Chunk& chunk, const std::string& source_bytes) {
 #endif
 
   Scanner scanner(source_bytes);
-  auto p = std::make_shared<Parser>(chunk, scanner);
+  ParseCompiler compiler;
+  auto p = std::make_shared<Parser>(chunk, scanner, compiler);
 
   p->advance();
 
