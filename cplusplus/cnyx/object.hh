@@ -99,6 +99,7 @@ public:
   virtual Object* move_to(void* p) override;
 
   static Array* create(VM* vm, int count);
+  static Array* ensure(VM* vm, Array* orig_array, int new_count);
 };
 
 class Forward : public Object {
@@ -137,6 +138,7 @@ public:
   inline Value get_constant(int i) const { return constants_->get_element(i); }
   inline int code_size(void) const { return code_size_; }
   inline const std::uint8_t* codes(void) const { return codes_; }
+  void dump(void);
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;

@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cassert>
+#include <iostream>
 #include <sstream>
 #include "object.hh"
 #include "vm.hh"
@@ -37,6 +38,18 @@ std::ostream& operator<<(std::ostream& out, Object* o) {
 
 template <typename T> inline T* __offset_of(void* startptr, std::size_t offset) {
   return reinterpret_cast<T*>(reinterpret_cast<byte_t*>(startptr) + offset);
+}
+
+inline int power_of_2ceil(int n) {
+  --n;
+  n |= n >> 1;
+  n |= n >> 2;
+  n |= n >> 4;
+  n |= n >> 8;
+  n |= n >> 16;
+  ++n;
+
+  return n;
 }
 
 Array::Array(int count)
@@ -70,6 +83,20 @@ Array* Array::create(VM* vm, int count) {
   return new (p) Array(count);
 }
 
+Array* Array::ensure(VM* vm, Array* orig_array, int new_count) {
+  int orig_count = orig_array == nullptr ? 0 : orig_array->count();
+  if (orig_count >= new_count)
+    return orig_array;
+
+  new_count = power_of_2ceil(new_count);
+  auto* new_array = create(vm, new_count);
+  if (orig_array != nullptr) {
+    for (int i = 0; i < orig_array->count(); ++i)
+      new_array->set_element(i, orig_array->get_element(i));
+  }
+  return new_array;
+}
+
 std::size_t Forward::size(void) const {
   return sizeof(*this);
 }
@@ -98,6 +125,24 @@ Function::Function(Array* constants, std::uint8_t* codes, int code_size)
   , code_size_(code_size) {
   codes_ = __offset_of<std::uint8_t>(this, sizeof(*this));
   memcpy(codes_, codes, sizeof(std::uint8_t) * code_size_);
+}
+
+void Function::dump(void) {
+  for (int i = 0; i < code_size_;) {
+    switch (codes_[i++]) {
+    case OpCode::OP_CONSTANT:
+      {
+        std::uint8_t constant = codes_[i++];
+        fprintf(stdout, "%-10s %5d `", "OP_CONSTANT", constant);
+        std::cout << constants_->get_element(constant) << std::endl;
+      } break;
+    case OpCode::OP_ADD: std::cout << "OP_ADD" << std::endl; break;
+    case OpCode::OP_SUB: std::cout << "OP_SUB" << std::endl; break;
+    case OpCode::OP_MUL: std::cout << "OP_MUL" << std::endl; break;
+    case OpCode::OP_DIV: std::cout << "OP_DIV" << std::endl; break;
+    case OpCode::OP_RETURN: std::cout << "OP_RETURN" << std::endl; break;
+    }
+  }
 }
 
 std::size_t Function::size(void) const {
