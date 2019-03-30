@@ -32,6 +32,15 @@
 
 namespace nyx {
 
+enum OpCode {
+  OP_CONSTANT,
+  OP_ADD, // +
+  OP_SUB, // -
+  OP_MUL, // *
+  OP_DIV, // /
+  OP_RETURN, // return
+};
+
 class VM : private UnCopyable {
   byte_t* heaptr_{};
   byte_t* fromspace_{};
@@ -49,6 +58,16 @@ class VM : private UnCopyable {
     return reinterpret_cast<void*>(x);
   }
 
+  inline void push(Value val) {
+    stack_.push_back(val);
+  }
+
+  inline Value pop(void) {
+    Value val = stack_.back();
+    stack_.pop_back();
+    return val;
+  }
+
   void initialize(void);
 public:
   VM(void);
@@ -58,11 +77,8 @@ public:
   void* allocate(std::size_t n);
   void collect(void);
 
-  // void push_numeric(double value);
-  // void push_pair(void);
-  Value pop(void);
-
   void print_stack(void);
+  void run(Function* fn);
 };
 
 }

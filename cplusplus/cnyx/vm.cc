@@ -103,16 +103,54 @@ void VM::collect(void) {
   std::cout << "********* collect: finished *********" << std::endl;
 }
 
-Value VM::pop(void) {
-  Value r = stack_.back();
-  stack_.pop_back();
-  return r;
-}
-
 void VM::print_stack(void) {
   int i{};
   for (auto* o : stack_)
     std::cout << i++ << " : " << o << std::endl;
+}
+
+void VM::run(Function* fn) {
+  const std::uint8_t* ip = fn->codes();
+  for (;;) {
+    switch (*ip++) {
+    case OpCode::OP_CONSTANT:
+      {
+        std::uint8_t constant = *ip++;
+        push(fn->get_constant(constant));
+      } break;
+    case OpCode::OP_ADD:
+      {
+        // TODO: check types
+        double b = pop()->down_to<Numeric>()->value();
+        double a = pop()->down_to<Numeric>()->value();
+        push(Numeric::create(this, a + b));
+      } break;
+    case OpCode::OP_SUB:
+      {
+        // TODO: check types
+        double b = pop()->cast_to<Numeric>()->value();
+        double a = pop()->cast_to<Numeric>()->value();
+        push(Numeric::create(this, a - b));
+      } break;
+    case OpCode::OP_MUL:
+      {
+        // TODO: check types
+        double b = pop()->cast_to<Numeric>()->value();
+        double a = pop()->cast_to<Numeric>()->value();
+        push(Numeric::create(this, a * b));
+      } break;
+    case OpCode::OP_DIV:
+      {
+        // TODO: check types
+        double b = pop()->cast_to<Numeric>()->value();
+        double a = pop()->cast_to<Numeric>()->value();
+        push(Numeric::create(this, a / b));
+      } break;
+    case OpCode::OP_RETURN:
+      std::cout << stack_.back() << std::endl;
+      return;
+    }
+  }
 }
 
 }
