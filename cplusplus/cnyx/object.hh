@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include "common.hh"
 
@@ -86,17 +87,16 @@ public:
     , elements_(std::move(r.elements_)) {
   }
 
-  static std::size_t alloc_size(int count) {
-    return sizeof(Array) + count * sizeof(Value);
-  }
-
   inline int count(void) const { return count_; }
   inline Value* elements(void) const { return elements_; }
+  inline Value get_element(int i) const { return elements_[i]; }
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
   virtual void traverse(VM* vm) override;
   virtual Object* move_to(void* p) override;
+
+  static Array* create(VM* vm, int count);
 };
 
 class Forward : public Object {
@@ -112,14 +112,17 @@ public:
   virtual std::string stringify(void) const override;
   virtual void traverse(VM* vm) override;
   virtual Object* move_to(void* p) override;
+
+  static Forward* create(VM* vm);
 };
 
 class Function : public Object {
   Array* constants_{};
   int code_size_{};
-  char* codes_{};
+  std::uint8_t* codes_{};
 public:
   Function(void) : Object(ObjType::FUNCTION) {}
+  Function(Array* constants, std::uint8_t* codes, int code_size);
   Function(Function&& r)
     : Object(ObjType::FUNCTION)
     , constants_(std::move(r.constants_))
@@ -128,19 +131,24 @@ public:
   }
 
   inline Array* constants(void) const { return constants_; }
+  inline Value get_constant(int i) const { return constants_->get_element(i); }
   inline int code_size(void) const { return code_size_; }
-  inline char* codes(void) const { return codes_; }
+  inline const std::uint8_t* codes(void) const { return codes_; }
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
   virtual void traverse(VM* vm) override;
   virtual Object* move_to(void* p) override;
+
+  static Function* create(VM* vm,
+      Array* constants, std::uint8_t* codes, int code_size);
 };
 
 class Numeric : public Object {
   double value_{};
 public:
   Numeric(void) : Object(ObjType::NUMERIC) {}
+  Numeric(double d) : Object(ObjType::NUMERIC), value_(d) {}
   Numeric(Numeric&& r) : Object(ObjType::NUMERIC), value_(std::move(r.value_)) {}
 
   inline void set_value(double v) { value_ = v; }
@@ -150,6 +158,8 @@ public:
   virtual std::string stringify(void) const override;
   virtual void traverse(VM* vm) override;
   virtual Object* move_to(void* p) override;
+
+  static Numeric* create(VM* vm, double d);
 };
 
 class String : public Object {
@@ -164,10 +174,6 @@ public:
     , chars_(std::move(r.chars_)) {
   }
 
-  static std::size_t alloc_size(int count) {
-    return sizeof(String) + (count + 1) * sizeof(char);
-  }
-
   inline int count(void) const { return count_; }
   inline char* chars(void) const { return chars_; }
   inline char* c_str(void) const { return chars_; }
@@ -176,6 +182,8 @@ public:
   virtual std::string stringify(void) const override;
   virtual void traverse(VM* vm) override;
   virtual Object* move_to(void* p) override;
+
+  static String* create(VM* vm, const char* s, int n);
 };
 
 struct TableEntry { Value key, value; };
@@ -218,6 +226,8 @@ public:
   virtual std::string stringify(void) const override;
   virtual void traverse(VM* vm) override;
   virtual Object* move_to(void* p) override;
+
+  static Table* create(VM* vm);
 };
 
 }

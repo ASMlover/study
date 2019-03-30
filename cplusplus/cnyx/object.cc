@@ -60,6 +60,11 @@ Object* Array::move_to(void* p) {
   return new (p) Array(std::move(*this));
 }
 
+Array* Array::create(VM* vm, int count) {
+  void* p = vm->allocate(sizeof(Array) + count * sizeof(Value));
+  return new (p) Array(count);
+}
+
 std::size_t Forward::size(void) const {
   return sizeof(*this);
 }
@@ -78,8 +83,19 @@ Object* Forward::move_to(void* p) {
   return new (p) Forward(std::move(*this));
 }
 
+Forward* Forward::create(VM* vm) {
+  return new (vm->allocate(sizeof(Forward))) Forward();
+}
+
+Function::Function(Array* constants, std::uint8_t* codes, int code_size)
+  : Object(ObjType::FUNCTION)
+  , constants_(constants)
+  , code_size_(code_size) {
+  memcpy(codes_, codes, sizeof(std::uint8_t) * code_size_);
+}
+
 std::size_t Function::size(void) const {
-  return sizeof(*this) + code_size_;
+  return sizeof(*this) + sizeof(std::uint8_t) * code_size_;
 }
 
 std::string Function::stringify(void) const {
@@ -93,6 +109,12 @@ void Function::traverse(VM* vm) {
 
 Object* Function::move_to(void* p) {
   return new (p) Function(std::move(*this));
+}
+
+Function* Function::create(VM* vm,
+    Array* constants, std::uint8_t* codes, int code_size) {
+  void* p = vm->allocate(sizeof(Function) + sizeof(std::uint8_t) * code_size);
+  return new (p) Function(constants, codes, code_size);
 }
 
 std::size_t Numeric::size(void) const {
@@ -110,6 +132,10 @@ void Numeric::traverse(VM*) {
 
 Object* Numeric::move_to(void* p) {
   return new (p) Numeric(std::move(*this));
+}
+
+Numeric* Numeric::create(VM* vm, double d) {
+  return new (vm->allocate(sizeof(Numeric))) Numeric(d);
 }
 
 String::String(const char* s, int n)
@@ -132,6 +158,11 @@ void String::traverse(VM*) {
 
 Object* String::move_to(void* p) {
   return new (p) String(std::move(*this));
+}
+
+String* String::create(VM* vm, const char* s, int n) {
+  void* p = vm->allocate(sizeof(String) + (n + 1) * sizeof(char));
+  return new (p) String(s, n);
 }
 
 std::size_t TableEntries::size(void) const {
@@ -170,6 +201,10 @@ void Table::traverse(VM* vm) {
 
 Object* Table::move_to(void* p) {
   return new (p) Table(std::move(*this));
+}
+
+Table* Table::create(VM* vm) {
+  return new (vm->allocate(sizeof(Table))) Table();
 }
 
 }
