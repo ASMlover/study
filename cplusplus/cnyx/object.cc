@@ -35,9 +35,14 @@ std::ostream& operator<<(std::ostream& out, Object* o) {
   return out << o->stringify();
 }
 
+template <typename T> inline T* __offset_of(void* startptr, std::size_t offset) {
+  return reinterpret_cast<T*>(reinterpret_cast<byte_t*>(startptr) + offset);
+}
+
 Array::Array(int count)
   : Object(ObjType::ARRAY)
   , count_(count) {
+  elements_ = __offset_of<Value>(this, sizeof(*this));
   for (int i = 0; i < count_; ++i)
     elements_[i] = nullptr;
 }
@@ -91,6 +96,7 @@ Function::Function(Array* constants, std::uint8_t* codes, int code_size)
   : Object(ObjType::FUNCTION)
   , constants_(constants)
   , code_size_(code_size) {
+  codes_ = __offset_of<std::uint8_t>(this, sizeof(*this));
   memcpy(codes_, codes, sizeof(std::uint8_t) * code_size_);
 }
 
@@ -141,6 +147,7 @@ Numeric* Numeric::create(VM* vm, double d) {
 String::String(const char* s, int n)
   : Object(ObjType::STRING)
   , count_(n) {
+  chars_ = __offset_of<char>(this, sizeof(*this));
   std::memcpy(chars_, s, n);
   chars_[count_] = 0;
 }

@@ -78,9 +78,10 @@ std::ostream& operator<<(std::ostream& out, Object* o);
 class Array : public Object {
   int count_{};
   Value* elements_{};
+
+  Array(int count);
 public:
   Array(void) : Object(ObjType::ARRAY) {}
-  Array(int count);
   Array(Array&& r)
     : Object(ObjType::ARRAY)
     , count_(std::move(r.count_))
@@ -90,6 +91,7 @@ public:
   inline int count(void) const { return count_; }
   inline Value* elements(void) const { return elements_; }
   inline Value get_element(int i) const { return elements_[i]; }
+  inline void set_element(int i, Value v) { elements_[i] = v; }
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
@@ -120,9 +122,10 @@ class Function : public Object {
   Array* constants_{};
   int code_size_{};
   std::uint8_t* codes_{};
+
+  Function(Array* constants, std::uint8_t* codes, int code_size);
 public:
   Function(void) : Object(ObjType::FUNCTION) {}
-  Function(Array* constants, std::uint8_t* codes, int code_size);
   Function(Function&& r)
     : Object(ObjType::FUNCTION)
     , constants_(std::move(r.constants_))
@@ -165,9 +168,10 @@ public:
 class String : public Object {
   int count_{};
   char* chars_{};
+
+  String(const char* s, int n);
 public:
   String(void) : Object(ObjType::STRING) {}
-  String(const char* s, int n);
   String(String&& r)
     : Object(ObjType::STRING)
     , count_(std::move(r.count_))
