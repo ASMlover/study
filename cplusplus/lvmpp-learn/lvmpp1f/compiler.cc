@@ -86,9 +86,9 @@ public:
   inline int inc_depth(void) { return ++scope_depth_; }
   inline int dec_depth(void) { return --scope_depth_; }
 
-  inline void push_local(const Token& name) {
+  inline void push_local(const Token& name, int depth = -1) {
     auto& local = locals_[local_count_++];
-    local.set(name, scope_depth_);
+    local.set(name, depth);
   }
   inline void pop_local(void) { --local_count_; }
 };
@@ -284,12 +284,18 @@ class Parser
     return identifier_constant(prev_);
   }
 
+  void make_initialized(void) {
+    if (curr_compiler_.scope_depth() == 0)
+      return;
+    curr_compiler_.peek().depth = curr_compiler_.scope_depth();
+  }
+
   OpCode identifier_constant(const Token& name) {
     return make_constant(Object::create_string(name.get_literal()));
   }
 
   void add_local(const Token& name) {
-    curr_compiler_.push_local(name);
+    curr_compiler_.push_local(name, -1);
   }
 
   void declare_variable(void) {
@@ -311,6 +317,7 @@ class Parser
   void define_variable(OpCode global) {
     if (curr_compiler_.scope_depth() > 0) {
       // emit the code to store a local variable if in a local scope
+      make_initialized();
       return;
     }
 
@@ -320,8 +327,11 @@ class Parser
   OpCode resolve_local(const Token& name) {
     for (int i = curr_compiler_.local_count() - 1; i >= 0; --i) {
       const auto& local = curr_compiler_.get(i);
-      if (name.literal_equal(local.name))
+      if (name.literal_equal(local.name)) {
+        if (local.depth == -1)
+          error("cannot read local variable in its own initializer");
         return EnumUtil<OpCode>::as_enum(i);
+      }
     }
     return OpCode::OP_INVALID;
   }
