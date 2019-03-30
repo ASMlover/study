@@ -55,8 +55,28 @@ static void test_lexer(int argc, char** argv) {
   }
 }
 
-void test_vm(void) {
+static void test_vm(void) {
   nyx::VM vm;
+
+  std::uint8_t codes[12];
+  codes[0] = nyx::OpCode::OP_CONSTANT;
+  codes[1] = 0;
+  codes[2] = nyx::OpCode::OP_CONSTANT;
+  codes[3] = 1;
+  codes[4] = nyx::OpCode::OP_ADD;
+  codes[5] = nyx::OpCode::OP_CONSTANT;
+  codes[6] = 0;
+  codes[7] = nyx::OpCode::OP_CONSTANT;
+  codes[8] = 1;
+  codes[9] = nyx::OpCode::OP_ADD;
+  codes[10] = nyx::OpCode::OP_MUL;
+  codes[11] = nyx::OpCode::OP_RETURN;
+
+  nyx::Array* constants = nyx::Array::create(&vm, 2);
+  constants->set_element(0, nyx::Numeric::create(&vm, 1));
+  constants->set_element(1, nyx::Numeric::create(&vm, 2));
+  nyx::Function* fn = nyx::Function::create(&vm, constants, codes, 12);
+  vm.run(fn);
 
   vm.collect();
   vm.print_stack();
