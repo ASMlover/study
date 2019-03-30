@@ -299,7 +299,7 @@ class Parser
 
     auto& name = prev_;
     for (int i = curr_compiler_.local_count() - 1; i >= 0; --i) {
-      auto& local = curr_compiler_.get(i);
+      const auto& local = curr_compiler_.get(i);
       if (local.depth != -1 && local.depth < curr_compiler_.scope_depth())
         break;
       if (name.literal_equal(local.name))
@@ -315,6 +315,15 @@ class Parser
     }
 
     emit_codes(OpCode::OP_DEFINE_GLOBAL, global);
+  }
+
+  OpCode resolve_local(const Token& name) {
+    for (int i = curr_compiler_.local_count() - 1; i >= 0; --i) {
+      const auto& local = curr_compiler_.get(i);
+      if (name.literal_equal(local.name))
+        return EnumUtil<OpCode>::as_enum(i);
+    }
+    return OpCode::OP_INVALID;
   }
 
   void enter_scope(void) {
@@ -492,14 +501,20 @@ public:
   }
 
   void named_varibale(const Token& name, bool can_assign) {
-    OpCode arg = identifier_constant(name);
+    OpCode getop{OpCode::OP_GET_LOCAL}, setop{OpCode::OP_SET_LOCAL};
+    OpCode arg = resolve_local(name);
+    if (arg == OpCode::OP_INVALID) {
+      arg = identifier_constant(name);
+      getop = OpCode::OP_GET_GLOBAL;
+      setop = OpCode::OP_SET_GLOBAL;
+    }
 
     if (can_assign && match(TokenKind::TK_EQUAL)) {
       expression();
-      emit_codes(OpCode::OP_SET_GLOBAL, arg);
+      emit_codes(setop, arg);
     }
     else {
-      emit_codes(OpCode::OP_GET_GLOBAL, arg);
+      emit_codes(getop, arg);
     }
   }
 

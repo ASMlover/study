@@ -34,11 +34,14 @@
 namespace lvm {
 
 enum class OpCode : int {
+  OP_INVALID = -1, // invalid opcode
   OP_CONSTANT,
   OP_NIL, // nil
   OP_TRUE, // true
   OP_FALSE, // false
   OP_POP, // pop
+  OP_SET_LOCAL, // set local variable
+  OP_GET_LOCAL, // get local variable
   OP_DEFINE_GLOBAL, // define global variable
   OP_SET_GLOBAL, // set global variable
   OP_GET_GLOBAL, // get global variable

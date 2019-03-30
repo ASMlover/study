@@ -67,6 +67,11 @@ int Chunk::disassemble_instruction(int offset) {
     std::cout << get_constant(constant) << "`" << std::endl;
     return offset + 2;
   };
+  auto byte_instruction = [&](const std::string& name, int offset) -> int {
+    int slot = EnumUtil<OpCode>::as_int(codes_[offset + 1]);
+    fprintf(stdout, "%-16s %4d\n", name.c_str(), slot);
+    return offset + 2;
+  };
 
   fprintf(stdout, "%04d ", offset);
   if (offset > 0 && lines_[offset] == lines_[offset - 1])
@@ -85,6 +90,10 @@ int Chunk::disassemble_instruction(int offset) {
     return simple_instruction("OP_FALSE", offset);
   case OpCode::OP_POP:
     return simple_instruction("OP_POP", offset);
+  case OpCode::OP_SET_LOCAL:
+    return byte_instruction("OP_SET_LOCAL", offset);
+  case OpCode::OP_GET_LOCAL:
+    return byte_instruction("OP_GET_LOCAL", offset);
   case OpCode::OP_DEFINE_GLOBAL:
     return constant_instruction("OP_DEFINE_GLOBAL", offset);
   case OpCode::OP_SET_GLOBAL:

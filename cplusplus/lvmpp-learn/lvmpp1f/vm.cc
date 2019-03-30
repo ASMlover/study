@@ -121,6 +121,16 @@ InterpretRet VM::run(void) {
     case OpCode::OP_TRUE: push(true); break;
     case OpCode::OP_FALSE: push(false); break;
     case OpCode::OP_POP: pop(); break;
+    case OpCode::OP_SET_LOCAL:
+      {
+        int slot = EnumUtil<OpCode>::as_int(_rdbyte());
+        stack_[slot] = peek(0);
+      } break;
+    case OpCode::OP_GET_LOCAL:
+      {
+        int slot = EnumUtil<OpCode>::as_int(_rdbyte());
+        push(stack_[slot]);
+      } break;
     case OpCode::OP_DEFINE_GLOBAL:
       {
         StringObject* name = _rdstring();
