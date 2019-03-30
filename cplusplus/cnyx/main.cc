@@ -29,6 +29,7 @@
 #include <sstream>
 #include "lexer.hh"
 #include "vm.hh"
+#include "compile.hh"
 
 static void test_lexer(int argc, char** argv) {
   if (argc < 2) {
@@ -82,12 +83,25 @@ static void test_vm(void) {
   vm.print_stack();
 }
 
+static void test_compiler(void) {
+  nyx::VM vm;
+  nyx::Compile c;
+
+  auto* fn = c.compile(vm, "1+2*3/4-5");
+  fn->dump();
+  vm.run(fn);
+
+  vm.collect();
+  vm.print_stack();
+}
+
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
   std::cout << "Welcome to NYX !" << std::endl;
   // test_lexer(argc, argv);
-  test_vm();
+  // test_vm();
+  test_compiler();
 
   return 0;
 }

@@ -147,7 +147,7 @@ void VM::run(Function* fn) {
         push(Numeric::create(this, a / b));
       } break;
     case OpCode::OP_RETURN:
-      std::cout << stack_.back() << std::endl;
+      // std::cout << stack_.back() << std::endl;
       return;
     }
   }

@@ -134,7 +134,7 @@ void Function::dump(void) {
       {
         std::uint8_t constant = codes_[i++];
         fprintf(stdout, "%-10s %5d `", "OP_CONSTANT", constant);
-        std::cout << constants_->get_element(constant) << std::endl;
+        std::cout << constants_->get_element(constant) << "`" << std::endl;
       } break;
     case OpCode::OP_ADD: std::cout << "OP_ADD" << std::endl; break;
     case OpCode::OP_SUB: std::cout << "OP_SUB" << std::endl; break;
