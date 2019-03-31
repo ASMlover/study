@@ -58,41 +58,7 @@ static void test_lexer(int argc, char** argv) {
 
 static void test_vm(void) {
   nyx::VM vm;
-
-  std::uint8_t codes[12];
-  codes[0] = nyx::OpCode::OP_CONSTANT;
-  codes[1] = 0;
-  codes[2] = nyx::OpCode::OP_CONSTANT;
-  codes[3] = 1;
-  codes[4] = nyx::OpCode::OP_ADD;
-  codes[5] = nyx::OpCode::OP_CONSTANT;
-  codes[6] = 0;
-  codes[7] = nyx::OpCode::OP_CONSTANT;
-  codes[8] = 1;
-  codes[9] = nyx::OpCode::OP_ADD;
-  codes[10] = nyx::OpCode::OP_MUL;
-  codes[11] = nyx::OpCode::OP_RETURN;
-
-  auto* constants = nyx::ArrayObject::create(vm, 2);
-  constants->set_element(0, nyx::NumericObject::create(vm, 1));
-  constants->set_element(1, nyx::NumericObject::create(vm, 2));
-  auto* fn = nyx::FunctionObject::create(vm, constants, codes, 12);
-  vm.run(fn);
-
-  vm.collect();
-  vm.print_stack();
-}
-
-static void test_compiler(void) {
-  nyx::VM vm;
-  nyx::Compile c;
-
-  auto* fn = c.compile(vm, "1+2*3/4-5");
-  fn->dump();
-  vm.run(fn);
-
-  vm.collect();
-  vm.print_stack();
+  vm.interpret("1+2*3/4-5;");
 }
 
 int main(int argc, char* argv[]) {
@@ -100,8 +66,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Welcome to NYX !" << std::endl;
   // test_lexer(argc, argv);
-  // test_vm();
-  test_compiler();
+  test_vm();
 
   return 0;
 }

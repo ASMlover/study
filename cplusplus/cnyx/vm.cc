@@ -27,6 +27,7 @@
 #include <cassert>
 #include <iostream>
 #include <sstream>
+#include "compile.hh"
 #include "vm.hh"
 
 namespace nyx {
@@ -44,49 +45,6 @@ void VM::initialize(void) {
   fromspace_ = heaptr_;
   tospace_ = heaptr_ + kMaxHeap;
   allocptr_ = fromspace_;
-}
-
-Value VM::move_object(Value from_ref) {
-  if (from_ref == nullptr)
-    return nullptr;
-  if (from_ref->get_type() == ObjType::FORWARD)
-    return from_ref->down_to<ForwardObject>()->to();
-
-  auto* p = allocptr_;
-  allocptr_ += from_ref->size();
-
-  std::cout
-    << "copy " << from_ref << " from `" << from_ref->address()
-    << "` to `" << as_address(p) << "`" << std::endl;
-
-  Object* to_ref = from_ref->move_to(p);
-  auto* old = ForwardObject::forward(from_ref->address());
-  old->set_to(to_ref);
-
-  return to_ref;
-}
-
-void* VM::allocate(std::size_t n) {
-  if (allocptr_ + n > fromspace_ + kMaxHeap) {
-    collect();
-
-    if (allocptr_ + n > fromspace_ + kMaxHeap) {
-      std::cerr
-        << "Heap full, need " << n
-        << " bytes, but only " << (kMaxHeap - (allocptr_ - fromspace_))
-        << " available" << std::endl;
-      std::exit(-1);
-    }
-  }
-  else {
-#if defined(DEBUG_GC_STRESS)
-    collect();
-#endif
-  }
-
-  auto* r = allocptr_;
-  allocptr_ += n;
-  return r;
 }
 
 void VM::collect(void) {
@@ -156,6 +114,62 @@ void VM::run(FunctionObject* fn) {
       return;
     }
   }
+}
+
+Value VM::move_object(Value from_ref) {
+  if (from_ref == nullptr)
+    return nullptr;
+  if (from_ref->get_type() == ObjType::FORWARD)
+    return from_ref->down_to<ForwardObject>()->to();
+
+  auto* p = allocptr_;
+  allocptr_ += from_ref->size();
+
+  std::cout
+    << "copy " << from_ref << " from `" << from_ref->address()
+    << "` to `" << as_address(p) << "`" << std::endl;
+
+  Object* to_ref = from_ref->move_to(p);
+  auto* old = ForwardObject::forward(from_ref->address());
+  old->set_to(to_ref);
+
+  return to_ref;
+}
+
+void* VM::allocate(std::size_t n) {
+  if (allocptr_ + n > fromspace_ + kMaxHeap) {
+    collect();
+
+    if (allocptr_ + n > fromspace_ + kMaxHeap) {
+      std::cerr
+        << "Heap full, need " << n
+        << " bytes, but only " << (kMaxHeap - (allocptr_ - fromspace_))
+        << " available" << std::endl;
+      std::exit(-1);
+    }
+  }
+  else {
+#if defined(DEBUG_GC_STRESS)
+    collect();
+#endif
+  }
+
+  auto* r = allocptr_;
+  allocptr_ += n;
+  return r;
+}
+
+void VM::interpret(const std::string& source_bytes) {
+  Compile c;
+
+  auto* fn = c.compile(*this, source_bytes);
+  if (fn == nullptr)
+    return;
+  fn->dump();
+
+  run(fn);
+  collect();
+  print_stack();
 }
 
 }

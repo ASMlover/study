@@ -69,16 +69,17 @@ class VM : private UnCopyable {
   }
 
   void initialize(void);
+  void collect(void);
+  void print_stack(void);
+  void run(FunctionObject* fn);
 public:
   VM(void);
   ~VM(void);
 
   Value move_object(Value from_ref);
   void* allocate(std::size_t n);
-  void collect(void);
 
-  void print_stack(void);
-  void run(FunctionObject* fn);
+  void interpret(const std::string& source_bytes);
 };
 
 }

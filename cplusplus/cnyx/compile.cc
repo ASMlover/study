@@ -64,10 +64,16 @@ class Compiler : private UnCopyable {
   Lexer& lex_;
   Token curr_;
   Token prev_;
+  bool had_error_{};
 
   std::vector<std::uint8_t> codes_;
   ArrayObject* constants_{};
   int num_constants_{};
+
+  void error(const std::string& message) {
+    std::cerr << message << std::endl;
+    had_error_ = true;
+  }
 
   void emit_byte(std::uint8_t byte) {
     codes_.push_back(byte);
@@ -141,7 +147,7 @@ class Compiler : private UnCopyable {
     auto prefix = get_rule(prev_.get_kind()).prefix;
     if (!prefix) {
       // compiler error
-      std::cerr << "expected expression" << std::endl;
+      error("expected expression");
       return;
     }
     prefix(this, can_assign);
@@ -178,22 +184,35 @@ class Compiler : private UnCopyable {
 public:
   Compiler(VM& vm, Lexer& lex) : vm_(vm), lex_(lex) {}
 
+  inline bool had_error(void) const { return had_error_; }
   inline std::uint8_t* get_codes(void) { return codes_.data(); }
   inline const std::uint8_t* get_codes(void) const { return codes_.data(); }
   inline int code_size(void) const { return static_cast<int>(codes_.size()); }
-  inline ArrayObject* get_constants(void) const { return constants_; }
+  inline ArrayObject* get_constants(void) { return constants_; }
+  inline const ArrayObject* get_constants(void) const { return constants_; }
+
+  void finish_compiler(void) {
+    emit_byte(OpCode::OP_RETURN);
+  }
 
   void advance(void) {
     prev_ = curr_;
     curr_ = lex_.next_token();
   }
 
+  void consume(TokenKind kind, const std::string& message) {
+    if (curr_.get_kind() != kind)
+      error(message);
+    advance();
+  }
+
   void expression(void) {
     parse_precedence(Precedence::ASSIGNMENT, true);
   }
 
-  void finish_compiler(void) {
-    emit_byte(OpCode::OP_RETURN);
+  void statement(void) {
+    expression();
+    consume(TokenKind::TK_SEMI, "expected `;` after expression");
   }
 };
 
@@ -202,8 +221,11 @@ FunctionObject* Compile::compile(VM& vm, const std::string& source_bytes) {
   Compiler c(vm, lex);
 
   c.advance();
-  c.expression();
+  c.statement();
   c.finish_compiler();
+
+  if (c.had_error())
+    return nullptr;
 
   return FunctionObject::create(vm, c.get_constants(), c.get_codes(), c.code_size());
 }
