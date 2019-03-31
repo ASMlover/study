@@ -50,17 +50,17 @@ Value VM::move_object(Value from_ref) {
   if (from_ref == nullptr)
     return nullptr;
   if (from_ref->get_type() == ObjType::FORWARD)
-    return from_ref->down_to<Forward>()->to();
+    return from_ref->down_to<ForwardObject>()->to();
 
   auto* p = allocptr_;
   allocptr_ += from_ref->size();
 
   std::cout
-    << "copy " << from_ref << " from " << from_ref->address()
-    << " to " << as_address(p) << std::endl;
+    << "copy " << from_ref << " from `" << from_ref->address()
+    << "` to `" << as_address(p) << "`" << std::endl;
 
   Object* to_ref = from_ref->move_to(p);
-  auto* old = Forward::forward(from_ref->address());
+  auto* old = ForwardObject::forward(from_ref->address());
   old->set_to(to_ref);
 
   return to_ref;
@@ -77,6 +77,11 @@ void* VM::allocate(std::size_t n) {
         << " available" << std::endl;
       std::exit(-1);
     }
+  }
+  else {
+#if defined(DEBUG_GC_STRESS)
+    collect();
+#endif
   }
 
   auto* r = allocptr_;
@@ -109,7 +114,7 @@ void VM::print_stack(void) {
     std::cout << i++ << " : " << o << std::endl;
 }
 
-void VM::run(Function* fn) {
+void VM::run(FunctionObject* fn) {
   const std::uint8_t* ip = fn->codes();
   for (;;) {
     switch (*ip++) {
@@ -121,30 +126,30 @@ void VM::run(Function* fn) {
     case OpCode::OP_ADD:
       {
         // TODO: check types
-        double b = pop()->down_to<Numeric>()->value();
-        double a = pop()->down_to<Numeric>()->value();
-        push(Numeric::create(*this, a + b));
+        double b = pop()->down_to<NumericObject>()->value();
+        double a = pop()->down_to<NumericObject>()->value();
+        push(NumericObject::create(*this, a + b));
       } break;
     case OpCode::OP_SUB:
       {
         // TODO: check types
-        double b = pop()->cast_to<Numeric>()->value();
-        double a = pop()->cast_to<Numeric>()->value();
-        push(Numeric::create(*this, a - b));
+        double b = pop()->cast_to<NumericObject>()->value();
+        double a = pop()->cast_to<NumericObject>()->value();
+        push(NumericObject::create(*this, a - b));
       } break;
     case OpCode::OP_MUL:
       {
         // TODO: check types
-        double b = pop()->cast_to<Numeric>()->value();
-        double a = pop()->cast_to<Numeric>()->value();
-        push(Numeric::create(*this, a * b));
+        double b = pop()->cast_to<NumericObject>()->value();
+        double a = pop()->cast_to<NumericObject>()->value();
+        push(NumericObject::create(*this, a * b));
       } break;
     case OpCode::OP_DIV:
       {
         // TODO: check types
-        double b = pop()->cast_to<Numeric>()->value();
-        double a = pop()->cast_to<Numeric>()->value();
-        push(Numeric::create(*this, a / b));
+        double b = pop()->cast_to<NumericObject>()->value();
+        double a = pop()->cast_to<NumericObject>()->value();
+        push(NumericObject::create(*this, a / b));
       } break;
     case OpCode::OP_RETURN:
       // std::cout << stack_.back() << std::endl;

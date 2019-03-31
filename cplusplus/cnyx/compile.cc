@@ -66,7 +66,7 @@ class Compiler : private UnCopyable {
   Token prev_;
 
   std::vector<std::uint8_t> codes_;
-  Array* constants_{};
+  ArrayObject* constants_{};
   int num_constants_{};
 
   void emit_byte(std::uint8_t byte) {
@@ -79,7 +79,7 @@ class Compiler : private UnCopyable {
   }
 
   std::uint8_t add_constant(Value constant) {
-    constants_ = Array::ensure(vm_, constants_, num_constants_ + 1);
+    constants_ = ArrayObject::ensure(vm_, constants_, num_constants_ + 1);
     constants_->set_element(num_constants_, constant);
     return static_cast<std::uint8_t>(num_constants_++);
   }
@@ -156,7 +156,7 @@ class Compiler : private UnCopyable {
 
   void numeric(bool can_assign) {
     double value = prev_.as_numeric();
-    std::uint8_t constant = add_constant(Numeric::create(vm_, value));
+    std::uint8_t constant = add_constant(NumericObject::create(vm_, value));
     emit_bytes(OpCode::OP_CONSTANT, constant);
   }
 
@@ -181,7 +181,7 @@ public:
   inline std::uint8_t* get_codes(void) { return codes_.data(); }
   inline const std::uint8_t* get_codes(void) const { return codes_.data(); }
   inline int code_size(void) const { return static_cast<int>(codes_.size()); }
-  inline Array* get_constants(void) const { return constants_; }
+  inline ArrayObject* get_constants(void) const { return constants_; }
 
   void advance(void) {
     prev_ = curr_;
@@ -197,7 +197,7 @@ public:
   }
 };
 
-Function* Compile::compile(VM& vm, const std::string& source_bytes) {
+FunctionObject* Compile::compile(VM& vm, const std::string& source_bytes) {
   Lexer lex(source_bytes);
   Compiler c(vm, lex);
 
@@ -205,7 +205,7 @@ Function* Compile::compile(VM& vm, const std::string& source_bytes) {
   c.expression();
   c.finish_compiler();
 
-  return Function::create(vm, c.get_constants(), c.get_codes(), c.code_size());
+  return FunctionObject::create(vm, c.get_constants(), c.get_codes(), c.code_size());
 }
 
 }

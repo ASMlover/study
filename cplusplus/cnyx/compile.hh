@@ -32,11 +32,11 @@
 namespace nyx {
 
 class VM;
-class Function;
+class FunctionObject;
 
 class Compile : private UnCopyable {
 public:
-  Function* compile(VM& vm, const std::string& source_bytes);
+  FunctionObject* compile(VM& vm, const std::string& source_bytes);
 };
 
 }

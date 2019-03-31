@@ -52,7 +52,8 @@ public:
 
   inline ObjType get_type(void) const { return type_; }
   inline void set_type(ObjType t) { type_ = t; }
-  inline void* address(void) const { return (void*)this; }
+  inline void* address(void) { return reinterpret_cast<void*>(this); }
+  inline const void* address(void) const { return reinterpret_cast<const void*>(this); }
   inline byte_t* as_byte(void) { return reinterpret_cast<byte_t*>(this); }
 
   template <typename Target> inline Target* cast_to(void) {
@@ -73,20 +74,22 @@ using Value = Object*;
 
 std::ostream& operator<<(std::ostream& out, Object* o);
 
-class Array : public Object {
+class ArrayObject : public Object {
   int count_{};
   Value* elements_{};
 
-  Array(int count);
-  Array(Array&& r)
+  ArrayObject(int count);
+  ArrayObject(ArrayObject&& r)
     : Object(ObjType::ARRAY)
     , count_(std::move(r.count_))
     , elements_(std::move(r.elements_)) {
   }
 public:
   inline int count(void) const { return count_; }
-  inline Value* elements(void) const { return elements_; }
-  inline Value get_element(int i) const { return elements_[i]; }
+  inline Value* elements(void) { return elements_; }
+  inline const Value* elements(void) const { return elements_; }
+  inline Value get_element(int i) { return elements_[i]; }
+  inline const Value get_element(int i) const { return elements_[i]; }
   inline void set_element(int i, Value v) { elements_[i] = v; }
 
   virtual std::size_t size(void) const override;
@@ -94,44 +97,49 @@ public:
   virtual void traverse(VM& vm) override;
   virtual Object* move_to(void* p) override;
 
-  static Array* create(VM& vm, int count);
-  static Array* ensure(VM& vm, Array* orig_array, int new_count);
+  static ArrayObject* create(VM& vm, int count);
+  static ArrayObject* ensure(VM& vm, ArrayObject* orig_array, int new_count);
 };
 
-class Forward : public Object {
+class ForwardObject : public Object {
   Object* to_{};
 
-  Forward(void) : Object(ObjType::FORWARD) {}
-  Forward(Forward&& r) : Object(ObjType::FORWARD), to_(std::move(r.to_)) {}
+  ForwardObject(void) : Object(ObjType::FORWARD) {}
+  ForwardObject(ForwardObject&& r) : Object(ObjType::FORWARD), to_(std::move(r.to_)) {}
 public:
   inline void set_to(Object* v) { to_ = v; }
-  inline Object* to(void) const { return to_; }
+  inline Object* to(void) { return to_; }
+  inline const Object* to(void) const { return to_; }
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
   virtual void traverse(VM& vm) override;
   virtual Object* move_to(void* p) override;
 
-  static Forward* forward(void* p);
-  static Forward* create(VM& vm);
+  static ForwardObject* forward(void* p);
+  static ForwardObject* create(VM& vm);
 };
 
-class Function : public Object {
-  Array* constants_{};
+class FunctionObject : public Object {
+  ArrayObject* constants_{};
   int code_size_{};
   std::uint8_t* codes_{};
 
-  Function(Array* constants, std::uint8_t* codes, int code_size);
-  Function(Function&& r)
+  FunctionObject(const ArrayObject* constants,
+      const std::uint8_t* codes, int code_size);
+  FunctionObject(FunctionObject&& r)
     : Object(ObjType::FUNCTION)
     , constants_(std::move(r.constants_))
     , code_size_(std::move(r.code_size_))
     , codes_(std::move(codes_)) {
   }
 public:
-  inline Array* constants(void) const { return constants_; }
-  inline Value get_constant(int i) const { return constants_->get_element(i); }
+  inline ArrayObject* constants(void) { return constants_; }
+  inline const ArrayObject* constants(void) const { return constants_; }
+  inline Value get_constant(int i) { return constants_->get_element(i); }
+  inline const Value get_constant(int i) const { return constants_->get_element(i); }
   inline int code_size(void) const { return code_size_; }
+  inline std::uint8_t* codes(void) { return codes_; }
   inline const std::uint8_t* codes(void) const { return codes_; }
   void dump(void);
 
@@ -140,15 +148,17 @@ public:
   virtual void traverse(VM& vm) override;
   virtual Object* move_to(void* p) override;
 
-  static Function* create(VM& vm,
-      Array* constants, std::uint8_t* codes, int code_size);
+  static FunctionObject* create(VM& vm,
+      const ArrayObject* constants, const std::uint8_t* codes, int code_size);
 };
 
-class Numeric : public Object {
+class NumericObject : public Object {
   double value_{};
 
-  Numeric(double d) : Object(ObjType::NUMERIC), value_(d) {}
-  Numeric(Numeric&& r) : Object(ObjType::NUMERIC), value_(std::move(r.value_)) {}
+  NumericObject(double d) : Object(ObjType::NUMERIC), value_(d) {}
+  NumericObject(NumericObject&& r)
+    : Object(ObjType::NUMERIC), value_(std::move(r.value_)) {
+  }
 public:
   inline void set_value(double v) { value_ = v; }
   inline double value(void) const { return value_; }
@@ -158,47 +168,49 @@ public:
   virtual void traverse(VM& vm) override;
   virtual Object* move_to(void* p) override;
 
-  static Numeric* create(VM& vm, double d);
+  static NumericObject* create(VM& vm, double d);
 };
 
-class String : public Object {
+class StringObject : public Object {
   int count_{};
   char* chars_{};
 
-  String(const char* s, int n);
-  String(String&& r)
+  StringObject(const char* s, int n);
+  StringObject(StringObject&& r)
     : Object(ObjType::STRING)
     , count_(std::move(r.count_))
     , chars_(std::move(r.chars_)) {
   }
 public:
   inline int count(void) const { return count_; }
-  inline char* chars(void) const { return chars_; }
-  inline char* c_str(void) const { return chars_; }
+  inline char* chars(void) { return chars_; }
+  inline const char* chars(void) const { return chars_; }
+  inline const char* c_str(void) const { return chars_; }
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
   virtual void traverse(VM& vm) override;
   virtual Object* move_to(void* p) override;
 
-  static String* create(VM& vm, const char* s, int n);
+  static StringObject* create(VM& vm, const char* s, int n);
 };
 
 struct TableEntry { Value key, value; };
 
-class TableEntries : public Object {
+class TableEntriesObject : public Object {
   int count_{};
   TableEntry* entries_{};
-public:
-  TableEntries(void) : Object(ObjType::TABLE_ENTRIES) {}
-  TableEntries(TableEntries&& r)
+
+  TableEntriesObject(void) : Object(ObjType::TABLE_ENTRIES) {}
+  TableEntriesObject(TableEntriesObject&& r)
     : Object(ObjType::TABLE_ENTRIES)
     , count_(std::move(r.count_))
     , entries_(std::move(r.entries_)) {
   }
-
+public:
   inline int count(void) const { return count_; }
-  inline TableEntry* entries(void) const { return entries_; }
+  inline TableEntry* entries(void) { return entries_; }
+  inline const TableEntry* entries(void) const { return entries_; }
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
@@ -206,26 +218,27 @@ public:
   virtual Object* move_to(void* p) override;
 };
 
-class Table : public Object {
+class TableObject : public Object {
   int count_{};
-  TableEntries* entries_{};
+  TableEntriesObject* entries_{};
 
-  Table(void) : Object(ObjType::TABLE) {}
-  Table(Table&& r)
+  TableObject(void) : Object(ObjType::TABLE) {}
+  TableObject(TableObject&& r)
     : Object(ObjType::TABLE)
     , count_(std::move(r.count_))
     , entries_(std::move(r.entries_)) {
   }
 public:
   inline int count(void) const { return count_; }
-  inline TableEntries* entries(void) const { return entries_; }
+  inline TableEntriesObject* entries(void) { return entries_; }
+  inline const TableEntriesObject* entries(void) const { return entries_; }
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
   virtual void traverse(VM& vm) override;
   virtual Object* move_to(void* p) override;
 
-  static Table* create(VM& vm);
+  static TableObject* create(VM& vm);
 };
 
 }

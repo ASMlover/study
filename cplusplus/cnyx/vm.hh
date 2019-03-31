@@ -78,7 +78,7 @@ public:
   void collect(void);
 
   void print_stack(void);
-  void run(Function* fn);
+  void run(FunctionObject* fn);
 };
 
 }

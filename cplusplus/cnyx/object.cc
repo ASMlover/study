@@ -52,7 +52,7 @@ inline int power_of_2ceil(int n) {
   return n;
 }
 
-Array::Array(int count)
+ArrayObject::ArrayObject(int count)
   : Object(ObjType::ARRAY)
   , count_(count) {
   elements_ = __offset_of<Value>(this, sizeof(*this));
@@ -60,36 +60,36 @@ Array::Array(int count)
     elements_[i] = nullptr;
 }
 
-std::size_t Array::size(void) const {
+std::size_t ArrayObject::size(void) const {
   return sizeof(*this) + count_ * sizeof(Value);
 }
 
-std::string Array::stringify(void) const {
+std::string ArrayObject::stringify(void) const {
   // TODO:
   return "array";
 }
 
-void Array::traverse(VM& vm) {
+void ArrayObject::traverse(VM& vm) {
   for (int i = 0; i < count_; ++i)
     elements_[i] = vm.move_object(elements_[i]);
 }
 
-Object* Array::move_to(void* p) {
-  return new (p) Array(std::move(*this));
+Object* ArrayObject::move_to(void* p) {
+  return new (p) ArrayObject(std::move(*this));
 }
 
-Array* Array::create(VM& vm, int count) {
-  void* p = vm.allocate(sizeof(Array) + count * sizeof(Value));
-  return new (p) Array(count);
+ArrayObject* ArrayObject::create(VM& vm, int count) {
+  void* p = vm.allocate(sizeof(ArrayObject) + count * sizeof(Value));
+  return new (p) ArrayObject(count);
 }
 
-Array* Array::ensure(VM& vm, Array* orig_array, int new_count) {
+ArrayObject* ArrayObject::ensure(VM& vm, ArrayObject* orig_array, int new_count) {
   int orig_count = orig_array == nullptr ? 0 : orig_array->count();
   if (orig_count >= new_count)
     return orig_array;
 
   new_count = power_of_2ceil(new_count);
-  auto* new_array = Array::create(vm, new_count);
+  auto* new_array = ArrayObject::create(vm, new_count);
   if (orig_array != nullptr) {
     for (int i = 0; i < orig_array->count(); ++i)
       new_array->set_element(i, orig_array->get_element(i));
@@ -97,41 +97,42 @@ Array* Array::ensure(VM& vm, Array* orig_array, int new_count) {
   return new_array;
 }
 
-std::size_t Forward::size(void) const {
+std::size_t ForwardObject::size(void) const {
   return sizeof(*this);
 }
 
-std::string Forward::stringify(void) const {
+std::string ForwardObject::stringify(void) const {
   std::stringstream ss;
   ss << "fwd->" << to_->address();
   return ss.str();
 }
 
-void Forward::traverse(VM& vm) {
+void ForwardObject::traverse(VM& vm) {
   assert(false);
 }
 
-Object* Forward::move_to(void* p) {
-  return new (p) Forward(std::move(*this));
+Object* ForwardObject::move_to(void* p) {
+  return new (p) ForwardObject(std::move(*this));
 }
 
-Forward* Forward::forward(void* p) {
-  return new (p) Forward();
+ForwardObject* ForwardObject::forward(void* p) {
+  return new (p) ForwardObject();
 }
 
-Forward* Forward::create(VM& vm) {
-  return new (vm.allocate(sizeof(Forward))) Forward();
+ForwardObject* ForwardObject::create(VM& vm) {
+  return new (vm.allocate(sizeof(ForwardObject))) ForwardObject();
 }
 
-Function::Function(Array* constants, std::uint8_t* codes, int code_size)
+FunctionObject::FunctionObject(
+    const ArrayObject* constants, const std::uint8_t* codes, int code_size)
   : Object(ObjType::FUNCTION)
-  , constants_(constants)
+  , constants_(const_cast<ArrayObject*>(constants))
   , code_size_(code_size) {
   codes_ = __offset_of<std::uint8_t>(this, sizeof(*this));
   memcpy(codes_, codes, sizeof(std::uint8_t) * code_size_);
 }
 
-void Function::dump(void) {
+void FunctionObject::dump(void) {
   for (int i = 0; i < code_size_;) {
     switch (codes_[i++]) {
     case OpCode::OP_CONSTANT:
@@ -149,51 +150,51 @@ void Function::dump(void) {
   }
 }
 
-std::size_t Function::size(void) const {
+std::size_t FunctionObject::size(void) const {
   return sizeof(*this) + sizeof(std::uint8_t) * code_size_;
 }
 
-std::string Function::stringify(void) const {
+std::string FunctionObject::stringify(void) const {
   // TODO:
   return "function";
 }
 
-void Function::traverse(VM& vm) {
-  constants_ = vm.move_object(constants_)->down_to<Array>();
+void FunctionObject::traverse(VM& vm) {
+  constants_ = vm.move_object(constants_)->down_to<ArrayObject>();
 }
 
-Object* Function::move_to(void* p) {
-  return new (p) Function(std::move(*this));
+Object* FunctionObject::move_to(void* p) {
+  return new (p) FunctionObject(std::move(*this));
 }
 
-Function* Function::create(VM& vm,
-    Array* constants, std::uint8_t* codes, int code_size) {
-  void* p = vm.allocate(sizeof(Function) + sizeof(std::uint8_t) * code_size);
-  return new (p) Function(constants, codes, code_size);
+FunctionObject* FunctionObject::create(VM& vm,
+    const ArrayObject* constants, const std::uint8_t* codes, int code_size) {
+  void* p = vm.allocate(sizeof(FunctionObject) + sizeof(std::uint8_t) * code_size);
+  return new (p) FunctionObject(constants, codes, code_size);
 }
 
-std::size_t Numeric::size(void) const {
+std::size_t NumericObject::size(void) const {
   return sizeof(*this);
 }
 
-std::string Numeric::stringify(void) const {
+std::string NumericObject::stringify(void) const {
   std::stringstream ss;
   ss << value_;
   return ss.str();
 }
 
-void Numeric::traverse(VM&) {
+void NumericObject::traverse(VM&) {
 }
 
-Object* Numeric::move_to(void* p) {
-  return new (p) Numeric(std::move(*this));
+Object* NumericObject::move_to(void* p) {
+  return new (p) NumericObject(std::move(*this));
 }
 
-Numeric* Numeric::create(VM& vm, double d) {
-  return new (vm.allocate(sizeof(Numeric))) Numeric(d);
+NumericObject* NumericObject::create(VM& vm, double d) {
+  return new (vm.allocate(sizeof(NumericObject))) NumericObject(d);
 }
 
-String::String(const char* s, int n)
+StringObject::StringObject(const char* s, int n)
   : Object(ObjType::STRING)
   , count_(n) {
   chars_ = __offset_of<char>(this, sizeof(*this));
@@ -201,36 +202,36 @@ String::String(const char* s, int n)
   chars_[count_] = 0;
 }
 
-std::size_t String::size(void) const {
+std::size_t StringObject::size(void) const {
   return sizeof(*this) + count_;
 }
 
-std::string String::stringify(void) const {
+std::string StringObject::stringify(void) const {
   return chars_;
 }
 
-void String::traverse(VM&) {
+void StringObject::traverse(VM&) {
 }
 
-Object* String::move_to(void* p) {
-  return new (p) String(std::move(*this));
+Object* StringObject::move_to(void* p) {
+  return new (p) StringObject(std::move(*this));
 }
 
-String* String::create(VM& vm, const char* s, int n) {
-  void* p = vm.allocate(sizeof(String) + (n + 1) * sizeof(char));
-  return new (p) String(s, n);
+StringObject* StringObject::create(VM& vm, const char* s, int n) {
+  void* p = vm.allocate(sizeof(StringObject) + (n + 1) * sizeof(char));
+  return new (p) StringObject(s, n);
 }
 
-std::size_t TableEntries::size(void) const {
+std::size_t TableEntriesObject::size(void) const {
   return sizeof(*this) + count_ * sizeof(TableEntry);
 }
 
-std::string TableEntries::stringify(void) const {
+std::string TableEntriesObject::stringify(void) const {
   // TODO:
   return "table entries";
 }
 
-void TableEntries::traverse(VM& vm) {
+void TableEntriesObject::traverse(VM& vm) {
   for (int i = 0; i < count_; ++i) {
     auto& entry = entries_[i];
     entry.key = vm.move_object(entry.key);
@@ -238,29 +239,29 @@ void TableEntries::traverse(VM& vm) {
   }
 }
 
-Object* TableEntries::move_to(void* p) {
-  return new (p) TableEntries(std::move(*this));
+Object* TableEntriesObject::move_to(void* p) {
+  return new (p) TableEntriesObject(std::move(*this));
 }
 
-std::size_t Table::size(void) const {
+std::size_t TableObject::size(void) const {
   return sizeof(*this);
 }
 
-std::string Table::stringify(void) const {
+std::string TableObject::stringify(void) const {
   // TODO:
   return "table";
 }
 
-void Table::traverse(VM& vm) {
-  entries_ = vm.move_object(entries_)->down_to<TableEntries>();
+void TableObject::traverse(VM& vm) {
+  entries_ = vm.move_object(entries_)->down_to<TableEntriesObject>();
 }
 
-Object* Table::move_to(void* p) {
-  return new (p) Table(std::move(*this));
+Object* TableObject::move_to(void* p) {
+  return new (p) TableObject(std::move(*this));
 }
 
-Table* Table::create(VM& vm) {
-  return new (vm.allocate(sizeof(Table))) Table();
+TableObject* TableObject::create(VM& vm) {
+  return new (vm.allocate(sizeof(TableObject))) TableObject();
 }
 
 }
