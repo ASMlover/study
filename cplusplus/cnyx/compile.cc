@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cassert>
 #include <functional>
+#include <iostream>
 #include <vector>
 #include "lexer.hh"
 #include "object.hh"
@@ -78,7 +79,7 @@ class Compiler : private UnCopyable {
   }
 
   std::uint8_t add_constant(Value constant) {
-    constants_ = Array::ensure(&vm_, constants_, num_constants_ + 1);
+    constants_ = Array::ensure(vm_, constants_, num_constants_ + 1);
     constants_->set_element(num_constants_, constant);
     return static_cast<std::uint8_t>(num_constants_++);
   }
@@ -140,6 +141,7 @@ class Compiler : private UnCopyable {
     auto prefix = get_rule(prev_.get_kind()).prefix;
     if (!prefix) {
       // compiler error
+      std::cerr << "expected expression" << std::endl;
       return;
     }
     prefix(this, can_assign);
@@ -154,7 +156,7 @@ class Compiler : private UnCopyable {
 
   void numeric(bool can_assign) {
     double value = prev_.as_numeric();
-    std::uint8_t constant = add_constant(Numeric::create(&vm_, value));
+    std::uint8_t constant = add_constant(Numeric::create(vm_, value));
     emit_bytes(OpCode::OP_CONSTANT, constant);
   }
 
@@ -203,7 +205,7 @@ Function* Compile::compile(VM& vm, const std::string& source_bytes) {
   c.expression();
   c.finish_compiler();
 
-  return Function::create(&vm, c.get_constants(), c.get_codes(), c.code_size());
+  return Function::create(vm, c.get_constants(), c.get_codes(), c.code_size());
 }
 
 }

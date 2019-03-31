@@ -73,10 +73,10 @@ static void test_vm(void) {
   codes[10] = nyx::OpCode::OP_MUL;
   codes[11] = nyx::OpCode::OP_RETURN;
 
-  nyx::Array* constants = nyx::Array::create(&vm, 2);
-  constants->set_element(0, nyx::Numeric::create(&vm, 1));
-  constants->set_element(1, nyx::Numeric::create(&vm, 2));
-  nyx::Function* fn = nyx::Function::create(&vm, constants, codes, 12);
+  nyx::Array* constants = nyx::Array::create(vm, 2);
+  constants->set_element(0, nyx::Numeric::create(vm, 1));
+  constants->set_element(1, nyx::Numeric::create(vm, 2));
+  nyx::Function* fn = nyx::Function::create(vm, constants, codes, 12);
   vm.run(fn);
 
   vm.collect();

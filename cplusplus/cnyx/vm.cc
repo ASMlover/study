@@ -60,7 +60,7 @@ Value VM::move_object(Value from_ref) {
     << " to " << as_address(p) << std::endl;
 
   Object* to_ref = from_ref->move_to(p);
-  auto* old = new (from_ref->address()) Forward();
+  auto* old = Forward::forward(from_ref->address());
   old->set_to(to_ref);
 
   return to_ref;
@@ -96,7 +96,7 @@ void VM::collect(void) {
   byte_t* p = fromspace_;
   while (p < allocptr_) {
     auto* obj = as_object(p);
-    obj->traverse(this);
+    obj->traverse(*this);
     p += obj->size();
   }
 
@@ -123,28 +123,28 @@ void VM::run(Function* fn) {
         // TODO: check types
         double b = pop()->down_to<Numeric>()->value();
         double a = pop()->down_to<Numeric>()->value();
-        push(Numeric::create(this, a + b));
+        push(Numeric::create(*this, a + b));
       } break;
     case OpCode::OP_SUB:
       {
         // TODO: check types
         double b = pop()->cast_to<Numeric>()->value();
         double a = pop()->cast_to<Numeric>()->value();
-        push(Numeric::create(this, a - b));
+        push(Numeric::create(*this, a - b));
       } break;
     case OpCode::OP_MUL:
       {
         // TODO: check types
         double b = pop()->cast_to<Numeric>()->value();
         double a = pop()->cast_to<Numeric>()->value();
-        push(Numeric::create(this, a * b));
+        push(Numeric::create(*this, a * b));
       } break;
     case OpCode::OP_DIV:
       {
         // TODO: check types
         double b = pop()->cast_to<Numeric>()->value();
         double a = pop()->cast_to<Numeric>()->value();
-        push(Numeric::create(this, a / b));
+        push(Numeric::create(*this, a / b));
       } break;
     case OpCode::OP_RETURN:
       // std::cout << stack_.back() << std::endl;
