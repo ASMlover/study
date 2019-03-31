@@ -39,4 +39,6 @@ public:
   FunctionObject* compile(VM& vm, const std::string& source_bytes);
 };
 
+void trace_compiler_roots(void);
+
 }

@@ -55,6 +55,7 @@ void VM::collect(void) {
 
   for (auto i = 0u; i < stack_.size(); ++i)
     stack_[i] = move_object(stack_[i]);
+  trace_compiler_roots();
 
   byte_t* p = fromspace_;
   while (p < allocptr_) {
@@ -73,7 +74,7 @@ void VM::print_stack(void) {
 }
 
 void VM::run(FunctionObject* fn) {
-  const std::uint8_t* ip = fn->codes();
+  const std::uint8_t* ip = fn->raw_codes();
   for (;;) {
     switch (*ip++) {
     case OpCode::OP_CONSTANT:

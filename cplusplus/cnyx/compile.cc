@@ -58,7 +58,7 @@ struct ParseRule {
 };
 
 class Compiler : private UnCopyable {
-  Compiler* parent_{};
+  Compiler* enclosing_{};
 
   VM& vm_;
   Lexer& lex_;
@@ -66,9 +66,7 @@ class Compiler : private UnCopyable {
   Token prev_;
   bool had_error_{};
 
-  std::vector<std::uint8_t> codes_;
-  ArrayObject* constants_{};
-  int num_constants_{};
+  FunctionObject* function_{};
 
   void error(const std::string& message) {
     std::cerr << message << std::endl;
@@ -76,7 +74,9 @@ class Compiler : private UnCopyable {
   }
 
   void emit_byte(std::uint8_t byte) {
-    codes_.push_back(byte);
+    function_->set_codes(StringObject::ensure(vm_,
+          function_->codes(), function_->codes_count() + 1));
+    function_->append_code(byte);
   }
 
   void emit_bytes(std::uint8_t byte1, std::uint8_t byte2) {
@@ -85,9 +85,10 @@ class Compiler : private UnCopyable {
   }
 
   std::uint8_t add_constant(Value constant) {
-    constants_ = ArrayObject::ensure(vm_, constants_, num_constants_ + 1);
-    constants_->set_element(num_constants_, constant);
-    return static_cast<std::uint8_t>(num_constants_++);
+    function_->set_constants(ArrayObject::ensure(vm_,
+          function_->constants(), function_->constants_count() + 1));
+    function_->append_constant(constant);
+    return static_cast<std::uint8_t>(function_->constants_count() - 1);
   }
 
   ParseRule& get_rule(TokenKind kind) {
@@ -182,14 +183,17 @@ class Compiler : private UnCopyable {
     }
   }
 public:
-  Compiler(VM& vm, Lexer& lex) : vm_(vm), lex_(lex) {}
+  Compiler(VM& vm, Lexer& lex) : vm_(vm), lex_(lex) {
+    function_ = FunctionObject::create(vm_);
+  }
 
   inline bool had_error(void) const { return had_error_; }
-  inline std::uint8_t* get_codes(void) { return codes_.data(); }
-  inline const std::uint8_t* get_codes(void) const { return codes_.data(); }
-  inline int code_size(void) const { return static_cast<int>(codes_.size()); }
-  inline ArrayObject* get_constants(void) { return constants_; }
-  inline const ArrayObject* get_constants(void) const { return constants_; }
+  inline FunctionObject* get_function(void) const { return function_; }
+  inline Compiler* get_enclosing(void) const { return enclosing_; }
+
+  void move_function(void) {
+    function_ = vm_.move_object(function_)->down_to<FunctionObject>();
+  }
 
   void finish_compiler(void) {
     emit_byte(OpCode::OP_RETURN);
@@ -216,18 +220,30 @@ public:
   }
 };
 
+static Compiler* _main_compiler = nullptr;
+
 FunctionObject* Compile::compile(VM& vm, const std::string& source_bytes) {
   Lexer lex(source_bytes);
   Compiler c(vm, lex);
+  _main_compiler = &c;
 
   c.advance();
   c.statement();
   c.finish_compiler();
 
+  _main_compiler = nullptr;
   if (c.had_error())
     return nullptr;
 
-  return FunctionObject::create(vm, c.get_constants(), c.get_codes(), c.code_size());
+  return c.get_function();
+}
+
+void trace_compiler_roots(void) {
+  auto* compiler_iter = _main_compiler;
+  while (compiler_iter != nullptr) {
+    compiler_iter->move_function();
+    compiler_iter = compiler_iter->get_enclosing();
+  }
 }
 
 }
