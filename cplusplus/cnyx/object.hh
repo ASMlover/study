@@ -94,6 +94,7 @@ public:
   inline Value get_element(int i) { return elements_[i]; }
   inline const Value get_element(int i) const { return elements_[i]; }
   inline void set_element(int i, Value v) { elements_[i] = v; }
+  inline void append_element(Value v) { elements_[count_++] = v; }
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
@@ -161,9 +162,12 @@ class StringObject : public Object {
 public:
   inline int capacity(void) const { return capacity_; }
   inline int count(void) const { return count_; }
+  inline std::uint8_t get_element(int i) { return chars_[i]; }
+  inline const std::uint8_t get_element(int i) const { return chars_[i]; }
+  inline void set_element(int i, std::uint8_t c) { chars_[i] = c; }
+  inline void append_element(std::uint8_t c) { chars_[count_++] = c; }
   inline std::uint8_t* chars(void) { return chars_; }
   inline const std::uint8_t* chars(void) const { return chars_; }
-  inline const std::uint8_t* c_str(void) const { return chars_; }
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
@@ -186,16 +190,22 @@ class FunctionObject : public Object {
     , codes_(std::move(codes_)) {
   }
 public:
+  inline void set_constants(ArrayObject* constants) { constants_ = constants; }
   inline ArrayObject* constants(void) { return constants_; }
   inline const ArrayObject* constants(void) const { return constants_; }
+  inline int constants_count(void) const { return constants_ == nullptr ? 0 : constants_->count(); }
   inline Value get_constant(int i) { return constants_->get_element(i); }
   inline const Value get_constant(int i) const { return constants_->get_element(i); }
-  inline int code_size(void) const { return codes_->count(); }
+  inline void set_constant(int i, Value v) { constants_->set_element(i, v); }
+  inline void append_constant(Value v) { constants_->append_element(v); }
   inline void set_codes(StringObject* codes) { codes_ = codes; }
   inline StringObject* codes(void) { return codes_; }
   inline const StringObject* codes(void) const { return codes_; }
   inline std::uint8_t* raw_codes(void) { return codes_->chars(); }
   inline const std::uint8_t* raw_codes(void) const { return codes_->chars(); }
+  inline int codes_count(void) const { return codes_ == nullptr ? 0 : codes_->count(); }
+  inline std::uint8_t get_code(int i) const { return codes_->get_element(i); }
+  inline void append_code(std::uint8_t c) { codes_->append_element(c); }
   void dump(void);
 
   virtual std::size_t size(void) const override;

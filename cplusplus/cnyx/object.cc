@@ -65,8 +65,9 @@ std::size_t ArrayObject::size(void) const {
 }
 
 std::string ArrayObject::stringify(void) const {
-  // TODO:
-  return "array";
+  std::stringstream ss;
+  ss << "array(" << count_ << ")";
+  return ss.str();
 }
 
 void ArrayObject::traverse(VM& vm) {
@@ -93,7 +94,7 @@ ArrayObject* ArrayObject::ensure(
   auto* new_array = ArrayObject::create(vm, new_capacity);
   if (orig_array != nullptr) {
     for (int i = 0; i < orig_array->count(); ++i)
-      new_array->set_element(i, orig_array->get_element(i));
+      new_array->append_element(orig_array->get_element(i));
   }
   return new_array;
 }
@@ -163,7 +164,9 @@ std::size_t StringObject::size(void) const {
 }
 
 std::string StringObject::stringify(void) const {
-  return reinterpret_cast<const char*>(chars_);
+  std::stringstream ss;
+  ss << "string(" << count_ << ")";
+  return ss.str();
 }
 
 void StringObject::traverse(VM&) {
@@ -205,7 +208,7 @@ FunctionObject::FunctionObject(void)
 
 void FunctionObject::dump(void) {
   const auto* codes = raw_codes();
-  int n = code_size();
+  int n = codes_count();
   for (int i = 0; i < n;) {
     switch (codes[i++]) {
     case OpCode::OP_CONSTANT:
