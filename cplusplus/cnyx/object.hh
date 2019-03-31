@@ -75,16 +75,19 @@ using Value = Object*;
 std::ostream& operator<<(std::ostream& out, Object* o);
 
 class ArrayObject : public Object {
+  int capacity_{};
   int count_{};
   Value* elements_{};
 
-  ArrayObject(int count);
+  ArrayObject(int capacity);
   ArrayObject(ArrayObject&& r)
     : Object(ObjType::ARRAY)
+    , capacity_(std::move(r.capacity_))
     , count_(std::move(r.count_))
     , elements_(std::move(r.elements_)) {
   }
 public:
+  inline int capacity(void) const { return capacity_; }
   inline int count(void) const { return count_; }
   inline Value* elements(void) { return elements_; }
   inline const Value* elements(void) const { return elements_; }
@@ -97,15 +100,17 @@ public:
   virtual void traverse(VM& vm) override;
   virtual Object* move_to(void* p) override;
 
-  static ArrayObject* create(VM& vm, int count);
-  static ArrayObject* ensure(VM& vm, ArrayObject* orig_array, int new_count);
+  static ArrayObject* create(VM& vm, int capacity);
+  static ArrayObject* ensure(VM& vm, ArrayObject* orig_array, int new_capacity);
 };
 
 class ForwardObject : public Object {
   Object* to_{};
 
   ForwardObject(void) : Object(ObjType::FORWARD) {}
-  ForwardObject(ForwardObject&& r) : Object(ObjType::FORWARD), to_(std::move(r.to_)) {}
+  ForwardObject(ForwardObject&& r)
+    : Object(ObjType::FORWARD), to_(std::move(r.to_)) {
+  }
 public:
   inline void set_to(Object* v) { to_ = v; }
   inline Object* to(void) { return to_; }
@@ -118,38 +123,6 @@ public:
 
   static ForwardObject* forward(void* p);
   static ForwardObject* create(VM& vm);
-};
-
-class FunctionObject : public Object {
-  ArrayObject* constants_{};
-  int code_size_{};
-  std::uint8_t* codes_{};
-
-  FunctionObject(const ArrayObject* constants,
-      const std::uint8_t* codes, int code_size);
-  FunctionObject(FunctionObject&& r)
-    : Object(ObjType::FUNCTION)
-    , constants_(std::move(r.constants_))
-    , code_size_(std::move(r.code_size_))
-    , codes_(std::move(codes_)) {
-  }
-public:
-  inline ArrayObject* constants(void) { return constants_; }
-  inline const ArrayObject* constants(void) const { return constants_; }
-  inline Value get_constant(int i) { return constants_->get_element(i); }
-  inline const Value get_constant(int i) const { return constants_->get_element(i); }
-  inline int code_size(void) const { return code_size_; }
-  inline std::uint8_t* codes(void) { return codes_; }
-  inline const std::uint8_t* codes(void) const { return codes_; }
-  void dump(void);
-
-  virtual std::size_t size(void) const override;
-  virtual std::string stringify(void) const override;
-  virtual void traverse(VM& vm) override;
-  virtual Object* move_to(void* p) override;
-
-  static FunctionObject* create(VM& vm,
-      const ArrayObject* constants, const std::uint8_t* codes, int code_size);
 };
 
 class NumericObject : public Object {
@@ -172,27 +145,65 @@ public:
 };
 
 class StringObject : public Object {
+  int capacity_{};
   int count_{};
-  char* chars_{};
+  std::uint8_t* chars_{};
 
-  StringObject(const char* s, int n);
+  StringObject(int capacity);
   StringObject(StringObject&& r)
     : Object(ObjType::STRING)
+    , capacity_(std::move(r.capacity_))
     , count_(std::move(r.count_))
     , chars_(std::move(r.chars_)) {
   }
+
+  void set_chars(const std::uint8_t* s, int n);
 public:
+  inline int capacity(void) const { return capacity_; }
   inline int count(void) const { return count_; }
-  inline char* chars(void) { return chars_; }
-  inline const char* chars(void) const { return chars_; }
-  inline const char* c_str(void) const { return chars_; }
+  inline std::uint8_t* chars(void) { return chars_; }
+  inline const std::uint8_t* chars(void) const { return chars_; }
+  inline const std::uint8_t* c_str(void) const { return chars_; }
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
   virtual void traverse(VM& vm) override;
   virtual Object* move_to(void* p) override;
 
-  static StringObject* create(VM& vm, const char* s, int n);
+  static StringObject* create(VM& vm, int capacity);
+  static StringObject* create(VM& vm, const std::uint8_t* s, int n);
+  static StringObject* ensure(VM& vm, StringObject* orig_str, int new_capacity);
+};
+
+class FunctionObject : public Object {
+  ArrayObject* constants_{};
+  StringObject* codes_{};
+
+  FunctionObject(void);
+  FunctionObject(FunctionObject&& r)
+    : Object(ObjType::FUNCTION)
+    , constants_(std::move(r.constants_))
+    , codes_(std::move(codes_)) {
+  }
+public:
+  inline ArrayObject* constants(void) { return constants_; }
+  inline const ArrayObject* constants(void) const { return constants_; }
+  inline Value get_constant(int i) { return constants_->get_element(i); }
+  inline const Value get_constant(int i) const { return constants_->get_element(i); }
+  inline int code_size(void) const { return codes_->count(); }
+  inline void set_codes(StringObject* codes) { codes_ = codes; }
+  inline StringObject* codes(void) { return codes_; }
+  inline const StringObject* codes(void) const { return codes_; }
+  inline std::uint8_t* raw_codes(void) { return codes_->chars(); }
+  inline const std::uint8_t* raw_codes(void) const { return codes_->chars(); }
+  void dump(void);
+
+  virtual std::size_t size(void) const override;
+  virtual std::string stringify(void) const override;
+  virtual void traverse(VM& vm) override;
+  virtual Object* move_to(void* p) override;
+
+  static FunctionObject* create(VM& vm);
 };
 
 struct TableEntry { Value key, value; };

@@ -36,8 +36,8 @@ std::ostream& operator<<(std::ostream& out, Object* o) {
   return out << o->stringify();
 }
 
-template <typename T> inline T* __offset_of(void* startptr, std::size_t offset) {
-  return reinterpret_cast<T*>(reinterpret_cast<byte_t*>(startptr) + offset);
+template <typename T> inline T* __offset_of(void* startp, std::size_t offset) {
+  return reinterpret_cast<T*>(reinterpret_cast<byte_t*>(startp) + offset);
 }
 
 inline int power_of_2ceil(int n) {
@@ -52,16 +52,16 @@ inline int power_of_2ceil(int n) {
   return n;
 }
 
-ArrayObject::ArrayObject(int count)
+ArrayObject::ArrayObject(int capacity)
   : Object(ObjType::ARRAY)
-  , count_(count) {
+  , capacity_(capacity) {
   elements_ = __offset_of<Value>(this, sizeof(*this));
-  for (int i = 0; i < count_; ++i)
+  for (int i = 0; i < capacity_; ++i)
     elements_[i] = nullptr;
 }
 
 std::size_t ArrayObject::size(void) const {
-  return sizeof(*this) + count_ * sizeof(Value);
+  return sizeof(*this) + sizeof(Value) * capacity_;
 }
 
 std::string ArrayObject::stringify(void) const {
@@ -78,18 +78,19 @@ Object* ArrayObject::move_to(void* p) {
   return new (p) ArrayObject(std::move(*this));
 }
 
-ArrayObject* ArrayObject::create(VM& vm, int count) {
-  void* p = vm.allocate(sizeof(ArrayObject) + count * sizeof(Value));
-  return new (p) ArrayObject(count);
+ArrayObject* ArrayObject::create(VM& vm, int capacity) {
+  void* p = vm.allocate(sizeof(ArrayObject) + capacity * sizeof(Value));
+  return new (p) ArrayObject(capacity);
 }
 
-ArrayObject* ArrayObject::ensure(VM& vm, ArrayObject* orig_array, int new_count) {
-  int orig_count = orig_array == nullptr ? 0 : orig_array->count();
-  if (orig_count >= new_count)
+ArrayObject* ArrayObject::ensure(
+    VM& vm, ArrayObject* orig_array, int new_capacity) {
+  int orig_capacity = orig_array == nullptr ? 0 : orig_array->capacity();
+  if (orig_capacity >= new_capacity)
     return orig_array;
 
-  new_count = power_of_2ceil(new_count);
-  auto* new_array = ArrayObject::create(vm, new_count);
+  new_capacity = power_of_2ceil(new_capacity);
+  auto* new_array = ArrayObject::create(vm, new_capacity);
   if (orig_array != nullptr) {
     for (int i = 0; i < orig_array->count(); ++i)
       new_array->set_element(i, orig_array->get_element(i));
@@ -123,56 +124,6 @@ ForwardObject* ForwardObject::create(VM& vm) {
   return new (vm.allocate(sizeof(ForwardObject))) ForwardObject();
 }
 
-FunctionObject::FunctionObject(
-    const ArrayObject* constants, const std::uint8_t* codes, int code_size)
-  : Object(ObjType::FUNCTION)
-  , constants_(const_cast<ArrayObject*>(constants))
-  , code_size_(code_size) {
-  codes_ = __offset_of<std::uint8_t>(this, sizeof(*this));
-  memcpy(codes_, codes, sizeof(std::uint8_t) * code_size_);
-}
-
-void FunctionObject::dump(void) {
-  for (int i = 0; i < code_size_;) {
-    switch (codes_[i++]) {
-    case OpCode::OP_CONSTANT:
-      {
-        std::uint8_t constant = codes_[i++];
-        fprintf(stdout, "%-10s %5d `", "OP_CONSTANT", constant);
-        std::cout << constants_->get_element(constant) << "`" << std::endl;
-      } break;
-    case OpCode::OP_ADD: std::cout << "OP_ADD" << std::endl; break;
-    case OpCode::OP_SUB: std::cout << "OP_SUB" << std::endl; break;
-    case OpCode::OP_MUL: std::cout << "OP_MUL" << std::endl; break;
-    case OpCode::OP_DIV: std::cout << "OP_DIV" << std::endl; break;
-    case OpCode::OP_RETURN: std::cout << "OP_RETURN" << std::endl; break;
-    }
-  }
-}
-
-std::size_t FunctionObject::size(void) const {
-  return sizeof(*this) + sizeof(std::uint8_t) * code_size_;
-}
-
-std::string FunctionObject::stringify(void) const {
-  // TODO:
-  return "function";
-}
-
-void FunctionObject::traverse(VM& vm) {
-  constants_ = vm.move_object(constants_)->down_to<ArrayObject>();
-}
-
-Object* FunctionObject::move_to(void* p) {
-  return new (p) FunctionObject(std::move(*this));
-}
-
-FunctionObject* FunctionObject::create(VM& vm,
-    const ArrayObject* constants, const std::uint8_t* codes, int code_size) {
-  void* p = vm.allocate(sizeof(FunctionObject) + sizeof(std::uint8_t) * code_size);
-  return new (p) FunctionObject(constants, codes, code_size);
-}
-
 std::size_t NumericObject::size(void) const {
   return sizeof(*this);
 }
@@ -194,20 +145,25 @@ NumericObject* NumericObject::create(VM& vm, double d) {
   return new (vm.allocate(sizeof(NumericObject))) NumericObject(d);
 }
 
-StringObject::StringObject(const char* s, int n)
+StringObject::StringObject(int capacity)
   : Object(ObjType::STRING)
-  , count_(n) {
-  chars_ = __offset_of<char>(this, sizeof(*this));
-  std::memcpy(chars_, s, n);
+  , capacity_(capacity) {
+  chars_ = __offset_of<std::uint8_t>(this, sizeof(*this));
+  chars_[count_] = 0;
+}
+
+void StringObject::set_chars(const std::uint8_t* s, int n) {
+  count_ = n;
+  memcpy(chars_, s, n);
   chars_[count_] = 0;
 }
 
 std::size_t StringObject::size(void) const {
-  return sizeof(*this) + count_;
+  return sizeof(*this) + sizeof(std::uint8_t) * capacity_;
 }
 
 std::string StringObject::stringify(void) const {
-  return chars_;
+  return reinterpret_cast<const char*>(chars_);
 }
 
 void StringObject::traverse(VM&) {
@@ -217,13 +173,80 @@ Object* StringObject::move_to(void* p) {
   return new (p) StringObject(std::move(*this));
 }
 
-StringObject* StringObject::create(VM& vm, const char* s, int n) {
-  void* p = vm.allocate(sizeof(StringObject) + (n + 1) * sizeof(char));
-  return new (p) StringObject(s, n);
+StringObject* StringObject::create(VM& vm, int capacity) {
+  void* p = vm.allocate(
+      sizeof(StringObject) + (capacity + 1) * sizeof(std::uint8_t));
+  return new (p) StringObject(capacity);
+}
+
+StringObject* StringObject::create(VM& vm, const std::uint8_t* s, int n) {
+  int capacity = power_of_2ceil(n);
+  StringObject* str = create(vm, capacity);
+  str->set_chars(s, n);
+  return str;
+}
+
+StringObject* StringObject::ensure(
+    VM& vm, StringObject* orig_str, int new_capacity) {
+  int orig_capacity = orig_str == nullptr ? 0 : orig_str->capacity();
+  if (orig_capacity >= new_capacity)
+    return orig_str;
+
+  new_capacity = power_of_2ceil(new_capacity);
+  auto* new_str = StringObject::create(vm, new_capacity);
+  if (orig_str != nullptr)
+    new_str->set_chars(orig_str->chars(), orig_str->count());
+  return new_str;
+}
+
+FunctionObject::FunctionObject(void)
+  : Object(ObjType::FUNCTION) {
+}
+
+void FunctionObject::dump(void) {
+  const auto* codes = raw_codes();
+  int n = code_size();
+  for (int i = 0; i < n;) {
+    switch (codes[i++]) {
+    case OpCode::OP_CONSTANT:
+      {
+        std::uint8_t constant = codes[i++];
+        fprintf(stdout, "%-10s %5d `", "OP_CONSTANT", constant);
+        std::cout << constants_->get_element(constant) << "`" << std::endl;
+      } break;
+    case OpCode::OP_ADD: std::cout << "OP_ADD" << std::endl; break;
+    case OpCode::OP_SUB: std::cout << "OP_SUB" << std::endl; break;
+    case OpCode::OP_MUL: std::cout << "OP_MUL" << std::endl; break;
+    case OpCode::OP_DIV: std::cout << "OP_DIV" << std::endl; break;
+    case OpCode::OP_RETURN: std::cout << "OP_RETURN" << std::endl; break;
+    }
+  }
+}
+
+std::size_t FunctionObject::size(void) const {
+  return sizeof(*this);
+}
+
+std::string FunctionObject::stringify(void) const {
+  // TODO:
+  return "function";
+}
+
+void FunctionObject::traverse(VM& vm) {
+  constants_ = vm.move_object(constants_)->down_to<ArrayObject>();
+  codes_ = vm.move_object(codes_)->down_to<StringObject>();
+}
+
+Object* FunctionObject::move_to(void* p) {
+  return new (p) FunctionObject(std::move(*this));
+}
+
+FunctionObject* FunctionObject::create(VM& vm) {
+  return new (vm.allocate(sizeof(FunctionObject))) FunctionObject();
 }
 
 std::size_t TableEntriesObject::size(void) const {
-  return sizeof(*this) + count_ * sizeof(TableEntry);
+  return sizeof(*this) + sizeof(TableEntry) * count_;
 }
 
 std::string TableEntriesObject::stringify(void) const {
