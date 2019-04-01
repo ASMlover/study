@@ -53,77 +53,7 @@ inline int power_of_2ceil(int n) {
   return n;
 }
 
-ArrayObject::ArrayObject(int capacity)
-  : Object(ObjType::ARRAY)
-  , capacity_(capacity) {
-  elements_ = __offset_of<Value>(this, sizeof(*this));
-  for (int i = 0; i < capacity_; ++i)
-    elements_[i] = nullptr;
-}
-
-std::size_t ArrayObject::size(void) const {
-  return sizeof(*this) + sizeof(Value) * capacity_;
-}
-
-std::string ArrayObject::stringify(void) const {
-  std::stringstream ss;
-  ss << "array(" << count_ << ")";
-  return ss.str();
-}
-
-void ArrayObject::traverse(VM& vm) {
-  for (int i = 0; i < count_; ++i)
-    elements_[i] = vm.move_object(elements_[i]);
-}
-
-Object* ArrayObject::move_to(void* p) {
-  return new (p) ArrayObject(std::move(*this));
-}
-
-ArrayObject* ArrayObject::create(VM& vm, int capacity) {
-  void* p = vm.allocate(sizeof(ArrayObject) + capacity * sizeof(Value));
-  return new (p) ArrayObject(capacity);
-}
-
-ArrayObject* ArrayObject::ensure(
-    VM& vm, ArrayObject* orig_array, int new_capacity) {
-  int orig_capacity = orig_array == nullptr ? 0 : orig_array->capacity();
-  if (orig_capacity >= new_capacity)
-    return orig_array;
-
-  new_capacity = power_of_2ceil(new_capacity);
-  auto* new_array = ArrayObject::create(vm, new_capacity);
-  if (orig_array != nullptr) {
-    for (int i = 0; i < orig_array->count(); ++i)
-      new_array->append_element(orig_array->get_element(i));
-  }
-  return new_array;
-}
-
-std::size_t ForwardObject::size(void) const {
-  return sizeof(*this);
-}
-
-std::string ForwardObject::stringify(void) const {
-  std::stringstream ss;
-  ss << "fwd->" << to_->address();
-  return ss.str();
-}
-
-void ForwardObject::traverse(VM& vm) {
-  assert(false);
-}
-
-Object* ForwardObject::move_to(void* p) {
-  return new (p) ForwardObject(std::move(*this));
-}
-
-ForwardObject* ForwardObject::forward(void* p) {
-  return new (p) ForwardObject();
-}
-
-ForwardObject* ForwardObject::create(VM& vm) {
-  return new (vm.allocate(sizeof(ForwardObject))) ForwardObject();
+NumericObject::~NumericObject(void) {
 }
 
 std::size_t NumericObject::size(void) const {
@@ -136,32 +66,30 @@ std::string NumericObject::stringify(void) const {
   return ss.str();
 }
 
-void NumericObject::traverse(VM&) {
-}
-
-Object* NumericObject::move_to(void* p) {
-  return new (p) NumericObject(std::move(*this));
+void NumericObject::blacken(VM&) {
 }
 
 NumericObject* NumericObject::create(VM& vm, double d) {
-  return new (vm.allocate(sizeof(NumericObject))) NumericObject(d);
+  auto* o = new NumericObject(d);
+  vm.put_in(o);
+  return o;
 }
 
-StringObject::StringObject(int capacity)
+StringObject::~StringObject(void) {
+  if (chars_ != nullptr)
+    delete [] chars_;
+}
+
+StringObject::StringObject(const char* s, int n)
   : Object(ObjType::STRING)
-  , capacity_(capacity) {
-  chars_ = __offset_of<std::uint8_t>(this, sizeof(*this));
-  chars_[count_] = 0;
-}
-
-void StringObject::set_chars(const std::uint8_t* s, int n) {
-  count_ = n;
+  , count_(n) {
+  chars_ = new char[count_ + 1];
   memcpy(chars_, s, n);
   chars_[count_] = 0;
 }
 
 std::size_t StringObject::size(void) const {
-  return sizeof(*this) + sizeof(std::uint8_t) * capacity_;
+  return sizeof(*this) + sizeof(char) * count_;
 }
 
 std::string StringObject::stringify(void) const {
@@ -170,53 +98,35 @@ std::string StringObject::stringify(void) const {
   return ss.str();
 }
 
-void StringObject::traverse(VM&) {
+void StringObject::blacken(VM&) {
 }
 
-Object* StringObject::move_to(void* p) {
-  return new (p) StringObject(std::move(*this));
-}
-
-StringObject* StringObject::create(VM& vm, int capacity) {
-  void* p = vm.allocate(
-      sizeof(StringObject) + (capacity + 1) * sizeof(std::uint8_t));
-  return new (p) StringObject(capacity);
-}
-
-StringObject* StringObject::create(VM& vm, const std::uint8_t* s, int n) {
-  int capacity = power_of_2ceil(n);
-  StringObject* str = create(vm, capacity);
-  str->set_chars(s, n);
-  return str;
-}
-
-StringObject* StringObject::ensure(
-    VM& vm, StringObject* orig_str, int new_capacity) {
-  int orig_capacity = orig_str == nullptr ? 0 : orig_str->capacity();
-  if (orig_capacity >= new_capacity)
-    return orig_str;
-
-  new_capacity = power_of_2ceil(new_capacity);
-  auto* new_str = StringObject::create(vm, new_capacity);
-  if (orig_str != nullptr)
-    new_str->set_chars(orig_str->chars(), orig_str->count());
-  return new_str;
+StringObject* StringObject::create(VM& vm, const char* s, int n) {
+  auto* o = new StringObject(s, n);
+  vm.put_in(o);
+  return o;
 }
 
 FunctionObject::FunctionObject(void)
   : Object(ObjType::FUNCTION) {
 }
 
+FunctionObject::~FunctionObject(void) {
+  if (codes_ != nullptr)
+    delete [] codes_;
+  if (constants_ != nullptr)
+    delete [] constants_;
+}
+
 void FunctionObject::dump(void) {
-  const auto* codes = raw_codes();
-  int n = codes_count();
-  for (int i = 0; i < n;) {
+  const auto* codes = codes_;
+  for (int i = 0; i < codes_count_;) {
     switch (codes[i++]) {
     case OpCode::OP_CONSTANT:
       {
         std::uint8_t constant = codes[i++];
         fprintf(stdout, "%-10s %5d `", "OP_CONSTANT", constant);
-        std::cout << constants_->get_element(constant) << "`" << std::endl;
+        std::cout << constants_[constant] << "`" << std::endl;
       } break;
     case OpCode::OP_ADD: std::cout << "OP_ADD" << std::endl; break;
     case OpCode::OP_SUB: std::cout << "OP_SUB" << std::endl; break;
@@ -225,6 +135,28 @@ void FunctionObject::dump(void) {
     case OpCode::OP_RETURN: std::cout << "OP_RETURN" << std::endl; break;
     }
   }
+}
+
+void FunctionObject::append_code(std::uint8_t c) {
+  if (codes_capacity_ < codes_count_ + 1) {
+    codes_capacity_ = codes_capacity_ == 0 ? 4 : codes_capacity_ * 2;
+
+    auto* new_codes = new std::uint8_t[codes_capacity_];
+    memcpy(new_codes, codes_, sizeof(std::uint8_t) * codes_count_);
+    codes_ = new_codes;
+  }
+  codes_[codes_count_++] = c;
+}
+
+void FunctionObject::append_constant(Value v) {
+  if (constants_capacity_ < constants_count_ + 1) {
+    constants_capacity_ = constants_capacity_ == 0 ? 4 : constants_capacity_ * 2;
+
+    auto* new_constants = new Value[constants_capacity_];
+    memcpy(new_constants, constants_, sizeof(Value) * constants_count_);
+    constants_ = new_constants;
+  }
+  constants_[constants_count_++] = v;
 }
 
 std::size_t FunctionObject::size(void) const {
@@ -236,38 +168,20 @@ std::string FunctionObject::stringify(void) const {
   return "function";
 }
 
-void FunctionObject::traverse(VM& vm) {
-  constants_ = vm.move_object(constants_)->down_to<ArrayObject>();
-  codes_ = vm.move_object(codes_)->down_to<StringObject>();
-}
-
-Object* FunctionObject::move_to(void* p) {
-  return new (p) FunctionObject(std::move(*this));
+void FunctionObject::blacken(VM& vm) {
+  for (int i = 0; i < constants_count_; ++i)
+    vm.gray_value(constants_[i]);
 }
 
 FunctionObject* FunctionObject::create(VM& vm) {
-  return new (vm.allocate(sizeof(FunctionObject))) FunctionObject();
+  auto* o = new FunctionObject();
+  vm.put_in(o);
+  return o;
 }
 
-std::size_t TableEntriesObject::size(void) const {
-  return sizeof(*this) + sizeof(TableEntry) * count_;
-}
-
-std::string TableEntriesObject::stringify(void) const {
-  // TODO:
-  return "table entries";
-}
-
-void TableEntriesObject::traverse(VM& vm) {
-  for (int i = 0; i < count_; ++i) {
-    auto& entry = entries_[i];
-    entry.key = vm.move_object(entry.key);
-    entry.value = vm.move_object(entry.value);
-  }
-}
-
-Object* TableEntriesObject::move_to(void* p) {
-  return new (p) TableEntriesObject(std::move(*this));
+TableObject::~TableObject(void) {
+  if (entries_ != nullptr)
+    delete [] entries_;
 }
 
 std::size_t TableObject::size(void) const {
@@ -279,16 +193,18 @@ std::string TableObject::stringify(void) const {
   return "table";
 }
 
-void TableObject::traverse(VM& vm) {
-  entries_ = vm.move_object(entries_)->down_to<TableEntriesObject>();
-}
-
-Object* TableObject::move_to(void* p) {
-  return new (p) TableObject(std::move(*this));
+void TableObject::blacken(VM& vm) {
+  for (int i = 0; i < capacity_; ++i) {
+    auto& entry = entries_[i];
+    vm.gray_value(entry.key);
+    vm.gray_value(entry.value);
+  }
 }
 
 TableObject* TableObject::create(VM& vm) {
-  return new (vm.allocate(sizeof(TableObject))) TableObject();
+  auto* o = new TableObject();
+  vm.put_in(o);
+  return o;
 }
 
 }
