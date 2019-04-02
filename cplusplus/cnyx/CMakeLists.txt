@@ -33,10 +33,10 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
-option(DEBUG_GC_STRESS "Enable/Disable debug gc stress" OFF)
+option(DEBUG_GC_TRACE "Enable/Disable debug gc trace" ON)
 
-if (DEBUG_GC_STRESS)
-  add_definitions(-DDEBUG_GC_STRESS)
+if (DEBUG_GC_TRACE)
+  add_definitions(-DDEBUG_GC_TRACE)
 endif()
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   add_definitions(
