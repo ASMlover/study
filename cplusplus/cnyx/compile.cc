@@ -74,8 +74,6 @@ class Compiler : private UnCopyable {
   }
 
   void emit_byte(std::uint8_t byte) {
-    function_->set_codes(StringObject::ensure(vm_,
-          function_->codes(), function_->codes_count() + 1));
     function_->append_code(byte);
   }
 
@@ -85,8 +83,6 @@ class Compiler : private UnCopyable {
   }
 
   std::uint8_t add_constant(Value constant) {
-    function_->set_constants(ArrayObject::ensure(vm_,
-          function_->constants(), function_->constants_count() + 1));
     function_->append_constant(constant);
     return static_cast<std::uint8_t>(function_->constants_count() - 1);
   }
@@ -191,8 +187,8 @@ public:
   inline FunctionObject* get_function(void) const { return function_; }
   inline Compiler* get_enclosing(void) const { return enclosing_; }
 
-  void move_function(void) {
-    function_ = vm_.move_object(function_)->down_to<FunctionObject>();
+  void gray_function(void) {
+    vm_.gray_value(function_);
   }
 
   void finish_compiler(void) {
@@ -238,10 +234,10 @@ FunctionObject* Compile::compile(VM& vm, const std::string& source_bytes) {
   return c.get_function();
 }
 
-void trace_compiler_roots(void) {
+void gray_compiler_roots(void) {
   auto* compiler_iter = _main_compiler;
   while (compiler_iter != nullptr) {
-    compiler_iter->move_function();
+    compiler_iter->gray_function();
     compiler_iter = compiler_iter->get_enclosing();
   }
 }
