@@ -42,6 +42,41 @@ VM::~VM(void) {
   gray_stack_.clear();
 }
 
+bool VM::pop_boolean(bool& v) {
+  if (peek()->type() != ObjType::BOOLEAN) {
+    std::cerr << "operand must be a boolean" << std::endl;
+    return false;
+  }
+
+  v = pop()->down_to<BooleanObject>()->value();
+  return true;
+}
+
+bool VM::pop_numeric(double& v) {
+  if (peek()->type() != ObjType::NUMERIC) {
+    std::cerr << "operand must be a numeric" << std::endl;
+    return false;
+  }
+
+  v = pop()->down_to<NumericObject>()->value();
+  return true;
+}
+
+bool VM::pop_numerics(double& a, double& b) {
+  if (peek(0)->type() != ObjType::NUMERIC) {
+    std::cerr << "right operand must be a numeric" << std::endl;
+    return false;
+  }
+  if (peek(1)->type() != ObjType::NUMERIC) {
+    std::cerr << "left operand must be a numeric" << std::endl;
+    return false;
+  }
+
+  b = pop()->down_to<NumericObject>()->value();
+  a = pop()->down_to<NumericObject>()->value();
+  return true;
+}
+
 void VM::collect(void) {
 #if defined(DEBUG_GC_TRACE)
   std::cout << "********* collect: starting *********" << std::endl;
@@ -91,33 +126,87 @@ void VM::run(FunctionObject* fn) {
         std::uint8_t constant = *ip++;
         push(fn->get_constant(constant));
       } break;
+    case OpCode::OP_GT:
+      {
+        double a, b;
+        if (!pop_numerics(a, b))
+          return;
+        push(BooleanObject::create(*this, a > b));
+      } break;
+    case OpCode::OP_GE:
+      {
+        double a, b;
+        if (!pop_numerics(a, b))
+          return;
+        push(BooleanObject::create(*this, a >= b));
+      } break;
+    case OpCode::OP_LT:
+      {
+        double a, b;
+        if (!pop_numerics(a, b))
+          return;
+        push(BooleanObject::create(*this, a < b));
+      } break;
+    case OpCode::OP_LE:
+      {
+        double a, b;
+        if (!pop_numerics(a, b))
+          return;
+        push(BooleanObject::create(*this, a <= b));
+      } break;
     case OpCode::OP_ADD:
       {
-        // TODO: check types
-        double b = pop()->down_to<NumericObject>()->value();
-        double a = pop()->down_to<NumericObject>()->value();
-        push(NumericObject::create(*this, a + b));
+        if (peek(0)->type() == ObjType::STRING
+            && peek(1)->type() == ObjType::STRING) {
+          auto* b = pop()->down_to<StringObject>();
+          auto* a = pop()->down_to<StringObject>();
+          push(StringObject::concat(*this, a, b));
+        }
+        else if (peek(0)->type() == ObjType::NUMERIC
+            && peek(1)->type() == ObjType::NUMERIC) {
+          double b = pop()->down_to<NumericObject>()->value();
+          double a = pop()->down_to<NumericObject>()->value();
+          push(NumericObject::create(*this, a + b));
+        }
+        else {
+          std::cerr << "can only add two strings or two numerics" << std::endl;
+          return;
+        }
       } break;
     case OpCode::OP_SUB:
       {
-        // TODO: check types
-        double b = pop()->cast_to<NumericObject>()->value();
-        double a = pop()->cast_to<NumericObject>()->value();
+        double a, b;
+        if (!pop_numerics(a, b))
+          return;
         push(NumericObject::create(*this, a - b));
       } break;
     case OpCode::OP_MUL:
       {
-        // TODO: check types
-        double b = pop()->cast_to<NumericObject>()->value();
-        double a = pop()->cast_to<NumericObject>()->value();
+        double a, b;
+        if (!pop_numerics(a, b))
+          return;
         push(NumericObject::create(*this, a * b));
       } break;
     case OpCode::OP_DIV:
       {
-        // TODO: check types
-        double b = pop()->cast_to<NumericObject>()->value();
-        double a = pop()->cast_to<NumericObject>()->value();
+        double a, b;
+        if (!pop_numerics(a, b))
+          return;
         push(NumericObject::create(*this, a / b));
+      } break;
+    case OpCode::OP_NOT:
+      {
+        bool v;
+        if (!pop_boolean(v))
+          return;
+        push(BooleanObject::create(*this, !v));
+      } break;
+    case OpCode::OP_NEG:
+      {
+        double v;
+        if (!pop_numeric(v))
+          return;
+        push(NumericObject::create(*this, -v));
       } break;
     case OpCode::OP_RETURN:
       // std::cout << stack_.back() << std::endl;

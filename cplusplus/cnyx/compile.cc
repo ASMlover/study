@@ -88,40 +88,44 @@ class Compiler : private UnCopyable {
   }
 
   ParseRule& get_rule(TokenKind kind) {
+    static auto grouping_fn = [](Compiler* p, bool b) { p->grouping(b); };
+    static auto boolean_fn = [](Compiler* p, bool b) { p->boolean(b); };
     static auto numeric_fn = [](Compiler* p, bool b) { p->numeric(b); };
+    static auto string_fn = [](Compiler* p, bool b) { p->string(b); };
     static auto binary_fn = [](Compiler* p, bool b) { p->binary(b); };
+    static auto unary_fn = [](Compiler* p, bool b) { p->unary(b); };
 
     static ParseRule _rules[] = {
       nullptr, nullptr, Precedence::NONE, // TK_ERROR
       nullptr, nullptr, Precedence::NONE, // TK_EOF
       nullptr, nullptr, Precedence::NONE, // TK_IDENTIFIER
-      nullptr, nullptr, Precedence::NONE, // TK_STRINGLITERAL
+      string_fn, nullptr, Precedence::NONE, // TK_STRINGLITERAL
       numeric_fn, nullptr, Precedence::NONE, // TK_NUMERICCONST
 
-      nullptr, nullptr, Precedence::NONE, // TK_LPAREN
+      grouping_fn, nullptr, Precedence::NONE, // TK_LPAREN
       nullptr, nullptr, Precedence::NONE, // TK_RPAREN
       nullptr, nullptr, Precedence::NONE, // TK_LBRACE
       nullptr, nullptr, Precedence::NONE, // TK_RBRACE
       nullptr, nullptr, Precedence::NONE, // TK_COMMA
       nullptr, nullptr, Precedence::NONE, // TK_DOT
       nullptr, nullptr, Precedence::NONE, // TK_SEMI
-      nullptr, nullptr, Precedence::NONE, // TK_BANG
+      unary_fn, nullptr, Precedence::NONE, // TK_BANG
       nullptr, nullptr, Precedence::NONE, // TK_BANGEQUAL
       nullptr, nullptr, Precedence::NONE, // TK_EQUAL
       nullptr, nullptr, Precedence::NONE, // TK_EQUALEQUAL
-      nullptr, nullptr, Precedence::NONE, // TK_GREATER
-      nullptr, nullptr, Precedence::NONE, // TK_GREATEREQUAL
-      nullptr, nullptr, Precedence::NONE, // TK_LESS
-      nullptr, nullptr, Precedence::NONE, // TK_LESSEQUAL
+      nullptr, binary_fn, Precedence::COMPARISON, // TK_GREATER
+      nullptr, binary_fn, Precedence::COMPARISON, // TK_GREATEREQUAL
+      nullptr, binary_fn, Precedence::COMPARISON, // TK_LESS
+      nullptr, binary_fn, Precedence::COMPARISON, // TK_LESSEQUAL
       nullptr, binary_fn, Precedence::TERM, // TK_PLUS
-      nullptr, binary_fn, Precedence::TERM, // TK_MINUS
+      unary_fn, binary_fn, Precedence::TERM, // TK_MINUS
       nullptr, binary_fn, Precedence::FACTOR, // TK_STAR
       nullptr, binary_fn, Precedence::FACTOR, // TK_SLASH
 
       nullptr, nullptr, Precedence::NONE, // KW_AND
       nullptr, nullptr, Precedence::NONE, // KW_CLASS
       nullptr, nullptr, Precedence::NONE, // KW_ELSE
-      nullptr, nullptr, Precedence::NONE, // KW_FALSE
+      boolean_fn, nullptr, Precedence::NONE, // KW_FALSE
       nullptr, nullptr, Precedence::NONE, // KW_FOR
       nullptr, nullptr, Precedence::NONE, // KW_FUN
       nullptr, nullptr, Precedence::NONE, // KW_IF
@@ -131,14 +135,14 @@ class Compiler : private UnCopyable {
       nullptr, nullptr, Precedence::NONE, // KW_RETURN
       nullptr, nullptr, Precedence::NONE, // KW_SUPER
       nullptr, nullptr, Precedence::NONE, // KW_THIS
-      nullptr, nullptr, Precedence::NONE, // KW_TRUE
+      boolean_fn, nullptr, Precedence::NONE, // KW_TRUE
       nullptr, nullptr, Precedence::NONE, // KW_VAR
       nullptr, nullptr, Precedence::NONE, // KW_WHILE
     };
     return _rules[EnumUtil<TokenKind>::as_int(kind)];
   }
 
-  void parse_precedence(Precedence precedence, bool can_assign) {
+  void parse_precedence(Precedence precedence) {
     advance();
 
     auto prefix = get_rule(prev_.get_kind()).prefix;
@@ -147,6 +151,7 @@ class Compiler : private UnCopyable {
       error("expected expression");
       return;
     }
+    bool can_assign = precedence <= Precedence::ASSIGNMENT;
     prefix(this, can_assign);
 
     while (precedence <= get_rule(curr_.get_kind()).precedence) {
@@ -157,10 +162,28 @@ class Compiler : private UnCopyable {
     }
   }
 
+  void boolean(bool can_assign) {
+    bool value = prev_.get_kind() == TokenKind::KW_TRUE;
+    std::uint8_t constant = add_constant(BooleanObject::create(vm_, value));
+    emit_bytes(OpCode::OP_CONSTANT, constant);
+  }
+
   void numeric(bool can_assign) {
     double value = prev_.as_numeric();
     std::uint8_t constant = add_constant(NumericObject::create(vm_, value));
     emit_bytes(OpCode::OP_CONSTANT, constant);
+  }
+
+  void string(bool can_assign) {
+    auto s = prev_.as_string();
+    std::uint8_t constant = add_constant(
+        StringObject::create(vm_, s.c_str(), static_cast<int>(s.size())));
+    emit_bytes(OpCode::OP_CONSTANT, constant);
+  }
+
+  void grouping(bool can_assign) {
+    expression();
+    consume(TokenKind::TK_RPAREN, "expect `)` after expression");
   }
 
   void binary(bool can_assign) {
@@ -168,13 +191,30 @@ class Compiler : private UnCopyable {
     auto& rule = get_rule(oper_kind);
 
     // compile the right-hand operand
-    parse_precedence(EnumUtil<Precedence>::as_enum(rule.precedence + 1), false);
+    parse_precedence(EnumUtil<Precedence>::as_enum(rule.precedence + 1));
 
     switch (oper_kind) {
+    case TokenKind::TK_GREATER: emit_byte(OpCode::OP_GT); break;
+    case TokenKind::TK_GREATEREQUAL: emit_byte(OpCode::OP_GE); break;
+    case TokenKind::TK_LESS: emit_byte(OpCode::OP_LT); break;
+    case TokenKind::TK_LESSEQUAL: emit_byte(OpCode::OP_LE); break;
     case TokenKind::TK_PLUS: emit_byte(OpCode::OP_ADD); break;
     case TokenKind::TK_MINUS: emit_byte(OpCode::OP_SUB); break;
     case TokenKind::TK_STAR: emit_byte(OpCode::OP_MUL); break;
     case TokenKind::TK_SLASH: emit_byte(OpCode::OP_DIV); break;
+    default: assert(false); break; // unreachable
+    }
+  }
+
+  void unary(bool can_assign) {
+    auto oper_kind = prev_.get_kind();
+
+    // compile the operand
+    parse_precedence(EnumUtil<Precedence>::as_enum(Precedence::UNARY + 1));
+
+    switch (oper_kind) {
+    case TokenKind::TK_BANG: emit_byte(OpCode::OP_NOT); break;
+    case TokenKind::TK_MINUS: emit_byte(OpCode::OP_NEG); break;
     default: assert(false); break; // unreachable
     }
   }
@@ -207,7 +247,7 @@ public:
   }
 
   void expression(void) {
-    parse_precedence(Precedence::ASSIGNMENT, true);
+    parse_precedence(Precedence::ASSIGNMENT);
   }
 
   void statement(void) {

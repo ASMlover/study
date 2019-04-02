@@ -35,10 +35,16 @@ namespace nyx {
 
 enum OpCode {
   OP_CONSTANT,
+  OP_GT, // >
+  OP_GE, // >=
+  OP_LT, // <
+  OP_LE, // <=
   OP_ADD, // +
   OP_SUB, // -
   OP_MUL, // *
   OP_DIV, // /
+  OP_NOT, // !
+  OP_NEG, // - negative
   OP_RETURN, // return
 };
 
@@ -65,7 +71,14 @@ class VM : private UnCopyable {
     return val;
   }
 
-  void initialize(void);
+  inline Value peek(int distance = 0) const {
+    return stack_[stack_.size() - 1 - distance];
+  }
+
+  bool pop_boolean(bool& v);
+  bool pop_numeric(double& v);
+  bool pop_numerics(double& a, double& b);
+
   void collect(void);
   void print_stack(void);
   void run(FunctionObject* fn);

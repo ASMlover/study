@@ -58,7 +58,10 @@ static void test_lexer(int argc, char** argv) {
 
 static void test_vm(void) {
   nyx::VM vm;
-  vm.interpret("1+2*3/4-5;");
+  // vm.interpret("1+2*3/4-5;");
+  // vm.interpret("true;");
+  // vm.interpret("false;");
+  vm.interpret("\"abc\" + \"123\";");
 }
 
 int main(int argc, char* argv[]) {
