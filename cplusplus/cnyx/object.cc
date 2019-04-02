@@ -161,10 +161,16 @@ void FunctionObject::dump(void) {
         fprintf(stdout, "%-10s %5d `", "OP_CONSTANT", constant);
         std::cout << constants_[constant] << "`" << std::endl;
       } break;
+    case OpCode::OP_GT: std::cout << "OP_GT" << std::endl; break;
+    case OpCode::OP_GE: std::cout << "OP_GE" << std::endl; break;
+    case OpCode::OP_LT: std::cout << "OP_LT" << std::endl; break;
+    case OpCode::OP_LE: std::cout << "OP_LE" << std::endl; break;
     case OpCode::OP_ADD: std::cout << "OP_ADD" << std::endl; break;
     case OpCode::OP_SUB: std::cout << "OP_SUB" << std::endl; break;
     case OpCode::OP_MUL: std::cout << "OP_MUL" << std::endl; break;
     case OpCode::OP_DIV: std::cout << "OP_DIV" << std::endl; break;
+    case OpCode::OP_NOT: std::cout << "OP_NOT" << std::endl; break;
+    case OpCode::OP_NEG: std::cout << "OP_NEG" << std::endl; break;
     case OpCode::OP_RETURN: std::cout << "OP_RETURN" << std::endl; break;
     }
   }
