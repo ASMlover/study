@@ -33,9 +33,10 @@
 namespace nyx {
 
 enum class ObjType {
-  FUNCTION,
+  BOOLEAN,
   NUMERIC,
   STRING,
+  FUNCTION,
   TABLE,
 };
 
@@ -74,11 +75,27 @@ using Value = Object*;
 
 std::ostream& operator<<(std::ostream& out, Object* o);
 
+class BooleanObject : public Object {
+  bool value_{};
+
+  BooleanObject(bool b) : Object(ObjType::BOOLEAN), value_(b) {}
+  ~BooleanObject(void) {}
+public:
+  inline void set_value(bool b) { value_ = b; }
+  inline bool value(void) const { return value_; }
+
+  virtual std::size_t size(void) const override;
+  virtual std::string stringify(void) const override;
+  virtual void blacken(VM& vm) override;
+
+  static BooleanObject* create(VM& vm, bool b);
+};
+
 class NumericObject : public Object {
   double value_{};
 
   NumericObject(double d) : Object(ObjType::NUMERIC), value_(d) {}
-  ~NumericObject(void);
+  ~NumericObject(void) {}
 public:
   inline void set_value(double v) { value_ = v; }
   inline double value(void) const { return value_; }
@@ -88,7 +105,6 @@ public:
   virtual void blacken(VM& vm) override;
 
   static NumericObject* create(VM& vm, double d);
-  static void release(VM& vm, NumericObject* o);
 };
 
 class StringObject : public Object {
@@ -99,18 +115,16 @@ class StringObject : public Object {
   ~StringObject(void);
 public:
   inline int count(void) const { return count_; }
-  inline char get_element(int i) { return chars_[i]; }
-  inline const char get_element(int i) const { return chars_[i]; }
-  inline void set_element(int i, char c) { chars_[i] = c; }
   inline char* chars(void) { return chars_; }
   inline const char* chars(void) const { return chars_; }
+  inline char get_element(int i) const { return chars_[i]; }
+  inline void set_element(int i, char c) { chars_[i] = c; }
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
   virtual void blacken(VM& vm) override;
 
   static StringObject* create(VM& vm, const char* s, int n);
-  static void release(VM& vm, StringObject* o);
 };
 
 class FunctionObject : public Object {
@@ -145,7 +159,6 @@ public:
   virtual void blacken(VM& vm) override;
 
   static FunctionObject* create(VM& vm);
-  static void release(VM& vm, FunctionObject* o);
 };
 
 struct TableEntry { Value key, value; };
@@ -168,7 +181,6 @@ public:
   virtual void blacken(VM& vm) override;
 
   static TableObject* create(VM& vm);
-  static void release(VM& vm, TableObject* o);
 };
 
 }

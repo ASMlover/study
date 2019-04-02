@@ -53,7 +53,21 @@ inline int power_of_2ceil(int n) {
   return n;
 }
 
-NumericObject::~NumericObject(void) {
+std::size_t BooleanObject::size(void) const {
+  return sizeof(*this);
+}
+
+std::string BooleanObject::stringify(void) const {
+  return value_ ? "true" : "false";
+}
+
+void BooleanObject::blacken(VM& vm) {
+}
+
+BooleanObject* BooleanObject::create(VM& vm, bool b) {
+  auto* o = new BooleanObject(b);
+  vm.put_in(o);
+  return o;
 }
 
 std::size_t NumericObject::size(void) const {
@@ -75,17 +89,18 @@ NumericObject* NumericObject::create(VM& vm, double d) {
   return o;
 }
 
-StringObject::~StringObject(void) {
-  if (chars_ != nullptr)
-    delete [] chars_;
-}
-
 StringObject::StringObject(const char* s, int n)
   : Object(ObjType::STRING)
   , count_(n) {
   chars_ = new char[count_ + 1];
-  memcpy(chars_, s, n);
+  if (s != nullptr)
+    memcpy(chars_, s, n);
   chars_[count_] = 0;
+}
+
+StringObject::~StringObject(void) {
+  if (chars_ != nullptr)
+    delete [] chars_;
 }
 
 std::size_t StringObject::size(void) const {
@@ -93,9 +108,7 @@ std::size_t StringObject::size(void) const {
 }
 
 std::string StringObject::stringify(void) const {
-  std::stringstream ss;
-  ss << "string(" << count_ << ")";
-  return ss.str();
+  return chars_;
 }
 
 void StringObject::blacken(VM&) {
