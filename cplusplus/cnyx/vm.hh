@@ -27,6 +27,7 @@
 #pragma once
 
 #include <vector>
+#include <list>
 #include "common.hh"
 #include "object.hh"
 
@@ -42,13 +43,9 @@ enum OpCode {
 };
 
 class VM : private UnCopyable {
-  byte_t* heaptr_{};
-  byte_t* fromspace_{};
-  byte_t* tospace_{};
-  byte_t* allocptr_{};
   std::vector<Value> stack_;
-
-  static constexpr std::size_t kMaxHeap = (1 << 20) * 10;
+  std::list<Object*> objects_;
+  std::list<Object*> gray_stack_;
 
   template <typename Source> inline Object* as_object(Source* x) const {
     return reinterpret_cast<Object*>(x);
@@ -76,8 +73,11 @@ public:
   VM(void);
   ~VM(void);
 
-  Value move_object(Value from_ref);
-  void* allocate(std::size_t n);
+  void put_in(Object* o);
+
+  void gray_value(Value v);
+  void blacken_object(Object* obj);
+  void free_object(Object* obj);
 
   void interpret(const std::string& source_bytes);
 };

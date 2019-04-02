@@ -33,38 +33,46 @@
 namespace nyx {
 
 VM::VM(void) {
-  initialize();
 }
 
 VM::~VM(void) {
-  delete [] heaptr_;
-}
-
-void VM::initialize(void) {
-  heaptr_ = new byte_t[kMaxHeap << 1];
-  fromspace_ = heaptr_;
-  tospace_ = heaptr_ + kMaxHeap;
-  allocptr_ = fromspace_;
+  for (auto* o : objects_)
+    free_object(o);
+  objects_.clear();
+  gray_stack_.clear();
 }
 
 void VM::collect(void) {
+#if defined(DEBUG_GC_TRACE)
   std::cout << "********* collect: starting *********" << std::endl;
+#endif
 
-  std::swap(fromspace_, tospace_);
-  allocptr_ = fromspace_;
+  // mark the roots
+  for (auto* v : stack_)
+    gray_value(v);
 
-  for (auto i = 0u; i < stack_.size(); ++i)
-    stack_[i] = move_object(stack_[i]);
-  trace_compiler_roots();
+  gray_compiler_roots();
 
-  byte_t* p = fromspace_;
-  while (p < allocptr_) {
-    auto* obj = as_object(p);
-    obj->traverse(*this);
-    p += obj->size();
+  while (!gray_stack_.empty()) {
+    auto* o = gray_stack_.back();
+    gray_stack_.pop_back();
+    blacken_object(o);
   }
 
+  for (auto it = objects_.begin(); it != objects_.end();) {
+    if (!(*it)->is_dark()) {
+      free_object(*it);
+      objects_.erase(it++);
+    }
+    else {
+      (*it)->set_dark(false);
+      ++it;
+    }
+  }
+
+#if defined(DEBUG_GC_TRACE)
   std::cout << "********* collect: finished *********" << std::endl;
+#endif
 }
 
 void VM::print_stack(void) {
@@ -74,7 +82,8 @@ void VM::print_stack(void) {
 }
 
 void VM::run(FunctionObject* fn) {
-  const std::uint8_t* ip = fn->raw_codes();
+  push(fn);
+  const std::uint8_t* ip = fn->codes();
   for (;;) {
     switch (*ip++) {
     case OpCode::OP_CONSTANT:
@@ -117,47 +126,35 @@ void VM::run(FunctionObject* fn) {
   }
 }
 
-Value VM::move_object(Value from_ref) {
-  if (from_ref == nullptr)
-    return nullptr;
-  if (from_ref->get_type() == ObjType::FORWARD)
-    return from_ref->down_to<ForwardObject>()->to();
-
-  auto* p = allocptr_;
-  allocptr_ += from_ref->size();
-
-  std::cout
-    << "copy " << from_ref << " from `" << from_ref->address()
-    << "` to `" << as_address(p) << "`" << std::endl;
-
-  Object* to_ref = from_ref->move_to(p);
-  auto* old = ForwardObject::forward(from_ref->address());
-  old->set_to(to_ref);
-
-  return to_ref;
+void VM::put_in(Object* o) {
+  objects_.push_back(o);
 }
 
-void* VM::allocate(std::size_t n) {
-  if (allocptr_ + n > fromspace_ + kMaxHeap) {
-    collect();
+void VM::gray_value(Value v) {
+  if (v == nullptr)
+    return;
 
-    if (allocptr_ + n > fromspace_ + kMaxHeap) {
-      std::cerr
-        << "Heap full, need " << n
-        << " bytes, but only " << (kMaxHeap - (allocptr_ - fromspace_))
-        << " available" << std::endl;
-      std::exit(-1);
-    }
-  }
-  else {
-#if defined(DEBUG_GC_STRESS)
-    collect();
+  if (v->is_dark())
+    return;
+#if defined(DEBUG_GC_TRACE)
+  std::cout << "`" << v->address() << "` gray " << v << std::endl;
 #endif
-  }
+  v->set_dark(true);
+  gray_stack_.push_back(v);
+}
 
-  auto* r = allocptr_;
-  allocptr_ += n;
-  return r;
+void VM::blacken_object(Object* obj) {
+#if defined(DEBUG_GC_TRACE)
+  std::cout << "`" << obj->address() << "` blacken " << obj << std::endl;
+#endif
+  obj->blacken(*this);
+}
+
+void VM::free_object(Object* obj) {
+#if defined(DEBUG_GC_TRACE)
+  std::cout << "`" << obj->address() << "` free " << obj << std::endl;
+#endif
+  delete obj;
 }
 
 void VM::interpret(const std::string& source_bytes) {
