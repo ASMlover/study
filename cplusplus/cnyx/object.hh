@@ -111,8 +111,11 @@ class StringObject : public Object {
   int count_{};
   char* chars_{};
 
+  StringObject(void) : Object(ObjType::STRING) {}
   StringObject(const char* s, int n);
   ~StringObject(void);
+
+  void inti_from_string(const char* s, int n);
 public:
   inline int count(void) const { return count_; }
   inline char* chars(void) { return chars_; }
@@ -125,6 +128,7 @@ public:
   virtual void blacken(VM& vm) override;
 
   static StringObject* create(VM& vm, const char* s, int n);
+  static StringObject* concat(VM& vm, StringObject* a, StringObject* b);
 };
 
 class FunctionObject : public Object {

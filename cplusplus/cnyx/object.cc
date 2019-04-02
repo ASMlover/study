@@ -103,6 +103,13 @@ StringObject::~StringObject(void) {
     delete [] chars_;
 }
 
+void StringObject::inti_from_string(const char* s, int n) {
+  if (chars_ != s || count_ != n) {
+    count_ = n;
+    chars_ = const_cast<char*>(s);
+  }
+}
+
 std::size_t StringObject::size(void) const {
   return sizeof(*this) + sizeof(char) * count_;
 }
@@ -116,6 +123,19 @@ void StringObject::blacken(VM&) {
 
 StringObject* StringObject::create(VM& vm, const char* s, int n) {
   auto* o = new StringObject(s, n);
+  vm.put_in(o);
+  return o;
+}
+
+StringObject* StringObject::concat(VM& vm, StringObject* a, StringObject* b) {
+  int n = a->count() + b->count();
+  char* s = new char[n + 1];
+  memcpy(s, a->chars(), a->count());
+  memcpy(s + a->count(), b->chars(), b->count());
+  s[n] = 0;
+
+  auto* o = new StringObject();
+  o->inti_from_string(s, n);
   vm.put_in(o);
   return o;
 }
