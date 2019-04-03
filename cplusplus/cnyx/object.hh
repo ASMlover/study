@@ -56,16 +56,38 @@ public:
 
   virtual std::size_t size(void) const = 0;
   virtual std::string stringify(void) const = 0;
+  virtual bool is_equal(Object* other) const = 0;
   virtual void blacken(VM& vm) = 0;
 };
 using Value = Object*;
 
-std::ostream& operator<<(std::ostream& out, Object* o);
+inline std::ostream& operator<<(std::ostream& out, Object* obj) {
+  return out << obj->stringify();
+}
+
+inline bool values_equal(Value a, Value b) {
+  if (a == b)
+    return true;
+  return a->type() != b->type() ? false : a->is_equal(b);
+}
 
 class ValueArray : private UnCopyable {
   int capacity_{};
   int count_{};
   Value* values_{};
+public:
+  ValueArray(void) {}
+  ~ValueArray(void);
+
+  inline int capacity(void) const { return capacity_; }
+  inline int count(void) const { return count_; }
+  inline Value* values(void) { return values_; }
+  inline const Value* values(void) const { return values_; }
+  inline void set_value(int i, Value v) { values_[i] = v; }
+  inline Value get_value(int i) { return values_[i]; }
+  inline const Value get_value(int i) const { return values_[i]; }
+  void append_value(Value v);
+  void gray(VM& vm);
 };
 
 class BooleanObject : public Object {
@@ -79,6 +101,7 @@ public:
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
+  virtual bool is_equal(Object* other) const override;
   virtual void blacken(VM& vm) override;
 
   static BooleanObject* create(VM& vm, bool b);
@@ -95,6 +118,7 @@ public:
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
+  virtual bool is_equal(Object* other) const override;
   virtual void blacken(VM& vm) override;
 
   static NumericObject* create(VM& vm, double d);
@@ -118,6 +142,7 @@ public:
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
+  virtual bool is_equal(Object* other) const override;
   virtual void blacken(VM& vm) override;
 
   static StringObject* create(VM& vm, const char* s, int n);
@@ -129,9 +154,7 @@ class FunctionObject : public Object {
   int codes_count_{};
   std::uint8_t* codes_{};
 
-  int constants_capacity_{};
-  int constants_count_{};
-  Value* constants_{};
+  ValueArray constants_;
 
   FunctionObject(void);
   ~FunctionObject(void);
@@ -141,11 +164,11 @@ public:
   inline std::uint8_t* codes(void) { return codes_; }
   inline const std::uint8_t* codes(void) const { return codes_; }
   inline std::uint8_t get_code(int i) const { return codes_[i]; }
-  inline int constants_capacity(void) const { return constants_capacity_; }
-  inline int constants_count(void) const { return constants_count_; }
-  inline Value* constants(void) { return constants_; }
-  inline const Value* constants(void) const { return constants_; }
-  inline Value get_constant(int i) const { return constants_[i]; }
+  inline int constants_capacity(void) const { return constants_.capacity(); }
+  inline int constants_count(void) const { return constants_.count(); }
+  inline Value* constants(void) { return constants_.values(); }
+  inline const Value* constants(void) const { return constants_.values(); }
+  inline Value get_constant(int i) const { return constants_.get_value(i); }
 
   void dump(void);
   void append_code(std::uint8_t c);
@@ -153,17 +176,24 @@ public:
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
+  virtual bool is_equal(Object* other) const override;
   virtual void blacken(VM& vm) override;
 
   static FunctionObject* create(VM& vm);
 };
 
-struct TableEntry { Value key, value; };
-
 class TableObject : public Object {
+public:
+  struct TableEntry {
+    StringObject* key;
+    Value value;
+  };
+private:
   int capacity_{};
   int count_{};
   TableEntry* entries_{};
+
+  static constexpr double kMaxLoad = 0.75;
 
   TableObject(void) : Object(ObjType::TABLE) {}
   ~TableObject(void);
@@ -172,9 +202,12 @@ public:
   inline int count(void) const { return count_; }
   inline TableEntry* entries(void) { return entries_; }
   inline const TableEntry* entries(void) const { return entries_; }
+  void set_entry(StringObject* key, Value value);
+  Value get_entry(StringObject* key);
 
   virtual std::size_t size(void) const override;
   virtual std::string stringify(void) const override;
+  virtual bool is_equal(Object* other) const override;
   virtual void blacken(VM& vm) override;
 
   static TableObject* create(VM& vm);

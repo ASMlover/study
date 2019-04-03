@@ -33,10 +33,6 @@
 
 namespace nyx {
 
-std::ostream& operator<<(std::ostream& out, Object* o) {
-  return out << o->stringify();
-}
-
 template <typename T> inline T* __offset_of(void* startp, std::size_t offset) {
   return reinterpret_cast<T*>(reinterpret_cast<byte_t*>(startp) + offset);
 }
@@ -53,12 +49,39 @@ inline int power_of_2ceil(int n) {
   return n;
 }
 
+ValueArray::~ValueArray(void) {
+  if (values_ != nullptr)
+    delete [] values_;
+}
+
+void ValueArray::append_value(Value v) {
+  if (capacity_ < count_ + 1) {
+    capacity_ = capacity_ == 0 ? 4 : capacity_ * 2;
+
+    auto* new_values = new Value[capacity_];
+    memcpy(new_values, values_, sizeof(Value) * count_);
+    if (values_ != nullptr)
+      delete [] values_;
+    values_ = new_values;
+  }
+  values_[count_++] = v;
+}
+
+void ValueArray::gray(VM& vm) {
+  for (int i = 0; i < count_; ++i)
+    vm.gray_value(values_[i]);
+}
+
 std::size_t BooleanObject::size(void) const {
   return sizeof(*this);
 }
 
 std::string BooleanObject::stringify(void) const {
   return value_ ? "true" : "false";
+}
+
+bool BooleanObject::is_equal(Object* other) const {
+  return value_ == Xptr::down<BooleanObject>(other)->value_;
 }
 
 void BooleanObject::blacken(VM& vm) {
@@ -78,6 +101,10 @@ std::string NumericObject::stringify(void) const {
   std::stringstream ss;
   ss << value_;
   return ss.str();
+}
+
+bool NumericObject::is_equal(Object* other) const {
+  return value_ == Xptr::down<NumericObject>(other)->value_;
 }
 
 void NumericObject::blacken(VM&) {
@@ -118,6 +145,11 @@ std::string StringObject::stringify(void) const {
   return chars_;
 }
 
+bool StringObject::is_equal(Object* other) const {
+  auto* r = Xptr::down<StringObject>(other);
+  return count_ == r->count_ && memcpy(chars_, r->chars_, count_) == 0;
+}
+
 void StringObject::blacken(VM&) {
 }
 
@@ -147,8 +179,6 @@ FunctionObject::FunctionObject(void)
 FunctionObject::~FunctionObject(void) {
   if (codes_ != nullptr)
     delete [] codes_;
-  if (constants_ != nullptr)
-    delete [] constants_;
 }
 
 void FunctionObject::dump(void) {
@@ -157,9 +187,27 @@ void FunctionObject::dump(void) {
     switch (codes[i++]) {
     case OpCode::OP_CONSTANT:
       {
-        std::uint8_t constant = codes[i++];
-        fprintf(stdout, "%-10s %5d `", "OP_CONSTANT", constant);
-        std::cout << constants_[constant] << "`" << std::endl;
+        u8_t constant = codes[i++];
+        fprintf(stdout, "%-16s %4d `", "OP_CONSTANT", constant);
+        std::cout << get_constant(constant) << "`" << std::endl;
+      } break;
+    case OpCode::OP_DEF_GLOBAL:
+      {
+        u8_t name = codes[i++];
+        fprintf(stdout, "%-16s %4d `", "OP_DEF_GLOBAL", name);
+        std::cout << get_constant(name) << "`" << std::endl;
+      } break;
+    case OpCode::OP_GET_GLOBAL:
+      {
+        u8_t name = codes[i++];
+        fprintf(stdout, "%-16s %4d `", "OP_GET_GLOBAL", name);
+        std::cout << get_constant(name) << "`" << std::endl;
+      } break;
+    case OpCode::OP_SET_GLOBAL:
+      {
+        u8_t name = codes[i++];
+        fprintf(stdout, "%-16s %4d `", "OP_SET_GLOBAL", name);
+        std::cout << get_constant(name) << "`" << std::endl;
       } break;
     case OpCode::OP_GT: std::cout << "OP_GT" << std::endl; break;
     case OpCode::OP_GE: std::cout << "OP_GE" << std::endl; break;
@@ -182,20 +230,15 @@ void FunctionObject::append_code(std::uint8_t c) {
 
     auto* new_codes = new std::uint8_t[codes_capacity_];
     memcpy(new_codes, codes_, sizeof(std::uint8_t) * codes_count_);
+    if (codes_ != nullptr)
+      delete [] codes_;
     codes_ = new_codes;
   }
   codes_[codes_count_++] = c;
 }
 
 void FunctionObject::append_constant(Value v) {
-  if (constants_capacity_ < constants_count_ + 1) {
-    constants_capacity_ = constants_capacity_ == 0 ? 4 : constants_capacity_ * 2;
-
-    auto* new_constants = new Value[constants_capacity_];
-    memcpy(new_constants, constants_, sizeof(Value) * constants_count_);
-    constants_ = new_constants;
-  }
-  constants_[constants_count_++] = v;
+  constants_.append_value(v);
 }
 
 std::size_t FunctionObject::size(void) const {
@@ -207,9 +250,12 @@ std::string FunctionObject::stringify(void) const {
   return "function";
 }
 
+bool FunctionObject::is_equal(Object*) const {
+  return false;
+}
+
 void FunctionObject::blacken(VM& vm) {
-  for (int i = 0; i < constants_count_; ++i)
-    vm.gray_value(constants_[i]);
+  constants_.gray(vm);
 }
 
 FunctionObject* FunctionObject::create(VM& vm) {
@@ -223,6 +269,38 @@ TableObject::~TableObject(void) {
     delete [] entries_;
 }
 
+void TableObject::set_entry(StringObject* key, Value val) {
+  for (int i = 0; i < count_; ++i) {
+    auto& entry = entries_[i];
+    if (key->is_equal(entry.key)) {
+      entry.value = val;
+      return;
+    }
+  }
+
+  if (capacity_ * kMaxLoad <= count_) {
+    capacity_ = capacity_ == 0 ? 4 : capacity_ * 2;
+
+    auto* new_entries = new TableEntry[capacity_];
+    memcpy(new_entries, entries_, sizeof(TableEntry) * count_);
+    if (entries_ != nullptr)
+      delete [] entries_;
+    entries_ = new_entries;
+  }
+  auto& entry = entries_[count_++];
+  entry.key = key;
+  entry.value = val;
+}
+
+Value TableObject::get_entry(StringObject* key) {
+  for (int i = 0; i < count_; ++i) {
+    auto& entry = entries_[i];
+    if (key->is_equal(entry.key))
+      return entry.value;
+  }
+  return nullptr;
+}
+
 std::size_t TableObject::size(void) const {
   return sizeof(*this);
 }
@@ -232,8 +310,12 @@ std::string TableObject::stringify(void) const {
   return "table";
 }
 
+bool TableObject::is_equal(Object*) const {
+  return false;
+}
+
 void TableObject::blacken(VM& vm) {
-  for (int i = 0; i < capacity_; ++i) {
+  for (int i = 0; i < count_; ++i) {
     auto& entry = entries_[i];
     vm.gray_value(entry.key);
     vm.gray_value(entry.value);
