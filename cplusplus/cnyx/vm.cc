@@ -48,7 +48,7 @@ bool VM::pop_boolean(bool& v) {
     return false;
   }
 
-  v = pop()->down_to<BooleanObject>()->value();
+  v = Xptr::down<BooleanObject>(pop())->value();
   return true;
 }
 
@@ -58,7 +58,7 @@ bool VM::pop_numeric(double& v) {
     return false;
   }
 
-  v = pop()->down_to<NumericObject>()->value();
+  v = Xptr::down<NumericObject>(pop())->value();
   return true;
 }
 
@@ -72,8 +72,8 @@ bool VM::pop_numerics(double& a, double& b) {
     return false;
   }
 
-  b = pop()->down_to<NumericObject>()->value();
-  a = pop()->down_to<NumericObject>()->value();
+  b = Xptr::down<NumericObject>(pop())->value();
+  a = Xptr::down<NumericObject>(pop())->value();
   return true;
 }
 
@@ -158,14 +158,14 @@ void VM::run(FunctionObject* fn) {
       {
         if (peek(0)->type() == ObjType::STRING
             && peek(1)->type() == ObjType::STRING) {
-          auto* b = pop()->down_to<StringObject>();
-          auto* a = pop()->down_to<StringObject>();
+          auto* b = Xptr::down<StringObject>(pop());
+          auto* a = Xptr::down<StringObject>(pop());
           push(StringObject::concat(*this, a, b));
         }
         else if (peek(0)->type() == ObjType::NUMERIC
             && peek(1)->type() == ObjType::NUMERIC) {
-          double b = pop()->down_to<NumericObject>()->value();
-          double a = pop()->down_to<NumericObject>()->value();
+          double b = Xptr::down<NumericObject>(pop())->value();
+          double a = Xptr::down<NumericObject>(pop())->value();
           push(NumericObject::create(*this, a + b));
         }
         else {
@@ -226,7 +226,7 @@ void VM::gray_value(Value v) {
   if (v->is_dark())
     return;
 #if defined(DEBUG_GC_TRACE)
-  std::cout << "`" << v->address() << "` gray " << v << std::endl;
+  std::cout << "`" << Xptr::address(v) << "` gray " << v << std::endl;
 #endif
   v->set_dark(true);
   gray_stack_.push_back(v);
@@ -234,14 +234,14 @@ void VM::gray_value(Value v) {
 
 void VM::blacken_object(Object* obj) {
 #if defined(DEBUG_GC_TRACE)
-  std::cout << "`" << obj->address() << "` blacken " << obj << std::endl;
+  std::cout << "`" << Xptr::address(obj) << "` blacken " << obj << std::endl;
 #endif
   obj->blacken(*this);
 }
 
 void VM::free_object(Object* obj) {
 #if defined(DEBUG_GC_TRACE)
-  std::cout << "`" << obj->address() << "` free " << obj << std::endl;
+  std::cout << "`" << Xptr::address(obj) << "` free " << obj << std::endl;
 #endif
   delete obj;
 }

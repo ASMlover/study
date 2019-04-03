@@ -54,19 +54,6 @@ public:
   inline bool is_dark(void) const { return is_dark_; }
   inline void set_dark(bool is_dark) { is_dark_ = is_dark; }
 
-  inline void* address(void) { return reinterpret_cast<void*>(this); }
-  inline const void* address(void) const { return reinterpret_cast<const void*>(this); }
-  inline byte_t* as_byte(void) { return reinterpret_cast<byte_t*>(this); }
-
-  template <typename Target> inline Target* cast_to(void) {
-    return static_cast<Target*>(this);
-  }
-
-  template <typename Target> inline Target* down_to(void) {
-    // this must be Object type
-    return dynamic_cast<Target*>(this);
-  }
-
   virtual std::size_t size(void) const = 0;
   virtual std::string stringify(void) const = 0;
   virtual void blacken(VM& vm) = 0;
@@ -74,6 +61,12 @@ public:
 using Value = Object*;
 
 std::ostream& operator<<(std::ostream& out, Object* o);
+
+class ValueArray : private UnCopyable {
+  int capacity_{};
+  int count_{};
+  Value* values_{};
+};
 
 class BooleanObject : public Object {
   bool value_{};

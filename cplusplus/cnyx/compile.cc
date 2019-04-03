@@ -139,7 +139,7 @@ class Compiler : private UnCopyable {
       nullptr, nullptr, Precedence::NONE, // KW_VAR
       nullptr, nullptr, Precedence::NONE, // KW_WHILE
     };
-    return _rules[EnumUtil<TokenKind>::as_int(kind)];
+    return _rules[Xenum::as_int<int>(kind)];
   }
 
   void parse_precedence(Precedence precedence) {
@@ -191,7 +191,7 @@ class Compiler : private UnCopyable {
     auto& rule = get_rule(oper_kind);
 
     // compile the right-hand operand
-    parse_precedence(EnumUtil<Precedence>::as_enum(rule.precedence + 1));
+    parse_precedence(Xenum::as_enum<Precedence>(rule.precedence + 1));
 
     switch (oper_kind) {
     case TokenKind::TK_GREATER: emit_byte(OpCode::OP_GT); break;
@@ -210,7 +210,7 @@ class Compiler : private UnCopyable {
     auto oper_kind = prev_.get_kind();
 
     // compile the operand
-    parse_precedence(EnumUtil<Precedence>::as_enum(Precedence::UNARY + 1));
+    parse_precedence(Xenum::as_enum<Precedence>(Precedence::UNARY + 1));
 
     switch (oper_kind) {
     case TokenKind::TK_BANG: emit_byte(OpCode::OP_NOT); break;

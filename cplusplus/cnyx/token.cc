@@ -48,7 +48,7 @@ static const std::unordered_map<std::string, TokenKind> kKeywords = {
 
 const char* get_token_name(TokenKind kind) {
   if (kind >= TokenKind::TK_ERROR && kind < TokenKind::NUM_KINDS)
-    return kNames[EnumUtil<TokenKind>::as_int(kind)];
+    return kNames[Xenum::as_int<int>(kind)];
   return nullptr;
 }
 
