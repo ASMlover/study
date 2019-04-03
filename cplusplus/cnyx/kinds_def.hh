@@ -84,7 +84,7 @@ KEYWORD(RETURN, "return")
 KEYWORD(SUPER, "super")
 KEYWORD(THIS, "this")
 KEYWORD(TRUE, "true")
-KEYWORD(var, "var")
+KEYWORD(VAR, "var")
 KEYWORD(WHILE, "while")
 
 #undef KEYWORD
