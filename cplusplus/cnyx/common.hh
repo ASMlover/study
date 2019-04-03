@@ -26,7 +26,20 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <cstdint>
+
 namespace nyx {
+
+using byte_t = unsigned char;
+using sz_t = std::size_t;
+using i8_t = std::int8_t;
+using u8_t = std::uint8_t;
+using i16_t = std::int16_t;
+using u16_t = std::uint16_t;
+using i32_t = std::int32_t;
+using u32_t = std::uint32_t;
+using i64_t = std::int64_t;
+using u64_t = std::uint64_t;
 
 class Copyable {
 protected:
@@ -42,12 +55,36 @@ protected:
   ~UnCopyable(void) = default;
 };
 
-template <typename Enum> class EnumUtil : private UnCopyable {
-public:
-  static int as_int(Enum x) { return static_cast<int>(x); }
-  static Enum as_enum(int x) { return static_cast<Enum>(x); }
-};
+namespace Xenum {
+  template <typename Int, typename Enum>
+  inline Int as_int(Enum x) { return static_cast<Int>(x); }
 
-using byte_t = unsigned char;
+  template <typename Enum, typename Int>
+  inline Enum as_enum(Int x) { return static_cast<Enum>(x); }
+}
+
+namespace Xptr {
+  template <typename Class>
+  inline void* address(Class* x) { return reinterpret_cast<void*>(x); }
+
+  template <typename Class>
+  inline const void* address(const Class* x) {
+    return reinterpret_cast<const void*>(x);
+  }
+
+  template <typename Source>
+  inline byte_t* bytes(Source* x) { return reinterpret_cast<byte_t*>(x); }
+
+  template <typename Source>
+  inline const byte_t* bytes(const Source* x) {
+    return reinterpret_cast<const byte_t*>(x);
+  }
+
+  template <typename Target, typename Source>
+  inline Target* cast(Source* x) { return static_cast<Target*>(x); }
+
+  template <typename Target, typename Source>
+  inline Target* down(Source* x) { return dynamic_cast<Target*>(x); }
+}
 
 }
