@@ -186,46 +186,65 @@ FunctionObject::~FunctionObject(void) {
     delete [] codes_;
 }
 
-void FunctionObject::dump(void) {
+int FunctionObject::dump_instruction(int i) {
   const auto* codes = codes_;
+  fprintf(stdout, "%04d ", i);
+  switch (codes[i++]) {
+  case OpCode::OP_CONSTANT:
+    {
+      u8_t constant = codes[i++];
+      fprintf(stdout, "%-16s %4d `", "OP_CONSTANT", constant);
+      std::cout << get_constant(constant) << "`" << std::endl;
+    } break;
+  case OpCode::OP_POP: std::cout << "OP_POP" << std::endl; break;
+  case OpCode::OP_DEF_GLOBAL:
+    {
+      u8_t name = codes[i++];
+      fprintf(stdout, "%-16s %4d `", "OP_DEF_GLOBAL", name);
+      std::cout << get_constant(name) << "`" << std::endl;
+    } break;
+  case OpCode::OP_GET_GLOBAL:
+    {
+      u8_t name = codes[i++];
+      fprintf(stdout, "%-16s %4d `", "OP_GET_GLOBAL", name);
+      std::cout << get_constant(name) << "`" << std::endl;
+    } break;
+  case OpCode::OP_SET_GLOBAL:
+    {
+      u8_t name = codes[i++];
+      fprintf(stdout, "%-16s %4d `", "OP_SET_GLOBAL", name);
+      std::cout << get_constant(name) << "`" << std::endl;
+    } break;
+  case OpCode::OP_GT: std::cout << "OP_GT" << std::endl; break;
+  case OpCode::OP_GE: std::cout << "OP_GE" << std::endl; break;
+  case OpCode::OP_LT: std::cout << "OP_LT" << std::endl; break;
+  case OpCode::OP_LE: std::cout << "OP_LE" << std::endl; break;
+  case OpCode::OP_ADD: std::cout << "OP_ADD" << std::endl; break;
+  case OpCode::OP_SUB: std::cout << "OP_SUB" << std::endl; break;
+  case OpCode::OP_MUL: std::cout << "OP_MUL" << std::endl; break;
+  case OpCode::OP_DIV: std::cout << "OP_DIV" << std::endl; break;
+  case OpCode::OP_NOT: std::cout << "OP_NOT" << std::endl; break;
+  case OpCode::OP_NEG: std::cout << "OP_NEG" << std::endl; break;
+  case OpCode::OP_RETURN: std::cout << "OP_RETURN" << std::endl; break;
+  case OpCode::OP_JUMP:
+    {
+      u16_t offset = static_cast<u16_t>(codes[i++] << 8);
+      offset |= codes[i++];
+      fprintf(stdout, "%-16s %4d -> %d\n", "OP_JUMP", offset, i + offset);
+    } break;
+  case OpCode::OP_JUMP_IF_FALSE:
+    {
+      u16_t offset = static_cast<u16_t>(codes[i++] << 8);
+      offset |= codes[i++];
+      fprintf(stdout, "%-16s %4d -> %d\n", "OP_JUMP_IF_FALSE", offset, i + offset);
+    } break;
+  }
+  return i;
+}
+
+void FunctionObject::dump(void) {
   for (int i = 0; i < codes_count_;) {
-    switch (codes[i++]) {
-    case OpCode::OP_CONSTANT:
-      {
-        u8_t constant = codes[i++];
-        fprintf(stdout, "%-16s %4d `", "OP_CONSTANT", constant);
-        std::cout << get_constant(constant) << "`" << std::endl;
-      } break;
-    case OpCode::OP_DEF_GLOBAL:
-      {
-        u8_t name = codes[i++];
-        fprintf(stdout, "%-16s %4d `", "OP_DEF_GLOBAL", name);
-        std::cout << get_constant(name) << "`" << std::endl;
-      } break;
-    case OpCode::OP_GET_GLOBAL:
-      {
-        u8_t name = codes[i++];
-        fprintf(stdout, "%-16s %4d `", "OP_GET_GLOBAL", name);
-        std::cout << get_constant(name) << "`" << std::endl;
-      } break;
-    case OpCode::OP_SET_GLOBAL:
-      {
-        u8_t name = codes[i++];
-        fprintf(stdout, "%-16s %4d `", "OP_SET_GLOBAL", name);
-        std::cout << get_constant(name) << "`" << std::endl;
-      } break;
-    case OpCode::OP_GT: std::cout << "OP_GT" << std::endl; break;
-    case OpCode::OP_GE: std::cout << "OP_GE" << std::endl; break;
-    case OpCode::OP_LT: std::cout << "OP_LT" << std::endl; break;
-    case OpCode::OP_LE: std::cout << "OP_LE" << std::endl; break;
-    case OpCode::OP_ADD: std::cout << "OP_ADD" << std::endl; break;
-    case OpCode::OP_SUB: std::cout << "OP_SUB" << std::endl; break;
-    case OpCode::OP_MUL: std::cout << "OP_MUL" << std::endl; break;
-    case OpCode::OP_DIV: std::cout << "OP_DIV" << std::endl; break;
-    case OpCode::OP_NOT: std::cout << "OP_NOT" << std::endl; break;
-    case OpCode::OP_NEG: std::cout << "OP_NEG" << std::endl; break;
-    case OpCode::OP_RETURN: std::cout << "OP_RETURN" << std::endl; break;
-    }
+    i = dump_instruction(i);
   }
 }
 

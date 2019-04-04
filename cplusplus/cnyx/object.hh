@@ -161,13 +161,16 @@ public:
   inline int codes_count(void) const { return codes_count_; }
   inline u8_t* codes(void) { return codes_; }
   inline const u8_t* codes(void) const { return codes_; }
+  inline void set_code(int i, u8_t c) { codes_[i] = c; }
   inline u8_t get_code(int i) const { return codes_[i]; }
   inline int constants_capacity(void) const { return constants_.capacity(); }
   inline int constants_count(void) const { return constants_.count(); }
   inline Value* constants(void) { return constants_.values(); }
   inline const Value* constants(void) const { return constants_.values(); }
+  inline void set_constant(int i, Value v) { constants_.set_value(i, v); }
   inline Value get_constant(int i) const { return constants_.get_value(i); }
 
+  int dump_instruction(int i);
   void dump(void);
   int append_code(u8_t c);
   int append_constant(Value v);
