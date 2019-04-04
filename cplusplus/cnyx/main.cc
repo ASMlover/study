@@ -59,11 +59,12 @@ static void test_lexer(int argc, char** argv) {
 static void test_vm(void) {
   nyx::VM vm;
   // vm.interpret("1+2*3/4-5;");
+  // vm.interpret("76 > 67;");
   // vm.interpret("true;");
   // vm.interpret("false;");
   // vm.interpret("\"abc\" + \"123\";");
   // vm.interpret("var a = 123; a = 456; a = a + a; a;");
-  vm.interpret("false and true;");
+  vm.interpret("false or true;");
 }
 
 int main(int argc, char* argv[]) {

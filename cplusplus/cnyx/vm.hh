@@ -26,6 +26,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <optional>
+#include <tuple>
 #include <vector>
 #include <list>
 #include "common.hh"
@@ -74,9 +76,9 @@ class VM : private UnCopyable {
     return stack_[stack_.size() - 1 - distance];
   }
 
-  bool pop_boolean(bool& v);
-  bool pop_numeric(double& v);
-  bool pop_numerics(double& a, double& b);
+  std::optional<bool> pop_boolean(void);
+  std::optional<double> pop_numeric(void);
+  std::optional<std::tuple<double, double>> pop_numerics(void);
 
   void collect(void);
   void print_stack(void);
