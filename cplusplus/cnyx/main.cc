@@ -62,7 +62,8 @@ static void test_vm(void) {
   // vm.interpret("true;");
   // vm.interpret("false;");
   // vm.interpret("\"abc\" + \"123\";");
-  vm.interpret("var a = 123; a = 456; a = a + a; a;");
+  // vm.interpret("var a = 123; a = 456; a = a + a; a;");
+  vm.interpret("false and true;");
 }
 
 int main(int argc, char* argv[]) {

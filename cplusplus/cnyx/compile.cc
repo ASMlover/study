@@ -82,9 +82,20 @@ class Compiler : private UnCopyable {
     emit_byte(byte2);
   }
 
+  int emit_jump(u8_t instruction) {
+    emit_byte(instruction);
+    emit_bytes(0xff, 0xff);
+    return function_->codes_count() - 2;
+  }
+
+  void patch_jump(int offset) {
+    int jump = function_->codes_count() - offset - 2;
+    function_->set_code(offset, (jump >> 8) & 0xff);
+    function_->set_code(offset + 1, jump & 0xff);
+  }
+
   u8_t add_constant(Value constant) {
-    function_->append_constant(constant);
-    return static_cast<u8_t>(function_->constants_count() - 1);
+    return static_cast<u8_t>(function_->append_constant(constant));
   }
 
   u8_t name_constant(void) {
@@ -94,6 +105,8 @@ class Compiler : private UnCopyable {
   }
 
   ParseRule& get_rule(TokenKind kind) {
+    static auto or_fn = [](Compiler* p, bool b) { p->or_op(b); };
+    static auto and_fn = [](Compiler* p, bool b) { p->and_op(b); };
     static auto grouping_fn = [](Compiler* p, bool b) { p->grouping(b); };
     static auto boolean_fn = [](Compiler* p, bool b) { p->boolean(b); };
     static auto numeric_fn = [](Compiler* p, bool b) { p->numeric(b); };
@@ -129,7 +142,7 @@ class Compiler : private UnCopyable {
       nullptr, binary_fn, Precedence::FACTOR, // TK_STAR
       nullptr, binary_fn, Precedence::FACTOR, // TK_SLASH
 
-      nullptr, nullptr, Precedence::NONE, // KW_AND
+      nullptr, and_fn, Precedence::AND, // KW_AND
       nullptr, nullptr, Precedence::NONE, // KW_CLASS
       nullptr, nullptr, Precedence::NONE, // KW_ELSE
       boolean_fn, nullptr, Precedence::NONE, // KW_FALSE
@@ -137,7 +150,7 @@ class Compiler : private UnCopyable {
       nullptr, nullptr, Precedence::NONE, // KW_FUN
       nullptr, nullptr, Precedence::NONE, // KW_IF
       nullptr, nullptr, Precedence::NONE, // KW_NIL
-      nullptr, nullptr, Precedence::NONE, // KW_OR
+      nullptr, or_fn, Precedence::OR, // KW_OR
       nullptr, nullptr, Precedence::NONE, // KW_PRINT
       nullptr, nullptr, Precedence::NONE, // KW_RETURN
       nullptr, nullptr, Precedence::NONE, // KW_SUPER
@@ -200,6 +213,24 @@ class Compiler : private UnCopyable {
     }
   }
 
+  void or_op(bool can_assign) {
+    int else_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+    int end_jump = emit_jump(OpCode::OP_JUMP);
+    patch_jump(else_jump);
+    emit_byte(OpCode::OP_POP);
+
+    parse_precedence(Precedence::OR);
+    patch_jump(end_jump);
+  }
+
+  void and_op(bool can_assign) {
+    int end_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+    emit_byte(OpCode::OP_POP);
+
+    parse_precedence(Precedence::AND);
+    patch_jump(end_jump);
+  }
+
   void grouping(bool can_assign) {
     expression();
     consume(TokenKind::TK_RPAREN, "expect `)` after expression");
@@ -245,14 +276,10 @@ public:
   inline bool had_error(void) const { return had_error_; }
   inline FunctionObject* get_function(void) const { return function_; }
   inline Compiler* get_enclosing(void) const { return enclosing_; }
+  inline void gray_function(void) { vm_.gray_value(function_); }
 
-  void gray_function(void) {
-    vm_.gray_value(function_);
-  }
-
-  void finish_compiler(void) {
-    emit_byte(OpCode::OP_RETURN);
-  }
+  inline void begin_compiler(void) { advance(); }
+  inline void finish_compiler(void) { emit_byte(OpCode::OP_RETURN); }
 
   void advance(void) {
     prev_ = curr_;
@@ -278,6 +305,25 @@ public:
   }
 
   void statement(void) {
+    if (match(TokenKind::KW_IF)) {
+      consume(TokenKind::TK_LPAREN, "expect `(` after `if`");
+      expression();
+      consume(TokenKind::TK_RPAREN, "expect `)` after if condition");
+
+      int else_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+      emit_byte(OpCode::OP_POP); // condition
+      statement();
+
+      int end_jump = emit_jump(OpCode::OP_JUMP);
+
+      patch_jump(else_jump);
+      emit_byte(OpCode::OP_POP);
+
+      if (match(TokenKind::KW_ELSE))
+        statement();
+      patch_jump(end_jump);
+      return;
+    }
     if (match(TokenKind::KW_VAR)) {
       consume(TokenKind::TK_IDENTIFIER, "expect variable name");
       u8_t constant = name_constant();
@@ -288,9 +334,11 @@ public:
       consume(TokenKind::TK_SEMI, "expect `;` after variable initializer");
 
       emit_bytes(OpCode::OP_DEF_GLOBAL, constant);
+      return;
     }
 
     expression();
+    emit_byte(OpCode::OP_POP);
     consume(TokenKind::TK_SEMI, "expected `;` after expression");
   }
 };
@@ -302,7 +350,7 @@ FunctionObject* Compile::compile(VM& vm, const str_t& source_bytes) {
   Compiler c(vm, lex);
   _main_compiler = &c;
 
-  c.advance();
+  c.begin_compiler();
   do {
     c.statement();
   } while (!c.match(TokenKind::TK_EOF));

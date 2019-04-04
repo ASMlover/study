@@ -123,28 +123,40 @@ void VM::print_stack(void) {
 void VM::run(FunctionObject* fn) {
   push(fn);
   const u8_t* ip = fn->codes();
+
+  auto _rdbyte = [&ip](void) -> u8_t { return *ip++; };
+  auto _rdword = [&ip](void) -> u16_t {
+    return (ip += 2, static_cast<u16_t>((ip[-2] << 8) | ip[-1]));
+  };
+
   for (;;) {
+    for (auto* v : stack_)
+      std::cout << "| " << v << " ";
+    std::cout << std::endl;
+    fn->dump_instruction(static_cast<int>(ip - fn->codes()));
+
     switch (*ip++) {
     case OpCode::OP_CONSTANT:
       {
-        u8_t constant = *ip++;
+        u8_t constant = _rdbyte();
         push(fn->get_constant(constant));
       } break;
+    case OpCode::OP_POP: pop(); break;
     case OpCode::OP_DEF_GLOBAL:
       {
-        u8_t constant = *ip++;
+        u8_t constant = _rdbyte();
         auto* key = Xptr::down<StringObject>(fn->get_constant(constant));
         globals_->set_entry(key, pop());
       } break;
     case OpCode::OP_GET_GLOBAL:
       {
-        u8_t constant = *ip++;
+        u8_t constant = _rdbyte();
         auto* key = Xptr::down<StringObject>(fn->get_constant(constant));
         push(globals_->get_entry(key));
       } break;
     case OpCode::OP_SET_GLOBAL:
       {
-        u8_t constant = *ip++;
+        u8_t constant = _rdbyte();
         auto* key = Xptr::down<StringObject>(fn->get_constant(constant));
         globals_->set_entry(key, pop());
       } break;
@@ -231,9 +243,22 @@ void VM::run(FunctionObject* fn) {
         push(NumericObject::create(*this, -v));
       } break;
     case OpCode::OP_RETURN:
-      // std::cout << stack_.back() << std::endl;
-      std::cout << pop() << std::endl;
+      // std::cout << pop() << std::endl;
       return;
+    case OpCode::OP_JUMP:
+      {
+        u16_t offset = _rdword();
+        ip += offset;
+      } break;
+    case OpCode::OP_JUMP_IF_FALSE:
+      {
+        u16_t offset = _rdword();
+        Value cond = peek();
+        if (cond == nullptr || (cond->type() == ObjType::BOOLEAN &&
+              !Xptr::down<BooleanObject>(cond)->value())) {
+          ip += offset;
+        }
+      } break;
     }
   }
 }

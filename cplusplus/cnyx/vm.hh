@@ -35,6 +35,7 @@ namespace nyx {
 
 enum OpCode {
   OP_CONSTANT,
+  OP_POP, // pop operation
   OP_DEF_GLOBAL, // define global variable
   OP_GET_GLOBAL, // get global variable
   OP_SET_GLOBAL, // set global variable
@@ -49,6 +50,8 @@ enum OpCode {
   OP_NOT, // !
   OP_NEG, // - negative
   OP_RETURN, // return
+  OP_JUMP,
+  OP_JUMP_IF_FALSE,
 };
 
 class VM : private UnCopyable {
