@@ -33,9 +33,12 @@
 namespace nyx {
 
 VM::VM(void) {
+  globals_ = TableObject::create(*this);
 }
 
 VM::~VM(void) {
+  globals_ = nullptr;
+
   for (auto* o : objects_)
     free_object(o);
   objects_.clear();
@@ -86,6 +89,7 @@ void VM::collect(void) {
   for (auto* v : stack_)
     gray_value(v);
 
+  gray_value(globals_);
   gray_compiler_roots();
 
   while (!gray_stack_.empty()) {
@@ -118,13 +122,31 @@ void VM::print_stack(void) {
 
 void VM::run(FunctionObject* fn) {
   push(fn);
-  const std::uint8_t* ip = fn->codes();
+  const u8_t* ip = fn->codes();
   for (;;) {
     switch (*ip++) {
     case OpCode::OP_CONSTANT:
       {
-        std::uint8_t constant = *ip++;
+        u8_t constant = *ip++;
         push(fn->get_constant(constant));
+      } break;
+    case OpCode::OP_DEF_GLOBAL:
+      {
+        u8_t constant = *ip++;
+        auto* key = Xptr::down<StringObject>(fn->get_constant(constant));
+        globals_->set_entry(key, pop());
+      } break;
+    case OpCode::OP_GET_GLOBAL:
+      {
+        u8_t constant = *ip++;
+        auto* key = Xptr::down<StringObject>(fn->get_constant(constant));
+        push(globals_->get_entry(key));
+      } break;
+    case OpCode::OP_SET_GLOBAL:
+      {
+        u8_t constant = *ip++;
+        auto* key = Xptr::down<StringObject>(fn->get_constant(constant));
+        globals_->set_entry(key, pop());
       } break;
     case OpCode::OP_GT:
       {
@@ -210,6 +232,7 @@ void VM::run(FunctionObject* fn) {
       } break;
     case OpCode::OP_RETURN:
       // std::cout << stack_.back() << std::endl;
+      std::cout << pop() << std::endl;
       return;
     }
   }

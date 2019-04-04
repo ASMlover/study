@@ -26,7 +26,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <string>
 #include "common.hh"
 
 namespace nyx {
@@ -36,7 +35,7 @@ class FunctionObject;
 
 class Compile : private UnCopyable {
 public:
-  FunctionObject* compile(VM& vm, const std::string& source_bytes);
+  FunctionObject* compile(VM& vm, const str_t& source_bytes);
 };
 
 void gray_compiler_roots(void);

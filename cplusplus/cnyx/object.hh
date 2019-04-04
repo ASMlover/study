@@ -54,8 +54,8 @@ public:
   inline bool is_dark(void) const { return is_dark_; }
   inline void set_dark(bool is_dark) { is_dark_ = is_dark; }
 
-  virtual std::size_t size(void) const = 0;
-  virtual std::string stringify(void) const = 0;
+  virtual sz_t size(void) const = 0;
+  virtual str_t stringify(void) const = 0;
   virtual bool is_equal(Object* other) const = 0;
   virtual void blacken(VM& vm) = 0;
 };
@@ -86,7 +86,7 @@ public:
   inline void set_value(int i, Value v) { values_[i] = v; }
   inline Value get_value(int i) { return values_[i]; }
   inline const Value get_value(int i) const { return values_[i]; }
-  void append_value(Value v);
+  int append_value(Value v);
   void gray(VM& vm);
 };
 
@@ -99,8 +99,8 @@ public:
   inline void set_value(bool b) { value_ = b; }
   inline bool value(void) const { return value_; }
 
-  virtual std::size_t size(void) const override;
-  virtual std::string stringify(void) const override;
+  virtual sz_t size(void) const override;
+  virtual str_t stringify(void) const override;
   virtual bool is_equal(Object* other) const override;
   virtual void blacken(VM& vm) override;
 
@@ -116,8 +116,8 @@ public:
   inline void set_value(double v) { value_ = v; }
   inline double value(void) const { return value_; }
 
-  virtual std::size_t size(void) const override;
-  virtual std::string stringify(void) const override;
+  virtual sz_t size(void) const override;
+  virtual str_t stringify(void) const override;
   virtual bool is_equal(Object* other) const override;
   virtual void blacken(VM& vm) override;
 
@@ -128,11 +128,9 @@ class StringObject : public Object {
   int count_{};
   char* chars_{};
 
-  StringObject(void) : Object(ObjType::STRING) {}
   StringObject(const char* s, int n);
+  StringObject(StringObject* a, StringObject* b);
   ~StringObject(void);
-
-  void inti_from_string(const char* s, int n);
 public:
   inline int count(void) const { return count_; }
   inline char* chars(void) { return chars_; }
@@ -140,8 +138,8 @@ public:
   inline char get_element(int i) const { return chars_[i]; }
   inline void set_element(int i, char c) { chars_[i] = c; }
 
-  virtual std::size_t size(void) const override;
-  virtual std::string stringify(void) const override;
+  virtual sz_t size(void) const override;
+  virtual str_t stringify(void) const override;
   virtual bool is_equal(Object* other) const override;
   virtual void blacken(VM& vm) override;
 
@@ -152,7 +150,7 @@ public:
 class FunctionObject : public Object {
   int codes_capacity_{};
   int codes_count_{};
-  std::uint8_t* codes_{};
+  u8_t* codes_{};
 
   ValueArray constants_;
 
@@ -161,9 +159,9 @@ class FunctionObject : public Object {
 public:
   inline int codes_capacity(void) const { return codes_capacity_; }
   inline int codes_count(void) const { return codes_count_; }
-  inline std::uint8_t* codes(void) { return codes_; }
-  inline const std::uint8_t* codes(void) const { return codes_; }
-  inline std::uint8_t get_code(int i) const { return codes_[i]; }
+  inline u8_t* codes(void) { return codes_; }
+  inline const u8_t* codes(void) const { return codes_; }
+  inline u8_t get_code(int i) const { return codes_[i]; }
   inline int constants_capacity(void) const { return constants_.capacity(); }
   inline int constants_count(void) const { return constants_.count(); }
   inline Value* constants(void) { return constants_.values(); }
@@ -171,11 +169,11 @@ public:
   inline Value get_constant(int i) const { return constants_.get_value(i); }
 
   void dump(void);
-  void append_code(std::uint8_t c);
-  void append_constant(Value v);
+  int append_code(u8_t c);
+  int append_constant(Value v);
 
-  virtual std::size_t size(void) const override;
-  virtual std::string stringify(void) const override;
+  virtual sz_t size(void) const override;
+  virtual str_t stringify(void) const override;
   virtual bool is_equal(Object* other) const override;
   virtual void blacken(VM& vm) override;
 
@@ -205,8 +203,8 @@ public:
   void set_entry(StringObject* key, Value value);
   Value get_entry(StringObject* key);
 
-  virtual std::size_t size(void) const override;
-  virtual std::string stringify(void) const override;
+  virtual sz_t size(void) const override;
+  virtual str_t stringify(void) const override;
   virtual bool is_equal(Object* other) const override;
   virtual void blacken(VM& vm) override;
 

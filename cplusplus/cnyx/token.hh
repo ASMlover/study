@@ -26,7 +26,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <string>
 #include "common.hh"
 
 namespace nyx {
@@ -44,21 +43,21 @@ TokenKind get_keyword_kind(const char* key);
 
 class Token : public Copyable {
   TokenKind kind_{TokenKind::TK_ERROR};
-  std::string literal_;
+  str_t literal_;
   int lineno_{1};
 public:
   Token(void) {}
-  Token(TokenKind kind, const std::string& literal, int lineno)
+  Token(TokenKind kind, const str_t& literal, int lineno)
     : kind_(kind), literal_(literal), lineno_(lineno) {
   }
 
   inline TokenKind get_kind(void) const { return kind_; }
-  inline std::string get_literal(void) const { return literal_; }
+  inline str_t get_literal(void) const { return literal_; }
   inline int get_lineno(void) const { return lineno_; }
   inline double as_numeric(void) const { return std::atof(literal_.c_str()); }
-  inline std::string as_string(void) const { return literal_; }
+  inline str_t as_string(void) const { return literal_; }
 
-  std::string stringify(void) const;
+  str_t stringify(void) const;
 };
 
 std::ostream& operator<<(std::ostream& out, const Token& tok);

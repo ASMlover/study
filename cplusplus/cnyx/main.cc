@@ -61,7 +61,8 @@ static void test_vm(void) {
   // vm.interpret("1+2*3/4-5;");
   // vm.interpret("true;");
   // vm.interpret("false;");
-  vm.interpret("\"abc\" + \"123\";");
+  // vm.interpret("\"abc\" + \"123\";");
+  vm.interpret("var a = 123; a = 456; a = a + a; a;");
 }
 
 int main(int argc, char* argv[]) {

@@ -103,11 +103,11 @@ Token Lexer::make_token(TokenKind kind) const {
   return make_token(kind, gen_literal(begpos_, curpos_));
 }
 
-Token Lexer::make_token(TokenKind kind, const std::string& literal) const {
+Token Lexer::make_token(TokenKind kind, const str_t& literal) const {
   return Token(kind, literal, lineno_);
 }
 
-Token Lexer::error_token(const std::string& message) const {
+Token Lexer::error_token(const str_t& message) const {
   return make_token(TokenKind::TK_ERROR, message);
 }
 
@@ -124,7 +124,7 @@ Token Lexer::make_numeric(void) {
 }
 
 Token Lexer::make_string(void) {
-  std::string literal;
+  str_t literal;
   while (!is_end() && peek() != '"') {
     char c = peek();
     switch (c) {

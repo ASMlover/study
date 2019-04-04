@@ -68,23 +68,29 @@ class Compiler : private UnCopyable {
 
   FunctionObject* function_{};
 
-  void error(const std::string& message) {
+  void error(const str_t& message) {
     std::cerr << message << std::endl;
     had_error_ = true;
   }
 
-  void emit_byte(std::uint8_t byte) {
+  void emit_byte(u8_t byte) {
     function_->append_code(byte);
   }
 
-  void emit_bytes(std::uint8_t byte1, std::uint8_t byte2) {
+  void emit_bytes(u8_t byte1, u8_t byte2) {
     emit_byte(byte1);
     emit_byte(byte2);
   }
 
-  std::uint8_t add_constant(Value constant) {
+  u8_t add_constant(Value constant) {
     function_->append_constant(constant);
-    return static_cast<std::uint8_t>(function_->constants_count() - 1);
+    return static_cast<u8_t>(function_->constants_count() - 1);
+  }
+
+  u8_t name_constant(void) {
+    auto s = prev_.as_string();
+    return add_constant(
+        StringObject::create(vm_, s.c_str(), static_cast<int>(s.size())));
   }
 
   ParseRule& get_rule(TokenKind kind) {
@@ -92,13 +98,14 @@ class Compiler : private UnCopyable {
     static auto boolean_fn = [](Compiler* p, bool b) { p->boolean(b); };
     static auto numeric_fn = [](Compiler* p, bool b) { p->numeric(b); };
     static auto string_fn = [](Compiler* p, bool b) { p->string(b); };
+    static auto variable_fn = [](Compiler* p, bool b) { p->variable(b); };
     static auto binary_fn = [](Compiler* p, bool b) { p->binary(b); };
     static auto unary_fn = [](Compiler* p, bool b) { p->unary(b); };
 
     static ParseRule _rules[] = {
       nullptr, nullptr, Precedence::NONE, // TK_ERROR
       nullptr, nullptr, Precedence::NONE, // TK_EOF
-      nullptr, nullptr, Precedence::NONE, // TK_IDENTIFIER
+      variable_fn, nullptr, Precedence::NONE, // TK_IDENTIFIER
       string_fn, nullptr, Precedence::NONE, // TK_STRINGLITERAL
       numeric_fn, nullptr, Precedence::NONE, // TK_NUMERICCONST
 
@@ -164,21 +171,33 @@ class Compiler : private UnCopyable {
 
   void boolean(bool can_assign) {
     bool value = prev_.get_kind() == TokenKind::KW_TRUE;
-    std::uint8_t constant = add_constant(BooleanObject::create(vm_, value));
+    u8_t constant = add_constant(BooleanObject::create(vm_, value));
     emit_bytes(OpCode::OP_CONSTANT, constant);
   }
 
   void numeric(bool can_assign) {
     double value = prev_.as_numeric();
-    std::uint8_t constant = add_constant(NumericObject::create(vm_, value));
+    u8_t constant = add_constant(NumericObject::create(vm_, value));
     emit_bytes(OpCode::OP_CONSTANT, constant);
   }
 
   void string(bool can_assign) {
     auto s = prev_.as_string();
-    std::uint8_t constant = add_constant(
+    u8_t constant = add_constant(
         StringObject::create(vm_, s.c_str(), static_cast<int>(s.size())));
     emit_bytes(OpCode::OP_CONSTANT, constant);
+  }
+
+  void variable(bool can_assign) {
+    u8_t constant = name_constant();
+
+    if (can_assign && match(TokenKind::TK_EQUAL)) {
+      expression();
+      emit_bytes(OpCode::OP_SET_GLOBAL, constant);
+    }
+    else {
+      emit_bytes(OpCode::OP_GET_GLOBAL, constant);
+    }
   }
 
   void grouping(bool can_assign) {
@@ -240,10 +259,18 @@ public:
     curr_ = lex_.next_token();
   }
 
-  void consume(TokenKind kind, const std::string& message) {
+  void consume(TokenKind kind, const str_t& message) {
     if (curr_.get_kind() != kind)
       error(message);
     advance();
+  }
+
+  bool match(TokenKind kind) {
+    if (curr_.get_kind() != kind)
+      return false;
+
+    advance();
+    return true;
   }
 
   void expression(void) {
@@ -251,6 +278,18 @@ public:
   }
 
   void statement(void) {
+    if (match(TokenKind::KW_VAR)) {
+      consume(TokenKind::TK_IDENTIFIER, "expect variable name");
+      u8_t constant = name_constant();
+
+      // check initializer
+      consume(TokenKind::TK_EQUAL, "expect `=` after variable name");
+      expression();
+      consume(TokenKind::TK_SEMI, "expect `;` after variable initializer");
+
+      emit_bytes(OpCode::OP_DEF_GLOBAL, constant);
+    }
+
     expression();
     consume(TokenKind::TK_SEMI, "expected `;` after expression");
   }
@@ -258,13 +297,15 @@ public:
 
 static Compiler* _main_compiler = nullptr;
 
-FunctionObject* Compile::compile(VM& vm, const std::string& source_bytes) {
+FunctionObject* Compile::compile(VM& vm, const str_t& source_bytes) {
   Lexer lex(source_bytes);
   Compiler c(vm, lex);
   _main_compiler = &c;
 
   c.advance();
-  c.statement();
+  do {
+    c.statement();
+  } while (!c.match(TokenKind::TK_EOF));
   c.finish_compiler();
 
   _main_compiler = nullptr;

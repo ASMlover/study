@@ -35,6 +35,9 @@ namespace nyx {
 
 enum OpCode {
   OP_CONSTANT,
+  OP_DEF_GLOBAL, // define global variable
+  OP_GET_GLOBAL, // get global variable
+  OP_SET_GLOBAL, // set global variable
   OP_GT, // >
   OP_GE, // >=
   OP_LT, // <
@@ -49,17 +52,10 @@ enum OpCode {
 };
 
 class VM : private UnCopyable {
+  TableObject* globals_{};
   std::vector<Value> stack_;
   std::list<Object*> objects_;
   std::list<Object*> gray_stack_;
-
-  template <typename Source> inline Object* as_object(Source* x) const {
-    return reinterpret_cast<Object*>(x);
-  }
-
-  template <typename Source> inline void* as_address(Source* x) const {
-    return reinterpret_cast<void*>(x);
-  }
 
   inline void push(Value val) {
     stack_.push_back(val);

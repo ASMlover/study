@@ -33,7 +33,7 @@
 
 namespace nyx {
 
-template <typename T> inline T* __offset_of(void* startp, std::size_t offset) {
+template <typename T> inline T* __offset_of(void* startp, sz_t offset) {
   return reinterpret_cast<T*>(reinterpret_cast<byte_t*>(startp) + offset);
 }
 
@@ -54,17 +54,20 @@ ValueArray::~ValueArray(void) {
     delete [] values_;
 }
 
-void ValueArray::append_value(Value v) {
+int ValueArray::append_value(Value v) {
   if (capacity_ < count_ + 1) {
     capacity_ = capacity_ == 0 ? 4 : capacity_ * 2;
 
     auto* new_values = new Value[capacity_];
-    memcpy(new_values, values_, sizeof(Value) * count_);
-    if (values_ != nullptr)
+    if (values_ != nullptr) {
+      memcpy(new_values, values_, sizeof(Value) * count_);
       delete [] values_;
+    }
     values_ = new_values;
   }
-  values_[count_++] = v;
+
+  values_[count_] = v;
+  return count_++;
 }
 
 void ValueArray::gray(VM& vm) {
@@ -72,11 +75,11 @@ void ValueArray::gray(VM& vm) {
     vm.gray_value(values_[i]);
 }
 
-std::size_t BooleanObject::size(void) const {
+sz_t BooleanObject::size(void) const {
   return sizeof(*this);
 }
 
-std::string BooleanObject::stringify(void) const {
+str_t BooleanObject::stringify(void) const {
   return value_ ? "true" : "false";
 }
 
@@ -93,11 +96,11 @@ BooleanObject* BooleanObject::create(VM& vm, bool b) {
   return o;
 }
 
-std::size_t NumericObject::size(void) const {
+sz_t NumericObject::size(void) const {
   return sizeof(*this);
 }
 
-std::string NumericObject::stringify(void) const {
+str_t NumericObject::stringify(void) const {
   std::stringstream ss;
   ss << value_;
   return ss.str();
@@ -125,29 +128,38 @@ StringObject::StringObject(const char* s, int n)
   chars_[count_] = 0;
 }
 
+StringObject::StringObject(StringObject* a, StringObject* b)
+  : Object(ObjType::STRING) {
+  count_ += a == nullptr ? 0 : a->count();
+  count_ += b == nullptr ? 0 : b->count();
+  chars_ = new char[count_ + 1];
+
+  int offset = 0;
+  if (a != nullptr) {
+    memcpy(chars_, a->chars(), a->count());
+    offset = a->count();
+  }
+  if (b != nullptr)
+    memcpy(chars_ + offset, b->chars(), b->count());
+  chars_[count_] = 0;
+}
+
 StringObject::~StringObject(void) {
   if (chars_ != nullptr)
     delete [] chars_;
 }
 
-void StringObject::inti_from_string(const char* s, int n) {
-  if (chars_ != s || count_ != n) {
-    count_ = n;
-    chars_ = const_cast<char*>(s);
-  }
-}
-
-std::size_t StringObject::size(void) const {
+sz_t StringObject::size(void) const {
   return sizeof(*this) + sizeof(char) * count_;
 }
 
-std::string StringObject::stringify(void) const {
+str_t StringObject::stringify(void) const {
   return chars_;
 }
 
 bool StringObject::is_equal(Object* other) const {
   auto* r = Xptr::down<StringObject>(other);
-  return count_ == r->count_ && memcpy(chars_, r->chars_, count_) == 0;
+  return count_ == r->count_ && memcmp(chars_, r->chars_, count_) == 0;
 }
 
 void StringObject::blacken(VM&) {
@@ -160,14 +172,7 @@ StringObject* StringObject::create(VM& vm, const char* s, int n) {
 }
 
 StringObject* StringObject::concat(VM& vm, StringObject* a, StringObject* b) {
-  int n = a->count() + b->count();
-  char* s = new char[n + 1];
-  memcpy(s, a->chars(), a->count());
-  memcpy(s + a->count(), b->chars(), b->count());
-  s[n] = 0;
-
-  auto* o = new StringObject();
-  o->inti_from_string(s, n);
+  auto* o = new StringObject(a, b);
   vm.put_in(o);
   return o;
 }
@@ -224,28 +229,30 @@ void FunctionObject::dump(void) {
   }
 }
 
-void FunctionObject::append_code(std::uint8_t c) {
+int FunctionObject::append_code(u8_t c) {
   if (codes_capacity_ < codes_count_ + 1) {
     codes_capacity_ = codes_capacity_ == 0 ? 4 : codes_capacity_ * 2;
 
-    auto* new_codes = new std::uint8_t[codes_capacity_];
-    memcpy(new_codes, codes_, sizeof(std::uint8_t) * codes_count_);
-    if (codes_ != nullptr)
+    auto* new_codes = new u8_t[codes_capacity_];
+    if (codes_ != nullptr) {
+      memcpy(new_codes, codes_, sizeof(u8_t) * codes_count_);
       delete [] codes_;
+    }
     codes_ = new_codes;
   }
-  codes_[codes_count_++] = c;
+  codes_[codes_count_] = c;
+  return codes_count_++;
 }
 
-void FunctionObject::append_constant(Value v) {
-  constants_.append_value(v);
+int FunctionObject::append_constant(Value v) {
+  return constants_.append_value(v);
 }
 
-std::size_t FunctionObject::size(void) const {
+sz_t FunctionObject::size(void) const {
   return sizeof(*this);
 }
 
-std::string FunctionObject::stringify(void) const {
+str_t FunctionObject::stringify(void) const {
   // TODO:
   return "function";
 }
@@ -282,9 +289,10 @@ void TableObject::set_entry(StringObject* key, Value val) {
     capacity_ = capacity_ == 0 ? 4 : capacity_ * 2;
 
     auto* new_entries = new TableEntry[capacity_];
-    memcpy(new_entries, entries_, sizeof(TableEntry) * count_);
-    if (entries_ != nullptr)
+    if (entries_ != nullptr) {
+      memcpy(new_entries, entries_, sizeof(TableEntry) * count_);
       delete [] entries_;
+    }
     entries_ = new_entries;
   }
   auto& entry = entries_[count_++];
@@ -301,11 +309,11 @@ Value TableObject::get_entry(StringObject* key) {
   return nullptr;
 }
 
-std::size_t TableObject::size(void) const {
+sz_t TableObject::size(void) const {
   return sizeof(*this);
 }
 
-std::string TableObject::stringify(void) const {
+str_t TableObject::stringify(void) const {
   // TODO:
   return "table";
 }
