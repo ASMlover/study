@@ -109,6 +109,7 @@ class Compiler : private UnCopyable {
     static auto and_fn = [](Compiler* p, bool b) { p->and_op(b); };
     static auto grouping_fn = [](Compiler* p, bool b) { p->grouping(b); };
     static auto boolean_fn = [](Compiler* p, bool b) { p->boolean(b); };
+    static auto nil_fn = [](Compiler* p, bool b) { p->nil(b); };
     static auto numeric_fn = [](Compiler* p, bool b) { p->numeric(b); };
     static auto string_fn = [](Compiler* p, bool b) { p->string(b); };
     static auto variable_fn = [](Compiler* p, bool b) { p->variable(b); };
@@ -149,7 +150,7 @@ class Compiler : private UnCopyable {
       nullptr, nullptr, Precedence::NONE, // KW_FOR
       nullptr, nullptr, Precedence::NONE, // KW_FUN
       nullptr, nullptr, Precedence::NONE, // KW_IF
-      nullptr, nullptr, Precedence::NONE, // KW_NIL
+      nil_fn, nullptr, Precedence::NONE, // KW_NIL
       nullptr, or_fn, Precedence::OR, // KW_OR
       nullptr, nullptr, Precedence::NONE, // KW_PRINT
       nullptr, nullptr, Precedence::NONE, // KW_RETURN
@@ -186,6 +187,10 @@ class Compiler : private UnCopyable {
     bool value = prev_.get_kind() == TokenKind::KW_TRUE;
     u8_t constant = add_constant(BooleanObject::create(vm_, value));
     emit_bytes(OpCode::OP_CONSTANT, constant);
+  }
+
+  void nil(bool can_assign) {
+    emit_byte(OpCode::OP_NIL);
   }
 
   void numeric(bool can_assign) {

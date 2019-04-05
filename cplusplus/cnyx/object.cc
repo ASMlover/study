@@ -196,6 +196,7 @@ int FunctionObject::dump_instruction(int i) {
       fprintf(stdout, "%-16s %4d `", "OP_CONSTANT", constant);
       std::cout << get_constant(constant) << "`" << std::endl;
     } break;
+  case OpCode::OP_NIL: std::cout << "OP_NIL" << std::endl; break;
   case OpCode::OP_POP: std::cout << "OP_POP" << std::endl; break;
   case OpCode::OP_DEF_GLOBAL:
     {

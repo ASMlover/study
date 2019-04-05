@@ -62,7 +62,7 @@ public:
 using Value = BaseObject*;
 
 inline std::ostream& operator<<(std::ostream& out, BaseObject* obj) {
-  return out << obj->stringify();
+  return out << (obj == nullptr ? "nul" : obj->stringify());
 }
 
 inline bool values_equal(Value a, Value b) {

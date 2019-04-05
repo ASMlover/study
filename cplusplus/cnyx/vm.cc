@@ -137,6 +137,7 @@ void VM::run(FunctionObject* fn) {
         u8_t constant = _rdbyte();
         push(fn->get_constant(constant));
       } break;
+    case OpCode::OP_NIL: push(nullptr); break;
     case OpCode::OP_POP: pop(); break;
     case OpCode::OP_DEF_GLOBAL:
       {

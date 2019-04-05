@@ -37,6 +37,7 @@ namespace nyx {
 
 enum OpCode {
   OP_CONSTANT,
+  OP_NIL, // nil value
   OP_POP, // pop operation
   OP_DEF_GLOBAL, // define global variable
   OP_GET_GLOBAL, // get global variable
