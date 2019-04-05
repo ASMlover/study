@@ -34,9 +34,13 @@ endif()
 message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
 option(DEBUG_GC_TRACE "Enable/Disable debug gc trace" ON)
+option(DEBUG_EXEC_TRACE "Enable/Disable trace instruction execution" ON)
 
 if (DEBUG_GC_TRACE)
   add_definitions(-DDEBUG_GC_TRACE)
+endif()
+if (DEBUG_EXEC_TRACE)
+  add_definitions(-DDEBUG_EXEC_TRACE)
 endif()
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   add_definitions(
