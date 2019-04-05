@@ -215,6 +215,8 @@ int FunctionObject::dump_instruction(int i) {
       fprintf(stdout, "%-16s %4d `", "OP_SET_GLOBAL", name);
       std::cout << get_constant(name) << "`" << std::endl;
     } break;
+  case OpCode::OP_EQ: std::cout << "OP_EQ" << std::endl; break;
+  case OpCode::OP_NE: std::cout << "OP_NE" << std::endl; break;
   case OpCode::OP_GT: std::cout << "OP_GT" << std::endl; break;
   case OpCode::OP_GE: std::cout << "OP_GE" << std::endl; break;
   case OpCode::OP_LT: std::cout << "OP_LT" << std::endl; break;

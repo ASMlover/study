@@ -130,9 +130,9 @@ class Compiler : private UnCopyable {
       nullptr, nullptr, Precedence::NONE, // TK_DOT
       nullptr, nullptr, Precedence::NONE, // TK_SEMI
       unary_fn, nullptr, Precedence::NONE, // TK_BANG
-      nullptr, nullptr, Precedence::NONE, // TK_BANGEQUAL
+      nullptr, binary_fn, Precedence::EQUALITY, // TK_BANGEQUAL
       nullptr, nullptr, Precedence::NONE, // TK_EQUAL
-      nullptr, nullptr, Precedence::NONE, // TK_EQUALEQUAL
+      nullptr, binary_fn, Precedence::EQUALITY, // TK_EQUALEQUAL
       nullptr, binary_fn, Precedence::COMPARISON, // TK_GREATER
       nullptr, binary_fn, Precedence::COMPARISON, // TK_GREATEREQUAL
       nullptr, binary_fn, Precedence::COMPARISON, // TK_LESS
@@ -244,6 +244,8 @@ class Compiler : private UnCopyable {
     parse_precedence(Xenum::as_enum<Precedence>(rule.precedence + 1));
 
     switch (oper_kind) {
+    case TokenKind::TK_BANGEQUAL: emit_byte(OpCode::OP_NE); break;
+    case TokenKind::TK_EQUALEQUAL: emit_byte(OpCode::OP_EQ); break;
     case TokenKind::TK_GREATER: emit_byte(OpCode::OP_GT); break;
     case TokenKind::TK_GREATEREQUAL: emit_byte(OpCode::OP_GE); break;
     case TokenKind::TK_LESS: emit_byte(OpCode::OP_LT); break;

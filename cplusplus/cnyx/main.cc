@@ -67,12 +67,27 @@ static void test_vm(void) {
   vm.interpret("false or true;");
 }
 
+static void repl(void) {
+  nyx::VM vm;
+
+  std::string line;
+  for (;;) {
+    std::cout << ">>> ";
+    if (!std::getline(std::cin, line) || line == "exit")
+      break;
+
+    vm.interpret(line);
+  }
+}
+
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
   std::cout << "Welcome to NYX !" << std::endl;
   // test_lexer(argc, argv);
-  test_vm();
+  // test_vm();
+
+  repl();
 
   return 0;
 }
