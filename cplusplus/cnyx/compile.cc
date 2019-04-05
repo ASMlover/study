@@ -57,6 +57,17 @@ struct ParseRule {
   Precedence precedence;
 };
 
+struct Local {
+  Token name;
+  int depth{};
+
+  Local(const Token& lname, int ldepth) : name(lname), depth(ldepth) {}
+  void assign(const Token& lname, int ldepth) {
+    name = lname;
+    depth = ldepth;
+  }
+};
+
 class Compiler : private UnCopyable {
   Compiler* enclosing_{};
 
@@ -67,6 +78,9 @@ class Compiler : private UnCopyable {
   bool had_error_{};
 
   FunctionObject* function_{};
+
+  std::vector<Local> locals_;
+  int scope_depth_{-1};
 
   void error(const str_t& message) {
     std::cerr << message << std::endl;
@@ -183,6 +197,29 @@ class Compiler : private UnCopyable {
     }
   }
 
+  void enter_scope(void) {
+    ++scope_depth_;
+  }
+
+  void leave_scope(void) {
+    --scope_depth_;
+
+    while (locals_.size() > 0 &&
+        locals_.back().depth > scope_depth_) {
+      emit_byte(OpCode::OP_POP);
+      locals_.pop_back();
+    }
+  }
+
+  int resolve_local(const Token& name) {
+    int i = static_cast<int>(locals_.size() - 1);
+    for (; i >= 0; --i) {
+      if (name.is_equal(locals_[i].name))
+        return i;
+    }
+    return -1;
+  }
+
   void boolean(bool can_assign) {
     bool value = prev_.get_kind() == TokenKind::KW_TRUE;
     u8_t constant = add_constant(BooleanObject::create(vm_, value));
@@ -207,14 +244,21 @@ class Compiler : private UnCopyable {
   }
 
   void variable(bool can_assign) {
-    u8_t constant = name_constant();
+    OpCode setop{OpCode::OP_SET_LOCAL}, getop{OpCode::OP_GET_LOCAL};
+    int local = resolve_local(prev_);
+    u8_t constant = static_cast<u8_t>(local);
+    if (local == -1) {
+      constant = name_constant();
+      setop = OpCode::OP_SET_GLOBAL;
+      getop = OpCode::OP_GET_GLOBAL;
+    }
 
     if (can_assign && match(TokenKind::TK_EQUAL)) {
       expression();
-      emit_bytes(OpCode::OP_SET_GLOBAL, constant);
+      emit_bytes(setop, constant);
     }
     else {
-      emit_bytes(OpCode::OP_GET_GLOBAL, constant);
+      emit_bytes(getop, constant);
     }
   }
 
@@ -299,8 +343,12 @@ public:
     advance();
   }
 
+  bool check(TokenKind kind) const {
+    return curr_.get_kind() == kind;
+  }
+
   bool match(TokenKind kind) {
-    if (curr_.get_kind() != kind)
+    if (!check(kind))
       return false;
 
     advance();
@@ -313,40 +361,72 @@ public:
 
   void statement(void) {
     if (match(TokenKind::KW_IF)) {
-      consume(TokenKind::TK_LPAREN, "expect `(` after `if`");
-      expression();
-      consume(TokenKind::TK_RPAREN, "expect `)` after if condition");
-
-      int else_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
-      emit_byte(OpCode::OP_POP); // condition
-      statement();
-
-      int end_jump = emit_jump(OpCode::OP_JUMP);
-
-      patch_jump(else_jump);
-      emit_byte(OpCode::OP_POP);
-
-      if (match(TokenKind::KW_ELSE))
-        statement();
-      patch_jump(end_jump);
+      if_stmt();
       return;
     }
     if (match(TokenKind::KW_VAR)) {
-      consume(TokenKind::TK_IDENTIFIER, "expect variable name");
-      u8_t constant = name_constant();
-
-      // check initializer
-      consume(TokenKind::TK_EQUAL, "expect `=` after variable name");
-      expression();
-      consume(TokenKind::TK_SEMI, "expect `;` after variable initializer");
-
-      emit_bytes(OpCode::OP_DEF_GLOBAL, constant);
+      var_stmt();
+      return;
+    }
+    if (check(TokenKind::TK_LBRACE)) {
+      enter_scope();
+      block_stmt();
+      leave_scope();
       return;
     }
 
     expression();
     emit_byte(OpCode::OP_POP);
     consume(TokenKind::TK_SEMI, "expected `;` after expression");
+  }
+
+  void block_stmt(void) {
+    consume(TokenKind::TK_LBRACE, "expect `{` before block");
+    while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE))
+      statement();
+    consume(TokenKind::TK_RBRACE, "expect `}` after block");
+  }
+
+  void if_stmt(void) {
+    consume(TokenKind::TK_LPAREN, "expect `(` before if condition");
+    expression();
+    consume(TokenKind::TK_RPAREN, "expect `)` after if condition");
+
+    enter_scope();
+
+    // jump to the else branch if the condition is false
+    int else_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+    // compile the then branch
+    emit_byte(OpCode::OP_POP); // condition
+    statement();
+
+    // jump over the else branch when the if branch is taken
+    int end_jump = emit_jump(OpCode::OP_JUMP);
+    // compile the else branch
+    patch_jump(else_jump);
+    emit_byte(OpCode::OP_POP); // condition
+
+    if (match(TokenKind::KW_ELSE))
+      statement();
+    patch_jump(end_jump);
+
+    leave_scope();
+  }
+
+  void var_stmt(void) {
+    consume(TokenKind::TK_IDENTIFIER, "expect variable name");
+    auto name = prev_;
+    u8_t constant = name_constant();
+
+    // compile the initializer
+    consume(TokenKind::TK_EQUAL, "expect `=` after variable name");
+    expression();
+    consume(TokenKind::TK_SEMI, "expect `;` after initializer");
+
+    if (scope_depth_ == -1)
+      emit_bytes(OpCode::OP_DEF_GLOBAL, constant);
+    else
+      locals_.push_back(Local(name, scope_depth_));
   }
 };
 

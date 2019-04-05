@@ -198,6 +198,16 @@ int FunctionObject::dump_instruction(int i) {
     } break;
   case OpCode::OP_NIL: std::cout << "OP_NIL" << std::endl; break;
   case OpCode::OP_POP: std::cout << "OP_POP" << std::endl; break;
+  case OpCode::OP_GET_LOCAL:
+    {
+      u8_t slot = codes[i++];
+      fprintf(stdout, "%-16s %4d\n", "OP_GET_LOCAL", slot);
+    } break;
+  case OpCode::OP_SET_LOCAL:
+    {
+      u8_t slot = codes[i++];
+      fprintf(stdout, "%-16s %4d\n", "OP_SET_LOCAL", slot);
+    } break;
   case OpCode::OP_DEF_GLOBAL:
     {
       u8_t name = codes[i++];

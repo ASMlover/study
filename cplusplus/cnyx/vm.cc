@@ -139,6 +139,16 @@ void VM::run(FunctionObject* fn) {
       } break;
     case OpCode::OP_NIL: push(nullptr); break;
     case OpCode::OP_POP: pop(); break;
+    case OpCode::OP_GET_LOCAL:
+      {
+        u8_t slot = _rdbyte();
+        push(stack_[slot]);
+      } break;
+    case OpCode::OP_SET_LOCAL:
+      {
+        u8_t slot = _rdbyte();
+        stack_[slot] = pop();
+      } break;
     case OpCode::OP_DEF_GLOBAL:
       {
         u8_t constant = _rdbyte();

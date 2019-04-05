@@ -39,6 +39,8 @@ enum OpCode {
   OP_CONSTANT,
   OP_NIL, // nil value
   OP_POP, // pop operation
+  OP_GET_LOCAL, // get local variable
+  OP_SET_LOCAL, // set local variable
   OP_DEF_GLOBAL, // define global variable
   OP_GET_GLOBAL, // get global variable
   OP_SET_GLOBAL, // set global variable

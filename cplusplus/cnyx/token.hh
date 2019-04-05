@@ -51,6 +51,8 @@ public:
     : kind_(kind), literal_(literal), lineno_(lineno) {
   }
 
+  inline bool is_equal(const Token& r) const { return literal_ == r.literal_; }
+
   inline TokenKind get_kind(void) const { return kind_; }
   inline str_t get_literal(void) const { return literal_; }
   inline int get_lineno(void) const { return lineno_; }
