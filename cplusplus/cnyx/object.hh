@@ -27,6 +27,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <string>
 #include "common.hh"
 
@@ -38,6 +39,7 @@ enum class ObjType {
   STRING,
   FUNCTION,
   TABLE,
+  NATIVE,
 };
 
 class VM;
@@ -60,6 +62,7 @@ public:
   virtual void blacken(VM& vm) = 0;
 };
 using Value = BaseObject*;
+using NativeFunction = std::function<Value (int argc, Value* args)>;
 
 inline std::ostream& operator<<(std::ostream& out, BaseObject* obj) {
   return out << (obj == nullptr ? "nul" : obj->stringify());
@@ -94,7 +97,7 @@ class BooleanObject : public BaseObject {
   bool value_{};
 
   BooleanObject(bool b) : BaseObject(ObjType::BOOLEAN), value_(b) {}
-  ~BooleanObject(void) {}
+  virtual ~BooleanObject(void) {}
 public:
   inline void set_value(bool b) { value_ = b; }
   inline bool value(void) const { return value_; }
@@ -111,7 +114,7 @@ class NumericObject : public BaseObject {
   double value_{};
 
   NumericObject(double d) : BaseObject(ObjType::NUMERIC), value_(d) {}
-  ~NumericObject(void) {}
+  virtual ~NumericObject(void) {}
 public:
   inline void set_value(double v) { value_ = v; }
   inline double value(void) const { return value_; }
@@ -130,7 +133,7 @@ class StringObject : public BaseObject {
 
   StringObject(const char* s, int n);
   StringObject(StringObject* a, StringObject* b);
-  ~StringObject(void);
+  virtual ~StringObject(void);
 public:
   inline int count(void) const { return count_; }
   inline char* chars(void) { return chars_; }
@@ -155,7 +158,7 @@ class FunctionObject : public BaseObject {
   ValueArray constants_;
 
   FunctionObject(void);
-  ~FunctionObject(void);
+  virtual ~FunctionObject(void);
 public:
   inline int codes_capacity(void) const { return codes_capacity_; }
   inline int codes_count(void) const { return codes_count_; }
@@ -197,7 +200,7 @@ private:
   static constexpr double kMaxLoad = 0.75;
 
   TableObject(void) : BaseObject(ObjType::TABLE) {}
-  ~TableObject(void);
+  virtual ~TableObject(void);
 public:
   inline int capacity(void) const { return capacity_; }
   inline int count(void) const { return count_; }
@@ -212,6 +215,28 @@ public:
   virtual void blacken(VM& vm) override;
 
   static TableObject* create(VM& vm);
+};
+
+class NativeObject : public BaseObject {
+  NativeFunction fn_{};
+
+  NativeObject(const NativeFunction& fn)
+    : BaseObject(ObjType::NATIVE), fn_(fn) {}
+  NativeObject(NativeFunction&& fn)
+    : BaseObject(ObjType::NATIVE), fn_(std::move(fn)) {}
+  virtual ~NativeObject(void) {}
+public:
+  inline void set_function(const NativeFunction& fn) { fn_ = fn; }
+  inline void set_function(NativeFunction&& fn) { fn_ = std::move(fn); }
+  inline NativeFunction get_function(void) const { return fn_; }
+
+  virtual sz_t size_bytes(void) const override;
+  virtual str_t stringify(void) const override;
+  virtual bool is_equal(BaseObject* other) const override;
+  virtual void blacken(VM& vm) override;
+
+  static NativeObject* create(VM& vm, const NativeFunction& fn);
+  static NativeObject* create(VM& vm, NativeFunction&& fn);
 };
 
 }

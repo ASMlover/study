@@ -251,6 +251,15 @@ int FunctionObject::dump_instruction(int i) {
       offset |= codes[i++];
       fprintf(stdout, "%-16s %4d -> %d\n", "OP_JUMP_IF_FALSE", offset, i + offset);
     } break;
+  case OpCode::OP_CALL_0: std::cout << "OP_CALL_0" << std::endl; break;
+  case OpCode::OP_CALL_1: std::cout << "OP_CALL_1" << std::endl; break;
+  case OpCode::OP_CALL_2: std::cout << "OP_CALL_2" << std::endl; break;
+  case OpCode::OP_CALL_3: std::cout << "OP_CALL_3" << std::endl; break;
+  case OpCode::OP_CALL_4: std::cout << "OP_CALL_4" << std::endl; break;
+  case OpCode::OP_CALL_5: std::cout << "OP_CALL_5" << std::endl; break;
+  case OpCode::OP_CALL_6: std::cout << "OP_CALL_6" << std::endl; break;
+  case OpCode::OP_CALL_7: std::cout << "OP_CALL_7" << std::endl; break;
+  case OpCode::OP_CALL_8: std::cout << "OP_CALL_8" << std::endl; break;
   }
   return i;
 }
@@ -364,6 +373,35 @@ void TableObject::blacken(VM& vm) {
 
 TableObject* TableObject::create(VM& vm) {
   auto* o = new TableObject();
+  vm.put_in(o);
+  return o;
+}
+
+sz_t NativeObject::size_bytes(void) const {
+  return sizeof(*this);
+}
+
+str_t NativeObject::stringify(void) const {
+  std::stringstream ss;
+  ss << "<fn " << &fn_ << ">";
+  return ss.str();
+}
+
+bool NativeObject::is_equal(BaseObject* other) const {
+  return false;
+}
+
+void NativeObject::blacken(VM& vm) {
+}
+
+NativeObject* NativeObject::create(VM& vm, const NativeFunction& fn) {
+  auto* o = new NativeObject(fn);
+  vm.put_in(o);
+  return o;
+}
+
+NativeObject* NativeObject::create(VM& vm, NativeFunction&& fn) {
+  auto* o = new NativeObject(std::move(fn));
   vm.put_in(o);
   return o;
 }
