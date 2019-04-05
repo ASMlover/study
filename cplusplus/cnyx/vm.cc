@@ -156,34 +156,54 @@ void VM::run(FunctionObject* fn) {
         auto* key = Xptr::down<StringObject>(fn->get_constant(constant));
         globals_->set_entry(key, pop());
       } break;
+    case OpCode::OP_EQ:
+      {
+        auto b = pop();
+        auto a = pop();
+        push(BooleanObject::create(*this, values_equal(a, b)));
+      } break;
+    case OpCode::OP_NE:
+      {
+        auto b = pop();
+        auto a = pop();
+        push(BooleanObject::create(*this, !values_equal(a, b)));
+      } break;
     case OpCode::OP_GT:
-      {
-        if (auto r = pop_numerics(); r)
-          push(BooleanObject::create(*this, std::get<0>(*r) > std::get<1>(*r)));
-        else
-          return;
-      } break;
+      if (auto r = pop_numerics(); r) {
+        auto [a, b] = *r;
+        push(BooleanObject::create(*this, a > b));
+      }
+      else {
+        return;
+      }
+      break;
     case OpCode::OP_GE:
-      {
-        if (auto r = pop_numerics(); r)
-          push(BooleanObject::create(*this, std::get<0>(*r) >= std::get<1>(*r)));
-        else
-          return;
-      } break;
+      if (auto r = pop_numerics(); r) {
+        auto [a, b] = *r;
+        push(BooleanObject::create(*this, a >= b));
+      }
+      else {
+        return;
+      }
+      break;
     case OpCode::OP_LT:
-      {
-        if (auto r = pop_numerics(); r)
-          push(BooleanObject::create(*this, std::get<0>(*r) < std::get<1>(*r)));
-        else
-          return;
-      } break;
+      if (auto r = pop_numerics(); r) {
+        auto [a, b] = *r;
+        push(BooleanObject::create(*this, a < b));
+      }
+      else {
+        return;
+      }
+      break;
     case OpCode::OP_LE:
-      {
-        if (auto r = pop_numerics(); r)
-          push(BooleanObject::create(*this, std::get<0>(*r) <= std::get<1>(*r)));
-        else
-          return;
-      } break;
+      if (auto r = pop_numerics(); r) {
+        auto [a, b] = *r;
+        push(BooleanObject::create(*this, a <= b));
+      }
+      else {
+        return;
+      }
+      break;
     case OpCode::OP_ADD:
       {
         if (peek(0)->type() == ObjType::STRING
@@ -204,26 +224,32 @@ void VM::run(FunctionObject* fn) {
         }
       } break;
     case OpCode::OP_SUB:
-      {
-        if (auto r = pop_numerics(); r)
-          push(NumericObject::create(*this, std::get<0>(*r) - std::get<1>(*r)));
-        else
-          return;
-      } break;
+      if (auto r = pop_numerics(); r) {
+        auto [a, b] = *r;
+        push(NumericObject::create(*this, a - b));
+      }
+      else {
+        return;
+      }
+      break;
     case OpCode::OP_MUL:
-      {
-        if (auto r = pop_numerics(); r)
-          push(NumericObject::create(*this, std::get<0>(*r) * std::get<1>(*r)));
-        else
-          return;
-      } break;
+      if (auto r = pop_numerics(); r) {
+        auto [a, b] = *r;
+        push(NumericObject::create(*this, a * b));
+      }
+      else {
+        return;
+      }
+      break;
     case OpCode::OP_DIV:
-      {
-        if (auto r = pop_numerics(); r)
-          push(NumericObject::create(*this, std::get<0>(*r) / std::get<1>(*r)));
-        else
-          return;
-      } break;
+      if (auto r = pop_numerics(); r) {
+        auto [a, b] = *r;
+        push(NumericObject::create(*this, a / b));
+      }
+      else {
+        return;
+      }
+      break;
     case OpCode::OP_NOT:
       {
         if (auto b = pop_boolean(); b)
@@ -299,6 +325,8 @@ void VM::interpret(const std::string& source_bytes) {
   fn->dump();
 
   run(fn);
+  stack_.clear();
+
   collect();
   print_stack();
 }

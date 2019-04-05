@@ -41,6 +41,8 @@ enum OpCode {
   OP_DEF_GLOBAL, // define global variable
   OP_GET_GLOBAL, // get global variable
   OP_SET_GLOBAL, // set global variable
+  OP_EQ, // ==
+  OP_NE, // !=
   OP_GT, // >
   OP_GE, // >=
   OP_LT, // <
