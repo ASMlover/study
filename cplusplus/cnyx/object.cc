@@ -75,7 +75,7 @@ void ValueArray::gray(VM& vm) {
     vm.gray_value(values_[i]);
 }
 
-sz_t BooleanObject::size(void) const {
+sz_t BooleanObject::size_bytes(void) const {
   return sizeof(*this);
 }
 
@@ -83,7 +83,7 @@ str_t BooleanObject::stringify(void) const {
   return value_ ? "true" : "false";
 }
 
-bool BooleanObject::is_equal(Object* other) const {
+bool BooleanObject::is_equal(BaseObject* other) const {
   return value_ == Xptr::down<BooleanObject>(other)->value_;
 }
 
@@ -96,7 +96,7 @@ BooleanObject* BooleanObject::create(VM& vm, bool b) {
   return o;
 }
 
-sz_t NumericObject::size(void) const {
+sz_t NumericObject::size_bytes(void) const {
   return sizeof(*this);
 }
 
@@ -106,7 +106,7 @@ str_t NumericObject::stringify(void) const {
   return ss.str();
 }
 
-bool NumericObject::is_equal(Object* other) const {
+bool NumericObject::is_equal(BaseObject* other) const {
   return value_ == Xptr::down<NumericObject>(other)->value_;
 }
 
@@ -120,7 +120,7 @@ NumericObject* NumericObject::create(VM& vm, double d) {
 }
 
 StringObject::StringObject(const char* s, int n)
-  : Object(ObjType::STRING)
+  : BaseObject(ObjType::STRING)
   , count_(n) {
   chars_ = new char[count_ + 1];
   if (s != nullptr)
@@ -129,7 +129,7 @@ StringObject::StringObject(const char* s, int n)
 }
 
 StringObject::StringObject(StringObject* a, StringObject* b)
-  : Object(ObjType::STRING) {
+  : BaseObject(ObjType::STRING) {
   count_ += a == nullptr ? 0 : a->count();
   count_ += b == nullptr ? 0 : b->count();
   chars_ = new char[count_ + 1];
@@ -149,7 +149,7 @@ StringObject::~StringObject(void) {
     delete [] chars_;
 }
 
-sz_t StringObject::size(void) const {
+sz_t StringObject::size_bytes(void) const {
   return sizeof(*this) + sizeof(char) * count_;
 }
 
@@ -157,7 +157,7 @@ str_t StringObject::stringify(void) const {
   return chars_;
 }
 
-bool StringObject::is_equal(Object* other) const {
+bool StringObject::is_equal(BaseObject* other) const {
   auto* r = Xptr::down<StringObject>(other);
   return count_ == r->count_ && memcmp(chars_, r->chars_, count_) == 0;
 }
@@ -178,7 +178,7 @@ StringObject* StringObject::concat(VM& vm, StringObject* a, StringObject* b) {
 }
 
 FunctionObject::FunctionObject(void)
-  : Object(ObjType::FUNCTION) {
+  : BaseObject(ObjType::FUNCTION) {
 }
 
 FunctionObject::~FunctionObject(void) {
@@ -267,7 +267,7 @@ int FunctionObject::append_constant(Value v) {
   return constants_.append_value(v);
 }
 
-sz_t FunctionObject::size(void) const {
+sz_t FunctionObject::size_bytes(void) const {
   return sizeof(*this);
 }
 
@@ -276,7 +276,7 @@ str_t FunctionObject::stringify(void) const {
   return "function";
 }
 
-bool FunctionObject::is_equal(Object*) const {
+bool FunctionObject::is_equal(BaseObject*) const {
   return false;
 }
 
@@ -328,7 +328,7 @@ Value TableObject::get_entry(StringObject* key) {
   return nullptr;
 }
 
-sz_t TableObject::size(void) const {
+sz_t TableObject::size_bytes(void) const {
   return sizeof(*this);
 }
 
@@ -337,7 +337,7 @@ str_t TableObject::stringify(void) const {
   return "table";
 }
 
-bool TableObject::is_equal(Object*) const {
+bool TableObject::is_equal(BaseObject*) const {
   return false;
 }
 

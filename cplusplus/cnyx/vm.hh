@@ -61,8 +61,8 @@ enum OpCode {
 class VM : private UnCopyable {
   TableObject* globals_{};
   std::vector<Value> stack_;
-  std::list<Object*> objects_;
-  std::list<Object*> gray_stack_;
+  std::list<BaseObject*> objects_;
+  std::list<BaseObject*> gray_stack_;
 
   inline void push(Value val) {
     stack_.push_back(val);
@@ -89,11 +89,11 @@ public:
   VM(void);
   ~VM(void);
 
-  void put_in(Object* o);
+  void put_in(BaseObject* o);
 
   void gray_value(Value v);
-  void blacken_object(Object* obj);
-  void free_object(Object* obj);
+  void blacken_object(BaseObject* obj);
+  void free_object(BaseObject* obj);
 
   void interpret(const std::string& source_bytes);
 };

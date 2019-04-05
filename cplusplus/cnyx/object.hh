@@ -42,26 +42,26 @@ enum class ObjType {
 
 class VM;
 
-class Object : private UnCopyable {
+class BaseObject : private UnCopyable {
   ObjType type_;
   bool is_dark_{};
 public:
-  Object(ObjType t) : type_(t) {}
-  virtual ~Object(void) {}
+  BaseObject(ObjType t) : type_(t) {}
+  virtual ~BaseObject(void) {}
 
   inline ObjType type(void) const { return type_; }
   inline void set_type(ObjType t) { type_ = t; }
   inline bool is_dark(void) const { return is_dark_; }
   inline void set_dark(bool is_dark) { is_dark_ = is_dark; }
 
-  virtual sz_t size(void) const = 0;
+  virtual sz_t size_bytes(void) const = 0;
   virtual str_t stringify(void) const = 0;
-  virtual bool is_equal(Object* other) const = 0;
+  virtual bool is_equal(BaseObject* other) const = 0;
   virtual void blacken(VM& vm) = 0;
 };
-using Value = Object*;
+using Value = BaseObject*;
 
-inline std::ostream& operator<<(std::ostream& out, Object* obj) {
+inline std::ostream& operator<<(std::ostream& out, BaseObject* obj) {
   return out << obj->stringify();
 }
 
@@ -90,41 +90,41 @@ public:
   void gray(VM& vm);
 };
 
-class BooleanObject : public Object {
+class BooleanObject : public BaseObject {
   bool value_{};
 
-  BooleanObject(bool b) : Object(ObjType::BOOLEAN), value_(b) {}
+  BooleanObject(bool b) : BaseObject(ObjType::BOOLEAN), value_(b) {}
   ~BooleanObject(void) {}
 public:
   inline void set_value(bool b) { value_ = b; }
   inline bool value(void) const { return value_; }
 
-  virtual sz_t size(void) const override;
+  virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;
-  virtual bool is_equal(Object* other) const override;
+  virtual bool is_equal(BaseObject* other) const override;
   virtual void blacken(VM& vm) override;
 
   static BooleanObject* create(VM& vm, bool b);
 };
 
-class NumericObject : public Object {
+class NumericObject : public BaseObject {
   double value_{};
 
-  NumericObject(double d) : Object(ObjType::NUMERIC), value_(d) {}
+  NumericObject(double d) : BaseObject(ObjType::NUMERIC), value_(d) {}
   ~NumericObject(void) {}
 public:
   inline void set_value(double v) { value_ = v; }
   inline double value(void) const { return value_; }
 
-  virtual sz_t size(void) const override;
+  virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;
-  virtual bool is_equal(Object* other) const override;
+  virtual bool is_equal(BaseObject* other) const override;
   virtual void blacken(VM& vm) override;
 
   static NumericObject* create(VM& vm, double d);
 };
 
-class StringObject : public Object {
+class StringObject : public BaseObject {
   int count_{};
   char* chars_{};
 
@@ -138,16 +138,16 @@ public:
   inline char get_element(int i) const { return chars_[i]; }
   inline void set_element(int i, char c) { chars_[i] = c; }
 
-  virtual sz_t size(void) const override;
+  virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;
-  virtual bool is_equal(Object* other) const override;
+  virtual bool is_equal(BaseObject* other) const override;
   virtual void blacken(VM& vm) override;
 
   static StringObject* create(VM& vm, const char* s, int n);
   static StringObject* concat(VM& vm, StringObject* a, StringObject* b);
 };
 
-class FunctionObject : public Object {
+class FunctionObject : public BaseObject {
   int codes_capacity_{};
   int codes_count_{};
   u8_t* codes_{};
@@ -175,15 +175,15 @@ public:
   int append_code(u8_t c);
   int append_constant(Value v);
 
-  virtual sz_t size(void) const override;
+  virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;
-  virtual bool is_equal(Object* other) const override;
+  virtual bool is_equal(BaseObject* other) const override;
   virtual void blacken(VM& vm) override;
 
   static FunctionObject* create(VM& vm);
 };
 
-class TableObject : public Object {
+class TableObject : public BaseObject {
 public:
   struct TableEntry {
     StringObject* key;
@@ -196,7 +196,7 @@ private:
 
   static constexpr double kMaxLoad = 0.75;
 
-  TableObject(void) : Object(ObjType::TABLE) {}
+  TableObject(void) : BaseObject(ObjType::TABLE) {}
   ~TableObject(void);
 public:
   inline int capacity(void) const { return capacity_; }
@@ -206,9 +206,9 @@ public:
   void set_entry(StringObject* key, Value value);
   Value get_entry(StringObject* key);
 
-  virtual sz_t size(void) const override;
+  virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;
-  virtual bool is_equal(Object* other) const override;
+  virtual bool is_equal(BaseObject* other) const override;
   virtual void blacken(VM& vm) override;
 
   static TableObject* create(VM& vm);

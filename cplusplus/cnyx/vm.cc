@@ -285,7 +285,7 @@ void VM::run(FunctionObject* fn) {
   }
 }
 
-void VM::put_in(Object* o) {
+void VM::put_in(BaseObject* o) {
   objects_.push_back(o);
 }
 
@@ -302,14 +302,14 @@ void VM::gray_value(Value v) {
   gray_stack_.push_back(v);
 }
 
-void VM::blacken_object(Object* obj) {
+void VM::blacken_object(BaseObject* obj) {
 #if defined(DEBUG_GC_TRACE)
   std::cout << "`" << Xptr::address(obj) << "` blacken " << obj << std::endl;
 #endif
   obj->blacken(*this);
 }
 
-void VM::free_object(Object* obj) {
+void VM::free_object(BaseObject* obj) {
 #if defined(DEBUG_GC_TRACE)
   std::cout << "`" << Xptr::address(obj) << "` free " << obj << std::endl;
 #endif
