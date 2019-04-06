@@ -78,44 +78,51 @@ enum class InterpretResult {
 
 class VM : private UnCopyable {
   struct CallFrame {
-    FunctionObject* fun;
-    const u8_t* ip;
-    int stack_begin{};
+    FunctionObject* fun{};
+    const u8_t* ip{};
 
-    CallFrame(FunctionObject* f, const u8_t* i, int beg = 0)
-      : fun(f), ip(i), stack_begin(beg) {
+    std::vector<Value> stack;
+    CallFrame* caller{};
+
+    CallFrame(void) {}
+    CallFrame(FunctionObject* f, const u8_t* i, CallFrame* c = nullptr)
+      : fun(f), ip(i), caller(c) {
     }
 
-    void assign(FunctionObject* f, const u8_t* i, int beg = 0) {
-      fun = f; ip = i; stack_begin = beg;
+    void assign(FunctionObject* f, const u8_t* i, CallFrame* c = nullptr) {
+      fun = f; ip = i; caller = c;
     }
+
+    void append_to_stack(Value v) {
+      stack.push_back(v);
+    }
+
+    Value pop_from_stack(void) {
+      Value r = stack.back();
+      stack.pop_back();
+      return r;
+    }
+
+    Value peek_of_stack(int distance = 0) const {
+      return stack[stack.size() - 1 - distance];
+    }
+
+    inline void set_stack_value(int i, Value v) { stack[i] = v; }
+    inline Value get_stack_value(int i) const { return stack[i]; }
+    inline Value get_fun_constant(int i) const { return fun->get_constant(i); }
   };
 
+  CallFrame* frame_{};
   TableObject* globals_{};
-  std::vector<Value> stack_;
-  int stack_offset_{};
-  std::vector<CallFrame> callframes_;
 
   std::list<BaseObject*> objects_;
   std::list<BaseObject*> gray_stack_;
 
-  inline void push(Value val) {
-    stack_.push_back(val);
-  }
-
-  inline Value pop(void) {
-    Value val = stack_.back();
-    stack_.pop_back();
-    return val;
-  }
-
-  inline Value peek(int distance = 0) const {
-    return stack_[stack_.size() - 1 - distance];
-  }
+  inline void push(Value val) { return frame_->append_to_stack(val); }
+  inline Value pop(void) { return frame_->pop_from_stack(); }
+  inline Value peek(int distance = 0) const { return frame_->peek_of_stack(distance); }
 
   void runtime_error(const char* format, ...);
-  void append_frame(FunctionObject* fn,
-      const u8_t* ip, int stack_begin = 0, bool with_replace = true);
 
   std::optional<bool> pop_boolean(void);
   std::optional<double> pop_numeric(void);
@@ -123,6 +130,8 @@ class VM : private UnCopyable {
 
   void collect(void);
   void print_stack(void);
+
+  void call(FunctionObject* fn);
   bool run(void);
 public:
   VM(void);

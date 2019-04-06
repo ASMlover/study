@@ -36,20 +36,23 @@ namespace nyx {
 VM::VM(void) {
   globals_ = TableObject::create(*this);
 
-  stack_.push_back(StringObject::create(*this, "print", 5));
-  stack_.push_back(NativeObject::create(*this,
+  auto* frame = new CallFrame();
+  frame->stack.push_back(StringObject::create(*this, "print", 5));
+  frame->stack.push_back(NativeObject::create(*this,
         [](int argc, Value* args) -> Value {
           for (int i = 0; i < argc; ++i)
             std::cout << args[i] << " ";
           std::cout << std::endl;
           return nullptr;
         }));
-  stack_offset_ += 2;
-  globals_->set_entry(Xptr::down<StringObject>(stack_[0]), stack_[1]);
+  globals_->set_entry(Xptr::down<StringObject>(
+        frame->get_stack_value(0)), frame->get_stack_value(1));
 }
 
 VM::~VM(void) {
   globals_ = nullptr;
+  if (frame_ != nullptr)
+    delete frame_;
 
   for (auto* o : objects_)
     free_object(o);
@@ -64,28 +67,15 @@ void VM::runtime_error(const char* format, ...) {
   std::cerr << std::endl;
   va_end(ap);
 
-  for (auto i = callframes_.size() - 1; i >= 0; --i) {
-    auto& frame = callframes_[i];
-    auto instruction_index = static_cast<int>(frame.ip - frame.fun->codes());
-    int lineno = frame.fun->get_codeline(instruction_index);
+  for (auto* f = frame_; frame_ != nullptr; f = f->caller) {
+    auto instruction_index = static_cast<int>(f->ip - f->fun->codes());
+    int lineno = f->fun->get_codeline(instruction_index);
     std::cerr << "[LINE: " << lineno << "]" << std::endl;
   }
 }
 
-void VM::append_frame(FunctionObject* fn,
-    const u8_t* ip, int stack_begin, bool with_replace) {
-  stack_begin += stack_offset_;
-  if (with_replace && !callframes_.empty()) {
-    auto& frame = callframes_.back();
-    frame.assign(fn, ip, stack_begin);
-  }
-  else {
-    callframes_.push_back({fn, ip, stack_begin});
-  }
-}
-
 std::optional<bool> VM::pop_boolean(void) {
-  if (peek()->type() != ObjType::BOOLEAN) {
+  if (!BaseObject::is_boolean(peek())) {
     runtime_error("operand must be a boolean");
     return {};
   }
@@ -93,7 +83,7 @@ std::optional<bool> VM::pop_boolean(void) {
 }
 
 std::optional<double> VM::pop_numeric(void) {
-  if (peek()->type() != ObjType::NUMERIC) {
+  if (!BaseObject::is_numeric(peek())) {
     runtime_error("operand must be a numeric");
     return {};
   }
@@ -101,11 +91,11 @@ std::optional<double> VM::pop_numeric(void) {
 }
 
 std::optional<std::tuple<double, double>> VM::pop_numerics(void) {
-  if (peek(0)->type() != ObjType::NUMERIC) {
+  if (!BaseObject::is_numeric(peek(0))) {
     runtime_error("right operand must be a numeric");
     return {};
   }
-  if (peek(1)->type() != ObjType::NUMERIC) {
+  if (!BaseObject::is_numeric(peek(1))) {
     runtime_error("left operand must be a numeric");
     return {};
   }
@@ -120,12 +110,12 @@ void VM::collect(void) {
   std::cout << "********* collect: starting *********" << std::endl;
 #endif
 
-  // mark the roots
-  for (auto* v : stack_)
-    gray_value(v);
-
-  for (auto& f : callframes_)
-    gray_value(f.fun);
+  // mark the stack roots
+  for (auto* f = frame_; f != nullptr; f = f->caller) {
+    gray_value(f->fun);
+    for (auto* v : f->stack)
+      gray_value(v);
+  }
 
   gray_value(globals_);
   gray_compiler_roots();
@@ -154,13 +144,17 @@ void VM::collect(void) {
 
 void VM::print_stack(void) {
   int i{};
-  for (auto* o : stack_)
+  for (auto* o : frame_->stack)
     std::cout << i++ << " : " << o << std::endl;
 }
 
+void VM::call(FunctionObject* fn) {
+  auto* frame = new CallFrame(fn, fn->codes(), frame_);
+  frame_ = frame;
+}
+
 bool VM::run(void) {
-  auto& frame = callframes_.back();
-  const u8_t* ip = frame.ip;
+  const u8_t* ip = frame_->ip;
 
   auto _rdbyte = [&ip](void) -> u8_t { return *ip++; };
   auto _rdword = [&ip](void) -> u16_t {
@@ -179,30 +173,30 @@ bool VM::run(void) {
     case OpCode::OP_CONSTANT:
       {
         u8_t constant = _rdbyte();
-        push(frame.fun->get_constant(constant));
+        push(frame_->get_fun_constant(constant));
       } break;
     case OpCode::OP_NIL: push(nullptr); break;
     case OpCode::OP_POP: pop(); break;
     case OpCode::OP_GET_LOCAL:
       {
         u8_t slot = _rdbyte();
-        push(stack_[frame.stack_begin + slot]);
+        push(frame_->get_stack_value(slot));
       } break;
     case OpCode::OP_SET_LOCAL:
       {
         u8_t slot = _rdbyte();
-        stack_[frame.stack_begin + slot] = peek();
+        frame_->set_stack_value(slot, peek());
       } break;
     case OpCode::OP_DEF_GLOBAL:
       {
         u8_t constant = _rdbyte();
-        auto* key = Xptr::down<StringObject>(frame.fun->get_constant(constant));
+        auto* key = Xptr::down<StringObject>(frame_->get_fun_constant(constant));
         globals_->set_entry(key, pop());
       } break;
     case OpCode::OP_GET_GLOBAL:
       {
         u8_t constant = _rdbyte();
-        auto* key = Xptr::down<StringObject>(frame.fun->get_constant(constant));
+        auto* key = Xptr::down<StringObject>(frame_->get_fun_constant(constant));
         if (auto val = globals_->get_entry(key); val) {
           push(*val);
         }
@@ -214,7 +208,7 @@ bool VM::run(void) {
     case OpCode::OP_SET_GLOBAL:
       {
         u8_t constant = _rdbyte();
-        auto* key = Xptr::down<StringObject>(frame.fun->get_constant(constant));
+        auto* key = Xptr::down<StringObject>(frame_->get_fun_constant(constant));
         if (!globals_->set_entry(key, peek())) {
           runtime_error("undefined variable `%s`", key->chars());
           return false;
@@ -270,14 +264,13 @@ bool VM::run(void) {
       break;
     case OpCode::OP_ADD:
       {
-        if (peek(0)->type() == ObjType::STRING
-            && peek(1)->type() == ObjType::STRING) {
+        if (BaseObject::is_string(peek(0)) && BaseObject::is_string(peek(1))) {
           auto* b = Xptr::down<StringObject>(pop());
           auto* a = Xptr::down<StringObject>(pop());
           push(StringObject::concat(*this, a, b));
         }
-        else if (peek(0)->type() == ObjType::NUMERIC
-            && peek(1)->type() == ObjType::NUMERIC) {
+        else if (BaseObject::is_numeric(peek(1))
+            && BaseObject::is_numeric(peek(1))) {
           double b = Xptr::down<NumericObject>(pop())->value();
           double a = Xptr::down<NumericObject>(pop())->value();
           push(NumericObject::create(*this, a + b));
@@ -340,7 +333,7 @@ bool VM::run(void) {
       {
         u16_t offset = _rdword();
         Value cond = peek();
-        if (cond == nullptr || (cond->type() == ObjType::BOOLEAN &&
+        if (BaseObject::is_nil(cond) || (cond->type() == ObjType::BOOLEAN &&
               !Xptr::down<BooleanObject>(cond)->value())) {
           ip += offset;
         }
@@ -357,10 +350,15 @@ bool VM::run(void) {
       {
         int argc = instruction - OpCode::OP_CALL_0;
         Value fun = peek(argc);
-        Value ret = Xptr::down<NativeObject>(fun)->get_function()(
-            argc, &stack_[stack_.size() - argc]);
-        stack_.resize(stack_.size() - argc - 1);
-        push(ret);
+        if (BaseObject::is_native(fun)) {
+          Value ret = Xptr::down<NativeObject>(fun)->get_function()(
+              argc, &frame_->stack[frame_->stack.size() - argc]);
+          frame_->stack.resize(frame_->stack.size() - argc - 1);
+          push(ret);
+        }
+        else {
+          // TODO:
+        }
       } break;
     }
   }
@@ -369,7 +367,7 @@ bool VM::run(void) {
 }
 
 void VM::gray_value(Value v) {
-  if (v == nullptr)
+  if (BaseObject::is_nil(v))
     return;
 
   if (v->is_dark())
@@ -402,7 +400,7 @@ InterpretResult VM::interpret(const str_t& source_bytes) {
   if (fn == nullptr)
     return InterpretResult::COMPILE_ERROR;
   // fn->dump();
-  append_frame(fn, fn->codes());
+  call(fn);
 
   // collect();
   // print_stack();

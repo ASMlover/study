@@ -57,6 +57,17 @@ public:
   inline bool is_dark(void) const { return is_dark_; }
   inline void set_dark(bool is_dark) { is_dark_ = is_dark; }
 
+  static bool is_type(BaseObject* o, ObjType t) {
+    return o != nullptr && o->type() == t;
+  }
+
+  static bool is_nil(BaseObject* o) { return o == nullptr; }
+  static bool is_boolean(BaseObject* o) { return is_type(o, ObjType::BOOLEAN); }
+  static bool is_numeric(BaseObject* o) { return is_type(o, ObjType::NUMERIC); }
+  static bool is_string(BaseObject* o) { return is_type(o, ObjType::STRING); }
+  static bool is_table(BaseObject* o) { return is_type(o, ObjType::TABLE); }
+  static bool is_native(BaseObject* o) { return is_type(o, ObjType::NATIVE); }
+
   virtual sz_t size_bytes(void) const = 0;
   virtual str_t stringify(void) const = 0;
   virtual bool is_equal(BaseObject* other) const = 0;
@@ -72,6 +83,8 @@ inline std::ostream& operator<<(std::ostream& out, BaseObject* obj) {
 inline bool values_equal(Value a, Value b) {
   if (a == b)
     return true;
+  if (BaseObject::is_nil(a) || BaseObject::is_nil(b))
+    return false;
   return a->type() != b->type() ? false : a->is_equal(b);
 }
 
