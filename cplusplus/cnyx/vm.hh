@@ -59,11 +59,22 @@ enum OpCode {
   OP_RETURN, // return
   OP_JUMP,
   OP_JUMP_IF_FALSE,
+  OP_CALL_0,
+  OP_CALL_1,
+  OP_CALL_2,
+  OP_CALL_3,
+  OP_CALL_4,
+  OP_CALL_5,
+  OP_CALL_6,
+  OP_CALL_7,
+  OP_CALL_8,
 };
 
 class VM : private UnCopyable {
   TableObject* globals_{};
   std::vector<Value> stack_;
+  int value_offset_{};
+
   std::list<BaseObject*> objects_;
   std::list<BaseObject*> gray_stack_;
 
@@ -98,7 +109,7 @@ public:
   void blacken_object(BaseObject* obj);
   void free_object(BaseObject* obj);
 
-  void interpret(const std::string& source_bytes);
+  bool interpret(const str_t& source_bytes);
 };
 
 }

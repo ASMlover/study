@@ -34,6 +34,17 @@ namespace nyx {
 
 VM::VM(void) {
   globals_ = TableObject::create(*this);
+
+  stack_.push_back(StringObject::create(*this, "print", 5));
+  stack_.push_back(NativeObject::create(*this,
+        [](int argc, Value* args) -> Value {
+          for (int i = 0; i < argc; ++i)
+            std::cout << args[i] << " ";
+          std::cout << std::endl;
+          return nullptr;
+        }));
+  value_offset_ += 2;
+  globals_->set_entry(Xptr::down<StringObject>(stack_[0]), stack_[1]);
 }
 
 VM::~VM(void) {
@@ -118,6 +129,7 @@ void VM::print_stack(void) {
 
 void VM::run(FunctionObject* fn) {
   push(fn);
+  value_offset_ += 1; // skip function object
   const u8_t* ip = fn->codes();
 
   auto _rdbyte = [&ip](void) -> u8_t { return *ip++; };
@@ -126,12 +138,14 @@ void VM::run(FunctionObject* fn) {
   };
 
   for (;;) {
+#if defined(DEBUG_EXEC_TRACE)
     for (auto* v : stack_)
       std::cout << "| " << v << " ";
     std::cout << std::endl;
     fn->dump_instruction(static_cast<int>(ip - fn->codes()));
+#endif
 
-    switch (*ip++) {
+    switch (auto instruction = *ip++; instruction) {
     case OpCode::OP_CONSTANT:
       {
         u8_t constant = _rdbyte();
@@ -141,13 +155,13 @@ void VM::run(FunctionObject* fn) {
     case OpCode::OP_POP: pop(); break;
     case OpCode::OP_GET_LOCAL:
       {
-        u8_t slot = _rdbyte();
+        u8_t slot = _rdbyte() + value_offset_;
         push(stack_[slot]);
       } break;
     case OpCode::OP_SET_LOCAL:
       {
-        u8_t slot = _rdbyte();
-        stack_[slot] = pop();
+        u8_t slot = _rdbyte() + value_offset_;
+        stack_[slot] = peek();
       } break;
     case OpCode::OP_DEF_GLOBAL:
       {
@@ -165,7 +179,7 @@ void VM::run(FunctionObject* fn) {
       {
         u8_t constant = _rdbyte();
         auto* key = Xptr::down<StringObject>(fn->get_constant(constant));
-        globals_->set_entry(key, pop());
+        globals_->set_entry(key, peek());
       } break;
     case OpCode::OP_EQ:
       {
@@ -292,6 +306,23 @@ void VM::run(FunctionObject* fn) {
           ip += offset;
         }
       } break;
+    case OpCode::OP_CALL_0:
+    case OpCode::OP_CALL_1:
+    case OpCode::OP_CALL_2:
+    case OpCode::OP_CALL_3:
+    case OpCode::OP_CALL_4:
+    case OpCode::OP_CALL_5:
+    case OpCode::OP_CALL_6:
+    case OpCode::OP_CALL_7:
+    case OpCode::OP_CALL_8:
+      {
+        int argc = instruction - OpCode::OP_CALL_0;
+        Value fun = peek(argc);
+        Value ret = Xptr::down<NativeObject>(fun)->get_function()(
+            argc, &stack_[stack_.size() - argc]);
+        stack_.resize(stack_.size() - argc - 1);
+        push(ret);
+      } break;
     }
   }
 }
@@ -327,19 +358,22 @@ void VM::free_object(BaseObject* obj) {
   delete obj;
 }
 
-void VM::interpret(const std::string& source_bytes) {
+bool VM::interpret(const str_t& source_bytes) {
   Compile c;
 
   auto* fn = c.compile(*this, source_bytes);
   if (fn == nullptr)
-    return;
+    return false;
   fn->dump();
 
   run(fn);
-  stack_.clear();
+  // stack_.clear();
+  stack_.resize(2);
 
   collect();
   print_stack();
+
+  return true;
 }
 
 }

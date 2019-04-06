@@ -24,13 +24,13 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include "vm.hh"
 
-static void repl(void) {
-  nyx::VM vm;
-
+static void run_with_repl(nyx::VM& vm) {
   std::string line;
   for (;;) {
     std::cout << ">>> ";
@@ -41,12 +41,33 @@ static void repl(void) {
   }
 }
 
+static void run_with_file(nyx::VM& vm, const char* fname) {
+  std::ifstream fp(fname);
+  if (!fp.is_open())
+    return;
+
+  std::stringstream ss;
+  ss << fp.rdbuf();
+
+  if (!vm.interpret(ss.str()))
+    std::exit(-1);
+}
+
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
-  std::cout << "Welcome to NYX !" << std::endl;
+  if (argc != 1 && argc != 2) {
+    std::cerr << "USAGE: " << argv[0] << " {FILE_PATH}" << std::endl;
+    std::exit(1);
+  }
 
-  repl();
+  std::cout << "Welcome to NYX !" << std::endl;
+  nyx::VM vm;
+
+  if (argc == 1)
+    run_with_repl(vm);
+  else if (argc == 2)
+    run_with_file(vm, argv[1]);
 
   return 0;
 }

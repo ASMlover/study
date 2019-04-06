@@ -83,7 +83,7 @@ class Compiler : private UnCopyable {
   int scope_depth_{-1};
 
   void error(const str_t& message) {
-    std::cerr << message << std::endl;
+    std::cerr << "[" << curr_.get_lineno() << "] ERROR:" << message << std::endl;
     had_error_ = true;
   }
 
@@ -129,6 +129,7 @@ class Compiler : private UnCopyable {
     static auto variable_fn = [](Compiler* p, bool b) { p->variable(b); };
     static auto binary_fn = [](Compiler* p, bool b) { p->binary(b); };
     static auto unary_fn = [](Compiler* p, bool b) { p->unary(b); };
+    static auto call_fn = [](Compiler* p, bool b) { p->call(b); };
 
     static ParseRule _rules[] = {
       nullptr, nullptr, Precedence::NONE, // TK_ERROR
@@ -137,7 +138,7 @@ class Compiler : private UnCopyable {
       string_fn, nullptr, Precedence::NONE, // TK_STRINGLITERAL
       numeric_fn, nullptr, Precedence::NONE, // TK_NUMERICCONST
 
-      grouping_fn, nullptr, Precedence::NONE, // TK_LPAREN
+      grouping_fn, call_fn, Precedence::CALL, // TK_LPAREN
       nullptr, nullptr, Precedence::NONE, // TK_RPAREN
       nullptr, nullptr, Precedence::NONE, // TK_LBRACE
       nullptr, nullptr, Precedence::NONE, // TK_RBRACE
@@ -319,6 +320,18 @@ class Compiler : private UnCopyable {
     default: assert(false); break; // unreachable
     }
   }
+
+  void call(bool can_assign) {
+    u8_t argc{};
+    if (!check(TokenKind::TK_RPAREN)) {
+      do {
+        expression();
+        ++argc;
+      } while (match(TokenKind::TK_COMMA));
+    }
+    consume(TokenKind::TK_RPAREN, "expect `)` after arguments");
+    emit_byte(OpCode::OP_CALL_0 + argc);
+  }
 public:
   Compiler(VM& vm, Lexer& lex) : vm_(vm), lex_(lex) {
     function_ = FunctionObject::create(vm_);
@@ -438,9 +451,11 @@ FunctionObject* Compile::compile(VM& vm, const str_t& source_bytes) {
   _main_compiler = &c;
 
   c.begin_compiler();
-  do {
-    c.statement();
-  } while (!c.match(TokenKind::TK_EOF));
+  if (!c.match(TokenKind::TK_EOF)) {
+    do {
+      c.statement();
+    } while (!c.match(TokenKind::TK_EOF));
+  }
   c.finish_compiler();
 
   _main_compiler = nullptr;
