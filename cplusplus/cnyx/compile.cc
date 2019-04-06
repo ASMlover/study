@@ -96,6 +96,15 @@ class Compiler : private UnCopyable {
     emit_byte(byte2);
   }
 
+  void emit_loop(int loop_start) {
+    emit_byte(OpCode::OP_LOOP);
+
+    // check for overflow
+    int offset = function_->codes_count() - loop_start + 2;
+    emit_byte((offset >> 8) & 0xff);
+    emit_byte(offset & 0xff);
+  }
+
   int emit_jump(u8_t instruction) {
     emit_byte(instruction);
     emit_bytes(0xff, 0xff);
@@ -375,22 +384,23 @@ public:
   void statement(void) {
     if (match(TokenKind::KW_IF)) {
       if_stmt();
-      return;
     }
-    if (match(TokenKind::KW_VAR)) {
+    else if (match(TokenKind::KW_VAR)) {
       var_stmt();
-      return;
     }
-    if (check(TokenKind::TK_LBRACE)) {
+    else if (match(TokenKind::KW_WHILE)) {
+      while_stmt();
+    }
+    else if (check(TokenKind::TK_LBRACE)) {
       enter_scope();
       block_stmt();
       leave_scope();
-      return;
     }
-
-    expression();
-    emit_byte(OpCode::OP_POP);
-    consume(TokenKind::TK_SEMI, "expected `;` after expression");
+    else {
+      expression();
+      emit_byte(OpCode::OP_POP);
+      consume(TokenKind::TK_SEMI, "expected `;` after expression");
+    }
   }
 
   void block_stmt(void) {
@@ -440,6 +450,27 @@ public:
       emit_bytes(OpCode::OP_DEF_GLOBAL, constant);
     else
       locals_.push_back(Local(name, scope_depth_));
+  }
+
+  void while_stmt(void) {
+    int loop_start = function_->codes_count();
+
+    consume(TokenKind::TK_LPAREN, "expect `(` before while condition");
+    expression();
+    consume(TokenKind::TK_RPAREN, "expect `)` after while condition");
+
+    enter_scope();
+
+    // jump out of the loop if the condition is false
+    int exit_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+    // compile the loop body
+    emit_byte(OpCode::OP_POP); // condition
+    statement();
+
+    emit_loop(loop_start); // loop back to the start
+    patch_jump(exit_jump);
+
+    leave_scope();
   }
 };
 

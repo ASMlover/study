@@ -413,6 +413,11 @@ bool VM::run(void) {
           ip += offset;
         }
       } break;
+    case OpCode::OP_LOOP:
+      {
+        u16_t offset = _rdword();
+        ip -= offset;
+      } break;
     case OpCode::OP_CALL_0:
     case OpCode::OP_CALL_1:
     case OpCode::OP_CALL_2:

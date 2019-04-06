@@ -59,6 +59,7 @@ enum OpCode {
   OP_RETURN, // return
   OP_JUMP,
   OP_JUMP_IF_FALSE,
+  OP_LOOP, // loop flow
   OP_CALL_0,
   OP_CALL_1,
   OP_CALL_2,

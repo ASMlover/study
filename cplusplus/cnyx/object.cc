@@ -253,6 +253,12 @@ int FunctionObject::dump_instruction(int i) {
       offset |= codes[i++];
       fprintf(stdout, "%-16s %4d -> %d\n", "OP_JUMP_IF_FALSE", offset, i + offset);
     } break;
+  case OpCode::OP_LOOP:
+    {
+      u16_t offset = static_cast<u16_t>(codes[i++] << 8);
+      offset |= codes[i++];
+      fprintf(stdout, "%-16s %4d -> %d\n", "OP_LOOP", offset, i - offset);
+    } break;
   case OpCode::OP_CALL_0: std::cout << "OP_CALL_0" << std::endl; break;
   case OpCode::OP_CALL_1: std::cout << "OP_CALL_1" << std::endl; break;
   case OpCode::OP_CALL_2: std::cout << "OP_CALL_2" << std::endl; break;
