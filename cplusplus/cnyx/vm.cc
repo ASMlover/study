@@ -32,13 +32,71 @@
 #include "vm.hh"
 
 namespace nyx {
+class CallFrame : private UnCopyable {
+  using IterCallback =
+    std::function<void(FunctionObject*, const u8_t*, std::vector<Value>&)>;
+
+  FunctionObject* fn_{};
+  const u8_t* ip_{};
+
+  std::vector<Value> stack_;
+  CallFrame* caller_{};
+
+  CallFrame(void) {}
+  CallFrame(FunctionObject* f, const u8_t* i, CallFrame* c = nullptr)
+    : fn_(f), ip_(i), caller_(c) {
+  }
+public:
+  inline FunctionObject* fn(void) const { return fn_; }
+  inline const u8_t* ip(void) const { return ip_; }
+  inline int stack_size(void) const { return static_cast<int>(stack_.size()); }
+  inline Value* stack_values(int offset = 0) { return &stack_[offset]; }
+  inline void resize_stack(int capacity) { stack_.resize(capacity); }
+  inline const std::vector<Value>& get_stack(void) const { return stack_; }
+  inline void set_stack_value(int i, Value v) { stack_[i] = v; }
+  inline Value get_stack_value(int i) const { return stack_[i]; }
+  inline Value get_fun_constant(int i) const { return fn_->get_constant(i); }
+
+  void append_to_stack(Value v) {
+    stack_.push_back(v);
+  }
+
+  Value pop_from_stack(void) {
+    Value r = stack_.back();
+    stack_.pop_back();
+    return r;
+  }
+
+  Value stack_peek(int distance = 0) const {
+    return stack_[stack_.size() - 1 - distance];
+  }
+
+  void iter_frames(IterCallback&& cb) {
+    for (auto* f = this; f != nullptr; f = f->caller_)
+      cb(f->fn_, f->ip_, f->stack_);
+  }
+
+  static CallFrame* create(void) {
+    return new CallFrame();
+  }
+
+  static CallFrame* create(FunctionObject* fn, const u8_t* ip, CallFrame* c) {
+    return new CallFrame(fn, ip, c);
+  }
+
+  static void release(CallFrame* frame) {
+    for (auto* c = frame->caller_; c != nullptr; c = c->caller_)
+      delete c;
+    delete frame;
+  }
+};
 
 VM::VM(void) {
   globals_ = TableObject::create(*this);
 
-  auto* frame = new CallFrame();
-  frame->stack.push_back(StringObject::create(*this, "print", 5));
-  frame->stack.push_back(NativeObject::create(*this,
+  auto* frame = CallFrame::create();
+  frame->append_to_stack(StringObject::create(*this, "print", 5));
+  frame->append_to_stack(NativeObject::create(*this,
         [](int argc, Value* args) -> Value {
           for (int i = 0; i < argc; ++i)
             std::cout << args[i] << " ";
@@ -60,6 +118,18 @@ VM::~VM(void) {
   gray_stack_.clear();
 }
 
+void VM::push(Value val) {
+  frame_->append_to_stack(val);
+}
+
+Value VM::pop(void) {
+  return frame_->pop_from_stack();
+}
+
+Value VM::peek(int distance) const {
+  return frame_->stack_peek(distance);
+}
+
 void VM::runtime_error(const char* format, ...) {
   va_list ap;
   va_start(ap, format);
@@ -67,10 +137,12 @@ void VM::runtime_error(const char* format, ...) {
   std::cerr << std::endl;
   va_end(ap);
 
-  for (auto* f = frame_; frame_ != nullptr; f = f->caller) {
-    auto instruction_index = static_cast<int>(f->ip - f->fun->codes());
-    int lineno = f->fun->get_codeline(instruction_index);
-    std::cerr << "[LINE: " << lineno << "]" << std::endl;
+  if (frame_ != nullptr) {
+    frame_->iter_frames(
+        [](FunctionObject* fn, const u8_t* ip, std::vector<Value>&) {
+          auto i = static_cast<int>(ip - fn->codes());
+          std::cerr << "[LINE: " << fn->get_codeline(i) << "]" << std::endl;
+        });
   }
 }
 
@@ -111,10 +183,13 @@ void VM::collect(void) {
 #endif
 
   // mark the stack roots
-  for (auto* f = frame_; f != nullptr; f = f->caller) {
-    gray_value(f->fun);
-    for (auto* v : f->stack)
-      gray_value(v);
+  if (frame_ != nullptr) {
+    frame_->iter_frames(
+        [this](FunctionObject* fn, const u8_t* ip, std::vector<Value>& s) {
+          gray_value(fn);
+          for (auto* o : s)
+            gray_value(o);
+        });
   }
 
   gray_value(globals_);
@@ -144,17 +219,17 @@ void VM::collect(void) {
 
 void VM::print_stack(void) {
   int i{};
-  for (auto* o : frame_->stack)
+  for (auto* o : frame_->get_stack())
     std::cout << i++ << " : " << o << std::endl;
 }
 
 void VM::call(FunctionObject* fn) {
-  auto* frame = new CallFrame(fn, fn->codes(), frame_);
+  auto* frame = CallFrame::create(fn, fn->codes(), frame_);
   frame_ = frame;
 }
 
 bool VM::run(void) {
-  const u8_t* ip = frame_->ip;
+  const u8_t* ip = frame_->ip();
 
   auto _rdbyte = [&ip](void) -> u8_t { return *ip++; };
   auto _rdword = [&ip](void) -> u16_t {
@@ -352,8 +427,8 @@ bool VM::run(void) {
         Value fun = peek(argc);
         if (BaseObject::is_native(fun)) {
           Value ret = Xptr::down<NativeObject>(fun)->get_function()(
-              argc, &frame_->stack[frame_->stack.size() - argc]);
-          frame_->stack.resize(frame_->stack.size() - argc - 1);
+              argc, frame_->stack_values(frame_->stack_size() - argc));
+          frame_->resize_stack(frame_->stack_size() - argc - 1);
           push(ret);
         }
         else {
