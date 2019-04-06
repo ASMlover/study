@@ -65,6 +65,7 @@ public:
   static bool is_boolean(BaseObject* o) { return is_type(o, ObjType::BOOLEAN); }
   static bool is_numeric(BaseObject* o) { return is_type(o, ObjType::NUMERIC); }
   static bool is_string(BaseObject* o) { return is_type(o, ObjType::STRING); }
+  static bool is_function(BaseObject* o) { return is_type(o, ObjType::FUNCTION); }
   static bool is_table(BaseObject* o) { return is_type(o, ObjType::TABLE); }
   static bool is_native(BaseObject* o) { return is_type(o, ObjType::NATIVE); }
 
@@ -170,6 +171,8 @@ class FunctionObject : public BaseObject {
   u8_t* codes_{};
   int* codelines_{};
 
+  int arity_{};
+
   ValueArray constants_;
 
   FunctionObject(void);
@@ -182,6 +185,7 @@ public:
   inline void set_code(int i, u8_t c) { codes_[i] = c; }
   inline u8_t get_code(int i) const { return codes_[i]; }
   inline int get_codeline(int i) const { return codelines_[i]; }
+  inline int arity(void) const { return arity_; }
   inline int constants_capacity(void) const { return constants_.capacity(); }
   inline int constants_count(void) const { return constants_.count(); }
   inline Value* constants(void) { return constants_.values(); }

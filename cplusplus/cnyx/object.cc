@@ -311,8 +311,9 @@ sz_t FunctionObject::size_bytes(void) const {
 }
 
 str_t FunctionObject::stringify(void) const {
-  // TODO:
-  return "function";
+  std::stringstream ss;
+  ss << "<fn `" << this << "`>";
+  return ss.str();
 }
 
 bool FunctionObject::is_equal(BaseObject*) const {
@@ -402,7 +403,7 @@ sz_t NativeObject::size_bytes(void) const {
 
 str_t NativeObject::stringify(void) const {
   std::stringstream ss;
-  ss << "<fn " << &fn_ << ">";
+  ss << "<native `" << &fn_ << "`>";
   return ss.str();
 }
 
