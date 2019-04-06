@@ -92,7 +92,7 @@ void BooleanObject::blacken(VM& vm) {
 
 BooleanObject* BooleanObject::create(VM& vm, bool b) {
   auto* o = new BooleanObject(b);
-  vm.put_in(o);
+  vm.append_object(o);
   return o;
 }
 
@@ -115,7 +115,7 @@ void NumericObject::blacken(VM&) {
 
 NumericObject* NumericObject::create(VM& vm, double d) {
   auto* o = new NumericObject(d);
-  vm.put_in(o);
+  vm.append_object(o);
   return o;
 }
 
@@ -167,13 +167,13 @@ void StringObject::blacken(VM&) {
 
 StringObject* StringObject::create(VM& vm, const char* s, int n) {
   auto* o = new StringObject(s, n);
-  vm.put_in(o);
+  vm.append_object(o);
   return o;
 }
 
 StringObject* StringObject::concat(VM& vm, StringObject* a, StringObject* b) {
   auto* o = new StringObject(a, b);
-  vm.put_in(o);
+  vm.append_object(o);
   return o;
 }
 
@@ -184,6 +184,8 @@ FunctionObject::FunctionObject(void)
 FunctionObject::~FunctionObject(void) {
   if (codes_ != nullptr)
     delete [] codes_;
+  if (codelines_ != nullptr)
+    delete [] codelines_;
 }
 
 int FunctionObject::dump_instruction(int i) {
@@ -270,7 +272,7 @@ void FunctionObject::dump(void) {
   }
 }
 
-int FunctionObject::append_code(u8_t c) {
+int FunctionObject::append_code(u8_t c, int lineno) {
   if (codes_capacity_ < codes_count_ + 1) {
     codes_capacity_ = codes_capacity_ == 0 ? 4 : codes_capacity_ * 2;
 
@@ -280,8 +282,17 @@ int FunctionObject::append_code(u8_t c) {
       delete [] codes_;
     }
     codes_ = new_codes;
+
+    auto* new_codelines = new int[codes_capacity_];
+    if (codelines_ != nullptr) {
+      memcpy(new_codelines, codelines_, sizeof(int) * codes_count_);
+      delete [] codelines_;
+    }
+    codelines_ = new_codelines;
   }
   codes_[codes_count_] = c;
+  codelines_[codes_count_] = lineno;
+
   return codes_count_++;
 }
 
@@ -308,7 +319,7 @@ void FunctionObject::blacken(VM& vm) {
 
 FunctionObject* FunctionObject::create(VM& vm) {
   auto* o = new FunctionObject();
-  vm.put_in(o);
+  vm.append_object(o);
   return o;
 }
 
@@ -317,12 +328,12 @@ TableObject::~TableObject(void) {
     delete [] entries_;
 }
 
-void TableObject::set_entry(StringObject* key, Value val) {
+bool TableObject::set_entry(StringObject* key, Value val) {
   for (int i = 0; i < count_; ++i) {
     auto& entry = entries_[i];
     if (key->is_equal(entry.key)) {
       entry.value = val;
-      return;
+      return true;
     }
   }
 
@@ -339,15 +350,17 @@ void TableObject::set_entry(StringObject* key, Value val) {
   auto& entry = entries_[count_++];
   entry.key = key;
   entry.value = val;
+
+  return false;
 }
 
-Value TableObject::get_entry(StringObject* key) {
+std::optional<Value> TableObject::get_entry(StringObject* key) const {
   for (int i = 0; i < count_; ++i) {
     auto& entry = entries_[i];
     if (key->is_equal(entry.key))
-      return entry.value;
+      return {entry.value};
   }
-  return nullptr;
+  return {};
 }
 
 sz_t TableObject::size_bytes(void) const {
@@ -373,7 +386,7 @@ void TableObject::blacken(VM& vm) {
 
 TableObject* TableObject::create(VM& vm) {
   auto* o = new TableObject();
-  vm.put_in(o);
+  vm.append_object(o);
   return o;
 }
 
@@ -396,13 +409,13 @@ void NativeObject::blacken(VM& vm) {
 
 NativeObject* NativeObject::create(VM& vm, const NativeFunction& fn) {
   auto* o = new NativeObject(fn);
-  vm.put_in(o);
+  vm.append_object(o);
   return o;
 }
 
 NativeObject* NativeObject::create(VM& vm, NativeFunction&& fn) {
   auto* o = new NativeObject(std::move(fn));
-  vm.put_in(o);
+  vm.append_object(o);
   return o;
 }
 

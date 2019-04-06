@@ -49,8 +49,11 @@ static void run_with_file(nyx::VM& vm, const char* fname) {
   std::stringstream ss;
   ss << fp.rdbuf();
 
-  if (!vm.interpret(ss.str()))
-    std::exit(-1);
+  auto r = vm.interpret(ss.str());
+  if (r == nyx::InterpretResult::COMPILE_ERROR)
+    std::exit(65);
+  else if (r == nyx::InterpretResult::RUNTIME_ERROR)
+    std::exit(70);
 }
 
 int main(int argc, char* argv[]) {

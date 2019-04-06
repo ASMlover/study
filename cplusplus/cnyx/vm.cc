@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cassert>
+#include <cstdarg>
 #include <iostream>
 #include <sstream>
 #include "compile.hh"
@@ -43,7 +44,7 @@ VM::VM(void) {
           std::cout << std::endl;
           return nullptr;
         }));
-  value_offset_ += 2;
+  stack_offset_ += 2;
   globals_->set_entry(Xptr::down<StringObject>(stack_[0]), stack_[1]);
 }
 
@@ -56,9 +57,36 @@ VM::~VM(void) {
   gray_stack_.clear();
 }
 
+void VM::runtime_error(const char* format, ...) {
+  va_list ap;
+  va_start(ap, format);
+  vfprintf(stderr, format, ap);
+  std::cerr << std::endl;
+  va_end(ap);
+
+  for (auto i = callframes_.size() - 1; i >= 0; --i) {
+    auto& frame = callframes_[i];
+    auto instruction_index = static_cast<int>(frame.ip - frame.fun->codes());
+    int lineno = frame.fun->get_codeline(instruction_index);
+    std::cerr << "[LINE: " << lineno << "]" << std::endl;
+  }
+}
+
+void VM::append_frame(FunctionObject* fn,
+    const u8_t* ip, int stack_begin, bool with_replace) {
+  stack_begin += stack_offset_;
+  if (with_replace && !callframes_.empty()) {
+    auto& frame = callframes_.back();
+    frame.assign(fn, ip, stack_begin);
+  }
+  else {
+    callframes_.push_back({fn, ip, stack_begin});
+  }
+}
+
 std::optional<bool> VM::pop_boolean(void) {
   if (peek()->type() != ObjType::BOOLEAN) {
-    std::cerr << "operand must be a boolean" << std::endl;
+    runtime_error("operand must be a boolean");
     return {};
   }
   return {Xptr::down<BooleanObject>(pop())->value()};
@@ -66,7 +94,7 @@ std::optional<bool> VM::pop_boolean(void) {
 
 std::optional<double> VM::pop_numeric(void) {
   if (peek()->type() != ObjType::NUMERIC) {
-    std::cerr << "operand must be a numeric" << std::endl;
+    runtime_error("operand must be a numeric");
     return {};
   }
   return {Xptr::down<NumericObject>(pop())->value()};
@@ -74,11 +102,11 @@ std::optional<double> VM::pop_numeric(void) {
 
 std::optional<std::tuple<double, double>> VM::pop_numerics(void) {
   if (peek(0)->type() != ObjType::NUMERIC) {
-    std::cerr << "right operand must be a numeric" << std::endl;
+    runtime_error("right operand must be a numeric");
     return {};
   }
   if (peek(1)->type() != ObjType::NUMERIC) {
-    std::cerr << "left operand must be a numeric" << std::endl;
+    runtime_error("left operand must be a numeric");
     return {};
   }
 
@@ -95,6 +123,9 @@ void VM::collect(void) {
   // mark the roots
   for (auto* v : stack_)
     gray_value(v);
+
+  for (auto& f : callframes_)
+    gray_value(f.fun);
 
   gray_value(globals_);
   gray_compiler_roots();
@@ -127,10 +158,9 @@ void VM::print_stack(void) {
     std::cout << i++ << " : " << o << std::endl;
 }
 
-void VM::run(FunctionObject* fn) {
-  push(fn);
-  value_offset_ += 1; // skip function object
-  const u8_t* ip = fn->codes();
+bool VM::run(void) {
+  auto& frame = callframes_.back();
+  const u8_t* ip = frame.ip;
 
   auto _rdbyte = [&ip](void) -> u8_t { return *ip++; };
   auto _rdword = [&ip](void) -> u16_t {
@@ -149,37 +179,46 @@ void VM::run(FunctionObject* fn) {
     case OpCode::OP_CONSTANT:
       {
         u8_t constant = _rdbyte();
-        push(fn->get_constant(constant));
+        push(frame.fun->get_constant(constant));
       } break;
     case OpCode::OP_NIL: push(nullptr); break;
     case OpCode::OP_POP: pop(); break;
     case OpCode::OP_GET_LOCAL:
       {
-        u8_t slot = _rdbyte() + value_offset_;
-        push(stack_[slot]);
+        u8_t slot = _rdbyte();
+        push(stack_[frame.stack_begin + slot]);
       } break;
     case OpCode::OP_SET_LOCAL:
       {
-        u8_t slot = _rdbyte() + value_offset_;
-        stack_[slot] = peek();
+        u8_t slot = _rdbyte();
+        stack_[frame.stack_begin + slot] = peek();
       } break;
     case OpCode::OP_DEF_GLOBAL:
       {
         u8_t constant = _rdbyte();
-        auto* key = Xptr::down<StringObject>(fn->get_constant(constant));
+        auto* key = Xptr::down<StringObject>(frame.fun->get_constant(constant));
         globals_->set_entry(key, pop());
       } break;
     case OpCode::OP_GET_GLOBAL:
       {
         u8_t constant = _rdbyte();
-        auto* key = Xptr::down<StringObject>(fn->get_constant(constant));
-        push(globals_->get_entry(key));
+        auto* key = Xptr::down<StringObject>(frame.fun->get_constant(constant));
+        if (auto val = globals_->get_entry(key); val) {
+          push(*val);
+        }
+        else {
+          runtime_error("undefined variable `%s`", key->chars());
+          return false;
+        }
       } break;
     case OpCode::OP_SET_GLOBAL:
       {
         u8_t constant = _rdbyte();
-        auto* key = Xptr::down<StringObject>(fn->get_constant(constant));
-        globals_->set_entry(key, peek());
+        auto* key = Xptr::down<StringObject>(frame.fun->get_constant(constant));
+        if (!globals_->set_entry(key, peek())) {
+          runtime_error("undefined variable `%s`", key->chars());
+          return false;
+        }
       } break;
     case OpCode::OP_EQ:
       {
@@ -199,7 +238,7 @@ void VM::run(FunctionObject* fn) {
         push(BooleanObject::create(*this, a > b));
       }
       else {
-        return;
+        return false;
       }
       break;
     case OpCode::OP_GE:
@@ -208,7 +247,7 @@ void VM::run(FunctionObject* fn) {
         push(BooleanObject::create(*this, a >= b));
       }
       else {
-        return;
+        return false;
       }
       break;
     case OpCode::OP_LT:
@@ -217,7 +256,7 @@ void VM::run(FunctionObject* fn) {
         push(BooleanObject::create(*this, a < b));
       }
       else {
-        return;
+        return false;
       }
       break;
     case OpCode::OP_LE:
@@ -226,7 +265,7 @@ void VM::run(FunctionObject* fn) {
         push(BooleanObject::create(*this, a <= b));
       }
       else {
-        return;
+        return false;
       }
       break;
     case OpCode::OP_ADD:
@@ -244,8 +283,8 @@ void VM::run(FunctionObject* fn) {
           push(NumericObject::create(*this, a + b));
         }
         else {
-          std::cerr << "can only add two strings or two numerics" << std::endl;
-          return;
+          runtime_error("can only add two strings or two numerics");
+          return false;
         }
       } break;
     case OpCode::OP_SUB:
@@ -254,7 +293,7 @@ void VM::run(FunctionObject* fn) {
         push(NumericObject::create(*this, a - b));
       }
       else {
-        return;
+        return false;
       }
       break;
     case OpCode::OP_MUL:
@@ -263,7 +302,7 @@ void VM::run(FunctionObject* fn) {
         push(NumericObject::create(*this, a * b));
       }
       else {
-        return;
+        return false;
       }
       break;
     case OpCode::OP_DIV:
@@ -272,7 +311,7 @@ void VM::run(FunctionObject* fn) {
         push(NumericObject::create(*this, a / b));
       }
       else {
-        return;
+        return false;
       }
       break;
     case OpCode::OP_NOT:
@@ -280,18 +319,18 @@ void VM::run(FunctionObject* fn) {
         if (auto b = pop_boolean(); b)
           push(BooleanObject::create(*this, !*b));
         else
-          return;
+          return false;
       } break;
     case OpCode::OP_NEG:
       {
         if (auto v = pop_numeric(); v)
           push(NumericObject::create(*this, -*v));
         else
-          return;
+          return false;
       } break;
     case OpCode::OP_RETURN:
       // std::cout << pop() << std::endl;
-      return;
+      return true;
     case OpCode::OP_JUMP:
       {
         u16_t offset = _rdword();
@@ -325,10 +364,8 @@ void VM::run(FunctionObject* fn) {
       } break;
     }
   }
-}
 
-void VM::put_in(BaseObject* o) {
-  objects_.push_back(o);
+  return true;
 }
 
 void VM::gray_value(Value v) {
@@ -358,22 +395,19 @@ void VM::free_object(BaseObject* obj) {
   delete obj;
 }
 
-bool VM::interpret(const str_t& source_bytes) {
+InterpretResult VM::interpret(const str_t& source_bytes) {
   Compile c;
 
   auto* fn = c.compile(*this, source_bytes);
   if (fn == nullptr)
-    return false;
-  fn->dump();
+    return InterpretResult::COMPILE_ERROR;
+  // fn->dump();
+  append_frame(fn, fn->codes());
 
-  run(fn);
-  // stack_.clear();
-  stack_.resize(2);
+  // collect();
+  // print_stack();
 
-  collect();
-  print_stack();
-
-  return true;
+  return run() ? InterpretResult::OK : InterpretResult::RUNTIME_ERROR;
 }
 
 }

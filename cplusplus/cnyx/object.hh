@@ -28,6 +28,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <string>
 #include "common.hh"
 
@@ -154,6 +155,7 @@ class FunctionObject : public BaseObject {
   int codes_capacity_{};
   int codes_count_{};
   u8_t* codes_{};
+  int* codelines_{};
 
   ValueArray constants_;
 
@@ -166,6 +168,7 @@ public:
   inline const u8_t* codes(void) const { return codes_; }
   inline void set_code(int i, u8_t c) { codes_[i] = c; }
   inline u8_t get_code(int i) const { return codes_[i]; }
+  inline int get_codeline(int i) const { return codelines_[i]; }
   inline int constants_capacity(void) const { return constants_.capacity(); }
   inline int constants_count(void) const { return constants_.count(); }
   inline Value* constants(void) { return constants_.values(); }
@@ -175,7 +178,7 @@ public:
 
   int dump_instruction(int i);
   void dump(void);
-  int append_code(u8_t c);
+  int append_code(u8_t c, int lineno = 0);
   int append_constant(Value v);
 
   virtual sz_t size_bytes(void) const override;
@@ -206,8 +209,8 @@ public:
   inline int count(void) const { return count_; }
   inline TableEntry* entries(void) { return entries_; }
   inline const TableEntry* entries(void) const { return entries_; }
-  void set_entry(StringObject* key, Value value);
-  Value get_entry(StringObject* key);
+  bool set_entry(StringObject* key, Value value);
+  std::optional<Value> get_entry(StringObject* key) const;
 
   virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;

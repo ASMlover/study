@@ -70,10 +70,31 @@ enum OpCode {
   OP_CALL_8,
 };
 
+enum class InterpretResult {
+  OK,
+  COMPILE_ERROR,
+  RUNTIME_ERROR,
+};
+
 class VM : private UnCopyable {
+  struct CallFrame {
+    FunctionObject* fun;
+    const u8_t* ip;
+    int stack_begin{};
+
+    CallFrame(FunctionObject* f, const u8_t* i, int beg = 0)
+      : fun(f), ip(i), stack_begin(beg) {
+    }
+
+    void assign(FunctionObject* f, const u8_t* i, int beg = 0) {
+      fun = f; ip = i; stack_begin = beg;
+    }
+  };
+
   TableObject* globals_{};
   std::vector<Value> stack_;
-  int value_offset_{};
+  int stack_offset_{};
+  std::vector<CallFrame> callframes_;
 
   std::list<BaseObject*> objects_;
   std::list<BaseObject*> gray_stack_;
@@ -92,24 +113,28 @@ class VM : private UnCopyable {
     return stack_[stack_.size() - 1 - distance];
   }
 
+  void runtime_error(const char* format, ...);
+  void append_frame(FunctionObject* fn,
+      const u8_t* ip, int stack_begin = 0, bool with_replace = true);
+
   std::optional<bool> pop_boolean(void);
   std::optional<double> pop_numeric(void);
   std::optional<std::tuple<double, double>> pop_numerics(void);
 
   void collect(void);
   void print_stack(void);
-  void run(FunctionObject* fn);
+  bool run(void);
 public:
   VM(void);
   ~VM(void);
 
-  void put_in(BaseObject* o);
+  inline void append_object(BaseObject* o) { objects_.push_back(o); }
 
   void gray_value(Value v);
   void blacken_object(BaseObject* obj);
   void free_object(BaseObject* obj);
 
-  bool interpret(const str_t& source_bytes);
+  InterpretResult interpret(const str_t& source_bytes);
 };
 
 }

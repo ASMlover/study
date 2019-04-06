@@ -88,7 +88,7 @@ class Compiler : private UnCopyable {
   }
 
   void emit_byte(u8_t byte) {
-    function_->append_code(byte);
+    function_->append_code(byte, prev_.get_lineno());
   }
 
   void emit_bytes(u8_t byte1, u8_t byte2) {
