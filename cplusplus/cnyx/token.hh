@@ -45,13 +45,15 @@ class Token : public Copyable {
   TokenKind kind_{TokenKind::TK_ERROR};
   str_t literal_;
   int lineno_{1};
+  bool force_ne_{false};
 public:
   Token(void) {}
   Token(TokenKind kind, const str_t& literal, int lineno)
     : kind_(kind), literal_(literal), lineno_(lineno) {
   }
 
-  inline bool is_equal(const Token& r) const { return literal_ == r.literal_; }
+  inline void set_force_ne(bool b) { force_ne_ = b; }
+  inline bool is_equal(const Token& r) const { return !force_ne_ && literal_ == r.literal_; }
 
   inline TokenKind get_kind(void) const { return kind_; }
   inline str_t get_literal(void) const { return literal_; }
