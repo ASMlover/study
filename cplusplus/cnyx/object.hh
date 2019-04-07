@@ -186,6 +186,7 @@ public:
   inline u8_t get_code(int i) const { return codes_[i]; }
   inline int get_codeline(int i) const { return codelines_[i]; }
   inline int arity(void) const { return arity_; }
+  inline void inc_arity(void) { ++arity_; }
   inline int constants_capacity(void) const { return constants_.capacity(); }
   inline int constants_count(void) const { return constants_.count(); }
   inline Value* constants(void) { return constants_.values(); }
