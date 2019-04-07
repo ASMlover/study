@@ -78,7 +78,7 @@ using Value = BaseObject*;
 using NativeFunction = std::function<Value (int argc, Value* args)>;
 
 inline std::ostream& operator<<(std::ostream& out, BaseObject* obj) {
-  return out << (obj == nullptr ? "nul" : obj->stringify());
+  return out << (obj == nullptr ? "nil" : obj->stringify());
 }
 
 inline bool values_equal(Value a, Value b) {
