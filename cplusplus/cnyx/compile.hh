@@ -38,6 +38,6 @@ public:
   FunctionObject* compile(VM& vm, const str_t& source_bytes);
 };
 
-void gray_compiler_roots(void);
+void gray_compiler_roots(VM& vm);
 
 }

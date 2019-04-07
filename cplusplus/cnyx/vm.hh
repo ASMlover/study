@@ -98,7 +98,7 @@ class VM : private UnCopyable {
   void collect(void);
   void print_stack(void);
 
-  void call(FunctionObject* fn);
+  void call(FunctionObject* fn, int argc = 0);
   bool run(void);
 public:
   VM(void);
