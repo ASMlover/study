@@ -445,6 +445,9 @@ public:
     else if (match(TokenKind::KW_IF)) {
       if_stmt();
     }
+    else if (match(TokenKind::KW_RETURN)) {
+      return_stmt();
+    }
     else if (match(TokenKind::KW_VAR)) {
       var_stmt();
     }
@@ -549,6 +552,17 @@ public:
     u8_t fn_constant = curr_compiler_.function->append_constant(fn);
     emit_bytes(OpCode::OP_CONSTANT, fn_constant);
     declare_variable(name, name_constant);
+  }
+
+  void return_stmt(void) {
+    if (match(TokenKind::TK_SEMI)) {
+      emit_byte(OpCode::OP_NIL);
+    }
+    else {
+      expression();
+      consume(TokenKind::TK_SEMI, "expect `;` after return value");
+    }
+    emit_byte(OpCode::OP_RETURN);
   }
 };
 
