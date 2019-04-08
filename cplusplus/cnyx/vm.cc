@@ -34,86 +34,48 @@
 namespace nyx {
 
 class CallFrame : private UnCopyable {
-  using IterCallback =
-    std::function<void(FunctionObject*, const u8_t*, std::vector<Value>&)>;
+  using IterCallback = std::function<void(FunctionObject*, const u8_t*)>;
 
   FunctionObject* fn_{};
   const u8_t* ip_{};
-
-  std::vector<Value> stack_;
-  CallFrame* caller_{};
-
-  CallFrame(void) {}
-  CallFrame(FunctionObject* f, const u8_t* i, CallFrame* c = nullptr)
-    : fn_(f), ip_(i), caller_(c) {
-  }
+  int stack_start_{};
 public:
+  CallFrame(FunctionObject* fn, const u8_t* ip, int start)
+    : fn_(fn), ip_(ip), stack_start_(start) {
+  }
+
+  CallFrame(CallFrame&& frame)
+    : fn_(std::move(frame.fn_))
+    , ip_(std::move(frame.ip_))
+    , stack_start_(std::move(frame.stack_start_)) {
+  }
+
   inline FunctionObject* fn(void) const { return fn_; }
   inline const u8_t* ip(void) const { return ip_; }
+  inline int stack_start(void) const { return stack_start_; }
   inline void set_ip(const u8_t* ip) { ip_ = ip; }
-  inline int stack_size(void) const { return static_cast<int>(stack_.size()); }
-  inline Value* stack_values(int offset = 0) { return &stack_[offset]; }
-  inline void resize_stack(int capacity) { stack_.resize(capacity); }
-  inline const std::vector<Value>& get_stack(void) const { return stack_; }
-  inline void set_stack_value(int i, Value v) { stack_[i] = v; }
-  inline Value get_stack_value(int i) const { return stack_[i]; }
-  inline Value get_fun_constant(int i) const { return fn_->get_constant(i); }
-  inline CallFrame* caller(void) const { return caller_; }
+  inline const u8_t* get_fn_codes(void) const { return fn_->codes(); }
+  inline Value get_fn_constant(int i) const { return fn_->get_constant(i); }
 
-  void append_to_stack(Value v) {
-    stack_.push_back(v);
-  }
-
-  Value pop_from_stack(void) {
-    Value r = stack_.back();
-    stack_.pop_back();
-    return r;
-  }
-
-  Value stack_peek(int distance = 0) const {
-    return stack_[stack_.size() - 1 - distance];
-  }
-
-  void iter_frames(IterCallback&& cb) {
-    for (auto* f = this; f != nullptr; f = f->caller_)
-      cb(f->fn_, f->ip_, f->stack_);
-  }
-
-  static CallFrame* create(void) {
-    return new CallFrame();
-  }
-
-  static CallFrame* create(FunctionObject* fn, const u8_t* ip, CallFrame* c) {
-    return new CallFrame(fn, ip, c);
-  }
-
-  static void release(CallFrame* frame) {
-    for (auto* c = frame->caller_; c != nullptr; c = c->caller_)
-      delete c;
-    delete frame;
-  }
+  inline void visit(IterCallback&& cb) { cb(fn_, ip_); }
 };
 
 VM::VM(void) {
   globals_ = TableObject::create(*this);
 
-  auto* frame = CallFrame::create();
-  frame->append_to_stack(StringObject::create(*this, "print", 5));
-  frame->append_to_stack(NativeObject::create(*this,
+  stack_.push_back(StringObject::create(*this, "print", 5));
+  stack_.push_back(NativeObject::create(*this,
         [](int argc, Value* args) -> Value {
           for (int i = 0; i < argc; ++i)
             std::cout << args[i] << " ";
           std::cout << std::endl;
           return nullptr;
         }));
-  globals_->set_entry(Xptr::down<StringObject>(
-        frame->get_stack_value(0)), frame->get_stack_value(1));
+  globals_->set_entry(Xptr::down<StringObject>(stack_[0]), stack_[1]);
 }
 
 VM::~VM(void) {
   globals_ = nullptr;
-  if (frame_ != nullptr)
-    delete frame_;
 
   for (auto* o : objects_)
     free_object(o);
@@ -122,27 +84,29 @@ VM::~VM(void) {
 }
 
 void VM::push(Value val) {
-  frame_->append_to_stack(val);
+  stack_.push_back(val);
 }
 
 Value VM::pop(void) {
-  return frame_->pop_from_stack();
+  Value val = stack_.back();
+  stack_.pop_back();
+  return val;
 }
 
 Value VM::peek(int distance) const {
-  return frame_->stack_peek(distance);
+  return stack_[stack_.size() - 1 - distance];
 }
 
 void VM::runtime_error(const char* format, ...) {
   va_list ap;
   va_start(ap, format);
   vfprintf(stderr, format, ap);
-  std::cerr << std::endl;
   va_end(ap);
+  std::cerr << std::endl;
 
-  if (frame_ != nullptr) {
-    frame_->iter_frames(
-        [](FunctionObject* fn, const u8_t* ip, std::vector<Value>&) {
+  for (auto i = frames_.size() - 1; i >= 0; --i) {
+    auto& frame = frames_[i];
+    frame.visit([](FunctionObject* fn, const u8_t* ip) {
           auto i = static_cast<int>(ip - fn->codes());
           std::cerr << "[LINE: " << fn->get_codeline(i) << "]" << std::endl;
         });
@@ -186,14 +150,10 @@ void VM::collect(void) {
 #endif
 
   // mark the stack roots
-  if (frame_ != nullptr) {
-    frame_->iter_frames(
-        [this](FunctionObject* fn, const u8_t* ip, std::vector<Value>& s) {
-          gray_value(fn);
-          for (auto* o : s)
-            gray_value(o);
-        });
-  }
+  for (auto* o : stack_)
+    gray_value(o);
+  for (auto& f : frames_)
+    gray_value(f.fn());
 
   gray_value(globals_);
   gray_compiler_roots(*this);
@@ -222,7 +182,7 @@ void VM::collect(void) {
 
 void VM::print_stack(void) {
   int i{};
-  for (auto* o : frame_->get_stack())
+  for (auto* o : stack_)
     std::cout << i++ << " : " << o << std::endl;
 }
 
@@ -232,20 +192,14 @@ bool VM::call(FunctionObject* fn, int argc/* = 0*/) {
     return false;
   }
 
-  auto* frame = CallFrame::create(fn, fn->codes(), frame_);
-  for (int i = 0; i < fn->arity(); ++i) {
-    frame->append_to_stack(
-        frame_->get_stack_value(frame_->stack_size() - argc + i));
-  }
-  if (frame_ != nullptr)
-    frame_->resize_stack(frame_->stack_size() - argc - 1);
-  frame_ = frame;
-
+  frames_.emplace_back(CallFrame(
+        fn, fn->codes(), static_cast<int>(stack_.size() - fn->arity())));
   return true;
 }
 
 bool VM::run(void) {
-  const u8_t* ip = frame_->ip();
+  auto* frame = &frames_.back();
+  const u8_t* ip = frame->ip();
 
   auto _rdbyte = [&ip](void) -> u8_t { return *ip++; };
   auto _rdword = [&ip](void) -> u16_t {
@@ -254,43 +208,40 @@ bool VM::run(void) {
 
   for (;;) {
 #if defined(DEBUG_EXEC_TRACE)
-    frame_->iter_frames(
-        [](FunctionObject* fn, const u8_t* ip, std::vector<Value>& s) {
-          for (auto* o : s)
-            std::cout << "| " << o << " ";
-          std::cout << std::endl;
-          fn->dump_instruction(static_cast<int>(ip - fn->codes()));
-        }) ;
+    for (auto* o : stack_)
+      std::cout << "| " << o << " ";
+    std::cout << std::endl;
+    frame->fn()->dump_instruction(static_cast<int>(ip - frame->get_fn_codes()));
 #endif
 
     switch (auto instruction = *ip++; instruction) {
     case OpCode::OP_CONSTANT:
       {
         u8_t constant = _rdbyte();
-        push(frame_->get_fun_constant(constant));
+        push(frame->get_fn_constant(constant));
       } break;
     case OpCode::OP_NIL: push(nullptr); break;
     case OpCode::OP_POP: pop(); break;
     case OpCode::OP_GET_LOCAL:
       {
         u8_t slot = _rdbyte();
-        push(frame_->get_stack_value(slot));
+        push(stack_[frame->stack_start() + slot]);
       } break;
     case OpCode::OP_SET_LOCAL:
       {
         u8_t slot = _rdbyte();
-        frame_->set_stack_value(slot, peek());
+        stack_[frame->stack_start() + slot] = peek();
       } break;
     case OpCode::OP_DEF_GLOBAL:
       {
         u8_t constant = _rdbyte();
-        auto* key = Xptr::down<StringObject>(frame_->get_fun_constant(constant));
+        auto* key = Xptr::down<StringObject>(frame->get_fn_constant(constant));
         globals_->set_entry(key, pop());
       } break;
     case OpCode::OP_GET_GLOBAL:
       {
         u8_t constant = _rdbyte();
-        auto* key = Xptr::down<StringObject>(frame_->get_fun_constant(constant));
+        auto* key = Xptr::down<StringObject>(frame->get_fn_constant(constant));
         if (auto val = globals_->get_entry(key); val) {
           push(*val);
         }
@@ -302,7 +253,7 @@ bool VM::run(void) {
     case OpCode::OP_SET_GLOBAL:
       {
         u8_t constant = _rdbyte();
-        auto* key = Xptr::down<StringObject>(frame_->get_fun_constant(constant));
+        auto* key = Xptr::down<StringObject>(frame->get_fn_constant(constant));
         if (!globals_->set_entry(key, peek())) {
           runtime_error("undefined variable `%s`", key->chars());
           return false;
@@ -415,16 +366,6 @@ bool VM::run(void) {
         else
           return false;
       } break;
-    case OpCode::OP_RETURN:
-      {
-        Value ret = pop();
-        frame_ = frame_->caller();
-        if (frame_ == nullptr)
-          return true;
-
-        ip = frame_->ip();
-        push(ret);
-      } break;
     case OpCode::OP_JUMP:
       {
         u16_t offset = _rdword();
@@ -458,21 +399,35 @@ bool VM::run(void) {
         Value called = peek(argc);
         if (BaseObject::is_native(called)) {
           Value ret = Xptr::down<NativeObject>(called)->get_function()(
-              argc, frame_->stack_values(frame_->stack_size() - argc));
-          frame_->resize_stack(frame_->stack_size() - argc - 1);
+              argc, &stack_[stack_.size() - argc]);
+          stack_.resize(stack_.size() - argc - 1);
           push(ret);
         }
         else if (BaseObject::is_function(called)) {
           auto* func = Xptr::down<FunctionObject>(called);
-          frame_->set_ip(ip);
+          frame->set_ip(ip);
           if (!call(func, argc))
             return false;
+          frame = &frames_.back();
           ip = func->codes();
         }
         else {
           runtime_error("can only call functions and classes");
           return false;
         }
+      } break;
+    case OpCode::OP_RETURN:
+      {
+        Value ret = pop();
+        if (frames_.size() == 1)
+          return true;
+
+        stack_.resize(frame->stack_start() - 1);
+        push(ret);
+
+        frames_.pop_back();
+        frame = &frames_.back();
+        ip = frame->ip();
       } break;
     }
   }
@@ -510,6 +465,7 @@ void VM::free_object(BaseObject* obj) {
 InterpretResult VM::interpret(const str_t& source_bytes) {
   Compile c;
 
+  stack_.resize(2);
   auto* fn = c.compile(*this, source_bytes);
   if (fn == nullptr)
     return InterpretResult::COMPILE_ERROR;

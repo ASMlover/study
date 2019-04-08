@@ -240,7 +240,6 @@ int FunctionObject::dump_instruction(int i) {
   case OpCode::OP_DIV: std::cout << "OP_DIV" << std::endl; break;
   case OpCode::OP_NOT: std::cout << "OP_NOT" << std::endl; break;
   case OpCode::OP_NEG: std::cout << "OP_NEG" << std::endl; break;
-  case OpCode::OP_RETURN: std::cout << "OP_RETURN" << std::endl; break;
   case OpCode::OP_JUMP:
     {
       u16_t offset = static_cast<u16_t>(codes[i++] << 8);
@@ -268,6 +267,7 @@ int FunctionObject::dump_instruction(int i) {
   case OpCode::OP_CALL_6: std::cout << "OP_CALL_6" << std::endl; break;
   case OpCode::OP_CALL_7: std::cout << "OP_CALL_7" << std::endl; break;
   case OpCode::OP_CALL_8: std::cout << "OP_CALL_8" << std::endl; break;
+  case OpCode::OP_RETURN: std::cout << "OP_RETURN" << std::endl; break;
   }
   return i;
 }

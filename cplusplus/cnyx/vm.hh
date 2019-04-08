@@ -56,7 +56,6 @@ enum OpCode {
   OP_DIV, // /
   OP_NOT, // !
   OP_NEG, // - negative
-  OP_RETURN, // return
   OP_JUMP,
   OP_JUMP_IF_FALSE,
   OP_LOOP, // loop flow
@@ -69,6 +68,7 @@ enum OpCode {
   OP_CALL_6,
   OP_CALL_7,
   OP_CALL_8,
+  OP_RETURN, // return
 };
 
 enum class InterpretResult {
@@ -80,7 +80,8 @@ enum class InterpretResult {
 class CallFrame;
 
 class VM : private UnCopyable {
-  CallFrame* frame_{};
+  std::vector<Value> stack_;
+  std::vector<CallFrame> frames_;
   TableObject* globals_{};
 
   std::list<BaseObject*> objects_;
