@@ -226,7 +226,12 @@ void VM::print_stack(void) {
     std::cout << i++ << " : " << o << std::endl;
 }
 
-void VM::call(FunctionObject* fn, int argc/* = 0*/) {
+bool VM::call(FunctionObject* fn, int argc/* = 0*/) {
+  if (argc < fn->arity()) {
+    runtime_error("not enough arguments");
+    return false;
+  }
+
   auto* frame = CallFrame::create(fn, fn->codes(), frame_);
   for (int i = 0; i < fn->arity(); ++i) {
     frame->append_to_stack(
@@ -235,6 +240,8 @@ void VM::call(FunctionObject* fn, int argc/* = 0*/) {
   if (frame_ != nullptr)
     frame_->resize_stack(frame_->stack_size() - argc - 1);
   frame_ = frame;
+
+  return true;
 }
 
 bool VM::run(void) {
@@ -458,11 +465,13 @@ bool VM::run(void) {
         else if (BaseObject::is_function(called)) {
           auto* func = Xptr::down<FunctionObject>(called);
           frame_->set_ip(ip);
-          call(func, argc);
+          if (!call(func, argc))
+            return false;
           ip = func->codes();
         }
         else {
-          runtime_error("not callable");
+          runtime_error("can only call functions and classes");
+          return false;
         }
       } break;
     }
