@@ -86,13 +86,13 @@ get_python_inc(),
 'cpp/ycm/benchmarks/benchmark/include',
 '-isystem',
 
-'C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/um',
+'C:/Program Files (x86)/Windows Kits/10/Include/10.0.17763.0/um',
 '-isystem',
-'C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/ucrt',
+'C:/Program Files (x86)/Windows Kits/10/Include/10.0.17763.0/ucrt',
 '-isystem',
-'C:/Program Files (x86)/Windows Kits/10/Include/10.0.15063.0/shared',
+'C:/Program Files (x86)/Windows Kits/10/Include/10.0.17763.0/shared',
 '-isystem',
-'D:/Tools/VS2017/Community/VC/Tools/MSVC/14.14.26428/include',
+'D:/Tools/VS2019/Community/VC/Tools/MSVC/14.20.27508/include',
 '-I',
 '.',
 
@@ -109,7 +109,7 @@ get_python_inc(),
 # versions.
 if platform.system() != 'Windows':
   flags.append( '-std=c++11' )
-flags.append( '-std=c++14' )
+flags.append( '-std=c++17' )
 
 
 # Set this to the absolute path to the folder (NOT the file!) containing the
