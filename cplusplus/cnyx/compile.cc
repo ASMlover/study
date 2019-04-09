@@ -223,16 +223,6 @@ class CompileParser : private UnCopyable {
   }
 
   void leave_scope(void) {
-    // for (int i = curr_compiler_.locals.size() - 1; i >= 0; --i) {
-    //   auto& local = curr_compiler_.locals[i];
-    //   if (local.depth < curr_compiler_.scope_depth)
-    //     break;
-
-    //   // TODO: local.name -> set literal.size -> 0
-    //   local.name.set_force_ne(true);
-    // }
-
-    // TODO: use old version ???
     curr_compiler_.dec_scope_depth();
     while (curr_compiler_.locals.size() > 0 &&
         curr_compiler_.locals.back().depth > curr_compiler_.scope_depth) {

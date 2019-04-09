@@ -62,16 +62,14 @@ public:
 
 VM::VM(void) {
   globals_ = TableObject::create(*this);
-
-  stack_.push_back(StringObject::create(*this, "print", 5));
-  stack_.push_back(NativeObject::create(*this,
-        [](int argc, Value* args) -> Value {
+  globals_->set_entry(
+      StringObject::create(*this, "print", 5),
+      NativeObject::create(*this, [](int argc, Value* args) -> Value {
           for (int i = 0; i < argc; ++i)
             std::cout << args[i] << " ";
           std::cout << std::endl;
           return nullptr;
         }));
-  globals_->set_entry(Xptr::down<StringObject>(stack_[0]), stack_[1]);
 }
 
 VM::~VM(void) {
