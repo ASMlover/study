@@ -433,4 +433,65 @@ NativeObject* NativeObject::create(VM& vm, NativeFunction&& fn) {
   return o;
 }
 
+sz_t UpvalueObject::size_bytes(void) const {
+  return sizeof(*this);
+}
+
+str_t UpvalueObject::stringify(void) const {
+  return "upvalue";
+}
+
+bool UpvalueObject::is_equal(BaseObject* other) const {
+  return false;
+}
+
+void UpvalueObject::blacken(VM& vm) {
+  vm.gray_value(closed_);
+}
+
+UpvalueObject* UpvalueObject::create(VM& vm, Value* slot) {
+  auto* o = new UpvalueObject(slot);
+  vm.append_object(o);
+  return o;
+}
+
+ClosureObject::ClosureObject(FunctionObject* fn)
+  : BaseObject(ObjType::CLOSURE)
+  , function_(fn) {
+  using UpvalueX = UpvalueObject*;
+
+  upvalues_ = new UpvalueX[fn->upvalue_count()];
+  for (int i = 0; i < fn->upvalue_count(); ++i)
+    upvalues_[i] = nullptr;
+}
+
+ClosureObject::~ClosureObject(void) {
+  if (upvalues_ != nullptr)
+    delete [] upvalues_;
+}
+
+sz_t ClosureObject::size_bytes(void) const {
+  return sizeof(*this) + sizeof(UpvalueObject*) * function_->upvalue_count();
+}
+
+str_t ClosureObject::stringify(void) const {
+  return "closure";
+}
+
+bool ClosureObject::is_equal(BaseObject* other) const {
+  return false;
+}
+
+void ClosureObject::blacken(VM& vm) {
+  vm.gray_value(function_);
+  for (int i = 0; i < function_->upvalue_count(); ++i)
+    vm.gray_value(upvalues_[i]);
+}
+
+ClosureObject* ClosureObject::create(VM& vm, FunctionObject* fn) {
+  auto* o = new ClosureObject(fn);
+  vm.append_object(o);
+  return o;
+}
+
 }

@@ -38,9 +38,11 @@ enum class ObjType {
   BOOLEAN,
   NUMERIC,
   STRING,
+  CLOSURE,
   FUNCTION,
   TABLE,
   NATIVE,
+  UPVALUE,
 };
 
 class VM;
@@ -65,9 +67,11 @@ public:
   static bool is_boolean(BaseObject* o) { return is_type(o, ObjType::BOOLEAN); }
   static bool is_numeric(BaseObject* o) { return is_type(o, ObjType::NUMERIC); }
   static bool is_string(BaseObject* o) { return is_type(o, ObjType::STRING); }
+  static bool is_closure(BaseObject* o) { return is_type(o, ObjType::CLOSURE); }
   static bool is_function(BaseObject* o) { return is_type(o, ObjType::FUNCTION); }
   static bool is_table(BaseObject* o) { return is_type(o, ObjType::TABLE); }
   static bool is_native(BaseObject* o) { return is_type(o, ObjType::NATIVE); }
+  static bool is_upvalue(BaseObject* o) { return is_type(o, ObjType::UPVALUE); }
 
   virtual sz_t size_bytes(void) const = 0;
   virtual str_t stringify(void) const = 0;
@@ -172,6 +176,7 @@ class FunctionObject : public BaseObject {
   int* codelines_{};
 
   int arity_{};
+  int upvalue_count_{};
 
   ValueArray constants_;
 
@@ -187,6 +192,7 @@ public:
   inline int get_codeline(int i) const { return codelines_[i]; }
   inline int arity(void) const { return arity_; }
   inline void inc_arity(void) { ++arity_; }
+  inline int upvalue_count(void) const { return upvalue_count_; }
   inline int constants_capacity(void) const { return constants_.capacity(); }
   inline int constants_count(void) const { return constants_.count(); }
   inline Value* constants(void) { return constants_.values(); }
@@ -258,6 +264,44 @@ public:
 
   static NativeObject* create(VM& vm, const NativeFunction& fn);
   static NativeObject* create(VM& vm, NativeFunction&& fn);
+};
+
+class UpvalueObject : public BaseObject {
+  Value* value_{};
+  Value closed_{};
+  UpvalueObject* next_{};
+
+  UpvalueObject(Value* slot) : BaseObject(ObjType::UPVALUE) , value_(slot) {}
+  virtual ~UpvalueObject(void) {}
+public:
+  inline Value* value(void) const { return value_; }
+  inline Value closed(void) const { return closed_; }
+  inline UpvalueObject* next(void) const { return next_; }
+
+  virtual sz_t size_bytes(void) const override;
+  virtual str_t stringify(void) const override;
+  virtual bool is_equal(BaseObject* other) const override;
+  virtual void blacken(VM& vm) override;
+
+  static UpvalueObject* create(VM& vm, Value* slot);
+};
+
+class ClosureObject : public BaseObject {
+  FunctionObject* function_{};
+  UpvalueObject** upvalues_{};
+
+  ClosureObject(FunctionObject* fn);
+  virtual ~ClosureObject(void);
+public:
+  inline FunctionObject* get_function(void) const { return function_; }
+  inline UpvalueObject** get_upvalues(void) const { return upvalues_; }
+
+  virtual sz_t size_bytes(void) const override;
+  virtual str_t stringify(void) const override;
+  virtual bool is_equal(BaseObject* other) const override;
+  virtual void blacken(VM& vm) override;
+
+  static ClosureObject* create(VM& vm, FunctionObject* fn);
 };
 
 }
