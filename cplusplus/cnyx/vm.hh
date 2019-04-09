@@ -106,6 +106,8 @@ public:
   ~VM(void);
 
   inline void append_object(BaseObject* o) { objects_.push_back(o); }
+  inline void invoke_push(Value v) { push(v); }
+  inline Value invoke_pop(void) { return pop(); }
 
   void gray_value(Value v);
   void blacken_object(BaseObject* obj);

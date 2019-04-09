@@ -130,13 +130,20 @@ class CompileParser : private UnCopyable {
   }
 
   u8_t add_constant(Value constant) {
-    return static_cast<u8_t>(curr_compiler_.function->append_constant(constant));
+    vm_.invoke_push(constant);
+    auto i = curr_compiler_.function->append_constant(vm_.invoke_pop());
+    return static_cast<u8_t>(i);
   }
 
   u8_t name_constant(void) {
     auto s = prev_.as_string();
     return add_constant(
         StringObject::create(vm_, s.c_str(), static_cast<int>(s.size())));
+  }
+
+  void emit_constant(Value value) {
+    u8_t constant = add_constant(value);
+    emit_bytes(OpCode::OP_CONSTANT, constant);
   }
 
   ParseRule& get_rule(TokenKind kind) {
@@ -271,8 +278,7 @@ class CompileParser : private UnCopyable {
 
   void boolean(bool can_assign) {
     bool value = prev_.get_kind() == TokenKind::KW_TRUE;
-    u8_t constant = add_constant(BooleanObject::create(vm_, value));
-    emit_bytes(OpCode::OP_CONSTANT, constant);
+    emit_constant(BooleanObject::create(vm_, value));
   }
 
   void nil(bool can_assign) {
@@ -281,15 +287,13 @@ class CompileParser : private UnCopyable {
 
   void numeric(bool can_assign) {
     double value = prev_.as_numeric();
-    u8_t constant = add_constant(NumericObject::create(vm_, value));
-    emit_bytes(OpCode::OP_CONSTANT, constant);
+    emit_constant(NumericObject::create(vm_, value));
   }
 
   void string(bool can_assign) {
     auto s = prev_.as_string();
-    u8_t constant = add_constant(
+    emit_constant(
         StringObject::create(vm_, s.c_str(), static_cast<int>(s.size())));
-    emit_bytes(OpCode::OP_CONSTANT, constant);
   }
 
   void variable(bool can_assign) {
@@ -539,8 +543,8 @@ public:
     leave_scope();
     auto* fn = finish_compiler();
 
-    u8_t fn_constant = curr_compiler_.function->append_constant(fn);
-    emit_bytes(OpCode::OP_CONSTANT, fn_constant);
+    emit_constant(fn);
+
     declare_variable(name, name_constant);
   }
 
