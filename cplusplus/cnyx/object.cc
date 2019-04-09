@@ -190,7 +190,13 @@ FunctionObject::~FunctionObject(void) {
 
 int FunctionObject::dump_instruction(int i) {
   const auto* codes = codes_;
+
   fprintf(stdout, "%04d ", i);
+  if (i > 0 && codelines_[i] == codelines_[i - 1])
+    std::cout << "  | ";
+  else
+    fprintf(stdout, "%3d ", codelines_[i]);
+
   switch (codes[i++]) {
   case OpCode::OP_CONSTANT:
     {
@@ -273,6 +279,7 @@ int FunctionObject::dump_instruction(int i) {
 }
 
 void FunctionObject::dump(void) {
+  std::cout << "---------" << std::endl;
   for (int i = 0; i < codes_count_;) {
     i = dump_instruction(i);
   }

@@ -37,10 +37,10 @@ class CallFrame : private UnCopyable {
   using IterCallback = std::function<void(FunctionObject*, const u8_t*)>;
 
   FunctionObject* fn_{};
-  const u8_t* ip_{};
+  u8_t* ip_{};
   int stack_start_{};
 public:
-  CallFrame(FunctionObject* fn, const u8_t* ip, int start)
+  CallFrame(FunctionObject* fn, u8_t* ip, int start)
     : fn_(fn), ip_(ip), stack_start_(start) {
   }
 
@@ -51,9 +51,14 @@ public:
   }
 
   inline FunctionObject* fn(void) const { return fn_; }
-  inline const u8_t* ip(void) const { return ip_; }
+  inline u8_t* ip(void) const { return ip_; }
+  inline void set_ip(u8_t* ip) { ip_ = ip; }
+  inline u8_t get_ip(int i) { return ip_[i]; }
+  inline u8_t inc_ip(void) { return *ip_++; }
+  inline u8_t dec_ip(void) { return *ip_--; }
+  inline void add_ip(int offset) { ip_ += offset; }
+  inline void sub_ip(int offset) { ip_ -= offset; }
   inline int stack_start(void) const { return stack_start_; }
-  inline void set_ip(const u8_t* ip) { ip_ = ip; }
   inline const u8_t* get_fn_codes(void) const { return fn_->codes(); }
   inline Value get_fn_constant(int i) const { return fn_->get_constant(i); }
 
@@ -197,11 +202,11 @@ bool VM::call(FunctionObject* fn, int argc/* = 0*/) {
 
 bool VM::run(void) {
   auto* frame = &frames_.back();
-  const u8_t* ip = frame->ip();
 
-  auto _rdbyte = [&ip](void) -> u8_t { return *ip++; };
-  auto _rdword = [&ip](void) -> u16_t {
-    return (ip += 2, static_cast<u16_t>((ip[-2] << 8) | ip[-1]));
+  auto _rdbyte = [&frame](void) -> u8_t { return frame->inc_ip(); };
+  auto _rdword = [&frame](void) -> u16_t {
+    return (frame->add_ip(2),
+        static_cast<u16_t>((frame->get_ip(-2) << 8) | frame->get_ip(-1)));
   };
 
   for (;;) {
@@ -209,10 +214,11 @@ bool VM::run(void) {
     for (auto* o : stack_)
       std::cout << "| " << o << " ";
     std::cout << std::endl;
-    frame->fn()->dump_instruction(static_cast<int>(ip - frame->get_fn_codes()));
+    frame->fn()->dump_instruction(
+        static_cast<int>(frame->ip() - frame->get_fn_codes()));
 #endif
 
-    switch (auto instruction = *ip++; instruction) {
+    switch (auto instruction = frame->inc_ip(); instruction) {
     case OpCode::OP_CONSTANT:
       {
         u8_t constant = _rdbyte();
@@ -367,7 +373,7 @@ bool VM::run(void) {
     case OpCode::OP_JUMP:
       {
         u16_t offset = _rdword();
-        ip += offset;
+        frame->add_ip(offset);
       } break;
     case OpCode::OP_JUMP_IF_FALSE:
       {
@@ -375,13 +381,13 @@ bool VM::run(void) {
         Value cond = peek();
         if (BaseObject::is_nil(cond) || (cond->type() == ObjType::BOOLEAN &&
               !Xptr::down<BooleanObject>(cond)->value())) {
-          ip += offset;
+          frame->add_ip(offset);
         }
       } break;
     case OpCode::OP_LOOP:
       {
         u16_t offset = _rdword();
-        ip -= offset;
+        frame->sub_ip(offset);
       } break;
     case OpCode::OP_CALL_0:
     case OpCode::OP_CALL_1:
@@ -403,11 +409,9 @@ bool VM::run(void) {
         }
         else if (BaseObject::is_function(called)) {
           auto* func = Xptr::down<FunctionObject>(called);
-          frame->set_ip(ip);
           if (!call(func, argc))
             return false;
           frame = &frames_.back();
-          ip = func->codes();
         }
         else {
           runtime_error("can only call functions and classes");
@@ -425,7 +429,6 @@ bool VM::run(void) {
 
         frames_.pop_back();
         frame = &frames_.back();
-        ip = frame->ip();
       } break;
     }
   }
@@ -463,7 +466,9 @@ void VM::free_object(BaseObject* obj) {
 InterpretResult VM::interpret(const str_t& source_bytes) {
   Compile c;
 
-  stack_.resize(2);
+  stack_.clear();
+  frames_.clear();
+
   auto* fn = c.compile(*this, source_bytes);
   if (fn == nullptr)
     return InterpretResult::COMPILE_ERROR;
