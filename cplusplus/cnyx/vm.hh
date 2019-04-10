@@ -44,6 +44,8 @@ enum OpCode {
   OP_DEF_GLOBAL, // define global variable
   OP_GET_GLOBAL, // get global variable
   OP_SET_GLOBAL, // set global variable
+  OP_GET_UPVALUE, // get upvalue
+  OP_SET_UPVALUE, // set upvalue
   OP_EQ, // ==
   OP_NE, // !=
   OP_GT, // >
@@ -68,6 +70,8 @@ enum OpCode {
   OP_CALL_6,
   OP_CALL_7,
   OP_CALL_8,
+  OP_CLOSURE,
+  OP_CLOSE_UPVALUE,
   OP_RETURN, // return
 };
 
@@ -82,7 +86,9 @@ class CallFrame;
 class VM : private UnCopyable {
   std::vector<Value> stack_;
   std::vector<CallFrame> frames_;
+
   TableObject* globals_{};
+  UpvalueObject* open_upvalues_{};
 
   std::list<BaseObject*> objects_;
   std::list<BaseObject*> gray_stack_;
@@ -99,7 +105,9 @@ class VM : private UnCopyable {
   void collect(void);
   void print_stack(void);
 
-  bool call(FunctionObject* fn, int argc = 0);
+  bool call(Value callee, int argc = 0);
+  UpvalueObject* capture_upvalue(Value* local);
+  void close_upvalues(Value* last);
   bool run(void);
 public:
   VM(void);

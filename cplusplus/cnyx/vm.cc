@@ -37,20 +37,23 @@ class CallFrame : private UnCopyable {
   using IterCallback = std::function<void(FunctionObject*, const u8_t*)>;
 
   FunctionObject* fn_{};
+  ClosureObject* closure_{};
   u8_t* ip_{};
   int stack_start_{};
 public:
-  CallFrame(FunctionObject* fn, u8_t* ip, int start)
-    : fn_(fn), ip_(ip), stack_start_(start) {
+  CallFrame(FunctionObject* fn, ClosureObject* closure, u8_t* ip, int start)
+    : fn_(fn), closure_(closure), ip_(ip), stack_start_(start) {
   }
 
   CallFrame(CallFrame&& frame)
     : fn_(std::move(frame.fn_))
+    , closure_(std::move(frame.closure_))
     , ip_(std::move(frame.ip_))
     , stack_start_(std::move(frame.stack_start_)) {
   }
 
   inline FunctionObject* fn(void) const { return fn_; }
+  inline ClosureObject* closure(void) const { return closure_; }
   inline u8_t* ip(void) const { return ip_; }
   inline void set_ip(u8_t* ip) { ip_ = ip; }
   inline u8_t get_ip(int i) { return ip_[i]; }
@@ -61,8 +64,6 @@ public:
   inline int stack_start(void) const { return stack_start_; }
   inline const u8_t* get_fn_codes(void) const { return fn_->codes(); }
   inline Value get_fn_constant(int i) const { return fn_->get_constant(i); }
-
-  inline void visit(IterCallback&& cb) { cb(fn_, ip_); }
 };
 
 VM::VM(void) {
@@ -109,10 +110,8 @@ void VM::runtime_error(const char* format, ...) {
 
   for (auto i = frames_.size() - 1; i >= 0; --i) {
     auto& frame = frames_[i];
-    frame.visit([](FunctionObject* fn, const u8_t* ip) {
-          auto i = static_cast<int>(ip - fn->codes());
-          std::cerr << "[LINE: " << fn->get_codeline(i) << "]" << std::endl;
-        });
+    auto offset = static_cast<int>(frame.ip() - frame.get_fn_codes());
+    std::cerr << "[LINE: " << frame.fn()->get_codeline(offset) << "]" << std::endl;
   }
 }
 
@@ -158,6 +157,12 @@ void VM::collect(void) {
   for (auto& f : frames_)
     gray_value(f.fn());
 
+  // mark the openvalues
+  for (auto* upvalue = open_upvalues_;
+      upvalue != nullptr; upvalue = upvalue->next()) {
+    gray_value(upvalue);
+  }
+
   gray_value(globals_);
   gray_compiler_roots(*this);
 
@@ -189,15 +194,76 @@ void VM::print_stack(void) {
     std::cout << i++ << " : " << o << std::endl;
 }
 
-bool VM::call(FunctionObject* fn, int argc/* = 0*/) {
+bool VM::call(Value callee, int argc/* = 0*/) {
+  FunctionObject* fn{};
+  ClosureObject* closure{};
+
+  if (BaseObject::is_native(callee)) {
+    Value ret = Xptr::down<NativeObject>(callee)->get_function()(
+        argc, &stack_[stack_.size() - argc]);
+    stack_.resize(stack_.size() - argc - 1);
+    push(ret);
+    return true;
+  }
+  else if (BaseObject::is_function(callee)) {
+    fn = Xptr::down<FunctionObject>(callee);
+  }
+  else if (BaseObject::is_closure(callee)) {
+    closure = Xptr::down<ClosureObject>(callee);
+    fn = closure->get_function();
+  }
+  else {
+    runtime_error("can only call functions and classes");
+    return false;
+  }
+
   if (argc < fn->arity()) {
     runtime_error("not enough arguments");
     return false;
   }
 
-  frames_.emplace_back(CallFrame(
-        fn, fn->codes(), static_cast<int>(stack_.size() - fn->arity())));
+  frames_.emplace_back(CallFrame(fn, closure,
+        fn->codes(), static_cast<int>(stack_.size() - argc)));
   return true;
+}
+
+UpvalueObject* VM::capture_upvalue(Value* local) {
+  if (open_upvalues_ == nullptr) {
+    open_upvalues_ = UpvalueObject::create(*this, local);
+    return open_upvalues_;
+  }
+
+  UpvalueObject* prev_upvalue{};
+  UpvalueObject* upvalue = open_upvalues_;
+
+  while (upvalue != nullptr && upvalue->value() > local) {
+    prev_upvalue = upvalue;
+    upvalue = upvalue->next();
+  }
+  if (upvalue != nullptr && upvalue->value() == local)
+    return upvalue;
+
+  auto* created_upvalue = UpvalueObject::create(*this, local);
+  created_upvalue->set_next(upvalue);
+
+  if (prev_upvalue == nullptr)
+    open_upvalues_ = created_upvalue;
+  else
+    prev_upvalue->set_next(created_upvalue);
+
+  return created_upvalue;
+}
+
+void VM::close_upvalues(Value* last) {
+  while (open_upvalues_ != nullptr && open_upvalues_->value() >= last) {
+    auto* upvalue = open_upvalues_;
+
+    upvalue->set_closed(*upvalue->value());
+    auto closed = upvalue->closed();
+    upvalue->set_value(&closed);
+
+    open_upvalues_ = upvalue->next();
+  }
 }
 
 bool VM::run(void) {
@@ -262,6 +328,17 @@ bool VM::run(void) {
           runtime_error("undefined variable `%s`", key->chars());
           return false;
         }
+      } break;
+    case OpCode::OP_GET_UPVALUE:
+      {
+        u8_t slot = _rdbyte();
+        push(*frame->closure()->get_upvalue(slot)->value());
+      } break;
+    case OpCode::OP_SET_UPVALUE:
+      {
+        u8_t slot = _rdbyte();
+        Value value = pop();
+        frame->closure()->get_upvalue(slot)->set_value(&value);
       } break;
     case OpCode::OP_EQ:
       {
@@ -400,27 +477,41 @@ bool VM::run(void) {
     case OpCode::OP_CALL_8:
       {
         int argc = instruction - OpCode::OP_CALL_0;
-        Value called = peek(argc);
-        if (BaseObject::is_native(called)) {
-          Value ret = Xptr::down<NativeObject>(called)->get_function()(
-              argc, &stack_[stack_.size() - argc]);
-          stack_.resize(stack_.size() - argc - 1);
-          push(ret);
-        }
-        else if (BaseObject::is_function(called)) {
-          auto* func = Xptr::down<FunctionObject>(called);
-          if (!call(func, argc))
-            return false;
-          frame = &frames_.back();
-        }
-        else {
-          runtime_error("can only call functions and classes");
+        if (!call(peek(argc), argc))
           return false;
+        frame = &frames_.back();
+      } break;
+    case OpCode::OP_CLOSURE:
+      {
+        u8_t constant = _rdbyte();
+        auto* fn = Xptr::down<FunctionObject>(frame->get_fn_constant(constant));
+
+        auto* closure = ClosureObject::create(*this, fn);
+        push(closure);
+
+        for (int i = 0; i < fn->upvalues_count(); ++i) {
+          u8_t is_local = _rdbyte();
+          u8_t index = _rdbyte();
+          if (is_local) {
+            auto* local = &stack_[frame->stack_start() + index];
+            closure->set_upvalue(i, capture_upvalue(local));
+          }
+          else {
+            closure->set_upvalue(i, frame->closure()->get_upvalue(index));
+          }
         }
+      } break;
+    case OpCode::OP_CLOSE_UPVALUE:
+      {
+        close_upvalues(&stack_.back());
+        pop();
       } break;
     case OpCode::OP_RETURN:
       {
         Value ret = pop();
+        if (!stack_.empty())
+          close_upvalues(&stack_[frame->stack_start() - 1]);
+
         if (frames_.size() == 1)
           return true;
 
