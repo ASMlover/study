@@ -36,23 +36,20 @@ namespace nyx {
 class CallFrame : private UnCopyable {
   using IterCallback = std::function<void(FunctionObject*, const u8_t*)>;
 
-  FunctionObject* fn_{};
   ClosureObject* closure_{};
   u8_t* ip_{};
   int stack_start_{};
 public:
-  CallFrame(FunctionObject* fn, ClosureObject* closure, u8_t* ip, int start)
-    : fn_(fn), closure_(closure), ip_(ip), stack_start_(start) {
+  CallFrame(ClosureObject* closure, u8_t* ip, int start)
+    : closure_(closure), ip_(ip), stack_start_(start) {
   }
 
   CallFrame(CallFrame&& frame)
-    : fn_(std::move(frame.fn_))
-    , closure_(std::move(frame.closure_))
+    : closure_(std::move(frame.closure_))
     , ip_(std::move(frame.ip_))
     , stack_start_(std::move(frame.stack_start_)) {
   }
 
-  inline FunctionObject* fn(void) const { return fn_; }
   inline ClosureObject* closure(void) const { return closure_; }
   inline u8_t* ip(void) const { return ip_; }
   inline void set_ip(u8_t* ip) { ip_ = ip; }
@@ -62,8 +59,22 @@ public:
   inline void add_ip(int offset) { ip_ += offset; }
   inline void sub_ip(int offset) { ip_ -= offset; }
   inline int stack_start(void) const { return stack_start_; }
-  inline const u8_t* get_fn_codes(void) const { return fn_->codes(); }
-  inline Value get_fn_constant(int i) const { return fn_->get_constant(i); }
+
+  inline const u8_t* get_closure_codes(void) const {
+    return closure_->get_function()->codes();
+  }
+
+  inline u8_t get_closure_code(int i) const {
+    return closure_->get_function()->get_code(i);
+  }
+
+  inline int get_closure_codeline(int i) const {
+    return closure_->get_function()->get_codeline(i);
+  }
+
+  inline Value get_closure_constant(int i) const {
+    return closure_->get_function()->get_constant(i);
+  }
 };
 
 VM::VM(void) {
@@ -110,8 +121,8 @@ void VM::runtime_error(const char* format, ...) {
 
   for (auto i = frames_.size() - 1; i >= 0; --i) {
     auto& frame = frames_[i];
-    auto offset = static_cast<int>(frame.ip() - frame.get_fn_codes());
-    std::cerr << "[LINE: " << frame.fn()->get_codeline(offset) << "]" << std::endl;
+    auto offset = static_cast<int>(frame.ip() - frame.get_closure_codes());
+    std::cerr << "[LINE: " << frame.get_closure_codeline(offset) << "]" << std::endl;
   }
 }
 
@@ -155,7 +166,7 @@ void VM::collect(void) {
   for (auto* o : stack_)
     gray_value(o);
   for (auto& f : frames_)
-    gray_value(f.fn());
+    gray_value(f.closure());
 
   // mark the openvalues
   for (auto* upvalue = open_upvalues_;
@@ -195,7 +206,6 @@ void VM::print_stack(void) {
 }
 
 bool VM::call(Value callee, int argc/* = 0*/) {
-  FunctionObject* fn{};
   ClosureObject* closure{};
 
   if (BaseObject::is_native(callee)) {
@@ -205,26 +215,21 @@ bool VM::call(Value callee, int argc/* = 0*/) {
     push(ret);
     return true;
   }
-  else if (BaseObject::is_function(callee)) {
-    fn = Xptr::down<FunctionObject>(callee);
-  }
-  else if (BaseObject::is_closure(callee)) {
+  if (BaseObject::is_closure(callee)) {
     closure = Xptr::down<ClosureObject>(callee);
-    fn = closure->get_function();
-  }
-  else {
-    runtime_error("can only call functions and classes");
-    return false;
+    if (argc < closure->get_function()->arity()) {
+      runtime_error("not enough arguments");
+      return false;
+    }
+
+    frames_.emplace_back(CallFrame(closure,
+          closure->get_function()->codes(),
+          static_cast<int>(stack_.size() - argc)));
+    return true;
   }
 
-  if (argc < fn->arity()) {
-    runtime_error("not enough arguments");
-    return false;
-  }
-
-  frames_.emplace_back(CallFrame(fn, closure,
-        fn->codes(), static_cast<int>(stack_.size() - argc)));
-  return true;
+  runtime_error("can only call functions and classes");
+  return false;
 }
 
 UpvalueObject* VM::capture_upvalue(Value* local) {
@@ -274,22 +279,24 @@ bool VM::run(void) {
     return (frame->add_ip(2),
         static_cast<u16_t>((frame->get_ip(-2) << 8) | frame->get_ip(-1)));
   };
+  auto _rdconstant = [&frame, _rdbyte](void) -> Value {
+    return frame->get_closure_constant(_rdbyte());
+  };
 
   for (;;) {
 #if defined(DEBUG_EXEC_TRACE)
-    for (auto* o : stack_)
-      std::cout << "| " << o << " ";
-    std::cout << std::endl;
-    frame->fn()->dump_instruction(
-        static_cast<int>(frame->ip() - frame->get_fn_codes()));
+    {
+      for (auto* o : stack_)
+        std::cout << "| " << o << " ";
+      std::cout << std::endl;
+      auto* fn = frame->closure()->get_function();
+      fn->dump_instruction(
+          static_cast<int>(frame->ip() - frame->get_closure_codes()));
+    }
 #endif
 
     switch (auto instruction = frame->inc_ip(); instruction) {
-    case OpCode::OP_CONSTANT:
-      {
-        u8_t constant = _rdbyte();
-        push(frame->get_fn_constant(constant));
-      } break;
+    case OpCode::OP_CONSTANT: push(_rdconstant()); break;
     case OpCode::OP_NIL: push(nullptr); break;
     case OpCode::OP_POP: pop(); break;
     case OpCode::OP_GET_LOCAL:
@@ -304,14 +311,12 @@ bool VM::run(void) {
       } break;
     case OpCode::OP_DEF_GLOBAL:
       {
-        u8_t constant = _rdbyte();
-        auto* key = Xptr::down<StringObject>(frame->get_fn_constant(constant));
+        auto* key = Xptr::down<StringObject>(_rdconstant());
         globals_->set_entry(key, pop());
       } break;
     case OpCode::OP_GET_GLOBAL:
       {
-        u8_t constant = _rdbyte();
-        auto* key = Xptr::down<StringObject>(frame->get_fn_constant(constant));
+        auto* key = Xptr::down<StringObject>(_rdconstant());
         if (auto val = globals_->get_entry(key); val) {
           push(*val);
         }
@@ -322,8 +327,7 @@ bool VM::run(void) {
       } break;
     case OpCode::OP_SET_GLOBAL:
       {
-        u8_t constant = _rdbyte();
-        auto* key = Xptr::down<StringObject>(frame->get_fn_constant(constant));
+        auto* key = Xptr::down<StringObject>(_rdconstant());
         if (!globals_->set_entry(key, peek())) {
           runtime_error("undefined variable `%s`", key->chars());
           return false;
@@ -483,9 +487,7 @@ bool VM::run(void) {
       } break;
     case OpCode::OP_CLOSURE:
       {
-        u8_t constant = _rdbyte();
-        auto* fn = Xptr::down<FunctionObject>(frame->get_fn_constant(constant));
-
+        auto* fn = Xptr::down<FunctionObject>(_rdconstant());
         auto* closure = ClosureObject::create(*this, fn);
         push(closure);
 
@@ -563,8 +565,12 @@ InterpretResult VM::interpret(const str_t& source_bytes) {
   auto* fn = c.compile(*this, source_bytes);
   if (fn == nullptr)
     return InterpretResult::COMPILE_ERROR;
-  // fn->dump();
-  call(fn, 0);
+
+  push(fn);
+  auto* closure = ClosureObject::create(*this, fn);
+  pop();
+
+  call(closure, 0);
 
   // collect();
   // print_stack();
