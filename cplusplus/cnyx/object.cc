@@ -234,6 +234,10 @@ int FunctionObject::dump_instruction(int i) {
       fprintf(stdout, "%-16s %4d `", "OP_SET_GLOBAL", name);
       std::cout << get_constant(name) << "`" << std::endl;
     } break;
+  case OpCode::OP_GET_UPVALUE:
+    fprintf(stdout, "%-16s %4d\n", "OP_GET_UPVALUE", codes_[i++]); break;
+  case OpCode::OP_SET_UPVALUE:
+    fprintf(stdout, "%-16s %4d\n", "OP_SET_UPVALUE", codes_[i++]); break;
   case OpCode::OP_EQ: std::cout << "OP_EQ" << std::endl; break;
   case OpCode::OP_NE: std::cout << "OP_NE" << std::endl; break;
   case OpCode::OP_GT: std::cout << "OP_GT" << std::endl; break;
@@ -273,6 +277,22 @@ int FunctionObject::dump_instruction(int i) {
   case OpCode::OP_CALL_6: std::cout << "OP_CALL_6" << std::endl; break;
   case OpCode::OP_CALL_7: std::cout << "OP_CALL_7" << std::endl; break;
   case OpCode::OP_CALL_8: std::cout << "OP_CALL_8" << std::endl; break;
+  case OpCode::OP_CLOSURE:
+    {
+      u8_t constant = codes_[i++];
+      auto* constant_value = constants_.get_value(constant);
+      fprintf(stdout, "%-16s %4d ", "OP_CLOSURE", constant);
+      std::cout << constant_value << std::endl;
+
+      auto* closed_fn = Xptr::down<FunctionObject>(constant_value);
+      for (int j = 0; j < closed_fn->upvalues_count(); ++j) {
+        u8_t is_local = codes_[i++];
+        u8_t index = codes_[i++];
+        fprintf(stdout, "%04d   |                     %s %d\n",
+            i - 2, is_local ? "local" : "upvalue", index);
+      }
+    } break;
+  case OpCode::OP_CLOSE_UPVALUE: std::cout << "OP_CLOSE_UPVALUE" << std::endl; break;
   case OpCode::OP_RETURN: std::cout << "OP_RETURN" << std::endl; break;
   }
   return i;
@@ -460,8 +480,8 @@ ClosureObject::ClosureObject(FunctionObject* fn)
   , function_(fn) {
   using UpvalueX = UpvalueObject*;
 
-  upvalues_ = new UpvalueX[fn->upvalue_count()];
-  for (int i = 0; i < fn->upvalue_count(); ++i)
+  upvalues_ = new UpvalueX[fn->upvalues_count()];
+  for (int i = 0; i < fn->upvalues_count(); ++i)
     upvalues_[i] = nullptr;
 }
 
@@ -471,7 +491,7 @@ ClosureObject::~ClosureObject(void) {
 }
 
 sz_t ClosureObject::size_bytes(void) const {
-  return sizeof(*this) + sizeof(UpvalueObject*) * function_->upvalue_count();
+  return sizeof(*this) + sizeof(UpvalueObject*) * function_->upvalues_count();
 }
 
 str_t ClosureObject::stringify(void) const {
@@ -484,7 +504,7 @@ bool ClosureObject::is_equal(BaseObject* other) const {
 
 void ClosureObject::blacken(VM& vm) {
   vm.gray_value(function_);
-  for (int i = 0; i < function_->upvalue_count(); ++i)
+  for (int i = 0; i < function_->upvalues_count(); ++i)
     vm.gray_value(upvalues_[i]);
 }
 

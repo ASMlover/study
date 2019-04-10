@@ -176,7 +176,7 @@ class FunctionObject : public BaseObject {
   int* codelines_{};
 
   int arity_{};
-  int upvalue_count_{};
+  int upvalues_count_{};
 
   ValueArray constants_;
 
@@ -192,7 +192,8 @@ public:
   inline int get_codeline(int i) const { return codelines_[i]; }
   inline int arity(void) const { return arity_; }
   inline void inc_arity(void) { ++arity_; }
-  inline int upvalue_count(void) const { return upvalue_count_; }
+  inline int upvalues_count(void) const { return upvalues_count_; }
+  inline int inc_upvalues_count(void) { return upvalues_count_++; }
   inline int constants_capacity(void) const { return constants_.capacity(); }
   inline int constants_count(void) const { return constants_.count(); }
   inline Value* constants(void) { return constants_.values(); }
@@ -277,6 +278,9 @@ public:
   inline Value* value(void) const { return value_; }
   inline Value closed(void) const { return closed_; }
   inline UpvalueObject* next(void) const { return next_; }
+  inline void set_value(Value* value) { value_ = value; }
+  inline void set_closed(Value closed) { closed_ = closed; }
+  inline void set_next(UpvalueObject* next) { next_ = next; }
 
   virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;
@@ -294,7 +298,10 @@ class ClosureObject : public BaseObject {
   virtual ~ClosureObject(void);
 public:
   inline FunctionObject* get_function(void) const { return function_; }
-  inline UpvalueObject** get_upvalues(void) const { return upvalues_; }
+  inline UpvalueObject** upvalues(void) const { return upvalues_; }
+  inline int upvaules_count(void) const { return function_->upvalues_count(); }
+  inline UpvalueObject* get_upvalue(int i) const { return upvalues_[i]; }
+  inline void set_upvalue(int i, UpvalueObject* upvalue) { upvalues_[i] = upvalue; }
 
   virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;
