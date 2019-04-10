@@ -60,11 +60,25 @@ struct ParseRule {
 struct Local {
   Token name;
   int depth{};
+  bool upvalue{};
 
-  Local(const Token& lname, int ldepth) : name(lname), depth(ldepth) {}
-  void assign(const Token& lname, int ldepth) {
+  Local(const Token& lname, int ldepth, bool lupvalue = false)
+    : name(lname), depth(ldepth), upvalue(lupvalue) {}
+  void assign(const Token& lname, int ldepth, bool lupvalue = false) {
     name = lname;
     depth = ldepth;
+    upvalue = lupvalue;
+  }
+};
+
+struct Upvalue {
+  u8_t index{};
+  bool local{};
+
+  Upvalue(u8_t idx, bool l) : index(idx), local(l) {}
+  void assign(u8_t idx, bool l) {
+    index = idx;
+    local = l;
   }
 };
 
@@ -72,6 +86,7 @@ struct CompilerImpl {
   CompilerImpl* enclosing{};
   FunctionObject* function{};
   std::vector<Local> locals;
+  std::vector<Upvalue> upvalues;
   int scope_depth{-1};
 
   CompilerImpl(void) {}
@@ -80,12 +95,14 @@ struct CompilerImpl {
   inline void dec_scope_depth(void) { --scope_depth; }
   inline void append_local(const Local& v) { locals.push_back(v); }
   inline void append_local(Local&& v) { locals.emplace_back(v); }
+  inline void append_upvalue(const Upvalue& v) { upvalues.push_back(v); }
+  inline void append_upvalue(Upvalue&& v) { upvalues.emplace_back(v); }
 };
 
 class CompileParser : private UnCopyable {
   VM& vm_;
   Lexer& lex_;
-  CompilerImpl& curr_compiler_;
+  CompilerImpl* curr_compiler_{};
   Token curr_;
   Token prev_;
   bool had_error_{};
@@ -100,7 +117,7 @@ class CompileParser : private UnCopyable {
   }
 
   void emit_byte(u8_t byte) {
-    curr_compiler_.function->append_code(byte, prev_.get_lineno());
+    curr_compiler_->function->append_code(byte, prev_.get_lineno());
   }
 
   void emit_bytes(u8_t byte1, u8_t byte2) {
@@ -112,7 +129,7 @@ class CompileParser : private UnCopyable {
     emit_byte(OpCode::OP_LOOP);
 
     // check for overflow
-    int offset = curr_compiler_.function->codes_count() - loop_start + 2;
+    int offset = curr_compiler_->function->codes_count() - loop_start + 2;
     emit_byte((offset >> 8) & 0xff);
     emit_byte(offset & 0xff);
   }
@@ -120,18 +137,18 @@ class CompileParser : private UnCopyable {
   int emit_jump(u8_t instruction) {
     emit_byte(instruction);
     emit_bytes(0xff, 0xff);
-    return curr_compiler_.function->codes_count() - 2;
+    return curr_compiler_->function->codes_count() - 2;
   }
 
   void patch_jump(int offset) {
-    int jump = curr_compiler_.function->codes_count() - offset - 2;
-    curr_compiler_.function->set_code(offset, (jump >> 8) & 0xff);
-    curr_compiler_.function->set_code(offset + 1, jump & 0xff);
+    int jump = curr_compiler_->function->codes_count() - offset - 2;
+    curr_compiler_->function->set_code(offset, (jump >> 8) & 0xff);
+    curr_compiler_->function->set_code(offset + 1, jump & 0xff);
   }
 
   u8_t add_constant(Value constant) {
     vm_.invoke_push(constant);
-    auto i = curr_compiler_.function->append_constant(vm_.invoke_pop());
+    auto i = curr_compiler_->function->append_constant(vm_.invoke_pop());
     return static_cast<u8_t>(i);
   }
 
@@ -226,24 +243,53 @@ class CompileParser : private UnCopyable {
   }
 
   void enter_scope(void) {
-    curr_compiler_.inc_scope_depth();
+    curr_compiler_->inc_scope_depth();
   }
 
   void leave_scope(void) {
-    curr_compiler_.dec_scope_depth();
-    while (curr_compiler_.locals.size() > 0 &&
-        curr_compiler_.locals.back().depth > curr_compiler_.scope_depth) {
-      emit_byte(OpCode::OP_POP);
-      curr_compiler_.locals.pop_back();
+    curr_compiler_->dec_scope_depth();
+    while (curr_compiler_->locals.size() > 0 &&
+        curr_compiler_->locals.back().depth > curr_compiler_->scope_depth) {
+      if (curr_compiler_->locals.back().upvalue)
+        emit_byte(OpCode::OP_CLOSE_UPVALUE);
+      else
+        emit_byte(OpCode::OP_POP);
+      curr_compiler_->locals.pop_back();
     }
   }
 
-  int resolve_local(const Token& name) {
-    int i = static_cast<int>(curr_compiler_.locals.size() - 1);
+  int resolve_local(CompilerImpl* compiler, const Token& name) {
+    int i = static_cast<int>(compiler->locals.size() - 1);
     for (; i >= 0; --i) {
-      if (name.is_equal(curr_compiler_.locals[i].name))
+      if (name.is_equal(compiler->locals[i].name))
         return i;
     }
+    return -1;
+  }
+
+  int add_upvalue(CompilerImpl* compiler, u8_t index, bool is_local) {
+    for (int i = 0; i < compiler->function->upvalues_count(); ++i) {
+      auto& upvalue = compiler->upvalues[i];
+      if (upvalue.index == index && upvalue.local == is_local)
+        return i;
+    }
+    compiler->append_upvalue(Upvalue(index, is_local));
+    return compiler->function->inc_upvalues_count();
+  }
+
+  int resolve_upvalue(CompilerImpl* compiler, const Token& name) {
+    if (compiler->enclosing == nullptr)
+      return -1;
+
+    int local = resolve_local(compiler->enclosing, name);
+    if (local != -1) {
+      compiler->enclosing->locals[local].upvalue = true;
+      return add_upvalue(compiler, static_cast<u8_t>(local), true);
+    }
+
+    int upvalue = resolve_upvalue(compiler->enclosing, name);
+    if (upvalue != -1)
+      return add_upvalue(compiler, static_cast<u8_t>(upvalue), false);
     return -1;
   }
 
@@ -251,20 +297,20 @@ class CompileParser : private UnCopyable {
     consume(TokenKind::TK_IDENTIFIER, error);
     auto name = prev_;
     u8_t constant = 0;
-    if (curr_compiler_.scope_depth == -1)
+    if (curr_compiler_->scope_depth == -1)
       constant = name_constant();
     return std::make_tuple(name, constant);
   }
 
   void declare_variable(const Token& name, u8_t constant) {
-    if (curr_compiler_.scope_depth == -1) {
+    if (curr_compiler_->scope_depth == -1) {
       emit_bytes(OpCode::OP_DEF_GLOBAL, constant);
     }
     else {
-      int i = static_cast<int>(curr_compiler_.locals.size() - 1);
+      int i = static_cast<int>(curr_compiler_->locals.size() - 1);
       for (; i >= 0; --i) {
-        auto& local = curr_compiler_.locals[i];
-        if (local.depth < curr_compiler_.scope_depth)
+        auto& local = curr_compiler_->locals[i];
+        if (local.depth < curr_compiler_->scope_depth)
           break;
         if (name.is_equal(local.name)) {
           error_at(name.get_lineno(),
@@ -272,7 +318,8 @@ class CompileParser : private UnCopyable {
         }
       }
 
-      curr_compiler_.append_local(Local(name, curr_compiler_.scope_depth));
+      curr_compiler_->append_local(
+          Local(name, curr_compiler_->scope_depth, false));
     }
   }
 
@@ -297,14 +344,22 @@ class CompileParser : private UnCopyable {
   }
 
   void variable(bool can_assign) {
-    OpCode setop{OpCode::OP_SET_LOCAL}, getop{OpCode::OP_GET_LOCAL};
-    int local = resolve_local(prev_);
-    u8_t constant = static_cast<u8_t>(local);
-    if (local == -1) {
-      constant = name_constant();
+    OpCode setop, getop;
+    int arg = resolve_local(curr_compiler_, prev_);
+    if (arg != -1) {
+      setop = OpCode::OP_SET_LOCAL;
+      getop = OpCode::OP_GET_LOCAL;
+    }
+    else if ((arg = resolve_upvalue(curr_compiler_, prev_)) != -1) {
+      setop = OpCode::OP_SET_UPVALUE;
+      getop = OpCode::OP_GET_UPVALUE;
+    }
+    else {
+      arg = name_constant();
       setop = OpCode::OP_SET_GLOBAL;
       getop = OpCode::OP_GET_GLOBAL;
     }
+    u8_t constant = static_cast<u8_t>(arg);
 
     if (can_assign && match(TokenKind::TK_EQUAL)) {
       expression();
@@ -385,24 +440,29 @@ class CompileParser : private UnCopyable {
     emit_byte(OpCode::OP_CALL_0 + argc);
   }
 public:
-  CompileParser(VM& vm, Lexer& lex, CompilerImpl& c)
-    : vm_(vm), lex_(lex), curr_compiler_(c) {
+  CompileParser(VM& vm, Lexer& lex)
+    : vm_(vm), lex_(lex) {
   }
 
   inline bool had_error(void) const { return had_error_; }
 
   void begin_compiler(CompilerImpl& new_compiler) {
-    new_compiler.enclosing = &curr_compiler_;
+    new_compiler.enclosing = curr_compiler_;
     new_compiler.function = FunctionObject::create(vm_);
-    curr_compiler_ = new_compiler;
+    curr_compiler_ = &new_compiler;
   }
 
   FunctionObject* finish_compiler(void) {
     emit_bytes(OpCode::OP_NIL, OpCode::OP_RETURN);
-    auto* fn = curr_compiler_.function;
-    curr_compiler_ = *curr_compiler_.enclosing;
+    auto* fn = curr_compiler_->function;
+    curr_compiler_ = curr_compiler_->enclosing;
 
-    return had_error_ ? nullptr : fn;
+#if defined(DEBUG_PRINT_CODE)
+    if (!had_error_)
+      fn->dump();
+#endif
+
+    return fn;
   }
 
   void advance(void) {
@@ -505,7 +565,7 @@ public:
   }
 
   void while_stmt(void) {
-    int loop_start = curr_compiler_.function->codes_count();
+    int loop_start = curr_compiler_->function->codes_count();
 
     consume(TokenKind::TK_LPAREN, "expect `(` before while condition");
     expression();
@@ -535,7 +595,7 @@ public:
     if (!check(TokenKind::TK_RPAREN)) {
       do {
         auto [param, param_constant] = parse_variable("expect parameter name");
-        curr_compiler_.function->inc_arity();
+        curr_compiler_->function->inc_arity();
       } while (match(TokenKind::TK_COMMA));
     }
     consume(TokenKind::TK_RPAREN, "expect `)` after parameters");
@@ -543,7 +603,18 @@ public:
     leave_scope();
     auto* fn = finish_compiler();
 
-    emit_constant(fn);
+    if (fn->upvalues_count() == 0) {
+      emit_constant(fn);
+    }
+    else {
+      u8_t constant = add_constant(fn);
+      emit_bytes(OpCode::OP_CLOSURE, constant);
+
+      for (int i = 0; i < fn->upvalues_count(); ++i) {
+        auto upval = fn_compiler.upvalues[i];
+        emit_bytes(upval.local ? 1 : 0, upval.index);
+      }
+    }
 
     declare_variable(name, name_constant);
   }
@@ -564,9 +635,9 @@ static CompilerImpl* _main_compiler = nullptr;
 
 FunctionObject* Compile::compile(VM& vm, const str_t& source_bytes) {
   Lexer lex(source_bytes);
-  CompilerImpl c;
-  CompileParser p(vm, lex, c);
+  CompileParser p(vm, lex);
 
+  CompilerImpl c;
   p.begin_compiler(c);
   _main_compiler = &c;
 
@@ -580,7 +651,7 @@ FunctionObject* Compile::compile(VM& vm, const str_t& source_bytes) {
   auto* fn = p.finish_compiler();
   _main_compiler = nullptr;
 
-  return fn;
+  return p.had_error() ? nullptr : fn;
 }
 
 void gray_compiler_roots(VM& vm) {
