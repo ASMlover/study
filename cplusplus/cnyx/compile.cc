@@ -603,17 +603,12 @@ public:
     leave_scope();
     auto* fn = finish_compiler();
 
-    if (fn->upvalues_count() == 0) {
-      emit_constant(fn);
-    }
-    else {
-      u8_t constant = add_constant(fn);
-      emit_bytes(OpCode::OP_CLOSURE, constant);
+    u8_t constant = add_constant(fn);
+    emit_bytes(OpCode::OP_CLOSURE, constant);
 
-      for (int i = 0; i < fn->upvalues_count(); ++i) {
-        auto upval = fn_compiler.upvalues[i];
-        emit_bytes(upval.local ? 1 : 0, upval.index);
-      }
+    for (int i = 0; i < fn->upvalues_count(); ++i) {
+      auto upval = fn_compiler.upvalues[i];
+      emit_bytes(upval.local ? 1 : 0, upval.index);
     }
 
     declare_variable(name, name_constant);

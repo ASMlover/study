@@ -44,7 +44,7 @@ public:
     : closure_(closure), ip_(ip), stack_start_(start) {
   }
 
-  CallFrame(CallFrame&& frame)
+  CallFrame(CallFrame&& frame) noexcept
     : closure_(std::move(frame.closure_))
     , ip_(std::move(frame.ip_))
     , stack_start_(std::move(frame.stack_start_)) {
