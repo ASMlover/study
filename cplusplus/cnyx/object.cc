@@ -514,4 +514,67 @@ ClosureObject* ClosureObject::create(VM& vm, FunctionObject* fn) {
   return o;
 }
 
+ClassObject::ClassObject(StringObject* name, Value superclass)
+  : BaseObject(ObjType::CLASS)
+  , name_(name) {
+}
+
+ClassObject::~ClassObject(void) {
+}
+
+sz_t ClassObject::size_bytes(void) const {
+  return sizeof(*this);
+}
+
+str_t ClassObject::stringify(void) const {
+  return name_ != nullptr ? name_->chars() : "class";
+}
+
+bool ClassObject::is_equal(BaseObject* other) const {
+  return false;
+}
+
+void ClassObject::blacken(VM& vm) {
+  vm.gray_value(name_);
+  vm.gray_value(methods_);
+}
+
+ClassObject* ClassObject::create(VM& vm, StringObject* name, Value superclass) {
+  auto* o = new ClassObject(name, superclass);
+  vm.append_object(o);
+  return nullptr;
+}
+
+InstanceObject::InstanceObject(ClassObject* klass, TableObject* fields)
+  : BaseObject(ObjType::INSTANCE) , class_(klass), fields_(fields) {
+}
+
+InstanceObject::~InstanceObject(void) {
+}
+
+sz_t InstanceObject::size_bytes(void) const {
+  return sizeof(*this);
+}
+
+str_t InstanceObject::stringify(void) const {
+  std::stringstream ss;
+  ss << "<" << class_->stringify() << " instance>";
+  return ss.str();
+}
+
+bool InstanceObject::is_equal(BaseObject* other) const {
+  return false;
+}
+
+void InstanceObject::blacken(VM& vm) {
+  vm.gray_value(class_);
+  vm.gray_value(fields_);
+}
+
+InstanceObject* InstanceObject::create(VM& vm, ClassObject* klass) {
+  auto* o = new InstanceObject(klass, TableObject::create(vm));
+  vm.append_object(o);
+  return o;
+}
+
 }

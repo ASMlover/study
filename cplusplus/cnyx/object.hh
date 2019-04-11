@@ -43,6 +43,8 @@ enum class ObjType {
   TABLE,
   NATIVE,
   UPVALUE,
+  CLASS,
+  INSTANCE,
 };
 
 class VM;
@@ -72,6 +74,8 @@ public:
   static bool is_table(BaseObject* o) { return is_type(o, ObjType::TABLE); }
   static bool is_native(BaseObject* o) { return is_type(o, ObjType::NATIVE); }
   static bool is_upvalue(BaseObject* o) { return is_type(o, ObjType::UPVALUE); }
+  static bool is_class(BaseObject* o) { return is_type(o, ObjType::CLASS); }
+  static bool is_instance(BaseObject* o) { return is_type(o, ObjType::INSTANCE); }
 
   virtual sz_t size_bytes(void) const = 0;
   virtual str_t stringify(void) const = 0;
@@ -309,6 +313,55 @@ public:
   virtual void blacken(VM& vm) override;
 
   static ClosureObject* create(VM& vm, FunctionObject* fn);
+};
+
+class ClassObject : public BaseObject {
+  StringObject* name_{};
+  TableObject* methods_{};
+
+  ClassObject(StringObject* name, Value superclass);
+  virtual ~ClassObject(void);
+public:
+  inline StringObject* name(void) const { return name_; }
+  inline TableObject* methods(void) const { return methods_; }
+  inline void set_methods(TableObject* methods) { methods_ = methods; }
+
+  inline void bind_method(StringObject* name, Value method) {
+    methods_->set_entry(name, method);
+  }
+
+  virtual sz_t size_bytes(void) const override;
+  virtual str_t stringify(void) const override;
+  virtual bool is_equal(BaseObject* other) const override;
+  virtual void blacken(VM& vm) override;
+
+  static ClassObject* create(VM& vm, StringObject* name, Value superclass);
+};
+
+class InstanceObject : public BaseObject {
+  ClassObject* class_{};
+  TableObject* fields_{};
+
+  InstanceObject(ClassObject* klass, TableObject* fields);
+  virtual ~InstanceObject(void);
+public:
+  inline ClassObject* get_class(void) const { return class_; }
+  inline TableObject* fields(void) const { return fields_; }
+
+  inline void set_field(StringObject* name, Value value) {
+    fields_->set_entry(name, value);
+  }
+
+  inline std::optional<Value> get_field(StringObject* name) const {
+    return fields_->get_entry(name);
+  }
+
+  virtual sz_t size_bytes(void) const override;
+  virtual str_t stringify(void) const override;
+  virtual bool is_equal(BaseObject* other) const override;
+  virtual void blacken(VM& vm) override;
+
+  static InstanceObject* create(VM& vm, ClassObject* klass);
 };
 
 }
