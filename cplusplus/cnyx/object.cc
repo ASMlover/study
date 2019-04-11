@@ -238,6 +238,18 @@ int FunctionObject::dump_instruction(int i) {
     fprintf(stdout, "%-16s %4d\n", "OP_GET_UPVALUE", codes_[i++]); break;
   case OpCode::OP_SET_UPVALUE:
     fprintf(stdout, "%-16s %4d\n", "OP_SET_UPVALUE", codes_[i++]); break;
+  case OpCode::OP_GET_FIELD:
+    {
+      u8_t name = codes[i++];
+      fprintf(stdout, "%-16s %4d ", "OP_GET_FIELD", name);
+      std::cout << "`" << constants_.get_value(name) << "`" << std::endl;
+    } break;
+  case OpCode::OP_SET_FIELD:
+    {
+      u8_t name = codes[i++];
+      fprintf(stdout, "%-16s %4d ", "OP_SET_FIELD", name);
+      std::cout << "`" << constants_.get_value(name) << "`" << std::endl;
+    } break;
   case OpCode::OP_EQ: std::cout << "OP_EQ" << std::endl; break;
   case OpCode::OP_NE: std::cout << "OP_NE" << std::endl; break;
   case OpCode::OP_GT: std::cout << "OP_GT" << std::endl; break;
@@ -294,6 +306,18 @@ int FunctionObject::dump_instruction(int i) {
     } break;
   case OpCode::OP_CLOSE_UPVALUE: std::cout << "OP_CLOSE_UPVALUE" << std::endl; break;
   case OpCode::OP_RETURN: std::cout << "OP_RETURN" << std::endl; break;
+  case OpCode::OP_CLASS:
+    {
+      u8_t name = codes[i++];
+      fprintf(stdout, "%-16s %4d ", "OP_CLASS", name);
+      std::cout << "`" << constants_.get_value(name) << "`" << std::endl;
+    } break;
+  case OpCode::OP_METHOD:
+    {
+      u8_t name = codes[i++];
+      fprintf(stdout, "%-16s %4d ", "OP_METHOD", name);
+      std::cout << "`" << constants_.get_value(name) << "`" << std::endl;
+    } break;
   }
   return i;
 }
