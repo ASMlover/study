@@ -26,10 +26,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <list>
 #include <optional>
 #include <tuple>
 #include <vector>
-#include <list>
 #include "common.hh"
 #include "object.hh"
 
@@ -46,6 +46,8 @@ enum OpCode {
   OP_SET_GLOBAL, // set global variable
   OP_GET_UPVALUE, // get upvalue
   OP_SET_UPVALUE, // set upvalue
+  OP_GET_FIELD, // get field
+  OP_SET_FIELD, // set field
   OP_EQ, // ==
   OP_NE, // !=
   OP_GT, // >
@@ -73,6 +75,8 @@ enum OpCode {
   OP_CLOSURE,
   OP_CLOSE_UPVALUE,
   OP_RETURN, // return
+  OP_CLASS,
+  OP_METHOD,
 };
 
 enum class InterpretResult {
@@ -93,6 +97,12 @@ class VM : private UnCopyable {
   std::list<BaseObject*> objects_;
   std::list<BaseObject*> gray_stack_;
 
+  void define_native(const std::string& name, const NativeFunction& fn);
+  void define_native(const std::string& name, NativeFunction&& fn);
+
+  void create_class(StringObject* name);
+  void bind_method(StringObject* name);
+
   void push(Value val);
   Value pop(void);
   Value peek(int distance = 0) const;
@@ -108,6 +118,7 @@ class VM : private UnCopyable {
   bool call(Value callee, int argc = 0);
   UpvalueObject* capture_upvalue(Value* local);
   void close_upvalues(Value* last);
+
   bool run(void);
 public:
   VM(void);

@@ -152,7 +152,7 @@ class CompileParser : private UnCopyable {
     return static_cast<u8_t>(i);
   }
 
-  u8_t name_constant(void) {
+  u8_t identifier_constant(void) {
     auto s = prev_.as_string();
     return add_constant(
         StringObject::create(vm_, s.c_str(), static_cast<int>(s.size())));
@@ -175,6 +175,7 @@ class CompileParser : private UnCopyable {
     static auto binary_fn = [](CompileParser* p, bool b) { p->binary(b); };
     static auto unary_fn = [](CompileParser* p, bool b) { p->unary(b); };
     static auto call_fn = [](CompileParser* p, bool b) { p->call(b); };
+    static auto dot_fn = [](CompileParser* p, bool b) { p->dot(b); };
 
     static ParseRule _rules[] = {
       nullptr, nullptr, Precedence::NONE, // TK_ERROR
@@ -188,7 +189,7 @@ class CompileParser : private UnCopyable {
       nullptr, nullptr, Precedence::NONE, // TK_LBRACE
       nullptr, nullptr, Precedence::NONE, // TK_RBRACE
       nullptr, nullptr, Precedence::NONE, // TK_COMMA
-      nullptr, nullptr, Precedence::NONE, // TK_DOT
+      nullptr, dot_fn, Precedence::CALL, // TK_DOT
       nullptr, nullptr, Precedence::NONE, // TK_SEMI
       unary_fn, nullptr, Precedence::NONE, // TK_BANG
       nullptr, binary_fn, Precedence::EQUALITY, // TK_BANGEQUAL
@@ -298,7 +299,7 @@ class CompileParser : private UnCopyable {
     auto name = prev_;
     u8_t constant = 0;
     if (curr_compiler_->scope_depth == -1)
-      constant = name_constant();
+      constant = identifier_constant();
     return std::make_tuple(name, constant);
   }
 
@@ -355,7 +356,7 @@ class CompileParser : private UnCopyable {
       getop = OpCode::OP_GET_UPVALUE;
     }
     else {
-      arg = name_constant();
+      arg = identifier_constant();
       setop = OpCode::OP_SET_GLOBAL;
       getop = OpCode::OP_GET_GLOBAL;
     }
@@ -439,6 +440,19 @@ class CompileParser : private UnCopyable {
     consume(TokenKind::TK_RPAREN, "expect `)` after arguments");
     emit_byte(OpCode::OP_CALL_0 + argc);
   }
+
+  void dot(bool can_assign) {
+    consume(TokenKind::TK_IDENTIFIER, "expect property name");
+    u8_t name = identifier_constant();
+
+    if (can_assign && match(TokenKind::TK_EQUAL)) {
+      expression();
+      emit_bytes(OpCode::OP_SET_FIELD, name);
+    }
+    else {
+      emit_bytes(OpCode::OP_GET_FIELD, name);
+    }
+  }
 public:
   CompileParser(VM& vm, Lexer& lex)
     : vm_(vm), lex_(lex) {
@@ -493,7 +507,10 @@ public:
   }
 
   void statement(void) {
-    if (match(TokenKind::KW_FUN)) {
+    if (match(TokenKind::KW_CLASS)) {
+      class_stmt();
+    }
+    else if (match(TokenKind::KW_FUN)) {
       fun_stmt();
     }
     else if (match(TokenKind::KW_IF)) {
@@ -585,9 +602,7 @@ public:
     leave_scope();
   }
 
-  void fun_stmt(void) {
-    auto [name, name_constant] = parse_variable("expect function name");
-
+  void fn_common(void) {
     CompilerImpl fn_compiler;
     begin_compiler(fn_compiler);
     enter_scope();
@@ -610,7 +625,11 @@ public:
       auto upval = fn_compiler.upvalues[i];
       emit_bytes(upval.local ? 1 : 0, upval.index);
     }
+  }
 
+  void fun_stmt(void) {
+    auto [name, name_constant] = parse_variable("expect function name");
+    fn_common();
     declare_variable(name, name_constant);
   }
 
@@ -623,6 +642,24 @@ public:
       consume(TokenKind::TK_SEMI, "expect `;` after return value");
     }
     emit_byte(OpCode::OP_RETURN);
+  }
+
+  void method(void) {
+    consume(TokenKind::TK_IDENTIFIER, "expect method name");
+    u8_t method_constant = identifier_constant();
+    fn_common();
+    emit_bytes(OpCode::OP_METHOD, method_constant);
+  }
+
+  void class_stmt(void) {
+    auto [name, name_constant] = parse_variable("expect class name");
+    emit_bytes(OpCode::OP_CLASS, name_constant);
+    declare_variable(name, name_constant);
+
+    consume(TokenKind::TK_LBRACE, "expect `{` before class body");
+    while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE))
+      method();
+    consume(TokenKind::TK_RBRACE, "expect `}` after class body");
   }
 };
 

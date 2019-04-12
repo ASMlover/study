@@ -79,14 +79,13 @@ public:
 
 VM::VM(void) {
   globals_ = TableObject::create(*this);
-  globals_->set_entry(
-      StringObject::create(*this, "print", 5),
-      NativeObject::create(*this, [](int argc, Value* args) -> Value {
-          for (int i = 0; i < argc; ++i)
-            std::cout << args[i] << " ";
-          std::cout << std::endl;
-          return nullptr;
-        }));
+
+  define_native("print", [](int argc, Value* args) -> Value {
+        for (int i = 0; i < argc; ++i)
+          std::cout << args[i] << " ";
+        std::cout << std::endl;
+        return nullptr;
+      });
 }
 
 VM::~VM(void) {
@@ -96,6 +95,32 @@ VM::~VM(void) {
     free_object(o);
   objects_.clear();
   gray_stack_.clear();
+}
+
+void VM::define_native(const std::string& name, const NativeFunction& fn) {
+  globals_->set_entry(
+      StringObject::create(*this, name.c_str(), static_cast<int>(name.size())),
+      NativeObject::create(*this, fn));
+}
+
+void VM::define_native(const std::string& name, NativeFunction&& fn) {
+  globals_->set_entry(
+      StringObject::create(*this, name.c_str(), static_cast<int>(name.size())),
+      NativeObject::create(*this, std::move(fn)));
+}
+
+void VM::create_class(StringObject* name) {
+  push(ClassObject::create(*this, name, peek()));
+}
+
+void VM::bind_method(StringObject* name) {
+  Value method = peek(0);
+  ClassObject* klass = Xptr::down<ClassObject>(peek(1));
+
+  if (klass->methods() == nullptr)
+    klass->set_methods(TableObject::create(*this));
+  klass->bind_method(name, method);
+  pop();
 }
 
 void VM::push(Value val) {
@@ -206,17 +231,15 @@ void VM::print_stack(void) {
 }
 
 bool VM::call(Value callee, int argc/* = 0*/) {
-  ClosureObject* closure{};
-
-  if (BaseObject::is_native(callee)) {
-    Value ret = Xptr::down<NativeObject>(callee)->get_function()(
-        argc, &stack_[stack_.size() - argc]);
-    stack_.resize(stack_.size() - argc - 1);
-    push(ret);
+  if (BaseObject::is_class(callee)) {
+    InstanceObject* inst = InstanceObject::create(
+        *this, Xptr::down<ClassObject>(callee));
+    stack_[stack_.size() - argc - 1] = inst;
+    stack_.resize(stack_.size() - argc);
     return true;
   }
   if (BaseObject::is_closure(callee)) {
-    closure = Xptr::down<ClosureObject>(callee);
+    ClosureObject* closure = Xptr::down<ClosureObject>(callee);
     if (argc < closure->get_function()->arity()) {
       runtime_error("not enough arguments");
       return false;
@@ -225,6 +248,13 @@ bool VM::call(Value callee, int argc/* = 0*/) {
     frames_.emplace_back(CallFrame(closure,
           closure->get_function()->codes(),
           static_cast<int>(stack_.size() - argc)));
+    return true;
+  }
+  if (BaseObject::is_native(callee)) {
+    Value ret = Xptr::down<NativeObject>(callee)->get_function()(
+        argc, &stack_[stack_.size() - argc]);
+    stack_.resize(stack_.size() - argc - 1);
+    push(ret);
     return true;
   }
 
@@ -343,6 +373,39 @@ bool VM::run(void) {
         u8_t slot = _rdbyte();
         Value value = pop();
         frame->closure()->get_upvalue(slot)->set_value(&value);
+      } break;
+    case OpCode::OP_GET_FIELD:
+      {
+        if (!BaseObject::is_instance(peek())) {
+          runtime_error("primitive values cannot have faileds");
+          return false;
+        }
+
+        // class fields
+        auto* inst = Xptr::down<InstanceObject>(pop());
+        auto* name = Xptr::down<StringObject>(_rdconstant());
+        if (auto val = inst->get_field(name); val) {
+          push(*val);
+        }
+        else {
+          runtime_error("undefined field `%s`", name->chars());
+          return false;
+        }
+      } break;
+    case OpCode::OP_SET_FIELD:
+      {
+        if (!BaseObject::is_instance(peek(1))) {
+          runtime_error("primitive values cannot have fields");
+          return false;
+        }
+
+        // class fields
+        auto* inst = Xptr::down<InstanceObject>(peek(1));
+        auto* name = Xptr::down<StringObject>(_rdconstant());
+        inst->set_field(name, peek(0));
+        Value val = pop();
+        pop();
+        push(val);
       } break;
     case OpCode::OP_EQ:
       {
@@ -523,6 +586,10 @@ bool VM::run(void) {
         frames_.pop_back();
         frame = &frames_.back();
       } break;
+    case OpCode::OP_CLASS:
+      create_class(Xptr::down<StringObject>(_rdconstant())); break;
+    case OpCode::OP_METHOD:
+      bind_method(Xptr::down<StringObject>(_rdconstant())); break;
     }
   }
 
