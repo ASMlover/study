@@ -189,21 +189,24 @@ FunctionObject::~FunctionObject(void) {
 }
 
 int FunctionObject::dump_instruction(int i) {
-  const auto* codes = codes_;
+  static auto constant_instruction =
+    [](FunctionObject* fn, int i, const char* name) -> int {
+      u8_t constant = fn->get_code(i++);
+      fprintf(stdout, "%-16s %4d ", name, constant);
+      std::cout << "`" << fn->get_constant(constant) << "`" << std::endl;
+      return i;
+    };
 
+  const auto* codes = codes_;
   fprintf(stdout, "%04d ", i);
   if (i > 0 && codelines_[i] == codelines_[i - 1])
     std::cout << "  | ";
   else
     fprintf(stdout, "%3d ", codelines_[i]);
 
-  switch (codes[i++]) {
+  switch (auto instruction = codes[i++]; instruction) {
   case OpCode::OP_CONSTANT:
-    {
-      u8_t constant = codes[i++];
-      fprintf(stdout, "%-16s %4d `", "OP_CONSTANT", constant);
-      std::cout << get_constant(constant) << "`" << std::endl;
-    } break;
+    i = constant_instruction(this, i, "OP_CONSTANT"); break;
   case OpCode::OP_NIL: std::cout << "OP_NIL" << std::endl; break;
   case OpCode::OP_POP: std::cout << "OP_POP" << std::endl; break;
   case OpCode::OP_GET_LOCAL:
@@ -217,39 +220,19 @@ int FunctionObject::dump_instruction(int i) {
       fprintf(stdout, "%-16s %4d\n", "OP_SET_LOCAL", slot);
     } break;
   case OpCode::OP_DEF_GLOBAL:
-    {
-      u8_t name = codes[i++];
-      fprintf(stdout, "%-16s %4d `", "OP_DEF_GLOBAL", name);
-      std::cout << get_constant(name) << "`" << std::endl;
-    } break;
+    i = constant_instruction(this, i, "OP_DEF_GLOBAL"); break;
   case OpCode::OP_GET_GLOBAL:
-    {
-      u8_t name = codes[i++];
-      fprintf(stdout, "%-16s %4d `", "OP_GET_GLOBAL", name);
-      std::cout << get_constant(name) << "`" << std::endl;
-    } break;
+    i = constant_instruction(this, i, "OP_GET_GLOBAL"); break;
   case OpCode::OP_SET_GLOBAL:
-    {
-      u8_t name = codes[i++];
-      fprintf(stdout, "%-16s %4d `", "OP_SET_GLOBAL", name);
-      std::cout << get_constant(name) << "`" << std::endl;
-    } break;
+    i = constant_instruction(this, i, "OP_SET_GLOBAL"); break;
   case OpCode::OP_GET_UPVALUE:
     fprintf(stdout, "%-16s %4d\n", "OP_GET_UPVALUE", codes_[i++]); break;
   case OpCode::OP_SET_UPVALUE:
     fprintf(stdout, "%-16s %4d\n", "OP_SET_UPVALUE", codes_[i++]); break;
   case OpCode::OP_GET_FIELD:
-    {
-      u8_t name = codes[i++];
-      fprintf(stdout, "%-16s %4d ", "OP_GET_FIELD", name);
-      std::cout << "`" << constants_.get_value(name) << "`" << std::endl;
-    } break;
+    i = constant_instruction(this, i, "OP_GET_FIELD"); break;
   case OpCode::OP_SET_FIELD:
-    {
-      u8_t name = codes[i++];
-      fprintf(stdout, "%-16s %4d ", "OP_SET_FIELD", name);
-      std::cout << "`" << constants_.get_value(name) << "`" << std::endl;
-    } break;
+    i = constant_instruction(this, i, "OP_SET_FIELD"); break;
   case OpCode::OP_EQ: std::cout << "OP_EQ" << std::endl; break;
   case OpCode::OP_NE: std::cout << "OP_NE" << std::endl; break;
   case OpCode::OP_GT: std::cout << "OP_GT" << std::endl; break;
@@ -280,15 +263,17 @@ int FunctionObject::dump_instruction(int i) {
       offset |= codes[i++];
       fprintf(stdout, "%-16s %4d -> %d\n", "OP_LOOP", offset, i - offset);
     } break;
-  case OpCode::OP_CALL_0: std::cout << "OP_CALL_0" << std::endl; break;
-  case OpCode::OP_CALL_1: std::cout << "OP_CALL_1" << std::endl; break;
-  case OpCode::OP_CALL_2: std::cout << "OP_CALL_2" << std::endl; break;
-  case OpCode::OP_CALL_3: std::cout << "OP_CALL_3" << std::endl; break;
-  case OpCode::OP_CALL_4: std::cout << "OP_CALL_4" << std::endl; break;
-  case OpCode::OP_CALL_5: std::cout << "OP_CALL_5" << std::endl; break;
-  case OpCode::OP_CALL_6: std::cout << "OP_CALL_6" << std::endl; break;
-  case OpCode::OP_CALL_7: std::cout << "OP_CALL_7" << std::endl; break;
-  case OpCode::OP_CALL_8: std::cout << "OP_CALL_8" << std::endl; break;
+  case OpCode::OP_CALL_0:
+  case OpCode::OP_CALL_1:
+  case OpCode::OP_CALL_2:
+  case OpCode::OP_CALL_3:
+  case OpCode::OP_CALL_4:
+  case OpCode::OP_CALL_5:
+  case OpCode::OP_CALL_6:
+  case OpCode::OP_CALL_7:
+  case OpCode::OP_CALL_8:
+    std::cout << "OP_CALL_" << instruction - OpCode::OP_CALL_0 << std::endl;
+    break;
   case OpCode::OP_CLOSURE:
     {
       u8_t constant = codes_[i++];
@@ -307,17 +292,9 @@ int FunctionObject::dump_instruction(int i) {
   case OpCode::OP_CLOSE_UPVALUE: std::cout << "OP_CLOSE_UPVALUE" << std::endl; break;
   case OpCode::OP_RETURN: std::cout << "OP_RETURN" << std::endl; break;
   case OpCode::OP_CLASS:
-    {
-      u8_t name = codes[i++];
-      fprintf(stdout, "%-16s %4d ", "OP_CLASS", name);
-      std::cout << "`" << constants_.get_value(name) << "`" << std::endl;
-    } break;
+    i = constant_instruction(this, i, "OP_CLASS"); break;
   case OpCode::OP_METHOD:
-    {
-      u8_t name = codes[i++];
-      fprintf(stdout, "%-16s %4d ", "OP_METHOD", name);
-      std::cout << "`" << constants_.get_value(name) << "`" << std::endl;
-    } break;
+    i = constant_instruction(this, i, "OP_METHOD"); break;
   }
   return i;
 }

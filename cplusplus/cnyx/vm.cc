@@ -377,7 +377,7 @@ bool VM::run(void) {
     case OpCode::OP_GET_FIELD:
       {
         if (!BaseObject::is_instance(peek())) {
-          runtime_error("primitive values cannot have faileds");
+          runtime_error("only instances have faileds");
           return false;
         }
 
@@ -395,7 +395,7 @@ bool VM::run(void) {
     case OpCode::OP_SET_FIELD:
       {
         if (!BaseObject::is_instance(peek(1))) {
-          runtime_error("primitive values cannot have fields");
+          runtime_error("only instances have fields");
           return false;
         }
 
