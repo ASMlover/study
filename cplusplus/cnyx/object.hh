@@ -61,6 +61,7 @@ public:
   inline bool is_dark(void) const { return is_dark_; }
   inline void set_dark(bool is_dark) { is_dark_ = is_dark; }
 
+  static bool is_falsely(BaseObject* o);
   static bool is_type(BaseObject* o, ObjType t) {
     return o != nullptr && o->type() == t;
   }

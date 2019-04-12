@@ -49,6 +49,10 @@ inline int power_of_2ceil(int n) {
   return n;
 }
 
+bool BaseObject::is_falsely(BaseObject* o) {
+  return is_nil(o) || (is_boolean(o) && !Xptr::down<BooleanObject>(o)->value());
+}
+
 ValueArray::~ValueArray(void) {
   if (values_ != nullptr)
     delete [] values_;
@@ -543,7 +547,7 @@ void ClassObject::blacken(VM& vm) {
 ClassObject* ClassObject::create(VM& vm, StringObject* name, Value superclass) {
   auto* o = new ClassObject(name, superclass);
   vm.append_object(o);
-  return nullptr;
+  return o;
 }
 
 InstanceObject::InstanceObject(ClassObject* klass, TableObject* fields)
