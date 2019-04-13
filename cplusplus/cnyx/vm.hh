@@ -72,6 +72,15 @@ enum OpCode {
   OP_CALL_6,
   OP_CALL_7,
   OP_CALL_8,
+  OP_INVOKE_0,
+  OP_INVOKE_1,
+  OP_INVOKE_2,
+  OP_INVOKE_3,
+  OP_INVOKE_4,
+  OP_INVOKE_5,
+  OP_INVOKE_6,
+  OP_INVOKE_7,
+  OP_INVOKE_8,
   OP_CLOSURE,
   OP_CLOSE_UPVALUE,
   OP_RETURN, // return
@@ -115,7 +124,9 @@ class VM : private UnCopyable {
   void collect(void);
   void print_stack(void);
 
+  bool call_closure(ClosureObject* closure, int argc);
   bool call(Value callee, int argc = 0);
+  bool invoke(Value receiver, StringObject* method, int argc);
   UpvalueObject* capture_upvalue(Value* local);
   void close_upvalues(Value* last);
 

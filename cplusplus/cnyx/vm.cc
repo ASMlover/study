@@ -121,8 +121,6 @@ void VM::bind_method(StringObject* name) {
   Value method = peek(0);
   ClassObject* klass = Xptr::down<ClassObject>(peek(1));
 
-  if (klass->methods() == nullptr)
-    klass->set_methods(TableObject::create(*this));
   klass->bind_method(name, method);
   pop();
 }
@@ -231,6 +229,18 @@ void VM::print_stack(void) {
     std::cout << i++ << " : " << o << std::endl;
 }
 
+bool VM::call_closure(ClosureObject* closure, int argc) {
+  if (argc < closure->get_function()->arity()) {
+    runtime_error("not enough arguments");
+    return false;
+  }
+
+  frames_.emplace_back(CallFrame(closure,
+        closure->get_function()->codes(),
+        static_cast<int>(stack_.size() - argc)));
+  return true;
+}
+
 bool VM::call(Value callee, int argc/* = 0*/) {
   if (BaseObject::is_class(callee)) {
     InstanceObject* inst = InstanceObject::create(
@@ -240,16 +250,7 @@ bool VM::call(Value callee, int argc/* = 0*/) {
     return true;
   }
   if (BaseObject::is_closure(callee)) {
-    ClosureObject* closure = Xptr::down<ClosureObject>(callee);
-    if (argc < closure->get_function()->arity()) {
-      runtime_error("not enough arguments");
-      return false;
-    }
-
-    frames_.emplace_back(CallFrame(closure,
-          closure->get_function()->codes(),
-          static_cast<int>(stack_.size() - argc)));
-    return true;
+    return call_closure(Xptr::down<ClosureObject>(callee), argc);
   }
   if (BaseObject::is_native(callee)) {
     Value ret = Xptr::down<NativeObject>(callee)->get_function()(
@@ -260,6 +261,23 @@ bool VM::call(Value callee, int argc/* = 0*/) {
   }
 
   runtime_error("can only call functions and classes");
+  return false;
+}
+
+bool VM::invoke(Value receiver, StringObject* method_name, int argc) {
+  if (!BaseObject::is_instance(receiver)) {
+    runtime_error("only instances have methods");
+    return false;
+  }
+
+  InstanceObject* inst = Xptr::down<InstanceObject>(receiver);
+  ClassObject* cls = inst->get_class();
+  if (auto method = cls->get_method(method_name); method) {
+    return call_closure(Xptr::down<ClosureObject>(*method), argc);
+  }
+
+  runtime_error("%s does not implement `%s`",
+      cls->name()->chars(), method_name->chars());
   return false;
 }
 
@@ -544,6 +562,22 @@ bool VM::run(void) {
           return false;
         frame = &frames_.back();
       } break;
+    case OpCode::OP_INVOKE_0:
+    case OpCode::OP_INVOKE_1:
+    case OpCode::OP_INVOKE_2:
+    case OpCode::OP_INVOKE_3:
+    case OpCode::OP_INVOKE_4:
+    case OpCode::OP_INVOKE_5:
+    case OpCode::OP_INVOKE_6:
+    case OpCode::OP_INVOKE_7:
+    case OpCode::OP_INVOKE_8:
+      {
+        StringObject* method = Xptr::down<StringObject>(_rdconstant());
+        int argc = instruction - OpCode::OP_INVOKE_0;
+        if (!invoke(peek(argc), method, argc))
+          return false;
+        frame = &frames_.back();
+      } break;
     case OpCode::OP_CLOSURE:
       {
         auto* fn = Xptr::down<FunctionObject>(_rdconstant());
@@ -632,6 +666,7 @@ InterpretResult VM::interpret(const str_t& source_bytes) {
   push(fn);
   auto* closure = ClosureObject::create(*this, fn);
   pop();
+  push(closure);
 
   call(closure, 0);
 
