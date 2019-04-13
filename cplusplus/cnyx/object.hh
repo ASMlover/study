@@ -293,12 +293,12 @@ class ClassObject : public BaseObject {
 public:
   inline StringObject* name(void) const { return name_; }
 
-  inline void bind_method(const str_t& name, Value method) {
-    methods_[name] = method;
+  inline void bind_method(StringObject* name, Value method) {
+    methods_[name->chars()] = method;
   }
 
-  inline std::optional<Value> get_method(const str_t& name) const {
-    if (auto it = methods_.find(name); it != methods_.end())
+  inline std::optional<Value> get_method(StringObject* name) const {
+    if (auto it = methods_.find(name->chars()); it != methods_.end())
       return {it->second};
     return {};
   }
@@ -320,12 +320,12 @@ class InstanceObject : public BaseObject {
 public:
   inline ClassObject* get_class(void) const { return class_; }
 
-  inline void set_field(const str_t& name, Value value) {
-    fields_[name] = value;
+  inline void set_field(StringObject* name, Value value) {
+    fields_[name->chars()] = value;
   }
 
-  inline std::optional<Value> get_field(const str_t& name) const {
-    if (auto it = fields_.find(name); it != fields_.end())
+  inline std::optional<Value> get_field(StringObject* name) const {
+    if (auto it = fields_.find(name->chars()); it != fields_.end())
       return {it->second};
     return {};
   }

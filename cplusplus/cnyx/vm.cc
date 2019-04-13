@@ -115,7 +115,7 @@ void VM::bind_method(StringObject* name) {
   Value method = peek(0);
   ClassObject* klass = Xptr::down<ClassObject>(peek(1));
 
-  klass->bind_method(name->chars(), method);
+  klass->bind_method(name, method);
   pop();
 }
 
@@ -266,7 +266,7 @@ bool VM::invoke(Value receiver, StringObject* method_name, int argc) {
 
   InstanceObject* inst = Xptr::down<InstanceObject>(receiver);
   ClassObject* cls = inst->get_class();
-  if (auto method = cls->get_method(method_name->chars()); method) {
+  if (auto method = cls->get_method(method_name); method) {
     return call_closure(Xptr::down<ClosureObject>(*method), argc);
   }
 
@@ -400,7 +400,7 @@ bool VM::run(void) {
         // class fields
         auto* inst = Xptr::down<InstanceObject>(pop());
         auto* name = Xptr::down<StringObject>(_rdconstant());
-        if (auto val = inst->get_field(name->chars()); val) {
+        if (auto val = inst->get_field(name); val) {
           push(*val);
         }
         else {
@@ -418,7 +418,7 @@ bool VM::run(void) {
         // class fields
         auto* inst = Xptr::down<InstanceObject>(peek(1));
         auto* name = Xptr::down<StringObject>(_rdconstant());
-        inst->set_field(name->chars(), peek(0));
+        inst->set_field(name, peek(0));
         Value val = pop();
         pop();
         push(val);
