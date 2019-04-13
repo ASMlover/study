@@ -162,8 +162,8 @@ class CompileParser : private UnCopyable {
   }
 
   ParseRule& get_rule(TokenKind kind) {
-    static auto or_fn = [](CompileParser* p, bool b) { p->or_op(b); };
-    static auto and_fn = [](CompileParser* p, bool b) { p->and_op(b); };
+    static auto or_fn = [](CompileParser* p, bool b) { p->or_exp(b); };
+    static auto and_fn = [](CompileParser* p, bool b) { p->and_exp(b); };
     static auto grouping_fn = [](CompileParser* p, bool b) { p->grouping(b); };
     static auto boolean_fn = [](CompileParser* p, bool b) { p->boolean(b); };
     static auto nil_fn = [](CompileParser* p, bool b) { p->nil(b); };
@@ -174,6 +174,7 @@ class CompileParser : private UnCopyable {
     static auto unary_fn = [](CompileParser* p, bool b) { p->unary(b); };
     static auto call_fn = [](CompileParser* p, bool b) { p->call(b); };
     static auto dot_fn = [](CompileParser* p, bool b) { p->dot(b); };
+    static auto this_fn = [](CompileParser* p, bool b) { p->this_exp(b); };
 
     static ParseRule _rules[] = {
       nullptr, nullptr, Precedence::NONE, // TK_ERROR
@@ -211,10 +212,10 @@ class CompileParser : private UnCopyable {
       nullptr, nullptr, Precedence::NONE, // KW_IF
       nil_fn, nullptr, Precedence::NONE, // KW_NIL
       nullptr, or_fn, Precedence::OR, // KW_OR
-      nullptr, nullptr, Precedence::NONE, // KW_PRINT
+      // nullptr, nullptr, Precedence::NONE, // KW_PRINT
       nullptr, nullptr, Precedence::NONE, // KW_RETURN
       nullptr, nullptr, Precedence::NONE, // KW_SUPER
-      nullptr, nullptr, Precedence::NONE, // KW_THIS
+      this_fn, nullptr, Precedence::NONE, // KW_THIS
       boolean_fn, nullptr, Precedence::NONE, // KW_TRUE
       nullptr, nullptr, Precedence::NONE, // KW_VAR
       nullptr, nullptr, Precedence::NONE, // KW_WHILE
@@ -296,11 +297,9 @@ class CompileParser : private UnCopyable {
     return -1;
   }
 
-  u8_t parse_variable(const str_t& message) {
-    consume(TokenKind::TK_IDENTIFIER, message);
-
+  void declare_variable(void) {
     if (curr_compiler_->scope_depth == 0)
-      return identifier_constant();
+      return;
 
     auto name = prev_;
     int begindex = static_cast<int>(curr_compiler_->locals.size() - 1);
@@ -313,6 +312,15 @@ class CompileParser : private UnCopyable {
     }
 
     curr_compiler_->append_local(Local(name, -1, false));
+  }
+
+  u8_t parse_variable(const str_t& error_message) {
+    consume(TokenKind::TK_IDENTIFIER, error_message);
+
+    if (curr_compiler_->scope_depth == 0)
+      return identifier_constant();
+
+    declare_variable();
     return 0;
   }
 
@@ -321,6 +329,18 @@ class CompileParser : private UnCopyable {
       emit_bytes(OpCode::OP_DEF_GLOBAL, global);
     else
       curr_compiler_->locals.back().depth = curr_compiler_->scope_depth;
+  }
+
+  u8_t argument_list(void) {
+    u8_t argc = 0;
+    if (!check(TokenKind::TK_RPAREN)) {
+      do {
+        expression();
+        ++argc;
+      } while (match(TokenKind::TK_COMMA));
+    }
+    consume(TokenKind::TK_RPAREN, "expect `)` after arguments");
+    return argc;
   }
 
   void boolean(bool can_assign) {
@@ -370,7 +390,7 @@ class CompileParser : private UnCopyable {
     }
   }
 
-  void or_op(bool can_assign) {
+  void or_exp(bool can_assign) {
     int else_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
     int end_jump = emit_jump(OpCode::OP_JUMP);
     patch_jump(else_jump);
@@ -380,7 +400,7 @@ class CompileParser : private UnCopyable {
     patch_jump(end_jump);
   }
 
-  void and_op(bool can_assign) {
+  void and_exp(bool can_assign) {
     int end_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
     emit_byte(OpCode::OP_POP);
 
@@ -429,14 +449,7 @@ class CompileParser : private UnCopyable {
   }
 
   void call(bool can_assign) {
-    u8_t argc{};
-    if (!check(TokenKind::TK_RPAREN)) {
-      do {
-        expression();
-        ++argc;
-      } while (match(TokenKind::TK_COMMA));
-    }
-    consume(TokenKind::TK_RPAREN, "expect `)` after arguments");
+    u8_t argc = argument_list();
     emit_byte(OpCode::OP_CALL_0 + argc);
   }
 
@@ -448,9 +461,23 @@ class CompileParser : private UnCopyable {
       expression();
       emit_bytes(OpCode::OP_SET_FIELD, name);
     }
+    else if (match(TokenKind::TK_LPAREN)) {
+      u8_t argc = argument_list();
+      emit_bytes(OpCode::OP_INVOKE_0 + argc, name);
+    }
     else {
       emit_bytes(OpCode::OP_GET_FIELD, name);
     }
+  }
+
+  void this_exp(bool can_assign) {
+    int arg = resolve_local(curr_compiler_, prev_, false);
+    if (arg != -1)
+      emit_bytes(OpCode::OP_GET_LOCAL, static_cast<u8_t>(arg));
+    else if ((arg = resolve_upvalue(curr_compiler_, prev_)) != -1)
+      emit_bytes(OpCode::OP_GET_UPVALUE, static_cast<u8_t>(arg));
+    else
+      error("cannot use `this` outside of a class");
   }
 public:
   CompileParser(VM& vm, Lexer& lex)
@@ -459,10 +486,23 @@ public:
 
   inline bool had_error(void) const { return had_error_; }
 
-  void begin_compiler(CompilerImpl& new_compiler) {
+  void begin_compiler(
+      CompilerImpl& new_compiler, int scope_depth, bool is_method) {
     new_compiler.enclosing = curr_compiler_;
     new_compiler.function = FunctionObject::create(vm_);
+    new_compiler.scope_depth = scope_depth;
     curr_compiler_ = &new_compiler;
+
+    if (is_method) {
+      curr_compiler_->append_local(
+          Local{Token{TokenKind::TK_STRINGLITERAL, "this", 0},
+          curr_compiler_->scope_depth});
+    }
+    else {
+      curr_compiler_->append_local(
+          Local{Token{TokenKind::TK_STRINGLITERAL, "", 0},
+          curr_compiler_->scope_depth});
+    }
   }
 
   FunctionObject* finish_compiler(void) {
@@ -603,9 +643,9 @@ public:
     leave_scope();
   }
 
-  void fn_common(void) {
+  void fn_common(bool is_method = false) {
     CompilerImpl fn_compiler;
-    begin_compiler(fn_compiler);
+    begin_compiler(fn_compiler, 1, is_method);
     enter_scope();
     consume(TokenKind::TK_LPAREN, "expect `(` after function name");
     if (!check(TokenKind::TK_RPAREN)) {
@@ -631,7 +671,7 @@ public:
 
   void fun_stmt(void) {
     u8_t name_constant = parse_variable("expect function name");
-    fn_common();
+    fn_common(false);
     define_variable(name_constant);
   }
 
@@ -649,12 +689,14 @@ public:
   void method(void) {
     consume(TokenKind::TK_IDENTIFIER, "expect method name");
     u8_t method_constant = identifier_constant();
-    fn_common();
+    fn_common(true);
     emit_bytes(OpCode::OP_METHOD, method_constant);
   }
 
   void class_stmt(void) {
-    u8_t name_constant = parse_variable("expect class name");
+    consume(TokenKind::TK_IDENTIFIER, "expect class anme");
+    u8_t name_constant = identifier_constant();
+    declare_variable();
     emit_bytes(OpCode::OP_CLASS, name_constant);
 
     consume(TokenKind::TK_LBRACE, "expect `{` before class body");
@@ -673,7 +715,7 @@ FunctionObject* Compile::compile(VM& vm, const str_t& source_bytes) {
   CompileParser p(vm, lex);
 
   CompilerImpl c;
-  p.begin_compiler(c);
+  p.begin_compiler(c, 0, false);
   _main_compiler = &c;
 
   p.advance();
