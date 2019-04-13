@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cassert>
+#include <cstdarg>
 #include <functional>
 #include <iostream>
 #include <vector>
@@ -107,10 +108,19 @@ class CompileParser : private UnCopyable {
   Token prev_;
   bool had_error_{};
 
-  void error(const str_t& message) {
+  static constexpr int kMaxArguments = 8;
+
+  void error(const char* format, ...) {
     std::cerr
-      << "[LINE: " << prev_.get_lineno() << "] ERROR: "
-      << message << std::endl;
+      << "[LINE: " << prev_.get_lineno() << "] ERROR at "
+      << "`" << prev_.get_literal() << "`: ";
+
+    va_list ap;
+    va_start(ap, format);
+    vfprintf(stderr, format, ap);
+    va_end(ap);
+    std::cerr << std::endl;
+
     had_error_ = true;
   }
 
@@ -337,6 +347,9 @@ class CompileParser : private UnCopyable {
       do {
         expression();
         ++argc;
+
+        if (argc > kMaxArguments)
+          error("cannot have more than %d arguments", kMaxArguments);
       } while (match(TokenKind::TK_COMMA));
     }
     consume(TokenKind::TK_RPAREN, "expect `)` after arguments");
@@ -525,7 +538,7 @@ public:
 
   void consume(TokenKind kind, const str_t& message) {
     if (curr_.get_kind() != kind)
-      error(message);
+      error(message.c_str());
     advance();
   }
 
@@ -653,6 +666,9 @@ public:
         u8_t param_constant = parse_variable("expect parameter name");
         define_variable(param_constant);
         curr_compiler_->function->inc_arity();
+
+        if (curr_compiler_->function->arity() > kMaxArguments)
+          error("cannot have more than %d parameters", kMaxArguments);
       } while (match(TokenKind::TK_COMMA));
     }
     consume(TokenKind::TK_RPAREN, "expect `)` after parameters");
