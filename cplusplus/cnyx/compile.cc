@@ -87,7 +87,7 @@ struct CompilerImpl {
   FunctionObject* function{};
   std::vector<Local> locals;
   std::vector<Upvalue> upvalues;
-  int scope_depth{-1};
+  int scope_depth{}; // 0: is global scope
 
   CompilerImpl(void) {}
 
@@ -107,13 +107,11 @@ class CompileParser : private UnCopyable {
   Token prev_;
   bool had_error_{};
 
-  void error_at(int lineno, const str_t& message) {
-    std::cerr << "[LINE: " << lineno << "] ERROR: " << message << std::endl;
-    had_error_ = true;
-  }
-
   void error(const str_t& message) {
-    error_at(prev_.get_lineno(), message);
+    std::cerr
+      << "[LINE: " << prev_.get_lineno() << "] ERROR: "
+      << message << std::endl;
+    had_error_ = true;
   }
 
   void emit_byte(u8_t byte) {
@@ -259,11 +257,15 @@ class CompileParser : private UnCopyable {
     }
   }
 
-  int resolve_local(CompilerImpl* compiler, const Token& name) {
+  int resolve_local(CompilerImpl* compiler, const Token& name, bool in_func) {
     int i = static_cast<int>(compiler->locals.size() - 1);
     for (; i >= 0; --i) {
-      if (name.is_equal(compiler->locals[i].name))
+      auto& local = compiler->locals[i];
+      if (name.is_equal(local.name)) {
+        if (!in_func && local.depth == -1)
+          error("a local variable cannot be use in its own initializer");
         return i;
+      }
     }
     return -1;
   }
@@ -282,7 +284,7 @@ class CompileParser : private UnCopyable {
     if (compiler->enclosing == nullptr)
       return -1;
 
-    int local = resolve_local(compiler->enclosing, name);
+    int local = resolve_local(compiler->enclosing, name, true);
     if (local != -1) {
       compiler->enclosing->locals[local].upvalue = true;
       return add_upvalue(compiler, static_cast<u8_t>(local), true);
@@ -294,34 +296,31 @@ class CompileParser : private UnCopyable {
     return -1;
   }
 
-  std::tuple<Token, u8_t> parse_variable(const str_t& error) {
-    consume(TokenKind::TK_IDENTIFIER, error);
+  u8_t parse_variable(const str_t& message) {
+    consume(TokenKind::TK_IDENTIFIER, message);
+
+    if (curr_compiler_->scope_depth == 0)
+      return identifier_constant();
+
     auto name = prev_;
-    u8_t constant = 0;
-    if (curr_compiler_->scope_depth == -1)
-      constant = identifier_constant();
-    return std::make_tuple(name, constant);
+    int begindex = static_cast<int>(curr_compiler_->locals.size() - 1);
+    for (int i = begindex; i >= 0; --i) {
+      auto& local = curr_compiler_->locals[i];
+      if (local.depth != -1 && local.depth < curr_compiler_->scope_depth)
+        break;
+      if (name.is_equal(local.name))
+        error("variable with this name already declared in this scope");
+    }
+
+    curr_compiler_->append_local(Local(name, -1, false));
+    return 0;
   }
 
-  void declare_variable(const Token& name, u8_t constant) {
-    if (curr_compiler_->scope_depth == -1) {
-      emit_bytes(OpCode::OP_DEF_GLOBAL, constant);
-    }
-    else {
-      int i = static_cast<int>(curr_compiler_->locals.size() - 1);
-      for (; i >= 0; --i) {
-        auto& local = curr_compiler_->locals[i];
-        if (local.depth < curr_compiler_->scope_depth)
-          break;
-        if (name.is_equal(local.name)) {
-          error_at(name.get_lineno(),
-              "variable with this name already declared in this scope");
-        }
-      }
-
-      curr_compiler_->append_local(
-          Local(name, curr_compiler_->scope_depth, false));
-    }
+  void define_variable(u8_t global) {
+    if (curr_compiler_->scope_depth == 0)
+      emit_bytes(OpCode::OP_DEF_GLOBAL, global);
+    else
+      curr_compiler_->locals.back().depth = curr_compiler_->scope_depth;
   }
 
   void boolean(bool can_assign) {
@@ -346,7 +345,7 @@ class CompileParser : private UnCopyable {
 
   void variable(bool can_assign) {
     OpCode setop, getop;
-    int arg = resolve_local(curr_compiler_, prev_);
+    int arg = resolve_local(curr_compiler_, prev_, false);
     if (arg != -1) {
       setop = OpCode::OP_SET_LOCAL;
       getop = OpCode::OP_GET_LOCAL;
@@ -526,9 +525,7 @@ public:
       while_stmt();
     }
     else if (check(TokenKind::TK_LBRACE)) {
-      enter_scope();
       block_stmt();
-      leave_scope();
     }
     else {
       expression();
@@ -539,8 +536,12 @@ public:
 
   void block_stmt(void) {
     consume(TokenKind::TK_LBRACE, "expect `{` before block");
+
+    enter_scope();
     while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE))
       statement();
+    leave_scope();
+
     consume(TokenKind::TK_RBRACE, "expect `}` after block");
   }
 
@@ -571,14 +572,14 @@ public:
   }
 
   void var_stmt(void) {
-    auto [name, constant] = parse_variable("expect variable name");
+    u8_t global = parse_variable("expect variable name");
 
     // compile the initializer
     consume(TokenKind::TK_EQUAL, "expect `=` after variable name");
     expression();
     consume(TokenKind::TK_SEMI, "expect `;` after initializer");
 
-    declare_variable(name, constant);
+    define_variable(global);
   }
 
   void while_stmt(void) {
@@ -609,7 +610,8 @@ public:
     consume(TokenKind::TK_LPAREN, "expect `(` after function name");
     if (!check(TokenKind::TK_RPAREN)) {
       do {
-        auto [param, param_constant] = parse_variable("expect parameter name");
+        u8_t param_constant = parse_variable("expect parameter name");
+        define_variable(param_constant);
         curr_compiler_->function->inc_arity();
       } while (match(TokenKind::TK_COMMA));
     }
@@ -628,9 +630,9 @@ public:
   }
 
   void fun_stmt(void) {
-    auto [name, name_constant] = parse_variable("expect function name");
+    u8_t name_constant = parse_variable("expect function name");
     fn_common();
-    declare_variable(name, name_constant);
+    define_variable(name_constant);
   }
 
   void return_stmt(void) {
@@ -652,14 +654,15 @@ public:
   }
 
   void class_stmt(void) {
-    auto [name, name_constant] = parse_variable("expect class name");
+    u8_t name_constant = parse_variable("expect class name");
     emit_bytes(OpCode::OP_CLASS, name_constant);
-    declare_variable(name, name_constant);
 
     consume(TokenKind::TK_LBRACE, "expect `{` before class body");
     while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE))
       method();
     consume(TokenKind::TK_RBRACE, "expect `}` after class body");
+
+    define_variable(name_constant);
   }
 };
 

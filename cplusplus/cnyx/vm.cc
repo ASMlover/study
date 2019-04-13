@@ -91,9 +91,13 @@ VM::VM(void) {
 VM::~VM(void) {
   globals_ = nullptr;
 
-  for (auto* o : objects_)
+  // new object pushed into `objects_` list may has reference to old object,
+  // so need free newly object first of `objects_` list.
+  while (!objects_.empty()) {
+    auto* o = objects_.back();
+    objects_.pop_back();
     free_object(o);
-  objects_.clear();
+  }
   gray_stack_.clear();
 }
 
@@ -134,7 +138,8 @@ Value VM::pop(void) {
 }
 
 Value VM::peek(int distance) const {
-  return stack_[stack_.size() - 1 - distance];
+  // return stack_[stack_.size() - 1 - distance];
+  return stack_.empty() ? nullptr : stack_[stack_.size() - 1 - distance];
 }
 
 void VM::runtime_error(const char* format, ...) {
@@ -168,12 +173,8 @@ std::optional<double> VM::pop_numeric(void) {
 }
 
 std::optional<std::tuple<double, double>> VM::pop_numerics(void) {
-  if (!BaseObject::is_numeric(peek(0))) {
-    runtime_error("right operand must be a numeric");
-    return {};
-  }
-  if (!BaseObject::is_numeric(peek(1))) {
-    runtime_error("left operand must be a numeric");
+  if (!BaseObject::is_numeric(peek(0)) || !BaseObject::is_numeric(peek(1))) {
+    runtime_error("operands must be numerics");
     return {};
   }
 
@@ -469,7 +470,7 @@ bool VM::run(void) {
           push(NumericObject::create(*this, a + b));
         }
         else {
-          runtime_error("can only add two strings or two numerics");
+          runtime_error("operands must be two strings or two numerics");
           return false;
         }
       } break;
@@ -502,10 +503,8 @@ bool VM::run(void) {
       break;
     case OpCode::OP_NOT:
       {
-        if (auto b = pop_boolean(); b)
-          push(BooleanObject::create(*this, !*b));
-        else
-          return false;
+        auto b = BaseObject::is_falsely(pop());
+        push(BooleanObject::create(*this, b));
       } break;
     case OpCode::OP_NEG:
       {
@@ -522,11 +521,8 @@ bool VM::run(void) {
     case OpCode::OP_JUMP_IF_FALSE:
       {
         u16_t offset = _rdword();
-        Value cond = peek();
-        if (BaseObject::is_nil(cond) || (cond->type() == ObjType::BOOLEAN &&
-              !Xptr::down<BooleanObject>(cond)->value())) {
+        if (BaseObject::is_falsely(peek()))
           frame->add_ip(offset);
-        }
       } break;
     case OpCode::OP_LOOP:
       {
