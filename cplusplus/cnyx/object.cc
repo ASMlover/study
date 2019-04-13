@@ -53,6 +53,11 @@ bool BaseObject::is_falsely(BaseObject* o) {
   return is_nil(o) || (is_boolean(o) && !Xptr::down<BooleanObject>(o)->value());
 }
 
+void gray_table(VM& vm, table_t& tbl) {
+  for (auto& t : tbl)
+    vm.gray_value(t.second);
+}
+
 ValueArray::~ValueArray(void) {
   if (values_ != nullptr)
     delete [] values_;
@@ -380,73 +385,6 @@ FunctionObject* FunctionObject::create(VM& vm) {
   return o;
 }
 
-TableObject::~TableObject(void) {
-  if (entries_ != nullptr)
-    delete [] entries_;
-}
-
-bool TableObject::set_entry(StringObject* key, Value val) {
-  for (int i = 0; i < count_; ++i) {
-    auto& entry = entries_[i];
-    if (key->is_equal(entry.key)) {
-      entry.value = val;
-      return true;
-    }
-  }
-
-  if (capacity_ * kMaxLoad <= count_) {
-    capacity_ = capacity_ == 0 ? 4 : capacity_ * 2;
-
-    auto* new_entries = new TableEntry[capacity_];
-    if (entries_ != nullptr) {
-      memcpy(new_entries, entries_, sizeof(TableEntry) * count_);
-      delete [] entries_;
-    }
-    entries_ = new_entries;
-  }
-  auto& entry = entries_[count_++];
-  entry.key = key;
-  entry.value = val;
-
-  return false;
-}
-
-std::optional<Value> TableObject::get_entry(StringObject* key) const {
-  for (int i = 0; i < count_; ++i) {
-    auto& entry = entries_[i];
-    if (key->is_equal(entry.key))
-      return {entry.value};
-  }
-  return {};
-}
-
-sz_t TableObject::size_bytes(void) const {
-  return sizeof(*this);
-}
-
-str_t TableObject::stringify(void) const {
-  // TODO:
-  return "table";
-}
-
-bool TableObject::is_equal(BaseObject*) const {
-  return false;
-}
-
-void TableObject::blacken(VM& vm) {
-  for (int i = 0; i < count_; ++i) {
-    auto& entry = entries_[i];
-    vm.gray_value(entry.key);
-    vm.gray_value(entry.value);
-  }
-}
-
-TableObject* TableObject::create(VM& vm) {
-  auto* o = new TableObject();
-  vm.append_object(o);
-  return o;
-}
-
 sz_t NativeObject::size_bytes(void) const {
   return sizeof(*this);
 }
@@ -538,10 +476,9 @@ ClosureObject* ClosureObject::create(VM& vm, FunctionObject* fn) {
 }
 
 ClassObject::ClassObject(
-    StringObject* name, TableObject* methods, Value superclass)
+    StringObject* name, Value superclass)
   : BaseObject(ObjType::CLASS)
-  , name_(name)
-  , methods_(methods) {
+  , name_(name) {
 }
 
 ClassObject::~ClassObject(void) {
@@ -561,17 +498,17 @@ bool ClassObject::is_equal(BaseObject* other) const {
 
 void ClassObject::blacken(VM& vm) {
   vm.gray_value(name_);
-  vm.gray_value(methods_);
+  gray_table(vm, methods_);
 }
 
 ClassObject* ClassObject::create(VM& vm, StringObject* name, Value superclass) {
-  auto* o = new ClassObject(name, TableObject::create(vm), superclass);
+  auto* o = new ClassObject(name, superclass);
   vm.append_object(o);
   return o;
 }
 
-InstanceObject::InstanceObject(ClassObject* klass, TableObject* fields)
-  : BaseObject(ObjType::INSTANCE) , class_(klass), fields_(fields) {
+InstanceObject::InstanceObject(ClassObject* klass)
+  : BaseObject(ObjType::INSTANCE) , class_(klass) {
 }
 
 InstanceObject::~InstanceObject(void) {
@@ -593,11 +530,11 @@ bool InstanceObject::is_equal(BaseObject* other) const {
 
 void InstanceObject::blacken(VM& vm) {
   vm.gray_value(class_);
-  vm.gray_value(fields_);
+  gray_table(vm, fields_);
 }
 
 InstanceObject* InstanceObject::create(VM& vm, ClassObject* klass) {
-  auto* o = new InstanceObject(klass, TableObject::create(vm));
+  auto* o = new InstanceObject(klass);
   vm.append_object(o);
   return o;
 }

@@ -100,14 +100,14 @@ class VM : private UnCopyable {
   std::vector<Value> stack_;
   std::vector<CallFrame> frames_;
 
-  TableObject* globals_{};
+  table_t globals_;
   UpvalueObject* open_upvalues_{};
 
   std::list<BaseObject*> objects_;
   std::list<BaseObject*> gray_stack_;
 
-  void define_native(const std::string& name, const NativeFunction& fn);
-  void define_native(const std::string& name, NativeFunction&& fn);
+  void define_native(const str_t& name, const NativeFunction& fn);
+  void define_native(const str_t& name, NativeFunction&& fn);
 
   void create_class(StringObject* name);
   void bind_method(StringObject* name);

@@ -28,8 +28,12 @@
 
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 
 namespace nyx {
+
+class BaseObject;
+using Value = BaseObject*;
 
 using byte_t = std::uint8_t;
 using i8_t = std::int8_t;
@@ -42,6 +46,7 @@ using i64_t = std::int64_t;
 using u64_t = std::uint64_t;
 using sz_t = std::size_t;
 using str_t = std::string;
+using table_t = std::unordered_map<str_t, Value>;
 
 class Copyable {
 protected:

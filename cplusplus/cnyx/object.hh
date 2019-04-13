@@ -40,7 +40,6 @@ enum class ObjType {
   STRING,
   CLOSURE,
   FUNCTION,
-  TABLE,
   NATIVE,
   UPVALUE,
   CLASS,
@@ -72,7 +71,6 @@ public:
   static bool is_string(BaseObject* o) { return is_type(o, ObjType::STRING); }
   static bool is_closure(BaseObject* o) { return is_type(o, ObjType::CLOSURE); }
   static bool is_function(BaseObject* o) { return is_type(o, ObjType::FUNCTION); }
-  static bool is_table(BaseObject* o) { return is_type(o, ObjType::TABLE); }
   static bool is_native(BaseObject* o) { return is_type(o, ObjType::NATIVE); }
   static bool is_upvalue(BaseObject* o) { return is_type(o, ObjType::UPVALUE); }
   static bool is_class(BaseObject* o) { return is_type(o, ObjType::CLASS); }
@@ -83,7 +81,6 @@ public:
   virtual bool is_equal(BaseObject* other) const = 0;
   virtual void blacken(VM& vm) = 0;
 };
-using Value = BaseObject*;
 using NativeFunction = std::function<Value (int argc, Value* args)>;
 
 inline std::ostream& operator<<(std::ostream& out, BaseObject* obj) {
@@ -97,6 +94,8 @@ inline bool values_equal(Value a, Value b) {
     return false;
   return a->type() != b->type() ? false : a->is_equal(b);
 }
+
+void gray_table(VM& vm, table_t& tbl);
 
 class ValueArray : private UnCopyable {
   int capacity_{};
@@ -219,37 +218,6 @@ public:
   static FunctionObject* create(VM& vm);
 };
 
-class TableObject : public BaseObject {
-public:
-  struct TableEntry {
-    StringObject* key;
-    Value value;
-  };
-private:
-  int capacity_{};
-  int count_{};
-  TableEntry* entries_{};
-
-  static constexpr double kMaxLoad = 0.75;
-
-  TableObject(void) : BaseObject(ObjType::TABLE) {}
-  virtual ~TableObject(void);
-public:
-  inline int capacity(void) const { return capacity_; }
-  inline int count(void) const { return count_; }
-  inline TableEntry* entries(void) { return entries_; }
-  inline const TableEntry* entries(void) const { return entries_; }
-  bool set_entry(StringObject* key, Value value);
-  std::optional<Value> get_entry(StringObject* key) const;
-
-  virtual sz_t size_bytes(void) const override;
-  virtual str_t stringify(void) const override;
-  virtual bool is_equal(BaseObject* other) const override;
-  virtual void blacken(VM& vm) override;
-
-  static TableObject* create(VM& vm);
-};
-
 class NativeObject : public BaseObject {
   NativeFunction fn_{};
 
@@ -318,20 +286,21 @@ public:
 
 class ClassObject : public BaseObject {
   StringObject* name_{};
-  TableObject* methods_{};
+  table_t methods_;
 
-  ClassObject(StringObject* name, TableObject* methods, Value superclass);
+  ClassObject(StringObject* name, Value superclass);
   virtual ~ClassObject(void);
 public:
   inline StringObject* name(void) const { return name_; }
-  inline TableObject* methods(void) const { return methods_; }
 
-  inline void bind_method(StringObject* name, Value method) {
-    methods_->set_entry(name, method);
+  inline void bind_method(const str_t& name, Value method) {
+    methods_[name] = method;
   }
 
-  inline std::optional<Value> get_method(StringObject* name) const {
-    return methods_->get_entry(name);
+  inline std::optional<Value> get_method(const str_t& name) const {
+    if (auto it = methods_.find(name); it != methods_.end())
+      return {it->second};
+    return {};
   }
 
   virtual sz_t size_bytes(void) const override;
@@ -344,20 +313,21 @@ public:
 
 class InstanceObject : public BaseObject {
   ClassObject* class_{};
-  TableObject* fields_{};
+  table_t fields_;
 
-  InstanceObject(ClassObject* klass, TableObject* fields);
+  InstanceObject(ClassObject* klass);
   virtual ~InstanceObject(void);
 public:
   inline ClassObject* get_class(void) const { return class_; }
-  inline TableObject* fields(void) const { return fields_; }
 
-  inline void set_field(StringObject* name, Value value) {
-    fields_->set_entry(name, value);
+  inline void set_field(const str_t& name, Value value) {
+    fields_[name] = value;
   }
 
-  inline std::optional<Value> get_field(StringObject* name) const {
-    return fields_->get_entry(name);
+  inline std::optional<Value> get_field(const str_t& name) const {
+    if (auto it = fields_.find(name); it != fields_.end())
+      return {it->second};
+    return {};
   }
 
   virtual sz_t size_bytes(void) const override;

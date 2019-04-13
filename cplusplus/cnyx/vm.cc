@@ -78,8 +78,6 @@ public:
 };
 
 VM::VM(void) {
-  globals_ = TableObject::create(*this);
-
   define_native("print", [](int argc, Value* args) -> Value {
         for (int i = 0; i < argc; ++i)
           std::cout << args[i] << " ";
@@ -89,7 +87,7 @@ VM::VM(void) {
 }
 
 VM::~VM(void) {
-  globals_ = nullptr;
+  globals_.clear();
 
   // new object pushed into `objects_` list may has reference to old object,
   // so need free newly object first of `objects_` list.
@@ -101,16 +99,12 @@ VM::~VM(void) {
   gray_stack_.clear();
 }
 
-void VM::define_native(const std::string& name, const NativeFunction& fn) {
-  globals_->set_entry(
-      StringObject::create(*this, name.c_str(), static_cast<int>(name.size())),
-      NativeObject::create(*this, fn));
+void VM::define_native(const str_t& name, const NativeFunction& fn) {
+  globals_[name] = NativeObject::create(*this, fn);
 }
 
-void VM::define_native(const std::string& name, NativeFunction&& fn) {
-  globals_->set_entry(
-      StringObject::create(*this, name.c_str(), static_cast<int>(name.size())),
-      NativeObject::create(*this, std::move(fn)));
+void VM::define_native(const str_t& name, NativeFunction&& fn) {
+  globals_[name] = NativeObject::create(*this, std::move(fn));
 }
 
 void VM::create_class(StringObject* name) {
@@ -121,7 +115,7 @@ void VM::bind_method(StringObject* name) {
   Value method = peek(0);
   ClassObject* klass = Xptr::down<ClassObject>(peek(1));
 
-  klass->bind_method(name, method);
+  klass->bind_method(name->chars(), method);
   pop();
 }
 
@@ -198,7 +192,7 @@ void VM::collect(void) {
     gray_value(upvalue);
   }
 
-  gray_value(globals_);
+  gray_table(*this, globals_);
   gray_compiler_roots(*this);
 
   while (!gray_stack_.empty()) {
@@ -272,7 +266,7 @@ bool VM::invoke(Value receiver, StringObject* method_name, int argc) {
 
   InstanceObject* inst = Xptr::down<InstanceObject>(receiver);
   ClassObject* cls = inst->get_class();
-  if (auto method = cls->get_method(method_name); method) {
+  if (auto method = cls->get_method(method_name->chars()); method) {
     return call_closure(Xptr::down<ClosureObject>(*method), argc);
   }
 
@@ -361,13 +355,13 @@ bool VM::run(void) {
     case OpCode::OP_DEF_GLOBAL:
       {
         auto* key = Xptr::down<StringObject>(_rdconstant());
-        globals_->set_entry(key, pop());
+        globals_[key->chars()] = pop();
       } break;
     case OpCode::OP_GET_GLOBAL:
       {
         auto* key = Xptr::down<StringObject>(_rdconstant());
-        if (auto val = globals_->get_entry(key); val) {
-          push(*val);
+        if (auto it = globals_.find(key->chars()); it != globals_.end()) {
+          push(it->second);
         }
         else {
           runtime_error("undefined variable `%s`", key->chars());
@@ -377,7 +371,10 @@ bool VM::run(void) {
     case OpCode::OP_SET_GLOBAL:
       {
         auto* key = Xptr::down<StringObject>(_rdconstant());
-        if (!globals_->set_entry(key, peek())) {
+        if (auto it = globals_.find(key->chars()); it != globals_.end()) {
+          globals_[key->chars()] = peek();
+        }
+        else {
           runtime_error("undefined variable `%s`", key->chars());
           return false;
         }
@@ -403,7 +400,7 @@ bool VM::run(void) {
         // class fields
         auto* inst = Xptr::down<InstanceObject>(pop());
         auto* name = Xptr::down<StringObject>(_rdconstant());
-        if (auto val = inst->get_field(name); val) {
+        if (auto val = inst->get_field(name->chars()); val) {
           push(*val);
         }
         else {
@@ -421,7 +418,7 @@ bool VM::run(void) {
         // class fields
         auto* inst = Xptr::down<InstanceObject>(peek(1));
         auto* name = Xptr::down<StringObject>(_rdconstant());
-        inst->set_field(name, peek(0));
+        inst->set_field(name->chars(), peek(0));
         Value val = pop();
         pop();
         push(val);
