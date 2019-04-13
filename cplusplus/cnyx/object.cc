@@ -278,6 +278,24 @@ int FunctionObject::dump_instruction(int i) {
   case OpCode::OP_CALL_8:
     std::cout << "OP_CALL_" << instruction - OpCode::OP_CALL_0 << std::endl;
     break;
+  case OpCode::OP_INVOKE_0:
+    i = constant_instruction(this, i, "OP_INVOKE_0"); break;
+  case OpCode::OP_INVOKE_1:
+    i = constant_instruction(this, i, "OP_INVOKE_1"); break;
+  case OpCode::OP_INVOKE_2:
+    i = constant_instruction(this, i, "OP_INVOKE_2"); break;
+  case OpCode::OP_INVOKE_3:
+    i = constant_instruction(this, i, "OP_INVOKE_3"); break;
+  case OpCode::OP_INVOKE_4:
+    i = constant_instruction(this, i, "OP_INVOKE_4"); break;
+  case OpCode::OP_INVOKE_5:
+    i = constant_instruction(this, i, "OP_INVOKE_5"); break;
+  case OpCode::OP_INVOKE_6:
+    i = constant_instruction(this, i, "OP_INVOKE_6"); break;
+  case OpCode::OP_INVOKE_7:
+    i = constant_instruction(this, i, "OP_INVOKE_7"); break;
+  case OpCode::OP_INVOKE_8:
+    i = constant_instruction(this, i, "OP_INVOKE_8"); break;
   case OpCode::OP_CLOSURE:
     {
       u8_t constant = codes_[i++];
@@ -519,9 +537,11 @@ ClosureObject* ClosureObject::create(VM& vm, FunctionObject* fn) {
   return o;
 }
 
-ClassObject::ClassObject(StringObject* name, Value superclass)
+ClassObject::ClassObject(
+    StringObject* name, TableObject* methods, Value superclass)
   : BaseObject(ObjType::CLASS)
-  , name_(name) {
+  , name_(name)
+  , methods_(methods) {
 }
 
 ClassObject::~ClassObject(void) {
@@ -545,7 +565,7 @@ void ClassObject::blacken(VM& vm) {
 }
 
 ClassObject* ClassObject::create(VM& vm, StringObject* name, Value superclass) {
-  auto* o = new ClassObject(name, superclass);
+  auto* o = new ClassObject(name, TableObject::create(vm), superclass);
   vm.append_object(o);
   return o;
 }

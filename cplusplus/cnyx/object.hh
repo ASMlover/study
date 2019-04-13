@@ -320,15 +320,18 @@ class ClassObject : public BaseObject {
   StringObject* name_{};
   TableObject* methods_{};
 
-  ClassObject(StringObject* name, Value superclass);
+  ClassObject(StringObject* name, TableObject* methods, Value superclass);
   virtual ~ClassObject(void);
 public:
   inline StringObject* name(void) const { return name_; }
   inline TableObject* methods(void) const { return methods_; }
-  inline void set_methods(TableObject* methods) { methods_ = methods; }
 
   inline void bind_method(StringObject* name, Value method) {
     methods_->set_entry(name, method);
+  }
+
+  inline std::optional<Value> get_method(StringObject* name) const {
+    return methods_->get_entry(name);
   }
 
   virtual sz_t size_bytes(void) const override;
