@@ -258,20 +258,24 @@ bool VM::call(Value callee, int argc/* = 0*/) {
   return false;
 }
 
-bool VM::invoke(Value receiver, StringObject* method_name, int argc) {
+bool VM::invoke(Value receiver, StringObject* name, int argc) {
   if (!BaseObject::is_instance(receiver)) {
     runtime_error("only instances have methods");
     return false;
   }
 
   InstanceObject* inst = Xptr::down<InstanceObject>(receiver);
+  if (auto callee = inst->get_field(name); callee) {
+    stack_[stack_.size() - argc - 1] = *callee;
+    return call(*callee, argc);
+  }
   ClassObject* cls = inst->get_class();
-  if (auto method = cls->get_method(method_name); method) {
+  if (auto method = cls->get_method(name); method) {
     return call_closure(Xptr::down<ClosureObject>(*method), argc);
   }
 
   runtime_error("%s does not implement `%s`",
-      cls->name()->chars(), method_name->chars());
+      cls->name()->chars(), name->chars());
   return false;
 }
 
