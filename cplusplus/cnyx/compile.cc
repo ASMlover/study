@@ -100,10 +100,20 @@ struct CompilerImpl {
   inline void append_upvalue(Upvalue&& v) { upvalues.emplace_back(v); }
 };
 
+struct ClassCompilerImpl {
+  ClassCompilerImpl* enclosing{};
+  Token name;
+
+  ClassCompilerImpl(ClassCompilerImpl* lenclosing, const Token& lname)
+    : enclosing(lenclosing), name(lname) {
+  }
+};
+
 class CompileParser : private UnCopyable {
   VM& vm_;
   Lexer& lex_;
   CompilerImpl* curr_compiler_{};
+  ClassCompilerImpl* curr_class_{};
   Token curr_;
   Token prev_;
   bool had_error_{};
@@ -656,7 +666,7 @@ public:
     leave_scope();
   }
 
-  void fn_common(bool is_method = false) {
+  void fn_common(bool is_method = false, bool is_ctor = false) {
     CompilerImpl fn_compiler;
     begin_compiler(fn_compiler, 1, is_method);
     enter_scope();
@@ -673,6 +683,11 @@ public:
     }
     consume(TokenKind::TK_RPAREN, "expect `)` after parameters");
     block_stmt();
+    // if this is a constructor, the body automatically return "this"
+    if (is_ctor) {
+      emit_bytes(OpCode::OP_GET_LOCAL, 0);
+      emit_byte(OpCode::OP_RETURN);
+    }
     leave_scope();
     auto* fn = finish_compiler();
 
@@ -687,7 +702,7 @@ public:
 
   void fun_stmt(void) {
     u8_t name_constant = parse_variable("expect function name");
-    fn_common(false);
+    fn_common(false, false);
     define_variable(name_constant);
   }
 
@@ -705,7 +720,8 @@ public:
   void method(void) {
     consume(TokenKind::TK_IDENTIFIER, "expect method name");
     u8_t method_constant = identifier_constant();
-    fn_common(true);
+    bool is_ctor{prev_.is_equal(curr_class_->name)};
+    fn_common(true, is_ctor);
     emit_bytes(OpCode::OP_METHOD, method_constant);
   }
 
@@ -713,6 +729,9 @@ public:
     consume(TokenKind::TK_IDENTIFIER, "expect class anme");
     u8_t name_constant = identifier_constant();
     declare_variable();
+
+    ClassCompilerImpl class_compiler(curr_class_, prev_);
+    curr_class_ = &class_compiler;
 
     if (match(TokenKind::TK_LESS)) {
       parse_precedence(Precedence::CALL);
@@ -728,6 +747,8 @@ public:
     consume(TokenKind::TK_RBRACE, "expect `}` after class body");
 
     define_variable(name_constant);
+
+    curr_class_ = curr_class_->enclosing;
   }
 };
 

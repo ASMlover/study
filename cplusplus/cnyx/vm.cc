@@ -127,7 +127,10 @@ void VM::define_method(StringObject* name) {
   Value method = peek(0);
   ClassObject* klass = Xptr::down<ClassObject>(peek(1));
 
-  klass->bind_method(name, method);
+  if (values_equal(name, klass->name()))
+    klass->set_ctor(method);
+  else
+    klass->bind_method(name, method);
   pop();
 }
 
@@ -243,7 +246,7 @@ bool VM::call_closure(ClosureObject* closure, int argc) {
 
   frames_.emplace_back(CallFrame(closure,
         closure->get_function()->codes(),
-        static_cast<int>(stack_.size() - argc)));
+        static_cast<int>(stack_.size() - argc - 1)));
   return true;
 }
 
@@ -254,10 +257,14 @@ bool VM::call(Value callee, int argc/* = 0*/) {
     return call_closure(bound->method(), argc);
   }
   if (BaseObject::is_class(callee)) {
-    InstanceObject* inst = InstanceObject::create(
-        *this, Xptr::down<ClassObject>(callee));
+    ClassObject* cls = Xptr::down<ClassObject>(callee);
+    InstanceObject* inst = InstanceObject::create(*this, cls);
     stack_[stack_.size() - argc - 1] = inst;
-    stack_.resize(stack_.size() - argc);
+    // call the constructor
+    if (auto ctor = cls->ctor(); ctor)
+      return call_closure(Xptr::down<ClosureObject>(ctor), argc);
+    else
+      stack_.resize(stack_.size() - argc);
     return true;
   }
   if (BaseObject::is_closure(callee)) {
@@ -634,8 +641,7 @@ bool VM::run(void) {
     case OpCode::OP_RETURN:
       {
         Value ret = pop();
-        if (!stack_.empty())
-          close_upvalues(&stack_[frame->stack_start() - 1]);
+        close_upvalues(stack_.empty() ? nullptr : &stack_[frame->stack_start()]);
 
         if (frames_.size() == 1)
           return true;

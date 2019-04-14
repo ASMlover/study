@@ -578,7 +578,6 @@ void BoundMethodObject::blacken(VM& vm) {
   vm.gray_value(method_);
 }
 
-
 BoundMethodObject* BoundMethodObject::create(
     VM& vm, Value receiver, ClosureObject* method) {
   auto* o = new BoundMethodObject(receiver, method);
