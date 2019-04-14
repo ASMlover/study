@@ -154,6 +154,7 @@ public:
 
 class StringObject : public BaseObject {
   int count_{};
+  u32_t hash_{};
   char* chars_{};
 
   StringObject(const char* s, int n);

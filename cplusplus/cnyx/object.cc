@@ -49,6 +49,16 @@ inline int power_of_2ceil(int n) {
   return n;
 }
 
+static u32_t string_hash(const char* s, int n) {
+  // FNV-1a hash. See: http://www.isthe.com/chongo/tech/comp/fnv/
+  u32_t hash{2166136261u};
+  for (int i = 0; i < n; ++i) {
+    hash ^= s[i];
+    hash *= 16777619;
+  }
+  return hash;
+}
+
 bool BaseObject::is_falsely(BaseObject* o) {
   return is_nil(o) || (is_boolean(o) && !Xptr::down<BooleanObject>(o)->value());
 }
@@ -135,6 +145,7 @@ StringObject::StringObject(const char* s, int n)
   if (s != nullptr)
     memcpy(chars_, s, n);
   chars_[count_] = 0;
+  hash_ = string_hash(chars_, count_);
 }
 
 StringObject::StringObject(StringObject* a, StringObject* b)
@@ -151,6 +162,7 @@ StringObject::StringObject(StringObject* a, StringObject* b)
   if (b != nullptr)
     memcpy(chars_ + offset, b->chars(), b->count());
   chars_[count_] = 0;
+  hash_ = string_hash(chars_, count_);
 }
 
 StringObject::~StringObject(void) {
@@ -168,7 +180,8 @@ str_t StringObject::stringify(void) const {
 
 bool StringObject::is_equal(BaseObject* other) const {
   auto* r = Xptr::down<StringObject>(other);
-  return count_ == r->count_ && memcmp(chars_, r->chars_, count_) == 0;
+  return (hash_ == r->hash_ &&  count_ == r->count_
+      && memcmp(chars_, r->chars_, count_) == 0);
 }
 
 void StringObject::blacken(VM&) {
