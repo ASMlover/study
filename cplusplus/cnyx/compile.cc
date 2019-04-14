@@ -452,7 +452,7 @@ class CompileParser : private UnCopyable {
     auto oper_kind = prev_.get_kind();
 
     // compile the operand
-    parse_precedence(Xenum::as_enum<Precedence>(Precedence::UNARY + 1));
+    parse_precedence(Precedence::CALL);
 
     switch (oper_kind) {
     case TokenKind::TK_BANG: emit_byte(OpCode::OP_NOT); break;
@@ -713,7 +713,14 @@ public:
     consume(TokenKind::TK_IDENTIFIER, "expect class anme");
     u8_t name_constant = identifier_constant();
     declare_variable();
-    emit_bytes(OpCode::OP_CLASS, name_constant);
+
+    if (match(TokenKind::TK_LESS)) {
+      parse_precedence(Precedence::CALL);
+      emit_bytes(OpCode::OP_SUBCLASS, name_constant);
+    }
+    else {
+      emit_bytes(OpCode::OP_CLASS, name_constant);
+    }
 
     consume(TokenKind::TK_LBRACE, "expect `{` before class body");
     while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE))

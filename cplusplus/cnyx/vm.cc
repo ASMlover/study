@@ -114,8 +114,8 @@ void VM::define_native(const str_t& name, NativeFunction&& fn) {
   globals_[name] = NativeObject::create(*this, std::move(fn));
 }
 
-void VM::create_class(StringObject* name) {
-  push(ClassObject::create(*this, name, peek()));
+void VM::create_class(StringObject* name, ClassObject* superclass) {
+  push(ClassObject::create(*this, name, superclass));
 }
 
 void VM::bind_method(StringObject* name) {
@@ -279,12 +279,15 @@ bool VM::invoke(Value receiver, StringObject* name, int argc) {
     return call(*callee, argc);
   }
   ClassObject* cls = inst->get_class();
-  if (auto method = cls->get_method(name); method) {
-    return call_closure(Xptr::down<ClosureObject>(*method), argc);
+  while (cls != nullptr) {
+    if (auto method = cls->get_method(name); method) {
+      return call_closure(Xptr::down<ClosureObject>(*method), argc);
+    }
+    cls = cls->superclass();
   }
 
   runtime_error("%s does not implement `%s`",
-      cls->name()->chars(), name->chars());
+      inst->get_class()->name()->chars(), name->chars());
   return false;
 }
 
@@ -338,6 +341,9 @@ bool VM::run(void) {
   auto _rdconstant = [&frame, _rdbyte](void) -> Value {
     return frame->get_closure_constant(_rdbyte());
   };
+  auto _rdsymbol = [_rdconstant](void) -> StringObject* {
+    return Xptr::down<StringObject>(_rdconstant());
+  };
 
   for (;;) {
 #if defined(DEBUG_EXEC_TRACE)
@@ -367,12 +373,12 @@ bool VM::run(void) {
       } break;
     case OpCode::OP_DEF_GLOBAL:
       {
-        auto* key = Xptr::down<StringObject>(_rdconstant());
+        auto* key = _rdsymbol();
         globals_[key->chars()] = pop();
       } break;
     case OpCode::OP_GET_GLOBAL:
       {
-        auto* key = Xptr::down<StringObject>(_rdconstant());
+        auto* key = _rdsymbol();
         if (auto it = globals_.find(key->chars()); it != globals_.end()) {
           push(it->second);
         }
@@ -383,7 +389,7 @@ bool VM::run(void) {
       } break;
     case OpCode::OP_SET_GLOBAL:
       {
-        auto* key = Xptr::down<StringObject>(_rdconstant());
+        auto* key = _rdsymbol();
         if (auto it = globals_.find(key->chars()); it != globals_.end()) {
           globals_[key->chars()] = peek();
         }
@@ -412,7 +418,7 @@ bool VM::run(void) {
 
         // class fields
         auto* inst = Xptr::down<InstanceObject>(pop());
-        auto* name = Xptr::down<StringObject>(_rdconstant());
+        auto* name = _rdsymbol();
         if (auto val = inst->get_field(name); val) {
           push(*val);
         }
@@ -430,8 +436,7 @@ bool VM::run(void) {
 
         // class fields
         auto* inst = Xptr::down<InstanceObject>(peek(1));
-        auto* name = Xptr::down<StringObject>(_rdconstant());
-        inst->set_field(name, peek(0));
+        inst->set_field(_rdsymbol(), peek(0));
         Value val = pop();
         pop();
         push(val);
@@ -582,7 +587,7 @@ bool VM::run(void) {
     case OpCode::OP_INVOKE_7:
     case OpCode::OP_INVOKE_8:
       {
-        StringObject* method = Xptr::down<StringObject>(_rdconstant());
+        StringObject* method = _rdsymbol();
         int argc = instruction - OpCode::OP_INVOKE_0;
         if (!invoke(peek(argc), method, argc))
           return false;
@@ -627,9 +632,18 @@ bool VM::run(void) {
         frame = &frames_.back();
       } break;
     case OpCode::OP_CLASS:
-      create_class(Xptr::down<StringObject>(_rdconstant())); break;
+      create_class(_rdsymbol(), nullptr); break;
+    case OpCode::OP_SUBCLASS:
+      {
+        Value superclass = pop();
+        if (!BaseObject::is_class(superclass)) {
+          runtime_error("superclass must be a class");
+          return false;
+        }
+        create_class(_rdsymbol(), Xptr::down<ClassObject>(superclass));
+      } break;
     case OpCode::OP_METHOD:
-      bind_method(Xptr::down<StringObject>(_rdconstant())); break;
+      bind_method(_rdsymbol()); break;
     }
   }
 

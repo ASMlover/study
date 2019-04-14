@@ -84,7 +84,8 @@ enum OpCode {
   OP_CLOSURE,
   OP_CLOSE_UPVALUE,
   OP_RETURN, // return
-  OP_CLASS,
+  OP_CLASS, // class
+  OP_SUBCLASS, // subclass
   OP_METHOD,
 };
 
@@ -109,7 +110,7 @@ class VM : private UnCopyable {
   void define_native(const str_t& name, const NativeFunction& fn);
   void define_native(const str_t& name, NativeFunction&& fn);
 
-  void create_class(StringObject* name);
+  void create_class(StringObject* name, ClassObject* superclass = nullptr);
   void bind_method(StringObject* name);
 
   void push(Value val);
