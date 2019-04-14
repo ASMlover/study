@@ -286,12 +286,14 @@ public:
 
 class ClassObject : public BaseObject {
   StringObject* name_{};
+  ClassObject* superclass_{};
   table_t methods_;
 
-  ClassObject(StringObject* name, Value superclass);
+  ClassObject(StringObject* name, ClassObject* superclass);
   virtual ~ClassObject(void);
 public:
   inline StringObject* name(void) const { return name_; }
+  inline ClassObject* superclass(void) const { return superclass_; }
 
   inline void bind_method(StringObject* name, Value method) {
     methods_[name->chars()] = method;
@@ -308,7 +310,7 @@ public:
   virtual bool is_equal(BaseObject* other) const override;
   virtual void blacken(VM& vm) override;
 
-  static ClassObject* create(VM& vm, StringObject* name, Value superclass);
+  static ClassObject* create(VM& vm, StringObject* name, ClassObject* superclass);
 };
 
 class InstanceObject : public BaseObject {

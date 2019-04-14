@@ -320,6 +320,8 @@ int FunctionObject::dump_instruction(int i) {
   case OpCode::OP_RETURN: std::cout << "OP_RETURN" << std::endl; break;
   case OpCode::OP_CLASS:
     i = constant_instruction(this, i, "OP_CLASS"); break;
+  case OpCode::OP_SUBCLASS:
+    i = constant_instruction(this, i, "OP_SUBCLASS"); break;
   case OpCode::OP_METHOD:
     i = constant_instruction(this, i, "OP_METHOD"); break;
   }
@@ -476,9 +478,10 @@ ClosureObject* ClosureObject::create(VM& vm, FunctionObject* fn) {
 }
 
 ClassObject::ClassObject(
-    StringObject* name, Value superclass)
+    StringObject* name, ClassObject* superclass)
   : BaseObject(ObjType::CLASS)
-  , name_(name) {
+  , name_(name)
+  , superclass_(superclass) {
 }
 
 ClassObject::~ClassObject(void) {
@@ -501,7 +504,8 @@ void ClassObject::blacken(VM& vm) {
   gray_table(vm, methods_);
 }
 
-ClassObject* ClassObject::create(VM& vm, StringObject* name, Value superclass) {
+ClassObject* ClassObject::create(
+    VM& vm, StringObject* name, ClassObject* superclass) {
   auto* o = new ClassObject(name, superclass);
   vm.append_object(o);
   return o;
