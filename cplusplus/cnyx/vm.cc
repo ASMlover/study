@@ -107,11 +107,21 @@ VM::~VM(void) {
 }
 
 void VM::define_native(const str_t& name, const NativeFunction& fn) {
-  globals_[name] = NativeObject::create(*this, fn);
+  push(StringObject::create(
+        *this, name.c_str(), static_cast<int>(name.size())));
+  push(NativeObject::create(*this, fn));
+  globals_[name] = Xptr::down<NativeObject>(peek());
+  pop();
+  pop();
 }
 
 void VM::define_native(const str_t& name, NativeFunction&& fn) {
-  globals_[name] = NativeObject::create(*this, std::move(fn));
+  push(StringObject::create(
+        *this, name.c_str(), static_cast<int>(name.size())));
+  push(NativeObject::create(*this, std::move(fn)));
+  globals_[name] = Xptr::down<NativeObject>(peek());
+  pop();
+  pop();
 }
 
 void VM::create_class(StringObject* name, ClassObject* superclass) {
@@ -671,6 +681,16 @@ bool VM::run(void) {
   return true;
 }
 
+void VM::append_object(BaseObject* o) {
+  bytes_allocated_ += o->size_bytes();
+  if (bytes_allocated_ > kGCThreshold) {
+    collect();
+    bytes_allocated_ = 0;
+  }
+
+  objects_.push_back(o);
+}
+
 void VM::gray_value(Value v) {
   if (BaseObject::is_nil(v))
     return;
@@ -693,7 +713,9 @@ void VM::blacken_object(BaseObject* obj) {
 
 void VM::free_object(BaseObject* obj) {
 #if defined(DEBUG_GC_TRACE)
-  std::cout << "`" << Xptr::address(obj) << "` free " << obj << std::endl;
+  std::cout
+    << "`" << Xptr::address(obj) << "` free "
+    << obj->type_name() << " " << obj << std::endl;
 #endif
   delete obj;
 }

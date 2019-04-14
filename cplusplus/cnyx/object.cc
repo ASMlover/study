@@ -59,6 +59,22 @@ static u32_t string_hash(const char* s, int n) {
   return hash;
 }
 
+str_t BaseObject::type_name(void) const {
+  switch (type_) {
+  case ObjType::BOOLEAN: return "<boolean>";
+  case ObjType::NUMERIC: return "<numeric>";
+  case ObjType::STRING: return "<string>";
+  case ObjType::CLOSURE: return "<closure>";
+  case ObjType::FUNCTION: return "<function>";
+  case ObjType::NATIVE: return "<native>";
+  case ObjType::UPVALUE: return "<upvalue>";
+  case ObjType::CLASS: return "<class>";
+  case ObjType::INSTANCE: return "<instance>";
+  case ObjType::BOUND_METHOD: return "<bound method>";
+  }
+  return "<unknown>";
+}
+
 bool BaseObject::is_falsely(BaseObject* o) {
   return is_nil(o) || (is_boolean(o) && !Xptr::down<BooleanObject>(o)->value());
 }
@@ -521,6 +537,8 @@ bool ClassObject::is_equal(BaseObject* other) const {
 
 void ClassObject::blacken(VM& vm) {
   vm.gray_value(name_);
+  vm.gray_value(superclass_);
+  vm.gray_value(ctor_);
   gray_table(vm, methods_);
 }
 

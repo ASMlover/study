@@ -98,12 +98,15 @@ enum class InterpretResult {
 class CallFrame;
 
 class VM : private UnCopyable {
+  static constexpr sz_t kGCThreshold = (1 << 20) * 10;
+
   std::vector<Value> stack_;
   std::vector<CallFrame> frames_;
 
   table_t globals_;
   UpvalueObject* open_upvalues_{};
 
+  sz_t bytes_allocated_{};
   std::list<BaseObject*> objects_;
   std::list<BaseObject*> gray_stack_;
 
@@ -136,10 +139,10 @@ public:
   VM(void);
   ~VM(void);
 
-  inline void append_object(BaseObject* o) { objects_.push_back(o); }
   inline void invoke_push(Value v) { push(v); }
   inline Value invoke_pop(void) { return pop(); }
 
+  void append_object(BaseObject* o);
   void gray_value(Value v);
   void blacken_object(BaseObject* obj);
   void free_object(BaseObject* obj);

@@ -60,6 +60,7 @@ public:
   inline void set_type(ObjType t) { type_ = t; }
   inline bool is_dark(void) const { return is_dark_; }
   inline void set_dark(bool is_dark) { is_dark_ = is_dark; }
+  str_t type_name(void) const;
 
   static bool is_falsely(BaseObject* o);
   static bool is_type(BaseObject* o, ObjType t) {
