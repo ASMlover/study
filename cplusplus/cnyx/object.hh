@@ -44,6 +44,7 @@ enum class ObjType {
   UPVALUE,
   CLASS,
   INSTANCE,
+  BOUND_METHOD,
 };
 
 class VM;
@@ -75,6 +76,7 @@ public:
   static bool is_upvalue(BaseObject* o) { return is_type(o, ObjType::UPVALUE); }
   static bool is_class(BaseObject* o) { return is_type(o, ObjType::CLASS); }
   static bool is_instance(BaseObject* o) { return is_type(o, ObjType::INSTANCE); }
+  static bool is_bound_method(BaseObject* o) { return is_type(o, ObjType::BOUND_METHOD); }
 
   virtual sz_t size_bytes(void) const = 0;
   virtual str_t stringify(void) const = 0;
@@ -340,6 +342,25 @@ public:
   virtual void blacken(VM& vm) override;
 
   static InstanceObject* create(VM& vm, ClassObject* klass);
+};
+
+class BoundMethodObject : public BaseObject {
+  Value receiver_{};
+  ClosureObject* method_{};
+
+  BoundMethodObject(Value receiver, ClosureObject* method);
+  virtual ~BoundMethodObject(void);
+public:
+  inline Value receiver(void) const { return receiver_; }
+  inline ClosureObject* method(void) const { return method_; }
+
+  virtual sz_t size_bytes(void) const override;
+  virtual str_t stringify(void) const override;
+  virtual bool is_equal(BaseObject* other) const override;
+  virtual void blacken(VM& vm) override;
+
+  static BoundMethodObject* create(
+      VM& vm, Value receiver, ClosureObject* method);
 };
 
 }

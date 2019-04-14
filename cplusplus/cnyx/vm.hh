@@ -111,7 +111,7 @@ class VM : private UnCopyable {
   void define_native(const str_t& name, NativeFunction&& fn);
 
   void create_class(StringObject* name, ClassObject* superclass = nullptr);
-  void bind_method(StringObject* name);
+  void define_method(StringObject* name);
 
   void push(Value val);
   Value pop(void);

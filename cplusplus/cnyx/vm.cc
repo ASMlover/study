@@ -123,7 +123,7 @@ void VM::create_class(StringObject* name, ClassObject* superclass) {
     cls->inherit_from(superclass);
 }
 
-void VM::bind_method(StringObject* name) {
+void VM::define_method(StringObject* name) {
   Value method = peek(0);
   ClassObject* klass = Xptr::down<ClassObject>(peek(1));
 
@@ -153,7 +153,7 @@ void VM::runtime_error(const char* format, ...) {
   va_end(ap);
   std::cerr << std::endl;
 
-  for (auto i = frames_.size() - 1; i >= 0; --i) {
+  for (auto i = static_cast<int>(frames_.size() - 1); i >= 0; --i) {
     auto& frame = frames_[i];
     auto offset = static_cast<int>(frame.ip() - frame.get_closure_codes());
     std::cerr << "[LINE: " << frame.get_closure_codeline(offset) << "]" << std::endl;
@@ -248,6 +248,11 @@ bool VM::call_closure(ClosureObject* closure, int argc) {
 }
 
 bool VM::call(Value callee, int argc/* = 0*/) {
+  if (BaseObject::is_bound_method(callee)) {
+    BoundMethodObject* bound = Xptr::down<BoundMethodObject>(callee);
+    stack_[stack_.size() - argc - 1] = bound;
+    return call_closure(bound->method(), argc);
+  }
   if (BaseObject::is_class(callee)) {
     InstanceObject* inst = InstanceObject::create(
         *this, Xptr::down<ClassObject>(callee));
@@ -290,8 +295,7 @@ bool VM::invoke(Value receiver, StringObject* name, int argc) {
     return call_closure(Xptr::down<ClosureObject>(*method), argc);
   }
 
-  runtime_error("%s does not implement `%s`",
-      inst->get_class()->name()->chars(), name->chars());
+  runtime_error("undefined property `%s`", name->chars());
   return false;
 }
 
@@ -421,13 +425,20 @@ bool VM::run(void) {
         }
 
         // class fields
-        auto* inst = Xptr::down<InstanceObject>(pop());
+        auto* inst = Xptr::down<InstanceObject>(peek());
         auto* name = _rdsymbol();
         if (auto val = inst->get_field(name); val) {
+          pop(); // pop out instance
           push(*val);
         }
+        else if (auto val = inst->get_class()->get_method(name); val) {
+          auto* bound = BoundMethodObject::create(
+              *this, peek(0), Xptr::down<ClosureObject>(*val));
+          pop(); // pop out instance
+          push(bound);
+        }
         else {
-          runtime_error("undefined field `%s`", name->chars());
+          runtime_error("undefined property `%s`", name->chars());
           return false;
         }
       } break;
@@ -647,7 +658,7 @@ bool VM::run(void) {
         create_class(_rdsymbol(), Xptr::down<ClassObject>(superclass));
       } break;
     case OpCode::OP_METHOD:
-      bind_method(_rdsymbol()); break;
+      define_method(_rdsymbol()); break;
     }
   }
 

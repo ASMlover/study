@@ -458,7 +458,9 @@ sz_t ClosureObject::size_bytes(void) const {
 }
 
 str_t ClosureObject::stringify(void) const {
-  return "closure";
+  std::stringstream ss;
+  ss << "<fn `" << this << "`";
+  return ss.str();
 }
 
 bool ClosureObject::is_equal(BaseObject* other) const {
@@ -544,6 +546,42 @@ void InstanceObject::blacken(VM& vm) {
 
 InstanceObject* InstanceObject::create(VM& vm, ClassObject* klass) {
   auto* o = new InstanceObject(klass);
+  vm.append_object(o);
+  return o;
+}
+
+BoundMethodObject::BoundMethodObject(Value receiver, ClosureObject* method)
+  : BaseObject(ObjType::BOUND_METHOD)
+  , receiver_(receiver)
+  , method_(method) {
+}
+
+BoundMethodObject::~BoundMethodObject(void) {
+}
+
+sz_t BoundMethodObject::size_bytes(void) const {
+  return sizeof(*this);
+}
+
+str_t BoundMethodObject::stringify(void) const {
+  std::stringstream ss;
+  ss << "<fn `" << this << "`";
+  return ss.str();
+}
+
+bool BoundMethodObject::is_equal(BaseObject* other) const {
+  return false;
+}
+
+void BoundMethodObject::blacken(VM& vm) {
+  vm.gray_value(receiver_);
+  vm.gray_value(method_);
+}
+
+
+BoundMethodObject* BoundMethodObject::create(
+    VM& vm, Value receiver, ClosureObject* method) {
+  auto* o = new BoundMethodObject(receiver, method);
   vm.append_object(o);
   return o;
 }
