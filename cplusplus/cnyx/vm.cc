@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cassert>
+#include <chrono>
 #include <cstdarg>
 #include <iostream>
 #include <sstream>
@@ -78,11 +79,17 @@ public:
 };
 
 VM::VM(void) {
+  // define native functions
   define_native("print", [](int argc, Value* args) -> Value {
         for (int i = 0; i < argc; ++i)
           std::cout << args[i] << " ";
         std::cout << std::endl;
         return nullptr;
+      });
+  define_native("clock", [this](int argc, Value* args) -> Value {
+        double sec = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
+        return NumericObject::create(*this, sec);
       });
 }
 
@@ -247,8 +254,10 @@ bool VM::call(Value callee, int argc/* = 0*/) {
     return call_closure(Xptr::down<ClosureObject>(callee), argc);
   }
   if (BaseObject::is_native(callee)) {
-    Value ret = Xptr::down<NativeObject>(callee)->get_function()(
-        argc, &stack_[stack_.size() - argc]);
+    Value* args{};
+    if (argc > 0)
+      args = &stack_[stack_.size() - argc];
+    Value ret = Xptr::down<NativeObject>(callee)->get_function()(argc, args);
     stack_.resize(stack_.size() - argc - 1);
     push(ret);
     return true;
