@@ -52,6 +52,8 @@ enum Precedence {
 
 class CompileParser;
 
+static CompileParser* _curr_cp{};
+
 struct ParseRule {
   std::function<void (CompileParser*, bool)> prefix;
   std::function<void (CompileParser*, bool)> infix;
@@ -505,8 +507,11 @@ class CompileParser : private UnCopyable {
 public:
   CompileParser(VM& vm, Lexer& lex)
     : vm_(vm), lex_(lex) {
+    _curr_cp = this;
   }
+  ~CompileParser(void) { _curr_cp = nullptr; }
 
+  inline CompilerImpl* curr_compiler(void) const { return curr_compiler_; }
   inline bool had_error(void) const { return had_error_; }
 
   void begin_compiler(
@@ -752,31 +757,28 @@ public:
   }
 };
 
-static CompilerImpl* _main_compiler = nullptr;
-
 FunctionObject* Compile::compile(VM& vm, const str_t& source_bytes) {
   Lexer lex(source_bytes);
   CompileParser p(vm, lex);
 
   CompilerImpl c;
   p.begin_compiler(c, 0, false);
-  _main_compiler = &c;
-
   p.advance();
   if (!p.match(TokenKind::TK_EOF)) {
     do {
       p.statement();
     } while (!p.match(TokenKind::TK_EOF));
   }
-
   auto* fn = p.finish_compiler();
-  _main_compiler = nullptr;
 
   return p.had_error() ? nullptr : fn;
 }
 
 void gray_compiler_roots(VM& vm) {
-  auto* compiler_iter = _main_compiler;
+  if (_curr_cp == nullptr)
+    return;
+
+  auto* compiler_iter = _curr_cp->curr_compiler();
   while (compiler_iter != nullptr) {
     vm.gray_value(compiler_iter->function);
     compiler_iter = compiler_iter->enclosing;
