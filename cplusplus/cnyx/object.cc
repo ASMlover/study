@@ -487,6 +487,11 @@ ClassObject::ClassObject(
 ClassObject::~ClassObject(void) {
 }
 
+void ClassObject::inherit_from(ClassObject* superclass) {
+  for (auto& meth : superclass->methods_)
+    methods_[meth.first] = meth.second;
+}
+
 sz_t ClassObject::size_bytes(void) const {
   return sizeof(*this);
 }

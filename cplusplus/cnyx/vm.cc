@@ -115,7 +115,12 @@ void VM::define_native(const str_t& name, NativeFunction&& fn) {
 }
 
 void VM::create_class(StringObject* name, ClassObject* superclass) {
-  push(ClassObject::create(*this, name, superclass));
+  ClassObject* cls = ClassObject::create(*this, name, superclass);
+  push(cls);
+
+  // inheritance methods of superclasses
+  if (superclass != nullptr)
+    cls->inherit_from(superclass);
 }
 
 void VM::bind_method(StringObject* name) {
@@ -278,12 +283,11 @@ bool VM::invoke(Value receiver, StringObject* name, int argc) {
     stack_[stack_.size() - argc - 1] = *callee;
     return call(*callee, argc);
   }
+
+  // look for a method
   ClassObject* cls = inst->get_class();
-  while (cls != nullptr) {
-    if (auto method = cls->get_method(name); method) {
-      return call_closure(Xptr::down<ClosureObject>(*method), argc);
-    }
-    cls = cls->superclass();
+  if (auto method = cls->get_method(name); method) {
+    return call_closure(Xptr::down<ClosureObject>(*method), argc);
   }
 
   runtime_error("%s does not implement `%s`",

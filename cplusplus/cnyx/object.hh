@@ -305,6 +305,8 @@ public:
     return {};
   }
 
+  void inherit_from(ClassObject* superclass);
+
   virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;
   virtual bool is_equal(BaseObject* other) const override;
