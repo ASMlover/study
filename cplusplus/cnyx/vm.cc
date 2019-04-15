@@ -135,7 +135,7 @@ void VM::create_class(StringObject* name, ClassObject* superclass) {
 
 void VM::define_method(StringObject* name) {
   Value method = peek(0);
-  ClassObject* klass = Xptr::down<ClassObject>(peek(1));
+  ClassObject* klass = peek(1)->as_class();
 
   if (values_equal(name, klass->name()))
     klass->set_ctor(method);
@@ -178,7 +178,7 @@ std::optional<bool> VM::pop_boolean(void) {
     runtime_error("operand must be a boolean");
     return {};
   }
-  return {Xptr::down<BooleanObject>(pop())->value()};
+  return {pop()->as_boolean()};
 }
 
 std::optional<double> VM::pop_numeric(void) {
@@ -186,7 +186,7 @@ std::optional<double> VM::pop_numeric(void) {
     runtime_error("operand must be a numeric");
     return {};
   }
-  return {Xptr::down<NumericObject>(pop())->value()};
+  return {pop()->as_numeric()};
 }
 
 std::optional<std::tuple<double, double>> VM::pop_numerics(void) {
@@ -195,8 +195,8 @@ std::optional<std::tuple<double, double>> VM::pop_numerics(void) {
     return {};
   }
 
-  auto b = Xptr::down<NumericObject>(pop())->value();
-  auto a = Xptr::down<NumericObject>(pop())->value();
+  auto b = pop()->as_numeric();
+  auto a = pop()->as_numeric();
   return {{a, b}};
 }
 
@@ -271,29 +271,29 @@ bool VM::call_closure(ClosureObject* closure, int argc) {
 
 bool VM::call(Value callee, int argc/* = 0*/) {
   if (BaseObject::is_bound_method(callee)) {
-    BoundMethodObject* bound = Xptr::down<BoundMethodObject>(callee);
+    BoundMethodObject* bound = callee->as_bound_method();
     stack_[stack_.size() - argc - 1] = bound;
     return call_closure(bound->method(), argc);
   }
   if (BaseObject::is_class(callee)) {
-    ClassObject* cls = Xptr::down<ClassObject>(callee);
+    ClassObject* cls = callee->as_class();
     InstanceObject* inst = InstanceObject::create(*this, cls);
     stack_[stack_.size() - argc - 1] = inst;
     // call the constructor
     if (auto ctor = cls->ctor(); ctor)
-      return call_closure(Xptr::down<ClosureObject>(ctor), argc);
+      return call_closure(ctor->as_closure(), argc);
     else
       stack_.resize(stack_.size() - argc);
     return true;
   }
   if (BaseObject::is_closure(callee)) {
-    return call_closure(Xptr::down<ClosureObject>(callee), argc);
+    return call_closure(callee->as_closure(), argc);
   }
   if (BaseObject::is_native(callee)) {
     Value* args{};
     if (argc > 0)
       args = &stack_[stack_.size() - argc];
-    Value ret = Xptr::down<NativeObject>(callee)->get_function()(argc, args);
+    Value ret = callee->as_native()(argc, args);
     stack_.resize(stack_.size() - argc - 1);
     push(ret);
     return true;
@@ -309,7 +309,7 @@ bool VM::invoke(Value receiver, StringObject* name, int argc) {
     return false;
   }
 
-  InstanceObject* inst = Xptr::down<InstanceObject>(receiver);
+  InstanceObject* inst = receiver->as_instance();
   if (auto callee = inst->get_field(name); callee) {
     stack_[stack_.size() - argc - 1] = *callee;
     return call(*callee, argc);
@@ -318,7 +318,7 @@ bool VM::invoke(Value receiver, StringObject* name, int argc) {
   // look for a method
   ClassObject* cls = inst->get_class();
   if (auto method = cls->get_method(name); method) {
-    return call_closure(Xptr::down<ClosureObject>(*method), argc);
+    return call_closure((*method)->as_closure(), argc);
   }
 
   runtime_error("undefined property `%s`", name->chars());
@@ -375,8 +375,8 @@ bool VM::run(void) {
   auto _rdconstant = [&frame, _rdbyte](void) -> Value {
     return frame->get_closure_constant(_rdbyte());
   };
-  auto _rdsymbol = [_rdconstant](void) -> StringObject* {
-    return Xptr::down<StringObject>(_rdconstant());
+  auto _rdstring = [_rdconstant](void) -> StringObject* {
+    return _rdconstant()->as_string();
   };
 
   for (;;) {
@@ -407,12 +407,12 @@ bool VM::run(void) {
       } break;
     case OpCode::OP_DEF_GLOBAL:
       {
-        auto* key = _rdsymbol();
+        auto* key = _rdstring();
         globals_[key->chars()] = pop();
       } break;
     case OpCode::OP_GET_GLOBAL:
       {
-        auto* key = _rdsymbol();
+        auto* key = _rdstring();
         if (auto it = globals_.find(key->chars()); it != globals_.end()) {
           push(it->second);
         }
@@ -423,7 +423,7 @@ bool VM::run(void) {
       } break;
     case OpCode::OP_SET_GLOBAL:
       {
-        auto* key = _rdsymbol();
+        auto* key = _rdstring();
         if (auto it = globals_.find(key->chars()); it != globals_.end()) {
           globals_[key->chars()] = peek();
         }
@@ -451,15 +451,15 @@ bool VM::run(void) {
         }
 
         // class fields
-        auto* inst = Xptr::down<InstanceObject>(peek());
-        auto* name = _rdsymbol();
+        auto* inst = peek()->as_instance();
+        auto* name = _rdstring();
         if (auto val = inst->get_field(name); val) {
           pop(); // pop out instance
           push(*val);
         }
         else if (auto val = inst->get_class()->get_method(name); val) {
           auto* bound = BoundMethodObject::create(
-              *this, peek(0), Xptr::down<ClosureObject>(*val));
+              *this, peek(0), (*val)->as_closure());
           pop(); // pop out instance
           push(bound);
         }
@@ -476,8 +476,8 @@ bool VM::run(void) {
         }
 
         // class fields
-        auto* inst = Xptr::down<InstanceObject>(peek(1));
-        inst->set_field(_rdsymbol(), peek(0));
+        auto* inst = peek(1)->as_instance();
+        inst->set_field(_rdstring(), peek(0));
         Value val = pop();
         pop();
         push(val);
@@ -533,14 +533,14 @@ bool VM::run(void) {
     case OpCode::OP_ADD:
       {
         if (BaseObject::is_string(peek(0)) && BaseObject::is_string(peek(1))) {
-          auto* b = Xptr::down<StringObject>(pop());
-          auto* a = Xptr::down<StringObject>(pop());
+          auto* b = pop()->as_string();
+          auto* a = pop()->as_string();
           push(StringObject::concat(*this, a, b));
         }
         else if (BaseObject::is_numeric(peek(1))
             && BaseObject::is_numeric(peek(1))) {
-          double b = Xptr::down<NumericObject>(pop())->value();
-          double a = Xptr::down<NumericObject>(pop())->value();
+          double b = pop()->as_numeric();
+          double a = pop()->as_numeric();
           push(NumericObject::create(*this, a + b));
         }
         else {
@@ -628,7 +628,7 @@ bool VM::run(void) {
     case OpCode::OP_INVOKE_7:
     case OpCode::OP_INVOKE_8:
       {
-        StringObject* method = _rdsymbol();
+        StringObject* method = _rdstring();
         int argc = instruction - OpCode::OP_INVOKE_0;
         if (!invoke(peek(argc), method, argc))
           return false;
@@ -636,7 +636,7 @@ bool VM::run(void) {
       } break;
     case OpCode::OP_CLOSURE:
       {
-        auto* fn = Xptr::down<FunctionObject>(_rdconstant());
+        auto* fn = _rdconstant()->as_function();
         auto* closure = ClosureObject::create(*this, fn);
         push(closure);
 
@@ -672,7 +672,7 @@ bool VM::run(void) {
         frame = &frames_.back();
       } break;
     case OpCode::OP_CLASS:
-      create_class(_rdsymbol(), nullptr); break;
+      create_class(_rdstring(), nullptr); break;
     case OpCode::OP_SUBCLASS:
       {
         Value superclass = pop();
@@ -680,10 +680,10 @@ bool VM::run(void) {
           runtime_error("superclass must be a class");
           return false;
         }
-        create_class(_rdsymbol(), Xptr::down<ClassObject>(superclass));
+        create_class(_rdstring(), superclass->as_class());
       } break;
     case OpCode::OP_METHOD:
-      define_method(_rdsymbol()); break;
+      define_method(_rdstring()); break;
     }
   }
 
