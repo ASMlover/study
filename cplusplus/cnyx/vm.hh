@@ -104,7 +104,7 @@ class VM : private UnCopyable {
   std::vector<CallFrame> frames_;
 
   table_t globals_;
-  table_t intern_strings_;
+  std::unordered_map<u32_t, StringObject*> intern_strings_;
   UpvalueObject* open_upvalues_{};
 
   sz_t bytes_allocated_{};
@@ -127,6 +127,7 @@ class VM : private UnCopyable {
   std::optional<std::tuple<double, double>> pop_numerics(void);
 
   void collect(void);
+  void remove_undark_intern_strings(void);
   void print_stack(void);
 
   bool call_closure(ClosureObject* closure, int argc);
@@ -144,7 +145,8 @@ public:
   inline Value invoke_pop(void) { return pop(); }
 
   void append_object(BaseObject* o);
-  std::optional<StringObject*> get_intern_string(const str_t& key) const;
+  void set_intern_string(u32_t hash, StringObject* o);
+  std::optional<StringObject*> get_intern_string(u32_t hash) const;
   void gray_value(Value v);
   void blacken_object(BaseObject* obj);
   void free_object(BaseObject* obj);

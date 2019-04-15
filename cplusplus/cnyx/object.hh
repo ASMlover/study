@@ -99,6 +99,7 @@ inline bool values_equal(Value a, Value b) {
 }
 
 void gray_table(VM& vm, table_t& tbl);
+void remove_table_undark(table_t& tbl);
 
 class ValueArray : private UnCopyable {
   int capacity_{};
@@ -158,8 +159,7 @@ class StringObject : public BaseObject {
   u32_t hash_{};
   char* chars_{};
 
-  StringObject(const char* s, int n);
-  StringObject(StringObject* a, StringObject* b);
+  StringObject(const char* s, int n, u32_t hash, bool copy = true);
   virtual ~StringObject(void);
 public:
   inline int count(void) const { return count_; }

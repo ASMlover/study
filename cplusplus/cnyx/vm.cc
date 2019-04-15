@@ -242,6 +242,15 @@ void VM::collect(void) {
 #endif
 }
 
+void VM::remove_undark_intern_strings(void) {
+  for (auto it = intern_strings_.begin(); it != intern_strings_.end();) {
+    if (!it->second->is_dark())
+      intern_strings_.erase(it++);
+    else
+      ++it;
+  }
+}
+
 void VM::print_stack(void) {
   int i{};
   for (auto* o : stack_)
@@ -691,8 +700,15 @@ void VM::append_object(BaseObject* o) {
   objects_.push_back(o);
 }
 
-std::optional<StringObject*> VM::get_intern_string(const str_t& key) const {
-  if (auto it = intern_strings_.find(key); it != intern_strings_.end())
+void VM::set_intern_string(u32_t hash, StringObject* s) {
+  // push StringObject `s` into stack, make sure it not be collected
+  push(s);
+  intern_strings_[hash] = s;
+  pop();
+}
+
+std::optional<StringObject*> VM::get_intern_string(u32_t hash) const {
+  if (auto it = intern_strings_.find(hash); it != intern_strings_.end())
     return {Xptr::down<StringObject>(it->second)};
   return {};
 }

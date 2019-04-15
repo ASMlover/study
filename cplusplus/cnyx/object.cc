@@ -84,6 +84,15 @@ void gray_table(VM& vm, table_t& tbl) {
     vm.gray_value(t.second);
 }
 
+void remove_table_undark(table_t& tbl) {
+  for (auto it = tbl.begin(); it != tbl.end();) {
+    if (!it->second->is_dark())
+      tbl.erase(it++);
+    else
+      ++it;
+  }
+}
+
 ValueArray::~ValueArray(void) {
   if (values_ != nullptr)
     delete [] values_;
@@ -154,31 +163,19 @@ NumericObject* NumericObject::create(VM& vm, double d) {
   return o;
 }
 
-StringObject::StringObject(const char* s, int n)
+StringObject::StringObject(const char* s, int n, u32_t hash, bool copy)
   : BaseObject(ObjType::STRING)
-  , count_(n) {
-  chars_ = new char[count_ + 1];
-  if (s != nullptr)
-    memcpy(chars_, s, n);
-  chars_[count_] = 0;
-  hash_ = string_hash(chars_, count_);
-}
-
-StringObject::StringObject(StringObject* a, StringObject* b)
-  : BaseObject(ObjType::STRING) {
-  count_ += a == nullptr ? 0 : a->count();
-  count_ += b == nullptr ? 0 : b->count();
-  chars_ = new char[count_ + 1];
-
-  int offset = 0;
-  if (a != nullptr) {
-    memcpy(chars_, a->chars(), a->count());
-    offset = a->count();
+  , count_(n)
+  , hash_(hash) {
+  if (copy) {
+    chars_ = new char[count_ + 1];
+    if (s != nullptr)
+      memcpy(chars_, s, n);
+    chars_[count_] = 0;
   }
-  if (b != nullptr)
-    memcpy(chars_ + offset, b->chars(), b->count());
-  chars_[count_] = 0;
-  hash_ = string_hash(chars_, count_);
+  else {
+    chars_ = const_cast<char*>(s);
+  }
 }
 
 StringObject::~StringObject(void) {
@@ -204,13 +201,39 @@ void StringObject::blacken(VM&) {
 }
 
 StringObject* StringObject::create(VM& vm, const char* s, int n) {
-  auto* o = new StringObject(s, n);
+  auto hash = string_hash(s, n);
+  if (auto v = vm.get_intern_string(hash); v)
+    return *v;
+
+  auto* o = new StringObject(s, n, hash);
+  vm.set_intern_string(hash, o);
   vm.append_object(o);
   return o;
 }
 
 StringObject* StringObject::concat(VM& vm, StringObject* a, StringObject* b) {
-  auto* o = new StringObject(a, b);
+  int count = 0;
+  count += a == nullptr ? 0 : a->count();
+  count += b == nullptr ? 0 : b->count();
+  char* chars = new char[count + 1];
+
+  int offset = 0;
+  if (a != nullptr) {
+    memcpy(chars, a->chars(), a->count());
+    offset = a->count();
+  }
+  if (b != nullptr)
+    memcpy(chars + offset, b->chars(), b->count());
+  chars[count] = 0;
+  u32_t hash = string_hash(chars, count);
+
+  if (auto v = vm.get_intern_string(hash); v) {
+    delete [] chars;
+    return *v;
+  }
+
+  auto* o = new StringObject(chars, count, hash, true);
+  vm.set_intern_string(hash, o);
   vm.append_object(o);
   return o;
 }
