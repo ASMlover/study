@@ -104,6 +104,7 @@ class VM : private UnCopyable {
   std::vector<CallFrame> frames_;
 
   table_t globals_;
+  table_t intern_strings_;
   UpvalueObject* open_upvalues_{};
 
   sz_t bytes_allocated_{};
@@ -143,6 +144,7 @@ public:
   inline Value invoke_pop(void) { return pop(); }
 
   void append_object(BaseObject* o);
+  std::optional<StringObject*> get_intern_string(const str_t& key) const;
   void gray_value(Value v);
   void blacken_object(BaseObject* obj);
   void free_object(BaseObject* obj);

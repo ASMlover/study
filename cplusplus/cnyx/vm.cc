@@ -691,6 +691,12 @@ void VM::append_object(BaseObject* o) {
   objects_.push_back(o);
 }
 
+std::optional<StringObject*> VM::get_intern_string(const str_t& key) const {
+  if (auto it = intern_strings_.find(key); it != intern_strings_.end())
+    return {Xptr::down<StringObject>(it->second)};
+  return {};
+}
+
 void VM::gray_value(Value v) {
   if (BaseObject::is_nil(v))
     return;
