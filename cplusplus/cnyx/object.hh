@@ -48,6 +48,14 @@ enum class ObjType {
 };
 
 class VM;
+class StringObject;
+class ClosureObject;
+class FunctionObject;
+class ClassObject;
+class InstanceObject;
+class BoundMethodObject;
+
+using NativeFunction = std::function<Value (int argc, Value* args)>;
 
 class BaseObject : private UnCopyable {
   ObjType type_;
@@ -61,6 +69,17 @@ public:
   inline bool is_dark(void) const { return is_dark_; }
   inline void set_dark(bool is_dark) { is_dark_ = is_dark; }
   str_t type_name(void) const;
+
+  inline bool as_boolean(void) const;
+  inline double as_numeric(void) const;
+  inline StringObject* as_string(void) const;
+  inline const char* as_cstring(void) const;
+  inline ClosureObject* as_closure(void) const;
+  inline FunctionObject* as_function(void) const;
+  inline NativeFunction as_native(void) const;
+  inline ClassObject* as_class(void) const;
+  inline InstanceObject* as_instance(void) const;
+  inline BoundMethodObject* as_bound_method(void) const;
 
   static bool is_falsely(BaseObject* o);
   static bool is_type(BaseObject* o, ObjType t) {
@@ -84,7 +103,6 @@ public:
   virtual bool is_equal(BaseObject* other) const = 0;
   virtual void blacken(VM& vm) = 0;
 };
-using NativeFunction = std::function<Value (int argc, Value* args)>;
 
 inline std::ostream& operator<<(std::ostream& out, BaseObject* obj) {
   return out << (obj == nullptr ? "nil" : obj->stringify());
@@ -369,3 +387,5 @@ public:
 };
 
 }
+
+#include "object.inl.hh"

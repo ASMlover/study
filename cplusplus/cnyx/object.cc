@@ -76,7 +76,7 @@ str_t BaseObject::type_name(void) const {
 }
 
 bool BaseObject::is_falsely(BaseObject* o) {
-  return is_nil(o) || (is_boolean(o) && !Xptr::down<BooleanObject>(o)->value());
+  return is_nil(o) || (is_boolean(o) && !o->as_boolean());
 }
 
 void gray_table(VM& vm, table_t& tbl) {
@@ -128,7 +128,7 @@ str_t BooleanObject::stringify(void) const {
 }
 
 bool BooleanObject::is_equal(BaseObject* other) const {
-  return value_ == Xptr::down<BooleanObject>(other)->value_;
+  return value_ == other->as_boolean();
 }
 
 void BooleanObject::blacken(VM& vm) {
@@ -151,7 +151,7 @@ str_t NumericObject::stringify(void) const {
 }
 
 bool NumericObject::is_equal(BaseObject* other) const {
-  return value_ == Xptr::down<NumericObject>(other)->value_;
+  return value_ == other->as_numeric();
 }
 
 void NumericObject::blacken(VM&) {
@@ -511,7 +511,7 @@ sz_t ClosureObject::size_bytes(void) const {
 
 str_t ClosureObject::stringify(void) const {
   std::stringstream ss;
-  ss << "<fn `" << this << "`";
+  ss << "<fn `" << this << "`>";
   return ss.str();
 }
 
@@ -585,7 +585,7 @@ sz_t InstanceObject::size_bytes(void) const {
 
 str_t InstanceObject::stringify(void) const {
   std::stringstream ss;
-  ss << "<" << class_->stringify() << " instance>";
+  ss << "<`" << class_->stringify() << "` instance>";
   return ss.str();
 }
 
