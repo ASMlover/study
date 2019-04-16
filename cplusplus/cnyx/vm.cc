@@ -144,6 +144,19 @@ void VM::define_method(StringObject* name) {
   pop();
 }
 
+bool VM::bind_method(ClassObject* cls, StringObject* name) {
+  if (auto method = cls->get_method(name); method) {
+    auto* bound = BoundMethodObject::create(
+        *this, peek(0), (*method)->as_closure());
+    pop(); // pop instance
+    push(bound);
+    return true;
+  }
+
+  runtime_error("undefined property `%s`", name->chars());
+  return false;
+}
+
 void VM::push(Value val) {
   stack_.push_back(val);
 }
@@ -303,6 +316,15 @@ bool VM::call(Value callee, int argc/* = 0*/) {
   return false;
 }
 
+bool VM::invoke_from_class(ClassObject* cls,
+    InstanceObject* receiver, StringObject* name, int argc) {
+  if (auto method = cls->get_method(name); method)
+    return call_closure((*method)->as_closure(), argc);
+
+  runtime_error("undefined property `%s`", name->chars());
+  return false;
+}
+
 bool VM::invoke(Value receiver, StringObject* name, int argc) {
   if (!BaseObject::is_instance(receiver)) {
     runtime_error("only instances have methods");
@@ -311,18 +333,11 @@ bool VM::invoke(Value receiver, StringObject* name, int argc) {
 
   InstanceObject* inst = receiver->as_instance();
   if (auto callee = inst->get_field(name); callee) {
-    stack_[stack_.size() - argc - 1] = *callee;
+    stack_[stack_.size() - argc] = *callee;
     return call(*callee, argc);
   }
 
-  // look for a method
-  ClassObject* cls = inst->get_class();
-  if (auto method = cls->get_method(name); method) {
-    return call_closure((*method)->as_closure(), argc);
-  }
-
-  runtime_error("undefined property `%s`", name->chars());
-  return false;
+  return invoke_from_class(inst->get_class(), inst, name, argc);
 }
 
 UpvalueObject* VM::capture_upvalue(Value* local) {
@@ -456,17 +471,11 @@ bool VM::run(void) {
         if (auto val = inst->get_field(name); val) {
           pop(); // pop out instance
           push(*val);
+          break;
         }
-        else if (auto val = inst->get_class()->get_method(name); val) {
-          auto* bound = BoundMethodObject::create(
-              *this, peek(0), (*val)->as_closure());
-          pop(); // pop out instance
-          push(bound);
-        }
-        else {
-          runtime_error("undefined property `%s`", name->chars());
+
+        if (!bind_method(inst->get_class(), name))
           return false;
-        }
       } break;
     case OpCode::OP_SET_FIELD:
       {
@@ -481,6 +490,13 @@ bool VM::run(void) {
         Value val = pop();
         pop();
         push(val);
+      } break;
+    case OpCode::OP_GET_SUPER:
+      {
+        StringObject* name = _rdstring();
+        ClassObject* superclass = pop()->as_class();
+        if (!bind_method(superclass, name))
+          return false;
       } break;
     case OpCode::OP_EQ:
       {
@@ -634,6 +650,24 @@ bool VM::run(void) {
           return false;
         frame = &frames_.back();
       } break;
+    case OpCode::OP_SUPER_0:
+    case OpCode::OP_SUPER_1:
+    case OpCode::OP_SUPER_2:
+    case OpCode::OP_SUPER_3:
+    case OpCode::OP_SUPER_4:
+    case OpCode::OP_SUPER_5:
+    case OpCode::OP_SUPER_6:
+    case OpCode::OP_SUPER_7:
+    case OpCode::OP_SUPER_8:
+      {
+        StringObject* method = _rdstring();
+        int argc = instruction - OpCode::OP_SUPER_0;
+        ClassObject* superclass = pop()->as_class();
+        InstanceObject* receiver = peek(argc)->as_instance();
+        if (!invoke_from_class(superclass, receiver, method, argc))
+          return false;
+        frame = &frames_.back();
+      } break;
     case OpCode::OP_CLOSURE:
       {
         auto* fn = _rdconstant()->as_function();
@@ -660,12 +694,15 @@ bool VM::run(void) {
     case OpCode::OP_RETURN:
       {
         Value ret = pop();
-        close_upvalues(stack_.empty() ? nullptr : &stack_[frame->stack_start()]);
+        if (stack_.empty() || frame->stack_start() >= stack_.size())
+          close_upvalues(nullptr);
+        else
+          close_upvalues(&stack_[frame->stack_start()]);
 
         if (frames_.size() == 1)
           return true;
 
-        stack_.resize(frame->stack_start() - 1);
+        stack_.resize(frame->stack_start());
         push(ret);
 
         frames_.pop_back();

@@ -104,9 +104,11 @@ struct CompilerImpl {
 struct ClassCompilerImpl {
   ClassCompilerImpl* enclosing{};
   Token name;
+  Token superclass;
 
-  ClassCompilerImpl(ClassCompilerImpl* lenclosing, const Token& lname)
-    : enclosing(lenclosing), name(lname) {
+  ClassCompilerImpl(ClassCompilerImpl* lenclosing,
+      const Token& lname, const Token& supercls)
+    : enclosing(lenclosing), name(lname), superclass(supercls) {
   }
 };
 
@@ -176,8 +178,8 @@ class CompileParser : private UnCopyable {
     return static_cast<u8_t>(i);
   }
 
-  u8_t identifier_constant(void) {
-    auto s = prev_.as_string();
+  u8_t identifier_constant(const Token& name) {
+    auto s = name.as_string();
     return add_constant(
         StringObject::create(vm_, s.c_str(), static_cast<int>(s.size())));
   }
@@ -200,6 +202,7 @@ class CompileParser : private UnCopyable {
     static auto unary_fn = [](CompileParser* p, bool b) { p->unary(b); };
     static auto call_fn = [](CompileParser* p, bool b) { p->call(b); };
     static auto dot_fn = [](CompileParser* p, bool b) { p->dot(b); };
+    static auto super_fn = [](CompileParser* p, bool b) { p->super_exp(b); };
     static auto this_fn = [](CompileParser* p, bool b) { p->this_exp(b); };
 
     static ParseRule _rules[] = {
@@ -240,7 +243,7 @@ class CompileParser : private UnCopyable {
       nullptr, or_fn, Precedence::OR, // KW_OR
       // nullptr, nullptr, Precedence::NONE, // KW_PRINT
       nullptr, nullptr, Precedence::NONE, // KW_RETURN
-      nullptr, nullptr, Precedence::NONE, // KW_SUPER
+      super_fn, nullptr, Precedence::NONE, // KW_SUPER
       this_fn, nullptr, Precedence::NONE, // KW_THIS
       boolean_fn, nullptr, Precedence::NONE, // KW_TRUE
       nullptr, nullptr, Precedence::NONE, // KW_VAR
@@ -349,7 +352,7 @@ class CompileParser : private UnCopyable {
     consume(TokenKind::TK_IDENTIFIER, error_message);
 
     if (curr_compiler_->scope_depth == 0)
-      return identifier_constant();
+      return identifier_constant(prev_);
 
     declare_variable();
     return 0;
@@ -360,6 +363,33 @@ class CompileParser : private UnCopyable {
       emit_bytes(OpCode::OP_DEF_GLOBAL, global);
     else
       curr_compiler_->locals.back().depth = curr_compiler_->scope_depth;
+  }
+
+  void name_variable(const Token& name, bool can_assign) {
+    u8_t getop, setop;
+    int arg = resolve_local(curr_compiler_, name, false);
+    if (arg != -1) {
+      getop = OpCode::OP_GET_LOCAL;
+      setop = OpCode::OP_SET_LOCAL;
+    }
+    else if ((arg = resolve_upvalue(curr_compiler_, name)) != -1) {
+      getop = OpCode::OP_GET_UPVALUE;
+      setop = OpCode::OP_SET_UPVALUE;
+    }
+    else {
+      arg = identifier_constant(name);
+      getop = OpCode::OP_GET_GLOBAL;
+      setop = OpCode::OP_SET_GLOBAL;
+    }
+
+    u8_t constant = static_cast<u8_t>(arg);
+    if (can_assign && match(TokenKind::TK_EQUAL)) {
+      expression();
+      emit_bytes(setop, constant);
+    }
+    else {
+      emit_bytes(getop, constant);
+    }
   }
 
   u8_t argument_list(void) {
@@ -400,30 +430,7 @@ class CompileParser : private UnCopyable {
   }
 
   void variable(bool can_assign) {
-    OpCode setop, getop;
-    int arg = resolve_local(curr_compiler_, prev_, false);
-    if (arg != -1) {
-      setop = OpCode::OP_SET_LOCAL;
-      getop = OpCode::OP_GET_LOCAL;
-    }
-    else if ((arg = resolve_upvalue(curr_compiler_, prev_)) != -1) {
-      setop = OpCode::OP_SET_UPVALUE;
-      getop = OpCode::OP_GET_UPVALUE;
-    }
-    else {
-      arg = identifier_constant();
-      setop = OpCode::OP_SET_GLOBAL;
-      getop = OpCode::OP_GET_GLOBAL;
-    }
-    u8_t constant = static_cast<u8_t>(arg);
-
-    if (can_assign && match(TokenKind::TK_EQUAL)) {
-      expression();
-      emit_bytes(setop, constant);
-    }
-    else {
-      emit_bytes(getop, constant);
-    }
+    name_variable(prev_, can_assign);
   }
 
   void or_exp(bool can_assign) {
@@ -491,7 +498,7 @@ class CompileParser : private UnCopyable {
 
   void dot(bool can_assign) {
     consume(TokenKind::TK_IDENTIFIER, "expect property name after `.`");
-    u8_t name = identifier_constant();
+    u8_t name = identifier_constant(prev_);
 
     if (can_assign && match(TokenKind::TK_EQUAL)) {
       expression();
@@ -506,14 +513,40 @@ class CompileParser : private UnCopyable {
     }
   }
 
+  void super_exp(bool can_assign) {
+    if (curr_class_ == nullptr)
+      error("cannot use `super` outside of a class");
+
+    consume(TokenKind::TK_DOT, "expect `.` after `super`");
+    consume(TokenKind::TK_IDENTIFIER, "expect superclass method name");
+    u8_t name = identifier_constant(prev_);
+
+    // push the receiver
+    name_variable(Token::custom_token("this"), false);
+
+    if (match(TokenKind::TK_LPAREN)) {
+      u8_t argc = argument_list();
+
+      if (curr_class_ != nullptr) {
+        // push the superclass
+        name_variable(curr_class_->superclass, false);
+      }
+      emit_bytes(OpCode::OP_SUPER_0 + argc, name);
+    }
+    else {
+      if (curr_class_ != nullptr) {
+        // push the superclass
+        name_variable(curr_class_->superclass, false);
+      }
+      emit_bytes(OpCode::OP_GET_SUPER, name);
+    }
+  }
+
   void this_exp(bool can_assign) {
-    int arg = resolve_local(curr_compiler_, prev_, false);
-    if (arg != -1)
-      emit_bytes(OpCode::OP_GET_LOCAL, static_cast<u8_t>(arg));
-    else if ((arg = resolve_upvalue(curr_compiler_, prev_)) != -1)
-      emit_bytes(OpCode::OP_GET_UPVALUE, static_cast<u8_t>(arg));
-    else
+    if (curr_class_ == nullptr)
       error("cannot use `this` outside of a class");
+    else
+      variable(false);
   }
 public:
   CompileParser(VM& vm, Lexer& lex)
@@ -534,13 +567,11 @@ public:
 
     if (is_method) {
       curr_compiler_->append_local(
-          Local{Token{TokenKind::TK_STRINGLITERAL, "this", 0},
-          curr_compiler_->scope_depth});
+          Local{Token::custom_token("this"), curr_compiler_->scope_depth});
     }
     else {
-      curr_compiler_->append_local(
-          Local{Token{TokenKind::TK_STRINGLITERAL, "", 0},
-          curr_compiler_->scope_depth});
+      curr_compiler_->append_local(Local{
+          Token::custom_token(), curr_compiler_->scope_depth});
     }
   }
 
@@ -577,8 +608,9 @@ public:
 
     error_at_current(message);
 
-    if (kind == TokenKind::TK_RBRACE || kind == TokenKind::TK_RPAREN ||
-        kind == TokenKind::TK_EQUAL || kind == TokenKind::TK_SEMI) {
+    if (kind == TokenKind::TK_LBRACE || kind == TokenKind::TK_RBRACE ||
+        kind == TokenKind::TK_RPAREN || kind == TokenKind::TK_EQUAL ||
+        kind == TokenKind::TK_SEMI) {
       while (curr_.get_kind() != kind && curr_.get_kind() != TokenKind::TK_EOF)
         advance();
 
@@ -755,7 +787,7 @@ public:
 
   void method(void) {
     consume(TokenKind::TK_IDENTIFIER, "expect method name");
-    u8_t method_constant = identifier_constant();
+    u8_t method_constant = identifier_constant(prev_);
     bool is_ctor{prev_.is_equal(curr_class_->name)};
     fn_common(true, is_ctor);
     emit_bytes(OpCode::OP_METHOD, method_constant);
@@ -763,14 +795,18 @@ public:
 
   void class_stmt(void) {
     consume(TokenKind::TK_IDENTIFIER, "expect class anme");
-    u8_t name_constant = identifier_constant();
+    u8_t name_constant = identifier_constant(prev_);
     declare_variable();
 
-    ClassCompilerImpl class_compiler(curr_class_, prev_);
+    ClassCompilerImpl class_compiler(curr_class_, prev_, Token());
     curr_class_ = &class_compiler;
 
     if (match(TokenKind::TK_LESS)) {
-      parse_precedence(Precedence::CALL);
+      consume(TokenKind::TK_IDENTIFIER, "expect superclass name");
+      class_compiler.superclass = prev_;
+
+      // load the superclass onto the stack
+      variable(false);
       emit_bytes(OpCode::OP_SUBCLASS, name_constant);
     }
     else {
