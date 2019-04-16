@@ -60,6 +60,10 @@ public:
   inline str_t as_string(void) const { return literal_; }
 
   str_t stringify(void) const;
+
+  static Token custom_token(const str_t& literal = "") {
+    return Token{TokenKind::TK_STRINGLITERAL, literal, 0};
+  }
 };
 
 std::ostream& operator<<(std::ostream& out, const Token& tok);
