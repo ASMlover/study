@@ -25,7 +25,6 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cassert>
-#include <cstdarg>
 #include <functional>
 #include <iostream>
 #include <vector>
@@ -122,18 +121,23 @@ class CompileParser : private UnCopyable {
 
   static constexpr int kMaxArguments = 8;
 
-  void error(const char* format, ...) {
-    std::cerr
-      << "[LINE: " << prev_.get_lineno() << "] ERROR at "
-      << "`" << prev_.get_literal() << "`: ";
-
-    va_list ap;
-    va_start(ap, format);
-    vfprintf(stderr, format, ap);
-    va_end(ap);
-    std::cerr << std::endl;
+  void error_at(const Token& tok, const str_t& message) {
+    std::cerr << "[LINE: " << tok.get_lineno() << "] ERROR at ";
+    if (tok.get_kind() == TokenKind::TK_EOF)
+      std::cerr << "end";
+    else
+      std::cerr << "`" << tok.get_literal() << "`";
+    std::cerr << ": " << message << std::endl;
 
     had_error_ = true;
+  }
+
+  void error(const str_t& message) {
+    error_at(prev_, message);
+  }
+
+  void error_at_current(const str_t& message) {
+    error_at(curr_, message);
   }
 
   void emit_byte(u8_t byte) {
@@ -262,6 +266,11 @@ class CompileParser : private UnCopyable {
       if (infix)
         infix(this, can_assign);
     }
+
+    if (can_assign && match(TokenKind::TK_EQUAL)) {
+      error("invalid assignment target");
+      expression();
+    }
   }
 
   void enter_scope(void) {
@@ -360,8 +369,10 @@ class CompileParser : private UnCopyable {
         expression();
         ++argc;
 
-        if (argc > kMaxArguments)
-          error("cannot have more than %d arguments", kMaxArguments);
+        if (argc > kMaxArguments) {
+          error("cannot have more than " +
+              std::to_string(kMaxArguments) + " arguments");
+        }
       } while (match(TokenKind::TK_COMMA));
     }
     consume(TokenKind::TK_RPAREN, "expect `)` after arguments");
@@ -479,7 +490,7 @@ class CompileParser : private UnCopyable {
   }
 
   void dot(bool can_assign) {
-    consume(TokenKind::TK_IDENTIFIER, "expect property name");
+    consume(TokenKind::TK_IDENTIFIER, "expect property name after `.`");
     u8_t name = identifier_constant();
 
     if (can_assign && match(TokenKind::TK_EQUAL)) {
@@ -548,13 +559,31 @@ public:
 
   void advance(void) {
     prev_ = curr_;
-    curr_ = lex_.next_token();
+
+    for (;;) {
+      curr_ = lex_.next_token();
+      if (curr_.get_kind() != TokenKind::TK_ERROR)
+        break;
+
+      error_at_current(curr_.get_literal());
+    }
   }
 
   void consume(TokenKind kind, const str_t& message) {
-    if (curr_.get_kind() != kind)
-      error(message.c_str());
-    advance();
+    if (curr_.get_kind() == kind) {
+      advance();
+      return;
+    }
+
+    error_at_current(message);
+
+    if (kind == TokenKind::TK_RBRACE || kind == TokenKind::TK_RPAREN ||
+        kind == TokenKind::TK_EQUAL || kind == TokenKind::TK_SEMI) {
+      while (curr_.get_kind() != kind && curr_.get_kind() != TokenKind::TK_EOF)
+        advance();
+
+      advance();
+    }
   }
 
   bool check(TokenKind kind) const {
@@ -682,8 +711,10 @@ public:
         define_variable(param_constant);
         curr_compiler_->function->inc_arity();
 
-        if (curr_compiler_->function->arity() > kMaxArguments)
-          error("cannot have more than %d parameters", kMaxArguments);
+        if (curr_compiler_->function->arity() > kMaxArguments) {
+          error("cannot have more than " +
+              std::to_string(kMaxArguments) + " parameters");
+        }
       } while (match(TokenKind::TK_COMMA));
     }
     consume(TokenKind::TK_RPAREN, "expect `)` after parameters");
