@@ -409,6 +409,12 @@ class CompileParser : private UnCopyable {
     return argc;
   }
 
+  void push_superclass(void) {
+    if (curr_class_ == nullptr)
+      return;
+    name_variable(curr_class_->superclass, false);
+  }
+
   void boolean(bool can_assign) {
     bool value = prev_.get_kind() == TokenKind::KW_TRUE;
     emit_constant(BooleanObject::create(vm_, value));
@@ -516,6 +522,8 @@ class CompileParser : private UnCopyable {
   void super_exp(bool can_assign) {
     if (curr_class_ == nullptr)
       error("cannot use `super` outside of a class");
+    else if (curr_class_->superclass.get_literal().empty())
+      error("cannot use `super` in a class without superclass");
 
     consume(TokenKind::TK_DOT, "expect `.` after `super`");
     consume(TokenKind::TK_IDENTIFIER, "expect superclass method name");
@@ -527,17 +535,11 @@ class CompileParser : private UnCopyable {
     if (match(TokenKind::TK_LPAREN)) {
       u8_t argc = argument_list();
 
-      if (curr_class_ != nullptr) {
-        // push the superclass
-        name_variable(curr_class_->superclass, false);
-      }
+      push_superclass();
       emit_bytes(OpCode::OP_SUPER_0 + argc, name);
     }
     else {
-      if (curr_class_ != nullptr) {
-        // push the superclass
-        name_variable(curr_class_->superclass, false);
-      }
+      push_superclass();
       emit_bytes(OpCode::OP_GET_SUPER, name);
     }
   }
