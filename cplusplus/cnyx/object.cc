@@ -294,6 +294,8 @@ int FunctionObject::dump_instruction(int i) {
     i = constant_instruction(this, i, "OP_GET_FIELD"); break;
   case OpCode::OP_SET_FIELD:
     i = constant_instruction(this, i, "OP_SET_FIELD"); break;
+  case OpCode::OP_GET_SUPER:
+    i = constant_instruction(this, i, "OP_GET_SUPER"); break;
   case OpCode::OP_EQ: std::cout << "OP_EQ" << std::endl; break;
   case OpCode::OP_NE: std::cout << "OP_NE" << std::endl; break;
   case OpCode::OP_GT: std::cout << "OP_GT" << std::endl; break;
@@ -353,6 +355,24 @@ int FunctionObject::dump_instruction(int i) {
     i = constant_instruction(this, i, "OP_INVOKE_7"); break;
   case OpCode::OP_INVOKE_8:
     i = constant_instruction(this, i, "OP_INVOKE_8"); break;
+  case OpCode::OP_SUPER_0:
+    i = constant_instruction(this, i, "OP_SUPER_0"); break;
+  case OpCode::OP_SUPER_1:
+    i = constant_instruction(this, i, "OP_SUPER_1"); break;
+  case OpCode::OP_SUPER_2:
+    i = constant_instruction(this, i, "OP_SUPER_2"); break;
+  case OpCode::OP_SUPER_3:
+    i = constant_instruction(this, i, "OP_SUPER_3"); break;
+  case OpCode::OP_SUPER_4:
+    i = constant_instruction(this, i, "OP_SUPER_4"); break;
+  case OpCode::OP_SUPER_5:
+    i = constant_instruction(this, i, "OP_SUPER_5"); break;
+  case OpCode::OP_SUPER_6:
+    i = constant_instruction(this, i, "OP_SUPER_6"); break;
+  case OpCode::OP_SUPER_7:
+    i = constant_instruction(this, i, "OP_SUPER_7"); break;
+  case OpCode::OP_SUPER_8:
+    i = constant_instruction(this, i, "OP_SUPER_8"); break;
   case OpCode::OP_CLOSURE:
     {
       u8_t constant = codes_[i++];
