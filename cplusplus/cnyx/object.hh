@@ -325,7 +325,11 @@ public:
   }
 
   inline std::optional<Value> get_method(StringObject* name) const {
-    if (auto it = methods_.find(name->chars()); it != methods_.end())
+    return get_method(name->chars());
+  }
+
+  inline std::optional<Value> get_method(const str_t& name) const {
+    if (auto it = methods_.find(name); it != methods_.end())
       return {it->second};
     return {};
   }
@@ -354,7 +358,11 @@ public:
   }
 
   inline std::optional<Value> get_field(StringObject* name) const {
-    if (auto it = fields_.find(name->chars()); it != fields_.end())
+    return get_field(name->chars());
+  }
+
+  inline std::optional<Value> get_field(const str_t& name) const {
+    if (auto it = fields_.find(name); it != fields_.end())
       return {it->second};
     return {};
   }
