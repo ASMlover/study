@@ -48,6 +48,7 @@ enum OpCode {
   OP_SET_UPVALUE, // set upvalue
   OP_GET_FIELD, // get field
   OP_SET_FIELD, // set field
+  OP_GET_SUPER, // get super
   OP_EQ, // ==
   OP_NE, // !=
   OP_GT, // >
@@ -81,6 +82,15 @@ enum OpCode {
   OP_INVOKE_6,
   OP_INVOKE_7,
   OP_INVOKE_8,
+  OP_SUPER_0,
+  OP_SUPER_1,
+  OP_SUPER_2,
+  OP_SUPER_3,
+  OP_SUPER_4,
+  OP_SUPER_5,
+  OP_SUPER_6,
+  OP_SUPER_7,
+  OP_SUPER_8,
   OP_CLOSURE,
   OP_CLOSE_UPVALUE,
   OP_RETURN, // return
@@ -116,6 +126,7 @@ class VM : private UnCopyable {
 
   void create_class(StringObject* name, ClassObject* superclass = nullptr);
   void define_method(StringObject* name);
+  bool bind_method(ClassObject* cls, StringObject* name);
 
   void push(Value val);
   Value pop(void);
@@ -132,6 +143,8 @@ class VM : private UnCopyable {
 
   bool call_closure(ClosureObject* closure, int argc);
   bool call(Value callee, int argc = 0);
+  bool invoke_from_class(ClassObject* cls,
+      InstanceObject* receiver, StringObject* name, int argc);
   bool invoke(Value receiver, StringObject* method, int argc);
   UpvalueObject* capture_upvalue(Value* local);
   void close_upvalues(Value* last);
