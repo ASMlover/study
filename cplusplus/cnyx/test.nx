@@ -3,7 +3,16 @@
 
 // do nothing
 
-print "Hello, world!";
+class A {
+  ctor() {
+    print("=== A.ctor ===", this);
+  }
+}
 
-var a = 34.56;
-print a * 100 ;
+class B < A {
+  ctor() {
+    super.ctor();
+  }
+}
+
+var a = B();
