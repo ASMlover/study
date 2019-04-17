@@ -191,6 +191,7 @@ public:
   virtual bool is_equal(BaseObject* other) const override;
   virtual void blacken(VM& vm) override;
 
+  static StringObject* create(VM& vm, const str_t& s);
   static StringObject* create(VM& vm, const char* s, int n);
   static StringObject* concat(VM& vm, StringObject* a, StringObject* b);
 };
@@ -205,6 +206,9 @@ class FunctionObject : public BaseObject {
   int upvalues_count_{};
 
   ValueArray constants_;
+
+  // debug information
+  StringObject* name_{};
 
   FunctionObject(void);
   virtual ~FunctionObject(void);
@@ -226,6 +230,8 @@ public:
   inline const Value* constants(void) const { return constants_.values(); }
   inline void set_constant(int i, Value v) { constants_.set_value(i, v); }
   inline Value get_constant(int i) const { return constants_.get_value(i); }
+  inline StringObject* name(void) const { return name_; }
+  inline void set_name(StringObject* name) { name_ = name; }
 
   int dump_instruction(int i);
   void dump(void);

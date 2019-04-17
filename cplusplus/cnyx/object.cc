@@ -200,6 +200,10 @@ bool StringObject::is_equal(BaseObject* other) const {
 void StringObject::blacken(VM&) {
 }
 
+StringObject* StringObject::create(VM& vm, const str_t& s) {
+  return create(vm, s.c_str(), static_cast<int>(s.size()));
+}
+
 StringObject* StringObject::create(VM& vm, const char* s, int n) {
   auto hash = string_hash(s, n);
   if (auto v = vm.get_intern_string(hash); v)
@@ -401,7 +405,7 @@ int FunctionObject::dump_instruction(int i) {
 }
 
 void FunctionObject::dump(void) {
-  std::cout << "---------" << std::endl;
+  std::cout << "--- [" << name_->chars() << "] ---" << std::endl;
   for (int i = 0; i < codes_count_;) {
     i = dump_instruction(i);
   }
@@ -451,6 +455,7 @@ bool FunctionObject::is_equal(BaseObject*) const {
 
 void FunctionObject::blacken(VM& vm) {
   constants_.gray(vm);
+  vm.gray_value(name_);
 }
 
 FunctionObject* FunctionObject::create(VM& vm) {

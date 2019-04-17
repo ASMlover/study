@@ -181,8 +181,11 @@ void VM::runtime_error(const char* format, ...) {
 
   for (auto i = static_cast<int>(frames_.size() - 1); i >= 0; --i) {
     auto& frame = frames_[i];
+    auto* fn = frame.closure()->get_function();
     auto offset = static_cast<int>(frame.ip() - frame.get_closure_codes());
-    std::cerr << "[LINE: " << frame.get_closure_codeline(offset) << "]" << std::endl;
+    std::cerr
+      << "[LINE: " << frame.get_closure_codeline(offset) << "] in "
+      << fn->name()->chars() << std::endl;
   }
 }
 

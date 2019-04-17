@@ -86,8 +86,8 @@ struct Upvalue {
 
 enum class FunctionKind {
   FUNCTION, // function
-  METHOD, // method of class
   CTOR, // constructor of class
+  METHOD, // method of class
 
   TOP_LEVEL,
 };
@@ -112,10 +112,12 @@ struct CompilerImpl {
 
 struct ClassCompilerImpl {
   ClassCompilerImpl* enclosing{};
+  Token name{};
   Token superclass;
 
-  ClassCompilerImpl(ClassCompilerImpl* lenclosing, const Token& supercls)
-    : enclosing(lenclosing), superclass(supercls) {
+  ClassCompilerImpl(
+      ClassCompilerImpl* lenclosing, const Token& lname, const Token& supercls)
+    : enclosing(lenclosing), name(lname), superclass(supercls) {
   }
 };
 
@@ -583,6 +585,24 @@ public:
     new_compiler.scope_depth = scope_depth;
     curr_compiler_ = &new_compiler;
 
+    switch (fun_kind) {
+    case FunctionKind::FUNCTION:
+      {
+        auto& name = prev_.get_literal();
+        curr_compiler_->function->set_name(StringObject::create(vm_, name));
+      } break;
+    case FunctionKind::CTOR:
+    case FunctionKind::METHOD:
+      {
+        str_t name(curr_class_->name.get_literal());
+        name += "." + prev_.get_literal();
+        curr_compiler_->function->set_name(StringObject::create(vm_, name));
+      } break;
+    case FunctionKind::TOP_LEVEL:
+      curr_compiler_->function->set_name(StringObject::create(vm_, "cnyx"));
+      break;
+    }
+
     if (fun_kind != FunctionKind::FUNCTION) {
       curr_compiler_->append_local(
           Local{Token::custom_token("this"), curr_compiler_->scope_depth});
@@ -823,7 +843,7 @@ public:
     u8_t name_constant = identifier_constant(prev_);
     declare_variable();
 
-    ClassCompilerImpl class_compiler(curr_class_, Token());
+    ClassCompilerImpl class_compiler(curr_class_, prev_, Token());
     curr_class_ = &class_compiler;
 
     if (match(TokenKind::TK_LESS)) {
