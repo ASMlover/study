@@ -115,6 +115,8 @@ class VM : private UnCopyable {
 
   table_t globals_;
   std::unordered_map<u32_t, StringObject*> intern_strings_;
+  StringObject* ctor_string_{};
+
   UpvalueObject* open_upvalues_{};
 
   sz_t bytes_allocated_{};

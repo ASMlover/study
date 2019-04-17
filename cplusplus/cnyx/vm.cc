@@ -91,10 +91,13 @@ VM::VM(void) {
             std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
         return NumericObject::create(*this, sec);
       });
+  ctor_string_ = StringObject::create(*this, "ctor");
 }
 
 VM::~VM(void) {
   globals_.clear();
+  intern_strings_.clear();
+  ctor_string_ = nullptr;
 
   // new object pushed into `objects_` list may has reference to old object,
   // so need free newly object first of `objects_` list.
@@ -235,6 +238,7 @@ void VM::collect(void) {
 
   gray_table(*this, globals_);
   gray_compiler_roots(*this);
+  gray_value(ctor_string_);
 
   while (!gray_stack_.empty()) {
     auto* o = gray_stack_.back();
@@ -297,7 +301,7 @@ bool VM::call(Value callee, int argc/* = 0*/) {
     // create the instance
     stack_[stack_.size() - argc - 1] = InstanceObject::create(*this, cls);
     // call the constructor if there is one
-    if (auto ctor = cls->get_method("ctor"); ctor)
+    if (auto ctor = cls->get_method(ctor_string_); ctor)
       return call_closure((*ctor)->as_closure(), argc);
     else
       stack_.resize(stack_.size() - argc);
