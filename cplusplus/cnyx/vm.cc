@@ -290,11 +290,12 @@ bool VM::call(Value callee, int argc/* = 0*/) {
   }
   if (BaseObject::is_class(callee)) {
     ClassObject* cls = callee->as_class();
-    InstanceObject* inst = InstanceObject::create(*this, cls);
-    stack_[stack_.size() - argc - 1] = inst;
-    // call the constructor
-    if (auto ctor = cls->ctor(); ctor)
-      return call_closure(ctor->as_closure(), argc);
+
+    // create the instance
+    stack_[stack_.size() - argc - 1] = InstanceObject::create(*this, cls);
+    // call the constructor if there is one
+    if (auto ctor = cls->get_method("ctor"); ctor)
+      return call_closure((*ctor)->as_closure(), argc);
     else
       stack_.resize(stack_.size() - argc);
     return true;

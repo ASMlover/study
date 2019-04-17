@@ -84,9 +84,16 @@ struct Upvalue {
   }
 };
 
+enum class FunctionKind {
+  FUNCTION, // function
+  METHOD, // method of class
+  CTOR, // constructor of class
+};
+
 struct CompilerImpl {
   CompilerImpl* enclosing{};
   FunctionObject* function{};
+  FunctionKind fun_kind{FunctionKind::FUNCTION};
   std::vector<Local> locals;
   std::vector<Upvalue> upvalues;
   int scope_depth{}; // 0: is global scope
@@ -103,12 +110,10 @@ struct CompilerImpl {
 
 struct ClassCompilerImpl {
   ClassCompilerImpl* enclosing{};
-  Token name;
   Token superclass;
 
-  ClassCompilerImpl(ClassCompilerImpl* lenclosing,
-      const Token& lname, const Token& supercls)
-    : enclosing(lenclosing), name(lname), superclass(supercls) {
+  ClassCompilerImpl(ClassCompilerImpl* lenclosing, const Token& supercls)
+    : enclosing(lenclosing), superclass(supercls) {
   }
 };
 
@@ -170,6 +175,14 @@ class CompileParser : private UnCopyable {
     int jump = curr_compiler_->function->codes_count() - offset - 2;
     curr_compiler_->function->set_code(offset, (jump >> 8) & 0xff);
     curr_compiler_->function->set_code(offset + 1, jump & 0xff);
+  }
+
+  void emit_return(void) {
+    if (curr_compiler_->fun_kind == FunctionKind::CTOR)
+      emit_bytes(OpCode::OP_GET_LOCAL, 0);
+    else
+      emit_byte(OpCode::OP_NIL);
+    emit_byte(OpCode::OP_RETURN);
   }
 
   u8_t add_constant(Value constant) {
@@ -561,13 +574,14 @@ public:
   inline bool had_error(void) const { return had_error_; }
 
   void begin_compiler(
-      CompilerImpl& new_compiler, int scope_depth, bool is_method) {
+      CompilerImpl& new_compiler, int scope_depth, FunctionKind fun_kind) {
     new_compiler.enclosing = curr_compiler_;
     new_compiler.function = FunctionObject::create(vm_);
+    new_compiler.fun_kind = fun_kind;
     new_compiler.scope_depth = scope_depth;
     curr_compiler_ = &new_compiler;
 
-    if (is_method) {
+    if (fun_kind != FunctionKind::FUNCTION) {
       curr_compiler_->append_local(
           Local{Token::custom_token("this"), curr_compiler_->scope_depth});
     }
@@ -578,7 +592,8 @@ public:
   }
 
   FunctionObject* finish_compiler(void) {
-    emit_bytes(OpCode::OP_NIL, OpCode::OP_RETURN);
+    emit_return();
+
     auto* fn = curr_compiler_->function;
     curr_compiler_ = curr_compiler_->enclosing;
 
@@ -734,9 +749,9 @@ public:
     leave_scope();
   }
 
-  void fn_common(bool is_method = false, bool is_ctor = false) {
+  void fn_common(FunctionKind fun_kind) {
     CompilerImpl fn_compiler;
-    begin_compiler(fn_compiler, 1, is_method);
+    begin_compiler(fn_compiler, 1, fun_kind);
     enter_scope();
     consume(TokenKind::TK_LPAREN, "expect `(` after function name");
     if (!check(TokenKind::TK_RPAREN)) {
@@ -753,11 +768,6 @@ public:
     }
     consume(TokenKind::TK_RPAREN, "expect `)` after parameters");
     block_stmt();
-    // if this is a constructor, the body automatically return "this"
-    if (is_ctor) {
-      emit_bytes(OpCode::OP_GET_LOCAL, 0);
-      emit_byte(OpCode::OP_RETURN);
-    }
     leave_scope();
     auto* fn = finish_compiler();
 
@@ -772,17 +782,21 @@ public:
 
   void fun_stmt(void) {
     u8_t name_constant = parse_variable("expect function name");
-    fn_common(false, false);
+    fn_common(FunctionKind::FUNCTION);
     define_variable(name_constant);
   }
 
   void return_stmt(void) {
     if (match(TokenKind::TK_SEMI)) {
-      emit_byte(OpCode::OP_NIL);
+      emit_return();
     }
     else {
+      if (curr_compiler_->fun_kind == FunctionKind::CTOR)
+        error("cannot return a value from an constructor");
+
       expression();
       consume(TokenKind::TK_SEMI, "expect `;` after return value");
+      emit_return();
     }
     emit_byte(OpCode::OP_RETURN);
   }
@@ -790,8 +804,12 @@ public:
   void method(void) {
     consume(TokenKind::TK_IDENTIFIER, "expect method name");
     u8_t method_constant = identifier_constant(prev_);
-    bool is_ctor{prev_.is_equal(curr_class_->name)};
-    fn_common(true, is_ctor);
+
+    // if the method is named `ctor`, it's the constructor
+    FunctionKind fun_kind{FunctionKind::METHOD};
+    if (prev_.get_literal() == "ctor")
+      fun_kind = FunctionKind::CTOR;
+    fn_common(fun_kind);
     emit_bytes(OpCode::OP_METHOD, method_constant);
   }
 
@@ -800,7 +818,7 @@ public:
     u8_t name_constant = identifier_constant(prev_);
     declare_variable();
 
-    ClassCompilerImpl class_compiler(curr_class_, prev_, Token());
+    ClassCompilerImpl class_compiler(curr_class_, Token());
     curr_class_ = &class_compiler;
 
     if (match(TokenKind::TK_LESS)) {
@@ -831,7 +849,7 @@ FunctionObject* Compile::compile(VM& vm, const str_t& source_bytes) {
   CompileParser p(vm, lex);
 
   CompilerImpl c;
-  p.begin_compiler(c, 0, false);
+  p.begin_compiler(c, 0, FunctionKind::FUNCTION);
   p.advance();
   if (!p.match(TokenKind::TK_EOF)) {
     do {
