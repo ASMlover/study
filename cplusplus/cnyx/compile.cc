@@ -88,6 +88,8 @@ enum class FunctionKind {
   FUNCTION, // function
   METHOD, // method of class
   CTOR, // constructor of class
+
+  TOP_LEVEL,
 };
 
 struct CompilerImpl {
@@ -787,6 +789,9 @@ public:
   }
 
   void return_stmt(void) {
+    if (curr_compiler_->fun_kind == FunctionKind::TOP_LEVEL)
+      error("cannot return from top-level code");
+
     if (match(TokenKind::TK_SEMI)) {
       emit_return();
     }
@@ -849,7 +854,7 @@ FunctionObject* Compile::compile(VM& vm, const str_t& source_bytes) {
   CompileParser p(vm, lex);
 
   CompilerImpl c;
-  p.begin_compiler(c, 0, FunctionKind::FUNCTION);
+  p.begin_compiler(c, 0, FunctionKind::TOP_LEVEL);
   p.advance();
   if (!p.match(TokenKind::TK_EOF)) {
     do {
