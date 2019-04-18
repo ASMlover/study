@@ -290,37 +290,40 @@ bool VM::call_closure(ClosureObject* closure, int argc) {
 }
 
 bool VM::call(Value callee, int argc/* = 0*/) {
-  if (BaseObject::is_bound_method(callee)) {
-    BoundMethodObject* bound = callee->as_bound_method();
-    stack_[stack_.size() - argc - 1] = bound;
-    return call_closure(bound->method(), argc);
-  }
-  if (BaseObject::is_class(callee)) {
-    ClassObject* cls = callee->as_class();
+  switch (BaseObject::type(callee)) {
+  case ObjType::BOUND_METHOD:
+    {
+      BoundMethodObject* bound = callee->as_bound_method();
+      stack_[stack_.size() - argc - 1] = bound;
+      return call_closure(bound->method(), argc);
+    }
+  case ObjType::CLASS:
+    {
+      ClassObject* cls = callee->as_class();
 
-    // create the instance
-    stack_[stack_.size() - argc - 1] = InstanceObject::create(*this, cls);
-    // call the constructor if there is one
-    if (auto ctor = cls->get_method(ctor_string_); ctor)
-      return call_closure((*ctor)->as_closure(), argc);
-    else
+      // create the instance
+      stack_[stack_.size() - argc - 1] = InstanceObject::create(*this, cls);
+      // call the constructor if there is one
+      if (auto ctor = cls->get_method(ctor_string_); ctor)
+        return call_closure((*ctor)->as_closure(), argc);
+      // no constructor, just discard the arguments
       stack_.resize(stack_.size() - argc);
-    return true;
-  }
-  if (BaseObject::is_closure(callee)) {
+      return true;
+    }
+  case ObjType::CLOSURE:
     return call_closure(callee->as_closure(), argc);
+  case ObjType::NATIVE:
+    {
+      Value* args = argc > 0 ? &stack_[stack_.size() - argc] : nullptr;
+      Value ret = callee->as_native()(argc, args);
+      stack_.resize(stack_.size() - argc - 1);
+      push(ret);
+      return true;
+    }
+  default:
+    runtime_error("can only call functions and classes");
+    return false;
   }
-  if (BaseObject::is_native(callee)) {
-    Value* args{};
-    if (argc > 0)
-      args = &stack_[stack_.size() - argc];
-    Value ret = callee->as_native()(argc, args);
-    stack_.resize(stack_.size() - argc - 1);
-    push(ret);
-    return true;
-  }
-
-  runtime_error("can only call functions and classes");
   return false;
 }
 
