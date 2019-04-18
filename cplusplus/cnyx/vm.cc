@@ -139,11 +139,7 @@ void VM::create_class(StringObject* name, ClassObject* superclass) {
 void VM::define_method(StringObject* name) {
   Value method = peek(0);
   ClassObject* klass = peek(1)->as_class();
-
-  if (values_equal(name, klass->name()))
-    klass->set_ctor(method);
-  else
-    klass->bind_method(name, method);
+  klass->bind_method(name, method);
   pop();
 }
 

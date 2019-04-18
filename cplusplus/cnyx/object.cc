@@ -586,7 +586,6 @@ bool ClassObject::is_equal(BaseObject* other) const {
 void ClassObject::blacken(VM& vm) {
   vm.gray_value(name_);
   vm.gray_value(superclass_);
-  vm.gray_value(ctor_);
   gray_table(vm, methods_);
 }
 

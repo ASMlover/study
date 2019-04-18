@@ -316,7 +316,6 @@ public:
 class ClassObject : public BaseObject {
   StringObject* name_{};
   ClassObject* superclass_{};
-  Value ctor_{};
   table_t methods_;
 
   ClassObject(StringObject* name, ClassObject* superclass);
@@ -324,8 +323,6 @@ class ClassObject : public BaseObject {
 public:
   inline StringObject* name(void) const { return name_; }
   inline ClassObject* superclass(void) const { return superclass_; }
-  inline Value ctor(void) const { return ctor_; }
-  inline void set_ctor(Value ctor) { ctor_ = ctor; }
 
   inline void bind_method(StringObject* name, Value method) {
     methods_[name->chars()] = method;
