@@ -742,10 +742,15 @@ public:
   void var_stmt(void) {
     u8_t global = parse_variable("expect variable name");
 
-    // compile the initializer
-    consume(TokenKind::TK_EQUAL, "expect `=` after variable name");
-    expression();
-    consume(TokenKind::TK_SEMI, "expect `;` after initializer");
+    if (match(TokenKind::TK_EQUAL)) {
+      // compile the initializer
+      expression();
+    }
+    else {
+      // default initialize with nil
+      emit_byte(OpCode::OP_NIL);
+    }
+    consume(TokenKind::TK_SEMI, "expect `;` after variable initializer");
 
     define_variable(global);
   }
