@@ -35,6 +35,7 @@
 namespace nyx {
 
 enum class ObjType {
+  NIL,
   BOOLEAN,
   NUMERIC,
   STRING,
@@ -82,21 +83,21 @@ public:
   inline BoundMethodObject* as_bound_method(void) const;
 
   static bool is_falsely(BaseObject* o);
-  static bool is_type(BaseObject* o, ObjType t) {
-    return o != nullptr && o->type() == t;
+  static ObjType type(BaseObject* o) {
+    return o == nullptr ? ObjType::NIL : o->type();
   }
 
   static bool is_nil(BaseObject* o) { return o == nullptr; }
-  static bool is_boolean(BaseObject* o) { return is_type(o, ObjType::BOOLEAN); }
-  static bool is_numeric(BaseObject* o) { return is_type(o, ObjType::NUMERIC); }
-  static bool is_string(BaseObject* o) { return is_type(o, ObjType::STRING); }
-  static bool is_closure(BaseObject* o) { return is_type(o, ObjType::CLOSURE); }
-  static bool is_function(BaseObject* o) { return is_type(o, ObjType::FUNCTION); }
-  static bool is_native(BaseObject* o) { return is_type(o, ObjType::NATIVE); }
-  static bool is_upvalue(BaseObject* o) { return is_type(o, ObjType::UPVALUE); }
-  static bool is_class(BaseObject* o) { return is_type(o, ObjType::CLASS); }
-  static bool is_instance(BaseObject* o) { return is_type(o, ObjType::INSTANCE); }
-  static bool is_bound_method(BaseObject* o) { return is_type(o, ObjType::BOUND_METHOD); }
+  static bool is_boolean(BaseObject* o) { return type(o) == ObjType::BOOLEAN; }
+  static bool is_numeric(BaseObject* o) { return type(o) == ObjType::NUMERIC; }
+  static bool is_string(BaseObject* o) { return type(o) == ObjType::STRING; }
+  static bool is_closure(BaseObject* o) { return type(o) == ObjType::CLOSURE; }
+  static bool is_function(BaseObject* o) { return type(o) == ObjType::FUNCTION; }
+  static bool is_native(BaseObject* o) { return type(o) == ObjType::NATIVE; }
+  static bool is_upvalue(BaseObject* o) { return type(o) == ObjType::UPVALUE; }
+  static bool is_class(BaseObject* o) { return type(o) == ObjType::CLASS; }
+  static bool is_instance(BaseObject* o) { return type(o) == ObjType::INSTANCE; }
+  static bool is_bound_method(BaseObject* o) { return type(o) == ObjType::BOUND_METHOD; }
 
   virtual sz_t size_bytes(void) const = 0;
   virtual str_t stringify(void) const = 0;
