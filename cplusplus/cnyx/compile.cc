@@ -190,6 +190,12 @@ class CompileParser : private UnCopyable {
   }
 
   u8_t add_constant(Value constant) {
+    FunctionObject* fn = curr_compiler_->function;
+    // see if already have an equivalent constant
+    for (int i = 0; i < fn->constants_count(); ++i)
+      if (values_equal(constant, fn->get_constant(i)))
+        return static_cast<u8_t>(i);
+
     vm_.invoke_push(constant);
     auto i = curr_compiler_->function->append_constant(vm_.invoke_pop());
     return static_cast<u8_t>(i);
@@ -202,8 +208,7 @@ class CompileParser : private UnCopyable {
   }
 
   void emit_constant(Value value) {
-    u8_t constant = add_constant(value);
-    emit_bytes(OpCode::OP_CONSTANT, constant);
+    emit_bytes(OpCode::OP_CONSTANT, add_constant(value));
   }
 
   ParseRule& get_rule(TokenKind kind) {
