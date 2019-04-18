@@ -720,7 +720,7 @@ bool VM::run(void) {
       create_class(_rdstring(), nullptr); break;
     case OpCode::OP_SUBCLASS:
       {
-        Value superclass = pop();
+        Value superclass = peek(0);
         if (!BaseObject::is_class(superclass)) {
           runtime_error("superclass must be a class");
           return false;
@@ -790,6 +790,7 @@ void VM::free_object(BaseObject* obj) {
 InterpretResult VM::interpret(const str_t& source_bytes) {
   Compile c;
 
+  // FIXME: execute from cli will crash ?
   stack_.clear();
   frames_.clear();
 

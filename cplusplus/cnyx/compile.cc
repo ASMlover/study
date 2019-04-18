@@ -61,10 +61,10 @@ struct ParseRule {
 
 struct Local {
   Token name;
-  int depth{};
+  int depth{-1};
   bool upvalue{};
 
-  Local(const Token& lname, int ldepth, bool lupvalue = false)
+  Local(const Token& lname, int ldepth = -1, bool lupvalue = false)
     : name(lname), depth(ldepth), upvalue(lupvalue) {}
   void assign(const Token& lname, int ldepth, bool lupvalue = false) {
     name = lname;
@@ -113,11 +113,11 @@ struct CompilerImpl {
 struct ClassCompilerImpl {
   ClassCompilerImpl* enclosing{};
   Token name{};
-  Token superclass;
+  bool has_superclass{};
 
   ClassCompilerImpl(
-      ClassCompilerImpl* lenclosing, const Token& lname, const Token& supercls)
-    : enclosing(lenclosing), name(lname), superclass(supercls) {
+      ClassCompilerImpl* lenclosing, const Token& lname, bool has_super = false)
+    : enclosing(lenclosing), name(lname), has_superclass(has_super) {
   }
 };
 
@@ -362,7 +362,7 @@ class CompileParser : private UnCopyable {
         error("variable with this name already declared in this scope");
     }
 
-    curr_compiler_->append_local(Local(name, -1, false));
+    curr_compiler_->append_local(Local{name, -1, false});
   }
 
   u8_t parse_variable(const str_t& error_message) {
@@ -429,7 +429,7 @@ class CompileParser : private UnCopyable {
   void push_superclass(void) {
     if (curr_class_ == nullptr)
       return;
-    name_variable(curr_class_->superclass, false);
+    name_variable(Token::custom_token("super"), false);
   }
 
   void boolean(bool can_assign) {
@@ -539,7 +539,7 @@ class CompileParser : private UnCopyable {
   void super_exp(bool can_assign) {
     if (curr_class_ == nullptr)
       error("cannot use `super` outside of a class");
-    else if (curr_class_->superclass.get_literal().empty())
+    else if (!curr_class_->has_superclass)
       error("cannot use `super` in a class without superclass");
 
     consume(TokenKind::TK_DOT, "expect `.` after `super`");
@@ -767,7 +767,7 @@ public:
 
     emit_loop(loop_start); // loop back to the start
     patch_jump(exit_jump);
-
+    emit_byte(OpCode::OP_POP); // condition
     leave_scope();
   }
 
@@ -843,15 +843,19 @@ public:
     u8_t name_constant = identifier_constant(prev_);
     declare_variable();
 
-    ClassCompilerImpl class_compiler(curr_class_, prev_, Token());
+    ClassCompilerImpl class_compiler(curr_class_, prev_, false);
     curr_class_ = &class_compiler;
 
     if (match(TokenKind::TK_LESS)) {
       consume(TokenKind::TK_IDENTIFIER, "expect superclass name");
-      class_compiler.superclass = prev_;
+      class_compiler.has_superclass = true;
 
-      // load the superclass onto the stack
+      enter_scope();
+
+      // store the superclass in a local variable named `super`
       variable(false);
+      curr_compiler_->append_local(
+          Local{Token::custom_token("super"), -1, false});
       emit_bytes(OpCode::OP_SUBCLASS, name_constant);
     }
     else {
@@ -862,6 +866,9 @@ public:
     while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE))
       method();
     consume(TokenKind::TK_RBRACE, "expect `}` after class body");
+
+    if (class_compiler.has_superclass)
+      leave_scope();
 
     define_variable(name_constant);
 
