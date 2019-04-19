@@ -113,7 +113,7 @@ void VM::define_native(const str_t& name, const NativeFunction& fn) {
   push(StringObject::create(
         *this, name.c_str(), static_cast<int>(name.size())));
   push(NativeObject::create(*this, fn));
-  globals_[name] = Xptr::down<NativeObject>(peek());
+  globals_[name] = peek();
   pop();
   pop();
 }
@@ -122,7 +122,7 @@ void VM::define_native(const str_t& name, NativeFunction&& fn) {
   push(StringObject::create(
         *this, name.c_str(), static_cast<int>(name.size())));
   push(NativeObject::create(*this, std::move(fn)));
-  globals_[name] = Xptr::down<NativeObject>(peek());
+  globals_[name] = peek();
   pop();
   pop();
 }
@@ -138,7 +138,7 @@ void VM::create_class(StringObject* name, ClassObject* superclass) {
 
 void VM::define_method(StringObject* name) {
   Value method = peek(0);
-  ClassObject* klass = peek(1)->as_class();
+  ClassObject* klass = peek(1).as_class();
   klass->bind_method(name, method);
   pop();
 }
@@ -146,7 +146,7 @@ void VM::define_method(StringObject* name) {
 bool VM::bind_method(ClassObject* cls, StringObject* name) {
   if (auto method = cls->get_method(name); method) {
     auto* bound = BoundMethodObject::create(
-        *this, peek(0), (*method)->as_closure());
+        *this, peek(0), (*method).as_closure());
     pop(); // pop instance
     push(bound);
     return true;
@@ -156,7 +156,7 @@ bool VM::bind_method(ClassObject* cls, StringObject* name) {
   return false;
 }
 
-void VM::push(Value val) {
+void VM::push(const Value& val) {
   stack_.push_back(val);
 }
 
@@ -166,9 +166,8 @@ Value VM::pop(void) {
   return val;
 }
 
-Value VM::peek(int distance) const {
-  // return stack_[stack_.size() - 1 - distance];
-  return stack_.empty() ? nullptr : stack_[stack_.size() - 1 - distance];
+Value VM::peek(int distance) {
+  return stack_.empty() ? Value::make_nil() : stack_[stack_.size() - 1 - distance];
 }
 
 void VM::runtime_error(const char* format, ...) {
@@ -189,29 +188,29 @@ void VM::runtime_error(const char* format, ...) {
 }
 
 std::optional<bool> VM::pop_boolean(void) {
-  if (!BaseObject::is_boolean(peek())) {
+  if (!peek().is_boolean()) {
     runtime_error("operand must be a boolean");
     return {};
   }
-  return {pop()->as_boolean()};
+  return {pop().as_boolean()};
 }
 
 std::optional<double> VM::pop_numeric(void) {
-  if (!BaseObject::is_numeric(peek())) {
+  if (!peek().is_numeric()) {
     runtime_error("operand must be a numeric");
     return {};
   }
-  return {pop()->as_numeric()};
+  return {pop().as_numeric()};
 }
 
 std::optional<std::tuple<double, double>> VM::pop_numerics(void) {
-  if (!BaseObject::is_numeric(peek(0)) || !BaseObject::is_numeric(peek(1))) {
+  if (!peek(0).is_numeric() || !peek(1).is_numeric()) {
     runtime_error("operands must be numerics");
     return {};
   }
 
-  auto b = pop()->as_numeric();
-  auto a = pop()->as_numeric();
+  auto b = pop().as_numeric();
+  auto a = pop().as_numeric();
   return {{a, b}};
 }
 
@@ -221,20 +220,20 @@ void VM::collect(void) {
 #endif
 
   // mark the stack roots
-  for (auto* o : stack_)
-    gray_value(o);
+  for (auto& v : stack_)
+    gray_value(v);
   for (auto& f : frames_)
-    gray_value(f.closure());
+    gray_object(f.closure());
 
   // mark the openvalues
   for (auto* upvalue = open_upvalues_;
       upvalue != nullptr; upvalue = upvalue->next()) {
-    gray_value(upvalue);
+    gray_object(upvalue);
   }
 
   gray_table(*this, globals_);
   gray_compiler_roots(*this);
-  gray_value(ctor_string_);
+  gray_object(ctor_string_);
 
   while (!gray_stack_.empty()) {
     auto* o = gray_stack_.back();
@@ -269,8 +268,8 @@ void VM::remove_undark_intern_strings(void) {
 
 void VM::print_stack(void) {
   int i{};
-  for (auto* o : stack_)
-    std::cout << i++ << " : " << o << std::endl;
+  for (auto& v : stack_)
+    std::cout << i++ << " : " << v << std::endl;
 }
 
 bool VM::call_closure(ClosureObject* closure, int argc) {
@@ -285,33 +284,33 @@ bool VM::call_closure(ClosureObject* closure, int argc) {
   return true;
 }
 
-bool VM::call(Value callee, int argc/* = 0*/) {
-  switch (BaseObject::type(callee)) {
+bool VM::call(const Value& callee, int argc/* = 0*/) {
+  switch (obj_type(callee)) {
   case ObjType::BOUND_METHOD:
     {
-      BoundMethodObject* bound = callee->as_bound_method();
+      BoundMethodObject* bound = callee.as_bound_method();
       stack_[stack_.size() - argc - 1] = bound;
       return call_closure(bound->method(), argc);
     }
   case ObjType::CLASS:
     {
-      ClassObject* cls = callee->as_class();
+      ClassObject* cls = callee.as_class();
 
       // create the instance
       stack_[stack_.size() - argc - 1] = InstanceObject::create(*this, cls);
       // call the constructor if there is one
       if (auto ctor = cls->get_method(ctor_string_); ctor)
-        return call_closure((*ctor)->as_closure(), argc);
+        return call_closure((*ctor).as_closure(), argc);
       // no constructor, just discard the arguments
       stack_.resize(stack_.size() - argc);
       return true;
     }
   case ObjType::CLOSURE:
-    return call_closure(callee->as_closure(), argc);
+    return call_closure(callee.as_closure(), argc);
   case ObjType::NATIVE:
     {
       Value* args = argc > 0 ? &stack_[stack_.size() - argc] : nullptr;
-      Value ret = callee->as_native()(argc, args);
+      Value ret = callee.as_native()(argc, args);
       stack_.resize(stack_.size() - argc - 1);
       push(ret);
       return true;
@@ -326,19 +325,19 @@ bool VM::call(Value callee, int argc/* = 0*/) {
 bool VM::invoke_from_class(ClassObject* cls,
     InstanceObject* receiver, StringObject* name, int argc) {
   if (auto method = cls->get_method(name); method)
-    return call_closure((*method)->as_closure(), argc);
+    return call_closure((*method).as_closure(), argc);
 
   runtime_error("undefined property `%s`", name->chars());
   return false;
 }
 
-bool VM::invoke(Value receiver, StringObject* name, int argc) {
-  if (!BaseObject::is_instance(receiver)) {
+bool VM::invoke(const Value& receiver, StringObject* name, int argc) {
+  if (!receiver.is_instance()) {
     runtime_error("only instances have methods");
     return false;
   }
 
-  InstanceObject* inst = receiver->as_instance();
+  InstanceObject* inst = receiver.as_instance();
   if (auto callee = inst->get_field(name); callee) {
     stack_[stack_.size() - argc] = *callee;
     return call(*callee, argc);
@@ -398,14 +397,14 @@ bool VM::run(void) {
     return frame->get_closure_constant(_rdbyte());
   };
   auto _rdstring = [_rdconstant](void) -> StringObject* {
-    return _rdconstant()->as_string();
+    return _rdconstant().as_string();
   };
 
   for (;;) {
 #if defined(DEBUG_EXEC_TRACE)
     {
-      for (auto* o : stack_)
-        std::cout << "| " << o << " ";
+      for (auto& v : stack_)
+        std::cout << "| " << v << " ";
       std::cout << std::endl;
       auto* fn = frame->closure()->get_function();
       fn->dump_instruction(
@@ -467,13 +466,13 @@ bool VM::run(void) {
       } break;
     case OpCode::OP_GET_FIELD:
       {
-        if (!BaseObject::is_instance(peek())) {
+        if (!peek().is_instance()) {
           runtime_error("only instances have faileds");
           return false;
         }
 
         // class fields
-        auto* inst = peek()->as_instance();
+        auto* inst = peek().as_instance();
         auto* name = _rdstring();
         if (auto val = inst->get_field(name); val) {
           pop(); // pop out instance
@@ -486,13 +485,13 @@ bool VM::run(void) {
       } break;
     case OpCode::OP_SET_FIELD:
       {
-        if (!BaseObject::is_instance(peek(1))) {
+        if (!peek(1).is_instance()) {
           runtime_error("only instances have fields");
           return false;
         }
 
         // class fields
-        auto* inst = peek(1)->as_instance();
+        auto* inst = peek(1).as_instance();
         inst->set_field(_rdstring(), peek(0));
         Value val = pop();
         pop();
@@ -501,7 +500,7 @@ bool VM::run(void) {
     case OpCode::OP_GET_SUPER:
       {
         StringObject* name = _rdstring();
-        ClassObject* superclass = pop()->as_class();
+        ClassObject* superclass = pop().as_class();
         if (!bind_method(superclass, name))
           return false;
       } break;
@@ -509,13 +508,13 @@ bool VM::run(void) {
       {
         auto b = pop();
         auto a = pop();
-        push(BooleanObject::create(*this, values_equal(a, b)));
+        push(BooleanObject::create(*this, a == b));
       } break;
     case OpCode::OP_NE:
       {
         auto b = pop();
         auto a = pop();
-        push(BooleanObject::create(*this, !values_equal(a, b)));
+        push(BooleanObject::create(*this, a != b));
       } break;
     case OpCode::OP_GT:
       if (auto r = pop_numerics(); r) {
@@ -555,15 +554,14 @@ bool VM::run(void) {
       break;
     case OpCode::OP_ADD:
       {
-        if (BaseObject::is_string(peek(0)) && BaseObject::is_string(peek(1))) {
-          auto* b = pop()->as_string();
-          auto* a = pop()->as_string();
+        if (peek(0).is_string() && peek(1).is_string()) {
+          auto* b = pop().as_string();
+          auto* a = pop().as_string();
           push(StringObject::concat(*this, a, b));
         }
-        else if (BaseObject::is_numeric(peek(1))
-            && BaseObject::is_numeric(peek(1))) {
-          double b = pop()->as_numeric();
-          double a = pop()->as_numeric();
+        else if (peek(1).is_numeric() && peek(1).is_numeric()) {
+          double b = pop().as_numeric();
+          double a = pop().as_numeric();
           push(NumericObject::create(*this, a + b));
         }
         else {
@@ -600,7 +598,7 @@ bool VM::run(void) {
       break;
     case OpCode::OP_NOT:
       {
-        auto b = BaseObject::is_falsely(pop());
+        auto b = pop().is_falsely();
         push(BooleanObject::create(*this, b));
       } break;
     case OpCode::OP_NEG:
@@ -618,7 +616,7 @@ bool VM::run(void) {
     case OpCode::OP_JUMP_IF_FALSE:
       {
         u16_t offset = _rdword();
-        if (BaseObject::is_falsely(peek()))
+        if (peek().is_falsely())
           frame->add_ip(offset);
       } break;
     case OpCode::OP_LOOP:
@@ -669,15 +667,15 @@ bool VM::run(void) {
       {
         StringObject* method = _rdstring();
         int argc = instruction - OpCode::OP_SUPER_0;
-        ClassObject* superclass = pop()->as_class();
-        InstanceObject* receiver = peek(argc)->as_instance();
+        ClassObject* superclass = pop().as_class();
+        InstanceObject* receiver = peek(argc).as_instance();
         if (!invoke_from_class(superclass, receiver, method, argc))
           return false;
         frame = &frames_.back();
       } break;
     case OpCode::OP_CLOSURE:
       {
-        auto* fn = _rdconstant()->as_function();
+        auto* fn = _rdconstant().as_function();
         auto* closure = ClosureObject::create(*this, fn);
         push(closure);
 
@@ -720,11 +718,11 @@ bool VM::run(void) {
     case OpCode::OP_SUBCLASS:
       {
         Value superclass = peek(0);
-        if (!BaseObject::is_class(superclass)) {
+        if (!superclass.is_class()) {
           runtime_error("superclass must be a class");
           return false;
         }
-        create_class(_rdstring(), superclass->as_class());
+        create_class(_rdstring(), superclass.as_class());
       } break;
     case OpCode::OP_METHOD:
       define_method(_rdstring()); break;
@@ -757,17 +755,23 @@ std::optional<StringObject*> VM::get_intern_string(u32_t hash) const {
   return {};
 }
 
-void VM::gray_value(Value v) {
-  if (BaseObject::is_nil(v))
+void VM::gray_object(BaseObject* obj) {
+  if (obj == nullptr)
     return;
 
-  if (v->is_dark())
+  if (obj->is_dark())
     return;
 #if defined(DEBUG_GC_TRACE)
-  std::cout << "`" << Xptr::address(v) << "` gray " << v << std::endl;
+  std::cout << "`" << Xptr::address(obj) << "` gray " << obj << std::endl;
 #endif
-  v->set_dark(true);
-  gray_stack_.push_back(v);
+  obj->set_dark(true);
+  gray_stack_.push_back(obj);
+}
+
+void VM::gray_value(const Value& v) {
+  if (!v.is_obj())
+    return;
+  gray_object(v.as_obj());
 }
 
 void VM::blacken_object(BaseObject* obj) {

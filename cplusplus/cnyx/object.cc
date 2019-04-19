@@ -28,8 +28,8 @@
 #include <cstring>
 #include <iostream>
 #include <sstream>
-#include "object.hh"
 #include "vm.hh"
+#include "object.hh"
 
 namespace nyx {
 
@@ -75,8 +75,8 @@ str_t BaseObject::type_name(void) const {
   return "<unknown>";
 }
 
-bool BaseObject::is_falsely(BaseObject* o) {
-  return is_nil(o) || (is_boolean(o) && !o->as_boolean());
+std::ostream& operator<<(std::ostream& out, BaseObject* obj) {
+  return out << (obj == nullptr ? "nil" : obj->stringify());
 }
 
 void gray_table(VM& vm, table_t& tbl) {
@@ -86,7 +86,7 @@ void gray_table(VM& vm, table_t& tbl) {
 
 void remove_table_undark(table_t& tbl) {
   for (auto it = tbl.begin(); it != tbl.end();) {
-    if (!it->second->is_dark())
+    if (!it->second.as_obj()->is_dark())
       tbl.erase(it++);
     else
       ++it;
@@ -98,7 +98,19 @@ ValueArray::~ValueArray(void) {
     delete [] values_;
 }
 
-int ValueArray::append_value(Value v) {
+void ValueArray::set_value(int i, const Value& v) {
+  values_[i] = v;
+}
+
+Value& ValueArray::get_value(int i) {
+  return values_[i];
+}
+
+const Value& ValueArray::get_value(int i) const {
+  return values_[i];
+}
+
+int ValueArray::append_value(const Value& v) {
   if (capacity_ < count_ + 1) {
     capacity_ = capacity_ == 0 ? 4 : capacity_ * 2;
 
@@ -128,7 +140,7 @@ str_t BooleanObject::stringify(void) const {
 }
 
 bool BooleanObject::is_equal(BaseObject* other) const {
-  return value_ == other->as_boolean();
+  return value_ == Xptr::down<BooleanObject>(other)->value();
 }
 
 void BooleanObject::blacken(VM& vm) {
@@ -151,7 +163,7 @@ str_t NumericObject::stringify(void) const {
 }
 
 bool NumericObject::is_equal(BaseObject* other) const {
-  return value_ == other->as_numeric();
+  return value_ == Xptr::down<NumericObject>(other)->value();
 }
 
 void NumericObject::blacken(VM&) {
@@ -192,9 +204,10 @@ str_t StringObject::stringify(void) const {
 }
 
 bool StringObject::is_equal(BaseObject* other) const {
-  auto* r = Xptr::down<StringObject>(other);
-  return (hash_ == r->hash_ &&  count_ == r->count_
-      && memcmp(chars_, r->chars_, count_) == 0);
+  return false;
+  // auto* r = Xptr::down<StringObject>(other);
+  // return (hash_ == r->hash_ &&  count_ == r->count_
+  //     && memcmp(chars_, r->chars_, count_) == 0);
 }
 
 void StringObject::blacken(VM&) {
@@ -380,11 +393,11 @@ int FunctionObject::dump_instruction(int i) {
   case OpCode::OP_CLOSURE:
     {
       u8_t constant = codes_[i++];
-      auto* constant_value = constants_.get_value(constant);
+      auto& constant_value = constants_.get_value(constant);
       fprintf(stdout, "%-16s %4d ", "OP_CLOSURE", constant);
       std::cout << constant_value << std::endl;
 
-      auto* closed_fn = Xptr::down<FunctionObject>(constant_value);
+      auto* closed_fn = constant_value.as_function();
       for (int j = 0; j < closed_fn->upvalues_count(); ++j) {
         u8_t is_local = codes_[i++];
         u8_t index = codes_[i++];
@@ -435,7 +448,7 @@ int FunctionObject::append_code(u8_t c, int lineno) {
   return codes_count_++;
 }
 
-int FunctionObject::append_constant(Value v) {
+int FunctionObject::append_constant(const Value& v) {
   return constants_.append_value(v);
 }
 
@@ -455,7 +468,7 @@ bool FunctionObject::is_equal(BaseObject*) const {
 
 void FunctionObject::blacken(VM& vm) {
   constants_.gray(vm);
-  vm.gray_value(name_);
+  vm.gray_object(name_);
 }
 
 FunctionObject* FunctionObject::create(VM& vm) {
@@ -545,9 +558,9 @@ bool ClosureObject::is_equal(BaseObject* other) const {
 }
 
 void ClosureObject::blacken(VM& vm) {
-  vm.gray_value(function_);
+  vm.gray_object(function_);
   for (int i = 0; i < function_->upvalues_count(); ++i)
-    vm.gray_value(upvalues_[i]);
+    vm.gray_object(upvalues_[i]);
 }
 
 ClosureObject* ClosureObject::create(VM& vm, FunctionObject* fn) {
@@ -584,8 +597,8 @@ bool ClassObject::is_equal(BaseObject* other) const {
 }
 
 void ClassObject::blacken(VM& vm) {
-  vm.gray_value(name_);
-  vm.gray_value(superclass_);
+  vm.gray_object(name_);
+  vm.gray_object(superclass_);
   gray_table(vm, methods_);
 }
 
@@ -618,7 +631,7 @@ bool InstanceObject::is_equal(BaseObject* other) const {
 }
 
 void InstanceObject::blacken(VM& vm) {
-  vm.gray_value(class_);
+  vm.gray_object(class_);
   gray_table(vm, fields_);
 }
 
@@ -628,7 +641,7 @@ InstanceObject* InstanceObject::create(VM& vm, ClassObject* klass) {
   return o;
 }
 
-BoundMethodObject::BoundMethodObject(Value receiver, ClosureObject* method)
+BoundMethodObject::BoundMethodObject(const Value& receiver, ClosureObject* method)
   : BaseObject(ObjType::BOUND_METHOD)
   , receiver_(receiver)
   , method_(method) {
@@ -653,11 +666,11 @@ bool BoundMethodObject::is_equal(BaseObject* other) const {
 
 void BoundMethodObject::blacken(VM& vm) {
   vm.gray_value(receiver_);
-  vm.gray_value(method_);
+  vm.gray_object(method_);
 }
 
 BoundMethodObject* BoundMethodObject::create(
-    VM& vm, Value receiver, ClosureObject* method) {
+    VM& vm, const Value& receiver, ClosureObject* method) {
   auto* o = new BoundMethodObject(receiver, method);
   vm.append_object(o);
   return o;

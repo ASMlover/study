@@ -29,8 +29,21 @@
 
 namespace nyx {
 
-inline ObjType __obj_type(const Value& v) {
-  return v.as_obj() == nullptr ? ObjType::NIL : v.as_obj()->type();
+bool operator==(const Value& a, const Value& b) {
+  if (a.as_obj() == b.as_obj())
+    return true;
+
+  if ((a.is_nil() || b.is_nil()) || obj_type(a) != obj_type(b))
+    return false;
+  return a.as_obj()->is_equal(b.as_obj());
+}
+
+bool operator!=(const Value& a, const Value& b) {
+  return !(a == b);
+}
+
+std::ostream& operator<<(std::ostream& out, const Value& v) {
+  return out << v.as_obj();
 }
 
 bool Value::is_obj(void) const noexcept {
@@ -38,47 +51,47 @@ bool Value::is_obj(void) const noexcept {
 }
 
 bool Value::is_nil(void) const noexcept {
-  return __obj_type(*this) == ObjType::NIL;
+  return obj_type(*this) == ObjType::NIL;
 }
 
 bool Value::is_boolean(void) const noexcept {
-  return __obj_type(*this) == ObjType::BOOLEAN;
+  return obj_type(*this) == ObjType::BOOLEAN;
 }
 
 bool Value::is_numeric(void) const noexcept {
-  return __obj_type(*this) == ObjType::NUMERIC;
+  return obj_type(*this) == ObjType::NUMERIC;
 }
 
 bool Value::is_string(void) const noexcept {
-  return __obj_type(*this) == ObjType::STRING;
+  return obj_type(*this) == ObjType::STRING;
 }
 
 bool Value::is_closure(void) const noexcept {
-  return __obj_type(*this) == ObjType::CLOSURE;
+  return obj_type(*this) == ObjType::CLOSURE;
 }
 
 bool Value::is_function(void) const noexcept {
-  return __obj_type(*this) == ObjType::FUNCTION;
+  return obj_type(*this) == ObjType::FUNCTION;
 }
 
 bool Value::is_native(void) const noexcept {
-  return __obj_type(*this) == ObjType::NATIVE;
+  return obj_type(*this) == ObjType::NATIVE;
 }
 
 bool Value::is_upvalue(void) const noexcept {
-  return __obj_type(*this) == ObjType::UPVALUE;
+  return obj_type(*this) == ObjType::UPVALUE;
 }
 
 bool Value::is_class(void) const noexcept {
-  return __obj_type(*this) == ObjType::CLASS;
+  return obj_type(*this) == ObjType::CLASS;
 }
 
 bool Value::is_instance(void) const noexcept {
-  return __obj_type(*this) == ObjType::INSTANCE;
+  return obj_type(*this) == ObjType::INSTANCE;
 }
 
 bool Value::is_bound_method(void) const noexcept {
-  return __obj_type(*this) == ObjType::BOUND_METHOD;
+  return obj_type(*this) == ObjType::BOUND_METHOD;
 }
 
 bool Value::as_boolean(void) const noexcept {

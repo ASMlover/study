@@ -130,9 +130,9 @@ class VM : private UnCopyable {
   void define_method(StringObject* name);
   bool bind_method(ClassObject* cls, StringObject* name);
 
-  void push(Value val);
+  void push(const Value& val);
   Value pop(void);
-  Value peek(int distance = 0) const;
+  Value peek(int distance = 0);
   void runtime_error(const char* format, ...);
 
   std::optional<bool> pop_boolean(void);
@@ -144,10 +144,10 @@ class VM : private UnCopyable {
   void print_stack(void);
 
   bool call_closure(ClosureObject* closure, int argc);
-  bool call(Value callee, int argc = 0);
+  bool call(const Value& callee, int argc = 0);
   bool invoke_from_class(ClassObject* cls,
       InstanceObject* receiver, StringObject* name, int argc);
-  bool invoke(Value receiver, StringObject* method, int argc);
+  bool invoke(const Value& receiver, StringObject* method, int argc);
   UpvalueObject* capture_upvalue(Value* local);
   void close_upvalues(Value* last);
 
@@ -156,13 +156,15 @@ public:
   VM(void);
   ~VM(void);
 
-  inline void invoke_push(Value v) { push(v); }
+  inline void invoke_push(const Value& v) { push(v); }
   inline Value invoke_pop(void) { return pop(); }
 
   void append_object(BaseObject* o);
   void set_intern_string(u32_t hash, StringObject* o);
   std::optional<StringObject*> get_intern_string(u32_t hash) const;
-  void gray_value(Value v);
+
+  void gray_object(BaseObject* obj);
+  void gray_value(const Value& v);
   void blacken_object(BaseObject* obj);
   void free_object(BaseObject* obj);
 

@@ -31,8 +31,12 @@
 #include <optional>
 #include <string>
 #include "common.hh"
+#include "value.hh"
 
 namespace nyx {
+
+class Value;
+using NativeFunction = std::function<Value (int argc, Value* args)>;
 
 enum class ObjType {
   NIL,
@@ -49,14 +53,6 @@ enum class ObjType {
 };
 
 class VM;
-class StringObject;
-class ClosureObject;
-class FunctionObject;
-class ClassObject;
-class InstanceObject;
-class BoundMethodObject;
-
-using NativeFunction = std::function<Value (int argc, Value* args)>;
 
 class BaseObject : private UnCopyable {
   ObjType type_;
@@ -71,33 +67,9 @@ public:
   inline void set_dark(bool is_dark) { is_dark_ = is_dark; }
   str_t type_name(void) const;
 
-  inline bool as_boolean(void) const;
-  inline double as_numeric(void) const;
-  inline StringObject* as_string(void) const;
-  inline const char* as_cstring(void) const;
-  inline ClosureObject* as_closure(void) const;
-  inline FunctionObject* as_function(void) const;
-  inline NativeFunction as_native(void) const;
-  inline ClassObject* as_class(void) const;
-  inline InstanceObject* as_instance(void) const;
-  inline BoundMethodObject* as_bound_method(void) const;
-
-  static bool is_falsely(BaseObject* o);
   static ObjType type(BaseObject* o) {
     return o == nullptr ? ObjType::NIL : o->type();
   }
-
-  static bool is_nil(BaseObject* o) { return o == nullptr; }
-  static bool is_boolean(BaseObject* o) { return type(o) == ObjType::BOOLEAN; }
-  static bool is_numeric(BaseObject* o) { return type(o) == ObjType::NUMERIC; }
-  static bool is_string(BaseObject* o) { return type(o) == ObjType::STRING; }
-  static bool is_closure(BaseObject* o) { return type(o) == ObjType::CLOSURE; }
-  static bool is_function(BaseObject* o) { return type(o) == ObjType::FUNCTION; }
-  static bool is_native(BaseObject* o) { return type(o) == ObjType::NATIVE; }
-  static bool is_upvalue(BaseObject* o) { return type(o) == ObjType::UPVALUE; }
-  static bool is_class(BaseObject* o) { return type(o) == ObjType::CLASS; }
-  static bool is_instance(BaseObject* o) { return type(o) == ObjType::INSTANCE; }
-  static bool is_bound_method(BaseObject* o) { return type(o) == ObjType::BOUND_METHOD; }
 
   virtual sz_t size_bytes(void) const = 0;
   virtual str_t stringify(void) const = 0;
@@ -105,17 +77,11 @@ public:
   virtual void blacken(VM& vm) = 0;
 };
 
-inline std::ostream& operator<<(std::ostream& out, BaseObject* obj) {
-  return out << (obj == nullptr ? "nil" : obj->stringify());
+inline ObjType obj_type(const Value& v) {
+  return v.as_obj() == nullptr ? ObjType::NIL : v.as_obj()->type();
 }
 
-inline bool values_equal(Value a, Value b) {
-  if (a == b)
-    return true;
-  if (BaseObject::is_nil(a) || BaseObject::is_nil(b))
-    return false;
-  return a->type() != b->type() ? false : a->is_equal(b);
-}
+std::ostream& operator<<(std::ostream& out, BaseObject* obj);
 
 void gray_table(VM& vm, table_t& tbl);
 void remove_table_undark(table_t& tbl);
@@ -132,10 +98,11 @@ public:
   inline int count(void) const { return count_; }
   inline Value* values(void) { return values_; }
   inline const Value* values(void) const { return values_; }
-  inline void set_value(int i, Value v) { values_[i] = v; }
-  inline Value get_value(int i) { return values_[i]; }
-  inline const Value get_value(int i) const { return values_[i]; }
-  int append_value(Value v);
+
+  void set_value(int i, const Value& v);
+  Value& get_value(int i);
+  const Value& get_value(int i) const;
+  int append_value(const Value& v);
   void gray(VM& vm);
 };
 
@@ -229,15 +196,16 @@ public:
   inline int constants_count(void) const { return constants_.count(); }
   inline Value* constants(void) { return constants_.values(); }
   inline const Value* constants(void) const { return constants_.values(); }
-  inline void set_constant(int i, Value v) { constants_.set_value(i, v); }
-  inline Value get_constant(int i) const { return constants_.get_value(i); }
+  inline void set_constant(int i, const Value& v) { constants_.set_value(i, v); }
+  inline Value& get_constant(int i) { return constants_.get_value(i); }
+  inline const Value& get_constant(int i) const { return constants_.get_value(i); }
   inline StringObject* name(void) const { return name_; }
   inline void set_name(StringObject* name) { name_ = name; }
 
   int dump_instruction(int i);
   void dump(void);
   int append_code(u8_t c, int lineno = 0);
-  int append_constant(Value v);
+  int append_constant(const Value& v);
 
   virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;
@@ -278,10 +246,11 @@ class UpvalueObject : public BaseObject {
   virtual ~UpvalueObject(void) {}
 public:
   inline Value* value(void) const { return value_; }
-  inline Value closed(void) const { return closed_; }
+  inline Value& closed(void) { return closed_; }
+  inline const Value& closed(void) const { return closed_; }
   inline UpvalueObject* next(void) const { return next_; }
   inline void set_value(Value* value) { value_ = value; }
-  inline void set_closed(Value closed) { closed_ = closed; }
+  inline void set_closed(const Value& closed) { closed_ = closed; }
   inline void set_next(UpvalueObject* next) { next_ = next; }
 
   virtual sz_t size_bytes(void) const override;
@@ -324,7 +293,7 @@ public:
   inline StringObject* name(void) const { return name_; }
   inline ClassObject* superclass(void) const { return superclass_; }
 
-  inline void bind_method(StringObject* name, Value method) {
+  inline void bind_method(StringObject* name, const Value& method) {
     methods_[name->chars()] = method;
   }
 
@@ -357,7 +326,7 @@ class InstanceObject : public BaseObject {
 public:
   inline ClassObject* get_class(void) const { return class_; }
 
-  inline void set_field(StringObject* name, Value value) {
+  inline void set_field(StringObject* name, const Value& value) {
     fields_[name->chars()] = value;
   }
 
@@ -383,10 +352,11 @@ class BoundMethodObject : public BaseObject {
   Value receiver_{};
   ClosureObject* method_{};
 
-  BoundMethodObject(Value receiver, ClosureObject* method);
+  BoundMethodObject(const Value& receiver, ClosureObject* method);
   virtual ~BoundMethodObject(void);
 public:
-  inline Value receiver(void) const { return receiver_; }
+  inline Value& receiver(void) { return receiver_; }
+  inline const Value& receiver(void) const { return receiver_; }
   inline ClosureObject* method(void) const { return method_; }
 
   virtual sz_t size_bytes(void) const override;
@@ -395,9 +365,7 @@ public:
   virtual void blacken(VM& vm) override;
 
   static BoundMethodObject* create(
-      VM& vm, Value receiver, ClosureObject* method);
+      VM& vm, const Value& receiver, ClosureObject* method);
 };
 
 }
-
-#include "object.inl.hh"

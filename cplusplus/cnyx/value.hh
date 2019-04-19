@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <ostream>
 #include "common.hh"
 
 namespace nyx {
@@ -45,8 +46,13 @@ public:
   Value(void) noexcept {
   }
 
-  Value(ValueType t, BaseObject* o = nullptr) noexcept
-    : type_{t}, as_{o} {
+  Value(BaseObject* o) noexcept
+    : type_{ValueType::OBJ}, as_{o} {
+  }
+
+  Value(const Value& v) noexcept
+    : type_(v.type_) {
+    as_.obj = v.as_.obj;
   }
 
   Value(Value&& v) noexcept
@@ -74,6 +80,10 @@ public:
     return as_.obj;
   }
 
+  bool is_falsely(void) const {
+    return is_nil() || (is_boolean() && !as_boolean());
+  }
+
   bool is_obj(void) const noexcept;
   bool is_nil(void) const noexcept;
   bool is_boolean(void) const noexcept;
@@ -98,10 +108,14 @@ public:
   InstanceObject* as_instance(void) const noexcept;
   BoundMethodObject* as_bound_method(void) const noexcept;
 
-  static Value to_value(BaseObject* obj) { return Value(ValueType::OBJ, obj); }
+  static Value to_value(BaseObject* obj) { return Value{obj}; }
   static Value make_nil(void) { return Value{}; }
-  static Value make_obj(BaseObject* obj) { return Value{ValueType::OBJ, obj}; }
+  static Value make_obj(BaseObject* obj) { return Value{obj}; }
 };
+
+bool operator==(const Value& a, const Value& b);
+bool operator!=(const Value& a, const Value& b);
+std::ostream& operator<<(std::ostream& out, const Value& v);
 
 using table_t = std::unordered_map<str_t, Value>;
 

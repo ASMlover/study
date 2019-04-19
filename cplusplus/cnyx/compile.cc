@@ -189,11 +189,11 @@ class CompileParser : private UnCopyable {
     emit_byte(OpCode::OP_RETURN);
   }
 
-  u8_t add_constant(Value constant) {
+  u8_t add_constant(const Value& constant) {
     FunctionObject* fn = curr_compiler_->function;
     // see if already have an equivalent constant
     for (int i = 0; i < fn->constants_count(); ++i)
-      if (values_equal(constant, fn->get_constant(i)))
+      if (constant == fn->get_constant(i))
         return static_cast<u8_t>(i);
 
     vm_.invoke_push(constant);
@@ -207,7 +207,7 @@ class CompileParser : private UnCopyable {
         StringObject::create(vm_, s.c_str(), static_cast<int>(s.size())));
   }
 
-  void emit_constant(Value value) {
+  void emit_constant(const Value& value) {
     emit_bytes(OpCode::OP_CONSTANT, add_constant(value));
   }
 
@@ -909,7 +909,7 @@ void gray_compiler_roots(VM& vm) {
 
   auto* compiler_iter = _curr_cp->curr_compiler();
   while (compiler_iter != nullptr) {
-    vm.gray_value(compiler_iter->function);
+    vm.gray_object(compiler_iter->function);
     compiler_iter = compiler_iter->enclosing;
   }
 }
