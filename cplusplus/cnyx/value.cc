@@ -1,0 +1,124 @@
+// Copyright (c) 2019 ASMlover. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list ofconditions and the following disclaimer.
+//
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in
+//    the documentation and/or other materialsprovided with the
+//    distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+#include "object.hh"
+#include "value.hh"
+
+namespace nyx {
+
+inline ObjType __obj_type(const Value& v) {
+  return v.as_obj() == nullptr ? ObjType::NIL : v.as_obj()->type();
+}
+
+bool Value::is_obj(void) const noexcept {
+  return type_ == ValueType::OBJ;
+}
+
+bool Value::is_nil(void) const noexcept {
+  return __obj_type(*this) == ObjType::NIL;
+}
+
+bool Value::is_boolean(void) const noexcept {
+  return __obj_type(*this) == ObjType::BOOLEAN;
+}
+
+bool Value::is_numeric(void) const noexcept {
+  return __obj_type(*this) == ObjType::NUMERIC;
+}
+
+bool Value::is_string(void) const noexcept {
+  return __obj_type(*this) == ObjType::STRING;
+}
+
+bool Value::is_closure(void) const noexcept {
+  return __obj_type(*this) == ObjType::CLOSURE;
+}
+
+bool Value::is_function(void) const noexcept {
+  return __obj_type(*this) == ObjType::FUNCTION;
+}
+
+bool Value::is_native(void) const noexcept {
+  return __obj_type(*this) == ObjType::NATIVE;
+}
+
+bool Value::is_upvalue(void) const noexcept {
+  return __obj_type(*this) == ObjType::UPVALUE;
+}
+
+bool Value::is_class(void) const noexcept {
+  return __obj_type(*this) == ObjType::CLASS;
+}
+
+bool Value::is_instance(void) const noexcept {
+  return __obj_type(*this) == ObjType::INSTANCE;
+}
+
+bool Value::is_bound_method(void) const noexcept {
+  return __obj_type(*this) == ObjType::BOUND_METHOD;
+}
+
+bool Value::as_boolean(void) const noexcept {
+  return Xptr::down<BooleanObject>(as_.obj)->value();
+}
+
+double Value::as_numeric(void) const noexcept {
+  return Xptr::down<NumericObject>(as_.obj)->value();
+}
+
+StringObject* Value::as_string(void) const noexcept {
+  return Xptr::down<StringObject>(as_.obj);
+}
+
+const char* Value::as_cstring(void) const noexcept {
+  return as_string()->chars();
+}
+
+ClosureObject* Value::as_closure(void) const noexcept {
+  return Xptr::down<ClosureObject>(as_.obj);
+}
+
+FunctionObject* Value::as_function(void) const noexcept {
+  return Xptr::down<FunctionObject>(as_.obj);
+}
+
+NativeFunction Value::as_native(void) const noexcept {
+  return Xptr::down<NativeObject>(as_.obj)->get_function();
+}
+
+ClassObject* Value::as_class(void) const noexcept {
+  return Xptr::down<ClassObject>(as_.obj);
+}
+
+InstanceObject* Value::as_instance(void) const noexcept {
+  return Xptr::down<InstanceObject>(as_.obj);
+}
+
+BoundMethodObject* Value::as_bound_method(void) const noexcept {
+  return Xptr::down<BoundMethodObject>(as_.obj);
+}
+
+}
