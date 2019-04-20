@@ -44,6 +44,7 @@ class ClassObject;
 class InstanceObject;
 class BoundMethodObject;
 
+using nil_t = std::nullptr_t;
 using byte_t = std::uint8_t;
 using i8_t = std::int8_t;
 using u8_t = std::uint8_t;

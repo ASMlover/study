@@ -30,10 +30,12 @@
 namespace nyx {
 
 bool operator==(const Value& a, const Value& b) {
-  if (a.as_obj() == b.as_obj())
+  if (a.type() != b.type())
+    return false;
+  if (a.is_nil() || a.as_obj() == b.as_obj())
     return true;
 
-  if ((a.is_nil() || b.is_nil()) || obj_type(a) != obj_type(b))
+  if (obj_type(a) != obj_type(b))
     return false;
   return a.as_obj()->is_equal(b.as_obj());
 }
@@ -42,56 +44,44 @@ bool operator!=(const Value& a, const Value& b) {
   return !(a == b);
 }
 
-std::ostream& operator<<(std::ostream& out, const Value& v) {
-  return out << v.as_obj();
-}
-
-bool Value::is_obj(void) const noexcept {
-  return type_ == ValueType::OBJ;
-}
-
-bool Value::is_nil(void) const noexcept {
-  return obj_type(*this) == ObjType::NIL;
-}
-
 bool Value::is_boolean(void) const noexcept {
-  return obj_type(*this) == ObjType::BOOLEAN;
+  return is_obj_type(*this, ObjType::BOOLEAN);
 }
 
 bool Value::is_numeric(void) const noexcept {
-  return obj_type(*this) == ObjType::NUMERIC;
+  return is_obj_type(*this, ObjType::NUMERIC);
 }
 
 bool Value::is_string(void) const noexcept {
-  return obj_type(*this) == ObjType::STRING;
+  return is_obj_type(*this, ObjType::STRING);
 }
 
 bool Value::is_closure(void) const noexcept {
-  return obj_type(*this) == ObjType::CLOSURE;
+  return is_obj_type(*this, ObjType::CLOSURE);
 }
 
 bool Value::is_function(void) const noexcept {
-  return obj_type(*this) == ObjType::FUNCTION;
+  return is_obj_type(*this, ObjType::FUNCTION);
 }
 
 bool Value::is_native(void) const noexcept {
-  return obj_type(*this) == ObjType::NATIVE;
+  return is_obj_type(*this, ObjType::NATIVE);
 }
 
 bool Value::is_upvalue(void) const noexcept {
-  return obj_type(*this) == ObjType::UPVALUE;
+  return is_obj_type(*this, ObjType::UPVALUE);
 }
 
 bool Value::is_class(void) const noexcept {
-  return obj_type(*this) == ObjType::CLASS;
+  return is_obj_type(*this, ObjType::CLASS);
 }
 
 bool Value::is_instance(void) const noexcept {
-  return obj_type(*this) == ObjType::INSTANCE;
+  return is_obj_type(*this, ObjType::INSTANCE);
 }
 
 bool Value::is_bound_method(void) const noexcept {
-  return obj_type(*this) == ObjType::BOUND_METHOD;
+  return is_obj_type(*this, ObjType::BOUND_METHOD);
 }
 
 bool Value::as_boolean(void) const noexcept {
@@ -132,6 +122,19 @@ InstanceObject* Value::as_instance(void) const noexcept {
 
 BoundMethodObject* Value::as_bound_method(void) const noexcept {
   return Xptr::down<BoundMethodObject>(as_.obj);
+}
+
+str_t Value::stringify(void) const {
+  switch (type_) {
+  case ValueType::NIL: return "nil";
+  case ValueType::OBJ: return as_.obj->stringify();
+  default: break;
+  }
+  return "";
+}
+
+std::ostream& operator<<(std::ostream& out, const Value& v) {
+  return out << v.stringify();
 }
 
 }

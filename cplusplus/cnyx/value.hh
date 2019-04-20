@@ -32,18 +32,24 @@
 namespace nyx {
 
 enum class ValueType {
+  NIL,
   OBJ,
 };
 
 class Value : private Copyable {
   using NativeFunction = std::function<Value (int argc, Value* args)>;
 
-  ValueType type_{ValueType::OBJ};
+  ValueType type_{ValueType::NIL};
   union {
     BaseObject* obj;
   } as_{};
 public:
-  Value(void) noexcept {
+  Value(void) noexcept
+    : type_{ValueType::NIL} {
+  }
+
+  Value(nil_t) noexcept
+    : type_{ValueType::NIL} {
   }
 
   Value(BaseObject* o) noexcept
@@ -51,12 +57,12 @@ public:
   }
 
   Value(const Value& v) noexcept
-    : type_(v.type_) {
+    : type_{v.type_} {
     as_.obj = v.as_.obj;
   }
 
   Value(Value&& v) noexcept
-    : type_(std::move(v.type_)) {
+    : type_{std::move(v.type_)} {
     as_.obj = std::move(v.as_.obj);
   }
 
@@ -76,16 +82,13 @@ public:
     return *this;
   }
 
-  inline BaseObject* as_obj(void) const noexcept {
-    return as_.obj;
-  }
+  inline ValueType type(void) const { return type_; }
+  inline bool is_nil(void) const noexcept { return type_ == ValueType::NIL; }
+  inline bool is_obj(void) const noexcept { return type_ == ValueType::OBJ; }
+  inline BaseObject* as_obj(void) const noexcept { return as_.obj; }
 
-  bool is_falsely(void) const {
-    return is_nil() || (is_boolean() && !as_boolean());
-  }
+  bool is_falsely(void) const { return is_nil() || (is_boolean() && !as_boolean()); }
 
-  bool is_obj(void) const noexcept;
-  bool is_nil(void) const noexcept;
   bool is_boolean(void) const noexcept;
   bool is_numeric(void) const noexcept;
   bool is_string(void) const noexcept;
@@ -107,6 +110,8 @@ public:
   ClassObject* as_class(void) const noexcept;
   InstanceObject* as_instance(void) const noexcept;
   BoundMethodObject* as_bound_method(void) const noexcept;
+
+  str_t stringify(void) const;
 
   static Value to_value(BaseObject* obj) { return Value{obj}; }
   static Value make_nil(void) { return Value{}; }

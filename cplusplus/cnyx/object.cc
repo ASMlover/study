@@ -76,7 +76,7 @@ str_t BaseObject::type_name(void) const {
 }
 
 std::ostream& operator<<(std::ostream& out, BaseObject* obj) {
-  return out << (obj == nullptr ? "nil" : obj->stringify());
+  return out << obj->stringify();
 }
 
 void gray_table(VM& vm, table_t& tbl) {

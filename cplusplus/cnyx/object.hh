@@ -77,8 +77,9 @@ public:
   virtual void blacken(VM& vm) = 0;
 };
 
-inline ObjType obj_type(const Value& v) {
-  return v.as_obj() == nullptr ? ObjType::NIL : v.as_obj()->type();
+inline ObjType obj_type(const Value& v) { return v.as_obj()->type(); }
+inline bool is_obj_type(const Value& v, ObjType type) {
+  return v.is_obj() && v.as_obj()->type() == type;
 }
 
 std::ostream& operator<<(std::ostream& out, BaseObject* obj);
