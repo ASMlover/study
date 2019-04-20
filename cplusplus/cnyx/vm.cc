@@ -87,9 +87,8 @@ VM::VM(void) {
         return nullptr;
       });
   define_native("clock", [this](int argc, Value* args) -> Value {
-        double sec = std::chrono::duration_cast<std::chrono::milliseconds>(
+        return std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
-        return NumericObject::create(*this, sec);
       });
   ctor_string_ = StringObject::create(*this, "ctor");
 }
@@ -285,7 +284,7 @@ bool VM::call_closure(ClosureObject* closure, int argc) {
 }
 
 bool VM::call(const Value& callee, int argc/* = 0*/) {
-  if (callee.is_obj()) {
+  if (callee.is_object()) {
     switch (obj_type(callee)) {
     case ObjType::BOUND_METHOD:
       {
@@ -416,7 +415,7 @@ bool VM::run(void) {
 
     switch (auto instruction = frame->inc_ip(); instruction) {
     case OpCode::OP_CONSTANT: push(_rdconstant()); break;
-    case OpCode::OP_NIL: push(Value::make_nil()); break;
+    case OpCode::OP_NIL: push(nullptr); break;
     case OpCode::OP_POP: pop(); break;
     case OpCode::OP_GET_LOCAL:
       {
@@ -510,18 +509,18 @@ bool VM::run(void) {
       {
         auto b = pop();
         auto a = pop();
-        push(Value::make_bool(a == b));
+        push(a == b);
       } break;
     case OpCode::OP_NE:
       {
         auto b = pop();
         auto a = pop();
-        push(Value::make_bool(a != b));
+        push(a != b);
       } break;
     case OpCode::OP_GT:
       if (auto r = pop_numerics(); r) {
         auto [a, b] = *r;
-        push(Value::make_bool(a > b));
+        push(a > b);
       }
       else {
         return false;
@@ -530,7 +529,7 @@ bool VM::run(void) {
     case OpCode::OP_GE:
       if (auto r = pop_numerics(); r) {
         auto [a, b] = *r;
-        push(Value::make_bool(a >= b));
+        push(a >= b);
       }
       else {
         return false;
@@ -539,7 +538,7 @@ bool VM::run(void) {
     case OpCode::OP_LT:
       if (auto r = pop_numerics(); r) {
         auto [a, b] = *r;
-        push(Value::make_bool(a < b));
+        push(a < b);
       }
       else {
         return false;
@@ -548,7 +547,7 @@ bool VM::run(void) {
     case OpCode::OP_LE:
       if (auto r = pop_numerics(); r) {
         auto [a, b] = *r;
-        push(Value::make_bool(a <= b));
+        push(a <= b);
       }
       else {
         return false;
@@ -564,7 +563,7 @@ bool VM::run(void) {
         else if (peek(1).is_numeric() && peek(1).is_numeric()) {
           double b = pop().as_numeric();
           double a = pop().as_numeric();
-          push(NumericObject::create(*this, a + b));
+          push(a + b);
         }
         else {
           runtime_error("operands must be two strings or two numerics");
@@ -574,7 +573,7 @@ bool VM::run(void) {
     case OpCode::OP_SUB:
       if (auto r = pop_numerics(); r) {
         auto [a, b] = *r;
-        push(NumericObject::create(*this, a - b));
+        push(a - b);
       }
       else {
         return false;
@@ -583,7 +582,7 @@ bool VM::run(void) {
     case OpCode::OP_MUL:
       if (auto r = pop_numerics(); r) {
         auto [a, b] = *r;
-        push(NumericObject::create(*this, a * b));
+        push(a * b);
       }
       else {
         return false;
@@ -592,7 +591,7 @@ bool VM::run(void) {
     case OpCode::OP_DIV:
       if (auto r = pop_numerics(); r) {
         auto [a, b] = *r;
-        push(NumericObject::create(*this, a / b));
+        push(a / b);
       }
       else {
         return false;
@@ -601,12 +600,12 @@ bool VM::run(void) {
     case OpCode::OP_NOT:
       {
         auto b = pop().is_falsely();
-        push(Value::make_bool(b));
+        push(b);
       } break;
     case OpCode::OP_NEG:
       {
         if (auto v = pop_numeric(); v)
-          push(NumericObject::create(*this, -*v));
+          push(-*v);
         else
           return false;
       } break;
@@ -771,9 +770,9 @@ void VM::gray_object(BaseObject* obj) {
 }
 
 void VM::gray_value(const Value& v) {
-  if (!v.is_obj())
+  if (!v.is_object())
     return;
-  gray_object(v.as_obj());
+  gray_object(v.as_object());
 }
 
 void VM::blacken_object(BaseObject* obj) {

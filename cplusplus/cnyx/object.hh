@@ -26,7 +26,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <cstdint>
 #include <functional>
 #include <optional>
 #include <string>
@@ -39,7 +38,6 @@ class Value;
 using NativeFunction = std::function<Value (int argc, Value* args)>;
 
 enum class ObjType {
-  NUMERIC,
   STRING,
   CLOSURE,
   FUNCTION,
@@ -71,9 +69,9 @@ public:
   virtual void blacken(VM& vm) = 0;
 };
 
-inline ObjType obj_type(const Value& v) { return v.as_obj()->type(); }
+inline ObjType obj_type(const Value& v) { return v.as_object()->type(); }
 inline bool is_obj_type(const Value& v, ObjType type) {
-  return v.is_obj() && v.as_obj()->type() == type;
+  return v.is_object() && v.as_object()->type() == type;
 }
 
 std::ostream& operator<<(std::ostream& out, BaseObject* obj);
@@ -99,23 +97,6 @@ public:
   const Value& get_value(int i) const;
   int append_value(const Value& v);
   void gray(VM& vm);
-};
-
-class NumericObject : public BaseObject {
-  double value_{};
-
-  NumericObject(double d) : BaseObject(ObjType::NUMERIC), value_(d) {}
-  virtual ~NumericObject(void) {}
-public:
-  inline void set_value(double v) { value_ = v; }
-  inline double value(void) const { return value_; }
-
-  virtual sz_t size_bytes(void) const override;
-  virtual str_t stringify(void) const override;
-  virtual bool is_equal(BaseObject* other) const override;
-  virtual void blacken(VM& vm) override;
-
-  static NumericObject* create(VM& vm, double d);
 };
 
 class StringObject : public BaseObject {

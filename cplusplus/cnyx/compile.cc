@@ -438,8 +438,7 @@ class CompileParser : private UnCopyable {
   }
 
   void boolean(bool can_assign) {
-    bool value = prev_.get_kind() == TokenKind::KW_TRUE;
-    emit_constant(Value::make_bool(value));
+    emit_constant(prev_.get_kind() == TokenKind::KW_TRUE);
   }
 
   void nil(bool can_assign) {
@@ -447,8 +446,7 @@ class CompileParser : private UnCopyable {
   }
 
   void numeric(bool can_assign) {
-    double value = prev_.as_numeric();
-    emit_constant(NumericObject::create(vm_, value));
+    emit_constant(prev_.as_numeric());
   }
 
   void string(bool can_assign) {

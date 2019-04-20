@@ -24,32 +24,34 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <sstream>
 #include "object.hh"
 #include "value.hh"
 
 namespace nyx {
 
+inline str_t numeric_as_string(double d) {
+  std::stringstream ss;
+  ss << d;
+  return ss.str();
+}
+
 bool operator==(const Value& a, const Value& b) {
   if (a.type() != b.type())
     return false;
-  if (a.is_nil())
-    return true;
-  if (a.is_boolean())
-    return a.as_boolean() == b.as_boolean();
 
-  if (a.as_obj() == b.as_obj())
-    return true;
-  if (obj_type(a) != obj_type(b))
-    return false;
-  return a.as_obj()->is_equal(b.as_obj());
+  switch (a.type()) {
+  case ValueType::NIL: return true;
+  case ValueType::BOOLEAN: return a.as_boolean() == b.as_boolean();
+  case ValueType::NUMERIC: return a.as_numeric() == b.as_numeric();
+  case ValueType::OBJECT: return a.as_object() == b.as_object();
+  default: break;
+  }
+  return false;
 }
 
 bool operator!=(const Value& a, const Value& b) {
   return !(a == b);
-}
-
-bool Value::is_numeric(void) const noexcept {
-  return is_obj_type(*this, ObjType::NUMERIC);
 }
 
 bool Value::is_string(void) const noexcept {
@@ -82,10 +84,6 @@ bool Value::is_instance(void) const noexcept {
 
 bool Value::is_bound_method(void) const noexcept {
   return is_obj_type(*this, ObjType::BOUND_METHOD);
-}
-
-double Value::as_numeric(void) const noexcept {
-  return Xptr::down<NumericObject>(as_.obj)->value();
 }
 
 StringObject* Value::as_string(void) const noexcept {
@@ -123,8 +121,9 @@ BoundMethodObject* Value::as_bound_method(void) const noexcept {
 str_t Value::stringify(void) const {
   switch (type_) {
   case ValueType::NIL: return "nil";
-  case ValueType::BOOL: return as_.boolean ? "true" : "false";
-  case ValueType::OBJ: return as_.obj->stringify();
+  case ValueType::BOOLEAN: return as_.boolean ? "true" : "false";
+  case ValueType::NUMERIC: return numeric_as_string(as_.numeric);
+  case ValueType::OBJECT: return as_.obj->stringify();
   default: break;
   }
   return "";

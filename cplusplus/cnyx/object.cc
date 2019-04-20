@@ -33,10 +33,6 @@
 
 namespace nyx {
 
-template <typename T> inline T* __offset_of(void* startp, sz_t offset) {
-  return reinterpret_cast<T*>(reinterpret_cast<byte_t*>(startp) + offset);
-}
-
 inline int power_of_2ceil(int n) {
   --n;
   n |= n >> 1;
@@ -61,7 +57,6 @@ static u32_t string_hash(const char* s, int n) {
 
 str_t BaseObject::type_name(void) const {
   switch (type_) {
-  case ObjType::NUMERIC: return "<numeric>";
   case ObjType::STRING: return "<string>";
   case ObjType::CLOSURE: return "<closure>";
   case ObjType::FUNCTION: return "<function>";
@@ -85,7 +80,7 @@ void gray_table(VM& vm, table_t& tbl) {
 
 void remove_table_undark(table_t& tbl) {
   for (auto it = tbl.begin(); it != tbl.end();) {
-    if (!it->second.as_obj()->is_dark())
+    if (!it->second.as_object()->is_dark())
       tbl.erase(it++);
     else
       ++it;
@@ -128,29 +123,6 @@ int ValueArray::append_value(const Value& v) {
 void ValueArray::gray(VM& vm) {
   for (int i = 0; i < count_; ++i)
     vm.gray_value(values_[i]);
-}
-
-sz_t NumericObject::size_bytes(void) const {
-  return sizeof(*this);
-}
-
-str_t NumericObject::stringify(void) const {
-  std::stringstream ss;
-  ss << value_;
-  return ss.str();
-}
-
-bool NumericObject::is_equal(BaseObject* other) const {
-  return value_ == Xptr::down<NumericObject>(other)->value();
-}
-
-void NumericObject::blacken(VM&) {
-}
-
-NumericObject* NumericObject::create(VM& vm, double d) {
-  auto* o = new NumericObject(d);
-  vm.append_object(o);
-  return o;
 }
 
 StringObject::StringObject(const char* s, int n, u32_t hash, bool copy)
