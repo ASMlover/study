@@ -40,12 +40,16 @@ public:
   int write(u8_t byte, int line);
   int add_constant(const Value& v);
 
-  inline sz_t codes_count(void) const { return codes_.size(); }
+  void disassemble(const str_t& name);
+  int disassemble_instruction(int i);
+
+  inline int codes_count(void) const { return static_cast<int>(codes_.size()); }
   inline u8_t* codes(void) { return codes_.data(); }
   inline const u8_t* codes(void) const { return codes_.data(); }
+  inline void set_code(int i, u8_t byte) { codes_[i] = byte; }
   inline u8_t get_code(int i) const { return codes_[i]; }
   inline int get_line(int i) const { return lines_[i]; }
-  inline sz_t constants_count(void) const { return constants_.size(); }
+  inline int constants_count(void) const { return static_cast<int>(constants_.size()); }
   inline Value* constants(void) { return constants_.data(); }
   inline const Value* constants(void) const { return constants_.data(); }
   inline Value& get_constant(int i) { return constants_[i]; }
