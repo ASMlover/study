@@ -45,7 +45,7 @@ class Value : private Copyable {
   union {
     bool boolean;
     double numeric;
-    BaseObject* obj;
+    BaseObject* object;
   } as_{};
 public:
   Value(void) noexcept
@@ -68,13 +68,13 @@ public:
 
   Value(BaseObject* o) noexcept
     : type_{ValueType::OBJECT} {
-    as_.obj = o;
+    as_.object = o;
   }
 
   Value(const Value& v) noexcept
     : type_{v.type_} {
     if (type_ == ValueType::OBJECT)
-      as_.obj = v.as_.obj;
+      as_.object = v.as_.object;
     else
       as_.numeric = v.as_.numeric;
   }
@@ -82,7 +82,7 @@ public:
   Value(Value&& v) noexcept
     : type_{std::move(v.type_)} {
     if (type_ == ValueType::OBJECT)
-      as_.obj = std::move(v.as_.obj);
+      as_.object = std::move(v.as_.object);
     else
       as_.numeric = std::move(v.as_.numeric);
   }
@@ -91,7 +91,7 @@ public:
     if (this != &v) {
       type_ = v.type_;
       if (type_ == ValueType::OBJECT)
-        as_.obj = v.as_.obj;
+        as_.object = v.as_.object;
       else
         as_.numeric = v.as_.numeric;
     }
@@ -102,7 +102,7 @@ public:
     if (this != &v) {
       type_ = std::move(v.type_);
       if (type_ == ValueType::OBJECT)
-        as_.obj = std::move(v.as_.obj);
+        as_.object = std::move(v.as_.object);
       else
         as_.numeric = std::move(v.as_.numeric);
     }
@@ -117,7 +117,7 @@ public:
 
   inline bool as_boolean(void) const noexcept { return as_.boolean; }
   inline double as_numeric(void) const noexcept { return as_.numeric; }
-  inline BaseObject* as_object(void) const noexcept { return as_.obj; }
+  inline BaseObject* as_object(void) const noexcept { return as_.object; }
 
   bool is_falsely(void) const { return is_nil() || (is_boolean() && !as_boolean()); }
 

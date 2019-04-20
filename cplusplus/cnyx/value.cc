@@ -87,7 +87,7 @@ bool Value::is_bound_method(void) const noexcept {
 }
 
 StringObject* Value::as_string(void) const noexcept {
-  return Xptr::down<StringObject>(as_.obj);
+  return Xptr::down<StringObject>(as_.object);
 }
 
 const char* Value::as_cstring(void) const noexcept {
@@ -95,27 +95,27 @@ const char* Value::as_cstring(void) const noexcept {
 }
 
 ClosureObject* Value::as_closure(void) const noexcept {
-  return Xptr::down<ClosureObject>(as_.obj);
+  return Xptr::down<ClosureObject>(as_.object);
 }
 
 FunctionObject* Value::as_function(void) const noexcept {
-  return Xptr::down<FunctionObject>(as_.obj);
+  return Xptr::down<FunctionObject>(as_.object);
 }
 
 NativeFunction Value::as_native(void) const noexcept {
-  return Xptr::down<NativeObject>(as_.obj)->get_function();
+  return Xptr::down<NativeObject>(as_.object)->get_function();
 }
 
 ClassObject* Value::as_class(void) const noexcept {
-  return Xptr::down<ClassObject>(as_.obj);
+  return Xptr::down<ClassObject>(as_.object);
 }
 
 InstanceObject* Value::as_instance(void) const noexcept {
-  return Xptr::down<InstanceObject>(as_.obj);
+  return Xptr::down<InstanceObject>(as_.object);
 }
 
 BoundMethodObject* Value::as_bound_method(void) const noexcept {
-  return Xptr::down<BoundMethodObject>(as_.obj);
+  return Xptr::down<BoundMethodObject>(as_.object);
 }
 
 str_t Value::stringify(void) const {
@@ -123,7 +123,7 @@ str_t Value::stringify(void) const {
   case ValueType::NIL: return "nil";
   case ValueType::BOOLEAN: return as_.boolean ? "true" : "false";
   case ValueType::NUMERIC: return numeric_as_string(as_.numeric);
-  case ValueType::OBJECT: return as_.obj->stringify();
+  case ValueType::OBJECT: return as_.object->stringify();
   default: break;
   }
   return "";
