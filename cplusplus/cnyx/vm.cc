@@ -416,6 +416,8 @@ bool VM::run(void) {
     switch (auto instruction = frame->inc_ip(); instruction) {
     case OpCode::OP_CONSTANT: push(_rdconstant()); break;
     case OpCode::OP_NIL: push(nullptr); break;
+    case OpCode::OP_TRUE: push(true); break;
+    case OpCode::OP_FALSE: push(false); break;
     case OpCode::OP_POP: pop(); break;
     case OpCode::OP_GET_LOCAL:
       {

@@ -215,7 +215,8 @@ class CompileParser : private UnCopyable {
     static auto or_fn = [](CompileParser* p, bool b) { p->or_exp(b); };
     static auto and_fn = [](CompileParser* p, bool b) { p->and_exp(b); };
     static auto grouping_fn = [](CompileParser* p, bool b) { p->grouping(b); };
-    static auto boolean_fn = [](CompileParser* p, bool b) { p->boolean(b); };
+    static auto true_fn = [](CompileParser* p, bool b) { p->true_exp(b); };
+    static auto false_fn = [](CompileParser* p, bool b) { p->false_exp(b); };
     static auto nil_fn = [](CompileParser* p, bool b) { p->nil(b); };
     static auto numeric_fn = [](CompileParser* p, bool b) { p->numeric(b); };
     static auto string_fn = [](CompileParser* p, bool b) { p->string(b); };
@@ -257,7 +258,7 @@ class CompileParser : private UnCopyable {
       nullptr, and_fn, Precedence::AND, // KW_AND
       nullptr, nullptr, Precedence::NONE, // KW_CLASS
       nullptr, nullptr, Precedence::NONE, // KW_ELSE
-      boolean_fn, nullptr, Precedence::NONE, // KW_FALSE
+      false_fn, nullptr, Precedence::NONE, // KW_FALSE
       nullptr, nullptr, Precedence::NONE, // KW_FOR
       nullptr, nullptr, Precedence::NONE, // KW_FUN
       nullptr, nullptr, Precedence::NONE, // KW_IF
@@ -267,7 +268,7 @@ class CompileParser : private UnCopyable {
       nullptr, nullptr, Precedence::NONE, // KW_RETURN
       super_fn, nullptr, Precedence::NONE, // KW_SUPER
       this_fn, nullptr, Precedence::NONE, // KW_THIS
-      boolean_fn, nullptr, Precedence::NONE, // KW_TRUE
+      true_fn, nullptr, Precedence::NONE, // KW_TRUE
       nullptr, nullptr, Precedence::NONE, // KW_VAR
       nullptr, nullptr, Precedence::NONE, // KW_WHILE
     };
@@ -437,8 +438,12 @@ class CompileParser : private UnCopyable {
     name_variable(Token::custom_token("super"), false);
   }
 
-  void boolean(bool can_assign) {
-    emit_constant(prev_.get_kind() == TokenKind::KW_TRUE);
+  void true_exp(bool can_assign) {
+    emit_byte(OpCode::OP_TRUE);
+  }
+
+  void false_exp(bool can_assign) {
+    emit_byte(OpCode::OP_FALSE);
   }
 
   void nil(bool can_assign) {

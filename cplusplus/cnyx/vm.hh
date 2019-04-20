@@ -38,6 +38,8 @@ namespace nyx {
 enum OpCode {
   OP_CONSTANT,
   OP_NIL, // nil value
+  OP_TRUE, // true value
+  OP_FALSE, // false value
   OP_POP, // pop operation
   OP_GET_LOCAL, // get local variable
   OP_SET_LOCAL, // set local variable

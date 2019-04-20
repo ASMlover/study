@@ -236,6 +236,8 @@ int FunctionObject::dump_instruction(int i) {
   case OpCode::OP_CONSTANT:
     i = constant_instruction(this, i, "OP_CONSTANT"); break;
   case OpCode::OP_NIL: std::cout << "OP_NIL" << std::endl; break;
+  case OpCode::OP_TRUE: std::cout << "OP_TRUE" << std::endl; break;
+  case OpCode::OP_FALSE: std::cout << "OP_FALSE" << std::endl; break;
   case OpCode::OP_POP: std::cout << "OP_POP" << std::endl; break;
   case OpCode::OP_GET_LOCAL:
     {
