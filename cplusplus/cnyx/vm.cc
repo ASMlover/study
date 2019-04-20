@@ -510,18 +510,18 @@ bool VM::run(void) {
       {
         auto b = pop();
         auto a = pop();
-        push(BooleanObject::create(*this, a == b));
+        push(Value::make_bool(a == b));
       } break;
     case OpCode::OP_NE:
       {
         auto b = pop();
         auto a = pop();
-        push(BooleanObject::create(*this, a != b));
+        push(Value::make_bool(a != b));
       } break;
     case OpCode::OP_GT:
       if (auto r = pop_numerics(); r) {
         auto [a, b] = *r;
-        push(BooleanObject::create(*this, a > b));
+        push(Value::make_bool(a > b));
       }
       else {
         return false;
@@ -530,7 +530,7 @@ bool VM::run(void) {
     case OpCode::OP_GE:
       if (auto r = pop_numerics(); r) {
         auto [a, b] = *r;
-        push(BooleanObject::create(*this, a >= b));
+        push(Value::make_bool(a >= b));
       }
       else {
         return false;
@@ -539,7 +539,7 @@ bool VM::run(void) {
     case OpCode::OP_LT:
       if (auto r = pop_numerics(); r) {
         auto [a, b] = *r;
-        push(BooleanObject::create(*this, a < b));
+        push(Value::make_bool(a < b));
       }
       else {
         return false;
@@ -548,7 +548,7 @@ bool VM::run(void) {
     case OpCode::OP_LE:
       if (auto r = pop_numerics(); r) {
         auto [a, b] = *r;
-        push(BooleanObject::create(*this, a <= b));
+        push(Value::make_bool(a <= b));
       }
       else {
         return false;
@@ -601,7 +601,7 @@ bool VM::run(void) {
     case OpCode::OP_NOT:
       {
         auto b = pop().is_falsely();
-        push(BooleanObject::create(*this, b));
+        push(Value::make_bool(b));
       } break;
     case OpCode::OP_NEG:
       {

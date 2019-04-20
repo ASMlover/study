@@ -33,6 +33,7 @@ namespace nyx {
 
 enum class ValueType {
   NIL,
+  BOOL,
   OBJ,
 };
 
@@ -41,6 +42,7 @@ class Value : private Copyable {
 
   ValueType type_{ValueType::NIL};
   union {
+    bool boolean;
     BaseObject* obj;
   } as_{};
 public:
@@ -52,24 +54,39 @@ public:
     : type_{ValueType::NIL} {
   }
 
+  Value(bool b) noexcept
+    : type_{ValueType::BOOL} {
+    as_.boolean = b;
+  }
+
   Value(BaseObject* o) noexcept
-    : type_{ValueType::OBJ}, as_{o} {
+    : type_{ValueType::OBJ} {
+    as_.obj = o;
   }
 
   Value(const Value& v) noexcept
     : type_{v.type_} {
-    as_.obj = v.as_.obj;
+    if (type_ == ValueType::OBJ)
+      as_.obj = v.as_.obj;
+    else
+      as_.boolean = v.as_.boolean;
   }
 
   Value(Value&& v) noexcept
     : type_{std::move(v.type_)} {
-    as_.obj = std::move(v.as_.obj);
+    if (type_ == ValueType::OBJ)
+      as_.obj = std::move(v.as_.obj);
+    else
+      as_.boolean = std::move(v.as_.boolean);
   }
 
   Value& operator=(const Value& v) noexcept {
     if (this != &v) {
       type_ = v.type_;
-      as_.obj = v.as_.obj;
+      if (type_ == ValueType::OBJ)
+        as_.obj = v.as_.obj;
+      else
+        as_.boolean = v.as_.boolean;
     }
     return *this;
   }
@@ -77,19 +94,24 @@ public:
   Value& operator=(Value&& v) noexcept {
     if (this != &v) {
       type_ = std::move(v.type_);
-      as_.obj = std::move(v.as_.obj);
+      if (type_ == ValueType::OBJ)
+        as_.obj = std::move(v.as_.obj);
+      else
+        as_.boolean = std::move(v.as_.boolean);
     }
     return *this;
   }
 
   inline ValueType type(void) const { return type_; }
   inline bool is_nil(void) const noexcept { return type_ == ValueType::NIL; }
+  inline bool is_boolean(void) const noexcept { return type_ == ValueType::BOOL; }
   inline bool is_obj(void) const noexcept { return type_ == ValueType::OBJ; }
+
+  inline bool as_boolean(void) const noexcept { return as_.boolean; }
   inline BaseObject* as_obj(void) const noexcept { return as_.obj; }
 
   bool is_falsely(void) const { return is_nil() || (is_boolean() && !as_boolean()); }
 
-  bool is_boolean(void) const noexcept;
   bool is_numeric(void) const noexcept;
   bool is_string(void) const noexcept;
   bool is_closure(void) const noexcept;
@@ -100,7 +122,6 @@ public:
   bool is_instance(void) const noexcept;
   bool is_bound_method(void) const noexcept;
 
-  bool as_boolean(void) const noexcept;
   double as_numeric(void) const noexcept;
   StringObject* as_string(void) const noexcept;
   const char* as_cstring(void) const noexcept;
@@ -114,7 +135,8 @@ public:
   str_t stringify(void) const;
 
   static Value to_value(BaseObject* obj) { return Value{obj}; }
-  static Value make_nil(void) { return Value{}; }
+  static Value make_nil(void) { return Value{nullptr}; }
+  static Value make_bool(bool b) { return Value{b}; }
   static Value make_obj(BaseObject* obj) { return Value{obj}; }
 };
 

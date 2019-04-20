@@ -61,7 +61,6 @@ static u32_t string_hash(const char* s, int n) {
 
 str_t BaseObject::type_name(void) const {
   switch (type_) {
-  case ObjType::BOOLEAN: return "<boolean>";
   case ObjType::NUMERIC: return "<numeric>";
   case ObjType::STRING: return "<string>";
   case ObjType::CLOSURE: return "<closure>";
@@ -129,27 +128,6 @@ int ValueArray::append_value(const Value& v) {
 void ValueArray::gray(VM& vm) {
   for (int i = 0; i < count_; ++i)
     vm.gray_value(values_[i]);
-}
-
-sz_t BooleanObject::size_bytes(void) const {
-  return sizeof(*this);
-}
-
-str_t BooleanObject::stringify(void) const {
-  return value_ ? "true" : "false";
-}
-
-bool BooleanObject::is_equal(BaseObject* other) const {
-  return value_ == Xptr::down<BooleanObject>(other)->value();
-}
-
-void BooleanObject::blacken(VM& vm) {
-}
-
-BooleanObject* BooleanObject::create(VM& vm, bool b) {
-  auto* o = new BooleanObject(b);
-  vm.append_object(o);
-  return o;
 }
 
 sz_t NumericObject::size_bytes(void) const {

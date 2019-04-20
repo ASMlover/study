@@ -39,8 +39,6 @@ class Value;
 using NativeFunction = std::function<Value (int argc, Value* args)>;
 
 enum class ObjType {
-  NIL,
-  BOOLEAN,
   NUMERIC,
   STRING,
   CLOSURE,
@@ -66,10 +64,6 @@ public:
   inline bool is_dark(void) const { return is_dark_; }
   inline void set_dark(bool is_dark) { is_dark_ = is_dark; }
   str_t type_name(void) const;
-
-  static ObjType type(BaseObject* o) {
-    return o == nullptr ? ObjType::NIL : o->type();
-  }
 
   virtual sz_t size_bytes(void) const = 0;
   virtual str_t stringify(void) const = 0;
@@ -105,23 +99,6 @@ public:
   const Value& get_value(int i) const;
   int append_value(const Value& v);
   void gray(VM& vm);
-};
-
-class BooleanObject : public BaseObject {
-  bool value_{};
-
-  BooleanObject(bool b) : BaseObject(ObjType::BOOLEAN), value_(b) {}
-  virtual ~BooleanObject(void) {}
-public:
-  inline void set_value(bool b) { value_ = b; }
-  inline bool value(void) const { return value_; }
-
-  virtual sz_t size_bytes(void) const override;
-  virtual str_t stringify(void) const override;
-  virtual bool is_equal(BaseObject* other) const override;
-  virtual void blacken(VM& vm) override;
-
-  static BooleanObject* create(VM& vm, bool b);
 };
 
 class NumericObject : public BaseObject {

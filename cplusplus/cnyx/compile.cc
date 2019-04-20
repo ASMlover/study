@@ -439,7 +439,7 @@ class CompileParser : private UnCopyable {
 
   void boolean(bool can_assign) {
     bool value = prev_.get_kind() == TokenKind::KW_TRUE;
-    emit_constant(BooleanObject::create(vm_, value));
+    emit_constant(Value::make_bool(value));
   }
 
   void nil(bool can_assign) {

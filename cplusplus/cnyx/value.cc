@@ -32,9 +32,13 @@ namespace nyx {
 bool operator==(const Value& a, const Value& b) {
   if (a.type() != b.type())
     return false;
-  if (a.is_nil() || a.as_obj() == b.as_obj())
+  if (a.is_nil())
     return true;
+  if (a.is_boolean())
+    return a.as_boolean() == b.as_boolean();
 
+  if (a.as_obj() == b.as_obj())
+    return true;
   if (obj_type(a) != obj_type(b))
     return false;
   return a.as_obj()->is_equal(b.as_obj());
@@ -42,10 +46,6 @@ bool operator==(const Value& a, const Value& b) {
 
 bool operator!=(const Value& a, const Value& b) {
   return !(a == b);
-}
-
-bool Value::is_boolean(void) const noexcept {
-  return is_obj_type(*this, ObjType::BOOLEAN);
 }
 
 bool Value::is_numeric(void) const noexcept {
@@ -82,10 +82,6 @@ bool Value::is_instance(void) const noexcept {
 
 bool Value::is_bound_method(void) const noexcept {
   return is_obj_type(*this, ObjType::BOUND_METHOD);
-}
-
-bool Value::as_boolean(void) const noexcept {
-  return Xptr::down<BooleanObject>(as_.obj)->value();
 }
 
 double Value::as_numeric(void) const noexcept {
@@ -127,6 +123,7 @@ BoundMethodObject* Value::as_bound_method(void) const noexcept {
 str_t Value::stringify(void) const {
   switch (type_) {
   case ValueType::NIL: return "nil";
+  case ValueType::BOOL: return as_.boolean ? "true" : "false";
   case ValueType::OBJ: return as_.obj->stringify();
   default: break;
   }
