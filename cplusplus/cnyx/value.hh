@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <functional>
 #include <ostream>
 #include "common.hh"
 

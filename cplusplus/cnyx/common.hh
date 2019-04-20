@@ -32,6 +32,8 @@
 
 namespace nyx {
 
+class Value;
+
 class BaseObject;
 class BooleanObject;
 class NumericObject;
