@@ -694,7 +694,10 @@ public:
   }
 
   void statement(void) {
-    if (match(TokenKind::KW_IF)) {
+    if (match(TokenKind::KW_FOR)) {
+      for_stmt();
+    }
+    else if (match(TokenKind::KW_IF)) {
       if_stmt();
     }
     else if (match(TokenKind::KW_RETURN)) {
@@ -704,12 +707,12 @@ public:
       while_stmt();
     }
     else if (check(TokenKind::TK_LBRACE)) {
+      enter_scope();
       block_stmt();
+      leave_scope();
     }
     else {
-      expression();
-      emit_byte(OpCode::OP_POP);
-      consume(TokenKind::TK_SEMI, "expected `;` after expression");
+      expr_stmt();
     }
   }
 
@@ -767,9 +770,67 @@ public:
       // default initialize with nil
       emit_byte(OpCode::OP_NIL);
     }
-    consume(TokenKind::TK_SEMI, "expect `;` after variable initializer");
+    consume(TokenKind::TK_SEMI, "expect `;` after variable declaration");
 
     define_variable(global);
+  }
+
+  void expr_stmt(void) {
+    expression();
+    emit_byte(OpCode::OP_POP);
+    consume(TokenKind::TK_SEMI, "expect `;` after expression");
+  }
+
+  void for_stmt(void) {
+    enter_scope();
+
+    consume(TokenKind::TK_LPAREN, "expect `(` after keyword `for`");
+    // the initialization clause
+    if (match(TokenKind::KW_VAR)) {
+      var_decl();
+    }
+    else if (match(TokenKind::TK_SEMI)) {
+      // no initializer
+    }
+    else {
+      expr_stmt();
+    }
+    int loop_start = curr_compiler_->function->codes_count();
+    // the exit condition
+    if (!match(TokenKind::TK_SEMI)) {
+      expression();
+      consume(TokenKind::TK_SEMI, "expect `;` after loop condition");
+    }
+    else {
+      emit_byte(OpCode::OP_TRUE);
+    }
+    // jump out of the loop if the condition is false
+    int exit_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+
+    emit_byte(OpCode::OP_POP); // condition
+    int body_jump = emit_jump(OpCode::OP_JUMP);
+
+    // increment loop step
+    int increment_start = curr_compiler_->function->codes_count();
+    if (!match(TokenKind::TK_RPAREN)) {
+      expression();
+      emit_byte(OpCode::OP_POP);
+      consume(TokenKind::TK_RPAREN, "expect `)` after `for` clauses");
+    }
+
+    // loop back to the start
+    emit_loop(loop_start);
+    patch_jump(body_jump);
+
+    // compile the loop body
+    statement();
+    // jump back to the increment
+    emit_loop(increment_start);
+
+    patch_jump(exit_jump);
+    emit_byte(OpCode::OP_POP); // condition
+
+    leave_scope();
   }
 
   void if_stmt(void) {
@@ -833,10 +894,8 @@ public:
   void block_stmt(void) {
     consume(TokenKind::TK_LBRACE, "expect `{` before block");
 
-    enter_scope();
     while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE))
       declaration();
-    leave_scope();
 
     consume(TokenKind::TK_RBRACE, "expect `}` after block");
   }
