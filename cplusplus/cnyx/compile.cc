@@ -678,21 +678,27 @@ public:
     parse_precedence(Precedence::ASSIGNMENT);
   }
 
-  void statement(void) {
+  void declaration(void) {
     if (match(TokenKind::KW_CLASS)) {
-      class_stmt();
+      class_decl();
     }
     else if (match(TokenKind::KW_FUN)) {
-      fun_stmt();
+      fun_decl();
     }
-    else if (match(TokenKind::KW_IF)) {
+    else if (match(TokenKind::KW_VAR)) {
+      var_decl();
+    }
+    else {
+      statement();
+    }
+  }
+
+  void statement(void) {
+    if (match(TokenKind::KW_IF)) {
       if_stmt();
     }
     else if (match(TokenKind::KW_RETURN)) {
       return_stmt();
-    }
-    else if (match(TokenKind::KW_VAR)) {
-      var_stmt();
     }
     else if (match(TokenKind::KW_WHILE)) {
       while_stmt();
@@ -707,147 +713,7 @@ public:
     }
   }
 
-  void block_stmt(void) {
-    consume(TokenKind::TK_LBRACE, "expect `{` before block");
-
-    enter_scope();
-    while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE))
-      statement();
-    leave_scope();
-
-    consume(TokenKind::TK_RBRACE, "expect `}` after block");
-  }
-
-  void if_stmt(void) {
-    consume(TokenKind::TK_LPAREN, "expect `(` before if condition");
-    expression();
-    consume(TokenKind::TK_RPAREN, "expect `)` after if condition");
-
-    enter_scope();
-
-    // jump to the else branch if the condition is false
-    int else_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
-    // compile the then branch
-    emit_byte(OpCode::OP_POP); // condition
-    statement();
-
-    // jump over the else branch when the if branch is taken
-    int end_jump = emit_jump(OpCode::OP_JUMP);
-    // compile the else branch
-    patch_jump(else_jump);
-    emit_byte(OpCode::OP_POP); // condition
-
-    if (match(TokenKind::KW_ELSE))
-      statement();
-    patch_jump(end_jump);
-
-    leave_scope();
-  }
-
-  void var_stmt(void) {
-    u8_t global = parse_variable("expect variable name");
-
-    if (match(TokenKind::TK_EQUAL)) {
-      // compile the initializer
-      expression();
-    }
-    else {
-      // default initialize with nil
-      emit_byte(OpCode::OP_NIL);
-    }
-    consume(TokenKind::TK_SEMI, "expect `;` after variable initializer");
-
-    define_variable(global);
-  }
-
-  void while_stmt(void) {
-    int loop_start = curr_compiler_->function->codes_count();
-
-    consume(TokenKind::TK_LPAREN, "expect `(` before while condition");
-    expression();
-    consume(TokenKind::TK_RPAREN, "expect `)` after while condition");
-
-    enter_scope();
-
-    // jump out of the loop if the condition is false
-    int exit_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
-    // compile the loop body
-    emit_byte(OpCode::OP_POP); // condition
-    statement();
-
-    emit_loop(loop_start); // loop back to the start
-    patch_jump(exit_jump);
-    emit_byte(OpCode::OP_POP); // condition
-    leave_scope();
-  }
-
-  void fn_common(FunctionKind fun_kind) {
-    CompilerImpl fn_compiler;
-    begin_compiler(fn_compiler, 1, fun_kind);
-    enter_scope();
-    consume(TokenKind::TK_LPAREN, "expect `(` after function name");
-    if (!check(TokenKind::TK_RPAREN)) {
-      do {
-        u8_t param_constant = parse_variable("expect parameter name");
-        define_variable(param_constant);
-        curr_compiler_->function->inc_arity();
-
-        if (curr_compiler_->function->arity() > kMaxArguments) {
-          error("cannot have more than " +
-              std::to_string(kMaxArguments) + " parameters");
-        }
-      } while (match(TokenKind::TK_COMMA));
-    }
-    consume(TokenKind::TK_RPAREN, "expect `)` after parameters");
-    block_stmt();
-    leave_scope();
-    auto* fn = finish_compiler();
-
-    emit_bytes(OpCode::OP_CLOSURE, make_constant(fn));
-
-    for (int i = 0; i < fn->upvalues_count(); ++i) {
-      auto upval = fn_compiler.upvalues[i];
-      emit_bytes(upval.local ? 1 : 0, upval.index);
-    }
-  }
-
-  void fun_stmt(void) {
-    u8_t name_constant = parse_variable("expect function name");
-    fn_common(FunctionKind::FUNCTION);
-    define_variable(name_constant);
-  }
-
-  void return_stmt(void) {
-    if (curr_compiler_->fun_kind == FunctionKind::TOP_LEVEL)
-      error("cannot return from top-level code");
-
-    if (match(TokenKind::TK_SEMI)) {
-      emit_return();
-    }
-    else {
-      if (curr_compiler_->fun_kind == FunctionKind::CTOR)
-        error("cannot return a value from an constructor");
-
-      expression();
-      consume(TokenKind::TK_SEMI, "expect `;` after return value");
-      emit_return();
-    }
-    emit_byte(OpCode::OP_RETURN);
-  }
-
-  void method(void) {
-    consume(TokenKind::TK_IDENTIFIER, "expect method name");
-    u8_t method_constant = identifier_constant(prev_);
-
-    // if the method is named `ctor`, it's the constructor
-    FunctionKind fun_kind{FunctionKind::METHOD};
-    if (prev_.get_literal() == "ctor")
-      fun_kind = FunctionKind::CTOR;
-    fn_common(fun_kind);
-    emit_bytes(OpCode::OP_METHOD, method_constant);
-  }
-
-  void class_stmt(void) {
+  void class_decl(void) {
     consume(TokenKind::TK_IDENTIFIER, "expect class anme");
     u8_t name_constant = identifier_constant(prev_);
     declare_variable();
@@ -883,6 +749,139 @@ public:
 
     curr_class_ = curr_class_->enclosing;
   }
+
+  void fun_decl(void) {
+    u8_t name_constant = parse_variable("expect function name");
+    fn_common(FunctionKind::FUNCTION);
+    define_variable(name_constant);
+  }
+
+  void var_decl(void) {
+    u8_t global = parse_variable("expect variable name");
+
+    if (match(TokenKind::TK_EQUAL)) {
+      // compile the initializer
+      expression();
+    }
+    else {
+      // default initialize with nil
+      emit_byte(OpCode::OP_NIL);
+    }
+    consume(TokenKind::TK_SEMI, "expect `;` after variable initializer");
+
+    define_variable(global);
+  }
+
+  void if_stmt(void) {
+    consume(TokenKind::TK_LPAREN, "expect `(` before if condition");
+    expression();
+    consume(TokenKind::TK_RPAREN, "expect `)` after if condition");
+
+    // jump to the else branch if the condition is false
+    int else_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+    // compile the then branch
+    emit_byte(OpCode::OP_POP); // condition
+    statement();
+
+    // jump over the else branch when the if branch is taken
+    int end_jump = emit_jump(OpCode::OP_JUMP);
+    // compile the else branch
+    patch_jump(else_jump);
+    emit_byte(OpCode::OP_POP); // condition
+
+    if (match(TokenKind::KW_ELSE))
+      statement();
+    patch_jump(end_jump);
+  }
+
+  void return_stmt(void) {
+    if (curr_compiler_->fun_kind == FunctionKind::TOP_LEVEL)
+      error("cannot return from top-level code");
+
+    if (match(TokenKind::TK_SEMI)) {
+      emit_return();
+    }
+    else {
+      if (curr_compiler_->fun_kind == FunctionKind::CTOR)
+        error("cannot return a value from an constructor");
+
+      expression();
+      consume(TokenKind::TK_SEMI, "expect `;` after return value");
+      emit_return();
+    }
+    emit_byte(OpCode::OP_RETURN);
+  }
+
+  void while_stmt(void) {
+    int loop_start = curr_compiler_->function->codes_count();
+
+    consume(TokenKind::TK_LPAREN, "expect `(` before while condition");
+    expression();
+    consume(TokenKind::TK_RPAREN, "expect `)` after while condition");
+
+    // jump out of the loop if the condition is false
+    int exit_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+    // compile the loop body
+    emit_byte(OpCode::OP_POP); // condition
+    statement();
+
+    emit_loop(loop_start); // loop back to the start
+    patch_jump(exit_jump);
+    emit_byte(OpCode::OP_POP); // condition
+  }
+
+  void block_stmt(void) {
+    consume(TokenKind::TK_LBRACE, "expect `{` before block");
+
+    enter_scope();
+    while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE))
+      declaration();
+    leave_scope();
+
+    consume(TokenKind::TK_RBRACE, "expect `}` after block");
+  }
+
+  void fn_common(FunctionKind fun_kind) {
+    CompilerImpl fn_compiler;
+    begin_compiler(fn_compiler, 1, fun_kind);
+    enter_scope();
+    consume(TokenKind::TK_LPAREN, "expect `(` after function name");
+    if (!check(TokenKind::TK_RPAREN)) {
+      do {
+        u8_t param_constant = parse_variable("expect parameter name");
+        define_variable(param_constant);
+        curr_compiler_->function->inc_arity();
+
+        if (curr_compiler_->function->arity() > kMaxArguments) {
+          error("cannot have more than " +
+              std::to_string(kMaxArguments) + " parameters");
+        }
+      } while (match(TokenKind::TK_COMMA));
+    }
+    consume(TokenKind::TK_RPAREN, "expect `)` after parameters");
+    block_stmt();
+    leave_scope();
+    auto* fn = finish_compiler();
+
+    emit_bytes(OpCode::OP_CLOSURE, make_constant(fn));
+
+    for (int i = 0; i < fn->upvalues_count(); ++i) {
+      auto upval = fn_compiler.upvalues[i];
+      emit_bytes(upval.local ? 1 : 0, upval.index);
+    }
+  }
+
+  void method(void) {
+    consume(TokenKind::TK_IDENTIFIER, "expect method name");
+    u8_t method_constant = identifier_constant(prev_);
+
+    // if the method is named `ctor`, it's the constructor
+    FunctionKind fun_kind{FunctionKind::METHOD};
+    if (prev_.get_literal() == "ctor")
+      fun_kind = FunctionKind::CTOR;
+    fn_common(fun_kind);
+    emit_bytes(OpCode::OP_METHOD, method_constant);
+  }
 };
 
 FunctionObject* Compile::compile(VM& vm, const str_t& source_bytes) {
@@ -894,7 +893,7 @@ FunctionObject* Compile::compile(VM& vm, const str_t& source_bytes) {
   p.advance();
   if (!p.match(TokenKind::TK_EOF)) {
     do {
-      p.statement();
+      p.declaration();
     } while (!p.match(TokenKind::TK_EOF));
   }
   auto* fn = p.finish_compiler();
