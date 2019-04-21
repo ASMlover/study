@@ -31,6 +31,7 @@
 #include <string>
 #include "common.hh"
 #include "value.hh"
+#include "chunk.hh"
 
 namespace nyx {
 
@@ -79,26 +80,6 @@ std::ostream& operator<<(std::ostream& out, BaseObject* obj);
 void gray_table(VM& vm, table_t& tbl);
 void remove_table_undark(table_t& tbl);
 
-class ValueArray : private UnCopyable {
-  int capacity_{};
-  int count_{};
-  Value* values_{};
-public:
-  ValueArray(void) {}
-  ~ValueArray(void);
-
-  inline int capacity(void) const { return capacity_; }
-  inline int count(void) const { return count_; }
-  inline Value* values(void) { return values_; }
-  inline const Value* values(void) const { return values_; }
-
-  void set_value(int i, const Value& v);
-  Value& get_value(int i);
-  const Value& get_value(int i) const;
-  int append_value(const Value& v);
-  void gray(VM& vm);
-};
-
 class StringObject : public BaseObject {
   int count_{};
   u32_t hash_{};
@@ -124,15 +105,10 @@ public:
 };
 
 class FunctionObject : public BaseObject {
-  int codes_capacity_{};
-  int codes_count_{};
-  u8_t* codes_{};
-  int* codelines_{};
+  Chunk chunk_{};
 
   int arity_{};
   int upvalues_count_{};
-
-  ValueArray constants_;
 
   // debug information
   StringObject* name_{};
@@ -140,31 +116,30 @@ class FunctionObject : public BaseObject {
   FunctionObject(void);
   virtual ~FunctionObject(void);
 public:
-  inline int codes_capacity(void) const { return codes_capacity_; }
-  inline int codes_count(void) const { return codes_count_; }
-  inline u8_t* codes(void) { return codes_; }
-  inline const u8_t* codes(void) const { return codes_; }
-  inline void set_code(int i, u8_t c) { codes_[i] = c; }
-  inline u8_t get_code(int i) const { return codes_[i]; }
-  inline int get_codeline(int i) const { return codelines_[i]; }
+  inline int codes_count(void) const { return chunk_.codes_count(); }
+  inline u8_t* codes(void) { return chunk_.codes(); }
+  inline const u8_t* codes(void) const { return chunk_.codes(); }
+  inline void set_code(int i, u8_t c) { chunk_.set_code(i, c); }
+  inline u8_t get_code(int i) const { return chunk_.get_code(i); }
+  inline int get_codeline(int i) const { return chunk_.get_line(i); }
   inline int arity(void) const { return arity_; }
   inline void inc_arity(void) { ++arity_; }
   inline int upvalues_count(void) const { return upvalues_count_; }
   inline int inc_upvalues_count(void) { return upvalues_count_++; }
-  inline int constants_capacity(void) const { return constants_.capacity(); }
-  inline int constants_count(void) const { return constants_.count(); }
-  inline Value* constants(void) { return constants_.values(); }
-  inline const Value* constants(void) const { return constants_.values(); }
-  inline void set_constant(int i, const Value& v) { constants_.set_value(i, v); }
-  inline Value& get_constant(int i) { return constants_.get_value(i); }
-  inline const Value& get_constant(int i) const { return constants_.get_value(i); }
+  inline int constants_count(void) const { return chunk_.constants_count(); }
+  inline Value* constants(void) { return chunk_.constants(); }
+  inline const Value* constants(void) const { return chunk_.constants(); }
+  inline Value& get_constant(int i) { return chunk_.get_constant(i); }
+  inline const Value& get_constant(int i) const { return chunk_.get_constant(i); }
   inline StringObject* name(void) const { return name_; }
   inline void set_name(StringObject* name) { name_ = name; }
+  inline int append_code(u8_t c, int lineno = 0) { return chunk_.write(c, lineno); }
+  inline int append_constant(const Value& v) { return chunk_.add_constant(v); }
 
-  int dump_instruction(int i);
-  void dump(void);
-  int append_code(u8_t c, int lineno = 0);
-  int append_constant(const Value& v);
+  inline void disassemble(const str_t& name) { chunk_.disassemble(name); }
+  inline int disassemble_instruction(int i) {
+    return chunk_.disassemble_instruction(i);
+  }
 
   virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;

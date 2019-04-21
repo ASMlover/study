@@ -408,7 +408,7 @@ bool VM::run(void) {
         std::cout << "| " << v << " ";
       std::cout << std::endl;
       auto* fn = frame->closure()->get_function();
-      fn->dump_instruction(
+      fn->disassemble_instruction(
           static_cast<int>(frame->ip() - frame->get_closure_codes()));
     }
 #endif

@@ -189,26 +189,23 @@ class CompileParser : private UnCopyable {
     emit_byte(OpCode::OP_RETURN);
   }
 
-  u8_t add_constant(const Value& constant) {
-    FunctionObject* fn = curr_compiler_->function;
-    // see if already have an equivalent constant
-    for (int i = 0; i < fn->constants_count(); ++i)
-      if (constant == fn->get_constant(i))
-        return static_cast<u8_t>(i);
-
-    vm_.invoke_push(constant);
-    auto i = curr_compiler_->function->append_constant(vm_.invoke_pop());
-    return static_cast<u8_t>(i);
+  u8_t make_constant(const Value& value) {
+    int constant = curr_compiler_->function->append_constant(value);
+    if (constant == -1) {
+      error("too many constants in one function");
+      return 0;
+    }
+    return static_cast<u8_t>(constant);
   }
 
   u8_t identifier_constant(const Token& name) {
     auto s = name.as_string();
-    return add_constant(
+    return make_constant(
         StringObject::create(vm_, s.c_str(), static_cast<int>(s.size())));
   }
 
   void emit_constant(const Value& value) {
-    emit_bytes(OpCode::OP_CONSTANT, add_constant(value));
+    emit_bytes(OpCode::OP_CONSTANT, make_constant(value));
   }
 
   ParseRule& get_rule(TokenKind kind) {
@@ -629,7 +626,7 @@ public:
 
 #if defined(DEBUG_PRINT_CODE)
     if (!had_error_)
-      fn->dump();
+      fn->disassemble(fn->name()->chars());
 #endif
 
     return fn;
@@ -806,8 +803,7 @@ public:
     leave_scope();
     auto* fn = finish_compiler();
 
-    u8_t constant = add_constant(fn);
-    emit_bytes(OpCode::OP_CLOSURE, constant);
+    emit_bytes(OpCode::OP_CLOSURE, make_constant(fn));
 
     for (int i = 0; i < fn->upvalues_count(); ++i) {
       auto upval = fn_compiler.upvalues[i];
