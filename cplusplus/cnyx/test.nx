@@ -16,6 +16,7 @@ class Child < Base {
 }
 
 var c = Child();
+print(str(nil), str(true), str(false), str(34+56*7.9/0.43));
 
 print(nil, true, false);
 print(34 + 56, 67 - 45, 6767 * 45, 8989 / 43);
