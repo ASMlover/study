@@ -34,6 +34,8 @@
 
 namespace nyx {
 
+static Value kNil = Value::make_nil();
+
 class CallFrame : private UnCopyable {
   using IterCallback = std::function<void(FunctionObject*, const u8_t*)>;
 
@@ -140,7 +142,7 @@ void VM::create_class(StringObject* name, ClassObject* superclass) {
 }
 
 void VM::define_method(StringObject* name) {
-  Value method = peek(0);
+  const Value& method = peek(0);
   ClassObject* klass = peek(1).as_class();
   klass->bind_method(name, method);
   pop();
@@ -169,8 +171,12 @@ Value VM::pop(void) {
   return val;
 }
 
-Value VM::peek(int distance) {
-  return stack_.empty() ? Value::make_nil() : stack_[stack_.size() - 1 - distance];
+Value& VM::peek(int distance) {
+  return stack_.empty() ? kNil : stack_[stack_.size() - 1 - distance];
+}
+
+const Value& VM::peek(int distance) const {
+  return stack_.empty() ? kNil : stack_[stack_.size() - 1 - distance];
 }
 
 void VM::runtime_error(const char* format, ...) {
@@ -272,12 +278,6 @@ void VM::remove_undark_intern_strings(void) {
   }
 }
 
-void VM::print_stack(void) {
-  int i{};
-  for (auto& v : stack_)
-    std::cout << i++ << " : " << v << std::endl;
-}
-
 bool VM::call_closure(ClosureObject* closure, int argc) {
   if (argc < closure->get_function()->arity()) {
     runtime_error("not enough arguments");
@@ -330,8 +330,7 @@ bool VM::call(const Value& callee, int argc/* = 0*/) {
   return false;
 }
 
-bool VM::invoke_from_class(ClassObject* cls,
-    InstanceObject* receiver, StringObject* name, int argc) {
+bool VM::invoke_from_class(ClassObject* cls, StringObject* name, int argc) {
   if (auto method = cls->get_method(name); method)
     return call_closure((*method).as_closure(), argc);
 
@@ -339,7 +338,8 @@ bool VM::invoke_from_class(ClassObject* cls,
   return false;
 }
 
-bool VM::invoke(const Value& receiver, StringObject* name, int argc) {
+bool VM::invoke(StringObject* name, int argc) {
+  const Value& receiver = peek(argc);
   if (!receiver.is_instance()) {
     runtime_error("only instances have methods");
     return false;
@@ -351,7 +351,7 @@ bool VM::invoke(const Value& receiver, StringObject* name, int argc) {
     return call(*callee, argc);
   }
 
-  return invoke_from_class(inst->get_class(), inst, name, argc);
+  return invoke_from_class(inst->get_class(), name, argc);
 }
 
 UpvalueObject* VM::capture_upvalue(Value* local) {
@@ -407,6 +407,16 @@ bool VM::run(void) {
   auto _rdstring = [_rdconstant](void) -> StringObject* {
     return _rdconstant().as_string();
   };
+
+#define BINARY_OP(op) do {\
+  if (!peek(0).is_numeric() || !peek(1).is_numeric()) {\
+    runtime_error("operands must be numerics");\
+    return false;\
+  }\
+  double b = pop().as_numeric();\
+  double a = pop().as_numeric();\
+  push(a op b);\
+} while (false)
 
   for (;;) {
 #if defined(DEBUG_EXEC_TRACE)
@@ -579,33 +589,9 @@ bool VM::run(void) {
           return false;
         }
       } break;
-    case OpCode::OP_SUB:
-      if (auto r = pop_numerics(); r) {
-        auto [a, b] = *r;
-        push(a - b);
-      }
-      else {
-        return false;
-      }
-      break;
-    case OpCode::OP_MUL:
-      if (auto r = pop_numerics(); r) {
-        auto [a, b] = *r;
-        push(a * b);
-      }
-      else {
-        return false;
-      }
-      break;
-    case OpCode::OP_DIV:
-      if (auto r = pop_numerics(); r) {
-        auto [a, b] = *r;
-        push(a / b);
-      }
-      else {
-        return false;
-      }
-      break;
+    case OpCode::OP_SUB: BINARY_OP(-); break;
+    case OpCode::OP_MUL: BINARY_OP(*); break;
+    case OpCode::OP_DIV: BINARY_OP(/); break;
     case OpCode::OP_NOT:
       {
         auto b = pop().is_falsely();
@@ -613,10 +599,11 @@ bool VM::run(void) {
       } break;
     case OpCode::OP_NEG:
       {
-        if (auto v = pop_numeric(); v)
-          push(-*v);
-        else
+        if (!peek(0).is_numeric()) {
+          runtime_error("operand must be a numeric");
           return false;
+        }
+        push(-pop().as_numeric());
       } break;
     case OpCode::OP_JUMP:
       {
@@ -661,7 +648,7 @@ bool VM::run(void) {
       {
         StringObject* method = _rdstring();
         int argc = instruction - OpCode::OP_INVOKE_0;
-        if (!invoke(peek(argc), method, argc))
+        if (!invoke(method, argc))
           return false;
         frame = &frames_.back();
       } break;
@@ -678,8 +665,7 @@ bool VM::run(void) {
         StringObject* method = _rdstring();
         int argc = instruction - OpCode::OP_SUPER_0;
         ClassObject* superclass = pop().as_class();
-        InstanceObject* receiver = peek(argc).as_instance();
-        if (!invoke_from_class(superclass, receiver, method, argc))
+        if (!invoke_from_class(superclass, method, argc))
           return false;
         frame = &frames_.back();
       } break;
@@ -714,9 +700,9 @@ bool VM::run(void) {
         else
           close_upvalues(&stack_[frame->stack_start()]);
 
-        if (frames_.size() == 1)
+        frames_.pop_back();
+        if (frames_.size() == 0)
           return true;
-
         stack_.resize(frame->stack_start());
         push(ret);
 
@@ -727,7 +713,7 @@ bool VM::run(void) {
       create_class(_rdstring(), nullptr); break;
     case OpCode::OP_SUBCLASS:
       {
-        Value superclass = peek(0);
+        const Value& superclass = peek(0);
         if (!superclass.is_class()) {
           runtime_error("superclass must be a class");
           return false;
@@ -738,6 +724,8 @@ bool VM::run(void) {
       define_method(_rdstring()); break;
     }
   }
+
+#undef BINARY_OP
 
   return true;
 }
@@ -812,12 +800,8 @@ InterpretResult VM::interpret(const str_t& source_bytes) {
   push(fn);
   auto* closure = ClosureObject::create(*this, fn);
   pop();
-  push(closure);
 
   call(closure, 0);
-
-  // collect();
-  // print_stack();
 
   return run() ? InterpretResult::OK : InterpretResult::RUNTIME_ERROR;
 }

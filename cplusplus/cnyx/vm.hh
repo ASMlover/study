@@ -135,7 +135,8 @@ class VM : private UnCopyable {
 
   void push(const Value& val);
   Value pop(void);
-  Value peek(int distance = 0);
+  Value& peek(int distance = 0);
+  const Value& peek(int distance = 0) const;
   void runtime_error(const char* format, ...);
 
   std::optional<bool> pop_boolean(void);
@@ -144,13 +145,11 @@ class VM : private UnCopyable {
 
   void collect(void);
   void remove_undark_intern_strings(void);
-  void print_stack(void);
 
   bool call_closure(ClosureObject* closure, int argc);
   bool call(const Value& callee, int argc = 0);
-  bool invoke_from_class(ClassObject* cls,
-      InstanceObject* receiver, StringObject* name, int argc);
-  bool invoke(const Value& receiver, StringObject* method, int argc);
+  bool invoke_from_class(ClassObject* cls, StringObject* name, int argc);
+  bool invoke(StringObject* method, int argc);
   UpvalueObject* capture_upvalue(Value* local);
   void close_upvalues(Value* last);
 
