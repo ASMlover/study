@@ -110,7 +110,7 @@ enum class InterpretResult {
 class CallFrame;
 
 class VM : private UnCopyable {
-  static constexpr sz_t kGCThreshold = (1 << 20) * 10;
+  static constexpr sz_t kGCThreshold = (1 << 20);
 
   std::vector<Value> stack_;
   std::vector<CallFrame> frames_;
@@ -122,6 +122,7 @@ class VM : private UnCopyable {
   UpvalueObject* open_upvalues_{};
 
   sz_t bytes_allocated_{};
+  sz_t next_gc_{kGCThreshold};
   std::list<BaseObject*> objects_;
   std::list<BaseObject*> gray_stack_;
 

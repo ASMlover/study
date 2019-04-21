@@ -198,13 +198,14 @@ public:
 class ClosureObject : public BaseObject {
   FunctionObject* function_{};
   UpvalueObject** upvalues_{};
+  int upvalues_count_{};
 
   ClosureObject(FunctionObject* fn);
   virtual ~ClosureObject(void);
 public:
   inline FunctionObject* get_function(void) const { return function_; }
   inline UpvalueObject** upvalues(void) const { return upvalues_; }
-  inline int upvaules_count(void) const { return function_->upvalues_count(); }
+  inline int upvaules_count(void) const { return upvalues_count_; }
   inline UpvalueObject* get_upvalue(int i) const { return upvalues_[i]; }
   inline void set_upvalue(int i, UpvalueObject* upvalue) { upvalues_[i] = upvalue; }
 

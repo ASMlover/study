@@ -86,9 +86,13 @@ VM::VM(void) {
         std::cout << std::endl;
         return nullptr;
       });
-  define_native("clock", [this](int argc, Value* args) -> Value {
+  define_native("clock", [](int argc, Value* args) -> Value {
         return std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
+      });
+  define_native("str", [this](int argc, Value* args) -> Value {
+        return Value::make_object(
+            StringObject::create(*this, args[0].stringify()));
       });
   ctor_string_ = StringObject::create(*this, "ctor");
 }
@@ -250,6 +254,9 @@ void VM::collect(void) {
       ++it;
     }
   }
+
+  // adjust the heap size head on live memory
+  next_gc_ = bytes_allocated_ * 2;
 
 #if defined(DEBUG_GC_TRACE)
   std::cout << "********* collect: finished *********" << std::endl;
@@ -682,7 +689,7 @@ bool VM::run(void) {
         auto* closure = ClosureObject::create(*this, fn);
         push(closure);
 
-        for (int i = 0; i < fn->upvalues_count(); ++i) {
+        for (int i = 0; i < closure->upvaules_count(); ++i) {
           u8_t is_local = _rdbyte();
           u8_t index = _rdbyte();
           if (is_local) {
@@ -737,10 +744,8 @@ bool VM::run(void) {
 
 void VM::append_object(BaseObject* o) {
   bytes_allocated_ += o->size_bytes();
-  if (bytes_allocated_ > kGCThreshold) {
+  if (bytes_allocated_ > next_gc_)
     collect();
-    bytes_allocated_ = 0;
-  }
 
   objects_.push_back(o);
 }

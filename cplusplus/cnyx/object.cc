@@ -252,7 +252,8 @@ UpvalueObject* UpvalueObject::create(VM& vm, Value* slot) {
 
 ClosureObject::ClosureObject(FunctionObject* fn)
   : BaseObject(ObjType::CLOSURE)
-  , function_(fn) {
+  , function_(fn)
+  , upvalues_count_(fn->upvalues_count()) {
   using UpvalueX = UpvalueObject*;
 
   upvalues_ = new UpvalueX[fn->upvalues_count()];
@@ -281,7 +282,7 @@ bool ClosureObject::is_equal(BaseObject* other) const {
 
 void ClosureObject::blacken(VM& vm) {
   vm.gray_object(function_);
-  for (int i = 0; i < function_->upvalues_count(); ++i)
+  for (int i = 0; i < upvalues_count_; ++i)
     vm.gray_object(upvalues_[i]);
 }
 
