@@ -161,6 +161,12 @@ bool VM::bind_method(ClassObject* cls, StringObject* name) {
   return false;
 }
 
+void VM::reset_stack(void) {
+  stack_.clear();
+  frames_.clear();
+  open_upvalues_ = nullptr;
+}
+
 void VM::push(const Value& val) {
   stack_.push_back(val);
 }
@@ -194,6 +200,8 @@ void VM::runtime_error(const char* format, ...) {
       << "[LINE: " << frame.get_closure_codeline(offset) << "] in "
       << fn->name()->chars() << std::endl;
   }
+
+  reset_stack();
 }
 
 std::optional<bool> VM::pop_boolean(void) {

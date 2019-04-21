@@ -133,6 +133,7 @@ class VM : private UnCopyable {
   void define_method(StringObject* name);
   bool bind_method(ClassObject* cls, StringObject* name);
 
+  void reset_stack(void);
   void push(const Value& val);
   Value pop(void);
   Value& peek(int distance = 0);
