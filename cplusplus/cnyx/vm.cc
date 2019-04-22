@@ -30,6 +30,7 @@
 #include <iostream>
 #include <sstream>
 #include "compile.hh"
+#include "value.hh"
 #include "vm.hh"
 
 namespace nyx {
@@ -270,7 +271,7 @@ void VM::collect(void) {
   }
 
   // adjust the heap size head on live memory
-  next_gc_ = bytes_allocated_ * 2;
+  next_gc_ = bytes_allocated_ * kGCGrowFactor;
 
 #if defined(DEBUG_GC_TRACE)
   std::cout << "********* collect: finished *********" << std::endl;

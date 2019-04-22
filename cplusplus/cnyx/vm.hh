@@ -35,72 +35,6 @@
 
 namespace nyx {
 
-enum OpCode {
-  OP_CONSTANT,
-  OP_NIL, // nil value
-  OP_TRUE, // true value
-  OP_FALSE, // false value
-  OP_POP, // pop operation
-  OP_GET_LOCAL, // get local variable
-  OP_SET_LOCAL, // set local variable
-  OP_DEF_GLOBAL, // define global variable
-  OP_GET_GLOBAL, // get global variable
-  OP_SET_GLOBAL, // set global variable
-  OP_GET_UPVALUE, // get upvalue
-  OP_SET_UPVALUE, // set upvalue
-  OP_GET_FIELD, // get field
-  OP_SET_FIELD, // set field
-  OP_GET_SUPER, // get super
-  OP_EQ, // ==
-  OP_NE, // !=
-  OP_GT, // >
-  OP_GE, // >=
-  OP_LT, // <
-  OP_LE, // <=
-  OP_ADD, // +
-  OP_SUB, // -
-  OP_MUL, // *
-  OP_DIV, // /
-  OP_NOT, // !
-  OP_NEG, // - negative
-  OP_JUMP,
-  OP_JUMP_IF_FALSE,
-  OP_LOOP, // loop flow
-  OP_CALL_0,
-  OP_CALL_1,
-  OP_CALL_2,
-  OP_CALL_3,
-  OP_CALL_4,
-  OP_CALL_5,
-  OP_CALL_6,
-  OP_CALL_7,
-  OP_CALL_8,
-  OP_INVOKE_0,
-  OP_INVOKE_1,
-  OP_INVOKE_2,
-  OP_INVOKE_3,
-  OP_INVOKE_4,
-  OP_INVOKE_5,
-  OP_INVOKE_6,
-  OP_INVOKE_7,
-  OP_INVOKE_8,
-  OP_SUPER_0,
-  OP_SUPER_1,
-  OP_SUPER_2,
-  OP_SUPER_3,
-  OP_SUPER_4,
-  OP_SUPER_5,
-  OP_SUPER_6,
-  OP_SUPER_7,
-  OP_SUPER_8,
-  OP_CLOSURE,
-  OP_CLOSE_UPVALUE,
-  OP_RETURN, // return
-  OP_CLASS, // class
-  OP_SUBCLASS, // subclass
-  OP_METHOD,
-};
-
 enum class InterpretResult {
   OK,
   COMPILE_ERROR,
@@ -110,7 +44,8 @@ enum class InterpretResult {
 class CallFrame;
 
 class VM : private UnCopyable {
-  static constexpr sz_t kGCThreshold = (1 << 20);
+  static constexpr sz_t kGCGrowFactor = 2;
+  static constexpr sz_t kGCThresholds = (1 << 20);
 
   std::vector<Value> stack_;
   std::vector<CallFrame> frames_;
@@ -122,7 +57,7 @@ class VM : private UnCopyable {
   UpvalueObject* open_upvalues_{};
 
   sz_t bytes_allocated_{};
-  sz_t next_gc_{kGCThreshold};
+  sz_t next_gc_{kGCThresholds};
   std::list<BaseObject*> objects_;
   std::list<BaseObject*> gray_stack_;
 

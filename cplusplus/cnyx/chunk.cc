@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include "value.hh"
-#include "vm.hh"
+#include "object.hh"
 #include "chunk.hh"
 
 namespace nyx {
