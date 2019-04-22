@@ -604,7 +604,7 @@ public:
         curr_compiler_->function->set_name(StringObject::create(vm_, name));
       } break;
     case FunctionKind::TOP_LEVEL:
-      curr_compiler_->function->set_name(StringObject::create(vm_, "cnyx"));
+      curr_compiler_->function->set_name(nullptr);
       break;
     }
 

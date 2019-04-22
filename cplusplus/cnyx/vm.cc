@@ -197,9 +197,11 @@ void VM::runtime_error(const char* format, ...) {
     auto& frame = frames_[i];
     auto* fn = frame.closure()->get_function();
     auto offset = static_cast<int>(frame.ip() - frame.get_closure_codes());
-    std::cerr
-      << "[LINE: " << frame.get_closure_codeline(offset) << "] in "
-      << fn->name()->chars() << std::endl;
+    std::cerr << "[LINE: " << frame.get_closure_codeline(offset) << "] in ";
+    if (fn->name() == nullptr)
+      std::cerr << "cnyx" << std::endl;
+    else
+      std::cerr << fn->name()->chars() << "()" << std::endl;
   }
 
   reset_stack();
