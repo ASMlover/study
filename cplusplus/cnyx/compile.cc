@@ -318,7 +318,7 @@ class CompileParser : private UnCopyable {
       auto& local = compiler->locals[i];
       if (name.is_equal(local.name)) {
         if (!in_func && local.depth == -1)
-          error("a local variable cannot be use in its own initializer");
+          error("cannot read local variable before initializing it");
         return i;
       }
     }
@@ -797,38 +797,42 @@ public:
     }
     int loop_start = curr_compiler_->function->codes_count();
     // the exit condition
+    int exit_jump = -1;
     if (!match(TokenKind::TK_SEMI)) {
       expression();
       consume(TokenKind::TK_SEMI, "expect `;` after loop condition");
-    }
-    else {
-      emit_byte(OpCode::OP_TRUE);
-    }
-    // jump out of the loop if the condition is false
-    int exit_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
 
-    emit_byte(OpCode::OP_POP); // condition
-    int body_jump = emit_jump(OpCode::OP_JUMP);
+      // jump out of the loop if the condition is false
+      exit_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+      emit_byte(OpCode::OP_POP); // condition
+    }
 
     // increment loop step
-    int increment_start = curr_compiler_->function->codes_count();
     if (!match(TokenKind::TK_RPAREN)) {
+      // don't want to execute the increment before the body, so jump over it
+      int body_jump = emit_jump(OpCode::OP_JUMP);
+      int increment_start = curr_compiler_->function->codes_count();
+
       expression();
       emit_byte(OpCode::OP_POP);
       consume(TokenKind::TK_RPAREN, "expect `)` after `for` clauses");
-    }
 
-    // loop back to the start
-    emit_loop(loop_start);
-    patch_jump(body_jump);
+      // after the increment, start the whole loop over
+      emit_loop(loop_start);
+      // at the end of the body, jump to the increment
+      loop_start = increment_start;
+      patch_jump(body_jump);
+    }
 
     // compile the loop body
     statement();
-    // jump back to the increment
-    emit_loop(increment_start);
+    // jump back to the begining or the increment
+    emit_loop(loop_start);
 
-    patch_jump(exit_jump);
-    emit_byte(OpCode::OP_POP); // condition
+    if (exit_jump != -1) {
+      patch_jump(exit_jump);
+      emit_byte(OpCode::OP_POP); // condition
+    }
 
     leave_scope();
   }
