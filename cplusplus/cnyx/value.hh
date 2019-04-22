@@ -48,29 +48,24 @@ class Value : private Copyable {
     double numeric;
     BaseObject* object;
   } as_{};
+
+  template <typename T> inline void set_numeric(T x) noexcept {
+    as_.numeric = static_cast<double>(x);
+  }
 public:
-  Value(void) noexcept
-    : type_{ValueType::NIL} {
-  }
-
-  Value(nil_t) noexcept
-    : type_{ValueType::NIL} {
-  }
-
-  Value(bool b) noexcept
-    : type_{ValueType::BOOLEAN} {
-    as_.boolean = b;
-  }
-
-  Value(double d) noexcept
-    : type_{ValueType::NUMERIC} {
-    as_.numeric = d;
-  }
-
-  Value(BaseObject* o) noexcept
-    : type_{ValueType::OBJECT} {
-    as_.object = o;
-  }
+  Value(void) noexcept : type_{ValueType::NIL} {}
+  Value(nil_t) noexcept : type_{ValueType::NIL} {}
+  Value(bool b) noexcept : type_{ValueType::BOOLEAN} { as_.boolean = b; }
+  Value(i8_t i8) noexcept : type_{ValueType::NUMERIC} { set_numeric(i8); }
+  Value(u8_t u8) noexcept : type_{ValueType::NUMERIC} { set_numeric(u8); }
+  Value(i16_t i16) noexcept : type_{ValueType::NUMERIC} { set_numeric(i16); }
+  Value(u16_t u16) noexcept : type_{ValueType::NUMERIC} { set_numeric(u16); }
+  Value(i32_t i32) noexcept : type_{ValueType::NUMERIC} { set_numeric(i32); }
+  Value(u32_t u32) noexcept : type_{ValueType::NUMERIC} { set_numeric(u32); }
+  Value(i64_t i64) noexcept : type_{ValueType::NUMERIC} { set_numeric(i64); }
+  Value(u64_t u64) noexcept : type_{ValueType::NUMERIC} { set_numeric(u64); }
+  Value(double d) noexcept : type_{ValueType::NUMERIC} { as_.numeric = d; }
+  Value(BaseObject* o) noexcept : type_{ValueType::OBJECT} { as_.object = o; }
 
   Value(const Value& v) noexcept
     : type_{v.type_} {

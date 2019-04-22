@@ -90,9 +90,9 @@ int Chunk::disassemble_instruction(int i) {
 
   fprintf(stdout, "%04d ", i);
   if (i > 1 && lines_[i] == lines_[i - 1])
-    std::cout << "  | ";
+    std::cout << "   | ";
   else
-    fprintf(stdout, "%03d ", lines_[i]);
+    fprintf(stdout, "%4d ", lines_[i]);
 
   const u8_t* codes = codes_.data();
   switch (auto instruction = codes[i++]; instruction) {

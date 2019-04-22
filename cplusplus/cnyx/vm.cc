@@ -438,7 +438,7 @@ bool VM::run(void) {
     }
 #endif
 
-    switch (auto instruction = frame->inc_ip(); instruction) {
+    switch (auto instruction = _rdbyte(); instruction) {
     case OpCode::OP_CONSTANT: push(_rdconstant()); break;
     case OpCode::OP_NIL: push(nullptr); break;
     case OpCode::OP_TRUE: push(true); break;
