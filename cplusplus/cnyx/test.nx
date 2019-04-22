@@ -21,3 +21,9 @@ print(str(nil), str(true), str(false), str(34+56*7.9/0.43));
 print(nil, true, false);
 print(34 + 56, 67 - 45, 6767 * 45, 8989 / 43);
 
+var beg = clock();
+var i = 0; // FIXME: error in for scope var clause initializer
+for (; i < 10; i = i+1) {
+  print(i);
+}
+print("use time is: ", clock() - beg);
