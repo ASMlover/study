@@ -631,7 +631,7 @@ public:
 
 #if defined(DEBUG_PRINT_CODE)
     if (!had_error_)
-      fn->disassemble(fn->name()->chars());
+      fn->disassemble(fn->name() != nullptr ? fn->name()->chars() : "<top>");
 #endif
 
     return fn;
@@ -736,7 +736,7 @@ public:
     else if (match(TokenKind::KW_WHILE)) {
       while_stmt();
     }
-    else if (check(TokenKind::TK_LBRACE)) {
+    else if (match(TokenKind::TK_LBRACE)) {
       enter_scope();
       block_stmt();
       leave_scope();
@@ -926,8 +926,6 @@ public:
   }
 
   void block_stmt(void) {
-    consume(TokenKind::TK_LBRACE, "expect `{` before block");
-
     while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE))
       declaration();
 
@@ -952,6 +950,9 @@ public:
       } while (match(TokenKind::TK_COMMA));
     }
     consume(TokenKind::TK_RPAREN, "expect `)` after parameters");
+
+    // the body
+    consume(TokenKind::TK_LBRACE, "expect `{` before function body");
     block_stmt();
     leave_scope();
     auto* fn = finish_compiler();

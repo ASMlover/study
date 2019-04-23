@@ -492,7 +492,7 @@ bool VM::run(void) {
     case OpCode::OP_SET_UPVALUE:
       {
         u8_t slot = _rdbyte();
-        Value value = pop();
+        Value value = peek();
         frame->closure()->get_upvalue(slot)->set_value(&value);
       } break;
     case OpCode::OP_GET_FIELD:
