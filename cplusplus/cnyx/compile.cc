@@ -589,29 +589,31 @@ public:
 
   void begin_compiler(
       CompilerImpl& new_compiler, int scope_depth, FunctionKind fun_kind) {
-    new_compiler.enclosing = curr_compiler_;
-    new_compiler.function = FunctionObject::create(vm_);
-    new_compiler.fun_kind = fun_kind;
-    new_compiler.scope_depth = scope_depth;
-    curr_compiler_ = &new_compiler;
-
+    // create function name StringObject first ...
+    StringObject* func_name{};
     switch (fun_kind) {
     case FunctionKind::FUNCTION:
       {
         auto& name = prev_.get_literal();
-        curr_compiler_->function->set_name(StringObject::create(vm_, name));
+        func_name = StringObject::create(vm_, name);
       } break;
     case FunctionKind::CTOR:
     case FunctionKind::METHOD:
       {
         str_t name(curr_class_->name.get_literal());
         name += "." + prev_.get_literal();
-        curr_compiler_->function->set_name(StringObject::create(vm_, name));
+        func_name = StringObject::create(vm_, name);
       } break;
     case FunctionKind::TOP_LEVEL:
-      curr_compiler_->function->set_name(nullptr);
       break;
     }
+
+    new_compiler.enclosing = curr_compiler_;
+    new_compiler.function = FunctionObject::create(vm_);
+    new_compiler.fun_kind = fun_kind;
+    new_compiler.scope_depth = scope_depth;
+    curr_compiler_ = &new_compiler;
+    curr_compiler_->function->set_name(func_name);
 
     if (fun_kind != FunctionKind::FUNCTION) {
       curr_compiler_->append_local(
@@ -656,15 +658,6 @@ public:
     }
 
     error_at_current(message);
-
-    // if (kind == TokenKind::TK_LBRACE || kind == TokenKind::TK_RBRACE ||
-    //     kind == TokenKind::TK_RPAREN || kind == TokenKind::TK_EQUAL ||
-    //     kind == TokenKind::TK_SEMI) {
-    //   while (curr_.get_kind() != kind && curr_.get_kind() != TokenKind::TK_EOF)
-    //     advance();
-
-    //   advance();
-    // }
   }
 
   void synchronize(void) {

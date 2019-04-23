@@ -82,8 +82,8 @@ class VM : private UnCopyable {
   void collect(void);
   void remove_undark_intern_strings(void);
 
-  bool call_closure(ClosureObject* closure, int argc);
-  bool call(const Value& callee, int argc = 0);
+  bool call(ClosureObject* closure, int argc);
+  bool call_value(const Value& callee, int argc = 0);
   bool invoke_from_class(ClassObject* cls, StringObject* name, int argc);
   bool invoke(StringObject* method, int argc);
   UpvalueObject* capture_upvalue(Value* local);

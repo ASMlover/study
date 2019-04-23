@@ -196,7 +196,7 @@ void VM::runtime_error(const char* format, ...) {
   for (auto i = static_cast<int>(frames_.size() - 1); i >= 0; --i) {
     auto& frame = frames_[i];
     auto* fn = frame.closure()->get_function();
-    auto offset = static_cast<int>(frame.ip() - frame.get_closure_codes());
+    auto offset = static_cast<int>(frame.ip() - frame.get_closure_codes() - 1);
     std::cerr << "[LINE: " << frame.get_closure_codeline(offset) << "] in ";
     if (fn->name() == nullptr)
       std::cerr << "cnyx" << std::endl;
@@ -289,9 +289,10 @@ void VM::remove_undark_intern_strings(void) {
   }
 }
 
-bool VM::call_closure(ClosureObject* closure, int argc) {
-  if (argc < closure->get_function()->arity()) {
-    runtime_error("not enough arguments");
+bool VM::call(ClosureObject* closure, int argc) {
+  if (argc != closure->get_function()->arity()) {
+    runtime_error("expected %d arguments but got %d",
+        closure->get_function()->arity(), argc);
     return false;
   }
 
@@ -301,14 +302,14 @@ bool VM::call_closure(ClosureObject* closure, int argc) {
   return true;
 }
 
-bool VM::call(const Value& callee, int argc/* = 0*/) {
+bool VM::call_value(const Value& callee, int argc/* = 0*/) {
   if (callee.is_object()) {
     switch (obj_type(callee)) {
     case ObjType::BOUND_METHOD:
       {
         BoundMethodObject* bound = callee.as_bound_method();
-        stack_[stack_.size() - argc - 1] = bound;
-        return call_closure(bound->method(), argc);
+        stack_[stack_.size() - argc - 1] = bound->receiver();
+        return call(bound->method(), argc);
       }
     case ObjType::CLASS:
       {
@@ -317,14 +318,17 @@ bool VM::call(const Value& callee, int argc/* = 0*/) {
         // create the instance
         stack_[stack_.size() - argc - 1] = InstanceObject::create(*this, cls);
         // call the constructor if there is one
-        if (auto ctor = cls->get_method(ctor_string_); ctor)
-          return call_closure((*ctor).as_closure(), argc);
-        // no constructor, just discard the arguments
-        stack_.resize(stack_.size() - argc);
+        if (auto ctor = cls->get_method(ctor_string_); ctor) {
+          return call((*ctor).as_closure(), argc);
+        }
+        else if (argc != 0) {
+          runtime_error("expected 0 arguments but got %d", argc);
+          return false;
+        }
         return true;
       }
     case ObjType::CLOSURE:
-      return call_closure(callee.as_closure(), argc);
+      return call(callee.as_closure(), argc);
     case ObjType::NATIVE:
       {
         Value* args = argc > 0 ? &stack_[stack_.size() - argc] : nullptr;
@@ -343,7 +347,7 @@ bool VM::call(const Value& callee, int argc/* = 0*/) {
 
 bool VM::invoke_from_class(ClassObject* cls, StringObject* name, int argc) {
   if (auto method = cls->get_method(name); method)
-    return call_closure((*method).as_closure(), argc);
+    return call((*method).as_closure(), argc);
 
   runtime_error("undefined property `%s`", name->chars());
   return false;
@@ -359,7 +363,7 @@ bool VM::invoke(StringObject* name, int argc) {
   InstanceObject* inst = receiver.as_instance();
   if (auto callee = inst->get_field(name); callee) {
     stack_[stack_.size() - argc] = *callee;
-    return call(*callee, argc);
+    return call_value(*callee, argc);
   }
 
   return invoke_from_class(inst->get_class(), name, argc);
@@ -643,7 +647,7 @@ bool VM::run(void) {
     case OpCode::OP_CALL_8:
       {
         int argc = instruction - OpCode::OP_CALL_0;
-        if (!call(peek(argc), argc))
+        if (!call_value(peek(argc), argc))
           return false;
         frame = &frames_.back();
       } break;
@@ -812,7 +816,7 @@ InterpretResult VM::interpret(const str_t& source_bytes) {
   auto* closure = ClosureObject::create(*this, fn);
   pop();
 
-  call(closure, 0);
+  call_value(closure, 0);
 
   return run() ? InterpretResult::OK : InterpretResult::RUNTIME_ERROR;
 }
