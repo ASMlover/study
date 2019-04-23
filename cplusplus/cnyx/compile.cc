@@ -129,10 +129,15 @@ class CompileParser : private UnCopyable {
   Token curr_;
   Token prev_;
   bool had_error_{};
+  bool panic_mode_{};
 
   static constexpr int kMaxArguments = 8;
 
   void error_at(const Token& tok, const str_t& message) {
+    if (panic_mode_)
+      return;
+    panic_mode_ = true;
+
     std::cerr << "[LINE: " << tok.get_lineno() << "] ERROR at ";
     if (tok.get_kind() == TokenKind::TK_EOF)
       std::cerr << "end";
@@ -652,12 +657,34 @@ public:
 
     error_at_current(message);
 
-    if (kind == TokenKind::TK_LBRACE || kind == TokenKind::TK_RBRACE ||
-        kind == TokenKind::TK_RPAREN || kind == TokenKind::TK_EQUAL ||
-        kind == TokenKind::TK_SEMI) {
-      while (curr_.get_kind() != kind && curr_.get_kind() != TokenKind::TK_EOF)
-        advance();
+    // if (kind == TokenKind::TK_LBRACE || kind == TokenKind::TK_RBRACE ||
+    //     kind == TokenKind::TK_RPAREN || kind == TokenKind::TK_EQUAL ||
+    //     kind == TokenKind::TK_SEMI) {
+    //   while (curr_.get_kind() != kind && curr_.get_kind() != TokenKind::TK_EOF)
+    //     advance();
 
+    //   advance();
+    // }
+  }
+
+  void synchronize(void) {
+    panic_mode_ = false;
+
+    while (curr_.get_kind() != TokenKind::TK_EOF) {
+      if (prev_.get_kind() == TokenKind::TK_SEMI)
+        return;
+
+      switch (curr_.get_kind()) {
+      case TokenKind::KW_CLASS:
+      case TokenKind::KW_FUN:
+      case TokenKind::KW_VAR:
+      case TokenKind::KW_FOR:
+      case TokenKind::KW_IF:
+      case TokenKind::KW_WHILE:
+      case TokenKind::KW_RETURN:
+        return;
+      default: break; // do nothing
+      }
       advance();
     }
   }
@@ -691,6 +718,9 @@ public:
     else {
       statement();
     }
+
+    if (panic_mode_)
+      synchronize();
   }
 
   void statement(void) {
