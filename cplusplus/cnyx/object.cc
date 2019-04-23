@@ -180,7 +180,7 @@ sz_t FunctionObject::size_bytes(void) const {
 
 str_t FunctionObject::stringify(void) const {
   std::stringstream ss;
-  ss << "<fn `" << this << "`>";
+  ss << "<fn `" << (name_ != nullptr ? name_->chars() : "<top>") << "`>";
   return ss.str();
 }
 
@@ -233,7 +233,7 @@ sz_t UpvalueObject::size_bytes(void) const {
 }
 
 str_t UpvalueObject::stringify(void) const {
-  return "upvalue";
+  return "<upvalue>";
 }
 
 bool UpvalueObject::is_equal(BaseObject* other) const {
@@ -272,7 +272,9 @@ sz_t ClosureObject::size_bytes(void) const {
 
 str_t ClosureObject::stringify(void) const {
   std::stringstream ss;
-  ss << "<fn `" << this << "`>";
+  ss << "<fn `"
+    << (function_->name() == nullptr ? "<top>" : function_->name()->chars())
+    << "`>";
   return ss.str();
 }
 
@@ -312,7 +314,9 @@ sz_t ClassObject::size_bytes(void) const {
 }
 
 str_t ClassObject::stringify(void) const {
-  return name_ != nullptr ? name_->chars() : "class";
+  std::stringstream ss;
+  ss << "<`" << name_->chars() << "` class>";
+  return ss.str();
 }
 
 bool ClassObject::is_equal(BaseObject* other) const {
@@ -345,7 +349,7 @@ sz_t InstanceObject::size_bytes(void) const {
 
 str_t InstanceObject::stringify(void) const {
   std::stringstream ss;
-  ss << "<`" << class_->stringify() << "` instance>";
+  ss << "<`" << class_->name()->chars() << "` instance>";
   return ss.str();
 }
 
@@ -379,7 +383,7 @@ sz_t BoundMethodObject::size_bytes(void) const {
 
 str_t BoundMethodObject::stringify(void) const {
   std::stringstream ss;
-  ss << "<fn `" << this << "`";
+  ss << "<fn `" << method_->get_function()->name()->chars() << "`";
   return ss.str();
 }
 
