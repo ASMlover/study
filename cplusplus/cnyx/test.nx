@@ -15,15 +15,38 @@ class Child < Base {
   }
 }
 
-var c = Child();
-print(str(nil), str(true), str(false), str(34+56*7.9/0.43));
+class UnitTest {
+  ctor() {
+    print("=== UnitTest ===");
+  }
 
-print(nil, true, false);
-print(34 + 56, 67 - 45, 6767 * 45, 8989 / 43);
+  test_str() {
+    print(str(nil), str(true), str(false), str(34+56*7.9/0.43));
+  }
 
-var beg = clock();
-var i = 0; // FIXME: error in for scope var clause initializer
-for (; i < 10; i = i+1) {
-  print(i);
+  test_literal() {
+    print(nil, true, false);
+    print(34 + 56, 67 - 45, 6767 * 45, 8989 / 43);
+  }
+
+  test_child() {
+    var c = Child();
+  }
+
+  test_profile() {
+    var beg = clock();
+    for (var i = 0; i < 10; i = i + 1) {
+      print(i);
+    }
+    print("use time is: ", clock() - beg);
+  }
+
+  run() {
+    this.test_str();
+    this.test_literal();
+    this.test_child();
+    this.test_profile();
+  }
 }
-print("use time is: ", clock() - beg);
+
+UnitTest().run();
