@@ -172,14 +172,16 @@ int Chunk::disassemble_instruction(int i) {
         fprintf(stdout, "%04d   |                     %s %d\n",
             i - 2, is_local ? "local" : "upvalue", index);
       }
-    } break;
+      return i;
+    }
   case OpCode::OP_CLOSE_UPVALUE: return simple_instruction(i, "OP_CLOSE_UPVALUE");
   case OpCode::OP_RETURN: return simple_instruction(i, "OP_RETURN");
   case OpCode::OP_CLASS: return const_instruction(*this, i, "OP_CLASS");
   case OpCode::OP_SUBCLASS: return const_instruction(*this, i, "OP_SUBCLASS");
   case OpCode::OP_METHOD: return const_instruction(*this, i, "OP_METHOD");
+  default: return i;
   }
-  return 0;
+  return i;
 }
 
 }
