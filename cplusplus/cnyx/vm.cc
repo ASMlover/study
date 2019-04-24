@@ -147,6 +147,7 @@ void VM::define_method(StringObject* name) {
   ClassObject* klass = peek(1).as_class();
   klass->bind_method(name, method);
   pop();
+  // pop();
 }
 
 bool VM::bind_method(ClassObject* cls, StringObject* name) {
@@ -464,7 +465,8 @@ bool VM::run(void) {
     case OpCode::OP_DEF_GLOBAL:
       {
         auto* key = _rdstring();
-        globals_[key->chars()] = pop();
+        globals_[key->chars()] = peek();
+        pop();
       } break;
     case OpCode::OP_GET_GLOBAL:
       {
@@ -497,6 +499,7 @@ bool VM::run(void) {
       {
         u8_t slot = _rdbyte();
         Value value = peek();
+        // FIXME: should fix this
         frame->closure()->get_upvalue(slot)->set_value(&value);
       } break;
     case OpCode::OP_GET_FIELD:
@@ -590,9 +593,12 @@ bool VM::run(void) {
     case OpCode::OP_ADD:
       {
         if (peek(0).is_string() && peek(1).is_string()) {
-          auto* b = pop().as_string();
-          auto* a = pop().as_string();
-          push(StringObject::concat(*this, a, b));
+          auto* b = peek(0).as_string();
+          auto* a = peek(1).as_string();
+          auto* s = StringObject::concat(*this, a, b);
+          pop();
+          pop();
+          push(s);
         }
         else if (peek(1).is_numeric() && peek(1).is_numeric()) {
           double b = pop().as_numeric();
@@ -721,19 +727,21 @@ bool VM::run(void) {
         stack_.resize(frame->stack_start());
         push(ret);
 
-        frames_.pop_back();
         frame = &frames_.back();
       } break;
     case OpCode::OP_CLASS:
       create_class(_rdstring(), nullptr); break;
     case OpCode::OP_SUBCLASS:
       {
-        const Value& superclass = peek(0);
+        const Value& superclass = peek(1);
         if (!superclass.is_class()) {
           runtime_error("superclass must be a class");
           return false;
         }
-        create_class(_rdstring(), superclass.as_class());
+
+        ClassObject* subclass = peek(0).as_class();
+        subclass->inherit_from(superclass.as_class());
+        pop();
       } break;
     case OpCode::OP_METHOD:
       define_method(_rdstring()); break;

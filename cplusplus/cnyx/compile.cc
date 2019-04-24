@@ -196,7 +196,7 @@ class CompileParser : private UnCopyable {
 
   u8_t make_constant(const Value& value) {
     int constant = curr_compiler_->function->append_constant(value);
-    if (constant == -1) {
+    if (constant > UINT8_MAX) {
       error("too many constants in one function");
       return 0;
     }
@@ -376,18 +376,26 @@ class CompileParser : private UnCopyable {
   u8_t parse_variable(const str_t& error_message) {
     consume(TokenKind::TK_IDENTIFIER, error_message);
 
-    if (curr_compiler_->scope_depth == 0)
-      return identifier_constant(prev_);
-
     declare_variable();
-    return 0;
+    if (curr_compiler_->scope_depth > 0)
+      return 0;
+
+    return identifier_constant(prev_);
+  }
+
+  void make_initialized(void) {
+    if (curr_compiler_->scope_depth == 0)
+      return;
+    curr_compiler_->locals.back().depth = curr_compiler_->scope_depth;
   }
 
   void define_variable(u8_t global) {
-    if (curr_compiler_->scope_depth == 0)
-      emit_bytes(OpCode::OP_DEF_GLOBAL, global);
-    else
-      curr_compiler_->locals.back().depth = curr_compiler_->scope_depth;
+    if (curr_compiler_->scope_depth > 0) {
+      make_initialized();
+      return;
+    }
+
+    emit_bytes(OpCode::OP_DEF_GLOBAL, global);
   }
 
   void name_variable(const Token& name, bool can_assign) {
@@ -515,7 +523,8 @@ class CompileParser : private UnCopyable {
     auto oper_kind = prev_.get_kind();
 
     // compile the operand
-    parse_precedence(Precedence::CALL);
+    // parse_precedence(Precedence::CALL);
+    parse_precedence(Precedence::UNARY);
 
     switch (oper_kind) {
     case TokenKind::TK_BANG: emit_byte(OpCode::OP_NOT); break;
@@ -629,12 +638,11 @@ public:
     emit_return();
 
     auto* fn = curr_compiler_->function;
-    curr_compiler_ = curr_compiler_->enclosing;
-
 #if defined(DEBUG_PRINT_CODE)
     if (!had_error_)
       fn->disassemble(fn->name() != nullptr ? fn->name()->chars() : "<top>");
 #endif
+    curr_compiler_ = curr_compiler_->enclosing;
 
     return fn;
   }
@@ -742,13 +750,19 @@ public:
   void class_decl(void) {
     consume(TokenKind::TK_IDENTIFIER, "expect class anme");
     u8_t name_constant = identifier_constant(prev_);
+    Token class_name = prev_;
     declare_variable();
+
+    emit_bytes(OpCode::OP_CLASS, name_constant);
+    define_variable(name_constant);
 
     ClassCompilerImpl class_compiler(curr_class_, prev_, false);
     curr_class_ = &class_compiler;
 
     if (match(TokenKind::TK_LESS)) {
       consume(TokenKind::TK_IDENTIFIER, "expect superclass name");
+      if (class_name.is_equal(prev_))
+        error("a class cannot inherit from itself");
       class_compiler.has_superclass = true;
 
       enter_scope();
@@ -757,15 +771,17 @@ public:
       variable(false);
       curr_compiler_->append_local(
           Local{Token::custom_token("super"), -1, false});
-      emit_bytes(OpCode::OP_SUBCLASS, name_constant);
-    }
-    else {
-      emit_bytes(OpCode::OP_CLASS, name_constant);
+      define_variable(0);
+
+      name_variable(class_name, false);
+      emit_byte(OpCode::OP_SUBCLASS);
     }
 
     consume(TokenKind::TK_LBRACE, "expect `{` before class body");
-    while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE))
+    while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE)) {
+      name_variable(class_name, false);
       method();
+    }
     consume(TokenKind::TK_RBRACE, "expect `}` after class body");
 
     if (class_compiler.has_superclass)
@@ -778,6 +794,7 @@ public:
 
   void fun_decl(void) {
     u8_t name_constant = parse_variable("expect function name");
+    make_initialized();
     fn_common(FunctionKind::FUNCTION);
     define_variable(name_constant);
   }
@@ -800,8 +817,8 @@ public:
 
   void expr_stmt(void) {
     expression();
-    emit_byte(OpCode::OP_POP);
     consume(TokenKind::TK_SEMI, "expect `;` after expression");
+    emit_byte(OpCode::OP_POP);
   }
 
   void for_stmt(void) {
@@ -895,9 +912,8 @@ public:
 
       expression();
       consume(TokenKind::TK_SEMI, "expect `;` after return value");
-      emit_return();
+      emit_byte(OpCode::OP_RETURN);
     }
-    emit_byte(OpCode::OP_RETURN);
   }
 
   void while_stmt(void) {
