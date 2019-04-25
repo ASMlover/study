@@ -76,6 +76,9 @@ protected:
 class UnCopyable {
   UnCopyable(const UnCopyable&) = delete;
   UnCopyable& operator=(const UnCopyable&) = delete;
+protected:
+  UnCopyable(void) noexcept = default;
+  ~UnCopyable(void) noexcept = default;
 };
 
 namespace Xt {
