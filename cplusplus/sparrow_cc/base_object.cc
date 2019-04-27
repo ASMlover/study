@@ -24,36 +24,18 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include "common.hh"
+#include "base_object.hh"
+#include "vm.hh"
 
 namespace sparrow {
 
-enum class ObjType {
-  CLASS,
-  LIST,
-  MAP,
-  MODULE,
-  RANGE,
-  STRING,
-  UPVALUE,
-  FUNCTION,
-  CLOSURE,
-  INSTANCE,
-  THREAD,
-};
+BaseObject::BaseObject(VM& vm, ObjType type, ClassObject* cls)
+  : type_(type)
+  , cls_(cls) {
+  vm.append_object(this);
+}
 
-class VM;
-class ClassObject;
-
-class BaseObject : private UnCopyable {
-  ObjType type_{};
-  bool marked_{};
-  ClassObject* cls_{};
-public:
-  BaseObject(VM& vm, ObjType type, ClassObject* cls = nullptr);
-  virtual ~BaseObject(void);
-};
+BaseObject::~BaseObject(void) {
+}
 
 }
