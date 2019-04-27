@@ -29,6 +29,67 @@
 namespace sparrow {
 
 Token Lexer::next_token(void) {
+  skip_whitespace();
+
+  begpos_ = curpos_;
+  if (is_end())
+    return make_token(TokenKind::TK_EOF);
+
+  char c = advance();
+  if (std::isdigit(c))
+    return make_numeric();
+  if (is_alpha(c))
+    return make_identifier();
+
+  switch (c) {
+  case ',': return make_token(TokenKind::TK_COMMA);
+  case ':': return make_token(TokenKind::TK_COLON);
+  case '(': return make_token(TokenKind::TK_LPAREN);
+  case ')': return make_token(TokenKind::TK_RPAREN);
+  case '[': return make_token(TokenKind::TK_LBRACKET);
+  case ']': return make_token(TokenKind::TK_RBRACKET);
+  case '{': return make_token(TokenKind::TK_LBRACE);
+  case '}': return make_token(TokenKind::TK_RBRACE);
+  case '.':
+    return make_token(match('.') ? TokenKind::TK_DOTDOT: TokenKind::TK_DOT);
+  case '+': return make_token(TokenKind::TK_PLUS);
+  case '-': return make_token(TokenKind::TK_MINUS);
+  case '*': return make_token(TokenKind::TK_STAR);
+  case '/': return make_token(TokenKind::TK_SLASH);
+  case '%': return make_token(TokenKind::TK_PERCENT);
+  case '=':
+    return make_token(match('=')
+        ?  TokenKind::TK_EQUALEQUAL : TokenKind::TK_EQUAL);
+  case '&':
+    return make_token(match('&')
+        ? TokenKind::TK_LOGICAND : TokenKind::TK_BITAND);
+  case '|':
+    return make_token(match('|')
+        ? TokenKind::TK_LOGICOR : TokenKind::TK_BITOR);
+  case '~': return make_token(TokenKind::TK_BITNOT);
+  case '?': return make_token(TokenKind::TK_QUESTION);
+  case '>':
+    if (match('>')) {
+      return make_token(TokenKind::TK_RSHIFT);
+    }
+    else {
+      return make_token(match('=')
+          ? TokenKind::TK_GREATEREQUAL : TokenKind::TK_GREATER);
+    }
+  case '<':
+    if (match('<')) {
+      return make_token(TokenKind::TK_LSHIFT);
+    }
+    else {
+      return make_token(match('=')
+          ? TokenKind::TK_LESSEQUAL : TokenKind::TK_LESS);
+    }
+  case '!':
+    return make_token(match('=')
+        ? TokenKind::TK_NOTEQUAL : TokenKind::TK_LOGICNOT);
+  case '"': return make_string();
+  }
+
   return make_error("unexpected charactor");
 }
 
@@ -114,7 +175,7 @@ Token Lexer::make_string(void) {
     return make_error("unterminated string");
 
   advance(); // closing the string "
-  return make_token(TokenKind::TK_STRING);
+  return make_token(TokenKind::TK_STRING, literal);
 }
 
 Token Lexer::make_identifier(void) {
