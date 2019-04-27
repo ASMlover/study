@@ -34,4 +34,8 @@ VM::VM(void) {
 VM::~VM(void) {
 }
 
+void VM::append_object(BaseObject* obj) {
+  all_objects_.push_back(obj);
+}
+
 }

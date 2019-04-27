@@ -26,18 +26,30 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <list>
 #include "common.hh"
+#include "base_object.hh"
 
 namespace sparrow {
+
+class ClassObject;
 
 class VM : private UnCopyable {
   static constexpr sz_t kGCThresholds = 1 << 20;
 
+  ClassObject* strcls_{};
+  ClassObject* funcls_{};
+
   sz_t bytes_allocated_{};
   sz_t next_gc_{kGCThresholds};
+  std::list<BaseObject*> all_objects_;
 public:
   VM(void);
   ~VM(void);
+
+  inline ClassObject* strcls(void) const { return strcls_; }
+
+  void append_object(BaseObject* obj);
 };
 
 }
