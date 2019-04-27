@@ -25,11 +25,34 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <string>
+#include "lexer.hh"
+#include "vm.hh"
+#include "core.hh"
+
+static void run_with_file(const std::string& fname) {
+  sparrow::VM vm;
+  auto source_bytes = sparrow::read_file(fname);
+
+  sparrow::Lexer lex(source_bytes);
+  for (;;) {
+    auto tok = lex.next_token();
+    if (tok.kind() == sparrow::TokenKind::TK_EOF)
+      break;
+
+    std::cout << tok << std::endl;
+  }
+}
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
   std::cout << "*** S P A R R O W ***" << std::endl;
+  if (argc == 1) {
+  }
+  else {
+    run_with_file(argv[1]);
+  }
 
   return 0;
 }
