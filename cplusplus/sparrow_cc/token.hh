@@ -50,6 +50,32 @@ public:
   Token(TokenKind kind, const str_t& literal, int lineno = 1) noexcept
     : kind_{kind}, literal_{literal}, lineno_{lineno} {
   }
+  Token(const Token& r) noexcept
+    : kind_{r.kind_}, literal_{r.literal_}, lineno_{r.lineno_} {
+  }
+  Token(Token&& r) noexcept
+    : kind_{std::move(r.kind_)}
+    , literal_{std::move(r.literal_)}
+    , lineno_{std::move(r.lineno_)} {
+  }
+
+  inline Token& operator=(const Token& r) noexcept {
+    if (this != &r) {
+      kind_ = r.kind_;
+      literal_ = r.literal_;
+      lineno_ = r.lineno_;
+    }
+    return *this;
+  }
+
+  inline Token& operator=(Token&& r) noexcept {
+    if (this != &r) {
+      kind_ = std::move(r.kind_);
+      literal_ = std::move(r.literal_);
+      lineno_ = std::move(r.lineno_);
+    }
+    return *this;
+  }
 
   inline TokenKind kind(void) const { return kind_; }
   inline str_t literal(void) const { return literal_; }
