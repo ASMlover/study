@@ -46,7 +46,7 @@ TOKEN(UNKNOWN, "unknown")
 TOKEN(NUMERIC, "numeric")
 TOKEN(STRING, "string")
 TOKEN(IDENTIFIER, "indentifier")
-TOKEN(INTERPOLATION, "interpolation")
+// TOKEN(INTERPOLATION, "interpolation")
 
 // keywords
 KEYWORD(VAR, "var")
