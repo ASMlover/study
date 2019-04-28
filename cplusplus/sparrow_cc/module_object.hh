@@ -29,10 +29,10 @@
 #include <vector>
 #include "base_object.hh"
 #include "string_object.hh"
-#include "value.hh"
 
 namespace sparrow {
 
+class Value;
 class StringObject;
 
 class ModuleObject final : public BaseObject {
