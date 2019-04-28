@@ -80,7 +80,7 @@ std::ostream& operator<<(std::ostream& out, BaseObject* obj);
 void gray_table(VM& vm, table_t& tbl);
 void remove_table_undark(table_t& tbl);
 
-class StringObject : public BaseObject {
+class StringObject final : public BaseObject {
   int count_{};
   u32_t hash_{};
   char* chars_{};
@@ -104,7 +104,7 @@ public:
   static StringObject* concat(VM& vm, StringObject* a, StringObject* b);
 };
 
-class FunctionObject : public BaseObject {
+class FunctionObject final : public BaseObject {
   Chunk chunk_{};
 
   int arity_{};
@@ -149,7 +149,7 @@ public:
   static FunctionObject* create(VM& vm);
 };
 
-class NativeObject : public BaseObject {
+class NativeObject final : public BaseObject {
   NativeFunction fn_{};
 
   NativeObject(const NativeFunction& fn)
@@ -171,7 +171,7 @@ public:
   static NativeObject* create(VM& vm, NativeFunction&& fn);
 };
 
-class UpvalueObject : public BaseObject {
+class UpvalueObject final : public BaseObject {
   Value* value_{};
   Value closed_{};
   UpvalueObject* next_{};
@@ -195,7 +195,7 @@ public:
   static UpvalueObject* create(VM& vm, Value* slot);
 };
 
-class ClosureObject : public BaseObject {
+class ClosureObject final : public BaseObject {
   FunctionObject* function_{};
   UpvalueObject** upvalues_{};
   int upvalues_count_{};
@@ -217,7 +217,7 @@ public:
   static ClosureObject* create(VM& vm, FunctionObject* fn);
 };
 
-class ClassObject : public BaseObject {
+class ClassObject final : public BaseObject {
   StringObject* name_{};
   ClassObject* superclass_{};
   table_t methods_;
@@ -252,7 +252,7 @@ public:
   static ClassObject* create(VM& vm, StringObject* name, ClassObject* superclass);
 };
 
-class InstanceObject : public BaseObject {
+class InstanceObject final : public BaseObject {
   ClassObject* class_{};
   table_t fields_;
 
@@ -283,7 +283,7 @@ public:
   static InstanceObject* create(VM& vm, ClassObject* klass);
 };
 
-class BoundMethodObject : public BaseObject {
+class BoundMethodObject final : public BaseObject {
   Value receiver_{};
   ClosureObject* method_{};
 

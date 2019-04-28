@@ -262,6 +262,7 @@ void VM::collect(void) {
     blacken_object(o);
   }
 
+  sz_t alived_bytes = 0;
   for (auto it = objects_.begin(); it != objects_.end();) {
     if (!(*it)->is_dark()) {
       free_object(*it);
@@ -269,12 +270,14 @@ void VM::collect(void) {
     }
     else {
       (*it)->set_dark(false);
+      alived_bytes += (*it)->size_bytes();
       ++it;
     }
   }
 
   // adjust the heap size head on live memory
   next_gc_ = bytes_allocated_ * kGCGrowFactor;
+  bytes_allocated_ = alived_bytes;
 
 #if defined(DEBUG_GC_TRACE)
   std::cout << "********* collect: finished *********" << std::endl;
