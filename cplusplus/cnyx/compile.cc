@@ -49,6 +49,10 @@ enum Precedence {
   PRIMARY,
 };
 
+inline Precedence operator+(Precedence a, int b) {
+  return Xenum::as_enum<Precedence>(Xenum::as_int<int>(a) + b);
+}
+
 class CompileParser;
 
 static CompileParser* _curr_cp{};
