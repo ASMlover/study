@@ -46,6 +46,11 @@ enum class ObjType {
 
 class VM;
 class ClassObject;
+class ModuleObject;
+class StringObject;
+class UpvalueObject;
+class FunctionObject;
+class ClosureObject;
 
 class BaseObject : private UnCopyable {
   ObjType type_{};
@@ -54,6 +59,10 @@ class BaseObject : private UnCopyable {
 public:
   BaseObject(VM& vm, ObjType type, ClassObject* cls = nullptr);
   virtual ~BaseObject(void);
+
+  inline ObjType type(void) const { return type_; }
+  inline bool marked(void) const { return marked_; }
+  inline ClassObject* cls(void) const { return cls_; }
 };
 
 }

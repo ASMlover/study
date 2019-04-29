@@ -46,6 +46,10 @@ class Value : public Copyable {
     double numeric;
     BaseObject* object;
   } as_{};
+
+  inline bool is_objtype(ObjType type) const {
+    return is_object() && as_.object->type() == type;
+  }
 public:
   Value(void) noexcept
     : type_(ValueType::NIL) {
@@ -137,6 +141,23 @@ public:
 
   inline double as_numeric(void) const { return as_.numeric; }
   inline BaseObject* as_object(void) const { return as_.object; }
+
+  inline bool is_class(void) const { return is_objtype(ObjType::CLASS); }
+  inline bool is_module(void) const { return is_objtype(ObjType::MODULE); }
+  inline bool is_string(void) const { return is_objtype(ObjType::STRING); }
+  inline bool is_upvalue(void) const { return is_objtype(ObjType::UPVALUE); }
+  inline bool is_function(void) const { return is_objtype(ObjType::FUNCTION); }
+  inline bool is_closure(void) const { return is_objtype(ObjType::CLOSURE); }
+
+  ClassObject* as_class(void) const;
+  ModuleObject* as_module(void) const;
+  StringObject* as_string(void) const;
+  const char* as_cstring(void) const;
+  UpvalueObject* as_upvalue(void) const;
+  FunctionObject* as_function(void) const;
+  ClosureObject* as_closure(void) const;
 };
+
+std::ostream& operator<<(std::ostream& out, const Value& value);
 
 }

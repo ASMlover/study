@@ -26,6 +26,12 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <sstream>
 #include "base_object.hh"
+#include "class_object.hh"
+#include "module_object.hh"
+#include "string_object.hh"
+#include "upvalue_object.hh"
+#include "function_object.hh"
+#include "closure_object.hh"
 #include "value.hh"
 
 namespace sparrow {
@@ -34,6 +40,10 @@ inline str_t numeric_to_string(double d) {
   std::stringstream ss;
   ss << d;
   return ss.str();
+}
+
+std::ostream& operator<<(std::ostream& out, const Value& value) {
+  return out << value.stringify();
 }
 
 bool Value::operator==(const Value& r) const {
@@ -76,6 +86,34 @@ str_t Value::stringify(void) const {
   default: break;
   }
   return "";
+}
+
+ClassObject* Value::as_class(void) const {
+  return Xt::down<ClassObject>(as_.object);
+}
+
+ModuleObject* Value::as_module(void) const {
+  return Xt::down<ModuleObject>(as_.object);
+}
+
+StringObject* Value::as_string(void) const {
+  return Xt::down<StringObject>(as_.object);
+}
+
+const char* Value::as_cstring(void) const {
+  return Xt::down<StringObject>(as_.object)->c_str();
+}
+
+UpvalueObject* Value::as_upvalue(void) const {
+  return Xt::down<UpvalueObject>(as_.object);
+}
+
+FunctionObject* Value::as_function(void) const {
+  return Xt::down<FunctionObject>(as_.object);
+}
+
+ClosureObject* Value::as_closure(void) const {
+  return Xt::down<ClosureObject>(as_.object);
 }
 
 }
