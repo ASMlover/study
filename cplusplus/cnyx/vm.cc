@@ -262,6 +262,14 @@ void VM::collect(void) {
     blacken_object(o);
   }
 
+  // delete unused interned strings
+  for (auto it = intern_strings_.begin(); it != intern_strings_.end();) {
+    if (it->second->is_dark())
+      intern_strings_.erase(it++);
+    else
+      ++it;
+  }
+
   sz_t alived_bytes = 0;
   for (auto it = objects_.begin(); it != objects_.end();) {
     if (!(*it)->is_dark()) {

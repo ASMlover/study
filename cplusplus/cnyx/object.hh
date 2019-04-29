@@ -67,7 +67,7 @@ public:
   virtual sz_t size_bytes(void) const = 0;
   virtual str_t stringify(void) const = 0;
   virtual bool is_equal(BaseObject* other) const = 0;
-  virtual void blacken(VM& vm) = 0;
+  virtual void blacken(VM& vm) {}
 };
 
 inline ObjType obj_type(const Value& v) { return v.as_object()->type(); }
@@ -97,7 +97,6 @@ public:
   virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;
   virtual bool is_equal(BaseObject* other) const override;
-  virtual void blacken(VM& vm) override;
 
   static StringObject* create(VM& vm, const str_t& s);
   static StringObject* create(VM& vm, const char* s, int n);
@@ -165,7 +164,6 @@ public:
   virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;
   virtual bool is_equal(BaseObject* other) const override;
-  virtual void blacken(VM& vm) override;
 
   static NativeObject* create(VM& vm, const NativeFunction& fn);
   static NativeObject* create(VM& vm, NativeFunction&& fn);

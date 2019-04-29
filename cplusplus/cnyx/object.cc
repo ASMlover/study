@@ -122,9 +122,6 @@ bool StringObject::is_equal(BaseObject* other) const {
   //     && memcmp(chars_, r->chars_, count_) == 0);
 }
 
-void StringObject::blacken(VM&) {
-}
-
 StringObject* StringObject::create(VM& vm, const str_t& s) {
   return create(vm, s.c_str(), static_cast<int>(s.size()));
 }
@@ -211,9 +208,6 @@ str_t NativeObject::stringify(void) const {
 
 bool NativeObject::is_equal(BaseObject* other) const {
   return false;
-}
-
-void NativeObject::blacken(VM& vm) {
 }
 
 NativeObject* NativeObject::create(VM& vm, const NativeFunction& fn) {
