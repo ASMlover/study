@@ -46,6 +46,10 @@ public:
   static StringObject* create(VM& vm, const char* s, sz_t n) {
     return new StringObject(vm, s, n);
   }
+
+  static StringObject* create(VM& vm, const str_t& s) {
+    return new StringObject(vm, s.c_str(), s.size());
+  }
 };
 
 }
