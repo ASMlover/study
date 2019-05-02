@@ -45,8 +45,13 @@ enum class ObjType {
 };
 
 class VM;
+class Value;
+
 class ClassObject;
+class ListObject;
+class MapObject;
 class ModuleObject;
+class RangeObject;
 class StringObject;
 class UpvalueObject;
 class FunctionObject;
@@ -63,6 +68,9 @@ public:
   inline ObjType type(void) const { return type_; }
   inline bool marked(void) const { return marked_; }
   inline ClassObject* cls(void) const { return cls_; }
+
+  virtual bool is_equal(BaseObject* other) const { return true; }
+  virtual sz_t hasher(void) const { return 0; }
 };
 
 }
