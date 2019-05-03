@@ -46,11 +46,11 @@ enum class MethodType {
 };
 
 struct Method {
-  MethodType type_{MethodType::NONE};
+  MethodType type{MethodType::NONE};
   union {
     PrimitiveFn prim_fn;
     ClosureObject* closure;
-  };
+  } as;
 };
 
 class ClassObject : public BaseObject {
@@ -67,5 +67,11 @@ union Bit64 {
   u32_t b32[2];
   double num;
 };
+
+inline u32_t hash_numeric(double d) {
+  Bit64 b64;
+  b64.num = d;
+  return b64.b32[0] ^ b64.b32[1];
+}
 
 }
