@@ -40,6 +40,8 @@ public:
   inline int from(void) const { return from_; }
   inline int to(void) const { return to_; }
 
+  virtual bool is_equal(BaseObject* other) const override;
+
   static RangeObject* create(VM& vm, int from, int to) {
     return new RangeObject(vm, from, to);
   }

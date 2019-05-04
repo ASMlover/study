@@ -38,4 +38,9 @@ RangeObject::RangeObject(VM& vm, int from, int to)
 RangeObject::~RangeObject(void) {
 }
 
+bool RangeObject::is_equal(BaseObject* other) const {
+  RangeObject* r = Xt::down<RangeObject>(other);
+  return from_ == r->from_ && to_ == r->to_;
+}
+
 }
