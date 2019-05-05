@@ -27,7 +27,10 @@
 #include <sstream>
 #include "base_object.hh"
 #include "class_object.hh"
+#include "list_object.hh"
+#include "map_object.hh"
 #include "module_object.hh"
+#include "range_object.hh"
 #include "string_object.hh"
 #include "upvalue_object.hh"
 #include "function_object.hh"
@@ -53,7 +56,8 @@ bool Value::operator==(const Value& r) const {
   switch (type_) {
   case ValueType::NIL: case ValueType::TRUE: case ValueType::FALSE: return true;
   case ValueType::NUMERIC: return as_.numeric == r.as_.numeric;
-  case ValueType::OBJECT: return as_.object == r.as_.object;
+  case ValueType::OBJECT:
+    return objtype() != r.objtype() ? false : as_object()->is_equal(r.as_object());
   default: break;
   }
   return false;
@@ -88,12 +92,35 @@ str_t Value::stringify(void) const {
   return "";
 }
 
+sz_t Value::hasher(void) const {
+  switch (type_) {
+  case ValueType::NIL: return 1;
+  case ValueType::FALSE: return 0;
+  case ValueType::TRUE: return 2;
+  case ValueType::NUMERIC: return hash_numeric(as_.numeric);
+  case ValueType::OBJECT: return as_.object->hasher();
+  }
+  return 0;
+}
+
 ClassObject* Value::as_class(void) const {
   return Xt::down<ClassObject>(as_.object);
 }
 
+ListObject* Value::as_list(void) const {
+  return Xt::down<ListObject>(as_.object);
+}
+
+MapObject* Value::as_map(void) const {
+  return Xt::down<MapObject>(as_.object);
+}
+
 ModuleObject* Value::as_module(void) const {
   return Xt::down<ModuleObject>(as_.object);
+}
+
+RangeObject* Value::as_range(void) const {
+  return Xt::down<RangeObject>(as_.object);
 }
 
 StringObject* Value::as_string(void) const {

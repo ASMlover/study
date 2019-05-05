@@ -50,6 +50,10 @@ class Value : public Copyable {
   inline bool is_objtype(ObjType type) const {
     return is_object() && as_.object->type() == type;
   }
+
+  inline ObjType objtype(void) const {
+    return as_object()->type();
+  }
 public:
   Value(void) noexcept
     : type_(ValueType::NIL) {
@@ -131,6 +135,7 @@ public:
   bool operator!=(const Value& r) const;
   bool is_truthy(void) const;
   str_t stringify(void) const;
+  sz_t hasher(void) const;
 
   inline bool is_unknown(void) const { return type_ == ValueType::UNKNOWN; }
   inline bool is_nil(void) const { return type_ == ValueType::NIL; }
@@ -143,14 +148,20 @@ public:
   inline BaseObject* as_object(void) const { return as_.object; }
 
   inline bool is_class(void) const { return is_objtype(ObjType::CLASS); }
+  inline bool is_list(void) const { return is_objtype(ObjType::LIST); }
+  inline bool is_map(void) const { return is_objtype(ObjType::MAP); }
   inline bool is_module(void) const { return is_objtype(ObjType::MODULE); }
+  inline bool is_range(void) const { return is_objtype(ObjType::RANGE); }
   inline bool is_string(void) const { return is_objtype(ObjType::STRING); }
   inline bool is_upvalue(void) const { return is_objtype(ObjType::UPVALUE); }
   inline bool is_function(void) const { return is_objtype(ObjType::FUNCTION); }
   inline bool is_closure(void) const { return is_objtype(ObjType::CLOSURE); }
 
   ClassObject* as_class(void) const;
+  ListObject* as_list(void) const;
+  MapObject* as_map(void) const;
   ModuleObject* as_module(void) const;
+  RangeObject* as_range(void) const;
   StringObject* as_string(void) const;
   const char* as_cstring(void) const;
   UpvalueObject* as_upvalue(void) const;
