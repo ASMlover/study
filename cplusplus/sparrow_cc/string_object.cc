@@ -58,4 +58,11 @@ StringObject::~StringObject(void) {
     delete [] chars_;
 }
 
+bool StringObject::is_equal(BaseObject* other) const {
+  StringObject* r = Xt::down<StringObject>(other);
+  return hash_code_ == r->hash_code_
+    && length_ == r->length_
+    && memcmp(chars_, r->chars_, length_) == 0;
+}
+
 }

@@ -43,6 +43,8 @@ public:
   inline const char* data(void) const { return chars_; }
   inline const char* c_str(void) const { return chars_; }
 
+  virtual bool is_equal(BaseObject* other) const override;
+
   static StringObject* create(VM& vm, const char* s, sz_t n) {
     return new StringObject(vm, s, n);
   }
