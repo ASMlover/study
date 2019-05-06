@@ -56,6 +56,8 @@ class StringObject;
 class UpvalueObject;
 class FunctionObject;
 class ClosureObject;
+class InstanceObject;
+class ThreadObject;
 
 class BaseObject : private UnCopyable {
   ObjType type_{};

@@ -50,7 +50,7 @@ struct Method {
   union {
     PrimitiveFn prim_fn;
     ClosureObject* closure;
-  } as_{};
+  } as{};
 };
 
 class ClassObject : public BaseObject {
