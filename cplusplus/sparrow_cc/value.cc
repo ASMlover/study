@@ -99,6 +99,7 @@ sz_t Value::hasher(void) const {
   case ValueType::TRUE: return 2;
   case ValueType::NUMERIC: return hash_numeric(as_.numeric);
   case ValueType::OBJECT: return as_.object->hasher();
+  default: RUNTIME_ERR("unsupport type hashed");
   }
   return 0;
 }

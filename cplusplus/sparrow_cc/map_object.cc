@@ -36,4 +36,27 @@ MapObject::MapObject(VM& vm)
 MapObject::~MapObject(void) {
 }
 
+void MapObject::set(const Value& key, const Value& val) {
+  entries_[key] = val;
+}
+
+std::optional<Value> MapObject::get(const Value& key) const {
+  if (auto it = entries_.find(key); it != entries_.end())
+    return {it->second};
+  return {};
+}
+
+Value MapObject::remove(const Value& key) {
+  if (auto it = entries_.find(key); it != entries_.end()) {
+    auto r = it->second;
+    entries_.erase(it);
+    return r;
+  }
+  return Value{};
+}
+
+void MapObject::clear(void) {
+  entries_.clear();
+}
+
 }

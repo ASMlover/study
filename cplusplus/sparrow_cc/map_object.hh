@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <optional>
 #include <unordered_map>
 #include "base_object.hh"
 #include "value.hh"
@@ -40,7 +41,8 @@ struct KeyHash {
 
 struct KeyEqual {
   inline bool operator()(const Value& lhs, const Value& rhs) const {
-    // TODO:
+    if (lhs.hasher() == rhs.hasher())
+      return true;
     return lhs == rhs;
   }
 };
@@ -51,6 +53,11 @@ class MapObject : public BaseObject {
   MapObject(VM& vm);
   virtual ~MapObject(void);
 public:
+  void set(const Value& key, const Value& val);
+  std::optional<Value> get(const Value& key) const;
+  Value remove(const Value& key);
+  void clear(void);
+
   static MapObject* create(VM& vm) {
     return new MapObject(vm);
   }
