@@ -24,66 +24,13 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include <functional>
-#include "base_object.hh"
+#include "string_object.hh"
+#include "class_object.hh"
 
 namespace sparrow {
 
-class VM;
-class Value;
-class ClosureObject;
-class StringObject;
-
-typedef bool (*PrimitiveFn)(VM* vm, Value* args);
-
-enum class MethodType {
-  NONE,
-  PRIMITIVE,
-  SCRIPT,
-  FUNCALL,
-};
-
-struct Method {
-  MethodType type{MethodType::NONE};
-  union {
-    PrimitiveFn prim_fn;
-    ClosureObject* closure;
-  } as_{};
-};
-
-class ClassObject : public BaseObject {
-  ClassObject* superclass_{};
-  u32_t field_num_{};
-  std::vector<Method> methods_;
-  StringObject* name_{};
-public:
-  inline u32_t field_num(void) const { return field_num_; }
-
-  virtual sz_t hasher(void) const override;
-};
-
-union Bit64 {
-  u64_t b64;
-  u32_t b32[2];
-  double num;
-};
-
-inline u32_t hash_numeric(double d) {
-  Bit64 b64;
-  b64.num = d;
-  return b64.b32[0] ^ b64.b32[1];
-}
-
-// fnv-1a hashing
-inline u32_t hash_string(const char* s, sz_t n) {
-  u32_t hash_code = 2166136261;
-  for (sz_t i = 0; i < n; ++i) {
-    hash_code ^= s[i];
-    hash_code *= 16777619;
-  }
-  return hash_code;
+sz_t ClassObject::hasher(void) const {
+  return hash_string(name_->c_str(), name_->size());
 }
 
 }
