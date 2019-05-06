@@ -32,13 +32,21 @@ class ClosureObject;
 class Value;
 
 struct CallFrame {
-  u8_t* ip{};
+  const u8_t* ip{};
   ClosureObject* closure{};
-  Value* stack_start_{};
+  Value* stack_start{};
 
-  CallFrame(void) {}
-  CallFrame(u8_t* arg_ip, ClosureObject* arg_closure, Value* arg_stack)
-    : ip(arg_ip), closure(arg_closure), stack_start_(arg_stack) {
+  CallFrame(void) noexcept {}
+  CallFrame(const u8_t* arg_ip, ClosureObject* arg_closure, Value* arg_stack) noexcept
+    : ip(arg_ip), closure(arg_closure), stack_start(arg_stack) {
+  }
+  CallFrame(const CallFrame& r) noexcept
+    : ip(r.ip), closure(r.closure), stack_start(r.stack_start) {
+  }
+  CallFrame(CallFrame&& r) noexcept
+    : ip(std::move(r.ip))
+    , closure(std::move(r.closure))
+    , stack_start(std::move(r.stack_start)) {
   }
 };
 
