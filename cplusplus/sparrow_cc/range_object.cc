@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "vm.hh"
+#include "class_object.hh"
 #include "range_object.hh"
 
 namespace sparrow {
@@ -41,6 +42,10 @@ RangeObject::~RangeObject(void) {
 bool RangeObject::is_equal(BaseObject* other) const {
   RangeObject* r = Xt::down<RangeObject>(other);
   return from_ == r->from_ && to_ == r->to_;
+}
+
+sz_t RangeObject::hasher(void) const {
+  return hash_numeric(from_) ^ hash_numeric(to_);
 }
 
 }

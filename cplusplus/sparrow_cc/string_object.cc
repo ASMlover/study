@@ -24,20 +24,11 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "class_object.hh"
 #include "string_object.hh"
 #include "vm.hh"
 
 namespace sparrow {
-
-// fnv-1a hashing
-inline u32_t hash_string(const char* s, sz_t n) {
-  u32_t hash_code = 2166136261;
-  for (sz_t i = 0; i < n; ++i) {
-    hash_code ^= s[i];
-    hash_code *= 16777619;
-  }
-  return hash_code;
-}
 
 StringObject::StringObject(VM& vm, const char* s, sz_t n, bool deepcopy)
   : BaseObject(vm, ObjType::STRING, vm.strcls())
@@ -63,6 +54,10 @@ bool StringObject::is_equal(BaseObject* other) const {
   return hash_code_ == r->hash_code_
     && length_ == r->length_
     && memcmp(chars_, r->chars_, length_) == 0;
+}
+
+sz_t StringObject::hasher(void) const {
+  return Xt::as_int<sz_t>(hash_code_);
 }
 
 }

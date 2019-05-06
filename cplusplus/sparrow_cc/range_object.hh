@@ -41,6 +41,7 @@ public:
   inline int to(void) const { return to_; }
 
   virtual bool is_equal(BaseObject* other) const override;
+  virtual sz_t hasher(void) const override;
 
   static RangeObject* create(VM& vm, int from, int to) {
     return new RangeObject(vm, from, to);
