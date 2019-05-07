@@ -27,8 +27,12 @@
 #include <fstream>
 #include <sstream>
 #include "core.hh"
+#include "value.hh"
+#include "module_object.hh"
 
 namespace sparrow {
+
+static const Value kCoreModule;
 
 str_t read_file(const str_t& fname) {
   std::ifstream fp(fname);
@@ -40,6 +44,15 @@ str_t read_file(const str_t& fname) {
   std::stringstream ss;
   ss << fp.rdbuf();
   return ss.str();
+}
+
+VMResult eval_module(VM& vm, const Value& name, const str_t& code_bytes) {
+  return VMResult::ERROR;
+}
+
+void build_core(VM& vm) {
+  ModuleObject* core_module = ModuleObject::create(vm, "");
+  vm.set_module(kCoreModule, core_module);
 }
 
 }

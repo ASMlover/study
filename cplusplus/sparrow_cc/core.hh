@@ -27,9 +27,12 @@
 #pragma once
 
 #include "common.hh"
+#include "vm.hh"
 
 namespace sparrow {
 
 str_t read_file(const str_t& fname);
+VMResult eval_module(VM& vm, const Value& name, const str_t& code_bytes);
+void build_core(VM& vm);
 
 }
