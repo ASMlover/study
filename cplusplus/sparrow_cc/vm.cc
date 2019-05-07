@@ -25,10 +25,16 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "vm.hh"
+#include "core.hh"
+#include "map_object.hh"
 
 namespace sparrow {
 
 VM::VM(void) {
+  all_modules_ = MapObject::create(*this);
+
+  lexer_ = std::make_unique<Lexer>(""); // TODO:
+  build_core(*this);
 }
 
 VM::~VM(void) {
@@ -36,6 +42,10 @@ VM::~VM(void) {
 
 void VM::append_object(BaseObject* obj) {
   all_objects_.push_back(obj);
+}
+
+void VM::set_module(const Value& name, const Value& module) {
+  all_modules_->set(name, module);
 }
 
 }

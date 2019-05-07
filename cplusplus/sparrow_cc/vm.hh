@@ -27,29 +27,59 @@
 #pragma once
 
 #include <list>
+#include <vector>
+#include <memory>
 #include "common.hh"
+#include "lexer.hh"
 #include "base_object.hh"
 
 namespace sparrow {
 
-class ClassObject;
+enum class VMResult {
+  SUCCESS,
+  ERROR,
+};
 
 class VM : private UnCopyable {
   static constexpr sz_t kGCThresholds = 1 << 20;
 
-  ClassObject* strcls_{};
-  ClassObject* funcls_{};
+  ClassObject* clscls_{}; // class
+  ClassObject* objcls_{}; // object
+  ClassObject* strcls_{}; // string
+  ClassObject* mapcls_{}; // map
+  ClassObject* rngcls_{}; // range
+  ClassObject* listcls_{}; // list
+  ClassObject* nilcls_{}; // nil
+  ClassObject* boolcls_{}; // boolean
+  ClassObject* funcls_{}; // function
+  ClassObject* thrdcls_{}; // thread
 
   sz_t bytes_allocated_{};
   sz_t next_gc_{kGCThresholds};
   std::list<BaseObject*> all_objects_;
+
+  std::vector<str_t> all_method_names_;
+  MapObject* all_modules_{};
+  ThreadObject* curr_thrd_{};
+
+  std::unique_ptr<Lexer> lexer_;
 public:
   VM(void);
   ~VM(void);
 
+  inline ClassObject* clscls(void) const { return clscls_; }
+  inline ClassObject* objcls(void) const { return objcls_; }
   inline ClassObject* strcls(void) const { return strcls_; }
+  inline ClassObject* mapcls(void) const { return mapcls_; }
+  inline ClassObject* rngcls(void) const { return rngcls_; }
+  inline ClassObject* listcls(void) const { return listcls_; }
+  inline ClassObject* nilcls(void) const { return nilcls_; }
+  inline ClassObject* boolcls(void) const { return boolcls_; }
+  inline ClassObject* funcls(void) const { return funcls_; }
+  inline ClassObject* thrdcls(void) const { return thrdcls_; }
 
   void append_object(BaseObject* obj);
+  void set_module(const Value& name, const Value& module);
 };
 
 }
