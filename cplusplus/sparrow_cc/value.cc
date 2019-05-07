@@ -35,6 +35,8 @@
 #include "upvalue_object.hh"
 #include "function_object.hh"
 #include "closure_object.hh"
+#include "instance_object.hh"
+#include "thread_object.hh"
 #include "value.hh"
 
 namespace sparrow {
@@ -142,6 +144,14 @@ FunctionObject* Value::as_function(void) const {
 
 ClosureObject* Value::as_closure(void) const {
   return Xt::down<ClosureObject>(as_.object);
+}
+
+InstanceObject* Value::as_instance(void) const {
+  return Xt::down<InstanceObject>(as_.object);
+}
+
+ThreadObject* Value::as_thread(void) const {
+  return Xt::down<ThreadObject>(as_.object);
 }
 
 }

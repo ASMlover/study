@@ -156,6 +156,8 @@ public:
   inline bool is_upvalue(void) const { return is_objtype(ObjType::UPVALUE); }
   inline bool is_function(void) const { return is_objtype(ObjType::FUNCTION); }
   inline bool is_closure(void) const { return is_objtype(ObjType::CLOSURE); }
+  inline bool is_instance(void) const { return is_objtype(ObjType::INSTANCE); }
+  inline bool is_thread(void) const { return is_objtype(ObjType::THREAD); }
 
   ClassObject* as_class(void) const;
   ListObject* as_list(void) const;
@@ -167,6 +169,8 @@ public:
   UpvalueObject* as_upvalue(void) const;
   FunctionObject* as_function(void) const;
   ClosureObject* as_closure(void) const;
+  InstanceObject* as_instance(void) const;
+  ThreadObject* as_thread(void) const;
 };
 
 std::ostream& operator<<(std::ostream& out, const Value& value);
