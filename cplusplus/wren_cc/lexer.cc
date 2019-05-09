@@ -29,7 +29,67 @@
 namespace wrencc {
 
 Token Lexer::next_token(void) {
+  skip_whitespace();
+
+  begpos_ = curpos_;
+  if (is_end())
+    return make_token(TokenKind::TK_EOF);
+
+  char c = advance();
+  if (std::isdigit(c))
+    return make_numeric();
+  if (is_alpha(c))
+    return make_identifier();
+
+  switch (c) {
+  case '(': return make_token(TokenKind::TK_LPAREN);
+  case ')': return make_token(TokenKind::TK_RPAREN);
+  case '[': return make_token(TokenKind::TK_LBRACKET);
+  case ']': return make_token(TokenKind::TK_RBRACKET);
+  case '{': return make_token(TokenKind::TK_LBRACE);
+  case '}': return make_token(TokenKind::TK_RBRACE);
+  case ':': return make_token(TokenKind::TK_COLON);
+  case '.': return make_token(TokenKind::TK_DOT);
+  case ',': return make_token(TokenKind::TK_COMMA);
+  case '*': return make_token(TokenKind::TK_STAR);
+  case '/': return make_token(TokenKind::TK_SLASH);
+  case '%': return make_token(TokenKind::TK_PERCENT);
+  case '+': return make_token(TokenKind::TK_PLUS);
+  case '-': return make_token(TokenKind::TK_MINUS);
+  case '|': return make_token(TokenKind::TK_PIPE);
+  case '&': return make_token(TokenKind::TK_AMP);
+  case '!':
+    return make_token(match('=') ? TokenKind::TK_BANGEQ : TokenKind::TK_BANG);
+  case '=':
+    return make_token(match('=') ? TokenKind::TK_EQEQ : TokenKind::TK_EQ);
+  case '<':
+    return make_token(match('=') ? TokenKind::TK_LTEQ : TokenKind::TK_LT);
+  case '>':
+    return make_token(match('=') ? TokenKind::TK_GTEQ : TokenKind::TK_GT);
+  case '\n': ++lineno_; return make_token(TokenKind::TK_NL, lineno_ - 1);
+  case '"': return make_string();
+  case '`': return make_embed();
+  }
   return make_error("unexpected charactor");
+}
+
+void Lexer::skip_whitespace(void) {
+  for (;;) {
+    char c = peek();
+    switch (c) {
+    case ' ': case '\r': case '\t': advance(); break;
+    case '/':
+      if (peek_next() == '/') {
+        while (!is_end() && peek() != '\n')
+          advance();
+      }
+      else {
+        return;
+      }
+      break;
+    default: return;
+    }
+  }
 }
 
 Token Lexer::make_token(TokenKind kind, const str_t& literal) {
@@ -38,6 +98,10 @@ Token Lexer::make_token(TokenKind kind, const str_t& literal) {
 
 Token Lexer::make_token(TokenKind kind) {
   return Token(kind, gen_literal(begpos_, curpos_), lineno_);
+}
+
+Token Lexer::make_token(TokenKind kind, int lineno) {
+  return Token(kind, gen_literal(begpos_, curpos_), lineno);
 }
 
 Token Lexer::make_error(const str_t& error_message) {
@@ -103,19 +167,6 @@ Token Lexer::make_embed(void) {
 
   // TODO:
   return make_token(TokenKind::TK_EMBED);
-}
-
-Token Lexer::make_whitespace(void) {
-  // TODO:
-  for (;;) {
-    char c = peek();
-    if (c == ' ' || c == '\r' || c == '\t')
-      advance();
-    else
-      break;
-  }
-
-  return make_token(TokenKind::TK_WHITESPACE);
 }
 
 }

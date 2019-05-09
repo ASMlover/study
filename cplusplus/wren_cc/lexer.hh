@@ -66,14 +66,22 @@ class Lexer : private UnCopyable {
     return source_bytes_[curpos_++];
   }
 
+  inline bool match(char expected) {
+    if (is_end() || source_bytes_[curpos_] != expected)
+      return false;
+    ++curpos_;
+    return true;
+  }
+
+  void skip_whitespace(void);
   Token make_token(TokenKind kind, const str_t& literal);
   Token make_token(TokenKind kind);
+  Token make_token(TokenKind kind, int lineno);
   Token make_error(const str_t& error_message);
   Token make_identifier(void);
   Token make_numeric(void);
   Token make_string(void);
   Token make_embed(void);
-  Token make_whitespace(void);
 public:
   Lexer(const str_t& source_bytes)
     : source_bytes_(source_bytes) {
