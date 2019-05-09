@@ -76,8 +76,6 @@ TOKEN(NUMERIC, "numeric")
 TOKEN(STRING, "string")
 
 TOKEN(NL, "new-line")
-TOKEN(INDENT, "indent")
-TOKEN(OUTDENT, "outdent")
 
 TOKEN(ERROR, "error")
 TOKEN(EOF, "eof")
