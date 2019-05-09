@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <ostream>
 #include "common.hh"
 
 namespace wrencc {
