@@ -52,6 +52,10 @@ public:
 };
 using Value = BaseObject*;
 
+inline Value make_value(double d) {
+  return new BaseObject(d);
+}
+
 std::ostream& operator<<(std::ostream& out, Value val);
 
 class Fiber : private UnCopyable {
@@ -80,6 +84,14 @@ class Block : private UnCopyable {
 public:
   inline u8_t get_code(int i) const { return codes_[i]; }
   inline Value get_constant(int i) const { return constants_[i]; }
+
+  template <typename T>
+  inline void add_code(T c) { codes_.push_back(Xt::as_type<u8_t>(c)); }
+
+  inline u8_t add_constant(Value v) {
+    constants_.push_back(v);
+    return Xt::as_type<u8_t>(constants_.size() - 1);
+  }
 };
 
 class VM : private UnCopyable {
