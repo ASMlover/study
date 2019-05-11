@@ -24,12 +24,33 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <fstream>
 #include <iostream>
+#include <sstream>
+#include "compiler.hh"
+#include "vm.hh"
+
+static void eval_with_file(const std::string& fname) {
+  std::ifstream fp(fname);
+  if (fp.is_open()) {
+    std::stringstream ss;
+    ss << fp.rdbuf();
+
+    wrencc::Block* block = wrencc::compile(ss.str());
+    wrencc::Fiber* fiber = new wrencc::Fiber();
+
+    wrencc::VM vm;
+    wrencc::Value r = vm.interpret(fiber, block);
+    std::cout << r << std::endl;
+  }
+}
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
   std::cout << "W R E N - C C" << std::endl;
+
+  eval_with_file(argv[1]);
 
   return 0;
 }
