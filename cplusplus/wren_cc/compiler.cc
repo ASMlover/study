@@ -175,6 +175,19 @@ class Compiler : private UnCopyable {
 
   void compile_precedence(Precedence precedence) {
     advance();
+
+    auto prefix = get_prefix(prev_.kind());
+    if (!prefix) {
+      error("no prefix parser");
+      std::exit(1);
+    }
+    prefix(this, prev_);
+
+    while (precedence <= get_infix(curr_.kind()).precedence) {
+      advance();
+      auto infix = get_infix(prev_.kind()).fn;
+      infix(this, prev_);
+    }
   }
 
   void prefix_literal(const Token& tok) {
@@ -214,16 +227,42 @@ class Compiler : private UnCopyable {
   }
 
   void statement(void) {
-    // TODO:
+    expression();
+    consume(TokenKind::TK_NL);
   }
 
   void expression(void) {
-    // TODO:
+    compile_precedence(Precedence::LOWEST);
+  }
+public:
+  Compiler(Lexer& lex) noexcept
+    : lex_(lex) {
+    block_ = new Block();
+  }
+
+  ~Compiler(void) {
+    // FIXME: fixed allocated Block
+    //
+    // if (block_ != nullptr)
+    //   delete block_;
+  }
+
+  Block* run_compiler(void) {
+    advance();
+    do {
+      statement();
+    } while (!match(TokenKind::TK_EOF));
+    emit_byte(Code::END);
+
+    return had_error_ ? nullptr : block_;
   }
 };
 
 Block* compile(const str_t& source_bytes) {
-  return nullptr;
+  Lexer lex(source_bytes);
+  Compiler c(lex);
+
+  return c.run_compiler();
 }
 
 }
