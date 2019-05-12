@@ -37,6 +37,7 @@
 #include "closure_object.hh"
 #include "instance_object.hh"
 #include "thread_object.hh"
+#include "vm.hh"
 #include "value.hh"
 
 namespace sparrow {
@@ -104,6 +105,18 @@ sz_t Value::hasher(void) const {
   default: RUNTIME_ERR("unsupport type hashed");
   }
   return 0;
+}
+
+ClassObject* Value::get_class(VM& vm) const {
+  switch (type_) {
+  case ValueType::NIL: return vm.nilcls();
+  case ValueType::FALSE:
+  case ValueType::TRUE: return vm.boolcls();
+  case ValueType::NUMERIC: return vm.numcls();
+  case ValueType::OBJECT: return as_object()->cls();
+  default: UNREACHED();
+  }
+  return nullptr;
 }
 
 ClassObject* Value::as_class(void) const {

@@ -136,6 +136,7 @@ public:
   bool is_truthy(void) const;
   str_t stringify(void) const;
   sz_t hasher(void) const;
+  ClassObject* get_class(VM& vm) const;
 
   inline bool is_unknown(void) const { return type_ == ValueType::UNKNOWN; }
   inline bool is_nil(void) const { return type_ == ValueType::NIL; }
