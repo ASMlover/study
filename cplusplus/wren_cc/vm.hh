@@ -58,22 +58,9 @@ inline Value make_value(double d) {
 
 std::ostream& operator<<(std::ostream& out, Value val);
 
-class Fiber : private UnCopyable {
-  std::vector<Value> stack_;
-public:
-  inline void push(Value v) {
-    stack_.push_back(v);
-  }
-
-  inline Value pop(void) {
-    Value v = stack_.back();
-    stack_.pop_back();
-    return v;
-  }
-};
-
 enum class Code : u8_t {
   CONSTANT, // load the constant at index [arg]
+  CALL, // invoke the method with symbol [arg]
 
   END,
 };
@@ -95,8 +82,11 @@ public:
 };
 
 class VM : private UnCopyable {
-  Value interpret(Fiber* fiber, Block* block);
+  std::vector<str_t> symbols_;
+
+  Value interpret(Block* block);
 public:
+  int get_symbol(const str_t& name);
   void interpret(const str_t& source_bytes);
 };
 

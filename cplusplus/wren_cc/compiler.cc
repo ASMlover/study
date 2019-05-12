@@ -53,6 +53,8 @@ struct InfixCompiler {
 };
 
 class Compiler : private UnCopyable {
+  VM& vm_;
+
   Lexer& lex_;
   Token prev_;
   Token curr_;
@@ -88,122 +90,10 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::CONSTANT, b);
   }
 
-  CompileFn& get_prefix(TokenKind kind) {
-    auto prefix_fn = [](Compiler* p, const Token& t) { p->prefix_literal(t); };
-
-    static CompileFn _prefixs[] = {
-      nullptr, // PUNCTUATOR(LPAREN, "(")
-      nullptr, // PUNCTUATOR(RPAREN, ")")
-      nullptr, // PUNCTUATOR(LBRACKET, "[")
-      nullptr, // PUNCTUATOR(RBRACKET, "]")
-      nullptr, // PUNCTUATOR(LBRACE, "{")
-      nullptr, // PUNCTUATOR(RBRACE, "}")
-      nullptr, // PUNCTUATOR(COLON, ":")
-      nullptr, // PUNCTUATOR(DOT, ".")
-      nullptr, // PUNCTUATOR(COMMA, ",")
-      nullptr, // PUNCTUATOR(STAR, "*")
-      nullptr, // PUNCTUATOR(SLASH, "/")
-      nullptr, // PUNCTUATOR(PERCENT, "%")
-      nullptr, // PUNCTUATOR(PLUS, "+")
-      nullptr, // PUNCTUATOR(MINUS, "-")
-      nullptr, // PUNCTUATOR(PIPE, "|")
-      nullptr, // PUNCTUATOR(AMP, "&")
-      nullptr, // PUNCTUATOR(BANG, "!")
-      nullptr, // PUNCTUATOR(EQ, "=")
-      nullptr, // PUNCTUATOR(LT, "<")
-      nullptr, // PUNCTUATOR(GT, ">")
-      nullptr, // PUNCTUATOR(LTEQ, "<=")
-      nullptr, // PUNCTUATOR(GTEQ, ">=")
-      nullptr, // PUNCTUATOR(EQEQ, "==")
-      nullptr, // PUNCTUATOR(BANGEQ, "!=")
-      nullptr, // KEYWORD(ELSE, "else")
-      nullptr, // KEYWORD(IF, "if")
-      nullptr, // KEYWORD(VAR, "var")
-      nullptr, // TOKEN(EMBED, "embed")
-      prefix_fn, // TOKEN(IDENTIFIER, "identifier")
-      prefix_fn, // TOKEN(NUMERIC, "numeric")
-      prefix_fn, // TOKEN(STRING, "string")
-      nullptr, // TOKEN(NL, "new-line")
-      nullptr, // TOKEN(ERROR, "error")
-      nullptr, // TOKEN(EOF, "eof")
-    };
-    return _prefixs[Xt::as_type<int>(kind)];
-  }
-
-  InfixCompiler& get_infix(TokenKind kind) {
-    auto call_fn = [](Compiler* p, const Token& t) { p->infix_call(t); };
-    auto binary_fn = [](Compiler* p, const Token& t) { p->infix_binary(t); };
-
-    static InfixCompiler _infixs[] = {
-      {call_fn, Precedence::CALL}, // PUNCTUATOR(LPAREN, "(")
-      {nullptr, Precedence::NONE}, // PUNCTUATOR(RPAREN, ")")
-      {nullptr, Precedence::NONE}, // PUNCTUATOR(LBRACKET, "[")
-      {nullptr, Precedence::NONE}, // PUNCTUATOR(RBRACKET, "]")
-      {nullptr, Precedence::NONE}, // PUNCTUATOR(LBRACE, "{")
-      {nullptr, Precedence::NONE}, // PUNCTUATOR(RBRACE, "}")
-      {nullptr, Precedence::NONE}, // PUNCTUATOR(COLON, ":")
-      {nullptr, Precedence::NONE}, // PUNCTUATOR(DOT, ".")
-      {nullptr, Precedence::NONE}, // PUNCTUATOR(COMMA, ",")
-      {binary_fn, Precedence::FACTOR}, // PUNCTUATOR(STAR, "*")
-      {binary_fn, Precedence::FACTOR}, // PUNCTUATOR(SLASH, "/")
-      {binary_fn, Precedence::FACTOR}, // PUNCTUATOR(PERCENT, "%")
-      {binary_fn, Precedence::TERM}, // PUNCTUATOR(PLUS, "+")
-      {binary_fn, Precedence::TERM}, // PUNCTUATOR(MINUS, "-")
-      {binary_fn, Precedence::BITWISE}, // PUNCTUATOR(PIPE, "|")
-      {binary_fn, Precedence::BITWISE}, // PUNCTUATOR(AMP, "&")
-      {nullptr, Precedence::NONE}, // PUNCTUATOR(BANG, "!")
-      {nullptr, Precedence::NONE}, // PUNCTUATOR(EQ, "=")
-      {binary_fn, Precedence::COMPARISON}, // PUNCTUATOR(LT, "<")
-      {binary_fn, Precedence::COMPARISON}, // PUNCTUATOR(GT, ">")
-      {binary_fn, Precedence::COMPARISON}, // PUNCTUATOR(LTEQ, "<=")
-      {binary_fn, Precedence::COMPARISON}, // PUNCTUATOR(GTEQ, ">=")
-      {binary_fn, Precedence::COMPARISON}, // PUNCTUATOR(EQEQ, "==")
-      {binary_fn, Precedence::COMPARISON}, // PUNCTUATOR(BANGEQ, "!=")
-      {nullptr, Precedence::NONE}, // KEYWORD(ELSE, "else")
-      {nullptr, Precedence::NONE}, // KEYWORD(IF, "if")
-      {nullptr, Precedence::NONE}, // KEYWORD(VAR, "var")
-      {nullptr, Precedence::NONE}, // TOKEN(EMBED, "embed")
-      {nullptr, Precedence::NONE}, // TOKEN(IDENTIFIER, "identifier")
-      {nullptr, Precedence::NONE}, // TOKEN(NUMERIC, "numeric")
-      {nullptr, Precedence::NONE}, // TOKEN(STRING, "string")
-      {nullptr, Precedence::NONE}, // TOKEN(NL, "new-line")
-      {nullptr, Precedence::NONE}, // TOKEN(ERROR, "error")
-      {nullptr, Precedence::NONE}, // TOKEN(EOF, "eof")
-    };
-    return _infixs[Xt::as_type<int>(kind)];
-  }
-
-  void compile_precedence(Precedence precedence) {
-    advance();
-
-    auto prefix = get_prefix(prev_.kind());
-    if (!prefix) {
-      error("no prefix parser");
-      std::exit(1);
-    }
-    prefix(this, prev_);
-
-    while (precedence <= get_infix(curr_.kind()).precedence) {
-      advance();
-      auto infix = get_infix(prev_.kind()).fn;
-      infix(this, prev_);
-    }
-  }
-
-  void prefix_literal(const Token& tok) {
+  void numeric(const Token& tok) {
     Value constant = make_value(tok.as_numeric());
 
     emit_constant(constant);
-  }
-
-  void infix_call(const Token& tok) {
-    std::cerr << "infix calls not implemented" << std::endl;
-    std::exit(1);
-  }
-
-  void infix_binary(const Token& tok) {
-    std::cerr << "infix binary operations not implemented" << std::endl;
-    std::exit(1);
   }
 
   bool match(TokenKind expected) {
@@ -232,11 +122,29 @@ class Compiler : private UnCopyable {
   }
 
   void expression(void) {
-    compile_precedence(Precedence::LOWEST);
+    call();
+  }
+
+  void call(void) {
+    primary();
+    if (match(TokenKind::TK_DOT)) {
+      consume(TokenKind::TK_IDENTIFIER);
+      int symbol = vm_.get_symbol(prev_.literal());
+      std::cout << "symbol: " << symbol << std::endl;
+
+      // compile the method call
+      emit_bytes(Code::CALL, symbol);
+    }
+  }
+
+  void primary(void) {
+    if (match(TokenKind::TK_NUMERIC))
+      numeric(prev_);
   }
 public:
-  Compiler(Lexer& lex) noexcept
-    : lex_(lex) {
+  Compiler(VM& vm, Lexer& lex) noexcept
+    : vm_(vm)
+    , lex_(lex) {
     block_ = new Block();
   }
 
@@ -258,9 +166,9 @@ public:
   }
 };
 
-Block* compile(const str_t& source_bytes) {
+Block* compile(VM& vm, const str_t& source_bytes) {
   Lexer lex(source_bytes);
-  Compiler c(lex);
+  Compiler c(vm, lex);
 
   return c.run_compiler();
 }

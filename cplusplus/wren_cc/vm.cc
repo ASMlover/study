@@ -53,27 +53,57 @@ std::ostream& operator<<(std::ostream& out, Value val) {
   return out << val->stringify();
 }
 
+class Fiber : private UnCopyable {
+  std::vector<Value> stack_;
+public:
+  inline void push(Value v) {
+    stack_.push_back(v);
+  }
+
+  inline Value pop(void) {
+    Value v = stack_.back();
+    stack_.pop_back();
+    return v;
+  }
+};
+
 /// VM IMPLEMENTATIONS
 
-Value VM::interpret(Fiber* fiber, Block* block) {
+int VM::get_symbol(const str_t& name) {
+  for (sz_t i = 0; i < symbols_.size(); ++i) {
+    if (symbols_[i] == name)
+      return Xt::as_type<int>(i);
+  }
+
+  symbols_.push_back(name);
+  return Xt::as_type<int>(symbols_.size() - 1);
+}
+
+Value VM::interpret(Block* block) {
+  Fiber fiber;
+
   int ip{};
   for (;;) {
     switch (auto c = Xt::as_type<Code>(block->get_code(ip++))) {
     case Code::CONSTANT:
       {
         Value v = block->get_constant(block->get_code(ip++));
-        fiber->push(v);
+        fiber.push(v);
       } break;
-    case Code::END: return fiber->pop();
+    case Code::CALL:
+      {
+        int symbol = block->get_code(ip++);
+        std::cout << "call " << symbol << std::endl;
+      } break;
+    case Code::END: return fiber.pop();
     }
   }
 }
 
 void VM::interpret(const str_t& source_bytes) {
-  Block* block = compile(source_bytes);
-  Fiber* fiber = new Fiber();
+  Block* block = compile(*this, source_bytes);
 
-  Value r = interpret(fiber, block);
+  Value r = interpret(block);
   std::cout << r << std::endl;
 }
 
