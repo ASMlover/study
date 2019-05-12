@@ -51,6 +51,7 @@ class VM : private UnCopyable {
   ClassObject* listcls_{}; // list
   ClassObject* nilcls_{}; // nil
   ClassObject* boolcls_{}; // boolean
+  ClassObject* numcls_{}; // numeric
   ClassObject* funcls_{}; // function
   ClassObject* thrdcls_{}; // thread
 
@@ -62,7 +63,7 @@ class VM : private UnCopyable {
   MapObject* all_modules_{};
   ThreadObject* curr_thrd_{};
 
-  std::unique_ptr<Lexer> lexer_;
+  std::shared_ptr<Lexer> lex_;
 public:
   VM(void);
   ~VM(void);
@@ -75,6 +76,7 @@ public:
   inline ClassObject* listcls(void) const { return listcls_; }
   inline ClassObject* nilcls(void) const { return nilcls_; }
   inline ClassObject* boolcls(void) const { return boolcls_; }
+  inline ClassObject* numcls(void) const { return numcls_; }
   inline ClassObject* funcls(void) const { return funcls_; }
   inline ClassObject* thrdcls(void) const { return thrdcls_; }
 

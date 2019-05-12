@@ -33,7 +33,7 @@ namespace sparrow {
 VM::VM(void) {
   all_modules_ = MapObject::create(*this);
 
-  lexer_ = std::make_unique<Lexer>(""); // TODO:
+  lex_ = std::make_shared<Lexer>(""); // TODO:
   build_core(*this);
 }
 
