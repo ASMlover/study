@@ -95,8 +95,9 @@ public:
 };
 
 class VM : private UnCopyable {
-public:
   Value interpret(Fiber* fiber, Block* block);
+public:
+  void interpret(const str_t& source_bytes);
 };
 
 }

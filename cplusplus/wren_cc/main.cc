@@ -36,12 +36,8 @@ static void eval_with_file(const std::string& fname) {
     std::stringstream ss;
     ss << fp.rdbuf();
 
-    wrencc::Block* block = wrencc::compile(ss.str());
-    wrencc::Fiber* fiber = new wrencc::Fiber();
-
     wrencc::VM vm;
-    wrencc::Value r = vm.interpret(fiber, block);
-    std::cout << r << std::endl;
+    vm.interpret(ss.str());
   }
 }
 

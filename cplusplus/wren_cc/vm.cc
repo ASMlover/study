@@ -24,7 +24,9 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include <sstream>
+#include "compiler.hh"
 #include "vm.hh"
 
 namespace wrencc {
@@ -65,6 +67,14 @@ Value VM::interpret(Fiber* fiber, Block* block) {
     case Code::END: return fiber->pop();
     }
   }
+}
+
+void VM::interpret(const str_t& source_bytes) {
+  Block* block = compile(source_bytes);
+  Fiber* fiber = new Fiber();
+
+  Value r = interpret(fiber, block);
+  std::cout << r << std::endl;
 }
 
 }
