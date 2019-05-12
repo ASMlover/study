@@ -38,4 +38,24 @@ ModuleObject::ModuleObject(VM& vm, const str_t& module_name)
 ModuleObject::~ModuleObject(void) {
 }
 
+int ModuleObject::index_of(const str_t& name) const {
+  int index = 0;
+  for (auto& n : var_names_) {
+    if (name == n)
+      return index;
+    ++index;
+  }
+  return -1;
+}
+
+int ModuleObject::append_var(const str_t& name, const Value& value) {
+  var_names_.push_back(name);
+  var_values_.push_back(value);
+  return static_cast<int>(var_names_.size() - 1);
+}
+
+void ModuleObject::assign_var(int index, const Value& value) {
+  var_values_[index] = value;
+}
+
 }

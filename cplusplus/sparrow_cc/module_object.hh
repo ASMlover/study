@@ -29,6 +29,7 @@
 #include <vector>
 #include "base_object.hh"
 #include "string_object.hh"
+#include "value.hh"
 
 namespace sparrow {
 
@@ -45,6 +46,11 @@ class ModuleObject final : public BaseObject {
 public:
   inline StringObject* name(void) const { return name_; }
   inline const char* name_cstr(void) const { return name_->c_str(); }
+  inline const Value& get_value(int i) const { return var_values_[i]; }
+
+  int index_of(const str_t& name) const;
+  int append_var(const str_t& name, const Value& value);
+  void assign_var(int index, const Value& value);
 
   static ModuleObject* create(VM& vm, const str_t& module_name) {
     return new ModuleObject(vm, module_name);
