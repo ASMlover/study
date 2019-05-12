@@ -29,6 +29,15 @@
 
 namespace sparrow {
 
+ClassObject::ClassObject(VM& vm, u32_t field_num, const str_t& name)
+  : BaseObject(vm, ObjType::CLASS, nullptr)
+  , field_num_(field_num) {
+  name_ = StringObject::create(vm, name.data(), name.size());
+}
+
+ClassObject::~ClassObject(void) {
+}
+
 sz_t ClassObject::hasher(void) const {
   return hash_string(name_->c_str(), name_->size());
 }

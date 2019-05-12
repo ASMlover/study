@@ -58,10 +58,17 @@ class ClassObject : public BaseObject {
   u32_t field_num_{};
   std::vector<Method> methods_;
   StringObject* name_{};
+
+  ClassObject(VM& vm, u32_t field_num, const str_t& name);
+  virtual ~ClassObject(void);
 public:
   inline u32_t field_num(void) const { return field_num_; }
 
   virtual sz_t hasher(void) const override;
+
+  static ClassObject* create_raw(VM& vm, u32_t field_num, const str_t& name) {
+    return new ClassObject(vm, field_num, name);
+  }
 };
 
 union Bit64 {
