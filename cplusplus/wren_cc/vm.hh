@@ -101,8 +101,12 @@ class Class : private UnCopyable {
 
   static constexpr sz_t kMaxMethods = 256;
 public:
-  Class(void) : methods_(kMaxMethods) {}
+  Class(void) : methods_(kMaxMethods) {
+    for (auto i = 0; i < kMaxMethods; ++i)
+      methods_[i] = nullptr;
+  }
 
+  inline PrimitiveFn get_method(int i) const { return methods_[i]; }
   void append_method(VM& vm, const str_t& name, PrimitiveFn&& fn);
 };
 

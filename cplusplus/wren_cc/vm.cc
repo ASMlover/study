@@ -71,6 +71,31 @@ class Fiber : private UnCopyable {
   std::vector<Value> stack_;
   std::vector<CallFrame> frames_;
 public:
+  inline void reset(void) {
+    stack_.clear();
+    frames_.clear();
+  }
+
+  inline CallFrame& peek_frame(void) {
+    return frames_.back();
+  }
+
+  inline void pop_frame(void) {
+    frames_.pop_back();
+  }
+
+  inline bool empty_frame(void) const {
+    return frames_.empty();
+  }
+
+  inline Value get_value(int i) const {
+    return stack_[i];
+  }
+
+  inline void set_value(int i, Value v) {
+    stack_[i] = v;
+  }
+
   inline void push(Value v) {
     stack_.push_back(v);
   }
@@ -82,10 +107,7 @@ public:
   }
 
   void call_block(Block* block, int locals) {
-  }
-
-  Value primitive_numabs(Value numeric) {
-    return nullptr;
+    frames_.push_back(CallFrame(0, block, locals));
   }
 };
 
@@ -135,23 +157,57 @@ void VM::clear_symbol(void) {
 
 Value VM::interpret(Block* block) {
   Fiber fiber;
+  fiber.reset();
+  fiber.call_block(block, 0);
 
-  int ip{};
   for (;;) {
-    switch (auto c = Xt::as_type<Code>(block->get_code(ip++))) {
+    auto* frame = &fiber.peek_frame();
+
+    switch (auto c = Xt::as_type<Code>(frame->block->get_code(frame->ip++))) {
     case Code::CONSTANT:
       {
-        Value v = block->get_constant(block->get_code(ip++));
+        Value v = frame->block->get_constant(frame->block->get_code(frame->ip++));
         fiber.push(v);
       } break;
+    case Code::LOAD_LOCAL:
+      {
+        int local = frame->block->get_code(frame->ip++);
+        fiber.push(fiber.get_value(frame->locals + local));
+      } break;
+    case Code::STORE_LOCAL:
+      {
+        int local = frame->block->get_code(frame->ip++);
+        fiber.set_value(frame->locals + local, fiber.pop());
+      } break;
+    case Code::POP: fiber.pop(); break;
     case Code::CALL:
       {
-        int symbol = block->get_code(ip++);
-        std::cout << "call " << symbol << std::endl;
+        Value receiver = fiber.pop();
+        int symbol = frame->block->get_code(frame->ip++);
+
+        Class* cls = &num_class_;
+        auto primitive_fn = cls->get_method(symbol);
+        if (primitive_fn) {
+          Value r = primitive_fn(receiver);
+          fiber.push(r);
+        }
+        else {
+          std::cerr << "not method" << std::endl;
+          std::exit(-1);
+        }
       } break;
-    case Code::END: return fiber.pop();
+    case Code::END:
+      {
+        Value r = fiber.pop();
+        fiber.pop_frame();
+
+        if (fiber.empty_frame())
+          return r;
+        fiber.set_value(frame->locals, r);
+      } break;
     }
   }
+  return nullptr;
 }
 
 void VM::interpret(const str_t& source_bytes) {
