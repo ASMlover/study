@@ -49,12 +49,27 @@ str_t BaseObject::stringify(void) const {
   return "";
 }
 
+Value BaseObject::make_numeric(double d) {
+  return new BaseObject(d);
+}
+
 std::ostream& operator<<(std::ostream& out, Value val) {
   return out << val->stringify();
 }
 
+struct CallFrame {
+  int ip{};
+  Block* block{};
+  int locals{};
+
+  CallFrame(int ip_arg, Block* block_arg, int locals_arg) noexcept
+    : ip(ip_arg), block(block_arg), locals(locals_arg) {
+  }
+};
+
 class Fiber : private UnCopyable {
   std::vector<Value> stack_;
+  std::vector<CallFrame> frames_;
 public:
   inline void push(Value v) {
     stack_.push_back(v);
@@ -65,18 +80,57 @@ public:
     stack_.pop_back();
     return v;
   }
+
+  void call_block(Block* block, int locals) {
+  }
+
+  Value primitive_numabs(Value numeric) {
+    return nullptr;
+  }
 };
 
 /// VM IMPLEMENTATIONS
 
-int VM::get_symbol(const str_t& name) {
+void Class::append_method(VM& vm, const str_t& name, PrimitiveFn&& fn) {
+  methods_[vm.ensure_symbol(name)] = std::move(fn);
+}
+
+VM::VM(void) {
+  num_class_.append_method(*this, "abs", [](Value v) -> Value {
+        auto d = v->as_numeric();
+        if (d < 0)
+          d = -d;
+        return BaseObject::make_numeric(d);
+      });
+}
+
+int VM::ensure_symbol(const str_t& name) {
+  int existing = get_symbol(name);
+  if (existing != -1)
+    return existing;
+
+  symbols_.push_back(name);
+  return Xt::as_type<int>(symbols_.size() - 1);
+}
+
+int VM::add_symbol(const str_t& name) {
+  if (get_symbol(name) != -1)
+    return -1;
+
+  symbols_.push_back(name);
+  return Xt::as_type<int>(symbols_.size() - 1);
+}
+
+int VM::get_symbol(const str_t& name) const {
   for (sz_t i = 0; i < symbols_.size(); ++i) {
     if (symbols_[i] == name)
       return Xt::as_type<int>(i);
   }
+  return -1;
+}
 
-  symbols_.push_back(name);
-  return Xt::as_type<int>(symbols_.size() - 1);
+void VM::clear_symbol(void) {
+  symbols_.clear();
 }
 
 Value VM::interpret(Block* block) {

@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <functional>
 #include <vector>
 #include "common.hh"
 
@@ -39,6 +40,9 @@ enum class ObjFlag {
   MARKED = 0x01,
 };
 
+class BaseObject;
+using Value = BaseObject*;
+
 class BaseObject : private UnCopyable {
   ObjType type_{};
   ObjFlag flag_{};
@@ -48,9 +52,11 @@ class BaseObject : private UnCopyable {
 public:
   BaseObject(double d);
 
+  inline double as_numeric(void) const { return as_.numeric; }
   str_t stringify(void) const;
+
+  static Value make_numeric(double d);
 };
-using Value = BaseObject*;
 
 inline Value make_value(double d) {
   return new BaseObject(d);
@@ -60,6 +66,9 @@ std::ostream& operator<<(std::ostream& out, Value val);
 
 enum class Code : u8_t {
   CONSTANT, // load the constant at index [arg]
+  POP, // pop and discard the top of stack
+  LOAD_LOCAL, // push the value in local slot [arg]
+  STORE_LOCAL, // pop and store the value in local slot [arg]
   CALL, // invoke the method with symbol [arg]
 
   END,
@@ -68,7 +77,9 @@ enum class Code : u8_t {
 class Block : private UnCopyable {
   std::vector<u8_t> codes_;
   std::vector<Value> constants_;
+  int num_locals_{};
 public:
+  inline int num_locals(void) const { return num_locals_; }
   inline u8_t get_code(int i) const { return codes_[i]; }
   inline Value get_constant(int i) const { return constants_[i]; }
 
@@ -81,12 +92,33 @@ public:
   }
 };
 
+using PrimitiveFn = std::function<Value (Value receiver)>;
+
+class VM;
+
+class Class : private UnCopyable {
+  std::vector<PrimitiveFn> methods_;
+
+  static constexpr sz_t kMaxMethods = 256;
+public:
+  Class(void) : methods_(kMaxMethods) {}
+
+  void append_method(VM& vm, const str_t& name, PrimitiveFn&& fn);
+};
+
 class VM : private UnCopyable {
   std::vector<str_t> symbols_;
+  Class num_class_;
 
   Value interpret(Block* block);
 public:
-  int get_symbol(const str_t& name);
+  VM(void);
+
+  int ensure_symbol(const str_t& name);
+  int add_symbol(const str_t& name);
+  int get_symbol(const str_t& name) const;
+  void clear_symbol(void);
+
   void interpret(const str_t& source_bytes);
 };
 
