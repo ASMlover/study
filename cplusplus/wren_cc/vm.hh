@@ -82,6 +82,7 @@ public:
   inline int num_locals(void) const { return num_locals_; }
   inline u8_t get_code(int i) const { return codes_[i]; }
   inline Value get_constant(int i) const { return constants_[i]; }
+  inline void set_num_locals(int n) { num_locals_ = n; }
 
   template <typename T>
   inline void add_code(T c) { codes_.push_back(Xt::as_type<u8_t>(c)); }

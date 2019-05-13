@@ -88,12 +88,19 @@ public:
     return frames_.empty();
   }
 
+  inline Value peek_value(int distance = 0) const {
+    return stack_[stack_.size() - 1 - distance];
+  }
+
   inline Value get_value(int i) const {
     return stack_[i];
   }
 
   inline void set_value(int i, Value v) {
-    stack_[i] = v;
+    if (stack_.size() <= i)
+      stack_.push_back(v);
+    else
+      stack_[i] = v;
   }
 
   inline void push(Value v) {
@@ -177,7 +184,7 @@ Value VM::interpret(Block* block) {
     case Code::STORE_LOCAL:
       {
         int local = frame->block->get_code(frame->ip++);
-        fiber.set_value(frame->locals + local, fiber.pop());
+        fiber.set_value(frame->locals + local, fiber.peek_value());
       } break;
     case Code::POP: fiber.pop(); break;
     case Code::CALL:
