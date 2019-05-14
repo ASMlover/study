@@ -27,6 +27,7 @@
 #include <cstdarg>
 #include <functional>
 #include <iostream>
+#include <vector>
 #include "lexer.hh"
 #include "compiler.hh"
 
@@ -63,7 +64,34 @@ class Compiler : private UnCopyable {
   Block* block_{};
   int codes_count_{};
 
+  std::vector<str_t> symbols_;
+
   bool had_error_{};
+
+  inline int get_symbol(const str_t& name) const {
+    for (auto i = 0u; i < symbols_.size(); ++i) {
+      if (symbols_[i] == name)
+        return Xt::as_type<int>(i);
+    }
+    return -1;
+  }
+
+  inline int add_symbol(const str_t& name) {
+    if (get_symbol(name) != -1)
+      return -1;
+
+    symbols_.push_back(name);
+    return Xt::as_type<int>(symbols_.size() - 1);
+  }
+
+  inline int ensure_symbol(const str_t& name) {
+    int existing = get_symbol(name);
+    if (existing != -1)
+      return existing;
+
+    symbols_.push_back(name);
+    return Xt::as_type<int>(symbols_.size() - 1);
+  }
 
   void error(const char* format, ...) {
     had_error_ = true;
@@ -91,7 +119,7 @@ class Compiler : private UnCopyable {
   }
 
   void numeric(const Token& tok) {
-    Value constant = make_value(tok.as_numeric());
+    Value constant = BaseObject::make_numeric(tok.as_numeric());
 
     emit_constant(constant);
   }
@@ -117,8 +145,22 @@ class Compiler : private UnCopyable {
   }
 
   void statement(void) {
+    if (match(TokenKind::KW_VAR)) {
+      consume(TokenKind::TK_IDENTIFIER);
+      int local = add_symbol(prev_.as_string());
+
+      if (local == -1)
+        error("local variable is already defined");
+
+      consume(TokenKind::TK_EQ);
+
+      // compile the initializer
+      expression();
+      emit_bytes(Code::STORE_LOCAL, local);
+      return;
+    }
+
     expression();
-    consume(TokenKind::TK_NL);
   }
 
   void expression(void) {
@@ -129,8 +171,7 @@ class Compiler : private UnCopyable {
     primary();
     if (match(TokenKind::TK_DOT)) {
       consume(TokenKind::TK_IDENTIFIER);
-      int symbol = vm_.get_symbol(prev_.literal());
-      std::cout << "symbol: " << symbol << std::endl;
+      int symbol = vm_.ensure_symbol(prev_.as_string());
 
       // compile the method call
       emit_bytes(Code::CALL, symbol);
@@ -138,8 +179,18 @@ class Compiler : private UnCopyable {
   }
 
   void primary(void) {
-    if (match(TokenKind::TK_NUMERIC))
+    if (match(TokenKind::TK_IDENTIFIER)) {
+      int local = get_symbol(prev_.as_string());
+      if (local == -1)
+        error("unkonwn variable");
+
+      emit_bytes(Code::LOAD_LOCAL, local);
+      return;
+    }
+    if (match(TokenKind::TK_NUMERIC)) {
       numeric(prev_);
+      return;
+    }
   }
 public:
   Compiler(VM& vm, Lexer& lex) noexcept
@@ -157,11 +208,18 @@ public:
 
   Block* run_compiler(void) {
     advance();
-    do {
+
+    for (;;) {
       statement();
-    } while (!match(TokenKind::TK_EOF));
+      consume(TokenKind::TK_NL);
+
+      if (match(TokenKind::TK_EOF))
+        break;
+      // emit_byte(Code::POP);
+    }
     emit_byte(Code::END);
 
+    block_->set_num_locals(Xt::as_type<int>(symbols_.size()));
     return had_error_ ? nullptr : block_;
   }
 };
