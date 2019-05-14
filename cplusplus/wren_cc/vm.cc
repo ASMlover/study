@@ -31,40 +31,80 @@
 
 namespace wrencc {
 
-BaseObject::BaseObject(double d)
-  : type_(ObjType::NUMERIC) {
-  as_.numeric = d;
-}
-
-str_t BaseObject::stringify(void) const {
-  auto _double2str_fn = [](double d) -> str_t {
-    std::stringstream ss;
-    ss << d;
-    return ss.str();
-  };
-
-  switch (type_) {
-  case ObjType::NUMERIC: return _double2str_fn(as_.numeric);
-  }
-  return "";
-}
-
-Value BaseObject::make_numeric(double d) {
-  return new BaseObject(d);
-}
-
 std::ostream& operator<<(std::ostream& out, Value val) {
   return out << val->stringify();
 }
 
+str_t NumericObject::stringify(void) const {
+  std::stringstream ss;
+  ss << value_;
+  return ss.str();
+}
+
+NumericObject* NumericObject::make_numeric(double d) {
+  return new NumericObject(d);
+}
+
+str_t BlockObject::stringify(void) const {
+  return "[block]";
+}
+
+BlockObject* BlockObject::make_block(void) {
+  return new BlockObject();
+}
+
+ClassObject::ClassObject(void) noexcept
+  : BaseObject(ObjType::CLASS) {
+}
+
+str_t ClassObject::stringify(void) const {
+  return "[class]";
+}
+
+ClassObject* ClassObject::make_class(void) {
+  return new ClassObject();
+}
+
+int SymbolTable::ensure(const str_t& name) {
+  int existing = get(name);
+  if (existing != -1)
+    return existing;
+
+  symbols_.push_back(name);
+  return Xt::as_type<int>(symbols_.size() - 1);
+}
+
+int SymbolTable::add(const str_t& name) {
+  if (get(name) != -1)
+    return -1;
+
+  symbols_.push_back(name);
+  return Xt::as_type<int>(symbols_.size() - 1);
+}
+
+int SymbolTable::get(const str_t& name) const {
+  for (sz_t i = 0; i < symbols_.size(); ++i) {
+    if (symbols_[i] == name)
+      return Xt::as_type<int>(i);
+  }
+  return -1;
+}
+
+void SymbolTable::clear(void) {
+  symbols_.clear();
+}
+
 struct CallFrame {
   int ip{};
-  Block* block{};
+  BlockObject* block{};
   int locals{};
 
-  CallFrame(int ip_arg, Block* block_arg, int locals_arg) noexcept
+  CallFrame(int ip_arg, BlockObject* block_arg, int locals_arg) noexcept
     : ip(ip_arg), block(block_arg), locals(locals_arg) {
   }
+
+  inline u8_t get_code(int i) const { return block->get_code(i); }
+  inline Value get_constant(int i) const { return block->get_constant(i); }
 };
 
 class Fiber : private UnCopyable {
@@ -75,6 +115,9 @@ public:
     stack_.clear();
     frames_.clear();
   }
+
+  inline int stack_size(void) const { return Xt::as_type<int>(stack_.size()); }
+  inline int frame_size(void) const { return Xt::as_type<int>(frames_.size()); }
 
   inline CallFrame& peek_frame(void) {
     return frames_.back();
@@ -113,56 +156,27 @@ public:
     return v;
   }
 
-  void call_block(Block* block, int locals) {
+  void call_block(BlockObject* block, int locals) {
     frames_.push_back(CallFrame(0, block, locals));
   }
 };
 
 /// VM IMPLEMENTATIONS
 
-void Class::append_method(VM& vm, const str_t& name, PrimitiveFn&& fn) {
-  methods_[vm.ensure_symbol(name)] = std::move(fn);
+static Value _primitive_numabs(Value v) {
+  double d = Xt::down<NumericObject>(v)->value();
+  if (d < 0)
+    d = -d;
+  return NumericObject::make_numeric(d);
 }
 
 VM::VM(void) {
-  num_class_.append_method(*this, "abs", [](Value v) -> Value {
-        auto d = v->as_numeric();
-        if (d < 0)
-          d = -d;
-        return BaseObject::make_numeric(d);
-      });
+  num_class_ = ClassObject::make_class();
+  int symbol = symbols_.ensure("abs");
+  num_class_->set_method(symbol, MethodType::PRIMITIVE, _primitive_numabs);
 }
 
-int VM::ensure_symbol(const str_t& name) {
-  int existing = get_symbol(name);
-  if (existing != -1)
-    return existing;
-
-  symbols_.push_back(name);
-  return Xt::as_type<int>(symbols_.size() - 1);
-}
-
-int VM::add_symbol(const str_t& name) {
-  if (get_symbol(name) != -1)
-    return -1;
-
-  symbols_.push_back(name);
-  return Xt::as_type<int>(symbols_.size() - 1);
-}
-
-int VM::get_symbol(const str_t& name) const {
-  for (sz_t i = 0; i < symbols_.size(); ++i) {
-    if (symbols_[i] == name)
-      return Xt::as_type<int>(i);
-  }
-  return -1;
-}
-
-void VM::clear_symbol(void) {
-  symbols_.clear();
-}
-
-Value VM::interpret(Block* block) {
+Value VM::interpret(BlockObject* block) {
   Fiber fiber;
   fiber.reset();
   fiber.call_block(block, 0);
@@ -170,37 +184,57 @@ Value VM::interpret(Block* block) {
   for (;;) {
     auto* frame = &fiber.peek_frame();
 
-    switch (auto c = Xt::as_type<Code>(frame->block->get_code(frame->ip++))) {
+    switch (auto c = Xt::as_type<Code>(frame->get_code(frame->ip++))) {
     case Code::CONSTANT:
       {
-        Value v = frame->block->get_constant(frame->block->get_code(frame->ip++));
+        Value v = frame->get_constant(frame->get_code(frame->ip++));
         fiber.push(v);
+      } break;
+    case Code::CLASS:
+      {
+        fiber.push(ClassObject::make_class());
+        std::cout << "push class at: " << fiber.stack_size() - 1 << std::endl;
       } break;
     case Code::LOAD_LOCAL:
       {
-        int local = frame->block->get_code(frame->ip++);
+        int local = frame->get_code(frame->ip++);
         fiber.push(fiber.get_value(frame->locals + local));
+
+        std::cout
+          << "load local `" << local << "` "
+          << "to `" << fiber.stack_size() - 1 << "`" << std::endl;
       } break;
     case Code::STORE_LOCAL:
       {
-        int local = frame->block->get_code(frame->ip++);
+        int local = frame->get_code(frame->ip++);
+        std::cout
+          << "store local `" << local << "` "
+          << "from `" << fiber.stack_size() - 1 << "`" << std::endl;
         fiber.set_value(frame->locals + local, fiber.peek_value());
       } break;
-    case Code::POP: fiber.pop(); break;
+    case Code::DUP:
+      {
+        fiber.push(fiber.peek_value());
+        std::cout << "dup `" << fiber.stack_size() - 1 << "`" << std::endl;
+      } break;
+    case Code::POP:
+      std::cout << "pop `" << fiber.stack_size() - 1 << "`" << std::endl;
+      fiber.pop(); break;
     case Code::CALL:
       {
         Value receiver = fiber.pop();
-        int symbol = frame->block->get_code(frame->ip++);
+        int symbol = frame->get_code(frame->ip++);
 
-        Class* cls = &num_class_;
-        auto primitive_fn = cls->get_method(symbol);
-        if (primitive_fn) {
-          Value r = primitive_fn(receiver);
-          fiber.push(r);
-        }
-        else {
-          std::cerr << "not method" << std::endl;
-          std::exit(-1);
+        ClassObject* cls = num_class_;
+        auto& method = cls->get_method(symbol);
+        switch (method.type) {
+        case MethodType::NONE:
+          std::cerr << "no method" << std::endl;
+          std::exit(-1); break;
+        case MethodType::PRIMITIVE:
+          fiber.push(method.primitive(receiver)); break;
+        case MethodType::BLOCK:
+          fiber.call_block(method.block, fiber.stack_size()); break;
         }
       } break;
     case Code::END:
@@ -218,7 +252,7 @@ Value VM::interpret(Block* block) {
 }
 
 void VM::interpret(const str_t& source_bytes) {
-  Block* block = compile(*this, source_bytes);
+  auto* block = compile(*this, source_bytes);
 
   Value r = interpret(block);
   std::cout << r << std::endl;
