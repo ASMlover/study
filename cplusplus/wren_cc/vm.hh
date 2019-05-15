@@ -90,6 +90,7 @@ public:
   inline int constants_count(void) const { return Xt::as_type<int>(constants_.size()); }
   inline u8_t get_code(int i) const { return codes_[i]; }
   inline Value get_constant(int i) const { return constants_[i]; }
+  inline void set_num_locals(int num_locals) { num_locals_ = num_locals; }
 
   template <typename T> inline void add_code(T c) {
     codes_.push_back(Xt::as_type<u8_t>(c));
@@ -158,6 +159,8 @@ enum class Code : u8_t {
 class SymbolTable : private UnCopyable {
   std::vector<str_t> symbols_;
 public:
+  inline int count(void) const { return Xt::as_type<int>(symbols_.size()); }
+
   int ensure(const str_t& name);
   int add(const str_t& name);
   int get(const str_t& name) const;
@@ -171,6 +174,8 @@ class VM : private UnCopyable {
   Value interpret(BlockObject* block);
 public:
   VM(void);
+
+  inline SymbolTable& symbols(void) { return symbols_; }
 
   void interpret(const str_t& source_bytes);
 };

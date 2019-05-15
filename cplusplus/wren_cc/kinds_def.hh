@@ -66,8 +66,8 @@ PUNCTUATOR(GTEQ, ">=")
 PUNCTUATOR(EQEQ, "==")
 PUNCTUATOR(BANGEQ, "!=")
 
-KEYWORD(ELSE, "else")
-KEYWORD(IF, "if")
+KEYWORD(CLASS, "class")
+KEYWORD(META, "meta")
 KEYWORD(VAR, "var")
 
 TOKEN(EMBED, "embed")
