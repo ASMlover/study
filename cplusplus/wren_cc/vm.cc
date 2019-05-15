@@ -140,10 +140,7 @@ public:
   }
 
   inline void set_value(int i, Value v) {
-    if (stack_.size() <= i)
-      stack_.push_back(v);
-    else
-      stack_[i] = v;
+    stack_[i] = v;
   }
 
   inline void push(Value v) {
@@ -156,8 +153,11 @@ public:
     return v;
   }
 
-  void call_block(BlockObject* block, int locals) {
-    frames_.push_back(CallFrame(0, block, locals));
+  void call_block(BlockObject* block, int beglocal = 0) {
+    frames_.push_back(CallFrame(0, block, beglocal));
+
+    for (int i = 0; i < block->num_locals(); ++i)
+      push(nullptr);
   }
 };
 
@@ -189,6 +189,10 @@ Value VM::interpret(BlockObject* block) {
       {
         Value v = frame->get_constant(frame->get_code(frame->ip++));
         fiber.push(v);
+
+        std::cout
+          << "load constant `" << v
+          << "` to `" << fiber.stack_size() - 1 << "`" << std::endl;
       } break;
     case Code::CLASS:
       {
