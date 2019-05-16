@@ -45,6 +45,10 @@ enum class ObjFlag {
 class BaseObject;
 using Value = BaseObject*;
 
+class NumericObject;
+class BlockObject;
+class ClassObject;
+
 class BaseObject : private UnCopyable {
   ObjType type_{};
   ObjFlag flag_{};
@@ -54,6 +58,10 @@ public:
 
   inline ObjType type(void) const { return type_; }
   inline ObjFlag flag(void) const { return flag_; }
+
+  NumericObject* as_numeric(void);
+  BlockObject* as_block(void);
+  ClassObject* as_class(void);
 
   virtual str_t stringify(void) const = 0;
 };
@@ -108,6 +116,7 @@ using PrimitiveFn = Value (*)(Value);
 
 enum class MethodType {
   NONE,
+  CALL,
   PRIMITIVE,
   BLOCK,
 };
@@ -130,9 +139,16 @@ class ClassObject : public BaseObject {
 public:
   inline int methods_count(void) const { return Xt::as_type<int>(methods_.size()); }
   inline Method& get_method(int i) { return methods_[i]; }
+  inline void set_method(int i, MethodType type) { methods_[i].type = type; }
+  inline void set_method(int i, PrimitiveFn fn) { methods_[i].primitive = fn; }
+  inline void set_method(int i, BlockObject* b) { methods_[i].block = b; }
   inline void set_method(int i, MethodType type, PrimitiveFn fn) {
     methods_[i].type = type;
     methods_[i].primitive = fn;
+  }
+  inline void set_method(int i, MethodType type, BlockObject* block) {
+    methods_[i].type = type;
+    methods_[i].block = block;
   }
 
   virtual str_t stringify(void) const override;
@@ -165,7 +181,12 @@ public:
 
 class VM : private UnCopyable {
   SymbolTable symbols_;
-  ClassObject* num_class_;
+
+  ClassObject* block_class_{};
+  ClassObject* class_class_{};
+  ClassObject* num_class_{};
+
+  void set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn);
 
   Value interpret(BlockObject* block);
 public:

@@ -35,6 +35,18 @@ std::ostream& operator<<(std::ostream& out, Value val) {
   return out << val->stringify();
 }
 
+NumericObject* BaseObject::as_numeric(void) {
+  return Xt::down<NumericObject>(this);
+}
+
+BlockObject* BaseObject::as_block(void) {
+  return Xt::down<BlockObject>(this);
+}
+
+ClassObject* BaseObject::as_class(void) {
+  return Xt::down<ClassObject>(this);
+}
+
 str_t NumericObject::stringify(void) const {
   std::stringstream ss;
   ss << value_;
@@ -156,9 +168,20 @@ static Value _primitive_numabs(Value v) {
 }
 
 VM::VM(void) {
+  block_class_ = ClassObject::make_class();
+  {
+    int symbol = symbols_.ensure("call");
+    block_class_->set_method(symbol, MethodType::CALL);
+  }
+  class_class_ = ClassObject::make_class();
+
   num_class_ = ClassObject::make_class();
-  int symbol = symbols_.ensure("abs");
-  num_class_->set_method(symbol, MethodType::PRIMITIVE, _primitive_numabs);
+  set_primitive(num_class_, "abs", _primitive_numabs);
+}
+
+void VM::set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn) {
+  int symbol = symbols_.ensure(name);
+  cls->set_method(symbol, MethodType::PRIMITIVE, fn);
 }
 
 Value VM::interpret(BlockObject* block) {
@@ -214,12 +237,20 @@ Value VM::interpret(BlockObject* block) {
         Value receiver = fiber.pop();
         int symbol = frame->get_code(frame->ip++);
 
-        ClassObject* cls = num_class_;
+        ClassObject* cls{};
+        switch (receiver->type()) {
+        case ObjType::BLOCK: cls = block_class_; break;
+        case ObjType::CLASS: cls = class_class_; break;
+        case ObjType::NUMERIC: cls = num_class_; break;
+        }
+
         auto& method = cls->get_method(symbol);
         switch (method.type) {
         case MethodType::NONE:
           std::cerr << "no method" << std::endl;
           std::exit(-1); break;
+        case MethodType::CALL:
+          fiber.call_block(receiver->as_block(), fiber.stack_size()); break;
         case MethodType::PRIMITIVE:
           fiber.push(method.primitive(receiver)); break;
         case MethodType::BLOCK:
