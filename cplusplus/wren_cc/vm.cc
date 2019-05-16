@@ -274,8 +274,10 @@ Value VM::interpret(BlockObject* block) {
 void VM::interpret(const str_t& source_bytes) {
   auto* block = compile(*this, source_bytes);
 
-  Value r = interpret(block);
-  std::cout << r << std::endl;
+  if (block != nullptr) {
+    Value r = interpret(block);
+    std::cout << "run VM interpret result is: `" << r << "`" << std::endl;
+  }
 }
 
 }

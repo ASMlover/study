@@ -1,6 +1,7 @@
-{
-  123
+
+var a = {
+  var b = 345
+  333
+  b
 }
-var a = 123
-var b = 456
-a
+a.call

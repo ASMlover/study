@@ -61,6 +61,8 @@ class Parser : private UnCopyable {
   Token prev_;
   Token curr_;
 
+  bool skip_newlines_{};
+
   bool had_error_{};
 public:
   Parser(VM& vm, Lexer& lex) noexcept
@@ -75,7 +77,43 @@ public:
 
   inline void advance(void) {
     prev_ = curr_;
-    curr_ = lex_.next_token();
+
+    for (;;) {
+      curr_ = lex_.next_token();
+      switch (curr_.kind()) {
+      case TokenKind::TK_NL:
+        if (!skip_newlines_) {
+          skip_newlines_ = true;
+          return;
+        }
+        break;
+      case TokenKind::TK_LPAREN:
+      case TokenKind::TK_LBRACKET:
+      case TokenKind::TK_LBRACE:
+      case TokenKind::TK_DOT:
+      case TokenKind::TK_COMMA:
+      case TokenKind::TK_STAR:
+      case TokenKind::TK_SLASH:
+      case TokenKind::TK_PERCENT:
+      case TokenKind::TK_PLUS:
+      case TokenKind::TK_MINUS:
+      case TokenKind::TK_PIPE:
+      case TokenKind::TK_AMP:
+      case TokenKind::TK_BANG:
+      case TokenKind::TK_EQ:
+      case TokenKind::TK_LT:
+      case TokenKind::TK_GT:
+      case TokenKind::TK_LTEQ:
+      case TokenKind::TK_GTEQ:
+      case TokenKind::TK_EQEQ:
+      case TokenKind::TK_BANGEQ:
+      case TokenKind::KW_CLASS:
+      case TokenKind::KW_META:
+      case TokenKind::KW_VAR:
+        skip_newlines_ = true; return;
+      default: skip_newlines_ = false; return;
+      }
+    }
   }
 };
 
@@ -239,7 +277,7 @@ public:
 
       if (match(end_kind))
         break;
-      emit_byte(Code::POP);
+      // emit_byte(Code::POP);
     }
     emit_byte(Code::END);
     block_->set_num_locals(locals_.count());
