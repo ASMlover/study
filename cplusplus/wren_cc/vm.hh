@@ -56,8 +56,6 @@ public:
   inline ObjFlag flag(void) const { return flag_; }
 
   virtual str_t stringify(void) const = 0;
-
-  static Value make_numeric(double d);
 };
 
 std::ostream& operator<<(std::ostream& out, Value val);
@@ -121,8 +119,6 @@ struct Method {
     BlockObject* block;
   };
 };
-
-class VM;
 
 class ClassObject : public BaseObject {
   static constexpr sz_t kMaxMethods = 256;

@@ -118,29 +118,14 @@ public:
 
   inline int stack_size(void) const { return Xt::as_type<int>(stack_.size()); }
   inline int frame_size(void) const { return Xt::as_type<int>(frames_.size()); }
-
-  inline CallFrame& peek_frame(void) {
-    return frames_.back();
-  }
-
-  inline void pop_frame(void) {
-    frames_.pop_back();
-  }
-
-  inline bool empty_frame(void) const {
-    return frames_.empty();
-  }
+  inline CallFrame& peek_frame(void) { return frames_.back(); }
+  inline void pop_frame(void) { frames_.pop_back(); }
+  inline bool empty_frame(void) const { return frames_.empty(); }
+  inline Value get_value(int i) const { return stack_[i]; }
+  inline void set_value(int i, Value v) { stack_[i] = v; }
 
   inline Value peek_value(int distance = 0) const {
     return stack_[stack_.size() - 1 - distance];
-  }
-
-  inline Value get_value(int i) const {
-    return stack_[i];
-  }
-
-  inline void set_value(int i, Value v) {
-    stack_[i] = v;
   }
 
   inline void push(Value v) {
