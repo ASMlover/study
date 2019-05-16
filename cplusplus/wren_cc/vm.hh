@@ -36,6 +36,7 @@ enum class ObjType {
   NUMERIC,
   BLOCK,
   CLASS,
+  INSTANCE,
 };
 
 enum class ObjFlag {
@@ -48,6 +49,7 @@ using Value = BaseObject*;
 class NumericObject;
 class BlockObject;
 class ClassObject;
+class InstanceObject;
 
 class BaseObject : private UnCopyable {
   ObjType type_{};
@@ -59,9 +61,15 @@ public:
   inline ObjType type(void) const { return type_; }
   inline ObjFlag flag(void) const { return flag_; }
 
-  NumericObject* as_numeric(void);
-  BlockObject* as_block(void);
-  ClassObject* as_class(void);
+  inline bool is_numeric(void) const { return type_ == ObjType::NUMERIC; }
+  inline bool is_block(void) const { return type_ == ObjType::BLOCK; }
+  inline bool is_class(void) const { return type_ == ObjType::CLASS; }
+  inline bool is_instance(void) const { return type_ == ObjType::INSTANCE; }
+
+  NumericObject* as_numeric(void) const;
+  BlockObject* as_block(void) const;
+  ClassObject* as_class(void) const;
+  InstanceObject* as_instance(void) const;
 
   virtual str_t stringify(void) const = 0;
 };
@@ -132,9 +140,11 @@ struct Method {
 class ClassObject : public BaseObject {
   static constexpr sz_t kMaxMethods = 256;
 
+  ClassObject* meta_class_{};
   std::vector<Method> methods_{kMaxMethods};
 
   ClassObject(void) noexcept;
+  ClassObject(ClassObject* meta_class) noexcept;
   virtual ~ClassObject(void) {}
 public:
   inline int methods_count(void) const { return Xt::as_type<int>(methods_.size()); }
@@ -156,9 +166,25 @@ public:
   static ClassObject* make_class(void);
 };
 
+class InstanceObject : public BaseObject {
+  ClassObject* cls_{};
+  // TODO: need add instance fields
+
+  InstanceObject(ClassObject* cls) noexcept;
+  virtual ~InstanceObject(void) {}
+public:
+  inline ClassObject* cls(void) const { return cls_; }
+
+  virtual str_t stringify(void) const override;
+
+  static InstanceObject* make_instance(ClassObject* cls);
+};
+
 enum class Code : u8_t {
   CONSTANT, // load the constant at index [arg]
   CLASS, // define a new empty class and push it into stack
+  METHOD, // method for symbol [arg1] with body stored in constant [arg2] to
+          // the class on the top of stack, does not modify the stack
   DUP, // push a copy of the top of stack
   POP, // pop and discard the top of stack
   LOAD_LOCAL, // push the value in local slot [arg]
@@ -172,6 +198,7 @@ class SymbolTable : private UnCopyable {
   std::vector<str_t> symbols_;
 public:
   inline int count(void) const { return Xt::as_type<int>(symbols_.size()); }
+  inline const str_t& get_name(int i) const { return symbols_[i]; }
 
   int ensure(const str_t& name);
   int add(const str_t& name);

@@ -35,16 +35,20 @@ std::ostream& operator<<(std::ostream& out, Value val) {
   return out << val->stringify();
 }
 
-NumericObject* BaseObject::as_numeric(void) {
-  return Xt::down<NumericObject>(this);
+NumericObject* BaseObject::as_numeric(void) const {
+  return Xt::down<NumericObject>(const_cast<BaseObject*>(this));
 }
 
-BlockObject* BaseObject::as_block(void) {
-  return Xt::down<BlockObject>(this);
+BlockObject* BaseObject::as_block(void) const {
+  return Xt::down<BlockObject>(const_cast<BaseObject*>(this));
 }
 
-ClassObject* BaseObject::as_class(void) {
-  return Xt::down<ClassObject>(this);
+ClassObject* BaseObject::as_class(void) const {
+  return Xt::down<ClassObject>(const_cast<BaseObject*>(this));
+}
+
+InstanceObject* BaseObject::as_instance(void) const {
+  return nullptr;
 }
 
 str_t NumericObject::stringify(void) const {
@@ -69,12 +73,31 @@ ClassObject::ClassObject(void) noexcept
   : BaseObject(ObjType::CLASS) {
 }
 
+ClassObject::ClassObject(ClassObject* meta_class) noexcept
+  : BaseObject(ObjType::CLASS)
+  , meta_class_(meta_class_) {
+}
+
 str_t ClassObject::stringify(void) const {
   return "[class]";
 }
 
 ClassObject* ClassObject::make_class(void) {
-  return new ClassObject();
+  auto* meta_class = new ClassObject();
+  return new ClassObject(meta_class);
+}
+
+InstanceObject::InstanceObject(ClassObject* cls) noexcept
+  : BaseObject(ObjType::INSTANCE)
+  , cls_(cls) {
+}
+
+str_t InstanceObject::stringify(void) const {
+  return "[instance]";
+}
+
+InstanceObject* InstanceObject::make_instance(ClassObject* cls) {
+  return new InstanceObject(cls);
 }
 
 int SymbolTable::ensure(const str_t& name) {
