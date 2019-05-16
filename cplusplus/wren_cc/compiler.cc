@@ -54,30 +54,52 @@ struct InfixCompiler {
   Precedence precedence;
 };
 
-class Compiler : private UnCopyable {
+class Parser : private UnCopyable {
   VM& vm_;
 
   Lexer& lex_;
   Token prev_;
   Token curr_;
 
-  // the block being comipled
+  bool had_error_{};
+public:
+  Parser(VM& vm, Lexer& lex) noexcept
+    : vm_(vm), lex_(lex) {
+  }
+
+  inline const Token& prev(void) const { return prev_; }
+  inline const Token& curr(void) const { return curr_; }
+  inline bool had_error(void) const { return had_error_; }
+  inline void set_error(bool b = true) { had_error_ = b; }
+  inline VM& get_vm(void) { return vm_; }
+
+  inline void advance(void) {
+    prev_ = curr_;
+    curr_ = lex_.next_token();
+  }
+};
+
+class Compiler : private UnCopyable {
+  Parser& parser_;
+  Compiler* parent_{};
   BlockObject* block_{};
-  int codes_count_{};
+  int num_codes_{};
 
   SymbolTable locals_;
 
-  bool had_error_{};
-
   void error(const char* format, ...) {
-    had_error_ = true;
-    std::cerr << "Compile ERROR on " << curr_ << " : ";
+    parser_.set_error(true);
+    std::cerr << "Compile ERROR on `" << parser_.prev().literal() << "` : ";
 
     va_list ap;
     va_start(ap, format);
     vfprintf(stderr, format, ap);
     va_end(ap);
     std::cerr << std::endl;
+  }
+
+  int intern_symbol(void) {
+    return parser_.get_vm().symbols().ensure(parser_.prev().as_string());
   }
 
   template <typename T> inline void emit_byte(T b) {
@@ -94,37 +116,33 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::CONSTANT, b);
   }
 
-  void numeric(const Token& tok) {
+  void numeric(void) {
+    auto& tok = parser_.prev();
     Value constant = NumericObject::make_numeric(tok.as_numeric());
 
     emit_constant(constant);
   }
 
   bool match(TokenKind expected) {
-    if (curr_.kind() != expected)
+    if (parser_.curr().kind() != expected)
       return false;
 
-    advance();
+    parser_.advance();
     return true;
   }
 
   void consume(TokenKind expected) {
-    advance();
+    parser_.advance();
 
-    if (prev_.kind() != expected)
-      error("expected %d, got %d", expected, prev_.kind());
-  }
-
-  void advance(void) {
-    prev_ = curr_;
-    curr_ = lex_.next_token();
+    if (parser_.prev().kind() != expected)
+      error("expected %d, got %d", expected, parser_.prev().kind());
   }
 
   void statement(void) {
     if (match(TokenKind::KW_CLASS)) {
       consume(TokenKind::TK_IDENTIFIER);
 
-      int local = locals_.add(prev_.as_string());
+      int local = locals_.add(parser_.prev().as_string());
       if (local == -1)
         error("local variable is already defined");
 
@@ -135,15 +153,21 @@ class Compiler : private UnCopyable {
 
       // compile the method definitions
       consume(TokenKind::TK_LBRACE);
-      // TODO: function definieions
-      consume(TokenKind::TK_RBRACE);
+      while (!match(TokenKind::TK_RBRACE)) {
+        // method name
+        consume(TokenKind::TK_IDENTIFIER);
+        consume(TokenKind::TK_LBRACE);
+        // TODO: parse body
+        consume(TokenKind::TK_RBRACE);
 
+        consume(TokenKind::TK_NL);
+      }
       return;
     }
 
     if (match(TokenKind::KW_VAR)) {
       consume(TokenKind::TK_IDENTIFIER);
-      int local = locals_.add(prev_.as_string());
+      int local = locals_.add(parser_.prev().as_string());
 
       if (local == -1)
         error("local variable is already defined");
@@ -167,7 +191,7 @@ class Compiler : private UnCopyable {
     primary();
     if (match(TokenKind::TK_DOT)) {
       consume(TokenKind::TK_IDENTIFIER);
-      int symbol = vm_.symbols().ensure(prev_.as_string());
+      int symbol = intern_symbol();
 
       // compile the method call
       emit_bytes(Code::CALL, symbol);
@@ -175,23 +199,32 @@ class Compiler : private UnCopyable {
   }
 
   void primary(void) {
+    if (match(TokenKind::TK_LBRACE)) {
+      auto* block = compile_block(parser_, this, TokenKind::TK_RBRACE);
+      u8_t constant = block_->add_constant(block);
+
+      emit_bytes(Code::CONSTANT, constant);
+      return;
+    }
+
     if (match(TokenKind::TK_IDENTIFIER)) {
-      int local = locals_.get(prev_.as_string());
+      int local = locals_.get(parser_.prev().as_string());
       if (local == -1)
         error("unkonwn variable");
 
       emit_bytes(Code::LOAD_LOCAL, local);
       return;
     }
+
     if (match(TokenKind::TK_NUMERIC)) {
-      numeric(prev_);
+      numeric();
       return;
     }
   }
 public:
-  Compiler(VM& vm, Lexer& lex) noexcept
-    : vm_(vm)
-    , lex_(lex) {
+  Compiler(Parser& parser, Compiler* parent = nullptr) noexcept
+    : parser_(parser)
+    , parent_(parent) {
     block_ = BlockObject::make_block();
   }
 
@@ -199,29 +232,35 @@ public:
     // FIXME: fixed deallocate BlockObject by GC
   }
 
-  BlockObject* run_compiler(void) {
-    advance();
-
+  BlockObject* compile_block(TokenKind end_kind) {
     for (;;) {
       statement();
       consume(TokenKind::TK_NL);
 
-      if (match(TokenKind::TK_EOF))
+      if (match(end_kind))
         break;
-      // emit_byte(Code::POP);
+      emit_byte(Code::POP);
     }
     emit_byte(Code::END);
-
     block_->set_num_locals(locals_.count());
-    return had_error_ ? nullptr : block_;
+
+    return parser_.had_error() ? nullptr : block_;
+  }
+
+  BlockObject* compile_block(Parser& p, Compiler* parent, TokenKind end_kind) {
+    Compiler c(p, parent);
+    return c.compile_block(end_kind);
   }
 };
 
 BlockObject* compile(VM& vm, const str_t& source_bytes) {
   Lexer lex(source_bytes);
-  Compiler c(vm, lex);
+  Parser p(vm, lex);
 
-  return c.run_compiler();
+  p.advance();
+  Compiler c(p, nullptr);
+
+  return c.compile_block(TokenKind::TK_EOF);
 }
 
 }
