@@ -58,6 +58,16 @@ class ThisExpr;
 class VariableExpr;
 class FunctionExpr;
 
+class ClassStmt;
+class FunctionStmt;
+class VarStmt;
+class BlockStmt;
+class ExprStmt;
+class WhileStmt;
+class IfStmt;
+class PrintStmt;
+class ReturnStmt;
+
 using AssignExprPtr = std::shared_ptr<AssignExpr>;
 using SetExprPtr = std::shared_ptr<SetExpr>;
 using LogicalExprPtr = std::shared_ptr<LogicalExpr>;
@@ -71,6 +81,16 @@ using SuperExprPtr = std::shared_ptr<SuperExpr>;
 using ThisExprPtr = std::shared_ptr<ThisExpr>;
 using VariableExprPtr = std::shared_ptr<VariableExpr>;
 using FunctionExprPtr = std::shared_ptr<FunctionExpr>;
+
+using ClassStmtPtr = std::shared_ptr<ClassStmt>;
+using FunctionStmtPtr = std::shared_ptr<FunctionStmt>;
+using VarStmtPtr = std::shared_ptr<VarStmt>;
+using BlockStmtPtr = std::shared_ptr<BlockStmt>;
+using ExprStmtPtr = std::shared_ptr<ExprStmt>;
+using WhileStmtPtr = std::shared_ptr<WhileStmt>;
+using IfStmtPtr = std::shared_ptr<IfStmt>;
+using PrintStmtPtr = std::shared_ptr<PrintStmt>;
+using ReturnStmtPtr = std::shared_ptr<ReturnStmt>;
 
 struct ExprVisitor : private UnCopyable {
   virtual ~ExprVisitor(void) {}
@@ -90,9 +110,28 @@ struct ExprVisitor : private UnCopyable {
   virtual void visit(const FunctionExprPtr& expr) = 0;
 };
 
+struct StmtVisitor : private UnCopyable {
+  virtual ~StmtVisitor(void) {}
+
+  virtual void visit(const ClassStmtPtr& stmt) = 0;
+  virtual void visit(const FunctionStmtPtr& stmt) = 0;
+  virtual void visit(const VarStmtPtr& stmt) = 0;
+  virtual void visit(const BlockStmtPtr& stmt) = 0;
+  virtual void visit(const ExprStmtPtr& stmt) = 0;
+  virtual void visit(const WhileStmtPtr& stmt) = 0;
+  virtual void visit(const IfStmtPtr& stmt) = 0;
+  virtual void visit(const PrintStmtPtr& stmt) = 0;
+  virtual void visit(const ReturnStmtPtr& stmt) = 0;
+};
+
 struct Expr : private UnCopyable {
   virtual ~Expr(void) {}
   virtual void accept(const ExprVisitorPtr& visitor) = 0;
+};
+
+struct Stmt : private UnCopyable {
+  virtual ~Stmt(void) {}
+  virtual void accept(const StmtVisitorPtr& visitor) = 0;
 };
 
 class AssignExpr final
@@ -296,6 +335,146 @@ public:
   }
 
   virtual void accept(const ExprVisitorPtr& visitor) override;
+};
+
+class ClassStmt final
+  : public Stmt, public std::enable_shared_from_this<ClassStmt> {
+  Token name_;
+  ExprPtr superclass_;
+  std::vector<FunctionStmtPtr> methods_;
+public:
+  inline const Token& name(void) const { return name_; }
+  inline const ExprPtr& superclass(void) const { return superclass_; }
+  inline const std::vector<FunctionStmtPtr>& methods(void) const { return methods_; }
+
+  ClassStmt(const Token& name,
+      const ExprPtr& superclass,
+      const std::vector<FunctionStmtPtr>& methods) noexcept
+    : name_(name), superclass_(superclass), methods_(methods) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
+};
+
+class FunctionStmt final
+  : public Stmt, public std::enable_shared_from_this<FunctionStmt> {
+  Token name_;
+  std::vector<Token> params_;
+  std::vector<StmtPtr> body_;
+public:
+  inline const Token& name(void) const { return name_; }
+  inline const std::vector<Token>& params(void) const { return params_; }
+  inline const std::vector<StmtPtr>& body(void) const { return body_; }
+
+  FunctionStmt(const Token& name,
+      const std::vector<Token>& params,
+      const std::vector<StmtPtr>& body) noexcept
+    : name_(name), params_(params), body_(body) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
+};
+
+class VarStmt final
+  : public Stmt, public std::enable_shared_from_this<VarStmt> {
+  Token name_;
+  ExprPtr expr_;
+public:
+  inline const Token& name(void) const { return name_; }
+  inline const ExprPtr& expr(void) const { return expr_; }
+
+  VarStmt(const Token& name, const ExprPtr& expr) noexcept
+    : name_(name), expr_(expr) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
+};
+
+class BlockStmt final
+  : public Stmt, public std::enable_shared_from_this<BlockStmt> {
+  std::vector<StmtPtr> stmts_;
+public:
+  inline const std::vector<StmtPtr>& stmts(void) const { return stmts_; }
+
+  BlockStmt(const std::vector<StmtPtr>& stmts) noexcept
+    : stmts_(stmts) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
+};
+
+class ExprStmt final
+  : public Stmt, public std::enable_shared_from_this<ExprStmt> {
+  ExprPtr expr_;
+public:
+  inline const ExprPtr& expr(void) const { return expr_; }
+
+  ExprStmt(const ExprPtr& expr) noexcept
+    : expr_(expr) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
+};
+
+class WhileStmt final
+  : public Stmt, public std::enable_shared_from_this<WhileStmt> {
+  ExprPtr cond_;
+  StmtPtr body_;
+public:
+  inline const ExprPtr& cond(void) const { return cond_; }
+  inline const StmtPtr& body(void) const { return body_; }
+
+  WhileStmt(const ExprPtr& cond, const StmtPtr& body) noexcept
+    : cond_(cond), body_(body) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
+};
+
+class IfStmt final
+  : public Stmt, public std::enable_shared_from_this<IfStmt> {
+  ExprPtr cond_;
+  StmtPtr then_branch_;
+  StmtPtr else_branch_;
+public:
+  inline const ExprPtr& cond(void) const { return cond_; }
+  inline const StmtPtr& then_branch(void) const { return then_branch_; }
+  inline const StmtPtr& else_branch(void) const { return else_branch_; }
+
+  IfStmt(const ExprPtr& cond,
+      const StmtPtr& then_branch, const StmtPtr& else_branch) noexcept
+    : cond_(cond), then_branch_(then_branch), else_branch_(else_branch) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
+};
+
+class PrintStmt final
+  : public Stmt, public std::enable_shared_from_this<PrintStmt> {
+  std::vector<ExprPtr> exprs_;
+public:
+  inline const std::vector<ExprPtr>& exprs(void) const { return exprs_; }
+
+  PrintStmt(const std::vector<ExprPtr>& exprs) noexcept
+    : exprs_(exprs) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
+};
+
+class ReturnStmt final
+  : public Stmt, public std::enable_shared_from_this<ReturnStmt> {
+  Token keyword_;
+  ExprPtr value_;
+public:
+  inline const Token& keyword(void) const { return keyword_; }
+  inline const ExprPtr& value(void) const { return value_; }
+
+  ReturnStmt(const Token& keyword, const ExprPtr& value) noexcept
+    : keyword_(keyword), value_(value) {
+  }
+
+  virtual void accept(const StmtVisitorPtr& visitor) override;
 };
 
 }

@@ -80,4 +80,40 @@ void FunctionExpr::accept(const ExprVisitorPtr& expr) {
   expr->visit(shared_from_this());
 }
 
+void ClassStmt::accept(const StmtVisitorPtr& stmt) {
+  stmt->visit(shared_from_this());
+}
+
+void FunctionStmt::accept(const StmtVisitorPtr& stmt) {
+  stmt->visit(shared_from_this());
+}
+
+void VarStmt::accept(const StmtVisitorPtr& stmt) {
+  stmt->visit(shared_from_this());
+}
+
+void BlockStmt::accept(const StmtVisitorPtr& stmt) {
+  stmt->visit(shared_from_this());
+}
+
+void ExprStmt::accept(const StmtVisitorPtr& stmt) {
+  stmt->visit(shared_from_this());
+}
+
+void WhileStmt::accept(const StmtVisitorPtr& stmt) {
+  stmt->visit(shared_from_this());
+}
+
+void IfStmt::accept(const StmtVisitorPtr& stmt) {
+  stmt->visit(shared_from_this());
+}
+
+void PrintStmt::accept(const StmtVisitorPtr& stmt) {
+  stmt->visit(shared_from_this());
+}
+
+void ReturnStmt::accept(const StmtVisitorPtr& stmt) {
+  stmt->visit(shared_from_this());
+}
+
 }
