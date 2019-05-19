@@ -49,11 +49,11 @@ Token Parser::advance(void) {
     if (curr_.kind() == TokenKind::TK_ERR)
       throw RuntimeError(curr_, curr_.literal());
   }
-  return prev();
+  return prev_;
 }
 
 bool Parser::check(TokenKind kind) const {
-  return is_end() ? false : peek().kind() == kind;
+  return is_end() ? false : curr_.kind() == kind;
 }
 
 bool Parser::match(const std::initializer_list<TokenKind>& kinds) {
@@ -70,7 +70,7 @@ Token Parser::consume(TokenKind kind, const str_t& message) {
   if (check(kind))
     return advance();
 
-  throw RuntimeError(peek(), message);
+  throw RuntimeError(curr_, message);
 }
 
 void Parser::synchronize(void) {
@@ -124,7 +124,7 @@ StmtPtr Parser::class_decl(void) {
   ExprPtr superclass;
   if (match({TokenKind::TK_LT})) {
     consume(TokenKind::TK_IDENTIFIER, "expect superclass name");
-    superclass = std::make_shared<VariableExpr>(prev());
+    superclass = std::make_shared<VariableExpr>(prev_);
   }
   consume(TokenKind::TK_LBRACE, "expect `{` before class body");
   std::vector<FunctionStmtPtr> methods;
@@ -147,7 +147,7 @@ StmtPtr Parser::fun_decl(const str_t& kind) {
   if (!check(TokenKind::TK_RPAREN)) {
     do {
       if (params.size() >= kMaxArguments) {
-        throw RuntimeError(peek(),
+        throw RuntimeError(curr_,
             "cannot have more than " +
             std::to_string(kMaxArguments) + " parameters");
       }
@@ -269,7 +269,7 @@ StmtPtr Parser::print_stmt(void) {
 StmtPtr Parser::return_stmt(void) {
   // return_stmt -> "return" expression? ";" ;
 
-  Token keyword = prev();
+  Token keyword = prev_;
   ExprPtr value;
   if (!check(TokenKind::TK_SEMI))
     value = expression();
@@ -301,19 +301,57 @@ std::vector<StmtPtr> Parser::block_stmt(void) {
 }
 
 ExprPtr Parser::expression(void) {
-  return nullptr;
+  // expression -> assignment ;
+
+  return assignment();
 }
 
 ExprPtr Parser::assignment(void) {
-  return nullptr;
+  // assignment -> ( call "." )? IDENTIFIER "=" assignment | logical_or ;
+
+  ExprPtr expr = logical_or();
+  if (match({TokenKind::TK_EQ})) {
+    const Token& oper = prev_;
+    ExprPtr value = assignment();
+
+    if (std::dynamic_pointer_cast<VariableExpr>(expr)) {
+      const Token& name = std::static_pointer_cast<VariableExpr>(expr)->name();
+      return std::make_shared<AssignExpr>(name, oper, value);
+    }
+    else if (std::dynamic_pointer_cast<GetExpr>(expr)) {
+      GetExprPtr get = std::static_pointer_cast<GetExpr>(expr);
+      return std::make_shared<SetExpr>(get->object(), get->name(), value);
+    }
+    throw RuntimeError(oper, "invalid assignment target");
+  }
+
+  return expr;
 }
 
 ExprPtr Parser::logical_or(void) {
-  return nullptr;
+  // logical_or -> logical_and ( "or" logical_and )* ;
+
+  ExprPtr expr = logical_and();
+  while (match({TokenKind::KW_OR})) {
+    const Token& oper = prev_;
+    ExprPtr right = logical_and();
+    expr = std::make_shared<LogicalExpr>(expr, oper, right);
+  }
+
+  return expr;
 }
 
 ExprPtr Parser::logical_and(void) {
-  return nullptr;
+  // logical_and -> equality ( "and" equality )* ;
+
+  ExprPtr expr = equality();
+  while (match({TokenKind::KW_AND})) {
+    const Token& oper = prev_;
+    ExprPtr right = equality();
+    expr = std::make_shared<LogicalExpr>(expr, oper, right);
+  }
+
+  return expr;
 }
 
 ExprPtr Parser::equality(void) {

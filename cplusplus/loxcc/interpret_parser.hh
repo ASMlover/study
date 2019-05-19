@@ -46,8 +46,6 @@ class Parser final : private UnCopyable {
   static constexpr sz_t kMaxArguments = 8;
 
   inline bool is_end(void) const { return curr_.kind() == TokenKind::TK_EOF; }
-  inline const Token& prev(void) const { return prev_; }
-  inline const Token& peek(void) const { return curr_; }
 
   Token advance(void);
   bool check(TokenKind kind) const;
