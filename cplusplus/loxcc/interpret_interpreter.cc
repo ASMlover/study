@@ -24,10 +24,18 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <exception>
 #include "interpret_errors.hh"
 #include "interpret_interpreter.hh"
 
 namespace loxcc::interpret {
+
+class Return : public std::exception {
+  Value value_;
+public:
+  Return(const Value& v) noexcept : value_(v) {}
+  inline const Value& value(void) const { return value_; }
+};
 
 Interpreter::Interpreter(ErrorReport& err_report) noexcept
   : err_report_(err_report)
