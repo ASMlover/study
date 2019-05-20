@@ -56,6 +56,14 @@ bool Parser::check(TokenKind kind) const {
   return is_end() ? false : curr_.kind() == kind;
 }
 
+bool Parser::match(TokenKind kind) {
+  if (!check(kind))
+    return false;
+
+  advance();
+  return true;
+}
+
 bool Parser::match(const std::initializer_list<TokenKind>& kinds) {
   for (auto kind : kinds) {
     if (check(kind)) {
@@ -100,11 +108,11 @@ StmtPtr Parser::declaration(void) {
   // declaration -> class_decl | fun_decl | var_decl | statement ;
 
   try {
-    if (match({TokenKind::KW_CLASS}))
+    if (match(TokenKind::KW_CLASS))
       return class_decl();
-    if (match({TokenKind::KW_FUN}))
+    if (match(TokenKind::KW_FUN))
       return fun_decl("function");
-    if (match({TokenKind::KW_VAR}))
+    if (match(TokenKind::KW_VAR))
       return var_decl();
 
     return statement();
@@ -122,7 +130,7 @@ StmtPtr Parser::class_decl(void) {
 
   Token name = consume(TokenKind::TK_IDENTIFIER, "expect class name");
   ExprPtr superclass;
-  if (match({TokenKind::TK_LT})) {
+  if (match(TokenKind::TK_LT)) {
     consume(TokenKind::TK_IDENTIFIER, "expect superclass name");
     superclass = std::make_shared<VariableExpr>(prev_);
   }
@@ -153,7 +161,7 @@ StmtPtr Parser::fun_decl(const str_t& kind) {
       }
       params.push_back(
           consume(TokenKind::TK_IDENTIFIER, "expect parameter name"));
-    } while (match({TokenKind::TK_COMMA}));
+    } while (match(TokenKind::TK_COMMA));
   }
   consume(TokenKind::TK_RPAREN, "expect `)` after " + kind + " parameters");
   consume(TokenKind::TK_LBRACE, "expect `{` before " + kind + " body");
@@ -167,7 +175,7 @@ StmtPtr Parser::var_decl(void) {
 
   Token name = consume(TokenKind::TK_IDENTIFIER, "expect variable name");
   ExprPtr expr;
-  if (match({TokenKind::TK_EQ}))
+  if (match(TokenKind::TK_EQ))
     expr = expression();
   consume(TokenKind::TK_SEMI, "expect `;` after variable declaration");
 
@@ -178,17 +186,17 @@ StmtPtr Parser::statement(void) {
   // statement -> expr_stmt | for_stmt | if_stmt | print_stmt
   //            | return_stmt | while_stmt | block_stmt ;
 
-  if (match({TokenKind::KW_FOR}))
+  if (match(TokenKind::KW_FOR))
     return for_stmt();
-  if (match({TokenKind::KW_IF}))
+  if (match(TokenKind::KW_IF))
     return if_stmt();
-  if (match({TokenKind::KW_PRINT}))
+  if (match(TokenKind::KW_PRINT))
     return print_stmt();
-  if (match({TokenKind::KW_RETURN}))
+  if (match(TokenKind::KW_RETURN))
     return return_stmt();
-  if (match({TokenKind::KW_WHILE}))
+  if (match(TokenKind::KW_WHILE))
     return while_stmt();
-  if (match({TokenKind::TK_LBRACE}))
+  if (match(TokenKind::TK_LBRACE))
     return std::make_shared<BlockStmt>(block_stmt());
   return expr_stmt();
 }
@@ -208,9 +216,9 @@ StmtPtr Parser::for_stmt(void) {
 
   consume(TokenKind::TK_LPAREN, "expect `(` after keyword `for`");
   StmtPtr init_clause;
-  if (match({TokenKind::TK_SEMI}))
+  if (match(TokenKind::TK_SEMI))
     init_clause = nullptr;
-  else if (match({TokenKind::KW_VAR}))
+  else if (match(TokenKind::KW_VAR))
     init_clause = var_decl();
   else
     init_clause = expr_stmt();
@@ -246,7 +254,7 @@ StmtPtr Parser::if_stmt(void) {
 
   StmtPtr then_branch = statement();
   StmtPtr else_branch;
-  if (match({TokenKind::KW_ELSE}))
+  if (match(TokenKind::KW_ELSE))
     else_branch = statement();
 
   return std::make_shared<IfStmt>(cond, then_branch, else_branch);
@@ -256,10 +264,10 @@ StmtPtr Parser::print_stmt(void) {
   // print_stmt -> "print" ( expression ( "," expression )* )? ";" ;
 
   std::vector<ExprPtr> exprs;
-  if (!match({TokenKind::TK_SEMI})) {
+  if (!match(TokenKind::TK_SEMI)) {
     do {
       exprs.push_back(expression());
-    } while (match({TokenKind::TK_COMMA}));
+    } while (match(TokenKind::TK_COMMA));
     consume(TokenKind::TK_SEMI, "expect `;` after print expressions");
   }
 
@@ -310,7 +318,7 @@ ExprPtr Parser::assignment(void) {
   // assignment -> ( call "." )? IDENTIFIER "=" assignment | logical_or ;
 
   ExprPtr expr = logical_or();
-  if (match({TokenKind::TK_EQ})) {
+  if (match(TokenKind::TK_EQ)) {
     const Token& oper = prev_;
     ExprPtr value = assignment();
 
@@ -332,7 +340,7 @@ ExprPtr Parser::logical_or(void) {
   // logical_or -> logical_and ( "or" logical_and )* ;
 
   ExprPtr expr = logical_and();
-  while (match({TokenKind::KW_OR})) {
+  while (match(TokenKind::KW_OR)) {
     const Token& oper = prev_;
     ExprPtr right = logical_and();
     expr = std::make_shared<LogicalExpr>(expr, oper, right);
@@ -345,7 +353,7 @@ ExprPtr Parser::logical_and(void) {
   // logical_and -> equality ( "and" equality )* ;
 
   ExprPtr expr = equality();
-  while (match({TokenKind::KW_AND})) {
+  while (match(TokenKind::KW_AND)) {
     const Token& oper = prev_;
     ExprPtr right = equality();
     expr = std::make_shared<LogicalExpr>(expr, oper, right);
@@ -355,31 +363,144 @@ ExprPtr Parser::logical_and(void) {
 }
 
 ExprPtr Parser::equality(void) {
-  return nullptr;
+  // equality -> comparison ( ( "!=" | "==" ) comparison )* ;
+
+  ExprPtr expr = comparison();
+  while (match({TokenKind::TK_BANGEQ, TokenKind::TK_EQEQ})) {
+    const Token& oper = prev_;
+    ExprPtr right = comparison();
+    expr = std::make_shared<BinaryExpr>(expr, oper, right);
+  }
+
+  return expr;
 }
 
 ExprPtr Parser::comparison(void) {
-  return nullptr;
+  // comparison -> addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
+
+  ExprPtr expr = addition();
+  while (match({TokenKind::TK_GT,
+        TokenKind::TK_GTEQ, TokenKind::TK_LT, TokenKind::TK_LTEQ})) {
+    const Token& oper = prev_;
+    ExprPtr right = addition();
+    expr = std::make_shared<BinaryExpr>(expr, oper, right);
+  }
+
+  return expr;
 }
 
 ExprPtr Parser::addition(void) {
-  return nullptr;
+  // addition -> multiplication ( ( "+" | "-" ) multiplication )* ;
+
+  ExprPtr expr = multiplication();
+  while (match({TokenKind::TK_PLUS, TokenKind::TK_MINUS})) {
+    const Token& oper = prev_;
+    ExprPtr right = multiplication();
+    expr = std::make_shared<BinaryExpr>(expr, oper, right);
+  }
+
+  return expr;
 }
 
 ExprPtr Parser::multiplication(void) {
-  return nullptr;
+  // multiplication -> unary ( ( "*" | "/" ) unary )* ;
+
+  ExprPtr expr = unary();
+  while (match({TokenKind::TK_STAR, TokenKind::TK_SLASH})) {
+    const Token& oper = prev_;
+    ExprPtr right = unary();
+    expr = std::make_shared<BinaryExpr>(expr, oper, right);
+  }
+
+  return expr;
 }
 
 ExprPtr Parser::unary(void) {
-  return nullptr;
+  // unary -> ( "!" | "-" ) unary | call ;
+
+  if (match({TokenKind::TK_BANG, TokenKind::TK_MINUS})) {
+    const Token& oper = prev_;
+    ExprPtr right = unary();
+    return std::make_shared<UnaryExpr>(oper, right);
+  }
+
+  return call();
 }
 
 ExprPtr Parser::call(void) {
-  return nullptr;
+  // call       -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
+  // arguments  -> expression ( "," expression )* ;
+
+  auto finish_call = [](Parser& p, const ExprPtr& callee) -> ExprPtr {
+    std::vector<ExprPtr> args;
+    if (!p.check(TokenKind::TK_RPAREN)) {
+      do {
+        if (args.size() >= kMaxArguments) {
+          throw RuntimeError(p.curr_,
+              "cannot have more than " +
+              std::to_string(kMaxArguments) + " arguments");
+        }
+        args.push_back(p.expression());
+      } while (p.match(TokenKind::TK_COMMA));
+    }
+    const Token& paren = p.consume(
+        TokenKind::TK_RPAREN, "expect `)` after arguments");
+    return std::make_shared<CallExpr>(callee, paren, args);
+  };
+
+  ExprPtr expr = primary();
+  while (true) {
+    if (match(TokenKind::TK_LPAREN)) {
+      expr = finish_call(*this, expr);
+    }
+    else if (match(TokenKind::TK_DOT)) {
+      const Token& name = consume(
+          TokenKind::TK_IDENTIFIER, "expect attribute name after `.`");
+      expr = std::make_shared<GetExpr>(expr, name);
+    }
+    else {
+      break;
+    }
+  }
+
+  return expr;
 }
 
 ExprPtr Parser::primary(void) {
-  return nullptr;
+  // primary -> NUMERIC | STRING | "true" | "false" | "nil" | "this"
+  //          | "(" expression ")" | "super" "." IDENTIFIER ;
+
+  if (match(TokenKind::TK_NUMERIC))
+    return std::make_shared<LiteralExpr>(prev_.as_numeric());
+  if (match(TokenKind::TK_STRING))
+    return std::make_shared<LiteralExpr>(prev_.as_string());
+  if (match(TokenKind::KW_TRUE))
+    return std::make_shared<LiteralExpr>(true);
+  if (match(TokenKind::KW_FALSE))
+    return std::make_shared<LiteralExpr>(false);
+  if (match(TokenKind::KW_NIL))
+    return std::make_shared<LiteralExpr>(nullptr);
+  if (match(TokenKind::KW_THIS))
+    return std::make_shared<ThisExpr>(prev_);
+
+  if (match(TokenKind::TK_LPAREN)) {
+    ExprPtr expr = expression();
+    consume(TokenKind::TK_RPAREN, "expect `)` after expression");
+    return std::make_shared<GroupingExpr>(expr);
+  }
+
+  if (match(TokenKind::KW_SUPER)) {
+    const Token& keyword = prev_;
+    consume(TokenKind::TK_DOT, "expect `.` after keyword `super`");
+    const Token& method = consume(
+        TokenKind::TK_IDENTIFIER, "expect superclass method name");
+    return std::make_shared<SuperExpr>(keyword, method);
+  }
+
+  if (match(TokenKind::TK_IDENTIFIER))
+    return std::make_shared<VariableExpr>(prev_);
+
+  throw RuntimeError(curr_, "expect expression");
 }
 
 }

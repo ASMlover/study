@@ -49,6 +49,7 @@ class Parser final : private UnCopyable {
 
   Token advance(void);
   bool check(TokenKind kind) const;
+  bool match(TokenKind kind);
   bool match(const std::initializer_list<TokenKind>& kinds);
   Token consume(TokenKind kind, const str_t& message);
   void synchronize(void);
