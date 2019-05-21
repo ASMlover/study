@@ -394,7 +394,7 @@ class BlockStmt final
   : public Stmt, public std::enable_shared_from_this<BlockStmt> {
   std::vector<StmtPtr> stmts_;
 public:
-  inline const std::vector<StmtPtr>& stmts(void) const { return stmts_; }
+  inline const std::vector<StmtPtr>& stmts(void) const { return stmts_; }
 
   BlockStmt(const std::vector<StmtPtr>& stmts) noexcept
     : stmts_(stmts) {
