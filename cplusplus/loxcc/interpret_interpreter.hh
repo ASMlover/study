@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <exception>
 #include <memory>
 #include <vector>
 #include <unordered_map>
@@ -40,6 +41,13 @@ class Environment;
 
 using EnvironmentPtr = std::shared_ptr<Environment>;
 
+class Return final : public Copyable, public std::exception {
+  Value value_{};
+public:
+  Return(const Value& v) noexcept : value_(v) {}
+  inline const Value& value(void) const { return value_; }
+};
+
 class Interpreter final
   : public ExprVisitor
   , public StmtVisitor
@@ -52,10 +60,11 @@ class Interpreter final
 
   Value evaluate(const ExprPtr& expr);
   void evaluate(const StmtPtr& stmt);
-  void evaluate_block(
+  void evaluate(
       const std::vector<StmtPtr>& stmts, const EnvironmentPtr& env);
   void check_numeric(const Token& oper, const Value& value);
   void check_numerics(const Token& oper, const Value& lhs, const Value& rhs);
+  void check_plus(const Token& oper, const Value& lhs, const Value& rhs);
   Value lookup_variable(const Token& name, const ExprPtr& expr);
 
   virtual void visit(const AssignExprPtr& expr) override;
@@ -90,7 +99,7 @@ public:
   inline EnvironmentPtr get_globals(void) const { return globals_; }
   inline void invoke_evaluate(
       const std::vector<StmtPtr>& stmts, const EnvironmentPtr& env) {
-    evaluate_block(stmts, env);
+    evaluate(stmts, env);
   }
 
 };

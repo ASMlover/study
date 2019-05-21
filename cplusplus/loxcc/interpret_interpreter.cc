@@ -24,18 +24,13 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <exception>
+#include <iostream>
 #include "interpret_errors.hh"
+#include "interpret_environment.hh"
+#include "interpret_callable.hh"
 #include "interpret_interpreter.hh"
 
 namespace loxcc::interpret {
-
-class Return : public std::exception {
-  Value value_;
-public:
-  Return(const Value& v) noexcept : value_(v) {}
-  inline const Value& value(void) const { return value_; }
-};
 
 Interpreter::Interpreter(ErrorReport& err_report) noexcept
   : err_report_(err_report)
@@ -45,7 +40,13 @@ Interpreter::Interpreter(ErrorReport& err_report) noexcept
 }
 
 void Interpreter::interpret(const std::vector<StmtPtr>& stmts) {
-  // TODO:
+  try {
+    for (auto& stmt : stmts)
+      evaluate(stmt);
+  }
+  catch (const RuntimeError& e) {
+    err_report_.error(e.token(), e.message());
+  }
 }
 
 Value Interpreter::evaluate(const ExprPtr& expr) {
@@ -57,22 +58,47 @@ void Interpreter::evaluate(const StmtPtr& stmt) {
   stmt->accept(shared_from_this());
 }
 
-void Interpreter::evaluate_block(
+void Interpreter::evaluate(
     const std::vector<StmtPtr>& stmts, const EnvironmentPtr& env) {
-  // TODO:
+  auto orig_env = environment_;
+  try {
+    environment_ = env;
+    for (auto& stmt : stmts)
+      evaluate(stmt);
+  }
+  catch (...) {
+    environment_ = orig_env;
+    throw;
+  }
+  environment_ = orig_env;
 }
 
 void Interpreter::check_numeric(const Token& oper, const Value& value) {
-  // TODO:
-}
-void Interpreter::check_numerics(
-    const Token& oper, const Value& lhs, const Value& rhs) {
-  // TODO:
+  if (value.is_numeric())
+    return;
+  throw RuntimeError(oper, "operand must be a numeric");
 }
 
-Value lookup_variable(const Token& name, const ExprPtr& expr) {
-  // TODO:
-  return nullptr;
+void Interpreter::check_numerics(
+    const Token& oper, const Value& lhs, const Value& rhs) {
+  if (lhs.is_numeric() && rhs.is_numeric())
+    return;
+  throw RuntimeError(oper, "operands must be two numerics");
+}
+
+void Interpreter::check_plus(
+    const Token& oper, const Value& lhs, const Value& rhs) {
+  if ((lhs.is_string() && rhs.is_string())
+      || (lhs.is_numeric() && rhs.is_numeric()))
+    return;
+  throw RuntimeError(oper, "operands must be two numerics or two strings");
+}
+
+Value Interpreter::lookup_variable(const Token& name, const ExprPtr& expr) {
+  if (auto distance_iter = locals_.find(expr); distance_iter != locals_.end())
+    return environment_->get_at(distance_iter->second, name);
+  else
+    return globals_->get(name);
 }
 
 void Interpreter::visit(const AssignExprPtr& expr) {
