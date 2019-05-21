@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "interpret_callable.hh"
 #include "interpret_value.hh"
 
 namespace loxcc::interpret {
@@ -48,8 +49,8 @@ str_t Value::stringify(void) const {
         [](bool b) -> str_t { return b ? "true" : "false"; },
         [](double d) -> str_t { return Xt::to_string(d); },
         [](const str_t& s) -> str_t { return s; },
-        [](const CallablePtr& c) -> str_t { return "<callable>"; }, // TODO:
-        [](const InstancePtr& i) -> str_t { return "<instance>"; }, // TODO:
+        [](const CallablePtr& c) -> str_t { return c->stringify(); },
+        [](const InstancePtr& i) -> str_t { return i->stringify(); },
       }, v_);
 }
 
