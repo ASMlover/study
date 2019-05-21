@@ -51,10 +51,10 @@ using InstancePtr = std::shared_ptr<Instance>;
 struct Callable : private UnCopyable {
   virtual ~Callable(void) {}
   virtual bool check_arity(void) const { return true; }
+  virtual sz_t arity(void) const { return 0; }
 
   virtual Value call(
       const InterpreterPtr& interp, const std::vector<Value>& args) = 0;
-  virtual sz_t arity(void) const = 0;
   virtual str_t stringify(void) const = 0;
 };
 
