@@ -35,7 +35,7 @@ namespace loxcc::interpret {
 
 Interpreter::Interpreter(ErrorReport& err_report) noexcept
   : err_report_(err_report)
-  , globals_()
+  , globals_(new Environment())
   , environment_(globals_) {
   globals_->define("clock", Value(std::make_shared<NatClock>()));
 }
@@ -206,7 +206,7 @@ void Interpreter::visit(const LiteralExprPtr& expr) {
 }
 
 void Interpreter::visit(const GroupingExprPtr& expr) {
-  evaluate(expr->expression());
+  (void)evaluate(expr->expression());
 }
 
 void Interpreter::visit(const SuperExprPtr& expr) {
@@ -294,7 +294,7 @@ void Interpreter::visit(const BlockStmtPtr& stmt) {
 }
 
 void Interpreter::visit(const ExprStmtPtr& stmt) {
-  evaluate(stmt->expr());
+  (void)evaluate(stmt->expr());
 }
 
 void Interpreter::visit(const WhileStmtPtr& stmt) {
