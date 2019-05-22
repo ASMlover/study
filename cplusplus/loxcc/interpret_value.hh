@@ -40,14 +40,13 @@ using CallablePtr = std::shared_ptr<Callable>;
 using InstancePtr = std::shared_ptr<Instance>;
 
 class Value final : private UnCopyable {
-  using VariantType = std::variant<
+  std::variant<
     nil_t,
     bool,
     double,
     str_t,
     CallablePtr,
-    InstancePtr>;
-  VariantType v_{};
+    InstancePtr> v_{};
 public:
   Value(void) noexcept : v_(nullptr) {}
   Value(nil_t) noexcept : v_(nullptr) {}
