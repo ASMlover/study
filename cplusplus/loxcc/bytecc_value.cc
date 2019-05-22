@@ -25,3 +25,82 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "bytecc_value.hh"
+
+namespace loxcc::bytecc {
+
+StringObject* Value::as_string(void) const {
+  return nullptr;
+}
+
+const char* Value::as_cstring(void) const {
+  return nullptr;
+}
+
+Value::NativeTp Value::as_native(void) const {
+  return nullptr;
+}
+
+FunctionObject* Value::as_function(void) const {
+  return nullptr;
+}
+
+UpvalueObject* Value::as_upvalue(void) const {
+  return nullptr;
+}
+
+ClosureObject* Value::as_closure(void) const {
+  return nullptr;
+}
+
+ClassObject* Value::as_class(void) const {
+  return nullptr;
+}
+
+InstanceObject* Value::as_instance(void) const {
+  return nullptr;
+}
+
+BoundMehtodObject* Value::as_bound_method(void) const {
+  return nullptr;
+}
+
+bool Value::operator==(const Value& r) const {
+  if (this == &r)
+    return true;
+  if (type_ != r.type_)
+    return false;
+
+  switch (type_) {
+  case ValueType::NIL: return true;
+  case ValueType::BOOLEAN: return as_.boolean == r.as_.boolean;
+  case ValueType::NUMERIC: return as_.numeric == r.as_.numeric;
+  case ValueType::OBJECT: return as_.object == r.as_.object; // TODO: FIXME:
+  }
+  return false;
+}
+
+bool Value::operator!=(const Value& r) const {
+  return !(*this == r);
+}
+
+bool Value::is_truthy(void) const {
+  switch (type_) {
+  case ValueType::NIL: return false;
+  case ValueType::BOOLEAN: return as_.boolean;
+  case ValueType::NUMERIC: return as_.numeric == 0.f;
+  case ValueType::OBJECT: return as_.object->is_truthy();
+  }
+  return false;
+}
+
+str_t Value::stringify(void) const {
+  switch (type_) {
+  case ValueType::NIL: return "nil";
+  case ValueType::BOOLEAN: return as_.boolean ? "true" : "false";
+  case ValueType::NUMERIC: return Xt::to_string(as_.numeric);
+  case ValueType::OBJECT: return as_.object->stringify();
+  }
+  return "";
+}
+
+}

@@ -45,6 +45,7 @@ enum class ObjType {
 };
 
 class VM;
+class Chunk;
 
 class BaseObject : private UnCopyable {
   ObjType type_{};
@@ -150,6 +151,22 @@ public:
     return *this;
   }
 
+  inline bool operator>(const Value& r) const noexcept {
+    return as_.numeric > r.as_.numeric;
+  }
+
+  inline bool operator>=(const Value& r) const noexcept {
+    return as_.numeric >= r.as_.numeric;
+  }
+
+  inline bool operator<(const Value& r) const noexcept {
+    return as_.numeric < r.as_.numeric;
+  }
+
+  inline bool operator<=(const Value& r) const noexcept {
+    return as_.numeric <= r.as_.numeric;
+  }
+
   inline bool is_nil(void) const { return type_ == ValueType::NIL; }
   inline bool is_boolean(void) const { return type_ == ValueType::BOOLEAN; }
   inline bool is_numeric(void) const { return type_ == ValueType::NUMERIC; }
@@ -162,6 +179,31 @@ public:
   inline bool is_class(void) const { return check(ObjType::CLASS); }
   inline bool is_instance(void) const { return check(ObjType::INSTANCE); }
   inline bool is_bound_method(void) const { return check(ObjType::BOUND_METHOD); }
+
+  inline bool as_boolean(void) const { return as_.boolean; }
+  inline double as_numeric(void) const { return as_.numeric; }
+  inline BaseObject* as_object(void) const { return as_.object; }
+
+  StringObject* as_string(void) const;
+  const char* as_cstring(void) const;
+  NativeTp as_native(void) const;
+  FunctionObject* as_function(void) const;
+  UpvalueObject* as_upvalue(void) const;
+  ClosureObject* as_closure(void) const;
+  ClassObject* as_class(void) const;
+  InstanceObject* as_instance(void) const;
+  BoundMehtodObject* as_bound_method(void) const;
+
+  bool operator==(const Value& r) const;
+  bool operator!=(const Value& r) const;
+  bool is_truthy(void) const;
+  str_t stringify(void) const;
 };
+
+using NativeFn = std::function<void (int argc, Value* args)>;
+
+inline std::ostream& operator<<(std::ostream& out, const Value& value) {
+  return out << value.stringify();
+}
 
 }
