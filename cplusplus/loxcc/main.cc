@@ -25,11 +25,32 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include "interpret_loxcc.hh"
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
   std::cout << "L O X - C C" << std::endl;
+
+  auto help_fn = [](const char* app) {
+    std::cerr << "USAGE: " << app << " [i|c] [FILE_NAME]" << std::endl;
+    std::exit(1);
+  };
+
+  if (argc < 2) {
+    help_fn(argv[0]);
+  }
+  else {
+    switch (argv[1][0]) {
+    case 'i':
+      {
+        loxcc::interpret::Loxcc lox;
+        lox.eval(argc, argv);
+      } break;
+    case 'c': break;
+    default: help_fn(argv[0]); break;
+    }
+  }
 
   return 0;
 }
