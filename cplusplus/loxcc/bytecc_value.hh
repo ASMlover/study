@@ -202,7 +202,7 @@ public:
   str_t stringify(void) const;
 };
 
-using NativeFn = std::function<void (int argc, Value* args)>;
+using NativeFn = std::function<Value (int argc, Value* args)>;
 
 inline std::ostream& operator<<(std::ostream& out, const Value& value) {
   return out << value.stringify();

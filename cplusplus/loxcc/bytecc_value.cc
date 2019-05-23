@@ -29,39 +29,39 @@
 namespace loxcc::bytecc {
 
 StringObject* Value::as_string(void) const {
-  return nullptr;
+  return Xt::down<StringObject>(as_.object);
 }
 
 const char* Value::as_cstring(void) const {
-  return nullptr;
+  return Xt::down<StringObject>(as_.object)->cstr();
 }
 
 Value::NativeTp Value::as_native(void) const {
-  return nullptr;
+  return Xt::down<NativeObject>(as_.object)->fn();
 }
 
 FunctionObject* Value::as_function(void) const {
-  return nullptr;
+  return Xt::down<FunctionObject>(as_.object);
 }
 
 UpvalueObject* Value::as_upvalue(void) const {
-  return nullptr;
+  return Xt::down<UpvalueObject>(as_.object);
 }
 
 ClosureObject* Value::as_closure(void) const {
-  return nullptr;
+  return Xt::down<ClosureObject>(as_.object);
 }
 
 ClassObject* Value::as_class(void) const {
-  return nullptr;
+  return Xt::down<ClassObject>(as_.object);
 }
 
 InstanceObject* Value::as_instance(void) const {
-  return nullptr;
+  return Xt::down<InstanceObject>(as_.object);
 }
 
 BoundMehtodObject* Value::as_bound_method(void) const {
-  return nullptr;
+  return Xt::down<BoundMehtodObject>(as_.object);
 }
 
 bool Value::operator==(const Value& r) const {
