@@ -27,8 +27,10 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <optional>
 #include <ostream>
+#include <unordered_map>
 #include "common.hh"
 
 namespace loxcc::bytecc {
@@ -205,5 +207,206 @@ using NativeFn = std::function<void (int argc, Value* args)>;
 inline std::ostream& operator<<(std::ostream& out, const Value& value) {
   return out << value.stringify();
 }
+
+template <typename T, typename... Args>
+inline T* make_object(Args&&... args) {
+  return new T(std::forward<Args>(args)...);
+}
+
+class StringObject final : public BaseObject {
+  int size_{};
+  char* data_{};
+  u32_t hash_{};
+public:
+  StringObject(
+      const char* s, int n, u32_t h, bool replace_owner = false) noexcept;
+  virtual ~StringObject(void);
+
+  inline int size(void) const { return size_; }
+  inline const char* cstr(void) const { return data_; }
+  inline const char* data(void) const { return data_; }
+  inline u32_t hash(void) const { return hash_; }
+
+  virtual sz_t size_bytes(void) const override;
+  virtual str_t stringify(void) const override;
+
+  static StringObject* create(VM& vm, const str_t& s);
+  static StringObject* create(VM& vm, const char* s, int n);
+  static StringObject* concat(VM& vm, StringObject* a, StringObject* b);
+};
+
+class NativeObject final : public BaseObject {
+  NativeFn fn_{};
+public:
+  NativeObject(const NativeFn& fn) noexcept;
+  NativeObject(NativeFn&& fn) noexcept;
+  virtual ~NativeObject(void) {}
+
+  inline NativeFn fn(void) const { return fn_; }
+
+  virtual sz_t size_bytes(void) const override;
+  virtual str_t stringify(void) const override;
+
+  static NativeObject* create(VM& vm, const NativeFn& fn);
+  static NativeObject* create(VM& vm, NativeFn&& fn);
+};
+
+class FunctionObject final : public BaseObject {
+  int arity_{};
+  int upvalues_count_{};
+  StringObject* name_{};
+  std::unique_ptr<Chunk> chunk_;
+public:
+  FunctionObject(void) noexcept;
+  virtual ~FunctionObject(void);
+
+  inline int arity(void) const { return arity_; }
+  inline int inc_arity(void) { return arity_++; }
+  inline int upvalues_count(void) const { return upvalues_count_; }
+  inline int inc_upvalues_count(void) { return upvalues_count_++; }
+  inline StringObject* name(void) const { return name_; }
+
+  inline const char* name_astr(void) const {
+    return name_ != nullptr ? name_->cstr() : "<top>";
+  }
+
+  inline void set_name(StringObject* name) { name_ = name; }
+  inline std::unique_ptr<Chunk>& chunk(void) { return chunk_; }
+
+  virtual sz_t size_bytes(void) const override;
+  virtual str_t stringify(void) const override;
+
+  static FunctionObject* create(VM& vm);
+};
+
+class UpvalueObject final : public BaseObject {
+  Value* value_{};
+  Value closed_{};
+  UpvalueObject* next_{};
+public:
+  UpvalueObject(Value* value) noexcept;
+  virtual ~UpvalueObject(void);
+
+  inline Value* value(void) const { return value_; }
+  inline void set_value(Value* value) { value_ = value; }
+  inline void set_value_withptr(Value* value) { value_ = value; }
+  inline void set_value_withref(const Value& value) { *value_ = value; }
+  inline const Value& closed(void) const { return closed_; }
+  inline Value* closed_asptr(void) { return &closed_; }
+  inline void set_closed(const Value& closed) { closed_ = closed; }
+  inline UpvalueObject* next(void) const { return next_; }
+  inline void set_next(UpvalueObject* next) { next_ = next; }
+
+  virtual sz_t size_bytes(void) const override;
+  virtual str_t stringify(void) const override;
+
+  static UpvalueObject* create(VM& vm, Value* value);
+};
+
+class ClosureObject final : public BaseObject {
+  FunctionObject* fn_{};
+  int upvalues_count_{};
+  UpvalueObject** upvalues_{};
+public:
+  ClosureObject(FunctionObject* fn) noexcept;
+  virtual ~ClosureObject(void);
+
+  inline FunctionObject* fn(void) const { return fn_; }
+  inline int upvalues_count(void) const { return upvalues_count_; }
+  inline UpvalueObject** upvalues(void) const { return upvalues_; }
+  inline UpvalueObject* get_upvalue(int i) const { return upvalues_[i]; }
+
+  inline void set_upvalue(int i, UpvalueObject* upvalue) {
+    upvalues_[i] = upvalue;
+  }
+
+  static ClosureObject* create(VM& vm, FunctionObject* fn);
+};
+
+class ClassObject final : public BaseObject {
+  StringObject* name_{};
+  std::unordered_map<str_t, Value> methods_;
+public:
+  ClassObject(StringObject* name) noexcept;
+  virtual ~ClassObject(void);
+
+  inline StringObject* name(void) const { return name_; }
+  inline const char* name_astr(void) const { return name_->cstr(); }
+
+  inline void set_method(const str_t& name, const Value& method) {
+    methods_[name] = method;
+  }
+
+  inline void set_method(StringObject* name, const Value& method) {
+    methods_[name->cstr()] = method;
+  }
+
+  inline std::optional<Value> get_method(StringObject* name) const {
+    return get_method(name->cstr());
+  }
+
+  std::optional<Value> get_method(const str_t& name) const {
+    if (auto meth_iter = methods_.find(name); meth_iter != methods_.end())
+      return {meth_iter->second};
+    return {};
+  }
+
+  void inherit_from(ClassObject* superclass);
+
+  virtual sz_t size_bytes(void) const override;
+  virtual str_t stringify(void) const override;
+
+  static ClassObject* create(VM& vm, StringObject* name);
+};
+
+class InstanceObject final : public BaseObject {
+  ClassObject* cls_{};
+  std::unordered_map<str_t, Value> attrs_;
+public:
+  InstanceObject(ClassObject* cls) noexcept;
+  virtual ~InstanceObject(void);
+
+  inline ClassObject* cls(void) const { return cls_; }
+
+  inline void set_attr(const str_t& key, const Value& val) {
+    attrs_[key] = val;
+  }
+
+  inline void set_attr(StringObject* key, const Value* val) {
+    attrs_[key->cstr()] = val;
+  }
+
+  inline std::optional<Value> get_attr(StringObject* key) const {
+    return get_attr(key->cstr());
+  }
+
+  std::optional<Value> get_attr(const str_t& key) const {
+    if (auto attr_iter = attrs_.find(key); attr_iter != attrs_.end())
+      return {attr_iter->second};
+    return {};
+  }
+
+  virtual sz_t size_bytes(void) const override;
+  virtual str_t stringify(void) const override;
+
+  static InstanceObject* create(VM& vm, ClassObject* cls);
+};
+
+class BoundMehtodObject final : public BaseObject {
+  Value owner_;
+  ClosureObject* method_{};
+public:
+  BoundMehtodObject(const Value& owner, ClosureObject* method) noexcept;
+  virtual ~BoundMehtodObject(void);
+
+  inline const Value& owner(void) const { return owner_; }
+  inline ClosureObject* method(void) const { return method_; }
+
+  virtual sz_t size_bytes(void) const override;
+  virtual str_t stringify(void) const override;
+
+  static BoundMehtodObject* create(
+      VM& vm, const Value& owner, ClosureObject* method);
+};
 
 }
