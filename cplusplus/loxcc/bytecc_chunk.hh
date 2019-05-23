@@ -27,6 +27,7 @@
 #pragma once
 
 #include <functional>
+#include <ostream>
 #include <vector>
 #include "common.hh"
 #include "bytecc_value.hh"
@@ -128,6 +129,10 @@ inline Code operator+(Code c, u8_t n) {
 
 inline Code operator-(Code c, u8_t n) {
   return Xt::as_type<Code>(Xt::as_type<u8_t>(c) - n);
+}
+
+inline std::ostream& operator<<(std::ostream& out, Code c) {
+  return out << Xt::as_type<int>(c);
 }
 
 class Chunk final : private UnCopyable {
