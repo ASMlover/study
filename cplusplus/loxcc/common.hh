@@ -65,6 +65,9 @@ namespace Xt {
   template <typename I, typename E>
   inline I as_type(E x) { return static_cast<I>(x); }
 
+  template <typename T>
+  inline T* as_ptr(const T* x) { return const_cast<T*>(x); }
+
   template <typename T, typename S>
   inline T* cast(S* x) { return static_cast<T*>(x); }
 
