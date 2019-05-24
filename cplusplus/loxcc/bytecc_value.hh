@@ -253,7 +253,7 @@ class FunctionObject final : public BaseObject {
   std::unique_ptr<Chunk> chunk_;
 public:
   FunctionObject(void) noexcept;
-  virtual ~FunctionObject(void);
+  virtual ~FunctionObject(void) {}
 
   inline int arity(void) const { return arity_; }
   inline int inc_arity(void) { return arity_++; }
@@ -280,7 +280,7 @@ class UpvalueObject final : public BaseObject {
   UpvalueObject* next_{};
 public:
   UpvalueObject(Value* value) noexcept;
-  virtual ~UpvalueObject(void);
+  virtual ~UpvalueObject(void) {}
 
   inline Value* value(void) const { return value_; }
   inline void set_value(Value* value) { value_ = value; }
@@ -315,15 +315,20 @@ public:
     upvalues_[i] = upvalue;
   }
 
+  virtual sz_t size_bytes(void) const override;
+  virtual str_t stringify(void) const override;
+
   static ClosureObject* create(VM& vm, FunctionObject* fn);
 };
 
 class ClassObject final : public BaseObject {
+  using MethodMap = std::unordered_map<str_t, Value>;
+
   StringObject* name_{};
-  std::unordered_map<str_t, Value> methods_;
+  MethodMap methods_;
 public:
   ClassObject(StringObject* name) noexcept;
-  virtual ~ClassObject(void);
+  virtual ~ClassObject(void) {}
 
   inline StringObject* name(void) const { return name_; }
   inline const char* name_astr(void) const { return name_->cstr(); }
@@ -355,11 +360,13 @@ public:
 };
 
 class InstanceObject final : public BaseObject {
+  using AttrMap = std::unordered_map<str_t, Value>;
+
   ClassObject* cls_{};
-  std::unordered_map<str_t, Value> attrs_;
+  AttrMap attrs_;
 public:
   InstanceObject(ClassObject* cls) noexcept;
-  virtual ~InstanceObject(void);
+  virtual ~InstanceObject(void) {}
 
   inline ClassObject* cls(void) const { return cls_; }
 
@@ -392,7 +399,7 @@ class BoundMehtodObject final : public BaseObject {
   ClosureObject* method_{};
 public:
   BoundMehtodObject(const Value& owner, ClosureObject* method) noexcept;
-  virtual ~BoundMehtodObject(void);
+  virtual ~BoundMehtodObject(void) {}
 
   inline const Value& owner(void) const { return owner_; }
   inline ClosureObject* method(void) const { return method_; }

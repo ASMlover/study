@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "bytecc_chunk.hh"
 #include "bytecc_value.hh"
 
 namespace loxcc::bytecc {
@@ -157,6 +158,167 @@ StringObject* StringObject::concat(VM& vm, StringObject* a, StringObject* b) {
   u32_t h = Xt::hasher(s, n);
   // TODO: set interned strings
   return make_object<StringObject>(vm, s, n, h, true);
+}
+
+NativeObject::NativeObject(const NativeFn& fn) noexcept
+  : BaseObject(ObjType::NATIVE)
+  , fn_(fn) {
+}
+
+NativeObject::NativeObject(NativeFn&& fn) noexcept
+  : BaseObject(ObjType::NATIVE)
+  , fn_(std::move(fn)) {
+}
+
+sz_t NativeObject::size_bytes(void) const {
+  return sizeof(*this);
+}
+
+str_t NativeObject::stringify(void) const {
+  std::stringstream ss;
+  ss << "<native function at `" << this << "`>";
+  return ss.str();
+}
+
+NativeObject* NativeObject::create(VM& vm, const NativeFn& fn) {
+  return make_object<NativeObject>(vm, fn);
+}
+
+NativeObject* NativeObject::create(VM& vm, NativeFn&& fn) {
+  return make_object<NativeObject>(vm, std::move(fn));
+}
+
+FunctionObject::FunctionObject(void) noexcept
+  : BaseObject(ObjType::FUNCTION)
+  , chunk_(new Chunk()) {
+}
+
+sz_t FunctionObject::size_bytes(void) const {
+  return sizeof(*this) + chunk_->size_bytes();
+}
+
+str_t FunctionObject::stringify(void) const {
+  std::stringstream ss;
+  ss << "<function `" << name_astr() << "` at `" << this << "`>";
+  return ss.str();
+}
+
+FunctionObject* FunctionObject::create(VM& vm) {
+  return make_object<FunctionObject>(vm);
+}
+
+UpvalueObject::UpvalueObject(Value* value) noexcept
+  : BaseObject(ObjType::UPVALUE)
+  , value_(value) {
+}
+
+sz_t UpvalueObject::size_bytes(void) const {
+  return sizeof(*this);
+}
+
+str_t UpvalueObject::stringify(void) const {
+  return "<upvalue>";
+}
+
+UpvalueObject* UpvalueObject::create(VM& vm, Value* value) {
+  return make_object<UpvalueObject>(vm, value);
+}
+
+ClosureObject::ClosureObject(FunctionObject* fn) noexcept
+  : BaseObject(ObjType::CLOSURE)
+  , fn_(fn)
+  , upvalues_count_(fn->upvalues_count()) {
+  upvalues_ = new UpvalueObject*[upvalues_count_];
+  for (int i = 0; i < upvalues_count_; ++i)
+    upvalues_[i] = nullptr;
+}
+
+ClosureObject::~ClosureObject(void) {
+  delete [] upvalues_;
+}
+
+sz_t ClosureObject::size_bytes(void) const {
+  return sizeof(*this) + sizeof(UpvalueObject*) * upvalues_count_;
+}
+
+str_t ClosureObject::stringify(void) const {
+  std::stringstream ss;
+  ss << "<closure function `" << fn_->name_astr() << "` at `" << this << "`>";
+  return ss.str();
+}
+
+ClosureObject* ClosureObject::create(VM& vm, FunctionObject* fn) {
+  return make_object<ClosureObject>(vm, fn);
+}
+
+ClassObject::ClassObject(StringObject* name) noexcept
+  : BaseObject(ObjType::CLASS)
+  , name_(name) {
+}
+
+void ClassObject::inherit_from(ClassObject* superclass) {
+  for (auto& method : superclass->methods_)
+    methods_[method.first] = method.second;
+}
+
+sz_t ClassObject::size_bytes(void) const {
+  return sizeof(*this) +
+    sizeof(MethodMap::value_type) * methods_.bucket_count();
+}
+
+str_t ClassObject::stringify(void) const {
+  std::stringstream ss;
+  ss << "<class `" << name_->cstr() << "`>";
+  return ss.str();
+}
+
+ClassObject* ClassObject::create(VM& vm, StringObject* name) {
+  return make_object<ClassObject>(vm, name);
+}
+
+InstanceObject::InstanceObject(ClassObject* cls) noexcept
+  : BaseObject(ObjType::INSTANCE)
+  , cls_(cls) {
+}
+
+sz_t InstanceObject::size_bytes(void) const {
+  return sizeof(*this) + sizeof(AttrMap::value_type) * attrs_.bucket_count();
+}
+
+str_t InstanceObject::stringify(void) const {
+  std::stringstream ss;
+  ss << "<`" << cls_->name_astr() << "` object at `" << this << "`>";
+  return ss.str();
+}
+
+InstanceObject* InstanceObject::create(VM& vm, ClassObject* cls) {
+  return make_object<InstanceObject>(vm, cls);
+}
+
+BoundMehtodObject::BoundMehtodObject(
+    const Value& owner, ClosureObject* method) noexcept
+  : BaseObject(ObjType::BOUND_METHOD)
+  , owner_(owner)
+  , method_(method) {
+}
+
+sz_t BoundMehtodObject::size_bytes(void) const {
+  return sizeof(*this);
+}
+
+str_t BoundMehtodObject::stringify(void) const {
+  std::stringstream ss;
+
+  InstanceObject* inst = owner_.as_instance();
+  ss << "<bound method "
+    << "`" << method_->fn()->name_astr() << "` of "
+    << inst->stringify() << ">";
+  return ss.str();
+}
+
+BoundMehtodObject* BoundMehtodObject::create(
+    VM& vm, const Value& owner, ClosureObject* method) {
+  return make_object<BoundMehtodObject>(vm, owner, method);
 }
 
 }
