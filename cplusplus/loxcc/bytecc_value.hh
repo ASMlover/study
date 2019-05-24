@@ -208,11 +208,6 @@ inline std::ostream& operator<<(std::ostream& out, const Value& value) {
   return out << value.stringify();
 }
 
-template <typename T, typename... Args>
-inline T* make_object(Args&&... args) {
-  return new T(std::forward<Args>(args)...);
-}
-
 class StringObject final : public BaseObject {
   int size_{};
   char* data_{};

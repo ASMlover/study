@@ -28,6 +28,13 @@
 
 namespace loxcc::bytecc {
 
+template <typename T, typename... Args>
+inline T* make_object(VM& vm, Args&&... args) {
+  auto* o = new T(std::forward<Args>(args)...);
+  // TODO: append object to VM
+  return o;
+}
+
 StringObject* Value::as_string(void) const {
   return Xt::down<StringObject>(as_.object);
 }
@@ -101,6 +108,55 @@ str_t Value::stringify(void) const {
   case ValueType::OBJECT: return as_.object->stringify();
   }
   return "";
+}
+
+StringObject::StringObject(
+    const char* s, int n, u32_t h, bool replace_owner) noexcept
+  : BaseObject(ObjType::STRING)
+  , size_(n)
+  , hash_(h) {
+  if (replace_owner) {
+    data_ = Xt::as_ptr<char>(s);
+  }
+  else {
+    data_ = new char[size_ + 1];
+    memcpy(data_, s, size_);
+    data_[size_] = 0;
+  }
+}
+
+StringObject::~StringObject(void) {
+  delete [] data_;
+}
+
+sz_t StringObject::size_bytes(void) const {
+  return sizeof(*this) + sizeof(char) * size_;
+}
+
+str_t StringObject::stringify(void) const {
+  return data_;
+}
+
+StringObject* StringObject::create(VM& vm, const str_t& s) {
+  return create(vm, s.c_str(), Xt::as_type<int>(s.size()));
+}
+
+StringObject* StringObject::create(VM& vm, const char* s, int n) {
+  u32_t h = Xt::hasher(s, n);
+  // TODO: set interned strings
+  return make_object<StringObject>(vm, s, n, h);
+}
+
+StringObject* StringObject::concat(VM& vm, StringObject* a, StringObject* b) {
+  int n = a->size() + b->size();
+  char* s = new char[n + 1];
+  memcpy(s, a->data(), a->size());
+  memcpy(s + a->size(), b->data(), b->size());
+  s[n] = 0;
+
+  u32_t h = Xt::hasher(s, n);
+  // TODO: set interned strings
+  return make_object<StringObject>(vm, s, n, h, true);
 }
 
 }
