@@ -279,7 +279,7 @@ class UpvalueObject final : public BaseObject {
   Value closed_{};
   UpvalueObject* next_{};
 public:
-  UpvalueObject(Value* value) noexcept;
+  UpvalueObject(Value* value, UpvalueObject* next = nullptr) noexcept;
   virtual ~UpvalueObject(void) {}
 
   inline Value* value(void) const { return value_; }
@@ -295,7 +295,8 @@ public:
   virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;
 
-  static UpvalueObject* create(VM& vm, Value* value);
+  static UpvalueObject* create(
+      VM& vm, Value* value, UpvalueObject* next = nullptr);
 };
 
 class ClosureObject final : public BaseObject {

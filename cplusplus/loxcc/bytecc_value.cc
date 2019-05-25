@@ -211,9 +211,10 @@ FunctionObject* FunctionObject::create(VM& vm) {
   return make_object<FunctionObject>(vm);
 }
 
-UpvalueObject::UpvalueObject(Value* value) noexcept
+UpvalueObject::UpvalueObject(Value* value, UpvalueObject* next) noexcept
   : BaseObject(ObjType::UPVALUE)
-  , value_(value) {
+  , value_(value)
+  , next_(next) {
 }
 
 sz_t UpvalueObject::size_bytes(void) const {
@@ -224,8 +225,9 @@ str_t UpvalueObject::stringify(void) const {
   return "<upvalue>";
 }
 
-UpvalueObject* UpvalueObject::create(VM& vm, Value* value) {
-  return make_object<UpvalueObject>(vm, value);
+UpvalueObject* UpvalueObject::create(
+    VM& vm, Value* value, UpvalueObject* next) {
+  return make_object<UpvalueObject>(vm, value, next);
 }
 
 ClosureObject::ClosureObject(FunctionObject* fn) noexcept
