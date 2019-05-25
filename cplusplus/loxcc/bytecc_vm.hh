@@ -43,6 +43,7 @@ enum class InterpretRet {
 class CallFrame;
 
 class VM final : private UnCopyable {
+  static constexpr sz_t kMaxFrames = 256;
   static constexpr sz_t kGCThresholds = 1 << 20;
 
   std::vector<Value> stack_;
@@ -61,9 +62,23 @@ class VM final : private UnCopyable {
 
   void runtime_error(const char* format, ...);
   void reset(void);
+  Value* stack_values(int distance);
+  void stack_resize(int distance);
+  void set_stack(int distance, const Value& v);
+
+  void push(const Value& value);
+  Value pop(void);
+  const Value& peek(int distance = 0) const;
+
+  void define_native(const str_t& name, const NativeFn& fn);
+  void define_native(const str_t& name, NativeFn&& fn);
+  bool call(ClosureObject* closure, int argc);
+  bool call_value(const Value& callee, int argc);
 public:
   VM(void) noexcept;
   ~VM(void);
+
+  void free_object(BaseObject* o);
 
   InterpretRet interpret(const str_t& source_bytes);
 };
