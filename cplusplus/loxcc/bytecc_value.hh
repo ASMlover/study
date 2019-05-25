@@ -169,6 +169,14 @@ public:
     return as_.numeric <= r.as_.numeric;
   }
 
+  inline bool operator!(void) const noexcept {
+    return !is_truthy();
+  }
+
+  inline Value operator-(void) const noexcept {
+    return -as_numeric();
+  }
+
   inline bool is_nil(void) const { return type_ == ValueType::NIL; }
   inline bool is_boolean(void) const { return type_ == ValueType::BOOLEAN; }
   inline bool is_numeric(void) const { return type_ == ValueType::NUMERIC; }
@@ -375,7 +383,7 @@ public:
     attrs_[key] = val;
   }
 
-  inline void set_attr(StringObject* key, const Value* val) {
+  inline void set_attr(StringObject* key, const Value& val) {
     attrs_[key->cstr()] = val;
   }
 
