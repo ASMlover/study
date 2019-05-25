@@ -250,10 +250,10 @@ class FunctionObject final : public BaseObject {
   int arity_{};
   int upvalues_count_{};
   StringObject* name_{};
-  std::unique_ptr<Chunk> chunk_;
+  Chunk* chunk_{};
 public:
   FunctionObject(void) noexcept;
-  virtual ~FunctionObject(void) {}
+  virtual ~FunctionObject(void);
 
   inline int arity(void) const { return arity_; }
   inline int inc_arity(void) { return arity_++; }
@@ -266,7 +266,7 @@ public:
   }
 
   inline void set_name(StringObject* name) { name_ = name; }
-  inline std::unique_ptr<Chunk>& chunk(void) { return chunk_; }
+  inline Chunk* chunk(void) { return chunk_; }
 
   virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;

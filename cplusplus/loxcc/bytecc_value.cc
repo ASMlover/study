@@ -193,6 +193,10 @@ FunctionObject::FunctionObject(void) noexcept
   , chunk_(new Chunk()) {
 }
 
+FunctionObject::~FunctionObject(void) {
+  delete chunk_;
+}
+
 sz_t FunctionObject::size_bytes(void) const {
   return sizeof(*this) + chunk_->size_bytes();
 }
