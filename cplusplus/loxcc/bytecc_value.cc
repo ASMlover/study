@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "bytecc_chunk.hh"
+#include "bytecc_vm.hh"
 #include "bytecc_value.hh"
 
 namespace loxcc::bytecc {
@@ -32,7 +33,7 @@ namespace loxcc::bytecc {
 template <typename T, typename... Args>
 inline T* make_object(VM& vm, Args&&... args) {
   auto* o = new T(std::forward<Args>(args)...);
-  // TODO: append object to VM
+  vm.append_object(o);
   return o;
 }
 
@@ -144,8 +145,12 @@ StringObject* StringObject::create(VM& vm, const str_t& s) {
 
 StringObject* StringObject::create(VM& vm, const char* s, int n) {
   u32_t h = Xt::hasher(s, n);
-  // TODO: set interned strings
-  return make_object<StringObject>(vm, s, n, h);
+  if (auto* o = vm.get_interned(h); o != nullptr)
+    return o;
+
+  auto* o = make_object<StringObject>(vm, s, n, h);
+  vm.set_interned(h, o);
+  return o;
 }
 
 StringObject* StringObject::concat(VM& vm, StringObject* a, StringObject* b) {
@@ -156,8 +161,14 @@ StringObject* StringObject::concat(VM& vm, StringObject* a, StringObject* b) {
   s[n] = 0;
 
   u32_t h = Xt::hasher(s, n);
-  // TODO: set interned strings
-  return make_object<StringObject>(vm, s, n, h, true);
+  if (auto* o = vm.get_interned(h); o != nullptr) {
+    delete [] s;
+    return o;
+  }
+
+  auto* o = make_object<StringObject>(vm, s, n, h, true);
+  vm.set_interned(h, o);
+  return o;
 }
 
 NativeObject::NativeObject(const NativeFn& fn) noexcept

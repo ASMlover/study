@@ -93,6 +93,16 @@ public:
   inline void invoke_push(const Value& v) { push(v); }
   inline Value invoke_pop(void) { return pop(); }
 
+  void set_interned(u32_t h, StringObject* s) {
+    interned_strings_[h] = s;
+  }
+
+  StringObject* get_interned(u32_t h) const {
+    if (auto it = interned_strings_.find(h); it != interned_strings_.end())
+      return it->second;
+    return nullptr;
+  }
+
   void append_object(BaseObject* o);
   void mark_object(BaseObject* o);
   void mark_value(const Value& v);
