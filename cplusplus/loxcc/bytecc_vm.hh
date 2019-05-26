@@ -72,8 +72,17 @@ class VM final : private UnCopyable {
 
   void define_native(const str_t& name, const NativeFn& fn);
   void define_native(const str_t& name, NativeFn&& fn);
+  void define_method(StringObject* name);
+  bool bind_method(ClassObject* cls, StringObject* name);
   bool call(ClosureObject* closure, int argc);
   bool call_value(const Value& callee, int argc);
+  bool invoke_from_class(ClassObject* cls, StringObject* name, int argc);
+  bool invoke(StringObject* name, int argc);
+
+  UpvalueObject* capture_upvalue(Value* local);
+  void close_upvalues(Value* last);
+
+  InterpretRet run(void);
 public:
   VM(void) noexcept;
   ~VM(void);

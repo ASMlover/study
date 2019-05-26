@@ -141,6 +141,27 @@ void VM::define_native(const str_t& name, NativeFn&& fn) {
   pop();
 }
 
+void VM::define_method(StringObject* name) {
+  const Value& method = peek();
+  ClassObject* cls = peek(1).as_class();
+  cls->set_method(name, method);
+  pop();
+  pop();
+}
+
+bool VM::bind_method(ClassObject* cls, StringObject* name) {
+  if (auto method = cls->get_method(name); method) {
+    BoundMehtodObject* bound =
+      BoundMehtodObject::create(*this, peek(0), (*method).as_closure());
+    pop(); // pop instance object
+    push(bound);
+    return true;
+  }
+
+  runtime_error("`%s` undefined attribute `%s`", cls->name_astr(), name->cstr());
+  return false;
+}
+
 bool VM::call(ClosureObject* closure, int argc) {
   if (argc != closure->fn()->arity()) {
     runtime_error("`%s` takes %d arguments but %d were given",
@@ -199,12 +220,379 @@ bool VM::call_value(const Value& callee, int argc) {
   return false;
 }
 
+bool VM::invoke_from_class(ClassObject* cls, StringObject* name, int argc) {
+  if (auto method = cls->get_method(name); method)
+    return call((*method).as_closure(), argc);
+
+  runtime_error("`%s` object has no method `%s`",
+      cls->name_astr(), name->cstr());
+  return false;
+}
+
+bool VM::invoke(StringObject* name, int argc) {
+  const Value& owner = peek(argc);
+  if (!owner.is_instance()) {
+    runtime_error("only instances have methods");
+    return false;
+  }
+
+  InstanceObject* inst = owner.as_instance();
+  if (auto attr = inst->get_attr(name); attr) {
+    set_stack(argc, (*attr));
+    return call_value((*attr), argc);
+  }
+
+  return invoke_from_class(inst->cls(), name, argc);
+}
+
+UpvalueObject* VM::capture_upvalue(Value* local) {
+  // if there are no open upvalues at all, need create a new one
+  if (open_upvalues_ == nullptr) {
+    open_upvalues_ = UpvalueObject::create(*this, local);
+    return open_upvalues_;
+  }
+
+  UpvalueObject* prev_upvalue{};
+  UpvalueObject* upvalue = open_upvalues_;
+
+  // walk towards the bottom of the stack until we find a previously
+  // existing upvalue or reach where it should be
+  while (upvalue != nullptr && upvalue->value() > local) {
+    prev_upvalue = upvalue;
+    upvalue = upvalue->next();
+  }
+  // reuse it if we found it
+  if (upvalue != nullptr && upvalue->value() == local)
+    return upvalue;
+
+  // we walked past the local on the stack, so there must not be an upvalue
+  // for it already, make sure a new one and link it in the right place to
+  // keep the list sorted
+  UpvalueObject* created_upvalue = UpvalueObject::create(*this, local, upvalue);
+  if (prev_upvalue == nullptr)
+    open_upvalues_ = created_upvalue;
+  else
+    prev_upvalue->set_next(created_upvalue);
+
+  return created_upvalue;
+}
+
+void VM::close_upvalues(Value* last) {
+  while (open_upvalues_ != nullptr && open_upvalues_->value() >= last) {
+    UpvalueObject* upvalue = open_upvalues_;
+
+    // move the value into the upvalue itself and point the upvalue to it
+    upvalue->set_closed(*upvalue->value());
+    upvalue->set_value(upvalue->closed_asptr());
+
+    // pop it off the open upvalue list
+    open_upvalues_ = upvalue->next();
+  }
+}
+
+InterpretRet VM::run(void) {
+  CallFrame& frame = frames_.back();
+
+  auto _RDBYTE = [&frame](void) -> u8_t { return frame.inc_ip(); };
+  auto _RDWORD = [&frame](void) -> u16_t {
+    return (frame.add_ip(2),
+        Xt::as_type<u16_t>((frame.get_ip(-2) << 8) | frame.get_ip(-1)));
+  };
+  auto _RDCONST = [&frame, _RDBYTE](void) -> const Value& {
+    return frame.frame_chunk()->get_constant(_RDBYTE());
+  };
+  auto _RDSTRING = [_RDCONST](void) -> StringObject* {
+    return _RDCONST().as_string();
+  };
+#define _BINARYOP(op) do {\
+  if (!peek(0).is_numeric() || !peek(1).is_numeric()) {\
+    runtime_error("operands must be two numerics");\
+    return InterpretRet::RUNTIME_ERR;\
+  }\
+  double b = pop().as_numeric();\
+  double a = pop().as_numeric();\
+  push(a op b);\
+} while (false)
+
+  for (;;) {
+#if defined(TRACE_EXEC)
+    std::cout << "          ";
+    for (auto& v : stack_)
+      std::cout << "[" << v << "]";
+    std::cout << std::endl;
+
+    frame.frame_chunk()->dis_ins(
+        Xt::as_type<int>(frame.ip() - frame.frame_chunk()->codes()));
+#endif
+
+    switch (auto ins = Xt::as_type<Code>(_RDBYTE())) {
+    case Code::CONSTANT: push(_RDCONST()); break;
+    case Code::NIL: push(nullptr); break;
+    case Code::TRUE: push(true); break;
+    case Code::FALSE: push(false); break;
+    case Code::POP: pop(); break;
+    case Code::DEF_GLOBAL:
+      {
+        StringObject* name = _RDSTRING();
+        globals_[name->cstr()] = peek(0);
+        pop();
+      } break;
+    case Code::GET_GLOBAL:
+      {
+        StringObject* name = _RDSTRING();
+        if (auto it = globals_.find(name->cstr()); it != globals_.end()) {
+          push(it->second);
+        }
+        else {
+          runtime_error("name `%s` is not defined", name->cstr());
+          return InterpretRet::RUNTIME_ERR;
+        }
+      } break;
+    case Code::SET_GLOBAL:
+      {
+        StringObject* name = _RDSTRING();
+        if (auto it = globals_.find(name->cstr()); it == globals_.end()) {
+          runtime_error("name `%s` is not defined", name->cstr());
+          return InterpretRet::RUNTIME_ERR;
+        }
+        else {
+          globals_[name->cstr()] = peek(0);
+        }
+      } break;
+    case Code::GET_LOCAL:
+      {
+        u8_t slot = _RDBYTE();
+        push(stack_[frame.begpos() + slot]);
+      } break;
+    case Code::SET_LOCAL:
+      {
+        u8_t slot = _RDBYTE();
+        stack_[frame.begpos() + slot] = peek(0);
+      } break;
+    case Code::GET_UPVALUE:
+      {
+        u8_t slot = _RDBYTE();
+        push(*frame.closure()->get_upvalue(slot)->value());
+      } break;
+    case Code::SET_UPVALUE:
+      {
+        u8_t slot = _RDBYTE();
+        frame.closure()->get_upvalue(slot)->set_value_withref(peek(0));
+      } break;
+    case Code::GET_ATTR:
+      {
+        if (!peek(0).is_instance()) {
+          runtime_error("only instance objects have attributes");
+          return InterpretRet::RUNTIME_ERR;
+        }
+
+        InstanceObject* inst = peek(0).as_instance();
+        StringObject* name = _RDSTRING();
+        if (auto attr = inst->get_attr(name); attr) {
+          pop(); // pop out instance
+          push(*attr);
+          break;
+        }
+        if (!bind_method(inst->cls(), name))
+          return InterpretRet::RUNTIME_ERR;
+      } break;
+    case Code::SET_ATTR:
+      {
+        if (!peek(1).is_instance()) {
+          runtime_error("only instance objects have attributes");
+          return InterpretRet::RUNTIME_ERR;
+        }
+
+        InstanceObject* inst = peek(1).as_instance();
+        inst->set_attr(_RDSTRING(), peek(0));
+        Value value = pop();
+        pop(); // pop instance
+        push(value);
+      } break;
+    case Code::GET_SUPER:
+      {
+        StringObject* name = _RDSTRING();
+        ClassObject* superclass = pop().as_class();
+        if (!bind_method(superclass, name))
+          return InterpretRet::RUNTIME_ERR;
+      } break;
+    case Code::EQ:
+      {
+        Value b = pop();
+        Value a = pop();
+        push(a == b);
+      } break;
+    case Code::NE:
+      {
+        Value b = pop();
+        Value a = pop();
+        push(a != b);
+      } break;
+    case Code::GT: _BINARYOP(>); break;
+    case Code::GE: _BINARYOP(>=); break;
+    case Code::LT: _BINARYOP(<); break;
+    case Code::LE: _BINARYOP(<=); break;
+    case Code::ADD:
+      {
+        if (peek(0).is_string() && peek(1).is_string()) {
+          StringObject* b = pop().as_string();
+          StringObject* a = pop().as_string();
+          push(StringObject::concat(*this, a, b));
+        }
+        else if (peek(0).is_numeric() && peek(1).is_numeric()) {
+          double b = pop().as_numeric();
+          double a = pop().as_numeric();
+          push(a + b);
+        }
+        else {
+          runtime_error("operands must be two strings or two numerics");
+          return InterpretRet::RUNTIME_ERR;
+        }
+      } break;
+    case Code::SUB: _BINARYOP(-); break;
+    case Code::MUL: _BINARYOP(*); break;
+    case Code::DIV: _BINARYOP(/); break;
+    case Code::NOT: push(!pop()); break;
+    case Code::NEG:
+      {
+        if (!peek(0).is_numeric()) {
+          runtime_error("operand must be a numeric");
+          return InterpretRet::RUNTIME_ERR;
+        }
+        push(-pop());
+      } break;
+    case Code::PRINT: std::cout << pop() << std::endl; break;
+    case Code::JUMP: frame.add_ip(_RDWORD()); break;
+    case Code::JUMP_IF_FALSE:
+      {
+        u16_t offset = _RDWORD();
+        if (!peek(0))
+          frame.add_ip(offset);
+      } break;
+    case Code::LOOP: frame.sub_ip(_RDWORD()); break;
+    case Code::CALL_0:
+    case Code::CALL_1:
+    case Code::CALL_2:
+    case Code::CALL_3:
+    case Code::CALL_4:
+    case Code::CALL_5:
+    case Code::CALL_6:
+    case Code::CALL_7:
+    case Code::CALL_8:
+      {
+        int argc = ins - Code::CALL_0;
+        if (!call_value(peek(argc), argc))
+          return InterpretRet::RUNTIME_ERR;
+        frame = frames_.back();
+      } break;
+    case Code::INVOKE_0:
+    case Code::INVOKE_1:
+    case Code::INVOKE_2:
+    case Code::INVOKE_3:
+    case Code::INVOKE_4:
+    case Code::INVOKE_5:
+    case Code::INVOKE_6:
+    case Code::INVOKE_7:
+    case Code::INVOKE_8:
+      {
+        StringObject* method_name = _RDSTRING();
+        int argc = ins - Code::INVOKE_0;
+        if (!invoke(method_name, argc))
+          return InterpretRet::RUNTIME_ERR;
+        frame = frames_.back();
+      } break;
+    case Code::SUPER_0:
+    case Code::SUPER_1:
+    case Code::SUPER_2:
+    case Code::SUPER_3:
+    case Code::SUPER_4:
+    case Code::SUPER_5:
+    case Code::SUPER_6:
+    case Code::SUPER_7:
+    case Code::SUPER_8:
+      {
+        StringObject* method_name = _RDSTRING();
+        int argc = ins - Code::SUPER_0;
+        ClassObject* superclass = pop().as_class();
+        if (!invoke_from_class(superclass, method_name, argc))
+          return InterpretRet::RUNTIME_ERR;
+        frame = frames_.back();
+      } break;
+    case Code::CLOSURE:
+      {
+        // create the closure and push it on the stack before creating
+        // upvalues so that is does not get collected
+        FunctionObject* fn = _RDCONST().as_function();
+        ClosureObject* closure = ClosureObject::create(*this, fn);
+        push(closure);
+
+        // capture upvalues
+        for (int i = 0; i < closure->upvalues_count(); ++i) {
+          u8_t is_local = _RDBYTE();
+          u8_t index = _RDBYTE();
+          if (is_local) {
+            // make an new upvalue to close over the parent's local variable
+            closure->set_upvalue(i,
+                capture_upvalue(&stack_[frame.begpos() + index]));
+          }
+          else {
+            // use the same upvalue as the current call frame
+            closure->set_upvalue(i, frame.closure()->get_upvalue(index));
+          }
+        }
+      } break;
+    case Code::CLOSE_UPVALUE: close_upvalues(&stack_.back()); pop(); break;
+    case Code::RETURN:
+      {
+        Value r = pop();
+        if (frame.begpos() >= stack_.size())
+          close_upvalues(nullptr);
+        else
+          close_upvalues(&stack_[frame.begpos()]);
+
+        frames_.pop_back();
+        if (frames_.empty())
+          return InterpretRet::OK;
+
+        stack_.resize(frame.begpos());
+        push(r);
+        frame = frames_.back();
+      } break;
+    case Code::CLASS: push(ClassObject::create(*this, _RDSTRING())); break;
+    case Code::SUBCLASS:
+      {
+        const Value& superclass = peek(1);
+        if (!superclass.is_class()) {
+          runtime_error("superclass must be a class");
+          return InterpretRet::RUNTIME_ERR;
+        }
+
+        ClassObject* cls = peek(0).as_class();
+        cls->inherit_from(superclass.as_class());
+        pop();
+      } break;
+    case Code::METHOD: define_method(_RDSTRING()); break;
+    }
+  }
+
+#undef _BINARYOP
+  return InterpretRet::OK;
+}
+
 void VM::free_object(BaseObject* o) {
   // TODO:
 }
 
 InterpretRet VM::interpret(const str_t& source_bytes) {
-  return InterpretRet::OK;
+  // TODO:
+  FunctionObject* fn = nullptr; // compile the source bytes to function object code
+
+  push(fn);
+  ClosureObject* closure = ClosureObject::create(*this, fn);
+  pop();
+  call_value(closure, 0);
+
+  return run();
 }
 
 }
