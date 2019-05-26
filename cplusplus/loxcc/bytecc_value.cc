@@ -120,7 +120,7 @@ StringObject::StringObject(
     data_ = Xt::as_ptr<char>(s);
   }
   else {
-    data_ = new char[size_ + 1];
+    data_ = new char[Xt::as_type<sz_t>(size_) + 1];
     memcpy(data_, s, size_);
     data_[size_] = 0;
   }
@@ -150,7 +150,7 @@ StringObject* StringObject::create(VM& vm, const char* s, int n) {
 
 StringObject* StringObject::concat(VM& vm, StringObject* a, StringObject* b) {
   int n = a->size() + b->size();
-  char* s = new char[n + 1];
+  char* s = new char[Xt::as_type<sz_t>(n) + 1];
   memcpy(s, a->data(), a->size());
   memcpy(s + a->size(), b->data(), b->size());
   s[n] = 0;
