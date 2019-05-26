@@ -579,8 +579,92 @@ InterpretRet VM::run(void) {
   return InterpretRet::OK;
 }
 
+void VM::collect(void) {
+  // mark the stack roots
+  for (auto& v : stack_)
+    mark_value(v);
+  for (auto& frame : frames_)
+    mark_object(frame.closure());
+
+  // mark the open upvalues
+  for (auto* uv = open_upvalues_; uv != nullptr; uv = uv->next())
+    mark_object(uv);
+
+  // mark the globals roots
+  for (auto& x : globals_)
+    mark_value(x.second);
+  // TODO: mark the compiler roots
+  mark_object(ctor_string_);
+
+  // traverse the references
+  while (!worked_objects_.empty()) {
+    // pop and object from the marked worked objects list
+    BaseObject* o = worked_objects_.back();
+    worked_objects_.pop_back();
+
+    o->blacken(*this);
+  }
+
+  // remove unused interned strings objects
+  for (auto it = interned_strings_.begin(); it != interned_strings_.end();) {
+    if (!it->second->marked())
+      interned_strings_.erase(it++);
+    else
+      ++it;
+  }
+
+  // collect the un-marked objects
+  sz_t new_bytes_allocated = 0;
+  for (auto it = all_objects_.begin(); it != all_objects_.end();) {
+    if (!(*it)->marked()) {
+      free_object(*it);
+      all_objects_.erase(it++);
+    }
+    else {
+      (*it)->set_marked(false);
+      new_bytes_allocated += (*it)->size_bytes();
+      ++it;
+    }
+  }
+
+  bytes_allocated_ = new_bytes_allocated;
+  next_gc_ = bytes_allocated_ * kHeapGrowFactor;
+}
+
+void VM::append_object(BaseObject* o) {
+  if (bytes_allocated_ > next_gc_)
+    collect();
+
+  bytes_allocated_ += o->size_bytes();
+  all_objects_.push_back(o);
+}
+
+void VM::mark_object(BaseObject* o) {
+  if (o == nullptr)
+    return;
+
+  if (o->marked())
+    return;
+
+#if defined(TRACE_GC)
+  std::cout << "mark object at `" << o << "` -> " << Value(o) << std::endl;
+#endif
+
+  o->set_marked(true);
+  worked_objects_.push_back(o);
+}
+
+void VM::mark_value(const Value& v) {
+  if (v.is_object())
+    mark_object(v.as_object());
+}
+
 void VM::free_object(BaseObject* o) {
-  // TODO:
+#if defined(TRACE_GC)
+  std::cout << "`" << o << "` free object - " << Value(o) << std::endl;
+#endif
+
+  delete o;
 }
 
 InterpretRet VM::interpret(const str_t& source_bytes) {

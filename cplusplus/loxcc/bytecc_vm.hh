@@ -44,6 +44,7 @@ class CallFrame;
 
 class VM final : private UnCopyable {
   static constexpr sz_t kMaxFrames = 256;
+  static constexpr sz_t kHeapGrowFactor = 2;
   static constexpr sz_t kGCThresholds = 1 << 20;
 
   std::vector<Value> stack_;
@@ -83,10 +84,18 @@ class VM final : private UnCopyable {
   void close_upvalues(Value* last);
 
   InterpretRet run(void);
+
+  void collect(void);
 public:
   VM(void) noexcept;
   ~VM(void);
 
+  inline void invoke_push(const Value& v) { push(v); }
+  inline Value invoke_pop(void) { return pop(); }
+
+  void append_object(BaseObject* o);
+  void mark_object(BaseObject* o);
+  void mark_value(const Value& v);
   void free_object(BaseObject* o);
 
   InterpretRet interpret(const str_t& source_bytes);
