@@ -141,7 +141,7 @@ class Chunk final : private UnCopyable {
   std::vector<Value> constants_;
 public:
   template <typename T> inline void write(T code, int line) {
-    codes_.push_back(code);
+    codes_.push_back(Xt::as_type<u8_t>(code));
     lines_.push_back(line);
   }
 
