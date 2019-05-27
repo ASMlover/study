@@ -27,24 +27,20 @@
 #pragma once
 
 #include <memory>
-#include "common.hh"
+#include "loxcc.hh"
 #include "interpret_errors.hh"
 
 namespace loxcc::interpret {
 
 class Interpreter;
 
-class Loxcc final : private UnCopyable {
+class Loxcc final : public BaseLoxcc {
   ErrorReport err_report_;
   std::shared_ptr<Interpreter> interp_;
 
-  void eval_with_repl(void);
-  void eval_with_file(const str_t& fname);
-  void eval(const str_t& source_bytes);
+  virtual void eval_impl(const str_t& source_bytes) override;
 public:
   Loxcc(void) noexcept;
-
-  void eval(int argc, char** argv);
 };
 
 }
