@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include "bytecc_loxcc.hh"
 #include "interpret_loxcc.hh"
 
 int main(int argc, char* argv[]) {
@@ -44,10 +45,16 @@ int main(int argc, char* argv[]) {
     switch (argv[1][0]) {
     case 'i':
       {
+        std::cout << "Loxcc Interpreter RUNNING ..." << std::endl;
         loxcc::interpret::Loxcc lox;
         lox.eval(argc, argv);
       } break;
-    case 'c': break;
+    case 'c':
+      {
+        std::cout << "Loxcc VM RUNNING ..." << std::endl;
+        loxcc::bytecc::Loxcc lox;
+        lox.eval(argc, argv);
+      } break;
     default: help_fn(argv[0]); break;
     }
   }
