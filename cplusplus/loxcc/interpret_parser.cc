@@ -56,14 +56,14 @@ bool Parser::match(TokenKind kind) {
   if (!check(kind))
     return false;
 
-  advance();
+  (void)advance();
   return true;
 }
 
 bool Parser::match(const std::initializer_list<TokenKind>& kinds) {
   for (auto kind : kinds) {
     if (check(kind)) {
-      advance();
+      (void)advance();
       return true;
     }
   }
@@ -78,7 +78,7 @@ Token Parser::consume(TokenKind kind, const str_t& message) {
 }
 
 void Parser::synchronize(void) {
-  advance();
+  (void)advance();
 
   while (!is_end()) {
     if (prev_.kind() == TokenKind::TK_SEMI)
@@ -96,7 +96,7 @@ void Parser::synchronize(void) {
       return;
     }
 
-    advance();
+    (void)advance();
   }
 }
 
@@ -127,16 +127,16 @@ StmtPtr Parser::class_decl(void) {
   Token name = consume(TokenKind::TK_IDENTIFIER, "expect class name");
   ExprPtr superclass;
   if (match(TokenKind::TK_LT)) {
-    consume(TokenKind::TK_IDENTIFIER, "expect superclass name");
+    (void)consume(TokenKind::TK_IDENTIFIER, "expect superclass name");
     superclass = std::make_shared<VariableExpr>(prev_);
   }
-  consume(TokenKind::TK_LBRACE, "expect `{` before class body");
+  (void)consume(TokenKind::TK_LBRACE, "expect `{` before class body");
   std::vector<FunctionStmtPtr> methods;
   while (!is_end() && !check(TokenKind::TK_RBRACE)) {
     auto method = std::static_pointer_cast<FunctionStmt>(fun_decl("method"));
     methods.push_back(method);
   }
-  consume(TokenKind::TK_RBRACE, "expect `}` after class body");
+  (void)consume(TokenKind::TK_RBRACE, "expect `}` after class body");
 
   return std::make_shared<ClassStmt>(name, superclass, methods);
 }
@@ -146,7 +146,7 @@ StmtPtr Parser::fun_decl(const str_t& kind) {
   // parameters -> IDENTIFIER ( "," IDENTIFIER )* ;
 
   Token name = consume(TokenKind::TK_IDENTIFIER, "expect " + kind + " name");
-  consume(TokenKind::TK_LPAREN, "expect `(` after " + kind + " name");
+  (void)consume(TokenKind::TK_LPAREN, "expect `(` after " + kind + " name");
   std::vector<Token> params;
   if (!check(TokenKind::TK_RPAREN)) {
     do {
@@ -159,8 +159,8 @@ StmtPtr Parser::fun_decl(const str_t& kind) {
           consume(TokenKind::TK_IDENTIFIER, "expect parameter name"));
     } while (match(TokenKind::TK_COMMA));
   }
-  consume(TokenKind::TK_RPAREN, "expect `)` after " + kind + " parameters");
-  consume(TokenKind::TK_LBRACE, "expect `{` before " + kind + " body");
+  (void)consume(TokenKind::TK_RPAREN, "expect `)` after " + kind + " parameters");
+  (void)consume(TokenKind::TK_LBRACE, "expect `{` before " + kind + " body");
   auto body = block_stmt();
 
   return std::make_shared<FunctionStmt>(name, params, body);
@@ -173,7 +173,7 @@ StmtPtr Parser::var_decl(void) {
   ExprPtr expr;
   if (match(TokenKind::TK_EQ))
     expr = expression();
-  consume(TokenKind::TK_SEMI, "expect `;` after variable declaration");
+  (void)consume(TokenKind::TK_SEMI, "expect `;` after variable declaration");
 
   return std::make_shared<VarStmt>(name, expr);
 }
@@ -201,7 +201,7 @@ StmtPtr Parser::expr_stmt(void) {
   // expr_stmt -> expression ";" ;
 
   ExprPtr expr = expression();
-  consume(TokenKind::TK_SEMI, "expect `;` after expression");
+  (void)consume(TokenKind::TK_SEMI, "expect `;` after expression");
 
   return std::make_shared<ExprStmt>(expr);
 }
@@ -210,7 +210,7 @@ StmtPtr Parser::for_stmt(void) {
   // for_stmt -> "for" "(" ( var_decl | expr_stmt | ";" )
   //                       expression? ";" expression? ")" statement ;
 
-  consume(TokenKind::TK_LPAREN, "expect `(` after keyword `for`");
+  (void)consume(TokenKind::TK_LPAREN, "expect `(` after keyword `for`");
   StmtPtr init_clause;
   if (match(TokenKind::TK_SEMI))
     init_clause = nullptr;
@@ -221,11 +221,11 @@ StmtPtr Parser::for_stmt(void) {
   ExprPtr cond_expr;
   if (!check(TokenKind::TK_SEMI))
     cond_expr = expression();
-  consume(TokenKind::TK_SEMI, "expect `;` after `for` loop condition");
+  (void)consume(TokenKind::TK_SEMI, "expect `;` after `for` loop condition");
   ExprPtr iter_expr;
   if (!check(TokenKind::TK_RPAREN))
     iter_expr = expression();
-  consume(TokenKind::TK_RPAREN, "expect `)` after `for` loop clauses");
+  (void)consume(TokenKind::TK_RPAREN, "expect `)` after `for` loop clauses");
 
   auto body = statement();
   if (iter_expr) {
@@ -244,9 +244,9 @@ StmtPtr Parser::for_stmt(void) {
 StmtPtr Parser::if_stmt(void) {
   // if_stmt -> "if" "(" expression ")" statement ( "else" statement )? ;
 
-  consume(TokenKind::TK_LPAREN, "expect `(` after keyword `if`");
+  (void)consume(TokenKind::TK_LPAREN, "expect `(` after keyword `if`");
   ExprPtr cond = expression();
-  consume(TokenKind::TK_RPAREN, "expect `)` after if condition");
+  (void)consume(TokenKind::TK_RPAREN, "expect `)` after if condition");
 
   StmtPtr then_branch = statement();
   StmtPtr else_branch;
@@ -264,7 +264,7 @@ StmtPtr Parser::print_stmt(void) {
     do {
       exprs.push_back(expression());
     } while (match(TokenKind::TK_COMMA));
-    consume(TokenKind::TK_SEMI, "expect `;` after print expressions");
+    (void)consume(TokenKind::TK_SEMI, "expect `;` after print expressions");
   }
 
   return std::make_shared<PrintStmt>(exprs);
@@ -277,7 +277,7 @@ StmtPtr Parser::return_stmt(void) {
   ExprPtr value;
   if (!check(TokenKind::TK_SEMI))
     value = expression();
-  consume(TokenKind::TK_SEMI, "expect `;` after return value");
+  (void)consume(TokenKind::TK_SEMI, "expect `;` after return value");
 
   return std::make_shared<ReturnStmt>(keyword, value);
 }
@@ -285,9 +285,9 @@ StmtPtr Parser::return_stmt(void) {
 StmtPtr Parser::while_stmt(void) {
   // while_stmt -> "while" "(" expression ")" statement ;
 
-  consume(TokenKind::TK_LPAREN, "expect `(` after keyword `while`");
+  (void)consume(TokenKind::TK_LPAREN, "expect `(` after keyword `while`");
   ExprPtr cond = expression();
-  consume(TokenKind::TK_RPAREN, "expect `)` after while condition");
+  (void)consume(TokenKind::TK_RPAREN, "expect `)` after while condition");
   StmtPtr body = statement();
 
   return std::make_shared<WhileStmt>(cond, body);
@@ -299,7 +299,7 @@ std::vector<StmtPtr> Parser::block_stmt(void) {
   std::vector<StmtPtr> stmts;
   while (!is_end() && !check(TokenKind::TK_RBRACE))
     stmts.push_back(declaration());
-  consume(TokenKind::TK_RBRACE, "expect `}` after block");
+  (void)consume(TokenKind::TK_RBRACE, "expect `}` after block");
 
   return stmts;
 }
@@ -481,13 +481,13 @@ ExprPtr Parser::primary(void) {
 
   if (match(TokenKind::TK_LPAREN)) {
     ExprPtr expr = expression();
-    consume(TokenKind::TK_RPAREN, "expect `)` after expression");
+    (void)consume(TokenKind::TK_RPAREN, "expect `)` after expression");
     return std::make_shared<GroupingExpr>(expr);
   }
 
   if (match(TokenKind::KW_SUPER)) {
     const Token& keyword = prev_;
-    consume(TokenKind::TK_DOT, "expect `.` after keyword `super`");
+    (void)consume(TokenKind::TK_DOT, "expect `.` after keyword `super`");
     const Token& method = consume(
         TokenKind::TK_IDENTIFIER, "expect superclass method name");
     return std::make_shared<SuperExpr>(keyword, method);
