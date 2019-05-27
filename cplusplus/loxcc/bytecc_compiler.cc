@@ -243,7 +243,7 @@ class GlobalParser final : private UnCopyable {
   }
 
   void init_compiler(Compiler* compiler, int scope_depth, FunctionType type) {
-    StringObject* func_name;
+    StringObject* func_name{};
     switch (type) {
     case FunctionType::CTOR:
     case FunctionType::METHOD:
