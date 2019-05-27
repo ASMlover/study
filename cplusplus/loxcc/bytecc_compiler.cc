@@ -1052,15 +1052,38 @@ class GlobalParser final : private UnCopyable {
     emit_byte(Code::POP); // pop out the while condition
   }
 public:
+  GlobalParser(VM& vm, Lexer& lex) noexcept
+    : vm_(vm), lex_(lex) {
+  }
+
+  inline Compiler* curr_compiler(void) const { return curr_compiler_; }
+
+  FunctionObject* run_compile(void) {
+    Compiler compiler;
+    init_compiler(&compiler, 0, FunctionType::TOP_LEVEL);
+
+    advance();
+    while (!match(TokenKind::TK_EOF))
+      declaration();
+
+    FunctionObject* fn = finish_compiler();
+    return had_error_ ? nullptr : fn;
+  }
 };
 
 FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) {
-  // TODO:
-  return nullptr;
+  Lexer lex(source_bytes);
+  gparser_ = std::make_shared<GlobalParser>(vm, lex);
+
+  return gparser_->run_compile();
 }
 
 void GlobalCompiler::mark_roots(VM& vm) {
-  // TODO:
+  Compiler* iter_compiter = gparser_->curr_compiler();
+  while (iter_compiter != nullptr) {
+    vm.mark_object(iter_compiter->fn);
+    iter_compiter = iter_compiter->enclosing;
+  }
 }
 
 }

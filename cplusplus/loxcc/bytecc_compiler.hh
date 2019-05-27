@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <memory>
 #include "common.hh"
 
 namespace loxcc::bytecc {
@@ -35,7 +36,7 @@ class GlobalParser;
 class VM;
 
 class GlobalCompiler final : private UnCopyable {
-  GlobalParser* gparser_{};
+  std::shared_ptr<GlobalParser> gparser_{};
 public:
   FunctionObject* compile(VM& vm, const str_t& source_bytes);
   void mark_roots(VM& vm);
