@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <memory>
 #include <list>
 #include <vector>
 #include <unordered_map>
@@ -41,11 +42,14 @@ enum class InterpretRet {
 };
 
 class CallFrame;
+class GlobalCompiler;
 
 class VM final : private UnCopyable {
   static constexpr sz_t kMaxFrames = 256;
   static constexpr sz_t kHeapGrowFactor = 2;
   static constexpr sz_t kGCThresholds = 1 << 20;
+
+  std::unique_ptr<GlobalCompiler> gcompiler_;
 
   std::vector<Value> stack_;
   std::vector<CallFrame> frames_;

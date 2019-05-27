@@ -28,6 +28,7 @@
 #include <cstdarg>
 #include <iostream>
 #include "bytecc_chunk.hh"
+#include "bytecc_compiler.hh"
 #include "bytecc_vm.hh"
 
 namespace loxcc::bytecc {
@@ -56,7 +57,8 @@ public:
   inline Chunk* frame_chunk(void) const { return closure_->fn()->chunk(); }
 };
 
-VM::VM(void) noexcept {
+VM::VM(void) noexcept
+  : gcompiler_(new GlobalCompiler()) {
   define_native("clock", [](int argc, Value* args) -> Value {
         return std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
@@ -593,7 +595,7 @@ void VM::collect(void) {
   // mark the globals roots
   for (auto& x : globals_)
     mark_value(x.second);
-  // TODO: mark the compiler roots
+  gcompiler_->mark_roots(*this);
   mark_object(ctor_string_);
 
   // traverse the references
@@ -668,8 +670,10 @@ void VM::free_object(BaseObject* o) {
 }
 
 InterpretRet VM::interpret(const str_t& source_bytes) {
-  // TODO:
-  FunctionObject* fn = nullptr; // compile the source bytes to function object code
+  // compile the source bytes to function object code
+  FunctionObject* fn = gcompiler_->compile(*this, source_bytes);
+  if (fn == nullptr)
+    return InterpretRet::COMPILE_ERR;
 
   push(fn);
   ClosureObject* closure = ClosureObject::create(*this, fn);
