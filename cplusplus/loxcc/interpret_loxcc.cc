@@ -24,9 +24,6 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "lexer.hh"
-#include "interpret_parser.hh"
-#include "interpret_resolver.hh"
 #include "interpret_interpreter.hh"
 #include "interpret_loxcc.hh"
 
@@ -38,21 +35,7 @@ Loxcc::Loxcc(void) noexcept
 }
 
 void Loxcc::eval_impl(const str_t& source_bytes) {
-  Lexer lex(source_bytes);
-  Parser p(err_report_, lex);
-
-  auto stmts = p.parse();
-  if (err_report_.had_error())
-    std::exit(-1);
-
-  auto resolver = std::make_shared<Resolver>(err_report_, interp_);
-  resolver->invoke_resolve(stmts);
-  if (err_report_.had_error())
-    std::exit(-2);
-
-  interp_->interpret(stmts);
-  if (err_report_.had_error())
-    std::exit(-3);
+  interp_->interpret(source_bytes);
 }
 
 }
