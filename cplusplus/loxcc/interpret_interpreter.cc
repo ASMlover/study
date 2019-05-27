@@ -25,10 +25,13 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include "lexer.hh"
 #include "interpret_errors.hh"
+#include "interpret_parser.hh"
 #include "interpret_environment.hh"
 #include "interpret_callable.hh"
 #include "interpret_builtins.hh"
+#include "interpret_resolver.hh"
 #include "interpret_interpreter.hh"
 
 namespace loxcc::interpret {
@@ -40,13 +43,30 @@ Interpreter::Interpreter(ErrorReport& err_report) noexcept
   globals_->define("clock", Value(std::make_shared<NatClock>()));
 }
 
-void Interpreter::interpret(const std::vector<StmtPtr>& stmts) {
-  try {
-    for (auto& stmt : stmts)
+void Interpreter::interpret(const str_t& source_bytes) {
+  Lexer lex(source_bytes);
+  Parser parser(err_report_, lex);
+  auto resolver = std::make_shared<Resolver>(err_report_, shared_from_this());
+
+  for (;;) {
+    StmtPtr stmt = parser.parse();
+    if (err_report_.had_error())
+      std::exit(-1);
+    if (!stmt)
+      break;
+
+    resolver->invoke_resolve(stmt);
+    if (err_report_.had_error())
+      std::exit(-2);
+
+    try {
       evaluate(stmt);
-  }
-  catch (const RuntimeError& e) {
-    err_report_.error(e.token(), e.message());
+    }
+    catch (const RuntimeError& e) {
+      err_report_.error(e.token(), e.message());
+    }
+    if (err_report_.had_error())
+      std::exit(-3);
   }
 }
 

@@ -30,9 +30,9 @@
 
 namespace loxcc::interpret {
 
-void Resolver::invoke_resolve(const std::vector<StmtPtr>& stmts) {
+void Resolver::invoke_resolve(const StmtPtr& stmt) {
   try {
-    resolve(stmts);
+    resolve(stmt);
   }
   catch (const RuntimeError& e) {
     err_report_.error(e.token(), e.message());

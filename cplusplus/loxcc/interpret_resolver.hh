@@ -92,7 +92,7 @@ public:
     : err_report_(err_report), interp_(interp) {
   }
 
-  void invoke_resolve(const std::vector<StmtPtr>& stmts);
+  void invoke_resolve(const StmtPtr& stmt);
 };
 
 }

@@ -93,7 +93,7 @@ class Interpreter final
 public:
   Interpreter(ErrorReport& err_report) noexcept;
 
-  void interpret(const std::vector<StmtPtr>& stmts);
+  void interpret(const str_t& source_bytes);
 
   inline void resolve(const ExprPtr& expr, int depth) { locals_[expr] = depth; }
   inline EnvironmentPtr get_globals(void) const { return globals_; }

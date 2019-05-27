@@ -29,16 +29,12 @@
 
 namespace loxcc::interpret {
 
-std::vector<StmtPtr> Parser::parse(void) {
-  // program -> declaration* EOF;
+StmtPtr Parser::parse(void) {
+  // program -> declaration* EOF ;
 
-  std::vector<StmtPtr> stmts;
-
-  advance();
-  while (!is_end())
-    stmts.push_back(declaration());
-
-  return stmts;
+  if (!is_end())
+    return declaration();
+  return nullptr;
 }
 
 Token Parser::advance(void) {
