@@ -364,12 +364,12 @@ InterpretRet VM::run(void) {
     case Code::GET_LOCAL:
       {
         u8_t slot = _RDBYTE();
-        push(stack_[frame.begpos() + slot]);
+        push(stack_[Xt::as_type<sz_t>(frame.begpos() + slot)]);
       } break;
     case Code::SET_LOCAL:
       {
         u8_t slot = _RDBYTE();
-        stack_[frame.begpos() + slot] = peek(0);
+        stack_[Xt::as_type<sz_t>(frame.begpos() + slot)] = peek(0);
       } break;
     case Code::GET_UPVALUE:
       {
@@ -534,8 +534,8 @@ InterpretRet VM::run(void) {
           u8_t index = _RDBYTE();
           if (is_local) {
             // make an new upvalue to close over the parent's local variable
-            closure->set_upvalue(i,
-                capture_upvalue(&stack_[frame.begpos() + index]));
+            closure->set_upvalue(i, capture_upvalue(
+                  &stack_[Xt::as_type<int>(frame.begpos() + index)]));
           }
           else {
             // use the same upvalue as the current call frame

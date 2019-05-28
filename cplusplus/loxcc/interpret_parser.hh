@@ -81,7 +81,7 @@ class Parser final : private UnCopyable {
 public:
   Parser(ErrorReport& err_report, Lexer& lex) noexcept
     : err_report_(err_report), lex_(lex) {
-    advance();
+    (void)advance();
   }
 
   StmtPtr parse(void);
