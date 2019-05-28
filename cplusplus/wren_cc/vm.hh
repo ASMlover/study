@@ -147,6 +147,7 @@ class ClassObject : public BaseObject {
   ClassObject(ClassObject* meta_class) noexcept;
   virtual ~ClassObject(void) {}
 public:
+  inline ClassObject* meta_class(void) const { return meta_class_; }
   inline int methods_count(void) const { return Xt::as_type<int>(methods_.size()); }
   inline Method& get_method(int i) { return methods_[i]; }
   inline void set_method(int i, MethodType type) { methods_[i].type = type; }

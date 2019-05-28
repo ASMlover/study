@@ -48,7 +48,7 @@ ClassObject* BaseObject::as_class(void) const {
 }
 
 InstanceObject* BaseObject::as_instance(void) const {
-  return nullptr;
+  return Xt::down<InstanceObject>(const_cast<BaseObject*>(this));
 }
 
 str_t NumericObject::stringify(void) const {
@@ -75,7 +75,7 @@ ClassObject::ClassObject(void) noexcept
 
 ClassObject::ClassObject(ClassObject* meta_class) noexcept
   : BaseObject(ObjType::CLASS)
-  , meta_class_(meta_class_) {
+  , meta_class_(meta_class) {
 }
 
 str_t ClassObject::stringify(void) const {
@@ -151,6 +151,7 @@ public:
     frames_.clear();
   }
 
+  inline void resize_stack(int n) { stack_.resize(n); }
   inline int stack_size(void) const { return Xt::as_type<int>(stack_.size()); }
   inline int frame_size(void) const { return Xt::as_type<int>(frames_.size()); }
   inline CallFrame& peek_frame(void) { return frames_.back(); }
@@ -190,6 +191,11 @@ static Value _primitive_numabs(Value v) {
   return NumericObject::make_numeric(d);
 }
 
+static Value _primitive_metaclass_new(Value v) {
+  ClassObject* cls = v->as_class();
+  return InstanceObject::make_instance(cls);
+}
+
 VM::VM(void) {
   block_class_ = ClassObject::make_class();
   {
@@ -227,8 +233,30 @@ Value VM::interpret(BlockObject* block) {
       } break;
     case Code::CLASS:
       {
-        fiber.push(ClassObject::make_class());
+        ClassObject* cls = ClassObject::make_class();
+
+        // define `new` method on the metaclass.
+        int new_symbol = symbols_.ensure("new");
+        std::cout << "define `new` " << new_symbol << std::endl;
+
+        cls->meta_class()->set_method(
+            new_symbol, MethodType::PRIMITIVE, _primitive_metaclass_new);
+        fiber.push(cls);
+
         std::cout << "push class at: " << fiber.stack_size() - 1 << std::endl;
+      } break;
+    case Code::METHOD:
+      {
+        int symbol = frame->get_code(frame->ip++);
+        int constant = frame->get_code(frame->ip++);
+        ClassObject* cls = fiber.peek_value()->as_class();
+
+        BlockObject* body = frame->get_constant(constant)->as_block();
+        cls->set_method(symbol, MethodType::BLOCK, body);
+
+        std::cout
+          << "define method `" << symbol
+          << "` using constant `" << constant << "` on " << cls << std::endl;
       } break;
     case Code::LOAD_LOCAL:
       {
@@ -263,9 +291,12 @@ Value VM::interpret(BlockObject* block) {
         ClassObject* cls{};
         switch (receiver->type()) {
         case ObjType::BLOCK: cls = block_class_; break;
-        case ObjType::CLASS: cls = class_class_; break;
+        case ObjType::CLASS: cls = receiver->as_class()->meta_class(); break;
         case ObjType::NUMERIC: cls = num_class_; break;
+        case ObjType::INSTANCE: cls = receiver->as_instance()->cls(); break;
         }
+
+        std::cout << "call `" << symbol << "` on " << receiver << std::endl;
 
         auto& method = cls->get_method(symbol);
         switch (method.type) {
@@ -285,9 +316,20 @@ Value VM::interpret(BlockObject* block) {
         Value r = fiber.pop();
         fiber.pop_frame();
 
-        if (fiber.empty_frame())
+        if (fiber.empty_frame()) {
+          std::cout << "done with result `" << r << "`" << std::endl;
           return r;
-        fiber.set_value(frame->locals, r);
+        }
+
+        std::cout
+          << "return and store result `" << r
+          << "` in " << frame->locals << std::endl;
+        if (fiber.stack_size() <= frame->locals)
+          fiber.push(r);
+        else
+          fiber.set_value(frame->locals, r);
+
+        fiber.resize_stack(frame->locals + 1);
       } break;
     }
   }

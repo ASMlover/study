@@ -194,11 +194,19 @@ class Compiler : private UnCopyable {
       while (!match(TokenKind::TK_RBRACE)) {
         // method name
         consume(TokenKind::TK_IDENTIFIER);
+        int symbol = intern_symbol();
         consume(TokenKind::TK_LBRACE);
-        // TODO: parse body
-        consume(TokenKind::TK_RBRACE);
+        BlockObject* method = compile_block(parser_, this, TokenKind::TK_RBRACE);
 
         consume(TokenKind::TK_NL);
+
+        // add the block to the constant table
+        u8_t constant = block_->add_constant(method);
+
+        // compile the code to define the method
+        emit_byte(Code::METHOD);
+        emit_byte(symbol);
+        emit_byte(constant);
       }
       return;
     }
