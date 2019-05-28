@@ -48,25 +48,18 @@ void Interpreter::interpret(const str_t& source_bytes) {
   Parser parser(err_report_, lex);
   auto resolver = std::make_shared<Resolver>(err_report_, shared_from_this());
 
-  for (;;) {
-    StmtPtr stmt = parser.parse();
-    if (err_report_.had_error())
-      std::exit(-1);
-    if (!stmt)
-      break;
+  try {
+    for (;;) {
+      StmtPtr stmt = parser.parse();
+      if (!stmt)
+        break;
 
-    resolver->invoke_resolve(stmt);
-    if (err_report_.had_error())
-      std::exit(-2);
-
-    try {
+      resolver->invoke_resolve(stmt);
       evaluate(stmt);
     }
-    catch (const RuntimeError& e) {
-      err_report_.error(e.token(), e.message());
-    }
-    if (err_report_.had_error())
-      std::exit(-3);
+  }
+  catch (const RuntimeError& e) {
+    err_report_.error(e.token(), e.message());
   }
 }
 

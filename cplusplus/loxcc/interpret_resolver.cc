@@ -31,12 +31,7 @@
 namespace loxcc::interpret {
 
 void Resolver::invoke_resolve(const StmtPtr& stmt) {
-  try {
-    resolve(stmt);
-  }
-  catch (const RuntimeError& e) {
-    err_report_.error(e.token(), e.message());
-  }
+  resolve(stmt);
 }
 
 void Resolver::resolve(const ExprPtr& expr) {

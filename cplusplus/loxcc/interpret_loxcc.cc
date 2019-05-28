@@ -36,6 +36,8 @@ Loxcc::Loxcc(void) noexcept
 
 void Loxcc::eval_impl(const str_t& source_bytes) {
   interp_->interpret(source_bytes);
+  if (err_report_.had_error())
+    std::exit(-1);
 }
 
 }
