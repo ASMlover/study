@@ -1,7 +1,10 @@
 
-var a = {
-  var b = 345
-  333
-  b
+class Foo {
+  // line comment for class `Foo`
+  bar {
+    123
+  }
 }
-a.call
+
+var a = Foo.new
+a.bar
