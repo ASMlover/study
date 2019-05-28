@@ -278,6 +278,7 @@ public:
 
   virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;
+  virtual void blacken(VM& vm) override;
 
   static FunctionObject* create(VM& vm);
 };
@@ -302,6 +303,7 @@ public:
 
   virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;
+  virtual void blacken(VM& vm) override;
 
   static UpvalueObject* create(
       VM& vm, Value* value, UpvalueObject* next = nullptr);
@@ -326,6 +328,7 @@ public:
 
   virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;
+  virtual void blacken(VM& vm) override;
 
   static ClosureObject* create(VM& vm, FunctionObject* fn);
 };
@@ -364,6 +367,7 @@ public:
 
   virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;
+  virtual void blacken(VM& vm) override;
 
   static ClassObject* create(VM& vm, StringObject* name);
 };
@@ -399,6 +403,7 @@ public:
 
   virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;
+  virtual void blacken(VM& vm) override;
 
   static InstanceObject* create(VM& vm, ClassObject* cls);
 };
@@ -415,6 +420,7 @@ public:
 
   virtual sz_t size_bytes(void) const override;
   virtual str_t stringify(void) const override;
+  virtual void blacken(VM& vm) override;
 
   static BoundMehtodObject* create(
       VM& vm, const Value& owner, ClosureObject* method);

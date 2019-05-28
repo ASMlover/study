@@ -218,6 +218,11 @@ str_t FunctionObject::stringify(void) const {
   return ss.str();
 }
 
+void FunctionObject::blacken(VM& vm) {
+  vm.mark_object(name_);
+  chunk_->iter_constants([&vm](const Value& v) { vm.mark_value(v); });
+}
+
 FunctionObject* FunctionObject::create(VM& vm) {
   return make_object<FunctionObject>(vm);
 }
@@ -234,6 +239,10 @@ sz_t UpvalueObject::size_bytes(void) const {
 
 str_t UpvalueObject::stringify(void) const {
   return "<upvalue>";
+}
+
+void UpvalueObject::blacken(VM& vm) {
+  vm.mark_value(closed_);
 }
 
 UpvalueObject* UpvalueObject::create(
@@ -264,6 +273,12 @@ str_t ClosureObject::stringify(void) const {
   return ss.str();
 }
 
+void ClosureObject::blacken(VM& vm) {
+  vm.mark_object(fn_);
+  for (int i = 0; i < upvalues_count_; ++i)
+    vm.mark_object(upvalues_[i]);
+}
+
 ClosureObject* ClosureObject::create(VM& vm, FunctionObject* fn) {
   return make_object<ClosureObject>(vm, fn);
 }
@@ -289,6 +304,13 @@ str_t ClassObject::stringify(void) const {
   return ss.str();
 }
 
+void ClassObject::blacken(VM& vm) {
+  vm.mark_value(name_);
+  for (auto& m : methods_) {
+    vm.mark_value(m.second);
+  }
+}
+
 ClassObject* ClassObject::create(VM& vm, StringObject* name) {
   return make_object<ClassObject>(vm, name);
 }
@@ -306,6 +328,12 @@ str_t InstanceObject::stringify(void) const {
   std::stringstream ss;
   ss << "<`" << cls_->name_astr() << "` object at `" << this << "`>";
   return ss.str();
+}
+
+void InstanceObject::blacken(VM& vm) {
+  vm.mark_object(cls_);
+  for (auto& attr : attrs_)
+    vm.mark_value(attr.second);
 }
 
 InstanceObject* InstanceObject::create(VM& vm, ClassObject* cls) {
@@ -331,6 +359,11 @@ str_t BoundMehtodObject::stringify(void) const {
     << "`" << method_->fn()->name_astr() << "` of "
     << inst->stringify() << ">";
   return ss.str();
+}
+
+void BoundMehtodObject::blacken(VM& vm) {
+  vm.mark_value(owner_);
+  vm.mark_object(method_);
 }
 
 BoundMehtodObject* BoundMehtodObject::create(
