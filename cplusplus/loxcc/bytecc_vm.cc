@@ -63,6 +63,12 @@ VM::VM(void) noexcept
         return std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
       });
+  define_native("puts", [](int argc, Value* args) -> Value {
+        for (int i = 0; i < argc; ++i)
+          std::cout << args[i] << " ";
+        std::cout << std::endl;
+        return nullptr;
+      });
 
   ctor_string_ = StringObject::create(*this, "ctor");
 }
