@@ -87,21 +87,23 @@ VM::~VM(void) {
 }
 
 void VM::runtime_error(const char* format, ...) {
-  va_list ap;
-  va_start(ap, format);
-  vfprintf(stderr, format, ap);
-  va_end(ap);
-  fprintf(stderr, "\n");
-
+  std::cerr << "Traceback (most recent call last):" << std::endl;
   int i = Xt::as_type<int>(frames_.size()) - 1;
   for (; i >= 0; --i) {
     auto& frame = frames_[i];
     Chunk* chunk = frame.frame_chunk();
     int ins = Xt::as_type<int>(frame.ip() - chunk->codes()) - 1;
 
-    std::cerr << "[LINE: " << chunk->get_line(ins) << "] in "
+    std::cerr << "  [LINE: " << chunk->get_line(ins) << "] in "
       << "`" << frame.frame_fn()->name_astr() << "()`" << std::endl;
   }
+
+  va_list ap;
+  va_start(ap, format);
+  vfprintf(stderr, format, ap);
+  va_end(ap);
+  fprintf(stderr, "\n");
+
   reset();
 }
 
