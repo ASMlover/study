@@ -260,7 +260,7 @@ class FunctionObject final : public BaseObject {
   StringObject* name_{};
   Chunk* chunk_{};
 public:
-  FunctionObject(void) noexcept;
+  FunctionObject(StringObject* name = nullptr) noexcept;
   virtual ~FunctionObject(void);
 
   inline int arity(void) const { return arity_; }
@@ -280,7 +280,7 @@ public:
   virtual str_t stringify(void) const override;
   virtual void blacken(VM& vm) override;
 
-  static FunctionObject* create(VM& vm);
+  static FunctionObject* create(VM& vm, StringObject* name = nullptr);
 };
 
 class UpvalueObject final : public BaseObject {

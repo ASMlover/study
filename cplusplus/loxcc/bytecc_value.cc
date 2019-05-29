@@ -199,8 +199,9 @@ NativeObject* NativeObject::create(VM& vm, NativeFn&& fn) {
   return make_object<NativeObject>(vm, std::move(fn));
 }
 
-FunctionObject::FunctionObject(void) noexcept
+FunctionObject::FunctionObject(StringObject* name) noexcept
   : BaseObject(ObjType::FUNCTION)
+  , name_(name)
   , chunk_(new Chunk()) {
 }
 
@@ -223,8 +224,8 @@ void FunctionObject::blacken(VM& vm) {
   chunk_->iter_constants([&vm](const Value& v) { vm.mark_value(v); });
 }
 
-FunctionObject* FunctionObject::create(VM& vm) {
-  return make_object<FunctionObject>(vm);
+FunctionObject* FunctionObject::create(VM& vm, StringObject* name) {
+  return make_object<FunctionObject>(vm, name);
 }
 
 UpvalueObject::UpvalueObject(Value* value, UpvalueObject* next) noexcept
