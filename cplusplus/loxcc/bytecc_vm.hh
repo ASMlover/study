@@ -94,9 +94,6 @@ public:
   VM(void) noexcept;
   ~VM(void);
 
-  inline void invoke_push(const Value& v) { push(v); }
-  inline Value invoke_pop(void) { return pop(); }
-
   void set_interned(u32_t h, StringObject* s) {
     interned_strings_[h] = s;
   }

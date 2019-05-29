@@ -112,6 +112,8 @@ void VM::reset(void) {
 }
 
 Value* VM::stack_values(int distance) {
+  if (distance == 0 || stack_.empty())
+    return nullptr;
   return &stack_[stack_.size() - distance];
 }
 
@@ -299,15 +301,15 @@ void VM::close_upvalues(Value* last) {
 }
 
 InterpretRet VM::run(void) {
-  CallFrame& frame = frames_.back();
+  CallFrame* frame = &frames_.back();
 
-  auto _RDBYTE = [&frame](void) -> u8_t { return frame.inc_ip(); };
+  auto _RDBYTE = [&frame](void) -> u8_t { return frame->inc_ip(); };
   auto _RDWORD = [&frame](void) -> u16_t {
-    return (frame.add_ip(2),
-        Xt::as_type<u16_t>((frame.get_ip(-2) << 8) | frame.get_ip(-1)));
+    return (frame->add_ip(2),
+        Xt::as_type<u16_t>((frame->get_ip(-2) << 8) | frame->get_ip(-1)));
   };
   auto _RDCONST = [&frame, _RDBYTE](void) -> const Value& {
-    return frame.frame_chunk()->get_constant(_RDBYTE());
+    return frame->frame_chunk()->get_constant(_RDBYTE());
   };
   auto _RDSTRING = [_RDCONST](void) -> StringObject* {
     return _RDCONST().as_string();
@@ -329,8 +331,8 @@ InterpretRet VM::run(void) {
       std::cout << "[" << v << "]";
     std::cout << std::endl;
 
-    frame.frame_chunk()->dis_ins(
-        Xt::as_type<int>(frame.ip() - frame.frame_chunk()->codes()));
+    frame->frame_chunk()->dis_ins(
+        Xt::as_type<int>(frame->ip() - frame->frame_chunk()->codes()));
 #endif
 
     switch (auto ins = Xt::as_type<Code>(_RDBYTE())) {
@@ -370,22 +372,22 @@ InterpretRet VM::run(void) {
     case Code::GET_LOCAL:
       {
         u8_t slot = _RDBYTE();
-        push(stack_[Xt::as_type<sz_t>(frame.begpos() + slot)]);
+        push(stack_[Xt::as_type<sz_t>(frame->begpos() + slot)]);
       } break;
     case Code::SET_LOCAL:
       {
         u8_t slot = _RDBYTE();
-        stack_[Xt::as_type<sz_t>(frame.begpos() + slot)] = peek(0);
+        stack_[Xt::as_type<sz_t>(frame->begpos() + slot)] = peek(0);
       } break;
     case Code::GET_UPVALUE:
       {
         u8_t slot = _RDBYTE();
-        push(*frame.closure()->get_upvalue(slot)->value());
+        push(*frame->closure()->get_upvalue(slot)->value());
       } break;
     case Code::SET_UPVALUE:
       {
         u8_t slot = _RDBYTE();
-        frame.closure()->get_upvalue(slot)->set_value_withref(peek(0));
+        frame->closure()->get_upvalue(slot)->set_value_withref(peek(0));
       } break;
     case Code::GET_ATTR:
       {
@@ -470,14 +472,14 @@ InterpretRet VM::run(void) {
         push(-pop());
       } break;
     case Code::PRINT: std::cout << pop() << std::endl; break;
-    case Code::JUMP: frame.add_ip(_RDWORD()); break;
+    case Code::JUMP: frame->add_ip(_RDWORD()); break;
     case Code::JUMP_IF_FALSE:
       {
         u16_t offset = _RDWORD();
         if (!peek(0))
-          frame.add_ip(offset);
+          frame->add_ip(offset);
       } break;
-    case Code::LOOP: frame.sub_ip(_RDWORD()); break;
+    case Code::LOOP: frame->sub_ip(_RDWORD()); break;
     case Code::CALL_0:
     case Code::CALL_1:
     case Code::CALL_2:
@@ -491,7 +493,7 @@ InterpretRet VM::run(void) {
         int argc = ins - Code::CALL_0;
         if (!call_value(peek(argc), argc))
           return InterpretRet::RUNTIME_ERR;
-        frame = frames_.back();
+        frame = &frames_.back();
       } break;
     case Code::INVOKE_0:
     case Code::INVOKE_1:
@@ -507,7 +509,7 @@ InterpretRet VM::run(void) {
         int argc = ins - Code::INVOKE_0;
         if (!invoke(method_name, argc))
           return InterpretRet::RUNTIME_ERR;
-        frame = frames_.back();
+        frame = &frames_.back();
       } break;
     case Code::SUPER_0:
     case Code::SUPER_1:
@@ -524,7 +526,7 @@ InterpretRet VM::run(void) {
         ClassObject* superclass = pop().as_class();
         if (!invoke_from_class(superclass, method_name, argc))
           return InterpretRet::RUNTIME_ERR;
-        frame = frames_.back();
+        frame = &frames_.back();
       } break;
     case Code::CLOSURE:
       {
@@ -541,11 +543,11 @@ InterpretRet VM::run(void) {
           if (is_local) {
             // make an new upvalue to close over the parent's local variable
             closure->set_upvalue(i, capture_upvalue(
-                  &stack_[Xt::as_type<int>(frame.begpos() + index)]));
+                  &stack_[Xt::as_type<int>(frame->begpos() + index)]));
           }
           else {
             // use the same upvalue as the current call frame
-            closure->set_upvalue(i, frame.closure()->get_upvalue(index));
+            closure->set_upvalue(i, frame->closure()->get_upvalue(index));
           }
         }
       } break;
@@ -553,18 +555,18 @@ InterpretRet VM::run(void) {
     case Code::RETURN:
       {
         Value r = pop();
-        if (frame.begpos() >= stack_.size())
+        if (frame->begpos() < 0 || frame->begpos() >= stack_.size())
           close_upvalues(nullptr);
         else
-          close_upvalues(&stack_[frame.begpos()]);
+          close_upvalues(&stack_[frame->begpos()]);
 
         frames_.pop_back();
         if (frames_.empty())
           return InterpretRet::OK;
 
-        stack_.resize(frame.begpos());
+        stack_.resize(frame->begpos());
         push(r);
-        frame = frames_.back();
+        frame = &frames_.back();
       } break;
     case Code::CLASS: push(ClassObject::create(*this, _RDSTRING())); break;
     case Code::SUBCLASS:
