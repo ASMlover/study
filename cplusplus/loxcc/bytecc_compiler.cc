@@ -144,14 +144,16 @@ class GlobalParser final : private UnCopyable {
 
     panic_mode_ = true;
 
-    std::cerr << "[LINE: " << tok.lineno() << "] ERROR ";
+    std::cerr
+      << "SyntaxError: invalid syntax" << std::endl
+      << "  [LINE: " << tok.lineno() << "] ";
     if (tok.kind() == TokenKind::TK_EOF)
-      std::cerr << " at end";
+      std::cerr << "at end";
     else if (tok.kind() == TokenKind::TK_ERR)
       (void)0;
     else
-      std::cerr << " at " << tok.literal();
-    std::cerr << ": " << msg << std::endl;
+      std::cerr << "at `" << tok.literal() << "`";
+    std::cerr << ", " << msg << std::endl;
 
     panic_mode_ = false;
   }
@@ -254,8 +256,7 @@ class GlobalParser final : private UnCopyable {
     }
 
     compiler->enclosing = curr_compiler_;
-    compiler->fn = FunctionObject::create(vm_);
-    compiler->fn->set_name(func_name);
+    compiler->fn = FunctionObject::create(vm_, func_name);
     compiler->type = type;
     compiler->scope_depth = scope_depth;
 
