@@ -37,14 +37,14 @@ namespace loxcc::bytecc {
 enum class Precedence {
   NONE,
   ASSIGNMENT, // =
-  OR, // or
-  AND, // and
-  EQUALITY, // == !=
+  OR,         // or
+  AND,        // and
+  EQUALITY,   // == !=
   COMPARISON, // > >= < <=
-  TERM, // + -
-  FACTOR, // * /
-  UNARY, // ! -
-  CALL, // . ()
+  TERM,       // + -
+  FACTOR,     // * /
+  UNARY,      // ! -
+  CALL,       // . ()
   PRIMARY,
 };
 
@@ -983,6 +983,17 @@ class GlobalParser final : private UnCopyable {
   }
 
   void if_stmt(void) {
+    // if ( expr ) then_branch else else_branch ;
+    //
+    //    if expr.is_false() goto _ELSE;  ----.
+    // _THEN:                                 |
+    //    then_branch ...                     |
+    //    goto _END;            ----------.   |
+    // _ELSE:                   <---------+---'
+    //    else_branch ...                 |
+    // _END:                    <---------'
+    //    ...
+
     consume(TokenKind::TK_LPAREN, "expect `(` after keyword `if`");
     expression();
     consume(TokenKind::TK_RPAREN, "expect `)` after if condition");
@@ -1032,6 +1043,16 @@ class GlobalParser final : private UnCopyable {
   }
 
   void while_stmt(void) {
+    // while ( expr ) stmt ;
+    //
+    // _START:                <-----------.
+    //    if expr.is_false() goto _EXIT; -+---.
+    // _BODY:                             |   |
+    //    stmt ...                        |   |
+    //    goto _START;        ------------'   |
+    // _EXIT:                 <---------------'
+    //    ...
+
     int loop_start = curr_chunk()->codes_count();
 
     consume(TokenKind::TK_LPAREN, "expect `(` before while condition");
@@ -1075,10 +1096,16 @@ FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) {
   Lexer lex(source_bytes);
   gparser_ = std::make_shared<GlobalParser>(vm, lex);
 
-  return gparser_->run_compile();
+  FunctionObject* fn = gparser_->run_compile();
+  gparser_.reset();
+
+  return fn;
 }
 
 void GlobalCompiler::mark_roots(VM& vm) {
+  if (!gparser_)
+    return;
+
   Compiler* iter_compiter = gparser_->curr_compiler();
   while (iter_compiter != nullptr) {
     vm.mark_object(iter_compiter->fn);
