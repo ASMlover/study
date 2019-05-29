@@ -33,6 +33,16 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
+option(TRACE_EXEC "Enable/Disable trace bytecode executation" OFF)
+option(TRACE_GC "Enable/Disable trace GC" OFF)
+
+if (TRACE_EXEC)
+  add_definitions(-DTRACE_EXEC)
+endif()
+if (TRACE_GC)
+  add_definitions(-DTRACE_GC)
+endif()
+
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   add_definitions(
     /DUNICODE
