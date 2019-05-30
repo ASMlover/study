@@ -39,6 +39,10 @@ NumericObject* BaseObject::as_numeric(void) const {
   return Xt::down<NumericObject>(const_cast<BaseObject*>(this));
 }
 
+StringObject* BaseObject::as_string(void) const {
+  return Xt::down<StringObject>(const_cast<BaseObject*>(this));
+}
+
 BlockObject* BaseObject::as_block(void) const {
   return Xt::down<BlockObject>(const_cast<BaseObject*>(this));
 }
@@ -204,6 +208,11 @@ static Value _primitive_metaclass_new(Value v) {
   return InstanceObject::make_instance(cls);
 }
 
+static Value _primitive_string_len(Value v) {
+  int len = Xt::as_type<int>(strlen(v->as_string()->cstr()));
+  return NumericObject::make_numeric(len);
+}
+
 VM::VM(void) {
   block_class_ = ClassObject::make_class();
   {
@@ -214,6 +223,9 @@ VM::VM(void) {
 
   num_class_ = ClassObject::make_class();
   set_primitive(num_class_, "abs", _primitive_numabs);
+
+  str_class_ = ClassObject::make_class();
+  set_primitive(str_class_, "len", _primitive_string_len);
 }
 
 void VM::set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn) {

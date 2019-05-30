@@ -48,6 +48,7 @@ class BaseObject;
 using Value = BaseObject*;
 
 class NumericObject;
+class StringObject;
 class BlockObject;
 class ClassObject;
 class InstanceObject;
@@ -63,11 +64,13 @@ public:
   inline ObjFlag flag(void) const { return flag_; }
 
   inline bool is_numeric(void) const { return type_ == ObjType::NUMERIC; }
+  inline bool is_string(void) const { return type_ == ObjType::STRING; }
   inline bool is_block(void) const { return type_ == ObjType::BLOCK; }
   inline bool is_class(void) const { return type_ == ObjType::CLASS; }
   inline bool is_instance(void) const { return type_ == ObjType::INSTANCE; }
 
   NumericObject* as_numeric(void) const;
+  StringObject* as_string(void) const;
   BlockObject* as_block(void) const;
   ClassObject* as_class(void) const;
   InstanceObject* as_instance(void) const;
