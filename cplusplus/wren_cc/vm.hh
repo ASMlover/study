@@ -190,6 +190,8 @@ enum class Code : u8_t {
   POP, // pop and discard the top of stack
   LOAD_LOCAL, // push the value in local slot [arg]
   STORE_LOCAL, // store the top of the stack in local slot [arg], not pop it
+  LOAD_GLOBAL, // push the value in global slot [arg]
+  STORE_GLOBAL, // store the top of the stack in global slot [arg], not pop it
   CALL, // invoke the method with symbol [arg]
 
   END,
@@ -208,11 +210,16 @@ public:
 };
 
 class VM : private UnCopyable {
+  static constexpr sz_t kMaxGlobals = 256;
+
   SymbolTable symbols_;
 
   ClassObject* block_class_{};
   ClassObject* class_class_{};
   ClassObject* num_class_{};
+
+  SymbolTable global_symbols_;
+  std::vector<Value> globals_{kMaxGlobals};
 
   void set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn);
 

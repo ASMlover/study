@@ -275,6 +275,22 @@ Value VM::interpret(BlockObject* block) {
           << "from `" << fiber.stack_size() - 1 << "`" << std::endl;
         fiber.set_value(frame->locals + local, fiber.peek_value());
       } break;
+    case Code::LOAD_GLOBAL:
+      {
+        int global = frame->get_code(frame->ip++);
+        fiber.push(globals_[global]);
+        std::cout
+          << "load global `" << global << "` "
+          << "to `" << fiber.stack_size() - 1 << "`" << std::endl;
+      } break;
+    case Code::STORE_GLOBAL:
+      {
+        int global = frame->get_code(frame->ip++);
+        std::cout
+          << "store global `" << global << "` "
+          << "from `" << fiber.stack_size() - 1 << "`" << std::endl;
+        globals_[global] = fiber.get_value(fiber.stack_size() - 1);
+      } break;
     case Code::DUP:
       {
         fiber.push(fiber.peek_value());

@@ -154,6 +154,26 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::CONSTANT, b);
   }
 
+  int define_identifier(void) {
+    consume(TokenKind::TK_IDENTIFIER);
+
+    int symbol;
+    str_t name = parser_.prev().as_string();
+    if (parent_ != nullptr)
+      symbol = locals_.add(name);
+    else
+      symbol = parser_.get_vm().symbols().add(name);
+
+    if (symbol == -1)
+      error("variable is already defined");
+    return symbol;
+  }
+
+  void store_variable(int symbol) {
+    emit_byte(parent_ != nullptr ? Code::STORE_LOCAL : Code::STORE_GLOBAL);
+    emit_byte(symbol);
+  }
+
   void numeric(void) {
     auto& tok = parser_.prev();
     Value constant = NumericObject::make_numeric(tok.as_numeric());
@@ -178,16 +198,13 @@ class Compiler : private UnCopyable {
 
   void statement(void) {
     if (match(TokenKind::KW_CLASS)) {
-      consume(TokenKind::TK_IDENTIFIER);
-
-      int local = locals_.add(parser_.prev().as_string());
-      if (local == -1)
-        error("local variable is already defined");
+      int symbol = define_identifier();
 
       // create the empty class
       emit_byte(Code::CLASS);
+
       // store it in it's name
-      emit_bytes(Code::STORE_LOCAL, local);
+      store_variable(symbol);
 
       // compile the method definitions
       consume(TokenKind::TK_LBRACE);
@@ -212,17 +229,15 @@ class Compiler : private UnCopyable {
     }
 
     if (match(TokenKind::KW_VAR)) {
-      consume(TokenKind::TK_IDENTIFIER);
-      int local = locals_.add(parser_.prev().as_string());
+      int symbol = define_identifier();
 
-      if (local == -1)
-        error("local variable is already defined");
-
+      // allow uninitialized vars
       consume(TokenKind::TK_EQ);
 
       // compile the initializer
       expression();
-      emit_bytes(Code::STORE_LOCAL, local);
+
+      store_variable(symbol);
       return;
     }
 
@@ -255,11 +270,18 @@ class Compiler : private UnCopyable {
 
     if (match(TokenKind::TK_IDENTIFIER)) {
       int local = locals_.get(parser_.prev().as_string());
-      if (local == -1)
-        error("unkonwn variable");
+      if (local != -1) {
+        emit_bytes(Code::LOAD_LOCAL, local);
+        return;
+      }
 
-      emit_bytes(Code::LOAD_LOCAL, local);
-      return;
+      int global = parser_.get_vm().symbols().get(parser_.prev().as_string());
+      if (global != -1) {
+        emit_bytes(Code::LOAD_GLOBAL, global);
+        return;
+      }
+
+      error("unknown variable");
     }
 
     if (match(TokenKind::TK_NUMERIC)) {
