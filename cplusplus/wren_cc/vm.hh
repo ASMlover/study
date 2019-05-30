@@ -34,6 +34,7 @@ namespace wrencc {
 
 enum class ObjType {
   NUMERIC,
+  STRING,
   BLOCK,
   CLASS,
   INSTANCE,
@@ -76,7 +77,7 @@ public:
 
 std::ostream& operator<<(std::ostream& out, Value val);
 
-class NumericObject : public BaseObject {
+class NumericObject final : public BaseObject {
   double value_{};
 
   NumericObject(double d) noexcept : BaseObject(ObjType::NUMERIC), value_(d) {}
@@ -89,7 +90,20 @@ public:
   static NumericObject* make_numeric(double d);
 };
 
-class BlockObject : public BaseObject {
+class StringObject final : public BaseObject {
+  const char* value_{};
+
+  StringObject(const char* s) noexcept : BaseObject(ObjType::STRING), value_(s) {}
+  virtual ~StringObject(void) {}
+public:
+  inline const char* cstr(void) const { return value_; }
+
+  virtual str_t stringify(void) const override;
+
+  static StringObject* make_string(const char* s);
+};
+
+class BlockObject final : public BaseObject {
   std::vector<u8_t> codes_;
   std::vector<Value> constants_;
   int num_locals_{};
@@ -137,7 +151,7 @@ struct Method {
   };
 };
 
-class ClassObject : public BaseObject {
+class ClassObject final : public BaseObject {
   static constexpr sz_t kMaxMethods = 256;
 
   ClassObject* meta_class_{};
@@ -167,7 +181,7 @@ public:
   static ClassObject* make_class(void);
 };
 
-class InstanceObject : public BaseObject {
+class InstanceObject final : public BaseObject {
   ClassObject* cls_{};
   // TODO: need add instance fields
 
@@ -217,6 +231,7 @@ class VM : private UnCopyable {
   ClassObject* block_class_{};
   ClassObject* class_class_{};
   ClassObject* num_class_{};
+  ClassObject* str_class_{};
 
   SymbolTable global_symbols_;
   std::vector<Value> globals_{kMaxGlobals};

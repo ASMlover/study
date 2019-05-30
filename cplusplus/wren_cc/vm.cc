@@ -61,6 +61,14 @@ NumericObject* NumericObject::make_numeric(double d) {
   return new NumericObject(d);
 }
 
+str_t StringObject::stringify(void) const {
+  return value_;
+}
+
+StringObject* StringObject::make_string(const char* s) {
+  return new StringObject(s);
+}
+
 str_t BlockObject::stringify(void) const {
   return "[block]";
 }
@@ -309,6 +317,7 @@ Value VM::interpret(BlockObject* block) {
         case ObjType::BLOCK: cls = block_class_; break;
         case ObjType::CLASS: cls = receiver->as_class()->meta_class(); break;
         case ObjType::NUMERIC: cls = num_class_; break;
+        case ObjType::STRING: cls = str_class_; break;
         case ObjType::INSTANCE: cls = receiver->as_instance()->cls(); break;
         }
 

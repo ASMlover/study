@@ -181,6 +181,19 @@ class Compiler : private UnCopyable {
     emit_constant(constant);
   }
 
+  void string(void) {
+    auto& tok = parser_.prev();
+
+    sz_t sz = tok.as_string().size();
+    char* s = new char [sz + 1];
+    memcpy(s, tok.as_string().c_str(), sz);
+    s[sz] = 0;
+
+    Value constant = StringObject::make_string(s);
+
+    emit_constant(constant);
+  }
+
   bool match(TokenKind expected) {
     if (parser_.curr().kind() != expected)
       return false;
@@ -286,6 +299,11 @@ class Compiler : private UnCopyable {
 
     if (match(TokenKind::TK_NUMERIC)) {
       numeric();
+      return;
+    }
+
+    if (match(TokenKind::TK_STRING)) {
+      string();
       return;
     }
   }
