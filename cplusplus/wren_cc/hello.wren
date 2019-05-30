@@ -8,3 +8,4 @@ class Foo {
 
 var a = Foo.new
 a.bar
+"a string"
