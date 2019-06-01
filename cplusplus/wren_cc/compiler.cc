@@ -265,20 +265,33 @@ class Compiler : private UnCopyable {
     primary();
 
     while (match(TokenKind::TK_DOT)) {
-      consume(TokenKind::TK_IDENTIFIER);
-      int symbol = intern_symbol();
-
+      str_t name;
       int argc = 0;
-      if (match(TokenKind::TK_LPAREN)) {
-        for (;;) {
-          expression();
-          ++argc;
 
-          if (!match(TokenKind::TK_COMMA))
+      consume(TokenKind::TK_IDENTIFIER);
+      for (;;) {
+        name += parser_.prev().as_string();
+        if (match(TokenKind::TK_LPAREN)) {
+          for (;;) {
+            expression();
+            ++argc;
+
+            name.push_back(' ');
+            if (!match(TokenKind::TK_COMMA))
+              break;
+          }
+          consume(TokenKind::TK_RPAREN);
+
+          // if there isn't another part name after the argument list, stop
+          if (!match(TokenKind::TK_IDENTIFIER))
             break;
         }
-        consume(TokenKind::TK_RPAREN);
+        else {
+          break;
+        }
       }
+      int symbol = parser_.get_vm().symbols().ensure(name);
+
       // compile the method call
       emit_bytes(Code::CALL_0 + argc, symbol);
     }

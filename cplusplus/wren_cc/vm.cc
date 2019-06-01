@@ -233,7 +233,7 @@ VM::VM(void) {
 
   str_class_ = ClassObject::make_class();
   set_primitive(str_class_, "len", _primitive_string_len);
-  set_primitive(str_class_, "contains", _primitive_string_contains);
+  set_primitive(str_class_, "contains ", _primitive_string_contains);
 }
 
 void VM::set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn) {
