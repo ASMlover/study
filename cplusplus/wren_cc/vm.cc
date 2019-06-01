@@ -163,6 +163,7 @@ public:
     frames_.clear();
   }
 
+  inline Value* values_at(int i) { return &stack_[i]; }
   inline void resize_stack(int n) { stack_.resize(n); }
   inline int stack_size(void) const { return Xt::as_type<int>(stack_.size()); }
   inline int frame_size(void) const { return Xt::as_type<int>(frames_.size()); }
@@ -196,21 +197,27 @@ public:
 
 /// VM IMPLEMENTATIONS
 
-static Value _primitive_numabs(Value v) {
-  double d = Xt::down<NumericObject>(v)->value();
+static Value _primitive_numabs(int argc, Value* args) {
+  double d = Xt::down<NumericObject>(args[0])->value();
   if (d < 0)
     d = -d;
   return NumericObject::make_numeric(d);
 }
 
-static Value _primitive_metaclass_new(Value v) {
-  ClassObject* cls = v->as_class();
+static Value _primitive_metaclass_new(int argc, Value* args) {
+  ClassObject* cls = args[0]->as_class();
   return InstanceObject::make_instance(cls);
 }
 
-static Value _primitive_string_len(Value v) {
-  int len = Xt::as_type<int>(strlen(v->as_string()->cstr()));
+static Value _primitive_string_len(int argc, Value* args) {
+  int len = Xt::as_type<int>(strlen(args[0]->as_string()->cstr()));
   return NumericObject::make_numeric(len);
+}
+
+static Value _primitive_string_contains(int argc, Value* args) {
+  StringObject* orig = args[0]->as_string();
+  StringObject* subs = args[1]->as_string();
+  return NumericObject::make_numeric(strstr(orig->cstr(), subs->cstr()) != 0);
 }
 
 VM::VM(void) {
@@ -226,6 +233,7 @@ VM::VM(void) {
 
   str_class_ = ClassObject::make_class();
   set_primitive(str_class_, "len", _primitive_string_len);
+  set_primitive(str_class_, "contains", _primitive_string_contains);
 }
 
 void VM::set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn) {
@@ -319,9 +327,21 @@ Value VM::interpret(BlockObject* block) {
     case Code::POP:
       std::cout << "pop `" << fiber.stack_size() - 1 << "`" << std::endl;
       fiber.pop(); break;
-    case Code::CALL:
+    case Code::CALL_0:
+    case Code::CALL_1:
+    case Code::CALL_2:
+    case Code::CALL_3:
+    case Code::CALL_4:
+    case Code::CALL_5:
+    case Code::CALL_6:
+    case Code::CALL_7:
+    case Code::CALL_8:
+    case Code::CALL_9:
+    case Code::CALL_10:
       {
-        Value receiver = fiber.pop();
+        int argc = c - Code::CALL_0;
+        Value receiver = fiber.get_value(fiber.stack_size() - argc - 1);
+
         int symbol = frame->get_code(frame->ip++);
 
         ClassObject* cls{};
@@ -341,11 +361,17 @@ Value VM::interpret(BlockObject* block) {
           std::cerr << "no method" << std::endl;
           std::exit(-1); break;
         case MethodType::CALL:
-          fiber.call_block(receiver->as_block(), fiber.stack_size()); break;
+          fiber.call_block(receiver->as_block(), fiber.stack_size() - argc);
+          break;
         case MethodType::PRIMITIVE:
-          fiber.push(method.primitive(receiver)); break;
+          fiber.set_value(fiber.stack_size() - argc - 1,
+              method.primitive(argc,
+                fiber.values_at(fiber.stack_size() - argc - 1)));
+          fiber.resize_stack(fiber.stack_size() - argc);
+          break;
         case MethodType::BLOCK:
-          fiber.call_block(method.block, fiber.stack_size()); break;
+          fiber.call_block(method.block, fiber.stack_size() - argc);
+          break;
         }
       } break;
     case Code::END:

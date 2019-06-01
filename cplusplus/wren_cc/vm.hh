@@ -137,7 +137,7 @@ public:
   static BlockObject* make_block(void);
 };
 
-using PrimitiveFn = Value (*)(Value);
+using PrimitiveFn = Value (*)(int argc, Value* args);
 
 enum class MethodType {
   NONE,
@@ -209,10 +209,31 @@ enum class Code : u8_t {
   STORE_LOCAL, // store the top of the stack in local slot [arg], not pop it
   LOAD_GLOBAL, // push the value in global slot [arg]
   STORE_GLOBAL, // store the top of the stack in global slot [arg], not pop it
-  CALL, // invoke the method with symbol [arg]
+
+  // invoke the method with symbol [arg], the number indicates the number of
+  // arguments (not including the receiver)
+  CALL_0,
+  CALL_1,
+  CALL_2,
+  CALL_3,
+  CALL_4,
+  CALL_5,
+  CALL_6,
+  CALL_7,
+  CALL_8,
+  CALL_9,
+  CALL_10,
 
   END,
 };
+
+inline Code operator+(Code a, int b) {
+  return Xt::as_type<Code>(Xt::as_type<int>(a) + b);
+}
+
+inline int operator-(Code a, Code b) {
+  return Xt::as_type<int>(a) - Xt::as_type<int>(b);
+}
 
 class SymbolTable : private UnCopyable {
   std::vector<str_t> symbols_;
