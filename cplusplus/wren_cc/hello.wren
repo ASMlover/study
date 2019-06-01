@@ -9,3 +9,6 @@ class Foo {
 var a = Foo.new
 a.bar
 "a string"
+"wren".len
+
+"something".contains("meth")
