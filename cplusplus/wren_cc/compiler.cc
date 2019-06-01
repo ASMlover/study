@@ -263,12 +263,24 @@ class Compiler : private UnCopyable {
 
   void call(void) {
     primary();
-    if (match(TokenKind::TK_DOT)) {
+
+    while (match(TokenKind::TK_DOT)) {
       consume(TokenKind::TK_IDENTIFIER);
       int symbol = intern_symbol();
 
+      int argc = 0;
+      if (match(TokenKind::TK_LPAREN)) {
+        for (;;) {
+          expression();
+          ++argc;
+
+          if (!match(TokenKind::TK_COMMA))
+            break;
+        }
+        consume(TokenKind::TK_RPAREN);
+      }
       // compile the method call
-      emit_bytes(Code::CALL, symbol);
+      emit_bytes(Code::CALL_0 + argc, symbol);
     }
   }
 
