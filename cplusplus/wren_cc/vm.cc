@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <sstream>
+#include "primitives.hh"
 #include "compiler.hh"
 #include "vm.hh"
 
@@ -197,43 +198,24 @@ public:
 
 /// VM IMPLEMENTATIONS
 
-static Value _primitive_numabs(int argc, Value* args) {
-  double d = Xt::down<NumericObject>(args[0])->value();
-  if (d < 0)
-    d = -d;
-  return NumericObject::make_numeric(d);
-}
-
 static Value _primitive_metaclass_new(int argc, Value* args) {
   ClassObject* cls = args[0]->as_class();
   return InstanceObject::make_instance(cls);
 }
 
-static Value _primitive_string_len(int argc, Value* args) {
-  int len = Xt::as_type<int>(strlen(args[0]->as_string()->cstr()));
-  return NumericObject::make_numeric(len);
-}
-
-static Value _primitive_string_contains(int argc, Value* args) {
-  StringObject* orig = args[0]->as_string();
-  StringObject* subs = args[1]->as_string();
-  return NumericObject::make_numeric(strstr(orig->cstr(), subs->cstr()) != 0);
-}
-
 VM::VM(void) {
   block_class_ = ClassObject::make_class();
+  class_class_ = ClassObject::make_class();
+  num_class_ = ClassObject::make_class();
+  str_class_ = ClassObject::make_class();
+
+  // the call method is special:
   {
     int symbol = symbols_.ensure("call");
     block_class_->set_method(symbol, MethodType::CALL);
   }
-  class_class_ = ClassObject::make_class();
 
-  num_class_ = ClassObject::make_class();
-  set_primitive(num_class_, "abs", _primitive_numabs);
-
-  str_class_ = ClassObject::make_class();
-  set_primitive(str_class_, "len", _primitive_string_len);
-  set_primitive(str_class_, "contains ", _primitive_string_contains);
+  reigister_primitives(*this);
 }
 
 void VM::set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn) {

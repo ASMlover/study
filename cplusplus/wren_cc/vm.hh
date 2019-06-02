@@ -260,13 +260,15 @@ class VM : private UnCopyable {
   SymbolTable global_symbols_;
   std::vector<Value> globals_{kMaxGlobals};
 
-  void set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn);
-
   Value interpret(BlockObject* block);
 public:
   VM(void);
 
+  inline ClassObject* num_cls(void) const { return num_class_; }
+  inline ClassObject* str_cls(void) const { return str_class_; }
+
   inline SymbolTable& symbols(void) { return symbols_; }
+  void set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn);
 
   void interpret(const str_t& source_bytes);
 };
