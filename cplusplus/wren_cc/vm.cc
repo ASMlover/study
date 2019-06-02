@@ -223,6 +223,12 @@ void VM::set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn) {
   cls->set_method(symbol, MethodType::PRIMITIVE, fn);
 }
 
+void VM::set_global(ClassObject* cls, const str_t& name) {
+  InstanceObject* obj = InstanceObject::make_instance(cls);
+  int symbol = global_symbols_.add(name);
+  globals_[symbol] = obj;
+}
+
 Value VM::interpret(BlockObject* block) {
   Fiber fiber;
   fiber.reset();
@@ -236,10 +242,6 @@ Value VM::interpret(BlockObject* block) {
       {
         Value v = frame->get_constant(frame->get_code(frame->ip++));
         fiber.push(v);
-
-        std::cout
-          << "load constant `" << v
-          << "` to `" << fiber.stack_size() - 1 << "`" << std::endl;
       } break;
     case Code::CLASS:
       {
@@ -247,13 +249,9 @@ Value VM::interpret(BlockObject* block) {
 
         // define `new` method on the metaclass.
         int new_symbol = symbols_.ensure("new");
-        std::cout << "define `new` " << new_symbol << std::endl;
-
         cls->meta_class()->set_method(
             new_symbol, MethodType::PRIMITIVE, _primitive_metaclass_new);
         fiber.push(cls);
-
-        std::cout << "push class at: " << fiber.stack_size() - 1 << std::endl;
       } break;
     case Code::METHOD:
       {
@@ -263,51 +261,30 @@ Value VM::interpret(BlockObject* block) {
 
         BlockObject* body = frame->get_constant(constant)->as_block();
         cls->set_method(symbol, MethodType::BLOCK, body);
-
-        std::cout
-          << "define method `" << symbol
-          << "` using constant `" << constant << "` on " << cls << std::endl;
       } break;
     case Code::LOAD_LOCAL:
       {
         int local = frame->get_code(frame->ip++);
         fiber.push(fiber.get_value(frame->locals + local));
-
-        std::cout
-          << "load local `" << local << "` "
-          << "to `" << fiber.stack_size() - 1 << "`" << std::endl;
       } break;
     case Code::STORE_LOCAL:
       {
         int local = frame->get_code(frame->ip++);
-        std::cout
-          << "store local `" << local << "` "
-          << "from `" << fiber.stack_size() - 1 << "`" << std::endl;
         fiber.set_value(frame->locals + local, fiber.peek_value());
       } break;
     case Code::LOAD_GLOBAL:
       {
         int global = frame->get_code(frame->ip++);
         fiber.push(globals_[global]);
-        std::cout
-          << "load global `" << global << "` "
-          << "to `" << fiber.stack_size() - 1 << "`" << std::endl;
       } break;
     case Code::STORE_GLOBAL:
       {
         int global = frame->get_code(frame->ip++);
-        std::cout
-          << "store global `" << global << "` "
-          << "from `" << fiber.stack_size() - 1 << "`" << std::endl;
         globals_[global] = fiber.get_value(fiber.stack_size() - 1);
       } break;
     case Code::DUP:
-      {
-        fiber.push(fiber.peek_value());
-        std::cout << "dup `" << fiber.stack_size() - 1 << "`" << std::endl;
-      } break;
+      fiber.push(fiber.peek_value()); break;
     case Code::POP:
-      std::cout << "pop `" << fiber.stack_size() - 1 << "`" << std::endl;
       fiber.pop(); break;
     case Code::CALL_0:
     case Code::CALL_1:
@@ -335,8 +312,6 @@ Value VM::interpret(BlockObject* block) {
         case ObjType::INSTANCE: cls = receiver->as_instance()->cls(); break;
         }
 
-        std::cout << "call `" << symbol << "` on " << receiver << std::endl;
-
         auto& method = cls->get_method(symbol);
         switch (method.type) {
         case MethodType::NONE:
@@ -361,14 +336,9 @@ Value VM::interpret(BlockObject* block) {
         Value r = fiber.pop();
         fiber.pop_frame();
 
-        if (fiber.empty_frame()) {
-          std::cout << "done with result `" << r << "`" << std::endl;
+        if (fiber.empty_frame())
           return r;
-        }
 
-        std::cout
-          << "return and store result `" << r
-          << "` in " << frame->locals << std::endl;
         if (fiber.stack_size() <= frame->locals)
           fiber.push(r);
         else

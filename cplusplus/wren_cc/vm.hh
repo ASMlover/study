@@ -268,7 +268,9 @@ public:
   inline ClassObject* str_cls(void) const { return str_class_; }
 
   inline SymbolTable& symbols(void) { return symbols_; }
+  inline SymbolTable& gsymbols(void) { return global_symbols_; }
   void set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn);
+  void set_global(ClassObject* cls, const str_t& name);
 
   void interpret(const str_t& source_bytes);
 };
