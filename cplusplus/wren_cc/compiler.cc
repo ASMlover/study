@@ -125,6 +125,8 @@ class Compiler : private UnCopyable {
 
   SymbolTable locals_;
 
+  inline SymbolTable& vm_symbols(void) { return parser_.get_vm().symbols(); }
+
   void error(const char* format, ...) {
     parser_.set_error(true);
     std::cerr << "Compile ERROR on `" << parser_.prev().literal() << "` : ";
@@ -137,7 +139,7 @@ class Compiler : private UnCopyable {
   }
 
   int intern_symbol(void) {
-    return parser_.get_vm().symbols().ensure(parser_.prev().as_string());
+    return vm_symbols().ensure(parser_.prev().as_string());
   }
 
   template <typename T> inline void emit_byte(T b) {
