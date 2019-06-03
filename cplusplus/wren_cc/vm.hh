@@ -94,11 +94,17 @@ public:
 };
 
 class StringObject final : public BaseObject {
+  int size_{};
   const char* value_{};
 
-  StringObject(const char* s) noexcept : BaseObject(ObjType::STRING), value_(s) {}
+  StringObject(const char* s) noexcept
+    : BaseObject(ObjType::STRING)
+    , size_(Xt::as_type<int>(strlen(s)))
+    , value_(s) {
+  }
   virtual ~StringObject(void) {}
 public:
+  inline int size(void) const { return size_; }
   inline const char* cstr(void) const { return value_; }
 
   virtual str_t stringify(void) const override;
