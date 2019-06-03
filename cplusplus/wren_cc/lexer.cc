@@ -55,7 +55,9 @@ Token Lexer::next_token(void) {
   case '/': return make_token(TokenKind::TK_SLASH);
   case '%': return make_token(TokenKind::TK_PERCENT);
   case '+': return make_token(TokenKind::TK_PLUS);
-  case '-': return make_token(TokenKind::TK_MINUS);
+  case '-':
+    return isdigit(peek_next()) ?
+      make_numeric() : make_token(TokenKind::TK_MINUS);
   case '|': return make_token(TokenKind::TK_PIPE);
   case '&': return make_token(TokenKind::TK_AMP);
   case '!':
