@@ -12,3 +12,5 @@ a.bar
 "wren".len
 
 "something".contains("meth")
+
+io.write("Hello, world")
