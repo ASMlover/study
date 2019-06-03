@@ -126,6 +126,7 @@ class Compiler : private UnCopyable {
   SymbolTable locals_;
 
   inline SymbolTable& vm_symbols(void) { return parser_.get_vm().symbols(); }
+  inline SymbolTable& vm_gsymbols(void) { return parser_.get_vm().gsymbols(); }
 
   void error(const char* format, ...) {
     parser_.set_error(true);
@@ -164,7 +165,7 @@ class Compiler : private UnCopyable {
     if (parent_ != nullptr)
       symbol = locals_.add(name);
     else
-      symbol = parser_.get_vm().symbols().add(name);
+      symbol = vm_gsymbols().add(name);
 
     if (symbol == -1)
       error("variable is already defined");
@@ -292,7 +293,7 @@ class Compiler : private UnCopyable {
           break;
         }
       }
-      int symbol = parser_.get_vm().symbols().ensure(name);
+      int symbol = vm_symbols().ensure(name);
 
       // compile the method call
       emit_bytes(Code::CALL_0 + argc, symbol);
@@ -315,7 +316,7 @@ class Compiler : private UnCopyable {
         return;
       }
 
-      int global = parser_.get_vm().symbols().get(parser_.prev().as_string());
+      int global = vm_gsymbols().get(parser_.prev().as_string());
       if (global != -1) {
         emit_bytes(Code::LOAD_GLOBAL, global);
         return;

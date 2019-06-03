@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include "vm.hh"
 #include "primitives.hh"
 
@@ -47,10 +48,19 @@ static Value _primitive_string_contains(int argc, Value* args) {
   return NumericObject::make_numeric(strstr(orig->cstr(), subs->cstr()) != 0);
 }
 
+static Value _primitive_io_write(int argc, Value* args) {
+  std::cout << args[1] << std::endl;
+  return args[1];
+}
+
 void reigister_primitives(VM& vm) {
   vm.set_primitive(vm.num_cls(), "abs", _primitive_numeric_abs);
   vm.set_primitive(vm.str_cls(), "len", _primitive_string_len);
   vm.set_primitive(vm.str_cls(), "contains ", _primitive_string_contains);
+
+  ClassObject* io_cls = ClassObject::make_class();
+  vm.set_primitive(io_cls, "write ", _primitive_io_write);
+  vm.set_global(io_cls, "io");
 }
 
 }
