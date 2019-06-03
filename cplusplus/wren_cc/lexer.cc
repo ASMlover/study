@@ -68,7 +68,7 @@ Token Lexer::next_token(void) {
     return make_token(match('=') ? TokenKind::TK_LTEQ : TokenKind::TK_LT);
   case '>':
     return make_token(match('=') ? TokenKind::TK_GTEQ : TokenKind::TK_GT);
-  case '\n': ++lineno_; return make_token(TokenKind::TK_NL, lineno_ - 1);
+  case '\n': return make_token(TokenKind::TK_NL, lineno_++);
   case '"': return make_string();
   case '`': return make_embed();
   }

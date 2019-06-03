@@ -323,7 +323,7 @@ class Compiler : private UnCopyable {
         return;
       }
 
-      error("unknown variable");
+      error("undefined variable");
     }
 
     if (match(TokenKind::TK_NUMERIC)) {
