@@ -130,7 +130,8 @@ class Compiler : private UnCopyable {
 
   void error(const char* format, ...) {
     parser_.set_error(true);
-    std::cerr << "Compile ERROR on `" << parser_.prev().literal() << "` : ";
+    std::cerr << "[LINE:" << parser_.prev().lineno() << "] - "
+      << "Compile ERROR on `" << parser_.prev().literal() << "` : ";
 
     va_list ap;
     va_start(ap, format);

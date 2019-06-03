@@ -34,6 +34,8 @@ static Value _primitive_numeric_abs(int argc, Value* args) {
   double d = Xt::down<NumericObject>(args[0])->value();
   if (d < 0)
     d = -d;
+  else if (d == 0)
+    d = 0;
   return NumericObject::make_numeric(d);
 }
 
@@ -45,6 +47,9 @@ static Value _primitive_string_len(int argc, Value* args) {
 static Value _primitive_string_contains(int argc, Value* args) {
   StringObject* orig = args[0]->as_string();
   StringObject* subs = args[1]->as_string();
+
+  if (orig->size() == 0 && subs->size() == 0)
+    return NumericObject::make_numeric(1);
   return NumericObject::make_numeric(strstr(orig->cstr(), subs->cstr()) != 0);
 }
 
