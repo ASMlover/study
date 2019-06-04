@@ -262,7 +262,39 @@ class Compiler : private UnCopyable {
   }
 
   void expression(void) {
+    term();
+  }
+
+  void term(void) {
+    factor();
+
+    while (match(TokenKind::TK_PLUS) || match(TokenKind::TK_MINUS)) {
+      str_t name;
+      if (parser_.prev().kind() == TokenKind::TK_PLUS)
+        name = "+ ";
+      else
+        name = "- ";
+
+      factor();
+      int symbol = vm_symbols().ensure(name);
+      emit_bytes(Code::CALL_1, symbol);
+    }
+  }
+
+  void factor(void) {
     call();
+
+    while (match(TokenKind::TK_STAR) || match(TokenKind::TK_SLASH)) {
+      str_t name;
+      if (parser_.prev().kind() == TokenKind::TK_STAR)
+        name = "* ";
+      else
+        name = "/ ";
+
+      call();
+      int symbol = vm_symbols().ensure(name);
+      emit_bytes(Code::CALL_1, symbol);
+    }
   }
 
   void call(void) {

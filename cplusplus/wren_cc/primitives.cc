@@ -108,14 +108,14 @@ static Value _primitive_io_write(VM& vm, int argc, Value* args) {
 
 void reigister_primitives(VM& vm) {
   vm.set_primitive(vm.num_cls(), "abs", _primitive_numeric_abs);
-  vm.set_primitive(vm.num_cls(), "+", _primitive_numeric_add);
-  vm.set_primitive(vm.num_cls(), "-", _primitive_numeric_sub);
-  vm.set_primitive(vm.num_cls(), "*", _primitive_numeric_mul);
-  vm.set_primitive(vm.num_cls(), "/", _primitive_numeric_div);
+  vm.set_primitive(vm.num_cls(), "+ ", _primitive_numeric_add);
+  vm.set_primitive(vm.num_cls(), "- ", _primitive_numeric_sub);
+  vm.set_primitive(vm.num_cls(), "* ", _primitive_numeric_mul);
+  vm.set_primitive(vm.num_cls(), "/ ", _primitive_numeric_div);
 
   vm.set_primitive(vm.str_cls(), "len", _primitive_string_len);
   vm.set_primitive(vm.str_cls(), "contains ", _primitive_string_contains);
-  vm.set_primitive(vm.str_cls(), "+", _primitive_string_add);
+  vm.set_primitive(vm.str_cls(), "+ ", _primitive_string_add);
 
   ClassObject* io_cls = ClassObject::make_class();
   vm.set_primitive(io_cls, "write ", _primitive_io_write);
