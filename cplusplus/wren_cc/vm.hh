@@ -143,7 +143,8 @@ public:
   static BlockObject* make_block(void);
 };
 
-using PrimitiveFn = Value (*)(int argc, Value* args);
+class VM;
+using PrimitiveFn = Value (*)(VM& vm, int argc, Value* args);
 
 enum class MethodType {
   NONE,
@@ -263,6 +264,8 @@ class VM : private UnCopyable {
   ClassObject* num_class_{};
   ClassObject* str_class_{};
 
+  Value unsupported_{};
+
   SymbolTable global_symbols_;
   std::vector<Value> globals_{kMaxGlobals};
 
@@ -272,6 +275,9 @@ public:
 
   inline ClassObject* num_cls(void) const { return num_class_; }
   inline ClassObject* str_cls(void) const { return str_class_; }
+
+  inline void set_unsupported(Value unsupported) { unsupported_ = unsupported; }
+  inline Value unsupported(void) const { return unsupported_; }
 
   inline SymbolTable& symbols(void) { return symbols_; }
   inline SymbolTable& gsymbols(void) { return global_symbols_; }

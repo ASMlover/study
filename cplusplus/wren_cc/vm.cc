@@ -198,7 +198,7 @@ public:
 
 /// VM IMPLEMENTATIONS
 
-static Value _primitive_metaclass_new(int argc, Value* args) {
+static Value _primitive_metaclass_new(VM& vm, int argc, Value* args) {
   ClassObject* cls = args[0]->as_class();
   return InstanceObject::make_instance(cls);
 }
@@ -299,9 +299,8 @@ Value VM::interpret(BlockObject* block) {
     case Code::CALL_10:
       {
         int argc = c - Code::CALL_0;
-        Value receiver = fiber.get_value(fiber.stack_size() - argc - 1);
-
         int symbol = frame->get_code(frame->ip++);
+        Value receiver = fiber.get_value(fiber.stack_size() - argc - 1);
 
         ClassObject* cls{};
         switch (receiver->type()) {
@@ -315,16 +314,21 @@ Value VM::interpret(BlockObject* block) {
         auto& method = cls->get_method(symbol);
         switch (method.type) {
         case MethodType::NONE:
-          std::cerr << "no method" << std::endl;
+          std::cerr
+            << "receiver: `" << receiver << "` "
+            << "does not implement method `" << symbols_.get_name(symbol) << "`"
+            << std::endl;
           std::exit(-1); break;
         case MethodType::CALL:
           fiber.call_block(receiver->as_block(), fiber.stack_size() - argc);
           break;
         case MethodType::PRIMITIVE:
-          fiber.set_value(fiber.stack_size() - argc - 1,
-              method.primitive(argc,
-                fiber.values_at(fiber.stack_size() - argc - 1)));
-          fiber.resize_stack(fiber.stack_size() - argc);
+          {
+            Value* args = fiber.values_at(fiber.stack_size() - argc - 1);
+            Value result = method.primitive(*this, argc, args);
+            fiber.set_value(fiber.stack_size() - argc - 1, result);
+            fiber.resize_stack(fiber.stack_size() - argc);
+          } break;
           break;
         case MethodType::BLOCK:
           fiber.call_block(method.block, fiber.stack_size() - argc);
