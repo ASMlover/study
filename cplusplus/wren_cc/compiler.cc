@@ -367,6 +367,13 @@ class Compiler : private UnCopyable {
       string();
       return;
     }
+
+    // parentheses
+    if (match(TokenKind::TK_LPAREN)) {
+      expression();
+      consume(TokenKind::TK_RPAREN);
+      return;
+    }
   }
 public:
   Compiler(Parser& parser, Compiler* parent = nullptr) noexcept

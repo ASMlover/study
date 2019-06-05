@@ -325,7 +325,8 @@ Value VM::interpret(BlockObject* block) {
         case MethodType::PRIMITIVE:
           {
             Value* args = fiber.values_at(fiber.stack_size() - argc - 1);
-            Value result = method.primitive(*this, argc, args);
+            // argc +1 to include the receiver since that's in the args array
+            Value result = method.primitive(*this, argc + 1, args);
             fiber.set_value(fiber.stack_size() - argc - 1, result);
             fiber.resize_stack(fiber.stack_size() - argc);
           } break;
