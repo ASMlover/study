@@ -69,8 +69,9 @@ public:
   inline bool is_class(void) const { return type_ == ObjType::CLASS; }
   inline bool is_instance(void) const { return type_ == ObjType::INSTANCE; }
 
-  NumericObject* as_numeric(void) const;
+  double as_numeric(void) const;
   StringObject* as_string(void) const;
+  const char* as_cstring(void) const;
   BlockObject* as_block(void) const;
   ClassObject* as_class(void) const;
   InstanceObject* as_instance(void) const;

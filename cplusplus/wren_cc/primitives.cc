@@ -25,13 +25,14 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <sstream>
 #include "vm.hh"
 #include "primitives.hh"
 
 namespace wrencc {
 
 static Value _primitive_numeric_abs(VM& vm, int argc, Value* args) {
-  double d = Xt::down<NumericObject>(args[0])->value();
+  double d = args[0]->as_numeric();
   if (d < 0)
     d = -d;
   else if (d == 0)
@@ -39,12 +40,24 @@ static Value _primitive_numeric_abs(VM& vm, int argc, Value* args) {
   return NumericObject::make_numeric(d);
 }
 
+static Value _primitive_numeric_tostring(VM& vm, int argc, Value* args) {
+  std::stringstream ss;
+  ss << args[0]->as_numeric();
+  str_t temp(ss.str());
+
+  char* s = new char [temp.size() + 1];
+  memcpy(s, temp.data(), temp.size());
+  s[temp.size()] = 0;
+
+  return StringObject::make_string(s);
+}
+
 static Value _primitive_numeric_add(VM& vm, int argc, Value* args) {
   if (!args[1]->is_numeric())
     return vm.unsupported();
 
   return NumericObject::make_numeric(
-      args[0]->as_numeric()->value() + args[1]->as_numeric()->value());
+      args[0]->as_numeric() + args[1]->as_numeric());
 }
 
 static Value _primitive_numeric_sub(VM& vm, int argc, Value* args) {
@@ -52,7 +65,7 @@ static Value _primitive_numeric_sub(VM& vm, int argc, Value* args) {
     return vm.unsupported();
 
   return NumericObject::make_numeric(
-      args[0]->as_numeric()->value() - args[1]->as_numeric()->value());
+      args[0]->as_numeric() - args[1]->as_numeric());
 }
 
 static Value _primitive_numeric_mul(VM& vm, int argc, Value* args) {
@@ -60,7 +73,7 @@ static Value _primitive_numeric_mul(VM& vm, int argc, Value* args) {
     return vm.unsupported();
 
   return NumericObject::make_numeric(
-      args[0]->as_numeric()->value() * args[1]->as_numeric()->value());
+      args[0]->as_numeric() * args[1]->as_numeric());
 }
 
 static Value _primitive_numeric_div(VM& vm, int argc, Value* args) {
@@ -68,12 +81,11 @@ static Value _primitive_numeric_div(VM& vm, int argc, Value* args) {
     return vm.unsupported();
 
   return NumericObject::make_numeric(
-      args[0]->as_numeric()->value() / args[1]->as_numeric()->value());
+      args[0]->as_numeric() / args[1]->as_numeric());
 }
 
 static Value _primitive_string_len(VM& vm, int argc, Value* args) {
-  int len = Xt::as_type<int>(strlen(args[0]->as_string()->cstr()));
-  return NumericObject::make_numeric(len);
+  return NumericObject::make_numeric(args[0]->as_string()->size());
 }
 
 static Value _primitive_string_contains(VM& vm, int argc, Value* args) {
@@ -85,6 +97,10 @@ static Value _primitive_string_contains(VM& vm, int argc, Value* args) {
   return NumericObject::make_numeric(strstr(orig->cstr(), subs->cstr()) != 0);
 }
 
+static Value _primitive_string_tostring(VM& vm, int argc, Value* args) {
+  return args[0];
+}
+
 static Value _primitive_string_add(VM& vm, int argc, Value* args) {
   if (!args[1]->is_string())
     return vm.unsupported();
@@ -93,7 +109,7 @@ static Value _primitive_string_add(VM& vm, int argc, Value* args) {
   StringObject* rhs = args[1]->as_string();
 
   int n = lhs->size() + rhs->size();
-  char* s = new char[n + 1];
+  char* s = new char[Xt::as_type<sz_t>(n) + 1];
   memcpy(s, lhs->cstr(), lhs->size());
   memcpy(s + lhs->size(), rhs->cstr(), rhs->size());
   s[n] = 0;
@@ -108,6 +124,7 @@ static Value _primitive_io_write(VM& vm, int argc, Value* args) {
 
 void reigister_primitives(VM& vm) {
   vm.set_primitive(vm.num_cls(), "abs", _primitive_numeric_abs);
+  vm.set_primitive(vm.num_cls(), "toString", _primitive_numeric_tostring);
   vm.set_primitive(vm.num_cls(), "+ ", _primitive_numeric_add);
   vm.set_primitive(vm.num_cls(), "- ", _primitive_numeric_sub);
   vm.set_primitive(vm.num_cls(), "* ", _primitive_numeric_mul);
@@ -115,6 +132,7 @@ void reigister_primitives(VM& vm) {
 
   vm.set_primitive(vm.str_cls(), "len", _primitive_string_len);
   vm.set_primitive(vm.str_cls(), "contains ", _primitive_string_contains);
+  vm.set_primitive(vm.str_cls(), "toString", _primitive_string_tostring);
   vm.set_primitive(vm.str_cls(), "+ ", _primitive_string_add);
 
   ClassObject* io_cls = ClassObject::make_class();

@@ -36,12 +36,16 @@ std::ostream& operator<<(std::ostream& out, Value val) {
   return out << val->stringify();
 }
 
-NumericObject* BaseObject::as_numeric(void) const {
-  return Xt::down<NumericObject>(const_cast<BaseObject*>(this));
+double BaseObject::as_numeric(void) const {
+  return Xt::down<const NumericObject>(this)->value();
 }
 
 StringObject* BaseObject::as_string(void) const {
   return Xt::down<StringObject>(const_cast<BaseObject*>(this));
+}
+
+const char* BaseObject::as_cstring(void) const {
+  return Xt::down<const StringObject>(this)->cstr();
 }
 
 BlockObject* BaseObject::as_block(void) const {
