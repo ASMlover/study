@@ -81,7 +81,6 @@ class Lexer : private UnCopyable {
   Token make_identifier(void);
   Token make_numeric(void);
   Token make_string(void);
-  Token make_embed(void);
 public:
   Lexer(const str_t& source_bytes)
     : source_bytes_(source_bytes) {

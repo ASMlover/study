@@ -70,7 +70,6 @@ Token Lexer::next_token(void) {
     return make_token(match('=') ? TokenKind::TK_GTEQ : TokenKind::TK_GT);
   case '\n': return make_token(TokenKind::TK_NL, lineno_++);
   case '"': return make_string();
-  case '`': return make_embed();
   }
   return make_error("unexpected charactor");
 }
@@ -161,14 +160,6 @@ Token Lexer::make_string(void) {
 
   advance(); // closing "
   return make_token(TokenKind::TK_STRING, literal);
-}
-
-Token Lexer::make_embed(void) {
-  while (peek() != '`')
-    advance();
-
-  // TODO:
-  return make_token(TokenKind::TK_EMBED);
 }
 
 }
