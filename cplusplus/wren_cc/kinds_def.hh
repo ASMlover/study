@@ -70,7 +70,6 @@ KEYWORD(CLASS, "class")
 KEYWORD(META, "meta")
 KEYWORD(VAR, "var")
 
-TOKEN(EMBED, "embed")
 TOKEN(IDENTIFIER, "identifier")
 TOKEN(NUMERIC, "numeric")
 TOKEN(STRING, "string")
