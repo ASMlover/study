@@ -389,8 +389,9 @@ public:
   BlockObject* compile_block(TokenKind end_kind) {
     for (;;) {
       statement();
-      consume(TokenKind::TK_NL);
 
+      if (!match(TokenKind::TK_NL))
+        break;
       if (match(end_kind))
         break;
       // emit_byte(Code::POP);
