@@ -33,6 +33,8 @@
 namespace wrencc {
 
 enum class ObjType {
+  TRUE,
+  FALSE,
   NUMERIC,
   STRING,
   BLOCK,
@@ -47,6 +49,7 @@ enum class ObjFlag {
 class BaseObject;
 using Value = BaseObject*;
 
+class BooleanObject;
 class NumericObject;
 class StringObject;
 class BlockObject;
@@ -63,12 +66,14 @@ public:
   inline ObjType type(void) const { return type_; }
   inline ObjFlag flag(void) const { return flag_; }
 
+  inline bool is_boolean(void) const { return type_ == ObjType::TRUE || type_ == ObjType::FALSE; }
   inline bool is_numeric(void) const { return type_ == ObjType::NUMERIC; }
   inline bool is_string(void) const { return type_ == ObjType::STRING; }
   inline bool is_block(void) const { return type_ == ObjType::BLOCK; }
   inline bool is_class(void) const { return type_ == ObjType::CLASS; }
   inline bool is_instance(void) const { return type_ == ObjType::INSTANCE; }
 
+  bool as_boolean(void) const;
   double as_numeric(void) const;
   StringObject* as_string(void) const;
   const char* as_cstring(void) const;
@@ -81,11 +86,20 @@ public:
 
 std::ostream& operator<<(std::ostream& out, Value val);
 
+class BooleanObject final : public BaseObject {
+  BooleanObject(bool b) noexcept
+    : BaseObject(b ? ObjType::TRUE : ObjType::FALSE) {
+  }
+public:
+  virtual str_t stringify(void) const override;
+
+  static BooleanObject* make_boolean(bool b);
+};
+
 class NumericObject final : public BaseObject {
   double value_{};
 
   NumericObject(double d) noexcept : BaseObject(ObjType::NUMERIC), value_(d) {}
-  virtual ~NumericObject(void) {}
 public:
   inline double value(void) const { return value_; }
 
@@ -119,7 +133,6 @@ class BlockObject final : public BaseObject {
   int num_locals_{};
 
   BlockObject(void) noexcept : BaseObject(ObjType::BLOCK) {}
-  virtual ~BlockObject(void) {}
 public:
   inline const u8_t* codes(void) const { return codes_.data(); }
   inline const Value* constants(void) const { return constants_.data(); }
@@ -170,7 +183,6 @@ class ClassObject final : public BaseObject {
 
   ClassObject(void) noexcept;
   ClassObject(ClassObject* meta_class) noexcept;
-  virtual ~ClassObject(void) {}
 public:
   inline ClassObject* meta_class(void) const { return meta_class_; }
   inline int methods_count(void) const { return Xt::as_type<int>(methods_.size()); }
@@ -197,7 +209,6 @@ class InstanceObject final : public BaseObject {
   // TODO: need add instance fields
 
   InstanceObject(ClassObject* cls) noexcept;
-  virtual ~InstanceObject(void) {}
 public:
   inline ClassObject* cls(void) const { return cls_; }
 
@@ -208,6 +219,8 @@ public:
 
 enum class Code : u8_t {
   CONSTANT, // load the constant at index [arg]
+  FALSE, // push `false` into the stack
+  TRUE, // push `true` into the stack
   CLASS, // define a new empty class and push it into stack
   METHOD, // method for symbol [arg1] with body stored in constant [arg2] to
           // the class on the top of stack, does not modify the stack
@@ -261,6 +274,7 @@ class VM : private UnCopyable {
   SymbolTable symbols_;
 
   ClassObject* block_class_{};
+  ClassObject* bool_class_{};
   ClassObject* class_class_{};
   ClassObject* num_class_{};
   ClassObject* str_class_{};
@@ -274,6 +288,15 @@ class VM : private UnCopyable {
 public:
   VM(void);
 
+  inline void set_block_cls(ClassObject* cls) { block_class_ = cls; }
+  inline void set_bool_cls(ClassObject* cls) { bool_class_ = cls; }
+  inline void set_class_cls(ClassObject* cls) { class_class_ = cls; }
+  inline void set_num_cls(ClassObject* cls) { num_class_ = cls; }
+  inline void set_str_cls(ClassObject* cls) { str_class_ = cls; }
+
+  inline ClassObject* block_cls(void) const { return block_class_; }
+  inline ClassObject* bool_cls(void) const { return bool_class_; }
+  inline ClassObject* class_cls(void) const { return class_class_; }
   inline ClassObject* num_cls(void) const { return num_class_; }
   inline ClassObject* str_cls(void) const { return str_class_; }
 

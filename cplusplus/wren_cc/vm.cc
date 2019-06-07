@@ -36,6 +36,10 @@ std::ostream& operator<<(std::ostream& out, Value val) {
   return out << val->stringify();
 }
 
+bool BaseObject::as_boolean(void) const {
+  return type_ == ObjType::TRUE;
+}
+
 double BaseObject::as_numeric(void) const {
   return Xt::down<const NumericObject>(this)->value();
 }
@@ -58,6 +62,14 @@ ClassObject* BaseObject::as_class(void) const {
 
 InstanceObject* BaseObject::as_instance(void) const {
   return Xt::down<InstanceObject>(const_cast<BaseObject*>(this));
+}
+
+str_t BooleanObject::stringify(void) const {
+  return type() == ObjType::TRUE ? "true" : "false";
+}
+
+BooleanObject* BooleanObject::make_boolean(bool b) {
+  return new BooleanObject(b);
 }
 
 str_t NumericObject::stringify(void) const {
@@ -208,18 +220,13 @@ static Value _primitive_metaclass_new(VM& vm, int argc, Value* args) {
 }
 
 VM::VM(void) {
-  block_class_ = ClassObject::make_class();
-  class_class_ = ClassObject::make_class();
-  num_class_ = ClassObject::make_class();
-  str_class_ = ClassObject::make_class();
+  register_primitives(*this);
 
   // the call method is special:
   {
     int symbol = symbols_.ensure("call");
     block_class_->set_method(symbol, MethodType::CALL);
   }
-
-  reigister_primitives(*this);
 }
 
 void VM::set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn) {
@@ -247,6 +254,10 @@ Value VM::interpret(BlockObject* block) {
         Value v = frame->get_constant(frame->get_code(frame->ip++));
         fiber.push(v);
       } break;
+    case Code::FALSE:
+      fiber.push(BooleanObject::make_boolean(false)); break;
+    case Code::TRUE:
+      fiber.push(BooleanObject::make_boolean(true)); break;
     case Code::CLASS:
       {
         ClassObject* cls = ClassObject::make_class();
@@ -308,6 +319,8 @@ Value VM::interpret(BlockObject* block) {
 
         ClassObject* cls{};
         switch (receiver->type()) {
+        case ObjType::FALSE:
+        case ObjType::TRUE: cls = bool_class_; break;
         case ObjType::BLOCK: cls = block_class_; break;
         case ObjType::CLASS: cls = receiver->as_class()->meta_class(); break;
         case ObjType::NUMERIC: cls = num_class_; break;
