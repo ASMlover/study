@@ -165,13 +165,14 @@ class Compiler : private UnCopyable {
   }
 
   const ParseRule& get_rule(TokenKind kind) const {
-    auto grouping_fn = [](Compiler* p) { p->grouping(); };
-    auto block_fn = [](Compiler* p) { p->block(); };
-    auto call_fn = [](Compiler* p) { p->call(); };
-    auto infix_oper_fn = [](Compiler* p) { p->infix_oper(); };
-    auto variable_fn = [](Compiler* p) { p->variable(); };
-    auto numeric_fn = [](Compiler* p) { p->numeric(); };
-    auto string_fn = [](Compiler* p) { p->string(); };
+    auto grouping_fn = [](Compiler* c) { c->grouping(); };
+    auto block_fn = [](Compiler* c) { c->block(); };
+    auto call_fn = [](Compiler* c) { c->call(); };
+    auto infix_oper_fn = [](Compiler* c) { c->infix_oper(); };
+    auto variable_fn = [](Compiler* c) { c->variable(); };
+    auto numeric_fn = [](Compiler* c) { c->numeric(); };
+    auto string_fn = [](Compiler* c) { c->string(); };
+    auto boolean_fn = [](Compiler* c) { c->boolean(); };
 
     static const ParseRule _rules[] = {
       {grouping_fn, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LPAREN, "(")
@@ -192,15 +193,17 @@ class Compiler : private UnCopyable {
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(AMP, "&")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(BANG, "!")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(EQ, "=")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LT, "<")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(GT, ">")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LTEQ, "<=")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(GTEQ, ">=")
+      {nullptr, infix_oper_fn, Precedence::COMPARISON, "< "}, // PUNCTUATOR(LT, "<")
+      {nullptr, infix_oper_fn, Precedence::COMPARISON, "> "}, // PUNCTUATOR(GT, ">")
+      {nullptr, infix_oper_fn, Precedence::COMPARISON, "<= "}, // PUNCTUATOR(LTEQ, "<=")
+      {nullptr, infix_oper_fn, Precedence::COMPARISON, ">= "}, // PUNCTUATOR(GTEQ, ">=")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(EQEQ, "==")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(BANGEQ, "!=")
 
       {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(CLASS, "class")
+      {boolean_fn, nullptr, Precedence::NONE, nullptr}, // KEYWORD(FALSE, "false")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(META, "meta")
+      {boolean_fn, nullptr, Precedence::NONE, nullptr}, // KEYWORD(TRUE, "true")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(VAR, "var")
 
       {variable_fn, nullptr, Precedence::NONE, nullptr}, // TOKEN(IDENTIFIER, "identifier")
@@ -253,6 +256,13 @@ class Compiler : private UnCopyable {
   void store_variable(int symbol) {
     emit_byte(parent_ != nullptr ? Code::STORE_LOCAL : Code::STORE_GLOBAL);
     emit_byte(symbol);
+  }
+
+  void boolean(void) {
+    if (parser_.prev().kind() == TokenKind::KW_TRUE)
+      emit_byte(Code::TRUE);
+    else
+      emit_byte(Code::FALSE);
   }
 
   void numeric(void) {

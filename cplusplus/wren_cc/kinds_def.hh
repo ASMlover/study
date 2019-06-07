@@ -67,7 +67,9 @@ PUNCTUATOR(EQEQ, "==")
 PUNCTUATOR(BANGEQ, "!=")
 
 KEYWORD(CLASS, "class")
+KEYWORD(FALSE, "false")
 KEYWORD(META, "meta")
+KEYWORD(TRUE, "true")
 KEYWORD(VAR, "var")
 
 TOKEN(IDENTIFIER, "identifier")
