@@ -31,6 +31,21 @@
 
 namespace wrencc {
 
+static Value _primitive_bool_tostring(VM& vm, int argc, Value* args) {
+  if (args[0]->as_boolean()) {
+    char* s = new char[5];
+    memcpy(s, "true", 4);
+    s[4] = 0;
+    return StringObject::make_string(s);
+  }
+  else {
+    char* s = new char[6];
+    memcpy(s, "false", 5);
+    s[5] = 0;
+    return StringObject::make_string(s);
+  }
+}
+
 static Value _primitive_numeric_abs(VM& vm, int argc, Value* args) {
   double d = args[0]->as_numeric();
   if (d < 0)
@@ -84,6 +99,34 @@ static Value _primitive_numeric_div(VM& vm, int argc, Value* args) {
       args[0]->as_numeric() / args[1]->as_numeric());
 }
 
+static Value _primitive_numeric_gt(VM& vm, int argc, Value* args) {
+  if (!args[1]->is_numeric())
+    return vm.unsupported();
+  return BooleanObject::make_boolean(
+      args[0]->as_numeric() > args[1]->as_numeric());
+}
+
+static Value _primitive_numeric_ge(VM& vm, int argc, Value* args) {
+  if (!args[1]->is_numeric())
+    return vm.unsupported();
+  return BooleanObject::make_boolean(
+      args[0]->as_numeric() >= args[1]->as_numeric());
+}
+
+static Value _primitive_numeric_lt(VM& vm, int argc, Value* args) {
+  if (!args[1]->is_numeric())
+    return vm.unsupported();
+  return BooleanObject::make_boolean(
+      args[0]->as_numeric() < args[1]->as_numeric());
+}
+
+static Value _primitive_numeric_le(VM& vm, int argc, Value* args) {
+  if (!args[1]->is_numeric())
+    return vm.unsupported();
+  return BooleanObject::make_boolean(
+      args[0]->as_numeric() <= args[1]->as_numeric());
+}
+
 static Value _primitive_string_len(VM& vm, int argc, Value* args) {
   return NumericObject::make_numeric(args[0]->as_string()->size());
 }
@@ -122,14 +165,26 @@ static Value _primitive_io_write(VM& vm, int argc, Value* args) {
   return args[1];
 }
 
-void reigister_primitives(VM& vm) {
+void register_primitives(VM& vm) {
+  vm.set_bool_cls(ClassObject::make_class());
+  vm.set_primitive(vm.bool_cls(), "toString", _primitive_bool_tostring);
+
+  vm.set_bool_cls(ClassObject::make_class());
+  vm.set_class_cls(ClassObject::make_class());
+
+  vm.set_num_cls(ClassObject::make_class());
   vm.set_primitive(vm.num_cls(), "abs", _primitive_numeric_abs);
   vm.set_primitive(vm.num_cls(), "toString", _primitive_numeric_tostring);
   vm.set_primitive(vm.num_cls(), "+ ", _primitive_numeric_add);
   vm.set_primitive(vm.num_cls(), "- ", _primitive_numeric_sub);
   vm.set_primitive(vm.num_cls(), "* ", _primitive_numeric_mul);
   vm.set_primitive(vm.num_cls(), "/ ", _primitive_numeric_div);
+  vm.set_primitive(vm.num_cls(), "> ", _primitive_numeric_gt);
+  vm.set_primitive(vm.num_cls(), ">= ", _primitive_numeric_ge);
+  vm.set_primitive(vm.num_cls(), "< ", _primitive_numeric_lt);
+  vm.set_primitive(vm.num_cls(), "<= ", _primitive_numeric_le);
 
+  vm.set_str_cls(ClassObject::make_class());
   vm.set_primitive(vm.str_cls(), "len", _primitive_string_len);
   vm.set_primitive(vm.str_cls(), "contains ", _primitive_string_contains);
   vm.set_primitive(vm.str_cls(), "toString", _primitive_string_tostring);
