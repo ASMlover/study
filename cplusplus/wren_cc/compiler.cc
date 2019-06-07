@@ -49,6 +49,10 @@ enum class Precedence {
   CALL,       // ()
 };
 
+inline Precedence operator+(Precedence a, int b) {
+  return Xt::as_type<Precedence>(Xt::as_type<int>(a) + b);
+}
+
 struct ParseRule {
   ParseFn prefix;
   ParseFn infix;
@@ -63,7 +67,7 @@ class Parser : private UnCopyable {
   Token prev_;
   Token curr_;
 
-  bool skip_newlines_{};
+  bool skip_newlines_{true};
 
   bool had_error_{};
 public:
@@ -161,21 +165,29 @@ class Compiler : private UnCopyable {
   }
 
   const ParseRule& get_rule(TokenKind kind) const {
+    auto grouping_fn = [](Compiler* p) { p->grouping(); };
+    auto block_fn = [](Compiler* p) { p->block(); };
+    auto call_fn = [](Compiler* p) { p->call(); };
+    auto infix_oper_fn = [](Compiler* p) { p->infix_oper(); };
+    auto variable_fn = [](Compiler* p) { p->variable(); };
+    auto numeric_fn = [](Compiler* p) { p->numeric(); };
+    auto string_fn = [](Compiler* p) { p->string(); };
+
     static const ParseRule _rules[] = {
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LPAREN, "(")
+      {grouping_fn, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LPAREN, "(")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(RPAREN, ")")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LBRACKET, "[")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(RBRACKET, "]")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LBRACE, "{")
+      {block_fn, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LBRACE, "{")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(RBRACE, "}")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(COLON, ":")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(DOT, ".")
+      {nullptr, call_fn, Precedence::CALL, nullptr}, // PUNCTUATOR(DOT, ".")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(COMMA, ",")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(STAR, "*")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(SLASH, "/")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(PERCENT, "%")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(PLUS, "+")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(MINUS, "-")
+      {nullptr, infix_oper_fn, Precedence::FACTOR, "* "}, // PUNCTUATOR(STAR, "*")
+      {nullptr, infix_oper_fn, Precedence::FACTOR, "/ "}, // PUNCTUATOR(SLASH, "/")
+      {nullptr, infix_oper_fn, Precedence::NONE, "% "}, // PUNCTUATOR(PERCENT, "%")
+      {nullptr, infix_oper_fn, Precedence::TERM, "+ "}, // PUNCTUATOR(PLUS, "+")
+      {nullptr, infix_oper_fn, Precedence::TERM, "- "}, // PUNCTUATOR(MINUS, "-")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(PIPE, "|")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(AMP, "&")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(BANG, "!")
@@ -191,9 +203,9 @@ class Compiler : private UnCopyable {
       {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(META, "meta")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(VAR, "var")
 
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // TOKEN(IDENTIFIER, "identifier")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // TOKEN(NUMERIC, "numeric")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // TOKEN(STRING, "string")
+      {variable_fn, nullptr, Precedence::NONE, nullptr}, // TOKEN(IDENTIFIER, "identifier")
+      {numeric_fn, nullptr, Precedence::NONE, nullptr}, // TOKEN(NUMERIC, "numeric")
+      {string_fn, nullptr, Precedence::NONE, nullptr}, // TOKEN(STRING, "string")
 
       {nullptr, nullptr, Precedence::NONE, nullptr}, // TOKEN(NL, "new-line")
 
@@ -207,8 +219,10 @@ class Compiler : private UnCopyable {
   void parse_precedence(Precedence precedence) {
     parser_.advance();
     auto& prefix_fn = get_rule(parser_.prev().kind()).prefix;
-    if (!prefix_fn)
+    if (!prefix_fn) {
       error("no prefix parser");
+      return;
+    }
 
     prefix_fn(this);
 
@@ -259,6 +273,22 @@ class Compiler : private UnCopyable {
     Value constant = StringObject::make_string(s);
 
     emit_constant(constant);
+  }
+
+  void variable(void) {
+    int local = locals_.get(parser_.prev().as_string());
+    if (local != -1) {
+      emit_bytes(Code::LOAD_LOCAL, local);
+      return;
+    }
+
+    int global = vm_gsymbols().get(parser_.prev().as_string());
+    if (global != -1) {
+      emit_bytes(Code::LOAD_GLOBAL, global);
+      return;
+    }
+
+    error("undefined variable");
   }
 
   bool match(TokenKind expected) {
@@ -340,115 +370,47 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::CONSTANT, constant);
   }
 
-  void term(void) {
-    factor();
-
-    while (match(TokenKind::TK_PLUS) || match(TokenKind::TK_MINUS)) {
-      str_t name;
-      if (parser_.prev().kind() == TokenKind::TK_PLUS)
-        name = "+ ";
-      else
-        name = "- ";
-
-      factor();
-      int symbol = vm_symbols().ensure(name);
-      emit_bytes(Code::CALL_1, symbol);
-    }
-  }
-
-  void factor(void) {
-    call();
-
-    while (match(TokenKind::TK_STAR) || match(TokenKind::TK_SLASH)) {
-      str_t name;
-      if (parser_.prev().kind() == TokenKind::TK_STAR)
-        name = "* ";
-      else
-        name = "/ ";
-
-      call();
-      int symbol = vm_symbols().ensure(name);
-      emit_bytes(Code::CALL_1, symbol);
-    }
-  }
-
   void call(void) {
-    primary();
+    str_t name;
+    int argc = 0;
 
-    while (match(TokenKind::TK_DOT)) {
-      str_t name;
-      int argc = 0;
+    consume(TokenKind::TK_IDENTIFIER);
+    for (;;) {
+      name += parser_.prev().as_string();
+      if (match(TokenKind::TK_LPAREN)) {
+        for (;;) {
+          expression();
+          ++argc;
 
-      consume(TokenKind::TK_IDENTIFIER);
-      for (;;) {
-        name += parser_.prev().as_string();
-        if (match(TokenKind::TK_LPAREN)) {
-          for (;;) {
-            expression();
-            ++argc;
-
-            name.push_back(' ');
-            if (!match(TokenKind::TK_COMMA))
-              break;
-          }
-          consume(TokenKind::TK_RPAREN);
-
-          // if there isn't another part name after the argument list, stop
-          if (!match(TokenKind::TK_IDENTIFIER))
+          name.push_back(' ');
+          if (!match(TokenKind::TK_COMMA))
             break;
         }
-        else {
-          break;
-        }
-      }
-      int symbol = vm_symbols().ensure(name);
+        consume(TokenKind::TK_RPAREN);
 
-      // compile the method call
-      emit_bytes(Code::CALL_0 + argc, symbol);
+        // if there isn't another part name after the argument list, stop
+        if (!match(TokenKind::TK_IDENTIFIER))
+          break;
+      }
+      else {
+        break;
+      }
     }
+    int symbol = vm_symbols().ensure(name);
+
+    // compile the method call
+    emit_bytes(Code::CALL_0 + argc, symbol);
   }
 
-  void primary(void) {
-    if (match(TokenKind::TK_LBRACE)) {
-      auto* block = compile_block(parser_, this, TokenKind::TK_RBRACE);
-      u8_t constant = block_->add_constant(block);
+  void infix_oper(void) {
+    auto& rule = get_rule(parser_.prev().kind());
 
-      emit_bytes(Code::CONSTANT, constant);
-      return;
-    }
+    // compile the right hand side
+    parse_precedence(rule.precedence + 1);
 
-    if (match(TokenKind::TK_IDENTIFIER)) {
-      int local = locals_.get(parser_.prev().as_string());
-      if (local != -1) {
-        emit_bytes(Code::LOAD_LOCAL, local);
-        return;
-      }
-
-      int global = vm_gsymbols().get(parser_.prev().as_string());
-      if (global != -1) {
-        emit_bytes(Code::LOAD_GLOBAL, global);
-        return;
-      }
-
-      error("undefined variable");
-    }
-
-    if (match(TokenKind::TK_NUMERIC)) {
-      numeric();
-      return;
-    }
-
-    if (match(TokenKind::TK_STRING)) {
-      string();
-      return;
-    }
-
-    // parentheses
-    if (match(TokenKind::TK_LPAREN)) {
-      expression();
-      consume(TokenKind::TK_RPAREN);
-      return;
-    }
+    // call the operator method on the left-hand side
+    int symbol = vm_symbols().ensure(rule.name);
+    emit_bytes(Code::CALL_1, symbol);
   }
 public:
   Compiler(Parser& parser, Compiler* parent = nullptr) noexcept
