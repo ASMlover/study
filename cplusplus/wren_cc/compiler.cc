@@ -35,23 +35,25 @@
 namespace wrencc {
 
 class Compiler;
-using CompileFn = std::function<void (Compiler*, const Token&)>;
+using ParseFn = std::function<void (Compiler*)>;
 
 enum class Precedence {
   NONE,
   LOWEST,
 
-  EQUALITY, // == !=
+  EQUALITY,   // == !=
   COMPARISON, // < <= > >=
-  BITWISE, // | &
-  TERM, // + -
-  FACTOR, // * / %
-  CALL, // ()
+  BITWISE,    // | &
+  TERM,       // + -
+  FACTOR,     // * / %
+  CALL,       // ()
 };
 
-struct InfixCompiler {
-  CompileFn fn;
+struct ParseRule {
+  ParseFn prefix;
+  ParseFn infix;
   Precedence precedence;
+  const char* name;
 };
 
 class Parser : private UnCopyable {
@@ -158,6 +160,67 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::CONSTANT, b);
   }
 
+  const ParseRule& get_rule(TokenKind kind) const {
+    static const ParseRule _rules[] = {
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LPAREN, "(")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(RPAREN, ")")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LBRACKET, "[")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(RBRACKET, "]")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LBRACE, "{")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(RBRACE, "}")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(COLON, ":")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(DOT, ".")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(COMMA, ",")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(STAR, "*")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(SLASH, "/")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(PERCENT, "%")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(PLUS, "+")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(MINUS, "-")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(PIPE, "|")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(AMP, "&")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(BANG, "!")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(EQ, "=")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LT, "<")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(GT, ">")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LTEQ, "<=")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(GTEQ, ">=")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(EQEQ, "==")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(BANGEQ, "!=")
+
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(CLASS, "class")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(META, "meta")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(VAR, "var")
+
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // TOKEN(IDENTIFIER, "identifier")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // TOKEN(NUMERIC, "numeric")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // TOKEN(STRING, "string")
+
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // TOKEN(NL, "new-line")
+
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // TOKEN(ERROR, "error")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // TOKEN(EOF, "eof")
+    };
+
+    return _rules[Xt::as_type<int>(kind)];
+  }
+
+  void parse_precedence(Precedence precedence) {
+    parser_.advance();
+    auto& prefix_fn = get_rule(parser_.prev().kind()).prefix;
+    if (!prefix_fn)
+      error("no prefix parser");
+
+    prefix_fn(this);
+
+    while (precedence <= get_rule(parser_.curr().kind()).precedence) {
+      parser_.advance();
+
+      auto& infix_fn = get_rule(parser_.prev().kind()).infix;
+      if (infix_fn)
+        infix_fn(this);
+    }
+  }
+
   int define_identifier(void) {
     consume(TokenKind::TK_IDENTIFIER);
 
@@ -262,7 +325,19 @@ class Compiler : private UnCopyable {
   }
 
   void expression(void) {
-    term();
+    parse_precedence(Precedence::LOWEST);
+  }
+
+  void grouping(void) {
+    expression();
+    consume(TokenKind::TK_RPAREN);
+  }
+
+  void block(void) {
+    BlockObject* block = compile_block(parser_, this, TokenKind::TK_RBRACE);
+    u8_t constant = block_->add_constant(block);
+
+    emit_bytes(Code::CONSTANT, constant);
   }
 
   void term(void) {
