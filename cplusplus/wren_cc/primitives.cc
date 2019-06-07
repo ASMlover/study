@@ -169,7 +169,7 @@ void register_primitives(VM& vm) {
   vm.set_bool_cls(ClassObject::make_class());
   vm.set_primitive(vm.bool_cls(), "toString", _primitive_bool_tostring);
 
-  vm.set_bool_cls(ClassObject::make_class());
+  vm.set_block_cls(ClassObject::make_class());
   vm.set_class_cls(ClassObject::make_class());
 
   vm.set_num_cls(ClassObject::make_class());
