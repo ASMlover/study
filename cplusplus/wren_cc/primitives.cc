@@ -31,7 +31,15 @@
 
 namespace wrencc {
 
-static Value _primitive_bool_tostring(VM& vm, int argc, Value* args) {
+#define DEF_PRIMITIVE(fn)\
+static Value _primitive_##fn(VM& vm, Fiber& fiber, int argc, Value* args)
+
+DEF_PRIMITIVE(block_call) {
+  vm.call_block(fiber, args[0]->as_block(), 1);
+  return nullptr;
+}
+
+DEF_PRIMITIVE(bool_tostring) {
   if (args[0]->as_boolean()) {
     char* s = new char[5];
     memcpy(s, "true", 4);
@@ -46,7 +54,7 @@ static Value _primitive_bool_tostring(VM& vm, int argc, Value* args) {
   }
 }
 
-static Value _primitive_numeric_abs(VM& vm, int argc, Value* args) {
+DEF_PRIMITIVE(numeric_abs) {
   double d = args[0]->as_numeric();
   if (d < 0)
     d = -d;
@@ -55,7 +63,7 @@ static Value _primitive_numeric_abs(VM& vm, int argc, Value* args) {
   return NumericObject::make_numeric(d);
 }
 
-static Value _primitive_numeric_tostring(VM& vm, int argc, Value* args) {
+DEF_PRIMITIVE(numeric_tostring) {
   std::stringstream ss;
   ss << args[0]->as_numeric();
   str_t temp(ss.str());
@@ -67,7 +75,7 @@ static Value _primitive_numeric_tostring(VM& vm, int argc, Value* args) {
   return StringObject::make_string(s);
 }
 
-static Value _primitive_numeric_add(VM& vm, int argc, Value* args) {
+DEF_PRIMITIVE(numeric_add) {
   if (!args[1]->is_numeric())
     return vm.unsupported();
 
@@ -75,7 +83,7 @@ static Value _primitive_numeric_add(VM& vm, int argc, Value* args) {
       args[0]->as_numeric() + args[1]->as_numeric());
 }
 
-static Value _primitive_numeric_sub(VM& vm, int argc, Value* args) {
+DEF_PRIMITIVE(numeric_sub) {
   if (!args[1]->is_numeric())
     return vm.unsupported();
 
@@ -83,7 +91,7 @@ static Value _primitive_numeric_sub(VM& vm, int argc, Value* args) {
       args[0]->as_numeric() - args[1]->as_numeric());
 }
 
-static Value _primitive_numeric_mul(VM& vm, int argc, Value* args) {
+DEF_PRIMITIVE(numeric_mul) {
   if (!args[1]->is_numeric())
     return vm.unsupported();
 
@@ -91,7 +99,7 @@ static Value _primitive_numeric_mul(VM& vm, int argc, Value* args) {
       args[0]->as_numeric() * args[1]->as_numeric());
 }
 
-static Value _primitive_numeric_div(VM& vm, int argc, Value* args) {
+DEF_PRIMITIVE(numeric_div) {
   if (!args[1]->is_numeric())
     return vm.unsupported();
 
@@ -99,39 +107,39 @@ static Value _primitive_numeric_div(VM& vm, int argc, Value* args) {
       args[0]->as_numeric() / args[1]->as_numeric());
 }
 
-static Value _primitive_numeric_gt(VM& vm, int argc, Value* args) {
+DEF_PRIMITIVE(numeric_gt) {
   if (!args[1]->is_numeric())
     return vm.unsupported();
   return BooleanObject::make_boolean(
       args[0]->as_numeric() > args[1]->as_numeric());
 }
 
-static Value _primitive_numeric_ge(VM& vm, int argc, Value* args) {
+DEF_PRIMITIVE(numeric_ge) {
   if (!args[1]->is_numeric())
     return vm.unsupported();
   return BooleanObject::make_boolean(
       args[0]->as_numeric() >= args[1]->as_numeric());
 }
 
-static Value _primitive_numeric_lt(VM& vm, int argc, Value* args) {
+DEF_PRIMITIVE(numeric_lt) {
   if (!args[1]->is_numeric())
     return vm.unsupported();
   return BooleanObject::make_boolean(
       args[0]->as_numeric() < args[1]->as_numeric());
 }
 
-static Value _primitive_numeric_le(VM& vm, int argc, Value* args) {
+DEF_PRIMITIVE(numeric_le) {
   if (!args[1]->is_numeric())
     return vm.unsupported();
   return BooleanObject::make_boolean(
       args[0]->as_numeric() <= args[1]->as_numeric());
 }
 
-static Value _primitive_string_len(VM& vm, int argc, Value* args) {
+DEF_PRIMITIVE(string_len) {
   return NumericObject::make_numeric(args[0]->as_string()->size());
 }
 
-static Value _primitive_string_contains(VM& vm, int argc, Value* args) {
+DEF_PRIMITIVE(string_contains) {
   StringObject* orig = args[0]->as_string();
   StringObject* subs = args[1]->as_string();
 
@@ -140,11 +148,11 @@ static Value _primitive_string_contains(VM& vm, int argc, Value* args) {
   return NumericObject::make_numeric(strstr(orig->cstr(), subs->cstr()) != 0);
 }
 
-static Value _primitive_string_tostring(VM& vm, int argc, Value* args) {
+DEF_PRIMITIVE(string_tostring) {
   return args[0];
 }
 
-static Value _primitive_string_add(VM& vm, int argc, Value* args) {
+DEF_PRIMITIVE(string_add) {
   if (!args[1]->is_string())
     return vm.unsupported();
 
@@ -160,16 +168,18 @@ static Value _primitive_string_add(VM& vm, int argc, Value* args) {
   return StringObject::make_string(s);
 }
 
-static Value _primitive_io_write(VM& vm, int argc, Value* args) {
+DEF_PRIMITIVE(io_write) {
   std::cout << args[1] << std::endl;
   return args[1];
 }
 
 void register_primitives(VM& vm) {
+  vm.set_block_cls(ClassObject::make_class());
+  vm.set_primitive(vm.block_cls(), "call", _primitive_block_call);
+
   vm.set_bool_cls(ClassObject::make_class());
   vm.set_primitive(vm.bool_cls(), "toString", _primitive_bool_tostring);
 
-  vm.set_block_cls(ClassObject::make_class());
   vm.set_class_cls(ClassObject::make_class());
 
   vm.set_num_cls(ClassObject::make_class());

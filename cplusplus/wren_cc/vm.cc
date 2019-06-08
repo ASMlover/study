@@ -214,19 +214,14 @@ public:
 
 /// VM IMPLEMENTATIONS
 
-static Value _primitive_metaclass_new(VM& vm, int argc, Value* args) {
+static Value _primitive_metaclass_new(
+    VM& vm, Fiber& fiber, int argc, Value* args) {
   ClassObject* cls = args[0]->as_class();
   return InstanceObject::make_instance(cls);
 }
 
 VM::VM(void) {
   register_primitives(*this);
-
-  // the call method is special:
-  {
-    int symbol = symbols_.ensure("call");
-    block_class_->set_method(symbol, MethodType::CALL);
-  }
 }
 
 void VM::set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn) {
@@ -313,9 +308,9 @@ Value VM::interpret(BlockObject* block) {
     case Code::CALL_9:
     case Code::CALL_10:
       {
-        int argc = c - Code::CALL_0;
+        int argc = c - Code::CALL_0 + 1;
         int symbol = frame->get_code(frame->ip++);
-        Value receiver = fiber.get_value(fiber.stack_size() - argc - 1);
+        Value receiver = fiber.get_value(fiber.stack_size() - argc);
 
         ClassObject* cls{};
         switch (receiver->type()) {
@@ -336,16 +331,17 @@ Value VM::interpret(BlockObject* block) {
             << "does not implement method `" << symbols_.get_name(symbol) << "`"
             << std::endl;
           std::exit(-1); break;
-        case MethodType::CALL:
-          fiber.call_block(receiver->as_block(), fiber.stack_size() - argc);
-          break;
         case MethodType::PRIMITIVE:
           {
-            Value* args = fiber.values_at(fiber.stack_size() - argc - 1);
+            Value* args = fiber.values_at(fiber.stack_size() - argc);
             // argc +1 to include the receiver since that's in the args array
-            Value result = method.primitive(*this, argc + 1, args);
-            fiber.set_value(fiber.stack_size() - argc - 1, result);
-            fiber.resize_stack(fiber.stack_size() - argc);
+            Value result = method.primitive(*this, fiber, argc, args);
+
+            // if the primitive pushed a call frame, it returns nullptr
+            if (result != nullptr) {
+              fiber.set_value(fiber.stack_size() - argc, result);
+              fiber.resize_stack(fiber.stack_size() - (argc - 1));
+            }
           } break;
           break;
         case MethodType::BLOCK:
@@ -378,6 +374,10 @@ void VM::interpret(const str_t& source_bytes) {
 
   if (block != nullptr)
     interpret(block);
+}
+
+void VM::call_block(Fiber& fiber, BlockObject* block, int argc) {
+  fiber.call_block(block, fiber.stack_size() - argc);
 }
 
 }

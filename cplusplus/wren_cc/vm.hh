@@ -158,11 +158,11 @@ public:
 };
 
 class VM;
-using PrimitiveFn = Value (*)(VM& vm, int argc, Value* args);
+class Fiber;
+using PrimitiveFn = Value (*)(VM& vm, Fiber& fiber, int argc, Value* args);
 
 enum class MethodType {
   NONE,
-  CALL,
   PRIMITIVE,
   BLOCK,
 };
@@ -309,6 +309,7 @@ public:
   void set_global(ClassObject* cls, const str_t& name);
 
   void interpret(const str_t& source_bytes);
+  void call_block(Fiber& fiber, BlockObject* block, int argc);
 };
 
 }

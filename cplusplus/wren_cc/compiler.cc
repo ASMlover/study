@@ -437,8 +437,11 @@ public:
     for (;;) {
       statement();
 
-      if (!match(TokenKind::TK_NL))
+      // if there is no newline, it must be the end of the block on the same line
+      if (!match(TokenKind::TK_NL)) {
+        consume(end_kind);
         break;
+      }
       if (match(end_kind))
         break;
       // emit_byte(Code::POP);
