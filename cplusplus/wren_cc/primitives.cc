@@ -39,6 +39,22 @@ DEF_PRIMITIVE(block_call) {
   return nullptr;
 }
 
+DEF_PRIMITIVE(bool_eq) {
+  if (!args[1]->is_boolean())
+    return BooleanObject::make_boolean(false);
+
+  return BooleanObject::make_boolean(
+      args[0]->as_boolean() == args[1]->as_boolean());
+}
+
+DEF_PRIMITIVE(bool_ne) {
+  if (!args[1]->is_boolean())
+    return BooleanObject::make_boolean(true);
+
+  return BooleanObject::make_boolean(
+      args[0]->as_boolean() != args[1]->as_boolean());
+}
+
 DEF_PRIMITIVE(bool_tostring) {
   if (args[0]->as_boolean()) {
     char* s = new char[5];
@@ -135,6 +151,22 @@ DEF_PRIMITIVE(numeric_le) {
       args[0]->as_numeric() <= args[1]->as_numeric());
 }
 
+DEF_PRIMITIVE(numeric_eq) {
+  if (!args[1]->is_numeric())
+    return BooleanObject::make_boolean(false);
+
+  return BooleanObject::make_boolean(
+      args[0]->as_numeric() == args[1]->as_numeric());
+}
+
+DEF_PRIMITIVE(numeric_ne) {
+  if (!args[1]->is_numeric())
+    return BooleanObject::make_boolean(true);
+
+  return BooleanObject::make_boolean(
+      args[0]->as_numeric() != args[1]->as_numeric());
+}
+
 DEF_PRIMITIVE(string_len) {
   return NumericObject::make_numeric(args[0]->as_string()->size());
 }
@@ -168,6 +200,22 @@ DEF_PRIMITIVE(string_add) {
   return StringObject::make_string(s);
 }
 
+DEF_PRIMITIVE(string_eq) {
+  if (!args[1]->is_string())
+    return BooleanObject::make_boolean(false);
+
+  auto r = strcmp(args[0]->as_cstring(), args[1]->as_cstring()) == 0;
+  return BooleanObject::make_boolean(r);
+}
+
+DEF_PRIMITIVE(string_ne) {
+  if (!args[1]->is_string())
+    return BooleanObject::make_boolean(true);
+
+  auto r = strcmp(args[0]->as_cstring(), args[1]->as_cstring()) != 0;
+  return BooleanObject::make_boolean(r);
+}
+
 DEF_PRIMITIVE(io_write) {
   std::cout << args[1] << std::endl;
   return args[1];
@@ -179,6 +227,8 @@ void register_primitives(VM& vm) {
 
   vm.set_bool_cls(ClassObject::make_class());
   vm.set_primitive(vm.bool_cls(), "toString", _primitive_bool_tostring);
+  vm.set_primitive(vm.bool_cls(), "== ", _primitive_bool_eq);
+  vm.set_primitive(vm.bool_cls(), "!= ", _primitive_bool_ne);
 
   vm.set_class_cls(ClassObject::make_class());
 
@@ -193,12 +243,16 @@ void register_primitives(VM& vm) {
   vm.set_primitive(vm.num_cls(), ">= ", _primitive_numeric_ge);
   vm.set_primitive(vm.num_cls(), "< ", _primitive_numeric_lt);
   vm.set_primitive(vm.num_cls(), "<= ", _primitive_numeric_le);
+  vm.set_primitive(vm.num_cls(), "== ", _primitive_numeric_eq);
+  vm.set_primitive(vm.num_cls(), "!= ", _primitive_numeric_ne);
 
   vm.set_str_cls(ClassObject::make_class());
   vm.set_primitive(vm.str_cls(), "len", _primitive_string_len);
   vm.set_primitive(vm.str_cls(), "contains ", _primitive_string_contains);
   vm.set_primitive(vm.str_cls(), "toString", _primitive_string_tostring);
   vm.set_primitive(vm.str_cls(), "+ ", _primitive_string_add);
+  vm.set_primitive(vm.str_cls(), "== ", _primitive_string_eq);
+  vm.set_primitive(vm.str_cls(), "!= ", _primitive_string_ne);
 
   ClassObject* io_cls = ClassObject::make_class();
   vm.set_primitive(io_cls, "write ", _primitive_io_write);
