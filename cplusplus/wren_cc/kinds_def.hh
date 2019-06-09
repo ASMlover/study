@@ -71,6 +71,7 @@ KEYWORD(ELSE, "else")
 KEYWORD(FALSE, "false")
 KEYWORD(IF, "if")
 KEYWORD(META, "meta")
+KEYWORD(NIL, "nil")
 KEYWORD(TRUE, "true")
 KEYWORD(VAR, "var")
 

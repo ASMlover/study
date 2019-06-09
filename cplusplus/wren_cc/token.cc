@@ -49,7 +49,7 @@ static const std::unordered_map<strv_t, TokenKind> kKeywords = {
 const char* get_token_name(TokenKind kind) {
   if (kind >= TokenKind::TK_LPAREN && kind < TokenKind::NUM_KINDS)
     return kNames[Xt::as_type<int>(kind)];
-  return nullptr;
+  return "<UNKNOWN>";
 }
 
 TokenKind get_keyword_kind(const char* key) {

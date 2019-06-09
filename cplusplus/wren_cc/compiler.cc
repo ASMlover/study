@@ -175,6 +175,7 @@ class Compiler : private UnCopyable {
     auto numeric_fn = [](Compiler* c) { c->numeric(); };
     auto string_fn = [](Compiler* c) { c->string(); };
     auto boolean_fn = [](Compiler* c) { c->boolean(); };
+    auto nil_fn = [](Compiler* c) { c->nil(); };
 
     static const ParseRule _rules[] = {
       {grouping_fn, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LPAREN, "(")
@@ -207,6 +208,7 @@ class Compiler : private UnCopyable {
       {boolean_fn, nullptr, Precedence::NONE, nullptr}, // KEYWORD(FALSE, "false")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(IF, "if")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(META, "meta")
+      {nil_fn, nullptr, Precedence::NONE, nullptr}, // KEYWORD(NIL, "nil")
       {boolean_fn, nullptr, Precedence::NONE, nullptr}, // KEYWORD(TRUE, "true")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(VAR, "var")
 
@@ -260,6 +262,10 @@ class Compiler : private UnCopyable {
   void store_variable(int symbol) {
     emit_byte(parent_ != nullptr ? Code::STORE_LOCAL : Code::STORE_GLOBAL);
     emit_byte(symbol);
+  }
+
+  void nil(void) {
+    emit_byte(Code::NIL);
   }
 
   void boolean(void) {
@@ -317,7 +323,8 @@ class Compiler : private UnCopyable {
     parser_.advance();
 
     if (parser_.prev().kind() != expected)
-      error("expected %d, got %d", expected, parser_.prev().kind());
+      error("expected `%s`, got `%s`",
+          get_token_name(expected), get_token_name(parser_.prev().kind()));
   }
 
   void statement(void) {
