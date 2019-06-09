@@ -30,6 +30,6 @@
 
 namespace wrencc {
 
-BlockObject* compile(VM& vm, const str_t& source_bytes);
+FunctionObject* compile(VM& vm, const str_t& source_bytes);
 
 }

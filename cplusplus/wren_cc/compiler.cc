@@ -128,7 +128,7 @@ public:
 class Compiler : private UnCopyable {
   Parser& parser_;
   Compiler* parent_{};
-  BlockObject* block_{};
+  FunctionObject* fn_{};
   int num_codes_{};
 
   SymbolTable locals_;
@@ -153,7 +153,7 @@ class Compiler : private UnCopyable {
   }
 
   template <typename T> inline int emit_byte(T b) {
-    return block_->add_code(b);
+    return fn_->add_code(b);
   }
 
   template <typename T, typename U> inline void emit_bytes(T b1, U b2) {
@@ -162,7 +162,7 @@ class Compiler : private UnCopyable {
   }
 
   inline void emit_constant(Value v) {
-    u8_t b = block_->add_constant(v);
+    u8_t b = fn_->add_constant(v);
     emit_bytes(Code::CONSTANT, b);
   }
 
@@ -344,12 +344,13 @@ class Compiler : private UnCopyable {
         consume(TokenKind::TK_IDENTIFIER);
         int symbol = intern_symbol();
         consume(TokenKind::TK_LBRACE);
-        BlockObject* method = compile_block(parser_, this, TokenKind::TK_RBRACE);
+        FunctionObject* method =
+          compile_function(parser_, this, TokenKind::TK_RBRACE);
 
         consume(TokenKind::TK_NL);
 
         // add the block to the constant table
-        u8_t constant = block_->add_constant(method);
+        u8_t constant = fn_->add_constant(method);
 
         // compile the code to define the method
         emit_byte(Code::METHOD);
@@ -394,7 +395,7 @@ class Compiler : private UnCopyable {
       int else_jump = emit_byte(0xff);
 
       // patch the if jump
-      block_->set_code(if_jump, block_->codes_count() - if_jump - 1);
+      fn_->set_code(if_jump, fn_->codes_count() - if_jump - 1);
 
       // compile the else branch if there is one
       if (match(TokenKind::KW_ELSE))
@@ -403,7 +404,7 @@ class Compiler : private UnCopyable {
         emit_byte(Code::NIL);
 
       // patch the jump over the else
-      block_->set_code(else_jump, block_->codes_count() - else_jump - 1);
+      fn_->set_code(else_jump, fn_->codes_count() - else_jump - 1);
 
       return;
     }
@@ -417,8 +418,8 @@ class Compiler : private UnCopyable {
   }
 
   void block(void) {
-    BlockObject* block = compile_block(parser_, this, TokenKind::TK_RBRACE);
-    u8_t constant = block_->add_constant(block);
+    FunctionObject* fn = compile_function(parser_, this, TokenKind::TK_RBRACE);
+    u8_t constant = fn_->add_constant(fn);
 
     emit_bytes(Code::CONSTANT, constant);
   }
@@ -469,14 +470,14 @@ public:
   Compiler(Parser& parser, Compiler* parent = nullptr) noexcept
     : parser_(parser)
     , parent_(parent) {
-    block_ = BlockObject::make_block();
+    fn_ = FunctionObject::make_function();
   }
 
   ~Compiler(void) {
-    // FIXME: fixed deallocate BlockObject by GC
+    // FIXME: fixed deallocate FunctionObject by GC
   }
 
-  BlockObject* compile_block(TokenKind end_kind) {
+  FunctionObject* compile_function(TokenKind end_kind) {
     for (;;) {
       statement();
 
@@ -490,25 +491,26 @@ public:
       // emit_byte(Code::POP);
     }
     emit_byte(Code::END);
-    block_->set_num_locals(locals_.count());
+    fn_->set_num_locals(locals_.count());
 
-    return parser_.had_error() ? nullptr : block_;
+    return parser_.had_error() ? nullptr : fn_;
   }
 
-  BlockObject* compile_block(Parser& p, Compiler* parent, TokenKind end_kind) {
+  FunctionObject* compile_function(
+      Parser& p, Compiler* parent, TokenKind end_kind) {
     Compiler c(p, parent);
-    return c.compile_block(end_kind);
+    return c.compile_function(end_kind);
   }
 };
 
-BlockObject* compile(VM& vm, const str_t& source_bytes) {
+FunctionObject* compile(VM& vm, const str_t& source_bytes) {
   Lexer lex(source_bytes);
   Parser p(vm, lex);
 
   p.advance();
   Compiler c(p, nullptr);
 
-  return c.compile_block(TokenKind::TK_EOF);
+  return c.compile_function(TokenKind::TK_EOF);
 }
 
 }

@@ -52,8 +52,8 @@ const char* BaseObject::as_cstring(void) const {
   return Xt::down<const StringObject>(this)->cstr();
 }
 
-BlockObject* BaseObject::as_block(void) const {
-  return Xt::down<BlockObject>(const_cast<BaseObject*>(this));
+FunctionObject* BaseObject::as_function(void) const {
+  return Xt::down<FunctionObject>(const_cast<BaseObject*>(this));
 }
 
 ClassObject* BaseObject::as_class(void) const {
@@ -98,12 +98,12 @@ StringObject* StringObject::make_string(const char* s) {
   return new StringObject(s);
 }
 
-str_t BlockObject::stringify(void) const {
-  return "[block]";
+str_t FunctionObject::stringify(void) const {
+  return "[fn]";
 }
 
-BlockObject* BlockObject::make_block(void) {
-  return new BlockObject();
+FunctionObject* FunctionObject::make_function(void) {
+  return new FunctionObject();
 }
 
 ClassObject::ClassObject(void) noexcept
@@ -168,15 +168,15 @@ void SymbolTable::clear(void) {
 
 struct CallFrame {
   int ip{};
-  BlockObject* block{};
+  FunctionObject* fn{};
   int locals{};
 
-  CallFrame(int ip_arg, BlockObject* block_arg, int locals_arg) noexcept
-    : ip(ip_arg), block(block_arg), locals(locals_arg) {
+  CallFrame(int ip_arg, FunctionObject* fn_arg, int locals_arg) noexcept
+    : ip(ip_arg), fn(fn_arg), locals(locals_arg) {
   }
 
-  inline u8_t get_code(int i) const { return block->get_code(i); }
-  inline Value get_constant(int i) const { return block->get_constant(i); }
+  inline u8_t get_code(int i) const { return fn->get_code(i); }
+  inline Value get_constant(int i) const { return fn->get_constant(i); }
 };
 
 class Fiber : private UnCopyable {
@@ -212,10 +212,10 @@ public:
     return v;
   }
 
-  void call_block(BlockObject* block, int beglocal = 0) {
-    frames_.push_back(CallFrame(0, block, beglocal));
+  void call_function(FunctionObject* fn, int beglocal = 0) {
+    frames_.push_back(CallFrame(0, fn, beglocal));
 
-    for (int i = 0; i < block->num_locals(); ++i)
+    for (int i = 0; i < fn->num_locals(); ++i)
       push(nullptr);
   }
 };
@@ -243,10 +243,10 @@ void VM::set_global(ClassObject* cls, const str_t& name) {
   globals_[symbol] = obj;
 }
 
-Value VM::interpret(BlockObject* block) {
+Value VM::interpret(FunctionObject* fn) {
   Fiber fiber;
   fiber.reset();
-  fiber.call_block(block, 0);
+  fiber.call_function(fn, 0);
 
   for (;;) {
     auto* frame = &fiber.peek_frame();
@@ -279,7 +279,7 @@ Value VM::interpret(BlockObject* block) {
         int constant = frame->get_code(frame->ip++);
         ClassObject* cls = fiber.peek_value()->as_class();
 
-        BlockObject* body = frame->get_constant(constant)->as_block();
+        FunctionObject* body = frame->get_constant(constant)->as_function();
         cls->set_method(symbol, MethodType::BLOCK, body);
       } break;
     case Code::LOAD_LOCAL:
@@ -327,10 +327,10 @@ Value VM::interpret(BlockObject* block) {
         case ObjType::NIL: cls = nil_class_; break;
         case ObjType::FALSE:
         case ObjType::TRUE: cls = bool_class_; break;
-        case ObjType::BLOCK: cls = block_class_; break;
         case ObjType::CLASS: cls = receiver->as_class()->meta_class(); break;
         case ObjType::NUMERIC: cls = num_class_; break;
         case ObjType::STRING: cls = str_class_; break;
+        case ObjType::FUNCTION: cls = fn_class_; break;
         case ObjType::INSTANCE: cls = receiver->as_instance()->cls(); break;
         }
 
@@ -356,7 +356,7 @@ Value VM::interpret(BlockObject* block) {
           } break;
           break;
         case MethodType::BLOCK:
-          fiber.call_block(method.block, fiber.stack_size() - argc);
+          fiber.call_function(method.fn, fiber.stack_size() - argc);
           break;
         }
       } break;
@@ -394,14 +394,14 @@ Value VM::interpret(BlockObject* block) {
 }
 
 void VM::interpret(const str_t& source_bytes) {
-  auto* block = compile(*this, source_bytes);
+  auto* fn = compile(*this, source_bytes);
 
-  if (block != nullptr)
-    interpret(block);
+  if (fn != nullptr)
+    interpret(fn);
 }
 
-void VM::call_block(Fiber& fiber, BlockObject* block, int argc) {
-  fiber.call_block(block, fiber.stack_size() - argc);
+void VM::call_function(Fiber& fiber, FunctionObject* fn, int argc) {
+  fiber.call_function(fn, fiber.stack_size() - argc);
 }
 
 }

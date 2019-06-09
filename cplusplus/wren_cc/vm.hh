@@ -38,7 +38,7 @@ enum class ObjType {
   FALSE,
   NUMERIC,
   STRING,
-  BLOCK,
+  FUNCTION,
   CLASS,
   INSTANCE,
 };
@@ -54,7 +54,7 @@ class NilObject;
 class BooleanObject;
 class NumericObject;
 class StringObject;
-class BlockObject;
+class FunctionObject;
 class ClassObject;
 class InstanceObject;
 
@@ -72,7 +72,7 @@ public:
   inline bool is_boolean(void) const { return type_ == ObjType::TRUE || type_ == ObjType::FALSE; }
   inline bool is_numeric(void) const { return type_ == ObjType::NUMERIC; }
   inline bool is_string(void) const { return type_ == ObjType::STRING; }
-  inline bool is_block(void) const { return type_ == ObjType::BLOCK; }
+  inline bool is_function(void) const { return type_ == ObjType::FUNCTION; }
   inline bool is_class(void) const { return type_ == ObjType::CLASS; }
   inline bool is_instance(void) const { return type_ == ObjType::INSTANCE; }
 
@@ -80,7 +80,7 @@ public:
   double as_numeric(void) const;
   StringObject* as_string(void) const;
   const char* as_cstring(void) const;
-  BlockObject* as_block(void) const;
+  FunctionObject* as_function(void) const;
   ClassObject* as_class(void) const;
   InstanceObject* as_instance(void) const;
 
@@ -138,12 +138,12 @@ public:
   static StringObject* make_string(const char* s);
 };
 
-class BlockObject final : public BaseObject {
+class FunctionObject final : public BaseObject {
   std::vector<u8_t> codes_;
   std::vector<Value> constants_;
   int num_locals_{};
 
-  BlockObject(void) noexcept : BaseObject(ObjType::BLOCK) {}
+  FunctionObject(void) noexcept : BaseObject(ObjType::FUNCTION) {}
 public:
   inline const u8_t* codes(void) const { return codes_.data(); }
   inline const Value* constants(void) const { return constants_.data(); }
@@ -170,7 +170,7 @@ public:
 
   virtual str_t stringify(void) const override;
 
-  static BlockObject* make_block(void);
+  static FunctionObject* make_function(void);
 };
 
 class VM;
@@ -187,7 +187,7 @@ struct Method {
   MethodType type{MethodType::NONE};
   union {
     PrimitiveFn primitive;
-    BlockObject* block;
+    FunctionObject* fn;
   };
 };
 
@@ -205,14 +205,14 @@ public:
   inline Method& get_method(int i) { return methods_[i]; }
   inline void set_method(int i, MethodType type) { methods_[i].type = type; }
   inline void set_method(int i, PrimitiveFn fn) { methods_[i].primitive = fn; }
-  inline void set_method(int i, BlockObject* b) { methods_[i].block = b; }
+  inline void set_method(int i, FunctionObject* fn) { methods_[i].fn = fn; }
   inline void set_method(int i, MethodType type, PrimitiveFn fn) {
     methods_[i].type = type;
     methods_[i].primitive = fn;
   }
-  inline void set_method(int i, MethodType type, BlockObject* block) {
+  inline void set_method(int i, MethodType type, FunctionObject* fn) {
     methods_[i].type = type;
-    methods_[i].block = block;
+    methods_[i].fn = fn;
   }
 
   virtual str_t stringify(void) const override;
@@ -293,7 +293,7 @@ class VM : private UnCopyable {
 
   SymbolTable symbols_;
 
-  ClassObject* block_class_{};
+  ClassObject* fn_class_{};
   ClassObject* bool_class_{};
   ClassObject* class_class_{};
   ClassObject* nil_class_{};
@@ -305,18 +305,18 @@ class VM : private UnCopyable {
   SymbolTable global_symbols_;
   std::vector<Value> globals_{kMaxGlobals};
 
-  Value interpret(BlockObject* block);
+  Value interpret(FunctionObject* fn);
 public:
   VM(void);
 
-  inline void set_block_cls(ClassObject* cls) { block_class_ = cls; }
+  inline void set_fn_cls(ClassObject* cls) { fn_class_ = cls; }
   inline void set_bool_cls(ClassObject* cls) { bool_class_ = cls; }
   inline void set_class_cls(ClassObject* cls) { class_class_ = cls; }
   inline void set_nil_cls(ClassObject* cls) { nil_class_ = cls; }
   inline void set_num_cls(ClassObject* cls) { num_class_ = cls; }
   inline void set_str_cls(ClassObject* cls) { str_class_ = cls; }
 
-  inline ClassObject* block_cls(void) const { return block_class_; }
+  inline ClassObject* fn_cls(void) const { return fn_class_; }
   inline ClassObject* bool_cls(void) const { return bool_class_; }
   inline ClassObject* class_cls(void) const { return class_class_; }
   inline ClassObject* nil_cls(void) const { return nil_class_; }
@@ -332,7 +332,7 @@ public:
   void set_global(ClassObject* cls, const str_t& name);
 
   void interpret(const str_t& source_bytes);
-  void call_block(Fiber& fiber, BlockObject* block, int argc);
+  void call_function(Fiber& fiber, FunctionObject* fn, int argc);
 };
 
 }
