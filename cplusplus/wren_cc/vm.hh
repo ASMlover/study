@@ -33,6 +33,7 @@
 namespace wrencc {
 
 enum class ObjType {
+  NIL,
   TRUE,
   FALSE,
   NUMERIC,
@@ -49,6 +50,7 @@ enum class ObjFlag {
 class BaseObject;
 using Value = BaseObject*;
 
+class NilObject;
 class BooleanObject;
 class NumericObject;
 class StringObject;
@@ -57,7 +59,7 @@ class ClassObject;
 class InstanceObject;
 
 class BaseObject : private UnCopyable {
-  ObjType type_{};
+  ObjType type_{ObjType::NIL};
   ObjFlag flag_{};
 public:
   BaseObject(ObjType type) noexcept : type_(type) {}
@@ -66,6 +68,7 @@ public:
   inline ObjType type(void) const { return type_; }
   inline ObjFlag flag(void) const { return flag_; }
 
+  inline bool is_nil(void) const { return type_ == ObjType::NIL; }
   inline bool is_boolean(void) const { return type_ == ObjType::TRUE || type_ == ObjType::FALSE; }
   inline bool is_numeric(void) const { return type_ == ObjType::NUMERIC; }
   inline bool is_string(void) const { return type_ == ObjType::STRING; }
@@ -85,6 +88,14 @@ public:
 };
 
 std::ostream& operator<<(std::ostream& out, Value val);
+
+class NilObject final : public BaseObject {
+  NilObject(void) noexcept : BaseObject(ObjType::NIL) {}
+public:
+  virtual str_t stringify(void) const override;
+
+  static NilObject* make_nil(void);
+};
 
 class BooleanObject final : public BaseObject {
   BooleanObject(bool b) noexcept
@@ -143,13 +154,18 @@ public:
   inline Value get_constant(int i) const { return constants_[i]; }
   inline void set_num_locals(int num_locals) { num_locals_ = num_locals; }
 
-  template <typename T> inline void add_code(T c) {
+  template <typename T> inline int add_code(T c) {
     codes_.push_back(Xt::as_type<u8_t>(c));
+    return Xt::as_type<int>(codes_.size()) - 1;
   }
 
-  inline u8_t add_constant(Value v) {
+  template <typename T> inline void set_code(int i, T c) {
+    codes_[i] = Xt::as_type<u8_t>(c);
+  }
+
+  inline int add_constant(Value v) {
     constants_.push_back(v);
-    return Xt::as_type<int>(constants_.size() - 1);
+    return Xt::as_type<int>(constants_.size()) - 1;
   }
 
   virtual str_t stringify(void) const override;
@@ -219,6 +235,7 @@ public:
 
 enum class Code : u8_t {
   CONSTANT, // load the constant at index [arg]
+  NIL, // push `nil` into the stack
   FALSE, // push `false` into the stack
   TRUE, // push `true` into the stack
   CLASS, // define a new empty class and push it into stack
@@ -244,6 +261,9 @@ enum class Code : u8_t {
   CALL_8,
   CALL_9,
   CALL_10,
+
+  JUMP, // jump the instruction pointer [arg1] forward
+  JUMP_IF, // pop and if not truthy then jump the instruction pointer [arg1] forward
 
   END,
 };
@@ -276,6 +296,7 @@ class VM : private UnCopyable {
   ClassObject* block_class_{};
   ClassObject* bool_class_{};
   ClassObject* class_class_{};
+  ClassObject* nil_class_{};
   ClassObject* num_class_{};
   ClassObject* str_class_{};
 
@@ -291,12 +312,14 @@ public:
   inline void set_block_cls(ClassObject* cls) { block_class_ = cls; }
   inline void set_bool_cls(ClassObject* cls) { bool_class_ = cls; }
   inline void set_class_cls(ClassObject* cls) { class_class_ = cls; }
+  inline void set_nil_cls(ClassObject* cls) { nil_class_ = cls; }
   inline void set_num_cls(ClassObject* cls) { num_class_ = cls; }
   inline void set_str_cls(ClassObject* cls) { str_class_ = cls; }
 
   inline ClassObject* block_cls(void) const { return block_class_; }
   inline ClassObject* bool_cls(void) const { return bool_class_; }
   inline ClassObject* class_cls(void) const { return class_class_; }
+  inline ClassObject* nil_cls(void) const { return nil_class_; }
   inline ClassObject* num_cls(void) const { return num_class_; }
   inline ClassObject* str_cls(void) const { return str_class_; }
 

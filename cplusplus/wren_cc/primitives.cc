@@ -231,6 +231,7 @@ void register_primitives(VM& vm) {
   vm.set_primitive(vm.bool_cls(), "!= ", _primitive_bool_ne);
 
   vm.set_class_cls(ClassObject::make_class());
+  vm.set_nil_cls(ClassObject::make_class());
 
   vm.set_num_cls(ClassObject::make_class());
   vm.set_primitive(vm.num_cls(), "abs", _primitive_numeric_abs);

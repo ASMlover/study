@@ -114,6 +114,8 @@ public:
       case TokenKind::TK_EQEQ:
       case TokenKind::TK_BANGEQ:
       case TokenKind::KW_CLASS:
+      case TokenKind::KW_ELSE:
+      case TokenKind::KW_IF:
       case TokenKind::KW_META:
       case TokenKind::KW_VAR:
         skip_newlines_ = true; return;
@@ -150,8 +152,8 @@ class Compiler : private UnCopyable {
     return vm_symbols().ensure(parser_.prev().as_string());
   }
 
-  template <typename T> inline void emit_byte(T b) {
-    block_->add_code(b);
+  template <typename T> inline int emit_byte(T b) {
+    return block_->add_code(b);
   }
 
   template <typename T, typename U> inline void emit_bytes(T b1, U b2) {
@@ -201,7 +203,9 @@ class Compiler : private UnCopyable {
       {nullptr, infix_oper_fn, Precedence::EQUALITY, "!= "}, // PUNCTUATOR(BANGEQ, "!=")
 
       {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(CLASS, "class")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(ELSE, "else")
       {boolean_fn, nullptr, Precedence::NONE, nullptr}, // KEYWORD(FALSE, "false")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(IF, "if")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(META, "meta")
       {boolean_fn, nullptr, Precedence::NONE, nullptr}, // KEYWORD(TRUE, "true")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(VAR, "var")
@@ -365,7 +369,39 @@ class Compiler : private UnCopyable {
   }
 
   void expression(void) {
-    parse_precedence(Precedence::LOWEST);
+    if (match(TokenKind::KW_IF)) {
+      // compile the condition
+      consume(TokenKind::TK_LPAREN);
+      expression();
+      consume(TokenKind::TK_RPAREN);
+
+      // compile the then block
+      emit_byte(Code::JUMP_IF);
+      // emit a placeholder, we'll patch it when we known what to jump to
+      int if_jump = emit_byte(0xff);
+
+      expression();
+      // jump over the else branch when the if branch is taken
+      emit_byte(Code::JUMP);
+      // emit a placeholder, we'll patch it when we known what to jump to
+      int else_jump = emit_byte(0xff);
+
+      // patch the if jump
+      block_->set_code(if_jump, block_->codes_count() - if_jump - 1);
+
+      // compile the else branch if there is one
+      if (match(TokenKind::KW_ELSE))
+        expression();
+      else
+        emit_byte(Code::NIL);
+
+      // patch the jump over the else
+      block_->set_code(else_jump, block_->codes_count() - else_jump - 1);
+
+      return;
+    }
+
+    return parse_precedence(Precedence::LOWEST);
   }
 
   void grouping(void) {

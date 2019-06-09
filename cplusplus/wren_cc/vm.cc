@@ -64,6 +64,14 @@ InstanceObject* BaseObject::as_instance(void) const {
   return Xt::down<InstanceObject>(const_cast<BaseObject*>(this));
 }
 
+str_t NilObject::stringify(void) const {
+  return "nil";
+}
+
+NilObject* NilObject::make_nil(void) {
+  return new NilObject();
+}
+
 str_t BooleanObject::stringify(void) const {
   return type() == ObjType::TRUE ? "true" : "false";
 }
@@ -249,6 +257,8 @@ Value VM::interpret(BlockObject* block) {
         Value v = frame->get_constant(frame->get_code(frame->ip++));
         fiber.push(v);
       } break;
+    case Code::NIL:
+      fiber.push(NilObject::make_nil()); break;
     case Code::FALSE:
       fiber.push(BooleanObject::make_boolean(false)); break;
     case Code::TRUE:
@@ -314,6 +324,7 @@ Value VM::interpret(BlockObject* block) {
 
         ClassObject* cls{};
         switch (receiver->type()) {
+        case ObjType::NIL: cls = nil_class_; break;
         case ObjType::FALSE:
         case ObjType::TRUE: cls = bool_class_; break;
         case ObjType::BLOCK: cls = block_class_; break;
@@ -348,6 +359,19 @@ Value VM::interpret(BlockObject* block) {
           fiber.call_block(method.block, fiber.stack_size() - argc);
           break;
         }
+      } break;
+    case Code::JUMP:
+      {
+        int offset = frame->get_code(frame->ip++);
+        frame->ip += offset;
+      } break;
+    case Code::JUMP_IF:
+      {
+        int offset = frame->get_code(frame->ip++);
+        Value cond = fiber.pop();
+
+        if (!cond->as_boolean())
+          frame->ip += offset;
       } break;
     case Code::END:
       {
