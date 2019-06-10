@@ -155,7 +155,7 @@ class GlobalParser final : private UnCopyable {
       std::cerr << "at `" << tok.literal() << "`";
     std::cerr << ", " << msg << std::endl;
 
-    panic_mode_ = false;
+    had_error_ = true;
   }
 
   void advance(void) {
