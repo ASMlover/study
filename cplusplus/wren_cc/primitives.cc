@@ -238,7 +238,7 @@ DEF_PRIMITIVE(io_write) {
 
 static constexpr const char* kCoreLib =
 "class Nil {}\n"
-"class Boolean {}\n"
+"class Bool {}\n"
 "class Numeric {}\n"
 "class String {}\n"
 "class Function {}\n"
@@ -249,7 +249,7 @@ static constexpr const char* kCoreLib =
 void load_core(VM& vm) {
   vm.interpret(kCoreLib);
 
-  vm.set_bool_cls(vm.get_global("Boolean")->as_class());
+  vm.set_bool_cls(vm.get_global("Bool")->as_class());
   vm.set_primitive(vm.bool_cls(), "toString", _primitive_bool_tostring);
   vm.set_primitive(vm.bool_cls(), "== ", _primitive_bool_eq);
   vm.set_primitive(vm.bool_cls(), "!= ", _primitive_bool_ne);
