@@ -41,6 +41,7 @@ enum class Precedence {
   NONE,
   LOWEST,
 
+  IS,         // is
   EQUALITY,   // == !=
   COMPARISON, // < <= > >=
   BITWISE,    // | &
@@ -116,6 +117,7 @@ public:
       case TokenKind::KW_CLASS:
       case TokenKind::KW_ELSE:
       case TokenKind::KW_IF:
+      case TokenKind::KW_IS:
       case TokenKind::KW_META:
       case TokenKind::KW_VAR:
         skip_newlines_ = true; return;
@@ -176,6 +178,7 @@ class Compiler : private UnCopyable {
     auto string_fn = [](Compiler* c) { c->string(); };
     auto boolean_fn = [](Compiler* c) { c->boolean(); };
     auto nil_fn = [](Compiler* c) { c->nil(); };
+    auto is_fn = [](Compiler* c) { c->is(); };
 
     static const ParseRule _rules[] = {
       {grouping_fn, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LPAREN, "(")
@@ -208,6 +211,7 @@ class Compiler : private UnCopyable {
       {boolean_fn, nullptr, Precedence::NONE, nullptr}, // KEYWORD(FALSE, "false")
       {function_fn, nullptr, Precedence::NONE, nullptr}, // KEYWORD(FN, "fn")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(IF, "if")
+      {nullptr, is_fn, Precedence::IS, nullptr}, // KEYWORD(IS, "is")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(META, "meta")
       {nil_fn, nullptr, Precedence::NONE, nullptr}, // KEYWORD(NIL, "nil")
       {boolean_fn, nullptr, Precedence::NONE, nullptr}, // KEYWORD(TRUE, "true")
@@ -476,6 +480,12 @@ class Compiler : private UnCopyable {
 
     // compile the method call
     emit_bytes(Code::CALL_0 + argc, symbol);
+  }
+
+  void is(void) {
+    // compile the right-hand side
+    parse_precedence(Precedence::CALL);
+    emit_byte(Code::IS);
   }
 
   void infix_oper(void) {
