@@ -168,7 +168,7 @@ class Compiler : private UnCopyable {
 
   const ParseRule& get_rule(TokenKind kind) const {
     auto grouping_fn = [](Compiler* c) { c->grouping(); };
-    auto block_fn = [](Compiler* c) { c->block(); };
+    auto function_fn = [](Compiler* c) { c->function(); };
     auto call_fn = [](Compiler* c) { c->call(); };
     auto infix_oper_fn = [](Compiler* c) { c->infix_oper(); };
     auto variable_fn = [](Compiler* c) { c->variable(); };
@@ -182,7 +182,7 @@ class Compiler : private UnCopyable {
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(RPAREN, ")")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LBRACKET, "[")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(RBRACKET, "]")
-      {block_fn, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LBRACE, "{")
+      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LBRACE, "{")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(RBRACE, "}")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(COLON, ":")
       {nullptr, call_fn, Precedence::CALL, nullptr}, // PUNCTUATOR(DOT, ".")
@@ -206,6 +206,7 @@ class Compiler : private UnCopyable {
       {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(CLASS, "class")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(ELSE, "else")
       {boolean_fn, nullptr, Precedence::NONE, nullptr}, // KEYWORD(FALSE, "false")
+      {function_fn, nullptr, Precedence::NONE, nullptr}, // KEYWORD(FN, "fn")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(IF, "if")
       {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(META, "meta")
       {nil_fn, nullptr, Precedence::NONE, nullptr}, // KEYWORD(NIL, "nil")
@@ -417,9 +418,30 @@ class Compiler : private UnCopyable {
     consume(TokenKind::TK_RPAREN);
   }
 
-  void block(void) {
-    FunctionObject* fn = compile_function(parser_, this, TokenKind::TK_RBRACE);
-    u8_t constant = fn_->add_constant(fn);
+  void function(void) {
+    Compiler fn_compiler(parser_, this);
+
+    if (fn_compiler.match(TokenKind::TK_LBRACE)) {
+      for (;;) {
+        fn_compiler.statement();
+
+        if (!fn_compiler.match(TokenKind::TK_NL)) {
+          fn_compiler.consume(TokenKind::TK_RBRACE);
+          break;
+        }
+        if (fn_compiler.match(TokenKind::TK_RBRACE))
+          break;
+        fn_compiler.emit_byte(Code::POP);
+      }
+    }
+    else {
+      fn_compiler.expression();
+    }
+    fn_compiler.emit_byte(Code::END);
+    fn_compiler.fn_->set_num_locals(fn_compiler.locals_.count());
+
+    // add the function to the constant table
+    u8_t constant = fn_->add_constant(fn_compiler.fn_);
 
     emit_bytes(Code::CONSTANT, constant);
   }

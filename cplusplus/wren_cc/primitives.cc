@@ -216,6 +216,20 @@ DEF_PRIMITIVE(string_ne) {
   return BooleanObject::make_boolean(r);
 }
 
+DEF_PRIMITIVE(fn_eq) {
+  if (!args[1]->is_function())
+    return BooleanObject::make_boolean(false);
+
+  return BooleanObject::make_boolean(args[0] == args[1]);
+}
+
+DEF_PRIMITIVE(fn_ne) {
+  if (!args[1]->is_function())
+    return BooleanObject::make_boolean(true);
+
+  return BooleanObject::make_boolean(args[0] != args[1]);
+}
+
 DEF_PRIMITIVE(io_write) {
   std::cout << args[1] << std::endl;
   return args[1];
@@ -231,6 +245,8 @@ void register_primitives(VM& vm) {
 
   vm.set_fn_cls(ClassObject::make_class());
   vm.set_primitive(vm.fn_cls(), "call", _primitive_fn_call);
+  vm.set_primitive(vm.fn_cls(), "== ", _primitive_fn_eq);
+  vm.set_primitive(vm.fn_cls(), "!= ", _primitive_fn_ne);
 
   vm.set_nil_cls(ClassObject::make_class());
 
