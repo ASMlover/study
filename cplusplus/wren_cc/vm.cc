@@ -222,14 +222,13 @@ public:
 
 /// VM IMPLEMENTATIONS
 
-static Value _primitive_metaclass_new(
-    VM& vm, Fiber& fiber, int argc, Value* args) {
+static Value _primitive_metaclass_new(VM& vm, Fiber& fiber, Value* args) {
   ClassObject* cls = args[0]->as_class();
   return InstanceObject::make_instance(cls);
 }
 
 VM::VM(void) {
-  register_primitives(*this);
+  load_core(*this);
 }
 
 void VM::set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn) {
@@ -241,6 +240,25 @@ void VM::set_global(ClassObject* cls, const str_t& name) {
   InstanceObject* obj = InstanceObject::make_instance(cls);
   int symbol = global_symbols_.add(name);
   globals_[symbol] = obj;
+}
+
+Value VM::get_global(const str_t& name) const {
+  int symbol = global_symbols_.get(name);
+  return globals_[symbol];
+}
+
+ClassObject* VM::get_class(Value obj) const {
+  switch (obj->type()) {
+  case ObjType::NIL: return nil_class_;
+  case ObjType::FALSE:
+  case ObjType::TRUE: return bool_class_;
+  case ObjType::NUMERIC: return num_class_;
+  case ObjType::STRING: return str_class_;
+  case ObjType::FUNCTION: return fn_class_;
+  case ObjType::CLASS: return obj->as_class()->meta_class();
+  case ObjType::INSTANCE: return obj->as_instance()->cls();
+  }
+  return nullptr;
 }
 
 Value VM::interpret(FunctionObject* fn) {
@@ -322,18 +340,7 @@ Value VM::interpret(FunctionObject* fn) {
         int symbol = frame->get_code(frame->ip++);
         Value receiver = fiber.get_value(fiber.stack_size() - argc);
 
-        ClassObject* cls{};
-        switch (receiver->type()) {
-        case ObjType::NIL: cls = nil_class_; break;
-        case ObjType::FALSE:
-        case ObjType::TRUE: cls = bool_class_; break;
-        case ObjType::CLASS: cls = receiver->as_class()->meta_class(); break;
-        case ObjType::NUMERIC: cls = num_class_; break;
-        case ObjType::STRING: cls = str_class_; break;
-        case ObjType::FUNCTION: cls = fn_class_; break;
-        case ObjType::INSTANCE: cls = receiver->as_instance()->cls(); break;
-        }
-
+        ClassObject* cls = get_class(receiver);
         auto& method = cls->get_method(symbol);
         switch (method.type) {
         case MethodType::NONE:
@@ -346,7 +353,7 @@ Value VM::interpret(FunctionObject* fn) {
           {
             Value* args = fiber.values_at(fiber.stack_size() - argc);
             // argc +1 to include the receiver since that's in the args array
-            Value result = method.primitive(*this, fiber, argc, args);
+            Value result = method.primitive(*this, fiber, args);
 
             // if the primitive pushed a call frame, it returns nullptr
             if (result != nullptr) {
@@ -372,6 +379,14 @@ Value VM::interpret(FunctionObject* fn) {
 
         if (!cond->as_boolean())
           frame->ip += offset;
+      } break;
+    case Code::IS:
+      {
+        Value cls = fiber.pop();
+        Value obj = fiber.pop();
+
+        ClassObject* actual = get_class(obj);
+        fiber.push(BooleanObject::make_boolean(actual == cls->as_class()));
       } break;
     case Code::END:
       {

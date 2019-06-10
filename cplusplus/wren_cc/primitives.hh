@@ -30,6 +30,6 @@ namespace wrencc {
 
 class VM;
 
-void register_primitives(VM& vm);
+void load_core(VM& vm);
 
 }

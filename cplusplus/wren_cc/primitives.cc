@@ -27,12 +27,13 @@
 #include <iostream>
 #include <sstream>
 #include "vm.hh"
+#include "compiler.hh"
 #include "primitives.hh"
 
 namespace wrencc {
 
 #define DEF_PRIMITIVE(fn)\
-static Value _primitive_##fn(VM& vm, Fiber& fiber, int argc, Value* args)
+static Value _primitive_##fn(VM& vm, Fiber& fiber, Value* args)
 
 DEF_PRIMITIVE(fn_call) {
   vm.call_function(fiber, args[0]->as_function(), 1);
@@ -235,22 +236,34 @@ DEF_PRIMITIVE(io_write) {
   return args[1];
 }
 
-void register_primitives(VM& vm) {
-  vm.set_bool_cls(ClassObject::make_class());
+static constexpr const char* kCoreLib =
+"class Nil {}\n"
+"class Boolean {}\n"
+"class Numeric {}\n"
+"class String {}\n"
+"class Function {}\n"
+"class Class {}\n"
+"class IO {}\n"
+"var io = IO.new\n";
+
+void load_core(VM& vm) {
+  vm.interpret(kCoreLib);
+
+  vm.set_bool_cls(vm.get_global("Boolean")->as_class());
   vm.set_primitive(vm.bool_cls(), "toString", _primitive_bool_tostring);
   vm.set_primitive(vm.bool_cls(), "== ", _primitive_bool_eq);
   vm.set_primitive(vm.bool_cls(), "!= ", _primitive_bool_ne);
 
-  vm.set_class_cls(ClassObject::make_class());
+  vm.set_class_cls(vm.get_global("Class")->as_class());
 
-  vm.set_fn_cls(ClassObject::make_class());
+  vm.set_fn_cls(vm.get_global("Function")->as_class());
   vm.set_primitive(vm.fn_cls(), "call", _primitive_fn_call);
   vm.set_primitive(vm.fn_cls(), "== ", _primitive_fn_eq);
   vm.set_primitive(vm.fn_cls(), "!= ", _primitive_fn_ne);
 
-  vm.set_nil_cls(ClassObject::make_class());
+  vm.set_nil_cls(vm.get_global("Nil")->as_class());
 
-  vm.set_num_cls(ClassObject::make_class());
+  vm.set_num_cls(vm.get_global("Numeric")->as_class());
   vm.set_primitive(vm.num_cls(), "abs", _primitive_numeric_abs);
   vm.set_primitive(vm.num_cls(), "toString", _primitive_numeric_tostring);
   vm.set_primitive(vm.num_cls(), "+ ", _primitive_numeric_add);
@@ -264,7 +277,7 @@ void register_primitives(VM& vm) {
   vm.set_primitive(vm.num_cls(), "== ", _primitive_numeric_eq);
   vm.set_primitive(vm.num_cls(), "!= ", _primitive_numeric_ne);
 
-  vm.set_str_cls(ClassObject::make_class());
+  vm.set_str_cls(vm.get_global("String")->as_class());
   vm.set_primitive(vm.str_cls(), "len", _primitive_string_len);
   vm.set_primitive(vm.str_cls(), "contains ", _primitive_string_contains);
   vm.set_primitive(vm.str_cls(), "toString", _primitive_string_tostring);
@@ -272,9 +285,8 @@ void register_primitives(VM& vm) {
   vm.set_primitive(vm.str_cls(), "== ", _primitive_string_eq);
   vm.set_primitive(vm.str_cls(), "!= ", _primitive_string_ne);
 
-  ClassObject* io_cls = ClassObject::make_class();
+  ClassObject* io_cls = vm.get_global("IO")->as_class();
   vm.set_primitive(io_cls, "write ", _primitive_io_write);
-  vm.set_global(io_cls, "io");
 
   ClassObject* unsupported_cls = ClassObject::make_class();
   vm.set_unsupported(InstanceObject::make_instance(unsupported_cls));

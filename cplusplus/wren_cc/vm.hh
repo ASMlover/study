@@ -175,7 +175,7 @@ public:
 
 class VM;
 class Fiber;
-using PrimitiveFn = Value (*)(VM& vm, Fiber& fiber, int argc, Value* args);
+using PrimitiveFn = Value (*)(VM& vm, Fiber& fiber, Value* args);
 
 enum class MethodType {
   NONE,
@@ -265,6 +265,8 @@ enum class Code : u8_t {
   JUMP, // jump the instruction pointer [arg1] forward
   JUMP_IF, // pop and if not truthy then jump the instruction pointer [arg1] forward
 
+  IS, // pop [a] then [b] and push true if [b] is an instance of [a]
+
   END,
 };
 
@@ -306,6 +308,8 @@ class VM : private UnCopyable {
   std::vector<Value> globals_{kMaxGlobals};
 
   Value interpret(FunctionObject* fn);
+
+  ClassObject* get_class(Value obj) const;
 public:
   VM(void);
 
@@ -330,6 +334,7 @@ public:
   inline SymbolTable& gsymbols(void) { return global_symbols_; }
   void set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn);
   void set_global(ClassObject* cls, const str_t& name);
+  Value get_global(const str_t& name) const;
 
   void interpret(const str_t& source_bytes);
   void call_function(Fiber& fiber, FunctionObject* fn, int argc);
