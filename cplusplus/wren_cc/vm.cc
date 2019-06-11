@@ -214,9 +214,6 @@ public:
 
   void call_function(FunctionObject* fn, int argc = 0) {
     frames_.push_back(CallFrame(0, fn, stack_size() - argc));
-
-    // for (int i = argc; i < fn->num_locals(); ++i)
-    //   push(nullptr);
   }
 };
 

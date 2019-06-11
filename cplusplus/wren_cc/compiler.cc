@@ -265,10 +265,29 @@ class Compiler : private UnCopyable {
   }
 
   void define_variable(int symbol) {
+    // if it's a global variable, we need to explicitly store it, if it's a
+    // local variable, the value is already on the stack in the right slot
     if (parent_ == nullptr) {
+      // it's a global variable, so store the value int the global slot
       emit_bytes(Code::STORE_GLOBAL, symbol);
     }
     else {
+      // it's a local variable, the value is already in the right slot to store
+      // the local, but later code will pop and discard that. to cancel that out
+      // duplicate it now, so that the temporary value will be discarded and
+      // leave the local still on the stack.
+      //
+      //    var a = "value"
+      //    io.write(a)
+      //
+      //    CONSTANT "value"    -> put constant into local slot
+      //    DUP                 -> dup it so the top is a temporary
+      //    POP                 -> discard previous result in sequence
+      //    <code for io.write>
+      //
+      // would be good to either peephole optimize this or be smarted about
+      // generating code for defining local variables to not emit the DUP
+      // sometimes
       emit_byte(Code::DUP);
     }
   }
