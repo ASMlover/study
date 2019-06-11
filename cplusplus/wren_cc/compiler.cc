@@ -135,7 +135,7 @@ class Compiler : private UnCopyable {
 
   SymbolTable locals_;
 
-  inline SymbolTable& vm_symbols(void) { return parser_.get_vm().symbols(); }
+  inline SymbolTable& vm_methods(void) { return parser_.get_vm().methods(); }
   inline SymbolTable& vm_gsymbols(void) { return parser_.get_vm().gsymbols(); }
 
   void error(const char* format, ...) {
@@ -151,7 +151,7 @@ class Compiler : private UnCopyable {
   }
 
   int intern_symbol(void) {
-    return vm_symbols().ensure(parser_.prev().as_string());
+    return vm_methods().ensure(parser_.prev().as_string());
   }
 
   template <typename T> inline int emit_byte(T b) {
@@ -249,7 +249,7 @@ class Compiler : private UnCopyable {
     }
   }
 
-  int define_identifier(void) {
+  int declare_variable(void) {
     consume(TokenKind::TK_IDENTIFIER);
 
     int symbol;
@@ -264,9 +264,13 @@ class Compiler : private UnCopyable {
     return symbol;
   }
 
-  void store_variable(int symbol) {
-    emit_byte(parent_ != nullptr ? Code::STORE_LOCAL : Code::STORE_GLOBAL);
-    emit_byte(symbol);
+  void define_variable(int symbol) {
+    if (parent_ == nullptr) {
+      emit_bytes(Code::STORE_GLOBAL, symbol);
+    }
+    else {
+      emit_byte(Code::DUP);
+    }
   }
 
   void nil(void) {
@@ -334,39 +338,25 @@ class Compiler : private UnCopyable {
 
   void statement(void) {
     if (match(TokenKind::KW_CLASS)) {
-      int symbol = define_identifier();
+      int symbol = declare_variable();
 
       // create the empty class
       emit_byte(Code::CLASS);
 
       // store it in it's name
-      store_variable(symbol);
+      define_variable(symbol);
 
       // compile the method definitions
       consume(TokenKind::TK_LBRACE);
       while (!match(TokenKind::TK_RBRACE)) {
-        // method name
-        consume(TokenKind::TK_IDENTIFIER);
-        int symbol = intern_symbol();
-        consume(TokenKind::TK_LBRACE);
-        FunctionObject* method =
-          compile_function(parser_, this, TokenKind::TK_RBRACE);
-
+        method();
         consume(TokenKind::TK_NL);
-
-        // add the block to the constant table
-        u8_t constant = fn_->add_constant(method);
-
-        // compile the code to define the method
-        emit_byte(Code::METHOD);
-        emit_byte(symbol);
-        emit_byte(constant);
       }
       return;
     }
 
     if (match(TokenKind::KW_VAR)) {
-      int symbol = define_identifier();
+      int symbol = declare_variable();
 
       // allow uninitialized vars
       consume(TokenKind::TK_EQ);
@@ -374,7 +364,7 @@ class Compiler : private UnCopyable {
       // compile the initializer
       expression();
 
-      store_variable(symbol);
+      define_variable(symbol);
       return;
     }
 
@@ -450,6 +440,75 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::CONSTANT, constant);
   }
 
+  void method(void) {
+    // compiles a method definition inside a class body
+    consume(TokenKind::TK_IDENTIFIER);
+
+    Compiler method_compiler(parser_, this);
+
+    // define a fake local slot for the receiver so that later locals have the
+    // correct slot indices
+    method_compiler.locals_.add("(this)");
+
+    // build the method name, the mangled name includes all of the name parts
+    // in a mixfix call as well as spaces for every argument.
+    // so a method like:
+    //    foo.bar(a, b) else (c) last
+    //
+    // will have name: "bar  else last"
+    str_t name;
+    for (;;) {
+      name += parser_.prev().as_string();
+
+      if (!match(TokenKind::TK_LPAREN))
+        break;
+      for (;;) {
+        // define a local variable in the method for the parameter
+        method_compiler.declare_variable();
+
+        // add a space in the name for each argument, lets us overload
+        // by arity
+        name.push_back(' ');
+        if (!match(TokenKind::TK_COMMA))
+          break;
+      }
+      consume(TokenKind::TK_RPAREN);
+
+      // if there isn't another part name after the argument list, stop
+      if (!match(TokenKind::TK_IDENTIFIER))
+        break;
+    }
+
+    int symbol = vm_methods().ensure(name);
+
+    consume(TokenKind::TK_LBRACE);
+    // block body
+    for (;;) {
+      method_compiler.statement();
+
+      // if there is no newline, is must be the end of the block on the same line
+      if (!method_compiler.match(TokenKind::TK_NL)) {
+        method_compiler.consume(TokenKind::TK_RBRACE);
+        break;
+      }
+
+      if (method_compiler.match(TokenKind::TK_RBRACE))
+        break;
+
+      // discard the result of the previous expression
+      method_compiler.emit_byte(Code::POP);
+    }
+    method_compiler.emit_byte(Code::END);
+    method_compiler.fn_->set_num_locals(method_compiler.locals_.count());
+
+    // add the block into the constant table
+    int constant = fn_->add_constant(method_compiler.fn_);
+    // compile the code to define the method it
+    emit_byte(Code::METHOD);
+    emit_byte(symbol);
+    emit_byte(constant);
+  }
+
   void call(void) {
     str_t name;
     int argc = 0;
@@ -476,7 +535,7 @@ class Compiler : private UnCopyable {
         break;
       }
     }
-    int symbol = vm_symbols().ensure(name);
+    int symbol = vm_methods().ensure(name);
 
     // compile the method call
     emit_bytes(Code::CALL_0 + argc, symbol);
@@ -495,7 +554,7 @@ class Compiler : private UnCopyable {
     parse_precedence(rule.precedence + 1);
 
     // call the operator method on the left-hand side
-    int symbol = vm_symbols().ensure(rule.name);
+    int symbol = vm_methods().ensure(rule.name);
     emit_bytes(Code::CALL_1, symbol);
   }
 public:

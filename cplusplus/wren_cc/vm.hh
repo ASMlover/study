@@ -293,7 +293,7 @@ public:
 class VM : private UnCopyable {
   static constexpr sz_t kMaxGlobals = 256;
 
-  SymbolTable symbols_;
+  SymbolTable methods_;
 
   ClassObject* fn_class_{};
   ClassObject* bool_class_{};
@@ -330,7 +330,7 @@ public:
   inline void set_unsupported(Value unsupported) { unsupported_ = unsupported; }
   inline Value unsupported(void) const { return unsupported_; }
 
-  inline SymbolTable& symbols(void) { return symbols_; }
+  inline SymbolTable& methods(void) { return methods_; }
   inline SymbolTable& gsymbols(void) { return global_symbols_; }
   void set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn);
   void set_global(ClassObject* cls, const str_t& name);

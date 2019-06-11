@@ -169,10 +169,10 @@ void SymbolTable::clear(void) {
 struct CallFrame {
   int ip{};
   FunctionObject* fn{};
-  int locals{};
+  int stack_start{};
 
-  CallFrame(int ip_arg, FunctionObject* fn_arg, int locals_arg) noexcept
-    : ip(ip_arg), fn(fn_arg), locals(locals_arg) {
+  CallFrame(int ip_arg, FunctionObject* fn_arg, int stack_start_arg) noexcept
+    : ip(ip_arg), fn(fn_arg), stack_start(stack_start_arg) {
   }
 
   inline u8_t get_code(int i) const { return fn->get_code(i); }
@@ -212,11 +212,11 @@ public:
     return v;
   }
 
-  void call_function(FunctionObject* fn, int beglocal = 0) {
-    frames_.push_back(CallFrame(0, fn, beglocal));
+  void call_function(FunctionObject* fn, int argc = 0) {
+    frames_.push_back(CallFrame(0, fn, stack_size() - argc));
 
-    for (int i = 0; i < fn->num_locals(); ++i)
-      push(nullptr);
+    // for (int i = argc; i < fn->num_locals(); ++i)
+    //   push(nullptr);
   }
 };
 
@@ -232,7 +232,7 @@ VM::VM(void) {
 }
 
 void VM::set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn) {
-  int symbol = symbols_.ensure(name);
+  int symbol = methods_.ensure(name);
   cls->set_method(symbol, MethodType::PRIMITIVE, fn);
 }
 
@@ -286,7 +286,7 @@ Value VM::interpret(FunctionObject* fn) {
         ClassObject* cls = ClassObject::make_class();
 
         // define `new` method on the metaclass.
-        int new_symbol = symbols_.ensure("new");
+        int new_symbol = methods_.ensure("new");
         cls->meta_class()->set_method(
             new_symbol, MethodType::PRIMITIVE, _primitive_metaclass_new);
         fiber.push(cls);
@@ -303,12 +303,12 @@ Value VM::interpret(FunctionObject* fn) {
     case Code::LOAD_LOCAL:
       {
         int local = frame->get_code(frame->ip++);
-        fiber.push(fiber.get_value(frame->locals + local));
+        fiber.push(fiber.get_value(frame->stack_start + local));
       } break;
     case Code::STORE_LOCAL:
       {
         int local = frame->get_code(frame->ip++);
-        fiber.set_value(frame->locals + local, fiber.peek_value());
+        fiber.set_value(frame->stack_start + local, fiber.peek_value());
       } break;
     case Code::LOAD_GLOBAL:
       {
@@ -336,7 +336,8 @@ Value VM::interpret(FunctionObject* fn) {
     case Code::CALL_9:
     case Code::CALL_10:
       {
-        int argc = c - Code::CALL_0 + 1;
+        int argc =
+          Xt::as_type<Code>(frame->get_code(frame->ip - 1)) - Code::CALL_0 + 1;
         int symbol = frame->get_code(frame->ip++);
         Value receiver = fiber.get_value(fiber.stack_size() - argc);
 
@@ -346,7 +347,7 @@ Value VM::interpret(FunctionObject* fn) {
         case MethodType::NONE:
           std::cerr
             << "receiver: `" << receiver << "` "
-            << "does not implement method `" << symbols_.get_name(symbol) << "`"
+            << "does not implement method `" << methods_.get_name(symbol) << "`"
             << std::endl;
           std::exit(-1); break;
         case MethodType::PRIMITIVE:
@@ -363,7 +364,7 @@ Value VM::interpret(FunctionObject* fn) {
           } break;
           break;
         case MethodType::BLOCK:
-          fiber.call_function(method.fn, fiber.stack_size() - argc);
+          fiber.call_function(method.fn, argc);
           break;
         }
       } break;
@@ -396,12 +397,12 @@ Value VM::interpret(FunctionObject* fn) {
         if (fiber.empty_frame())
           return r;
 
-        if (fiber.stack_size() <= frame->locals)
+        if (fiber.stack_size() <= frame->stack_start)
           fiber.push(r);
         else
-          fiber.set_value(frame->locals, r);
+          fiber.set_value(frame->stack_start, r);
 
-        fiber.resize_stack(frame->locals + 1);
+        fiber.resize_stack(frame->stack_start + 1);
       } break;
     }
   }
@@ -416,7 +417,7 @@ void VM::interpret(const str_t& source_bytes) {
 }
 
 void VM::call_function(Fiber& fiber, FunctionObject* fn, int argc) {
-  fiber.call_function(fn, fiber.stack_size() - argc);
+  fiber.call_function(fn, argc);
 }
 
 }
