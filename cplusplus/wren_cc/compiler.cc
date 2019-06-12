@@ -132,8 +132,8 @@ class Compiler : private UnCopyable {
   Compiler* parent_{};
   FunctionObject* fn_{};
   int num_codes_{};
-
   SymbolTable locals_;
+  bool is_method_{};
 
   inline SymbolTable& vm_methods(void) { return parser_.get_vm().methods(); }
   inline SymbolTable& vm_gsymbols(void) { return parser_.get_vm().gsymbols(); }
@@ -179,52 +179,54 @@ class Compiler : private UnCopyable {
     auto boolean_fn = [](Compiler* c) { c->boolean(); };
     auto nil_fn = [](Compiler* c) { c->nil(); };
     auto is_fn = [](Compiler* c) { c->is(); };
+    auto this_fn = [](Compiler* c) { c->this_exp(); };
 
     static const ParseRule _rules[] = {
-      {grouping_fn, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LPAREN, "(")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(RPAREN, ")")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LBRACKET, "[")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(RBRACKET, "]")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(LBRACE, "{")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(RBRACE, "}")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(COLON, ":")
-      {nullptr, call_fn, Precedence::CALL, nullptr}, // PUNCTUATOR(DOT, ".")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(COMMA, ",")
-      {nullptr, infix_oper_fn, Precedence::FACTOR, "* "}, // PUNCTUATOR(STAR, "*")
-      {nullptr, infix_oper_fn, Precedence::FACTOR, "/ "}, // PUNCTUATOR(SLASH, "/")
-      {nullptr, infix_oper_fn, Precedence::TERM, "% "}, // PUNCTUATOR(PERCENT, "%")
-      {nullptr, infix_oper_fn, Precedence::TERM, "+ "}, // PUNCTUATOR(PLUS, "+")
-      {nullptr, infix_oper_fn, Precedence::TERM, "- "}, // PUNCTUATOR(MINUS, "-")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(PIPE, "|")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(AMP, "&")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(BANG, "!")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // PUNCTUATOR(EQ, "=")
-      {nullptr, infix_oper_fn, Precedence::COMPARISON, "< "}, // PUNCTUATOR(LT, "<")
-      {nullptr, infix_oper_fn, Precedence::COMPARISON, "> "}, // PUNCTUATOR(GT, ">")
-      {nullptr, infix_oper_fn, Precedence::COMPARISON, "<= "}, // PUNCTUATOR(LTEQ, "<=")
-      {nullptr, infix_oper_fn, Precedence::COMPARISON, ">= "}, // PUNCTUATOR(GTEQ, ">=")
-      {nullptr, infix_oper_fn, Precedence::EQUALITY, "== "}, // PUNCTUATOR(EQEQ, "==")
-      {nullptr, infix_oper_fn, Precedence::EQUALITY, "!= "}, // PUNCTUATOR(BANGEQ, "!=")
+      {grouping_fn, nullptr, Precedence::NONE, nullptr},        // PUNCTUATOR(LPAREN, "(")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(RPAREN, ")")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(LBRACKET, "[")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(RBRACKET, "]")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(LBRACE, "{")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(RBRACE, "}")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(COLON, ":")
+      {nullptr, call_fn, Precedence::CALL, nullptr},            // PUNCTUATOR(DOT, ".")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(COMMA, ",")
+      {nullptr, infix_oper_fn, Precedence::FACTOR, "* "},       // PUNCTUATOR(STAR, "*")
+      {nullptr, infix_oper_fn, Precedence::FACTOR, "/ "},       // PUNCTUATOR(SLASH, "/")
+      {nullptr, infix_oper_fn, Precedence::TERM, "% "},         // PUNCTUATOR(PERCENT, "%")
+      {nullptr, infix_oper_fn, Precedence::TERM, "+ "},         // PUNCTUATOR(PLUS, "+")
+      {nullptr, infix_oper_fn, Precedence::TERM, "- "},         // PUNCTUATOR(MINUS, "-")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(PIPE, "|")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(AMP, "&")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(BANG, "!")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(EQ, "=")
+      {nullptr, infix_oper_fn, Precedence::COMPARISON, "< "},   // PUNCTUATOR(LT, "<")
+      {nullptr, infix_oper_fn, Precedence::COMPARISON, "> "},   // PUNCTUATOR(GT, ">")
+      {nullptr, infix_oper_fn, Precedence::COMPARISON, "<= "},  // PUNCTUATOR(LTEQ, "<=")
+      {nullptr, infix_oper_fn, Precedence::COMPARISON, ">= "},  // PUNCTUATOR(GTEQ, ">=")
+      {nullptr, infix_oper_fn, Precedence::EQUALITY, "== "},    // PUNCTUATOR(EQEQ, "==")
+      {nullptr, infix_oper_fn, Precedence::EQUALITY, "!= "},    // PUNCTUATOR(BANGEQ, "!=")
 
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(CLASS, "class")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(ELSE, "else")
-      {boolean_fn, nullptr, Precedence::NONE, nullptr}, // KEYWORD(FALSE, "false")
-      {function_fn, nullptr, Precedence::NONE, nullptr}, // KEYWORD(FN, "fn")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(IF, "if")
-      {nullptr, is_fn, Precedence::IS, nullptr}, // KEYWORD(IS, "is")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(META, "meta")
-      {nil_fn, nullptr, Precedence::NONE, nullptr}, // KEYWORD(NIL, "nil")
-      {boolean_fn, nullptr, Precedence::NONE, nullptr}, // KEYWORD(TRUE, "true")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // KEYWORD(VAR, "var")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // KEYWORD(CLASS, "class")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // KEYWORD(ELSE, "else")
+      {boolean_fn, nullptr, Precedence::NONE, nullptr},         // KEYWORD(FALSE, "false")
+      {function_fn, nullptr, Precedence::NONE, nullptr},        // KEYWORD(FN, "fn")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // KEYWORD(IF, "if")
+      {nullptr, is_fn, Precedence::IS, nullptr},                // KEYWORD(IS, "is")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // KEYWORD(META, "meta")
+      {nil_fn, nullptr, Precedence::NONE, nullptr},             // KEYWORD(NIL, "nil")
+      {this_fn, nullptr, Precedence::NONE, nullptr},            // KEYWORD(THIS, "this")
+      {boolean_fn, nullptr, Precedence::NONE, nullptr},         // KEYWORD(TRUE, "true")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // KEYWORD(VAR, "var")
 
-      {variable_fn, nullptr, Precedence::NONE, nullptr}, // TOKEN(IDENTIFIER, "identifier")
-      {numeric_fn, nullptr, Precedence::NONE, nullptr}, // TOKEN(NUMERIC, "numeric")
-      {string_fn, nullptr, Precedence::NONE, nullptr}, // TOKEN(STRING, "string")
+      {variable_fn, nullptr, Precedence::NONE, nullptr},        // TOKEN(IDENTIFIER, "identifier")
+      {numeric_fn, nullptr, Precedence::NONE, nullptr},         // TOKEN(NUMERIC, "numeric")
+      {string_fn, nullptr, Precedence::NONE, nullptr},          // TOKEN(STRING, "string")
 
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // TOKEN(NL, "new-line")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // TOKEN(NL, "new-line")
 
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // TOKEN(ERROR, "error")
-      {nullptr, nullptr, Precedence::NONE, nullptr}, // TOKEN(EOF, "eof")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // TOKEN(ERROR, "error")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // TOKEN(EOF, "eof")
     };
 
     return _rules[Xt::as_type<int>(kind)];
@@ -432,7 +434,7 @@ class Compiler : private UnCopyable {
   }
 
   void function(void) {
-    Compiler fn_compiler(parser_, this);
+    Compiler fn_compiler(parser_, this, false);
 
     if (fn_compiler.match(TokenKind::TK_LBRACE)) {
       for (;;) {
@@ -451,7 +453,6 @@ class Compiler : private UnCopyable {
       fn_compiler.expression();
     }
     fn_compiler.emit_byte(Code::END);
-    fn_compiler.fn_->set_num_locals(fn_compiler.locals_.count());
 
     // add the function to the constant table
     u8_t constant = fn_->add_constant(fn_compiler.fn_);
@@ -463,7 +464,7 @@ class Compiler : private UnCopyable {
     // compiles a method definition inside a class body
     consume(TokenKind::TK_IDENTIFIER);
 
-    Compiler method_compiler(parser_, this);
+    Compiler method_compiler(parser_, this, true);
 
     // define a fake local slot for the receiver so that later locals have the
     // correct slot indices
@@ -518,7 +519,6 @@ class Compiler : private UnCopyable {
       method_compiler.emit_byte(Code::POP);
     }
     method_compiler.emit_byte(Code::END);
-    method_compiler.fn_->set_num_locals(method_compiler.locals_.count());
 
     // add the block into the constant table
     int constant = fn_->add_constant(method_compiler.fn_);
@@ -576,10 +576,33 @@ class Compiler : private UnCopyable {
     int symbol = vm_methods().ensure(rule.name);
     emit_bytes(Code::CALL_1, symbol);
   }
+
+  void this_exp(void) {
+    // walk up the parent chain to see if there is an enclosing method
+    Compiler* this_compiler = this;
+    bool inside_method = false;
+    while (this_compiler != nullptr) {
+      if (this_compiler->is_method_) {
+        inside_method = true;
+        break;
+      }
+      this_compiler = this_compiler->parent_;
+    }
+
+    if (!inside_method) {
+      error("cannot use `this` outside of a method");
+      return;
+    }
+
+    // the receiver is always stored in the first local slot
+    emit_bytes(Code::LOAD_LOCAL, 0);
+  }
 public:
-  Compiler(Parser& parser, Compiler* parent = nullptr) noexcept
+  Compiler(Parser& parser,
+      Compiler* parent = nullptr, bool is_method = false) noexcept
     : parser_(parser)
-    , parent_(parent) {
+    , parent_(parent)
+    , is_method_(is_method) {
     fn_ = FunctionObject::make_function();
   }
 
@@ -598,17 +621,16 @@ public:
       }
       if (match(end_kind))
         break;
-      // emit_byte(Code::POP);
+      emit_byte(Code::POP);
     }
     emit_byte(Code::END);
-    fn_->set_num_locals(locals_.count());
 
     return parser_.had_error() ? nullptr : fn_;
   }
 
   FunctionObject* compile_function(
       Parser& p, Compiler* parent, TokenKind end_kind) {
-    Compiler c(p, parent);
+    Compiler c(p, parent, false);
     return c.compile_function(end_kind);
   }
 };
@@ -618,7 +640,7 @@ FunctionObject* compile(VM& vm, const str_t& source_bytes) {
   Parser p(vm, lex);
 
   p.advance();
-  Compiler c(p, nullptr);
+  Compiler c(p, nullptr, false);
 
   return c.compile_function(TokenKind::TK_EOF);
 }

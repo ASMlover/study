@@ -141,18 +141,15 @@ public:
 class FunctionObject final : public BaseObject {
   std::vector<u8_t> codes_;
   std::vector<Value> constants_;
-  int num_locals_{};
 
   FunctionObject(void) noexcept : BaseObject(ObjType::FUNCTION) {}
 public:
   inline const u8_t* codes(void) const { return codes_.data(); }
   inline const Value* constants(void) const { return constants_.data(); }
-  inline int num_locals(void) const { return num_locals_; }
   inline int codes_count(void) const { return Xt::as_type<int>(codes_.size()); }
   inline int constants_count(void) const { return Xt::as_type<int>(constants_.size()); }
   inline u8_t get_code(int i) const { return codes_[i]; }
   inline Value get_constant(int i) const { return constants_[i]; }
-  inline void set_num_locals(int num_locals) { num_locals_ = num_locals; }
 
   template <typename T> inline int add_code(T c) {
     codes_.push_back(Xt::as_type<u8_t>(c));
