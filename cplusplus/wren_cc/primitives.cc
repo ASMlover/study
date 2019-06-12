@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cmath>
 #include <iostream>
 #include <sstream>
 #include "vm.hh"
@@ -122,6 +123,14 @@ DEF_PRIMITIVE(numeric_div) {
 
   return NumericObject::make_numeric(
       args[0]->as_numeric() / args[1]->as_numeric());
+}
+
+DEF_PRIMITIVE(numeric_mod) {
+  if (!args[1]->is_numeric())
+    return vm.unsupported();
+
+  return NumericObject::make_numeric(
+      std::fmod(args[0]->as_numeric(), args[1]->as_numeric()));
 }
 
 DEF_PRIMITIVE(numeric_gt) {
@@ -270,6 +279,7 @@ void load_core(VM& vm) {
   vm.set_primitive(vm.num_cls(), "- ", _primitive_numeric_sub);
   vm.set_primitive(vm.num_cls(), "* ", _primitive_numeric_mul);
   vm.set_primitive(vm.num_cls(), "/ ", _primitive_numeric_div);
+  vm.set_primitive(vm.num_cls(), "% ", _primitive_numeric_mod);
   vm.set_primitive(vm.num_cls(), "> ", _primitive_numeric_gt);
   vm.set_primitive(vm.num_cls(), ">= ", _primitive_numeric_ge);
   vm.set_primitive(vm.num_cls(), "< ", _primitive_numeric_lt);
