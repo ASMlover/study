@@ -73,12 +73,7 @@ DEF_PRIMITIVE(bool_tostring) {
 }
 
 DEF_PRIMITIVE(numeric_abs) {
-  double d = args[0]->as_numeric();
-  if (d < 0)
-    d = -d;
-  else if (d == 0)
-    d = 0;
-  return NumericObject::make_numeric(d);
+  return NumericObject::make_numeric(std::abs(args[0]->as_numeric()));
 }
 
 DEF_PRIMITIVE(numeric_tostring) {
