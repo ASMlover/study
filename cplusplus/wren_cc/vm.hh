@@ -231,18 +231,25 @@ public:
 };
 
 enum class Code : u8_t {
-  CONSTANT, // load the constant at index [arg]
-  NIL, // push `nil` into the stack
-  FALSE, // push `false` into the stack
-  TRUE, // push `true` into the stack
-  CLASS, // define a new empty class and push it into stack
-  METHOD, // method for symbol [arg1] with body stored in constant [arg2] to
-          // the class on the top of stack, does not modify the stack
-  DUP, // push a copy of the top of stack
-  POP, // pop and discard the top of stack
-  LOAD_LOCAL, // push the value in local slot [arg]
-  STORE_LOCAL, // store the top of the stack in local slot [arg], not pop it
-  LOAD_GLOBAL, // push the value in global slot [arg]
+  CONSTANT,     // load the constant at index [arg]
+  NIL,          // push `nil` into the stack
+  FALSE,        // push `false` into the stack
+  TRUE,         // push `true` into the stack
+  CLASS,        // define a new empty class and push it into stack
+
+  // push the metaclass of the class on the top of the stack. does not
+  // discard the class
+  METACLASS,
+
+  // method for symbol [arg1] with body stored in constant [arg2] to
+  // the class on the top of stack, does not modify the stack
+  METHOD,
+
+  DUP,          // push a copy of the top of stack
+  POP,          // pop and discard the top of stack
+  LOAD_LOCAL,   // push the value in local slot [arg]
+  STORE_LOCAL,  // store the top of the stack in local slot [arg], not pop it
+  LOAD_GLOBAL,  // push the value in global slot [arg]
   STORE_GLOBAL, // store the top of the stack in global slot [arg], not pop it
 
   // invoke the method with symbol [arg], the number indicates the number of
@@ -259,10 +266,10 @@ enum class Code : u8_t {
   CALL_9,
   CALL_10,
 
-  JUMP, // jump the instruction pointer [arg1] forward
-  JUMP_IF, // pop and if not truthy then jump the instruction pointer [arg1] forward
+  JUMP,         // jump the instruction pointer [arg1] forward
+  JUMP_IF,      // pop and if not truthy then jump the instruction pointer [arg1] forward
 
-  IS, // pop [a] then [b] and push true if [b] is an instance of [a]
+  IS,           // pop [a] then [b] and push true if [b] is an instance of [a]
 
   END,
 };

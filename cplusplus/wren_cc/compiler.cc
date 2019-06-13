@@ -118,7 +118,7 @@ public:
       case TokenKind::KW_ELSE:
       case TokenKind::KW_IF:
       case TokenKind::KW_IS:
-      case TokenKind::KW_META:
+      case TokenKind::KW_STATIC:
       case TokenKind::KW_VAR:
         skip_newlines_ = true; return;
       default: skip_newlines_ = false; return;
@@ -213,8 +213,8 @@ class Compiler : private UnCopyable {
       {function_fn, nullptr, Precedence::NONE, nullptr},        // KEYWORD(FN, "fn")
       {nullptr, nullptr, Precedence::NONE, nullptr},            // KEYWORD(IF, "if")
       {nullptr, is_fn, Precedence::IS, nullptr},                // KEYWORD(IS, "is")
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // KEYWORD(META, "meta")
       {nil_fn, nullptr, Precedence::NONE, nullptr},             // KEYWORD(NIL, "nil")
+      {nullptr, nullptr, Precedence::NONE, nullptr},            // KEYWORD(STATIC, "static")
       {this_fn, nullptr, Precedence::NONE, nullptr},            // KEYWORD(THIS, "this")
       {boolean_fn, nullptr, Precedence::NONE, nullptr},         // KEYWORD(TRUE, "true")
       {nullptr, nullptr, Precedence::NONE, nullptr},            // KEYWORD(VAR, "var")
@@ -370,7 +370,10 @@ class Compiler : private UnCopyable {
       // compile the method definitions
       consume(TokenKind::TK_LBRACE);
       while (!match(TokenKind::TK_RBRACE)) {
-        method();
+        if (match(TokenKind::KW_STATIC))
+          method(true);
+        else
+          method(false);
         consume(TokenKind::TK_NL);
       }
       return;
@@ -460,7 +463,7 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::CONSTANT, constant);
   }
 
-  void method(void) {
+  void method(bool is_static = false) {
     // compiles a method definition inside a class body
     consume(TokenKind::TK_IDENTIFIER);
 
@@ -522,10 +525,17 @@ class Compiler : private UnCopyable {
 
     // add the block into the constant table
     int constant = fn_->add_constant(method_compiler.fn_);
+
+    if (is_static)
+      emit_byte(Code::METACLASS);
+
     // compile the code to define the method it
     emit_byte(Code::METHOD);
     emit_byte(symbol);
     emit_byte(constant);
+
+    if (is_static)
+      emit_byte(Code::POP);
   }
 
   void call(void) {

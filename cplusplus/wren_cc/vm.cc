@@ -263,21 +263,19 @@ Value VM::interpret(FunctionObject* fn) {
   fiber.reset();
   fiber.call_function(fn, 0);
 
+#define PUSH(v) fiber.push(v)
+#define POP()   fiber.pop()
+#define PEEK()  fiber.peek_value()
+#define RDARG() frame->get_code(frame->ip++)
+
   for (;;) {
     auto* frame = &fiber.peek_frame();
 
     switch (auto c = Xt::as_type<Code>(frame->get_code(frame->ip++))) {
-    case Code::CONSTANT:
-      {
-        Value v = frame->get_constant(frame->get_code(frame->ip++));
-        fiber.push(v);
-      } break;
-    case Code::NIL:
-      fiber.push(NilObject::make_nil()); break;
-    case Code::FALSE:
-      fiber.push(BooleanObject::make_boolean(false)); break;
-    case Code::TRUE:
-      fiber.push(BooleanObject::make_boolean(true)); break;
+    case Code::CONSTANT: PUSH(frame->get_constant(RDARG())); break;
+    case Code::NIL: PUSH(NilObject::make_nil()); break;
+    case Code::FALSE: PUSH(BooleanObject::make_boolean(false)); break;
+    case Code::TRUE: PUSH(BooleanObject::make_boolean(true)); break;
     case Code::CLASS:
       {
         ClassObject* cls = ClassObject::make_class();
@@ -286,41 +284,40 @@ Value VM::interpret(FunctionObject* fn) {
         int new_symbol = methods_.ensure("new");
         cls->meta_class()->set_method(
             new_symbol, MethodType::PRIMITIVE, _primitive_metaclass_new);
-        fiber.push(cls);
+        PUSH(cls);
       } break;
+    case Code::METACLASS: PUSH(PEEK()->as_class()->meta_class()); break;
     case Code::METHOD:
       {
-        int symbol = frame->get_code(frame->ip++);
-        int constant = frame->get_code(frame->ip++);
-        ClassObject* cls = fiber.peek_value()->as_class();
+        int symbol = RDARG();
+        int constant = RDARG();
+        ClassObject* cls = PEEK()->as_class();
 
         FunctionObject* body = frame->get_constant(constant)->as_function();
         cls->set_method(symbol, MethodType::BLOCK, body);
       } break;
     case Code::LOAD_LOCAL:
       {
-        int local = frame->get_code(frame->ip++);
-        fiber.push(fiber.get_value(frame->stack_start + local));
+        int local = RDARG();
+        PUSH(fiber.get_value(frame->stack_start + local));
       } break;
     case Code::STORE_LOCAL:
       {
-        int local = frame->get_code(frame->ip++);
-        fiber.set_value(frame->stack_start + local, fiber.peek_value());
+        int local = RDARG();
+        fiber.set_value(frame->stack_start + local, PEEK());
       } break;
     case Code::LOAD_GLOBAL:
       {
-        int global = frame->get_code(frame->ip++);
-        fiber.push(globals_[global]);
+        int global = RDARG();
+        PUSH(globals_[global]);
       } break;
     case Code::STORE_GLOBAL:
       {
-        int global = frame->get_code(frame->ip++);
-        globals_[global] = fiber.get_value(fiber.stack_size() - 1);
+        int global = RDARG();
+        globals_[global] = PEEK();
       } break;
-    case Code::DUP:
-      fiber.push(fiber.peek_value()); break;
-    case Code::POP:
-      fiber.pop(); break;
+    case Code::DUP: PUSH(PEEK()); break;
+    case Code::POP: POP(); break;
     case Code::CALL_0:
     case Code::CALL_1:
     case Code::CALL_2:
@@ -335,7 +332,7 @@ Value VM::interpret(FunctionObject* fn) {
       {
         int argc =
           Xt::as_type<Code>(frame->get_code(frame->ip - 1)) - Code::CALL_0 + 1;
-        int symbol = frame->get_code(frame->ip++);
+        int symbol = RDARG();
         Value receiver = fiber.get_value(fiber.stack_size() - argc);
 
         ClassObject* cls = get_class(receiver);
@@ -365,30 +362,26 @@ Value VM::interpret(FunctionObject* fn) {
           break;
         }
       } break;
-    case Code::JUMP:
-      {
-        int offset = frame->get_code(frame->ip++);
-        frame->ip += offset;
-      } break;
+    case Code::JUMP: frame->ip += RDARG(); break;
     case Code::JUMP_IF:
       {
-        int offset = frame->get_code(frame->ip++);
-        Value cond = fiber.pop();
+        int offset = RDARG();
+        Value cond = POP();
 
         if (!cond->as_boolean())
           frame->ip += offset;
       } break;
     case Code::IS:
       {
-        Value cls = fiber.pop();
-        Value obj = fiber.pop();
+        Value cls = POP();
+        Value obj = POP();
 
         ClassObject* actual = get_class(obj);
-        fiber.push(BooleanObject::make_boolean(actual == cls->as_class()));
+        PUSH(BooleanObject::make_boolean(actual == cls->as_class()));
       } break;
     case Code::END:
       {
-        Value r = fiber.pop();
+        Value r = POP();
         fiber.pop_frame();
 
         if (fiber.empty_frame())
