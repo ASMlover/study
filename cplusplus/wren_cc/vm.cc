@@ -220,8 +220,7 @@ public:
 /// VM IMPLEMENTATIONS
 
 static Value _primitive_metaclass_new(VM& vm, Fiber& fiber, Value* args) {
-  ClassObject* cls = args[0]->as_class();
-  return InstanceObject::make_instance(cls);
+  return InstanceObject::make_instance(args[0]->as_class());
 }
 
 VM::VM(void) {
