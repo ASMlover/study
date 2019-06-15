@@ -307,20 +307,15 @@ class Compiler : private UnCopyable {
 
   void numeric(void) {
     auto& tok = parser_.prev();
-    Value constant = NumericObject::make_numeric(tok.as_numeric());
+    Value constant = NumericObject::make_numeric(
+        parser_.get_vm(), tok.as_numeric());
 
     emit_constant(constant);
   }
 
   void string(void) {
     auto& tok = parser_.prev();
-
-    sz_t sz = tok.as_string().size();
-    char* s = new char [sz + 1];
-    memcpy(s, tok.as_string().c_str(), sz);
-    s[sz] = 0;
-
-    Value constant = StringObject::make_string(s);
+    Value constant = StringObject::make_string(parser_.get_vm(), tok.as_string());
 
     emit_constant(constant);
   }
@@ -438,6 +433,8 @@ class Compiler : private UnCopyable {
 
   void function(void) {
     Compiler fn_compiler(parser_, this, false);
+    // add the function to the constant table
+    u8_t fn_constant = fn_->add_constant(fn_compiler.fn_);
 
     if (fn_compiler.match(TokenKind::TK_LBRACE)) {
       for (;;) {
@@ -457,10 +454,7 @@ class Compiler : private UnCopyable {
     }
     fn_compiler.emit_byte(Code::END);
 
-    // add the function to the constant table
-    u8_t constant = fn_->add_constant(fn_compiler.fn_);
-
-    emit_bytes(Code::CONSTANT, constant);
+    emit_bytes(Code::CONSTANT, fn_constant);
   }
 
   void method(bool is_static = false) {
@@ -468,6 +462,9 @@ class Compiler : private UnCopyable {
     consume(TokenKind::TK_IDENTIFIER);
 
     Compiler method_compiler(parser_, this, true);
+
+    // add the block into the constant table
+    int method_constant = fn_->add_constant(method_compiler.fn_);
 
     // define a fake local slot for the receiver so that later locals have the
     // correct slot indices
@@ -523,16 +520,13 @@ class Compiler : private UnCopyable {
     }
     method_compiler.emit_byte(Code::END);
 
-    // add the block into the constant table
-    int constant = fn_->add_constant(method_compiler.fn_);
-
     if (is_static)
       emit_byte(Code::METACLASS);
 
     // compile the code to define the method it
     emit_byte(Code::METHOD);
     emit_byte(symbol);
-    emit_byte(constant);
+    emit_byte(method_constant);
 
     if (is_static)
       emit_byte(Code::POP);
@@ -613,7 +607,7 @@ public:
     : parser_(parser)
     , parent_(parent)
     , is_method_(is_method) {
-    fn_ = FunctionObject::make_function();
+    fn_ = FunctionObject::make_function(parser_.get_vm());
   }
 
   ~Compiler(void) {
@@ -621,6 +615,7 @@ public:
   }
 
   FunctionObject* compile_function(TokenKind end_kind) {
+    parser_.get_vm().pin_object(fn_);
     for (;;) {
       statement();
 
@@ -635,6 +630,7 @@ public:
     }
     emit_byte(Code::END);
 
+    parser_.get_vm().unpin_object(fn_);
     return parser_.had_error() ? nullptr : fn_;
   }
 
