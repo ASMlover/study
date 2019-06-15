@@ -126,7 +126,7 @@ class StringObject final : public BaseObject {
   int size_{};
   char* value_{};
 
-  StringObject(const char* s, int n) noexcept;
+  StringObject(const char* s, int n, bool replace_owner = false) noexcept;
   virtual ~StringObject(void);
 public:
   inline int size(void) const { return size_; }
@@ -136,6 +136,7 @@ public:
 
   static StringObject* make_string(VM& vm, const char* s, int n);
   static StringObject* make_string(VM& vm, const str_t& s);
+  static StringObject* make_string(VM& vm, StringObject* s1, StringObject* s2);
 };
 
 class FunctionObject final : public BaseObject {

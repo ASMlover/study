@@ -96,13 +96,18 @@ NumericObject* NumericObject::make_numeric(VM& vm, double d) {
   return o;
 }
 
-StringObject::StringObject(const char* s, int n) noexcept
+StringObject::StringObject(const char* s, int n, bool replace_owner) noexcept
   : BaseObject(ObjType::STRING)
   , size_(n) {
-  value_ = new char[size_ + 1];
-  if (s != nullptr) {
-    memcpy(value_, s, n);
-    value_[size_] = 0;
+  if (replace_owner) {
+    value_ = const_cast<char*>(s);
+  }
+  else {
+    value_ = new char[size_ + 1];
+    if (s != nullptr) {
+      memcpy(value_, s, n);
+      value_[size_] = 0;
+    }
   }
 }
 
@@ -122,6 +127,19 @@ StringObject* StringObject::make_string(VM& vm, const char* s, int n) {
 
 StringObject* StringObject::make_string(VM& vm, const str_t& s) {
   return make_string(vm, s.data(), Xt::as_type<int>(s.size()));
+}
+
+StringObject* StringObject::make_string(
+    VM& vm, StringObject* s1, StringObject* s2) {
+  int n = s1->size() + s2->size();
+  char* s = new char [n + 1];
+  memcpy(s, s1->cstr(), s1->size());
+  memcpy(s + s1->size(), s2->cstr(), s2->size());
+  s[n] = 0;
+
+  auto* o = new StringObject(s, n, true);
+  vm.append_object(o);
+  return o;
 }
 
 str_t FunctionObject::stringify(void) const {
@@ -301,6 +319,16 @@ void VM::set_global(ClassObject* cls, const str_t& name) {
 Value VM::get_global(const str_t& name) const {
   int symbol = global_symbols_.get(name);
   return globals_[symbol];
+}
+
+void VM::pin_object(Value value) {
+  ASSERT(pinned_.size() < kMaxPinned, "too many pinned objects");
+  pinned_.push_back(value);
+}
+
+void VM::unpin_object(Value value) {
+  ASSERT(pinned_.back() == value, "unppinning object out of stack order");
+  pinned_.pop_back();
 }
 
 ClassObject* VM::get_class(Value obj) const {
