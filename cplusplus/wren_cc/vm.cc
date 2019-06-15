@@ -68,16 +68,20 @@ str_t NilObject::stringify(void) const {
   return "nil";
 }
 
-NilObject* NilObject::make_nil(void) {
-  return new NilObject();
+NilObject* NilObject::make_nil(VM& vm) {
+  auto* o = new NilObject();
+  vm.append_object(o);
+  return o;
 }
 
 str_t BooleanObject::stringify(void) const {
   return type() == ObjType::TRUE ? "true" : "false";
 }
 
-BooleanObject* BooleanObject::make_boolean(bool b) {
-  return new BooleanObject(b);
+BooleanObject* BooleanObject::make_boolean(VM& vm, bool b) {
+  auto* o = new BooleanObject(b);
+  vm.append_object(o);
+  return o;
 }
 
 str_t NumericObject::stringify(void) const {
@@ -86,24 +90,55 @@ str_t NumericObject::stringify(void) const {
   return ss.str();
 }
 
-NumericObject* NumericObject::make_numeric(double d) {
-  return new NumericObject(d);
+NumericObject* NumericObject::make_numeric(VM& vm, double d) {
+  auto* o = new NumericObject(d);
+  vm.append_object(o);
+  return o;
+}
+
+StringObject::StringObject(const char* s, int n) noexcept
+  : BaseObject(ObjType::STRING)
+  , size_(n) {
+  value_ = new char[size_ + 1];
+  if (s != nullptr) {
+    memcpy(value_, s, n);
+    value_[size_] = 0;
+  }
+}
+
+StringObject::~StringObject(void) {
+  delete [] value_;
 }
 
 str_t StringObject::stringify(void) const {
   return value_;
 }
 
-StringObject* StringObject::make_string(const char* s) {
-  return new StringObject(s);
+StringObject* StringObject::make_string(VM& vm, const char* s, int n) {
+  auto* o = new StringObject(s, n);
+  vm.append_object(o);
+  return o;
+}
+
+StringObject* StringObject::make_string(VM& vm, const str_t& s) {
+  return make_string(vm, s.data(), Xt::as_type<int>(s.size()));
 }
 
 str_t FunctionObject::stringify(void) const {
-  return "[fn]";
+  std::stringstream ss;
+  ss << "[fn `" << this << "`]";
+  return ss.str();
 }
 
-FunctionObject* FunctionObject::make_function(void) {
-  return new FunctionObject();
+void FunctionObject::gc_mark(VM& vm) {
+  for (auto* c : constants_)
+    vm.mark_object(c);
+}
+
+FunctionObject* FunctionObject::make_function(VM& vm) {
+  auto* o = new FunctionObject();
+  vm.append_object(o);
+  return o;
 }
 
 ClassObject::ClassObject(void) noexcept
@@ -116,12 +151,24 @@ ClassObject::ClassObject(ClassObject* meta_class) noexcept
 }
 
 str_t ClassObject::stringify(void) const {
-  return "[class]";
+  std::stringstream ss;
+  ss << "[class `" << this << "`]";
+  return ss.str();
 }
 
-ClassObject* ClassObject::make_class(void) {
+void ClassObject::gc_mark(VM& vm) {
+  vm.mark_object(meta_class_);
+  for (auto& m : methods_) {
+    if (m.type == MethodType::BLOCK)
+      vm.mark_object(m.fn);
+  }
+}
+
+ClassObject* ClassObject::make_class(VM& vm) {
   auto* meta_class = new ClassObject();
-  return new ClassObject(meta_class);
+  auto* o = new ClassObject(meta_class);
+  vm.append_object(o);
+  return o;
 }
 
 InstanceObject::InstanceObject(ClassObject* cls) noexcept
@@ -130,11 +177,15 @@ InstanceObject::InstanceObject(ClassObject* cls) noexcept
 }
 
 str_t InstanceObject::stringify(void) const {
-  return "[instance]";
+  std::stringstream ss;
+  ss << "[instance `" << this << "`]";
+  return ss.str();
 }
 
-InstanceObject* InstanceObject::make_instance(ClassObject* cls) {
-  return new InstanceObject(cls);
+InstanceObject* InstanceObject::make_instance(VM& vm, ClassObject* cls) {
+  auto* o = new InstanceObject(cls);
+  vm.append_object(o);
+  return o;
 }
 
 int SymbolTable::ensure(const str_t& name) {
@@ -220,11 +271,20 @@ public:
 /// VM IMPLEMENTATIONS
 
 static Value _primitive_metaclass_new(VM& vm, Fiber& fiber, Value* args) {
-  return InstanceObject::make_instance(args[0]->as_class());
+  return InstanceObject::make_instance(vm, args[0]->as_class());
 }
 
-VM::VM(void) {
+VM::VM(void) noexcept {
+  fiber_ = new Fiber();
+
+  for (int i = 0; i < kMaxGlobals; ++i)
+    globals_[i] = nullptr;
+
   load_core(*this);
+}
+
+VM::~VM(void) {
+  delete fiber_;
 }
 
 void VM::set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn) {
@@ -233,7 +293,7 @@ void VM::set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn) {
 }
 
 void VM::set_global(ClassObject* cls, const str_t& name) {
-  InstanceObject* obj = InstanceObject::make_instance(cls);
+  InstanceObject* obj = InstanceObject::make_instance(*this, cls);
   int symbol = global_symbols_.add(name);
   globals_[symbol] = obj;
 }
@@ -258,26 +318,30 @@ ClassObject* VM::get_class(Value obj) const {
 }
 
 Value VM::interpret(FunctionObject* fn) {
-  Fiber fiber;
-  fiber.reset();
-  fiber.call_function(fn, 0);
+  Fiber* fiber = fiber_;
+  fiber->call_function(fn, 0);
 
-#define PUSH(v) fiber.push(v)
-#define POP()   fiber.pop()
-#define PEEK()  fiber.peek_value()
+#define PUSH(v) fiber->push(v)
+#define POP()   fiber->pop()
+#define PEEK()  fiber->peek_value()
 #define RDARG() frame->get_code(frame->ip++)
 
+  int lastop;
   for (;;) {
-    auto* frame = &fiber.peek_frame();
+    auto* frame = &fiber->peek_frame();
+    if (fiber->stack_size() > 0 && PEEK() == nullptr) {
+      lastop = frame->ip - 1;
+      std::cout << lastop << std::endl;
+    }
 
     switch (auto c = Xt::as_type<Code>(frame->get_code(frame->ip++))) {
     case Code::CONSTANT: PUSH(frame->get_constant(RDARG())); break;
-    case Code::NIL: PUSH(NilObject::make_nil()); break;
-    case Code::FALSE: PUSH(BooleanObject::make_boolean(false)); break;
-    case Code::TRUE: PUSH(BooleanObject::make_boolean(true)); break;
+    case Code::NIL: PUSH(NilObject::make_nil(*this)); break;
+    case Code::FALSE: PUSH(BooleanObject::make_boolean(*this, false)); break;
+    case Code::TRUE: PUSH(BooleanObject::make_boolean(*this, true)); break;
     case Code::CLASS:
       {
-        ClassObject* cls = ClassObject::make_class();
+        ClassObject* cls = ClassObject::make_class(*this);
 
         // define `new` method on the metaclass.
         int new_symbol = methods_.ensure("new");
@@ -298,12 +362,12 @@ Value VM::interpret(FunctionObject* fn) {
     case Code::LOAD_LOCAL:
       {
         int local = RDARG();
-        PUSH(fiber.get_value(frame->stack_start + local));
+        PUSH(fiber->get_value(frame->stack_start + local));
       } break;
     case Code::STORE_LOCAL:
       {
         int local = RDARG();
-        fiber.set_value(frame->stack_start + local, PEEK());
+        fiber->set_value(frame->stack_start + local, PEEK());
       } break;
     case Code::LOAD_GLOBAL:
       {
@@ -332,7 +396,7 @@ Value VM::interpret(FunctionObject* fn) {
         int argc =
           Xt::as_type<Code>(frame->get_code(frame->ip - 1)) - Code::CALL_0 + 1;
         int symbol = RDARG();
-        Value receiver = fiber.get_value(fiber.stack_size() - argc);
+        Value receiver = fiber->get_value(fiber->stack_size() - argc);
 
         ClassObject* cls = get_class(receiver);
         auto& method = cls->get_method(symbol);
@@ -345,19 +409,19 @@ Value VM::interpret(FunctionObject* fn) {
           std::exit(-1); break;
         case MethodType::PRIMITIVE:
           {
-            Value* args = fiber.values_at(fiber.stack_size() - argc);
+            Value* args = fiber->values_at(fiber->stack_size() - argc);
             // argc +1 to include the receiver since that's in the args array
-            Value result = method.primitive(*this, fiber, args);
+            Value result = method.primitive(*this, *fiber, args);
 
             // if the primitive pushed a call frame, it returns nullptr
             if (result != nullptr) {
-              fiber.set_value(fiber.stack_size() - argc, result);
-              fiber.resize_stack(fiber.stack_size() - (argc - 1));
+              fiber->set_value(fiber->stack_size() - argc, result);
+              fiber->resize_stack(fiber->stack_size() - (argc - 1));
             }
           } break;
           break;
         case MethodType::BLOCK:
-          fiber.call_function(method.fn, argc);
+          fiber->call_function(method.fn, argc);
           break;
         }
       } break;
@@ -376,22 +440,22 @@ Value VM::interpret(FunctionObject* fn) {
         Value obj = POP();
 
         ClassObject* actual = get_class(obj);
-        PUSH(BooleanObject::make_boolean(actual == cls->as_class()));
+        PUSH(BooleanObject::make_boolean(*this, actual == cls->as_class()));
       } break;
     case Code::END:
       {
         Value r = POP();
-        fiber.pop_frame();
+        fiber->pop_frame();
 
-        if (fiber.empty_frame())
+        if (fiber->empty_frame())
           return r;
 
-        if (fiber.stack_size() <= frame->stack_start)
-          fiber.push(r);
+        if (fiber->stack_size() <= frame->stack_start)
+          PUSH(r);
         else
-          fiber.set_value(frame->stack_start, r);
+          fiber->set_value(frame->stack_start, r);
 
-        fiber.resize_stack(frame->stack_start + 1);
+        fiber->resize_stack(frame->stack_start + 1);
       } break;
     }
   }
@@ -407,6 +471,27 @@ void VM::interpret(const str_t& source_bytes) {
 
 void VM::call_function(Fiber& fiber, FunctionObject* fn, int argc) {
   fiber.call_function(fn, argc);
+}
+
+void VM::collect(void) {
+}
+
+void VM::free_object(BaseObject* obj) {
+  std::cout
+    << "`" << Xt::cast<void>(obj) << "` free object "
+    << "`" << obj->stringify() << "`" << std::endl;
+}
+
+void VM::append_object(BaseObject* obj) {
+}
+
+void VM::mark_object(BaseObject* obj) {
+  if (obj == nullptr)
+    return;
+  if (obj->flag() & ObjFlag::MARKED)
+    return;
+
+  obj->set_flag(obj->flag() | ObjFlag::MARKED);
 }
 
 }

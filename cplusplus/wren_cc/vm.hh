@@ -43,10 +43,11 @@ enum class ObjType {
   INSTANCE,
 };
 
-enum class ObjFlag {
+enum ObjFlag {
   MARKED = 0x01,
 };
 
+class VM;
 class BaseObject;
 using Value = BaseObject*;
 
@@ -67,6 +68,7 @@ public:
 
   inline ObjType type(void) const { return type_; }
   inline ObjFlag flag(void) const { return flag_; }
+  template <typename T> inline void set_flag(T f) { flag_ = Xt::as_type<ObjFlag>(f); }
 
   inline bool is_nil(void) const { return type_ == ObjType::NIL; }
   inline bool is_boolean(void) const { return type_ == ObjType::TRUE || type_ == ObjType::FALSE; }
@@ -85,6 +87,7 @@ public:
   InstanceObject* as_instance(void) const;
 
   virtual str_t stringify(void) const = 0;
+  virtual void gc_mark(VM& vm) {}
 };
 
 std::ostream& operator<<(std::ostream& out, Value val);
@@ -94,7 +97,7 @@ class NilObject final : public BaseObject {
 public:
   virtual str_t stringify(void) const override;
 
-  static NilObject* make_nil(void);
+  static NilObject* make_nil(VM& vm);
 };
 
 class BooleanObject final : public BaseObject {
@@ -104,7 +107,7 @@ class BooleanObject final : public BaseObject {
 public:
   virtual str_t stringify(void) const override;
 
-  static BooleanObject* make_boolean(bool b);
+  static BooleanObject* make_boolean(VM& vm, bool b);
 };
 
 class NumericObject final : public BaseObject {
@@ -116,26 +119,23 @@ public:
 
   virtual str_t stringify(void) const override;
 
-  static NumericObject* make_numeric(double d);
+  static NumericObject* make_numeric(VM& vm, double d);
 };
 
 class StringObject final : public BaseObject {
   int size_{};
-  const char* value_{};
+  char* value_{};
 
-  StringObject(const char* s) noexcept
-    : BaseObject(ObjType::STRING)
-    , size_(Xt::as_type<int>(strlen(s)))
-    , value_(s) {
-  }
-  virtual ~StringObject(void) {}
+  StringObject(const char* s, int n) noexcept;
+  virtual ~StringObject(void);
 public:
   inline int size(void) const { return size_; }
   inline const char* cstr(void) const { return value_; }
 
   virtual str_t stringify(void) const override;
 
-  static StringObject* make_string(const char* s);
+  static StringObject* make_string(VM& vm, const char* s, int n);
+  static StringObject* make_string(VM& vm, const str_t& s);
 };
 
 class FunctionObject final : public BaseObject {
@@ -166,11 +166,11 @@ public:
   }
 
   virtual str_t stringify(void) const override;
+  virtual void gc_mark(VM& vm) override;
 
-  static FunctionObject* make_function(void);
+  static FunctionObject* make_function(VM& vm);
 };
 
-class VM;
 class Fiber;
 using PrimitiveFn = Value (*)(VM& vm, Fiber& fiber, Value* args);
 
@@ -213,8 +213,9 @@ public:
   }
 
   virtual str_t stringify(void) const override;
+  virtual void gc_mark(VM& vm) override;
 
-  static ClassObject* make_class(void);
+  static ClassObject* make_class(VM& vm);
 };
 
 class InstanceObject final : public BaseObject {
@@ -227,7 +228,7 @@ public:
 
   virtual str_t stringify(void) const override;
 
-  static InstanceObject* make_instance(ClassObject* cls);
+  static InstanceObject* make_instance(VM& vm, ClassObject* cls);
 };
 
 enum class Code : u8_t {
@@ -296,6 +297,7 @@ public:
 
 class VM : private UnCopyable {
   static constexpr sz_t kMaxGlobals = 256;
+  static constexpr sz_t kMaxPinned = 16;
 
   SymbolTable methods_;
 
@@ -311,11 +313,25 @@ class VM : private UnCopyable {
   SymbolTable global_symbols_;
   std::vector<Value> globals_{kMaxGlobals};
 
+  Fiber* fiber_{};
+
+  // how many bytes of object data have been allocated
+  sz_t total_allocated_{};
+  // the number of total allocated bytes that will trigger the next GC
+  sz_t next_gc_{1<<20}; // 1024 * 1024
+
+  std::vector<BaseObject*> objects_; // all currently allocated objects
+  std::vector<Value> pinned_;
+
   Value interpret(FunctionObject* fn);
 
   ClassObject* get_class(Value obj) const;
+
+  void collect(void);
+  void free_object(BaseObject* obj);
 public:
-  VM(void);
+  VM(void) noexcept;
+  ~VM(void);
 
   inline void set_fn_cls(ClassObject* cls) { fn_class_ = cls; }
   inline void set_bool_cls(ClassObject* cls) { bool_class_ = cls; }
@@ -339,6 +355,11 @@ public:
   void set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn);
   void set_global(ClassObject* cls, const str_t& name);
   Value get_global(const str_t& name) const;
+  void pin_object(Value value);
+  void unpin_object(Value value);
+
+  void append_object(BaseObject* obj);
+  void mark_object(BaseObject* obj);
 
   void interpret(const str_t& source_bytes);
   void call_function(Fiber& fiber, FunctionObject* fn, int argc);
