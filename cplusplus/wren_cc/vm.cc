@@ -284,6 +284,16 @@ public:
   void call_function(FunctionObject* fn, int argc = 0) {
     frames_.push_back(CallFrame(0, fn, stack_size() - argc));
   }
+
+  void iter_stacks(std::function<void (Value)>&& visit) {
+    for (auto* v : stack_)
+      visit(v);
+  }
+
+  void iter_frames(std::function<void (const CallFrame&)>&& visit) {
+    for (auto& c : frames_)
+      visit(c);
+  }
 };
 
 /// VM IMPLEMENTATIONS
@@ -502,6 +512,30 @@ void VM::call_function(Fiber& fiber, FunctionObject* fn, int argc) {
 }
 
 void VM::collect(void) {
+  // global variables
+  for (int i = 0; i < global_symbols_.count(); ++i)
+    mark_object(globals_[i]);
+  // pinned objects
+  for (auto* o : pinned_)
+    mark_object(o);
+  // stack functions
+  fiber_->iter_frames([this](const CallFrame& f) { mark_object(f.fn); });
+  // stack variables
+  fiber_->iter_stacks([this](Value v) { mark_object(v); });
+
+  // collect any unmarked objects
+  for (auto it = objects_.begin(); it != objects_.end();) {
+    if (!((*it)->flag() & ObjFlag::MARKED)) {
+      free_object(*it);
+      objects_.erase(it++);
+    }
+    else {
+      ObjFlag f = (*it)->flag();
+      (*it)->set_flag(f & ~ObjFlag::MARKED);
+      ++it;
+    }
+  }
+  total_allocated_ = objects_.size();
 }
 
 void VM::free_object(BaseObject* obj) {
@@ -511,6 +545,12 @@ void VM::free_object(BaseObject* obj) {
 }
 
 void VM::append_object(BaseObject* obj) {
+  if (objects_.size() > next_gc_) {
+    collect();
+    next_gc_ = total_allocated_ * 3 / 2;
+  }
+
+  objects_.push_back(obj);
 }
 
 void VM::mark_object(BaseObject* obj) {

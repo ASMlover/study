@@ -318,8 +318,8 @@ class VM : private UnCopyable {
 
   // how many bytes of object data have been allocated
   sz_t total_allocated_{};
-  // the number of total allocated bytes that will trigger the next GC
-  sz_t next_gc_{1<<20}; // 1024 * 1024
+  // the number of total allocated objects that will trigger the next GC
+  sz_t next_gc_{1<<10}; // 1024
 
   std::vector<BaseObject*> objects_; // all currently allocated objects
   std::vector<Value> pinned_;
