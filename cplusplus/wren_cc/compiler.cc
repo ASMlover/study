@@ -632,7 +632,7 @@ class Compiler : private UnCopyable {
     parse_precedence(false, Precedence::UNARY + 1);
 
     // call the operator method on the left-hand side
-    int symbol = vm_methods().ensure(rule.name);
+    int symbol = vm_methods().ensure(str_t(1, rule.name[0]));
     emit_bytes(Code::CALL_0, symbol);
   }
 
