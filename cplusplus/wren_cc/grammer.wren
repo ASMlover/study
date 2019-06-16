@@ -21,3 +21,6 @@ io.write(false == 2 <= 1) // expect: true
 
 // `>=` has higher precedence than `==`
 io.write(false == 1 >= 2) // expect: true
+
+// unary `-` has lower precedence than `.`
+io.write(-"abs".len) // expect: -3
