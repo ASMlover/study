@@ -345,6 +345,7 @@ class Compiler : private UnCopyable {
       }
 
       emit_bytes(Code::STORE_GLOBAL, global);
+      return;
     }
 
     // otherwise, it's just a variable access
