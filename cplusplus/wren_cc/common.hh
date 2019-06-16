@@ -83,7 +83,7 @@ namespace Xt {
 
 }
 
-#ifdef DEBUG
+#ifndef NDEBUG
 # define ASSERT(cond, msg) if (!(cond)) {\
   std::cerr << "ASSERT FAIL `" << __FILE__ << "`: "\
     << __LINE__ << " - " << msg << std::endl;\
