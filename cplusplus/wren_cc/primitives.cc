@@ -41,6 +41,17 @@ DEF_PRIMITIVE(fn_call) {
   return nullptr;
 }
 
+DEF_PRIMITIVE(bool_tostring) {
+  if (args[0]->as_boolean())
+    return StringObject::make_string(vm, "true");
+  else
+    return StringObject::make_string(vm, "false");
+}
+
+DEF_PRIMITIVE(bool_not) {
+  return BooleanObject::make_boolean(vm, !args[0]->as_boolean());
+}
+
 DEF_PRIMITIVE(bool_eq) {
   if (!args[1]->is_boolean())
     return BooleanObject::make_boolean(vm, false);
@@ -57,13 +68,6 @@ DEF_PRIMITIVE(bool_ne) {
       args[0]->as_boolean() != args[1]->as_boolean());
 }
 
-DEF_PRIMITIVE(bool_tostring) {
-  if (args[0]->as_boolean())
-    return StringObject::make_string(vm, "true");
-  else
-    return StringObject::make_string(vm, "false");
-}
-
 DEF_PRIMITIVE(numeric_abs) {
   return NumericObject::make_numeric(vm, std::abs(args[0]->as_numeric()));
 }
@@ -74,6 +78,10 @@ DEF_PRIMITIVE(numeric_tostring) {
   str_t s = ss.str();
 
   return StringObject::make_string(vm, s);
+}
+
+DEF_PRIMITIVE(numeric_neg) {
+  return NumericObject::make_numeric(vm, -args[0]->as_numeric());
 }
 
 DEF_PRIMITIVE(numeric_add) {
@@ -236,6 +244,7 @@ void load_core(VM& vm) {
 
   vm.set_bool_cls(vm.get_global("Bool")->as_class());
   vm.set_primitive(vm.bool_cls(), "toString", _primitive_bool_tostring);
+  vm.set_primitive(vm.bool_cls(), "!", _primitive_bool_not);
   vm.set_primitive(vm.bool_cls(), "== ", _primitive_bool_eq);
   vm.set_primitive(vm.bool_cls(), "!= ", _primitive_bool_ne);
 
@@ -251,6 +260,7 @@ void load_core(VM& vm) {
   vm.set_num_cls(vm.get_global("Numeric")->as_class());
   vm.set_primitive(vm.num_cls(), "abs", _primitive_numeric_abs);
   vm.set_primitive(vm.num_cls(), "toString", _primitive_numeric_tostring);
+  vm.set_primitive(vm.num_cls(), "-", _primitive_numeric_neg);
   vm.set_primitive(vm.num_cls(), "+ ", _primitive_numeric_add);
   vm.set_primitive(vm.num_cls(), "- ", _primitive_numeric_sub);
   vm.set_primitive(vm.num_cls(), "* ", _primitive_numeric_mul);

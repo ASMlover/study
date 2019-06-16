@@ -35,28 +35,37 @@
 namespace wrencc {
 
 class Compiler;
-using ParseFn = std::function<void (Compiler*)>;
+using GrammerFn = std::function<void (Compiler*, bool)>;
 
 enum class Precedence {
   NONE,
   LOWEST,
 
+  ASSIGNMENT, // =
   IS,         // is
   EQUALITY,   // == !=
   COMPARISON, // < <= > >=
   BITWISE,    // | &
   TERM,       // + -
   FACTOR,     // * / %
+  UNARY,      // unary - ! ~
   CALL,       // ()
+};
+
+struct Assignment {
+  bool is_assignment{};
+
+  Assignment(void) noexcept {}
+  Assignment(bool is_assign = false) noexcept : is_assignment(is_assign) {}
 };
 
 inline Precedence operator+(Precedence a, int b) {
   return Xt::as_type<Precedence>(Xt::as_type<int>(a) + b);
 }
 
-struct ParseRule {
-  ParseFn prefix;
-  ParseFn infix;
+struct GrammerRule {
+  GrammerFn prefix;
+  GrammerFn infix;
   Precedence precedence;
   const char* name;
 };
@@ -168,71 +177,61 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::CONSTANT, b);
   }
 
-  const ParseRule& get_rule(TokenKind kind) const {
-    auto grouping_fn = [](Compiler* c) { c->grouping(); };
-    auto function_fn = [](Compiler* c) { c->function(); };
-    auto call_fn = [](Compiler* c) { c->call(); };
-    auto infix_oper_fn = [](Compiler* c) { c->infix_oper(); };
-    auto variable_fn = [](Compiler* c) { c->variable(); };
-    auto numeric_fn = [](Compiler* c) { c->numeric(); };
-    auto string_fn = [](Compiler* c) { c->string(); };
-    auto boolean_fn = [](Compiler* c) { c->boolean(); };
-    auto nil_fn = [](Compiler* c) { c->nil(); };
-    auto is_fn = [](Compiler* c) { c->is(); };
-    auto this_fn = [](Compiler* c) { c->this_exp(); };
+  const GrammerRule& get_rule(TokenKind kind) const {
+#define RULE(fn) [](Compiler* c, bool b) { c->fn(b); }
+    static const GrammerRule _rules[] = {
+      {RULE(grouping), nullptr, Precedence::NONE, nullptr},         // PUNCTUATOR(LPAREN, "(")
+      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(RPAREN, ")")
+      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(LBRACKET, "[")
+      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(RBRACKET, "]")
+      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(LBRACE, "{")
+      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(RBRACE, "}")
+      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(COLON, ":")
+      {nullptr, RULE(call), Precedence::CALL, nullptr},             // PUNCTUATOR(DOT, ".")
+      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(COMMA, ",")
+      {nullptr, RULE(infix_oper), Precedence::FACTOR, "* "},        // PUNCTUATOR(STAR, "*")
+      {nullptr, RULE(infix_oper), Precedence::FACTOR, "/ "},        // PUNCTUATOR(SLASH, "/")
+      {nullptr, RULE(infix_oper), Precedence::TERM, "% "},          // PUNCTUATOR(PERCENT, "%")
+      {nullptr, RULE(infix_oper), Precedence::TERM, "+ "},          // PUNCTUATOR(PLUS, "+")
+      {RULE(unary_oper), RULE(infix_oper), Precedence::TERM, "- "}, // PUNCTUATOR(MINUS, "-")
+      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(PIPE, "|")
+      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(AMP, "&")
+      {RULE(unary_oper), nullptr, Precedence::NONE, "!"},           // PUNCTUATOR(BANG, "!")
+      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(EQ, "=")
+      {nullptr, RULE(infix_oper), Precedence::COMPARISON, "< "},    // PUNCTUATOR(LT, "<")
+      {nullptr, RULE(infix_oper), Precedence::COMPARISON, "> "},    // PUNCTUATOR(GT, ">")
+      {nullptr, RULE(infix_oper), Precedence::COMPARISON, "<= "},   // PUNCTUATOR(LTEQ, "<=")
+      {nullptr, RULE(infix_oper), Precedence::COMPARISON, ">= "},   // PUNCTUATOR(GTEQ, ">=")
+      {nullptr, RULE(infix_oper), Precedence::EQUALITY, "== "},     // PUNCTUATOR(EQEQ, "==")
+      {nullptr, RULE(infix_oper), Precedence::EQUALITY, "!= "},     // PUNCTUATOR(BANGEQ, "!=")
 
-    static const ParseRule _rules[] = {
-      {grouping_fn, nullptr, Precedence::NONE, nullptr},        // PUNCTUATOR(LPAREN, "(")
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(RPAREN, ")")
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(LBRACKET, "[")
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(RBRACKET, "]")
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(LBRACE, "{")
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(RBRACE, "}")
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(COLON, ":")
-      {nullptr, call_fn, Precedence::CALL, nullptr},            // PUNCTUATOR(DOT, ".")
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(COMMA, ",")
-      {nullptr, infix_oper_fn, Precedence::FACTOR, "* "},       // PUNCTUATOR(STAR, "*")
-      {nullptr, infix_oper_fn, Precedence::FACTOR, "/ "},       // PUNCTUATOR(SLASH, "/")
-      {nullptr, infix_oper_fn, Precedence::TERM, "% "},         // PUNCTUATOR(PERCENT, "%")
-      {nullptr, infix_oper_fn, Precedence::TERM, "+ "},         // PUNCTUATOR(PLUS, "+")
-      {nullptr, infix_oper_fn, Precedence::TERM, "- "},         // PUNCTUATOR(MINUS, "-")
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(PIPE, "|")
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(AMP, "&")
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(BANG, "!")
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // PUNCTUATOR(EQ, "=")
-      {nullptr, infix_oper_fn, Precedence::COMPARISON, "< "},   // PUNCTUATOR(LT, "<")
-      {nullptr, infix_oper_fn, Precedence::COMPARISON, "> "},   // PUNCTUATOR(GT, ">")
-      {nullptr, infix_oper_fn, Precedence::COMPARISON, "<= "},  // PUNCTUATOR(LTEQ, "<=")
-      {nullptr, infix_oper_fn, Precedence::COMPARISON, ">= "},  // PUNCTUATOR(GTEQ, ">=")
-      {nullptr, infix_oper_fn, Precedence::EQUALITY, "== "},    // PUNCTUATOR(EQEQ, "==")
-      {nullptr, infix_oper_fn, Precedence::EQUALITY, "!= "},    // PUNCTUATOR(BANGEQ, "!=")
+      {nullptr, nullptr, Precedence::NONE, nullptr},                // KEYWORD(CLASS, "class")
+      {nullptr, nullptr, Precedence::NONE, nullptr},                // KEYWORD(ELSE, "else")
+      {RULE(boolean), nullptr, Precedence::NONE, nullptr},          // KEYWORD(FALSE, "false")
+      {RULE(function), nullptr, Precedence::NONE, nullptr},         // KEYWORD(FN, "fn")
+      {nullptr, nullptr, Precedence::NONE, nullptr},                // KEYWORD(IF, "if")
+      {nullptr, RULE(is), Precedence::IS, nullptr},                 // KEYWORD(IS, "is")
+      {RULE(nil), nullptr, Precedence::NONE, nullptr},              // KEYWORD(NIL, "nil")
+      {nullptr, nullptr, Precedence::NONE, nullptr},                // KEYWORD(STATIC, "static")
+      {RULE(this_exp), nullptr, Precedence::NONE, nullptr},         // KEYWORD(THIS, "this")
+      {RULE(boolean), nullptr, Precedence::NONE, nullptr},          // KEYWORD(TRUE, "true")
+      {nullptr, nullptr, Precedence::NONE, nullptr},                // KEYWORD(VAR, "var")
 
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // KEYWORD(CLASS, "class")
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // KEYWORD(ELSE, "else")
-      {boolean_fn, nullptr, Precedence::NONE, nullptr},         // KEYWORD(FALSE, "false")
-      {function_fn, nullptr, Precedence::NONE, nullptr},        // KEYWORD(FN, "fn")
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // KEYWORD(IF, "if")
-      {nullptr, is_fn, Precedence::IS, nullptr},                // KEYWORD(IS, "is")
-      {nil_fn, nullptr, Precedence::NONE, nullptr},             // KEYWORD(NIL, "nil")
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // KEYWORD(STATIC, "static")
-      {this_fn, nullptr, Precedence::NONE, nullptr},            // KEYWORD(THIS, "this")
-      {boolean_fn, nullptr, Precedence::NONE, nullptr},         // KEYWORD(TRUE, "true")
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // KEYWORD(VAR, "var")
+      {RULE(variable), nullptr, Precedence::NONE, nullptr},         // TOKEN(IDENTIFIER, "identifier")
+      {RULE(numeric), nullptr, Precedence::NONE, nullptr},          // TOKEN(NUMERIC, "numeric")
+      {RULE(string), nullptr, Precedence::NONE, nullptr},           // TOKEN(STRING, "string")
 
-      {variable_fn, nullptr, Precedence::NONE, nullptr},        // TOKEN(IDENTIFIER, "identifier")
-      {numeric_fn, nullptr, Precedence::NONE, nullptr},         // TOKEN(NUMERIC, "numeric")
-      {string_fn, nullptr, Precedence::NONE, nullptr},          // TOKEN(STRING, "string")
+      {nullptr, nullptr, Precedence::NONE, nullptr},                // TOKEN(NL, "new-line")
 
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // TOKEN(NL, "new-line")
-
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // TOKEN(ERROR, "error")
-      {nullptr, nullptr, Precedence::NONE, nullptr},            // TOKEN(EOF, "eof")
+      {nullptr, nullptr, Precedence::NONE, nullptr},                // TOKEN(ERROR, "error")
+      {nullptr, nullptr, Precedence::NONE, nullptr},                // TOKEN(EOF, "eof")
     };
+#undef RULE
 
     return _rules[Xt::as_type<int>(kind)];
   }
 
-  void parse_precedence(Precedence precedence) {
+  void parse_precedence(bool allow_assignment, Precedence precedence) {
     parser_.advance();
     auto& prefix_fn = get_rule(parser_.prev().kind()).prefix;
     if (!prefix_fn) {
@@ -240,14 +239,14 @@ class Compiler : private UnCopyable {
       return;
     }
 
-    prefix_fn(this);
+    prefix_fn(this, allow_assignment);
 
     while (precedence <= get_rule(parser_.curr().kind()).precedence) {
       parser_.advance();
 
       auto& infix_fn = get_rule(parser_.prev().kind()).infix;
       if (infix_fn)
-        infix_fn(this);
+        infix_fn(this, allow_assignment);
     }
   }
 
@@ -294,18 +293,18 @@ class Compiler : private UnCopyable {
     }
   }
 
-  void nil(void) {
+  void nil(bool allow_assignment) {
     emit_byte(Code::NIL);
   }
 
-  void boolean(void) {
+  void boolean(bool allow_assignment) {
     if (parser_.prev().kind() == TokenKind::KW_TRUE)
       emit_byte(Code::TRUE);
     else
       emit_byte(Code::FALSE);
   }
 
-  void numeric(void) {
+  void numeric(bool allow_assignment) {
     auto& tok = parser_.prev();
     Value constant = NumericObject::make_numeric(
         parser_.get_vm(), tok.as_numeric());
@@ -313,27 +312,48 @@ class Compiler : private UnCopyable {
     emit_constant(constant);
   }
 
-  void string(void) {
+  void string(bool allow_assignment) {
     auto& tok = parser_.prev();
     Value constant = StringObject::make_string(parser_.get_vm(), tok.as_string());
 
     emit_constant(constant);
   }
 
-  void variable(void) {
-    int local = locals_.get(parser_.prev().as_string());
+  void variable(bool allow_assignment) {
+    str_t variable_name = parser_.prev().as_string();
+    int local = locals_.get(variable_name);
+
+    // see if it's a global variable
+    int global = 0;
+    if (local == -1)
+      global = vm_gsymbols().get(variable_name);
+
+    if (local == -1 && global == -1)
+      error("undefined variable");
+
+    // if there's an `=` after a bare name, it's a variable assignment
+    if (match(TokenKind::TK_EQ)) {
+      if (!allow_assignment)
+        error("invalid assignment");
+
+      // compile the right-hand side
+      statement();
+
+      if (local != -1) {
+        emit_bytes(Code::STORE_LOCAL, local);
+        return;
+      }
+
+      emit_bytes(Code::STORE_GLOBAL, global);
+    }
+
+    // otherwise, it's just a variable access
+
     if (local != -1) {
       emit_bytes(Code::LOAD_LOCAL, local);
       return;
     }
-
-    int global = vm_gsymbols().get(parser_.prev().as_string());
-    if (global != -1) {
-      emit_bytes(Code::LOAD_GLOBAL, global);
-      return;
-    }
-
-    error("undefined variable");
+    emit_bytes(Code::LOAD_GLOBAL, global);
   }
 
   bool match(TokenKind expected) {
@@ -352,17 +372,15 @@ class Compiler : private UnCopyable {
           get_token_name(expected), get_token_name(parser_.prev().kind()));
   }
 
-  void statement(void) {
+  void definition(void) {
     if (match(TokenKind::KW_CLASS)) {
+      // create a variable to store the class in
       int symbol = declare_variable();
-
       // create the empty class
       emit_byte(Code::CLASS);
-
-      // store it in it's name
+      // store it in its name
       define_variable(symbol);
-
-      // compile the method definitions
+      // compile the method definition
       consume(TokenKind::TK_LBRACE);
       while (!match(TokenKind::TK_RBRACE)) {
         if (match(TokenKind::KW_STATIC))
@@ -376,69 +394,90 @@ class Compiler : private UnCopyable {
 
     if (match(TokenKind::KW_VAR)) {
       int symbol = declare_variable();
-
-      // allow uninitialized vars
       consume(TokenKind::TK_EQ);
-
       // compile the initializer
-      expression();
-
+      statement();
       define_variable(symbol);
       return;
     }
-
-    expression();
+    statement();
   }
 
-  void expression(void) {
+  void statement(void) {
     if (match(TokenKind::KW_IF)) {
       // compile the condition
       consume(TokenKind::TK_LPAREN);
-      expression();
+      assignment();
       consume(TokenKind::TK_RPAREN);
 
-      // compile the then block
+      // compile the then branch
       emit_byte(Code::JUMP_IF);
       // emit a placeholder, we'll patch it when we known what to jump to
-      int if_jump = emit_byte(0xff);
+      int if_jump = emit_byte(255);
+      statement();
 
-      expression();
       // jump over the else branch when the if branch is taken
       emit_byte(Code::JUMP);
-      // emit a placeholder, we'll patch it when we known what to jump to
-      int else_jump = emit_byte(0xff);
+      // emit a placeholder, we'll patch it when we know what to jump to
+      int else_jump = emit_byte(255);
 
-      // patch the if jump
+      // patch the jump
       fn_->set_code(if_jump, fn_->codes_count() - if_jump - 1);
-
-      // compile the else branch if there is one
+      // compile the else branch if thers is one
       if (match(TokenKind::KW_ELSE))
-        expression();
+        statement();
       else
         emit_byte(Code::NIL);
-
       // patch the jump over the else
       fn_->set_code(else_jump, fn_->codes_count() - else_jump - 1);
 
       return;
     }
 
-    return parse_precedence(Precedence::LOWEST);
+    // curly block
+    if (match(TokenKind::TK_LBRACE)) {
+      for (;;) {
+        definition();
+
+        // if there is no newline, it must be the end of the block on the same line
+        if (!match(TokenKind::TK_NL)) {
+          consume(TokenKind::TK_RBRACE);
+          break;
+        }
+
+        if (match(TokenKind::TK_RBRACE))
+          break;
+
+        // discard the result of the previous expression
+        emit_byte(Code::POP);
+      }
+      return;
+    }
+
+    assignment();
   }
 
-  void grouping(void) {
-    expression();
+  void expression(bool allow_assignment) {
+    parse_precedence(allow_assignment, Precedence::LOWEST);
+  }
+
+  void grouping(bool allow_assignment) {
+    expression(false);
     consume(TokenKind::TK_RPAREN);
   }
 
-  void function(void) {
+  void function(bool allow_assignment) {
     Compiler fn_compiler(parser_, this, false);
     // add the function to the constant table
     u8_t fn_constant = fn_->add_constant(fn_compiler.fn_);
 
+    // define a fake local slot for the receiver (the function object itself)
+    // so that later locals have the correct slot indices
+    fn_compiler.locals_.add("(this)");
+
     if (fn_compiler.match(TokenKind::TK_LBRACE)) {
       for (;;) {
-        fn_compiler.statement();
+        fn_compiler.definition();
 
         if (!fn_compiler.match(TokenKind::TK_NL)) {
           fn_compiler.consume(TokenKind::TK_RBRACE);
@@ -450,7 +489,7 @@ class Compiler : private UnCopyable {
       }
     }
     else {
-      fn_compiler.expression();
+      fn_compiler.expression(false);
     }
     fn_compiler.emit_byte(Code::END);
 
@@ -504,7 +543,7 @@ class Compiler : private UnCopyable {
     consume(TokenKind::TK_LBRACE);
     // block body
     for (;;) {
-      method_compiler.statement();
+      method_compiler.definition();
 
       // if there is no newline, is must be the end of the block on the same line
       if (!method_compiler.match(TokenKind::TK_NL)) {
@@ -532,7 +571,12 @@ class Compiler : private UnCopyable {
       emit_byte(Code::POP);
   }
 
-  void call(void) {
+  void assignment(void) {
+    // assignment statement
+    expression(true);
+  }
+
+  void call(bool allow_assignment) {
     str_t name;
     int argc = 0;
 
@@ -541,7 +585,7 @@ class Compiler : private UnCopyable {
       name += parser_.prev().as_string();
       if (match(TokenKind::TK_LPAREN)) {
         for (;;) {
-          expression();
+          statement();
           ++argc;
 
           name.push_back(' ');
@@ -564,24 +608,35 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::CALL_0 + argc, symbol);
   }
 
-  void is(void) {
+  void is(bool allow_assignment) {
     // compile the right-hand side
-    parse_precedence(Precedence::CALL);
+    parse_precedence(false, Precedence::CALL);
     emit_byte(Code::IS);
   }
 
-  void infix_oper(void) {
+  void infix_oper(bool allow_assignment) {
     auto& rule = get_rule(parser_.prev().kind());
 
     // compile the right hand side
-    parse_precedence(rule.precedence + 1);
+    parse_precedence(false, rule.precedence + 1);
 
     // call the operator method on the left-hand side
     int symbol = vm_methods().ensure(rule.name);
     emit_bytes(Code::CALL_1, symbol);
   }
 
-  void this_exp(void) {
+  void unary_oper(bool allow_assignment) {
+    auto& rule = get_rule(parser_.prev().kind());
+
+    // compile the argument
+    parse_precedence(false, Precedence::UNARY + 1);
+
+    // call the operator method on the left-hand side
+    int symbol = vm_methods().ensure(rule.name);
+    emit_bytes(Code::CALL_0, symbol);
+  }
+
+  void this_exp(bool allow_assignment) {
     // walk up the parent chain to see if there is an enclosing method
     Compiler* this_compiler = this;
     bool inside_method = false;
@@ -617,7 +672,7 @@ public:
   FunctionObject* compile_function(TokenKind end_kind) {
     parser_.get_vm().pin_object(fn_);
     for (;;) {
-      statement();
+      definition();
 
       // if there is no newline, it must be the end of the block on the same line
       if (!match(TokenKind::TK_NL)) {

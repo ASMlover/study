@@ -364,13 +364,8 @@ Value VM::interpret(FunctionObject* fn) {
 #define PEEK()  fiber->peek_value()
 #define RDARG() frame->get_code(frame->ip++)
 
-  int lastop;
   for (;;) {
     auto* frame = &fiber->peek_frame();
-    if (fiber->stack_size() > 0 && PEEK() == nullptr) {
-      lastop = frame->ip - 1;
-      std::cout << lastop << std::endl;
-    }
 
     switch (auto c = Xt::as_type<Code>(frame->get_code(frame->ip++))) {
     case Code::CONSTANT: PUSH(frame->get_constant(RDARG())); break;
