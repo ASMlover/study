@@ -193,10 +193,11 @@ class ClassObject final : public BaseObject {
   static constexpr sz_t kMaxMethods = 256;
 
   ClassObject* meta_class_{};
+  ClassObject* superclass_{};
   std::vector<Method> methods_{kMaxMethods};
 
   ClassObject(void) noexcept;
-  ClassObject(ClassObject* meta_class) noexcept;
+  ClassObject(ClassObject* meta_class, ClassObject* supercls = nullptr) noexcept;
 public:
   inline ClassObject* meta_class(void) const { return meta_class_; }
   inline int methods_count(void) const { return Xt::as_type<int>(methods_.size()); }
@@ -216,7 +217,7 @@ public:
   virtual str_t stringify(void) const override;
   virtual void gc_mark(VM& vm) override;
 
-  static ClassObject* make_class(VM& vm);
+  static ClassObject* make_class(VM& vm, ClassObject* superclass = nullptr);
 };
 
 class InstanceObject final : public BaseObject {
@@ -238,6 +239,7 @@ enum class Code : u8_t {
   FALSE,        // push `false` into the stack
   TRUE,         // push `true` into the stack
   CLASS,        // define a new empty class and push it into stack
+  SUBCLASS,     // pop a superclass from stack, push a new class that extends it
 
   // push the metaclass of the class on the top of the stack. does not
   // discard the class
@@ -307,6 +309,7 @@ class VM : private UnCopyable {
   ClassObject* class_class_{};
   ClassObject* nil_class_{};
   ClassObject* num_class_{};
+  ClassObject* obj_class_{};
   ClassObject* str_class_{};
 
   Value unsupported_{};
@@ -339,6 +342,7 @@ public:
   inline void set_class_cls(ClassObject* cls) { class_class_ = cls; }
   inline void set_nil_cls(ClassObject* cls) { nil_class_ = cls; }
   inline void set_num_cls(ClassObject* cls) { num_class_ = cls; }
+  inline void set_obj_cls(ClassObject* cls) { obj_class_ = cls; }
   inline void set_str_cls(ClassObject* cls) { str_class_ = cls; }
 
   inline ClassObject* fn_cls(void) const { return fn_class_; }
@@ -346,6 +350,7 @@ public:
   inline ClassObject* class_cls(void) const { return class_class_; }
   inline ClassObject* nil_cls(void) const { return nil_class_; }
   inline ClassObject* num_cls(void) const { return num_class_; }
+  inline ClassObject* obj_cls(void) const { return obj_class_; }
   inline ClassObject* str_cls(void) const { return str_class_; }
 
   inline void set_unsupported(Value unsupported) { unsupported_ = unsupported; }

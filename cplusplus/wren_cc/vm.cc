@@ -163,9 +163,14 @@ ClassObject::ClassObject(void) noexcept
   : BaseObject(ObjType::CLASS) {
 }
 
-ClassObject::ClassObject(ClassObject* meta_class) noexcept
+ClassObject::ClassObject(ClassObject* meta_class, ClassObject* supercls) noexcept
   : BaseObject(ObjType::CLASS)
-  , meta_class_(meta_class) {
+  , meta_class_(meta_class)
+  , superclass_(supercls) {
+  if (superclass_ != nullptr) {
+    for (int i = 0; i < kMaxMethods; ++i)
+      methods_[i] = superclass_->methods_[i];
+  }
 }
 
 str_t ClassObject::stringify(void) const {
@@ -182,9 +187,9 @@ void ClassObject::gc_mark(VM& vm) {
   }
 }
 
-ClassObject* ClassObject::make_class(VM& vm) {
-  auto* meta_class = new ClassObject();
-  auto* o = new ClassObject(meta_class);
+ClassObject* ClassObject::make_class(VM& vm, ClassObject* superclass) {
+  auto* meta_class = new ClassObject(nullptr, nullptr);
+  auto* o = new ClassObject(meta_class, superclass);
   vm.append_object(o);
   return o;
 }
@@ -373,8 +378,16 @@ Value VM::interpret(FunctionObject* fn) {
     case Code::FALSE: PUSH(BooleanObject::make_boolean(*this, false)); break;
     case Code::TRUE: PUSH(BooleanObject::make_boolean(*this, true)); break;
     case Code::CLASS:
+    case Code::SUBCLASS:
       {
-        ClassObject* cls = ClassObject::make_class(*this);
+        bool is_subclass = c == Code::SUBCLASS;
+        ClassObject* superclass;
+        if (is_subclass)
+          superclass = POP()->as_class();
+        else
+          superclass = obj_class_;
+
+        ClassObject* cls = ClassObject::make_class(*this, superclass);
 
         // define `new` method on the metaclass.
         int new_symbol = methods_.ensure("new");
@@ -426,8 +439,7 @@ Value VM::interpret(FunctionObject* fn) {
     case Code::CALL_9:
     case Code::CALL_10:
       {
-        int argc =
-          Xt::as_type<Code>(frame->get_code(frame->ip - 1)) - Code::CALL_0 + 1;
+        int argc = c - Code::CALL_0 + 1;
         int symbol = RDARG();
         Value receiver = fiber->get_value(fiber->stack_size() - argc);
 

@@ -236,6 +236,7 @@ static constexpr const char* kCoreLib =
 "class String {}\n"
 "class Function {}\n"
 "class Class {}\n"
+"class Object {}\n"
 "class IO {}\n"
 "var io = IO.new\n";
 
@@ -273,6 +274,8 @@ void load_core(VM& vm) {
   vm.set_primitive(vm.num_cls(), "== ", _primitive_numeric_eq);
   vm.set_primitive(vm.num_cls(), "!= ", _primitive_numeric_ne);
 
+  vm.set_obj_cls(vm.get_global("Object")->as_class());
+
   vm.set_str_cls(vm.get_global("String")->as_class());
   vm.set_primitive(vm.str_cls(), "len", _primitive_string_len);
   vm.set_primitive(vm.str_cls(), "contains ", _primitive_string_contains);
@@ -284,7 +287,7 @@ void load_core(VM& vm) {
   ClassObject* io_cls = vm.get_global("IO")->as_class();
   vm.set_primitive(io_cls, "write ", _primitive_io_write);
 
-  ClassObject* unsupported_cls = ClassObject::make_class(vm);
+  ClassObject* unsupported_cls = ClassObject::make_class(vm, vm.obj_cls());
   vm.set_unsupported(InstanceObject::make_instance(vm, unsupported_cls));
 }
 

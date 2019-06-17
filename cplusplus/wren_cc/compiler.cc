@@ -377,8 +377,17 @@ class Compiler : private UnCopyable {
     if (match(TokenKind::KW_CLASS)) {
       // create a variable to store the class in
       int symbol = declare_variable();
-      // create the empty class
-      emit_byte(Code::CLASS);
+
+      // load the superclass (if there is one)
+      if (match(TokenKind::KW_IS)) {
+        parse_precedence(false, Precedence::CALL);
+        emit_byte(Code::SUBCLASS);
+      }
+      else {
+        // create the empty class
+        emit_byte(Code::CLASS);
+      }
+
       // store it in its name
       define_variable(symbol);
       // compile the method definition
