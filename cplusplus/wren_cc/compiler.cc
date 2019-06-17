@@ -251,7 +251,7 @@ class Compiler : private UnCopyable {
   }
 
   int declare_variable(void) {
-    consume(TokenKind::TK_IDENTIFIER);
+    consume(TokenKind::TK_IDENTIFIER, "expected variable name");
 
     int symbol;
     str_t name = parser_.prev().as_string();
@@ -365,12 +365,11 @@ class Compiler : private UnCopyable {
     return true;
   }
 
-  void consume(TokenKind expected) {
+  void consume(TokenKind expected, const char* msg) {
     parser_.advance();
 
     if (parser_.prev().kind() != expected)
-      error("expected `%s`, got `%s`",
-          get_token_name(expected), get_token_name(parser_.prev().kind()));
+      error(msg);
   }
 
   void definition(void) {
@@ -391,20 +390,20 @@ class Compiler : private UnCopyable {
       // store it in its name
       define_variable(symbol);
       // compile the method definition
-      consume(TokenKind::TK_LBRACE);
+      consume(TokenKind::TK_LBRACE, "expect `{` before class body");
       while (!match(TokenKind::TK_RBRACE)) {
         if (match(TokenKind::KW_STATIC))
           method(true);
         else
           method(false);
-        consume(TokenKind::TK_NL);
+        consume(TokenKind::TK_NL, "expect newline after definition in class");
       }
       return;
     }
 
     if (match(TokenKind::KW_VAR)) {
       int symbol = declare_variable();
-      consume(TokenKind::TK_EQ);
+      consume(TokenKind::TK_EQ, "expect `=` after variable name");
       // compile the initializer
       statement();
       define_variable(symbol);
@@ -416,9 +415,9 @@ class Compiler : private UnCopyable {
   void statement(void) {
     if (match(TokenKind::KW_IF)) {
       // compile the condition
-      consume(TokenKind::TK_LPAREN);
+      consume(TokenKind::TK_LPAREN, "expect `(` after `if` keyword");
       assignment();
-      consume(TokenKind::TK_RPAREN);
+      consume(TokenKind::TK_RPAREN, "expect `)` after if condition");
 
       // compile the then branch
       emit_byte(Code::JUMP_IF);
@@ -451,7 +450,7 @@ class Compiler : private UnCopyable {
 
         // if there is no newline, it must be the end of the block on the same line
         if (!match(TokenKind::TK_NL)) {
-          consume(TokenKind::TK_RBRACE);
+          consume(TokenKind::TK_RBRACE, "expect `}` after block body");
           break;
         }
 
@@ -473,7 +472,7 @@ class Compiler : private UnCopyable {
 
   void grouping(bool allow_assignment) {
     expression(false);
-    consume(TokenKind::TK_RPAREN);
+    consume(TokenKind::TK_RPAREN, "expect `)` after expression");
   }
 
   void function(bool allow_assignment) {
@@ -490,7 +489,8 @@ class Compiler : private UnCopyable {
         fn_compiler.definition();
 
         if (!fn_compiler.match(TokenKind::TK_NL)) {
-          fn_compiler.consume(TokenKind::TK_RBRACE);
+          fn_compiler.consume(
+              TokenKind::TK_RBRACE, "expect `}` after function body");
           break;
         }
         if (fn_compiler.match(TokenKind::TK_RBRACE))
@@ -508,7 +508,7 @@ class Compiler : private UnCopyable {
 
   void method(bool is_static = false) {
     // compiles a method definition inside a class body
-    consume(TokenKind::TK_IDENTIFIER);
+    consume(TokenKind::TK_IDENTIFIER, "expect method name");
 
     Compiler method_compiler(parser_, this, true);
 
@@ -541,7 +541,7 @@ class Compiler : private UnCopyable {
         if (!match(TokenKind::TK_COMMA))
           break;
       }
-      consume(TokenKind::TK_RPAREN);
+      consume(TokenKind::TK_RPAREN, "expect `)` after method parameters");
 
       // if there isn't another part name after the argument list, stop
       if (!match(TokenKind::TK_IDENTIFIER))
@@ -550,14 +550,15 @@ class Compiler : private UnCopyable {
 
     int symbol = vm_methods().ensure(name);
 
-    consume(TokenKind::TK_LBRACE);
+    consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
     // block body
     for (;;) {
       method_compiler.definition();
 
       // if there is no newline, is must be the end of the block on the same line
       if (!method_compiler.match(TokenKind::TK_NL)) {
-        method_compiler.consume(TokenKind::TK_RBRACE);
+        method_compiler.consume(
+            TokenKind::TK_RBRACE, "expect `}` after method body");
         break;
       }
 
@@ -590,7 +591,7 @@ class Compiler : private UnCopyable {
     str_t name;
     int argc = 0;
 
-    consume(TokenKind::TK_IDENTIFIER);
+    consume(TokenKind::TK_IDENTIFIER, "expect method name after `.`");
     for (;;) {
       name += parser_.prev().as_string();
       if (match(TokenKind::TK_LPAREN)) {
@@ -602,7 +603,7 @@ class Compiler : private UnCopyable {
           if (!match(TokenKind::TK_COMMA))
             break;
         }
-        consume(TokenKind::TK_RPAREN);
+        consume(TokenKind::TK_RPAREN, "expect `)` after arguments");
 
         // if there isn't another part name after the argument list, stop
         if (!match(TokenKind::TK_IDENTIFIER))
@@ -686,7 +687,7 @@ public:
 
       // if there is no newline, it must be the end of the block on the same line
       if (!match(TokenKind::TK_NL)) {
-        consume(end_kind);
+        consume(end_kind, "expect end of file");
         break;
       }
       if (match(end_kind))
