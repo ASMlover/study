@@ -26,7 +26,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <cassert>
 #include <cstdint>
+#include <cstdlib>
+#include <iostream>
 #include <string>
 #include <string_view>
 
@@ -51,11 +54,17 @@ class Copyable {
 protected:
   Copyable(void) noexcept = default;
   ~Copyable(void) noexcept = default;
+  Copyable(const Copyable&) noexcept = default;
+  Copyable(Copyable&&) noexcept = default;
+  Copyable& operator=(const Copyable&) noexcept = default;
+  Copyable& operator=(Copyable&&) noexcept = default;
 };
 
 class UnCopyable {
   UnCopyable(const UnCopyable&) noexcept = delete;
+  UnCopyable(UnCopyable&&) noexcept = delete;
   UnCopyable& operator=(const UnCopyable&) noexcept = delete;
+  UnCopyable& operator=(UnCopyable&&) noexcept = delete;
 protected:
   UnCopyable(void) noexcept = default;
   ~UnCopyable(void) noexcept = default;
@@ -73,3 +82,13 @@ namespace Xt {
 }
 
 }
+
+#ifndef NDEBUG
+# define ASSERT(cond, msg) if (!(cond)) {\
+  std::cerr << "ASSERT FAIL `" << __FILE__ << "`: "\
+    << __LINE__ << " - " << msg << std::endl;\
+  std::abort();\
+}
+#else
+# define ASSERT(cond, msg) ((void)0)
+#endif
