@@ -526,26 +526,18 @@ class Compiler : private UnCopyable {
     //
     // will have name: "bar  else last"
     str_t name;
-    for (;;) {
-      name += parser_.prev().as_string();
+    name += parser_.prev().as_string();
 
-      if (!match(TokenKind::TK_LPAREN))
-        break;
-      for (;;) {
+    if (match(TokenKind::TK_LPAREN)) {
+      do {
         // define a local variable in the method for the parameter
         method_compiler.declare_variable();
 
         // add a space in the name for each argument, lets us overload
         // by arity
         name.push_back(' ');
-        if (!match(TokenKind::TK_COMMA))
-          break;
-      }
+      } while (match(TokenKind::TK_COMMA));
       consume(TokenKind::TK_RPAREN, "expect `)` after method parameters");
-
-      // if there isn't another part name after the argument list, stop
-      if (!match(TokenKind::TK_IDENTIFIER))
-        break;
     }
 
     int symbol = vm_methods().ensure(name);
@@ -592,26 +584,15 @@ class Compiler : private UnCopyable {
     int argc = 0;
 
     consume(TokenKind::TK_IDENTIFIER, "expect method name after `.`");
-    for (;;) {
-      name += parser_.prev().as_string();
-      if (match(TokenKind::TK_LPAREN)) {
-        for (;;) {
-          statement();
-          ++argc;
+    name += parser_.prev().as_string();
+    if (match(TokenKind::TK_LPAREN)) {
+      do {
+        statement();
+        ++argc;
 
-          name.push_back(' ');
-          if (!match(TokenKind::TK_COMMA))
-            break;
-        }
-        consume(TokenKind::TK_RPAREN, "expect `)` after arguments");
-
-        // if there isn't another part name after the argument list, stop
-        if (!match(TokenKind::TK_IDENTIFIER))
-          break;
-      }
-      else {
-        break;
-      }
+        name.push_back(' ');
+      } while (match(TokenKind::TK_COMMA));
+      consume(TokenKind::TK_RPAREN, "expect `)` after arguments");
     }
     int symbol = vm_methods().ensure(name);
 
