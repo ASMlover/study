@@ -139,9 +139,33 @@ def func_call():
                 if curr.id != ',':
                     break
                 advance(',')
+            self.node2 = tuple(self.node2)
         advance(')')
         return self
     symbol(')'); symbol(',')
+
+def lambda_expr():
+    def arguments(args):
+        while True:
+            if curr.id != '(name)':
+                raise SyntaxError('expected an arguments name')
+            args.append(curr)
+            advance()
+            if curr.id != ',':
+                break
+            advance(',')
+
+    @method(symbol('lambda'))
+    def nud(self):
+        self.node1 = []
+        if curr.id != ':':
+            arguments(self.node1)
+        self.node1 = tuple(self.node1)
+        advance(':')
+        self.node2 = expression()
+        return self
+
+    symbol(':')
 
 symbol('lambda', 20)
 symbol('if', 20)
@@ -167,7 +191,7 @@ symbol('(literal)').nud = lambda self: self
 symbol('(name)').nud = lambda self: self
 symbol('(end)')
 
-paren_expr(); logic_expr(); dot_expr(); attr_expr(); func_call()
+paren_expr(); logic_expr(); dot_expr(); attr_expr(); func_call(); lambda_expr()
 
 def tokenize_python(program):
     import tokenize
@@ -245,3 +269,4 @@ if __name__ == '__main__':
     print parse('foo.bar')
     print parse('"hello"[2]')
     print parse('hello(1, 2, 3)')
+    print parse('lambda a, b: a+b')
