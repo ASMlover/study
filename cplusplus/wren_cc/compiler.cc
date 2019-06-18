@@ -502,7 +502,7 @@ class Compiler : private UnCopyable {
     fn_compiler.locals_.add("(this)");
 
     str_t dummy_name;
-    parameters(dummy_name);
+    fn_compiler.parameters(dummy_name);
 
     if (fn_compiler.match(TokenKind::TK_LBRACE)) {
       for (;;) {
