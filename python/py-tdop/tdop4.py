@@ -128,6 +128,21 @@ def method(s):
         setattr(s, fn.__name__, fn)
     return bind
 
+def func_call():
+    @method(symbol('('))
+    def led(self, left):
+        self.node1 = left
+        self.node2 = []
+        if curr.id != ')':
+            while True:
+                self.node2.append(expression())
+                if curr.id != ',':
+                    break
+                advance(',')
+        advance(')')
+        return self
+    symbol(')'); symbol(',')
+
 symbol('lambda', 20)
 symbol('if', 20)
 infix_r('or', 30); infix_r('and', 40); prefix('not', 50)
@@ -152,7 +167,7 @@ symbol('(literal)').nud = lambda self: self
 symbol('(name)').nud = lambda self: self
 symbol('(end)')
 
-paren_expr(); logic_expr(); dot_expr(); attr_expr()
+paren_expr(); logic_expr(); dot_expr(); attr_expr(); func_call()
 
 def tokenize_python(program):
     import tokenize
@@ -229,3 +244,4 @@ if __name__ == '__main__':
     print parse('1 if 2 else 3')
     print parse('foo.bar')
     print parse('"hello"[2]')
+    print parse('hello(1, 2, 3)')
