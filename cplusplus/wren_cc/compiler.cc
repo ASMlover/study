@@ -36,6 +36,7 @@ namespace wrencc {
 
 class Compiler;
 using GrammerFn = std::function<void (Compiler*, bool)>;
+using SignatureFn = std::function<void (Compiler*, str_t&)>;
 
 enum class Precedence {
   NONE,
@@ -66,6 +67,7 @@ inline Precedence operator+(Precedence a, int b) {
 struct GrammerRule {
   GrammerFn prefix;
   GrammerFn infix;
+  SignatureFn method;
   Precedence precedence;
   const char* name;
 };
@@ -179,53 +181,63 @@ class Compiler : private UnCopyable {
 
   const GrammerRule& get_rule(TokenKind kind) const {
 #define RULE(fn) [](Compiler* c, bool b) { c->fn(b); }
+#define SIGN(fn) [](Compiler* c, str_t& n) { c->fn(n); }
+
+#define UNUSED {nullptr, nullptr, nullptr, Precedence::NONE, nullptr}
+#define PREFIX(fn) {RULE(fn), nullptr, nullptr, Precedence::NONE, nullptr}
+#define INFIX(fn, prec) {nullptr, RULE(fn), nullptr, prec, nullptr}
+#define INFIXOP(prec, name) {nullptr, RULE(infix_oper), SIGN(infix_signature), prec, name}
+#define OPER(prec, name) {RULE(unary_oper), RULE(infix_oper), SIGN(mixed_signature), prec, name}
+#define PREFIXOP(name) {RULE(unary_oper), nullptr, SIGN(unary_signature), Precedence::NONE, name}
+#define PREFIXNAME {RULE(variable), nullptr, SIGN(named_signature), Precedence::NONE, nullptr}
     static const GrammerRule _rules[] = {
-      {RULE(grouping), nullptr, Precedence::NONE, nullptr},         // PUNCTUATOR(LPAREN, "(")
-      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(RPAREN, ")")
-      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(LBRACKET, "[")
-      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(RBRACKET, "]")
-      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(LBRACE, "{")
-      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(RBRACE, "}")
-      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(COLON, ":")
-      {nullptr, RULE(call), Precedence::CALL, nullptr},             // PUNCTUATOR(DOT, ".")
-      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(COMMA, ",")
-      {nullptr, RULE(infix_oper), Precedence::FACTOR, "* "},        // PUNCTUATOR(STAR, "*")
-      {nullptr, RULE(infix_oper), Precedence::FACTOR, "/ "},        // PUNCTUATOR(SLASH, "/")
-      {nullptr, RULE(infix_oper), Precedence::TERM, "% "},          // PUNCTUATOR(PERCENT, "%")
-      {nullptr, RULE(infix_oper), Precedence::TERM, "+ "},          // PUNCTUATOR(PLUS, "+")
-      {RULE(unary_oper), RULE(infix_oper), Precedence::TERM, "- "}, // PUNCTUATOR(MINUS, "-")
-      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(PIPE, "|")
-      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(AMP, "&")
-      {RULE(unary_oper), nullptr, Precedence::NONE, "!"},           // PUNCTUATOR(BANG, "!")
-      {nullptr, nullptr, Precedence::NONE, nullptr},                // PUNCTUATOR(EQ, "=")
-      {nullptr, RULE(infix_oper), Precedence::COMPARISON, "< "},    // PUNCTUATOR(LT, "<")
-      {nullptr, RULE(infix_oper), Precedence::COMPARISON, "> "},    // PUNCTUATOR(GT, ">")
-      {nullptr, RULE(infix_oper), Precedence::COMPARISON, "<= "},   // PUNCTUATOR(LTEQ, "<=")
-      {nullptr, RULE(infix_oper), Precedence::COMPARISON, ">= "},   // PUNCTUATOR(GTEQ, ">=")
-      {nullptr, RULE(infix_oper), Precedence::EQUALITY, "== "},     // PUNCTUATOR(EQEQ, "==")
-      {nullptr, RULE(infix_oper), Precedence::EQUALITY, "!= "},     // PUNCTUATOR(BANGEQ, "!=")
+      PREFIX(grouping),                       // PUNCTUATOR(LPAREN, "(")
+      UNUSED,                                 // PUNCTUATOR(RPAREN, ")")
+      UNUSED,                                 // PUNCTUATOR(LBRACKET, "[")
+      UNUSED,                                 // PUNCTUATOR(RBRACKET, "]")
+      UNUSED,                                 // PUNCTUATOR(LBRACE, "{")
+      UNUSED,                                 // PUNCTUATOR(RBRACE, "}")
+      UNUSED,                                 // PUNCTUATOR(COLON, ":")
+      INFIX(call, Precedence::CALL),          // PUNCTUATOR(DOT, ".")
+      UNUSED,                                 // PUNCTUATOR(COMMA, ",")
+      INFIXOP(Precedence::FACTOR, "* "),      // PUNCTUATOR(STAR, "*")
+      INFIXOP(Precedence::FACTOR, "/ "),      // PUNCTUATOR(SLASH, "/")
+      INFIXOP(Precedence::TERM, "% "),        // PUNCTUATOR(PERCENT, "%")
+      INFIXOP(Precedence::TERM, "+ "),        // PUNCTUATOR(PLUS, "+")
+      OPER(Precedence::TERM, "- "),           // PUNCTUATOR(MINUS, "-")
+      UNUSED,                                 // PUNCTUATOR(PIPE, "|")
+      UNUSED,                                 // PUNCTUATOR(AMP, "&")
+      PREFIXOP("!"),                          // PUNCTUATOR(BANG, "!")
+      UNUSED,                                 // PUNCTUATOR(EQ, "=")
+      INFIXOP(Precedence::COMPARISON, "< "),  // PUNCTUATOR(LT, "<")
+      INFIXOP(Precedence::COMPARISON, "> "),  // PUNCTUATOR(GT, ">")
+      INFIXOP(Precedence::COMPARISON, "<= "), // PUNCTUATOR(LTEQ, "<=")
+      INFIXOP(Precedence::COMPARISON, ">= "), // PUNCTUATOR(GTEQ, ">=")
+      INFIXOP(Precedence::EQUALITY, "== "),   // PUNCTUATOR(EQEQ, "==")
+      INFIXOP(Precedence::EQUALITY, "!= "),   // PUNCTUATOR(BANGEQ, "!=")
 
-      {nullptr, nullptr, Precedence::NONE, nullptr},                // KEYWORD(CLASS, "class")
-      {nullptr, nullptr, Precedence::NONE, nullptr},                // KEYWORD(ELSE, "else")
-      {RULE(boolean), nullptr, Precedence::NONE, nullptr},          // KEYWORD(FALSE, "false")
-      {RULE(function), nullptr, Precedence::NONE, nullptr},         // KEYWORD(FN, "fn")
-      {nullptr, nullptr, Precedence::NONE, nullptr},                // KEYWORD(IF, "if")
-      {nullptr, RULE(is), Precedence::IS, nullptr},                 // KEYWORD(IS, "is")
-      {RULE(nil), nullptr, Precedence::NONE, nullptr},              // KEYWORD(NIL, "nil")
-      {nullptr, nullptr, Precedence::NONE, nullptr},                // KEYWORD(STATIC, "static")
-      {RULE(this_exp), nullptr, Precedence::NONE, nullptr},         // KEYWORD(THIS, "this")
-      {RULE(boolean), nullptr, Precedence::NONE, nullptr},          // KEYWORD(TRUE, "true")
-      {nullptr, nullptr, Precedence::NONE, nullptr},                // KEYWORD(VAR, "var")
+      UNUSED,                                 // KEYWORD(CLASS, "class")
+      UNUSED,                                 // KEYWORD(ELSE, "else")
+      PREFIX(boolean),                        // KEYWORD(FALSE, "false")
+      PREFIX(function),                       // KEYWORD(FN, "fn")
+      UNUSED,                                 // KEYWORD(IF, "if")
+      INFIX(is, Precedence::IS),              // KEYWORD(IS, "is")
+      PREFIX(nil),                            // KEYWORD(NIL, "nil")
+      UNUSED,                                 // KEYWORD(STATIC, "static")
+      PREFIX(this_exp),                       // KEYWORD(THIS, "this")
+      PREFIX(boolean),                        // KEYWORD(TRUE, "true")
+      UNUSED,                                 // KEYWORD(VAR, "var")
 
-      {RULE(variable), nullptr, Precedence::NONE, nullptr},         // TOKEN(IDENTIFIER, "identifier")
-      {RULE(numeric), nullptr, Precedence::NONE, nullptr},          // TOKEN(NUMERIC, "numeric")
-      {RULE(string), nullptr, Precedence::NONE, nullptr},           // TOKEN(STRING, "string")
+      PREFIXNAME,                             // TOKEN(IDENTIFIER, "identifier")
+      PREFIX(numeric),                        // TOKEN(NUMERIC, "numeric")
+      PREFIX(string),                         // TOKEN(STRING, "string")
 
-      {nullptr, nullptr, Precedence::NONE, nullptr},                // TOKEN(NL, "new-line")
+      UNUSED,                                 // TOKEN(NL, "new-line")
 
-      {nullptr, nullptr, Precedence::NONE, nullptr},                // TOKEN(ERROR, "error")
-      {nullptr, nullptr, Precedence::NONE, nullptr},                // TOKEN(EOF, "eof")
+      UNUSED,                                 // TOKEN(ERROR, "error")
+      UNUSED,                                 // TOKEN(EOF, "eof")
     };
+#undef SIGN
 #undef RULE
 
     return _rules[Xt::as_type<int>(kind)];
@@ -392,10 +404,15 @@ class Compiler : private UnCopyable {
       // compile the method definition
       consume(TokenKind::TK_LBRACE, "expect `{` before class body");
       while (!match(TokenKind::TK_RBRACE)) {
-        if (match(TokenKind::KW_STATIC))
-          method(true);
-        else
-          method(false);
+        bool is_static = match(TokenKind::KW_STATIC);
+        auto& signature = get_rule(parser_.curr().kind()).method;
+        parser_.advance();
+
+        if (!signature) {
+          error("expect method definition");
+          break;
+        }
+        method(is_static, signature);
         consume(TokenKind::TK_NL, "expect newline after definition in class");
       }
       return;
@@ -506,9 +523,9 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::CONSTANT, fn_constant);
   }
 
-  void method(bool is_static = false) {
+  void method(bool is_static, const SignatureFn& signature) {
     // compiles a method definition inside a class body
-    consume(TokenKind::TK_IDENTIFIER, "expect method name");
+    // consume(TokenKind::TK_IDENTIFIER, "expect method name");
 
     Compiler method_compiler(parser_, this, true);
 
@@ -525,21 +542,8 @@ class Compiler : private UnCopyable {
     //    foo.bar(a, b) else (c) last
     //
     // will have name: "bar  else last"
-    str_t name;
-    name += parser_.prev().as_string();
-
-    if (match(TokenKind::TK_LPAREN)) {
-      do {
-        // define a local variable in the method for the parameter
-        method_compiler.declare_variable();
-
-        // add a space in the name for each argument, lets us overload
-        // by arity
-        name.push_back(' ');
-      } while (match(TokenKind::TK_COMMA));
-      consume(TokenKind::TK_RPAREN, "expect `)` after method parameters");
-    }
-
+    str_t name(parser_.prev().as_string());
+    signature(&method_compiler, name);
     int symbol = vm_methods().ensure(name);
 
     consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
@@ -626,6 +630,47 @@ class Compiler : private UnCopyable {
     // call the operator method on the left-hand side
     int symbol = vm_methods().ensure(str_t(1, rule.name[0]));
     emit_bytes(Code::CALL_0, symbol);
+  }
+
+  void named_signature(str_t& name) {
+    // compiles a method signature for a regular named method
+
+    // parse the parameter list, if any
+    if (match(TokenKind::TK_LPAREN)) {
+      do {
+        // define a local variable in the method for the parameter
+        declare_variable();
+
+        // add a space in the name for the parameter
+        name.push_back(' ');
+      } while (match(TokenKind::TK_COMMA));
+      consume(TokenKind::TK_RPAREN, "expect `)` after parameters");
+    }
+  }
+
+  void infix_signature(str_t& name) {
+    // compiles a method signature for an infix operator
+
+    // add a space for the RHS parameter
+    name.push_back(' ');
+
+    // parse the parameter name
+    declare_variable();
+  }
+
+  void unary_signature(str_t& name) {
+    // compiles a method signature for an unary operator
+  }
+
+  void mixed_signature(str_t& name) {
+    // if there is a parameter name, it's an infix operator, otherwise it's unary
+    if (parser_.curr().kind() == TokenKind::TK_IDENTIFIER) {
+      // add a space for the RHS parameter
+      name.push_back(' ');
+
+      // parse the parameter name
+      declare_variable();
+    }
   }
 
   void this_exp(bool allow_assignment) {
