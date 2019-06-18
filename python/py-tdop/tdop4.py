@@ -174,6 +174,27 @@ def constant(id):
         self.value = id
         return self
 
+def not_expr():
+    @method(symbol('not'))
+    def led(self, left):
+        if curr.id != 'in':
+            raise SyntaxError('invalid syntax')
+        advance()
+        self.id = 'not in'
+        self.node1 = left
+        self.node2 = expression(60)
+        return self
+
+def is_expr():
+    @method(symbol('is'))
+    def led(self, left):
+        if curr.id == 'not':
+            advance()
+            self.id = 'is not'
+        self.node1 = left
+        self.node2 = expression(60)
+        return self
+
 symbol('lambda', 20)
 symbol('if', 20)
 infix_r('or', 30); infix_r('and', 40); prefix('not', 50)
@@ -200,6 +221,7 @@ symbol('(end)')
 
 paren_expr(); logic_expr(); dot_expr(); attr_expr(); func_call(); lambda_expr()
 constant('None'); constant('True'); constant('False')
+not_expr(); is_expr()
 
 def tokenize_python(program):
     import tokenize
@@ -280,3 +302,7 @@ if __name__ == '__main__':
     print parse('lambda a, b: a+b')
     print parse('1 is None')
     print parse('True or False')
+    print parse('1 in 2')
+    print parse('1 not in 2')
+    print parse('1 is 2')
+    print parse('1 is not 2')
