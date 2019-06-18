@@ -35,11 +35,21 @@ namespace wrencc {
 
 #define DEF_PRIMITIVE(fn)\
 static Value _primitive_##fn(VM& vm, Fiber& fiber, Value* args)
-
-DEF_PRIMITIVE(fn_call) {
-  vm.call_function(fiber, args[0]->as_function(), 1);
-  return nullptr;
+#define DEF_PRIMITIVE_FN(fn, argc)\
+static Value _primitive_##fn(VM& vm, Fiber& fiber, Value* args) {\
+  vm.call_function(fiber, args[0]->as_function(), argc);\
+  return nullptr;\
 }
+
+DEF_PRIMITIVE_FN(fn_call0, 1)
+DEF_PRIMITIVE_FN(fn_call1, 2)
+DEF_PRIMITIVE_FN(fn_call2, 3)
+DEF_PRIMITIVE_FN(fn_call3, 4)
+DEF_PRIMITIVE_FN(fn_call4, 5)
+DEF_PRIMITIVE_FN(fn_call5, 6)
+DEF_PRIMITIVE_FN(fn_call6, 7)
+DEF_PRIMITIVE_FN(fn_call7, 8)
+DEF_PRIMITIVE_FN(fn_call8, 9)
 
 DEF_PRIMITIVE(bool_tostring) {
   if (args[0]->as_boolean())
@@ -252,7 +262,15 @@ void load_core(VM& vm) {
   vm.set_class_cls(vm.get_global("Class")->as_class());
 
   vm.set_fn_cls(vm.get_global("Function")->as_class());
-  vm.set_primitive(vm.fn_cls(), "call", _primitive_fn_call);
+  vm.set_primitive(vm.fn_cls(), "call", _primitive_fn_call0);
+  vm.set_primitive(vm.fn_cls(), "call ", _primitive_fn_call1);
+  vm.set_primitive(vm.fn_cls(), "call  ", _primitive_fn_call2);
+  vm.set_primitive(vm.fn_cls(), "call   ", _primitive_fn_call3);
+  vm.set_primitive(vm.fn_cls(), "call    ", _primitive_fn_call4);
+  vm.set_primitive(vm.fn_cls(), "call     ", _primitive_fn_call5);
+  vm.set_primitive(vm.fn_cls(), "call      ", _primitive_fn_call6);
+  vm.set_primitive(vm.fn_cls(), "call       ", _primitive_fn_call7);
+  vm.set_primitive(vm.fn_cls(), "call        ", _primitive_fn_call8);
   vm.set_primitive(vm.fn_cls(), "== ", _primitive_fn_eq);
   vm.set_primitive(vm.fn_cls(), "!= ", _primitive_fn_ne);
 

@@ -189,7 +189,7 @@ class Compiler : private UnCopyable {
 #define INFIXOP(prec, name) {nullptr, RULE(infix_oper), SIGN(infix_signature), prec, name}
 #define OPER(prec, name) {RULE(unary_oper), RULE(infix_oper), SIGN(mixed_signature), prec, name}
 #define PREFIXOP(name) {RULE(unary_oper), nullptr, SIGN(unary_signature), Precedence::NONE, name}
-#define PREFIXNAME {RULE(variable), nullptr, SIGN(named_signature), Precedence::NONE, nullptr}
+#define PREFIXNAME {RULE(variable), nullptr, SIGN(parameters), Precedence::NONE, nullptr}
     static const GrammerRule _rules[] = {
       PREFIX(grouping),                       // PUNCTUATOR(LPAREN, "(")
       UNUSED,                                 // PUNCTUATOR(RPAREN, ")")
@@ -501,6 +501,9 @@ class Compiler : private UnCopyable {
     // so that later locals have the correct slot indices
     fn_compiler.locals_.add("(this)");
 
+    str_t dummy_name;
+    parameters(dummy_name);
+
     if (fn_compiler.match(TokenKind::TK_LBRACE)) {
       for (;;) {
         fn_compiler.definition();
@@ -632,22 +635,6 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::CALL_0, symbol);
   }
 
-  void named_signature(str_t& name) {
-    // compiles a method signature for a regular named method
-
-    // parse the parameter list, if any
-    if (match(TokenKind::TK_LPAREN)) {
-      do {
-        // define a local variable in the method for the parameter
-        declare_variable();
-
-        // add a space in the name for the parameter
-        name.push_back(' ');
-      } while (match(TokenKind::TK_COMMA));
-      consume(TokenKind::TK_RPAREN, "expect `)` after parameters");
-    }
-  }
-
   void infix_signature(str_t& name) {
     // compiles a method signature for an infix operator
 
@@ -670,6 +657,20 @@ class Compiler : private UnCopyable {
 
       // parse the parameter name
       declare_variable();
+    }
+  }
+
+  void parameters(str_t& name) {
+    // parse the parameter list, if any
+    if (match(TokenKind::TK_LPAREN)) {
+      do {
+        // define a local variable in the method for the parameters
+        declare_variable();
+
+        // add a space in the name for the parameters
+        name.push_back(' ');
+      } while (match(TokenKind::TK_COMMA));
+      consume(TokenKind::TK_RPAREN, "expect `)` after parameters");
     }
   }
 
