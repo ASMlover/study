@@ -167,6 +167,13 @@ def lambda_expr():
 
     symbol(':')
 
+def constant(id):
+    @method(symbol(id))
+    def nud(self):
+        self.id = "(literal)"
+        self.value = id
+        return self
+
 symbol('lambda', 20)
 symbol('if', 20)
 infix_r('or', 30); infix_r('and', 40); prefix('not', 50)
@@ -192,6 +199,7 @@ symbol('(name)').nud = lambda self: self
 symbol('(end)')
 
 paren_expr(); logic_expr(); dot_expr(); attr_expr(); func_call(); lambda_expr()
+constant('None'); constant('True'); constant('False')
 
 def tokenize_python(program):
     import tokenize
@@ -270,3 +278,5 @@ if __name__ == '__main__':
     print parse('"hello"[2]')
     print parse('hello(1, 2, 3)')
     print parse('lambda a, b: a+b')
+    print parse('1 is None')
+    print parse('True or False')
