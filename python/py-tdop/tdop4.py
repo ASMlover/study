@@ -128,6 +128,127 @@ def method(s):
         setattr(s, fn.__name__, fn)
     return bind
 
+def func_call():
+    @method(symbol('('))
+    def led(self, left):
+        self.node1 = left
+        self.node2 = []
+        if curr.id != ')':
+            while True:
+                self.node2.append(expression())
+                if curr.id != ',':
+                    break
+                advance(',')
+            self.node2 = tuple(self.node2)
+        advance(')')
+        return self
+    symbol(')'); symbol(',')
+
+def lambda_expr():
+    def arguments(args):
+        while True:
+            if curr.id != '(name)':
+                raise SyntaxError('expected an arguments name')
+            args.append(curr)
+            advance()
+            if curr.id != ',':
+                break
+            advance(',')
+
+    @method(symbol('lambda'))
+    def nud(self):
+        self.node1 = []
+        if curr.id != ':':
+            arguments(self.node1)
+        self.node1 = tuple(self.node1)
+        advance(':')
+        self.node2 = expression()
+        return self
+
+    symbol(':')
+
+def constant(id):
+    @method(symbol(id))
+    def nud(self):
+        self.id = "(literal)"
+        self.value = id
+        return self
+
+def not_expr():
+    @method(symbol('not'))
+    def led(self, left):
+        if curr.id != 'in':
+            raise SyntaxError('invalid syntax')
+        advance()
+        self.id = 'not in'
+        self.node1 = left
+        self.node2 = expression(60)
+        return self
+
+def is_expr():
+    @method(symbol('is'))
+    def led(self, left):
+        if curr.id == 'not':
+            advance()
+            self.id = 'is not'
+        self.node1 = left
+        self.node2 = expression(60)
+        return self
+
+def tuple_expr():
+    @method(symbol('('))
+    def nud(self):
+        self.node1 = []
+        comma = False
+        if curr.id != ')':
+            while True:
+                if curr.id == ')':
+                    break
+                self.node1.append(expression())
+                if curr.id != ',':
+                    break
+                comma = True
+                advance(',')
+        advance(')')
+        if not self.node1 or comma:
+            return self
+        else:
+            return self.node1[0]
+
+def list_expr():
+    @method(symbol('['))
+    def nud(self):
+        self.node1 = []
+        if curr.id != ']':
+            while True:
+                if curr.id == ']':
+                    break
+                self.node1.append(expression())
+                if curr.id != ',':
+                    break
+                advance(',')
+        advance(']')
+        return self
+    symbol(']')
+
+def dict_expr():
+    @method(symbol('{'))
+    def nud(self):
+        self.node1 = []
+        if curr.id != '}':
+            while True:
+                if curr.id == '}':
+                    break
+                self.node1.append(expression())
+                advance(':')
+                self.node1.append(expression())
+                if curr.id != ',':
+                    break
+                advance(',')
+        advance('}')
+        return self
+    symbol('}'); symbol(':')
+
 symbol('lambda', 20)
 symbol('if', 20)
 infix_r('or', 30); infix_r('and', 40); prefix('not', 50)
@@ -152,7 +273,10 @@ symbol('(literal)').nud = lambda self: self
 symbol('(name)').nud = lambda self: self
 symbol('(end)')
 
-paren_expr(); logic_expr(); dot_expr(); attr_expr()
+paren_expr(); logic_expr(); dot_expr(); attr_expr(); func_call(); lambda_expr()
+constant('None'); constant('True'); constant('False')
+not_expr(); is_expr()
+tuple_expr(); list_expr(); dict_expr()
 
 def tokenize_python(program):
     import tokenize
@@ -229,3 +353,17 @@ if __name__ == '__main__':
     print parse('1 if 2 else 3')
     print parse('foo.bar')
     print parse('"hello"[2]')
+    print parse('hello(1, 2, 3)')
+    print parse('lambda a, b: a+b')
+    print parse('1 is None')
+    print parse('True or False')
+    print parse('1 in 2')
+    print parse('1 not in 2')
+    print parse('1 is 2')
+    print parse('1 is not 2')
+    print parse('()')
+    print parse('(1)')
+    print parse('(1,)')
+    print parse('(1,2)')
+    print parse('[1,2,3]')
+    print parse('{1: "one", 2: "two"}')
