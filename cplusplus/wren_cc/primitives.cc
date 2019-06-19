@@ -59,23 +59,21 @@ DEF_PRIMITIVE(bool_tostring) {
 }
 
 DEF_PRIMITIVE(bool_not) {
-  return BooleanObject::make_boolean(vm, !args[0].as_boolean());
+  return !args[0].as_boolean();
 }
 
 DEF_PRIMITIVE(bool_eq) {
   if (!args[1].is_boolean())
-    return BooleanObject::make_boolean(vm, false);
+    return false;
 
-  return BooleanObject::make_boolean(vm,
-      args[0].as_boolean() == args[1].as_boolean());
+  return args[0].as_boolean() == args[1].as_boolean();
 }
 
 DEF_PRIMITIVE(bool_ne) {
   if (!args[1].is_boolean())
-    return BooleanObject::make_boolean(vm, true);
+    return true;
 
-  return BooleanObject::make_boolean(vm,
-      args[0].as_boolean() != args[1].as_boolean());
+  return args[0].as_boolean() != args[1].as_boolean();
 }
 
 DEF_PRIMITIVE(numeric_abs) {
@@ -137,45 +135,39 @@ DEF_PRIMITIVE(numeric_mod) {
 DEF_PRIMITIVE(numeric_gt) {
   if (!args[1].is_numeric())
     return vm.unsupported();
-  return BooleanObject::make_boolean(vm,
-      args[0].as_numeric() > args[1].as_numeric());
+  return args[0].as_numeric() > args[1].as_numeric();
 }
 
 DEF_PRIMITIVE(numeric_ge) {
   if (!args[1].is_numeric())
     return vm.unsupported();
-  return BooleanObject::make_boolean(vm,
-      args[0].as_numeric() >= args[1].as_numeric());
+  return args[0].as_numeric() >= args[1].as_numeric();
 }
 
 DEF_PRIMITIVE(numeric_lt) {
   if (!args[1].is_numeric())
     return vm.unsupported();
-  return BooleanObject::make_boolean(vm,
-      args[0].as_numeric() < args[1].as_numeric());
+  return args[0].as_numeric() < args[1].as_numeric();
 }
 
 DEF_PRIMITIVE(numeric_le) {
   if (!args[1].is_numeric())
     return vm.unsupported();
-  return BooleanObject::make_boolean(vm,
-      args[0].as_numeric() <= args[1].as_numeric());
+  return args[0].as_numeric() <= args[1].as_numeric();
 }
 
 DEF_PRIMITIVE(numeric_eq) {
   if (!args[1].is_numeric())
-    return BooleanObject::make_boolean(vm, false);
+    return false;
 
-  return BooleanObject::make_boolean(vm,
-      args[0].as_numeric() == args[1].as_numeric());
+  return args[0].as_numeric() == args[1].as_numeric();
 }
 
 DEF_PRIMITIVE(numeric_ne) {
   if (!args[1].is_numeric())
-    return BooleanObject::make_boolean(vm, true);
+    return true;
 
-  return BooleanObject::make_boolean(vm,
-      args[0].as_numeric() != args[1].as_numeric());
+  return args[0].as_numeric() != args[1].as_numeric();
 }
 
 DEF_PRIMITIVE(string_len) {
@@ -206,34 +198,30 @@ DEF_PRIMITIVE(string_add) {
 
 DEF_PRIMITIVE(string_eq) {
   if (!args[1].is_string())
-    return BooleanObject::make_boolean(vm, false);
+    return false;
 
-  auto r = strcmp(args[0].as_cstring(), args[1].as_cstring()) == 0;
-  return BooleanObject::make_boolean(vm, r);
+  return strcmp(args[0].as_cstring(), args[1].as_cstring()) == 0;
 }
 
 DEF_PRIMITIVE(string_ne) {
   if (!args[1].is_string())
-    return BooleanObject::make_boolean(vm, true);
+    return true;
 
-  auto r = strcmp(args[0].as_cstring(), args[1].as_cstring()) != 0;
-  return BooleanObject::make_boolean(vm, r);
+  return strcmp(args[0].as_cstring(), args[1].as_cstring()) != 0;
 }
 
 DEF_PRIMITIVE(fn_eq) {
   if (!args[1].is_function())
-    return BooleanObject::make_boolean(vm, false);
+    return false;
 
-  return BooleanObject::make_boolean(vm,
-      args[0].as_function() == args[1].as_function());
+  return args[0].as_function() == args[1].as_function();
 }
 
 DEF_PRIMITIVE(fn_ne) {
   if (!args[1].is_function())
-    return BooleanObject::make_boolean(vm, true);
+    return true;
 
-  return BooleanObject::make_boolean(vm,
-      args[0].as_function() != args[1].as_function());
+  return args[0].as_function() != args[1].as_function();
 }
 
 DEF_PRIMITIVE(io_write) {

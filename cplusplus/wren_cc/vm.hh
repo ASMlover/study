@@ -43,9 +43,6 @@ enum class ValueType {
 };
 
 enum class ObjType {
-  NIL,
-  TRUE,
-  FALSE,
   NUMERIC,
   STRING,
   FUNCTION,
@@ -69,7 +66,7 @@ class ClassObject;
 class InstanceObject;
 
 class BaseObject : private UnCopyable {
-  ObjType type_{ObjType::NIL};
+  ObjType type_;
   ObjFlag flag_{};
 public:
   BaseObject(ObjType type) noexcept : type_(type) {}
@@ -91,6 +88,7 @@ class Value : public Copyable {
 public:
   Value(void) noexcept {}
   Value(nil_t) noexcept : type_(ValueType::NIL) {}
+  Value(bool b) noexcept : type_(b ? ValueType::TRUE : ValueType::FALSE) {}
   Value(BaseObject* obj) noexcept;
 
   inline ValueType type(void) const { return type_; }
@@ -124,24 +122,6 @@ public:
 };
 
 std::ostream& operator<<(std::ostream& out, const Value& val);
-
-class NilObject final : public BaseObject {
-  NilObject(void) noexcept : BaseObject(ObjType::NIL) {}
-public:
-  virtual str_t stringify(void) const override;
-
-  static NilObject* make_nil(VM& vm);
-};
-
-class BooleanObject final : public BaseObject {
-  BooleanObject(bool b) noexcept
-    : BaseObject(b ? ObjType::TRUE : ObjType::FALSE) {
-  }
-public:
-  virtual str_t stringify(void) const override;
-
-  static BooleanObject* make_boolean(VM& vm, bool b);
-};
 
 class NumericObject final : public BaseObject {
   double value_{};
@@ -348,7 +328,7 @@ class VM : private UnCopyable {
   Value unsupported_{};
 
   SymbolTable global_symbols_;
-  std::vector<Value> globals_{kMaxGlobals};
+  std::vector<Value> globals_;
 
   Fiber* fiber_{};
 

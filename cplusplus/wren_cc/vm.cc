@@ -38,9 +38,6 @@ std::ostream& operator<<(std::ostream& out, const Value& val) {
 
 Value::Value(BaseObject* obj) noexcept {
   switch (obj->type()) {
-  case ObjType::NIL: type_ = ValueType::NIL; break;
-  case ObjType::TRUE: type_ = ValueType::TRUE; break;
-  case ObjType::FALSE: type_ = ValueType::FALSE; break;
   case ObjType::NUMERIC: type_ = ValueType::NUMERIC; break;
   case ObjType::STRING:
   case ObjType::FUNCTION:
@@ -76,30 +73,15 @@ InstanceObject* Value::as_instance(void) const {
 }
 
 str_t Value::stringify(void) const {
-  if (type_ == ValueType::NO_VALUE)
-    return "<no_value>";
-
-  return obj_ != nullptr ? obj_->stringify() : "nil";
-}
-
-str_t NilObject::stringify(void) const {
-  return "nil";
-}
-
-NilObject* NilObject::make_nil(VM& vm) {
-  auto* o = new NilObject();
-  vm.append_object(o);
-  return o;
-}
-
-str_t BooleanObject::stringify(void) const {
-  return type() == ObjType::TRUE ? "true" : "false";
-}
-
-BooleanObject* BooleanObject::make_boolean(VM& vm, bool b) {
-  auto* o = new BooleanObject(b);
-  vm.append_object(o);
-  return o;
+  switch (type_) {
+  case ValueType::NO_VALUE: return "<no_value>";
+  case ValueType::NIL: return "nil";
+  case ValueType::TRUE: return "true";
+  case ValueType::FALSE: return "false";
+  case ValueType::NUMERIC:
+  case ValueType::OBJECT: return obj_->stringify();
+  }
+  return "";
 }
 
 str_t NumericObject::stringify(void) const {
@@ -121,7 +103,7 @@ StringObject::StringObject(const char* s, int n, bool replace_owner) noexcept
     value_ = const_cast<char*>(s);
   }
   else {
-    value_ = new char[size_ + 1];
+    value_ = new char[Xt::as_type<sz_t>(size_ + 1)];
     if (s != nullptr) {
       memcpy(value_, s, n);
       value_[size_] = 0;
@@ -150,7 +132,7 @@ StringObject* StringObject::make_string(VM& vm, const str_t& s) {
 StringObject* StringObject::make_string(
     VM& vm, StringObject* s1, StringObject* s2) {
   int n = s1->size() + s2->size();
-  char* s = new char [n + 1];
+  char* s = new char [Xt::as_type<sz_t>(n + 1)];
   memcpy(s, s1->cstr(), s1->size());
   memcpy(s + s1->size(), s2->cstr(), s2->size());
   s[n] = 0;
@@ -328,6 +310,7 @@ static Value _primitive_metaclass_new(VM& vm, Fiber& fiber, Value* args) {
 VM::VM(void) noexcept {
   fiber_ = new Fiber();
 
+  globals_.resize(kMaxGlobals);
   for (int i = 0; i < kMaxGlobals; ++i)
     globals_[i] = nullptr;
 
@@ -365,15 +348,21 @@ void VM::unpin_object(const Value& value) {
 }
 
 ClassObject* VM::get_class(const Value& val) const {
-  switch (val.objtype()) {
-  case ObjType::NIL: return nil_class_;
-  case ObjType::FALSE:
-  case ObjType::TRUE: return bool_class_;
-  case ObjType::NUMERIC: return num_class_;
-  case ObjType::STRING: return str_class_;
-  case ObjType::FUNCTION: return fn_class_;
-  case ObjType::CLASS: return val.as_class()->meta_class();
-  case ObjType::INSTANCE: return val.as_instance()->cls();
+  switch (val.type()) {
+  case ValueType::NO_VALUE:
+  case ValueType::NIL: return nil_class_;
+  case ValueType::TRUE:
+  case ValueType::FALSE: return bool_class_;
+  case ValueType::NUMERIC: return num_class_;
+  case ValueType::OBJECT:
+    switch (val.objtype()) {
+    case ObjType::NUMERIC: return num_class_;
+    case ObjType::STRING: return str_class_;
+    case ObjType::FUNCTION: return fn_class_;
+    case ObjType::CLASS: return val.as_class()->meta_class();
+    case ObjType::INSTANCE: return val.as_instance()->cls();
+    }
+    break;
   }
   return nullptr;
 }
@@ -392,9 +381,9 @@ Value VM::interpret(FunctionObject* fn) {
 
     switch (auto c = Xt::as_type<Code>(frame->get_code(frame->ip++))) {
     case Code::CONSTANT: PUSH(frame->get_constant(RDARG())); break;
-    case Code::NIL: PUSH(NilObject::make_nil(*this)); break;
-    case Code::FALSE: PUSH(BooleanObject::make_boolean(*this, false)); break;
-    case Code::TRUE: PUSH(BooleanObject::make_boolean(*this, true)); break;
+    case Code::NIL: PUSH(nullptr); break;
+    case Code::FALSE: PUSH(false); break;
+    case Code::TRUE: PUSH(true); break;
     case Code::CLASS:
     case Code::SUBCLASS:
       {
@@ -507,7 +496,7 @@ Value VM::interpret(FunctionObject* fn) {
         const Value& obj = POP();
 
         ClassObject* actual = get_class(obj);
-        PUSH(BooleanObject::make_boolean(*this, actual == cls.as_class()));
+        PUSH(actual == cls.as_class());
       } break;
     case Code::END:
       {
