@@ -32,36 +32,54 @@
 
 namespace wrencc {
 
-std::ostream& operator<<(std::ostream& out, Value val) {
-  return out << val->stringify();
+std::ostream& operator<<(std::ostream& out, const Value& val) {
+  return out << val.stringify();
 }
 
-bool BaseObject::as_boolean(void) const {
-  return type_ == ObjType::TRUE;
+Value::Value(BaseObject* obj) noexcept {
+  switch (obj->type()) {
+  case ObjType::NIL: type_ = ValueType::NIL; break;
+  case ObjType::TRUE: type_ = ValueType::TRUE; break;
+  case ObjType::FALSE: type_ = ValueType::FALSE; break;
+  case ObjType::NUMERIC: type_ = ValueType::NUMERIC; break;
+  case ObjType::STRING:
+  case ObjType::FUNCTION:
+  case ObjType::CLASS:
+  case ObjType::INSTANCE: type_ = ValueType::OBJECT; break;
+  default: type_ = ValueType::NO_VALUE; break;
+  }
+  obj_ = obj;
 }
 
-double BaseObject::as_numeric(void) const {
-  return Xt::down<const NumericObject>(this)->value();
+double Value::as_numeric(void) const {
+  return Xt::down<NumericObject>(obj_)->value();
 }
 
-StringObject* BaseObject::as_string(void) const {
-  return Xt::down<StringObject>(const_cast<BaseObject*>(this));
+StringObject* Value::as_string(void) const {
+  return Xt::down<StringObject>(obj_);
 }
 
-const char* BaseObject::as_cstring(void) const {
-  return Xt::down<const StringObject>(this)->cstr();
+const char* Value::as_cstring(void) const {
+  return Xt::down<StringObject>(obj_)->cstr();
 }
 
-FunctionObject* BaseObject::as_function(void) const {
-  return Xt::down<FunctionObject>(const_cast<BaseObject*>(this));
+FunctionObject* Value::as_function(void) const {
+  return Xt::down<FunctionObject>(obj_);
 }
 
-ClassObject* BaseObject::as_class(void) const {
-  return Xt::down<ClassObject>(const_cast<BaseObject*>(this));
+ClassObject* Value::as_class(void) const {
+  return Xt::down<ClassObject>(obj_);
 }
 
-InstanceObject* BaseObject::as_instance(void) const {
-  return Xt::down<InstanceObject>(const_cast<BaseObject*>(this));
+InstanceObject* Value::as_instance(void) const {
+  return Xt::down<InstanceObject>(obj_);
+}
+
+str_t Value::stringify(void) const {
+  if (type_ == ValueType::NO_VALUE)
+    return "<no_value>";
+
+  return obj_ != nullptr ? obj_->stringify() : "nil";
 }
 
 str_t NilObject::stringify(void) const {
@@ -149,8 +167,8 @@ str_t FunctionObject::stringify(void) const {
 }
 
 void FunctionObject::gc_mark(VM& vm) {
-  for (auto* c : constants_)
-    vm.mark_object(c);
+  for (auto& c : constants_)
+    vm.mark_value(c);
 }
 
 FunctionObject* FunctionObject::make_function(VM& vm) {
@@ -250,7 +268,7 @@ struct CallFrame {
   }
 
   inline u8_t get_code(int i) const { return fn->get_code(i); }
-  inline Value get_constant(int i) const { return fn->get_constant(i); }
+  inline const Value& get_constant(int i) const { return fn->get_constant(i); }
 };
 
 class Fiber : private UnCopyable {
@@ -269,14 +287,14 @@ public:
   inline CallFrame& peek_frame(void) { return frames_.back(); }
   inline void pop_frame(void) { frames_.pop_back(); }
   inline bool empty_frame(void) const { return frames_.empty(); }
-  inline Value get_value(int i) const { return stack_[i]; }
-  inline void set_value(int i, Value v) { stack_[i] = v; }
+  inline const Value& get_value(int i) const { return stack_[i]; }
+  inline void set_value(int i, const Value& v) { stack_[i] = v; }
 
-  inline Value peek_value(int distance = 0) const {
+  inline const Value& peek_value(int distance = 0) const {
     return stack_[stack_.size() - 1 - distance];
   }
 
-  inline void push(Value v) {
+  inline void push(const Value& v) {
     stack_.push_back(v);
   }
 
@@ -290,8 +308,8 @@ public:
     frames_.push_back(CallFrame(0, fn, stack_size() - argc));
   }
 
-  void iter_stacks(std::function<void (Value)>&& visit) {
-    for (auto* v : stack_)
+  void iter_stacks(std::function<void (const Value&)>&& visit) {
+    for (auto& v : stack_)
       visit(v);
   }
 
@@ -304,7 +322,7 @@ public:
 /// VM IMPLEMENTATIONS
 
 static Value _primitive_metaclass_new(VM& vm, Fiber& fiber, Value* args) {
-  return InstanceObject::make_instance(vm, args[0]->as_class());
+  return InstanceObject::make_instance(vm, args[0].as_class());
 }
 
 VM::VM(void) noexcept {
@@ -331,31 +349,31 @@ void VM::set_global(ClassObject* cls, const str_t& name) {
   globals_[symbol] = obj;
 }
 
-Value VM::get_global(const str_t& name) const {
+const Value& VM::get_global(const str_t& name) const {
   int symbol = global_symbols_.get(name);
   return globals_[symbol];
 }
 
-void VM::pin_object(Value value) {
+void VM::pin_object(const Value& value) {
   ASSERT(pinned_.size() < kMaxPinned, "too many pinned objects");
   pinned_.push_back(value);
 }
 
-void VM::unpin_object(Value value) {
-  ASSERT(pinned_.back() == value, "unppinning object out of stack order");
+void VM::unpin_object(const Value& value) {
+  ASSERT(pinned_.back().type() == value.type(), "unppinning object out of stack order");
   pinned_.pop_back();
 }
 
-ClassObject* VM::get_class(Value obj) const {
-  switch (obj->type()) {
+ClassObject* VM::get_class(const Value& val) const {
+  switch (val.objtype()) {
   case ObjType::NIL: return nil_class_;
   case ObjType::FALSE:
   case ObjType::TRUE: return bool_class_;
   case ObjType::NUMERIC: return num_class_;
   case ObjType::STRING: return str_class_;
   case ObjType::FUNCTION: return fn_class_;
-  case ObjType::CLASS: return obj->as_class()->meta_class();
-  case ObjType::INSTANCE: return obj->as_instance()->cls();
+  case ObjType::CLASS: return val.as_class()->meta_class();
+  case ObjType::INSTANCE: return val.as_instance()->cls();
   }
   return nullptr;
 }
@@ -383,11 +401,15 @@ Value VM::interpret(FunctionObject* fn) {
         bool is_subclass = c == Code::SUBCLASS;
         ClassObject* superclass;
         if (is_subclass)
-          superclass = POP()->as_class();
+          superclass = POP().as_class();
         else
           superclass = obj_class_;
 
         ClassObject* cls = ClassObject::make_class(*this, superclass);
+
+        // assume the first class being defined is Object
+        if (obj_class_ == nullptr)
+          obj_class_ = cls;
 
         // define `new` method on the metaclass.
         int new_symbol = methods_.ensure("new");
@@ -395,14 +417,14 @@ Value VM::interpret(FunctionObject* fn) {
             new_symbol, MethodType::PRIMITIVE, _primitive_metaclass_new);
         PUSH(cls);
       } break;
-    case Code::METACLASS: PUSH(PEEK()->as_class()->meta_class()); break;
+    case Code::METACLASS: PUSH(PEEK().as_class()->meta_class()); break;
     case Code::METHOD:
       {
         int symbol = RDARG();
         int constant = RDARG();
-        ClassObject* cls = PEEK()->as_class();
+        ClassObject* cls = PEEK().as_class();
 
-        FunctionObject* body = frame->get_constant(constant)->as_function();
+        FunctionObject* body = frame->get_constant(constant).as_function();
         cls->set_method(symbol, MethodType::BLOCK, body);
       } break;
     case Code::LOAD_LOCAL:
@@ -441,7 +463,7 @@ Value VM::interpret(FunctionObject* fn) {
       {
         int argc = c - Code::CALL_0 + 1;
         int symbol = RDARG();
-        Value receiver = fiber->get_value(fiber->stack_size() - argc);
+        const Value& receiver = fiber->get_value(fiber->stack_size() - argc);
 
         ClassObject* cls = get_class(receiver);
         auto& method = cls->get_method(symbol);
@@ -459,7 +481,7 @@ Value VM::interpret(FunctionObject* fn) {
             Value result = method.primitive(*this, *fiber, args);
 
             // if the primitive pushed a call frame, it returns nullptr
-            if (result != nullptr) {
+            if (!result.is_no_value()) {
               fiber->set_value(fiber->stack_size() - argc, result);
               fiber->resize_stack(fiber->stack_size() - (argc - 1));
             }
@@ -474,22 +496,22 @@ Value VM::interpret(FunctionObject* fn) {
     case Code::JUMP_IF:
       {
         int offset = RDARG();
-        Value cond = POP();
+        const Value& cond = POP();
 
-        if (!cond->as_boolean())
+        if (!cond.as_boolean())
           frame->ip += offset;
       } break;
     case Code::IS:
       {
-        Value cls = POP();
-        Value obj = POP();
+        const Value& cls = POP();
+        const Value& obj = POP();
 
         ClassObject* actual = get_class(obj);
-        PUSH(BooleanObject::make_boolean(*this, actual == cls->as_class()));
+        PUSH(BooleanObject::make_boolean(*this, actual == cls.as_class()));
       } break;
     case Code::END:
       {
-        Value r = POP();
+        const Value& r = POP();
         fiber->pop_frame();
 
         if (fiber->empty_frame())
@@ -521,14 +543,14 @@ void VM::call_function(Fiber& fiber, FunctionObject* fn, int argc) {
 void VM::collect(void) {
   // global variables
   for (int i = 0; i < global_symbols_.count(); ++i)
-    mark_object(globals_[i]);
+    mark_value(globals_[i]);
   // pinned objects
-  for (auto* o : pinned_)
-    mark_object(o);
+  for (auto& o : pinned_)
+    mark_value(o);
   // stack functions
   fiber_->iter_frames([this](const CallFrame& f) { mark_object(f.fn); });
   // stack variables
-  fiber_->iter_stacks([this](Value v) { mark_object(v); });
+  fiber_->iter_stacks([this](const Value& v) { mark_value(v); });
 
   // collect any unmarked objects
   for (auto it = objects_.begin(); it != objects_.end();) {
@@ -549,6 +571,8 @@ void VM::free_object(BaseObject* obj) {
   std::cout
     << "`" << Xt::cast<void>(obj) << "` free object "
     << "`" << obj->stringify() << "`" << std::endl;
+
+  delete obj;
 }
 
 void VM::append_object(BaseObject* obj) {
@@ -567,6 +591,12 @@ void VM::mark_object(BaseObject* obj) {
     return;
 
   obj->set_flag(obj->flag() | ObjFlag::MARKED);
+
+  obj->gc_mark(*this);
+}
+
+void VM::mark_value(const Value& val) {
+  mark_object(val.as_object());
 }
 
 }

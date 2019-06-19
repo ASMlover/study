@@ -32,6 +32,16 @@
 
 namespace wrencc {
 
+enum class ValueType {
+  NO_VALUE,
+
+  NIL,
+  TRUE,
+  FALSE,
+  NUMERIC,
+  OBJECT,
+};
+
 enum class ObjType {
   NIL,
   TRUE,
@@ -49,7 +59,6 @@ enum ObjFlag {
 
 class VM;
 class BaseObject;
-using Value = BaseObject*;
 
 class NilObject;
 class BooleanObject;
@@ -70,15 +79,36 @@ public:
   inline ObjFlag flag(void) const { return flag_; }
   template <typename T> inline void set_flag(T f) { flag_ = Xt::as_type<ObjFlag>(f); }
 
-  inline bool is_nil(void) const { return type_ == ObjType::NIL; }
-  inline bool is_boolean(void) const { return type_ == ObjType::TRUE || type_ == ObjType::FALSE; }
-  inline bool is_numeric(void) const { return type_ == ObjType::NUMERIC; }
-  inline bool is_string(void) const { return type_ == ObjType::STRING; }
-  inline bool is_function(void) const { return type_ == ObjType::FUNCTION; }
-  inline bool is_class(void) const { return type_ == ObjType::CLASS; }
-  inline bool is_instance(void) const { return type_ == ObjType::INSTANCE; }
+  virtual str_t stringify(void) const = 0;
+  virtual void gc_mark(VM& vm) {}
+};
 
-  bool as_boolean(void) const;
+class Value : public Copyable {
+  ValueType type_{ValueType::NO_VALUE};
+  BaseObject* obj_{};
+
+  inline bool check(ObjType type) const { return is_object() && obj_->type() == type; }
+public:
+  Value(void) noexcept {}
+  Value(nil_t) noexcept : type_(ValueType::NIL) {}
+  Value(BaseObject* obj) noexcept;
+
+  inline ValueType type(void) const { return type_; }
+  inline ObjType objtype(void) const { return obj_->type(); }
+
+  inline bool is_no_value(void) const { return type_ == ValueType::NO_VALUE; }
+  inline bool is_nil(void) const { return type_ == ValueType::NIL; }
+  inline bool is_boolean(void) const { return type_ == ValueType::TRUE || type_ == ValueType::FALSE; }
+  inline bool is_numeric(void) const { return type_ == ValueType::NUMERIC; }
+  inline bool is_object(void) const { return type_ == ValueType::OBJECT; }
+  inline bool is_string(void) const { return check(ObjType::STRING); }
+  inline bool is_function(void) const { return check(ObjType::FUNCTION); }
+  inline bool is_class(void) const { return check(ObjType::CLASS); }
+  inline bool is_instance(void) const { return check(ObjType::INSTANCE); }
+
+  inline BaseObject* as_object(void) const { return obj_; }
+  inline bool as_boolean(void) const { return type_ == ValueType::TRUE; }
+
   double as_numeric(void) const;
   StringObject* as_string(void) const;
   const char* as_cstring(void) const;
@@ -86,11 +116,14 @@ public:
   ClassObject* as_class(void) const;
   InstanceObject* as_instance(void) const;
 
-  virtual str_t stringify(void) const = 0;
-  virtual void gc_mark(VM& vm) {}
+  str_t stringify(void) const;
+
+  static Value no_value(void) {
+    return Value();
+  }
 };
 
-std::ostream& operator<<(std::ostream& out, Value val);
+std::ostream& operator<<(std::ostream& out, const Value& val);
 
 class NilObject final : public BaseObject {
   NilObject(void) noexcept : BaseObject(ObjType::NIL) {}
@@ -150,7 +183,7 @@ public:
   inline int codes_count(void) const { return Xt::as_type<int>(codes_.size()); }
   inline int constants_count(void) const { return Xt::as_type<int>(constants_.size()); }
   inline u8_t get_code(int i) const { return codes_[i]; }
-  inline Value get_constant(int i) const { return constants_[i]; }
+  inline const Value& get_constant(int i) const { return constants_[i]; }
 
   template <typename T> inline int add_code(T c) {
     codes_.push_back(Xt::as_type<u8_t>(c));
@@ -161,7 +194,7 @@ public:
     codes_[i] = Xt::as_type<u8_t>(c);
   }
 
-  inline int add_constant(Value v) {
+  inline int add_constant(const Value& v) {
     constants_.push_back(v);
     return Xt::as_type<int>(constants_.size()) - 1;
   }
@@ -329,7 +362,7 @@ class VM : private UnCopyable {
 
   Value interpret(FunctionObject* fn);
 
-  ClassObject* get_class(Value obj) const;
+  ClassObject* get_class(const Value& val) const;
 
   void collect(void);
   void free_object(BaseObject* obj);
@@ -353,19 +386,20 @@ public:
   inline ClassObject* obj_cls(void) const { return obj_class_; }
   inline ClassObject* str_cls(void) const { return str_class_; }
 
-  inline void set_unsupported(Value unsupported) { unsupported_ = unsupported; }
-  inline Value unsupported(void) const { return unsupported_; }
+  inline void set_unsupported(const Value& unsupported) { unsupported_ = unsupported; }
+  inline const Value& unsupported(void) const { return unsupported_; }
 
   inline SymbolTable& methods(void) { return methods_; }
   inline SymbolTable& gsymbols(void) { return global_symbols_; }
   void set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn);
   void set_global(ClassObject* cls, const str_t& name);
-  Value get_global(const str_t& name) const;
-  void pin_object(Value value);
-  void unpin_object(Value value);
+  const Value& get_global(const str_t& name) const;
+  void pin_object(const Value& value);
+  void unpin_object(const Value& value);
 
   void append_object(BaseObject* obj);
   void mark_object(BaseObject* obj);
+  void mark_value(const Value& val);
 
   void interpret(const str_t& source_bytes);
   void call_function(Fiber& fiber, FunctionObject* fn, int argc);
