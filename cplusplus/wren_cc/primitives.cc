@@ -37,8 +37,8 @@ namespace wrencc {
 static Value _primitive_##fn(VM& vm, Fiber& fiber, Value* args)
 #define DEF_PRIMITIVE_FN(fn, argc)\
 static Value _primitive_##fn(VM& vm, Fiber& fiber, Value* args) {\
-  vm.call_function(fiber, args[0]->as_function(), argc);\
-  return nullptr;\
+  vm.call_function(fiber, args[0].as_function(), argc);\
+  return Value::no_value();\
 }
 
 DEF_PRIMITIVE_FN(fn_call0, 1)
@@ -52,139 +52,139 @@ DEF_PRIMITIVE_FN(fn_call7, 8)
 DEF_PRIMITIVE_FN(fn_call8, 9)
 
 DEF_PRIMITIVE(bool_tostring) {
-  if (args[0]->as_boolean())
+  if (args[0].as_boolean())
     return StringObject::make_string(vm, "true");
   else
     return StringObject::make_string(vm, "false");
 }
 
 DEF_PRIMITIVE(bool_not) {
-  return BooleanObject::make_boolean(vm, !args[0]->as_boolean());
+  return BooleanObject::make_boolean(vm, !args[0].as_boolean());
 }
 
 DEF_PRIMITIVE(bool_eq) {
-  if (!args[1]->is_boolean())
+  if (!args[1].is_boolean())
     return BooleanObject::make_boolean(vm, false);
 
   return BooleanObject::make_boolean(vm,
-      args[0]->as_boolean() == args[1]->as_boolean());
+      args[0].as_boolean() == args[1].as_boolean());
 }
 
 DEF_PRIMITIVE(bool_ne) {
-  if (!args[1]->is_boolean())
+  if (!args[1].is_boolean())
     return BooleanObject::make_boolean(vm, true);
 
   return BooleanObject::make_boolean(vm,
-      args[0]->as_boolean() != args[1]->as_boolean());
+      args[0].as_boolean() != args[1].as_boolean());
 }
 
 DEF_PRIMITIVE(numeric_abs) {
-  return NumericObject::make_numeric(vm, std::abs(args[0]->as_numeric()));
+  return NumericObject::make_numeric(vm, std::abs(args[0].as_numeric()));
 }
 
 DEF_PRIMITIVE(numeric_tostring) {
   std::stringstream ss;
-  ss << args[0]->as_numeric();
+  ss << args[0].as_numeric();
   str_t s = ss.str();
 
   return StringObject::make_string(vm, s);
 }
 
 DEF_PRIMITIVE(numeric_neg) {
-  return NumericObject::make_numeric(vm, -args[0]->as_numeric());
+  return NumericObject::make_numeric(vm, -args[0].as_numeric());
 }
 
 DEF_PRIMITIVE(numeric_add) {
-  if (!args[1]->is_numeric())
+  if (!args[1].is_numeric())
     return vm.unsupported();
 
   return NumericObject::make_numeric(vm,
-      args[0]->as_numeric() + args[1]->as_numeric());
+      args[0].as_numeric() + args[1].as_numeric());
 }
 
 DEF_PRIMITIVE(numeric_sub) {
-  if (!args[1]->is_numeric())
+  if (!args[1].is_numeric())
     return vm.unsupported();
 
   return NumericObject::make_numeric(vm,
-      args[0]->as_numeric() - args[1]->as_numeric());
+      args[0].as_numeric() - args[1].as_numeric());
 }
 
 DEF_PRIMITIVE(numeric_mul) {
-  if (!args[1]->is_numeric())
+  if (!args[1].is_numeric())
     return vm.unsupported();
 
   return NumericObject::make_numeric(vm,
-      args[0]->as_numeric() * args[1]->as_numeric());
+      args[0].as_numeric() * args[1].as_numeric());
 }
 
 DEF_PRIMITIVE(numeric_div) {
-  if (!args[1]->is_numeric())
+  if (!args[1].is_numeric())
     return vm.unsupported();
 
   return NumericObject::make_numeric(vm,
-      args[0]->as_numeric() / args[1]->as_numeric());
+      args[0].as_numeric() / args[1].as_numeric());
 }
 
 DEF_PRIMITIVE(numeric_mod) {
-  if (!args[1]->is_numeric())
+  if (!args[1].is_numeric())
     return vm.unsupported();
 
   return NumericObject::make_numeric(vm,
-      std::fmod(args[0]->as_numeric(), args[1]->as_numeric()));
+      std::fmod(args[0].as_numeric(), args[1].as_numeric()));
 }
 
 DEF_PRIMITIVE(numeric_gt) {
-  if (!args[1]->is_numeric())
+  if (!args[1].is_numeric())
     return vm.unsupported();
   return BooleanObject::make_boolean(vm,
-      args[0]->as_numeric() > args[1]->as_numeric());
+      args[0].as_numeric() > args[1].as_numeric());
 }
 
 DEF_PRIMITIVE(numeric_ge) {
-  if (!args[1]->is_numeric())
+  if (!args[1].is_numeric())
     return vm.unsupported();
   return BooleanObject::make_boolean(vm,
-      args[0]->as_numeric() >= args[1]->as_numeric());
+      args[0].as_numeric() >= args[1].as_numeric());
 }
 
 DEF_PRIMITIVE(numeric_lt) {
-  if (!args[1]->is_numeric())
+  if (!args[1].is_numeric())
     return vm.unsupported();
   return BooleanObject::make_boolean(vm,
-      args[0]->as_numeric() < args[1]->as_numeric());
+      args[0].as_numeric() < args[1].as_numeric());
 }
 
 DEF_PRIMITIVE(numeric_le) {
-  if (!args[1]->is_numeric())
+  if (!args[1].is_numeric())
     return vm.unsupported();
   return BooleanObject::make_boolean(vm,
-      args[0]->as_numeric() <= args[1]->as_numeric());
+      args[0].as_numeric() <= args[1].as_numeric());
 }
 
 DEF_PRIMITIVE(numeric_eq) {
-  if (!args[1]->is_numeric())
+  if (!args[1].is_numeric())
     return BooleanObject::make_boolean(vm, false);
 
   return BooleanObject::make_boolean(vm,
-      args[0]->as_numeric() == args[1]->as_numeric());
+      args[0].as_numeric() == args[1].as_numeric());
 }
 
 DEF_PRIMITIVE(numeric_ne) {
-  if (!args[1]->is_numeric())
+  if (!args[1].is_numeric())
     return BooleanObject::make_boolean(vm, true);
 
   return BooleanObject::make_boolean(vm,
-      args[0]->as_numeric() != args[1]->as_numeric());
+      args[0].as_numeric() != args[1].as_numeric());
 }
 
 DEF_PRIMITIVE(string_len) {
-  return NumericObject::make_numeric(vm, args[0]->as_string()->size());
+  return NumericObject::make_numeric(vm, args[0].as_string()->size());
 }
 
 DEF_PRIMITIVE(string_contains) {
-  StringObject* orig = args[0]->as_string();
-  StringObject* subs = args[1]->as_string();
+  StringObject* orig = args[0].as_string();
+  StringObject* subs = args[1].as_string();
 
   if (orig->size() == 0 && subs->size() == 0)
     return NumericObject::make_numeric(vm, 1);
@@ -196,42 +196,44 @@ DEF_PRIMITIVE(string_tostring) {
 }
 
 DEF_PRIMITIVE(string_add) {
-  if (!args[1]->is_string())
+  if (!args[1].is_string())
     return vm.unsupported();
 
-  StringObject* lhs = args[0]->as_string();
-  StringObject* rhs = args[1]->as_string();
+  StringObject* lhs = args[0].as_string();
+  StringObject* rhs = args[1].as_string();
   return StringObject::make_string(vm, lhs, rhs);
 }
 
 DEF_PRIMITIVE(string_eq) {
-  if (!args[1]->is_string())
+  if (!args[1].is_string())
     return BooleanObject::make_boolean(vm, false);
 
-  auto r = strcmp(args[0]->as_cstring(), args[1]->as_cstring()) == 0;
+  auto r = strcmp(args[0].as_cstring(), args[1].as_cstring()) == 0;
   return BooleanObject::make_boolean(vm, r);
 }
 
 DEF_PRIMITIVE(string_ne) {
-  if (!args[1]->is_string())
+  if (!args[1].is_string())
     return BooleanObject::make_boolean(vm, true);
 
-  auto r = strcmp(args[0]->as_cstring(), args[1]->as_cstring()) != 0;
+  auto r = strcmp(args[0].as_cstring(), args[1].as_cstring()) != 0;
   return BooleanObject::make_boolean(vm, r);
 }
 
 DEF_PRIMITIVE(fn_eq) {
-  if (!args[1]->is_function())
+  if (!args[1].is_function())
     return BooleanObject::make_boolean(vm, false);
 
-  return BooleanObject::make_boolean(vm, args[0] == args[1]);
+  return BooleanObject::make_boolean(vm,
+      args[0].as_function() == args[1].as_function());
 }
 
 DEF_PRIMITIVE(fn_ne) {
-  if (!args[1]->is_function())
+  if (!args[1].is_function())
     return BooleanObject::make_boolean(vm, true);
 
-  return BooleanObject::make_boolean(vm, args[0] != args[1]);
+  return BooleanObject::make_boolean(vm,
+      args[0].as_function() != args[1].as_function());
 }
 
 DEF_PRIMITIVE(io_write) {
@@ -253,15 +255,15 @@ static constexpr const char* kCoreLib =
 void load_core(VM& vm) {
   vm.interpret(kCoreLib);
 
-  vm.set_bool_cls(vm.get_global("Bool")->as_class());
+  vm.set_bool_cls(vm.get_global("Bool").as_class());
   vm.set_primitive(vm.bool_cls(), "toString", _primitive_bool_tostring);
   vm.set_primitive(vm.bool_cls(), "!", _primitive_bool_not);
   vm.set_primitive(vm.bool_cls(), "== ", _primitive_bool_eq);
   vm.set_primitive(vm.bool_cls(), "!= ", _primitive_bool_ne);
 
-  vm.set_class_cls(vm.get_global("Class")->as_class());
+  vm.set_class_cls(vm.get_global("Class").as_class());
 
-  vm.set_fn_cls(vm.get_global("Function")->as_class());
+  vm.set_fn_cls(vm.get_global("Function").as_class());
   vm.set_primitive(vm.fn_cls(), "call", _primitive_fn_call0);
   vm.set_primitive(vm.fn_cls(), "call ", _primitive_fn_call1);
   vm.set_primitive(vm.fn_cls(), "call  ", _primitive_fn_call2);
@@ -274,9 +276,9 @@ void load_core(VM& vm) {
   vm.set_primitive(vm.fn_cls(), "== ", _primitive_fn_eq);
   vm.set_primitive(vm.fn_cls(), "!= ", _primitive_fn_ne);
 
-  vm.set_nil_cls(vm.get_global("Nil")->as_class());
+  vm.set_nil_cls(vm.get_global("Nil").as_class());
 
-  vm.set_num_cls(vm.get_global("Numeric")->as_class());
+  vm.set_num_cls(vm.get_global("Numeric").as_class());
   vm.set_primitive(vm.num_cls(), "abs", _primitive_numeric_abs);
   vm.set_primitive(vm.num_cls(), "toString", _primitive_numeric_tostring);
   vm.set_primitive(vm.num_cls(), "-", _primitive_numeric_neg);
@@ -292,9 +294,9 @@ void load_core(VM& vm) {
   vm.set_primitive(vm.num_cls(), "== ", _primitive_numeric_eq);
   vm.set_primitive(vm.num_cls(), "!= ", _primitive_numeric_ne);
 
-  vm.set_obj_cls(vm.get_global("Object")->as_class());
+  // vm.set_obj_cls(vm.get_global("Object").as_class());
 
-  vm.set_str_cls(vm.get_global("String")->as_class());
+  vm.set_str_cls(vm.get_global("String").as_class());
   vm.set_primitive(vm.str_cls(), "len", _primitive_string_len);
   vm.set_primitive(vm.str_cls(), "contains ", _primitive_string_contains);
   vm.set_primitive(vm.str_cls(), "toString", _primitive_string_tostring);
@@ -302,7 +304,7 @@ void load_core(VM& vm) {
   vm.set_primitive(vm.str_cls(), "== ", _primitive_string_eq);
   vm.set_primitive(vm.str_cls(), "!= ", _primitive_string_ne);
 
-  ClassObject* io_cls = vm.get_global("IO")->as_class();
+  ClassObject* io_cls = vm.get_global("IO").as_class();
   vm.set_primitive(io_cls, "write ", _primitive_io_write);
 
   ClassObject* unsupported_cls = ClassObject::make_class(vm, vm.obj_cls());

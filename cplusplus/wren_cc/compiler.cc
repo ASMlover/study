@@ -174,7 +174,7 @@ class Compiler : private UnCopyable {
     emit_byte(b2);
   }
 
-  inline void emit_constant(Value v) {
+  inline void emit_constant(const Value& v) {
     u8_t b = fn_->add_constant(v);
     emit_bytes(Code::CONSTANT, b);
   }
@@ -318,17 +318,14 @@ class Compiler : private UnCopyable {
 
   void numeric(bool allow_assignment) {
     auto& tok = parser_.prev();
-    Value constant = NumericObject::make_numeric(
-        parser_.get_vm(), tok.as_numeric());
-
-    emit_constant(constant);
+    emit_constant(NumericObject::make_numeric(
+          parser_.get_vm(), tok.as_numeric()));
   }
 
   void string(bool allow_assignment) {
     auto& tok = parser_.prev();
-    Value constant = StringObject::make_string(parser_.get_vm(), tok.as_string());
-
-    emit_constant(constant);
+    emit_constant(StringObject::make_string(
+          parser_.get_vm(), tok.as_string()));
   }
 
   void variable(bool allow_assignment) {
