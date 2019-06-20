@@ -35,3 +35,4 @@ message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` _MEVO_HEADERS: ${_MEVO_HEADERS}
 message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` _MEVO_SOURCES: ${_MEVO_SOURCES}")
 
 add_executable(${OUTPUT_NAME} ${_MEVO_SOURCES} ${_MEVO_HEADERS})
+target_link_libraries(${OUTPUT_NAME} _mevo)
