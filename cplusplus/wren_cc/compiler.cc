@@ -29,6 +29,7 @@
 #include <iostream>
 #include <vector>
 #include "lexer.hh"
+#include "value.hh"
 #include "vm.hh"
 #include "compiler.hh"
 

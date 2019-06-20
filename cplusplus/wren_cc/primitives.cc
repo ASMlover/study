@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cmath>
 #include <iostream>
-#include <sstream>
+#include "value.hh"
 #include "vm.hh"
 #include "compiler.hh"
 #include "primitives.hh"
@@ -81,11 +81,7 @@ DEF_PRIMITIVE(numeric_abs) {
 }
 
 DEF_PRIMITIVE(numeric_tostring) {
-  std::stringstream ss;
-  ss << args[0].as_numeric();
-  str_t s = ss.str();
-
-  return StringObject::make_string(vm, s);
+  return StringObject::make_string(vm, args[0].stringify());
 }
 
 DEF_PRIMITIVE(numeric_neg) {
