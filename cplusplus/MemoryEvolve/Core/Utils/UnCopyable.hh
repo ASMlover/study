@@ -26,53 +26,16 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <cstdint>
-#include <memory>
-
-#if !defined(_MEVO_UNUSED)
-# define _MEVO_UNUSED(x) ((void)x)
-#endif
-
-#if !defined(_MEVO_CHECK)
-# include <cstdlib>
-# define _MEVO_CHECK(condition, message) do {\
-    if (!(condition)) {\
-        std::fprintf(stderr,\
-            "[%s:%d] CHECKING FAILED `%s()` - `%s` - %s\n",\
-            __FILE__,\
-            __LINE__,\
-            __func__,\
-            #condition,\
-            (message));\
-        std::fflush(stderr);\
-        std::abort();\
-    }\
-  } while (0)
-#endif
-
-#if !defined(_MEVO_COUNTOF)
-# define _MEVO_COUNTOF(array) sizeof(_mevo::__countof_impl(array).elements)
-#endif
-
 namespace _mevo {
 
-template <std::ptrdiff_t N> struct Sizer { char elements[N]; };
-template <typename T, std::ptrdiff_t N> Sizer<N> __countof_impl(T (&array)[N]);
-
-template <typename T> struct Identity { typedef T type; };
-template <typename T>
-inline T implicit_cast(typename Identity<T>::type x) noexcept {
-  return x;
-}
-
-template <typename T>
-inline T* get_raw_pointer(const std::unique_ptr<T>& p) noexcept {
-  return p.get();
-}
-
-template <typename T>
-inline T* get_raw_pointer(const std::shared_ptr<T>& p) noexcept {
-  return p.get();
-}
+class UnCopyable {
+  UnCopyable(const UnCopyable&) noexcept = delete;
+  UnCopyable(UnCopyable&&) noexcept = delete;
+  UnCopyable& operator=(const UnCopyable&) noexcept = delete;
+  UnCopyable& operator=(UnCopyable&&) noexcept = delete;
+protected:
+  UnCopyable(void) noexcept = default;
+  ~UnCopyable(void) noexcept = default;
+};
 
 }

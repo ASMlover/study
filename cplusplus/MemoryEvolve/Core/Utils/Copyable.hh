@@ -26,6 +26,16 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <Core/Utils/Copyable.h>
-#include <Core/Utils/UnCopyable.h>
-#include <Core/Utils/Types.h>
+namespace _mevo {
+
+class Copyable {
+protected:
+  Copyable(void) noexcept = default;
+  ~Copyable(void) noexcept = default;
+  Copyable(const Copyable&) noexcept = default;
+  Copyable(Copyable&&) noexcept = default;
+  Copyable& operator=(const Copyable&) noexcept = default;
+  Copyable& operator=(Copyable&&) noexcept = default;
+};
+
+}

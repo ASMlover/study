@@ -26,12 +26,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-namespace _mevo {
-
-class Copyable {
-protected:
-  Copyable(void) = default;
-  ~Copyable(void) = default;
-};
-
-}
+#include <Core/Utils/Copyable.hh>
+#include <Core/Utils/UnCopyable.hh>
+#include <Core/Utils/Types.hh>

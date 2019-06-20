@@ -27,7 +27,7 @@
 
 set(OUTPUT_NAME "_mevo.test")
 
-file(GLOB_RECURSE _MEVO_HEADERS *.h)
+file(GLOB_RECURSE _MEVO_HEADERS *.hh)
 file(GLOB_RECURSE _MEVO_SOURCES *.cc)
 source_group("Header Files" FILES _MEVO_HEADERS)
 source_group("Source Files" FILES _MEVO_SOURCES)
@@ -35,3 +35,4 @@ message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` _MEVO_HEADERS: ${_MEVO_HEADERS}
 message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` _MEVO_SOURCES: ${_MEVO_SOURCES}")
 
 add_executable(${OUTPUT_NAME} ${_MEVO_SOURCES} ${_MEVO_HEADERS})
+target_link_libraries(${OUTPUT_NAME} _mevo)
