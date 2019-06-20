@@ -81,7 +81,7 @@ namespace Xt {
   template <typename T, typename U>
   inline T* down(U* x) { return dynamic_cast<T*>(x); }
 
-  str_t to_string(double d) {
+  inline str_t to_string(double d) {
     std::stringstream ss;
     ss << d;
     return ss.str();
