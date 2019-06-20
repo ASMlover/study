@@ -338,7 +338,7 @@ class VM : private UnCopyable {
   sz_t next_gc_{1<<10}; // 1024
 
   std::vector<BaseObject*> objects_; // all currently allocated objects
-  std::vector<Value> pinned_;
+  std::vector<BaseObject*> pinned_;
 
   Value interpret(FunctionObject* fn);
 
@@ -374,8 +374,8 @@ public:
   void set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn);
   void set_global(ClassObject* cls, const str_t& name);
   const Value& get_global(const str_t& name) const;
-  void pin_object(const Value& value);
-  void unpin_object(const Value& value);
+  void pin_object(BaseObject* obj);
+  void unpin_object(BaseObject* obj);
 
   void append_object(BaseObject* obj);
   void mark_object(BaseObject* obj);

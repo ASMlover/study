@@ -308,13 +308,13 @@ const Value& VM::get_global(const str_t& name) const {
   return globals_[symbol];
 }
 
-void VM::pin_object(const Value& value) {
+void VM::pin_object(BaseObject* obj) {
   ASSERT(pinned_.size() < kMaxPinned, "too many pinned objects");
-  pinned_.push_back(value);
+  pinned_.push_back(obj);
 }
 
-void VM::unpin_object(const Value& value) {
-  ASSERT(pinned_.back().type() == value.type(), "unppinning object out of stack order");
+void VM::unpin_object(BaseObject* obj) {
+  ASSERT(pinned_.back() == obj, "unppinning object out of stack order");
   pinned_.pop_back();
 }
 

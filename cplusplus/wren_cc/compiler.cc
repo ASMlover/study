@@ -53,13 +53,6 @@ enum class Precedence {
   CALL,       // ()
 };
 
-struct Assignment {
-  bool is_assignment{};
-
-  Assignment(void) noexcept {}
-  Assignment(bool is_assign = false) noexcept : is_assignment(is_assign) {}
-};
-
 inline Precedence operator+(Precedence a, int b) {
   return Xt::as_type<Precedence>(Xt::as_type<int>(a) + b);
 }
