@@ -33,8 +33,6 @@
 namespace wrencc {
 
 enum class ValueType {
-  NO_VALUE,
-
   NIL,
   TRUE,
   FALSE,
@@ -80,7 +78,7 @@ public:
 };
 
 class Value : public Copyable {
-  ValueType type_{ValueType::NO_VALUE};
+  ValueType type_{};
   double num_{};
   BaseObject* obj_{};
 
@@ -90,7 +88,7 @@ class Value : public Copyable {
     return Xt::as_type<double>(x);
   }
 public:
-  Value(void) noexcept {}
+  Value(void) noexcept : type_(ValueType::OBJECT) {}
   Value(nil_t) noexcept : type_(ValueType::NIL) {}
   Value(bool b) noexcept : type_(b ? ValueType::TRUE : ValueType::FALSE) {}
   Value(i8_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
@@ -107,8 +105,8 @@ public:
 
   inline ValueType type(void) const { return type_; }
   inline ObjType objtype(void) const { return obj_->type(); }
+  inline bool is_valid(void) const { return type_ != ValueType::OBJECT || obj_ != nullptr; }
 
-  inline bool is_no_value(void) const { return type_ == ValueType::NO_VALUE; }
   inline bool is_nil(void) const { return type_ == ValueType::NIL; }
   inline bool is_boolean(void) const { return type_ == ValueType::TRUE || type_ == ValueType::FALSE; }
   inline bool is_numeric(void) const { return type_ == ValueType::NUMERIC; }

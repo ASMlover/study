@@ -58,7 +58,6 @@ InstanceObject* Value::as_instance(void) const {
 
 str_t Value::stringify(void) const {
   switch (type_) {
-  case ValueType::NO_VALUE: return "<no_value>";
   case ValueType::NIL: return "nil";
   case ValueType::TRUE: return "true";
   case ValueType::FALSE: return "false";
@@ -321,7 +320,6 @@ void VM::unpin_object(const Value& value) {
 
 ClassObject* VM::get_class(const Value& val) const {
   switch (val.type()) {
-  case ValueType::NO_VALUE:
   case ValueType::NIL: return nil_class_;
   case ValueType::TRUE:
   case ValueType::FALSE: return bool_class_;
@@ -441,7 +439,7 @@ Value VM::interpret(FunctionObject* fn) {
             Value result = method.primitive(*this, *fiber, args);
 
             // if the primitive pushed a call frame, it returns nullptr
-            if (!result.is_no_value()) {
+            if (result.is_valid()) {
               fiber->set_value(fiber->stack_size() - argc, result);
               fiber->resize_stack(fiber->stack_size() - (argc - 1));
             }
