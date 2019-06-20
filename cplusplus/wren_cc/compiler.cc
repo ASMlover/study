@@ -318,8 +318,7 @@ class Compiler : private UnCopyable {
 
   void numeric(bool allow_assignment) {
     auto& tok = parser_.prev();
-    emit_constant(NumericObject::make_numeric(
-          parser_.get_vm(), tok.as_numeric()));
+    emit_constant(tok.as_numeric());
   }
 
   void string(bool allow_assignment) {

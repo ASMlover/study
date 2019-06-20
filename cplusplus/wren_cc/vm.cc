@@ -36,22 +36,6 @@ std::ostream& operator<<(std::ostream& out, const Value& val) {
   return out << val.stringify();
 }
 
-Value::Value(BaseObject* obj) noexcept {
-  switch (obj->type()) {
-  case ObjType::NUMERIC: type_ = ValueType::NUMERIC; break;
-  case ObjType::STRING:
-  case ObjType::FUNCTION:
-  case ObjType::CLASS:
-  case ObjType::INSTANCE: type_ = ValueType::OBJECT; break;
-  default: type_ = ValueType::NO_VALUE; break;
-  }
-  obj_ = obj;
-}
-
-double Value::as_numeric(void) const {
-  return Xt::down<NumericObject>(obj_)->value();
-}
-
 StringObject* Value::as_string(void) const {
   return Xt::down<StringObject>(obj_);
 }
@@ -78,22 +62,10 @@ str_t Value::stringify(void) const {
   case ValueType::NIL: return "nil";
   case ValueType::TRUE: return "true";
   case ValueType::FALSE: return "false";
-  case ValueType::NUMERIC:
+  case ValueType::NUMERIC: return Xt::to_string(num_);
   case ValueType::OBJECT: return obj_->stringify();
   }
   return "";
-}
-
-str_t NumericObject::stringify(void) const {
-  std::stringstream ss;
-  ss << value_;
-  return ss.str();
-}
-
-NumericObject* NumericObject::make_numeric(VM& vm, double d) {
-  auto* o = new NumericObject(d);
-  vm.append_object(o);
-  return o;
 }
 
 StringObject::StringObject(const char* s, int n, bool replace_owner) noexcept
@@ -356,7 +328,6 @@ ClassObject* VM::get_class(const Value& val) const {
   case ValueType::NUMERIC: return num_class_;
   case ValueType::OBJECT:
     switch (val.objtype()) {
-    case ObjType::NUMERIC: return num_class_;
     case ObjType::STRING: return str_class_;
     case ObjType::FUNCTION: return fn_class_;
     case ObjType::CLASS: return val.as_class()->meta_class();
@@ -585,7 +556,8 @@ void VM::mark_object(BaseObject* obj) {
 }
 
 void VM::mark_value(const Value& val) {
-  mark_object(val.as_object());
+  if (val.is_object())
+    mark_object(val.as_object());
 }
 
 }

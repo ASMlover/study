@@ -77,7 +77,7 @@ DEF_PRIMITIVE(bool_ne) {
 }
 
 DEF_PRIMITIVE(numeric_abs) {
-  return NumericObject::make_numeric(vm, std::abs(args[0].as_numeric()));
+  return std::abs(args[0].as_numeric());
 }
 
 DEF_PRIMITIVE(numeric_tostring) {
@@ -89,47 +89,42 @@ DEF_PRIMITIVE(numeric_tostring) {
 }
 
 DEF_PRIMITIVE(numeric_neg) {
-  return NumericObject::make_numeric(vm, -args[0].as_numeric());
+  return -args[0].as_numeric();
 }
 
 DEF_PRIMITIVE(numeric_add) {
   if (!args[1].is_numeric())
     return vm.unsupported();
 
-  return NumericObject::make_numeric(vm,
-      args[0].as_numeric() + args[1].as_numeric());
+  return args[0].as_numeric() + args[1].as_numeric();
 }
 
 DEF_PRIMITIVE(numeric_sub) {
   if (!args[1].is_numeric())
     return vm.unsupported();
 
-  return NumericObject::make_numeric(vm,
-      args[0].as_numeric() - args[1].as_numeric());
+  return args[0].as_numeric() - args[1].as_numeric();
 }
 
 DEF_PRIMITIVE(numeric_mul) {
   if (!args[1].is_numeric())
     return vm.unsupported();
 
-  return NumericObject::make_numeric(vm,
-      args[0].as_numeric() * args[1].as_numeric());
+  return args[0].as_numeric() * args[1].as_numeric();
 }
 
 DEF_PRIMITIVE(numeric_div) {
   if (!args[1].is_numeric())
     return vm.unsupported();
 
-  return NumericObject::make_numeric(vm,
-      args[0].as_numeric() / args[1].as_numeric());
+  return args[0].as_numeric() / args[1].as_numeric();
 }
 
 DEF_PRIMITIVE(numeric_mod) {
   if (!args[1].is_numeric())
     return vm.unsupported();
 
-  return NumericObject::make_numeric(vm,
-      std::fmod(args[0].as_numeric(), args[1].as_numeric()));
+  return std::fmod(args[0].as_numeric(), args[1].as_numeric());
 }
 
 DEF_PRIMITIVE(numeric_gt) {
@@ -171,7 +166,7 @@ DEF_PRIMITIVE(numeric_ne) {
 }
 
 DEF_PRIMITIVE(string_len) {
-  return NumericObject::make_numeric(vm, args[0].as_string()->size());
+  return args[0].as_string()->size();
 }
 
 DEF_PRIMITIVE(string_contains) {
@@ -179,8 +174,8 @@ DEF_PRIMITIVE(string_contains) {
   StringObject* subs = args[1].as_string();
 
   if (orig->size() == 0 && subs->size() == 0)
-    return NumericObject::make_numeric(vm, 1);
-  return NumericObject::make_numeric(vm, strstr(orig->cstr(), subs->cstr()) != 0);
+    return true;
+  return strstr(orig->cstr(), subs->cstr()) != nullptr;
 }
 
 DEF_PRIMITIVE(string_tostring) {

@@ -43,7 +43,6 @@ enum class ValueType {
 };
 
 enum class ObjType {
-  NUMERIC,
   STRING,
   FUNCTION,
   CLASS,
@@ -82,14 +81,29 @@ public:
 
 class Value : public Copyable {
   ValueType type_{ValueType::NO_VALUE};
+  double num_{};
   BaseObject* obj_{};
 
   inline bool check(ObjType type) const { return is_object() && obj_->type() == type; }
+
+  template <typename T> inline double to_decimal(T x) {
+    return Xt::as_type<double>(x);
+  }
 public:
   Value(void) noexcept {}
   Value(nil_t) noexcept : type_(ValueType::NIL) {}
   Value(bool b) noexcept : type_(b ? ValueType::TRUE : ValueType::FALSE) {}
-  Value(BaseObject* obj) noexcept;
+  Value(i8_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
+  Value(u8_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
+  Value(i16_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
+  Value(u16_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
+  Value(i32_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
+  Value(u32_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
+  Value(i64_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
+  Value(u64_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
+  Value(float n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
+  Value(double d) noexcept : type_(ValueType::NUMERIC), num_(d) {}
+  Value(BaseObject* obj) noexcept : type_(ValueType::OBJECT), obj_(obj) {}
 
   inline ValueType type(void) const { return type_; }
   inline ObjType objtype(void) const { return obj_->type(); }
@@ -106,8 +120,8 @@ public:
 
   inline BaseObject* as_object(void) const { return obj_; }
   inline bool as_boolean(void) const { return type_ == ValueType::TRUE; }
+  inline double as_numeric(void) const { return num_; }
 
-  double as_numeric(void) const;
   StringObject* as_string(void) const;
   const char* as_cstring(void) const;
   FunctionObject* as_function(void) const;
@@ -122,18 +136,6 @@ public:
 };
 
 std::ostream& operator<<(std::ostream& out, const Value& val);
-
-class NumericObject final : public BaseObject {
-  double value_{};
-
-  NumericObject(double d) noexcept : BaseObject(ObjType::NUMERIC), value_(d) {}
-public:
-  inline double value(void) const { return value_; }
-
-  virtual str_t stringify(void) const override;
-
-  static NumericObject* make_numeric(VM& vm, double d);
-};
 
 class StringObject final : public BaseObject {
   int size_{};
