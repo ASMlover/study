@@ -34,22 +34,23 @@
 namespace wrencc {
 
 #define DEF_PRIMITIVE(fn)\
-static Value _primitive_##fn(VM& vm, Fiber& fiber, Value* args)
-#define DEF_PRIMITIVE_FN(fn, argc)\
-static Value _primitive_##fn(VM& vm, Fiber& fiber, Value* args) {\
+static Value _primitive_##fn(VM& vm, Value* args)
+#define DEF_FIBER_PRIMITIVE(fn)\
+static void _primitive_##fn(VM& vm, Fiber& fiber, Value* args)
+#define DEF_FIBER_PRIMITIVE_FN(fn, argc)\
+static void _primitive_##fn(VM& vm, Fiber& fiber, Value* args) {\
   vm.call_function(fiber, args[0].as_function(), argc);\
-  return Value::no_value();\
 }
 
-DEF_PRIMITIVE_FN(fn_call0, 1)
-DEF_PRIMITIVE_FN(fn_call1, 2)
-DEF_PRIMITIVE_FN(fn_call2, 3)
-DEF_PRIMITIVE_FN(fn_call3, 4)
-DEF_PRIMITIVE_FN(fn_call4, 5)
-DEF_PRIMITIVE_FN(fn_call5, 6)
-DEF_PRIMITIVE_FN(fn_call6, 7)
-DEF_PRIMITIVE_FN(fn_call7, 8)
-DEF_PRIMITIVE_FN(fn_call8, 9)
+DEF_FIBER_PRIMITIVE_FN(fn_call0, 1)
+DEF_FIBER_PRIMITIVE_FN(fn_call1, 2)
+DEF_FIBER_PRIMITIVE_FN(fn_call2, 3)
+DEF_FIBER_PRIMITIVE_FN(fn_call3, 4)
+DEF_FIBER_PRIMITIVE_FN(fn_call4, 5)
+DEF_FIBER_PRIMITIVE_FN(fn_call5, 6)
+DEF_FIBER_PRIMITIVE_FN(fn_call6, 7)
+DEF_FIBER_PRIMITIVE_FN(fn_call7, 8)
+DEF_FIBER_PRIMITIVE_FN(fn_call8, 9)
 
 DEF_PRIMITIVE(bool_tostring) {
   if (args[0].as_boolean())

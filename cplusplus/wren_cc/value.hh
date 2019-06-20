@@ -186,18 +186,21 @@ public:
 };
 
 class Fiber;
-using PrimitiveFn = Value (*)(VM& vm, Fiber& fiber, Value* args);
+using PrimitiveFn = Value (*)(VM& vm, Value* args);
+using FiberPrimitiveFn = void (*)(VM& vm, Fiber& fiber, Value* args);
 
 enum class MethodType {
-  NONE,
-  PRIMITIVE,
-  BLOCK,
+  NONE,     // no method for the given symbol
+  PRIMITIVE,// a primitive method implemented in C that immediatelt returns a Value
+  FIBER,    // a built-in method that modifies the fiber directly
+  BLOCK,    // a normal user-defined method
 };
 
 struct Method {
   MethodType type{MethodType::NONE};
   union {
     PrimitiveFn primitive;
+    FiberPrimitiveFn fiber_primitive;
     FunctionObject* fn;
   };
 };
@@ -215,15 +218,16 @@ public:
   inline ClassObject* meta_class(void) const { return meta_class_; }
   inline int methods_count(void) const { return Xt::as_type<int>(methods_.size()); }
   inline Method& get_method(int i) { return methods_[i]; }
-  inline void set_method(int i, MethodType type) { methods_[i].type = type; }
-  inline void set_method(int i, PrimitiveFn fn) { methods_[i].primitive = fn; }
-  inline void set_method(int i, FunctionObject* fn) { methods_[i].fn = fn; }
-  inline void set_method(int i, MethodType type, PrimitiveFn fn) {
-    methods_[i].type = type;
+  inline void set_method(int i, PrimitiveFn fn) {
+    methods_[i].type = MethodType::PRIMITIVE;
     methods_[i].primitive = fn;
   }
-  inline void set_method(int i, MethodType type, FunctionObject* fn) {
-    methods_[i].type = type;
+  inline void set_method(int i, FiberPrimitiveFn fn) {
+    methods_[i].type = MethodType::FIBER;
+    methods_[i].fiber_primitive = fn;
+  }
+  inline void set_method(int i, FunctionObject* fn) {
+    methods_[i].type = MethodType::BLOCK;
     methods_[i].fn = fn;
   }
 

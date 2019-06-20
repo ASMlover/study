@@ -124,7 +124,7 @@ public:
 
 /// VM IMPLEMENTATIONS
 
-static Value _primitive_metaclass_new(VM& vm, Fiber& fiber, Value* args) {
+static Value _primitive_metaclass_new(VM& vm, Value* args) {
   return InstanceObject::make_instance(vm, args[0].as_class());
 }
 
@@ -144,7 +144,12 @@ VM::~VM(void) {
 
 void VM::set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn) {
   int symbol = methods_.ensure(name);
-  cls->set_method(symbol, MethodType::PRIMITIVE, fn);
+  cls->set_method(symbol, fn);
+}
+
+void VM::set_primitive(ClassObject* cls, const str_t& name, FiberPrimitiveFn fn) {
+  int symbol = methods_.ensure(name);
+  cls->set_method(symbol, fn);
 }
 
 void VM::set_global(ClassObject* cls, const str_t& name) {
@@ -221,8 +226,7 @@ Value VM::interpret(FunctionObject* fn) {
 
         // define `new` method on the metaclass.
         int new_symbol = methods_.ensure("new");
-        cls->meta_class()->set_method(
-            new_symbol, MethodType::PRIMITIVE, _primitive_metaclass_new);
+        cls->meta_class()->set_method(new_symbol, _primitive_metaclass_new);
         PUSH(cls);
       } break;
     case Code::METACLASS: PUSH(PEEK().as_class()->meta_class()); break;
@@ -233,7 +237,7 @@ Value VM::interpret(FunctionObject* fn) {
         ClassObject* cls = PEEK().as_class();
 
         FunctionObject* body = frame->get_constant(constant).as_function();
-        cls->set_method(symbol, MethodType::BLOCK, body);
+        cls->set_method(symbol, body);
       } break;
     case Code::LOAD_LOCAL:
       {
@@ -286,18 +290,20 @@ Value VM::interpret(FunctionObject* fn) {
           {
             Value* args = fiber->values_at(fiber->stack_size() - argc);
             // argc +1 to include the receiver since that's in the args array
-            Value result = method.primitive(*this, *fiber, args);
+            Value result = method.primitive(*this, args);
 
-            // if the primitive pushed a call frame, it returns nullptr
-            if (result.is_valid()) {
-              fiber->set_value(fiber->stack_size() - argc, result);
-              fiber->resize_stack(fiber->stack_size() - (argc - 1));
-            }
+            fiber->set_value(fiber->stack_size() - argc, result);
+            // discard the stack slots for the arguments (but leave one for
+            // the result)
+            fiber->resize_stack(fiber->stack_size() - (argc - 1));
           } break;
-          break;
+        case MethodType::FIBER:
+          {
+            Value* args = fiber->values_at(fiber->stack_size() - argc);
+            method.fiber_primitive(*this, *fiber, args);
+          } break;
         case MethodType::BLOCK:
-          fiber->call_function(method.fn, argc);
-          break;
+          fiber->call_function(method.fn, argc); break;
         }
       } break;
     case Code::JUMP: frame->ip += RDARG(); break;
