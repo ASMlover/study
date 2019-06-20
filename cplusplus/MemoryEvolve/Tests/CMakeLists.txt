@@ -27,7 +27,7 @@
 
 set(OUTPUT_NAME "_mevo.test")
 
-file(GLOB_RECURSE _MEVO_HEADERS *.h)
+file(GLOB_RECURSE _MEVO_HEADERS *.hh)
 file(GLOB_RECURSE _MEVO_SOURCES *.cc)
 source_group("Header Files" FILES _MEVO_HEADERS)
 source_group("Source Files" FILES _MEVO_SOURCES)
