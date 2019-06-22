@@ -78,22 +78,22 @@ public:
   virtual void gc_mark(VM& vm) {}
 };
 
+enum Tag {
+  MASK = 7,
+
+  NaN = 0,
+  NIL,
+  FALSE,
+  TRUE,
+  UNUSED1,
+  UNUSED2,
+  UNUSED3,
+  UNUSED4,
+};
+
 class TagValue final : public Copyable {
   static constexpr u64_t kSignBit = 1llu << 63;
   static constexpr u64_t kQNaN = 0x7ffc000000000000llu;
-
-  enum Tag {
-    MASK = 7,
-
-    NaN = 0,
-    NIL,
-    FALSE,
-    TRUE,
-    UNUSED1,
-    UNUSED2,
-    UNUSED3,
-    UNUSED4,
-  };
 
   union {
     double num_;
@@ -104,8 +104,8 @@ class TagValue final : public Copyable {
     num_ = Xt::as_type<double>(x);
   }
 
-  inline int get_tag(void) const {
-    return Xt::as_type<int>(bits_ & Tag::MASK);
+  inline bool check(ObjType type) const {
+    return is_object() && as_object()->type() == type;
   }
 public:
   TagValue(void) noexcept {}
@@ -123,16 +123,32 @@ public:
   TagValue(double d) noexcept { num_ = d; }
   TagValue(BaseObject* o) noexcept { bits_ = (kSignBit | kQNaN | (u64_t)(o)); }
 
+  inline int tag(void) const { return Xt::as_type<int>(bits_ & Tag::MASK); }
+  inline ObjType objtype(void) const { return as_object()->type(); }
+
   inline bool is_nil(void) const { return bits_ == (kQNaN | Tag::NIL); }
   inline bool is_boolean(void) const { return (bits_ == (kQNaN | Tag::TRUE)) || (bits_ == (kQNaN | Tag::FALSE)); }
   inline bool is_numeric(void) const { return (bits_ & kQNaN) != kQNaN; }
   inline bool is_object(void) const { return (bits_ & (kSignBit | kQNaN)) == (kSignBit | kQNaN); }
+  inline bool is_string(void) const { return check(ObjType::STRING); }
+  inline bool is_function(void) const { return check(ObjType::FUNCTION); }
+  inline bool is_class(void) const { return check(ObjType::CLASS); }
+  inline bool is_instance(void) const { return check(ObjType::INSTANCE); }
 
   inline bool as_boolean(void) const { return bits_ == (kQNaN | Tag::TRUE); }
+  inline double as_numeric(void) const { return num_; }
   inline BaseObject* as_object(void) const { return (BaseObject*)(bits_ & ~(kSignBit | kQNaN)); }
+
+  StringObject* as_string(void) const;
+  const char* as_cstring(void) const;
+  FunctionObject* as_function(void) const;
+  ClassObject* as_class(void) const;
+  InstanceObject* as_instance(void) const;
+
+  str_t stringify(void) const;
 };
 
-class Value final : public Copyable {
+class ObjValue final : public Copyable {
   ValueType type_{};
   double num_{};
   BaseObject* obj_{};
@@ -143,20 +159,20 @@ class Value final : public Copyable {
     return Xt::as_type<double>(x);
   }
 public:
-  Value(void) noexcept : type_(ValueType::OBJECT) {}
-  Value(nil_t) noexcept : type_(ValueType::NIL) {}
-  Value(bool b) noexcept : type_(b ? ValueType::TRUE : ValueType::FALSE) {}
-  Value(i8_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
-  Value(u8_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
-  Value(i16_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
-  Value(u16_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
-  Value(i32_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
-  Value(u32_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
-  Value(i64_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
-  Value(u64_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
-  Value(float n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
-  Value(double d) noexcept : type_(ValueType::NUMERIC), num_(d) {}
-  Value(BaseObject* o) noexcept : type_(ValueType::OBJECT), obj_(o) {}
+  ObjValue(void) noexcept : type_(ValueType::OBJECT) {}
+  ObjValue(nil_t) noexcept : type_(ValueType::NIL) {}
+  ObjValue(bool b) noexcept : type_(b ? ValueType::TRUE : ValueType::FALSE) {}
+  ObjValue(i8_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
+  ObjValue(u8_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
+  ObjValue(i16_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
+  ObjValue(u16_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
+  ObjValue(i32_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
+  ObjValue(u32_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
+  ObjValue(i64_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
+  ObjValue(u64_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
+  ObjValue(float n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
+  ObjValue(double d) noexcept : type_(ValueType::NUMERIC), num_(d) {}
+  ObjValue(BaseObject* o) noexcept : type_(ValueType::OBJECT), obj_(o) {}
 
   inline ValueType type(void) const { return type_; }
   inline ObjType objtype(void) const { return obj_->type(); }
@@ -182,11 +198,13 @@ public:
   InstanceObject* as_instance(void) const;
 
   str_t stringify(void) const;
-
-  static Value no_value(void) {
-    return Value();
-  }
 };
+
+#ifdef NAN_TAGGING
+using Value = TagValue;
+#else
+using Value = ObjValue;
+#endif
 
 std::ostream& operator<<(std::ostream& out, const Value& val);
 

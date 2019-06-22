@@ -34,27 +34,65 @@ std::ostream& operator<<(std::ostream& out, const Value& val) {
   return out << val.stringify();
 }
 
-StringObject* Value::as_string(void) const {
+StringObject* TagValue::as_string(void) const {
+  return Xt::down<StringObject>(as_object());
+}
+
+const char* TagValue::as_cstring(void) const {
+  return Xt::down<StringObject>(as_object())->cstr();
+}
+
+FunctionObject* TagValue::as_function(void) const {
+  return Xt::down<FunctionObject>(as_object());
+}
+
+ClassObject* TagValue::as_class(void) const {
+  return Xt::down<ClassObject>(as_object());
+}
+
+InstanceObject* TagValue::as_instance(void) const {
+  return Xt::down<InstanceObject>(as_object());
+}
+
+str_t TagValue::stringify(void) const {
+  if (is_numeric()) {
+    return Xt::to_string(as_numeric());
+  }
+  else if (is_object()) {
+    return as_object()->stringify();
+  }
+  else {
+    switch (tag()) {
+    case Tag::NaN: return "NaN";
+    case Tag::NIL: return "nil";
+    case Tag::TRUE: return "true";
+    case Tag::FALSE: return "false";
+    }
+  }
+  return "";
+}
+
+StringObject* ObjValue::as_string(void) const {
   return Xt::down<StringObject>(obj_);
 }
 
-const char* Value::as_cstring(void) const {
+const char* ObjValue::as_cstring(void) const {
   return Xt::down<StringObject>(obj_)->cstr();
 }
 
-FunctionObject* Value::as_function(void) const {
+FunctionObject* ObjValue::as_function(void) const {
   return Xt::down<FunctionObject>(obj_);
 }
 
-ClassObject* Value::as_class(void) const {
+ClassObject* ObjValue::as_class(void) const {
   return Xt::down<ClassObject>(obj_);
 }
 
-InstanceObject* Value::as_instance(void) const {
+InstanceObject* ObjValue::as_instance(void) const {
   return Xt::down<InstanceObject>(obj_);
 }
 
-str_t Value::stringify(void) const {
+str_t ObjValue::stringify(void) const {
   switch (type_) {
   case ValueType::NIL: return "nil";
   case ValueType::TRUE: return "true";

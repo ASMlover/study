@@ -174,6 +174,24 @@ void VM::unpin_object(BaseObject* obj) {
 }
 
 ClassObject* VM::get_class(const Value& val) const {
+#ifdef NAN_TAGGING
+  if (val.is_numeric())
+    return num_class_;
+  if (val.is_object()) {
+    switch (val.objtype()) {
+    case ObjType::STRING: return str_class_;
+    case ObjType::FUNCTION: return fn_class_;
+    case ObjType::CLASS: return val.as_class()->meta_class();
+    case ObjType::INSTANCE: return val.as_instance()->cls();
+    }
+  }
+  switch (val.tag()) {
+  case Tag::NaN: return num_class_;
+  case Tag::NIL: return nil_class_;
+  case Tag::TRUE:
+  case Tag::FALSE: return bool_class_;
+  }
+#else
   switch (val.type()) {
   case ValueType::NIL: return nil_class_;
   case ValueType::TRUE:
@@ -188,6 +206,7 @@ ClassObject* VM::get_class(const Value& val) const {
     }
     break;
   }
+#endif
   return nullptr;
 }
 
@@ -200,9 +219,8 @@ Value VM::interpret(FunctionObject* fn) {
 #define PEEK()  fiber->peek_value()
 #define RDARG() frame->get_code(frame->ip++)
 
+  auto* frame = &fiber->peek_frame();
   for (;;) {
-    auto* frame = &fiber->peek_frame();
-
     switch (auto c = Xt::as_type<Code>(frame->get_code(frame->ip++))) {
     case Code::CONSTANT: PUSH(frame->get_constant(RDARG())); break;
     case Code::NIL: PUSH(nullptr); break;
@@ -301,9 +319,13 @@ Value VM::interpret(FunctionObject* fn) {
           {
             Value* args = fiber->values_at(fiber->stack_size() - argc);
             method.fiber_primitive(*this, *fiber, args);
+
+            frame = &fiber->peek_frame();
           } break;
         case MethodType::BLOCK:
-          fiber->call_function(method.fn, argc); break;
+          fiber->call_function(method.fn, argc);
+          frame = &fiber->peek_frame();
+          break;
         }
       } break;
     case Code::JUMP: frame->ip += RDARG(); break;
@@ -335,8 +357,9 @@ Value VM::interpret(FunctionObject* fn) {
           PUSH(r);
         else
           fiber->set_value(frame->stack_start, r);
-
         fiber->resize_stack(frame->stack_start + 1);
+
+        frame = &fiber->peek_frame();
       } break;
     }
   }
