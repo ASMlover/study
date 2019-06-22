@@ -77,6 +77,7 @@ KEYWORD(STATIC, "static")
 KEYWORD(THIS, "this")
 KEYWORD(TRUE, "true")
 KEYWORD(VAR, "var")
+KEYWORD(WHILE, "while")
 
 TOKEN(IDENTIFIER, "identifier")
 TOKEN(NUMERIC, "numeric")

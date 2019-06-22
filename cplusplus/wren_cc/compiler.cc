@@ -125,6 +125,7 @@ public:
       case TokenKind::KW_IS:
       case TokenKind::KW_STATIC:
       case TokenKind::KW_VAR:
+      case TokenKind::KW_WHILE:
         skip_newlines_ = true; return;
       default: skip_newlines_ = false; return;
       }
@@ -166,6 +167,13 @@ class Compiler : private UnCopyable {
   template <typename T, typename U> inline void emit_bytes(T b1, U b2) {
     emit_byte(b1);
     emit_byte(b2);
+  }
+
+  inline void patch_jump(int offset) {
+    // replaces the placeholder argument for a previous JUMP or JUMP_IF
+    // instruction with an offset that jumps to the current end of bytecode
+
+    fn_->set_code(offset, fn_->codes_count() - offset - 1);
   }
 
   inline void emit_constant(const Value& v) {
@@ -221,6 +229,7 @@ class Compiler : private UnCopyable {
       PREFIX(this_exp),                       // KEYWORD(THIS, "this")
       PREFIX(boolean),                        // KEYWORD(TRUE, "true")
       UNUSED,                                 // KEYWORD(VAR, "var")
+      UNUSED,                                 // KEYWORD(WHILE, "while")
 
       PREFIXNAME,                             // TOKEN(IDENTIFIER, "identifier")
       PREFIX(numeric),                        // TOKEN(NUMERIC, "numeric")
@@ -426,27 +435,53 @@ class Compiler : private UnCopyable {
       assignment();
       consume(TokenKind::TK_RPAREN, "expect `)` after if condition");
 
-      // compile the then branch
+      // jump to the else branch if the condition is false
       emit_byte(Code::JUMP_IF);
-      // emit a placeholder, we'll patch it when we known what to jump to
-      int if_jump = emit_byte(255);
+      int if_jump = emit_byte(0xff);
+
+      // compile the then branch
       statement();
 
       // jump over the else branch when the if branch is taken
       emit_byte(Code::JUMP);
-      // emit a placeholder, we'll patch it when we know what to jump to
-      int else_jump = emit_byte(255);
+      int else_jump = emit_byte(0xff);
 
-      // patch the jump
-      fn_->set_code(if_jump, fn_->codes_count() - if_jump - 1);
+      patch_jump(if_jump);
       // compile the else branch if thers is one
       if (match(TokenKind::KW_ELSE))
         statement();
       else
         emit_byte(Code::NIL);
       // patch the jump over the else
-      fn_->set_code(else_jump, fn_->codes_count() - else_jump - 1);
+      patch_jump(else_jump);
 
+      return;
+    }
+
+    if (match(TokenKind::KW_WHILE)) {
+      // remember what instruction to loop back to
+      int loop_start = fn_->codes_count() - 1;
+
+      // compile the condition
+      consume(TokenKind::TK_LPAREN, "expect `(` after while keyword");
+      assignment();
+      consume(TokenKind::TK_RPAREN, "expect `)` after while condition");
+
+      emit_byte(Code::JUMP_IF);
+      int exit_jump = emit_byte(0xff);
+
+      //  compile the while statement body
+      statement();
+
+      // loop back to the while top
+      emit_byte(Code::LOOP);
+      int loop_offset = fn_->codes_count() - loop_start;
+      emit_byte(loop_offset);
+
+      patch_jump(exit_jump);
+
+      // a while loop always evaluates to nil
+      emit_byte(Code::NIL);
       return;
     }
 

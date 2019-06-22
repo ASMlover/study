@@ -329,6 +329,15 @@ Value VM::interpret(FunctionObject* fn) {
         }
       } break;
     case Code::JUMP: frame->ip += RDARG(); break;
+    case Code::LOOP:
+      {
+        // the loop body's result is on the top of the stack, since we are
+        // looping and running the body again, discard it
+        POP();
+
+        // jump back to the top of the loop
+        frame->ip -= RDARG();
+      } break;
     case Code::JUMP_IF:
       {
         int offset = RDARG();
