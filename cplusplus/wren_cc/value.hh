@@ -48,6 +48,7 @@ enum class ObjType {
 };
 
 enum ObjFlag {
+  UNMARK = 0x00,
   MARKED = 0x01,
 };
 
@@ -63,10 +64,10 @@ class ClassObject;
 class InstanceObject;
 
 class BaseObject : private UnCopyable {
-  ObjType type_;
-  ObjFlag flag_{};
+  ObjType type_ : 3;
+  ObjFlag flag_ : 1;
 public:
-  BaseObject(ObjType type) noexcept : type_(type) {}
+  BaseObject(ObjType type) noexcept : type_(type), flag_(ObjFlag::UNMARK) {}
   virtual ~BaseObject(void) {}
 
   inline ObjType type(void) const { return type_; }
@@ -77,7 +78,61 @@ public:
   virtual void gc_mark(VM& vm) {}
 };
 
-class Value : public Copyable {
+class TagValue final : public Copyable {
+  static constexpr u64_t kSignBit = 1llu << 63;
+  static constexpr u64_t kQNaN = 0x7ffc000000000000llu;
+
+  enum Tag {
+    MASK = 7,
+
+    NaN = 0,
+    NIL,
+    FALSE,
+    TRUE,
+    UNUSED1,
+    UNUSED2,
+    UNUSED3,
+    UNUSED4,
+  };
+
+  union {
+    double num_;
+    u64_t bits_;
+  };
+
+  template <typename T> inline void set_decimal(T x) {
+    num_ = Xt::as_type<double>(x);
+  }
+
+  inline int get_tag(void) const {
+    return Xt::as_type<int>(bits_ & Tag::MASK);
+  }
+public:
+  TagValue(void) noexcept {}
+  TagValue(nil_t) noexcept { bits_ = (kQNaN | Tag::NIL); }
+  TagValue(bool b) noexcept { bits_ = b ? (kQNaN | Tag::TRUE) : (kQNaN | Tag::FALSE); }
+  TagValue(i8_t n) noexcept { set_decimal(n); }
+  TagValue(u8_t n) noexcept { set_decimal(n); }
+  TagValue(i16_t n) noexcept { set_decimal(n); }
+  TagValue(u16_t n) noexcept { set_decimal(n); }
+  TagValue(i32_t n) noexcept { set_decimal(n); }
+  TagValue(u32_t n) noexcept { set_decimal(n); }
+  TagValue(i64_t n) noexcept { set_decimal(n); }
+  TagValue(u64_t n) noexcept { set_decimal(n); }
+  TagValue(float n) noexcept { set_decimal(n); }
+  TagValue(double d) noexcept { num_ = d; }
+  TagValue(BaseObject* o) noexcept { bits_ = (kSignBit | kQNaN | (u64_t)(o)); }
+
+  inline bool is_nil(void) const { return bits_ == (kQNaN | Tag::NIL); }
+  inline bool is_boolean(void) const { return (bits_ == (kQNaN | Tag::TRUE)) || (bits_ == (kQNaN | Tag::FALSE)); }
+  inline bool is_numeric(void) const { return (bits_ & kQNaN) != kQNaN; }
+  inline bool is_object(void) const { return (bits_ & (kSignBit | kQNaN)) == (kSignBit | kQNaN); }
+
+  inline bool as_boolean(void) const { return bits_ == (kQNaN | Tag::TRUE); }
+  inline BaseObject* as_object(void) const { return (BaseObject*)(bits_ & ~(kSignBit | kQNaN)); }
+};
+
+class Value final : public Copyable {
   ValueType type_{};
   double num_{};
   BaseObject* obj_{};
@@ -101,7 +156,7 @@ public:
   Value(u64_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
   Value(float n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
   Value(double d) noexcept : type_(ValueType::NUMERIC), num_(d) {}
-  Value(BaseObject* obj) noexcept : type_(ValueType::OBJECT), obj_(obj) {}
+  Value(BaseObject* o) noexcept : type_(ValueType::OBJECT), obj_(o) {}
 
   inline ValueType type(void) const { return type_; }
   inline ObjType objtype(void) const { return obj_->type(); }

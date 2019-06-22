@@ -90,6 +90,12 @@ namespace Xt {
 
 }
 
+// define this to stress test the GC, it will perform a collection before
+// every allocation
+#define GC_STRESS
+
+#define NAN_TAGGING
+
 #ifndef NDEBUG
 # define ASSERT(cond, msg) if (!(cond)) {\
   std::cerr << "ASSERT FAIL `" << __FILE__ << "`: "\
