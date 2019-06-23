@@ -133,6 +133,27 @@ public:
   }
 };
 
+struct Scope {
+  // the number of previously defined local variables when this scope was
+  // created. used to know how many variables to discard when this scope is
+  // exited
+  int prev_locals{};
+
+  // the scope enclosing this one, or nullptr if this is the top scope in
+  // the function
+  Scope* parent{};
+
+  void set_scope(int _locals_count = 0, Scope* _parent = nullptr) {
+    prev_locals = _locals_count;
+    parent = _parent;
+  }
+};
+
+#define PUSH_SCOPE\
+  Scope _scope##__LINE__;\
+  push_scope(&_scope##__LINE__)
+#define POP_SCOPE pop_scope()
+
 class Compiler : private UnCopyable {
   Parser& parser_;
   Compiler* parent_{};
@@ -140,6 +161,9 @@ class Compiler : private UnCopyable {
   int num_codes_{};
   SymbolTable locals_;
   bool is_method_{};
+
+  // the current local variable scope, initially nullptr
+  Scope* scope_{};
 
   inline SymbolTable& vm_methods(void) { return parser_.get_vm().methods(); }
   inline SymbolTable& vm_gsymbols(void) { return parser_.get_vm().gsymbols(); }
@@ -179,6 +203,27 @@ class Compiler : private UnCopyable {
   inline void emit_constant(const Value& v) {
     u8_t b = fn_->add_constant(v);
     emit_bytes(Code::CONSTANT, b);
+  }
+
+  void push_scope(Scope* scope) {
+    // starts a new local block scope
+
+    scope->set_scope(locals_.count(), scope_);
+    scope_ = scope;
+  }
+
+  void pop_scope(void) {
+    // closes the last pushed block scope
+
+    ASSERT(scope_ != nullptr, "cannot pop top-level scope");
+
+    Scope* scope = scope_;
+    // pop locals off the stack
+    for (int i = scope->prev_locals; i < locals_.count(); ++i)
+      emit_byte(Code::POP);
+
+    locals_.truncate(scope->prev_locals);
+    scope_ = scope->parent;
   }
 
   const GrammerRule& get_rule(TokenKind kind) const {
@@ -270,10 +315,11 @@ class Compiler : private UnCopyable {
 
     int symbol;
     str_t name = parser_.prev().as_string();
-    if (parent_ != nullptr)
-      symbol = locals_.add(name);
+    // the top-level scope of the top-level compiler is global scope
+    if (parent_ == nullptr && scope_ == nullptr)
+      symbol = vm_gsymbols().add(name); // top level global variable
     else
-      symbol = vm_gsymbols().add(name);
+      symbol = locals_.add(name); // nested block, this is a local variable
 
     if (symbol == -1)
       error("variable is already defined");
@@ -281,9 +327,8 @@ class Compiler : private UnCopyable {
   }
 
   void define_variable(int symbol) {
-    // if it's a global variable, we need to explicitly store it, if it's a
-    // local variable, the value is already on the stack in the right slot
-    if (parent_ == nullptr) {
+    // the top-level scope of the top-level compiler is global scope
+    if (parent_ == nullptr && scope_ == nullptr) {
       // it's a global variable, so store the value int the global slot
       emit_bytes(Code::STORE_GLOBAL, symbol);
     }
@@ -440,7 +485,9 @@ class Compiler : private UnCopyable {
       int if_jump = emit_byte(0xff);
 
       // compile the then branch
-      statement();
+      PUSH_SCOPE;
+      definition();
+      POP_SCOPE;
 
       // jump over the else branch when the if branch is taken
       emit_byte(Code::JUMP);
@@ -448,10 +495,14 @@ class Compiler : private UnCopyable {
 
       patch_jump(if_jump);
       // compile the else branch if thers is one
-      if (match(TokenKind::KW_ELSE))
-        statement();
-      else
-        emit_byte(Code::NIL);
+      if (match(TokenKind::KW_ELSE)) {
+        PUSH_SCOPE;
+        definition();
+        POP_SCOPE;
+      }
+      else {
+        emit_byte(Code::NIL); // just default to nil
+      }
       // patch the jump over the else
       patch_jump(else_jump);
 
@@ -470,8 +521,10 @@ class Compiler : private UnCopyable {
       emit_byte(Code::JUMP_IF);
       int exit_jump = emit_byte(0xff);
 
-      //  compile the while statement body
-      statement();
+      // compile the while body
+      PUSH_SCOPE;
+      definition();
+      POP_SCOPE;
 
       // loop back to the while top
       emit_byte(Code::LOOP);
@@ -487,6 +540,7 @@ class Compiler : private UnCopyable {
 
     // curly block
     if (match(TokenKind::TK_LBRACE)) {
+      PUSH_SCOPE;
       for (;;) {
         definition();
 
@@ -502,6 +556,7 @@ class Compiler : private UnCopyable {
         // discard the result of the previous expression
         emit_byte(Code::POP);
       }
+      POP_SCOPE;
       return;
     }
 
@@ -513,7 +568,7 @@ class Compiler : private UnCopyable {
   }
 
   void grouping(bool allow_assignment) {
-    expression(false);
+    assignment();
     consume(TokenKind::TK_RPAREN, "expect `)` after expression");
   }
 

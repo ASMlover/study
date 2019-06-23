@@ -61,6 +61,12 @@ void SymbolTable::clear(void) {
   symbols_.clear();
 }
 
+void SymbolTable::truncate(int count) {
+  auto n = Xt::as_type<sz_t>(count);
+  ASSERT(n <= symbols_.size(), "cannot truncate to larger size");
+  symbols_.resize(n);
+}
+
 struct CallFrame {
   int ip{};
   FunctionObject* fn{};

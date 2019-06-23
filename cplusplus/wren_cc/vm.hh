@@ -88,7 +88,7 @@ inline int operator-(Code a, Code b) {
   return Xt::as_type<int>(a) - Xt::as_type<int>(b);
 }
 
-class SymbolTable : private UnCopyable {
+class SymbolTable final : private UnCopyable {
   std::vector<str_t> symbols_;
 public:
   inline int count(void) const { return Xt::as_type<int>(symbols_.size()); }
@@ -98,9 +98,10 @@ public:
   int add(const str_t& name);
   int get(const str_t& name) const;
   void clear(void);
+  void truncate(int count);
 };
 
-class VM : private UnCopyable {
+class VM final : private UnCopyable {
   static constexpr sz_t kMaxGlobals = 256;
   static constexpr sz_t kMaxPinned = 16;
 
