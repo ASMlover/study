@@ -43,3 +43,8 @@ if (true) class Foo {}
 // definition in else branch
 if (false) nil else var a = io.write("ok") // expect: ok
 if (true) nil else class Foo {}
+
+// only nil and false is falsely
+if (0) io.write(0) // expect: 0
+if (nil) io.write(nil) // no print
+if ("") io.write("empty-string") // expect: empty-string

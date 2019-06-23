@@ -16,3 +16,9 @@ io.write(true) && // expect: true
 // swallow a trailing newline
 io.write(true &&
   true) // expect: true
+
+// only nil and false is falsely
+io.write(0 && true) // expect: true
+io.write(nil && true) // expect: nil
+io.write("" && true) // expect: true
+io.write(false && true) // expect: false
