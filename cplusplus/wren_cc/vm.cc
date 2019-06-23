@@ -349,8 +349,19 @@ Value VM::interpret(FunctionObject* fn) {
         int offset = RDARG();
         const Value& cond = POP();
 
-        if (!cond.as_boolean())
+        if (cond.is_falsely())
           frame->ip += offset;
+      } break;
+    case Code::AND:
+      {
+        int offset = RDARG();
+        const Value& cond = PEEK();
+
+        // false and nil is the only falsey value
+        if (!cond.is_falsely())
+          POP(); // discard the condition and evaluate the right hand side
+        else
+          frame->ip += offset; // short-circuit the right hand side
       } break;
     case Code::IS:
       {

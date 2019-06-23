@@ -67,14 +67,15 @@ enum class Code : u8_t {
   CALL_9,
   CALL_10,
 
-  JUMP,         // jump the instruction pointer [arg1] forward
+  JUMP,         // jump the instruction pointer [arg] forward
 
-  // jump the instruction pointer [arg1] backward. pop and discard the
+  // jump the instruction pointer [arg] backward. pop and discard the
   // top of the stack
   LOOP,
 
-  JUMP_IF,      // pop and if not truthy then jump the instruction pointer [arg1] forward
+  JUMP_IF,      // pop and if not truthy then jump the instruction pointer [arg] forward
 
+  AND,          // if the top of the stack is false jump [arg], otherwise pop and continue
   IS,           // pop [a] then [b] and push true if [b] is an instance of [a]
 
   END,

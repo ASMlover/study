@@ -135,6 +135,8 @@ public:
   inline bool is_class(void) const { return check(ObjType::CLASS); }
   inline bool is_instance(void) const { return check(ObjType::INSTANCE); }
 
+  inline bool is_falsely(void) const { return is_nil() || bits_ == (kQNaN | Tag::FALSE); }
+
   inline bool as_boolean(void) const { return bits_ == (kQNaN | Tag::TRUE); }
   inline double as_numeric(void) const { return num_; }
   inline BaseObject* as_object(void) const { return (BaseObject*)(bits_ & ~(kSignBit | kQNaN)); }
@@ -186,6 +188,8 @@ public:
   inline bool is_function(void) const { return check(ObjType::FUNCTION); }
   inline bool is_class(void) const { return check(ObjType::CLASS); }
   inline bool is_instance(void) const { return check(ObjType::INSTANCE); }
+
+  inline bool is_falsely(void) const { return is_nil() || type_ == ValueType::FALSE; }
 
   inline BaseObject* as_object(void) const { return obj_; }
   inline bool as_boolean(void) const { return type_ == ValueType::TRUE; }

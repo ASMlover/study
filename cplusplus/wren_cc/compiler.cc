@@ -44,6 +44,7 @@ enum class Precedence {
   LOWEST,
 
   ASSIGNMENT, // =
+  LOGIC,      // && ||
   IS,         // is
   EQUALITY,   // == !=
   COMPARISON, // < <= > >=
@@ -111,6 +112,7 @@ public:
       case TokenKind::TK_MINUS:
       case TokenKind::TK_PIPE:
       case TokenKind::TK_AMP:
+      case TokenKind::TK_AMPAMP:
       case TokenKind::TK_BANG:
       case TokenKind::TK_EQ:
       case TokenKind::TK_LT:
@@ -254,6 +256,7 @@ class Compiler : private UnCopyable {
       OPER(Precedence::TERM, "- "),           // PUNCTUATOR(MINUS, "-")
       UNUSED,                                 // PUNCTUATOR(PIPE, "|")
       UNUSED,                                 // PUNCTUATOR(AMP, "&")
+      INFIX(and_expr, Precedence::LOGIC),     // PUNCTUATOR(AMPAMP, "&&")
       PREFIXOP("!"),                          // PUNCTUATOR(BANG, "!")
       UNUSED,                                 // PUNCTUATOR(EQ, "=")
       INFIXOP(Precedence::COMPARISON, "< "),  // PUNCTUATOR(LT, "<")
@@ -691,6 +694,16 @@ class Compiler : private UnCopyable {
     // compile the right-hand side
     parse_precedence(false, Precedence::CALL);
     emit_byte(Code::IS);
+  }
+
+  void and_expr(bool allow_assignment) {
+    // skip the right argument if the left is false
+
+    emit_byte(Code::AND);
+    int jump = emit_byte(0xff);
+
+    parse_precedence(false, Precedence::LOGIC);
+    patch_jump(jump);
   }
 
   void infix_oper(bool allow_assignment) {
