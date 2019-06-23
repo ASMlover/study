@@ -35,3 +35,11 @@ if
 // newline after `else`
 if (false) io.write("bad") else
 io.write("good") // expect: good
+
+// definition in then branch
+if (true) var a = io.write("ok") // expect: ok
+if (true) class Foo {}
+
+// definition in else branch
+if (false) nil else var a = io.write("ok") // expect: ok
+if (true) nil else class Foo {}
