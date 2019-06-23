@@ -75,7 +75,8 @@ enum class Code : u8_t {
 
   JUMP_IF,      // pop and if not truthy then jump the instruction pointer [arg] forward
 
-  AND,          // if the top of the stack is false jump [arg], otherwise pop and continue
+  AND,          // if the top of the stack is false jump [arg], or pop and continue
+  OR,           // if the top of the stack if non-false jump [arg], or pop and continue
   IS,           // pop [a] then [b] and push true if [b] is an instance of [a]
 
   END,

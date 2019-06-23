@@ -111,6 +111,7 @@ public:
       case TokenKind::TK_PLUS:
       case TokenKind::TK_MINUS:
       case TokenKind::TK_PIPE:
+      case TokenKind::TK_PIPEPIPE:
       case TokenKind::TK_AMP:
       case TokenKind::TK_AMPAMP:
       case TokenKind::TK_BANG:
@@ -255,6 +256,7 @@ class Compiler : private UnCopyable {
       INFIXOP(Precedence::TERM, "+ "),        // PUNCTUATOR(PLUS, "+")
       OPER(Precedence::TERM, "- "),           // PUNCTUATOR(MINUS, "-")
       UNUSED,                                 // PUNCTUATOR(PIPE, "|")
+      INFIX(or_expr, Precedence::LOGIC),      // PUNCTUATOR(PIPEPIPE, "||")
       UNUSED,                                 // PUNCTUATOR(AMP, "&")
       INFIX(and_expr, Precedence::LOGIC),     // PUNCTUATOR(AMPAMP, "&&")
       PREFIXOP("!"),                          // PUNCTUATOR(BANG, "!")
@@ -700,6 +702,16 @@ class Compiler : private UnCopyable {
     // skip the right argument if the left is false
 
     emit_byte(Code::AND);
+    int jump = emit_byte(0xff);
+
+    parse_precedence(false, Precedence::LOGIC);
+    patch_jump(jump);
+  }
+
+  void or_expr(bool allow_assignment) {
+    // skip the right argument if the left if true
+
+    emit_byte(Code::OR);
     int jump = emit_byte(0xff);
 
     parse_precedence(false, Precedence::LOGIC);

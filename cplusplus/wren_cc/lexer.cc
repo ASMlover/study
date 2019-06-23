@@ -58,7 +58,8 @@ Token Lexer::next_token(void) {
   case '-':
     return isdigit(peek()) ?
       make_numeric() : make_token(TokenKind::TK_MINUS);
-  case '|': return make_token(TokenKind::TK_PIPE);
+  case '|':
+    return make_token(match('|') ? TokenKind::TK_PIPEPIPE :  TokenKind::TK_PIPE);
   case '&':
     return make_token(match('&') ? TokenKind::TK_AMPAMP : TokenKind::TK_AMP);
   case '!':
