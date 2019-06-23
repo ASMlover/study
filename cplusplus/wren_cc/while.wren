@@ -28,3 +28,7 @@ while
 var d = 0
 var e = while (d < 3) { d = d + 1}
 io.write(e) // expect: nil
+
+// definition body
+while (false) var a = "ok"
+while (false) class Foo {}
