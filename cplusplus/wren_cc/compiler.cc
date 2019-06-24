@@ -203,6 +203,10 @@ class Compiler : private UnCopyable {
     fn_->set_code(offset, fn_->codes_count() - offset - 1);
   }
 
+  inline int add_constant(const Value& v) {
+    return fn_->add_constant(v);
+  }
+
   inline void emit_constant(const Value& v) {
     u8_t b = fn_->add_constant(v);
     emit_bytes(Code::CONSTANT, b);
@@ -546,21 +550,7 @@ class Compiler : private UnCopyable {
     // curly block
     if (match(TokenKind::TK_LBRACE)) {
       PUSH_SCOPE;
-      for (;;) {
-        definition();
-
-        // if there is no newline, it must be the end of the block on the same line
-        if (!match(TokenKind::TK_NL)) {
-          consume(TokenKind::TK_RBRACE, "expect `}` after block body");
-          break;
-        }
-
-        if (match(TokenKind::TK_RBRACE))
-          break;
-
-        // discard the result of the previous expression
-        emit_byte(Code::POP);
-      }
+      finish_block();
       POP_SCOPE;
       return;
     }
@@ -577,35 +567,35 @@ class Compiler : private UnCopyable {
     consume(TokenKind::TK_RPAREN, "expect `)` after expression");
   }
 
+  void finish_block(void) {
+    // parses a block body, after the initial `{` has been consumed
+
+    for (;;) {
+      definition();
+
+      if (!match(TokenKind::TK_NL)) {
+        consume(TokenKind::TK_RBRACE, "expect `}` after block body");
+        break;
+      }
+      if (match(TokenKind::TK_RBRACE))
+        break;
+
+      // discard the result of the previous expression
+      emit_byte(Code::POP);
+    }
+  }
+
   void function(bool allow_assignment) {
     Compiler fn_compiler(parser_, this, false);
-    // add the function to the constant table
-    u8_t fn_constant = fn_->add_constant(fn_compiler.fn_);
-
-    // define a fake local slot for the receiver (the function object itself)
-    // so that later locals have the correct slot indices
-    fn_compiler.locals_.add("(this)");
+    int fn_constant = fn_compiler.init_compiler();
 
     str_t dummy_name;
     fn_compiler.parameters(dummy_name);
 
-    if (fn_compiler.match(TokenKind::TK_LBRACE)) {
-      for (;;) {
-        fn_compiler.definition();
-
-        if (!fn_compiler.match(TokenKind::TK_NL)) {
-          fn_compiler.consume(
-              TokenKind::TK_RBRACE, "expect `}` after function body");
-          break;
-        }
-        if (fn_compiler.match(TokenKind::TK_RBRACE))
-          break;
-        fn_compiler.emit_byte(Code::POP);
-      }
-    }
-    else {
+    if (fn_compiler.match(TokenKind::TK_LBRACE))
+      fn_compiler.finish_block();
+    else
       fn_compiler.expression(false);
-    }
     fn_compiler.emit_byte(Code::END);
 
     emit_bytes(Code::CONSTANT, fn_constant);
@@ -616,13 +606,7 @@ class Compiler : private UnCopyable {
     // consume(TokenKind::TK_IDENTIFIER, "expect method name");
 
     Compiler method_compiler(parser_, this, true);
-
-    // add the block into the constant table
-    int method_constant = fn_->add_constant(method_compiler.fn_);
-
-    // define a fake local slot for the receiver so that later locals have the
-    // correct slot indices
-    method_compiler.locals_.add("(this)");
+    int method_constant = method_compiler.init_compiler();
 
     // build the method name, the mangled name includes all of the name parts
     // in a mixfix call as well as spaces for every argument.
@@ -635,23 +619,7 @@ class Compiler : private UnCopyable {
     int symbol = vm_methods().ensure(name);
 
     consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
-    // block body
-    for (;;) {
-      method_compiler.definition();
-
-      // if there is no newline, is must be the end of the block on the same line
-      if (!method_compiler.match(TokenKind::TK_NL)) {
-        method_compiler.consume(
-            TokenKind::TK_RBRACE, "expect `}` after method body");
-        break;
-      }
-
-      if (method_compiler.match(TokenKind::TK_RBRACE))
-        break;
-
-      // discard the result of the previous expression
-      method_compiler.emit_byte(Code::POP);
-    }
+    method_compiler.finish_block();
     method_compiler.emit_byte(Code::END);
 
     if (is_static)
@@ -810,6 +778,19 @@ public:
 
   ~Compiler(void) {
     // FIXME: fixed deallocate FunctionObject by GC
+  }
+
+  int init_compiler(void) {
+    if (parent_ == nullptr)
+      return -1;
+
+    // define a fake local slot for the receiver so that later locals
+    // have the correct slot indices
+    locals_.add("(this)");
+
+    // add the block to the constant table, do this eagerly to it's
+    // reachable by the GC
+    return parent_->add_constant(fn_);
   }
 
   FunctionObject* compile_function(TokenKind end_kind) {
