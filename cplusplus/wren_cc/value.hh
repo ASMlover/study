@@ -271,6 +271,11 @@ enum class MethodType {
   PRIMITIVE,// a primitive method implemented in C that immediatelt returns a Value
   FIBER,    // a built-in method that modifies the fiber directly
   BLOCK,    // a normal user-defined method
+
+  // a constructor, this will be defined on the metaclass, if [fn] is non-nil,
+  // then it's a user-defined constructor and [fn] is the initialization code
+  // otherwise, it's a default constructor
+  CTOR,
 };
 
 struct Method {
@@ -305,6 +310,10 @@ public:
   }
   inline void set_method(int i, FunctionObject* fn) {
     methods_[i].type = MethodType::BLOCK;
+    methods_[i].fn = fn;
+  }
+  inline void set_method(int i, MethodType fn_type, FunctionObject* fn) {
+    methods_[i].type = fn_type;
     methods_[i].fn = fn;
   }
 
