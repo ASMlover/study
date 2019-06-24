@@ -457,7 +457,15 @@ class Compiler : private UnCopyable {
       // compile the method definition
       consume(TokenKind::TK_LBRACE, "expect `{` before class body");
       while (!match(TokenKind::TK_RBRACE)) {
-        bool is_static = match(TokenKind::KW_STATIC);
+        Code instruction = Code::METHOD_INSTANCE;
+        if (match(TokenKind::KW_STATIC)) {
+          instruction = Code::METHOD_STATIC;
+        }
+        else if (match(TokenKind::KW_THIS)) {
+          // if the method name is prefixed with `this` it's a named constructor
+          instruction = Code::METHOD_CTOR;
+        }
+
         auto& signature = get_rule(parser_.curr().kind()).method;
         parser_.advance();
 
@@ -465,7 +473,7 @@ class Compiler : private UnCopyable {
           error("expect method definition");
           break;
         }
-        method(is_static, signature);
+        method(instruction, signature);
         consume(TokenKind::TK_NL, "expect newline after definition in class");
       }
       return;
@@ -601,7 +609,7 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::CONSTANT, fn_constant);
   }
 
-  void method(bool is_static, const SignatureFn& signature) {
+  void method(Code instruction, const SignatureFn& signature) {
     // compiles a method definition inside a class body
     // consume(TokenKind::TK_IDENTIFIER, "expect method name");
 
@@ -620,18 +628,19 @@ class Compiler : private UnCopyable {
 
     consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
     method_compiler.finish_block();
+
+    // if it's a constructor, return `this`, not the result of the body
+    if (instruction == Code::METHOD_CTOR) {
+      method_compiler.emit_byte(Code::POP);
+      // the receiver is always stored in the first local slot
+      emit_bytes(Code::LOAD_LOCAL, 0);
+    }
     method_compiler.emit_byte(Code::END);
 
-    if (is_static)
-      emit_byte(Code::METACLASS);
-
     // compile the code to define the method it
-    emit_byte(Code::METHOD);
+    emit_byte(instruction);
     emit_byte(symbol);
     emit_byte(method_constant);
-
-    if (is_static)
-      emit_byte(Code::POP);
   }
 
   void assignment(void) {

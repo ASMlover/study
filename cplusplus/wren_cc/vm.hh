@@ -38,13 +38,18 @@ enum class Code : u8_t {
   CLASS,        // define a new empty class and push it into stack
   SUBCLASS,     // pop a superclass from stack, push a new class that extends it
 
-  // push the metaclass of the class on the top of the stack. does not
-  // discard the class
-  METACLASS,
+  // add a method for symbol [arg1] with body stored in constant [arg2] to
+  // the class on the top of the stack, does not modify the stack
+  METHOD_INSTANCE,
 
-  // method for symbol [arg1] with body stored in constant [arg2] to
-  // the class on the top of stack, does not modify the stack
-  METHOD,
+  // add a method for symbol [arg1] with body stored in constant [arg2] to
+  // the metaclass of the class on the top of stack, does not modify the stack
+  METHOD_STATIC,
+
+  // add a constructor method for symbol [arg1] with body stored in constant
+  // [arg2] to tthe metaclass of the class on the top of the stack. does not
+  // modify the stack
+  METHOD_CTOR,
 
   DUP,          // push a copy of the top of stack
   POP,          // pop and discard the top of stack

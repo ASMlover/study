@@ -130,10 +130,6 @@ public:
 
 /// VM IMPLEMENTATIONS
 
-static Value _primitive_metaclass_new(VM& vm, Value* args) {
-  return InstanceObject::make_instance(vm, args[0].as_class());
-}
-
 VM::VM(void) noexcept {
   fiber_ = new Fiber();
 
@@ -226,6 +222,11 @@ Value VM::interpret(FunctionObject* fn) {
 #define RDARG() frame->get_code(frame->ip++)
 
   auto* frame = &fiber->peek_frame();
+
+// use this after a CallFrame has been pushed or popped ti refresh the
+// local variables
+#define LOAD_FRAME()  frame = &fiber->peek_frame()
+
   for (;;) {
     switch (auto c = Xt::as_type<Code>(frame->get_code(frame->ip++))) {
     case Code::CONSTANT: PUSH(frame->get_constant(RDARG())); break;
@@ -250,18 +251,27 @@ Value VM::interpret(FunctionObject* fn) {
 
         // define `new` method on the metaclass.
         int new_symbol = methods_.ensure("new");
-        cls->meta_class()->set_method(new_symbol, _primitive_metaclass_new);
+        cls->meta_class()->set_method(new_symbol, MethodType::CTOR, nullptr);
         PUSH(cls);
       } break;
-    case Code::METACLASS: PUSH(PEEK().as_class()->meta_class()); break;
-    case Code::METHOD:
+    case Code::METHOD_INSTANCE:
+    case Code::METHOD_STATIC:
+    case Code::METHOD_CTOR:
       {
+        Code type = c;
         int symbol = RDARG();
         int constant = RDARG();
         ClassObject* cls = PEEK().as_class();
 
-        FunctionObject* body = frame->get_constant(constant).as_function();
-        cls->set_method(symbol, body);
+        FunctionObject* body_fn = frame->get_constant(constant).as_function();
+        switch (type) {
+        case Code::METHOD_INSTANCE:
+          cls->set_method(symbol, MethodType::BLOCK, body_fn); break;
+        case Code::METHOD_STATIC:
+          cls->meta_class()->set_method(symbol, MethodType::BLOCK, body_fn); break;
+        case Code::METHOD_CTOR:
+          cls->meta_class()->set_method(symbol, MethodType::CTOR, body_fn); break;
+        }
       } break;
     case Code::LOAD_LOCAL:
       {
@@ -325,13 +335,31 @@ Value VM::interpret(FunctionObject* fn) {
           {
             Value* args = fiber->values_at(fiber->stack_size() - argc);
             method.fiber_primitive(*this, *fiber, args);
-
-            frame = &fiber->peek_frame();
+            LOAD_FRAME();
           } break;
         case MethodType::BLOCK:
           fiber->call_function(method.fn, argc);
-          frame = &fiber->peek_frame();
+          LOAD_FRAME();
           break;
+        case MethodType::CTOR:
+          {
+            Value instance =
+              InstanceObject::make_instance(*this, receiver.as_class());
+
+            // store the new instance in the receiver slot so that it can
+            // be `this` in the body of the constructor and returned by it
+            fiber->set_value(fiber->stack_size() - argc, instance);
+            if (method.fn == nullptr) {
+              // default constructor, so no body to call, just discard the
+              // stack slots for the arguments (but leave one for the instance)
+              fiber->resize_stack(fiber->stack_size() - (argc - 1));
+            }
+            else {
+              // invoke the constructor body
+              fiber->call_function(method.fn, argc);
+              LOAD_FRAME();
+            }
+          } break;
         }
       } break;
     case Code::JUMP: frame->ip += RDARG(); break;
@@ -396,7 +424,7 @@ Value VM::interpret(FunctionObject* fn) {
           fiber->set_value(frame->stack_start, r);
         fiber->resize_stack(frame->stack_start + 1);
 
-        frame = &fiber->peek_frame();
+        LOAD_FRAME();
       } break;
     }
   }
