@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <chrono>
 #include <cmath>
 #include <iostream>
 #include "value.hh"
@@ -221,6 +222,11 @@ DEF_PRIMITIVE(io_write) {
   return args[1];
 }
 
+DEF_PRIMITIVE(os_clock) {
+  return std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
+}
+
 static constexpr const char* kCoreLib =
 "class Nil {}\n"
 "class Bool {}\n"
@@ -230,7 +236,9 @@ static constexpr const char* kCoreLib =
 "class Class {}\n"
 "class Object {}\n"
 "class IO {}\n"
-"var io = IO.new\n";
+"var io = IO.new\n"
+"class OS {}\n"
+;
 
 void load_core(VM& vm) {
   vm.interpret(kCoreLib);
@@ -286,6 +294,9 @@ void load_core(VM& vm) {
 
   ClassObject* io_cls = vm.get_global("IO").as_class();
   vm.set_primitive(io_cls, "write ", _primitive_io_write);
+
+  ClassObject* os_cls = vm.get_global("OS").as_class();
+  vm.set_primitive(os_cls->meta_class(), "clock", _primitive_os_clock);
 
   ClassObject* unsupported_cls = ClassObject::make_class(vm, vm.obj_cls());
   vm.set_unsupported(InstanceObject::make_instance(vm, unsupported_cls));
