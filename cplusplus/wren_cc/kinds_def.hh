@@ -81,6 +81,7 @@ KEYWORD(TRUE, "true")
 KEYWORD(VAR, "var")
 KEYWORD(WHILE, "while")
 
+TOKEN(FIELD, "field")
 TOKEN(IDENTIFIER, "identifier")
 TOKEN(NUMERIC, "numeric")
 TOKEN(STRING, "string")

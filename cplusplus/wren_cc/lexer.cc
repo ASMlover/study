@@ -39,7 +39,7 @@ Token Lexer::next_token(void) {
   if (std::isdigit(c))
     return make_numeric();
   if (is_alpha(c))
-    return make_identifier();
+    return make_identifier(c);
 
   switch (c) {
   case '(': return make_token(TokenKind::TK_LPAREN);
@@ -111,12 +111,15 @@ Token Lexer::make_error(const str_t& error_message) {
   return Token(TokenKind::TK_ERROR, error_message, lineno_);
 }
 
-Token Lexer::make_identifier(void) {
+Token Lexer::make_identifier(char beg_char) {
   while (is_alnum(peek()))
     advance();
 
   auto literal = gen_literal(begpos_, curpos_);
-  return make_token(get_keyword_kind(literal.c_str()), literal);
+  TokenKind kind = get_keyword_kind(literal.c_str());
+  if (kind != TokenKind::TK_IDENTIFIER && beg_char == '_')
+    kind = TokenKind::TK_FIELD;
+  return make_token(kind, literal);
 }
 
 Token Lexer::make_numeric(void) {

@@ -78,7 +78,7 @@ class Lexer : private UnCopyable {
   Token make_token(TokenKind kind);
   Token make_token(TokenKind kind, int lineno);
   Token make_error(const str_t& error_message);
-  Token make_identifier(void);
+  Token make_identifier(char beg_char);
   Token make_numeric(void);
   Token make_string(void);
 public:
