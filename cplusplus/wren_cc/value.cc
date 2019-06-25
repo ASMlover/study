@@ -103,6 +103,14 @@ str_t ObjValue::stringify(void) const {
   return "";
 }
 
+StringObject::StringObject(char c) noexcept
+  : BaseObject(ObjType::STRING)
+  , size_(1) {
+  value_ = new char[2];
+  value_[0] = c;
+  value_[1] = 0;
+}
+
 StringObject::StringObject(const char* s, int n, bool replace_owner) noexcept
   : BaseObject(ObjType::STRING)
   , size_(n) {
@@ -124,6 +132,12 @@ StringObject::~StringObject(void) {
 
 str_t StringObject::stringify(void) const {
   return value_;
+}
+
+StringObject* StringObject::make_string(VM& vm, char c) {
+  auto* o = new StringObject(c);
+  vm.append_object(o);
+  return o;
 }
 
 StringObject* StringObject::make_string(VM& vm, const char* s, int n) {

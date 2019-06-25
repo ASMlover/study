@@ -216,14 +216,18 @@ class StringObject final : public BaseObject {
   int size_{};
   char* value_{};
 
+  StringObject(char c) noexcept;
   StringObject(const char* s, int n, bool replace_owner = false) noexcept;
   virtual ~StringObject(void);
 public:
   inline int size(void) const { return size_; }
   inline const char* cstr(void) const { return value_; }
+  inline char operator[](int i) const { return value_[i]; }
+  inline char& operator[](int i) { return value_[i]; }
 
   virtual str_t stringify(void) const override;
 
+  static StringObject* make_string(VM& vm, char c);
   static StringObject* make_string(VM& vm, const char* s, int n);
   static StringObject* make_string(VM& vm, const str_t& s);
   static StringObject* make_string(VM& vm, StringObject* s1, StringObject* s2);
