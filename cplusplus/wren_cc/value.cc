@@ -170,10 +170,12 @@ ClassObject::ClassObject(void) noexcept
   : BaseObject(ObjType::CLASS) {
 }
 
-ClassObject::ClassObject(ClassObject* meta_class, ClassObject* supercls) noexcept
+ClassObject::ClassObject(
+    ClassObject* meta_class, ClassObject* supercls, int num_fields) noexcept
   : BaseObject(ObjType::CLASS)
   , meta_class_(meta_class)
-  , superclass_(supercls) {
+  , superclass_(supercls)
+  , num_fields_(num_fields) {
   if (superclass_ != nullptr) {
     for (int i = 0; i < kMaxMethods; ++i)
       methods_[i] = superclass_->methods_[i];
@@ -194,22 +196,31 @@ void ClassObject::gc_mark(VM& vm) {
   }
 }
 
-ClassObject* ClassObject::make_class(VM& vm, ClassObject* superclass) {
-  auto* meta_class = new ClassObject(nullptr, nullptr);
-  auto* o = new ClassObject(meta_class, superclass);
+ClassObject* ClassObject::make_class(
+    VM& vm, ClassObject* superclass, int num_fields) {
+  auto* meta_class = new ClassObject(nullptr, nullptr, 0);
+  auto* o = new ClassObject(meta_class, superclass, num_fields);
   vm.append_object(o);
   return o;
 }
 
 InstanceObject::InstanceObject(ClassObject* cls) noexcept
   : BaseObject(ObjType::INSTANCE)
-  , cls_(cls) {
+  , cls_(cls)
+  , fields_(cls->num_fields()) {
+  for (int i = 0; i < cls_->num_fields(); ++i)
+    fields_[i] = nullptr;
 }
 
 str_t InstanceObject::stringify(void) const {
   std::stringstream ss;
   ss << "[instance `" << this << "`]";
   return ss.str();
+}
+
+void InstanceObject::gc_mark(VM& vm) {
+  for (auto& v : fields_)
+    vm.mark_value(v);
 }
 
 InstanceObject* InstanceObject::make_instance(VM& vm, ClassObject* cls) {

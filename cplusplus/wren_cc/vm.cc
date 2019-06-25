@@ -237,13 +237,15 @@ Value VM::interpret(FunctionObject* fn) {
     case Code::SUBCLASS:
       {
         bool is_subclass = c == Code::SUBCLASS;
+        int num_fields = RDARG();
+
         ClassObject* superclass;
         if (is_subclass)
           superclass = POP().as_class();
         else
           superclass = obj_class_;
 
-        ClassObject* cls = ClassObject::make_class(*this, superclass);
+        ClassObject* cls = ClassObject::make_class(*this, superclass, num_fields);
 
         // assume the first class being defined is Object
         if (obj_class_ == nullptr)
@@ -292,6 +294,24 @@ Value VM::interpret(FunctionObject* fn) {
       {
         int global = RDARG();
         globals_[global] = PEEK();
+      } break;
+    case Code::LOAD_FIELD:
+      {
+        int field = RDARG();
+        const Value& receiver = fiber->get_value(frame->stack_start);
+        ASSERT(receiver.is_instance(), "receiver should be instance");
+        InstanceObject* inst = receiver.as_instance();
+        ASSERT(field < inst->cls()->num_fields(), "out of bounds field");
+        PUSH(inst->get_field(field));
+      } break;
+    case Code::STORE_FIELD:
+      {
+        int field = RDARG();
+        const Value& receiver = fiber->get_value(frame->stack_start);
+        ASSERT(receiver.is_instance(), "receiver should be instance");
+        InstanceObject* inst = receiver.as_instance();
+        ASSERT(field < inst->cls()->num_fields(), "out of bounds field");
+        inst->set_field(field, PEEK());
       } break;
     case Code::DUP: PUSH(PEEK()); break;
     case Code::POP: POP(); break;

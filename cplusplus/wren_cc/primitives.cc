@@ -298,7 +298,7 @@ void load_core(VM& vm) {
   ClassObject* os_cls = vm.get_global("OS").as_class();
   vm.set_primitive(os_cls->meta_class(), "clock", _primitive_os_clock);
 
-  ClassObject* unsupported_cls = ClassObject::make_class(vm, vm.obj_cls());
+  ClassObject* unsupported_cls = ClassObject::make_class(vm, vm.obj_cls(), 0);
   vm.set_unsupported(InstanceObject::make_instance(vm, unsupported_cls));
 }
 

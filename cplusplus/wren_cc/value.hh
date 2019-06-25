@@ -292,12 +292,16 @@ class ClassObject final : public BaseObject {
 
   ClassObject* meta_class_{};
   ClassObject* superclass_{};
+  int num_fields_{};
   std::vector<Method> methods_{kMaxMethods};
 
   ClassObject(void) noexcept;
-  ClassObject(ClassObject* meta_class, ClassObject* supercls = nullptr) noexcept;
+  ClassObject(ClassObject* meta_class,
+      ClassObject* supercls = nullptr, int num_fields = 0) noexcept;
 public:
   inline ClassObject* meta_class(void) const { return meta_class_; }
+  inline ClassObject* superclass(void) const { return superclass_; }
+  inline int num_fields(void) const { return num_fields_; }
   inline int methods_count(void) const { return Xt::as_type<int>(methods_.size()); }
   inline Method& get_method(int i) { return methods_[i]; }
   inline void set_method(int i, PrimitiveFn fn) {
@@ -320,18 +324,22 @@ public:
   virtual str_t stringify(void) const override;
   virtual void gc_mark(VM& vm) override;
 
-  static ClassObject* make_class(VM& vm, ClassObject* superclass = nullptr);
+  static ClassObject* make_class(VM& vm,
+      ClassObject* superclass = nullptr, int num_fields = 0);
 };
 
 class InstanceObject final : public BaseObject {
   ClassObject* cls_{};
-  // TODO: need add instance fields
+  std::vector<Value> fields_;
 
   InstanceObject(ClassObject* cls) noexcept;
 public:
   inline ClassObject* cls(void) const { return cls_; }
+  inline const Value& get_field(int i) const { return fields_[i]; }
+  inline void set_field(int i, const Value& v) { fields_[i] = v; }
 
   virtual str_t stringify(void) const override;
+  virtual void gc_mark(VM& vm) override;
 
   static InstanceObject* make_instance(VM& vm, ClassObject* cls);
 };

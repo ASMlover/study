@@ -163,7 +163,12 @@ class Compiler : private UnCopyable {
   FunctionObject* fn_{};
   int num_codes_{};
   SymbolTable locals_;
-  bool is_method_{};
+
+  // for the fields of the nearest enclosing class, or nullptr if not
+  // currently inside a class
+  SymbolTable* fields_{};
+
+  bool is_method_{}; // true if the function being compiled is a method
 
   // the current local variable scope, initially nullptr
   Scope* scope_{};
@@ -285,6 +290,7 @@ class Compiler : private UnCopyable {
       UNUSED,                                 // KEYWORD(VAR, "var")
       UNUSED,                                 // KEYWORD(WHILE, "while")
 
+      PREFIX(field),                          // TOKEN(FIELD, "field")
       PREFIXNAME,                             // TOKEN(IDENTIFIER, "identifier")
       PREFIX(numeric),                        // TOKEN(NUMERIC, "numeric")
       PREFIX(string),                         // TOKEN(STRING, "string")
@@ -422,6 +428,25 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::LOAD_GLOBAL, global);
   }
 
+  void field(bool allow_assignment) {
+    // look up the field, or implicitlt define it
+    int field = fields_->ensure(parser_.prev().as_string());
+
+    // if there is an `=` after a filed name, it's an assignment
+    if (match(TokenKind::TK_EQ)) {
+      if (!allow_assignment)
+        error("invalid assignment");
+
+      // compile the right-hand side
+      statement();
+
+      emit_bytes(Code::STORE_FIELD, field);
+    }
+    else {
+      emit_bytes(Code::LOAD_FIELD, field);
+    }
+  }
+
   bool match(TokenKind expected) {
     if (parser_.curr().kind() != expected)
       return false;
@@ -452,10 +477,20 @@ class Compiler : private UnCopyable {
         emit_byte(Code::CLASS);
       }
 
+      // store a placeholder for the number of fields argument, we donot
+      // know the value untial we have compiled all the methods to see
+      // which fields are used.
+      int num_fields_instruction = emit_byte(0xff);
       // store it in its name
       define_variable(symbol);
       // compile the method definition
       consume(TokenKind::TK_LBRACE, "expect `{` before class body");
+
+      // set up a symbol table for the class's fields
+      SymbolTable* prev_fields = fields_;
+      SymbolTable fileds;
+      fields_ = &fileds;
+
       while (!match(TokenKind::TK_RBRACE)) {
         Code instruction = Code::METHOD_INSTANCE;
         if (match(TokenKind::KW_STATIC)) {
@@ -476,6 +511,11 @@ class Compiler : private UnCopyable {
         method(instruction, signature);
         consume(TokenKind::TK_NL, "expect newline after definition in class");
       }
+
+      // update the class with the number of fields
+      fn_->set_code(num_fields_instruction, fileds.count());
+      fields_ = prev_fields;
+
       return;
     }
 
@@ -782,6 +822,8 @@ public:
     : parser_(parser)
     , parent_(parent)
     , is_method_(is_method) {
+    if (parent_ != nullptr)
+      fields_ = parent_->fields_;
     fn_ = FunctionObject::make_function(parser_.get_vm());
   }
 

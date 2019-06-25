@@ -57,6 +57,8 @@ enum class Code : u8_t {
   STORE_LOCAL,  // store the top of the stack in local slot [arg], not pop it
   LOAD_GLOBAL,  // push the value in global slot [arg]
   STORE_GLOBAL, // store the top of the stack in global slot [arg], not pop it
+  LOAD_FIELD,   // push the value of field in slot [arg] for current receiver
+  STORE_FIELD,  // store the top of the stack in field slot [arg] in current receiver
 
   // invoke the method with symbol [arg], the number indicates the number of
   // arguments (not including the receiver)
