@@ -226,6 +226,25 @@ DEF_PRIMITIVE(list_len) {
   return args[0].as_list()->count();
 }
 
+DEF_PRIMITIVE(list_subscript) {
+  if (!args[1].is_numeric())
+    return nullptr;
+
+  double index_num = args[1].as_numeric();
+  int index = Xt::as_type<int>(index_num);
+  // make sure the index is an integer
+  if (index_num != index)
+    return nullptr;
+
+  ListObject* l = args[0].as_list();
+  if (index < 0)
+    index = index + l->count();
+  if (index < 0 || index >= l->count())
+    return nullptr;
+
+  return l->get_element(index);
+}
+
 DEF_PRIMITIVE(fn_eq) {
   if (!args[1].is_function())
     return false;
@@ -319,6 +338,7 @@ void load_core(VM& vm) {
 
   vm.set_list_cls(vm.get_global("List").as_class());
   vm.set_primitive(vm.list_cls(), "len", _primitive_list_len);
+  vm.set_primitive(vm.list_cls(), "[ ]", _primitive_list_subscript);
 
   ClassObject* io_cls = vm.get_global("IO").as_class();
   vm.set_primitive(io_cls, "write ", _primitive_io_write);
