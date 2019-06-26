@@ -182,6 +182,7 @@ ClassObject* VM::get_class(const Value& val) const {
   if (val.is_object()) {
     switch (val.objtype()) {
     case ObjType::STRING: return str_class_;
+    case ObjType::LIST: return list_class_;
     case ObjType::FUNCTION: return fn_class_;
     case ObjType::CLASS: return val.as_class()->meta_class();
     case ObjType::INSTANCE: return val.as_instance()->cls();
@@ -202,6 +203,7 @@ ClassObject* VM::get_class(const Value& val) const {
   case ValueType::OBJECT:
     switch (val.objtype()) {
     case ObjType::STRING: return str_class_;
+    case ObjType::LIST: return list_class_;
     case ObjType::FUNCTION: return fn_class_;
     case ObjType::CLASS: return val.as_class()->meta_class();
     case ObjType::INSTANCE: return val.as_instance()->cls();
@@ -274,6 +276,19 @@ Value VM::interpret(FunctionObject* fn) {
         case Code::METHOD_CTOR:
           cls->meta_class()->set_method(symbol, MethodType::CTOR, body_fn); break;
         }
+      } break;
+    case Code::LIST:
+      {
+        int num_elements = RDARG();
+        ListObject* list = ListObject::make_list(*this, num_elements);
+        for (int i = 0; i < num_elements; ++i) {
+          list->set_element(i,
+              fiber->get_value(fiber->stack_size() - num_elements + i));
+        }
+        // discard the elements
+        fiber->resize_stack(fiber->stack_size() - num_elements);
+
+        PUSH(list);
       } break;
     case Code::LOAD_LOCAL:
       {

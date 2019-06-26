@@ -247,58 +247,59 @@ class Compiler : private UnCopyable {
 #define INFIX(fn, prec) {nullptr, RULE(fn), nullptr, prec, nullptr}
 #define INFIXOP(prec, name) {nullptr, RULE(infix_oper), SIGN(infix_signature), prec, name}
 #define OPER(prec, name) {RULE(unary_oper), RULE(infix_oper), SIGN(mixed_signature), prec, name}
+#define OPER2(pfn, ifn, prec) {RULE(pfn), RULE(ifn), nullptr, prec, nullptr}
 #define PREFIXOP(name) {RULE(unary_oper), nullptr, SIGN(unary_signature), Precedence::NONE, name}
 #define PREFIXNAME {RULE(variable), nullptr, SIGN(parameters), Precedence::NONE, nullptr}
     static const GrammerRule _rules[] = {
-      PREFIX(grouping),                       // PUNCTUATOR(LPAREN, "(")
-      UNUSED,                                 // PUNCTUATOR(RPAREN, ")")
-      INFIX(subscript, Precedence::CALL),     // PUNCTUATOR(LBRACKET, "[")
-      UNUSED,                                 // PUNCTUATOR(RBRACKET, "]")
-      UNUSED,                                 // PUNCTUATOR(LBRACE, "{")
-      UNUSED,                                 // PUNCTUATOR(RBRACE, "}")
-      UNUSED,                                 // PUNCTUATOR(COLON, ":")
-      INFIX(call, Precedence::CALL),          // PUNCTUATOR(DOT, ".")
-      UNUSED,                                 // PUNCTUATOR(COMMA, ",")
-      INFIXOP(Precedence::FACTOR, "* "),      // PUNCTUATOR(STAR, "*")
-      INFIXOP(Precedence::FACTOR, "/ "),      // PUNCTUATOR(SLASH, "/")
-      INFIXOP(Precedence::TERM, "% "),        // PUNCTUATOR(PERCENT, "%")
-      INFIXOP(Precedence::TERM, "+ "),        // PUNCTUATOR(PLUS, "+")
-      OPER(Precedence::TERM, "- "),           // PUNCTUATOR(MINUS, "-")
-      UNUSED,                                 // PUNCTUATOR(PIPE, "|")
-      INFIX(or_expr, Precedence::LOGIC),      // PUNCTUATOR(PIPEPIPE, "||")
-      UNUSED,                                 // PUNCTUATOR(AMP, "&")
-      INFIX(and_expr, Precedence::LOGIC),     // PUNCTUATOR(AMPAMP, "&&")
-      PREFIXOP("!"),                          // PUNCTUATOR(BANG, "!")
-      UNUSED,                                 // PUNCTUATOR(EQ, "=")
-      INFIXOP(Precedence::COMPARISON, "< "),  // PUNCTUATOR(LT, "<")
-      INFIXOP(Precedence::COMPARISON, "> "),  // PUNCTUATOR(GT, ">")
-      INFIXOP(Precedence::COMPARISON, "<= "), // PUNCTUATOR(LTEQ, "<=")
-      INFIXOP(Precedence::COMPARISON, ">= "), // PUNCTUATOR(GTEQ, ">=")
-      INFIXOP(Precedence::EQUALITY, "== "),   // PUNCTUATOR(EQEQ, "==")
-      INFIXOP(Precedence::EQUALITY, "!= "),   // PUNCTUATOR(BANGEQ, "!=")
+      PREFIX(grouping),                         // PUNCTUATOR(LPAREN, "(")
+      UNUSED,                                   // PUNCTUATOR(RPAREN, ")")
+      OPER2(list, subscript, Precedence::CALL), // PUNCTUATOR(LBRACKET, "[")
+      UNUSED,                                   // PUNCTUATOR(RBRACKET, "]")
+      UNUSED,                                   // PUNCTUATOR(LBRACE, "{")
+      UNUSED,                                   // PUNCTUATOR(RBRACE, "}")
+      UNUSED,                                   // PUNCTUATOR(COLON, ":")
+      INFIX(call, Precedence::CALL),            // PUNCTUATOR(DOT, ".")
+      UNUSED,                                   // PUNCTUATOR(COMMA, ",")
+      INFIXOP(Precedence::FACTOR, "* "),        // PUNCTUATOR(STAR, "*")
+      INFIXOP(Precedence::FACTOR, "/ "),        // PUNCTUATOR(SLASH, "/")
+      INFIXOP(Precedence::TERM, "% "),          // PUNCTUATOR(PERCENT, "%")
+      INFIXOP(Precedence::TERM, "+ "),          // PUNCTUATOR(PLUS, "+")
+      OPER(Precedence::TERM, "- "),             // PUNCTUATOR(MINUS, "-")
+      UNUSED,                                   // PUNCTUATOR(PIPE, "|")
+      INFIX(or_expr, Precedence::LOGIC),        // PUNCTUATOR(PIPEPIPE, "||")
+      UNUSED,                                   // PUNCTUATOR(AMP, "&")
+      INFIX(and_expr, Precedence::LOGIC),       // PUNCTUATOR(AMPAMP, "&&")
+      PREFIXOP("!"),                            // PUNCTUATOR(BANG, "!")
+      UNUSED,                                   // PUNCTUATOR(EQ, "=")
+      INFIXOP(Precedence::COMPARISON, "< "),    // PUNCTUATOR(LT, "<")
+      INFIXOP(Precedence::COMPARISON, "> "),    // PUNCTUATOR(GT, ">")
+      INFIXOP(Precedence::COMPARISON, "<= "),   // PUNCTUATOR(LTEQ, "<=")
+      INFIXOP(Precedence::COMPARISON, ">= "),   // PUNCTUATOR(GTEQ, ">=")
+      INFIXOP(Precedence::EQUALITY, "== "),     // PUNCTUATOR(EQEQ, "==")
+      INFIXOP(Precedence::EQUALITY, "!= "),     // PUNCTUATOR(BANGEQ, "!=")
 
-      UNUSED,                                 // KEYWORD(CLASS, "class")
-      UNUSED,                                 // KEYWORD(ELSE, "else")
-      PREFIX(boolean),                        // KEYWORD(FALSE, "false")
-      PREFIX(function),                       // KEYWORD(FN, "fn")
-      UNUSED,                                 // KEYWORD(IF, "if")
-      INFIX(is, Precedence::IS),              // KEYWORD(IS, "is")
-      PREFIX(nil),                            // KEYWORD(NIL, "nil")
-      UNUSED,                                 // KEYWORD(STATIC, "static")
-      PREFIX(this_exp),                       // KEYWORD(THIS, "this")
-      PREFIX(boolean),                        // KEYWORD(TRUE, "true")
-      UNUSED,                                 // KEYWORD(VAR, "var")
-      UNUSED,                                 // KEYWORD(WHILE, "while")
+      UNUSED,                                   // KEYWORD(CLASS, "class")
+      UNUSED,                                   // KEYWORD(ELSE, "else")
+      PREFIX(boolean),                          // KEYWORD(FALSE, "false")
+      PREFIX(function),                         // KEYWORD(FN, "fn")
+      UNUSED,                                   // KEYWORD(IF, "if")
+      INFIX(is, Precedence::IS),                // KEYWORD(IS, "is")
+      PREFIX(nil),                              // KEYWORD(NIL, "nil")
+      UNUSED,                                   // KEYWORD(STATIC, "static")
+      PREFIX(this_exp),                         // KEYWORD(THIS, "this")
+      PREFIX(boolean),                          // KEYWORD(TRUE, "true")
+      UNUSED,                                   // KEYWORD(VAR, "var")
+      UNUSED,                                   // KEYWORD(WHILE, "while")
 
-      PREFIX(field),                          // TOKEN(FIELD, "field")
-      PREFIXNAME,                             // TOKEN(IDENTIFIER, "identifier")
-      PREFIX(numeric),                        // TOKEN(NUMERIC, "numeric")
-      PREFIX(string),                         // TOKEN(STRING, "string")
+      PREFIX(field),                            // TOKEN(FIELD, "field")
+      PREFIXNAME,                               // TOKEN(IDENTIFIER, "identifier")
+      PREFIX(numeric),                          // TOKEN(NUMERIC, "numeric")
+      PREFIX(string),                           // TOKEN(STRING, "string")
 
-      UNUSED,                                 // TOKEN(NL, "new-line")
+      UNUSED,                                   // TOKEN(NL, "new-line")
 
-      UNUSED,                                 // TOKEN(ERROR, "error")
-      UNUSED,                                 // TOKEN(EOF, "eof")
+      UNUSED,                                   // TOKEN(ERROR, "error")
+      UNUSED,                                   // TOKEN(EOF, "eof")
     };
 #undef SIGN
 #undef RULE
@@ -388,6 +389,21 @@ class Compiler : private UnCopyable {
     auto& tok = parser_.prev();
     emit_constant(StringObject::make_string(
           parser_.get_vm(), tok.as_string()));
+  }
+
+  void list(bool allow_assignment) {
+    // compile the list elements
+    int num_elements = 0;
+    if (parser_.curr().kind() != TokenKind::TK_RBRACKET) {
+      do {
+        ++num_elements;
+        assignment();
+      } while (match(TokenKind::TK_COMMA));
+    }
+    consume(TokenKind::TK_RBRACKET, "expect `]` after list elements");
+
+    // create the list
+    emit_bytes(Code::LIST, num_elements);
   }
 
   void variable(bool allow_assignment) {

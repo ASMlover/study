@@ -32,7 +32,7 @@
 
 namespace wrencc {
 
-enum class ValueType {
+enum class ValueType : u8_t {
   NIL,
   TRUE,
   FALSE,
@@ -40,8 +40,9 @@ enum class ValueType {
   OBJECT,
 };
 
-enum class ObjType {
+enum class ObjType : u8_t {
   STRING,
+  LIST,
   FUNCTION,
   CLASS,
   INSTANCE,
@@ -59,6 +60,7 @@ class NilObject;
 class BooleanObject;
 class NumericObject;
 class StringObject;
+class ListObject;
 class FunctionObject;
 class ClassObject;
 class InstanceObject;
@@ -131,6 +133,7 @@ public:
   inline bool is_numeric(void) const { return (bits_ & kQNaN) != kQNaN; }
   inline bool is_object(void) const { return (bits_ & (kSignBit | kQNaN)) == (kSignBit | kQNaN); }
   inline bool is_string(void) const { return check(ObjType::STRING); }
+  inline bool is_list(void) const { return check(ObjType::LIST); }
   inline bool is_function(void) const { return check(ObjType::FUNCTION); }
   inline bool is_class(void) const { return check(ObjType::CLASS); }
   inline bool is_instance(void) const { return check(ObjType::INSTANCE); }
@@ -143,6 +146,7 @@ public:
 
   StringObject* as_string(void) const;
   const char* as_cstring(void) const;
+  ListObject* as_list(void) const;
   FunctionObject* as_function(void) const;
   ClassObject* as_class(void) const;
   InstanceObject* as_instance(void) const;
@@ -185,6 +189,7 @@ public:
   inline bool is_numeric(void) const { return type_ == ValueType::NUMERIC; }
   inline bool is_object(void) const { return type_ == ValueType::OBJECT; }
   inline bool is_string(void) const { return check(ObjType::STRING); }
+  inline bool is_list(void) const { return check(ObjType::LIST); }
   inline bool is_function(void) const { return check(ObjType::FUNCTION); }
   inline bool is_class(void) const { return check(ObjType::CLASS); }
   inline bool is_instance(void) const { return check(ObjType::INSTANCE); }
@@ -197,6 +202,7 @@ public:
 
   StringObject* as_string(void) const;
   const char* as_cstring(void) const;
+  ListObject* as_list(void) const;
   FunctionObject* as_function(void) const;
   ClassObject* as_class(void) const;
   InstanceObject* as_instance(void) const;
@@ -231,6 +237,21 @@ public:
   static StringObject* make_string(VM& vm, const char* s, int n);
   static StringObject* make_string(VM& vm, const str_t& s);
   static StringObject* make_string(VM& vm, StringObject* s1, StringObject* s2);
+};
+
+class ListObject final : public BaseObject {
+  std::vector<Value> elements_;
+
+  ListObject(int num_elements = 0) noexcept;
+public:
+  inline int count(void) const { return Xt::as_type<int>(elements_.size()); }
+  inline const Value& get_element(int i) const { return elements_[i]; }
+  inline void set_element(int i, const Value& e) { elements_[i] = e; }
+
+  virtual str_t stringify(void) const override;
+  virtual void gc_mark(VM& vm) override;
+
+  static ListObject* make_list(VM& vm, int num_elements = 0);
 };
 
 class FunctionObject final : public BaseObject {

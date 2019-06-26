@@ -51,14 +51,19 @@ enum class Code : u8_t {
   // modify the stack
   METHOD_CTOR,
 
-  DUP,          // push a copy of the top of stack
-  POP,          // pop and discard the top of stack
+  // create a new list with [arg] elements, the top [arg] values on the stack
+  // are the elements in forward order. removes the elements and then pushs
+  // the new list
+  LIST,
+
   LOAD_LOCAL,   // push the value in local slot [arg]
   STORE_LOCAL,  // store the top of the stack in local slot [arg], not pop it
   LOAD_GLOBAL,  // push the value in global slot [arg]
   STORE_GLOBAL, // store the top of the stack in global slot [arg], not pop it
   LOAD_FIELD,   // push the value of field in slot [arg] for current receiver
   STORE_FIELD,  // store the top of the stack in field slot [arg] in current receiver
+  DUP,          // push a copy of the top of stack
+  POP,          // pop and discard the top of stack
 
   // invoke the method with symbol [arg], the number indicates the number of
   // arguments (not including the receiver)
@@ -123,6 +128,7 @@ class VM final : private UnCopyable {
   ClassObject* num_class_{};
   ClassObject* obj_class_{};
   ClassObject* str_class_{};
+  ClassObject* list_class_{};
 
   Value unsupported_{};
 
@@ -156,6 +162,7 @@ public:
   inline void set_num_cls(ClassObject* cls) { num_class_ = cls; }
   inline void set_obj_cls(ClassObject* cls) { obj_class_ = cls; }
   inline void set_str_cls(ClassObject* cls) { str_class_ = cls; }
+  inline void set_list_cls(ClassObject* cls) { list_class_ = cls; }
 
   inline ClassObject* fn_cls(void) const { return fn_class_; }
   inline ClassObject* bool_cls(void) const { return bool_class_; }
@@ -164,6 +171,7 @@ public:
   inline ClassObject* num_cls(void) const { return num_class_; }
   inline ClassObject* obj_cls(void) const { return obj_class_; }
   inline ClassObject* str_cls(void) const { return str_class_; }
+  inline ClassObject* list_cls(void) const { return list_class_; }
 
   inline void set_unsupported(const Value& unsupported) { unsupported_ = unsupported; }
   inline const Value& unsupported(void) const { return unsupported_; }

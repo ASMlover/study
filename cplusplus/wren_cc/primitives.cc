@@ -222,6 +222,10 @@ DEF_PRIMITIVE(string_subscript) {
   return StringObject::make_string(vm, (*s)[index]);
 }
 
+DEF_PRIMITIVE(list_len) {
+  return args[0].as_list()->count();
+}
+
 DEF_PRIMITIVE(fn_eq) {
   if (!args[1].is_function())
     return false;
@@ -251,6 +255,7 @@ static constexpr const char* kCoreLib =
 "class Bool {}\n"
 "class Numeric {}\n"
 "class String {}\n"
+"class List {}\n"
 "class Function {}\n"
 "class Class {}\n"
 "class Object {}\n"
@@ -311,6 +316,9 @@ void load_core(VM& vm) {
   vm.set_primitive(vm.str_cls(), "== ", _primitive_string_eq);
   vm.set_primitive(vm.str_cls(), "!= ", _primitive_string_ne);
   vm.set_primitive(vm.str_cls(), "[ ]", _primitive_string_subscript);
+
+  vm.set_list_cls(vm.get_global("List").as_class());
+  vm.set_primitive(vm.list_cls(), "len", _primitive_list_len);
 
   ClassObject* io_cls = vm.get_global("IO").as_class();
   vm.set_primitive(io_cls, "write ", _primitive_io_write);

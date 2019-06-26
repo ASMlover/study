@@ -42,6 +42,10 @@ const char* TagValue::as_cstring(void) const {
   return Xt::down<StringObject>(as_object())->cstr();
 }
 
+ListObject* TagValue::as_list(void) const {
+  return Xt::down<ListObject>(as_object());
+}
+
 FunctionObject* TagValue::as_function(void) const {
   return Xt::down<FunctionObject>(as_object());
 }
@@ -78,6 +82,10 @@ StringObject* ObjValue::as_string(void) const {
 
 const char* ObjValue::as_cstring(void) const {
   return Xt::down<StringObject>(obj_)->cstr();
+}
+
+ListObject* ObjValue::as_list(void) const {
+  return Xt::down<ListObject>(obj_);
 }
 
 FunctionObject* ObjValue::as_function(void) const {
@@ -159,6 +167,29 @@ StringObject* StringObject::make_string(
   s[n] = 0;
 
   auto* o = new StringObject(s, n, true);
+  vm.append_object(o);
+  return o;
+}
+
+ListObject::ListObject(int num_elements) noexcept
+  : BaseObject(ObjType::LIST) {
+  if (num_elements > 0)
+    elements_.resize(num_elements);
+}
+
+str_t ListObject::stringify(void) const {
+  std::stringstream ss;
+  ss << "[list: " << this << "]";
+  return ss.str();
+}
+
+void ListObject::gc_mark(VM& vm) {
+  for (auto& e : elements_)
+    vm.mark_value(e);
+}
+
+ListObject* ListObject::make_list(VM& vm, int num_elements) {
+  auto* o = new ListObject(num_elements);
   vm.append_object(o);
   return o;
 }
