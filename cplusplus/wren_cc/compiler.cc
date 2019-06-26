@@ -52,7 +52,7 @@ enum class Precedence {
   TERM,       // + -
   FACTOR,     // * / %
   UNARY,      // unary - ! ~
-  CALL,       // ()
+  CALL,       // () []
 };
 
 inline Precedence operator+(Precedence a, int b) {
@@ -252,7 +252,7 @@ class Compiler : private UnCopyable {
     static const GrammerRule _rules[] = {
       PREFIX(grouping),                       // PUNCTUATOR(LPAREN, "(")
       UNUSED,                                 // PUNCTUATOR(RPAREN, ")")
-      UNUSED,                                 // PUNCTUATOR(LBRACKET, "[")
+      INFIX(subscript, Precedence::CALL),     // PUNCTUATOR(LBRACKET, "[")
       UNUSED,                                 // PUNCTUATOR(RBRACKET, "]")
       UNUSED,                                 // PUNCTUATOR(LBRACE, "{")
       UNUSED,                                 // PUNCTUATOR(RBRACE, "}")
@@ -705,6 +705,30 @@ class Compiler : private UnCopyable {
     }
     int symbol = vm_methods().ensure(name);
 
+    // compile the method call
+    emit_bytes(Code::CALL_0 + argc, symbol);
+  }
+
+  void subscript(bool allow_assignment) {
+    // subscript or `array indexing` operator like `foo[index]`
+
+    int argc = 0;
+    // build the method name, allow overloading by arity, add a space to
+    // the name for each argument
+    str_t name(1, '[');
+
+    // parse the arguments list
+    do {
+      statement();
+
+      // add a space in the name for each argument, lets overload by arity
+      ++argc;
+      name.push_back(' ');
+    } while (match(TokenKind::TK_COMMA));
+    consume(TokenKind::TK_RBRACKET, "expect `]` after subscript arguments");
+    name.push_back(']');
+
+    int symbol = vm_methods().ensure(name);
     // compile the method call
     emit_bytes(Code::CALL_0 + argc, symbol);
   }
