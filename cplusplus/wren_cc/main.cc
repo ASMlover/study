@@ -36,7 +36,7 @@ static void eval_with_file(const std::string& fname) {
     std::stringstream ss;
     ss << fp.rdbuf();
 
-    wrencc::VM vm;
+    wrencc::WrenVM vm;
     vm.interpret(ss.str());
   }
 }

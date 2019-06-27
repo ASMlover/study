@@ -53,7 +53,7 @@ enum ObjFlag {
   MARKED = 0x01,
 };
 
-class VM;
+class WrenVM;
 class BaseObject;
 
 class NilObject;
@@ -77,7 +77,7 @@ public:
   template <typename T> inline void set_flag(T f) { flag_ = Xt::as_type<ObjFlag>(f); }
 
   virtual str_t stringify(void) const = 0;
-  virtual void gc_mark(VM& vm) {}
+  virtual void gc_mark(WrenVM& vm) {}
 };
 
 enum Tag {
@@ -233,10 +233,10 @@ public:
 
   virtual str_t stringify(void) const override;
 
-  static StringObject* make_string(VM& vm, char c);
-  static StringObject* make_string(VM& vm, const char* s, int n);
-  static StringObject* make_string(VM& vm, const str_t& s);
-  static StringObject* make_string(VM& vm, StringObject* s1, StringObject* s2);
+  static StringObject* make_string(WrenVM& vm, char c);
+  static StringObject* make_string(WrenVM& vm, const char* s, int n);
+  static StringObject* make_string(WrenVM& vm, const str_t& s);
+  static StringObject* make_string(WrenVM& vm, StringObject* s1, StringObject* s2);
 };
 
 class ListObject final : public BaseObject {
@@ -249,9 +249,9 @@ public:
   inline void set_element(int i, const Value& e) { elements_[i] = e; }
 
   virtual str_t stringify(void) const override;
-  virtual void gc_mark(VM& vm) override;
+  virtual void gc_mark(WrenVM& vm) override;
 
-  static ListObject* make_list(VM& vm, int num_elements = 0);
+  static ListObject* make_list(WrenVM& vm, int num_elements = 0);
 };
 
 class FunctionObject final : public BaseObject {
@@ -282,14 +282,14 @@ public:
   }
 
   virtual str_t stringify(void) const override;
-  virtual void gc_mark(VM& vm) override;
+  virtual void gc_mark(WrenVM& vm) override;
 
-  static FunctionObject* make_function(VM& vm);
+  static FunctionObject* make_function(WrenVM& vm);
 };
 
 class Fiber;
-using PrimitiveFn = Value (*)(VM& vm, Value* args);
-using FiberPrimitiveFn = void (*)(VM& vm, Fiber& fiber, Value* args);
+using PrimitiveFn = Value (*)(WrenVM& vm, Value* args);
+using FiberPrimitiveFn = void (*)(WrenVM& vm, Fiber& fiber, Value* args);
 
 enum class MethodType {
   NONE,     // no method for the given symbol
@@ -347,9 +347,9 @@ public:
   }
 
   virtual str_t stringify(void) const override;
-  virtual void gc_mark(VM& vm) override;
+  virtual void gc_mark(WrenVM& vm) override;
 
-  static ClassObject* make_class(VM& vm,
+  static ClassObject* make_class(WrenVM& vm,
       ClassObject* superclass = nullptr, int num_fields = 0);
 };
 
@@ -364,9 +364,9 @@ public:
   inline void set_field(int i, const Value& v) { fields_[i] = v; }
 
   virtual str_t stringify(void) const override;
-  virtual void gc_mark(VM& vm) override;
+  virtual void gc_mark(WrenVM& vm) override;
 
-  static InstanceObject* make_instance(VM& vm, ClassObject* cls);
+  static InstanceObject* make_instance(WrenVM& vm, ClassObject* cls);
 };
 
 }

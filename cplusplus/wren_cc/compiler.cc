@@ -68,7 +68,7 @@ struct GrammerRule {
 };
 
 class Parser : private UnCopyable {
-  VM& vm_;
+  WrenVM& vm_;
 
   Lexer& lex_;
   Token prev_;
@@ -78,7 +78,7 @@ class Parser : private UnCopyable {
 
   bool had_error_{};
 public:
-  Parser(VM& vm, Lexer& lex) noexcept
+  Parser(WrenVM& vm, Lexer& lex) noexcept
     : vm_(vm), lex_(lex) {
   }
 
@@ -86,7 +86,7 @@ public:
   inline const Token& curr(void) const { return curr_; }
   inline bool had_error(void) const { return had_error_; }
   inline void set_error(bool b = true) { had_error_ = b; }
-  inline VM& get_vm(void) { return vm_; }
+  inline WrenVM& get_vm(void) { return vm_; }
 
   inline void advance(void) {
     prev_ = curr_;
@@ -911,7 +911,7 @@ public:
   }
 };
 
-FunctionObject* compile(VM& vm, const str_t& source_bytes) {
+FunctionObject* compile(WrenVM& vm, const str_t& source_bytes) {
   Lexer lex(source_bytes);
   Parser p(vm, lex);
 

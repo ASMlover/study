@@ -142,24 +142,24 @@ str_t StringObject::stringify(void) const {
   return value_;
 }
 
-StringObject* StringObject::make_string(VM& vm, char c) {
+StringObject* StringObject::make_string(WrenVM& vm, char c) {
   auto* o = new StringObject(c);
   vm.append_object(o);
   return o;
 }
 
-StringObject* StringObject::make_string(VM& vm, const char* s, int n) {
+StringObject* StringObject::make_string(WrenVM& vm, const char* s, int n) {
   auto* o = new StringObject(s, n);
   vm.append_object(o);
   return o;
 }
 
-StringObject* StringObject::make_string(VM& vm, const str_t& s) {
+StringObject* StringObject::make_string(WrenVM& vm, const str_t& s) {
   return make_string(vm, s.data(), Xt::as_type<int>(s.size()));
 }
 
 StringObject* StringObject::make_string(
-    VM& vm, StringObject* s1, StringObject* s2) {
+    WrenVM& vm, StringObject* s1, StringObject* s2) {
   int n = s1->size() + s2->size();
   char* s = new char [Xt::as_type<sz_t>(n + 1)];
   memcpy(s, s1->cstr(), s1->size());
@@ -183,12 +183,12 @@ str_t ListObject::stringify(void) const {
   return ss.str();
 }
 
-void ListObject::gc_mark(VM& vm) {
+void ListObject::gc_mark(WrenVM& vm) {
   for (auto& e : elements_)
     vm.mark_value(e);
 }
 
-ListObject* ListObject::make_list(VM& vm, int num_elements) {
+ListObject* ListObject::make_list(WrenVM& vm, int num_elements) {
   auto* o = new ListObject(num_elements);
   vm.append_object(o);
   return o;
@@ -200,12 +200,12 @@ str_t FunctionObject::stringify(void) const {
   return ss.str();
 }
 
-void FunctionObject::gc_mark(VM& vm) {
+void FunctionObject::gc_mark(WrenVM& vm) {
   for (auto& c : constants_)
     vm.mark_value(c);
 }
 
-FunctionObject* FunctionObject::make_function(VM& vm) {
+FunctionObject* FunctionObject::make_function(WrenVM& vm) {
   auto* o = new FunctionObject();
   vm.append_object(o);
   return o;
@@ -233,7 +233,7 @@ str_t ClassObject::stringify(void) const {
   return ss.str();
 }
 
-void ClassObject::gc_mark(VM& vm) {
+void ClassObject::gc_mark(WrenVM& vm) {
   vm.mark_object(meta_class_);
   for (auto& m : methods_) {
     if (m.type == MethodType::BLOCK)
@@ -242,7 +242,7 @@ void ClassObject::gc_mark(VM& vm) {
 }
 
 ClassObject* ClassObject::make_class(
-    VM& vm, ClassObject* superclass, int num_fields) {
+    WrenVM& vm, ClassObject* superclass, int num_fields) {
   auto* meta_class = new ClassObject(nullptr, nullptr, 0);
   auto* o = new ClassObject(meta_class, superclass, num_fields);
   vm.append_object(o);
@@ -263,12 +263,12 @@ str_t InstanceObject::stringify(void) const {
   return ss.str();
 }
 
-void InstanceObject::gc_mark(VM& vm) {
+void InstanceObject::gc_mark(WrenVM& vm) {
   for (auto& v : fields_)
     vm.mark_value(v);
 }
 
-InstanceObject* InstanceObject::make_instance(VM& vm, ClassObject* cls) {
+InstanceObject* InstanceObject::make_instance(WrenVM& vm, ClassObject* cls) {
   auto* o = new InstanceObject(cls);
   vm.append_object(o);
   return o;

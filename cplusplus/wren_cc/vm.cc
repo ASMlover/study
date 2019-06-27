@@ -128,9 +128,9 @@ public:
   }
 };
 
-/// VM IMPLEMENTATIONS
+/// WrenVM IMPLEMENTATIONS
 
-VM::VM(void) noexcept {
+WrenVM::WrenVM(void) noexcept {
   fiber_ = new Fiber();
 
   globals_.resize(kMaxGlobals);
@@ -140,42 +140,44 @@ VM::VM(void) noexcept {
   load_core(*this);
 }
 
-VM::~VM(void) {
+WrenVM::~WrenVM(void) {
   delete fiber_;
 }
 
-void VM::set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn) {
+void WrenVM::set_primitive(
+    ClassObject* cls, const str_t& name, PrimitiveFn fn) {
   int symbol = methods_.ensure(name);
   cls->set_method(symbol, fn);
 }
 
-void VM::set_primitive(ClassObject* cls, const str_t& name, FiberPrimitiveFn fn) {
+void WrenVM::set_primitive(
+    ClassObject* cls, const str_t& name, FiberPrimitiveFn fn) {
   int symbol = methods_.ensure(name);
   cls->set_method(symbol, fn);
 }
 
-void VM::set_global(ClassObject* cls, const str_t& name) {
+void WrenVM::set_global(ClassObject* cls, const str_t& name) {
   InstanceObject* obj = InstanceObject::make_instance(*this, cls);
   int symbol = global_symbols_.add(name);
   globals_[symbol] = obj;
 }
 
-const Value& VM::get_global(const str_t& name) const {
+const Value& WrenVM::get_global(const str_t& name) const {
   int symbol = global_symbols_.get(name);
   return globals_[symbol];
 }
 
-void VM::pin_object(BaseObject* obj) {
+void WrenVM::pin_object(BaseObject* obj) {
   ASSERT(pinned_.size() < kMaxPinned, "too many pinned objects");
   pinned_.push_back(obj);
 }
 
-void VM::unpin_object(BaseObject* obj) {
+void WrenVM::unpin_object(BaseObject* obj) {
   ASSERT(pinned_.back() == obj, "unppinning object out of stack order");
   pinned_.pop_back();
 }
 
-ClassObject* VM::get_class(const Value& val) const {
+ClassObject* WrenVM::get_class(const Value& val) const {
 #ifdef NAN_TAGGING
   if (val.is_numeric())
     return num_class_;
@@ -214,7 +216,7 @@ ClassObject* VM::get_class(const Value& val) const {
   return nullptr;
 }
 
-Value VM::interpret(FunctionObject* fn) {
+Value WrenVM::interpret(FunctionObject* fn) {
   Fiber* fiber = fiber_;
   fiber->call_function(fn, 0);
 
@@ -512,18 +514,18 @@ Value VM::interpret(FunctionObject* fn) {
   return nullptr;
 }
 
-void VM::interpret(const str_t& source_bytes) {
+void WrenVM::interpret(const str_t& source_bytes) {
   auto* fn = compile(*this, source_bytes);
 
   if (fn != nullptr)
     interpret(fn);
 }
 
-void VM::call_function(Fiber& fiber, FunctionObject* fn, int argc) {
+void WrenVM::call_function(Fiber& fiber, FunctionObject* fn, int argc) {
   fiber.call_function(fn, argc);
 }
 
-void VM::collect(void) {
+void WrenVM::collect(void) {
   // global variables
   for (int i = 0; i < global_symbols_.count(); ++i)
     mark_value(globals_[i]);
@@ -550,7 +552,7 @@ void VM::collect(void) {
   total_allocated_ = objects_.size();
 }
 
-void VM::free_object(BaseObject* obj) {
+void WrenVM::free_object(BaseObject* obj) {
   std::cout
     << "`" << Xt::cast<void>(obj) << "` free object "
     << "`" << obj->stringify() << "`" << std::endl;
@@ -558,7 +560,7 @@ void VM::free_object(BaseObject* obj) {
   delete obj;
 }
 
-void VM::append_object(BaseObject* obj) {
+void WrenVM::append_object(BaseObject* obj) {
   if (objects_.size() > next_gc_) {
     collect();
     next_gc_ = total_allocated_ * 3 / 2;
@@ -567,7 +569,7 @@ void VM::append_object(BaseObject* obj) {
   objects_.push_back(obj);
 }
 
-void VM::mark_object(BaseObject* obj) {
+void WrenVM::mark_object(BaseObject* obj) {
   if (obj == nullptr)
     return;
   if (obj->flag() & ObjFlag::MARKED)
@@ -578,7 +580,7 @@ void VM::mark_object(BaseObject* obj) {
   obj->gc_mark(*this);
 }
 
-void VM::mark_value(const Value& val) {
+void WrenVM::mark_value(const Value& val) {
   if (val.is_object())
     mark_object(val.as_object());
 }

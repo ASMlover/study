@@ -35,11 +35,11 @@
 namespace wrencc {
 
 #define DEF_PRIMITIVE(fn)\
-static Value _primitive_##fn(VM& vm, Value* args)
+static Value _primitive_##fn(WrenVM& vm, Value* args)
 #define DEF_FIBER_PRIMITIVE(fn)\
-static void _primitive_##fn(VM& vm, Fiber& fiber, Value* args)
+static void _primitive_##fn(WrenVM& vm, Fiber& fiber, Value* args)
 #define DEF_FIBER_PRIMITIVE_FN(fn, argc)\
-static void _primitive_##fn(VM& vm, Fiber& fiber, Value* args) {\
+static void _primitive_##fn(WrenVM& vm, Fiber& fiber, Value* args) {\
   vm.call_function(fiber, args[0].as_function(), argc);\
 }
 
@@ -283,7 +283,7 @@ static constexpr const char* kCoreLib =
 "class OS {}\n"
 ;
 
-void load_core(VM& vm) {
+void load_core(WrenVM& vm) {
   vm.interpret(kCoreLib);
 
   vm.set_bool_cls(vm.get_global("Bool").as_class());

@@ -30,6 +30,6 @@
 
 namespace wrencc {
 
-FunctionObject* compile(VM& vm, const str_t& source_bytes);
+FunctionObject* compile(WrenVM& vm, const str_t& source_bytes);
 
 }

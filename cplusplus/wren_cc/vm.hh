@@ -57,7 +57,7 @@ public:
   void truncate(int count);
 };
 
-class VM final : private UnCopyable {
+class WrenVM final : private UnCopyable {
   static constexpr sz_t kMaxGlobals = 256;
   static constexpr sz_t kMaxPinned = 16;
 
@@ -94,8 +94,8 @@ class VM final : private UnCopyable {
   void collect(void);
   void free_object(BaseObject* obj);
 public:
-  VM(void) noexcept;
-  ~VM(void);
+  WrenVM(void) noexcept;
+  ~WrenVM(void);
 
   inline void set_fn_cls(ClassObject* cls) { fn_class_ = cls; }
   inline void set_bool_cls(ClassObject* cls) { bool_class_ = cls; }

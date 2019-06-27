@@ -28,8 +28,8 @@
 
 namespace wrencc {
 
-class VM;
+class WrenVM;
 
-void load_core(VM& vm);
+void load_core(WrenVM& vm);
 
 }
