@@ -96,6 +96,10 @@ namespace Xt {
 
 #define NAN_TAGGING
 
+// set this, the VM's interpreter loop uses computed gotos.
+// see post (http://gcc.gnu.org/onlinedocs/gcc-3.1.1/gcc/Labels-as-Values.html)
+// #define COMPUTED_GOTOS
+
 #ifndef NDEBUG
 # define ASSERT(cond, msg) if (!(cond)) {\
   std::cerr << "ASSERT FAIL `" << __FILE__ << "`: "\

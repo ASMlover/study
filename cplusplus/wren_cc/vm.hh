@@ -31,67 +31,9 @@
 namespace wrencc {
 
 enum class Code : u8_t {
-  CONSTANT,     // load the constant at index [arg]
-  NIL,          // push `nil` into the stack
-  FALSE,        // push `false` into the stack
-  TRUE,         // push `true` into the stack
-  CLASS,        // define a new empty class and push it into stack
-  SUBCLASS,     // pop a superclass from stack, push a new class that extends it
-
-  // add a method for symbol [arg1] with body stored in constant [arg2] to
-  // the class on the top of the stack, does not modify the stack
-  METHOD_INSTANCE,
-
-  // add a method for symbol [arg1] with body stored in constant [arg2] to
-  // the metaclass of the class on the top of stack, does not modify the stack
-  METHOD_STATIC,
-
-  // add a constructor method for symbol [arg1] with body stored in constant
-  // [arg2] to tthe metaclass of the class on the top of the stack. does not
-  // modify the stack
-  METHOD_CTOR,
-
-  // create a new list with [arg] elements, the top [arg] values on the stack
-  // are the elements in forward order. removes the elements and then pushs
-  // the new list
-  LIST,
-
-  LOAD_LOCAL,   // push the value in local slot [arg]
-  STORE_LOCAL,  // store the top of the stack in local slot [arg], not pop it
-  LOAD_GLOBAL,  // push the value in global slot [arg]
-  STORE_GLOBAL, // store the top of the stack in global slot [arg], not pop it
-  LOAD_FIELD,   // push the value of field in slot [arg] for current receiver
-  STORE_FIELD,  // store the top of the stack in field slot [arg] in current receiver
-  DUP,          // push a copy of the top of stack
-  POP,          // pop and discard the top of stack
-
-  // invoke the method with symbol [arg], the number indicates the number of
-  // arguments (not including the receiver)
-  CALL_0,
-  CALL_1,
-  CALL_2,
-  CALL_3,
-  CALL_4,
-  CALL_5,
-  CALL_6,
-  CALL_7,
-  CALL_8,
-  CALL_9,
-  CALL_10,
-
-  JUMP,         // jump the instruction pointer [arg] forward
-
-  // jump the instruction pointer [arg] backward. pop and discard the
-  // top of the stack
-  LOOP,
-
-  JUMP_IF,      // pop and if not truthy then jump the instruction pointer [arg] forward
-
-  AND,          // if the top of the stack is false jump [arg], or pop and continue
-  OR,           // if the top of the stack if non-false jump [arg], or pop and continue
-  IS,           // pop [a] then [b] and push true if [b] is an instance of [a]
-
-  END,
+#undef CODEF
+#define CODEF(c) c,
+#include "codes_def.hh"
 };
 
 inline Code operator+(Code a, int b) {

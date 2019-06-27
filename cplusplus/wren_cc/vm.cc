@@ -229,238 +229,284 @@ Value VM::interpret(FunctionObject* fn) {
 // local variables
 #define LOAD_FRAME()  frame = &fiber->peek_frame()
 
-  for (;;) {
-    switch (auto c = Xt::as_type<Code>(frame->get_code(frame->ip++))) {
-    case Code::CONSTANT: PUSH(frame->get_constant(RDARG())); break;
-    case Code::NIL: PUSH(nullptr); break;
-    case Code::FALSE: PUSH(false); break;
-    case Code::TRUE: PUSH(true); break;
-    case Code::CLASS:
-    case Code::SUBCLASS:
-      {
-        bool is_subclass = c == Code::SUBCLASS;
-        int num_fields = RDARG();
+#if defined(COMPUTED_GOTOS)
+  static void* _dispatch_table[] = {
+# undef CODEF
+# define CODEF(c) &&__code_##c,
+# include "codes_def.hh"
+  };
+# define INTERPRET_LOOP() DISPATCH();
+# define CASE_CODE(name)  __code_##name
+# define DISPATCH()       goto *_dispatch_table[Xt::as_type<int>(c = Xt::as_type<Code>(frame->get_code(frame->ip++)))]
+#else
+# define INTERPRET_LOOP() for (;;) switch (c = Xt::as_type<Code>(frame->get_code(frame->ip++)))
+# define CASE_CODE(name)  case Code::##name
+# define DISPATCH()       break
+#endif
 
-        ClassObject* superclass;
-        if (is_subclass)
-          superclass = POP().as_class();
-        else
-          superclass = obj_class_;
+  Code c;
+  INTERPRET_LOOP() {
+    CASE_CODE(CONSTANT): PUSH(frame->get_constant(RDARG())); DISPATCH();
+    CASE_CODE(NIL): PUSH(nullptr); DISPATCH();
+    CASE_CODE(FALSE): PUSH(false); DISPATCH();
+    CASE_CODE(TRUE): PUSH(true); DISPATCH();
+    CASE_CODE(CLASS):
+    CASE_CODE(SUBCLASS):
+    {
+      bool is_subclass = c == Code::SUBCLASS;
+      int num_fields = RDARG();
 
-        ClassObject* cls = ClassObject::make_class(*this, superclass, num_fields);
+      ClassObject* superclass;
+      if (is_subclass)
+        superclass = POP().as_class();
+      else
+        superclass = obj_class_;
 
-        // assume the first class being defined is Object
-        if (obj_class_ == nullptr)
-          obj_class_ = cls;
+      ClassObject* cls = ClassObject::make_class(*this, superclass, num_fields);
 
-        // define `new` method on the metaclass.
-        int new_symbol = methods_.ensure("new");
-        cls->meta_class()->set_method(new_symbol, MethodType::CTOR, nullptr);
-        PUSH(cls);
-      } break;
-    case Code::METHOD_INSTANCE:
-    case Code::METHOD_STATIC:
-    case Code::METHOD_CTOR:
-      {
-        Code type = c;
-        int symbol = RDARG();
-        int constant = RDARG();
-        ClassObject* cls = PEEK().as_class();
+      // assume the first class being defined is Object
+      if (obj_class_ == nullptr)
+        obj_class_ = cls;
 
-        FunctionObject* body_fn = frame->get_constant(constant).as_function();
-        switch (type) {
-        case Code::METHOD_INSTANCE:
-          cls->set_method(symbol, MethodType::BLOCK, body_fn); break;
-        case Code::METHOD_STATIC:
-          cls->meta_class()->set_method(symbol, MethodType::BLOCK, body_fn); break;
-        case Code::METHOD_CTOR:
-          cls->meta_class()->set_method(symbol, MethodType::CTOR, body_fn); break;
-        }
-      } break;
-    case Code::LIST:
-      {
-        int num_elements = RDARG();
-        ListObject* list = ListObject::make_list(*this, num_elements);
-        for (int i = 0; i < num_elements; ++i) {
-          list->set_element(i,
-              fiber->get_value(fiber->stack_size() - num_elements + i));
-        }
-        // discard the elements
-        fiber->resize_stack(fiber->stack_size() - num_elements);
+      // define `new` method on the metaclass.
+      int new_symbol = methods_.ensure("new");
+      cls->meta_class()->set_method(new_symbol, MethodType::CTOR, nullptr);
+      PUSH(cls);
 
-        PUSH(list);
-      } break;
-    case Code::LOAD_LOCAL:
-      {
-        int local = RDARG();
-        PUSH(fiber->get_value(frame->stack_start + local));
-      } break;
-    case Code::STORE_LOCAL:
-      {
-        int local = RDARG();
-        fiber->set_value(frame->stack_start + local, PEEK());
-      } break;
-    case Code::LOAD_GLOBAL:
-      {
-        int global = RDARG();
-        PUSH(globals_[global]);
-      } break;
-    case Code::STORE_GLOBAL:
-      {
-        int global = RDARG();
-        globals_[global] = PEEK();
-      } break;
-    case Code::LOAD_FIELD:
-      {
-        int field = RDARG();
-        const Value& receiver = fiber->get_value(frame->stack_start);
-        ASSERT(receiver.is_instance(), "receiver should be instance");
-        InstanceObject* inst = receiver.as_instance();
-        ASSERT(field < inst->cls()->num_fields(), "out of bounds field");
-        PUSH(inst->get_field(field));
-      } break;
-    case Code::STORE_FIELD:
-      {
-        int field = RDARG();
-        const Value& receiver = fiber->get_value(frame->stack_start);
-        ASSERT(receiver.is_instance(), "receiver should be instance");
-        InstanceObject* inst = receiver.as_instance();
-        ASSERT(field < inst->cls()->num_fields(), "out of bounds field");
-        inst->set_field(field, PEEK());
-      } break;
-    case Code::DUP: PUSH(PEEK()); break;
-    case Code::POP: POP(); break;
-    case Code::CALL_0:
-    case Code::CALL_1:
-    case Code::CALL_2:
-    case Code::CALL_3:
-    case Code::CALL_4:
-    case Code::CALL_5:
-    case Code::CALL_6:
-    case Code::CALL_7:
-    case Code::CALL_8:
-    case Code::CALL_9:
-    case Code::CALL_10:
-      {
-        int argc = c - Code::CALL_0 + 1;
-        int symbol = RDARG();
-        const Value& receiver = fiber->get_value(fiber->stack_size() - argc);
+      DISPATCH();
+    }
+    CASE_CODE(METHOD_INSTANCE):
+    CASE_CODE(METHOD_STATIC):
+    CASE_CODE(METHOD_CTOR):
+    {
+      Code type = c;
+      int symbol = RDARG();
+      int constant = RDARG();
+      ClassObject* cls = PEEK().as_class();
 
-        ClassObject* cls = get_class(receiver);
-        auto& method = cls->get_method(symbol);
-        switch (method.type) {
-        case MethodType::NONE:
-          std::cerr
-            << "receiver: `" << receiver << "` "
-            << "does not implement method `" << methods_.get_name(symbol) << "`"
-            << std::endl;
-          std::exit(-1); break;
-        case MethodType::PRIMITIVE:
-          {
-            Value* args = fiber->values_at(fiber->stack_size() - argc);
-            // argc +1 to include the receiver since that's in the args array
-            Value result = method.primitive(*this, args);
+      FunctionObject* body_fn = frame->get_constant(constant).as_function();
+      switch (type) {
+      case Code::METHOD_INSTANCE:
+        cls->set_method(symbol, MethodType::BLOCK, body_fn); break;
+      case Code::METHOD_STATIC:
+        cls->meta_class()->set_method(symbol, MethodType::BLOCK, body_fn); break;
+      case Code::METHOD_CTOR:
+        cls->meta_class()->set_method(symbol, MethodType::CTOR, body_fn); break;
+      }
 
-            fiber->set_value(fiber->stack_size() - argc, result);
-            // discard the stack slots for the arguments (but leave one for
-            // the result)
-            fiber->resize_stack(fiber->stack_size() - (argc - 1));
-          } break;
-        case MethodType::FIBER:
-          {
-            Value* args = fiber->values_at(fiber->stack_size() - argc);
-            method.fiber_primitive(*this, *fiber, args);
-            LOAD_FRAME();
-          } break;
-        case MethodType::BLOCK:
-          fiber->call_function(method.fn, argc);
+      DISPATCH();
+    }
+    CASE_CODE(LIST):
+    {
+      int num_elements = RDARG();
+      ListObject* list = ListObject::make_list(*this, num_elements);
+      for (int i = 0; i < num_elements; ++i) {
+        list->set_element(i,
+            fiber->get_value(fiber->stack_size() - num_elements + i));
+      }
+      // discard the elements
+      fiber->resize_stack(fiber->stack_size() - num_elements);
+
+      PUSH(list);
+
+      DISPATCH();
+    }
+    CASE_CODE(LOAD_LOCAL):
+    {
+      int local = RDARG();
+      PUSH(fiber->get_value(frame->stack_start + local));
+
+      DISPATCH();
+    }
+    CASE_CODE(STORE_LOCAL):
+    {
+      int local = RDARG();
+      fiber->set_value(frame->stack_start + local, PEEK());
+
+      DISPATCH();
+    }
+    CASE_CODE(LOAD_GLOBAL):
+    {
+      int global = RDARG();
+      PUSH(globals_[global]);
+
+      DISPATCH();
+    }
+    CASE_CODE(STORE_GLOBAL):
+    {
+      int global = RDARG();
+      globals_[global] = PEEK();
+
+      DISPATCH();
+    }
+    CASE_CODE(LOAD_FIELD):
+    {
+      int field = RDARG();
+      const Value& receiver = fiber->get_value(frame->stack_start);
+      ASSERT(receiver.is_instance(), "receiver should be instance");
+      InstanceObject* inst = receiver.as_instance();
+      ASSERT(field < inst->cls()->num_fields(), "out of bounds field");
+      PUSH(inst->get_field(field));
+
+      DISPATCH();
+    }
+    CASE_CODE(STORE_FIELD):
+    {
+      int field = RDARG();
+      const Value& receiver = fiber->get_value(frame->stack_start);
+      ASSERT(receiver.is_instance(), "receiver should be instance");
+      InstanceObject* inst = receiver.as_instance();
+      ASSERT(field < inst->cls()->num_fields(), "out of bounds field");
+      inst->set_field(field, PEEK());
+
+      DISPATCH();
+    }
+    CASE_CODE(DUP): PUSH(PEEK()); DISPATCH();
+    CASE_CODE(POP): POP(); DISPATCH();
+    CASE_CODE(CALL_0):
+    CASE_CODE(CALL_1):
+    CASE_CODE(CALL_2):
+    CASE_CODE(CALL_3):
+    CASE_CODE(CALL_4):
+    CASE_CODE(CALL_5):
+    CASE_CODE(CALL_6):
+    CASE_CODE(CALL_7):
+    CASE_CODE(CALL_8):
+    CASE_CODE(CALL_9):
+    CASE_CODE(CALL_10):
+    {
+      int argc = c - Code::CALL_0 + 1;
+      int symbol = RDARG();
+      const Value& receiver = fiber->get_value(fiber->stack_size() - argc);
+
+      ClassObject* cls = get_class(receiver);
+      auto& method = cls->get_method(symbol);
+      switch (method.type) {
+      case MethodType::NONE:
+        std::cerr
+          << "receiver: `" << receiver << "` "
+          << "does not implement method `" << methods_.get_name(symbol) << "`"
+          << std::endl;
+        std::exit(-1); break;
+      case MethodType::PRIMITIVE:
+        {
+          Value* args = fiber->values_at(fiber->stack_size() - argc);
+          // argc +1 to include the receiver since that's in the args array
+          Value result = method.primitive(*this, args);
+
+          fiber->set_value(fiber->stack_size() - argc, result);
+          // discard the stack slots for the arguments (but leave one for
+          // the result)
+          fiber->resize_stack(fiber->stack_size() - (argc - 1));
+        } break;
+      case MethodType::FIBER:
+        {
+          Value* args = fiber->values_at(fiber->stack_size() - argc);
+          method.fiber_primitive(*this, *fiber, args);
           LOAD_FRAME();
-          break;
-        case MethodType::CTOR:
-          {
-            Value instance =
-              InstanceObject::make_instance(*this, receiver.as_class());
-
-            // store the new instance in the receiver slot so that it can
-            // be `this` in the body of the constructor and returned by it
-            fiber->set_value(fiber->stack_size() - argc, instance);
-            if (method.fn == nullptr) {
-              // default constructor, so no body to call, just discard the
-              // stack slots for the arguments (but leave one for the instance)
-              fiber->resize_stack(fiber->stack_size() - (argc - 1));
-            }
-            else {
-              // invoke the constructor body
-              fiber->call_function(method.fn, argc);
-              LOAD_FRAME();
-            }
-          } break;
-        }
-      } break;
-    case Code::JUMP: frame->ip += RDARG(); break;
-    case Code::LOOP:
-      {
-        // the loop body's result is on the top of the stack, since we are
-        // looping and running the body again, discard it
-        POP();
-
-        // jump back to the top of the loop
-        frame->ip -= RDARG();
-      } break;
-    case Code::JUMP_IF:
-      {
-        int offset = RDARG();
-        const Value& cond = POP();
-
-        if (cond.is_falsely())
-          frame->ip += offset;
-      } break;
-    case Code::AND:
-      {
-        int offset = RDARG();
-        const Value& cond = PEEK();
-
-        // false and nil is falsely value
-        if (!cond.is_falsely())
-          POP(); // discard the condition and evaluate the right hand side
-        else
-          frame->ip += offset; // short-circuit the right hand side
-      } break;
-    case Code::OR:
-      {
-        int offset = RDARG();
-        const Value& cond = PEEK();
-
-        // false and nil is falsely value
-        if (cond.is_falsely())
-          POP(); // discard the condition and evaluate the right hand side
-        else
-          frame->ip += offset; // short-circuit the right hand side
-      } break;
-    case Code::IS:
-      {
-        const Value& cls = POP();
-        const Value& obj = POP();
-
-        ClassObject* actual = get_class(obj);
-        PUSH(actual == cls.as_class());
-      } break;
-    case Code::END:
-      {
-        const Value& r = POP();
-        fiber->pop_frame();
-
-        if (fiber->empty_frame())
-          return r;
-
-        if (fiber->stack_size() <= frame->stack_start)
-          PUSH(r);
-        else
-          fiber->set_value(frame->stack_start, r);
-        fiber->resize_stack(frame->stack_start + 1);
-
+        } break;
+      case MethodType::BLOCK:
+        fiber->call_function(method.fn, argc);
         LOAD_FRAME();
-      } break;
+        break;
+      case MethodType::CTOR:
+        {
+          Value instance =
+            InstanceObject::make_instance(*this, receiver.as_class());
+
+          // store the new instance in the receiver slot so that it can
+          // be `this` in the body of the constructor and returned by it
+          fiber->set_value(fiber->stack_size() - argc, instance);
+          if (method.fn == nullptr) {
+            // default constructor, so no body to call, just discard the
+            // stack slots for the arguments (but leave one for the instance)
+            fiber->resize_stack(fiber->stack_size() - (argc - 1));
+          }
+          else {
+            // invoke the constructor body
+            fiber->call_function(method.fn, argc);
+            LOAD_FRAME();
+          }
+        } break;
+      }
+
+      DISPATCH();
+    }
+    CASE_CODE(JUMP): frame->ip += RDARG(); DISPATCH();
+    CASE_CODE(LOOP):
+    {
+      // the loop body's result is on the top of the stack, since we are
+      // looping and running the body again, discard it
+      POP();
+
+      // jump back to the top of the loop
+      frame->ip -= RDARG();
+
+      DISPATCH();
+    }
+    CASE_CODE(JUMP_IF):
+    {
+      int offset = RDARG();
+      Value cond = POP();
+
+      if (cond.is_falsely())
+        frame->ip += offset;
+
+      DISPATCH();
+    }
+    CASE_CODE(AND):
+    {
+      int offset = RDARG();
+      const Value& cond = PEEK();
+
+      // false and nil is falsely value
+      if (!cond.is_falsely())
+        POP(); // discard the condition and evaluate the right hand side
+      else
+        frame->ip += offset; // short-circuit the right hand side
+
+      DISPATCH();
+    }
+    CASE_CODE(OR):
+    {
+      int offset = RDARG();
+      const Value& cond = PEEK();
+
+      // false and nil is falsely value
+      if (cond.is_falsely())
+        POP(); // discard the condition and evaluate the right hand side
+      else
+        frame->ip += offset; // short-circuit the right hand side
+
+      DISPATCH();
+    }
+    CASE_CODE(IS):
+    {
+      Value cls = POP();
+      Value obj = POP();
+
+      ClassObject* actual = get_class(obj);
+      PUSH(actual == cls.as_class());
+
+      DISPATCH();
+    }
+    CASE_CODE(END):
+    {
+      Value r = POP();
+      fiber->pop_frame();
+
+      if (fiber->empty_frame())
+        return r;
+
+      if (fiber->stack_size() <= frame->stack_start)
+        PUSH(r);
+      else
+        fiber->set_value(frame->stack_start, r);
+      fiber->resize_stack(frame->stack_start + 1);
+
+      LOAD_FRAME();
+
+      DISPATCH();
     }
   }
   return nullptr;
