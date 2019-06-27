@@ -100,6 +100,19 @@ InstanceObject* ObjValue::as_instance(void) const {
   return Xt::down<InstanceObject>(obj_);
 }
 
+bool ObjValue::operator==(const ObjValue& r) const noexcept {
+  if (type_ != r.type_)
+    return false;
+
+  if (type_ == ValueType::NUMERIC)
+    return num_ == r.num_;
+  return obj_ == r.obj_;
+}
+
+bool ObjValue::operator!=(const ObjValue& r) const noexcept {
+  return !(*this == r);
+}
+
 str_t ObjValue::stringify(void) const {
   switch (type_) {
   case ValueType::NIL: return "nil";
@@ -243,7 +256,7 @@ void ClassObject::gc_mark(WrenVM& vm) {
 
 ClassObject* ClassObject::make_class(
     WrenVM& vm, ClassObject* superclass, int num_fields) {
-  auto* meta_class = new ClassObject(nullptr, nullptr, 0);
+  auto* meta_class = new ClassObject(nullptr, vm.class_cls(), 0);
   auto* o = new ClassObject(meta_class, superclass, num_fields);
   vm.append_object(o);
   return o;

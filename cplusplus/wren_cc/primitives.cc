@@ -29,7 +29,6 @@
 #include <iostream>
 #include "value.hh"
 #include "vm.hh"
-#include "compiler.hh"
 #include "primitives.hh"
 
 namespace wrencc {
@@ -62,20 +61,6 @@ DEF_PRIMITIVE(bool_tostring) {
 
 DEF_PRIMITIVE(bool_not) {
   return !args[0].as_boolean();
-}
-
-DEF_PRIMITIVE(bool_eq) {
-  if (!args[1].is_boolean())
-    return false;
-
-  return args[0].as_boolean() == args[1].as_boolean();
-}
-
-DEF_PRIMITIVE(bool_ne) {
-  if (!args[1].is_boolean())
-    return true;
-
-  return args[0].as_boolean() != args[1].as_boolean();
 }
 
 DEF_PRIMITIVE(numeric_abs) {
@@ -163,6 +148,18 @@ DEF_PRIMITIVE(numeric_ne) {
   return args[0].as_numeric() != args[1].as_numeric();
 }
 
+DEF_PRIMITIVE(object_eq) {
+  return args[0] == args[1];
+}
+
+DEF_PRIMITIVE(object_ne) {
+  return args[0] != args[1];
+}
+
+DEF_PRIMITIVE(object_type) {
+  return vm.get_class(args[0]);
+}
+
 DEF_PRIMITIVE(string_len) {
   return args[0].as_string()->size();
 }
@@ -245,20 +242,6 @@ DEF_PRIMITIVE(list_subscript) {
   return l->get_element(index);
 }
 
-DEF_PRIMITIVE(fn_eq) {
-  if (!args[1].is_function())
-    return false;
-
-  return args[0].as_function() == args[1].as_function();
-}
-
-DEF_PRIMITIVE(fn_ne) {
-  if (!args[1].is_function())
-    return true;
-
-  return args[0].as_function() != args[1].as_function();
-}
-
 DEF_PRIMITIVE(io_write) {
   std::cout << args[1] << std::endl;
   return args[1];
@@ -269,32 +252,27 @@ DEF_PRIMITIVE(os_clock) {
       std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
 }
 
-static constexpr const char* kCoreLib =
-"class Nil {}\n"
-"class Bool {}\n"
-"class Numeric {}\n"
-"class String {}\n"
-"class List {}\n"
-"class Function {}\n"
-"class Class {}\n"
-"class Object {}\n"
-"class IO {}\n"
-"var io = IO.new\n"
-"class OS {}\n"
-;
+static ClassObject* define_class(
+    WrenVM& vm, const str_t& name, ClassObject* superclass) {
+  ClassObject* cls = ClassObject::make_class(vm, superclass, 0);
+  vm.set_global(name, cls);
+  return cls;
+}
 
 void load_core(WrenVM& vm) {
-  vm.interpret(kCoreLib);
+  vm.set_obj_cls(define_class(vm, "Object", nullptr));
+  vm.set_primitive(vm.obj_cls(), "== ", _primitive_object_eq);
+  vm.set_primitive(vm.obj_cls(), "!= ", _primitive_object_ne);
+  vm.set_primitive(vm.obj_cls(), "type", _primitive_object_type);
 
-  vm.set_bool_cls(vm.get_global("Bool").as_class());
+  // the "Class" class is the superclass of all metaclasses
+  vm.set_class_cls(define_class(vm, "Class", vm.obj_cls()));
+
+  vm.set_bool_cls(define_class(vm, "Bool", vm.obj_cls()));
   vm.set_primitive(vm.bool_cls(), "toString", _primitive_bool_tostring);
   vm.set_primitive(vm.bool_cls(), "!", _primitive_bool_not);
-  vm.set_primitive(vm.bool_cls(), "== ", _primitive_bool_eq);
-  vm.set_primitive(vm.bool_cls(), "!= ", _primitive_bool_ne);
 
-  vm.set_class_cls(vm.get_global("Class").as_class());
-
-  vm.set_fn_cls(vm.get_global("Function").as_class());
+  vm.set_fn_cls(define_class(vm, "Function", vm.obj_cls()));
   vm.set_primitive(vm.fn_cls(), "call", _primitive_fn_call0);
   vm.set_primitive(vm.fn_cls(), "call ", _primitive_fn_call1);
   vm.set_primitive(vm.fn_cls(), "call  ", _primitive_fn_call2);
@@ -304,12 +282,14 @@ void load_core(WrenVM& vm) {
   vm.set_primitive(vm.fn_cls(), "call      ", _primitive_fn_call6);
   vm.set_primitive(vm.fn_cls(), "call       ", _primitive_fn_call7);
   vm.set_primitive(vm.fn_cls(), "call        ", _primitive_fn_call8);
-  vm.set_primitive(vm.fn_cls(), "== ", _primitive_fn_eq);
-  vm.set_primitive(vm.fn_cls(), "!= ", _primitive_fn_ne);
 
-  vm.set_nil_cls(vm.get_global("Nil").as_class());
+  vm.set_list_cls(define_class(vm, "List", vm.obj_cls()));
+  vm.set_primitive(vm.list_cls(), "len", _primitive_list_len);
+  vm.set_primitive(vm.list_cls(), "[ ]", _primitive_list_subscript);
 
-  vm.set_num_cls(vm.get_global("Numeric").as_class());
+  vm.set_nil_cls(define_class(vm, "Nil", vm.obj_cls()));
+
+  vm.set_num_cls(define_class(vm, "Numeric", vm.obj_cls()));
   vm.set_primitive(vm.num_cls(), "abs", _primitive_numeric_abs);
   vm.set_primitive(vm.num_cls(), "toString", _primitive_numeric_tostring);
   vm.set_primitive(vm.num_cls(), "-", _primitive_numeric_neg);
@@ -327,7 +307,7 @@ void load_core(WrenVM& vm) {
 
   // vm.set_obj_cls(vm.get_global("Object").as_class());
 
-  vm.set_str_cls(vm.get_global("String").as_class());
+  vm.set_str_cls(define_class(vm, "String", vm.obj_cls()));
   vm.set_primitive(vm.str_cls(), "len", _primitive_string_len);
   vm.set_primitive(vm.str_cls(), "contains ", _primitive_string_contains);
   vm.set_primitive(vm.str_cls(), "toString", _primitive_string_tostring);
@@ -336,14 +316,14 @@ void load_core(WrenVM& vm) {
   vm.set_primitive(vm.str_cls(), "!= ", _primitive_string_ne);
   vm.set_primitive(vm.str_cls(), "[ ]", _primitive_string_subscript);
 
-  vm.set_list_cls(vm.get_global("List").as_class());
-  vm.set_primitive(vm.list_cls(), "len", _primitive_list_len);
-  vm.set_primitive(vm.list_cls(), "[ ]", _primitive_list_subscript);
-
-  ClassObject* io_cls = vm.get_global("IO").as_class();
+  ClassObject* io_cls = define_class(vm, "IO", vm.obj_cls());
   vm.set_primitive(io_cls, "write ", _primitive_io_write);
 
-  ClassObject* os_cls = vm.get_global("OS").as_class();
+  // making this an instance is lame, the only reason we are doing it
+  // is because "IO.write()" looks ugly, maybe just get used to that ?
+  vm.set_global("io", InstanceObject::make_instance(vm, io_cls));
+
+  ClassObject* os_cls = define_class(vm, "OS", vm.obj_cls());
   vm.set_primitive(os_cls->meta_class(), "clock", _primitive_os_clock);
 
   ClassObject* unsupported_cls = ClassObject::make_class(vm, vm.obj_cls(), 0);

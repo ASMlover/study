@@ -156,10 +156,9 @@ void WrenVM::set_primitive(
   cls->set_method(symbol, fn);
 }
 
-void WrenVM::set_global(ClassObject* cls, const str_t& name) {
-  InstanceObject* obj = InstanceObject::make_instance(*this, cls);
+void WrenVM::set_global(const str_t& name, const Value& value) {
   int symbol = global_symbols_.add(name);
-  globals_[symbol] = obj;
+  globals_[symbol] = value;
 }
 
 const Value& WrenVM::get_global(const str_t& name) const {
@@ -175,45 +174,6 @@ void WrenVM::pin_object(BaseObject* obj) {
 void WrenVM::unpin_object(BaseObject* obj) {
   ASSERT(pinned_.back() == obj, "unppinning object out of stack order");
   pinned_.pop_back();
-}
-
-ClassObject* WrenVM::get_class(const Value& val) const {
-#ifdef NAN_TAGGING
-  if (val.is_numeric())
-    return num_class_;
-  if (val.is_object()) {
-    switch (val.objtype()) {
-    case ObjType::STRING: return str_class_;
-    case ObjType::LIST: return list_class_;
-    case ObjType::FUNCTION: return fn_class_;
-    case ObjType::CLASS: return val.as_class()->meta_class();
-    case ObjType::INSTANCE: return val.as_instance()->cls();
-    }
-  }
-  switch (val.tag()) {
-  case Tag::NaN: return num_class_;
-  case Tag::NIL: return nil_class_;
-  case Tag::TRUE:
-  case Tag::FALSE: return bool_class_;
-  }
-#else
-  switch (val.type()) {
-  case ValueType::NIL: return nil_class_;
-  case ValueType::TRUE:
-  case ValueType::FALSE: return bool_class_;
-  case ValueType::NUMERIC: return num_class_;
-  case ValueType::OBJECT:
-    switch (val.objtype()) {
-    case ObjType::STRING: return str_class_;
-    case ObjType::LIST: return list_class_;
-    case ObjType::FUNCTION: return fn_class_;
-    case ObjType::CLASS: return val.as_class()->meta_class();
-    case ObjType::INSTANCE: return val.as_instance()->cls();
-    }
-    break;
-  }
-#endif
-  return nullptr;
 }
 
 Value WrenVM::interpret(FunctionObject* fn) {
@@ -484,11 +444,21 @@ Value WrenVM::interpret(FunctionObject* fn) {
     }
     CASE_CODE(IS):
     {
-      Value cls = POP();
+      ClassObject* expected = POP().as_class();
       Value obj = POP();
 
       ClassObject* actual = get_class(obj);
-      PUSH(actual == cls.as_class());
+      bool is_instance = false;
+
+      // walk the superclass chain looking for the class
+      while (actual != nullptr) {
+        if (actual == expected) {
+          is_instance = true;
+          break;
+        }
+        actual = actual->superclass();
+      }
+      PUSH(is_instance);
 
       DISPATCH();
     }
@@ -511,6 +481,45 @@ Value WrenVM::interpret(FunctionObject* fn) {
       DISPATCH();
     }
   }
+  return nullptr;
+}
+
+ClassObject* WrenVM::get_class(const Value& val) const {
+#ifdef NAN_TAGGING
+  if (val.is_numeric())
+    return num_class_;
+  if (val.is_object()) {
+    switch (val.objtype()) {
+    case ObjType::STRING: return str_class_;
+    case ObjType::LIST: return list_class_;
+    case ObjType::FUNCTION: return fn_class_;
+    case ObjType::CLASS: return val.as_class()->meta_class();
+    case ObjType::INSTANCE: return val.as_instance()->cls();
+    }
+  }
+  switch (val.tag()) {
+  case Tag::NaN: return num_class_;
+  case Tag::NIL: return nil_class_;
+  case Tag::TRUE:
+  case Tag::FALSE: return bool_class_;
+  }
+#else
+  switch (val.type()) {
+  case ValueType::NIL: return nil_class_;
+  case ValueType::TRUE:
+  case ValueType::FALSE: return bool_class_;
+  case ValueType::NUMERIC: return num_class_;
+  case ValueType::OBJECT:
+    switch (val.objtype()) {
+    case ObjType::STRING: return str_class_;
+    case ObjType::LIST: return list_class_;
+    case ObjType::FUNCTION: return fn_class_;
+    case ObjType::CLASS: return val.as_class()->meta_class();
+    case ObjType::INSTANCE: return val.as_instance()->cls();
+    }
+    break;
+  }
+#endif
   return nullptr;
 }
 

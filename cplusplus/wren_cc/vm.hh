@@ -89,8 +89,6 @@ class WrenVM final : private UnCopyable {
 
   Value interpret(FunctionObject* fn);
 
-  ClassObject* get_class(const Value& val) const;
-
   void collect(void);
   void free_object(BaseObject* obj);
 public:
@@ -122,7 +120,7 @@ public:
   inline SymbolTable& gsymbols(void) { return global_symbols_; }
   void set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn);
   void set_primitive(ClassObject* cls, const str_t& name, FiberPrimitiveFn fn);
-  void set_global(ClassObject* cls, const str_t& name);
+  void set_global(const str_t& name, const Value& value);
   const Value& get_global(const str_t& name) const;
   void pin_object(BaseObject* obj);
   void unpin_object(BaseObject* obj);
@@ -131,6 +129,7 @@ public:
   void mark_object(BaseObject* obj);
   void mark_value(const Value& val);
 
+  ClassObject* get_class(const Value& val) const;
   void interpret(const str_t& source_bytes);
   void call_function(Fiber& fiber, FunctionObject* fn, int argc);
 };

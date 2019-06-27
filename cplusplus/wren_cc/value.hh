@@ -125,6 +125,9 @@ public:
   TagValue(double d) noexcept { num_ = d; }
   TagValue(BaseObject* o) noexcept { bits_ = (kSignBit | kQNaN | (u64_t)(o)); }
 
+  inline bool operator==(const TagValue& r) const noexcept { return bits_ == r.bits_; }
+  inline bool operator!=(const TagValue& r) const noexcept { return bits_ != r.bits_; }
+
   inline int tag(void) const { return Xt::as_type<int>(bits_ & Tag::MASK); }
   inline ObjType objtype(void) const { return as_object()->type(); }
 
@@ -207,6 +210,8 @@ public:
   ClassObject* as_class(void) const;
   InstanceObject* as_instance(void) const;
 
+  bool operator==(const ObjValue& r) const noexcept;
+  bool operator!=(const ObjValue& r) const noexcept;
   str_t stringify(void) const;
 };
 
