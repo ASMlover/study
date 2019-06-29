@@ -264,6 +264,18 @@ DEF_PRIMITIVE(list_insert) {
   return args[2];
 }
 
+DEF_PRIMITIVE(list_remove) {
+  ListObject* list = args[0].as_list();
+  int index = validate_index(args[1], list->count());
+  if (index == -1)
+    return nullptr;
+
+  Value removed = list->get_element(index);
+  list->remove(index);
+
+  return removed;
+}
+
 DEF_PRIMITIVE(list_subscript) {
   ListObject* list = args[0].as_list();
   int index = validate_index(args[1], list->count());
@@ -319,6 +331,7 @@ void load_core(WrenVM& vm) {
   vm.set_primitive(vm.list_cls(), "clear", _primitive_list_clear);
   vm.set_primitive(vm.list_cls(), "len", _primitive_list_len);
   vm.set_primitive(vm.list_cls(), "insert  ", _primitive_list_insert);
+  vm.set_primitive(vm.list_cls(), "remove ", _primitive_list_remove);
   vm.set_primitive(vm.list_cls(), "[ ]", _primitive_list_subscript);
 
   vm.set_nil_cls(define_class(vm, "Nil", vm.obj_cls()));
