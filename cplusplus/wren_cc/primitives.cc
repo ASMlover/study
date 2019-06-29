@@ -42,6 +42,25 @@ static void _primitive_##fn(WrenVM& vm, Fiber& fiber, Value* args) {\
   vm.call_function(fiber, args[0].as_function(), argc);\
 }
 
+static int validate_index(const Value& index, int count) {
+  if (!index.is_numeric())
+    return -1;
+
+  double index_num = index.as_numeric();
+  int i = Xt::as_type<int>(index_num);
+  // make sure the index as an integer
+  if (index_num != i)
+    return -1;
+
+  // negative indices count from the end
+  if (i < 0)
+    i += count;
+  if (i < 0 || i >= count)
+    return -1;
+
+  return i;
+}
+
 DEF_FIBER_PRIMITIVE_FN(fn_call0, 1)
 DEF_FIBER_PRIMITIVE_FN(fn_call1, 2)
 DEF_FIBER_PRIMITIVE_FN(fn_call2, 3)
@@ -225,27 +244,33 @@ DEF_PRIMITIVE(list_add) {
   return args[1];
 }
 
+DEF_PRIMITIVE(list_clear) {
+  ListObject* list = args[0].as_list();
+  list->clear();
+  return nullptr;
+}
+
 DEF_PRIMITIVE(list_len) {
   return args[0].as_list()->count();
 }
 
+DEF_PRIMITIVE(list_insert) {
+  ListObject* list = args[0].as_list();
+  int index = validate_index(args[1], list->count() + 1);
+  if (index == -1)
+    return nullptr;
+
+  list->insert(index, args[2]);
+  return args[2];
+}
+
 DEF_PRIMITIVE(list_subscript) {
-  if (!args[1].is_numeric())
+  ListObject* list = args[0].as_list();
+  int index = validate_index(args[1], list->count());
+  if (index == -1)
     return nullptr;
 
-  double index_num = args[1].as_numeric();
-  int index = Xt::as_type<int>(index_num);
-  // make sure the index is an integer
-  if (index_num != index)
-    return nullptr;
-
-  ListObject* l = args[0].as_list();
-  if (index < 0)
-    index = index + l->count();
-  if (index < 0 || index >= l->count())
-    return nullptr;
-
-  return l->get_element(index);
+  return list->get_element(index);
 }
 
 DEF_PRIMITIVE(io_write) {
@@ -291,7 +316,9 @@ void load_core(WrenVM& vm) {
 
   vm.set_list_cls(define_class(vm, "List", vm.obj_cls()));
   vm.set_primitive(vm.list_cls(), "add ", _primitive_list_add);
+  vm.set_primitive(vm.list_cls(), "clear", _primitive_list_clear);
   vm.set_primitive(vm.list_cls(), "len", _primitive_list_len);
+  vm.set_primitive(vm.list_cls(), "insert  ", _primitive_list_insert);
   vm.set_primitive(vm.list_cls(), "[ ]", _primitive_list_subscript);
 
   vm.set_nil_cls(define_class(vm, "Nil", vm.obj_cls()));

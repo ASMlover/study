@@ -252,7 +252,9 @@ public:
   inline int count(void) const { return Xt::as_type<int>(elements_.size()); }
   inline const Value& get_element(int i) const { return elements_[i]; }
   inline void set_element(int i, const Value& e) { elements_[i] = e; }
+  inline void clear(void) { elements_.clear(); }
   inline void add_element(const Value& e) { elements_.push_back(e); }
+  inline void insert(int i, const Value& e) { elements_.insert(elements_.begin() + i, e); }
 
   virtual str_t stringify(void) const override;
   virtual void gc_mark(WrenVM& vm) override;
