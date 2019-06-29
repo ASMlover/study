@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <sstream>
-#include "primitives.hh"
+#include "core.hh"
 #include "compiler.hh"
 #include "vm.hh"
 
@@ -137,20 +137,19 @@ WrenVM::WrenVM(void) noexcept {
   for (int i = 0; i < kMaxGlobals; ++i)
     globals_[i] = nullptr;
 
-  load_core(*this);
+  initialize_core(*this);
 }
 
 WrenVM::~WrenVM(void) {
   delete fiber_;
 }
 
-void WrenVM::set_primitive(
-    ClassObject* cls, const str_t& name, PrimitiveFn fn) {
+void WrenVM::set_native(ClassObject* cls, const str_t& name, PrimitiveFn fn) {
   int symbol = methods_.ensure(name);
   cls->set_method(symbol, fn);
 }
 
-void WrenVM::set_primitive(
+void WrenVM::set_native(
     ClassObject* cls, const str_t& name, FiberPrimitiveFn fn) {
   int symbol = methods_.ensure(name);
   cls->set_method(symbol, fn);

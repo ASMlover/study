@@ -29,15 +29,15 @@
 #include <iostream>
 #include "value.hh"
 #include "vm.hh"
-#include "primitives.hh"
+#include "core.hh"
 
 namespace wrencc {
 
-#define DEF_PRIMITIVE(fn)\
+#define DEF_NATIVE(fn)\
 static Value _primitive_##fn(WrenVM& vm, Value* args)
-#define DEF_FIBER_PRIMITIVE(fn)\
+#define DEF_FIBER_NATIVE(fn)\
 static void _primitive_##fn(WrenVM& vm, Fiber& fiber, Value* args)
-#define DEF_FIBER_PRIMITIVE_FN(fn, argc)\
+#define DEF_FIBER_NATIVE_FN(fn, argc)\
 static void _primitive_##fn(WrenVM& vm, Fiber& fiber, Value* args) {\
   vm.call_function(fiber, args[0].as_function(), argc);\
 }
@@ -61,129 +61,129 @@ static int validate_index(const Value& index, int count) {
   return i;
 }
 
-DEF_FIBER_PRIMITIVE_FN(fn_call0, 1)
-DEF_FIBER_PRIMITIVE_FN(fn_call1, 2)
-DEF_FIBER_PRIMITIVE_FN(fn_call2, 3)
-DEF_FIBER_PRIMITIVE_FN(fn_call3, 4)
-DEF_FIBER_PRIMITIVE_FN(fn_call4, 5)
-DEF_FIBER_PRIMITIVE_FN(fn_call5, 6)
-DEF_FIBER_PRIMITIVE_FN(fn_call6, 7)
-DEF_FIBER_PRIMITIVE_FN(fn_call7, 8)
-DEF_FIBER_PRIMITIVE_FN(fn_call8, 9)
+DEF_FIBER_NATIVE_FN(fn_call0, 1)
+DEF_FIBER_NATIVE_FN(fn_call1, 2)
+DEF_FIBER_NATIVE_FN(fn_call2, 3)
+DEF_FIBER_NATIVE_FN(fn_call3, 4)
+DEF_FIBER_NATIVE_FN(fn_call4, 5)
+DEF_FIBER_NATIVE_FN(fn_call5, 6)
+DEF_FIBER_NATIVE_FN(fn_call6, 7)
+DEF_FIBER_NATIVE_FN(fn_call7, 8)
+DEF_FIBER_NATIVE_FN(fn_call8, 9)
 
-DEF_PRIMITIVE(bool_tostring) {
+DEF_NATIVE(bool_tostring) {
   if (args[0].as_boolean())
     return StringObject::make_string(vm, "true");
   else
     return StringObject::make_string(vm, "false");
 }
 
-DEF_PRIMITIVE(bool_not) {
+DEF_NATIVE(bool_not) {
   return !args[0].as_boolean();
 }
 
-DEF_PRIMITIVE(numeric_abs) {
+DEF_NATIVE(numeric_abs) {
   return std::abs(args[0].as_numeric());
 }
 
-DEF_PRIMITIVE(numeric_tostring) {
+DEF_NATIVE(numeric_tostring) {
   return StringObject::make_string(vm, args[0].stringify());
 }
 
-DEF_PRIMITIVE(numeric_neg) {
+DEF_NATIVE(numeric_neg) {
   return -args[0].as_numeric();
 }
 
-DEF_PRIMITIVE(numeric_add) {
+DEF_NATIVE(numeric_add) {
   if (!args[1].is_numeric())
     return vm.unsupported();
 
   return args[0].as_numeric() + args[1].as_numeric();
 }
 
-DEF_PRIMITIVE(numeric_sub) {
+DEF_NATIVE(numeric_sub) {
   if (!args[1].is_numeric())
     return vm.unsupported();
 
   return args[0].as_numeric() - args[1].as_numeric();
 }
 
-DEF_PRIMITIVE(numeric_mul) {
+DEF_NATIVE(numeric_mul) {
   if (!args[1].is_numeric())
     return vm.unsupported();
 
   return args[0].as_numeric() * args[1].as_numeric();
 }
 
-DEF_PRIMITIVE(numeric_div) {
+DEF_NATIVE(numeric_div) {
   if (!args[1].is_numeric())
     return vm.unsupported();
 
   return args[0].as_numeric() / args[1].as_numeric();
 }
 
-DEF_PRIMITIVE(numeric_mod) {
+DEF_NATIVE(numeric_mod) {
   if (!args[1].is_numeric())
     return vm.unsupported();
 
   return std::fmod(args[0].as_numeric(), args[1].as_numeric());
 }
 
-DEF_PRIMITIVE(numeric_gt) {
+DEF_NATIVE(numeric_gt) {
   if (!args[1].is_numeric())
     return vm.unsupported();
   return args[0].as_numeric() > args[1].as_numeric();
 }
 
-DEF_PRIMITIVE(numeric_ge) {
+DEF_NATIVE(numeric_ge) {
   if (!args[1].is_numeric())
     return vm.unsupported();
   return args[0].as_numeric() >= args[1].as_numeric();
 }
 
-DEF_PRIMITIVE(numeric_lt) {
+DEF_NATIVE(numeric_lt) {
   if (!args[1].is_numeric())
     return vm.unsupported();
   return args[0].as_numeric() < args[1].as_numeric();
 }
 
-DEF_PRIMITIVE(numeric_le) {
+DEF_NATIVE(numeric_le) {
   if (!args[1].is_numeric())
     return vm.unsupported();
   return args[0].as_numeric() <= args[1].as_numeric();
 }
 
-DEF_PRIMITIVE(numeric_eq) {
+DEF_NATIVE(numeric_eq) {
   if (!args[1].is_numeric())
     return false;
 
   return args[0].as_numeric() == args[1].as_numeric();
 }
 
-DEF_PRIMITIVE(numeric_ne) {
+DEF_NATIVE(numeric_ne) {
   if (!args[1].is_numeric())
     return true;
 
   return args[0].as_numeric() != args[1].as_numeric();
 }
 
-DEF_PRIMITIVE(object_eq) {
+DEF_NATIVE(object_eq) {
   return args[0] == args[1];
 }
 
-DEF_PRIMITIVE(object_ne) {
+DEF_NATIVE(object_ne) {
   return args[0] != args[1];
 }
 
-DEF_PRIMITIVE(object_type) {
+DEF_NATIVE(object_type) {
   return vm.get_class(args[0]);
 }
 
-DEF_PRIMITIVE(string_len) {
+DEF_NATIVE(string_len) {
   return args[0].as_string()->size();
 }
 
-DEF_PRIMITIVE(string_contains) {
+DEF_NATIVE(string_contains) {
   StringObject* orig = args[0].as_string();
   StringObject* subs = args[1].as_string();
 
@@ -192,11 +192,11 @@ DEF_PRIMITIVE(string_contains) {
   return strstr(orig->cstr(), subs->cstr()) != nullptr;
 }
 
-DEF_PRIMITIVE(string_tostring) {
+DEF_NATIVE(string_tostring) {
   return args[0];
 }
 
-DEF_PRIMITIVE(string_add) {
+DEF_NATIVE(string_add) {
   if (!args[1].is_string())
     return vm.unsupported();
 
@@ -205,21 +205,21 @@ DEF_PRIMITIVE(string_add) {
   return StringObject::make_string(vm, lhs, rhs);
 }
 
-DEF_PRIMITIVE(string_eq) {
+DEF_NATIVE(string_eq) {
   if (!args[1].is_string())
     return false;
 
   return strcmp(args[0].as_cstring(), args[1].as_cstring()) == 0;
 }
 
-DEF_PRIMITIVE(string_ne) {
+DEF_NATIVE(string_ne) {
   if (!args[1].is_string())
     return true;
 
   return strcmp(args[0].as_cstring(), args[1].as_cstring()) != 0;
 }
 
-DEF_PRIMITIVE(string_subscript) {
+DEF_NATIVE(string_subscript) {
   if (!args[1].is_numeric())
     return nullptr;
 
@@ -238,23 +238,23 @@ DEF_PRIMITIVE(string_subscript) {
   return StringObject::make_string(vm, (*s)[index]);
 }
 
-DEF_PRIMITIVE(list_add) {
+DEF_NATIVE(list_add) {
   ListObject* list = args[0].as_list();
   list->add_element(args[1]);
   return args[1];
 }
 
-DEF_PRIMITIVE(list_clear) {
+DEF_NATIVE(list_clear) {
   ListObject* list = args[0].as_list();
   list->clear();
   return nullptr;
 }
 
-DEF_PRIMITIVE(list_len) {
+DEF_NATIVE(list_len) {
   return args[0].as_list()->count();
 }
 
-DEF_PRIMITIVE(list_insert) {
+DEF_NATIVE(list_insert) {
   ListObject* list = args[0].as_list();
   int index = validate_index(args[1], list->count() + 1);
   if (index == -1)
@@ -264,7 +264,7 @@ DEF_PRIMITIVE(list_insert) {
   return args[2];
 }
 
-DEF_PRIMITIVE(list_remove) {
+DEF_NATIVE(list_remove) {
   ListObject* list = args[0].as_list();
   int index = validate_index(args[1], list->count());
   if (index == -1)
@@ -276,7 +276,7 @@ DEF_PRIMITIVE(list_remove) {
   return removed;
 }
 
-DEF_PRIMITIVE(list_subscript) {
+DEF_NATIVE(list_subscript) {
   ListObject* list = args[0].as_list();
   int index = validate_index(args[1], list->count());
   if (index == -1)
@@ -285,12 +285,12 @@ DEF_PRIMITIVE(list_subscript) {
   return list->get_element(index);
 }
 
-DEF_PRIMITIVE(io_write) {
+DEF_NATIVE(io_write) {
   std::cout << args[1] << std::endl;
   return args[1];
 }
 
-DEF_PRIMITIVE(os_clock) {
+DEF_NATIVE(os_clock) {
   return std::chrono::duration_cast<std::chrono::milliseconds>(
       std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
 }
@@ -302,76 +302,76 @@ static ClassObject* define_class(
   return cls;
 }
 
-void load_core(WrenVM& vm) {
+void initialize_core(WrenVM& vm) {
   vm.set_obj_cls(define_class(vm, "Object", nullptr));
-  vm.set_primitive(vm.obj_cls(), "== ", _primitive_object_eq);
-  vm.set_primitive(vm.obj_cls(), "!= ", _primitive_object_ne);
-  vm.set_primitive(vm.obj_cls(), "type", _primitive_object_type);
+  vm.set_native(vm.obj_cls(), "== ", _primitive_object_eq);
+  vm.set_native(vm.obj_cls(), "!= ", _primitive_object_ne);
+  vm.set_native(vm.obj_cls(), "type", _primitive_object_type);
 
   // the "Class" class is the superclass of all metaclasses
   vm.set_class_cls(define_class(vm, "Class", vm.obj_cls()));
 
   vm.set_bool_cls(define_class(vm, "Bool", vm.obj_cls()));
-  vm.set_primitive(vm.bool_cls(), "toString", _primitive_bool_tostring);
-  vm.set_primitive(vm.bool_cls(), "!", _primitive_bool_not);
+  vm.set_native(vm.bool_cls(), "toString", _primitive_bool_tostring);
+  vm.set_native(vm.bool_cls(), "!", _primitive_bool_not);
 
   vm.set_fn_cls(define_class(vm, "Function", vm.obj_cls()));
-  vm.set_primitive(vm.fn_cls(), "call", _primitive_fn_call0);
-  vm.set_primitive(vm.fn_cls(), "call ", _primitive_fn_call1);
-  vm.set_primitive(vm.fn_cls(), "call  ", _primitive_fn_call2);
-  vm.set_primitive(vm.fn_cls(), "call   ", _primitive_fn_call3);
-  vm.set_primitive(vm.fn_cls(), "call    ", _primitive_fn_call4);
-  vm.set_primitive(vm.fn_cls(), "call     ", _primitive_fn_call5);
-  vm.set_primitive(vm.fn_cls(), "call      ", _primitive_fn_call6);
-  vm.set_primitive(vm.fn_cls(), "call       ", _primitive_fn_call7);
-  vm.set_primitive(vm.fn_cls(), "call        ", _primitive_fn_call8);
+  vm.set_native(vm.fn_cls(), "call", _primitive_fn_call0);
+  vm.set_native(vm.fn_cls(), "call ", _primitive_fn_call1);
+  vm.set_native(vm.fn_cls(), "call  ", _primitive_fn_call2);
+  vm.set_native(vm.fn_cls(), "call   ", _primitive_fn_call3);
+  vm.set_native(vm.fn_cls(), "call    ", _primitive_fn_call4);
+  vm.set_native(vm.fn_cls(), "call     ", _primitive_fn_call5);
+  vm.set_native(vm.fn_cls(), "call      ", _primitive_fn_call6);
+  vm.set_native(vm.fn_cls(), "call       ", _primitive_fn_call7);
+  vm.set_native(vm.fn_cls(), "call        ", _primitive_fn_call8);
 
   vm.set_list_cls(define_class(vm, "List", vm.obj_cls()));
-  vm.set_primitive(vm.list_cls(), "add ", _primitive_list_add);
-  vm.set_primitive(vm.list_cls(), "clear", _primitive_list_clear);
-  vm.set_primitive(vm.list_cls(), "len", _primitive_list_len);
-  vm.set_primitive(vm.list_cls(), "insert  ", _primitive_list_insert);
-  vm.set_primitive(vm.list_cls(), "remove ", _primitive_list_remove);
-  vm.set_primitive(vm.list_cls(), "[ ]", _primitive_list_subscript);
+  vm.set_native(vm.list_cls(), "add ", _primitive_list_add);
+  vm.set_native(vm.list_cls(), "clear", _primitive_list_clear);
+  vm.set_native(vm.list_cls(), "len", _primitive_list_len);
+  vm.set_native(vm.list_cls(), "insert  ", _primitive_list_insert);
+  vm.set_native(vm.list_cls(), "remove ", _primitive_list_remove);
+  vm.set_native(vm.list_cls(), "[ ]", _primitive_list_subscript);
 
   vm.set_nil_cls(define_class(vm, "Nil", vm.obj_cls()));
 
   vm.set_num_cls(define_class(vm, "Numeric", vm.obj_cls()));
-  vm.set_primitive(vm.num_cls(), "abs", _primitive_numeric_abs);
-  vm.set_primitive(vm.num_cls(), "toString", _primitive_numeric_tostring);
-  vm.set_primitive(vm.num_cls(), "-", _primitive_numeric_neg);
-  vm.set_primitive(vm.num_cls(), "+ ", _primitive_numeric_add);
-  vm.set_primitive(vm.num_cls(), "- ", _primitive_numeric_sub);
-  vm.set_primitive(vm.num_cls(), "* ", _primitive_numeric_mul);
-  vm.set_primitive(vm.num_cls(), "/ ", _primitive_numeric_div);
-  vm.set_primitive(vm.num_cls(), "% ", _primitive_numeric_mod);
-  vm.set_primitive(vm.num_cls(), "> ", _primitive_numeric_gt);
-  vm.set_primitive(vm.num_cls(), ">= ", _primitive_numeric_ge);
-  vm.set_primitive(vm.num_cls(), "< ", _primitive_numeric_lt);
-  vm.set_primitive(vm.num_cls(), "<= ", _primitive_numeric_le);
-  vm.set_primitive(vm.num_cls(), "== ", _primitive_numeric_eq);
-  vm.set_primitive(vm.num_cls(), "!= ", _primitive_numeric_ne);
+  vm.set_native(vm.num_cls(), "abs", _primitive_numeric_abs);
+  vm.set_native(vm.num_cls(), "toString", _primitive_numeric_tostring);
+  vm.set_native(vm.num_cls(), "-", _primitive_numeric_neg);
+  vm.set_native(vm.num_cls(), "+ ", _primitive_numeric_add);
+  vm.set_native(vm.num_cls(), "- ", _primitive_numeric_sub);
+  vm.set_native(vm.num_cls(), "* ", _primitive_numeric_mul);
+  vm.set_native(vm.num_cls(), "/ ", _primitive_numeric_div);
+  vm.set_native(vm.num_cls(), "% ", _primitive_numeric_mod);
+  vm.set_native(vm.num_cls(), "> ", _primitive_numeric_gt);
+  vm.set_native(vm.num_cls(), ">= ", _primitive_numeric_ge);
+  vm.set_native(vm.num_cls(), "< ", _primitive_numeric_lt);
+  vm.set_native(vm.num_cls(), "<= ", _primitive_numeric_le);
+  vm.set_native(vm.num_cls(), "== ", _primitive_numeric_eq);
+  vm.set_native(vm.num_cls(), "!= ", _primitive_numeric_ne);
 
   // vm.set_obj_cls(vm.get_global("Object").as_class());
 
   vm.set_str_cls(define_class(vm, "String", vm.obj_cls()));
-  vm.set_primitive(vm.str_cls(), "len", _primitive_string_len);
-  vm.set_primitive(vm.str_cls(), "contains ", _primitive_string_contains);
-  vm.set_primitive(vm.str_cls(), "toString", _primitive_string_tostring);
-  vm.set_primitive(vm.str_cls(), "+ ", _primitive_string_add);
-  vm.set_primitive(vm.str_cls(), "== ", _primitive_string_eq);
-  vm.set_primitive(vm.str_cls(), "!= ", _primitive_string_ne);
-  vm.set_primitive(vm.str_cls(), "[ ]", _primitive_string_subscript);
+  vm.set_native(vm.str_cls(), "len", _primitive_string_len);
+  vm.set_native(vm.str_cls(), "contains ", _primitive_string_contains);
+  vm.set_native(vm.str_cls(), "toString", _primitive_string_tostring);
+  vm.set_native(vm.str_cls(), "+ ", _primitive_string_add);
+  vm.set_native(vm.str_cls(), "== ", _primitive_string_eq);
+  vm.set_native(vm.str_cls(), "!= ", _primitive_string_ne);
+  vm.set_native(vm.str_cls(), "[ ]", _primitive_string_subscript);
 
   ClassObject* io_cls = define_class(vm, "IO", vm.obj_cls());
-  vm.set_primitive(io_cls, "write ", _primitive_io_write);
+  vm.set_native(io_cls, "write ", _primitive_io_write);
 
   // making this an instance is lame, the only reason we are doing it
   // is because "IO.write()" looks ugly, maybe just get used to that ?
   vm.set_global("io", InstanceObject::make_instance(vm, io_cls));
 
   ClassObject* os_cls = define_class(vm, "OS", vm.obj_cls());
-  vm.set_primitive(os_cls->meta_class(), "clock", _primitive_os_clock);
+  vm.set_native(os_cls->meta_class(), "clock", _primitive_os_clock);
 
   ClassObject* unsupported_cls = ClassObject::make_class(vm, vm.obj_cls(), 0);
   vm.set_unsupported(InstanceObject::make_instance(vm, unsupported_cls));

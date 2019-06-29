@@ -118,8 +118,8 @@ public:
 
   inline SymbolTable& methods(void) { return methods_; }
   inline SymbolTable& gsymbols(void) { return global_symbols_; }
-  void set_primitive(ClassObject* cls, const str_t& name, PrimitiveFn fn);
-  void set_primitive(ClassObject* cls, const str_t& name, FiberPrimitiveFn fn);
+  void set_native(ClassObject* cls, const str_t& name, PrimitiveFn fn);
+  void set_native(ClassObject* cls, const str_t& name, FiberPrimitiveFn fn);
   void set_global(const str_t& name, const Value& value);
   const Value& get_global(const str_t& name) const;
   void pin_object(BaseObject* obj);

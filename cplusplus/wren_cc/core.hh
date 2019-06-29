@@ -30,6 +30,6 @@ namespace wrencc {
 
 class WrenVM;
 
-void load_core(WrenVM& vm);
+void initialize_core(WrenVM& vm);
 
 }
