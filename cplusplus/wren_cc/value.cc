@@ -192,7 +192,18 @@ ListObject::ListObject(int num_elements) noexcept
 
 str_t ListObject::stringify(void) const {
   std::stringstream ss;
-  ss << "[list: " << this << "]";
+  ss << "[";
+  for (auto i = 0u; i < elements_.size(); ++i) {
+    if (i > 0)
+      ss << ", ";
+
+    auto& v = elements_[i];
+    if (v.is_string())
+      ss << "\"" << v << "\"";
+    else
+      ss << v;
+  }
+  ss << "]";
   return ss.str();
 }
 

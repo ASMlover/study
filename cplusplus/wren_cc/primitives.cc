@@ -219,6 +219,12 @@ DEF_PRIMITIVE(string_subscript) {
   return StringObject::make_string(vm, (*s)[index]);
 }
 
+DEF_PRIMITIVE(list_add) {
+  ListObject* list = args[0].as_list();
+  list->add_element(args[1]);
+  return args[1];
+}
+
 DEF_PRIMITIVE(list_len) {
   return args[0].as_list()->count();
 }
@@ -284,6 +290,7 @@ void load_core(WrenVM& vm) {
   vm.set_primitive(vm.fn_cls(), "call        ", _primitive_fn_call8);
 
   vm.set_list_cls(define_class(vm, "List", vm.obj_cls()));
+  vm.set_primitive(vm.list_cls(), "add ", _primitive_list_add);
   vm.set_primitive(vm.list_cls(), "len", _primitive_list_len);
   vm.set_primitive(vm.list_cls(), "[ ]", _primitive_list_subscript);
 
