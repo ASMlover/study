@@ -164,6 +164,11 @@ struct Scope {
 #define POP_SCOPE pop_scope()
 
 class Compiler : private UnCopyable {
+  // the maximum number of arguments that can be passed to a method, note
+  // that this limtation is hardcoded in other places in th VM, in particular
+  // the `CALL_xx` instructions assume a certain maximum number
+  static constexpr int kMaxArguments = 16;
+
   Parser& parser_;
   Compiler* parent_{};
   FunctionObject* fn_{};
@@ -727,8 +732,15 @@ class Compiler : private UnCopyable {
     name += parser_.prev().as_string();
     if (match(TokenKind::TK_LPAREN)) {
       do {
+        // the VM can only handle a certain number of parameters, so check
+        // for this explicitly and give a usable error
+        if (++argc >= kMaxArguments + 1) {
+          // only show an error at exactly `max + 1` and do not break so that
+          // we can keep parsing the parameter list and minimize cascaded errors
+          error("cannot pass more than %d arguments to a method", kMaxArguments);
+        }
+
         statement();
-        ++argc;
 
         name.push_back(' ');
       } while (match(TokenKind::TK_COMMA));
@@ -750,10 +762,17 @@ class Compiler : private UnCopyable {
 
     // parse the arguments list
     do {
+      // the VM can only handle a certain number of parameters, so check
+      // for this explicitly and give a usable error
+      if (++argc >= kMaxArguments + 1) {
+        // only show an error at exactly `max + 1` and do not break so that
+        // we can keep parsing the parameter list and minimize cascaded errors
+        error("cannot pass more than %d arguments to a method", kMaxArguments);
+      }
+
       statement();
 
       // add a space in the name for each argument, lets overload by arity
-      ++argc;
       name.push_back(' ');
     } while (match(TokenKind::TK_COMMA));
     consume(TokenKind::TK_RBRACKET, "expect `]` after subscript arguments");
@@ -840,7 +859,17 @@ class Compiler : private UnCopyable {
   void parameters(str_t& name) {
     // parse the parameter list, if any
     if (match(TokenKind::TK_LPAREN)) {
+      int argc = 0;
       do {
+        // the VM can only handle a certain number of parameters, so
+        // check for this explicitly and give a usable error
+        if (++argc >= kMaxArguments + 1) {
+          // only show an error at exactly `max + 1` and do not break
+          // so that we can keep parsing the parameter list and minimize
+          // cascaded errors
+          error("cannot have more than %d parameters", kMaxArguments);
+        }
+
         // define a local variable in the method for the parameters
         declare_variable();
 

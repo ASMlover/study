@@ -335,6 +335,12 @@ Value WrenVM::interpret(FunctionObject* fn) {
     CASE_CODE(CALL_8):
     CASE_CODE(CALL_9):
     CASE_CODE(CALL_10):
+    CASE_CODE(CALL_11):
+    CASE_CODE(CALL_12):
+    CASE_CODE(CALL_13):
+    CASE_CODE(CALL_14):
+    CASE_CODE(CALL_15):
+    CASE_CODE(CALL_16):
     {
       int argc = c - Code::CALL_0 + 1;
       int symbol = RDARG();

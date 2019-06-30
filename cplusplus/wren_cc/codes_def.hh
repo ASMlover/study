@@ -80,6 +80,12 @@ CODE(CALL_7)
 CODE(CALL_8)
 CODE(CALL_9)
 CODE(CALL_10)
+CODE(CALL_11)
+CODE(CALL_12)
+CODE(CALL_13)
+CODE(CALL_14)
+CODE(CALL_15)
+CODE(CALL_16)
 
 CODE(JUMP)         // jump the instruction pointer [arg] forward
 

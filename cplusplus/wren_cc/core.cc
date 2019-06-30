@@ -70,6 +70,14 @@ DEF_FIBER_NATIVE_FN(fn_call5, 6)
 DEF_FIBER_NATIVE_FN(fn_call6, 7)
 DEF_FIBER_NATIVE_FN(fn_call7, 8)
 DEF_FIBER_NATIVE_FN(fn_call8, 9)
+DEF_FIBER_NATIVE_FN(fn_call9, 10)
+DEF_FIBER_NATIVE_FN(fn_call10, 11)
+DEF_FIBER_NATIVE_FN(fn_call11, 12)
+DEF_FIBER_NATIVE_FN(fn_call12, 13)
+DEF_FIBER_NATIVE_FN(fn_call13, 14)
+DEF_FIBER_NATIVE_FN(fn_call14, 15)
+DEF_FIBER_NATIVE_FN(fn_call15, 16)
+DEF_FIBER_NATIVE_FN(fn_call16, 17)
 
 DEF_NATIVE(bool_tostring) {
   if (args[0].as_boolean())
@@ -325,6 +333,14 @@ void initialize_core(WrenVM& vm) {
   vm.set_native(vm.fn_cls(), "call      ", _primitive_fn_call6);
   vm.set_native(vm.fn_cls(), "call       ", _primitive_fn_call7);
   vm.set_native(vm.fn_cls(), "call        ", _primitive_fn_call8);
+  vm.set_native(vm.fn_cls(), "call         ", _primitive_fn_call9);
+  vm.set_native(vm.fn_cls(), "call          ", _primitive_fn_call10);
+  vm.set_native(vm.fn_cls(), "call           ", _primitive_fn_call11);
+  vm.set_native(vm.fn_cls(), "call            ", _primitive_fn_call12);
+  vm.set_native(vm.fn_cls(), "call             ", _primitive_fn_call13);
+  vm.set_native(vm.fn_cls(), "call              ", _primitive_fn_call14);
+  vm.set_native(vm.fn_cls(), "call               ", _primitive_fn_call15);
+  vm.set_native(vm.fn_cls(), "call                ", _primitive_fn_call16);
 
   vm.set_list_cls(define_class(vm, "List", vm.obj_cls()));
   vm.set_native(vm.list_cls(), "add ", _primitive_list_add);
