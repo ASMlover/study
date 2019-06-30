@@ -88,8 +88,14 @@ public:
   inline void set_error(bool b = true) { had_error_ = b; }
   inline WrenVM& get_vm(void) { return vm_; }
 
-  inline void advance(void) {
+  void advance(void) {
     prev_ = curr_;
+
+    // if we are out of tokens, donot try to tokenize any more we *do*
+    // skill copy the TokenKind::TK_EOF to previois so that so that code
+    // that expects it to be consumed will still work
+    if (curr_.kind() == TokenKind::TK_EOF)
+      return;
 
     for (;;) {
       curr_ = lex_.next_token();
@@ -311,7 +317,7 @@ class Compiler : private UnCopyable {
     parser_.advance();
     auto& prefix_fn = get_rule(parser_.prev().kind()).prefix;
     if (!prefix_fn) {
-      error("no prefix parser");
+      error("unexpected token for expression");
       return;
     }
 
@@ -445,8 +451,17 @@ class Compiler : private UnCopyable {
   }
 
   void field(bool allow_assignment) {
-    // look up the field, or implicitlt define it
-    int field = fields_->ensure(parser_.prev().as_string());
+    int field;
+    if (fields_ != nullptr) {
+      // look up the field, or implicitlt define it
+      field = fields_->ensure(parser_.prev().as_string());
+    }
+    else {
+      error("cannot reference a field outside of a class definition");
+      // initialize it with a fake value so we can keep parsing and minimize
+      // the number of cascaded erros
+      field = 0xff;
+    }
 
     // if there is an `=` after a filed name, it's an assignment
     if (match(TokenKind::TK_EQ)) {
