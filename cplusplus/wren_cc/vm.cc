@@ -165,14 +165,14 @@ const Value& WrenVM::get_global(const str_t& name) const {
   return globals_[symbol];
 }
 
-void WrenVM::pin_object(BaseObject* obj) {
-  ASSERT(pinned_.size() < kMaxPinned, "too many pinned objects");
-  pinned_.push_back(obj);
+void WrenVM::pin_object(BaseObject* obj, Pinned* pinned) {
+  pinned->obj = obj;
+  pinned->prev = pinned_;
+  pinned_ = pinned;
 }
 
-void WrenVM::unpin_object(BaseObject* obj) {
-  ASSERT(pinned_.back() == obj, "unppinning object out of stack order");
-  pinned_.pop_back();
+void WrenVM::unpin_object(void) {
+  pinned_ = pinned_->prev;
 }
 
 Value WrenVM::interpret(FunctionObject* fn) {
@@ -538,8 +538,8 @@ void WrenVM::collect(void) {
   for (int i = 0; i < global_symbols_.count(); ++i)
     mark_value(globals_[i]);
   // pinned objects
-  for (auto& o : pinned_)
-    mark_value(o);
+  for (auto* p = pinned_; p != nullptr; p = p->prev)
+    mark_object(p->obj);
   // stack functions
   fiber_->iter_frames([this](const CallFrame& f) { mark_object(f.fn); });
   // stack variables

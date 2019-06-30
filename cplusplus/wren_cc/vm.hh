@@ -57,6 +57,11 @@ public:
   void truncate(int count);
 };
 
+struct Pinned {
+  BaseObject* obj{};
+  Pinned* prev{};
+};
+
 class WrenVM final : private UnCopyable {
   static constexpr sz_t kMaxGlobals = 256;
   static constexpr sz_t kMaxPinned = 16;
@@ -85,7 +90,10 @@ class WrenVM final : private UnCopyable {
   sz_t next_gc_{1<<10}; // 1024
 
   std::vector<BaseObject*> objects_; // all currently allocated objects
-  std::vector<BaseObject*> pinned_;
+
+  // the header of the list of pinned objects, will be `nullptr` if nothing
+  // is pinned
+  Pinned* pinned_{};
 
   Value interpret(FunctionObject* fn);
 
@@ -122,8 +130,8 @@ public:
   void set_native(ClassObject* cls, const str_t& name, FiberPrimitiveFn fn);
   void set_global(const str_t& name, const Value& value);
   const Value& get_global(const str_t& name) const;
-  void pin_object(BaseObject* obj);
-  void unpin_object(BaseObject* obj);
+  void pin_object(BaseObject* obj, Pinned* pinned);
+  void unpin_object(void);
 
   void append_object(BaseObject* obj);
   void mark_object(BaseObject* obj);

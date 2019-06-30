@@ -885,7 +885,8 @@ public:
   }
 
   FunctionObject* compile_function(TokenKind end_kind) {
-    parser_.get_vm().pin_object(fn_);
+    Pinned pinned;
+    parser_.get_vm().pin_object(fn_, &pinned);
     for (;;) {
       definition();
 
@@ -900,7 +901,7 @@ public:
     }
     emit_byte(Code::END);
 
-    parser_.get_vm().unpin_object(fn_);
+    parser_.get_vm().unpin_object();
     return parser_.had_error() ? nullptr : fn_;
   }
 
