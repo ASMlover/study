@@ -158,10 +158,18 @@ struct Scope {
   }
 };
 
-#define PUSH_SCOPE\
-  Scope _scope##__LINE__;\
-  push_scope(&_scope##__LINE__)
-#define POP_SCOPE pop_scope()
+struct Local {
+  str_t name{}; // the name of the local variable
+
+  // the depth in the scope chain that this variable was declared at. Zero
+  // is the outermost scope-parameters for a method, or the first local block
+  // in top level code. one is the scope within that, etc.
+  int depth{};
+
+  Local(const str_t& n = str_t(), int d = -1) noexcept
+    : name(n), depth(d) {
+  }
+};
 
 class Compiler : private UnCopyable {
   // the maximum number of arguments that can be passed to a method, note
@@ -173,7 +181,6 @@ class Compiler : private UnCopyable {
   Compiler* parent_{};
   FunctionObject* fn_{};
   int num_codes_{};
-  SymbolTable locals_;
 
   // for the fields of the nearest enclosing class, or nullptr if not
   // currently inside a class
@@ -181,8 +188,13 @@ class Compiler : private UnCopyable {
 
   bool is_method_{}; // true if the function being compiled is a method
 
-  // the current local variable scope, initially nullptr
-  Scope* scope_{};
+  // the current level of block scope nesting, where zero is no nesting.
+  // a -1 here means top-level code is being compiled and thers is no block
+  // scope in effect at all. any variables declared will be global
+  int scope_depth_{-1};
+
+  // the currently in scope local variables
+  std::vector<Local> locals_;
 
   inline SymbolTable& vm_methods(void) { return parser_.get_vm().methods(); }
   inline SymbolTable& vm_gsymbols(void) { return parser_.get_vm().gsymbols(); }
@@ -228,25 +240,23 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::CONSTANT, b);
   }
 
-  void push_scope(Scope* scope) {
+  void push_scope(void) {
     // starts a new local block scope
 
-    scope->set_scope(locals_.count(), scope_);
-    scope_ = scope;
+    ++scope_depth_;
   }
 
   void pop_scope(void) {
     // closes the last pushed block scope
 
-    ASSERT(scope_ != nullptr, "cannot pop top-level scope");
+    ASSERT(scope_depth_ > -1, "cannot pop top-level scope");
 
-    Scope* scope = scope_;
     // pop locals off the stack
-    for (int i = scope->prev_locals; i < locals_.count(); ++i)
+    while (!locals_.empty() && locals_.back().depth == scope_depth_) {
+      locals_.pop_back();
       emit_byte(Code::POP);
-
-    locals_.truncate(scope->prev_locals);
-    scope_ = scope->parent;
+    }
+    --scope_depth_;
   }
 
   const GrammerRule& get_rule(TokenKind kind) const {
@@ -340,22 +350,38 @@ class Compiler : private UnCopyable {
   int declare_variable(void) {
     consume(TokenKind::TK_IDENTIFIER, "expected variable name");
 
-    int symbol;
     str_t name = parser_.prev().as_string();
-    // the top-level scope of the top-level compiler is global scope
-    if (parent_ == nullptr && scope_ == nullptr)
-      symbol = vm_gsymbols().add(name); // top level global variable
-    else
-      symbol = locals_.add(name); // nested block, this is a local variable
+    // top-level global scope
+    if (scope_depth_ == -1) {
+      int symbol = vm_gsymbols().add(name);
+      if (symbol == -1)
+        error("global variable is already defined");
+      return symbol;
+    }
 
-    if (symbol == -1)
-      error("variable is already defined");
-    return symbol;
+    // see if there is already a variable with this name declared in the
+    // current scope (outer scopes are OK: those get shadowed)
+    int i = Xt::as_type<int>(locals_.size()) - 1;
+    for (; i >= 0; --i) {
+      auto& local = locals_[i];
+
+      // once we escape this scope and hit an outer one, we can stop
+      if (local.depth < scope_depth_)
+        break;
+      if (local.name == name) {
+        error("variable is already declared in this scope");
+        return i;
+      }
+    }
+
+    // define a new local variable in the current scope
+    locals_.push_back(Local(name, scope_depth_));
+    return Xt::as_type<int>(locals_.size() - 1);
   }
 
   void define_variable(int symbol) {
-    // the top-level scope of the top-level compiler is global scope
-    if (parent_ == nullptr && scope_ == nullptr) {
+    // handle top-level global scope
+    if (scope_depth_ == -1) {
       // it's a global variable, so store the value int the global slot
       emit_bytes(Code::STORE_GLOBAL, symbol);
     }
@@ -378,6 +404,26 @@ class Compiler : private UnCopyable {
       // sometimes
       emit_byte(Code::DUP);
     }
+  }
+
+  int resolve_local(bool& is_global) {
+    // look up the previously consumed token, which is presumed to be a
+    // TK_IDENTIFIER in the currenr scope to see what identifier it's
+    // bound to. returns the index of the identifier either global or local
+    // scope. returns -1 if not found. sets [is_global] to `true` if the
+    // identifier is in global scope, or `false` if in local.
+
+    str_t name = parser_.prev().as_string();
+
+    is_global = false;
+    int i = Xt::as_type<int>(locals_.size()) - 1;
+    for (; i >= 0; --i) {
+      if (locals_[i].name == name)
+        return i;
+    }
+
+    is_global = true;
+    return vm_gsymbols().get(name);
   }
 
   void nil(bool allow_assignment) {
@@ -418,15 +464,10 @@ class Compiler : private UnCopyable {
   }
 
   void variable(bool allow_assignment) {
-    str_t variable_name = parser_.prev().as_string();
-    int local = locals_.get(variable_name);
-
-    // see if it's a global variable
-    int global = 0;
-    if (local == -1)
-      global = vm_gsymbols().get(variable_name);
-
-    if (local == -1 && global == -1)
+    // look up the name in the scope chain
+    bool is_global;
+    int index = resolve_local(is_global);
+    if (index == -1)
       error("undefined variable");
 
     // if there's an `=` after a bare name, it's a variable assignment
@@ -437,22 +478,18 @@ class Compiler : private UnCopyable {
       // compile the right-hand side
       statement();
 
-      if (local != -1) {
-        emit_bytes(Code::STORE_LOCAL, local);
-        return;
-      }
-
-      emit_bytes(Code::STORE_GLOBAL, global);
+      if (is_global)
+        emit_bytes(Code::STORE_GLOBAL, index);
+      else
+        emit_bytes(Code::STORE_LOCAL, index);
       return;
     }
 
     // otherwise, it's just a variable access
-
-    if (local != -1) {
-      emit_bytes(Code::LOAD_LOCAL, local);
-      return;
-    }
-    emit_bytes(Code::LOAD_GLOBAL, global);
+    if (is_global)
+      emit_bytes(Code::LOAD_GLOBAL, index);
+    else
+      emit_bytes(Code::LOAD_LOCAL, index);
   }
 
   void field(bool allow_assignment) {
@@ -578,9 +615,9 @@ class Compiler : private UnCopyable {
       int if_jump = emit_byte(0xff);
 
       // compile the then branch
-      PUSH_SCOPE;
+      push_scope();
       definition();
-      POP_SCOPE;
+      pop_scope();
 
       // jump over the else branch when the if branch is taken
       emit_byte(Code::JUMP);
@@ -589,9 +626,9 @@ class Compiler : private UnCopyable {
       patch_jump(if_jump);
       // compile the else branch if thers is one
       if (match(TokenKind::KW_ELSE)) {
-        PUSH_SCOPE;
+        push_scope();
         definition();
-        POP_SCOPE;
+        pop_scope();
       }
       else {
         emit_byte(Code::NIL); // just default to nil
@@ -615,9 +652,9 @@ class Compiler : private UnCopyable {
       int exit_jump = emit_byte(0xff);
 
       // compile the while body
-      PUSH_SCOPE;
+      push_scope();
       definition();
-      POP_SCOPE;
+      pop_scope();
 
       // loop back to the while top
       emit_byte(Code::LOOP);
@@ -633,9 +670,9 @@ class Compiler : private UnCopyable {
 
     // curly block
     if (match(TokenKind::TK_LBRACE)) {
-      PUSH_SCOPE;
+      push_scope();
       finish_block();
-      POP_SCOPE;
+      pop_scope();
       return;
     }
 
@@ -709,7 +746,7 @@ class Compiler : private UnCopyable {
     if (instruction == Code::METHOD_CTOR) {
       method_compiler.emit_byte(Code::POP);
       // the receiver is always stored in the first local slot
-      emit_bytes(Code::LOAD_LOCAL, 0);
+      method_compiler.emit_bytes(Code::LOAD_LOCAL, 0);
     }
     method_compiler.emit_byte(Code::END);
 
@@ -906,9 +943,6 @@ public:
     : parser_(parser)
     , parent_(parent)
     , is_method_(is_method) {
-    if (parent_ != nullptr)
-      fields_ = parent_->fields_;
-    fn_ = FunctionObject::make_function(parser_.get_vm());
   }
 
   ~Compiler(void) {
@@ -916,12 +950,20 @@ public:
   }
 
   int init_compiler(void) {
+    if (parent_ == nullptr) {
+      scope_depth_ = -1;
+    }
+    else {
+      locals_.push_back(Local());
+      scope_depth_ = 0;
+    }
+
+    if (parent_ != nullptr)
+      fields_ = parent_->fields_;
+    fn_ = FunctionObject::make_function(parser_.get_vm());
+
     if (parent_ == nullptr)
       return -1;
-
-    // define a fake local slot for the receiver so that later locals
-    // have the correct slot indices
-    locals_.add("(this)");
 
     // add the block to the constant table, do this eagerly to it's
     // reachable by the GC
@@ -962,6 +1004,7 @@ FunctionObject* compile(WrenVM& vm, const str_t& source_bytes) {
 
   p.advance();
   Compiler c(p, nullptr, false);
+  c.init_compiler();
 
   return c.compile_function(TokenKind::TK_EOF);
 }
