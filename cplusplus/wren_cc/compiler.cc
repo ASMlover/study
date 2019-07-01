@@ -177,6 +177,15 @@ class Compiler : private UnCopyable {
   // the `CALL_xx` instructions assume a certain maximum number
   static constexpr int kMaxArguments = 16;
 
+  // the maximum number of local variables that can be declared in a single
+  // function, method, or check of top level code. this is the maximum number
+  // of variables in scope at one time, and spans block scopes.
+  //
+  // note that this limitation is also explicit in the bytecode, since [LOAD_LOCAL]
+  // and [STORE_LOCAL] use a single argument byte to identify the local, only
+  // 256 can be in scope at one time.
+  static constexpr int kMaxLocals = 256;
+
   Parser& parser_;
   Compiler* parent_{};
   FunctionObject* fn_{};
@@ -372,6 +381,11 @@ class Compiler : private UnCopyable {
         error("variable is already declared in this scope");
         return i;
       }
+    }
+
+    if (locals_.size() >= kMaxLocals) {
+      error("cannot declare more than %d variables in one scope", kMaxLocals);
+      return -1;
     }
 
     // define a new local variable in the current scope
