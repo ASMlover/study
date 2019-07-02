@@ -340,7 +340,7 @@ public:
   inline Value* value_asptr(void) const { return value_; }
   inline const Value& value_asref(void) const { return *value_; }
   inline void set_value(Value* value) { value_ = value; }
-  inline void set_value(const Value& value) { *value_ = value; }
+  inline void set_value(const Value& value) { value_ = const_cast<Value*>(&value); }
   inline const Value& closed(void) const { return closed_; }
   inline Value* closed_asptr(void) const { return const_cast<Value*>(&closed_); }
   inline const Value& closed_asref(void) const { return closed_; }

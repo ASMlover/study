@@ -50,6 +50,14 @@ FunctionObject* TagValue::as_function(void) const {
   return Xt::down<FunctionObject>(as_object());
 }
 
+UpvalueObject* TagValue::as_upvalue(void) const {
+  return Xt::down<UpvalueObject>(as_object());
+}
+
+ClosureObject* TagValue::as_closure(void) const {
+  return Xt::down<ClosureObject>(as_object());
+}
+
 ClassObject* TagValue::as_class(void) const {
   return Xt::down<ClassObject>(as_object());
 }
@@ -90,6 +98,14 @@ ListObject* ObjValue::as_list(void) const {
 
 FunctionObject* ObjValue::as_function(void) const {
   return Xt::down<FunctionObject>(obj_);
+}
+
+UpvalueObject* ObjValue::as_upvalue(void) const {
+  return Xt::down<UpvalueObject>(obj_);
+}
+
+ClosureObject* ObjValue::as_closure(void) const {
+  return Xt::down<ClosureObject>(obj_);
 }
 
 ClassObject* ObjValue::as_class(void) const {
@@ -235,6 +251,61 @@ FunctionObject* FunctionObject::make_function(WrenVM& vm) {
   return o;
 }
 
+UpvalueObject::UpvalueObject(Value* value, UpvalueObject* next) noexcept
+  : BaseObject(ObjType::UPVALUE)
+  , value_(value)
+  , next_(next) {
+}
+
+str_t UpvalueObject::stringify(void) const {
+  ASSERT(false, "upvalues should not be used as first-class object");
+  return "";
+}
+
+void UpvalueObject::gc_mark(WrenVM& vm) {
+  vm.mark_value(closed_);
+}
+
+UpvalueObject* UpvalueObject::make_upvalue(
+    WrenVM& vm, Value* value, UpvalueObject* next) {
+  auto* o = new UpvalueObject(value, next);
+  vm.append_object(o);
+  return o;
+}
+
+ClosureObject::ClosureObject(FunctionObject* fn) noexcept
+  : BaseObject(ObjType::CLOSURE)
+  , fn_(fn) {
+  int num_upvalues = fn_->num_upvalues();
+  if (num_upvalues > 0) {
+    upvalues_ = new UpvalueObject*[num_upvalues];
+    for (int i = 0; i < num_upvalues; ++i)
+      upvalues_[i] = nullptr;
+  }
+}
+
+ClosureObject::~ClosureObject(void) {
+  if (upvalues_ != nullptr)
+    delete [] upvalues_;
+}
+
+str_t ClosureObject::stringify(void) const {
+  std::stringstream ss;
+  ss << "[closure `" << this << "`]";
+  return ss.str();
+}
+
+void ClosureObject::gc_mark(WrenVM& vm) {
+  for (int i = 0; i < fn_->num_upvalues(); ++i)
+    vm.mark_object(upvalues_[i]);
+}
+
+ClosureObject* ClosureObject::make_closure(WrenVM& vm, FunctionObject* fn) {
+  auto* o = new ClosureObject(fn);
+  vm.append_object(o);
+  return o;
+}
+
 ClassObject::ClassObject(void) noexcept
   : BaseObject(ObjType::CLASS) {
 }
@@ -261,7 +332,7 @@ void ClassObject::gc_mark(WrenVM& vm) {
   vm.mark_object(meta_class_);
   for (auto& m : methods_) {
     if (m.type == MethodType::BLOCK)
-      vm.mark_object(m.fn);
+      vm.mark_value(m.fn);
   }
 }
 
