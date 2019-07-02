@@ -69,20 +69,36 @@ void SymbolTable::truncate(int count) {
 
 struct CallFrame {
   int ip{};
-  FunctionObject* fn{};
+  Value fn{}; // the function or closure being executed
   int stack_start{};
 
-  CallFrame(int ip_arg, FunctionObject* fn_arg, int stack_start_arg) noexcept
+  CallFrame(int ip_arg, const Value& fn_arg, int stack_start_arg) noexcept
     : ip(ip_arg), fn(fn_arg), stack_start(stack_start_arg) {
   }
 
-  inline u8_t get_code(int i) const { return fn->get_code(i); }
-  inline const Value& get_constant(int i) const { return fn->get_constant(i); }
+  inline u8_t get_code(int i) const {
+    if (fn.is_function())
+      return fn.as_function()->get_code(i);
+    else
+      return fn.as_closure()->fn()->get_code(i);
+  }
+
+  inline const Value& get_constant(int i) const {
+    if (fn.is_function())
+      return fn.as_function()->get_constant(i);
+    else
+      return fn.as_closure()->fn()->get_constant(i);
+  }
 };
 
 class Fiber : private UnCopyable {
   std::vector<Value> stack_;
   std::vector<CallFrame> frames_;
+
+  // pointer to the first node in the linked list of open upvalues that are
+  // pointing to values still on stack. the head of the list will be the
+  // upvalue closest to the top of stack and then the list works downwards.
+  UpvalueObject* open_upvlaues_{};
 public:
   inline void reset(void) {
     stack_.clear();
@@ -113,7 +129,7 @@ public:
     return v;
   }
 
-  void call_function(FunctionObject* fn, int argc = 0) {
+  void call_function(const Value& fn, int argc = 0) {
     frames_.push_back(CallFrame(0, fn, stack_size() - argc));
   }
 
@@ -125,6 +141,64 @@ public:
   void iter_frames(std::function<void (const CallFrame&)>&& visit) {
     for (auto& c : frames_)
       visit(c);
+  }
+
+  void iter_upvalues(std::function<void (UpvalueObject*)>&& visit) {
+    for (auto* uv = open_upvlaues_; uv != nullptr; uv = uv->next())
+      visit(uv);
+  }
+
+  // capture the local variable in [slot] into an [upvalue], if that local is
+  // already in an upvalue, the existing one will be used. otherwise it will
+  // create a new open upvalue and add it into the fiber's list of upvalues
+  UpvalueObject* capture_upvalue(WrenVM& vm, int slot) {
+    Value* local = &stack_[slot];
+
+    // if there are no open upvalues at all, we must need a new one
+    if (open_upvlaues_ == nullptr) {
+      open_upvlaues_ = UpvalueObject::make_upvalue(vm, local);
+      return open_upvlaues_;
+    }
+
+    UpvalueObject* prev_upvalue = nullptr;
+    UpvalueObject* upvalue = open_upvlaues_;
+
+    // walk towards the bottom of the stack until we find a previously
+    // existing upvalue or pass where it should be
+    while (upvalue != nullptr && upvalue->value() > local) {
+      prev_upvalue = upvalue;
+      upvalue = upvalue->next();
+    }
+    // found an existing upvalue for this local
+    if (upvalue->value() == local)
+      return upvalue;
+
+    // walked past this local on the stack, so there must not be an upvalue
+    // for it already. make a new one and link it in the right place to keep
+    // the list sorted
+    UpvalueObject* created_upvalue = UpvalueObject::make_upvalue(vm, local, upvalue);
+    if (prev_upvalue == nullptr)
+      open_upvlaues_ = created_upvalue;
+    else
+      prev_upvalue->set_next(created_upvalue);
+    return created_upvalue;
+  }
+
+  void close_upvalue(void) {
+    UpvalueObject* upvalue = open_upvlaues_;
+
+    // move the value into the upvalue itself and point the value to it
+    upvalue->set_closed(stack_.back());
+    upvalue->set_value(upvalue->closed_asptr());
+
+    // remove it from the open upvalue list
+    open_upvlaues_ = upvalue->next();
+  }
+
+  void close_upvalues(int slot) {
+    Value* first = &stack_[slot];
+    while (open_upvlaues_ != nullptr && open_upvlaues_->value() >= first)
+      close_upvalue();
   }
 };
 
@@ -175,20 +249,31 @@ void WrenVM::unpin_object(void) {
   pinned_ = pinned_->prev;
 }
 
-Value WrenVM::interpret(FunctionObject* fn) {
+Value WrenVM::interpret(const Value& function) {
   Fiber* fiber = fiber_;
-  fiber->call_function(fn, 0);
+  fiber->call_function(function, 0);
 
 #define PUSH(v) fiber->push(v)
 #define POP()   fiber->pop()
 #define PEEK()  fiber->peek_value()
-#define RDARG() frame->get_code(frame->ip++)
+#define RDARG() fn->get_code(frame->ip++)
 
-  auto* frame = &fiber->peek_frame();
+  CallFrame* frame{};
+  FunctionObject* fn{};
+  ClosureObject* co{};
 
 // use this after a CallFrame has been pushed or popped ti refresh the
 // local variables
-#define LOAD_FRAME()  frame = &fiber->peek_frame()
+#define LOAD_FRAME()\
+  frame = &fiber->peek_frame();\
+  if (frame->fn.is_function()) {\
+    fn = frame->fn.as_function();\
+    co = nullptr;\
+  }\
+  else {\
+    fn = frame->fn.as_closure()->fn();\
+    co = frame->fn.as_closure();\
+  }
 
 #if defined(COMPUTED_GOTOS)
   static void* _dispatch_table[] = {
@@ -205,9 +290,11 @@ Value WrenVM::interpret(FunctionObject* fn) {
 # define DISPATCH()       break
 #endif
 
+  LOAD_FRAME();
+
   Code c;
   INTERPRET_LOOP() {
-    CASE_CODE(CONSTANT): PUSH(frame->get_constant(RDARG())); DISPATCH();
+    CASE_CODE(CONSTANT): PUSH(fn->get_constant(RDARG())); DISPATCH();
     CASE_CODE(NIL): PUSH(nullptr); DISPATCH();
     CASE_CODE(FALSE): PUSH(false); DISPATCH();
     CASE_CODE(TRUE): PUSH(true); DISPATCH();
@@ -245,14 +332,13 @@ Value WrenVM::interpret(FunctionObject* fn) {
       Value method = POP();
       ClassObject* cls = PEEK().as_class();
 
-      FunctionObject* body_fn = method.as_function();
       switch (type) {
       case Code::METHOD_INSTANCE:
-        cls->set_method(symbol, MethodType::BLOCK, body_fn); break;
+        cls->set_method(symbol, MethodType::BLOCK, method); break;
       case Code::METHOD_STATIC:
-        cls->meta_class()->set_method(symbol, MethodType::BLOCK, body_fn); break;
+        cls->meta_class()->set_method(symbol, MethodType::BLOCK, method); break;
       case Code::METHOD_CTOR:
-        cls->meta_class()->set_method(symbol, MethodType::CTOR, body_fn); break;
+        cls->meta_class()->set_method(symbol, MethodType::CTOR, method); break;
       }
 
       DISPATCH();
@@ -272,6 +358,34 @@ Value WrenVM::interpret(FunctionObject* fn) {
 
       DISPATCH();
     }
+    CASE_CODE(CLOSURE):
+    {
+      FunctionObject* prototype = fn->get_constant(RDARG()).as_function();
+      ASSERT(prototype->num_upvalues() > 0,
+          "should not create closure for functions that donot need it");
+
+      // create the closure and push it on the stack before creating upvalues
+      // so that it does not get collected
+      ClosureObject* closure = ClosureObject::make_closure(*this, prototype);
+      PUSH(closure);
+
+      // capture upvalues
+      for (int i = 0; i < prototype->num_upvalues(); ++i) {
+        int is_local = RDARG();
+        int index = RDARG();
+        if (is_local) {
+          // make an new upvalue to close over the parent's local variable
+          closure->set_upvalue(i,
+              fiber->capture_upvalue(*this, frame->stack_start + index));
+        }
+        else {
+          // use the same upvalue as the current call frame
+          closure->set_upvalue(i, co->get_upvalue(index));
+        }
+      }
+
+      DISPATCH();
+    }
     CASE_CODE(LOAD_LOCAL):
     {
       int local = RDARG();
@@ -283,6 +397,26 @@ Value WrenVM::interpret(FunctionObject* fn) {
     {
       int local = RDARG();
       fiber->set_value(frame->stack_start + local, PEEK());
+
+      DISPATCH();
+    }
+    CASE_CODE(LOAD_UPVALUE):
+    {
+      ASSERT(co->has_upvalues(),
+          "should not have LOAD_UPVALUE instruction in non-closure");
+
+      int upvalue = RDARG();
+      PUSH(co->get_upvalue(upvalue)->value_asref());
+
+      DISPATCH();
+    }
+    CASE_CODE(STORE_UPVALUE):
+    {
+      ASSERT(co->has_upvalues(),
+          "should not have STORE_UPVALUE instruction in non-closure");
+
+      int upvalue = RDARG();
+      co->get_upvalue(upvalue)->set_value(POP());
 
       DISPATCH();
     }
@@ -384,7 +518,7 @@ Value WrenVM::interpret(FunctionObject* fn) {
           // store the new instance in the receiver slot so that it can
           // be `this` in the body of the constructor and returned by it
           fiber->set_value(fiber->stack_size() - argc, instance);
-          if (method.fn == nullptr) {
+          if (method.fn.is_nil()) {
             // default constructor, so no body to call, just discard the
             // stack slots for the arguments (but leave one for the instance)
             fiber->resize_stack(fiber->stack_size() - (argc - 1));
@@ -467,7 +601,12 @@ Value WrenVM::interpret(FunctionObject* fn) {
 
       DISPATCH();
     }
-    CASE_CODE(END):
+    CASE_CODE(CLOSE_UPVALUE):
+    {
+      fiber->close_upvalue();
+      DISPATCH();
+    }
+    CASE_CODE(RETURN):
     {
       Value r = POP();
       fiber->pop_frame();
@@ -479,11 +618,22 @@ Value WrenVM::interpret(FunctionObject* fn) {
         PUSH(r);
       else
         fiber->set_value(frame->stack_start, r);
+
+      // close any upvalues still in scope
+      fiber->close_upvalues(frame->stack_start);
+
+      // discard the stack slots for the call frame
       fiber->resize_stack(frame->stack_start + 1);
 
       LOAD_FRAME();
 
       DISPATCH();
+    }
+    CASE_CODE(END):
+    {
+      // a END should always preceded by a RETURN. if we get here, the compiler
+      // generated wrong code
+      ASSERT(false, "should not execute past end of bytecode");
     }
   }
   return nullptr;
@@ -498,8 +648,13 @@ ClassObject* WrenVM::get_class(const Value& val) const {
     case ObjType::STRING: return str_class_;
     case ObjType::LIST: return list_class_;
     case ObjType::FUNCTION: return fn_class_;
+    case ObjType::UPVALUE:
+      ASSERT(false, "upvalues should not be used as first-class objects");
+      return nullptr;
+    case ObjType::CLOSURE: return fn_class_;
     case ObjType::CLASS: return val.as_class()->meta_class();
     case ObjType::INSTANCE: return val.as_instance()->cls();
+    default: ASSERT(false, "unreachable"); return nullptr;
     }
   }
   switch (val.tag()) {
@@ -519,8 +674,13 @@ ClassObject* WrenVM::get_class(const Value& val) const {
     case ObjType::STRING: return str_class_;
     case ObjType::LIST: return list_class_;
     case ObjType::FUNCTION: return fn_class_;
+    case ObjType::UPVALUE:
+      ASSERT(false, "upvalues should not be used as first-class objects");
+      return nullptr;
+    case ObjType::CLOSURE: return fn_class_;
     case ObjType::CLASS: return val.as_class()->meta_class();
     case ObjType::INSTANCE: return val.as_instance()->cls();
+    default: ASSERT(false, "unreachable"); return nullptr;
     }
     break;
   }
@@ -535,7 +695,7 @@ void WrenVM::interpret(const str_t& source_bytes) {
     interpret(fn);
 }
 
-void WrenVM::call_function(Fiber& fiber, FunctionObject* fn, int argc) {
+void WrenVM::call_function(Fiber& fiber, const Value& fn, int argc) {
   fiber.call_function(fn, argc);
 }
 
@@ -547,9 +707,11 @@ void WrenVM::collect(void) {
   for (auto* p = pinned_; p != nullptr; p = p->prev)
     mark_object(p->obj);
   // stack functions
-  fiber_->iter_frames([this](const CallFrame& f) { mark_object(f.fn); });
+  fiber_->iter_frames([this](const CallFrame& f) { mark_value(f.fn); });
   // stack variables
   fiber_->iter_stacks([this](const Value& v) { mark_value(v); });
+  // open upvalues
+  fiber_->iter_upvalues([this](UpvalueObject* uv) { mark_object(uv); });
 
   // collect any unmarked objects
   for (auto it = objects_.begin(); it != objects_.end();) {

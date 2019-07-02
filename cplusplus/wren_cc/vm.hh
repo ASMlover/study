@@ -95,7 +95,7 @@ class WrenVM final : private UnCopyable {
   // is pinned
   Pinned* pinned_{};
 
-  Value interpret(FunctionObject* fn);
+  Value interpret(const Value& fn);
 
   void collect(void);
   void free_object(BaseObject* obj);
@@ -139,7 +139,7 @@ public:
 
   ClassObject* get_class(const Value& val) const;
   void interpret(const str_t& source_bytes);
-  void call_function(Fiber& fiber, FunctionObject* fn, int argc);
+  void call_function(Fiber& fiber, const Value& fn, int argc);
 };
 
 }

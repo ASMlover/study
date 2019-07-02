@@ -58,8 +58,19 @@ CODE(METHOD_CTOR)
 // the new list
 CODE(LIST)
 
+// creates a closure for the function stored at [arg] in the constant table
+//
+// following the function argument is a number of arguments, two for each
+// upvalue. the first is non-zero if the variable being captured is a local
+// and the second is the index of the local or upvalue being captured.
+//
+// pushes the created closure object
+CODE(CLOSURE)
+
 CODE(LOAD_LOCAL)   // push the value in local slot [arg]
 CODE(STORE_LOCAL)  // store the top of the stack in local slot [arg], not pop it
+CODE(LOAD_UPVALUE) // push the value in upvalue [arg]
+CODE(STORE_UPVALUE)// store the top of stack in upvalue [arg], does not pop it
 CODE(LOAD_GLOBAL)  // push the value in global slot [arg]
 CODE(STORE_GLOBAL) // store the top of the stack in global slot [arg], not pop it
 CODE(LOAD_FIELD)   // push the value of field in slot [arg] for current receiver
@@ -98,6 +109,10 @@ CODE(JUMP_IF)      // pop and if not truthy then jump the instruction pointer [a
 CODE(AND)          // if the top of the stack is false jump [arg], or pop and continue
 CODE(OR)           // if the top of the stack if non-false jump [arg], or pop and continue
 CODE(IS)           // pop [a] then [b] and push true if [b] is an instance of [a]
+
+// close the upvalue for the local on the top of the stack, then pop it.
+CODE(CLOSE_UPVALUE)
+CODE(RETURN)       // exit from the current function and return the value on the top of stack
 
 CODE(END)
 
