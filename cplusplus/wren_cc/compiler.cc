@@ -731,9 +731,8 @@ class Compiler : private UnCopyable {
       fn_compiler.finish_block();
     else
       fn_compiler.expression(false);
-    fn_compiler.emit_byte(Code::END);
 
-    emit_bytes(Code::CONSTANT, fn_constant);
+    fn_compiler.finish_compiler(fn_constant);
   }
 
   void method(Code instruction, const SignatureFn& signature) {
@@ -762,12 +761,11 @@ class Compiler : private UnCopyable {
       // the receiver is always stored in the first local slot
       method_compiler.emit_bytes(Code::LOAD_LOCAL, 0);
     }
-    method_compiler.emit_byte(Code::END);
+    method_compiler.finish_compiler(method_constant);
 
     // compile the code to define the method it
     emit_byte(instruction);
     emit_byte(symbol);
-    emit_byte(method_constant);
   }
 
   void assignment(void) {
@@ -984,6 +982,19 @@ public:
     return parent_->add_constant(fn_);
   }
 
+  void finish_compiler(int constant) {
+    // finishes [compiler], which is compiling a function, method or chunk of
+    // top level code. if there is a parent compiler, then this emits code in
+    // the parent compiler to loadd the resulting function
+
+    emit_byte(Code::END); // end the function's code
+    if (parent_ != nullptr) {
+      // int the function that contains this one, load the resulting
+      // function object
+      emit_bytes(Code::CONSTANT, constant);
+    }
+  }
+
   FunctionObject* compile_function(TokenKind end_kind) {
     Pinned pinned;
     parser_.get_vm().pin_object(fn_, &pinned);
@@ -999,7 +1010,7 @@ public:
         break;
       emit_byte(Code::POP);
     }
-    emit_byte(Code::END);
+    finish_compiler(-1);
 
     parser_.get_vm().unpin_object();
     return parser_.had_error() ? nullptr : fn_;

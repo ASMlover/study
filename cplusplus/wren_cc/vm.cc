@@ -242,10 +242,10 @@ Value WrenVM::interpret(FunctionObject* fn) {
     {
       Code type = c;
       int symbol = RDARG();
-      int constant = RDARG();
+      Value method = POP();
       ClassObject* cls = PEEK().as_class();
 
-      FunctionObject* body_fn = frame->get_constant(constant).as_function();
+      FunctionObject* body_fn = method.as_function();
       switch (type) {
       case Code::METHOD_INSTANCE:
         cls->set_method(symbol, MethodType::BLOCK, body_fn); break;
