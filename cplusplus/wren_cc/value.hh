@@ -27,6 +27,7 @@
 #pragma once
 
 #include <functional>
+#include <variant>
 #include <vector>
 #include "common.hh"
 
@@ -283,6 +284,7 @@ class FunctionObject final : public BaseObject {
   FunctionObject(void) noexcept : BaseObject(ObjType::FUNCTION) {}
 public:
   inline int num_upvalues(void) const { return num_upvalues_; }
+  inline int inc_num_upvalues(void) { return num_upvalues_++; }
   inline const u8_t* codes(void) const { return codes_.data(); }
   inline const Value* constants(void) const { return constants_.data(); }
   inline int codes_count(void) const { return Xt::as_type<int>(codes_.size()); }
@@ -376,8 +378,8 @@ public:
 };
 
 class Fiber;
-using PrimitiveFn = Value (*)(WrenVM& vm, Value* args);
-using FiberPrimitiveFn = void (*)(WrenVM& vm, Fiber& fiber, Value* args);
+using PrimitiveFn = std::function<Value (WrenVM&, Value*)>;
+using FiberPrimitiveFn = std::function<void (WrenVM&, Fiber&, Value*)>;
 
 enum class MethodType {
   NONE,     // no method for the given symbol
@@ -393,13 +395,16 @@ enum class MethodType {
 
 struct Method {
   MethodType type{MethodType::NONE};
-  union {
-    PrimitiveFn primitive;
-    FiberPrimitiveFn fiber_primitive;
-    Value fn;
-  };
+  std::variant<PrimitiveFn, FiberPrimitiveFn, Value> m_{};
 
-  Method(void) {}
+  inline const PrimitiveFn& primitive(void) const { return std::get<PrimitiveFn>(m_); }
+  inline void set_primitive(const PrimitiveFn& fn) { m_ = fn; }
+  inline const FiberPrimitiveFn& fiber_primitive(void) const { return std::get<FiberPrimitiveFn>(m_); }
+  inline void set_fiber_primitive(const FiberPrimitiveFn& fn) { m_ = fn; }
+  inline const Value& fn(void) const { return std::get<Value>(m_); }
+  inline void set_fn(const Value& fn) { m_ = fn; }
+
+  Method(void) noexcept {}
 };
 
 class ClassObject final : public BaseObject {
@@ -419,21 +424,21 @@ public:
   inline int num_fields(void) const { return num_fields_; }
   inline int methods_count(void) const { return Xt::as_type<int>(methods_.size()); }
   inline Method& get_method(int i) { return methods_[i]; }
-  inline void set_method(int i, PrimitiveFn fn) {
+  inline void set_method(int i, const PrimitiveFn& fn) {
     methods_[i].type = MethodType::PRIMITIVE;
-    methods_[i].primitive = fn;
+    methods_[i].set_primitive(fn);
   }
-  inline void set_method(int i, FiberPrimitiveFn fn) {
+  inline void set_method(int i, const FiberPrimitiveFn& fn) {
     methods_[i].type = MethodType::FIBER;
-    methods_[i].fiber_primitive = fn;
+    methods_[i].set_fiber_primitive(fn);
   }
   inline void set_method(int i, const Value& fn) {
     methods_[i].type = MethodType::BLOCK;
-    methods_[i].fn = fn;
+    methods_[i].set_fn(fn);
   }
   inline void set_method(int i, MethodType fn_type, const Value& fn) {
     methods_[i].type = fn_type;
-    methods_[i].fn = fn;
+    methods_[i].set_fn(fn);
   }
 
   virtual str_t stringify(void) const override;

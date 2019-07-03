@@ -493,7 +493,7 @@ Value WrenVM::interpret(const Value& function) {
         {
           Value* args = fiber->values_at(fiber->stack_size() - argc);
           // argc +1 to include the receiver since that's in the args array
-          Value result = method.primitive(*this, args);
+          Value result = method.primitive()(*this, args);
 
           fiber->set_value(fiber->stack_size() - argc, result);
           // discard the stack slots for the arguments (but leave one for
@@ -503,11 +503,11 @@ Value WrenVM::interpret(const Value& function) {
       case MethodType::FIBER:
         {
           Value* args = fiber->values_at(fiber->stack_size() - argc);
-          method.fiber_primitive(*this, *fiber, args);
+          method.fiber_primitive()(*this, *fiber, args);
           LOAD_FRAME();
         } break;
       case MethodType::BLOCK:
-        fiber->call_function(method.fn, argc);
+        fiber->call_function(method.fn(), argc);
         LOAD_FRAME();
         break;
       case MethodType::CTOR:
@@ -518,14 +518,14 @@ Value WrenVM::interpret(const Value& function) {
           // store the new instance in the receiver slot so that it can
           // be `this` in the body of the constructor and returned by it
           fiber->set_value(fiber->stack_size() - argc, instance);
-          if (method.fn.is_nil()) {
+          if (method.fn().is_nil()) {
             // default constructor, so no body to call, just discard the
             // stack slots for the arguments (but leave one for the instance)
             fiber->resize_stack(fiber->stack_size() - (argc - 1));
           }
           else {
             // invoke the constructor body
-            fiber->call_function(method.fn, argc);
+            fiber->call_function(method.fn(), argc);
             LOAD_FRAME();
           }
         } break;

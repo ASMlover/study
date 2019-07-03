@@ -332,7 +332,7 @@ void ClassObject::gc_mark(WrenVM& vm) {
   vm.mark_object(meta_class_);
   for (auto& m : methods_) {
     if (m.type == MethodType::BLOCK)
-      vm.mark_value(m.fn);
+      vm.mark_value(m.fn());
   }
 }
 

@@ -39,7 +39,7 @@ static Value _primitive_##fn(WrenVM& vm, Value* args)
 static void _primitive_##fn(WrenVM& vm, Fiber& fiber, Value* args)
 #define DEF_FIBER_NATIVE_FN(fn, argc)\
 static void _primitive_##fn(WrenVM& vm, Fiber& fiber, Value* args) {\
-  vm.call_function(fiber, args[0].as_function(), argc);\
+  vm.call_function(fiber, args[0], argc);\
 }
 
 static int validate_index(const Value& index, int count) {
