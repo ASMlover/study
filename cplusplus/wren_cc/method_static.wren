@@ -1,10 +1,10 @@
 
 class Foo {
-  bar { "on instance" }
-  static bar { "on metaclass" }
+  bar { return "on instance" }
+  static bar { return "on metaclass" }
 
-  bar(arg) { "on instance " + arg }
-  static bar(arg) { "on metaclass " + arg }
+  bar(arg) { return "on instance " + arg }
+  static bar(arg) { return "on metaclass " + arg }
 }
 
 io.write("on metaclass " + "arg") // expect: on metaclass arg

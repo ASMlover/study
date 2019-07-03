@@ -1,7 +1,7 @@
 
 class Foo {
-  bar { this }
-  bar2 { "bar2" }
+  bar { return this }
+  bar2 { return "bar2" }
 }
 
 io.write(Foo.new.bar.bar2) // expect: bar2
