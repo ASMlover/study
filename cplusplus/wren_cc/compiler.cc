@@ -166,8 +166,25 @@ struct Local {
   // in top level code. one is the scope within that, etc.
   int depth{};
 
-  Local(const str_t& n = str_t(), int d = -1) noexcept
-    : name(n), depth(d) {
+  // true if thie local variable is being used as an upvalue
+  bool is_upvalue{};
+
+  Local(const str_t& n = str_t(), int d = -1, bool up = false) noexcept
+    : name(n), depth(d), is_upvalue(up) {
+  }
+};
+
+struct CompilerUpvalue {
+  // true if this upvalue is capturing a local variable from the
+  // enclosing function. false if it's capturing an upvalue
+  bool is_local{};
+
+  // index of the local or upvalue being captured in the enclosing
+  // function
+  int index{};
+
+  CompilerUpvalue(bool local = false, int idx = 0) noexcept
+    : is_local(local), index(idx) {
   }
 };
 
@@ -204,6 +221,10 @@ class Compiler : private UnCopyable {
 
   // the currently in scope local variables
   std::vector<Local> locals_;
+
+  // the upvalues that this function has captured from outer scopes, the
+  // count of them is stored in `fn->num_upvalues()`
+  std::vector<CompilerUpvalue> upvalues_;
 
   inline SymbolTable& vm_methods(void) { return parser_.get_vm().methods(); }
   inline SymbolTable& vm_gsymbols(void) { return parser_.get_vm().gsymbols(); }
@@ -256,14 +277,21 @@ class Compiler : private UnCopyable {
   }
 
   void pop_scope(void) {
-    // closes the last pushed block scope
+    // closes the last pushed block scope. this should only be called in
+    // a statement context where no temporaries are still on the stack
 
     ASSERT(scope_depth_ > -1, "cannot pop top-level scope");
 
-    // pop locals off the stack
     while (!locals_.empty() && locals_.back().depth == scope_depth_) {
+      bool is_upvalue = locals_.back().is_upvalue;
       locals_.pop_back();
-      emit_byte(Code::POP);
+
+      // if the local was closed over, make sure the upvalue gets closed
+      // when it goes out of scope on the stack
+      if (is_upvalue)
+        emit_byte(Code::CLOSE_UPVALUE);
+      else
+        emit_byte(Code::POP);
     }
     --scope_depth_;
   }
@@ -315,6 +343,7 @@ class Compiler : private UnCopyable {
       UNUSED,                                   // KEYWORD(IF, "if")
       INFIX(is, Precedence::IS),                // KEYWORD(IS, "is")
       PREFIX(nil),                              // KEYWORD(NIL, "nil")
+      UNUSED,                                   // KEYWORD(RETURN, "return")
       UNUSED,                                   // KEYWORD(STATIC, "static")
       PREFIX(this_exp),                         // KEYWORD(THIS, "this")
       PREFIX(boolean),                          // KEYWORD(TRUE, "true")
@@ -389,54 +418,124 @@ class Compiler : private UnCopyable {
     }
 
     // define a new local variable in the current scope
-    locals_.push_back(Local(name, scope_depth_));
+    locals_.push_back(Local(name, scope_depth_, false));
     return Xt::as_type<int>(locals_.size() - 1);
   }
 
   void define_variable(int symbol) {
-    // handle top-level global scope
-    if (scope_depth_ == -1) {
-      // it's a global variable, so store the value int the global slot
-      emit_bytes(Code::STORE_GLOBAL, symbol);
-    }
-    else {
-      // it's a local variable, the value is already in the right slot to store
-      // the local, but later code will pop and discard that. to cancel that out
-      // duplicate it now, so that the temporary value will be discarded and
-      // leave the local still on the stack.
-      //
-      //    var a = "value"
-      //    io.write(a)
-      //
-      //    CONSTANT "value"    -> put constant into local slot
-      //    DUP                 -> dup it so the top is a temporary
-      //    POP                 -> discard previous result in sequence
-      //    <code for io.write>
-      //
-      // would be good to either peephole optimize this or be smarted about
-      // generating code for defining local variables to not emit the DUP
-      // sometimes
-      emit_byte(Code::DUP);
-    }
+    // store the variable if it's a local, the result of the initializer
+    // is in the correct slot on the stack already so we are done.
+    if (scope_depth_ >= 0)
+      return;
+
+    // it's a global variable, so store the value int the global slot and
+    // then discard the temporary for the initializer
+    emit_bytes(Code::STORE_GLOBAL, symbol);
+    emit_byte(Code::POP);
   }
 
-  int resolve_local(bool& is_global) {
-    // look up the previously consumed token, which is presumed to be a
-    // TK_IDENTIFIER in the currenr scope to see what identifier it's
-    // bound to. returns the index of the identifier either global or local
-    // scope. returns -1 if not found. sets [is_global] to `true` if the
-    // identifier is in global scope, or `false` if in local.
+  int resolve_local(void) {
+    // attempts to look up the previously consumed name token in the local
+    // variables of [compiler], if found returns its index, otherwise
+    // returns -1
 
     str_t name = parser_.prev().as_string();
 
-    is_global = false;
+    // look it up in the local scopes. look in reverse order so that the
+    // most nested variable is found first and shadows outer ones
     int i = Xt::as_type<int>(locals_.size()) - 1;
     for (; i >= 0; --i) {
       if (locals_[i].name == name)
         return i;
     }
+    return -1;
+  }
 
-    is_global = true;
+  int add_upvalue(bool is_local, int index) {
+    // adds an upvalue to [compiler]'s function with the given properties,
+    // does not add one if an upvalue for that variable is already in the
+    // list. returns the index of the upvalue
+
+    // look for an existing one
+    for (int i = 0; i < fn_->num_upvalues(); ++i) {
+      auto& upvalue = upvalues_[i];
+      if (upvalue.is_local == is_local && upvalue.index == index)
+        return i;
+    }
+
+    // if got here, need add a new upvalue
+    upvalues_.push_back(CompilerUpvalue(is_local, index));
+    return fn_->inc_num_upvalues();
+  }
+
+  int find_upvalue(void) {
+    // attempts to look up the previously consumed name token in the
+    // functions enclosing the one being compiled by [compiler]. if
+    // found, it adds an upvalue for it to this compiler's list of
+    // upvalues and returns its index, if not found, returns -1
+    //
+    // if the name is found outside of the immediately enclosing function
+    // this will flatten the closure and add upvalues to all of the
+    // intermediate functions so that it gets walked down to this one.
+
+    // if out of enclosing functions, it cannot be an upvalue
+    if (parent_ == nullptr)
+      return -1;
+
+    // if it's a local variable in the immediately enclosing function
+    int local = parent_->resolve_local();
+    if (local != -1) {
+      // mark the local as an upvalue so we know to clsoe it when it
+      // goes out of scope
+      parent_->locals_[local].is_upvalue = true;
+      return add_upvalue(true, local);
+    }
+
+    // if it's an upvalue in the immediately enclosing function, in outer
+    // words, if its a local variable in a non-immediately enclosing
+    // funtion. this will `flatten` closures automatically: it will add
+    // upvalues to all of the immediate functions to get from the function
+    // where a local is declared all the way into the possibly deeply
+    // nested function that is closing over it.
+    int upvalue = parent_->find_upvalue();
+    if (upvalue != -1)
+      return add_upvalue(false, upvalue);
+
+    // if got here, walked all the way up the parent chain and could not
+    // find it
+    return -1;
+  }
+
+  enum class ResolvedName {
+    LOCAL,
+    UPVALUE,
+    GLOBAL
+  };
+
+  int resolve_name(ResolvedName& resolved) {
+    // loop up the previously consumed token, which is presumed to be a
+    // TK_IDENTIFIER in the current scope to see what name it is bound to
+    // returns the index of the name either in global or local scope.
+    // returns -1 if not found, sets [resolved] to `ResolvedName`.
+
+    str_t name = parser_.prev().as_string();
+
+    // look it up in the local scope, look in reverse order so that the
+    // most nested variable is found first and shadows outer ones
+    resolved = ResolvedName::LOCAL;
+    int local = resolve_local();
+    if (local != -1)
+      return local;
+
+    // if got here, it's not a local, so lets see if we are closing over
+    // an outer local
+    resolved = ResolvedName::UPVALUE;
+    int upvalue = find_upvalue();
+    if (upvalue != -1)
+      return upvalue;
+
+    // if got here, it was not in a local scope, so try the global scope
+    resolved = ResolvedName::GLOBAL;
     return vm_gsymbols().get(name);
   }
 
@@ -468,7 +567,7 @@ class Compiler : private UnCopyable {
     if (parser_.curr().kind() != TokenKind::TK_RBRACKET) {
       do {
         ++num_elements;
-        assignment();
+        expression();
       } while (match(TokenKind::TK_COMMA));
     }
     consume(TokenKind::TK_RBRACKET, "expect `]` after list elements");
@@ -479,8 +578,8 @@ class Compiler : private UnCopyable {
 
   void variable(bool allow_assignment) {
     // look up the name in the scope chain
-    bool is_global;
-    int index = resolve_local(is_global);
+    ResolvedName resolved;
+    int index = resolve_name(resolved);
     if (index == -1)
       error("undefined variable");
 
@@ -490,20 +589,24 @@ class Compiler : private UnCopyable {
         error("invalid assignment");
 
       // compile the right-hand side
-      statement();
+      expression();
 
-      if (is_global)
-        emit_bytes(Code::STORE_GLOBAL, index);
-      else
-        emit_bytes(Code::STORE_LOCAL, index);
+      switch (resolved) {
+      case ResolvedName::LOCAL: emit_byte(Code::STORE_LOCAL); break;
+      case ResolvedName::UPVALUE: emit_byte(Code::STORE_UPVALUE); break;
+      case ResolvedName::GLOBAL: emit_byte(Code::STORE_GLOBAL); break;
+      }
+      emit_byte(index);
       return;
     }
 
     // otherwise, it's just a variable access
-    if (is_global)
-      emit_bytes(Code::LOAD_GLOBAL, index);
-    else
-      emit_bytes(Code::LOAD_LOCAL, index);
+    switch (resolved) {
+    case ResolvedName::LOCAL: emit_byte(Code::LOAD_LOCAL); break;
+    case ResolvedName::UPVALUE: emit_byte(Code::LOAD_UPVALUE); break;
+    case ResolvedName::GLOBAL: emit_byte(Code::LOAD_GLOBAL); break;
+    }
+    emit_byte(index);
   }
 
   void field(bool allow_assignment) {
@@ -525,7 +628,7 @@ class Compiler : private UnCopyable {
         error("invalid assignment");
 
       // compile the right-hand side
-      statement();
+      expression();
 
       emit_bytes(Code::STORE_FIELD, field);
     }
@@ -549,7 +652,7 @@ class Compiler : private UnCopyable {
       error(msg);
   }
 
-  void definition(void) {
+  void statement(void) {
     if (match(TokenKind::KW_CLASS)) {
       // create a variable to store the class in
       int symbol = declare_variable();
@@ -568,8 +671,6 @@ class Compiler : private UnCopyable {
       // know the value untial we have compiled all the methods to see
       // which fields are used.
       int num_fields_instruction = emit_byte(0xff);
-      // store it in its name
-      define_variable(symbol);
       // compile the method definition
       consume(TokenKind::TK_LBRACE, "expect `{` before class body");
 
@@ -603,25 +704,15 @@ class Compiler : private UnCopyable {
       fn_->set_code(num_fields_instruction, fileds.count());
       fields_ = prev_fields;
 
-      return;
-    }
-
-    if (match(TokenKind::KW_VAR)) {
-      int symbol = declare_variable();
-      consume(TokenKind::TK_EQ, "expect `=` after variable name");
-      // compile the initializer
-      statement();
+      // store it in its name
       define_variable(symbol);
       return;
     }
-    statement();
-  }
 
-  void statement(void) {
     if (match(TokenKind::KW_IF)) {
       // compile the condition
       consume(TokenKind::TK_LPAREN, "expect `(` after `if` keyword");
-      assignment();
+      expression();
       consume(TokenKind::TK_RPAREN, "expect `)` after if condition");
 
       // jump to the else branch if the condition is false
@@ -629,9 +720,7 @@ class Compiler : private UnCopyable {
       int if_jump = emit_byte(0xff);
 
       // compile the then branch
-      push_scope();
-      definition();
-      pop_scope();
+      block();
 
       // jump over the else branch when the if branch is taken
       emit_byte(Code::JUMP);
@@ -639,17 +728,26 @@ class Compiler : private UnCopyable {
 
       patch_jump(if_jump);
       // compile the else branch if thers is one
-      if (match(TokenKind::KW_ELSE)) {
-        push_scope();
-        definition();
-        pop_scope();
-      }
-      else {
-        emit_byte(Code::NIL); // just default to nil
-      }
+      if (match(TokenKind::KW_ELSE))
+        block();
+
       // patch the jump over the else
       patch_jump(else_jump);
+      return;
+    }
 
+    if (match(TokenKind::KW_RETURN)) {
+      expression();
+      emit_byte(Code::RETURN);
+      return;
+    }
+
+    if (match(TokenKind::KW_VAR)) {
+      int symbol = declare_variable();
+      consume(TokenKind::TK_EQ, "expect `=` after variable name");
+      // compile the initializer
+      expression();
+      define_variable(symbol);
       return;
     }
 
@@ -659,16 +757,14 @@ class Compiler : private UnCopyable {
 
       // compile the condition
       consume(TokenKind::TK_LPAREN, "expect `(` after while keyword");
-      assignment();
+      expression();
       consume(TokenKind::TK_RPAREN, "expect `)` after while condition");
 
       emit_byte(Code::JUMP_IF);
       int exit_jump = emit_byte(0xff);
 
       // compile the while body
-      push_scope();
-      definition();
-      pop_scope();
+      block();
 
       // loop back to the while top
       emit_byte(Code::LOOP);
@@ -676,13 +772,26 @@ class Compiler : private UnCopyable {
       emit_byte(loop_offset);
 
       patch_jump(exit_jump);
-
-      // a while loop always evaluates to nil
-      emit_byte(Code::NIL);
       return;
     }
 
-    // curly block
+    block();
+  }
+
+  void expression(void) {
+    parse_precedence(true, Precedence::LOWEST);
+  }
+
+  void grouping(bool allow_assignment) {
+    expression();
+    consume(TokenKind::TK_RPAREN, "expect `)` after expression");
+  }
+
+  void block(void) {
+    // parses a curly block or an expression statement, used in places like
+    // the arms of an if statement where either a single expression or a
+    // curly body is allowd
+
     if (match(TokenKind::TK_LBRACE)) {
       push_scope();
       finish_block();
@@ -690,23 +799,16 @@ class Compiler : private UnCopyable {
       return;
     }
 
-    assignment();
-  }
-
-  void expression(bool allow_assignment) {
-    parse_precedence(allow_assignment, Precedence::LOWEST);
-  }
-
-  void grouping(bool allow_assignment) {
-    assignment();
-    consume(TokenKind::TK_RPAREN, "expect `)` after expression");
+    // expression statement
+    expression();
+    emit_byte(Code::POP);
   }
 
   void finish_block(void) {
     // parses a block body, after the initial `{` has been consumed
 
     for (;;) {
-      definition();
+      statement();
 
       if (!match(TokenKind::TK_NL)) {
         consume(TokenKind::TK_RBRACE, "expect `}` after block body");
@@ -714,9 +816,6 @@ class Compiler : private UnCopyable {
       }
       if (match(TokenKind::TK_RBRACE))
         break;
-
-      // discard the result of the previous expression
-      emit_byte(Code::POP);
     }
   }
 
@@ -727,10 +826,16 @@ class Compiler : private UnCopyable {
     str_t dummy_name;
     fn_compiler.parameters(dummy_name);
 
-    if (fn_compiler.match(TokenKind::TK_LBRACE))
+    if (fn_compiler.match(TokenKind::TK_LBRACE)) {
       fn_compiler.finish_block();
-    else
-      fn_compiler.expression(false);
+
+      // implicitly return nil
+      fn_compiler.emit_bytes(Code::NIL, Code::RETURN);
+    }
+    else {
+      fn_compiler.expression();
+      fn_compiler.emit_byte(Code::RETURN);
+    }
 
     fn_compiler.finish_compiler(fn_constant);
   }
@@ -755,22 +860,21 @@ class Compiler : private UnCopyable {
     consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
     method_compiler.finish_block();
 
-    // if it's a constructor, return `this`, not the result of the body
+    // if it's a constructor, return `this`
     if (instruction == Code::METHOD_CTOR) {
-      method_compiler.emit_byte(Code::POP);
       // the receiver is always stored in the first local slot
       method_compiler.emit_bytes(Code::LOAD_LOCAL, 0);
+      method_compiler.emit_byte(Code::RETURN);
+    }
+    else {
+      // end the method's code
+      method_compiler.emit_bytes(Code::NIL, Code::RETURN);
     }
     method_compiler.finish_compiler(method_constant);
 
     // compile the code to define the method it
     emit_byte(instruction);
     emit_byte(symbol);
-  }
-
-  void assignment(void) {
-    // assignment statement
-    expression(true);
   }
 
   void call(bool allow_assignment) {
@@ -789,7 +893,7 @@ class Compiler : private UnCopyable {
           error("cannot pass more than %d arguments to a method", kMaxArguments);
         }
 
-        statement();
+        expression();
 
         name.push_back(' ');
       } while (match(TokenKind::TK_COMMA));
@@ -819,7 +923,7 @@ class Compiler : private UnCopyable {
         error("cannot pass more than %d arguments to a method", kMaxArguments);
       }
 
-      statement();
+      expression();
 
       // add a space in the name for each argument, lets overload by arity
       name.push_back(' ');
@@ -987,11 +1091,29 @@ public:
     // top level code. if there is a parent compiler, then this emits code in
     // the parent compiler to loadd the resulting function
 
-    emit_byte(Code::END); // end the function's code
+    // mark the end of the bytecode, since it may contain multiple early
+    // returns, we cannot rely on `RETURN` to tell use we are at the end.
+    emit_byte(Code::END);
+
+    // in the function that contains this one, load the resulting function
+    // object.
     if (parent_ != nullptr) {
-      // int the function that contains this one, load the resulting
-      // function object
-      emit_bytes(Code::CONSTANT, constant);
+      // if the function has no upvalues, we donot need to create a closure.
+      // we can just load and run the function directly
+      if (fn_->num_upvalues() == 0) {
+        parent_->emit_bytes(Code::CONSTANT, constant);
+      }
+      else {
+        // capture the upvalues in the new closure object.
+        parent_->emit_bytes(Code::CLOSURE, constant);
+
+        // emit a arguments for each upvalue to know whether to capture a
+        // local or an upvalue
+        for (int i = 0; i < fn_->num_upvalues(); ++i) {
+          auto& uv = upvalues_[i];
+          parent_->emit_bytes(uv.is_local ? 1 : 0, uv.index);
+        }
+      }
     }
   }
 
@@ -999,7 +1121,7 @@ public:
     Pinned pinned;
     parser_.get_vm().pin_object(fn_, &pinned);
     for (;;) {
-      definition();
+      statement();
 
       // if there is no newline, it must be the end of the block on the same line
       if (!match(TokenKind::TK_NL)) {
@@ -1008,8 +1130,8 @@ public:
       }
       if (match(end_kind))
         break;
-      emit_byte(Code::POP);
     }
+    emit_bytes(Code::NIL, Code::RETURN);
     finish_compiler(-1);
 
     parser_.get_vm().unpin_object();

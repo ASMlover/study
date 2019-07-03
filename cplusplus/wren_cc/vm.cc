@@ -538,7 +538,7 @@ Value WrenVM::interpret(const Value& function) {
     {
       // the loop body's result is on the top of the stack, since we are
       // looping and running the body again, discard it
-      POP();
+      // POP(); // TODO:
 
       // jump back to the top of the loop
       frame->ip -= RDARG();
