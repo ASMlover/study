@@ -14,6 +14,11 @@
     3. $(LUA_SO): $(SO_OBJS)
         $(CC) -o $@ -shared $? -ldl -lm
 
+    编译v5.3
+    1. git co https://github.com/lua/lua.git
+    2. apt-get install libreadline-dev
+    3. make
+
 
 
 ## **Lua的栈索引**
