@@ -48,6 +48,7 @@ Token Lexer::next_token(void) {
   case ']': return make_token(TokenKind::TK_RBRACKET);
   case '{': return make_token(TokenKind::TK_LBRACE);
   case '}': return make_token(TokenKind::TK_RBRACE);
+  case ';': return make_token(TokenKind::TK_NL);
   case ':': return make_token(TokenKind::TK_COLON);
   case '.': return make_token(TokenKind::TK_DOT);
   case ',': return make_token(TokenKind::TK_COMMA);
