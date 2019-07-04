@@ -92,6 +92,8 @@ struct CallFrame {
 };
 
 class Fiber : private UnCopyable {
+  static constexpr sz_t kDefaultCap = 256;
+
   std::vector<Value> stack_;
   std::vector<CallFrame> frames_;
 
@@ -100,6 +102,10 @@ class Fiber : private UnCopyable {
   // upvalue closest to the top of stack and then the list works downwards.
   UpvalueObject* open_upvlaues_{};
 public:
+  Fiber(void) noexcept {
+    stack_.reserve(kDefaultCap);
+  }
+
   inline void reset(void) {
     stack_.clear();
     frames_.clear();
@@ -170,7 +176,7 @@ public:
       upvalue = upvalue->next();
     }
     // found an existing upvalue for this local
-    if (upvalue->value() == local)
+    if (upvalue != nullptr && upvalue->value() == local)
       return upvalue;
 
     // walked past this local on the stack, so there must not be an upvalue
