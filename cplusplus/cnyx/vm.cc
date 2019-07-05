@@ -82,6 +82,8 @@ public:
 };
 
 VM::VM(void) {
+  stack_.reserve(kDefaultCap);
+
   // define native functions
   define_native("print", [](int argc, Value* args) -> Value {
         for (int i = 0; i < argc; ++i)

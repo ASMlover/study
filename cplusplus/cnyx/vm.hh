@@ -44,6 +44,7 @@ enum class InterpretResult {
 class CallFrame;
 
 class VM : private UnCopyable {
+  static constexpr sz_t kDefaultCap = 256;
   static constexpr sz_t kGCGrowFactor = 2;
   static constexpr sz_t kGCThresholds = (1 << 20);
 
