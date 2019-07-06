@@ -347,6 +347,10 @@ Value WrenVM::interpret(const Value& function) {
         cls->meta_class()->set_method(symbol, MethodType::CTOR, method); break;
       }
 
+      FunctionObject* method_fn = method.is_function()
+        ? method.as_function() : method.as_closure()->fn();
+      cls->bind_method(method_fn);
+
       DISPATCH();
     }
     CASE_CODE(LIST):

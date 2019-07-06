@@ -317,8 +317,86 @@ ClassObject::ClassObject(
   , superclass_(supercls)
   , num_fields_(num_fields) {
   if (superclass_ != nullptr) {
+    num_fields_ += superclass_->num_fields_;
     for (int i = 0; i < kMaxMethods; ++i)
       methods_[i] = superclass_->methods_[i];
+  }
+}
+
+void ClassObject::bind_method(FunctionObject* fn) {
+  int ip = 0;
+  for (;;) {
+    Code c = Xt::as_type<Code>(fn->get_code(ip++));
+    switch (c) {
+    // instructions with no arguments
+    case Code::NIL:
+    case Code::FALSE:
+    case Code::TRUE:
+    case Code::DUP:
+    case Code::POP:
+    case Code::IS:
+    case Code::CLOSE_UPVALUE:
+    case Code::RETURN:
+      break;
+
+    // instructions with one argument
+    case Code::CONSTANT:
+    case Code::CLASS:
+    case Code::SUBCLASS:
+    case Code::LIST:
+    case Code::LOAD_LOCAL:
+    case Code::STORE_LOCAL:
+    case Code::LOAD_UPVALUE:
+    case Code::STORE_UPVALUE:
+    case Code::LOAD_GLOBAL:
+    case Code::STORE_GLOBAL:
+    case Code::CALL_0:
+    case Code::CALL_1:
+    case Code::CALL_2:
+    case Code::CALL_3:
+    case Code::CALL_4:
+    case Code::CALL_5:
+    case Code::CALL_6:
+    case Code::CALL_7:
+    case Code::CALL_8:
+    case Code::CALL_9:
+    case Code::CALL_10:
+    case Code::CALL_11:
+    case Code::CALL_12:
+    case Code::CALL_13:
+    case Code::CALL_14:
+    case Code::CALL_15:
+    case Code::CALL_16:
+    case Code::JUMP:
+    case Code::LOOP:
+    case Code::JUMP_IF:
+    case Code::AND:
+    case Code::OR:
+      ++ip; break;
+
+    // instructions with two arguments
+    case Code::METHOD_INSTANCE:
+    case Code::METHOD_STATIC:
+    case Code::METHOD_CTOR:
+      ip += 2; break;
+
+    case Code::CLOSURE:
+      {
+        int constant = fn->get_code(ip++);
+        FunctionObject* loaded_fn = fn->get_constant(constant).as_function();
+        ip += loaded_fn->num_upvalues();
+      } break;
+
+    case Code::LOAD_FIELD:
+    case Code::STORE_FIELD:
+      {
+        auto num_fields = fn->get_code(ip) + superclass_->num_fields();
+        fn->set_code(ip++, num_fields);
+      } break;
+
+    case Code::END: return;
+    default: ASSERT(false, "unknown instruction"); break;
+    }
   }
 }
 
