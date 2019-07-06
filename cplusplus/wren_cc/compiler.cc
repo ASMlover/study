@@ -121,6 +121,7 @@ public:
       case TokenKind::TK_AMP:
       case TokenKind::TK_AMPAMP:
       case TokenKind::TK_BANG:
+      case TokenKind::TK_TILDE:
       case TokenKind::TK_EQ:
       case TokenKind::TK_LT:
       case TokenKind::TK_GT:
@@ -307,6 +308,7 @@ class Compiler : private UnCopyable {
 #define OPER(prec, name) {RULE(unary_oper), RULE(infix_oper), SIGN(mixed_signature), prec, name}
 #define OPER2(pfn, ifn, prec) {RULE(pfn), RULE(ifn), nullptr, prec, nullptr}
 #define PREFIXOP(name) {RULE(unary_oper), nullptr, SIGN(unary_signature), Precedence::NONE, name}
+#define OP(name) {RULE(unary_oper), RULE(infix_oper), SIGN(mixed_signature), Precedence::TERM, name}
 #define PREFIXNAME {RULE(variable), nullptr, SIGN(parameters), Precedence::NONE, nullptr}
     static const GrammerRule _rules[] = {
       PREFIX(grouping),                         // PUNCTUATOR(LPAREN, "(")
@@ -328,6 +330,7 @@ class Compiler : private UnCopyable {
       UNUSED,                                   // PUNCTUATOR(AMP, "&")
       INFIX(and_expr, Precedence::LOGIC),       // PUNCTUATOR(AMPAMP, "&&")
       PREFIXOP("!"),                            // PUNCTUATOR(BANG, "!")
+      PREFIXOP("~"),                            // PUNCTUATOR(TILDE, "~")
       UNUSED,                                   // PUNCTUATOR(EQ, "=")
       INFIXOP(Precedence::COMPARISON, "< "),    // PUNCTUATOR(LT, "<")
       INFIXOP(Precedence::COMPARISON, "> "),    // PUNCTUATOR(GT, ">")

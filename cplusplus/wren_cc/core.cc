@@ -175,6 +175,12 @@ DEF_NATIVE(numeric_ne) {
   return args[0].as_numeric() != args[1].as_numeric();
 }
 
+DEF_NATIVE(numeric_bitnot) {
+  // bitwise operators always work on 32-bit unsigned int
+  u32_t val = Xt::as_type<u32_t>(args[0].as_numeric());
+  return ~val;
+}
+
 DEF_NATIVE(object_eq) {
   return args[0] == args[1];
 }
@@ -367,6 +373,7 @@ void initialize_core(WrenVM& vm) {
   vm.set_native(vm.num_cls(), "<= ", _primitive_numeric_le);
   vm.set_native(vm.num_cls(), "== ", _primitive_numeric_eq);
   vm.set_native(vm.num_cls(), "!= ", _primitive_numeric_ne);
+  vm.set_native(vm.num_cls(), "~", _primitive_numeric_bitnot);
 
   // vm.set_obj_cls(vm.get_global("Object").as_class());
 
