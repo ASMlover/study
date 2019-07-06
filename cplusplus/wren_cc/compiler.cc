@@ -134,6 +134,7 @@ public:
       case TokenKind::KW_IF:
       case TokenKind::KW_IS:
       case TokenKind::KW_STATIC:
+      case TokenKind::KW_SUPER:
       case TokenKind::KW_VAR:
       case TokenKind::KW_WHILE:
         skip_newlines_ = true; return;
@@ -348,6 +349,7 @@ class Compiler : private UnCopyable {
       PREFIX(nil),                              // KEYWORD(NIL, "nil")
       UNUSED,                                   // KEYWORD(RETURN, "return")
       UNUSED,                                   // KEYWORD(STATIC, "static")
+      UNUSED,                                   // KEYWORD(SUPER, "super")
       PREFIX(this_exp),                         // KEYWORD(THIS, "this")
       PREFIX(boolean),                          // KEYWORD(TRUE, "true")
       UNUSED,                                   // KEYWORD(VAR, "var")
