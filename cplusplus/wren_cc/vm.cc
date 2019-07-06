@@ -542,10 +542,6 @@ Value WrenVM::interpret(const Value& function) {
     CASE_CODE(JUMP): frame->ip += RDARG(); DISPATCH();
     CASE_CODE(LOOP):
     {
-      // the loop body's result is on the top of the stack, since we are
-      // looping and running the body again, discard it
-      // POP(); // TODO:
-
       // jump back to the top of the loop
       frame->ip -= RDARG();
 

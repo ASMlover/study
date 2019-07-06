@@ -79,6 +79,10 @@ DEF_FIBER_NATIVE_FN(fn_call14, 15)
 DEF_FIBER_NATIVE_FN(fn_call15, 16)
 DEF_FIBER_NATIVE_FN(fn_call16, 17)
 
+DEF_NATIVE(nil_tostring) {
+  return StringObject::make_string(vm, "nil");
+}
+
 DEF_NATIVE(bool_tostring) {
   if (args[0].as_boolean())
     return StringObject::make_string(vm, "true");
@@ -357,6 +361,7 @@ void initialize_core(WrenVM& vm) {
   vm.set_native(vm.list_cls(), "[ ]", _primitive_list_subscript);
 
   vm.set_nil_cls(define_class(vm, "Nil", vm.obj_cls()));
+  vm.set_native(vm.nil_cls(), "toString", _primitive_nil_tostring);
 
   vm.set_num_cls(define_class(vm, "Numeric", vm.obj_cls()));
   vm.set_native(vm.num_cls(), "abs", _primitive_numeric_abs);
