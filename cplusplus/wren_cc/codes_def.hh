@@ -37,21 +37,6 @@ CODE(CONSTANT)     // load the constant at index [arg]
 CODE(NIL)          // push `nil` into the stack
 CODE(FALSE)        // push `false` into the stack
 CODE(TRUE)         // push `true` into the stack
-CODE(CLASS)        // define a new empty class and push it into stack
-CODE(SUBCLASS)     // pop a superclass from stack, push a new class that extends it
-
-// add a method for symbol [arg1] with body stored in constant [arg2] to
-// the class on the top of the stack, does not modify the stack
-CODE(METHOD_INSTANCE)
-
-// add a method for symbol [arg1] with body stored in constant [arg2] to
-// the metaclass of the class on the top of stack, does not modify the stack
-CODE(METHOD_STATIC)
-
-// add a constructor method for symbol [arg1] with body stored in constant
-// [arg2] to tthe metaclass of the class on the top of the stack. does not
-// modify the stack
-CODE(METHOD_CTOR)
 
 // create a new list with [arg] elements, the top [arg] values on the stack
 // are the elements in forward order. removes the elements and then pushs
@@ -113,6 +98,21 @@ CODE(IS)           // pop [a] then [b] and push true if [b] is an instance of [a
 // close the upvalue for the local on the top of the stack, then pop it.
 CODE(CLOSE_UPVALUE)
 CODE(RETURN)       // exit from the current function and return the value on the top of stack
+CODE(CLASS)        // define a new empty class and push it into stack
+CODE(SUBCLASS)     // pop a superclass from stack, push a new class that extends it
+
+// add a method for symbol [arg1] with body stored in constant [arg2] to
+// the class on the top of the stack, does not modify the stack
+CODE(METHOD_INSTANCE)
+
+// add a method for symbol [arg1] with body stored in constant [arg2] to
+// the metaclass of the class on the top of stack, does not modify the stack
+CODE(METHOD_STATIC)
+
+// add a constructor method for symbol [arg1] with body stored in constant
+// [arg2] to tthe metaclass of the class on the top of the stack. does not
+// modify the stack
+CODE(METHOD_CTOR)
 
 CODE(END)
 

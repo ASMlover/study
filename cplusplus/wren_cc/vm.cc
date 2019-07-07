@@ -304,55 +304,6 @@ Value WrenVM::interpret(const Value& function) {
     CASE_CODE(NIL): PUSH(nullptr); DISPATCH();
     CASE_CODE(FALSE): PUSH(false); DISPATCH();
     CASE_CODE(TRUE): PUSH(true); DISPATCH();
-    CASE_CODE(CLASS):
-    CASE_CODE(SUBCLASS):
-    {
-      bool is_subclass = c == Code::SUBCLASS;
-      int num_fields = RDARG();
-
-      ClassObject* superclass;
-      if (is_subclass)
-        superclass = POP().as_class();
-      else
-        superclass = obj_class_;
-
-      ClassObject* cls = ClassObject::make_class(*this, superclass, num_fields);
-
-      // assume the first class being defined is Object
-      if (obj_class_ == nullptr)
-        obj_class_ = cls;
-
-      // define `new` method on the metaclass.
-      int new_symbol = methods_.ensure("new");
-      cls->meta_class()->set_method(new_symbol, MethodType::CTOR, nullptr);
-      PUSH(cls);
-
-      DISPATCH();
-    }
-    CASE_CODE(METHOD_INSTANCE):
-    CASE_CODE(METHOD_STATIC):
-    CASE_CODE(METHOD_CTOR):
-    {
-      Code type = c;
-      int symbol = RDARG();
-      Value method = POP();
-      ClassObject* cls = PEEK().as_class();
-
-      switch (type) {
-      case Code::METHOD_INSTANCE:
-        cls->set_method(symbol, MethodType::BLOCK, method); break;
-      case Code::METHOD_STATIC:
-        cls->meta_class()->set_method(symbol, MethodType::BLOCK, method); break;
-      case Code::METHOD_CTOR:
-        cls->meta_class()->set_method(symbol, MethodType::CTOR, method); break;
-      }
-
-      FunctionObject* method_fn = method.is_function()
-        ? method.as_function() : method.as_closure()->fn();
-      cls->bind_method(method_fn);
-
-      DISPATCH();
-    }
     CASE_CODE(LIST):
     {
       int num_elements = RDARG();
@@ -528,16 +479,10 @@ Value WrenVM::interpret(const Value& function) {
           // store the new instance in the receiver slot so that it can
           // be `this` in the body of the constructor and returned by it
           fiber->set_value(fiber->stack_size() - argc, instance);
-          if (method.fn().is_nil()) {
-            // default constructor, so no body to call, just discard the
-            // stack slots for the arguments (but leave one for the instance)
-            fiber->resize_stack(fiber->stack_size() - (argc - 1));
-          }
-          else {
-            // invoke the constructor body
-            fiber->call_function(method.fn(), argc);
-            LOAD_FRAME();
-          }
+
+          // invoke the constructor body
+          fiber->call_function(method.fn(), argc);
+          LOAD_FRAME();
         } break;
       }
 
@@ -632,6 +577,47 @@ Value WrenVM::interpret(const Value& function) {
       fiber->resize_stack(frame->stack_start + 1);
 
       LOAD_FRAME();
+
+      DISPATCH();
+    }
+    CASE_CODE(CLASS):
+    CASE_CODE(SUBCLASS):
+    {
+      bool is_subclass = c == Code::SUBCLASS;
+      int num_fields = RDARG();
+
+      ClassObject* superclass;
+      if (is_subclass)
+        superclass = POP().as_class();
+      else
+        superclass = obj_class_;
+
+      ClassObject* cls = ClassObject::make_class(*this, superclass, num_fields);
+      PUSH(cls);
+
+      DISPATCH();
+    }
+    CASE_CODE(METHOD_INSTANCE):
+    CASE_CODE(METHOD_STATIC):
+    CASE_CODE(METHOD_CTOR):
+    {
+      Code type = c;
+      int symbol = RDARG();
+      Value method = POP();
+      ClassObject* cls = PEEK().as_class();
+
+      switch (type) {
+      case Code::METHOD_INSTANCE:
+        cls->set_method(symbol, MethodType::BLOCK, method); break;
+      case Code::METHOD_STATIC:
+        cls->meta_class()->set_method(symbol, MethodType::BLOCK, method); break;
+      case Code::METHOD_CTOR:
+        cls->meta_class()->set_method(symbol, MethodType::CTOR, method); break;
+      }
+
+      FunctionObject* method_fn = method.is_function()
+        ? method.as_function() : method.as_closure()->fn();
+      cls->bind_method(method_fn);
 
       DISPATCH();
     }

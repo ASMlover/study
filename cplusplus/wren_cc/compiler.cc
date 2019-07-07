@@ -657,6 +657,22 @@ class Compiler : private UnCopyable {
       error(msg);
   }
 
+  void default_constructor(void) {
+    // defines a default constructor method with an empty body
+
+    Compiler ctor_compiler(parser_, this, true);
+    int ctor_constant = ctor_compiler.init_compiler();
+
+    // just return the receiver with is in the first local slot
+    ctor_compiler.emit_bytes(Code::LOAD_LOCAL, 0);
+    ctor_compiler.emit_byte(Code::RETURN);
+
+    ctor_compiler.finish_compiler(ctor_constant);
+
+    // define the constructor method
+    emit_bytes(Code::METHOD_CTOR, vm_methods().ensure("new"));
+  }
+
   void statement(void) {
     if (match(TokenKind::KW_CLASS)) {
       // create a variable to store the class in
@@ -676,14 +692,19 @@ class Compiler : private UnCopyable {
       // know the value untial we have compiled all the methods to see
       // which fields are used.
       int num_fields_instruction = emit_byte(0xff);
-      // compile the method definition
-      consume(TokenKind::TK_LBRACE, "expect `{` before class body");
 
-      // set up a symbol table for the class's fields
+      // set up a symbol table for the class's fields, we'll initially compile
+      // them to slots starting at zero. when the method is bound to the close
+      // the bytecode will be adjusted by [bind_method] to take inherited fields
+      // into account.
       SymbolTable* prev_fields = fields_;
       SymbolTable fileds;
       fields_ = &fileds;
 
+      // classes with no explicity defined constructor get a default one
+      bool has_ctor = false;
+
+      consume(TokenKind::TK_LBRACE, "expect `{` before class body");
       while (!match(TokenKind::TK_RBRACE)) {
         Code instruction = Code::METHOD_INSTANCE;
         if (match(TokenKind::KW_STATIC)) {
@@ -692,6 +713,7 @@ class Compiler : private UnCopyable {
         else if (match(TokenKind::KW_THIS)) {
           // if the method name is prefixed with `this` it's a named constructor
           instruction = Code::METHOD_CTOR;
+          has_ctor = true;
         }
 
         auto& signature = get_rule(parser_.curr().kind()).method;
@@ -704,6 +726,8 @@ class Compiler : private UnCopyable {
         method(instruction, signature);
         consume(TokenKind::TK_NL, "expect newline after definition in class");
       }
+      if (!has_ctor)
+        default_constructor();
 
       // update the class with the number of fields
       fn_->set_code(num_fields_instruction, fileds.count());
