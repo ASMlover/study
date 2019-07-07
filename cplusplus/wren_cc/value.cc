@@ -337,6 +337,7 @@ void ClassObject::bind_method(FunctionObject* fn) {
     case Code::IS:
     case Code::CLOSE_UPVALUE:
     case Code::RETURN:
+    case Code::NEW:
       break;
 
     // instructions with one argument
@@ -394,7 +395,6 @@ void ClassObject::bind_method(FunctionObject* fn) {
     // instructions with two arguments
     case Code::METHOD_INSTANCE:
     case Code::METHOD_STATIC:
-    case Code::METHOD_CTOR:
       ip += 2; break;
 
     case Code::CLOSURE:

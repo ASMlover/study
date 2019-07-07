@@ -422,19 +422,6 @@ Value WrenVM::interpret(const Value& function) {
         fiber->call_function(method.fn(), argc);
         LOAD_FRAME();
         break;
-      case MethodType::CTOR:
-        {
-          Value instance =
-            InstanceObject::make_instance(*this, receiver.as_class());
-
-          // store the new instance in the receiver slot so that it can
-          // be `this` in the body of the constructor and returned by it
-          fiber->set_value(fiber->stack_size() - argc, instance);
-
-          // invoke the constructor body
-          fiber->call_function(method.fn(), argc);
-          LOAD_FRAME();
-        } break;
       case MethodType::NONE:
         std::cerr
           << "receiver: `" << receiver << "` "
@@ -494,19 +481,6 @@ Value WrenVM::interpret(const Value& function) {
         fiber->call_function(method.fn(), argc);
         LOAD_FRAME();
         break;
-      case MethodType::CTOR:
-        {
-          Value instance =
-            InstanceObject::make_instance(*this, receiver.as_class());
-
-          // store the new instance in the receiver slot so that it can be
-          // `this` in the body of the constructor and returned by it
-          fiber->set_value(fiber->stack_size() - argc, instance);
-
-          // invoke the constructor body
-          fiber->call_function(method.fn(), argc);
-          LOAD_FRAME();
-        } break;
       case MethodType::NONE:
         std::cerr
           << "receiver: `" << receiver << "` "
@@ -609,6 +583,18 @@ Value WrenVM::interpret(const Value& function) {
 
       DISPATCH();
     }
+    CASE_CODE(NEW):
+    {
+      // the current receiver is the class itself
+      const Value& receiver = fiber->get_value(frame->stack_start);
+      Value inst = InstanceObject::make_instance(*this, receiver.as_class());
+
+      // store the new instance back in the receiver slot so that now it can
+      // be `this` in the body of the constructor and returned by it
+      fiber->set_value(frame->stack_start, inst);
+
+      DISPATCH();
+    }
     CASE_CODE(LIST):
     {
       int num_elements = RDARG();
@@ -671,7 +657,6 @@ Value WrenVM::interpret(const Value& function) {
     }
     CASE_CODE(METHOD_INSTANCE):
     CASE_CODE(METHOD_STATIC):
-    CASE_CODE(METHOD_CTOR):
     {
       Code type = c;
       int symbol = RDARG();
@@ -683,8 +668,6 @@ Value WrenVM::interpret(const Value& function) {
         cls->set_method(symbol, MethodType::BLOCK, method); break;
       case Code::METHOD_STATIC:
         cls->meta_class()->set_method(symbol, MethodType::BLOCK, method); break;
-      case Code::METHOD_CTOR:
-        cls->meta_class()->set_method(symbol, MethodType::CTOR, method); break;
       }
 
       FunctionObject* method_fn = method.is_function()

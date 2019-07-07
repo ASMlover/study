@@ -386,11 +386,6 @@ enum class MethodType {
   FIBER,    // a built-in method that modifies the fiber directly
   BLOCK,    // a normal user-defined method
 
-  // a constructor, this will be defined on the metaclass, if [fn] is non-nil,
-  // then it's a user-defined constructor and [fn] is the initialization code
-  // otherwise, it's a default constructor
-  CTOR,
-
   NONE,     // no method for the given symbol
 };
 

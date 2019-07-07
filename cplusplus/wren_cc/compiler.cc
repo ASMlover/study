@@ -668,14 +668,17 @@ class Compiler : private UnCopyable {
     Compiler ctor_compiler(parser_, this, true);
     int ctor_constant = ctor_compiler.init_compiler();
 
-    // just return the receiver with is in the first local slot
+    // create the instance of the class
+    ctor_compiler.emit_byte(Code::NEW);
+
+    // return the receiver with is in the first local slot
     ctor_compiler.emit_bytes(Code::LOAD_LOCAL, 0);
     ctor_compiler.emit_byte(Code::RETURN);
 
     ctor_compiler.finish_compiler(ctor_constant);
 
     // define the constructor method
-    emit_bytes(Code::METHOD_CTOR, vm_methods().ensure("new"));
+    emit_bytes(Code::METHOD_STATIC, vm_methods().ensure("new"));
   }
 
   void statement(void) {
@@ -712,13 +715,18 @@ class Compiler : private UnCopyable {
       consume(TokenKind::TK_LBRACE, "expect `{` before class body");
       while (!match(TokenKind::TK_RBRACE)) {
         Code instruction = Code::METHOD_INSTANCE;
+        bool is_ctor = false;
+
         if (match(TokenKind::KW_STATIC)) {
           instruction = Code::METHOD_STATIC;
         }
         else if (match(TokenKind::KW_THIS)) {
           // if the method name is prefixed with `this` it's a named constructor
-          instruction = Code::METHOD_CTOR;
+          is_ctor = true;
           has_ctor = true;
+
+          // constructors are defined on the class
+          instruction = Code::METHOD_STATIC;
         }
 
         auto& signature = get_rule(parser_.curr().kind()).method;
@@ -728,7 +736,7 @@ class Compiler : private UnCopyable {
           error("expect method definition");
           break;
         }
-        method(instruction, signature);
+        method(instruction, is_ctor, signature);
         consume(TokenKind::TK_NL, "expect newline after definition in class");
       }
       if (!has_ctor)
@@ -874,7 +882,7 @@ class Compiler : private UnCopyable {
     fn_compiler.finish_compiler(fn_constant);
   }
 
-  void method(Code instruction, const SignatureFn& signature) {
+  void method(Code instruction, bool is_ctor, const SignatureFn& signature) {
     // compiles a method definition inside a class body
     // consume(TokenKind::TK_IDENTIFIER, "expect method name");
 
@@ -892,10 +900,15 @@ class Compiler : private UnCopyable {
     int symbol = vm_methods().ensure(name);
 
     consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
+
+    // if this is a constructor, create the new instance
+    if (is_ctor)
+      method_compiler.emit_byte(Code::NEW);
+
     method_compiler.finish_block();
 
     // if it's a constructor, return `this`
-    if (instruction == Code::METHOD_CTOR) {
+    if (is_ctor) {
       // the receiver is always stored in the first local slot
       method_compiler.emit_bytes(Code::LOAD_LOCAL, 0);
       method_compiler.emit_byte(Code::RETURN);

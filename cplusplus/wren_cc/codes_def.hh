@@ -104,6 +104,7 @@ CODE(IS)           // pop [a] then [b] and push true if [b] is an instance of [a
 // close the upvalue for the local on the top of the stack, then pop it.
 CODE(CLOSE_UPVALUE)
 CODE(RETURN)       // exit from the current function and return the value on the top of stack
+CODE(NEW)          // create a new instance of receiver, which is assumed to be a class
 
 // create a new list with [arg] elements, the top [arg] values on the stack
 // are the elements in forward order. removes the elements and then pushs
@@ -129,11 +130,6 @@ CODE(METHOD_INSTANCE)
 // add a method for symbol [arg1] with body stored in constant [arg2] to
 // the metaclass of the class on the top of stack, does not modify the stack
 CODE(METHOD_STATIC)
-
-// add a constructor method for symbol [arg1] with body stored in constant
-// [arg2] to tthe metaclass of the class on the top of the stack. does not
-// modify the stack
-CODE(METHOD_CTOR)
 
 CODE(END)
 
