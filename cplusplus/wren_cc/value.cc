@@ -341,9 +341,6 @@ void ClassObject::bind_method(FunctionObject* fn) {
 
     // instructions with one argument
     case Code::CONSTANT:
-    case Code::CLASS:
-    case Code::SUBCLASS:
-    case Code::LIST:
     case Code::LOAD_LOCAL:
     case Code::STORE_LOCAL:
     case Code::LOAD_UPVALUE:
@@ -372,6 +369,9 @@ void ClassObject::bind_method(FunctionObject* fn) {
     case Code::JUMP_IF:
     case Code::AND:
     case Code::OR:
+    case Code::LIST:
+    case Code::CLASS:
+    case Code::SUBCLASS:
       ++ip; break;
 
     // instructions with two arguments

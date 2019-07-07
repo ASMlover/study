@@ -304,49 +304,6 @@ Value WrenVM::interpret(const Value& function) {
     CASE_CODE(NIL): PUSH(nullptr); DISPATCH();
     CASE_CODE(FALSE): PUSH(false); DISPATCH();
     CASE_CODE(TRUE): PUSH(true); DISPATCH();
-    CASE_CODE(LIST):
-    {
-      int num_elements = RDARG();
-      ListObject* list = ListObject::make_list(*this, num_elements);
-      for (int i = 0; i < num_elements; ++i) {
-        list->set_element(i,
-            fiber->get_value(fiber->stack_size() - num_elements + i));
-      }
-      // discard the elements
-      fiber->resize_stack(fiber->stack_size() - num_elements);
-
-      PUSH(list);
-
-      DISPATCH();
-    }
-    CASE_CODE(CLOSURE):
-    {
-      FunctionObject* prototype = fn->get_constant(RDARG()).as_function();
-      ASSERT(prototype->num_upvalues() > 0,
-          "should not create closure for functions that donot need it");
-
-      // create the closure and push it on the stack before creating upvalues
-      // so that it does not get collected
-      ClosureObject* closure = ClosureObject::make_closure(*this, prototype);
-      PUSH(closure);
-
-      // capture upvalues
-      for (int i = 0; i < prototype->num_upvalues(); ++i) {
-        int is_local = RDARG();
-        int index = RDARG();
-        if (is_local) {
-          // make an new upvalue to close over the parent's local variable
-          closure->set_upvalue(i,
-              fiber->capture_upvalue(*this, frame->stack_start + index));
-        }
-        else {
-          // use the same upvalue as the current call frame
-          closure->set_upvalue(i, co->get_upvalue(index));
-        }
-      }
-
-      DISPATCH();
-    }
     CASE_CODE(LOAD_LOCAL):
     {
       int local = RDARG();
@@ -577,6 +534,49 @@ Value WrenVM::interpret(const Value& function) {
       fiber->resize_stack(frame->stack_start + 1);
 
       LOAD_FRAME();
+
+      DISPATCH();
+    }
+    CASE_CODE(LIST):
+    {
+      int num_elements = RDARG();
+      ListObject* list = ListObject::make_list(*this, num_elements);
+      for (int i = 0; i < num_elements; ++i) {
+        list->set_element(i,
+            fiber->get_value(fiber->stack_size() - num_elements + i));
+      }
+      // discard the elements
+      fiber->resize_stack(fiber->stack_size() - num_elements);
+
+      PUSH(list);
+
+      DISPATCH();
+    }
+    CASE_CODE(CLOSURE):
+    {
+      FunctionObject* prototype = fn->get_constant(RDARG()).as_function();
+      ASSERT(prototype->num_upvalues() > 0,
+          "should not create closure for functions that donot need it");
+
+      // create the closure and push it on the stack before creating upvalues
+      // so that it does not get collected
+      ClosureObject* closure = ClosureObject::make_closure(*this, prototype);
+      PUSH(closure);
+
+      // capture upvalues
+      for (int i = 0; i < prototype->num_upvalues(); ++i) {
+        int is_local = RDARG();
+        int index = RDARG();
+        if (is_local) {
+          // make an new upvalue to close over the parent's local variable
+          closure->set_upvalue(i,
+              fiber->capture_upvalue(*this, frame->stack_start + index));
+        }
+        else {
+          // use the same upvalue as the current call frame
+          closure->set_upvalue(i, co->get_upvalue(index));
+        }
+      }
 
       DISPATCH();
     }

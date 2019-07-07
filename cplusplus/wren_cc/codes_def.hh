@@ -38,20 +38,6 @@ CODE(NIL)          // push `nil` into the stack
 CODE(FALSE)        // push `false` into the stack
 CODE(TRUE)         // push `true` into the stack
 
-// create a new list with [arg] elements, the top [arg] values on the stack
-// are the elements in forward order. removes the elements and then pushs
-// the new list
-CODE(LIST)
-
-// creates a closure for the function stored at [arg] in the constant table
-//
-// following the function argument is a number of arguments, two for each
-// upvalue. the first is non-zero if the variable being captured is a local
-// and the second is the index of the local or upvalue being captured.
-//
-// pushes the created closure object
-CODE(CLOSURE)
-
 CODE(LOAD_LOCAL)   // push the value in local slot [arg]
 CODE(STORE_LOCAL)  // store the top of the stack in local slot [arg], not pop it
 CODE(LOAD_UPVALUE) // push the value in upvalue [arg]
@@ -98,6 +84,21 @@ CODE(IS)           // pop [a] then [b] and push true if [b] is an instance of [a
 // close the upvalue for the local on the top of the stack, then pop it.
 CODE(CLOSE_UPVALUE)
 CODE(RETURN)       // exit from the current function and return the value on the top of stack
+
+// create a new list with [arg] elements, the top [arg] values on the stack
+// are the elements in forward order. removes the elements and then pushs
+// the new list
+CODE(LIST)
+
+// creates a closure for the function stored at [arg] in the constant table
+//
+// following the function argument is a number of arguments, two for each
+// upvalue. the first is non-zero if the variable being captured is a local
+// and the second is the index of the local or upvalue being captured.
+//
+// pushes the created closure object
+CODE(CLOSURE)
+
 CODE(CLASS)        // define a new empty class and push it into stack
 CODE(SUBCLASS)     // pop a superclass from stack, push a new class that extends it
 
