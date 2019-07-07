@@ -444,12 +444,6 @@ Value WrenVM::interpret(const Value& function) {
       ClassObject* cls = get_class(receiver);
       auto& method = cls->get_method(symbol);
       switch (method.type) {
-      case MethodType::NONE:
-        std::cerr
-          << "receiver: `" << receiver << "` "
-          << "does not implement method `" << methods_.get_name(symbol) << "`"
-          << std::endl;
-        std::exit(-1); break;
       case MethodType::PRIMITIVE:
         {
           Value* args = fiber->values_at(fiber->stack_size() - argc);
@@ -484,6 +478,12 @@ Value WrenVM::interpret(const Value& function) {
           fiber->call_function(method.fn(), argc);
           LOAD_FRAME();
         } break;
+      case MethodType::NONE:
+        std::cerr
+          << "receiver: `" << receiver << "` "
+          << "does not implement method `" << methods_.get_name(symbol) << "`"
+          << std::endl;
+        std::exit(-1); break;
       }
 
       DISPATCH();

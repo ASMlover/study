@@ -382,7 +382,6 @@ using PrimitiveFn = std::function<Value (WrenVM&, Value*)>;
 using FiberPrimitiveFn = std::function<void (WrenVM&, Fiber&, Value*)>;
 
 enum class MethodType {
-  NONE,     // no method for the given symbol
   PRIMITIVE,// a primitive method implemented in C that immediatelt returns a Value
   FIBER,    // a built-in method that modifies the fiber directly
   BLOCK,    // a normal user-defined method
@@ -391,6 +390,8 @@ enum class MethodType {
   // then it's a user-defined constructor and [fn] is the initialization code
   // otherwise, it's a default constructor
   CTOR,
+
+  NONE,     // no method for the given symbol
 };
 
 struct Method {
