@@ -69,6 +69,26 @@ CODE(CALL_14)
 CODE(CALL_15)
 CODE(CALL_16)
 
+// invoke a superclass method with symbol [arg], the number indicates the
+// number of arguments (not including the receiver)
+CODE(SUPER_0)
+CODE(SUPER_1)
+CODE(SUPER_2)
+CODE(SUPER_3)
+CODE(SUPER_4)
+CODE(SUPER_5)
+CODE(SUPER_6)
+CODE(SUPER_7)
+CODE(SUPER_8)
+CODE(SUPER_9)
+CODE(SUPER_10)
+CODE(SUPER_11)
+CODE(SUPER_12)
+CODE(SUPER_13)
+CODE(SUPER_14)
+CODE(SUPER_15)
+CODE(SUPER_16)
+
 CODE(JUMP)         // jump the instruction pointer [arg] forward
 
 // jump the instruction pointer [arg] backward. pop and discard the

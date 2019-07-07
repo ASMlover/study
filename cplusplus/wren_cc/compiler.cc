@@ -232,9 +232,14 @@ class Compiler : private UnCopyable {
   inline SymbolTable& vm_gsymbols(void) { return parser_.get_vm().gsymbols(); }
 
   void error(const char* format, ...) {
+    const Token& tok = parser_.prev();
     parser_.set_error(true);
-    std::cerr << "[LINE:" << parser_.prev().lineno() << "] - "
-      << "Compile ERROR on `" << parser_.prev().literal() << "` : ";
+    std::cerr << "[LINE:" << tok.lineno() << "] - "
+      << "Compile ERROR on ";
+    if (tok.kind() == TokenKind::TK_NL)
+      std::cerr << "`newline` : ";
+    else
+      std::cerr << "`" << tok.literal() << "` : ";
 
     va_list ap;
     va_start(ap, format);
@@ -349,7 +354,7 @@ class Compiler : private UnCopyable {
       PREFIX(nil),                              // KEYWORD(NIL, "nil")
       UNUSED,                                   // KEYWORD(RETURN, "return")
       UNUSED,                                   // KEYWORD(STATIC, "static")
-      UNUSED,                                   // KEYWORD(SUPER, "super")
+      PREFIX(super_exp),                        // KEYWORD(SUPER, "super")
       PREFIX(this_exp),                         // KEYWORD(THIS, "this")
       PREFIX(boolean),                          // KEYWORD(TRUE, "true")
       UNUSED,                                   // KEYWORD(VAR, "var")
@@ -907,31 +912,7 @@ class Compiler : private UnCopyable {
   }
 
   void call(bool allow_assignment) {
-    str_t name;
-    int argc = 0;
-
-    consume(TokenKind::TK_IDENTIFIER, "expect method name after `.`");
-    name += parser_.prev().as_string();
-    if (match(TokenKind::TK_LPAREN)) {
-      do {
-        // the VM can only handle a certain number of parameters, so check
-        // for this explicitly and give a usable error
-        if (++argc >= kMaxArguments + 1) {
-          // only show an error at exactly `max + 1` and do not break so that
-          // we can keep parsing the parameter list and minimize cascaded errors
-          error("cannot pass more than %d arguments to a method", kMaxArguments);
-        }
-
-        expression();
-
-        name.push_back(' ');
-      } while (match(TokenKind::TK_COMMA));
-      consume(TokenKind::TK_RPAREN, "expect `)` after arguments");
-    }
-    int symbol = vm_methods().ensure(name);
-
-    // compile the method call
-    emit_bytes(Code::CALL_0 + argc, symbol);
+    named_call(allow_assignment, Code::CALL_0);
   }
 
   void subscript(bool allow_assignment) {
@@ -1060,6 +1041,46 @@ class Compiler : private UnCopyable {
       } while (match(TokenKind::TK_COMMA));
       consume(TokenKind::TK_RPAREN, "expect `)` after parameters");
     }
+  }
+
+  void named_call(bool allow_assignment, Code instruction) {
+    // compiles the method name and argument list fot a `<...>.name(...)` call
+
+    // build the method name
+    consume(TokenKind::TK_IDENTIFIER, "expect method name after `.`");
+    str_t name(parser_.prev().as_string());
+
+    // parse the argument list, if any
+    int argc = 0;
+    if (match(TokenKind::TK_LPAREN)) {
+      do {
+        // the vm can only handle a certain number of parameters, so check for
+        // this explicitly and give a usable error
+        if (++argc >= kMaxArguments + 1) {
+          // only show an error at exactly max + 1 and donot break so that we
+          // can keep parsing the parameter list and minimize casaded errors
+          error("cannot pass more than %d arguments to a method",
+              kMaxArguments);
+        }
+
+        expression();
+
+        // add a space in the name for each argument, let's us overload by arity
+        name.push_back(' ');
+      } while (match(TokenKind::TK_COMMA));
+      consume(TokenKind::TK_RPAREN, "expect `)` after arguments");
+    }
+
+    int symbol = vm_methods().ensure(name);
+    emit_bytes(instruction + argc, symbol);
+  }
+
+  void super_exp(bool allow_assignment) {
+    emit_bytes(Code::LOAD_LOCAL, 0);
+
+    consume(TokenKind::TK_DOT, "expect `.` after `super`");
+    // compile the superclass call
+    named_call(allow_assignment, Code::SUPER_0);
   }
 
   void this_exp(bool allow_assignment) {

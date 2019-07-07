@@ -364,6 +364,23 @@ void ClassObject::bind_method(FunctionObject* fn) {
     case Code::CALL_14:
     case Code::CALL_15:
     case Code::CALL_16:
+    case Code::SUPER_0:
+    case Code::SUPER_1:
+    case Code::SUPER_2:
+    case Code::SUPER_3:
+    case Code::SUPER_4:
+    case Code::SUPER_5:
+    case Code::SUPER_6:
+    case Code::SUPER_7:
+    case Code::SUPER_8:
+    case Code::SUPER_9:
+    case Code::SUPER_10:
+    case Code::SUPER_11:
+    case Code::SUPER_12:
+    case Code::SUPER_13:
+    case Code::SUPER_14:
+    case Code::SUPER_15:
+    case Code::SUPER_16:
     case Code::JUMP:
     case Code::LOOP:
     case Code::JUMP_IF:

@@ -445,6 +445,78 @@ Value WrenVM::interpret(const Value& function) {
 
       DISPATCH();
     }
+    CASE_CODE(SUPER_0):
+    CASE_CODE(SUPER_1):
+    CASE_CODE(SUPER_2):
+    CASE_CODE(SUPER_3):
+    CASE_CODE(SUPER_4):
+    CASE_CODE(SUPER_5):
+    CASE_CODE(SUPER_6):
+    CASE_CODE(SUPER_7):
+    CASE_CODE(SUPER_8):
+    CASE_CODE(SUPER_9):
+    CASE_CODE(SUPER_10):
+    CASE_CODE(SUPER_11):
+    CASE_CODE(SUPER_12):
+    CASE_CODE(SUPER_13):
+    CASE_CODE(SUPER_14):
+    CASE_CODE(SUPER_15):
+    CASE_CODE(SUPER_16):
+    {
+      // add one for the implicit receiver argument
+      int argc = c - Code::SUPER_0 + 1;
+      int symbol = RDARG();
+
+      const Value& receiver = fiber->get_value(fiber->stack_size() - argc);
+      ClassObject* cls = get_class(receiver);
+
+      // ignore methods defined on the receiver's immediate class
+      cls  = cls->superclass();
+      auto& method = cls->get_method(symbol);
+      switch (method.type) {
+      case MethodType::PRIMITIVE:
+        {
+          Value* args = fiber->values_at(fiber->stack_size() - argc);
+          Value result = method.primitive()(*this, args);
+
+          fiber->set_value(fiber->stack_size() - argc, result);
+
+          // discard the stack slots for the arguments
+          fiber->resize_stack(fiber->stack_size() - (argc - 1));
+        } break;
+      case MethodType::FIBER:
+        {
+          Value* args = fiber->values_at(fiber->stack_size() - argc);
+          method.fiber_primitive()(*this, *fiber, args);
+          LOAD_FRAME();
+        } break;
+      case MethodType::BLOCK:
+        fiber->call_function(method.fn(), argc);
+        LOAD_FRAME();
+        break;
+      case MethodType::CTOR:
+        {
+          Value instance =
+            InstanceObject::make_instance(*this, receiver.as_class());
+
+          // store the new instance in the receiver slot so that it can be
+          // `this` in the body of the constructor and returned by it
+          fiber->set_value(fiber->stack_size() - argc, instance);
+
+          // invoke the constructor body
+          fiber->call_function(method.fn(), argc);
+          LOAD_FRAME();
+        } break;
+      case MethodType::NONE:
+        std::cerr
+          << "receiver: `" << receiver << "` "
+          << "does not implement method `" << methods_.get_name(symbol) << "`"
+          << std::endl;
+        std::exit(-1); break;
+      }
+
+      DISPATCH();
+    }
     CASE_CODE(JUMP): frame->ip += RDARG(); DISPATCH();
     CASE_CODE(LOOP):
     {
