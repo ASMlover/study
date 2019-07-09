@@ -24,9 +24,9 @@ io.write(123 is Object) // expect: true
 class A {}
 class B is A {}
 class C is B {}
-var a = A.new
-var b = B.new
-var c = C.new
+var a = new A
+var b = new B
+var c = new C
 
 io.write(a is A) // expect: true
 io.write(a is B) // expect: false

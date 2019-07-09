@@ -14,6 +14,6 @@ class C is B {
   }
 }
 
-C.new.foo
+(new C).foo
 // expect: C.foo
 // expect: A.foo

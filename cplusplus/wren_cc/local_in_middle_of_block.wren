@@ -15,4 +15,4 @@ class Foo {
   }
 }
 
-Foo.new.bar
+(new Foo).bar

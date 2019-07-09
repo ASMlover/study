@@ -13,7 +13,7 @@ class Bar is Foo {
   override { io.write("bar") }
 }
 
-var bar = Bar.new
+var bar = new Bar
 bar.methodOnFoo // expect: foo
 bar.methodOnBar // expect: bar
 

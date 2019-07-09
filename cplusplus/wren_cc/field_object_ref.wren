@@ -17,15 +17,15 @@ class Node {
   }
 }
 
-var a = Node.new
+var a = new Node
 a.set(nil, "a", nil)
-var b = Node.new
+var b = new Node
 b.set(nil, "b", nil)
-var c = Node.new
+var c = new Node
 c.set(a, "c", b)
 a = nil
 b = nil
-var d = Node.new
+var d = new Node
 d.set(c, "d", nil)
 c = nil
 d.write

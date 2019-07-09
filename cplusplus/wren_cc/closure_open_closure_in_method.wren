@@ -7,5 +7,5 @@
     }
   }
 
-  Foo.new.method // expect: local
+  (new Foo).method // expect: local
 }

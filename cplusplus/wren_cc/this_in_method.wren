@@ -4,4 +4,4 @@ class Foo {
   bar2 { return "bar2" }
 }
 
-io.write(Foo.new.bar.bar2) // expect: bar2
+io.write((new Foo).bar.bar2) // expect: bar2

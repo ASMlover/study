@@ -1,6 +1,6 @@
 
 class Toggle {
-  this new(startState) {
+  new(startState) {
     _state = startState
   }
 
@@ -13,7 +13,8 @@ class Toggle {
 }
 
 class NthToggle is Toggle {
-  this new(startState, maxCounter) super.new(startState) {
+  new(startState, maxCounter) {
+    super(startState)
     _countMax = maxCounter
     _count = 0
   }
@@ -32,7 +33,7 @@ var start = OS.clock
 var n = 100000
 var i = 0
 var val = true
-var toggle = Toggle.new(val)
+var toggle = new Toggle(val)
 
 while (i < n) {
   val = toggle.activate.value
@@ -41,7 +42,7 @@ while (i < n) {
 io.write(toggle.value)
 
 val = true
-var ntoggle = NthToggle.new(val, 3)
+var ntoggle = new NthToggle(val, 3)
 
 i = 0
 while (i < n) {

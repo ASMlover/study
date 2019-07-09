@@ -17,7 +17,7 @@ class Foo {
   }
 }
 
-var foo = Foo.new
+var foo = new Foo
 foo.set(1, 2, 3, 4, 5)
 foo.write
 // expect: 1

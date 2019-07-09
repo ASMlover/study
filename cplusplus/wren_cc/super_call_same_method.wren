@@ -12,6 +12,6 @@ class Derived is Base {
   }
 }
 
-Derived.new.foo
+(new Derived).foo
 // expect: Derived.foo
 // expect: Base.foo
