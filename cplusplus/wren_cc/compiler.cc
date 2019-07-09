@@ -1088,7 +1088,24 @@ class Compiler : private UnCopyable {
     emit_bytes(instruction + argc, symbol);
   }
 
+  bool is_inside_method(void) {
+    // returns true if [compiler] is compiling a chunk of code that is either
+    // directly or indirectly contained in a method for a class
+
+    auto* c = this;
+    // walk up the parent chain to see if there is an enclosing method
+    while (c != nullptr) {
+      if (c->is_method_)
+        return true;
+      c = c->parent_;
+    }
+    return false;
+  }
+
   void super_exp(bool allow_assignment) {
+    if (!is_inside_method())
+      error("cannot use `super` outside of a method");
+
     emit_bytes(Code::LOAD_LOCAL, 0);
 
     consume(TokenKind::TK_DOT, "expect `.` after `super`");
@@ -1097,18 +1114,7 @@ class Compiler : private UnCopyable {
   }
 
   void this_exp(bool allow_assignment) {
-    // walk up the parent chain to see if there is an enclosing method
-    Compiler* this_compiler = this;
-    bool inside_method = false;
-    while (this_compiler != nullptr) {
-      if (this_compiler->is_method_) {
-        inside_method = true;
-        break;
-      }
-      this_compiler = this_compiler->parent_;
-    }
-
-    if (!inside_method) {
+    if (!is_inside_method()) {
       error("cannot use `this` outside of a method");
       return;
     }
