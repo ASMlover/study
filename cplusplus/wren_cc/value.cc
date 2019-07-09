@@ -433,7 +433,12 @@ void ClassObject::gc_mark(WrenVM& vm) {
 
 ClassObject* ClassObject::make_class(
     WrenVM& vm, ClassObject* superclass, int num_fields) {
-  auto* meta_class = new ClassObject(nullptr, vm.class_cls(), 0);
+  ClassObject* meta_superclass;
+  if (superclass == vm.obj_cls())
+    meta_superclass = vm.class_cls();
+  else
+    meta_superclass = superclass->meta_class();
+  auto* meta_class = new ClassObject(nullptr, meta_superclass, 0);
   auto* o = new ClassObject(meta_class, superclass, num_fields);
   vm.append_object(o);
   return o;

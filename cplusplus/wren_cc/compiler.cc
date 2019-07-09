@@ -899,14 +899,35 @@ class Compiler : private UnCopyable {
     signature(&method_compiler, name);
     int symbol = vm_methods().ensure(name);
 
+    if (is_ctor) {
+      // see if there is a superclass constructor call, which comes before
+      // the open `{`
+      if (match(TokenKind::KW_SUPER)) {
+        // push a copy of the class onto the stack so it can be the receiver
+        // for the superclass constructor call
+        method_compiler.emit_bytes(Code::LOAD_LOCAL, 0);
+
+        consume(TokenKind::TK_DOT, "expect `.` after `super`");
+
+        // compile the superclass call
+        method_compiler.named_call(false, Code::SUPER_0);
+
+        // the superclass call with return the new instance, so store it back
+        // into slot [0] to replace the receiver with the new object
+        method_compiler.emit_bytes(Code::STORE_LOCAL, 0);
+
+        // remove it from the stack
+        method_compiler.emit_byte(Code::POP);
+      }
+      else {
+        // otherwise just create the new instance
+        method_compiler.emit_byte(Code::NEW);
+      }
+    }
+
     consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
 
-    // if this is a constructor, create the new instance
-    if (is_ctor)
-      method_compiler.emit_byte(Code::NEW);
-
     method_compiler.finish_block();
-
     // if it's a constructor, return `this`
     if (is_ctor) {
       // the receiver is always stored in the first local slot
