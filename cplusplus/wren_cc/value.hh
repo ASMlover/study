@@ -438,6 +438,7 @@ public:
   }
 
   void bind_method(FunctionObject* fn);
+  void bind_method(int i, int method_type, const Value& fn);
 
   virtual str_t stringify(void) const override;
   virtual void gc_mark(WrenVM& vm) override;

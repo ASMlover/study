@@ -764,17 +764,20 @@ class Compiler : private UnCopyable {
       // compile the then branch
       block();
 
-      // jump over the else branch when the if branch is taken
-      emit_byte(Code::JUMP);
-      int else_jump = emit_byte(0xff);
+      if (match(TokenKind::KW_ELSE)) {
+        // jump over the else branch when the if branch is taken
+        emit_byte(Code::JUMP);
+        int else_jump = emit_byte(0xff);
 
-      patch_jump(if_jump);
-      // compile the else branch if thers is one
-      if (match(TokenKind::KW_ELSE))
+        patch_jump(if_jump);
         block();
 
-      // patch the jump over the else
-      patch_jump(else_jump);
+        // patch the jump over the else
+        patch_jump(else_jump);
+      }
+      else {
+        patch_jump(if_jump);
+      }
       return;
     }
 

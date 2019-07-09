@@ -417,6 +417,23 @@ void ClassObject::bind_method(FunctionObject* fn) {
   }
 }
 
+void ClassObject::bind_method(int i, int method_type, const Value& fn) {
+  FunctionObject* method_fn = fn.is_function()
+    ? fn.as_function() : fn.as_closure()->fn();
+
+  // methods are always bound against the class, and not the metaclass, even
+  // for static methods, so that constructors (which are static) get bound
+  // like instance methods
+  bind_method(method_fn);
+
+  switch (Xt::as_type<Code>(method_type)) {
+  case Code::METHOD_INSTANCE:
+    set_method(i, MethodType::BLOCK, fn); break;
+  case Code::METHOD_STATIC:
+    meta_class_->set_method(i, MethodType::BLOCK, fn); break;
+  }
+}
+
 str_t ClassObject::stringify(void) const {
   std::stringstream ss;
   ss << "[class `" << this << "`]";

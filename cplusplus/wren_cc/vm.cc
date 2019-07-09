@@ -658,21 +658,10 @@ Value WrenVM::interpret(const Value& function) {
     CASE_CODE(METHOD_INSTANCE):
     CASE_CODE(METHOD_STATIC):
     {
-      Code type = c;
       int symbol = RDARG();
       Value method = POP();
       ClassObject* cls = PEEK().as_class();
-
-      switch (type) {
-      case Code::METHOD_INSTANCE:
-        cls->set_method(symbol, MethodType::BLOCK, method); break;
-      case Code::METHOD_STATIC:
-        cls->meta_class()->set_method(symbol, MethodType::BLOCK, method); break;
-      }
-
-      FunctionObject* method_fn = method.is_function()
-        ? method.as_function() : method.as_closure()->fn();
-      cls->bind_method(method_fn);
+      cls->bind_method(symbol, Xt::as_type<int>(c), method);
 
       DISPATCH();
     }
