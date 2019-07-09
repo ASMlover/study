@@ -193,6 +193,12 @@ DEF_NATIVE(object_ne) {
   return args[0] != args[1];
 }
 
+DEF_NATIVE(object_new) {
+  // this is the default argument-less constructor that all objects
+  // inherit. it just returns `this`
+  return args[0];
+}
+
 DEF_NATIVE(object_type) {
   return vm.get_class(args[0]);
 }
@@ -324,6 +330,7 @@ void initialize_core(WrenVM& vm) {
   vm.set_obj_cls(define_class(vm, "Object", nullptr));
   vm.set_native(vm.obj_cls(), "== ", _primitive_object_eq);
   vm.set_native(vm.obj_cls(), "!= ", _primitive_object_ne);
+  vm.set_native(vm.obj_cls(), "new", _primitive_object_new);
   vm.set_native(vm.obj_cls(), "type", _primitive_object_type);
 
   // the "Class" class is the superclass of all metaclasses

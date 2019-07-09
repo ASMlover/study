@@ -585,13 +585,9 @@ Value WrenVM::interpret(const Value& function) {
     }
     CASE_CODE(NEW):
     {
-      // the current receiver is the class itself
-      const Value& receiver = fiber->get_value(frame->stack_start);
-      Value inst = InstanceObject::make_instance(*this, receiver.as_class());
-
-      // store the new instance back in the receiver slot so that now it can
-      // be `this` in the body of the constructor and returned by it
-      fiber->set_value(frame->stack_start, inst);
+      // handle object not being a class
+      ClassObject* cls = POP().as_class();
+      PUSH(InstanceObject::make_instance(*this, cls));
 
       DISPATCH();
     }

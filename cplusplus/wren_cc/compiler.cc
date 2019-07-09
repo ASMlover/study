@@ -133,6 +133,7 @@ public:
       case TokenKind::KW_ELSE:
       case TokenKind::KW_IF:
       case TokenKind::KW_IS:
+      case TokenKind::KW_NEW:
       case TokenKind::KW_STATIC:
       case TokenKind::KW_SUPER:
       case TokenKind::KW_VAR:
@@ -214,12 +215,15 @@ class Compiler : private UnCopyable {
   // currently inside a class
   SymbolTable* fields_{};
 
-  bool is_method_{}; // true if the function being compiled is a method
-
   // the current level of block scope nesting, where zero is no nesting.
   // a -1 here means top-level code is being compiled and thers is no block
   // scope in effect at all. any variables declared will be global
   int scope_depth_{-1};
+
+  // name of the method this compiler is compiling, or `empty` if this
+  // compiler is not for a method. note that this is just the bare method
+  // name and not its full signature
+  str_t method_name_;
 
   // the currently in scope local variables
   std::vector<Local> locals_;
@@ -316,6 +320,7 @@ class Compiler : private UnCopyable {
 #define PREFIXOP(name) {RULE(unary_oper), nullptr, SIGN(unary_signature), Precedence::NONE, name}
 #define OP(name) {RULE(unary_oper), RULE(infix_oper), SIGN(mixed_signature), Precedence::TERM, name}
 #define PREFIXNAME {RULE(variable), nullptr, SIGN(parameters), Precedence::NONE, nullptr}
+#define NEWOP(fn) {RULE(fn), nullptr, SIGN(ctor_signature), Precedence::NONE, nullptr}
     static const GrammerRule _rules[] = {
       PREFIX(grouping),                         // PUNCTUATOR(LPAREN, "(")
       UNUSED,                                   // PUNCTUATOR(RPAREN, ")")
@@ -351,6 +356,7 @@ class Compiler : private UnCopyable {
       PREFIX(function),                         // KEYWORD(FN, "fn")
       UNUSED,                                   // KEYWORD(IF, "if")
       INFIX(is, Precedence::IS),                // KEYWORD(IS, "is")
+      NEWOP(new_exp),                           // KEYWORD(NEW, "new")
       PREFIX(nil),                              // KEYWORD(NIL, "nil")
       UNUSED,                                   // KEYWORD(RETURN, "return")
       UNUSED,                                   // KEYWORD(STATIC, "static")
@@ -662,25 +668,6 @@ class Compiler : private UnCopyable {
       error(msg);
   }
 
-  void default_constructor(void) {
-    // defines a default constructor method with an empty body
-
-    Compiler ctor_compiler(parser_, this, true);
-    int ctor_constant = ctor_compiler.init_compiler();
-
-    // create the instance of the class
-    ctor_compiler.emit_byte(Code::NEW);
-
-    // return the receiver with is in the first local slot
-    ctor_compiler.emit_bytes(Code::LOAD_LOCAL, 0);
-    ctor_compiler.emit_byte(Code::RETURN);
-
-    ctor_compiler.finish_compiler(ctor_constant);
-
-    // define the constructor method
-    emit_bytes(Code::METHOD_STATIC, vm_methods().ensure("new"));
-  }
-
   void statement(void) {
     if (match(TokenKind::KW_CLASS)) {
       // create a variable to store the class in
@@ -709,9 +696,6 @@ class Compiler : private UnCopyable {
       SymbolTable fileds;
       fields_ = &fileds;
 
-      // classes with no explicity defined constructor get a default one
-      bool has_ctor = false;
-
       consume(TokenKind::TK_LBRACE, "expect `{` before class body");
       while (!match(TokenKind::TK_RBRACE)) {
         Code instruction = Code::METHOD_INSTANCE;
@@ -720,13 +704,9 @@ class Compiler : private UnCopyable {
         if (match(TokenKind::KW_STATIC)) {
           instruction = Code::METHOD_STATIC;
         }
-        else if (match(TokenKind::KW_THIS)) {
-          // if the method name is prefixed with `this` it's a named constructor
+        else if (parser_.curr().kind() == TokenKind::KW_NEW) {
+          // if the method name is `new` it's a named constructor
           is_ctor = true;
-          has_ctor = true;
-
-          // constructors are defined on the class
-          instruction = Code::METHOD_STATIC;
         }
 
         auto& signature = get_rule(parser_.curr().kind()).method;
@@ -739,8 +719,6 @@ class Compiler : private UnCopyable {
         method(instruction, is_ctor, signature);
         consume(TokenKind::TK_NL, "expect newline after definition in class");
       }
-      if (!has_ctor)
-        default_constructor();
 
       // update the class with the number of fields
       fn_->set_code(num_fields_instruction, fileds.count());
@@ -865,7 +843,7 @@ class Compiler : private UnCopyable {
   }
 
   void function(bool allow_assignment) {
-    Compiler fn_compiler(parser_, this, false);
+    Compiler fn_compiler(parser_, this, "");
     int fn_constant = fn_compiler.init_compiler();
 
     str_t dummy_name;
@@ -887,10 +865,6 @@ class Compiler : private UnCopyable {
 
   void method(Code instruction, bool is_ctor, const SignatureFn& signature) {
     // compiles a method definition inside a class body
-    // consume(TokenKind::TK_IDENTIFIER, "expect method name");
-
-    Compiler method_compiler(parser_, this, true);
-    int method_constant = method_compiler.init_compiler();
 
     // build the method name, the mangled name includes all of the name parts
     // in a mixfix call as well as spaces for every argument.
@@ -899,34 +873,12 @@ class Compiler : private UnCopyable {
     //
     // will have name: "bar  else last"
     str_t name(parser_.prev().as_string());
+
+    Compiler method_compiler(parser_, this, name);
+    int method_constant = method_compiler.init_compiler();
+
     signature(&method_compiler, name);
     int symbol = vm_methods().ensure(name);
-
-    if (is_ctor) {
-      // see if there is a superclass constructor call, which comes before
-      // the open `{`
-      if (match(TokenKind::KW_SUPER)) {
-        // push a copy of the class onto the stack so it can be the receiver
-        // for the superclass constructor call
-        method_compiler.emit_bytes(Code::LOAD_LOCAL, 0);
-
-        consume(TokenKind::TK_DOT, "expect `.` after `super`");
-
-        // compile the superclass call
-        method_compiler.named_call(false, Code::SUPER_0);
-
-        // the superclass call with return the new instance, so store it back
-        // into slot [0] to replace the receiver with the new object
-        method_compiler.emit_bytes(Code::STORE_LOCAL, 0);
-
-        // remove it from the stack
-        method_compiler.emit_byte(Code::POP);
-      }
-      else {
-        // otherwise just create the new instance
-        method_compiler.emit_byte(Code::NEW);
-      }
-    }
 
     consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
 
@@ -935,12 +887,12 @@ class Compiler : private UnCopyable {
     if (is_ctor) {
       // the receiver is always stored in the first local slot
       method_compiler.emit_bytes(Code::LOAD_LOCAL, 0);
-      method_compiler.emit_byte(Code::RETURN);
     }
     else {
-      // end the method's code
-      method_compiler.emit_bytes(Code::NIL, Code::RETURN);
+      // implicitly return nil in case there is no explicit return
+      method_compiler.emit_byte(Code::NIL);
     }
+    method_compiler.emit_byte(Code::RETURN);
     method_compiler.finish_compiler(method_constant);
 
     // compile the code to define the method it
@@ -1056,6 +1008,11 @@ class Compiler : private UnCopyable {
     }
   }
 
+  void ctor_signature(str_t& name) {
+    // add the parameters if there are any
+    parameters(name);
+  }
+
   void parameters(str_t& name) {
     // parse the parameter list, if any
     if (match(TokenKind::TK_LPAREN)) {
@@ -1080,15 +1037,12 @@ class Compiler : private UnCopyable {
     }
   }
 
-  void named_call(bool allow_assignment, Code instruction) {
-    // compiles the method name and argument list fot a `<...>.name(...)` call
-
-    // build the method name
-    consume(TokenKind::TK_IDENTIFIER, "expect method name after `.`");
-    str_t name(parser_.prev().as_string());
+  void method_call(Code instruction, const str_t& method_name) {
+    // compiles an (optional) argument list and then calls it
 
     // parse the argument list, if any
     int argc = 0;
+    str_t name(method_name);
     if (match(TokenKind::TK_LPAREN)) {
       do {
         // the vm can only handle a certain number of parameters, so check for
@@ -1112,6 +1066,16 @@ class Compiler : private UnCopyable {
     emit_bytes(instruction + argc, symbol);
   }
 
+  void named_call(bool allow_assignment, Code instruction) {
+    // compiles the method name and argument list for a `<...>.name(...)` call
+
+    // build the method name
+    consume(TokenKind::TK_IDENTIFIER, "expect method name after `.`");
+    str_t name(parser_.prev().as_string());
+
+    method_call(instruction, name);
+  }
+
   bool is_inside_method(void) {
     // returns true if [compiler] is compiling a chunk of code that is either
     // directly or indirectly contained in a method for a class
@@ -1119,11 +1083,20 @@ class Compiler : private UnCopyable {
     auto* c = this;
     // walk up the parent chain to see if there is an enclosing method
     while (c != nullptr) {
-      if (c->is_method_)
+      if (!c->method_name_.empty())
         return true;
       c = c->parent_;
     }
     return false;
+  }
+
+  void new_exp(bool allow_assignment) {
+    parse_precedence(false, Precedence::CALL);
+
+    // create the instance of the class
+    emit_byte(Code::NEW);
+
+    method_call(Code::CALL_0, "new");
   }
 
   void super_exp(bool allow_assignment) {
@@ -1132,9 +1105,25 @@ class Compiler : private UnCopyable {
 
     emit_bytes(Code::LOAD_LOCAL, 0);
 
-    consume(TokenKind::TK_DOT, "expect `.` after `super`");
-    // compile the superclass call
-    named_call(allow_assignment, Code::SUPER_0);
+    // see if it's a nemd super call, or an unnamed one
+    if (match(TokenKind::TK_DOT)) {
+      // compile the superclass call
+      named_call(allow_assignment, Code::SUPER_0);
+    }
+    else {
+      str_t name;
+      Compiler* this_compiler = this;
+      while (this_compiler != nullptr) {
+        if (!this_compiler->method_name_.empty()) {
+          name = this_compiler->method_name_;
+          break;
+        }
+        this_compiler = this_compiler->parent_;
+      }
+
+      // call the superclass method with the same name
+      method_call(Code::SUPER_0, name);
+    }
   }
 
   void this_exp(bool allow_assignment) {
@@ -1148,10 +1137,10 @@ class Compiler : private UnCopyable {
   }
 public:
   Compiler(Parser& parser,
-      Compiler* parent = nullptr, bool is_method = false) noexcept
+      Compiler* parent = nullptr, const str_t& method_name = "") noexcept
     : parser_(parser)
     , parent_(parent)
-    , is_method_(is_method) {
+    , method_name_(method_name) {
   }
 
   ~Compiler(void) {
@@ -1233,7 +1222,7 @@ public:
 
   FunctionObject* compile_function(
       Parser& p, Compiler* parent, TokenKind end_kind) {
-    Compiler c(p, parent, false);
+    Compiler c(p, parent, "");
     return c.compile_function(end_kind);
   }
 };
@@ -1243,7 +1232,7 @@ FunctionObject* compile(WrenVM& vm, const str_t& source_bytes) {
   Parser p(vm, lex);
 
   p.advance();
-  Compiler c(p, nullptr, false);
+  Compiler c(p, nullptr, "");
   c.init_compiler();
 
   return c.compile_function(TokenKind::TK_EOF);
