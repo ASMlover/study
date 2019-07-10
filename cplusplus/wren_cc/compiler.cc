@@ -319,7 +319,7 @@ class Compiler : private UnCopyable {
 #define OPER2(pfn, ifn, prec) {RULE(pfn), RULE(ifn), nullptr, prec, nullptr}
 #define PREFIXOP(name) {RULE(unary_oper), nullptr, SIGN(unary_signature), Precedence::NONE, name}
 #define OP(name) {RULE(unary_oper), RULE(infix_oper), SIGN(mixed_signature), Precedence::TERM, name}
-#define PREFIXNAME {RULE(variable), nullptr, SIGN(parameters), Precedence::NONE, nullptr}
+#define PREFIXNAME {RULE(variable), nullptr, SIGN(named_signature), Precedence::NONE, nullptr}
 #define NEWOP(fn) {RULE(fn), nullptr, SIGN(ctor_signature), Precedence::NONE, nullptr}
     static const GrammerRule _rules[] = {
       PREFIX(grouping),                         // PUNCTUATOR(LPAREN, "(")
@@ -668,64 +668,74 @@ class Compiler : private UnCopyable {
       error(msg);
   }
 
+  void class_stmt(void) {
+    // compiles a class definition, assumes the `class` token has already
+    // been consumed.
+
+    // create a variable to store the class in
+    int symbol = declare_variable();
+
+    // load the superclass (if there is one)
+    if (match(TokenKind::KW_IS)) {
+      parse_precedence(false, Precedence::CALL);
+      emit_byte(Code::SUBCLASS);
+    }
+    else {
+      // create the empty class
+      emit_byte(Code::CLASS);
+    }
+
+    // store a placeholder for the number of fields argument, we donot
+    // know the value untial we have compiled all the methods to see
+    // which fields are used.
+    int num_fields_instruction = emit_byte(0xff);
+
+    // set up a symbol table for the class's fields, we'll initially compile
+    // them to slots starting at zero. when the method is bound to the close
+    // the bytecode will be adjusted by [bind_method] to take inherited fields
+    // into account.
+    SymbolTable* prev_fields = fields_;
+    SymbolTable fileds;
+    fields_ = &fileds;
+
+    consume(TokenKind::TK_LBRACE, "expect `{` before class body");
+    while (!match(TokenKind::TK_RBRACE)) {
+      Code instruction = Code::METHOD_INSTANCE;
+      bool is_ctor = false;
+
+      if (match(TokenKind::KW_STATIC)) {
+        instruction = Code::METHOD_STATIC;
+      }
+      else if (parser_.curr().kind() == TokenKind::KW_NEW) {
+        // if the method name is `new` it's a named constructor
+        is_ctor = true;
+      }
+
+      auto& signature = get_rule(parser_.curr().kind()).method;
+      parser_.advance();
+
+      if (!signature) {
+        error("expect method definition");
+        break;
+      }
+      method(instruction, is_ctor, signature);
+      consume(TokenKind::TK_NL, "expect newline after definition in class");
+    }
+
+    // update the class with the number of fields
+    fn_->set_code(num_fields_instruction, fileds.count());
+    fields_ = prev_fields;
+
+    // store it in its name
+    define_variable(symbol);
+  }
+
   void statement(void) {
+    // compiles a statement, there can only appear at the top-level or within
+    // curly blocks, unlike expressions, these do not leave a value on the stack
+
     if (match(TokenKind::KW_CLASS)) {
-      // create a variable to store the class in
-      int symbol = declare_variable();
-
-      // load the superclass (if there is one)
-      if (match(TokenKind::KW_IS)) {
-        parse_precedence(false, Precedence::CALL);
-        emit_byte(Code::SUBCLASS);
-      }
-      else {
-        // create the empty class
-        emit_byte(Code::CLASS);
-      }
-
-      // store a placeholder for the number of fields argument, we donot
-      // know the value untial we have compiled all the methods to see
-      // which fields are used.
-      int num_fields_instruction = emit_byte(0xff);
-
-      // set up a symbol table for the class's fields, we'll initially compile
-      // them to slots starting at zero. when the method is bound to the close
-      // the bytecode will be adjusted by [bind_method] to take inherited fields
-      // into account.
-      SymbolTable* prev_fields = fields_;
-      SymbolTable fileds;
-      fields_ = &fileds;
-
-      consume(TokenKind::TK_LBRACE, "expect `{` before class body");
-      while (!match(TokenKind::TK_RBRACE)) {
-        Code instruction = Code::METHOD_INSTANCE;
-        bool is_ctor = false;
-
-        if (match(TokenKind::KW_STATIC)) {
-          instruction = Code::METHOD_STATIC;
-        }
-        else if (parser_.curr().kind() == TokenKind::KW_NEW) {
-          // if the method name is `new` it's a named constructor
-          is_ctor = true;
-        }
-
-        auto& signature = get_rule(parser_.curr().kind()).method;
-        parser_.advance();
-
-        if (!signature) {
-          error("expect method definition");
-          break;
-        }
-        method(instruction, is_ctor, signature);
-        consume(TokenKind::TK_NL, "expect newline after definition in class");
-      }
-
-      // update the class with the number of fields
-      fn_->set_code(num_fields_instruction, fileds.count());
-      fields_ = prev_fields;
-
-      // store it in its name
-      define_variable(symbol);
+      class_stmt();
       return;
     }
 
@@ -1008,6 +1018,22 @@ class Compiler : private UnCopyable {
     }
   }
 
+  void named_signature(str_t& name) {
+    // compiles a method signature for a named method or setter
+
+    if (match(TokenKind::TK_EQ)) {
+      name.push_back('=');
+      name.push_back(' ');
+
+      // parse the value parameter
+      declare_variable();
+    }
+    else {
+      // regular named method with an optional parameter list
+      parameters(name);
+    }
+  }
+
   void ctor_signature(str_t& name) {
     // add the parameters if there are any
     parameters(name);
@@ -1073,7 +1099,21 @@ class Compiler : private UnCopyable {
     consume(TokenKind::TK_IDENTIFIER, "expect method name after `.`");
     str_t name(parser_.prev().as_string());
 
-    method_call(instruction, name);
+    if (match(TokenKind::TK_EQ)) {
+      if (!allow_assignment)
+        error("invalid assignment");
+
+      name.push_back('=');
+      name.push_back(' ');
+
+      expression();
+
+      int symbol = vm_methods().ensure(name);
+      emit_bytes(instruction + 1, symbol);
+    }
+    else {
+      method_call(instruction, name);
+    }
   }
 
   bool is_inside_method(void) {
