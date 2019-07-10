@@ -584,6 +584,9 @@ class Compiler : private UnCopyable {
       do {
         ++num_elements;
         expression();
+
+        // ignore a newline after the element but before the `,` or `]`
+        match(TokenKind::TK_NL);
       } while (match(TokenKind::TK_COMMA));
     }
     consume(TokenKind::TK_RBRACKET, "expect `]` after list elements");
