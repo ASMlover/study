@@ -219,3 +219,16 @@ nmake -f Make_mvc.mak SDK_INCLUDE_DIR="C:\Program Files (x86)\Microsoft SDKs\Win
   dp ; (diff "put") 将当前文件的差异内容复制到另一个文件
   do ; (diff "get") 把另一个文件中的内容复制到当前文件行
 ```
+
+## **多文件替换**
+  * 例如将`*.tt/.cc`文件中的xxx替换为yyy
+```vimscript
+  :args *.tt *.cc
+  :argdo %s/xxx/yyy/gc | update ; update是必须的，表示替换后会写入
+
+  ; 如果想当前目录递归则需要使用
+  :args **/*.tt
+
+  ; 如果只想扫描下一级目录则使用
+  :args */*.tt
+```
