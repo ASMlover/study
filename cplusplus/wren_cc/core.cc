@@ -309,6 +309,16 @@ DEF_NATIVE(list_subscript) {
   return list->get_element(index);
 }
 
+DEF_NATIVE(list_subscript_setter) {
+  ListObject* list = args[0].as_list();
+  int index = validate_index(args[1], list->count());
+  if (index == -1)
+    return nullptr;
+
+  list->set_element(index, args[2]);
+  return args[2];
+}
+
 DEF_NATIVE(io_write) {
   std::cout << args[1] << std::endl;
   return args[1];
@@ -366,6 +376,7 @@ void initialize_core(WrenVM& vm) {
   vm.set_native(vm.list_cls(), "insert  ", _primitive_list_insert);
   vm.set_native(vm.list_cls(), "remove ", _primitive_list_remove);
   vm.set_native(vm.list_cls(), "[ ]", _primitive_list_subscript);
+  vm.set_native(vm.list_cls(), "[ ]=", _primitive_list_subscript_setter);
 
   vm.set_nil_cls(define_class(vm, "Nil", vm.obj_cls()));
   vm.set_native(vm.nil_cls(), "toString", _primitive_nil_tostring);

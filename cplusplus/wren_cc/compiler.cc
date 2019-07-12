@@ -927,14 +927,7 @@ class Compiler : private UnCopyable {
 
     // parse the arguments list
     do {
-      // the VM can only handle a certain number of parameters, so check
-      // for this explicitly and give a usable error
-      if (++argc >= kMaxArguments + 1) {
-        // only show an error at exactly `max + 1` and do not break so that
-        // we can keep parsing the parameter list and minimize cascaded errors
-        error("cannot pass more than %d arguments to a method", kMaxArguments);
-      }
-
+      validate_num_parameters(++argc);
       expression();
 
       // add a space in the name for each argument, lets overload by arity
@@ -942,6 +935,17 @@ class Compiler : private UnCopyable {
     } while (match(TokenKind::TK_COMMA));
     consume(TokenKind::TK_RBRACKET, "expect `]` after subscript arguments");
     name.push_back(']');
+
+    if (match(TokenKind::TK_EQ)) {
+      if (!allow_assignment)
+        error("invalid assignment");
+
+      name.push_back('=');
+
+      // compile the assigned value
+      validate_num_parameters(++argc);
+      expression();
+    }
 
     int symbol = vm_methods().ensure(name);
     // compile the method call
@@ -1042,19 +1046,23 @@ class Compiler : private UnCopyable {
     parameters(name);
   }
 
+  void validate_num_parameters(int argc) {
+    // the VM can only handle a certain number of parameters, so check that
+    // we havenot exceeded that and give a usable error
+
+    if (argc >= kMaxArguments + 1) {
+      // only show an error at exactly max + 1 so that we can keep parsing
+      // the parameters and minimize cascaded errors
+      error("methods cannot have more than %d parameters", kMaxArguments);
+    }
+  }
+
   void parameters(str_t& name) {
     // parse the parameter list, if any
     if (match(TokenKind::TK_LPAREN)) {
       int argc = 0;
       do {
-        // the VM can only handle a certain number of parameters, so
-        // check for this explicitly and give a usable error
-        if (++argc >= kMaxArguments + 1) {
-          // only show an error at exactly `max + 1` and do not break
-          // so that we can keep parsing the parameter list and minimize
-          // cascaded errors
-          error("cannot have more than %d parameters", kMaxArguments);
-        }
+        validate_num_parameters(++argc);
 
         // define a local variable in the method for the parameters
         declare_variable();
@@ -1074,15 +1082,7 @@ class Compiler : private UnCopyable {
     str_t name(method_name);
     if (match(TokenKind::TK_LPAREN)) {
       do {
-        // the vm can only handle a certain number of parameters, so check for
-        // this explicitly and give a usable error
-        if (++argc >= kMaxArguments + 1) {
-          // only show an error at exactly max + 1 and donot break so that we
-          // can keep parsing the parameter list and minimize casaded errors
-          error("cannot pass more than %d arguments to a method",
-              kMaxArguments);
-        }
-
+        validate_num_parameters(++argc);
         expression();
 
         // add a space in the name for each argument, let's us overload by arity
