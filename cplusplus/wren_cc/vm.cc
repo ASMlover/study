@@ -194,7 +194,7 @@ public:
     UpvalueObject* upvalue = open_upvlaues_;
 
     // move the value into the upvalue itself and point the value to it
-    upvalue->set_closed(stack_.back());
+    upvalue->set_closed(upvalue->value_asref());
     upvalue->set_value(upvalue->closed_asptr());
 
     // remove it from the open upvalue list
@@ -568,17 +568,18 @@ Value WrenVM::interpret(const Value& function) {
       if (fiber->empty_frame())
         return r;
 
+      // close any upvalues still in scope
+      fiber->close_upvalues(frame->stack_start);
+
+      // store the result of the block in the first slot, which is where the
+      // caller expects it
       if (fiber->stack_size() <= frame->stack_start)
         PUSH(r);
       else
         fiber->set_value(frame->stack_start, r);
 
-      // close any upvalues still in scope
-      fiber->close_upvalues(frame->stack_start);
-
       // discard the stack slots for the call frame
       fiber->resize_stack(frame->stack_start + 1);
-
       LOAD_FRAME();
 
       DISPATCH();

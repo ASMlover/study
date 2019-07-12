@@ -1175,8 +1175,8 @@ class Compiler : private UnCopyable {
       return;
     }
 
-    // the receiver is always stored in the first local slot
-    emit_bytes(Code::LOAD_LOCAL, 0);
+    // `this` works just like any other lexically scoped variable
+    variable(false);
   }
 public:
   Compiler(Parser& parser,
@@ -1195,7 +1195,10 @@ public:
       scope_depth_ = -1;
     }
     else {
-      locals_.push_back(Local());
+      if (!method_name_.empty())
+        locals_.push_back(Local("this"));
+      else
+        locals_.push_back(Local());
       scope_depth_ = 0;
     }
 
