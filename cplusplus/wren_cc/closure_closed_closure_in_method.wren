@@ -5,7 +5,7 @@ var f = nil
   var local = "local"
   class Foo {
     method {
-      io.write(local)
+      IO.write(local)
     }
   }
 

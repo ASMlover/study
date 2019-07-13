@@ -6,8 +6,8 @@ class Foo {
   }
 
   fooPrint {
-    io.write(_field1)
-    io.write(_field2)
+    IO.write(_field1)
+    IO.write(_field2)
   }
 }
 
@@ -18,8 +18,8 @@ class Bar is Foo {
   }
 
   barPrint {
-    io.write(_field1)
-    io.write(_field2)
+    IO.write(_field1)
+    IO.write(_field2)
   }
 }
 

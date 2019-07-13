@@ -4,4 +4,4 @@ var i = 0
 while ((i = i + 1) <= 1) {
   var a = "in"
 }
-io.write(a) // expect: out
+IO.write(a) // expect: out

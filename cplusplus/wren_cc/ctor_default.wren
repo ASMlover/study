@@ -4,5 +4,5 @@ class Foo {
 }
 
 var foo = new Foo
-io.write(foo is Foo) // expect: true
-io.write(foo.toString) // expect: Foo
+IO.write(foo is Foo) // expect: true
+IO.write(foo.toString) // expect: Foo

@@ -1,6 +1,6 @@
 
 class Foo {
-  write { io.write(_field) }
+  write { IO.write(_field) }
   init { _field = "field-value" }
 }
 

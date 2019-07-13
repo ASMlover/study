@@ -1,5 +1,5 @@
 
-io.write("\"") // expect: "
-io.write("\\") // expect: \
-io.write("(\n)")  // expect: (
+IO.write("\"") // expect: "
+IO.write("\\") // expect: \
+IO.write("(\n)")  // expect: (
                   // expect: )

@@ -2,5 +2,5 @@
 var global = "global"
 
 fn {
-  io.write(global) // expect: global
+  IO.write(global) // expect: global
 }.call

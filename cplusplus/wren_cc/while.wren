@@ -1,7 +1,7 @@
 
 var a = 0
 while (a < 3) {
-  io.write(a)
+  IO.write(a)
   a = a + 1
 }
 // expect: 0
@@ -11,7 +11,7 @@ while (a < 3) {
 // newline after `while`
 var c = 0
 while
-(c < 3) io.write(c = c + 1)
+(c < 3) IO.write(c = c + 1)
 // expect: 1
 // expect: 2
 // expect: 3

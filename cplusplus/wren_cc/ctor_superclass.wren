@@ -1,7 +1,7 @@
 
 class A {
   new(arg) {
-    io.write("A.new " + arg)
+    IO.write("A.new " + arg)
     _field = arg
   }
 
@@ -11,7 +11,7 @@ class A {
 class B is A {
   new(arg1, arg2) {
     super(arg1)
-    io.write("B.new " + arg2)
+    IO.write("B.new " + arg2)
     _field = arg2
   }
 
@@ -21,7 +21,7 @@ class B is A {
 class C is B {
   new {
     super("one", "two")
-    io.write("C.new")
+    IO.write("C.new")
     _field = "c"
   }
 
@@ -29,10 +29,10 @@ class C is B {
 }
 
 var c = new C
-io.write(c is A) // expect: true
-io.write(c is B) // expect: true
-io.write(c is C) // expect: true
+IO.write(c is A) // expect: true
+IO.write(c is B) // expect: true
+IO.write(c is C) // expect: true
 
-io.write(c.aField) // expect: one
-io.write(c.bField) // expect: two
-io.write(c.cField) // expect: c
+IO.write(c.aField) // expect: one
+IO.write(c.bField) // expect: two
+IO.write(c.cField) // expect: c

@@ -1,14 +1,14 @@
 
-// create a local scope for `then` expression
+// create a local scope for `then` expressIO.
 var a = "out"
 if (true) {
   var a = "in"
 }
-io.write(a) // expect: out
+IO.write(a) // expect: out
 
-// create a local scope for `else` expression
+// create a local scope for `else` expressIO.
 var b = "out"
 if (false) "dummy" else {
   var b = "in"
 }
-io.write(b) // expect: out
+IO.write(b) // expect: out

@@ -258,7 +258,7 @@
     var afe = afd
     var aff = afe
 
-    io.write(aff) // expect: value a
+    IO.write(aff) // expect: value a
   }
 
   {
@@ -519,6 +519,6 @@
     var bfe = bfd
     var bff = bfe
 
-    io.write(bff) // expect: value b
+    IO.write(bff) // expect: value b
   }
 }

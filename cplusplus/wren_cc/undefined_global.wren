@@ -1,2 +1,2 @@
 
-io.write(undefined) // expect error
+IO.write(undefined) // expect error

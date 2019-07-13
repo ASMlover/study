@@ -1,14 +1,14 @@
 
 class Outer {
   method {
-    io.write(this.toString) // expect: Outer
+    IO.write(this.toString) // expect: Outer
 
     fn {
-      io.write(this.toString) // expect: Outer
+      IO.write(this.toString) // expect: Outer
 
       class Inner {
         method {
-          io.write(this.toString) // expect: Inner
+          IO.write(this.toString) // expect: Inner
         }
         toString { return "Inner" }
       }

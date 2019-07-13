@@ -10,7 +10,7 @@ class Node {
     if (_lhs is Node) {
       _lhs.write
     }
-    io.write(_val)
+    IO.write(_val)
     if (_rhs is Node) {
     _rhs.write
     }

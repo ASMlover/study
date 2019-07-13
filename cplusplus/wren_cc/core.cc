@@ -410,11 +410,11 @@ void initialize_core(WrenVM& vm) {
   vm.set_native(vm.str_cls(), "[ ]", _primitive_string_subscript);
 
   ClassObject* io_cls = define_class(vm, "IO", vm.obj_cls());
-  vm.set_native(io_cls, "write ", _primitive_io_write);
+  vm.set_native(io_cls->meta_class(), "write ", _primitive_io_write);
 
-  // making this an instance is lame, the only reason we are doing it
-  // is because "IO.write()" looks ugly, maybe just get used to that ?
-  vm.set_global("io", InstanceObject::make_instance(vm, io_cls));
+  /// // making this an instance is lame, the only reason we are doing it
+  /// // is because "IO.write()" looks ugly, maybe just get used to that ?
+  /// vm.set_global("io", InstanceObject::make_instance(vm, io_cls));
 
   ClassObject* os_cls = define_class(vm, "OS", vm.obj_cls());
   vm.set_native(os_cls->meta_class(), "clock", _primitive_os_clock);

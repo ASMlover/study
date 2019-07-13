@@ -3,7 +3,7 @@ var f = nil
 
 fn (param) {
   f = fn {
-    io.write(param)
+    IO.write(param)
   }
 }.call("parameter")
 
