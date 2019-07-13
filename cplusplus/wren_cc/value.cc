@@ -314,13 +314,20 @@ ClassObject::ClassObject(
     ClassObject* meta_class, ClassObject* supercls, int num_fields) noexcept
   : BaseObject(ObjType::CLASS)
   , meta_class_(meta_class)
-  , superclass_(supercls)
   , num_fields_(num_fields) {
-  if (superclass_ != nullptr) {
-    num_fields_ += superclass_->num_fields_;
-    for (int i = 0; i < kMaxMethods; ++i)
-      methods_[i] = superclass_->methods_[i];
-  }
+  if (supercls != nullptr)
+    bind_superclass(supercls);
+}
+
+void ClassObject::bind_superclass(ClassObject* superclass) {
+  ASSERT(superclass != nullptr, "must have superclass");
+
+  superclass_ = superclass;
+  // include the superclass in the total number of fields
+  num_fields_ += superclass->num_fields_;
+  // inherit methods from its superclass
+  for (int i = 0; i < kMaxMethods; ++i)
+    methods_[i] = superclass->methods_[i];
 }
 
 void ClassObject::bind_method(FunctionObject* fn) {
@@ -448,14 +455,21 @@ void ClassObject::gc_mark(WrenVM& vm) {
   }
 }
 
+ClassObject* ClassObject::make_single_class(WrenVM& vm) {
+  auto* o = new ClassObject(nullptr, nullptr);
+  vm.append_object(o);
+  return o;
+}
+
 ClassObject* ClassObject::make_class(
     WrenVM& vm, ClassObject* superclass, int num_fields) {
-  ClassObject* meta_superclass;
+  ClassObject* meta_supercls;
   if (superclass == vm.obj_cls())
-    meta_superclass = vm.class_cls();
+    meta_supercls = vm.class_cls();
   else
-    meta_superclass = superclass->meta_class();
-  auto* meta_class = new ClassObject(nullptr, meta_superclass, 0);
+    meta_supercls = superclass->meta_class();
+  ClassObject* meta_class = new ClassObject(vm.class_cls(), meta_supercls, 0);
+
   auto* o = new ClassObject(meta_class, superclass, num_fields);
   vm.append_object(o);
   return o;

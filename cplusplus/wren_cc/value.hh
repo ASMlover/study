@@ -416,6 +416,7 @@ class ClassObject final : public BaseObject {
       ClassObject* supercls = nullptr, int num_fields = 0) noexcept;
 public:
   inline ClassObject* meta_class(void) const { return meta_class_; }
+  inline void set_meta_class(ClassObject* meta_class) { meta_class_ = meta_class; }
   inline ClassObject* superclass(void) const { return superclass_; }
   inline int num_fields(void) const { return num_fields_; }
   inline int methods_count(void) const { return Xt::as_type<int>(methods_.size()); }
@@ -437,12 +438,14 @@ public:
     methods_[i].set_fn(fn);
   }
 
+  void bind_superclass(ClassObject* superclass);
   void bind_method(FunctionObject* fn);
   void bind_method(int i, int method_type, const Value& fn);
 
   virtual str_t stringify(void) const override;
   virtual void gc_mark(WrenVM& vm) override;
 
+  static ClassObject* make_single_class(WrenVM& vm);
   static ClassObject* make_class(WrenVM& vm,
       ClassObject* superclass = nullptr, int num_fields = 0);
 };

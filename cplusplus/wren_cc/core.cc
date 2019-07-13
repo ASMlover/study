@@ -329,28 +329,40 @@ DEF_NATIVE(os_clock) {
       std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
 }
 
-static ClassObject* define_class(
-    WrenVM& vm, const str_t& name, ClassObject* superclass) {
-  ClassObject* cls = ClassObject::make_class(vm, superclass, 0);
+static ClassObject* define_class(WrenVM& vm, const str_t& name) {
+  ClassObject* cls = ClassObject::make_class(vm, vm.obj_cls(), 0);
   vm.set_global(name, cls);
   return cls;
 }
 
 void initialize_core(WrenVM& vm) {
-  vm.set_obj_cls(define_class(vm, "Object", nullptr));
+  // define the root object class, this has to be done a little specially
+  // because it has no superclass and an unusual metaclass (Class)
+  ClassObject* obj_cls = ClassObject::make_single_class(vm);
+  vm.set_global("Object", obj_cls);
+  vm.set_obj_cls(obj_cls);
+
   vm.set_native(vm.obj_cls(), "== ", _primitive_object_eq);
   vm.set_native(vm.obj_cls(), "!= ", _primitive_object_ne);
   vm.set_native(vm.obj_cls(), "new", _primitive_object_new);
   vm.set_native(vm.obj_cls(), "type", _primitive_object_type);
 
-  // the "Class" class is the superclass of all metaclasses
-  vm.set_class_cls(define_class(vm, "Class", vm.obj_cls()));
+  // now we can define Class, which is a subclass of Object, but Object's
+  // metclass
+  ClassObject* class_cls = ClassObject::make_single_class(vm);
+  vm.set_global("Class", class_cls);
+  vm.set_class_cls(class_cls);
 
-  vm.set_bool_cls(define_class(vm, "Bool", vm.obj_cls()));
+  // now that Object and Class are defined, we can wrie them up to each other
+  vm.class_cls()->bind_superclass(vm.obj_cls());
+  vm.obj_cls()->set_meta_class(vm.class_cls());
+  vm.class_cls()->set_meta_class(vm.class_cls());
+
+  vm.set_bool_cls(define_class(vm, "Bool"));
   vm.set_native(vm.bool_cls(), "toString", _primitive_bool_tostring);
   vm.set_native(vm.bool_cls(), "!", _primitive_bool_not);
 
-  vm.set_fn_cls(define_class(vm, "Function", vm.obj_cls()));
+  vm.set_fn_cls(define_class(vm, "Function"));
   vm.set_native(vm.fn_cls(), "call", _primitive_fn_call0);
   vm.set_native(vm.fn_cls(), "call ", _primitive_fn_call1);
   vm.set_native(vm.fn_cls(), "call  ", _primitive_fn_call2);
@@ -369,7 +381,7 @@ void initialize_core(WrenVM& vm) {
   vm.set_native(vm.fn_cls(), "call               ", _primitive_fn_call15);
   vm.set_native(vm.fn_cls(), "call                ", _primitive_fn_call16);
 
-  vm.set_list_cls(define_class(vm, "List", vm.obj_cls()));
+  vm.set_list_cls(define_class(vm, "List"));
   vm.set_native(vm.list_cls(), "add ", _primitive_list_add);
   vm.set_native(vm.list_cls(), "clear", _primitive_list_clear);
   vm.set_native(vm.list_cls(), "len", _primitive_list_len);
@@ -378,10 +390,10 @@ void initialize_core(WrenVM& vm) {
   vm.set_native(vm.list_cls(), "[ ]", _primitive_list_subscript);
   vm.set_native(vm.list_cls(), "[ ]=", _primitive_list_subscript_setter);
 
-  vm.set_nil_cls(define_class(vm, "Nil", vm.obj_cls()));
+  vm.set_nil_cls(define_class(vm, "Nil"));
   vm.set_native(vm.nil_cls(), "toString", _primitive_nil_tostring);
 
-  vm.set_num_cls(define_class(vm, "Numeric", vm.obj_cls()));
+  vm.set_num_cls(define_class(vm, "Numeric"));
   vm.set_native(vm.num_cls(), "abs", _primitive_numeric_abs);
   vm.set_native(vm.num_cls(), "toString", _primitive_numeric_tostring);
   vm.set_native(vm.num_cls(), "-", _primitive_numeric_neg);
@@ -400,7 +412,7 @@ void initialize_core(WrenVM& vm) {
 
   // vm.set_obj_cls(vm.get_global("Object").as_class());
 
-  vm.set_str_cls(define_class(vm, "String", vm.obj_cls()));
+  vm.set_str_cls(define_class(vm, "String"));
   vm.set_native(vm.str_cls(), "len", _primitive_string_len);
   vm.set_native(vm.str_cls(), "contains ", _primitive_string_contains);
   vm.set_native(vm.str_cls(), "toString", _primitive_string_tostring);
@@ -409,14 +421,14 @@ void initialize_core(WrenVM& vm) {
   vm.set_native(vm.str_cls(), "!= ", _primitive_string_ne);
   vm.set_native(vm.str_cls(), "[ ]", _primitive_string_subscript);
 
-  ClassObject* io_cls = define_class(vm, "IO", vm.obj_cls());
+  ClassObject* io_cls = define_class(vm, "IO");
   vm.set_native(io_cls->meta_class(), "write ", _primitive_io_write);
 
   /// // making this an instance is lame, the only reason we are doing it
   /// // is because "IO.write()" looks ugly, maybe just get used to that ?
   /// vm.set_global("io", InstanceObject::make_instance(vm, io_cls));
 
-  ClassObject* os_cls = define_class(vm, "OS", vm.obj_cls());
+  ClassObject* os_cls = define_class(vm, "OS");
   vm.set_native(os_cls->meta_class(), "clock", _primitive_os_clock);
 
   ClassObject* unsupported_cls = ClassObject::make_class(vm, vm.obj_cls(), 0);
