@@ -780,9 +780,14 @@ class Compiler : private UnCopyable {
 
     if (match(TokenKind::KW_VAR)) {
       int symbol = declare_variable();
-      consume(TokenKind::TK_EQ, "expect `=` after variable name");
       // compile the initializer
-      expression();
+      if (match(TokenKind::TK_EQ)) {
+        expression();
+      }
+      else {
+        // default initialize it to nil
+        nil(false);
+      }
       define_variable(symbol);
       return;
     }
