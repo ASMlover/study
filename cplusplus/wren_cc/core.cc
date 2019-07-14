@@ -42,6 +42,29 @@ static void _primitive_##fn(WrenVM& vm, Fiber& fiber, Value* args) {\
   vm.call_function(fiber, args[0], argc);\
 }
 
+static str_t kCoreLib =
+"class IO {\n"
+"  static write(obj) {\n"
+"    IO.write__native__(obj.toString)\n"
+"    return obj\n"
+"  }\n"
+"}\n"
+"\n"
+"class List {\n"
+"  toString {\n"
+"    var result = \"[\"\n"
+"    var i = 0\n"
+"    // TODO: use for loop\n"
+"    while (i < this.len) {\n"
+"      if (i > 0) result = result + \", \"\n"
+"      result = result + this[i].toString\n"
+"      i = i + 1\n"
+"    }\n"
+"    result = result + \"]\"\n"
+"    return result\n"
+"  }\n"
+"}";
+
 static int validate_index(const Value& index, int count) {
   if (!index.is_numeric())
     return -1;
@@ -199,6 +222,10 @@ DEF_NATIVE(object_new) {
   return args[0];
 }
 
+DEF_NATIVE(object_tostring) {
+  return StringObject::make_string(vm, "<object>");
+}
+
 DEF_NATIVE(object_type) {
   return vm.get_class(args[0]);
 }
@@ -345,6 +372,7 @@ void initialize_core(WrenVM& vm) {
   vm.set_native(vm.obj_cls(), "== ", _primitive_object_eq);
   vm.set_native(vm.obj_cls(), "!= ", _primitive_object_ne);
   vm.set_native(vm.obj_cls(), "new", _primitive_object_new);
+  vm.set_native(vm.obj_cls(), "toString", _primitive_object_tostring);
   vm.set_native(vm.obj_cls(), "type", _primitive_object_type);
 
   // now we can define Class, which is a subclass of Object, but Object's
@@ -381,15 +409,6 @@ void initialize_core(WrenVM& vm) {
   vm.set_native(vm.fn_cls(), "call               ", _primitive_fn_call15);
   vm.set_native(vm.fn_cls(), "call                ", _primitive_fn_call16);
 
-  vm.set_list_cls(define_class(vm, "List"));
-  vm.set_native(vm.list_cls(), "add ", _primitive_list_add);
-  vm.set_native(vm.list_cls(), "clear", _primitive_list_clear);
-  vm.set_native(vm.list_cls(), "len", _primitive_list_len);
-  vm.set_native(vm.list_cls(), "insert  ", _primitive_list_insert);
-  vm.set_native(vm.list_cls(), "remove ", _primitive_list_remove);
-  vm.set_native(vm.list_cls(), "[ ]", _primitive_list_subscript);
-  vm.set_native(vm.list_cls(), "[ ]=", _primitive_list_subscript_setter);
-
   vm.set_nil_cls(define_class(vm, "Nil"));
   vm.set_native(vm.nil_cls(), "toString", _primitive_nil_tostring);
 
@@ -421,9 +440,6 @@ void initialize_core(WrenVM& vm) {
   vm.set_native(vm.str_cls(), "!= ", _primitive_string_ne);
   vm.set_native(vm.str_cls(), "[ ]", _primitive_string_subscript);
 
-  ClassObject* io_cls = define_class(vm, "IO");
-  vm.set_native(io_cls->meta_class(), "write ", _primitive_io_write);
-
   /// // making this an instance is lame, the only reason we are doing it
   /// // is because "IO.write()" looks ugly, maybe just get used to that ?
   /// vm.set_global("io", InstanceObject::make_instance(vm, io_cls));
@@ -433,6 +449,22 @@ void initialize_core(WrenVM& vm) {
 
   ClassObject* unsupported_cls = ClassObject::make_class(vm, vm.obj_cls(), 0);
   vm.set_unsupported(InstanceObject::make_instance(vm, unsupported_cls));
+
+  /// from core library source
+  vm.interpret(kCoreLib);
+
+  vm.set_list_cls(vm.get_global("List").as_class());
+  vm.set_native(vm.list_cls(), "add ", _primitive_list_add);
+  vm.set_native(vm.list_cls(), "clear", _primitive_list_clear);
+  vm.set_native(vm.list_cls(), "len", _primitive_list_len);
+  vm.set_native(vm.list_cls(), "insert  ", _primitive_list_insert);
+  vm.set_native(vm.list_cls(), "remove ", _primitive_list_remove);
+  vm.set_native(vm.list_cls(), "[ ]", _primitive_list_subscript);
+  vm.set_native(vm.list_cls(), "[ ]=", _primitive_list_subscript_setter);
+
+  ClassObject* io_cls = vm.get_global("IO").as_class();
+  vm.set_native(io_cls->meta_class(), "write__native__ ", _primitive_io_write);
+
 }
 
 }
