@@ -68,26 +68,12 @@ void SymbolTable::truncate(int count) {
 }
 
 struct CallFrame {
-  int ip{};
-  Value fn{}; // the function or closure being executed
+  const u8_t* ip{}; // pointer to the current instruction in the function's body
+  Value fn{};       // the function or closure being executed
   int stack_start{};
 
-  CallFrame(int ip_arg, const Value& fn_arg, int stack_start_arg) noexcept
+  CallFrame(const u8_t* ip_arg, const Value& fn_arg, int stack_start_arg) noexcept
     : ip(ip_arg), fn(fn_arg), stack_start(stack_start_arg) {
-  }
-
-  inline u8_t get_code(int i) const {
-    if (fn.is_function())
-      return fn.as_function()->get_code(i);
-    else
-      return fn.as_closure()->fn()->get_code(i);
-  }
-
-  inline const Value& get_constant(int i) const {
-    if (fn.is_function())
-      return fn.as_function()->get_constant(i);
-    else
-      return fn.as_closure()->fn()->get_constant(i);
   }
 };
 
@@ -136,7 +122,12 @@ public:
   }
 
   void call_function(const Value& fn, int argc = 0) {
-    frames_.push_back(CallFrame(0, fn, stack_size() - argc));
+    const u8_t* ip;
+    if (fn.is_function())
+      ip = fn.as_function()->codes();
+    else
+      ip = fn.as_closure()->fn()->codes();
+    frames_.push_back(CallFrame(ip, fn, stack_size() - argc));
   }
 
   void iter_stacks(std::function<void (const Value&)>&& visit) {
@@ -262,7 +253,7 @@ Value WrenVM::interpret(const Value& function) {
 #define PUSH(v) fiber->push(v)
 #define POP()   fiber->pop()
 #define PEEK()  fiber->peek_value()
-#define RDARG() fn->get_code(frame->ip++)
+#define RDARG() (*frame->ip++)
 
   CallFrame* frame{};
   FunctionObject* fn{};
@@ -289,9 +280,9 @@ Value WrenVM::interpret(const Value& function) {
   };
 # define INTERPRET_LOOP() DISPATCH();
 # define CASE_CODE(name)  __code_##name
-# define DISPATCH()       goto *_dispatch_table[Xt::as_type<int>(c = Xt::as_type<Code>(frame->get_code(frame->ip++)))]
+# define DISPATCH()       goto *_dispatch_table[Xt::as_type<int>(c = Xt::as_type<Code>(*frame->ip++))]
 #else
-# define INTERPRET_LOOP() for (;;) switch (c = Xt::as_type<Code>(frame->get_code(frame->ip++)))
+# define INTERPRET_LOOP() for (;;) switch (c = Xt::as_type<Code>(*frame->ip++))
 # define CASE_CODE(name)  case Code::##name
 # define DISPATCH()       break
 #endif
