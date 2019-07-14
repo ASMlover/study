@@ -58,6 +58,10 @@ ClosureObject* TagValue::as_closure(void) const {
   return Xt::down<ClosureObject>(as_object());
 }
 
+FiberObject* TagValue::as_fiber(void) const {
+  return Xt::down<FiberObject>(as_object());
+}
+
 ClassObject* TagValue::as_class(void) const {
   return Xt::down<ClassObject>(as_object());
 }
@@ -106,6 +110,10 @@ UpvalueObject* ObjValue::as_upvalue(void) const {
 
 ClosureObject* ObjValue::as_closure(void) const {
   return Xt::down<ClosureObject>(obj_);
+}
+
+FiberObject* ObjValue::as_fiber(void) const {
+  return Xt::down<FiberObject>(obj_);
 }
 
 ClassObject* ObjValue::as_class(void) const {
@@ -302,6 +310,95 @@ void ClosureObject::gc_mark(WrenVM& vm) {
 
 ClosureObject* ClosureObject::make_closure(WrenVM& vm, FunctionObject* fn) {
   auto* o = new ClosureObject(fn);
+  vm.append_object(o);
+  return o;
+}
+
+void FiberObject::call_function(const Value& fn, int argc) {
+  const u8_t* ip;
+  if (fn.is_function())
+    ip = fn.as_function()->codes();
+  else
+    ip = fn.as_closure()->fn()->codes();
+  frames_.push_back(CallFrame(ip, fn, stack_size() - argc));
+}
+
+UpvalueObject* FiberObject::capture_upvalue(WrenVM& vm, int slot) {
+  // capture the local variable in [slot] into an [upvalue], if that local is
+  // already in an upvalue, the existing one will be used. otherwise it will
+  // create a new open upvalue and add it into the fiber's list of upvalues
+
+  Value* local = &stack_[slot];
+  // if there are no open upvalues at all, we must need a new one
+  if (open_upvlaues_ == nullptr) {
+    open_upvlaues_ = UpvalueObject::make_upvalue(vm, local);
+    return open_upvlaues_;
+  }
+
+  UpvalueObject* prev_upvalue = nullptr;
+  UpvalueObject* upvalue = open_upvlaues_;
+
+  // walk towards the bottom of the stack until we find a previously
+  // existing upvalue or pass where it should be
+  while (upvalue != nullptr && upvalue->value() > local) {
+    prev_upvalue = upvalue;
+    upvalue = upvalue->next();
+  }
+  // found an existing upvalue for this local
+  if (upvalue != nullptr && upvalue->value() == local)
+    return upvalue;
+
+  // walked past this local on the stack, so there must not be an upvalue
+  // for it already. make a new one and link it in the right place to keep
+  // the list sorted
+  UpvalueObject* created_upvalue = UpvalueObject::make_upvalue(vm, local, upvalue);
+  if (prev_upvalue == nullptr)
+    open_upvlaues_ = created_upvalue;
+  else
+    prev_upvalue->set_next(created_upvalue);
+  return created_upvalue;
+}
+
+void FiberObject::close_upvalue(void) {
+  UpvalueObject* upvalue = open_upvlaues_;
+
+  // move the value into the upvalue itself and point the value to it
+  upvalue->set_closed(upvalue->value_asref());
+  upvalue->set_value(upvalue->closed_asptr());
+
+  // remove it from the open upvalue list
+  open_upvlaues_ = upvalue->next();
+}
+
+void FiberObject::close_upvalues(int slot) {
+  Value* first = &stack_[slot];
+  while (open_upvlaues_ != nullptr && open_upvlaues_->value() >= first)
+    close_upvalue();
+}
+
+str_t FiberObject::stringify(void) const {
+  std::stringstream ss;
+  ss << "[fiber " << this << "]";
+  return ss.str();
+}
+
+void FiberObject::gc_mark(WrenVM& vm) {
+  // stack functions
+  for (auto& f : frames_)
+    vm.mark_value(f.fn);
+
+  // stack variables
+  for (auto& v : stack_)
+    vm.mark_value(v);
+
+  // open upvalues
+  for (auto* upvalue = open_upvlaues_;
+      upvalue != nullptr; upvalue = upvalue->next())
+    vm.mark_object(upvalue);
+}
+
+FiberObject* FiberObject::make_fiber(WrenVM& vm) {
+  auto* o = new FiberObject();
   vm.append_object(o);
   return o;
 }

@@ -36,9 +36,9 @@ namespace wrencc {
 #define DEF_NATIVE(fn)\
 static Value _primitive_##fn(WrenVM& vm, Value* args)
 #define DEF_FIBER_NATIVE(fn)\
-static void _primitive_##fn(WrenVM& vm, Fiber& fiber, Value* args)
+static void _primitive_##fn(WrenVM& vm, FiberObject* fiber, Value* args)
 #define DEF_FIBER_NATIVE_FN(fn, argc)\
-static void _primitive_##fn(WrenVM& vm, Fiber& fiber, Value* args) {\
+static void _primitive_##fn(WrenVM& vm, FiberObject* fiber, Value* args) {\
   vm.call_function(fiber, args[0], argc);\
 }
 
@@ -131,60 +131,60 @@ DEF_NATIVE(numeric_neg) {
 
 DEF_NATIVE(numeric_add) {
   if (!args[1].is_numeric())
-    return vm.unsupported();
+    return nullptr;
 
   return args[0].as_numeric() + args[1].as_numeric();
 }
 
 DEF_NATIVE(numeric_sub) {
   if (!args[1].is_numeric())
-    return vm.unsupported();
+    return nullptr;
 
   return args[0].as_numeric() - args[1].as_numeric();
 }
 
 DEF_NATIVE(numeric_mul) {
   if (!args[1].is_numeric())
-    return vm.unsupported();
+    return nullptr;
 
   return args[0].as_numeric() * args[1].as_numeric();
 }
 
 DEF_NATIVE(numeric_div) {
   if (!args[1].is_numeric())
-    return vm.unsupported();
+    return nullptr;
 
   return args[0].as_numeric() / args[1].as_numeric();
 }
 
 DEF_NATIVE(numeric_mod) {
   if (!args[1].is_numeric())
-    return vm.unsupported();
+    return nullptr;
 
   return std::fmod(args[0].as_numeric(), args[1].as_numeric());
 }
 
 DEF_NATIVE(numeric_gt) {
   if (!args[1].is_numeric())
-    return vm.unsupported();
+    return nullptr;
   return args[0].as_numeric() > args[1].as_numeric();
 }
 
 DEF_NATIVE(numeric_ge) {
   if (!args[1].is_numeric())
-    return vm.unsupported();
+    return nullptr;
   return args[0].as_numeric() >= args[1].as_numeric();
 }
 
 DEF_NATIVE(numeric_lt) {
   if (!args[1].is_numeric())
-    return vm.unsupported();
+    return nullptr;
   return args[0].as_numeric() < args[1].as_numeric();
 }
 
 DEF_NATIVE(numeric_le) {
   if (!args[1].is_numeric())
-    return vm.unsupported();
+    return nullptr;
   return args[0].as_numeric() <= args[1].as_numeric();
 }
 
@@ -249,7 +249,7 @@ DEF_NATIVE(string_tostring) {
 
 DEF_NATIVE(string_add) {
   if (!args[1].is_string())
-    return vm.unsupported();
+    return nullptr;
 
   StringObject* lhs = args[0].as_string();
   StringObject* rhs = args[1].as_string();
@@ -390,6 +390,8 @@ void initialize_core(WrenVM& vm) {
   vm.set_native(vm.bool_cls(), "toString", _primitive_bool_tostring);
   vm.set_native(vm.bool_cls(), "!", _primitive_bool_not);
 
+  vm.set_fiber_cls(define_class(vm, "Fiber"));
+
   vm.set_fn_cls(define_class(vm, "Function"));
   vm.set_native(vm.fn_cls(), "call", _primitive_fn_call0);
   vm.set_native(vm.fn_cls(), "call ", _primitive_fn_call1);
@@ -442,13 +444,9 @@ void initialize_core(WrenVM& vm) {
 
   /// // making this an instance is lame, the only reason we are doing it
   /// // is because "IO.write()" looks ugly, maybe just get used to that ?
-  /// vm.set_global("io", InstanceObject::make_instance(vm, io_cls));
 
   ClassObject* os_cls = define_class(vm, "OS");
   vm.set_native(os_cls->meta_class(), "clock", _primitive_os_clock);
-
-  ClassObject* unsupported_cls = ClassObject::make_class(vm, vm.obj_cls(), 0);
-  vm.set_unsupported(InstanceObject::make_instance(vm, unsupported_cls));
 
   /// from core library source
   vm.interpret(kCoreLib);

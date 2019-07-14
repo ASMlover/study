@@ -67,143 +67,9 @@ void SymbolTable::truncate(int count) {
   symbols_.resize(n);
 }
 
-struct CallFrame {
-  const u8_t* ip{}; // pointer to the current instruction in the function's body
-  Value fn{};       // the function or closure being executed
-  int stack_start{};
-
-  CallFrame(const u8_t* ip_arg, const Value& fn_arg, int stack_start_arg) noexcept
-    : ip(ip_arg), fn(fn_arg), stack_start(stack_start_arg) {
-  }
-};
-
-class Fiber : private UnCopyable {
-  static constexpr sz_t kDefaultCap = 256;
-
-  std::vector<Value> stack_;
-  std::vector<CallFrame> frames_;
-
-  // pointer to the first node in the linked list of open upvalues that are
-  // pointing to values still on stack. the head of the list will be the
-  // upvalue closest to the top of stack and then the list works downwards.
-  UpvalueObject* open_upvlaues_{};
-public:
-  Fiber(void) noexcept {
-    stack_.reserve(kDefaultCap);
-  }
-
-  inline void reset(void) {
-    stack_.clear();
-    frames_.clear();
-  }
-
-  inline Value* values_at(int i) { return &stack_[i]; }
-  inline void resize_stack(int n) { stack_.resize(n); }
-  inline int stack_size(void) const { return Xt::as_type<int>(stack_.size()); }
-  inline int frame_size(void) const { return Xt::as_type<int>(frames_.size()); }
-  inline CallFrame& peek_frame(void) { return frames_.back(); }
-  inline void pop_frame(void) { frames_.pop_back(); }
-  inline bool empty_frame(void) const { return frames_.empty(); }
-  inline const Value& get_value(int i) const { return stack_[i]; }
-  inline void set_value(int i, const Value& v) { stack_[i] = v; }
-
-  inline const Value& peek_value(int distance = 0) const {
-    return stack_[stack_.size() - 1 - distance];
-  }
-
-  inline void push(const Value& v) {
-    stack_.push_back(v);
-  }
-
-  inline Value pop(void) {
-    Value v = stack_.back();
-    stack_.pop_back();
-    return v;
-  }
-
-  void call_function(const Value& fn, int argc = 0) {
-    const u8_t* ip;
-    if (fn.is_function())
-      ip = fn.as_function()->codes();
-    else
-      ip = fn.as_closure()->fn()->codes();
-    frames_.push_back(CallFrame(ip, fn, stack_size() - argc));
-  }
-
-  void iter_stacks(std::function<void (const Value&)>&& visit) {
-    for (auto& v : stack_)
-      visit(v);
-  }
-
-  void iter_frames(std::function<void (const CallFrame&)>&& visit) {
-    for (auto& c : frames_)
-      visit(c);
-  }
-
-  void iter_upvalues(std::function<void (UpvalueObject*)>&& visit) {
-    for (auto* uv = open_upvlaues_; uv != nullptr; uv = uv->next())
-      visit(uv);
-  }
-
-  // capture the local variable in [slot] into an [upvalue], if that local is
-  // already in an upvalue, the existing one will be used. otherwise it will
-  // create a new open upvalue and add it into the fiber's list of upvalues
-  UpvalueObject* capture_upvalue(WrenVM& vm, int slot) {
-    Value* local = &stack_[slot];
-
-    // if there are no open upvalues at all, we must need a new one
-    if (open_upvlaues_ == nullptr) {
-      open_upvlaues_ = UpvalueObject::make_upvalue(vm, local);
-      return open_upvlaues_;
-    }
-
-    UpvalueObject* prev_upvalue = nullptr;
-    UpvalueObject* upvalue = open_upvlaues_;
-
-    // walk towards the bottom of the stack until we find a previously
-    // existing upvalue or pass where it should be
-    while (upvalue != nullptr && upvalue->value() > local) {
-      prev_upvalue = upvalue;
-      upvalue = upvalue->next();
-    }
-    // found an existing upvalue for this local
-    if (upvalue != nullptr && upvalue->value() == local)
-      return upvalue;
-
-    // walked past this local on the stack, so there must not be an upvalue
-    // for it already. make a new one and link it in the right place to keep
-    // the list sorted
-    UpvalueObject* created_upvalue = UpvalueObject::make_upvalue(vm, local, upvalue);
-    if (prev_upvalue == nullptr)
-      open_upvlaues_ = created_upvalue;
-    else
-      prev_upvalue->set_next(created_upvalue);
-    return created_upvalue;
-  }
-
-  void close_upvalue(void) {
-    UpvalueObject* upvalue = open_upvlaues_;
-
-    // move the value into the upvalue itself and point the value to it
-    upvalue->set_closed(upvalue->value_asref());
-    upvalue->set_value(upvalue->closed_asptr());
-
-    // remove it from the open upvalue list
-    open_upvlaues_ = upvalue->next();
-  }
-
-  void close_upvalues(int slot) {
-    Value* first = &stack_[slot];
-    while (open_upvlaues_ != nullptr && open_upvlaues_->value() >= first)
-      close_upvalue();
-  }
-};
-
 /// WrenVM IMPLEMENTATIONS
 
 WrenVM::WrenVM(void) noexcept {
-  fiber_ = new Fiber();
-
   globals_.resize(kMaxGlobals);
   for (int i = 0; i < kMaxGlobals; ++i)
     globals_[i] = nullptr;
@@ -212,7 +78,6 @@ WrenVM::WrenVM(void) noexcept {
 }
 
 WrenVM::~WrenVM(void) {
-  delete fiber_;
 }
 
 void WrenVM::set_native(ClassObject* cls, const str_t& name, PrimitiveFn fn) {
@@ -246,10 +111,7 @@ void WrenVM::unpin_object(void) {
   pinned_ = pinned_->prev;
 }
 
-Value WrenVM::interpret(const Value& function) {
-  Fiber* fiber = fiber_;
-  fiber->call_function(function, 0);
-
+Value WrenVM::interpret(const Value& function, FiberObject* fiber) {
 #define PUSH(v) fiber->push(v)
 #define POP()   fiber->pop()
 #define PEEK()  fiber->peek_value()
@@ -406,7 +268,7 @@ Value WrenVM::interpret(const Value& function) {
       case MethodType::FIBER:
         {
           Value* args = fiber->values_at(fiber->stack_size() - argc);
-          method.fiber_primitive()(*this, *fiber, args);
+          method.fiber_primitive()(*this, fiber, args);
           LOAD_FRAME();
         } break;
       case MethodType::BLOCK:
@@ -465,7 +327,7 @@ Value WrenVM::interpret(const Value& function) {
       case MethodType::FIBER:
         {
           Value* args = fiber->values_at(fiber->stack_size() - argc);
-          method.fiber_primitive()(*this, *fiber, args);
+          method.fiber_primitive()(*this, fiber, args);
           LOAD_FRAME();
         } break;
       case MethodType::BLOCK:
@@ -660,6 +522,8 @@ Value WrenVM::interpret(const Value& function) {
       ASSERT(false, "should not execute past end of bytecode");
     }
   }
+
+  ASSERT(false, "should not reach end of interpret");
   return nullptr;
 }
 
@@ -676,6 +540,7 @@ ClassObject* WrenVM::get_class(const Value& val) const {
       ASSERT(false, "upvalues should not be used as first-class objects");
       return nullptr;
     case ObjType::CLOSURE: return fn_class_;
+    case ObjType::FIBER: return fiber_class_;
     case ObjType::CLASS: return val.as_class()->meta_class();
     case ObjType::INSTANCE: return val.as_instance()->cls();
     default: ASSERT(false, "unreachable"); return nullptr;
@@ -702,6 +567,7 @@ ClassObject* WrenVM::get_class(const Value& val) const {
       ASSERT(false, "upvalues should not be used as first-class objects");
       return nullptr;
     case ObjType::CLOSURE: return fn_class_;
+    case ObjType::FIBER: return fiber_class_;
     case ObjType::CLASS: return val.as_class()->meta_class();
     case ObjType::INSTANCE: return val.as_instance()->cls();
     default: ASSERT(false, "unreachable"); return nullptr;
@@ -713,14 +579,21 @@ ClassObject* WrenVM::get_class(const Value& val) const {
 }
 
 void WrenVM::interpret(const str_t& source_bytes) {
-  auto* fn = compile(*this, source_bytes);
+  FiberObject* fiber = FiberObject::make_fiber(*this);
+  Pinned pinned;
+  pin_object(fiber, &pinned);
 
-  if (fn != nullptr)
-    interpret(fn);
+  FunctionObject* fn = compile(*this, source_bytes);
+  if (fn != nullptr) {
+    fiber->call_function(fn, 0);
+    interpret(fn, fiber);
+  }
+
+  unpin_object();
 }
 
-void WrenVM::call_function(Fiber& fiber, const Value& fn, int argc) {
-  fiber.call_function(fn, argc);
+void WrenVM::call_function(FiberObject* fiber, const Value& fn, int argc) {
+  fiber->call_function(fn, argc);
 }
 
 void WrenVM::collect(void) {
@@ -730,12 +603,6 @@ void WrenVM::collect(void) {
   // pinned objects
   for (auto* p = pinned_; p != nullptr; p = p->prev)
     mark_object(p->obj);
-  // stack functions
-  fiber_->iter_frames([this](const CallFrame& f) { mark_value(f.fn); });
-  // stack variables
-  fiber_->iter_stacks([this](const Value& v) { mark_value(v); });
-  // open upvalues
-  fiber_->iter_upvalues([this](UpvalueObject* uv) { mark_object(uv); });
 
   // collect any unmarked objects
   for (auto it = objects_.begin(); it != objects_.end();) {

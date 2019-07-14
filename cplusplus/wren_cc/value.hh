@@ -47,6 +47,7 @@ enum class ObjType : u8_t {
   FUNCTION,
   UPVALUE,
   CLOSURE,
+  FIBER,
   CLASS,
   INSTANCE,
 };
@@ -67,6 +68,7 @@ class ListObject;
 class FunctionObject;
 class UpvalueObject;
 class ClosureObject;
+class FiberObject;
 class ClassObject;
 class InstanceObject;
 
@@ -145,6 +147,7 @@ public:
   inline bool is_function(void) const { return check(ObjType::FUNCTION); }
   inline bool is_upvalue(void) const { return check(ObjType::UPVALUE); }
   inline bool is_closure(void) const { return check(ObjType::CLOSURE); }
+  inline bool is_fiber(void) const { return check(ObjType::FIBER); }
   inline bool is_class(void) const { return check(ObjType::CLASS); }
   inline bool is_instance(void) const { return check(ObjType::INSTANCE); }
 
@@ -160,6 +163,7 @@ public:
   FunctionObject* as_function(void) const;
   UpvalueObject* as_upvalue(void) const;
   ClosureObject* as_closure(void) const;
+  FiberObject* as_fiber(void) const;
   ClassObject* as_class(void) const;
   InstanceObject* as_instance(void) const;
 
@@ -205,6 +209,7 @@ public:
   inline bool is_function(void) const { return check(ObjType::FUNCTION); }
   inline bool is_upvalue(void) const { return check(ObjType::UPVALUE); }
   inline bool is_closure(void) const { return check(ObjType::CLOSURE); }
+  inline bool is_fiber(void) const { return check(ObjType::FIBER); }
   inline bool is_class(void) const { return check(ObjType::CLASS); }
   inline bool is_instance(void) const { return check(ObjType::INSTANCE); }
 
@@ -220,6 +225,7 @@ public:
   FunctionObject* as_function(void) const;
   UpvalueObject* as_upvalue(void) const;
   ClosureObject* as_closure(void) const;
+  FiberObject* as_fiber(void) const;
   ClassObject* as_class(void) const;
   InstanceObject* as_instance(void) const;
 
@@ -377,9 +383,78 @@ public:
   static ClosureObject* make_closure(WrenVM& vm, FunctionObject* fn);
 };
 
-class Fiber;
+struct CallFrame {
+  const u8_t* ip{}; // pointer to the current instruction in the function's body
+  Value fn{};       // the function or closure being executed
+
+  // index of the first stack slot used by this call frame, this will contain
+  // the receiver, followed by the function's parameters, then local variables
+  // and temporaries
+  int stack_start{};
+
+  CallFrame(const u8_t* _ip, const Value& _fn, int _stack_start) noexcept
+    : ip(_ip), fn(_fn), stack_start(_stack_start) {
+  }
+};
+
+class FiberObject final : public BaseObject {
+  static constexpr sz_t kDefaultCap = 256;
+
+  std::vector<Value> stack_;
+  std::vector<CallFrame> frames_;
+
+  // pointer to the first node in the linked list of open upvalues that are
+  // pointing to values still on the stack. the head of the list will be the
+  // upvalue closest to the top of the stack, and then the list works downwards
+  UpvalueObject* open_upvlaues_{};
+
+  FiberObject(void) noexcept : BaseObject(ObjType::FIBER) {
+    stack_.reserve(kDefaultCap);
+  }
+  virtual ~FiberObject(void) {}
+public:
+  inline void reset(void) {
+    stack_.clear();
+    frames_.clear();
+  }
+
+  inline Value* values_at(int i) { return &stack_[i]; }
+  inline void resize_stack(int n) { stack_.resize(n); }
+  inline int stack_size(void) const { return Xt::as_type<int>(stack_.size()); }
+  inline int frame_size(void) const { return Xt::as_type<int>(frames_.size()); }
+  inline CallFrame& peek_frame(void) { return frames_.back(); }
+  inline void pop_frame(void) { frames_.pop_back(); }
+  inline bool empty_frame(void) const { return frames_.empty(); }
+  inline const Value& get_value(int i) const { return stack_[i]; }
+  inline void set_value(int i, const Value& v) { stack_[i] = v; }
+
+  inline const Value& peek_value(int distance = 0) const {
+    return stack_[stack_.size() - 1 - distance];
+  }
+
+  inline void push(const Value& v) {
+    stack_.push_back(v);
+  }
+
+  inline Value pop(void) {
+    Value v = stack_.back();
+    stack_.pop_back();
+    return v;
+  }
+
+  void call_function(const Value& fn, int argc = 0);
+  UpvalueObject* capture_upvalue(WrenVM& vm, int slot);
+  void close_upvalue(void);
+  void close_upvalues(int slot);
+
+  virtual str_t stringify(void) const override;
+  virtual void gc_mark(WrenVM& vm) override;
+
+  static FiberObject* make_fiber(WrenVM& vm);
+};
+
 using PrimitiveFn = std::function<Value (WrenVM&, Value*)>;
-using FiberPrimitiveFn = std::function<void (WrenVM&, Fiber&, Value*)>;
+using FiberPrimitiveFn = std::function<void (WrenVM&, FiberObject*, Value*)>;
 
 enum class MethodType {
   PRIMITIVE,// a primitive method implemented in C that immediatelt returns a Value

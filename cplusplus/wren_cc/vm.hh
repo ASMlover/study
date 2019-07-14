@@ -71,18 +71,15 @@ class WrenVM final : private UnCopyable {
   ClassObject* fn_class_{};
   ClassObject* bool_class_{};
   ClassObject* class_class_{};
+  ClassObject* fiber_class_{};
   ClassObject* nil_class_{};
   ClassObject* num_class_{};
   ClassObject* obj_class_{};
   ClassObject* str_class_{};
   ClassObject* list_class_{};
 
-  Value unsupported_{};
-
   SymbolTable global_symbols_;
   std::vector<Value> globals_;
-
-  Fiber* fiber_{};
 
   // how many bytes of object data have been allocated
   sz_t total_allocated_{};
@@ -95,7 +92,7 @@ class WrenVM final : private UnCopyable {
   // is pinned
   Pinned* pinned_{};
 
-  Value interpret(const Value& fn);
+  Value interpret(const Value& fn, FiberObject* fiber);
 
   void collect(void);
   void free_object(BaseObject* obj);
@@ -106,6 +103,7 @@ public:
   inline void set_fn_cls(ClassObject* cls) { fn_class_ = cls; }
   inline void set_bool_cls(ClassObject* cls) { bool_class_ = cls; }
   inline void set_class_cls(ClassObject* cls) { class_class_ = cls; }
+  inline void set_fiber_cls(ClassObject* cls) { fiber_class_ = cls; }
   inline void set_nil_cls(ClassObject* cls) { nil_class_ = cls; }
   inline void set_num_cls(ClassObject* cls) { num_class_ = cls; }
   inline void set_obj_cls(ClassObject* cls) { obj_class_ = cls; }
@@ -115,14 +113,12 @@ public:
   inline ClassObject* fn_cls(void) const { return fn_class_; }
   inline ClassObject* bool_cls(void) const { return bool_class_; }
   inline ClassObject* class_cls(void) const { return class_class_; }
+  inline ClassObject* fiber_cls(void) const { return fiber_class_; }
   inline ClassObject* nil_cls(void) const { return nil_class_; }
   inline ClassObject* num_cls(void) const { return num_class_; }
   inline ClassObject* obj_cls(void) const { return obj_class_; }
   inline ClassObject* str_cls(void) const { return str_class_; }
   inline ClassObject* list_cls(void) const { return list_class_; }
-
-  inline void set_unsupported(const Value& unsupported) { unsupported_ = unsupported; }
-  inline const Value& unsupported(void) const { return unsupported_; }
 
   inline SymbolTable& methods(void) { return methods_; }
   inline SymbolTable& gsymbols(void) { return global_symbols_; }
@@ -139,7 +135,7 @@ public:
 
   ClassObject* get_class(const Value& val) const;
   void interpret(const str_t& source_bytes);
-  void call_function(Fiber& fiber, const Value& fn, int argc);
+  void call_function(FiberObject* fiber, const Value& fn, int argc);
 };
 
 }
