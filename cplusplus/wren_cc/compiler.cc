@@ -519,34 +519,30 @@ class Compiler : private UnCopyable {
     return -1;
   }
 
-  enum class ResolvedName {
-    LOCAL,
-    UPVALUE,
-    GLOBAL
-  };
-
-  int resolve_name(const str_t& name, ResolvedName& resolved) {
+  int resolve_name(const str_t& name, Code& load_instruction) {
     // loop up [name] in the current scope to see what name it is bound
     // to returns the index of the name either in global or local scope,
-    // or the enclosing function's upvalue list. returns -1 if not found,
-    // sets [resolved] to the scope where the name was resolved.
+    // or the enclosing function's upvalue list. returns -1 if not found.
+    //
+    // sets [load_instruction] to the instruction needed to load the
+    // variable. will be one of [LOAD_LOCAL], [LOAD_UPVALUE] or [LOAD_GLOBAL]
 
     // look it up in the local scope, look in reverse order so that the
     // most nested variable is found first and shadows outer ones
-    resolved = ResolvedName::LOCAL;
+    load_instruction = Code::LOAD_LOCAL;
     int local = resolve_local(name);
     if (local != -1)
       return local;
 
     // if got here, it's not a local, so lets see if we are closing over
     // an outer local
-    resolved = ResolvedName::UPVALUE;
+    load_instruction = Code::LOAD_UPVALUE;
     int upvalue = find_upvalue(name);
     if (upvalue != -1)
       return upvalue;
 
     // if got here, it was not in a local scope, so try the global scope
-    resolved = ResolvedName::GLOBAL;
+    load_instruction = Code::LOAD_GLOBAL;
     return vm_gsymbols().get(name);
   }
 
@@ -590,24 +586,12 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::LIST, num_elements);
   }
 
-  void load_variable(ResolvedName resolved, int index) {
-    // compiles a reference or assignment to a named variable, including
-    // `this`
-
-    switch (resolved) {
-    case ResolvedName::LOCAL: emit_byte(Code::LOAD_LOCAL); break;
-    case ResolvedName::UPVALUE: emit_byte(Code::LOAD_UPVALUE); break;
-    case ResolvedName::GLOBAL: emit_byte(Code::LOAD_GLOBAL); break;
-    }
-    emit_byte(index);
-  }
-
   void variable(bool allow_assignment) {
     // look up the name in the scope chain
     const auto& token = parser_.prev();
 
-    ResolvedName resolved;
-    int index = resolve_name(token.as_string(), resolved);
+    Code load_instruction;
+    int index = resolve_name(token.as_string(), load_instruction);
     if (index == -1)
       error("undefined variable");
 
@@ -619,16 +603,19 @@ class Compiler : private UnCopyable {
       // compile the right-hand side
       expression();
 
-      switch (resolved) {
-      case ResolvedName::LOCAL: emit_byte(Code::STORE_LOCAL); break;
-      case ResolvedName::UPVALUE: emit_byte(Code::STORE_UPVALUE); break;
-      case ResolvedName::GLOBAL: emit_byte(Code::STORE_GLOBAL); break;
+      // emit the store instruction
+      switch (load_instruction) {
+      case Code::LOAD_LOCAL: emit_byte(Code::STORE_LOCAL); break;
+      case Code::LOAD_UPVALUE: emit_byte(Code::STORE_UPVALUE); break;
+      case Code::LOAD_GLOBAL: emit_byte(Code::STORE_GLOBAL); break;
+      default: UNREACHABLE();
       }
-      emit_byte(index);
-      return;
+    }
+    else {
+      emit_byte(load_instruction);
     }
 
-    load_variable(resolved, index);
+    emit_byte(index);
   }
 
   void field(bool allow_assignment) {
@@ -1155,9 +1142,9 @@ class Compiler : private UnCopyable {
       error("cannot use `super` outside of a method");
 
     // look up `this` in the scope chain
-    ResolvedName resolved;
-    int index = resolve_name("this", resolved);
-    load_variable(resolved, index);
+    Code load_instruction;
+    int index = resolve_name("this", load_instruction);
+    emit_bytes(load_instruction, index);
 
     // see if it's a nemd super call, or an unnamed one
     if (match(TokenKind::TK_DOT)) {

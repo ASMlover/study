@@ -109,3 +109,7 @@ namespace Xt {
 #else
 # define ASSERT(cond, msg) ((void)0)
 #endif
+
+// assertion to indicate that the given point in the code should never be
+// reached
+#define UNREACHABLE() ASSERT(false, "this line should not be reached")
