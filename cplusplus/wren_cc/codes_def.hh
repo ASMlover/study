@@ -60,7 +60,6 @@ CODE(LOAD_FIELD)
 // pop an instance and store the subsequent top of stack in field slot [arg]
 // in it. does not pop the value
 CODE(STORE_FIELD)
-CODE(DUP)          // push a copy of the top of stack
 CODE(POP)          // pop and discard the top of stack
 
 // invoke the method with symbol [arg], the number indicates the number of

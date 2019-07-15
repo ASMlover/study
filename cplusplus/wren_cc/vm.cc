@@ -159,15 +159,13 @@ Value WrenVM::interpret(const Value& function, FiberObject* fiber) {
     CASE_CODE(TRUE): PUSH(true); DISPATCH();
     CASE_CODE(LOAD_LOCAL):
     {
-      int local = RDARG();
-      PUSH(fiber->get_value(frame->stack_start + local));
+      PUSH(fiber->get_value(frame->stack_start + RDARG()));
 
       DISPATCH();
     }
     CASE_CODE(STORE_LOCAL):
     {
-      int local = RDARG();
-      fiber->set_value(frame->stack_start + local, PEEK());
+      fiber->set_value(frame->stack_start + RDARG(), PEEK());
 
       DISPATCH();
     }
@@ -175,9 +173,7 @@ Value WrenVM::interpret(const Value& function, FiberObject* fiber) {
     {
       ASSERT(co->has_upvalues(),
           "should not have LOAD_UPVALUE instruction in non-closure");
-
-      int upvalue = RDARG();
-      PUSH(co->get_upvalue(upvalue)->value_asref());
+      PUSH(co->get_upvalue(RDARG())->value_asref());
 
       DISPATCH();
     }
@@ -185,23 +181,19 @@ Value WrenVM::interpret(const Value& function, FiberObject* fiber) {
     {
       ASSERT(co->has_upvalues(),
           "should not have STORE_UPVALUE instruction in non-closure");
-
-      int upvalue = RDARG();
-      co->get_upvalue(upvalue)->set_value(POP());
+      co->get_upvalue(RDARG())->set_value(POP());
 
       DISPATCH();
     }
     CASE_CODE(LOAD_GLOBAL):
     {
-      int global = RDARG();
-      PUSH(globals_[global]);
+      PUSH(globals_[RDARG()]);
 
       DISPATCH();
     }
     CASE_CODE(STORE_GLOBAL):
     {
-      int global = RDARG();
-      globals_[global] = PEEK();
+      globals_[RDARG()] = PEEK();
 
       DISPATCH();
     }
@@ -249,7 +241,6 @@ Value WrenVM::interpret(const Value& function, FiberObject* fiber) {
 
       DISPATCH();
     }
-    CASE_CODE(DUP): PUSH(PEEK()); DISPATCH();
     CASE_CODE(POP): POP(); DISPATCH();
     CASE_CODE(CALL_0):
     CASE_CODE(CALL_1):

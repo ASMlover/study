@@ -436,7 +436,6 @@ void ClassObject::bind_method(FunctionObject* fn) {
     case Code::NIL:
     case Code::FALSE:
     case Code::TRUE:
-    case Code::DUP:
     case Code::POP:
     case Code::IS:
     case Code::CLOSE_UPVALUE:
