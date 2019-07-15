@@ -206,6 +206,11 @@ class Compiler : private UnCopyable {
   // 256 can be in scope at one time.
   static constexpr int kMaxLocals = 256;
 
+  // the maximum number of distinct constants that a function can contain. this
+  // value is explicit in the bytecode since `CONSTANT` only takes a single
+  // argument
+  static constexpr int kMaxConstants = 256;
+
   Parser& parser_;
   Compiler* parent_{};
   FunctionObject* fn_{};
@@ -273,11 +278,22 @@ class Compiler : private UnCopyable {
   }
 
   inline int add_constant(const Value& v) {
-    return fn_->add_constant(v);
+    // see if an equivalent constant has already been added
+    for (int i = 0; i < fn_->constants_count(); ++i) {
+      if (fn_->get_constant(i) == v)
+        return i;
+    }
+
+    if (fn_->constants_count() < kMaxConstants)
+      fn_->add_constant(v);
+    else
+      error("a function may only contain %d unique constants", kMaxConstants);
+
+    return fn_->constants_count() - 1;
   }
 
   inline void emit_constant(const Value& v) {
-    u8_t b = fn_->add_constant(v);
+    int b = add_constant(v);
     emit_bytes(Code::CONSTANT, b);
   }
 
