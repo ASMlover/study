@@ -450,12 +450,9 @@ class Compiler : private UnCopyable {
     emit_byte(Code::POP);
   }
 
-  int resolve_local(void) {
-    // attempts to look up the previously consumed name token in the local
-    // variables of [compiler], if found returns its index, otherwise
-    // returns -1
-
-    str_t name = parser_.prev().as_string();
+  int resolve_local(const str_t& name) {
+    // attempts to look up the name in the local variables of [compiler],
+    // if found returns its index, otherwise returns -1
 
     // look it up in the local scopes. look in reverse order so that the
     // most nested variable is found first and shadows outer ones
@@ -484,11 +481,11 @@ class Compiler : private UnCopyable {
     return fn_->inc_num_upvalues();
   }
 
-  int find_upvalue(void) {
-    // attempts to look up the previously consumed name token in the
-    // functions enclosing the one being compiled by [compiler]. if
-    // found, it adds an upvalue for it to this compiler's list of
-    // upvalues and returns its index, if not found, returns -1
+  int find_upvalue(const str_t& name) {
+    // attempts to look up [name] in the functions enclosing the one being
+    // compiled by [compiler]. if found, it adds an upvalue for it to this
+    // compiler's list of upvalues and returns its index, if not found,
+    // returns -1
     //
     // if the name is found outside of the immediately enclosing function
     // this will flatten the closure and add upvalues to all of the
@@ -499,7 +496,7 @@ class Compiler : private UnCopyable {
       return -1;
 
     // if it's a local variable in the immediately enclosing function
-    int local = parent_->resolve_local();
+    int local = parent_->resolve_local(name);
     if (local != -1) {
       // mark the local as an upvalue so we know to clsoe it when it
       // goes out of scope
@@ -513,7 +510,7 @@ class Compiler : private UnCopyable {
     // upvalues to all of the immediate functions to get from the function
     // where a local is declared all the way into the possibly deeply
     // nested function that is closing over it.
-    int upvalue = parent_->find_upvalue();
+    int upvalue = parent_->find_upvalue(name);
     if (upvalue != -1)
       return add_upvalue(false, upvalue);
 
@@ -528,25 +525,23 @@ class Compiler : private UnCopyable {
     GLOBAL
   };
 
-  int resolve_name(ResolvedName& resolved) {
-    // loop up the previously consumed token, which is presumed to be a
-    // TK_IDENTIFIER in the current scope to see what name it is bound to
-    // returns the index of the name either in global or local scope.
-    // returns -1 if not found, sets [resolved] to `ResolvedName`.
-
-    str_t name = parser_.prev().as_string();
+  int resolve_name(const str_t& name, ResolvedName& resolved) {
+    // loop up [name] in the current scope to see what name it is bound
+    // to returns the index of the name either in global or local scope,
+    // or the enclosing function's upvalue list. returns -1 if not found,
+    // sets [resolved] to the scope where the name was resolved.
 
     // look it up in the local scope, look in reverse order so that the
     // most nested variable is found first and shadows outer ones
     resolved = ResolvedName::LOCAL;
-    int local = resolve_local();
+    int local = resolve_local(name);
     if (local != -1)
       return local;
 
     // if got here, it's not a local, so lets see if we are closing over
     // an outer local
     resolved = ResolvedName::UPVALUE;
-    int upvalue = find_upvalue();
+    int upvalue = find_upvalue(name);
     if (upvalue != -1)
       return upvalue;
 
@@ -595,10 +590,24 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::LIST, num_elements);
   }
 
+  void load_variable(ResolvedName resolved, int index) {
+    // compiles a reference or assignment to a named variable, including
+    // `this`
+
+    switch (resolved) {
+    case ResolvedName::LOCAL: emit_byte(Code::LOAD_LOCAL); break;
+    case ResolvedName::UPVALUE: emit_byte(Code::LOAD_UPVALUE); break;
+    case ResolvedName::GLOBAL: emit_byte(Code::LOAD_GLOBAL); break;
+    }
+    emit_byte(index);
+  }
+
   void variable(bool allow_assignment) {
     // look up the name in the scope chain
+    const auto& token = parser_.prev();
+
     ResolvedName resolved;
-    int index = resolve_name(resolved);
+    int index = resolve_name(token.as_string(), resolved);
     if (index == -1)
       error("undefined variable");
 
@@ -619,13 +628,7 @@ class Compiler : private UnCopyable {
       return;
     }
 
-    // otherwise, it's just a variable access
-    switch (resolved) {
-    case ResolvedName::LOCAL: emit_byte(Code::LOAD_LOCAL); break;
-    case ResolvedName::UPVALUE: emit_byte(Code::LOAD_UPVALUE); break;
-    case ResolvedName::GLOBAL: emit_byte(Code::LOAD_GLOBAL); break;
-    }
-    emit_byte(index);
+    load_variable(resolved, index);
   }
 
   void field(bool allow_assignment) {
@@ -1151,7 +1154,10 @@ class Compiler : private UnCopyable {
     if (!is_inside_method())
       error("cannot use `super` outside of a method");
 
-    emit_bytes(Code::LOAD_LOCAL, 0);
+    // look up `this` in the scope chain
+    ResolvedName resolved;
+    int index = resolve_name("this", resolved);
+    load_variable(resolved, index);
 
     // see if it's a nemd super call, or an unnamed one
     if (match(TokenKind::TK_DOT)) {
