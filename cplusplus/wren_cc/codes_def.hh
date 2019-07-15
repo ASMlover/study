@@ -44,8 +44,22 @@ CODE(LOAD_UPVALUE) // push the value in upvalue [arg]
 CODE(STORE_UPVALUE)// store the top of stack in upvalue [arg], does not pop it
 CODE(LOAD_GLOBAL)  // push the value in global slot [arg]
 CODE(STORE_GLOBAL) // store the top of the stack in global slot [arg], not pop it
-CODE(LOAD_FIELD)   // push the value of field in slot [arg] for current receiver
-CODE(STORE_FIELD)  // store the top of the stack in field slot [arg] in current receiver
+
+// push the value of the field in slot [arg] of the receiver of the current
+// function. this is used for regular field access on `this` directly in
+// methods. this instruction is faster than the more general LOAD_FIELD
+// instruction
+CODE(LOAD_FIELD_THIS)
+// stroe the top of the stack in field slot [arg] in the receiver of the current
+// value, does not pop the value, this instruction is faster than the more
+// general LOAD_FIELD instruction
+CODE(STORE_FIELD_THIS)
+
+// pop an instance and push the value of the field in slot [arg] of it
+CODE(LOAD_FIELD)
+// pop an instance and store the subsequent top of stack in field slot [arg]
+// in it. does not pop the value
+CODE(STORE_FIELD)
 CODE(DUP)          // push a copy of the top of stack
 CODE(POP)          // pop and discard the top of stack
 

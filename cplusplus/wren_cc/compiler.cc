@@ -586,6 +586,15 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::LIST, num_elements);
   }
 
+  void load_this(void) {
+    // loads the receiver of the currently enclosing method. correctly
+    // handles functions defined inside methods
+
+    Code load_instruction;
+    int index = resolve_name("this", load_instruction);
+    emit_bytes(load_instruction, index);
+  }
+
   void variable(bool allow_assignment) {
     // look up the name in the scope chain
     const auto& token = parser_.prev();
@@ -639,11 +648,26 @@ class Compiler : private UnCopyable {
       // compile the right-hand side
       expression();
 
-      emit_bytes(Code::STORE_FIELD, field);
+      // if we are directly inside a method, use a more optional instruction
+      if (!method_name_.empty()) {
+        emit_byte(Code::STORE_FIELD_THIS);
+      }
+      else {
+        load_this();
+        emit_byte(Code::STORE_FIELD);
+      }
     }
     else {
-      emit_bytes(Code::LOAD_FIELD, field);
+      // if we are directly inside a method, use a more optional instruction
+      if (!method_name_.empty()) {
+        emit_byte(Code::LOAD_FIELD_THIS);
+      }
+      else {
+        load_this();
+        emit_byte(Code::LOAD_FIELD);
+      }
     }
+    emit_byte(field);
   }
 
   bool match(TokenKind expected) {
@@ -1141,11 +1165,7 @@ class Compiler : private UnCopyable {
     if (!is_inside_method())
       error("cannot use `super` outside of a method");
 
-    // look up `this` in the scope chain
-    Code load_instruction;
-    int index = resolve_name("this", load_instruction);
-    emit_bytes(load_instruction, index);
-
+    load_this();
     // see if it's a nemd super call, or an unnamed one
     if (match(TokenKind::TK_DOT)) {
       // compile the superclass call
@@ -1173,8 +1193,7 @@ class Compiler : private UnCopyable {
       return;
     }
 
-    // `this` works just like any other lexically scoped variable
-    variable(false);
+    load_this();
   }
 public:
   Compiler(Parser& parser,

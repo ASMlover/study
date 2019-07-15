@@ -205,7 +205,7 @@ Value WrenVM::interpret(const Value& function, FiberObject* fiber) {
 
       DISPATCH();
     }
-    CASE_CODE(LOAD_FIELD):
+    CASE_CODE(LOAD_FIELD_THIS):
     {
       int field = RDARG();
       const Value& receiver = fiber->get_value(frame->stack_start);
@@ -216,10 +216,32 @@ Value WrenVM::interpret(const Value& function, FiberObject* fiber) {
 
       DISPATCH();
     }
-    CASE_CODE(STORE_FIELD):
+    CASE_CODE(STORE_FIELD_THIS):
     {
       int field = RDARG();
       const Value& receiver = fiber->get_value(frame->stack_start);
+      ASSERT(receiver.is_instance(), "receiver should be instance");
+      InstanceObject* inst = receiver.as_instance();
+      ASSERT(field < inst->cls()->num_fields(), "out of bounds field");
+      inst->set_field(field, PEEK());
+
+      DISPATCH();
+    }
+    CASE_CODE(LOAD_FIELD):
+    {
+      int field = RDARG();
+      Value receiver = POP();
+      ASSERT(receiver.is_instance(), "receiver should be instance");
+      InstanceObject* inst = receiver.as_instance();
+      ASSERT(field < inst->cls()->num_fields(), "out of bounds field");
+      PUSH(inst->get_field(field));
+
+      DISPATCH();
+    }
+    CASE_CODE(STORE_FIELD):
+    {
+      int field = RDARG();
+      Value receiver = POP();
       ASSERT(receiver.is_instance(), "receiver should be instance");
       InstanceObject* inst = receiver.as_instance();
       ASSERT(field < inst->cls()->num_fields(), "out of bounds field");

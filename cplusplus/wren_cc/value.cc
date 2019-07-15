@@ -510,6 +510,8 @@ void ClassObject::bind_method(FunctionObject* fn) {
 
     case Code::LOAD_FIELD:
     case Code::STORE_FIELD:
+    case Code::LOAD_FIELD_THIS:
+    case Code::STORE_FIELD_THIS:
       {
         auto num_fields = fn->get_code(ip) + superclass_->num_fields();
         fn->set_code(ip++, num_fields);
