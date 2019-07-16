@@ -462,83 +462,7 @@ void ClassObject::bind_superclass(ClassObject* superclass) {
 void ClassObject::bind_method(FunctionObject* fn) {
   int ip = 0;
   for (;;) {
-    Code c = Xt::as_type<Code>(fn->get_code(ip++));
-    switch (c) {
-    // instructions with no arguments
-    case Code::NIL:
-    case Code::FALSE:
-    case Code::TRUE:
-    case Code::POP:
-    case Code::IS:
-    case Code::CLOSE_UPVALUE:
-    case Code::RETURN:
-    case Code::NEW:
-      break;
-
-    // instructions with one argument
-    case Code::CONSTANT:
-    case Code::LOAD_LOCAL:
-    case Code::STORE_LOCAL:
-    case Code::LOAD_UPVALUE:
-    case Code::STORE_UPVALUE:
-    case Code::LOAD_GLOBAL:
-    case Code::STORE_GLOBAL:
-    case Code::CALL_0:
-    case Code::CALL_1:
-    case Code::CALL_2:
-    case Code::CALL_3:
-    case Code::CALL_4:
-    case Code::CALL_5:
-    case Code::CALL_6:
-    case Code::CALL_7:
-    case Code::CALL_8:
-    case Code::CALL_9:
-    case Code::CALL_10:
-    case Code::CALL_11:
-    case Code::CALL_12:
-    case Code::CALL_13:
-    case Code::CALL_14:
-    case Code::CALL_15:
-    case Code::CALL_16:
-    case Code::SUPER_0:
-    case Code::SUPER_1:
-    case Code::SUPER_2:
-    case Code::SUPER_3:
-    case Code::SUPER_4:
-    case Code::SUPER_5:
-    case Code::SUPER_6:
-    case Code::SUPER_7:
-    case Code::SUPER_8:
-    case Code::SUPER_9:
-    case Code::SUPER_10:
-    case Code::SUPER_11:
-    case Code::SUPER_12:
-    case Code::SUPER_13:
-    case Code::SUPER_14:
-    case Code::SUPER_15:
-    case Code::SUPER_16:
-    case Code::JUMP:
-    case Code::LOOP:
-    case Code::JUMP_IF:
-    case Code::AND:
-    case Code::OR:
-    case Code::LIST:
-    case Code::CLASS:
-    case Code::SUBCLASS:
-      ++ip; break;
-
-    // instructions with two arguments
-    case Code::METHOD_INSTANCE:
-    case Code::METHOD_STATIC:
-      ip += 2; break;
-
-    case Code::CLOSURE:
-      {
-        int constant = fn->get_code(ip++);
-        FunctionObject* loaded_fn = fn->get_constant(constant).as_function();
-        ip += loaded_fn->num_upvalues();
-      } break;
-
+    switch (Code c = Xt::as_type<Code>(fn->get_code(ip++))) {
     case Code::LOAD_FIELD:
     case Code::STORE_FIELD:
     case Code::LOAD_FIELD_THIS:
@@ -549,7 +473,9 @@ void ClassObject::bind_method(FunctionObject* fn) {
       } break;
 
     case Code::END: return;
-    default: ASSERT(false, "unknown instruction"); break;
+    default:
+      // other instructions are unaffected, so just skip over them
+      ip += fn->get_argc(ip - 1); break;
     }
   }
 }
