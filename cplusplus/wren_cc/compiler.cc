@@ -133,6 +133,7 @@ public:
       case TokenKind::KW_ELSE:
       case TokenKind::KW_FOR:
       case TokenKind::KW_IF:
+      case TokenKind::KW_IN:
       case TokenKind::KW_IS:
       case TokenKind::KW_NEW:
       case TokenKind::KW_STATIC:
@@ -269,9 +270,9 @@ class Compiler : private UnCopyable {
     return fn_->add_code(b);
   }
 
-  template <typename T, typename U> inline void emit_bytes(T b1, U b2) {
+  template <typename T, typename U> inline int emit_bytes(T b1, U b2) {
     emit_byte(b1);
-    emit_byte(b2);
+    return emit_byte(b2);
   }
 
   inline void patch_jump(int offset) {
@@ -377,6 +378,7 @@ class Compiler : private UnCopyable {
       PREFIX(function),                         // KEYWORD(FN, "fn")
       UNUSED,                                   // KEYWORD(FOR, "for")
       UNUSED,                                   // KEYWORD(IF, "if")
+      UNUSED,                                   // KEYWORD(IN, "in")
       INFIX(is, Precedence::IS),                // KEYWORD(IS, "is")
       NEWOP(new_exp),                           // KEYWORD(NEW, "new")
       PREFIX(nil),                              // KEYWORD(NIL, "nil")
@@ -423,6 +425,14 @@ class Compiler : private UnCopyable {
     }
   }
 
+  int define_local(const str_t& name) {
+    // create a new local variable with [name], assumes the current scope
+    // is local and the name is unique
+
+    locals_.push_back(Local(name, scope_depth_, false));
+    return Xt::as_type<int>(locals_.size() - 1);
+  }
+
   int declare_variable(void) {
     consume(TokenKind::TK_IDENTIFIER, "expected variable name");
 
@@ -455,9 +465,7 @@ class Compiler : private UnCopyable {
       return -1;
     }
 
-    // define a new local variable in the current scope
-    locals_.push_back(Local(name, scope_depth_, false));
-    return Xt::as_type<int>(locals_.size() - 1);
+    return define_local(name);
   }
 
   void define_variable(int symbol) {
@@ -636,17 +644,15 @@ class Compiler : private UnCopyable {
 
       // emit the store instruction
       switch (load_instruction) {
-      case Code::LOAD_LOCAL: emit_byte(Code::STORE_LOCAL); break;
-      case Code::LOAD_UPVALUE: emit_byte(Code::STORE_UPVALUE); break;
-      case Code::LOAD_GLOBAL: emit_byte(Code::STORE_GLOBAL); break;
+      case Code::LOAD_LOCAL: emit_bytes(Code::STORE_LOCAL, index); break;
+      case Code::LOAD_UPVALUE: emit_bytes(Code::STORE_UPVALUE, index); break;
+      case Code::LOAD_GLOBAL: emit_bytes(Code::STORE_GLOBAL, index); break;
       default: UNREACHABLE();
       }
     }
     else {
-      emit_byte(load_instruction);
+      emit_bytes(load_instruction, index);
     }
-
-    emit_byte(index);
   }
 
   void field(bool allow_assignment) {
@@ -672,24 +678,23 @@ class Compiler : private UnCopyable {
 
       // if we are directly inside a method, use a more optional instruction
       if (!method_name_.empty()) {
-        emit_byte(Code::STORE_FIELD_THIS);
+        emit_bytes(Code::STORE_FIELD_THIS, field);
       }
       else {
         load_this();
-        emit_byte(Code::STORE_FIELD);
+        emit_bytes(Code::STORE_FIELD, field);
       }
     }
     else {
       // if we are directly inside a method, use a more optional instruction
       if (!method_name_.empty()) {
-        emit_byte(Code::LOAD_FIELD_THIS);
+        emit_bytes(Code::LOAD_FIELD_THIS, field);
       }
       else {
         load_this();
-        emit_byte(Code::LOAD_FIELD);
+        emit_bytes(Code::LOAD_FIELD, field);
       }
     }
-    emit_byte(field);
   }
 
   bool match(TokenKind expected) {
@@ -705,6 +710,30 @@ class Compiler : private UnCopyable {
 
     if (parser_.prev().kind() != expected)
       error(msg);
+  }
+
+  int start_loop_body(void) {
+    int outer_loop_body = loop_body_;
+    loop_body_ = fn_->codes_count();
+    return outer_loop_body;
+  }
+
+  void finish_loop_body(int outer_loop_body) {
+    // find any break placeholder instructions (which will be Code::END in the
+    // bytecode) and replace them with real jumps
+    int i = loop_body_;
+    while (i < fn_->codes_count()) {
+      if (Xt::as_type<Code>(fn_->get_code(i)) == Code::END) {
+        fn_->set_code(i, Code::JUMP);
+        patch_jump(i + 1);
+        i += 2;
+      }
+      else {
+        // skip this instruction and its arguments
+        i += 1 + fn_->get_argc(i);
+      }
+    }
+    loop_body_ = outer_loop_body;
   }
 
   void class_definition(void) {
@@ -769,6 +798,108 @@ class Compiler : private UnCopyable {
     define_variable(symbol);
   }
 
+  void for_stmt(void) {
+    // A for statement like:
+    //
+    //     for (i in sequence.expression) {
+    //       IO.write(i)
+    //     }
+    //
+    // Is compiled to bytecode almost as if the source looked like this:
+    //
+    //     {
+    //       var seq_ = sequence.expression
+    //       var iter_
+    //       while (true) {
+    //         iter_ = seq_.iterate(iter_)
+    //         if (!iter_) break
+    //         var i = set_.iteratorValue(iter_)
+    //         IO.write(i)
+    //       }
+    //     }
+    //
+    // It's not exactly this, because the synthetic variables `seq_` and `iter_`
+    // actually get names that aren't valid Wren identfiers. Also, the `while`
+    // and `break` are just the bytecode for explicit loops and jumps. But that's
+    // the basic idea.
+    //
+    // The important parts are:
+    // - The sequence expression is only evaluated once.
+    // - The .iterate() method is used to advance the iterator and determine if
+    //   it should exit the loop.
+    // - The .iteratorValue() method is used to get the value at the current
+    //   iterator position.
+
+    // Create a scope for the hidden local variables used for the iterator.
+
+    push_scope();
+
+    consume(TokenKind::TK_LPAREN, "expect `(` after keyword `for`");
+    consume(TokenKind::TK_IDENTIFIER, "expect for loop variable name");
+
+    // remeber the name of the loop variable
+    str_t name = parser_.prev().as_string();
+
+    consume(TokenKind::KW_IN, "expect `in` after for loop variable");
+
+    // evaluate the sequence expression and store it in a hidden local variable
+    // the scope in the variable name ensures it won't collide with a user-defined
+    // variable
+    expression();
+    int seq_slot = define_local("seq ");
+
+    // create another hidden local for the iterator object
+    nil(false);
+    int iter_slot = define_local("iter ");
+
+    consume(TokenKind::TK_RPAREN, "expect `)` after loop expression");
+
+    // remeber what instrution to loop back to
+    int loop_start = fn_->codes_count() - 1;
+
+    // advance the iterator by calling the `.iterate` method on the sequence
+    emit_bytes(Code::LOAD_LOCAL, seq_slot);
+    emit_bytes(Code::LOAD_LOCAL, iter_slot);
+
+    int iterate_symbol = vm_methods().ensure("iterate ");
+    emit_bytes(Code::CALL_1, iterate_symbol);
+
+    // store the iterator back in its local for the next iteration
+    emit_bytes(Code::STORE_LOCAL, iter_slot);
+
+    // if it returned something falsely, jump out of the loop
+    int exit_jump = emit_bytes(Code::JUMP_IF, 0xff);
+
+    // create a scope for the loop body
+    push_scope();
+
+    // get the current value in the sequence by calling `.iterValue`
+    emit_bytes(Code::LOAD_LOCAL, seq_slot);
+    emit_bytes(Code::LOAD_LOCAL, iter_slot);
+
+    int iter_value_symbol = vm_methods().ensure("iterValue ");
+    emit_bytes(Code::CALL_1, iter_value_symbol);
+
+    // bind it to the loop variable
+    define_local(name);
+
+    // compile the body
+    int outer_loop_body = start_loop_body();
+    block();
+
+    pop_scope();
+
+    // loop back to the top
+    emit_byte(Code::LOOP);
+    int loop_offset = fn_->codes_count() - loop_start;
+    emit_byte(loop_offset);
+
+    patch_jump(exit_jump);
+    finish_loop_body(outer_loop_body);
+
+    pop_scope();
+  }
+
   void while_stmt(void) {
     // remeber what instrution to loop back to
     int loop_start = fn_->codes_count() - 1;
@@ -778,13 +909,10 @@ class Compiler : private UnCopyable {
     expression();
     consume(TokenKind::TK_RPAREN, "expect `)` after while condition");
 
-    emit_byte(Code::JUMP_IF);
-    int exit_jump = emit_byte(0xff);
+    int exit_jump = emit_bytes(Code::JUMP_IF, 0xff);
 
     // compile the body
-    int outer_loop_body = loop_body_;
-    loop_body_ = fn_->codes_count();
-
+    int outer_loop_body = start_loop_body();
     block();
 
     // loop back to the top
@@ -793,22 +921,20 @@ class Compiler : private UnCopyable {
     emit_byte(loop_offset);
 
     patch_jump(exit_jump);
+    finish_loop_body(outer_loop_body);
+  }
 
-    // find any break placeholder instructions (which will be Code::END in the
-    // bytecode) and replace them with real jumps
-    int i = loop_body_;
-    while (i < fn_->codes_count()) {
-      if (Xt::as_type<Code>(fn_->get_code(i)) == Code::END) {
-        fn_->set_code(i, Code::JUMP);
-        patch_jump(i + 1);
-        i += 2;
-      }
-      else {
-        // skip this instruction and its arguments
-        i += 1 + fn_->get_argc(i);
-      }
+  void var_definition(void) {
+    int symbol = declare_variable();
+    // compile the initializer
+    if (match(TokenKind::TK_EQ)) {
+      expression();
     }
-    loop_body_ = outer_loop_body;
+    else {
+      // default initialize it to nil
+      nil(false);
+    }
+    define_variable(symbol);
   }
 
   void definition(void) {
@@ -822,16 +948,7 @@ class Compiler : private UnCopyable {
     }
 
     if (match(TokenKind::KW_VAR)) {
-      int symbol = declare_variable();
-      // compile the initializer
-      if (match(TokenKind::TK_EQ)) {
-        expression();
-      }
-      else {
-        // default initialize it to nil
-        nil(false);
-      }
-      define_variable(symbol);
+      var_definition();
       return;
     }
 
@@ -854,6 +971,11 @@ class Compiler : private UnCopyable {
       return;
     }
 
+    if (match(TokenKind::KW_FOR)) {
+      for_stmt();
+      return;
+    }
+
     if (match(TokenKind::KW_IF)) {
       // compile the condition
       consume(TokenKind::TK_LPAREN, "expect `(` after `if` keyword");
@@ -861,16 +983,14 @@ class Compiler : private UnCopyable {
       consume(TokenKind::TK_RPAREN, "expect `)` after if condition");
 
       // jump to the else branch if the condition is false
-      emit_byte(Code::JUMP_IF);
-      int if_jump = emit_byte(0xff);
+      int if_jump = emit_bytes(Code::JUMP_IF, 0xff);
 
       // compile the then branch
       block();
 
       if (match(TokenKind::KW_ELSE)) {
         // jump over the else branch when the if branch is taken
-        emit_byte(Code::JUMP);
-        int else_jump = emit_byte(0xff);
+        int else_jump = emit_bytes(Code::JUMP, 0xff);
 
         patch_jump(if_jump);
         block();
@@ -994,8 +1114,7 @@ class Compiler : private UnCopyable {
     method_compiler.finish_compiler(method_constant);
 
     // compile the code to define the method it
-    emit_byte(instruction);
-    emit_byte(symbol);
+    emit_bytes(instruction, symbol);
   }
 
   void call(bool allow_assignment) {
@@ -1046,8 +1165,7 @@ class Compiler : private UnCopyable {
   void and_expr(bool allow_assignment) {
     // skip the right argument if the left is false
 
-    emit_byte(Code::AND);
-    int jump = emit_byte(0xff);
+    int jump = emit_bytes(Code::AND, 0xff);
 
     parse_precedence(false, Precedence::LOGIC);
     patch_jump(jump);
@@ -1056,8 +1174,7 @@ class Compiler : private UnCopyable {
   void or_expr(bool allow_assignment) {
     // skip the right argument if the left if true
 
-    emit_byte(Code::OR);
-    int jump = emit_byte(0xff);
+    int jump = emit_bytes(Code::OR, 0xff);
 
     parse_precedence(false, Precedence::LOGIC);
     patch_jump(jump);

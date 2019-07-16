@@ -424,6 +424,8 @@ Value WrenVM::interpret(const Value& function, FiberObject* fiber) {
     CASE_CODE(CLOSE_UPVALUE):
     {
       fiber->close_upvalue();
+      POP();
+
       DISPATCH();
     }
     CASE_CODE(RETURN):

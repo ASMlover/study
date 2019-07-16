@@ -327,6 +327,27 @@ DEF_NATIVE(list_remove) {
   return removed;
 }
 
+DEF_NATIVE(list_iterate) {
+  // if we are starting the interation, return the first index
+  if (args[1].is_nil())
+    return 0;
+
+  ListObject* list = args[0].as_list();
+  double index = args[1].as_numeric();
+
+  if (index >= list->count() - 1)
+    return false;
+
+  return index + 1;
+}
+
+DEF_NATIVE(list_itervalue) {
+  ListObject* list = args[0].as_list();
+  double index = args[1].as_numeric();
+
+  return list->get_element(Xt::as_type<int>(index));
+}
+
 DEF_NATIVE(list_subscript) {
   ListObject* list = args[0].as_list();
   int index = validate_index(args[1], list->count());
@@ -457,6 +478,8 @@ void initialize_core(WrenVM& vm) {
   vm.set_native(vm.list_cls(), "len", _primitive_list_len);
   vm.set_native(vm.list_cls(), "insert  ", _primitive_list_insert);
   vm.set_native(vm.list_cls(), "remove ", _primitive_list_remove);
+  vm.set_native(vm.list_cls(), "iterate ", _primitive_list_iterate);
+  vm.set_native(vm.list_cls(), "iterValue ", _primitive_list_itervalue);
   vm.set_native(vm.list_cls(), "[ ]", _primitive_list_subscript);
   vm.set_native(vm.list_cls(), "[ ]=", _primitive_list_subscript_setter);
 
