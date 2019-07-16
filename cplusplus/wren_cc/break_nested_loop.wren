@@ -2,18 +2,13 @@
 var i = 0
 while (true) {
   IO.write("outer " + i.toString)
-  if (i > 1) {
-    // TODO:
-    break
-  }
+  if (i > 1) break
 
   var j = 0
   while (true) {
     IO.write("inner " + j.toString)
-    if (j > 1) {
-      // TODO:
-      break
-    }
+    if (j > 1) break
+
     j = j + 1
   }
   i = i + 1

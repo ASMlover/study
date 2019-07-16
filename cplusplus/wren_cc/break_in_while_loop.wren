@@ -4,10 +4,7 @@ while (true) {
   i = i + 1
   IO.write(i)
 
-  if (i > 2) {
-    // should not require block for break
-    break
-  }
+  if (i > 2) break
   IO.write(i)
 }
 

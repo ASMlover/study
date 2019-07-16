@@ -707,7 +707,7 @@ class Compiler : private UnCopyable {
       error(msg);
   }
 
-  void class_stmt(void) {
+  void class_definition(void) {
     // compiles a class definition, assumes the `class` token has already
     // been consumed.
 
@@ -811,6 +811,33 @@ class Compiler : private UnCopyable {
     loop_body_ = outer_loop_body;
   }
 
+  void definition(void) {
+    // compiles a `definition`, there are the statements that bind new
+    // variables, they can only appear at the top level of a block and are
+    // prohibited in places like the non-curly body of an if or while
+
+    if (match(TokenKind::KW_CLASS)) {
+      class_definition();
+      return;
+    }
+
+    if (match(TokenKind::KW_VAR)) {
+      int symbol = declare_variable();
+      // compile the initializer
+      if (match(TokenKind::TK_EQ)) {
+        expression();
+      }
+      else {
+        // default initialize it to nil
+        nil(false);
+      }
+      define_variable(symbol);
+      return;
+    }
+
+    block();
+  }
+
   void statement(void) {
     // compiles a statement, there can only appear at the top-level or within
     // curly blocks, unlike expressions, these do not leave a value on the stack
@@ -824,11 +851,6 @@ class Compiler : private UnCopyable {
       // we will replace these with `JUMP` instructions with appropriate offsets
       // we use `END` here because that cannot occur in the middle of bytecode
       emit_bytes(Code::END, 0);
-      return;
-    }
-
-    if (match(TokenKind::KW_CLASS)) {
-      class_stmt();
       return;
     }
 
@@ -868,26 +890,14 @@ class Compiler : private UnCopyable {
       return;
     }
 
-    if (match(TokenKind::KW_VAR)) {
-      int symbol = declare_variable();
-      // compile the initializer
-      if (match(TokenKind::TK_EQ)) {
-        expression();
-      }
-      else {
-        // default initialize it to nil
-        nil(false);
-      }
-      define_variable(symbol);
-      return;
-    }
-
     if (match(TokenKind::KW_WHILE)) {
       while_stmt();
       return;
     }
 
-    block();
+    // expression statement
+    expression();
+    emit_byte(Code::POP);
   }
 
   void expression(void) {
@@ -911,16 +921,15 @@ class Compiler : private UnCopyable {
       return;
     }
 
-    // expression statement
-    expression();
-    emit_byte(Code::POP);
+    // single statement body
+    statement();
   }
 
   void finish_block(void) {
     // parses a block body, after the initial `{` has been consumed
 
     for (;;) {
-      statement();
+      definition();
 
       if (!match(TokenKind::TK_NL)) {
         consume(TokenKind::TK_RBRACE, "expect `}` after block body");
@@ -1323,7 +1332,7 @@ public:
     Pinned pinned;
     parser_.get_vm().pin_object(fn_, &pinned);
     for (;;) {
-      statement();
+      definition();
 
       // if there is no newline, it must be the end of the block on the same line
       if (!match(TokenKind::TK_NL)) {
