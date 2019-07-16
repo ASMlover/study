@@ -312,6 +312,8 @@ public:
     return Xt::as_type<int>(constants_.size()) - 1;
   }
 
+  int get_argc(int ip) const;
+
   virtual str_t stringify(void) const override;
   virtual void gc_mark(WrenVM& vm) override;
 

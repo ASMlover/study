@@ -242,6 +242,38 @@ ListObject* ListObject::make_list(WrenVM& vm, int num_elements) {
   return o;
 }
 
+int FunctionObject::get_argc(int ip) const {
+  // returns the number of arguments to the instruction at [ip] in [fn]'s
+  // bytecode
+
+  switch (Code c = Xt::as_type<Code>(get_code(ip))) {
+  case Code::NIL:
+  case Code::FALSE:
+  case Code::TRUE:
+  case Code::POP:
+  case Code::IS:
+  case Code::CLOSE_UPVALUE:
+  case Code::RETURN:
+  case Code::NEW:
+    return 0;
+
+  // instructions with two arguments
+  case Code::METHOD_INSTANCE:
+  case Code::METHOD_STATIC:
+    return 2;
+
+  case Code::CLOSURE:
+    {
+      int constant = get_code(ip + 1);
+      FunctionObject* loaded_fn = get_constant(constant).as_function();
+
+      // there is an argument for the constant, then one for each upvalue
+      return 1 + loaded_fn->num_upvalues();
+    }
+  default: return 1; // most instructions have one argument
+  }
+}
+
 str_t FunctionObject::stringify(void) const {
   std::stringstream ss;
   ss << "[fn `" << this << "`]";

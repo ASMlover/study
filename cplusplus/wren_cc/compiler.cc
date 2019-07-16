@@ -131,6 +131,7 @@ public:
       case TokenKind::TK_BANGEQ:
       case TokenKind::KW_CLASS:
       case TokenKind::KW_ELSE:
+      case TokenKind::KW_FOR:
       case TokenKind::KW_IF:
       case TokenKind::KW_IS:
       case TokenKind::KW_NEW:
@@ -214,7 +215,6 @@ class Compiler : private UnCopyable {
   Parser& parser_;
   Compiler* parent_{};
   FunctionObject* fn_{};
-  int num_codes_{};
 
   // for the fields of the nearest enclosing class, or nullptr if not
   // currently inside a class
@@ -224,6 +224,10 @@ class Compiler : private UnCopyable {
   // a -1 here means top-level code is being compiled and thers is no block
   // scope in effect at all. any variables declared will be global
   int scope_depth_{-1};
+
+  // index of the first instruction of the body of the innermost loop
+  // currently being compiled. will be -1 if not currently inside a loop.
+  int loop_body_{-1};
 
   // name of the method this compiler is compiling, or `empty` if this
   // compiler is not for a method. note that this is just the bare method
@@ -366,10 +370,12 @@ class Compiler : private UnCopyable {
       INFIXOP(Precedence::EQUALITY, "== "),     // PUNCTUATOR(EQEQ, "==")
       INFIXOP(Precedence::EQUALITY, "!= "),     // PUNCTUATOR(BANGEQ, "!=")
 
+      UNUSED,                                   // KEYWORD(BREAK, "break")
       UNUSED,                                   // KEYWORD(CLASS, "class")
       UNUSED,                                   // KEYWORD(ELSE, "else")
       PREFIX(boolean),                          // KEYWORD(FALSE, "false")
       PREFIX(function),                         // KEYWORD(FN, "fn")
+      UNUSED,                                   // KEYWORD(FOR, "for")
       UNUSED,                                   // KEYWORD(IF, "if")
       INFIX(is, Precedence::IS),                // KEYWORD(IS, "is")
       NEWOP(new_exp),                           // KEYWORD(NEW, "new")
@@ -763,9 +769,63 @@ class Compiler : private UnCopyable {
     define_variable(symbol);
   }
 
+  void while_stmt(void) {
+    // remeber what instrution to loop back to
+    int loop_start = fn_->codes_count() - 1;
+
+    // compile the condition
+    consume(TokenKind::TK_LPAREN, "expect `(` after `while`");
+    expression();
+    consume(TokenKind::TK_RPAREN, "expect `)` after while condition");
+
+    emit_byte(Code::JUMP_IF);
+    int exit_jump = emit_byte(0xff);
+
+    // compile the body
+    int outer_loop_body = loop_body_;
+    loop_body_ = fn_->codes_count();
+
+    block();
+
+    // loop back to the top
+    emit_byte(Code::LOOP);
+    int loop_offset = fn_->codes_count() - loop_start;
+    emit_byte(loop_offset);
+
+    patch_jump(exit_jump);
+
+    // find any break placeholder instructions (which will be Code::END in the
+    // bytecode) and replace them with real jumps
+    int i = loop_body_;
+    while (i < fn_->codes_count()) {
+      if (Xt::as_type<Code>(fn_->get_code(i)) == Code::END) {
+        fn_->set_code(i, Code::JUMP);
+        patch_jump(i + 1);
+        i += 2;
+      }
+      else {
+        // skip this instruction and its arguments
+        i += 1 + fn_->get_argc(i);
+      }
+    }
+    loop_body_ = outer_loop_body;
+  }
+
   void statement(void) {
     // compiles a statement, there can only appear at the top-level or within
     // curly blocks, unlike expressions, these do not leave a value on the stack
+
+    if (match(TokenKind::KW_BREAK)) {
+      if (loop_body_ == -1)
+        error("cannot use `break` outside of a loop");
+
+      // emit a placeholder instruction for the jump to the end of the body,
+      // when we are done compiling the loop body and know where the end is.
+      // we will replace these with `JUMP` instructions with appropriate offsets
+      // we use `END` here because that cannot occur in the middle of bytecode
+      emit_bytes(Code::END, 0);
+      return;
+    }
 
     if (match(TokenKind::KW_CLASS)) {
       class_stmt();
@@ -823,26 +883,7 @@ class Compiler : private UnCopyable {
     }
 
     if (match(TokenKind::KW_WHILE)) {
-      // remember what instruction to loop back to
-      int loop_start = fn_->codes_count() - 1;
-
-      // compile the condition
-      consume(TokenKind::TK_LPAREN, "expect `(` after while keyword");
-      expression();
-      consume(TokenKind::TK_RPAREN, "expect `)` after while condition");
-
-      emit_byte(Code::JUMP_IF);
-      int exit_jump = emit_byte(0xff);
-
-      // compile the while body
-      block();
-
-      // loop back to the while top
-      emit_byte(Code::LOOP);
-      int loop_offset = fn_->codes_count() - loop_start;
-      emit_byte(loop_offset);
-
-      patch_jump(exit_jump);
+      while_stmt();
       return;
     }
 
