@@ -48,6 +48,7 @@ enum class Precedence {
   IS,         // is
   EQUALITY,   // == !=
   COMPARISON, // < <= > >=
+  RANGE,      // .. ...
   BITWISE,    // | &
   TERM,       // + -
   FACTOR,     // * / %
@@ -110,6 +111,8 @@ public:
       case TokenKind::TK_LBRACKET:
       case TokenKind::TK_LBRACE:
       case TokenKind::TK_DOT:
+      case TokenKind::TK_DOTDOT:
+      case TokenKind::TK_DOTDOTDOT:
       case TokenKind::TK_COMMA:
       case TokenKind::TK_STAR:
       case TokenKind::TK_SLASH:
@@ -351,6 +354,8 @@ class Compiler : private UnCopyable {
       UNUSED,                                   // PUNCTUATOR(RBRACE, "}")
       UNUSED,                                   // PUNCTUATOR(COLON, ":")
       INFIX(call, Precedence::CALL),            // PUNCTUATOR(DOT, ".")
+      INFIXOP(Precedence::RANGE, ".. "),        // PUNCTUATOR(DOTDOT, "..")
+      INFIXOP(Precedence::RANGE, "... "),       // PUNCTUATOR(DOTDOTDOT, "...")
       UNUSED,                                   // PUNCTUATOR(COMMA, ",")
       INFIXOP(Precedence::FACTOR, "* "),        // PUNCTUATOR(STAR, "*")
       INFIXOP(Precedence::FACTOR, "/ "),        // PUNCTUATOR(SLASH, "/")

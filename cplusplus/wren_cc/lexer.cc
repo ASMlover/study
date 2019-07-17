@@ -50,7 +50,14 @@ Token Lexer::next_token(void) {
   case '}': return make_token(TokenKind::TK_RBRACE);
   case ';': return make_token(TokenKind::TK_NL);
   case ':': return make_token(TokenKind::TK_COLON);
-  case '.': return make_token(TokenKind::TK_DOT);
+  case '.':
+    if (match('.')) {
+      return make_token(match('.') ?
+          TokenKind::TK_DOTDOTDOT : TokenKind::TK_DOTDOT);
+    }
+    else {
+      return make_token(TokenKind::TK_DOT);
+    }
   case ',': return make_token(TokenKind::TK_COMMA);
   case '*': return make_token(TokenKind::TK_STAR);
   case '/': return make_token(TokenKind::TK_SLASH);
