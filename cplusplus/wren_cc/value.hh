@@ -274,7 +274,11 @@ public:
   inline void clear(void) { elements_.clear(); }
   inline void add_element(const Value& e) { elements_.push_back(e); }
   inline void insert(int i, const Value& e) { elements_.insert(elements_.begin() + i, e); }
-  inline void remove(int i) { elements_.erase(elements_.begin() + i); }
+  inline Value remove(int i) {
+    Value removed = elements_[i];
+    elements_.erase(elements_.begin() + i);
+    return removed;
+  }
 
   virtual str_t stringify(void) const override;
   virtual void gc_mark(WrenVM& vm) override;
