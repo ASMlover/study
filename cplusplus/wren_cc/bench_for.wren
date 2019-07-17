@@ -1,13 +1,6 @@
 
 var list = []
-
-{
-  var i = 0
-  while (i < 200000) {
-    list.add(i)
-    i = i + 1
-  }
-}
+for (i in 0...200000) list.add(i)
 
 var start = OS.clock
 var sum = 0

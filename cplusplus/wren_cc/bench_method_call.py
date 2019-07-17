@@ -58,22 +58,36 @@ class NthToggle(Toggle):
 def main():
     start = time.time()
     n = 100000
-    i = 0
     val = True
     toggle = Toggle(val)
 
-    while i < n:
+    for i in range(0, n):
       val = toggle.activate().value()
-      i += 1
+      val = toggle.activate().value()
+      val = toggle.activate().value()
+      val = toggle.activate().value()
+      val = toggle.activate().value()
+      val = toggle.activate().value()
+      val = toggle.activate().value()
+      val = toggle.activate().value()
+      val = toggle.activate().value()
+      val = toggle.activate().value()
     print(toggle.value())
 
     val = True
     ntoggle = NthToggle(val, 3)
 
-    i = 0
-    while i < n:
-      val = ntoggle.activate().value
-      i += 1
+    for i in range(0, n):
+      val = ntoggle.activate().value()
+      val = ntoggle.activate().value()
+      val = ntoggle.activate().value()
+      val = ntoggle.activate().value()
+      val = ntoggle.activate().value()
+      val = ntoggle.activate().value()
+      val = ntoggle.activate().value()
+      val = ntoggle.activate().value()
+      val = ntoggle.activate().value()
+      val = ntoggle.activate().value()
     print(ntoggle.value())
 
     print("use: %s" % (time.time() - start))
