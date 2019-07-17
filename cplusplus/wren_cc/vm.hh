@@ -135,7 +135,7 @@ public:
 
   ClassObject* get_class(const Value& val) const;
   void interpret(const str_t& source_bytes);
-  void call_function(FiberObject* fiber, const Value& fn, int argc);
+  void call_function(FiberObject* fiber, BaseObject* fn, int argc);
 };
 
 }

@@ -387,14 +387,14 @@ public:
 
 struct CallFrame {
   const u8_t* ip{}; // pointer to the current instruction in the function's body
-  Value fn{};       // the function or closure being executed
+  BaseObject* fn{}; // the function or closure being executed
 
   // index of the first stack slot used by this call frame, this will contain
   // the receiver, followed by the function's parameters, then local variables
   // and temporaries
   int stack_start{};
 
-  CallFrame(const u8_t* _ip, const Value& _fn, int _stack_start) noexcept
+  CallFrame(const u8_t* _ip, BaseObject* _fn, int _stack_start) noexcept
     : ip(_ip), fn(_fn), stack_start(_stack_start) {
   }
 };
@@ -444,7 +444,7 @@ public:
     return v;
   }
 
-  void call_function(const Value& fn, int argc = 0);
+  void call_function(BaseObject* fn, int argc = 0);
   UpvalueObject* capture_upvalue(WrenVM& vm, int slot);
   void close_upvalue(void);
   void close_upvalues(int slot);
@@ -468,14 +468,14 @@ enum class MethodType {
 
 struct Method {
   MethodType type{MethodType::NONE};
-  std::variant<PrimitiveFn, FiberPrimitiveFn, Value> m_{};
+  std::variant<PrimitiveFn, FiberPrimitiveFn, BaseObject*> m_{};
 
   inline const PrimitiveFn& primitive(void) const { return std::get<PrimitiveFn>(m_); }
   inline void set_primitive(const PrimitiveFn& fn) { m_ = fn; }
   inline const FiberPrimitiveFn& fiber_primitive(void) const { return std::get<FiberPrimitiveFn>(m_); }
   inline void set_fiber_primitive(const FiberPrimitiveFn& fn) { m_ = fn; }
-  inline const Value& fn(void) const { return std::get<Value>(m_); }
-  inline void set_fn(const Value& fn) { m_ = fn; }
+  inline BaseObject* fn(void) const { return std::get<BaseObject*>(m_); }
+  inline void set_fn(BaseObject* fn) { m_ = fn; }
 
   Method(void) noexcept {}
 };
@@ -506,11 +506,11 @@ public:
     methods_[i].type = MethodType::FIBER;
     methods_[i].set_fiber_primitive(fn);
   }
-  inline void set_method(int i, const Value& fn) {
+  inline void set_method(int i, BaseObject* fn) {
     methods_[i].type = MethodType::BLOCK;
     methods_[i].set_fn(fn);
   }
-  inline void set_method(int i, MethodType fn_type, const Value& fn) {
+  inline void set_method(int i, MethodType fn_type, BaseObject* fn) {
     methods_[i].type = fn_type;
     methods_[i].set_fn(fn);
   }

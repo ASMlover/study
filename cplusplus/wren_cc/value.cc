@@ -298,8 +298,9 @@ UpvalueObject::UpvalueObject(Value* value, UpvalueObject* next) noexcept
 }
 
 str_t UpvalueObject::stringify(void) const {
-  ASSERT(false, "upvalues should not be used as first-class object");
-  return "";
+  std::stringstream ss;
+  ss << "[upvalue `" << this << "`]";
+  return ss.str();
 }
 
 void UpvalueObject::gc_mark(WrenVM& vm) {
@@ -346,12 +347,12 @@ ClosureObject* ClosureObject::make_closure(WrenVM& vm, FunctionObject* fn) {
   return o;
 }
 
-void FiberObject::call_function(const Value& fn, int argc) {
+void FiberObject::call_function(BaseObject* fn, int argc) {
   const u8_t* ip;
-  if (fn.is_function())
-    ip = fn.as_function()->codes();
+  if (fn->type() == ObjType::FUNCTION)
+    ip = Xt::down<FunctionObject>(fn)->codes();
   else
-    ip = fn.as_closure()->fn()->codes();
+    ip = Xt::down<ClosureObject>(fn)->fn()->codes();
   frames_.push_back(CallFrame(ip, fn, stack_size() - argc));
 }
 
@@ -417,7 +418,7 @@ str_t FiberObject::stringify(void) const {
 void FiberObject::gc_mark(WrenVM& vm) {
   // stack functions
   for (auto& f : frames_)
-    vm.mark_value(f.fn);
+    vm.mark_object(f.fn);
 
   // stack variables
   for (auto& v : stack_)
@@ -491,9 +492,9 @@ void ClassObject::bind_method(int i, int method_type, const Value& fn) {
 
   switch (Xt::as_type<Code>(method_type)) {
   case Code::METHOD_INSTANCE:
-    set_method(i, MethodType::BLOCK, fn); break;
+    set_method(i, MethodType::BLOCK, fn.as_object()); break;
   case Code::METHOD_STATIC:
-    meta_class_->set_method(i, MethodType::BLOCK, fn); break;
+    meta_class_->set_method(i, MethodType::BLOCK, fn.as_object()); break;
   }
 }
 
@@ -507,7 +508,7 @@ void ClassObject::gc_mark(WrenVM& vm) {
   vm.mark_object(meta_class_);
   for (auto& m : methods_) {
     if (m.type == MethodType::BLOCK)
-      vm.mark_value(m.fn());
+      vm.mark_object(m.fn());
   }
 }
 

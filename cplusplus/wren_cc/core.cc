@@ -39,7 +39,7 @@ static Value _primitive_##fn(WrenVM& vm, Value* args)
 static void _primitive_##fn(WrenVM& vm, FiberObject* fiber, Value* args)
 #define DEF_FIBER_NATIVE_FN(fn, argc)\
 static void _primitive_##fn(WrenVM& vm, FiberObject* fiber, Value* args) {\
-  vm.call_function(fiber, args[0], argc);\
+  vm.call_function(fiber, args[0].as_object(), argc);\
 }
 
 static str_t kCoreLib =

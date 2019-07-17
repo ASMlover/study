@@ -125,13 +125,13 @@ Value WrenVM::interpret(const Value& function, FiberObject* fiber) {
 // local variables
 #define LOAD_FRAME()\
   frame = &fiber->peek_frame();\
-  if (frame->fn.is_function()) {\
-    fn = frame->fn.as_function();\
+  if (frame->fn->type() == ObjType::FUNCTION) {\
+    fn = Xt::down<FunctionObject>(frame->fn);\
     co = nullptr;\
   }\
   else {\
-    fn = frame->fn.as_closure()->fn();\
-    co = frame->fn.as_closure();\
+    fn = Xt::down<ClosureObject>(frame->fn)->fn();\
+    co = Xt::down<ClosureObject>(frame->fn);\
   }
 
 #if defined(COMPUTED_GOTOS)
@@ -607,7 +607,7 @@ void WrenVM::interpret(const str_t& source_bytes) {
   unpin_object();
 }
 
-void WrenVM::call_function(FiberObject* fiber, const Value& fn, int argc) {
+void WrenVM::call_function(FiberObject* fiber, BaseObject* fn, int argc) {
   fiber->call_function(fn, argc);
 }
 
