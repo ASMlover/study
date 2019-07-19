@@ -27,6 +27,7 @@
 #pragma once
 
 #include "value.hh"
+#include "compiler.hh"
 
 namespace wrencc {
 
@@ -81,6 +82,11 @@ class WrenVM final : private UnCopyable {
   SymbolTable global_symbols_;
   std::vector<Value> globals_;
 
+  // the compiler that is currently compiling code, this is used so that
+  // heap allocated objects used by the compiler can be found if a GC is
+  // kicked off in the middle of a compile
+  Compiler* compiler_{};
+
   // how many bytes of object data have been allocated
   sz_t total_allocated_{};
   // the number of total allocated objects that will trigger the next GC
@@ -122,6 +128,7 @@ public:
 
   inline SymbolTable& methods(void) { return methods_; }
   inline SymbolTable& gsymbols(void) { return global_symbols_; }
+  void set_compiler(Compiler* compiler) { compiler_ = compiler; }
   void set_native(ClassObject* cls, const str_t& name, PrimitiveFn fn);
   void set_native(ClassObject* cls, const str_t& name, FiberPrimitiveFn fn);
   void set_global(const str_t& name, const Value& value);

@@ -218,7 +218,10 @@ class Compiler : private UnCopyable {
 
   Parser& parser_;
   Compiler* parent_{};
-  FunctionObject* fn_{};
+
+  // the growable buffer of code that's been compiled so far
+  std::vector<u8_t> bytecode_;
+  ListObject* constants_{};
 
   // for the fields of the nearest enclosing class, or nullptr if not
   // currently inside a class
@@ -244,6 +247,7 @@ class Compiler : private UnCopyable {
   // the upvalues that this function has captured from outer scopes, the
   // count of them is stored in `fn->num_upvalues()`
   std::vector<CompilerUpvalue> upvalues_;
+  int num_upvalues_{};
 
   inline SymbolTable& vm_methods(void) { return parser_.get_vm().methods(); }
   inline SymbolTable& vm_gsymbols(void) { return parser_.get_vm().gsymbols(); }
@@ -270,7 +274,8 @@ class Compiler : private UnCopyable {
   }
 
   template <typename T> inline int emit_byte(T b) {
-    return fn_->add_code(b);
+    bytecode_.push_back(Xt::as_type<u8_t>(b));
+    return Xt::as_type<int>(bytecode_.size() - 1);
   }
 
   template <typename T, typename U> inline int emit_bytes(T b1, U b2) {
@@ -282,22 +287,22 @@ class Compiler : private UnCopyable {
     // replaces the placeholder argument for a previous JUMP or JUMP_IF
     // instruction with an offset that jumps to the current end of bytecode
 
-    fn_->set_code(offset, fn_->codes_count() - offset - 1);
+    bytecode_[offset] = Xt::as_type<u8_t>(bytecode_.size() - offset - 1);
   }
 
   inline int add_constant(const Value& v) {
     // see if an equivalent constant has already been added
-    for (int i = 0; i < fn_->constants_count(); ++i) {
-      if (fn_->get_constant(i) == v)
+    for (int i = 0; i < constants_->count(); ++i) {
+      if (constants_->get_element(i) == v)
         return i;
     }
 
-    if (fn_->constants_count() < kMaxConstants)
-      fn_->add_constant(v);
+    if (constants_->count() < kMaxConstants)
+      constants_->add_element(v);
     else
       error("a function may only contain %d unique constants", kMaxConstants);
 
-    return fn_->constants_count() - 1;
+    return constants_->count() - 1;
   }
 
   inline void emit_constant(const Value& v) {
@@ -505,7 +510,7 @@ class Compiler : private UnCopyable {
     // list. returns the index of the upvalue
 
     // look for an existing one
-    for (int i = 0; i < fn_->num_upvalues(); ++i) {
+    for (int i = 0; i < num_upvalues_; ++i) {
       auto& upvalue = upvalues_[i];
       if (upvalue.is_local == is_local && upvalue.index == index)
         return i;
@@ -513,7 +518,7 @@ class Compiler : private UnCopyable {
 
     // if got here, need add a new upvalue
     upvalues_.push_back(CompilerUpvalue(is_local, index));
-    return fn_->inc_num_upvalues();
+    return num_upvalues_++;
   }
 
   int find_upvalue(const str_t& name) {
@@ -719,7 +724,7 @@ class Compiler : private UnCopyable {
 
   int start_loop_body(void) {
     int outer_loop_body = loop_body_;
-    loop_body_ = fn_->codes_count();
+    loop_body_ = Xt::as_type<int>(bytecode_.size());
     return outer_loop_body;
   }
 
@@ -727,15 +732,15 @@ class Compiler : private UnCopyable {
     // find any break placeholder instructions (which will be Code::END in the
     // bytecode) and replace them with real jumps
     int i = loop_body_;
-    while (i < fn_->codes_count()) {
-      if (Xt::as_type<Code>(fn_->get_code(i)) == Code::END) {
-        fn_->set_code(i, Code::JUMP);
+    while (i < bytecode_.size()) {
+      if (Xt::as_type<Code>(bytecode_[i]) == Code::END) {
+        bytecode_[i] = Xt::as_type<u8_t>(Code::JUMP);
         patch_jump(i + 1);
         i += 2;
       }
       else {
         // skip this instruction and its arguments
-        i += 1 + fn_->get_argc(i);
+        i += 1 + get_argc(bytecode_, constants_->elements(), i);
       }
     }
     loop_body_ = outer_loop_body;
@@ -796,7 +801,7 @@ class Compiler : private UnCopyable {
     }
 
     // update the class with the number of fields
-    fn_->set_code(num_fields_instruction, fileds.count());
+    bytecode_[num_fields_instruction] = fileds.count();
     fields_ = prev_fields;
 
     // store it in its name
@@ -860,7 +865,7 @@ class Compiler : private UnCopyable {
     consume(TokenKind::TK_RPAREN, "expect `)` after loop expression");
 
     // remeber what instrution to loop back to
-    int loop_start = fn_->codes_count() - 1;
+    int loop_start = Xt::as_type<int>(bytecode_.size()) - 1;
 
     // advance the iterator by calling the `.iterate` method on the sequence
     emit_bytes(Code::LOAD_LOCAL, seq_slot);
@@ -896,7 +901,7 @@ class Compiler : private UnCopyable {
 
     // loop back to the top
     emit_byte(Code::LOOP);
-    int loop_offset = fn_->codes_count() - loop_start;
+    int loop_offset = Xt::as_type<int>(bytecode_.size()) - loop_start;
     emit_byte(loop_offset);
 
     patch_jump(exit_jump);
@@ -907,7 +912,7 @@ class Compiler : private UnCopyable {
 
   void while_stmt(void) {
     // remeber what instrution to loop back to
-    int loop_start = fn_->codes_count() - 1;
+    int loop_start = Xt::as_type<int>(bytecode_.size()) - 1;
 
     // compile the condition
     consume(TokenKind::TK_LPAREN, "expect `(` after `while`");
@@ -922,7 +927,7 @@ class Compiler : private UnCopyable {
 
     // loop back to the top
     emit_byte(Code::LOOP);
-    int loop_offset = fn_->codes_count() - loop_start;
+    int loop_offset = Xt::as_type<int>(bytecode_.size()) - loop_start;
     emit_byte(loop_offset);
 
     patch_jump(exit_jump);
@@ -1067,7 +1072,7 @@ class Compiler : private UnCopyable {
 
   void function(bool allow_assignment) {
     Compiler fn_compiler(parser_, this, "");
-    int fn_constant = fn_compiler.init_compiler();
+    fn_compiler.init_compiler();
 
     str_t dummy_name;
     fn_compiler.parameters(dummy_name);
@@ -1083,7 +1088,7 @@ class Compiler : private UnCopyable {
       fn_compiler.emit_byte(Code::RETURN);
     }
 
-    fn_compiler.finish_compiler(fn_constant);
+    fn_compiler.finish_compiler();
   }
 
   void method(Code instruction, bool is_ctor, const SignatureFn& signature) {
@@ -1098,7 +1103,7 @@ class Compiler : private UnCopyable {
     str_t name(parser_.prev().as_string());
 
     Compiler method_compiler(parser_, this, name);
-    int method_constant = method_compiler.init_compiler();
+    method_compiler.init_compiler();
 
     signature(&method_compiler, name);
     int symbol = vm_methods().ensure(name);
@@ -1116,7 +1121,7 @@ class Compiler : private UnCopyable {
       method_compiler.emit_byte(Code::NIL);
     }
     method_compiler.emit_byte(Code::RETURN);
-    method_compiler.finish_compiler(method_constant);
+    method_compiler.finish_compiler();
 
     // compile the code to define the method it
     emit_bytes(instruction, symbol);
@@ -1281,6 +1286,40 @@ class Compiler : private UnCopyable {
     }
   }
 
+  int get_argc(const std::vector<u8_t>& bytecode,
+      const Value* constants, int ip) {
+    // returns the number of arguments to the instruction at [ip] in bytecode
+
+    switch (Code instruction = Xt::as_type<Code>(bytecode[ip])) {
+    case Code::NIL:
+    case Code::FALSE:
+    case Code::TRUE:
+    case Code::POP:
+    case Code::IS:
+    case Code::CLOSE_UPVALUE:
+    case Code::RETURN:
+    case Code::NEW:
+      return 0;
+
+    // instructions with two arguments
+    case Code::METHOD_INSTANCE:
+    case Code::METHOD_STATIC:
+      return 2;
+
+    case Code::CLOSURE:
+      {
+        int constant = bytecode[ip + 1];
+        FunctionObject* loaded_fn = constants[constant].as_function();
+
+        // there is an argument for the constant, then one for each upvalue
+        return 1 + loaded_fn->num_upvalues();
+      }
+    default:
+      // most instructions have one argument
+      return 1;
+    }
+  }
+
   void method_call(Code instruction, const str_t& method_name) {
     // compiles an (optional) argument list and then calls it
 
@@ -1395,7 +1434,10 @@ public:
     // FIXME: fixed deallocate FunctionObject by GC
   }
 
-  int init_compiler(void) {
+  void init_compiler(void) {
+    parser_.get_vm().set_compiler(this);
+    constants_ = ListObject::make_list(parser_.get_vm(), 0);
+
     if (parent_ == nullptr) {
       scope_depth_ = -1;
     }
@@ -1409,31 +1451,40 @@ public:
 
     if (parent_ != nullptr)
       fields_ = parent_->fields_;
-    fn_ = FunctionObject::make_function(parser_.get_vm());
-
-    if (parent_ == nullptr)
-      return -1;
-
-    // add the block to the constant table, do this eagerly to it's
-    // reachable by the GC
-    return parent_->add_constant(fn_);
   }
 
-  void finish_compiler(int constant) {
+  FunctionObject* finish_compiler(void) {
     // finishes [compiler], which is compiling a function, method or chunk of
     // top level code. if there is a parent compiler, then this emits code in
     // the parent compiler to loadd the resulting function
+
+    // if we hit an error, donot bother creating the function since it's borked
+    // anyway
+    if (parser_.had_error())
+      return nullptr;
 
     // mark the end of the bytecode, since it may contain multiple early
     // returns, we cannot rely on `RETURN` to tell use we are at the end.
     emit_byte(Code::END);
 
+    // create a function object for the code we just compiled
+    FunctionObject* fn = FunctionObject::make_function(parser_.get_vm());
+    Pinned pinned;
+    parser_.get_vm().pin_object(fn, &pinned);
+
+    for (int i = 0; i < constants_->count(); ++i)
+      fn->add_constant(constants_->get_element(i));
+    fn->set_num_upvalues(num_upvalues_);
+    fn->set_codes(bytecode_);
+
     // in the function that contains this one, load the resulting function
     // object.
     if (parent_ != nullptr) {
+      int constant = parent_->add_constant(fn);
+
       // if the function has no upvalues, we donot need to create a closure.
       // we can just load and run the function directly
-      if (fn_->num_upvalues() == 0) {
+      if (num_upvalues_ == 0) {
         parent_->emit_bytes(Code::CONSTANT, constant);
       }
       else {
@@ -1442,17 +1493,21 @@ public:
 
         // emit a arguments for each upvalue to know whether to capture a
         // local or an upvalue
-        for (int i = 0; i < fn_->num_upvalues(); ++i) {
+        for (int i = 0; i < num_upvalues_; ++i) {
           auto& uv = upvalues_[i];
           parent_->emit_bytes(uv.is_local ? 1 : 0, uv.index);
         }
       }
     }
+
+    // pop this compiler off the stack
+    parser_.get_vm().set_compiler(parent_);
+    parser_.get_vm().unpin_object();
+
+    return fn;
   }
 
   FunctionObject* compile_function(TokenKind end_kind) {
-    Pinned pinned;
-    parser_.get_vm().pin_object(fn_, &pinned);
     for (;;) {
       definition();
 
@@ -1465,16 +1520,26 @@ public:
         break;
     }
     emit_bytes(Code::NIL, Code::RETURN);
-    finish_compiler(-1);
 
-    parser_.get_vm().unpin_object();
-    return parser_.had_error() ? nullptr : fn_;
+    return finish_compiler();
   }
 
   FunctionObject* compile_function(
       Parser& p, Compiler* parent, TokenKind end_kind) {
     Compiler c(p, parent, "");
     return c.compile_function(end_kind);
+  }
+
+  void mark_compiler(WrenVM& vm) {
+    // walk up the parent chain to mark the outer compilers too, the VM
+    // only tracks the innermost one
+
+    Compiler* c = this;
+    while (c != nullptr) {
+      if (c->constants_ != nullptr)
+        vm.mark_object(c->constants_);
+      c = c->parent_;
+    }
   }
 };
 
@@ -1487,6 +1552,10 @@ FunctionObject* compile(WrenVM& vm, const str_t& source_bytes) {
   c.init_compiler();
 
   return c.compile_function(TokenKind::TK_EOF);
+}
+
+void mark_compiler(WrenVM& vm, Compiler* compiler) {
+  compiler->mark_compiler(vm);
 }
 
 }

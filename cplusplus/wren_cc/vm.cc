@@ -27,7 +27,6 @@
 #include <iostream>
 #include <sstream>
 #include "core.hh"
-#include "compiler.hh"
 #include "vm.hh"
 
 namespace wrencc {
@@ -618,6 +617,10 @@ void WrenVM::collect(void) {
   // pinned objects
   for (auto* p = pinned_; p != nullptr; p = p->prev)
     mark_object(p->obj);
+
+  // any object the compiler is using
+  if (compiler_ != nullptr)
+    mark_compiler(*this, compiler_);
 
   // collect any unmarked objects
   for (auto it = objects_.begin(); it != objects_.end();) {

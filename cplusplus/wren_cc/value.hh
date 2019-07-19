@@ -269,6 +269,7 @@ class ListObject final : public BaseObject {
   ListObject(int num_elements = 0) noexcept;
 public:
   inline int count(void) const { return Xt::as_type<int>(elements_.size()); }
+  inline const Value* elements(void) const { return elements_.data(); }
   inline const Value& get_element(int i) const { return elements_[i]; }
   inline void set_element(int i, const Value& e) { elements_[i] = e; }
   inline void clear(void) { elements_.clear(); }
@@ -294,6 +295,7 @@ class FunctionObject final : public BaseObject {
   FunctionObject(void) noexcept : BaseObject(ObjType::FUNCTION) {}
 public:
   inline int num_upvalues(void) const { return num_upvalues_; }
+  inline void set_num_upvalues(int num_upvalues) { num_upvalues_ = num_upvalues; }
   inline int inc_num_upvalues(void) { return num_upvalues_++; }
   inline const u8_t* codes(void) const { return codes_.data(); }
   inline void set_codes(const std::vector<u8_t>& codes) { codes_ = codes; }

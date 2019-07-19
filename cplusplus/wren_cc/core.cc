@@ -346,10 +346,7 @@ DEF_NATIVE(list_remove) {
   if (index == -1)
     return nullptr;
 
-  Value removed = list->get_element(index);
-  list->remove(index);
-
-  return removed;
+  return list->remove(index);
 }
 
 DEF_NATIVE(list_iterate) {

@@ -26,10 +26,13 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include "vm.hh"
+#include "value.hh"
 
 namespace wrencc {
 
+class Compiler;
+
 FunctionObject* compile(WrenVM& vm, const str_t& source_bytes);
+void mark_compiler(WrenVM& vm, Compiler* compiler);
 
 }
