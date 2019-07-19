@@ -296,7 +296,9 @@ public:
   inline int num_upvalues(void) const { return num_upvalues_; }
   inline int inc_num_upvalues(void) { return num_upvalues_++; }
   inline const u8_t* codes(void) const { return codes_.data(); }
+  inline void set_codes(const std::vector<u8_t>& codes) { codes_ = codes; }
   inline const Value* constants(void) const { return constants_.data(); }
+  inline void set_constants(const std::vector<Value>& constants) { constants_ = constants; }
   inline int codes_count(void) const { return Xt::as_type<int>(codes_.size()); }
   inline int constants_count(void) const { return Xt::as_type<int>(constants_.size()); }
   inline u8_t get_code(int i) const { return codes_[i]; }
