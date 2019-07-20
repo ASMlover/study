@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <list>
 #include "value.hh"
 #include "compiler.hh"
 
@@ -92,7 +93,7 @@ class WrenVM final : private UnCopyable {
   // the number of total allocated objects that will trigger the next GC
   sz_t next_gc_{1<<10}; // 1024
 
-  std::vector<BaseObject*> objects_; // all currently allocated objects
+  std::list<BaseObject*> objects_; // all currently allocated objects
 
   // the header of the list of pinned objects, will be `nullptr` if nothing
   // is pinned
