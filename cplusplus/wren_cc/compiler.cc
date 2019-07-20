@@ -1468,14 +1468,11 @@ public:
     emit_byte(Code::END);
 
     // create a function object for the code we just compiled
-    FunctionObject* fn = FunctionObject::make_function(parser_.get_vm());
+    FunctionObject* fn = FunctionObject::make_function(parser_.get_vm(),
+        num_upvalues_, bytecode_.data(), bytecode_.size(),
+        constants_->elements(), constants_->count());
     Pinned pinned;
     parser_.get_vm().pin_object(fn, &pinned);
-
-    for (int i = 0; i < constants_->count(); ++i)
-      fn->add_constant(constants_->get_element(i));
-    fn->set_num_upvalues(num_upvalues_);
-    fn->set_codes(bytecode_);
 
     // in the function that contains this one, load the resulting function
     // object.

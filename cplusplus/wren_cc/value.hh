@@ -292,11 +292,11 @@ class FunctionObject final : public BaseObject {
   std::vector<u8_t> codes_;
   std::vector<Value> constants_;
 
-  FunctionObject(void) noexcept : BaseObject(ObjType::FUNCTION) {}
+  FunctionObject(int num_upvalues, u8_t* codes,
+      int codes_count, const Value* constants, int constants_count) noexcept;
 public:
   inline int num_upvalues(void) const { return num_upvalues_; }
   inline void set_num_upvalues(int num_upvalues) { num_upvalues_ = num_upvalues; }
-  inline int inc_num_upvalues(void) { return num_upvalues_++; }
   inline const u8_t* codes(void) const { return codes_.data(); }
   inline void set_codes(const std::vector<u8_t>& codes) { codes_ = codes; }
   inline const Value* constants(void) const { return constants_.data(); }
@@ -306,18 +306,8 @@ public:
   inline u8_t get_code(int i) const { return codes_[i]; }
   inline const Value& get_constant(int i) const { return constants_[i]; }
 
-  template <typename T> inline int add_code(T c) {
-    codes_.push_back(Xt::as_type<u8_t>(c));
-    return Xt::as_type<int>(codes_.size()) - 1;
-  }
-
   template <typename T> inline void set_code(int i, T c) {
     codes_[i] = Xt::as_type<u8_t>(c);
-  }
-
-  inline int add_constant(const Value& v) {
-    constants_.push_back(v);
-    return Xt::as_type<int>(constants_.size()) - 1;
   }
 
   int get_argc(int ip) const;
@@ -325,7 +315,8 @@ public:
   virtual str_t stringify(void) const override;
   virtual void gc_mark(WrenVM& vm) override;
 
-  static FunctionObject* make_function(WrenVM& vm);
+  static FunctionObject* make_function(WrenVM& vm, int num_upvalues,
+      u8_t* codes, int codes_count, const Value* constants, int constants_count);
 };
 
 // the dynamically allocated data structure for a variable that has been

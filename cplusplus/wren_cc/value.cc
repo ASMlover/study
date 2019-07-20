@@ -242,6 +242,15 @@ ListObject* ListObject::make_list(WrenVM& vm, int num_elements) {
   return o;
 }
 
+FunctionObject::FunctionObject(int num_upvalues,
+    u8_t* codes, int codes_count,
+    const Value* constants, int constants_count) noexcept
+  : BaseObject(ObjType::FUNCTION)
+  , num_upvalues_(num_upvalues)
+  , codes_(codes, codes + codes_count)
+  , constants_(constants, constants + constants_count) {
+}
+
 int FunctionObject::get_argc(int ip) const {
   // returns the number of arguments to the instruction at [ip] in [fn]'s
   // bytecode
@@ -285,8 +294,11 @@ void FunctionObject::gc_mark(WrenVM& vm) {
     vm.mark_value(c);
 }
 
-FunctionObject* FunctionObject::make_function(WrenVM& vm) {
-  auto* o = new FunctionObject();
+FunctionObject* FunctionObject::make_function(WrenVM& vm, int num_upvalues,
+    u8_t* codes, int codes_count,
+    const Value* constants, int constants_count) {
+  auto* o = new FunctionObject(num_upvalues,
+      codes, codes_count, constants, constants_count);
   vm.append_object(o);
   return o;
 }
