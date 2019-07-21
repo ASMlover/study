@@ -44,7 +44,7 @@ using WrenNativeFn = std::function<void (WrenVM&)>;
 // be replaced, when invoked, the method will call [method]
 void wrenDefineMethod(WrenVM& vm,
     const str_t& class_name, const str_t& method_name,
-    int num_params, const NativeMethodFn& method);
+    int num_params, const WrenNativeFn& method);
 
 // reads an numeric argument for a foreign call, this must only be called wi-
 // thin a function provided to [wrenDefineMethod] retrieves the argument at
