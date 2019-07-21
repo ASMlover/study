@@ -101,10 +101,10 @@ class WrenVM final : private UnCopyable {
 
   // during a foreign function call, this will point to the first argument
   // of the call on the fiber's stack
-  Value* native_call_slot_{};
+  Value* foreign_call_slot_{};
   // during a foreign function call, this will contain the number of arguments
   // to the function
-  int native_call_argc_{};
+  int foreign_call_argc_{};
 
   void call_foreign(FiberObject* fiber, const Method& method, int argc);
   Value interpret(const Value& fn, FiberObject* fiber);

@@ -111,16 +111,16 @@ void WrenVM::unpin_object(void) {
 }
 
 void WrenVM::call_foreign(FiberObject* fiber, const Method& method, int argc) {
-  native_call_slot_ = fiber->values_at(fiber->stack_size() - argc);
+  foreign_call_slot_ = fiber->values_at(fiber->stack_size() - argc);
 
   // donot include the receiver
-  native_call_argc_ = argc - 1;
+  foreign_call_argc_ = argc - 1;
   method.native()(*this);
 
   // discard the stack slots for the arguments (but leave one for result)
-  if (native_call_slot_ != nullptr) {
-    *native_call_slot_ = nullptr;
-    native_call_slot_ = nullptr;
+  if (foreign_call_slot_ != nullptr) {
+    *foreign_call_slot_ = nullptr;
+    foreign_call_slot_ = nullptr;
   }
 }
 
@@ -722,18 +722,18 @@ void WrenVM::define_method(
 }
 
 double WrenVM::get_argument_double(int index) const {
-  ASSERT(native_call_slot_ != nullptr, "must be in foreign call");
+  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
   ASSERT(index >= 0, "index cannot be negative");
-  ASSERT(index < native_call_argc_, "not that many arguments");
+  ASSERT(index < foreign_call_argc_, "not that many arguments");
 
-  return (*(native_call_slot_ + index + 1)).as_numeric();
+  return (*(foreign_call_slot_ + index + 1)).as_numeric();
 }
 
 void WrenVM::return_double(double value) {
-  ASSERT(native_call_slot_ != nullptr, "must be in foreign call");
+  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
 
-  *native_call_slot_ = value;
-  native_call_slot_ = nullptr;
+  *foreign_call_slot_ = value;
+  foreign_call_slot_ = nullptr;
 }
 
 void wrenDefineMethod(WrenVM& vm,
