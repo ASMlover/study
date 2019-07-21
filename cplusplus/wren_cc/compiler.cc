@@ -1058,6 +1058,10 @@ class Compiler : private UnCopyable {
   void finish_block(void) {
     // parses a block body, after the initial `{` has been consumed
 
+    // empty blocks do nothing
+    if (match(TokenKind::TK_RBRACE))
+      return;
+
     for (;;) {
       definition();
 
