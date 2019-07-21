@@ -110,6 +110,20 @@ void WrenVM::unpin_object(void) {
   pinned_ = pinned_->prev;
 }
 
+void WrenVM::call_foreign(FiberObject* fiber, const Method& method, int argc) {
+  native_call_slot_ = fiber->values_at(fiber->stack_size() - argc);
+
+  // donot include the receiver
+  native_call_argc_ = argc - 1;
+  method.native()(*this);
+
+  // discard the stack slots for the arguments (but leave one for result)
+  if (native_call_slot_ != nullptr) {
+    *native_call_slot_ = nullptr;
+    native_call_slot_ = nullptr;
+  }
+}
+
 Value WrenVM::interpret(const Value& function, FiberObject* fiber) {
 #define PUSH(v) fiber->push(v)
 #define POP()   fiber->pop()
@@ -283,6 +297,9 @@ Value WrenVM::interpret(const Value& function, FiberObject* fiber) {
           method.fiber_primitive()(*this, fiber, args);
           LOAD_FRAME();
         } break;
+      case MethodType::FOREIGN:
+        call_foreign(fiber, method, argc);
+        break;
       case MethodType::BLOCK:
         fiber->call_function(method.fn(), argc);
         LOAD_FRAME();
@@ -342,6 +359,9 @@ Value WrenVM::interpret(const Value& function, FiberObject* fiber) {
           method.fiber_primitive()(*this, fiber, args);
           LOAD_FRAME();
         } break;
+      case MethodType::FOREIGN:
+        call_foreign(fiber, method, argc);
+        break;
       case MethodType::BLOCK:
         fiber->call_function(method.fn(), argc);
         LOAD_FRAME();
@@ -668,6 +688,66 @@ void WrenVM::mark_object(BaseObject* obj) {
 void WrenVM::mark_value(const Value& val) {
   if (val.is_object())
     mark_object(val.as_object());
+}
+
+void WrenVM::define_method(
+    const str_t& class_name, const str_t& method_name,
+    int num_params, const WrenNativeFn& method) {
+  ASSERT(!class_name.empty(), "must provide class name");
+  ASSERT(!method_name.empty(), "must provide method name");
+  ASSERT(method_name.size() < MAX_METHOD_NAME, "method name too long");
+  ASSERT(num_params >= 0, "num_params cannot be negative");
+  ASSERT(num_params <= MAX_PARAMETERS, "too many parameters");
+
+  // find or create the class to bind the method to
+  int class_symbol = global_symbols_.get(class_name);
+  ClassObject* cls;
+  if (class_symbol != -1) {
+    cls = globals_[class_symbol].as_class();
+  }
+  else {
+    cls = ClassObject::make_class(*this, obj_class_, 0);
+    class_symbol = global_symbols_.add(class_name);
+    globals_[class_symbol] = cls;
+  }
+
+  // create a name for the method, including its arity
+  str_t name(method_name);
+  for (int i = 0; i < num_params; ++i)
+    name.push_back(' ');
+
+  // bind the method
+  int method_symbol = methods_.ensure(name);
+  cls->set_method(method_symbol, method);
+}
+
+double WrenVM::get_argument_double(int index) const {
+  ASSERT(native_call_slot_ != nullptr, "must be in foreign call");
+  ASSERT(index >= 0, "index cannot be negative");
+  ASSERT(index < native_call_argc_, "not that many arguments");
+
+  return (*(native_call_slot_ + index + 1)).as_numeric();
+}
+
+void WrenVM::return_double(double value) {
+  ASSERT(native_call_slot_ != nullptr, "must be in foreign call");
+
+  *native_call_slot_ = value;
+  native_call_slot_ = nullptr;
+}
+
+void wrenDefineMethod(WrenVM& vm,
+    const str_t& class_name, const str_t& method_name,
+    int num_params, const WrenNativeFn& method) {
+  vm.define_method(class_name, method_name, num_params, method);
+}
+
+double wrenGetArgumentDouble(WrenVM& vm, int index) {
+  return vm.get_argument_double(index);
+}
+
+void wrenReturnDouble(WrenVM& vm, double value) {
+  vm.return_double(value);
 }
 
 }

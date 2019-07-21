@@ -99,6 +99,14 @@ class WrenVM final : private UnCopyable {
   // is pinned
   Pinned* pinned_{};
 
+  // during a foreign function call, this will point to the first argument
+  // of the call on the fiber's stack
+  Value* native_call_slot_{};
+  // during a foreign function call, this will contain the number of arguments
+  // to the function
+  int native_call_argc_{};
+
+  void call_foreign(FiberObject* fiber, const Method& method, int argc);
   Value interpret(const Value& fn, FiberObject* fiber);
 
   void collect(void);
@@ -129,7 +137,9 @@ public:
 
   inline SymbolTable& methods(void) { return methods_; }
   inline SymbolTable& gsymbols(void) { return global_symbols_; }
-  void set_compiler(Compiler* compiler) { compiler_ = compiler; }
+  inline void set_compiler(Compiler* compiler) { compiler_ = compiler; }
+  inline void set_global(int index, const Value& value) { globals_[index] = value; }
+  inline const Value& get_global(int index) const { return globals_[index]; }
   void set_native(ClassObject* cls, const str_t& name, PrimitiveFn fn);
   void set_native(ClassObject* cls, const str_t& name, FiberPrimitiveFn fn);
   void set_global(const str_t& name, const Value& value);
@@ -144,6 +154,11 @@ public:
   ClassObject* get_class(const Value& val) const;
   void interpret(const str_t& source_bytes);
   void call_function(FiberObject* fiber, BaseObject* fn, int argc);
+
+  void define_method(const str_t& class_name, const str_t& method_name,
+      int num_params, const WrenNativeFn& method);
+  double get_argument_double(int index) const;
+  void return_double(double value);
 };
 
 }

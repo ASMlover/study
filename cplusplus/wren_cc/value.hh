@@ -30,6 +30,7 @@
 #include <variant>
 #include <vector>
 #include "common.hh"
+#include "wren.hh"
 
 namespace wrencc {
 
@@ -460,6 +461,7 @@ using FiberPrimitiveFn = std::function<void (WrenVM&, FiberObject*, Value*)>;
 enum class MethodType {
   PRIMITIVE,// a primitive method implemented in C that immediatelt returns a Value
   FIBER,    // a built-in method that modifies the fiber directly
+  FOREIGN,  // a externally-defined C++ native method
   BLOCK,    // a normal user-defined method
 
   NONE,     // no method for the given symbol
@@ -467,12 +469,14 @@ enum class MethodType {
 
 struct Method {
   MethodType type{MethodType::NONE};
-  std::variant<PrimitiveFn, FiberPrimitiveFn, BaseObject*> m_{};
+  std::variant<PrimitiveFn, FiberPrimitiveFn, WrenNativeFn, BaseObject*> m_{};
 
   inline const PrimitiveFn& primitive(void) const { return std::get<PrimitiveFn>(m_); }
   inline void set_primitive(const PrimitiveFn& fn) { m_ = fn; }
   inline const FiberPrimitiveFn& fiber_primitive(void) const { return std::get<FiberPrimitiveFn>(m_); }
   inline void set_fiber_primitive(const FiberPrimitiveFn& fn) { m_ = fn; }
+  inline const WrenNativeFn& native(void) const { return std::get<WrenNativeFn>(m_); }
+  inline void set_native(const WrenNativeFn& fn) { m_ = fn; }
   inline BaseObject* fn(void) const { return std::get<BaseObject*>(m_); }
   inline void set_fn(BaseObject* fn) { m_ = fn; }
 
@@ -504,6 +508,10 @@ public:
   inline void set_method(int i, const FiberPrimitiveFn& fn) {
     methods_[i].type = MethodType::FIBER;
     methods_[i].set_fiber_primitive(fn);
+  }
+  inline void set_method(int i, const WrenNativeFn& fn) {
+    methods_[i].type = MethodType::FOREIGN;
+    methods_[i].set_native(fn);
   }
   inline void set_method(int i, BaseObject* fn) {
     methods_[i].type = MethodType::BLOCK;

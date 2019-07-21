@@ -96,6 +96,20 @@ namespace Xt {
 
 #define NAN_TAGGING
 
+// the maximum number of arguments that can be passed to a method, note that
+// this limitation is hardcoded in order places in the VM, in particular the
+// `Code::CALL_*` instructions assume a certain maximum number
+#define MAX_PARAMETERS  (16)
+
+// the maximum name of a method, not including the signature, this is an
+// arbitrary but enforced maximum just so we know how long the method name
+// strings need to be in the parser
+#define MAX_METHOD_NAME (64)
+
+// the maximum length of a method signature, this includes the name and the
+// extra spaces added to handle arity and another byte to terminate the string
+#define MAX_METHOD_SIGNATURE  (MAX_METHOD_NAME + MAX_PARAMETERS + 1)
+
 // set this, the VM's interpreter loop uses computed gotos.
 // see post (http://gcc.gnu.org/onlinedocs/gcc-3.1.1/gcc/Labels-as-Values.html)
 // #define COMPUTED_GOTOS
