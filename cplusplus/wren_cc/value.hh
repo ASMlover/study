@@ -288,13 +288,41 @@ public:
   static ListObject* make_list(WrenVM& vm, int num_elements = 0);
 };
 
+// stores debugging information for a function used for things like stack
+// traces
+class DebugObject final : private UnCopyable {
+  // the name of the function, heap allocated and owned by the FunctionObject
+  str_t name_{};
+
+  // the name of the source file where this function was defined, an
+  // [StringObject] because this will be shared among all functions defined
+  // in the same file
+  str_t source_path_{};
+
+  // an array of line numbers, there is one element in this array for each
+  // bytecode in the function's bytecode array, the value of that element
+  // is the line in the source code that generated that instruction
+  std::vector<int> source_lines_;
+public:
+  DebugObject(const str_t& name,
+      const str_t& source_path, int* source_lines, int lines_count) noexcept;
+
+  inline const str_t& name(void) const { return name_; }
+  inline const str_t& source_path(void) const { return source_path_; }
+  inline int get_line(int i) const { return source_lines_[i]; }
+};
+
 class FunctionObject final : public BaseObject {
   int num_upvalues_{};
   std::vector<u8_t> codes_;
   std::vector<Value> constants_;
+  DebugObject debug_;
 
-  FunctionObject(int num_upvalues, u8_t* codes,
-      int codes_count, const Value* constants, int constants_count) noexcept;
+  FunctionObject(int num_upvalues,
+      u8_t* codes, int codes_count,
+      const Value* constants, int constants_count,
+      const str_t& source_path, const str_t& debug_name,
+      int* source_lines, int lines_count) noexcept;
 public:
   inline int num_upvalues(void) const { return num_upvalues_; }
   inline void set_num_upvalues(int num_upvalues) { num_upvalues_ = num_upvalues; }
@@ -306,6 +334,7 @@ public:
   inline int constants_count(void) const { return Xt::as_type<int>(constants_.size()); }
   inline u8_t get_code(int i) const { return codes_[i]; }
   inline const Value& get_constant(int i) const { return constants_[i]; }
+  inline const DebugObject& debug(void) const { return debug_; }
 
   template <typename T> inline void set_code(int i, T c) {
     codes_[i] = Xt::as_type<u8_t>(c);
@@ -317,7 +346,10 @@ public:
   virtual void gc_mark(WrenVM& vm) override;
 
   static FunctionObject* make_function(WrenVM& vm, int num_upvalues,
-      u8_t* codes, int codes_count, const Value* constants, int constants_count);
+      u8_t* codes, int codes_count,
+      const Value* constants, int constants_count,
+      const str_t& source_path, const str_t& debug_name,
+      int* source_lines, int lines_count);
 };
 
 // the dynamically allocated data structure for a variable that has been
@@ -427,6 +459,7 @@ public:
   inline CallFrame& peek_frame(void) { return frames_.back(); }
   inline void pop_frame(void) { frames_.pop_back(); }
   inline bool empty_frame(void) const { return frames_.empty(); }
+  inline Value& get_value(int i) { return stack_[i]; }
   inline const Value& get_value(int i) const { return stack_[i]; }
   inline void set_value(int i, const Value& v) { stack_[i] = v; }
 
@@ -449,18 +482,25 @@ public:
   void close_upvalue(void);
   void close_upvalues(int slot);
 
+  void riter_frames(
+      std::function<void (const CallFrame&, FunctionObject*)>&& visit);
+
   virtual str_t stringify(void) const override;
   virtual void gc_mark(WrenVM& vm) override;
 
   static FiberObject* make_fiber(WrenVM& vm);
 };
 
-using PrimitiveFn = std::function<Value (WrenVM&, Value*)>;
-using FiberPrimitiveFn = std::function<void (WrenVM&, FiberObject*, Value*)>;
+enum class PrimitiveResult {
+  VALUE,  // a normal value has been returned
+  ERROR,  // a runtime error occurred
+  CALL,   // a new callframe has been pushed
+};
+
+using PrimitiveFn = std::function<PrimitiveResult (WrenVM&, FiberObject*, Value*)>;
 
 enum class MethodType {
   PRIMITIVE,// a primitive method implemented in C that immediatelt returns a Value
-  FIBER,    // a built-in method that modifies the fiber directly
   FOREIGN,  // a externally-defined C++ native method
   BLOCK,    // a normal user-defined method
 
@@ -469,14 +509,12 @@ enum class MethodType {
 
 struct Method {
   MethodType type{MethodType::NONE};
-  std::variant<PrimitiveFn, FiberPrimitiveFn, WrenNativeFn, BaseObject*> m_{};
+  std::variant<PrimitiveFn, WrenForeignFn, BaseObject*> m_{};
 
   inline const PrimitiveFn& primitive(void) const { return std::get<PrimitiveFn>(m_); }
   inline void set_primitive(const PrimitiveFn& fn) { m_ = fn; }
-  inline const FiberPrimitiveFn& fiber_primitive(void) const { return std::get<FiberPrimitiveFn>(m_); }
-  inline void set_fiber_primitive(const FiberPrimitiveFn& fn) { m_ = fn; }
-  inline const WrenNativeFn& native(void) const { return std::get<WrenNativeFn>(m_); }
-  inline void set_native(const WrenNativeFn& fn) { m_ = fn; }
+  inline const WrenForeignFn& foreign(void) const { return std::get<WrenForeignFn>(m_); }
+  inline void set_foreign(const WrenForeignFn& fn) { m_ = fn; }
   inline BaseObject* fn(void) const { return std::get<BaseObject*>(m_); }
   inline void set_fn(BaseObject* fn) { m_ = fn; }
 
@@ -505,13 +543,9 @@ public:
     methods_[i].type = MethodType::PRIMITIVE;
     methods_[i].set_primitive(fn);
   }
-  inline void set_method(int i, const FiberPrimitiveFn& fn) {
-    methods_[i].type = MethodType::FIBER;
-    methods_[i].set_fiber_primitive(fn);
-  }
-  inline void set_method(int i, const WrenNativeFn& fn) {
+  inline void set_method(int i, const WrenForeignFn& fn) {
     methods_[i].type = MethodType::FOREIGN;
-    methods_[i].set_native(fn);
+    methods_[i].set_foreign(fn);
   }
   inline void set_method(int i, BaseObject* fn) {
     methods_[i].type = MethodType::BLOCK;

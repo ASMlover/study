@@ -242,13 +242,23 @@ ListObject* ListObject::make_list(WrenVM& vm, int num_elements) {
   return o;
 }
 
+DebugObject::DebugObject(const str_t& name,
+    const str_t& source_path, int* source_lines, int lines_count) noexcept
+  : name_(name)
+  , source_path_(source_path)
+  , source_lines_(source_lines, source_lines + lines_count) {
+}
+
 FunctionObject::FunctionObject(int num_upvalues,
     u8_t* codes, int codes_count,
-    const Value* constants, int constants_count) noexcept
+    const Value* constants, int constants_count,
+    const str_t& source_path, const str_t& debug_name,
+    int* source_lines, int lines_count) noexcept
   : BaseObject(ObjType::FUNCTION)
   , num_upvalues_(num_upvalues)
   , codes_(codes, codes + codes_count)
-  , constants_(constants, constants + constants_count) {
+  , constants_(constants, constants + constants_count)
+  , debug_(debug_name, source_path, source_lines, lines_count) {
 }
 
 int FunctionObject::get_argc(int ip) const {
@@ -294,11 +304,15 @@ void FunctionObject::gc_mark(WrenVM& vm) {
     vm.mark_value(c);
 }
 
-FunctionObject* FunctionObject::make_function(WrenVM& vm, int num_upvalues,
+FunctionObject* FunctionObject::make_function(
+    WrenVM& vm, int num_upvalues,
     u8_t* codes, int codes_count,
-    const Value* constants, int constants_count) {
+    const Value* constants, int constants_count,
+    const str_t& source_path, const str_t& debug_name,
+    int* source_lines, int lines_count) {
   auto* o = new FunctionObject(num_upvalues,
-      codes, codes_count, constants, constants_count);
+      codes, codes_count, constants, constants_count,
+      source_path, debug_name, source_lines, lines_count);
   vm.append_object(o);
   return o;
 }
@@ -419,6 +433,20 @@ void FiberObject::close_upvalues(int slot) {
   Value* first = &stack_[slot];
   while (open_upvlaues_ != nullptr && open_upvlaues_->value() >= first)
     close_upvalue();
+}
+
+void FiberObject::riter_frames(
+    std::function<void (const CallFrame&, FunctionObject*)>&& visit) {
+  for (auto it = frames_.rbegin(); it != frames_.rend(); ++it) {
+    auto& frame = *it;
+    FunctionObject* fn;
+    if (frame.fn->type() == ObjType::FUNCTION)
+      fn = Xt::down<FunctionObject>(frame.fn);
+    else
+      fn = Xt::down<ClosureObject>(frame.fn)->fn();
+
+    visit(frame, fn);
+  }
 }
 
 str_t FiberObject::stringify(void) const {
