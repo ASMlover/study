@@ -106,8 +106,11 @@ class WrenVM final : private UnCopyable {
   // to the function
   int foreign_call_argc_{};
 
-  void call_foreign(FiberObject* fiber, const Method& method, int argc);
-  Value interpret(const Value& fn, FiberObject* fiber);
+  void print_stacktrace(FiberObject* fiber, const Value& error);
+  void call_foreign(FiberObject* fiber, const WrenForeignFn& foreign, int argc);
+  void method_not_found(FiberObject* fiber, int symbol, Value& receiver);
+
+  bool interpret(const Value& fn, FiberObject* fiber);
 
   void collect(void);
   void free_object(BaseObject* obj);
@@ -141,7 +144,6 @@ public:
   inline void set_global(int index, const Value& value) { globals_[index] = value; }
   inline const Value& get_global(int index) const { return globals_[index]; }
   void set_native(ClassObject* cls, const str_t& name, PrimitiveFn fn);
-  void set_native(ClassObject* cls, const str_t& name, FiberPrimitiveFn fn);
   void set_global(const str_t& name, const Value& value);
   const Value& get_global(const str_t& name) const;
   void pin_object(BaseObject* obj, Pinned* pinned);
@@ -152,11 +154,11 @@ public:
   void mark_value(const Value& val);
 
   ClassObject* get_class(const Value& val) const;
-  void interpret(const str_t& source_bytes);
+  void interpret(const str_t& source_path, const str_t& source_bytes);
   void call_function(FiberObject* fiber, BaseObject* fn, int argc);
 
   void define_method(const str_t& class_name, const str_t& method_name,
-      int num_params, const WrenNativeFn& method);
+      int num_params, const WrenForeignFn& method);
   double get_argument_double(int index) const;
   void return_double(double value);
 };

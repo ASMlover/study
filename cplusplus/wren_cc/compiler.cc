@@ -83,6 +83,7 @@ public:
     : vm_(vm), lex_(lex) {
   }
 
+  inline const str_t& source_path(void) const { return lex_.source_path(); }
   inline const Token& prev(void) const { return prev_; }
   inline const Token& curr(void) const { return curr_; }
   inline bool had_error(void) const { return had_error_; }
@@ -221,6 +222,8 @@ class Compiler : private UnCopyable {
 
   // the growable buffer of code that's been compiled so far
   std::vector<u8_t> bytecode_;
+  // the buffer of source line mappings
+  std::vector<int> debug_source_lines_;
   ListObject* constants_{};
 
   // for the fields of the nearest enclosing class, or nullptr if not
@@ -255,7 +258,8 @@ class Compiler : private UnCopyable {
   void error(const char* format, ...) {
     const Token& tok = parser_.prev();
     parser_.set_error(true);
-    std::cerr << "[LINE:" << tok.lineno() << "] - "
+    std::cerr
+      << "[`" << parser_.source_path() << "` LINE:" << tok.lineno() << "] - "
       << "Compile ERROR on ";
     if (tok.kind() == TokenKind::TK_NL)
       std::cerr << "`newline` : ";
@@ -275,6 +279,7 @@ class Compiler : private UnCopyable {
 
   template <typename T> inline int emit_byte(T b) {
     bytecode_.push_back(Xt::as_type<u8_t>(b));
+    debug_source_lines_.push_back(parser_.prev().lineno());
     return Xt::as_type<int>(bytecode_.size() - 1);
   }
 
@@ -1092,7 +1097,7 @@ class Compiler : private UnCopyable {
       fn_compiler.emit_byte(Code::RETURN);
     }
 
-    fn_compiler.finish_compiler();
+    fn_compiler.finish_compiler("(fn)");
   }
 
   void method(Code instruction, bool is_ctor, const SignatureFn& signature) {
@@ -1125,7 +1130,7 @@ class Compiler : private UnCopyable {
       method_compiler.emit_byte(Code::NIL);
     }
     method_compiler.emit_byte(Code::RETURN);
-    method_compiler.finish_compiler();
+    method_compiler.finish_compiler(name);
 
     // compile the code to define the method it
     emit_bytes(instruction, symbol);
@@ -1457,7 +1462,7 @@ public:
       fields_ = parent_->fields_;
   }
 
-  FunctionObject* finish_compiler(void) {
+  FunctionObject* finish_compiler(const str_t& debug_name) {
     // finishes [compiler], which is compiling a function, method or chunk of
     // top level code. if there is a parent compiler, then this emits code in
     // the parent compiler to loadd the resulting function
@@ -1475,7 +1480,9 @@ public:
     FunctionObject* fn = FunctionObject::make_function(
         parser_.get_vm(), num_upvalues_,
         bytecode_.data(), Xt::as_type<int>(bytecode_.size()),
-        constants_->elements(), constants_->count());
+        constants_->elements(), constants_->count(),
+        parser_.source_path(), debug_name,
+        debug_source_lines_.data(), Xt::as_type<int>(debug_source_lines_.size()));
     Pinned pinned;
     parser_.get_vm().pin_object(fn, &pinned);
 
@@ -1523,7 +1530,7 @@ public:
     }
     emit_bytes(Code::NIL, Code::RETURN);
 
-    return finish_compiler();
+    return finish_compiler("(script)");
   }
 
   FunctionObject* compile_function(
@@ -1545,8 +1552,9 @@ public:
   }
 };
 
-FunctionObject* compile(WrenVM& vm, const str_t& source_bytes) {
-  Lexer lex(source_bytes);
+FunctionObject* compile(
+    WrenVM& vm, const str_t& source_path, const str_t& source_bytes) {
+  Lexer lex(source_path, source_bytes);
   Parser p(vm, lex);
 
   p.advance();

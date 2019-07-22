@@ -84,12 +84,6 @@ void WrenVM::set_native(ClassObject* cls, const str_t& name, PrimitiveFn fn) {
   cls->set_method(symbol, fn);
 }
 
-void WrenVM::set_native(
-    ClassObject* cls, const str_t& name, FiberPrimitiveFn fn) {
-  int symbol = methods_.ensure(name);
-  cls->set_method(symbol, fn);
-}
-
 void WrenVM::set_global(const str_t& name, const Value& value) {
   int symbol = global_symbols_.add(name);
   globals_[symbol] = value;
@@ -110,12 +104,26 @@ void WrenVM::unpin_object(void) {
   pinned_ = pinned_->prev;
 }
 
-void WrenVM::call_foreign(FiberObject* fiber, const Method& method, int argc) {
+void WrenVM::print_stacktrace(FiberObject* fiber, const Value& error) {
+  std::cerr << error.as_cstring() << std::endl;
+
+  fiber->riter_frames([](const CallFrame& frame, FunctionObject* fn) {
+      auto& debug = fn->debug();
+      int line = debug.get_line(Xt::as_type<int>(frame.ip - fn->codes()) - 1);
+      std::cerr
+        << "[`" << debug.source_path() << "` LINE: " << line << "] in "
+        << "`" << debug.name() << "`"
+        << std::endl;
+      });
+}
+
+void WrenVM::call_foreign(
+    FiberObject* fiber, const WrenForeignFn& foreign, int argc) {
   foreign_call_slot_ = fiber->values_at(fiber->stack_size() - argc);
 
   // donot include the receiver
   foreign_call_argc_ = argc - 1;
-  method.native()(*this);
+  foreign(*this);
 
   // discard the stack slots for the arguments (but leave one for result)
   if (foreign_call_slot_ != nullptr) {
@@ -124,7 +132,19 @@ void WrenVM::call_foreign(FiberObject* fiber, const Method& method, int argc) {
   }
 }
 
-Value WrenVM::interpret(const Value& function, FiberObject* fiber) {
+void WrenVM::method_not_found(FiberObject* fiber, int symbol, Value& receiver) {
+  std::stringstream ss;
+  ss << "receiver does not implement method "
+    << "`" << methods_.get_name(symbol) << "`";
+
+  // store the error message in the receiver slot so that it's on the fiber's
+  // stack and does not get garbage collected
+  receiver = StringObject::make_string(*this, ss.str());
+
+  print_stacktrace(fiber, receiver);
+}
+
+bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
 #define PUSH(v) fiber->push(v)
 #define POP()   fiber->pop()
 #define PEEK()  fiber->peek_value()
@@ -283,33 +303,34 @@ Value WrenVM::interpret(const Value& function, FiberObject* fiber) {
       case MethodType::PRIMITIVE:
         {
           Value* args = fiber->values_at(fiber->stack_size() - argc);
-          // argc +1 to include the receiver since that's in the args array
-          Value result = method.primitive()(*this, args);
 
-          fiber->set_value(fiber->stack_size() - argc, result);
-          // discard the stack slots for the arguments (but leave one for
-          // the result)
-          fiber->resize_stack(fiber->stack_size() - (argc - 1));
-        } break;
-      case MethodType::FIBER:
-        {
-          Value* args = fiber->values_at(fiber->stack_size() - argc);
-          method.fiber_primitive()(*this, fiber, args);
-          LOAD_FRAME();
+          // after calling this, the result will be in the first arg slot
+          switch (method.primitive()(*this, fiber, args)) {
+          case PrimitiveResult::VALUE:
+            // the result is now in the first arg slot, discard the other
+            // stack slots
+            fiber->resize_stack(fiber->stack_size() - (argc - 1));
+            break;
+          case PrimitiveResult::ERROR:
+            print_stacktrace(fiber, args[0]);
+            return false;
+          case PrimitiveResult::CALL:
+            fiber->call_function(args[0].as_object(), argc);
+            LOAD_FRAME();
+            break;
+          }
         } break;
       case MethodType::FOREIGN:
-        call_foreign(fiber, method, argc);
+        call_foreign(fiber, method.foreign(), argc);
         break;
       case MethodType::BLOCK:
         fiber->call_function(method.fn(), argc);
         LOAD_FRAME();
         break;
       case MethodType::NONE:
-        std::cerr
-          << "receiver: `" << receiver << "` "
-          << "does not implement method `" << methods_.get_name(symbol) << "`"
-          << std::endl;
-        std::exit(-1); break;
+        method_not_found(fiber,
+            symbol, fiber->get_value(fiber->stack_size() - argc));
+        return false;
       }
 
       DISPATCH();
@@ -346,32 +367,34 @@ Value WrenVM::interpret(const Value& function, FiberObject* fiber) {
       case MethodType::PRIMITIVE:
         {
           Value* args = fiber->values_at(fiber->stack_size() - argc);
-          Value result = method.primitive()(*this, args);
 
-          fiber->set_value(fiber->stack_size() - argc, result);
-
-          // discard the stack slots for the arguments
-          fiber->resize_stack(fiber->stack_size() - (argc - 1));
-        } break;
-      case MethodType::FIBER:
-        {
-          Value* args = fiber->values_at(fiber->stack_size() - argc);
-          method.fiber_primitive()(*this, fiber, args);
-          LOAD_FRAME();
+          // after calling this, the result will be in the first arg slot
+          switch (method.primitive()(*this, fiber, args)) {
+          case PrimitiveResult::VALUE:
+            // the result is now in the first arg slot, discard the other
+            // stack slots
+            fiber->resize_stack(fiber->stack_size() - (argc - 1));
+            break;
+          case PrimitiveResult::ERROR:
+            print_stacktrace(fiber, args[0]);
+            return false;
+          case PrimitiveResult::CALL:
+            fiber->call_function(args[0].as_object(), argc);
+            LOAD_FRAME();
+            break;
+          }
         } break;
       case MethodType::FOREIGN:
-        call_foreign(fiber, method, argc);
+        call_foreign(fiber, method.foreign(), argc);
         break;
       case MethodType::BLOCK:
         fiber->call_function(method.fn(), argc);
         LOAD_FRAME();
         break;
       case MethodType::NONE:
-        std::cerr
-          << "receiver: `" << receiver << "` "
-          << "does not implement method `" << methods_.get_name(symbol) << "`"
-          << std::endl;
-        std::exit(-1); break;
+        method_not_found(fiber,
+            symbol, fiber->get_value(fiber->stack_size() - argc));
+        return false;
       }
 
       DISPATCH();
@@ -453,7 +476,7 @@ Value WrenVM::interpret(const Value& function, FiberObject* fiber) {
       fiber->pop_frame();
 
       if (fiber->empty_frame())
-        return r;
+        return true;
 
       // close any upvalues still in scope
       fiber->close_upvalues(frame->stack_start);
@@ -558,7 +581,7 @@ Value WrenVM::interpret(const Value& function, FiberObject* fiber) {
   }
 
   ASSERT(false, "should not reach end of interpret");
-  return nullptr;
+  return false;
 }
 
 ClassObject* WrenVM::get_class(const Value& val) const {
@@ -612,12 +635,12 @@ ClassObject* WrenVM::get_class(const Value& val) const {
   return nullptr;
 }
 
-void WrenVM::interpret(const str_t& source_bytes) {
+void WrenVM::interpret(const str_t& source_path, const str_t& source_bytes) {
   FiberObject* fiber = FiberObject::make_fiber(*this);
   Pinned pinned;
   pin_object(fiber, &pinned);
 
-  FunctionObject* fn = compile(*this, source_bytes);
+  FunctionObject* fn = compile(*this, source_path, source_bytes);
   if (fn != nullptr) {
     fiber->call_function(fn, 0);
     interpret(fn, fiber);
@@ -692,7 +715,7 @@ void WrenVM::mark_value(const Value& val) {
 
 void WrenVM::define_method(
     const str_t& class_name, const str_t& method_name,
-    int num_params, const WrenNativeFn& method) {
+    int num_params, const WrenForeignFn& method) {
   ASSERT(!class_name.empty(), "must provide class name");
   ASSERT(!method_name.empty(), "must provide method name");
   ASSERT(method_name.size() < MAX_METHOD_NAME, "method name too long");
@@ -738,7 +761,7 @@ void WrenVM::return_double(double value) {
 
 void wrenDefineMethod(WrenVM& vm,
     const str_t& class_name, const str_t& method_name,
-    int num_params, const WrenNativeFn& method) {
+    int num_params, const WrenForeignFn& method) {
   vm.define_method(class_name, method_name, num_params, method);
 }
 
