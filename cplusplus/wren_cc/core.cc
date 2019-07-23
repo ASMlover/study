@@ -93,6 +93,11 @@ static str_t kCoreLib =
 "}\n";
 
 static int validate_index(const Value& index, int count) {
+  // validates that [index] is an integer within `[0, count)` also allows
+  // negative indices which map backwards from the end, returns the valid
+  // positive index value, or -1 if the index was not valid (not a number,
+  // not an int, out of bounds)
+
   if (!index.is_numeric())
     return -1;
 
@@ -109,6 +114,62 @@ static int validate_index(const Value& index, int count) {
     return -1;
 
   return i;
+}
+
+static bool validate_numeric(WrenVM& vm,
+    Value* args, int index, const str_t& arg_name) {
+  // validates that the given argument in [args] is a Numeric, returns true
+  // if it is, if not reports an error and returns false
+
+  if (args[index].is_numeric())
+    return true;
+
+  std::stringstream ss;
+  ss << "`" << arg_name << "` must be a numeric";
+  args[0] = StringObject::make_string(vm, ss.str());
+  return false;
+}
+
+static bool validate_int(WrenVM& vm,
+    Value* args, int index, const str_t& arg_name) {
+  // validates that the given argument in [args] is an integer, returns true
+  // if it is, if not reports error and returns false
+
+  // make sure it's a Numeric first
+  if (!validate_numeric(vm, args, index, arg_name))
+    return false;
+
+  double value = args[index].as_numeric();
+  if (std::trunc(value) == value)
+    return true;
+
+  std::stringstream ss;
+  ss << "`" << arg_name << "` must be an integer";
+  args[0] = StringObject::make_string(vm, ss.str());
+  return false;
+}
+
+static int validate_index(WrenVM& vm,
+    Value* args, int arg_index, int count, const str_t& arg_name) {
+  // validates that [arg_index] is an integer within `[0, count)`, also allows
+  // negative indices which map backwards from the end, returns the valid
+  // positive index value, if invalid reports an error and return -1
+
+  if (!validate_int(vm, args, arg_index, arg_name))
+    return -1;
+
+  int index = Xt::as_type<int>(args[arg_index].as_numeric());
+  // negative indices count from the end
+  if (index < 0)
+    index += count;
+  // check bounds
+  if (index >= 0 && index < count)
+    return index;
+
+  std::stringstream ss;
+  ss << "`" << arg_name << "` out of bounds";
+  args[0] = StringObject::make_string(vm, ss.str());
+  return -1;
 }
 
 DEF_NATIVE(fn_call) {
@@ -142,45 +203,36 @@ DEF_NATIVE(numeric_neg) {
   RETURN_VAL(-args[0].as_numeric());
 }
 
-static bool check_numeric_type(WrenVM& vm, Value* args) {
-  if (args[1].is_numeric())
-    return true;
-
-  args[0] = StringObject::make_string(vm,
-      "TypeError: right operand must be numeric");
-  return false;
-}
-
 DEF_NATIVE(numeric_add) {
-  if (!check_numeric_type(vm, args))
+  if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(args[0].as_numeric() + args[1].as_numeric());
 }
 
 DEF_NATIVE(numeric_sub) {
-  if (!check_numeric_type(vm, args))
+  if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(args[0].as_numeric() - args[1].as_numeric());
 }
 
 DEF_NATIVE(numeric_mul) {
-  if (!check_numeric_type(vm, args))
+  if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(args[0].as_numeric() * args[1].as_numeric());
 }
 
 DEF_NATIVE(numeric_div) {
-  if (!check_numeric_type(vm, args))
+  if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(args[0].as_numeric() / args[1].as_numeric());
 }
 
 DEF_NATIVE(numeric_mod) {
-  if (!check_numeric_type(vm, args))
+  if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(std::fmod(args[0].as_numeric(), args[1].as_numeric()));
@@ -329,9 +381,9 @@ DEF_NATIVE(list_len) {
 
 DEF_NATIVE(list_insert) {
   ListObject* list = args[0].as_list();
-  int index = validate_index(args[1], list->count() + 1);
+  int index = validate_index(vm, args, 1, list->count() + 1, "Index");
   if (index == -1)
-    RETURN_VAL(nullptr);
+    return PrimitiveResult::ERROR;
 
   list->insert(index, args[2]);
   RETURN_VAL(args[2]);
@@ -351,10 +403,14 @@ DEF_NATIVE(list_iterate) {
   if (args[1].is_nil())
     RETURN_VAL(0);
 
-  ListObject* list = args[0].as_list();
-  double index = args[1].as_numeric();
+  if (!validate_int(vm, args, 1, "Iterator"))
+    return PrimitiveResult::ERROR;
 
-  if (index >= list->count() - 1)
+  ListObject* list = args[0].as_list();
+  int index = Xt::as_type<int>(args[1].as_numeric());
+
+  // stop if we are out out bounds
+  if (index < 0 || index >= list->count() - 1)
     RETURN_VAL(false);
 
   RETURN_VAL(index + 1);
@@ -362,9 +418,11 @@ DEF_NATIVE(list_iterate) {
 
 DEF_NATIVE(list_itervalue) {
   ListObject* list = args[0].as_list();
-  double index = args[1].as_numeric();
+  int index = validate_index(vm, args, 1, list->count(), "Iterator");
+  if (index == -1)
+    return PrimitiveResult::ERROR;
 
-  RETURN_VAL(list->get_element(Xt::as_type<int>(index)));
+  RETURN_VAL(list->get_element(index));
 }
 
 DEF_NATIVE(list_subscript) {
