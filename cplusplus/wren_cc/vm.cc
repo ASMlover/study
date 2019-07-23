@@ -31,41 +31,6 @@
 
 namespace wrencc {
 
-int SymbolTable::ensure(const str_t& name) {
-  int existing = get(name);
-  if (existing != -1)
-    return existing;
-
-  symbols_.push_back(name);
-  return Xt::as_type<int>(symbols_.size() - 1);
-}
-
-int SymbolTable::add(const str_t& name) {
-  if (get(name) != -1)
-    return -1;
-
-  symbols_.push_back(name);
-  return Xt::as_type<int>(symbols_.size() - 1);
-}
-
-int SymbolTable::get(const str_t& name) const {
-  for (sz_t i = 0; i < symbols_.size(); ++i) {
-    if (symbols_[i] == name)
-      return Xt::as_type<int>(i);
-  }
-  return -1;
-}
-
-void SymbolTable::clear(void) {
-  symbols_.clear();
-}
-
-void SymbolTable::truncate(int count) {
-  auto n = Xt::as_type<sz_t>(count);
-  ASSERT(n <= symbols_.size(), "cannot truncate to larger size");
-  symbols_.resize(n);
-}
-
 /// WrenVM IMPLEMENTATIONS
 
 WrenVM::WrenVM(void) noexcept {

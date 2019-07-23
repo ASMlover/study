@@ -876,8 +876,7 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::LOAD_LOCAL, seq_slot);
     emit_bytes(Code::LOAD_LOCAL, iter_slot);
 
-    int iterate_symbol = vm_methods().ensure("iterate ");
-    emit_bytes(Code::CALL_1, iterate_symbol);
+    emit_bytes(Code::CALL_1, method_symbol("iterate "));
 
     // store the iterator back in its local for the next iteration
     emit_bytes(Code::STORE_LOCAL, iter_slot);
@@ -892,8 +891,7 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::LOAD_LOCAL, seq_slot);
     emit_bytes(Code::LOAD_LOCAL, iter_slot);
 
-    int iter_value_symbol = vm_methods().ensure("iterValue ");
-    emit_bytes(Code::CALL_1, iter_value_symbol);
+    emit_bytes(Code::CALL_1, method_symbol("iterValue "));
 
     // bind it to the loop variable
     define_local(name);
@@ -1115,7 +1113,6 @@ class Compiler : private UnCopyable {
     method_compiler.init_compiler();
 
     signature(&method_compiler, name);
-    int symbol = vm_methods().ensure(name);
 
     consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
 
@@ -1133,7 +1130,7 @@ class Compiler : private UnCopyable {
     method_compiler.finish_compiler(name);
 
     // compile the code to define the method it
-    emit_bytes(instruction, symbol);
+    emit_bytes(instruction, method_symbol(name));
   }
 
   void call(bool allow_assignment) {
@@ -1170,9 +1167,8 @@ class Compiler : private UnCopyable {
       expression();
     }
 
-    int symbol = vm_methods().ensure(name);
     // compile the method call
-    emit_bytes(Code::CALL_0 + argc, symbol);
+    emit_bytes(Code::CALL_0 + argc, method_symbol(name));
   }
 
   void is(bool allow_assignment) {
@@ -1206,8 +1202,7 @@ class Compiler : private UnCopyable {
     parse_precedence(false, rule.precedence + 1);
 
     // call the operator method on the left-hand side
-    int symbol = vm_methods().ensure(rule.name);
-    emit_bytes(Code::CALL_1, symbol);
+    emit_bytes(Code::CALL_1, method_symbol(rule.name));
   }
 
   void unary_oper(bool allow_assignment) {
@@ -1217,8 +1212,7 @@ class Compiler : private UnCopyable {
     parse_precedence(false, Precedence::UNARY + 1);
 
     // call the operator method on the left-hand side
-    int symbol = vm_methods().ensure(str_t(1, rule.name[0]));
-    emit_bytes(Code::CALL_0, symbol);
+    emit_bytes(Code::CALL_0, method_symbol(str_t(1, rule.name[0])));
   }
 
   void infix_signature(str_t& name) {
@@ -1329,6 +1323,8 @@ class Compiler : private UnCopyable {
     }
   }
 
+  inline int method_symbol(const str_t& name) { return vm_methods().ensure(name); }
+
   void method_call(Code instruction, const str_t& method_name) {
     // compiles an (optional) argument list and then calls it
 
@@ -1347,7 +1343,7 @@ class Compiler : private UnCopyable {
     }
 
     int symbol = vm_methods().ensure(name);
-    emit_bytes(instruction + argc, symbol);
+    emit_bytes(instruction + argc, method_symbol(name));
   }
 
   void named_call(bool allow_assignment, Code instruction) {
@@ -1366,8 +1362,7 @@ class Compiler : private UnCopyable {
 
       expression();
 
-      int symbol = vm_methods().ensure(name);
-      emit_bytes(instruction + 1, symbol);
+      emit_bytes(instruction + 1, method_symbol(name));
     }
     else {
       method_call(instruction, name);
