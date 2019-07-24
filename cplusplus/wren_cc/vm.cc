@@ -44,9 +44,10 @@ WrenVM::WrenVM(void) noexcept {
 WrenVM::~WrenVM(void) {
 }
 
-void WrenVM::set_native(ClassObject* cls, const str_t& name, PrimitiveFn fn) {
+void WrenVM::set_native(
+    ClassObject* cls, const str_t& name, const PrimitiveFn& fn) {
   int symbol = methods_.ensure(name);
-  cls->set_method(symbol, fn);
+  cls->bind_method(symbol, fn);
 }
 
 void WrenVM::set_global(const str_t& name, const Value& value) {
@@ -110,10 +111,12 @@ void WrenVM::method_not_found(FiberObject* fiber, int symbol, Value& receiver) {
 }
 
 bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
-#define PUSH(v) fiber->push(v)
-#define POP()   fiber->pop()
-#define PEEK()  fiber->peek_value()
-#define RDARG() (*frame->ip++)
+#define PUSH(v)   fiber->push(v)
+#define POP()     fiber->pop()
+#define PEEK()    fiber->peek_value()
+#define PEEK2()   fiber->peek_value(1)
+#define RDBYTE()  (*frame->ip++)
+#define RDWORD()  (frame->ip += 2, (frame->ip[-2] << 8) | frame->ip[-1])
 
   CallFrame* frame{};
   FunctionObject* fn{};
@@ -140,9 +143,9 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
   };
 # define INTERPRET_LOOP() DISPATCH();
 # define CASE_CODE(name)  __code_##name
-# define DISPATCH()       goto *_dispatch_table[Xt::as_type<int>(c = Xt::as_type<Code>(*frame->ip++))]
+# define DISPATCH()       goto *_dispatch_table[Xt::as_type<int>(c = Xt::as_type<Code>(RDBYTE()))]
 #else
-# define INTERPRET_LOOP() for (;;) switch (c = Xt::as_type<Code>(*frame->ip++))
+# define INTERPRET_LOOP() for (;;) switch (c = Xt::as_type<Code>(RDBYTE()))
 # define CASE_CODE(name)  case Code::##name
 # define DISPATCH()       break
 #endif
@@ -151,19 +154,19 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
 
   Code c;
   INTERPRET_LOOP() {
-    CASE_CODE(CONSTANT): PUSH(fn->get_constant(RDARG())); DISPATCH();
+    CASE_CODE(CONSTANT): PUSH(fn->get_constant(RDWORD())); DISPATCH();
     CASE_CODE(NIL): PUSH(nullptr); DISPATCH();
     CASE_CODE(FALSE): PUSH(false); DISPATCH();
     CASE_CODE(TRUE): PUSH(true); DISPATCH();
     CASE_CODE(LOAD_LOCAL):
     {
-      PUSH(fiber->get_value(frame->stack_start + RDARG()));
+      PUSH(fiber->get_value(frame->stack_start + RDBYTE()));
 
       DISPATCH();
     }
     CASE_CODE(STORE_LOCAL):
     {
-      fiber->set_value(frame->stack_start + RDARG(), PEEK());
+      fiber->set_value(frame->stack_start + RDBYTE(), PEEK());
 
       DISPATCH();
     }
@@ -171,7 +174,7 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
     {
       ASSERT(co->has_upvalues(),
           "should not have LOAD_UPVALUE instruction in non-closure");
-      PUSH(co->get_upvalue(RDARG())->value_asref());
+      PUSH(co->get_upvalue(RDBYTE())->value_asref());
 
       DISPATCH();
     }
@@ -179,25 +182,25 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
     {
       ASSERT(co->has_upvalues(),
           "should not have STORE_UPVALUE instruction in non-closure");
-      co->get_upvalue(RDARG())->set_value(POP());
+      co->get_upvalue(RDBYTE())->set_value(POP());
 
       DISPATCH();
     }
     CASE_CODE(LOAD_GLOBAL):
     {
-      PUSH(globals_[RDARG()]);
+      PUSH(globals_[RDBYTE()]);
 
       DISPATCH();
     }
     CASE_CODE(STORE_GLOBAL):
     {
-      globals_[RDARG()] = PEEK();
+      globals_[RDBYTE()] = PEEK();
 
       DISPATCH();
     }
     CASE_CODE(LOAD_FIELD_THIS):
     {
-      int field = RDARG();
+      int field = RDBYTE();
       const Value& receiver = fiber->get_value(frame->stack_start);
       ASSERT(receiver.is_instance(), "receiver should be instance");
       InstanceObject* inst = receiver.as_instance();
@@ -208,7 +211,7 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
     }
     CASE_CODE(STORE_FIELD_THIS):
     {
-      int field = RDARG();
+      int field = RDBYTE();
       const Value& receiver = fiber->get_value(frame->stack_start);
       ASSERT(receiver.is_instance(), "receiver should be instance");
       InstanceObject* inst = receiver.as_instance();
@@ -219,7 +222,7 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
     }
     CASE_CODE(LOAD_FIELD):
     {
-      int field = RDARG();
+      int field = RDBYTE();
       Value receiver = POP();
       ASSERT(receiver.is_instance(), "receiver should be instance");
       InstanceObject* inst = receiver.as_instance();
@@ -230,7 +233,7 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
     }
     CASE_CODE(STORE_FIELD):
     {
-      int field = RDARG();
+      int field = RDBYTE();
       Value receiver = POP();
       ASSERT(receiver.is_instance(), "receiver should be instance");
       InstanceObject* inst = receiver.as_instance();
@@ -259,10 +262,18 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
     CASE_CODE(CALL_16):
     {
       int argc = c - Code::CALL_0 + 1;
-      int symbol = RDARG();
+      int symbol = RDWORD();
       const Value& receiver = fiber->get_value(fiber->stack_size() - argc);
 
       ClassObject* cls = get_class(receiver);
+
+      // if the class's method table does not include the symbol, bail
+      if (cls->methods_count() < symbol) {
+        method_not_found(fiber,
+            symbol, fiber->get_value(fiber->stack_size() - argc));
+        return false;
+      }
+
       auto& method = cls->get_method(symbol);
       switch (method.type) {
       case MethodType::PRIMITIVE:
@@ -320,13 +331,21 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
     {
       // add one for the implicit receiver argument
       int argc = c - Code::SUPER_0 + 1;
-      int symbol = RDARG();
+      int symbol = RDWORD();
 
       const Value& receiver = fiber->get_value(fiber->stack_size() - argc);
       ClassObject* cls = get_class(receiver);
 
       // ignore methods defined on the receiver's immediate class
       cls  = cls->superclass();
+
+      // if the class's method table does not include the symbol, bail
+      if (cls->methods_count() < symbol) {
+        method_not_found(fiber,
+            symbol, fiber->get_value(fiber->stack_size() - argc));
+        return false;
+      }
+
       auto& method = cls->get_method(symbol);
       switch (method.type) {
       case MethodType::PRIMITIVE:
@@ -364,17 +383,17 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
 
       DISPATCH();
     }
-    CASE_CODE(JUMP): frame->ip += RDARG(); DISPATCH();
+    CASE_CODE(JUMP): frame->ip += RDBYTE(); DISPATCH();
     CASE_CODE(LOOP):
     {
       // jump back to the top of the loop
-      frame->ip -= RDARG();
+      frame->ip -= RDBYTE();
 
       DISPATCH();
     }
     CASE_CODE(JUMP_IF):
     {
-      int offset = RDARG();
+      int offset = RDBYTE();
       Value cond = POP();
 
       if (cond.is_falsely())
@@ -384,7 +403,7 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
     }
     CASE_CODE(AND):
     {
-      int offset = RDARG();
+      int offset = RDBYTE();
       const Value& cond = PEEK();
 
       // false and nil is falsely value
@@ -397,7 +416,7 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
     }
     CASE_CODE(OR):
     {
-      int offset = RDARG();
+      int offset = RDBYTE();
       const Value& cond = PEEK();
 
       // false and nil is falsely value
@@ -461,15 +480,18 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
     }
     CASE_CODE(NEW):
     {
-      // handle object not being a class
-      ClassObject* cls = POP().as_class();
-      PUSH(InstanceObject::make_instance(*this, cls));
+      // make sure the class stays on the stack until after the instance is
+      // allocated so that if does not get collected
+      ClassObject* cls = PEEK().as_class();
+      InstanceObject* inst = InstanceObject::make_instance(*this, cls);
+      POP();
+      PUSH(inst);
 
       DISPATCH();
     }
     CASE_CODE(LIST):
     {
-      int num_elements = RDARG();
+      int num_elements = RDBYTE();
       ListObject* list = ListObject::make_list(*this, num_elements);
       for (int i = 0; i < num_elements; ++i) {
         list->set_element(i,
@@ -484,7 +506,7 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
     }
     CASE_CODE(CLOSURE):
     {
-      FunctionObject* prototype = fn->get_constant(RDARG()).as_function();
+      FunctionObject* prototype = fn->get_constant(RDWORD()).as_function();
       ASSERT(prototype->num_upvalues() > 0,
           "should not create closure for functions that donot need it");
 
@@ -495,8 +517,8 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
 
       // capture upvalues
       for (int i = 0; i < prototype->num_upvalues(); ++i) {
-        int is_local = RDARG();
-        int index = RDARG();
+        int is_local = RDBYTE();
+        int index = RDBYTE();
         if (is_local) {
           // make an new upvalue to close over the parent's local variable
           closure->set_upvalue(i,
@@ -514,15 +536,19 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
     CASE_CODE(SUBCLASS):
     {
       bool is_subclass = c == Code::SUBCLASS;
-      int num_fields = RDARG();
+      int num_fields = RDBYTE();
 
       ClassObject* superclass;
       if (is_subclass)
-        superclass = POP().as_class();
+        superclass = PEEK().as_class();
       else
         superclass = obj_class_;
 
       ClassObject* cls = ClassObject::make_class(*this, superclass, num_fields);
+      // donot pop the superclass off the stack until the subclass is done
+      // being created, to make sure it does not get collected
+      if (is_subclass)
+        POP();
       PUSH(cls);
 
       DISPATCH();
@@ -530,10 +556,11 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
     CASE_CODE(METHOD_INSTANCE):
     CASE_CODE(METHOD_STATIC):
     {
-      int symbol = RDARG();
-      Value method = POP();
-      ClassObject* cls = PEEK().as_class();
+      int symbol = RDWORD();
+      Value method = PEEK();
+      ClassObject* cls = PEEK2().as_class();
       cls->bind_method(symbol, Xt::as_type<int>(c), method);
+      POP();
 
       DISPATCH();
     }
@@ -706,7 +733,7 @@ void WrenVM::define_method(
 
   // bind the method
   int method_symbol = methods_.ensure(name);
-  cls->set_method(method_symbol, method);
+  cls->bind_method(method_symbol, method);
 }
 
 double WrenVM::get_argument_double(int index) const {

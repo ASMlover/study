@@ -215,7 +215,7 @@ class Compiler : private UnCopyable {
   // the maximum number of distinct constants that a function can contain. this
   // value is explicit in the bytecode since `CONSTANT` only takes a single
   // argument
-  static constexpr int kMaxConstants = 256;
+  static constexpr int kMaxConstants = 1 << 16;
 
   Parser& parser_;
   Compiler* parent_{};
@@ -288,6 +288,15 @@ class Compiler : private UnCopyable {
     return emit_byte(b2);
   }
 
+  template <typename T> inline void emit_words(T b, u16_t arg) {
+    // emits one bytecode instruction followed by a 16-bit argument,
+    // which will be written big endian
+
+    emit_byte(b);
+    emit_byte((arg >> 8) & 0xff);
+    emit_byte(arg & 0xff);
+  }
+
   inline void patch_jump(int offset) {
     // replaces the placeholder argument for a previous JUMP or JUMP_IF
     // instruction with an offset that jumps to the current end of bytecode
@@ -296,12 +305,6 @@ class Compiler : private UnCopyable {
   }
 
   inline int add_constant(const Value& v) {
-    // see if an equivalent constant has already been added
-    for (int i = 0; i < constants_->count(); ++i) {
-      if (constants_->get_element(i) == v)
-        return i;
-    }
-
     if (constants_->count() < kMaxConstants)
       constants_->add_element(v);
     else
@@ -312,7 +315,7 @@ class Compiler : private UnCopyable {
 
   inline void emit_constant(const Value& v) {
     int b = add_constant(v);
-    emit_bytes(Code::CONSTANT, b);
+    emit_words(Code::CONSTANT, b);
   }
 
   void push_scope(void) {
@@ -876,7 +879,7 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::LOAD_LOCAL, seq_slot);
     emit_bytes(Code::LOAD_LOCAL, iter_slot);
 
-    emit_bytes(Code::CALL_1, method_symbol("iterate "));
+    emit_words(Code::CALL_1, method_symbol("iterate "));
 
     // store the iterator back in its local for the next iteration
     emit_bytes(Code::STORE_LOCAL, iter_slot);
@@ -891,7 +894,7 @@ class Compiler : private UnCopyable {
     emit_bytes(Code::LOAD_LOCAL, seq_slot);
     emit_bytes(Code::LOAD_LOCAL, iter_slot);
 
-    emit_bytes(Code::CALL_1, method_symbol("iterValue "));
+    emit_words(Code::CALL_1, method_symbol("iterValue "));
 
     // bind it to the loop variable
     define_local(name);
@@ -1130,7 +1133,7 @@ class Compiler : private UnCopyable {
     method_compiler.finish_compiler(name);
 
     // compile the code to define the method it
-    emit_bytes(instruction, method_symbol(name));
+    emit_words(instruction, method_symbol(name));
   }
 
   void call(bool allow_assignment) {
@@ -1168,7 +1171,7 @@ class Compiler : private UnCopyable {
     }
 
     // compile the method call
-    emit_bytes(Code::CALL_0 + argc, method_symbol(name));
+    emit_words(Code::CALL_0 + argc, method_symbol(name));
   }
 
   void is(bool allow_assignment) {
@@ -1202,7 +1205,7 @@ class Compiler : private UnCopyable {
     parse_precedence(false, rule.precedence + 1);
 
     // call the operator method on the left-hand side
-    emit_bytes(Code::CALL_1, method_symbol(rule.name));
+    emit_words(Code::CALL_1, method_symbol(rule.name));
   }
 
   void unary_oper(bool allow_assignment) {
@@ -1212,7 +1215,7 @@ class Compiler : private UnCopyable {
     parse_precedence(false, Precedence::UNARY + 1);
 
     // call the operator method on the left-hand side
-    emit_bytes(Code::CALL_0, method_symbol(str_t(1, rule.name[0])));
+    emit_words(Code::CALL_0, method_symbol(str_t(1, rule.name[0])));
   }
 
   void infix_signature(str_t& name) {
@@ -1305,17 +1308,54 @@ class Compiler : private UnCopyable {
       return 0;
 
     // instructions with two arguments
+    case Code::CONSTANT:
+    case Code::CALL_0:
+    case Code::CALL_1:
+    case Code::CALL_2:
+    case Code::CALL_3:
+    case Code::CALL_4:
+    case Code::CALL_5:
+    case Code::CALL_6:
+    case Code::CALL_7:
+    case Code::CALL_8:
+    case Code::CALL_9:
+    case Code::CALL_10:
+    case Code::CALL_11:
+    case Code::CALL_12:
+    case Code::CALL_13:
+    case Code::CALL_14:
+    case Code::CALL_15:
+    case Code::CALL_16:
+    case Code::SUPER_0:
+    case Code::SUPER_1:
+    case Code::SUPER_2:
+    case Code::SUPER_3:
+    case Code::SUPER_4:
+    case Code::SUPER_5:
+    case Code::SUPER_6:
+    case Code::SUPER_7:
+    case Code::SUPER_8:
+    case Code::SUPER_9:
+    case Code::SUPER_10:
+    case Code::SUPER_11:
+    case Code::SUPER_12:
+    case Code::SUPER_13:
+    case Code::SUPER_14:
+    case Code::SUPER_15:
+    case Code::SUPER_16:
+      return 2;
+
     case Code::METHOD_INSTANCE:
     case Code::METHOD_STATIC:
-      return 2;
+      return 3;
 
     case Code::CLOSURE:
       {
-        int constant = bytecode[ip + 1];
+        int constant = (bytecode[ip + 1] << 8) | (bytecode[ip + 2]);
         FunctionObject* loaded_fn = constants[constant].as_function();
 
-        // there is an argument for the constant, then one for each upvalue
-        return 1 + loaded_fn->num_upvalues();
+        // there are two arguments for the constant, then one for each upvalue
+        return 2 + loaded_fn->num_upvalues();
       }
     default:
       // most instructions have one argument
@@ -1343,7 +1383,7 @@ class Compiler : private UnCopyable {
     }
 
     int symbol = vm_methods().ensure(name);
-    emit_bytes(instruction + argc, method_symbol(name));
+    emit_words(instruction + argc, method_symbol(name));
   }
 
   void named_call(bool allow_assignment, Code instruction) {
@@ -1362,7 +1402,7 @@ class Compiler : private UnCopyable {
 
       expression();
 
-      emit_bytes(instruction + 1, method_symbol(name));
+      emit_words(instruction + 1, method_symbol(name));
     }
     else {
       method_call(instruction, name);
@@ -1489,11 +1529,11 @@ public:
       // if the function has no upvalues, we donot need to create a closure.
       // we can just load and run the function directly
       if (num_upvalues_ == 0) {
-        parent_->emit_bytes(Code::CONSTANT, constant);
+        parent_->emit_words(Code::CONSTANT, constant);
       }
       else {
         // capture the upvalues in the new closure object.
-        parent_->emit_bytes(Code::CLOSURE, constant);
+        parent_->emit_words(Code::CLOSURE, constant);
 
         // emit a arguments for each upvalue to know whether to capture a
         // local or an upvalue
