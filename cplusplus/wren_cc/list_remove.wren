@@ -23,7 +23,4 @@ var cc = [1, 2, 3]
 cc.remove(-1)
 IO.write(cc) // expect: [1, 3]
 
-IO.write([1, 2, 3].remove(3)) // expect: nil
-IO.write([1, 2, 3].remove(-4)) // expect: nil
-
 IO.write([1, 2, 3].remove(1)) // expect: 2

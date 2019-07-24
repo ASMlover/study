@@ -11,10 +11,3 @@ IO.write(list[-4]) // expect: b
 IO.write(list[-3]) // expect: c
 IO.write(list[-2]) // expect: d
 IO.write(list[-1]) // expect: 555
-
-IO.write(list[5]) // expect: nil
-IO.write(list[-6]) // expect: nil
-
-IO.write(list[true]) // expect: nil
-IO.write(list[1.5]) // expect: nil
-IO.write(list["1"]) // expect: nil
