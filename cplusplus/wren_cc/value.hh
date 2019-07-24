@@ -511,6 +511,8 @@ struct Method {
   MethodType type{MethodType::NONE};
   std::variant<PrimitiveFn, WrenForeignFn, BaseObject*> m_{};
 
+  inline MethodType get_type(void) const { return type; }
+  inline void set_type(MethodType method_type) { type = method_type; }
   inline const PrimitiveFn& primitive(void) const { return std::get<PrimitiveFn>(m_); }
   inline void set_primitive(const PrimitiveFn& fn) { m_ = fn; }
   inline const WrenForeignFn& foreign(void) const { return std::get<WrenForeignFn>(m_); }
@@ -519,15 +521,19 @@ struct Method {
   inline void set_fn(BaseObject* fn) { m_ = fn; }
 
   Method(void) noexcept {}
+  Method(const PrimitiveFn& fn) noexcept : type(MethodType::PRIMITIVE), m_(fn) {}
+  Method(const WrenForeignFn& fn) noexcept : type(MethodType::FOREIGN), m_(fn) {}
+  Method(BaseObject* fn) noexcept : type(MethodType::BLOCK), m_(fn) {}
+  Method(MethodType t, const PrimitiveFn& fn) noexcept : type(t), m_(fn) {}
+  Method(MethodType t, const WrenForeignFn& fn) noexcept : type(t), m_(fn) {}
+  Method(MethodType t, BaseObject* fn) noexcept : type(t), m_(fn) {}
 };
 
 class ClassObject final : public BaseObject {
-  static constexpr sz_t kMaxMethods = 256;
-
   ClassObject* meta_class_{};
   ClassObject* superclass_{};
   int num_fields_{};
-  std::vector<Method> methods_{kMaxMethods};
+  std::vector<Method> methods_{};
 
   ClassObject(void) noexcept;
   ClassObject(ClassObject* meta_class,
@@ -559,6 +565,7 @@ public:
   void bind_superclass(ClassObject* superclass);
   void bind_method(FunctionObject* fn);
   void bind_method(int i, int method_type, const Value& fn);
+  void bind_method(int i, const Method& method);
 
   virtual str_t stringify(void) const override;
   virtual void gc_mark(WrenVM& vm) override;

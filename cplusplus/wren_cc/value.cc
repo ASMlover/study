@@ -277,17 +277,54 @@ int FunctionObject::get_argc(int ip) const {
     return 0;
 
   // instructions with two arguments
+  case Code::CONSTANT:
+  case Code::CALL_0:
+  case Code::CALL_1:
+  case Code::CALL_2:
+  case Code::CALL_3:
+  case Code::CALL_4:
+  case Code::CALL_5:
+  case Code::CALL_6:
+  case Code::CALL_7:
+  case Code::CALL_8:
+  case Code::CALL_9:
+  case Code::CALL_10:
+  case Code::CALL_11:
+  case Code::CALL_12:
+  case Code::CALL_13:
+  case Code::CALL_14:
+  case Code::CALL_15:
+  case Code::CALL_16:
+  case Code::SUPER_0:
+  case Code::SUPER_1:
+  case Code::SUPER_2:
+  case Code::SUPER_3:
+  case Code::SUPER_4:
+  case Code::SUPER_5:
+  case Code::SUPER_6:
+  case Code::SUPER_7:
+  case Code::SUPER_8:
+  case Code::SUPER_9:
+  case Code::SUPER_10:
+  case Code::SUPER_11:
+  case Code::SUPER_12:
+  case Code::SUPER_13:
+  case Code::SUPER_14:
+  case Code::SUPER_15:
+  case Code::SUPER_16:
+    return 2;
+
   case Code::METHOD_INSTANCE:
   case Code::METHOD_STATIC:
-    return 2;
+    return 3;
 
   case Code::CLOSURE:
     {
-      int constant = get_code(ip + 1);
+      int constant = (get_code(ip + 1) << 8) | get_code(ip + 2);
       FunctionObject* loaded_fn = get_constant(constant).as_function();
 
-      // there is an argument for the constant, then one for each upvalue
-      return 1 + loaded_fn->num_upvalues();
+      // there are two arguments for the constant, then one for each upvalue
+      return 2 + loaded_fn->num_upvalues();
     }
   default: return 1; // most instructions have one argument
   }
@@ -496,8 +533,9 @@ void ClassObject::bind_superclass(ClassObject* superclass) {
   // include the superclass in the total number of fields
   num_fields_ += superclass->num_fields_;
   // inherit methods from its superclass
-  for (int i = 0; i < kMaxMethods; ++i)
-    methods_[i] = superclass->methods_[i];
+  int super_methods_count = superclass_->methods_count();
+  for (int i = 0; i < super_methods_count; ++i)
+    bind_method(i, superclass_->methods_[i]);
 }
 
 void ClassObject::bind_method(FunctionObject* fn) {
@@ -530,12 +568,18 @@ void ClassObject::bind_method(int i, int method_type, const Value& fn) {
   // like instance methods
   bind_method(method_fn);
 
-  switch (Xt::as_type<Code>(method_type)) {
-  case Code::METHOD_INSTANCE:
-    set_method(i, MethodType::BLOCK, fn.as_object()); break;
-  case Code::METHOD_STATIC:
-    meta_class_->set_method(i, MethodType::BLOCK, fn.as_object()); break;
-  }
+  if (Xt::as_type<Code>(method_type) == Code::METHOD_STATIC )
+    meta_class_->bind_method(i, fn.as_object());
+  else
+    bind_method(i, fn.as_object());
+}
+
+void ClassObject::bind_method(int i, const Method& method) {
+  // make sure the buffer is big enough to reach the symbol's index
+
+  while (i >= methods_count())
+    methods_.push_back(Method());
+  methods_[i] = method;
 }
 
 str_t ClassObject::stringify(void) const {
