@@ -172,6 +172,20 @@ static int validate_index(WrenVM& vm,
   return -1;
 }
 
+static bool validate_string(WrenVM& vm,
+    Value* args, int index, const str_t& arg_name) {
+  // validates that the given argument in [args] is a String, returns true
+  // if it is, if not reports an error and returns false
+
+  if (args[index].is_string())
+    return true;
+
+  std::stringstream ss;
+  ss << "`" << arg_name << "` must be a string";
+  args[0] = StringObject::make_string(vm, ss.str());
+  return false;
+}
+
 DEF_NATIVE(fn_call) {
   return PrimitiveResult::CALL;
 }
@@ -309,6 +323,9 @@ DEF_NATIVE(string_len) {
 }
 
 DEF_NATIVE(string_contains) {
+  if (!validate_string(vm, args, 1, "Argument"))
+    return PrimitiveResult::ERROR;
+
   StringObject* orig = args[0].as_string();
   StringObject* subs = args[1].as_string();
 
@@ -345,20 +362,10 @@ DEF_NATIVE(string_ne) {
 }
 
 DEF_NATIVE(string_subscript) {
-  if (!args[1].is_numeric())
-    RETURN_VAL(nullptr);
-
-  double index_num = args[1].as_numeric();
-  int index = Xt::as_type<int>(index_num);
-  // make sure the index is an integer
-  if (index_num != index)
-    RETURN_VAL(nullptr);
-
   StringObject* s = args[0].as_string();
-  if (index < 0)
-    index = index + s->size();
-  if (index < 0 || index >= s->size())
-    RETURN_VAL(nullptr);
+  int index = validate_index(vm, args, 1, s->size(), "Subscript");
+  if (index == -1)
+    return PrimitiveResult::ERROR;
 
   RETURN_VAL(StringObject::make_string(vm, (*s)[index]));
 }
@@ -391,9 +398,9 @@ DEF_NATIVE(list_insert) {
 
 DEF_NATIVE(list_remove) {
   ListObject* list = args[0].as_list();
-  int index = validate_index(args[1], list->count());
+  int index = validate_index(vm, args, 1, list->count(), "Index");
   if (index == -1)
-    RETURN_VAL(nullptr);
+    return PrimitiveResult::ERROR;
 
   RETURN_VAL(list->remove(index));
 }
@@ -427,18 +434,18 @@ DEF_NATIVE(list_itervalue) {
 
 DEF_NATIVE(list_subscript) {
   ListObject* list = args[0].as_list();
-  int index = validate_index(args[1], list->count());
+  int index = validate_index(vm, args, 1, list->count(), "Index");
   if (index == -1)
-    RETURN_VAL(nullptr);
+    return PrimitiveResult::ERROR;
 
   RETURN_VAL(list->get_element(index));
 }
 
 DEF_NATIVE(list_subscript_setter) {
   ListObject* list = args[0].as_list();
-  int index = validate_index(args[1], list->count());
+  int index = validate_index(vm, args, 1, list->count(), "Index");
   if (index == -1)
-    RETURN_VAL(nullptr);
+    return PrimitiveResult::ERROR;
 
   list->set_element(index, args[2]);
   RETURN_VAL(args[2]);
