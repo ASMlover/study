@@ -46,8 +46,14 @@ static PrimitiveResult _primitive_##fn(WrenVM& vm, FiberObject* fiber, Value* ar
 
 static str_t kCoreLib =
 "class IO {\n"
+"  static print(obj) {\n"
+"    IO.writeString(obj.toString)\n"
+"    IO.writeString(\"\n\")\n"
+"    return obj\n"
+"  }\n"
+"\n"
 "  static write(obj) {\n"
-"    IO.write__native__(obj.toString)\n"
+"    IO.writeString(obj.toString)\n"
 "    return obj\n"
 "  }\n"
 "}\n"
@@ -452,8 +458,11 @@ DEF_NATIVE(list_subscript_setter) {
 }
 
 DEF_NATIVE(io_write) {
-  std::cout << args[1] << std::endl;
-  RETURN_VAL(args[1]);
+  if (!validate_string(vm, args, 1, "Argument"))
+    return PrimitiveResult::ERROR;
+
+  std::cout << args[1];
+  RETURN_VAL(nullptr);
 }
 
 DEF_NATIVE(os_clock) {
@@ -568,7 +577,7 @@ void initialize_core(WrenVM& vm) {
   vm.set_native(vm.num_cls(), "~", _primitive_numeric_bitnot);
 
   ClassObject* io_cls = vm.get_global("IO").as_class();
-  vm.set_native(io_cls->meta_class(), "write__native__ ", _primitive_io_write);
+  vm.set_native(io_cls->meta_class(), "writeString ", _primitive_io_write);
 
 }
 
