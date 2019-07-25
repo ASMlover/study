@@ -197,6 +197,25 @@ struct CompilerUpvalue {
   }
 };
 
+struct Loop {
+  // index of the instruction that the loop should jump back to
+  int start{};
+
+  // index of the argument for the `Code::JUMP_IF` instruction use to exit
+  // the loop, stored so we can patch it once we know where the loop ends
+  int exit_jump{};
+
+  // index of the first instruction of the body of the loop
+  int body{};
+
+  // depth of the scope(s) that need to be exited if a break is hit inside
+  // the loop
+  int scope_depth{};
+
+  // the loop enclosing this one or `nullptr` of this is the outermost loop
+  Loop* enclosing{};
+};
+
 class Compiler : private UnCopyable {
   // the maximum number of arguments that can be passed to a method, note
   // that this limtation is hardcoded in other places in th VM, in particular
@@ -235,9 +254,8 @@ class Compiler : private UnCopyable {
   // scope in effect at all. any variables declared will be global
   int scope_depth_{-1};
 
-  // index of the first instruction of the body of the innermost loop
-  // currently being compiled. will be -1 if not currently inside a loop.
-  int loop_body_{-1};
+  // the current innermost loop being compiled, or `nullptr` if not in a loop
+  Loop* loop_{};
 
   // name of the method this compiler is compiling, or `empty` if this
   // compiler is not for a method. note that this is just the bare method
@@ -318,6 +336,32 @@ class Compiler : private UnCopyable {
     emit_words(Code::CONSTANT, b);
   }
 
+  sz_t discard_locals(int depth) {
+    // generates code to discard local variables at [depth] or greater, does
+    // not actually undeclare variables or pop any scopes, though. this is
+    // called directly when compiling `break` statements to ditch the local
+    // variables before jumping out of the loop even though they are still in
+    // scope *past* the break instruction
+    //
+    // returns the number of local variables that were eliminated.
+
+    ASSERT(scope_depth_ > -1, "cannot exit top-level scope");
+
+    sz_t local = locals_.size() - 1;
+    while (local >= 0 && locals_[local].depth >= depth) {
+      // if the local was closed over, make sure the upvalue gets closed
+      // when it goes out of scope on the stack
+      if (locals_[local].is_upvalue)
+        emit_byte(Code::CLOSE_UPVALUE);
+      else
+        emit_byte(Code::POP);
+
+      --local;
+    }
+
+    return locals_.size() - local - 1;
+  }
+
   void push_scope(void) {
     // starts a new local block scope
 
@@ -325,22 +369,11 @@ class Compiler : private UnCopyable {
   }
 
   void pop_scope(void) {
-    // closes the last pushed block scope. this should only be called in
-    // a statement context where no temporaries are still on the stack
+    // closes the last pushed block scope and discards any local variables
+    // decalred in that scope, this should only be called in a statement
+    // context where no temporaries are still on the stack
 
-    ASSERT(scope_depth_ > -1, "cannot pop top-level scope");
-
-    while (!locals_.empty() && locals_.back().depth == scope_depth_) {
-      bool is_upvalue = locals_.back().is_upvalue;
-      locals_.pop_back();
-
-      // if the local was closed over, make sure the upvalue gets closed
-      // when it goes out of scope on the stack
-      if (is_upvalue)
-        emit_byte(Code::CLOSE_UPVALUE);
-      else
-        emit_byte(Code::POP);
-    }
+    locals_.resize(locals_.size() - discard_locals(scope_depth_));
     --scope_depth_;
   }
 
@@ -730,16 +763,45 @@ class Compiler : private UnCopyable {
       error(msg);
   }
 
-  int start_loop_body(void) {
-    int outer_loop_body = loop_body_;
-    loop_body_ = Xt::as_type<int>(bytecode_.size());
-    return outer_loop_body;
+  void start_loop(Loop* loop) {
+    // marks the beginning of a lopp, keeps track of the current instruction
+    // so we know what to loop back to at the end of the body
+
+    loop->enclosing = loop_;
+    loop->start = Xt::as_type<int>(bytecode_.size() - 1);
+    loop->scope_depth = scope_depth_;
+    loop_ = loop;
   }
 
-  void finish_loop_body(int outer_loop_body) {
+  void test_exit_loop(void) {
+    // emit the [Code::JUMP_IF] instruction used to test the loop condition
+    // and potentially exit the loop, keeps tracks of the instruction so we
+    // can patch it later once we know the end of the body is
+
+    loop_->exit_jump = emit_bytes(Code::JUMP_IF, 0xff);
+  }
+
+  void loop_body(void) {
+    // compiles the body of the loop and tracks its extent so that contained
+    // `break` statements can be handled correctly
+
+    loop_->body = Xt::as_type<int>(bytecode_.size());
+    block();
+  }
+
+  void finish_loop(void) {
+    // ends the current innermost loop, patches up all jumps and breaks now
+    // that we know where the end of the loop is
+
+    emit_byte(Code::LOOP);
+    int loop_offset = Xt::as_type<int>(bytecode_.size()) - loop_->start;
+    emit_byte(loop_offset);
+
+    patch_jump(loop_->exit_jump);
+
     // find any break placeholder instructions (which will be Code::END in the
     // bytecode) and replace them with real jumps
-    int i = loop_body_;
+    int i = loop_->body;
     while (i < bytecode_.size()) {
       if (Xt::as_type<Code>(bytecode_[i]) == Code::END) {
         bytecode_[i] = Xt::as_type<u8_t>(Code::JUMP);
@@ -751,7 +813,7 @@ class Compiler : private UnCopyable {
         i += 1 + get_argc(bytecode_, constants_->elements(), i);
       }
     }
-    loop_body_ = outer_loop_body;
+    loop_ = loop_->enclosing;
   }
 
   void class_definition(void) {
@@ -872,8 +934,8 @@ class Compiler : private UnCopyable {
 
     consume(TokenKind::TK_RPAREN, "expect `)` after loop expression");
 
-    // remeber what instrution to loop back to
-    int loop_start = Xt::as_type<int>(bytecode_.size()) - 1;
+    Loop loop;
+    start_loop(&loop);
 
     // advance the iterator by calling the `.iterate` method on the sequence
     emit_bytes(Code::LOAD_LOCAL, seq_slot);
@@ -884,11 +946,7 @@ class Compiler : private UnCopyable {
     // store the iterator back in its local for the next iteration
     emit_bytes(Code::STORE_LOCAL, iter_slot);
 
-    // if it returned something falsely, jump out of the loop
-    int exit_jump = emit_bytes(Code::JUMP_IF, 0xff);
-
-    // create a scope for the loop body
-    push_scope();
+    test_exit_loop();
 
     // get the current value in the sequence by calling `.iterValue`
     emit_bytes(Code::LOAD_LOCAL, seq_slot);
@@ -896,48 +954,33 @@ class Compiler : private UnCopyable {
 
     emit_words(Code::CALL_1, method_symbol("iterValue "));
 
-    // bind it to the loop variable
+    // bind the loop variable in its own scope, this ensures we get a fresh
+    // variable each iteration so that closures for it donot all see the
+    // same one
+    push_scope();
     define_local(name);
 
-    // compile the body
-    int outer_loop_body = start_loop_body();
-    block();
-
+    loop_body();
+    // loop variable
     pop_scope();
+    finish_loop();
 
-    // loop back to the top
-    emit_byte(Code::LOOP);
-    int loop_offset = Xt::as_type<int>(bytecode_.size()) - loop_start;
-    emit_byte(loop_offset);
-
-    patch_jump(exit_jump);
-    finish_loop_body(outer_loop_body);
-
+    // hidden variables
     pop_scope();
   }
 
   void while_stmt(void) {
-    // remeber what instrution to loop back to
-    int loop_start = Xt::as_type<int>(bytecode_.size()) - 1;
+    Loop loop;
+    start_loop(&loop);
 
     // compile the condition
     consume(TokenKind::TK_LPAREN, "expect `(` after `while`");
     expression();
     consume(TokenKind::TK_RPAREN, "expect `)` after while condition");
 
-    int exit_jump = emit_bytes(Code::JUMP_IF, 0xff);
-
-    // compile the body
-    int outer_loop_body = start_loop_body();
-    block();
-
-    // loop back to the top
-    emit_byte(Code::LOOP);
-    int loop_offset = Xt::as_type<int>(bytecode_.size()) - loop_start;
-    emit_byte(loop_offset);
-
-    patch_jump(exit_jump);
-    finish_loop_body(outer_loop_body);
+    test_exit_loop();
+    loop_body();
+    finish_loop();
   }
 
   void var_definition(void) {
@@ -976,8 +1019,14 @@ class Compiler : private UnCopyable {
     // curly blocks, unlike expressions, these do not leave a value on the stack
 
     if (match(TokenKind::KW_BREAK)) {
-      if (loop_body_ == -1)
+      if (loop_ == nullptr) {
         error("cannot use `break` outside of a loop");
+        return;
+      }
+
+      // since we will be jumping out of the scope, make sure any locals in it
+      // are discarded first
+      discard_locals(loop_->scope_depth + 1);
 
       // emit a placeholder instruction for the jump to the end of the body,
       // when we are done compiling the loop body and know where the end is.
