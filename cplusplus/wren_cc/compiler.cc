@@ -336,7 +336,7 @@ class Compiler : private UnCopyable {
     emit_words(Code::CONSTANT, b);
   }
 
-  sz_t discard_locals(int depth) {
+  int discard_locals(int depth) {
     // generates code to discard local variables at [depth] or greater, does
     // not actually undeclare variables or pop any scopes, though. this is
     // called directly when compiling `break` statements to ditch the local
@@ -347,7 +347,7 @@ class Compiler : private UnCopyable {
 
     ASSERT(scope_depth_ > -1, "cannot exit top-level scope");
 
-    sz_t local = locals_.size() - 1;
+    int local = Xt::as_type<int>(locals_.size()) - 1;
     while (local >= 0 && locals_[local].depth >= depth) {
       // if the local was closed over, make sure the upvalue gets closed
       // when it goes out of scope on the stack
@@ -359,7 +359,7 @@ class Compiler : private UnCopyable {
       --local;
     }
 
-    return locals_.size() - local - 1;
+    return Xt::as_type<int>(locals_.size()) - local - 1;
   }
 
   void push_scope(void) {
