@@ -400,6 +400,7 @@ str_t ClosureObject::stringify(void) const {
 }
 
 void ClosureObject::gc_mark(WrenVM& vm) {
+  vm.mark_object(fn_);
   for (int i = 0; i < fn_->num_upvalues(); ++i)
     vm.mark_object(upvalues_[i]);
 }
@@ -590,6 +591,7 @@ str_t ClassObject::stringify(void) const {
 
 void ClassObject::gc_mark(WrenVM& vm) {
   vm.mark_object(meta_class_);
+  vm.mark_object(superclass_);
   for (auto& m : methods_) {
     if (m.type == MethodType::BLOCK)
       vm.mark_object(m.fn());

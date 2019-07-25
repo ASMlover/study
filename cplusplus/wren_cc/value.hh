@@ -432,7 +432,7 @@ struct CallFrame {
 };
 
 class FiberObject final : public BaseObject {
-  static constexpr sz_t kDefaultCap = 256;
+  static constexpr sz_t kDefaultCap = 1<<10;
 
   std::vector<Value> stack_;
   std::vector<CallFrame> frames_;

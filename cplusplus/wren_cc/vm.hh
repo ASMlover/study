@@ -79,7 +79,7 @@ class WrenVM final : private UnCopyable {
   // how many bytes of object data have been allocated
   sz_t total_allocated_{};
   // the number of total allocated objects that will trigger the next GC
-  sz_t next_gc_{1<<10}; // 1024
+  sz_t next_gc_{1<<10}; // 1024 // class的methods超过1000时，回收会crash，method_many_methods.wren
 
   std::list<BaseObject*> objects_; // all currently allocated objects
 
