@@ -2,8 +2,8 @@
 class Foo {
   method {
     return "ok"
-    IO.write("bad")
+    IO.print("bad")
   }
 }
 
-IO.write((new Foo).method) // expect: ok
+IO.print((new Foo).method) // expect: ok

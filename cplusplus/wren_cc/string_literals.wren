@@ -1,3 +1,3 @@
 
-IO.write("".len)
-IO.write("string informatIO.")
+IO.print("".len)
+IO.print("string informatIO.")

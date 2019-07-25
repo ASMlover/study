@@ -1,10 +1,10 @@
 
 {
   var a = "first"
-  IO.write(a) // expect: first
+  IO.print(a) // expect: first
 }
 
 {
   var a = "second"
-  IO.write(a) // expect: second
+  IO.print(a) // expect: second
 }

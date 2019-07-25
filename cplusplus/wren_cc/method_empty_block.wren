@@ -3,4 +3,4 @@ class Foo {
   bar {}
 }
 
-IO.write((new Foo).bar) // expect: nil
+IO.print((new Foo).bar) // expect: nil

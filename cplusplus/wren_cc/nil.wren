@@ -1,2 +1,2 @@
 
-IO.write(nil) // expect: nil
+IO.print(nil) // expect: nil

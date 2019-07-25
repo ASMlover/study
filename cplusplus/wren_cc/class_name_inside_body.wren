@@ -1,11 +1,11 @@
 
 class Foo {
   static sayName {
-    IO.write(Foo.toString)
+    IO.print(Foo.toString)
   }
 
   sayName {
-    IO.write(Foo.toString)
+    IO.print(Foo.toString)
   }
 
   static toString { return "Foo" }

@@ -4,8 +4,8 @@ var f = nil
 {
   var a = "a"
   f = fn {
-    IO.write(a)
-    IO.write(a)
+    IO.print(a)
+    IO.print(a)
   }
 }
 

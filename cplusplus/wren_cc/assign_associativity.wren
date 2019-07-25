@@ -4,6 +4,6 @@ var b = "b"
 var c = "c"
 
 a = b = c
-IO.write(a) // expect: c
-IO.write(b) // expect: c
-IO.write(c) // expect: c
+IO.print(a) // expect: c
+IO.print(b) // expect: c
+IO.print(c) // expect: c

@@ -5,4 +5,4 @@
 if (true) {}
 if (false) {} else {}
 
-IO.write("OK") // expect: OK
+IO.print("OK") // expect: OK

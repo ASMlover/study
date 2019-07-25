@@ -3,7 +3,7 @@
   var a = "local"
   {
     var a = "shadow"
-    IO.write(a) // expect: shadow
+    IO.print(a) // expect: shadow
   }
-  IO.write(a) // expect: local
+  IO.print(a) // expect: local
 }

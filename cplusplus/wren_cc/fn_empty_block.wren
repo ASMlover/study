@@ -1,3 +1,3 @@
 
 var f = fn {}
-IO.write(f.call) // expect: nil
+IO.print(f.call) // expect: nil

@@ -1,7 +1,7 @@
 
 class A {
   foo {
-    IO.write("A.foo")
+    IO.print("A.foo")
   }
 }
 
@@ -9,7 +9,7 @@ class B is A {}
 
 class C is B {
   foo {
-    IO.write("C.foo")
+    IO.print("C.foo")
     super.foo
   }
 }

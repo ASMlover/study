@@ -1,7 +1,7 @@
 
 class Foo {
   bar = value {
-    IO.write(value)
+    IO.print(value)
   }
 }
 

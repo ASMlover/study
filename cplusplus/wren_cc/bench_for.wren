@@ -7,5 +7,5 @@ var sum = 0
 for (i in list) {
   sum = sum + i
 }
-IO.write(sum)
-IO.write("use: " + (OS.clock - start).toString)
+IO.print(sum)
+IO.print("use: " + (OS.clock - start).toString)

@@ -46,7 +46,7 @@ for (i in 0...n) {
   val = toggle.activate.value
   val = toggle.activate.value
 }
-IO.write(toggle.value)
+IO.print(toggle.value)
 
 val = true
 var ntoggle = new NthToggle(val, 3)
@@ -63,6 +63,6 @@ for (i in 0...n) {
   val = ntoggle.activate.value
   val = ntoggle.activate.value
 }
-IO.write(ntoggle.value)
+IO.print(ntoggle.value)
 
-IO.write("use: " + (OS.clock - start).toString)
+IO.print("use: " + (OS.clock - start).toString)

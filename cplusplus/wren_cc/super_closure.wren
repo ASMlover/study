@@ -14,4 +14,4 @@ class Derived is Base {
 }
 
 var closure = (new Derived).getClosure
-IO.write(closure.call) // expect: Base
+IO.print(closure.call) // expect: Base

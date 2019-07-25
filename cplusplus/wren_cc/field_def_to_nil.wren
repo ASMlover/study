@@ -1,6 +1,6 @@
 
 class Foo {
-  write { IO.write(_field) }
+  write { IO.print(_field) }
 }
 
 (new Foo).write // expect: nil

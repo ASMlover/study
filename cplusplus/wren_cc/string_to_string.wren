@@ -1,3 +1,3 @@
 
-IO.write("".toString)
-IO.write("string".toString)
+IO.print("".toString)
+IO.print("string".toString)

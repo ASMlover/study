@@ -1,4 +1,4 @@
 
 fn {
-  IO.write(undefined) // expect error
+  IO.print(undefined) // expect error
 }.call

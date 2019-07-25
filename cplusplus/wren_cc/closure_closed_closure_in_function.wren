@@ -4,7 +4,7 @@ var f = nil
 {
   var local = "local"
   f = fn {
-    IO.write(local)
+    IO.print(local)
   }
 }
 

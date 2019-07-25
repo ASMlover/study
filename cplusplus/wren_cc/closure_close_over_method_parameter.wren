@@ -4,7 +4,7 @@ var f = nil
 class Foo {
   method(param) {
     f = fn {
-      IO.write(param)
+      IO.print(param)
     }
   }
 }

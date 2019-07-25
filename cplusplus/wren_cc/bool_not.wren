@@ -1,4 +1,4 @@
 
-IO.write(!true) // expect: false
-IO.write(!false) // expect: true
-IO.write(!!true) // expect: true
+IO.print(!true) // expect: false
+IO.print(!false) // expect: true
+IO.print(!!true) // expect: true

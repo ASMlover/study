@@ -1,5 +1,5 @@
 
 {
   var a
-  IO.write(a) // expect: nil
+  IO.print(a) // expect: nil
 }

@@ -9,6 +9,6 @@ var fib = fn(n) {
 
 var beg = OS.clock
 for (i in 1..5) {
-  IO.write(fib.call(20))
+  IO.print(fib.call(20))
 }
-IO.write("elapsed: " + (OS.clock - beg).toString)
+IO.print("elapsed: " + (OS.clock - beg).toString)
