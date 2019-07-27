@@ -215,8 +215,28 @@ DEF_NATIVE(numeric_abs) {
   RETURN_VAL(std::abs(args[0].as_numeric()));
 }
 
+DEF_NATIVE(numeric_ceil) {
+  RETURN_VAL(std::ceil(args[0].as_numeric()));
+}
+
+DEF_NATIVE(numeric_cos) {
+  RETURN_VAL(std::cos(args[0].as_numeric()));
+}
+
 DEF_NATIVE(numeric_floor) {
   RETURN_VAL(std::floor(args[0].as_numeric()));
+}
+
+DEF_NATIVE(numeric_isnan) {
+  RETURN_VAL(std::isnan(args[0].as_numeric()));
+}
+
+DEF_NATIVE(numeric_sin) {
+  RETURN_VAL(std::sin(args[0].as_numeric()));
+}
+
+DEF_NATIVE(numeric_sqrt) {
+  RETURN_VAL(std::sqrt(args[0].as_numeric()));
 }
 
 DEF_NATIVE(numeric_tostring) {
@@ -565,7 +585,12 @@ void initialize_core(WrenVM& vm) {
 
   vm.set_num_cls(vm.get_global("Numeric").as_class());
   vm.set_native(vm.num_cls(), "abs", _primitive_numeric_abs);
+  vm.set_native(vm.num_cls(), "ceil", _primitive_numeric_ceil);
+  vm.set_native(vm.num_cls(), "cos", _primitive_numeric_cos);
   vm.set_native(vm.num_cls(), "floor", _primitive_numeric_floor);
+  vm.set_native(vm.num_cls(), "isNan", _primitive_numeric_isnan);
+  vm.set_native(vm.num_cls(), "sin", _primitive_numeric_sin);
+  vm.set_native(vm.num_cls(), "sqrt", _primitive_numeric_sqrt);
   vm.set_native(vm.num_cls(), "toString", _primitive_numeric_tostring);
   vm.set_native(vm.num_cls(), "-", _primitive_numeric_neg);
   vm.set_native(vm.num_cls(), "+ ", _primitive_numeric_add);
