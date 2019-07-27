@@ -442,9 +442,11 @@ class FiberObject final : public BaseObject {
   // upvalue closest to the top of the stack, and then the list works downwards
   UpvalueObject* open_upvlaues_{};
 
-  FiberObject(void) noexcept : BaseObject(ObjType::FIBER) {
-    stack_.reserve(kDefaultCap);
-  }
+  // the fiber that ran this one, if this fiber is yielded, control will
+  // resume to this one, it's may be `nullptr`
+  FiberObject* caller_{};
+
+  FiberObject(BaseObject* fn) noexcept;
   virtual ~FiberObject(void) {}
 public:
   inline void reset(void) {
@@ -462,6 +464,8 @@ public:
   inline Value& get_value(int i) { return stack_[i]; }
   inline const Value& get_value(int i) const { return stack_[i]; }
   inline void set_value(int i, const Value& v) { stack_[i] = v; }
+  inline FiberObject* caller(void) const { return caller_; }
+  inline void set_caller(FiberObject* caller) { caller_ = caller; }
 
   inline const Value& peek_value(int distance = 0) const {
     return stack_[stack_.size() - 1 - distance];
@@ -488,13 +492,16 @@ public:
   virtual str_t stringify(void) const override;
   virtual void gc_mark(WrenVM& vm) override;
 
-  static FiberObject* make_fiber(WrenVM& vm);
+  // creates a new fiber object will invoke [fn], which can be a function
+  // or closure
+  static FiberObject* make_fiber(WrenVM& vm, BaseObject* fn);
 };
 
 enum class PrimitiveResult {
-  VALUE,  // a normal value has been returned
-  ERROR,  // a runtime error occurred
-  CALL,   // a new callframe has been pushed
+  VALUE,      // a normal value has been returned
+  ERROR,      // a runtime error occurred
+  CALL,       // a new callframe has been pushed
+  RUN_FIBER,  // a fiber is being switched to
 };
 
 using PrimitiveFn = std::function<PrimitiveResult (WrenVM&, FiberObject*, Value*)>;

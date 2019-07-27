@@ -346,6 +346,7 @@ int FunctionObject::get_argc(int ip) const {
       return 2 + loaded_fn->num_upvalues();
     }
   }
+  return 0;
 }
 
 str_t FunctionObject::stringify(void) const {
@@ -427,6 +428,17 @@ ClosureObject* ClosureObject::make_closure(WrenVM& vm, FunctionObject* fn) {
   auto* o = new ClosureObject(fn);
   vm.append_object(o);
   return o;
+}
+
+FiberObject::FiberObject(BaseObject* fn) noexcept
+  : BaseObject(ObjType::FIBER) {
+  stack_.reserve(kDefaultCap);
+  const u8_t* ip;
+  if (fn->type() == ObjType::FUNCTION)
+    ip = Xt::down<FunctionObject>(fn)->codes();
+  else
+    ip = Xt::down<ClosureObject>(fn)->fn()->codes();
+  frames_.push_back(CallFrame(ip, fn, 0));
 }
 
 void FiberObject::call_function(BaseObject* fn, int argc) {
@@ -524,10 +536,12 @@ void FiberObject::gc_mark(WrenVM& vm) {
   for (auto* upvalue = open_upvlaues_;
       upvalue != nullptr; upvalue = upvalue->next())
     vm.mark_object(upvalue);
+
+  vm.mark_object(caller_);
 }
 
-FiberObject* FiberObject::make_fiber(WrenVM& vm) {
-  auto* o = new FiberObject();
+FiberObject* FiberObject::make_fiber(WrenVM& vm, BaseObject* fn) {
+  auto* o = new FiberObject(fn);
   vm.append_object(o);
   return o;
 }
