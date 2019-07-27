@@ -215,6 +215,10 @@ DEF_NATIVE(numeric_abs) {
   RETURN_VAL(std::abs(args[0].as_numeric()));
 }
 
+DEF_NATIVE(numeric_floor) {
+  RETURN_VAL(std::floor(args[0].as_numeric()));
+}
+
 DEF_NATIVE(numeric_tostring) {
   RETURN_VAL(StringObject::make_string(vm, args[0].stringify()));
 }
@@ -561,6 +565,7 @@ void initialize_core(WrenVM& vm) {
 
   vm.set_num_cls(vm.get_global("Numeric").as_class());
   vm.set_native(vm.num_cls(), "abs", _primitive_numeric_abs);
+  vm.set_native(vm.num_cls(), "floor", _primitive_numeric_floor);
   vm.set_native(vm.num_cls(), "toString", _primitive_numeric_tostring);
   vm.set_native(vm.num_cls(), "-", _primitive_numeric_neg);
   vm.set_native(vm.num_cls(), "+ ", _primitive_numeric_add);
