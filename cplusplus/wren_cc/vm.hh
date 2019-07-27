@@ -76,6 +76,9 @@ class WrenVM final : private UnCopyable {
   // kicked off in the middle of a compile
   Compiler* compiler_{};
 
+  // the fiber that is currently running
+  FiberObject* fiber_{};
+
   // how many bytes of object data have been allocated
   sz_t total_allocated_{};
   // the number of total allocated objects that will trigger the next GC
@@ -98,7 +101,7 @@ class WrenVM final : private UnCopyable {
   void call_foreign(FiberObject* fiber, const WrenForeignFn& foreign, int argc);
   void method_not_found(FiberObject* fiber, int symbol, Value& receiver);
 
-  bool interpret(const Value& fn, FiberObject* fiber);
+  bool interpret(void);
 
   void collect(void);
   void free_object(BaseObject* obj);

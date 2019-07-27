@@ -211,6 +211,75 @@ DEF_NATIVE(bool_not) {
   RETURN_VAL(!args[0].as_boolean());
 }
 
+DEF_NATIVE(fiber_create) {
+  if (!args[1].is_function() && !args[1].is_closure())
+    RETURN_ERR("Argument must be a function or closure");
+
+  FiberObject* new_fiber = FiberObject::make_fiber(vm, args[1].as_object());
+
+  // the compiler expect the first slot of a function to hold the receiver.
+  // since a fiber's stack is invoked directly, it does not have one, so
+  // put it in here
+  new_fiber->push(nullptr);
+
+  RETURN_VAL(new_fiber);
+}
+
+DEF_NATIVE(fiber_run) {
+  FiberObject* run_fiber = args[0].as_fiber();
+
+  // remember who ran it
+  run_fiber->set_caller(fiber);
+  // if the fiber was yielded, make the yield call return nil
+  if (run_fiber->stack_size() > 0)
+    run_fiber->set_value(run_fiber->stack_size() - 1, nullptr);
+
+  return PrimitiveResult::RUN_FIBER;
+}
+
+DEF_NATIVE(fiber_run1) {
+  FiberObject* run_fiber = args[0].as_fiber();
+
+  // remember who ran it
+  run_fiber->set_caller(fiber);
+  // if the fiber was yielded, make the yield call return the value passed
+  // to run
+  if (run_fiber->stack_size() > 0)
+    run_fiber->set_value(run_fiber->stack_size() - 1, args[1]);
+
+  // when the calling fiber resumes, we will store the result of the run call
+  // in it's stack, since fiber.run(value) has two arguments (the fiber and
+  // the value) and we only need one slot for the result, discard the other
+  // slot now
+  fiber->pop();
+
+  return PrimitiveResult::RUN_FIBER;
+}
+
+DEF_NATIVE(fiber_yield) {
+  // make the caller's run method return nil
+  fiber->caller()->set_value(fiber->caller()->stack_size() - 1, nullptr);
+
+  // return the fiber to resume
+  args[0] = fiber->caller();
+  return PrimitiveResult::RUN_FIBER;
+}
+
+DEF_NATIVE(fiber_yield1) {
+  // make the caller's run method return the argument passed to yield
+  fiber->caller()->set_value(fiber->caller()->stack_size() - 1, args[1]);
+
+  // when we yielding fiber resumes, we will store the result of the yield
+  // call in it's stack, since Fiber.yield(value) has two arguments (the
+  // Fiber class and the value) and we only need one slot for the result,
+  // discard the other slot now
+  fiber->pop();
+
+  // return the fiber to resume
+  args[0] = fiber->caller();
+  return PrimitiveResult::RUN_FIBER;
+}
+
 DEF_NATIVE(numeric_abs) {
   RETURN_VAL(std::abs(args[0].as_numeric()));
 }
@@ -529,6 +598,11 @@ void initialize_core(WrenVM& vm) {
   vm.set_native(vm.bool_cls(), "!", _primitive_bool_not);
 
   vm.set_fiber_cls(define_class(vm, "Fiber"));
+  vm.set_native(vm.fiber_cls()->meta_class(), "create ", _primitive_fiber_create);
+  vm.set_native(vm.fiber_cls()->meta_class(), "yield", _primitive_fiber_yield);
+  vm.set_native(vm.fiber_cls()->meta_class(), "yield ", _primitive_fiber_yield1);
+  vm.set_native(vm.fiber_cls(), "run", _primitive_fiber_run);
+  vm.set_native(vm.fiber_cls(), "run ", _primitive_fiber_run1);
 
   vm.set_fn_cls(define_class(vm, "Function"));
   vm.set_native(vm.fn_cls(), "call", _primitive_fn_call);

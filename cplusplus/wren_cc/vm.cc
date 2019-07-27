@@ -110,7 +110,7 @@ void WrenVM::method_not_found(FiberObject* fiber, int symbol, Value& receiver) {
   print_stacktrace(fiber, receiver);
 }
 
-bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
+bool WrenVM::interpret(void) {
 #define PUSH(v)   fiber->push(v)
 #define POP()     fiber->pop()
 #define PEEK()    fiber->peek_value()
@@ -118,6 +118,7 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
 #define RDBYTE()  (*frame->ip++)
 #define RDWORD()  (frame->ip += 2, (frame->ip[-2] << 8) | frame->ip[-1])
 
+  FiberObject* fiber = fiber_;
   CallFrame* frame{};
   FunctionObject* fn{};
   ClosureObject* co{};
@@ -294,6 +295,10 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
             fiber->call_function(args[0].as_object(), argc);
             LOAD_FRAME();
             break;
+          case PrimitiveResult::RUN_FIBER:
+            fiber = args[0].as_fiber();
+            LOAD_FRAME();
+            break;
           }
         } break;
       case MethodType::FOREIGN:
@@ -364,6 +369,10 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
             return false;
           case PrimitiveResult::CALL:
             fiber->call_function(args[0].as_object(), argc);
+            LOAD_FRAME();
+            break;
+          case PrimitiveResult::RUN_FIBER:
+            fiber = args[0].as_fiber();
             LOAD_FRAME();
             break;
           }
@@ -459,21 +468,32 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
       Value r = POP();
       fiber->pop_frame();
 
-      if (fiber->empty_frame())
-        return true;
+      // if the fiber is complete, end it
+      if (fiber->empty_frame()) {
+        // if this is the main fiber, we are done
+        if (fiber->caller() == nullptr)
+          return true;
 
-      // close any upvalues still in scope
-      fiber->close_upvalues(frame->stack_start);
+        // we have a calling fiber to resume
+        fiber = fiber->caller();
 
-      // store the result of the block in the first slot, which is where the
-      // caller expects it
-      if (fiber->stack_size() <= frame->stack_start)
-        PUSH(r);
-      else
-        fiber->set_value(frame->stack_start, r);
+        // store the result in the resuming fiber
+        fiber->set_value(fiber->stack_size() - 1, r);
+      }
+      else {
+        // close any upvalues still in scope
+        fiber->close_upvalues(frame->stack_start);
 
-      // discard the stack slots for the call frame
-      fiber->resize_stack(frame->stack_start + 1);
+        // store the result of the block in the first slot, which is where the
+        // caller expects it
+        if (fiber->stack_size() <= frame->stack_start)
+          PUSH(r);
+        else
+          fiber->set_value(frame->stack_start, r);
+
+        // discard the stack slots for the call frame
+        fiber->resize_stack(frame->stack_start + 1);
+      }
       LOAD_FRAME();
 
       DISPATCH();
@@ -628,17 +648,17 @@ ClassObject* WrenVM::get_class(const Value& val) const {
 }
 
 void WrenVM::interpret(const str_t& source_path, const str_t& source_bytes) {
-  FiberObject* fiber = FiberObject::make_fiber(*this);
-  Pinned pinned;
-  pin_object(fiber, &pinned);
-
   FunctionObject* fn = compile(*this, source_path, source_bytes);
   if (fn != nullptr) {
-    fiber->call_function(fn, 0);
-    interpret(fn, fiber);
-  }
+    Pinned pinned;
+    pin_object(fn, &pinned);
 
-  unpin_object();
+    fiber_ = FiberObject::make_fiber(*this, fn);
+
+    unpin_object();
+
+    interpret();
+  }
 }
 
 void WrenVM::call_function(FiberObject* fiber, BaseObject* fn, int argc) {
@@ -652,6 +672,9 @@ void WrenVM::collect(void) {
   // pinned objects
   for (auto* p = pinned_; p != nullptr; p = p->prev)
     mark_object(p->obj);
+
+  // the current fiber
+  mark_object(fiber_);
 
   // any object the compiler is using
   if (compiler_ != nullptr)
