@@ -315,11 +315,24 @@ class Compiler : private UnCopyable {
     emit_byte(arg & 0xff);
   }
 
+  template <typename T> inline int emit_jump(T instruction) {
+    // emits [instruction] followed by a placeholder for a jump offset, the
+    // placeholder can be patched by calling [patch_jump], returns the index
+    // of the placeholder
+
+    emit_byte(instruction);
+    return emit_bytes(0xff, 0xff) - 1;
+  }
+
   inline void patch_jump(int offset) {
     // replaces the placeholder argument for a previous JUMP or JUMP_IF
     // instruction with an offset that jumps to the current end of bytecode
 
-    bytecode_[offset] = Xt::as_type<u8_t>(bytecode_.size() - offset - 1);
+    // -2 to adjust for the bytecode for the jump offset iteself
+    int jump = Xt::as_type<int>(bytecode_.size()) - offset - 2;
+
+    bytecode_[offset] = (jump >> 8) & 0xff;
+    bytecode_[offset + 1] = jump & 0xff;
   }
 
   inline int add_constant(const Value& v) {
@@ -778,7 +791,7 @@ class Compiler : private UnCopyable {
     // and potentially exit the loop, keeps tracks of the instruction so we
     // can patch it later once we know the end of the body is
 
-    loop_->exit_jump = emit_bytes(Code::JUMP_IF, 0xff);
+    loop_->exit_jump = emit_jump(Code::JUMP_IF);
   }
 
   void loop_body(void) {
@@ -793,9 +806,8 @@ class Compiler : private UnCopyable {
     // ends the current innermost loop, patches up all jumps and breaks now
     // that we know where the end of the loop is
 
-    emit_byte(Code::LOOP);
-    int loop_offset = Xt::as_type<int>(bytecode_.size()) - loop_->start;
-    emit_byte(loop_offset);
+    int loop_offset = Xt::as_type<int>(bytecode_.size()) - loop_->start + 2;
+    emit_words(Code::LOOP, loop_offset);
 
     patch_jump(loop_->exit_jump);
 
@@ -1032,7 +1044,7 @@ class Compiler : private UnCopyable {
       // when we are done compiling the loop body and know where the end is.
       // we will replace these with `JUMP` instructions with appropriate offsets
       // we use `END` here because that cannot occur in the middle of bytecode
-      emit_bytes(Code::END, 0);
+      emit_jump(Code::END);
       return;
     }
 
@@ -1048,14 +1060,14 @@ class Compiler : private UnCopyable {
       consume(TokenKind::TK_RPAREN, "expect `)` after if condition");
 
       // jump to the else branch if the condition is false
-      int if_jump = emit_bytes(Code::JUMP_IF, 0xff);
+      int if_jump = emit_jump(Code::JUMP_IF);
 
       // compile the then branch
       block();
 
       if (match(TokenKind::KW_ELSE)) {
         // jump over the else branch when the if branch is taken
-        int else_jump = emit_bytes(Code::JUMP, 0xff);
+        int else_jump = emit_jump(Code::JUMP);
 
         patch_jump(if_jump);
         block();
@@ -1232,7 +1244,7 @@ class Compiler : private UnCopyable {
   void and_expr(bool allow_assignment) {
     // skip the right argument if the left is false
 
-    int jump = emit_bytes(Code::AND, 0xff);
+    int jump = emit_jump(Code::AND);
 
     parse_precedence(false, Precedence::LOGIC);
     patch_jump(jump);
@@ -1241,7 +1253,7 @@ class Compiler : private UnCopyable {
   void or_expr(bool allow_assignment) {
     // skip the right argument if the left if true
 
-    int jump = emit_bytes(Code::OR, 0xff);
+    int jump = emit_jump(Code::OR);
 
     parse_precedence(false, Precedence::LOGIC);
     patch_jump(jump);
@@ -1354,7 +1366,23 @@ class Compiler : private UnCopyable {
     case Code::CLOSE_UPVALUE:
     case Code::RETURN:
     case Code::NEW:
+    case Code::CLASS:
+    case Code::SUBCLASS:
+    case Code::END:
       return 0;
+
+    case Code::LOAD_LOCAL:
+    case Code::STORE_LOCAL:
+    case Code::LOAD_UPVALUE:
+    case Code::STORE_UPVALUE:
+    case Code::LOAD_GLOBAL:
+    case Code::STORE_GLOBAL:
+    case Code::LOAD_FIELD_THIS:
+    case Code::STORE_FIELD_THIS:
+    case Code::LOAD_FIELD:
+    case Code::STORE_FIELD:
+    case Code::LIST:
+      return 1;
 
     // instructions with two arguments
     case Code::CONSTANT:
@@ -1392,11 +1420,14 @@ class Compiler : private UnCopyable {
     case Code::SUPER_14:
     case Code::SUPER_15:
     case Code::SUPER_16:
-      return 2;
-
+    case Code::JUMP:
+    case Code::LOOP:
+    case Code::JUMP_IF:
+    case Code::AND:
+    case Code::OR:
     case Code::METHOD_INSTANCE:
     case Code::METHOD_STATIC:
-      return 3;
+      return 2;
 
     case Code::CLOSURE:
       {
@@ -1406,9 +1437,6 @@ class Compiler : private UnCopyable {
         // there are two arguments for the constant, then one for each upvalue
         return 2 + loaded_fn->num_upvalues();
       }
-    default:
-      // most instructions have one argument
-      return 1;
     }
   }
 

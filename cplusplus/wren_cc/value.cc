@@ -274,7 +274,23 @@ int FunctionObject::get_argc(int ip) const {
   case Code::CLOSE_UPVALUE:
   case Code::RETURN:
   case Code::NEW:
+  case Code::CLASS:
+  case Code::SUBCLASS:
+  case Code::END:
     return 0;
+
+  case Code::LOAD_LOCAL:
+  case Code::STORE_LOCAL:
+  case Code::LOAD_UPVALUE:
+  case Code::STORE_UPVALUE:
+  case Code::LOAD_GLOBAL:
+  case Code::STORE_GLOBAL:
+  case Code::LOAD_FIELD_THIS:
+  case Code::STORE_FIELD_THIS:
+  case Code::LOAD_FIELD:
+  case Code::STORE_FIELD:
+  case Code::LIST:
+    return 1;
 
   // instructions with two arguments
   case Code::CONSTANT:
@@ -312,11 +328,14 @@ int FunctionObject::get_argc(int ip) const {
   case Code::SUPER_14:
   case Code::SUPER_15:
   case Code::SUPER_16:
-    return 2;
-
+  case Code::JUMP:
+  case Code::LOOP:
+  case Code::JUMP_IF:
+  case Code::AND:
+  case Code::OR:
   case Code::METHOD_INSTANCE:
   case Code::METHOD_STATIC:
-    return 3;
+    return 2;
 
   case Code::CLOSURE:
     {
@@ -326,7 +345,6 @@ int FunctionObject::get_argc(int ip) const {
       // there are two arguments for the constant, then one for each upvalue
       return 2 + loaded_fn->num_upvalues();
     }
-  default: return 1; // most instructions have one argument
   }
 }
 

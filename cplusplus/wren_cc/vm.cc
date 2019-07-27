@@ -383,17 +383,17 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
 
       DISPATCH();
     }
-    CASE_CODE(JUMP): frame->ip += RDBYTE(); DISPATCH();
+    CASE_CODE(JUMP): frame->ip += RDWORD(); DISPATCH();
     CASE_CODE(LOOP):
     {
       // jump back to the top of the loop
-      frame->ip -= RDBYTE();
+      frame->ip -= RDWORD();
 
       DISPATCH();
     }
     CASE_CODE(JUMP_IF):
     {
-      int offset = RDBYTE();
+      int offset = RDWORD();
       Value cond = POP();
 
       if (cond.is_falsely())
@@ -403,7 +403,7 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
     }
     CASE_CODE(AND):
     {
-      int offset = RDBYTE();
+      int offset = RDWORD();
       const Value& cond = PEEK();
 
       // false and nil is falsely value
@@ -416,7 +416,7 @@ bool WrenVM::interpret(const Value& function, FiberObject* fiber) {
     }
     CASE_CODE(OR):
     {
-      int offset = RDBYTE();
+      int offset = RDWORD();
       const Value& cond = PEEK();
 
       // false and nil is falsely value
