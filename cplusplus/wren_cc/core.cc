@@ -225,8 +225,16 @@ DEF_NATIVE(fiber_create) {
   RETURN_VAL(new_fiber);
 }
 
+DEF_NATIVE(fiber_isdone) {
+  FiberObject* run_fiber = args[0].as_fiber();
+  RETURN_VAL(run_fiber->empty_frame());
+}
+
 DEF_NATIVE(fiber_run) {
   FiberObject* run_fiber = args[0].as_fiber();
+
+  if (run_fiber->empty_frame())
+    RETURN_ERR("cannot run a finished fiber");
 
   // remember who ran it
   run_fiber->set_caller(fiber);
@@ -239,6 +247,9 @@ DEF_NATIVE(fiber_run) {
 
 DEF_NATIVE(fiber_run1) {
   FiberObject* run_fiber = args[0].as_fiber();
+
+  if (run_fiber->empty_frame())
+    RETURN_ERR("cannot run a finished fiber");
 
   // remember who ran it
   run_fiber->set_caller(fiber);
@@ -257,6 +268,9 @@ DEF_NATIVE(fiber_run1) {
 }
 
 DEF_NATIVE(fiber_yield) {
+  if (fiber->caller() == nullptr)
+    RETURN_ERR("no fiber to yield to");
+
   // make the caller's run method return nil
   fiber->caller()->set_value(fiber->caller()->stack_size() - 1, nullptr);
 
@@ -266,6 +280,9 @@ DEF_NATIVE(fiber_yield) {
 }
 
 DEF_NATIVE(fiber_yield1) {
+  if (fiber->caller() == nullptr)
+    RETURN_ERR("no fiber to yield to");
+
   // make the caller's run method return the argument passed to yield
   fiber->caller()->set_value(fiber->caller()->stack_size() - 1, args[1]);
 
@@ -601,6 +618,7 @@ void initialize_core(WrenVM& vm) {
   vm.set_native(vm.fiber_cls()->meta_class(), "create ", _primitive_fiber_create);
   vm.set_native(vm.fiber_cls()->meta_class(), "yield", _primitive_fiber_yield);
   vm.set_native(vm.fiber_cls()->meta_class(), "yield ", _primitive_fiber_yield1);
+  vm.set_native(vm.fiber_cls(), "isDone", _primitive_fiber_isdone);
   vm.set_native(vm.fiber_cls(), "run", _primitive_fiber_run);
   vm.set_native(vm.fiber_cls(), "run ", _primitive_fiber_run1);
 
