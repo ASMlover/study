@@ -94,6 +94,8 @@ namespace Xt {
 // every allocation
 #define GC_STRESS
 
+// #define TRACE_MEMORY
+
 #define NAN_TAGGING
 
 // the maximum number of arguments that can be passed to a method, note that

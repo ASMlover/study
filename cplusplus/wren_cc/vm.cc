@@ -42,6 +42,12 @@ WrenVM::WrenVM(void) noexcept {
 }
 
 WrenVM::~WrenVM(void) {
+  while (!objects_.empty()) {
+    BaseObject* obj = objects_.back();
+    objects_.pop_back();
+
+    free_object(obj);
+  }
 }
 
 void WrenVM::set_native(
@@ -697,8 +703,11 @@ void WrenVM::collect(void) {
 
 void WrenVM::free_object(BaseObject* obj) {
   std::cout
-    << "`" << Xt::cast<void>(obj) << "` free object "
-    << "`" << obj->stringify() << "`" << std::endl;
+    << "`" << Xt::cast<void>(obj) << "` free object"
+#if defined(TRACE_MEMORY)
+    << " `" << obj->stringify() << "`"
+#endif
+    << std::endl;
 
   delete obj;
 }
