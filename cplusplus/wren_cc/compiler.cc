@@ -1082,7 +1082,15 @@ class Compiler : private UnCopyable {
     }
 
     if (match(TokenKind::KW_RETURN)) {
-      expression();
+      // compile the return value
+      if (parser_.curr().kind() == TokenKind::TK_NL ||
+          parser_.curr().kind() == TokenKind::TK_RBRACE) {
+        // impilicity return nil if there is no value
+        emit_byte(Code::NIL);
+      }
+      else {
+        expression();
+      }
       emit_byte(Code::RETURN);
       return;
     }
