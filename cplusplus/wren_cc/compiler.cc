@@ -141,7 +141,6 @@ public:
       case TokenKind::KW_IS:
       case TokenKind::KW_NEW:
       case TokenKind::KW_STATIC:
-      case TokenKind::KW_SUPER:
       case TokenKind::KW_VAR:
       case TokenKind::KW_WHILE:
         skip_newlines_ = true; return;
@@ -822,7 +821,8 @@ class Compiler : private UnCopyable {
       }
       else {
         // skip this instruction and its arguments
-        i += 1 + get_argc(bytecode_, constants_->elements(), i);
+        i += 1 + FunctionObject::get_argc(
+            bytecode_.data(), constants_->elements(), i);
       }
     }
     loop_ = loop_->enclosing;
@@ -1359,94 +1359,6 @@ class Compiler : private UnCopyable {
       } while (match(TokenKind::TK_COMMA));
       consume(TokenKind::TK_RPAREN, "expect `)` after parameters");
     }
-  }
-
-  int get_argc(const std::vector<u8_t>& bytecode,
-      const Value* constants, int ip) {
-    // returns the number of arguments to the instruction at [ip] in bytecode
-
-    switch (Code instruction = Xt::as_type<Code>(bytecode[ip])) {
-    case Code::NIL:
-    case Code::FALSE:
-    case Code::TRUE:
-    case Code::POP:
-    case Code::IS:
-    case Code::CLOSE_UPVALUE:
-    case Code::RETURN:
-    case Code::NEW:
-    case Code::CLASS:
-    case Code::SUBCLASS:
-    case Code::END:
-      return 0;
-
-    case Code::LOAD_LOCAL:
-    case Code::STORE_LOCAL:
-    case Code::LOAD_UPVALUE:
-    case Code::STORE_UPVALUE:
-    case Code::LOAD_GLOBAL:
-    case Code::STORE_GLOBAL:
-    case Code::LOAD_FIELD_THIS:
-    case Code::STORE_FIELD_THIS:
-    case Code::LOAD_FIELD:
-    case Code::STORE_FIELD:
-    case Code::LIST:
-      return 1;
-
-    // instructions with two arguments
-    case Code::CONSTANT:
-    case Code::CALL_0:
-    case Code::CALL_1:
-    case Code::CALL_2:
-    case Code::CALL_3:
-    case Code::CALL_4:
-    case Code::CALL_5:
-    case Code::CALL_6:
-    case Code::CALL_7:
-    case Code::CALL_8:
-    case Code::CALL_9:
-    case Code::CALL_10:
-    case Code::CALL_11:
-    case Code::CALL_12:
-    case Code::CALL_13:
-    case Code::CALL_14:
-    case Code::CALL_15:
-    case Code::CALL_16:
-    case Code::SUPER_0:
-    case Code::SUPER_1:
-    case Code::SUPER_2:
-    case Code::SUPER_3:
-    case Code::SUPER_4:
-    case Code::SUPER_5:
-    case Code::SUPER_6:
-    case Code::SUPER_7:
-    case Code::SUPER_8:
-    case Code::SUPER_9:
-    case Code::SUPER_10:
-    case Code::SUPER_11:
-    case Code::SUPER_12:
-    case Code::SUPER_13:
-    case Code::SUPER_14:
-    case Code::SUPER_15:
-    case Code::SUPER_16:
-    case Code::JUMP:
-    case Code::LOOP:
-    case Code::JUMP_IF:
-    case Code::AND:
-    case Code::OR:
-    case Code::METHOD_INSTANCE:
-    case Code::METHOD_STATIC:
-      return 2;
-
-    case Code::CLOSURE:
-      {
-        int constant = (bytecode[ip + 1] << 8) | (bytecode[ip + 2]);
-        FunctionObject* loaded_fn = constants[constant].as_function();
-
-        // there are two arguments for the constant, then one for each upvalue
-        return 2 + loaded_fn->num_upvalues();
-      }
-    }
-    return 0;
   }
 
   inline int method_symbol(const str_t& name) { return vm_methods().ensure(name); }

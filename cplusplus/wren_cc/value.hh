@@ -340,11 +340,10 @@ public:
     codes_[i] = Xt::as_type<u8_t>(c);
   }
 
-  int get_argc(int ip) const;
-
   virtual str_t stringify(void) const override;
   virtual void gc_mark(WrenVM& vm) override;
 
+  static int get_argc(const u8_t* bytecode, const Value* constants, int ip);
   static FunctionObject* make_function(WrenVM& vm, int num_upvalues,
       u8_t* codes, int codes_count,
       const Value* constants, int constants_count,

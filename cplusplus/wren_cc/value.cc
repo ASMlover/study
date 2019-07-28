@@ -261,11 +261,22 @@ FunctionObject::FunctionObject(int num_upvalues,
   , debug_(debug_name, source_path, source_lines, lines_count) {
 }
 
-int FunctionObject::get_argc(int ip) const {
-  // returns the number of arguments to the instruction at [ip] in [fn]'s
-  // bytecode
+str_t FunctionObject::stringify(void) const {
+  std::stringstream ss;
+  ss << "[fn `" << this << "`]";
+  return ss.str();
+}
 
-  switch (Code c = Xt::as_type<Code>(get_code(ip))) {
+void FunctionObject::gc_mark(WrenVM& vm) {
+  for (auto& c : constants_)
+    vm.mark_value(c);
+}
+
+int FunctionObject::get_argc(
+    const u8_t* bytecode, const Value* constants, int ip) {
+  // returns the number of arguments to the instruction at [ip] in bytecode
+
+  switch (Code instruction = Xt::as_type<Code>(bytecode[ip])) {
   case Code::NIL:
   case Code::FALSE:
   case Code::TRUE:
@@ -292,7 +303,7 @@ int FunctionObject::get_argc(int ip) const {
   case Code::LIST:
     return 1;
 
-  // instructions with two arguments
+    // instructions with two arguments
   case Code::CONSTANT:
   case Code::CALL_0:
   case Code::CALL_1:
@@ -339,25 +350,14 @@ int FunctionObject::get_argc(int ip) const {
 
   case Code::CLOSURE:
     {
-      int constant = (get_code(ip + 1) << 8) | get_code(ip + 2);
-      FunctionObject* loaded_fn = get_constant(constant).as_function();
+      int constant = (bytecode[ip + 1] << 8) | (bytecode[ip + 2]);
+      FunctionObject* loaded_fn = constants[constant].as_function();
 
       // there are two arguments for the constant, then one for each upvalue
       return 2 + loaded_fn->num_upvalues();
     }
   }
   return 0;
-}
-
-str_t FunctionObject::stringify(void) const {
-  std::stringstream ss;
-  ss << "[fn `" << this << "`]";
-  return ss.str();
-}
-
-void FunctionObject::gc_mark(WrenVM& vm) {
-  for (auto& c : constants_)
-    vm.mark_value(c);
 }
 
 FunctionObject* FunctionObject::make_function(
@@ -583,11 +583,18 @@ void ClassObject::bind_method(FunctionObject* fn) {
         auto num_fields = fn->get_code(ip) + superclass_->num_fields();
         fn->set_code(ip++, num_fields);
       } break;
+    case Code::CLOSURE:
+      {
+        int constant = (fn->get_code(ip) << 8) | fn->get_code(ip + 1);
+        bind_method(fn->get_constant(constant).as_function());
+        ip += FunctionObject::get_argc(fn->codes(), fn->constants(), ip - 1);
+      } break;
 
     case Code::END: return;
     default:
       // other instructions are unaffected, so just skip over them
-      ip += fn->get_argc(ip - 1); break;
+      ip += FunctionObject::get_argc(fn->codes(), fn->constants(), ip - 1);
+      break;
     }
   }
 }
