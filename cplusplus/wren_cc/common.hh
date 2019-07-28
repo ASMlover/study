@@ -95,6 +95,7 @@ namespace Xt {
 #define GC_STRESS
 
 // #define TRACE_MEMORY
+// #define TRACE_OBJECT_DETAIL
 
 #define NAN_TAGGING
 

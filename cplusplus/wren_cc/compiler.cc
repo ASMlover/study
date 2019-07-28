@@ -1446,6 +1446,7 @@ class Compiler : private UnCopyable {
         return 2 + loaded_fn->num_upvalues();
       }
     }
+    return 0;
   }
 
   inline int method_symbol(const str_t& name) { return vm_methods().ensure(name); }

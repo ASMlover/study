@@ -702,12 +702,14 @@ void WrenVM::collect(void) {
 }
 
 void WrenVM::free_object(BaseObject* obj) {
+#if defined(TRACE_MEMORY)
   std::cout
     << "`" << Xt::cast<void>(obj) << "` free object"
-#if defined(TRACE_MEMORY)
+# if defined(TRACE_OBJECT_DETAIL)
     << " `" << obj->stringify() << "`"
-#endif
+# endif
     << std::endl;
+#endif
 
   delete obj;
 }
