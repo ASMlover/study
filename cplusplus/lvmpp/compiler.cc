@@ -152,11 +152,11 @@ class Parser
     return static_cast<std::uint8_t>(constant);
   }
 
-  void emit_byte(std::uint8_t byte) {
-    compiling_chunk_.write(byte, prev_.get_lineno());
+  template <typename T> inline void emit_byte(T byte) {
+    compiling_chunk_.write(static_cast<std::uint8_t>(byte), prev_.get_lineno());
   }
 
-  void emit_bytes(std::uint8_t byte1, std::uint8_t byte2) {
+  template <typename T, typename U> inline void emit_bytes(T byte1, U byte2) {
     emit_byte(byte1);
     emit_byte(byte2);
   }
@@ -167,6 +167,20 @@ class Parser
 
   void emit_constant(const Value& value) {
     emit_bytes(OpCode::OP_CONSTANT, make_constant(value));
+  }
+
+  template <typename T> inline int emit_jump(T instruction) {
+    emit_byte(instruction);
+    emit_bytes(0xff, 0xff);
+    return compiling_chunk_.codes_count() - 2;
+  }
+
+  void patch_jump(int offset) {
+    // -2 to adjust for the bytecode for the jump offset itself
+    int jump = compiling_chunk_.codes_count() - offset - 2;
+
+    compiling_chunk_.set_code(offset, (jump >> 8) & 0xff);
+    compiling_chunk_.set_code(offset + 1, jump & 0xff);
   }
 
   std::uint8_t parse_variable(const std::string& err_msg) {
@@ -516,6 +530,9 @@ public:
     if (match(TokenKind::KW_PRINT)) {
       print_stmt();
     }
+    else if (match(TokenKind::KW_IF)) {
+      if_stmt();
+    }
     else if (match(TokenKind::TK_LBRACE)) {
       enter_scope();
       block_stmt();
@@ -530,6 +547,17 @@ public:
     expression();
     consume(TokenKind::TK_SEMI, "expect `;` after print expression ...");
     emit_byte(OpCode::OP_PRINT);
+  }
+
+  void if_stmt(void) {
+    consume(TokenKind::TK_LPAREN, "expect `(` after `if`");
+    expression();
+    consume(TokenKind::TK_RPAREN, "expect `)` after if condition");
+
+    int then_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+    statement();
+
+    patch_jump(then_jump);
   }
 
   void expr_stmt(void) {

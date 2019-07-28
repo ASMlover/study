@@ -46,6 +46,8 @@ enum InterpretRet {
 };
 
 class VM : private UnCopyable {
+  static constexpr std::size_t kDefaultCap = 256;
+
   Chunk& chunk_;
   int ip_{};
   std::vector<Value> stack_;

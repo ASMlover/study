@@ -52,6 +52,16 @@ static int byte_instruction(
   return offset + 2;
 }
 
+static int jump_instruction(
+    const std::string& name, const Chunk& chunk, int offset, int sign) {
+  std::uint16_t jump =
+    static_cast<std::uint16_t>(chunk.get_code(offset + 1) << 8);
+  jump |= chunk.get_code(offset + 2);
+  fprintf(stdout, "%-16s %4d -> %d\n",
+      name.c_str(), offset, offset + 3 + sign * jump);
+  return offset + 3;
+}
+
 void Chunk::write(std::uint8_t byte, int line) {
   codes_.push_back(byte);
   lines_.push_back(line);
@@ -117,6 +127,8 @@ int Chunk::disassemble_instruction(int offset) {
     return simple_instruction("OP_DIVIDE", offset);
   case OpCode::OP_PRINT:
     return simple_instruction("OP_PRINT", offset);
+  case OpCode::OP_JUMP_IF_FALSE:
+    return jump_instruction("OP_JUMP_IF_FALSE", *this, offset, 1);
   case OpCode::OP_RETURN:
     return simple_instruction("OP_RETURN", offset);
   default:

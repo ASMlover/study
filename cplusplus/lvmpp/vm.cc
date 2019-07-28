@@ -41,6 +41,7 @@ VM* global_vm(void) {
 
 VM::VM(Chunk& c)
   : chunk_(c) {
+  stack_.reserve(kDefaultCap);
   _vm_object = this;
 }
 
@@ -73,6 +74,10 @@ InterpretRet VM::interpret(void) {
 InterpretRet VM::run(void) {
   auto _rdbyte = [this]() -> std::uint8_t {
     return chunk_.get_code(ip_++);
+  };
+  auto _rdshort = [this]() -> std::uint8_t {
+    return ip_ += 2, static_cast<std::uint8_t>(
+        (chunk_.get_code(ip_ - 2) << 8) | chunk_.get_code(ip_ - 1));
   };
   auto _rdconstant = [this, _rdbyte]() -> Value {
     return chunk_.get_constant(_rdbyte());
@@ -178,6 +183,12 @@ InterpretRet VM::run(void) {
     case OpCode::OP_PRINT:
       std::cout << pop() << std::endl;
       break;
+    case OpCode::OP_JUMP_IF_FALSE:
+      {
+        std::uint16_t offset = _rdshort();
+        if (!peek(0).is_truthy())
+          ip_ += offset;
+      } break;
     case OpCode::OP_RETURN:
       return InterpretRet::OK;
     }

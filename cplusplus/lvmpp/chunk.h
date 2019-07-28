@@ -55,6 +55,7 @@ enum OpCode {
   OP_MULTIPLY, // binary *
   OP_DIVIDE, // binary /
   OP_PRINT, // print
+  OP_JUMP_IF_FALSE,
   OP_RETURN
 };
 
@@ -69,8 +70,18 @@ public:
   void disassemble(const std::string& name);
   int disassemble_instruction(int offset);
 
+  inline int codes_count(void) const {
+    return static_cast<int>(codes_.size());
+  }
+
+  inline int constants_count(void) const {
+    return static_cast<int>(constants_.size());
+  }
+
   std::uint8_t get_code(int offset) const { return codes_[offset]; }
-  Value get_constant(int constant) const { return constants_[constant]; }
+  void set_code(int i, std::uint8_t b) { codes_[i] = b; }
+  const Value& get_constant(int constant) const { return constants_[constant]; }
+  void set_constant(int i, const Value& v) { constants_[i] = v; }
   int get_line(int instruction) const { return lines_[instruction]; }
 };
 
