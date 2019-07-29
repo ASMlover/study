@@ -458,6 +458,7 @@ class Compiler : private UnCopyable {
       UNUSED,                                   // KEYWORD(WHILE, "while")
 
       PREFIX(field),                            // TOKEN(FIELD, "field")
+      UNUSED,                                   // TOKEN(STATIC_FIELD, "static-field")
       PREFIXNAME,                               // TOKEN(IDENTIFIER, "identifier")
       PREFIX(numeric),                          // TOKEN(NUMERIC, "numeric")
       PREFIX(string),                           // TOKEN(STRING, "string")

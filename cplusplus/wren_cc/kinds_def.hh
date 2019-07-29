@@ -91,6 +91,7 @@ KEYWORD(VAR, "var")
 KEYWORD(WHILE, "while")
 
 TOKEN(FIELD, "field")
+TOKEN(STATIC_FIELD, "static-field")
 TOKEN(IDENTIFIER, "identifier")
 TOKEN(NUMERIC, "numeric")
 TOKEN(STRING, "string")

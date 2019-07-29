@@ -121,13 +121,14 @@ Token Lexer::make_error(const str_t& error_message) {
 }
 
 Token Lexer::make_identifier(char beg_char) {
+  char cur_char = peek();
   while (is_alnum(peek()))
     advance();
 
   auto literal = gen_literal(begpos_, curpos_);
   TokenKind kind = get_keyword_kind(literal.c_str());
   if (kind == TokenKind::TK_IDENTIFIER && beg_char == '_')
-    kind = TokenKind::TK_FIELD;
+    kind = cur_char == '_' ? TokenKind::TK_STATIC_FIELD : TokenKind::TK_FIELD;
   return make_token(kind, literal);
 }
 
