@@ -651,6 +651,7 @@ ClassObject* ClassObject::make_class(
   else
     meta_supercls = superclass->meta_class();
   ClassObject* meta_class = new ClassObject(vm.class_cls(), meta_supercls, 0);
+  vm.append_object(meta_class);
 
   auto* o = new ClassObject(meta_class, superclass, num_fields);
   vm.append_object(o);
