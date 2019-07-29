@@ -1431,7 +1431,6 @@ class Compiler : private UnCopyable {
       consume(TokenKind::TK_RPAREN, "expect `)` after arguments");
     }
 
-    int symbol = vm_methods().ensure(name);
     emit_words(instruction + argc, method_symbol(name));
   }
 
