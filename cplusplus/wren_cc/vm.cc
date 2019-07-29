@@ -116,6 +116,18 @@ void WrenVM::method_not_found(FiberObject* fiber, int symbol, Value& receiver) {
   print_stacktrace(fiber, receiver);
 }
 
+void WrenVM::too_many_inherited_fields(FiberObject* fiber, Value& receiver) {
+  std::stringstream ss;
+  ss << "a class may not have more than " << MAX_FIELDS
+    << " fields, including inherited ones.";
+
+  // stores the error message in the receiver slot so that it's on the fiber's
+  // stack and does not get garbage collected
+  receiver = StringObject::make_string(*this, ss.str());
+
+  print_stacktrace(fiber, receiver);
+}
+
 bool WrenVM::interpret(void) {
 #define PUSH(v)   fiber->push(v)
 #define POP()     fiber->pop()
@@ -571,6 +583,15 @@ bool WrenVM::interpret(void) {
         superclass = obj_class_;
 
       ClassObject* cls = ClassObject::make_class(*this, superclass, num_fields);
+
+      // now that we know the total number of fields, make sure we donot
+      // overflow
+      if (superclass->num_fields() + num_fields > MAX_FIELDS) {
+        too_many_inherited_fields(fiber,
+            fiber->get_value(fiber->stack_size() - 1));
+        return false;
+      }
+
       // donot pop the superclass off the stack until the subclass is done
       // being created, to make sure it does not get collected
       if (is_subclass)

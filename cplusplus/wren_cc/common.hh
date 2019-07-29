@@ -113,6 +113,13 @@ namespace Xt {
 // extra spaces added to handle arity and another byte to terminate the string
 #define MAX_METHOD_SIGNATURE  (MAX_METHOD_NAME + MAX_PARAMETERS + 1)
 
+// the maximum number of fields a class can have, including inherited fields,
+// this is explicit in the bytecode since `Code::CLASS` and `Code::SUBCLASS`
+// take a single byte for the number of fields, note that it's 255 and not
+// 256 because creating a class takes the *number* of fields, not the *highest
+// field index*
+#define MAX_FIELDS      (255)
+
 // set this, the VM's interpreter loop uses computed gotos.
 // see post (http://gcc.gnu.org/onlinedocs/gcc-3.1.1/gcc/Labels-as-Values.html)
 // #define COMPUTED_GOTOS

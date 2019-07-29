@@ -723,6 +723,9 @@ class Compiler : private UnCopyable {
     if (fields_ != nullptr) {
       // look up the field, or implicitlt define it
       field = fields_->ensure(parser_.prev().as_string());
+
+      if (field >= MAX_FIELDS)
+        error("a class can only have %d fields", MAX_FIELDS);
     }
     else {
       error("cannot reference a field outside of a class definition");
