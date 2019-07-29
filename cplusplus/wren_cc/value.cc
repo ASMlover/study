@@ -645,12 +645,9 @@ ClassObject* ClassObject::make_single_class(WrenVM& vm) {
 
 ClassObject* ClassObject::make_class(
     WrenVM& vm, ClassObject* superclass, int num_fields) {
-  ClassObject* meta_supercls;
-  if (superclass == vm.obj_cls())
-    meta_supercls = vm.class_cls();
-  else
-    meta_supercls = superclass->meta_class();
-  ClassObject* meta_class = new ClassObject(vm.class_cls(), meta_supercls, 0);
+  // metaclasses always inherit Class and do not parallel the non-metaclass
+  // hierarclly
+  ClassObject* meta_class = new ClassObject(vm.class_cls(), vm.class_cls(), 0);
   vm.append_object(meta_class);
 
   auto* o = new ClassObject(meta_class, superclass, num_fields);

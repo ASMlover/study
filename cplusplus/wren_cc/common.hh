@@ -126,8 +126,9 @@ namespace Xt {
 
 #ifndef NDEBUG
 # define ASSERT(cond, msg) if (!(cond)) {\
-  std::cerr << "ASSERT FAIL `" << __FILE__ << "`: "\
-    << __LINE__ << " - " << msg << std::endl;\
+  std::cerr << "[" << __FILE__ << ": " << __LINE__ << "] "\
+            << "Assert failed in " << __func__ << "(): "\
+            << msg << std::endl;\
   std::abort();\
 }
 #else

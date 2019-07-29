@@ -1420,14 +1420,7 @@ class Compiler : private UnCopyable {
     // returns true if [compiler] is compiling a chunk of code that is either
     // directly or indirectly contained in a method for a class
 
-    auto* c = this;
-    // walk up the parent chain to see if there is an enclosing method
-    while (c != nullptr) {
-      if (!c->method_name_.empty())
-        return true;
-      c = c->parent_;
-    }
-    return false;
+    return fields_ != nullptr;
   }
 
   void new_exp(bool allow_assignment) {
@@ -1442,6 +1435,8 @@ class Compiler : private UnCopyable {
   void super_exp(bool allow_assignment) {
     if (!is_inside_method())
       error("cannot use `super` outside of a method");
+    else if (is_static_method_)
+      error("cannot use `super` in a static method");
 
     load_this();
     // see if it's a nemd super call, or an unnamed one
