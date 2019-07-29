@@ -256,6 +256,10 @@ class Compiler : private UnCopyable {
   // the current innermost loop being compiled, or `nullptr` if not in a loop
   Loop* loop_{};
 
+  // true if the current method being compiled is static, false if it's an
+  // instance method or we are not compiling a method
+  bool is_static_method_{};
+
   // name of the method this compiler is compiling, or `empty` if this
   // compiler is not for a method. note that this is just the bare method
   // name and not its full signature
@@ -719,8 +723,14 @@ class Compiler : private UnCopyable {
   }
 
   void field(bool allow_assignment) {
-    int field;
-    if (fields_ != nullptr) {
+    // initialize it with a fake value so we can keep parsing and minimize
+    // the number of cascaded erros
+    int field = 0xff;
+
+    if (is_static_method_) {
+      error("cannot use an instance field in a static method");
+    }
+    else if (fields_ != nullptr) {
       // look up the field, or implicitlt define it
       field = fields_->ensure(parser_.prev().as_string());
 
@@ -729,9 +739,6 @@ class Compiler : private UnCopyable {
     }
     else {
       error("cannot reference a field outside of a class definition");
-      // initialize it with a fake value so we can keep parsing and minimize
-      // the number of cascaded erros
-      field = 0xff;
     }
 
     // if there is an `=` after a filed name, it's an assignment
@@ -905,18 +912,15 @@ class Compiler : private UnCopyable {
     //     {
     //       var seq_ = sequence.expression
     //       var iter_
-    //       while (true) {
-    //         iter_ = seq_.iterate(iter_)
-    //         if (!iter_) break
-    //         var i = set_.iteratorValue(iter_)
+    //       while (iter_ = seq_.iterate(iter_)) {
+    //         var i = set_.iterValue(iter_)
     //         IO.write(i)
     //       }
     //     }
     //
     // It's not exactly this, because the synthetic variables `seq_` and `iter_`
-    // actually get names that aren't valid Wren identfiers. Also, the `while`
-    // and `break` are just the bytecode for explicit loops and jumps. But that's
-    // the basic idea.
+    // actually get names that aren't valid Wren identfiers, but that's the basic
+    // idea.
     //
     // The important parts are:
     // - The sequence expression is only evaluated once.
@@ -1186,6 +1190,9 @@ class Compiler : private UnCopyable {
 
     Compiler method_compiler(parser_, this, name);
     method_compiler.init_compiler();
+
+    if (instruction == Code::METHOD_STATIC)
+      method_compiler.is_static_method_ = true;
 
     signature(&method_compiler, name);
 
@@ -1491,10 +1498,11 @@ public:
       else
         locals_.push_back(Local());
       scope_depth_ = 0;
-    }
 
-    if (parent_ != nullptr)
+      // propagate the enclosing class and method downwards
       fields_ = parent_->fields_;
+      is_static_method_ = parent_->is_static_method_;
+    }
   }
 
   FunctionObject* finish_compiler(const str_t& debug_name) {
