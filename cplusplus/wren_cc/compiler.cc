@@ -484,7 +484,7 @@ class Compiler : private UnCopyable {
       UNUSED,                                   // KEYWORD(WHILE, "while")
 
       PREFIX(field),                            // TOKEN(FIELD, "field")
-      UNUSED,                                   // TOKEN(STATIC_FIELD, "static-field")
+      PREFIX(static_field),                     // TOKEN(STATIC_FIELD, "static-field")
       PREFIXNAME,                               // TOKEN(IDENTIFIER, "identifier")
       PREFIX(numeric),                          // TOKEN(NUMERIC, "numeric")
       PREFIX(string),                           // TOKEN(STRING, "string")
@@ -528,7 +528,8 @@ class Compiler : private UnCopyable {
   }
 
   int declare_variable(void) {
-    consume(TokenKind::TK_IDENTIFIER, "expected variable name");
+    // declares a variable in the current scope with the name of the previously
+    // consumed token, returns its symbol
 
     str_t name = parser_.prev().as_string();
     // top-level global scope
@@ -560,6 +561,14 @@ class Compiler : private UnCopyable {
     }
 
     return define_local(name);
+  }
+
+  int declare_named_variable(void) {
+    // parses a name token and declares a variable in the current scope with
+    // that name, returns its symbol
+
+    consume(TokenKind::TK_IDENTIFIER, "expected variable name");
+    return declare_variable();
   }
 
   void define_variable(int symbol) {
@@ -670,17 +679,26 @@ class Compiler : private UnCopyable {
     return vm_gsymbols().get(name);
   }
 
-  ClassCompiler* get_enclosing_class(void) {
-    // walks the compiler chain to find the nearest class enclosing this one
-    // returns nullptr if not currently inside a class definition
+  Compiler* get_enclosing_class_compiler(void) {
+    // walks the compiler chain to find the compiler for the nearest class
+    // enclosing this one, returns nullptr if not currently inside a class
+    // definition
 
     Compiler* c = this;
     while (c != nullptr) {
       if (c->enclosing_class_ != nullptr)
-        return c->enclosing_class_;
+        return c;
       c = c->parent_;
     }
     return nullptr;
+  }
+
+  ClassCompiler* get_enclosing_class(void) {
+    // walks the compiler chain to find the nearest class enclosing this one
+    // returns nullptr if not currently inside a class definition
+
+    Compiler* c = get_enclosing_class_compiler();
+    return c == nullptr ? nullptr : c->enclosing_class_;
   }
 
   void nil(bool allow_assignment) {
@@ -732,14 +750,9 @@ class Compiler : private UnCopyable {
     emit_bytes(load_instruction, index);
   }
 
-  void variable(bool allow_assignment) {
-    // look up the name in the scope chain
-    const auto& token = parser_.prev();
-
-    Code load_instruction;
-    int index = resolve_name(token.as_string(), load_instruction);
-    if (index == -1)
-      error("undefined variable");
+  void variable_impl(bool allow_assignment, int index, Code load_instruction) {
+    // compiles a read or assignment to a variable at [index]
+    // using [load_instruction]
 
     // if there's an `=` after a bare name, it's a variable assignment
     if (match(TokenKind::TK_EQ)) {
@@ -760,6 +773,49 @@ class Compiler : private UnCopyable {
     else {
       emit_bytes(load_instruction, index);
     }
+  }
+
+  void static_field(bool allow_assignment) {
+    Code load_instruction = Code::LOAD_LOCAL;
+    int index = 0xff;
+
+    Compiler* class_compiler = get_enclosing_class_compiler();
+    if (class_compiler == nullptr) {
+      error("cannot use a static field outside of a class definition");
+    }
+    else {
+      str_t name = parser_.prev().as_string();
+
+      if (class_compiler->resolve_local(name) == -1) {
+        int symbol = class_compiler->declare_variable();
+
+        // implicitly initialize it to nil
+        class_compiler->emit_byte(Code::NIL);
+        class_compiler->define_variable(symbol);
+
+        index = resolve_name(name, load_instruction);
+      }
+      else {
+        // it exists already, so resolve it properly, this is different from
+        // the above resolve_local(...) call because we may have already closed
+        // over it as an upvalue
+        index = resolve_name(name, load_instruction);
+      }
+    }
+
+    variable_impl(allow_assignment, index, load_instruction);
+  }
+
+  void variable(bool allow_assignment) {
+    // look up the name in the scope chain
+    const auto& token = parser_.prev();
+
+    Code load_instruction;
+    int index = resolve_name(token.as_string(), load_instruction);
+    if (index == -1)
+      error("undefined variable");
+
+    variable_impl(allow_assignment, index, load_instruction);
   }
 
   void field(bool allow_assignment) {
@@ -794,7 +850,7 @@ class Compiler : private UnCopyable {
     }
 
     // if we are directly inside a method, use a more optional instruction
-    if (enclosing_class_ == enclosing_class) {
+    if (parent_ != nullptr && parent_->enclosing_class_ == enclosing_class) {
       emit_bytes(is_load ?
           Code::LOAD_FIELD_THIS : Code::STORE_FIELD_THIS, field);
     }
@@ -877,7 +933,8 @@ class Compiler : private UnCopyable {
     // been consumed.
 
     // create a variable to store the class in
-    int symbol = declare_variable();
+    int symbol = declare_named_variable();
+    bool is_global = scope_depth_ == -1;
 
     // load the superclass (if there is one)
     if (match(TokenKind::KW_IS)) {
@@ -894,6 +951,14 @@ class Compiler : private UnCopyable {
     // which fields are used.
     int num_fields_instruction = emit_byte(0xff);
 
+    // store it in its name
+    define_variable(symbol);
+
+    // push a local variable scope, static fields in a class body are hoisted
+    // out into local variables declared in this scope, methods that use them
+    // will have upvalues referencing them
+    push_scope();
+
     ClassCompiler class_compiler;
 
     // set up a symbol table for the class's fields, we'll initially compile
@@ -902,6 +967,7 @@ class Compiler : private UnCopyable {
     // into account.
     SymbolTable fields;
     class_compiler.fields = &fields;
+    enclosing_class_ = &class_compiler;
 
     consume(TokenKind::TK_LBRACE, "expect `{` before class body");
     while (!match(TokenKind::TK_RBRACE)) {
@@ -925,15 +991,22 @@ class Compiler : private UnCopyable {
         error("expect method definition");
         break;
       }
-      method(&class_compiler, instruction, is_ctor, signature);
+
+      int method_symbol = method(
+          &class_compiler, is_ctor, signature);
+      // load the class
+      emit_bytes(is_global ? Code::LOAD_GLOBAL : Code::LOAD_LOCAL, symbol);
+      // define the method
+      emit_words(instruction, method_symbol);
+
       consume(TokenKind::TK_NL, "expect newline after definition in class");
     }
 
     // update the class with the number of fields
     bytecode_[num_fields_instruction] = fields.count();
 
-    // store it in its name
-    define_variable(symbol);
+    enclosing_class_ = nullptr;
+    pop_scope();
   }
 
   void for_stmt(void) {
@@ -1039,7 +1112,7 @@ class Compiler : private UnCopyable {
   }
 
   void var_definition(void) {
-    int symbol = declare_variable();
+    int symbol = declare_named_variable();
     // compile the initializer
     if (match(TokenKind::TK_EQ)) {
       expression();
@@ -1213,24 +1286,20 @@ class Compiler : private UnCopyable {
     fn_compiler.finish_compiler("(fn)");
   }
 
-  void method(ClassCompiler* class_compiler,
-      Code instruction, bool is_ctor, const SignatureFn& signature) {
-    // compiles a method definition inside a class body
+  int method(ClassCompiler* class_compiler,
+      bool is_ctor, const SignatureFn& signature) {
+    // compiles a method definition inside a class body, returns the symbol
+    // in the method table for the new method
 
-    // build the method name, the mangled name includes all of the name parts
-    // in a mixfix call as well as spaces for every argument.
-    // so a method like:
-    //    foo.bar(a, b) else (c) last
-    //
-    // will have name: "bar  else last"
+    // build the method name
     str_t name(parser_.prev().as_string());
 
     class_compiler->method_name = name;
 
     Compiler method_compiler(parser_, this);
     method_compiler.init_compiler(false);
-    method_compiler.enclosing_class_ = class_compiler;
 
+    // compile the method signature
     signature(&method_compiler, name);
 
     consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
@@ -1248,8 +1317,7 @@ class Compiler : private UnCopyable {
     method_compiler.emit_byte(Code::RETURN);
     method_compiler.finish_compiler(name);
 
-    // compile the code to define the method it
-    emit_words(instruction, method_symbol(name));
+    return method_symbol(name);
   }
 
   void call(bool allow_assignment) {
@@ -1341,7 +1409,7 @@ class Compiler : private UnCopyable {
     name.push_back(' ');
 
     // parse the parameter name
-    declare_variable();
+    declare_named_variable();
   }
 
   void unary_signature(str_t& name) {
@@ -1355,7 +1423,7 @@ class Compiler : private UnCopyable {
       name.push_back(' ');
 
       // parse the parameter name
-      declare_variable();
+      declare_named_variable();
     }
   }
 
@@ -1367,7 +1435,7 @@ class Compiler : private UnCopyable {
       name.push_back(' ');
 
       // parse the value parameter
-      declare_variable();
+      declare_named_variable();
     }
     else {
       // regular named method with an optional parameter list
@@ -1399,7 +1467,7 @@ class Compiler : private UnCopyable {
         validate_num_parameters(++argc);
 
         // define a local variable in the method for the parameters
-        declare_variable();
+        declare_named_variable();
 
         // add a space in the name for the parameters
         name.push_back(' ');

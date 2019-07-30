@@ -201,7 +201,7 @@ bool WrenVM::interpret(void) {
     {
       ASSERT(co->has_upvalues(),
           "should not have STORE_UPVALUE instruction in non-closure");
-      co->get_upvalue(RDBYTE())->set_value(POP());
+      co->get_upvalue(RDBYTE())->set_value(PEEK());
 
       DISPATCH();
     }
@@ -604,9 +604,10 @@ bool WrenVM::interpret(void) {
     CASE_CODE(METHOD_STATIC):
     {
       int symbol = RDWORD();
-      Value method = PEEK();
-      ClassObject* cls = PEEK2().as_class();
+      ClassObject* cls = PEEK().as_class();
+      Value method = PEEK2();
       cls->bind_method(symbol, Xt::as_type<int>(c), method);
+      POP();
       POP();
 
       DISPATCH();

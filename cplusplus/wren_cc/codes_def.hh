@@ -136,12 +136,13 @@ CODE(CLOSURE)
 CODE(CLASS)        // define a new empty class and push it into stack
 CODE(SUBCLASS)     // pop a superclass from stack, push a new class that extends it
 
-// add a method for symbol [arg1] with body stored in constant [arg2] to
-// the class on the top of the stack, does not modify the stack
+// define a method for symbol [arg] the class receiving the method is popped
+// off the stack, then the function defining the body is popped
 CODE(METHOD_INSTANCE)
 
-// add a method for symbol [arg1] with body stored in constant [arg2] to
-// the metaclass of the class on the top of stack, does not modify the stack
+// define a method for symbol [arg] the class whose metaclass will receive
+// the method is popped off the stack, then the function defining the body
+// is popped
 CODE(METHOD_STATIC)
 
 CODE(END)
