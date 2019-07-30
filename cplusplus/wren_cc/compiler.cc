@@ -215,6 +215,29 @@ struct Loop {
   Loop* enclosing{};
 };
 
+struct ClassCompiler {
+  // bookkeeping information for compiling a class definition
+
+  // symbol table for the fields of the class
+  SymbolTable* fields{};
+
+  // true if the current method being compiled is static
+  bool is_static_method{};
+
+  // the name of the method being compiled, note that this is just the bare
+  // method name, and not its full signature
+  str_t method_name;
+
+  ClassCompiler(void) noexcept {}
+
+  ClassCompiler(SymbolTable* arg_fields,
+      bool arg_static_method, const str_t arg_method_name) noexcept
+    : fields(arg_fields)
+    , is_static_method(arg_static_method)
+    , method_name(arg_method_name) {
+  }
+};
+
 class Compiler : private UnCopyable {
   // the maximum number of arguments that can be passed to a method, note
   // that this limtation is hardcoded in other places in th VM, in particular
@@ -244,10 +267,6 @@ class Compiler : private UnCopyable {
   std::vector<int> debug_source_lines_;
   ListObject* constants_{};
 
-  // for the fields of the nearest enclosing class, or nullptr if not
-  // currently inside a class
-  SymbolTable* fields_{};
-
   // the current level of block scope nesting, where zero is no nesting.
   // a -1 here means top-level code is being compiled and thers is no block
   // scope in effect at all. any variables declared will be global
@@ -256,14 +275,21 @@ class Compiler : private UnCopyable {
   // the current innermost loop being compiled, or `nullptr` if not in a loop
   Loop* loop_{};
 
-  // true if the current method being compiled is static, false if it's an
-  // instance method or we are not compiling a method
-  bool is_static_method_{};
+  // if this is a compiler for a method, keeps track of the class enclosing it
+  ClassCompiler* enclosing_class_{};
 
-  // name of the method this compiler is compiling, or `empty` if this
-  // compiler is not for a method. note that this is just the bare method
-  // name and not its full signature
-  str_t method_name_;
+  // // for the fields of the nearest enclosing class, or nullptr if not
+  // // currently inside a class
+  // SymbolTable* fields_{};
+
+  // // true if the current method being compiled is static, false if it's an
+  // // instance method or we are not compiling a method
+  // bool is_static_method_{};
+
+  // // name of the method this compiler is compiling, or `empty` if this
+  // // compiler is not for a method. note that this is just the bare method
+  // // name and not its full signature
+  // str_t method_name_;
 
   // the currently in scope local variables
   std::vector<Local> locals_;
@@ -644,6 +670,19 @@ class Compiler : private UnCopyable {
     return vm_gsymbols().get(name);
   }
 
+  ClassCompiler* get_enclosing_class(void) {
+    // walks the compiler chain to find the nearest class enclosing this one
+    // returns nullptr if not currently inside a class definition
+
+    Compiler* c = this;
+    while (c != nullptr) {
+      if (c->enclosing_class_ != nullptr)
+        return c->enclosing_class_;
+      c = c->parent_;
+    }
+    return nullptr;
+  }
+
   void nil(bool allow_assignment) {
     emit_byte(Code::NIL);
   }
@@ -728,46 +767,40 @@ class Compiler : private UnCopyable {
     // the number of cascaded erros
     int field = 0xff;
 
-    if (is_static_method_) {
+    ClassCompiler* enclosing_class = get_enclosing_class();
+    if (enclosing_class == nullptr) {
+      error("cannot reference a field outside of a class definition");
+    }
+    else if (enclosing_class->is_static_method) {
       error("cannot use an instance field in a static method");
     }
-    else if (fields_ != nullptr) {
+    else {
       // look up the field, or implicitlt define it
-      field = fields_->ensure(parser_.prev().as_string());
+      field = enclosing_class->fields->ensure(parser_.prev().as_string());
 
       if (field >= MAX_FIELDS)
         error("a class can only have %d fields", MAX_FIELDS);
     }
-    else {
-      error("cannot reference a field outside of a class definition");
-    }
 
     // if there is an `=` after a filed name, it's an assignment
+    bool is_load = true;
     if (match(TokenKind::TK_EQ)) {
       if (!allow_assignment)
         error("invalid assignment");
 
       // compile the right-hand side
       expression();
+      is_load = false;
+    }
 
-      // if we are directly inside a method, use a more optional instruction
-      if (!method_name_.empty()) {
-        emit_bytes(Code::STORE_FIELD_THIS, field);
-      }
-      else {
-        load_this();
-        emit_bytes(Code::STORE_FIELD, field);
-      }
+    // if we are directly inside a method, use a more optional instruction
+    if (enclosing_class_ == enclosing_class) {
+      emit_bytes(is_load ?
+          Code::LOAD_FIELD_THIS : Code::STORE_FIELD_THIS, field);
     }
     else {
-      // if we are directly inside a method, use a more optional instruction
-      if (!method_name_.empty()) {
-        emit_bytes(Code::LOAD_FIELD_THIS, field);
-      }
-      else {
-        load_this();
-        emit_bytes(Code::LOAD_FIELD, field);
-      }
+      load_this();
+      emit_bytes(is_load ? Code::LOAD_FIELD : Code::STORE_FIELD, field);
     }
   }
 
@@ -861,21 +894,24 @@ class Compiler : private UnCopyable {
     // which fields are used.
     int num_fields_instruction = emit_byte(0xff);
 
+    ClassCompiler class_compiler;
+
     // set up a symbol table for the class's fields, we'll initially compile
     // them to slots starting at zero. when the method is bound to the close
     // the bytecode will be adjusted by [bind_method] to take inherited fields
     // into account.
-    SymbolTable* prev_fields = fields_;
-    SymbolTable fileds;
-    fields_ = &fileds;
+    SymbolTable fields;
+    class_compiler.fields = &fields;
 
     consume(TokenKind::TK_LBRACE, "expect `{` before class body");
     while (!match(TokenKind::TK_RBRACE)) {
       Code instruction = Code::METHOD_INSTANCE;
       bool is_ctor = false;
+      class_compiler.is_static_method = false;
 
       if (match(TokenKind::KW_STATIC)) {
         instruction = Code::METHOD_STATIC;
+        class_compiler.is_static_method = true;
       }
       else if (parser_.curr().kind() == TokenKind::KW_NEW) {
         // if the method name is `new` it's a named constructor
@@ -889,13 +925,12 @@ class Compiler : private UnCopyable {
         error("expect method definition");
         break;
       }
-      method(instruction, is_ctor, signature);
+      method(&class_compiler, instruction, is_ctor, signature);
       consume(TokenKind::TK_NL, "expect newline after definition in class");
     }
 
     // update the class with the number of fields
-    bytecode_[num_fields_instruction] = fileds.count();
-    fields_ = prev_fields;
+    bytecode_[num_fields_instruction] = fields.count();
 
     // store it in its name
     define_variable(symbol);
@@ -1158,8 +1193,8 @@ class Compiler : private UnCopyable {
   }
 
   void function(bool allow_assignment) {
-    Compiler fn_compiler(parser_, this, "");
-    fn_compiler.init_compiler();
+    Compiler fn_compiler(parser_, this);
+    fn_compiler.init_compiler(true);
 
     str_t dummy_name;
     fn_compiler.parameters(dummy_name);
@@ -1178,7 +1213,8 @@ class Compiler : private UnCopyable {
     fn_compiler.finish_compiler("(fn)");
   }
 
-  void method(Code instruction, bool is_ctor, const SignatureFn& signature) {
+  void method(ClassCompiler* class_compiler,
+      Code instruction, bool is_ctor, const SignatureFn& signature) {
     // compiles a method definition inside a class body
 
     // build the method name, the mangled name includes all of the name parts
@@ -1189,11 +1225,11 @@ class Compiler : private UnCopyable {
     // will have name: "bar  else last"
     str_t name(parser_.prev().as_string());
 
-    Compiler method_compiler(parser_, this, name);
-    method_compiler.init_compiler();
+    class_compiler->method_name = name;
 
-    if (instruction == Code::METHOD_STATIC)
-      method_compiler.is_static_method_ = true;
+    Compiler method_compiler(parser_, this);
+    method_compiler.init_compiler(false);
+    method_compiler.enclosing_class_ = class_compiler;
 
     signature(&method_compiler, name);
 
@@ -1417,13 +1453,6 @@ class Compiler : private UnCopyable {
     }
   }
 
-  bool is_inside_method(void) {
-    // returns true if [compiler] is compiling a chunk of code that is either
-    // directly or indirectly contained in a method for a class
-
-    return fields_ != nullptr;
-  }
-
   void new_exp(bool allow_assignment) {
     parse_precedence(false, Precedence::CALL);
 
@@ -1434,9 +1463,10 @@ class Compiler : private UnCopyable {
   }
 
   void super_exp(bool allow_assignment) {
-    if (!is_inside_method())
+    ClassCompiler* enclosing_class = get_enclosing_class();
+    if (enclosing_class == nullptr)
       error("cannot use `super` outside of a method");
-    else if (is_static_method_)
+    else if (enclosing_class->is_static_method)
       error("cannot use `super` in a static method");
 
     load_this();
@@ -1446,23 +1476,14 @@ class Compiler : private UnCopyable {
       named_call(allow_assignment, Code::SUPER_0);
     }
     else {
-      str_t name;
-      Compiler* this_compiler = this;
-      while (this_compiler != nullptr) {
-        if (!this_compiler->method_name_.empty()) {
-          name = this_compiler->method_name_;
-          break;
-        }
-        this_compiler = this_compiler->parent_;
-      }
-
+      str_t name(enclosing_class->method_name);
       // call the superclass method with the same name
       method_call(Code::SUPER_0, name);
     }
   }
 
   void this_exp(bool allow_assignment) {
-    if (!is_inside_method()) {
+    if (get_enclosing_class() == nullptr) {
       error("cannot use `this` outside of a method");
       return;
     }
@@ -1470,18 +1491,16 @@ class Compiler : private UnCopyable {
     load_this();
   }
 public:
-  Compiler(Parser& parser,
-      Compiler* parent = nullptr, const str_t& method_name = "") noexcept
+  Compiler(Parser& parser, Compiler* parent = nullptr) noexcept
     : parser_(parser)
-    , parent_(parent)
-    , method_name_(method_name) {
+    , parent_(parent) {
   }
 
   ~Compiler(void) {
     // FIXME: fixed deallocate FunctionObject by GC
   }
 
-  void init_compiler(void) {
+  void init_compiler(bool is_func = true) {
     parser_.get_vm().set_compiler(this);
     constants_ = ListObject::make_list(parser_.get_vm(), 0);
 
@@ -1489,15 +1508,11 @@ public:
       scope_depth_ = -1;
     }
     else {
-      if (!method_name_.empty())
-        locals_.push_back(Local("this"));
-      else
+      if (is_func)
         locals_.push_back(Local());
+      else
+        locals_.push_back(Local("this"));
       scope_depth_ = 0;
-
-      // propagate the enclosing class and method downwards
-      fields_ = parent_->fields_;
-      is_static_method_ = parent_->is_static_method_;
     }
   }
 
@@ -1574,7 +1589,7 @@ public:
 
   FunctionObject* compile_function(
       Parser& p, Compiler* parent, TokenKind end_kind) {
-    Compiler c(p, parent, "");
+    Compiler c(p, parent);
     return c.compile_function(end_kind);
   }
 
@@ -1597,8 +1612,8 @@ FunctionObject* compile(
   Parser p(vm, lex);
 
   p.advance();
-  Compiler c(p, nullptr, "");
-  c.init_compiler();
+  Compiler c(p, nullptr);
+  c.init_compiler(true);
 
   return c.compile_function(TokenKind::TK_EOF);
 }
