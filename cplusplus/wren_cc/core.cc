@@ -388,15 +388,21 @@ DEF_NATIVE(numeric_bitnot) {
 }
 
 DEF_NATIVE(numeric_dotdot) {
+  if (!validate_numeric(vm, args, 1, "Right hand side of range"))
+    return PrimitiveResult::ERROR;
+
   double from = args[0].as_numeric();
   double to = args[1].as_numeric();
-  RETURN_VAL(RangeObject::make_range(vm, from, to));
+  RETURN_VAL(RangeObject::make_range(vm, from, to, true));
 }
 
 DEF_NATIVE(numeric_dotdotdot) {
+  if (!validate_numeric(vm, args, 1, "Right hand side of range"))
+    return PrimitiveResult::ERROR;
+
   double from = args[0].as_numeric();
-  double to = args[1].as_numeric() - 1;
-  RETURN_VAL(RangeObject::make_range(vm, from, to));
+  double to = args[1].as_numeric();
+  RETURN_VAL(RangeObject::make_range(vm, from, to, false));
 }
 
 DEF_NATIVE(object_eq) {
@@ -574,19 +580,37 @@ DEF_NATIVE(range_max) {
   RETURN_VAL(std::fmax(range->from(), range->to()));
 }
 
+DEF_NATIVE(range_isinclusive) {
+  RangeObject* range = args[0].as_range();
+  RETURN_VAL(range->is_inclusive());
+}
+
 DEF_NATIVE(range_iterate) {
   RangeObject* range = args[0].as_range();
 
+  if (range->from() == range->to() && !range->is_inclusive())
+    RETURN_VAL(false);
   if (args[1].is_nil())
     RETURN_VAL(range->from());
   if (!validate_numeric(vm, args, 1, "Iterator"))
     return PrimitiveResult::ERROR;
 
   double iterator = args[1].as_numeric();
-  if (iterator >= range->to())
+  // iterate towards [to] from [from]
+  if (range->from() < range->to()) {
+    ++iterator;
+    if (iterator > range->to())
+      RETURN_VAL(false);
+  }
+  else {
+    --iterator;
+    if (iterator < range->to())
+      RETURN_VAL(false);
+  }
+  if (!range->is_inclusive() && iterator == range->to())
     RETURN_VAL(false);
 
-  RETURN_VAL(args[1].as_numeric() + 1);
+  RETURN_VAL(iterator);
 }
 
 DEF_NATIVE(range_itervalue) {
@@ -597,7 +621,7 @@ DEF_NATIVE(range_tostring) {
   RangeObject* range = args[0].as_range();
 
   std::stringstream ss;
-  ss << range->from() << ".." << range->to();
+  ss << range->from() << (range->is_inclusive() ? ".." : "...") << range->to();
   RETURN_VAL(StringObject::make_string(vm, ss.str()));
 }
 
@@ -708,6 +732,7 @@ void initialize_core(WrenVM& vm) {
   vm.set_native(vm.range_cls(), "to", _primitive_range_to);
   vm.set_native(vm.range_cls(), "min", _primitive_range_min);
   vm.set_native(vm.range_cls(), "max", _primitive_range_max);
+  vm.set_native(vm.range_cls(), "isInclusive", _primitive_range_isinclusive);
   vm.set_native(vm.range_cls(), "iterate ", _primitive_range_iterate);
   vm.set_native(vm.range_cls(), "iterValue ", _primitive_range_itervalue);
   vm.set_native(vm.range_cls(), "toString", _primitive_range_tostring);

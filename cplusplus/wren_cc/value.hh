@@ -297,17 +297,23 @@ public:
 class RangeObject final : public BaseObject {
   double from_{}; // the beginning of the range
   double to_{};   // the end of the range, may be greater or less than [from_]
+  bool is_inclusive_{}; // true if [to] is included in the range
 
-  RangeObject(double from, double to) noexcept
-    : BaseObject(ObjType::RANGE), from_(from), to_(to) {
+  RangeObject(double from, double to, bool is_inclusive) noexcept
+    : BaseObject(ObjType::RANGE)
+    , from_(from)
+    , to_(to)
+    , is_inclusive_(is_inclusive) {
   }
 public:
   inline double from(void) const { return from_; }
   inline double to(void) const { return to_; }
+  inline bool is_inclusive(void) const { return is_inclusive_; }
 
   virtual str_t stringify(void) const override;
 
-  static RangeObject* make_range(WrenVM& vm, double from, double to);
+  static RangeObject* make_range(WrenVM& vm,
+      double from, double to, bool is_instance);
 };
 
 // stores debugging information for a function used for things like stack

@@ -256,8 +256,9 @@ str_t RangeObject::stringify(void) const {
   return ss.str();
 }
 
-RangeObject* RangeObject::make_range(WrenVM& vm, double from, double to) {
-  auto* o = new RangeObject(from, to);
+RangeObject* RangeObject::make_range(
+    WrenVM& vm, double from, double to, bool is_inclusive) {
+  auto* o = new RangeObject(from, to, is_inclusive);
   vm.append_object(o);
   return o;
 }
