@@ -750,10 +750,9 @@ void WrenVM::append_object(BaseObject* obj) {
 void WrenVM::mark_object(BaseObject* obj) {
   if (obj == nullptr)
     return;
-  if (obj->flag() & ObjFlag::MARKED)
-    return;
 
-  obj->set_flag(obj->flag() | ObjFlag::MARKED);
+  if (obj->set_marked())
+    return;
 
   obj->gc_mark(*this);
 }

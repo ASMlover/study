@@ -86,6 +86,13 @@ public:
   inline ObjFlag flag(void) const { return flag_; }
   template <typename T> inline void set_flag(T f) { flag_ = Xt::as_type<ObjFlag>(f); }
 
+  inline bool set_marked(void) {
+    if (flag() & ObjFlag::MARKED)
+      return true;
+    set_flag(flag() | ObjFlag::MARKED);
+    return true;
+  }
+
   virtual str_t stringify(void) const = 0;
   virtual void gc_mark(WrenVM& vm) {}
 };
