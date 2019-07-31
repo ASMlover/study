@@ -45,6 +45,7 @@ enum class ValueType : u8_t {
 enum class ObjType : u8_t {
   STRING,
   LIST,
+  RANGE,
   FUNCTION,
   UPVALUE,
   CLOSURE,
@@ -66,6 +67,7 @@ class BooleanObject;
 class NumericObject;
 class StringObject;
 class ListObject;
+class RangeObject;
 class FunctionObject;
 class UpvalueObject;
 class ClosureObject;
@@ -74,7 +76,7 @@ class ClassObject;
 class InstanceObject;
 
 class BaseObject : private UnCopyable {
-  ObjType type_ : 3;
+  ObjType type_ : 4;
   ObjFlag flag_ : 1;
 public:
   BaseObject(ObjType type) noexcept : type_(type), flag_(ObjFlag::UNMARK) {}
@@ -145,6 +147,7 @@ public:
   inline bool is_object(void) const { return (bits_ & (kSignBit | kQNaN)) == (kSignBit | kQNaN); }
   inline bool is_string(void) const { return check(ObjType::STRING); }
   inline bool is_list(void) const { return check(ObjType::LIST); }
+  inline bool is_range(void) const { return check(ObjType::RANGE); }
   inline bool is_function(void) const { return check(ObjType::FUNCTION); }
   inline bool is_upvalue(void) const { return check(ObjType::UPVALUE); }
   inline bool is_closure(void) const { return check(ObjType::CLOSURE); }
@@ -161,6 +164,7 @@ public:
   StringObject* as_string(void) const;
   const char* as_cstring(void) const;
   ListObject* as_list(void) const;
+  RangeObject* as_range(void) const;
   FunctionObject* as_function(void) const;
   UpvalueObject* as_upvalue(void) const;
   ClosureObject* as_closure(void) const;
@@ -207,6 +211,7 @@ public:
   inline bool is_object(void) const { return type_ == ValueType::OBJECT; }
   inline bool is_string(void) const { return check(ObjType::STRING); }
   inline bool is_list(void) const { return check(ObjType::LIST); }
+  inline bool is_range(void) const { return check(ObjType::RANGE); }
   inline bool is_function(void) const { return check(ObjType::FUNCTION); }
   inline bool is_upvalue(void) const { return check(ObjType::UPVALUE); }
   inline bool is_closure(void) const { return check(ObjType::CLOSURE); }
@@ -223,6 +228,7 @@ public:
   StringObject* as_string(void) const;
   const char* as_cstring(void) const;
   ListObject* as_list(void) const;
+  RangeObject* as_range(void) const;
   FunctionObject* as_function(void) const;
   UpvalueObject* as_upvalue(void) const;
   ClosureObject* as_closure(void) const;
@@ -286,6 +292,22 @@ public:
   virtual void gc_mark(WrenVM& vm) override;
 
   static ListObject* make_list(WrenVM& vm, int num_elements = 0);
+};
+
+class RangeObject final : public BaseObject {
+  double from_{}; // the beginning of the range
+  double to_{};   // the end of the range, may be greater or less than [from_]
+
+  RangeObject(double from, double to) noexcept
+    : BaseObject(ObjType::RANGE), from_(from), to_(to) {
+  }
+public:
+  inline double from(void) const { return from_; }
+  inline double to(void) const { return to_; }
+
+  virtual str_t stringify(void) const override;
+
+  static RangeObject* make_range(WrenVM& vm, double from, double to);
 };
 
 // stores debugging information for a function used for things like stack

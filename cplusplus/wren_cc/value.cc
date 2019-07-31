@@ -46,6 +46,10 @@ ListObject* TagValue::as_list(void) const {
   return Xt::down<ListObject>(as_object());
 }
 
+RangeObject* TagValue::as_range(void) const {
+  return Xt::down<RangeObject>(as_object());
+}
+
 FunctionObject* TagValue::as_function(void) const {
   return Xt::down<FunctionObject>(as_object());
 }
@@ -98,6 +102,10 @@ const char* ObjValue::as_cstring(void) const {
 
 ListObject* ObjValue::as_list(void) const {
   return Xt::down<ListObject>(obj_);
+}
+
+RangeObject* ObjValue::as_range(void) const {
+  return Xt::down<RangeObject>(obj_);
 }
 
 FunctionObject* ObjValue::as_function(void) const {
@@ -238,6 +246,18 @@ void ListObject::gc_mark(WrenVM& vm) {
 
 ListObject* ListObject::make_list(WrenVM& vm, int num_elements) {
   auto* o = new ListObject(num_elements);
+  vm.append_object(o);
+  return o;
+}
+
+str_t RangeObject::stringify(void) const {
+  std::stringstream ss;
+  ss << "[fn `" << this << "`]";
+  return ss.str();
+}
+
+RangeObject* RangeObject::make_range(WrenVM& vm, double from, double to) {
+  auto* o = new RangeObject(from, to);
   vm.append_object(o);
   return o;
 }

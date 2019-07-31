@@ -632,6 +632,7 @@ ClassObject* WrenVM::get_class(const Value& val) const {
     switch (val.objtype()) {
     case ObjType::STRING: return str_class_;
     case ObjType::LIST: return list_class_;
+    case ObjType::RANGE: return range_class_;
     case ObjType::FUNCTION: return fn_class_;
     case ObjType::UPVALUE:
       ASSERT(false, "upvalues should not be used as first-class objects");
@@ -659,6 +660,7 @@ ClassObject* WrenVM::get_class(const Value& val) const {
     switch (val.objtype()) {
     case ObjType::STRING: return str_class_;
     case ObjType::LIST: return list_class_;
+    case ObjType::RANGE: return range_class_;
     case ObjType::FUNCTION: return fn_class_;
     case ObjType::UPVALUE:
       ASSERT(false, "upvalues should not be used as first-class objects");

@@ -71,31 +71,6 @@ static str_t kCoreLib =
 "    result = result + \"]\"\n"
 "    return result\n"
 "  }\n"
-"}\n"
-"\n"
-"class Range {\n"
-"  new(min, max) {\n"
-"    _min = min\n"
-"    _max = max\n"
-"  }\n"
-"\n"
-"  min { return _min }\n"
-"  max { return _max }\n"
-"\n"
-"  iterate(prev) {\n"
-"    if (prev == nil) return _min\n"
-"    if (prev == _max) return false\n"
-"    return prev + 1\n"
-"  }\n"
-"\n"
-"  iterValue(i) {\n"
-"    return i\n"
-"  }\n"
-"}\n"
-"\n"
-"class Numeric {\n"
-"  .. other { return new Range(this, other) }\n"
-"  ... other { return new Range(this, other - 1) }\n"
 "}\n";
 
 static int validate_index(const Value& index, int count) {
@@ -412,6 +387,18 @@ DEF_NATIVE(numeric_bitnot) {
   RETURN_VAL(~val);
 }
 
+DEF_NATIVE(numeric_dotdot) {
+  double from = args[0].as_numeric();
+  double to = args[1].as_numeric();
+  RETURN_VAL(RangeObject::make_range(vm, from, to));
+}
+
+DEF_NATIVE(numeric_dotdotdot) {
+  double from = args[0].as_numeric();
+  double to = args[1].as_numeric() - 1;
+  RETURN_VAL(RangeObject::make_range(vm, from, to));
+}
+
 DEF_NATIVE(object_eq) {
   RETURN_VAL(args[0] == args[1]);
 }
@@ -567,6 +554,53 @@ DEF_NATIVE(list_subscript_setter) {
   RETURN_VAL(args[2]);
 }
 
+DEF_NATIVE(range_from) {
+  RangeObject* range = args[0].as_range();
+  RETURN_VAL(range->from());
+}
+
+DEF_NATIVE(range_to) {
+  RangeObject* range = args[0].as_range();
+  RETURN_VAL(range->to());
+}
+
+DEF_NATIVE(range_min) {
+  RangeObject* range = args[0].as_range();
+  RETURN_VAL(std::fmin(range->from(), range->to()));
+}
+
+DEF_NATIVE(range_max) {
+  RangeObject* range = args[0].as_range();
+  RETURN_VAL(std::fmax(range->from(), range->to()));
+}
+
+DEF_NATIVE(range_iterate) {
+  RangeObject* range = args[0].as_range();
+
+  if (args[1].is_nil())
+    RETURN_VAL(range->from());
+  if (!validate_numeric(vm, args, 1, "Iterator"))
+    return PrimitiveResult::ERROR;
+
+  double iterator = args[1].as_numeric();
+  if (iterator >= range->to())
+    RETURN_VAL(false);
+
+  RETURN_VAL(args[1].as_numeric() + 1);
+}
+
+DEF_NATIVE(range_itervalue) {
+  RETURN_VAL(args[1]);
+}
+
+DEF_NATIVE(range_tostring) {
+  RangeObject* range = args[0].as_range();
+
+  std::stringstream ss;
+  ss << range->from() << ".." << range->to();
+  RETURN_VAL(StringObject::make_string(vm, ss.str()));
+}
+
 DEF_NATIVE(io_write) {
   if (!validate_string(vm, args, 1, "Argument"))
     return PrimitiveResult::ERROR;
@@ -644,6 +678,40 @@ void initialize_core(WrenVM& vm) {
   vm.set_nil_cls(define_class(vm, "Nil"));
   vm.set_native(vm.nil_cls(), "toString", _primitive_nil_tostring);
 
+  vm.set_num_cls(define_class(vm, "Numeric"));
+  vm.set_native(vm.num_cls(), "abs", _primitive_numeric_abs);
+  vm.set_native(vm.num_cls(), "ceil", _primitive_numeric_ceil);
+  vm.set_native(vm.num_cls(), "cos", _primitive_numeric_cos);
+  vm.set_native(vm.num_cls(), "floor", _primitive_numeric_floor);
+  vm.set_native(vm.num_cls(), "isNan", _primitive_numeric_isnan);
+  vm.set_native(vm.num_cls(), "sin", _primitive_numeric_sin);
+  vm.set_native(vm.num_cls(), "sqrt", _primitive_numeric_sqrt);
+  vm.set_native(vm.num_cls(), "toString", _primitive_numeric_tostring);
+  vm.set_native(vm.num_cls(), "-", _primitive_numeric_neg);
+  vm.set_native(vm.num_cls(), "+ ", _primitive_numeric_add);
+  vm.set_native(vm.num_cls(), "- ", _primitive_numeric_sub);
+  vm.set_native(vm.num_cls(), "* ", _primitive_numeric_mul);
+  vm.set_native(vm.num_cls(), "/ ", _primitive_numeric_div);
+  vm.set_native(vm.num_cls(), "% ", _primitive_numeric_mod);
+  vm.set_native(vm.num_cls(), "> ", _primitive_numeric_gt);
+  vm.set_native(vm.num_cls(), ">= ", _primitive_numeric_ge);
+  vm.set_native(vm.num_cls(), "< ", _primitive_numeric_lt);
+  vm.set_native(vm.num_cls(), "<= ", _primitive_numeric_le);
+  vm.set_native(vm.num_cls(), "== ", _primitive_numeric_eq);
+  vm.set_native(vm.num_cls(), "!= ", _primitive_numeric_ne);
+  vm.set_native(vm.num_cls(), "~", _primitive_numeric_bitnot);
+  vm.set_native(vm.num_cls(), ".. ", _primitive_numeric_dotdot);
+  vm.set_native(vm.num_cls(), "... ", _primitive_numeric_dotdotdot);
+
+  vm.set_range_cls(define_class(vm, "Range"));
+  vm.set_native(vm.range_cls(), "from", _primitive_range_from);
+  vm.set_native(vm.range_cls(), "to", _primitive_range_to);
+  vm.set_native(vm.range_cls(), "min", _primitive_range_min);
+  vm.set_native(vm.range_cls(), "max", _primitive_range_max);
+  vm.set_native(vm.range_cls(), "iterate ", _primitive_range_iterate);
+  vm.set_native(vm.range_cls(), "iterValue ", _primitive_range_itervalue);
+  vm.set_native(vm.range_cls(), "toString", _primitive_range_tostring);
+
   // vm.set_obj_cls(vm.get_global("Object").as_class());
 
   vm.set_str_cls(define_class(vm, "String"));
@@ -674,29 +742,6 @@ void initialize_core(WrenVM& vm) {
   vm.set_native(vm.list_cls(), "iterValue ", _primitive_list_itervalue);
   vm.set_native(vm.list_cls(), "[ ]", _primitive_list_subscript);
   vm.set_native(vm.list_cls(), "[ ]=", _primitive_list_subscript_setter);
-
-  vm.set_num_cls(vm.get_global("Numeric").as_class());
-  vm.set_native(vm.num_cls(), "abs", _primitive_numeric_abs);
-  vm.set_native(vm.num_cls(), "ceil", _primitive_numeric_ceil);
-  vm.set_native(vm.num_cls(), "cos", _primitive_numeric_cos);
-  vm.set_native(vm.num_cls(), "floor", _primitive_numeric_floor);
-  vm.set_native(vm.num_cls(), "isNan", _primitive_numeric_isnan);
-  vm.set_native(vm.num_cls(), "sin", _primitive_numeric_sin);
-  vm.set_native(vm.num_cls(), "sqrt", _primitive_numeric_sqrt);
-  vm.set_native(vm.num_cls(), "toString", _primitive_numeric_tostring);
-  vm.set_native(vm.num_cls(), "-", _primitive_numeric_neg);
-  vm.set_native(vm.num_cls(), "+ ", _primitive_numeric_add);
-  vm.set_native(vm.num_cls(), "- ", _primitive_numeric_sub);
-  vm.set_native(vm.num_cls(), "* ", _primitive_numeric_mul);
-  vm.set_native(vm.num_cls(), "/ ", _primitive_numeric_div);
-  vm.set_native(vm.num_cls(), "% ", _primitive_numeric_mod);
-  vm.set_native(vm.num_cls(), "> ", _primitive_numeric_gt);
-  vm.set_native(vm.num_cls(), ">= ", _primitive_numeric_ge);
-  vm.set_native(vm.num_cls(), "< ", _primitive_numeric_lt);
-  vm.set_native(vm.num_cls(), "<= ", _primitive_numeric_le);
-  vm.set_native(vm.num_cls(), "== ", _primitive_numeric_eq);
-  vm.set_native(vm.num_cls(), "!= ", _primitive_numeric_ne);
-  vm.set_native(vm.num_cls(), "~", _primitive_numeric_bitnot);
 
   ClassObject* io_cls = vm.get_global("IO").as_class();
   vm.set_native(io_cls->meta_class(), "writeString ", _primitive_io_write);
