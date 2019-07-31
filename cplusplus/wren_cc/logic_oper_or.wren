@@ -16,9 +16,3 @@ IO.print(false) || // expect: false
 // swallow a trailing newline
 IO.print(true ||
   true) // expect: true
-
-// only nil and false are falsely
-IO.print(0 || true) // expect: 0
-IO.print(nil || true) // expect: true
-IO.print(("" || true) == "") // expect: true
-IO.print(false || true) // expect: true
