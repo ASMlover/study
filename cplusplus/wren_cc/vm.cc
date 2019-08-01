@@ -451,15 +451,18 @@ bool WrenVM::interpret(void) {
     }
     CASE_CODE(IS):
     {
-      ClassObject* expected = POP().as_class();
-      Value obj = POP();
+      Value expected = POP();
+      if (!expected.is_class()) {
+        runtime_error(fiber, "right operand must be a class");
+        return false;
+      }
 
-      ClassObject* actual = get_class(obj);
+      ClassObject* actual = get_class(POP());
       bool is_instance = false;
 
       // walk the superclass chain looking for the class
       while (actual != nullptr) {
-        if (actual == expected) {
+        if (actual == expected.as_class()) {
           is_instance = true;
           break;
         }
