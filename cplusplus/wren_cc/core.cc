@@ -342,26 +342,30 @@ DEF_NATIVE(numeric_mod) {
 }
 
 DEF_NATIVE(numeric_gt) {
-  if (!args[1].is_numeric())
-    RETURN_VAL(nullptr);
+  if (!validate_numeric(vm, args, 1, "Right operand"))
+    return PrimitiveResult::ERROR;
+
   RETURN_VAL(args[0].as_numeric() > args[1].as_numeric());
 }
 
 DEF_NATIVE(numeric_ge) {
-  if (!args[1].is_numeric())
-    RETURN_VAL(nullptr);
+  if (!validate_numeric(vm, args, 1, "Right operand"))
+    return PrimitiveResult::ERROR;
+
   RETURN_VAL(args[0].as_numeric() >= args[1].as_numeric());
 }
 
 DEF_NATIVE(numeric_lt) {
-  if (!args[1].is_numeric())
-    RETURN_VAL(nullptr);
+  if (!validate_numeric(vm, args, 1, "Right operand"))
+    return PrimitiveResult::ERROR;
+
   RETURN_VAL(args[0].as_numeric() < args[1].as_numeric());
 }
 
 DEF_NATIVE(numeric_le) {
-  if (!args[1].is_numeric())
-    RETURN_VAL(nullptr);
+  if (!validate_numeric(vm, args, 1, "Right operand"))
+    return PrimitiveResult::ERROR;
+
   RETURN_VAL(args[0].as_numeric() <= args[1].as_numeric());
 }
 
