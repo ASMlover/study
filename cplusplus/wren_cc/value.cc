@@ -374,8 +374,8 @@ int FunctionObject::get_argc(
       int constant = (bytecode[ip + 1] << 8) | (bytecode[ip + 2]);
       FunctionObject* loaded_fn = constants[constant].as_function();
 
-      // there are two arguments for the constant, then one for each upvalue
-      return 2 + loaded_fn->num_upvalues();
+      // there are two bytes for the constant, then two for each upvalue
+      return 2 + (loaded_fn->num_upvalues() * 2);
     }
   }
   return 0;

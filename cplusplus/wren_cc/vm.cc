@@ -613,7 +613,8 @@ bool WrenVM::interpret(void) {
     {
       // a END should always preceded by a RETURN. if we get here, the compiler
       // generated wrong code
-      ASSERT(false, "should not execute past end of bytecode");
+      UNREACHABLE();
+      DISPATCH();
     }
   }
 

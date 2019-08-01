@@ -18,7 +18,6 @@ class List {
     for (i in 0...this.len) {
       if (i > 0) result = result + ", "
       result = result + this[i].toString
-      i = i + 1
     }
     result = result + "]"
     return result

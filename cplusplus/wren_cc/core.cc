@@ -64,7 +64,6 @@ static str_t kCoreLib =
 "    for (i in 0...this.len) {\n"
 "      if (i > 0) result = result + \", \"\n"
 "      result = result + this[i].toString\n"
-"      i = i + 1\n"
 "    }\n"
 "    result = result + \"]\"\n"
 "    return result\n"
