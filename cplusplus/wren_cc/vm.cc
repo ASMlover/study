@@ -76,8 +76,8 @@ void WrenVM::unpin_object(void) {
   pinned_ = pinned_->prev;
 }
 
-void WrenVM::print_stacktrace(FiberObject* fiber, const Value& error) {
-  std::cerr << error.as_cstring() << std::endl;
+void WrenVM::print_stacktrace(FiberObject* fiber) {
+  std::cerr << fiber->error() << std::endl;
 
   fiber->riter_frames([](const CallFrame& frame, FunctionObject* fn) {
       auto& debug = fn->debug();
@@ -87,6 +87,29 @@ void WrenVM::print_stacktrace(FiberObject* fiber, const Value& error) {
         << "`" << debug.name() << "`"
         << std::endl;
       });
+}
+
+void WrenVM::runtime_error(FiberObject* fiber, const str_t& error) {
+  ASSERT(fiber->error().empty(), "can only fail one");
+  fiber->set_error(error);
+
+  print_stacktrace(fiber);
+}
+
+void WrenVM::method_not_found(FiberObject* fiber, int symbol) {
+  std::stringstream ss;
+  ss << "receiver does not implement method "
+    << "`" << methods_.get_name(symbol) << "`";
+
+  runtime_error(fiber, ss.str());
+}
+
+void WrenVM::too_many_inherited_fields(FiberObject* fiber) {
+  std::stringstream ss;
+  ss << "a class may not have more than " << MAX_FIELDS
+    << " fields, including inherited ones.";
+
+  runtime_error(fiber, ss.str());
 }
 
 void WrenVM::call_foreign(
@@ -102,30 +125,6 @@ void WrenVM::call_foreign(
     *foreign_call_slot_ = nullptr;
     foreign_call_slot_ = nullptr;
   }
-}
-
-void WrenVM::method_not_found(FiberObject* fiber, int symbol, Value& receiver) {
-  std::stringstream ss;
-  ss << "receiver does not implement method "
-    << "`" << methods_.get_name(symbol) << "`";
-
-  // store the error message in the receiver slot so that it's on the fiber's
-  // stack and does not get garbage collected
-  receiver = StringObject::make_string(*this, ss.str());
-
-  print_stacktrace(fiber, receiver);
-}
-
-void WrenVM::too_many_inherited_fields(FiberObject* fiber, Value& receiver) {
-  std::stringstream ss;
-  ss << "a class may not have more than " << MAX_FIELDS
-    << " fields, including inherited ones.";
-
-  // stores the error message in the receiver slot so that it's on the fiber's
-  // stack and does not get garbage collected
-  receiver = StringObject::make_string(*this, ss.str());
-
-  print_stacktrace(fiber, receiver);
 }
 
 bool WrenVM::interpret(void) {
@@ -288,8 +287,7 @@ bool WrenVM::interpret(void) {
 
       // if the class's method table does not include the symbol, bail
       if (cls->methods_count() < symbol) {
-        method_not_found(fiber,
-            symbol, fiber->get_value(fiber->stack_size() - argc));
+        method_not_found(fiber, symbol);
         return false;
       }
 
@@ -307,7 +305,7 @@ bool WrenVM::interpret(void) {
             fiber->resize_stack(fiber->stack_size() - (argc - 1));
             break;
           case PrimitiveResult::ERROR:
-            print_stacktrace(fiber, args[0]);
+            runtime_error(fiber, args[0].as_cstring());
             return false;
           case PrimitiveResult::CALL:
             fiber->call_function(args[0].as_object(), argc);
@@ -327,8 +325,7 @@ bool WrenVM::interpret(void) {
         LOAD_FRAME();
         break;
       case MethodType::NONE:
-        method_not_found(fiber,
-            symbol, fiber->get_value(fiber->stack_size() - argc));
+        method_not_found(fiber, symbol);
         return false;
       }
 
@@ -364,8 +361,7 @@ bool WrenVM::interpret(void) {
 
       // if the class's method table does not include the symbol, bail
       if (cls->methods_count() < symbol) {
-        method_not_found(fiber,
-            symbol, fiber->get_value(fiber->stack_size() - argc));
+        method_not_found(fiber, symbol);
         return false;
       }
 
@@ -383,7 +379,7 @@ bool WrenVM::interpret(void) {
             fiber->resize_stack(fiber->stack_size() - (argc - 1));
             break;
           case PrimitiveResult::ERROR:
-            print_stacktrace(fiber, args[0]);
+            runtime_error(fiber, args[0].as_cstring());
             return false;
           case PrimitiveResult::CALL:
             fiber->call_function(args[0].as_object(), argc);
@@ -403,8 +399,7 @@ bool WrenVM::interpret(void) {
         LOAD_FRAME();
         break;
       case MethodType::NONE:
-        method_not_found(fiber,
-            symbol, fiber->get_value(fiber->stack_size() - argc));
+        method_not_found(fiber, symbol);
         return false;
       }
 
@@ -587,8 +582,7 @@ bool WrenVM::interpret(void) {
       // now that we know the total number of fields, make sure we donot
       // overflow
       if (superclass->num_fields() + num_fields > MAX_FIELDS) {
-        too_many_inherited_fields(fiber,
-            fiber->get_value(fiber->stack_size() - 1));
+        too_many_inherited_fields(fiber);
         return false;
       }
 

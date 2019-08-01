@@ -480,6 +480,10 @@ class FiberObject final : public BaseObject {
   // resume to this one, it's may be `nullptr`
   FiberObject* caller_{};
 
+  // if the fiber failed because of a runtime error, this will contain the
+  // error message, otherwise it will be empty
+  str_t error_{};
+
   FiberObject(BaseObject* fn) noexcept;
   virtual ~FiberObject(void) {}
 public:
@@ -500,6 +504,8 @@ public:
   inline void set_value(int i, const Value& v) { stack_[i] = v; }
   inline FiberObject* caller(void) const { return caller_; }
   inline void set_caller(FiberObject* caller) { caller_ = caller; }
+  inline const str_t& error(void) const { return error_; }
+  inline void set_error(const str_t& error) { error_ = error; }
 
   inline const Value& peek_value(int distance = 0) const {
     return stack_[stack_.size() - 1 - distance];
