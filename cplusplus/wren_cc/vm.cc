@@ -569,16 +569,14 @@ bool WrenVM::interpret(void) {
       DISPATCH();
     }
     CASE_CODE(CLASS):
-    CASE_CODE(SUBCLASS):
     {
-      bool is_subclass = c == Code::SUBCLASS;
       int num_fields = RDBYTE();
 
       ClassObject* superclass;
-      if (is_subclass)
-        superclass = PEEK().as_class();
+      if (PEEK().is_nil())
+        superclass = obj_class_; // implicit Object superclass
       else
-        superclass = obj_class_;
+        superclass = PEEK().as_class();
 
       ClassObject* cls = ClassObject::make_class(*this, superclass, num_fields);
 
@@ -591,8 +589,7 @@ bool WrenVM::interpret(void) {
 
       // donot pop the superclass off the stack until the subclass is done
       // being created, to make sure it does not get collected
-      if (is_subclass)
-        POP();
+      POP();
       PUSH(cls);
 
       DISPATCH();

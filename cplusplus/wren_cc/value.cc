@@ -306,8 +306,6 @@ int FunctionObject::get_argc(
   case Code::CLOSE_UPVALUE:
   case Code::RETURN:
   case Code::NEW:
-  case Code::CLASS:
-  case Code::SUBCLASS:
   case Code::END:
     return 0;
 
@@ -322,6 +320,7 @@ int FunctionObject::get_argc(
   case Code::LOAD_FIELD:
   case Code::STORE_FIELD:
   case Code::LIST:
+  case Code::CLASS:
     return 1;
 
     // instructions with two arguments

@@ -939,12 +939,12 @@ class Compiler : private UnCopyable {
     // load the superclass (if there is one)
     if (match(TokenKind::KW_IS)) {
       parse_precedence(false, Precedence::CALL);
-      emit_byte(Code::SUBCLASS);
     }
     else {
       // create the empty class
-      emit_byte(Code::CLASS);
+      emit_byte(Code::NIL);
     }
+    emit_byte(Code::CLASS);
 
     // store a placeholder for the number of fields argument, we donot
     // know the value untial we have compiled all the methods to see

@@ -134,7 +134,6 @@ CODE(LIST)
 CODE(CLOSURE)
 
 CODE(CLASS)        // define a new empty class and push it into stack
-CODE(SUBCLASS)     // pop a superclass from stack, push a new class that extends it
 
 // define a method for symbol [arg] the class receiving the method is popped
 // off the stack, then the function defining the body is popped
