@@ -133,7 +133,9 @@ CODE(LIST)
 // pushes the created closure object
 CODE(CLOSURE)
 
-CODE(CLASS)        // define a new empty class and push it into stack
+// define a new empty class and push it, short [arg1] is a constant of the
+// name of the class, byte [arg2] is the number of fields in the class
+CODE(CLASS)
 
 // define a method for symbol [arg] the class receiving the method is popped
 // off the stack, then the function defining the body is popped
