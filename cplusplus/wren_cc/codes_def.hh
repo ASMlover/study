@@ -133,8 +133,9 @@ CODE(LIST)
 // pushes the created closure object
 CODE(CLOSURE)
 
-// define a new empty class and push it, short [arg1] is a constant of the
-// name of the class, byte [arg2] is the number of fields in the class
+// creates a class, top of stack is the superclass, or `nil` if the class
+// inherits Object, below that is a string for the name of the class, byte
+// [arg] is the number of fields in the class
 CODE(CLASS)
 
 // define a method for symbol [arg] the class receiving the method is popped

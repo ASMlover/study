@@ -939,6 +939,7 @@ class Compiler : private UnCopyable {
     // make a string constant for the name
     int name_constant = add_constant(
         StringObject::make_string(parser_.get_vm(), parser_.prev().as_string()));
+    emit_words(Code::CONSTANT, name_constant);
 
     // load the superclass (if there is one)
     if (match(TokenKind::KW_IS)) {
@@ -948,12 +949,11 @@ class Compiler : private UnCopyable {
       // create the empty class
       emit_byte(Code::NIL);
     }
-    emit_words(Code::CLASS, name_constant);
 
     // store a placeholder for the number of fields argument, we donot
     // know the value untial we have compiled all the methods to see
     // which fields are used.
-    int num_fields_instruction = emit_byte(0xff);
+    int num_fields_instruction = emit_bytes(Code::CLASS, 0xff);
 
     // store it in its name
     define_variable(symbol);

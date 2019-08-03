@@ -570,8 +570,7 @@ bool WrenVM::interpret(void) {
     }
     CASE_CODE(CLASS):
     {
-      StringObject* name = fn->get_constant(RDWORD()).as_string();
-      int num_fields = RDBYTE();
+      StringObject* name = PEEK2().as_string();
 
       ClassObject* superclass;
       if (PEEK().is_nil())
@@ -579,6 +578,7 @@ bool WrenVM::interpret(void) {
       else
         superclass = PEEK().as_class();
 
+      int num_fields = RDBYTE();
       ClassObject* cls =
         ClassObject::make_class(*this, superclass, num_fields, name);
 
@@ -589,8 +589,9 @@ bool WrenVM::interpret(void) {
         return false;
       }
 
-      // donot pop the superclass off the stack until the subclass is done
-      // being created, to make sure it does not get collected
+      // do not pop the superclass and name off the stack until the subclass
+      // is done being created, to make sure it does not get collected
+      POP();
       POP();
       PUSH(cls);
 
