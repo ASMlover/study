@@ -426,6 +426,14 @@ DEF_NATIVE(object_new) {
 }
 
 DEF_NATIVE(object_tostring) {
+  if (args[0].is_class()) {
+    RETURN_VAL(args[0].as_class()->name());
+  }
+  else if (args[0].is_instance()) {
+    InstanceObject* inst = args[0].as_instance();
+    RETURN_VAL(StringObject::concat_string(
+          vm, "instance of ", inst->cls()->name_cstr()));
+  }
   RETURN_VAL(StringObject::make_string(vm, "<object>"));
 }
 
@@ -450,9 +458,6 @@ DEF_NATIVE(string_contains) {
 }
 
 DEF_NATIVE(string_tostring) {
-  if (args[0].is_class()) {
-    RETURN_VAL(args[0].as_class()->name());
-  }
   RETURN_VAL(args[0]);
 }
 
