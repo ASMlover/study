@@ -183,6 +183,11 @@ DEF_NATIVE(bool_not) {
   RETURN_VAL(!args[0].as_boolean());
 }
 
+DEF_NATIVE(class_name) {
+  ClassObject* cls = args[0].as_class();
+  RETURN_VAL(cls->name());
+}
+
 DEF_NATIVE(fiber_create) {
   if (!args[1].is_function() && !args[1].is_closure())
     RETURN_ERR("Argument must be a function or closure");
@@ -445,6 +450,9 @@ DEF_NATIVE(string_contains) {
 }
 
 DEF_NATIVE(string_tostring) {
+  if (args[0].is_class()) {
+    RETURN_VAL(args[0].as_class()->name());
+  }
   RETURN_VAL(args[0]);
 }
 
@@ -639,8 +647,20 @@ DEF_NATIVE(os_clock) {
       std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0);
 }
 
+static ClassObject* define_single_class(WrenVM& vm, const str_t& name) {
+  StringObject* name_string = StringObject::make_string(vm, name);
+
+  PinnedGuard guard(vm, name_string);
+  ClassObject* cls = ClassObject::make_single_class(vm, name_string);
+  vm.set_global(name, cls);
+  return cls;
+}
+
 static ClassObject* define_class(WrenVM& vm, const str_t& name) {
-  ClassObject* cls = ClassObject::make_class(vm, vm.obj_cls(), 0);
+  StringObject* name_string = StringObject::make_string(vm, name);
+
+  PinnedGuard guard(vm, name_string);
+  ClassObject* cls = ClassObject::make_class(vm, vm.obj_cls(), 0, name_string);
   vm.set_global(name, cls);
   return cls;
 }
@@ -648,9 +668,7 @@ static ClassObject* define_class(WrenVM& vm, const str_t& name) {
 void initialize_core(WrenVM& vm) {
   // define the root object class, this has to be done a little specially
   // because it has no superclass and an unusual metaclass (Class)
-  ClassObject* obj_cls = ClassObject::make_single_class(vm);
-  vm.set_global("Object", obj_cls);
-  vm.set_obj_cls(obj_cls);
+  vm.set_obj_cls(define_single_class(vm, "Object"));
 
   vm.set_native(vm.obj_cls(), "== ", _primitive_object_eq);
   vm.set_native(vm.obj_cls(), "!= ", _primitive_object_ne);
@@ -660,9 +678,8 @@ void initialize_core(WrenVM& vm) {
 
   // now we can define Class, which is a subclass of Object, but Object's
   // metclass
-  ClassObject* class_cls = ClassObject::make_single_class(vm);
-  vm.set_global("Class", class_cls);
-  vm.set_class_cls(class_cls);
+  vm.set_class_cls(define_single_class(vm, "Class"));
+  vm.set_native(vm.class_cls(), "name", _primitive_class_name);
 
   // now that Object and Class are defined, we can wrie them up to each other
   vm.class_cls()->bind_superclass(vm.obj_cls());

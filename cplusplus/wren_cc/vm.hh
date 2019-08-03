@@ -161,4 +161,18 @@ public:
   void return_double(double value);
 };
 
+class PinnedGuard final : private UnCopyable {
+  WrenVM& vm_;
+  Pinned pinned_;
+public:
+  PinnedGuard(WrenVM& vm, BaseObject* obj) noexcept
+    : vm_(vm) {
+    vm_.pin_object(obj, &pinned_);
+  }
+
+  ~PinnedGuard(void) {
+    vm_.unpin_object();
+  }
+};
+
 }

@@ -216,6 +216,26 @@ StringObject* StringObject::make_string(
   return o;
 }
 
+StringObject* StringObject::concat_string(
+    WrenVM& vm, const char* s1, const char* s2) {
+  sz_t n1 = strlen(s1);
+  sz_t n2 = strlen(s2);
+  sz_t n = n1 + n2;
+  char* s = new char [n + 1];
+  memcpy(s, s1, n1);
+  memcpy(s + n1, s2, n2);
+  s[n] = 0;
+
+  auto* o = new StringObject(s, Xt::as_type<int>(n), true);
+  vm.append_object(o);
+  return o;
+}
+
+StringObject* StringObject::concat_string(
+    WrenVM& vm, const str_t& s1, const str_t& s2) {
+  return concat_string(vm, s1.data(), s2.data());
+}
+
 ListObject::ListObject(int num_elements) noexcept
   : BaseObject(ObjType::LIST) {
   if (num_elements > 0)
@@ -570,11 +590,12 @@ ClassObject::ClassObject(void) noexcept
   : BaseObject(ObjType::CLASS) {
 }
 
-ClassObject::ClassObject(
-    ClassObject* meta_class, ClassObject* supercls, int num_fields) noexcept
+ClassObject::ClassObject(ClassObject* meta_class,
+    ClassObject* supercls, int num_fields, StringObject* name) noexcept
   : BaseObject(ObjType::CLASS)
   , meta_class_(meta_class)
-  , num_fields_(num_fields) {
+  , num_fields_(num_fields)
+  , name_(name) {
   if (supercls != nullptr)
     bind_superclass(supercls);
 }
@@ -651,26 +672,35 @@ str_t ClassObject::stringify(void) const {
 void ClassObject::gc_mark(WrenVM& vm) {
   vm.mark_object(meta_class_);
   vm.mark_object(superclass_);
+  vm.mark_object(name_);
   for (auto& m : methods_) {
     if (m.type == MethodType::BLOCK)
       vm.mark_object(m.fn());
   }
 }
 
-ClassObject* ClassObject::make_single_class(WrenVM& vm) {
-  auto* o = new ClassObject(nullptr, nullptr);
+ClassObject* ClassObject::make_single_class(WrenVM& vm, StringObject* name) {
+  auto* o = new ClassObject(nullptr, nullptr, 0, name);
   vm.append_object(o);
   return o;
 }
 
 ClassObject* ClassObject::make_class(
-    WrenVM& vm, ClassObject* superclass, int num_fields) {
+    WrenVM& vm, ClassObject* superclass, int num_fields, StringObject* name) {
   // metaclasses always inherit Class and do not parallel the non-metaclass
   // hierarclly
-  ClassObject* meta_class = new ClassObject(vm.class_cls(), vm.class_cls(), 0);
+
+  PinnedGuard pinned_name(vm, name);
+  StringObject* metaclass_name =
+    StringObject::concat_string(vm, name->cstr(), " metaclass");
+
+  PinnedGuard pinned_metaclass_name(vm, metaclass_name);
+  ClassObject* meta_class = new ClassObject(
+      vm.class_cls(), vm.class_cls(), 0, metaclass_name);
   vm.append_object(meta_class);
 
-  auto* o = new ClassObject(meta_class, superclass, num_fields);
+  PinnedGuard pinned_metaclass(vm, meta_class);
+  auto* o = new ClassObject(meta_class, superclass, num_fields, name);
   vm.append_object(o);
   return o;
 }
@@ -685,7 +715,7 @@ InstanceObject::InstanceObject(ClassObject* cls) noexcept
 
 str_t InstanceObject::stringify(void) const {
   std::stringstream ss;
-  ss << "[instance `" << this << "`]";
+  ss << "[instance `" << this << "` of " << cls_->name_cstr() << "]";
   return ss.str();
 }
 

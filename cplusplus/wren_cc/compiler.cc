@@ -936,6 +936,10 @@ class Compiler : private UnCopyable {
     int symbol = declare_named_variable();
     bool is_global = scope_depth_ == -1;
 
+    // make a string constant for the name
+    int name_constant = add_constant(
+        StringObject::make_string(parser_.get_vm(), parser_.prev().as_string()));
+
     // load the superclass (if there is one)
     if (match(TokenKind::KW_IS)) {
       parse_precedence(false, Precedence::CALL);
@@ -944,7 +948,7 @@ class Compiler : private UnCopyable {
       // create the empty class
       emit_byte(Code::NIL);
     }
-    emit_byte(Code::CLASS);
+    emit_words(Code::CLASS, name_constant);
 
     // store a placeholder for the number of fields argument, we donot
     // know the value untial we have compiled all the methods to see
@@ -1605,8 +1609,8 @@ public:
         constants_->elements(), constants_->count(),
         parser_.source_path(), debug_name,
         debug_source_lines_.data(), Xt::as_type<int>(debug_source_lines_.size()));
-    Pinned pinned;
-    parser_.get_vm().pin_object(fn, &pinned);
+
+    PinnedGuard pinned_fn(parser_.get_vm(), fn);
 
     // in the function that contains this one, load the resulting function
     // object.
@@ -1633,7 +1637,6 @@ public:
 
     // pop this compiler off the stack
     parser_.get_vm().set_compiler(parent_);
-    parser_.get_vm().unpin_object();
 
     return fn;
   }

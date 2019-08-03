@@ -93,7 +93,7 @@ public:
     return true;
   }
 
-  virtual str_t stringify(void) const = 0;
+  virtual str_t stringify(void) const { return "<object>"; }
   virtual void gc_mark(WrenVM& vm) {}
 };
 
@@ -275,6 +275,8 @@ public:
   static StringObject* make_string(WrenVM& vm, const char* s, int n);
   static StringObject* make_string(WrenVM& vm, const str_t& s);
   static StringObject* make_string(WrenVM& vm, StringObject* s1, StringObject* s2);
+  static StringObject* concat_string(WrenVM& vm, const char* s1, const char* s2);
+  static StringObject* concat_string(WrenVM& vm, const str_t& s1, const str_t& s2);
 };
 
 class ListObject final : public BaseObject {
@@ -580,16 +582,21 @@ class ClassObject final : public BaseObject {
   ClassObject* meta_class_{};
   ClassObject* superclass_{};
   int num_fields_{};
+  StringObject* name_{}; // the name of the class
+
   std::vector<Method> methods_{};
 
   ClassObject(void) noexcept;
-  ClassObject(ClassObject* meta_class,
-      ClassObject* supercls = nullptr, int num_fields = 0) noexcept;
+  ClassObject(
+      ClassObject* meta_class, ClassObject* supercls = nullptr,
+      int num_fields = 0, StringObject* name = nullptr) noexcept;
 public:
   inline ClassObject* meta_class(void) const { return meta_class_; }
   inline void set_meta_class(ClassObject* meta_class) { meta_class_ = meta_class; }
   inline ClassObject* superclass(void) const { return superclass_; }
   inline int num_fields(void) const { return num_fields_; }
+  inline StringObject* name(void) const { return name_; }
+  inline const char* name_cstr(void) const { return name_->cstr(); }
   inline int methods_count(void) const { return Xt::as_type<int>(methods_.size()); }
   inline Method& get_method(int i) { return methods_[i]; }
   inline void set_method(int i, const PrimitiveFn& fn) {
@@ -617,9 +624,10 @@ public:
   virtual str_t stringify(void) const override;
   virtual void gc_mark(WrenVM& vm) override;
 
-  static ClassObject* make_single_class(WrenVM& vm);
-  static ClassObject* make_class(WrenVM& vm,
-      ClassObject* superclass = nullptr, int num_fields = 0);
+  static ClassObject* make_single_class(WrenVM& vm, StringObject* name = nullptr);
+  static ClassObject* make_class(
+      WrenVM& vm, ClassObject* superclass = nullptr,
+      int num_fields = 0, StringObject* name = nullptr);
 };
 
 class InstanceObject final : public BaseObject {

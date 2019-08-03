@@ -570,6 +570,7 @@ bool WrenVM::interpret(void) {
     }
     CASE_CODE(CLASS):
     {
+      StringObject* name = fn->get_constant(RDWORD()).as_string();
       int num_fields = RDBYTE();
 
       ClassObject* superclass;
@@ -578,7 +579,8 @@ bool WrenVM::interpret(void) {
       else
         superclass = PEEK().as_class();
 
-      ClassObject* cls = ClassObject::make_class(*this, superclass, num_fields);
+      ClassObject* cls =
+        ClassObject::make_class(*this, superclass, num_fields, name);
 
       // now that we know the total number of fields, make sure we donot
       // overflow
@@ -675,13 +677,9 @@ ClassObject* WrenVM::get_class(const Value& val) const {
 void WrenVM::interpret(const str_t& source_path, const str_t& source_bytes) {
   FunctionObject* fn = compile(*this, source_path, source_bytes);
   if (fn != nullptr) {
-    Pinned pinned;
-    pin_object(fn, &pinned);
+    PinnedGuard guard(*this, fn);
 
     fiber_ = FiberObject::make_fiber(*this, fn);
-
-    unpin_object();
-
     interpret();
   }
 }
@@ -773,7 +771,11 @@ void WrenVM::define_method(
     cls = globals_[class_symbol].as_class();
   }
   else {
-    cls = ClassObject::make_class(*this, obj_class_, 0);
+    // the class does not already exists, so create it
+    StringObject* name_string = StringObject::make_string(*this, class_name);
+    PinnedGuard guard(*this, name_string);
+
+    cls = ClassObject::make_class(*this, obj_class_, 0, name_string);
     class_symbol = global_symbols_.add(class_name);
     globals_[class_symbol] = cls;
   }
