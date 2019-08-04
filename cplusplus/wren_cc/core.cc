@@ -24,7 +24,6 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <chrono>
 #include <cmath>
 #include <iostream>
 #include "value.hh"
@@ -688,11 +687,6 @@ DEF_NATIVE(range_tostring) {
   RETURN_VAL(StringObject::make_string(vm, ss.str()));
 }
 
-DEF_NATIVE(os_clock) {
-  RETURN_VAL(std::chrono::duration_cast<std::chrono::milliseconds>(
-      std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0);
-}
-
 static ClassObject* define_single_class(WrenVM& vm, const str_t& name) {
   StringObject* name_string = StringObject::make_string(vm, name);
 
@@ -812,12 +806,6 @@ namespace core {
     vm.set_native(vm.str_cls(), "== ", _primitive_string_eq);
     vm.set_native(vm.str_cls(), "!= ", _primitive_string_ne);
     vm.set_native(vm.str_cls(), "[ ]", _primitive_string_subscript);
-
-    /// // making this an instance is lame, the only reason we are doing it
-    /// // is because "IO.write()" looks ugly, maybe just get used to that ?
-
-    ClassObject* os_cls = define_class(vm, "OS");
-    vm.set_native(os_cls->meta_class(), "clock", _primitive_os_clock);
 
     /// from core library source
     vm.interpret("Wren core library", kLibSource);

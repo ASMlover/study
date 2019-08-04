@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <chrono>
 #include <iostream>
 #include "vm.hh"
 #include "io.hh"
@@ -44,16 +45,22 @@ static const str_t kLibSource =
 "  }\n"
 "}\n";
 
-static void write_string(WrenVM& vm) {
+static void io_write_string(WrenVM& vm) {
   const char* s = wrenGetArgumentString(vm, 1);
 
   std::cout << s;
 }
 
+static void io_clock(WrenVM& vm) {
+  wrenReturnDouble(vm, std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0);
+}
+
 namespace io {
   void load_library(WrenVM& vm) {
     vm.interpret("Wren IO library", kLibSource);
-    wrenDefineStaticMethod(vm, "IO", "writeString", 1, write_string);
+    wrenDefineStaticMethod(vm, "IO", "writeString", 1, io_write_string);
+    wrenDefineStaticMethod(vm, "IO", "clock", 0, io_clock);
   }
 }
 
