@@ -44,20 +44,7 @@ static PrimitiveResult _primitive_##fn(WrenVM& vm, FiberObject* fiber, Value* ar
   return PrimitiveResult::ERROR;\
 } while (false)
 
-static str_t kCoreLib =
-"class IO {\n"
-"  static print(obj) {\n"
-"    IO.writeString(obj.toString)\n"
-"    IO.writeString(\"\n\")\n"
-"    return obj\n"
-"  }\n"
-"\n"
-"  static write(obj) {\n"
-"    IO.writeString(obj.toString)\n"
-"    return obj\n"
-"  }\n"
-"}\n"
-"\n"
+static str_t kLibSource =
 "class List {\n"
 "  toString {\n"
 "    var result = \"[\"\n"
@@ -701,14 +688,6 @@ DEF_NATIVE(range_tostring) {
   RETURN_VAL(StringObject::make_string(vm, ss.str()));
 }
 
-DEF_NATIVE(io_write) {
-  if (!validate_string(vm, args, 1, "Argument"))
-    return PrimitiveResult::ERROR;
-
-  std::cout << args[1];
-  RETURN_VAL(nullptr);
-}
-
 DEF_NATIVE(os_clock) {
   RETURN_VAL(std::chrono::duration_cast<std::chrono::milliseconds>(
       std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0);
@@ -732,130 +711,128 @@ static ClassObject* define_class(WrenVM& vm, const str_t& name) {
   return cls;
 }
 
-void initialize_core(WrenVM& vm) {
-  // define the root object class, this has to be done a little specially
-  // because it has no superclass and an unusual metaclass (Class)
-  vm.set_obj_cls(define_single_class(vm, "Object"));
+namespace core {
+  void initialize(WrenVM& vm) {
+    // define the root object class, this has to be done a little specially
+    // because it has no superclass and an unusual metaclass (Class)
+    vm.set_obj_cls(define_single_class(vm, "Object"));
 
-  vm.set_native(vm.obj_cls(), "== ", _primitive_object_eq);
-  vm.set_native(vm.obj_cls(), "!= ", _primitive_object_ne);
-  vm.set_native(vm.obj_cls(), "new", _primitive_object_new);
-  vm.set_native(vm.obj_cls(), "toString", _primitive_object_tostring);
-  vm.set_native(vm.obj_cls(), "type", _primitive_object_type);
+    vm.set_native(vm.obj_cls(), "== ", _primitive_object_eq);
+    vm.set_native(vm.obj_cls(), "!= ", _primitive_object_ne);
+    vm.set_native(vm.obj_cls(), "new", _primitive_object_new);
+    vm.set_native(vm.obj_cls(), "toString", _primitive_object_tostring);
+    vm.set_native(vm.obj_cls(), "type", _primitive_object_type);
 
-  // now we can define Class, which is a subclass of Object, but Object's
-  // metclass
-  vm.set_class_cls(define_single_class(vm, "Class"));
-  vm.set_native(vm.class_cls(), "name", _primitive_class_name);
+    // now we can define Class, which is a subclass of Object, but Object's
+    // metclass
+    vm.set_class_cls(define_single_class(vm, "Class"));
+    vm.set_native(vm.class_cls(), "name", _primitive_class_name);
 
-  // now that Object and Class are defined, we can wrie them up to each other
-  vm.class_cls()->bind_superclass(vm.obj_cls());
-  vm.obj_cls()->set_meta_class(vm.class_cls());
-  vm.class_cls()->set_meta_class(vm.class_cls());
+    // now that Object and Class are defined, we can wrie them up to each other
+    vm.class_cls()->bind_superclass(vm.obj_cls());
+    vm.obj_cls()->set_meta_class(vm.class_cls());
+    vm.class_cls()->set_meta_class(vm.class_cls());
 
-  vm.set_bool_cls(define_class(vm, "Bool"));
-  vm.set_native(vm.bool_cls(), "toString", _primitive_bool_tostring);
-  vm.set_native(vm.bool_cls(), "!", _primitive_bool_not);
+    vm.set_bool_cls(define_class(vm, "Bool"));
+    vm.set_native(vm.bool_cls(), "toString", _primitive_bool_tostring);
+    vm.set_native(vm.bool_cls(), "!", _primitive_bool_not);
 
-  vm.set_fiber_cls(define_class(vm, "Fiber"));
-  vm.set_native(vm.fiber_cls()->meta_class(), "create ", _primitive_fiber_create);
-  vm.set_native(vm.fiber_cls()->meta_class(), "yield", _primitive_fiber_yield);
-  vm.set_native(vm.fiber_cls()->meta_class(), "yield ", _primitive_fiber_yield1);
-  vm.set_native(vm.fiber_cls(), "isDone", _primitive_fiber_isdone);
-  vm.set_native(vm.fiber_cls(), "run", _primitive_fiber_run);
-  vm.set_native(vm.fiber_cls(), "run ", _primitive_fiber_run1);
+    vm.set_fiber_cls(define_class(vm, "Fiber"));
+    vm.set_native(vm.fiber_cls()->meta_class(), "create ", _primitive_fiber_create);
+    vm.set_native(vm.fiber_cls()->meta_class(), "yield", _primitive_fiber_yield);
+    vm.set_native(vm.fiber_cls()->meta_class(), "yield ", _primitive_fiber_yield1);
+    vm.set_native(vm.fiber_cls(), "isDone", _primitive_fiber_isdone);
+    vm.set_native(vm.fiber_cls(), "run", _primitive_fiber_run);
+    vm.set_native(vm.fiber_cls(), "run ", _primitive_fiber_run1);
 
-  vm.set_fn_cls(define_class(vm, "Function"));
-  vm.set_native(vm.fn_cls(), "call", _primitive_fn_call);
-  vm.set_native(vm.fn_cls(), "call ", _primitive_fn_call);
-  vm.set_native(vm.fn_cls(), "call  ", _primitive_fn_call);
-  vm.set_native(vm.fn_cls(), "call   ", _primitive_fn_call);
-  vm.set_native(vm.fn_cls(), "call    ", _primitive_fn_call);
-  vm.set_native(vm.fn_cls(), "call     ", _primitive_fn_call);
-  vm.set_native(vm.fn_cls(), "call      ", _primitive_fn_call);
-  vm.set_native(vm.fn_cls(), "call       ", _primitive_fn_call);
-  vm.set_native(vm.fn_cls(), "call        ", _primitive_fn_call);
-  vm.set_native(vm.fn_cls(), "call         ", _primitive_fn_call);
-  vm.set_native(vm.fn_cls(), "call          ", _primitive_fn_call);
-  vm.set_native(vm.fn_cls(), "call           ", _primitive_fn_call);
-  vm.set_native(vm.fn_cls(), "call            ", _primitive_fn_call);
-  vm.set_native(vm.fn_cls(), "call             ", _primitive_fn_call);
-  vm.set_native(vm.fn_cls(), "call              ", _primitive_fn_call);
-  vm.set_native(vm.fn_cls(), "call               ", _primitive_fn_call);
-  vm.set_native(vm.fn_cls(), "call                ", _primitive_fn_call);
+    vm.set_fn_cls(define_class(vm, "Function"));
+    vm.set_native(vm.fn_cls(), "call", _primitive_fn_call);
+    vm.set_native(vm.fn_cls(), "call ", _primitive_fn_call);
+    vm.set_native(vm.fn_cls(), "call  ", _primitive_fn_call);
+    vm.set_native(vm.fn_cls(), "call   ", _primitive_fn_call);
+    vm.set_native(vm.fn_cls(), "call    ", _primitive_fn_call);
+    vm.set_native(vm.fn_cls(), "call     ", _primitive_fn_call);
+    vm.set_native(vm.fn_cls(), "call      ", _primitive_fn_call);
+    vm.set_native(vm.fn_cls(), "call       ", _primitive_fn_call);
+    vm.set_native(vm.fn_cls(), "call        ", _primitive_fn_call);
+    vm.set_native(vm.fn_cls(), "call         ", _primitive_fn_call);
+    vm.set_native(vm.fn_cls(), "call          ", _primitive_fn_call);
+    vm.set_native(vm.fn_cls(), "call           ", _primitive_fn_call);
+    vm.set_native(vm.fn_cls(), "call            ", _primitive_fn_call);
+    vm.set_native(vm.fn_cls(), "call             ", _primitive_fn_call);
+    vm.set_native(vm.fn_cls(), "call              ", _primitive_fn_call);
+    vm.set_native(vm.fn_cls(), "call               ", _primitive_fn_call);
+    vm.set_native(vm.fn_cls(), "call                ", _primitive_fn_call);
 
-  vm.set_nil_cls(define_class(vm, "Nil"));
-  vm.set_native(vm.nil_cls(), "toString", _primitive_nil_tostring);
+    vm.set_nil_cls(define_class(vm, "Nil"));
+    vm.set_native(vm.nil_cls(), "toString", _primitive_nil_tostring);
 
-  vm.set_num_cls(define_class(vm, "Numeric"));
-  vm.set_native(vm.num_cls(), "abs", _primitive_numeric_abs);
-  vm.set_native(vm.num_cls(), "ceil", _primitive_numeric_ceil);
-  vm.set_native(vm.num_cls(), "cos", _primitive_numeric_cos);
-  vm.set_native(vm.num_cls(), "floor", _primitive_numeric_floor);
-  vm.set_native(vm.num_cls(), "isNan", _primitive_numeric_isnan);
-  vm.set_native(vm.num_cls(), "sin", _primitive_numeric_sin);
-  vm.set_native(vm.num_cls(), "sqrt", _primitive_numeric_sqrt);
-  vm.set_native(vm.num_cls(), "toString", _primitive_numeric_tostring);
-  vm.set_native(vm.num_cls(), "-", _primitive_numeric_neg);
-  vm.set_native(vm.num_cls(), "+ ", _primitive_numeric_add);
-  vm.set_native(vm.num_cls(), "- ", _primitive_numeric_sub);
-  vm.set_native(vm.num_cls(), "* ", _primitive_numeric_mul);
-  vm.set_native(vm.num_cls(), "/ ", _primitive_numeric_div);
-  vm.set_native(vm.num_cls(), "% ", _primitive_numeric_mod);
-  vm.set_native(vm.num_cls(), "> ", _primitive_numeric_gt);
-  vm.set_native(vm.num_cls(), ">= ", _primitive_numeric_ge);
-  vm.set_native(vm.num_cls(), "< ", _primitive_numeric_lt);
-  vm.set_native(vm.num_cls(), "<= ", _primitive_numeric_le);
-  vm.set_native(vm.num_cls(), "== ", _primitive_numeric_eq);
-  vm.set_native(vm.num_cls(), "!= ", _primitive_numeric_ne);
-  vm.set_native(vm.num_cls(), "~", _primitive_numeric_bitnot);
-  vm.set_native(vm.num_cls(), ".. ", _primitive_numeric_dotdot);
-  vm.set_native(vm.num_cls(), "... ", _primitive_numeric_dotdotdot);
+    vm.set_num_cls(define_class(vm, "Numeric"));
+    vm.set_native(vm.num_cls(), "abs", _primitive_numeric_abs);
+    vm.set_native(vm.num_cls(), "ceil", _primitive_numeric_ceil);
+    vm.set_native(vm.num_cls(), "cos", _primitive_numeric_cos);
+    vm.set_native(vm.num_cls(), "floor", _primitive_numeric_floor);
+    vm.set_native(vm.num_cls(), "isNan", _primitive_numeric_isnan);
+    vm.set_native(vm.num_cls(), "sin", _primitive_numeric_sin);
+    vm.set_native(vm.num_cls(), "sqrt", _primitive_numeric_sqrt);
+    vm.set_native(vm.num_cls(), "toString", _primitive_numeric_tostring);
+    vm.set_native(vm.num_cls(), "-", _primitive_numeric_neg);
+    vm.set_native(vm.num_cls(), "+ ", _primitive_numeric_add);
+    vm.set_native(vm.num_cls(), "- ", _primitive_numeric_sub);
+    vm.set_native(vm.num_cls(), "* ", _primitive_numeric_mul);
+    vm.set_native(vm.num_cls(), "/ ", _primitive_numeric_div);
+    vm.set_native(vm.num_cls(), "% ", _primitive_numeric_mod);
+    vm.set_native(vm.num_cls(), "> ", _primitive_numeric_gt);
+    vm.set_native(vm.num_cls(), ">= ", _primitive_numeric_ge);
+    vm.set_native(vm.num_cls(), "< ", _primitive_numeric_lt);
+    vm.set_native(vm.num_cls(), "<= ", _primitive_numeric_le);
+    vm.set_native(vm.num_cls(), "== ", _primitive_numeric_eq);
+    vm.set_native(vm.num_cls(), "!= ", _primitive_numeric_ne);
+    vm.set_native(vm.num_cls(), "~", _primitive_numeric_bitnot);
+    vm.set_native(vm.num_cls(), ".. ", _primitive_numeric_dotdot);
+    vm.set_native(vm.num_cls(), "... ", _primitive_numeric_dotdotdot);
 
-  vm.set_range_cls(define_class(vm, "Range"));
-  vm.set_native(vm.range_cls(), "from", _primitive_range_from);
-  vm.set_native(vm.range_cls(), "to", _primitive_range_to);
-  vm.set_native(vm.range_cls(), "min", _primitive_range_min);
-  vm.set_native(vm.range_cls(), "max", _primitive_range_max);
-  vm.set_native(vm.range_cls(), "isInclusive", _primitive_range_isinclusive);
-  vm.set_native(vm.range_cls(), "iterate ", _primitive_range_iterate);
-  vm.set_native(vm.range_cls(), "iterValue ", _primitive_range_itervalue);
-  vm.set_native(vm.range_cls(), "toString", _primitive_range_tostring);
+    vm.set_range_cls(define_class(vm, "Range"));
+    vm.set_native(vm.range_cls(), "from", _primitive_range_from);
+    vm.set_native(vm.range_cls(), "to", _primitive_range_to);
+    vm.set_native(vm.range_cls(), "min", _primitive_range_min);
+    vm.set_native(vm.range_cls(), "max", _primitive_range_max);
+    vm.set_native(vm.range_cls(), "isInclusive", _primitive_range_isinclusive);
+    vm.set_native(vm.range_cls(), "iterate ", _primitive_range_iterate);
+    vm.set_native(vm.range_cls(), "iterValue ", _primitive_range_itervalue);
+    vm.set_native(vm.range_cls(), "toString", _primitive_range_tostring);
 
-  // vm.set_obj_cls(vm.get_global("Object").as_class());
+    // vm.set_obj_cls(vm.get_global("Object").as_class());
 
-  vm.set_str_cls(define_class(vm, "String"));
-  vm.set_native(vm.str_cls(), "len", _primitive_string_len);
-  vm.set_native(vm.str_cls(), "contains ", _primitive_string_contains);
-  vm.set_native(vm.str_cls(), "toString", _primitive_string_tostring);
-  vm.set_native(vm.str_cls(), "+ ", _primitive_string_add);
-  vm.set_native(vm.str_cls(), "== ", _primitive_string_eq);
-  vm.set_native(vm.str_cls(), "!= ", _primitive_string_ne);
-  vm.set_native(vm.str_cls(), "[ ]", _primitive_string_subscript);
+    vm.set_str_cls(define_class(vm, "String"));
+    vm.set_native(vm.str_cls(), "len", _primitive_string_len);
+    vm.set_native(vm.str_cls(), "contains ", _primitive_string_contains);
+    vm.set_native(vm.str_cls(), "toString", _primitive_string_tostring);
+    vm.set_native(vm.str_cls(), "+ ", _primitive_string_add);
+    vm.set_native(vm.str_cls(), "== ", _primitive_string_eq);
+    vm.set_native(vm.str_cls(), "!= ", _primitive_string_ne);
+    vm.set_native(vm.str_cls(), "[ ]", _primitive_string_subscript);
 
-  /// // making this an instance is lame, the only reason we are doing it
-  /// // is because "IO.write()" looks ugly, maybe just get used to that ?
+    /// // making this an instance is lame, the only reason we are doing it
+    /// // is because "IO.write()" looks ugly, maybe just get used to that ?
 
-  ClassObject* os_cls = define_class(vm, "OS");
-  vm.set_native(os_cls->meta_class(), "clock", _primitive_os_clock);
+    ClassObject* os_cls = define_class(vm, "OS");
+    vm.set_native(os_cls->meta_class(), "clock", _primitive_os_clock);
 
-  /// from core library source
-  vm.interpret("Wren core library", kCoreLib);
+    /// from core library source
+    vm.interpret("Wren core library", kLibSource);
 
-  vm.set_list_cls(vm.get_global("List").as_class());
-  vm.set_native(vm.list_cls(), "add ", _primitive_list_add);
-  vm.set_native(vm.list_cls(), "clear", _primitive_list_clear);
-  vm.set_native(vm.list_cls(), "len", _primitive_list_len);
-  vm.set_native(vm.list_cls(), "insert  ", _primitive_list_insert);
-  vm.set_native(vm.list_cls(), "remove ", _primitive_list_remove);
-  vm.set_native(vm.list_cls(), "iterate ", _primitive_list_iterate);
-  vm.set_native(vm.list_cls(), "iterValue ", _primitive_list_itervalue);
-  vm.set_native(vm.list_cls(), "[ ]", _primitive_list_subscript);
-  vm.set_native(vm.list_cls(), "[ ]=", _primitive_list_subscript_setter);
-
-  ClassObject* io_cls = vm.get_global("IO").as_class();
-  vm.set_native(io_cls->meta_class(), "writeString ", _primitive_io_write);
-
+    vm.set_list_cls(vm.get_global("List").as_class());
+    vm.set_native(vm.list_cls(), "add ", _primitive_list_add);
+    vm.set_native(vm.list_cls(), "clear", _primitive_list_clear);
+    vm.set_native(vm.list_cls(), "len", _primitive_list_len);
+    vm.set_native(vm.list_cls(), "insert  ", _primitive_list_insert);
+    vm.set_native(vm.list_cls(), "remove ", _primitive_list_remove);
+    vm.set_native(vm.list_cls(), "iterate ", _primitive_list_iterate);
+    vm.set_native(vm.list_cls(), "iterValue ", _primitive_list_itervalue);
+    vm.set_native(vm.list_cls(), "[ ]", _primitive_list_subscript);
+    vm.set_native(vm.list_cls(), "[ ]=", _primitive_list_subscript_setter);
+  }
 }
 
 }

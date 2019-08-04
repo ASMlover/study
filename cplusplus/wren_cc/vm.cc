@@ -27,6 +27,7 @@
 #include <iostream>
 #include <sstream>
 #include "core.hh"
+#include "io.hh"
 #include "vm.hh"
 
 namespace wrencc {
@@ -38,7 +39,8 @@ WrenVM::WrenVM(void) noexcept {
   for (int i = 0; i < kMaxGlobals; ++i)
     globals_[i] = nullptr;
 
-  initialize_core(*this);
+  core::initialize(*this);
+  io::load_library(*this);
 }
 
 WrenVM::~WrenVM(void) {
@@ -117,7 +119,7 @@ void WrenVM::call_foreign(
   foreign_call_slot_ = fiber->values_at(fiber->stack_size() - argc);
 
   // donot include the receiver
-  foreign_call_argc_ = argc - 1;
+  foreign_call_argc_ = argc;
   foreign(*this);
 
   // discard the stack slots for the arguments (but leave one for result)
@@ -763,7 +765,7 @@ void WrenVM::mark_value(const Value& val) {
 
 void WrenVM::define_method(
     const str_t& class_name, const str_t& method_name,
-    int num_params, const WrenForeignFn& method) {
+    int num_params, const WrenForeignFn& method, bool is_static) {
   ASSERT(!class_name.empty(), "must provide class name");
   ASSERT(!method_name.empty(), "must provide method name");
   ASSERT(method_name.size() < MAX_METHOD_NAME, "method name too long");
@@ -793,6 +795,8 @@ void WrenVM::define_method(
 
   // bind the method
   int method_symbol = methods_.ensure(name);
+  if (is_static)
+    cls = cls->meta_class();
   cls->bind_method(method_symbol, method);
 }
 
@@ -801,7 +805,15 @@ double WrenVM::get_argument_double(int index) const {
   ASSERT(index >= 0, "index cannot be negative");
   ASSERT(index < foreign_call_argc_, "not that many arguments");
 
-  return (*(foreign_call_slot_ + index + 1)).as_numeric();
+  return (*(foreign_call_slot_ + index)).as_numeric();
+}
+
+const char* WrenVM::get_argument_string(int index) const {
+  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
+  ASSERT(index >= 0, "index cannot be negative");
+  ASSERT(index < foreign_call_argc_, "not that many arguments");
+
+  return (*(foreign_call_slot_ + index)).as_cstring();
 }
 
 void WrenVM::return_double(double value) {
@@ -814,11 +826,21 @@ void WrenVM::return_double(double value) {
 void wrenDefineMethod(WrenVM& vm,
     const str_t& class_name, const str_t& method_name,
     int num_params, const WrenForeignFn& method) {
-  vm.define_method(class_name, method_name, num_params, method);
+  vm.define_method(class_name, method_name, num_params, method, false);
+}
+
+void wrenDefineStaticMethod(WrenVM& vm,
+    const str_t& class_name, const str_t& method_name,
+    int num_params, const WrenForeignFn& method) {
+  vm.define_method(class_name, method_name, num_params, method, true);
 }
 
 double wrenGetArgumentDouble(WrenVM& vm, int index) {
   return vm.get_argument_double(index);
+}
+
+const char* wrenGetArgumentString(WrenVM& vm, int index) {
+  return vm.get_argument_string(index);
 }
 
 void wrenReturnDouble(WrenVM& vm, double value) {

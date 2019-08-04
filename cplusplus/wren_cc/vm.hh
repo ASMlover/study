@@ -162,8 +162,9 @@ public:
   void call_function(FiberObject* fiber, BaseObject* fn, int argc);
 
   void define_method(const str_t& class_name, const str_t& method_name,
-      int num_params, const WrenForeignFn& method);
+      int num_params, const WrenForeignFn& method, bool is_static = false);
   double get_argument_double(int index) const;
+  const char* get_argument_string(int index) const;
   void return_double(double value);
 };
 
