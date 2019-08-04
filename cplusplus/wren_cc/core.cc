@@ -108,16 +108,11 @@ static bool validate_numeric(WrenVM& vm,
   return false;
 }
 
-static bool validate_int(WrenVM& vm,
-    Value* args, int index, const str_t& arg_name) {
-  // validates that the given argument in [args] is an integer, returns true
-  // if it is, if not reports error and returns false
+static bool validate_int_value(WrenVM& vm,
+    Value* args, double value, const str_t& arg_name) {
+  // validates that [value] is an integer, returns true if it is, if not
+  // reports an error and returns false
 
-  // make sure it's a Numeric first
-  if (!validate_numeric(vm, args, index, arg_name))
-    return false;
-
-  double value = args[index].as_numeric();
   if (std::trunc(value) == value)
     return true;
 
@@ -127,19 +122,31 @@ static bool validate_int(WrenVM& vm,
   return false;
 }
 
-static int validate_index(WrenVM& vm,
-    Value* args, int arg_index, int count, const str_t& arg_name) {
-  // validates that [arg_index] is an integer within `[0, count)`, also allows
-  // negative indices which map backwards from the end, returns the valid
-  // positive index value, if invalid reports an error and return -1
+static bool validate_int(WrenVM& vm,
+    Value* args, int index, const str_t& arg_name) {
+  // validates that the given argument in [args] is an integer, returns true
+  // if it is, if not reports error and returns false
 
-  if (!validate_int(vm, args, arg_index, arg_name))
+  // make sure it's a Numeric first
+  if (!validate_numeric(vm, args, index, arg_name))
+    return false;
+
+  return validate_int_value(vm, args, args[index].as_numeric(), arg_name);
+}
+
+static int validate_index_value(WrenVM& vm,
+    Value* args, int count, double value, const str_t& arg_name) {
+  // validates that [value] is an integer within [0, count), also allows
+  // negative indices which map backwards from the end, returns the valid
+  // positive index value, if invalid, reports an error and return -1
+
+  if (!validate_int_value(vm, args, value, arg_name))
     return -1;
 
-  int index = Xt::as_type<int>(args[arg_index].as_numeric());
+  int index = Xt::as_type<int>(value);
   // negative indices count from the end
   if (index < 0)
-    index += count;
+    index = count + index;
   // check bounds
   if (index >= 0 && index < count)
     return index;
@@ -148,6 +155,19 @@ static int validate_index(WrenVM& vm,
   ss << "`" << arg_name << "` out of bounds";
   args[0] = StringObject::make_string(vm, ss.str());
   return -1;
+}
+
+static int validate_index(WrenVM& vm,
+    Value* args, int arg_index, int count, const str_t& arg_name) {
+  // validates that argument at [arg_index] is an integer within `[0, count)`,
+  // also allows negative indices which map backwards from the end, returns
+  // the valid positive index value, if invalid reports an error and return -1
+
+  if (!validate_numeric(vm, args, arg_index, arg_name))
+    return -1;
+
+  return validate_index_value(vm,
+      args, count, args[arg_index].as_numeric(), arg_name);
 }
 
 static bool validate_string(WrenVM& vm,
@@ -557,11 +577,53 @@ DEF_NATIVE(list_itervalue) {
 
 DEF_NATIVE(list_subscript) {
   ListObject* list = args[0].as_list();
-  int index = validate_index(vm, args, 1, list->count(), "Index");
-  if (index == -1)
+
+  if (args[1].is_numeric()) {
+    int index = validate_index(vm, args, 1, list->count(), "Subscript");
+    if (index ==  -1)
+      return PrimitiveResult::ERROR;
+
+    RETURN_VAL(list->get_element(index));
+  }
+
+  if (!args[1].is_range())
+    RETURN_ERR("Subscript must be a numeric or a range");
+
+  RangeObject* range = args[1].as_range();
+  int from = validate_index_value(vm,
+      args, list->count(), range->from(), "Range start");
+  if (from == -1)
     return PrimitiveResult::ERROR;
 
-  RETURN_VAL(list->get_element(index));
+  int to, count;
+  if (range->is_inclusive()) {
+    to = validate_index_value(vm,
+        args, list->count(), range->to(), "Range end");
+    if (to == -1)
+      return PrimitiveResult::ERROR;
+
+    count = std::abs(from - to) + 1;
+  }
+  else {
+    if (!validate_int_value(vm, args, range->to(), "Range end"))
+      return PrimitiveResult::ERROR;
+
+    // bounds check it manually here since the exclusive range can
+    // hang over the edge
+    to = Xt::as_type<int>(range->to());
+    if (to < 0)
+      to = list->count() + to;
+    if (to < -1 || to > list->count())
+      RETURN_ERR("Reange end out of bounds");
+
+    count = std::abs(from - to);
+  }
+
+  int step = from < to ? 1 : -1;
+  ListObject* result = ListObject::make_list(vm, count);
+  for (int i = 0; i < count; ++i)
+    result->set_element(i, list->get_element(from + (i * step)));
+  RETURN_VAL(result);
 }
 
 DEF_NATIVE(list_subscript_setter) {
