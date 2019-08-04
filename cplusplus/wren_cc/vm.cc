@@ -675,14 +675,19 @@ ClassObject* WrenVM::get_class(const Value& val) const {
   return nullptr;
 }
 
-void WrenVM::interpret(const str_t& source_path, const str_t& source_bytes) {
+InterpretRet WrenVM::interpret(
+    const str_t& source_path, const str_t& source_bytes) {
   FunctionObject* fn = compile(*this, source_path, source_bytes);
-  if (fn != nullptr) {
-    PinnedGuard guard(*this, fn);
+  if (fn == nullptr)
+    return InterpretRet::COMPILE_ERROR;
 
-    fiber_ = FiberObject::make_fiber(*this, fn);
-    interpret();
-  }
+  PinnedGuard guard(*this, fn);
+
+  fiber_ = FiberObject::make_fiber(*this, fn);
+  if (interpret())
+    return InterpretRet::SUCCESS;
+  else
+    return InterpretRet::RUNTIME_ERROR;
 }
 
 void WrenVM::call_function(FiberObject* fiber, BaseObject* fn, int argc) {

@@ -52,6 +52,12 @@ struct Pinned {
   Pinned* prev{};
 };
 
+enum class InterpretRet {
+  SUCCESS,
+  COMPILE_ERROR,
+  RUNTIME_ERROR,
+};
+
 class WrenVM final : private UnCopyable {
   static constexpr sz_t kMaxGlobals = 256;
   static constexpr sz_t kMaxPinned = 16;
@@ -152,7 +158,7 @@ public:
   void mark_value(const Value& val);
 
   ClassObject* get_class(const Value& val) const;
-  void interpret(const str_t& source_path, const str_t& source_bytes);
+  InterpretRet interpret(const str_t& source_path, const str_t& source_bytes);
   void call_function(FiberObject* fiber, BaseObject* fn, int argc);
 
   void define_method(const str_t& class_name, const str_t& method_name,
