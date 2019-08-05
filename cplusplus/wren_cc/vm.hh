@@ -166,6 +166,8 @@ public:
   double get_argument_double(int index) const;
   const char* get_argument_string(int index) const;
   void return_double(double value);
+  void return_nil(void);
+  void return_string(const str_t& text);
 };
 
 class PinnedGuard final : private UnCopyable {

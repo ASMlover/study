@@ -76,4 +76,18 @@ const char* wrenGetArgumentString(WrenVM& vm, int index);
 // foreign call is done and no more arguments can be read or return calls made
 void wrenReturnDouble(WrenVM& vm, double value);
 
+// provides a nil return value for a foreign call. this must only be called
+// within a function provided to [wrenDefineMethod], once this is called, the
+// foreign call is done, and no more arguments can be read or return calls made
+void wrenReturnNil(WrenVM& vm);
+
+// provides a string return value for a foreign call, this must only be called
+// within a function provided to [wrenDefineMethod], once this is called, the
+// foreign call is done, and no more arguments can be read or return calls made
+//
+// the [text] will be copied to a new string within Wren's heap, so you can
+// free memory used by it after this is called, if [text] is non-empty, Wren
+// will copy that from [text]
+void wrenReturnString(WrenVM& vm, const str_t& text);
+
 }

@@ -500,7 +500,12 @@ DEF_NATIVE(string_subscript) {
 }
 
 static PrimitiveResult call_function(WrenVM& vm, Value* args, int argc) {
-  FunctionObject* fn = args[0].as_function();
+  FunctionObject* fn;
+  if (args[0].is_closure())
+    fn = args[0].as_closure()->fn();
+  else
+    fn = args[0].as_function();
+
   if (argc < fn->num_params())
     RETURN_ERR("function expects more arguments");
   return PrimitiveResult::CALL;

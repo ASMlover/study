@@ -288,7 +288,7 @@ bool WrenVM::interpret(void) {
       ClassObject* cls = get_class(receiver);
 
       // if the class's method table does not include the symbol, bail
-      if (cls->methods_count() < symbol) {
+      if (cls->methods_count() <= symbol) {
         method_not_found(fiber, symbol);
         return false;
       }
@@ -362,7 +362,7 @@ bool WrenVM::interpret(void) {
       cls  = cls->superclass();
 
       // if the class's method table does not include the symbol, bail
-      if (cls->methods_count() < symbol) {
+      if (cls->methods_count() <= symbol) {
         method_not_found(fiber, symbol);
         return false;
       }
@@ -823,6 +823,20 @@ void WrenVM::return_double(double value) {
   foreign_call_slot_ = nullptr;
 }
 
+void WrenVM::return_nil(void) {
+  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
+
+  *foreign_call_slot_ = nullptr;
+  foreign_call_slot_ = nullptr;
+}
+
+void WrenVM::return_string(const str_t& text) {
+  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
+
+  *foreign_call_slot_ = StringObject::make_string(*this, text);
+  foreign_call_slot_ = nullptr;
+}
+
 void wrenDefineMethod(WrenVM& vm,
     const str_t& class_name, const str_t& method_name,
     int num_params, const WrenForeignFn& method) {
@@ -845,6 +859,14 @@ const char* wrenGetArgumentString(WrenVM& vm, int index) {
 
 void wrenReturnDouble(WrenVM& vm, double value) {
   vm.return_double(value);
+}
+
+void wrenReturnNil(WrenVM& vm) {
+  vm.return_nil();
+}
+
+void wrenReturnString(WrenVM& vm, const str_t& text) {
+  vm.return_string(text);
 }
 
 }
