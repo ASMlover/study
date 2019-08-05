@@ -353,9 +353,16 @@ class FunctionObject final : public BaseObject {
   int num_upvalues_{};
   std::vector<u8_t> codes_;
   std::vector<Value> constants_;
+
+  // the number of parameters this functon expects, used to ensure that `.call`
+  // handles a mismatch between number of parameters and arguments, this will
+  // only be set for fns, and not FunctionObjects that represent methods or
+  // scripts
+  int num_params_{};
   DebugObject debug_;
 
-  FunctionObject(int num_upvalues,
+  FunctionObject(
+      int num_upvalues, int num_params,
       u8_t* codes, int codes_count,
       const Value* constants, int constants_count,
       const str_t& source_path, const str_t& debug_name,
@@ -371,6 +378,7 @@ public:
   inline int constants_count(void) const { return Xt::as_type<int>(constants_.size()); }
   inline u8_t get_code(int i) const { return codes_[i]; }
   inline const Value& get_constant(int i) const { return constants_[i]; }
+  inline int num_params(void) const { return num_params_; }
   inline const DebugObject& debug(void) const { return debug_; }
 
   template <typename T> inline void set_code(int i, T c) {
@@ -381,7 +389,8 @@ public:
   virtual void gc_mark(WrenVM& vm) override;
 
   static int get_argc(const u8_t* bytecode, const Value* constants, int ip);
-  static FunctionObject* make_function(WrenVM& vm, int num_upvalues,
+  static FunctionObject* make_function(WrenVM& vm,
+      int num_upvalues, int num_params,
       u8_t* codes, int codes_count,
       const Value* constants, int constants_count,
       const str_t& source_path, const str_t& debug_name,

@@ -299,6 +299,9 @@ class Compiler : private UnCopyable {
   std::vector<CompilerUpvalue> upvalues_;
   int num_upvalues_{};
 
+  // the number of parameters this method or function expects
+  int num_params_{};
+
   inline SymbolTable& vm_methods(void) { return parser_.get_vm().methods(); }
   inline SymbolTable& vm_gsymbols(void) { return parser_.get_vm().gsymbols(); }
 
@@ -1274,7 +1277,7 @@ class Compiler : private UnCopyable {
     fn_compiler.init_compiler(true);
 
     str_t dummy_name;
-    fn_compiler.parameters(dummy_name);
+    fn_compiler.num_params_ = fn_compiler.parameters(dummy_name);
 
     if (fn_compiler.match(TokenKind::TK_LBRACE)) {
       fn_compiler.finish_block();
@@ -1463,21 +1466,29 @@ class Compiler : private UnCopyable {
     }
   }
 
-  void parameters(str_t& name) {
-    // parse the parameter list, if any
-    if (match(TokenKind::TK_LPAREN)) {
-      int argc = 0;
-      do {
-        validate_num_parameters(++argc);
+  int parameters(str_t& name) {
+    // parses an optional parenthesis-delimited parameter list, if the parameter
+    // list is for a method, [name] will be the name of the method and this will
+    // modify it to handle arity in the signature, for functions, [name] will be
+    // `empty` string
 
-        // define a local variable in the method for the parameters
-        declare_named_variable();
+    // the parameter list is optional
+    if (!match(TokenKind::TK_LPAREN))
+      return 0;
 
-        // add a space in the name for the parameters
-        name.push_back(' ');
-      } while (match(TokenKind::TK_COMMA));
-      consume(TokenKind::TK_RPAREN, "expect `)` after parameters");
-    }
+    int argc = 0;
+    do {
+      validate_num_parameters(++argc);
+
+      // define a local variable in the method for the parameters
+      declare_named_variable();
+
+      // add a space in the name for the parameters
+      name.push_back(' ');
+    } while (match(TokenKind::TK_COMMA));
+    consume(TokenKind::TK_RPAREN, "expect `)` after parameters");
+
+    return argc;
   }
 
   inline int method_symbol(const str_t& name) { return vm_methods().ensure(name); }
@@ -1604,7 +1615,8 @@ public:
 
     // create a function object for the code we just compiled
     FunctionObject* fn = FunctionObject::make_function(
-        parser_.get_vm(), num_upvalues_,
+        parser_.get_vm(),
+        num_upvalues_, num_params_,
         bytecode_.data(), Xt::as_type<int>(bytecode_.size()),
         constants_->elements(), constants_->count(),
         parser_.source_path(), debug_name,

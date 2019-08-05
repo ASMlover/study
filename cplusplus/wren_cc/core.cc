@@ -42,6 +42,10 @@ static PrimitiveResult _primitive_##fn(WrenVM& vm, FiberObject* fiber, Value* ar
   args[0] = StringObject::make_string(vm, msg);\
   return PrimitiveResult::ERROR;\
 } while (false)
+#define DEF_NATIVE_FN(fn, i)\
+DEF_NATIVE(fn##i) {\
+  return call_function(vm, args, i);\
+}
 
 static str_t kLibSource =
 "class List {\n"
@@ -168,10 +172,6 @@ static bool validate_string(WrenVM& vm,
   ss << "`" << arg_name << "` must be a string";
   args[0] = StringObject::make_string(vm, ss.str());
   return false;
-}
-
-DEF_NATIVE(fn_call) {
-  return PrimitiveResult::CALL;
 }
 
 DEF_NATIVE(nil_tostring) {
@@ -499,6 +499,31 @@ DEF_NATIVE(string_subscript) {
   RETURN_VAL(StringObject::make_string(vm, (*s)[index]));
 }
 
+static PrimitiveResult call_function(WrenVM& vm, Value* args, int argc) {
+  FunctionObject* fn = args[0].as_function();
+  if (argc < fn->num_params())
+    RETURN_ERR("function expects more arguments");
+  return PrimitiveResult::CALL;
+}
+
+DEF_NATIVE_FN(fn_call, 0)
+DEF_NATIVE_FN(fn_call, 1)
+DEF_NATIVE_FN(fn_call, 2)
+DEF_NATIVE_FN(fn_call, 3)
+DEF_NATIVE_FN(fn_call, 4)
+DEF_NATIVE_FN(fn_call, 5)
+DEF_NATIVE_FN(fn_call, 6)
+DEF_NATIVE_FN(fn_call, 7)
+DEF_NATIVE_FN(fn_call, 8)
+DEF_NATIVE_FN(fn_call, 9)
+DEF_NATIVE_FN(fn_call, 10)
+DEF_NATIVE_FN(fn_call, 11)
+DEF_NATIVE_FN(fn_call, 12)
+DEF_NATIVE_FN(fn_call, 13)
+DEF_NATIVE_FN(fn_call, 14)
+DEF_NATIVE_FN(fn_call, 15)
+DEF_NATIVE_FN(fn_call, 16)
+
 DEF_NATIVE(list_add) {
   ListObject* list = args[0].as_list();
   list->add_element(args[1]);
@@ -740,23 +765,23 @@ namespace core {
     vm.set_native(vm.fiber_cls(), "run ", _primitive_fiber_run1);
 
     vm.set_fn_cls(define_class(vm, "Function"));
-    vm.set_native(vm.fn_cls(), "call", _primitive_fn_call);
-    vm.set_native(vm.fn_cls(), "call ", _primitive_fn_call);
-    vm.set_native(vm.fn_cls(), "call  ", _primitive_fn_call);
-    vm.set_native(vm.fn_cls(), "call   ", _primitive_fn_call);
-    vm.set_native(vm.fn_cls(), "call    ", _primitive_fn_call);
-    vm.set_native(vm.fn_cls(), "call     ", _primitive_fn_call);
-    vm.set_native(vm.fn_cls(), "call      ", _primitive_fn_call);
-    vm.set_native(vm.fn_cls(), "call       ", _primitive_fn_call);
-    vm.set_native(vm.fn_cls(), "call        ", _primitive_fn_call);
-    vm.set_native(vm.fn_cls(), "call         ", _primitive_fn_call);
-    vm.set_native(vm.fn_cls(), "call          ", _primitive_fn_call);
-    vm.set_native(vm.fn_cls(), "call           ", _primitive_fn_call);
-    vm.set_native(vm.fn_cls(), "call            ", _primitive_fn_call);
-    vm.set_native(vm.fn_cls(), "call             ", _primitive_fn_call);
-    vm.set_native(vm.fn_cls(), "call              ", _primitive_fn_call);
-    vm.set_native(vm.fn_cls(), "call               ", _primitive_fn_call);
-    vm.set_native(vm.fn_cls(), "call                ", _primitive_fn_call);
+    vm.set_native(vm.fn_cls(), "call", _primitive_fn_call0);
+    vm.set_native(vm.fn_cls(), "call ", _primitive_fn_call1);
+    vm.set_native(vm.fn_cls(), "call  ", _primitive_fn_call2);
+    vm.set_native(vm.fn_cls(), "call   ", _primitive_fn_call3);
+    vm.set_native(vm.fn_cls(), "call    ", _primitive_fn_call4);
+    vm.set_native(vm.fn_cls(), "call     ", _primitive_fn_call5);
+    vm.set_native(vm.fn_cls(), "call      ", _primitive_fn_call6);
+    vm.set_native(vm.fn_cls(), "call       ", _primitive_fn_call7);
+    vm.set_native(vm.fn_cls(), "call        ", _primitive_fn_call8);
+    vm.set_native(vm.fn_cls(), "call         ", _primitive_fn_call9);
+    vm.set_native(vm.fn_cls(), "call          ", _primitive_fn_call10);
+    vm.set_native(vm.fn_cls(), "call           ", _primitive_fn_call11);
+    vm.set_native(vm.fn_cls(), "call            ", _primitive_fn_call12);
+    vm.set_native(vm.fn_cls(), "call             ", _primitive_fn_call13);
+    vm.set_native(vm.fn_cls(), "call              ", _primitive_fn_call14);
+    vm.set_native(vm.fn_cls(), "call               ", _primitive_fn_call15);
+    vm.set_native(vm.fn_cls(), "call                ", _primitive_fn_call16);
 
     vm.set_nil_cls(define_class(vm, "Nil"));
     vm.set_native(vm.nil_cls(), "toString", _primitive_nil_tostring);
