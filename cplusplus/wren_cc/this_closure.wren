@@ -2,7 +2,7 @@
 class Foo {
   getClosure {
     return fn {
-      return this.toString
+      return toString
     }
   }
 

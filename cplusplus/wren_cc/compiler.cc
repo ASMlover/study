@@ -815,10 +815,21 @@ class Compiler : private UnCopyable {
 
     Code load_instruction;
     int index = resolve_name(token.as_string(), load_instruction);
-    if (index == -1)
-      error("undefined variable");
+    if (index != -1) {
+      variable_impl(allow_assignment, index, load_instruction);
+      return;
+    }
 
-    variable_impl(allow_assignment, index, load_instruction);
+    // otherwise, if we are inside a class, it's a getter call with an
+    // implicit receiver
+    ClassCompiler* class_compiler = get_enclosing_class();
+    if (class_compiler == nullptr) {
+      error("undefined variable");
+      return;
+    }
+
+    load_this();
+    named_call(allow_assignment, Code::CALL_0);
   }
 
   void field(bool allow_assignment) {
@@ -1328,6 +1339,7 @@ class Compiler : private UnCopyable {
   }
 
   void call(bool allow_assignment) {
+    consume(TokenKind::TK_IDENTIFIER, "expect method name after `.`");
     named_call(allow_assignment, Code::CALL_0);
   }
 
@@ -1514,10 +1526,10 @@ class Compiler : private UnCopyable {
   }
 
   void named_call(bool allow_assignment, Code instruction) {
-    // compiles the method name and argument list for a `<...>.name(...)` call
+    // compiles a call whose name is the previously consumed token, this
+    // includes getters, method calls with arguments, and setter calls
 
     // build the method name
-    consume(TokenKind::TK_IDENTIFIER, "expect method name after `.`");
     str_t name(parser_.prev().as_string());
 
     if (match(TokenKind::TK_EQ)) {
@@ -1556,6 +1568,7 @@ class Compiler : private UnCopyable {
     // see if it's a nemd super call, or an unnamed one
     if (match(TokenKind::TK_DOT)) {
       // compile the superclass call
+      consume(TokenKind::TK_IDENTIFIER, "expect method name after `super`");
       named_call(allow_assignment, Code::SUPER_0);
     }
     else {

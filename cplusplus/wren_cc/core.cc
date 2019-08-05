@@ -51,7 +51,7 @@ static str_t kLibSource =
 "class List {\n"
 "  toString {\n"
 "    var result = \"[\"\n"
-"    for (i in 0...this.len) {\n"
+"    for (i in 0...len) {\n"
 "      if (i > 0) result = result + \", \"\n"
 "      result = result + this[i].toString\n"
 "    }\n"
