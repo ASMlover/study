@@ -11,17 +11,13 @@ class List {
   }
 
   + that {
-    var newList = []
-    if (this.len > 0) {
-      for (element in this) {
-        newList.add(element)
-      }
+    var result = []
+    for (element in this) {
+      result.add(element)
     }
-    if (that is Range || that.len > 0) {
-      for (element in that) {
-        newList.add(element)
-      }
+    for (element in that) {
+      result.add(element)
     }
-    return newList
+    return result
   }
 }

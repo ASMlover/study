@@ -60,18 +60,14 @@ static str_t kLibSource =
 "  }\n"
 "\n"
 "  + that {\n"
-"    var newList = []\n"
-"    if (this.len > 0) {\n"
-"      for (element in this) {\n"
-"        newList.add(element)\n"
-"      }\n"
+"    var result = []\n"
+"    for (element in this) {\n"
+"      result.add(element)\n"
 "    }\n"
-"    if (that is Range || that.len > 0) {\n"
-"      for (element in that) {\n"
-"        newList.add(element)\n"
-"      }\n"
+"    for (element in that) {\n"
+"      result.add(element)\n"
 "    }\n"
-"    return newList\n"
+"    return result\n"
 "  }\n"
 "}\n";
 
@@ -580,14 +576,18 @@ DEF_NATIVE(list_remove) {
 }
 
 DEF_NATIVE(list_iterate) {
+  ListObject* list = args[0].as_list();
+
   // if we are starting the interation, return the first index
-  if (args[1].is_nil())
+  if (args[1].is_nil()) {
+    if (list->count() == 0)
+      RETURN_VAL(false);
     RETURN_VAL(0);
+  }
 
   if (!validate_int(vm, args, 1, "Iterator"))
     return PrimitiveResult::ERROR;
 
-  ListObject* list = args[0].as_list();
   int index = Xt::as_type<int>(args[1].as_numeric());
 
   // stop if we are out out bounds
