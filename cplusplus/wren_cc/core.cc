@@ -74,6 +74,14 @@ static str_t kLibSource =
 "    }\n"
 "    return result\n"
 "  }\n"
+"\n"
+"  where(f) {\n"
+"    var result = []\n"
+"    for (element in this) {\n"
+"      if (f.call(element)) result.add(element)\n"
+"    }\n"
+"    return result\n"
+"  }\n"
 "}\n";
 
 static int validate_index(const Value& index, int count) {
