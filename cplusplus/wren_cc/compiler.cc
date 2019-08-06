@@ -126,6 +126,7 @@ public:
       case TokenKind::TK_AMPAMP:
       case TokenKind::TK_BANG:
       case TokenKind::TK_TILDE:
+      case TokenKind::TK_QUESTION:
       case TokenKind::TK_EQ:
       case TokenKind::TK_LT:
       case TokenKind::TK_GT:
@@ -459,6 +460,7 @@ class Compiler : private UnCopyable {
       INFIX(and_expr, Precedence::LOGIC),       // PUNCTUATOR(AMPAMP, "&&")
       PREFIXOP("!"),                            // PUNCTUATOR(BANG, "!")
       PREFIXOP("~"),                            // PUNCTUATOR(TILDE, "~")
+      INFIX(condition, Precedence::ASSIGNMENT), // PUNCTUATOR(QUESTION, "?")
       UNUSED,                                   // PUNCTUATOR(EQ, "=")
       INFIXOP(Precedence::COMPARISON, "< "),    // PUNCTUATOR(LT, "<")
       INFIXOP(Precedence::COMPARISON, "> "),    // PUNCTUATOR(GT, ">")
@@ -1402,6 +1404,25 @@ class Compiler : private UnCopyable {
 
     parse_precedence(false, Precedence::LOGIC);
     patch_jump(jump);
+  }
+
+  void condition(bool allow_assignment) {
+    // jump to the else branch if the condition is false
+    int if_jump = emit_jump(Code::JUMP_IF);
+
+    // compile the then branch
+    parse_precedence(allow_assignment, Precedence::LOGIC);
+    consume(TokenKind::TK_COLON,
+        "expect `:` after then branch of condition operator");
+
+    // jump over the else branch when the if branch is taken
+    int else_jump = emit_jump(Code::JUMP);
+    // compile the else branch
+    patch_jump(if_jump);
+    parse_precedence(allow_assignment, Precedence::ASSIGNMENT);
+
+    // patch the jump over the else
+    patch_jump(else_jump);
   }
 
   void infix_oper(bool allow_assignment) {

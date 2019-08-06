@@ -553,6 +553,10 @@ DEF_NATIVE_FN(fn_call, 14)
 DEF_NATIVE_FN(fn_call, 15)
 DEF_NATIVE_FN(fn_call, 16)
 
+DEF_NATIVE(fn_tostring) {
+  RETURN_VAL(StringObject::make_string(vm, "<fn>"));
+}
+
 DEF_NATIVE(list_add) {
   ListObject* list = args[0].as_list();
   list->add_element(args[1]);
@@ -825,6 +829,7 @@ namespace core {
     vm.set_native(vm.fn_cls(), "call              ", _primitive_fn_call14);
     vm.set_native(vm.fn_cls(), "call               ", _primitive_fn_call15);
     vm.set_native(vm.fn_cls(), "call                ", _primitive_fn_call16);
+    vm.set_native(vm.fn_cls(), "toString", _primitive_fn_tostring);
 
     vm.set_nil_cls(define_class(vm, "Nil"));
     vm.set_native(vm.nil_cls(), "toString", _primitive_nil_tostring);
