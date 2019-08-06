@@ -232,3 +232,15 @@ nmake -f Make_mvc.mak SDK_INCLUDE_DIR="C:\Program Files (x86)\Microsoft SDKs\Win
   ; 如果只想扫描下一级目录则使用
   :args */*.tt
 ```
+
+## **多行操作**
+  * 在行首或行尾插入
+  * 多行匹配替换
+```vimscript
+  :s/^/#        ; 在行首插入#
+  :2,50s/$/#    ; 在2~50行行尾添加#
+  :%s/^/#       ; 在所有行首插入#
+
+  :2,50s/part1/part2    ; 用part2替换2~50行中每一行的第一个part1
+  :2,50s/part1/part2/g  ; 用part2替换2~50行的所有part1
+```
