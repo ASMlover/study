@@ -540,7 +540,10 @@ void FiberObject::close_upvalue(void) {
 }
 
 void FiberObject::close_upvalues(int slot) {
-  Value* first = &stack_[slot];
+  Value* first = nullptr;
+  if (slot < stack_.size())
+    first = &stack_[slot];
+
   while (open_upvlaues_ != nullptr && open_upvlaues_->value() >= first)
     close_upvalue();
 }

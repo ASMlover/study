@@ -486,6 +486,9 @@ bool WrenVM::interpret(void) {
       Value r = POP();
       fiber->pop_frame();
 
+      // close any upvalues still in scope
+      fiber->close_upvalues(frame->stack_start);
+
       // if the fiber is complete, end it
       if (fiber->empty_frame()) {
         // if this is the main fiber, we are done
@@ -499,9 +502,6 @@ bool WrenVM::interpret(void) {
         fiber->set_value(fiber->stack_size() - 1, r);
       }
       else {
-        // close any upvalues still in scope
-        fiber->close_upvalues(frame->stack_start);
-
         // store the result of the block in the first slot, which is where the
         // caller expects it
         if (fiber->stack_size() <= frame->stack_start)
