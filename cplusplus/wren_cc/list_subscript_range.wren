@@ -16,7 +16,7 @@ IO.print(list[3...3]) // expect: []
 IO.print(list[-5..-2]) // expect: [a, b, c, d]
 IO.print(list[-5...-2]) // expect: [a, b, c]
 IO.print(list[-3..-5]) // expect: [c, b, a]
-IO.print(list[-3..-6]) // expect: [c, b, a]
+IO.print(list[-3...-6]) // expect: [c, b, a]
 
 // half-negative ranges are treated like the negative value is fixed
 // before walking the range
@@ -29,3 +29,7 @@ IO.print(list[1..-2]) // expect: [b, c, d]
 IO.print(list[2...-1]) // expect: [c, d]
 IO.print(list[4..-5]) // expect: [e, d, c, b, a]
 IO.print(list[3...-6]) // expect: [d, c, b, a]
+
+// an empty range at zero is allowed on an empty list
+IO.print([][0...0]) // expect: []
+IO.print([][0..-1]) // expect: []

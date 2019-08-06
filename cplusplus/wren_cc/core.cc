@@ -60,10 +60,7 @@ static str_t kLibSource =
 "  }\n"
 "\n"
 "  + that {\n"
-"    var result = []\n"
-"    for (element in this) {\n"
-"      result.add(element)\n"
-"    }\n"
+"    var result = this[0..-1]\n"
 "    for (element in that) {\n"
 "      result.add(element)\n"
 "    }\n"
@@ -621,6 +618,16 @@ DEF_NATIVE(list_subscript) {
     RETURN_ERR("Subscript must be a numeric or a range");
 
   RangeObject* range = args[1].as_range();
+
+  // corner case: an empty range at zero is allowed on an empty list
+  // this way, list[0..-1] and [0...list.len] can be used to copy a list
+  // even when empty
+  if (list->count() == 0) {
+    if ((range->from() == 0 && range->to() == -1 && range->is_inclusive()) ||
+        (range->from() == 0 && range->to() == 0 && !range->is_inclusive()))
+      RETURN_VAL(ListObject::make_list(vm, 0));
+  }
+
   int from = validate_index_value(vm,
       args, list->count(), range->from(), "Range start");
   if (from == -1)

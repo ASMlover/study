@@ -11,10 +11,7 @@ class List {
   }
 
   + that {
-    var result = []
-    for (element in this) {
-      result.add(element)
-    }
+    var result = this[0..-1]
     for (element in that) {
       result.add(element)
     }
