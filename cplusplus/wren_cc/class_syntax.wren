@@ -6,3 +6,7 @@ class A {}
 class B {
 
 }
+
+// no newline after last method
+class C {
+  method {} }

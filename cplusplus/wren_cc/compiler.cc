@@ -1017,6 +1017,9 @@ class Compiler : private UnCopyable {
       // define the method
       emit_words(instruction, method_symbol);
 
+      // donot require a newline after the last definition
+      if (match(TokenKind::TK_RBRACE))
+        break;
       consume(TokenKind::TK_NL, "expect newline after definition in class");
     }
 
