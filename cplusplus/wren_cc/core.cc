@@ -58,6 +58,21 @@ static str_t kLibSource =
 "    result = result + \"]\"\n"
 "    return result\n"
 "  }\n"
+"\n"
+"  + that {\n"
+"    var newList = []\n"
+"    if (this.len > 0) {\n"
+"      for (element in this) {\n"
+"        newList.add(element)\n"
+"      }\n"
+"    }\n"
+"    if (that is Range || that.len > 0) {\n"
+"      for (element in that) {\n"
+"        newList.add(element)\n"
+"      }\n"
+"    }\n"
+"    return newList\n"
+"  }\n"
 "}\n";
 
 static int validate_index(const Value& index, int count) {
