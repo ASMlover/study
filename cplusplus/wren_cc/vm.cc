@@ -519,6 +519,11 @@ bool WrenVM::interpret(void) {
     }
     CASE_CODE(NEW):
     {
+      if (!PEEK().is_class()) {
+        runtime_error(fiber, "must provide a class to `new` to construct");
+        return false;
+      }
+
       // make sure the class stays on the stack until after the instance is
       // allocated so that if does not get collected
       ClassObject* cls = PEEK().as_class();
