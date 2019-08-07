@@ -98,9 +98,10 @@ void WrenVM::runtime_error(FiberObject* fiber, const str_t& error) {
   print_stacktrace(fiber);
 }
 
-void WrenVM::method_not_found(FiberObject* fiber, int symbol) {
+void WrenVM::method_not_found(
+    FiberObject* fiber, int symbol, ClassObject* cls) {
   std::stringstream ss;
-  ss << "receiver does not implement method "
+  ss << "`" << cls->name_cstr() << "` does not implement method "
     << "`" << methods_.get_name(symbol) << "`";
 
   runtime_error(fiber, ss.str());
@@ -289,7 +290,7 @@ bool WrenVM::interpret(void) {
 
       // if the class's method table does not include the symbol, bail
       if (cls->methods_count() <= symbol) {
-        method_not_found(fiber, symbol);
+        method_not_found(fiber, symbol, cls);
         return false;
       }
 
@@ -327,7 +328,7 @@ bool WrenVM::interpret(void) {
         LOAD_FRAME();
         break;
       case MethodType::NONE:
-        method_not_found(fiber, symbol);
+        method_not_found(fiber, symbol, cls);
         return false;
       }
 
@@ -363,7 +364,7 @@ bool WrenVM::interpret(void) {
 
       // if the class's method table does not include the symbol, bail
       if (cls->methods_count() <= symbol) {
-        method_not_found(fiber, symbol);
+        method_not_found(fiber, symbol, cls);
         return false;
       }
 
@@ -401,7 +402,7 @@ bool WrenVM::interpret(void) {
         LOAD_FRAME();
         break;
       case MethodType::NONE:
-        method_not_found(fiber, symbol);
+        method_not_found(fiber, symbol, cls);
         return false;
       }
 
