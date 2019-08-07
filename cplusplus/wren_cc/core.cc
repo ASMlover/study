@@ -48,7 +48,25 @@ DEF_NATIVE(fn##i) {\
 }
 
 static str_t kLibSource =
-"class List {\n"
+"class Sequence {\n"
+"  map(f) {\n"
+"    var result = []\n"
+"    for (element in this) {\n"
+"      result.add(f.call(element))\n"
+"    }\n"
+"    return result\n"
+"  }\n"
+"\n"
+"  where(f) {\n"
+"    var result = []\n"
+"    for (element in this) {\n"
+"      if (f.call(element)) result.add(element)\n"
+"    }\n"
+"    return result\n"
+"  }\n"
+"}\n"
+"\n"
+"class List is Sequence {\n"
 "  toString {\n"
 "    var result = \"[\"\n"
 "    for (i in 0...len) {\n"
@@ -66,23 +84,9 @@ static str_t kLibSource =
 "    }\n"
 "    return result\n"
 "  }\n"
+"}\n"
 "\n"
-"  map(f) {\n"
-"    var result = []\n"
-"    for (element in this) {\n"
-"      result.add(f.call(element))\n"
-"    }\n"
-"    return result\n"
-"  }\n"
-"\n"
-"  where(f) {\n"
-"    var result = []\n"
-"    for (element in this) {\n"
-"      if (f.call(element)) result.add(element)\n"
-"    }\n"
-"    return result\n"
-"  }\n"
-"}\n";
+"class Range is Sequence {}\n";
 
 static int validate_index(const Value& index, int count) {
   // validates that [index] is an integer within `[0, count)` also allows
@@ -859,16 +863,6 @@ namespace core {
     vm.set_native(vm.num_cls(), ".. ", _primitive_numeric_dotdot);
     vm.set_native(vm.num_cls(), "... ", _primitive_numeric_dotdotdot);
 
-    vm.set_range_cls(define_class(vm, "Range"));
-    vm.set_native(vm.range_cls(), "from", _primitive_range_from);
-    vm.set_native(vm.range_cls(), "to", _primitive_range_to);
-    vm.set_native(vm.range_cls(), "min", _primitive_range_min);
-    vm.set_native(vm.range_cls(), "max", _primitive_range_max);
-    vm.set_native(vm.range_cls(), "isInclusive", _primitive_range_isinclusive);
-    vm.set_native(vm.range_cls(), "iterate ", _primitive_range_iterate);
-    vm.set_native(vm.range_cls(), "iterValue ", _primitive_range_itervalue);
-    vm.set_native(vm.range_cls(), "toString", _primitive_range_tostring);
-
     // vm.set_obj_cls(vm.get_global("Object").as_class());
 
     vm.set_str_cls(define_class(vm, "String"));
@@ -893,6 +887,16 @@ namespace core {
     vm.set_native(vm.list_cls(), "iterValue ", _primitive_list_itervalue);
     vm.set_native(vm.list_cls(), "[ ]", _primitive_list_subscript);
     vm.set_native(vm.list_cls(), "[ ]=", _primitive_list_subscript_setter);
+
+    vm.set_range_cls(vm.get_global("Range").as_class());
+    vm.set_native(vm.range_cls(), "from", _primitive_range_from);
+    vm.set_native(vm.range_cls(), "to", _primitive_range_to);
+    vm.set_native(vm.range_cls(), "min", _primitive_range_min);
+    vm.set_native(vm.range_cls(), "max", _primitive_range_max);
+    vm.set_native(vm.range_cls(), "isInclusive", _primitive_range_isinclusive);
+    vm.set_native(vm.range_cls(), "iterate ", _primitive_range_iterate);
+    vm.set_native(vm.range_cls(), "iterValue ", _primitive_range_itervalue);
+    vm.set_native(vm.range_cls(), "toString", _primitive_range_tostring);
   }
 }
 

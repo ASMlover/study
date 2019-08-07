@@ -1,5 +1,23 @@
 
-class List {
+class Sequence {
+  map(f) {
+    var result = []
+    for (element in this) {
+      result.add(f.call(element))
+    }
+    return result
+  }
+
+  where(f) {
+    var result = []
+    for (element in this) {
+      if (f.call(element)) result.add(element)
+    }
+    return result
+  }
+}
+
+class List is Sequence {
   toString {
     var result = "["
     for (i in 0...len) {
@@ -17,20 +35,6 @@ class List {
     }
     return result
   }
-
-  map(f) {
-    var result = []
-    for (element in this) {
-      result.add(f.call(element))
-    }
-    return result
-  }
-
-  where(f) {
-    var result = []
-    for (element in this) {
-      if (f.call(element)) result.add(element)
-    }
-    return result
-  }
 }
+
+class Range is Sequence {}
