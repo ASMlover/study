@@ -110,7 +110,6 @@ public:
         break;
       case TokenKind::TK_LPAREN:
       case TokenKind::TK_LBRACKET:
-      case TokenKind::TK_LBRACE:
       case TokenKind::TK_DOT:
       case TokenKind::TK_DOTDOT:
       case TokenKind::TK_DOTDOTDOT:
@@ -989,7 +988,9 @@ class Compiler : private UnCopyable {
     class_compiler.fields = &fields;
     enclosing_class_ = &class_compiler;
 
-    consume(TokenKind::TK_LBRACE, "expect `{` before class body");
+    consume(TokenKind::TK_LBRACE, "expect `{` after class declaration");
+    match(TokenKind::TK_NL);
+
     while (!match(TokenKind::TK_RBRACE)) {
       Code instruction = Code::METHOD_INSTANCE;
       bool is_ctor = false;
@@ -1259,6 +1260,8 @@ class Compiler : private UnCopyable {
     // curly body is allowd
 
     if (match(TokenKind::TK_LBRACE)) {
+      match(TokenKind::TK_NL);
+
       push_scope();
       finish_block();
       pop_scope();
@@ -1271,6 +1274,8 @@ class Compiler : private UnCopyable {
 
   void finish_block(void) {
     // parses a block body, after the initial `{` has been consumed
+
+    match(TokenKind::TK_NL);
 
     // empty blocks do nothing
     if (match(TokenKind::TK_RBRACE))
@@ -1297,6 +1302,8 @@ class Compiler : private UnCopyable {
         dummy_name, TokenKind::TK_LPAREN, TokenKind::TK_RPAREN);
 
     if (fn_compiler.match(TokenKind::TK_LBRACE)) {
+      match(TokenKind::TK_NL);
+
       fn_compiler.finish_block();
 
       // implicitly return nil
@@ -1564,6 +1571,10 @@ class Compiler : private UnCopyable {
         // block body
         fn_compiler.finish_block();
         // implicitly return nil
+        fn_compiler.emit_bytes(Code::NIL, Code::RETURN);
+      }
+      else if (fn_compiler.match(TokenKind::TK_RBRACE)) {
+        // empty body
         fn_compiler.emit_bytes(Code::NIL, Code::RETURN);
       }
       else {

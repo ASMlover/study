@@ -1,9 +1,9 @@
 
-var fiber = Fiber.create(fn {
+var fiber = Fiber.create {
   IO.print("111")
   Fiber.yield
   IO.print("222")
-})
+}
 
 IO.print(fiber.isDone) // expect: false
 fiber.run // expect: 111
