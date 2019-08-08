@@ -823,7 +823,7 @@ class Compiler : private UnCopyable {
     }
 
     // otherwise, if we are inside a class, it's a getter call with an
-    // implicit receiver
+    // implicit `this`
     ClassCompiler* class_compiler = get_enclosing_class();
     if (class_compiler == nullptr) {
       error("undefined variable");
@@ -1293,7 +1293,8 @@ class Compiler : private UnCopyable {
     fn_compiler.init_compiler(true);
 
     str_t dummy_name;
-    fn_compiler.num_params_ = fn_compiler.parameters(dummy_name);
+    fn_compiler.num_params_ = fn_compiler.parameters(
+        dummy_name, TokenKind::TK_LPAREN, TokenKind::TK_RPAREN);
 
     if (fn_compiler.match(TokenKind::TK_LBRACE)) {
       fn_compiler.finish_block();
@@ -1482,13 +1483,13 @@ class Compiler : private UnCopyable {
     }
     else {
       // regular named method with an optional parameter list
-      parameters(name);
+      parameters(name, TokenKind::TK_LPAREN, TokenKind::TK_RPAREN);
     }
   }
 
   void ctor_signature(str_t& name) {
     // add the parameters if there are any
-    parameters(name);
+    parameters(name, TokenKind::TK_LPAREN, TokenKind::TK_RPAREN);
   }
 
   void validate_num_parameters(int argc) {
@@ -1502,14 +1503,14 @@ class Compiler : private UnCopyable {
     }
   }
 
-  int parameters(str_t& name) {
+  int parameters(str_t& name, TokenKind beg_kind, TokenKind end_kind) {
     // parses an optional parenthesis-delimited parameter list, if the parameter
     // list is for a method, [name] will be the name of the method and this will
     // modify it to handle arity in the signature, for functions, [name] will be
     // `empty` string
 
     // the parameter list is optional
-    if (!match(TokenKind::TK_LPAREN))
+    if (!match(beg_kind))
       return 0;
 
     int argc = 0;
@@ -1522,7 +1523,9 @@ class Compiler : private UnCopyable {
       // add a space in the name for the parameters
       name.push_back(' ');
     } while (match(TokenKind::TK_COMMA));
-    consume(TokenKind::TK_RPAREN, "expect `)` after parameters");
+    const char* msg = end_kind == TokenKind::TK_RPAREN ?
+      "expect `)` after parameters" : "expect `|` after parameters";
+    consume(end_kind, msg);
 
     return argc;
   }
@@ -1544,6 +1547,33 @@ class Compiler : private UnCopyable {
         name.push_back(' ');
       } while (match(TokenKind::TK_COMMA));
       consume(TokenKind::TK_RPAREN, "expect `)` after arguments");
+    }
+
+    // parse the block argument, if any
+    if (match(TokenKind::TK_LBRACE)) {
+      name.push_back(' ');
+      ++argc;
+
+      Compiler fn_compiler(parser_, this);
+      fn_compiler.init_compiler(true);
+
+      str_t dummy_name;
+      fn_compiler.num_params_ = parameters(
+          dummy_name, TokenKind::TK_PIPE, TokenKind::TK_PIPE);
+      if (fn_compiler.match(TokenKind::TK_NL)) {
+        // block body
+        fn_compiler.finish_block();
+        // implicitly return nil
+        fn_compiler.emit_bytes(Code::NIL, Code::RETURN);
+      }
+      else {
+        // single expression body
+        fn_compiler.expression();
+        fn_compiler.emit_byte(Code::RETURN);
+
+        consume(TokenKind::TK_RBRACE, "expect `}` at end of block argument");
+      }
+      fn_compiler.finish_compiler("(fn)");
     }
 
     emit_words(instruction + argc, method_symbol(name));
