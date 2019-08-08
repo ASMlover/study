@@ -105,10 +105,7 @@ class WrenVM final : private UnCopyable {
   int foreign_call_argc_{};
 
   void print_stacktrace(FiberObject* fiber);
-
   void runtime_error(FiberObject* fiber, const str_t& error);
-  void method_not_found(FiberObject* fiber, int symbol, ClassObject* cls);
-  void too_many_inherited_fields(FiberObject* fiber);
 
   void call_foreign(FiberObject* fiber, const WrenForeignFn& foreign, int argc);
 

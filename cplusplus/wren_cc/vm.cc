@@ -98,23 +98,6 @@ void WrenVM::runtime_error(FiberObject* fiber, const str_t& error) {
   print_stacktrace(fiber);
 }
 
-void WrenVM::method_not_found(
-    FiberObject* fiber, int symbol, ClassObject* cls) {
-  std::stringstream ss;
-  ss << "`" << cls->name_cstr() << "` does not implement method "
-    << "`" << methods_.get_name(symbol) << "`";
-
-  runtime_error(fiber, ss.str());
-}
-
-void WrenVM::too_many_inherited_fields(FiberObject* fiber) {
-  std::stringstream ss;
-  ss << "a class may not have more than " << MAX_FIELDS
-    << " fields, including inherited ones.";
-
-  runtime_error(fiber, ss.str());
-}
-
 void WrenVM::call_foreign(
     FiberObject* fiber, const WrenForeignFn& foreign, int argc) {
   foreign_call_slot_ = fiber->values_at(fiber->stack_size() - argc);
@@ -155,6 +138,11 @@ bool WrenVM::interpret(void) {
     fn = Xt::down<ClosureObject>(frame->fn)->fn();\
     co = Xt::down<ClosureObject>(frame->fn);\
   }
+
+#define RUNTIME_ERROR(error) do {\
+    runtime_error(fiber, (error));\
+    return false;\
+  } while (false)
 
 #if defined(COMPUTED_GOTOS)
   static void* _dispatch_table[] = {
@@ -290,8 +278,10 @@ bool WrenVM::interpret(void) {
 
       // if the class's method table does not include the symbol, bail
       if (cls->methods_count() <= symbol) {
-        method_not_found(fiber, symbol, cls);
-        return false;
+        std::stringstream ss;
+        ss << "`" << cls->name_cstr() << "` does not implement method "
+          << "`" << methods_.get_name(symbol) << "`";
+        RUNTIME_ERROR(ss.str());
       }
 
       auto& method = cls->get_method(symbol);
@@ -308,8 +298,7 @@ bool WrenVM::interpret(void) {
             fiber->resize_stack(fiber->stack_size() - (argc - 1));
             break;
           case PrimitiveResult::ERROR:
-            runtime_error(fiber, args[0].as_cstring());
-            return false;
+            RUNTIME_ERROR(args[0].as_cstring());
           case PrimitiveResult::CALL:
             fiber->call_function(args[0].as_object(), argc);
             LOAD_FRAME();
@@ -328,8 +317,12 @@ bool WrenVM::interpret(void) {
         LOAD_FRAME();
         break;
       case MethodType::NONE:
-        method_not_found(fiber, symbol, cls);
-        return false;
+        {
+          std::stringstream ss;
+          ss << "`" << cls->name_cstr() << "` does not implement method "
+            << "`" << methods_.get_name(symbol) << "`";
+          RUNTIME_ERROR(ss.str());
+        }
       }
 
       DISPATCH();
@@ -364,8 +357,10 @@ bool WrenVM::interpret(void) {
 
       // if the class's method table does not include the symbol, bail
       if (cls->methods_count() <= symbol) {
-        method_not_found(fiber, symbol, cls);
-        return false;
+        std::stringstream ss;
+        ss << "`" << cls->name_cstr() << "` does not implement method "
+          << "`" << methods_.get_name(symbol) << "`";
+        RUNTIME_ERROR(ss.str());
       }
 
       auto& method = cls->get_method(symbol);
@@ -382,8 +377,7 @@ bool WrenVM::interpret(void) {
             fiber->resize_stack(fiber->stack_size() - (argc - 1));
             break;
           case PrimitiveResult::ERROR:
-            runtime_error(fiber, args[0].as_cstring());
-            return false;
+            RUNTIME_ERROR(args[0].as_cstring());
           case PrimitiveResult::CALL:
             fiber->call_function(args[0].as_object(), argc);
             LOAD_FRAME();
@@ -402,8 +396,12 @@ bool WrenVM::interpret(void) {
         LOAD_FRAME();
         break;
       case MethodType::NONE:
-        method_not_found(fiber, symbol, cls);
-        return false;
+        {
+          std::stringstream ss;
+          ss << "`" << cls->name_cstr() << "` does not implement method "
+            << "`" << methods_.get_name(symbol) << "`";
+          RUNTIME_ERROR(ss.str());
+        }
       }
 
       DISPATCH();
@@ -455,10 +453,8 @@ bool WrenVM::interpret(void) {
     CASE_CODE(IS):
     {
       Value expected = POP();
-      if (!expected.is_class()) {
-        runtime_error(fiber, "right operand must be a class");
-        return false;
-      }
+      if (!expected.is_class())
+        RUNTIME_ERROR("right operand must be a class");
 
       ClassObject* actual = get_class(POP());
       bool is_instance = false;
@@ -519,10 +515,8 @@ bool WrenVM::interpret(void) {
     }
     CASE_CODE(NEW):
     {
-      if (!PEEK().is_class()) {
-        runtime_error(fiber, "must provide a class to `new` to construct");
-        return false;
-      }
+      if (!PEEK().is_class())
+        RUNTIME_ERROR("must provide a class to `new` to construct");
 
       // make sure the class stays on the stack until after the instance is
       // allocated so that if does not get collected
@@ -593,8 +587,10 @@ bool WrenVM::interpret(void) {
       // now that we know the total number of fields, make sure we donot
       // overflow
       if (superclass->num_fields() + num_fields > MAX_FIELDS) {
-        too_many_inherited_fields(fiber);
-        return false;
+        std::stringstream ss;
+        ss << "a class may not have more thane " << MAX_FIELDS
+          << " fields, including inherited ones";
+        RUNTIME_ERROR(ss.str());
       }
 
       // do not pop the superclass and name off the stack until the subclass
