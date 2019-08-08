@@ -1,14 +1,14 @@
 
 IO.print(Numeric is Class) // expect: true
 IO.print(true is Bool) // expect: true
-IO.print((fn 1) is FunctIO.) // expect: true
+IO.print((fn 1) is Function) // expect: true
 IO.print(123 is Numeric) // expect: true
 IO.print(nil is Nil) // expect: true
 IO.print("s" is String) // expect: true
 
 IO.print(Numeric is Bool) // expect: false
 IO.print(nil is Class) // expect: false
-IO.print(true is FunctIO.) // expect: false
+IO.print(true is Function) // expect: false
 IO.print((fn 1) is Numeric) // expect: false
 IO.print("s" is Nil) // expect: false
 IO.print(123 is String) // expect: false
