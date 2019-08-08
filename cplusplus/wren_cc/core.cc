@@ -217,6 +217,11 @@ DEF_NATIVE(bool_not) {
   RETURN_VAL(!args[0].as_boolean());
 }
 
+DEF_NATIVE(class_instantiate) {
+  ClassObject* cls = args[0].as_class();
+  RETURN_VAL(InstanceObject::make_instance(vm, cls));
+}
+
 DEF_NATIVE(class_name) {
   ClassObject* cls = args[0].as_class();
   RETURN_VAL(cls->name());
@@ -495,6 +500,10 @@ DEF_NATIVE(object_type) {
   RETURN_VAL(vm.get_class(args[0]));
 }
 
+DEF_NATIVE(object_instantiate) {
+  RETURN_ERR("must provide a class to `new` to construct");
+}
+
 DEF_NATIVE(string_len) {
   RETURN_VAL(args[0].as_string()->size());
 }
@@ -557,6 +566,19 @@ static PrimitiveResult call_function(WrenVM& vm, Value* args, int argc) {
   if (argc < fn->num_params())
     RETURN_ERR("function expects more arguments");
   return PrimitiveResult::CALL;
+}
+
+DEF_NATIVE(fn_instantiate) {
+  // return the Function class itself, when we then call `new` on it,
+  // it will return the block
+
+  RETURN_VAL(args[0]);
+}
+
+DEF_NATIVE(fn_new) {
+  // the block argument is already a function, so just return it
+
+  RETURN_VAL(args[1]);
 }
 
 DEF_NATIVE_FN(fn_call, 0)
@@ -812,16 +834,21 @@ namespace core {
     vm.set_native(vm.obj_cls(), "new", _primitive_object_new);
     vm.set_native(vm.obj_cls(), "toString", _primitive_object_tostring);
     vm.set_native(vm.obj_cls(), "type", _primitive_object_type);
+    vm.set_native(vm.obj_cls(), "instantiate", _primitive_object_instantiate);
 
     // now we can define Class, which is a subclass of Object, but Object's
     // metclass
     vm.set_class_cls(define_single_class(vm, "Class"));
-    vm.set_native(vm.class_cls(), "name", _primitive_class_name);
 
     // now that Object and Class are defined, we can wrie them up to each other
     vm.class_cls()->bind_superclass(vm.obj_cls());
     vm.obj_cls()->set_meta_class(vm.class_cls());
     vm.class_cls()->set_meta_class(vm.class_cls());
+
+    // define the methods specific to Class after wiring up its superclass
+    // to prevent the inherited ones from overwriting them
+    vm.set_native(vm.class_cls(), "instantiate", _primitive_class_instantiate);
+    vm.set_native(vm.class_cls(), "name", _primitive_class_name);
 
     vm.set_bool_cls(define_class(vm, "Bool"));
     vm.set_native(vm.bool_cls(), "toString", _primitive_bool_tostring);
@@ -836,6 +863,8 @@ namespace core {
     vm.set_native(vm.fiber_cls(), "run ", _primitive_fiber_run1);
 
     vm.set_fn_cls(define_class(vm, "Function"));
+    vm.set_native(vm.fn_cls()->meta_class(), "instantiate", _primitive_fn_instantiate);
+    vm.set_native(vm.fn_cls()->meta_class(), "new ", _primitive_fn_new);
     vm.set_native(vm.fn_cls(), "call", _primitive_fn_call0);
     vm.set_native(vm.fn_cls(), "call ", _primitive_fn_call1);
     vm.set_native(vm.fn_cls(), "call  ", _primitive_fn_call2);

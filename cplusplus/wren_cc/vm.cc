@@ -513,20 +513,6 @@ bool WrenVM::interpret(void) {
 
       DISPATCH();
     }
-    CASE_CODE(NEW):
-    {
-      if (!PEEK().is_class())
-        RUNTIME_ERROR("must provide a class to `new` to construct");
-
-      // make sure the class stays on the stack until after the instance is
-      // allocated so that if does not get collected
-      ClassObject* cls = PEEK().as_class();
-      InstanceObject* inst = InstanceObject::make_instance(*this, cls);
-      POP();
-      PUSH(inst);
-
-      DISPATCH();
-    }
     CASE_CODE(LIST):
     {
       int num_elements = RDBYTE();

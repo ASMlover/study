@@ -1617,7 +1617,7 @@ class Compiler : private UnCopyable {
     parse_precedence(false, Precedence::CALL);
 
     // create the instance of the class
-    emit_byte(Code::NEW);
+    emit_words(Code::CALL_0, method_symbol("instantiate"));
 
     method_call(Code::CALL_0, "new");
   }

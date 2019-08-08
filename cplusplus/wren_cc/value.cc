@@ -327,7 +327,6 @@ int FunctionObject::get_argc(
   case Code::IS:
   case Code::CLOSE_UPVALUE:
   case Code::RETURN:
-  case Code::NEW:
   case Code::END:
     return 0;
 

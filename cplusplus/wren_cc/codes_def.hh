@@ -117,7 +117,6 @@ CODE(IS)           // pop [a] then [b] and push true if [b] is an instance of [a
 // close the upvalue for the local on the top of the stack, then pop it.
 CODE(CLOSE_UPVALUE)
 CODE(RETURN)       // exit from the current function and return the value on the top of stack
-CODE(NEW)          // create a new instance of receiver, which is assumed to be a class
 
 // create a new list with [arg] elements, the top [arg] values on the stack
 // are the elements in forward order. removes the elements and then pushs
