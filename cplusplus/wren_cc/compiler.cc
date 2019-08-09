@@ -119,7 +119,6 @@ public:
       case TokenKind::TK_PERCENT:
       case TokenKind::TK_PLUS:
       case TokenKind::TK_MINUS:
-      case TokenKind::TK_PIPE:
       case TokenKind::TK_PIPEPIPE:
       case TokenKind::TK_AMP:
       case TokenKind::TK_AMPAMP:
@@ -1436,6 +1435,11 @@ class Compiler : private UnCopyable {
   void infix_oper(bool allow_assignment) {
     auto& rule = get_rule(parser_.prev().kind());
 
+    // the pipe operator does not swallow a newline after it because when
+    // it's used as a block argument delimiter, the newline is significant.
+    // so discard it here
+    match(TokenKind::TK_NL);
+
     // compile the right hand side
     parse_precedence(false, rule.precedence + 1);
 
@@ -1528,7 +1532,8 @@ class Compiler : private UnCopyable {
       declare_named_variable();
 
       // add a space in the name for the parameters
-      name.push_back(' ');
+      if (!name.empty())
+        name.push_back(' ');
     } while (match(TokenKind::TK_COMMA));
     const char* msg = end_kind == TokenKind::TK_RPAREN ?
       "expect `)` after parameters" : "expect `|` after parameters";
