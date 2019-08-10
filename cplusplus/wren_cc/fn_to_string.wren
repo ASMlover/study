@@ -1,2 +1,2 @@
 
-IO.print(fn {}) // expect: <fn>
+IO.print(new Function {}) // expect: <fn>

@@ -5,7 +5,7 @@ class Base {
 
 class Derived is Base {
   getClosure {
-    return fn {
+    return new Function {
       return super.toString
     }
   }

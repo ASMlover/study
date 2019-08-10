@@ -1,7 +1,7 @@
 
 {
   var local = "local"
-  fn {
+  new Function {
     IO.print(local) // expect: local
   }.call
 }

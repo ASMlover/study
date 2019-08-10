@@ -1,6 +1,6 @@
 
 class Foo {
   static bar {
-    fn _field = "wat" // expect error
+    new Function { _field = "wat" } // expect error
   }
 }

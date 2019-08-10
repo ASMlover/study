@@ -1,5 +1,5 @@
 
-var f = fn {
+var f = new Function {
   while (true) {
     var i = "iii"
     return i

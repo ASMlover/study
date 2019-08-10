@@ -1,6 +1,6 @@
 
 var global = "global"
 
-fn {
+new Function {
   IO.print(global) // expect: global
 }.call

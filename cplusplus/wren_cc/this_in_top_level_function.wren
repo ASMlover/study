@@ -1,4 +1,4 @@
 
-fn {
+new Function {
   this // expect error
 }

@@ -1,8 +1,8 @@
 
-var f = fn {
+var f = new Function {
   while (true) {
     var i = "iii"
-    return fn IO.print(i)
+    return new Function { IO.print(i) }
   }
 }
 

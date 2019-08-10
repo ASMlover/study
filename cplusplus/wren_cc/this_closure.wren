@@ -1,7 +1,7 @@
 
 class Foo {
   getClosure {
-    return fn {
+    return new Function {
       return toString
     }
   }

@@ -1,8 +1,8 @@
 
 var f = nil
 
-fn (param) {
-  f = fn {
+new Function {|param|
+  f = new Function {
     IO.print(param)
   }
 }.call("parameter")

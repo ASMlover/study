@@ -3,7 +3,7 @@ var f = nil
 
 class Foo {
   method(param) {
-    f = fn {
+    f = new Function {
       IO.print(param)
     }
   }

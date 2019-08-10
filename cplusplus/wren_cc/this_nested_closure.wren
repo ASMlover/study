@@ -1,9 +1,9 @@
 
 class Foo {
   getClosure {
-    return fn {
-      return fn {
-        return fn {
+    return new Function {
+      return new Function {
+        return new Function {
           return toString
         }
       }

@@ -4,7 +4,7 @@
 
   {
     var a = "a"
-    f = fn IO.print(a)
+    f = new Function { IO.print(a) }
   }
 
   {

@@ -1,5 +1,5 @@
 
-var f = fn {
+var f = new Function {
   return "ok"
   IO.print("bad")
 }

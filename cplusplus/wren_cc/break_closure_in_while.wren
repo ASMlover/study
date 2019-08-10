@@ -2,7 +2,7 @@
 var f
 while (true) {
   var i = "iii"
-  f = fn IO.print(i)
+  f = new Function { IO.print(i) }
   break
 }
 
