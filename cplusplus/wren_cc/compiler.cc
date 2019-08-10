@@ -1208,8 +1208,7 @@ class Compiler : private UnCopyable {
 
     if (match(TokenKind::KW_RETURN)) {
       // compile the return value
-      if (parser_.curr().kind() == TokenKind::TK_NL ||
-          parser_.curr().kind() == TokenKind::TK_RBRACE) {
+      if (parser_.curr().kind() == TokenKind::TK_NL) {
         // impilicity return nil if there is no value
         emit_byte(Code::NIL);
       }
@@ -1245,10 +1244,11 @@ class Compiler : private UnCopyable {
     // curly body is allowd
 
     if (match(TokenKind::TK_LBRACE)) {
-      match(TokenKind::TK_NL);
-
       push_scope();
-      finish_block();
+      if (!finish_block()){
+        // block was an expression, so discard it
+        emit_byte(Code::POP);
+      }
       pop_scope();
       return;
     }
@@ -1257,25 +1257,56 @@ class Compiler : private UnCopyable {
     statement();
   }
 
-  void finish_block(void) {
-    // parses a block body, after the initial `{` has been consumed
-
-    match(TokenKind::TK_NL);
+  bool finish_block(void) {
+    // returns true if it was a statement body, false if it was an expression
+    // body (most precisely, returns false if a value was left on the stack,
+    // an empty block returns true)
 
     // empty blocks do nothing
     if (match(TokenKind::TK_RBRACE))
-      return;
+      return true;
 
-    for (;;) {
+    // if there is no newline after the `{`, it's a single expression body
+    if (!match(TokenKind::TK_NL)) {
+      expression();
+      consume(TokenKind::TK_RBRACE, "expect `}` at end of block");
+      return false;
+    }
+
+    // empty blocks (with just a newline inside) do nothing
+    if (match(TokenKind::TK_RBRACE))
+      return true;
+
+    // compile the definition list
+    do {
       definition();
 
-      if (!match(TokenKind::TK_NL)) {
-        consume(TokenKind::TK_RBRACE, "expect `}` after block body");
-        break;
-      }
-      if (match(TokenKind::TK_RBRACE))
-        break;
+      // if we got into a weird error state, donot get stuck in a loop
+      if (parser_.curr().kind() == TokenKind::TK_EOF)
+        return true;
+
+      consume(TokenKind::TK_NL, "expect newline after statement");
+    } while (!match(TokenKind::TK_RBRACE));
+    return true;
+  }
+
+  void finish_body(bool is_ctor) {
+    // parses a method or function body, after the initial `{` has been consumed
+
+    bool is_statement_body = finish_block();
+    if (is_ctor) {
+      // if the constructor body evaluates to a value, discard it
+      if (!is_statement_body)
+        emit_byte(Code::POP);
+
+      // the receiver is always stored in the first local slot
+      emit_bytes(Code::LOAD_LOCAL, 0);
     }
+    else if (is_statement_body) {
+      // implicitly return nil in statement bodies
+      emit_byte(Code::NIL);
+    }
+    emit_byte(Code::RETURN);
   }
 
   int method(ClassCompiler* class_compiler,
@@ -1296,17 +1327,7 @@ class Compiler : private UnCopyable {
 
     consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
 
-    method_compiler.finish_block();
-    // if it's a constructor, return `this`
-    if (is_ctor) {
-      // the receiver is always stored in the first local slot
-      method_compiler.emit_bytes(Code::LOAD_LOCAL, 0);
-    }
-    else {
-      // implicitly return nil in case there is no explicit return
-      method_compiler.emit_byte(Code::NIL);
-    }
-    method_compiler.emit_byte(Code::RETURN);
+    method_compiler.finish_body(is_ctor);
     method_compiler.finish_compiler(name);
 
     return method_symbol(name);
@@ -1534,23 +1555,7 @@ class Compiler : private UnCopyable {
       str_t dummy_name;
       fn_compiler.num_params_ = fn_compiler.parameters(
           dummy_name, TokenKind::TK_PIPE, TokenKind::TK_PIPE);
-      if (fn_compiler.match(TokenKind::TK_NL)) {
-        // block body
-        fn_compiler.finish_block();
-        // implicitly return nil
-        fn_compiler.emit_bytes(Code::NIL, Code::RETURN);
-      }
-      else if (fn_compiler.match(TokenKind::TK_RBRACE)) {
-        // empty body
-        fn_compiler.emit_bytes(Code::NIL, Code::RETURN);
-      }
-      else {
-        // single expression body
-        fn_compiler.expression();
-        fn_compiler.emit_byte(Code::RETURN);
-
-        consume(TokenKind::TK_RBRACE, "expect `}` at end of block argument");
-      }
+      fn_compiler.finish_body(false);
       fn_compiler.finish_compiler("(fn)");
     }
 
