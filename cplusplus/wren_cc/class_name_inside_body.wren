@@ -8,7 +8,7 @@ class Foo {
     IO.print(Foo.toString)
   }
 
-  static toString { return "Foo" }
+  static toString { "Foo" }
 }
 
 Foo.sayName // expect: Foo

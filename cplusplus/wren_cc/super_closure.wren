@@ -1,16 +1,11 @@
 
 class Base {
-  toString { return "Base" }
+  toString { "Base" }
 }
 
 class Derived is Base {
-  getClosure {
-    return new Function {
-      return super.toString
-    }
-  }
-
-  toString { return "Derived"}
+  getClosure { new Function { super.toString } }
+  toString { "Derived"}
 }
 
 var closure = (new Derived).getClosure

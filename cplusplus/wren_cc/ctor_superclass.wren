@@ -5,7 +5,7 @@ class A {
     _field = arg
   }
 
-  aField { return _field }
+  aField { _field }
 }
 
 class B is A {
@@ -15,7 +15,7 @@ class B is A {
     _field = arg2
   }
 
-  bField { return _field }
+  bField { _field }
 }
 
 class C is B {
@@ -25,7 +25,7 @@ class C is B {
     _field = "c"
   }
 
-  cField { return _field }
+  cField { _field }
 }
 
 var c = new C

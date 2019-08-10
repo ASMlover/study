@@ -1,6 +1,6 @@
 
 class Foo {
-  toString { return "Foo" }
+  toString { "Foo" }
 }
 
 var foo = new Foo

@@ -1,14 +1,13 @@
 
-// no trailing newline
-new Function {
-  IO.print("ok") }.call // expect: ok
+// single expression body
+new Function { IO.print("ok") }.call // expect: ok
 
-// trailing newline
+// curly body
 new Function {
   IO.print("ok") // expect: ok
 }.call
 
-// muiltiple expressIO.s
+// muiltiple statements
 new Function {
   IO.print("1") // expect: 1
   IO.print("2") // expect: 2

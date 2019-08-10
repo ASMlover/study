@@ -1,21 +1,21 @@
 
 class Foo {
-  + other { return "infix + " + other }
-  - other { return "infix - " + other }
-  * other { return "infix * " + other }
-  / other { return "infix / " + other }
-  % other { return "infix % " + other }
-  < other { return "infix < " + other }
-  > other { return "infix > " + other }
-  <= other { return "infix <= " + other }
-  >= other { return "infix >= " + other }
-  == other { return "infix == " + other }
-  != other { return "infix != " + other }
-  & other { return "infix & " + other }
-  | other { return "infix | " + other }
+  + other { "infix + " + other }
+  - other { "infix - " + other }
+  * other { "infix * " + other }
+  / other { "infix / " + other }
+  % other { "infix % " + other }
+  < other { "infix < " + other }
+  > other { "infix > " + other }
+  <= other { "infix <= " + other }
+  >= other { "infix >= " + other }
+  == other { "infix == " + other }
+  != other { "infix != " + other }
+  & other { "infix & " + other }
+  | other { "infix | " + other }
 
-  ! { return "prefix !" }
-  - { return "prefix -" }
+  ! { "prefix !" }
+  - { "prefix -" }
 }
 
 var foo = new Foo

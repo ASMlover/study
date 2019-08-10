@@ -1,15 +1,6 @@
 
 class Foo {
-  getClosure {
-    return new Function {
-      return new Function {
-        return new Function {
-          return toString
-        }
-      }
-    }
-  }
-
+  getClosure { new Function { new Function { new Function { toString } } } }
   toString { return "Foo" }
 }
 

@@ -4,7 +4,7 @@ class Toggle {
     _state = startState
   }
 
-  value { return _state }
+  value { _state }
 
   activate {
     _state = !_state

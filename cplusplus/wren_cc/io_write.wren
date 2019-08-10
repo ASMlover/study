@@ -1,6 +1,6 @@
 
 class Foo {
-  toString { return "Foo.toString" }
+  toString { "Foo.toString" }
 }
 
 // calls toString on argument

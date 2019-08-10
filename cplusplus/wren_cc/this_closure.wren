@@ -1,12 +1,7 @@
 
 class Foo {
-  getClosure {
-    return new Function {
-      return toString
-    }
-  }
-
-  toString { return "Foo" }
+  getClosure { new Function { toString } }
+  toString { "Foo" }
 }
 
 var closure = (new Foo).getClosure

@@ -1,7 +1,6 @@
 
 var f = new Function {
-  if (true) { return }
-  IO.print("bad")
+  // hi
 }
 
 IO.print(f.call) // expect: nil

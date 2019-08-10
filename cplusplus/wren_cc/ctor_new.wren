@@ -4,7 +4,7 @@ class Foo {
   new(a) { IO.print(a) }
   new(a, b) { IO.print(a + b) }
 
-  toString { return "Foo" }
+  toString { "Foo" }
 }
 
 // can overload by arity

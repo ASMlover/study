@@ -1,8 +1,8 @@
 
 class Iter {
   new(value) { _value = value }
-  iterate(iterator) { return _value }
-  iterValue(iterator) { return "value" }
+  iterate(iterator) { _value }
+  iterValue(iterator) { "value" }
 }
 
 // false and nil are false

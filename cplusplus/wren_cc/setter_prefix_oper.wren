@@ -1,6 +1,6 @@
 
 class Foo {
-  bar = value { return value }
+  bar = value { value }
 }
 
 var foo = new Foo
