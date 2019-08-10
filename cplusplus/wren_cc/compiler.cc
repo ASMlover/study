@@ -111,27 +111,14 @@ public:
       case TokenKind::TK_LPAREN:
       case TokenKind::TK_LBRACKET:
       case TokenKind::TK_DOT:
-      case TokenKind::TK_DOTDOT:
-      case TokenKind::TK_DOTDOTDOT:
       case TokenKind::TK_COMMA:
-      case TokenKind::TK_STAR:
-      case TokenKind::TK_SLASH:
-      case TokenKind::TK_PERCENT:
-      case TokenKind::TK_PLUS:
       case TokenKind::TK_MINUS:
       case TokenKind::TK_PIPEPIPE:
-      case TokenKind::TK_AMP:
       case TokenKind::TK_AMPAMP:
       case TokenKind::TK_BANG:
       case TokenKind::TK_TILDE:
       case TokenKind::TK_QUESTION:
       case TokenKind::TK_EQ:
-      case TokenKind::TK_LT:
-      case TokenKind::TK_GT:
-      case TokenKind::TK_LTEQ:
-      case TokenKind::TK_GTEQ:
-      case TokenKind::TK_EQEQ:
-      case TokenKind::TK_BANGEQ:
       case TokenKind::KW_CLASS:
       case TokenKind::KW_ELSE:
       case TokenKind::KW_FOR:
@@ -471,7 +458,6 @@ class Compiler : private UnCopyable {
       UNUSED,                                   // KEYWORD(CLASS, "class")
       UNUSED,                                   // KEYWORD(ELSE, "else")
       PREFIX(boolean),                          // KEYWORD(FALSE, "false")
-      PREFIX(function),                         // KEYWORD(FN, "fn")
       UNUSED,                                   // KEYWORD(FOR, "for")
       UNUSED,                                   // KEYWORD(IF, "if")
       UNUSED,                                   // KEYWORD(IN, "in")
@@ -1290,30 +1276,6 @@ class Compiler : private UnCopyable {
       if (match(TokenKind::TK_RBRACE))
         break;
     }
-  }
-
-  void function(bool allow_assignment) {
-    Compiler fn_compiler(parser_, this);
-    fn_compiler.init_compiler(true);
-
-    str_t dummy_name;
-    fn_compiler.num_params_ = fn_compiler.parameters(
-        dummy_name, TokenKind::TK_LPAREN, TokenKind::TK_RPAREN);
-
-    if (fn_compiler.match(TokenKind::TK_LBRACE)) {
-      match(TokenKind::TK_NL);
-
-      fn_compiler.finish_block();
-
-      // implicitly return nil
-      fn_compiler.emit_bytes(Code::NIL, Code::RETURN);
-    }
-    else {
-      fn_compiler.expression();
-      fn_compiler.emit_byte(Code::RETURN);
-    }
-
-    fn_compiler.finish_compiler("(fn)");
   }
 
   int method(ClassCompiler* class_compiler,
