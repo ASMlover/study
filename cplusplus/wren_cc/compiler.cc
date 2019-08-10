@@ -1570,7 +1570,7 @@ class Compiler : private UnCopyable {
       fn_compiler.init_compiler(true);
 
       str_t dummy_name;
-      fn_compiler.num_params_ = parameters(
+      fn_compiler.num_params_ = fn_compiler.parameters(
           dummy_name, TokenKind::TK_PIPE, TokenKind::TK_PIPE);
       if (fn_compiler.match(TokenKind::TK_NL)) {
         // block body
