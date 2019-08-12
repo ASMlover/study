@@ -100,41 +100,6 @@ public:
       return;
 
     curr_ = lex_.next_token();
-
-    // for (;;) {
-    //   curr_ = lex_.next_token();
-    //   switch (curr_.kind()) {
-    //   case TokenKind::TK_NL:
-    //     if (!skip_newlines_) {
-    //       skip_newlines_ = true;
-    //       return;
-    //     }
-    //     break;
-    //   case TokenKind::TK_LPAREN:
-    //   case TokenKind::TK_LBRACKET:
-    //   case TokenKind::TK_DOT:
-    //   case TokenKind::TK_COMMA:
-    //   case TokenKind::TK_MINUS:
-    //   case TokenKind::TK_PIPEPIPE:
-    //   case TokenKind::TK_AMPAMP:
-    //   case TokenKind::TK_BANG:
-    //   case TokenKind::TK_TILDE:
-    //   case TokenKind::TK_QUESTION:
-    //   case TokenKind::TK_EQ:
-    //   case TokenKind::KW_CLASS:
-    //   case TokenKind::KW_ELSE:
-    //   case TokenKind::KW_FOR:
-    //   case TokenKind::KW_IF:
-    //   case TokenKind::KW_IN:
-    //   case TokenKind::KW_IS:
-    //   case TokenKind::KW_NEW:
-    //   case TokenKind::KW_STATIC:
-    //   case TokenKind::KW_VAR:
-    //   case TokenKind::KW_WHILE:
-    //     skip_newlines_ = true; return;
-    //   default: skip_newlines_ = false; return;
-    //   }
-    // }
   }
 };
 
