@@ -1,0 +1,3 @@
+
+new // expect error
+Function {}
