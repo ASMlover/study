@@ -99,40 +99,42 @@ public:
     if (curr_.kind() == TokenKind::TK_EOF)
       return;
 
-    for (;;) {
-      curr_ = lex_.next_token();
-      switch (curr_.kind()) {
-      case TokenKind::TK_NL:
-        if (!skip_newlines_) {
-          skip_newlines_ = true;
-          return;
-        }
-        break;
-      case TokenKind::TK_LPAREN:
-      case TokenKind::TK_LBRACKET:
-      case TokenKind::TK_DOT:
-      case TokenKind::TK_COMMA:
-      case TokenKind::TK_MINUS:
-      case TokenKind::TK_PIPEPIPE:
-      case TokenKind::TK_AMPAMP:
-      case TokenKind::TK_BANG:
-      case TokenKind::TK_TILDE:
-      case TokenKind::TK_QUESTION:
-      case TokenKind::TK_EQ:
-      case TokenKind::KW_CLASS:
-      case TokenKind::KW_ELSE:
-      case TokenKind::KW_FOR:
-      case TokenKind::KW_IF:
-      case TokenKind::KW_IN:
-      case TokenKind::KW_IS:
-      case TokenKind::KW_NEW:
-      case TokenKind::KW_STATIC:
-      case TokenKind::KW_VAR:
-      case TokenKind::KW_WHILE:
-        skip_newlines_ = true; return;
-      default: skip_newlines_ = false; return;
-      }
-    }
+    curr_ = lex_.next_token();
+
+    // for (;;) {
+    //   curr_ = lex_.next_token();
+    //   switch (curr_.kind()) {
+    //   case TokenKind::TK_NL:
+    //     if (!skip_newlines_) {
+    //       skip_newlines_ = true;
+    //       return;
+    //     }
+    //     break;
+    //   case TokenKind::TK_LPAREN:
+    //   case TokenKind::TK_LBRACKET:
+    //   case TokenKind::TK_DOT:
+    //   case TokenKind::TK_COMMA:
+    //   case TokenKind::TK_MINUS:
+    //   case TokenKind::TK_PIPEPIPE:
+    //   case TokenKind::TK_AMPAMP:
+    //   case TokenKind::TK_BANG:
+    //   case TokenKind::TK_TILDE:
+    //   case TokenKind::TK_QUESTION:
+    //   case TokenKind::TK_EQ:
+    //   case TokenKind::KW_CLASS:
+    //   case TokenKind::KW_ELSE:
+    //   case TokenKind::KW_FOR:
+    //   case TokenKind::KW_IF:
+    //   case TokenKind::KW_IN:
+    //   case TokenKind::KW_IS:
+    //   case TokenKind::KW_NEW:
+    //   case TokenKind::KW_STATIC:
+    //   case TokenKind::KW_VAR:
+    //   case TokenKind::KW_WHILE:
+    //     skip_newlines_ = true; return;
+    //   default: skip_newlines_ = false; return;
+    //   }
+    // }
   }
 };
 
@@ -440,9 +442,9 @@ class Compiler : private UnCopyable {
       INFIXOP(Precedence::TERM, "+ "),          // PUNCTUATOR(PLUS, "+")
       OPER(Precedence::TERM, "- "),             // PUNCTUATOR(MINUS, "-")
       INFIXOP(Precedence::BITWISE, "| "),       // PUNCTUATOR(PIPE, "|")
-      INFIX(or_expr, Precedence::LOGIC),        // PUNCTUATOR(PIPEPIPE, "||")
+      INFIX(or_exp, Precedence::LOGIC),         // PUNCTUATOR(PIPEPIPE, "||")
       INFIXOP(Precedence::BITWISE, "& "),       // PUNCTUATOR(AMP, "&")
-      INFIX(and_expr, Precedence::LOGIC),       // PUNCTUATOR(AMPAMP, "&&")
+      INFIX(and_exp, Precedence::LOGIC),        // PUNCTUATOR(AMPAMP, "&&")
       PREFIXOP("!"),                            // PUNCTUATOR(BANG, "!")
       PREFIXOP("~"),                            // PUNCTUATOR(TILDE, "~")
       INFIX(condition, Precedence::ASSIGNMENT), // PUNCTUATOR(QUESTION, "?")
@@ -717,13 +719,15 @@ class Compiler : private UnCopyable {
     int num_elements = 0;
     if (parser_.curr().kind() != TokenKind::TK_RBRACKET) {
       do {
+        ignore_newlines();
+
         ++num_elements;
         expression();
-
-        // ignore a newline after the element but before the `,` or `]`
-        match(TokenKind::TK_NL);
       } while (match(TokenKind::TK_COMMA));
     }
+
+    // allow newlines before the closing `]`
+    ignore_newlines();
     consume(TokenKind::TK_RBRACKET, "expect `]` after list elements");
 
     // create the list
@@ -868,11 +872,48 @@ class Compiler : private UnCopyable {
     return true;
   }
 
-  void consume(TokenKind expected, const char* msg) {
+  bool consume(TokenKind expected, const char* msg) {
     parser_.advance();
 
-    if (parser_.prev().kind() != expected)
+    if (parser_.prev().kind() != expected) {
       error(msg);
+
+      // if the next token is the one we want, assume the current one is just
+      // a spurious error and discard it to minimize the number of cascaded
+      // errors
+      if (parser_.curr().kind() == expected)
+        parser_.advance();
+      return false;
+    }
+    return true;
+  }
+
+  bool match_line(void) {
+    // matches one or more newlines, returns true if at least one was found
+
+    if (!match(TokenKind::TK_NL))
+      return false;
+
+    while (match(TokenKind::TK_NL)) {
+    }
+    return true;
+  }
+
+  void ignore_newlines(void) {
+    // consumes the current token if its type is [expected], returns true if a
+    // token was consumed, since [expected] is known to be in the middle of an
+    // expression, any newlines following it are consumed and discarded
+
+    match_line();
+  }
+
+  bool consume_line(const char* msg) {
+    // consumes the current token, emits an error if it is not a newline, then
+    // discards any duplicate newlines following it
+
+    bool r = consume(TokenKind::TK_NL, msg);
+    ignore_newlines();
+    return r;
   }
 
   void start_loop(Loop* loop) {
@@ -974,7 +1015,8 @@ class Compiler : private UnCopyable {
     enclosing_class_ = &class_compiler;
 
     consume(TokenKind::TK_LBRACE, "expect `{` after class declaration");
-    match(TokenKind::TK_NL);
+
+    match_line();
 
     while (!match(TokenKind::TK_RBRACE)) {
       Code instruction = Code::METHOD_INSTANCE;
@@ -1008,7 +1050,8 @@ class Compiler : private UnCopyable {
       // donot require a newline after the last definition
       if (match(TokenKind::TK_RBRACE))
         break;
-      consume(TokenKind::TK_NL, "expect newline after definition in class");
+
+      consume_line("expect newline after definition in class");
     }
 
     // update the class with the number of fields
@@ -1031,7 +1074,7 @@ class Compiler : private UnCopyable {
     //       var seq_ = sequence.expression
     //       var iter_
     //       while (iter_ = seq_.iterate(iter_)) {
-    //         var i = set_.iterValue(iter_)
+    //         var i = seq_.iterValue(iter_)
     //         IO.write(i)
     //       }
     //     }
@@ -1058,6 +1101,7 @@ class Compiler : private UnCopyable {
     str_t name = parser_.prev().as_string();
 
     consume(TokenKind::KW_IN, "expect `in` after for loop variable");
+    ignore_newlines();
 
     // evaluate the sequence expression and store it in a hidden local variable
     // the scope in the variable name ensures it won't collide with a user-defined
@@ -1267,7 +1311,7 @@ class Compiler : private UnCopyable {
       return true;
 
     // if there is no newline after the `{`, it's a single expression body
-    if (!match(TokenKind::TK_NL)) {
+    if (!match_line()) {
       expression();
       consume(TokenKind::TK_RBRACE, "expect `}` at end of block");
       return false;
@@ -1285,7 +1329,7 @@ class Compiler : private UnCopyable {
       if (parser_.curr().kind() == TokenKind::TK_EOF)
         return true;
 
-      consume(TokenKind::TK_NL, "expect newline after statement");
+      consume_line("expect newline after statement");
     } while (!match(TokenKind::TK_RBRACE));
     return true;
   }
@@ -1334,6 +1378,7 @@ class Compiler : private UnCopyable {
   }
 
   void call(bool allow_assignment) {
+    ignore_newlines();
     consume(TokenKind::TK_IDENTIFIER, "expect method name after `.`");
     named_call(allow_assignment, Code::CALL_0);
   }
@@ -1348,12 +1393,16 @@ class Compiler : private UnCopyable {
 
     // parse the arguments list
     do {
+      ignore_newlines();
       validate_num_parameters(++argc);
       expression();
 
       // add a space in the name for each argument, lets overload by arity
       name.push_back(' ');
     } while (match(TokenKind::TK_COMMA));
+
+    // allow a newline before the closing `]`
+    ignore_newlines();
     consume(TokenKind::TK_RBRACKET, "expect `]` after subscript arguments");
     name.push_back(']');
 
@@ -1373,23 +1422,27 @@ class Compiler : private UnCopyable {
   }
 
   void is(bool allow_assignment) {
+    ignore_newlines();
+
     // compile the right-hand side
     parse_precedence(false, Precedence::CALL);
     emit_byte(Code::IS);
   }
 
-  void and_expr(bool allow_assignment) {
-    // skip the right argument if the left is false
+  void and_exp(bool allow_assignment) {
+    ignore_newlines();
 
+    // skip the right argument if the left is false
     int jump = emit_jump(Code::AND);
 
     parse_precedence(false, Precedence::LOGIC);
     patch_jump(jump);
   }
 
-  void or_expr(bool allow_assignment) {
-    // skip the right argument if the left if true
+  void or_exp(bool allow_assignment) {
+    ignore_newlines();
 
+    // skip the right argument if the left if true
     int jump = emit_jump(Code::OR);
 
     parse_precedence(false, Precedence::LOGIC);
@@ -1397,6 +1450,9 @@ class Compiler : private UnCopyable {
   }
 
   void condition(bool allow_assignment) {
+    // ignore newline after `?`
+    ignore_newlines();
+
     // jump to the else branch if the condition is false
     int if_jump = emit_jump(Code::JUMP_IF);
 
@@ -1404,6 +1460,7 @@ class Compiler : private UnCopyable {
     parse_precedence(allow_assignment, Precedence::LOGIC);
     consume(TokenKind::TK_COLON,
         "expect `:` after then branch of condition operator");
+    ignore_newlines();
 
     // jump over the else branch when the if branch is taken
     int else_jump = emit_jump(Code::JUMP);
@@ -1418,10 +1475,8 @@ class Compiler : private UnCopyable {
   void infix_oper(bool allow_assignment) {
     auto& rule = get_rule(parser_.prev().kind());
 
-    // the pipe operator does not swallow a newline after it because when
-    // it's used as a block argument delimiter, the newline is significant.
-    // so discard it here
-    match(TokenKind::TK_NL);
+    // an infix operator cannot end an expression
+    ignore_newlines();
 
     // compile the right hand side
     parse_precedence(false, rule.precedence + 1);
@@ -1432,6 +1487,8 @@ class Compiler : private UnCopyable {
 
   void unary_oper(bool allow_assignment) {
     auto& rule = get_rule(parser_.prev().kind());
+
+    ignore_newlines();
 
     // compile the argument
     parse_precedence(false, Precedence::UNARY + 1);
@@ -1509,6 +1566,7 @@ class Compiler : private UnCopyable {
 
     int argc = 0;
     do {
+      ignore_newlines();
       validate_num_parameters(++argc);
 
       // define a local variable in the method for the parameters
@@ -1518,6 +1576,9 @@ class Compiler : private UnCopyable {
       if (!name.empty())
         name.push_back(' ');
     } while (match(TokenKind::TK_COMMA));
+
+    // allow a newline before the closing `)`
+    ignore_newlines();
     const char* msg = end_kind == TokenKind::TK_RPAREN ?
       "expect `)` after parameters" : "expect `|` after parameters";
     consume(end_kind, msg);
@@ -1535,12 +1596,16 @@ class Compiler : private UnCopyable {
     str_t name(method_name);
     if (match(TokenKind::TK_LPAREN)) {
       do {
+        ignore_newlines();
         validate_num_parameters(++argc);
         expression();
 
         // add a space in the name for each argument, let's us overload by arity
         name.push_back(' ');
       } while (match(TokenKind::TK_COMMA));
+
+      // allow a newline before the closing `)`
+      ignore_newlines();
       consume(TokenKind::TK_RPAREN, "expect `)` after arguments");
     }
 
@@ -1573,6 +1638,8 @@ class Compiler : private UnCopyable {
       if (!allow_assignment)
         error("invalid assignment");
 
+      ignore_newlines();
+
       name.push_back('=');
       name.push_back(' ');
 
@@ -1586,11 +1653,15 @@ class Compiler : private UnCopyable {
   }
 
   void new_exp(bool allow_assignment) {
-    parse_precedence(false, Precedence::CALL);
+    // allow a dotted name after `new`
+    consume(TokenKind::TK_IDENTIFIER, "expect name after `name`");
+    variable(false);
 
-    // create the instance of the class
+    while (match(TokenKind::TK_DOT))
+      call(false);
+
+    // invoke the constructor on the new instance
     emit_words(Code::CALL_0, method_symbol("instantiate"));
-
     method_call(Code::CALL_0, "new");
   }
 
@@ -1704,11 +1775,12 @@ public:
   }
 
   FunctionObject* compile_function(TokenKind end_kind) {
+    ignore_newlines();
     for (;;) {
       definition();
 
       // if there is no newline, it must be the end of the block on the same line
-      if (!match(TokenKind::TK_NL)) {
+      if (!match_line()) {
         consume(end_kind, "expect end of file");
         break;
       }
