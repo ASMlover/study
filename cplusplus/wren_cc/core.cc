@@ -578,6 +578,9 @@ DEF_NATIVE(fn_instantiate) {
 DEF_NATIVE(fn_new) {
   // the block argument is already a function, so just return it
 
+  if (!args[1].is_function() && !args[1].is_closure())
+    RETURN_ERR("argument must be a function");
+
   RETURN_VAL(args[1]);
 }
 
