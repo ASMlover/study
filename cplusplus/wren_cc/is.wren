@@ -37,3 +37,7 @@ IO.print(b is C) // expect: false
 IO.print(c is A) // expect: true
 IO.print(c is B) // expect: true
 IO.print(c is C) // expect: true
+
+// ignore newline after `is`
+IO.print(123 is
+  Numeric) // expect: trur

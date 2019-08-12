@@ -1,3 +1,3 @@
 
 new Function {
-  IO.print("ok") }.call // expect error
+  IO.print("ok") } // expect error
