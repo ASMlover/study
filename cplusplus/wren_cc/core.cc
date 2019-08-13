@@ -112,6 +112,20 @@ static int validate_index(const Value& index, int count) {
   return i;
 }
 
+static bool validate_function(WrenVM& vm,
+    Value* args, int index, const str_t& arg_name) {
+  // validates that the given argument in [args] is a function, returns true
+  // if it is, if not reports an error and returns false
+
+  if (args[index].is_function() || args[index].is_closure())
+    return true;
+
+  std::stringstream ss;
+  ss << "`" << arg_name << "` must be a function";
+  args[0] = StringObject::make_string(vm, ss.str());
+  return false;
+}
+
 static bool validate_numeric(WrenVM& vm,
     Value* args, int index, const str_t& arg_name) {
   // validates that the given argument in [args] is a Numeric, returns true
@@ -227,9 +241,16 @@ DEF_NATIVE(class_name) {
   RETURN_VAL(cls->name());
 }
 
-DEF_NATIVE(fiber_create) {
-  if (!args[1].is_function() && !args[1].is_closure())
-    RETURN_ERR("Argument must be a function or closure");
+DEF_NATIVE(fiber_instantiate) {
+  // return the Fiber class itself, when we then call `new` on it, it will
+  // create the fiber
+
+  RETURN_VAL(args[0]);
+}
+
+DEF_NATIVE(fiber_new) {
+  if (!validate_function(vm, args, 1, "Argument"))
+    return PrimitiveResult::ERROR;
 
   FiberObject* new_fiber = FiberObject::make_fiber(vm, args[1].as_object());
 
@@ -576,11 +597,10 @@ DEF_NATIVE(fn_instantiate) {
 }
 
 DEF_NATIVE(fn_new) {
+  if (!validate_function(vm, args, 1, "Argument"))
+    return PrimitiveResult::ERROR;
+
   // the block argument is already a function, so just return it
-
-  if (!args[1].is_function() && !args[1].is_closure())
-    RETURN_ERR("argument must be a function");
-
   RETURN_VAL(args[1]);
 }
 
@@ -858,7 +878,8 @@ namespace core {
     vm.set_native(vm.bool_cls(), "!", _primitive_bool_not);
 
     vm.set_fiber_cls(define_class(vm, "Fiber"));
-    vm.set_native(vm.fiber_cls()->meta_class(), "create ", _primitive_fiber_create);
+    vm.set_native(vm.fiber_cls()->meta_class(), "instantiate", _primitive_fiber_instantiate);
+    vm.set_native(vm.fiber_cls()->meta_class(), "new ", _primitive_fiber_new);
     vm.set_native(vm.fiber_cls()->meta_class(), "yield", _primitive_fiber_yield);
     vm.set_native(vm.fiber_cls()->meta_class(), "yield ", _primitive_fiber_yield1);
     vm.set_native(vm.fiber_cls(), "isDone", _primitive_fiber_isdone);
