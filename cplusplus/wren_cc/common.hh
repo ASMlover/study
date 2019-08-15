@@ -99,6 +99,11 @@ namespace Xt {
 
 #define NAN_TAGGING
 
+// the maximum number of globals that may be defined at one time, this
+// limitation comes from the 16-bits used for the arguments to
+// `Code::LOAD_GLOBAL` and `Code::STORE_GLOBAL`
+#define MAX_GLOBALS     (65536)
+
 // the maximum number of arguments that can be passed to a method, note that
 // this limitation is hardcoded in order places in the VM, in particular the
 // `Code::CALL_*` instructions assume a certain maximum number

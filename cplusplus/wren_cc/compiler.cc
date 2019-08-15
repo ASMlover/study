@@ -490,9 +490,11 @@ class Compiler : private UnCopyable {
     str_t name = parser_.prev().as_string();
     // top-level global scope
     if (scope_depth_ == -1) {
-      int symbol = vm_gsymbols().add(name);
+      int symbol = parser_.get_vm().define_global(name, nullptr);
       if (symbol == -1)
         error("global variable is already defined");
+      else if (symbol == -2)
+        error("too many global variables defined");
       return symbol;
     }
 
@@ -535,7 +537,7 @@ class Compiler : private UnCopyable {
 
     // it's a global variable, so store the value int the global slot and
     // then discard the temporary for the initializer
-    emit_bytes(Code::STORE_GLOBAL, symbol);
+    emit_words(Code::STORE_GLOBAL, symbol);
     emit_byte(Code::POP);
   }
 
@@ -705,6 +707,8 @@ class Compiler : private UnCopyable {
 
     Code load_instruction;
     int index = resolve_name("this", load_instruction);
+    ASSERT(index == -1 || load_instruction != Code::LOAD_GLOBAL,
+        "`this` should not be global");
     emit_bytes(load_instruction, index);
   }
 
@@ -724,9 +728,12 @@ class Compiler : private UnCopyable {
       switch (load_instruction) {
       case Code::LOAD_LOCAL: emit_bytes(Code::STORE_LOCAL, index); break;
       case Code::LOAD_UPVALUE: emit_bytes(Code::STORE_UPVALUE, index); break;
-      case Code::LOAD_GLOBAL: emit_bytes(Code::STORE_GLOBAL, index); break;
+      case Code::LOAD_GLOBAL: emit_words(Code::STORE_GLOBAL, index); break;
       default: UNREACHABLE();
       }
+    }
+    else if (load_instruction == Code::LOAD_GLOBAL) {
+      emit_words(load_instruction, index);
     }
     else {
       emit_bytes(load_instruction, index);
@@ -1008,7 +1015,10 @@ class Compiler : private UnCopyable {
       int method_symbol = method(
           &class_compiler, is_ctor, signature);
       // load the class
-      emit_bytes(is_global ? Code::LOAD_GLOBAL : Code::LOAD_LOCAL, symbol);
+      if (is_global)
+        emit_words(Code::LOAD_GLOBAL, symbol);
+      else
+        emit_bytes(Code::LOAD_LOCAL, symbol);
       // define the method
       emit_words(instruction, method_symbol);
 

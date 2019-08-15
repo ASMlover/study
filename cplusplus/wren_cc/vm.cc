@@ -35,9 +35,9 @@ namespace wrencc {
 /// WrenVM IMPLEMENTATIONS
 
 WrenVM::WrenVM(void) noexcept {
-  globals_.resize(kMaxGlobals);
-  for (int i = 0; i < kMaxGlobals; ++i)
-    globals_[i] = nullptr;
+  // globals_.resize(kMaxGlobals);
+  // for (int i = 0; i < kMaxGlobals; ++i)
+  //   globals_[i] = nullptr;
 
   core::initialize(*this);
   io::load_library(*this);
@@ -50,6 +50,29 @@ WrenVM::~WrenVM(void) {
 
     free_object(obj);
   }
+}
+
+int WrenVM::define_global(const str_t& name, const Value& value) {
+  // adds a new global named [name] to the global namespace
+  //
+  // returns the symbol for the new global, -1 if a global with the given name
+  // is already defined, or -2 if there are too many globals defined
+
+  if (globals_.size() == MAX_GLOBALS)
+    return -2;
+  if (value.is_object()) {
+    Pinned pinned;
+    pin_object(value.as_object(), &pinned);
+  }
+
+  int symbol = global_symbols_.add(name);
+  if (symbol != -1)
+    globals_.push_back(value);
+
+  if (value.is_object())
+    unpin_object();
+
+  return symbol;
 }
 
 void WrenVM::set_native(
@@ -197,13 +220,13 @@ bool WrenVM::interpret(void) {
     }
     CASE_CODE(LOAD_GLOBAL):
     {
-      PUSH(globals_[RDBYTE()]);
+      PUSH(globals_[RDWORD()]);
 
       DISPATCH();
     }
     CASE_CODE(STORE_GLOBAL):
     {
-      globals_[RDBYTE()] = PEEK();
+      globals_[RDWORD()] = PEEK();
 
       DISPATCH();
     }
@@ -686,8 +709,8 @@ void WrenVM::call_function(FiberObject* fiber, BaseObject* fn, int argc) {
 
 void WrenVM::collect(void) {
   // global variables
-  for (int i = 0; i < global_symbols_.count(); ++i)
-    mark_value(globals_[i]);
+  for (auto& v : globals_)
+    mark_value(v);
   // pinned objects
   for (auto* p = pinned_; p != nullptr; p = p->prev)
     mark_object(p->obj);
@@ -772,8 +795,7 @@ void WrenVM::define_method(
     PinnedGuard guard(*this, name_string);
 
     cls = ClassObject::make_class(*this, obj_class_, 0, name_string);
-    class_symbol = global_symbols_.add(class_name);
-    globals_[class_symbol] = cls;
+    define_global(class_name, cls);
   }
 
   // create a name for the method, including its arity

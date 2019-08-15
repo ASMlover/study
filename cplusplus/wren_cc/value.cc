@@ -334,8 +334,6 @@ int FunctionObject::get_argc(
   case Code::STORE_LOCAL:
   case Code::LOAD_UPVALUE:
   case Code::STORE_UPVALUE:
-  case Code::LOAD_GLOBAL:
-  case Code::STORE_GLOBAL:
   case Code::LOAD_FIELD_THIS:
   case Code::STORE_FIELD_THIS:
   case Code::LOAD_FIELD:
@@ -346,6 +344,8 @@ int FunctionObject::get_argc(
 
     // instructions with two arguments
   case Code::CONSTANT:
+  case Code::LOAD_GLOBAL:
+  case Code::STORE_GLOBAL:
   case Code::CALL_0:
   case Code::CALL_1:
   case Code::CALL_2:

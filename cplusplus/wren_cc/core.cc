@@ -840,7 +840,7 @@ static ClassObject* define_single_class(WrenVM& vm, const str_t& name) {
 
   PinnedGuard guard(vm, name_string);
   ClassObject* cls = ClassObject::make_single_class(vm, name_string);
-  vm.set_global(name, cls);
+  vm.define_global(name, cls);
   return cls;
 }
 
@@ -849,7 +849,7 @@ static ClassObject* define_class(WrenVM& vm, const str_t& name) {
 
   PinnedGuard guard(vm, name_string);
   ClassObject* cls = ClassObject::make_class(vm, vm.obj_cls(), 0, name_string);
-  vm.set_global(name, cls);
+  vm.define_global(name, cls);
   return cls;
 }
 
