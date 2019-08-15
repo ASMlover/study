@@ -255,8 +255,8 @@ class Compiler : private UnCopyable {
   // the number of parameters this method or function expects
   int num_params_{};
 
-  inline SymbolTable& vm_methods(void) { return parser_.get_vm().methods(); }
-  inline SymbolTable& vm_gsymbols(void) { return parser_.get_vm().gsymbols(); }
+  inline SymbolTable& vm_mnames(void) { return parser_.get_vm().mnames(); }
+  inline SymbolTable& vm_gnames(void) { return parser_.get_vm().gnames(); }
 
   void error(const char* format, ...) {
     const Token& tok = parser_.prev();
@@ -277,7 +277,7 @@ class Compiler : private UnCopyable {
   }
 
   int intern_symbol(void) {
-    return vm_methods().ensure(parser_.prev().as_string());
+    return vm_mnames().ensure(parser_.prev().as_string());
   }
 
   template <typename T> inline int emit_byte(T b) {
@@ -634,7 +634,7 @@ class Compiler : private UnCopyable {
 
     // if got here, it was not in a local scope, so try the global scope
     load_instruction = Code::LOAD_GLOBAL;
-    return vm_gsymbols().get(name);
+    return vm_gnames().get(name);
   }
 
   Compiler* get_enclosing_class_compiler(void) {
@@ -1561,7 +1561,7 @@ class Compiler : private UnCopyable {
     return argc;
   }
 
-  inline int method_symbol(const str_t& name) { return vm_methods().ensure(name); }
+  inline int method_symbol(const str_t& name) { return vm_mnames().ensure(name); }
 
   void method_call(Code instruction, const str_t& method_name) {
     // compiles an (optional) argument list and then calls it
@@ -1635,8 +1635,8 @@ class Compiler : private UnCopyable {
     while (match(TokenKind::TK_DOT))
       call(false);
 
-    // invoke the constructor on the new instance
-    emit_words(Code::CALL_0, method_symbol("instantiate"));
+    // the leading space in the name is to ensure users cannot call it directly
+    emit_words(Code::CALL_0, method_symbol(" instantiate"));
     method_call(Code::CALL_0, "new");
   }
 

@@ -864,7 +864,7 @@ namespace core {
     vm.set_native(vm.obj_cls(), "new", _primitive_object_new);
     vm.set_native(vm.obj_cls(), "toString", _primitive_object_tostring);
     vm.set_native(vm.obj_cls(), "type", _primitive_object_type);
-    vm.set_native(vm.obj_cls(), "instantiate", _primitive_object_instantiate);
+    vm.set_native(vm.obj_cls(), " instantiate", _primitive_object_instantiate);
 
     // now we can define Class, which is a subclass of Object, but Object's
     // metclass
@@ -877,7 +877,7 @@ namespace core {
 
     // define the methods specific to Class after wiring up its superclass
     // to prevent the inherited ones from overwriting them
-    vm.set_native(vm.class_cls(), "instantiate", _primitive_class_instantiate);
+    vm.set_native(vm.class_cls(), " instantiate", _primitive_class_instantiate);
     vm.set_native(vm.class_cls(), "name", _primitive_class_name);
 
     vm.set_bool_cls(define_class(vm, "Bool"));
@@ -885,7 +885,7 @@ namespace core {
     vm.set_native(vm.bool_cls(), "!", _primitive_bool_not);
 
     vm.set_fiber_cls(define_class(vm, "Fiber"));
-    vm.set_native(vm.fiber_cls()->meta_class(), "instantiate", _primitive_fiber_instantiate);
+    vm.set_native(vm.fiber_cls()->meta_class(), " instantiate", _primitive_fiber_instantiate);
     vm.set_native(vm.fiber_cls()->meta_class(), "new ", _primitive_fiber_new);
     vm.set_native(vm.fiber_cls()->meta_class(), "yield", _primitive_fiber_yield);
     vm.set_native(vm.fiber_cls()->meta_class(), "yield ", _primitive_fiber_yield1);
@@ -894,7 +894,7 @@ namespace core {
     vm.set_native(vm.fiber_cls(), "run ", _primitive_fiber_run1);
 
     vm.set_fn_cls(define_class(vm, "Function"));
-    vm.set_native(vm.fn_cls()->meta_class(), "instantiate", _primitive_fn_instantiate);
+    vm.set_native(vm.fn_cls()->meta_class(), " instantiate", _primitive_fn_instantiate);
     vm.set_native(vm.fn_cls()->meta_class(), "new ", _primitive_fn_new);
     vm.set_native(vm.fn_cls(), "call", _primitive_fn_call0);
     vm.set_native(vm.fn_cls(), "call ", _primitive_fn_call1);

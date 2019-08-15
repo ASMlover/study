@@ -35,10 +35,6 @@ namespace wrencc {
 /// WrenVM IMPLEMENTATIONS
 
 WrenVM::WrenVM(void) noexcept {
-  // globals_.resize(kMaxGlobals);
-  // for (int i = 0; i < kMaxGlobals; ++i)
-  //   globals_[i] = nullptr;
-
   core::initialize(*this);
   io::load_library(*this);
 }
@@ -65,7 +61,7 @@ int WrenVM::define_global(const str_t& name, const Value& value) {
     pin_object(value.as_object(), &pinned);
   }
 
-  int symbol = global_symbols_.add(name);
+  int symbol = global_names_.add(name);
   if (symbol != -1)
     globals_.push_back(value);
 
@@ -77,17 +73,17 @@ int WrenVM::define_global(const str_t& name, const Value& value) {
 
 void WrenVM::set_native(
     ClassObject* cls, const str_t& name, const PrimitiveFn& fn) {
-  int symbol = methods_.ensure(name);
+  int symbol = method_names_.ensure(name);
   cls->bind_method(symbol, fn);
 }
 
 void WrenVM::set_global(const str_t& name, const Value& value) {
-  int symbol = global_symbols_.add(name);
+  int symbol = global_names_.add(name);
   globals_[symbol] = value;
 }
 
 const Value& WrenVM::get_global(const str_t& name) const {
-  int symbol = global_symbols_.get(name);
+  int symbol = global_names_.get(name);
   return globals_[symbol];
 }
 
@@ -137,6 +133,10 @@ void WrenVM::call_foreign(
 }
 
 bool WrenVM::interpret(void) {
+  // the main bytecode interpreter loop, this is where the magic happens, it
+  // is also, as you can imagine, highly performance critical, returns `true`
+  // if the fiber completed without error
+
 #define PUSH(v)   fiber->push(v)
 #define POP()     fiber->pop()
 #define PEEK()    fiber->peek_value()
@@ -303,7 +303,7 @@ bool WrenVM::interpret(void) {
       if (cls->methods_count() <= symbol) {
         std::stringstream ss;
         ss << "`" << cls->name_cstr() << "` does not implement method "
-          << "`" << methods_.get_name(symbol) << "`";
+          << "`" << method_names_.get_name(symbol) << "`";
         RUNTIME_ERROR(ss.str());
       }
 
@@ -343,7 +343,7 @@ bool WrenVM::interpret(void) {
         {
           std::stringstream ss;
           ss << "`" << cls->name_cstr() << "` does not implement method "
-            << "`" << methods_.get_name(symbol) << "`";
+            << "`" << method_names_.get_name(symbol) << "`";
           RUNTIME_ERROR(ss.str());
         }
       }
@@ -382,7 +382,7 @@ bool WrenVM::interpret(void) {
       if (cls->methods_count() <= symbol) {
         std::stringstream ss;
         ss << "`" << cls->name_cstr() << "` does not implement method "
-          << "`" << methods_.get_name(symbol) << "`";
+          << "`" << method_names_.get_name(symbol) << "`";
         RUNTIME_ERROR(ss.str());
       }
 
@@ -422,7 +422,7 @@ bool WrenVM::interpret(void) {
         {
           std::stringstream ss;
           ss << "`" << cls->name_cstr() << "` does not implement method "
-            << "`" << methods_.get_name(symbol) << "`";
+            << "`" << method_names_.get_name(symbol) << "`";
           RUNTIME_ERROR(ss.str());
         }
       }
@@ -784,7 +784,7 @@ void WrenVM::define_method(
   ASSERT(num_params <= MAX_PARAMETERS, "too many parameters");
 
   // find or create the class to bind the method to
-  int class_symbol = global_symbols_.get(class_name);
+  int class_symbol = global_names_.get(class_name);
   ClassObject* cls;
   if (class_symbol != -1) {
     cls = globals_[class_symbol].as_class();
@@ -804,7 +804,7 @@ void WrenVM::define_method(
     name.push_back(' ');
 
   // bind the method
-  int method_symbol = methods_.ensure(name);
+  int method_symbol = method_names_.ensure(name);
   if (is_static)
     cls = cls->meta_class();
   cls->bind_method(method_symbol, method);

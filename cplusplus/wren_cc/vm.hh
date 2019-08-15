@@ -59,10 +59,7 @@ enum class InterpretRet {
 };
 
 class WrenVM final : private UnCopyable {
-  static constexpr sz_t kMaxGlobals = 256;
   static constexpr sz_t kMaxPinned = 16;
-
-  SymbolTable methods_;
 
   ClassObject* fn_class_{};
   ClassObject* bool_class_{};
@@ -75,13 +72,7 @@ class WrenVM final : private UnCopyable {
   ClassObject* list_class_{};
   ClassObject* range_class_{};
 
-  SymbolTable global_symbols_;
   std::vector<Value> globals_;
-
-  // the compiler that is currently compiling code, this is used so that
-  // heap allocated objects used by the compiler can be found if a GC is
-  // kicked off in the middle of a compile
-  Compiler* compiler_{};
 
   // the fiber that is currently running
   FiberObject* fiber_{};
@@ -103,6 +94,21 @@ class WrenVM final : private UnCopyable {
   // during a foreign function call, this will contain the number of arguments
   // to the function
   int foreign_call_argc_{};
+
+  // compiler and debugger data:
+  //
+  // the compiler that is currently compiling code, this is used so that
+  // heap allocated objects used by the compiler can be found if a GC is
+  // kicked off in the middle of a compile
+  Compiler* compiler_{};
+
+  // there is a single global symbol table for all method names on all classes
+  // method calls are dispatched directly by index in this table
+  SymbolTable method_names_;
+
+  // symbol table for the name of all global variables, indexes here directly
+  // correspond to entries in [globals_]
+  SymbolTable global_names_;
 
   void print_stacktrace(FiberObject* fiber);
   void runtime_error(FiberObject* fiber, const str_t& error);
@@ -139,8 +145,10 @@ public:
   inline ClassObject* list_cls(void) const { return list_class_; }
   inline ClassObject* range_cls(void) const { return range_class_; }
 
-  inline SymbolTable& methods(void) { return methods_; }
-  inline SymbolTable& gsymbols(void) { return global_symbols_; }
+  inline const SymbolTable& method_names(void) const { return method_names_; }
+  inline SymbolTable& mnames(void) { return method_names_; }
+  inline const SymbolTable& global_names(void) const { return global_names_; }
+  inline SymbolTable& gnames(void) { return global_names_; }
   inline void set_compiler(Compiler* compiler) { compiler_ = compiler; }
   inline void set_global(int index, const Value& value) { globals_[index] = value; }
   inline const Value& get_global(int index) const { return globals_[index]; }
