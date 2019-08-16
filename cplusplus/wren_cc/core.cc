@@ -633,6 +633,10 @@ DEF_NATIVE(fn_tostring) {
   RETURN_VAL(StringObject::make_string(vm, "<fn>"));
 }
 
+DEF_NATIVE(list_instantiate) {
+  RETURN_VAL(ListObject::make_list(vm, 0));
+}
+
 DEF_NATIVE(list_add) {
   ListObject* list = args[0].as_list();
   list->add_element(args[1]);
@@ -960,6 +964,7 @@ namespace core {
     vm.interpret("Wren core library", kLibSource);
 
     vm.set_list_cls(vm.get_global("List").as_class());
+    vm.set_native(vm.list_cls()->meta_class(), " instantiate", _primitive_list_instantiate);
     vm.set_native(vm.list_cls(), "add ", _primitive_list_add);
     vm.set_native(vm.list_cls(), "clear", _primitive_list_clear);
     vm.set_native(vm.list_cls(), "len", _primitive_list_len);
