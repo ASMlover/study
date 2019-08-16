@@ -4,7 +4,7 @@ class Foo {
     IO.print("getter")
   }
 
-  setter = value {
+  setter=(value) {
     IO.print("setter")
   }
 

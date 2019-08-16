@@ -3,7 +3,7 @@ class Foo {
   new(value) { _value = value }
   toString { _value }
 
-  bar = value {
+  bar=(value) {
     _value = value
     return value
   }

@@ -1,6 +1,6 @@
 
 class Foo {
-  static bar = value {
+  static bar=(value) {
     IO.print(value)
   }
 }

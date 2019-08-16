@@ -4,7 +4,7 @@ class Outer {
     IO.print("outer getter")
   }
 
-  setter = value {
+  setter=(value) {
     IO.print("outer setter")
   }
 
@@ -22,7 +22,7 @@ class Outer {
         IO.print("inner getter")
       }
 
-      setter = value {
+      setter=(value) {
         IO.print("inner setter")
       }
 
