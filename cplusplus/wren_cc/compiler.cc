@@ -1479,7 +1479,9 @@ class Compiler : private UnCopyable {
     name.push_back(' ');
 
     // parse the parameter name
+    consume(TokenKind::TK_LPAREN, "expect `(` after operator name");
     declare_named_variable();
+    consume(TokenKind::TK_RPAREN, "expect `)` after parameter name");
   }
 
   void unary_signature(str_t& name) {
@@ -1487,13 +1489,14 @@ class Compiler : private UnCopyable {
   }
 
   void mixed_signature(str_t& name) {
-    // if there is a parameter name, it's an infix operator, otherwise it's unary
-    if (parser_.curr().kind() == TokenKind::TK_IDENTIFIER) {
+    // if there is a parameter, it's an infix operator, otherwise it's unary
+    if (match(TokenKind::TK_LPAREN)) {
       // add a space for the RHS parameter
       name.push_back(' ');
 
       // parse the parameter name
       declare_named_variable();
+      consume(TokenKind::TK_RPAREN, "expect `)` after parameter name");
     }
   }
 
@@ -1505,7 +1508,9 @@ class Compiler : private UnCopyable {
       name.push_back(' ');
 
       // parse the value parameter
+      consume(TokenKind::TK_LPAREN, "expect `(` after `=`");
       declare_named_variable();
+      consume(TokenKind::TK_RPAREN, "expect `)` after parameter name");
     }
     else {
       // regular named method with an optional parameter list
