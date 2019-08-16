@@ -90,29 +90,70 @@ namespace Xt {
 
 }
 
-// define this to stress test the GC, it will perform a collection before
-// every allocation
-#define GC_STRESS
+// if true then Wren will use a NaN tagged double for its core value
+// representation, otherwise it will use a larger more conventional struct,
+// the former is significantly faster and more compact, the latter is useful
+// for debugging and may be more protable
+//
+// Defaults to on
+#ifndef NAN_TAGGING
+# define NAN_TAGGING        (true)
+#endif
 
-// #define TRACE_MEMORY
-// #define TRACE_OBJECT_DETAIL
+// if true the VM's interpreter loop use computed gotos, see this for more:
+// https://gcc.gnu.org/onlinedocs/gcc-3.1.1/gcc/Labels-as-Values.html, enabling
+// this speeds up the main dispatch loop a bit, but requires compiler support
+//
+// Defaults to on if not MSVC
+#ifndef COMPUTED_GOTOS
+# ifndef _MSC_VER
+#   define COMPUTED_GOTOS   (true)
+# else
+#   define COMPUTED_GOTOS   (false)
+# endif
+#endif
 
-#define NAN_TAGGING
+// if true loads the `IO` class in the standard library
+//
+// Defaults to on
+#ifndef USE_LIBIO
+# define USE_LIBIO          (true)
+#endif
+
+// set this to true to stress test the GC, it will perform a collection before
+// every allocation, this is useful to ensure that memory is always correctly
+// pinned
+#define GC_STRESS           (false)
+
+// set this to true to log memory operations as they occured
+#define TRACE_MEMORY        (false)
+
+// set this to true to log garbage collections as the occured
+#define TRACE_GC            (false)
+
+// set this to true to print out the compiled bytecode of each function
+#define DUMP_COMPILED       (false)
+
+// set this to trace each instructions as it's executed
+#define TRACE_INSTRUCTIONS  (false)
+
+// set this to display object's detail information
+#define TRACE_OBJECT_DETAIL (false)
 
 // the maximum number of globals that may be defined at one time, this
 // limitation comes from the 16-bits used for the arguments to
 // `Code::LOAD_GLOBAL` and `Code::STORE_GLOBAL`
-#define MAX_GLOBALS     (65536)
+#define MAX_GLOBALS         (65536)
 
 // the maximum number of arguments that can be passed to a method, note that
 // this limitation is hardcoded in order places in the VM, in particular the
 // `Code::CALL_*` instructions assume a certain maximum number
-#define MAX_PARAMETERS  (16)
+#define MAX_PARAMETERS      (16)
 
 // the maximum name of a method, not including the signature, this is an
 // arbitrary but enforced maximum just so we know how long the method name
 // strings need to be in the parser
-#define MAX_METHOD_NAME (64)
+#define MAX_METHOD_NAME     (64)
 
 // the maximum length of a method signature, this includes the name and the
 // extra spaces added to handle arity and another byte to terminate the string
@@ -123,11 +164,7 @@ namespace Xt {
 // take a single byte for the number of fields, note that it's 255 and not
 // 256 because creating a class takes the *number* of fields, not the *highest
 // field index*
-#define MAX_FIELDS      (255)
-
-// set this, the VM's interpreter loop uses computed gotos.
-// see post (http://gcc.gnu.org/onlinedocs/gcc-3.1.1/gcc/Labels-as-Values.html)
-// #define COMPUTED_GOTOS
+#define MAX_FIELDS          (255)
 
 #ifndef NDEBUG
 # define ASSERT(cond, msg) if (!(cond)) {\

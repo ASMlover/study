@@ -248,7 +248,7 @@ public:
   str_t stringify(void) const;
 };
 
-#ifdef NAN_TAGGING
+#if NAN_TAGGING
 using Value = TagValue;
 #else
 using Value = ObjValue;

@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <chrono>
 #include <iostream>
+#include "common.hh"
 #include "vm.hh"
 #include "io.hh"
 
@@ -57,10 +58,18 @@ static void io_clock(WrenVM& vm) {
 }
 
 namespace io {
+  namespace details {
+    inline void load_library(WrenVM& vm) {
+      vm.interpret("Wren IO library", kLibSource);
+      wrenDefineStaticMethod(vm, "IO", "writeString", 1, io_write_string);
+      wrenDefineStaticMethod(vm, "IO", "clock", 0, io_clock);
+    }
+  }
+
   void load_library(WrenVM& vm) {
-    vm.interpret("Wren IO library", kLibSource);
-    wrenDefineStaticMethod(vm, "IO", "writeString", 1, io_write_string);
-    wrenDefineStaticMethod(vm, "IO", "clock", 0, io_clock);
+#if USE_LIBIO
+    details::load_library(vm);
+#endif
   }
 }
 

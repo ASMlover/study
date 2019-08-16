@@ -167,7 +167,7 @@ bool WrenVM::interpret(void) {
     return false;\
   } while (false)
 
-#if defined(COMPUTED_GOTOS)
+#if COMPUTED_GOTOS
   static void* _dispatch_table[] = {
 # undef CODEF
 # define CODEF(c) &&__code_##c,
@@ -636,7 +636,7 @@ bool WrenVM::interpret(void) {
 }
 
 ClassObject* WrenVM::get_class(const Value& val) const {
-#ifdef NAN_TAGGING
+#if NAN_TAGGING
   if (val.is_numeric())
     return num_class_;
   if (val.is_object()) {
@@ -738,10 +738,10 @@ void WrenVM::collect(void) {
 }
 
 void WrenVM::free_object(BaseObject* obj) {
-#if defined(TRACE_MEMORY)
+#if TRACE_MEMORY
   std::cout
     << "`" << Xt::cast<void>(obj) << "` free object"
-# if defined(TRACE_OBJECT_DETAIL)
+# if TRACE_OBJECT_DETAIL
     << " `" << obj->stringify() << "`"
 # endif
     << std::endl;
