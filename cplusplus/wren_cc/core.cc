@@ -553,8 +553,8 @@ DEF_NATIVE(string_tostring) {
 }
 
 DEF_NATIVE(string_add) {
-  if (!args[1].is_string())
-    RETURN_VAL(nullptr);
+  if (!validate_string(vm, args, 1, "Right operand"))
+    return PrimitiveResult::ERROR;
 
   StringObject* lhs = args[0].as_string();
   StringObject* rhs = args[1].as_string();
