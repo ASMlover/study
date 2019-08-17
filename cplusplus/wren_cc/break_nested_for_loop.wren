@@ -1,10 +1,10 @@
 
 for (i in 0..2) {
-  IO.print("outer " + i.toString)
+  IO.print("outer ", i)
   if (i > 1) break
 
   for (j in 0..2) {
-    IO.print("inner " + j.toString)
+    IO.print("inner ", j)
     if (j > 1) break
   }
 }

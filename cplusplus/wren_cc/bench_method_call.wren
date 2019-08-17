@@ -65,4 +65,4 @@ for (i in 0...n) {
 }
 IO.print(ntoggle.value)
 
-IO.print("use: " + (IO.clock - start).toString)
+IO.print("use: ", IO.clock - start)

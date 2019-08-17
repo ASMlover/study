@@ -8,4 +8,4 @@ var beg = IO.clock
 for (i in 1..5) {
   IO.print(fib.call(20))
 }
-IO.print("elapsed: " + (IO.clock - beg).toString)
+IO.print("elapsed: ", IO.clock - beg)
