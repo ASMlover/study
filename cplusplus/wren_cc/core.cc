@@ -269,16 +269,13 @@ DEF_NATIVE(fiber_new) {
   RETURN_VAL(new_fiber);
 }
 
-DEF_NATIVE(fiber_isdone) {
-  FiberObject* run_fiber = args[0].as_fiber();
-  RETURN_VAL(run_fiber->empty_frame());
-}
-
-DEF_NATIVE(fiber_run) {
+DEF_NATIVE(fiber_call) {
   FiberObject* run_fiber = args[0].as_fiber();
 
   if (run_fiber->empty_frame())
-    RETURN_ERR("cannot run a finished fiber");
+    RETURN_ERR("cannot call a finished fiber");
+  if (run_fiber->caller() != nullptr)
+    RETURN_ERR("fiber has already been called");
 
   // remember who ran it
   run_fiber->set_caller(fiber);
@@ -289,11 +286,13 @@ DEF_NATIVE(fiber_run) {
   return PrimitiveResult::RUN_FIBER;
 }
 
-DEF_NATIVE(fiber_run1) {
+DEF_NATIVE(fiber_call1) {
   FiberObject* run_fiber = args[0].as_fiber();
 
   if (run_fiber->empty_frame())
-    RETURN_ERR("cannot run a finished fiber");
+    RETURN_ERR("cannot call a finished fiber");
+  if (run_fiber->caller() != nullptr)
+    RETURN_ERR("fiber has already been called");
 
   // remember who ran it
   run_fiber->set_caller(fiber);
@@ -311,15 +310,61 @@ DEF_NATIVE(fiber_run1) {
   return PrimitiveResult::RUN_FIBER;
 }
 
+DEF_NATIVE(fiber_isdone) {
+  FiberObject* run_fiber = args[0].as_fiber();
+  RETURN_VAL(run_fiber->empty_frame());
+}
+
+DEF_NATIVE(fiber_run) {
+  FiberObject* run_fiber = args[0].as_fiber();
+
+  if (run_fiber->empty_frame())
+    RETURN_ERR("cannot run a finished fiber");
+
+  // if the fiber was yield, make the yield call return nil
+  if (run_fiber->caller() == nullptr && run_fiber->stack_size() > 0)
+    run_fiber->set_value(run_fiber->stack_size() - 1, nullptr);
+
+  // unlike call, this does not remeber the calling fiber, instead, it remeber
+  // is *that* fiber's caller, you can think of it like tail call elimination
+  // the switched-from fiber is discarded and when the switched to fiber
+  // completes or yields, control passes to the switched-from fiber's caller.
+  run_fiber->set_caller(fiber->caller());
+
+  return PrimitiveResult::RUN_FIBER;
+}
+
+DEF_NATIVE(fiber_run1) {
+  FiberObject* run_fiber = args[0].as_fiber();
+
+  if (run_fiber->empty_frame())
+    RETURN_ERR("cannot run a finished fiber");
+
+  // if the fiber was yield, make the yield call return the value passed to run
+  if (run_fiber->caller() == nullptr && run_fiber->stack_size() > 0)
+    run_fiber->set_value(run_fiber->stack_size() - 1, args[1]);
+
+  // unlike call, this does not remeber the calling fiber, instead, it remeber
+  // is *that* fiber's caller, you can think of it like tail call elimination
+  // the switched-from fiber is discard and when the switched to fiber
+  // completes or yields, control passes to the switched-from fiber's caller
+  run_fiber->set_caller(fiber->caller());
+
+  return PrimitiveResult::RUN_FIBER;
+}
+
 DEF_NATIVE(fiber_yield) {
   if (fiber->caller() == nullptr)
     RETURN_ERR("no fiber to yield to");
 
+  FiberObject* caller = fiber->caller();
+  fiber->set_caller(nullptr);
+
   // make the caller's run method return nil
-  fiber->caller()->set_value(fiber->caller()->stack_size() - 1, nullptr);
+  caller->set_value(caller->stack_size() - 1, nullptr);
 
   // return the fiber to resume
-  args[0] = fiber->caller();
+  args[0] = caller;
   return PrimitiveResult::RUN_FIBER;
 }
 
@@ -327,8 +372,11 @@ DEF_NATIVE(fiber_yield1) {
   if (fiber->caller() == nullptr)
     RETURN_ERR("no fiber to yield to");
 
+  FiberObject* caller = fiber->caller();
+  fiber->set_caller(nullptr);
+
   // make the caller's run method return the argument passed to yield
-  fiber->caller()->set_value(fiber->caller()->stack_size() - 1, args[1]);
+  caller->set_value(caller->stack_size() - 1, args[1]);
 
   // when we yielding fiber resumes, we will store the result of the yield
   // call in it's stack, since Fiber.yield(value) has two arguments (the
@@ -337,7 +385,7 @@ DEF_NATIVE(fiber_yield1) {
   fiber->pop();
 
   // return the fiber to resume
-  args[0] = fiber->caller();
+  args[0] = caller;
   return PrimitiveResult::RUN_FIBER;
 }
 
@@ -893,6 +941,8 @@ namespace core {
     vm.set_native(vm.fiber_cls()->meta_class(), "new ", _primitive_fiber_new);
     vm.set_native(vm.fiber_cls()->meta_class(), "yield", _primitive_fiber_yield);
     vm.set_native(vm.fiber_cls()->meta_class(), "yield ", _primitive_fiber_yield1);
+    vm.set_native(vm.fiber_cls(), "call", _primitive_fiber_call);
+    vm.set_native(vm.fiber_cls(), "call ", _primitive_fiber_call1);
     vm.set_native(vm.fiber_cls(), "isDone", _primitive_fiber_isdone);
     vm.set_native(vm.fiber_cls(), "run", _primitive_fiber_run);
     vm.set_native(vm.fiber_cls(), "run ", _primitive_fiber_run1);

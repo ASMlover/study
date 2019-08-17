@@ -5,4 +5,6 @@ var fiber = new Fiber {
 
 IO.print("before") // expect: before
 fiber.run // expect: fiber
-IO.print("after") // expect: after
+
+// this does not get run since we exit when the fiber completes
+IO.print("nope")
