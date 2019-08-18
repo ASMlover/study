@@ -34,6 +34,10 @@ namespace wrencc {
 
 static const str_t kLibSource =
 "class IO {\n"
+"  static print {\n"
+"    IO.writeString(\"\n\")\n"
+"  }\n"
+"\n"
 "  static print(obj) {\n"
 "    IO.writeString(obj.toString)\n"
 "    IO.writeString(\"\n\")\n"

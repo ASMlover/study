@@ -1557,8 +1557,6 @@ class Compiler : private UnCopyable {
         name.push_back(' ');
     } while (match(TokenKind::TK_COMMA));
 
-    // allow a newline before the closing `)`
-    ignore_newlines();
     const char* msg = end_kind == TokenKind::TK_RPAREN ?
       "expect `)` after parameters" : "expect `|` after parameters";
     consume(end_kind, msg);
@@ -1584,8 +1582,6 @@ class Compiler : private UnCopyable {
         name.push_back(' ');
       } while (match(TokenKind::TK_COMMA));
 
-      // allow a newline before the closing `)`
-      ignore_newlines();
       consume(TokenKind::TK_RPAREN, "expect `)` after arguments");
     }
 

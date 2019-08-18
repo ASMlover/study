@@ -1,5 +1,9 @@
 
 class IO {
+  static print {
+    IO.writeString("\n")
+  }
+
   static print(obj) {
     IO.writeString(obj.toString)
     IO.writeString("\n")
