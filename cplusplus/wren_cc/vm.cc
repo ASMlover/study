@@ -597,8 +597,8 @@ bool WrenVM::interpret(void) {
       // overflow
       if (superclass->num_fields() + num_fields > MAX_FIELDS) {
         std::stringstream ss;
-        ss << "a class may not have more thane " << MAX_FIELDS
-          << " fields, including inherited ones";
+        ss << "class `" << name->cstr() << "` may not have more thane "
+          << MAX_FIELDS << " fields, including inherited ones";
         RUNTIME_ERROR(ss.str());
       }
 

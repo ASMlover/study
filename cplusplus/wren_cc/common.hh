@@ -159,6 +159,10 @@ namespace Xt {
 // extra spaces added to handle arity and another byte to terminate the string
 #define MAX_METHOD_SIGNATURE  (MAX_METHOD_NAME + MAX_PARAMETERS + 1)
 
+// the maximum length of an identifier, the only real reason for this limitation
+// is so that error messages mentioning variables can be stack allocated
+#define MAX_VARIABLE_NAME   (64)
+
 // the maximum number of fields a class can have, including inherited fields,
 // this is explicit in the bytecode since `Code::CLASS` and `Code::SUBCLASS`
 // take a single byte for the number of fields, note that it's 255 and not

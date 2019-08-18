@@ -488,6 +488,11 @@ class Compiler : private UnCopyable {
     // consumed token, returns its symbol
 
     str_t name = parser_.prev().as_string();
+    if (name.size() > MAX_VARIABLE_NAME) {
+      error("variable name cannot be longger than %d characters",
+          MAX_VARIABLE_NAME);
+    }
+
     // top-level global scope
     if (scope_depth_ == -1) {
       int symbol = parser_.get_vm().define_global(name, nullptr);
