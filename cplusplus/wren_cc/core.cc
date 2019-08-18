@@ -310,9 +310,16 @@ DEF_NATIVE(fiber_call1) {
   return PrimitiveResult::RUN_FIBER;
 }
 
+DEF_NATIVE(fiber_error) {
+  FiberObject* run_fiber = args[0].as_fiber();
+  if (run_fiber->error() == nullptr)
+    RETURN_VAL(nullptr);
+  RETURN_VAL(run_fiber->error());
+}
+
 DEF_NATIVE(fiber_isdone) {
   FiberObject* run_fiber = args[0].as_fiber();
-  RETURN_VAL(run_fiber->empty_frame());
+  RETURN_VAL(run_fiber->empty_frame() || run_fiber->error() != nullptr);
 }
 
 DEF_NATIVE(fiber_run) {
@@ -353,12 +360,32 @@ DEF_NATIVE(fiber_run1) {
   return PrimitiveResult::RUN_FIBER;
 }
 
+DEF_NATIVE(fiber_try) {
+  FiberObject* run_fiber = args[0].as_fiber();
+
+  if (run_fiber->empty_frame())
+    RETURN_ERR("cannot try a finished fiber");
+  if (run_fiber->caller() != nullptr)
+    RETURN_ERR("fiber has already benn called");
+
+  // remeber who ran it
+  run_fiber->set_caller(fiber);
+  run_fiber->set_caller_is_trying(true);
+
+  // if the fiber was yielded, make the yield call return nil
+  if (run_fiber->stack_size() > 0)
+    run_fiber->set_value(run_fiber->stack_size() - 1, nullptr);
+
+  return PrimitiveResult::RUN_FIBER;
+}
+
 DEF_NATIVE(fiber_yield) {
   if (fiber->caller() == nullptr)
     RETURN_ERR("no fiber to yield to");
 
   FiberObject* caller = fiber->caller();
   fiber->set_caller(nullptr);
+  fiber->set_caller_is_trying(false);
 
   // make the caller's run method return nil
   caller->set_value(caller->stack_size() - 1, nullptr);
@@ -374,6 +401,7 @@ DEF_NATIVE(fiber_yield1) {
 
   FiberObject* caller = fiber->caller();
   fiber->set_caller(nullptr);
+  fiber->set_caller_is_trying(false);
 
   // make the caller's run method return the argument passed to yield
   caller->set_value(caller->stack_size() - 1, args[1]);
@@ -943,9 +971,11 @@ namespace core {
     vm.set_native(vm.fiber_cls()->meta_class(), "yield ", _primitive_fiber_yield1);
     vm.set_native(vm.fiber_cls(), "call", _primitive_fiber_call);
     vm.set_native(vm.fiber_cls(), "call ", _primitive_fiber_call1);
+    vm.set_native(vm.fiber_cls(), "error", _primitive_fiber_error);
     vm.set_native(vm.fiber_cls(), "isDone", _primitive_fiber_isdone);
     vm.set_native(vm.fiber_cls(), "run", _primitive_fiber_run);
     vm.set_native(vm.fiber_cls(), "run ", _primitive_fiber_run1);
+    vm.set_native(vm.fiber_cls(), "try", _primitive_fiber_try);
 
     vm.set_fn_cls(define_class(vm, "Function"));
     vm.set_native(vm.fn_cls()->meta_class(), " instantiate", _primitive_fn_instantiate);

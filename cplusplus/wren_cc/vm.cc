@@ -98,7 +98,7 @@ void WrenVM::unpin_object(void) {
 }
 
 void WrenVM::print_stacktrace(FiberObject* fiber) {
-  std::cerr << fiber->error() << std::endl;
+  std::cerr << fiber->error_cstr() << std::endl;
 
   fiber->riter_frames([](const CallFrame& frame, FunctionObject* fn) {
       auto& debug = fn->debug();
@@ -110,11 +110,26 @@ void WrenVM::print_stacktrace(FiberObject* fiber) {
       });
 }
 
-void WrenVM::runtime_error(FiberObject* fiber, const str_t& error) {
-  ASSERT(fiber->error().empty(), "can only fail one");
-  fiber->set_error(error);
+FiberObject* WrenVM::runtime_error(FiberObject* fiber, const str_t& error) {
+  // returns the fiber that should receive the error or `nullptr` if no
+  // fiber caught it
 
+  ASSERT(fiber->error() == nullptr, "can only fail one");
+
+  // store the error in the fiber so it can be accessed later
+  fiber->set_error(StringObject::make_string(*this, error));
+  // if the caller ran this fiber using `try`, give it the error
+  if (fiber->caller_is_trying()) {
+    FiberObject* caller = fiber->caller();
+
+    // make the caller's try method return the error message
+    caller->set_value(caller->stack_size() - 1, fiber->error());
+    return caller;
+  }
+
+  // if we got here, nothing caught the error, so show the stack trace
   print_stacktrace(fiber);
+  return nullptr;
 }
 
 void WrenVM::call_foreign(
@@ -162,9 +177,15 @@ bool WrenVM::interpret(void) {
     co = Xt::down<ClosureObject>(frame->fn);\
   }
 
+// terminates the current fiber with error string [error], if another calling
+// fiber is willing to catch the error, transfers control to it, otherwise
+// exits the interpreter
 #define RUNTIME_ERROR(error) do {\
-    runtime_error(fiber, (error));\
-    return false;\
+    fiber = runtime_error(fiber, (error));\
+    if (fiber == nullptr)\
+      return false;\
+    LOAD_FRAME();\
+    DISPATCH();\
   } while (false)
 
 #if COMPUTED_GOTOS
@@ -177,9 +198,9 @@ bool WrenVM::interpret(void) {
 # define CASE_CODE(name)  __code_##name
 # define DISPATCH()       goto *_dispatch_table[Xt::as_type<int>(c = Xt::as_type<Code>(RDBYTE()))]
 #else
-# define INTERPRET_LOOP() for (;;) switch (c = Xt::as_type<Code>(RDBYTE()))
+# define INTERPRET_LOOP() __loop: switch (c = Xt::as_type<Code>(RDBYTE()))
 # define CASE_CODE(name)  case Code::##name
-# define DISPATCH()       break
+# define DISPATCH()       goto __loop
 #endif
 
   LOAD_FRAME();
@@ -593,6 +614,11 @@ bool WrenVM::interpret(void) {
       ClassObject* cls =
         ClassObject::make_class(*this, superclass, num_fields, name);
 
+      // do not pop the superclass and name off the stack until the subclass
+      // is done being created, to make sure it does not get collected
+      POP();
+      POP();
+
       // now that we know the total number of fields, make sure we donot
       // overflow
       if (superclass->num_fields() + num_fields > MAX_FIELDS) {
@@ -601,11 +627,6 @@ bool WrenVM::interpret(void) {
           << MAX_FIELDS << " fields, including inherited ones";
         RUNTIME_ERROR(ss.str());
       }
-
-      // do not pop the superclass and name off the stack until the subclass
-      // is done being created, to make sure it does not get collected
-      POP();
-      POP();
       PUSH(cls);
 
       DISPATCH();

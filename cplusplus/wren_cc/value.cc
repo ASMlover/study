@@ -582,6 +582,7 @@ void FiberObject::gc_mark(WrenVM& vm) {
     vm.mark_object(upvalue);
 
   vm.mark_object(caller_);
+  vm.mark_object(error_);
 }
 
 FiberObject* FiberObject::make_fiber(WrenVM& vm, BaseObject* fn) {

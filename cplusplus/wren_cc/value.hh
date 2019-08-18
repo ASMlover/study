@@ -493,7 +493,12 @@ class FiberObject final : public BaseObject {
 
   // if the fiber failed because of a runtime error, this will contain the
   // error message, otherwise it will be empty
-  str_t error_{};
+  StringObject* error_{};
+
+  // this will be true id the caller that called this fiber did so using `try`
+  // in that case, if this fiber fails with an error, the error will be given
+  // to the caller
+  bool caller_is_trying_{};
 
   FiberObject(BaseObject* fn) noexcept;
   virtual ~FiberObject(void) {}
@@ -515,8 +520,11 @@ public:
   inline void set_value(int i, const Value& v) { stack_[i] = v; }
   inline FiberObject* caller(void) const { return caller_; }
   inline void set_caller(FiberObject* caller) { caller_ = caller; }
-  inline const str_t& error(void) const { return error_; }
-  inline void set_error(const str_t& error) { error_ = error; }
+  inline StringObject* error(void) const { return error_; }
+  inline const char* error_cstr(void) const { return error_->cstr(); }
+  inline void set_error(StringObject* error) { error_ = error; }
+  inline bool caller_is_trying(void) const { return caller_is_trying_; }
+  inline void set_caller_is_trying(bool b) { caller_is_trying_ = b; }
 
   inline const Value& peek_value(int distance = 0) const {
     return stack_[stack_.size() - 1 - distance];
