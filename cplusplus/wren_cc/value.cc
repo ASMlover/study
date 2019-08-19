@@ -342,6 +342,15 @@ int FunctionObject::get_argc(
   case Code::CLOSE_UPVALUE:
   case Code::RETURN:
   case Code::END:
+  case Code::LOAD_LOCAL_0:
+  case Code::LOAD_LOCAL_1:
+  case Code::LOAD_LOCAL_2:
+  case Code::LOAD_LOCAL_3:
+  case Code::LOAD_LOCAL_4:
+  case Code::LOAD_LOCAL_5:
+  case Code::LOAD_LOCAL_6:
+  case Code::LOAD_LOCAL_7:
+  case Code::LOAD_LOCAL_8:
     return 0;
 
   case Code::LOAD_LOCAL:

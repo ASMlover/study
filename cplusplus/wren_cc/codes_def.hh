@@ -38,6 +38,17 @@ CODE(NIL)          // push `nil` into the stack
 CODE(FALSE)        // push `false` into the stack
 CODE(TRUE)         // push `true` into the stack
 
+// pushes the value in the given local slot
+CODE(LOAD_LOCAL_0)
+CODE(LOAD_LOCAL_1)
+CODE(LOAD_LOCAL_2)
+CODE(LOAD_LOCAL_3)
+CODE(LOAD_LOCAL_4)
+CODE(LOAD_LOCAL_5)
+CODE(LOAD_LOCAL_6)
+CODE(LOAD_LOCAL_7)
+CODE(LOAD_LOCAL_8)
+
 CODE(LOAD_LOCAL)   // push the value in local slot [arg]
 CODE(STORE_LOCAL)  // store the top of the stack in local slot [arg], not pop it
 CODE(LOAD_UPVALUE) // push the value in upvalue [arg]

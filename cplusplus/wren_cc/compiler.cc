@@ -642,6 +642,13 @@ class Compiler : private UnCopyable {
     return vm_gnames().get(name);
   }
 
+  inline void load_local(int slot) {
+    if (slot <= 8)
+      emit_byte(Code::LOAD_LOCAL_0 + slot);
+    else
+      emit_bytes(Code::LOAD_LOCAL, slot);
+  }
+
   Compiler* get_enclosing_class_compiler(void) {
     // walks the compiler chain to find the compiler for the nearest class
     // enclosing this one, returns nullptr if not currently inside a class
@@ -714,7 +721,10 @@ class Compiler : private UnCopyable {
     int index = resolve_name("this", load_instruction);
     ASSERT(index == -1 || load_instruction != Code::LOAD_GLOBAL,
         "`this` should not be global");
-    emit_bytes(load_instruction, index);
+    if (load_instruction == Code::LOAD_LOCAL)
+      load_local(index);
+    else
+      emit_bytes(load_instruction, index);
   }
 
   void variable_impl(bool allow_assignment, int index, Code load_instruction) {
@@ -739,6 +749,9 @@ class Compiler : private UnCopyable {
     }
     else if (load_instruction == Code::LOAD_GLOBAL) {
       emit_words(load_instruction, index);
+    }
+    else if (load_instruction == Code::LOAD_LOCAL) {
+      load_local(index);
     }
     else {
       emit_bytes(load_instruction, index);
@@ -1023,7 +1036,8 @@ class Compiler : private UnCopyable {
       if (is_global)
         emit_words(Code::LOAD_GLOBAL, symbol);
       else
-        emit_bytes(Code::LOAD_LOCAL, symbol);
+        load_local(symbol);
+
       // define the method
       emit_words(instruction, method_symbol);
 
@@ -1099,8 +1113,8 @@ class Compiler : private UnCopyable {
     start_loop(&loop);
 
     // advance the iterator by calling the `.iterate` method on the sequence
-    emit_bytes(Code::LOAD_LOCAL, seq_slot);
-    emit_bytes(Code::LOAD_LOCAL, iter_slot);
+    load_local(seq_slot);
+    load_local(iter_slot);
 
     emit_words(Code::CALL_1, method_symbol("iterate "));
 
@@ -1110,8 +1124,8 @@ class Compiler : private UnCopyable {
     test_exit_loop();
 
     // get the current value in the sequence by calling `.iterValue`
-    emit_bytes(Code::LOAD_LOCAL, seq_slot);
-    emit_bytes(Code::LOAD_LOCAL, iter_slot);
+    load_local(seq_slot);
+    load_local(iter_slot);
 
     emit_words(Code::CALL_1, method_symbol("iterValue "));
 
@@ -1324,7 +1338,7 @@ class Compiler : private UnCopyable {
         emit_byte(Code::POP);
 
       // the receiver is always stored in the first local slot
-      emit_bytes(Code::LOAD_LOCAL, 0);
+      emit_byte(Code::LOAD_LOCAL_0);
     }
     else if (is_statement_body) {
       // implicitly return nil in statement bodies

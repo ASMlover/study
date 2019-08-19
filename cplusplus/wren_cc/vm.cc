@@ -207,6 +207,20 @@ bool WrenVM::interpret(void) {
 
   Code c;
   INTERPRET_LOOP() {
+    CASE_CODE(LOAD_LOCAL_0):
+    CASE_CODE(LOAD_LOCAL_1):
+    CASE_CODE(LOAD_LOCAL_2):
+    CASE_CODE(LOAD_LOCAL_3):
+    CASE_CODE(LOAD_LOCAL_4):
+    CASE_CODE(LOAD_LOCAL_5):
+    CASE_CODE(LOAD_LOCAL_6):
+    CASE_CODE(LOAD_LOCAL_7):
+    CASE_CODE(LOAD_LOCAL_8):
+    {
+      PUSH(fiber->get_value(frame->stack_start + (c - Code::LOAD_LOCAL_0)));
+
+      DISPATCH();
+    }
     CASE_CODE(CONSTANT): PUSH(fn->get_constant(RDWORD())); DISPATCH();
     CASE_CODE(NIL): PUSH(nullptr); DISPATCH();
     CASE_CODE(FALSE): PUSH(false); DISPATCH();
