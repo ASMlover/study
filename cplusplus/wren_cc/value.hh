@@ -261,6 +261,7 @@ class StringObject final : public BaseObject {
   char* value_{};
 
   StringObject(char c) noexcept;
+  StringObject(int n) noexcept;
   StringObject(const char* s, int n, bool replace_owner = false) noexcept;
   virtual ~StringObject(void);
 public:
@@ -275,6 +276,7 @@ public:
   static StringObject* make_string(WrenVM& vm, const char* s, int n);
   static StringObject* make_string(WrenVM& vm, const str_t& s);
   static StringObject* make_string(WrenVM& vm, StringObject* s1, StringObject* s2);
+  static StringObject* make_uninitialized_string(WrenVM& vm, int n);
   static StringObject* concat_string(WrenVM& vm, const char* s1, const char* s2);
   static StringObject* concat_string(WrenVM& vm, const str_t& s1, const str_t& s2);
 };

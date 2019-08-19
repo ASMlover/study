@@ -164,6 +164,12 @@ StringObject::StringObject(char c) noexcept
   value_[1] = 0;
 }
 
+StringObject::StringObject(int n) noexcept
+  : BaseObject(ObjType::STRING)
+  , size_(n) {
+  value_ = new char[Xt::as_type<sz_t>(size_ + 1)];
+}
+
 StringObject::StringObject(const char* s, int n, bool replace_owner) noexcept
   : BaseObject(ObjType::STRING)
   , size_(n) {
@@ -194,6 +200,8 @@ StringObject* StringObject::make_string(WrenVM& vm, char c) {
 }
 
 StringObject* StringObject::make_string(WrenVM& vm, const char* s, int n) {
+  ASSERT(s != nullptr, "unexpected null string");
+
   auto* o = new StringObject(s, n);
   vm.append_object(o);
   return o;
@@ -212,6 +220,12 @@ StringObject* StringObject::make_string(
   s[n] = 0;
 
   auto* o = new StringObject(s, n, true);
+  vm.append_object(o);
+  return o;
+}
+
+StringObject* StringObject::make_uninitialized_string(WrenVM& vm, int n) {
+  auto* o = new StringObject(n);
   vm.append_object(o);
   return o;
 }
