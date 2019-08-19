@@ -171,16 +171,22 @@ namespace Xt {
 #define MAX_FIELDS          (255)
 
 #ifndef NDEBUG
-# define ASSERT(cond, msg) if (!(cond)) {\
-  std::cerr << "[" << __FILE__ << ": " << __LINE__ << "] "\
-            << "Assert failed in " << __func__ << "(): "\
-            << msg << std::endl;\
-  std::abort();\
-}
-#else
-# define ASSERT(cond, msg) ((void)0)
-#endif
+# define ASSERT(cond, msg) do {\
+  if (!(cond)) {\
+    std::cerr << "[" << __FILE__ << ": " << __LINE__ << "] "\
+              << "Assert failed in " << __func__ << "(): "\
+              << msg << std::endl;\
+    std::abort();\
+  }\
+} while (false)
 
-// assertion to indicate that the given point in the code should never be
-// reached
-#define UNREACHABLE() ASSERT(false, "this line should not be reached")
+// assertion to indicate that the given point in the code should never
+// be reached
+#define UNREACHABLE() do {\
+  std::cerr << "This line should not be reached" << std::endl;\
+  std::abort();\
+} while (false)
+#else
+# define ASSERT(cond, msg)  ((void)0)
+# define UNREACHABLE()      ((void)0)
+#endif
