@@ -397,6 +397,7 @@ int FunctionObject::get_argc(
       // there are two bytes for the constant, then two for each upvalue
       return 2 + (loaded_fn->num_upvalues() * 2);
     }
+  default: UNREACHABLE();
   }
   return 0;
 }

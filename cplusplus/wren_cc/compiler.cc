@@ -935,7 +935,7 @@ class Compiler : private UnCopyable {
       if (Xt::as_type<Code>(bytecode_[i]) == Code::END) {
         bytecode_[i] = Xt::as_type<u8_t>(Code::JUMP);
         patch_jump(i + 1);
-        i += 2;
+        i += 3;
       }
       else {
         // skip this instruction and its arguments
