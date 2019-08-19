@@ -652,30 +652,37 @@ bool WrenVM::interpret(void) {
     }
   }
 
-  ASSERT(false, "should not reach end of interpret");
+  // we should only exit this function from an explicit return from Code::RETURN
+  // or a runtime error
+  UNREACHABLE();
   return false;
+}
+
+ClassObject* WrenVM::get_object_class(BaseObject* obj) const {
+  switch (obj->type()) {
+  case ObjType::STRING: return str_class_;
+  case ObjType::LIST: return list_class_;
+  case ObjType::RANGE: return range_class_;
+  case ObjType::FUNCTION: return fn_class_;
+  case ObjType::UPVALUE:
+    ASSERT(false, "upvalues should not be used as first-class objects");
+    return nullptr;
+  case ObjType::CLOSURE: return fn_class_;
+  case ObjType::FIBER: return fiber_class_;
+  case ObjType::CLASS: return Xt::down<ClassObject>(obj)->meta_class();
+  case ObjType::INSTANCE: return Xt::down<InstanceObject>(obj)->cls();
+  default: ASSERT(false, "unreachable"); return nullptr;
+  }
+  return nullptr;
 }
 
 ClassObject* WrenVM::get_class(const Value& val) const {
 #if NAN_TAGGING
   if (val.is_numeric())
     return num_class_;
-  if (val.is_object()) {
-    switch (val.objtype()) {
-    case ObjType::STRING: return str_class_;
-    case ObjType::LIST: return list_class_;
-    case ObjType::RANGE: return range_class_;
-    case ObjType::FUNCTION: return fn_class_;
-    case ObjType::UPVALUE:
-      ASSERT(false, "upvalues should not be used as first-class objects");
-      return nullptr;
-    case ObjType::CLOSURE: return fn_class_;
-    case ObjType::FIBER: return fiber_class_;
-    case ObjType::CLASS: return val.as_class()->meta_class();
-    case ObjType::INSTANCE: return val.as_instance()->cls();
-    default: ASSERT(false, "unreachable"); return nullptr;
-    }
-  }
+  if (val.is_object())
+    return get_object_class(val.as_object());
+
   switch (val.tag()) {
   case Tag::NaN: return num_class_;
   case Tag::NIL: return nil_class_;
@@ -688,24 +695,11 @@ ClassObject* WrenVM::get_class(const Value& val) const {
   case ValueType::TRUE:
   case ValueType::FALSE: return bool_class_;
   case ValueType::NUMERIC: return num_class_;
-  case ValueType::OBJECT:
-    switch (val.objtype()) {
-    case ObjType::STRING: return str_class_;
-    case ObjType::LIST: return list_class_;
-    case ObjType::RANGE: return range_class_;
-    case ObjType::FUNCTION: return fn_class_;
-    case ObjType::UPVALUE:
-      ASSERT(false, "upvalues should not be used as first-class objects");
-      return nullptr;
-    case ObjType::CLOSURE: return fn_class_;
-    case ObjType::FIBER: return fiber_class_;
-    case ObjType::CLASS: return val.as_class()->meta_class();
-    case ObjType::INSTANCE: return val.as_instance()->cls();
-    default: ASSERT(false, "unreachable"); return nullptr;
-    }
-    break;
+  case ValueType::OBJECT: return get_object_class(val.as_object());
   }
 #endif
+
+  UNREACHABLE();
   return nullptr;
 }
 

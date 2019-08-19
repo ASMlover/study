@@ -163,6 +163,7 @@ public:
   void mark_object(BaseObject* obj);
   void mark_value(const Value& val);
 
+  ClassObject* get_object_class(BaseObject* obj) const;
   ClassObject* get_class(const Value& val) const;
   InterpretRet interpret(const str_t& source_path, const str_t& source_bytes);
   void call_function(FiberObject* fiber, BaseObject* fn, int argc);
