@@ -798,10 +798,9 @@ DEF_NATIVE(list_subscript) {
   // corner case: an empty range at zero is allowed on an empty list
   // this way, list[0..-1] and [0...list.len] can be used to copy a list
   // even when empty
-  if (list->count() == 0) {
-    if ((range->from() == 0 && range->to() == -1 && range->is_inclusive()) ||
-        (range->from() == 0 && range->to() == 0 && !range->is_inclusive()))
-      RETURN_VAL(ListObject::make_list(vm, 0));
+  if (list->count() == 0 && range->from() == 0 &&
+      range->to() == (range->is_inclusive() ? -1 : 0)) {
+    RETURN_VAL(ListObject::make_list(vm, 0));
   }
 
   int from = validate_index_value(vm,
