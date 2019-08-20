@@ -156,22 +156,23 @@ str_t ObjValue::stringify(void) const {
   return "";
 }
 
-StringObject::StringObject(char c) noexcept
-  : BaseObject(ObjType::STRING)
+StringObject::StringObject(ClassObject* cls, char c) noexcept
+  : BaseObject(ObjType::STRING, cls)
   , size_(1) {
   value_ = new char[2];
   value_[0] = c;
   value_[1] = 0;
 }
 
-StringObject::StringObject(int n) noexcept
-  : BaseObject(ObjType::STRING)
+StringObject::StringObject(ClassObject* cls, int n) noexcept
+  : BaseObject(ObjType::STRING, cls)
   , size_(n) {
   value_ = new char[Xt::as_type<sz_t>(size_ + 1)];
 }
 
-StringObject::StringObject(const char* s, int n, bool replace_owner) noexcept
-  : BaseObject(ObjType::STRING)
+StringObject::StringObject(
+    ClassObject* cls, const char* s, int n, bool replace_owner) noexcept
+  : BaseObject(ObjType::STRING, cls)
   , size_(n) {
   if (replace_owner) {
     value_ = const_cast<char*>(s);
@@ -194,7 +195,7 @@ str_t StringObject::stringify(void) const {
 }
 
 StringObject* StringObject::make_string(WrenVM& vm, char c) {
-  auto* o = new StringObject(c);
+  auto* o = new StringObject(vm.str_cls(), c);
   vm.append_object(o);
   return o;
 }
@@ -202,7 +203,7 @@ StringObject* StringObject::make_string(WrenVM& vm, char c) {
 StringObject* StringObject::make_string(WrenVM& vm, const char* s, int n) {
   ASSERT(s != nullptr, "unexpected null string");
 
-  auto* o = new StringObject(s, n);
+  auto* o = new StringObject(vm.str_cls(), s, n);
   vm.append_object(o);
   return o;
 }
@@ -219,13 +220,13 @@ StringObject* StringObject::make_string(
   memcpy(s + s1->size(), s2->cstr(), s2->size());
   s[n] = 0;
 
-  auto* o = new StringObject(s, n, true);
+  auto* o = new StringObject(vm.str_cls(), s, n, true);
   vm.append_object(o);
   return o;
 }
 
 StringObject* StringObject::make_uninitialized_string(WrenVM& vm, int n) {
-  auto* o = new StringObject(n);
+  auto* o = new StringObject(vm.str_cls(), n);
   vm.append_object(o);
   return o;
 }
@@ -240,7 +241,7 @@ StringObject* StringObject::concat_string(
   memcpy(s + n1, s2, n2);
   s[n] = 0;
 
-  auto* o = new StringObject(s, Xt::as_type<int>(n), true);
+  auto* o = new StringObject(vm.str_cls(), s, Xt::as_type<int>(n), true);
   vm.append_object(o);
   return o;
 }
@@ -250,8 +251,8 @@ StringObject* StringObject::concat_string(
   return concat_string(vm, s1.data(), s2.data());
 }
 
-ListObject::ListObject(int num_elements) noexcept
-  : BaseObject(ObjType::LIST) {
+ListObject::ListObject(ClassObject* cls, int num_elements) noexcept
+  : BaseObject(ObjType::LIST, cls) {
   if (num_elements > 0)
     elements_.resize(num_elements);
 }
@@ -279,7 +280,7 @@ void ListObject::gc_mark(WrenVM& vm) {
 }
 
 ListObject* ListObject::make_list(WrenVM& vm, int num_elements) {
-  auto* o = new ListObject(num_elements);
+  auto* o = new ListObject(vm.list_cls(), num_elements);
   vm.append_object(o);
   return o;
 }
@@ -292,7 +293,7 @@ str_t RangeObject::stringify(void) const {
 
 RangeObject* RangeObject::make_range(
     WrenVM& vm, double from, double to, bool is_inclusive) {
-  auto* o = new RangeObject(from, to, is_inclusive);
+  auto* o = new RangeObject(vm.range_cls(), from, to, is_inclusive);
   vm.append_object(o);
   return o;
 }
@@ -305,12 +306,13 @@ DebugObject::DebugObject(const str_t& name,
 }
 
 FunctionObject::FunctionObject(
+    ClassObject* cls,
     int num_upvalues, int num_params,
     u8_t* codes, int codes_count,
     const Value* constants, int constants_count,
     const str_t& source_path, const str_t& debug_name,
     int* source_lines, int lines_count) noexcept
-  : BaseObject(ObjType::FUNCTION)
+  : BaseObject(ObjType::FUNCTION, cls)
   , num_upvalues_(num_upvalues)
   , codes_(codes, codes + codes_count)
   , constants_(constants, constants + constants_count)
@@ -431,7 +433,8 @@ FunctionObject* FunctionObject::make_function(WrenVM& vm,
     const Value* constants, int constants_count,
     const str_t& source_path, const str_t& debug_name,
     int* source_lines, int lines_count) {
-  auto* o = new FunctionObject(num_upvalues, num_params,
+  auto* o = new FunctionObject(
+      vm.fn_cls(), num_upvalues, num_params,
       codes, codes_count, constants, constants_count,
       source_path, debug_name, source_lines, lines_count);
   vm.append_object(o);
@@ -439,7 +442,7 @@ FunctionObject* FunctionObject::make_function(WrenVM& vm,
 }
 
 UpvalueObject::UpvalueObject(Value* value, UpvalueObject* next) noexcept
-  : BaseObject(ObjType::UPVALUE)
+  : BaseObject(ObjType::UPVALUE, nullptr)
   , value_(value)
   , next_(next) {
 }
@@ -461,8 +464,8 @@ UpvalueObject* UpvalueObject::make_upvalue(
   return o;
 }
 
-ClosureObject::ClosureObject(FunctionObject* fn) noexcept
-  : BaseObject(ObjType::CLOSURE)
+ClosureObject::ClosureObject(ClassObject* cls, FunctionObject* fn) noexcept
+  : BaseObject(ObjType::CLOSURE, cls)
   , fn_(fn) {
   int num_upvalues = fn_->num_upvalues();
   if (num_upvalues > 0) {
@@ -490,13 +493,13 @@ void ClosureObject::gc_mark(WrenVM& vm) {
 }
 
 ClosureObject* ClosureObject::make_closure(WrenVM& vm, FunctionObject* fn) {
-  auto* o = new ClosureObject(fn);
+  auto* o = new ClosureObject(vm.fn_cls(), fn);
   vm.append_object(o);
   return o;
 }
 
-FiberObject::FiberObject(BaseObject* fn) noexcept
-  : BaseObject(ObjType::FIBER) {
+FiberObject::FiberObject(ClassObject* cls, BaseObject* fn) noexcept
+  : BaseObject(ObjType::FIBER, cls) {
   stack_.reserve(kDefaultCap);
   const u8_t* ip;
   if (fn->type() == ObjType::FUNCTION)
@@ -610,19 +613,18 @@ void FiberObject::gc_mark(WrenVM& vm) {
 }
 
 FiberObject* FiberObject::make_fiber(WrenVM& vm, BaseObject* fn) {
-  auto* o = new FiberObject(fn);
+  auto* o = new FiberObject(vm.fiber_cls(), fn);
   vm.append_object(o);
   return o;
 }
 
 ClassObject::ClassObject(void) noexcept
-  : BaseObject(ObjType::CLASS) {
+  : BaseObject(ObjType::CLASS, nullptr) {
 }
 
 ClassObject::ClassObject(ClassObject* meta_class,
     ClassObject* supercls, int num_fields, StringObject* name) noexcept
-  : BaseObject(ObjType::CLASS)
-  , meta_class_(meta_class)
+  : BaseObject(ObjType::CLASS, meta_class)
   , num_fields_(num_fields)
   , name_(name) {
   if (supercls != nullptr)
@@ -679,7 +681,7 @@ void ClassObject::bind_method(int i, int method_type, const Value& fn) {
   bind_method(method_fn);
 
   if (Xt::as_type<Code>(method_type) == Code::METHOD_STATIC )
-    meta_class_->bind_method(i, fn.as_object());
+    cls()->bind_method(i, fn.as_object());
   else
     bind_method(i, fn.as_object());
 }
@@ -699,7 +701,7 @@ str_t ClassObject::stringify(void) const {
 }
 
 void ClassObject::gc_mark(WrenVM& vm) {
-  vm.mark_object(meta_class_);
+  vm.mark_object(cls());
   vm.mark_object(superclass_);
   vm.mark_object(name_);
   for (auto& m : methods_) {
@@ -735,20 +737,20 @@ ClassObject* ClassObject::make_class(
 }
 
 InstanceObject::InstanceObject(ClassObject* cls) noexcept
-  : BaseObject(ObjType::INSTANCE)
-  , cls_(cls)
+  : BaseObject(ObjType::INSTANCE, cls)
   , fields_(cls->num_fields()) {
-  for (int i = 0; i < cls_->num_fields(); ++i)
+  for (int i = 0; i < cls->num_fields(); ++i)
     fields_[i] = nullptr;
 }
 
 str_t InstanceObject::stringify(void) const {
   std::stringstream ss;
-  ss << "[instance `" << this << "` of " << cls_->name_cstr() << "]";
+  ss << "[instance `" << this << "` of " << cls()->name_cstr() << "]";
   return ss.str();
 }
 
 void InstanceObject::gc_mark(WrenVM& vm) {
+  vm.mark_object(cls());
   for (auto& v : fields_)
     vm.mark_value(v);
 }

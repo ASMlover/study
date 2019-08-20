@@ -952,8 +952,8 @@ namespace core {
 
     // now that Object and Class are defined, we can wrie them up to each other
     vm.class_cls()->bind_superclass(vm.obj_cls());
-    vm.obj_cls()->set_meta_class(vm.class_cls());
-    vm.class_cls()->set_meta_class(vm.class_cls());
+    vm.obj_cls()->set_cls(vm.class_cls());
+    vm.class_cls()->set_cls(vm.class_cls());
 
     // define the methods specific to Class after wiring up its superclass
     // to prevent the inherited ones from overwriting them
@@ -965,10 +965,10 @@ namespace core {
     vm.set_native(vm.bool_cls(), "!", _primitive_bool_not);
 
     vm.set_fiber_cls(define_class(vm, "Fiber"));
-    vm.set_native(vm.fiber_cls()->meta_class(), " instantiate", _primitive_fiber_instantiate);
-    vm.set_native(vm.fiber_cls()->meta_class(), "new ", _primitive_fiber_new);
-    vm.set_native(vm.fiber_cls()->meta_class(), "yield", _primitive_fiber_yield);
-    vm.set_native(vm.fiber_cls()->meta_class(), "yield ", _primitive_fiber_yield1);
+    vm.set_native(vm.fiber_cls()->cls(), " instantiate", _primitive_fiber_instantiate);
+    vm.set_native(vm.fiber_cls()->cls(), "new ", _primitive_fiber_new);
+    vm.set_native(vm.fiber_cls()->cls(), "yield", _primitive_fiber_yield);
+    vm.set_native(vm.fiber_cls()->cls(), "yield ", _primitive_fiber_yield1);
     vm.set_native(vm.fiber_cls(), "call", _primitive_fiber_call);
     vm.set_native(vm.fiber_cls(), "call ", _primitive_fiber_call1);
     vm.set_native(vm.fiber_cls(), "error", _primitive_fiber_error);
@@ -978,8 +978,8 @@ namespace core {
     vm.set_native(vm.fiber_cls(), "try", _primitive_fiber_try);
 
     vm.set_fn_cls(define_class(vm, "Function"));
-    vm.set_native(vm.fn_cls()->meta_class(), " instantiate", _primitive_fn_instantiate);
-    vm.set_native(vm.fn_cls()->meta_class(), "new ", _primitive_fn_new);
+    vm.set_native(vm.fn_cls()->cls(), " instantiate", _primitive_fn_instantiate);
+    vm.set_native(vm.fn_cls()->cls(), "new ", _primitive_fn_new);
     vm.set_native(vm.fn_cls(), "call", _primitive_fn_call0);
     vm.set_native(vm.fn_cls(), "call ", _primitive_fn_call1);
     vm.set_native(vm.fn_cls(), "call  ", _primitive_fn_call2);
@@ -1040,11 +1040,24 @@ namespace core {
     vm.set_native(vm.str_cls(), "!= ", _primitive_string_ne);
     vm.set_native(vm.str_cls(), "[ ]", _primitive_string_subscript);
 
+    // when the base classes are defined, we allocated string objects for
+    // their names, however we have not created the string class itself yet,
+    // so those all have nullptr class pointers, now that we have a string
+    // class, go back and fix them up
+    vm.obj_cls()->name()->set_cls(vm.str_cls());
+    vm.class_cls()->name()->set_cls(vm.str_cls());
+    vm.bool_cls()->name()->set_cls(vm.str_cls());
+    vm.fiber_cls()->name()->set_cls(vm.str_cls());
+    vm.fn_cls()->name()->set_cls(vm.str_cls());
+    vm.nil_cls()->name()->set_cls(vm.str_cls());
+    vm.num_cls()->name()->set_cls(vm.str_cls());
+    vm.str_cls()->name()->set_cls(vm.str_cls());
+
     /// from core library source
     vm.interpret("Wren core library", kLibSource);
 
     vm.set_list_cls(vm.get_global("List").as_class());
-    vm.set_native(vm.list_cls()->meta_class(), " instantiate", _primitive_list_instantiate);
+    vm.set_native(vm.list_cls()->cls(), " instantiate", _primitive_list_instantiate);
     vm.set_native(vm.list_cls(), "add ", _primitive_list_add);
     vm.set_native(vm.list_cls(), "clear", _primitive_list_clear);
     vm.set_native(vm.list_cls(), "len", _primitive_list_len);

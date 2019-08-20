@@ -78,12 +78,17 @@ class InstanceObject;
 class BaseObject : private UnCopyable {
   ObjType type_ : 4;
   ObjFlag flag_ : 1;
+  ClassObject* cls_{}; // the object's class
 public:
-  BaseObject(ObjType type) noexcept : type_(type), flag_(ObjFlag::UNMARK) {}
+  BaseObject(ObjType type, ClassObject* cls = nullptr) noexcept
+    : type_(type), flag_(ObjFlag::UNMARK), cls_(cls) {
+  }
   virtual ~BaseObject(void) {}
 
   inline ObjType type(void) const { return type_; }
   inline ObjFlag flag(void) const { return flag_; }
+  inline ClassObject* cls(void) const { return cls_; }
+  inline void set_cls(ClassObject* cls) { cls_ = cls; }
   template <typename T> inline void set_flag(T f) { flag_ = Xt::as_type<ObjFlag>(f); }
 
   inline bool set_marked(void) {
@@ -260,9 +265,10 @@ class StringObject final : public BaseObject {
   int size_{};
   char* value_{};
 
-  StringObject(char c) noexcept;
-  StringObject(int n) noexcept;
-  StringObject(const char* s, int n, bool replace_owner = false) noexcept;
+  StringObject(ClassObject* cls, char c) noexcept;
+  StringObject(ClassObject* cls, int n) noexcept;
+  StringObject(ClassObject* cls,
+      const char* s, int n, bool replace_owner = false) noexcept;
   virtual ~StringObject(void);
 public:
   inline int size(void) const { return size_; }
@@ -284,7 +290,7 @@ public:
 class ListObject final : public BaseObject {
   std::vector<Value> elements_;
 
-  ListObject(int num_elements = 0) noexcept;
+  ListObject(ClassObject* cls, int num_elements = 0) noexcept;
 public:
   inline int count(void) const { return Xt::as_type<int>(elements_.size()); }
   inline const Value* elements(void) const { return elements_.data(); }
@@ -310,8 +316,8 @@ class RangeObject final : public BaseObject {
   double to_{};   // the end of the range, may be greater or less than [from_]
   bool is_inclusive_{}; // true if [to] is included in the range
 
-  RangeObject(double from, double to, bool is_inclusive) noexcept
-    : BaseObject(ObjType::RANGE)
+  RangeObject(ClassObject* cls, double from, double to, bool is_inclusive) noexcept
+    : BaseObject(ObjType::RANGE, cls)
     , from_(from)
     , to_(to)
     , is_inclusive_(is_inclusive) {
@@ -364,6 +370,7 @@ class FunctionObject final : public BaseObject {
   DebugObject debug_;
 
   FunctionObject(
+      ClassObject* cls,
       int num_upvalues, int num_params,
       u8_t* codes, int codes_count,
       const Value* constants, int constants_count,
@@ -449,7 +456,7 @@ class ClosureObject final : public BaseObject {
   FunctionObject* fn_{}; // function that this closure is an instance of
   UpvalueObject** upvalues_{}; // the upvalues this function has closed over
 
-  ClosureObject(FunctionObject* fn) noexcept;
+  ClosureObject(ClassObject* cls, FunctionObject* fn) noexcept;
   virtual ~ClosureObject(void);
 public:
   inline FunctionObject* fn(void) const { return fn_; }
@@ -502,7 +509,7 @@ class FiberObject final : public BaseObject {
   // to the caller
   bool caller_is_trying_{};
 
-  FiberObject(BaseObject* fn) noexcept;
+  FiberObject(ClassObject* cls, BaseObject* fn) noexcept;
   virtual ~FiberObject(void) {}
 public:
   inline void reset(void) {
@@ -598,7 +605,6 @@ struct Method {
 };
 
 class ClassObject final : public BaseObject {
-  ClassObject* meta_class_{};
   ClassObject* superclass_{};
   int num_fields_{};
   StringObject* name_{}; // the name of the class
@@ -610,8 +616,6 @@ class ClassObject final : public BaseObject {
       ClassObject* meta_class, ClassObject* supercls = nullptr,
       int num_fields = 0, StringObject* name = nullptr) noexcept;
 public:
-  inline ClassObject* meta_class(void) const { return meta_class_; }
-  inline void set_meta_class(ClassObject* meta_class) { meta_class_ = meta_class; }
   inline ClassObject* superclass(void) const { return superclass_; }
   inline int num_fields(void) const { return num_fields_; }
   inline StringObject* name(void) const { return name_; }
@@ -650,12 +654,10 @@ public:
 };
 
 class InstanceObject final : public BaseObject {
-  ClassObject* cls_{};
   std::vector<Value> fields_;
 
   InstanceObject(ClassObject* cls) noexcept;
 public:
-  inline ClassObject* cls(void) const { return cls_; }
   inline const Value& get_field(int i) const { return fields_[i]; }
   inline void set_field(int i, const Value& v) { fields_[i] = v; }
 
