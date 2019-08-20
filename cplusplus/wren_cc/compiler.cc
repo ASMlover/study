@@ -261,6 +261,12 @@ class Compiler : private UnCopyable {
   void error(const char* format, ...) {
     const Token& tok = parser_.prev();
     parser_.set_error(true);
+
+    // if the parse error was caused by an error token, the lexer has already
+    // reported it.
+    if (tok.kind() == TokenKind::TK_ERROR)
+      return;
+
     std::cerr
       << "[`" << parser_.source_path() << "` LINE:" << tok.lineno() << "] - "
       << "Compile ERROR on ";

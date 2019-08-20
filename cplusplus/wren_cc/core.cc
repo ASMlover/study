@@ -455,6 +455,10 @@ DEF_NATIVE(numeric_sqrt) {
 }
 
 DEF_NATIVE(numeric_tostring) {
+  double v = args[0].as_numeric();
+  if (v != v)
+    RETURN_VAL(StringObject::make_string(vm, "nan"));
+
   RETURN_VAL(StringObject::make_string(vm, args[0].stringify()));
 }
 
@@ -650,14 +654,20 @@ DEF_NATIVE(string_eq) {
   if (!args[1].is_string())
     RETURN_VAL(false);
 
-  RETURN_VAL(strcmp(args[0].as_cstring(), args[1].as_cstring()) == 0);
+  StringObject* a = args[0].as_string();
+  StringObject* b = args[1].as_string();
+  RETURN_VAL(a->size() == b->size() &&
+      memcmp(a->cstr(), b->cstr(), a->size()) == 0);
 }
 
 DEF_NATIVE(string_ne) {
   if (!args[1].is_string())
     RETURN_VAL(true);
 
-  RETURN_VAL(strcmp(args[0].as_cstring(), args[1].as_cstring()) != 0);
+  StringObject* a = args[0].as_string();
+  StringObject* b = args[1].as_string();
+  RETURN_VAL(a->size() != b->size() ||
+      memcmp(a->cstr(), b->cstr(), a->size()) != 0);
 }
 
 DEF_NATIVE(string_subscript) {
