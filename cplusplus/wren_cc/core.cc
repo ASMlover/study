@@ -269,6 +269,15 @@ DEF_NATIVE(fiber_new) {
   RETURN_VAL(new_fiber);
 }
 
+DEF_NATIVE(fiber_abort) {
+  if (!validate_string(vm, args, 1, "Error message"))
+    return PrimitiveResult::ERROR;
+
+  // move the error message to the return position
+  args[0] = args[1];
+  return PrimitiveResult::ERROR;
+}
+
 DEF_NATIVE(fiber_call) {
   FiberObject* run_fiber = args[0].as_fiber();
 
@@ -966,6 +975,7 @@ namespace core {
     vm.set_fiber_cls(define_class(vm, "Fiber"));
     vm.set_native(vm.fiber_cls()->cls(), " instantiate", _primitive_fiber_instantiate);
     vm.set_native(vm.fiber_cls()->cls(), "new ", _primitive_fiber_new);
+    vm.set_native(vm.fiber_cls()->cls(), "abort ", _primitive_fiber_abort);
     vm.set_native(vm.fiber_cls()->cls(), "yield", _primitive_fiber_yield);
     vm.set_native(vm.fiber_cls()->cls(), "yield ", _primitive_fiber_yield1);
     vm.set_native(vm.fiber_cls(), "call", _primitive_fiber_call);
