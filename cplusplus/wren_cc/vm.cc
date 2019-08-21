@@ -32,24 +32,6 @@
 
 namespace wrencc {
 
-static str_t method_not_found(
-    const str_t& class_name, const str_t& symbol_name) {
-  // count the number of spaces to determine number of arguments for this symbol
-
-  sz_t pos = symbol_name.size() - 1;
-  while (symbol_name[pos] == ' ')
-    --pos;
-
-  sz_t argc = symbol_name.size() - pos - 1;
-  str_t canonical_symbol = symbol_name.substr(0, pos + 1);
-
-  std::stringstream ss;
-  ss << "`" << class_name << "` does not implement method "
-    << "`" << canonical_symbol << "` with " << argc << " argument"
-    << (argc == 1 ? "" : "s");
-  return ss.str();
-}
-
 /// WrenVM IMPLEMENTATIONS
 
 WrenVM::WrenVM(void) noexcept {
@@ -128,14 +110,14 @@ void WrenVM::print_stacktrace(FiberObject* fiber) {
       });
 }
 
-FiberObject* WrenVM::runtime_error(FiberObject* fiber, const str_t& error) {
+FiberObject* WrenVM::runtime_error(FiberObject* fiber, StringObject* error) {
   // returns the fiber that should receive the error or `nullptr` if no
   // fiber caught it
 
   ASSERT(fiber->error() == nullptr, "can only fail one");
 
   // store the error in the fiber so it can be accessed later
-  fiber->set_error(StringObject::make_string(*this, error));
+  fiber->set_error(error);
   // if the caller ran this fiber using `try`, give it the error
   if (fiber->caller_is_trying()) {
     FiberObject* caller = fiber->caller();
@@ -148,6 +130,27 @@ FiberObject* WrenVM::runtime_error(FiberObject* fiber, const str_t& error) {
   // if we got here, nothing caught the error, so show the stack trace
   print_stacktrace(fiber);
   return nullptr;
+}
+
+StringObject* WrenVM::method_not_found(ClassObject* cls, int symbol) {
+  // creates a string containing an appropriate method not found error for
+  // a method with [symbol] on [cls] object.
+
+  // count the number of spaces to determine the number of parameters the
+  // method expects
+  const str_t& method_name = method_names_.get_name(symbol);
+  sz_t method_len = method_name.size();
+  int num_params = 0;
+  while (method_name[method_len - num_params - 1] == ' ')
+    ++num_params;
+
+  std::stringstream ss;
+  ss << "`" << cls->name_cstr() << "` does not implement method "
+    << "`" << method_name.substr(0, method_len - num_params) << "` "
+    << "with " << num_params << " argument"
+    << (num_params == 1 ? "" : "s");
+
+  return StringObject::make_string(*this, ss.str());
 }
 
 void WrenVM::call_foreign(
@@ -349,9 +352,7 @@ bool WrenVM::interpret(void) {
 
       // if the class's method table does not include the symbol, bail
       if (cls->methods_count() <= symbol) {
-        str_t message = method_not_found(
-            cls->name_cstr(), method_names_.get_name(symbol));
-        RUNTIME_ERROR(message);
+        RUNTIME_ERROR(method_not_found(cls, symbol));
       }
 
       auto& method = cls->get_method(symbol);
@@ -368,7 +369,7 @@ bool WrenVM::interpret(void) {
             fiber->resize_stack(fiber->stack_size() - (argc - 1));
             break;
           case PrimitiveResult::ERROR:
-            RUNTIME_ERROR(args[0].as_cstring());
+            RUNTIME_ERROR(args[0].as_string());
           case PrimitiveResult::CALL:
             fiber->call_function(args[0].as_object(), argc);
             LOAD_FRAME();
@@ -387,11 +388,8 @@ bool WrenVM::interpret(void) {
         LOAD_FRAME();
         break;
       case MethodType::NONE:
-        {
-          str_t message = method_not_found(
-              cls->name_cstr(), method_names_.get_name(symbol));
-          RUNTIME_ERROR(message);
-        }
+        RUNTIME_ERROR(method_not_found(cls, symbol));
+        break;
       }
 
       DISPATCH();
@@ -426,9 +424,7 @@ bool WrenVM::interpret(void) {
 
       // if the class's method table does not include the symbol, bail
       if (cls->methods_count() <= symbol) {
-        str_t message = method_not_found(
-            cls->name_cstr(), method_names_.get_name(symbol));
-        RUNTIME_ERROR(message);
+        RUNTIME_ERROR(method_not_found(cls, symbol));
       }
 
       auto& method = cls->get_method(symbol);
@@ -445,7 +441,7 @@ bool WrenVM::interpret(void) {
             fiber->resize_stack(fiber->stack_size() - (argc - 1));
             break;
           case PrimitiveResult::ERROR:
-            RUNTIME_ERROR(args[0].as_cstring());
+            RUNTIME_ERROR(args[0].as_string());
           case PrimitiveResult::CALL:
             fiber->call_function(args[0].as_object(), argc);
             LOAD_FRAME();
@@ -464,11 +460,8 @@ bool WrenVM::interpret(void) {
         LOAD_FRAME();
         break;
       case MethodType::NONE:
-        {
-          str_t message = method_not_found(
-              cls->name_cstr(), method_names_.get_name(symbol));
-          RUNTIME_ERROR(message);
-        }
+        RUNTIME_ERROR(method_not_found(cls, symbol));
+        break;
       }
 
       DISPATCH();
@@ -520,8 +513,10 @@ bool WrenVM::interpret(void) {
     CASE_CODE(IS):
     {
       Value expected = POP();
-      if (!expected.is_class())
-        RUNTIME_ERROR("right operand must be a class");
+      if (!expected.is_class()) {
+        RUNTIME_ERROR(StringObject::make_string(
+              *this, "right operand must be a class"));
+      }
 
       ClassObject* actual = get_class(POP());
       bool is_instance = false;
@@ -649,7 +644,7 @@ bool WrenVM::interpret(void) {
         std::stringstream ss;
         ss << "class `" << name->cstr() << "` may not have more thane "
           << MAX_FIELDS << " fields, including inherited ones";
-        RUNTIME_ERROR(ss.str());
+        RUNTIME_ERROR(StringObject::make_string(*this, ss.str()));
       }
       PUSH(cls);
 

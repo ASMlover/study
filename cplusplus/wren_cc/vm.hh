@@ -111,7 +111,8 @@ class WrenVM final : private UnCopyable {
   SymbolTable global_names_;
 
   void print_stacktrace(FiberObject* fiber);
-  FiberObject* runtime_error(FiberObject* fiber, const str_t& error);
+  FiberObject* runtime_error(FiberObject* fiber, StringObject* error);
+  StringObject* method_not_found(ClassObject* cls, int symbol);
 
   void call_foreign(FiberObject* fiber, const WrenForeignFn& foreign, int argc);
 
