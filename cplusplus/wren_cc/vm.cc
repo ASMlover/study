@@ -161,17 +161,12 @@ bool WrenVM::interpret(void) {
 
   FiberObject* fiber = fiber_;
   CallFrame* frame{};
-  Value* stack_start{};
   FunctionObject* fn{};
 
 // use this after a CallFrame has been pushed or popped ti refresh the
 // local variables
 #define LOAD_FRAME()\
   frame = &fiber->peek_frame();\
-  if (fiber->stack_size() > 0)\
-    stack_start = fiber->values_at(frame->stack_start);\
-  else\
-    stack_start = nullptr;\
   if (frame->fn->type() == ObjType::FUNCTION) {\
     fn = Xt::down<FunctionObject>(frame->fn);\
   }\
@@ -219,7 +214,7 @@ bool WrenVM::interpret(void) {
     CASE_CODE(LOAD_LOCAL_7):
     CASE_CODE(LOAD_LOCAL_8):
     {
-      PUSH(stack_start[c - Code::LOAD_LOCAL_0]);
+      PUSH(fiber->get_value(frame->stack_start + (c - Code::LOAD_LOCAL_0)));
 
       DISPATCH();
     }
@@ -229,13 +224,13 @@ bool WrenVM::interpret(void) {
     CASE_CODE(TRUE): PUSH(true); DISPATCH();
     CASE_CODE(LOAD_LOCAL):
     {
-      PUSH(stack_start[RDBYTE()]);
+      PUSH(fiber->get_value(frame->stack_start + RDBYTE()));
 
       DISPATCH();
     }
     CASE_CODE(STORE_LOCAL):
     {
-      stack_start[RDBYTE()] = PEEK();
+      fiber->set_value(frame->stack_start + RDBYTE(), PEEK());
 
       DISPATCH();
     }
@@ -268,7 +263,7 @@ bool WrenVM::interpret(void) {
     CASE_CODE(LOAD_FIELD_THIS):
     {
       int field = RDBYTE();
-      const Value& receiver = stack_start[0];
+      const Value& receiver = fiber->get_value(frame->stack_start);
       ASSERT(receiver.is_instance(), "receiver should be instance");
       InstanceObject* inst = receiver.as_instance();
       ASSERT(field < inst->cls()->num_fields(), "out of bounds field");
@@ -279,7 +274,7 @@ bool WrenVM::interpret(void) {
     CASE_CODE(STORE_FIELD_THIS):
     {
       int field = RDBYTE();
-      const Value& receiver = stack_start[0];
+      const Value& receiver = fiber->get_value(frame->stack_start);
       ASSERT(receiver.is_instance(), "receiver should be instance");
       InstanceObject* inst = receiver.as_instance();
       ASSERT(field < inst->cls()->num_fields(), "out of bounds field");
@@ -562,7 +557,7 @@ bool WrenVM::interpret(void) {
         if (fiber->stack_size() <= frame->stack_start)
           PUSH(r);
         else
-          stack_start[0] = r;
+          fiber->set_value(frame->stack_start, r);
 
         // discard the stack slots for the call frame
         fiber->resize_stack(frame->stack_start + 1);
