@@ -24,3 +24,12 @@ IO.print(false == 1 >= 2) // expect: true
 
 // unary `-` has lower precedence than `.`
 IO.print(-"abs".len) // expect: -3
+
+// 1 - 1 is not space-sensitive
+IO.print(1 - 1) // expect: 0
+IO.print(1 -1) // expect: 0
+IO.print(1- 1) // expect: 0
+IO.print(1-1) // expect: 0
+
+// using `()` for grouping
+IO.print((2 * ( 6 - (2 + 2)))) // expect: 4
