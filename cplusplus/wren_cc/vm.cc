@@ -32,6 +32,34 @@
 
 namespace wrencc {
 
+static str_t canonical_symbol(const str_t& symbol_name) {
+  // returns the canonical name of a symbol with the argument spaces
+  // stripped off
+
+  // find the end of the text in the given symbol name
+  sz_t pos = symbol_name.size() - 1;
+  while (symbol_name[pos] == ' ')
+    --pos;
+
+  return symbol_name.substr(0, pos + 1);
+}
+
+static str_t method_argument_string(const str_t& symbol_name) {
+  // extracts the number of arguments from a symbol name
+
+  sz_t pos = symbol_name.size() - 1;
+  while (symbol_name[pos] == ' ')
+    --pos;
+
+  int argc = Xt::as_type<int>(symbol_name.size() - pos - 1);
+  if (argc == 1)
+    return "1 argument";
+
+  std::stringstream ss;
+  ss << argc << " arguments";
+  return ss.str();
+}
+
 /// WrenVM IMPLEMENTATIONS
 
 WrenVM::WrenVM(void) noexcept {
@@ -332,8 +360,10 @@ bool WrenVM::interpret(void) {
       // if the class's method table does not include the symbol, bail
       if (cls->methods_count() <= symbol) {
         std::stringstream ss;
+        const str_t& symbol_name = method_names_.get_name(symbol);
         ss << "`" << cls->name_cstr() << "` does not implement method "
-          << "`" << method_names_.get_name(symbol) << "`";
+          << "`" << canonical_symbol(symbol_name) << "` "
+          << "with " << method_argument_string(symbol_name);
         RUNTIME_ERROR(ss.str());
       }
 
@@ -372,8 +402,10 @@ bool WrenVM::interpret(void) {
       case MethodType::NONE:
         {
           std::stringstream ss;
+          const str_t& symbol_name = method_names_.get_name(symbol);
           ss << "`" << cls->name_cstr() << "` does not implement method "
-            << "`" << method_names_.get_name(symbol) << "`";
+            << "`" << canonical_symbol(symbol_name) << "` "
+            << "with " << method_argument_string(symbol_name);
           RUNTIME_ERROR(ss.str());
         }
       }
@@ -411,8 +443,10 @@ bool WrenVM::interpret(void) {
       // if the class's method table does not include the symbol, bail
       if (cls->methods_count() <= symbol) {
         std::stringstream ss;
+        const str_t& symbol_name = method_names_.get_name(symbol);
         ss << "`" << cls->name_cstr() << "` does not implement method "
-          << "`" << method_names_.get_name(symbol) << "`";
+          << "`" << canonical_symbol(symbol_name) << "` "
+          << "with " << method_argument_string(symbol_name);
         RUNTIME_ERROR(ss.str());
       }
 
@@ -451,8 +485,10 @@ bool WrenVM::interpret(void) {
       case MethodType::NONE:
         {
           std::stringstream ss;
+          const str_t& symbol_name = method_names_.get_name(symbol);
           ss << "`" << cls->name_cstr() << "` does not implement method "
-            << "`" << method_names_.get_name(symbol) << "`";
+            << "`" << canonical_symbol(symbol_name) << "` "
+            << method_argument_string(symbol_name);
           RUNTIME_ERROR(ss.str());
         }
       }
