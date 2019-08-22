@@ -1668,22 +1668,25 @@ class Compiler : private UnCopyable {
 
   void super_exp(bool allow_assignment) {
     ClassCompiler* enclosing_class = get_enclosing_class();
-    if (enclosing_class == nullptr)
+    if (enclosing_class == nullptr) {
       error("cannot use `super` outside of a method");
-    else if (enclosing_class->is_static_method)
+    }
+    else if (enclosing_class->is_static_method) {
       error("cannot use `super` in a static method");
-
-    load_this();
-    // see if it's a nemd super call, or an unnamed one
-    if (match(TokenKind::TK_DOT)) {
-      // compile the superclass call
-      consume(TokenKind::TK_IDENTIFIER, "expect method name after `super`");
-      named_call(allow_assignment, Code::SUPER_0);
     }
     else {
-      str_t name(enclosing_class->method_name);
-      // call the superclass method with the same name
-      method_call(Code::SUPER_0, name);
+      load_this();
+      // see if it's a nemd super call, or an unnamed one
+      if (match(TokenKind::TK_DOT)) {
+        // compile the superclass call
+        consume(TokenKind::TK_IDENTIFIER, "expect method name after `super`");
+        named_call(allow_assignment, Code::SUPER_0);
+      }
+      else {
+        str_t name(enclosing_class->method_name);
+        // call the superclass method with the same name
+        method_call(Code::SUPER_0, name);
+      }
     }
   }
 
