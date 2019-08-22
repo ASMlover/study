@@ -1674,19 +1674,26 @@ class Compiler : private UnCopyable {
     else if (enclosing_class->is_static_method) {
       error("cannot use `super` in a static method");
     }
+
+    load_this();
+    // see if it's a nemd super call, or an unnamed one
+    if (match(TokenKind::TK_DOT)) {
+      // compile the superclass call
+      consume(TokenKind::TK_IDENTIFIER, "expect method name after `super`");
+      named_call(allow_assignment, Code::SUPER_0);
+    }
     else {
-      load_this();
-      // see if it's a nemd super call, or an unnamed one
-      if (match(TokenKind::TK_DOT)) {
-        // compile the superclass call
-        consume(TokenKind::TK_IDENTIFIER, "expect method name after `super`");
-        named_call(allow_assignment, Code::SUPER_0);
+      str_t name{};
+      if (enclosing_class_ != nullptr) {
+        name = enclosing_class->method_name;
       }
       else {
-        str_t name(enclosing_class->method_name);
-        // call the superclass method with the same name
-        method_call(Code::SUPER_0, name);
+        // the compiler errored since super is called outside a method, we
+        // want to continue, but we cannot generate valid bytecode
       }
+
+      // call the superclass method with the same name
+      method_call(Code::SUPER_0, name);
     }
   }
 
