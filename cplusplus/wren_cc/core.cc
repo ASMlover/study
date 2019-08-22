@@ -625,6 +625,48 @@ DEF_NATIVE(string_len) {
   RETURN_VAL(args[0].as_string()->size());
 }
 
+DEF_NATIVE(string_endswith) {
+  if (!validate_string(vm, args, 1, "Argument"))
+    return PrimitiveResult::ERROR;
+
+  StringObject* string = args[0].as_string();
+  StringObject* search = args[1].as_string();
+
+  // corner case, if the search string is longer than return false right away
+  if (search->size() > string->size())
+    RETURN_VAL(false);
+
+  int r = memcmp(
+      string->cstr() + string->size() - search->size(),
+      search->cstr(), search->size());
+  RETURN_VAL(r == 0);
+}
+
+DEF_NATIVE(string_indexof) {
+  if (!validate_string(vm, args, 1, "Argument"))
+    return PrimitiveResult::ERROR;
+
+  StringObject* string = args[0].as_string();
+  StringObject* search = args[1].as_string();
+
+  const char* first_occur = strstr(string->cstr(), search->cstr());
+  RETURN_VAL(first_occur != nullptr ? (first_occur - string->cstr()) : -1);
+}
+
+DEF_NATIVE(string_startswith) {
+  if (!validate_string(vm, args, 1, "Argument"))
+    return PrimitiveResult::ERROR;
+
+  StringObject* string = args[0].as_string();
+  StringObject* search = args[1].as_string();
+
+  // corner case, if the search string is longer than return false right away
+  if (search->size() > string->size())
+    RETURN_VAL(false);
+
+  RETURN_VAL(memcmp(string->cstr(), search->cstr(), search->size()) == 0);
+}
+
 DEF_NATIVE(string_contains) {
   if (!validate_string(vm, args, 1, "Argument"))
     return PrimitiveResult::ERROR;
@@ -1053,6 +1095,9 @@ namespace core {
     vm.set_str_cls(define_class(vm, "String"));
     vm.set_native(vm.str_cls(), "len", _primitive_string_len);
     vm.set_native(vm.str_cls(), "contains ", _primitive_string_contains);
+    vm.set_native(vm.str_cls(), "endsWith ", _primitive_string_endswith);
+    vm.set_native(vm.str_cls(), "indexOf ", _primitive_string_indexof);
+    vm.set_native(vm.str_cls(), "startsWith ", _primitive_string_startswith);
     vm.set_native(vm.str_cls(), "toString", _primitive_string_tostring);
     vm.set_native(vm.str_cls(), "+ ", _primitive_string_add);
     vm.set_native(vm.str_cls(), "== ", _primitive_string_eq);
