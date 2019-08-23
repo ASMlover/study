@@ -1688,8 +1688,9 @@ class Compiler : private UnCopyable {
         name = enclosing_class->method_name;
       }
       else {
-        // the compiler errored since super is called outside a method, we
-        // want to continue, but we cannot generate valid bytecode
+        // we get here if super is used outside of a method, in that case,
+        // we have already reported the error, so just stub this out so we
+        // can keep going to try to find later errors
       }
 
       // call the superclass method with the same name
