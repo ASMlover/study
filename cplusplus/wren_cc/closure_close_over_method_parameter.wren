@@ -1,13 +1,13 @@
 
-var f = nil
+var F = nil
 
 class Foo {
   method(param) {
-    f = new Function {
+    F = new Function {
       IO.print(param)
     }
   }
 }
 
 (new Foo).method("parameter")
-f.call // expect: parameter
+F.call // expect: parameter

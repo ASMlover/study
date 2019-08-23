@@ -592,9 +592,12 @@ class Compiler : private UnCopyable {
     // if the name is found outside of the immediately enclosing function
     // this will flatten the closure and add upvalues to all of the
     // intermediate functions so that it gets walked down to this one.
+    //
+    // if it reaches a method boundary, this stops and returns -1 since
+    // methods do not close over local variables
 
-    // if out of enclosing functions, it cannot be an upvalue
-    if (parent_ == nullptr)
+    // if we are at a method boundary or the top level, we did not find it
+    if (parent_ == nullptr || enclosing_class_ != nullptr)
       return -1;
 
     // if it's a local variable in the immediately enclosing function
@@ -607,9 +610,9 @@ class Compiler : private UnCopyable {
     }
 
     // if it's an upvalue in the immediately enclosing function, in outer
-    // words, if its a local variable in a non-immediately enclosing
-    // funtion. this will `flatten` closures automatically: it will add
-    // upvalues to all of the immediate functions to get from the function
+    // words, if it's a local variable in a non-immediately enclosing
+    // funtion. this will `flattens` closures automatically: it will adds
+    // upvalues to all of the intermediate functions to get from the function
     // where a local is declared all the way into the possibly deeply
     // nested function that is closing over it.
     int upvalue = parent_->find_upvalue(name);
@@ -621,13 +624,14 @@ class Compiler : private UnCopyable {
     return -1;
   }
 
-  int resolve_name(const str_t& name, Code& load_instruction) {
-    // loop up [name] in the current scope to see what name it is bound
-    // to returns the index of the name either in global or local scope,
-    // or the enclosing function's upvalue list. returns -1 if not found.
+  int resolve_non_global(const str_t& name, Code& load_instruction) {
+    // lookup [name] in the current scope to see what name it is bound to,
+    // returns the index of the name either in local scope, or the enclosing
+    // function's upvalue list, does not search the global scope, returns -1
+    // if not found
     //
-    // sets [load_instruction] to the instruction needed to load the
-    // variable. will be one of [LOAD_LOCAL], [LOAD_UPVALUE] or [LOAD_GLOBAL]
+    // sets [load_instruction] to the instruction needed to load the variable
+    // will be [Code::LOAD_LOCAL] or [Code::LOAD_UPVALUE]
 
     // look it up in the local scope, look in reverse order so that the
     // most nested variable is found first and shadows outer ones
@@ -636,12 +640,23 @@ class Compiler : private UnCopyable {
     if (local != -1)
       return local;
 
-    // if got here, it's not a local, so lets see if we are closing over
+    // if we go here, it's not a local, so lets see if we are closing over
     // an outer local
     load_instruction = Code::LOAD_UPVALUE;
-    int upvalue = find_upvalue(name);
-    if (upvalue != -1)
-      return upvalue;
+    return find_upvalue(name);
+  }
+
+  int resolve_name(const str_t& name, Code& load_instruction) {
+    // loop up [name] in the current scope to see what name it is bound
+    // to returns the index of the name either in global or local scope,
+    // or the enclosing function's upvalue list. returns -1 if not found.
+    //
+    // sets [load_instruction] to the instruction needed to load the
+    // variable. will be one of [LOAD_LOCAL], [LOAD_UPVALUE] or [LOAD_GLOBAL]
+
+    int non_global = resolve_non_global(name, load_instruction);
+    if (non_global != -1)
+      return non_global;
 
     // if got here, it was not in a local scope, so try the global scope
     load_instruction = Code::LOAD_GLOBAL;
@@ -724,9 +739,7 @@ class Compiler : private UnCopyable {
     // handles functions defined inside methods
 
     Code load_instruction;
-    int index = resolve_name("this", load_instruction);
-    ASSERT(index == -1 || load_instruction != Code::LOAD_GLOBAL,
-        "`this` should not be global");
+    int index = resolve_non_global("this", load_instruction);
     if (load_instruction == Code::LOAD_LOCAL)
       load_local(index);
     else
@@ -781,41 +794,52 @@ class Compiler : private UnCopyable {
         // implicitly initialize it to nil
         class_compiler->emit_byte(Code::NIL);
         class_compiler->define_variable(symbol);
+      }
 
-        index = resolve_name(name, load_instruction);
-      }
-      else {
-        // it exists already, so resolve it properly, this is different from
-        // the above resolve_local(...) call because we may have already closed
-        // over it as an upvalue
-        index = resolve_name(name, load_instruction);
-      }
+      // it definitely exists now, so resolve it properly, this is different
+      // from the above resolve_local(...) call because we may have already
+      // closed over it as an upvalue
+      index = resolve_name(name, load_instruction);
     }
 
     variable_impl(allow_assignment, index, load_instruction);
   }
 
+  inline bool is_local_name(const str_t& name) const {
+    // returns `true` if [name] is a local variable name (starts with a
+    // lowercase letter)
+
+    return std::islower(name[0]);
+  }
+
   void variable(bool allow_assignment) {
-    // look up the name in the scope chain
-    const auto& token = parser_.prev();
+    // compiles a variable name or method call with an implicit receiver
+
+    // look for the name in the scope chain up to the nearest enclosing method
+    str_t token_name = parser_.prev().as_string();
 
     Code load_instruction;
-    int index = resolve_name(token.as_string(), load_instruction);
+    int index = resolve_non_global(token_name, load_instruction);
     if (index != -1) {
       variable_impl(allow_assignment, index, load_instruction);
       return;
     }
 
-    // otherwise, if we are inside a class, it's a getter call with an
-    // implicit `this`
-    ClassCompiler* class_compiler = get_enclosing_class();
-    if (class_compiler == nullptr) {
-      error("undefined variable");
+    // if we're inside a method and the name is lowercase, treat it as a method
+    // on this
+    if (is_local_name(token_name) && get_enclosing_class() != nullptr) {
+      load_this();
+      named_call(allow_assignment, Code::CALL_0);
       return;
     }
 
-    load_this();
-    named_call(allow_assignment, Code::CALL_0);
+    // otherwise, look for a global variable with the name
+    int global = vm_gnames().get(token_name);
+    if (global == -1) {
+      error("undefined variable");
+      return;
+    }
+    variable_impl(allow_assignment, global, Code::LOAD_GLOBAL);
   }
 
   void field(bool allow_assignment) {
