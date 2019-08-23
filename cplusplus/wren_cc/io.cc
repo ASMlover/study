@@ -114,6 +114,13 @@ static const str_t kLibSource =
 "    return obj\n"
 "  }\n"
 "\n"
+"\n"
+"  static read(prompt) {\n"
+"    if (!(prompt is String)) Fiber.abort(\"Prompt must be a string\")\n"
+"    IO.write(prompt)\n"
+"    return IO.read\n"
+"  }\n"
+"\n"
 "  static writeObject(obj) {\n"
 "    var string = obj.toString\n"
 "    if (string is String) {\n"
@@ -130,6 +137,15 @@ static void io_write_string(WrenVM& vm) {
   std::cout << s;
 }
 
+static void io_read(WrenVM& vm) {
+  str_t buffer;
+  if (!std::getline(std::cin, buffer) || buffer.empty()) {
+    // TODO: error
+  }
+
+  wrenReturnString(vm, buffer);
+}
+
 static void io_clock(WrenVM& vm) {
   wrenReturnDouble(vm, std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0);
@@ -138,9 +154,10 @@ static void io_clock(WrenVM& vm) {
 namespace io {
   namespace details {
     inline void load_library(WrenVM& vm) {
-      vm.interpret("Wren IO library", kLibSource);
+      vm.interpret("", kLibSource);
       wrenDefineStaticMethod(vm, "IO", "writeString", 1, io_write_string);
       wrenDefineStaticMethod(vm, "IO", "clock", 0, io_clock);
+      wrenDefineStaticMethod(vm, "IO", "read", 0, io_read);
     }
   }
 

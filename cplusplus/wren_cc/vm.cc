@@ -102,6 +102,14 @@ void WrenVM::print_stacktrace(FiberObject* fiber) {
 
   fiber->riter_frames([](const CallFrame& frame, FunctionObject* fn) {
       auto& debug = fn->debug();
+
+      // built-in libraries have no source path and are explicitly omitted,
+      // from stack traces since we donot want to highlight to a user the
+      // implementation detail of what part of a core library is implemented
+      // in C++ and what is in Wren
+      if (debug.source_path().empty())
+        return;
+
       int line = debug.get_line(Xt::as_type<int>(frame.ip - fn->codes()) - 1);
       std::cerr
         << "[`" << debug.source_path() << "` LINE: " << line << "] in "

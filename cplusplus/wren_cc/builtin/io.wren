@@ -80,6 +80,12 @@ class IO {
     return obj
   }
 
+  static read(prompt) {
+    if (!(prompt is String)) Fiber.abort("Prompt must be a string")
+    IO.write(prompt)
+    return IO.read
+  }
+
   static writeObject(obj) {
     var string = obj.toString
     if (string is String) {
