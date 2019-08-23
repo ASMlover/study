@@ -42,6 +42,15 @@ class List is Sequence {
     }
     return result
   }
+
+  contains(element) {
+    for (item in this) {
+      if (element == item) {
+        return true
+      }
+    }
+    return false
+  }
 }
 
 class Range is Sequence {}

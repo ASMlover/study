@@ -72,27 +72,36 @@ class Set {
     return new Set(_list.where(f))
   }
 
-  | that {
+  |(that) {
     return new Set(_list + that)
   }
 
-  + that {
+  +(that) {
     return this | that
   }
 
-  & that {
+  &(that) {
     return new Set(
-      _list.where(fn(element) {
-        return that.constants(element)
-      }) + that.where(fn(element) {
+      _list.where{|element|
+        return that.contains(element)
+      } + that.where{|element|
         return _list.contains(element)
-      }))
+      })
   }
 
-  - that {
+  -(that) {
     return new Set(
-      _list.where(fn(element) {
+      _list.where{|element|
         return !that.constants(element)
-      }))
+      })
   }
 }
+
+var a = "a"
+var as = new Set([a, a, a])
+
+var b = "b"
+var bs = new Set([b, b, b])
+
+IO.print((as | bs).contains(b))
+IO.print((as & bs).contains(a))

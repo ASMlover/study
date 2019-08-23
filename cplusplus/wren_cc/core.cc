@@ -91,6 +91,15 @@ static str_t kLibSource =
 "    }\n"
 "    return result\n"
 "  }\n"
+"\n"
+"  contains(element) {\n"
+"    for (item in this) {\n"
+"      if (element == item) {\n"
+"        return true\n"
+"      }\n"
+"    }\n"
+"    return false\n"
+"  }\n"
 "}\n"
 "\n"
 "class Range is Sequence {}\n";
@@ -1118,7 +1127,7 @@ namespace core {
     vm.str_cls()->name()->set_cls(vm.str_cls());
 
     /// from core library source
-    vm.interpret("Wren core library", kLibSource);
+    vm.interpret("", kLibSource);
 
     vm.set_list_cls(vm.get_global("List").as_class());
     vm.set_native(vm.list_cls()->cls(), " instantiate", _primitive_list_instantiate);
