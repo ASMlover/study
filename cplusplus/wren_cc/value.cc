@@ -87,6 +87,7 @@ str_t TagValue::stringify(void) const {
     case Tag::NIL: return "nil";
     case Tag::TRUE: return "true";
     case Tag::FALSE: return "false";
+    case Tag::UNDEFINED: UNREACHABLE();
     }
   }
   return "";
@@ -152,6 +153,7 @@ str_t ObjValue::stringify(void) const {
   case ValueType::FALSE: return "false";
   case ValueType::NUMERIC: return Xt::to_string(num_);
   case ValueType::OBJECT: return obj_->stringify();
+  case ValueType::UNDEFINED: UNREACHABLE();
   }
   return "";
 }

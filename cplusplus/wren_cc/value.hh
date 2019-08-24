@@ -40,6 +40,7 @@ enum class ValueType : u8_t {
   FALSE,
   NUMERIC,
   OBJECT,
+  UNDEFINED,
 };
 
 enum class ObjType : u8_t {
@@ -109,7 +110,7 @@ enum Tag {
   NIL,
   FALSE,
   TRUE,
-  UNUSED1,
+  UNDEFINED,
   UNUSED2,
   UNUSED3,
   UNUSED4,
@@ -132,7 +133,7 @@ class TagValue final : public Copyable {
     return is_object() && as_object()->type() == type;
   }
 public:
-  TagValue(void) noexcept {}
+  TagValue(void) noexcept { bits_ = (kQNaN | Tag::UNDEFINED); }
   TagValue(nil_t) noexcept { bits_ = (kQNaN | Tag::NIL); }
   TagValue(bool b) noexcept { bits_ = b ? (kQNaN | Tag::TRUE) : (kQNaN | Tag::FALSE); }
   TagValue(i8_t n) noexcept { set_decimal(n); }
@@ -157,6 +158,7 @@ public:
   inline bool is_boolean(void) const { return (bits_ == (kQNaN | Tag::TRUE)) || (bits_ == (kQNaN | Tag::FALSE)); }
   inline bool is_numeric(void) const { return (bits_ & kQNaN) != kQNaN; }
   inline bool is_object(void) const { return (bits_ & (kSignBit | kQNaN)) == (kSignBit | kQNaN); }
+  inline bool is_undefined(void) const { return bits_ == (kQNaN | Tag::UNDEFINED); }
   inline bool is_string(void) const { return check(ObjType::STRING); }
   inline bool is_list(void) const { return check(ObjType::LIST); }
   inline bool is_range(void) const { return check(ObjType::RANGE); }
@@ -198,7 +200,7 @@ class ObjValue final : public Copyable {
     return Xt::as_type<double>(x);
   }
 public:
-  ObjValue(void) noexcept : type_(ValueType::OBJECT) {}
+  ObjValue(void) noexcept : type_(ValueType::UNDEFINED) {}
   ObjValue(nil_t) noexcept : type_(ValueType::NIL) {}
   ObjValue(bool b) noexcept : type_(b ? ValueType::TRUE : ValueType::FALSE) {}
   ObjValue(i8_t n) noexcept : type_(ValueType::NUMERIC), num_(to_decimal(n)) {}
@@ -221,6 +223,7 @@ public:
   inline bool is_boolean(void) const { return type_ == ValueType::TRUE || type_ == ValueType::FALSE; }
   inline bool is_numeric(void) const { return type_ == ValueType::NUMERIC; }
   inline bool is_object(void) const { return type_ == ValueType::OBJECT; }
+  inline bool is_undefined(void) const { return type_ == ValueType::UNDEFINED; }
   inline bool is_string(void) const { return check(ObjType::STRING); }
   inline bool is_list(void) const { return check(ObjType::LIST); }
   inline bool is_range(void) const { return check(ObjType::RANGE); }

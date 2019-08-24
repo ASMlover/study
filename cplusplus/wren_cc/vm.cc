@@ -48,6 +48,20 @@ WrenVM::~WrenVM(void) {
   }
 }
 
+int WrenVM::declare_global(const str_t& name) {
+  // adds a new implicitly declared global named [name] to the global namespace
+  //
+  // does not check to see if a global with that name is already declared or
+  // defined, returns the symbol for the new global or -2 if there are too
+  // many globals defined
+
+  if (globals_.size() == MAX_GLOBALS)
+    return -2;
+
+  globals_.push_back(Value());
+  return global_names_.add(name);
+}
+
 int WrenVM::define_global(const str_t& name, const Value& value) {
   // adds a new global named [name] to the global namespace
   //
@@ -61,14 +75,31 @@ int WrenVM::define_global(const str_t& name, const Value& value) {
     pin_object(value.as_object(), &pinned);
   }
 
-  int symbol = global_names_.add(name);
-  if (symbol != -1)
+  // see if the global is already explicitly or implicitly declared
+  int symbol = global_names_.get(name);
+  if (symbol == -1) {
+    // brand new global
+    symbol = global_names_.add(name);
     globals_.push_back(value);
+  }
+  else if (globals_[symbol].is_undefined()) {
+    // explicitly declaring an implicitly decalred one, mark it as defined
+    globals_[symbol] = value;
+  }
+  else {
+    // already explicitly declared
+    symbol = -1;
+  }
 
   if (value.is_object())
     unpin_object();
 
   return symbol;
+}
+
+void WrenVM::iter_globals(std::function<void (int i, const Value&)>&& fn) {
+  for (int i = 0; i < globals_.size(); ++i)
+    fn(i, globals_[i]);
 }
 
 void WrenVM::set_native(
@@ -697,6 +728,7 @@ ClassObject* WrenVM::get_class(const Value& val) const {
   case Tag::NIL: return nil_class_;
   case Tag::TRUE:
   case Tag::FALSE: return bool_class_;
+  case Tag::UNDEFINED: UNREACHABLE();
   }
 #else
   switch (val.type()) {
@@ -705,6 +737,7 @@ ClassObject* WrenVM::get_class(const Value& val) const {
   case ValueType::FALSE: return bool_class_;
   case ValueType::NUMERIC: return num_class_;
   case ValueType::OBJECT: return val.as_object()->cls();
+  case ValueType::UNDEFINED: UNREACHABLE();
   }
 #endif
 

@@ -269,9 +269,11 @@ class Compiler : private UnCopyable {
 
     std::cerr
       << "[`" << parser_.source_path() << "` LINE:" << tok.lineno() << "] - "
-      << "Compile ERROR on ";
+      << "ERROR at ";
     if (tok.kind() == TokenKind::TK_NL)
       std::cerr << "`newline` : ";
+    else if (tok.kind() == TokenKind::TK_EOF)
+      std::cerr << "`end of file` : ";
     else
       std::cerr << "`" << tok.literal() << "` : ";
 
@@ -836,8 +838,17 @@ class Compiler : private UnCopyable {
     // otherwise, look for a global variable with the name
     int global = vm_gnames().get(token_name);
     if (global == -1) {
-      error("undefined variable");
-      return;
+      if (is_local_name(token_name)) {
+        error("undefined variable");
+        return;
+      }
+
+      // if it's a nonlocal name, implicitly define a global in the hopes
+      // that we get a real definition later
+      global = parser_.get_vm().declare_global(token_name);
+      if (global == -2) {
+        error("too many global variables defined");
+      }
     }
     variable_impl(allow_assignment, global, Code::LOAD_GLOBAL);
   }
@@ -1824,6 +1835,13 @@ public:
         break;
     }
     emit_bytes(Code::NIL, Code::RETURN);
+
+    parser_.get_vm().iter_globals([this](int i, const Value& val) {
+          if (val.is_undefined()) {
+            error("variable `%s` is used but not defined",
+                vm_gnames().get_name(i).c_str());
+          }
+        });
 
     return finish_compiler("(script)");
   }
