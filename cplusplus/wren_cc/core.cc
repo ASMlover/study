@@ -67,7 +67,7 @@ static str_t kLibSource =
 "\n"
 "  forall(f) {\n"
 "    for (element in this) {\n"
-"      if (f.call(element) != true) return false\n"
+"      if (!f.call(element)) return false\n"
 "    }\n"
 "    return true\n"
 "  }\n"
