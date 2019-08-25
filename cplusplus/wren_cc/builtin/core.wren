@@ -15,6 +15,13 @@ class Sequence {
     }
     return result
   }
+
+  forall(f) {
+    for (element in this) {
+      if (f.call(element) != true) return false
+    }
+    return true
+  }
 }
 
 class List is Sequence {
