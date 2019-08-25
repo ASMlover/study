@@ -1,2 +1,2 @@
 
-[1, 2, 3].forall{|x| "string" } // expect runtime error
+[1, 2, 3].all{|x| "string" } // expect runtime error
