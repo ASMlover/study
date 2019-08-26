@@ -22,6 +22,15 @@ class Sequence {
     }
     return true
   }
+
+  reduce(acc, f) {
+    for (element in this) {
+      acc = f.call(acc, element)
+    }
+    return acc
+  }
+
+  reduce(f) { this[1..-1].reduce(this[0], f) }
 }
 
 class List is Sequence {
