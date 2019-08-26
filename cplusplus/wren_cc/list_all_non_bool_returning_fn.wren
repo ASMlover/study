@@ -1,2 +1,2 @@
 
-[1, 2, 3].all{|x| "string" } // expect runtime error
+IO.print([1, 2, 3].all{|x| "truthy" }) // expect: true

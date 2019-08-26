@@ -239,6 +239,10 @@ static bool validate_string(WrenVM& vm,
   return false;
 }
 
+DEF_NATIVE(nil_not) {
+  RETURN_VAL(true);
+}
+
 DEF_NATIVE(nil_tostring) {
   RETURN_VAL(StringObject::make_string(vm, "nil"));
 }
@@ -601,6 +605,10 @@ DEF_NATIVE(numeric_dotdotdot) {
   double from = args[0].as_numeric();
   double to = args[1].as_numeric();
   RETURN_VAL(RangeObject::make_range(vm, from, to, false));
+}
+
+DEF_NATIVE(object_not) {
+  RETURN_VAL(false);
 }
 
 DEF_NATIVE(object_eq) {
@@ -1014,7 +1022,7 @@ namespace core {
     // define the root object class, this has to be done a little specially
     // because it has no superclass and an unusual metaclass (Class)
     vm.set_obj_cls(define_single_class(vm, "Object"));
-
+    vm.set_native(vm.obj_cls(), "!", _primitive_object_not);
     vm.set_native(vm.obj_cls(), "== ", _primitive_object_eq);
     vm.set_native(vm.obj_cls(), "!= ", _primitive_object_ne);
     vm.set_native(vm.obj_cls(), "new", _primitive_object_new);
@@ -1077,17 +1085,10 @@ namespace core {
     vm.set_native(vm.fn_cls(), "toString", _primitive_fn_tostring);
 
     vm.set_nil_cls(define_class(vm, "Nil"));
+    vm.set_native(vm.nil_cls(), "!", _primitive_nil_not);
     vm.set_native(vm.nil_cls(), "toString", _primitive_nil_tostring);
 
     vm.set_num_cls(define_class(vm, "Numeric"));
-    vm.set_native(vm.num_cls(), "abs", _primitive_numeric_abs);
-    vm.set_native(vm.num_cls(), "ceil", _primitive_numeric_ceil);
-    vm.set_native(vm.num_cls(), "cos", _primitive_numeric_cos);
-    vm.set_native(vm.num_cls(), "floor", _primitive_numeric_floor);
-    vm.set_native(vm.num_cls(), "isNan", _primitive_numeric_isnan);
-    vm.set_native(vm.num_cls(), "sin", _primitive_numeric_sin);
-    vm.set_native(vm.num_cls(), "sqrt", _primitive_numeric_sqrt);
-    vm.set_native(vm.num_cls(), "toString", _primitive_numeric_tostring);
     vm.set_native(vm.num_cls(), "-", _primitive_numeric_neg);
     vm.set_native(vm.num_cls(), "+ ", _primitive_numeric_add);
     vm.set_native(vm.num_cls(), "- ", _primitive_numeric_sub);
@@ -1105,20 +1106,28 @@ namespace core {
     vm.set_native(vm.num_cls(), "| ", _primitive_numeric_bitor);
     vm.set_native(vm.num_cls(), ".. ", _primitive_numeric_dotdot);
     vm.set_native(vm.num_cls(), "... ", _primitive_numeric_dotdotdot);
+    vm.set_native(vm.num_cls(), "abs", _primitive_numeric_abs);
+    vm.set_native(vm.num_cls(), "ceil", _primitive_numeric_ceil);
+    vm.set_native(vm.num_cls(), "cos", _primitive_numeric_cos);
+    vm.set_native(vm.num_cls(), "floor", _primitive_numeric_floor);
+    vm.set_native(vm.num_cls(), "isNan", _primitive_numeric_isnan);
+    vm.set_native(vm.num_cls(), "sin", _primitive_numeric_sin);
+    vm.set_native(vm.num_cls(), "sqrt", _primitive_numeric_sqrt);
+    vm.set_native(vm.num_cls(), "toString", _primitive_numeric_tostring);
 
     // vm.set_obj_cls(vm.get_global("Object").as_class());
 
     vm.set_str_cls(define_class(vm, "String"));
+    vm.set_native(vm.str_cls(), "+ ", _primitive_string_add);
+    vm.set_native(vm.str_cls(), "== ", _primitive_string_eq);
+    vm.set_native(vm.str_cls(), "!= ", _primitive_string_ne);
+    vm.set_native(vm.str_cls(), "[ ]", _primitive_string_subscript);
     vm.set_native(vm.str_cls(), "len", _primitive_string_len);
     vm.set_native(vm.str_cls(), "contains ", _primitive_string_contains);
     vm.set_native(vm.str_cls(), "endsWith ", _primitive_string_endswith);
     vm.set_native(vm.str_cls(), "indexOf ", _primitive_string_indexof);
     vm.set_native(vm.str_cls(), "startsWith ", _primitive_string_startswith);
     vm.set_native(vm.str_cls(), "toString", _primitive_string_tostring);
-    vm.set_native(vm.str_cls(), "+ ", _primitive_string_add);
-    vm.set_native(vm.str_cls(), "== ", _primitive_string_eq);
-    vm.set_native(vm.str_cls(), "!= ", _primitive_string_ne);
-    vm.set_native(vm.str_cls(), "[ ]", _primitive_string_subscript);
 
     // when the base classes are defined, we allocated string objects for
     // their names, however we have not created the string class itself yet,
@@ -1138,6 +1147,8 @@ namespace core {
 
     vm.set_list_cls(vm.get_global("List").as_class());
     vm.set_native(vm.list_cls()->cls(), " instantiate", _primitive_list_instantiate);
+    vm.set_native(vm.list_cls(), "[ ]", _primitive_list_subscript);
+    vm.set_native(vm.list_cls(), "[ ]=", _primitive_list_subscript_setter);
     vm.set_native(vm.list_cls(), "add ", _primitive_list_add);
     vm.set_native(vm.list_cls(), "clear", _primitive_list_clear);
     vm.set_native(vm.list_cls(), "len", _primitive_list_len);
@@ -1145,8 +1156,6 @@ namespace core {
     vm.set_native(vm.list_cls(), "remove ", _primitive_list_remove);
     vm.set_native(vm.list_cls(), "iterate ", _primitive_list_iterate);
     vm.set_native(vm.list_cls(), "iterValue ", _primitive_list_itervalue);
-    vm.set_native(vm.list_cls(), "[ ]", _primitive_list_subscript);
-    vm.set_native(vm.list_cls(), "[ ]=", _primitive_list_subscript_setter);
 
     vm.set_range_cls(vm.get_global("Range").as_class());
     vm.set_native(vm.range_cls(), "from", _primitive_range_from);
