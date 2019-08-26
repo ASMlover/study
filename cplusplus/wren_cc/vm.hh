@@ -177,6 +177,7 @@ public:
   void return_double(double value);
   void return_nil(void);
   void return_string(const str_t& text);
+  void return_bool(bool value);
 };
 
 class PinnedGuard final : private UnCopyable {

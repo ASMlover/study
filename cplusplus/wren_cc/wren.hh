@@ -90,4 +90,9 @@ void wrenReturnNil(WrenVM& vm);
 // will copy that from [text]
 void wrenReturnString(WrenVM& vm, const str_t& text);
 
+// provides a boolean return value f or a foreign call, this must only be called
+// within a function provided to [wrenDefineMethod], once this is called, the
+// foreign call is done, and no more arguments can be read or return calls made
+void wrenReturnBool(WrenVM& vm, bool value);
+
 }

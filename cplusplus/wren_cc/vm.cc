@@ -900,6 +900,13 @@ void WrenVM::return_string(const str_t& text) {
   foreign_call_slot_ = nullptr;
 }
 
+void WrenVM::return_bool(bool value) {
+  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
+
+  *foreign_call_slot_ = value;
+  foreign_call_slot_ = nullptr;
+}
+
 void wrenDefineMethod(WrenVM& vm,
     const str_t& class_name, const str_t& method_name,
     int num_params, const WrenForeignFn& method) {
@@ -930,6 +937,10 @@ void wrenReturnNil(WrenVM& vm) {
 
 void wrenReturnString(WrenVM& vm, const str_t& text) {
   vm.return_string(text);
+}
+
+void wrenReturnBool(WrenVM& vm, bool value) {
+  vm.return_bool(value);
 }
 
 }
