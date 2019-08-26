@@ -45,8 +45,8 @@ enum class Precedence {
 
   ASSIGNMENT, // =
   LOGIC,      // && ||
-  IS,         // is
   EQUALITY,   // == !=
+  IS,         // is
   COMPARISON, // < <= > >=
   RANGE,      // .. ...
   BITWISE,    // | &

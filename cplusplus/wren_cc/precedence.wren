@@ -22,6 +22,10 @@ IO.print(false == 2 <= 1) // expect: true
 // `>=` has higher precedence than `==`
 IO.print(false == 1 >= 2) // expect: true
 
+// `is` has higher precedence than `==`
+IO.print(true == 10 is Numeric) // expect: true
+IO.print(10 is Numeric == false) // expect: false
+
 // unary `-` has lower precedence than `.`
 IO.print(-"abs".len) // expect: -3
 
