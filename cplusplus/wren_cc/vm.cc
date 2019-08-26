@@ -385,9 +385,9 @@ bool WrenVM::interpret(void) {
     {
       int argc = c - Code::CALL_0 + 1;
       int symbol = RDWORD();
-      const Value& receiver = fiber->get_value(fiber->stack_size() - argc);
 
-      ClassObject* cls = get_class(receiver);
+      Value* args = fiber->values_at(fiber->stack_size() - argc);
+      ClassObject* cls = get_class(args[0]);
 
       // if the class's method table does not include the symbol, bail
       if (cls->methods_count() <= symbol) {
@@ -398,8 +398,6 @@ bool WrenVM::interpret(void) {
       switch (method.type) {
       case MethodType::PRIMITIVE:
         {
-          Value* args = fiber->values_at(fiber->stack_size() - argc);
-
           // after calling this, the result will be in the first arg slot
           switch (method.primitive()(*this, fiber, args)) {
           case PrimitiveResult::VALUE:
@@ -455,8 +453,8 @@ bool WrenVM::interpret(void) {
       int argc = c - Code::SUPER_0 + 1;
       int symbol = RDWORD();
 
-      const Value& receiver = fiber->get_value(fiber->stack_size() - argc);
-      ClassObject* cls = get_class(receiver);
+      Value* args = fiber->values_at(fiber->stack_size() - argc);
+      ClassObject* cls = get_class(args[0]);
 
       // ignore methods defined on the receiver's immediate class
       cls  = cls->superclass();
@@ -470,8 +468,6 @@ bool WrenVM::interpret(void) {
       switch (method.type) {
       case MethodType::PRIMITIVE:
         {
-          Value* args = fiber->values_at(fiber->stack_size() - argc);
-
           // after calling this, the result will be in the first arg slot
           switch (method.primitive()(*this, fiber, args)) {
           case PrimitiveResult::VALUE:
