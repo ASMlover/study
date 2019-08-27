@@ -322,7 +322,7 @@ bool WrenVM::interpret(void) {
     }
     CASE_CODE(LOAD_FIELD_THIS):
     {
-      int field = RDBYTE();
+      u8_t field = RDBYTE();
       const Value& receiver = fiber->get_value(frame->stack_start);
       ASSERT(receiver.is_instance(), "receiver should be instance");
       InstanceObject* inst = receiver.as_instance();
@@ -333,7 +333,7 @@ bool WrenVM::interpret(void) {
     }
     CASE_CODE(STORE_FIELD_THIS):
     {
-      int field = RDBYTE();
+      u8_t field = RDBYTE();
       const Value& receiver = fiber->get_value(frame->stack_start);
       ASSERT(receiver.is_instance(), "receiver should be instance");
       InstanceObject* inst = receiver.as_instance();
@@ -344,7 +344,7 @@ bool WrenVM::interpret(void) {
     }
     CASE_CODE(LOAD_FIELD):
     {
-      int field = RDBYTE();
+      u8_t field = RDBYTE();
       Value receiver = POP();
       ASSERT(receiver.is_instance(), "receiver should be instance");
       InstanceObject* inst = receiver.as_instance();
@@ -355,7 +355,7 @@ bool WrenVM::interpret(void) {
     }
     CASE_CODE(STORE_FIELD):
     {
-      int field = RDBYTE();
+      u8_t field = RDBYTE();
       Value receiver = POP();
       ASSERT(receiver.is_instance(), "receiver should be instance");
       InstanceObject* inst = receiver.as_instance();
@@ -511,7 +511,7 @@ bool WrenVM::interpret(void) {
     }
     CASE_CODE(JUMP_IF):
     {
-      int offset = RDWORD();
+      u16_t offset = RDWORD();
       Value cond = POP();
 
       if (cond.is_falsely())
@@ -521,7 +521,7 @@ bool WrenVM::interpret(void) {
     }
     CASE_CODE(AND):
     {
-      int offset = RDWORD();
+      u16_t offset = RDWORD();
       const Value& cond = PEEK();
 
       // false and nil is falsely value
@@ -534,7 +534,7 @@ bool WrenVM::interpret(void) {
     }
     CASE_CODE(OR):
     {
-      int offset = RDWORD();
+      u16_t offset = RDWORD();
       const Value& cond = PEEK();
 
       // false and nil is falsely value
@@ -612,7 +612,7 @@ bool WrenVM::interpret(void) {
     }
     CASE_CODE(LIST):
     {
-      int num_elements = RDBYTE();
+      u8_t num_elements = RDBYTE();
       ListObject* list = ListObject::make_list(*this, num_elements);
       for (int i = 0; i < num_elements; ++i) {
         list->set_element(i,
@@ -638,8 +638,8 @@ bool WrenVM::interpret(void) {
 
       // capture upvalues
       for (int i = 0; i < prototype->num_upvalues(); ++i) {
-        int is_local = RDBYTE();
-        int index = RDBYTE();
+        u8_t is_local = RDBYTE();
+        u8_t index = RDBYTE();
         if (is_local) {
           // make an new upvalue to close over the parent's local variable
           closure->set_upvalue(i,
@@ -688,7 +688,7 @@ bool WrenVM::interpret(void) {
     CASE_CODE(METHOD_INSTANCE):
     CASE_CODE(METHOD_STATIC):
     {
-      int symbol = RDWORD();
+      u16_t symbol = RDWORD();
       ClassObject* cls = PEEK().as_class();
       Value method = PEEK2();
       cls->bind_method(symbol, Xt::as_type<int>(c), method);
