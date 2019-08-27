@@ -863,6 +863,14 @@ void WrenVM::define_method(
   cls->bind_method(method_symbol, method);
 }
 
+bool WrenVM::get_argument_bool(int index) const {
+  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
+  ASSERT(index >= 0, "index cannot be negative");
+  ASSERT(index < foreign_call_argc_, "not that many arguments");
+
+  return (*(foreign_call_slot_ + index)).as_boolean();
+}
+
 double WrenVM::get_argument_double(int index) const {
   ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
   ASSERT(index >= 0, "index cannot be negative");
@@ -877,6 +885,13 @@ const char* WrenVM::get_argument_string(int index) const {
   ASSERT(index < foreign_call_argc_, "not that many arguments");
 
   return (*(foreign_call_slot_ + index)).as_cstring();
+}
+
+void WrenVM::return_bool(bool value) {
+  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
+
+  *foreign_call_slot_ = value;
+  foreign_call_slot_ = nullptr;
 }
 
 void WrenVM::return_double(double value) {
@@ -900,13 +915,6 @@ void WrenVM::return_string(const str_t& text) {
   foreign_call_slot_ = nullptr;
 }
 
-void WrenVM::return_bool(bool value) {
-  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
-
-  *foreign_call_slot_ = value;
-  foreign_call_slot_ = nullptr;
-}
-
 void wrenDefineMethod(WrenVM& vm,
     const str_t& class_name, const str_t& method_name,
     int num_params, const WrenForeignFn& method) {
@@ -919,12 +927,20 @@ void wrenDefineStaticMethod(WrenVM& vm,
   vm.define_method(class_name, method_name, num_params, method, true);
 }
 
+bool wrenGetArgumentBool(WrenVM& vm, int index) {
+  return vm.get_argument_bool(index);
+}
+
 double wrenGetArgumentDouble(WrenVM& vm, int index) {
   return vm.get_argument_double(index);
 }
 
 const char* wrenGetArgumentString(WrenVM& vm, int index) {
   return vm.get_argument_string(index);
+}
+
+void wrenReturnBool(WrenVM& vm, bool value) {
+  vm.return_bool(value);
 }
 
 void wrenReturnDouble(WrenVM& vm, double value) {
@@ -937,10 +953,6 @@ void wrenReturnNil(WrenVM& vm) {
 
 void wrenReturnString(WrenVM& vm, const str_t& text) {
   vm.return_string(text);
-}
-
-void wrenReturnBool(WrenVM& vm, bool value) {
-  vm.return_bool(value);
 }
 
 }

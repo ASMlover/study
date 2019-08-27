@@ -57,6 +57,11 @@ void wrenDefineStaticMethod(WrenVM& vm,
     const str_t& class_name, const str_t& method_name,
     int num_params, const WrenForeignFn& method);
 
+// reads a boolean argument for a foreign call, this must only be called within
+// a function provided to [wrenDefineMethod], retrieves the argument at [index]
+// with ranges from 0 to the number of parameters the method expects -1
+bool wrenGetArgumentBool(WrenVM& vm, int index);
+
 // reads an numeric argument for a foreign call, this must only be called wi-
 // thin a function provided to [wrenDefineMethod] retrieves the argument at
 // [index] with ranges from 0 to the number of parameters the method expects-1
@@ -70,6 +75,11 @@ double wrenGetArgumentDouble(WrenVM& vm, int index);
 // while in your foreign function, but cannot keep a pointer to it after the
 // function returns, since the garbage collector may reclaim it
 const char* wrenGetArgumentString(WrenVM& vm, int index);
+
+// provides a boolean return value f or a foreign call, this must only be called
+// within a function provided to [wrenDefineMethod], once this is called, the
+// foreign call is done, and no more arguments can be read or return calls made
+void wrenReturnBool(WrenVM& vm, bool value);
 
 // provides a numeric return value for a foreign call. this must only be called
 // within a function provided to [wrenDefineMethod] once this is called, the
@@ -89,10 +99,5 @@ void wrenReturnNil(WrenVM& vm);
 // free memory used by it after this is called, if [text] is non-empty, Wren
 // will copy that from [text]
 void wrenReturnString(WrenVM& vm, const str_t& text);
-
-// provides a boolean return value f or a foreign call, this must only be called
-// within a function provided to [wrenDefineMethod], once this is called, the
-// foreign call is done, and no more arguments can be read or return calls made
-void wrenReturnBool(WrenVM& vm, bool value);
 
 }

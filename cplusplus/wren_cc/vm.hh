@@ -172,12 +172,13 @@ public:
 
   void define_method(const str_t& class_name, const str_t& method_name,
       int num_params, const WrenForeignFn& method, bool is_static = false);
+  bool get_argument_bool(int index) const;
   double get_argument_double(int index) const;
   const char* get_argument_string(int index) const;
+  void return_bool(bool value);
   void return_double(double value);
   void return_nil(void);
   void return_string(const str_t& text);
-  void return_bool(bool value);
 };
 
 class PinnedGuard final : private UnCopyable {
