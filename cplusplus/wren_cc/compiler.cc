@@ -903,7 +903,7 @@ class Compiler : private UnCopyable {
     return true;
   }
 
-  bool consume(TokenKind expected, const char* msg) {
+  void consume(TokenKind expected, const char* msg) {
     parser_.advance();
 
     if (parser_.prev().kind() != expected) {
@@ -914,9 +914,7 @@ class Compiler : private UnCopyable {
       // errors
       if (parser_.curr().kind() == expected)
         parser_.advance();
-      return false;
     }
-    return true;
   }
 
   bool match_line(void) {
@@ -938,13 +936,12 @@ class Compiler : private UnCopyable {
     match_line();
   }
 
-  bool consume_line(const char* msg) {
+  void consume_line(const char* msg) {
     // consumes the current token, emits an error if it is not a newline, then
     // discards any duplicate newlines following it
 
-    bool r = consume(TokenKind::TK_NL, msg);
+    consume(TokenKind::TK_NL, msg);
     ignore_newlines();
-    return r;
   }
 
   void start_loop(Loop* loop) {
