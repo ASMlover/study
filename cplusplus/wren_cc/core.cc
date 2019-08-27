@@ -259,6 +259,45 @@ static bool validate_string(WrenVM& vm,
   return false;
 }
 
+static CalculatedRange calculate_range(
+    WrenVM& vm, Value* args, RangeObject* range, int length) {
+  // given a [range] and the [length] of the object being operated on determine
+  // if the range is valid and return a CalculatedRange
+
+  int from = validate_index_value(
+      vm, args, length, range->from(), "Range start");
+  if (from == -1)
+    return CalculatedRange();
+
+  int to, count;
+  if (range->is_inclusive()) {
+    to = validate_index_value(vm, args, length, range->to(), "Range end");
+    if (to == -1)
+      return CalculatedRange();
+
+    count = std::abs(from - to) + 1;
+  }
+  else {
+    if (!validate_int_value(vm, args, range->to(), "Range end"))
+      return CalculatedRange();
+
+    // bounds check it manually here since the excusive range can hang over
+    // the edge
+    to = Xt::as_type<int>(range->to());
+    if (to < 0)
+      to = length + to;
+
+    if (to < -1 || to > length) {
+      args[0] = StringObject::make_string(vm, "`Range end` out of bounds");
+      return CalculatedRange();
+    }
+
+    count = std::abs(from - to);
+  }
+
+  return CalculatedRange(false, from, (from < to ? 1 : -1), count);
+}
+
 DEF_NATIVE(nil_not) {
   RETURN_VAL(true);
 }
@@ -758,11 +797,37 @@ DEF_NATIVE(string_ne) {
 
 DEF_NATIVE(string_subscript) {
   StringObject* s = args[0].as_string();
-  int index = validate_index(vm, args, 1, s->size(), "Subscript");
-  if (index == -1)
+
+  if (args[1].is_numeric()) {
+    int index = validate_index(vm, args, 1, s->size(), "Subscript");
+    if (index == -1)
+      return PrimitiveResult::ERROR;
+
+    RETURN_VAL(StringObject::make_string(vm, (*s)[index]));
+  }
+
+  if (!args[1].is_range())
+    RETURN_ERR("subscript must be a numeric or a range");
+
+  RangeObject* range = args[1].as_range();
+
+  // corner case: an empty range at zero is allowed on an empty string
+  // this way, string[0..-1] and string[0...string.count] can be used to copy
+  // a string even when empty
+  if (s->size() == 0 && range->from() == 0 &&
+      range->to() == (range->is_inclusive() ? -1 : 0)) {
+    RETURN_VAL(StringObject::make_string(vm, ""));
+  }
+
+  auto bounds = calculate_range(vm, args, range, s->size());
+  if (bounds.invalid_range)
     return PrimitiveResult::ERROR;
 
-  RETURN_VAL(StringObject::make_string(vm, (*s)[index]));
+  str_t text(bounds.count, 0);
+  const char* raw_str = s->cstr();
+  for (int i = 0; i < bounds.count; ++i)
+    text[i] = raw_str[bounds.start + (i * bounds.step)];
+  RETURN_VAL(StringObject::make_string(vm, text));
 }
 
 static PrimitiveResult call_function(WrenVM& vm, Value* args, int argc) {
@@ -908,39 +973,13 @@ DEF_NATIVE(list_subscript) {
     RETURN_VAL(ListObject::make_list(vm, 0));
   }
 
-  int from = validate_index_value(vm,
-      args, list->count(), range->from(), "Range start");
-  if (from == -1)
+  auto bounds = calculate_range(vm, args, range, list->count());
+  if (bounds.invalid_range)
     return PrimitiveResult::ERROR;
 
-  int to, count;
-  if (range->is_inclusive()) {
-    to = validate_index_value(vm,
-        args, list->count(), range->to(), "Range end");
-    if (to == -1)
-      return PrimitiveResult::ERROR;
-
-    count = std::abs(from - to) + 1;
-  }
-  else {
-    if (!validate_int_value(vm, args, range->to(), "Range end"))
-      return PrimitiveResult::ERROR;
-
-    // bounds check it manually here since the exclusive range can
-    // hang over the edge
-    to = Xt::as_type<int>(range->to());
-    if (to < 0)
-      to = list->count() + to;
-    if (to < -1 || to > list->count())
-      RETURN_ERR("Reange end out of bounds");
-
-    count = std::abs(from - to);
-  }
-
-  int step = from < to ? 1 : -1;
-  ListObject* result = ListObject::make_list(vm, count);
-  for (int i = 0; i < count; ++i)
-    result->set_element(i, list->get_element(from + (i * step)));
+  ListObject* result = ListObject::make_list(vm, bounds.count);
+  for (int i = 0; i < bounds.count; ++i)
+    result->set_element(i, list->get_element(bounds.start + (i * bounds.step)));
   RETURN_VAL(result);
 }
 
