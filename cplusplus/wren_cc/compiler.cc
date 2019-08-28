@@ -392,7 +392,7 @@ class Compiler : private UnCopyable {
 #define INFIX(fn, prec) {nullptr, RULE(fn), nullptr, prec, nullptr}
 #define INFIXOP(prec, name) {nullptr, RULE(infix_oper), SIGN(infix_signature), prec, name}
 #define OPER(prec, name) {RULE(unary_oper), RULE(infix_oper), SIGN(mixed_signature), prec, name}
-#define OPER2(pfn, ifn, prec) {RULE(pfn), RULE(ifn), nullptr, prec, nullptr}
+#define OPER2(pfn, ifn, prec) {RULE(pfn), RULE(ifn), SIGN(subscript_signature), prec, nullptr}
 #define PREFIXOP(name) {RULE(unary_oper), nullptr, SIGN(unary_signature), Precedence::NONE, name}
 #define OP(name) {RULE(unary_oper), RULE(infix_oper), SIGN(mixed_signature), Precedence::TERM, name}
 #define PREFIXNAME {RULE(variable), nullptr, SIGN(named_signature), Precedence::NONE, nullptr}
@@ -1557,22 +1557,44 @@ class Compiler : private UnCopyable {
     }
   }
 
+  bool maybe_setter(str_t& name) {
+    // compiles an optional setter parameter in a method signature.
+    //
+    // returns `true` if it was a setter
+
+    // see if it is a setter
+    if (!match(TokenKind::TK_EQ))
+      return false;
+
+    // it is a setter
+    name.push_back('=');
+
+    // parse the value parameter
+    consume(TokenKind::TK_LPAREN, "expect `(` after `=`");
+    declare_named_variable();
+    consume(TokenKind::TK_RPAREN, "expect `)` after parameter name");
+
+    return true;
+  }
+
+  void subscript_signature(str_t& name) {
+    // compiles a method signature for a subscript operator
+
+    // parse the parameters inside the subscript
+    finish_parameters(name, TokenKind::TK_RBRACKET);
+    name.push_back(']');
+
+    maybe_setter(name);
+  }
+
   void named_signature(str_t& name) {
     // compiles a method signature for a named method or setter
 
-    if (match(TokenKind::TK_EQ)) {
-      name.push_back('=');
-      name.push_back(' ');
+    if (maybe_setter(name))
+      return;
 
-      // parse the value parameter
-      consume(TokenKind::TK_LPAREN, "expect `(` after `=`");
-      declare_named_variable();
-      consume(TokenKind::TK_RPAREN, "expect `)` after parameter name");
-    }
-    else {
-      // regular named method with an optional parameter list
-      parameters(name, TokenKind::TK_LPAREN, TokenKind::TK_RPAREN);
-    }
+    // regular named method with an optional parameter list
+    parameters(name, TokenKind::TK_LPAREN, TokenKind::TK_RPAREN);
   }
 
   void ctor_signature(str_t& name) {
@@ -1591,6 +1613,37 @@ class Compiler : private UnCopyable {
     }
   }
 
+  int finish_parameters(str_t& name, TokenKind end_kind) {
+    // parses the rest of a parameter list after the opening delimeter, and
+    // closed by [end_kind] if the parameter list is for a method, [name] will
+    // be the name of the method and this will modify it to handle arity in
+    // the signatrue, for functions [name] will be empty string
+
+    int num_params = 0;
+    do {
+      ignore_newlines();
+      validate_num_parameters(++num_params);
+
+      // define a local variable in the method for the parameter
+      declare_named_variable();
+
+      // add a space in the name for the parameter
+      if (!name.empty())
+        name.push_back(' ');
+    } while (match(TokenKind::TK_COMMA));
+
+    const char* message;
+    switch (end_kind) {
+    case TokenKind::TK_RPAREN: message = "expect `)` after parameters"; break;
+    case TokenKind::TK_RBRACKET: message = "expect `]` after parameters"; break;
+    case TokenKind::TK_PIPE: message = "expect `|` after parameters"; break;
+    default: message = nullptr; UNREACHABLE();
+    }
+    consume(end_kind, message);
+
+    return num_params;
+  }
+
   int parameters(str_t& name, TokenKind beg_kind, TokenKind end_kind) {
     // parses an optional parenthesis-delimited parameter list, if the parameter
     // list is for a method, [name] will be the name of the method and this will
@@ -1601,24 +1654,7 @@ class Compiler : private UnCopyable {
     if (!match(beg_kind))
       return 0;
 
-    int argc = 0;
-    do {
-      ignore_newlines();
-      validate_num_parameters(++argc);
-
-      // define a local variable in the method for the parameters
-      declare_named_variable();
-
-      // add a space in the name for the parameters
-      if (!name.empty())
-        name.push_back(' ');
-    } while (match(TokenKind::TK_COMMA));
-
-    const char* msg = end_kind == TokenKind::TK_RPAREN ?
-      "expect `)` after parameters" : "expect `|` after parameters";
-    consume(end_kind, msg);
-
-    return argc;
+    return finish_parameters(name, end_kind);
   }
 
   inline int method_symbol(const str_t& name) { return vm_mnames().ensure(name); }
@@ -1674,7 +1710,6 @@ class Compiler : private UnCopyable {
       ignore_newlines();
 
       name.push_back('=');
-      name.push_back(' ');
 
       expression();
 
