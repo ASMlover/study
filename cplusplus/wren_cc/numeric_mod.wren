@@ -9,3 +9,5 @@ IO.print(4.2 % -3.1) // expect: 1.1
 IO.print(-4.2 % -3.1) // expect: -1.1
 
 IO.print(13 % 7 % 4) // expect: 2
+
+IO.print(13 + 1 % 7) // expect: 14

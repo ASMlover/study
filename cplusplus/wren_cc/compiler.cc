@@ -411,7 +411,7 @@ class Compiler : private UnCopyable {
       UNUSED,                                   // PUNCTUATOR(COMMA, ",")
       INFIXOP(Precedence::FACTOR, "* "),        // PUNCTUATOR(STAR, "*")
       INFIXOP(Precedence::FACTOR, "/ "),        // PUNCTUATOR(SLASH, "/")
-      INFIXOP(Precedence::TERM, "% "),          // PUNCTUATOR(PERCENT, "%")
+      INFIXOP(Precedence::FACTOR, "% "),        // PUNCTUATOR(PERCENT, "%")
       INFIXOP(Precedence::TERM, "+ "),          // PUNCTUATOR(PLUS, "+")
       OPER(Precedence::TERM, "- "),             // PUNCTUATOR(MINUS, "-")
       INFIXOP(Precedence::BITWISE, "| "),       // PUNCTUATOR(PIPE, "|")
