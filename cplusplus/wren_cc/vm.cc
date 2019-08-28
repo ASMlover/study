@@ -70,10 +70,8 @@ int WrenVM::define_global(const str_t& name, const Value& value) {
 
   if (globals_.size() == MAX_GLOBALS)
     return -2;
-  if (value.is_object()) {
-    Pinned pinned;
-    pin_object(value.as_object(), &pinned);
-  }
+  if (value.is_object())
+    push_root(value.as_object());
 
   // see if the global is already explicitly or implicitly declared
   int symbol = global_names_.get(name);
@@ -92,7 +90,7 @@ int WrenVM::define_global(const str_t& name, const Value& value) {
   }
 
   if (value.is_object())
-    unpin_object();
+    pop_root();
 
   return symbol;
 }
@@ -118,14 +116,14 @@ const Value& WrenVM::get_global(const str_t& name) const {
   return globals_[symbol];
 }
 
-void WrenVM::pin_object(BaseObject* obj, Pinned* pinned) {
-  pinned->obj = obj;
-  pinned->prev = pinned_;
-  pinned_ = pinned;
+void WrenVM::push_root(BaseObject* obj) {
+  ASSERT(pinned_.size() < kMaxPinned, "Too many pinned objects");
+  pinned_.push_back(obj);
 }
 
-void WrenVM::unpin_object(void) {
-  pinned_ = pinned_->prev;
+void WrenVM::pop_root(void) {
+  ASSERT(pinned_.size() > 0, "No pinned object to unpin");
+  pinned_.pop_back();
 }
 
 void WrenVM::print_stacktrace(FiberObject* fiber) {
@@ -765,8 +763,8 @@ void WrenVM::collect(void) {
   for (auto& v : globals_)
     mark_value(v);
   // pinned objects
-  for (auto* p = pinned_; p != nullptr; p = p->prev)
-    mark_object(p->obj);
+  for (auto* o : pinned_)
+    mark_object(o);
 
   // the current fiber
   mark_object(fiber_);

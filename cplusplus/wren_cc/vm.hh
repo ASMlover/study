@@ -59,7 +59,9 @@ enum class InterpretRet {
 };
 
 class WrenVM final : private UnCopyable {
-  static constexpr sz_t kMaxPinned = 16;
+  // the maximum number of objects that can be pinned to be visible to the
+  // GC at one time
+  static constexpr sz_t kMaxPinned = 4;
 
   ClassObject* fn_class_{};
   ClassObject* bool_class_{};
@@ -84,9 +86,14 @@ class WrenVM final : private UnCopyable {
 
   std::list<BaseObject*> objects_; // all currently allocated objects
 
-  // the header of the list of pinned objects, will be `nullptr` if nothing
-  // is pinned
-  Pinned* pinned_{};
+  // the list of pinned objects, a pinned object is an BaseObject that has been
+  // temporarily made an explicit GC root, this is for temporarily or new
+  // objects that are not otherwise reachable but should not be collected.
+  //
+  // there are organized as a stack of pointers stored in this array, this
+  // implies that pinned objects need to have stack semantics: only the most
+  // recently pinned object can be unpinned
+  std::vector<BaseObject*> pinned_;
 
   // during a foreign function call, this will point to the first argument
   // of the call on the fiber's stack
@@ -159,8 +166,9 @@ public:
   void set_native(ClassObject* cls, const str_t& name, const PrimitiveFn& fn);
   void set_global(const str_t& name, const Value& value);
   const Value& get_global(const str_t& name) const;
-  void pin_object(BaseObject* obj, Pinned* pinned);
-  void unpin_object(void);
+
+  void push_root(BaseObject* obj);
+  void pop_root(void);
 
   void append_object(BaseObject* obj);
   void mark_object(BaseObject* obj);
@@ -183,15 +191,14 @@ public:
 
 class PinnedGuard final : private UnCopyable {
   WrenVM& vm_;
-  Pinned pinned_;
 public:
   PinnedGuard(WrenVM& vm, BaseObject* obj) noexcept
     : vm_(vm) {
-    vm_.pin_object(obj, &pinned_);
+    vm_.push_root(obj);
   }
 
-  ~PinnedGuard(void) {
-    vm_.unpin_object();
+  ~PinnedGuard(void) noexcept {
+    vm_.pop_root();
   }
 };
 
