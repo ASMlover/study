@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cmath>
 #include <iostream>
+#include <tuple>
 #include "value.hh"
 #include "vm.hh"
 #include "core.hh"
@@ -259,27 +260,34 @@ static bool validate_string(WrenVM& vm,
   return false;
 }
 
-static CalculatedRange calculate_range(
+static std::tuple<int, int, int> calculate_range(
     WrenVM& vm, Value* args, RangeObject* range, int length) {
   // given a [range] and the [length] of the object being operated on determine
-  // if the range is valid and return a CalculatedRange
+  // if the range is valid and return a tuple<start, step, legth>
+
+  // corner case: an empty range at zero is allowed on an empty sequence, this
+  // way, list[0..-1] and list[0...list.count] can be used to copy a list even
+  // when empty
+  if (length == 0 && range->from() == 0 &&
+      range->to() == (range->is_inclusive() ? -1 : 0))
+    return std::make_tuple(0, 0, length);
 
   int from = validate_index_value(
       vm, args, length, range->from(), "Range start");
   if (from == -1)
-    return CalculatedRange();
+    return std::make_tuple(-1, 0, length);
 
   int to, count;
   if (range->is_inclusive()) {
     to = validate_index_value(vm, args, length, range->to(), "Range end");
     if (to == -1)
-      return CalculatedRange();
+      return std::make_tuple(-1, 0, length);
 
     count = std::abs(from - to) + 1;
   }
   else {
     if (!validate_int_value(vm, args, range->to(), "Range end"))
-      return CalculatedRange();
+      return std::make_tuple(-1, 0, length);
 
     // bounds check it manually here since the excusive range can hang over
     // the edge
@@ -289,13 +297,13 @@ static CalculatedRange calculate_range(
 
     if (to < -1 || to > length) {
       args[0] = StringObject::make_string(vm, "`Range end` out of bounds");
-      return CalculatedRange();
+      return std::make_tuple(-1, 0, length);
     }
 
     count = std::abs(from - to);
   }
 
-  return CalculatedRange(false, from, (from < to ? 1 : -1), count);
+  return std::make_tuple(from, (from < to ? 1 : -1), count);
 }
 
 DEF_NATIVE(nil_not) {
@@ -809,24 +817,15 @@ DEF_NATIVE(string_subscript) {
   if (!args[1].is_range())
     RETURN_ERR("subscript must be a numeric or a range");
 
-  RangeObject* range = args[1].as_range();
-
-  // corner case: an empty range at zero is allowed on an empty string
-  // this way, string[0..-1] and string[0...string.count] can be used to copy
-  // a string even when empty
-  if (s->size() == 0 && range->from() == 0 &&
-      range->to() == (range->is_inclusive() ? -1 : 0)) {
-    RETURN_VAL(StringObject::make_string(vm, ""));
-  }
-
-  auto bounds = calculate_range(vm, args, range, s->size());
-  if (bounds.invalid_range)
+  auto [start, step, count] = calculate_range(
+      vm, args, args[1].as_range(), s->size());
+  if (start == -1)
     return PrimitiveResult::ERROR;
 
-  str_t text(bounds.count, 0);
+  str_t text(count, 0);
   const char* raw_str = s->cstr();
-  for (int i = 0; i < bounds.count; ++i)
-    text[i] = raw_str[bounds.start + (i * bounds.step)];
+  for (int i = 0; i < count; ++i)
+    text[i] = raw_str[start + (i * step)];
   RETURN_VAL(StringObject::make_string(vm, text));
 }
 
@@ -963,23 +962,14 @@ DEF_NATIVE(list_subscript) {
   if (!args[1].is_range())
     RETURN_ERR("Subscript must be a numeric or a range");
 
-  RangeObject* range = args[1].as_range();
-
-  // corner case: an empty range at zero is allowed on an empty list
-  // this way, list[0..-1] and [0...list.len] can be used to copy a list
-  // even when empty
-  if (list->count() == 0 && range->from() == 0 &&
-      range->to() == (range->is_inclusive() ? -1 : 0)) {
-    RETURN_VAL(ListObject::make_list(vm, 0));
-  }
-
-  auto bounds = calculate_range(vm, args, range, list->count());
-  if (bounds.invalid_range)
+  auto [start, step, count] = calculate_range(
+      vm, args, args[1].as_range(), list->count());
+  if (start == -1)
     return PrimitiveResult::ERROR;
 
-  ListObject* result = ListObject::make_list(vm, bounds.count);
-  for (int i = 0; i < bounds.count; ++i)
-    result->set_element(i, list->get_element(bounds.start + (i * bounds.step)));
+  ListObject* result = ListObject::make_list(vm, count);
+  for (int i = 0; i < count; ++i)
+    result->set_element(i, list->get_element(start + (i * step)));
   RETURN_VAL(result);
 }
 

@@ -30,28 +30,6 @@ namespace wrencc {
 
 class WrenVM;
 
-struct CalculatedRange {
-  // set to true if the range was not valid, with the assumption that error
-  // was already set on the stack
-  bool invalid_range{true};
-
-  // the index from which the range should start
-  int start{};
-
-  // the direction that the range is going, set to 1 if the range is increasing
-  // from the [start] index or -1 if the range is decreasing from the [start]
-  // index
-  int step{};
-
-  // length of the range
-  int count{};
-
-  CalculatedRange(void) noexcept {}
-  CalculatedRange(bool _invalid, int _start, int _step, int _count) noexcept
-    : invalid_range(_invalid), start(_start), step(_step), count(_count) {
-  }
-};
-
 namespace core {
   void initialize(WrenVM& vm);
 }
