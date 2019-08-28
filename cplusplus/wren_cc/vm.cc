@@ -117,13 +117,17 @@ const Value& WrenVM::get_global(const str_t& name) const {
 }
 
 void WrenVM::push_root(BaseObject* obj) {
-  ASSERT(pinned_.size() < kMaxPinned, "Too many pinned objects");
-  pinned_.push_back(obj);
+  // mark [obj] as a GC root so that it does not get collected
+
+  ASSERT(temp_roots_.size() < kMaxTempRoots, "Too many temporary roots");
+  temp_roots_.push_back(obj);
 }
 
 void WrenVM::pop_root(void) {
-  ASSERT(pinned_.size() > 0, "No pinned object to unpin");
-  pinned_.pop_back();
+  // remove the most recently pushed temporary root
+
+  ASSERT(temp_roots_.size() > 0, "No temporary roots to release");
+  temp_roots_.pop_back();
 }
 
 void WrenVM::print_stacktrace(FiberObject* fiber) {
@@ -763,7 +767,7 @@ void WrenVM::collect(void) {
   for (auto& v : globals_)
     mark_value(v);
   // pinned objects
-  for (auto* o : pinned_)
+  for (auto* o : temp_roots_)
     mark_object(o);
 
   // the current fiber

@@ -59,9 +59,9 @@ enum class InterpretRet {
 };
 
 class WrenVM final : private UnCopyable {
-  // the maximum number of objects that can be pinned to be visible to the
+  // the maximum number of temporary objects that can be made visible to the
   // GC at one time
-  static constexpr sz_t kMaxPinned = 4;
+  static constexpr sz_t kMaxTempRoots = 4;
 
   ClassObject* fn_class_{};
   ClassObject* bool_class_{};
@@ -86,14 +86,13 @@ class WrenVM final : private UnCopyable {
 
   std::list<BaseObject*> objects_; // all currently allocated objects
 
-  // the list of pinned objects, a pinned object is an BaseObject that has been
-  // temporarily made an explicit GC root, this is for temporarily or new
-  // objects that are not otherwise reachable but should not be collected.
+  // the list of temporary roots, this is for temporarily or new objects
+  // that are not otherwise reachable but should not be collected.
   //
-  // there are organized as a stack of pointers stored in this array, this
-  // implies that pinned objects need to have stack semantics: only the most
-  // recently pinned object can be unpinned
-  std::vector<BaseObject*> pinned_;
+  // they are organized as a stack of pointers stored in this array, this
+  // implies that temporary roots need to have stack semantics: only the
+  // most recently pushed object can be released
+  std::vector<BaseObject*> temp_roots_;
 
   // during a foreign function call, this will point to the first argument
   // of the call on the fiber's stack
