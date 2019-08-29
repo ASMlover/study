@@ -768,7 +768,7 @@ DEF_NATIVE(string_iterate) {
 
 DEF_NATIVE(string_itervalue) {
   StringObject* s = args[0].as_string();
-  int index = validate_index(vm, args, s->size(), 1, "Iterator");
+  int index = validate_index(vm, args, 1, s->size(), "Iterator");
   if (index == -1)
     return PrimitiveResult::ERROR;
 
