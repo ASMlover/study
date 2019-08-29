@@ -870,6 +870,8 @@ bool WrenVM::get_argument_bool(int index) const {
   ASSERT(index >= 0, "index cannot be negative");
   ASSERT(index < foreign_call_argc_, "not that many arguments");
 
+  if (!(*(foreign_call_slot_ + index)).is_boolean())
+    return false;
   return (*(foreign_call_slot_ + index)).as_boolean();
 }
 
@@ -878,6 +880,8 @@ double WrenVM::get_argument_double(int index) const {
   ASSERT(index >= 0, "index cannot be negative");
   ASSERT(index < foreign_call_argc_, "not that many arguments");
 
+  if (!(*(foreign_call_slot_ + index)).is_numeric())
+    return 0.0;
   return (*(foreign_call_slot_ + index)).as_numeric();
 }
 
@@ -886,6 +890,8 @@ const char* WrenVM::get_argument_string(int index) const {
   ASSERT(index >= 0, "index cannot be negative");
   ASSERT(index < foreign_call_argc_, "not that many arguments");
 
+  if (!(*(foreign_call_slot_ + index)).is_string())
+    return nullptr;
   return (*(foreign_call_slot_ + index)).as_cstring();
 }
 
@@ -903,15 +909,9 @@ void WrenVM::return_double(double value) {
   foreign_call_slot_ = nullptr;
 }
 
-void WrenVM::return_nil(void) {
-  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
-
-  *foreign_call_slot_ = nullptr;
-  foreign_call_slot_ = nullptr;
-}
-
 void WrenVM::return_string(const str_t& text) {
   ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
+  ASSERT(!text.empty(), "string cannot be empty");
 
   *foreign_call_slot_ = StringObject::make_string(*this, text);
   foreign_call_slot_ = nullptr;
@@ -947,10 +947,6 @@ void wrenReturnBool(WrenVM& vm, bool value) {
 
 void wrenReturnDouble(WrenVM& vm, double value) {
   vm.return_double(value);
-}
-
-void wrenReturnNil(WrenVM& vm) {
-  vm.return_nil();
 }
 
 void wrenReturnString(WrenVM& vm, const str_t& text) {

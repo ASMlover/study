@@ -184,7 +184,6 @@ public:
   const char* get_argument_string(int index) const;
   void return_bool(bool value);
   void return_double(double value);
-  void return_nil(void);
   void return_string(const str_t& text);
 };
 

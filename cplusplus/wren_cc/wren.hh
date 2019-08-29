@@ -57,43 +57,58 @@ void wrenDefineStaticMethod(WrenVM& vm,
     const str_t& class_name, const str_t& method_name,
     int num_params, const WrenForeignFn& method);
 
-// reads a boolean argument for a foreign call, this must only be called within
-// a function provided to [wrenDefineMethod], retrieves the argument at [index]
-// with ranges from 0 to the number of parameters the method expects -1
+// the following functions read one of the arguments passed to a foreign call.
+// they may only be called while within a function provided to
+// [wrenDefineMethod] or [wrenDefineStaticMethod] that Wren has invoked.
+//
+// they retreive the argument at a given index which ranges from 0 to the number
+// of parameters the method expects, the zeroth parameter is used for the
+// receiver of the method, for example, given a foreign method `foo` on String
+// invoked like:
+//
+//    "receiver".foo("one", "two", "three")
+//
+// the foreign function will be able to access the arguments like so:
+//
+//    0: "receiver"
+//    1: "one"
+//    2: "two"
+//    3: "three"
+//
+// it is an error to pass an invalid argument index
+
+// reads a boolean argument for a foreign call, returns false if the argument
+// is not a boolean
 bool wrenGetArgumentBool(WrenVM& vm, int index);
 
-// reads an numeric argument for a foreign call, this must only be called wi-
-// thin a function provided to [wrenDefineMethod] retrieves the argument at
-// [index] with ranges from 0 to the number of parameters the method expects-1
+// reads a numeric argument for a foreign call, returns 0 if the argument is
+// not a numeric value
 double wrenGetArgumentDouble(WrenVM& vm, int index);
 
-// reads a string argument for a foreign call, this must only be called within
-// a function provided to [wrenDefineMethod], retrieves the argument at [index]
-// which ranges from 0 to the number of parameters the method expects -1
+// reads an string argument for a foreign call, returns nullptr if the argument
+// is not a string
 //
 // the memory for the returned string is owned by Wren. you can inspect it
 // while in your foreign function, but cannot keep a pointer to it after the
 // function returns, since the garbage collector may reclaim it
 const char* wrenGetArgumentString(WrenVM& vm, int index);
 
-// provides a boolean return value f or a foreign call, this must only be called
-// within a function provided to [wrenDefineMethod], once this is called, the
-// foreign call is done, and no more arguments can be read or return calls made
+// the following functions provide the return value for a foreign method back
+// to Wren, like above they may only be called during a foreign call invoked
+// by Wren
+//
+// if one of these is called by the time the foreign funtion returns, the method
+// implicitly returns `nil`, within a given foreign call, you may only call one
+// of these once, it is an error to access any of the foreign calls arguments
+// after one of these has been called.
+
+// provides a boolean return value for a foreign call
 void wrenReturnBool(WrenVM& vm, bool value);
 
-// provides a numeric return value for a foreign call. this must only be called
-// within a function provided to [wrenDefineMethod] once this is called, the
-// foreign call is done and no more arguments can be read or return calls made
+// provides a numeric return value for a foreign call
 void wrenReturnDouble(WrenVM& vm, double value);
 
-// provides a nil return value for a foreign call. this must only be called
-// within a function provided to [wrenDefineMethod], once this is called, the
-// foreign call is done, and no more arguments can be read or return calls made
-void wrenReturnNil(WrenVM& vm);
-
-// provides a string return value for a foreign call, this must only be called
-// within a function provided to [wrenDefineMethod], once this is called, the
-// foreign call is done, and no more arguments can be read or return calls made
+// provides a string return value for a foreign call
 //
 // the [text] will be copied to a new string within Wren's heap, so you can
 // free memory used by it after this is called, if [text] is non-empty, Wren
