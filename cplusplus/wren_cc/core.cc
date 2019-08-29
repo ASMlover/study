@@ -760,10 +760,10 @@ DEF_NATIVE(string_iterate) {
     return PrimitiveResult::ERROR;
 
   int index = Xt::as_type<int>(args[1].as_numeric());
-  if (index < 0)
+  if (index < 0 || index >= s->size() - 1)
     RETURN_VAL(false);
 
-  RETURN_VAL(index);
+  RETURN_VAL(index + 1);
 }
 
 DEF_NATIVE(string_itervalue) {
