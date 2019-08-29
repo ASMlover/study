@@ -94,6 +94,8 @@ static str_t kLibSource =
 "  }\n"
 "}\n"
 "\n"
+"class String is Sequence {}\n"
+"\n"
 "class List is Sequence {\n"
 "  addAll(other) {\n"
 "    for (element in other) {\n"
@@ -744,6 +746,35 @@ DEF_NATIVE(string_indexof) {
   RETURN_VAL(first_occur != nullptr ? (first_occur - string->cstr()) : -1);
 }
 
+DEF_NATIVE(string_iterate) {
+  StringObject* s = args[0].as_string();
+
+  // if we are starting the interation, return the first index
+  if (args[1].is_nil()) {
+    if (s->size() == 0)
+      RETURN_VAL(false);
+    RETURN_VAL(0);
+  }
+
+  if (!validate_int(vm, args, 1, "Iterator"))
+    return PrimitiveResult::ERROR;
+
+  int index = Xt::as_type<int>(args[1].as_numeric());
+  if (index < 0)
+    RETURN_VAL(false);
+
+  RETURN_VAL(index);
+}
+
+DEF_NATIVE(string_itervalue) {
+  StringObject* s = args[0].as_string();
+  int index = validate_index(vm, args, s->size(), 1, "Iterator");
+  if (index == -1)
+    return PrimitiveResult::ERROR;
+
+  RETURN_VAL(StringObject::make_string(vm, (*s)[index]));
+}
+
 DEF_NATIVE(string_startswith) {
   if (!validate_string(vm, args, 1, "Argument"))
     return PrimitiveResult::ERROR;
@@ -1166,7 +1197,10 @@ namespace core {
 
     // vm.set_obj_cls(vm.get_global("Object").as_class());
 
-    vm.set_str_cls(define_class(vm, "String"));
+    /// from core library source
+    vm.interpret("", kLibSource);
+
+    vm.set_str_cls(vm.get_global("String").as_class());
     vm.set_native(vm.str_cls(), "+ ", _primitive_string_add);
     vm.set_native(vm.str_cls(), "== ", _primitive_string_eq);
     vm.set_native(vm.str_cls(), "!= ", _primitive_string_ne);
@@ -1175,24 +1209,10 @@ namespace core {
     vm.set_native(vm.str_cls(), "contains ", _primitive_string_contains);
     vm.set_native(vm.str_cls(), "endsWith ", _primitive_string_endswith);
     vm.set_native(vm.str_cls(), "indexOf ", _primitive_string_indexof);
+    vm.set_native(vm.str_cls(), "iterate ", _primitive_string_iterate);
+    vm.set_native(vm.str_cls(), "iterValue ", _primitive_string_itervalue);
     vm.set_native(vm.str_cls(), "startsWith ", _primitive_string_startswith);
     vm.set_native(vm.str_cls(), "toString", _primitive_string_tostring);
-
-    // when the base classes are defined, we allocated string objects for
-    // their names, however we have not created the string class itself yet,
-    // so those all have nullptr class pointers, now that we have a string
-    // class, go back and fix them up
-    vm.obj_cls()->name()->set_cls(vm.str_cls());
-    vm.class_cls()->name()->set_cls(vm.str_cls());
-    vm.bool_cls()->name()->set_cls(vm.str_cls());
-    vm.fiber_cls()->name()->set_cls(vm.str_cls());
-    vm.fn_cls()->name()->set_cls(vm.str_cls());
-    vm.nil_cls()->name()->set_cls(vm.str_cls());
-    vm.num_cls()->name()->set_cls(vm.str_cls());
-    vm.str_cls()->name()->set_cls(vm.str_cls());
-
-    /// from core library source
-    vm.interpret("", kLibSource);
 
     vm.set_list_cls(vm.get_global("List").as_class());
     vm.set_native(vm.list_cls()->cls(), " instantiate", _primitive_list_instantiate);
@@ -1215,6 +1235,16 @@ namespace core {
     vm.set_native(vm.range_cls(), "iterate ", _primitive_range_iterate);
     vm.set_native(vm.range_cls(), "iterValue ", _primitive_range_itervalue);
     vm.set_native(vm.range_cls(), "toString", _primitive_range_tostring);
+
+    // while bootstrapping the core types and running the core library, a number
+    // string objects have benn created, many of which were instantiated before
+    // `str_class_` was stored in the VM, some of them *must* be created first:
+    // the ClassObject from string itself has a reference to the StringObject
+    // for its name.
+    //
+    // these all currently a `nullptr` `class_obj_` pointer, so go back and
+    // assign them now that the string class is known
+    vm.set_metaclasses();
   }
 }
 

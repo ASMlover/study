@@ -48,6 +48,13 @@ WrenVM::~WrenVM(void) {
   }
 }
 
+void WrenVM::set_metaclasses(void) {
+  for (auto* o : objects_) {
+    if (o->type() == ObjType::STRING)
+      o->set_cls(str_class_);
+  }
+}
+
 int WrenVM::declare_global(const str_t& name) {
   // adds a new implicitly declared global named [name] to the global namespace
   //

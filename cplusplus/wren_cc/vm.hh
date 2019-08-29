@@ -159,6 +159,7 @@ public:
   inline void set_compiler(Compiler* compiler) { compiler_ = compiler; }
   inline void set_global(int index, const Value& value) { globals_[index] = value; }
   inline const Value& get_global(int index) const { return globals_[index]; }
+  void set_metaclasses(void);
   int declare_global(const str_t& name);
   int define_global(const str_t& name, const Value& value);
   void iter_globals(std::function<void (int, const Value&)>&& fn);
