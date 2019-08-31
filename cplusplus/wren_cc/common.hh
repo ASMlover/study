@@ -120,6 +120,13 @@ namespace Xt {
 # define USE_LIBIO          (true)
 #endif
 
+// if true loads the `Math` class in the standard library
+//
+// Defaults to on
+#ifndef USE_LIBMATH
+# define USE_LIBMATH        (true)
+#endif
+
 // set this to true to stress test the GC, it will perform a collection before
 // every allocation, this is useful to ensure that memory is always correctly
 // pinned
