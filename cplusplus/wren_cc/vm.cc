@@ -926,14 +926,14 @@ void WrenVM::return_string(const str_t& text) {
 
 void wrenDefineMethod(WrenVM& vm,
     const str_t& class_name, const str_t& method_name,
-    int num_params, const WrenForeignFn& method) {
-  vm.define_method(class_name, method_name, num_params, method, false);
+    int arity, const WrenForeignFn& method) {
+  vm.define_method(class_name, method_name, arity, method, false);
 }
 
 void wrenDefineStaticMethod(WrenVM& vm,
     const str_t& class_name, const str_t& method_name,
-    int num_params, const WrenForeignFn& method) {
-  vm.define_method(class_name, method_name, num_params, method, true);
+    int arity, const WrenForeignFn& method) {
+  vm.define_method(class_name, method_name, arity, method, true);
 }
 
 bool wrenGetArgumentBool(WrenVM& vm, int index) {

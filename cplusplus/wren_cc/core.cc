@@ -867,7 +867,7 @@ static PrimitiveResult call_function(WrenVM& vm, Value* args, int argc) {
   else
     fn = args[0].as_function();
 
-  if (argc < fn->num_params())
+  if (argc < fn->arity())
     RETURN_ERR("function expects more arguments");
   return PrimitiveResult::CALL;
 }
@@ -885,6 +885,10 @@ DEF_NATIVE(fn_new) {
 
   // the block argument is already a function, so just return it
   RETURN_VAL(args[1]);
+}
+
+DEF_NATIVE(fn_arity) {
+  RETURN_VAL(args[0].as_function()->arity());
 }
 
 DEF_NATIVE_FN(fn_call, 0)
@@ -1145,6 +1149,7 @@ namespace core {
     vm.set_fn_cls(define_class(vm, "Function"));
     vm.set_native(vm.fn_cls()->cls(), " instantiate", _primitive_fn_instantiate);
     vm.set_native(vm.fn_cls()->cls(), "new ", _primitive_fn_new);
+    vm.set_native(vm.fn_cls(), "arity", _primitive_fn_arity);
     vm.set_native(vm.fn_cls(), "call", _primitive_fn_call0);
     vm.set_native(vm.fn_cls(), "call ", _primitive_fn_call1);
     vm.set_native(vm.fn_cls(), "call  ", _primitive_fn_call2);

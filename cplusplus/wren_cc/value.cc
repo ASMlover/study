@@ -309,7 +309,7 @@ DebugObject::DebugObject(const str_t& name,
 
 FunctionObject::FunctionObject(
     ClassObject* cls,
-    int num_upvalues, int num_params,
+    int num_upvalues, int arity,
     u8_t* codes, int codes_count,
     const Value* constants, int constants_count,
     const str_t& source_path, const str_t& debug_name,
@@ -318,7 +318,7 @@ FunctionObject::FunctionObject(
   , num_upvalues_(num_upvalues)
   , codes_(codes, codes + codes_count)
   , constants_(constants, constants + constants_count)
-  , num_params_(num_params)
+  , arity_(arity)
   , debug_(debug_name, source_path, source_lines, lines_count) {
 }
 
@@ -430,13 +430,13 @@ int FunctionObject::get_argc(
 }
 
 FunctionObject* FunctionObject::make_function(WrenVM& vm,
-    int num_upvalues, int num_params,
+    int num_upvalues, int arity,
     u8_t* codes, int codes_count,
     const Value* constants, int constants_count,
     const str_t& source_path, const str_t& debug_name,
     int* source_lines, int lines_count) {
   auto* o = new FunctionObject(
-      vm.fn_cls(), num_upvalues, num_params,
+      vm.fn_cls(), num_upvalues, arity,
       codes, codes_count, constants, constants_count,
       source_path, debug_name, source_lines, lines_count);
   vm.append_object(o);
