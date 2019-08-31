@@ -131,28 +131,26 @@ static const str_t kLibSource =
 "  }\n"
 "}\n";
 
-static void io_write_string(WrenVM& vm) {
-  const char* s = wrenGetArgumentString(vm, 1);
-
-  std::cout << s;
-}
-
-static void io_read(WrenVM& vm) {
-  str_t buffer;
-  if (!std::getline(std::cin, buffer) || buffer.empty()) {
-    // TODO: error
-  }
-
-  wrenReturnString(vm, buffer);
-}
-
-static void io_clock(WrenVM& vm) {
-  wrenReturnDouble(vm, std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0);
-}
-
 namespace io {
   namespace details {
+    void io_write_string(WrenVM& vm) {
+      const char* s = wrenGetArgumentString(vm, 1);
+      std::cout << s;
+    }
+
+    void io_read(WrenVM& vm) {
+      str_t buffer;
+      if (!std::getline(std::cin, buffer) || buffer.empty()) {
+        // TODO: error
+      }
+      wrenReturnString(vm, buffer);
+    }
+
+    void io_clock(WrenVM& vm) {
+      wrenReturnDouble(vm, std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0);
+    }
+
     inline void load_library(WrenVM& vm) {
       vm.interpret("", kLibSource);
       wrenDefineStaticMethod(vm, "IO", "writeString", 1, io_write_string);
