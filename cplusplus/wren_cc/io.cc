@@ -133,12 +133,12 @@ static const str_t kLibSource =
 
 namespace io {
   namespace details {
-    void io_write_string(WrenVM& vm) {
+    void write_string_impl(WrenVM& vm) {
       const char* s = wrenGetArgumentString(vm, 1);
       std::cout << s;
     }
 
-    void io_read(WrenVM& vm) {
+    void read_impl(WrenVM& vm) {
       str_t buffer;
       if (!std::getline(std::cin, buffer) || buffer.empty()) {
         // TODO: error
@@ -146,16 +146,16 @@ namespace io {
       wrenReturnString(vm, buffer);
     }
 
-    void io_clock(WrenVM& vm) {
+    void clock_impl(WrenVM& vm) {
       wrenReturnDouble(vm, std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0);
     }
 
     inline void load_library(WrenVM& vm) {
       vm.interpret("", kLibSource);
-      wrenDefineStaticMethod(vm, "IO", "writeString", 1, io_write_string);
-      wrenDefineStaticMethod(vm, "IO", "clock", 0, io_clock);
-      wrenDefineStaticMethod(vm, "IO", "read", 0, io_read);
+      wrenDefineStaticMethod(vm, "IO", "writeString", 1, write_string_impl);
+      wrenDefineStaticMethod(vm, "IO", "clock", 0, clock_impl);
+      wrenDefineStaticMethod(vm, "IO", "read", 0, read_impl);
     }
   }
 
