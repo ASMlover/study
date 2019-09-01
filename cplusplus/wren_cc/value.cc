@@ -405,14 +405,71 @@ RangeObject* RangeObject::make_range(
   return o;
 }
 
+bool MapObject::add_entry(std::vector<MapEntry>& entries,
+    int capacity, const Value& k, const Value& v) {
+  int index = k.hash() % capacity;
+
+  while (true) {
+    auto& entry = entries[index];
+
+    // if we found an empty slot, the key is not in the table
+    if (entry.first.is_undefined()) {
+      entry.first = k;
+      entry.second = v;
+      return true;
+    }
+
+    // if the key already exists, just replace the value
+    if (entry.first == k) {
+      entry.second = v;
+      return false;
+    }
+
+    // try the next slot
+    index = (index + 1) % capacity;
+  }
+  return false;
+}
+
+void MapObject::grow(void) {
+  if (count_ + 1 <= capacity_ * kLoadPercent / 100)
+    return;
+
+  int new_capacity = capacity_ * kGrowFactor;
+  if (new_capacity < kMinCapacity)
+    new_capacity = kMinCapacity;
+
+  std::vector<MapEntry> new_entries(new_capacity);
+  if (capacity_ > 0) {
+    for (auto& entry : entries_) {
+      if (!entry.first.is_undefined())
+        add_entry(new_entries, new_capacity, entry.first, entry.second);
+    }
+  }
+
+  capacity_ = new_capacity;
+  entries_.swap(new_entries);
+}
+
 const Value& MapObject::get(const Value& key) const {
-  if (auto it = entries_.find(key.hash()); it != entries_.end())
-    return it->second.second;
+  int index = key.hash() % capacity_;
+  while (true) {
+    auto& entry = entries_[index];
+
+    if (entry.first.is_undefined())
+      break;
+    if (entry.first == key)
+      return entry.second;
+
+    index = (index + 1) % capacity_;
+  }
   return kNilValue;
 }
 
 void MapObject::set(const Value& key, const Value& val) {
-  entries_[key.hash()] = std::make_pair(key, val);
+  grow();
+  if (add_entry(entries_, capacity_, key, val))
+    ++count_;
 }
 
 str_t MapObject::stringify(void) const {
@@ -422,9 +479,11 @@ str_t MapObject::stringify(void) const {
 }
 
 void MapObject::gc_mark(WrenVM& vm) {
-  for (auto& it : entries_) {
-    vm.mark_value(it.second.first);
-    vm.mark_value(it.second.second);
+  for (auto& entry : entries_) {
+    if (!entry.first.is_undefined()) {
+      vm.mark_value(entry.first);
+      vm.mark_value(entry.second);
+    }
   }
 }
 

@@ -29,7 +29,6 @@
 #include <functional>
 #include <variant>
 #include <vector>
-#include <unordered_map>
 #include "common.hh"
 #include "wren.hh"
 
@@ -369,13 +368,20 @@ class MapObject final : public BaseObject {
   // the maximum percentage of map entries that can be filled before the map
   // is grown, a lower load takes more memory but reduces collisiions which
   // makes lookup faster
-  static constexpr sz_t kLoadPercent = 75;
+  static constexpr int kLoadPercent = 75;
+  static constexpr int kMinCapacity = 16;
+  static constexpr int kGrowFactor = 2;
 
-  std::unordered_map<u32_t, MapEntry> entries_;
+  int count_{};
+  int capacity_{};
+  std::vector<MapEntry> entries_;
 
+  bool add_entry(std::vector<MapEntry>& entries,
+      int capacity, const Value& k, const Value& v);
+  void grow(void);
   MapObject(ClassObject* cls) noexcept : BaseObject(ObjType::MAP, cls) {}
 public:
-  inline int count(void) const { return Xt::as_type<int>(entries_.size()); }
+  inline int count(void) const { return count_; }
 
   const Value& get(const Value& key) const;
   void set(const Value& key, const Value& val);
