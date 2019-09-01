@@ -382,6 +382,8 @@ class MapObject final : public BaseObject {
   MapObject(ClassObject* cls) noexcept : BaseObject(ObjType::MAP, cls) {}
 public:
   inline int count(void) const { return count_; }
+  inline int capacity(void) const { return capacity_; }
+  inline const MapEntry& operator[](int i) const { return entries_[i]; }
 
   void clear(void);
   const Value& get(const Value& key) const;
