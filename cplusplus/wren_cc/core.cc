@@ -140,9 +140,40 @@ static str_t kLibSource =
 "\n"
 "class Range is Sequence {}\n"
 "\n"
+"class MapKeySequence is Sequence {\n"
+"  new(map) {\n"
+"    _map = map\n"
+"  }\n"
+"\n"
+"  iterate(n) { _map.iter(n) }\n"
+"  iterValue(iterator) { _map.keyIterValue(iterator) }\n"
+"}\n"
+"\n"
+"class MapValSequence is Sequence {\n"
+"  new(map) {\n"
+"    _map = map\n"
+"  }\n"
+"\n"
+"  iterate(n) { _map.iter(n) }\n"
+"  iterValue(iterator) { _map.valIterValue(iterator) }\n"
+"}\n"
+"\n"
 "class Map {\n"
-"  // TODO: implement this\n"
-"  toString { \"{}\" }\n"
+"  keys { new MapKeySequence(this) }\n"
+"  values { new MapValSequence(this) }\n"
+"\n"
+"  toString {\n"
+"    var first = true\n"
+"    var result = \"{\"\n"
+"\n"
+"    for (key in keys) {\n"
+"      if (!first) result = result + \", \"\n"
+"      first = false\n"
+"      result = result + key.toString + \": \" + this[key].toString\n"
+"    }\n"
+"\n"
+"    return result + \"}\"\n"
+"  }\n"
 "}\n";
 
 static int validate_index(const Value& index, int count) {
@@ -1117,6 +1148,57 @@ DEF_NATIVE(map_len) {
   RETURN_VAL(args[0].as_map()->count());
 }
 
+DEF_NATIVE(map_iterate) {
+  MapObject* map = args[0].as_map();
+
+  if (map->count() == 0)
+    RETURN_VAL(false);
+
+  // if we are starting the iteration, return the first entry
+  int index = -1;
+  if (!args[1].is_nil()) {
+    if (!validate_int(vm, args, 1, "Iterator"))
+      return PrimitiveResult::ERROR;
+
+    index = Xt::as_type<int>(args[1].as_numeric());
+    if (index < 0 || index >= map->capacity())
+      RETURN_VAL(false);
+  }
+
+  // find the index used entry if any
+  for (++index; index < map->capacity(); ++index) {
+    if (!(*map)[index].first.is_undefined())
+      RETURN_VAL(index);
+  }
+
+  // if we get here, walked all of the entries
+  RETURN_VAL(false);
+}
+
+DEF_NATIVE(map_iterkey) {
+  MapObject* map = args[0].as_map();
+  int index = validate_index(vm, args, 1, map->capacity(), "Iterator");
+  if (index == -1)
+    return PrimitiveResult::ERROR;
+
+  const auto& entry = (*map)[index];
+  if (entry.first.is_undefined())
+    RETURN_ERR("invalid map iterator value");
+  RETURN_VAL(entry.first);
+}
+
+DEF_NATIVE(map_itervalue) {
+  MapObject* map = args[0].as_map();
+  int index = validate_index(vm, args, 1, map->capacity(), "Iterator");
+  if (index == -1)
+    return PrimitiveResult::ERROR;
+
+  const auto& entry = (*map)[index];
+  if (entry.first.is_undefined())
+    RETURN_ERR("invalid map iterator value");
+  RETURN_VAL(entry.second);
+}
+
 static ClassObject* define_single_class(WrenVM& vm, const str_t& name) {
   StringObject* name_string = StringObject::make_string(vm, name);
 
@@ -1281,6 +1363,9 @@ namespace core {
     vm.set_native(vm.map_cls(), "[ ]=", _primitive_map_subscript_setter);
     vm.set_native(vm.map_cls(), "clear", _primitive_map_clear);
     vm.set_native(vm.map_cls(), "len", _primitive_map_len);
+    vm.set_native(vm.map_cls(), "iter ", _primitive_map_iterate);
+    vm.set_native(vm.map_cls(), "keyIterValue ", _primitive_map_iterkey);
+    vm.set_native(vm.map_cls(), "valIterValue ", _primitive_map_itervalue);
 
     // while bootstrapping the core types and running the core library, a number
     // string objects have benn created, many of which were instantiated before
