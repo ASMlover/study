@@ -30,6 +30,26 @@
 
 namespace wrencc {
 
+// hash codes for singleton values
+static constexpr u32_t kHashFalse = 1;
+static constexpr u32_t kHashNaN = 2;
+static constexpr u32_t kHashNil = 3;
+static constexpr u32_t kHashTrue = 4;
+
+union DoubleBits {
+  u64_t b64;
+  u32_t b32[2];
+  double num;
+};
+
+inline u32_t hash_numeric(double num) {
+  // generates a hash code for [num]
+
+  DoubleBits data;
+  data.num = num;
+  return data.b32[0] ^ data.b32[1];
+}
+
 std::ostream& operator<<(std::ostream& out, const Value& val) {
   return out << val.stringify();
 }
@@ -48,6 +68,10 @@ ListObject* TagValue::as_list(void) const {
 
 RangeObject* TagValue::as_range(void) const {
   return Xt::down<RangeObject>(as_object());
+}
+
+MapObject* TagValue::as_map(void) const {
+  return Xt::down<MapObject>(as_object());
 }
 
 FunctionObject* TagValue::as_function(void) const {
@@ -72,6 +96,35 @@ ClassObject* TagValue::as_class(void) const {
 
 InstanceObject* TagValue::as_instance(void) const {
   return Xt::down<InstanceObject>(as_object());
+}
+
+bool TagValue::is_equal(const TagValue& r) const noexcept {
+  if (is_same(r))
+    return true;
+
+  if (!is_object() || !r.is_object())
+    return false;
+  if (objtype() != r.objtype())
+    return false;
+
+  return as_object()->is_equal(r.as_object());
+}
+
+u32_t TagValue::hash(void) const {
+  if (is_numeric())
+    return hash_numeric(as_numeric());
+  if (is_object())
+    return as_object()->hash();
+
+  switch (tag()) {
+  case Tag::FALSE: return kHashFalse;
+  case Tag::NaN: return kHashNaN;
+  case Tag::NIL: return kHashNil;
+  case Tag::TRUE: return kHashTrue;
+  }
+
+  UNREACHABLE();
+  return 0;
 }
 
 str_t TagValue::stringify(void) const {
@@ -109,6 +162,10 @@ RangeObject* ObjValue::as_range(void) const {
   return Xt::down<RangeObject>(obj_);
 }
 
+MapObject* ObjValue::as_map(void) const {
+  return Xt::down<MapObject>(obj_);
+}
+
 FunctionObject* ObjValue::as_function(void) const {
   return Xt::down<FunctionObject>(obj_);
 }
@@ -133,7 +190,7 @@ InstanceObject* ObjValue::as_instance(void) const {
   return Xt::down<InstanceObject>(obj_);
 }
 
-bool ObjValue::operator==(const ObjValue& r) const noexcept {
+bool ObjValue::is_same(const ObjValue& r) const noexcept {
   if (type_ != r.type_)
     return false;
 
@@ -142,8 +199,29 @@ bool ObjValue::operator==(const ObjValue& r) const noexcept {
   return obj_ == r.obj_;
 }
 
-bool ObjValue::operator!=(const ObjValue& r) const noexcept {
-  return !(*this == r);
+bool ObjValue::is_equal(const ObjValue& r) const noexcept {
+  if (is_same(r))
+    return true;
+
+  if (!is_object() || !r.is_object())
+    return false;
+  if (objtype() != r.objtype())
+    return false;
+
+  return obj_->is_equal(r.obj_);
+}
+
+u32_t ObjValue::hash(void) const {
+  switch (type_) {
+  case ValueType::NIL: return kHashNil;
+  case ValueType::TRUE: return kHashTrue;
+  case ValueType::FALSE: return kHashFalse;
+  case ValueType::NUMERIC: return hash_numeric(num_);
+  case ValueType::OBJECT: return obj_->hash();
+  }
+
+  UNREACHABLE();
+  return 0;
 }
 
 str_t ObjValue::stringify(void) const {
@@ -190,6 +268,11 @@ StringObject::StringObject(
 
 StringObject::~StringObject(void) {
   delete [] value_;
+}
+
+bool StringObject::is_equal(BaseObject* r) const {
+  auto* o = Xt::down<StringObject>(r);
+  return size_ == o->size_ && std::strncmp(value_, o->value_, size_) == 0;
 }
 
 str_t StringObject::stringify(void) const {
@@ -287,6 +370,11 @@ ListObject* ListObject::make_list(WrenVM& vm, int num_elements) {
   return o;
 }
 
+bool RangeObject::is_equal(BaseObject* r) const {
+  auto* o = Xt::down<RangeObject>(r);
+  return from_ == o->from_ && to_ == o->to_ && is_inclusive_ == o->is_inclusive_;
+}
+
 str_t RangeObject::stringify(void) const {
   std::stringstream ss;
   ss << "[fn `" << this << "`]";
@@ -298,6 +386,31 @@ RangeObject* RangeObject::make_range(
   auto* o = new RangeObject(vm.range_cls(), from, to, is_inclusive);
   vm.append_object(o);
   return o;
+}
+
+const Value& MapObject::get(const Value& key) const {
+  // TODO:
+  auto it = entries_.find(0);
+  return it->second.second;
+}
+
+void MapObject::set(const Value& key, const Value& val) {
+  // TODO:
+}
+
+str_t MapObject::stringify(void) const {
+  std::stringstream ss;
+  ss << "[map `" << this << "`]";
+  return ss.str();
+}
+
+void MapObject::gc_mark(WrenVM& vm) {
+  // TODO:
+}
+
+MapObject* MapObject::make_map(WrenVM& vm) {
+  // TODO:
+  return nullptr;
 }
 
 DebugObject::DebugObject(const str_t& name,

@@ -29,6 +29,7 @@
 #include <functional>
 #include <variant>
 #include <vector>
+#include <unordered_map>
 #include "common.hh"
 #include "wren.hh"
 
@@ -47,6 +48,7 @@ enum class ObjType : u8_t {
   STRING,
   LIST,
   RANGE,
+  MAP,
   FUNCTION,
   UPVALUE,
   CLOSURE,
@@ -69,6 +71,7 @@ class NumericObject;
 class StringObject;
 class ListObject;
 class RangeObject;
+class MapObject;
 class FunctionObject;
 class UpvalueObject;
 class ClosureObject;
@@ -99,8 +102,14 @@ public:
     return true;
   }
 
+  virtual bool is_equal(BaseObject* r) const { return false; }
   virtual str_t stringify(void) const { return "<object>"; }
   virtual void gc_mark(WrenVM& vm) {}
+
+  virtual u32_t hash(void) const {
+    ASSERT(false, "only immutable objects can be hashed");
+    return 0;
+  }
 };
 
 enum Tag {
@@ -148,8 +157,8 @@ public:
   TagValue(double d) noexcept { num_ = d; }
   TagValue(BaseObject* o) noexcept { bits_ = (kSignBit | kQNaN | (u64_t)(o)); }
 
-  inline bool operator==(const TagValue& r) const noexcept { return bits_ == r.bits_; }
-  inline bool operator!=(const TagValue& r) const noexcept { return bits_ != r.bits_; }
+  inline bool operator==(const TagValue& r) const noexcept { return is_equal(r); }
+  inline bool operator!=(const TagValue& r) const noexcept { return !(*this == r); }
 
   inline int tag(void) const { return Xt::as_type<int>(bits_ & Tag::MASK); }
   inline ObjType objtype(void) const { return as_object()->type(); }
@@ -162,6 +171,7 @@ public:
   inline bool is_string(void) const { return check(ObjType::STRING); }
   inline bool is_list(void) const { return check(ObjType::LIST); }
   inline bool is_range(void) const { return check(ObjType::RANGE); }
+  inline bool is_map(void) const { return check(ObjType::MAP); }
   inline bool is_function(void) const { return check(ObjType::FUNCTION); }
   inline bool is_upvalue(void) const { return check(ObjType::UPVALUE); }
   inline bool is_closure(void) const { return check(ObjType::CLOSURE); }
@@ -179,6 +189,7 @@ public:
   const char* as_cstring(void) const;
   ListObject* as_list(void) const;
   RangeObject* as_range(void) const;
+  MapObject* as_map(void) const;
   FunctionObject* as_function(void) const;
   UpvalueObject* as_upvalue(void) const;
   ClosureObject* as_closure(void) const;
@@ -186,6 +197,10 @@ public:
   ClassObject* as_class(void) const;
   InstanceObject* as_instance(void) const;
 
+  inline bool is_same(const TagValue& r) const noexcept { return bits_ == r.bits_; }
+  bool is_equal(const TagValue& r) const noexcept;
+
+  u32_t hash(void) const;
   str_t stringify(void) const;
 };
 
@@ -215,6 +230,9 @@ public:
   ObjValue(double d) noexcept : type_(ValueType::NUMERIC), num_(d) {}
   ObjValue(BaseObject* o) noexcept : type_(ValueType::OBJECT), obj_(o) {}
 
+  inline bool operator==(const ObjValue& r) const noexcept { return is_equal(r); }
+  inline bool operator!=(const ObjValue& r) const noexcept { return !(*this == r); }
+
   inline ValueType type(void) const { return type_; }
   inline ObjType objtype(void) const { return obj_->type(); }
   inline bool is_valid(void) const { return type_ != ValueType::OBJECT || obj_ != nullptr; }
@@ -227,6 +245,7 @@ public:
   inline bool is_string(void) const { return check(ObjType::STRING); }
   inline bool is_list(void) const { return check(ObjType::LIST); }
   inline bool is_range(void) const { return check(ObjType::RANGE); }
+  inline bool is_map(void) const { return check(ObjType::MAP); }
   inline bool is_function(void) const { return check(ObjType::FUNCTION); }
   inline bool is_upvalue(void) const { return check(ObjType::UPVALUE); }
   inline bool is_closure(void) const { return check(ObjType::CLOSURE); }
@@ -244,6 +263,7 @@ public:
   const char* as_cstring(void) const;
   ListObject* as_list(void) const;
   RangeObject* as_range(void) const;
+  MapObject* as_map(void) const;
   FunctionObject* as_function(void) const;
   UpvalueObject* as_upvalue(void) const;
   ClosureObject* as_closure(void) const;
@@ -251,8 +271,9 @@ public:
   ClassObject* as_class(void) const;
   InstanceObject* as_instance(void) const;
 
-  bool operator==(const ObjValue& r) const noexcept;
-  bool operator!=(const ObjValue& r) const noexcept;
+  bool is_same(const ObjValue& r) const noexcept;
+  bool is_equal(const ObjValue& r) const noexcept;
+  u32_t hash(void) const;
   str_t stringify(void) const;
 };
 
@@ -279,6 +300,7 @@ public:
   inline char operator[](int i) const { return value_[i]; }
   inline char& operator[](int i) { return value_[i]; }
 
+  virtual bool is_equal(BaseObject* r) const override;
   virtual str_t stringify(void) const override;
 
   static StringObject* make_string(WrenVM& vm, char c);
@@ -330,10 +352,36 @@ public:
   inline double to(void) const { return to_; }
   inline bool is_inclusive(void) const { return is_inclusive_; }
 
+  virtual bool is_equal(BaseObject* r) const override;
   virtual str_t stringify(void) const override;
 
   static RangeObject* make_range(WrenVM& vm,
       double from, double to, bool is_instance);
+};
+
+class MapObject final : public BaseObject {
+  // a hash table mapping keys to values
+
+  using MapEntry = std::pair<Value, Value>;
+
+  // the maximum percentage of map entries that can be filled before the map
+  // is grown, a lower load takes more memory but reduces collisiions which
+  // makes lookup faster
+  static constexpr sz_t kLoadPercent = 75;
+
+  std::unordered_map<u32_t, MapEntry> entries_;
+
+  MapObject(ClassObject* cls) noexcept : BaseObject(ObjType::MAP, cls) {}
+public:
+  inline int count(void) const { return Xt::as_type<int>(entries_.size()); }
+
+  const Value& get(const Value& key) const;
+  void set(const Value& key, const Value& val);
+
+  virtual str_t stringify(void) const override;
+  virtual void gc_mark(WrenVM& vm) override;
+
+  static MapObject* make_map(WrenVM& vm);
 };
 
 // stores debugging information for a function used for things like stack
