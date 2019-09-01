@@ -1,14 +1,14 @@
 
-var map = new Map
-
-map[nil] = "nil value"
-map[true] = "true value"
-map[false] = "false value"
-map[0] = "zero"
-map[1.2] = "1 point 2"
-map[List] = "list class"
-map["nil"] = "string value"
-map[1..3] = "1 to 3"
+var map = {
+  nil: "nil value",
+  true: "true value",
+  false: "false value",
+  0: "zero",
+  1.2: "1 point 2",
+  List: "list class",
+  "nil": "string value",
+  (1..3): "1 to 3"
+}
 
 IO.print(map[nil]) // expect: nil value
 IO.print(map[true]) // expect: true value

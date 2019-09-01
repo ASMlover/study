@@ -72,6 +72,7 @@ CODE(LOAD_FIELD)
 // in it. does not pop the value
 CODE(STORE_FIELD)
 CODE(POP)          // pop and discard the top of stack
+CODE(DUP)          // push a copy of the value currently on the top of stack
 
 // invoke the method with symbol [arg], the number indicates the number of
 // arguments (not including the receiver)

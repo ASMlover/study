@@ -54,6 +54,7 @@ enum class Precedence {
   FACTOR,     // * / %
   UNARY,      // unary - ! ~
   CALL,       // () []
+  PRIMARY,    //
 };
 
 inline Precedence operator+(Precedence a, int b) {
@@ -402,7 +403,7 @@ class Compiler : private UnCopyable {
       UNUSED,                                   // PUNCTUATOR(RPAREN, ")")
       OPER2(list, subscript, Precedence::CALL), // PUNCTUATOR(LBRACKET, "[")
       UNUSED,                                   // PUNCTUATOR(RBRACKET, "]")
-      UNUSED,                                   // PUNCTUATOR(LBRACE, "{")
+      PREFIX(map),                              // PUNCTUATOR(LBRACE, "{")
       UNUSED,                                   // PUNCTUATOR(RBRACE, "}")
       UNUSED,                                   // PUNCTUATOR(COLON, ":")
       INFIX(call, Precedence::CALL),            // PUNCTUATOR(DOT, ".")
@@ -734,6 +735,43 @@ class Compiler : private UnCopyable {
 
     // create the list
     emit_bytes(Code::LIST, num_elements);
+  }
+
+  void map(bool allow_assignment) {
+    // load the map class
+    int map_class_symbol = vm_gnames().get("Map");
+    ASSERT(map_class_symbol != -1, "should have already defined `Map` global");
+    emit_words(Code::LOAD_GLOBAL, map_class_symbol);
+
+    // instantiate a new map
+    emit_words(Code::CALL_0, method_symbol(" instantiate"));
+
+    int subscript_set_symbol = method_symbol("[ ]=");
+    // compile the map elements, each one is compiled to just invoke the
+    // subscript setter on the map
+    if (parser_.curr().kind() != TokenKind::TK_RBRACE) {
+      do {
+        ignore_newlines();
+
+        // push a copy of the map since the subscript call will consume it
+        emit_byte(Code::DUP);
+
+        // the key
+        parse_precedence(false, Precedence::PRIMARY);
+        consume(TokenKind::TK_COLON, "expect `:` after map key");
+        // the value
+        expression();
+
+        emit_words(Code::CALL_2, subscript_set_symbol);
+
+        // discard the result of the setter call
+        emit_byte(Code::POP);
+      } while (match(TokenKind::TK_COMMA));
+    }
+
+    // allow newlines before the closing `}`
+    ignore_newlines();
+    consume(TokenKind::TK_RBRACE, "expect `}` after map entries");
   }
 
   void load_this(void) {

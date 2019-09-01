@@ -1,5 +1,5 @@
 
-var m = new Map
+var m = {}
 IO.print(m.len) // expect: 0
 m["one"] = "value"
 IO.print(m.len) // expect: 1

@@ -57,7 +57,7 @@ var fishes = [
   "Cutlassfish", "Cutthroat eel", "Cutthroat trout"
 ]
 
-var m = new Map
+var m = {}
 for (fish in fishes) {
   m[fish] = fish.len
 }
