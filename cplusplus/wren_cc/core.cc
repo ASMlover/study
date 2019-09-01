@@ -138,7 +138,12 @@ static str_t kLibSource =
 "  }\n"
 "}\n"
 "\n"
-"class Range is Sequence {}\n";
+"class Range is Sequence {}\n"
+"\n"
+"class Map {\n"
+"  // TODO: implement this\n"
+"  toString { \"{}\" }\n"
+"}\n";
 
 static int validate_index(const Value& index, int count) {
   // validates that [index] is an integer within `[0, count)` also allows
@@ -687,11 +692,11 @@ DEF_NATIVE(object_not) {
 }
 
 DEF_NATIVE(object_eq) {
-  RETURN_VAL(args[0] == args[1]);
+  RETURN_VAL(args[0].is_same(args[1]));
 }
 
 DEF_NATIVE(object_ne) {
-  RETURN_VAL(args[0] != args[1]);
+  RETURN_VAL(!args[0].is_same(args[1]));
 }
 
 DEF_NATIVE(object_new) {
@@ -1089,6 +1094,23 @@ DEF_NATIVE(range_tostring) {
   RETURN_VAL(StringObject::make_string(vm, ss.str()));
 }
 
+DEF_NATIVE(map_instantiate) {
+  RETURN_VAL(MapObject::make_map(vm));
+}
+
+DEF_NATIVE(map_subscript) {
+  RETURN_VAL(args[0].as_map()->get(args[1]));
+}
+
+DEF_NATIVE(map_subscript_setter) {
+  args[0].as_map()->set(args[1], args[2]);
+  RETURN_VAL(args[2]);
+}
+
+DEF_NATIVE(map_len) {
+  RETURN_VAL(args[0].as_map()->count());
+}
+
 static ClassObject* define_single_class(WrenVM& vm, const str_t& name) {
   StringObject* name_string = StringObject::make_string(vm, name);
 
@@ -1246,6 +1268,12 @@ namespace core {
     vm.set_native(vm.range_cls(), "iterate ", _primitive_range_iterate);
     vm.set_native(vm.range_cls(), "iterValue ", _primitive_range_itervalue);
     vm.set_native(vm.range_cls(), "toString", _primitive_range_tostring);
+
+    vm.set_map_cls(vm.get_global("Map").as_class());
+    vm.set_native(vm.map_cls()->cls(), " instantiate", _primitive_map_instantiate);
+    vm.set_native(vm.map_cls(), "[ ]", _primitive_map_subscript);
+    vm.set_native(vm.map_cls(), "[ ]=", _primitive_map_subscript_setter);
+    vm.set_native(vm.map_cls(), "len", _primitive_map_len);
 
     // while bootstrapping the core types and running the core library, a number
     // string objects have benn created, many of which were instantiated before

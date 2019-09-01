@@ -302,6 +302,7 @@ public:
 
   virtual bool is_equal(BaseObject* r) const override;
   virtual str_t stringify(void) const override;
+  virtual u32_t hash(void) const override;
 
   static StringObject* make_string(WrenVM& vm, char c);
   static StringObject* make_string(WrenVM& vm, const char* s, int n);
@@ -354,6 +355,7 @@ public:
 
   virtual bool is_equal(BaseObject* r) const override;
   virtual str_t stringify(void) const override;
+  virtual u32_t hash(void) const override;
 
   static RangeObject* make_range(WrenVM& vm,
       double from, double to, bool is_instance);
@@ -697,6 +699,7 @@ public:
 
   virtual str_t stringify(void) const override;
   virtual void gc_mark(WrenVM& vm) override;
+  virtual u32_t hash(void) const override;
 
   static ClassObject* make_single_class(WrenVM& vm, StringObject* name = nullptr);
   static ClassObject* make_class(

@@ -73,6 +73,7 @@ class WrenVM final : private UnCopyable {
   ClassObject* str_class_{};
   ClassObject* list_class_{};
   ClassObject* range_class_{};
+  ClassObject* map_class_{};
 
   std::vector<Value> globals_;
 
@@ -140,6 +141,7 @@ public:
   inline void set_str_cls(ClassObject* cls) { str_class_ = cls; }
   inline void set_list_cls(ClassObject* cls) { list_class_ = cls; }
   inline void set_range_cls(ClassObject* cls) { range_class_ = cls; }
+  inline void set_map_cls(ClassObject* cls) { map_class_ = cls; }
 
   inline ClassObject* fn_cls(void) const { return fn_class_; }
   inline ClassObject* bool_cls(void) const { return bool_class_; }
@@ -151,6 +153,7 @@ public:
   inline ClassObject* str_cls(void) const { return str_class_; }
   inline ClassObject* list_cls(void) const { return list_class_; }
   inline ClassObject* range_cls(void) const { return range_class_; }
+  inline ClassObject* map_cls(void) const { return map_class_; }
 
   inline const SymbolTable& method_names(void) const { return method_names_; }
   inline SymbolTable& mnames(void) { return method_names_; }

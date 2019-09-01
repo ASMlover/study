@@ -35,6 +35,7 @@ static constexpr u32_t kHashFalse = 1;
 static constexpr u32_t kHashNaN = 2;
 static constexpr u32_t kHashNil = 3;
 static constexpr u32_t kHashTrue = 4;
+static const Value kNilValue(nullptr);
 
 union DoubleBits {
   u64_t b64;
@@ -279,6 +280,18 @@ str_t StringObject::stringify(void) const {
   return value_;
 }
 
+u32_t StringObject::hash(void) const {
+  // FNV-1a hash. See: http://www.isthe.com/chongo/tech/comp/fnv/
+  u32_t hash = 2166136261;
+
+  int step = 1 + 7 / size_;
+  for (int i = 0; i < size_; i += step) {
+    hash ^= value_[i];
+    hash *= 16777619;
+  }
+  return hash;
+}
+
 StringObject* StringObject::make_string(WrenVM& vm, char c) {
   auto* o = new StringObject(vm.str_cls(), c);
   vm.append_object(o);
@@ -381,6 +394,10 @@ str_t RangeObject::stringify(void) const {
   return ss.str();
 }
 
+u32_t RangeObject::hash(void) const {
+  return hash_numeric(from_) ^ hash_numeric(to_);
+}
+
 RangeObject* RangeObject::make_range(
     WrenVM& vm, double from, double to, bool is_inclusive) {
   auto* o = new RangeObject(vm.range_cls(), from, to, is_inclusive);
@@ -389,13 +406,13 @@ RangeObject* RangeObject::make_range(
 }
 
 const Value& MapObject::get(const Value& key) const {
-  // TODO:
-  auto it = entries_.find(0);
-  return it->second.second;
+  if (auto it = entries_.find(key.hash()); it != entries_.end())
+    return it->second.second;
+  return kNilValue;
 }
 
 void MapObject::set(const Value& key, const Value& val) {
-  // TODO:
+  entries_[key.hash()] = std::make_pair(key, val);
 }
 
 str_t MapObject::stringify(void) const {
@@ -405,12 +422,16 @@ str_t MapObject::stringify(void) const {
 }
 
 void MapObject::gc_mark(WrenVM& vm) {
-  // TODO:
+  for (auto& it : entries_) {
+    vm.mark_value(it.second.first);
+    vm.mark_value(it.second.second);
+  }
 }
 
 MapObject* MapObject::make_map(WrenVM& vm) {
-  // TODO:
-  return nullptr;
+  auto* o = new MapObject(vm.map_cls());
+  vm.append_object(o);
+  return o;
 }
 
 DebugObject::DebugObject(const str_t& name,
@@ -823,6 +844,10 @@ void ClassObject::gc_mark(WrenVM& vm) {
     if (m.type == MethodType::BLOCK)
       vm.mark_object(m.fn());
   }
+}
+
+u32_t ClassObject::hash(void) const {
+  return name_->hash();
 }
 
 ClassObject* ClassObject::make_single_class(WrenVM& vm, StringObject* name) {

@@ -88,3 +88,8 @@ class List is Sequence {
 }
 
 class Range is Sequence {}
+
+class Map {
+  // TODO: implement this
+  toString { "{}" }
+}
