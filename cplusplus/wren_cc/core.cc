@@ -1107,6 +1107,12 @@ DEF_NATIVE(map_subscript_setter) {
   RETURN_VAL(args[2]);
 }
 
+DEF_NATIVE(map_clear) {
+  MapObject* map = args[0].as_map();
+  map->clear();
+  RETURN_VAL(nullptr);
+}
+
 DEF_NATIVE(map_len) {
   RETURN_VAL(args[0].as_map()->count());
 }
@@ -1273,6 +1279,7 @@ namespace core {
     vm.set_native(vm.map_cls()->cls(), " instantiate", _primitive_map_instantiate);
     vm.set_native(vm.map_cls(), "[ ]", _primitive_map_subscript);
     vm.set_native(vm.map_cls(), "[ ]=", _primitive_map_subscript_setter);
+    vm.set_native(vm.map_cls(), "clear", _primitive_map_clear);
     vm.set_native(vm.map_cls(), "len", _primitive_map_len);
 
     // while bootstrapping the core types and running the core library, a number

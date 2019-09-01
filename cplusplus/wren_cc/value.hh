@@ -383,6 +383,7 @@ class MapObject final : public BaseObject {
 public:
   inline int count(void) const { return count_; }
 
+  void clear(void);
   const Value& get(const Value& key) const;
   void set(const Value& key, const Value& val);
 

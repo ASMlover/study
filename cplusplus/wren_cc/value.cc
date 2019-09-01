@@ -451,6 +451,12 @@ void MapObject::grow(void) {
   entries_.swap(new_entries);
 }
 
+void MapObject::clear(void) {
+  entries_.clear();
+  capacity_ = 0;
+  count_ = 0;
+}
+
 const Value& MapObject::get(const Value& key) const {
   int index = key.hash() % capacity_;
   while (true) {
