@@ -27,6 +27,7 @@
 #pragma once
 
 #include <functional>
+#include <optional>
 #include <variant>
 #include <vector>
 #include "common.hh"
@@ -386,7 +387,8 @@ public:
   inline const MapEntry& operator[](int i) const { return entries_[i]; }
 
   void clear(void);
-  const Value& get(const Value& key) const;
+  bool contains(const Value& key) const;
+  std::optional<Value> get(const Value& key) const;
   void set(const Value& key, const Value& val);
 
   virtual str_t stringify(void) const override;

@@ -304,6 +304,19 @@ static bool validate_string(WrenVM& vm,
   return false;
 }
 
+static bool validate_key(WrenVM& vm, Value* args, int index) {
+  // validates that [key] is a valid object for use as a map key, returns
+  // true if it is, if not, reports an error and returns false
+
+  const Value& arg = args[index];
+  if (arg.is_boolean() || arg.is_class() || arg.is_nil() ||
+      arg.is_numeric() || arg.is_range() || arg.is_string())
+    return true;
+
+  args[0] = StringObject::make_string(vm, "key must be a value type");
+  return false;
+}
+
 static std::tuple<int, int, int> calculate_range(
     WrenVM& vm, Value* args, RangeObject* range, int length) {
   // given a [range] and the [length] of the object being operated on determine
@@ -1130,10 +1143,18 @@ DEF_NATIVE(map_instantiate) {
 }
 
 DEF_NATIVE(map_subscript) {
-  RETURN_VAL(args[0].as_map()->get(args[1]));
+  if (!validate_key(vm, args, 1))
+    return PrimitiveResult::ERROR;
+
+  if (auto val = args[0].as_map()->get(args[1]); val)
+    RETURN_VAL(*val);
+  RETURN_VAL(nullptr);
 }
 
 DEF_NATIVE(map_subscript_setter) {
+  if (!validate_key(vm, args, 1))
+    return PrimitiveResult::ERROR;
+
   args[0].as_map()->set(args[1], args[2]);
   RETURN_VAL(args[2]);
 }
@@ -1142,6 +1163,15 @@ DEF_NATIVE(map_clear) {
   MapObject* map = args[0].as_map();
   map->clear();
   RETURN_VAL(nullptr);
+}
+
+DEF_NATIVE(map_contains) {
+  if (!validate_key(vm, args, 1))
+    return PrimitiveResult::ERROR;
+
+  if (auto val = args[0].as_map()->get(args[1]); val)
+    RETURN_VAL(true);
+  RETURN_VAL(false);
 }
 
 DEF_NATIVE(map_len) {
@@ -1362,6 +1392,7 @@ namespace core {
     vm.set_native(vm.map_cls(), "[ ]", _primitive_map_subscript);
     vm.set_native(vm.map_cls(), "[ ]=", _primitive_map_subscript_setter);
     vm.set_native(vm.map_cls(), "clear", _primitive_map_clear);
+    vm.set_native(vm.map_cls(), "containsKey ", _primitive_map_contains);
     vm.set_native(vm.map_cls(), "len", _primitive_map_len);
     vm.set_native(vm.map_cls(), "iter ", _primitive_map_iterate);
     vm.set_native(vm.map_cls(), "keyIterValue ", _primitive_map_iterkey);

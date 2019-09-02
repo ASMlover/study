@@ -457,7 +457,12 @@ void MapObject::clear(void) {
   count_ = 0;
 }
 
-const Value& MapObject::get(const Value& key) const {
+bool MapObject::contains(const Value& key) const {
+  // TODO:
+  return false;
+}
+
+std::optional<Value> MapObject::get(const Value& key) const {
   int index = key.hash() % capacity_;
   while (true) {
     auto& entry = entries_[index];
@@ -465,11 +470,11 @@ const Value& MapObject::get(const Value& key) const {
     if (entry.first.is_undefined())
       break;
     if (entry.first == key)
-      return entry.second;
+      return {entry.second};
 
     index = (index + 1) % capacity_;
   }
-  return kNilValue;
+  return {};
 }
 
 void MapObject::set(const Value& key, const Value& val) {
