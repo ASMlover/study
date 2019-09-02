@@ -64,9 +64,15 @@ for (fish in fishes) {
 
 IO.print(m.len) // expect: 249
 
-// re-add some keys
-for (i in 20..50) {
-  m[fishes[i]] = i
+for (i in 0...150) {
+  m.remove(fishes[i])
 }
 
-IO.print(m.len) // expect: 249
+IO.print(m.len) // expect: 99
+
+var contained = 0
+for (i in 150...249) {
+  if (m.containsKey(fishes[i])) contained = contained + 1
+}
+
+IO.print(contained) // expect: 99
