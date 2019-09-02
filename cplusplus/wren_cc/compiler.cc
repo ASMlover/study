@@ -718,23 +718,33 @@ class Compiler : private UnCopyable {
   }
 
   void list(bool allow_assignment) {
-    // compile the list elements
-    int num_elements = 0;
+    int list_class_symbol = vm_gnames().get("List");
+    ASSERT(list_class_symbol != -1, "should have already defined `List` global");
+    emit_words(Code::LOAD_GLOBAL, list_class_symbol);
+
+    // instantiate a new list
+    emit_words(Code::CALL_0, method_symbol(" instantiate"));
+
+    int add_symbol = method_symbol("add ");
+
+    // compile the list elements, each one compiles to a ".add()" call
     if (parser_.curr().kind() != TokenKind::TK_RBRACKET) {
       do {
         ignore_newlines();
 
-        ++num_elements;
+        emit_byte(Code::DUP);
         expression();
+
+        emit_words(Code::CALL_1, add_symbol);
+
+        // discard the result of the add() call
+        emit_byte(Code::POP);
       } while (match(TokenKind::TK_COMMA));
     }
 
     // allow newlines before the closing `]`
     ignore_newlines();
     consume(TokenKind::TK_RBRACKET, "expect `]` after list elements");
-
-    // create the list
-    emit_bytes(Code::LIST, num_elements);
   }
 
   void map(bool allow_assignment) {

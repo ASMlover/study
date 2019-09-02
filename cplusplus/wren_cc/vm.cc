@@ -620,21 +620,6 @@ bool WrenVM::interpret(void) {
 
       DISPATCH();
     }
-    CASE_CODE(LIST):
-    {
-      u8_t num_elements = RDBYTE();
-      ListObject* list = ListObject::make_list(*this, num_elements);
-      for (int i = 0; i < num_elements; ++i) {
-        list->set_element(i,
-            fiber->get_value(fiber->stack_size() - num_elements + i));
-      }
-      // discard the elements
-      fiber->resize_stack(fiber->stack_size() - num_elements);
-
-      PUSH(list);
-
-      DISPATCH();
-    }
     CASE_CODE(CLOSURE):
     {
       FunctionObject* prototype = fn->get_constant(RDWORD()).as_function();

@@ -1,7 +1,7 @@
 
 class Sequence {
   map(f) {
-    var result = []
+    var result = new List
     for (element in this) {
       result.add(f.call(element))
     }
@@ -9,7 +9,7 @@ class Sequence {
   }
 
   where(f) {
-    var result = []
+    var result = new List
     for (element in this) {
       if (f.call(element)) result.add(element)
     }

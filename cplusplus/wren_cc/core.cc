@@ -51,7 +51,7 @@ DEF_NATIVE(fn##i) {\
 static str_t kLibSource =
 "class Sequence {\n"
 "  map(f) {\n"
-"    var result = []\n"
+"    var result = new List\n"
 "    for (element in this) {\n"
 "      result.add(f.call(element))\n"
 "    }\n"
@@ -59,7 +59,7 @@ static str_t kLibSource =
 "  }\n"
 "\n"
 "  where(f) {\n"
-"    var result = []\n"
+"    var result = new List\n"
 "    for (element in this) {\n"
 "      if (f.call(element)) result.add(element)\n"
 "    }\n"

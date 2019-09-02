@@ -130,11 +130,6 @@ CODE(IS)           // pop [a] then [b] and push true if [b] is an instance of [a
 CODE(CLOSE_UPVALUE)
 CODE(RETURN)       // exit from the current function and return the value on the top of stack
 
-// create a new list with [arg] elements, the top [arg] values on the stack
-// are the elements in forward order. removes the elements and then pushs
-// the new list
-CODE(LIST)
-
 // creates a closure for the function stored at [arg] in the constant table
 //
 // following the function argument is a number of arguments, two for each

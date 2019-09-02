@@ -623,7 +623,6 @@ int FunctionObject::get_argc(
   case Code::STORE_FIELD_THIS:
   case Code::LOAD_FIELD:
   case Code::STORE_FIELD:
-  case Code::LIST:
   case Code::CLASS:
     return 1;
 
