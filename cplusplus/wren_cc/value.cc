@@ -458,7 +458,8 @@ void MapObject::clear(void) {
 }
 
 bool MapObject::contains(const Value& key) const {
-  // TODO:
+  if (auto val = get(key); val)
+    return true;
   return false;
 }
 
