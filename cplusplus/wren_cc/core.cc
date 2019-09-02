@@ -1160,8 +1160,7 @@ DEF_NATIVE(map_subscript_setter) {
 }
 
 DEF_NATIVE(map_clear) {
-  MapObject* map = args[0].as_map();
-  map->clear();
+  args[0].as_map()->clear();
   RETURN_VAL(nullptr);
 }
 
@@ -1169,13 +1168,18 @@ DEF_NATIVE(map_contains) {
   if (!validate_key(vm, args, 1))
     return PrimitiveResult::ERROR;
 
-  if (auto val = args[0].as_map()->get(args[1]); val)
-    RETURN_VAL(true);
-  RETURN_VAL(false);
+  RETURN_VAL(args[0].as_map()->find(args[1]) != -1);
 }
 
 DEF_NATIVE(map_len) {
   RETURN_VAL(args[0].as_map()->count());
+}
+
+DEF_NATIVE(map_remove) {
+  if (!validate_key(vm, args, 1))
+    return PrimitiveResult::ERROR;
+
+  RETURN_VAL(args[0].as_map()->remove(args[1]));
 }
 
 DEF_NATIVE(map_iterate) {
@@ -1394,6 +1398,7 @@ namespace core {
     vm.set_native(vm.map_cls(), "clear", _primitive_map_clear);
     vm.set_native(vm.map_cls(), "containsKey ", _primitive_map_contains);
     vm.set_native(vm.map_cls(), "len", _primitive_map_len);
+    vm.set_native(vm.map_cls(), "remove ", _primitive_map_remove);
     vm.set_native(vm.map_cls(), "iter ", _primitive_map_iterate);
     vm.set_native(vm.map_cls(), "keyIterValue ", _primitive_map_iterkey);
     vm.set_native(vm.map_cls(), "valIterValue ", _primitive_map_itervalue);

@@ -432,13 +432,16 @@ bool MapObject::add_entry(std::vector<MapEntry>& entries,
 }
 
 void MapObject::grow(void) {
-  if (count_ + 1 <= capacity_ * kLoadPercent / 100)
-    return;
+  if (count_ + 1 > capacity_ * kLoadPercent / 100) {
+    int new_capacity = capacity_ * kGrowFactor;
+    if (new_capacity < kMinCapacity)
+      new_capacity = kMinCapacity;
 
-  int new_capacity = capacity_ * kGrowFactor;
-  if (new_capacity < kMinCapacity)
-    new_capacity = kMinCapacity;
+    resize(new_capacity);
+  }
+}
 
+void MapObject::resize(int new_capacity) {
   std::vector<MapEntry> new_entries(new_capacity);
   if (capacity_ > 0) {
     for (auto& entry : entries_) {
@@ -463,7 +466,7 @@ bool MapObject::contains(const Value& key) const {
   return false;
 }
 
-std::optional<Value> MapObject::get(const Value& key) const {
+int MapObject::find(const Value& key) const {
   int index = key.hash() % capacity_;
   while (true) {
     auto& entry = entries_[index];
@@ -471,17 +474,66 @@ std::optional<Value> MapObject::get(const Value& key) const {
     if (entry.first.is_undefined())
       break;
     if (entry.first == key)
-      return {entry.second};
+      return index;
 
     index = (index + 1) % capacity_;
   }
-  return {};
+  return -1;
+}
+
+std::optional<Value> MapObject::get(const Value& key) const {
+  int index = find(key);
+  if (index == -1)
+    return {};
+  return {entries_[index].second};
 }
 
 void MapObject::set(const Value& key, const Value& val) {
   grow();
   if (add_entry(entries_, capacity_, key, val))
     ++count_;
+}
+
+Value MapObject::remove(const Value& key) {
+  int index = find(key);
+  if (index == -1)
+    return nullptr;
+
+  // remove the entry from the map
+  Value value = entries_[index].second;
+  entries_[index].first = Value();
+
+  --count_;
+  if (count_ == 0) {
+    clear();
+  }
+  else if (count_ < capacity_ / kGrowFactor * kLoadPercent / 100) {
+    int new_capacity = capacity_ / kGrowFactor;
+    if (new_capacity < kMinCapacity)
+      new_capacity = kMinCapacity;
+
+    resize(new_capacity);
+  }
+  else {
+    // we are removed the entry, but we need to update any subsequent entries
+    // that may have wanted to occupy its slot and got pushed down, otherwise
+    // we won't be able to find them later
+
+    while (true) {
+      index = (index + 1) % capacity_;
+
+      if (entries_[index].first.is_undefined())
+        break;
+
+      Value removed_key = entries_[index].first;
+      Value removed_val = entries_[index].second;
+      entries_[index].first = Value();
+
+      add_entry(entries_, capacity_, removed_key, removed_val);
+    }
+  }
+
+  return value;
 }
 
 str_t MapObject::stringify(void) const {

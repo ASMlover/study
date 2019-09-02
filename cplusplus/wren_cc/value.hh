@@ -380,6 +380,7 @@ class MapObject final : public BaseObject {
   bool add_entry(std::vector<MapEntry>& entries,
       int capacity, const Value& k, const Value& v);
   void grow(void);
+  void resize(int new_capacity);
   MapObject(ClassObject* cls) noexcept : BaseObject(ObjType::MAP, cls) {}
 public:
   inline int count(void) const { return count_; }
@@ -388,8 +389,10 @@ public:
 
   void clear(void);
   bool contains(const Value& key) const;
+  int find(const Value& key) const;
   std::optional<Value> get(const Value& key) const;
   void set(const Value& key, const Value& val);
+  Value remove(const Value& key);
 
   virtual str_t stringify(void) const override;
   virtual void gc_mark(WrenVM& vm) override;
