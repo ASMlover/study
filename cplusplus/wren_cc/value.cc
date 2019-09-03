@@ -273,7 +273,7 @@ StringObject::~StringObject(void) {
 
 bool StringObject::is_equal(BaseObject* r) const {
   auto* o = Xt::down<StringObject>(r);
-  return size_ == o->size_ && std::strncmp(value_, o->value_, size_) == 0;
+  return size_ == o->size_ && std::memcmp(value_, o->value_, size_) == 0;
 }
 
 str_t StringObject::stringify(void) const {

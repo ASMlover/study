@@ -736,11 +736,11 @@ DEF_NATIVE(object_not) {
 }
 
 DEF_NATIVE(object_eq) {
-  RETURN_VAL(args[0].is_same(args[1]));
+  RETURN_VAL(args[0] == args[1]);
 }
 
 DEF_NATIVE(object_ne) {
-  RETURN_VAL(!args[0].is_same(args[1]));
+  RETURN_VAL(args[0] != args[1]);
 }
 
 DEF_NATIVE(object_new) {
@@ -867,26 +867,6 @@ DEF_NATIVE(string_add) {
   StringObject* lhs = args[0].as_string();
   StringObject* rhs = args[1].as_string();
   RETURN_VAL(StringObject::make_string(vm, lhs, rhs));
-}
-
-DEF_NATIVE(string_eq) {
-  if (!args[1].is_string())
-    RETURN_VAL(false);
-
-  StringObject* a = args[0].as_string();
-  StringObject* b = args[1].as_string();
-  RETURN_VAL(a->size() == b->size() &&
-      memcmp(a->cstr(), b->cstr(), a->size()) == 0);
-}
-
-DEF_NATIVE(string_ne) {
-  if (!args[1].is_string())
-    RETURN_VAL(true);
-
-  StringObject* a = args[0].as_string();
-  StringObject* b = args[1].as_string();
-  RETURN_VAL(a->size() != b->size() ||
-      memcmp(a->cstr(), b->cstr(), a->size()) != 0);
 }
 
 DEF_NATIVE(string_subscript) {
@@ -1071,14 +1051,6 @@ DEF_NATIVE(list_subscript_setter) {
 
   list->set_element(index, args[2]);
   RETURN_VAL(args[2]);
-}
-
-DEF_NATIVE(range_eq) {
-  RETURN_VAL(args[0] == args[1]);
-}
-
-DEF_NATIVE(range_ne) {
-  RETURN_VAL(args[0] != args[1]);
 }
 
 DEF_NATIVE(range_from) {
@@ -1365,8 +1337,6 @@ namespace core {
 
     vm.set_str_cls(vm.find_variable("String").as_class());
     vm.set_native(vm.str_cls(), "+ ", _primitive_string_add);
-    vm.set_native(vm.str_cls(), "== ", _primitive_string_eq);
-    vm.set_native(vm.str_cls(), "!= ", _primitive_string_ne);
     vm.set_native(vm.str_cls(), "[ ]", _primitive_string_subscript);
     vm.set_native(vm.str_cls(), "len", _primitive_string_len);
     vm.set_native(vm.str_cls(), "contains ", _primitive_string_contains);
@@ -1390,8 +1360,6 @@ namespace core {
     vm.set_native(vm.list_cls(), "iterValue ", _primitive_list_itervalue);
 
     vm.set_range_cls(vm.find_variable("Range").as_class());
-    vm.set_native(vm.range_cls(), "== ", _primitive_range_eq);
-    vm.set_native(vm.range_cls(), "!= ", _primitive_range_ne);
     vm.set_native(vm.range_cls(), "from", _primitive_range_from);
     vm.set_native(vm.range_cls(), "to", _primitive_range_to);
     vm.set_native(vm.range_cls(), "min", _primitive_range_min);
