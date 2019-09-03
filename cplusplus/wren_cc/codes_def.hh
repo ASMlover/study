@@ -53,8 +53,12 @@ CODE(LOAD_LOCAL)   // push the value in local slot [arg]
 CODE(STORE_LOCAL)  // store the top of the stack in local slot [arg], not pop it
 CODE(LOAD_UPVALUE) // push the value in upvalue [arg]
 CODE(STORE_UPVALUE)// store the top of stack in upvalue [arg], does not pop it
-CODE(LOAD_GLOBAL)  // push the value in global slot [arg]
-CODE(STORE_GLOBAL) // store the top of the stack in global slot [arg], not pop it
+
+// pushes the value of the top-level variable in slot [arg]
+CODE(LOAD_MODULE_VAR)
+
+// stores the top of stack in the top-level variable slot [arg], not pop it
+CODE(STORE_MODULE_VAR)
 
 // push the value of the field in slot [arg] of the receiver of the current
 // function. this is used for regular field access on `this` directly in
