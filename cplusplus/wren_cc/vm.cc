@@ -333,7 +333,13 @@ bool WrenVM::interpret(void) {
       DISPATCH();
     }
     CASE_CODE(POP): POP(); DISPATCH();
-    CASE_CODE(DUP): PUSH(PEEK()); DISPATCH();
+    CASE_CODE(DUP):
+    {
+      const Value& value = PEEK();
+      PUSH(value);
+
+      DISPATCH();
+    }
     CASE_CODE(CALL_0):
     CASE_CODE(CALL_1):
     CASE_CODE(CALL_2):
