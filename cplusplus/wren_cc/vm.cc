@@ -55,56 +55,20 @@ void WrenVM::set_metaclasses(void) {
   }
 }
 
-int WrenVM::declare_global(const str_t& name) {
-  // adds a new implicitly declared global named [name] to the global namespace
-  //
-  // does not check to see if a global with that name is already declared or
-  // defined, returns the symbol for the new global or -2 if there are too
-  // many globals defined
-
-  if (globals_.size() == MAX_GLOBALS)
-    return -2;
-
-  globals_.push_back(Value());
-  return global_names_.add(name);
+int WrenVM::declare_variable(Module& module, const str_t& name) {
+  return module.declare_variable(name);
 }
 
-int WrenVM::define_global(const str_t& name, const Value& value) {
-  // adds a new global named [name] to the global namespace
-  //
-  // returns the symbol for the new global, -1 if a global with the given name
-  // is already defined, or -2 if there are too many globals defined
-
-  if (globals_.size() == MAX_GLOBALS)
-    return -2;
+int WrenVM::define_variable(Module& module, const str_t& name, const Value& value) {
   if (value.is_object())
     push_root(value.as_object());
 
-  // see if the global is already explicitly or implicitly declared
-  int symbol = global_names_.get(name);
-  if (symbol == -1) {
-    // brand new global
-    symbol = global_names_.add(name);
-    globals_.push_back(value);
-  }
-  else if (globals_[symbol].is_undefined()) {
-    // explicitly declaring an implicitly decalred one, mark it as defined
-    globals_[symbol] = value;
-  }
-  else {
-    // already explicitly declared
-    symbol = -1;
-  }
+  int symbol = module.define_variable(name, value);
 
   if (value.is_object())
     pop_root();
 
   return symbol;
-}
-
-void WrenVM::iter_globals(std::function<void (int i, const Value&)>&& fn) {
-  for (int i = 0; i < globals_.size(); ++i)
-    fn(i, globals_[i]);
 }
 
 void WrenVM::set_native(
@@ -113,14 +77,9 @@ void WrenVM::set_native(
   cls->bind_method(symbol, fn);
 }
 
-void WrenVM::set_global(const str_t& name, const Value& value) {
-  int symbol = global_names_.add(name);
-  globals_[symbol] = value;
-}
-
-const Value& WrenVM::get_global(const str_t& name) const {
-  int symbol = global_names_.get(name);
-  return globals_[symbol];
+const Value& WrenVM::find_variable(const str_t& name) const {
+  int symbol = main_.find_variable(name);
+  return main_.get_variable(symbol);
 }
 
 void WrenVM::push_root(BaseObject* obj) {
@@ -317,15 +276,15 @@ bool WrenVM::interpret(void) {
 
       DISPATCH();
     }
-    CASE_CODE(LOAD_GLOBAL):
+    CASE_CODE(LOAD_MODULE_VAR):
     {
-      PUSH(globals_[RDWORD()]);
+      PUSH(fn->module().get_variable(RDWORD()));
 
       DISPATCH();
     }
-    CASE_CODE(STORE_GLOBAL):
+    CASE_CODE(STORE_MODULE_VAR):
     {
-      globals_[RDWORD()] = PEEK();
+      fn->module().set_variable(RDWORD(), PEEK());
 
       DISPATCH();
     }
@@ -756,9 +715,7 @@ void WrenVM::call_function(FiberObject* fiber, BaseObject* fn, int argc) {
 }
 
 void WrenVM::collect(void) {
-  // global variables
-  for (auto& v : globals_)
-    mark_value(v);
+  main_.gc_mark(*this);
   // pinned objects
   for (auto* o : temp_roots_)
     mark_object(o);
@@ -832,10 +789,10 @@ void WrenVM::define_method(
   ASSERT(num_params <= MAX_PARAMETERS, "too many parameters");
 
   // find or create the class to bind the method to
-  int class_symbol = global_names_.get(class_name);
+  int class_symbol = main_.find_variable(class_name);
   ClassObject* cls;
   if (class_symbol != -1) {
-    cls = globals_[class_symbol].as_class();
+    cls = main_.get_variable(class_symbol).as_class();
   }
   else {
     // the class does not already exists, so create it
@@ -843,7 +800,7 @@ void WrenVM::define_method(
     PinnedGuard guard(*this, name_string);
 
     cls = ClassObject::make_class(*this, obj_class_, 0, name_string);
-    define_global(class_name, cls);
+    define_variable(main_, class_name, cls);
   }
 
   // create a name for the method, including its arity

@@ -31,6 +31,7 @@
 #include <variant>
 #include <vector>
 #include "common.hh"
+#include "utils.hh"
 #include "wren.hh"
 
 namespace wrencc {
@@ -424,10 +425,35 @@ public:
   inline int get_line(int i) const { return source_lines_[i]; }
 };
 
+class Module final : private UnCopyable {
+  // the currently defined top-level variables
+  std::vector<Value> variables_;
+
+  // symbol table for the names of all module variables, indexes here directly
+  // correspond to entries in [variables_]
+  SymbolTable var_names_;
+public:
+  Module(void) noexcept {}
+
+  inline int count(void) const { return Xt::as_type<int>(variables_.size()); }
+  inline const Value& get_variable(int i) const { return variables_[i]; }
+  inline void set_variable(int i, const Value& value) { variables_[i] = value; }
+  inline int find_variable(const str_t& name) const { return var_names_.get(name); }
+
+  int declare_variable(const str_t& name);
+  int define_variable(const str_t& name, const Value& value);
+  void iter_variables(std::function<void (int, const Value&, const str_t&)>&& fn);
+
+  void gc_mark(WrenVM& vm);
+};
+
 class FunctionObject final : public BaseObject {
   int num_upvalues_{};
   std::vector<u8_t> codes_;
   std::vector<Value> constants_;
+
+  // the module where this function was defined
+  Module& module_;
 
   // the number of parameters this functon expects, used to ensure that `.call`
   // handles a mismatch between number of parameters and arguments, this will
@@ -438,6 +464,7 @@ class FunctionObject final : public BaseObject {
 
   FunctionObject(
       ClassObject* cls,
+      Module& module,
       int num_upvalues, int arity,
       u8_t* codes, int codes_count,
       const Value* constants, int constants_count,
@@ -455,6 +482,8 @@ public:
   inline u8_t get_code(int i) const { return codes_[i]; }
   inline const Value& get_constant(int i) const { return constants_[i]; }
   inline int arity(void) const { return arity_; }
+  inline Module& module(void) { return module_; }
+  inline const Module& module(void) const { return module_; }
   inline const DebugObject& debug(void) const { return debug_; }
 
   template <typename T> inline void set_code(int i, T c) {

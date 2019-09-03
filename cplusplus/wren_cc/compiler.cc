@@ -71,6 +71,7 @@ struct GrammerRule {
 
 class Parser : private UnCopyable {
   WrenVM& vm_;
+  Module& module_;
 
   Lexer& lex_;
   Token prev_;
@@ -81,7 +82,7 @@ class Parser : private UnCopyable {
   bool had_error_{};
 public:
   Parser(WrenVM& vm, Lexer& lex) noexcept
-    : vm_(vm), lex_(lex) {
+    : vm_(vm), module_(vm.mmodule()), lex_(lex) {
   }
 
   inline const str_t& source_path(void) const { return lex_.source_path(); }
@@ -90,6 +91,7 @@ public:
   inline bool had_error(void) const { return had_error_; }
   inline void set_error(bool b = true) { had_error_ = b; }
   inline WrenVM& get_vm(void) { return vm_; }
+  inline Module& get_module(void) { return module_; }
 
   void advance(void) {
     prev_ = curr_;
@@ -223,7 +225,7 @@ class Compiler : private UnCopyable {
 
   // the current level of block scope nesting, where zero is no nesting.
   // a -1 here means top-level code is being compiled and thers is no block
-  // scope in effect at all. any variables declared will be global
+  // scope in effect at all. any variables declared will be module-level
   int scope_depth_{-1};
 
   // the current innermost loop being compiled, or `nullptr` if not in a loop
@@ -257,7 +259,7 @@ class Compiler : private UnCopyable {
   int num_params_{};
 
   inline SymbolTable& vm_mnames(void) { return parser_.get_vm().mnames(); }
-  inline SymbolTable& vm_gnames(void) { return parser_.get_vm().gnames(); }
+  inline Module& vm_mmodule(void) { return parser_.get_vm().mmodule(); }
 
   void error(const char* format, ...) {
     const Token& tok = parser_.prev();
@@ -502,13 +504,13 @@ class Compiler : private UnCopyable {
           MAX_VARIABLE_NAME);
     }
 
-    // top-level global scope
+    // top-level module scope
     if (scope_depth_ == -1) {
-      int symbol = parser_.get_vm().define_global(name, nullptr);
+      int symbol = parser_.get_vm().define_variable(vm_mmodule(), name, nullptr);
       if (symbol == -1)
-        error("global variable is already defined");
+        error("module variable is already defined");
       else if (symbol == -2)
-        error("too many global variables defined");
+        error("too many module variables defined");
       return symbol;
     }
 
@@ -549,9 +551,9 @@ class Compiler : private UnCopyable {
     if (scope_depth_ >= 0)
       return;
 
-    // it's a global variable, so store the value int the global slot and
+    // it's a module variable, so store the value int the module slot and
     // then discard the temporary for the initializer
-    emit_words(Code::STORE_GLOBAL, symbol);
+    emit_words(Code::STORE_MODULE_VAR, symbol);
     emit_byte(Code::POP);
   }
 
@@ -627,10 +629,10 @@ class Compiler : private UnCopyable {
     return -1;
   }
 
-  int resolve_non_global(const str_t& name, Code& load_instruction) {
+  int resolve_non_module(const str_t& name, Code& load_instruction) {
     // lookup [name] in the current scope to see what name it is bound to,
     // returns the index of the name either in local scope, or the enclosing
-    // function's upvalue list, does not search the global scope, returns -1
+    // function's upvalue list, does not search the module scope, returns -1
     // if not found
     //
     // sets [load_instruction] to the instruction needed to load the variable
@@ -651,19 +653,18 @@ class Compiler : private UnCopyable {
 
   int resolve_name(const str_t& name, Code& load_instruction) {
     // loop up [name] in the current scope to see what name it is bound
-    // to returns the index of the name either in global or local scope,
+    // to returns the index of the name either in module or local scope,
     // or the enclosing function's upvalue list. returns -1 if not found.
     //
     // sets [load_instruction] to the instruction needed to load the
-    // variable. will be one of [LOAD_LOCAL], [LOAD_UPVALUE] or [LOAD_GLOBAL]
+    // variable. will be one of [LOAD_LOCAL], [LOAD_UPVALUE] or [LOAD_MODULE_VAR]
 
-    int non_global = resolve_non_global(name, load_instruction);
-    if (non_global != -1)
-      return non_global;
+    int non_module = resolve_non_module(name, load_instruction);
+    if (non_module != -1)
+      return non_module;
 
-    // if got here, it was not in a local scope, so try the global scope
-    load_instruction = Code::LOAD_GLOBAL;
-    return vm_gnames().get(name);
+    load_instruction = Code::LOAD_MODULE_VAR;
+    return vm_mmodule().find_variable(name);
   }
 
   inline void load_local(int slot) {
@@ -718,9 +719,9 @@ class Compiler : private UnCopyable {
   }
 
   void list(bool allow_assignment) {
-    int list_class_symbol = vm_gnames().get("List");
-    ASSERT(list_class_symbol != -1, "should have already defined `List` global");
-    emit_words(Code::LOAD_GLOBAL, list_class_symbol);
+    int list_class_symbol = vm_mmodule().find_variable("List");
+    ASSERT(list_class_symbol != -1, "should have already defined `List` variable");
+    emit_words(Code::LOAD_MODULE_VAR, list_class_symbol);
 
     // instantiate a new list
     emit_words(Code::CALL_0, method_symbol(" instantiate"));
@@ -749,9 +750,9 @@ class Compiler : private UnCopyable {
 
   void map(bool allow_assignment) {
     // load the map class
-    int map_class_symbol = vm_gnames().get("Map");
-    ASSERT(map_class_symbol != -1, "should have already defined `Map` global");
-    emit_words(Code::LOAD_GLOBAL, map_class_symbol);
+    int map_class_symbol = vm_mmodule().find_variable("Map");
+    ASSERT(map_class_symbol != -1, "should have already defined `Map` variable");
+    emit_words(Code::LOAD_MODULE_VAR, map_class_symbol);
 
     // instantiate a new map
     emit_words(Code::CALL_0, method_symbol(" instantiate"));
@@ -789,7 +790,7 @@ class Compiler : private UnCopyable {
     // handles functions defined inside methods
 
     Code load_instruction;
-    int index = resolve_non_global("this", load_instruction);
+    int index = resolve_non_module("this", load_instruction);
     if (load_instruction == Code::LOAD_LOCAL)
       load_local(index);
     else
@@ -812,11 +813,11 @@ class Compiler : private UnCopyable {
       switch (load_instruction) {
       case Code::LOAD_LOCAL: emit_bytes(Code::STORE_LOCAL, index); break;
       case Code::LOAD_UPVALUE: emit_bytes(Code::STORE_UPVALUE, index); break;
-      case Code::LOAD_GLOBAL: emit_words(Code::STORE_GLOBAL, index); break;
+      case Code::LOAD_MODULE_VAR: emit_words(Code::STORE_MODULE_VAR, index); break;
       default: UNREACHABLE();
       }
     }
-    else if (load_instruction == Code::LOAD_GLOBAL) {
+    else if (load_instruction == Code::LOAD_MODULE_VAR) {
       emit_words(load_instruction, index);
     }
     else if (load_instruction == Code::LOAD_LOCAL) {
@@ -869,7 +870,7 @@ class Compiler : private UnCopyable {
     str_t token_name = parser_.prev().as_string();
 
     Code load_instruction;
-    int index = resolve_non_global(token_name, load_instruction);
+    int index = resolve_non_module(token_name, load_instruction);
     if (index != -1) {
       variable_impl(allow_assignment, index, load_instruction);
       return;
@@ -884,21 +885,21 @@ class Compiler : private UnCopyable {
     }
 
     // otherwise, look for a global variable with the name
-    int global = vm_gnames().get(token_name);
-    if (global == -1) {
+    int module = vm_mmodule().find_variable(token_name);
+    if (module == -1) {
       if (is_local_name(token_name)) {
         error("undefined variable");
         return;
       }
 
-      // if it's a nonlocal name, implicitly define a global in the hopes
-      // that we get a real definition later
-      global = parser_.get_vm().declare_global(token_name);
-      if (global == -2) {
-        error("too many global variables defined");
+      // if it's a nonlocal name, implicitly define a module-level variable in
+      // the hopes that we get a real definition later
+      module = parser_.get_vm().declare_variable(vm_mmodule(), token_name);
+      if (module == -2) {
+        error("too many module variables defined");
       }
     }
-    variable_impl(allow_assignment, global, Code::LOAD_GLOBAL);
+    variable_impl(allow_assignment, module, Code::LOAD_MODULE_VAR);
   }
 
   void field(bool allow_assignment) {
@@ -1051,7 +1052,7 @@ class Compiler : private UnCopyable {
 
     // create a variable to store the class in
     int symbol = declare_named_variable();
-    bool is_global = scope_depth_ == -1;
+    bool is_module = scope_depth_ == -1;
 
     // make a string constant for the name
     int name_constant = add_constant(
@@ -1119,8 +1120,8 @@ class Compiler : private UnCopyable {
       int method_symbol = method(
           &class_compiler, is_ctor, signature);
       // load the class
-      if (is_global)
-        emit_words(Code::LOAD_GLOBAL, symbol);
+      if (is_module)
+        emit_words(Code::LOAD_MODULE_VAR, symbol);
       else
         load_local(symbol);
 
@@ -1916,10 +1917,10 @@ public:
     }
     emit_bytes(Code::NIL, Code::RETURN);
 
-    parser_.get_vm().iter_globals([this](int i, const Value& val) {
+    parser_.get_module().iter_variables(
+        [this](int i, const Value& val, const str_t& name) {
           if (val.is_undefined()) {
-            error("variable `%s` is used but not defined",
-                vm_gnames().get_name(i).c_str());
+            error("variable `%s` is used but not defined", name.c_str());
           }
         });
 

@@ -147,10 +147,10 @@ namespace Xt {
 // set this to display object's detail information
 #define TRACE_OBJECT_DETAIL (false)
 
-// the maximum number of globals that may be defined at one time, this
-// limitation comes from the 16-bits used for the arguments to
-// `Code::LOAD_GLOBAL` and `Code::STORE_GLOBAL`
-#define MAX_GLOBALS         (65536)
+// the maximum number of module-level variables that may be defined at one
+// time, this limitation comes from the 16-bits used for the arguments to
+// `Code::LOAD_MODULE_VAR` and `Code::STORE_MODULE_VAR`
+#define MAX_MODULE_VARS     (65536)
 
 // the maximum number of arguments that can be passed to a method, note that
 // this limitation is hardcoded in order places in the VM, in particular the

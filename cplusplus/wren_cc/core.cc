@@ -1238,7 +1238,7 @@ static ClassObject* define_single_class(WrenVM& vm, const str_t& name) {
 
   PinnedGuard guard(vm, name_string);
   ClassObject* cls = ClassObject::make_single_class(vm, name_string);
-  vm.define_global(name, cls);
+  vm.define_variable(vm.mmodule(), name, cls);
   return cls;
 }
 
@@ -1247,7 +1247,7 @@ static ClassObject* define_class(WrenVM& vm, const str_t& name) {
 
   PinnedGuard guard(vm, name_string);
   ClassObject* cls = ClassObject::make_class(vm, vm.obj_cls(), 0, name_string);
-  vm.define_global(name, cls);
+  vm.define_variable(vm.mmodule(), name, cls);
   return cls;
 }
 
@@ -1350,12 +1350,12 @@ namespace core {
     vm.set_native(vm.num_cls(), "sqrt", _primitive_numeric_sqrt);
     vm.set_native(vm.num_cls(), "toString", _primitive_numeric_tostring);
 
-    // vm.set_obj_cls(vm.get_global("Object").as_class());
+    // vm.set_obj_cls(vm.find_variable("Object").as_class());
 
     /// from core library source
     vm.interpret("", kLibSource);
 
-    vm.set_str_cls(vm.get_global("String").as_class());
+    vm.set_str_cls(vm.find_variable("String").as_class());
     vm.set_native(vm.str_cls(), "+ ", _primitive_string_add);
     vm.set_native(vm.str_cls(), "== ", _primitive_string_eq);
     vm.set_native(vm.str_cls(), "!= ", _primitive_string_ne);
@@ -1369,7 +1369,7 @@ namespace core {
     vm.set_native(vm.str_cls(), "startsWith ", _primitive_string_startswith);
     vm.set_native(vm.str_cls(), "toString", _primitive_string_tostring);
 
-    vm.set_list_cls(vm.get_global("List").as_class());
+    vm.set_list_cls(vm.find_variable("List").as_class());
     vm.set_native(vm.list_cls()->cls(), " instantiate", _primitive_list_instantiate);
     vm.set_native(vm.list_cls(), "[ ]", _primitive_list_subscript);
     vm.set_native(vm.list_cls(), "[ ]=", _primitive_list_subscript_setter);
@@ -1381,7 +1381,7 @@ namespace core {
     vm.set_native(vm.list_cls(), "iterate ", _primitive_list_iterate);
     vm.set_native(vm.list_cls(), "iterValue ", _primitive_list_itervalue);
 
-    vm.set_range_cls(vm.get_global("Range").as_class());
+    vm.set_range_cls(vm.find_variable("Range").as_class());
     vm.set_native(vm.range_cls(), "from", _primitive_range_from);
     vm.set_native(vm.range_cls(), "to", _primitive_range_to);
     vm.set_native(vm.range_cls(), "min", _primitive_range_min);
@@ -1391,7 +1391,7 @@ namespace core {
     vm.set_native(vm.range_cls(), "iterValue ", _primitive_range_itervalue);
     vm.set_native(vm.range_cls(), "toString", _primitive_range_tostring);
 
-    vm.set_map_cls(vm.get_global("Map").as_class());
+    vm.set_map_cls(vm.find_variable("Map").as_class());
     vm.set_native(vm.map_cls()->cls(), " instantiate", _primitive_map_instantiate);
     vm.set_native(vm.map_cls(), "[ ]", _primitive_map_subscript);
     vm.set_native(vm.map_cls(), "[ ]=", _primitive_map_subscript_setter);

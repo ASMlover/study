@@ -75,10 +75,11 @@ class WrenVM final : private UnCopyable {
   ClassObject* range_class_{};
   ClassObject* map_class_{};
 
-  std::vector<Value> globals_;
-
   // the fiber that is currently running
   FiberObject* fiber_{};
+
+  // the main module
+  Module main_{};
 
   // how many bytes of object data have been allocated
   sz_t total_allocated_{};
@@ -112,10 +113,6 @@ class WrenVM final : private UnCopyable {
   // there is a single global symbol table for all method names on all classes
   // method calls are dispatched directly by index in this table
   SymbolTable method_names_;
-
-  // symbol table for the name of all global variables, indexes here directly
-  // correspond to entries in [globals_]
-  SymbolTable global_names_;
 
   void print_stacktrace(FiberObject* fiber);
   FiberObject* runtime_error(FiberObject* fiber, StringObject* error);
@@ -155,20 +152,15 @@ public:
   inline ClassObject* range_cls(void) const { return range_class_; }
   inline ClassObject* map_cls(void) const { return map_class_; }
 
-  inline const SymbolTable& method_names(void) const { return method_names_; }
+  inline Module& mmodule(void) { return main_; }
+  inline const Module& mmodule(void) const { return main_; }
   inline SymbolTable& mnames(void) { return method_names_; }
-  inline const SymbolTable& global_names(void) const { return global_names_; }
-  inline SymbolTable& gnames(void) { return global_names_; }
   inline void set_compiler(Compiler* compiler) { compiler_ = compiler; }
-  inline void set_global(int index, const Value& value) { globals_[index] = value; }
-  inline const Value& get_global(int index) const { return globals_[index]; }
   void set_metaclasses(void);
-  int declare_global(const str_t& name);
-  int define_global(const str_t& name, const Value& value);
-  void iter_globals(std::function<void (int, const Value&)>&& fn);
+  int declare_variable(Module& module, const str_t& name);
+  int define_variable(Module& module, const str_t& name, const Value& value);
   void set_native(ClassObject* cls, const str_t& name, const PrimitiveFn& fn);
-  void set_global(const str_t& name, const Value& value);
-  const Value& get_global(const str_t& name) const;
+  const Value& find_variable(const str_t& name) const;
 
   void push_root(BaseObject* obj);
   void pop_root(void);

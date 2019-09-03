@@ -564,8 +564,60 @@ DebugObject::DebugObject(const str_t& name,
   , source_lines_(source_lines, source_lines + lines_count) {
 }
 
+int Module::declare_variable(const str_t& name) {
+  // adds a new implicitly declared top-level variable named [name] to [module]
+  //
+  // does not check to see if a variable with that name is already decalred or
+  // defined, returns the symbol for the new variable or -2 if there are too
+  // many variables defined
+
+  if (variables_.size() == MAX_MODULE_VARS)
+    return -2;
+
+  variables_.push_back(Value());
+  return var_names_.add(name);
+}
+
+int Module::define_variable(const str_t& name, const Value& value) {
+  // adds a new top-level variable named [name] to [module]
+  //
+  // returns the symbol for the new variable, -1 if a variable with the given
+  // name is already defined or -2 if there are too many variables defined
+
+  if (variables_.size() == MAX_MODULE_VARS)
+    return -2;
+
+  // see if the variable is already explicitly or implicitly declared
+  int symbol = var_names_.get(name);
+  if (symbol == -1) {
+    // brand new variable
+    symbol = var_names_.add(name);
+    variables_.push_back(value);
+  }
+  else if (variables_[symbol].is_undefined()) {
+    variables_[symbol] = value;
+  }
+  else {
+    symbol = -1;
+  }
+
+  return symbol;
+}
+
+void Module::iter_variables(
+    std::function<void (int, const Value&, const str_t&)>&& fn) {
+  for (int i = 0; i < variables_.size(); ++i)
+    fn(i, variables_[i], var_names_.get_name(i));
+}
+
+void Module::gc_mark(WrenVM& vm) {
+  for (auto& v : variables_)
+    vm.mark_value(v);
+}
+
 FunctionObject::FunctionObject(
     ClassObject* cls,
+    Module& module,
     int num_upvalues, int arity,
     u8_t* codes, int codes_count,
     const Value* constants, int constants_count,
@@ -575,6 +627,7 @@ FunctionObject::FunctionObject(
   , num_upvalues_(num_upvalues)
   , codes_(codes, codes + codes_count)
   , constants_(constants, constants + constants_count)
+  , module_(module)
   , arity_(arity)
   , debug_(debug_name, source_path, source_lines, lines_count) {
 }
@@ -628,8 +681,8 @@ int FunctionObject::get_argc(
 
     // instructions with two arguments
   case Code::CONSTANT:
-  case Code::LOAD_GLOBAL:
-  case Code::STORE_GLOBAL:
+  case Code::LOAD_MODULE_VAR:
+  case Code::STORE_MODULE_VAR:
   case Code::CALL_0:
   case Code::CALL_1:
   case Code::CALL_2:
@@ -693,7 +746,7 @@ FunctionObject* FunctionObject::make_function(WrenVM& vm,
     const str_t& source_path, const str_t& debug_name,
     int* source_lines, int lines_count) {
   auto* o = new FunctionObject(
-      vm.fn_cls(), num_upvalues, arity,
+      vm.fn_cls(), vm.mmodule(), num_upvalues, arity,
       codes, codes_count, constants, constants_count,
       source_path, debug_name, source_lines, lines_count);
   vm.append_object(o);
