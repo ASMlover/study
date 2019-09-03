@@ -1073,6 +1073,14 @@ DEF_NATIVE(list_subscript_setter) {
   RETURN_VAL(args[2]);
 }
 
+DEF_NATIVE(range_eq) {
+  RETURN_VAL(args[0] == args[1]);
+}
+
+DEF_NATIVE(range_ne) {
+  RETURN_VAL(args[0] != args[1]);
+}
+
 DEF_NATIVE(range_from) {
   RangeObject* range = args[0].as_range();
   RETURN_VAL(range->from());
@@ -1382,6 +1390,8 @@ namespace core {
     vm.set_native(vm.list_cls(), "iterValue ", _primitive_list_itervalue);
 
     vm.set_range_cls(vm.find_variable("Range").as_class());
+    vm.set_native(vm.range_cls(), "== ", _primitive_range_eq);
+    vm.set_native(vm.range_cls(), "!= ", _primitive_range_ne);
     vm.set_native(vm.range_cls(), "from", _primitive_range_from);
     vm.set_native(vm.range_cls(), "to", _primitive_range_to);
     vm.set_native(vm.range_cls(), "min", _primitive_range_min);
