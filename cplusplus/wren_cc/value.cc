@@ -475,6 +475,10 @@ bool MapObject::contains(const Value& key) const {
 }
 
 int MapObject::find(const Value& key) const {
+  // if there is no entry array (an empty map) we definitely won't find it
+  if (capacity_ == 0)
+    return -1;
+
   int index = key.hash() % capacity_;
   while (true) {
     auto& entry = entries_[index];
