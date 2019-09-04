@@ -59,11 +59,6 @@ enum class ObjType : u8_t {
   INSTANCE,
 };
 
-enum ObjFlag {
-  UNMARK = 0x00,
-  MARKED = 0x01,
-};
-
 class WrenVM;
 class BaseObject;
 
@@ -83,27 +78,20 @@ class ClassObject;
 class InstanceObject;
 
 class BaseObject : private UnCopyable {
-  ObjType type_ : 4;
-  ObjFlag flag_ : 1;
+  ObjType type_;
+  bool marked_{};
   ClassObject* cls_{}; // the object's class
 public:
   BaseObject(ObjType type, ClassObject* cls = nullptr) noexcept
-    : type_(type), flag_(ObjFlag::UNMARK), cls_(cls) {
+    : type_(type), cls_(cls) {
   }
   virtual ~BaseObject(void) {}
 
   inline ObjType type(void) const { return type_; }
-  inline ObjFlag flag(void) const { return flag_; }
+  inline bool is_marked(void) const { return marked_; }
+  inline void set_marked(bool marked = true) { marked_ = marked; }
   inline ClassObject* cls(void) const { return cls_; }
   inline void set_cls(ClassObject* cls) { cls_ = cls; }
-  template <typename T> inline void set_flag(T f) { flag_ = Xt::as_type<ObjFlag>(f); }
-
-  inline bool set_marked(void) {
-    if (flag() & ObjFlag::MARKED)
-      return true;
-    set_flag(flag() | ObjFlag::MARKED);
-    return true;
-  }
 
   virtual bool is_equal(BaseObject* r) const { return false; }
   virtual str_t stringify(void) const { return "<object>"; }

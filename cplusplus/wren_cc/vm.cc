@@ -737,13 +737,12 @@ void WrenVM::collect(void) {
 
   // collect any unmarked objects
   for (auto it = objects_.begin(); it != objects_.end();) {
-    if (!((*it)->flag() & ObjFlag::MARKED)) {
+    if (!(*it)->is_marked()) {
       free_object(*it);
       objects_.erase(it++);
     }
     else {
-      ObjFlag f = (*it)->flag();
-      (*it)->set_flag(f & ~ObjFlag::MARKED);
+      (*it)->set_marked(false);
       ++it;
     }
   }
@@ -776,8 +775,9 @@ void WrenVM::mark_object(BaseObject* obj) {
   if (obj == nullptr)
     return;
 
-  if (obj->set_marked())
+  if (obj->is_marked())
     return;
+  obj->set_marked(true);
 
   obj->gc_mark(*this);
 }
