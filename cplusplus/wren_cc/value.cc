@@ -75,6 +75,10 @@ MapObject* TagValue::as_map(void) const {
   return Xt::down<MapObject>(as_object());
 }
 
+ModuleObject* TagValue::as_module(void) const {
+  return Xt::down<ModuleObject>(as_object());
+}
+
 FunctionObject* TagValue::as_function(void) const {
   return Xt::down<FunctionObject>(as_object());
 }
@@ -165,6 +169,10 @@ RangeObject* ObjValue::as_range(void) const {
 
 MapObject* ObjValue::as_map(void) const {
   return Xt::down<MapObject>(obj_);
+}
+
+ModuleObject* ObjValue::as_module(void) const {
+  return Xt::down<ModuleObject>(obj_);
 }
 
 FunctionObject* ObjValue::as_function(void) const {
@@ -564,7 +572,7 @@ DebugObject::DebugObject(const str_t& name,
   , source_lines_(source_lines, source_lines + lines_count) {
 }
 
-int Module::declare_variable(const str_t& name) {
+int ModuleObject::declare_variable(const str_t& name) {
   // adds a new implicitly declared top-level variable named [name] to [module]
   //
   // does not check to see if a variable with that name is already decalred or
@@ -575,10 +583,10 @@ int Module::declare_variable(const str_t& name) {
     return -2;
 
   variables_.push_back(Value());
-  return var_names_.add(name);
+  return variable_names_.add(name);
 }
 
-int Module::define_variable(const str_t& name, const Value& value) {
+int ModuleObject::define_variable(const str_t& name, const Value& value) {
   // adds a new top-level variable named [name] to [module]
   //
   // returns the symbol for the new variable, -1 if a variable with the given
@@ -588,10 +596,10 @@ int Module::define_variable(const str_t& name, const Value& value) {
     return -2;
 
   // see if the variable is already explicitly or implicitly declared
-  int symbol = var_names_.get(name);
+  int symbol = variable_names_.get(name);
   if (symbol == -1) {
     // brand new variable
-    symbol = var_names_.add(name);
+    symbol = variable_names_.add(name);
     variables_.push_back(value);
   }
   else if (variables_[symbol].is_undefined()) {
@@ -604,20 +612,33 @@ int Module::define_variable(const str_t& name, const Value& value) {
   return symbol;
 }
 
-void Module::iter_variables(
+void ModuleObject::iter_variables(
     std::function<void (int, const Value&, const str_t&)>&& fn) {
   for (int i = 0; i < variables_.size(); ++i)
-    fn(i, variables_[i], var_names_.get_name(i));
+    fn(i, variables_[i], variable_names_.get_name(i));
 }
 
-void Module::gc_mark(WrenVM& vm) {
+str_t ModuleObject::stringify(void) const {
+  std::stringstream ss;
+  ss << "[module `" << this << "`]";
+  return ss.str();
+}
+
+void ModuleObject::gc_mark(WrenVM& vm) {
   for (auto& v : variables_)
     vm.mark_value(v);
 }
 
+ModuleObject* ModuleObject::make_module(WrenVM& vm) {
+  // modules are never used as first-class objects, so do not need a class
+  auto* o = new ModuleObject();
+  vm.append_object(o);
+  return o;
+}
+
 FunctionObject::FunctionObject(
     ClassObject* cls,
-    Module& module,
+    ModuleObject* module,
     int num_upvalues, int arity,
     u8_t* codes, int codes_count,
     const Value* constants, int constants_count,

@@ -79,7 +79,7 @@ class WrenVM final : private UnCopyable {
   FiberObject* fiber_{};
 
   // the main module
-  Module main_{};
+  ModuleObject* main_{};
 
   // how many bytes of object data have been allocated
   sz_t total_allocated_{};
@@ -152,13 +152,12 @@ public:
   inline ClassObject* range_cls(void) const { return range_class_; }
   inline ClassObject* map_cls(void) const { return map_class_; }
 
-  inline Module& mmodule(void) { return main_; }
-  inline const Module& mmodule(void) const { return main_; }
+  inline ModuleObject* mmodule(void) const { return main_; }
   inline SymbolTable& mnames(void) { return method_names_; }
   inline void set_compiler(Compiler* compiler) { compiler_ = compiler; }
   void set_metaclasses(void);
-  int declare_variable(Module& module, const str_t& name);
-  int define_variable(Module& module, const str_t& name, const Value& value);
+  int declare_variable(ModuleObject* module, const str_t& name);
+  int define_variable(ModuleObject* module, const str_t& name, const Value& value);
   void set_native(ClassObject* cls, const str_t& name, const PrimitiveFn& fn);
   const Value& find_variable(const str_t& name) const;
 

@@ -50,6 +50,7 @@ enum class ObjType : u8_t {
   LIST,
   RANGE,
   MAP,
+  MODULE,
   FUNCTION,
   UPVALUE,
   CLOSURE,
@@ -73,6 +74,7 @@ class StringObject;
 class ListObject;
 class RangeObject;
 class MapObject;
+class ModuleObject;
 class FunctionObject;
 class UpvalueObject;
 class ClosureObject;
@@ -173,6 +175,7 @@ public:
   inline bool is_list(void) const { return check(ObjType::LIST); }
   inline bool is_range(void) const { return check(ObjType::RANGE); }
   inline bool is_map(void) const { return check(ObjType::MAP); }
+  inline bool is_module(void) const { return check(ObjType::MODULE); }
   inline bool is_function(void) const { return check(ObjType::FUNCTION); }
   inline bool is_upvalue(void) const { return check(ObjType::UPVALUE); }
   inline bool is_closure(void) const { return check(ObjType::CLOSURE); }
@@ -191,6 +194,7 @@ public:
   ListObject* as_list(void) const;
   RangeObject* as_range(void) const;
   MapObject* as_map(void) const;
+  ModuleObject* as_module(void) const;
   FunctionObject* as_function(void) const;
   UpvalueObject* as_upvalue(void) const;
   ClosureObject* as_closure(void) const;
@@ -247,6 +251,7 @@ public:
   inline bool is_list(void) const { return check(ObjType::LIST); }
   inline bool is_range(void) const { return check(ObjType::RANGE); }
   inline bool is_map(void) const { return check(ObjType::MAP); }
+  inline bool is_module(void) const { return check(ObjType::MODULE); }
   inline bool is_function(void) const { return check(ObjType::FUNCTION); }
   inline bool is_upvalue(void) const { return check(ObjType::UPVALUE); }
   inline bool is_closure(void) const { return check(ObjType::CLOSURE); }
@@ -265,6 +270,7 @@ public:
   ListObject* as_list(void) const;
   RangeObject* as_range(void) const;
   MapObject* as_map(void) const;
+  ModuleObject* as_module(void) const;
   FunctionObject* as_function(void) const;
   UpvalueObject* as_upvalue(void) const;
   ClosureObject* as_closure(void) const;
@@ -425,26 +431,34 @@ public:
   inline int get_line(int i) const { return source_lines_[i]; }
 };
 
-class Module final : private UnCopyable {
+class ModuleObject final : public BaseObject {
+  // a loaded module and the top-level variables it defines
+  //
+  // while this is an BaseObject and is managed by the GC, it never appers
+  // as a first-class object in Wren
+
   // the currently defined top-level variables
   std::vector<Value> variables_;
 
   // symbol table for the names of all module variables, indexes here directly
   // correspond to entries in [variables_]
-  SymbolTable var_names_;
-public:
-  Module(void) noexcept {}
+  SymbolTable variable_names_;
 
+  ModuleObject(void) noexcept : BaseObject(ObjType::MODULE) {}
+public:
   inline int count(void) const { return Xt::as_type<int>(variables_.size()); }
   inline const Value& get_variable(int i) const { return variables_[i]; }
-  inline void set_variable(int i, const Value& value) { variables_[i] = value; }
-  inline int find_variable(const str_t& name) const { return var_names_.get(name); }
+  inline void set_variable(int i, const Value& val) { variables_[i] = val; }
+  inline int find_variable(const str_t& name) const { return variable_names_.get(name); }
 
   int declare_variable(const str_t& name);
   int define_variable(const str_t& name, const Value& value);
   void iter_variables(std::function<void (int, const Value&, const str_t&)>&& fn);
 
-  void gc_mark(WrenVM& vm);
+  virtual str_t stringify(void) const override;
+  virtual void gc_mark(WrenVM& vm) override;
+
+  static ModuleObject* make_module(WrenVM& vm);
 };
 
 class FunctionObject final : public BaseObject {
@@ -453,7 +467,7 @@ class FunctionObject final : public BaseObject {
   std::vector<Value> constants_;
 
   // the module where this function was defined
-  Module& module_;
+  ModuleObject* module_{};
 
   // the number of parameters this functon expects, used to ensure that `.call`
   // handles a mismatch between number of parameters and arguments, this will
@@ -464,7 +478,7 @@ class FunctionObject final : public BaseObject {
 
   FunctionObject(
       ClassObject* cls,
-      Module& module,
+      ModuleObject* module,
       int num_upvalues, int arity,
       u8_t* codes, int codes_count,
       const Value* constants, int constants_count,
@@ -482,8 +496,7 @@ public:
   inline u8_t get_code(int i) const { return codes_[i]; }
   inline const Value& get_constant(int i) const { return constants_[i]; }
   inline int arity(void) const { return arity_; }
-  inline Module& module(void) { return module_; }
-  inline const Module& module(void) const { return module_; }
+  inline ModuleObject* module(void) const { return module_; }
   inline const DebugObject& debug(void) const { return debug_; }
 
   template <typename T> inline void set_code(int i, T c) {

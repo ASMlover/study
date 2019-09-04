@@ -71,7 +71,7 @@ struct GrammerRule {
 
 class Parser : private UnCopyable {
   WrenVM& vm_;
-  Module& module_;
+  ModuleObject* module_;
 
   Lexer& lex_;
   Token prev_;
@@ -91,7 +91,7 @@ public:
   inline bool had_error(void) const { return had_error_; }
   inline void set_error(bool b = true) { had_error_ = b; }
   inline WrenVM& get_vm(void) { return vm_; }
-  inline Module& get_module(void) { return module_; }
+  inline ModuleObject* get_module(void) const { return module_; }
 
   void advance(void) {
     prev_ = curr_;
@@ -259,7 +259,7 @@ class Compiler : private UnCopyable {
   int num_params_{};
 
   inline SymbolTable& vm_mnames(void) { return parser_.get_vm().mnames(); }
-  inline Module& vm_mmodule(void) { return parser_.get_vm().mmodule(); }
+  inline ModuleObject* vm_mmodule(void) { return parser_.get_vm().mmodule(); }
 
   void error(const char* format, ...) {
     const Token& tok = parser_.prev();
@@ -664,7 +664,7 @@ class Compiler : private UnCopyable {
       return non_module;
 
     load_instruction = Code::LOAD_MODULE_VAR;
-    return vm_mmodule().find_variable(name);
+    return vm_mmodule()->find_variable(name);
   }
 
   inline void load_local(int slot) {
@@ -719,7 +719,7 @@ class Compiler : private UnCopyable {
   }
 
   void list(bool allow_assignment) {
-    int list_class_symbol = vm_mmodule().find_variable("List");
+    int list_class_symbol = vm_mmodule()->find_variable("List");
     ASSERT(list_class_symbol != -1, "should have already defined `List` variable");
     emit_words(Code::LOAD_MODULE_VAR, list_class_symbol);
 
@@ -750,7 +750,7 @@ class Compiler : private UnCopyable {
 
   void map(bool allow_assignment) {
     // load the map class
-    int map_class_symbol = vm_mmodule().find_variable("Map");
+    int map_class_symbol = vm_mmodule()->find_variable("Map");
     ASSERT(map_class_symbol != -1, "should have already defined `Map` variable");
     emit_words(Code::LOAD_MODULE_VAR, map_class_symbol);
 
@@ -885,7 +885,7 @@ class Compiler : private UnCopyable {
     }
 
     // otherwise, look for a global variable with the name
-    int module = vm_mmodule().find_variable(token_name);
+    int module = vm_mmodule()->find_variable(token_name);
     if (module == -1) {
       if (is_local_name(token_name)) {
         error("undefined variable");
@@ -1917,7 +1917,7 @@ public:
     }
     emit_bytes(Code::NIL, Code::RETURN);
 
-    parser_.get_module().iter_variables(
+    parser_.get_module()->iter_variables(
         [this](int i, const Value& val, const str_t& name) {
           if (val.is_undefined()) {
             error("variable `%s` is used but not defined", name.c_str());

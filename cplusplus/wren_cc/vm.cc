@@ -35,6 +35,7 @@ namespace wrencc {
 /// WrenVM IMPLEMENTATIONS
 
 WrenVM::WrenVM(void) noexcept {
+  main_ = ModuleObject::make_module(*this);
   core::initialize(*this);
   io::load_library(*this);
 }
@@ -55,15 +56,16 @@ void WrenVM::set_metaclasses(void) {
   }
 }
 
-int WrenVM::declare_variable(Module& module, const str_t& name) {
-  return module.declare_variable(name);
+int WrenVM::declare_variable(ModuleObject* module, const str_t& name) {
+  return module->declare_variable(name);
 }
 
-int WrenVM::define_variable(Module& module, const str_t& name, const Value& value) {
+int WrenVM::define_variable(
+    ModuleObject* module, const str_t& name, const Value& value) {
   if (value.is_object())
     push_root(value.as_object());
 
-  int symbol = module.define_variable(name, value);
+  int symbol = module->define_variable(name, value);
 
   if (value.is_object())
     pop_root();
@@ -78,8 +80,8 @@ void WrenVM::set_native(
 }
 
 const Value& WrenVM::find_variable(const str_t& name) const {
-  int symbol = main_.find_variable(name);
-  return main_.get_variable(symbol);
+  int symbol = main_->find_variable(name);
+  return main_->get_variable(symbol);
 }
 
 void WrenVM::push_root(BaseObject* obj) {
@@ -278,13 +280,13 @@ bool WrenVM::interpret(void) {
     }
     CASE_CODE(LOAD_MODULE_VAR):
     {
-      PUSH(fn->module().get_variable(RDWORD()));
+      PUSH(fn->module()->get_variable(RDWORD()));
 
       DISPATCH();
     }
     CASE_CODE(STORE_MODULE_VAR):
     {
-      fn->module().set_variable(RDWORD(), PEEK());
+      fn->module()->set_variable(RDWORD(), PEEK());
 
       DISPATCH();
     }
@@ -721,7 +723,7 @@ void WrenVM::call_function(FiberObject* fiber, BaseObject* fn, int argc) {
 }
 
 void WrenVM::collect(void) {
-  main_.gc_mark(*this);
+  mark_object(main_);
   // pinned objects
   for (auto* o : temp_roots_)
     mark_object(o);
@@ -795,10 +797,10 @@ void WrenVM::define_method(
   ASSERT(num_params <= MAX_PARAMETERS, "too many parameters");
 
   // find or create the class to bind the method to
-  int class_symbol = main_.find_variable(class_name);
+  int class_symbol = main_->find_variable(class_name);
   ClassObject* cls;
   if (class_symbol != -1) {
-    cls = main_.get_variable(class_symbol).as_class();
+    cls = main_->get_variable(class_symbol).as_class();
   }
   else {
     // the class does not already exists, so create it
