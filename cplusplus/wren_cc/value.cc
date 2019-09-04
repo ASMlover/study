@@ -126,9 +126,8 @@ u32_t TagValue::hash(void) const {
   case Tag::NaN: return kHashNaN;
   case Tag::NIL: return kHashNil;
   case Tag::TRUE: return kHashTrue;
+  default: UNREACHABLE(); return 0;
   }
-
-  UNREACHABLE();
   return 0;
 }
 
@@ -227,10 +226,8 @@ u32_t ObjValue::hash(void) const {
   case ValueType::FALSE: return kHashFalse;
   case ValueType::NUMERIC: return hash_numeric(num_);
   case ValueType::OBJECT: return obj_->hash();
-  default: UNREACHABLE();
+  default: UNREACHABLE(); return 0;
   }
-
-  UNREACHABLE();
   return 0;
 }
 
@@ -291,7 +288,7 @@ str_t StringObject::stringify(void) const {
 
 u32_t StringObject::hash(void) const {
   // FNV-1a hash. See: http://www.isthe.com/chongo/tech/comp/fnv/
-  u32_t hash = 2166136261;
+  u32_t hash = 2166136261u;
 
   int step = 1 + 7 / size_;
   for (int i = 0; i < size_; i += step) {

@@ -199,8 +199,11 @@ public:
 
 class ObjValue final : public Copyable {
   ValueType type_{};
-  double num_{};
-  BaseObject* obj_{};
+
+  union {
+    double num_{};
+    BaseObject* obj_;
+  };
 
   inline bool check(ObjType type) const { return is_object() && obj_->type() == type; }
 
