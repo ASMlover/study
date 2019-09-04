@@ -71,7 +71,7 @@ struct GrammerRule {
 
 class Parser : private UnCopyable {
   WrenVM& vm_;
-  ModuleObject* module_;
+  ModuleObject* module_{};
 
   Lexer& lex_;
   Token prev_;
@@ -81,8 +81,8 @@ class Parser : private UnCopyable {
 
   bool had_error_{};
 public:
-  Parser(WrenVM& vm, Lexer& lex) noexcept
-    : vm_(vm), module_(vm.mmodule()), lex_(lex) {
+  Parser(WrenVM& vm, ModuleObject* module, Lexer& lex) noexcept
+    : vm_(vm), module_(module), lex_(lex) {
   }
 
   inline const str_t& source_path(void) const { return lex_.source_path(); }
@@ -91,7 +91,7 @@ public:
   inline bool had_error(void) const { return had_error_; }
   inline void set_error(bool b = true) { had_error_ = b; }
   inline WrenVM& get_vm(void) { return vm_; }
-  inline ModuleObject* get_module(void) const { return module_; }
+  inline ModuleObject* get_mod(void) const { return module_; }
 
   void advance(void) {
     prev_ = curr_;
@@ -259,7 +259,6 @@ class Compiler : private UnCopyable {
   int num_params_{};
 
   inline SymbolTable& vm_mnames(void) { return parser_.get_vm().mnames(); }
-  inline ModuleObject* vm_mmodule(void) { return parser_.get_vm().mmodule(); }
 
   void error(const char* format, ...) {
     const Token& tok = parser_.prev();
@@ -506,7 +505,8 @@ class Compiler : private UnCopyable {
 
     // top-level module scope
     if (scope_depth_ == -1) {
-      int symbol = parser_.get_vm().define_variable(vm_mmodule(), name, nullptr);
+      int symbol = parser_.get_vm().define_variable(
+          parser_.get_mod(), name, nullptr);
       if (symbol == -1)
         error("module variable is already defined");
       else if (symbol == -2)
@@ -664,7 +664,7 @@ class Compiler : private UnCopyable {
       return non_module;
 
     load_instruction = Code::LOAD_MODULE_VAR;
-    return vm_mmodule()->find_variable(name);
+    return parser_.get_mod()->find_variable(name);
   }
 
   inline void load_local(int slot) {
@@ -719,7 +719,7 @@ class Compiler : private UnCopyable {
   }
 
   void list(bool allow_assignment) {
-    int list_class_symbol = vm_mmodule()->find_variable("List");
+    int list_class_symbol = parser_.get_mod()->find_variable("List");
     ASSERT(list_class_symbol != -1, "should have already defined `List` variable");
     emit_words(Code::LOAD_MODULE_VAR, list_class_symbol);
 
@@ -750,7 +750,7 @@ class Compiler : private UnCopyable {
 
   void map(bool allow_assignment) {
     // load the map class
-    int map_class_symbol = vm_mmodule()->find_variable("Map");
+    int map_class_symbol = parser_.get_mod()->find_variable("Map");
     ASSERT(map_class_symbol != -1, "should have already defined `Map` variable");
     emit_words(Code::LOAD_MODULE_VAR, map_class_symbol);
 
@@ -885,7 +885,7 @@ class Compiler : private UnCopyable {
     }
 
     // otherwise, look for a global variable with the name
-    int module = vm_mmodule()->find_variable(token_name);
+    int module = parser_.get_mod()->find_variable(token_name);
     if (module == -1) {
       if (is_local_name(token_name)) {
         error("undefined variable");
@@ -894,7 +894,7 @@ class Compiler : private UnCopyable {
 
       // if it's a nonlocal name, implicitly define a module-level variable in
       // the hopes that we get a real definition later
-      module = parser_.get_vm().declare_variable(vm_mmodule(), token_name);
+      module = parser_.get_vm().declare_variable(parser_.get_mod(), token_name);
       if (module == -2) {
         error("too many module variables defined");
       }
@@ -1865,6 +1865,7 @@ public:
     // create a function object for the code we just compiled
     FunctionObject* fn = FunctionObject::make_function(
         parser_.get_vm(),
+        parser_.get_mod(),
         num_upvalues_, num_params_,
         bytecode_.data(), Xt::as_type<int>(bytecode_.size()),
         constants_->elements(), constants_->count(),
@@ -1917,7 +1918,7 @@ public:
     }
     emit_bytes(Code::NIL, Code::RETURN);
 
-    parser_.get_module()->iter_variables(
+    parser_.get_mod()->iter_variables(
         [this](int i, const Value& val, const str_t& name) {
           if (val.is_undefined()) {
             error("variable `%s` is used but not defined", name.c_str());
@@ -1946,10 +1947,10 @@ public:
   }
 };
 
-FunctionObject* compile(
-    WrenVM& vm, const str_t& source_path, const str_t& source_bytes) {
+FunctionObject* compile(WrenVM& vm,
+    ModuleObject* module, const str_t& source_path, const str_t& source_bytes) {
   Lexer lex(source_path, source_bytes);
-  Parser p(vm, lex);
+  Parser p(vm, module, lex);
 
   p.advance();
   Compiler c(p, nullptr);

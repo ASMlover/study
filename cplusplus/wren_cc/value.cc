@@ -227,6 +227,7 @@ u32_t ObjValue::hash(void) const {
   case ValueType::FALSE: return kHashFalse;
   case ValueType::NUMERIC: return hash_numeric(num_);
   case ValueType::OBJECT: return obj_->hash();
+  default: UNREACHABLE();
   }
 
   UNREACHABLE();
@@ -649,10 +650,10 @@ FunctionObject::FunctionObject(
     const str_t& source_path, const str_t& debug_name,
     int* source_lines, int lines_count) noexcept
   : BaseObject(ObjType::FUNCTION, cls)
+  , module_(module)
   , num_upvalues_(num_upvalues)
   , codes_(codes, codes + codes_count)
   , constants_(constants, constants + constants_count)
-  , module_(module)
   , arity_(arity)
   , debug_(debug_name, source_path, source_lines, lines_count) {
 }
@@ -764,14 +765,15 @@ int FunctionObject::get_argc(
   return 0;
 }
 
-FunctionObject* FunctionObject::make_function(WrenVM& vm,
+FunctionObject* FunctionObject::make_function(
+    WrenVM& vm, ModuleObject* module,
     int num_upvalues, int arity,
     u8_t* codes, int codes_count,
     const Value* constants, int constants_count,
     const str_t& source_path, const str_t& debug_name,
     int* source_lines, int lines_count) {
   auto* o = new FunctionObject(
-      vm.fn_cls(), vm.mmodule(), num_upvalues, arity,
+      vm.fn_cls(), module, num_upvalues, arity,
       codes, codes_count, constants, constants_count,
       source_path, debug_name, source_lines, lines_count);
   vm.append_object(o);

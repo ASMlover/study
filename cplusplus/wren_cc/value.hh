@@ -450,12 +450,12 @@ public:
 };
 
 class FunctionObject final : public BaseObject {
+  // the module where this function was defined
+  ModuleObject* module_{};
+
   int num_upvalues_{};
   std::vector<u8_t> codes_;
   std::vector<Value> constants_;
-
-  // the module where this function was defined
-  ModuleObject* module_{};
 
   // the number of parameters this functon expects, used to ensure that `.call`
   // handles a mismatch between number of parameters and arguments, this will
@@ -495,7 +495,8 @@ public:
   virtual void gc_mark(WrenVM& vm) override;
 
   static int get_argc(const u8_t* bytecode, const Value* constants, int ip);
-  static FunctionObject* make_function(WrenVM& vm,
+  static FunctionObject* make_function(
+      WrenVM& vm, ModuleObject* module,
       int num_upvalues, int arity,
       u8_t* codes, int codes_count,
       const Value* constants, int constants_count,

@@ -78,8 +78,10 @@ class WrenVM final : private UnCopyable {
   // the fiber that is currently running
   FiberObject* fiber_{};
 
-  // the main module
-  ModuleObject* main_{};
+  // the loaded modules, each key is an StringObject (expect for the main
+  // module, whose key is nil) for the module's name and the value is the
+  // ModuleObject for the module
+  MapObject* modules_{};
 
   // how many bytes of object data have been allocated
   sz_t total_allocated_{};
@@ -118,6 +120,7 @@ class WrenVM final : private UnCopyable {
   FiberObject* runtime_error(FiberObject* fiber, StringObject* error);
   StringObject* method_not_found(ClassObject* cls, int symbol);
 
+  ModuleObject* get_main_module(void) const;
   void call_foreign(FiberObject* fiber, const WrenForeignFn& foreign, int argc);
 
   bool interpret(void);
@@ -152,7 +155,6 @@ public:
   inline ClassObject* range_cls(void) const { return range_class_; }
   inline ClassObject* map_cls(void) const { return map_class_; }
 
-  inline ModuleObject* mmodule(void) const { return main_; }
   inline SymbolTable& mnames(void) { return method_names_; }
   inline void set_compiler(Compiler* compiler) { compiler_ = compiler; }
   void set_metaclasses(void);
