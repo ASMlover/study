@@ -114,6 +114,47 @@ void WrenVM::pop_root(void) {
   temp_roots_.pop_back();
 }
 
+Value WrenVM::import_module(const str_t& name) {
+  // imports the module with [name]
+  //
+  // if the module has already been imported (or is already in the middle of
+  // being imported, in the case of a circular import), returns true, oterwise
+  // returns a new fiber that will execute the module's code, that fiber should
+  // be called before any variables are loaded from the module
+  //
+  // if the module could not be found, return false
+
+  Value name_val = StringObject::make_string(*this, name);
+  PinnedGuard name_guard(*this, name_val.as_object());
+
+  // if the module is already loaded, we do not need to do anything
+  if (int index = modules_->find(name_val); index != -1)
+    return true;
+
+  // load the module's source code from the embedder
+  str_t source_bytes = load_module_(*this, name);
+  if (source_bytes.empty())
+    return false;
+
+  ModuleObject* module = ModuleObject::make_module(*this);
+  PinnedGuard module_guard(*this, module);
+
+  ModuleObject* main_module = get_main_module();
+  int symbol = main_module->find_variable("IO");
+  define_variable(module, "IO", main_module->get_variable(symbol));
+
+  FunctionObject* fn = compile(*this, module, name, source_bytes);
+  PinnedGuard fn_guard(*this, fn);
+
+  // stores it in the VM's module registry so we donot load the same module
+  // multiple times
+  modules_->set(name_val, module);
+  FiberObject* module_fiber = FiberObject::make_fiber(*this, fn);
+
+  // return the fiber the executes the module
+  return module_fiber;
+}
+
 void WrenVM::print_stacktrace(FiberObject* fiber) {
   std::cerr << fiber->error_cstr() << std::endl;
 

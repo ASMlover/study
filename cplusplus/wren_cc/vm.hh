@@ -63,6 +63,8 @@ class WrenVM final : private UnCopyable {
   // GC at one time
   static constexpr sz_t kMaxTempRoots = 4;
 
+  using LoadModuleFn = std::function<str_t (WrenVM&, const str_t&)>;
+
   ClassObject* fn_class_{};
   ClassObject* bool_class_{};
   ClassObject* class_class_{};
@@ -104,6 +106,9 @@ class WrenVM final : private UnCopyable {
   // during a foreign function call, this will contain the number of arguments
   // to the function
   int foreign_call_argc_{};
+
+  // the function used to laod modules
+  LoadModuleFn load_module_{};
 
   // compiler and debugger data:
   //
@@ -156,7 +161,10 @@ public:
   inline ClassObject* map_cls(void) const { return map_class_; }
 
   inline SymbolTable& mnames(void) { return method_names_; }
+  inline MapObject* modules(void) const { return modules_; }
   inline void set_compiler(Compiler* compiler) { compiler_ = compiler; }
+  inline void set_load_fn(const LoadModuleFn& fn) { load_module_ = fn; }
+  inline void set_load_fn(LoadModuleFn&& fn) { load_module_ = std::move(fn); }
   void set_metaclasses(void);
   int declare_variable(ModuleObject* module, const str_t& name);
   int define_variable(ModuleObject* module, const str_t& name, const Value& value);
@@ -165,6 +173,7 @@ public:
 
   void push_root(BaseObject* obj);
   void pop_root(void);
+  Value import_module(const str_t& name);
 
   void append_object(BaseObject* obj);
   void mark_object(BaseObject* obj);
