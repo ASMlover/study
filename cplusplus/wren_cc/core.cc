@@ -797,8 +797,7 @@ DEF_NATIVE(string_indexof) {
   StringObject* string = args[0].as_string();
   StringObject* search = args[1].as_string();
 
-  const char* first_occur = strstr(string->cstr(), search->cstr());
-  RETURN_VAL(first_occur != nullptr ? (first_occur - string->cstr()) : -1);
+  RETURN_VAL(string->find(search));
 }
 
 DEF_NATIVE(string_iterate) {
@@ -853,7 +852,7 @@ DEF_NATIVE(string_contains) {
 
   if (orig->size() == 0 && subs->size() == 0)
     RETURN_VAL(true);
-  RETURN_VAL(strstr(orig->cstr(), subs->cstr()) != nullptr);
+  RETURN_VAL(orig->find(subs) != -1);
 }
 
 DEF_NATIVE(string_tostring) {

@@ -277,6 +277,14 @@ StringObject::~StringObject(void) {
   delete [] value_;
 }
 
+int StringObject::find(StringObject* sub) const {
+  if (sub->size_ > size_)
+    return size_;
+
+  char* first_occur = std::strstr(value_, sub->value_);
+  return first_occur != nullptr ? Xt::as_type<int>(first_occur - value_) : -1;
+}
+
 bool StringObject::is_equal(BaseObject* r) const {
   auto* o = Xt::down<StringObject>(r);
   return size_ == o->size_ && std::memcmp(value_, o->value_, size_) == 0;
