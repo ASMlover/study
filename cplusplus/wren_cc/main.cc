@@ -30,13 +30,31 @@
 #include "compiler.hh"
 #include "vm.hh"
 
+static std::string _s_root_dir;
+
+static std::string read_module(wrencc::WrenVM& vm, const std::string& module) {
+  std::string path = _s_root_dir + module;
+  std::ifstream fp(path);
+  if (fp.is_open()) {
+    std::stringstream ss;
+    ss << fp.rdbuf();
+
+    return ss.str();
+  }
+  return "";
+}
+
 static void eval_with_file(const std::string& fname) {
+  auto pos = fname.find_last_of('\\');
+  _s_root_dir = fname.substr(0, pos + 1);
+
   std::ifstream fp(fname);
   if (fp.is_open()) {
     std::stringstream ss;
     ss << fp.rdbuf();
 
     wrencc::WrenVM vm;
+    vm.set_load_fn(read_module);
     vm.interpret(fname, ss.str());
   }
 }
