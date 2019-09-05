@@ -278,8 +278,10 @@ StringObject::~StringObject(void) {
 }
 
 int StringObject::find(StringObject* sub) const {
+  if (sub->size_ == 0)
+    return 0;
   if (sub->size_ > size_)
-    return size_;
+    return -1;
 
   char* first_occur = std::strstr(value_, sub->value_);
   return first_occur != nullptr ? Xt::as_type<int>(first_occur - value_) : -1;

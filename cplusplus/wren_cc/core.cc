@@ -849,9 +849,6 @@ DEF_NATIVE(string_contains) {
 
   StringObject* orig = args[0].as_string();
   StringObject* subs = args[1].as_string();
-
-  if (orig->size() == 0 && subs->size() == 0)
-    RETURN_VAL(true);
   RETURN_VAL(orig->find(subs) != -1);
 }
 
