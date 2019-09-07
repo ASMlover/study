@@ -57,7 +57,18 @@ class Sequence {
   }
 }
 
-class String is Sequence {}
+class String is Sequence {
+  import_(variable) {
+    var result = loadModule
+    if (result == false) {
+      Fiber.abort("could not find module `" + this + "`")
+    } else if (result != true) {
+      result.call
+    }
+
+    return lookupVariable(variable)
+  }
+}
 
 class List is Sequence {
   addAll(other) {

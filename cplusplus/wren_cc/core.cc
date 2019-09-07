@@ -108,7 +108,18 @@ static str_t kLibSource =
 "  }\n"
 "}\n"
 "\n"
-"class String is Sequence {}\n"
+"class String is Sequence {\n"
+"  import_(variable) {\n"
+"    var result = loadModule\n"
+"    if (result == false) {\n"
+"      Fiber.abort(\"could not find module `\" + this + \"`\")\n"
+"    } else if (result != true) {\n"
+"      result.call\n"
+"    }\n"
+"\n"
+"    return lookupVariable(variable)\n"
+"  }\n"
+"}\n"
 "\n"
 "class List is Sequence {\n"
 "  addAll(other) {\n"
@@ -891,6 +902,33 @@ DEF_NATIVE(string_subscript) {
   RETURN_VAL(StringObject::make_string(vm, text));
 }
 
+DEF_NATIVE(string_loadmodule) {
+  RETURN_VAL(vm.import_module(args[0].as_cstring()));
+}
+
+DEF_NATIVE(string_lookup_variable) {
+  ModuleObject* module{};
+  if (auto m = vm.modules()->get(args[0]); m)
+    module = (*m).as_module();
+  else
+    ASSERT(false, "should only look up loaded modules");
+
+  StringObject* variable_name = args[1].as_string();
+  int var_symbol = module->find_variable(variable_name->cstr());
+
+  // it is a runtime error if the imported variable does not exist
+  if (var_symbol == -1) {
+    std::stringstream ss;
+    ss << "could not find a variable named `" << variable_name->cstr() << "` "
+      << "in module `" << args[0].as_cstring() << "`";
+
+    args[0] = StringObject::make_string(vm, ss.str());
+    return PrimitiveResult::ERROR;
+  }
+
+  RETURN_VAL(module->get_variable(var_symbol));
+}
+
 static PrimitiveResult call_function(WrenVM& vm, Value* args, int argc) {
   FunctionObject* fn;
   if (args[0].is_closure())
@@ -1376,6 +1414,9 @@ namespace core {
     vm.set_native(vm.map_cls(), "iter ", _primitive_map_iterate);
     vm.set_native(vm.map_cls(), "keyIterValue ", _primitive_map_iterkey);
     vm.set_native(vm.map_cls(), "valIterValue ", _primitive_map_itervalue);
+
+    vm.set_native(vm.str_cls(), "loadModule", _primitive_string_loadmodule);
+    vm.set_native(vm.str_cls(), "lookupVariable ", _primitive_string_lookup_variable);
 
     // while bootstrapping the core types and running the core library, a number
     // string objects have benn created, many of which were instantiated before
