@@ -1,2 +1,2 @@
 
-var DoesNotExist = "does_not_exist.wren".import_("DoesNotExist") // expect runtime error
+var DoesNotExist = "does_not_exist".import_("DoesNotExist") // expect runtime error

@@ -33,7 +33,7 @@
 static std::string _s_root_dir;
 
 static std::string read_module(wrencc::WrenVM& vm, const std::string& module) {
-  std::string path = _s_root_dir + module;
+  std::string path = _s_root_dir + module + ".wren";
   std::ifstream fp(path);
   if (fp.is_open()) {
     std::stringstream ss;

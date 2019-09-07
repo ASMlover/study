@@ -1,6 +1,6 @@
 
-var A = "module_shared_module_a.wren".import_("A")
-var B = "module_shared_module_b.wren".import_("B")
+var A = "module_shared_module_a".import_("A")
+var B = "module_shared_module_b".import_("B")
 
 // Shared module should only run done
 // expect: a
