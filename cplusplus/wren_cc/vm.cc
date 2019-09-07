@@ -66,7 +66,7 @@ void WrenVM::set_metaclasses(void) {
 
 int WrenVM::declare_variable(ModuleObject* module, const str_t& name) {
   if (module == nullptr)
-    module = get_main_module();
+    module = get_core_module();
 
   return module->declare_variable(name);
 }
@@ -74,7 +74,7 @@ int WrenVM::declare_variable(ModuleObject* module, const str_t& name) {
 int WrenVM::define_variable(
     ModuleObject* module, const str_t& name, const Value& value) {
   if (module == nullptr)
-    module = get_main_module();
+    module = get_core_module();
 
   if (value.is_object())
     push_root(value.as_object());
@@ -94,9 +94,9 @@ void WrenVM::set_native(
 }
 
 const Value& WrenVM::find_variable(const str_t& name) const {
-  auto* main_module = get_main_module();
-  int symbol = main_module->find_variable(name);
-  return main_module->get_variable(symbol);
+  auto* core_module = get_core_module();
+  int symbol = core_module->find_variable(name);
+  return core_module->get_variable(symbol);
 }
 
 void WrenVM::push_root(BaseObject* obj) {
@@ -136,21 +136,7 @@ Value WrenVM::import_module(const str_t& name) {
   if (source_bytes.empty())
     return false;
 
-  ModuleObject* module = ModuleObject::make_module(*this);
-  PinnedGuard module_guard(*this, module);
-
-  ModuleObject* main_module = get_main_module();
-  int symbol = main_module->find_variable("IO");
-  define_variable(module, "IO", main_module->get_variable(symbol));
-
-  FunctionObject* fn = compile(*this, module, name, source_bytes);
-  PinnedGuard fn_guard(*this, fn);
-
-  // stores it in the VM's module registry so we donot load the same module
-  // multiple times
-  modules_->set(name_val, module);
-  FiberObject* module_fiber = FiberObject::make_fiber(*this, fn);
-
+  FiberObject* module_fiber = load_module(name_val, source_bytes);
   // return the fiber the executes the module
   return module_fiber;
 }
@@ -762,26 +748,65 @@ ClassObject* WrenVM::get_class(const Value& val) const {
 
 InterpretRet WrenVM::interpret(
     const str_t& source_path, const str_t& source_bytes) {
-  FunctionObject* fn = compile(*this,
-      get_main_module(), source_path, source_bytes);
+  if (source_path.empty())
+    return load_into_core(source_bytes);
+
+  StringObject* name = StringObject::make_string(*this, "main");
+  PinnedGuard name_guard(*this, name);
+
+  FiberObject* fiber = load_module(name, source_bytes);
+  if (fiber == nullptr)
+    return InterpretRet::COMPILE_ERROR;
+
+  fiber_ = fiber;
+  return interpret() ? InterpretRet::SUCCESS : InterpretRet::RUNTIME_ERROR;
+}
+
+ModuleObject* WrenVM::get_core_module(void) const {
+  // looks up the core module in the module map
+  if (auto val = modules_->get(nullptr); val)
+    return (*val).as_module();
+
+  ASSERT(false, "could not find core module");
+  return false;
+}
+
+FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
+  ModuleObject* module = ModuleObject::make_module(*this);
+  PinnedGuard module_guard(*this, module);
+
+  // implicitly import the core module
+  ModuleObject* core_module = get_core_module();
+  core_module->iter_variables(
+      [&](int i, const Value& val, const str_t& name) {
+        this->define_variable(module, name, val);
+      });
+
+  FunctionObject* fn = compile(*this, module, name.as_cstring(), source_bytes);
+  if (fn == nullptr)
+    return nullptr;
+
+  PinnedGuard fn_guard(*this, fn);
+
+  // stores it in the VM's module registry so we donot load the same module
+  // multiple times
+  modules_->set(name, module);
+
+  FiberObject* module_fiber = FiberObject::make_fiber(*this, fn);
+
+  // return the fiber that executes the module
+  return module_fiber;
+}
+
+InterpretRet WrenVM::load_into_core(const str_t& source_bytes) {
+  FunctionObject* fn = compile(*this, get_core_module(), "", source_bytes);
   if (fn == nullptr)
     return InterpretRet::COMPILE_ERROR;
 
   PinnedGuard guard(*this, fn);
 
   fiber_ = FiberObject::make_fiber(*this, fn);
-  if (interpret())
-    return InterpretRet::SUCCESS;
-  else
-    return InterpretRet::RUNTIME_ERROR;
-}
-
-ModuleObject* WrenVM::get_main_module(void) const {
-  if (auto val = modules_->get(nullptr); val)
-    return (*val).as_module();
-
-  ASSERT(false, "could not find main module");
-  return nullptr;
+  return interpret() ? InterpretRet::SUCCESS : InterpretRet::RUNTIME_ERROR;
 }
 
 void WrenVM::call_function(FiberObject* fiber, BaseObject* fn, int argc) {
@@ -863,11 +888,11 @@ void WrenVM::define_method(
   ASSERT(num_params <= MAX_PARAMETERS, "too many parameters");
 
   // find or create the class to bind the method to
-  ModuleObject* main_module = get_main_module();
-  int class_symbol = main_module->find_variable(class_name);
+  ModuleObject* core_module = get_core_module();
+  int class_symbol = core_module->find_variable(class_name);
   ClassObject* cls;
   if (class_symbol != -1) {
-    cls = main_module->get_variable(class_symbol).as_class();
+    cls = core_module->get_variable(class_symbol).as_class();
   }
   else {
     // the class does not already exists, so create it
@@ -875,7 +900,7 @@ void WrenVM::define_method(
     PinnedGuard guard(*this, name_string);
 
     cls = ClassObject::make_class(*this, obj_class_, 0, name_string);
-    define_variable(main_module, class_name, cls);
+    define_variable(core_module, class_name, cls);
   }
 
   // create a name for the method, including its arity

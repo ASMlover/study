@@ -61,7 +61,7 @@ enum class InterpretRet {
 class WrenVM final : private UnCopyable {
   // the maximum number of temporary objects that can be made visible to the
   // GC at one time
-  static constexpr sz_t kMaxTempRoots = 4;
+  static constexpr sz_t kMaxTempRoots = 5;
 
   using LoadModuleFn = std::function<str_t (WrenVM&, const str_t&)>;
 
@@ -125,7 +125,10 @@ class WrenVM final : private UnCopyable {
   FiberObject* runtime_error(FiberObject* fiber, StringObject* error);
   StringObject* method_not_found(ClassObject* cls, int symbol);
 
-  ModuleObject* get_main_module(void) const;
+  ModuleObject* get_core_module(void) const;
+  FiberObject* load_module(const Value& name, const str_t& source_bytes);
+  InterpretRet load_into_core(const str_t& source_bytes);
+
   void call_foreign(FiberObject* fiber, const WrenForeignFn& foreign, int argc);
 
   bool interpret(void);
