@@ -437,6 +437,7 @@ class Compiler : private UnCopyable {
       PREFIX(boolean),                          // KEYWORD(FALSE, "false")
       UNUSED,                                   // KEYWORD(FOR, "for")
       UNUSED,                                   // KEYWORD(IF, "if")
+      UNUSED,                                   // KEYWORD(IMPORT, "import")
       UNUSED,                                   // KEYWORD(IN, "in")
       INFIX(is, Precedence::IS),                // KEYWORD(IS, "is")
       NEWOP(new_exp),                           // KEYWORD(NEW, "new")
@@ -541,7 +542,7 @@ class Compiler : private UnCopyable {
     // parses a name token and declares a variable in the current scope with
     // that name, returns its symbol
 
-    consume(TokenKind::TK_IDENTIFIER, "expected variable name");
+    consume(TokenKind::TK_IDENTIFIER, "expect variable name");
     return declare_variable();
   }
 
@@ -712,10 +713,16 @@ class Compiler : private UnCopyable {
     emit_constant(tok.as_numeric());
   }
 
+  int string_constant(void) {
+    // parse a string literal and adds it to the constant table
+
+    return add_constant(StringObject::make_string(
+          parser_.get_vm(), parser_.prev().as_string()));
+  }
+
   void string(bool allow_assignment) {
-    auto& tok = parser_.prev();
-    emit_constant(StringObject::make_string(
-          parser_.get_vm(), tok.as_string()));
+    int constant = string_constant();
+    emit_words(Code::CONSTANT, constant);
   }
 
   void list(bool allow_assignment) {
@@ -1051,7 +1058,7 @@ class Compiler : private UnCopyable {
     // been consumed.
 
     // create a variable to store the class in
-    int symbol = declare_named_variable();
+    int slot = declare_named_variable();
     bool is_module = scope_depth_ == -1;
 
     // make a string constant for the name
@@ -1074,7 +1081,7 @@ class Compiler : private UnCopyable {
     int num_fields_instruction = emit_bytes(Code::CLASS, 0xff);
 
     // store it in its name
-    define_variable(symbol);
+    define_variable(slot);
 
     // push a local variable scope, static fields in a class body are hoisted
     // out into local variables declared in this scope, methods that use them
@@ -1121,9 +1128,9 @@ class Compiler : private UnCopyable {
           &class_compiler, is_ctor, signature);
       // load the class
       if (is_module)
-        emit_words(Code::LOAD_MODULE_VAR, symbol);
+        emit_words(Code::LOAD_MODULE_VAR, slot);
       else
-        load_local(symbol);
+        load_local(slot);
 
       // define the method
       emit_words(instruction, method_symbol);
@@ -1140,6 +1147,27 @@ class Compiler : private UnCopyable {
 
     enclosing_class_ = nullptr;
     pop_scope();
+  }
+
+  void import(void) {
+    consume(TokenKind::TK_STRING, "expect a string after `import`");
+    int module_constant = string_constant();
+
+    consume(TokenKind::KW_FOR, "expect `for` after module string");
+    consume(TokenKind::TK_IDENTIFIER, "expect name of variable to import");
+    int slot = declare_variable();
+
+    // also define a string constant for the variable name
+    int variable_constant = add_constant(StringObject::make_string(
+          parser_.get_vm(), parser_.prev().as_string()));
+    emit_words(Code::CONSTANT, module_constant);
+    emit_words(Code::CONSTANT, variable_constant);
+
+    // call "module".import_("variable")
+    emit_words(Code::CALL_1, method_symbol("import_ "));
+
+    // stores the result in the variable here
+    define_variable(slot);
   }
 
   void for_stmt(void) {
@@ -1265,6 +1293,11 @@ class Compiler : private UnCopyable {
 
     if (match(TokenKind::KW_CLASS)) {
       class_definition();
+      return;
+    }
+
+    if (match(TokenKind::KW_IMPORT)) {
+      import();
       return;
     }
 
