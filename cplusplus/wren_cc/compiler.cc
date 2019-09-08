@@ -296,6 +296,11 @@ class Compiler : private UnCopyable {
     return Xt::as_type<int>(bytecode_.size() - 1);
   }
 
+  template <typename T> inline void emit_u16(T arg) {
+    emit_byte((arg >> 8) & 0xff);
+    emit_byte(arg & 0xff);
+  }
+
   template <typename T, typename U> inline int emit_bytes(T b1, U b2) {
     emit_byte(b1);
     return emit_byte(b2);
@@ -306,8 +311,7 @@ class Compiler : private UnCopyable {
     // which will be written big endian
 
     emit_byte(b);
-    emit_byte((arg >> 8) & 0xff);
-    emit_byte(arg & 0xff);
+    emit_u16(arg);
   }
 
   template <typename T> inline int emit_jump(T instruction) {
@@ -1166,10 +1170,9 @@ class Compiler : private UnCopyable {
     // discard the unused result value from calling the module's fiber
     emit_byte(Code::POP);
 
-    // call "module".import_("variable")
-    emit_words(Code::CONSTANT, module_constant);
-    emit_words(Code::CONSTANT, variable_constant);
-    emit_words(Code::CALL_1, method_symbol("import "));
+    // load the variable from the other module
+    emit_words(Code::IMPORT_VARIABLE, module_constant);
+    emit_u16(variable_constant);
 
     // stores the result in the variable here
     define_variable(slot);

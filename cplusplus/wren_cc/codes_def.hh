@@ -163,6 +163,11 @@ CODE(METHOD_STATIC)
 // to that, when that fiber is done the current one is resumed
 CODE(LOAD_MODULE)
 
+// reads a top-level variable from another module, [arg1] is a string constant
+// for the name of the module and [arg2] is a string constant for the variable
+// name, pushes the variable if found or generates a runtime error otherwise
+CODE(IMPORT_VARIABLE)
+
 CODE(END)
 
 #undef CODE

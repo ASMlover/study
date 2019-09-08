@@ -733,6 +733,19 @@ bool WrenVM::interpret(void) {
 
       DISPATCH();
     }
+    CASE_CODE(IMPORT_VARIABLE):
+    {
+      const Value& module = fn->get_constant(RDWORD());
+      const Value& variable = fn->get_constant(RDWORD());
+
+      auto [r, result] = import_variable(module, variable);
+      if (r)
+        PUSH(result);
+      else
+        RUNTIME_ERROR(result.as_string());
+
+      DISPATCH();
+    }
     CASE_CODE(END):
     {
       // a END should always preceded by a RETURN. if we get here, the compiler
@@ -846,6 +859,25 @@ Value WrenVM::import_module(const Value& name) {
   FiberObject* module_fiber = load_module(name, source_bytes);
   // return the fiber that executes the module
   return module_fiber;
+}
+
+std::tuple<bool, Value> WrenVM::import_variable(
+      const Value& module_name, const Value& variable_name) {
+  ModuleObject* module{};
+  if (auto m = modules_->get(module_name); m)
+    module = (*m).as_module();
+  ASSERT(module != nullptr, "should only look up loaded modules");
+
+  StringObject* variable = variable_name.as_string();
+  int variable_entry = module->find_variable(variable->cstr());
+  // it's a runtime error if the imported variable does not exist
+  if (variable_entry != -1)
+    return std::make_tuple(true, module->get_variable(variable_entry));
+
+  std::stringstream ss;
+  ss << "could not find a variable named `" << variable->cstr() << "` "
+    << "in module `" << module_name.as_cstring() << "`";
+  return std::make_tuple(false, StringObject::make_string(*this, ss.str()));
 }
 
 InterpretRet WrenVM::load_into_core(const str_t& source_bytes) {

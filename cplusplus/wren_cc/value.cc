@@ -760,6 +760,9 @@ int FunctionObject::get_argc(
   case Code::LOAD_MODULE:
     return 2;
 
+  case Code::IMPORT_VARIABLE:
+    return 4;
+
   case Code::CLOSURE:
     {
       int constant = (bytecode[ip + 1] << 8) | (bytecode[ip + 2]);

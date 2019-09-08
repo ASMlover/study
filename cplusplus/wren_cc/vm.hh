@@ -128,6 +128,8 @@ class WrenVM final : private UnCopyable {
   ModuleObject* get_core_module(void) const;
   FiberObject* load_module(const Value& name, const str_t& source_bytes);
   Value import_module(const Value& name);
+  std::tuple<bool, Value> import_variable(
+      const Value& module_name, const Value& variable_name);
   InterpretRet load_into_core(const str_t& source_bytes);
 
   void call_foreign(FiberObject* fiber, const WrenForeignFn& foreign, int argc);
