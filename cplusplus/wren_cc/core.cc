@@ -110,9 +110,7 @@ static str_t kLibSource =
 "\n"
 "class String is Sequence {\n"
 "  import_(variable) {\n"
-"    var result = loadModule\n"
-"    if (result != nil) result.call\n"
-"\n"
+"    loadModule\n"
 "    return lookupVariable(variable)\n"
 "  }\n"
 "}\n"
@@ -900,9 +898,14 @@ DEF_NATIVE(string_subscript) {
 
 DEF_NATIVE(string_loadmodule) {
   args[0] = vm.import_module(args[0].as_cstring());
-  // if it returnd a string, it was an error message
+  // if it returned a string, it was an error message
   if (args[0].is_string())
     return PrimitiveResult::ERROR;
+  // if it returned a fiber, we want to call it
+  if (args[0].is_fiber()) {
+    args[0].as_fiber()->set_caller(fiber);
+    return PrimitiveResult::RUN_FIBER;
+  }
   return PrimitiveResult::VALUE;
 }
 
