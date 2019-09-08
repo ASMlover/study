@@ -57,12 +57,7 @@ class Sequence {
   }
 }
 
-class String is Sequence {
-  import_(variable) {
-    loadModule
-    return lookupVariable(variable)
-  }
-}
+class String is Sequence {}
 
 class List is Sequence {
   addAll(other) {

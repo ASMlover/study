@@ -1160,11 +1160,14 @@ class Compiler : private UnCopyable {
     // also define a string constant for the variable name
     int variable_constant = add_constant(StringObject::make_string(
           parser_.get_vm(), parser_.prev().as_string()));
+
+    // call "module".loadModule
+    emit_words(Code::CONSTANT, module_constant);
+    emit_words(Code::CALL_0, method_symbol("loadModule"));
+    // call "module".import_("variable")
     emit_words(Code::CONSTANT, module_constant);
     emit_words(Code::CONSTANT, variable_constant);
-
-    // call "module".import_("variable")
-    emit_words(Code::CALL_1, method_symbol("import_ "));
+    emit_words(Code::CALL_1, method_symbol("import "));
 
     // stores the result in the variable here
     define_variable(slot);

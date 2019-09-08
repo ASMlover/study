@@ -108,12 +108,7 @@ static str_t kLibSource =
 "  }\n"
 "}\n"
 "\n"
-"class String is Sequence {\n"
-"  import_(variable) {\n"
-"    loadModule\n"
-"    return lookupVariable(variable)\n"
-"  }\n"
-"}\n"
+"class String is Sequence {}\n"
 "\n"
 "class List is Sequence {\n"
 "  addAll(other) {\n"
@@ -909,7 +904,7 @@ DEF_NATIVE(string_loadmodule) {
   return PrimitiveResult::VALUE;
 }
 
-DEF_NATIVE(string_lookup_variable) {
+DEF_NATIVE(string_import) {
   ModuleObject* module{};
   if (auto m = vm.modules()->get(args[0]); m)
     module = (*m).as_module();
@@ -1419,7 +1414,7 @@ namespace core {
     vm.set_native(vm.map_cls(), "valIterValue ", _primitive_map_itervalue);
 
     vm.set_native(vm.str_cls(), "loadModule", _primitive_string_loadmodule);
-    vm.set_native(vm.str_cls(), "lookupVariable ", _primitive_string_lookup_variable);
+    vm.set_native(vm.str_cls(), "import ", _primitive_string_import);
 
     // while bootstrapping the core types and running the core library, a number
     // string objects have benn created, many of which were instantiated before
