@@ -1,2 +1,2 @@
 
-var DoesNotExist = "does_not_exist".import_("DoesNotExist") // expect runtime error
+import "does_not_exist" for DoesNotExist // expect runtime error

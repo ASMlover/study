@@ -1,5 +1,5 @@
 
-var Module = "module_implicitly_imports_core_module".import_("Module")
+import "module_implicitly_imports_core_module" for Module
 
 // expect: Bool
 // expect: Class

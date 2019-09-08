@@ -1,5 +1,5 @@
 
-var A = "module_cyclic_import_a".import_("A")
+import "module_cyclic_import_a" for A
 
 // expect: start a
 // expect: a defined a value

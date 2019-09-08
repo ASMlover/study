@@ -1,6 +1,6 @@
 
-var A = "module_shared_module_a".import_("A")
-var B = "module_shared_module_b".import_("B")
+import "module_shared_module_a" for A
+import "module_shared_module_b" for B
 
 // Shared module should only run done
 // expect: a

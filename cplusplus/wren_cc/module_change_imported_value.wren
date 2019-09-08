@@ -1,6 +1,6 @@
 
-var Module = "module_change_imported_value_module".import_("Module")
-var Other = "module_change_imported_value_module".import_("Other")
+import "module_change_imported_value_module" for Module
+import "module_change_imported_value_module" for Other
 
 IO.print(Module) // expect: before
 

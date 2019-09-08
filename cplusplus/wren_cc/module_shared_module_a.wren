@@ -1,5 +1,5 @@
 
 IO.print("a")
-var Shared = "module_shared_module_shared".import_("Shared")
+import "module_shared_module_shared" for Shared
 var A = "a " + Shared
 IO.print("a done")
