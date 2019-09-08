@@ -1161,9 +1161,11 @@ class Compiler : private UnCopyable {
     int variable_constant = add_constant(StringObject::make_string(
           parser_.get_vm(), parser_.prev().as_string()));
 
-    // call "module".loadModule
-    emit_words(Code::CONSTANT, module_constant);
-    emit_words(Code::CALL_0, method_symbol("loadModule"));
+    // load the module
+    emit_words(Code::LOAD_MODULE, module_constant);
+    // discard the unused result value from calling the module's fiber
+    emit_byte(Code::POP);
+
     // call "module".import_("variable")
     emit_words(Code::CONSTANT, module_constant);
     emit_words(Code::CONSTANT, variable_constant);

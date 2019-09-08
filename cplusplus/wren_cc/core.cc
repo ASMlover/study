@@ -891,19 +891,6 @@ DEF_NATIVE(string_subscript) {
   RETURN_VAL(StringObject::make_string(vm, text));
 }
 
-DEF_NATIVE(string_loadmodule) {
-  args[0] = vm.import_module(args[0].as_cstring());
-  // if it returned a string, it was an error message
-  if (args[0].is_string())
-    return PrimitiveResult::ERROR;
-  // if it returned a fiber, we want to call it
-  if (args[0].is_fiber()) {
-    args[0].as_fiber()->set_caller(fiber);
-    return PrimitiveResult::RUN_FIBER;
-  }
-  return PrimitiveResult::VALUE;
-}
-
 DEF_NATIVE(string_import) {
   ModuleObject* module{};
   if (auto m = vm.modules()->get(args[0]); m)
@@ -1413,7 +1400,6 @@ namespace core {
     vm.set_native(vm.map_cls(), "keyIterValue ", _primitive_map_iterkey);
     vm.set_native(vm.map_cls(), "valIterValue ", _primitive_map_itervalue);
 
-    vm.set_native(vm.str_cls(), "loadModule", _primitive_string_loadmodule);
     vm.set_native(vm.str_cls(), "import ", _primitive_string_import);
 
     // while bootstrapping the core types and running the core library, a number

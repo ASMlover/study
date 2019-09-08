@@ -757,6 +757,7 @@ int FunctionObject::get_argc(
   case Code::OR:
   case Code::METHOD_INSTANCE:
   case Code::METHOD_STATIC:
+  case Code::LOAD_MODULE:
     return 2;
 
   case Code::CLOSURE:

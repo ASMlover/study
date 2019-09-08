@@ -157,6 +157,12 @@ CODE(METHOD_INSTANCE)
 // is popped
 CODE(METHOD_STATIC)
 
+// load the module whose name is stored in string constant [arg], pushes
+// nullptr onto the stack, if the module has already been loaded, does nothing
+// else, otherwise it creates a fiber to run the desired module and switches
+// to that, when that fiber is done the current one is resumed
+CODE(LOAD_MODULE)
+
 CODE(END)
 
 #undef CODE

@@ -436,6 +436,7 @@ bool WrenVM::interpret(void) {
             break;
           case PrimitiveResult::RUN_FIBER:
             fiber = args[0].as_fiber();
+            fiber_ = fiber;
             LOAD_FRAME();
             break;
           }
@@ -506,6 +507,7 @@ bool WrenVM::interpret(void) {
             break;
           case PrimitiveResult::RUN_FIBER:
             fiber = args[0].as_fiber();
+            fiber_ = fiber;
             LOAD_FRAME();
             break;
           }
@@ -614,6 +616,7 @@ bool WrenVM::interpret(void) {
 
         // we have a calling fiber to resume
         fiber = fiber->caller();
+        fiber_ = fiber;
 
         // store the result in the resuming fiber
         fiber->set_value(fiber->stack_size() - 1, r);
@@ -705,6 +708,31 @@ bool WrenVM::interpret(void) {
 
       DISPATCH();
     }
+    CASE_CODE(LOAD_MODULE):
+    {
+      Value result = import_module(fn->get_constant(RDWORD()));
+
+      // if it returned a string. it was an error message
+      if (result.is_string())
+        RUNTIME_ERROR(result.as_string());
+
+      // make a slot that the module's fiber can use to store its result in,
+      // it ends up getting discarded, but `Code::RETURN` expects to be able
+      // to place a value there
+      PUSH(nullptr);
+
+      // if it returned a fiber to execute the module body, switch to it
+      if (result.is_fiber()) {
+        // return to this module when that one is done
+        result.as_fiber()->set_caller(fiber);
+
+        fiber = result.as_fiber();
+        fiber_ = fiber;
+        LOAD_FRAME();
+      }
+
+      DISPATCH();
+    }
     CASE_CODE(END):
     {
       // a END should always preceded by a RETURN. if we get here, the compiler
@@ -782,7 +810,7 @@ FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
   ModuleObject* core_module = get_core_module();
   core_module->iter_variables(
       [&](int i, const Value& val, const str_t& name) {
-        this->define_variable(module, name, val);
+        define_variable(module, name, val);
       });
 
   FunctionObject* fn = compile(*this, module, name.as_cstring(), source_bytes);
@@ -797,6 +825,25 @@ FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
 
   FiberObject* module_fiber = FiberObject::make_fiber(*this, fn);
 
+  // return the fiber that executes the module
+  return module_fiber;
+}
+
+Value WrenVM::import_module(const Value& name) {
+  // if the module is already loaded, we do not need to do anything
+  if (auto index = modules_->find(name); index != -1)
+    return nullptr;
+
+  // load the module's source code from the embedder
+  const str_t source_bytes = load_module_(*this, name.as_cstring());
+  if (source_bytes.empty()) {
+    // could not load the module
+    std::stringstream ss;
+    ss << "could not find module `" << name.as_cstring() << "`";
+    return StringObject::make_string(*this, ss.str());
+  }
+
+  FiberObject* module_fiber = load_module(name, source_bytes);
   // return the fiber that executes the module
   return module_fiber;
 }
