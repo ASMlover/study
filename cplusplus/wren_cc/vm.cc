@@ -129,12 +129,15 @@ Value WrenVM::import_module(const str_t& name) {
 
   // if the module is already loaded, we do not need to do anything
   if (int index = modules_->find(name_val); index != -1)
-    return true;
+    return nullptr;
 
   // load the module's source code from the embedder
   str_t source_bytes = load_module_(*this, name);
-  if (source_bytes.empty())
-    return false;
+  if (source_bytes.empty()) {
+    std::stringstream ss;
+    ss << "could not find module `" << name << "`";
+    return StringObject::make_string(*this, ss.str());
+  }
 
   FiberObject* module_fiber = load_module(name_val, source_bytes);
   // return the fiber the executes the module
