@@ -1157,25 +1157,30 @@ class Compiler : private UnCopyable {
     consume(TokenKind::TK_STRING, "expect a string after `import`");
     int module_constant = string_constant();
 
-    consume(TokenKind::KW_FOR, "expect `for` after module string");
-    consume(TokenKind::TK_IDENTIFIER, "expect name of variable to import");
-    int slot = declare_variable();
-
-    // also define a string constant for the variable name
-    int variable_constant = add_constant(StringObject::make_string(
-          parser_.get_vm(), parser_.prev().as_string()));
-
     // load the module
     emit_words(Code::LOAD_MODULE, module_constant);
     // discard the unused result value from calling the module's fiber
     emit_byte(Code::POP);
 
-    // load the variable from the other module
-    emit_words(Code::IMPORT_VARIABLE, module_constant);
-    emit_u16(variable_constant);
+    // the for clause is optional
+    if (!match(TokenKind::KW_FOR))
+      return;
 
-    // stores the result in the variable here
-    define_variable(slot);
+    // compile the comma-separated list of variables to import
+    do {
+      consume(TokenKind::TK_IDENTIFIER, "expect name of variable to import");
+      int slot = declare_variable();
+
+      // define a string constant for the variable name
+      int variable_constant = add_constant(StringObject::make_string(
+            parser_.get_vm(), parser_.prev().as_string()));
+      // load the variable from the other module
+      emit_words(Code::IMPORT_VARIABLE, module_constant);
+      emit_u16(variable_constant);
+
+      // stores the result in the variable here
+      define_variable(slot);
+    } while (match(TokenKind::TK_COMMA));
   }
 
   void for_stmt(void) {

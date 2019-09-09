@@ -1,6 +1,4 @@
 
-var Module = "from module"
-
 IO.print(Bool)
 IO.print(Class)
 IO.print(Fiber)
