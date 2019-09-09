@@ -30,11 +30,6 @@
 
 namespace wrencc {
 
-// hash codes for singleton values
-static constexpr u32_t kHashFalse = 1;
-static constexpr u32_t kHashNaN = 2;
-static constexpr u32_t kHashNil = 3;
-static constexpr u32_t kHashTrue = 4;
 static const Value kUndefined;
 
 union DoubleBits {
@@ -215,9 +210,9 @@ bool ObjValue::is_equal(const ObjValue& r) const noexcept {
 
 u32_t ObjValue::hash(void) const {
   switch (type_) {
-  case ValueType::NIL: return kHashNil;
-  case ValueType::TRUE: return kHashTrue;
-  case ValueType::FALSE: return kHashFalse;
+  case ValueType::NIL: return 1;
+  case ValueType::TRUE: return 2;
+  case ValueType::FALSE: return 0;
   case ValueType::NUMERIC: return hash_numeric(num_);
   case ValueType::OBJECT: return obj_->hash();
   default: UNREACHABLE(); return 0;
