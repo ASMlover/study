@@ -35,7 +35,7 @@ static constexpr u32_t kHashFalse = 1;
 static constexpr u32_t kHashNaN = 2;
 static constexpr u32_t kHashNil = 3;
 static constexpr u32_t kHashTrue = 4;
-static const Value kNilValue(nullptr);
+static const Value kUndefined;
 
 union DoubleBits {
   u64_t b64;
@@ -116,19 +116,13 @@ bool TagValue::is_equal(const TagValue& r) const noexcept {
 }
 
 u32_t TagValue::hash(void) const {
-  if (is_numeric())
-    return hash_numeric(as_numeric());
   if (is_object())
     return as_object()->hash();
 
-  switch (tag()) {
-  case Tag::FALSE: return kHashFalse;
-  case Tag::NaN: return kHashNaN;
-  case Tag::NIL: return kHashNil;
-  case Tag::TRUE: return kHashTrue;
-  default: UNREACHABLE(); return 0;
-  }
-  return 0;
+  // hash the raw bits of the unboxed value
+  DoubleBits bits;
+  bits.b64 = bits_;
+  return bits.b32[0] ^ bits.b32[1];
 }
 
 str_t TagValue::stringify(void) const {
@@ -428,15 +422,18 @@ bool MapObject::add_entry(std::vector<MapEntry>& entries,
   while (true) {
     auto& entry = entries[index];
 
-    // if we found an empty slot, the key is not in the table
+    // if we found an open slot, the key is not in the table
     if (entry.first.is_undefined()) {
-      entry.first = k;
-      entry.second = v;
-      return true;
+      // do not stop at a tombstone, though, because the key may be found
+      // after it
+      if (!entry.second.as_boolean()) {
+        entry.first = k;
+        entry.second = v;
+        return true;
+      }
     }
-
-    // if the key already exists, just replace the value
-    if (entry.first == k) {
+    else if (entry.first == k) {
+      // if the key already exists, just replace the value
       entry.second = v;
       return false;
     }
@@ -458,7 +455,8 @@ void MapObject::grow(void) {
 }
 
 void MapObject::resize(int new_capacity) {
-  std::vector<MapEntry> new_entries(new_capacity);
+  std::vector<MapEntry> new_entries(
+      new_capacity, std::make_pair(kUndefined, false));
   if (capacity_ > 0) {
     for (auto& entry : entries_) {
       if (!entry.first.is_undefined())
@@ -491,10 +489,15 @@ int MapObject::find(const Value& key) const {
   while (true) {
     auto& entry = entries_[index];
 
-    if (entry.first.is_undefined())
-      break;
-    if (entry.first == key)
+    if (entry.first.is_undefined()) {
+      // if we found an empty slot, the key is not in the table, if we found
+      // a slot that contains a deleted key, we have to keep looking
+      if (!entry.second.as_boolean())
+        break;
+    }
+    else if (entry.first == key) {
       return index;
+    }
 
     index = (index + 1) % capacity_;
   }
@@ -521,36 +524,20 @@ Value MapObject::remove(const Value& key) {
 
   // remove the entry from the map
   Value value = entries_[index].second;
-  entries_[index].first = Value();
+  entries_[index].first = kUndefined;
+  entries_[index].second = true;
 
   --count_;
   if (count_ == 0) {
     clear();
   }
-  else if (count_ < capacity_ / kGrowFactor * kLoadPercent / 100) {
+  else if (capacity_ > kMinCapacity &&
+      count_ < capacity_ / kGrowFactor * kLoadPercent / 100) {
     int new_capacity = capacity_ / kGrowFactor;
     if (new_capacity < kMinCapacity)
       new_capacity = kMinCapacity;
 
     resize(new_capacity);
-  }
-  else {
-    // we are removed the entry, but we need to update any subsequent entries
-    // that may have wanted to occupy its slot and got pushed down, otherwise
-    // we won't be able to find them later
-
-    while (true) {
-      index = (index + 1) % capacity_;
-
-      if (entries_[index].first.is_undefined())
-        break;
-
-      Value removed_key = entries_[index].first;
-      Value removed_val = entries_[index].second;
-      entries_[index].first = Value();
-
-      add_entry(entries_, capacity_, removed_key, removed_val);
-    }
   }
 
   return value;
