@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <chrono>
+#include <ctime>
 #include <iostream>
 #include "common.hh"
 #include "vm.hh"
@@ -151,10 +152,15 @@ namespace io {
             std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0);
     }
 
+    void time_impl(WrenVM& vm) {
+      wrenReturnDouble(vm, Xt::as_type<double>(std::time(nullptr)));
+    }
+
     inline void load_library(WrenVM& vm) {
       vm.interpret("", kLibSource);
       wrenDefineStaticMethod(vm, "IO", "writeString", 1, write_string_impl);
       wrenDefineStaticMethod(vm, "IO", "clock", 0, clock_impl);
+      wrenDefineStaticMethod(vm, "IO", "time", 0, time_impl);
       wrenDefineStaticMethod(vm, "IO", "read", 0, read_impl);
     }
   }
