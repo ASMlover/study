@@ -29,6 +29,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -83,7 +84,7 @@ namespace Xt {
 
   inline str_t to_string(double d) {
     std::stringstream ss;
-    ss << d;
+    ss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
     return ss.str();
   }
 }
