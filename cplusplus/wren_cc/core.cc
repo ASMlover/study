@@ -713,6 +713,36 @@ DEF_NATIVE(numeric_bitor) {
   RETURN_VAL(lhs | rhs);
 }
 
+DEF_NATIVE(numeric_bitxor) {
+  if (!validate_numeric(vm, args, 1, "Right operand"))
+    return PrimitiveResult::ERROR;
+
+  // bitwise operators always work on 32-bit unsigned int
+  u32_t lhs = Xt::as_type<u32_t>(args[0].as_numeric());
+  u32_t rhs = Xt::as_type<u32_t>(args[1].as_numeric());
+  RETURN_VAL(lhs ^ rhs);
+}
+
+DEF_NATIVE(numeric_bitlshift) {
+  if (!validate_numeric(vm, args, 1, "Right operand"))
+    return PrimitiveResult::ERROR;
+
+  // bitwise operators always work on 32-bit unsigned int
+  u32_t lhs = Xt::as_type<u32_t>(args[0].as_numeric());
+  u32_t rhs = Xt::as_type<u32_t>(args[1].as_numeric());
+  RETURN_VAL(lhs << rhs);
+}
+
+DEF_NATIVE(numeric_bitrshift) {
+  if (!validate_numeric(vm, args, 1, "Right operand"))
+    return PrimitiveResult::ERROR;
+
+  // bitwise operators always work on 32-bit unsigned int
+  u32_t lhs = Xt::as_type<u32_t>(args[0].as_numeric());
+  u32_t rhs = Xt::as_type<u32_t>(args[1].as_numeric());
+  RETURN_VAL(lhs >> rhs);
+}
+
 DEF_NATIVE(numeric_dotdot) {
   if (!validate_numeric(vm, args, 1, "Right hand side of range"))
     return PrimitiveResult::ERROR;
@@ -1315,6 +1345,9 @@ namespace core {
     vm.set_native(vm.num_cls(), "~", _primitive_numeric_bitnot);
     vm.set_native(vm.num_cls(), "& ", _primitive_numeric_bitand);
     vm.set_native(vm.num_cls(), "| ", _primitive_numeric_bitor);
+    vm.set_native(vm.num_cls(), "^ ", _primitive_numeric_bitxor);
+    vm.set_native(vm.num_cls(), "<< ", _primitive_numeric_bitlshift);
+    vm.set_native(vm.num_cls(), ">> ", _primitive_numeric_bitrshift);
     vm.set_native(vm.num_cls(), ".. ", _primitive_numeric_dotdot);
     vm.set_native(vm.num_cls(), "... ", _primitive_numeric_dotdotdot);
     vm.set_native(vm.num_cls(), "abs", _primitive_numeric_abs);

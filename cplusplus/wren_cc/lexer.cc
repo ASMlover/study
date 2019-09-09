@@ -66,6 +66,7 @@ Token Lexer::next_token(void) {
   case '~': return make_token(TokenKind::TK_TILDE);
   case '?': return make_token(TokenKind::TK_QUESTION);
   case '-': return make_token(TokenKind::TK_MINUS);
+  case '^': return make_token(TokenKind::TK_CARET);
   case '|':
     return make_token(match('|') ? TokenKind::TK_PIPEPIPE :  TokenKind::TK_PIPE);
   case '&':
@@ -75,9 +76,21 @@ Token Lexer::next_token(void) {
   case '=':
     return make_token(match('=') ? TokenKind::TK_EQEQ : TokenKind::TK_EQ);
   case '<':
-    return make_token(match('=') ? TokenKind::TK_LTEQ : TokenKind::TK_LT);
+    if (peek() == '<') {
+      advance();
+      return make_token(TokenKind::TK_LSHIFT);
+    }
+    else {
+      return make_token(match('=') ? TokenKind::TK_LTEQ : TokenKind::TK_LT);
+    }
   case '>':
-    return make_token(match('=') ? TokenKind::TK_GTEQ : TokenKind::TK_GT);
+    if (peek() == '>') {
+      advance();
+      return make_token(TokenKind::TK_RSHIFT);
+    }
+    else {
+      return make_token(match('=') ? TokenKind::TK_GTEQ : TokenKind::TK_GT);
+    }
   case '\n': return make_token(TokenKind::TK_NL, lineno_++);
   case '"': return make_string();
   }

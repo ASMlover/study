@@ -49,7 +49,7 @@ enum class Precedence {
   IS,         // is
   COMPARISON, // < <= > >=
   RANGE,      // .. ...
-  BITWISE,    // | &
+  BITWISE,    // | ^ & << >>
   TERM,       // + -
   FACTOR,     // * / %
   UNARY,      // unary - ! ~
@@ -420,8 +420,11 @@ class Compiler : private UnCopyable {
       INFIXOP(Precedence::FACTOR, "% "),        // PUNCTUATOR(PERCENT, "%")
       INFIXOP(Precedence::TERM, "+ "),          // PUNCTUATOR(PLUS, "+")
       OPER(Precedence::TERM, "- "),             // PUNCTUATOR(MINUS, "-")
+      INFIXOP(Precedence::BITWISE, "<< "),      // PUNCTUATOR(LSHIFT, "<<")
+      INFIXOP(Precedence::BITWISE, ">> "),      // PUNCTUATOR(RSHIFT, ">>")
       INFIXOP(Precedence::BITWISE, "| "),       // PUNCTUATOR(PIPE, "|")
       INFIX(or_exp, Precedence::LOGIC),         // PUNCTUATOR(PIPEPIPE, "||")
+      INFIXOP(Precedence::BITWISE, "^ "),       // PUNCTUATOR(CARET, "^")
       INFIXOP(Precedence::BITWISE, "& "),       // PUNCTUATOR(AMP, "&")
       INFIX(and_exp, Precedence::LOGIC),        // PUNCTUATOR(AMPAMP, "&&")
       PREFIXOP("!"),                            // PUNCTUATOR(BANG, "!")
