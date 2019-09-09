@@ -78,7 +78,7 @@ Token Lexer::next_token(void) {
   case '<':
     if (peek() == '<') {
       advance();
-      return make_token(TokenKind::TK_LSHIFT);
+      return make_token(TokenKind::TK_LTLT);
     }
     else {
       return make_token(match('=') ? TokenKind::TK_LTEQ : TokenKind::TK_LT);
@@ -86,7 +86,7 @@ Token Lexer::next_token(void) {
   case '>':
     if (peek() == '>') {
       advance();
-      return make_token(TokenKind::TK_RSHIFT);
+      return make_token(TokenKind::TK_GTGT);
     }
     else {
       return make_token(match('=') ? TokenKind::TK_GTEQ : TokenKind::TK_GT);
