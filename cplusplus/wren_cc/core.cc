@@ -843,11 +843,15 @@ DEF_NATIVE(string_iterate) {
   if (!validate_int(vm, args, 1, "Iterator"))
     return PrimitiveResult::ERROR;
 
-  int index = Xt::as_type<int>(args[1].as_numeric());
-  if (index < 0 || index >= s->size() - 1)
+  if (args[1].is_numeric() < 0)
     RETURN_VAL(false);
 
-  RETURN_VAL(index + 1);
+  int index = Xt::as_type<int>(args[1].as_numeric());
+  ++index;
+  if (index >= s->size())
+    RETURN_VAL(false);
+
+  RETURN_VAL(index);
 }
 
 DEF_NATIVE(string_itervalue) {
@@ -1194,19 +1198,27 @@ DEF_NATIVE(map_iterate) {
   if (map->count() == 0)
     RETURN_VAL(false);
 
-  // if we are starting the iteration, return the first entry
-  int index = -1;
+  // if we are starting the iteration, start at the first used entry
+  int index = 0;
+
+  // otherwise, start one past the last entry we stopped at
   if (!args[1].is_nil()) {
     if (!validate_int(vm, args, 1, "Iterator"))
       return PrimitiveResult::ERROR;
 
-    index = Xt::as_type<int>(args[1].as_numeric());
-    if (index < 0 || index >= map->capacity())
+    if (args[1].as_numeric() < 0)
       RETURN_VAL(false);
+
+    index = Xt::as_type<int>(args[1].as_numeric());
+    if (index >= map->capacity())
+      RETURN_VAL(false);
+
+    // advance the iterator
+    ++index;
   }
 
-  // find the index used entry if any
-  for (++index; index < map->capacity(); ++index) {
+  // find a used entry if any
+  for (; index < map->capacity(); ++index) {
     if (!(*map)[index].first.is_undefined())
       RETURN_VAL(index);
   }
