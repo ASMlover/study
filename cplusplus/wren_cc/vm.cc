@@ -816,26 +816,33 @@ ModuleObject* WrenVM::get_core_module(void) const {
 }
 
 FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
-  ModuleObject* module = ModuleObject::make_module(*this);
-  PinnedGuard module_guard(*this, module);
+  ModuleObject* module{};
 
-  // implicitly import the core module
-  ModuleObject* core_module = get_core_module();
-  core_module->iter_variables(
-      [&](int i, const Value& val, const str_t& name) {
-        define_variable(module, name, val);
-      });
+  // see if the module has already been loaded
+  if (auto m = modules_->get(name); m) {
+    // execute the new code in the context of the existing module
+    module = (*m).as_module();
+  }
+  else {
+    module = ModuleObject::make_module(*this);
+
+    // store it in the VM's module registry so we don't load the same module
+    // multiple times
+    modules_->set(name, module);
+
+    // implicitly import the core module
+    ModuleObject* core_module = get_core_module();
+    core_module->iter_variables(
+        [&](int i, const Value& val, const str_t& name) {
+          define_variable(module, name, val);
+        });
+  }
 
   FunctionObject* fn = compile(*this, module, name.as_cstring(), source_bytes);
   if (fn == nullptr)
     return nullptr;
 
   PinnedGuard fn_guard(*this, fn);
-
-  // stores it in the VM's module registry so we donot load the same module
-  // multiple times
-  modules_->set(name, module);
-
   FiberObject* module_fiber = FiberObject::make_fiber(*this, fn);
 
   // return the fiber that executes the module
