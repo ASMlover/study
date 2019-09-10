@@ -1516,23 +1516,11 @@ class Compiler : private UnCopyable {
   void subscript(bool allow_assignment) {
     // subscript or `array indexing` operator like `foo[index]`
 
-    int argc = 0;
     // build the method name, allow overloading by arity, add a space to
     // the name for each argument
     str_t name(1, '[');
 
-    // parse the arguments list
-    do {
-      ignore_newlines();
-      validate_num_parameters(++argc);
-      expression();
-
-      // add a space in the name for each argument, lets overload by arity
-      name.push_back(' ');
-    } while (match(TokenKind::TK_COMMA));
-
-    // allow a newline before the closing `]`
-    ignore_newlines();
+    int argc = finish_arguments(name);
     consume(TokenKind::TK_RBRACKET, "expect `]` after subscript arguments");
     name.push_back(']');
 
@@ -1757,22 +1745,36 @@ class Compiler : private UnCopyable {
 
   inline int method_symbol(const str_t& name) { return vm_mnames().ensure(name); }
 
+  int finish_arguments(str_t& name) {
+    // parses a comma-separated list of arguments, modifies [name] to include
+    // the arity of the argument list
+    //
+    // returns the number of parsed arguments
+
+    int argc = 0;
+    do {
+      ignore_newlines();
+      validate_num_parameters(++argc);
+      expression();
+
+      // add a space in the name for each argument, lets us overload by arity
+      name.push_back(' ');
+    } while (match(TokenKind::TK_COMMA));
+    // allow a newline before the closing delimiter
+    ignore_newlines();
+
+    return argc;
+  }
+
   void method_call(Code instruction, const str_t& method_name) {
     // compiles an (optional) argument list and then calls it
 
     // parse the argument list, if any
     int argc = 0;
     str_t name(method_name);
+
     if (match(TokenKind::TK_LPAREN)) {
-      do {
-        ignore_newlines();
-        validate_num_parameters(++argc);
-        expression();
-
-        // add a space in the name for each argument, let's us overload by arity
-        name.push_back(' ');
-      } while (match(TokenKind::TK_COMMA));
-
+      argc = finish_arguments(name);
       consume(TokenKind::TK_RPAREN, "expect `)` after arguments");
     }
 

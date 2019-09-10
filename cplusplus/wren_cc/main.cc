@@ -46,7 +46,8 @@ static std::string read_module(wrencc::WrenVM& vm, const std::string& module) {
 
 static void eval_with_file(const std::string& fname) {
   auto pos = fname.find_last_of('\\');
-  _s_root_dir = fname.substr(0, pos + 1);
+  if (pos != std::string::npos)
+    _s_root_dir = fname.substr(0, pos + 1);
 
   std::ifstream fp(fname);
   if (fp.is_open()) {
