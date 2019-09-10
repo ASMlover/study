@@ -738,9 +738,7 @@ class Compiler : private UnCopyable {
     emit_words(Code::LOAD_MODULE_VAR, list_class_symbol);
 
     // instantiate a new list
-    emit_words(Code::CALL_0, method_symbol(" instantiate"));
-
-    int add_symbol = method_symbol("add ");
+    call_method(0, " instantiate");
 
     // compile the list elements, each one compiles to a ".add()" call
     if (parser_.curr().kind() != TokenKind::TK_RBRACKET) {
@@ -750,7 +748,7 @@ class Compiler : private UnCopyable {
         emit_byte(Code::DUP);
         expression();
 
-        emit_words(Code::CALL_1, add_symbol);
+        call_method(1, "add ");
 
         // discard the result of the add() call
         emit_byte(Code::POP);
@@ -769,9 +767,8 @@ class Compiler : private UnCopyable {
     emit_words(Code::LOAD_MODULE_VAR, map_class_symbol);
 
     // instantiate a new map
-    emit_words(Code::CALL_0, method_symbol(" instantiate"));
+    call_method(0, " instantiate");
 
-    int subscript_set_symbol = method_symbol("[ ]=");
     // compile the map elements, each one is compiled to just invoke the
     // subscript setter on the map
     if (parser_.curr().kind() != TokenKind::TK_RBRACE) {
@@ -787,7 +784,7 @@ class Compiler : private UnCopyable {
         // the value
         expression();
 
-        emit_words(Code::CALL_2, subscript_set_symbol);
+        call_method(2, "[ ]=");
 
         // discard the result of the setter call
         emit_byte(Code::POP);
@@ -1247,7 +1244,7 @@ class Compiler : private UnCopyable {
     load_local(seq_slot);
     load_local(iter_slot);
 
-    emit_words(Code::CALL_1, method_symbol("iterate "));
+    call_method(1, "iterate ");
 
     // store the iterator back in its local for the next iteration
     emit_bytes(Code::STORE_LOCAL, iter_slot);
@@ -1258,7 +1255,7 @@ class Compiler : private UnCopyable {
     load_local(seq_slot);
     load_local(iter_slot);
 
-    emit_words(Code::CALL_1, method_symbol("iterValue "));
+    call_method(1, "iterValue ");
 
     // bind the loop variable in its own scope, this ensures we get a fresh
     // variable each iteration so that closures for it donot all see the
@@ -1536,7 +1533,7 @@ class Compiler : private UnCopyable {
     }
 
     // compile the method call
-    emit_words(Code::CALL_0 + argc, method_symbol(name));
+    call_method(argc, name);
   }
 
   void is(bool allow_assignment) {
@@ -1600,7 +1597,7 @@ class Compiler : private UnCopyable {
     parse_precedence(false, rule.precedence + 1);
 
     // call the operator method on the left-hand side
-    emit_words(Code::CALL_1, method_symbol(rule.name));
+    call_method(1, rule.name);
   }
 
   void unary_oper(bool allow_assignment) {
@@ -1612,7 +1609,7 @@ class Compiler : private UnCopyable {
     parse_precedence(false, Precedence::UNARY + 1);
 
     // call the operator method on the left-hand side
-    emit_words(Code::CALL_0, method_symbol(str_t(1, rule.name[0])));
+    call_method(0, str_t(1, rule.name[0]));
   }
 
   void infix_signature(str_t& name) {
@@ -1766,6 +1763,20 @@ class Compiler : private UnCopyable {
     return argc;
   }
 
+  inline void call_method_instruction(
+      Code instruction, int argc, const str_t& name) {
+    // compiles a method call using [instruction] with [argc] for a method
+    // with [name]
+
+    emit_words(instruction + argc, method_symbol(name));
+  }
+
+  inline void call_method(int argc, const str_t& name) {
+    // compiles a method call with [argc] for a method with [name]
+
+    call_method_instruction(Code::CALL_0, argc, name);
+  }
+
   void method_call(Code instruction, const str_t& method_name) {
     // compiles an (optional) argument list and then calls it
 
@@ -1793,7 +1804,7 @@ class Compiler : private UnCopyable {
       fn_compiler.finish_compiler("(fn)");
     }
 
-    emit_words(instruction + argc, method_symbol(name));
+    call_method_instruction(instruction, argc, name);
   }
 
   void named_call(bool allow_assignment, Code instruction) {
@@ -1813,7 +1824,7 @@ class Compiler : private UnCopyable {
 
       expression();
 
-      emit_words(instruction + 1, method_symbol(name));
+      call_method_instruction(instruction, 1, name);
     }
     else {
       method_call(instruction, name);
@@ -1829,7 +1840,7 @@ class Compiler : private UnCopyable {
       call(false);
 
     // the leading space in the name is to ensure users cannot call it directly
-    emit_words(Code::CALL_0, method_symbol(" instantiate"));
+    call_method(0, " instantiate");
     method_call(Code::CALL_0, "new");
   }
 
