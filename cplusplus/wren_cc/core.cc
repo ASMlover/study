@@ -606,6 +606,18 @@ DEF_NATIVE(numeric_tostring) {
   RETURN_VAL(StringObject::make_string(vm, args[0].stringify()));
 }
 
+DEF_NATIVE(numeric_fromstring) {
+  if (!validate_string(vm, args, 1, "Argument"))
+    return PrimitiveResult::ERROR;
+
+  StringObject* s = args[1].as_string();
+
+  char* end;
+  if (double number = std::strtod(s->cstr(), &end); end != s->cstr())
+    RETURN_VAL(number);
+  RETURN_VAL(nullptr);
+}
+
 DEF_NATIVE(numeric_neg) {
   RETURN_VAL(-args[0].as_numeric());
 }
@@ -1342,6 +1354,7 @@ namespace core {
     vm.set_native(vm.nil_cls(), "toString", _primitive_nil_tostring);
 
     vm.set_num_cls(define_class(vm, "Numeric"));
+    vm.set_native(vm.num_cls()->cls(), "fromString ", _primitive_numeric_fromstring);
     vm.set_native(vm.num_cls(), "-", _primitive_numeric_neg);
     vm.set_native(vm.num_cls(), "+ ", _primitive_numeric_add);
     vm.set_native(vm.num_cls(), "- ", _primitive_numeric_sub);
