@@ -968,13 +968,11 @@ void WrenVM::mark_value(const Value& val) {
 }
 
 void WrenVM::define_method(
-    const str_t& class_name, const str_t& method_name,
-    int num_params, const WrenForeignFn& method, bool is_static) {
+    const str_t& class_name, const str_t& signatrue,
+    const WrenForeignFn& method, bool is_static) {
   ASSERT(!class_name.empty(), "must provide class name");
-  ASSERT(!method_name.empty(), "must provide method name");
-  ASSERT(method_name.size() < MAX_METHOD_NAME, "method name too long");
-  ASSERT(num_params >= 0, "num_params cannot be negative");
-  ASSERT(num_params <= MAX_PARAMETERS, "too many parameters");
+  ASSERT(!signatrue.empty(), "must provide signatrue");
+  ASSERT(signatrue.size() < MAX_METHOD_SIGNATURE, "signatrue too long");
 
   // find or create the class to bind the method to
   ModuleObject* core_module = get_core_module();
@@ -992,13 +990,8 @@ void WrenVM::define_method(
     define_variable(core_module, class_name, cls);
   }
 
-  // create a name for the method, including its arity
-  str_t name(method_name);
-  for (int i = 0; i < num_params; ++i)
-    name.push_back(' ');
-
   // bind the method
-  int method_symbol = method_names_.ensure(name);
+  int method_symbol = method_names_.ensure(signatrue);
   if (is_static)
     cls = cls->cls();
   cls->bind_method(method_symbol, method);
@@ -1056,16 +1049,14 @@ void WrenVM::return_string(const str_t& text) {
   foreign_call_slot_ = nullptr;
 }
 
-void wrenDefineMethod(WrenVM& vm,
-    const str_t& class_name, const str_t& method_name,
-    int arity, const WrenForeignFn& method) {
-  vm.define_method(class_name, method_name, arity, method, false);
+void wrenDefineMethod(WrenVM& vm, const str_t& class_name,
+    const str_t& signatrue, const WrenForeignFn& method) {
+  vm.define_method(class_name, signatrue, method, false);
 }
 
-void wrenDefineStaticMethod(WrenVM& vm,
-    const str_t& class_name, const str_t& method_name,
-    int arity, const WrenForeignFn& method) {
-  vm.define_method(class_name, method_name, arity, method, true);
+void wrenDefineStaticMethod(WrenVM& vm, const str_t& class_name,
+    const str_t& signatrue, const WrenForeignFn& method) {
+  vm.define_method(class_name, signatrue, method, true);
 }
 
 bool wrenGetArgumentBool(WrenVM& vm, int index) {

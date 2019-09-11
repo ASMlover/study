@@ -39,23 +39,21 @@ using WrenForeignFn = std::function<void (WrenVM&)>;
 // global class named [class_name] to bind the method, if not found, it will
 // be created automatically
 //
-// defines a method on that class named [method_name] accepting [arity]
-// parameters, if a method already exists with that name and arity, it will
-// be replaced, when invoked, the method will call [method]
-void wrenDefineMethod(WrenVM& vm,
-    const str_t& class_name, const str_t& method_name,
-    int arity, const WrenForeignFn& method);
+// defines a method on that class with [signature] if a method already exists
+// with that signature, it will be replaced, when invoked the method will call
+// [method]
+void wrenDefineMethod(WrenVM& vm, const str_t& class_name,
+    const str_t& signatrue, const WrenForeignFn& method);
 
 // defines a static foreign method implemented by the host application, looks
 // for a global class named [class_name] to bind the method to, if not found,
 // it will be created automatically
 //
-// defines a static method on that class named [method_name] accepting
-// [arity] parameters, if a method already exists with that name and
-// arity, it will be replaced, when invoked, the method will call [method]
-void wrenDefineStaticMethod(WrenVM& vm,
-    const str_t& class_name, const str_t& method_name,
-    int arity, const WrenForeignFn& method);
+// defines a static method on that class with [signature] if a method already
+// exists with that signature, it will be replaced, when invoked the method
+// will call [method]
+void wrenDefineStaticMethod(WrenVM& vm, const str_t& class_name,
+    const str_t& signatrue, const WrenForeignFn& method);
 
 // the following functions read one of the arguments passed to a foreign call.
 // they may only be called while within a function provided to

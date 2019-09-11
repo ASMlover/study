@@ -158,10 +158,10 @@ namespace io {
 
     inline void load_library(WrenVM& vm) {
       vm.interpret("", kLibSource);
-      wrenDefineStaticMethod(vm, "IO", "writeString", 1, write_string_impl);
-      wrenDefineStaticMethod(vm, "IO", "clock", 0, clock_impl);
-      wrenDefineStaticMethod(vm, "IO", "time", 0, time_impl);
-      wrenDefineStaticMethod(vm, "IO", "read", 0, read_impl);
+      wrenDefineStaticMethod(vm, "IO", "writeString ", write_string_impl);
+      wrenDefineStaticMethod(vm, "IO", "clock", clock_impl);
+      wrenDefineStaticMethod(vm, "IO", "time", time_impl);
+      wrenDefineStaticMethod(vm, "IO", "read", read_impl);
     }
   }
 
