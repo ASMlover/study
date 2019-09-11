@@ -45,11 +45,14 @@ enum class Precedence {
 
   ASSIGNMENT, // =
   LOGIC,      // && ||
+  BIT_OR,     // |
+  BIT_XOR,    // ^
+  BIT_AND,    // &
   EQUALITY,   // == !=
   IS,         // is
   COMPARISON, // < <= > >=
   RANGE,      // .. ...
-  BITWISE,    // | ^ & << >>
+  BIT_SHIFT,  // << >>
   TERM,       // + -
   FACTOR,     // * / %
   UNARY,      // unary - ! ~
@@ -420,12 +423,12 @@ class Compiler : private UnCopyable {
       INFIXOP(Precedence::FACTOR, "% "),        // PUNCTUATOR(PERCENT, "%")
       INFIXOP(Precedence::TERM, "+ "),          // PUNCTUATOR(PLUS, "+")
       OPER(Precedence::TERM, "- "),             // PUNCTUATOR(MINUS, "-")
-      INFIXOP(Precedence::BITWISE, "<< "),      // PUNCTUATOR(LTLT, "<<")
-      INFIXOP(Precedence::BITWISE, ">> "),      // PUNCTUATOR(GTGT, ">>")
-      INFIXOP(Precedence::BITWISE, "| "),       // PUNCTUATOR(PIPE, "|")
+      INFIXOP(Precedence::BIT_SHIFT, "<< "),    // PUNCTUATOR(LTLT, "<<")
+      INFIXOP(Precedence::BIT_SHIFT, ">> "),    // PUNCTUATOR(GTGT, ">>")
+      INFIXOP(Precedence::BIT_OR, "| "),        // PUNCTUATOR(PIPE, "|")
       INFIX(or_exp, Precedence::LOGIC),         // PUNCTUATOR(PIPEPIPE, "||")
-      INFIXOP(Precedence::BITWISE, "^ "),       // PUNCTUATOR(CARET, "^")
-      INFIXOP(Precedence::BITWISE, "& "),       // PUNCTUATOR(AMP, "&")
+      INFIXOP(Precedence::BIT_XOR, "^ "),       // PUNCTUATOR(CARET, "^")
+      INFIXOP(Precedence::BIT_AND, "& "),       // PUNCTUATOR(AMP, "&")
       INFIX(and_exp, Precedence::LOGIC),        // PUNCTUATOR(AMPAMP, "&&")
       PREFIXOP("!"),                            // PUNCTUATOR(BANG, "!")
       PREFIXOP("~"),                            // PUNCTUATOR(TILDE, "~")
