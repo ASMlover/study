@@ -611,11 +611,21 @@ DEF_NATIVE(numeric_fromstring) {
     return PrimitiveResult::ERROR;
 
   StringObject* s = args[1].as_string();
+  if (s->size() == 0)
+    RETURN_VAL(nullptr);
 
   char* end;
-  if (double number = std::strtod(s->cstr(), &end); end != s->cstr())
-    RETURN_VAL(number);
-  RETURN_VAL(nullptr);
+  double number = std::strtod(s->cstr(), &end);
+  // skip past any trailing whitespace
+  while (*end != '\0' && std::isspace(*end))
+    ++end;
+
+  // we must have consumed the entrie string, otherwise, it contains non-number
+  // characters and we can't parse it
+  if (end < s->cstr() + s->size())
+    RETURN_VAL(nullptr);
+
+  RETURN_VAL(number);
 }
 
 DEF_NATIVE(numeric_neg) {
@@ -855,7 +865,7 @@ DEF_NATIVE(string_iterate) {
   if (!validate_int(vm, args, 1, "Iterator"))
     return PrimitiveResult::ERROR;
 
-  if (args[1].is_numeric() < 0)
+  if (args[1].as_numeric() < 0)
     RETURN_VAL(false);
 
   int index = Xt::as_type<int>(args[1].as_numeric());
