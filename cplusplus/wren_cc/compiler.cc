@@ -44,15 +44,17 @@ enum class Precedence {
   LOWEST,
 
   ASSIGNMENT, // =
-  LOGIC,      // && ||
-  BIT_OR,     // |
-  BIT_XOR,    // ^
-  BIT_AND,    // &
+  TERNARY,    // ?:
+  LOGIC_OR,   // ||
+  LOGIC_AND,  // &&
   EQUALITY,   // == !=
   IS,         // is
   COMPARISON, // < <= > >=
-  RANGE,      // .. ...
+  BIT_OR,     // |
+  BIT_XOR,    // ^
+  BIT_AND,    // &
   BIT_SHIFT,  // << >>
+  RANGE,      // .. ...
   TERM,       // + -
   FACTOR,     // * / %
   UNARY,      // unary - ! ~
@@ -426,10 +428,10 @@ class Compiler : private UnCopyable {
       INFIXOP(Precedence::BIT_SHIFT, "<< "),    // PUNCTUATOR(LTLT, "<<")
       INFIXOP(Precedence::BIT_SHIFT, ">> "),    // PUNCTUATOR(GTGT, ">>")
       INFIXOP(Precedence::BIT_OR, "| "),        // PUNCTUATOR(PIPE, "|")
-      INFIX(or_exp, Precedence::LOGIC),         // PUNCTUATOR(PIPEPIPE, "||")
+      INFIX(or_exp, Precedence::LOGIC_OR),      // PUNCTUATOR(PIPEPIPE, "||")
       INFIXOP(Precedence::BIT_XOR, "^ "),       // PUNCTUATOR(CARET, "^")
       INFIXOP(Precedence::BIT_AND, "& "),       // PUNCTUATOR(AMP, "&")
-      INFIX(and_exp, Precedence::LOGIC),        // PUNCTUATOR(AMPAMP, "&&")
+      INFIX(and_exp, Precedence::LOGIC_AND),    // PUNCTUATOR(AMPAMP, "&&")
       PREFIXOP("!"),                            // PUNCTUATOR(BANG, "!")
       PREFIXOP("~"),                            // PUNCTUATOR(TILDE, "~")
       INFIX(condition, Precedence::ASSIGNMENT), // PUNCTUATOR(QUESTION, "?")
@@ -1553,7 +1555,7 @@ class Compiler : private UnCopyable {
     // skip the right argument if the left is false
     int jump = emit_jump(Code::AND);
 
-    parse_precedence(false, Precedence::LOGIC);
+    parse_precedence(false, Precedence::LOGIC_AND);
     patch_jump(jump);
   }
 
@@ -1563,7 +1565,7 @@ class Compiler : private UnCopyable {
     // skip the right argument if the left if true
     int jump = emit_jump(Code::OR);
 
-    parse_precedence(false, Precedence::LOGIC);
+    parse_precedence(false, Precedence::LOGIC_OR);
     patch_jump(jump);
   }
 
@@ -1575,7 +1577,7 @@ class Compiler : private UnCopyable {
     int if_jump = emit_jump(Code::JUMP_IF);
 
     // compile the then branch
-    parse_precedence(allow_assignment, Precedence::LOGIC);
+    parse_precedence(allow_assignment, Precedence::TERNARY);
     consume(TokenKind::TK_COLON,
         "expect `:` after then branch of condition operator");
     ignore_newlines();
