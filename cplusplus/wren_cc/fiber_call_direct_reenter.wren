@@ -2,7 +2,7 @@
 var fiber
 
 fiber = new Fiber {
-  fiber.call // expect runtime error
+  fiber.call() // expect runtime error
 }
 
-fiber.call
+fiber.call()

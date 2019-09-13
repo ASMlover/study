@@ -9,6 +9,6 @@
 
   {
     var b = "b"
-    f.call // expect: a
+    f.call() // expect: a
   }
 }

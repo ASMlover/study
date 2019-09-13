@@ -7,4 +7,4 @@ new Function {|param|
   }
 }.call("parameter")
 
-f.call // expect: parameter
+f.call() // expect: parameter

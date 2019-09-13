@@ -6,9 +6,9 @@ var a = new Fiber {
 // run a through an intermediate fiber since it will get discarded and we
 // need to return to the main one after a completes
 var b = new Fiber {
-  a.run
+  a.run()
   IO.print("nope")
 }
 
-b.call // expect: run
-a.run // expect runtime error
+b.call() // expect: run
+a.run() // expect runtime error

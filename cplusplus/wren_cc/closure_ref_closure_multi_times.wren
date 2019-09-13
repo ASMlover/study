@@ -9,6 +9,6 @@ var f = nil
   }
 }
 
-f.call
+f.call()
 // expect: a
 // expect: b

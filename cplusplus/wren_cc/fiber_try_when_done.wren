@@ -3,5 +3,5 @@ var fiber = new Fiber {
   IO.print("try")
 }
 
-fiber.try // expect: try
-fiber.try // expect runtime error
+fiber.try() // expect: try
+fiber.try() // expect runtime error

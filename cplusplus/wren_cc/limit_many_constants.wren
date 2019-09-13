@@ -8194,4 +8194,4 @@ var f = new Function {
   IO.print(65536)
 }
 
-f.call // expect 65536
+f.call() // expect 65536

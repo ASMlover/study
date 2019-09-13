@@ -1,6 +1,6 @@
 
 var f0 = new Function { 0 }
-IO.print(f0.call) // expect: 0
+IO.print(f0.call()) // expect: 0
 
 var f1 = new Function {|a| a }
 IO.print(f1.call(1)) // expect: 1

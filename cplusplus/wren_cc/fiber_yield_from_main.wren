@@ -1,2 +1,2 @@
 
-Fiber.yield // expect runtime error
+Fiber.yield() // expect runtime error

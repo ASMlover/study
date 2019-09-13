@@ -6,5 +6,5 @@ var f = new Function {
   }
 }
 
-var g = f.call
-g.call // expect: iii
+var g = f.call()
+g.call() // expect: iii

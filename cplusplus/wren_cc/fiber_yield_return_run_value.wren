@@ -1,11 +1,11 @@
 
 var fiber = new Fiber {
   IO.print("fiber")
-  var result = Fiber.yield
+  var result = Fiber.yield()
   IO.print(result)
 }
 
-fiber.call // expect: fiber
+fiber.call() // expect: fiber
 IO.print("main") // expect: main
 fiber.run("run") // expect: run
 

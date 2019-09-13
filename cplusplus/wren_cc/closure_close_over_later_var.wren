@@ -5,5 +5,5 @@ new Function {
   new Function {
     IO.print(b) // expect: b
     IO.print(a) // expect: a
-  }.call
-}.call
+  }.call()
+}.call()

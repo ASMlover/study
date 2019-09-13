@@ -4,7 +4,7 @@ var fiber = new Fiber {
 }
 
 IO.print("before") // expect: before
-IO.print(fiber.try)
+IO.print(fiber.try())
 // expect: fiber
 // expect: nil
 IO.print("after") // expect: after

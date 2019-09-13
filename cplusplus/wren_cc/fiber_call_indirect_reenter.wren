@@ -3,11 +3,11 @@ var a
 var b
 
 a = new Fiber {
-  b.call // expect runtime error
+  b.call() // expect runtime error
 }
 
 b = new Fiber {
-  a.call
+  a.call()
 }
 
-b.call
+b.call()

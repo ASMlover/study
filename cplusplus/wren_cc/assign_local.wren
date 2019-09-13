@@ -8,4 +8,4 @@ new Function {
 
   IO.print(a = "arg") // expect: arg
   IO.print(a) // expect: arg
-}.call
+}.call()

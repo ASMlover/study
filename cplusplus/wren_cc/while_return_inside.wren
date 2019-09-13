@@ -6,4 +6,4 @@ var f = new Function {
   }
 }
 
-IO.print(f.call) // expect: iii
+IO.print(f.call()) // expect: iii

@@ -7,5 +7,5 @@ fiber = new Fiber {
   IO.print(2) // expect: 2
 }
 
-fiber.call
+fiber.call()
 IO.print(3) // expect: 3

@@ -5,4 +5,4 @@ var f = new Function {
   }
 }
 
-IO.print(f.call) // expect: 1
+IO.print(f.call()) // expect: 1

@@ -8,4 +8,4 @@ var f = nil
   }
 }
 
-f.call // expect: local
+f.call() // expect: local

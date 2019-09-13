@@ -9999,4 +9999,4 @@ new Function {
   IO.print(8) // expect: 8
   IO.print(9) // expect: 9
   IO.print(10) // expect: 10
-}.call
+}.call()

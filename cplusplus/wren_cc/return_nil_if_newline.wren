@@ -4,4 +4,4 @@ var f = new Function {
   IO.print("bad")
 }
 
-IO.print(f.call) // expect: nil
+IO.print(f.call()) // expect: nil

@@ -6,4 +6,4 @@ while (true) {
   break
 }
 
-f.call // expect: iii
+f.call() // expect: iii

@@ -5,5 +5,5 @@ var f = new Function {
   }
 }
 
-var g = f.call
-g.call // expect: 1
+var g = f.call()
+g.call() // expect: 1

@@ -1,15 +1,15 @@
 
 var fiber = new Fiber {
   IO.print("fiber 1")
-  var result = Fiber.yield
+  var result = Fiber.yield()
   IO.print(result)
-  result = Fiber.yield
+  result = Fiber.yield()
   IO.print(result)
 }
 
-fiber.call // expect: fiber 1
+fiber.call() // expect: fiber 1
 IO.print("main 1") // expect: main 1
 fiber.call("call 1") // expect: call 1
 IO.print("main 2") // expect: main 2
-fiber.call // expect: nil
+fiber.call() // expect: nil
 IO.print("main 3") // expect: main 3
