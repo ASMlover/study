@@ -1542,7 +1542,10 @@ class Compiler : private UnCopyable {
     consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
 
     method_compiler.finish_body(is_ctor);
-    method_compiler.finish_compiler(signature.name);
+
+    // include the full signature in debug messages in stack traces
+    str_t debug_name = signature_to_string(signature);
+    method_compiler.finish_compiler(debug_name);
 
     return signature_symbol(signature);
   }
@@ -1797,16 +1800,13 @@ class Compiler : private UnCopyable {
     name.push_back(rbracket);
   }
 
-  int signature_symbol(Signature& signature) {
-    // gets the symbol for a method with [signature]
-
+  str_t signature_to_string(const Signature& signature) {
     str_t name(signature.name);
     switch (signature.type) {
     case SignatureType::METHOD:
       signature_parameters(name, signature.arity, '(', ')');
       break;
     case SignatureType::GETTER:
-      // the signature is just the name
       break;
     case SignatureType::SETTER:
       name.push_back('=');
@@ -1821,7 +1821,14 @@ class Compiler : private UnCopyable {
       signature_parameters(name, 1, '(', ')');
       break;
     }
-    return method_symbol(name);
+
+    return name;
+  }
+
+  int signature_symbol(Signature& signature) {
+    // gets the symbol for a method with [signature]
+
+    return method_symbol(signature_to_string(signature));
   }
 
   void signature_from_token(Signature& signature) {
