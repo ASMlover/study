@@ -660,10 +660,20 @@ bool WrenVM::interpret(void) {
       StringObject* name = PEEK2().as_string();
 
       ClassObject* superclass;
-      if (PEEK().is_nil())
+      if (PEEK().is_nil()) {
         superclass = obj_class_; // implicit Object superclass
-      else
+      }
+      else {
         superclass = PEEK().as_class();
+        if (superclass == class_class_ || superclass == fiber_class_ ||
+            superclass == fn_class_ || superclass == list_class_ ||
+            superclass == map_class_ || superclass == range_class_ ||
+            superclass == str_class_) {
+          std::stringstream ss;
+          ss << "class `" << name->cstr() << "` may not subclass a built-in";
+          RUNTIME_ERROR(StringObject::make_string(*this, ss.str()));
+        }
+      }
 
       int num_fields = RDBYTE();
       ClassObject* cls =
