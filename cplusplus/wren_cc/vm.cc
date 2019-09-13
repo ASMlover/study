@@ -191,19 +191,9 @@ StringObject* WrenVM::method_not_found(ClassObject* cls, int symbol) {
   // creates a string containing an appropriate method not found error for
   // a method with [symbol] on [cls] object.
 
-  // count the number of spaces to determine the number of parameters the
-  // method expects
-  const str_t& method_name = method_names_.get_name(symbol);
-  sz_t method_len = method_name.size();
-  int num_params = 0;
-  while (method_name[method_len - num_params - 1] == ' ')
-    ++num_params;
-
   std::stringstream ss;
-  ss << "`" << cls->name_cstr() << "` does not implement method "
-    << "`" << method_name.substr(0, method_len - num_params) << "` "
-    << "with " << num_params << " argument"
-    << (num_params == 1 ? "" : "s");
+  ss << "`" << cls->name_cstr() << "` does not implement "
+    << "`" << method_names_.get_name(symbol) << "`";
 
   return StringObject::make_string(*this, ss.str());
 }

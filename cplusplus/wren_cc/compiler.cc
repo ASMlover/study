@@ -36,8 +36,6 @@
 namespace wrencc {
 
 class Compiler;
-using GrammerFn = std::function<void (Compiler*, bool)>;
-using SignatureFn = std::function<void (Compiler*, str_t&)>;
 
 enum class Precedence {
   NONE,
@@ -65,6 +63,45 @@ enum class Precedence {
 inline Precedence operator+(Precedence a, int b) {
   return Xt::as_type<Precedence>(Xt::as_type<int>(a) + b);
 }
+
+// the different signature syntaxes for different kinds of methods
+enum class SignatureType {
+  // a name followed by a (possibly empty) parenthesized parameter list, also
+  // used for binary operators
+  METHOD,
+
+  GETTER,           // just a name, also used for unary operators
+  SETTER,           // a name followed by `=`
+  SUBSCRIPT,        // a square bracketed parameter list
+  SUBSCRIPT_SETTER, // a square bracketed parameter list followed by `=`
+};
+
+struct Signature {
+  str_t name{};
+  SignatureType type{};
+  int arity{};
+
+  Signature(void) noexcept {}
+  Signature(const str_t& _name, SignatureType _type, int _arity = 0) noexcept
+    : name(_name), type(_type), arity(_arity) {
+  }
+
+  inline void set_signature(
+      const str_t& _name, SignatureType _type, int _arity = 0) {
+    name = _name;
+    type = _type;
+    arity = _arity;
+  }
+
+  inline void set_name(const str_t& s) { name = s; }
+  inline void set_arity(int n) { arity = n; }
+  inline int inc_arity(void) { return ++arity; }
+  inline void set_type(SignatureType t) { type = t; }
+};
+
+using GrammerFn = std::function<void (Compiler*, bool)>;
+using SignatureFn = std::function<void (Compiler*, Signature&)>;
+
 
 struct GrammerRule {
   GrammerFn prefix;
@@ -396,7 +433,7 @@ class Compiler : private UnCopyable {
 
   const GrammerRule& get_rule(TokenKind kind) const {
 #define RULE(fn) [](Compiler* c, bool b) { c->fn(b); }
-#define SIGN(fn) [](Compiler* c, str_t& n) { c->fn(n); }
+#define SIGN(fn) [](Compiler* c, Signature& s) { c->fn(s); }
 
 #define UNUSED {nullptr, nullptr, nullptr, Precedence::NONE, nullptr}
 #define PREFIX(fn) {RULE(fn), nullptr, nullptr, Precedence::NONE, nullptr}
@@ -417,31 +454,31 @@ class Compiler : private UnCopyable {
       UNUSED,                                   // PUNCTUATOR(RBRACE, "}")
       UNUSED,                                   // PUNCTUATOR(COLON, ":")
       INFIX(call, Precedence::CALL),            // PUNCTUATOR(DOT, ".")
-      INFIXOP(Precedence::RANGE, ".. "),        // PUNCTUATOR(DOTDOT, "..")
-      INFIXOP(Precedence::RANGE, "... "),       // PUNCTUATOR(DOTDOTDOT, "...")
+      INFIXOP(Precedence::RANGE, ".."),         // PUNCTUATOR(DOTDOT, "..")
+      INFIXOP(Precedence::RANGE, "..."),        // PUNCTUATOR(DOTDOTDOT, "...")
       UNUSED,                                   // PUNCTUATOR(COMMA, ",")
-      INFIXOP(Precedence::FACTOR, "* "),        // PUNCTUATOR(STAR, "*")
-      INFIXOP(Precedence::FACTOR, "/ "),        // PUNCTUATOR(SLASH, "/")
-      INFIXOP(Precedence::FACTOR, "% "),        // PUNCTUATOR(PERCENT, "%")
-      INFIXOP(Precedence::TERM, "+ "),          // PUNCTUATOR(PLUS, "+")
-      OPER(Precedence::TERM, "- "),             // PUNCTUATOR(MINUS, "-")
-      INFIXOP(Precedence::BIT_SHIFT, "<< "),    // PUNCTUATOR(LTLT, "<<")
-      INFIXOP(Precedence::BIT_SHIFT, ">> "),    // PUNCTUATOR(GTGT, ">>")
-      INFIXOP(Precedence::BIT_OR, "| "),        // PUNCTUATOR(PIPE, "|")
+      INFIXOP(Precedence::FACTOR, "*"),         // PUNCTUATOR(STAR, "*")
+      INFIXOP(Precedence::FACTOR, "/"),         // PUNCTUATOR(SLASH, "/")
+      INFIXOP(Precedence::FACTOR, "%"),         // PUNCTUATOR(PERCENT, "%")
+      INFIXOP(Precedence::TERM, "+"),           // PUNCTUATOR(PLUS, "+")
+      OPER(Precedence::TERM, "-"),              // PUNCTUATOR(MINUS, "-")
+      INFIXOP(Precedence::BIT_SHIFT, "<<"),     // PUNCTUATOR(LTLT, "<<")
+      INFIXOP(Precedence::BIT_SHIFT, ">>"),     // PUNCTUATOR(GTGT, ">>")
+      INFIXOP(Precedence::BIT_OR, "|"),         // PUNCTUATOR(PIPE, "|")
       INFIX(or_exp, Precedence::LOGIC_OR),      // PUNCTUATOR(PIPEPIPE, "||")
-      INFIXOP(Precedence::BIT_XOR, "^ "),       // PUNCTUATOR(CARET, "^")
-      INFIXOP(Precedence::BIT_AND, "& "),       // PUNCTUATOR(AMP, "&")
+      INFIXOP(Precedence::BIT_XOR, "^"),        // PUNCTUATOR(CARET, "^")
+      INFIXOP(Precedence::BIT_AND, "&"),        // PUNCTUATOR(AMP, "&")
       INFIX(and_exp, Precedence::LOGIC_AND),    // PUNCTUATOR(AMPAMP, "&&")
       PREFIXOP("!"),                            // PUNCTUATOR(BANG, "!")
       PREFIXOP("~"),                            // PUNCTUATOR(TILDE, "~")
       INFIX(condition, Precedence::ASSIGNMENT), // PUNCTUATOR(QUESTION, "?")
       UNUSED,                                   // PUNCTUATOR(EQ, "=")
-      INFIXOP(Precedence::COMPARISON, "< "),    // PUNCTUATOR(LT, "<")
-      INFIXOP(Precedence::COMPARISON, "> "),    // PUNCTUATOR(GT, ">")
-      INFIXOP(Precedence::COMPARISON, "<= "),   // PUNCTUATOR(LTEQ, "<=")
-      INFIXOP(Precedence::COMPARISON, ">= "),   // PUNCTUATOR(GTEQ, ">=")
-      INFIXOP(Precedence::EQUALITY, "== "),     // PUNCTUATOR(EQEQ, "==")
-      INFIXOP(Precedence::EQUALITY, "!= "),     // PUNCTUATOR(BANGEQ, "!=")
+      INFIXOP(Precedence::COMPARISON, "<"),     // PUNCTUATOR(LT, "<")
+      INFIXOP(Precedence::COMPARISON, ">"),     // PUNCTUATOR(GT, ">")
+      INFIXOP(Precedence::COMPARISON, "<="),    // PUNCTUATOR(LTEQ, "<=")
+      INFIXOP(Precedence::COMPARISON, ">="),    // PUNCTUATOR(GTEQ, ">=")
+      INFIXOP(Precedence::EQUALITY, "=="),      // PUNCTUATOR(EQEQ, "==")
+      INFIXOP(Precedence::EQUALITY, "!="),      // PUNCTUATOR(BANGEQ, "!=")
 
       UNUSED,                                   // KEYWORD(BREAK, "break")
       UNUSED,                                   // KEYWORD(CLASS, "class")
@@ -753,7 +790,7 @@ class Compiler : private UnCopyable {
         emit_byte(Code::DUP);
         expression();
 
-        call_method(1, "add ");
+        call_method(1, "add(_)");
 
         // discard the result of the add() call
         emit_byte(Code::POP);
@@ -789,7 +826,7 @@ class Compiler : private UnCopyable {
         // the value
         expression();
 
-        call_method(2, "[ ]=");
+        call_method(2, "[_]=(_)");
 
         // discard the result of the setter call
         emit_byte(Code::POP);
@@ -1249,7 +1286,7 @@ class Compiler : private UnCopyable {
     load_local(seq_slot);
     load_local(iter_slot);
 
-    call_method(1, "iterate ");
+    call_method(1, "iterate(_)");
 
     // store the iterator back in its local for the next iteration
     emit_bytes(Code::STORE_LOCAL, iter_slot);
@@ -1260,7 +1297,7 @@ class Compiler : private UnCopyable {
     load_local(seq_slot);
     load_local(iter_slot);
 
-    call_method(1, "iterValue ");
+    call_method(1, "iterValue(_)");
 
     // bind the loop variable in its own scope, this ensures we get a fresh
     // variable each iteration so that closures for it donot all see the
@@ -1486,27 +1523,28 @@ class Compiler : private UnCopyable {
   }
 
   int method(ClassCompiler* class_compiler,
-      bool is_ctor, const SignatureFn& signature) {
+      bool is_ctor, const SignatureFn& signature_fn) {
     // compiles a method definition inside a class body, returns the symbol
     // in the method table for the new method
 
-    // build the method name
-    str_t name(parser_.prev().as_string());
+    // build the method signature
+    Signature signatrue;
+    signatrue_from_token(signatrue);
 
-    class_compiler->method_name = name;
+    class_compiler->method_name = signatrue.name;
 
     Compiler method_compiler(parser_, this);
     method_compiler.init_compiler(false);
 
     // compile the method signature
-    signature(&method_compiler, name);
+    signature_fn(&method_compiler, signatrue);
 
     consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
 
     method_compiler.finish_body(is_ctor);
-    method_compiler.finish_compiler(name);
+    method_compiler.finish_compiler(signatrue.name);
 
-    return method_symbol(name);
+    return signatrue_symbol(signatrue);
   }
 
   void call(bool allow_assignment) {
@@ -1518,27 +1556,24 @@ class Compiler : private UnCopyable {
   void subscript(bool allow_assignment) {
     // subscript or `array indexing` operator like `foo[index]`
 
-    // build the method name, allow overloading by arity, add a space to
-    // the name for each argument
-    str_t name(1, '[');
+    Signature signatrue("", SignatureType::SUBSCRIPT, 0);
 
-    int argc = finish_arguments(name);
+    // parse the argument list
+    finish_arguments(signatrue);
     consume(TokenKind::TK_RBRACKET, "expect `]` after subscript arguments");
-    name.push_back(']');
 
     if (match(TokenKind::TK_EQ)) {
       if (!allow_assignment)
         error("invalid assignment");
 
-      name.push_back('=');
+      signatrue.set_type(SignatureType::SUBSCRIPT_SETTER);
 
       // compile the assigned value
-      validate_num_parameters(++argc);
+      validate_num_parameters(signatrue.inc_arity());
       expression();
     }
 
-    // compile the method call
-    call_method(argc, name);
+    call_signature(Code::CALL_0, signatrue);
   }
 
   void is(bool allow_assignment) {
@@ -1602,7 +1637,8 @@ class Compiler : private UnCopyable {
     parse_precedence(false, rule.precedence + 1);
 
     // call the operator method on the left-hand side
-    call_method(1, rule.name);
+    Signature signatrue(rule.name, SignatureType::METHOD, 1);
+    call_signature(Code::CALL_0, signatrue);
   }
 
   void unary_oper(bool allow_assignment) {
@@ -1617,11 +1653,12 @@ class Compiler : private UnCopyable {
     call_method(0, str_t(1, rule.name[0]));
   }
 
-  void infix_signature(str_t& name) {
+  void infix_signature(Signature& signatrue) {
     // compiles a method signature for an infix operator
 
     // add a space for the RHS parameter
-    name.push_back(' ');
+    signatrue.set_type(SignatureType::METHOD);
+    signatrue.set_arity(1);
 
     // parse the parameter name
     consume(TokenKind::TK_LPAREN, "expect `(` after operator name");
@@ -1629,15 +1666,18 @@ class Compiler : private UnCopyable {
     consume(TokenKind::TK_RPAREN, "expect `)` after parameter name");
   }
 
-  void unary_signature(str_t& name) {
+  void unary_signature(Signature& signatrue) {
     // compiles a method signature for an unary operator
+    signatrue.set_type(SignatureType::GETTER);
   }
 
-  void mixed_signature(str_t& name) {
+  void mixed_signature(Signature& signatrue) {
+    signatrue.set_type(SignatureType::GETTER);
     // if there is a parameter, it's an infix operator, otherwise it's unary
     if (match(TokenKind::TK_LPAREN)) {
       // add a space for the RHS parameter
-      name.push_back(' ');
+      signatrue.set_type(SignatureType::METHOD);
+      signatrue.set_arity(1);
 
       // parse the parameter name
       declare_named_variable();
@@ -1645,8 +1685,8 @@ class Compiler : private UnCopyable {
     }
   }
 
-  bool maybe_setter(str_t& name) {
-    // compiles an optional setter parameter in a method signature.
+  bool maybe_setter(Signature& signatrue) {
+    // compiles an optional setter parameter in a method [signature]
     //
     // returns `true` if it was a setter
 
@@ -1655,39 +1695,47 @@ class Compiler : private UnCopyable {
       return false;
 
     // it is a setter
-    name.push_back('=');
+    if (signatrue.type == SignatureType::SUBSCRIPT)
+      signatrue.set_type(SignatureType::SUBSCRIPT_SETTER);
+    else
+      signatrue.set_type(SignatureType::SETTER);
 
     // parse the value parameter
     consume(TokenKind::TK_LPAREN, "expect `(` after `=`");
     declare_named_variable();
     consume(TokenKind::TK_RPAREN, "expect `)` after parameter name");
 
+    signatrue.inc_arity();
+
     return true;
   }
 
-  void subscript_signature(str_t& name) {
+  void subscript_signature(Signature& signatrue) {
     // compiles a method signature for a subscript operator
 
-    // parse the parameters inside the subscript
-    finish_parameters(name, TokenKind::TK_RBRACKET);
-    name.push_back(']');
+    signatrue.set_type(SignatureType::SUBSCRIPT);
+    signatrue.set_name("");
 
-    maybe_setter(name);
+    // parse the parameters inside the subscript
+    finish_parameters(signatrue, TokenKind::TK_RBRACKET);
+    maybe_setter(signatrue);
   }
 
-  void named_signature(str_t& name) {
+  void named_signature(Signature& signatrue) {
     // compiles a method signature for a named method or setter
 
-    if (maybe_setter(name))
+    signatrue.set_type(SignatureType::GETTER);
+    if (maybe_setter(signatrue))
       return;
 
     // regular named method with an optional parameter list
-    parameters(name, TokenKind::TK_LPAREN, TokenKind::TK_RPAREN);
+    parameters(signatrue, TokenKind::TK_LPAREN, TokenKind::TK_RPAREN);
   }
 
-  void ctor_signature(str_t& name) {
+  void ctor_signature(Signature& signatrue) {
+    signatrue.set_type(SignatureType::GETTER);
     // add the parameters if there are any
-    parameters(name, TokenKind::TK_LPAREN, TokenKind::TK_RPAREN);
+    parameters(signatrue, TokenKind::TK_LPAREN, TokenKind::TK_RPAREN);
   }
 
   void validate_num_parameters(int argc) {
@@ -1701,23 +1749,17 @@ class Compiler : private UnCopyable {
     }
   }
 
-  int finish_parameters(str_t& name, TokenKind end_kind) {
+  void finish_parameters(Signature& signatrue, TokenKind end_kind) {
     // parses the rest of a parameter list after the opening delimeter, and
-    // closed by [end_kind] if the parameter list is for a method, [name] will
-    // be the name of the method and this will modify it to handle arity in
-    // the signatrue, for functions [name] will be empty string
+    // closed by [end_kind], updates `arity` in [signature] with the number
+    // of parameters
 
-    int num_params = 0;
     do {
       ignore_newlines();
-      validate_num_parameters(++num_params);
+      validate_num_parameters(signatrue.inc_arity());
 
       // define a local variable in the method for the parameter
       declare_named_variable();
-
-      // add a space in the name for the parameter
-      if (!name.empty())
-        name.push_back(' ');
     } while (match(TokenKind::TK_COMMA));
 
     const char* message;
@@ -1728,111 +1770,156 @@ class Compiler : private UnCopyable {
     default: message = nullptr; UNREACHABLE();
     }
     consume(end_kind, message);
-
-    return num_params;
   }
 
-  int parameters(str_t& name, TokenKind beg_kind, TokenKind end_kind) {
-    // parses an optional parenthesis-delimited parameter list, if the parameter
-    // list is for a method, [name] will be the name of the method and this will
-    // modify it to handle arity in the signature, for functions, [name] will be
-    // `empty` string
+  void parameters(
+      Signature& signatrue, TokenKind beg_kind, TokenKind end_kind) {
+    // parses an optional parenthesis-delimited parameter list, updates `type`
+    // and `arity` in [signature] to match what was parsed
 
     // the parameter list is optional
     if (!match(beg_kind))
-      return 0;
+      return;
 
-    return finish_parameters(name, end_kind);
+    signatrue.set_type(SignatureType::METHOD);
+    finish_parameters(signatrue, end_kind);
   }
 
   inline int method_symbol(const str_t& name) { return vm_mnames().ensure(name); }
 
-  int finish_arguments(str_t& name) {
+  void signatrue_parameters(
+      str_t& name, int num_params, char lbracket, char rbracket) {
+    // appends characters to [name] for [num_params] `_` surrounded by
+    // [lbracket] and [rbracket]
+
+    name.push_back(lbracket);
+    for (int i = 0; i < num_params; ++i) {
+      if (i > 0)
+        name.push_back(',');
+      name.push_back('_');
+    }
+    name.push_back(rbracket);
+  }
+
+  int signatrue_symbol(Signature& signatrue) {
+    // gets the symbol for a method with [signature]
+
+    str_t name(signatrue.name);
+    switch (signatrue.type) {
+    case SignatureType::METHOD:
+      signatrue_parameters(name, signatrue.arity, '(', ')');
+      break;
+    case SignatureType::GETTER:
+      // the signature is just the name
+      break;
+    case SignatureType::SETTER:
+      name.push_back('=');
+      signatrue_parameters(name, 1, '(', ')');
+      break;
+    case SignatureType::SUBSCRIPT:
+      signatrue_parameters(name, signatrue.arity, '[', ']');
+      break;
+    case SignatureType::SUBSCRIPT_SETTER:
+      signatrue_parameters(name, signatrue.arity - 1, '[', ']');
+      name.push_back('=');
+      signatrue_parameters(name, 1, '(', ')');
+      break;
+    }
+    return method_symbol(name);
+  }
+
+  void signatrue_from_token(Signature& signatrue) {
+    // initializes [signature] from the last consumed token
+
+    // get the token for the method name
+    const Token& token = parser_.prev();
+    signatrue.set_signature(token.as_string(), SignatureType::GETTER, 0);
+
+    if (signatrue.name.size() > MAX_METHOD_NAME) {
+      error("method names cannot be longer than %d characters", MAX_METHOD_NAME);
+      // signature.name -> MAX_METHOD_NAME
+    }
+  }
+
+  void finish_arguments(Signature& signatrue) {
     // parses a comma-separated list of arguments, modifies [name] to include
     // the arity of the argument list
-    //
-    // returns the number of parsed arguments
 
-    int argc = 0;
     do {
       ignore_newlines();
-      validate_num_parameters(++argc);
+      validate_num_parameters(signatrue.inc_arity());
       expression();
-
-      // add a space in the name for each argument, lets us overload by arity
-      name.push_back(' ');
     } while (match(TokenKind::TK_COMMA));
     // allow a newline before the closing delimiter
     ignore_newlines();
-
-    return argc;
   }
 
-  inline void call_method_instruction(
-      Code instruction, int argc, const str_t& name) {
-    // compiles a method call using [instruction] with [argc] for a method
-    // with [name]
+  inline void call_signature(Code instruction, Signature& signatrue) {
+    // compiles a method call with [signature] using [instruction]
 
-    emit_words(instruction + argc, method_symbol(name));
+    int symbol = signatrue_symbol(signatrue);
+    emit_words(instruction + signatrue.arity, symbol);
   }
 
   inline void call_method(int argc, const str_t& name) {
     // compiles a method call with [argc] for a method with [name]
 
-    call_method_instruction(Code::CALL_0, argc, name);
+    emit_words(Code::CALL_0 + argc, method_symbol(name));
   }
 
   void method_call(Code instruction, const str_t& method_name) {
     // compiles an (optional) argument list and then calls it
 
-    // parse the argument list, if any
-    int argc = 0;
-    str_t name(method_name);
+    Signature signatrue(method_name, SignatureType::GETTER, 0);
 
+    // parse the argument list, if any
     if (match(TokenKind::TK_LPAREN)) {
-      argc = finish_arguments(name);
+      signatrue.set_type(SignatureType::METHOD);
+      finish_arguments(signatrue);
       consume(TokenKind::TK_RPAREN, "expect `)` after arguments");
     }
 
     // parse the block argument, if any
     if (match(TokenKind::TK_LBRACE)) {
-      name.push_back(' ');
-      ++argc;
+      signatrue.set_type(SignatureType::METHOD);
+      signatrue.inc_arity();
 
       Compiler fn_compiler(parser_, this);
       fn_compiler.init_compiler(true);
 
-      str_t dummy_name;
-      fn_compiler.num_params_ = fn_compiler.parameters(
-          dummy_name, TokenKind::TK_PIPE, TokenKind::TK_PIPE);
+      // make a dummy signature to track the arity
+      Signature fn_signatrue;
+      fn_compiler.parameters(fn_signatrue, TokenKind::TK_PIPE, TokenKind::TK_PIPE);
+      fn_compiler.num_params_ = fn_signatrue.arity;
+
       fn_compiler.finish_body(false);
       fn_compiler.finish_compiler("(fn)");
     }
 
-    call_method_instruction(instruction, argc, name);
+    call_signature(instruction, signatrue);
   }
 
   void named_call(bool allow_assignment, Code instruction) {
     // compiles a call whose name is the previously consumed token, this
     // includes getters, method calls with arguments, and setter calls
 
-    // build the method name
-    str_t name(parser_.prev().as_string());
+    // get the token for the method name
+    Signature signatrue;
+    signatrue_from_token(signatrue);
 
     if (match(TokenKind::TK_EQ)) {
       if (!allow_assignment)
         error("invalid assignment");
-
       ignore_newlines();
 
-      name.push_back('=');
+      signatrue.set_type(SignatureType::SETTER);
+      signatrue.set_arity(1);
 
       expression();
-
-      call_method_instruction(instruction, 1, name);
+      call_signature(instruction, signatrue);
     }
     else {
-      method_call(instruction, name);
+      method_call(instruction, signatrue.name);
     }
   }
 
@@ -1865,19 +1952,12 @@ class Compiler : private UnCopyable {
       consume(TokenKind::TK_IDENTIFIER, "expect method name after `super`");
       named_call(allow_assignment, Code::SUPER_0);
     }
-    else {
-      str_t name{};
-      if (enclosing_class_ != nullptr) {
-        name = enclosing_class->method_name;
-      }
-      else {
-        // we get here if super is used outside of a method, in that case,
-        // we have already reported the error, so just stub this out so we
-        // can keep going to try to find later errors
-      }
+    else if (enclosing_class != nullptr) {
+      // no explicit name, so use the name of the enclosing method, make sure
+      // we check that enclosing_class_ is not nullptr first, we've already
+      // reported the error, but we don't want to crash here
 
-      // call the superclass method with the same name
-      method_call(Code::SUPER_0, name);
+      method_call(Code::SUPER_0, enclosing_class->method_name);
     }
   }
 
