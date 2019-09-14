@@ -198,6 +198,34 @@ StringObject* WrenVM::method_not_found(ClassObject* cls, int symbol) {
   return StringObject::make_string(*this, ss.str());
 }
 
+StringObject* WrenVM::validate_superclass(
+    StringObject* name, const Value& supercls_val) {
+  // verifies that [superclass] is a valid object to inherit from, that means
+  // it must be a class and cannot be the class of any built-in type
+  //
+  // if successful return nulltr, otherwise returns a string for the runtime
+  // error message
+
+  if (!supercls_val.is_class())
+    return StringObject::make_string(*this, "must inherit from a class");
+
+  // make sure it does not inherit from a sealed built-in type, primitive
+  // methods on these classes assume the instance is one of the other Obj*
+  // types and will fail horribly if it is actually an InstanceObject
+  ClassObject* superclass = supercls_val.as_class();
+  if (superclass == class_class_ || superclass == fiber_class_ ||
+      superclass == fn_class_ || superclass == list_class_ ||
+      superclass == map_class_ || superclass == range_class_ ||
+      superclass == str_class_) {
+    std::stringstream ss;
+    ss << "`" << name->cstr() << "` cannot inherit from "
+      << "`" << superclass->name_cstr() << "`";
+    return StringObject::make_string(*this, ss.str());
+  }
+
+  return nullptr;
+}
+
 void WrenVM::call_foreign(
     FiberObject* fiber, const WrenForeignFn& foreign, int argc) {
   foreign_call_slot_ = fiber->values_at(fiber->stack_size() - argc);
@@ -658,21 +686,14 @@ bool WrenVM::interpret(void) {
     CASE_CODE(CLASS):
     {
       StringObject* name = PEEK2().as_string();
+      ClassObject* superclass = obj_class_;
 
-      ClassObject* superclass;
-      if (PEEK().is_nil()) {
-        superclass = obj_class_; // implicit Object superclass
-      }
-      else {
+      // use implicit object superclass if none given
+      if (!PEEK().is_nil()) {
+        StringObject* error = validate_superclass(name, PEEK());
+        if (error != nullptr)
+          RUNTIME_ERROR(error);
         superclass = PEEK().as_class();
-        if (superclass == class_class_ || superclass == fiber_class_ ||
-            superclass == fn_class_ || superclass == list_class_ ||
-            superclass == map_class_ || superclass == range_class_ ||
-            superclass == str_class_) {
-          std::stringstream ss;
-          ss << "class `" << name->cstr() << "` may not subclass a built-in";
-          RUNTIME_ERROR(StringObject::make_string(*this, ss.str()));
-        }
       }
 
       int num_fields = RDBYTE();
