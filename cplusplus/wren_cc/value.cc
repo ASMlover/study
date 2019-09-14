@@ -920,6 +920,23 @@ void FiberObject::riter_frames(
   }
 }
 
+void FiberObject::reset_fiber(FunctionObject* fn) {
+  stack_.clear();
+  frames_.clear();
+
+  stack_.reserve(kDefaultCap);
+  open_upvlaues_ = nullptr;
+  caller_ = nullptr;
+  caller_is_trying_ = false;
+
+  const u8_t* ip;
+  if (fn->type() == ObjType::FUNCTION)
+    ip = Xt::down<FunctionObject>(fn)->codes();
+  else
+    ip = Xt::down<ClosureObject>(fn)->fn()->codes();
+  frames_.push_back(CallFrame(ip, fn, 0));
+}
+
 str_t FiberObject::stringify(void) const {
   std::stringstream ss;
   ss << "[fiber " << this << "]";
