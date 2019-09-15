@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cerrno>
 #include <cmath>
 #include <iostream>
 #include <tuple>
@@ -614,11 +615,17 @@ DEF_PRIMITIVE(numeric_fromstring) {
   if (s->size() == 0)
     RETURN_VAL(nullptr);
 
+  errno = 0;
   char* end;
   double number = std::strtod(s->cstr(), &end);
   // skip past any trailing whitespace
   while (*end != '\0' && std::isspace(*end))
     ++end;
+
+  if (errno == ERANGE) {
+    args[0] = StringObject::make_string(vm, "numeric literal is too large");
+    return PrimitiveResult::ERROR;
+  }
 
   // we must have consumed the entrie string, otherwise, it contains non-number
   // characters and we can't parse it
