@@ -51,6 +51,14 @@ DEF_PRIMITIVE(fn##i) {\
 
 static str_t kLibSource =
 "class Sequence {\n"
+"  count {\n"
+"    var result = 0\n"
+"    for (element in this) {\n"
+"      result = result + 1\n"
+"    }\n"
+"    return result\n"
+"  }\n"
+"\n"
 "  map(f) {\n"
 "    var result = new List\n"
 "    for (element in this) {\n"
