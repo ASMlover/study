@@ -789,12 +789,12 @@ bool WrenVM::interpret(void) {
 }
 
 ClassObject* WrenVM::get_class(const Value& val) const {
-#if NAN_TAGGING
   if (val.is_numeric())
     return num_class_;
   if (val.is_object())
     return val.as_object()->cls();
 
+#if NAN_TAGGING
   switch (val.tag()) {
   case Tag::NaN: return num_class_;
   case Tag::NIL: return nil_class_;
