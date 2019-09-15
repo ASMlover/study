@@ -195,6 +195,11 @@ public:
   inline void set_compiler(Compiler* compiler) { compiler_ = compiler; }
   inline void set_load_fn(const LoadModuleFn& fn) { load_module_ = fn; }
   inline void set_load_fn(LoadModuleFn&& fn) { load_module_ = std::move(fn); }
+  inline void set_primitive(
+      ClassObject* cls, const str_t& name, const PrimitiveFn& fn) {
+    set_native(cls, name, fn);
+  }
+
   void set_metaclasses(void);
   int declare_variable(ModuleObject* module, const str_t& name);
   int define_variable(ModuleObject* module, const str_t& name, const Value& value);

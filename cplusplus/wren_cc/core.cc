@@ -33,7 +33,7 @@
 
 namespace wrencc {
 
-#define DEF_NATIVE(fn)\
+#define DEF_PRIMITIVE(fn)\
 static PrimitiveResult _primitive_##fn(WrenVM& vm, FiberObject* fiber, Value* args)
 #define RETURN_VAL(val) do {\
   args[0] = val;\
@@ -43,8 +43,8 @@ static PrimitiveResult _primitive_##fn(WrenVM& vm, FiberObject* fiber, Value* ar
   args[0] = StringObject::make_string(vm, msg);\
   return PrimitiveResult::ERROR;\
 } while (false)
-#define DEF_NATIVE_FN(fn, i)\
-DEF_NATIVE(fn##i) {\
+#define DEF_PRIMITIVE_FN(fn, i)\
+DEF_PRIMITIVE(fn##i) {\
   return call_function(vm, args, i);\
 }
 
@@ -363,43 +363,43 @@ static std::tuple<int, int, int> calculate_range(
   return std::make_tuple(from, (from < to ? 1 : -1), count);
 }
 
-DEF_NATIVE(nil_not) {
+DEF_PRIMITIVE(nil_not) {
   RETURN_VAL(true);
 }
 
-DEF_NATIVE(nil_tostring) {
+DEF_PRIMITIVE(nil_tostring) {
   RETURN_VAL(StringObject::make_string(vm, "nil"));
 }
 
-DEF_NATIVE(bool_tostring) {
+DEF_PRIMITIVE(bool_tostring) {
   if (args[0].as_boolean())
     RETURN_VAL(StringObject::make_string(vm, "true"));
   else
     RETURN_VAL(StringObject::make_string(vm, "false"));
 }
 
-DEF_NATIVE(bool_not) {
+DEF_PRIMITIVE(bool_not) {
   RETURN_VAL(!args[0].as_boolean());
 }
 
-DEF_NATIVE(class_instantiate) {
+DEF_PRIMITIVE(class_instantiate) {
   ClassObject* cls = args[0].as_class();
   RETURN_VAL(InstanceObject::make_instance(vm, cls));
 }
 
-DEF_NATIVE(class_name) {
+DEF_PRIMITIVE(class_name) {
   ClassObject* cls = args[0].as_class();
   RETURN_VAL(cls->name());
 }
 
-DEF_NATIVE(fiber_instantiate) {
+DEF_PRIMITIVE(fiber_instantiate) {
   // return the Fiber class itself, when we then call `new` on it, it will
   // create the fiber
 
   RETURN_VAL(args[0]);
 }
 
-DEF_NATIVE(fiber_new) {
+DEF_PRIMITIVE(fiber_new) {
   if (!validate_function(vm, args, 1, "Argument"))
     return PrimitiveResult::ERROR;
 
@@ -413,7 +413,7 @@ DEF_NATIVE(fiber_new) {
   RETURN_VAL(new_fiber);
 }
 
-DEF_NATIVE(fiber_abort) {
+DEF_PRIMITIVE(fiber_abort) {
   if (!validate_string(vm, args, 1, "Error message"))
     return PrimitiveResult::ERROR;
 
@@ -422,7 +422,7 @@ DEF_NATIVE(fiber_abort) {
   return PrimitiveResult::ERROR;
 }
 
-DEF_NATIVE(fiber_call) {
+DEF_PRIMITIVE(fiber_call) {
   FiberObject* run_fiber = args[0].as_fiber();
 
   if (run_fiber->empty_frame())
@@ -439,7 +439,7 @@ DEF_NATIVE(fiber_call) {
   return PrimitiveResult::RUN_FIBER;
 }
 
-DEF_NATIVE(fiber_call1) {
+DEF_PRIMITIVE(fiber_call1) {
   FiberObject* run_fiber = args[0].as_fiber();
 
   if (run_fiber->empty_frame())
@@ -463,19 +463,19 @@ DEF_NATIVE(fiber_call1) {
   return PrimitiveResult::RUN_FIBER;
 }
 
-DEF_NATIVE(fiber_error) {
+DEF_PRIMITIVE(fiber_error) {
   FiberObject* run_fiber = args[0].as_fiber();
   if (run_fiber->error() == nullptr)
     RETURN_VAL(nullptr);
   RETURN_VAL(run_fiber->error());
 }
 
-DEF_NATIVE(fiber_isdone) {
+DEF_PRIMITIVE(fiber_isdone) {
   FiberObject* run_fiber = args[0].as_fiber();
   RETURN_VAL(run_fiber->empty_frame() || run_fiber->error() != nullptr);
 }
 
-DEF_NATIVE(fiber_run) {
+DEF_PRIMITIVE(fiber_run) {
   FiberObject* run_fiber = args[0].as_fiber();
 
   if (run_fiber->empty_frame())
@@ -494,7 +494,7 @@ DEF_NATIVE(fiber_run) {
   return PrimitiveResult::RUN_FIBER;
 }
 
-DEF_NATIVE(fiber_run1) {
+DEF_PRIMITIVE(fiber_run1) {
   FiberObject* run_fiber = args[0].as_fiber();
 
   if (run_fiber->empty_frame())
@@ -513,7 +513,7 @@ DEF_NATIVE(fiber_run1) {
   return PrimitiveResult::RUN_FIBER;
 }
 
-DEF_NATIVE(fiber_try) {
+DEF_PRIMITIVE(fiber_try) {
   FiberObject* run_fiber = args[0].as_fiber();
 
   if (run_fiber->empty_frame())
@@ -532,7 +532,7 @@ DEF_NATIVE(fiber_try) {
   return PrimitiveResult::RUN_FIBER;
 }
 
-DEF_NATIVE(fiber_yield) {
+DEF_PRIMITIVE(fiber_yield) {
   if (fiber->caller() == nullptr)
     RETURN_ERR("no fiber to yield to");
 
@@ -548,7 +548,7 @@ DEF_NATIVE(fiber_yield) {
   return PrimitiveResult::RUN_FIBER;
 }
 
-DEF_NATIVE(fiber_yield1) {
+DEF_PRIMITIVE(fiber_yield1) {
   if (fiber->caller() == nullptr)
     RETURN_ERR("no fiber to yield to");
 
@@ -570,35 +570,35 @@ DEF_NATIVE(fiber_yield1) {
   return PrimitiveResult::RUN_FIBER;
 }
 
-DEF_NATIVE(numeric_abs) {
+DEF_PRIMITIVE(numeric_abs) {
   RETURN_VAL(std::abs(args[0].as_numeric()));
 }
 
-DEF_NATIVE(numeric_ceil) {
+DEF_PRIMITIVE(numeric_ceil) {
   RETURN_VAL(std::ceil(args[0].as_numeric()));
 }
 
-DEF_NATIVE(numeric_cos) {
+DEF_PRIMITIVE(numeric_cos) {
   RETURN_VAL(std::cos(args[0].as_numeric()));
 }
 
-DEF_NATIVE(numeric_floor) {
+DEF_PRIMITIVE(numeric_floor) {
   RETURN_VAL(std::floor(args[0].as_numeric()));
 }
 
-DEF_NATIVE(numeric_isnan) {
+DEF_PRIMITIVE(numeric_isnan) {
   RETURN_VAL(std::isnan(args[0].as_numeric()));
 }
 
-DEF_NATIVE(numeric_sin) {
+DEF_PRIMITIVE(numeric_sin) {
   RETURN_VAL(std::sin(args[0].as_numeric()));
 }
 
-DEF_NATIVE(numeric_sqrt) {
+DEF_PRIMITIVE(numeric_sqrt) {
   RETURN_VAL(std::sqrt(args[0].as_numeric()));
 }
 
-DEF_NATIVE(numeric_tostring) {
+DEF_PRIMITIVE(numeric_tostring) {
   double v = args[0].as_numeric();
   if (v != v)
     RETURN_VAL(StringObject::make_string(vm, "nan"));
@@ -606,7 +606,7 @@ DEF_NATIVE(numeric_tostring) {
   RETURN_VAL(StringObject::make_string(vm, args[0].stringify()));
 }
 
-DEF_NATIVE(numeric_fromstring) {
+DEF_PRIMITIVE(numeric_fromstring) {
   if (!validate_string(vm, args, 1, "Argument"))
     return PrimitiveResult::ERROR;
 
@@ -628,94 +628,94 @@ DEF_NATIVE(numeric_fromstring) {
   RETURN_VAL(number);
 }
 
-DEF_NATIVE(numeric_neg) {
+DEF_PRIMITIVE(numeric_neg) {
   RETURN_VAL(-args[0].as_numeric());
 }
 
-DEF_NATIVE(numeric_add) {
+DEF_PRIMITIVE(numeric_add) {
   if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(args[0].as_numeric() + args[1].as_numeric());
 }
 
-DEF_NATIVE(numeric_sub) {
+DEF_PRIMITIVE(numeric_sub) {
   if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(args[0].as_numeric() - args[1].as_numeric());
 }
 
-DEF_NATIVE(numeric_mul) {
+DEF_PRIMITIVE(numeric_mul) {
   if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(args[0].as_numeric() * args[1].as_numeric());
 }
 
-DEF_NATIVE(numeric_div) {
+DEF_PRIMITIVE(numeric_div) {
   if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(args[0].as_numeric() / args[1].as_numeric());
 }
 
-DEF_NATIVE(numeric_mod) {
+DEF_PRIMITIVE(numeric_mod) {
   if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(std::fmod(args[0].as_numeric(), args[1].as_numeric()));
 }
 
-DEF_NATIVE(numeric_gt) {
+DEF_PRIMITIVE(numeric_gt) {
   if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(args[0].as_numeric() > args[1].as_numeric());
 }
 
-DEF_NATIVE(numeric_ge) {
+DEF_PRIMITIVE(numeric_ge) {
   if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(args[0].as_numeric() >= args[1].as_numeric());
 }
 
-DEF_NATIVE(numeric_lt) {
+DEF_PRIMITIVE(numeric_lt) {
   if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(args[0].as_numeric() < args[1].as_numeric());
 }
 
-DEF_NATIVE(numeric_le) {
+DEF_PRIMITIVE(numeric_le) {
   if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(args[0].as_numeric() <= args[1].as_numeric());
 }
 
-DEF_NATIVE(numeric_eq) {
+DEF_PRIMITIVE(numeric_eq) {
   if (!args[1].is_numeric())
     RETURN_VAL(false);
 
   RETURN_VAL(args[0].as_numeric() == args[1].as_numeric());
 }
 
-DEF_NATIVE(numeric_ne) {
+DEF_PRIMITIVE(numeric_ne) {
   if (!args[1].is_numeric())
     RETURN_VAL(true);
 
   RETURN_VAL(args[0].as_numeric() != args[1].as_numeric());
 }
 
-DEF_NATIVE(numeric_bitnot) {
+DEF_PRIMITIVE(numeric_bitnot) {
   // bitwise operators always work on 32-bit unsigned int
   u32_t val = Xt::as_type<u32_t>(args[0].as_numeric());
   RETURN_VAL(~val);
 }
 
-DEF_NATIVE(numeric_bitand) {
+DEF_PRIMITIVE(numeric_bitand) {
   if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
@@ -725,7 +725,7 @@ DEF_NATIVE(numeric_bitand) {
   RETURN_VAL(lhs & rhs);
 }
 
-DEF_NATIVE(numeric_bitor) {
+DEF_PRIMITIVE(numeric_bitor) {
   if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
@@ -735,7 +735,7 @@ DEF_NATIVE(numeric_bitor) {
   RETURN_VAL(lhs | rhs);
 }
 
-DEF_NATIVE(numeric_bitxor) {
+DEF_PRIMITIVE(numeric_bitxor) {
   if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
@@ -745,7 +745,7 @@ DEF_NATIVE(numeric_bitxor) {
   RETURN_VAL(lhs ^ rhs);
 }
 
-DEF_NATIVE(numeric_bitlshift) {
+DEF_PRIMITIVE(numeric_bitlshift) {
   if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
@@ -755,7 +755,7 @@ DEF_NATIVE(numeric_bitlshift) {
   RETURN_VAL(lhs << rhs);
 }
 
-DEF_NATIVE(numeric_bitrshift) {
+DEF_PRIMITIVE(numeric_bitrshift) {
   if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
@@ -765,7 +765,7 @@ DEF_NATIVE(numeric_bitrshift) {
   RETURN_VAL(lhs >> rhs);
 }
 
-DEF_NATIVE(numeric_dotdot) {
+DEF_PRIMITIVE(numeric_dotdot) {
   if (!validate_numeric(vm, args, 1, "Right hand side of range"))
     return PrimitiveResult::ERROR;
 
@@ -774,7 +774,7 @@ DEF_NATIVE(numeric_dotdot) {
   RETURN_VAL(RangeObject::make_range(vm, from, to, true));
 }
 
-DEF_NATIVE(numeric_dotdotdot) {
+DEF_PRIMITIVE(numeric_dotdotdot) {
   if (!validate_numeric(vm, args, 1, "Right hand side of range"))
     return PrimitiveResult::ERROR;
 
@@ -783,25 +783,25 @@ DEF_NATIVE(numeric_dotdotdot) {
   RETURN_VAL(RangeObject::make_range(vm, from, to, false));
 }
 
-DEF_NATIVE(object_not) {
+DEF_PRIMITIVE(object_not) {
   RETURN_VAL(false);
 }
 
-DEF_NATIVE(object_eq) {
+DEF_PRIMITIVE(object_eq) {
   RETURN_VAL(args[0] == args[1]);
 }
 
-DEF_NATIVE(object_ne) {
+DEF_PRIMITIVE(object_ne) {
   RETURN_VAL(args[0] != args[1]);
 }
 
-DEF_NATIVE(object_new) {
+DEF_PRIMITIVE(object_new) {
   // this is the default argument-less constructor that all objects
   // inherit. it just returns `this`
   RETURN_VAL(args[0]);
 }
 
-DEF_NATIVE(object_tostring) {
+DEF_PRIMITIVE(object_tostring) {
   if (args[0].is_class()) {
     RETURN_VAL(args[0].as_class()->name());
   }
@@ -813,19 +813,19 @@ DEF_NATIVE(object_tostring) {
   RETURN_VAL(StringObject::make_string(vm, "<object>"));
 }
 
-DEF_NATIVE(object_type) {
+DEF_PRIMITIVE(object_type) {
   RETURN_VAL(vm.get_class(args[0]));
 }
 
-DEF_NATIVE(object_instantiate) {
+DEF_PRIMITIVE(object_instantiate) {
   RETURN_ERR("must provide a class to `new` to construct");
 }
 
-DEF_NATIVE(string_len) {
+DEF_PRIMITIVE(string_len) {
   RETURN_VAL(args[0].as_string()->size());
 }
 
-DEF_NATIVE(string_endswith) {
+DEF_PRIMITIVE(string_endswith) {
   if (!validate_string(vm, args, 1, "Argument"))
     return PrimitiveResult::ERROR;
 
@@ -842,7 +842,7 @@ DEF_NATIVE(string_endswith) {
   RETURN_VAL(r == 0);
 }
 
-DEF_NATIVE(string_indexof) {
+DEF_PRIMITIVE(string_indexof) {
   if (!validate_string(vm, args, 1, "Argument"))
     return PrimitiveResult::ERROR;
 
@@ -852,7 +852,7 @@ DEF_NATIVE(string_indexof) {
   RETURN_VAL(string->find(search));
 }
 
-DEF_NATIVE(string_iterate) {
+DEF_PRIMITIVE(string_iterate) {
   StringObject* s = args[0].as_string();
 
   // if we are starting the interation, return the first index
@@ -876,7 +876,7 @@ DEF_NATIVE(string_iterate) {
   RETURN_VAL(index);
 }
 
-DEF_NATIVE(string_itervalue) {
+DEF_PRIMITIVE(string_itervalue) {
   StringObject* s = args[0].as_string();
   int index = validate_index(vm, args, 1, s->size(), "Iterator");
   if (index == -1)
@@ -885,7 +885,7 @@ DEF_NATIVE(string_itervalue) {
   RETURN_VAL(StringObject::make_string(vm, (*s)[index]));
 }
 
-DEF_NATIVE(string_startswith) {
+DEF_PRIMITIVE(string_startswith) {
   if (!validate_string(vm, args, 1, "Argument"))
     return PrimitiveResult::ERROR;
 
@@ -899,7 +899,7 @@ DEF_NATIVE(string_startswith) {
   RETURN_VAL(memcmp(string->cstr(), search->cstr(), search->size()) == 0);
 }
 
-DEF_NATIVE(string_contains) {
+DEF_PRIMITIVE(string_contains) {
   if (!validate_string(vm, args, 1, "Argument"))
     return PrimitiveResult::ERROR;
 
@@ -908,11 +908,11 @@ DEF_NATIVE(string_contains) {
   RETURN_VAL(orig->find(subs) != -1);
 }
 
-DEF_NATIVE(string_tostring) {
+DEF_PRIMITIVE(string_tostring) {
   RETURN_VAL(args[0]);
 }
 
-DEF_NATIVE(string_add) {
+DEF_PRIMITIVE(string_add) {
   if (!validate_string(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
@@ -921,7 +921,7 @@ DEF_NATIVE(string_add) {
   RETURN_VAL(StringObject::make_string(vm, lhs, rhs));
 }
 
-DEF_NATIVE(string_subscript) {
+DEF_PRIMITIVE(string_subscript) {
   StringObject* s = args[0].as_string();
 
   if (args[1].is_numeric()) {
@@ -959,14 +959,14 @@ static PrimitiveResult call_function(WrenVM& vm, Value* args, int argc) {
   return PrimitiveResult::CALL;
 }
 
-DEF_NATIVE(fn_instantiate) {
+DEF_PRIMITIVE(fn_instantiate) {
   // return the Function class itself, when we then call `new` on it,
   // it will return the block
 
   RETURN_VAL(args[0]);
 }
 
-DEF_NATIVE(fn_new) {
+DEF_PRIMITIVE(fn_new) {
   if (!validate_function(vm, args, 1, "Argument"))
     return PrimitiveResult::ERROR;
 
@@ -974,53 +974,53 @@ DEF_NATIVE(fn_new) {
   RETURN_VAL(args[1]);
 }
 
-DEF_NATIVE(fn_arity) {
+DEF_PRIMITIVE(fn_arity) {
   RETURN_VAL(args[0].as_function()->arity());
 }
 
-DEF_NATIVE_FN(fn_call, 0)
-DEF_NATIVE_FN(fn_call, 1)
-DEF_NATIVE_FN(fn_call, 2)
-DEF_NATIVE_FN(fn_call, 3)
-DEF_NATIVE_FN(fn_call, 4)
-DEF_NATIVE_FN(fn_call, 5)
-DEF_NATIVE_FN(fn_call, 6)
-DEF_NATIVE_FN(fn_call, 7)
-DEF_NATIVE_FN(fn_call, 8)
-DEF_NATIVE_FN(fn_call, 9)
-DEF_NATIVE_FN(fn_call, 10)
-DEF_NATIVE_FN(fn_call, 11)
-DEF_NATIVE_FN(fn_call, 12)
-DEF_NATIVE_FN(fn_call, 13)
-DEF_NATIVE_FN(fn_call, 14)
-DEF_NATIVE_FN(fn_call, 15)
-DEF_NATIVE_FN(fn_call, 16)
+DEF_PRIMITIVE_FN(fn_call, 0)
+DEF_PRIMITIVE_FN(fn_call, 1)
+DEF_PRIMITIVE_FN(fn_call, 2)
+DEF_PRIMITIVE_FN(fn_call, 3)
+DEF_PRIMITIVE_FN(fn_call, 4)
+DEF_PRIMITIVE_FN(fn_call, 5)
+DEF_PRIMITIVE_FN(fn_call, 6)
+DEF_PRIMITIVE_FN(fn_call, 7)
+DEF_PRIMITIVE_FN(fn_call, 8)
+DEF_PRIMITIVE_FN(fn_call, 9)
+DEF_PRIMITIVE_FN(fn_call, 10)
+DEF_PRIMITIVE_FN(fn_call, 11)
+DEF_PRIMITIVE_FN(fn_call, 12)
+DEF_PRIMITIVE_FN(fn_call, 13)
+DEF_PRIMITIVE_FN(fn_call, 14)
+DEF_PRIMITIVE_FN(fn_call, 15)
+DEF_PRIMITIVE_FN(fn_call, 16)
 
-DEF_NATIVE(fn_tostring) {
+DEF_PRIMITIVE(fn_tostring) {
   RETURN_VAL(StringObject::make_string(vm, "<fn>"));
 }
 
-DEF_NATIVE(list_instantiate) {
+DEF_PRIMITIVE(list_instantiate) {
   RETURN_VAL(ListObject::make_list(vm, 0));
 }
 
-DEF_NATIVE(list_add) {
+DEF_PRIMITIVE(list_add) {
   ListObject* list = args[0].as_list();
   list->add_element(args[1]);
   RETURN_VAL(args[1]);
 }
 
-DEF_NATIVE(list_clear) {
+DEF_PRIMITIVE(list_clear) {
   ListObject* list = args[0].as_list();
   list->clear();
   RETURN_VAL(nullptr);
 }
 
-DEF_NATIVE(list_len) {
+DEF_PRIMITIVE(list_len) {
   RETURN_VAL(args[0].as_list()->count());
 }
 
-DEF_NATIVE(list_insert) {
+DEF_PRIMITIVE(list_insert) {
   ListObject* list = args[0].as_list();
   int index = validate_index(vm, args, 1, list->count() + 1, "Index");
   if (index == -1)
@@ -1030,7 +1030,7 @@ DEF_NATIVE(list_insert) {
   RETURN_VAL(args[2]);
 }
 
-DEF_NATIVE(list_remove) {
+DEF_PRIMITIVE(list_remove) {
   ListObject* list = args[0].as_list();
   int index = validate_index(vm, args, 1, list->count(), "Index");
   if (index == -1)
@@ -1039,7 +1039,7 @@ DEF_NATIVE(list_remove) {
   RETURN_VAL(list->remove(index));
 }
 
-DEF_NATIVE(list_iterate) {
+DEF_PRIMITIVE(list_iterate) {
   ListObject* list = args[0].as_list();
 
   // if we are starting the interation, return the first index
@@ -1061,7 +1061,7 @@ DEF_NATIVE(list_iterate) {
   RETURN_VAL(index + 1);
 }
 
-DEF_NATIVE(list_itervalue) {
+DEF_PRIMITIVE(list_itervalue) {
   ListObject* list = args[0].as_list();
   int index = validate_index(vm, args, 1, list->count(), "Iterator");
   if (index == -1)
@@ -1070,7 +1070,7 @@ DEF_NATIVE(list_itervalue) {
   RETURN_VAL(list->get_element(index));
 }
 
-DEF_NATIVE(list_subscript) {
+DEF_PRIMITIVE(list_subscript) {
   ListObject* list = args[0].as_list();
 
   if (args[1].is_numeric()) {
@@ -1095,7 +1095,7 @@ DEF_NATIVE(list_subscript) {
   RETURN_VAL(result);
 }
 
-DEF_NATIVE(list_subscript_setter) {
+DEF_PRIMITIVE(list_subscript_setter) {
   ListObject* list = args[0].as_list();
   int index = validate_index(vm, args, 1, list->count(), "Index");
   if (index == -1)
@@ -1105,32 +1105,32 @@ DEF_NATIVE(list_subscript_setter) {
   RETURN_VAL(args[2]);
 }
 
-DEF_NATIVE(range_from) {
+DEF_PRIMITIVE(range_from) {
   RangeObject* range = args[0].as_range();
   RETURN_VAL(range->from());
 }
 
-DEF_NATIVE(range_to) {
+DEF_PRIMITIVE(range_to) {
   RangeObject* range = args[0].as_range();
   RETURN_VAL(range->to());
 }
 
-DEF_NATIVE(range_min) {
+DEF_PRIMITIVE(range_min) {
   RangeObject* range = args[0].as_range();
   RETURN_VAL(std::fmin(range->from(), range->to()));
 }
 
-DEF_NATIVE(range_max) {
+DEF_PRIMITIVE(range_max) {
   RangeObject* range = args[0].as_range();
   RETURN_VAL(std::fmax(range->from(), range->to()));
 }
 
-DEF_NATIVE(range_isinclusive) {
+DEF_PRIMITIVE(range_isinclusive) {
   RangeObject* range = args[0].as_range();
   RETURN_VAL(range->is_inclusive());
 }
 
-DEF_NATIVE(range_iterate) {
+DEF_PRIMITIVE(range_iterate) {
   RangeObject* range = args[0].as_range();
 
   if (range->from() == range->to() && !range->is_inclusive())
@@ -1158,11 +1158,11 @@ DEF_NATIVE(range_iterate) {
   RETURN_VAL(iterator);
 }
 
-DEF_NATIVE(range_itervalue) {
+DEF_PRIMITIVE(range_itervalue) {
   RETURN_VAL(args[1]);
 }
 
-DEF_NATIVE(range_tostring) {
+DEF_PRIMITIVE(range_tostring) {
   RangeObject* range = args[0].as_range();
 
   std::stringstream ss;
@@ -1170,11 +1170,11 @@ DEF_NATIVE(range_tostring) {
   RETURN_VAL(StringObject::make_string(vm, ss.str()));
 }
 
-DEF_NATIVE(map_instantiate) {
+DEF_PRIMITIVE(map_instantiate) {
   RETURN_VAL(MapObject::make_map(vm));
 }
 
-DEF_NATIVE(map_subscript) {
+DEF_PRIMITIVE(map_subscript) {
   if (!validate_key(vm, args, 1))
     return PrimitiveResult::ERROR;
 
@@ -1183,7 +1183,7 @@ DEF_NATIVE(map_subscript) {
   RETURN_VAL(nullptr);
 }
 
-DEF_NATIVE(map_subscript_setter) {
+DEF_PRIMITIVE(map_subscript_setter) {
   if (!validate_key(vm, args, 1))
     return PrimitiveResult::ERROR;
 
@@ -1191,30 +1191,30 @@ DEF_NATIVE(map_subscript_setter) {
   RETURN_VAL(args[2]);
 }
 
-DEF_NATIVE(map_clear) {
+DEF_PRIMITIVE(map_clear) {
   args[0].as_map()->clear();
   RETURN_VAL(nullptr);
 }
 
-DEF_NATIVE(map_contains) {
+DEF_PRIMITIVE(map_contains) {
   if (!validate_key(vm, args, 1))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(args[0].as_map()->find(args[1]) != -1);
 }
 
-DEF_NATIVE(map_len) {
+DEF_PRIMITIVE(map_len) {
   RETURN_VAL(args[0].as_map()->count());
 }
 
-DEF_NATIVE(map_remove) {
+DEF_PRIMITIVE(map_remove) {
   if (!validate_key(vm, args, 1))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(args[0].as_map()->remove(args[1]));
 }
 
-DEF_NATIVE(map_iterate) {
+DEF_PRIMITIVE(map_iterate) {
   MapObject* map = args[0].as_map();
 
   if (map->count() == 0)
@@ -1249,7 +1249,7 @@ DEF_NATIVE(map_iterate) {
   RETURN_VAL(false);
 }
 
-DEF_NATIVE(map_iterkey) {
+DEF_PRIMITIVE(map_iterkey) {
   MapObject* map = args[0].as_map();
   int index = validate_index(vm, args, 1, map->capacity(), "Iterator");
   if (index == -1)
@@ -1261,7 +1261,7 @@ DEF_NATIVE(map_iterkey) {
   RETURN_VAL(entry.first);
 }
 
-DEF_NATIVE(map_itervalue) {
+DEF_PRIMITIVE(map_itervalue) {
   MapObject* map = args[0].as_map();
   int index = validate_index(vm, args, 1, map->capacity(), "Iterator");
   if (index == -1)
@@ -1296,13 +1296,13 @@ namespace core {
     // define the root object class, this has to be done a little specially
     // because it has no superclass and an unusual metaclass (Class)
     vm.set_obj_cls(define_single_class(vm, "Object"));
-    vm.set_native(vm.obj_cls(), "!", _primitive_object_not);
-    vm.set_native(vm.obj_cls(), "==(_)", _primitive_object_eq);
-    vm.set_native(vm.obj_cls(), "!=(_)", _primitive_object_ne);
-    vm.set_native(vm.obj_cls(), "new", _primitive_object_new);
-    vm.set_native(vm.obj_cls(), "toString", _primitive_object_tostring);
-    vm.set_native(vm.obj_cls(), "type", _primitive_object_type);
-    vm.set_native(vm.obj_cls(), "<instantiate>", _primitive_object_instantiate);
+    vm.set_primitive(vm.obj_cls(), "!", _primitive_object_not);
+    vm.set_primitive(vm.obj_cls(), "==(_)", _primitive_object_eq);
+    vm.set_primitive(vm.obj_cls(), "!=(_)", _primitive_object_ne);
+    vm.set_primitive(vm.obj_cls(), "new", _primitive_object_new);
+    vm.set_primitive(vm.obj_cls(), "toString", _primitive_object_tostring);
+    vm.set_primitive(vm.obj_cls(), "type", _primitive_object_type);
+    vm.set_primitive(vm.obj_cls(), "<instantiate>", _primitive_object_instantiate);
 
     // now we can define Class, which is a subclass of Object, but Object's
     // metclass
@@ -1315,84 +1315,84 @@ namespace core {
 
     // define the methods specific to Class after wiring up its superclass
     // to prevent the inherited ones from overwriting them
-    vm.set_native(vm.class_cls(), "<instantiate>", _primitive_class_instantiate);
-    vm.set_native(vm.class_cls(), "name", _primitive_class_name);
+    vm.set_primitive(vm.class_cls(), "<instantiate>", _primitive_class_instantiate);
+    vm.set_primitive(vm.class_cls(), "name", _primitive_class_name);
 
     vm.set_bool_cls(define_class(vm, "Bool"));
-    vm.set_native(vm.bool_cls(), "toString", _primitive_bool_tostring);
-    vm.set_native(vm.bool_cls(), "!", _primitive_bool_not);
+    vm.set_primitive(vm.bool_cls(), "toString", _primitive_bool_tostring);
+    vm.set_primitive(vm.bool_cls(), "!", _primitive_bool_not);
 
     vm.set_fiber_cls(define_class(vm, "Fiber"));
-    vm.set_native(vm.fiber_cls()->cls(), "<instantiate>", _primitive_fiber_instantiate);
-    vm.set_native(vm.fiber_cls()->cls(), "new(_)", _primitive_fiber_new);
-    vm.set_native(vm.fiber_cls()->cls(), "abort(_)", _primitive_fiber_abort);
-    vm.set_native(vm.fiber_cls()->cls(), "yield()", _primitive_fiber_yield);
-    vm.set_native(vm.fiber_cls()->cls(), "yield(_)", _primitive_fiber_yield1);
-    vm.set_native(vm.fiber_cls(), "call()", _primitive_fiber_call);
-    vm.set_native(vm.fiber_cls(), "call(_)", _primitive_fiber_call1);
-    vm.set_native(vm.fiber_cls(), "error", _primitive_fiber_error);
-    vm.set_native(vm.fiber_cls(), "isDone", _primitive_fiber_isdone);
-    vm.set_native(vm.fiber_cls(), "run()", _primitive_fiber_run);
-    vm.set_native(vm.fiber_cls(), "run(_)", _primitive_fiber_run1);
-    vm.set_native(vm.fiber_cls(), "try()", _primitive_fiber_try);
+    vm.set_primitive(vm.fiber_cls()->cls(), "<instantiate>", _primitive_fiber_instantiate);
+    vm.set_primitive(vm.fiber_cls()->cls(), "new(_)", _primitive_fiber_new);
+    vm.set_primitive(vm.fiber_cls()->cls(), "abort(_)", _primitive_fiber_abort);
+    vm.set_primitive(vm.fiber_cls()->cls(), "yield()", _primitive_fiber_yield);
+    vm.set_primitive(vm.fiber_cls()->cls(), "yield(_)", _primitive_fiber_yield1);
+    vm.set_primitive(vm.fiber_cls(), "call()", _primitive_fiber_call);
+    vm.set_primitive(vm.fiber_cls(), "call(_)", _primitive_fiber_call1);
+    vm.set_primitive(vm.fiber_cls(), "error", _primitive_fiber_error);
+    vm.set_primitive(vm.fiber_cls(), "isDone", _primitive_fiber_isdone);
+    vm.set_primitive(vm.fiber_cls(), "run()", _primitive_fiber_run);
+    vm.set_primitive(vm.fiber_cls(), "run(_)", _primitive_fiber_run1);
+    vm.set_primitive(vm.fiber_cls(), "try()", _primitive_fiber_try);
 
     vm.set_fn_cls(define_class(vm, "Function"));
-    vm.set_native(vm.fn_cls()->cls(), "<instantiate>", _primitive_fn_instantiate);
-    vm.set_native(vm.fn_cls()->cls(), "new(_)", _primitive_fn_new);
-    vm.set_native(vm.fn_cls(), "arity", _primitive_fn_arity);
-    vm.set_native(vm.fn_cls(), "call()", _primitive_fn_call0);
-    vm.set_native(vm.fn_cls(), "call(_)", _primitive_fn_call1);
-    vm.set_native(vm.fn_cls(), "call(_,_)", _primitive_fn_call2);
-    vm.set_native(vm.fn_cls(), "call(_,_,_)", _primitive_fn_call3);
-    vm.set_native(vm.fn_cls(), "call(_,_,_,_)", _primitive_fn_call4);
-    vm.set_native(vm.fn_cls(), "call(_,_,_,_,_)", _primitive_fn_call5);
-    vm.set_native(vm.fn_cls(), "call(_,_,_,_,_,_)", _primitive_fn_call6);
-    vm.set_native(vm.fn_cls(), "call(_,_,_,_,_,_,_)", _primitive_fn_call7);
-    vm.set_native(vm.fn_cls(), "call(_,_,_,_,_,_,_,_)", _primitive_fn_call8);
-    vm.set_native(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_)", _primitive_fn_call9);
-    vm.set_native(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call10);
-    vm.set_native(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call11);
-    vm.set_native(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call12);
-    vm.set_native(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call13);
-    vm.set_native(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call14);
-    vm.set_native(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call15);
-    vm.set_native(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call16);
-    vm.set_native(vm.fn_cls(), "toString", _primitive_fn_tostring);
+    vm.set_primitive(vm.fn_cls()->cls(), "<instantiate>", _primitive_fn_instantiate);
+    vm.set_primitive(vm.fn_cls()->cls(), "new(_)", _primitive_fn_new);
+    vm.set_primitive(vm.fn_cls(), "arity", _primitive_fn_arity);
+    vm.set_primitive(vm.fn_cls(), "call()", _primitive_fn_call0);
+    vm.set_primitive(vm.fn_cls(), "call(_)", _primitive_fn_call1);
+    vm.set_primitive(vm.fn_cls(), "call(_,_)", _primitive_fn_call2);
+    vm.set_primitive(vm.fn_cls(), "call(_,_,_)", _primitive_fn_call3);
+    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_)", _primitive_fn_call4);
+    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_)", _primitive_fn_call5);
+    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_)", _primitive_fn_call6);
+    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_)", _primitive_fn_call7);
+    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_)", _primitive_fn_call8);
+    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_)", _primitive_fn_call9);
+    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call10);
+    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call11);
+    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call12);
+    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call13);
+    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call14);
+    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call15);
+    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call16);
+    vm.set_primitive(vm.fn_cls(), "toString", _primitive_fn_tostring);
 
     vm.set_nil_cls(define_class(vm, "Nil"));
-    vm.set_native(vm.nil_cls(), "!", _primitive_nil_not);
-    vm.set_native(vm.nil_cls(), "toString", _primitive_nil_tostring);
+    vm.set_primitive(vm.nil_cls(), "!", _primitive_nil_not);
+    vm.set_primitive(vm.nil_cls(), "toString", _primitive_nil_tostring);
 
     vm.set_num_cls(define_class(vm, "Numeric"));
-    vm.set_native(vm.num_cls()->cls(), "fromString(_)", _primitive_numeric_fromstring);
-    vm.set_native(vm.num_cls(), "-", _primitive_numeric_neg);
-    vm.set_native(vm.num_cls(), "+(_)", _primitive_numeric_add);
-    vm.set_native(vm.num_cls(), "-(_)", _primitive_numeric_sub);
-    vm.set_native(vm.num_cls(), "*(_)", _primitive_numeric_mul);
-    vm.set_native(vm.num_cls(), "/(_)", _primitive_numeric_div);
-    vm.set_native(vm.num_cls(), "%(_)", _primitive_numeric_mod);
-    vm.set_native(vm.num_cls(), ">(_)", _primitive_numeric_gt);
-    vm.set_native(vm.num_cls(), ">=(_)", _primitive_numeric_ge);
-    vm.set_native(vm.num_cls(), "<(_)", _primitive_numeric_lt);
-    vm.set_native(vm.num_cls(), "<=(_)", _primitive_numeric_le);
-    vm.set_native(vm.num_cls(), "==(_)", _primitive_numeric_eq);
-    vm.set_native(vm.num_cls(), "!=(_)", _primitive_numeric_ne);
-    vm.set_native(vm.num_cls(), "~", _primitive_numeric_bitnot);
-    vm.set_native(vm.num_cls(), "&(_)", _primitive_numeric_bitand);
-    vm.set_native(vm.num_cls(), "|(_)", _primitive_numeric_bitor);
-    vm.set_native(vm.num_cls(), "^(_)", _primitive_numeric_bitxor);
-    vm.set_native(vm.num_cls(), "<<(_)", _primitive_numeric_bitlshift);
-    vm.set_native(vm.num_cls(), ">>(_)", _primitive_numeric_bitrshift);
-    vm.set_native(vm.num_cls(), "..(_)", _primitive_numeric_dotdot);
-    vm.set_native(vm.num_cls(), "...(_)", _primitive_numeric_dotdotdot);
-    vm.set_native(vm.num_cls(), "abs", _primitive_numeric_abs);
-    vm.set_native(vm.num_cls(), "ceil", _primitive_numeric_ceil);
-    vm.set_native(vm.num_cls(), "cos", _primitive_numeric_cos);
-    vm.set_native(vm.num_cls(), "floor", _primitive_numeric_floor);
-    vm.set_native(vm.num_cls(), "isNan", _primitive_numeric_isnan);
-    vm.set_native(vm.num_cls(), "sin", _primitive_numeric_sin);
-    vm.set_native(vm.num_cls(), "sqrt", _primitive_numeric_sqrt);
-    vm.set_native(vm.num_cls(), "toString", _primitive_numeric_tostring);
+    vm.set_primitive(vm.num_cls()->cls(), "fromString(_)", _primitive_numeric_fromstring);
+    vm.set_primitive(vm.num_cls(), "-", _primitive_numeric_neg);
+    vm.set_primitive(vm.num_cls(), "+(_)", _primitive_numeric_add);
+    vm.set_primitive(vm.num_cls(), "-(_)", _primitive_numeric_sub);
+    vm.set_primitive(vm.num_cls(), "*(_)", _primitive_numeric_mul);
+    vm.set_primitive(vm.num_cls(), "/(_)", _primitive_numeric_div);
+    vm.set_primitive(vm.num_cls(), "%(_)", _primitive_numeric_mod);
+    vm.set_primitive(vm.num_cls(), ">(_)", _primitive_numeric_gt);
+    vm.set_primitive(vm.num_cls(), ">=(_)", _primitive_numeric_ge);
+    vm.set_primitive(vm.num_cls(), "<(_)", _primitive_numeric_lt);
+    vm.set_primitive(vm.num_cls(), "<=(_)", _primitive_numeric_le);
+    vm.set_primitive(vm.num_cls(), "==(_)", _primitive_numeric_eq);
+    vm.set_primitive(vm.num_cls(), "!=(_)", _primitive_numeric_ne);
+    vm.set_primitive(vm.num_cls(), "~", _primitive_numeric_bitnot);
+    vm.set_primitive(vm.num_cls(), "&(_)", _primitive_numeric_bitand);
+    vm.set_primitive(vm.num_cls(), "|(_)", _primitive_numeric_bitor);
+    vm.set_primitive(vm.num_cls(), "^(_)", _primitive_numeric_bitxor);
+    vm.set_primitive(vm.num_cls(), "<<(_)", _primitive_numeric_bitlshift);
+    vm.set_primitive(vm.num_cls(), ">>(_)", _primitive_numeric_bitrshift);
+    vm.set_primitive(vm.num_cls(), "..(_)", _primitive_numeric_dotdot);
+    vm.set_primitive(vm.num_cls(), "...(_)", _primitive_numeric_dotdotdot);
+    vm.set_primitive(vm.num_cls(), "abs", _primitive_numeric_abs);
+    vm.set_primitive(vm.num_cls(), "ceil", _primitive_numeric_ceil);
+    vm.set_primitive(vm.num_cls(), "cos", _primitive_numeric_cos);
+    vm.set_primitive(vm.num_cls(), "floor", _primitive_numeric_floor);
+    vm.set_primitive(vm.num_cls(), "isNan", _primitive_numeric_isnan);
+    vm.set_primitive(vm.num_cls(), "sin", _primitive_numeric_sin);
+    vm.set_primitive(vm.num_cls(), "sqrt", _primitive_numeric_sqrt);
+    vm.set_primitive(vm.num_cls(), "toString", _primitive_numeric_tostring);
 
     // vm.set_obj_cls(vm.find_variable("Object").as_class());
 
@@ -1400,50 +1400,50 @@ namespace core {
     vm.interpret("", kLibSource);
 
     vm.set_str_cls(vm.find_variable("String").as_class());
-    vm.set_native(vm.str_cls(), "+(_)", _primitive_string_add);
-    vm.set_native(vm.str_cls(), "[_]", _primitive_string_subscript);
-    vm.set_native(vm.str_cls(), "len", _primitive_string_len);
-    vm.set_native(vm.str_cls(), "contains(_)", _primitive_string_contains);
-    vm.set_native(vm.str_cls(), "endsWith(_)", _primitive_string_endswith);
-    vm.set_native(vm.str_cls(), "indexOf(_)", _primitive_string_indexof);
-    vm.set_native(vm.str_cls(), "iterate(_)", _primitive_string_iterate);
-    vm.set_native(vm.str_cls(), "iterValue(_)", _primitive_string_itervalue);
-    vm.set_native(vm.str_cls(), "startsWith(_)", _primitive_string_startswith);
-    vm.set_native(vm.str_cls(), "toString", _primitive_string_tostring);
+    vm.set_primitive(vm.str_cls(), "+(_)", _primitive_string_add);
+    vm.set_primitive(vm.str_cls(), "[_]", _primitive_string_subscript);
+    vm.set_primitive(vm.str_cls(), "len", _primitive_string_len);
+    vm.set_primitive(vm.str_cls(), "contains(_)", _primitive_string_contains);
+    vm.set_primitive(vm.str_cls(), "endsWith(_)", _primitive_string_endswith);
+    vm.set_primitive(vm.str_cls(), "indexOf(_)", _primitive_string_indexof);
+    vm.set_primitive(vm.str_cls(), "iterate(_)", _primitive_string_iterate);
+    vm.set_primitive(vm.str_cls(), "iterValue(_)", _primitive_string_itervalue);
+    vm.set_primitive(vm.str_cls(), "startsWith(_)", _primitive_string_startswith);
+    vm.set_primitive(vm.str_cls(), "toString", _primitive_string_tostring);
 
     vm.set_list_cls(vm.find_variable("List").as_class());
-    vm.set_native(vm.list_cls()->cls(), "<instantiate>", _primitive_list_instantiate);
-    vm.set_native(vm.list_cls(), "[_]", _primitive_list_subscript);
-    vm.set_native(vm.list_cls(), "[_]=(_)", _primitive_list_subscript_setter);
-    vm.set_native(vm.list_cls(), "add(_)", _primitive_list_add);
-    vm.set_native(vm.list_cls(), "clear()", _primitive_list_clear);
-    vm.set_native(vm.list_cls(), "len", _primitive_list_len);
-    vm.set_native(vm.list_cls(), "insert(_,_)", _primitive_list_insert);
-    vm.set_native(vm.list_cls(), "remove(_)", _primitive_list_remove);
-    vm.set_native(vm.list_cls(), "iterate(_)", _primitive_list_iterate);
-    vm.set_native(vm.list_cls(), "iterValue(_)", _primitive_list_itervalue);
+    vm.set_primitive(vm.list_cls()->cls(), "<instantiate>", _primitive_list_instantiate);
+    vm.set_primitive(vm.list_cls(), "[_]", _primitive_list_subscript);
+    vm.set_primitive(vm.list_cls(), "[_]=(_)", _primitive_list_subscript_setter);
+    vm.set_primitive(vm.list_cls(), "add(_)", _primitive_list_add);
+    vm.set_primitive(vm.list_cls(), "clear()", _primitive_list_clear);
+    vm.set_primitive(vm.list_cls(), "len", _primitive_list_len);
+    vm.set_primitive(vm.list_cls(), "insert(_,_)", _primitive_list_insert);
+    vm.set_primitive(vm.list_cls(), "remove(_)", _primitive_list_remove);
+    vm.set_primitive(vm.list_cls(), "iterate(_)", _primitive_list_iterate);
+    vm.set_primitive(vm.list_cls(), "iterValue(_)", _primitive_list_itervalue);
 
     vm.set_range_cls(vm.find_variable("Range").as_class());
-    vm.set_native(vm.range_cls(), "from", _primitive_range_from);
-    vm.set_native(vm.range_cls(), "to", _primitive_range_to);
-    vm.set_native(vm.range_cls(), "min", _primitive_range_min);
-    vm.set_native(vm.range_cls(), "max", _primitive_range_max);
-    vm.set_native(vm.range_cls(), "isInclusive", _primitive_range_isinclusive);
-    vm.set_native(vm.range_cls(), "iterate(_)", _primitive_range_iterate);
-    vm.set_native(vm.range_cls(), "iterValue(_)", _primitive_range_itervalue);
-    vm.set_native(vm.range_cls(), "toString", _primitive_range_tostring);
+    vm.set_primitive(vm.range_cls(), "from", _primitive_range_from);
+    vm.set_primitive(vm.range_cls(), "to", _primitive_range_to);
+    vm.set_primitive(vm.range_cls(), "min", _primitive_range_min);
+    vm.set_primitive(vm.range_cls(), "max", _primitive_range_max);
+    vm.set_primitive(vm.range_cls(), "isInclusive", _primitive_range_isinclusive);
+    vm.set_primitive(vm.range_cls(), "iterate(_)", _primitive_range_iterate);
+    vm.set_primitive(vm.range_cls(), "iterValue(_)", _primitive_range_itervalue);
+    vm.set_primitive(vm.range_cls(), "toString", _primitive_range_tostring);
 
     vm.set_map_cls(vm.find_variable("Map").as_class());
-    vm.set_native(vm.map_cls()->cls(), "<instantiate>", _primitive_map_instantiate);
-    vm.set_native(vm.map_cls(), "[_]", _primitive_map_subscript);
-    vm.set_native(vm.map_cls(), "[_]=(_)", _primitive_map_subscript_setter);
-    vm.set_native(vm.map_cls(), "clear()", _primitive_map_clear);
-    vm.set_native(vm.map_cls(), "containsKey(_)", _primitive_map_contains);
-    vm.set_native(vm.map_cls(), "len", _primitive_map_len);
-    vm.set_native(vm.map_cls(), "remove(_)", _primitive_map_remove);
-    vm.set_native(vm.map_cls(), "iter(_)", _primitive_map_iterate);
-    vm.set_native(vm.map_cls(), "keyIterValue(_)", _primitive_map_iterkey);
-    vm.set_native(vm.map_cls(), "valIterValue(_)", _primitive_map_itervalue);
+    vm.set_primitive(vm.map_cls()->cls(), "<instantiate>", _primitive_map_instantiate);
+    vm.set_primitive(vm.map_cls(), "[_]", _primitive_map_subscript);
+    vm.set_primitive(vm.map_cls(), "[_]=(_)", _primitive_map_subscript_setter);
+    vm.set_primitive(vm.map_cls(), "clear()", _primitive_map_clear);
+    vm.set_primitive(vm.map_cls(), "containsKey(_)", _primitive_map_contains);
+    vm.set_primitive(vm.map_cls(), "len", _primitive_map_len);
+    vm.set_primitive(vm.map_cls(), "remove(_)", _primitive_map_remove);
+    vm.set_primitive(vm.map_cls(), "iter(_)", _primitive_map_iterate);
+    vm.set_primitive(vm.map_cls(), "keyIterValue(_)", _primitive_map_iterkey);
+    vm.set_primitive(vm.map_cls(), "valIterValue(_)", _primitive_map_itervalue);
 
     // while bootstrapping the core types and running the core library, a number
     // string objects have benn created, many of which were instantiated before
