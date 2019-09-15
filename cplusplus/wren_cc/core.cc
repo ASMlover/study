@@ -598,8 +598,19 @@ DEF_PRIMITIVE(numeric_cos) {
   RETURN_VAL(std::cos(args[0].as_numeric()));
 }
 
+DEF_PRIMITIVE(numeric_decimal) {
+  double num = args[0].as_numeric();
+  RETURN_VAL(num - Xt::as_type<u32_t>(num));
+}
+
 DEF_PRIMITIVE(numeric_deg) {
   RETURN_VAL(args[0].as_numeric() * 57.2957795130823208768);
+}
+
+DEF_PRIMITIVE(numeric_idiv) {
+  i32_t lhs = Xt::as_type<i32_t>(args[0].as_numeric());
+  i32_t rhs = Xt::as_type<i32_t>(args[1].as_numeric());
+  RETURN_VAL(lhs / rhs);
 }
 
 DEF_PRIMITIVE(numeric_floor) {
@@ -612,6 +623,18 @@ DEF_PRIMITIVE(numeric_isnan) {
 
 DEF_PRIMITIVE(numeric_rad) {
   RETURN_VAL(args[0].as_numeric() / 57.2957795130823208768);
+}
+
+DEF_PRIMITIVE(numeric_sign) {
+  double num = args[0].as_numeric();
+  double sign;
+  if (num > 0)
+    sign = 1;
+  else if (num < 0)
+    sign = -1;
+  else
+    sign = 0;
+  RETURN_VAL(sign);
 }
 
 DEF_PRIMITIVE(numeric_sin) {
@@ -628,6 +651,10 @@ DEF_PRIMITIVE(numeric_tostring) {
     RETURN_VAL(StringObject::make_string(vm, "nan"));
 
   RETURN_VAL(StringObject::make_string(vm, args[0].stringify()));
+}
+
+DEF_PRIMITIVE(numeric_truncate) {
+  RETURN_VAL(Xt::as_type<u32_t>(args[0].as_numeric()));
 }
 
 DEF_PRIMITIVE(numeric_fromstring) {
@@ -1418,13 +1445,17 @@ namespace core {
     vm.set_primitive(vm.num_cls(), "abs", _primitive_numeric_abs);
     vm.set_primitive(vm.num_cls(), "ceil", _primitive_numeric_ceil);
     vm.set_primitive(vm.num_cls(), "cos", _primitive_numeric_cos);
+    vm.set_primitive(vm.num_cls(), "decimal", _primitive_numeric_decimal);
     vm.set_primitive(vm.num_cls(), "deg", _primitive_numeric_deg);
+    vm.set_primitive(vm.num_cls(), "div(_)", _primitive_numeric_idiv);
     vm.set_primitive(vm.num_cls(), "floor", _primitive_numeric_floor);
     vm.set_primitive(vm.num_cls(), "isNan", _primitive_numeric_isnan);
     vm.set_primitive(vm.num_cls(), "rad", _primitive_numeric_rad);
+    vm.set_primitive(vm.num_cls(), "sign", _primitive_numeric_sign);
     vm.set_primitive(vm.num_cls(), "sin", _primitive_numeric_sin);
     vm.set_primitive(vm.num_cls(), "sqrt", _primitive_numeric_sqrt);
     vm.set_primitive(vm.num_cls(), "toString", _primitive_numeric_tostring);
+    vm.set_primitive(vm.num_cls(), "truncate", _primitive_numeric_truncate);
 
     // vm.set_obj_cls(vm.find_variable("Object").as_class());
 
