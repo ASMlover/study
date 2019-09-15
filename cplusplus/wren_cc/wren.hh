@@ -43,7 +43,7 @@ using WrenForeignFn = std::function<void (WrenVM&)>;
 // with that signature, it will be replaced, when invoked the method will call
 // [method]
 void wrenDefineMethod(WrenVM& vm, const str_t& class_name,
-    const str_t& signatrue, const WrenForeignFn& method);
+    const str_t& signature, const WrenForeignFn& method);
 
 // defines a static foreign method implemented by the host application, looks
 // for a global class named [class_name] to bind the method to, if not found,
@@ -53,7 +53,7 @@ void wrenDefineMethod(WrenVM& vm, const str_t& class_name,
 // exists with that signature, it will be replaced, when invoked the method
 // will call [method]
 void wrenDefineStaticMethod(WrenVM& vm, const str_t& class_name,
-    const str_t& signatrue, const WrenForeignFn& method);
+    const str_t& signature, const WrenForeignFn& method);
 
 // the following functions read one of the arguments passed to a foreign call.
 // they may only be called while within a function provided to

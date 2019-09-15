@@ -58,6 +58,25 @@ enum class InterpretRet {
   RUNTIME_ERROR,
 };
 
+struct WrenMethod {
+  // the fiber that invokes the method, it's stack is pre-populated with the
+  // receiver for the method, and it contains a single callframe whose function
+  // is the bytecode stub to invoke the method
+  FiberObject* fiber{};
+  WrenMethod* prev{};
+  WrenMethod* next{};
+
+  WrenMethod(FiberObject* fb,
+      WrenMethod* p = nullptr, WrenMethod* n = nullptr) noexcept
+    : fiber(fb), prev(p), next(n) {
+  }
+
+  void clear(void) {
+    fiber = nullptr;
+    prev = next = nullptr;
+  }
+};
+
 class WrenVM final : private UnCopyable {
   // the maximum number of temporary objects that can be made visible to the
   // GC at one time
@@ -110,6 +129,9 @@ class WrenVM final : private UnCopyable {
   // the function used to laod modules
   LoadModuleFn load_module_{};
 
+  // list of active method handles or nullptr if there are no handles
+  WrenMethod* method_handles_{};
+
   // compiler and debugger data:
   //
   // the compiler that is currently compiling code, this is used so that
@@ -132,6 +154,7 @@ class WrenVM final : private UnCopyable {
   std::tuple<bool, Value> import_variable(
       const Value& module_name, const Value& variable_name);
   InterpretRet load_into_core(const str_t& source_bytes);
+  FunctionObject* make_call_stub(ModuleObject* module, const str_t& signature);
 
   void call_foreign(FiberObject* fiber, const WrenForeignFn& foreign, int argc);
 
@@ -190,7 +213,12 @@ public:
   InterpretRet interpret(const str_t& source_path, const str_t& source_bytes);
   void call_function(FiberObject* fiber, BaseObject* fn, int argc);
 
-  void define_method(const str_t& class_name, const str_t& signatrue,
+  WrenMethod* acquire_method(
+      const str_t& module, const str_t& variable, const str_t& signature);
+  void release_method(WrenMethod* method);
+  void wren_call(WrenMethod* method, const char* arg_types, ...);
+
+  void define_method(const str_t& class_name, const str_t& signature,
       const WrenForeignFn& method, bool is_static = false);
   bool get_argument_bool(int index) const;
   double get_argument_double(int index) const;

@@ -920,7 +920,7 @@ void FiberObject::riter_frames(
   }
 }
 
-void FiberObject::reset_fiber(FunctionObject* fn) {
+void FiberObject::reset_fiber(BaseObject* fn) {
   stack_.clear();
   frames_.clear();
 

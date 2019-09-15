@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstdarg>
 #include <iostream>
 #include <sstream>
 #include "core.hh"
@@ -55,6 +56,11 @@ WrenVM::~WrenVM(void) {
 
     free_object(obj);
   }
+
+  // tell the user if they didn't free any method handles, wo don't want to
+  // just free them here because the host app may still have pointers to them
+  // that they may try to use. better to tell them about the bug early
+  ASSERT(method_handles_ == nullptr, "all methods have not been released");
 }
 
 void WrenVM::set_metaclasses(void) {
@@ -203,7 +209,7 @@ StringObject* WrenVM::validate_superclass(
   // verifies that [superclass] is a valid object to inherit from, that means
   // it must be a class and cannot be the class of any built-in type
   //
-  // if successful return nulltr, otherwise returns a string for the runtime
+  // if successful return nullptr, otherwise returns a string for the runtime
   // error message
 
   if (!supercls_val.is_class())
@@ -919,6 +925,31 @@ InterpretRet WrenVM::load_into_core(const str_t& source_bytes) {
   return interpret() ? InterpretRet::SUCCESS : InterpretRet::RUNTIME_ERROR;
 }
 
+FunctionObject* WrenVM::make_call_stub(
+    ModuleObject* module, const str_t& signature) {
+  // creates an [FunctionObject] that invokes a method with [signature]
+  // when called
+
+  int num_params = 0;
+  for (auto c : signature) {
+    if (c == '_')
+      ++num_params;
+  }
+
+  int method = method_names_.ensure(signature);
+  u8_t bytecode[5] = {
+    Xt::as_type<u8_t>(Code::CALL_0 + num_params),
+    Xt::as_type<u8_t>((method >> 8) & 0xff),
+    Xt::as_type<u8_t>(method & 0xff),
+    Xt::as_type<u8_t>(Code::RETURN),
+    Xt::as_type<u8_t>(Code::END)
+  };
+  int debug_lines[] = {1, 1, 1, 1, 1};
+
+  return FunctionObject::make_function(*this,
+      module, 0, 0, bytecode, 5, nullptr, 0, "", signature, debug_lines, 5);
+}
+
 void WrenVM::call_function(FiberObject* fiber, BaseObject* fn, int argc) {
   fiber->call_function(fn, argc);
 }
@@ -931,6 +962,10 @@ void WrenVM::collect(void) {
 
   // the current fiber
   mark_object(fiber_);
+
+  // the method handles
+  for (WrenMethod* m = method_handles_; m != nullptr; m = m->next)
+    mark_object(m->fiber);
 
   // any object the compiler is using
   if (compiler_ != nullptr)
@@ -988,12 +1023,104 @@ void WrenVM::mark_value(const Value& val) {
     mark_object(val.as_object());
 }
 
+WrenMethod* WrenVM::acquire_method(
+    const str_t& module, const str_t& variable, const str_t& signature) {
+  // creates a handle that can be used to invoke a method with [signature] on
+  // the object in [module] currently stored in top-level [variable]
+  //
+  // this handle can be used repeatedly to directly invoke that method from
+  // C++ code using [wren_call]
+  //
+  // when done with this handle, it must be released by calling [release_method]
+
+  Value module_name = StringObject::make_string(*this, module);
+  PinnedGuard module_name_guard(*this, module_name.as_object());
+
+  ModuleObject* module_obj{};
+  if (auto m = modules_->get(module_name); m)
+    module_obj = (*m).as_module();
+  int variable_slot = module_obj->find_variable(variable);
+
+  FunctionObject* fn = make_call_stub(module_obj, signature);
+  PinnedGuard fn_guard(*this, fn);
+
+  // create a single fiber that we can reuse each time the method is invoked
+  FiberObject* fiber = FiberObject::make_fiber(*this, fn);
+  PinnedGuard fiber_guard(*this, fiber);
+
+  // create a handle that keeps track of the function that calls the method
+  WrenMethod* method = new WrenMethod(fiber);
+  fiber->push(module_obj->get_variable(variable_slot));
+
+  // add it to the front of the linked list of handles
+  if (method_handles_ != nullptr)
+    method_handles_->prev = method;
+  method->next = method_handles_;
+  method_handles_ = method;
+
+  return method;
+}
+
+void WrenVM::release_method(WrenMethod* method) {
+  // releases memory associated with [method], after calling this, [method]
+  // can no longer be used
+
+  ASSERT(method != nullptr, "null method");
+
+  // update the VM's head pointer if we are releasing the first handle
+  if (method_handles_ == method)
+    method_handles_ = method->next;
+  if (method->prev != nullptr)
+    method->prev->prev = method->next;
+  if (method->next != nullptr)
+    method->next->prev = method->prev;
+
+  method->clear();
+  delete method;
+}
+
+void WrenVM::wren_call(WrenMethod* method, const char* arg_types, ...) {
+  va_list ap;
+  va_start(ap, arg_types);
+
+  for (const char* arg_type = arg_types; *arg_type != '\0'; ++arg_type) {
+    Value value(nullptr);
+    switch (*arg_type) {
+      case 'b': value = Xt::as_type<bool>(va_arg(ap, int)); break;
+      case 'd': value = va_arg(ap, double); break;
+      case 'i': value = va_arg(ap, int); break;
+      case 'n': value = nullptr; va_arg(ap, void*); break;
+      case 's':
+        {
+          const char* text = va_arg(ap, const char*);
+          value = StringObject::make_string(*this, text);
+        } break;
+      default: ASSERT(false, "unknown argument type"); break;
+    }
+    method->fiber->push(value);
+  }
+
+  va_end(ap);
+
+  fiber_ = method->fiber;
+  const Value& receiver = method->fiber->peek_value();
+  BaseObject* fn = method->fiber->peek_frame().fn;
+
+  interpret();
+
+  // reset the fiber to get ready for the next call
+  method->fiber->reset_fiber(fn);
+
+  // push the receiver back on the stack
+  method->fiber->push(receiver);
+}
+
 void WrenVM::define_method(
-    const str_t& class_name, const str_t& signatrue,
+    const str_t& class_name, const str_t& signature,
     const WrenForeignFn& method, bool is_static) {
   ASSERT(!class_name.empty(), "must provide class name");
-  ASSERT(!signatrue.empty(), "must provide signatrue");
-  ASSERT(signatrue.size() < MAX_METHOD_SIGNATURE, "signatrue too long");
+  ASSERT(!signature.empty(), "must provide signature");
+  ASSERT(signature.size() < MAX_METHOD_SIGNATURE, "signature too long");
 
   // find or create the class to bind the method to
   ModuleObject* core_module = get_core_module();
@@ -1012,7 +1139,7 @@ void WrenVM::define_method(
   }
 
   // bind the method
-  int method_symbol = method_names_.ensure(signatrue);
+  int method_symbol = method_names_.ensure(signature);
   if (is_static)
     cls = cls->cls();
   cls->bind_method(method_symbol, method);
@@ -1071,13 +1198,13 @@ void WrenVM::return_string(const str_t& text) {
 }
 
 void wrenDefineMethod(WrenVM& vm, const str_t& class_name,
-    const str_t& signatrue, const WrenForeignFn& method) {
-  vm.define_method(class_name, signatrue, method, false);
+    const str_t& signature, const WrenForeignFn& method) {
+  vm.define_method(class_name, signature, method, false);
 }
 
 void wrenDefineStaticMethod(WrenVM& vm, const str_t& class_name,
-    const str_t& signatrue, const WrenForeignFn& method) {
-  vm.define_method(class_name, signatrue, method, true);
+    const str_t& signature, const WrenForeignFn& method) {
+  vm.define_method(class_name, signature, method, true);
 }
 
 bool wrenGetArgumentBool(WrenVM& vm, int index) {

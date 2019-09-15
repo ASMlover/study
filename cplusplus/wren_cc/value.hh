@@ -659,7 +659,7 @@ public:
 
   void riter_frames(
       std::function<void (const CallFrame&, FunctionObject*)>&& visit);
-  void reset_fiber(FunctionObject* fn);
+  void reset_fiber(BaseObject* fn);
 
   virtual str_t stringify(void) const override;
   virtual void gc_mark(WrenVM& vm) override;
