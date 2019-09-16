@@ -141,10 +141,8 @@ namespace io {
 
     void read_impl(WrenVM& vm) {
       str_t buffer;
-      if (!std::getline(std::cin, buffer) || buffer.empty()) {
-        // TODO: error
-      }
-      wrenReturnString(vm, buffer);
+      if (std::getline(std::cin, buffer) && !buffer.empty())
+        wrenReturnString(vm, buffer);
     }
 
     void clock_impl(WrenVM& vm) {
