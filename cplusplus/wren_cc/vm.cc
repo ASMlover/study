@@ -134,7 +134,7 @@ Value WrenVM::import_module(const str_t& name) {
   PinnedGuard name_guard(*this, name_val.as_object());
 
   // if the module is already loaded, we do not need to do anything
-  if (int index = modules_->find(name_val); index != -1)
+  if (auto val = modules_->get(name_val); !val)
     return nullptr;
 
   // load the module's source code from the embedder
@@ -845,7 +845,7 @@ ModuleObject* WrenVM::get_core_module(void) const {
     return (*val).as_module();
 
   ASSERT(false, "could not find core module");
-  return false;
+  return nullptr;
 }
 
 FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
@@ -884,7 +884,7 @@ FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
 
 Value WrenVM::import_module(const Value& name) {
   // if the module is already loaded, we do not need to do anything
-  if (auto index = modules_->find(name); index != -1)
+  if (auto val = modules_->get(name); !val)
     return nullptr;
 
   // load the module's source code from the embedder

@@ -1259,7 +1259,9 @@ DEF_PRIMITIVE(map_contains) {
   if (!validate_key(vm, args, 1))
     return PrimitiveResult::ERROR;
 
-  RETURN_VAL(args[0].as_map()->find(args[1]) != -1);
+  if (auto v = args[0].as_map()->get(args[1]); v)
+    RETURN_VAL(true);
+  RETURN_VAL(false);
 }
 
 DEF_PRIMITIVE(map_len) {

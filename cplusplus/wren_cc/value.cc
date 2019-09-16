@@ -463,18 +463,6 @@ void MapObject::resize(int new_capacity) {
   entries_.swap(new_entries);
 }
 
-void MapObject::clear(void) {
-  entries_.clear();
-  capacity_ = 0;
-  count_ = 0;
-}
-
-bool MapObject::contains(const Value& key) const {
-  if (auto val = get(key); val)
-    return true;
-  return false;
-}
-
 int MapObject::find(const Value& key) const {
   // if there is no entry array (an empty map) we definitely won't find it
   if (capacity_ == 0)
@@ -497,6 +485,18 @@ int MapObject::find(const Value& key) const {
     index = (index + 1) % capacity_;
   }
   return -1;
+}
+
+void MapObject::clear(void) {
+  entries_.clear();
+  capacity_ = 0;
+  count_ = 0;
+}
+
+bool MapObject::contains(const Value& key) const {
+  if (auto val = get(key); val)
+    return true;
+  return false;
 }
 
 std::optional<Value> MapObject::get(const Value& key) const {
