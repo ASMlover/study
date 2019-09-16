@@ -600,7 +600,7 @@ DEF_PRIMITIVE(numeric_cos) {
 
 DEF_PRIMITIVE(numeric_decimal) {
   double num = args[0].as_numeric();
-  RETURN_VAL(num - Xt::as_type<u32_t>(num));
+  RETURN_VAL(num - Xt::as_type<i32_t>(num));
 }
 
 DEF_PRIMITIVE(numeric_deg) {
@@ -654,7 +654,7 @@ DEF_PRIMITIVE(numeric_tostring) {
 }
 
 DEF_PRIMITIVE(numeric_truncate) {
-  RETURN_VAL(Xt::as_type<u32_t>(args[0].as_numeric()));
+  RETURN_VAL(Xt::as_type<i32_t>(args[0].as_numeric()));
 }
 
 DEF_PRIMITIVE(numeric_fromstring) {
