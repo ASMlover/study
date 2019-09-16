@@ -479,6 +479,10 @@ DEF_PRIMITIVE(fiber_call1) {
   return PrimitiveResult::RUN_FIBER;
 }
 
+DEF_PRIMITIVE(fiber_current) {
+  RETURN_VAL(fiber);
+}
+
 DEF_PRIMITIVE(fiber_error) {
   FiberObject* run_fiber = args[0].as_fiber();
   if (run_fiber->error() == nullptr)
@@ -549,40 +553,52 @@ DEF_PRIMITIVE(fiber_try) {
 }
 
 DEF_PRIMITIVE(fiber_yield) {
-  if (fiber->caller() == nullptr)
-    RETURN_ERR("no fiber to yield to");
-
+  // unhook this fiber from the one that called it
   FiberObject* caller = fiber->caller();
   fiber->set_caller(nullptr);
   fiber->set_caller_is_trying(false);
 
-  // make the caller's run method return nil
-  caller->set_value(caller->stack_size() - 1, nullptr);
+  // if we do not have any other pending fibers, jump all the way out of
+  // the interpreter
+  if (caller == nullptr) {
+    args[0] = nullptr;
+  }
+  else {
+    // make the caller's run method return nil
+    caller->set_value(caller->stack_size() - 1, nullptr);
 
-  // return the fiber to resume
-  args[0] = caller;
+    // return the fiber to resume
+    args[0] = caller;
+  }
+
   return PrimitiveResult::RUN_FIBER;
 }
 
 DEF_PRIMITIVE(fiber_yield1) {
-  if (fiber->caller() == nullptr)
-    RETURN_ERR("no fiber to yield to");
-
+  // unhook this fiber from the one that called it
   FiberObject* caller = fiber->caller();
   fiber->set_caller(nullptr);
   fiber->set_caller_is_trying(false);
 
-  // make the caller's run method return the argument passed to yield
-  caller->set_value(caller->stack_size() - 1, args[1]);
+  // if we do not have any other pending fibers, jump all the way out of
+  // the interpreter
+  if (caller == nullptr) {
+    args[0] = nullptr;
+  }
+  else {
+    // make the caller's run method return the argument passed to yield
+    caller->set_value(caller->stack_size() - 1, args[1]);
 
-  // when we yielding fiber resumes, we will store the result of the yield
-  // call in it's stack, since Fiber.yield(value) has two arguments (the
-  // Fiber class and the value) and we only need one slot for the result,
-  // discard the other slot now
-  fiber->pop();
+    // when we yielding fiber resumes, we will store the result of the yield
+    // call in it's stack, since Fiber.yield(value) has two arguments (the
+    // Fiber class and the value) and we only need one slot for the result,
+    // discard the other slot now
+    fiber->pop();
 
-  // return the fiber to resume
-  args[0] = caller;
+    // return the fiber to resume
+    args[0] = caller;
+  }
+
   return PrimitiveResult::RUN_FIBER;
 }
 
@@ -1369,6 +1385,7 @@ namespace core {
     vm.set_primitive(vm.fiber_cls()->cls(), "<instantiate>", _primitive_fiber_instantiate);
     vm.set_primitive(vm.fiber_cls()->cls(), "new(_)", _primitive_fiber_new);
     vm.set_primitive(vm.fiber_cls()->cls(), "abort(_)", _primitive_fiber_abort);
+    vm.set_primitive(vm.fiber_cls()->cls(), "current", _primitive_fiber_current);
     vm.set_primitive(vm.fiber_cls()->cls(), "yield()", _primitive_fiber_yield);
     vm.set_primitive(vm.fiber_cls()->cls(), "yield(_)", _primitive_fiber_yield1);
     vm.set_primitive(vm.fiber_cls(), "call()", _primitive_fiber_call);

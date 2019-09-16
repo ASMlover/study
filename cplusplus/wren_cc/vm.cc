@@ -459,6 +459,9 @@ bool WrenVM::interpret(void) {
             LOAD_FRAME();
             break;
           case PrimitiveResult::RUN_FIBER:
+            // if we do not have a fiber to switch to, stop interpreting
+            if (args[0].is_nil())
+              return true;
             fiber = args[0].as_fiber();
             fiber_ = fiber;
             LOAD_FRAME();
@@ -530,6 +533,9 @@ bool WrenVM::interpret(void) {
             LOAD_FRAME();
             break;
           case PrimitiveResult::RUN_FIBER:
+            // if we do not have a fiber to switch to, stop interpreting
+            if (args[0].is_nil())
+              return true;
             fiber = args[0].as_fiber();
             fiber_ = fiber;
             LOAD_FRAME();

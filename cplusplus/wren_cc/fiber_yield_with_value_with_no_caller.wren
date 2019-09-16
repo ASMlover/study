@@ -1,8 +1,10 @@
 
 var a = new Fiber {
-  Fiber.yield(1) // expect runtime error
+  IO.print("before")
+  Fiber.yield(1)
 }
 
 var b = new Fiber { a.run() }
 var c = new Fiber { b.run() }
 c.run()
+IO.print("not reached")
