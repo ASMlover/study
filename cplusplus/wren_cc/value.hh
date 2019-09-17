@@ -311,6 +311,8 @@ public:
   static StringObject* make_uninitialized_string(WrenVM& vm, int n);
   static StringObject* concat_string(WrenVM& vm, const char* s1, const char* s2);
   static StringObject* concat_string(WrenVM& vm, const str_t& s1, const str_t& s2);
+  static StringObject* from_numeric(WrenVM& vm, double value);
+  static StringObject* format(WrenVM& vm, const char* format, ...);
 };
 
 class ListObject final : public BaseObject {

@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstdarg>
 #include <sstream>
 #include "vm.hh"
 #include "value.hh"
@@ -352,6 +353,46 @@ StringObject* StringObject::concat_string(
 StringObject* StringObject::concat_string(
     WrenVM& vm, const str_t& s1, const str_t& s2) {
   return concat_string(vm, s1.data(), s2.data());
+}
+
+StringObject* StringObject::from_numeric(WrenVM& vm, double value) {
+  // produces a string representation of [value]
+
+  if (value != value)
+    return make_string(vm, "nan");
+  if (value == INFINITY)
+    return make_string(vm, "infinity");
+  if (value == -INFINITY)
+    return make_string(vm, "-infinity");
+
+  return make_string(vm, Xt::to_string(value));
+}
+
+StringObject* StringObject::format(WrenVM& vm, const char* format, ...) {
+  // creates a new formatted string from [format] and any additional arguments
+  // used in the format string
+  //
+  // this is a very restricted flavor of formatting, intended only for internal
+  // use by the VM, two formatting characters are supported, each of which
+  // reads the next argument as a certain type:
+  //
+  // $ - a C++ string
+  // @ - a wren string object
+
+  va_list ap;
+
+  str_t text;
+  va_start(ap, format);
+  for (const char* c = format; *c != '\0'; ++c) {
+    switch (*c) {
+    case '$': text += va_arg(ap, str_t); break;
+    case '@': text += va_arg(ap, Value).as_cstring(); break;
+    default: text.push_back(*c); break; // any other charactor is interpreted literally
+    }
+  }
+  va_end(ap);
+
+  return make_string(vm, text);
 }
 
 ListObject::ListObject(ClassObject* cls, int num_elements) noexcept
@@ -1075,8 +1116,7 @@ ClassObject* ClassObject::make_class(
   // hierarclly
 
   PinnedGuard pinned_name(vm, name);
-  StringObject* metaclass_name =
-    StringObject::concat_string(vm, name->cstr(), " metaclass");
+  StringObject* metaclass_name = StringObject::format(vm, "@ metaclass", name);
 
   PinnedGuard pinned_metaclass_name(vm, metaclass_name);
   ClassObject* meta_class = new ClassObject(
