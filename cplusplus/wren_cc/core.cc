@@ -649,6 +649,10 @@ DEF_PRIMITIVE(numeric_tostring) {
   double v = args[0].as_numeric();
   if (v != v)
     RETURN_VAL(StringObject::make_string(vm, "nan"));
+  if (v == INFINITY)
+    RETURN_VAL(StringObject::make_string(vm, "infinity"));
+  if (v == -INFINITY)
+    RETURN_VAL(StringObject::make_string(vm, "-infinity"));
 
   RETURN_VAL(StringObject::make_string(vm, args[0].stringify()));
 }
