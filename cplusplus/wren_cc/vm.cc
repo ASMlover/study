@@ -139,11 +139,8 @@ Value WrenVM::import_module(const str_t& name) {
 
   // load the module's source code from the embedder
   str_t source_bytes = load_module_(*this, name);
-  if (source_bytes.empty()) {
-    std::stringstream ss;
-    ss << "could not find module `" << name << "`";
-    return StringObject::make_string(*this, ss.str());
-  }
+  if (source_bytes.empty())
+    return StringObject::format(*this, "could not find module `$`", name);
 
   FiberObject* module_fiber = load_module(name_val, source_bytes);
   // return the fiber the executes the module
@@ -171,14 +168,14 @@ void WrenVM::print_stacktrace(FiberObject* fiber) {
       });
 }
 
-FiberObject* WrenVM::runtime_error(FiberObject* fiber, StringObject* error) {
+FiberObject* WrenVM::runtime_error(FiberObject* fiber, const Value& error) {
   // returns the fiber that should receive the error or `nullptr` if no
   // fiber caught it
 
   ASSERT(fiber->error() == nullptr, "can only fail one");
 
   // store the error in the fiber so it can be accessed later
-  fiber->set_error(error);
+  fiber->set_error(error.as_string());
   // if the caller ran this fiber using `try`, give it the error
   if (fiber->caller_is_trying()) {
     FiberObject* caller = fiber->caller();
@@ -193,19 +190,16 @@ FiberObject* WrenVM::runtime_error(FiberObject* fiber, StringObject* error) {
   return nullptr;
 }
 
-StringObject* WrenVM::method_not_found(ClassObject* cls, int symbol) {
+Value WrenVM::method_not_found(ClassObject* cls, int symbol) {
   // creates a string containing an appropriate method not found error for
   // a method with [symbol] on [cls] object.
 
-  std::stringstream ss;
-  ss << "`" << cls->name_cstr() << "` does not implement "
-    << "`" << method_names_.get_name(symbol) << "`";
-
-  return StringObject::make_string(*this, ss.str());
+  return StringObject::format(*this, "`@` does not implement `$`",
+      cls->name(), method_names_.get_name(symbol));
 }
 
-StringObject* WrenVM::validate_superclass(
-    StringObject* name, const Value& supercls_val) {
+Value WrenVM::validate_superclass(
+    const Value& name, const Value& supercls_val) {
   // verifies that [superclass] is a valid object to inherit from, that means
   // it must be a class and cannot be the class of any built-in type
   //
@@ -223,10 +217,8 @@ StringObject* WrenVM::validate_superclass(
       superclass == fn_class_ || superclass == list_class_ ||
       superclass == map_class_ || superclass == range_class_ ||
       superclass == str_class_) {
-    std::stringstream ss;
-    ss << "`" << name->cstr() << "` cannot inherit from "
-      << "`" << superclass->name_cstr() << "`";
-    return StringObject::make_string(*this, ss.str());
+    return StringObject::format(*this,
+        "`@` cannot inherit from `@`", name, superclass->name());
   }
 
   return nullptr;
@@ -453,7 +445,7 @@ bool WrenVM::interpret(void) {
             fiber->resize_stack(fiber->stack_size() - (argc - 1));
             break;
           case PrimitiveResult::ERROR:
-            RUNTIME_ERROR(args[0].as_string());
+            RUNTIME_ERROR(args[0]);
           case PrimitiveResult::CALL:
             fiber->call_function(args[0].as_object(), argc);
             LOAD_FRAME();
@@ -527,7 +519,7 @@ bool WrenVM::interpret(void) {
             fiber->resize_stack(fiber->stack_size() - (argc - 1));
             break;
           case PrimitiveResult::ERROR:
-            RUNTIME_ERROR(args[0].as_string());
+            RUNTIME_ERROR(args[0]);
           case PrimitiveResult::CALL:
             fiber->call_function(args[0].as_object(), argc);
             LOAD_FRAME();
@@ -697,20 +689,20 @@ bool WrenVM::interpret(void) {
     }
     CASE_CODE(CLASS):
     {
-      StringObject* name = PEEK2().as_string();
+      const Value& name = PEEK2();
       ClassObject* superclass = obj_class_;
 
       // use implicit object superclass if none given
       if (!PEEK().is_nil()) {
-        StringObject* error = validate_superclass(name, PEEK());
-        if (error != nullptr)
+        Value error = validate_superclass(name, PEEK());
+        if (!error.is_nil())
           RUNTIME_ERROR(error);
         superclass = PEEK().as_class();
       }
 
       int num_fields = RDBYTE();
-      ClassObject* cls =
-        ClassObject::make_class(*this, superclass, num_fields, name);
+      ClassObject* cls = ClassObject::make_class(
+          *this, superclass, num_fields, name.as_string());
 
       // do not pop the superclass and name off the stack until the subclass
       // is done being created, to make sure it does not get collected
@@ -720,10 +712,9 @@ bool WrenVM::interpret(void) {
       // now that we know the total number of fields, make sure we donot
       // overflow
       if (superclass->num_fields() + num_fields > MAX_FIELDS) {
-        std::stringstream ss;
-        ss << "class `" << name->cstr() << "` may not have more thane "
-          << MAX_FIELDS << " fields, including inherited ones";
-        RUNTIME_ERROR(StringObject::make_string(*this, ss.str()));
+        RUNTIME_ERROR(StringObject::format(*this,
+              "class `@` may not have more than 255 fields, including inherited ones",
+              name));
       }
       PUSH(cls);
 
@@ -747,7 +738,7 @@ bool WrenVM::interpret(void) {
 
       // if it returned a string. it was an error message
       if (result.is_string())
-        RUNTIME_ERROR(result.as_string());
+        RUNTIME_ERROR(result);
 
       // make a slot that the module's fiber can use to store its result in,
       // it ends up getting discarded, but `Code::RETURN` expects to be able
@@ -775,7 +766,7 @@ bool WrenVM::interpret(void) {
       if (r)
         PUSH(result);
       else
-        RUNTIME_ERROR(result.as_string());
+        RUNTIME_ERROR(result);
 
       DISPATCH();
     }
@@ -891,9 +882,7 @@ Value WrenVM::import_module(const Value& name) {
   const str_t source_bytes = load_module_(*this, name.as_cstring());
   if (source_bytes.empty()) {
     // could not load the module
-    std::stringstream ss;
-    ss << "could not find module `" << name.as_cstring() << "`";
-    return StringObject::make_string(*this, ss.str());
+    return StringObject::format(*this, "could not find module `@`", name);
   }
 
   FiberObject* module_fiber = load_module(name, source_bytes);
@@ -914,10 +903,9 @@ std::tuple<bool, Value> WrenVM::import_variable(
   if (variable_entry != -1)
     return std::make_tuple(true, module->get_variable(variable_entry));
 
-  std::stringstream ss;
-  ss << "could not find a variable named `" << variable->cstr() << "` "
-    << "in module `" << module_name.as_cstring() << "`";
-  return std::make_tuple(false, StringObject::make_string(*this, ss.str()));
+  return std::make_tuple(false, StringObject::format(*this,
+        "could not find a variable named `@` in module `@`",
+        variable, module_name));
 }
 
 InterpretRet WrenVM::load_into_core(const str_t& source_bytes) {
@@ -1097,10 +1085,8 @@ void WrenVM::wren_call(WrenMethod* method, const char* arg_types, ...) {
       case 'i': value = va_arg(ap, int); break;
       case 'n': value = nullptr; va_arg(ap, void*); break;
       case 's':
-        {
-          const char* text = va_arg(ap, const char*);
-          value = StringObject::make_string(*this, text);
-        } break;
+        value = StringObject::format(*this, "$", va_arg(ap, const char*));
+        break;
       default: ASSERT(false, "unknown argument type"); break;
     }
     method->fiber->push(value);

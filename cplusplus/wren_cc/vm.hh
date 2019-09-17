@@ -144,9 +144,9 @@ class WrenVM final : private UnCopyable {
   SymbolTable method_names_;
 
   void print_stacktrace(FiberObject* fiber);
-  FiberObject* runtime_error(FiberObject* fiber, StringObject* error);
-  StringObject* method_not_found(ClassObject* cls, int symbol);
-  StringObject* validate_superclass(StringObject* name, const Value& supercls_val);
+  FiberObject* runtime_error(FiberObject* fiber, const Value& error);
+  Value method_not_found(ClassObject* cls, int symbol);
+  Value validate_superclass(const Value& name, const Value& supercls_val);
 
   ModuleObject* get_core_module(void) const;
   FiberObject* load_module(const Value& name, const str_t& source_bytes);

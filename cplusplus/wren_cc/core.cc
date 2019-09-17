@@ -224,9 +224,7 @@ static bool validate_function(WrenVM& vm,
   if (args[index].is_function() || args[index].is_closure())
     return true;
 
-  std::stringstream ss;
-  ss << "`" << arg_name << "` must be a function";
-  args[0] = StringObject::make_string(vm, ss.str());
+  args[0] = StringObject::format(vm, "`$` must be a function", arg_name);
   return false;
 }
 
@@ -238,9 +236,7 @@ static bool validate_numeric(WrenVM& vm,
   if (args[index].is_numeric())
     return true;
 
-  std::stringstream ss;
-  ss << "`" << arg_name << "` must be a numeric";
-  args[0] = StringObject::make_string(vm, ss.str());
+  args[0] = StringObject::format(vm, "`$` must be a numeric", arg_name);
   return false;
 }
 
@@ -252,9 +248,7 @@ static bool validate_int_value(WrenVM& vm,
   if (std::trunc(value) == value)
     return true;
 
-  std::stringstream ss;
-  ss << "`" << arg_name << "` must be an integer";
-  args[0] = StringObject::make_string(vm, ss.str());
+  args[0] = StringObject::format(vm, "`$` must be an integer", arg_name);
   return false;
 }
 
@@ -287,9 +281,7 @@ static int validate_index_value(WrenVM& vm,
   if (index >= 0 && index < count)
     return index;
 
-  std::stringstream ss;
-  ss << "`" << arg_name << "` out of bounds";
-  args[0] = StringObject::make_string(vm, ss.str());
+  args[0] = StringObject::format(vm, "`$` out of bounds", arg_name);
   return -1;
 }
 
@@ -314,9 +306,7 @@ static bool validate_string(WrenVM& vm,
   if (args[index].is_string())
     return true;
 
-  std::stringstream ss;
-  ss << "`" << arg_name << "` must be a string";
-  args[0] = StringObject::make_string(vm, ss.str());
+  args[0] = StringObject::format(vm, "`$` must be a string", arg_name);
   return false;
 }
 
@@ -656,15 +646,7 @@ DEF_PRIMITIVE(numeric_sqrt) {
 }
 
 DEF_PRIMITIVE(numeric_tostring) {
-  double v = args[0].as_numeric();
-  if (v != v)
-    RETURN_VAL(StringObject::make_string(vm, "nan"));
-  if (v == INFINITY)
-    RETURN_VAL(StringObject::make_string(vm, "infinity"));
-  if (v == -INFINITY)
-    RETURN_VAL(StringObject::make_string(vm, "-infinity"));
-
-  RETURN_VAL(StringObject::make_string(vm, args[0].stringify()));
+  RETURN_VAL(StringObject::from_numeric(vm, args[0].as_numeric()));
 }
 
 DEF_PRIMITIVE(numeric_truncate) {
@@ -880,8 +862,7 @@ DEF_PRIMITIVE(object_tostring) {
   }
   else if (args[0].is_instance()) {
     InstanceObject* inst = args[0].as_instance();
-    RETURN_VAL(StringObject::concat_string(
-          vm, "instance of ", inst->cls()->name_cstr()));
+    RETURN_VAL(StringObject::format(vm, "instance of @", inst->cls()->name()));
   }
   RETURN_VAL(StringObject::make_string(vm, "<object>"));
 }
@@ -989,9 +970,7 @@ DEF_PRIMITIVE(string_add) {
   if (!validate_string(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
-  StringObject* lhs = args[0].as_string();
-  StringObject* rhs = args[1].as_string();
-  RETURN_VAL(StringObject::make_string(vm, lhs, rhs));
+  RETURN_VAL(StringObject::format(vm, "@@", args[0], args[1]));
 }
 
 DEF_PRIMITIVE(string_subscript) {
