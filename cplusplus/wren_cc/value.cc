@@ -290,10 +290,12 @@ u32_t StringObject::hash(void) const {
   // FNV-1a hash. See: http://www.isthe.com/chongo/tech/comp/fnv/
   u32_t hash = 2166136261u;
 
-  int step = 1 + 7 / size_;
-  for (int i = 0; i < size_; i += step) {
-    hash ^= value_[i];
-    hash *= 16777619;
+  if (size_ > 0) {
+    int step = 1 + 7 / size_;
+    for (int i = 0; i < size_; i += step) {
+      hash ^= value_[i];
+      hash *= 16777619;
+    }
   }
   return hash;
 }
