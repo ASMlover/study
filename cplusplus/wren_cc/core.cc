@@ -408,6 +408,16 @@ DEF_PRIMITIVE(class_name) {
   RETURN_VAL(cls->name());
 }
 
+DEF_PRIMITIVE(class_supertype) {
+  ClassObject* cls = args[0].as_class();
+
+  // Object has no superclass
+  ClassObject* superclass = cls->superclass();
+  if (superclass == nullptr)
+    RETURN_VAL(nullptr);
+  RETURN_VAL(superclass);
+}
+
 DEF_PRIMITIVE(fiber_instantiate) {
   // return the Fiber class itself, when we then call `new` on it, it will
   // create the fiber
@@ -1382,6 +1392,7 @@ namespace core {
     // to prevent the inherited ones from overwriting them
     vm.set_primitive(vm.class_cls(), "<instantiate>", _primitive_class_instantiate);
     vm.set_primitive(vm.class_cls(), "name", _primitive_class_name);
+    vm.set_primitive(vm.class_cls(), "supertype", _primitive_class_supertype);
 
     vm.set_bool_cls(define_class(vm, "Bool"));
     vm.set_primitive(vm.bool_cls(), "toString", _primitive_bool_tostring);
