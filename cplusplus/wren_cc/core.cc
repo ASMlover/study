@@ -340,32 +340,33 @@ static std::tuple<int, int, int> calculate_range(
   if (from == -1)
     return std::make_tuple(-1, 0, length);
 
-  int to, count;
-  if (range->is_inclusive()) {
-    to = validate_index_value(vm, args, length, range->to(), "Range end");
-    if (to == -1)
-      return std::make_tuple(-1, 0, length);
+  // bounds check the end manually to handle exclusive ranges
+  double value = range->to();
+  if (!validate_int_value(vm, args, value, "Range end"))
+    return std::make_tuple(-1, 0, length);
 
-    count = std::abs(from - to) + 1;
-  }
-  else {
-    if (!validate_int_value(vm, args, range->to(), "Range end"))
-      return std::make_tuple(-1, 0, length);
+  // negative indices count from the end
+  if (value < 0)
+    value = length + value;
 
-    // bounds check it manually here since the excusive range can hang over
-    // the edge
-    to = Xt::as_type<int>(range->to());
-    if (to < 0)
-      to = length + to;
+  // convert the exclusive range to an inclusive one
+  if (!range->is_inclusive()) {
+    if (value == from)
+      return std::make_tuple(from, 0, 0);
 
-    if (to < -1 || to > length) {
-      args[0] = StringObject::make_string(vm, "`Range end` out of bounds");
-      return std::make_tuple(-1, 0, length);
-    }
-
-    count = std::abs(from - to);
+    // shift the endpoint to make it inclusive, handling both increasing and
+    // decreasing ranges
+    value += value >= from ? -1 : 1;
   }
 
+  // check bounds
+  if (value < 0 || value >= length) {
+    args[0] = StringObject::make_string(vm, "`Range end` out of bounds");
+    return std::make_tuple(-1, 0, length);
+  }
+
+  int to = Xt::as_type<int>(value);
+  int count = std::abs(from - to) + 1;
   return std::make_tuple(from, (from < to ? 1 : -1), count);
 }
 
