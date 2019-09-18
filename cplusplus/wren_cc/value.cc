@@ -269,12 +269,12 @@ void StringObject::hash_string(void) {
   // FNV-1a hash. See: http://www.isthe.com/chongo/tech/comp/fnv/
   u32_t hash = 2166136261u;
 
-  if (size_ > 0) {
-    int step = 1 + 7 / size_;
-    for (int i = 0; i < size_; i += step) {
-      hash ^= value_[i];
-      hash *= 16777619;
-    }
+  // this is O(n) on the length of the string, but we only call this when a
+  // new string is created, since the creation is also O(n) (to copy/initialize
+  // all the bytes), we allow this here
+  for (int i = 0; i < size_; ++i) {
+    hash ^= value_[i];
+    hash *= 16777619;
   }
 
   hash_ = hash;
