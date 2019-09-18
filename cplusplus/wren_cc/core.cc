@@ -603,36 +603,8 @@ DEF_PRIMITIVE(fiber_yield1) {
   return PrimitiveResult::RUN_FIBER;
 }
 
-DEF_PRIMITIVE(numeric_abs) {
-  RETURN_VAL(std::abs(args[0].as_numeric()));
-}
-
-DEF_PRIMITIVE(numeric_acos) {
-  RETURN_VAL(std::acos(args[0].as_numeric()));
-}
-
-DEF_PRIMITIVE(numeric_asin) {
-  RETURN_VAL(std::asin(args[0].as_numeric()));
-}
-
-DEF_PRIMITIVE(numeric_atan) {
-  RETURN_VAL(std::atan(args[0].as_numeric()));
-}
-
 DEF_PRIMITIVE(numeric_atan2) {
   RETURN_VAL(std::atan2(args[0].as_numeric(), args[1].as_numeric()));
-}
-
-DEF_PRIMITIVE(numeric_ceil) {
-  RETURN_VAL(std::ceil(args[0].as_numeric()));
-}
-
-DEF_PRIMITIVE(numeric_cos) {
-  RETURN_VAL(std::cos(args[0].as_numeric()));
-}
-
-DEF_PRIMITIVE(numeric_floor) {
-  RETURN_VAL(std::floor(args[0].as_numeric()));
 }
 
 DEF_PRIMITIVE(numeric_fraction) {
@@ -652,18 +624,6 @@ DEF_PRIMITIVE(numeric_sign) {
     RETURN_VAL(-1);
   else
     RETURN_VAL(0);
-}
-
-DEF_PRIMITIVE(numeric_sin) {
-  RETURN_VAL(std::sin(args[0].as_numeric()));
-}
-
-DEF_PRIMITIVE(numeric_sqrt) {
-  RETURN_VAL(std::sqrt(args[0].as_numeric()));
-}
-
-DEF_PRIMITIVE(numeric_tan) {
-  RETURN_VAL(std::tan(args[0].as_numeric()));
 }
 
 DEF_PRIMITIVE(numeric_tostring) {
@@ -704,75 +664,61 @@ DEF_PRIMITIVE(numeric_fromstring) {
   RETURN_VAL(number);
 }
 
-DEF_PRIMITIVE(numeric_neg) {
-  RETURN_VAL(-args[0].as_numeric());
-}
-
 DEF_PRIMITIVE(numeric_pi) {
   RETURN_VAL(3.14159265358979323846);
 }
 
-DEF_PRIMITIVE(numeric_add) {
-  if (!validate_numeric(vm, args, 1, "Right operand"))
-    return PrimitiveResult::ERROR;
-
-  RETURN_VAL(args[0].as_numeric() + args[1].as_numeric());
+#define DEF_NUMERIC_INFIX(name, op)\
+DEF_PRIMITIVE(numeric_##name) {\
+  if (!validate_numeric(vm, args, 1, "Right operand"))\
+    return PrimitiveResult::ERROR;\
+  RETURN_VAL(args[0].as_numeric() op args[1].as_numeric());\
+}
+#define DEF_NUMERIC_BITWISE(name, op)\
+DEF_PRIMITIVE(numeric_bit##name) {\
+  if (!validate_numeric(vm, args, 1, "Right operand"))\
+    return PrimitiveResult::ERROR;\
+  u32_t lhs = Xt::as_type<u32_t>(args[0].as_numeric());\
+  u32_t rhs = Xt::as_type<u32_t>(args[1].as_numeric());\
+  RETURN_VAL(lhs op rhs);\
+}
+#define DEF_NUMERIC_FN(name, fn)\
+DEF_PRIMITIVE(numeric_##name) {\
+  RETURN_VAL(fn(args[0].as_numeric()));\
 }
 
-DEF_PRIMITIVE(numeric_sub) {
-  if (!validate_numeric(vm, args, 1, "Right operand"))
-    return PrimitiveResult::ERROR;
+DEF_NUMERIC_INFIX(add, +)
+DEF_NUMERIC_INFIX(sub, -)
+DEF_NUMERIC_INFIX(mul, *)
+DEF_NUMERIC_INFIX(div, /)
+DEF_NUMERIC_INFIX(gt, >)
+DEF_NUMERIC_INFIX(ge, >=)
+DEF_NUMERIC_INFIX(lt, <)
+DEF_NUMERIC_INFIX(le, <=)
 
-  RETURN_VAL(args[0].as_numeric() - args[1].as_numeric());
-}
+DEF_NUMERIC_BITWISE(and, &)
+DEF_NUMERIC_BITWISE(or, |)
+DEF_NUMERIC_BITWISE(xor, ^)
+DEF_NUMERIC_BITWISE(lshift, <<)
+DEF_NUMERIC_BITWISE(rshift, >>)
 
-DEF_PRIMITIVE(numeric_mul) {
-  if (!validate_numeric(vm, args, 1, "Right operand"))
-    return PrimitiveResult::ERROR;
-
-  RETURN_VAL(args[0].as_numeric() * args[1].as_numeric());
-}
-
-DEF_PRIMITIVE(numeric_div) {
-  if (!validate_numeric(vm, args, 1, "Right operand"))
-    return PrimitiveResult::ERROR;
-
-  RETURN_VAL(args[0].as_numeric() / args[1].as_numeric());
-}
+DEF_NUMERIC_FN(abs, std::fabs)
+DEF_NUMERIC_FN(acos, std::acos)
+DEF_NUMERIC_FN(asin, std::asin)
+DEF_NUMERIC_FN(atan, std::atan)
+DEF_NUMERIC_FN(ceil, std::ceil)
+DEF_NUMERIC_FN(cos, std::cos)
+DEF_NUMERIC_FN(floor, std::floor)
+DEF_NUMERIC_FN(neg, -)
+DEF_NUMERIC_FN(sin, std::sin)
+DEF_NUMERIC_FN(sqrt, std::sqrt)
+DEF_NUMERIC_FN(tan, std::tan)
 
 DEF_PRIMITIVE(numeric_mod) {
   if (!validate_numeric(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(std::fmod(args[0].as_numeric(), args[1].as_numeric()));
-}
-
-DEF_PRIMITIVE(numeric_gt) {
-  if (!validate_numeric(vm, args, 1, "Right operand"))
-    return PrimitiveResult::ERROR;
-
-  RETURN_VAL(args[0].as_numeric() > args[1].as_numeric());
-}
-
-DEF_PRIMITIVE(numeric_ge) {
-  if (!validate_numeric(vm, args, 1, "Right operand"))
-    return PrimitiveResult::ERROR;
-
-  RETURN_VAL(args[0].as_numeric() >= args[1].as_numeric());
-}
-
-DEF_PRIMITIVE(numeric_lt) {
-  if (!validate_numeric(vm, args, 1, "Right operand"))
-    return PrimitiveResult::ERROR;
-
-  RETURN_VAL(args[0].as_numeric() < args[1].as_numeric());
-}
-
-DEF_PRIMITIVE(numeric_le) {
-  if (!validate_numeric(vm, args, 1, "Right operand"))
-    return PrimitiveResult::ERROR;
-
-  RETURN_VAL(args[0].as_numeric() <= args[1].as_numeric());
 }
 
 DEF_PRIMITIVE(numeric_eq) {
@@ -793,56 +739,6 @@ DEF_PRIMITIVE(numeric_bitnot) {
   // bitwise operators always work on 32-bit unsigned int
   u32_t val = Xt::as_type<u32_t>(args[0].as_numeric());
   RETURN_VAL(~val);
-}
-
-DEF_PRIMITIVE(numeric_bitand) {
-  if (!validate_numeric(vm, args, 1, "Right operand"))
-    return PrimitiveResult::ERROR;
-
-  // bitwise operators always work on 32-bit unsigned int
-  u32_t lhs = Xt::as_type<u32_t>(args[0].as_numeric());
-  u32_t rhs = Xt::as_type<u32_t>(args[1].as_numeric());
-  RETURN_VAL(lhs & rhs);
-}
-
-DEF_PRIMITIVE(numeric_bitor) {
-  if (!validate_numeric(vm, args, 1, "Right operand"))
-    return PrimitiveResult::ERROR;
-
-  // bitwise operators always work on 32-bit unsigned int
-  u32_t lhs = Xt::as_type<u32_t>(args[0].as_numeric());
-  u32_t rhs = Xt::as_type<u32_t>(args[1].as_numeric());
-  RETURN_VAL(lhs | rhs);
-}
-
-DEF_PRIMITIVE(numeric_bitxor) {
-  if (!validate_numeric(vm, args, 1, "Right operand"))
-    return PrimitiveResult::ERROR;
-
-  // bitwise operators always work on 32-bit unsigned int
-  u32_t lhs = Xt::as_type<u32_t>(args[0].as_numeric());
-  u32_t rhs = Xt::as_type<u32_t>(args[1].as_numeric());
-  RETURN_VAL(lhs ^ rhs);
-}
-
-DEF_PRIMITIVE(numeric_bitlshift) {
-  if (!validate_numeric(vm, args, 1, "Right operand"))
-    return PrimitiveResult::ERROR;
-
-  // bitwise operators always work on 32-bit unsigned int
-  u32_t lhs = Xt::as_type<u32_t>(args[0].as_numeric());
-  u32_t rhs = Xt::as_type<u32_t>(args[1].as_numeric());
-  RETURN_VAL(lhs << rhs);
-}
-
-DEF_PRIMITIVE(numeric_bitrshift) {
-  if (!validate_numeric(vm, args, 1, "Right operand"))
-    return PrimitiveResult::ERROR;
-
-  // bitwise operators always work on 32-bit unsigned int
-  u32_t lhs = Xt::as_type<u32_t>(args[0].as_numeric());
-  u32_t rhs = Xt::as_type<u32_t>(args[1].as_numeric());
-  RETURN_VAL(lhs >> rhs);
 }
 
 DEF_PRIMITIVE(numeric_dotdot) {
@@ -1084,14 +980,12 @@ DEF_PRIMITIVE(list_instantiate) {
 }
 
 DEF_PRIMITIVE(list_add) {
-  ListObject* list = args[0].as_list();
-  list->add_element(args[1]);
+  args[0].as_list()->add_element(args[1]);
   RETURN_VAL(args[1]);
 }
 
 DEF_PRIMITIVE(list_clear) {
-  ListObject* list = args[0].as_list();
-  list->clear();
+  args[0].as_list()->clear();
   RETURN_VAL(nullptr);
 }
 
@@ -1185,13 +1079,11 @@ DEF_PRIMITIVE(list_subscript_setter) {
 }
 
 DEF_PRIMITIVE(range_from) {
-  RangeObject* range = args[0].as_range();
-  RETURN_VAL(range->from());
+  RETURN_VAL(args[0].as_range()->from());
 }
 
 DEF_PRIMITIVE(range_to) {
-  RangeObject* range = args[0].as_range();
-  RETURN_VAL(range->to());
+  RETURN_VAL(args[0].as_range()->to());
 }
 
 DEF_PRIMITIVE(range_min) {
@@ -1205,8 +1097,7 @@ DEF_PRIMITIVE(range_max) {
 }
 
 DEF_PRIMITIVE(range_isinclusive) {
-  RangeObject* range = args[0].as_range();
-  RETURN_VAL(range->is_inclusive());
+  RETURN_VAL(args[0].as_range()->is_inclusive());
 }
 
 DEF_PRIMITIVE(range_iterate) {
@@ -1449,42 +1340,45 @@ namespace core {
     vm.set_num_cls(define_class(vm, "Numeric"));
     vm.set_primitive(vm.num_cls()->cls(), "fromString(_)", _primitive_numeric_fromstring);
     vm.set_primitive(vm.num_cls()->cls(), "pi", _primitive_numeric_pi);
-    vm.set_primitive(vm.num_cls(), "-", _primitive_numeric_neg);
     vm.set_primitive(vm.num_cls(), "+(_)", _primitive_numeric_add);
     vm.set_primitive(vm.num_cls(), "-(_)", _primitive_numeric_sub);
     vm.set_primitive(vm.num_cls(), "*(_)", _primitive_numeric_mul);
     vm.set_primitive(vm.num_cls(), "/(_)", _primitive_numeric_div);
-    vm.set_primitive(vm.num_cls(), "%(_)", _primitive_numeric_mod);
     vm.set_primitive(vm.num_cls(), ">(_)", _primitive_numeric_gt);
     vm.set_primitive(vm.num_cls(), ">=(_)", _primitive_numeric_ge);
     vm.set_primitive(vm.num_cls(), "<(_)", _primitive_numeric_lt);
     vm.set_primitive(vm.num_cls(), "<=(_)", _primitive_numeric_le);
-    vm.set_primitive(vm.num_cls(), "==(_)", _primitive_numeric_eq);
-    vm.set_primitive(vm.num_cls(), "!=(_)", _primitive_numeric_ne);
-    vm.set_primitive(vm.num_cls(), "~", _primitive_numeric_bitnot);
     vm.set_primitive(vm.num_cls(), "&(_)", _primitive_numeric_bitand);
     vm.set_primitive(vm.num_cls(), "|(_)", _primitive_numeric_bitor);
     vm.set_primitive(vm.num_cls(), "^(_)", _primitive_numeric_bitxor);
     vm.set_primitive(vm.num_cls(), "<<(_)", _primitive_numeric_bitlshift);
     vm.set_primitive(vm.num_cls(), ">>(_)", _primitive_numeric_bitrshift);
-    vm.set_primitive(vm.num_cls(), "..(_)", _primitive_numeric_dotdot);
-    vm.set_primitive(vm.num_cls(), "...(_)", _primitive_numeric_dotdotdot);
     vm.set_primitive(vm.num_cls(), "abs", _primitive_numeric_abs);
     vm.set_primitive(vm.num_cls(), "acos", _primitive_numeric_acos);
     vm.set_primitive(vm.num_cls(), "asin", _primitive_numeric_asin);
     vm.set_primitive(vm.num_cls(), "atan", _primitive_numeric_atan);
-    vm.set_primitive(vm.num_cls(), "atan(_)", _primitive_numeric_atan2);
     vm.set_primitive(vm.num_cls(), "ceil", _primitive_numeric_ceil);
     vm.set_primitive(vm.num_cls(), "cos", _primitive_numeric_cos);
     vm.set_primitive(vm.num_cls(), "floor", _primitive_numeric_floor);
-    vm.set_primitive(vm.num_cls(), "fraction", _primitive_numeric_fraction);
-    vm.set_primitive(vm.num_cls(), "isNan", _primitive_numeric_isnan);
-    vm.set_primitive(vm.num_cls(), "sign", _primitive_numeric_sign);
+    vm.set_primitive(vm.num_cls(), "-", _primitive_numeric_neg);
     vm.set_primitive(vm.num_cls(), "sin", _primitive_numeric_sin);
     vm.set_primitive(vm.num_cls(), "sqrt", _primitive_numeric_sqrt);
     vm.set_primitive(vm.num_cls(), "tan", _primitive_numeric_tan);
+    vm.set_primitive(vm.num_cls(), "%(_)", _primitive_numeric_mod);
+    vm.set_primitive(vm.num_cls(), "~", _primitive_numeric_bitnot);
+    vm.set_primitive(vm.num_cls(), "..(_)", _primitive_numeric_dotdot);
+    vm.set_primitive(vm.num_cls(), "...(_)", _primitive_numeric_dotdotdot);
+    vm.set_primitive(vm.num_cls(), "atan(_)", _primitive_numeric_atan2);
+    vm.set_primitive(vm.num_cls(), "fraction", _primitive_numeric_fraction);
+    vm.set_primitive(vm.num_cls(), "isNan", _primitive_numeric_isnan);
+    vm.set_primitive(vm.num_cls(), "sign", _primitive_numeric_sign);
     vm.set_primitive(vm.num_cls(), "toString", _primitive_numeric_tostring);
     vm.set_primitive(vm.num_cls(), "truncate", _primitive_numeric_truncate);
+
+    // these are defined just so that 0 and -0 are equal, which is specified
+    // by IEEE-754 even though they have different bit representations
+    vm.set_primitive(vm.num_cls(), "==(_)", _primitive_numeric_eq);
+    vm.set_primitive(vm.num_cls(), "!=(_)", _primitive_numeric_ne);
 
     // vm.set_obj_cls(vm.find_variable("Object").as_class());
 
