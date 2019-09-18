@@ -239,12 +239,8 @@ StringObject::StringObject(ClassObject* cls, char c) noexcept
   value_ = new char[2];
   value_[0] = c;
   value_[1] = 0;
-}
 
-StringObject::StringObject(ClassObject* cls, int n) noexcept
-  : BaseObject(ObjType::STRING, cls)
-  , size_(n) {
-  value_ = new char[Xt::as_type<sz_t>(size_ + 1)];
+  hash_string();
 }
 
 StringObject::StringObject(
@@ -261,10 +257,27 @@ StringObject::StringObject(
       value_[size_] = 0;
     }
   }
+
+  hash_string();
 }
 
 StringObject::~StringObject(void) {
   delete [] value_;
+}
+
+void StringObject::hash_string(void) {
+  // FNV-1a hash. See: http://www.isthe.com/chongo/tech/comp/fnv/
+  u32_t hash = 2166136261u;
+
+  if (size_ > 0) {
+    int step = 1 + 7 / size_;
+    for (int i = 0; i < size_; i += step) {
+      hash ^= value_[i];
+      hash *= 16777619;
+    }
+  }
+
+  hash_ = hash;
 }
 
 int StringObject::find(StringObject* sub) const {
@@ -279,7 +292,8 @@ int StringObject::find(StringObject* sub) const {
 
 bool StringObject::is_equal(BaseObject* r) const {
   auto* o = Xt::down<StringObject>(r);
-  return size_ == o->size_ && std::memcmp(value_, o->value_, size_) == 0;
+  return size_ == o->size_ &&
+    hash_ == o->hash_ && std::memcmp(value_, o->value_, size_) == 0;
 }
 
 str_t StringObject::stringify(void) const {
@@ -287,17 +301,7 @@ str_t StringObject::stringify(void) const {
 }
 
 u32_t StringObject::hash(void) const {
-  // FNV-1a hash. See: http://www.isthe.com/chongo/tech/comp/fnv/
-  u32_t hash = 2166136261u;
-
-  if (size_ > 0) {
-    int step = 1 + 7 / size_;
-    for (int i = 0; i < size_; i += step) {
-      hash ^= value_[i];
-      hash *= 16777619;
-    }
-  }
-  return hash;
+  return hash_;
 }
 
 StringObject* StringObject::make_string(WrenVM& vm, char c) {
@@ -327,12 +331,6 @@ StringObject* StringObject::make_string(
   s[n] = 0;
 
   auto* o = new StringObject(vm.str_cls(), s, n, true);
-  vm.append_object(o);
-  return o;
-}
-
-StringObject* StringObject::make_uninitialized_string(WrenVM& vm, int n) {
-  auto* o = new StringObject(vm.str_cls(), n);
   vm.append_object(o);
   return o;
 }
@@ -438,7 +436,7 @@ bool RangeObject::is_equal(BaseObject* r) const {
 
 str_t RangeObject::stringify(void) const {
   std::stringstream ss;
-  ss << "[fn `" << this << "`]";
+  ss << "[range `" << this << "`]";
   return ss.str();
 }
 

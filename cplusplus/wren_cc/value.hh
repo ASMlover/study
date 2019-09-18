@@ -285,13 +285,15 @@ std::ostream& operator<<(std::ostream& out, const Value& val);
 
 class StringObject final : public BaseObject {
   int size_{};
+  u32_t hash_{};
   char* value_{};
 
   StringObject(ClassObject* cls, char c) noexcept;
-  StringObject(ClassObject* cls, int n) noexcept;
   StringObject(ClassObject* cls,
       const char* s, int n, bool replace_owner = false) noexcept;
   virtual ~StringObject(void);
+
+  void hash_string(void);
 public:
   inline int size(void) const { return size_; }
   inline const char* cstr(void) const { return value_; }
@@ -308,7 +310,6 @@ public:
   static StringObject* make_string(WrenVM& vm, const char* s, int n);
   static StringObject* make_string(WrenVM& vm, const str_t& s);
   static StringObject* make_string(WrenVM& vm, StringObject* s1, StringObject* s2);
-  static StringObject* make_uninitialized_string(WrenVM& vm, int n);
   static StringObject* concat_string(WrenVM& vm, const char* s1, const char* s2);
   static StringObject* concat_string(WrenVM& vm, const str_t& s1, const str_t& s2);
   static StringObject* from_numeric(WrenVM& vm, double value);

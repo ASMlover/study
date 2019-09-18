@@ -987,16 +987,18 @@ DEF_PRIMITIVE(string_subscript) {
   if (!args[1].is_range())
     RETURN_ERR("subscript must be a numeric or a range");
 
-  auto [start, step, count] = calculate_range(
-      vm, args, args[1].as_range(), s->size());
-  if (start == -1)
-    return PrimitiveResult::ERROR;
+  // auto [start, step, count] = calculate_range(
+  //     vm, args, args[1].as_range(), s->size());
+  // if (start == -1)
+  //   return PrimitiveResult::ERROR;
 
-  str_t text(count, 0);
-  const char* raw_str = s->cstr();
-  for (int i = 0; i < count; ++i)
-    text[i] = raw_str[start + (i * step)];
-  RETURN_VAL(StringObject::make_string(vm, text));
+  // str_t text(count, 0);
+  // const char* raw_str = s->cstr();
+  // for (int i = 0; i < count; ++i)
+  //   text[i] = raw_str[start + (i * step)];
+  // RETURN_VAL(StringObject::make_string(vm, text));
+
+  RETURN_ERR("subscript ranges for strings are not implemented yet");
 }
 
 static PrimitiveResult call_function(WrenVM& vm, Value* args, int argc) {
