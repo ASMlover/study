@@ -607,6 +607,22 @@ DEF_PRIMITIVE(numeric_abs) {
   RETURN_VAL(std::abs(args[0].as_numeric()));
 }
 
+DEF_PRIMITIVE(numeric_acos) {
+  RETURN_VAL(std::acos(args[0].as_numeric()));
+}
+
+DEF_PRIMITIVE(numeric_asin) {
+  RETURN_VAL(std::asin(args[0].as_numeric()));
+}
+
+DEF_PRIMITIVE(numeric_atan) {
+  RETURN_VAL(std::atan(args[0].as_numeric()));
+}
+
+DEF_PRIMITIVE(numeric_atan2) {
+  RETURN_VAL(std::atan2(args[0].as_numeric(), args[1].as_numeric()));
+}
+
 DEF_PRIMITIVE(numeric_ceil) {
   RETURN_VAL(std::ceil(args[0].as_numeric()));
 }
@@ -644,6 +660,10 @@ DEF_PRIMITIVE(numeric_sin) {
 
 DEF_PRIMITIVE(numeric_sqrt) {
   RETURN_VAL(std::sqrt(args[0].as_numeric()));
+}
+
+DEF_PRIMITIVE(numeric_tan) {
+  RETURN_VAL(std::tan(args[0].as_numeric()));
 }
 
 DEF_PRIMITIVE(numeric_tostring) {
@@ -686,6 +706,10 @@ DEF_PRIMITIVE(numeric_fromstring) {
 
 DEF_PRIMITIVE(numeric_neg) {
   RETURN_VAL(-args[0].as_numeric());
+}
+
+DEF_PRIMITIVE(numeric_pi) {
+  RETURN_VAL(3.14159265358979323846);
 }
 
 DEF_PRIMITIVE(numeric_add) {
@@ -1424,6 +1448,7 @@ namespace core {
 
     vm.set_num_cls(define_class(vm, "Numeric"));
     vm.set_primitive(vm.num_cls()->cls(), "fromString(_)", _primitive_numeric_fromstring);
+    vm.set_primitive(vm.num_cls()->cls(), "pi", _primitive_numeric_pi);
     vm.set_primitive(vm.num_cls(), "-", _primitive_numeric_neg);
     vm.set_primitive(vm.num_cls(), "+(_)", _primitive_numeric_add);
     vm.set_primitive(vm.num_cls(), "-(_)", _primitive_numeric_sub);
@@ -1445,6 +1470,10 @@ namespace core {
     vm.set_primitive(vm.num_cls(), "..(_)", _primitive_numeric_dotdot);
     vm.set_primitive(vm.num_cls(), "...(_)", _primitive_numeric_dotdotdot);
     vm.set_primitive(vm.num_cls(), "abs", _primitive_numeric_abs);
+    vm.set_primitive(vm.num_cls(), "acos", _primitive_numeric_acos);
+    vm.set_primitive(vm.num_cls(), "asin", _primitive_numeric_asin);
+    vm.set_primitive(vm.num_cls(), "atan", _primitive_numeric_atan);
+    vm.set_primitive(vm.num_cls(), "atan(_)", _primitive_numeric_atan2);
     vm.set_primitive(vm.num_cls(), "ceil", _primitive_numeric_ceil);
     vm.set_primitive(vm.num_cls(), "cos", _primitive_numeric_cos);
     vm.set_primitive(vm.num_cls(), "floor", _primitive_numeric_floor);
@@ -1453,6 +1482,7 @@ namespace core {
     vm.set_primitive(vm.num_cls(), "sign", _primitive_numeric_sign);
     vm.set_primitive(vm.num_cls(), "sin", _primitive_numeric_sin);
     vm.set_primitive(vm.num_cls(), "sqrt", _primitive_numeric_sqrt);
+    vm.set_primitive(vm.num_cls(), "tan", _primitive_numeric_tan);
     vm.set_primitive(vm.num_cls(), "toString", _primitive_numeric_tostring);
     vm.set_primitive(vm.num_cls(), "truncate", _primitive_numeric_truncate);
 
