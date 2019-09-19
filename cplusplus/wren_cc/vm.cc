@@ -261,7 +261,7 @@ bool WrenVM::interpret(void) {
 #define PEEK()    fiber->peek_value()
 #define PEEK2()   fiber->peek_value(1)
 #define RDBYTE()  (*frame->ip++)
-#define RDWORD()  (frame->ip += 2, (frame->ip[-2] << 8) | frame->ip[-1])
+#define RDWORD()  (frame->ip += 2, Xt::as_type<u16_t>((frame->ip[-2] << 8) | frame->ip[-1]))
 
   FiberObject* fiber = fiber_;
   CallFrame* frame{};

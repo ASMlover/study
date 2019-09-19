@@ -263,7 +263,7 @@ class Compiler : private UnCopyable {
   std::vector<u8_t> bytecode_;
   // the buffer of source line mappings
   std::vector<int> debug_source_lines_;
-  ListObject* constants_{};
+  std::vector<Value> constants_;
 
   // the current level of block scope nesting, where zero is no nesting.
   // a -1 here means top-level code is being compiled and thers is no block
@@ -377,12 +377,12 @@ class Compiler : private UnCopyable {
   }
 
   inline int add_constant(const Value& v) {
-    if (constants_->count() < kMaxConstants)
-      constants_->add_element(v);
+    if (constants_.size() < kMaxConstants)
+      constants_.push_back(v);
     else
       error("a function may only contain %d unique constants", kMaxConstants);
 
-    return constants_->count() - 1;
+    return Xt::as_type<int>(constants_.size() - 1);
   }
 
   inline void emit_constant(const Value& v) {
@@ -1093,7 +1093,7 @@ class Compiler : private UnCopyable {
       else {
         // skip this instruction and its arguments
         i += 1 + FunctionObject::get_argc(
-            bytecode_.data(), constants_->elements(), i);
+            bytecode_.data(), constants_.data(), i);
       }
     }
     loop_ = loop_->enclosing;
@@ -1993,7 +1993,6 @@ public:
 
   void init_compiler(bool is_func = true) {
     parser_.get_vm().set_compiler(this);
-    constants_ = ListObject::make_list(parser_.get_vm(), 0);
 
     if (parent_ == nullptr) {
       scope_depth_ = -1;
@@ -2027,7 +2026,7 @@ public:
         parser_.get_mod(),
         num_upvalues_, num_params_,
         bytecode_.data(), Xt::as_type<int>(bytecode_.size()),
-        constants_->elements(), constants_->count(),
+        constants_.data(), Xt::as_type<int>(constants_.size()),
         parser_.source_path(), debug_name,
         debug_source_lines_.data(), Xt::as_type<int>(debug_source_lines_.size()));
 
@@ -2099,8 +2098,8 @@ public:
 
     Compiler* c = this;
     while (c != nullptr) {
-      if (c->constants_ != nullptr)
-        vm.mark_object(c->constants_);
+      for (auto& v : c->constants_)
+        vm.mark_value(v);
       c = c->parent_;
     }
   }
