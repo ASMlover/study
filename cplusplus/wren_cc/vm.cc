@@ -877,7 +877,7 @@ FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
 
 Value WrenVM::import_module(const Value& name) {
   // if the module is already loaded, we do not need to do anything
-  if (auto val = modules_->get(name); !val)
+  if (auto val = modules_->get(name); val)
     return nullptr;
 
   // load the module's source code from the embedder
