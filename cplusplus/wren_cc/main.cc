@@ -32,8 +32,7 @@
 
 static std::string _s_root_dir;
 
-static std::string read_module(wrencc::WrenVM& vm, const std::string& module) {
-  std::string path = _s_root_dir + module + ".wren";
+inline std::string read_file(const std::string& path) {
   std::ifstream fp(path);
   if (fp.is_open()) {
     std::stringstream ss;
@@ -42,6 +41,26 @@ static std::string read_module(wrencc::WrenVM& vm, const std::string& module) {
     return ss.str();
   }
   return "";
+}
+
+inline std::string file_path(const std::string& name) {
+  return _s_root_dir + name + ".wren";
+}
+
+static std::string read_module(wrencc::WrenVM& vm, const std::string& module) {
+  // first try to load the module with a `.wren` extension
+  std::string module_path = file_path(module);
+  std::string module_contents = read_file(module_path);
+
+  // if no contents could be loaded treat the module name as specifying a
+  // package and try to load the `__init__.wren` file in the package
+
+  if (module_contents.empty()) {
+    std::string package_module = module + "/__init__";
+    std::string package_module_path = file_path(package_module);
+    module_contents = read_file(package_module_path);
+  }
+  return module_contents;
 }
 
 static void eval_with_file(const std::string& fname) {
