@@ -224,6 +224,18 @@ Value WrenVM::validate_superclass(
   return nullptr;
 }
 
+bool WrenVM::isinstance_of(const Value& value, ClassObject* base_class) const {
+  // returns `true` if [value] is an instance of [base_class] or any of its
+  // superclasses
+
+  // walk the superclass chain looking for the class
+  for (auto* cls = get_class(value); cls != nullptr; cls = cls->superclass()) {
+    if (cls == base_class)
+      return true;
+  }
+  return false;
+}
+
 void WrenVM::call_foreign(
     FiberObject* fiber, const WrenForeignFn& foreign, int argc) {
   foreign_call_slot_ = fiber->values_at(fiber->stack_size() - argc);
@@ -600,18 +612,8 @@ bool WrenVM::interpret(void) {
               *this, "right operand must be a class"));
       }
 
-      ClassObject* actual = get_class(POP());
-      bool is_instance = false;
-
-      // walk the superclass chain looking for the class
-      while (actual != nullptr) {
-        if (actual == expected.as_class()) {
-          is_instance = true;
-          break;
-        }
-        actual = actual->superclass();
-      }
-      PUSH(is_instance);
+      Value instance = POP();
+      PUSH(isinstance_of(instance, expected.as_class()));
 
       DISPATCH();
     }
