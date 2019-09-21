@@ -376,7 +376,8 @@ StringObject* StringObject::format(WrenVM& vm, const char* format, ...) {
   // use by the VM, two formatting characters are supported, each of which
   // reads the next argument as a certain type:
   //
-  // $ - a C++ string
+  // $ - a pure C string
+  // # - a C++ string
   // @ - a wren string object
 
   va_list ap;
@@ -385,7 +386,8 @@ StringObject* StringObject::format(WrenVM& vm, const char* format, ...) {
   va_start(ap, format);
   for (const char* c = format; *c != '\0'; ++c) {
     switch (*c) {
-    case '$': text += va_arg(ap, str_t); break;
+    case '$': text += va_arg(ap, const char*); break;
+    case '#': text += va_arg(ap, str_t); break;
     case '@': text += va_arg(ap, Value).as_cstring(); break;
     default: text.push_back(*c); break; // any other charactor is interpreted literally
     }
