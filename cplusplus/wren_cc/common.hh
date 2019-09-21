@@ -121,11 +121,11 @@ namespace Xt {
 # define USE_LIBIO          (true)
 #endif
 
-// if true loads the `Math` class in the standard library
+// if true loads the `Meta` class in the standard library
 //
 // Defaults to on
-#ifndef USE_LIBMATH
-# define USE_LIBMATH        (true)
+#ifndef USE_LIBMETA
+# define USE_LIBMETA        (true)
 #endif
 
 // set this to true to stress test the GC, it will perform a collection before

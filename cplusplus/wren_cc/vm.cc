@@ -29,6 +29,7 @@
 #include <sstream>
 #include "core.hh"
 #include "io.hh"
+#include "meta.hh"
 #include "vm.hh"
 
 namespace wrencc {
@@ -52,6 +53,7 @@ WrenVM::WrenVM(void) noexcept {
 
   core::initialize(*this);
   io::load_library(*this);
+  meta::load_library(*this);
 }
 
 WrenVM::~WrenVM(void) {
