@@ -968,13 +968,15 @@ WrenForeignFn WrenVM::find_foreign_method(const str_t& module_name,
   }
 
   // otherwise try the built-in libraries
-  fn = io::bind_foreign(*this, class_name, signature);
-  if (fn)
-    return fn;
+  if (module_name == "core") {
+    fn = io::bind_foreign(*this, class_name, signature);
+    if (fn)
+      return fn;
 
-  fn = meta::bind_foreign(*this, class_name, signature);
-  if (fn)
-    return fn;
+    fn = meta::bind_foreign(*this, class_name, signature);
+    if (fn)
+      return fn;
+  }
 
   return nullptr;
 }
