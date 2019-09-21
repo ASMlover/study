@@ -165,7 +165,8 @@ namespace io {
 
     inline WrenForeignFn bind_foreign(WrenVM& vm,
         const str_t& class_name, const str_t& signature) {
-      ASSERT(class_name == "IO", "should only have IO class");
+      if (class_name != "IO")
+        return nullptr;
 
       if (signature == "writeString(_)")
         return write_string_impl;

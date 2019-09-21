@@ -26,12 +26,16 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include "wren.hh"
+
 namespace wrencc {
 
 class WrenVM;
 
 namespace meta {
   void load_library(WrenVM& vm);
+  WrenForeignFn bind_foreign(WrenVM& vm,
+      const str_t& class_name, const str_t& signature);
 }
 
 }

@@ -37,17 +37,17 @@ namespace wrencc {
 /// WrenVM IMPLEMENTATIONS
 
 WrenVM::WrenVM(void) noexcept {
-  StringObject* name = StringObject::make_string(*this, "main");
+  StringObject* name = StringObject::make_string(*this, "core");
   {
     PinnedGuard name_guard(*this, name);
 
-    // implicitly create a `main` module for the REPL or entry script
-    ModuleObject* main_module = ModuleObject::make_module(*this, name);
+    // implicitly create a `core` module for the built-in libraries
+    ModuleObject* core_module = ModuleObject::make_module(*this, name);
     {
-      PinnedGuard guard(*this, main_module);
+      PinnedGuard guard(*this, core_module);
 
       modules_ = MapObject::make_map(*this);
-      modules_->set(nullptr, main_module);
+      modules_->set(nullptr, core_module);
     }
   }
 
@@ -969,6 +969,10 @@ WrenForeignFn WrenVM::find_foreign_method(const str_t& module_name,
 
   // otherwise try the built-in libraries
   fn = io::bind_foreign(*this, class_name, signature);
+  if (fn)
+    return fn;
+
+  fn = meta::bind_foreign(*this, class_name, signature);
   if (fn)
     return fn;
 

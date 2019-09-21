@@ -30,7 +30,9 @@
 namespace wrencc {
 
 static const str_t kLibSource =
-"class Meta {}\n";
+"class Meta {\n"
+"  foreign static eval(source)\n"
+"}\n";
 
 namespace meta {
   namespace details {
@@ -41,13 +43,29 @@ namespace meta {
 
     inline void load_library(WrenVM& vm) {
       vm.interpret("", kLibSource);
-      // wrenDefineStaticMethod(vm, "Meta", "eval(_)", eval_impl);
+    }
+
+    inline WrenForeignFn bind_foreign(WrenVM& vm,
+        const str_t& class_name, const str_t& signature) {
+      if (class_name != "Meta")
+        return nullptr;
+
+      if (signature == "eval(_)")
+        return eval_impl;
+      return nullptr;
     }
   }
 
   void load_library(WrenVM& vm) {
 #if USE_LIBMETA
     details::load_library(vm);
+#endif
+  }
+
+  WrenForeignFn bind_foreign(WrenVM& vm,
+      const str_t& class_name, const str_t& signature) {
+#if USE_LIBMETA
+    return details::bind_foreign(vm, class_name, signature);
 #endif
   }
 }
