@@ -662,11 +662,12 @@ str_t ModuleObject::stringify(void) const {
 void ModuleObject::gc_mark(WrenVM& vm) {
   for (auto& v : variables_)
     vm.mark_value(v);
+  vm.mark_object(name_);
 }
 
-ModuleObject* ModuleObject::make_module(WrenVM& vm) {
+ModuleObject* ModuleObject::make_module(WrenVM& vm, StringObject* name) {
   // modules are never used as first-class objects, so do not need a class
-  auto* o = new ModuleObject();
+  auto* o = new ModuleObject(name);
   vm.append_object(o);
   return o;
 }
@@ -1059,21 +1060,6 @@ void ClassObject::bind_method(FunctionObject* fn) {
       break;
     }
   }
-}
-
-void ClassObject::bind_method(int i, int method_type, const Value& fn) {
-  FunctionObject* method_fn = fn.is_function()
-    ? fn.as_function() : fn.as_closure()->fn();
-
-  // methods are always bound against the class, and not the metaclass, even
-  // for static methods, so that constructors (which are static) get bound
-  // like instance methods
-  bind_method(method_fn);
-
-  if (Xt::as_type<Code>(method_type) == Code::METHOD_STATIC )
-    cls()->bind_method(i, fn.as_object());
-  else
-    bind_method(i, fn.as_object());
 }
 
 void ClassObject::bind_method(int i, const Method& method) {

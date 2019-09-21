@@ -83,6 +83,8 @@ class WrenVM final : private UnCopyable {
   static constexpr sz_t kMaxTempRoots = 5;
 
   using LoadModuleFn = std::function<str_t (WrenVM&, const str_t&)>;
+  using BindForeignFn = std::function<WrenForeignFn (
+      WrenVM&, const str_t&, const str_t&, bool, const str_t&)>;
 
   ClassObject* fn_class_{};
   ClassObject* bool_class_{};
@@ -126,8 +128,11 @@ class WrenVM final : private UnCopyable {
   // to the function
   int foreign_call_argc_{};
 
+  // the function used to locate foreign functions
+  BindForeignFn bind_foreign_fn_{};
+
   // the function used to laod modules
-  LoadModuleFn load_module_{};
+  LoadModuleFn load_module_fn_{};
 
   // list of active method handles or nullptr if there are no handles
   WrenMethod* method_handles_{};
@@ -156,6 +161,11 @@ class WrenVM final : private UnCopyable {
       const Value& module_name, const Value& variable_name);
   InterpretRet load_into_core(const str_t& source_bytes);
   FunctionObject* make_call_stub(ModuleObject* module, const str_t& signature);
+  WrenForeignFn find_foreign_method(const str_t& module_name,
+      const str_t& class_name, bool is_static, const str_t& signature);
+
+  void bind_method(int i, Code method_type,
+      ModuleObject* module, ClassObject* cls, const Value& method_val);
 
   void call_foreign(FiberObject* fiber, const WrenForeignFn& foreign, int argc);
 
@@ -194,8 +204,10 @@ public:
   inline SymbolTable& mnames(void) { return method_names_; }
   inline MapObject* modules(void) const { return modules_; }
   inline void set_compiler(Compiler* compiler) { compiler_ = compiler; }
-  inline void set_load_fn(const LoadModuleFn& fn) { load_module_ = fn; }
-  inline void set_load_fn(LoadModuleFn&& fn) { load_module_ = std::move(fn); }
+  inline void set_load_fn(const LoadModuleFn& fn) { load_module_fn_ = fn; }
+  inline void set_load_fn(LoadModuleFn&& fn) { load_module_fn_ = std::move(fn); }
+  inline void set_foreign_fn(const BindForeignFn& fn) { bind_foreign_fn_ = fn; }
+  inline void set_foreign_fn(BindForeignFn&& fn) { bind_foreign_fn_ = std::move(fn); }
   inline void set_primitive(
       ClassObject* cls, const str_t& name, const PrimitiveFn& fn) {
     set_native(cls, name, fn);
@@ -224,8 +236,6 @@ public:
   void release_method(WrenMethod* method);
   void wren_call(WrenMethod* method, const char* arg_types, ...);
 
-  void define_method(const str_t& class_name, const str_t& signature,
-      const WrenForeignFn& method, bool is_static = false);
   bool get_argument_bool(int index) const;
   double get_argument_double(int index) const;
   const char* get_argument_string(int index) const;

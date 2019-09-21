@@ -485,6 +485,7 @@ class Compiler : private UnCopyable {
       UNUSED,                                   // KEYWORD(ELSE, "else")
       PREFIX(boolean),                          // KEYWORD(FALSE, "false")
       UNUSED,                                   // KEYWORD(FOR, "for")
+      UNUSED,                                   // KEYWORD(FOREIGN, "foreign")
       UNUSED,                                   // KEYWORD(IF, "if")
       UNUSED,                                   // KEYWORD(IMPORT, "import")
       UNUSED,                                   // KEYWORD(IN, "in")
@@ -1151,6 +1152,7 @@ class Compiler : private UnCopyable {
     while (!match(TokenKind::TK_RBRACE)) {
       Code instruction = Code::METHOD_INSTANCE;
       bool is_ctor = false;
+      bool is_foreign = match(TokenKind::KW_FOREIGN);
       class_compiler.is_static_method = false;
 
       if (match(TokenKind::KW_STATIC)) {
@@ -1171,7 +1173,7 @@ class Compiler : private UnCopyable {
       }
 
       int method_symbol = method(
-          &class_compiler, is_ctor, signature);
+          &class_compiler, is_ctor, is_foreign, signature);
       // load the class
       if (is_module)
         emit_words(Code::LOAD_MODULE_VAR, slot);
@@ -1523,7 +1525,7 @@ class Compiler : private UnCopyable {
   }
 
   int method(ClassCompiler* class_compiler,
-      bool is_ctor, const SignatureFn& signature_fn) {
+      bool is_ctor, bool is_foreign, const SignatureFn& signature_fn) {
     // compiles a method definition inside a class body, returns the symbol
     // in the method table for the new method
 
@@ -1539,13 +1541,19 @@ class Compiler : private UnCopyable {
     // compile the method signature
     signature_fn(&method_compiler, signature);
 
-    consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
-
-    method_compiler.finish_body(is_ctor);
-
     // include the full signature in debug messages in stack traces
-    str_t debug_name = signature_to_string(signature);
-    method_compiler.finish_compiler(debug_name);
+    str_t full_signature = signature_to_string(signature);
+    if (is_foreign) {
+      // define a constant for the signature
+      int constant = add_constant(
+          StringObject::make_string(parser_.get_vm(), full_signature));
+      emit_words(Code::CONSTANT, constant);
+    }
+    else {
+      consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
+      method_compiler.finish_body(is_ctor);
+      method_compiler.finish_compiler(full_signature);
+    }
 
     return signature_symbol(signature);
   }

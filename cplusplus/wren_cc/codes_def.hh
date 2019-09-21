@@ -150,11 +150,17 @@ CODE(CLASS)
 
 // define a method for symbol [arg] the class receiving the method is popped
 // off the stack, then the function defining the body is popped
+//
+// if a foreign method is being defined, the `function` will be a string
+// identifying the foreign method, otherwise it will be a function or closure
 CODE(METHOD_INSTANCE)
 
 // define a method for symbol [arg] the class whose metaclass will receive
 // the method is popped off the stack, then the function defining the body
 // is popped
+//
+// if a foreign method is being defined, the `function` will be a string
+// identifying the foreign method, otherwise it will be a function or closure
 CODE(METHOD_STATIC)
 
 // load the module whose name is stored in string constant [arg], pushes

@@ -440,12 +440,18 @@ class ModuleObject final : public BaseObject {
   // correspond to entries in [variables_]
   SymbolTable variable_names_;
 
-  ModuleObject(void) noexcept : BaseObject(ObjType::MODULE) {}
+  StringObject* name_{}; // name of the module
+
+  ModuleObject(StringObject* name) noexcept
+    : BaseObject(ObjType::MODULE), name_(name) {
+  }
 public:
   inline int count(void) const { return Xt::as_type<int>(variables_.size()); }
   inline const Value& get_variable(int i) const { return variables_[i]; }
   inline void set_variable(int i, const Value& val) { variables_[i] = val; }
   inline int find_variable(const str_t& name) const { return variable_names_.get(name); }
+  inline StringObject* name(void) const { return name_; }
+  inline const char* name_cstr(void) const { return name_->cstr(); }
 
   int declare_variable(const str_t& name);
   int define_variable(const str_t& name, const Value& value);
@@ -454,7 +460,7 @@ public:
   virtual str_t stringify(void) const override;
   virtual void gc_mark(WrenVM& vm) override;
 
-  static ModuleObject* make_module(WrenVM& vm);
+  static ModuleObject* make_module(WrenVM& vm, StringObject* name);
 };
 
 class FunctionObject final : public BaseObject {
@@ -709,6 +715,19 @@ struct Method {
   Method(MethodType t, const PrimitiveFn& fn) noexcept : type(t), m_(fn) {}
   Method(MethodType t, const WrenForeignFn& fn) noexcept : type(t), m_(fn) {}
   Method(MethodType t, BaseObject* fn) noexcept : type(t), m_(fn) {}
+
+  inline void assign(const PrimitiveFn& fn) noexcept {
+    type = MethodType::PRIMITIVE;
+    m_ = fn;
+  }
+  inline void assign(const WrenForeignFn& fn) noexcept {
+    type = MethodType::FOREIGN;
+    m_ = fn;
+  }
+  inline void assign(BaseObject* fn) noexcept {
+    type = MethodType::BLOCK;
+    m_ = fn;
+  }
 };
 
 class ClassObject final : public BaseObject {
@@ -748,7 +767,6 @@ public:
 
   void bind_superclass(ClassObject* superclass);
   void bind_method(FunctionObject* fn);
-  void bind_method(int i, int method_type, const Value& fn);
   void bind_method(int i, const Method& method);
 
   virtual str_t stringify(void) const override;

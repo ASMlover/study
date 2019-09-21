@@ -94,4 +94,9 @@ class IO {
       IO.writeString("[invalid toString]")
     }
   }
+
+  foreign static writeString(string)
+  foreign static clock
+  foreign static time
+  foreign static read
 }

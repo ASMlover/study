@@ -130,6 +130,11 @@ static const str_t kLibSource =
 "      IO.writeString(\"[invalid toString]\")\n"
 "    }\n"
 "  }\n"
+"\n"
+"  foreign static writeString(string)\n"
+"  foreign static clock\n"
+"  foreign static time\n"
+"  foreign static read\n"
 "}\n";
 
 namespace io {
@@ -156,16 +161,35 @@ namespace io {
 
     inline void load_library(WrenVM& vm) {
       vm.interpret("", kLibSource);
-      wrenDefineStaticMethod(vm, "IO", "writeString(_)", write_string_impl);
-      wrenDefineStaticMethod(vm, "IO", "clock", clock_impl);
-      wrenDefineStaticMethod(vm, "IO", "time", time_impl);
-      wrenDefineStaticMethod(vm, "IO", "read", read_impl);
+    }
+
+    inline WrenForeignFn bind_foreign(WrenVM& vm,
+        const str_t& class_name, const str_t& signature) {
+      ASSERT(class_name == "IO", "should only have IO class");
+
+      if (signature == "writeString(_)")
+        return write_string_impl;
+      if (signature == "clock")
+        return clock_impl;
+      if (signature == "time")
+        return time_impl;
+      if (signature == "read")
+        return read_impl;
+
+      return nullptr;
     }
   }
 
   void load_library(WrenVM& vm) {
 #if USE_LIBIO
     details::load_library(vm);
+#endif
+  }
+
+  WrenForeignFn bind_foreign(WrenVM& vm,
+      const str_t& class_name, const str_t& signature) {
+#if USE_LIBIO
+    return details::bind_foreign(vm, class_name, signature);
 #endif
   }
 }

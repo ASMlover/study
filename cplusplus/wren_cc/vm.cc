@@ -36,13 +36,18 @@ namespace wrencc {
 /// WrenVM IMPLEMENTATIONS
 
 WrenVM::WrenVM(void) noexcept {
-  // implicitly create a `main` module for the REPL or entry script
-  ModuleObject* main_module = ModuleObject::make_module(*this);
+  StringObject* name = StringObject::make_string(*this, "main");
   {
-    PinnedGuard guard(*this, main_module);
+    PinnedGuard name_guard(*this, name);
 
-    modules_ = MapObject::make_map(*this);
-    modules_->set(nullptr, main_module);
+    // implicitly create a `main` module for the REPL or entry script
+    ModuleObject* main_module = ModuleObject::make_module(*this, name);
+    {
+      PinnedGuard guard(*this, main_module);
+
+      modules_ = MapObject::make_map(*this);
+      modules_->set(nullptr, main_module);
+    }
   }
 
   core::initialize(*this);
@@ -138,7 +143,7 @@ Value WrenVM::import_module(const str_t& name) {
     return nullptr;
 
   // load the module's source code from the embedder
-  str_t source_bytes = load_module_(*this, name);
+  str_t source_bytes = load_module_fn_(*this, name);
   if (source_bytes.empty())
     return StringObject::format(*this, "could not find module `$`", name);
 
@@ -727,8 +732,8 @@ bool WrenVM::interpret(void) {
     {
       u16_t symbol = RDWORD();
       ClassObject* cls = PEEK().as_class();
-      Value method = PEEK2();
-      cls->bind_method(symbol, Xt::as_type<int>(c), method);
+      const Value& method = PEEK2();
+      bind_method(symbol, c, fn->module(), cls, method);
       POP();
       POP();
 
@@ -850,7 +855,7 @@ FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
     module = (*m).as_module();
   }
   else {
-    module = ModuleObject::make_module(*this);
+    module = ModuleObject::make_module(*this, name.as_string());
 
     // store it in the VM's module registry so we don't load the same module
     // multiple times
@@ -881,7 +886,7 @@ Value WrenVM::import_module(const Value& name) {
     return nullptr;
 
   // load the module's source code from the embedder
-  const str_t source_bytes = load_module_(*this, name.as_cstring());
+  const str_t source_bytes = load_module_fn_(*this, name.as_cstring());
   if (source_bytes.empty()) {
     // could not load the module
     return StringObject::format(*this, "could not find module `@`", name);
@@ -944,6 +949,54 @@ FunctionObject* WrenVM::make_call_stub(
 
   return FunctionObject::make_function(*this,
       module, 0, 0, bytecode, 5, nullptr, 0, "", signature, debug_lines, 5);
+}
+
+WrenForeignFn WrenVM::find_foreign_method(const str_t& module_name,
+    const str_t& class_name, bool is_static, const str_t& signature) {
+  // looks up a foreign method in [module_name] on [class_name] with [signature]
+  //
+  // this will try the host's foreign method binder first, if that falls, it
+  // falls back ot handling the built-in modules
+
+  WrenForeignFn fn{};
+  if (bind_foreign_fn_) {
+    if (fn = bind_foreign_fn_(*this,
+          module_name, class_name, is_static, signature); fn)
+      return fn;
+  }
+
+  // otherwise try the built-in libraries
+  fn = io::bind_foreign(*this, class_name, signature);
+  if (fn)
+    return fn;
+
+  return nullptr;
+}
+
+void WrenVM::bind_method(int i, Code method_type,
+    ModuleObject* module, ClassObject* cls, const Value& method_val) {
+  Method method;
+
+  bool is_static = method_type == Code::METHOD_STATIC;
+  if (method_val.is_string()) {
+    auto method_fn = find_foreign_method(module->name_cstr(),
+        cls->name_cstr(), is_static, method_val.as_cstring());
+    method.assign(method_fn);
+  }
+  else {
+    FunctionObject* method_fn = method_val.is_function() ?
+      method_val.as_function() : method_val.as_closure()->fn();
+
+    // methods are always bound against the class, and not the metaclass, even
+    // for static methods, so that constructors (which are static) get bound
+    // like instance methods
+    cls->bind_method(method_fn);
+    method.assign(method_fn);
+  }
+
+  if (is_static)
+    cls = cls->cls();
+  cls->bind_method(i, method);
 }
 
 void WrenVM::call_function(FiberObject* fiber, BaseObject* fn, int argc) {
@@ -1109,36 +1162,6 @@ void WrenVM::wren_call(WrenMethod* method, const char* arg_types, ...) {
   method->fiber->push(receiver);
 }
 
-void WrenVM::define_method(
-    const str_t& class_name, const str_t& signature,
-    const WrenForeignFn& method, bool is_static) {
-  ASSERT(!class_name.empty(), "must provide class name");
-  ASSERT(!signature.empty(), "must provide signature");
-  ASSERT(signature.size() < MAX_METHOD_SIGNATURE, "signature too long");
-
-  // find or create the class to bind the method to
-  ModuleObject* core_module = get_core_module();
-  int class_symbol = core_module->find_variable(class_name);
-  ClassObject* cls;
-  if (class_symbol != -1) {
-    cls = core_module->get_variable(class_symbol).as_class();
-  }
-  else {
-    // the class does not already exists, so create it
-    StringObject* name_string = StringObject::make_string(*this, class_name);
-    PinnedGuard guard(*this, name_string);
-
-    cls = ClassObject::make_class(*this, obj_class_, 0, name_string);
-    define_variable(core_module, class_name, cls);
-  }
-
-  // bind the method
-  int method_symbol = method_names_.ensure(signature);
-  if (is_static)
-    cls = cls->cls();
-  cls->bind_method(method_symbol, method);
-}
-
 bool WrenVM::get_argument_bool(int index) const {
   ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
   ASSERT(index >= 0, "index cannot be negative");
@@ -1189,16 +1212,6 @@ void WrenVM::return_string(const str_t& text) {
 
   *foreign_call_slot_ = StringObject::make_string(*this, text);
   foreign_call_slot_ = nullptr;
-}
-
-void wrenDefineMethod(WrenVM& vm, const str_t& class_name,
-    const str_t& signature, const WrenForeignFn& method) {
-  vm.define_method(class_name, signature, method, false);
-}
-
-void wrenDefineStaticMethod(WrenVM& vm, const str_t& class_name,
-    const str_t& signature, const WrenForeignFn& method) {
-  vm.define_method(class_name, signature, method, true);
 }
 
 bool wrenGetArgumentBool(WrenVM& vm, int index) {
