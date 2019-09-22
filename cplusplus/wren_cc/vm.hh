@@ -164,7 +164,7 @@ class WrenVM final : private UnCopyable {
   WrenForeignFn find_foreign_method(const str_t& module_name,
       const str_t& class_name, bool is_static, const str_t& signature);
 
-  void bind_method(int i, Code method_type,
+  Value bind_method(int i, Code method_type,
       ModuleObject* module, ClassObject* cls, const Value& method_val);
 
   void call_foreign(FiberObject* fiber, const WrenForeignFn& foreign, int argc);

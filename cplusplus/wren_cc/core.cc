@@ -234,7 +234,7 @@ static bool validate_function(WrenVM& vm,
   if (args[index].is_function() || args[index].is_closure())
     return true;
 
-  args[0] = StringObject::format(vm, "`$` must be a function", arg_name);
+  args[0] = StringObject::format(vm, "`$` must be a function", arg_name.c_str());
   return false;
 }
 
@@ -246,7 +246,7 @@ static bool validate_numeric(WrenVM& vm,
   if (args[index].is_numeric())
     return true;
 
-  args[0] = StringObject::format(vm, "`$` must be a numeric", arg_name);
+  args[0] = StringObject::format(vm, "`$` must be a numeric", arg_name.c_str());
   return false;
 }
 
@@ -258,7 +258,7 @@ static bool validate_int_value(WrenVM& vm,
   if (std::trunc(value) == value)
     return true;
 
-  args[0] = StringObject::format(vm, "`$` must be an integer", arg_name);
+  args[0] = StringObject::format(vm, "`$` must be an integer", arg_name.c_str());
   return false;
 }
 
@@ -291,7 +291,7 @@ static int validate_index_value(WrenVM& vm,
   if (index >= 0 && index < count)
     return index;
 
-  args[0] = StringObject::format(vm, "`$` out of bounds", arg_name);
+  args[0] = StringObject::format(vm, "`$` out of bounds", arg_name.c_str());
   return -1;
 }
 
@@ -316,7 +316,7 @@ static bool validate_string(WrenVM& vm,
   if (args[index].is_string())
     return true;
 
-  args[0] = StringObject::format(vm, "`$` must be a string", arg_name);
+  args[0] = StringObject::format(vm, "`$` must be a string", arg_name.c_str());
   return false;
 }
 

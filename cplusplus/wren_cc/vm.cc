@@ -147,7 +147,7 @@ Value WrenVM::import_module(const str_t& name) {
   // load the module's source code from the embedder
   str_t source_bytes = load_module_fn_(*this, name);
   if (source_bytes.empty())
-    return StringObject::format(*this, "could not find module `$`", name);
+    return StringObject::format(*this, "could not find module `$`", name.c_str());
 
   FiberObject* module_fiber = load_module(name_val, source_bytes);
   // return the fiber the executes the module
@@ -202,7 +202,7 @@ Value WrenVM::method_not_found(ClassObject* cls, int symbol) {
   // a method with [symbol] on [cls] object.
 
   return StringObject::format(*this, "`@` does not implement `$`",
-      cls->name(), method_names_.get_name(symbol));
+      cls->name(), method_names_.get_name(symbol).c_str());
 }
 
 Value WrenVM::validate_superclass(
@@ -735,7 +735,9 @@ bool WrenVM::interpret(void) {
       u16_t symbol = RDWORD();
       ClassObject* cls = PEEK().as_class();
       const Value& method = PEEK2();
-      bind_method(symbol, c, fn->module(), cls, method);
+      Value error = bind_method(symbol, c, fn->module(), cls, method);
+      if (error.is_string())
+        RUNTIME_ERROR(error);
       POP();
       POP();
 
@@ -981,8 +983,16 @@ WrenForeignFn WrenVM::find_foreign_method(const str_t& module_name,
   return nullptr;
 }
 
-void WrenVM::bind_method(int i, Code method_type,
+Value WrenVM::bind_method(int i, Code method_type,
     ModuleObject* module, ClassObject* cls, const Value& method_val) {
+  // defines [method_val] as a method on [cls]
+  //
+  // handles both foreign methods where [method_val] is a string containning
+  // the method's signature and Wren methods where [method_val] is a function
+  //
+  // returns an error string if the method is a foreign method that could not
+  // be found, otherwise returns `nil` Value
+
   Method method;
 
   bool is_static = method_type == Code::METHOD_STATIC;
@@ -990,6 +1000,11 @@ void WrenVM::bind_method(int i, Code method_type,
     auto method_fn = find_foreign_method(module->name_cstr(),
         cls->name_cstr(), is_static, method_val.as_cstring());
     method.assign(method_fn);
+    if (!method_fn) {
+      return StringObject::format(*this,
+          "could not find foreign method `@` for class `$` in module `$`",
+          method_val, cls->name_cstr(), module->name_cstr());
+    }
   }
   else {
     FunctionObject* method_fn = method_val.is_function() ?
@@ -1005,6 +1020,8 @@ void WrenVM::bind_method(int i, Code method_type,
   if (is_static)
     cls = cls->cls();
   cls->bind_method(i, method);
+
+  return nullptr;
 }
 
 void WrenVM::call_function(FiberObject* fiber, BaseObject* fn, int argc) {
