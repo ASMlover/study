@@ -91,7 +91,19 @@ class Sequence {
   }
 }
 
-class String is Sequence {}
+class String is Sequence {
+  bytes { new StringByteSequence(this) }
+}
+
+class StringByteSequence is Sequence {
+  new(string) {
+    _string = string
+  }
+
+  [index] { _string.byteAt(index) }
+  iterate(iterator) { _string.iterByte(iterator) }
+  iterValue(iterator) { _string.byteAt(iterator) }
+}
 
 class List is Sequence {
   addAll(other) {

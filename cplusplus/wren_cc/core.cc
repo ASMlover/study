@@ -143,7 +143,19 @@ static str_t kLibSource =
 "  }\n"
 "}\n"
 "\n"
-"class String is Sequence {}\n"
+"class String is Sequence {\n"
+"  bytes { new StringByteSequence(this) }\n"
+"}\n"
+"\n"
+"class StringByteSequence is Sequence {\n"
+"  new(string) {\n"
+"    _string = string\n"
+"  }\n"
+"\n"
+"  [index] { _string.byteAt(index) }\n"
+"  iterate(iterator) { _string.iterByte(iterator) }\n"
+"  iterValue(iterator) { _string.byteAt(iterator) }\n"
+"}\n"
 "\n"
 "class List is Sequence {\n"
 "  addAll(other) {\n"
@@ -806,6 +818,15 @@ DEF_PRIMITIVE(object_instantiate) {
   RETURN_ERR("must provide a class to `new` to construct");
 }
 
+DEF_PRIMITIVE(string_byteat) {
+  StringObject* s = args[0].as_string();
+  int index = validate_index(vm, args, 1, s->size(), "Index");
+  if (index == -1)
+    return PrimitiveResult::ERROR;
+
+  RETURN_VAL(Xt::as_type<u8_t>((*s)[index]));
+}
+
 DEF_PRIMITIVE(string_len) {
   RETURN_VAL(args[0].as_string()->size());
 }
@@ -854,6 +875,31 @@ DEF_PRIMITIVE(string_iterate) {
     RETURN_VAL(false);
 
   int index = Xt::as_type<int>(args[1].as_numeric());
+  ++index;
+  if (index >= s->size())
+    RETURN_VAL(false);
+
+  RETURN_VAL(index);
+}
+
+DEF_PRIMITIVE(string_iterbyte) {
+  StringObject* s = args[0].as_string();
+
+  // if we're starting the iteration, return the first index
+  if (args[1].is_nil()) {
+    if (s->size() == 0)
+      RETURN_VAL(false);
+    RETURN_VAL(0);
+  }
+
+  if (!validate_int(vm, args, 1, "Iterator"))
+    return PrimitiveResult::ERROR;
+
+  if (args[1].as_numeric() < 0)
+    RETURN_VAL(false);
+  int index = Xt::as_type<int>(args[1].as_numeric());
+
+  // advance to the next byte
   ++index;
   if (index >= s->size())
     RETURN_VAL(false);
@@ -1398,11 +1444,13 @@ namespace core {
     vm.set_str_cls(vm.find_variable("String").as_class());
     vm.set_primitive(vm.str_cls(), "+(_)", _primitive_string_add);
     vm.set_primitive(vm.str_cls(), "[_]", _primitive_string_subscript);
+    vm.set_primitive(vm.str_cls(), "byteAt(_)", _primitive_string_byteat);
     vm.set_primitive(vm.str_cls(), "len", _primitive_string_len);
     vm.set_primitive(vm.str_cls(), "contains(_)", _primitive_string_contains);
     vm.set_primitive(vm.str_cls(), "endsWith(_)", _primitive_string_endswith);
     vm.set_primitive(vm.str_cls(), "indexOf(_)", _primitive_string_indexof);
     vm.set_primitive(vm.str_cls(), "iterate(_)", _primitive_string_iterate);
+    vm.set_primitive(vm.str_cls(), "iterByte(_)", _primitive_string_iterbyte);
     vm.set_primitive(vm.str_cls(), "iterValue(_)", _primitive_string_itervalue);
     vm.set_primitive(vm.str_cls(), "startsWith(_)", _primitive_string_startswith);
     vm.set_primitive(vm.str_cls(), "toString", _primitive_string_tostring);
