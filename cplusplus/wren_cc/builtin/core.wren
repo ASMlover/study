@@ -1,10 +1,26 @@
 
 class Sequence {
+  all(f) {
+    var result = true
+    for (element in this) {
+      result = f.call(element)
+      if (!result) return result
+    }
+    return result
+  }
+
+  any(f) {
+    var result = false
+    for (element in this) {
+      result = f.call(element)
+      if (result) return result
+    }
+    return result
+  }
+
   contains(element) {
     for (item in this) {
-      if (element == item) {
-        return true
-      }
+      if (element == item) return true
     }
     return false
   }
@@ -20,9 +36,7 @@ class Sequence {
   count(f) {
     var result = 0
     for (element in this) {
-      if (f.call(element)) {
-        result = result + 1
-      }
+      if (f.call(element)) result = result + 1
     }
     return result
   }
@@ -41,20 +55,6 @@ class Sequence {
       if (f.call(element)) result.add(element)
     }
     return result
-  }
-
-  all(f) {
-    for (element in this) {
-      if (!f.call(element)) return false
-    }
-    return true
-  }
-
-  any(f) {
-    for (element in this) {
-      if (f.call(element)) return true
-    }
-    return false
   }
 
   reduce(acc, f) {
