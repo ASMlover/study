@@ -1460,7 +1460,7 @@ class Compiler : private UnCopyable {
 
     if (match(TokenKind::TK_LBRACE)) {
       push_scope();
-      if (!finish_block()){
+      if (finish_block()){
         // block was an expression, so discard it
         emit_byte(Code::POP);
       }
@@ -1473,24 +1473,24 @@ class Compiler : private UnCopyable {
   }
 
   bool finish_block(void) {
-    // returns true if it was a statement body, false if it was an expression
-    // body (most precisely, returns false if a value was left on the stack,
-    // an empty block returns true)
+    // returns true if it was a expresion body, false if it was an statement
+    // body (most precisely, returns true if a value was left on the stack,
+    // an empty block returns false)
 
     // empty blocks do nothing
     if (match(TokenKind::TK_RBRACE))
-      return true;
+      return false;
 
     // if there is no newline after the `{`, it's a single expression body
     if (!match_line()) {
       expression();
       consume(TokenKind::TK_RBRACE, "expect `}` at end of block");
-      return false;
+      return true;
     }
 
     // empty blocks (with just a newline inside) do nothing
     if (match(TokenKind::TK_RBRACE))
-      return true;
+      return false;
 
     // compile the definition list
     do {
@@ -1502,22 +1502,22 @@ class Compiler : private UnCopyable {
 
       consume_line("expect newline after statement");
     } while (!match(TokenKind::TK_RBRACE));
-    return true;
+    return false;
   }
 
   void finish_body(bool is_ctor) {
     // parses a method or function body, after the initial `{` has been consumed
 
-    bool is_statement_body = finish_block();
+    bool is_expression_body = finish_block();
     if (is_ctor) {
       // if the constructor body evaluates to a value, discard it
-      if (!is_statement_body)
+      if (is_expression_body)
         emit_byte(Code::POP);
 
       // the receiver is always stored in the first local slot
       emit_byte(Code::LOAD_LOCAL_0);
     }
-    else if (is_statement_body) {
+    else if (!is_expression_body) {
       // implicitly return nil in statement bodies
       emit_byte(Code::NIL);
     }
