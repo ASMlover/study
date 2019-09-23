@@ -50,6 +50,12 @@ DEF_PRIMITIVE(fn##i) {\
 }
 
 static str_t kLibSource =
+"class Nil {}\n"
+"class Bool {}\n"
+"class Numeric {}\n"
+"class Function {}\n"
+"class Fiber {}\n"
+"\n"
 "class Sequence {\n"
 "  all(f) {\n"
 "    var result = true\n"
@@ -1330,16 +1336,12 @@ DEF_PRIMITIVE(map_itervalue) {
 }
 
 static ClassObject* define_class(WrenVM& vm, const str_t& name) {
-  StringObject* name_string = StringObject::make_string(vm, name);
+  // creates either the Object or Class class in the core library with [name]
 
+  StringObject* name_string = StringObject::make_string(vm, name);
   PinnedGuard guard(vm, name_string);
-  ClassObject* cls;
-  // if `Object` and `Class` classes are not defined in the VM yet, then define
-  // a `raw` class (a class without class or superclass)
-  if (vm.class_cls() == nullptr)
-    cls = ClassObject::make_single_class(vm, name_string);
-  else
-    cls = ClassObject::make_class(vm, vm.obj_cls(), 0, name_string);
+
+  ClassObject* cls = ClassObject::make_single_class(vm, name_string);
   vm.define_variable(nullptr, name, cls);
   return cls;
 }
@@ -1372,11 +1374,14 @@ namespace core {
     vm.set_primitive(vm.class_cls(), "name", _primitive_class_name);
     vm.set_primitive(vm.class_cls(), "supertype", _primitive_class_supertype);
 
-    vm.set_bool_cls(define_class(vm, "Bool"));
+    // the rest of the classes can now be defined normally
+    vm.interpret("", kLibSource);
+
+    vm.set_bool_cls(vm.find_variable("Bool").as_class());
     vm.set_primitive(vm.bool_cls(), "toString", _primitive_bool_tostring);
     vm.set_primitive(vm.bool_cls(), "!", _primitive_bool_not);
 
-    vm.set_fiber_cls(define_class(vm, "Fiber"));
+    vm.set_fiber_cls(vm.find_variable("Fiber").as_class());
     vm.set_primitive(vm.fiber_cls()->cls(), "<instantiate>", _primitive_fiber_instantiate);
     vm.set_primitive(vm.fiber_cls()->cls(), "new(_)", _primitive_fiber_new);
     vm.set_primitive(vm.fiber_cls()->cls(), "abort(_)", _primitive_fiber_abort);
@@ -1391,7 +1396,7 @@ namespace core {
     vm.set_primitive(vm.fiber_cls(), "run(_)", _primitive_fiber_run1);
     vm.set_primitive(vm.fiber_cls(), "try()", _primitive_fiber_try);
 
-    vm.set_fn_cls(define_class(vm, "Function"));
+    vm.set_fn_cls(vm.find_variable("Function").as_class());
     vm.set_primitive(vm.fn_cls()->cls(), "<instantiate>", _primitive_fn_instantiate);
     vm.set_primitive(vm.fn_cls()->cls(), "new(_)", _primitive_fn_new);
     vm.set_primitive(vm.fn_cls(), "arity", _primitive_fn_arity);
@@ -1414,11 +1419,11 @@ namespace core {
     vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call16);
     vm.set_primitive(vm.fn_cls(), "toString", _primitive_fn_tostring);
 
-    vm.set_nil_cls(define_class(vm, "Nil"));
+    vm.set_nil_cls(vm.find_variable("Nil").as_class());
     vm.set_primitive(vm.nil_cls(), "!", _primitive_nil_not);
     vm.set_primitive(vm.nil_cls(), "toString", _primitive_nil_tostring);
 
-    vm.set_num_cls(define_class(vm, "Numeric"));
+    vm.set_num_cls(vm.find_variable("Numeric").as_class());
     vm.set_primitive(vm.num_cls()->cls(), "fromString(_)", _primitive_numeric_fromstring);
     vm.set_primitive(vm.num_cls()->cls(), "pi", _primitive_numeric_pi);
     vm.set_primitive(vm.num_cls(), "+(_)", _primitive_numeric_add);
@@ -1460,11 +1465,6 @@ namespace core {
     // by IEEE-754 even though they have different bit representations
     vm.set_primitive(vm.num_cls(), "==(_)", _primitive_numeric_eq);
     vm.set_primitive(vm.num_cls(), "!=(_)", _primitive_numeric_ne);
-
-    // vm.set_obj_cls(vm.find_variable("Object").as_class());
-
-    /// from core library source
-    vm.interpret("", kLibSource);
 
     vm.set_str_cls(vm.find_variable("String").as_class());
     vm.set_primitive(vm.str_cls(), "+(_)", _primitive_string_add);

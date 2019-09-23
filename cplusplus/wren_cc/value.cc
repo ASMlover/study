@@ -1103,7 +1103,6 @@ ClassObject* ClassObject::make_class(
   // metaclasses always inherit Class and do not parallel the non-metaclass
   // hierarclly
 
-  PinnedGuard pinned_name(vm, name);
   StringObject* metaclass_name = StringObject::format(vm, "@ metaclass", name);
 
   PinnedGuard pinned_metaclass_name(vm, metaclass_name);

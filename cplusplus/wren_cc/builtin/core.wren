@@ -1,4 +1,10 @@
 
+class Nil {}
+class Bool {}
+class Numeric {}
+class Function {}
+class Fiber {}
+
 class Sequence {
   all(f) {
     var result = true
