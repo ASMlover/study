@@ -1329,20 +1329,17 @@ DEF_PRIMITIVE(map_itervalue) {
   RETURN_VAL(entry.second);
 }
 
-static ClassObject* define_single_class(WrenVM& vm, const str_t& name) {
-  StringObject* name_string = StringObject::make_string(vm, name);
-
-  PinnedGuard guard(vm, name_string);
-  ClassObject* cls = ClassObject::make_single_class(vm, name_string);
-  vm.define_variable(nullptr, name, cls);
-  return cls;
-}
-
 static ClassObject* define_class(WrenVM& vm, const str_t& name) {
   StringObject* name_string = StringObject::make_string(vm, name);
 
   PinnedGuard guard(vm, name_string);
-  ClassObject* cls = ClassObject::make_class(vm, vm.obj_cls(), 0, name_string);
+  ClassObject* cls;
+  // if `Object` and `Class` classes are not defined in the VM yet, then define
+  // a `raw` class (a class without class or superclass)
+  if (vm.class_cls() == nullptr)
+    cls = ClassObject::make_single_class(vm, name_string);
+  else
+    cls = ClassObject::make_class(vm, vm.obj_cls(), 0, name_string);
   vm.define_variable(nullptr, name, cls);
   return cls;
 }
@@ -1351,7 +1348,7 @@ namespace core {
   void initialize(WrenVM& vm) {
     // define the root object class, this has to be done a little specially
     // because it has no superclass and an unusual metaclass (Class)
-    vm.set_obj_cls(define_single_class(vm, "Object"));
+    vm.set_obj_cls(define_class(vm, "Object"));
     vm.set_primitive(vm.obj_cls(), "!", _primitive_object_not);
     vm.set_primitive(vm.obj_cls(), "==(_)", _primitive_object_eq);
     vm.set_primitive(vm.obj_cls(), "!=(_)", _primitive_object_ne);
@@ -1362,7 +1359,7 @@ namespace core {
 
     // now we can define Class, which is a subclass of Object, but Object's
     // metclass
-    vm.set_class_cls(define_single_class(vm, "Class"));
+    vm.set_class_cls(define_class(vm, "Class"));
 
     // now that Object and Class are defined, we can wrie them up to each other
     vm.class_cls()->bind_superclass(vm.obj_cls());
