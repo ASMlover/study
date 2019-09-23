@@ -94,29 +94,29 @@ class Sequence {
 }
 
 class MapSequence is Sequence {
-  new(seq, f) {
-    _seq = seq
-    _f = f
+  new(sequence, fn) {
+    _sequence = sequence
+    _fn = fn
   }
 
-  iterate(iterator) { _seq.iterate(iterator) }
-  iterValue(iterator) { _f.call(_seq.iterValue(iterator)) }
+  iterate(iterator) { _sequence.iterate(iterator) }
+  iterValue(iterator) { _fn.call(_sequence.iterValue(iterator)) }
 }
 
 class WhereSequence is Sequence {
-  new(seq, f) {
-    _seq = seq
-    _f = f
+  new(sequence, fn) {
+    _sequence = sequence
+    _fn = fn
   }
 
   iterate(iterator) {
-    while (iterator = _seq.iterate(iterator)) {
-      if (_f.call(_seq.iterValue(iterator))) break
+    while (iterator = _sequence.iterate(iterator)) {
+      if (_fn.call(_sequence.iterValue(iterator))) break
     }
     return iterator
   }
 
-  iterValue(iterator) { _seq.iterValue(iterator) }
+  iterValue(iterator) { _sequence.iterValue(iterator) }
 }
 
 class String is Sequence {
