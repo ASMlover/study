@@ -544,11 +544,14 @@ class Compiler : private UnCopyable {
     return Xt::as_type<int>(locals_.size() - 1);
   }
 
-  int declare_variable(void) {
-    // declares a variable in the current scope with the name of the previously
-    // consumed token, returns its symbol
+  int declare_variable(Token* token = nullptr) {
+    // declares a variable in the current scope whose name is the given token
+    //
+    // if [token] is `nullptr` use the previously consumed token, returns its
+    // symbol
 
-    str_t name = parser_.prev().as_string();
+    str_t name(token == nullptr ? parser_.prev().as_string() : token->as_string());
+
     if (name.size() > MAX_VARIABLE_NAME) {
       error("variable name cannot be longger than %d characters",
           MAX_VARIABLE_NAME);
@@ -1212,8 +1215,7 @@ class Compiler : private UnCopyable {
 
     // compile the comma-separated list of variables to import
     do {
-      consume(TokenKind::TK_IDENTIFIER, "expect name of variable to import");
-      int slot = declare_variable();
+      int slot = declare_named_variable();
 
       // define a string constant for the variable name
       int variable_constant = add_constant(StringObject::make_string(
@@ -1331,7 +1333,11 @@ class Compiler : private UnCopyable {
   }
 
   void var_definition(void) {
-    int symbol = declare_named_variable();
+    // grab its name, but don't declare it yet, a (local) variable shouldn't
+    // be in scope in its own initializer
+    consume(TokenKind::TK_IDENTIFIER, "expect variable name");
+    Token name_token = parser_.prev();
+
     // compile the initializer
     if (match(TokenKind::TK_EQ)) {
       expression();
@@ -1340,6 +1346,9 @@ class Compiler : private UnCopyable {
       // default initialize it to nil
       nil(false);
     }
+
+    // now put it in scope
+    int symbol = declare_variable(&name_token);
     define_variable(symbol);
   }
 
@@ -1473,7 +1482,7 @@ class Compiler : private UnCopyable {
   }
 
   bool finish_block(void) {
-    // returns true if it was a expresion body, false if it was an statement
+    // returns true if it was a expresion body, false if it was a statement
     // body (most precisely, returns true if a value was left on the stack,
     // an empty block returns false)
 
