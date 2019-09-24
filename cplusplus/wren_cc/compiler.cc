@@ -120,11 +120,12 @@ class Parser : private UnCopyable {
   Token curr_;
 
   bool skip_newlines_{true};
+  bool print_errors_{false};
 
   bool had_error_{};
 public:
-  Parser(WrenVM& vm, ModuleObject* module, Lexer& lex) noexcept
-    : vm_(vm), module_(module), lex_(lex) {
+  Parser(WrenVM& vm, ModuleObject* module, Lexer& lex, bool print_errors) noexcept
+    : vm_(vm), module_(module), lex_(lex), print_errors_(print_errors) {
   }
 
   inline const str_t& source_path(void) const { return lex_.source_path(); }
@@ -132,6 +133,8 @@ public:
   inline const Token& curr(void) const { return curr_; }
   inline bool had_error(void) const { return had_error_; }
   inline void set_error(bool b = true) { had_error_ = b; }
+  inline bool print_errors(void) const { return print_errors_; }
+  inline void set_print_errors(bool b = true) { print_errors_ = b; }
   inline WrenVM& get_vm(void) { return vm_; }
   inline ModuleObject* get_mod(void) const { return module_; }
 
@@ -305,6 +308,8 @@ class Compiler : private UnCopyable {
   void error(const char* format, ...) {
     const Token& tok = parser_.prev();
     parser_.set_error(true);
+    if (!parser_.print_errors())
+      return;
 
     // if the parse error was caused by an error token, the lexer has already
     // reported it.
@@ -2122,10 +2127,10 @@ public:
   }
 };
 
-FunctionObject* compile(WrenVM& vm,
-    ModuleObject* module, const str_t& source_path, const str_t& source_bytes) {
+FunctionObject* compile(WrenVM& vm, ModuleObject* module,
+    const str_t& source_path, const str_t& source_bytes, bool print_errors) {
   Lexer lex(source_path, source_bytes);
-  Parser p(vm, module, lex);
+  Parser p(vm, module, lex, print_errors);
 
   p.advance();
   Compiler c(p, nullptr);

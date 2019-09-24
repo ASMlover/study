@@ -873,7 +873,8 @@ FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
         });
   }
 
-  FunctionObject* fn = compile(*this, module, name.as_cstring(), source_bytes);
+  FunctionObject* fn = compile(*this,
+      module, name.as_cstring(), source_bytes, true);
   if (fn == nullptr)
     return nullptr;
 
@@ -920,7 +921,7 @@ std::tuple<bool, Value> WrenVM::import_variable(
 }
 
 InterpretRet WrenVM::load_into_core(const str_t& source_bytes) {
-  FunctionObject* fn = compile(*this, get_core_module(), "", source_bytes);
+  FunctionObject* fn = compile(*this, get_core_module(), "", source_bytes, true);
   if (fn == nullptr)
     return InterpretRet::COMPILE_ERROR;
 
@@ -972,10 +973,6 @@ WrenForeignFn WrenVM::find_foreign_method(const str_t& module_name,
   // otherwise try the built-in libraries
   if (module_name == "core") {
     fn = io::bind_foreign(*this, class_name, signature);
-    if (fn)
-      return fn;
-
-    fn = meta::bind_foreign(*this, class_name, signature);
     if (fn)
       return fn;
   }

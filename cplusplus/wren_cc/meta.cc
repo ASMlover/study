@@ -25,47 +25,57 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "vm.hh"
+#include "primitive.hh"
+#include "compiler.hh"
 #include "meta.hh"
 
 namespace wrencc {
 
 static const str_t kLibSource =
-"class Meta {\n"
-"  foreign static eval(source)\n"
-"}\n";
+"class Meta {}\n";
 
 namespace meta {
   namespace details {
-    void eval_impl(WrenVM& vm) {
-      const char* source = wrenGetArgumentString(vm, 1);
-      vm.interpret("Meta", source);
+    DEF_PRIMITIVE(meta_eval) {
+      if (!validate_string(vm, args, 1, "Source code"))
+        return PrimitiveResult::ERROR;
+
+      // eval the code in the module where the calling function was defined
+      Value calling_fn(fiber->peek_frame().fn);
+      ModuleObject* module = calling_fn.is_function()
+        ? calling_fn.as_function()->module()
+        : calling_fn.as_closure()->fn()->module();
+
+      // compile it
+      FunctionObject* fn = compile(vm, module, "<eval>", args[1].as_cstring());
+      if (fn == nullptr)
+        RETURN_ERR("could not compile source code");
+
+      PinnedGuard guard(vm, fn);
+      // create a fiber to run the code in
+      FiberObject* eval_fiber = FiberObject::make_fiber(vm, fn);
+
+      // remember what fiber to return to
+      eval_fiber->set_caller(fiber);
+      // switch to the fiber
+      args[0] = eval_fiber;
+
+      return PrimitiveResult::RUN_FIBER;
     }
 
     inline void load_library(WrenVM& vm) {
       vm.interpret("", kLibSource);
-    }
 
-    inline WrenForeignFn bind_foreign(WrenVM& vm,
-        const str_t& class_name, const str_t& signature) {
-      if (class_name != "Meta")
-        return nullptr;
-
-      if (signature == "eval(_)")
-        return eval_impl;
-      return nullptr;
+      // the methods on `Meta` are static, so get the metaclass for the
+      // Meta class
+      ClassObject* meta_cls = vm.find_variable("Meta").as_class()->cls();
+      vm.set_primitive(meta_cls, "eval(_)", _primitive_meta_eval);
     }
   }
 
   void load_library(WrenVM& vm) {
 #if USE_LIBMETA
     details::load_library(vm);
-#endif
-  }
-
-  WrenForeignFn bind_foreign(WrenVM& vm,
-      const str_t& class_name, const str_t& signature) {
-#if USE_LIBMETA
-    return details::bind_foreign(vm, class_name, signature);
 #endif
   }
 }
