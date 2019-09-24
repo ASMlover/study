@@ -627,6 +627,10 @@ DEF_PRIMITIVE(numeric_dotdotdot) {
   RETURN_VAL(RangeObject::make_range(vm, from, to, false));
 }
 
+DEF_PRIMITIVE(object_same) {
+  RETURN_VAL(args[1] == args[2]);
+}
+
 DEF_PRIMITIVE(object_not) {
   RETURN_VAL(false);
 }
@@ -1161,7 +1165,7 @@ static ClassObject* define_class(WrenVM& vm, const str_t& name) {
 namespace core {
   void initialize(WrenVM& vm) {
     // define the root object class, this has to be done a little specially
-    // because it has no superclass and an unusual metaclass (Class)
+    // because it has no superclass
     vm.set_obj_cls(define_class(vm, "Object"));
     vm.set_primitive(vm.obj_cls(), "!", _primitive_object_not);
     vm.set_primitive(vm.obj_cls(), "==(_)", _primitive_object_eq);
@@ -1171,20 +1175,26 @@ namespace core {
     vm.set_primitive(vm.obj_cls(), "type", _primitive_object_type);
     vm.set_primitive(vm.obj_cls(), "<instantiate>", _primitive_object_instantiate);
 
-    // now we can define Class, which is a subclass of Object, but Object's
-    // metclass
+    // now we can define Class, which is a subclass of Object
     vm.set_class_cls(define_class(vm, "Class"));
 
     // now that Object and Class are defined, we can wrie them up to each other
     vm.class_cls()->bind_superclass(vm.obj_cls());
-    vm.obj_cls()->set_cls(vm.class_cls());
-    vm.class_cls()->set_cls(vm.class_cls());
-
-    // define the methods specific to Class after wiring up its superclass
-    // to prevent the inherited ones from overwriting them
     vm.set_primitive(vm.class_cls(), "<instantiate>", _primitive_class_instantiate);
     vm.set_primitive(vm.class_cls(), "name", _primitive_class_name);
     vm.set_primitive(vm.class_cls(), "supertype", _primitive_class_supertype);
+
+    // finally we can define Object's metaclass which is a subclass of Class
+    ClassObject* obj_metaclass = define_class(vm, "Object metaclass");
+    // wire up the metaclass relationships now that all three classes are built
+    vm.obj_cls()->set_cls(obj_metaclass);
+    obj_metaclass->set_cls(vm.class_cls());
+    vm.class_cls()->set_cls(vm.class_cls());
+
+    // do this after wiring up the metaclasses so obj_metaclass doesn't get
+    // collected
+    obj_metaclass->bind_superclass(vm.class_cls());
+    vm.set_primitive(obj_metaclass, "same(_,_)", _primitive_object_same);
 
     // the rest of the classes can now be defined normally
     vm.interpret("", kLibSource);
