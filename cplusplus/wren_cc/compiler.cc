@@ -2035,8 +2035,10 @@ public:
 
     // if we hit an error, donot bother creating the function since it's borked
     // anyway
-    if (parser_.had_error())
+    if (parser_.had_error()) {
+      parser_.get_vm().set_compiler(parent_);
       return nullptr;
+    }
 
     // mark the end of the bytecode, since it may contain multiple early
     // returns, we cannot rely on `RETURN` to tell use we are at the end.

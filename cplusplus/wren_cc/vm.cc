@@ -1008,8 +1008,8 @@ Value WrenVM::bind_method(int i, Code method_type,
       method_val.as_function() : method_val.as_closure()->fn();
 
     // methods are always bound against the class, and not the metaclass, even
-    // for static methods, so that constructors (which are static) get bound
-    // like instance methods
+    // for static methods, because static methods don't have instance fields
+    // anyway
     cls->bind_method(method_fn);
     method.assign(method_fn);
   }
