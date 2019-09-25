@@ -9,4 +9,4 @@ class A {
 
 class B is A {}
 
-IO.print((new B).callSuperToString) // expect: A.toString
+IO.print((new B).callSuperToString) // expect: instance of B
