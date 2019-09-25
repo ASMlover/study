@@ -128,7 +128,6 @@ CODE(JUMP_IF)      // pop and if not truthy then jump the instruction pointer [a
 
 CODE(AND)          // if the top of the stack is false jump [arg], or pop and continue
 CODE(OR)           // if the top of the stack if non-false jump [arg], or pop and continue
-CODE(IS)           // pop [a] then [b] and push true if [b] is an instance of [a]
 
 // close the upvalue for the local on the top of the stack, then pop it.
 CODE(CLOSE_UPVALUE)

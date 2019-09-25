@@ -643,6 +643,22 @@ DEF_PRIMITIVE(object_ne) {
   RETURN_VAL(args[0] != args[1]);
 }
 
+DEF_PRIMITIVE(object_is) {
+  if (!args[1].is_class())
+    RETURN_ERR("right operand must be a class");
+
+  ClassObject* cls = vm.get_class(args[0]);
+  ClassObject* base_cls = args[1].as_class();
+
+  // walk the superclass chain looking for the class
+  for (; cls != nullptr; cls = cls->superclass()) {
+    if (base_cls == cls)
+      RETURN_VAL(true);
+  }
+
+  RETURN_VAL(false);
+}
+
 DEF_PRIMITIVE(object_new) {
   // this is the default argument-less constructor that all objects
   // inherit. it just returns `this`
@@ -1171,6 +1187,7 @@ namespace core {
     vm.set_primitive(vm.obj_cls(), "==(_)", _primitive_object_eq);
     vm.set_primitive(vm.obj_cls(), "!=(_)", _primitive_object_ne);
     vm.set_primitive(vm.obj_cls(), "new", _primitive_object_new);
+    vm.set_primitive(vm.obj_cls(), "is(_)", _primitive_object_is);
     vm.set_primitive(vm.obj_cls(), "toString", _primitive_object_tostring);
     vm.set_primitive(vm.obj_cls(), "type", _primitive_object_type);
     vm.set_primitive(vm.obj_cls(), "<instantiate>", _primitive_object_instantiate);

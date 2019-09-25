@@ -494,7 +494,7 @@ class Compiler : private UnCopyable {
       UNUSED,                                   // KEYWORD(IF, "if")
       UNUSED,                                   // KEYWORD(IMPORT, "import")
       UNUSED,                                   // KEYWORD(IN, "in")
-      INFIX(is, Precedence::IS),                // KEYWORD(IS, "is")
+      INFIXOP(Precedence::IS, "is"),            // KEYWORD(IS, "is")
       NEWOP(new_exp),                           // KEYWORD(NEW, "new")
       PREFIX(nil),                              // KEYWORD(NIL, "nil")
       UNUSED,                                   // KEYWORD(RETURN, "return")
@@ -1599,14 +1599,6 @@ class Compiler : private UnCopyable {
     }
 
     call_signature(Code::CALL_0, signature);
-  }
-
-  void is(bool allow_assignment) {
-    ignore_newlines();
-
-    // compile the right-hand side
-    parse_precedence(false, Precedence::CALL);
-    emit_byte(Code::IS);
   }
 
   void and_exp(bool allow_assignment) {
