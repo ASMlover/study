@@ -1924,7 +1924,12 @@ class Compiler : private UnCopyable {
       fn_compiler.num_params_ = fn_signature.arity;
 
       fn_compiler.finish_body(false);
-      fn_compiler.finish_compiler("(fn)");
+
+      // name the funciton based on the method its passed to
+      str_t block_name = signature_to_string(signature);
+      block_name += " block argument";
+
+      fn_compiler.finish_compiler(block_name);
     }
 
     call_signature(instruction, signature);
