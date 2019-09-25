@@ -246,7 +246,7 @@ void WrenVM::call_foreign(
   }
 }
 
-bool WrenVM::interpret(void) {
+InterpretRet WrenVM::interpret(FiberObject* fiber) {
   // the main bytecode interpreter loop, this is where the magic happens, it
   // is also, as you can imagine, highly performance critical, returns `true`
   // if the fiber completed without error
@@ -258,7 +258,9 @@ bool WrenVM::interpret(void) {
 #define RDBYTE()  (*frame->ip++)
 #define RDWORD()  (frame->ip += 2, Xt::as_type<u16_t>((frame->ip[-2] << 8) | frame->ip[-1]))
 
-  FiberObject* fiber = fiber_;
+  // remember the current fiber so we can find it if a GC happens
+  fiber_ = fiber;
+
   CallFrame* frame{};
   FunctionObject* fn{};
 
@@ -279,7 +281,7 @@ bool WrenVM::interpret(void) {
 #define RUNTIME_ERROR(error) do {\
     fiber = runtime_error(fiber, (error));\
     if (fiber == nullptr)\
-      return false;\
+      return InterpretRet::RUNTIME_ERROR;\
     LOAD_FRAME();\
     DISPATCH();\
   } while (false)
@@ -460,7 +462,7 @@ bool WrenVM::interpret(void) {
           case PrimitiveResult::RUN_FIBER:
             // if we do not have a fiber to switch to, stop interpreting
             if (args[0].is_nil())
-              return true;
+              return InterpretRet::SUCCESS;
             fiber = args[0].as_fiber();
             fiber_ = fiber;
             LOAD_FRAME();
@@ -532,7 +534,7 @@ bool WrenVM::interpret(void) {
           case PrimitiveResult::RUN_FIBER:
             // if we do not have a fiber to switch to, stop interpreting
             if (args[0].is_nil())
-              return true;
+              return InterpretRet::SUCCESS;
             fiber = args[0].as_fiber();
             fiber_ = fiber;
             LOAD_FRAME();
@@ -616,7 +618,7 @@ bool WrenVM::interpret(void) {
       if (fiber->empty_frame()) {
         // if this is the main fiber, we are done
         if (fiber->caller() == nullptr)
-          return true;
+          return InterpretRet::SUCCESS;
 
         // we have a calling fiber to resume
         fiber = fiber->caller();
@@ -766,7 +768,7 @@ bool WrenVM::interpret(void) {
   // we should only exit this function from an explicit return from Code::RETURN
   // or a runtime error
   UNREACHABLE();
-  return false;
+  return InterpretRet::RUNTIME_ERROR;
 }
 
 ClassObject* WrenVM::get_class(const Value& val) const {
@@ -810,8 +812,8 @@ InterpretRet WrenVM::interpret(
   if (fiber == nullptr)
     return InterpretRet::COMPILE_ERROR;
 
-  fiber_ = fiber;
-  return interpret() ? InterpretRet::SUCCESS : InterpretRet::RUNTIME_ERROR;
+  InterpretRet result = interpret(fiber);
+  return result;
 }
 
 ModuleObject* WrenVM::get_module(const Value& name) const {
@@ -901,10 +903,12 @@ InterpretRet WrenVM::load_into_core(const str_t& source_bytes) {
   if (fn == nullptr)
     return InterpretRet::COMPILE_ERROR;
 
-  PinnedGuard guard(*this, fn);
-
-  fiber_ = FiberObject::make_fiber(*this, fn);
-  return interpret() ? InterpretRet::SUCCESS : InterpretRet::RUNTIME_ERROR;
+  FiberObject* fiber;
+  {
+    PinnedGuard guard(*this, fn);
+    fiber = FiberObject::make_fiber(*this, fn);
+  }
+  return interpret(fiber);
 }
 
 FunctionObject* WrenVM::make_call_stub(
@@ -1145,11 +1149,10 @@ void WrenVM::wren_call(WrenMethod* method, const char* arg_types, ...) {
 
   va_end(ap);
 
-  fiber_ = method->fiber;
   const Value& receiver = method->fiber->peek_value();
   BaseObject* fn = method->fiber->peek_frame().fn;
 
-  interpret();
+  interpret(method->fiber);
 
   // reset the fiber to get ready for the next call
   method->fiber->reset_fiber(fn);

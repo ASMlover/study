@@ -174,7 +174,7 @@ class WrenVM final : private UnCopyable {
 
   void call_foreign(FiberObject* fiber, const WrenForeignFn& foreign, int argc);
 
-  bool interpret(void);
+  InterpretRet interpret(FiberObject* fiber);
 
   void collect(void);
   void free_object(BaseObject* obj);
