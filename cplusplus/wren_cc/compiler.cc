@@ -1884,6 +1884,11 @@ class Compiler : private UnCopyable {
 
     int symbol = signature_symbol(signature);
     emit_words(instruction + signature.arity, symbol);
+
+    if (instruction == Code::SUPER_0) {
+      int constant = add_constant(nullptr);
+      emit_u16(constant);
+    }
   }
 
   inline void call_method(int argc, const str_t& name) {

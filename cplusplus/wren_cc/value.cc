@@ -759,6 +759,16 @@ int FunctionObject::get_argc(
   case Code::CALL_14:
   case Code::CALL_15:
   case Code::CALL_16:
+  case Code::JUMP:
+  case Code::LOOP:
+  case Code::JUMP_IF:
+  case Code::AND:
+  case Code::OR:
+  case Code::METHOD_INSTANCE:
+  case Code::METHOD_STATIC:
+  case Code::LOAD_MODULE:
+    return 2;
+
   case Code::SUPER_0:
   case Code::SUPER_1:
   case Code::SUPER_2:
@@ -776,16 +786,6 @@ int FunctionObject::get_argc(
   case Code::SUPER_14:
   case Code::SUPER_15:
   case Code::SUPER_16:
-  case Code::JUMP:
-  case Code::LOOP:
-  case Code::JUMP_IF:
-  case Code::AND:
-  case Code::OR:
-  case Code::METHOD_INSTANCE:
-  case Code::METHOD_STATIC:
-  case Code::LOAD_MODULE:
-    return 2;
-
   case Code::IMPORT_VARIABLE:
     return 4;
 
@@ -1052,6 +1052,31 @@ void ClassObject::bind_method(FunctionObject* fn) {
       {
         auto num_fields = fn->get_code(ip) + superclass_->num_fields();
         fn->set_code(ip++, num_fields);
+      } break;
+    case Code::SUPER_0:
+    case Code::SUPER_1:
+    case Code::SUPER_2:
+    case Code::SUPER_3:
+    case Code::SUPER_4:
+    case Code::SUPER_5:
+    case Code::SUPER_6:
+    case Code::SUPER_7:
+    case Code::SUPER_8:
+    case Code::SUPER_9:
+    case Code::SUPER_10:
+    case Code::SUPER_11:
+    case Code::SUPER_12:
+    case Code::SUPER_13:
+    case Code::SUPER_14:
+    case Code::SUPER_15:
+    case Code::SUPER_16:
+      {
+        // skip over the symbol
+        ip += 2;
+
+        // fill in the constant slot with a reference to the superclass
+        int constant = (fn->get_code(ip) << 8) | fn->get_code(ip + 1);
+        fn->set_constant(constant, superclass_);
       } break;
     case Code::CLOSURE:
       {

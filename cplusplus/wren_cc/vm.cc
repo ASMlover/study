@@ -516,10 +516,8 @@ bool WrenVM::interpret(void) {
       int symbol = RDWORD();
 
       Value* args = fiber->values_at(fiber->stack_size() - argc);
-      ClassObject* cls = get_class(args[0]);
-
-      // ignore methods defined on the receiver's immediate class
-      cls  = cls->superclass();
+      // the superclass is stored in a constant
+      ClassObject* cls = fn->get_constant(RDWORD()).as_class();
 
       // if the class's method table does not include the symbol, bail
       if (cls->methods_count() <= symbol) {

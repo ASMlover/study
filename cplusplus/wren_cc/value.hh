@@ -497,6 +497,7 @@ public:
   inline int constants_count(void) const { return Xt::as_type<int>(constants_.size()); }
   inline u8_t get_code(int i) const { return codes_[i]; }
   inline const Value& get_constant(int i) const { return constants_[i]; }
+  inline void set_constant(int i, const Value& v) { constants_[i] = v; }
   inline int arity(void) const { return arity_; }
   inline ModuleObject* module(void) const { return module_; }
   inline const DebugObject& debug(void) const { return debug_; }
