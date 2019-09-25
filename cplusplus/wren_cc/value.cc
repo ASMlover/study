@@ -1072,8 +1072,8 @@ void ClassObject::bind_method(FunctionObject* fn) {
 void ClassObject::bind_method(int i, const Method& method) {
   // make sure the buffer is big enough to reach the symbol's index
 
-  while (i >= methods_count())
-    methods_.push_back(Method());
+  if (i >= methods_count())
+    methods_.insert(methods_.end(), i - methods_count() + 1, Method());
   methods_[i] = method;
 }
 
