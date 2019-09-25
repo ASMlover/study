@@ -814,24 +814,29 @@ InterpretRet WrenVM::interpret(
   return interpret() ? InterpretRet::SUCCESS : InterpretRet::RUNTIME_ERROR;
 }
 
-ModuleObject* WrenVM::get_core_module(void) const {
-  // looks up the core module in the module map
-  if (auto val = modules_->get(nullptr); val)
-    return (*val).as_module();
+ModuleObject* WrenVM::get_module(const Value& name) const {
+  // looks up the previously loaded module with  [name]
+  //
+  // returns `nullptr` if no module with that name has been loaded
 
-  ASSERT(false, "could not find core module");
+  if (auto m = modules_->get(name); m)
+    return (*m).as_module();
   return nullptr;
 }
 
+ModuleObject* WrenVM::get_core_module(void) const {
+  // looks up the core module in the module map
+
+  ModuleObject* module = get_module(nullptr);
+  ASSERT(module != nullptr, "could not find core module");
+  return module;
+}
+
 FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
-  ModuleObject* module{};
+  ModuleObject* module = get_module(name);
 
   // see if the module has already been loaded
-  if (auto m = modules_->get(name); m) {
-    // execute the new code in the context of the existing module
-    module = (*m).as_module();
-  }
-  else {
+  if (module == nullptr) {
     module = ModuleObject::make_module(*this, name.as_string());
 
     // store it in the VM's module registry so we don't load the same module
@@ -877,9 +882,7 @@ Value WrenVM::import_module(const Value& name) {
 
 std::tuple<bool, Value> WrenVM::import_variable(
       const Value& module_name, const Value& variable_name) {
-  ModuleObject* module{};
-  if (auto m = modules_->get(module_name); m)
-    module = (*m).as_module();
+  ModuleObject* module = get_module(module_name);
   ASSERT(module != nullptr, "should only look up loaded modules");
 
   StringObject* variable = variable_name.as_string();
@@ -1080,9 +1083,7 @@ WrenMethod* WrenVM::acquire_method(
   Value module_name = StringObject::make_string(*this, module);
   PinnedGuard module_name_guard(*this, module_name.as_object());
 
-  ModuleObject* module_obj{};
-  if (auto m = modules_->get(module_name); m)
-    module_obj = (*m).as_module();
+  ModuleObject* module_obj = get_module(module_name);
   int variable_slot = module_obj->find_variable(variable);
 
   FunctionObject* fn = make_call_stub(module_obj, signature);

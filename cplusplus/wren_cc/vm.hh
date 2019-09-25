@@ -158,6 +158,7 @@ class WrenVM final : private UnCopyable {
   Value method_not_found(ClassObject* cls, int symbol);
   Value validate_superclass(const Value& name, const Value& supercls_val);
 
+  ModuleObject* get_module(const Value& name) const;
   ModuleObject* get_core_module(void) const;
   FiberObject* load_module(const Value& name, const str_t& source_bytes);
   Value import_module(const Value& name);
