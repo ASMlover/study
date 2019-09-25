@@ -874,8 +874,9 @@ ClosureObject* ClosureObject::make_closure(WrenVM& vm, FunctionObject* fn) {
   return o;
 }
 
-FiberObject::FiberObject(ClassObject* cls, BaseObject* fn) noexcept
-  : BaseObject(ObjType::FIBER, cls) {
+FiberObject::FiberObject(ClassObject* cls, BaseObject* fn, u16_t id) noexcept
+  : BaseObject(ObjType::FIBER, cls)
+  , id_(id) {
   stack_.reserve(kDefaultCap);
   const u8_t* ip;
   if (fn->type() == ObjType::FUNCTION)
@@ -1005,8 +1006,12 @@ void FiberObject::gc_mark(WrenVM& vm) {
   vm.mark_object(error_);
 }
 
+u32_t FiberObject::hash(void) const {
+  return id_;
+}
+
 FiberObject* FiberObject::make_fiber(WrenVM& vm, BaseObject* fn) {
-  auto* o = new FiberObject(vm.fiber_cls(), fn);
+  auto* o = new FiberObject(vm.fiber_cls(), fn, vm.gen_fiberid());
   vm.append_object(o);
   return o;
 }

@@ -616,12 +616,16 @@ class FiberObject final : public BaseObject {
   // error message, otherwise it will be empty
   StringObject* error_{};
 
+  // a unique-ish numeric ID for the fiber, lets fibers be used as map keys,
+  // unique-ish since IDs may overflow and wrap around
+  u16_t id_{};
+
   // this will be true id the caller that called this fiber did so using `try`
   // in that case, if this fiber fails with an error, the error will be given
   // to the caller
   bool caller_is_trying_{};
 
-  FiberObject(ClassObject* cls, BaseObject* fn) noexcept;
+  FiberObject(ClassObject* cls, BaseObject* fn, u16_t id) noexcept;
   virtual ~FiberObject(void) {}
 public:
   inline void reset(void) {
@@ -672,6 +676,7 @@ public:
 
   virtual str_t stringify(void) const override;
   virtual void gc_mark(WrenVM& vm) override;
+  virtual u32_t hash(void) const override;
 
   // creates a new fiber object will invoke [fn], which can be a function
   // or closure

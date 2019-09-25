@@ -101,6 +101,11 @@ class WrenVM final : private UnCopyable {
   // the fiber that is currently running
   FiberObject* fiber_{};
 
+  // the ID that will be assigned to the next fiber that is allocated, Fibers
+  // are given unique-ish (not completely unique since this can overflow) IDs
+  // so that they can be used as map keys
+  u16_t next_fiberid_{1};
+
   // the loaded modules, each key is an StringObject (expect for the main
   // module, whose key is nil) for the module's name and the value is the
   // ModuleObject for the module
@@ -212,6 +217,7 @@ public:
       ClassObject* cls, const str_t& name, const PrimitiveFn& fn) {
     set_native(cls, name, fn);
   }
+  inline u16_t gen_fiberid(void) { return next_fiberid_++; }
 
   void set_metaclasses(void);
   int declare_variable(ModuleObject* module, const str_t& name);
