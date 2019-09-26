@@ -94,6 +94,8 @@ static str_t kLibSource =
 "    }\n"
 "  }\n"
 "\n"
+"  isEmpty { iterate(nil) ? false : true }\n"
+"\n"
 "  map(transformation) { new MapSequence(this, transformation) }\n"
 "\n"
 "  where(predicate) { new WhereSequence(this, predicate)}\n"

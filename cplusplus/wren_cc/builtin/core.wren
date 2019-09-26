@@ -53,6 +53,8 @@ class Sequence {
     }
   }
 
+  isEmpty { iterate(nil) ? false : true }
+
   map(transformation) { new MapSequence(this, transformation) }
 
   where(predicate) { new WhereSequence(this, predicate)}
