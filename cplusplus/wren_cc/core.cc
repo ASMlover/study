@@ -277,6 +277,10 @@ DEF_PRIMITIVE(class_supertype) {
   RETURN_VAL(superclass);
 }
 
+DEF_PRIMITIVE(class_tostring) {
+  RETURN_VAL(args[0].as_class()->name());
+}
+
 DEF_PRIMITIVE(fiber_instantiate) {
   // return the Fiber class itself, when we then call `new` on it, it will
   // create the fiber
@@ -666,14 +670,8 @@ DEF_PRIMITIVE(object_new) {
 }
 
 DEF_PRIMITIVE(object_tostring) {
-  if (args[0].is_class()) {
-    RETURN_VAL(args[0].as_class()->name());
-  }
-  else if (args[0].is_instance()) {
-    InstanceObject* inst = args[0].as_instance();
-    RETURN_VAL(StringObject::format(vm, "instance of @", inst->cls()->name()));
-  }
-  RETURN_VAL(StringObject::make_string(vm, "<object>"));
+  BaseObject* obj = args[0].as_object();
+  RETURN_VAL(StringObject::format(vm, "instance of @", obj->cls()->name()));
 }
 
 DEF_PRIMITIVE(object_type) {
@@ -1200,6 +1198,7 @@ namespace core {
     vm.set_primitive(vm.class_cls(), "<instantiate>", _primitive_class_instantiate);
     vm.set_primitive(vm.class_cls(), "name", _primitive_class_name);
     vm.set_primitive(vm.class_cls(), "supertype", _primitive_class_supertype);
+    vm.set_primitive(vm.class_cls(), "toString", _primitive_class_tostring);
 
     // finally we can define Object's metaclass which is a subclass of Class
     ClassObject* obj_metaclass = define_class(vm, "Object metaclass");
