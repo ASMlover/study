@@ -754,6 +754,7 @@ public:
   inline const char* name_cstr(void) const { return name_->cstr(); }
   inline int methods_count(void) const { return Xt::as_type<int>(methods_.size()); }
   inline Method& get_method(int i) { return methods_[i]; }
+  inline const Method& get_method(int i) const { return methods_[i]; }
   inline void set_method(int i, const PrimitiveFn& fn) {
     methods_[i].type = MethodType::PRIMITIVE;
     methods_[i].set_primitive(fn);

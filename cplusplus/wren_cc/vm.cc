@@ -413,6 +413,23 @@ InterpretRet WrenVM::interpret(FiberObject* fiber) {
 
       DISPATCH();
     }
+
+    {
+      // the opercodes for doing method and superclass calls share a lot of
+      // code, however doing an if() test in the middle of the instruction
+      // sequence to handle the bit that is special to super calls makes the
+      // non-super call path noticeably slower
+      //
+      // instead we do this old school using an explicit goto to share code
+      // for everything at the tail end of the call-handling code that is the
+      // same between normal and superclass calls
+
+      int argc;
+      int symbol;
+
+      Value* args;
+      ClassObject* cls;
+
     CASE_CODE(CALL_0):
     CASE_CODE(CALL_1):
     CASE_CODE(CALL_2):
@@ -430,59 +447,16 @@ InterpretRet WrenVM::interpret(FiberObject* fiber) {
     CASE_CODE(CALL_14):
     CASE_CODE(CALL_15):
     CASE_CODE(CALL_16):
-    {
-      int argc = c - Code::CALL_0 + 1;
-      int symbol = RDWORD();
+      // add one for the implicit receiver argument
+      argc = c - Code::CALL_0 + 1;
+      symbol = RDWORD();
 
-      Value* args = fiber->values_at(fiber->stack_size() - argc);
-      ClassObject* cls = get_class(args[0]);
+      // the receiver is the first argument
+      args = fiber->values_at(fiber->stack_size() - argc);
+      cls = get_class(args[0]);
 
-      // if the class's method table does not include the symbol, bail
-      if (cls->methods_count() <= symbol) {
-        RUNTIME_ERROR(method_not_found(cls, symbol));
-      }
+      goto __complete_call;
 
-      auto& method = cls->get_method(symbol);
-      switch (method.type) {
-      case MethodType::PRIMITIVE:
-        {
-          // after calling this, the result will be in the first arg slot
-          switch (method.primitive()(*this, fiber, args)) {
-          case PrimitiveResult::VALUE:
-            // the result is now in the first arg slot, discard the other
-            // stack slots
-            fiber->resize_stack(fiber->stack_size() - (argc - 1));
-            break;
-          case PrimitiveResult::ERROR:
-            RUNTIME_ERROR(args[0]);
-          case PrimitiveResult::CALL:
-            fiber->call_function(args[0].as_object(), argc);
-            LOAD_FRAME();
-            break;
-          case PrimitiveResult::RUN_FIBER:
-            // if we do not have a fiber to switch to, stop interpreting
-            if (args[0].is_nil())
-              return InterpretRet::SUCCESS;
-            fiber = args[0].as_fiber();
-            fiber_ = fiber;
-            LOAD_FRAME();
-            break;
-          }
-        } break;
-      case MethodType::FOREIGN:
-        call_foreign(fiber, method.foreign(), argc);
-        break;
-      case MethodType::BLOCK:
-        fiber->call_function(method.fn(), argc);
-        LOAD_FRAME();
-        break;
-      case MethodType::NONE:
-        RUNTIME_ERROR(method_not_found(cls, symbol));
-        break;
-      }
-
-      DISPATCH();
-    }
     CASE_CODE(SUPER_0):
     CASE_CODE(SUPER_1):
     CASE_CODE(SUPER_2):
@@ -500,22 +474,26 @@ InterpretRet WrenVM::interpret(FiberObject* fiber) {
     CASE_CODE(SUPER_14):
     CASE_CODE(SUPER_15):
     CASE_CODE(SUPER_16):
-    {
       // add one for the implicit receiver argument
-      int argc = c - Code::SUPER_0 + 1;
-      int symbol = RDWORD();
+      argc = c - Code::SUPER_0 + 1;
+      symbol = RDWORD();
 
-      Value* args = fiber->values_at(fiber->stack_size() - argc);
+      // the receiver is the first argument
+      args = fiber->values_at(fiber->stack_size() - argc);
       // the superclass is stored in a constant
-      ClassObject* cls = fn->get_constant(RDWORD()).as_class();
+      cls = fn->get_constant(RDWORD()).as_class();
 
+      goto __complete_call;
+
+__complete_call:
+      // Method method = cls->get_method(symbol);
       // if the class's method table does not include the symbol, bail
-      if (cls->methods_count() <= symbol) {
+      if (symbol >= cls->methods_count() ||
+          (cls->get_method(symbol)).type == MethodType::NONE) {
         RUNTIME_ERROR(method_not_found(cls, symbol));
       }
 
-      auto& method = cls->get_method(symbol);
-      switch (method.type) {
+      switch (auto& method = cls->get_method(symbol); method.type) {
       case MethodType::PRIMITIVE:
         {
           // after calling this, the result will be in the first arg slot
@@ -549,7 +527,7 @@ InterpretRet WrenVM::interpret(FiberObject* fiber) {
         LOAD_FRAME();
         break;
       case MethodType::NONE:
-        RUNTIME_ERROR(method_not_found(cls, symbol));
+        UNREACHABLE();
         break;
       }
 
