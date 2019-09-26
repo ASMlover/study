@@ -240,6 +240,10 @@ static str_t kLibSource =
 "  }\n"
 "}\n";
 
+DEF_PRIMITIVE(return_this) {
+  RETURN_VAL(args[0]);
+}
+
 DEF_PRIMITIVE(nil_not) {
   RETURN_VAL(true);
 }
@@ -281,13 +285,6 @@ DEF_PRIMITIVE(class_supertype) {
 
 DEF_PRIMITIVE(class_tostring) {
   RETURN_VAL(args[0].as_class()->name());
-}
-
-DEF_PRIMITIVE(fiber_instantiate) {
-  // return the Fiber class itself, when we then call `new` on it, it will
-  // create the fiber
-
-  RETURN_VAL(args[0]);
 }
 
 DEF_PRIMITIVE(fiber_new) {
@@ -665,12 +662,6 @@ DEF_PRIMITIVE(object_is) {
   RETURN_VAL(false);
 }
 
-DEF_PRIMITIVE(object_new) {
-  // this is the default argument-less constructor that all objects
-  // inherit. it just returns `this`
-  RETURN_VAL(args[0]);
-}
-
 DEF_PRIMITIVE(object_tostring) {
   BaseObject* obj = args[0].as_object();
   RETURN_VAL(StringObject::format(vm, "instance of @", obj->cls()->name()));
@@ -805,10 +796,6 @@ DEF_PRIMITIVE(string_contains) {
   RETURN_VAL(orig->find(subs) != -1);
 }
 
-DEF_PRIMITIVE(string_tostring) {
-  RETURN_VAL(args[0]);
-}
-
 DEF_PRIMITIVE(string_add) {
   if (!validate_string(vm, args, 1, "Right operand"))
     return PrimitiveResult::ERROR;
@@ -854,13 +841,6 @@ static PrimitiveResult call_function(WrenVM& vm, Value* args, int argc) {
   if (argc < fn->arity())
     RETURN_ERR("function expects more arguments");
   return PrimitiveResult::CALL;
-}
-
-DEF_PRIMITIVE(fn_instantiate) {
-  // return the Function class itself, when we then call `new` on it,
-  // it will return the block
-
-  RETURN_VAL(args[0]);
 }
 
 DEF_PRIMITIVE(fn_new) {
@@ -1186,7 +1166,7 @@ namespace core {
     vm.set_primitive(vm.obj_cls(), "!", _primitive_object_not);
     vm.set_primitive(vm.obj_cls(), "==(_)", _primitive_object_eq);
     vm.set_primitive(vm.obj_cls(), "!=(_)", _primitive_object_ne);
-    vm.set_primitive(vm.obj_cls(), "new", _primitive_object_new);
+    vm.set_primitive(vm.obj_cls(), "new", _primitive_return_this);
     vm.set_primitive(vm.obj_cls(), "is(_)", _primitive_object_is);
     vm.set_primitive(vm.obj_cls(), "toString", _primitive_object_tostring);
     vm.set_primitive(vm.obj_cls(), "type", _primitive_object_type);
@@ -1222,7 +1202,7 @@ namespace core {
     vm.set_primitive(vm.bool_cls(), "!", _primitive_bool_not);
 
     vm.set_fiber_cls(vm.find_variable("Fiber").as_class());
-    vm.set_primitive(vm.fiber_cls()->cls(), "<instantiate>", _primitive_fiber_instantiate);
+    vm.set_primitive(vm.fiber_cls()->cls(), "<instantiate>", _primitive_return_this);
     vm.set_primitive(vm.fiber_cls()->cls(), "new(_)", _primitive_fiber_new);
     vm.set_primitive(vm.fiber_cls()->cls(), "abort(_)", _primitive_fiber_abort);
     vm.set_primitive(vm.fiber_cls()->cls(), "current", _primitive_fiber_current);
@@ -1237,7 +1217,7 @@ namespace core {
     vm.set_primitive(vm.fiber_cls(), "try()", _primitive_fiber_try);
 
     vm.set_fn_cls(vm.find_variable("Function").as_class());
-    vm.set_primitive(vm.fn_cls()->cls(), "<instantiate>", _primitive_fn_instantiate);
+    vm.set_primitive(vm.fn_cls()->cls(), "<instantiate>", _primitive_return_this);
     vm.set_primitive(vm.fn_cls()->cls(), "new(_)", _primitive_fn_new);
     vm.set_primitive(vm.fn_cls(), "arity", _primitive_fn_arity);
     vm.set_primitive(vm.fn_cls(), "call()", _primitive_fn_call0);
@@ -1318,7 +1298,7 @@ namespace core {
     vm.set_primitive(vm.str_cls(), "iterByte(_)", _primitive_string_iterbyte);
     vm.set_primitive(vm.str_cls(), "iterValue(_)", _primitive_string_itervalue);
     vm.set_primitive(vm.str_cls(), "startsWith(_)", _primitive_string_startswith);
-    vm.set_primitive(vm.str_cls(), "toString", _primitive_string_tostring);
+    vm.set_primitive(vm.str_cls(), "toString", _primitive_return_this);
 
     vm.set_list_cls(vm.find_variable("List").as_class());
     vm.set_primitive(vm.list_cls()->cls(), "<instantiate>", _primitive_list_instantiate);
