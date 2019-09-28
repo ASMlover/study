@@ -77,6 +77,7 @@ PUNCTUATOR(BANGEQ, "!=")
 
 KEYWORD(BREAK, "break")
 KEYWORD(CLASS, "class")
+KEYWORD(CONSTRUCT, "construct")
 KEYWORD(ELSE, "else")
 KEYWORD(FALSE, "false")
 KEYWORD(FOR, "for")

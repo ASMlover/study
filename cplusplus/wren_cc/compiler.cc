@@ -452,7 +452,7 @@ class Compiler : private UnCopyable {
 #define PREFIXOP(name) {RULE(unary_oper), nullptr, SIGN(unary_signature), Precedence::NONE, name}
 #define OP(name) {RULE(unary_oper), RULE(infix_oper), SIGN(mixed_signature), Precedence::TERM, name}
 #define PREFIXNAME {RULE(variable), nullptr, SIGN(named_signature), Precedence::NONE, nullptr}
-#define THISOP(fn) {RULE(fn), nullptr, SIGN(ctor_signature), Precedence::NONE, nullptr}
+#define CTOROP {nullptr, nullptr, SIGN(ctor_signature), Precedence::NONE, nullptr}
     static const GrammerRule _rules[] = {
       PREFIX(grouping),                         // PUNCTUATOR(LPAREN, "(")
       UNUSED,                                   // PUNCTUATOR(RPAREN, ")")
@@ -490,6 +490,7 @@ class Compiler : private UnCopyable {
 
       UNUSED,                                   // KEYWORD(BREAK, "break")
       UNUSED,                                   // KEYWORD(CLASS, "class")
+      CTOROP,                                   // KEYWORD(CONSTRUCT, "construct")
       UNUSED,                                   // KEYWORD(ELSE, "else")
       PREFIX(boolean),                          // KEYWORD(FALSE, "false")
       UNUSED,                                   // KEYWORD(FOR, "for")
@@ -502,7 +503,7 @@ class Compiler : private UnCopyable {
       UNUSED,                                   // KEYWORD(RETURN, "return")
       UNUSED,                                   // KEYWORD(STATIC, "static")
       PREFIX(super_exp),                        // KEYWORD(SUPER, "super")
-      THISOP(this_exp),                         // KEYWORD(THIS, "this")
+      PREFIX(this_exp),                         // KEYWORD(THIS, "this")
       PREFIX(boolean),                          // KEYWORD(TRUE, "true")
       UNUSED,                                   // KEYWORD(VAR, "var")
       UNUSED,                                   // KEYWORD(WHILE, "while")

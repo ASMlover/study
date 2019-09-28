@@ -102,7 +102,7 @@ class Sequence {
 }
 
 class MapSequence is Sequence {
-  this new(sequence, fn) {
+  construct new(sequence, fn) {
     _sequence = sequence
     _fn = fn
   }
@@ -112,7 +112,7 @@ class MapSequence is Sequence {
 }
 
 class WhereSequence is Sequence {
-  this new(sequence, fn) {
+  construct new(sequence, fn) {
     _sequence = sequence
     _fn = fn
   }
@@ -132,7 +132,7 @@ class String is Sequence {
 }
 
 class StringByteSequence is Sequence {
-  this new(string) {
+  construct new(string) {
     _string = string
   }
 
@@ -163,7 +163,7 @@ class List is Sequence {
 class Range is Sequence {}
 
 class MapKeySequence is Sequence {
-  this new(map) {
+  construct new(map) {
     _map = map
   }
 
@@ -172,7 +172,7 @@ class MapKeySequence is Sequence {
 }
 
 class MapValSequence is Sequence {
-  this new(map) {
+  construct new(map) {
     _map = map
   }
 
