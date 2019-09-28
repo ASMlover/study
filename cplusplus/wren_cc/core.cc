@@ -96,9 +96,9 @@ static str_t kLibSource =
 "\n"
 "  isEmpty { iterate(nil) ? false : true }\n"
 "\n"
-"  map(transformation) { new MapSequence(this, transformation) }\n"
+"  map(transformation) { MapSequence.new(this, transformation) }\n"
 "\n"
-"  where(predicate) { new WhereSequence(this, predicate)}\n"
+"  where(predicate) { WhereSequence.new(this, predicate)}\n"
 "\n"
 "  reduce(acc, f) {\n"
 "    for (element in this) {\n"
@@ -135,7 +135,7 @@ static str_t kLibSource =
 "  }\n"
 "\n"
 "  toList {\n"
-"    var result = new List\n"
+"    var result = List.new()\n"
 "    for (element in this) {\n"
 "      result.add(element)\n"
 "    }\n"
@@ -144,7 +144,7 @@ static str_t kLibSource =
 "}\n"
 "\n"
 "class MapSequence is Sequence {\n"
-"  new(sequence, fn) {\n"
+"  this new(sequence, fn) {\n"
 "    _sequence = sequence\n"
 "    _fn = fn\n"
 "  }\n"
@@ -154,7 +154,7 @@ static str_t kLibSource =
 "}\n"
 "\n"
 "class WhereSequence is Sequence {\n"
-"  new(sequence, fn) {\n"
+"  this new(sequence, fn) {\n"
 "    _sequence = sequence\n"
 "    _fn = fn\n"
 "  }\n"
@@ -170,11 +170,11 @@ static str_t kLibSource =
 "}\n"
 "\n"
 "class String is Sequence {\n"
-"  bytes { new StringByteSequence(this) }\n"
+"  bytes { StringByteSequence.new(this) }\n"
 "}\n"
 "\n"
 "class StringByteSequence is Sequence {\n"
-"  new(string) {\n"
+"  this new(string) {\n"
 "    _string = string\n"
 "  }\n"
 "\n"
@@ -205,7 +205,7 @@ static str_t kLibSource =
 "class Range is Sequence {}\n"
 "\n"
 "class MapKeySequence is Sequence {\n"
-"  new(map) {\n"
+"  this new(map) {\n"
 "    _map = map\n"
 "  }\n"
 "\n"
@@ -214,7 +214,7 @@ static str_t kLibSource =
 "}\n"
 "\n"
 "class MapValSequence is Sequence {\n"
-"  new(map) {\n"
+"  this new(map) {\n"
 "    _map = map\n"
 "  }\n"
 "\n"
@@ -223,8 +223,8 @@ static str_t kLibSource =
 "}\n"
 "\n"
 "class Map {\n"
-"  keys { new MapKeySequence(this) }\n"
-"  values { new MapValSequence(this) }\n"
+"  keys { MapKeySequence.new(this) }\n"
+"  values { MapValSequence.new(this) }\n"
 "\n"
 "  toString {\n"
 "    var first = true\n"
@@ -261,11 +261,6 @@ DEF_PRIMITIVE(bool_tostring) {
 
 DEF_PRIMITIVE(bool_not) {
   RETURN_VAL(!args[0].as_boolean());
-}
-
-DEF_PRIMITIVE(class_instantiate) {
-  ClassObject* cls = args[0].as_class();
-  RETURN_VAL(InstanceObject::make_instance(vm, cls));
 }
 
 DEF_PRIMITIVE(class_name) {
@@ -671,10 +666,6 @@ DEF_PRIMITIVE(object_type) {
   RETURN_VAL(vm.get_class(args[0]));
 }
 
-DEF_PRIMITIVE(object_instantiate) {
-  RETURN_ERR("must provide a class to `new` to construct");
-}
-
 DEF_PRIMITIVE(string_byteat) {
   StringObject* s = args[0].as_string();
   int index = validate_index(vm, args, 1, s->size(), "Index");
@@ -877,7 +868,7 @@ DEF_PRIMITIVE(fn_tostring) {
   RETURN_VAL(StringObject::make_string(vm, "<fn>"));
 }
 
-DEF_PRIMITIVE(list_instantiate) {
+DEF_PRIMITIVE(list_new) {
   RETURN_VAL(ListObject::make_list(vm, 0));
 }
 
@@ -1042,7 +1033,7 @@ DEF_PRIMITIVE(range_tostring) {
   RETURN_VAL(StringObject::make_string(vm, ss.str()));
 }
 
-DEF_PRIMITIVE(map_instantiate) {
+DEF_PRIMITIVE(map_new) {
   RETURN_VAL(MapObject::make_map(vm));
 }
 
@@ -1166,18 +1157,14 @@ namespace core {
     vm.set_primitive(vm.obj_cls(), "!", _primitive_object_not);
     vm.set_primitive(vm.obj_cls(), "==(_)", _primitive_object_eq);
     vm.set_primitive(vm.obj_cls(), "!=(_)", _primitive_object_ne);
-    vm.set_primitive(vm.obj_cls(), "new", _primitive_return_this);
+    vm.set_primitive(vm.obj_cls(), "this new()", _primitive_return_this);
     vm.set_primitive(vm.obj_cls(), "is(_)", _primitive_object_is);
     vm.set_primitive(vm.obj_cls(), "toString", _primitive_object_tostring);
     vm.set_primitive(vm.obj_cls(), "type", _primitive_object_type);
-    vm.set_primitive(vm.obj_cls(), "<instantiate>", _primitive_object_instantiate);
 
     // now we can define Class, which is a subclass of Object
     vm.set_class_cls(define_class(vm, "Class"));
-
-    // now that Object and Class are defined, we can wrie them up to each other
     vm.class_cls()->bind_superclass(vm.obj_cls());
-    vm.set_primitive(vm.class_cls(), "<instantiate>", _primitive_class_instantiate);
     vm.set_primitive(vm.class_cls(), "name", _primitive_class_name);
     vm.set_primitive(vm.class_cls(), "supertype", _primitive_class_supertype);
     vm.set_primitive(vm.class_cls(), "toString", _primitive_class_tostring);
@@ -1202,7 +1189,6 @@ namespace core {
     vm.set_primitive(vm.bool_cls(), "!", _primitive_bool_not);
 
     vm.set_fiber_cls(vm.find_variable("Fiber").as_class());
-    vm.set_primitive(vm.fiber_cls()->cls(), "<instantiate>", _primitive_return_this);
     vm.set_primitive(vm.fiber_cls()->cls(), "new(_)", _primitive_fiber_new);
     vm.set_primitive(vm.fiber_cls()->cls(), "abort(_)", _primitive_fiber_abort);
     vm.set_primitive(vm.fiber_cls()->cls(), "current", _primitive_fiber_current);
@@ -1217,7 +1203,6 @@ namespace core {
     vm.set_primitive(vm.fiber_cls(), "try()", _primitive_fiber_try);
 
     vm.set_fn_cls(vm.find_variable("Function").as_class());
-    vm.set_primitive(vm.fn_cls()->cls(), "<instantiate>", _primitive_return_this);
     vm.set_primitive(vm.fn_cls()->cls(), "new(_)", _primitive_fn_new);
     vm.set_primitive(vm.fn_cls(), "arity", _primitive_fn_arity);
     vm.set_primitive(vm.fn_cls(), "call()", _primitive_fn_call0);
@@ -1301,7 +1286,7 @@ namespace core {
     vm.set_primitive(vm.str_cls(), "toString", _primitive_return_this);
 
     vm.set_list_cls(vm.find_variable("List").as_class());
-    vm.set_primitive(vm.list_cls()->cls(), "<instantiate>", _primitive_list_instantiate);
+    vm.set_primitive(vm.list_cls()->cls(), "new()", _primitive_list_new);
     vm.set_primitive(vm.list_cls(), "[_]", _primitive_list_subscript);
     vm.set_primitive(vm.list_cls(), "[_]=(_)", _primitive_list_subscript_setter);
     vm.set_primitive(vm.list_cls(), "add(_)", _primitive_list_add);
@@ -1323,7 +1308,7 @@ namespace core {
     vm.set_primitive(vm.range_cls(), "toString", _primitive_range_tostring);
 
     vm.set_map_cls(vm.find_variable("Map").as_class());
-    vm.set_primitive(vm.map_cls()->cls(), "<instantiate>", _primitive_map_instantiate);
+    vm.set_primitive(vm.map_cls()->cls(), "new()", _primitive_map_new);
     vm.set_primitive(vm.map_cls(), "[_]", _primitive_map_subscript);
     vm.set_primitive(vm.map_cls(), "[_]=(_)", _primitive_map_subscript_setter);
     vm.set_primitive(vm.map_cls(), "clear()", _primitive_map_clear);

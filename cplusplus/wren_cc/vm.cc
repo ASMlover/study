@@ -649,6 +649,15 @@ __complete_call:
 
       DISPATCH();
     }
+    CASE_CODE(CONSTRUCT):
+    {
+      const Value& cls = fiber->get_value(frame->stack_start);
+      ASSERT(cls.is_class(), "`this` should be a class");
+      fiber->set_value(frame->stack_start,
+          InstanceObject::make_instance(*this, cls.as_class()));
+
+      DISPATCH();
+    }
     CASE_CODE(CLASS):
     {
       const Value& name = PEEK2();

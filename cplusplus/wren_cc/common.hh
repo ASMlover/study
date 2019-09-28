@@ -163,9 +163,17 @@ namespace Xt {
 // strings need to be in the parser
 #define MAX_METHOD_NAME     (64)
 
+// the maximum length of a method signature, signatures looks like:
+//
+//    foo       // getter
+//    foo()     // no argument method
+//    foo(_)    // one argument method
+//    foo(_,_)  // two arguments method
+//    this foo  // constructor initializer
+//
 // the maximum signature length takes into account the longest method name,
-// the maximum number of parameters with separators between them, and "()"
-#define MAX_METHOD_SIGNATURE  (MAX_METHOD_NAME + (MAX_PARAMETERS * 2) + 1)
+// the maximum number of parameters with separators between them, "this" and "()"
+#define MAX_METHOD_SIGNATURE  (MAX_METHOD_NAME + (MAX_PARAMETERS * 2) + 6)
 
 // the maximum length of an identifier, the only real reason for this limitation
 // is so that error messages mentioning variables can be stack allocated

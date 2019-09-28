@@ -74,6 +74,11 @@ enum class SignatureType {
   SETTER,           // a name followed by `=`
   SUBSCRIPT,        // a square bracketed parameter list
   SUBSCRIPT_SETTER, // a square bracketed parameter list followed by `=`
+
+  // a constructor initializer function, this has a distinct signature to
+  // prevent it from being invoked directly outside of the constructor on
+  // the metaclass
+  INITIALIZER,
 };
 
 struct Signature {
@@ -223,19 +228,17 @@ struct ClassCompiler {
   SymbolTable* fields{};
 
   // true if the current method being compiled is static
-  bool is_static_method{};
+  bool in_static{};
 
-  // the name of the method being compiled, note that this is just the bare
-  // method name, and not its full signature
-  str_t method_name;
+  // the signature of the method being compiled
+  Signature* signature{};
 
   ClassCompiler(void) noexcept {}
-
   ClassCompiler(SymbolTable* arg_fields,
-      bool arg_static_method, const str_t arg_method_name) noexcept
+      bool arg_static, Signature* arg_signature) noexcept
     : fields(arg_fields)
-    , is_static_method(arg_static_method)
-    , method_name(arg_method_name) {
+    , in_static(arg_static)
+    , signature(arg_signature) {
   }
 };
 
@@ -449,7 +452,7 @@ class Compiler : private UnCopyable {
 #define PREFIXOP(name) {RULE(unary_oper), nullptr, SIGN(unary_signature), Precedence::NONE, name}
 #define OP(name) {RULE(unary_oper), RULE(infix_oper), SIGN(mixed_signature), Precedence::TERM, name}
 #define PREFIXNAME {RULE(variable), nullptr, SIGN(named_signature), Precedence::NONE, nullptr}
-#define NEWOP(fn) {RULE(fn), nullptr, SIGN(ctor_signature), Precedence::NONE, nullptr}
+#define THISOP(fn) {RULE(fn), nullptr, SIGN(ctor_signature), Precedence::NONE, nullptr}
     static const GrammerRule _rules[] = {
       PREFIX(grouping),                         // PUNCTUATOR(LPAREN, "(")
       UNUSED,                                   // PUNCTUATOR(RPAREN, ")")
@@ -495,12 +498,11 @@ class Compiler : private UnCopyable {
       UNUSED,                                   // KEYWORD(IMPORT, "import")
       UNUSED,                                   // KEYWORD(IN, "in")
       INFIXOP(Precedence::IS, "is"),            // KEYWORD(IS, "is")
-      NEWOP(new_exp),                           // KEYWORD(NEW, "new")
       PREFIX(nil),                              // KEYWORD(NIL, "nil")
       UNUSED,                                   // KEYWORD(RETURN, "return")
       UNUSED,                                   // KEYWORD(STATIC, "static")
       PREFIX(super_exp),                        // KEYWORD(SUPER, "super")
-      PREFIX(this_exp),                         // KEYWORD(THIS, "this")
+      THISOP(this_exp),                         // KEYWORD(THIS, "this")
       PREFIX(boolean),                          // KEYWORD(TRUE, "true")
       UNUSED,                                   // KEYWORD(VAR, "var")
       UNUSED,                                   // KEYWORD(WHILE, "while")
@@ -789,7 +791,7 @@ class Compiler : private UnCopyable {
     emit_words(Code::LOAD_MODULE_VAR, list_class_symbol);
 
     // instantiate a new list
-    call_method(0, "<instantiate>");
+    call_method(0, "new()");
 
     // compile the list elements, each one compiles to a ".add()" call
     if (parser_.curr().kind() != TokenKind::TK_RBRACKET) {
@@ -818,7 +820,7 @@ class Compiler : private UnCopyable {
     emit_words(Code::LOAD_MODULE_VAR, map_class_symbol);
 
     // instantiate a new map
-    call_method(0, "<instantiate>");
+    call_method(0, "new()");
 
     // compile the map elements, each one is compiled to just invoke the
     // subscript setter on the map
@@ -973,7 +975,7 @@ class Compiler : private UnCopyable {
     if (enclosing_class == nullptr) {
       error("cannot reference a field outside of a class definition");
     }
-    else if (enclosing_class->is_static_method) {
+    else if (enclosing_class->in_static) {
       error("cannot use an instance field in a static method");
     }
     else {
@@ -1114,7 +1116,6 @@ class Compiler : private UnCopyable {
 
     // create a variable to store the class in
     int slot = declare_named_variable();
-    bool is_module = scope_depth_ == -1;
 
     // make a string constant for the name
     int name_constant = add_constant(
@@ -1157,46 +1158,21 @@ class Compiler : private UnCopyable {
 
     match_line();
 
+    bool has_constructor = false;
     while (!match(TokenKind::TK_RBRACE)) {
-      Code instruction = Code::METHOD_INSTANCE;
-      bool is_ctor = false;
-      bool is_foreign = match(TokenKind::KW_FOREIGN);
-      class_compiler.is_static_method = false;
-
-      if (match(TokenKind::KW_STATIC)) {
-        instruction = Code::METHOD_STATIC;
-        class_compiler.is_static_method = true;
-      }
-      else if (parser_.curr().kind() == TokenKind::KW_NEW) {
-        // if the method name is `new` it's a named constructor
-        is_ctor = true;
-      }
-
-      auto& signature = get_rule(parser_.curr().kind()).method;
-      parser_.advance();
-
-      if (!signature) {
-        error("expect method definition");
+      if (!method(&class_compiler, slot, has_constructor))
         break;
-      }
 
-      int method_symbol = method(
-          &class_compiler, is_ctor, is_foreign, signature);
-      // load the class
-      if (is_module)
-        emit_words(Code::LOAD_MODULE_VAR, slot);
-      else
-        load_local(slot);
-
-      // define the method
-      emit_words(instruction, method_symbol);
-
-      // donot require a newline after the last definition
+      // don't require a newline after the last definition
       if (match(TokenKind::TK_RBRACE))
         break;
 
       consume_line("expect newline after definition in class");
     }
+
+    // if no constructor was defined, create a default new() one
+    if (!has_constructor)
+      create_default_constructor(slot);
 
     // update the class with the number of fields
     bytecode_[num_fields_instruction] = fields.count();
@@ -1519,12 +1495,15 @@ class Compiler : private UnCopyable {
     return false;
   }
 
-  void finish_body(bool is_ctor) {
+  void finish_body(bool is_initializer) {
     // parses a method or function body, after the initial `{` has been consumed
+    //
+    // if [is_initializer] is `true`, this is the body of a constructor
+    // initializer, in that case, this adds the code to ensure it returns `this`
 
     bool is_expression_body = finish_block();
-    if (is_ctor) {
-      // if the constructor body evaluates to a value, discard it
+    if (is_initializer) {
+      // if the initializer body evaluates to a value, discard it
       if (is_expression_body)
         emit_byte(Code::POP);
 
@@ -1538,22 +1517,92 @@ class Compiler : private UnCopyable {
     emit_byte(Code::RETURN);
   }
 
-  int method(ClassCompiler* class_compiler,
-      bool is_ctor, bool is_foreign, const SignatureFn& signature_fn) {
-    // compiles a method definition inside a class body, returns the symbol
-    // in the method table for the new method
+  void create_constructor(const Signature& signature, int initializer_symbol) {
+    // creates a matching constructor method for an initializer with [signature]
+    // and [initializer_symbol]
+    //
+    // construction is a two-stage process in Wren that involves two separate
+    // methods, there is a static method that allocates a new instance of the
+    // class, it then invokes an initializer method on the new instance,
+    // forwarding all of the constructor arguments to it.
+    //
+    // the allocator method always has a fixed implementation
+    //
+    //    CONSTANT  - replace the class in slot 0 with a new instance of it
+    //    NEW       - invoke the initializer with [initializer_symbol]
+    //
+    // this creates that method and calls the initializer with [initializer_symbol]
+
+    Compiler method_compiler(parser_, this);
+    method_compiler.init_compiler(false);
+
+    // allocate the instance
+    method_compiler.emit_byte(Code::CONSTRUCT);
+
+    // run its initializer
+    method_compiler.emit_words(
+        Code::CALL_0 + signature.arity, initializer_symbol);
+
+    // return the instance
+    method_compiler.emit_byte(Code::RETURN);
+    method_compiler.finish_compiler("");
+  }
+
+  void define_method(int class_slot, bool is_static, int method_symbol) {
+    // loads the enclosing class onto the stack and then binds the function
+    // already on the stack as a method on that class
+
+    // load the class we have to do this for each method because we cannot
+    // keep the class on top of the stack, if there are statid fields, they
+    // will be locals above the initial variable slot for the class on the
+    // stack, to skip past those, we just load the class each time right
+    // before defining a method
+    if (scope_depth_ == 0) {
+      // the class is at the top level (scope depth is 0, not -1 to account
+      // for the static variable scope surrounding the class itself), so load
+      // it from there
+      emit_words(Code::LOAD_MODULE_VAR, class_slot);
+    }
+    else {
+      load_local(class_slot);
+    }
+
+    // define the method
+    Code instruction = is_static ? Code::METHOD_STATIC : Code::METHOD_INSTANCE;
+    emit_words(instruction, method_symbol);
+  }
+
+  bool method(ClassCompiler* class_compiler,
+      int class_slot, bool& has_constructor) {
+    // compiles a method definition inside a class body
+    //
+    // returns `true` if compiled successfully or `false` if the method
+    // couldn't be parsed
+
+    Signature signature;
+    class_compiler->signature = &signature;
+
+    bool is_foreign = match(TokenKind::KW_FOREIGN);
+    class_compiler->in_static = match(TokenKind::KW_STATIC);
+
+    SignatureFn signature_fn = get_rule(parser_.curr().kind()).method;
+    parser_.advance();
+
+    if (!signature_fn) {
+      error("expect method definition");
+      return false;
+    }
 
     // build the method signature
-    Signature signature;
     signature_from_token(signature);
-
-    class_compiler->method_name = signature.name;
 
     Compiler method_compiler(parser_, this);
     method_compiler.init_compiler(false);
 
     // compile the method signature
     signature_fn(&method_compiler, signature);
+    if (class_compiler->in_static && signature.type == SignatureType::INITIALIZER)
+      error("a constructor cannot be static");
 
     // include the full signature in debug messages in stack traces
     str_t full_signature = signature_to_string(signature);
@@ -1565,11 +1614,44 @@ class Compiler : private UnCopyable {
     }
     else {
       consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
-      method_compiler.finish_body(is_ctor);
+      method_compiler.finish_body(signature.type == SignatureType::INITIALIZER);
       method_compiler.finish_compiler(full_signature);
     }
 
-    return signature_symbol(signature);
+    // define the method for a constructor, this defines the instance
+    // initializer method
+    int method_symbol = signature_symbol(signature);
+    define_method(class_slot, class_compiler->in_static, method_symbol);
+    if (signature.type == SignatureType::INITIALIZER) {
+      // also define a matching constructor method on the metaclass
+      signature.set_type(SignatureType::METHOD);
+      int constructor_symbol = signature_symbol(signature);
+
+      create_constructor(signature, method_symbol);
+      define_method(class_slot, true, constructor_symbol);
+
+      // we donot need a default constructor anymore
+      has_constructor = true;
+    }
+
+    return true;
+  }
+
+  void create_default_constructor(int class_slot) {
+    // define a default `new()` constructor on the current class
+    //
+    // it just invokes `this new()` on the instance, if a base class defines
+    // that, it will get invoked, otherwise it falls on the defualt one in
+    // Object which does nothing
+
+    Signature signature("new", SignatureType::INITIALIZER, 0);
+    int initializer_symbol = signature_symbol(signature);
+
+    signature.set_type(SignatureType::METHOD);
+    int constructor_symbol = signature_symbol(signature);
+
+    create_constructor(signature, initializer_symbol);
+    define_method(class_slot, true, constructor_symbol);
   }
 
   void call(bool allow_assignment) {
@@ -1685,7 +1767,6 @@ class Compiler : private UnCopyable {
 
   void unary_signature(Signature& signature) {
     // compiles a method signature for an unary operator
-    signature.set_type(SignatureType::GETTER);
   }
 
   void mixed_signature(Signature& signature) {
@@ -1752,9 +1833,24 @@ class Compiler : private UnCopyable {
   }
 
   void ctor_signature(Signature& signature) {
-    signature.set_type(SignatureType::GETTER);
-    // add the parameters if there are any
-    parameters(signature);
+    signature.set_type(SignatureType::INITIALIZER);
+    consume(TokenKind::TK_IDENTIFIER, "expect constructor name after `this`");
+
+    // capture the name
+    signature_from_token(signature);
+    if (match(TokenKind::TK_EQ))
+      error("a constructor cannot be a setter");
+    if (!match(TokenKind::TK_LPAREN)) {
+      error("a constructor cannot be a getter");
+      return;
+    }
+
+    // allow an empty parameter list
+    if (match(TokenKind::TK_RPAREN))
+      return;
+
+    finish_parameters(signature);
+    consume(TokenKind::TK_RPAREN, "expect `)` after parameters");
   }
 
   void validate_num_parameters(int argc) {
@@ -1834,6 +1930,10 @@ class Compiler : private UnCopyable {
       name.push_back('=');
       signature_parameters(name, 1, '(', ')');
       break;
+    case SignatureType::INITIALIZER:
+      name = "this " + signature.name;
+      signature_parameters(name, signature.arity, '(', ')');
+      break;
     }
 
     return name;
@@ -1850,7 +1950,8 @@ class Compiler : private UnCopyable {
 
     // get the token for the method name
     const Token& token = parser_.prev();
-    signature.set_signature(token.as_string(), SignatureType::GETTER, 0);
+    signature.set_name(token.as_string());
+    signature.set_arity(0);
 
     if (signature.name.size() > MAX_METHOD_NAME) {
       error("method names cannot be longer than %d characters", MAX_METHOD_NAME);
@@ -1889,10 +1990,13 @@ class Compiler : private UnCopyable {
     emit_words(Code::CALL_0 + argc, method_symbol(name));
   }
 
-  void method_call(Code instruction, const str_t& method_name) {
-    // compiles an (optional) argument list and then calls it
+  void method_call(Code instruction, const Signature& method_signature) {
+    // compiles an (optional) argument list for a method call with
+    // [method_signature] and then calls it
 
-    Signature signature(method_name, SignatureType::GETTER, 0);
+    // make a new signature that conatians the updated arity and type based on
+    // the arguments we find
+    Signature signature(method_signature.name, SignatureType::GETTER, 0);
 
     // parse the argument list, if any
     if (match(TokenKind::TK_LPAREN)) {
@@ -1932,6 +2036,14 @@ class Compiler : private UnCopyable {
       fn_compiler.finish_compiler(block_name);
     }
 
+    // if this is a super() call for an initializer, make sure we got an
+    // actual argument list
+    if (method_signature.type == SignatureType::INITIALIZER) {
+      if (signature.type != SignatureType::METHOD)
+        error("a superclass constructor must have an argument list");
+      signature.set_type(SignatureType::INITIALIZER);
+    }
+
     call_signature(instruction, signature);
   }
 
@@ -1955,21 +2067,8 @@ class Compiler : private UnCopyable {
       call_signature(instruction, signature);
     }
     else {
-      method_call(instruction, signature.name);
+      method_call(instruction, signature);
     }
-  }
-
-  void new_exp(bool allow_assignment) {
-    // allow a dotted name after `new`
-    consume(TokenKind::TK_IDENTIFIER, "expect name after `name`");
-    variable(false);
-
-    while (match(TokenKind::TK_DOT))
-      call(false);
-
-    // the leading space in the name is to ensure users cannot call it directly
-    call_method(0, "<instantiate>");
-    method_call(Code::CALL_0, "new");
   }
 
   void super_exp(bool allow_assignment) {
@@ -1977,7 +2076,7 @@ class Compiler : private UnCopyable {
     if (enclosing_class == nullptr) {
       error("cannot use `super` outside of a method");
     }
-    else if (enclosing_class->is_static_method) {
+    else if (enclosing_class->in_static) {
       error("cannot use `super` in a static method");
     }
 
@@ -1993,7 +2092,7 @@ class Compiler : private UnCopyable {
       // we check that enclosing_class_ is not nullptr first, we've already
       // reported the error, but we don't want to crash here
 
-      method_call(Code::SUPER_0, enclosing_class->method_name);
+      method_call(Code::SUPER_0, *enclosing_class->signature);
     }
   }
 

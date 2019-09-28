@@ -142,6 +142,13 @@ CODE(RETURN)       // exit from the current function and return the value on the
 // pushes the created closure object
 CODE(CLOSURE)
 
+// creates a new instance of a class
+//
+// assumes the class object is in slot zero, and replaces it with the new
+// uninitialized instance of that class, the opcode is only emitted by the
+// compiler-generated constructor metaclass methods
+CODE(CONSTRUCT)
+
 // creates a class, top of stack is the superclass, or `nil` if the class
 // inherits Object, below that is a string for the name of the class, byte
 // [arg] is the number of fields in the class
