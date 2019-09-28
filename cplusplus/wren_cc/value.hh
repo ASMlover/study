@@ -596,6 +596,15 @@ struct CallFrame {
   CallFrame(const u8_t* _ip, BaseObject* _fn, int _stack_start) noexcept
     : ip(_ip), fn(_fn), stack_start(_stack_start) {
   }
+
+  inline FunctionObject* get_frame_fn(void) const {
+    switch (fn->type()) {
+    case ObjType::FUNCTION: return Xt::down<FunctionObject>(fn);
+    case ObjType::CLOSURE: return Xt::down<ClosureObject>(fn)->fn();
+    default: UNREACHABLE();
+    }
+    return nullptr;
+  }
 };
 
 class FiberObject final : public BaseObject {
@@ -625,6 +634,15 @@ class FiberObject final : public BaseObject {
   // in that case, if this fiber fails with an error, the error will be given
   // to the caller
   bool caller_is_trying_{};
+
+  inline FunctionObject* get_fn(BaseObject* fn) const {
+    switch (fn->type()) {
+    case ObjType::FUNCTION: return Xt::down<FunctionObject>(fn);
+    case ObjType::CLOSURE: return Xt::down<ClosureObject>(fn)->fn();
+    default: UNREACHABLE();
+    }
+    return nullptr;
+  }
 
   FiberObject(ClassObject* cls, BaseObject* fn, u16_t id) noexcept;
   virtual ~FiberObject(void) {}

@@ -878,11 +878,7 @@ FiberObject::FiberObject(ClassObject* cls, BaseObject* fn, u16_t id) noexcept
   : BaseObject(ObjType::FIBER, cls)
   , id_(id) {
   stack_.reserve(kDefaultCap);
-  const u8_t* ip;
-  if (fn->type() == ObjType::FUNCTION)
-    ip = Xt::down<FunctionObject>(fn)->codes();
-  else
-    ip = Xt::down<ClosureObject>(fn)->fn()->codes();
+  const u8_t* ip = get_fn(fn)->codes();
   frames_.push_back(CallFrame(ip, fn, 0));
 }
 

@@ -268,12 +268,7 @@ InterpretRet WrenVM::interpret(FiberObject* fiber) {
 // local variables
 #define LOAD_FRAME()\
   frame = &fiber->peek_frame();\
-  if (frame->fn->type() == ObjType::FUNCTION) {\
-    fn = Xt::down<FunctionObject>(frame->fn);\
-  }\
-  else {\
-    fn = Xt::down<ClosureObject>(frame->fn)->fn();\
-  }
+  fn = frame->get_frame_fn();
 
 // terminates the current fiber with error string [error], if another calling
 // fiber is willing to catch the error, transfers control to it, otherwise
