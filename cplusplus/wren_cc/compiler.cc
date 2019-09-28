@@ -1767,6 +1767,7 @@ class Compiler : private UnCopyable {
 
   void unary_signature(Signature& signature) {
     // compiles a method signature for an unary operator
+    signature.set_type(SignatureType::GETTER);
   }
 
   void mixed_signature(Signature& signature) {
