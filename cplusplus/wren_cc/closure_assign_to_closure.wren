@@ -4,13 +4,13 @@ var g = nil
 
 {
   var local = "local"
-  f = new Function {
+  f = Function.new {
     IO.print(local)
     local = "after f"
     IO.print(local)
   }
 
-  g = new Function {
+  g = Function.new {
     IO.print(local)
     local = "after g"
     IO.print(local)

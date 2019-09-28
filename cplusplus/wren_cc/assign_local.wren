@@ -1,5 +1,5 @@
 
-new Function {
+Function.new {
   var a = "before"
   IO.print(a) // expect: before
 

@@ -13,7 +13,7 @@ class Foo {
 Foo.method
 IO.print(NonLocal) // expect: method
 
-new Function {
+Function.new {
   NonLocal = "fn"
 }.call()
 IO.print(NonLocal) // expect: fn

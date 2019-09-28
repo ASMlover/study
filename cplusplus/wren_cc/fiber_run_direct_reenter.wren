@@ -1,7 +1,7 @@
 
 var fiber
 
-fiber = new Fiber {
+fiber = Fiber.new {
   IO.print(1) // expect: 1
   fiber.run()
   IO.print(2) // expect: 2

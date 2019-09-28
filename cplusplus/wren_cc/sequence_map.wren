@@ -1,6 +1,6 @@
 
 class FibIterator {
-  new {
+  this new() {
     _current = 0
     _next = 1
   }
@@ -16,7 +16,7 @@ class FibIterator {
 
 class Fib is Sequence {
   iterate(iterator) {
-    if (iterator == nil) return new FibIterator
+    if (iterator == nil) return FibIterator.new()
     iterator.iterate
     return iterator
   }
@@ -24,7 +24,7 @@ class Fib is Sequence {
   iterValue(iterator) { iterator.value }
 }
 
-var squareFib = (new Fib).map{|fib| fib * fib }
+var squareFib = Fib.new().map{|fib| fib * fib }
 var iterator = nil
 
 IO.print(squareFib is Sequence) // expect: true

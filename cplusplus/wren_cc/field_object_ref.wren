@@ -1,34 +1,30 @@
 
 class Node {
-  set(lhs, val, rhs) {
+  this new(lhs, val, rhs) {
     _lhs = lhs
     _val = val
     _rhs = rhs
   }
 
-  write {
+  write() {
     if (_lhs is Node) {
-      _lhs.write
+      _lhs.write()
     }
     IO.print(_val)
     if (_rhs is Node) {
-    _rhs.write
+    _rhs.write()
     }
   }
 }
 
-var a = new Node
-a.set(nil, "a", nil)
-var b = new Node
-b.set(nil, "b", nil)
-var c = new Node
-c.set(a, "c", b)
+var a = Node.new(nil, "a", nil)
+var b = Node.new(nil, "b", nil)
+var c = Node.new(a, "c", b)
 a = nil
 b = nil
-var d = new Node
-d.set(c, "d", nil)
+var d = Node.new(c, "d", nil)
 c = nil
-d.write
+d.write()
 
 // expect: a
 // expect: c

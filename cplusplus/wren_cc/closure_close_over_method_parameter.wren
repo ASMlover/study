@@ -3,11 +3,11 @@ var F = nil
 
 class Foo {
   method(param) {
-    F = new Function {
+    F = Function.new {
       IO.print(param)
     }
   }
 }
 
-(new Foo).method("parameter")
+Foo.new().method("parameter")
 F.call() // expect: parameter

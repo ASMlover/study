@@ -3,5 +3,5 @@ class Foo {
   bar=(value) { "result" }
 }
 
-var foo = new Foo
+var foo = Foo.new()
 IO.print(foo.bar = "value") // expect: result

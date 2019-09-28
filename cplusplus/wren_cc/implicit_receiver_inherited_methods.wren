@@ -21,4 +21,4 @@ class Bar is Foo {
   }
 }
 
-(new Bar).test
+Bar.new().test

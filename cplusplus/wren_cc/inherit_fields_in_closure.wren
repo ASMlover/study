@@ -1,32 +1,32 @@
 
 class Foo {
-  new { _field = "Foo field" }
+  this new() { _field = "Foo field" }
 
   closeOverFooGet {
-    return new Function { return new Function { return _field } }
+    return Function.new { Function.new { _field } }
   }
 
   closeOverFooSet {
-    return new Function { return new Function { _field = "new foo value" } }
+    return Function.new { Function.new { _field = "new foo value" } }
   }
 }
 
 class Bar is Foo {
-  new {
-    super
+  this new() {
+    super()
     _field = "Bar field"
   }
 
   closeOverBarGet {
-    return new Function { return new Function { return _field } }
+    return Function.new { Function.new { _field } }
   }
 
   closeOverBarSet {
-    return new Function { return new Function { _field = "new bar value" } }
+    return Function.new { Function.new { _field = "new bar value" } }
   }
 }
 
-var bar = new Bar
+var bar = Bar.new()
 IO.print(bar.closeOverFooGet.call().call()) // expect: Foo field
 IO.print(bar.closeOverBarGet.call().call()) // expect: Bar field
 bar.closeOverFooSet.call().call()

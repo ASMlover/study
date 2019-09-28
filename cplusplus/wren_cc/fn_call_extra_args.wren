@@ -1,8 +1,8 @@
 
-var f0 = new Function { IO.print("zero") }
-var f1 = new Function {|a| IO.print("one ", a) }
-var f2 = new Function {|a, b| IO.print("two ", a, " ", b) }
-var f3 = new Function {|a, b, c| IO.print("three ", a, " ", b, " ", c) }
+var f0 = Function.new { IO.print("zero") }
+var f1 = Function.new {|a| IO.print("one ", a) }
+var f2 = Function.new {|a, b| IO.print("two ", a, " ", b) }
+var f3 = Function.new {|a, b, c| IO.print("three ", a, " ", b, " ", c) }
 
 f0.call("a") // expect: zero
 f0.call("a", "b") // expect: zero

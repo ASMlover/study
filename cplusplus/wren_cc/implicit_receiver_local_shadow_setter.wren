@@ -18,4 +18,4 @@ class Foo {
   }
 }
 
-(new Foo).test
+Foo.new().test

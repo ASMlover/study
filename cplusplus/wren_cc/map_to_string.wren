@@ -10,7 +10,7 @@ IO.print({1: {2: {}}}) // expect: {1: {2: {}}}
 class Foo {
   toString { "Foo.toString" }
 }
-IO.print({1: new Foo}) // expect: {1: Foo.toString}
+IO.print({1: Foo.new()}) // expect: {1: Foo.toString}
 
 var s = {1: 2, 3: 4, 5: 6}.toString
 IO.print(s == "{1: 2, 3: 4, 5: 6}" ||

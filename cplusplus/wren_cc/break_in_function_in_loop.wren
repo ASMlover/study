@@ -1,7 +1,7 @@
 
 var done = false
 while (!done) {
-  new Function {
+  Function.new {
     break // expect error
   }
 

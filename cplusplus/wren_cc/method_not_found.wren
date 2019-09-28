@@ -1,4 +1,4 @@
 
 class Foo {}
 
-(new Foo).someUnknownMethod // expect runtime error
+Foo.new().someUnknownMethod // expect runtime error

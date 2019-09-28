@@ -4,7 +4,7 @@ class Foo {
 }
 
 // calls toString on argument
-IO.print(new Foo) // expect: Foo.toString
+IO.print(Foo.new()) // expect: Foo.toString
 
 // with one argument, returns the argument
 IO.print(IO.print(1) == 1)

@@ -1,7 +1,7 @@
 
-var f = new Function {
+var f = Function.new {
   for (i in [1, 2, 3]) {
-    return new Function { IO.print(i) }
+    return Function.new { IO.print(i) }
   }
 }
 

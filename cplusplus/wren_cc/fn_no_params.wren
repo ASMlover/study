@@ -1,2 +1,2 @@
 
-new Function {|| nil } // expect error
+Function.new {|| nil } // expect error

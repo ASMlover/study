@@ -1,4 +1,4 @@
 
-new Function {
+Function.new {
   super.foo // expect error
 }

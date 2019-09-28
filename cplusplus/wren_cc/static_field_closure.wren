@@ -3,11 +3,11 @@ class Foo {
   static initialize { __field = "Foo field" }
 
   static closeOverGet {
-    return new Function { return __field }
+    return Function.new { __field }
   }
 
   static closeOverSet {
-    return new Function { __field = "new value" }
+    return Function.new { __field = "new value" }
   }
 }
 

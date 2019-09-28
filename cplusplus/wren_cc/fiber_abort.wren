@@ -1,5 +1,5 @@
 
-var fiber = new Fiber {
+var fiber = Fiber.new {
   Fiber.abort("error message")
 }
 

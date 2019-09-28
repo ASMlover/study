@@ -1,8 +1,8 @@
 
-var f = new Function {
+var f = Function.new {
   while (true) {
     var i = "iii"
-    return new Function { IO.print(i) }
+    return Function.new { IO.print(i) }
   }
 }
 

@@ -1,6 +1,6 @@
 
 class A {
-  new(arg) {
+  this new(arg) {
     IO.print("A.new ", arg)
     _field = arg
   }
@@ -9,7 +9,7 @@ class A {
 }
 
 class B is A {
-  new(arg1, arg2) {
+  this new(arg1, arg2) {
     super(arg1)
     IO.print("B.new ", arg2)
     _field = arg2
@@ -19,7 +19,7 @@ class B is A {
 }
 
 class C is B {
-  new {
+  this new() {
     super("one", "two")
     IO.print("C.new")
     _field = "c"
@@ -28,7 +28,7 @@ class C is B {
   cField { _field }
 }
 
-var c = new C
+var c = C.new()
 IO.print(c is A) // expect: true
 IO.print(c is B) // expect: true
 IO.print(c is C) // expect: true

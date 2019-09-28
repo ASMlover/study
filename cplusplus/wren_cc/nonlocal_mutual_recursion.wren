@@ -1,10 +1,10 @@
 
 class Foo {
-  static bar { new Bar }
+  static bar { Bar.new() }
 }
 
 class Bar {
-  static foo { new Foo }
+  static foo { Foo.new() }
 }
 
 IO.print(Foo.bar) // expect: instance of Bar

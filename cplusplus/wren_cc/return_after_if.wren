@@ -1,4 +1,4 @@
 
-IO.print(new Function {
+IO.print(Function.new {
   if (true) return "ok"
 }.call()) // expect: ok

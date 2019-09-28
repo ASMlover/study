@@ -1,5 +1,5 @@
 
-var list = new List
+var list = List.new()
 
 IO.print(list.len) // expect: 0
 IO.print(list) // expect: []

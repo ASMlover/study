@@ -4,7 +4,7 @@ class Foo {
   [a, b] { "subscript " + a + " " + b }
 }
 
-var foo = new Foo
+var foo = Foo.new()
 
 IO.print(foo.method("a",
 

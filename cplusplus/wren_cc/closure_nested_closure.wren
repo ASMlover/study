@@ -1,13 +1,13 @@
 
 var f = nil
 
-new Function {
+Function.new {
   var a = "a"
-  new Function {
+  Function.new {
     var b = "b"
-    new Function {
+    Function.new {
       var c = "c"
-      f = new Function {
+      f = Function.new {
         IO.print(a)
         IO.print(b)
         IO.print(c)

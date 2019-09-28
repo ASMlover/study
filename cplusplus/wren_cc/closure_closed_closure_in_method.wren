@@ -9,6 +9,6 @@ var f = nil
     }
   }
 
-  f = new Foo
+  f = Foo.new()
 }
 f.method // expect: local

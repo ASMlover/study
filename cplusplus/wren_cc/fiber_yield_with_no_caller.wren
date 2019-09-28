@@ -1,10 +1,10 @@
 
-var a = new Fiber {
+var a = Fiber.new {
   IO.print("before") // expect: before
   Fiber.yield()
 }
 
-var b = new Fiber { a.run() }
-var c = new Fiber { b.run() }
+var b = Fiber.new { a.run() }
+var c = Fiber.new { b.run() }
 c.run()
 IO.print("not reached")

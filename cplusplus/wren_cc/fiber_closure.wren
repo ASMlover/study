@@ -4,7 +4,7 @@ var closure
 
 {
   var a = "before"
-  fiber = new Fiber {
+  fiber = Fiber.new {
     IO.print(a)
     Fiber.yield()
     a = "after"
@@ -13,7 +13,7 @@ var closure
     a = "final"
   }
 
-  closure = new Function {
+  closure = Function.new {
     IO.print(a)
   }
 }

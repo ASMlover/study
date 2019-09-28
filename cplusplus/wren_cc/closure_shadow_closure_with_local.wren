@@ -2,7 +2,7 @@
 {
   var foo = "closure"
 
-  new Function {
+  Function.new {
     {
       IO.print(foo) // expect: closure
       var foo = "shadow"

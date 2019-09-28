@@ -1,5 +1,5 @@
 
-var fiber = new Fiber {}
+var fiber = Fiber.new {}
 var map = {
   nil: "nil value",
   true: "true value",

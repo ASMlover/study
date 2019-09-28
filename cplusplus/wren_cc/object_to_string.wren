@@ -1,3 +1,3 @@
 
 class Foo {}
-IO.print((new Foo).toString) // expect: <object>
+IO.print(Foo.new().toString) // expect: <object>

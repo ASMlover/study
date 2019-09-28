@@ -4,6 +4,6 @@ class Foo {
   init { _field = "field-value" }
 }
 
-var foo = new Foo
+var foo = Foo.new()
 foo.init
 foo.write // expect: field-value

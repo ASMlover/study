@@ -1,6 +1,6 @@
 
 class FibIterator {
-  new {
+  this new() {
     _current = 0
     _next = 1
   }
@@ -16,7 +16,7 @@ class FibIterator {
 
 class Fib is Sequence {
   iterate(iterator) {
-    if (iterator == nil) return new FibIterator
+    if (iterator == nil) return FibIterator.new()
     iterator.iterate
     return iterator
   }
@@ -24,7 +24,7 @@ class Fib is Sequence {
   iterValue(iterator) { iterator.value }
 }
 
-var largeFibs = (new Fib).where{|fib| fib > 100 }
+var largeFibs = Fib.new().where{|fib| fib > 100 }
 var iterator = nil
 
 IO.print(largeFibs is Sequence) // expect:  true

@@ -3,7 +3,7 @@ var f = nil
 
 {
   var a = "a"
-  f = new Function {
+  f = Function.new {
     IO.print(a)
   }
 }

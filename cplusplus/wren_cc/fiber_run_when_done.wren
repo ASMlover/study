@@ -1,11 +1,11 @@
 
-var a = new Fiber {
+var a = Fiber.new {
   IO.print("run")
 }
 
 // run a through an intermediate fiber since it will get discarded and we
 // need to return to the main one after a completes
-var b = new Fiber {
+var b = Fiber.new {
   a.run()
   IO.print("nope")
 }

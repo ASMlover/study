@@ -1,8 +1,8 @@
 
 class Foo {
-  getClosure { new Function { new Function { new Function { toString } } } }
-  toString { return "Foo" }
+  getClosure { Function.new { Function.new { Function.new { toString } } } }
+  toString { "Foo" }
 }
 
-var closure = (new Foo).getClosure
+var closure = Foo.new().getClosure
 IO.print(closure.call().call().call()) // expect: Foo

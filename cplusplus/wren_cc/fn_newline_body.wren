@@ -1,5 +1,5 @@
 
-var f = new Function {
+var f = Function.new {
   // hi
 }
 

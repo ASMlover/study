@@ -3,7 +3,7 @@ var f = nil
 
 {
   var local = "local"
-  f = new Function {
+  f = Function.new {
     IO.print(local)
   }
 }

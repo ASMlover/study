@@ -1,5 +1,5 @@
 
-var f = new Function {
+var f = Function.new {
   IO.print("evaluate sequence")
   return [1, 2, 3]
 }

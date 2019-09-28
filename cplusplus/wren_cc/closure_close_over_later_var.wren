@@ -1,8 +1,8 @@
 
-new Function {
+Function.new {
   var a = "a"
   var b = "b"
-  new Function {
+  Function.new {
     IO.print(b) // expect: b
     IO.print(a) // expect: a
   }.call()

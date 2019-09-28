@@ -3,7 +3,7 @@ class Outer {
   method {
     IO.print(this) // expect: Outer
 
-    new Function {
+    Function.new {
       IO.print(this) // expect: Outer
 
       class Inner {
@@ -13,11 +13,11 @@ class Outer {
         toString { "Inner" }
       }
 
-      (new Inner).method
+      Inner.ne().method
     }.call()
   }
 
   toString { "Outer" }
 }
 
-(new Outer).method
+Outer.new().method

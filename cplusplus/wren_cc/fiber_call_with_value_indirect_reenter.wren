@@ -2,11 +2,11 @@
 var a
 var b
 
-a = new Fiber {
+a = Fiber.new {
   b.call(3) // expect runtime error
 }
 
-b = new Fiber {
+b = Fiber.new {
   a.call(2)
 }
 

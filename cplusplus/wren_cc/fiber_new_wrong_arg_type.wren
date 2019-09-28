@@ -1,2 +1,2 @@
 
-var fiber = new Fiber("not fn") // expect runtime error
+var fiber = Fiber.new("not fn") // expect runtime error

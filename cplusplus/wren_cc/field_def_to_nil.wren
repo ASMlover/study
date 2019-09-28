@@ -3,4 +3,4 @@ class Foo {
   write { IO.print(_field) }
 }
 
-(new Foo).write // expect: nil
+Foo.new().write // expect: nil
