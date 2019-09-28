@@ -196,13 +196,24 @@ namespace Xt {
   }\
 } while (false)
 
-// assertion to indicate that the given point in the code should never
-// be reached
+// indicates that we know execution should never reach this point in the
+// program, in debug mode we assert this fact because it's a bug to get here
+//
+// in release mode, we use compiler-specific built in functions to tell the
+// compiler the code can't be reached, this avoids `missing return` warnings
+// in some cases and also lets it perform some optimizations by assuming the
+// code in never reached
 #define UNREACHABLE() do {\
-  std::cerr << "This line should not be reached" << std::endl;\
+  std::cerr << "[" << __FILE__ << ": " << __LINE__ << "] "\
+            << "This code should not be reached in " << __func__ << "()"\
+            << std::endl;\
   std::abort();\
 } while (false)
 #else
 # define ASSERT(cond, msg)  ((void)0)
-# define UNREACHABLE()      ((void)0)
+# if defined(_MSC_VER)
+#   define UNREACHABLE()    __assume(0)
+# else
+#   define UNREACHABLE()    __builtin_unreachable()
+# endif
 #endif
