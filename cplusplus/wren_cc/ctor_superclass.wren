@@ -1,6 +1,6 @@
 
 class A {
-  this new(arg) {
+  construct new(arg) {
     IO.print("A.new ", arg)
     _field = arg
   }
@@ -9,7 +9,7 @@ class A {
 }
 
 class B is A {
-  this new(arg1, arg2) {
+  construct new(arg1, arg2) {
     super(arg1)
     IO.print("B.new ", arg2)
     _field = arg2
@@ -19,7 +19,7 @@ class B is A {
 }
 
 class C is B {
-  this new() {
+  construct new() {
     super("one", "two")
     IO.print("C.new")
     _field = "c"

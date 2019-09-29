@@ -1,6 +1,6 @@
 
 class Foo {
-  this new() { _field = "Foo field" }
+  construct new() { _field = "Foo field" }
 
   closeOverFooGet {
     return Function.new { Function.new { _field } }
@@ -12,7 +12,7 @@ class Foo {
 }
 
 class Bar is Foo {
-  this new() {
+  construct new() {
     super()
     _field = "Bar field"
   }

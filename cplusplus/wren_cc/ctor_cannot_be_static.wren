@@ -1,5 +1,5 @@
 
 class Foo {
-  static this new() {} // expect error
-  this static new() {} // expect error
+  static construct new() {} // expect error
+  construct static new() {} // expect error
 }

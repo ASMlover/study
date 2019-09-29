@@ -1,6 +1,6 @@
 
 class Iter {
-  this new(value) { _value = value }
+  construct new(value) { _value = value }
   iterate(iterator) { _value }
   iterValue(iterator) { "value" }
 }

@@ -1,6 +1,6 @@
 
 class Foo {
-  this new() {
+  construct new() {
     IO.print("ok")
   }
 }

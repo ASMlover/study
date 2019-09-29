@@ -1,6 +1,6 @@
 
 class Foo {
-  this real() {}
+  construct real() {}
 }
 
 var foo = Foo.new() // expect runtime error

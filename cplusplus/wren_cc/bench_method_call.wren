@@ -1,6 +1,6 @@
 
 class Toggle {
-  this new(startState) {
+  construct new(startState) {
     _state = startState
   }
 
@@ -13,7 +13,7 @@ class Toggle {
 }
 
 class NthToggle is Toggle {
-  this new(startState, maxCounter) {
+  construct new(startState, maxCounter) {
     super(startState)
     _countMax = maxCounter
     _count = 0

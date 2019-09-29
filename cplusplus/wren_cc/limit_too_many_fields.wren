@@ -1,6 +1,6 @@
 
 class Foo {
-  this new() {
+  construct new() {
     _field1 = 1
     _field2 = 2
     _field3 = 3

@@ -2,7 +2,7 @@
 class A {}
 
 class B is A {
-  this new() {
+  construct new() {
     super // expect error
   }
 }

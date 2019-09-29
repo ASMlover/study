@@ -1,6 +1,6 @@
 
 class Foo {
-  this base() {}
+  construct base() {}
 }
 
 class Bar is Foo {}

@@ -1,6 +1,6 @@
 
 class Node {
-  this new(lhs, val, rhs) {
+  construct new(lhs, val, rhs) {
     _lhs = lhs
     _val = val
     _rhs = rhs

@@ -1,6 +1,6 @@
 
 class Foo {
-  this new() { _field = "Foo._field" }
+  construct new() { _field = "Foo._field" }
 
   closeOverGet {
     return Function.new { _field }

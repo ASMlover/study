@@ -1,6 +1,6 @@
 
 class FibIterator {
-  this new() {
+  construct new() {
     _current = 0
     _next = 1
   }
