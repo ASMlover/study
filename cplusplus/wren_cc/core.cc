@@ -1138,22 +1138,25 @@ DEF_PRIMITIVE(map_itervalue) {
   RETURN_VAL(entry.second);
 }
 
-static ClassObject* define_class(WrenVM& vm, const str_t& name) {
+static ClassObject* define_class(
+    WrenVM& vm, ModuleObject* module, const str_t& name) {
   // creates either the Object or Class class in the core library with [name]
 
   StringObject* name_string = StringObject::make_string(vm, name);
   PinnedGuard guard(vm, name_string);
 
   ClassObject* cls = ClassObject::make_single_class(vm, name_string);
-  vm.define_variable(nullptr, name, cls);
+  vm.define_variable(module, name, cls);
   return cls;
 }
 
 namespace core {
   void initialize(WrenVM& vm) {
+    ModuleObject* core_module = vm.get_core_module();
+
     // define the root object class, this has to be done a little specially
     // because it has no superclass
-    vm.set_obj_cls(define_class(vm, "Object"));
+    vm.set_obj_cls(define_class(vm, core_module, "Object"));
     vm.set_primitive(vm.obj_cls(), "!", _primitive_object_not);
     vm.set_primitive(vm.obj_cls(), "==(_)", _primitive_object_eq);
     vm.set_primitive(vm.obj_cls(), "!=(_)", _primitive_object_ne);
@@ -1163,14 +1166,14 @@ namespace core {
     vm.set_primitive(vm.obj_cls(), "type", _primitive_object_type);
 
     // now we can define Class, which is a subclass of Object
-    vm.set_class_cls(define_class(vm, "Class"));
+    vm.set_class_cls(define_class(vm, core_module, "Class"));
     vm.class_cls()->bind_superclass(vm.obj_cls());
     vm.set_primitive(vm.class_cls(), "name", _primitive_class_name);
     vm.set_primitive(vm.class_cls(), "supertype", _primitive_class_supertype);
     vm.set_primitive(vm.class_cls(), "toString", _primitive_class_tostring);
 
     // finally we can define Object's metaclass which is a subclass of Class
-    ClassObject* obj_metaclass = define_class(vm, "Object metaclass");
+    ClassObject* obj_metaclass = define_class(vm, core_module, "Object metaclass");
     // wire up the metaclass relationships now that all three classes are built
     vm.obj_cls()->set_cls(obj_metaclass);
     obj_metaclass->set_cls(vm.class_cls());
@@ -1184,11 +1187,11 @@ namespace core {
     // the rest of the classes can now be defined normally
     vm.interpret("", kLibSource);
 
-    vm.set_bool_cls(vm.find_variable("Bool").as_class());
+    vm.set_bool_cls(vm.find_variable(core_module, "Bool").as_class());
     vm.set_primitive(vm.bool_cls(), "toString", _primitive_bool_tostring);
     vm.set_primitive(vm.bool_cls(), "!", _primitive_bool_not);
 
-    vm.set_fiber_cls(vm.find_variable("Fiber").as_class());
+    vm.set_fiber_cls(vm.find_variable(core_module, "Fiber").as_class());
     vm.set_primitive(vm.fiber_cls()->cls(), "new(_)", _primitive_fiber_new);
     vm.set_primitive(vm.fiber_cls()->cls(), "abort(_)", _primitive_fiber_abort);
     vm.set_primitive(vm.fiber_cls()->cls(), "current", _primitive_fiber_current);
@@ -1202,7 +1205,7 @@ namespace core {
     vm.set_primitive(vm.fiber_cls(), "run(_)", _primitive_fiber_run1);
     vm.set_primitive(vm.fiber_cls(), "try()", _primitive_fiber_try);
 
-    vm.set_fn_cls(vm.find_variable("Function").as_class());
+    vm.set_fn_cls(vm.find_variable(core_module, "Function").as_class());
     vm.set_primitive(vm.fn_cls()->cls(), "new(_)", _primitive_fn_new);
     vm.set_primitive(vm.fn_cls(), "arity", _primitive_fn_arity);
     vm.set_primitive(vm.fn_cls(), "call()", _primitive_fn_call0);
@@ -1224,11 +1227,11 @@ namespace core {
     vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call16);
     vm.set_primitive(vm.fn_cls(), "toString", _primitive_fn_tostring);
 
-    vm.set_nil_cls(vm.find_variable("Nil").as_class());
+    vm.set_nil_cls(vm.find_variable(core_module, "Nil").as_class());
     vm.set_primitive(vm.nil_cls(), "!", _primitive_nil_not);
     vm.set_primitive(vm.nil_cls(), "toString", _primitive_nil_tostring);
 
-    vm.set_num_cls(vm.find_variable("Numeric").as_class());
+    vm.set_num_cls(vm.find_variable(core_module, "Numeric").as_class());
     vm.set_primitive(vm.num_cls()->cls(), "fromString(_)", _primitive_numeric_fromstring);
     vm.set_primitive(vm.num_cls()->cls(), "pi", _primitive_numeric_pi);
     vm.set_primitive(vm.num_cls(), "+(_)", _primitive_numeric_add);
@@ -1271,7 +1274,7 @@ namespace core {
     vm.set_primitive(vm.num_cls(), "==(_)", _primitive_numeric_eq);
     vm.set_primitive(vm.num_cls(), "!=(_)", _primitive_numeric_ne);
 
-    vm.set_str_cls(vm.find_variable("String").as_class());
+    vm.set_str_cls(vm.find_variable(core_module, "String").as_class());
     vm.set_primitive(vm.str_cls(), "+(_)", _primitive_string_add);
     vm.set_primitive(vm.str_cls(), "[_]", _primitive_string_subscript);
     vm.set_primitive(vm.str_cls(), "byteAt(_)", _primitive_string_byteat);
@@ -1285,7 +1288,7 @@ namespace core {
     vm.set_primitive(vm.str_cls(), "startsWith(_)", _primitive_string_startswith);
     vm.set_primitive(vm.str_cls(), "toString", _primitive_return_this);
 
-    vm.set_list_cls(vm.find_variable("List").as_class());
+    vm.set_list_cls(vm.find_variable(core_module, "List").as_class());
     vm.set_primitive(vm.list_cls()->cls(), "new()", _primitive_list_new);
     vm.set_primitive(vm.list_cls(), "[_]", _primitive_list_subscript);
     vm.set_primitive(vm.list_cls(), "[_]=(_)", _primitive_list_subscript_setter);
@@ -1297,7 +1300,7 @@ namespace core {
     vm.set_primitive(vm.list_cls(), "iterate(_)", _primitive_list_iterate);
     vm.set_primitive(vm.list_cls(), "iterValue(_)", _primitive_list_itervalue);
 
-    vm.set_range_cls(vm.find_variable("Range").as_class());
+    vm.set_range_cls(vm.find_variable(core_module, "Range").as_class());
     vm.set_primitive(vm.range_cls(), "from", _primitive_range_from);
     vm.set_primitive(vm.range_cls(), "to", _primitive_range_to);
     vm.set_primitive(vm.range_cls(), "min", _primitive_range_min);
@@ -1307,7 +1310,7 @@ namespace core {
     vm.set_primitive(vm.range_cls(), "iterValue(_)", _primitive_range_itervalue);
     vm.set_primitive(vm.range_cls(), "toString", _primitive_range_tostring);
 
-    vm.set_map_cls(vm.find_variable("Map").as_class());
+    vm.set_map_cls(vm.find_variable(core_module, "Map").as_class());
     vm.set_primitive(vm.map_cls()->cls(), "new()", _primitive_map_new);
     vm.set_primitive(vm.map_cls(), "[_]", _primitive_map_subscript);
     vm.set_primitive(vm.map_cls(), "[_]=(_)", _primitive_map_subscript_setter);

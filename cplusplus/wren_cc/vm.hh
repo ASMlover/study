@@ -159,7 +159,6 @@ class WrenVM final : private UnCopyable {
   Value validate_superclass(const Value& name, const Value& supercls_val);
 
   ModuleObject* get_module(const Value& name) const;
-  ModuleObject* get_core_module(void) const;
   FiberObject* load_module(const Value& name, const str_t& source_bytes);
   Value import_module(const Value& name);
   std::tuple<bool, Value> import_variable(
@@ -219,11 +218,12 @@ public:
   }
   inline u16_t gen_fiberid(void) { return next_fiberid_++; }
 
+  ModuleObject* get_core_module(void) const;
   void set_metaclasses(void);
   int declare_variable(ModuleObject* module, const str_t& name);
   int define_variable(ModuleObject* module, const str_t& name, const Value& value);
   void set_native(ClassObject* cls, const str_t& name, const PrimitiveFn& fn);
-  const Value& find_variable(const str_t& name) const;
+  const Value& find_variable(ModuleObject* module, const str_t& name) const;
 
   void push_root(BaseObject* obj);
   void pop_root(void);

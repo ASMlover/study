@@ -70,6 +70,14 @@ WrenVM::~WrenVM(void) {
   ASSERT(method_handles_ == nullptr, "all methods have not been released");
 }
 
+ModuleObject* WrenVM::get_core_module(void) const {
+  // looks up the core module in the module map
+
+  ModuleObject* module = get_module(nullptr);
+  ASSERT(module != nullptr, "could not find core module");
+  return module;
+}
+
 void WrenVM::set_metaclasses(void) {
   for (auto* o : objects_) {
     if (o->type() == ObjType::STRING)
@@ -78,17 +86,11 @@ void WrenVM::set_metaclasses(void) {
 }
 
 int WrenVM::declare_variable(ModuleObject* module, const str_t& name) {
-  if (module == nullptr)
-    module = get_core_module();
-
   return module->declare_variable(name);
 }
 
 int WrenVM::define_variable(
     ModuleObject* module, const str_t& name, const Value& value) {
-  if (module == nullptr)
-    module = get_core_module();
-
   if (value.is_object())
     push_root(value.as_object());
 
@@ -106,10 +108,10 @@ void WrenVM::set_native(
   cls->bind_method(symbol, fn);
 }
 
-const Value& WrenVM::find_variable(const str_t& name) const {
-  auto* core_module = get_core_module();
-  int symbol = core_module->find_variable(name);
-  return core_module->get_variable(symbol);
+const Value& WrenVM::find_variable(
+    ModuleObject* module, const str_t& name) const {
+  int symbol = module->find_variable(name);
+  return module->get_variable(symbol);
 }
 
 void WrenVM::push_root(BaseObject* obj) {
@@ -806,14 +808,6 @@ ModuleObject* WrenVM::get_module(const Value& name) const {
   if (auto m = modules_->get(name); m)
     return (*m).as_module();
   return nullptr;
-}
-
-ModuleObject* WrenVM::get_core_module(void) const {
-  // looks up the core module in the module map
-
-  ModuleObject* module = get_module(nullptr);
-  ASSERT(module != nullptr, "could not find core module");
-  return module;
 }
 
 FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {

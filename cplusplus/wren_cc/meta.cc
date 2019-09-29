@@ -66,10 +66,12 @@ namespace meta {
     inline void load_library(WrenVM& vm) {
       vm.interpret("", kLibSource);
 
+      ModuleObject* core_module = vm.get_core_module();
+
       // the methods on `Meta` are static, so get the metaclass for the
       // Meta class
-      ClassObject* meta_cls = vm.find_variable("Meta").as_class()->cls();
-      vm.set_primitive(meta_cls, "eval(_)", _primitive_meta_eval);
+      ClassObject* meta_cls = vm.find_variable(core_module, "Meta").as_class();
+      vm.set_primitive(meta_cls->cls(), "eval(_)", _primitive_meta_eval);
     }
   }
 
