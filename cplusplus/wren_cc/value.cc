@@ -462,13 +462,9 @@ bool MapObject::add_entry(std::vector<MapEntry>& entries,
 
     // if we found an open slot, the key is not in the table
     if (entry.first.is_undefined()) {
-      // do not stop at a tombstone, though, because the key may be found
-      // after it
-      if (!entry.second.as_boolean()) {
-        entry.first = k;
-        entry.second = v;
-        return true;
-      }
+      entry.first = k;
+      entry.second = v;
+      return true;
     }
     else if (entry.first == k) {
       // if the key already exists, just replace the value
