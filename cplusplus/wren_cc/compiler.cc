@@ -1580,9 +1580,6 @@ class Compiler : private UnCopyable {
     // returns `true` if compiled successfully or `false` if the method
     // couldn't be parsed
 
-    Signature signature;
-    class_compiler->signature = &signature;
-
     bool is_foreign = match(TokenKind::KW_FOREIGN);
     class_compiler->in_static = match(TokenKind::KW_STATIC);
 
@@ -1595,7 +1592,8 @@ class Compiler : private UnCopyable {
     }
 
     // build the method signature
-    signature_from_token(signature);
+    Signature signature = signature_from_token(SignatureType::GETTER);
+    class_compiler->signature = &signature;
 
     Compiler method_compiler(parser_, this);
     method_compiler.init_compiler(false);
@@ -1835,11 +1833,11 @@ class Compiler : private UnCopyable {
   }
 
   void ctor_signature(Signature& signature) {
-    signature.set_type(SignatureType::INITIALIZER);
     consume(TokenKind::TK_IDENTIFIER, "expect constructor name after `this`");
 
     // capture the name
-    signature_from_token(signature);
+    signature = signature_from_token(SignatureType::INITIALIZER);
+
     if (match(TokenKind::TK_EQ))
       error("a constructor cannot be a setter");
     if (!match(TokenKind::TK_LPAREN)) {
@@ -1947,18 +1945,20 @@ class Compiler : private UnCopyable {
     return method_symbol(signature_to_string(signature));
   }
 
-  void signature_from_token(Signature& signature) {
-    // initializes [signature] from the last consumed token
+  Signature signature_from_token(SignatureType type) {
+    // returns a signature with [type] whose name is from the last consumed
+    // token
 
     // get the token for the method name
     const Token& token = parser_.prev();
-    signature.set_name(token.as_string());
-    signature.set_arity(0);
+    Signature signature(token.as_string(), type, 0);
 
     if (signature.name.size() > MAX_METHOD_NAME) {
       error("method names cannot be longer than %d characters", MAX_METHOD_NAME);
       signature.set_name(signature.name.substr(0, MAX_METHOD_NAME));
     }
+
+    return signature;
   }
 
   void finish_arguments(Signature& signature) {
@@ -1992,35 +1992,35 @@ class Compiler : private UnCopyable {
     emit_words(Code::CALL_0 + argc, method_symbol(name));
   }
 
-  void method_call(Code instruction, const Signature& method_signature) {
+  void method_call(Code instruction, const Signature& signature) {
     // compiles an (optional) argument list for a method call with
     // [method_signature] and then calls it
 
     // make a new signature that conatians the updated arity and type based on
     // the arguments we find
-    Signature signature(method_signature.name, SignatureType::GETTER, 0);
+    Signature called(signature.name, SignatureType::GETTER, 0);
 
     // parse the argument list, if any
     if (match(TokenKind::TK_LPAREN)) {
-      signature.set_type(SignatureType::METHOD);
+      called.set_type(SignatureType::METHOD);
 
       // allow empty an argument list
       if (parser_.curr().kind() != TokenKind::TK_RPAREN) {
-        finish_arguments(signature);
+        finish_arguments(called);
       }
       consume(TokenKind::TK_RPAREN, "expect `)` after arguments");
     }
 
     // parse the block argument, if any
     if (match(TokenKind::TK_LBRACE)) {
-      signature.set_type(SignatureType::METHOD);
-      signature.inc_arity();
+      called.set_type(SignatureType::METHOD);
+      called.inc_arity();
 
       Compiler fn_compiler(parser_, this);
       fn_compiler.init_compiler(true);
 
       // make a dummy signature to track the arity
-      Signature fn_signature;
+      Signature fn_signature("", SignatureType::METHOD, 0);
 
       // parse the parameter list, if any
       if (match(TokenKind::TK_PIPE)) {
@@ -2032,7 +2032,7 @@ class Compiler : private UnCopyable {
       fn_compiler.finish_body(false);
 
       // name the funciton based on the method its passed to
-      str_t block_name = signature_to_string(signature);
+      str_t block_name = signature_to_string(called);
       block_name += " block argument";
 
       fn_compiler.finish_compiler(block_name);
@@ -2040,13 +2040,13 @@ class Compiler : private UnCopyable {
 
     // if this is a super() call for an initializer, make sure we got an
     // actual argument list
-    if (method_signature.type == SignatureType::INITIALIZER) {
-      if (signature.type != SignatureType::METHOD)
+    if (signature.type == SignatureType::INITIALIZER) {
+      if (called.type != SignatureType::METHOD)
         error("a superclass constructor must have an argument list");
-      signature.set_type(SignatureType::INITIALIZER);
+      called.set_type(SignatureType::INITIALIZER);
     }
 
-    call_signature(instruction, signature);
+    call_signature(instruction, called);
   }
 
   void named_call(bool allow_assignment, Code instruction) {
@@ -2054,8 +2054,7 @@ class Compiler : private UnCopyable {
     // includes getters, method calls with arguments, and setter calls
 
     // get the token for the method name
-    Signature signature;
-    signature_from_token(signature);
+    Signature signature = signature_from_token(SignatureType::GETTER);
 
     if (match(TokenKind::TK_EQ)) {
       if (!allow_assignment)
