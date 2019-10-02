@@ -149,10 +149,21 @@ CODE(CLOSURE)
 // compiler-generated constructor metaclass methods
 CODE(CONSTRUCT)
 
+// creates a new instance of a foreign class
+//
+// assumes the class object is in slot zero, and replaces it with the new
+// uninitialized instance of that class, this opcode is only emitted by the
+// compiler-generated constructor metaclass methods
+CODE(FOREIGN_CONSTRUCT)
+
 // creates a class, top of stack is the superclass, or `nil` if the class
 // inherits Object, below that is a string for the name of the class, byte
 // [arg] is the number of fields in the class
 CODE(CLASS)
+
+// creates a foreign class, top of stack is the superclass, or `nil` if the
+// class inherits Object, below that is a string for the name of the class
+CODE(FOREIGN_CLASS)
 
 // define a method for symbol [arg] the class receiving the method is popped
 // off the stack, then the function defining the body is popped
