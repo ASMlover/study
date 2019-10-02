@@ -900,9 +900,12 @@ FunctionObject* WrenVM::make_call_stub(
   // when called
 
   int num_params = 0;
-  for (auto c : signature) {
-    if (c == '_')
-      ++num_params;
+  if (signature.back() == ')') {
+    sz_t i = signature.size() - 2;
+    for (auto c = signature[i]; i >= 0 && c != '('; c = signature[--i]) {
+      if (c == '_')
+        ++num_params;
+    }
   }
 
   int method = method_names_.ensure(signature);
@@ -1128,6 +1131,7 @@ void WrenVM::wren_call(WrenMethod* method, const char* arg_types, ...) {
       case 's':
         value = StringObject::format(*this, "$", va_arg(ap, const char*));
         break;
+      case 'v': value = va_arg(ap, WrenValue*)->value; break;
       default: ASSERT(false, "unknown argument type"); break;
     }
     method->fiber->push(value);
