@@ -32,8 +32,13 @@
 namespace wrencc {
 
 class WrenVM;
+struct WrenValue;
 
 using WrenForeignFn = std::function<void (WrenVM&)>;
+
+// releases the reference stored in [value], after calling this, [value] can no
+// longer be used
+void wrenReleaseValue(WrenVM& vm, WrenValue* value);
 
 // the following functions read one of the arguments passed to a foreign call.
 // they may only be called while within a function provided to
@@ -71,6 +76,13 @@ double wrenGetArgumentDouble(WrenVM& vm, int index);
 // function returns, since the garbage collector may reclaim it
 const char* wrenGetArgumentString(WrenVM& vm, int index);
 
+// creates a handle for the value passed as an argument to a foreign to a
+// foreign call.
+//
+// this will prevent the object that is referred to from being garbage collected
+// until the handle is released by calling [wrenReleaseValue()]
+WrenValue* wrenGetArgumentValue(WrenVM& vm, int index);
+
 // the following functions provide the return value for a foreign method back
 // to Wren, like above they may only be called during a foreign call invoked
 // by Wren
@@ -92,5 +104,11 @@ void wrenReturnDouble(WrenVM& vm, double value);
 // free memory used by it after this is called, if [text] is non-empty, Wren
 // will copy that from [text]
 void wrenReturnString(WrenVM& vm, const str_t& text);
+
+// provides the return value for a foreign call
+//
+// this uses the value referred to by the handle as the return value, but it
+// does not release the handle
+void wrenReturnValue(WrenVM& vm, WrenValue* value);
 
 }

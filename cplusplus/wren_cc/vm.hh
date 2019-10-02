@@ -77,6 +77,27 @@ struct WrenMethod {
   }
 };
 
+struct WrenValue {
+  // a handle to a value, basically just linked list of extra GC roots.
+  //
+  // note that even non-heap-allocated values can be stored here
+
+  Value value{};
+
+  WrenValue* prev{};
+  WrenValue* next{};
+
+  WrenValue(const Value& v,
+      WrenValue* p = nullptr, WrenValue* n = nullptr) noexcept
+    : value(v), prev(p), next(p) {
+  }
+
+  void clear(void) {
+    value = nullptr;
+    prev = next = nullptr;
+  }
+};
+
 class WrenVM final : private UnCopyable {
   // the maximum number of temporary objects that can be made visible to the
   // GC at one time
@@ -142,6 +163,9 @@ class WrenVM final : private UnCopyable {
   // list of active method handles or nullptr if there are no handles
   WrenMethod* method_handles_{};
 
+  // list of active value handles or nullptr if there are no handles
+  WrenValue* value_handles_{};
+
   // compiler and debugger data:
   //
   // the compiler that is currently compiling code, this is used so that
@@ -156,7 +180,8 @@ class WrenVM final : private UnCopyable {
   void print_stacktrace(FiberObject* fiber);
   FiberObject* runtime_error(FiberObject* fiber, const Value& error);
   Value method_not_found(ClassObject* cls, int symbol);
-  Value validate_superclass(const Value& name, const Value& supercls_val);
+  Value validate_superclass(const Value& name, const Value& supercls_val) ;
+  void validate_foreign_argument(int index) const;
 
   ModuleObject* get_module(const Value& name) const;
   FiberObject* load_module(const Value& name, const str_t& source_bytes);
@@ -241,13 +266,16 @@ public:
       const str_t& module, const str_t& variable, const str_t& signature);
   void release_method(WrenMethod* method);
   void wren_call(WrenMethod* method, const char* arg_types, ...);
+  void release_value(WrenValue* value);
 
   bool get_argument_bool(int index) const;
   double get_argument_double(int index) const;
   const char* get_argument_string(int index) const;
+  WrenValue* get_argument_value(int index);
   void return_bool(bool value);
   void return_double(double value);
   void return_string(const str_t& text);
+  void return_value(WrenValue* value);
 };
 
 class PinnedGuard final : private UnCopyable {

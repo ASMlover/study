@@ -64,10 +64,11 @@ WrenVM::~WrenVM(void) {
     free_object(obj);
   }
 
-  // tell the user if they didn't free any method handles, wo don't want to
-  // just free them here because the host app may still have pointers to them
-  // that they may try to use. better to tell them about the bug early
+  // tell the user if they didn't free any handles, wo don't want to just free
+  // them here because the host app may still have pointers to them that they
+  // may try to use. better to tell them about the bug early
   ASSERT(method_handles_ == nullptr, "all methods have not been released");
+  ASSERT(value_handles_ == nullptr, "all values have not been released");
 }
 
 ModuleObject* WrenVM::get_core_module(void) const {
@@ -231,6 +232,12 @@ Value WrenVM::validate_superclass(
   }
 
   return nullptr;
+}
+
+void WrenVM::validate_foreign_argument(int index) const {
+  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
+  ASSERT(index >= 0, "index cannot be negative");
+  ASSERT(index < foreign_call_argc_, "not that many arguments");
 }
 
 void WrenVM::call_foreign(
@@ -993,6 +1000,9 @@ void WrenVM::collect(void) {
   // the method handles
   for (WrenMethod* m = method_handles_; m != nullptr; m = m->next)
     mark_object(m->fiber);
+  // the value handles
+  for (WrenValue* v = value_handles_; v != nullptr; v = v->next)
+    mark_value(v->value);
 
   // any object the compiler is using
   if (compiler_ != nullptr)
@@ -1137,10 +1147,27 @@ void WrenVM::wren_call(WrenMethod* method, const char* arg_types, ...) {
   method->fiber->push(receiver);
 }
 
+void WrenVM::release_value(WrenValue* value) {
+  ASSERT(value != nullptr, "null value");
+
+  // update the VM's head pointer if we're releasing the first handle
+  if (value_handles_ == nullptr)
+    value_handles_ = value->next;
+
+  // unlink it from the list
+  if (value->prev != nullptr)
+    value->prev->next = value->next;
+  if (value->next != nullptr)
+    value->next->prev = value->prev;
+
+  // clear it out, this isn't strictly necessary since we're going to free it
+  // but it makes for easier debugging
+  value->clear();
+  delete value;
+}
+
 bool WrenVM::get_argument_bool(int index) const {
-  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
-  ASSERT(index >= 0, "index cannot be negative");
-  ASSERT(index < foreign_call_argc_, "not that many arguments");
+  validate_foreign_argument(index);
 
   if (!(*(foreign_call_slot_ + index)).is_boolean())
     return false;
@@ -1148,9 +1175,7 @@ bool WrenVM::get_argument_bool(int index) const {
 }
 
 double WrenVM::get_argument_double(int index) const {
-  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
-  ASSERT(index >= 0, "index cannot be negative");
-  ASSERT(index < foreign_call_argc_, "not that many arguments");
+  validate_foreign_argument(index);
 
   if (!(*(foreign_call_slot_ + index)).is_numeric())
     return 0.0;
@@ -1158,13 +1183,25 @@ double WrenVM::get_argument_double(int index) const {
 }
 
 const char* WrenVM::get_argument_string(int index) const {
-  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
-  ASSERT(index >= 0, "index cannot be negative");
-  ASSERT(index < foreign_call_argc_, "not that many arguments");
+  validate_foreign_argument(index);
 
   if (!(*(foreign_call_slot_ + index)).is_string())
     return nullptr;
   return (*(foreign_call_slot_ + index)).as_cstring();
+}
+
+WrenValue* WrenVM::get_argument_value(int index) {
+  validate_foreign_argument(index);
+
+  // make a handle for it
+  WrenValue* value = new WrenValue(*(foreign_call_slot_ + index));
+  // add it to the front of the linked list of handles
+  if (value_handles_ != nullptr)
+    value_handles_->prev = value;
+  value->next = value_handles_;
+  value_handles_ = value;
+
+  return value;
 }
 
 void WrenVM::return_bool(bool value) {
@@ -1189,6 +1226,18 @@ void WrenVM::return_string(const str_t& text) {
   foreign_call_slot_ = nullptr;
 }
 
+void WrenVM::return_value(WrenValue* value) {
+  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
+  ASSERT(value != nullptr, "`value` cannot be `nullptr`");
+
+  *foreign_call_slot_ = value->value;
+  foreign_call_slot_ = nullptr;
+}
+
+void wrenReleaseValue(WrenVM& vm, WrenValue* value) {
+  vm.release_value(value);
+}
+
 bool wrenGetArgumentBool(WrenVM& vm, int index) {
   return vm.get_argument_bool(index);
 }
@@ -1201,6 +1250,10 @@ const char* wrenGetArgumentString(WrenVM& vm, int index) {
   return vm.get_argument_string(index);
 }
 
+WrenValue* wrenGetArgumentValue(WrenVM& vm, int index) {
+  return vm.get_argument_value(index);
+}
+
 void wrenReturnBool(WrenVM& vm, bool value) {
   vm.return_bool(value);
 }
@@ -1211,6 +1264,10 @@ void wrenReturnDouble(WrenVM& vm, double value) {
 
 void wrenReturnString(WrenVM& vm, const str_t& text) {
   vm.return_string(text);
+}
+
+void wrenReturnValue(WrenVM& vm, WrenValue* value) {
+  vm.return_value(value);
 }
 
 }
