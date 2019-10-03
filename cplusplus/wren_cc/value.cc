@@ -79,6 +79,10 @@ FunctionObject* TagValue::as_function(void) const {
   return Xt::down<FunctionObject>(as_object());
 }
 
+ForeignObject* TagValue::as_foreign(void) const {
+  return Xt::down<ForeignObject>(as_object());
+}
+
 UpvalueObject* TagValue::as_upvalue(void) const {
   return Xt::down<UpvalueObject>(as_object());
 }
@@ -166,6 +170,10 @@ ModuleObject* ObjValue::as_module(void) const {
 
 FunctionObject* ObjValue::as_function(void) const {
   return Xt::down<FunctionObject>(obj_);
+}
+
+ForeignObject* ObjValue::as_foreign(void) const {
+  return Xt::down<ForeignObject>(obj_);
 }
 
 UpvalueObject* ObjValue::as_upvalue(void) const {
@@ -811,6 +819,16 @@ FunctionObject* FunctionObject::make_function(
       source_path, debug_name, source_lines, lines_count);
   vm.append_object(o);
   return o;
+}
+
+str_t ForeignObject::stringify(void) const {
+  // TODO:
+  return "";
+}
+
+ForeignObject* ForeignObject::make_foreign(
+    WrenVM& vm, ClassObject* cls, sz_t size) {
+  return nullptr;
 }
 
 UpvalueObject::UpvalueObject(Value* value, UpvalueObject* next) noexcept

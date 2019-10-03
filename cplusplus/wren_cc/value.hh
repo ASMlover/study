@@ -52,6 +52,7 @@ enum class ObjType : u8_t {
   MAP,
   MODULE,
   FUNCTION,
+  FOREIGN,
   UPVALUE,
   CLOSURE,
   FIBER,
@@ -71,6 +72,7 @@ class RangeObject;
 class MapObject;
 class ModuleObject;
 class FunctionObject;
+class ForeignObject;
 class UpvalueObject;
 class ClosureObject;
 class FiberObject;
@@ -165,6 +167,7 @@ public:
   inline bool is_map(void) const { return check(ObjType::MAP); }
   inline bool is_module(void) const { return check(ObjType::MODULE); }
   inline bool is_function(void) const { return check(ObjType::FUNCTION); }
+  inline bool is_foreign(void) const { return check(ObjType::FOREIGN); }
   inline bool is_upvalue(void) const { return check(ObjType::UPVALUE); }
   inline bool is_closure(void) const { return check(ObjType::CLOSURE); }
   inline bool is_fiber(void) const { return check(ObjType::FIBER); }
@@ -184,6 +187,7 @@ public:
   MapObject* as_map(void) const;
   ModuleObject* as_module(void) const;
   FunctionObject* as_function(void) const;
+  ForeignObject* as_foreign(void) const;
   UpvalueObject* as_upvalue(void) const;
   ClosureObject* as_closure(void) const;
   FiberObject* as_fiber(void) const;
@@ -244,6 +248,7 @@ public:
   inline bool is_map(void) const { return check(ObjType::MAP); }
   inline bool is_module(void) const { return check(ObjType::MODULE); }
   inline bool is_function(void) const { return check(ObjType::FUNCTION); }
+  inline bool is_foreign(void) const { return check(ObjType::FOREIGN); }
   inline bool is_upvalue(void) const { return check(ObjType::UPVALUE); }
   inline bool is_closure(void) const { return check(ObjType::CLOSURE); }
   inline bool is_fiber(void) const { return check(ObjType::FIBER); }
@@ -263,6 +268,7 @@ public:
   MapObject* as_map(void) const;
   ModuleObject* as_module(void) const;
   FunctionObject* as_function(void) const;
+  ForeignObject* as_foreign(void) const;
   UpvalueObject* as_upvalue(void) const;
   ClosureObject* as_closure(void) const;
   FiberObject* as_fiber(void) const;
@@ -517,6 +523,14 @@ public:
       const Value* constants, int constants_count,
       const str_t& source_path, const str_t& debug_name,
       int* source_lines, int lines_count);
+};
+
+class ForeignObject final : public BaseObject {
+  std::vector<u8_t> data_;
+public:
+  virtual str_t stringify(void) const override;
+
+  static ForeignObject* make_foreign(WrenVM& vm, ClassObject* cls, sz_t size);
 };
 
 // the dynamically allocated data structure for a variable that has been
