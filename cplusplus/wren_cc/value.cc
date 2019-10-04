@@ -828,7 +828,9 @@ str_t ForeignObject::stringify(void) const {
 
 ForeignObject* ForeignObject::make_foreign(
     WrenVM& vm, ClassObject* cls, sz_t size) {
-  return nullptr;
+  auto* o = new ForeignObject(cls);
+  vm.append_object(o);
+  return o;
 }
 
 UpvalueObject::UpvalueObject(Value* value, UpvalueObject* next) noexcept
@@ -1044,7 +1046,14 @@ void ClassObject::bind_superclass(ClassObject* superclass) {
 
   superclass_ = superclass;
   // include the superclass in the total number of fields
-  num_fields_ += superclass->num_fields_;
+  if (num_fields_ != -1) {
+    num_fields_ += superclass->num_fields_;
+  }
+  else {
+    ASSERT(superclass->num_fields_ == 0,
+        "a foreign class cannot inherit from a class with fields");
+  }
+
   // inherit methods from its superclass
   int super_methods_count = superclass_->methods_count();
   for (int i = 0; i < super_methods_count; ++i)

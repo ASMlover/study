@@ -527,6 +527,8 @@ public:
 
 class ForeignObject final : public BaseObject {
   std::vector<u8_t> data_;
+
+  ForeignObject(ClassObject* cls) noexcept : BaseObject(ObjType::FOREIGN, cls) {}
 public:
   virtual str_t stringify(void) const override;
 
