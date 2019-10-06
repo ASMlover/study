@@ -530,6 +530,9 @@ class ForeignObject final : public BaseObject {
 
   ForeignObject(ClassObject* cls) noexcept : BaseObject(ObjType::FOREIGN, cls) {}
 public:
+  inline u8_t* data(void) { return data_.data(); }
+  inline const u8_t* data(void) const { return data_.data(); }
+
   virtual str_t stringify(void) const override;
 
   static ForeignObject* make_foreign(WrenVM& vm, ClassObject* cls, sz_t size);

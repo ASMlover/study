@@ -822,8 +822,9 @@ FunctionObject* FunctionObject::make_function(
 }
 
 str_t ForeignObject::stringify(void) const {
-  // TODO:
-  return "";
+  std::stringstream ss;
+  ss << "[foreign `" << this << "`]";
+  return ss.str();
 }
 
 ForeignObject* ForeignObject::make_foreign(
@@ -1123,7 +1124,7 @@ void ClassObject::bind_method(int i, const Method& method) {
 
 str_t ClassObject::stringify(void) const {
   std::stringstream ss;
-  ss << "[class `" << this << "`]";
+  ss << "[class `" << name_cstr() << "` at `" << this << "`]";
   return ss.str();
 }
 
