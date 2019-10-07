@@ -209,15 +209,20 @@ Value WrenVM::method_not_found(ClassObject* cls, int symbol) {
 }
 
 Value WrenVM::validate_superclass(
-    const Value& name, const Value& supercls_val) {
-  // verifies that [superclass] is a valid object to inherit from, that means
-  // it must be a class and cannot be the class of any built-in type
+    const Value& name, const Value& supercls_val, int num_fields) {
+  // verifies that [supercls_val] is a valid object to inherit from, that
+  // means it must be a class and cannot be the class of any built-in type
+  //
+  // also validates that it doesn't result in a class with too many fields
+  // and the other limitations foreign classes have
   //
   // if successful return nullptr, otherwise returns a string for the runtime
   // error message
 
-  if (!supercls_val.is_class())
-    return StringObject::make_string(*this, "must inherit from a class");
+  if (!supercls_val.is_class()) {
+    return StringObject::format(*this,
+        "class `@` cannot inherit from a non-class object", name);
+  }
 
   // make sure it does not inherit from a sealed built-in type, primitive
   // methods on these classes assume the instance is one of the other Obj*
@@ -228,7 +233,21 @@ Value WrenVM::validate_superclass(
       superclass == map_class_ || superclass == range_class_ ||
       superclass == str_class_) {
     return StringObject::format(*this,
-        "`@` cannot inherit from `@`", name, superclass->name());
+        "class `@` cannot inherit from class `@`", name, superclass->name());
+  }
+  if (superclass->num_fields() == -1) {
+    return StringObject::format(*this,
+        "class `@` cannot inherit from foreign class `@`",
+        name, superclass->name());
+  }
+  if (num_fields == -1 && superclass->num_fields() > 0) {
+    return StringObject::format(*this,
+        "foreign class `@` may not inherit from a class with fields", name);
+  }
+  if (superclass->num_fields() + num_fields > MAX_FIELDS) {
+    return StringObject::format(*this,
+        "class `@` may not have more than 255 fields, including inherited",
+        name);
   }
 
   return nullptr;
@@ -253,6 +272,84 @@ void WrenVM::call_foreign(
     *foreign_call_slot_ = nullptr;
     foreign_call_slot_ = nullptr;
   }
+}
+
+void WrenVM::bind_foreign_class(ClassObject* cls, ModuleObject* module) {
+  ASSERT(bind_foreign_cls_ != nullptr,
+      "cannot declare foreign classes without a BindForeignClassFn");
+
+  WrenForeignClass methods = bind_foreign_cls_(
+      *this, module->name_cstr(), cls->name_cstr());
+
+  Method method = methods.allocate;
+  ASSERT(method.foreign(), "a foreign class must provide an allocate function");
+
+  int symbol = method_names_.ensure("<allocate>");
+  cls->bind_method(symbol, method);
+
+  if (methods.finalize) {
+    method.set_foreign(methods.finalize);
+    symbol = method_names_.ensure("<finalize>");
+    cls->bind_method(symbol, method);
+  }
+}
+
+bool WrenVM::define_class(
+    FiberObject* fiber, int num_fields, ModuleObject* module) {
+  // creates a new class
+  //
+  // if [num_fields] is -1, the class is a foreign class, the name and
+  // superclass should be on top of the fiber's stack, after calling this,
+  // the top of the stack will contain either the new class or a string if
+  // a runtime error occurred
+  //
+  // returns false if the result is an error
+
+  // pull the name and superclass off the stack
+  const Value& name = fiber->peek_value(1);
+  const Value& supercls_val = fiber->peek_value();
+
+  // we have two values on the stack and we are going to leave one, so
+  // discard the other slot
+  fiber->pop();
+
+  // use implicit Object superclass if none given
+  ClassObject* superclass = obj_class_;
+  if (!supercls_val.is_nil()) {
+    Value err = validate_superclass(name, supercls_val, num_fields);
+    if (!err.is_nil()) {
+      fiber->set_value(fiber->stack_size() - 1, err);
+      return false;
+    }
+    superclass = supercls_val.as_class();
+  }
+  ClassObject* cls = ClassObject::make_class(
+      *this, superclass, num_fields, name.as_string());
+  fiber->set_value(fiber->stack_size() - 1, cls);
+
+  if (num_fields == -1)
+    bind_foreign_class(cls, module);
+
+  return true;
+}
+
+void WrenVM::create_foreign(FiberObject* fiber, Value* stack) {
+  ClassObject* cls = stack[0].as_class();
+  ASSERT(cls->num_fields() == -1, "class must be a foreign class");
+
+  int symbol = method_names_.get("<allocate>");
+  ASSERT(symbol != -1, "should have defined <allocate> symbol");
+  ASSERT(cls->methods_count() > symbol, "class should have allocator");
+
+  const Method& method = cls->get_method(symbol);
+  ASSERT(method.get_type() == MethodType::FOREIGN, "allocator should be foreign");
+
+  // pass the constructor arguments to the allocator as well
+  foreign_call_slot_ = stack;
+  foreign_call_argc_ = Xt::as_type<int>(
+      fiber->values_at(fiber->stack_size() - 1) - stack + 1);
+
+  method.foreign()(*this);
 }
 
 InterpretRet WrenVM::interpret(FiberObject* fiber) {
@@ -662,36 +759,25 @@ __complete_call:
 
       DISPATCH();
     }
+    CASE_CODE(FOREIGN_CONSTRUCT):
+    {
+      const Value& cls = fiber->get_value(frame->stack_start);
+      ASSERT(cls.is_class(), "`this` should be a class");
+      create_foreign(fiber, fiber->values_at(frame->stack_start));
+
+      DISPATCH();
+    }
     CASE_CODE(CLASS):
     {
-      const Value& name = PEEK2();
-      ClassObject* superclass = obj_class_;
+      if (!define_class(fiber, RDBYTE(), nullptr))
+        RUNTIME_ERROR(PEEK());
 
-      // use implicit object superclass if none given
-      if (!PEEK().is_nil()) {
-        Value error = validate_superclass(name, PEEK());
-        if (!error.is_nil())
-          RUNTIME_ERROR(error);
-        superclass = PEEK().as_class();
-      }
-
-      int num_fields = RDBYTE();
-      ClassObject* cls = ClassObject::make_class(
-          *this, superclass, num_fields, name.as_string());
-
-      // do not pop the superclass and name off the stack until the subclass
-      // is done being created, to make sure it does not get collected
-      POP();
-      POP();
-
-      // now that we know the total number of fields, make sure we donot
-      // overflow
-      if (superclass->num_fields() + num_fields > MAX_FIELDS) {
-        RUNTIME_ERROR(StringObject::format(*this,
-              "class `@` may not have more than 255 fields, including inherited ones",
-              name));
-      }
-      PUSH(cls);
+      DISPATCH();
+    }
+    CASE_CODE(FOREIGN_CLASS):
+    {
+      if (!define_class(fiber, -1, fn->module()))
+        RUNTIME_ERROR(PEEK());
 
       DISPATCH();
     }
@@ -930,20 +1016,18 @@ WrenForeignFn WrenVM::find_foreign_method(const str_t& module_name,
   // falls back ot handling the built-in modules
 
   WrenForeignFn fn{};
-  if (bind_foreign_fn_) {
-    if (fn = bind_foreign_fn_(*this,
-          module_name, class_name, is_static, signature); fn)
-      return fn;
-  }
-
-  // otherwise try the built-in libraries
+  // bind foreign methods in the core module
   if (module_name == "core") {
     fn = io::bind_foreign(*this, class_name, signature);
-    if (fn)
-      return fn;
+    ASSERT(fn != nullptr, "failed to bind core module foreign method");
+    return fn;
   }
 
-  return nullptr;
+  // for other modules, let the host bind it
+  if (bind_foreign_meth_ == nullptr)
+    return nullptr;
+
+  return bind_foreign_meth_(*this, module_name, class_name, is_static, signature);
 }
 
 Value WrenVM::bind_method(int i, Code method_type,
@@ -1170,6 +1254,21 @@ void WrenVM::release_value(WrenValue* value) {
   delete value;
 }
 
+void* WrenVM::allocate_foreign(sz_t size) {
+  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
+
+  ClassObject* cls = foreign_call_slot_[0].as_class();
+  ForeignObject* foreign = ForeignObject::make_foreign(*this, cls, size);
+  *foreign_call_slot_ = foreign;
+
+  return foreign->data();
+}
+
+int WrenVM::get_argument_count(void) const {
+  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
+  return foreign_call_argc_;
+}
+
 bool WrenVM::get_argument_bool(int index) const {
   validate_foreign_argument(index);
 
@@ -1206,6 +1305,15 @@ WrenValue* WrenVM::get_argument_value(int index) {
   value_handles_ = value;
 
   return value;
+}
+
+void* WrenVM::get_argument_foreign(int index) const {
+  validate_foreign_argument(index);
+
+  const Value& foreign_val = *(foreign_call_slot_ + index);
+  if (!foreign_val.is_foreign())
+    return nullptr;
+  return foreign_val.as_foreign()->data();
 }
 
 void WrenVM::return_bool(bool value) {

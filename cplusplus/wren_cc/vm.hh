@@ -104,8 +104,10 @@ class WrenVM final : private UnCopyable {
   static constexpr sz_t kMaxTempRoots = 5;
 
   using LoadModuleFn = std::function<str_t (WrenVM&, const str_t&)>;
-  using BindForeignFn = std::function<WrenForeignFn (
+  using BindForeignMethodFn = std::function<WrenForeignFn (
       WrenVM&, const str_t&, const str_t&, bool, const str_t&)>;
+  using BindForeignClassFn = std::function<WrenForeignClass (
+      WrenVM&, const str_t&, const str_t&)>;
 
   ClassObject* fn_class_{};
   ClassObject* bool_class_{};
@@ -155,7 +157,10 @@ class WrenVM final : private UnCopyable {
   int foreign_call_argc_{};
 
   // the function used to locate foreign functions
-  BindForeignFn bind_foreign_fn_{};
+  BindForeignMethodFn bind_foreign_meth_{};
+
+  // the function used to locate foreign classes
+  BindForeignClassFn bind_foreign_cls_{};
 
   // the function used to laod modules
   LoadModuleFn load_module_fn_{};
@@ -180,8 +185,12 @@ class WrenVM final : private UnCopyable {
   void print_stacktrace(FiberObject* fiber);
   FiberObject* runtime_error(FiberObject* fiber, const Value& error);
   Value method_not_found(ClassObject* cls, int symbol);
-  Value validate_superclass(const Value& name, const Value& supercls_val) ;
+  Value validate_superclass(
+      const Value& name, const Value& supercls_val, int num_fields);
   void validate_foreign_argument(int index) const;
+  void bind_foreign_class(ClassObject* cls, ModuleObject* module);
+  bool define_class(FiberObject* fiber, int num_fields, ModuleObject* module);
+  void create_foreign(FiberObject* fiber, Value* stack);
 
   ModuleObject* get_module(const Value& name) const;
   FiberObject* load_module(const Value& name, const str_t& source_bytes);
@@ -235,8 +244,10 @@ public:
   inline void set_compiler(Compiler* compiler) { compiler_ = compiler; }
   inline void set_load_fn(const LoadModuleFn& fn) { load_module_fn_ = fn; }
   inline void set_load_fn(LoadModuleFn&& fn) { load_module_fn_ = std::move(fn); }
-  inline void set_foreign_fn(const BindForeignFn& fn) { bind_foreign_fn_ = fn; }
-  inline void set_foreign_fn(BindForeignFn&& fn) { bind_foreign_fn_ = std::move(fn); }
+  inline void set_foreign_meth(const BindForeignMethodFn& fn) { bind_foreign_meth_ = fn; }
+  inline void set_foreign_meth(BindForeignMethodFn&& fn) { bind_foreign_meth_ = std::move(fn); }
+  inline void set_foreign_cls(const BindForeignClassFn& fn) { bind_foreign_cls_ = fn; }
+  inline void set_foreign_cls(BindForeignClassFn&& fn) { bind_foreign_cls_ = std::move(fn); }
   inline void set_primitive(
       ClassObject* cls, const str_t& name, const PrimitiveFn& fn) {
     set_native(cls, name, fn);
@@ -267,11 +278,14 @@ public:
   void release_method(WrenMethod* method);
   void wren_call(WrenMethod* method, const char* arg_types, ...);
   void release_value(WrenValue* value);
+  void* allocate_foreign(sz_t size);
 
+  int get_argument_count(void) const;
   bool get_argument_bool(int index) const;
   double get_argument_double(int index) const;
   const char* get_argument_string(int index) const;
   WrenValue* get_argument_value(int index);
+  void* get_argument_foreign(int index) const;
   void return_bool(bool value);
   void return_double(double value);
   void return_string(const str_t& text);
