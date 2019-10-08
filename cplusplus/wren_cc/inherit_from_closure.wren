@@ -1,9 +1,9 @@
 
-var f = nil
+var ClosureType
 
 {
   var a = "a"
-  f = Function.new {
-    IO.print(a)
-  }
+  ClosureType = Function.new { IO.print(a) }.type
 }
+
+class SubClass is ClosureType {} // expect runtime error

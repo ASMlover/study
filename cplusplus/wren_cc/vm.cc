@@ -233,7 +233,8 @@ Value WrenVM::validate_superclass(
       superclass == map_class_ || superclass == range_class_ ||
       superclass == str_class_) {
     return StringObject::format(*this,
-        "class `@` cannot inherit from class `@`", name, superclass->name());
+        "class `@` cannot inherit from built-in class `@`",
+        name, superclass->name());
   }
   if (superclass->num_fields() == -1) {
     return StringObject::format(*this,
