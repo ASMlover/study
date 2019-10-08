@@ -729,6 +729,8 @@ int FunctionObject::get_argc(
   case Code::LOAD_LOCAL_7:
   case Code::LOAD_LOCAL_8:
   case Code::CONSTRUCT:
+  case Code::FOREIGN_CONSTRUCT:
+  case Code::FOREIGN_CLASS:
     return 0;
 
   case Code::LOAD_LOCAL:

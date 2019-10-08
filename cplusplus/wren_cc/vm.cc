@@ -1350,6 +1350,14 @@ void wrenReleaseValue(WrenVM& vm, WrenValue* value) {
   vm.release_value(value);
 }
 
+void* wrenAllocateForeign(WrenVM& vm, sz_t size) {
+  return vm.allocate_foreign(size);
+}
+
+int wrenGetArgumentCount(WrenVM& vm) {
+  return vm.get_argument_count();
+}
+
 bool wrenGetArgumentBool(WrenVM& vm, int index) {
   return vm.get_argument_bool(index);
 }
@@ -1364,6 +1372,10 @@ const char* wrenGetArgumentString(WrenVM& vm, int index) {
 
 WrenValue* wrenGetArgumentValue(WrenVM& vm, int index) {
   return vm.get_argument_value(index);
+}
+
+void* wrenGetArgumentForeign(WrenVM& vm, int index) {
+  return vm.get_argument_foreign(index);
 }
 
 void wrenReturnBool(WrenVM& vm, bool value) {

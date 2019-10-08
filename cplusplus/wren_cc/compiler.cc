@@ -227,6 +227,9 @@ struct ClassCompiler {
   // symbol table for the fields of the class
   SymbolTable* fields{};
 
+  // true if the class being compiled is a foreign class
+  bool is_foreign{};
+
   // true if the current method being compiled is static
   bool in_static{};
 
@@ -235,8 +238,9 @@ struct ClassCompiler {
 
   ClassCompiler(void) noexcept {}
   ClassCompiler(SymbolTable* arg_fields,
-      bool arg_static, Signature* arg_signature) noexcept
+      bool arg_foreign, bool arg_static, Signature* arg_signature) noexcept
     : fields(arg_fields)
+    , is_foreign(arg_foreign)
     , in_static(arg_static)
     , signature(arg_signature) {
   }
@@ -976,6 +980,9 @@ class Compiler : private UnCopyable {
     if (enclosing_class == nullptr) {
       error("cannot reference a field outside of a class definition");
     }
+    else if (enclosing_class->is_foreign) {
+      error("cannot define fields in a foreign class");
+    }
     else if (enclosing_class->in_static) {
       error("cannot use an instance field in a static method");
     }
@@ -1111,9 +1118,9 @@ class Compiler : private UnCopyable {
     loop_ = loop_->enclosing;
   }
 
-  void class_definition(void) {
+  void class_definition(bool is_foreign) {
     // compiles a class definition, assumes the `class` token has already
-    // been consumed.
+    // been consumed (along with a possibly preceding `foreign` token)
 
     // create a variable to store the class in
     int slot = declare_named_variable();
@@ -1135,7 +1142,11 @@ class Compiler : private UnCopyable {
     // store a placeholder for the number of fields argument, we donot
     // know the value untial we have compiled all the methods to see
     // which fields are used.
-    int num_fields_instruction = emit_bytes(Code::CLASS, 0xff);
+    int num_fields_instruction = -1;
+    if (is_foreign)
+      emit_byte(Code::FOREIGN_CLASS);
+    else
+      num_fields_instruction = emit_bytes(Code::CLASS, 0xff);
 
     // store it in its name
     define_variable(slot);
@@ -1146,6 +1157,7 @@ class Compiler : private UnCopyable {
     push_scope();
 
     ClassCompiler class_compiler;
+    class_compiler.is_foreign = is_foreign;
 
     // set up a symbol table for the class's fields, we'll initially compile
     // them to slots starting at zero. when the method is bound to the close
@@ -1176,7 +1188,8 @@ class Compiler : private UnCopyable {
       create_default_constructor(slot);
 
     // update the class with the number of fields
-    bytecode_[num_fields_instruction] = fields.count();
+    if (!is_foreign)
+      bytecode_[num_fields_instruction] = fields.count();
 
     enclosing_class_ = nullptr;
     pop_scope();
@@ -1340,7 +1353,13 @@ class Compiler : private UnCopyable {
     // prohibited in places like the non-curly body of an if or while
 
     if (match(TokenKind::KW_CLASS)) {
-      class_definition();
+      class_definition(false);
+      return;
+    }
+
+    if (match(TokenKind::KW_FOREIGN)) {
+      consume(TokenKind::KW_CLASS, "expect `class` after `foreign`");
+      class_definition(true);
       return;
     }
 
@@ -1538,7 +1557,8 @@ class Compiler : private UnCopyable {
     method_compiler.init_compiler(false);
 
     // allocate the instance
-    method_compiler.emit_byte(Code::CONSTRUCT);
+    method_compiler.emit_byte(enclosing_class_->is_foreign
+        ? Code::FOREIGN_CONSTRUCT : Code::CONSTRUCT);
 
     // run its initializer
     method_compiler.emit_words(

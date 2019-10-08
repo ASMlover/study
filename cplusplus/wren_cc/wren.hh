@@ -36,9 +36,33 @@ struct WrenValue;
 
 using WrenForeignFn = std::function<void (WrenVM&)>;
 
+struct WrenForeignClass {
+  // the callback invoked when the foreign object is created
+  //
+  // this must be provided, inside the body of this, it must call
+  // [wrenAllocateForeign] exactly once
+  WrenForeignFn allocate;
+
+  // the callback invoked when the garbage collecator is about to collect a
+  // foreign object's memory
+  //
+  // this may be `nullptr` if the foreign class does not need it finalize
+  WrenForeignFn finalize;
+};
+
 // releases the reference stored in [value], after calling this, [value] can no
 // longer be used
 void wrenReleaseValue(WrenVM& vm, WrenValue* value);
+
+// this must be called once inside a foreign class's allocator function
+//
+// it tells When how many bytes of raw data need to be stored in the foreign
+// object and creates the new object with that size, it returns a pointer to
+// the foreign object's data
+void* wrenAllocateForeign(WrenVM& vm, sz_t size);
+
+// returns the number of arguments available to the current foreign method
+int wrenGetArgumentCount(WrenVM& vm);
 
 // the following functions read one of the arguments passed to a foreign call.
 // they may only be called while within a function provided to
@@ -82,6 +106,11 @@ const char* wrenGetArgumentString(WrenVM& vm, int index);
 // this will prevent the object that is referred to from being garbage collected
 // until the handle is released by calling [wrenReleaseValue()]
 WrenValue* wrenGetArgumentValue(WrenVM& vm, int index);
+
+// reads a foreign object argument for a foreign call and returns a pointer to
+// the foreign data stored with it, returns `nullptr` if the argument is not a
+// foreign object
+void* wrenGetArgumentForeign(WrenVM& vm, int index);
 
 // the following functions provide the return value for a foreign method back
 // to Wren, like above they may only be called during a foreign call invoked
