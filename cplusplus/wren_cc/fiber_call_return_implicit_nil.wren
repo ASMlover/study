@@ -1,7 +1,6 @@
 
 var fiber = Fiber.new {
-  IO.print("fiber")
+  IO.print("fiber") // expect: fiber
 }
 
-var result = fiber.call() // expect: fiber
-IO.print(result) // expect: nil
+IO.print(fiber.call()) // expect: nil

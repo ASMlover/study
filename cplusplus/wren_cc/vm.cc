@@ -186,12 +186,16 @@ FiberObject* WrenVM::runtime_error(FiberObject* fiber, const Value& error) {
 
   // store the error in the fiber so it can be accessed later
   fiber->set_error(error.as_string());
+
+  // unhook the caller since we will never resume and return to it
+  FiberObject* caller = fiber->caller();
+  fiber->set_caller(nullptr);
+
   // if the caller ran this fiber using `try`, give it the error
   if (fiber->caller_is_trying()) {
-    FiberObject* caller = fiber->caller();
-
     // make the caller's try method return the error message
     caller->set_value(caller->stack_size() - 1, fiber->error());
+    fiber_ = caller;
     return caller;
   }
 
@@ -701,7 +705,9 @@ __complete_call:
           return InterpretRet::SUCCESS;
 
         // we have a calling fiber to resume
-        fiber = fiber->caller();
+        FiberObject* calling_fiber = fiber->caller();
+        fiber->set_caller(nullptr);
+        fiber = calling_fiber;
         fiber_ = fiber;
 
         // store the result in the resuming fiber

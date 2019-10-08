@@ -241,6 +241,8 @@ public:
 
   inline SymbolTable& mnames(void) { return method_names_; }
   inline MapObject* modules(void) const { return modules_; }
+  inline FiberObject* fiber(void) { return fiber_; }
+  inline const FiberObject* fiber(void) const { return fiber_; }
   inline void set_compiler(Compiler* compiler) { compiler_ = compiler; }
   inline void set_load_fn(const LoadModuleFn& fn) { load_module_fn_ = fn; }
   inline void set_load_fn(LoadModuleFn&& fn) { load_module_fn_ = std::move(fn); }

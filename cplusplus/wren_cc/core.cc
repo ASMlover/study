@@ -305,45 +305,60 @@ DEF_PRIMITIVE(fiber_abort) {
   return PrimitiveResult::ERROR;
 }
 
-DEF_PRIMITIVE(fiber_call) {
-  FiberObject* run_fiber = args[0].as_fiber();
+static PrimitiveResult run_fiber(
+    WrenVM& vm, FiberObject* fiber, Value* args, bool is_call, bool has_value) {
+  // transfer execution to [fiber] coming from the current fiber whose stack
+  // has [args]
+  //
+  // [is_call] is true if [fiber] is being called and not transferred
+  //
+  // [has_value] is true if a value in [args] is being passed to the new fiber
+  // otherwise `nil` is implicitly being passed
 
-  if (run_fiber->empty_frame())
-    RETURN_ERR("cannot call a finished fiber");
-  if (run_fiber->caller() != nullptr)
-    RETURN_ERR("fiber has already been called");
+  if (is_call) {
+    if (fiber->caller() != nullptr)
+      RETURN_ERR("fiber has already been called");
 
-  // remember who ran it
-  run_fiber->set_caller(fiber);
-  // if the fiber was yielded, make the yield call return nil
-  if (run_fiber->stack_size() > 0)
-    run_fiber->set_value(run_fiber->stack_size() - 1, nullptr);
+    // remember who ran it
+    fiber->set_caller(vm.fiber());
+  }
+  else {
+    // edge case: if we are transferring to ourself, immediately return the
+    // value, we cannot treat this like an actual transfer since when we set
+    // the return below, it would overwrite the fiber being transferred to
+    if (fiber == vm.fiber())
+      RETURN_VAL(has_value ? args[1] : nullptr);
+  }
+
+  if (fiber->empty_frame()) {
+    args[0] = StringObject::format(vm,
+        "cannot `$` a finished fiber", is_call ? "call" : "transfer to");
+    return PrimitiveResult::ERROR;
+  }
+  if (fiber->error() != nullptr) {
+    args[0] = StringObject::format(vm,
+        "cannot `$` an aborted fiber", is_call ? "call" : "transfer to");
+    return PrimitiveResult::ERROR;
+  }
+
+  // when the calling fiber resumes, we'll store the result of the call in its
+  // stack, if the call has two arguments (the fiber and the value), we only
+  // need one slot for the result, so discard the other slot now
+  if (has_value)
+    vm.fiber()->pop();
+  // if the fiber was paused, make yield() or transfer() return the result
+  if (fiber->stack_size() > 0)
+    fiber->set_value(fiber->stack_size() - 1, has_value ? args[1] : nullptr);
 
   return PrimitiveResult::RUN_FIBER;
 }
 
+DEF_PRIMITIVE(fiber_call) {
+  return run_fiber(vm, args[0].as_fiber(), args, true, false);
+}
+
 DEF_PRIMITIVE(fiber_call1) {
-  FiberObject* run_fiber = args[0].as_fiber();
-
-  if (run_fiber->empty_frame())
-    RETURN_ERR("cannot call a finished fiber");
-  if (run_fiber->caller() != nullptr)
-    RETURN_ERR("fiber has already been called");
-
-  // remember who ran it
-  run_fiber->set_caller(fiber);
-  // if the fiber was yielded, make the yield call return the value passed
-  // to run
-  if (run_fiber->stack_size() > 0)
-    run_fiber->set_value(run_fiber->stack_size() - 1, args[1]);
-
-  // when the calling fiber resumes, we will store the result of the run call
-  // in it's stack, since fiber.run(value) has two arguments (the fiber and
-  // the value) and we only need one slot for the result, discard the other
-  // slot now
-  fiber->pop();
-
-  return PrimitiveResult::RUN_FIBER;
+  return run_fiber(vm, args[0].as_fiber(), args, true, true);
 }
 
 DEF_PRIMITIVE(fiber_current) {
@@ -362,42 +377,18 @@ DEF_PRIMITIVE(fiber_isdone) {
   RETURN_VAL(run_fiber->empty_frame() || run_fiber->error() != nullptr);
 }
 
-DEF_PRIMITIVE(fiber_run) {
-  FiberObject* run_fiber = args[0].as_fiber();
-
-  if (run_fiber->empty_frame())
-    RETURN_ERR("cannot run a finished fiber");
-
-  // if the fiber was yield, make the yield call return nil
-  if (run_fiber->caller() == nullptr && run_fiber->stack_size() > 0)
-    run_fiber->set_value(run_fiber->stack_size() - 1, nullptr);
-
-  // unlike call, this does not remeber the calling fiber, instead, it remeber
-  // is *that* fiber's caller, you can think of it like tail call elimination
-  // the switched-from fiber is discarded and when the switched to fiber
-  // completes or yields, control passes to the switched-from fiber's caller.
-  run_fiber->set_caller(fiber->caller());
-
+DEF_PRIMITIVE(fiber_suspend) {
+  // switching to a nil fiber tells the interpreter to stop and exit
+  args[0] = nullptr;
   return PrimitiveResult::RUN_FIBER;
 }
 
-DEF_PRIMITIVE(fiber_run1) {
-  FiberObject* run_fiber = args[0].as_fiber();
+DEF_PRIMITIVE(fiber_transfer) {
+  return run_fiber(vm, args[0].as_fiber(), args, false, false);
+}
 
-  if (run_fiber->empty_frame())
-    RETURN_ERR("cannot run a finished fiber");
-
-  // if the fiber was yield, make the yield call return the value passed to run
-  if (run_fiber->caller() == nullptr && run_fiber->stack_size() > 0)
-    run_fiber->set_value(run_fiber->stack_size() - 1, args[1]);
-
-  // unlike call, this does not remeber the calling fiber, instead, it remeber
-  // is *that* fiber's caller, you can think of it like tail call elimination
-  // the switched-from fiber is discard and when the switched to fiber
-  // completes or yields, control passes to the switched-from fiber's caller
-  run_fiber->set_caller(fiber->caller());
-
-  return PrimitiveResult::RUN_FIBER;
+DEF_PRIMITIVE(fiber_transfer1) {
+  return run_fiber(vm, args[0].as_fiber(), args, false, true);
 }
 
 DEF_PRIMITIVE(fiber_try) {
@@ -1195,14 +1186,15 @@ namespace core {
     vm.set_primitive(vm.fiber_cls()->cls(), "new(_)", _primitive_fiber_new);
     vm.set_primitive(vm.fiber_cls()->cls(), "abort(_)", _primitive_fiber_abort);
     vm.set_primitive(vm.fiber_cls()->cls(), "current", _primitive_fiber_current);
+    vm.set_primitive(vm.fiber_cls()->cls(), "suspend()", _primitive_fiber_suspend);
     vm.set_primitive(vm.fiber_cls()->cls(), "yield()", _primitive_fiber_yield);
     vm.set_primitive(vm.fiber_cls()->cls(), "yield(_)", _primitive_fiber_yield1);
     vm.set_primitive(vm.fiber_cls(), "call()", _primitive_fiber_call);
     vm.set_primitive(vm.fiber_cls(), "call(_)", _primitive_fiber_call1);
     vm.set_primitive(vm.fiber_cls(), "error", _primitive_fiber_error);
     vm.set_primitive(vm.fiber_cls(), "isDone", _primitive_fiber_isdone);
-    vm.set_primitive(vm.fiber_cls(), "run()", _primitive_fiber_run);
-    vm.set_primitive(vm.fiber_cls(), "run(_)", _primitive_fiber_run1);
+    vm.set_primitive(vm.fiber_cls(), "transfer()", _primitive_fiber_transfer);
+    vm.set_primitive(vm.fiber_cls(), "transfer(_)", _primitive_fiber_transfer1);
     vm.set_primitive(vm.fiber_cls(), "try()", _primitive_fiber_try);
 
     vm.set_fn_cls(vm.find_variable(core_module, "Function").as_class());
