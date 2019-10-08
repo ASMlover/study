@@ -548,7 +548,7 @@ class Compiler : private UnCopyable {
     }
   }
 
-  int define_local(const str_t& name) {
+  int add_local(const str_t& name) {
     // create a new local variable with [name], assumes the current scope
     // is local and the name is unique
 
@@ -600,7 +600,7 @@ class Compiler : private UnCopyable {
       return -1;
     }
 
-    return define_local(name);
+    return add_local(name);
   }
 
   int declare_named_variable(void) {
@@ -1264,11 +1264,11 @@ class Compiler : private UnCopyable {
     // the scope in the variable name ensures it won't collide with a user-defined
     // variable
     expression();
-    int seq_slot = define_local("seq ");
+    int seq_slot = add_local("seq ");
 
     // create another hidden local for the iterator object
     nil(false);
-    int iter_slot = define_local("iter ");
+    int iter_slot = add_local("iter ");
 
     consume(TokenKind::TK_RPAREN, "expect `)` after loop expression");
 
@@ -1296,7 +1296,7 @@ class Compiler : private UnCopyable {
     // variable each iteration so that closures for it donot all see the
     // same one
     push_scope();
-    define_local(name);
+    add_local(name);
 
     loop_body();
     // loop variable
@@ -1348,26 +1348,20 @@ class Compiler : private UnCopyable {
 
     if (match(TokenKind::KW_CLASS)) {
       class_definition(false);
-      return;
     }
-
-    if (match(TokenKind::KW_FOREIGN)) {
+    else if (match(TokenKind::KW_FOREIGN)) {
       consume(TokenKind::KW_CLASS, "expect `class` after `foreign`");
       class_definition(true);
-      return;
     }
-
-    if (match(TokenKind::KW_IMPORT)) {
+    else if (match(TokenKind::KW_IMPORT)) {
       import();
-      return;
     }
-
-    if (match(TokenKind::KW_VAR)) {
+    else if (match(TokenKind::KW_VAR)) {
       var_definition();
-      return;
     }
-
-    block();
+    else {
+      block();
+    }
   }
 
   void statement(void) {
