@@ -515,8 +515,8 @@ class Compiler : private UnCopyable {
       PREFIX(field),                            // TOKEN(FIELD, "field")
       PREFIX(static_field),                     // TOKEN(STATIC_FIELD, "static-field")
       PREFIXNAME,                               // TOKEN(IDENTIFIER, "identifier")
-      PREFIX(numeric),                          // TOKEN(NUMERIC, "numeric")
-      PREFIX(string),                           // TOKEN(STRING, "string")
+      PREFIX(literal),                          // TOKEN(NUMERIC, "numeric")
+      PREFIX(literal),                          // TOKEN(STRING, "string")
 
       UNUSED,                                   // TOKEN(NL, "new-line")
 
@@ -773,21 +773,15 @@ class Compiler : private UnCopyable {
       emit_byte(Code::FALSE);
   }
 
-  void numeric(bool allow_assignment) {
-    auto& tok = parser_.prev();
-    emit_constant(tok.as_numeric());
-  }
-
-  int string_constant(void) {
-    // parse a string literal and adds it to the constant table
-
-    return add_constant(StringObject::make_string(
-          parser_.get_vm(), parser_.prev().as_string()));
-  }
-
-  void string(bool allow_assignment) {
-    int constant = string_constant();
-    emit_words(Code::CONSTANT, constant);
+  void literal(bool allow_assignment) {
+    const Token& tok = parser_.prev();
+    if (tok.kind() == TokenKind::TK_NUMERIC) {
+      emit_constant(tok.as_numeric());
+    }
+    else {
+      emit_constant(
+          StringObject::make_string(parser_.get_vm(), tok.as_string()));
+    }
   }
 
   void list(bool allow_assignment) {
@@ -1126,9 +1120,8 @@ class Compiler : private UnCopyable {
     int slot = declare_named_variable();
 
     // make a string constant for the name
-    int name_constant = add_constant(
+    emit_constant(
         StringObject::make_string(parser_.get_vm(), parser_.prev().as_string()));
-    emit_words(Code::CONSTANT, name_constant);
 
     // load the superclass (if there is one)
     if (match(TokenKind::KW_IS)) {
@@ -1197,7 +1190,8 @@ class Compiler : private UnCopyable {
 
   void import(void) {
     consume(TokenKind::TK_STRING, "expect a string after `import`");
-    int module_constant = string_constant();
+    int module_constant = add_constant(
+        StringObject::make_string(parser_.get_vm(), parser_.prev().as_string()));
 
     // load the module
     emit_words(Code::LOAD_MODULE, module_constant);
@@ -1627,9 +1621,8 @@ class Compiler : private UnCopyable {
     str_t full_signature = signature_to_string(signature);
     if (is_foreign) {
       // define a constant for the signature
-      int constant = add_constant(
+      emit_constant(
           StringObject::make_string(parser_.get_vm(), full_signature));
-      emit_words(Code::CONSTANT, constant);
     }
     else {
       consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
@@ -2001,10 +1994,8 @@ class Compiler : private UnCopyable {
     int symbol = signature_symbol(signature);
     emit_words(instruction + signature.arity, symbol);
 
-    if (instruction == Code::SUPER_0) {
-      int constant = add_constant(nullptr);
-      emit_u16(constant);
-    }
+    if (instruction == Code::SUPER_0)
+      emit_u16(add_constant(nullptr));
   }
 
   inline void call_method(int argc, const str_t& name) {
