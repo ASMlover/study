@@ -1160,7 +1160,7 @@ namespace core {
     vm.set_primitive(vm.obj_cls(), "!", _primitive_object_not);
     vm.set_primitive(vm.obj_cls(), "==(_)", _primitive_object_eq);
     vm.set_primitive(vm.obj_cls(), "!=(_)", _primitive_object_ne);
-    vm.set_primitive(vm.obj_cls(), "this new()", _primitive_return_this);
+    vm.set_primitive(vm.obj_cls(), "init new()", _primitive_return_this);
     vm.set_primitive(vm.obj_cls(), "is(_)", _primitive_object_is);
     vm.set_primitive(vm.obj_cls(), "toString", _primitive_object_tostring);
     vm.set_primitive(vm.obj_cls(), "type", _primitive_object_type);

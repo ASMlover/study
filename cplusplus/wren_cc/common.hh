@@ -165,14 +165,14 @@ namespace Xt {
 
 // the maximum length of a method signature, signatures looks like:
 //
-//    foo       // getter
-//    foo()     // no argument method
-//    foo(_)    // one argument method
-//    foo(_,_)  // two arguments method
-//    this foo  // constructor initializer
+//    foo         // getter
+//    foo()       // no argument method
+//    foo(_)      // one argument method
+//    foo(_,_)    // two arguments method
+//    init foo()  // constructor initializer
 //
 // the maximum signature length takes into account the longest method name,
-// the maximum number of parameters with separators between them, "this" and "()"
+// the maximum number of parameters with separators between them, "init" and "()"
 #define MAX_METHOD_SIGNATURE  (MAX_METHOD_NAME + (MAX_PARAMETERS * 2) + 6)
 
 // the maximum length of an identifier, the only real reason for this limitation

@@ -1659,7 +1659,7 @@ class Compiler : private UnCopyable {
   void create_default_constructor(int class_slot) {
     // define a default `new()` constructor on the current class
     //
-    // it just invokes `this new()` on the instance, if a base class defines
+    // it just invokes `init new()` on the instance, if a base class defines
     // that, it will get invoked, otherwise it falls on the defualt one in
     // Object which does nothing
 
@@ -1853,7 +1853,8 @@ class Compiler : private UnCopyable {
   }
 
   void ctor_signature(Signature& signature) {
-    consume(TokenKind::TK_IDENTIFIER, "expect constructor name after `this`");
+    consume(TokenKind::TK_IDENTIFIER,
+        "expect constructor name after `construct`");
 
     // capture the name
     signature = signature_from_token(SignatureType::INITIALIZER);
@@ -1951,7 +1952,7 @@ class Compiler : private UnCopyable {
       signature_parameters(name, 1, '(', ')');
       break;
     case SignatureType::INITIALIZER:
-      name = "this " + signature.name;
+      name = "init " + signature.name;
       signature_parameters(name, signature.arity, '(', ')');
       break;
     }
