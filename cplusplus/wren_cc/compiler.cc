@@ -792,24 +792,24 @@ class Compiler : private UnCopyable {
     // instantiate a new list
     call_method(0, "new()");
 
+    ignore_newlines();
+
     // compile the list elements, each one compiles to a ".add()" call
-    if (parser_.curr().kind() != TokenKind::TK_RBRACKET) {
-      do {
-        ignore_newlines();
+    do {
+      ignore_newlines();
 
-        // list with trailing comma
-        if (parser_.curr().kind() == TokenKind::TK_RBRACKET)
-          break;
+      // stop if we hit the end of the list
+      if (parser_.curr().kind() == TokenKind::TK_RBRACKET)
+        break;
 
-        emit_byte(Code::DUP);
-        expression();
+      emit_byte(Code::DUP);
+      expression();
 
-        call_method(1, "add(_)");
+      call_method(1, "add(_)");
 
-        // discard the result of the add() call
-        emit_byte(Code::POP);
-      } while (match(TokenKind::TK_COMMA));
-    }
+      // discard the result of the add() call
+      emit_byte(Code::POP);
+    } while (match(TokenKind::TK_COMMA));
 
     // allow newlines before the closing `]`
     ignore_newlines();
@@ -827,29 +827,29 @@ class Compiler : private UnCopyable {
 
     // compile the map elements, each one is compiled to just invoke the
     // subscript setter on the map
-    if (parser_.curr().kind() != TokenKind::TK_RBRACE) {
-      do {
-        ignore_newlines();
+    do {
+      ignore_newlines();
 
-        // map with trailing comma
-        if (parser_.curr().kind() == TokenKind::TK_RBRACE)
-          break;
+      // stop if we hit the end of the map
+      if (parser_.curr().kind() == TokenKind::TK_RBRACE)
+        break;
 
-        // push a copy of the map since the subscript call will consume it
-        emit_byte(Code::DUP);
+      // push a copy of the map since the subscript call will consume it
+      emit_byte(Code::DUP);
 
-        // the key
-        parse_precedence(false, Precedence::PRIMARY);
-        consume(TokenKind::TK_COLON, "expect `:` after map key");
-        // the value
-        expression();
+      // the key
+      parse_precedence(false, Precedence::PRIMARY);
+      consume(TokenKind::TK_COLON, "expect `:` after map key");
+      ignore_newlines();
 
-        call_method(2, "[_]=(_)");
+      // the value
+      expression();
 
-        // discard the result of the setter call
-        emit_byte(Code::POP);
-      } while (match(TokenKind::TK_COMMA));
-    }
+      call_method(2, "[_]=(_)");
+
+      // discard the result of the setter call
+      emit_byte(Code::POP);
+    } while (match(TokenKind::TK_COMMA));
 
     // allow newlines before the closing `}`
     ignore_newlines();
