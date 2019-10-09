@@ -36,6 +36,12 @@ struct WrenValue;
 
 using WrenForeignFn = std::function<void (WrenVM&)>;
 
+enum class InterpretRet {
+  SUCCESS,
+  COMPILE_ERROR,
+  RUNTIME_ERROR,
+};
+
 struct WrenForeignClass {
   // the callback invoked when the foreign object is created
   //

@@ -792,8 +792,6 @@ class Compiler : private UnCopyable {
     // instantiate a new list
     call_method(0, "new()");
 
-    ignore_newlines();
-
     // compile the list elements, each one compiles to a ".add()" call
     do {
       ignore_newlines();

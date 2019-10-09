@@ -67,7 +67,6 @@ WrenVM::~WrenVM(void) {
   // tell the user if they didn't free any handles, wo don't want to just free
   // them here because the host app may still have pointers to them that they
   // may try to use. better to tell them about the bug early
-  ASSERT(method_handles_ == nullptr, "all methods have not been released");
   ASSERT(value_handles_ == nullptr, "all values have not been released");
 }
 
@@ -1091,9 +1090,6 @@ void WrenVM::collect(void) {
   // the current fiber
   mark_object(fiber_);
 
-  // the method handles
-  for (WrenMethod* m = method_handles_; m != nullptr; m = m->next)
-    mark_object(m->fiber);
   // the value handles
   for (WrenValue* v = value_handles_; v != nullptr; v = v->next)
     mark_value(v->value);
@@ -1154,7 +1150,7 @@ void WrenVM::mark_value(const Value& val) {
     mark_object(val.as_object());
 }
 
-WrenMethod* WrenVM::acquire_method(
+WrenValue* WrenVM::acquire_method(
     const str_t& module, const str_t& variable, const str_t& signature) {
   // creates a handle that can be used to invoke a method with [signature] on
   // the object in [module] currently stored in top-level [variable]
@@ -1162,7 +1158,7 @@ WrenMethod* WrenVM::acquire_method(
   // this handle can be used repeatedly to directly invoke that method from
   // C++ code using [wren_call]
   //
-  // when done with this handle, it must be released by calling [release_method]
+  // when done with this handle, it must be released using [release_value]
 
   Value module_name = StringObject::make_string(*this, module);
   PinnedGuard module_name_guard(*this, module_name.as_object());
@@ -1178,37 +1174,19 @@ WrenMethod* WrenVM::acquire_method(
   PinnedGuard fiber_guard(*this, fiber);
 
   // create a handle that keeps track of the function that calls the method
-  WrenMethod* method = new WrenMethod(fiber);
+  WrenValue* method = capture_value(fiber);
+  // store the receiver in the fiber's stack so we can use it later in the call
   fiber->push(module_obj->get_variable(variable_slot));
-
-  // add it to the front of the linked list of handles
-  if (method_handles_ != nullptr)
-    method_handles_->prev = method;
-  method->next = method_handles_;
-  method_handles_ = method;
 
   return method;
 }
 
-void WrenVM::release_method(WrenMethod* method) {
-  // releases memory associated with [method], after calling this, [method]
-  // can no longer be used
+InterpretRet WrenVM::wren_call(
+    WrenValue* method, WrenValue*& result, const char* arg_types, ...) {
+  ASSERT(method->value.is_fiber(), "value must come from `acquire_method()`");
+  FiberObject* fiber = method->value.as_fiber();
 
-  ASSERT(method != nullptr, "null method");
-
-  // update the VM's head pointer if we are releasing the first handle
-  if (method_handles_ == method)
-    method_handles_ = method->next;
-  if (method->prev != nullptr)
-    method->prev->prev = method->next;
-  if (method->next != nullptr)
-    method->next->prev = method->prev;
-
-  method->clear();
-  delete method;
-}
-
-void WrenVM::wren_call(WrenMethod* method, const char* arg_types, ...) {
+  // push the arguments
   va_list ap;
   va_start(ap, arg_types);
 
@@ -1225,21 +1203,38 @@ void WrenVM::wren_call(WrenMethod* method, const char* arg_types, ...) {
       case 'v': value = va_arg(ap, WrenValue*)->value; break;
       default: ASSERT(false, "unknown argument type"); break;
     }
-    method->fiber->push(value);
+    fiber->push(value);
   }
 
   va_end(ap);
 
-  const Value& receiver = method->fiber->peek_value();
-  BaseObject* fn = method->fiber->peek_frame().fn;
+  const Value& receiver = fiber->peek_value();
+  BaseObject* fn = fiber->peek_frame().fn;
 
-  interpret(method->fiber);
+  interpret(fiber);
+
+  if (result != nullptr)
+    result = capture_value(fiber->get_value(0));
 
   // reset the fiber to get ready for the next call
-  method->fiber->reset_fiber(fn);
+  fiber->reset_fiber(fn);
 
   // push the receiver back on the stack
-  method->fiber->push(receiver);
+  fiber->push(receiver);
+
+  return InterpretRet::SUCCESS;
+}
+
+WrenValue* WrenVM::capture_value(const Value& value) {
+  // make a handle for it
+  WrenValue* wrapped_value = new WrenValue(value);
+  // add it to the front of the linked list of handles
+  if (value_handles_ != nullptr)
+    value_handles_->prev = wrapped_value;
+  wrapped_value->next = value_handles_;
+  value_handles_ = wrapped_value;
+
+  return wrapped_value;
 }
 
 void WrenVM::release_value(WrenValue* value) {
@@ -1303,15 +1298,7 @@ const char* WrenVM::get_argument_string(int index) const {
 WrenValue* WrenVM::get_argument_value(int index) {
   validate_foreign_argument(index);
 
-  // make a handle for it
-  WrenValue* value = new WrenValue(*(foreign_call_slot_ + index));
-  // add it to the front of the linked list of handles
-  if (value_handles_ != nullptr)
-    value_handles_->prev = value;
-  value->next = value_handles_;
-  value_handles_ = value;
-
-  return value;
+  return capture_value(*(foreign_call_slot_ + index));
 }
 
 void* WrenVM::get_argument_foreign(int index) const {

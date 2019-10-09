@@ -52,31 +52,6 @@ struct Pinned {
   Pinned* prev{};
 };
 
-enum class InterpretRet {
-  SUCCESS,
-  COMPILE_ERROR,
-  RUNTIME_ERROR,
-};
-
-struct WrenMethod {
-  // the fiber that invokes the method, it's stack is pre-populated with the
-  // receiver for the method, and it contains a single callframe whose function
-  // is the bytecode stub to invoke the method
-  FiberObject* fiber{};
-  WrenMethod* prev{};
-  WrenMethod* next{};
-
-  WrenMethod(FiberObject* fb,
-      WrenMethod* p = nullptr, WrenMethod* n = nullptr) noexcept
-    : fiber(fb), prev(p), next(n) {
-  }
-
-  void clear(void) {
-    fiber = nullptr;
-    prev = next = nullptr;
-  }
-};
-
 struct WrenValue {
   // a handle to a value, basically just linked list of extra GC roots.
   //
@@ -164,9 +139,6 @@ class WrenVM final : private UnCopyable {
 
   // the function used to laod modules
   LoadModuleFn load_module_fn_{};
-
-  // list of active method handles or nullptr if there are no handles
-  WrenMethod* method_handles_{};
 
   // list of active value handles or nullptr if there are no handles
   WrenValue* value_handles_{};
@@ -275,10 +247,11 @@ public:
   InterpretRet interpret(const str_t& source_path, const str_t& source_bytes);
   void call_function(FiberObject* fiber, BaseObject* fn, int argc);
 
-  WrenMethod* acquire_method(
+  WrenValue* acquire_method(
       const str_t& module, const str_t& variable, const str_t& signature);
-  void release_method(WrenMethod* method);
-  void wren_call(WrenMethod* method, const char* arg_types, ...);
+  InterpretRet wren_call(
+      WrenValue* method, WrenValue*& result, const char* arg_types, ...);
+  WrenValue* capture_value(const Value& value);
   void release_value(WrenValue* value);
   void* allocate_foreign(sz_t size);
 
