@@ -332,12 +332,12 @@ static PrimitiveResult run_fiber(
 
   if (fiber->empty_frame()) {
     args[0] = StringObject::format(vm,
-        "cannot `$` a finished fiber", is_call ? "call" : "transfer to");
+        "cannot $ a finished fiber", is_call ? "call" : "transfer to");
     return PrimitiveResult::ERROR;
   }
   if (fiber->error() != nullptr) {
     args[0] = StringObject::format(vm,
-        "cannot `$` an aborted fiber", is_call ? "call" : "transfer to");
+        "cannot $ an aborted fiber", is_call ? "call" : "transfer to");
     return PrimitiveResult::ERROR;
   }
 
