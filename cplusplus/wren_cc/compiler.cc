@@ -797,6 +797,10 @@ class Compiler : private UnCopyable {
       do {
         ignore_newlines();
 
+        // list with trailing comma
+        if (parser_.curr().kind() == TokenKind::TK_RBRACKET)
+          break;
+
         emit_byte(Code::DUP);
         expression();
 
@@ -826,6 +830,10 @@ class Compiler : private UnCopyable {
     if (parser_.curr().kind() != TokenKind::TK_RBRACE) {
       do {
         ignore_newlines();
+
+        // map with trailing comma
+        if (parser_.curr().kind() == TokenKind::TK_RBRACE)
+          break;
 
         // push a copy of the map since the subscript call will consume it
         emit_byte(Code::DUP);
