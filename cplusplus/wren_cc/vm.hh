@@ -181,7 +181,6 @@ class WrenVM final : private UnCopyable {
 
   InterpretRet interpret(FiberObject* fiber);
 
-  void collect(void);
   void free_object(BaseObject* obj);
 public:
   WrenVM(void) noexcept;
@@ -239,6 +238,7 @@ public:
   void pop_root(void);
   Value import_module(const str_t& name);
 
+  void collect(void);
   void append_object(BaseObject* obj);
   void mark_object(BaseObject* obj);
   void mark_value(const Value& val);
@@ -254,6 +254,7 @@ public:
   WrenValue* capture_value(const Value& value);
   void release_value(WrenValue* value);
   void* allocate_foreign(sz_t size);
+  void finalize_foreign(ForeignObject* foreign);
 
   int get_argument_count(void) const;
   bool get_argument_bool(int index) const;

@@ -98,6 +98,7 @@ public:
   virtual bool is_equal(BaseObject* r) const { return false; }
   virtual str_t stringify(void) const { return "<object>"; }
   virtual void gc_mark(WrenVM& vm) {}
+  virtual void finalize(WrenVM& vm) {}
 
   virtual u32_t hash(void) const {
     ASSERT(false, "only immutable objects can be hashed");
@@ -534,6 +535,7 @@ public:
   inline const u8_t* data(void) const { return data_.data(); }
 
   virtual str_t stringify(void) const override;
+  virtual void finalize(WrenVM& vm) override;
 
   static ForeignObject* make_foreign(WrenVM& vm, ClassObject* cls, sz_t size);
 };

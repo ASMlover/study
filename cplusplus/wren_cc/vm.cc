@@ -291,9 +291,11 @@ void WrenVM::bind_foreign_class(ClassObject* cls, ModuleObject* module) {
   int symbol = method_names_.ensure("<allocate>");
   cls->bind_method(symbol, method);
 
+  // add the symbol even if there is no finalizer so we can ensure that the
+  // symbol itself is always in the symbol table
+  symbol = method_names_.ensure("<finalize>");
   if (methods.finalize) {
     method.set_foreign(methods.finalize);
-    symbol = method_names_.ensure("<finalize>");
     cls->bind_method(symbol, method);
   }
 }
@@ -1122,6 +1124,7 @@ void WrenVM::free_object(BaseObject* obj) {
     << std::endl;
 #endif
 
+  obj->finalize(*this);
   delete obj;
 }
 
@@ -1266,6 +1269,34 @@ void* WrenVM::allocate_foreign(sz_t size) {
   return foreign->data();
 }
 
+void WrenVM::finalize_foreign(ForeignObject* foreign) {
+  // invoke the finalizer for the foreign object referenced by [foreign]
+
+  int symbol = method_names_.get("<finalize>");
+  ASSERT(symbol != -1, "should have defined <finalize> symbol");
+
+  // if there are no finalizers, donot finalize it
+  if (symbol == -1)
+    return;
+
+  // if the class doesn't have a finalizer, bail out
+  ClassObject* cls = foreign->cls();
+  if (symbol >= cls->methods_count())
+    return;
+
+  const Method& method = cls->get_method(symbol);
+  if (method.get_type() == MethodType::NONE)
+    return;
+  ASSERT(method.get_type() == MethodType::FOREIGN, "finalizer should be foreign");
+
+  // pass the constructor arguments to the allocator as well
+  Value slot(foreign);
+  foreign_call_slot_ = &slot;
+  foreign_call_argc_ = 1;
+
+  method.foreign()(*this);
+}
+
 int WrenVM::get_argument_count(void) const {
   ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
   return foreign_call_argc_;
@@ -1338,6 +1369,10 @@ void WrenVM::return_value(WrenValue* value) {
 
   *foreign_call_slot_ = value->value;
   foreign_call_slot_ = nullptr;
+}
+
+void wrenCollectGarbage(WrenVM& vm) {
+  vm.collect();
 }
 
 void wrenReleaseValue(WrenVM& vm, WrenValue* value) {

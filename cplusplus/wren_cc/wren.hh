@@ -56,6 +56,9 @@ struct WrenForeignClass {
   WrenForeignFn finalize;
 };
 
+// immediately run the garbage collector to free unused memory
+void wrenCollectGarbage(WrenVM& vm);
+
 // releases the reference stored in [value], after calling this, [value] can no
 // longer be used
 void wrenReleaseValue(WrenVM& vm, WrenValue* value);

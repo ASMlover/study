@@ -829,6 +829,10 @@ str_t ForeignObject::stringify(void) const {
   return ss.str();
 }
 
+void ForeignObject::finalize(WrenVM& vm) {
+  vm.finalize_foreign(this);
+}
+
 ForeignObject* ForeignObject::make_foreign(
     WrenVM& vm, ClassObject* cls, sz_t size) {
   auto* o = new ForeignObject(cls);
