@@ -240,10 +240,6 @@ static str_t kLibSource =
 "  }\n"
 "}\n";
 
-DEF_PRIMITIVE(return_this) {
-  RETURN_VAL(args[0]);
-}
-
 DEF_PRIMITIVE(nil_not) {
   RETURN_VAL(true);
 }
@@ -813,6 +809,10 @@ DEF_PRIMITIVE(string_subscript) {
   RETURN_ERR("subscript ranges for strings are not implemented yet");
 }
 
+DEF_PRIMITIVE(string_tostring) {
+  RETURN_VAL(args[0]);
+}
+
 static PrimitiveResult call_function(WrenVM& vm, Value* args, int argc) {
   FunctionObject* fn;
   if (args[0].is_closure())
@@ -1151,7 +1151,6 @@ namespace core {
     vm.set_primitive(vm.obj_cls(), "!", _primitive_object_not);
     vm.set_primitive(vm.obj_cls(), "==(_)", _primitive_object_eq);
     vm.set_primitive(vm.obj_cls(), "!=(_)", _primitive_object_ne);
-    vm.set_primitive(vm.obj_cls(), "init new()", _primitive_return_this);
     vm.set_primitive(vm.obj_cls(), "is(_)", _primitive_object_is);
     vm.set_primitive(vm.obj_cls(), "toString", _primitive_object_tostring);
     vm.set_primitive(vm.obj_cls(), "type", _primitive_object_type);
@@ -1278,7 +1277,7 @@ namespace core {
     vm.set_primitive(vm.str_cls(), "iterByte(_)", _primitive_string_iterbyte);
     vm.set_primitive(vm.str_cls(), "iterValue(_)", _primitive_string_itervalue);
     vm.set_primitive(vm.str_cls(), "startsWith(_)", _primitive_string_startswith);
-    vm.set_primitive(vm.str_cls(), "toString", _primitive_return_this);
+    vm.set_primitive(vm.str_cls(), "toString", _primitive_string_tostring);
 
     vm.set_list_cls(vm.find_variable(core_module, "List").as_class());
     vm.set_primitive(vm.list_cls()->cls(), "new()", _primitive_list_new);

@@ -1170,9 +1170,8 @@ class Compiler : private UnCopyable {
 
     match_line();
 
-    bool has_constructor = false;
     while (!match(TokenKind::TK_RBRACE)) {
-      if (!method(&class_compiler, slot, has_constructor))
+      if (!method(&class_compiler, slot))
         break;
 
       // don't require a newline after the last definition
@@ -1181,10 +1180,6 @@ class Compiler : private UnCopyable {
 
       consume_line("expect newline after definition in class");
     }
-
-    // if no constructor was defined, create a default new() one
-    if (!has_constructor)
-      create_default_constructor(slot);
 
     // update the class with the number of fields
     if (!is_foreign)
@@ -1587,8 +1582,7 @@ class Compiler : private UnCopyable {
     emit_words(instruction, method_symbol);
   }
 
-  bool method(ClassCompiler* class_compiler,
-      int class_slot, bool& has_constructor) {
+  bool method(ClassCompiler* class_compiler, int class_slot) {
     // compiles a method definition inside a class body
     //
     // returns `true` if compiled successfully or `false` if the method
@@ -1641,29 +1635,9 @@ class Compiler : private UnCopyable {
 
       create_constructor(signature, method_symbol);
       define_method(class_slot, true, constructor_symbol);
-
-      // we donot need a default constructor anymore
-      has_constructor = true;
     }
 
     return true;
-  }
-
-  void create_default_constructor(int class_slot) {
-    // define a default `new()` constructor on the current class
-    //
-    // it just invokes `init new()` on the instance, if a base class defines
-    // that, it will get invoked, otherwise it falls on the defualt one in
-    // Object which does nothing
-
-    Signature signature("new", SignatureType::INITIALIZER, 0);
-    int initializer_symbol = signature_symbol(signature);
-
-    signature.set_type(SignatureType::METHOD);
-    int constructor_symbol = signature_symbol(signature);
-
-    create_constructor(signature, initializer_symbol);
-    define_method(class_slot, true, constructor_symbol);
   }
 
   void call(bool allow_assignment) {
