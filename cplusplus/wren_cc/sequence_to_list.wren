@@ -1,5 +1,7 @@
 
 class TestSequence is Sequence {
+  construct new() {}
+
   iterate(iterator) {
     if (iterator == nil) return 1
     if (iterator == 3) return false

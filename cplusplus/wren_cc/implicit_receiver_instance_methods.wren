@@ -1,5 +1,7 @@
 
 class Foo {
+  construct new() {}
+
   getter {
     IO.print("getter")
   }

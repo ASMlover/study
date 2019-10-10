@@ -2,6 +2,8 @@
 var foo = "variable"
 
 class Foo {
+  construct new() {}
+
   foo { "method" }
 
   method {

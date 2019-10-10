@@ -16,6 +16,7 @@ IO.print([1, [2, [3], 4], 5].join(",")) // expect: 1,[2, [3], 4],5
 
 // calls toString on elements
 class Foo {
+  construct new() {}
   toString { "Foo.toString" }
 }
 IO.print([1, Foo.new(), 2].join(", ")) // expect: 1, Foo.toString, 2

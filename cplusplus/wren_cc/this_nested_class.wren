@@ -1,5 +1,7 @@
 
 class Outer {
+  construct new() {}
+
   method {
     IO.print(this) // expect: Outer
 
@@ -7,13 +9,15 @@ class Outer {
       IO.print(this) // expect: Outer
 
       class Inner {
+        construct new() {}
+
         method {
           IO.print(this) // expect: Inner
         }
         toString { "Inner" }
       }
 
-      Inner.ne().method
+      Inner.new().method
     }.call()
   }
 

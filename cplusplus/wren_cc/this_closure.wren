@@ -1,5 +1,6 @@
 
 class Foo {
+  construct new() {}
   getClosure { Function.new { toString } }
   toString { "Foo" }
 }

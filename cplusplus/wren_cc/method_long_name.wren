@@ -1,5 +1,6 @@
 
 class Foo {
+  construct new() {}
   thisHasAMethodNameThatIsExactly64CharactersLongWhichIsTheMaximum {
     return "result"
   }

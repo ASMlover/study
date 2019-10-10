@@ -21,7 +21,9 @@ IO.print(Object.same(Bool, Numeric)) // expect: false
 IO.print(Object.same(Bool, Bool)) // expect: true
 
 // other types compare by identity
-class Foo {}
+class Foo {
+  construct new() {}
+}
 
 var foo = Foo.new()
 IO.print(Object.same(foo, foo)) // expect: true
@@ -29,6 +31,7 @@ IO.print(Object.same(foo, Foo.new())) // expect: false
 
 // ignores == operators
 class Bar {
+  construct new() {}
   ==(other) { true }
 }
 

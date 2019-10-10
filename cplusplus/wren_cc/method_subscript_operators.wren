@@ -1,5 +1,6 @@
 
 class Foo {
+  construct new() {}
   [a] { "1-subscript " + a }
   [a, b] { "2-subscript " + a + " " + b }
   [a, b, c] { "3-subscript " + a + " " + b + " " + c }

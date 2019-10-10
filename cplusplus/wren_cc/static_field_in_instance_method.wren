@@ -1,5 +1,7 @@
 
 class Foo {
+  construct new() {}
+
   set(a, b, c, d, e) {
     __a = a
     __b = b

@@ -1,5 +1,6 @@
 
 class Foo {
+  construct new() {}
   method { "getter" }
   method() { "no args" }
   method(a) { a }

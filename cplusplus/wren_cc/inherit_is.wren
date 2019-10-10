@@ -1,7 +1,16 @@
 
-class A {}
-class B is A {}
-class C is B {}
+class A {
+  construct new() {}
+}
+
+class B is A {
+  construct new() {}
+}
+
+class C is B {
+  construct new() {}
+}
+
 var a = A.new()
 var b = B.new()
 var c = C.new()

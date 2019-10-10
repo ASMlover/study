@@ -1,5 +1,6 @@
 
 class Foo {
+  construct new() {}
   bar { "on instance" }
   static bar { "on metaclass" }
 

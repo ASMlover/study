@@ -1,5 +1,7 @@
 
 class Foo {
+  construct new() {}
+
   foo(a, b) {
     _field1 = a
     _field2 = b
@@ -12,6 +14,8 @@ class Foo {
 }
 
 class Bar is Foo {
+  construct new() {}
+
   bar(a, b) {
     _field1 = a
     _field2 = b
