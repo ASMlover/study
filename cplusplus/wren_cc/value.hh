@@ -317,6 +317,8 @@ public:
   static StringObject* make_string(WrenVM& vm, const char* s, int n);
   static StringObject* make_string(WrenVM& vm, const str_t& s);
   static StringObject* make_string(WrenVM& vm, StringObject* s1, StringObject* s2);
+  static StringObject* make_string_from_range(
+      WrenVM& vm, StringObject* s, int off, int n, int step);
   static StringObject* concat_string(WrenVM& vm, const char* s1, const char* s2);
   static StringObject* concat_string(WrenVM& vm, const str_t& s1, const str_t& s2);
   static StringObject* from_numeric(WrenVM& vm, double value);

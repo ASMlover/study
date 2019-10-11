@@ -343,6 +343,17 @@ StringObject* StringObject::make_string(
   return o;
 }
 
+StringObject* StringObject::make_string_from_range(
+    WrenVM& vm, StringObject* s, int off, int n, int step) {
+  str_t text;
+  for (int i = 0; i < n; ++i) {
+    int index = off + i * step;
+    text.push_back(s->value_[index]);
+  }
+
+  return make_string(vm, text);
+}
+
 StringObject* StringObject::concat_string(
     WrenVM& vm, const char* s1, const char* s2) {
   sz_t n1 = strlen(s1);
