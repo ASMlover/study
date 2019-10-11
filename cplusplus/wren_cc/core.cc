@@ -181,6 +181,7 @@ static str_t kLibSource =
 "  [index] { _string.byteAt(index) }\n"
 "  iterate(iterator) { _string.iterByte(iterator) }\n"
 "  iterValue(iterator) { _string.byteAt(iterator) }\n"
+"  count { _string.byteCount }\n"
 "}\n"
 "\n"
 "class List is Sequence {\n"
@@ -660,6 +661,10 @@ DEF_PRIMITIVE(string_byteat) {
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(Xt::as_type<u8_t>((*s)[index]));
+}
+
+DEF_PRIMITIVE(string_bytecount) {
+  RETURN_VAL(args[0].as_string()->size());
 }
 
 DEF_PRIMITIVE(string_len) {
@@ -1263,6 +1268,7 @@ namespace core {
     vm.set_primitive(vm.str_cls(), "+(_)", _primitive_string_add);
     vm.set_primitive(vm.str_cls(), "[_]", _primitive_string_subscript);
     vm.set_primitive(vm.str_cls(), "byteAt(_)", _primitive_string_byteat);
+    vm.set_primitive(vm.str_cls(), "byteCount", _primitive_string_bytecount);
     vm.set_primitive(vm.str_cls(), "len", _primitive_string_len);
     vm.set_primitive(vm.str_cls(), "contains(_)", _primitive_string_contains);
     vm.set_primitive(vm.str_cls(), "endsWith(_)", _primitive_string_endswith);
