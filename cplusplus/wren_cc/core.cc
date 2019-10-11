@@ -667,10 +667,6 @@ DEF_PRIMITIVE(string_bytecount) {
   RETURN_VAL(args[0].as_string()->size());
 }
 
-DEF_PRIMITIVE(string_len) {
-  RETURN_VAL(args[0].as_string()->size());
-}
-
 DEF_PRIMITIVE(string_endswith) {
   if (!validate_string(vm, args, 1, "Argument"))
     return PrimitiveResult::ERROR;
@@ -1269,7 +1265,6 @@ namespace core {
     vm.set_primitive(vm.str_cls(), "[_]", _primitive_string_subscript);
     vm.set_primitive(vm.str_cls(), "byteAt(_)", _primitive_string_byteat);
     vm.set_primitive(vm.str_cls(), "byteCount", _primitive_string_bytecount);
-    vm.set_primitive(vm.str_cls(), "len", _primitive_string_len);
     vm.set_primitive(vm.str_cls(), "contains(_)", _primitive_string_contains);
     vm.set_primitive(vm.str_cls(), "endsWith(_)", _primitive_string_endswith);
     vm.set_primitive(vm.str_cls(), "indexOf(_)", _primitive_string_indexof);

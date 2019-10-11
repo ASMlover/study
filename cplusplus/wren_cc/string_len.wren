@@ -1,3 +1,3 @@
 
-IO.print("".len) // expect 0
-IO.print("a string".len) // expect 8
+IO.print("".count) // expect 0
+IO.print("a string".count) // expect 8
