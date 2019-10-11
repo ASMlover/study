@@ -313,24 +313,19 @@ bool WrenVM::define_class(
 
   // pull the name and superclass off the stack
   const Value& name = fiber->peek_value(1);
-  const Value& supercls_val = fiber->peek_value();
+  const Value& superclass = fiber->peek_value();
 
   // we have two values on the stack and we are going to leave one, so
   // discard the other slot
   fiber->pop();
 
-  // use implicit Object superclass if none given
-  ClassObject* superclass = obj_class_;
-  if (!supercls_val.is_nil()) {
-    Value err = validate_superclass(name, supercls_val, num_fields);
-    if (!err.is_nil()) {
-      fiber->set_value(fiber->stack_size() - 1, err);
-      return false;
-    }
-    superclass = supercls_val.as_class();
+  Value err = validate_superclass(name, superclass, num_fields);
+  if (!err.is_nil()) {
+    fiber->set_value(fiber->stack_size() - 1, err);
+    return false;
   }
   ClassObject* cls = ClassObject::make_class(
-      *this, superclass, num_fields, name.as_string());
+      *this, superclass.as_class(), num_fields, name.as_string());
   fiber->set_value(fiber->stack_size() - 1, cls);
 
   if (num_fields == -1)

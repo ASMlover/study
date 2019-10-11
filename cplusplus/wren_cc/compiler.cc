@@ -784,12 +784,17 @@ class Compiler : private UnCopyable {
     }
   }
 
-  void list(bool allow_assignment) {
-    int list_class_symbol = parser_.get_mod()->find_variable("List");
-    ASSERT(list_class_symbol != -1, "should have already defined `List` variable");
-    emit_words(Code::LOAD_MODULE_VAR, list_class_symbol);
+  void load_core_variable(const str_t& name) {
+    // pushes the value of a module-level variable implicitly imported from core
 
+    int symbol = parser_.get_mod()->find_variable(name);
+    ASSERT(symbol != -1, "should have already define core name");
+    emit_words(Code::LOAD_MODULE_VAR, symbol);
+  }
+
+  void list(bool allow_assignment) {
     // instantiate a new list
+    load_core_variable("List");
     call_method(0, "new()");
 
     // compile the list elements, each one compiles to a ".add()" call
@@ -815,12 +820,8 @@ class Compiler : private UnCopyable {
   }
 
   void map(bool allow_assignment) {
-    // load the map class
-    int map_class_symbol = parser_.get_mod()->find_variable("Map");
-    ASSERT(map_class_symbol != -1, "should have already defined `Map` variable");
-    emit_words(Code::LOAD_MODULE_VAR, map_class_symbol);
-
     // instantiate a new map
+    load_core_variable("Map");
     call_method(0, "new()");
 
     // compile the map elements, each one is compiled to just invoke the
@@ -1134,8 +1135,8 @@ class Compiler : private UnCopyable {
       parse_precedence(false, Precedence::CALL);
     }
     else {
-      // create the empty class
-      emit_byte(Code::NIL);
+      // implicitly inherit from Object
+      load_core_variable("Object");
     }
 
     // store a placeholder for the number of fields argument, we donot

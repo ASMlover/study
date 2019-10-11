@@ -156,13 +156,12 @@ CODE(CONSTRUCT)
 // compiler-generated constructor metaclass methods
 CODE(FOREIGN_CONSTRUCT)
 
-// creates a class, top of stack is the superclass, or `nil` if the class
-// inherits Object, below that is a string for the name of the class, byte
-// [arg] is the number of fields in the class
+// creates a class, top of stack is the superclass, below that is a string for
+// the name of the class, byte [arg] is the number of fields in the class
 CODE(CLASS)
 
-// creates a foreign class, top of stack is the superclass, or `nil` if the
-// class inherits Object, below that is a string for the name of the class
+// creates a foreign class, top of stack is the superclass, below that is a
+// string for the name of the class
 CODE(FOREIGN_CLASS)
 
 // define a method for symbol [arg] the class receiving the method is popped
