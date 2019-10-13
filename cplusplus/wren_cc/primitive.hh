@@ -38,26 +38,20 @@ static PrimitiveResult _primitive_##fn(WrenVM& vm, FiberObject* fiber, Value* ar
   return PrimitiveResult::VALUE;\
 } while (false)
 #define RETURN_ERR(msg) do {\
-  args[0] = StringObject::make_string(vm, msg);\
+  vm.fiber()->set_error(StringObject::make_string(vm, msg));\
   return PrimitiveResult::ERROR;\
 } while (false)
 
 int validate_index(const Value& index, int count);
-bool validate_function(
-    WrenVM& vm, Value* args, int index, const str_t& arg_name);
-bool validate_numeric(
-    WrenVM& vm, Value* args, int index, const str_t& arg_name);
-bool validate_int_value(
-    WrenVM& vm, Value* args, double value, const str_t& arg_name);
-bool validate_int(WrenVM& vm, Value* args, int index, const str_t& arg_name);
-int validate_index_value(
-    WrenVM& vm, Value* args, int count, double value, const str_t& arg_name);
+bool validate_function(WrenVM& vm, const Value& arg, const str_t& arg_name);
+bool validate_numeric(WrenVM& vm, const Value& arg, const str_t& arg_name);
+bool validate_int_value(WrenVM& vm, double value, const str_t& arg_name);
+bool validate_int(WrenVM& vm, const Value& arg, const str_t& arg_name);
 int validate_index(
-    WrenVM& vm, Value* args, int arg_index, int count, const str_t& arg_name);
-bool validate_string(
-    WrenVM& vm, Value* args, int index, const str_t& arg_name);
-bool validate_key(WrenVM& vm, Value* args, int index);
+    WrenVM& vm, const Value& arg, int count, const str_t& arg_name);
+bool validate_string(WrenVM& vm, const Value& arg, const str_t& arg_name);
+bool validate_key(WrenVM& vm, const Value& arg);
 std::tuple<int, int, int> calculate_range(
-    WrenVM& vm, Value* args, RangeObject* range, int length);
+    WrenVM& vm, RangeObject* range, int length);
 
 }

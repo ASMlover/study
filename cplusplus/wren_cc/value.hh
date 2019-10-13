@@ -646,8 +646,8 @@ class FiberObject final : public BaseObject {
   FiberObject* caller_{};
 
   // if the fiber failed because of a runtime error, this will contain the
-  // error message, otherwise it will be empty
-  StringObject* error_{};
+  // error object, otherwise it will be nil
+  Value error_{nullptr};
 
   // a unique-ish numeric ID for the fiber, lets fibers be used as map keys,
   // unique-ish since IDs may overflow and wrap around
@@ -688,9 +688,8 @@ public:
   inline const CallFrame& get_frame(int i) const { return frames_[0]; }
   inline FiberObject* caller(void) const { return caller_; }
   inline void set_caller(FiberObject* caller) { caller_ = caller; }
-  inline StringObject* error(void) const { return error_; }
-  inline const char* error_cstr(void) const { return error_->cstr(); }
-  inline void set_error(StringObject* error) { error_ = error; }
+  inline const Value& error(void) const { return error_; }
+  inline void set_error(const Value& error) { error_ = error; }
   inline bool caller_is_trying(void) const { return caller_is_trying_; }
   inline void set_caller_is_trying(bool b) { caller_is_trying_ = b; }
 

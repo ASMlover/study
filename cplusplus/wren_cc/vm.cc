@@ -157,7 +157,10 @@ Value WrenVM::import_module(const str_t& name) {
 }
 
 void WrenVM::print_stacktrace(FiberObject* fiber) {
-  std::cerr << fiber->error_cstr() << std::endl;
+  if (fiber->error().is_string())
+    std::cerr << fiber->error().as_cstring() << std::endl;
+  else
+    std::cerr << "[error object]" << std::endl;
 
   fiber->riter_frames([](const CallFrame& frame, FunctionObject* fn) {
       auto& debug = fn->debug();

@@ -36,7 +36,7 @@ namespace wrencc {
 namespace meta {
   namespace details {
     DEF_PRIMITIVE(meta_eval) {
-      if (!validate_string(vm, args, 1, "Source code"))
+      if (!validate_string(vm, args[1], "Source code"))
         return PrimitiveResult::ERROR;
 
       // eval the code in the module where the calling function was defined
@@ -57,7 +57,7 @@ namespace meta {
       // remember what fiber to return to
       eval_fiber->set_caller(fiber);
       // switch to the fiber
-      args[0] = eval_fiber;
+      vm.set_fiber(eval_fiber);
 
       return PrimitiveResult::RUN_FIBER;
     }

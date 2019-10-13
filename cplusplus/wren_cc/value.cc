@@ -1033,7 +1033,7 @@ void FiberObject::gc_mark(WrenVM& vm) {
     vm.mark_object(upvalue);
 
   vm.mark_object(caller_);
-  vm.mark_object(error_);
+  vm.mark_value(error_);
 }
 
 u32_t FiberObject::hash(void) const {

@@ -30,6 +30,27 @@
 
 namespace wrencc {
 
+static int validate_index_value(
+    WrenVM& vm, int count, double value, const str_t& arg_name) {
+  // validates that [value] is an integer within [0, count), also allows
+  // negative indices which map backwards from the end, returns the valid
+  // positive index value, if invalid, reports an error and return -1
+
+  if (!validate_int_value(vm, value, arg_name))
+    return -1;
+
+  // negative indices count from the end
+  if (value < 0)
+    value = count + value;
+  // check bounds
+  if (value >= 0 && value < count)
+    return Xt::as_type<int>(value);
+
+  vm.fiber()->set_error(StringObject::format(
+        vm, "`$` out of bounds", arg_name.c_str()));
+  return -1;
+}
+
 int validate_index(const Value& index, int count) {
   // validates that [index] is an integer within `[0, count)` also allows
   // negative indices which map backwards from the end, returns the valid
@@ -54,114 +75,92 @@ int validate_index(const Value& index, int count) {
   return i;
 }
 
-bool validate_function(
-    WrenVM& vm, Value* args, int index, const str_t& arg_name) {
-  // validates that the given argument in [args] is a function, returns true
-  // if it is, if not reports an error and returns false
+bool validate_function(WrenVM& vm, const Value& arg, const str_t& arg_name) {
+  // validates that the given [arg] is a function, returns true if it is,
+  // if not reports an error and returns false
 
-  if (args[index].is_function() || args[index].is_closure())
+  if (arg.is_function() || arg.is_closure())
     return true;
 
-  args[0] = StringObject::format(vm, "`$` must be a function", arg_name.c_str());
+  vm.fiber()->set_error(
+      StringObject::format(vm, "`$` must be a function", arg_name.c_str()));
   return false;
 }
 
-bool validate_numeric(
-    WrenVM& vm, Value* args, int index, const str_t& arg_name) {
-  // validates that the given argument in [args] is a Numeric, returns true
-  // if it is, if not reports an error and returns false
+bool validate_numeric(WrenVM& vm, const Value& arg, const str_t& arg_name) {
+  // validates that the given [arg] is a Numeric, returns true if it is,
+  // if not reports an error and returns false
 
-  if (args[index].is_numeric())
+  if (arg.is_numeric())
     return true;
 
-  args[0] = StringObject::format(vm, "`$` must be a numeric", arg_name.c_str());
+  vm.fiber()->set_error(
+      StringObject::format(vm, "`$` must be a numeric", arg_name.c_str()));
   return false;
 }
 
-bool validate_int_value(
-    WrenVM& vm, Value* args, double value, const str_t& arg_name) {
+bool validate_int_value(WrenVM& vm, double value, const str_t& arg_name) {
   // validates that [value] is an integer, returns true if it is, if not
   // reports an error and returns false
 
   if (std::trunc(value) == value)
     return true;
 
-  args[0] = StringObject::format(vm, "`$` must be an integer", arg_name.c_str());
+  vm.fiber()->set_error(
+      StringObject::format(vm, "`$` must be an integer", arg_name.c_str()));
   return false;
 }
 
-bool validate_int(WrenVM& vm, Value* args, int index, const str_t& arg_name) {
-  // validates that the given argument in [args] is an integer, returns true
-  // if it is, if not reports error and returns false
+bool validate_int(WrenVM& vm, const Value& arg, const str_t& arg_name) {
+  // validates that the given [arg] is an integer, returns true if it is,
+  // if not reports error and returns false
 
   // make sure it's a Numeric first
-  if (!validate_numeric(vm, args, index, arg_name))
+  if (!validate_numeric(vm, arg, arg_name))
     return false;
 
-  return validate_int_value(vm, args, args[index].as_numeric(), arg_name);
-}
-
-int validate_index_value(
-    WrenVM& vm, Value* args, int count, double value, const str_t& arg_name) {
-  // validates that [value] is an integer within [0, count), also allows
-  // negative indices which map backwards from the end, returns the valid
-  // positive index value, if invalid, reports an error and return -1
-
-  if (!validate_int_value(vm, args, value, arg_name))
-    return -1;
-
-  int index = Xt::as_type<int>(value);
-  // negative indices count from the end
-  if (index < 0)
-    index = count + index;
-  // check bounds
-  if (index >= 0 && index < count)
-    return index;
-
-  args[0] = StringObject::format(vm, "`$` out of bounds", arg_name.c_str());
-  return -1;
+  return validate_int_value(vm, arg.as_numeric(), arg_name);
 }
 
 int validate_index(
-    WrenVM& vm, Value* args, int arg_index, int count, const str_t& arg_name) {
+    WrenVM& vm, const Value& arg, int count, const str_t& arg_name) {
   // validates that argument at [arg_index] is an integer within `[0, count)`,
   // also allows negative indices which map backwards from the end, returns
   // the valid positive index value, if invalid reports an error and return -1
 
-  if (!validate_numeric(vm, args, arg_index, arg_name))
+  if (!validate_numeric(vm, arg, arg_name))
     return -1;
 
-  return validate_index_value(vm,
-      args, count, args[arg_index].as_numeric(), arg_name);
+  return validate_index_value(vm, count, arg.as_numeric(), arg_name);
 }
 
-bool validate_string(
-    WrenVM& vm, Value* args, int index, const str_t& arg_name) {
+bool validate_string(WrenVM& vm, const Value& arg, const str_t& arg_name) {
   // validates that the given argument in [args] is a String, returns true
   // if it is, if not reports an error and returns false
 
-  if (args[index].is_string())
+  if (arg.is_string())
     return true;
 
-  args[0] = StringObject::format(vm, "`$` must be a string", arg_name.c_str());
+  vm.fiber()->set_error(
+      StringObject::format(vm, "`$` must be a string", arg_name.c_str()));
   return false;
 }
 
-bool validate_key(WrenVM& vm, Value* args, int index) {
-  // validates that [key] is a valid object for use as a map key, returns
+bool validate_key(WrenVM& vm, const Value& arg) {
+  // validates that [arg] is a valid object for use as a map key, returns
   // true if it is, if not, reports an error and returns false
 
-  const Value& arg = args[index];
   if (arg.is_boolean() || arg.is_class() || arg.is_nil() ||
       arg.is_numeric() || arg.is_range() || arg.is_string() || arg.is_fiber())
     return true;
 
-  args[0] = StringObject::make_string(vm, "key must be a value type or fiber");
+  vm.fiber()->set_error(
+      StringObject::make_string(vm, "key must be a value type or fiber"));
   return false;
 }
 
 std::tuple<int, int, int> calculate_range(
-    WrenVM& vm, Value* args, RangeObject* range, int length) {
+    WrenVM& vm, RangeObject* range, int length) {
   // given a [range] and the [length] of the object being operated on determine
   // if the range is valid and return a tuple<start, step, legth>
 
@@ -172,14 +171,13 @@ std::tuple<int, int, int> calculate_range(
       range->to() == (range->is_inclusive() ? -1 : 0))
     return std::make_tuple(0, 0, length);
 
-  int from = validate_index_value(
-      vm, args, length, range->from(), "Range start");
+  int from = validate_index_value(vm, length, range->from(), "Range start");
   if (from == -1)
     return std::make_tuple(-1, 0, length);
 
   // bounds check the end manually to handle exclusive ranges
   double value = range->to();
-  if (!validate_int_value(vm, args, value, "Range end"))
+  if (!validate_int_value(vm, value, "Range end"))
     return std::make_tuple(-1, 0, length);
 
   // negative indices count from the end
@@ -198,7 +196,8 @@ std::tuple<int, int, int> calculate_range(
 
   // check bounds
   if (value < 0 || value >= length) {
-    args[0] = StringObject::make_string(vm, "`Range end` out of bounds");
+    vm.fiber()->set_error(
+        StringObject::make_string(vm, "`Range end` out of bounds"));
     return std::make_tuple(-1, 0, length);
   }
 

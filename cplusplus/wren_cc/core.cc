@@ -80,7 +80,7 @@ DEF_PRIMITIVE(class_tostring) {
 }
 
 DEF_PRIMITIVE(fiber_new) {
-  if (!validate_function(vm, args, 1, "Argument"))
+  if (!validate_function(vm, args[1], "Argument"))
     return PrimitiveResult::ERROR;
 
   FiberObject* new_fiber = FiberObject::make_fiber(vm, args[1].as_object());
@@ -94,12 +94,10 @@ DEF_PRIMITIVE(fiber_new) {
 }
 
 DEF_PRIMITIVE(fiber_abort) {
-  if (!validate_string(vm, args, 1, "Error message"))
-    return PrimitiveResult::ERROR;
+  vm.fiber()->set_error(args[1]);
 
-  // move the error message to the return position
-  args[0] = args[1];
-  return PrimitiveResult::ERROR;
+  // if the error is explicitly nil, it's not really an abort
+  return args[1].is_nil() ? PrimitiveResult::VALUE : PrimitiveResult::ERROR;
 }
 
 static PrimitiveResult run_fiber(
@@ -119,22 +117,15 @@ static PrimitiveResult run_fiber(
     // remember who ran it
     fiber->set_caller(vm.fiber());
   }
-  else {
-    // edge case: if we are transferring to ourself, immediately return the
-    // value, we cannot treat this like an actual transfer since when we set
-    // the return below, it would overwrite the fiber being transferred to
-    if (fiber == vm.fiber())
-      RETURN_VAL(has_value ? args[1] : nullptr);
-  }
 
   if (fiber->empty_frame()) {
-    args[0] = StringObject::format(vm,
-        "cannot $ a finished fiber", is_call ? "call" : "transfer to");
+    vm.fiber()->set_error(StringObject::format(vm,
+        "cannot $ a finished fiber", is_call ? "call" : "transfer to"));
     return PrimitiveResult::ERROR;
   }
-  if (fiber->error() != nullptr) {
-    args[0] = StringObject::format(vm,
-        "cannot $ an aborted fiber", is_call ? "call" : "transfer to");
+  if (!fiber->error().is_nil()) {
+    vm.fiber()->set_error(StringObject::format(vm,
+        "cannot $ an aborted fiber", is_call ? "call" : "transfer to"));
     return PrimitiveResult::ERROR;
   }
 
@@ -146,6 +137,7 @@ static PrimitiveResult run_fiber(
   // if the fiber was paused, make yield() or transfer() return the result
   if (fiber->stack_size() > 0)
     fiber->set_value(fiber->stack_size() - 1, has_value ? args[1] : nullptr);
+  vm.set_fiber(fiber);
 
   return PrimitiveResult::RUN_FIBER;
 }
@@ -163,20 +155,17 @@ DEF_PRIMITIVE(fiber_current) {
 }
 
 DEF_PRIMITIVE(fiber_error) {
-  FiberObject* run_fiber = args[0].as_fiber();
-  if (run_fiber->error() == nullptr)
-    RETURN_VAL(nullptr);
-  RETURN_VAL(run_fiber->error());
+  RETURN_VAL(args[0].as_fiber()->error());
 }
 
 DEF_PRIMITIVE(fiber_isdone) {
   FiberObject* run_fiber = args[0].as_fiber();
-  RETURN_VAL(run_fiber->empty_frame() || run_fiber->error() != nullptr);
+  RETURN_VAL(run_fiber->empty_frame() || !run_fiber->error().is_nil());
 }
 
 DEF_PRIMITIVE(fiber_suspend) {
   // switching to a nil fiber tells the interpreter to stop and exit
-  args[0] = nullptr;
+  vm.set_fiber(nullptr);
   return PrimitiveResult::RUN_FIBER;
 }
 
@@ -188,70 +177,66 @@ DEF_PRIMITIVE(fiber_transfer1) {
   return run_fiber(vm, args[0].as_fiber(), args, false, true);
 }
 
-DEF_PRIMITIVE(fiber_try) {
-  FiberObject* run_fiber = args[0].as_fiber();
+DEF_PRIMITIVE(fiber_transfer_error) {
+  PrimitiveResult result = run_fiber(vm, args[0].as_fiber(), args, false, true);
+  if (result == PrimitiveResult::RUN_FIBER)
+    vm.fiber()->set_error(args[1]);
+  return result;
+}
 
-  if (run_fiber->empty_frame())
+DEF_PRIMITIVE(fiber_try) {
+  FiberObject* tried = args[0].as_fiber();
+
+  if (tried->empty_frame())
     RETURN_ERR("cannot try a finished fiber");
-  if (run_fiber->caller() != nullptr)
+  if (tried->caller() != nullptr)
     RETURN_ERR("fiber has already benn called");
+  vm.set_fiber(tried);
 
   // remeber who ran it
-  run_fiber->set_caller(fiber);
-  run_fiber->set_caller_is_trying(true);
+  vm.fiber()->set_caller(fiber);
+  vm.fiber()->set_caller_is_trying(true);
 
   // if the fiber was yielded, make the yield call return nil
-  if (run_fiber->stack_size() > 0)
-    run_fiber->set_value(run_fiber->stack_size() - 1, nullptr);
+  if (vm.fiber()->stack_size() > 0)
+    vm.fiber()->set_value(vm.fiber()->stack_size() - 1, nullptr);
 
   return PrimitiveResult::RUN_FIBER;
 }
 
 DEF_PRIMITIVE(fiber_yield) {
+  vm.set_fiber(fiber->caller());
+
   // unhook this fiber from the one that called it
-  FiberObject* caller = fiber->caller();
   fiber->set_caller(nullptr);
   fiber->set_caller_is_trying(false);
 
-  // if we do not have any other pending fibers, jump all the way out of
-  // the interpreter
-  if (caller == nullptr) {
-    args[0] = nullptr;
-  }
-  else {
+  if (vm.fiber() != nullptr) {
     // make the caller's run method return nil
-    caller->set_value(caller->stack_size() - 1, nullptr);
-
-    // return the fiber to resume
-    args[0] = caller;
+    vm.fiber()->set_value(vm.fiber()->stack_size() - 1, nullptr);
   }
 
   return PrimitiveResult::RUN_FIBER;
 }
 
 DEF_PRIMITIVE(fiber_yield1) {
+  vm.set_fiber(fiber->caller());
+
   // unhook this fiber from the one that called it
-  FiberObject* caller = fiber->caller();
   fiber->set_caller(nullptr);
   fiber->set_caller_is_trying(false);
 
   // if we do not have any other pending fibers, jump all the way out of
   // the interpreter
-  if (caller == nullptr) {
-    args[0] = nullptr;
-  }
-  else {
+  if (vm.fiber() != nullptr) {
     // make the caller's run method return the argument passed to yield
-    caller->set_value(caller->stack_size() - 1, args[1]);
+    vm.fiber()->set_value(vm.fiber()->stack_size() - 1, args[1]);
 
     // when we yielding fiber resumes, we will store the result of the yield
     // call in it's stack, since Fiber.yield(value) has two arguments (the
     // Fiber class and the value) and we only need one slot for the result,
     // discard the other slot now
     fiber->pop();
-
-    // return the fiber to resume
-    args[0] = caller;
   }
 
   return PrimitiveResult::RUN_FIBER;
@@ -291,7 +276,7 @@ DEF_PRIMITIVE(numeric_truncate) {
 }
 
 DEF_PRIMITIVE(numeric_fromstring) {
-  if (!validate_string(vm, args, 1, "Argument"))
+  if (!validate_string(vm, args[1], "Argument"))
     return PrimitiveResult::ERROR;
 
   StringObject* s = args[1].as_string();
@@ -306,7 +291,8 @@ DEF_PRIMITIVE(numeric_fromstring) {
     ++end;
 
   if (errno == ERANGE) {
-    args[0] = StringObject::make_string(vm, "numeric literal is too large");
+    vm.fiber()->set_error(
+        StringObject::make_string(vm, "numeric literal is too large"));
     return PrimitiveResult::ERROR;
   }
 
@@ -324,13 +310,13 @@ DEF_PRIMITIVE(numeric_pi) {
 
 #define DEF_NUMERIC_INFIX(name, op)\
 DEF_PRIMITIVE(numeric_##name) {\
-  if (!validate_numeric(vm, args, 1, "Right operand"))\
+  if (!validate_numeric(vm, args[1], "Right operand"))\
     return PrimitiveResult::ERROR;\
   RETURN_VAL(args[0].as_numeric() op args[1].as_numeric());\
 }
 #define DEF_NUMERIC_BITWISE(name, op)\
 DEF_PRIMITIVE(numeric_bit##name) {\
-  if (!validate_numeric(vm, args, 1, "Right operand"))\
+  if (!validate_numeric(vm, args[1], "Right operand"))\
     return PrimitiveResult::ERROR;\
   u32_t lhs = Xt::as_type<u32_t>(args[0].as_numeric());\
   u32_t rhs = Xt::as_type<u32_t>(args[1].as_numeric());\
@@ -369,7 +355,7 @@ DEF_NUMERIC_FN(sqrt, std::sqrt)
 DEF_NUMERIC_FN(tan, std::tan)
 
 DEF_PRIMITIVE(numeric_mod) {
-  if (!validate_numeric(vm, args, 1, "Right operand"))
+  if (!validate_numeric(vm, args[1], "Right operand"))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(std::fmod(args[0].as_numeric(), args[1].as_numeric()));
@@ -396,7 +382,7 @@ DEF_PRIMITIVE(numeric_bitnot) {
 }
 
 DEF_PRIMITIVE(numeric_dotdot) {
-  if (!validate_numeric(vm, args, 1, "Right hand side of range"))
+  if (!validate_numeric(vm, args[1], "Right hand side of range"))
     return PrimitiveResult::ERROR;
 
   double from = args[0].as_numeric();
@@ -405,7 +391,7 @@ DEF_PRIMITIVE(numeric_dotdot) {
 }
 
 DEF_PRIMITIVE(numeric_dotdotdot) {
-  if (!validate_numeric(vm, args, 1, "Right hand side of range"))
+  if (!validate_numeric(vm, args[1], "Right hand side of range"))
     return PrimitiveResult::ERROR;
 
   double from = args[0].as_numeric();
@@ -456,7 +442,7 @@ DEF_PRIMITIVE(object_type) {
 
 DEF_PRIMITIVE(string_byteat) {
   StringObject* s = args[0].as_string();
-  int index = validate_index(vm, args, 1, s->size(), "Index");
+  int index = validate_index(vm, args[1], s->size(), "Index");
   if (index == -1)
     return PrimitiveResult::ERROR;
 
@@ -468,7 +454,7 @@ DEF_PRIMITIVE(string_bytecount) {
 }
 
 DEF_PRIMITIVE(string_endswith) {
-  if (!validate_string(vm, args, 1, "Argument"))
+  if (!validate_string(vm, args[1], "Argument"))
     return PrimitiveResult::ERROR;
 
   StringObject* string = args[0].as_string();
@@ -485,7 +471,7 @@ DEF_PRIMITIVE(string_endswith) {
 }
 
 DEF_PRIMITIVE(string_indexof) {
-  if (!validate_string(vm, args, 1, "Argument"))
+  if (!validate_string(vm, args[1], "Argument"))
     return PrimitiveResult::ERROR;
 
   StringObject* string = args[0].as_string();
@@ -504,7 +490,7 @@ DEF_PRIMITIVE(string_iterate) {
     RETURN_VAL(0);
   }
 
-  if (!validate_int(vm, args, 1, "Iterator"))
+  if (!validate_int(vm, args[1], "Iterator"))
     return PrimitiveResult::ERROR;
 
   if (args[1].as_numeric() < 0)
@@ -528,7 +514,7 @@ DEF_PRIMITIVE(string_iterbyte) {
     RETURN_VAL(0);
   }
 
-  if (!validate_int(vm, args, 1, "Iterator"))
+  if (!validate_int(vm, args[1], "Iterator"))
     return PrimitiveResult::ERROR;
 
   if (args[1].as_numeric() < 0)
@@ -545,7 +531,7 @@ DEF_PRIMITIVE(string_iterbyte) {
 
 DEF_PRIMITIVE(string_itervalue) {
   StringObject* s = args[0].as_string();
-  int index = validate_index(vm, args, 1, s->size(), "Iterator");
+  int index = validate_index(vm, args[1], s->size(), "Iterator");
   if (index == -1)
     return PrimitiveResult::ERROR;
 
@@ -553,7 +539,7 @@ DEF_PRIMITIVE(string_itervalue) {
 }
 
 DEF_PRIMITIVE(string_startswith) {
-  if (!validate_string(vm, args, 1, "Argument"))
+  if (!validate_string(vm, args[1], "Argument"))
     return PrimitiveResult::ERROR;
 
   StringObject* string = args[0].as_string();
@@ -567,7 +553,7 @@ DEF_PRIMITIVE(string_startswith) {
 }
 
 DEF_PRIMITIVE(string_contains) {
-  if (!validate_string(vm, args, 1, "Argument"))
+  if (!validate_string(vm, args[1], "Argument"))
     return PrimitiveResult::ERROR;
 
   StringObject* orig = args[0].as_string();
@@ -576,7 +562,7 @@ DEF_PRIMITIVE(string_contains) {
 }
 
 DEF_PRIMITIVE(string_add) {
-  if (!validate_string(vm, args, 1, "Right operand"))
+  if (!validate_string(vm, args[1], "Right operand"))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(StringObject::format(vm, "@@", args[0], args[1]));
@@ -586,7 +572,7 @@ DEF_PRIMITIVE(string_subscript) {
   StringObject* s = args[0].as_string();
 
   if (args[1].is_numeric()) {
-    int index = validate_index(vm, args, 1, s->size(), "Subscript");
+    int index = validate_index(vm, args[1], s->size(), "Subscript");
     if (index == -1)
       return PrimitiveResult::ERROR;
 
@@ -597,7 +583,7 @@ DEF_PRIMITIVE(string_subscript) {
     RETURN_ERR("subscript must be a numeric or a range");
 
   auto [start, step, count] = calculate_range(
-      vm, args, args[1].as_range(), s->size());
+      vm, args[1].as_range(), s->size());
   if (start == -1)
     return PrimitiveResult::ERROR;
 
@@ -621,7 +607,7 @@ static PrimitiveResult call_function(WrenVM& vm, Value* args, int argc) {
 }
 
 DEF_PRIMITIVE(fn_new) {
-  if (!validate_function(vm, args, 1, "Argument"))
+  if (!validate_function(vm, args[1], "Argument"))
     return PrimitiveResult::ERROR;
 
   // the block argument is already a function, so just return it
@@ -674,7 +660,7 @@ DEF_PRIMITIVE(list_len) {
 
 DEF_PRIMITIVE(list_insert) {
   ListObject* list = args[0].as_list();
-  int index = validate_index(vm, args, 1, list->count() + 1, "Index");
+  int index = validate_index(vm, args[1], list->count() + 1, "Index");
   if (index == -1)
     return PrimitiveResult::ERROR;
 
@@ -684,7 +670,7 @@ DEF_PRIMITIVE(list_insert) {
 
 DEF_PRIMITIVE(list_remove) {
   ListObject* list = args[0].as_list();
-  int index = validate_index(vm, args, 1, list->count(), "Index");
+  int index = validate_index(vm, args[1], list->count(), "Index");
   if (index == -1)
     return PrimitiveResult::ERROR;
 
@@ -701,7 +687,7 @@ DEF_PRIMITIVE(list_iterate) {
     RETURN_VAL(0);
   }
 
-  if (!validate_int(vm, args, 1, "Iterator"))
+  if (!validate_int(vm, args[1], "Iterator"))
     return PrimitiveResult::ERROR;
 
   int index = Xt::as_type<int>(args[1].as_numeric());
@@ -715,7 +701,7 @@ DEF_PRIMITIVE(list_iterate) {
 
 DEF_PRIMITIVE(list_itervalue) {
   ListObject* list = args[0].as_list();
-  int index = validate_index(vm, args, 1, list->count(), "Iterator");
+  int index = validate_index(vm, args[1], list->count(), "Iterator");
   if (index == -1)
     return PrimitiveResult::ERROR;
 
@@ -726,7 +712,7 @@ DEF_PRIMITIVE(list_subscript) {
   ListObject* list = args[0].as_list();
 
   if (args[1].is_numeric()) {
-    int index = validate_index(vm, args, 1, list->count(), "Subscript");
+    int index = validate_index(vm, args[1], list->count(), "Subscript");
     if (index ==  -1)
       return PrimitiveResult::ERROR;
 
@@ -737,7 +723,7 @@ DEF_PRIMITIVE(list_subscript) {
     RETURN_ERR("Subscript must be a numeric or a range");
 
   auto [start, step, count] = calculate_range(
-      vm, args, args[1].as_range(), list->count());
+      vm, args[1].as_range(), list->count());
   if (start == -1)
     return PrimitiveResult::ERROR;
 
@@ -749,7 +735,7 @@ DEF_PRIMITIVE(list_subscript) {
 
 DEF_PRIMITIVE(list_subscript_setter) {
   ListObject* list = args[0].as_list();
-  int index = validate_index(vm, args, 1, list->count(), "Index");
+  int index = validate_index(vm, args[1], list->count(), "Index");
   if (index == -1)
     return PrimitiveResult::ERROR;
 
@@ -786,7 +772,7 @@ DEF_PRIMITIVE(range_iterate) {
     RETURN_VAL(false);
   if (args[1].is_nil())
     RETURN_VAL(range->from());
-  if (!validate_numeric(vm, args, 1, "Iterator"))
+  if (!validate_numeric(vm, args[1], "Iterator"))
     return PrimitiveResult::ERROR;
 
   double iterator = args[1].as_numeric();
@@ -824,7 +810,7 @@ DEF_PRIMITIVE(map_new) {
 }
 
 DEF_PRIMITIVE(map_subscript) {
-  if (!validate_key(vm, args, 1))
+  if (!validate_key(vm, args[1]))
     return PrimitiveResult::ERROR;
 
   if (auto val = args[0].as_map()->get(args[1]); val)
@@ -833,7 +819,7 @@ DEF_PRIMITIVE(map_subscript) {
 }
 
 DEF_PRIMITIVE(map_subscript_setter) {
-  if (!validate_key(vm, args, 1))
+  if (!validate_key(vm, args[1]))
     return PrimitiveResult::ERROR;
 
   args[0].as_map()->set(args[1], args[2]);
@@ -846,7 +832,7 @@ DEF_PRIMITIVE(map_clear) {
 }
 
 DEF_PRIMITIVE(map_contains) {
-  if (!validate_key(vm, args, 1))
+  if (!validate_key(vm, args[1]))
     return PrimitiveResult::ERROR;
 
   if (auto v = args[0].as_map()->get(args[1]); v)
@@ -859,7 +845,7 @@ DEF_PRIMITIVE(map_len) {
 }
 
 DEF_PRIMITIVE(map_remove) {
-  if (!validate_key(vm, args, 1))
+  if (!validate_key(vm, args[1]))
     return PrimitiveResult::ERROR;
 
   RETURN_VAL(args[0].as_map()->remove(args[1]));
@@ -876,7 +862,7 @@ DEF_PRIMITIVE(map_iterate) {
 
   // otherwise, start one past the last entry we stopped at
   if (!args[1].is_nil()) {
-    if (!validate_int(vm, args, 1, "Iterator"))
+    if (!validate_int(vm, args[1], "Iterator"))
       return PrimitiveResult::ERROR;
 
     if (args[1].as_numeric() < 0)
@@ -902,7 +888,7 @@ DEF_PRIMITIVE(map_iterate) {
 
 DEF_PRIMITIVE(map_iterkey) {
   MapObject* map = args[0].as_map();
-  int index = validate_index(vm, args, 1, map->capacity(), "Iterator");
+  int index = validate_index(vm, args[1], map->capacity(), "Iterator");
   if (index == -1)
     return PrimitiveResult::ERROR;
 
@@ -914,7 +900,7 @@ DEF_PRIMITIVE(map_iterkey) {
 
 DEF_PRIMITIVE(map_itervalue) {
   MapObject* map = args[0].as_map();
-  int index = validate_index(vm, args, 1, map->capacity(), "Iterator");
+  int index = validate_index(vm, args[1], map->capacity(), "Iterator");
   if (index == -1)
     return PrimitiveResult::ERROR;
 
@@ -989,6 +975,7 @@ namespace core {
     vm.set_primitive(vm.fiber_cls(), "isDone", _primitive_fiber_isdone);
     vm.set_primitive(vm.fiber_cls(), "transfer()", _primitive_fiber_transfer);
     vm.set_primitive(vm.fiber_cls(), "transfer(_)", _primitive_fiber_transfer1);
+    vm.set_primitive(vm.fiber_cls(), "transferError(_)", _primitive_fiber_transfer_error);
     vm.set_primitive(vm.fiber_cls(), "try()", _primitive_fiber_try);
 
     vm.set_fn_cls(vm.find_variable(core_module, "Function").as_class());
