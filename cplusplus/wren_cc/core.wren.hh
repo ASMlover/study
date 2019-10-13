@@ -1,4 +1,4 @@
-// generated automatically from builtin/core.wren, do not edit
+// generated automatically from builtin\core.wren, do not edit
 
 static const str_t kLibSource =
 "\n"
@@ -81,7 +81,7 @@ static const str_t kLibSource =
 "    return result\n"
 "  }\n"
 "\n"
-"  join { join(\"\") }\n"
+"  join() { join(\"\") }\n"
 "\n"
 "  join(sep) {\n"
 "    var first = true\n"
