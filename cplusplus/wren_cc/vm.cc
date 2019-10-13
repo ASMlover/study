@@ -1179,14 +1179,21 @@ WrenValue* WrenVM::acquire_method(
 }
 
 InterpretRet WrenVM::wren_call(
-    WrenValue* method, WrenValue*& result, const char* arg_types, ...) {
+    WrenValue* method, WrenValue*& return_value, const char* arg_types, ...) {
+  va_list ap;
+  va_start(ap, arg_types);
+  InterpretRet result = wren_call_args(method, return_value, arg_types, ap);
+  va_end(ap);
+
+  return result;
+}
+
+InterpretRet WrenVM::wren_call_args(WrenValue* method,
+    WrenValue*& return_value, const char* arg_types, va_list ap) {
   ASSERT(method->value.is_fiber(), "value must come from `acquire_method()`");
   FiberObject* fiber = method->value.as_fiber();
 
   // push the arguments
-  va_list ap;
-  va_start(ap, arg_types);
-
   for (const char* arg_type = arg_types; *arg_type != '\0'; ++arg_type) {
     Value value(nullptr);
     switch (*arg_type) {
@@ -1215,23 +1222,28 @@ InterpretRet WrenVM::wren_call(
     fiber->push(value);
   }
 
-  va_end(ap);
+  const Value& receiver = fiber->get_value(0);
+  BaseObject* fn = fiber->get_frame(0).fn;
+  PinnedGuard fn_guard(*this, fn);
 
-  const Value& receiver = fiber->peek_value();
-  BaseObject* fn = fiber->peek_frame().fn;
+  InterpretRet result = interpret(fiber);
+  if (result == InterpretRet::SUCCESS) {
+    if (return_value != nullptr) {
+      // make sure the return value doesn't get collected while capturing it
+      fiber->push(Value());
+      return_value = capture_value(fiber->get_value(0));
+    }
+    // reset the fiber to get ready for the next call
+    fiber->reset_fiber(fn);
+    // push the receiver back on the stack
+    fiber->push(receiver);
+  }
+  else {
+    if (return_value != nullptr)
+      return_value = nullptr;
+  }
 
-  interpret(fiber);
-
-  if (result != nullptr)
-    result = capture_value(fiber->get_value(0));
-
-  // reset the fiber to get ready for the next call
-  fiber->reset_fiber(fn);
-
-  // push the receiver back on the stack
-  fiber->push(receiver);
-
-  return InterpretRet::SUCCESS;
+  return result;
 }
 
 WrenValue* WrenVM::capture_value(const Value& value) {

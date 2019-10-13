@@ -250,7 +250,9 @@ public:
   WrenValue* acquire_method(
       const str_t& module, const str_t& variable, const str_t& signature);
   InterpretRet wren_call(
-      WrenValue* method, WrenValue*& result, const char* arg_types, ...);
+      WrenValue* method, WrenValue*& return_value, const char* arg_types, ...);
+  InterpretRet wren_call_args(WrenValue* method,
+      WrenValue*& return_value, const char* arg_types, va_list ap);
   WrenValue* capture_value(const Value& value);
   void release_value(WrenValue* value);
   void* allocate_foreign(sz_t size);

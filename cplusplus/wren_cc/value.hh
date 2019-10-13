@@ -685,6 +685,7 @@ public:
   inline Value& get_value(int i) { return stack_[i]; }
   inline const Value& get_value(int i) const { return stack_[i]; }
   inline void set_value(int i, const Value& v) { stack_[i] = v; }
+  inline const CallFrame& get_frame(int i) const { return frames_[0]; }
   inline FiberObject* caller(void) const { return caller_; }
   inline void set_caller(FiberObject* caller) { caller_ = caller; }
   inline StringObject* error(void) const { return error_; }
