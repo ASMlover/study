@@ -1190,15 +1190,27 @@ InterpretRet WrenVM::wren_call(
   for (const char* arg_type = arg_types; *arg_type != '\0'; ++arg_type) {
     Value value(nullptr);
     switch (*arg_type) {
-      case 'b': value = Xt::as_type<bool>(va_arg(ap, int)); break;
-      case 'd': value = va_arg(ap, double); break;
-      case 'i': value = va_arg(ap, int); break;
-      case 'n': value = nullptr; va_arg(ap, void*); break;
-      case 's':
-        value = StringObject::format(*this, "$", va_arg(ap, const char*));
-        break;
-      case 'v': value = va_arg(ap, WrenValue*)->value; break;
-      default: ASSERT(false, "unknown argument type"); break;
+    case 'a':
+      {
+        const char* bytes = va_arg(ap, const char*);
+        int length = va_arg(ap, int);
+        value = StringObject::make_string(*this, bytes, length);
+      } break;
+    case 'b': value = Xt::as_type<bool>(va_arg(ap, int)); break;
+    case 'd': value = va_arg(ap, double); break;
+    case 'i': value = va_arg(ap, int); break;
+    case 'n': value = nullptr; va_arg(ap, void*); break;
+    case 's':
+      value = StringObject::format(*this, "$", va_arg(ap, const char*));
+      break;
+    case 'v':
+      {
+        // allow a nullptr value pointer for Wren nil
+        WrenValue* wren_value = va_arg(ap, WrenValue*);
+        if (wren_value != nullptr)
+          value = wren_value->value;
+      } break;
+    default: ASSERT(false, "unknown argument type"); break;
     }
     fiber->push(value);
   }
