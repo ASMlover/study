@@ -155,26 +155,25 @@ class WrenVM final : private UnCopyable {
   SymbolTable method_names_;
 
   void print_stacktrace(FiberObject* fiber);
-  FiberObject* runtime_error(FiberObject* fiber, const Value& error);
-  Value method_not_found(ClassObject* cls, int symbol);
+  void runtime_error(void);
+  void method_not_found(ClassObject* cls, int symbol);
   Value validate_superclass(
       const Value& name, const Value& supercls_val, int num_fields);
   void validate_foreign_argument(int index) const;
   void bind_foreign_class(ClassObject* cls, ModuleObject* module);
-  bool define_class(FiberObject* fiber, int num_fields, ModuleObject* module);
+  void create_class(int num_fields, ModuleObject* module);
   void create_foreign(FiberObject* fiber, Value* stack);
 
   ModuleObject* get_module(const Value& name) const;
   FiberObject* load_module(const Value& name, const str_t& source_bytes);
   Value import_module(const Value& name);
-  std::tuple<bool, Value> import_variable(
-      const Value& module_name, const Value& variable_name);
+  Value import_variable(const Value& module_name, const Value& variable_name);
   InterpretRet load_into_core(const str_t& source_bytes);
   FunctionObject* make_call_stub(ModuleObject* module, const str_t& signature);
   WrenForeignFn find_foreign_method(const str_t& module_name,
       const str_t& class_name, bool is_static, const str_t& signature);
 
-  Value bind_method(int i, Code method_type,
+  void bind_method(int i, Code method_type,
       ModuleObject* module, ClassObject* cls, const Value& method_val);
 
   void call_foreign(FiberObject* fiber, const WrenForeignFn& foreign, int argc);

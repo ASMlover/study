@@ -158,7 +158,7 @@ Value WrenVM::import_module(const str_t& name) {
 
 void WrenVM::print_stacktrace(FiberObject* fiber) {
   if (fiber->error().is_string())
-    std::cerr << fiber->error().as_cstring() << std::endl;
+    std::cerr << fiber->error_asstr() << std::endl;
   else
     std::cerr << "[error object]" << std::endl;
 
@@ -180,38 +180,36 @@ void WrenVM::print_stacktrace(FiberObject* fiber) {
       });
 }
 
-FiberObject* WrenVM::runtime_error(FiberObject* fiber, const Value& error) {
-  // returns the fiber that should receive the error or `nullptr` if no
-  // fiber caught it
+void WrenVM::runtime_error(void) {
+  // handles the current fiber having aborted because of an error, switches
+  // to a new fiber if there is a fiber that will handle the error, oterwise,
+  // tells the VM to stop
 
-  ASSERT(fiber->error() == nullptr, "can only fail one");
-
-  // store the error in the fiber so it can be accessed later
-  fiber->set_error(error.as_string());
+  ASSERT(!fiber_->error().is_nil(), "should only call this after an error");
 
   // unhook the caller since we will never resume and return to it
-  FiberObject* caller = fiber->caller();
-  fiber->set_caller(nullptr);
+  FiberObject* caller = fiber_->caller();
+  fiber_->set_caller(nullptr);
 
   // if the caller ran this fiber using `try`, give it the error
-  if (fiber->caller_is_trying()) {
+  if (fiber_->caller_is_trying()) {
     // make the caller's try method return the error message
-    caller->set_value(caller->stack_size() - 1, fiber->error());
+    caller->set_value(caller->stack_size() - 1, fiber_->error());
     fiber_ = caller;
-    return caller;
+    return;
   }
 
   // if we got here, nothing caught the error, so show the stack trace
-  print_stacktrace(fiber);
-  return nullptr;
+  print_stacktrace(fiber_);
+  fiber_ = nullptr;
 }
 
-Value WrenVM::method_not_found(ClassObject* cls, int symbol) {
-  // creates a string containing an appropriate method not found error for
-  // a method with [symbol] on [cls] object.
+void WrenVM::method_not_found(ClassObject* cls, int symbol) {
+  // aborts the current fiber with an appropriate method not found error for
+  // a method with [symbol] on [cls]
 
-  return StringObject::format(*this, "`@` does not implement `$`",
-      cls->name(), method_names_.get_name(symbol).c_str());
+  fiber_->set_error(StringObject::format(*this, "`@` does not implement `$`",
+      cls->name(), method_names_.get_name(symbol).c_str()));
 }
 
 Value WrenVM::validate_superclass(
@@ -303,38 +301,33 @@ void WrenVM::bind_foreign_class(ClassObject* cls, ModuleObject* module) {
   }
 }
 
-bool WrenVM::define_class(
-    FiberObject* fiber, int num_fields, ModuleObject* module) {
+void WrenVM::create_class(int num_fields, ModuleObject* module) {
   // creates a new class
   //
   // if [num_fields] is -1, the class is a foreign class, the name and
   // superclass should be on top of the fiber's stack, after calling this,
-  // the top of the stack will contain either the new class or a string if
-  // a runtime error occurred
+  // the top of the stack will contain either the new class
   //
-  // returns false if the result is an error
+  // aborts the current fiber if an error occurs
 
   // pull the name and superclass off the stack
-  const Value& name = fiber->peek_value(1);
-  const Value& superclass = fiber->peek_value();
+  const Value& name = fiber_->peek_value(1);
+  const Value& superclass = fiber_->peek_value();
 
   // we have two values on the stack and we are going to leave one, so
   // discard the other slot
-  fiber->pop();
+  fiber_->pop();
 
-  Value err = validate_superclass(name, superclass, num_fields);
-  if (!err.is_nil()) {
-    fiber->set_value(fiber->stack_size() - 1, err);
-    return false;
-  }
+  fiber_->set_error(validate_superclass(name, superclass, num_fields));
+  if (!fiber_->error().is_nil())
+    return;
+
   ClassObject* cls = ClassObject::make_class(
       *this, superclass.as_class(), num_fields, name.as_string());
-  fiber->set_value(fiber->stack_size() - 1, cls);
+  fiber_->set_value(fiber_->stack_size() - 1, cls);
 
   if (num_fields == -1)
     bind_foreign_class(cls, module);
-
-  return true;
 }
 
 void WrenVM::create_foreign(FiberObject* fiber, Value* stack) {
@@ -383,10 +376,11 @@ InterpretRet WrenVM::interpret(FiberObject* fiber) {
 // terminates the current fiber with error string [error], if another calling
 // fiber is willing to catch the error, transfers control to it, otherwise
 // exits the interpreter
-#define RUNTIME_ERROR(error) do {\
-    fiber = runtime_error(fiber, (error));\
-    if (fiber == nullptr)\
+#define RUNTIME_ERROR() do {\
+    runtime_error();\
+    if (fiber_ == nullptr)\
       return InterpretRet::RUNTIME_ERROR;\
+    fiber = fiber_;\
     LOAD_FRAME();\
     DISPATCH();\
   } while (false)
@@ -595,7 +589,8 @@ __complete_call:
       // if the class's method table does not include the symbol, bail
       if (symbol >= cls->methods_count() ||
           (cls->get_method(symbol)).type == MethodType::NONE) {
-        RUNTIME_ERROR(method_not_found(cls, symbol));
+        method_not_found(cls, symbol);
+        RUNTIME_ERROR();
       }
 
       switch (auto& method = cls->get_method(symbol); method.type) {
@@ -609,17 +604,18 @@ __complete_call:
             fiber->resize_stack(fiber->stack_size() - (argc - 1));
             break;
           case PrimitiveResult::ERROR:
-            RUNTIME_ERROR(args[0]);
+            RUNTIME_ERROR();
           case PrimitiveResult::CALL:
             fiber->call_function(args[0].as_object(), argc);
             LOAD_FRAME();
             break;
           case PrimitiveResult::RUN_FIBER:
             // if we do not have a fiber to switch to, stop interpreting
-            if (args[0].is_nil())
+            if (fiber_ == nullptr)
               return InterpretRet::SUCCESS;
-            fiber = args[0].as_fiber();
-            fiber_ = fiber;
+            if (!fiber_->error().is_nil())
+              RUNTIME_ERROR();
+            fiber = fiber_;
             LOAD_FRAME();
             break;
           }
@@ -775,15 +771,17 @@ __complete_call:
     }
     CASE_CODE(CLASS):
     {
-      if (!define_class(fiber, RDBYTE(), nullptr))
-        RUNTIME_ERROR(PEEK());
+      create_class(RDBYTE(), nullptr);
+      if (!fiber->error().is_nil())
+        RUNTIME_ERROR();
 
       DISPATCH();
     }
     CASE_CODE(FOREIGN_CLASS):
     {
-      if (!define_class(fiber, -1, fn->module()))
-        RUNTIME_ERROR(PEEK());
+      create_class(-1, fn->module());
+      if (!fiber->error().is_nil())
+        RUNTIME_ERROR();
 
       DISPATCH();
     }
@@ -793,9 +791,9 @@ __complete_call:
       u16_t symbol = RDWORD();
       ClassObject* cls = PEEK().as_class();
       const Value& method = PEEK2();
-      Value error = bind_method(symbol, c, fn->module(), cls, method);
-      if (error.is_string())
-        RUNTIME_ERROR(error);
+      bind_method(symbol, c, fn->module(), cls, method);
+      if (!fiber->error().is_nil())
+        RUNTIME_ERROR();
       POP();
       POP();
 
@@ -805,9 +803,8 @@ __complete_call:
     {
       Value result = import_module(fn->get_constant(RDWORD()));
 
-      // if it returned a string. it was an error message
-      if (result.is_string())
-        RUNTIME_ERROR(result);
+      if (!fiber->error().is_nil())
+        RUNTIME_ERROR();
 
       // make a slot that the module's fiber can use to store its result in,
       // it ends up getting discarded, but `Code::RETURN` expects to be able
@@ -831,11 +828,11 @@ __complete_call:
       const Value& module = fn->get_constant(RDWORD());
       const Value& variable = fn->get_constant(RDWORD());
 
-      auto [r, result] = import_variable(module, variable);
-      if (r)
-        PUSH(result);
-      else
-        RUNTIME_ERROR(result);
+      Value result = import_variable(module, variable);
+      if (!fiber->error().is_nil())
+        RUNTIME_ERROR();
+
+      PUSH(result);
 
       DISPATCH();
     }
@@ -949,7 +946,9 @@ Value WrenVM::import_module(const Value& name) {
   const str_t source_bytes = load_module_fn_(*this, name.as_cstring());
   if (source_bytes.empty()) {
     // could not load the module
-    return StringObject::format(*this, "could not find module `@`", name);
+    fiber_->set_error(
+        StringObject::format(*this, "could not find module `@`", name));
+    return nullptr;
   }
 
   FiberObject* module_fiber = load_module(name, source_bytes);
@@ -957,8 +956,8 @@ Value WrenVM::import_module(const Value& name) {
   return module_fiber;
 }
 
-std::tuple<bool, Value> WrenVM::import_variable(
-      const Value& module_name, const Value& variable_name) {
+Value WrenVM::import_variable(
+    const Value& module_name, const Value& variable_name) {
   ModuleObject* module = get_module(module_name);
   ASSERT(module != nullptr, "should only look up loaded modules");
 
@@ -966,11 +965,12 @@ std::tuple<bool, Value> WrenVM::import_variable(
   int variable_entry = module->find_variable(variable->cstr());
   // it's a runtime error if the imported variable does not exist
   if (variable_entry != -1)
-    return std::make_tuple(true, module->get_variable(variable_entry));
+    return module->get_variable(variable_entry);
 
-  return std::make_tuple(false, StringObject::format(*this,
+  fiber_->set_error(StringObject::format(*this,
         "could not find a variable named `@` in module `@`",
         variable, module_name));
+  return nullptr;
 }
 
 InterpretRet WrenVM::load_into_core(const str_t& source_bytes) {
@@ -1036,15 +1036,15 @@ WrenForeignFn WrenVM::find_foreign_method(const str_t& module_name,
   return bind_foreign_meth_(*this, module_name, class_name, is_static, signature);
 }
 
-Value WrenVM::bind_method(int i, Code method_type,
+void WrenVM::bind_method(int i, Code method_type,
     ModuleObject* module, ClassObject* cls, const Value& method_val) {
   // defines [method_val] as a method on [cls]
   //
   // handles both foreign methods where [method_val] is a string containning
   // the method's signature and Wren methods where [method_val] is a function
   //
-  // returns an error string if the method is a foreign method that could not
-  // be found, otherwise returns `nil` Value
+  // aborts the current fiber if the method is a foreign method that could not
+  // be found
 
   const char* class_name = cls->name_cstr();
   bool is_static = method_type == Code::METHOD_STATIC;
@@ -1057,9 +1057,10 @@ Value WrenVM::bind_method(int i, Code method_type,
         class_name, is_static, method_val.as_cstring());
     method.assign(method_fn);
     if (!method_fn) {
-      return StringObject::format(*this,
+      fiber_->set_error(StringObject::format(*this,
           "could not find foreign method `@` for class `$` in module `$`",
-          method_val, cls->name_cstr(), module->name_cstr());
+          method_val, cls->name_cstr(), module->name_cstr()));
+      return;
     }
   }
   else {
@@ -1072,8 +1073,6 @@ Value WrenVM::bind_method(int i, Code method_type,
   }
 
   cls->bind_method(i, method);
-
-  return nullptr;
 }
 
 void WrenVM::call_function(FiberObject* fiber, BaseObject* fn, int argc) {
