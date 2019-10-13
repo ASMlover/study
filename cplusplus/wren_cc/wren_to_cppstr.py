@@ -59,8 +59,8 @@ def main():
         wren_source_lines = fp.readlines()
 
     cpp_source = wren_to_cppstr(args.input, wren_source_lines)
-    with open(args.output, 'w') as fp:
-        fp.write(cpp_source)
+    with open(args.output, 'wb') as fp:
+        fp.write(cpp_source.encode())
 
 if __name__ == '__main__':
     # DEMO: $ python wren_to_cppstr.py builtin/core.wren core.wren.hh
