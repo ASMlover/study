@@ -80,6 +80,10 @@ class IO {
     return obj
   }
 
+  static writeAll(sequence) {
+    for (object in sequence) writeObject(object)
+  }
+
   static read(prompt) {
     if (!(prompt is String)) Fiber.abort("Prompt must be a string")
     write(prompt)

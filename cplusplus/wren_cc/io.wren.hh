@@ -1,4 +1,4 @@
-// generated automatically from builtin\io.wren, do not edit
+// generated automatically from builtin/io.wren, do not edit
 
 static const str_t kLibSource =
 "\n"
@@ -81,6 +81,10 @@ static const str_t kLibSource =
 "  static write(obj) {\n"
 "    writeObject(obj)\n"
 "    return obj\n"
+"  }\n"
+"\n"
+"  static writeAll(sequence) {\n"
+"    for (object in sequence) writeObject(object)\n"
 "  }\n"
 "\n"
 "  static read(prompt) {\n"
