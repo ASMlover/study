@@ -31,8 +31,7 @@
 
 namespace wrencc {
 
-static const str_t kLibSource =
-"class Meta {}\n";
+#include "meta.wren.hh"
 
 namespace meta {
   namespace details {
