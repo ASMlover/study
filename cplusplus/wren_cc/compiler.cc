@@ -2064,9 +2064,6 @@ class Compiler : private UnCopyable {
     if (enclosing_class == nullptr) {
       error("cannot use `super` outside of a method");
     }
-    else if (enclosing_class->in_static) {
-      error("cannot use `super` in a static method");
-    }
 
     load_this();
     // see if it's a nemd super call, or an unnamed one

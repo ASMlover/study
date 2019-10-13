@@ -1043,12 +1043,15 @@ Value WrenVM::bind_method(int i, Code method_type,
   // returns an error string if the method is a foreign method that could not
   // be found, otherwise returns `nil` Value
 
-  Method method;
-
+  const char* class_name = cls->name_cstr();
   bool is_static = method_type == Code::METHOD_STATIC;
+  if (is_static)
+    cls = cls->cls();
+
+  Method method;
   if (method_val.is_string()) {
     auto method_fn = find_foreign_method(module->name_cstr(),
-        cls->name_cstr(), is_static, method_val.as_cstring());
+        class_name, is_static, method_val.as_cstring());
     method.assign(method_fn);
     if (!method_fn) {
       return StringObject::format(*this,
@@ -1060,15 +1063,11 @@ Value WrenVM::bind_method(int i, Code method_type,
     FunctionObject* method_fn = method_val.is_function() ?
       method_val.as_function() : method_val.as_closure()->fn();
 
-    // methods are always bound against the class, and not the metaclass, even
-    // for static methods, because static methods don't have instance fields
-    // anyway
+    // patch up the bytecode now that we know the superclass
     cls->bind_method(method_fn);
     method.assign(method_fn);
   }
 
-  if (is_static)
-    cls = cls->cls();
   cls->bind_method(i, method);
 
   return nullptr;
