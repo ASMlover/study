@@ -251,6 +251,17 @@ DEF_PRIMITIVE(numeric_fraction) {
   RETURN_VAL(std::modf(args[0].as_numeric(), &dummy));
 }
 
+DEF_PRIMITIVE(numeric_isinfinity) {
+  RETURN_VAL(std::isinf(args[0].as_numeric()));
+}
+
+DEF_PRIMITIVE(numeric_isinteger) {
+  double value = args[0].as_numeric();
+  if (std::isnan(value) || std::isinf(value))
+    RETURN_VAL(false);
+  RETURN_VAL(std::trunc(value) == value);
+}
+
 DEF_PRIMITIVE(numeric_isnan) {
   RETURN_VAL(std::isnan(args[0].as_numeric()));
 }
@@ -1037,6 +1048,8 @@ namespace core {
     vm.set_primitive(vm.num_cls(), "...(_)", _primitive_numeric_dotdotdot);
     vm.set_primitive(vm.num_cls(), "atan(_)", _primitive_numeric_atan2);
     vm.set_primitive(vm.num_cls(), "fraction", _primitive_numeric_fraction);
+    vm.set_primitive(vm.num_cls(), "isInfinity", _primitive_numeric_isinfinity);
+    vm.set_primitive(vm.num_cls(), "isInteger", _primitive_numeric_isinteger);
     vm.set_primitive(vm.num_cls(), "isNan", _primitive_numeric_isnan);
     vm.set_primitive(vm.num_cls(), "sign", _primitive_numeric_sign);
     vm.set_primitive(vm.num_cls(), "toString", _primitive_numeric_tostring);
