@@ -735,7 +735,7 @@ enum class PrimitiveResult {
   FIBER,
 };
 
-using PrimitiveFn = std::function<PrimitiveResult (WrenVM&, FiberObject*, Value*)>;
+using PrimitiveFn = std::function<PrimitiveResult (WrenVM&, Value*)>;
 
 enum class MethodType {
   PRIMITIVE,// a primitive method implemented in C that immediatelt returns a Value

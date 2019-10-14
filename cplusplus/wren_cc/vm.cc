@@ -597,7 +597,7 @@ __complete_call:
       case MethodType::PRIMITIVE:
         {
           // after calling this, the result will be in the first arg slot
-          switch (method.primitive()(*this, fiber, args)) {
+          switch (method.primitive()(*this, args)) {
           case PrimitiveResult::VALUE:
             // the result is now in the first arg slot, discard the other
             // stack slots

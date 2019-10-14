@@ -151,7 +151,7 @@ DEF_PRIMITIVE(fiber_call1) {
 }
 
 DEF_PRIMITIVE(fiber_current) {
-  RETURN_VAL(fiber);
+  RETURN_VAL(vm.fiber());
 }
 
 DEF_PRIMITIVE(fiber_error) {
@@ -185,6 +185,7 @@ DEF_PRIMITIVE(fiber_transfer_error) {
 }
 
 DEF_PRIMITIVE(fiber_try) {
+  FiberObject* current = vm.fiber();
   FiberObject* tried = args[0].as_fiber();
 
   if (tried->empty_frame())
@@ -194,7 +195,7 @@ DEF_PRIMITIVE(fiber_try) {
   vm.set_fiber(tried);
 
   // remeber who ran it
-  vm.fiber()->set_caller(fiber);
+  vm.fiber()->set_caller(current);
   vm.fiber()->set_caller_is_trying(true);
 
   // if the fiber was yielded, make the yield call return nil
@@ -205,11 +206,12 @@ DEF_PRIMITIVE(fiber_try) {
 }
 
 DEF_PRIMITIVE(fiber_yield) {
-  vm.set_fiber(fiber->caller());
+  FiberObject* current = vm.fiber();
+  vm.set_fiber(current->caller());
 
   // unhook this fiber from the one that called it
-  fiber->set_caller(nullptr);
-  fiber->set_caller_is_trying(false);
+  current->set_caller(nullptr);
+  current->set_caller_is_trying(false);
 
   if (vm.fiber() != nullptr) {
     // make the caller's run method return nil
@@ -220,11 +222,12 @@ DEF_PRIMITIVE(fiber_yield) {
 }
 
 DEF_PRIMITIVE(fiber_yield1) {
-  vm.set_fiber(fiber->caller());
+  FiberObject* current = vm.fiber();
+  vm.set_fiber(current->caller());
 
   // unhook this fiber from the one that called it
-  fiber->set_caller(nullptr);
-  fiber->set_caller_is_trying(false);
+  current->set_caller(nullptr);
+  current->set_caller_is_trying(false);
 
   // if we do not have any other pending fibers, jump all the way out of
   // the interpreter
@@ -236,7 +239,7 @@ DEF_PRIMITIVE(fiber_yield1) {
     // call in it's stack, since Fiber.yield(value) has two arguments (the
     // Fiber class and the value) and we only need one slot for the result,
     // discard the other slot now
-    fiber->pop();
+    current->pop();
   }
 
   return PrimitiveResult::FIBER;

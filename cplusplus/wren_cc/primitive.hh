@@ -32,7 +32,7 @@
 namespace wrencc {
 
 #define DEF_PRIMITIVE(fn)\
-static PrimitiveResult _primitive_##fn(WrenVM& vm, FiberObject* fiber, Value* args)
+static PrimitiveResult _primitive_##fn(WrenVM& vm, Value* args)
 #define RETURN_VAL(val) do {\
   args[0] = val;\
   return PrimitiveResult::VALUE;\

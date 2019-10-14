@@ -40,7 +40,7 @@ namespace meta {
         return PrimitiveResult::FIBER;
 
       // eval the code in the module where the calling function was defined
-      Value calling_fn(fiber->peek_frame().fn);
+      Value calling_fn(vm.fiber()->peek_frame().fn);
       ModuleObject* module = calling_fn.is_function()
         ? calling_fn.as_function()->module()
         : calling_fn.as_closure()->fn()->module();
@@ -55,7 +55,7 @@ namespace meta {
       FiberObject* eval_fiber = FiberObject::make_fiber(vm, fn);
 
       // remember what fiber to return to
-      eval_fiber->set_caller(fiber);
+      eval_fiber->set_caller(vm.fiber());
       // switch to the fiber
       vm.set_fiber(eval_fiber);
 
