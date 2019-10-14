@@ -39,7 +39,7 @@ static PrimitiveResult _primitive_##fn(WrenVM& vm, FiberObject* fiber, Value* ar
 } while (false)
 #define RETURN_ERR(msg) do {\
   vm.fiber()->set_error(StringObject::make_string(vm, msg));\
-  return PrimitiveResult::ERROR;\
+  return PrimitiveResult::FIBER;\
 } while (false)
 
 int validate_index(const Value& index, int count);

@@ -37,7 +37,7 @@ namespace meta {
   namespace details {
     DEF_PRIMITIVE(meta_eval) {
       if (!validate_string(vm, args[1], "Source code"))
-        return PrimitiveResult::ERROR;
+        return PrimitiveResult::FIBER;
 
       // eval the code in the module where the calling function was defined
       Value calling_fn(fiber->peek_frame().fn);
@@ -59,7 +59,7 @@ namespace meta {
       // switch to the fiber
       vm.set_fiber(eval_fiber);
 
-      return PrimitiveResult::RUN_FIBER;
+      return PrimitiveResult::FIBER;
     }
 
     inline void load_library(WrenVM& vm) {

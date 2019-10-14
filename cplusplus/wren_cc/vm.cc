@@ -603,13 +603,11 @@ __complete_call:
             // stack slots
             fiber->resize_stack(fiber->stack_size() - (argc - 1));
             break;
-          case PrimitiveResult::ERROR:
-            RUNTIME_ERROR();
           case PrimitiveResult::CALL:
             fiber->call_function(args[0].as_object(), argc);
             LOAD_FRAME();
             break;
-          case PrimitiveResult::RUN_FIBER:
+          case PrimitiveResult::FIBER:
             // if we do not have a fiber to switch to, stop interpreting
             if (fiber_ == nullptr)
               return InterpretRet::SUCCESS;

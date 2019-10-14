@@ -728,9 +728,11 @@ public:
 
 enum class PrimitiveResult {
   VALUE,      // a normal value has been returned
-  ERROR,      // a runtime error occurred
   CALL,       // a new callframe has been pushed
-  RUN_FIBER,  // a fiber is being switched to
+
+  // a fiber is being switched to, also used for runtime errors (which also
+  // change which fiber is being executed)
+  FIBER,
 };
 
 using PrimitiveFn = std::function<PrimitiveResult (WrenVM&, FiberObject*, Value*)>;
