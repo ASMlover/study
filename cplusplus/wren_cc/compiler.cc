@@ -667,8 +667,13 @@ class Compiler : private UnCopyable {
     // if it reaches a method boundary, this stops and returns -1 since
     // methods do not close over local variables
 
-    // if we are at a method boundary or the top level, we did not find it
-    if (parent_ == nullptr || enclosing_class_ != nullptr)
+    // if we are at the top level, we did not find it
+    if (parent_ == nullptr)
+      return -1;
+
+    // if we hit the method boundary (and the name isn't a static field), then
+    // stop looking for it, we'll instead treat it as a self send
+    if (name[0] != '_' && parent_->enclosing_class_ != nullptr)
       return -1;
 
     // if it's a local variable in the immediately enclosing function
