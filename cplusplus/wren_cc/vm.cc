@@ -706,7 +706,7 @@ __complete_call:
     }
     CASE_CODE(CLOSE_UPVALUE):
     {
-      fiber->close_upvalue();
+      fiber->close_upvalues(fiber->stack_size() - 1);
       POP();
 
       DISPATCH();
