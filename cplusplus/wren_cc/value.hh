@@ -728,7 +728,6 @@ public:
 
 enum class PrimitiveResult {
   VALUE,      // a normal value has been returned
-  CALL,       // a new callframe has been pushed
 
   // a fiber is being switched to, also used for runtime errors (which also
   // change which fiber is being executed)
@@ -741,6 +740,7 @@ enum class MethodType {
   PRIMITIVE,// a primitive method implemented in C that immediatelt returns a Value
   FOREIGN,  // a externally-defined C++ native method
   BLOCK,    // a normal user-defined method
+  FNCALL,   // the special "call(...)" methods on function
 
   NONE,     // no method for the given symbol
 };
@@ -759,6 +759,7 @@ struct Method {
   inline void set_fn(BaseObject* fn) { m_ = fn; }
 
   Method(void) noexcept {}
+  Method(MethodType t) noexcept : type(t) {}
   Method(const PrimitiveFn& fn) noexcept : type(MethodType::PRIMITIVE), m_(fn) {}
   Method(const WrenForeignFn& fn) noexcept : type(MethodType::FOREIGN), m_(fn) {}
   Method(BaseObject* fn) noexcept : type(MethodType::BLOCK), m_(fn) {}

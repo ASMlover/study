@@ -34,11 +34,6 @@
 
 namespace wrencc {
 
-#define DEF_PRIMITIVE_FN(fn, i)\
-DEF_PRIMITIVE(fn##i) {\
-  return call_function(vm, args, i);\
-}
-
 #include "core.wren.hh"
 
 DEF_PRIMITIVE(nil_not) {
@@ -608,18 +603,6 @@ DEF_PRIMITIVE(string_tostring) {
   RETURN_VAL(args[0]);
 }
 
-static PrimitiveResult call_function(WrenVM& vm, Value* args, int argc) {
-  FunctionObject* fn;
-  if (args[0].is_closure())
-    fn = args[0].as_closure()->fn();
-  else
-    fn = args[0].as_function();
-
-  if (argc < fn->arity())
-    RETURN_ERR("function expects more arguments");
-  return PrimitiveResult::CALL;
-}
-
 DEF_PRIMITIVE(fn_new) {
   if (!validate_function(vm, args[1], "Argument"))
     return PrimitiveResult::FIBER;
@@ -631,24 +614,6 @@ DEF_PRIMITIVE(fn_new) {
 DEF_PRIMITIVE(fn_arity) {
   RETURN_VAL(args[0].as_function()->arity());
 }
-
-DEF_PRIMITIVE_FN(fn_call, 0)
-DEF_PRIMITIVE_FN(fn_call, 1)
-DEF_PRIMITIVE_FN(fn_call, 2)
-DEF_PRIMITIVE_FN(fn_call, 3)
-DEF_PRIMITIVE_FN(fn_call, 4)
-DEF_PRIMITIVE_FN(fn_call, 5)
-DEF_PRIMITIVE_FN(fn_call, 6)
-DEF_PRIMITIVE_FN(fn_call, 7)
-DEF_PRIMITIVE_FN(fn_call, 8)
-DEF_PRIMITIVE_FN(fn_call, 9)
-DEF_PRIMITIVE_FN(fn_call, 10)
-DEF_PRIMITIVE_FN(fn_call, 11)
-DEF_PRIMITIVE_FN(fn_call, 12)
-DEF_PRIMITIVE_FN(fn_call, 13)
-DEF_PRIMITIVE_FN(fn_call, 14)
-DEF_PRIMITIVE_FN(fn_call, 15)
-DEF_PRIMITIVE_FN(fn_call, 16)
 
 DEF_PRIMITIVE(fn_tostring) {
   RETURN_VAL(StringObject::make_string(vm, "<fn>"));
@@ -936,6 +901,16 @@ static ClassObject* define_class(
   return cls;
 }
 
+static void fn_call(WrenVM& vm, const str_t& signature) {
+  // defines one of the overloads of the special `call(...)` method on Function
+  //
+  // these methods have their own unique method type to handle pushing the
+  // function onto the callstack and checking its arity
+
+  int symbol = vm.mnames().ensure(signature);
+  vm.fn_cls()->bind_method(symbol, Method(MethodType::FNCALL));
+}
+
 namespace core {
   void initialize(WrenVM& vm) {
     ModuleObject* core_module = vm.get_core_module();
@@ -995,23 +970,23 @@ namespace core {
     vm.set_fn_cls(vm.find_variable(core_module, "Function").as_class());
     vm.set_primitive(vm.fn_cls()->cls(), "new(_)", _primitive_fn_new);
     vm.set_primitive(vm.fn_cls(), "arity", _primitive_fn_arity);
-    vm.set_primitive(vm.fn_cls(), "call()", _primitive_fn_call0);
-    vm.set_primitive(vm.fn_cls(), "call(_)", _primitive_fn_call1);
-    vm.set_primitive(vm.fn_cls(), "call(_,_)", _primitive_fn_call2);
-    vm.set_primitive(vm.fn_cls(), "call(_,_,_)", _primitive_fn_call3);
-    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_)", _primitive_fn_call4);
-    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_)", _primitive_fn_call5);
-    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_)", _primitive_fn_call6);
-    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_)", _primitive_fn_call7);
-    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_)", _primitive_fn_call8);
-    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_)", _primitive_fn_call9);
-    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call10);
-    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call11);
-    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call12);
-    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call13);
-    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call14);
-    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call15);
-    vm.set_primitive(vm.fn_cls(), "call(_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_)", _primitive_fn_call16);
+    fn_call(vm, "call()");
+    fn_call(vm, "call(_)");
+    fn_call(vm, "call(_,_)");
+    fn_call(vm, "call(_,_,_)");
+    fn_call(vm, "call(_,_,_,_)");
+    fn_call(vm, "call(_,_,_,_,_)");
+    fn_call(vm, "call(_,_,_,_,_,_)");
+    fn_call(vm, "call(_,_,_,_,_,_,_)");
+    fn_call(vm, "call(_,_,_,_,_,_,_,_)");
+    fn_call(vm, "call(_,_,_,_,_,_,_,_,_)");
+    fn_call(vm, "call(_,_,_,_,_,_,_,_,_,_)");
+    fn_call(vm, "call(_,_,_,_,_,_,_,_,_,_,_)");
+    fn_call(vm, "call(_,_,_,_,_,_,_,_,_,_,_,_)");
+    fn_call(vm, "call(_,_,_,_,_,_,_,_,_,_,_,_,_)");
+    fn_call(vm, "call(_,_,_,_,_,_,_,_,_,_,_,_,_,_)");
+    fn_call(vm, "call(_,_,_,_,_,_,_,_,_,_,_,_,_,_,_)");
+    fn_call(vm, "call(_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_)");
     vm.set_primitive(vm.fn_cls(), "toString", _primitive_fn_tostring);
 
     vm.set_nil_cls(vm.find_variable(core_module, "Nil").as_class());

@@ -157,6 +157,7 @@ class WrenVM final : private UnCopyable {
   void print_stacktrace(FiberObject* fiber);
   void runtime_error(void);
   void method_not_found(ClassObject* cls, int symbol);
+  bool check_arity(const Value& value, int argc);
   Value validate_superclass(
       const Value& name, const Value& supercls_val, int num_fields);
   void validate_foreign_argument(int index) const;

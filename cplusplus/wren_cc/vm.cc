@@ -212,6 +212,32 @@ void WrenVM::method_not_found(ClassObject* cls, int symbol) {
       cls->name(), method_names_.get_name(symbol).c_str()));
 }
 
+bool WrenVM::check_arity(const Value& value, int argc) {
+  // checks that [value], which must be a function or closure, does not
+  // require more parameters than are provided by [argc]
+  //
+  // if there are not enough arguments, aborts the current fiber and returns
+  // `false`
+
+  FunctionObject* fn{};
+  if (value.is_closure()) {
+    fn = value.as_closure()->fn();
+  }
+  else {
+    ASSERT(value.is_function(), "receiver must be a function or closure");
+    fn = value.as_function();
+  }
+
+  // we only care about missing arguments, not extras, the `-1` is because argc
+  // includes the receiver, the function itself, which we donot want to count
+  if (argc - 1 >= fn->arity())
+    return true;
+
+  fiber_->set_error(
+      StringObject::make_string(*this, "function expects more arguments"));
+  return false;
+}
+
 Value WrenVM::validate_superclass(
     const Value& name, const Value& supercls_val, int num_fields) {
   // verifies that [supercls_val] is a valid object to inherit from, that
@@ -603,10 +629,6 @@ __complete_call:
             // stack slots
             fiber->resize_stack(fiber->stack_size() - (argc - 1));
             break;
-          case PrimitiveResult::CALL:
-            fiber->call_function(args[0].as_object(), argc);
-            LOAD_FRAME();
-            break;
           case PrimitiveResult::FIBER:
             // if we do not have a fiber to switch to, stop interpreting
             if (fiber_ == nullptr)
@@ -623,6 +645,12 @@ __complete_call:
         break;
       case MethodType::BLOCK:
         fiber->call_function(method.fn(), argc);
+        LOAD_FRAME();
+        break;
+      case MethodType::FNCALL:
+        if (!check_arity(args[0], argc))
+          RUNTIME_ERROR();
+        fiber->call_function(args[0].as_object(), argc);
         LOAD_FRAME();
         break;
       case MethodType::NONE:
