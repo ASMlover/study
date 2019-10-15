@@ -622,20 +622,20 @@ __complete_call:
       switch (auto& method = cls->get_method(symbol); method.type) {
       case MethodType::PRIMITIVE:
         {
-          // after calling this, the result will be in the first arg slot
-          switch (method.primitive()(*this, args)) {
-          case PrimitiveResult::VALUE:
+          if (method.primitive()(*this, args)) {
             // the result is now in the first arg slot, discard the other
             // stack slots
             fiber->resize_stack(fiber->stack_size() - (argc - 1));
-            break;
-          case PrimitiveResult::FIBER:
+          }
+          else {
+            // an error or fiber switch occurred
+
             // if we do not have a fiber to switch to, stop interpreting
+            fiber = fiber_;
             if (fiber_ == nullptr)
               return InterpretRet::SUCCESS;
             if (!fiber_->error().is_nil())
               RUNTIME_ERROR();
-            fiber = fiber_;
             LOAD_FRAME();
             break;
           }

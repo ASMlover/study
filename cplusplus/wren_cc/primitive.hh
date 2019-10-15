@@ -32,14 +32,14 @@
 namespace wrencc {
 
 #define DEF_PRIMITIVE(fn)\
-static PrimitiveResult _primitive_##fn(WrenVM& vm, Value* args)
+static bool _primitive_##fn(WrenVM& vm, Value* args)
 #define RETURN_VAL(val) do {\
   args[0] = val;\
-  return PrimitiveResult::VALUE;\
+  return true;\
 } while (false)
 #define RETURN_ERR(msg) do {\
   vm.fiber()->set_error(StringObject::make_string(vm, msg));\
-  return PrimitiveResult::FIBER;\
+  return false;\
 } while (false)
 
 int validate_index(const Value& index, int count);

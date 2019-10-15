@@ -726,15 +726,13 @@ public:
   static FiberObject* make_fiber(WrenVM& vm, BaseObject* fn);
 };
 
-enum class PrimitiveResult {
-  VALUE,      // a normal value has been returned
-
-  // a fiber is being switched to, also used for runtime errors (which also
-  // change which fiber is being executed)
-  FIBER,
-};
-
-using PrimitiveFn = std::function<PrimitiveResult (WrenVM&, Value*)>;
+// the type of a primitive function
+//
+// primitives are similiar to foreign functions, but have more direct access
+// to VM internals, it's passed the arguments in [args], if it returns a value
+// it places it in `args[0]` and returns `true`, if it causes a runtime error
+// or modifies the running fiber, it returns `false`
+using PrimitiveFn = std::function<bool (WrenVM&, Value*)>;
 
 enum class MethodType {
   PRIMITIVE,// a primitive method implemented in C that immediatelt returns a Value
