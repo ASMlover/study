@@ -46,7 +46,7 @@ namespace meta {
         : calling_fn.as_closure()->fn()->module();
 
       // compile it
-      FunctionObject* fn = compile(vm, module, "<eval>", args[1].as_cstring());
+      FunctionObject* fn = compile(vm, module, args[1].as_cstring());
       if (fn == nullptr)
         RETURN_ERR("could not compile source code");
 

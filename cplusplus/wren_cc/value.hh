@@ -418,21 +418,14 @@ class DebugObject final : private UnCopyable {
   // the name of the function, heap allocated and owned by the FunctionObject
   str_t name_{};
 
-  // the name of the source file where this function was defined, an
-  // [StringObject] because this will be shared among all functions defined
-  // in the same file
-  str_t source_path_{};
-
   // an array of line numbers, there is one element in this array for each
   // bytecode in the function's bytecode array, the value of that element
   // is the line in the source code that generated that instruction
   std::vector<int> source_lines_;
 public:
-  DebugObject(const str_t& name,
-      const str_t& source_path, int* source_lines, int lines_count) noexcept;
+  DebugObject(const str_t& name, int* source_lines, int lines_count) noexcept;
 
   inline const str_t& name(void) const { return name_; }
-  inline const str_t& source_path(void) const { return source_path_; }
   inline int get_line(int i) const { return source_lines_[i]; }
 };
 
@@ -451,8 +444,11 @@ class ModuleObject final : public BaseObject {
 
   StringObject* name_{}; // name of the module
 
-  ModuleObject(StringObject* name) noexcept
-    : BaseObject(ObjType::MODULE), name_(name) {
+  // the path to the source file where this module was loaded
+  StringObject* source_path_{};
+
+  ModuleObject(StringObject* name, StringObject* path) noexcept
+    : BaseObject(ObjType::MODULE), name_(name), source_path_(path) {
   }
 public:
   inline int count(void) const { return Xt::as_type<int>(variables_.size()); }
@@ -461,6 +457,8 @@ public:
   inline int find_variable(const str_t& name) const { return variable_names_.get(name); }
   inline StringObject* name(void) const { return name_; }
   inline const char* name_cstr(void) const { return name_->cstr(); }
+  inline StringObject* source_path(void) const { return source_path_; }
+  inline const char* source_path_cstr(void) const { return source_path_->cstr(); }
 
   int declare_variable(const str_t& name);
   int define_variable(const str_t& name, const Value& value);
@@ -469,7 +467,8 @@ public:
   virtual str_t stringify(void) const override;
   virtual void gc_mark(WrenVM& vm) override;
 
-  static ModuleObject* make_module(WrenVM& vm, StringObject* name);
+  static ModuleObject* make_module(
+      WrenVM& vm, StringObject* name, StringObject* path);
 };
 
 class FunctionObject final : public BaseObject {
@@ -493,8 +492,7 @@ class FunctionObject final : public BaseObject {
       int num_upvalues, int arity,
       u8_t* codes, int codes_count,
       const Value* constants, int constants_count,
-      const str_t& source_path, const str_t& debug_name,
-      int* source_lines, int lines_count) noexcept;
+      const str_t& debug_name, int* source_lines, int lines_count) noexcept;
 public:
   inline int num_upvalues(void) const { return num_upvalues_; }
   inline void set_num_upvalues(int num_upvalues) { num_upvalues_ = num_upvalues; }
@@ -524,8 +522,7 @@ public:
       int num_upvalues, int arity,
       u8_t* codes, int codes_count,
       const Value* constants, int constants_count,
-      const str_t& source_path, const str_t& debug_name,
-      int* source_lines, int lines_count);
+      const str_t& debug_name, int* source_lines, int lines_count);
 };
 
 class ForeignObject final : public BaseObject {

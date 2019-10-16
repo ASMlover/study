@@ -133,7 +133,7 @@ public:
     : vm_(vm), module_(module), lex_(lex), print_errors_(print_errors) {
   }
 
-  inline const str_t& source_path(void) const { return lex_.source_path(); }
+  inline const char* source_path(void) const { return module_->source_path_cstr(); }
   inline const Token& prev(void) const { return prev_; }
   inline const Token& curr(void) const { return curr_; }
   inline bool had_error(void) const { return had_error_; }
@@ -2142,8 +2142,8 @@ public:
         num_upvalues_, num_params_,
         bytecode_.data(), Xt::as_type<int>(bytecode_.size()),
         constants_.data(), Xt::as_type<int>(constants_.size()),
-        parser_.source_path(), debug_name,
-        debug_source_lines_.data(), Xt::as_type<int>(debug_source_lines_.size()));
+        debug_name, debug_source_lines_.data(),
+        Xt::as_type<int>(debug_source_lines_.size()));
 
     PinnedGuard pinned_fn(parser_.get_vm(), fn);
 
@@ -2220,9 +2220,9 @@ public:
   }
 };
 
-FunctionObject* compile(WrenVM& vm, ModuleObject* module,
-    const str_t& source_path, const str_t& source_bytes, bool print_errors) {
-  Lexer lex(source_path, source_bytes);
+FunctionObject* compile(WrenVM& vm,
+    ModuleObject* module, const str_t& source_bytes, bool print_errors) {
+  Lexer lex(source_bytes);
   Parser p(vm, module, lex, print_errors);
 
   p.advance();

@@ -617,10 +617,9 @@ MapObject* MapObject::make_map(WrenVM& vm) {
   return o;
 }
 
-DebugObject::DebugObject(const str_t& name,
-    const str_t& source_path, int* source_lines, int lines_count) noexcept
+DebugObject::DebugObject(
+    const str_t& name, int* source_lines, int lines_count) noexcept
   : name_(name)
-  , source_path_(source_path)
   , source_lines_(source_lines, source_lines + lines_count) {
 }
 
@@ -680,11 +679,13 @@ void ModuleObject::gc_mark(WrenVM& vm) {
   for (auto& v : variables_)
     vm.mark_value(v);
   vm.mark_object(name_);
+  vm.mark_object(source_path_);
 }
 
-ModuleObject* ModuleObject::make_module(WrenVM& vm, StringObject* name) {
+ModuleObject* ModuleObject::make_module(
+    WrenVM& vm, StringObject* name, StringObject* path) {
   // modules are never used as first-class objects, so do not need a class
-  auto* o = new ModuleObject(name);
+  auto* o = new ModuleObject(name, path);
   vm.append_object(o);
   return o;
 }
@@ -695,15 +696,14 @@ FunctionObject::FunctionObject(
     int num_upvalues, int arity,
     u8_t* codes, int codes_count,
     const Value* constants, int constants_count,
-    const str_t& source_path, const str_t& debug_name,
-    int* source_lines, int lines_count) noexcept
+    const str_t& debug_name, int* source_lines, int lines_count) noexcept
   : BaseObject(ObjType::FUNCTION, cls)
   , module_(module)
   , num_upvalues_(num_upvalues)
   , codes_(codes, codes + codes_count)
   , constants_(constants, constants + constants_count)
   , arity_(arity)
-  , debug_(debug_name, source_path, source_lines, lines_count) {
+  , debug_(debug_name, source_lines, lines_count) {
 }
 
 str_t FunctionObject::stringify(void) const {
@@ -824,12 +824,11 @@ FunctionObject* FunctionObject::make_function(
     int num_upvalues, int arity,
     u8_t* codes, int codes_count,
     const Value* constants, int constants_count,
-    const str_t& source_path, const str_t& debug_name,
-    int* source_lines, int lines_count) {
+    const str_t& debug_name, int* source_lines, int lines_count) {
   auto* o = new FunctionObject(
       vm.fn_cls(), module, num_upvalues, arity,
       codes, codes_count, constants, constants_count,
-      source_path, debug_name, source_lines, lines_count);
+      debug_name, source_lines, lines_count);
   vm.append_object(o);
   return o;
 }

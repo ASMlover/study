@@ -33,7 +33,6 @@
 namespace wrencc {
 
 class Lexer : private UnCopyable {
-  const str_t& source_path_;
   const str_t& source_bytes_;
   sz_t begpos_{};
   sz_t curpos_{};
@@ -83,13 +82,8 @@ class Lexer : private UnCopyable {
   Token make_numeric(void);
   Token make_string(void);
 public:
-  Lexer(const str_t& source_path, const str_t& source_bytes)
-    : source_path_(source_path)
-    , source_bytes_(source_bytes) {
-  }
-
-  inline const str_t& source_path(void) const {
-    return source_path_;
+  Lexer(const str_t& source_bytes)
+    : source_bytes_(source_bytes) {
   }
 
   Token next_token(void);

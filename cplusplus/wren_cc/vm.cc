@@ -42,7 +42,7 @@ WrenVM::WrenVM(void) noexcept {
     PinnedGuard name_guard(*this, name);
 
     // implicitly create a `core` module for the built-in libraries
-    ModuleObject* core_module = ModuleObject::make_module(*this, name);
+    ModuleObject* core_module = ModuleObject::make_module(*this, name, nullptr);
     {
       PinnedGuard guard(*this, core_module);
 
@@ -163,18 +163,20 @@ void WrenVM::print_stacktrace(FiberObject* fiber) {
     std::cerr << "[error object]" << std::endl;
 
   fiber->riter_frames([](const CallFrame& frame, FunctionObject* fn) {
-      auto& debug = fn->debug();
+      ModuleObject* module = fn->module();
+      const DebugObject& debug = fn->debug();
 
       // built-in libraries have no source path and are explicitly omitted,
       // from stack traces since we donot want to highlight to a user the
       // implementation detail of what part of a core library is implemented
       // in C++ and what is in Wren
-      if (debug.source_path().empty())
+      if (module->source_path() == nullptr ||
+          module->source_path()->size() == 0)
         return;
 
       int line = debug.get_line(Xt::as_type<int>(frame.ip - fn->codes()) - 1);
       std::cerr
-        << "[`" << debug.source_path() << "` LINE: " << line << "] in "
+        << "[`" << module->source_path_cstr() << "` LINE: " << line << "] in "
         << "`" << debug.name() << "`"
         << std::endl;
       });
@@ -937,7 +939,7 @@ FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
 
   // see if the module has already been loaded
   if (module == nullptr) {
-    module = ModuleObject::make_module(*this, name.as_string());
+    module = ModuleObject::make_module(*this, name.as_string(), name.as_string());
 
     // store it in the VM's module registry so we don't load the same module
     // multiple times
@@ -951,8 +953,7 @@ FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
         });
   }
 
-  FunctionObject* fn = compile(*this,
-      module, name.as_cstring(), source_bytes, true);
+  FunctionObject* fn = compile(*this, module, source_bytes, true);
   if (fn == nullptr)
     return nullptr;
 
@@ -1000,7 +1001,7 @@ Value WrenVM::import_variable(
 }
 
 InterpretRet WrenVM::load_into_core(const str_t& source_bytes) {
-  FunctionObject* fn = compile(*this, get_core_module(), "", source_bytes, true);
+  FunctionObject* fn = compile(*this, get_core_module(), source_bytes, true);
   if (fn == nullptr)
     return InterpretRet::COMPILE_ERROR;
 
@@ -1037,7 +1038,7 @@ FunctionObject* WrenVM::make_call_stub(
   int debug_lines[] = {1, 1, 1, 1, 1};
 
   return FunctionObject::make_function(*this,
-      module, 0, 0, bytecode, 5, nullptr, 0, "", signature, debug_lines, 5);
+      module, 0, 0, bytecode, 5, nullptr, 0, signature, debug_lines, 5);
 }
 
 WrenForeignFn WrenVM::find_foreign_method(const str_t& module_name,
