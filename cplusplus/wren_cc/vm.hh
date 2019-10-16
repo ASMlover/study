@@ -228,12 +228,14 @@ public:
   }
   inline u16_t gen_fiberid(void) { return next_fiberid_++; }
 
-  ModuleObject* get_core_module(void) const;
+  InterpretRet interpret_in_module(const str_t& module,
+      const str_t& source_path, const str_t& source_bytes);
   void set_metaclasses(void);
   int declare_variable(ModuleObject* module, const str_t& name);
   int define_variable(ModuleObject* module, const str_t& name, const Value& value);
   void set_native(ClassObject* cls, const str_t& name, const PrimitiveFn& fn);
   const Value& find_variable(ModuleObject* module, const str_t& name) const;
+  void set_foreign_call_slot(const Value& value);
 
   void push_root(BaseObject* obj);
   void pop_root(void);
@@ -273,14 +275,24 @@ public:
 
 class PinnedGuard final : private UnCopyable {
   WrenVM& vm_;
+  bool guard_{};
 public:
+  PinnedGuard(WrenVM& vm) noexcept : vm_(vm) {}
+
   PinnedGuard(WrenVM& vm, BaseObject* obj) noexcept
     : vm_(vm) {
     vm_.push_root(obj);
+    guard_ = true;
   }
 
   ~PinnedGuard(void) noexcept {
-    vm_.pop_root();
+    if (guard_)
+      vm_.pop_root();
+  }
+
+  inline void set_guard_object(BaseObject* obj) noexcept {
+    vm_.push_root(obj);
+    guard_ = true;
   }
 };
 
