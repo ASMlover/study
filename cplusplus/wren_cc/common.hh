@@ -213,7 +213,9 @@ namespace Xt {
 # define ASSERT(cond, msg)  ((void)0)
 # if defined(_MSC_VER)
 #   define UNREACHABLE()    __assume(0)
-# else
+# elif (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5))
 #   define UNREACHABLE()    __builtin_unreachable()
+# else
+#   define UNREACHABLE()
 # endif
 #endif
