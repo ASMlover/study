@@ -444,11 +444,8 @@ class ModuleObject final : public BaseObject {
 
   StringObject* name_{}; // name of the module
 
-  // the path to the source file where this module was loaded
-  StringObject* source_path_{};
-
-  ModuleObject(StringObject* name, StringObject* path) noexcept
-    : BaseObject(ObjType::MODULE), name_(name), source_path_(path) {
+  ModuleObject(StringObject* name) noexcept
+    : BaseObject(ObjType::MODULE), name_(name) {
   }
 public:
   inline int count(void) const { return Xt::as_type<int>(variables_.size()); }
@@ -456,9 +453,7 @@ public:
   inline void set_variable(int i, const Value& val) { variables_[i] = val; }
   inline int find_variable(const str_t& name) const { return variable_names_.get(name); }
   inline StringObject* name(void) const { return name_; }
-  inline const char* name_cstr(void) const { return name_->cstr(); }
-  inline StringObject* source_path(void) const { return source_path_; }
-  inline const char* source_path_cstr(void) const { return source_path_->cstr(); }
+  inline const char* name_cstr(void) const { return name_ != nullptr ? name_->cstr() : ""; }
 
   int declare_variable(const str_t& name);
   int define_variable(const str_t& name, const Value& value);
@@ -467,8 +462,7 @@ public:
   virtual str_t stringify(void) const override;
   virtual void gc_mark(WrenVM& vm) override;
 
-  static ModuleObject* make_module(
-      WrenVM& vm, StringObject* name, StringObject* path);
+  static ModuleObject* make_module(WrenVM& vm, StringObject* name);
 };
 
 class FunctionObject final : public BaseObject {

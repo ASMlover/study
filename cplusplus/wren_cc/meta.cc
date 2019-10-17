@@ -70,7 +70,7 @@ namespace meta {
       auto& prev_foreign_meth = vm.get_foreign_meth();
 
       vm.set_foreign_meth(bind_foreign);
-      vm.interpret_in_module("meta", "meta", kLibSource);
+      vm.interpret_in_module("meta", kLibSource);
       vm.set_foreign_meth(prev_foreign_meth);
     }
   }

@@ -59,7 +59,7 @@ WrenVM::~WrenVM(void) {
 }
 
 InterpretRet WrenVM::interpret_in_module(
-    const str_t& module, const str_t& source_path, const str_t& source_bytes) {
+    const str_t& module, const str_t& source_bytes) {
   // executes [source_bytes] in the  context of [module]
 
   PinnedGuard name_guard{*this};
@@ -169,17 +169,15 @@ void WrenVM::print_stacktrace(FiberObject* fiber) {
       ModuleObject* module = fn->module();
       const DebugObject& debug = fn->debug();
 
-      // built-in libraries have no source path and are explicitly omitted,
-      // from stack traces since we donot want to highlight to a user the
-      // implementation detail of what part of a core library is implemented
-      // in C++ and what is in Wren
-      if (module->source_path() == nullptr ||
-          module->source_path()->size() == 0)
+      // the built-in core module has no name, we explicitly omit it from stack
+      // traces since we don't want to highlight to a user the implementation
+      // detail of what part of the core module is written in C and what is Wren
+      if (module->name() == nullptr)
         return;
 
       int line = debug.get_line(Xt::as_type<int>(frame.ip - fn->codes()) - 1);
       std::cerr
-        << "[`" << module->source_path_cstr() << "` LINE: " << line << "] in "
+        << "[`" << module->name_cstr() << "` LINE: " << line << "] in "
         << "`" << debug.name() << "`"
         << std::endl;
       });
@@ -911,9 +909,8 @@ ClassObject* WrenVM::get_class(const Value& val) const {
   return nullptr;
 }
 
-InterpretRet WrenVM::interpret(
-    const str_t& source_path, const str_t& source_bytes) {
-  return interpret_in_module("main", source_path, source_bytes);
+InterpretRet WrenVM::interpret(const str_t& source_bytes) {
+  return interpret_in_module("main", source_bytes);
 }
 
 ModuleObject* WrenVM::get_module(const Value& name) const {
@@ -931,7 +928,7 @@ FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
 
   // see if the module has already been loaded
   if (module == nullptr) {
-    module = ModuleObject::make_module(*this, name.as_string(), name.as_string());
+    module = ModuleObject::make_module(*this, name.as_string());
 
     // store it in the VM's module registry so we don't load the same module
     // multiple times
@@ -1031,7 +1028,7 @@ WrenForeignFn WrenVM::find_foreign_method(const str_t& module_name,
 
   WrenForeignFn fn{};
   // bind foreign methods in the core module
-  if (module_name == "core") {
+  if (module_name == "") {
     fn = io::bind_foreign(*this, class_name, signature);
     ASSERT(fn != nullptr, "failed to bind core module foreign method");
     return fn;

@@ -133,7 +133,7 @@ public:
     : vm_(vm), module_(module), lex_(lex), print_errors_(print_errors) {
   }
 
-  inline const char* source_path(void) const { return module_->source_path_cstr(); }
+  inline const char* module_name_cstr(void) const { return module_->name_cstr(); }
   inline const Token& prev(void) const { return prev_; }
   inline const Token& curr(void) const { return curr_; }
   inline bool had_error(void) const { return had_error_; }
@@ -324,7 +324,7 @@ class Compiler : private UnCopyable {
       return;
 
     std::cerr
-      << "[`" << parser_.source_path() << "` LINE:" << tok.lineno() << "] - "
+      << "[`" << parser_.module_name_cstr() << "` LINE:" << tok.lineno() << "] - "
       << "ERROR at ";
     if (tok.kind() == TokenKind::TK_NL)
       std::cerr << "`newline` : ";

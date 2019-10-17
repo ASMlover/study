@@ -230,8 +230,8 @@ public:
   }
   inline u16_t gen_fiberid(void) { return next_fiberid_++; }
 
-  InterpretRet interpret_in_module(const str_t& module,
-      const str_t& source_path, const str_t& source_bytes);
+  InterpretRet interpret_in_module(
+      const str_t& module, const str_t& source_bytes);
   void set_metaclasses(void);
   int declare_variable(ModuleObject* module, const str_t& name);
   int define_variable(ModuleObject* module, const str_t& name, const Value& value);
@@ -249,7 +249,7 @@ public:
   void mark_value(const Value& val);
 
   ClassObject* get_class(const Value& val) const;
-  InterpretRet interpret(const str_t& source_path, const str_t& source_bytes);
+  InterpretRet interpret(const str_t& source_bytes);
   void call_function(FiberObject* fiber, BaseObject* fn, int argc);
 
   WrenValue* acquire_method(

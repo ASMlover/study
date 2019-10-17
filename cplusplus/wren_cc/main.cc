@@ -75,7 +75,7 @@ static void eval_with_file(const std::string& fname) {
 
     wrencc::WrenVM vm;
     vm.set_load_fn(read_module);
-    vm.interpret(fname, ss.str());
+    vm.interpret(ss.str());
   }
 }
 

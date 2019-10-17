@@ -679,13 +679,11 @@ void ModuleObject::gc_mark(WrenVM& vm) {
   for (auto& v : variables_)
     vm.mark_value(v);
   vm.mark_object(name_);
-  vm.mark_object(source_path_);
 }
 
-ModuleObject* ModuleObject::make_module(
-    WrenVM& vm, StringObject* name, StringObject* path) {
+ModuleObject* ModuleObject::make_module(WrenVM& vm, StringObject* name) {
   // modules are never used as first-class objects, so do not need a class
-  auto* o = new ModuleObject(name, path);
+  auto* o = new ModuleObject(name);
   vm.append_object(o);
   return o;
 }
