@@ -676,7 +676,6 @@ public:
   inline void resize_stack(int n) { stack_.resize(n); }
   inline int stack_size(void) const { return Xt::as_type<int>(stack_.size()); }
   inline int frame_size(void) const { return Xt::as_type<int>(frames_.size()); }
-  inline CallFrame& peek_frame(void) { return frames_.back(); }
   inline void pop_frame(void) { frames_.pop_back(); }
   inline bool empty_frame(void) const { return frames_.empty(); }
   inline Value& get_value(int i) { return stack_[i]; }
@@ -693,6 +692,14 @@ public:
 
   inline const Value& peek_value(int distance = 0) const {
     return stack_[stack_.size() - 1 - distance];
+  }
+
+  inline CallFrame& peek_frame(int distance = 0) {
+    return frames_[frames_.size() - 1 - distance];
+  }
+
+  inline const CallFrame& peek_frame(int distance = 0) const {
+    return frames_[frames_.size() - 1 - distance];
   }
 
   inline void push(const Value& v) {
