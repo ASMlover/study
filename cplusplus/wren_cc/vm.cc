@@ -1350,7 +1350,7 @@ const char* WrenVM::get_argument_string(int index) const {
   validate_foreign_argument(index);
 
   if (!(*(foreign_call_slot_ + index)).is_string())
-    return nullptr;
+    return "";
   return (*(foreign_call_slot_ + index)).as_cstring();
 }
 
