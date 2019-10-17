@@ -912,7 +912,17 @@ static void fn_call(WrenVM& vm, const str_t& signature) {
 
 namespace core {
   void initialize(WrenVM& vm) {
-    ModuleObject* core_module = vm.get_core_module();
+    StringObject* name = StringObject::make_string(vm, "core");
+    ModuleObject* core_module;
+    {
+      PinnedGuard name_guard(vm, name);
+      core_module = ModuleObject::make_module(vm, name, nullptr);
+    }
+    {
+      // the core module's key is nullptr in the module map
+      PinnedGuard module_guard(vm, core_module);
+      vm.modules()->set(nullptr, core_module);
+    }
 
     // define the root object class, this has to be done a little specially
     // because it has no superclass
@@ -944,7 +954,7 @@ namespace core {
     vm.set_primitive(obj_metaclass, "same(_,_)", _primitive_object_same);
 
     // the rest of the classes can now be defined normally
-    vm.interpret("", kLibSource);
+    vm.interpret_in_module("", "", kLibSource);
 
     vm.set_bool_cls(vm.find_variable(core_module, "Bool").as_class());
     vm.set_primitive(vm.bool_cls(), "toString", _primitive_bool_tostring);

@@ -216,8 +216,10 @@ public:
   inline const FiberObject* fiber(void) const { return fiber_; }
   inline void set_fiber(FiberObject* fiber) { fiber_ = fiber; }
   inline void set_compiler(Compiler* compiler) { compiler_ = compiler; }
+  inline LoadModuleFn get_load_fn(void) const { return load_module_fn_; }
   inline void set_load_fn(const LoadModuleFn& fn) { load_module_fn_ = fn; }
   inline void set_load_fn(LoadModuleFn&& fn) { load_module_fn_ = std::move(fn); }
+  inline BindForeignMethodFn get_foreign_meth(void) const { return bind_foreign_meth_; }
   inline void set_foreign_meth(const BindForeignMethodFn& fn) { bind_foreign_meth_ = fn; }
   inline void set_foreign_meth(BindForeignMethodFn&& fn) { bind_foreign_meth_ = std::move(fn); }
   inline void set_foreign_cls(const BindForeignClassFn& fn) { bind_foreign_cls_ = fn; }

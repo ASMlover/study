@@ -121,7 +121,7 @@ namespace Xt {
 # define USE_LIBIO          (true)
 #endif
 
-// if true loads the `Meta` class in the standard library
+// if true loads the `Meta` built in module
 //
 // Defaults to on
 #ifndef USE_LIBMETA

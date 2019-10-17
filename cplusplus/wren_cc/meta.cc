@@ -35,42 +35,43 @@ namespace wrencc {
 
 namespace meta {
   namespace details {
-    DEF_PRIMITIVE(meta_eval) {
-      if (!validate_string(vm, args[1], "Source code"))
-        return false;
+    static void meta_compile(WrenVM& vm) {
+      // evaluate the code in the module where the calling function was defined,
+      // that's one stack frame back from the top since the top-most frame is
+      // the helper eval() methid in Meta itself
 
-      // eval the code in the module where the calling function was defined
-      Value calling_fn(vm.fiber()->peek_frame().fn);
+      Value calling_fn(vm.fiber()->peek_frame(1).fn);
       ModuleObject* module = calling_fn.is_function()
         ? calling_fn.as_function()->module()
         : calling_fn.as_closure()->fn()->module();
 
       // compile it
-      FunctionObject* fn = compile(vm, module, args[1].as_cstring());
+      FunctionObject* fn = compile(vm, module, wrenGetArgumentString(vm, 1), false);
       if (fn == nullptr)
-        RETURN_ERR("could not compile source code");
+        return;
 
-      PinnedGuard guard(vm, fn);
-      // create a fiber to run the code in
-      FiberObject* eval_fiber = FiberObject::make_fiber(vm, fn);
+      // return the result, we can not use the public API for this since we
+      // have a bare FunctionObject
+      vm.set_foreign_call_slot(fn);
+    }
 
-      // remember what fiber to return to
-      eval_fiber->set_caller(vm.fiber());
-      // switch to the fiber
-      vm.set_fiber(eval_fiber);
+    static WrenForeignFn bind_foreign(WrenVM& vm,
+        const str_t& module, const str_t& class_name,
+        bool is_static, const str_t& signature) {
+      ASSERT(module == "meta", "should be in meta module");
+      ASSERT(class_name == "Meta", "should be in Meta class");
+      ASSERT(is_static, "should be static");
+      ASSERT(signature == "compile(_)", "should be compile method");
 
-      return true;
+      return meta_compile;
     }
 
     inline void load_library(WrenVM& vm) {
-      vm.interpret("", kLibSource);
+      auto& prev_foreign_meth = vm.get_foreign_meth();
 
-      ModuleObject* core_module = vm.get_core_module();
-
-      // the methods on `Meta` are static, so get the metaclass for the
-      // Meta class
-      ClassObject* meta_cls = vm.find_variable(core_module, "Meta").as_class();
-      vm.set_primitive(meta_cls->cls(), "eval(_)", _primitive_meta_eval);
+      vm.set_foreign_meth(bind_foreign);
+      vm.interpret_in_module("meta", "meta", kLibSource);
+      vm.set_foreign_meth(prev_foreign_meth);
     }
   }
 

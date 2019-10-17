@@ -37,19 +37,7 @@ namespace wrencc {
 /// WrenVM IMPLEMENTATIONS
 
 WrenVM::WrenVM(void) noexcept {
-  StringObject* name = StringObject::make_string(*this, "core");
-  {
-    PinnedGuard name_guard(*this, name);
-
-    // implicitly create a `core` module for the built-in libraries
-    ModuleObject* core_module = ModuleObject::make_module(*this, name, nullptr);
-    {
-      PinnedGuard guard(*this, core_module);
-
-      modules_ = MapObject::make_map(*this);
-      modules_->set(nullptr, core_module);
-    }
-  }
+  modules_ = MapObject::make_map(*this);
 
   core::initialize(*this);
   io::load_library(*this);
@@ -70,12 +58,22 @@ WrenVM::~WrenVM(void) {
   ASSERT(value_handles_ == nullptr, "all values have not been released");
 }
 
-ModuleObject* WrenVM::get_core_module(void) const {
-  // looks up the core module in the module map
+InterpretRet WrenVM::interpret_in_module(
+    const str_t& module, const str_t& source_path, const str_t& source_bytes) {
+  // executes [source_bytes] in the  context of [module]
 
-  ModuleObject* module = get_module(nullptr);
-  ASSERT(module != nullptr, "could not find core module");
-  return module;
+  PinnedGuard name_guard{*this};
+
+  Value name_val{nullptr};
+  if (!module.empty()) {
+    name_val = StringObject::format(*this, "$", module.c_str());
+    name_guard.set_guard_object(name_val.as_object());
+  }
+  FiberObject* fiber = load_module(name_val, source_bytes);
+  if (fiber == nullptr)
+    return InterpretRet::COMPILE_ERROR;
+
+  return interpret(fiber);
 }
 
 void WrenVM::set_metaclasses(void) {
@@ -112,6 +110,11 @@ const Value& WrenVM::find_variable(
     ModuleObject* module, const str_t& name) const {
   int symbol = module->find_variable(name);
   return module->get_variable(symbol);
+}
+
+void WrenVM::set_foreign_call_slot(const Value& value) {
+  *foreign_call_slot_ = value;
+  foreign_call_slot_ = nullptr;
 }
 
 void WrenVM::push_root(BaseObject* obj) {
@@ -910,18 +913,7 @@ ClassObject* WrenVM::get_class(const Value& val) const {
 
 InterpretRet WrenVM::interpret(
     const str_t& source_path, const str_t& source_bytes) {
-  if (source_path.empty())
-    return load_into_core(source_bytes);
-
-  StringObject* name = StringObject::make_string(*this, "main");
-  PinnedGuard name_guard(*this, name);
-
-  FiberObject* fiber = load_module(name, source_bytes);
-  if (fiber == nullptr)
-    return InterpretRet::COMPILE_ERROR;
-
-  InterpretRet result = interpret(fiber);
-  return result;
+  return interpret_in_module("main", source_path, source_bytes);
 }
 
 ModuleObject* WrenVM::get_module(const Value& name) const {
@@ -945,12 +937,14 @@ FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
     // multiple times
     modules_->set(name, module);
 
-    // implicitly import the core module
-    ModuleObject* core_module = get_core_module();
-    core_module->iter_variables(
-        [&](int i, const Value& val, const str_t& name) {
-          define_variable(module, name, val);
-        });
+    // implicitly import the core module (unless we `are` core)
+    if (!name.is_nil()) {
+      ModuleObject* core_module = get_module(nullptr);
+      core_module->iter_variables(
+          [&](int i, const Value& val, const str_t& name) {
+            define_variable(module, name, val);
+          });
+    }
   }
 
   FunctionObject* fn = compile(*this, module, source_bytes, true);
@@ -998,19 +992,6 @@ Value WrenVM::import_variable(
         "could not find a variable named `@` in module `@`",
         variable, module_name));
   return nullptr;
-}
-
-InterpretRet WrenVM::load_into_core(const str_t& source_bytes) {
-  FunctionObject* fn = compile(*this, get_core_module(), source_bytes, true);
-  if (fn == nullptr)
-    return InterpretRet::COMPILE_ERROR;
-
-  FiberObject* fiber;
-  {
-    PinnedGuard guard(*this, fn);
-    fiber = FiberObject::make_fiber(*this, fn);
-  }
-  return interpret(fiber);
 }
 
 FunctionObject* WrenVM::make_call_stub(
