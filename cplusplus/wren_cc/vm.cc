@@ -30,6 +30,7 @@
 #include "core.hh"
 #include "io.hh"
 #include "./auxiliary/meta.hh"
+#include "./auxiliary/random.hh"
 #include "vm.hh"
 
 namespace wrencc {
@@ -41,7 +42,10 @@ WrenVM::WrenVM(void) noexcept {
 
   core::initialize(*this);
   io::load_library(*this);
+
+  // load aux modules
   meta::load_aux_module(*this);
+  random::load_aux_module(*this);
 }
 
 WrenVM::~WrenVM(void) {
@@ -935,13 +939,11 @@ FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
     modules_->set(name, module);
 
     // implicitly import the core module (unless we `are` core)
-    if (!name.is_nil()) {
-      ModuleObject* core_module = get_module(nullptr);
-      core_module->iter_variables(
-          [&](int i, const Value& val, const str_t& name) {
-            define_variable(module, name, val);
-          });
-    }
+    ModuleObject* core_module = get_module(nullptr);
+    core_module->iter_variables(
+        [&](int i, const Value& val, const str_t& name) {
+          define_variable(module, name, val);
+        });
   }
 
   FunctionObject* fn = compile(*this, module, source_bytes, true);

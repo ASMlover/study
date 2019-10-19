@@ -222,6 +222,7 @@ public:
   inline BindForeignMethodFn get_foreign_meth(void) const { return bind_foreign_meth_; }
   inline void set_foreign_meth(const BindForeignMethodFn& fn) { bind_foreign_meth_ = fn; }
   inline void set_foreign_meth(BindForeignMethodFn&& fn) { bind_foreign_meth_ = std::move(fn); }
+  inline BindForeignClassFn get_foreign_cls(void) const { return bind_foreign_cls_; }
   inline void set_foreign_cls(const BindForeignClassFn& fn) { bind_foreign_cls_ = fn; }
   inline void set_foreign_cls(BindForeignClassFn&& fn) { bind_foreign_cls_ = std::move(fn); }
   inline void set_primitive(
