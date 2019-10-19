@@ -888,6 +888,11 @@ DEF_PRIMITIVE(map_itervalue) {
   RETURN_VAL(entry.second);
 }
 
+DEF_PRIMITIVE(sys_gc) {
+  vm.collect();
+  RETURN_VAL(nullptr);
+}
+
 static ClassObject* define_class(
     WrenVM& vm, ModuleObject* module, const str_t& name) {
   // creates either the Object or Class class in the core library with [name]
@@ -1089,6 +1094,9 @@ namespace core {
     vm.set_primitive(vm.map_cls(), "iter(_)", _primitive_map_iterate);
     vm.set_primitive(vm.map_cls(), "keyIterValue(_)", _primitive_map_iterkey);
     vm.set_primitive(vm.map_cls(), "valIterValue(_)", _primitive_map_itervalue);
+
+    ClassObject* sys_cls = vm.find_variable(core_module, "Sys").as_class();
+    vm.set_primitive(sys_cls->cls(), "gc()", _primitive_sys_gc);
 
     // while bootstrapping the core types and running the core library, a number
     // string objects have benn created, many of which were instantiated before

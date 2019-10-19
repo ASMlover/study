@@ -200,4 +200,6 @@ static const str_t kLibSource =
 "\n"
 "    return result + \"}\"\n"
 "  }\n"
-"}\n";
+"}\n"
+"\n"
+"class Sys {}\n";

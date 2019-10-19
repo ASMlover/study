@@ -198,3 +198,5 @@ class Map {
     return result + "}"
   }
 }
+
+class Sys {}
