@@ -14,7 +14,7 @@ static const str_t kLibSource =
 "      if (seed_val.isEmpty) Fiber.abort(\"sequence cannot be empty\")\n"
 "\n"
 "      var seeds = []\n"
-"      for (element in seed) {\n"
+"      for (element in seed_val) {\n"
 "        if (!(element is Numeric)) Fiber.abort(\"sequence elements must all be numbers\")\n"
 "\n"
 "        seeds.add(element)\n"

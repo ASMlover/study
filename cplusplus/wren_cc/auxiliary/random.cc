@@ -92,8 +92,8 @@ namespace random {
     void random_float(WrenVM& vm) {
       Well512* well = Xt::as_type<Well512*>(wrenGetArgumentForeign(vm, 0));
 
-      double result = advance_state(*well) * (1 << 21);
-      result += advance_state(*well) & ((1 << 21) - 1);
+      double result = Xt::as_type<double>(advance_state(*well)) * (1 << 21);
+      result += Xt::as_type<double>(advance_state(*well) & ((1 << 21) - 1));
       result /= 9007199254740992.0;
 
       wrenReturnDouble(vm, result);

@@ -11,7 +11,7 @@ foreign class Random {
       if (seed_val.isEmpty) Fiber.abort("sequence cannot be empty")
 
       var seeds = []
-      for (element in seed) {
+      for (element in seed_val) {
         if (!(element is Numeric)) Fiber.abort("sequence elements must all be numbers")
 
         seeds.add(element)
