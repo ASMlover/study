@@ -29,7 +29,7 @@
 #include <sstream>
 #include "core.hh"
 #include "io.hh"
-#include "meta.hh"
+#include "./auxiliary/meta.hh"
 #include "vm.hh"
 
 namespace wrencc {

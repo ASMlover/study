@@ -76,7 +76,7 @@ namespace meta {
   }
 
   void load_library(WrenVM& vm) {
-#if USE_LIBMETA
+#if AUX_META
     details::load_library(vm);
 #endif
   }

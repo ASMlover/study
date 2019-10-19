@@ -121,11 +121,17 @@ namespace Xt {
 # define USE_LIBIO          (true)
 #endif
 
-// if true loads the `Meta` built in module
+// the VM includes a number of optional `auxiliary` modules, you can choose to
+// include these or not, by default, they are all available, to disable one,
+// set the corresponding `AUX_<name>` define to `false`
 //
 // Defaults to on
-#ifndef USE_LIBMETA
-# define USE_LIBMETA        (true)
+#ifndef AUX_META
+# define AUX_META           (true)
+#endif
+
+#ifndef AUX_RANDOM
+# define AUX_RANDOM         (true)
 #endif
 
 // set this to true to stress test the GC, it will perform a collection before
