@@ -41,7 +41,7 @@ WrenVM::WrenVM(void) noexcept {
 
   core::initialize(*this);
   io::load_library(*this);
-  meta::load_library(*this);
+  meta::load_aux_module(*this);
 }
 
 WrenVM::~WrenVM(void) {

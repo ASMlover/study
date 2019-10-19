@@ -33,7 +33,7 @@ namespace wrencc {
 class WrenVM;
 
 namespace meta {
-  void load_library(WrenVM& vm);
+  void load_aux_module(WrenVM& vm);
 }
 
 }

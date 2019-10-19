@@ -66,7 +66,7 @@ namespace meta {
       return meta_compile;
     }
 
-    inline void load_library(WrenVM& vm) {
+    inline void load_aux_module(WrenVM& vm) {
       auto& prev_foreign_meth = vm.get_foreign_meth();
 
       vm.set_foreign_meth(bind_foreign);
@@ -75,9 +75,9 @@ namespace meta {
     }
   }
 
-  void load_library(WrenVM& vm) {
+  void load_aux_module(WrenVM& vm) {
 #if AUX_META
-    details::load_library(vm);
+    details::load_aux_module(vm);
 #endif
   }
 }
