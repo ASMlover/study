@@ -843,7 +843,7 @@ void ForeignObject::finalize(WrenVM& vm) {
 
 ForeignObject* ForeignObject::make_foreign(
     WrenVM& vm, ClassObject* cls, sz_t size) {
-  auto* o = new ForeignObject(cls);
+  auto* o = new ForeignObject(cls, size);
   vm.append_object(o);
   return o;
 }

@@ -522,7 +522,10 @@ public:
 class ForeignObject final : public BaseObject {
   std::vector<u8_t> data_;
 
-  ForeignObject(ClassObject* cls) noexcept : BaseObject(ObjType::FOREIGN, cls) {}
+  ForeignObject(ClassObject* cls, sz_t size) noexcept
+    : BaseObject(ObjType::FOREIGN, cls)
+    , data_(size) {
+  }
 public:
   inline u8_t* data(void) { return data_.data(); }
   inline const u8_t* data(void) const { return data_.data(); }
