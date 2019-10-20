@@ -12,5 +12,6 @@ for (i in 1..1000) {
   found.add(bar)
 }
 
+Sys.gc()
 IO.print(found.all{|x| x == 1337 }) // expect: true
 IO.print("DONE!") // expect: DONE!
