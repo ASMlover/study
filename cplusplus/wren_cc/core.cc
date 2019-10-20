@@ -627,6 +627,15 @@ DEF_PRIMITIVE(list_add) {
   RETURN_VAL(args[1]);
 }
 
+DEF_PRIMITIVE(list_addcore) {
+  // adds an element to the list and then returns the list itself, this is
+  // called by the compiler when compiling list literals instead of using
+  // add() to minimize stack churn
+
+  args[0].as_list()->add_element(args[1]);
+  RETURN_VAL(args[0]);
+}
+
 DEF_PRIMITIVE(list_clear) {
   args[0].as_list()->clear();
   RETURN_VAL(nullptr);
@@ -802,6 +811,18 @@ DEF_PRIMITIVE(map_subscript_setter) {
 
   args[0].as_map()->set(args[1], args[2]);
   RETURN_VAL(args[2]);
+}
+
+DEF_PRIMITIVE(map_addcore) {
+  // adds an entry to the map and then returns the map itself, this is called
+  // by the compiler when compiling map literals instead of using [_]=(_) to
+  // minimize stack churn
+
+  if (!validate_key(vm, args[1]))
+    return false;
+
+  args[0].as_map()->set(args[1], args[2]);
+  RETURN_VAL(args[0]);
 }
 
 DEF_PRIMITIVE(map_clear) {
@@ -1066,6 +1087,7 @@ namespace core {
     vm.set_primitive(vm.list_cls(), "[_]", _primitive_list_subscript);
     vm.set_primitive(vm.list_cls(), "[_]=(_)", _primitive_list_subscript_setter);
     vm.set_primitive(vm.list_cls(), "add(_)", _primitive_list_add);
+    vm.set_primitive(vm.list_cls(), "addCore(_)", _primitive_list_addcore);
     vm.set_primitive(vm.list_cls(), "clear()", _primitive_list_clear);
     vm.set_primitive(vm.list_cls(), "len", _primitive_list_len);
     vm.set_primitive(vm.list_cls(), "insert(_,_)", _primitive_list_insert);
@@ -1087,6 +1109,7 @@ namespace core {
     vm.set_primitive(vm.map_cls()->cls(), "new()", _primitive_map_new);
     vm.set_primitive(vm.map_cls(), "[_]", _primitive_map_subscript);
     vm.set_primitive(vm.map_cls(), "[_]=(_)", _primitive_map_subscript_setter);
+    vm.set_primitive(vm.map_cls(), "addCore(_,_)", _primitive_map_addcore);
     vm.set_primitive(vm.map_cls(), "clear()", _primitive_map_clear);
     vm.set_primitive(vm.map_cls(), "containsKey(_)", _primitive_map_contains);
     vm.set_primitive(vm.map_cls(), "len", _primitive_map_len);

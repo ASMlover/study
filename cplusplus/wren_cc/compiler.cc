@@ -810,13 +810,9 @@ class Compiler : private UnCopyable {
       if (parser_.curr().kind() == TokenKind::TK_RBRACKET)
         break;
 
-      emit_byte(Code::DUP);
+      // the element
       expression();
-
-      call_method(1, "add(_)");
-
-      // discard the result of the add() call
-      emit_byte(Code::POP);
+      call_method(1, "addCore(_)");
     } while (match(TokenKind::TK_COMMA));
 
     // allow newlines before the closing `]`
@@ -838,9 +834,6 @@ class Compiler : private UnCopyable {
       if (parser_.curr().kind() == TokenKind::TK_RBRACE)
         break;
 
-      // push a copy of the map since the subscript call will consume it
-      emit_byte(Code::DUP);
-
       // the key
       parse_precedence(false, Precedence::PRIMARY);
       consume(TokenKind::TK_COLON, "expect `:` after map key");
@@ -848,11 +841,7 @@ class Compiler : private UnCopyable {
 
       // the value
       expression();
-
-      call_method(2, "[_]=(_)");
-
-      // discard the result of the setter call
-      emit_byte(Code::POP);
+      call_method(2, "addCore(_,_)");
     } while (match(TokenKind::TK_COMMA));
 
     // allow newlines before the closing `}`
