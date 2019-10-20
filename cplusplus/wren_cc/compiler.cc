@@ -1185,6 +1185,7 @@ class Compiler : private UnCopyable {
   }
 
   void import(void) {
+    ignore_newlines();
     consume(TokenKind::TK_STRING, "expect a string after `import`");
     int module_constant = add_constant(
         StringObject::make_string(parser_.get_vm(), parser_.prev().as_string()));
@@ -1200,6 +1201,7 @@ class Compiler : private UnCopyable {
 
     // compile the comma-separated list of variables to import
     do {
+      ignore_newlines();
       int slot = declare_named_variable();
 
       // define a string constant for the variable name
