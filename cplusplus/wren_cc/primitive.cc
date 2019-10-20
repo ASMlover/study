@@ -164,12 +164,12 @@ std::tuple<int, int, int> calculate_range(
   // given a [range] and the [length] of the object being operated on determine
   // if the range is valid and return a tuple<start, step, legth>
 
-  // corner case: an empty range at zero is allowed on an empty sequence, this
-  // way, list[0..-1] and list[0...list.count] can be used to copy a list even
+  // edge case: an empty range is allowed at the end of a sequence, this way,
+  // list[0..-1] and list[0...list.count] can be used to copy a list even
   // when empty
-  if (length == 0 && range->from() == 0 &&
-      range->to() == (range->is_inclusive() ? -1 : 0))
-    return std::make_tuple(0, 0, length);
+  if (range->from() == length &&
+      range->to() == (range->is_inclusive() ? -1.0 : length))
+    return std::make_tuple(0, 0, 0);
 
   int from = validate_index_value(vm, length, range->from(), "Range start");
   if (from == -1)
