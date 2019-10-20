@@ -43,7 +43,7 @@ WrenVM::WrenVM(void) noexcept {
   core::initialize(*this);
   io::load_library(*this);
 
-  gray_objects_.reserve(kMaxGrayObjects);
+  gray_objects_.reserve(gray_capacity_);
 
   // load aux modules
   meta::load_aux_module(*this);
@@ -1160,10 +1160,9 @@ void WrenVM::gray_object(BaseObject* obj) {
   // it is been reached
   obj->set_darken(true);
 
-  if (gray_objects_.size() >= max_gray_) {
-    int new_max_gray = max_gray_ * 2;
-    gray_objects_.reserve(new_max_gray);
-    max_gray_ = new_max_gray;
+  if (gray_objects_.size() >= gray_capacity_) {
+    gray_capacity_ *= 2;
+    gray_objects_.reserve(gray_capacity_);
   }
   gray_objects_.push_back(obj);
 }
