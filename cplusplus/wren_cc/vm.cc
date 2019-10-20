@@ -43,6 +43,8 @@ WrenVM::WrenVM(void) noexcept {
   core::initialize(*this);
   io::load_library(*this);
 
+  gray_objects_.reserve(kMaxGrayObjects);
+
   // load aux modules
   meta::load_aux_module(*this);
   random::load_aux_module(*this);
@@ -1087,13 +1089,13 @@ void WrenVM::call_function(FiberObject* fiber, BaseObject* fn, int argc) {
 }
 
 void WrenVM::collect(void) {
-  mark_object(modules_);
+  gray_object(modules_);
   // pinned objects
   for (auto* o : temp_roots_)
-    mark_object(o);
+    gray_object(o);
 
   // the current fiber
-  mark_object(fiber_);
+  gray_object(fiber_);
 
   // the value handles
   for (WrenValue* v = value_handles_; v != nullptr; v = v->next)
@@ -1103,14 +1105,18 @@ void WrenVM::collect(void) {
   if (compiler_ != nullptr)
     mark_compiler(*this, compiler_);
 
+  // now we have marked all of the root objects expand the marks out
+  // to all of the live objects
+  darken_objects();
+
   // collect any unmarked objects
   for (auto it = objects_.begin(); it != objects_.end();) {
-    if (!(*it)->is_marked()) {
+    if (!(*it)->is_darken()) {
       free_object(*it);
       objects_.erase(it++);
     }
     else {
-      (*it)->set_marked(false);
+      (*it)->set_darken(false);
       ++it;
     }
   }
@@ -1140,20 +1146,37 @@ void WrenVM::append_object(BaseObject* obj) {
   objects_.push_back(obj);
 }
 
-void WrenVM::mark_object(BaseObject* obj) {
+void WrenVM::gray_object(BaseObject* obj) {
   if (obj == nullptr)
     return;
 
-  if (obj->is_marked())
+  // stop if the object is already marked so we don't get stuck in a cycle
+  if (obj->is_darken())
     return;
-  obj->set_marked(true);
 
-  obj->gc_mark(*this);
+  // it is been reached
+  obj->set_darken(true);
+
+  if (gray_objects_.size() >= max_gray_) {
+    int new_max_gray = max_gray_ * 2;
+    gray_objects_.reserve(new_max_gray);
+    max_gray_ = new_max_gray;
+  }
+  gray_objects_.push_back(obj);
+}
+
+void WrenVM::darken_objects(void) {
+  while (!gray_objects_.empty()) {
+    BaseObject* obj = gray_objects_.back();
+    gray_objects_.pop_back();
+
+    obj->gc_darken(*this);
+  }
 }
 
 void WrenVM::mark_value(const Value& val) {
   if (val.is_object())
-    mark_object(val.as_object());
+    gray_object(val.as_object());
 }
 
 WrenValue* WrenVM::acquire_method(

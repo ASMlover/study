@@ -439,7 +439,7 @@ str_t ListObject::stringify(void) const {
   return ss.str();
 }
 
-void ListObject::gc_mark(WrenVM& vm) {
+void ListObject::gc_darken(WrenVM& vm) {
   for (auto& e : elements_)
     vm.mark_value(e);
 }
@@ -602,7 +602,7 @@ str_t MapObject::stringify(void) const {
   return ss.str();
 }
 
-void MapObject::gc_mark(WrenVM& vm) {
+void MapObject::gc_darken(WrenVM& vm) {
   for (auto& entry : entries_) {
     if (!entry.first.is_undefined()) {
       vm.mark_value(entry.first);
@@ -675,10 +675,10 @@ str_t ModuleObject::stringify(void) const {
   return ss.str();
 }
 
-void ModuleObject::gc_mark(WrenVM& vm) {
+void ModuleObject::gc_darken(WrenVM& vm) {
   for (auto& v : variables_)
     vm.mark_value(v);
-  vm.mark_object(name_);
+  vm.gray_object(name_);
 }
 
 ModuleObject* ModuleObject::make_module(WrenVM& vm, StringObject* name) {
@@ -710,7 +710,7 @@ str_t FunctionObject::stringify(void) const {
   return ss.str();
 }
 
-void FunctionObject::gc_mark(WrenVM& vm) {
+void FunctionObject::gc_darken(WrenVM& vm) {
   for (auto& c : constants_)
     vm.mark_value(c);
 }
@@ -860,7 +860,7 @@ str_t UpvalueObject::stringify(void) const {
   return ss.str();
 }
 
-void UpvalueObject::gc_mark(WrenVM& vm) {
+void UpvalueObject::gc_darken(WrenVM& vm) {
   vm.mark_value(closed_);
 }
 
@@ -893,10 +893,10 @@ str_t ClosureObject::stringify(void) const {
   return ss.str();
 }
 
-void ClosureObject::gc_mark(WrenVM& vm) {
-  vm.mark_object(fn_);
+void ClosureObject::gc_darken(WrenVM& vm) {
+  vm.gray_object(fn_);
   for (int i = 0; i < fn_->num_upvalues(); ++i)
-    vm.mark_object(upvalues_[i]);
+    vm.gray_object(upvalues_[i]);
 }
 
 ClosureObject* ClosureObject::make_closure(WrenVM& vm, FunctionObject* fn) {
@@ -1015,10 +1015,10 @@ str_t FiberObject::stringify(void) const {
   return ss.str();
 }
 
-void FiberObject::gc_mark(WrenVM& vm) {
+void FiberObject::gc_darken(WrenVM& vm) {
   // stack functions
   for (auto& f : frames_)
-    vm.mark_object(f.fn);
+    vm.gray_object(f.fn);
 
   // stack variables
   for (auto& v : stack_)
@@ -1027,9 +1027,9 @@ void FiberObject::gc_mark(WrenVM& vm) {
   // open upvalues
   for (auto* upvalue = open_upvlaues_;
       upvalue != nullptr; upvalue = upvalue->next())
-    vm.mark_object(upvalue);
+    vm.gray_object(upvalue);
 
-  vm.mark_object(caller_);
+  vm.gray_object(caller_);
   vm.mark_value(error_);
 }
 
@@ -1142,13 +1142,13 @@ str_t ClassObject::stringify(void) const {
   return ss.str();
 }
 
-void ClassObject::gc_mark(WrenVM& vm) {
-  vm.mark_object(cls());
-  vm.mark_object(superclass_);
-  vm.mark_object(name_);
+void ClassObject::gc_darken(WrenVM& vm) {
+  vm.gray_object(cls());
+  vm.gray_object(superclass_);
+  vm.gray_object(name_);
   for (auto& m : methods_) {
     if (m.type == MethodType::BLOCK)
-      vm.mark_object(m.fn());
+      vm.gray_object(m.fn());
   }
 }
 
@@ -1193,8 +1193,8 @@ str_t InstanceObject::stringify(void) const {
   return ss.str();
 }
 
-void InstanceObject::gc_mark(WrenVM& vm) {
-  vm.mark_object(cls());
+void InstanceObject::gc_darken(WrenVM& vm) {
+  vm.gray_object(cls());
   for (auto& v : fields_)
     vm.mark_value(v);
 }

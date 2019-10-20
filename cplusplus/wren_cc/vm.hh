@@ -77,6 +77,7 @@ class WrenVM final : private UnCopyable {
   // the maximum number of temporary objects that can be made visible to the
   // GC at one time
   static constexpr sz_t kMaxTempRoots = 5;
+  static constexpr int kMaxGrayObjects = 5;
 
   using LoadModuleFn = std::function<str_t (WrenVM&, const str_t&)>;
   using BindForeignMethodFn = std::function<WrenForeignFn (
@@ -115,6 +116,11 @@ class WrenVM final : private UnCopyable {
   sz_t next_gc_{1<<10}; // 1024 // class的methods超过1000时，回收会crash，method_many_methods.wren
 
   std::list<BaseObject*> objects_; // all currently allocated objects
+
+  // the gray set for the garbage collector, this is the stack of unprocessed
+  // objects while a garbace collection pass is in process
+  std::vector<BaseObject*> gray_objects_;
+  int max_gray_{kMaxGrayObjects};
 
   // the list of temporary roots, this is for temporarily or new objects
   // that are not otherwise reachable but should not be collected.
@@ -246,7 +252,8 @@ public:
 
   void collect(void);
   void append_object(BaseObject* obj);
-  void mark_object(BaseObject* obj);
+  void gray_object(BaseObject* obj);
+  void darken_objects(void);
   void mark_value(const Value& val);
 
   ClassObject* get_class(const Value& val) const;
