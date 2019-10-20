@@ -118,7 +118,7 @@ class WrenVM final : private UnCopyable {
   std::list<BaseObject*> objects_; // all currently allocated objects
 
   // the gray set for the garbage collector, this is the stack of unprocessed
-  // objects while a garbace collection pass is in process
+  // objects while a garbage collection pass is in process
   std::vector<BaseObject*> gray_objects_;
   int max_gray_{kMaxGrayObjects};
 
@@ -253,8 +253,8 @@ public:
   void collect(void);
   void append_object(BaseObject* obj);
   void gray_object(BaseObject* obj);
-  void darken_objects(void);
-  void mark_value(const Value& val);
+  void gray_value(const Value& val);
+  void blacken_objects(void);
 
   ClassObject* get_class(const Value& val) const;
   InterpretRet interpret(const str_t& source_bytes);

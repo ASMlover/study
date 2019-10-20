@@ -1099,15 +1099,15 @@ void WrenVM::collect(void) {
 
   // the value handles
   for (WrenValue* v = value_handles_; v != nullptr; v = v->next)
-    mark_value(v->value);
+    gray_value(v->value);
 
   // any object the compiler is using
   if (compiler_ != nullptr)
     mark_compiler(*this, compiler_);
 
-  // now we have marked all of the root objects expand the marks out
-  // to all of the live objects
-  darken_objects();
+  // now that we have grayed the roots, do a depth-first search over all of the
+  // reachable objects
+  blacken_objects();
 
   // collect any unmarked objects
   for (auto it = objects_.begin(); it != objects_.end();) {
@@ -1147,6 +1147,9 @@ void WrenVM::append_object(BaseObject* obj) {
 }
 
 void WrenVM::gray_object(BaseObject* obj) {
+  // mark [obj] as reachable and still in use, this should only be called
+  // during the sweep phase of a garbage collection
+
   if (obj == nullptr)
     return;
 
@@ -1165,18 +1168,25 @@ void WrenVM::gray_object(BaseObject* obj) {
   gray_objects_.push_back(obj);
 }
 
-void WrenVM::darken_objects(void) {
+void WrenVM::gray_value(const Value& val) {
+  // mark [val] as reachable and still in use, this should only be called
+  // during the sweep phase of a garbage collection
+
+  if (val.is_object())
+    gray_object(val.as_object());
+}
+
+void WrenVM::blacken_objects(void) {
+  // processes every object in the gray stack until all reachable objects have
+  // been marked, after that, all objects are either white (freeable) or black
+  // (in use and fully traversed)
+
   while (!gray_objects_.empty()) {
     BaseObject* obj = gray_objects_.back();
     gray_objects_.pop_back();
 
-    obj->gc_darken(*this);
+    obj->gc_blacken(*this);
   }
-}
-
-void WrenVM::mark_value(const Value& val) {
-  if (val.is_object())
-    gray_object(val.as_object());
 }
 
 WrenValue* WrenVM::acquire_method(

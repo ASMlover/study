@@ -2214,7 +2214,7 @@ public:
     Compiler* c = this;
     while (c != nullptr) {
       for (auto& v : c->constants_)
-        vm.mark_value(v);
+        vm.gray_value(v);
       c = c->parent_;
     }
   }

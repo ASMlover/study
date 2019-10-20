@@ -97,7 +97,7 @@ public:
 
   virtual bool is_equal(BaseObject* r) const { return false; }
   virtual str_t stringify(void) const { return "<object>"; }
-  virtual void gc_darken(WrenVM& vm) {}
+  virtual void gc_blacken(WrenVM& vm) {}
   virtual void finalize(WrenVM& vm) {}
 
   virtual u32_t hash(void) const {
@@ -344,7 +344,7 @@ public:
   }
 
   virtual str_t stringify(void) const override;
-  virtual void gc_darken(WrenVM& vm) override;
+  virtual void gc_blacken(WrenVM& vm) override;
 
   static ListObject* make_list(WrenVM& vm, int num_elements = 0);
 };
@@ -407,7 +407,7 @@ public:
   Value remove(const Value& key);
 
   virtual str_t stringify(void) const override;
-  virtual void gc_darken(WrenVM& vm) override;
+  virtual void gc_blacken(WrenVM& vm) override;
 
   static MapObject* make_map(WrenVM& vm);
 };
@@ -460,7 +460,7 @@ public:
   void iter_variables(std::function<void (int, const Value&, const str_t&)>&& fn);
 
   virtual str_t stringify(void) const override;
-  virtual void gc_darken(WrenVM& vm) override;
+  virtual void gc_blacken(WrenVM& vm) override;
 
   static ModuleObject* make_module(WrenVM& vm, StringObject* name);
 };
@@ -508,7 +508,7 @@ public:
   }
 
   virtual str_t stringify(void) const override;
-  virtual void gc_darken(WrenVM& vm) override;
+  virtual void gc_blacken(WrenVM& vm) override;
 
   static int get_argc(const u8_t* bytecode, const Value* constants, int ip);
   static FunctionObject* make_function(
@@ -576,7 +576,7 @@ public:
   inline void set_next(UpvalueObject* next) { next_ = next; }
 
   virtual str_t stringify(void) const override;
-  virtual void gc_darken(WrenVM& vm) override;
+  virtual void gc_blacken(WrenVM& vm) override;
 
   static UpvalueObject* make_upvalue(
       WrenVM& vm, Value* value, UpvalueObject* next = nullptr);
@@ -596,7 +596,7 @@ public:
   inline void set_upvalue(int i, UpvalueObject* upvalue) { upvalues_[i] = upvalue; }
 
   virtual str_t stringify(void) const override;
-  virtual void gc_darken(WrenVM& vm) override;
+  virtual void gc_blacken(WrenVM& vm) override;
 
   static ClosureObject* make_closure(WrenVM& vm, FunctionObject* fn);
 };
@@ -719,7 +719,7 @@ public:
   void reset_fiber(BaseObject* fn);
 
   virtual str_t stringify(void) const override;
-  virtual void gc_darken(WrenVM& vm) override;
+  virtual void gc_blacken(WrenVM& vm) override;
   virtual u32_t hash(void) const override;
 
   // creates a new fiber object will invoke [fn], which can be a function
@@ -821,7 +821,7 @@ public:
   void bind_method(int i, const Method& method);
 
   virtual str_t stringify(void) const override;
-  virtual void gc_darken(WrenVM& vm) override;
+  virtual void gc_blacken(WrenVM& vm) override;
   virtual u32_t hash(void) const override;
 
   static ClassObject* make_single_class(WrenVM& vm, StringObject* name = nullptr);
@@ -839,7 +839,7 @@ public:
   inline void set_field(int i, const Value& v) { fields_[i] = v; }
 
   virtual str_t stringify(void) const override;
-  virtual void gc_darken(WrenVM& vm) override;
+  virtual void gc_blacken(WrenVM& vm) override;
 
   static InstanceObject* make_instance(WrenVM& vm, ClassObject* cls);
 };
