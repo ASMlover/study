@@ -689,14 +689,14 @@ ModuleObject* ModuleObject::make_module(WrenVM& vm, StringObject* name) {
 }
 
 FunctionObject::FunctionObject(
-    ClassObject* cls,
-    ModuleObject* module,
-    int num_upvalues, int arity,
+    ClassObject* cls, ModuleObject* module,
+    int max_slots, int num_upvalues, int arity,
     u8_t* codes, int codes_count,
     const Value* constants, int constants_count,
     const str_t& debug_name, int* source_lines, int lines_count) noexcept
   : BaseObject(ObjType::FUNCTION, cls)
   , module_(module)
+  , max_slots_(max_slots)
   , num_upvalues_(num_upvalues)
   , codes_(codes, codes + codes_count)
   , constants_(constants, constants + constants_count)
@@ -819,12 +819,12 @@ int FunctionObject::get_argc(
 
 FunctionObject* FunctionObject::make_function(
     WrenVM& vm, ModuleObject* module,
-    int num_upvalues, int arity,
+    int max_slots, int num_upvalues, int arity,
     u8_t* codes, int codes_count,
     const Value* constants, int constants_count,
     const str_t& debug_name, int* source_lines, int lines_count) {
   auto* o = new FunctionObject(
-      vm.fn_cls(), module, num_upvalues, arity,
+      vm.fn_cls(), module, max_slots, num_upvalues, arity,
       codes, codes_count, constants, constants_count,
       debug_name, source_lines, lines_count);
   vm.append_object(o);

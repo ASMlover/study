@@ -469,6 +469,9 @@ class FunctionObject final : public BaseObject {
   // the module where this function was defined
   ModuleObject* module_{};
 
+  // the maximum number of stack slots this function may use
+  int max_slots_{};
+
   int num_upvalues_{};
   std::vector<u8_t> codes_;
   std::vector<Value> constants_;
@@ -481,9 +484,8 @@ class FunctionObject final : public BaseObject {
   DebugObject debug_;
 
   FunctionObject(
-      ClassObject* cls,
-      ModuleObject* module,
-      int num_upvalues, int arity,
+      ClassObject* cls, ModuleObject* module,
+      int max_slots, int num_upvalues, int arity,
       u8_t* codes, int codes_count,
       const Value* constants, int constants_count,
       const str_t& debug_name, int* source_lines, int lines_count) noexcept;
@@ -513,7 +515,7 @@ public:
   static int get_argc(const u8_t* bytecode, const Value* constants, int ip);
   static FunctionObject* make_function(
       WrenVM& vm, ModuleObject* module,
-      int num_upvalues, int arity,
+      int max_slots, int num_upvalues, int arity,
       u8_t* codes, int codes_count,
       const Value* constants, int constants_count,
       const str_t& debug_name, int* source_lines, int lines_count);

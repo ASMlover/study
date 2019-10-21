@@ -246,6 +246,14 @@ struct ClassCompiler {
   }
 };
 
+// the stack effect of each opcode, the index in the array is the opcode, and
+// the value is the stack effect of that instruction
+static constexpr int kStackEffects[] = {
+#undef CODEF
+#define CODEF(_, effect) effect,
+#include "codes_def.hh"
+};
+
 class Compiler : private UnCopyable {
   // the maximum number of arguments that can be passed to a method, note
   // that this limtation is hardcoded in other places in th VM, in particular
@@ -279,6 +287,13 @@ class Compiler : private UnCopyable {
   // a -1 here means top-level code is being compiled and thers is no block
   // scope in effect at all. any variables declared will be module-level
   int scope_depth_{-1};
+
+  // the current number of slots (locals and temporaries) in use
+  int num_slots_{};
+
+  // the maximum number of slots (locals and temporaries) in use at one time
+  // in the function
+  int max_slots_{};
 
   // the current innermost loop being compiled, or `nullptr` if not in a loop
   Loop* loop_{};
@@ -350,13 +365,22 @@ class Compiler : private UnCopyable {
     return Xt::as_type<int>(bytecode_.size() - 1);
   }
 
+  template <typename T> inline void emit_opcode(T b) {
+    emit_byte(b);
+
+    // keep track of the stack's high water mark
+    num_slots_ += kStackEffects[Xt::as_type<int>(b)];
+    if (num_slots_ > max_slots_)
+      max_slots_ = num_slots_;
+  }
+
   template <typename T> inline void emit_u16(T arg) {
     emit_byte((arg >> 8) & 0xff);
     emit_byte(arg & 0xff);
   }
 
   template <typename T, typename U> inline int emit_bytes(T b1, U b2) {
-    emit_byte(b1);
+    emit_opcode(b1);
     return emit_byte(b2);
   }
 
@@ -364,7 +388,7 @@ class Compiler : private UnCopyable {
     // emits one bytecode instruction followed by a 16-bit argument,
     // which will be written big endian
 
-    emit_byte(b);
+    emit_opcode(b);
     emit_u16(arg);
   }
 
@@ -373,7 +397,7 @@ class Compiler : private UnCopyable {
     // placeholder can be patched by calling [patch_jump], returns the index
     // of the placeholder
 
-    emit_byte(instruction);
+    emit_opcode(instruction);
     return emit_bytes(0xff, 0xff) - 1;
   }
 
@@ -416,7 +440,9 @@ class Compiler : private UnCopyable {
     int local = Xt::as_type<int>(locals_.size()) - 1;
     while (local >= 0 && locals_[local].depth >= depth) {
       // if the local was closed over, make sure the upvalue gets closed
-      // when it goes out of scope on the stack
+      // when it goes out of scope on the stack, we use `emit_byte` and not
+      // `emit_opcode` here because we don't want to track that stack effect
+      // of these pops since the variables are still in scope after the break
       if (locals_[local].is_upvalue)
         emit_byte(Code::CLOSE_UPVALUE);
       else
@@ -439,7 +465,9 @@ class Compiler : private UnCopyable {
     // decalred in that scope, this should only be called in a statement
     // context where no temporaries are still on the stack
 
-    locals_.resize(locals_.size() - discard_locals(scope_depth_));
+    int popped = discard_locals(scope_depth_);
+    locals_.resize(locals_.size() - popped);
+    num_slots_ -= popped;
     --scope_depth_;
   }
 
@@ -620,7 +648,7 @@ class Compiler : private UnCopyable {
     // it's a module variable, so store the value int the module slot and
     // then discard the temporary for the initializer
     emit_words(Code::STORE_MODULE_VAR, symbol);
-    emit_byte(Code::POP);
+    emit_opcode(Code::POP);
   }
 
   int resolve_local(const str_t& name) {
@@ -740,7 +768,7 @@ class Compiler : private UnCopyable {
 
   inline void load_local(int slot) {
     if (slot <= 8)
-      emit_byte(Code::LOAD_LOCAL_0 + slot);
+      emit_opcode(Code::LOAD_LOCAL_0 + slot);
     else
       emit_bytes(Code::LOAD_LOCAL, slot);
   }
@@ -768,14 +796,12 @@ class Compiler : private UnCopyable {
   }
 
   void nil(bool allow_assignment) {
-    emit_byte(Code::NIL);
+    emit_opcode(Code::NIL);
   }
 
   void boolean(bool allow_assignment) {
-    if (parser_.prev().kind() == TokenKind::KW_TRUE)
-      emit_byte(Code::TRUE);
-    else
-      emit_byte(Code::FALSE);
+    emit_opcode(parser_.prev().kind() == TokenKind::KW_TRUE
+        ? Code::TRUE : Code::FALSE);
   }
 
   void literal(bool allow_assignment) {
@@ -907,7 +933,7 @@ class Compiler : private UnCopyable {
         int symbol = class_compiler->declare_variable();
 
         // implicitly initialize it to nil
-        class_compiler->emit_byte(Code::NIL);
+        class_compiler->emit_opcode(Code::NIL);
         class_compiler->define_variable(symbol);
       }
 
@@ -1138,7 +1164,7 @@ class Compiler : private UnCopyable {
     // which fields are used.
     int num_fields_instruction = -1;
     if (is_foreign)
-      emit_byte(Code::FOREIGN_CLASS);
+      emit_opcode(Code::FOREIGN_CLASS);
     else
       num_fields_instruction = emit_bytes(Code::CLASS, 0xff);
 
@@ -1193,7 +1219,7 @@ class Compiler : private UnCopyable {
     // load the module
     emit_words(Code::LOAD_MODULE, module_constant);
     // discard the unused result value from calling the module's fiber
-    emit_byte(Code::POP);
+    emit_opcode(Code::POP);
 
     // the for clause is optional
     if (!match(TokenKind::KW_FOR))
@@ -1421,12 +1447,12 @@ class Compiler : private UnCopyable {
       // compile the return value
       if (parser_.curr().kind() == TokenKind::TK_NL) {
         // impilicity return nil if there is no value
-        emit_byte(Code::NIL);
+        emit_opcode(Code::NIL);
       }
       else {
         expression();
       }
-      emit_byte(Code::RETURN);
+      emit_opcode(Code::RETURN);
       return;
     }
 
@@ -1437,7 +1463,7 @@ class Compiler : private UnCopyable {
 
     // expression statement
     expression();
-    emit_byte(Code::POP);
+    emit_opcode(Code::POP);
   }
 
   void expression(void) {
@@ -1458,7 +1484,7 @@ class Compiler : private UnCopyable {
       push_scope();
       if (finish_block()){
         // block was an expression, so discard it
-        emit_byte(Code::POP);
+        emit_opcode(Code::POP);
       }
       pop_scope();
       return;
@@ -1507,20 +1533,25 @@ class Compiler : private UnCopyable {
     // if [is_initializer] is `true`, this is the body of a constructor
     // initializer, in that case, this adds the code to ensure it returns `this`
 
+    // now that the parameter list has been compiled, we know how many slots
+    // they use
+    num_slots_ = Xt::as_type<int>(locals_.size());
+    max_slots_ = Xt::as_type<int>(locals_.size());
+
     bool is_expression_body = finish_block();
     if (is_initializer) {
       // if the initializer body evaluates to a value, discard it
       if (is_expression_body)
-        emit_byte(Code::POP);
+        emit_opcode(Code::POP);
 
       // the receiver is always stored in the first local slot
-      emit_byte(Code::LOAD_LOCAL_0);
+      emit_opcode(Code::LOAD_LOCAL_0);
     }
     else if (!is_expression_body) {
       // implicitly return nil in statement bodies
-      emit_byte(Code::NIL);
+      emit_opcode(Code::NIL);
     }
-    emit_byte(Code::RETURN);
+    emit_opcode(Code::RETURN);
   }
 
   void create_constructor(const Signature& signature, int initializer_symbol) {
@@ -1541,9 +1572,11 @@ class Compiler : private UnCopyable {
 
     Compiler method_compiler(parser_, this);
     method_compiler.init_compiler(false);
+    method_compiler.num_slots_ = signature.arity + 1;
+    method_compiler.max_slots_ = method_compiler.num_slots_;
 
     // allocate the instance
-    method_compiler.emit_byte(enclosing_class_->is_foreign
+    method_compiler.emit_opcode(enclosing_class_->is_foreign
         ? Code::FOREIGN_CONSTRUCT : Code::CONSTRUCT);
 
     // run its initializer
@@ -1551,7 +1584,7 @@ class Compiler : private UnCopyable {
         Code::CALL_0 + signature.arity, initializer_symbol);
 
     // return the instance
-    method_compiler.emit_byte(Code::RETURN);
+    method_compiler.emit_opcode(Code::RETURN);
     method_compiler.finish_compiler("");
   }
 
@@ -2108,6 +2141,9 @@ public:
         locals_.push_back(Local("this"));
       scope_depth_ = 0;
     }
+
+    num_slots_ = Xt::as_type<int>(locals_.size());
+    max_slots_ = Xt::as_type<int>(locals_.size());
   }
 
   FunctionObject* finish_compiler(const str_t& debug_name) {
@@ -2124,13 +2160,12 @@ public:
 
     // mark the end of the bytecode, since it may contain multiple early
     // returns, we cannot rely on `RETURN` to tell use we are at the end.
-    emit_byte(Code::END);
+    emit_opcode(Code::END);
 
     // create a function object for the code we just compiled
     FunctionObject* fn = FunctionObject::make_function(
-        parser_.get_vm(),
-        parser_.get_mod(),
-        num_upvalues_, num_params_,
+        parser_.get_vm(), parser_.get_mod(),
+        max_slots_, num_upvalues_, num_params_,
         bytecode_.data(), Xt::as_type<int>(bytecode_.size()),
         constants_.data(), Xt::as_type<int>(constants_.size()),
         debug_name, debug_source_lines_.data(),
@@ -2180,7 +2215,8 @@ public:
       if (match(end_kind))
         break;
     }
-    emit_bytes(Code::NIL, Code::RETURN);
+    emit_opcode(Code::NIL);
+    emit_opcode(Code::RETURN);
 
     parser_.get_mod()->iter_variables(
         [this](int i, const Value& val, const str_t& name) {

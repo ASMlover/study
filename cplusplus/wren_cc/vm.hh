@@ -35,7 +35,7 @@ namespace wrencc {
 
 enum class Code : u8_t {
 #undef CODEF
-#define CODEF(c) c,
+#define CODEF(c, _) c,
 #include "codes_def.hh"
 };
 

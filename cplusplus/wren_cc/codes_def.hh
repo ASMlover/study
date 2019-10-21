@@ -26,112 +26,112 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef CODEF
-# define CODEF(c)
+# define CODEF(c, n)
 #endif
 
 #ifndef CODE
-# define CODE(c) CODEF(c)
+# define CODE(c, n) CODEF(c, n)
 #endif
 
-CODE(CONSTANT)     // load the constant at index [arg]
-CODE(NIL)          // push `nil` into the stack
-CODE(FALSE)        // push `false` into the stack
-CODE(TRUE)         // push `true` into the stack
+CODE(CONSTANT, 1)     // load the constant at index [arg]
+CODE(NIL, 1)          // push `nil` into the stack
+CODE(FALSE, 1)        // push `false` into the stack
+CODE(TRUE, 1)         // push `true` into the stack
 
 // pushes the value in the given local slot
-CODE(LOAD_LOCAL_0)
-CODE(LOAD_LOCAL_1)
-CODE(LOAD_LOCAL_2)
-CODE(LOAD_LOCAL_3)
-CODE(LOAD_LOCAL_4)
-CODE(LOAD_LOCAL_5)
-CODE(LOAD_LOCAL_6)
-CODE(LOAD_LOCAL_7)
-CODE(LOAD_LOCAL_8)
+CODE(LOAD_LOCAL_0, 1)
+CODE(LOAD_LOCAL_1, 1)
+CODE(LOAD_LOCAL_2, 1)
+CODE(LOAD_LOCAL_3, 1)
+CODE(LOAD_LOCAL_4, 1)
+CODE(LOAD_LOCAL_5, 1)
+CODE(LOAD_LOCAL_6, 1)
+CODE(LOAD_LOCAL_7, 1)
+CODE(LOAD_LOCAL_8, 1)
 
-CODE(LOAD_LOCAL)   // push the value in local slot [arg]
-CODE(STORE_LOCAL)  // store the top of the stack in local slot [arg], not pop it
-CODE(LOAD_UPVALUE) // push the value in upvalue [arg]
-CODE(STORE_UPVALUE)// store the top of stack in upvalue [arg], does not pop it
+CODE(LOAD_LOCAL, 1)   // push the value in local slot [arg]
+CODE(STORE_LOCAL, 0)  // store the top of the stack in local slot [arg], not pop it
+CODE(LOAD_UPVALUE, 1) // push the value in upvalue [arg]
+CODE(STORE_UPVALUE, 0)// store the top of stack in upvalue [arg], does not pop it
 
 // pushes the value of the top-level variable in slot [arg]
-CODE(LOAD_MODULE_VAR)
+CODE(LOAD_MODULE_VAR, 1)
 
 // stores the top of stack in the top-level variable slot [arg], not pop it
-CODE(STORE_MODULE_VAR)
+CODE(STORE_MODULE_VAR, 0)
 
 // push the value of the field in slot [arg] of the receiver of the current
 // function. this is used for regular field access on `this` directly in
 // methods. this instruction is faster than the more general LOAD_FIELD
 // instruction
-CODE(LOAD_FIELD_THIS)
+CODE(LOAD_FIELD_THIS, 1)
 // stroe the top of the stack in field slot [arg] in the receiver of the current
 // value, does not pop the value, this instruction is faster than the more
 // general LOAD_FIELD instruction
-CODE(STORE_FIELD_THIS)
+CODE(STORE_FIELD_THIS, 0)
 
 // pop an instance and push the value of the field in slot [arg] of it
-CODE(LOAD_FIELD)
+CODE(LOAD_FIELD, 0)
 // pop an instance and store the subsequent top of stack in field slot [arg]
 // in it. does not pop the value
-CODE(STORE_FIELD)
-CODE(POP)          // pop and discard the top of stack
-CODE(DUP)          // push a copy of the value currently on the top of stack
+CODE(STORE_FIELD, -1)
+CODE(POP, -1)         // pop and discard the top of stack
+CODE(DUP, 1)          // push a copy of the value currently on the top of stack
 
 // invoke the method with symbol [arg], the number indicates the number of
 // arguments (not including the receiver)
-CODE(CALL_0)
-CODE(CALL_1)
-CODE(CALL_2)
-CODE(CALL_3)
-CODE(CALL_4)
-CODE(CALL_5)
-CODE(CALL_6)
-CODE(CALL_7)
-CODE(CALL_8)
-CODE(CALL_9)
-CODE(CALL_10)
-CODE(CALL_11)
-CODE(CALL_12)
-CODE(CALL_13)
-CODE(CALL_14)
-CODE(CALL_15)
-CODE(CALL_16)
+CODE(CALL_0, 0)
+CODE(CALL_1, -1)
+CODE(CALL_2, -2)
+CODE(CALL_3, -3)
+CODE(CALL_4, -4)
+CODE(CALL_5, -5)
+CODE(CALL_6, -6)
+CODE(CALL_7, -7)
+CODE(CALL_8, -8)
+CODE(CALL_9, -9)
+CODE(CALL_10, -10)
+CODE(CALL_11, -11)
+CODE(CALL_12, -12)
+CODE(CALL_13, -13)
+CODE(CALL_14, -14)
+CODE(CALL_15, -15)
+CODE(CALL_16, -16)
 
 // invoke a superclass method with symbol [arg], the number indicates the
 // number of arguments (not including the receiver)
-CODE(SUPER_0)
-CODE(SUPER_1)
-CODE(SUPER_2)
-CODE(SUPER_3)
-CODE(SUPER_4)
-CODE(SUPER_5)
-CODE(SUPER_6)
-CODE(SUPER_7)
-CODE(SUPER_8)
-CODE(SUPER_9)
-CODE(SUPER_10)
-CODE(SUPER_11)
-CODE(SUPER_12)
-CODE(SUPER_13)
-CODE(SUPER_14)
-CODE(SUPER_15)
-CODE(SUPER_16)
+CODE(SUPER_0, 0)
+CODE(SUPER_1, -1)
+CODE(SUPER_2, -2)
+CODE(SUPER_3, -3)
+CODE(SUPER_4, -4)
+CODE(SUPER_5, -5)
+CODE(SUPER_6, -6)
+CODE(SUPER_7, -7)
+CODE(SUPER_8, -8)
+CODE(SUPER_9, -9)
+CODE(SUPER_10, -10)
+CODE(SUPER_11, -11)
+CODE(SUPER_12, -12)
+CODE(SUPER_13, -13)
+CODE(SUPER_14, -14)
+CODE(SUPER_15, -15)
+CODE(SUPER_16, -16)
 
-CODE(JUMP)         // jump the instruction pointer [arg] forward
+CODE(JUMP, 0)         // jump the instruction pointer [arg] forward
 
 // jump the instruction pointer [arg] backward. pop and discard the
 // top of the stack
-CODE(LOOP)
+CODE(LOOP, 0)
 
-CODE(JUMP_IF)      // pop and if not truthy then jump the instruction pointer [arg] forward
+CODE(JUMP_IF, -1)     // pop and if not truthy then jump the instruction pointer [arg] forward
 
-CODE(AND)          // if the top of the stack is false jump [arg], or pop and continue
-CODE(OR)           // if the top of the stack if non-false jump [arg], or pop and continue
+CODE(AND, -1)         // if the top of the stack is false jump [arg], or pop and continue
+CODE(OR, -1)          // if the top of the stack if non-false jump [arg], or pop and continue
 
 // close the upvalue for the local on the top of the stack, then pop it.
-CODE(CLOSE_UPVALUE)
-CODE(RETURN)       // exit from the current function and return the value on the top of stack
+CODE(CLOSE_UPVALUE, -1)
+CODE(RETURN, 0)       // exit from the current function and return the value on the top of stack
 
 // creates a closure for the function stored at [arg] in the constant table
 //
@@ -140,36 +140,36 @@ CODE(RETURN)       // exit from the current function and return the value on the
 // and the second is the index of the local or upvalue being captured.
 //
 // pushes the created closure object
-CODE(CLOSURE)
+CODE(CLOSURE, 1)
 
 // creates a new instance of a class
 //
 // assumes the class object is in slot zero, and replaces it with the new
 // uninitialized instance of that class, the opcode is only emitted by the
 // compiler-generated constructor metaclass methods
-CODE(CONSTRUCT)
+CODE(CONSTRUCT, 0)
 
 // creates a new instance of a foreign class
 //
 // assumes the class object is in slot zero, and replaces it with the new
 // uninitialized instance of that class, this opcode is only emitted by the
 // compiler-generated constructor metaclass methods
-CODE(FOREIGN_CONSTRUCT)
+CODE(FOREIGN_CONSTRUCT, 0)
 
 // creates a class, top of stack is the superclass, below that is a string for
 // the name of the class, byte [arg] is the number of fields in the class
-CODE(CLASS)
+CODE(CLASS, -1)
 
 // creates a foreign class, top of stack is the superclass, below that is a
 // string for the name of the class
-CODE(FOREIGN_CLASS)
+CODE(FOREIGN_CLASS, -1)
 
 // define a method for symbol [arg] the class receiving the method is popped
 // off the stack, then the function defining the body is popped
 //
 // if a foreign method is being defined, the `function` will be a string
 // identifying the foreign method, otherwise it will be a function or closure
-CODE(METHOD_INSTANCE)
+CODE(METHOD_INSTANCE, -2)
 
 // define a method for symbol [arg] the class whose metaclass will receive
 // the method is popped off the stack, then the function defining the body
@@ -177,20 +177,20 @@ CODE(METHOD_INSTANCE)
 //
 // if a foreign method is being defined, the `function` will be a string
 // identifying the foreign method, otherwise it will be a function or closure
-CODE(METHOD_STATIC)
+CODE(METHOD_STATIC, -2)
 
 // load the module whose name is stored in string constant [arg], pushes
 // nullptr onto the stack, if the module has already been loaded, does nothing
 // else, otherwise it creates a fiber to run the desired module and switches
 // to that, when that fiber is done the current one is resumed
-CODE(LOAD_MODULE)
+CODE(LOAD_MODULE, 1)
 
 // reads a top-level variable from another module, [arg1] is a string constant
 // for the name of the module and [arg2] is a string constant for the variable
 // name, pushes the variable if found or generates a runtime error otherwise
-CODE(IMPORT_VARIABLE)
+CODE(IMPORT_VARIABLE, 1)
 
-CODE(END)
+CODE(END, 0)
 
 #undef CODE
 #undef CODEF

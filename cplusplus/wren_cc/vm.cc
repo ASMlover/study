@@ -423,7 +423,7 @@ InterpretRet WrenVM::interpret(FiberObject* fiber) {
 #if COMPUTED_GOTOS
   static void* _dispatch_table[] = {
 # undef CODEF
-# define CODEF(c) &&__code_##c,
+# define CODEF(c, _) &&__code_##c,
 # include "codes_def.hh"
   };
 # define INTERPRET_LOOP() DISPATCH();
@@ -1025,8 +1025,8 @@ FunctionObject* WrenVM::make_call_stub(
   };
   int debug_lines[] = {1, 1, 1, 1, 1};
 
-  return FunctionObject::make_function(*this,
-      module, 0, 0, bytecode, 5, nullptr, 0, signature, debug_lines, 5);
+  return FunctionObject::make_function(*this, module,
+      num_params + 1, 0, 0, bytecode, 5, nullptr, 0, signature, debug_lines, 5);
 }
 
 WrenForeignFn WrenVM::find_foreign_method(const str_t& module_name,
