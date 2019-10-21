@@ -984,11 +984,7 @@ void FiberObject::riter_frames(
     std::function<void (const CallFrame&, FunctionObject*)>&& visit) {
   for (auto it = frames_.rbegin(); it != frames_.rend(); ++it) {
     auto& frame = *it;
-    FunctionObject* fn;
-    if (frame.fn->type() == ObjType::FUNCTION)
-      fn = Xt::down<FunctionObject>(frame.fn);
-    else
-      fn = Xt::down<ClosureObject>(frame.fn)->fn();
+    FunctionObject* fn = upwrap_closure(frame.fn);
 
     visit(frame, fn);
   }

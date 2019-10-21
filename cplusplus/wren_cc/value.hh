@@ -604,6 +604,20 @@ public:
   static ClosureObject* make_closure(WrenVM& vm, FunctionObject* fn);
 };
 
+inline FunctionObject* upwrap_closure(BaseObject* fn) {
+  // returns the base FunctionObject backing an ClosureObject, or [fn] if
+  // it already is a raw FunctionObject
+
+  switch (fn->type()) {
+  case ObjType::FUNCTION: return Xt::down<FunctionObject>(fn);
+  case ObjType::CLOSURE: return Xt::down<ClosureObject>(fn)->fn();
+  default:
+    ASSERT(false, "function should be an FunctionObject or ClosureObject");
+    break;
+  }
+  return nullptr;
+}
+
 struct CallFrame {
   const u8_t* ip{}; // pointer to the current instruction in the function's body
   BaseObject* fn{}; // the function or closure being executed
@@ -615,15 +629,6 @@ struct CallFrame {
 
   CallFrame(const u8_t* _ip, BaseObject* _fn, int _stack_start) noexcept
     : ip(_ip), fn(_fn), stack_start(_stack_start) {
-  }
-
-  inline FunctionObject* get_frame_fn(void) const {
-    switch (fn->type()) {
-    case ObjType::FUNCTION: return Xt::down<FunctionObject>(fn);
-    case ObjType::CLOSURE: return Xt::down<ClosureObject>(fn)->fn();
-    default: UNREACHABLE();
-    }
-    return nullptr;
   }
 };
 
@@ -655,20 +660,6 @@ class FiberObject final : public BaseObject {
   // in that case, if this fiber fails with an error, the error will be given
   // to the caller
   bool caller_is_trying_{};
-
-  inline FunctionObject* upwrap_closure(BaseObject* fn) const {
-    // returns the base FunctionObject backing an ClosureObject, or [fn] if
-    // it already is a raw FunctionObject
-
-    switch (fn->type()) {
-    case ObjType::FUNCTION: return Xt::down<FunctionObject>(fn);
-    case ObjType::CLOSURE: return Xt::down<ClosureObject>(fn)->fn();
-    default:
-      ASSERT(false, "function shoule be an FunctionObject or ClosureObject");
-      break;
-    }
-    return nullptr;
-  }
 
   FiberObject(ClassObject* cls, BaseObject* fn, u16_t id) noexcept;
   virtual ~FiberObject(void) {}
