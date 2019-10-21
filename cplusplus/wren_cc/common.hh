@@ -87,6 +87,19 @@ namespace Xt {
     ss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
     return ss.str();
   }
+
+  inline int power_of_2ceil(int n) {
+    // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2Float
+    --n;
+    n |= n >> 1;
+    n |= n >> 2;
+    n |= n >> 4;
+    n |= n >> 8;
+    n |= n >> 16;
+    ++n;
+
+    return n;
+  }
 }
 
 }

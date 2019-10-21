@@ -908,8 +908,10 @@ ClosureObject* ClosureObject::make_closure(WrenVM& vm, FunctionObject* fn) {
 FiberObject::FiberObject(ClassObject* cls, BaseObject* fn, u16_t id) noexcept
   : BaseObject(ObjType::FIBER, cls)
   , id_(id) {
-  stack_.reserve(kDefaultCap);
-  const u8_t* ip = get_fn(fn)->codes();
+  stack_capacity_ = Xt::power_of_2ceil(upwrap_closure(fn)->max_slots());
+  stack_.reserve(stack_capacity_);
+
+  const u8_t* ip = upwrap_closure(fn)->codes();
   frames_.push_back(CallFrame(ip, fn, 0));
 }
 

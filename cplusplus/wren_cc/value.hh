@@ -491,6 +491,7 @@ class FunctionObject final : public BaseObject {
       const str_t& debug_name, int* source_lines, int lines_count) noexcept;
 public:
   inline int num_upvalues(void) const { return num_upvalues_; }
+  inline int max_slots(void) const { return max_slots_; }
   inline void set_num_upvalues(int num_upvalues) { num_upvalues_ = num_upvalues; }
   inline const u8_t* codes(void) const { return codes_.data(); }
   inline void set_codes(const std::vector<u8_t>& codes) { codes_ = codes; }
@@ -629,6 +630,7 @@ struct CallFrame {
 class FiberObject final : public BaseObject {
   static constexpr sz_t kDefaultCap = 1<<10;
 
+  int stack_capacity_{}; // the number of allocated slots in the stack array
   std::vector<Value> stack_;
   std::vector<CallFrame> frames_;
 
@@ -654,11 +656,16 @@ class FiberObject final : public BaseObject {
   // to the caller
   bool caller_is_trying_{};
 
-  inline FunctionObject* get_fn(BaseObject* fn) const {
+  inline FunctionObject* upwrap_closure(BaseObject* fn) const {
+    // returns the base FunctionObject backing an ClosureObject, or [fn] if
+    // it already is a raw FunctionObject
+
     switch (fn->type()) {
     case ObjType::FUNCTION: return Xt::down<FunctionObject>(fn);
     case ObjType::CLOSURE: return Xt::down<ClosureObject>(fn)->fn();
-    default: UNREACHABLE();
+    default:
+      ASSERT(false, "function shoule be an FunctionObject or ClosureObject");
+      break;
     }
     return nullptr;
   }
