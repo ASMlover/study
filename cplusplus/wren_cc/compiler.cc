@@ -289,6 +289,15 @@ class Compiler : private UnCopyable {
   int scope_depth_{-1};
 
   // the current number of slots (locals and temporaries) in use
+  //
+  // we use this and max_slots_ to track the maximum number of additional slots
+  // a function may need while executing, when the function is called, the
+  // fiber will check to ensure its stack has enough room to cover that worst
+  // case and grow the stack if needed
+  //
+  // this value here doesn't include parameters to the function, since those
+  // are already pushed onto the stack by the caller and tracked there, we do
+  // not need to double count them here
   int num_slots_{};
 
   // the maximum number of slots (locals and temporaries) in use at one time
@@ -1533,11 +1542,6 @@ class Compiler : private UnCopyable {
     // if [is_initializer] is `true`, this is the body of a constructor
     // initializer, in that case, this adds the code to ensure it returns `this`
 
-    // now that the parameter list has been compiled, we know how many slots
-    // they use
-    num_slots_ = Xt::as_type<int>(locals_.size());
-    max_slots_ = Xt::as_type<int>(locals_.size());
-
     bool is_expression_body = finish_block();
     if (is_initializer) {
       // if the initializer body evaluates to a value, discard it
@@ -1572,8 +1576,6 @@ class Compiler : private UnCopyable {
 
     Compiler method_compiler(parser_, this);
     method_compiler.init_compiler(false);
-    method_compiler.num_slots_ = signature.arity + 1;
-    method_compiler.max_slots_ = method_compiler.num_slots_;
 
     // allocate the instance
     method_compiler.emit_opcode(enclosing_class_->is_foreign

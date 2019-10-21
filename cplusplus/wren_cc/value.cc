@@ -910,17 +910,35 @@ FiberObject::FiberObject(ClassObject* cls, BaseObject* fn, u16_t id) noexcept
   , id_(id) {
   stack_capacity_ = Xt::power_of_2ceil(upwrap_closure(fn)->max_slots());
   stack_.reserve(stack_capacity_);
+  frames_.reserve(kFrameCapacity);
 
   const u8_t* ip = upwrap_closure(fn)->codes();
   frames_.push_back(CallFrame(ip, fn, 0));
 }
 
 void FiberObject::call_function(BaseObject* fn, int argc) {
-  const u8_t* ip;
-  if (fn->type() == ObjType::FUNCTION)
-    ip = Xt::down<FunctionObject>(fn)->codes();
-  else
-    ip = Xt::down<ClosureObject>(fn)->fn()->codes();
+  // grow the call frames if needed (use vector auto)
+
+  // grow the stack capacity if needed
+  int stack_count = Xt::as_type<int>(stack_.size());
+  int needed = stack_count + upwrap_closure(fn)->max_slots();
+  if (stack_capacity_ < needed) {
+    stack_capacity_ = Xt::power_of_2ceil(needed);
+    const Value* old_stack = stack_.data();
+    stack_.reserve(stack_capacity_);
+
+    // if the reallocation moves the stack, then we need to shift every pointer
+    // into the stack to point to its new location
+    const Value* new_stack = stack_.data();
+    if (new_stack != old_stack) {
+      sz_t offset = new_stack - old_stack;
+      // open upvalues
+      for (UpvalueObject* uv = open_upvlaues_; uv != nullptr; uv = uv->next())
+        uv->set_value(uv->value() + offset);
+    }
+  }
+
+  const u8_t* ip = upwrap_closure(fn)->codes();
   frames_.push_back(CallFrame(ip, fn, stack_size() - argc));
 }
 
@@ -994,16 +1012,12 @@ void FiberObject::reset_fiber(BaseObject* fn) {
   stack_.clear();
   frames_.clear();
 
-  stack_.reserve(kDefaultCap);
   open_upvlaues_ = nullptr;
   caller_ = nullptr;
+  error_ = nullptr;
   caller_is_trying_ = false;
 
-  const u8_t* ip;
-  if (fn->type() == ObjType::FUNCTION)
-    ip = Xt::down<FunctionObject>(fn)->codes();
-  else
-    ip = Xt::down<ClosureObject>(fn)->fn()->codes();
+  const u8_t* ip = upwrap_closure(fn)->codes();
   frames_.push_back(CallFrame(ip, fn, 0));
 }
 

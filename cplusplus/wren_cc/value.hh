@@ -627,13 +627,15 @@ struct CallFrame {
   // and temporaries
   int stack_start{};
 
+  CallFrame(void) noexcept {}
   CallFrame(const u8_t* _ip, BaseObject* _fn, int _stack_start) noexcept
     : ip(_ip), fn(_fn), stack_start(_stack_start) {
   }
 };
 
 class FiberObject final : public BaseObject {
-  static constexpr sz_t kDefaultCap = 1<<10;
+  static constexpr sz_t kStackCapacity = 1<<10;
+  static constexpr sz_t kFrameCapacity = 4;
 
   int stack_capacity_{}; // the number of allocated slots in the stack array
   std::vector<Value> stack_;
