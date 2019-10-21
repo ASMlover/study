@@ -969,11 +969,17 @@ Value WrenVM::import_module(const Value& name) {
   if (source_bytes.empty()) {
     // could not load the module
     fiber_->set_error(
-        StringObject::format(*this, "could not find module `@`", name));
+        StringObject::format(*this, "could not load module `@`", name));
     return nullptr;
   }
 
   FiberObject* module_fiber = load_module(name, source_bytes);
+  if (module_fiber == nullptr) {
+    fiber_->set_error(
+        StringObject::format(*this, "could not compile module `@`", name));
+    return nullptr;
+  }
+
   // return the fiber that executes the module
   return module_fiber;
 }
