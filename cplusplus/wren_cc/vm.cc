@@ -123,6 +123,10 @@ void WrenVM::set_foreign_stack_start(const Value& value) {
   foreign_stack_start_ = nullptr;
 }
 
+void WrenVM::set_foreign_stack_start(Value* value) {
+  foreign_stack_start_ = value;
+}
+
 void WrenVM::push_root(BaseObject* obj) {
   // mark [obj] as a GC root so that it does not get collected
 
@@ -307,14 +311,10 @@ void WrenVM::call_foreign(
 
   foreign(*this);
 
-  // discard the stack slots for the arguments (but leave one for result)
+  // discard the stack slots for the arguments and temporaries but leave one
+  // for the result
   fiber->resize_stack(fiber->stack_size() - (argc - 1));
-
-  // if nothing was returned, implicitly return nil
-  if (foreign_stack_start_ != nullptr) {
-    *foreign_stack_start_ = nullptr;
-    foreign_stack_start_ = nullptr;
-  }
+  foreign_stack_start_ = nullptr;
 }
 
 void WrenVM::bind_foreign_class(ClassObject* cls, ModuleObject* module) {
@@ -654,13 +654,13 @@ __complete_call:
         call_foreign(fiber, method.foreign(), argc);
         break;
       case MethodType::BLOCK:
-        fiber->call_function(method.fn(), argc);
+        fiber->call_function(*this, method.fn(), argc);
         LOAD_FRAME();
         break;
       case MethodType::FNCALL:
         if (!check_arity(args[0], argc))
           RUNTIME_ERROR();
-        fiber->call_function(args[0].as_object(), argc);
+        fiber->call_function(*this, args[0].as_object(), argc);
         LOAD_FRAME();
         break;
       case MethodType::NONE:
@@ -1089,10 +1089,6 @@ void WrenVM::bind_method(int i, Code method_type,
   }
 
   cls->bind_method(i, method);
-}
-
-void WrenVM::call_function(FiberObject* fiber, BaseObject* fn, int argc) {
-  fiber->call_function(fn, argc);
 }
 
 void WrenVM::collect(void) {

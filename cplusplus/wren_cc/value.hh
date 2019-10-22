@@ -710,7 +710,7 @@ public:
     return v;
   }
 
-  void call_function(BaseObject* fn, int argc = 0);
+  void call_function(WrenVM& vm, BaseObject* fn, int argc = 0);
   UpvalueObject* capture_upvalue(WrenVM& vm, int slot);
   void close_upvalue(void);
   void close_upvalues(int slot);

@@ -915,7 +915,7 @@ FiberObject::FiberObject(ClassObject* cls, BaseObject* fn) noexcept
   frames_.push_back(CallFrame(ip, fn, 0));
 }
 
-void FiberObject::call_function(BaseObject* fn, int argc) {
+void FiberObject::call_function(WrenVM& vm, BaseObject* fn, int argc) {
   // grow the call frames if needed (use vector auto)
 
   // grow the stack capacity if needed
@@ -934,6 +934,9 @@ void FiberObject::call_function(BaseObject* fn, int argc) {
       // open upvalues
       for (UpvalueObject* uv = open_upvlaues_; uv != nullptr; uv = uv->next())
         uv->set_value(uv->value() + offset);
+
+      if (vm.get_foreign_stack_start() != nullptr)
+        vm.set_foreign_stack_start(vm.get_foreign_stack_start() + offset);
     }
   }
 

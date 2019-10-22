@@ -215,6 +215,7 @@ public:
   inline void set_fiber(FiberObject* fiber) { fiber_ = fiber; }
   inline void set_compiler(Compiler* compiler) { compiler_ = compiler; }
   inline LoadModuleFn get_load_fn(void) const { return load_module_fn_; }
+  inline Value* get_foreign_stack_start(void) const { return foreign_stack_start_; }
   inline void set_load_fn(const LoadModuleFn& fn) { load_module_fn_ = fn; }
   inline void set_load_fn(LoadModuleFn&& fn) { load_module_fn_ = std::move(fn); }
   inline BindForeignMethodFn get_foreign_meth(void) const { return bind_foreign_meth_; }
@@ -236,6 +237,7 @@ public:
   void set_native(ClassObject* cls, const str_t& name, const PrimitiveFn& fn);
   const Value& find_variable(ModuleObject* module, const str_t& name) const;
   void set_foreign_stack_start(const Value& value);
+  void set_foreign_stack_start(Value* value);
 
   void push_root(BaseObject* obj);
   void pop_root(void);
@@ -249,7 +251,6 @@ public:
 
   ClassObject* get_class(const Value& val) const;
   InterpretRet interpret(const str_t& source_bytes);
-  void call_function(FiberObject* fiber, BaseObject* fn, int argc);
 
   WrenValue* acquire_method(
       const str_t& module, const str_t& variable, const str_t& signature);
