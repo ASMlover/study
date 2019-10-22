@@ -52,7 +52,7 @@ namespace meta {
 
       // return the result, we can not use the public API for this since we
       // have a bare FunctionObject
-      vm.set_foreign_call_slot(fn);
+      vm.set_foreign_stack_start(fn);
     }
 
     static WrenForeignFn bind_foreign(WrenVM& vm,

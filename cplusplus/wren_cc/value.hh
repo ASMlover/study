@@ -667,7 +667,10 @@ public:
     frames_.clear();
   }
 
-  inline Value* values_at(int i) { return &stack_[i]; }
+  inline Value* values_at(int i) { return stack_.data() + i; }
+  inline const Value* values_at(int i) const { return stack_.data() + i; }
+  inline Value* values_at_top(void) { return stack_.data() + stack_.size(); }
+  inline const Value* values_at_top(void) const { return stack_.data() + stack_.size(); }
   inline void resize_stack(int n) { stack_.resize(n); }
   inline int stack_size(void) const { return Xt::as_type<int>(stack_.size()); }
   inline int frame_size(void) const { return Xt::as_type<int>(frames_.size()); }

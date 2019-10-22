@@ -127,10 +127,7 @@ class WrenVM final : private UnCopyable {
 
   // during a foreign function call, this will point to the first argument
   // of the call on the fiber's stack
-  Value* foreign_call_slot_{};
-  // during a foreign function call, this will contain the number of arguments
-  // to the function
-  int foreign_call_argc_{};
+  Value* foreign_stack_start_{};
 
   // the function used to locate foreign functions
   BindForeignMethodFn bind_foreign_meth_{};
@@ -238,7 +235,7 @@ public:
   int define_variable(ModuleObject* module, const str_t& name, const Value& value);
   void set_native(ClassObject* cls, const str_t& name, const PrimitiveFn& fn);
   const Value& find_variable(ModuleObject* module, const str_t& name) const;
-  void set_foreign_call_slot(const Value& value);
+  void set_foreign_stack_start(const Value& value);
 
   void push_root(BaseObject* obj);
   void pop_root(void);

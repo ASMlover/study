@@ -118,9 +118,9 @@ const Value& WrenVM::find_variable(
   return module->get_variable(symbol);
 }
 
-void WrenVM::set_foreign_call_slot(const Value& value) {
-  *foreign_call_slot_ = value;
-  foreign_call_slot_ = nullptr;
+void WrenVM::set_foreign_stack_start(const Value& value) {
+  *foreign_stack_start_ = value;
+  foreign_stack_start_ = nullptr;
 }
 
 void WrenVM::push_root(BaseObject* obj) {
@@ -294,23 +294,24 @@ Value WrenVM::validate_superclass(
 }
 
 void WrenVM::validate_foreign_argument(int index) const {
-  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
+  ASSERT(foreign_stack_start_ != nullptr, "must be in foreign call");
   ASSERT(index >= 0, "index cannot be negative");
-  ASSERT(index < foreign_call_argc_, "not that many arguments");
+  ASSERT(index < get_argument_count(), "not that many arguments");
 }
 
 void WrenVM::call_foreign(
     FiberObject* fiber, const WrenForeignFn& foreign, int argc) {
-  foreign_call_slot_ = fiber->values_at(fiber->stack_size() - argc);
+  foreign_stack_start_ = fiber->values_at(fiber->stack_size() - argc);
 
-  // donot include the receiver
-  foreign_call_argc_ = argc;
   foreign(*this);
 
   // discard the stack slots for the arguments (but leave one for result)
-  if (foreign_call_slot_ != nullptr) {
-    *foreign_call_slot_ = nullptr;
-    foreign_call_slot_ = nullptr;
+  fiber->resize_stack(fiber->stack_size() - (argc - 1));
+
+  // if nothing was returned, implicitly return nil
+  if (foreign_stack_start_ != nullptr) {
+    *foreign_stack_start_ = nullptr;
+    foreign_stack_start_ = nullptr;
   }
 }
 
@@ -377,9 +378,7 @@ void WrenVM::create_foreign(FiberObject* fiber, Value* stack) {
   ASSERT(method.get_type() == MethodType::FOREIGN, "allocator should be foreign");
 
   // pass the constructor arguments to the allocator as well
-  foreign_call_slot_ = stack;
-  foreign_call_argc_ = Xt::as_type<int>(
-      fiber->values_at(fiber->stack_size() - 1) - stack + 1);
+  foreign_stack_start_ = stack;
 
   method.foreign()(*this);
 }
@@ -730,15 +729,15 @@ __complete_call:
 
       // if the fiber is complete, end it
       if (fiber->empty_frame()) {
-        // if this is the main fiber, we are done
-        if (fiber->caller() == nullptr)
-          return InterpretRet::SUCCESS;
-
-        // we have a calling fiber to resume
+        // see if there's another fiber to return to
         FiberObject* calling_fiber = fiber->caller();
         fiber->set_caller(nullptr);
         fiber = calling_fiber;
         fiber_ = fiber;
+
+        // if not, we are done
+        if (fiber == nullptr)
+          return InterpretRet::SUCCESS;
 
         // store the result in the resuming fiber
         fiber->set_value(fiber->stack_size() - 1, r);
@@ -1325,11 +1324,11 @@ void WrenVM::release_value(WrenValue* value) {
 }
 
 void* WrenVM::allocate_foreign(sz_t size) {
-  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
+  ASSERT(foreign_stack_start_ != nullptr, "must be in foreign call");
 
-  ClassObject* cls = foreign_call_slot_[0].as_class();
+  ClassObject* cls = foreign_stack_start_[0].as_class();
   ForeignObject* foreign = ForeignObject::make_foreign(*this, cls, size);
-  *foreign_call_slot_ = foreign;
+  *foreign_stack_start_ = foreign;
 
   return foreign->data();
 }
@@ -1356,84 +1355,88 @@ void WrenVM::finalize_foreign(ForeignObject* foreign) {
 
   // pass the constructor arguments to the allocator as well
   Value slot(foreign);
-  foreign_call_slot_ = &slot;
-  foreign_call_argc_ = 1;
+  foreign_stack_start_ = &slot;
 
   method.foreign()(*this);
 }
 
 int WrenVM::get_argument_count(void) const {
-  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
-  return foreign_call_argc_;
+  ASSERT(foreign_stack_start_ != nullptr, "must be in foreign call");
+
+  // if no fiber is executing, we must be in a finalizer, in which case the
+  // `stack` just has one object, the object being finalized
+  if (fiber_ == nullptr)
+    return 1;
+  return Xt::as_type<int>(fiber_->values_at_top() - foreign_stack_start_);
 }
 
 bool WrenVM::get_argument_bool(int index) const {
   validate_foreign_argument(index);
 
-  if (!(*(foreign_call_slot_ + index)).is_boolean())
+  if (!foreign_stack_start_[index].is_boolean())
     return false;
-  return (*(foreign_call_slot_ + index)).as_boolean();
+  return foreign_stack_start_[index].as_boolean();
 }
 
 double WrenVM::get_argument_double(int index) const {
   validate_foreign_argument(index);
 
-  if (!(*(foreign_call_slot_ + index)).is_numeric())
+  if (!foreign_stack_start_[index].is_numeric())
     return 0.0;
-  return (*(foreign_call_slot_ + index)).as_numeric();
+  return foreign_stack_start_[index].as_numeric();
 }
 
 const char* WrenVM::get_argument_string(int index) const {
   validate_foreign_argument(index);
 
-  if (!(*(foreign_call_slot_ + index)).is_string())
+  if (!foreign_stack_start_[index].is_string())
     return "";
-  return (*(foreign_call_slot_ + index)).as_cstring();
+  return foreign_stack_start_[index].as_cstring();
 }
 
 WrenValue* WrenVM::get_argument_value(int index) {
   validate_foreign_argument(index);
 
-  return capture_value(*(foreign_call_slot_ + index));
+  return capture_value(foreign_stack_start_[index]);
 }
 
 void* WrenVM::get_argument_foreign(int index) const {
   validate_foreign_argument(index);
 
-  const Value& foreign_val = *(foreign_call_slot_ + index);
+  const Value& foreign_val = foreign_stack_start_[index];
   if (!foreign_val.is_foreign())
     return nullptr;
   return foreign_val.as_foreign()->data();
 }
 
 void WrenVM::return_bool(bool value) {
-  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
+  ASSERT(foreign_stack_start_ != nullptr, "must be in foreign call");
 
-  *foreign_call_slot_ = value;
-  foreign_call_slot_ = nullptr;
+  *foreign_stack_start_ = value;
+  foreign_stack_start_ = nullptr;
 }
 
 void WrenVM::return_double(double value) {
-  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
+  ASSERT(foreign_stack_start_ != nullptr, "must be in foreign call");
 
-  *foreign_call_slot_ = value;
-  foreign_call_slot_ = nullptr;
+  *foreign_stack_start_ = value;
+  foreign_stack_start_ = nullptr;
 }
 
 void WrenVM::return_string(const str_t& text) {
-  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
+  ASSERT(foreign_stack_start_ != nullptr, "must be in foreign call");
   ASSERT(!text.empty(), "string cannot be empty");
 
-  *foreign_call_slot_ = StringObject::make_string(*this, text);
-  foreign_call_slot_ = nullptr;
+  *foreign_stack_start_ = StringObject::make_string(*this, text);
+  foreign_stack_start_ = nullptr;
 }
 
 void WrenVM::return_value(WrenValue* value) {
-  ASSERT(foreign_call_slot_ != nullptr, "must be in foreign call");
+  ASSERT(foreign_stack_start_ != nullptr, "must be in foreign call");
   ASSERT(value != nullptr, "`value` cannot be `nullptr`");
 
-  *foreign_call_slot_ = value->value;
-  foreign_call_slot_ = nullptr;
+  *foreign_stack_start_ = value->value;
+  foreign_stack_start_ = nullptr;
 }
 
 void wrenCollectGarbage(WrenVM& vm) {
