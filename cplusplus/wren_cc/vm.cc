@@ -293,10 +293,12 @@ Value WrenVM::validate_superclass(
   return nullptr;
 }
 
-void WrenVM::validate_foreign_argument(int index) const {
+void WrenVM::validate_foreign_slot(int slot) const {
+  // ensures that [slot] is a valid index into a foreign method's stack of slots
+
   ASSERT(foreign_stack_start_ != nullptr, "must be in foreign call");
-  ASSERT(index >= 0, "index cannot be negative");
-  ASSERT(index < get_argument_count(), "not that many arguments");
+  ASSERT(slot >= 0, "slot cannot be negative");
+  ASSERT(slot < get_slot_count(), "not that many slots");
 }
 
 void WrenVM::call_foreign(
@@ -1360,7 +1362,7 @@ void WrenVM::finalize_foreign(ForeignObject* foreign) {
   method.foreign()(*this);
 }
 
-int WrenVM::get_argument_count(void) const {
+int WrenVM::get_slot_count(void) const {
   ASSERT(foreign_stack_start_ != nullptr, "must be in foreign call");
 
   // if no fiber is executing, we must be in a finalizer, in which case the
@@ -1370,42 +1372,38 @@ int WrenVM::get_argument_count(void) const {
   return Xt::as_type<int>(fiber_->values_at_top() - foreign_stack_start_);
 }
 
-bool WrenVM::get_argument_bool(int index) const {
-  validate_foreign_argument(index);
+bool WrenVM::get_slot_bool(int slot) const {
+  validate_foreign_slot(slot);
 
-  if (!foreign_stack_start_[index].is_boolean())
-    return false;
-  return foreign_stack_start_[index].as_boolean();
+  ASSERT(foreign_stack_start_[slot].is_boolean(), "slot must hold a boolean");
+  return foreign_stack_start_[slot].as_boolean();
 }
 
-double WrenVM::get_argument_double(int index) const {
-  validate_foreign_argument(index);
+double WrenVM::get_slot_double(int slot) const {
+  validate_foreign_slot(slot);
 
-  if (!foreign_stack_start_[index].is_numeric())
-    return 0.0;
-  return foreign_stack_start_[index].as_numeric();
+  ASSERT(foreign_stack_start_[slot].is_numeric(), "slot must hold a numeric");
+  return foreign_stack_start_[slot].as_numeric();
 }
 
-const char* WrenVM::get_argument_string(int index) const {
-  validate_foreign_argument(index);
+const char* WrenVM::get_slot_string(int slot) const {
+  validate_foreign_slot(slot);
 
-  if (!foreign_stack_start_[index].is_string())
-    return "";
-  return foreign_stack_start_[index].as_cstring();
+  ASSERT(foreign_stack_start_[slot].is_string(), "slot must hold a string");
+  return foreign_stack_start_[slot].as_cstring();
 }
 
-WrenValue* WrenVM::get_argument_value(int index) {
-  validate_foreign_argument(index);
+WrenValue* WrenVM::get_slot_value(int slot) {
+  validate_foreign_slot(slot);
 
-  return capture_value(foreign_stack_start_[index]);
+  return capture_value(foreign_stack_start_[slot]);
 }
 
-void* WrenVM::get_argument_foreign(int index) const {
-  validate_foreign_argument(index);
+void* WrenVM::get_slot_foreign(int slot) const {
+  validate_foreign_slot(slot);
 
-  const Value& foreign_val = foreign_stack_start_[index];
-  if (!foreign_val.is_foreign())
-    return nullptr;
+  const Value& foreign_val = foreign_stack_start_[slot];
+  ASSERT(foreign_val.is_foreign(), "slot must hold a foreign instance");
   return foreign_val.as_foreign()->data();
 }
 
@@ -1451,28 +1449,28 @@ void* wrenAllocateForeign(WrenVM& vm, sz_t size) {
   return vm.allocate_foreign(size);
 }
 
-int wrenGetArgumentCount(WrenVM& vm) {
-  return vm.get_argument_count();
+int wrenGetSlotCount(WrenVM& vm) {
+  return vm.get_slot_count();
 }
 
-bool wrenGetArgumentBool(WrenVM& vm, int index) {
-  return vm.get_argument_bool(index);
+bool wrenGetSlotBool(WrenVM& vm, int slot) {
+  return vm.get_slot_bool(slot);
 }
 
-double wrenGetArgumentDouble(WrenVM& vm, int index) {
-  return vm.get_argument_double(index);
+double wrenGetSlotDouble(WrenVM& vm, int slot) {
+  return vm.get_slot_double(slot);
 }
 
-const char* wrenGetArgumentString(WrenVM& vm, int index) {
-  return vm.get_argument_string(index);
+const char* wrenGetSlotString(WrenVM& vm, int slot) {
+  return vm.get_slot_string(slot);
 }
 
-WrenValue* wrenGetArgumentValue(WrenVM& vm, int index) {
-  return vm.get_argument_value(index);
+WrenValue* wrenGetSlotValue(WrenVM& vm, int slot) {
+  return vm.get_slot_value(slot);
 }
 
-void* wrenGetArgumentForeign(WrenVM& vm, int index) {
-  return vm.get_argument_foreign(index);
+void* wrenGetSlotForeign(WrenVM& vm, int slot) {
+  return vm.get_slot_foreign(slot);
 }
 
 void wrenReturnBool(WrenVM& vm, bool value) {

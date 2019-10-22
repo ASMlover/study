@@ -46,7 +46,7 @@ namespace meta {
         : calling_fn.as_closure()->fn()->module();
 
       // compile it
-      FunctionObject* fn = compile(vm, module, wrenGetArgumentString(vm, 1), false);
+      FunctionObject* fn = compile(vm, module, wrenGetSlotString(vm, 1), false);
       if (fn == nullptr)
         return;
 

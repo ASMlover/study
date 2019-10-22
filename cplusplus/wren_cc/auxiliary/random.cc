@@ -67,7 +67,7 @@ namespace random {
     }
 
     void random_seed0(WrenVM& vm) {
-      Well512* well = Xt::as_type<Well512*>(wrenGetArgumentForeign(vm, 0));
+      Well512* well = Xt::as_type<Well512*>(wrenGetSlotForeign(vm, 0));
 
       std::srand(Xt::as_type<u32_t>(std::time(nullptr)));
       for (int i = 0; i < 16; ++i)
@@ -75,22 +75,22 @@ namespace random {
     }
 
     void random_seed1(WrenVM& vm) {
-      Well512* well = Xt::as_type<Well512*>(wrenGetArgumentForeign(vm, 0));
+      Well512* well = Xt::as_type<Well512*>(wrenGetSlotForeign(vm, 0));
 
-      std::srand(Xt::as_type<u32_t>(wrenGetArgumentDouble(vm, 1)));
+      std::srand(Xt::as_type<u32_t>(wrenGetSlotDouble(vm, 1)));
       for (int i = 0; i < 16; ++i)
         well->state[i] = std::rand();
     }
 
     void random_seed16(WrenVM& vm) {
-      Well512* well = Xt::as_type<Well512*>(wrenGetArgumentForeign(vm, 0));
+      Well512* well = Xt::as_type<Well512*>(wrenGetSlotForeign(vm, 0));
 
       for (int i = 0; i < 16; ++i)
-        well->state[i] = Xt::as_type<u32_t>(wrenGetArgumentDouble(vm, i + 1));
+        well->state[i] = Xt::as_type<u32_t>(wrenGetSlotDouble(vm, i + 1));
     }
 
     void random_float(WrenVM& vm) {
-      Well512* well = Xt::as_type<Well512*>(wrenGetArgumentForeign(vm, 0));
+      Well512* well = Xt::as_type<Well512*>(wrenGetSlotForeign(vm, 0));
 
       double result = Xt::as_type<double>(advance_state(*well)) * (1 << 21);
       result += Xt::as_type<double>(advance_state(*well) & ((1 << 21) - 1));
@@ -100,7 +100,7 @@ namespace random {
     }
 
     void random_int0(WrenVM& vm) {
-      Well512* well = Xt::as_type<Well512*>(wrenGetArgumentForeign(vm, 0));
+      Well512* well = Xt::as_type<Well512*>(wrenGetSlotForeign(vm, 0));
       wrenReturnDouble(vm, advance_state(*well));
     }
 

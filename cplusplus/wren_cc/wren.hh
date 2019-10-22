@@ -70,8 +70,8 @@ void wrenReleaseValue(WrenVM& vm, WrenValue* value);
 // the foreign object's data
 void* wrenAllocateForeign(WrenVM& vm, sz_t size);
 
-// returns the number of arguments available to the current foreign method
-int wrenGetArgumentCount(WrenVM& vm);
+// returns the number of slots available to the current foreign method
+int wrenGetSlotCount(WrenVM& vm);
 
 // the following functions read one of the arguments passed to a foreign call.
 // they may only be called while within a function provided to
@@ -93,33 +93,37 @@ int wrenGetArgumentCount(WrenVM& vm);
 //
 // it is an error to pass an invalid argument index
 
-// reads a boolean argument for a foreign call, returns false if the argument
-// is not a boolean
-bool wrenGetArgumentBool(WrenVM& vm, int index);
+// reads a boolean value from [slot]
+//
+// it is an error to call this if the slot does not contain a boolean value
+bool wrenGetSlotBool(WrenVM& vm, int slot);
 
-// reads a numeric argument for a foreign call, returns 0 if the argument is
-// not a numeric value
-double wrenGetArgumentDouble(WrenVM& vm, int index);
+// reads a numeric value from [slot]
+//
+// it is an error to call this if the slot does not contain a numeric value
+double wrenGetSlotDouble(WrenVM& vm, int slot);
 
-// reads an string argument for a foreign call, returns nullptr if the argument
-// is not a string
+// reads a string from [slot]
 //
 // the memory for the returned string is owned by Wren. you can inspect it
-// while in your foreign function, but cannot keep a pointer to it after the
+// while in your foreign method, but cannot keep a pointer to it after the
 // function returns, since the garbage collector may reclaim it
-const char* wrenGetArgumentString(WrenVM& vm, int index);
+//
+// it is an error to call this if the slot does not contain a string
+const char* wrenGetSlotString(WrenVM& vm, int slot);
 
-// creates a handle for the value passed as an argument to a foreign to a
-// foreign call.
+// creates a handle for the value stored in [slot]
 //
 // this will prevent the object that is referred to from being garbage collected
 // until the handle is released by calling [wrenReleaseValue()]
-WrenValue* wrenGetArgumentValue(WrenVM& vm, int index);
+WrenValue* wrenGetSlotValue(WrenVM& vm, int slot);
 
-// reads a foreign object argument for a foreign call and returns a pointer to
-// the foreign data stored with it, returns `nullptr` if the argument is not a
-// foreign object
-void* wrenGetArgumentForeign(WrenVM& vm, int index);
+// reads a foreign object from [slot] and returns a pointer to the foreign data
+// stored with it
+//
+// it is an error to call this if the slot does not contain an instance of a
+// foreign class
+void* wrenGetSlotForeign(WrenVM& vm, int slot);
 
 // the following functions provide the return value for a foreign method back
 // to Wren, like above they may only be called during a foreign call invoked

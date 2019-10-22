@@ -38,7 +38,7 @@ namespace wrencc {
 namespace io {
   namespace details {
     void write_string_impl(WrenVM& vm) {
-      const char* s = wrenGetArgumentString(vm, 1);
+      const char* s = wrenGetSlotString(vm, 1);
       std::cout << s;
     }
 

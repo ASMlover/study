@@ -158,7 +158,7 @@ class WrenVM final : private UnCopyable {
   bool check_arity(const Value& value, int argc);
   Value validate_superclass(
       const Value& name, const Value& supercls_val, int num_fields);
-  void validate_foreign_argument(int index) const;
+  void validate_foreign_slot(int slot) const;
   void bind_foreign_class(ClassObject* cls, ModuleObject* module);
   void create_class(int num_fields, ModuleObject* module);
   void create_foreign(FiberObject* fiber, Value* stack);
@@ -262,12 +262,12 @@ public:
   void* allocate_foreign(sz_t size);
   void finalize_foreign(ForeignObject* foreign);
 
-  int get_argument_count(void) const;
-  bool get_argument_bool(int index) const;
-  double get_argument_double(int index) const;
-  const char* get_argument_string(int index) const;
-  WrenValue* get_argument_value(int index);
-  void* get_argument_foreign(int index) const;
+  int get_slot_count(void) const;
+  bool get_slot_bool(int slot) const;
+  double get_slot_double(int slot) const;
+  const char* get_slot_string(int slot) const;
+  WrenValue* get_slot_value(int slot);
+  void* get_slot_foreign(int slot) const;
   void return_bool(bool value);
   void return_double(double value);
   void return_string(const str_t& text);
