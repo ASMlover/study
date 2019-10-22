@@ -225,7 +225,7 @@ struct ClassCompiler {
   // bookkeeping information for compiling a class definition
 
   // symbol table for the fields of the class
-  SymbolTable* fields{};
+  SymbolTable fields{};
 
   // true if the class being compiled is a foreign class
   bool is_foreign{};
@@ -237,13 +237,6 @@ struct ClassCompiler {
   Signature* signature{};
 
   ClassCompiler(void) noexcept {}
-  ClassCompiler(SymbolTable* arg_fields,
-      bool arg_foreign, bool arg_static, Signature* arg_signature) noexcept
-    : fields(arg_fields)
-    , is_foreign(arg_foreign)
-    , in_static(arg_static)
-    , signature(arg_signature) {
-  }
 };
 
 // the stack effect of each opcode, the index in the array is the opcode, and
@@ -1018,7 +1011,7 @@ class Compiler : private UnCopyable {
     }
     else {
       // look up the field, or implicitlt define it
-      field = enclosing_class->fields->ensure(parser_.prev().as_string());
+      field = enclosing_class->fields.ensure(parser_.prev().as_string());
 
       if (field >= MAX_FIELDS)
         error("a class can only have %d fields", MAX_FIELDS);
@@ -1192,8 +1185,6 @@ class Compiler : private UnCopyable {
     // them to slots starting at zero. when the method is bound to the close
     // the bytecode will be adjusted by [bind_method] to take inherited fields
     // into account.
-    SymbolTable fields;
-    class_compiler.fields = &fields;
     enclosing_class_ = &class_compiler;
 
     consume(TokenKind::TK_LBRACE, "expect `{` after class declaration");
@@ -1201,7 +1192,7 @@ class Compiler : private UnCopyable {
     match_line();
 
     while (!match(TokenKind::TK_RBRACE)) {
-      if (!method(&class_compiler, slot))
+      if (!method(slot))
         break;
 
       // don't require a newline after the last definition
@@ -1213,7 +1204,7 @@ class Compiler : private UnCopyable {
 
     // update the class with the number of fields
     if (!is_foreign)
-      bytecode_[num_fields_instruction] = fields.count();
+      bytecode_[num_fields_instruction] = class_compiler.fields.count();
 
     enclosing_class_ = nullptr;
     pop_scope();
@@ -1614,14 +1605,14 @@ class Compiler : private UnCopyable {
     emit_words(instruction, method_symbol);
   }
 
-  bool method(ClassCompiler* class_compiler, int class_slot) {
+  bool method(int class_slot) {
     // compiles a method definition inside a class body
     //
     // returns `true` if compiled successfully or `false` if the method
     // couldn't be parsed
 
     bool is_foreign = match(TokenKind::KW_FOREIGN);
-    class_compiler->in_static = match(TokenKind::KW_STATIC);
+    enclosing_class_->in_static = match(TokenKind::KW_STATIC);
 
     SignatureFn signature_fn = get_rule(parser_.curr().kind()).method;
     parser_.advance();
@@ -1633,14 +1624,14 @@ class Compiler : private UnCopyable {
 
     // build the method signature
     Signature signature = signature_from_token(SignatureType::GETTER);
-    class_compiler->signature = &signature;
+    enclosing_class_->signature = &signature;
 
     Compiler method_compiler(parser_, this);
     method_compiler.init_compiler(false);
 
     // compile the method signature
     signature_fn(&method_compiler, signature);
-    if (class_compiler->in_static && signature.type == SignatureType::INITIALIZER)
+    if (enclosing_class_->in_static && signature.type == SignatureType::INITIALIZER)
       error("a constructor cannot be static");
 
     // include the full signature in debug messages in stack traces
@@ -1659,7 +1650,7 @@ class Compiler : private UnCopyable {
     // define the method for a constructor, this defines the instance
     // initializer method
     int method_symbol = signature_symbol(signature);
-    define_method(class_slot, class_compiler->in_static, method_symbol);
+    define_method(class_slot, enclosing_class_->in_static, method_symbol);
     if (signature.type == SignatureType::INITIALIZER) {
       // also define a matching constructor method on the metaclass
       signature.set_type(SignatureType::METHOD);
