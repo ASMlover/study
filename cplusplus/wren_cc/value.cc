@@ -905,9 +905,8 @@ ClosureObject* ClosureObject::make_closure(WrenVM& vm, FunctionObject* fn) {
   return o;
 }
 
-FiberObject::FiberObject(ClassObject* cls, BaseObject* fn, u16_t id) noexcept
-  : BaseObject(ObjType::FIBER, cls)
-  , id_(id) {
+FiberObject::FiberObject(ClassObject* cls, BaseObject* fn) noexcept
+  : BaseObject(ObjType::FIBER, cls) {
   stack_capacity_ = Xt::power_of_2ceil(upwrap_closure(fn)->max_slots());
   stack_.reserve(stack_capacity_);
   frames_.reserve(kFrameCapacity);
@@ -1045,12 +1044,8 @@ void FiberObject::gc_blacken(WrenVM& vm) {
   vm.gray_value(error_);
 }
 
-u32_t FiberObject::hash(void) const {
-  return id_;
-}
-
 FiberObject* FiberObject::make_fiber(WrenVM& vm, BaseObject* fn) {
-  auto* o = new FiberObject(vm.fiber_cls(), fn, vm.gen_fiberid());
+  auto* o = new FiberObject(vm.fiber_cls(), fn);
   vm.append_object(o);
   return o;
 }

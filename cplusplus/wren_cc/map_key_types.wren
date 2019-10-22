@@ -8,8 +8,7 @@ var map = {
   1.2: "1 point 2",
   List: "list class",
   "nil": "string value",
-  (1..3): "1 to 3",
-  fiber: "fiber"
+  (1..3): "1 to 3"
 }
 
 IO.print(map[nil]) // expect: nil value
@@ -20,9 +19,8 @@ IO.print(map[1.2]) // expect: 1 point 2
 IO.print(map[List]) // expect: list class
 IO.print(map["nil"]) // expect: string value
 IO.print(map[1..3]) // expect: 1 to 3
-IO.print(map[fiber]) // expect: fiber
 
-IO.print(map.len) // expect: 9
+IO.print(map.len) // expect: 8
 
 map[nil] = "new nil value"
 map[!false] = "new true value"
@@ -42,4 +40,4 @@ IO.print(map[List]) // expect: new list class
 IO.print(map["nil"]) // expect: new string value
 IO.print(map[1..3]) // expect: new 1 to 3
 
-IO.print(map.len) // expect: 9
+IO.print(map.len) // expect: 8

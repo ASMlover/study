@@ -151,11 +151,11 @@ bool validate_key(WrenVM& vm, const Value& arg) {
   // true if it is, if not, reports an error and returns false
 
   if (arg.is_boolean() || arg.is_class() || arg.is_nil() ||
-      arg.is_numeric() || arg.is_range() || arg.is_string() || arg.is_fiber())
+      arg.is_numeric() || arg.is_range() || arg.is_string())
     return true;
 
   vm.fiber()->set_error(
-      StringObject::make_string(vm, "key must be a value type or fiber"));
+      StringObject::make_string(vm, "key must be a value type"));
   return false;
 }
 
