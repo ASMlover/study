@@ -81,26 +81,6 @@ int wrenGetSlotCount(WrenVM& vm);
 // it is an error to call this from a finalizer
 void wrenEnsureSlots(WrenVM& vm, int num_slots);
 
-// the following functions read one of the arguments passed to a foreign call.
-// they may only be called while within a function provided to
-// [wrenDefineMethod] or [wrenDefineStaticMethod] that Wren has invoked.
-//
-// they retreive the argument at a given index which ranges from 0 to the number
-// of parameters the method expects, the zeroth parameter is used for the
-// receiver of the method, for example, given a foreign method `foo` on String
-// invoked like:
-//
-//    "receiver".foo("one", "two", "three")
-//
-// the foreign function will be able to access the arguments like so:
-//
-//    0: "receiver"
-//    1: "one"
-//    2: "two"
-//    3: "three"
-//
-// it is an error to pass an invalid argument index
-
 // reads a boolean value from [slot]
 //
 // it is an error to call this if the slot does not contain a boolean value

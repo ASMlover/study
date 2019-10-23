@@ -907,7 +907,9 @@ ClosureObject* ClosureObject::make_closure(WrenVM& vm, FunctionObject* fn) {
 
 FiberObject::FiberObject(ClassObject* cls, BaseObject* fn) noexcept
   : BaseObject(ObjType::FIBER, cls) {
-  stack_capacity_ = Xt::power_of_2ceil(upwrap_closure(fn)->max_slots());
+  // add one slot for the unused implicit receiver slot that the compiler
+  // assumes all functions have
+  stack_capacity_ = Xt::power_of_2ceil(upwrap_closure(fn)->max_slots() + 1);
   stack_.reserve(stack_capacity_);
   frames_.reserve(kFrameCapacity);
 
