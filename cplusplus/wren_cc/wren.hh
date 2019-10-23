@@ -157,4 +157,9 @@ void wrenSetSlotNewList(WrenVM& vm, int slot);
 // at element, use `-1` for the index
 void wrenInsertInList(WrenVM& vm, int list_slot, int index, int element_slot);
 
+// looks up the top level variable with [name] in [module] and stores it in
+// [to_slot]
+void wrenGetVariable(WrenVM& vm,
+    const str_t& module, const str_t& name, int to_slot);
+
 }

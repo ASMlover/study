@@ -274,6 +274,7 @@ public:
 
   void set_slot(int slot, const Value& value);
   void insert_into_list(int list_slot, int index, int element_slot);
+  void get_variable(const str_t& module, const str_t& name, int slot);
 };
 
 class PinnedGuard final : private UnCopyable {

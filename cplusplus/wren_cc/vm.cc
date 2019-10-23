@@ -1441,6 +1441,26 @@ void WrenVM::insert_into_list(int list_slot, int index, int element_slot) {
   list->insert(index, foreign_stack_start_[element_slot]);
 }
 
+void WrenVM::get_variable(const str_t& module, const str_t& name, int slot) {
+  ASSERT(!module.empty(), "module cannot be empty");
+  ASSERT(!name.empty(), "variable name cannot be empty");
+  validate_foreign_slot(slot);
+
+  StringObject* module_name = StringObject::make_string(*this, module);
+  ModuleObject* module_obj;
+  {
+    PinnedGuard guard(*this, module_name);
+
+    module_obj = get_module(module_name);
+    ASSERT(module_obj != nullptr, "could not find module");
+  }
+
+  int variable_slot = module_obj->find_variable(name);
+  ASSERT(variable_slot != -1, "could not find variable");
+
+  set_slot(slot, module_obj->get_variable(variable_slot));
+}
+
 void wrenCollectGarbage(WrenVM& vm) {
   vm.collect();
 }
@@ -1512,6 +1532,11 @@ void wrenSetSlotNewList(WrenVM& vm, int slot) {
 
 void wrenInsertInList(WrenVM& vm, int list_slot, int index, int element_slot) {
   vm.insert_into_list(list_slot, list_slot, element_slot);
+}
+
+void wrenGetVariable(
+    WrenVM& vm, const str_t& module, const str_t& name, int to_slot) {
+  vm.get_variable(module, name, to_slot);
 }
 
 }
