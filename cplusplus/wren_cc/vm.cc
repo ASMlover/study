@@ -1308,7 +1308,7 @@ WrenValue* WrenVM::capture_value(const Value& value) {
 }
 
 void WrenVM::release_value(WrenValue* value) {
-  ASSERT(value != nullptr, "null value");
+  ASSERT(value != nullptr, "value cannot be nullptr");
 
   // update the VM's head pointer if we're releasing the first handle
   if (value_handles_ == nullptr)
@@ -1443,6 +1443,13 @@ void WrenVM::insert_into_list(int list_slot, int index, int element_slot) {
 
 void wrenCollectGarbage(WrenVM& vm) {
   vm.collect();
+}
+
+double wrenGetValueAsDouble(WrenVM& vm, WrenValue* value) {
+  ASSERT(value != nullptr, "value cannot be nullptr");
+  ASSERT(value->value.is_numeric(), "value must be a numeric");
+
+  return value->value.as_numeric();
 }
 
 void wrenReleaseValue(WrenVM& vm, WrenValue* value) {
