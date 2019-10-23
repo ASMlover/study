@@ -863,7 +863,7 @@ class Compiler : private UnCopyable {
         break;
 
       // the key
-      parse_precedence(false, Precedence::PRIMARY);
+      parse_precedence(false, Precedence::UNARY);
       consume(TokenKind::TK_COLON, "expect `:` after map key");
       ignore_newlines();
 
