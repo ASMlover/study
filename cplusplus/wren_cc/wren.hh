@@ -134,23 +134,24 @@ void* wrenGetSlotForeign(WrenVM& vm, int slot);
 // of these once, it is an error to access any of the foreign calls arguments
 // after one of these has been called.
 
-// provides a boolean return value for a foreign call
-void wrenReturnBool(WrenVM& vm, bool value);
+// stores the boolean [value] in [slot]
+void wrenSetSlotBool(WrenVM& vm, int slot, bool value);
 
-// provides a numeric return value for a foreign call
-void wrenReturnDouble(WrenVM& vm, double value);
+// stores the numeric [value] in [slot]
+void wrenSetSlotDouble(WrenVM& vm, int slot, double value);
 
-// provides a string return value for a foreign call
+// stores nil in [slot]
+void wrenSetSlotNil(WrenVM& vm, int slot);
+
+// stores the string in [slot]
 //
-// the [text] will be copied to a new string within Wren's heap, so you can
-// free memory used by it after this is called, if [text] is non-empty, Wren
-// will copy that from [text]
-void wrenReturnString(WrenVM& vm, const str_t& text);
+// the [text] is copied to a new string within Wren's heap, so you can free
+// memory used by it after this is called.
+void wrenSetSlotString(WrenVM& vm, int slot, const str_t& text);
 
-// provides the return value for a foreign call
+// stores the value captured in [value] in [slot]
 //
-// this uses the value referred to by the handle as the return value, but it
-// does not release the handle
-void wrenReturnValue(WrenVM& vm, WrenValue* value);
+// this does not release the handle for the value
+void wrenSetSlotValue(WrenVM& vm, int slot, WrenValue* value);
 
 }

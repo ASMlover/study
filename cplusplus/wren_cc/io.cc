@@ -45,16 +45,17 @@ namespace io {
     void read_impl(WrenVM& vm) {
       str_t buffer;
       if (std::getline(std::cin, buffer) && !buffer.empty())
-        wrenReturnString(vm, buffer);
+        wrenSetSlotString(vm, 0, buffer);
     }
 
     void clock_impl(WrenVM& vm) {
-      wrenReturnDouble(vm, std::chrono::duration_cast<std::chrono::milliseconds>(
+      wrenSetSlotDouble(vm, 0,
+          std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0);
     }
 
     void time_impl(WrenVM& vm) {
-      wrenReturnDouble(vm, Xt::as_type<double>(std::time(nullptr)));
+      wrenSetSlotDouble(vm, 0, Xt::as_type<double>(std::time(nullptr)));
     }
 
     inline void load_library(WrenVM& vm) {

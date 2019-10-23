@@ -47,12 +47,10 @@ namespace meta {
 
       // compile it
       FunctionObject* fn = compile(vm, module, wrenGetSlotString(vm, 1), false);
-      if (fn == nullptr)
-        return;
 
       // return the result, we can not use the public API for this since we
       // have a bare FunctionObject
-      vm.set_foreign_stack_start(fn);
+      vm.set_foreign_stack_asref(fn);
     }
 
     static WrenForeignFn bind_foreign(WrenVM& vm,

@@ -96,12 +96,12 @@ namespace random {
       result += Xt::as_type<double>(advance_state(*well) & ((1 << 21) - 1));
       result /= 9007199254740992.0;
 
-      wrenReturnDouble(vm, result);
+      wrenSetSlotDouble(vm, 0, result);
     }
 
     void random_int0(WrenVM& vm) {
       Well512* well = Xt::as_type<Well512*>(wrenGetSlotForeign(vm, 0));
-      wrenReturnDouble(vm, advance_state(*well));
+      wrenSetSlotDouble(vm, 0, advance_state(*well));
     }
 
     WrenForeignFn bind_foreign_method(WrenVM& vm,

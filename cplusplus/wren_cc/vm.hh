@@ -215,7 +215,7 @@ public:
   inline void set_fiber(FiberObject* fiber) { fiber_ = fiber; }
   inline void set_compiler(Compiler* compiler) { compiler_ = compiler; }
   inline LoadModuleFn get_load_fn(void) const { return load_module_fn_; }
-  inline Value* get_foreign_stack_start(void) const { return foreign_stack_start_; }
+  inline Value* get_foreign_stack(void) const { return foreign_stack_start_; }
   inline void set_load_fn(const LoadModuleFn& fn) { load_module_fn_ = fn; }
   inline void set_load_fn(LoadModuleFn&& fn) { load_module_fn_ = std::move(fn); }
   inline BindForeignMethodFn get_foreign_meth(void) const { return bind_foreign_meth_; }
@@ -236,8 +236,8 @@ public:
   int define_variable(ModuleObject* module, const str_t& name, const Value& value);
   void set_native(ClassObject* cls, const str_t& name, const PrimitiveFn& fn);
   const Value& find_variable(ModuleObject* module, const str_t& name) const;
-  void set_foreign_stack_start(const Value& value);
-  void set_foreign_stack_start(Value* value);
+  void set_foreign_stack_asref(const Value& value);
+  void set_foreign_stack_asptr(Value* value);
 
   void push_root(BaseObject* obj);
   void pop_root(void);
@@ -269,10 +269,8 @@ public:
   const char* get_slot_string(int slot) const;
   WrenValue* get_slot_value(int slot);
   void* get_slot_foreign(int slot) const;
-  void return_bool(bool value);
-  void return_double(double value);
-  void return_string(const str_t& text);
-  void return_value(WrenValue* value);
+
+  void set_slot(int slot, const Value& value);
 };
 
 class PinnedGuard final : private UnCopyable {

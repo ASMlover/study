@@ -935,8 +935,8 @@ void FiberObject::call_function(WrenVM& vm, BaseObject* fn, int argc) {
       for (UpvalueObject* uv = open_upvlaues_; uv != nullptr; uv = uv->next())
         uv->set_value(uv->value() + offset);
 
-      if (vm.get_foreign_stack_start() != nullptr)
-        vm.set_foreign_stack_start(vm.get_foreign_stack_start() + offset);
+      if (vm.get_foreign_stack() != nullptr)
+        vm.set_foreign_stack_asptr(vm.get_foreign_stack() + offset);
     }
   }
 
