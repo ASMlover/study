@@ -710,6 +710,7 @@ public:
     return v;
   }
 
+  void ensure_stack(WrenVM& vm, int needed);
   void call_function(WrenVM& vm, BaseObject* fn, int argc = 0);
   UpvalueObject* capture_upvalue(WrenVM& vm, int slot);
   void close_upvalue(void);

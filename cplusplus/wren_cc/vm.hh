@@ -159,6 +159,7 @@ class WrenVM final : private UnCopyable {
   Value validate_superclass(
       const Value& name, const Value& supercls_val, int num_fields);
   void validate_foreign_slot(int slot) const;
+  bool is_in_finalizer(void) const;
   void bind_foreign_class(ClassObject* cls, ModuleObject* module);
   void create_class(int num_fields, ModuleObject* module);
   void create_foreign(FiberObject* fiber, Value* stack);
@@ -264,6 +265,7 @@ public:
   void finalize_foreign(ForeignObject* foreign);
 
   int get_slot_count(void) const;
+  void ensure_slots(int num_slots);
   bool get_slot_bool(int slot) const;
   double get_slot_double(int slot) const;
   const char* get_slot_string(int slot) const;
@@ -271,6 +273,7 @@ public:
   void* get_slot_foreign(int slot) const;
 
   void set_slot(int slot, const Value& value);
+  void insert_into_list(int list_slot, int index, int element_slot);
 };
 
 class PinnedGuard final : private UnCopyable {

@@ -304,6 +304,12 @@ void WrenVM::validate_foreign_slot(int slot) const {
   ASSERT(slot < get_slot_count(), "not that many slots");
 }
 
+bool WrenVM::is_in_finalizer(void) const {
+  return fiber_ == nullptr ||
+    foreign_stack_start_ < fiber_->values_at(0) ||
+    foreign_stack_start_ > fiber_->values_at_top();
+}
+
 void WrenVM::call_foreign(
     FiberObject* fiber, const WrenForeignFn& foreign, int argc) {
   foreign_stack_start_ = fiber->values_at(fiber->stack_size() - argc);
@@ -1360,15 +1366,23 @@ void WrenVM::finalize_foreign(ForeignObject* foreign) {
 int WrenVM::get_slot_count(void) const {
   ASSERT(foreign_stack_start_ != nullptr, "must be in foreign call");
 
-  // if no fiber is executing or the foreign stack is not in it, we must be
-  // in a finalizer, in which case the `stack` just has one object, the object
-  // being finalized
-  if (fiber_ == nullptr ||
-      foreign_stack_start_ < fiber_->values_at(0) ||
-      foreign_stack_start_ > fiber_->values_at_top()) {
+  if (is_in_finalizer())
     return 1;
-  }
   return Xt::as_type<int>(fiber_->values_at_top() - foreign_stack_start_);
+}
+
+void WrenVM::ensure_slots(int num_slots) {
+  ASSERT(!is_in_finalizer(), "cannot grow the stack in a finalizer");
+
+  int current_size = Xt::as_type<int>(
+      fiber_->values_at_top() - foreign_stack_start_);
+  if (current_size >= num_slots)
+    return;
+
+  // grow the stack if needed
+  int needed = num_slots + Xt::as_type<int>(
+      foreign_stack_start_ - fiber_->values_at(0));
+  fiber_->ensure_stack(*this, needed);
 }
 
 bool WrenVM::get_slot_bool(int slot) const {
@@ -1411,6 +1425,20 @@ void WrenVM::set_slot(int slot, const Value& value) {
 
   validate_foreign_slot(slot);
   foreign_stack_start_[slot] = value;
+}
+
+void WrenVM::insert_into_list(int list_slot, int index, int element_slot) {
+  validate_foreign_slot(list_slot);
+  validate_foreign_slot(element_slot);
+  ASSERT(foreign_stack_start_[list_slot].is_list(), "must insert into a list");
+
+  ListObject* list = foreign_stack_start_[list_slot].as_list();
+  // negative indices count from the end
+  if (index < 0)
+    index = list->count() + 1 + index;
+  ASSERT(index <= list->count(), "index out of bounds");
+
+  list->insert(index, foreign_stack_start_[element_slot]);
 }
 
 void wrenCollectGarbage(WrenVM& vm) {
@@ -1469,6 +1497,14 @@ void wrenSetSlotString(WrenVM& vm, int slot, const str_t& text) {
 void wrenSetSlotValue(WrenVM& vm, int slot, WrenValue* value) {
   ASSERT(value != nullptr, "value cannot be nullptr");
   vm.set_slot(slot, value->value);
+}
+
+void wrenSetSlotNewList(WrenVM& vm, int slot) {
+  vm.set_slot(slot, ListObject::make_list(vm));
+}
+
+void wrenInsertInList(WrenVM& vm, int list_slot, int index, int element_slot) {
+  vm.insert_into_list(list_slot, list_slot, element_slot);
 }
 
 }

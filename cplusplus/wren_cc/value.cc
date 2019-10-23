@@ -915,12 +915,7 @@ FiberObject::FiberObject(ClassObject* cls, BaseObject* fn) noexcept
   frames_.push_back(CallFrame(ip, fn, 0));
 }
 
-void FiberObject::call_function(WrenVM& vm, BaseObject* fn, int argc) {
-  // grow the call frames if needed (use vector auto)
-
-  // grow the stack capacity if needed
-  int stack_count = Xt::as_type<int>(stack_.size());
-  int needed = stack_count + upwrap_closure(fn)->max_slots();
+void FiberObject::ensure_stack(WrenVM& vm, int needed) {
   if (stack_capacity_ < needed) {
     stack_capacity_ = Xt::power_of_2ceil(needed);
     const Value* old_stack = stack_.data();
@@ -939,6 +934,15 @@ void FiberObject::call_function(WrenVM& vm, BaseObject* fn, int argc) {
         vm.set_foreign_stack_asptr(vm.get_foreign_stack() + offset);
     }
   }
+}
+
+void FiberObject::call_function(WrenVM& vm, BaseObject* fn, int argc) {
+  // grow the call frames if needed (use vector auto)
+
+  // grow the stack capacity if needed
+  int stack_count = Xt::as_type<int>(stack_.size());
+  int needed = stack_count + upwrap_closure(fn)->max_slots();
+  ensure_stack(vm, needed);
 
   const u8_t* ip = upwrap_closure(fn)->codes();
   frames_.push_back(CallFrame(ip, fn, stack_size() - argc));
