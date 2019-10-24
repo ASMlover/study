@@ -37,25 +37,25 @@ namespace wrencc {
 
 namespace io {
   namespace details {
-    void write_string_impl(WrenVM& vm) {
-      const char* s = wrenGetSlotString(vm, 1);
+    void write_string_impl(WrenVM* vm) {
+      const char* s = wrenGetSlotString(*vm, 1);
       std::cout << s;
     }
 
-    void read_impl(WrenVM& vm) {
+    void read_impl(WrenVM* vm) {
       str_t buffer;
       if (std::getline(std::cin, buffer) && !buffer.empty())
-        wrenSetSlotString(vm, 0, buffer);
+        wrenSetSlotString(*vm, 0, buffer);
     }
 
-    void clock_impl(WrenVM& vm) {
-      wrenSetSlotDouble(vm, 0,
+    void clock_impl(WrenVM* vm) {
+      wrenSetSlotDouble(*vm, 0,
           std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0);
     }
 
-    void time_impl(WrenVM& vm) {
-      wrenSetSlotDouble(vm, 0, Xt::as_type<double>(std::time(nullptr)));
+    void time_impl(WrenVM* vm) {
+      wrenSetSlotDouble(*vm, 0, Xt::as_type<double>(std::time(nullptr)));
     }
 
     inline void load_library(WrenVM& vm) {

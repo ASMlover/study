@@ -60,48 +60,48 @@ namespace random {
       return well.state[well.index];
     }
 
-    void random_allocate(WrenVM& vm) {
+    void random_allocate(WrenVM* vm) {
       Well512* well = Xt::as_type<Well512*>(
-          wrenAllocateForeign(vm, sizeof(Well512)));
+          wrenAllocateForeign(*vm, sizeof(Well512)));
       well->index = 0;
     }
 
-    void random_seed0(WrenVM& vm) {
-      Well512* well = Xt::as_type<Well512*>(wrenGetSlotForeign(vm, 0));
+    void random_seed0(WrenVM* vm) {
+      Well512* well = Xt::as_type<Well512*>(wrenGetSlotForeign(*vm, 0));
 
       std::srand(Xt::as_type<u32_t>(std::time(nullptr)));
       for (int i = 0; i < 16; ++i)
         well->state[i] = std::rand();
     }
 
-    void random_seed1(WrenVM& vm) {
-      Well512* well = Xt::as_type<Well512*>(wrenGetSlotForeign(vm, 0));
+    void random_seed1(WrenVM* vm) {
+      Well512* well = Xt::as_type<Well512*>(wrenGetSlotForeign(*vm, 0));
 
-      std::srand(Xt::as_type<u32_t>(wrenGetSlotDouble(vm, 1)));
+      std::srand(Xt::as_type<u32_t>(wrenGetSlotDouble(*vm, 1)));
       for (int i = 0; i < 16; ++i)
         well->state[i] = std::rand();
     }
 
-    void random_seed16(WrenVM& vm) {
-      Well512* well = Xt::as_type<Well512*>(wrenGetSlotForeign(vm, 0));
+    void random_seed16(WrenVM* vm) {
+      Well512* well = Xt::as_type<Well512*>(wrenGetSlotForeign(*vm, 0));
 
       for (int i = 0; i < 16; ++i)
-        well->state[i] = Xt::as_type<u32_t>(wrenGetSlotDouble(vm, i + 1));
+        well->state[i] = Xt::as_type<u32_t>(wrenGetSlotDouble(*vm, i + 1));
     }
 
-    void random_float(WrenVM& vm) {
-      Well512* well = Xt::as_type<Well512*>(wrenGetSlotForeign(vm, 0));
+    void random_float(WrenVM* vm) {
+      Well512* well = Xt::as_type<Well512*>(wrenGetSlotForeign(*vm, 0));
 
       double result = Xt::as_type<double>(advance_state(*well)) * (1 << 21);
       result += Xt::as_type<double>(advance_state(*well) & ((1 << 21) - 1));
       result /= 9007199254740992.0;
 
-      wrenSetSlotDouble(vm, 0, result);
+      wrenSetSlotDouble(*vm, 0, result);
     }
 
-    void random_int0(WrenVM& vm) {
-      Well512* well = Xt::as_type<Well512*>(wrenGetSlotForeign(vm, 0));
-      wrenSetSlotDouble(vm, 0, advance_state(*well));
+    void random_int0(WrenVM* vm) {
+      Well512* well = Xt::as_type<Well512*>(wrenGetSlotForeign(*vm, 0));
+      wrenSetSlotDouble(*vm, 0, advance_state(*well));
     }
 
     WrenForeignFn bind_foreign_method(WrenVM& vm,

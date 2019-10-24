@@ -34,7 +34,7 @@ namespace wrencc {
 class WrenVM;
 struct WrenValue;
 
-using WrenForeignFn = std::function<void (WrenVM&)>;
+using WrenForeignFn = std::function<void (WrenVM*)>;
 
 enum class InterpretRet {
   SUCCESS,

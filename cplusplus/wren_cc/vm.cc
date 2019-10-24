@@ -308,7 +308,7 @@ void WrenVM::call_foreign(
     FiberObject* fiber, const WrenForeignFn& foreign, int argc) {
   api_stack_ = fiber->values_at(fiber->stack_size() - argc);
 
-  foreign(*this);
+  foreign(this);
 
   // discard the stack slots for the arguments and temporaries but leave one
   // for the result
@@ -381,7 +381,7 @@ void WrenVM::create_foreign(FiberObject* fiber, Value* stack) {
   // pass the constructor arguments to the allocator as well
   api_stack_ = stack;
 
-  method.foreign()(*this);
+  method.foreign()(this);
 }
 
 InterpretRet WrenVM::interpret(FiberObject* fiber) {
@@ -1357,7 +1357,7 @@ void WrenVM::finalize_foreign(ForeignObject* foreign) {
   fiber_ = finalizer_fiber_;
   api_stack_ = finalizer_fiber_->values_at(0);
 
-  method.foreign()(*this);
+  method.foreign()(this);
 
   fiber_ = prev_fiber;
   api_stack_ = nullptr;

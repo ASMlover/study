@@ -35,22 +35,22 @@ namespace wrencc {
 
 namespace meta {
   namespace details {
-    static void meta_compile(WrenVM& vm) {
+    static void meta_compile(WrenVM* vm) {
       // evaluate the code in the module where the calling function was defined,
       // that's one stack frame back from the top since the top-most frame is
       // the helper eval() methid in Meta itself
 
-      Value calling_fn(vm.fiber()->peek_frame(1).fn);
+      Value calling_fn(vm->fiber()->peek_frame(1).fn);
       ModuleObject* module = calling_fn.is_function()
         ? calling_fn.as_function()->module()
         : calling_fn.as_closure()->fn()->module();
 
       // compile it
-      FunctionObject* fn = compile(vm, module, wrenGetSlotString(vm, 1), false);
+      FunctionObject* fn = compile(*vm, module, wrenGetSlotString(*vm, 1), false);
 
       // return the result, we can not use the public API for this since we
       // have a bare FunctionObject
-      vm.set_api_stack_asref(fn);
+      vm->set_api_stack_asref(fn);
     }
 
     static WrenForeignFn bind_foreign(WrenVM& vm,
