@@ -909,12 +909,12 @@ FiberObject::FiberObject(ClassObject* cls, BaseObject* fn) noexcept
   : BaseObject(ObjType::FIBER, cls) {
   // add one slot for the unused implicit receiver slot that the compiler
   // assumes all functions have
-  stack_capacity_ = Xt::power_of_2ceil(upwrap_closure(fn)->max_slots() + 1);
+  stack_capacity_ = fn == nullptr
+    ? 1 : Xt::power_of_2ceil(upwrap_closure(fn)->max_slots() + 1);
   stack_.reserve(stack_capacity_);
   frames_.reserve(kFrameCapacity);
 
-  const u8_t* ip = upwrap_closure(fn)->codes();
-  frames_.push_back(CallFrame(ip, fn, 0));
+  reset_fiber(fn);
 }
 
 void FiberObject::ensure_stack(WrenVM& vm, int needed) {
@@ -1025,8 +1025,11 @@ void FiberObject::reset_fiber(BaseObject* fn) {
   error_ = nullptr;
   caller_is_trying_ = false;
 
-  const u8_t* ip = upwrap_closure(fn)->codes();
-  frames_.push_back(CallFrame(ip, fn, 0));
+  if (fn != nullptr) {
+    // initialize the first call frame
+    const u8_t* ip = upwrap_closure(fn)->codes();
+    frames_.push_back(CallFrame(ip, fn, 0));
+  }
 }
 
 str_t FiberObject::stringify(void) const {

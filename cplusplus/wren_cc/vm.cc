@@ -39,11 +39,12 @@ namespace wrencc {
 
 WrenVM::WrenVM(void) noexcept {
   modules_ = MapObject::make_map(*this);
+  gray_objects_.reserve(gray_capacity_);
 
   core::initialize(*this);
   io::load_library(*this);
 
-  gray_objects_.reserve(gray_capacity_);
+  finalizer_fiber_ = FiberObject::make_fiber(*this, nullptr);
 
   // load aux modules
   meta::load_aux_module(*this);
@@ -302,12 +303,6 @@ void WrenVM::validate_foreign_slot(int slot) const {
   ASSERT(foreign_stack_start_ != nullptr, "must be in foreign call");
   ASSERT(slot >= 0, "slot cannot be negative");
   ASSERT(slot < get_slot_count(), "not that many slots");
-}
-
-bool WrenVM::is_in_finalizer(void) const {
-  return fiber_ == nullptr ||
-    foreign_stack_start_ < fiber_->values_at(0) ||
-    foreign_stack_start_ > fiber_->values_at_top();
 }
 
 void WrenVM::call_foreign(
@@ -1102,8 +1097,9 @@ void WrenVM::collect(void) {
   for (auto* o : temp_roots_)
     gray_object(o);
 
-  // the current fiber
+  // the rooted fibers
   gray_object(fiber_);
+  gray_object(finalizer_fiber_);
 
   // the value handles
   for (WrenValue* v = value_handles_; v != nullptr; v = v->next)
@@ -1357,22 +1353,25 @@ void WrenVM::finalize_foreign(ForeignObject* foreign) {
   ASSERT(method.get_type() == MethodType::FOREIGN, "finalizer should be foreign");
 
   // pass the constructor arguments to the allocator as well
-  Value slot(foreign);
-  foreign_stack_start_ = &slot;
+  finalizer_fiber_->push(foreign);
+  FiberObject* prev_fiber = fiber_;
+  fiber_ = finalizer_fiber_;
+  foreign_stack_start_ = finalizer_fiber_->values_at(0);
 
   method.foreign()(*this);
+
+  fiber_ = prev_fiber;
+  foreign_stack_start_ = nullptr;
+  finalizer_fiber_->reset_fiber(nullptr);
 }
 
 int WrenVM::get_slot_count(void) const {
   ASSERT(foreign_stack_start_ != nullptr, "must be in foreign call");
-
-  if (is_in_finalizer())
-    return 1;
   return Xt::as_type<int>(fiber_->values_at_top() - foreign_stack_start_);
 }
 
 void WrenVM::ensure_slots(int num_slots) {
-  ASSERT(!is_in_finalizer(), "cannot grow the stack in a finalizer");
+  ASSERT(fiber_ != finalizer_fiber_, "cannot grow the stack in a finalizer");
 
   int current_size = Xt::as_type<int>(
       fiber_->values_at_top() - foreign_stack_start_);
