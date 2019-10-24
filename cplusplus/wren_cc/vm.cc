@@ -119,12 +119,12 @@ const Value& WrenVM::find_variable(
   return module->get_variable(symbol);
 }
 
-void WrenVM::set_foreign_stack_asref(const Value& value) {
-  *foreign_stack_start_ = value;
+void WrenVM::set_api_stack_asref(const Value& value) {
+  *api_stack_ = value;
 }
 
-void WrenVM::set_foreign_stack_asptr(Value* value) {
-  foreign_stack_start_ = value;
+void WrenVM::set_api_stack_asptr(Value* value) {
+  api_stack_ = value;
 }
 
 void WrenVM::push_root(BaseObject* obj) {
@@ -297,24 +297,23 @@ Value WrenVM::validate_superclass(
   return nullptr;
 }
 
-void WrenVM::validate_foreign_slot(int slot) const {
-  // ensures that [slot] is a valid index into a foreign method's stack of slots
+void WrenVM::validate_api_slot(int slot) const {
+  // ensures that [slot] is a valid index into the API's stack of slots
 
-  ASSERT(foreign_stack_start_ != nullptr, "must be in foreign call");
   ASSERT(slot >= 0, "slot cannot be negative");
   ASSERT(slot < get_slot_count(), "not that many slots");
 }
 
 void WrenVM::call_foreign(
     FiberObject* fiber, const WrenForeignFn& foreign, int argc) {
-  foreign_stack_start_ = fiber->values_at(fiber->stack_size() - argc);
+  api_stack_ = fiber->values_at(fiber->stack_size() - argc);
 
   foreign(*this);
 
   // discard the stack slots for the arguments and temporaries but leave one
   // for the result
   fiber->resize_stack(fiber->stack_size() - (argc - 1));
-  foreign_stack_start_ = nullptr;
+  api_stack_ = nullptr;
 }
 
 void WrenVM::bind_foreign_class(ClassObject* cls, ModuleObject* module) {
@@ -380,7 +379,7 @@ void WrenVM::create_foreign(FiberObject* fiber, Value* stack) {
   ASSERT(method.get_type() == MethodType::FOREIGN, "allocator should be foreign");
 
   // pass the constructor arguments to the allocator as well
-  foreign_stack_start_ = stack;
+  api_stack_ = stack;
 
   method.foreign()(*this);
 }
@@ -1323,11 +1322,11 @@ void WrenVM::release_value(WrenValue* value) {
 }
 
 void* WrenVM::allocate_foreign(sz_t size) {
-  ASSERT(foreign_stack_start_ != nullptr, "must be in foreign call");
+  ASSERT(api_stack_ != nullptr, "must be in foreign call");
 
-  ClassObject* cls = foreign_stack_start_[0].as_class();
+  ClassObject* cls = api_stack_[0].as_class();
   ForeignObject* foreign = ForeignObject::make_foreign(*this, cls, size);
-  *foreign_stack_start_ = foreign;
+  api_stack_[0] = foreign;
 
   return foreign->data();
 }
@@ -1356,65 +1355,69 @@ void WrenVM::finalize_foreign(ForeignObject* foreign) {
   finalizer_fiber_->push(foreign);
   FiberObject* prev_fiber = fiber_;
   fiber_ = finalizer_fiber_;
-  foreign_stack_start_ = finalizer_fiber_->values_at(0);
+  api_stack_ = finalizer_fiber_->values_at(0);
 
   method.foreign()(*this);
 
   fiber_ = prev_fiber;
-  foreign_stack_start_ = nullptr;
+  api_stack_ = nullptr;
   finalizer_fiber_->reset_fiber(nullptr);
 }
 
 int WrenVM::get_slot_count(void) const {
-  ASSERT(foreign_stack_start_ != nullptr, "must be in foreign call");
-  return Xt::as_type<int>(fiber_->values_at_top() - foreign_stack_start_);
+  if (api_stack_ == nullptr)
+    return 0;
+  return Xt::as_type<int>(fiber_->values_at_top() - api_stack_);
 }
 
 void WrenVM::ensure_slots(int num_slots) {
   ASSERT(fiber_ != finalizer_fiber_, "cannot grow the stack in a finalizer");
 
-  int current_size = Xt::as_type<int>(
-      fiber_->values_at_top() - foreign_stack_start_);
+  // if we donot have a fiber accessible, create one for the API to use
+  if (fiber_ == nullptr && api_stack_ == nullptr) {
+    fiber_ = FiberObject::make_fiber(*this, nullptr);
+    api_stack_ = fiber_->values_at(0);
+  }
+  int current_size = Xt::as_type<int>(fiber_->values_at_top() - api_stack_);
   if (current_size >= num_slots)
     return;
 
   // grow the stack if needed
-  int needed = num_slots + Xt::as_type<int>(
-      foreign_stack_start_ - fiber_->values_at(0));
+  int needed = num_slots + Xt::as_type<int>(api_stack_ - fiber_->values_at(0));
   fiber_->ensure_stack(*this, needed);
 }
 
 bool WrenVM::get_slot_bool(int slot) const {
-  validate_foreign_slot(slot);
+  validate_api_slot(slot);
 
-  ASSERT(foreign_stack_start_[slot].is_boolean(), "slot must hold a boolean");
-  return foreign_stack_start_[slot].as_boolean();
+  ASSERT(api_stack_[slot].is_boolean(), "slot must hold a boolean");
+  return api_stack_[slot].as_boolean();
 }
 
 double WrenVM::get_slot_double(int slot) const {
-  validate_foreign_slot(slot);
+  validate_api_slot(slot);
 
-  ASSERT(foreign_stack_start_[slot].is_numeric(), "slot must hold a numeric");
-  return foreign_stack_start_[slot].as_numeric();
+  ASSERT(api_stack_[slot].is_numeric(), "slot must hold a numeric");
+  return api_stack_[slot].as_numeric();
 }
 
 const char* WrenVM::get_slot_string(int slot) const {
-  validate_foreign_slot(slot);
+  validate_api_slot(slot);
 
-  ASSERT(foreign_stack_start_[slot].is_string(), "slot must hold a string");
-  return foreign_stack_start_[slot].as_cstring();
+  ASSERT(api_stack_[slot].is_string(), "slot must hold a string");
+  return api_stack_[slot].as_cstring();
 }
 
 WrenValue* WrenVM::get_slot_value(int slot) {
-  validate_foreign_slot(slot);
+  validate_api_slot(slot);
 
-  return capture_value(foreign_stack_start_[slot]);
+  return capture_value(api_stack_[slot]);
 }
 
 void* WrenVM::get_slot_foreign(int slot) const {
-  validate_foreign_slot(slot);
+  validate_api_slot(slot);
 
-  const Value& foreign_val = foreign_stack_start_[slot];
+  const Value& foreign_val = api_stack_[slot];
   ASSERT(foreign_val.is_foreign(), "slot must hold a foreign instance");
   return foreign_val.as_foreign()->data();
 }
@@ -1422,28 +1425,28 @@ void* WrenVM::get_slot_foreign(int slot) const {
 void WrenVM::set_slot(int slot, const Value& value) {
   // stores [value] in [slot] in the foreign call stack
 
-  validate_foreign_slot(slot);
-  foreign_stack_start_[slot] = value;
+  validate_api_slot(slot);
+  api_stack_[slot] = value;
 }
 
 void WrenVM::insert_into_list(int list_slot, int index, int element_slot) {
-  validate_foreign_slot(list_slot);
-  validate_foreign_slot(element_slot);
-  ASSERT(foreign_stack_start_[list_slot].is_list(), "must insert into a list");
+  validate_api_slot(list_slot);
+  validate_api_slot(element_slot);
+  ASSERT(api_stack_[list_slot].is_list(), "must insert into a list");
 
-  ListObject* list = foreign_stack_start_[list_slot].as_list();
+  ListObject* list = api_stack_[list_slot].as_list();
   // negative indices count from the end
   if (index < 0)
     index = list->count() + 1 + index;
   ASSERT(index <= list->count(), "index out of bounds");
 
-  list->insert(index, foreign_stack_start_[element_slot]);
+  list->insert(index, api_stack_[element_slot]);
 }
 
 void WrenVM::get_variable(const str_t& module, const str_t& name, int slot) {
   ASSERT(!module.empty(), "module cannot be empty");
   ASSERT(!name.empty(), "variable name cannot be empty");
-  validate_foreign_slot(slot);
+  validate_api_slot(slot);
 
   StringObject* module_name = StringObject::make_string(*this, module);
   ModuleObject* module_obj;

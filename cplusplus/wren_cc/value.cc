@@ -932,8 +932,8 @@ void FiberObject::ensure_stack(WrenVM& vm, int needed) {
       for (UpvalueObject* uv = open_upvlaues_; uv != nullptr; uv = uv->next())
         uv->set_value(uv->value() + offset);
 
-      if (vm.get_foreign_stack() != nullptr)
-        vm.set_foreign_stack_asptr(vm.get_foreign_stack() + offset);
+      if (vm.get_api_stack() != nullptr)
+        vm.set_api_stack_asptr(vm.get_api_stack() + offset);
     }
   }
 }

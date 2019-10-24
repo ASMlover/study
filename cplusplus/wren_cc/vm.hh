@@ -125,9 +125,14 @@ class WrenVM final : private UnCopyable {
   // most recently pushed object can be released
   std::vector<BaseObject*> temp_roots_;
 
-  // during a foreign function call, this will point to the first argument
-  // of the call on the fiber's stack
-  Value* foreign_stack_start_{};
+  // pointer to the bottom of the range of stack slots available for use from
+  // the C++ API, during a foreign method, this will be in the stack of the
+  // fiber that is executing a method
+  //
+  // if not in a foreign method, this is initially nullptr, if the user
+  // requests slots by calling wrenEnsureSlots(), a stack is created and this
+  // is initialized
+  Value* api_stack_{};
 
   // the function used to locate foreign functions
   BindForeignMethodFn bind_foreign_meth_{};
@@ -164,7 +169,7 @@ class WrenVM final : private UnCopyable {
   bool check_arity(const Value& value, int argc);
   Value validate_superclass(
       const Value& name, const Value& supercls_val, int num_fields);
-  void validate_foreign_slot(int slot) const;
+  void validate_api_slot(int slot) const;
   void bind_foreign_class(ClassObject* cls, ModuleObject* module);
   void create_class(int num_fields, ModuleObject* module);
   void create_foreign(FiberObject* fiber, Value* stack);
@@ -221,7 +226,7 @@ public:
   inline void set_fiber(FiberObject* fiber) { fiber_ = fiber; }
   inline void set_compiler(Compiler* compiler) { compiler_ = compiler; }
   inline LoadModuleFn get_load_fn(void) const { return load_module_fn_; }
-  inline Value* get_foreign_stack(void) const { return foreign_stack_start_; }
+  inline Value* get_api_stack(void) const { return api_stack_; }
   inline void set_load_fn(const LoadModuleFn& fn) { load_module_fn_ = fn; }
   inline void set_load_fn(LoadModuleFn&& fn) { load_module_fn_ = std::move(fn); }
   inline BindForeignMethodFn get_foreign_meth(void) const { return bind_foreign_meth_; }
@@ -242,8 +247,8 @@ public:
   int define_variable(ModuleObject* module, const str_t& name, const Value& value);
   void set_native(ClassObject* cls, const str_t& name, const PrimitiveFn& fn);
   const Value& find_variable(ModuleObject* module, const str_t& name) const;
-  void set_foreign_stack_asref(const Value& value);
-  void set_foreign_stack_asptr(Value* value);
+  void set_api_stack_asref(const Value& value);
+  void set_api_stack_asptr(Value* value);
 
   void push_root(BaseObject* obj);
   void pop_root(void);
