@@ -1,3 +1,0 @@
-
-class // expect error
-Foo {}
