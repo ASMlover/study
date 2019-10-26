@@ -161,6 +161,8 @@ DEF_PRIMITIVE(fiber_isdone) {
 DEF_PRIMITIVE(fiber_suspend) {
   // switching to a nil fiber tells the interpreter to stop and exit
   vm.set_fiber(nullptr);
+  vm.set_api_stack_asptr(nullptr);
+
   return false;
 }
 

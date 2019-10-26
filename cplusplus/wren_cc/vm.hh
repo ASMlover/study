@@ -173,7 +173,6 @@ class WrenVM final : private UnCopyable {
   Value import_module(const Value& name);
   Value import_variable(const Value& module_name, const Value& variable_name);
   InterpretRet load_into_core(const str_t& source_bytes);
-  FunctionObject* make_call_stub(ModuleObject* module, const str_t& signature);
   WrenForeignFn find_foreign_method(const str_t& module_name,
       const str_t& class_name, bool is_static, const str_t& signature);
 
@@ -257,12 +256,8 @@ public:
   ClassObject* get_class(const Value& val) const;
   InterpretRet interpret(const str_t& source_bytes);
 
-  WrenValue* acquire_method(
-      const str_t& module, const str_t& variable, const str_t& signature);
-  InterpretRet wren_call(
-      WrenValue* method, WrenValue*& return_value, const char* arg_types, ...);
-  InterpretRet wren_call_args(WrenValue* method,
-      WrenValue*& return_value, const char* arg_types, va_list ap);
+  WrenValue* make_call_handle(const str_t& signature);
+  InterpretRet wren_call(WrenValue* method);
   WrenValue* capture_value(const Value& value);
   void release_value(WrenValue* value);
   void* allocate_foreign(sz_t size);

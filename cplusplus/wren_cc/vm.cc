@@ -999,34 +999,6 @@ Value WrenVM::import_variable(
   return nullptr;
 }
 
-FunctionObject* WrenVM::make_call_stub(
-    ModuleObject* module, const str_t& signature) {
-  // creates an [FunctionObject] that invokes a method with [signature]
-  // when called
-
-  int num_params = 0;
-  if (signature.back() == ')') {
-    sz_t i = signature.size() - 2;
-    for (auto c = signature[i]; i >= 0 && c != '('; c = signature[--i]) {
-      if (c == '_')
-        ++num_params;
-    }
-  }
-
-  int method = method_names_.ensure(signature);
-  u8_t bytecode[5] = {
-    Xt::as_type<u8_t>(Code::CALL_0 + num_params),
-    Xt::as_type<u8_t>((method >> 8) & 0xff),
-    Xt::as_type<u8_t>(method & 0xff),
-    Xt::as_type<u8_t>(Code::RETURN),
-    Xt::as_type<u8_t>(Code::END)
-  };
-  int debug_lines[] = {1, 1, 1, 1, 1};
-
-  return FunctionObject::make_function(*this, module,
-      num_params + 1, 0, 0, bytecode, 5, nullptr, 0, signature, debug_lines, 5);
-}
-
 WrenForeignFn WrenVM::find_foreign_method(const str_t& module_name,
     const str_t& class_name, bool is_static, const str_t& signature) {
   // looks up a foreign method in [module_name] on [class_name] with [signature]
@@ -1188,103 +1160,68 @@ void WrenVM::blacken_objects(void) {
   }
 }
 
-WrenValue* WrenVM::acquire_method(
-    const str_t& module, const str_t& variable, const str_t& signature) {
+WrenValue* WrenVM::make_call_handle(const str_t& signature) {
   // creates a handle that can be used to invoke a method with [signature] on
-  // the object in [module] currently stored in top-level [variable]
+  // using a receiver and arguments that are set up on the stack
   //
-  // this handle can be used repeatedly to directly invoke that method from
+  // this handle can be used repreatedly to directly invoke that method from
   // C++ code using [wren_call]
   //
-  // when done with this handle, it must be released using [release_value]
+  // when you are done with this handle, it must be released using
+  // [wrenReleaseValue]
 
-  Value module_name = StringObject::make_string(*this, module);
-  PinnedGuard module_name_guard(*this, module_name.as_object());
+  int num_params = 0;
+  if (signature.back() == ')') {
+    sz_t i = signature.size() - 2;
+    for (auto c = signature[i]; i >= 0 && c != '('; c = signature[--i]) {
+      if (c == '_')
+        ++num_params;
+    }
+  }
 
-  ModuleObject* module_obj = get_module(module_name);
-  int variable_slot = module_obj->find_variable(variable);
+  // add the signature to the method table
+  int method = method_names_.ensure(signature);
 
-  FunctionObject* fn = make_call_stub(module_obj, signature);
-  PinnedGuard fn_guard(*this, fn);
+  // create a little stub function that assumes the arguments are on the stack
+  // and calls the method
+  u8_t bytecode[5] = {
+    Xt::as_type<u8_t>(Code::CALL_0 + num_params),
+    Xt::as_type<u8_t>((method >> 8) & 0xff),
+    Xt::as_type<u8_t>(method & 0xff),
+    Xt::as_type<u8_t>(Code::RETURN),
+    Xt::as_type<u8_t>(Code::END)
+  };
+  int debug_lines[] = {1, 1, 1, 1, 1};
 
-  // create a single fiber that we can reuse each time the method is invoked
-  FiberObject* fiber = FiberObject::make_fiber(*this, fn);
-  PinnedGuard fiber_guard(*this, fiber);
+  FunctionObject* fn = FunctionObject::make_function(*this, nullptr,
+      num_params + 1, 0, 0, bytecode, 5, nullptr, 0, signature, debug_lines, 5);
 
-  // create a handle that keeps track of the function that calls the method
-  WrenValue* method = capture_value(fiber);
-  // store the receiver in the fiber's stack so we can use it later in the call
-  fiber->push(module_obj->get_variable(variable_slot));
-
-  return method;
+  // wrap the function in a handle
+  return capture_value(fn);
 }
 
-InterpretRet WrenVM::wren_call(
-    WrenValue* method, WrenValue*& return_value, const char* arg_types, ...) {
-  va_list ap;
-  va_start(ap, arg_types);
-  InterpretRet result = wren_call_args(method, return_value, arg_types, ap);
-  va_end(ap);
+InterpretRet WrenVM::wren_call(WrenValue* method) {
+  // [method] must have been created by a call to [make_call_handle], the
+  // arguments to the method must be already on the stack, the receiver should
+  // be in slot 0 with the remaining arguments following it, in order, it is
+  // an error if the number of arguments provided does not match the method's
+  // signature
+  //
+  // after this returns, you can access the return value from slot 0 on the
+  // stack
 
-  return result;
-}
+  ASSERT(method != nullptr, "method cannot be nullptr");
+  ASSERT(method->value.is_function(), "method must be a method handle");
+  ASSERT(fiber_ != nullptr, "must set up arguments for call first");
+  ASSERT(api_stack_ != nullptr, "must set up arguments for call first");
+  ASSERT(fiber_->empty_frame(), "can not call from a foreign method");
 
-InterpretRet WrenVM::wren_call_args(WrenValue* method,
-    WrenValue*& return_value, const char* arg_types, va_list ap) {
-  ASSERT(method->value.is_fiber(), "value must come from `acquire_method()`");
-  FiberObject* fiber = method->value.as_fiber();
+  FunctionObject* fn = method->value.as_function();
+  ASSERT(fiber_->stack_size() >= fn->arity(),
+      "stack must have enough arguments for method");
 
-  // push the arguments
-  for (const char* arg_type = arg_types; *arg_type != '\0'; ++arg_type) {
-    Value value(nullptr);
-    switch (*arg_type) {
-    case 'a':
-      {
-        const char* bytes = va_arg(ap, const char*);
-        int length = va_arg(ap, int);
-        value = StringObject::make_string(*this, bytes, length);
-      } break;
-    case 'b': value = Xt::as_type<bool>(va_arg(ap, int)); break;
-    case 'd': value = va_arg(ap, double); break;
-    case 'i': value = va_arg(ap, int); break;
-    case 'n': value = nullptr; va_arg(ap, void*); break;
-    case 's':
-      value = StringObject::format(*this, "$", va_arg(ap, const char*));
-      break;
-    case 'v':
-      {
-        // allow a nullptr value pointer for Wren nil
-        WrenValue* wren_value = va_arg(ap, WrenValue*);
-        if (wren_value != nullptr)
-          value = wren_value->value;
-      } break;
-    default: ASSERT(false, "unknown argument type"); break;
-    }
-    fiber->push(value);
-  }
-
-  const Value& receiver = fiber->get_value(0);
-  BaseObject* fn = fiber->get_frame(0).fn;
-  PinnedGuard fn_guard(*this, fn);
-
-  InterpretRet result = interpret(fiber);
-  if (result == InterpretRet::SUCCESS) {
-    if (return_value != nullptr) {
-      // make sure the return value doesn't get collected while capturing it
-      fiber->push(Value());
-      return_value = capture_value(fiber->get_value(0));
-    }
-    // reset the fiber to get ready for the next call
-    fiber->reset_fiber(fn);
-    // push the receiver back on the stack
-    fiber->push(receiver);
-  }
-  else {
-    if (return_value != nullptr)
-      return_value = nullptr;
-  }
-
-  return result;
+  fiber_->call_function(*this, fn, fn->arity());
+  return interpret(fiber_);
 }
 
 WrenValue* WrenVM::capture_value(const Value& value) {
@@ -1361,7 +1298,7 @@ int WrenVM::get_slot_count(void) const {
 
 void WrenVM::ensure_slots(int num_slots) {
   // if we donot have a fiber accessible, create one for the API to use
-  if (fiber_ == nullptr && api_stack_ == nullptr) {
+  if (api_stack_ == nullptr) {
     fiber_ = FiberObject::make_fiber(*this, nullptr);
     api_stack_ = fiber_->values_at(0);
   }
@@ -1454,11 +1391,12 @@ void wrenCollectGarbage(WrenVM& vm) {
   vm.collect();
 }
 
-double wrenGetValueAsDouble(WrenVM& vm, WrenValue* value) {
-  ASSERT(value != nullptr, "value cannot be nullptr");
-  ASSERT(value->value.is_numeric(), "value must be a numeric");
+WrenValue* wrenMakeCallHandle(WrenVM& vm, const str_t& signature) {
+  return vm.make_call_handle(signature);
+}
 
-  return value->value.as_numeric();
+InterpretRet wrenCall(WrenVM& vm, WrenValue* method) {
+  return vm.wren_call(method);
 }
 
 void wrenReleaseValue(WrenVM& vm, WrenValue* value) {

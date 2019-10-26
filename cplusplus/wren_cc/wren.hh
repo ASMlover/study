@@ -60,13 +60,28 @@ struct WrenForeignClass {
 // immediately run the garbage collector to free unused memory
 void wrenCollectGarbage(WrenVM& vm);
 
-// gets the numeric value of [value]
+// creates a handle that can be used to invoke a method with [signature] on
+// using a receiver and arguments that are set up on the stack
 //
-// it is an error to call this if the value is not a numeric
-double wrenGetValueAsDouble(WrenVM& vm, WrenValue* value);
+// this handle can be used repreatedly to directly invoke that method from
+// C++ code using [wrenCall]
+//
+// when you are done with this handle, it must be released using
+// [wrenReleaseValue]
+WrenValue* wrenMakeCallHandle(WrenVM& vm, const str_t& signature);
 
-// releases the reference stored in [value], after calling this, [value] can no
-// longer be used
+// [method] must have been created by a call to [wrenMakeCallHandle], the
+// arguments to the method must be already on the stack, the receiver should
+// be in slot 0 with the remaining arguments following it, in order, it is
+// an error if the number of arguments provided does not match the method's
+// signature
+//
+// after this returns, you can access the return value from slot 0 on the
+// stack
+InterpretRet wrenCall(WrenVM& vm, WrenValue* method);
+
+// releases the reference stored in [value], after calling this, [value] can
+// no longer be used
 void wrenReleaseValue(WrenVM& vm, WrenValue* value);
 
 // this must be called once inside a foreign class's allocator function
