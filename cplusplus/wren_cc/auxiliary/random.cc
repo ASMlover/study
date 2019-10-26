@@ -62,7 +62,7 @@ namespace random {
 
     void random_allocate(WrenVM* vm) {
       Well512* well = Xt::as_type<Well512*>(
-          wrenAllocateForeign(*vm, sizeof(Well512)));
+          wrenSetSlotNewForeign(*vm, 0, 0, sizeof(Well512)));
       well->index = 0;
     }
 

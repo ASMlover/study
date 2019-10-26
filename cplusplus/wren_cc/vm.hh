@@ -260,7 +260,6 @@ public:
   InterpretRet wren_call(WrenValue* method);
   WrenValue* capture_value(const Value& value);
   void release_value(WrenValue* value);
-  void* allocate_foreign(sz_t size);
   void finalize_foreign(ForeignObject* foreign);
 
   int get_slot_count(void) const;
@@ -272,6 +271,7 @@ public:
   void* get_slot_foreign(int slot) const;
 
   void set_slot(int slot, const Value& value);
+  void* set_slot_new_foreign(int slot, int class_slot, sz_t size);
   void insert_into_list(int list_slot, int index, int element_slot);
   void get_variable(const str_t& module, const str_t& name, int slot);
 };

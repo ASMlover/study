@@ -47,7 +47,7 @@ struct WrenForeignClass {
   // the callback invoked when the foreign object is created
   //
   // this must be provided, inside the body of this, it must call
-  // [wrenAllocateForeign] exactly once
+  // [wrenSetSlotNewForeign] exactly once
   WrenForeignFn allocate;
 
   // the callback invoked when the garbage collecator is about to collect a
@@ -83,13 +83,6 @@ InterpretRet wrenCall(WrenVM& vm, WrenValue* method);
 // releases the reference stored in [value], after calling this, [value] can
 // no longer be used
 void wrenReleaseValue(WrenVM& vm, WrenValue* value);
-
-// this must be called once inside a foreign class's allocator function
-//
-// it tells When how many bytes of raw data need to be stored in the foreign
-// object and creates the new object with that size, it returns a pointer to
-// the foreign object's data
-void* wrenAllocateForeign(WrenVM& vm, sz_t size);
 
 // returns the number of slots available to the current foreign method
 int wrenGetSlotCount(WrenVM& vm);
@@ -165,6 +158,17 @@ void wrenSetSlotValue(WrenVM& vm, int slot, WrenValue* value);
 
 // stores a new empty list in [slot]
 void wrenSetSlotNewList(WrenVM& vm, int slot);
+
+// creates a new instance of the foreign class stored in [class_slot] with
+// [size] bytes of raw storage and places the resulting object in [slot]
+//
+// this does not invoke the foreign class's constructor on the new instance,
+// if you need that to happen, call the constructor from Wren, which will
+// then call the allocator foreign method, in there, call this to create the
+// object and then the constructor will be invoked when the allocator returns
+//
+// returns a pointer to the foreign object's data
+void* wrenSetSlotNewForeign(WrenVM& vm, int slot, int class_slot, sz_t size);
 
 // takes the value stored at [element_slot] and inserts it into the list stored
 // at [list_slot] at [index]

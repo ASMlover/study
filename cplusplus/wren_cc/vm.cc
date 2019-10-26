@@ -1268,16 +1268,6 @@ void WrenVM::release_value(WrenValue* value) {
   delete value;
 }
 
-void* WrenVM::allocate_foreign(sz_t size) {
-  ASSERT(api_stack_ != nullptr, "must be in foreign call");
-
-  ClassObject* cls = api_stack_[0].as_class();
-  ForeignObject* foreign = ForeignObject::make_foreign(*this, cls, size);
-  api_stack_[0] = foreign;
-
-  return foreign->data();
-}
-
 void WrenVM::finalize_foreign(ForeignObject* foreign) {
   // invoke the finalizer for the foreign object referenced by [foreign]
 
@@ -1366,6 +1356,20 @@ void WrenVM::set_slot(int slot, const Value& value) {
   api_stack_[slot] = value;
 }
 
+void* WrenVM::set_slot_new_foreign(int slot, int class_slot, sz_t size) {
+  validate_api_slot(slot);
+  validate_api_slot(class_slot);
+  ASSERT(api_stack_[class_slot].is_class(), "slot must hold a class");
+
+  ClassObject* cls = api_stack_[class_slot].as_class();
+  ASSERT(cls->num_fields() == -1, "class must be a foreign class");
+
+  ForeignObject* foreign = ForeignObject::make_foreign(*this, cls, size);
+  api_stack_[slot] = foreign;
+
+  return foreign->data();
+}
+
 void WrenVM::insert_into_list(int list_slot, int index, int element_slot) {
   validate_api_slot(list_slot);
   validate_api_slot(element_slot);
@@ -1416,10 +1420,6 @@ void wrenReleaseValue(WrenVM& vm, WrenValue* value) {
   vm.release_value(value);
 }
 
-void* wrenAllocateForeign(WrenVM& vm, sz_t size) {
-  return vm.allocate_foreign(size);
-}
-
 int wrenGetSlotCount(WrenVM& vm) {
   return vm.get_slot_count();
 }
@@ -1468,6 +1468,10 @@ void wrenSetSlotValue(WrenVM& vm, int slot, WrenValue* value) {
 
 void wrenSetSlotNewList(WrenVM& vm, int slot) {
   vm.set_slot(slot, ListObject::make_list(vm));
+}
+
+void* wrenSetSlotNewForeign(WrenVM& vm, int slot, int class_slot, sz_t size) {
+  return vm.set_slot_new_foreign(slot, class_slot, size);
 }
 
 void wrenInsertInList(WrenVM& vm, int list_slot, int index, int element_slot) {
