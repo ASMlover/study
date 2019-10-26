@@ -177,6 +177,10 @@ void WrenVM::print_stacktrace(FiberObject* fiber) {
       ModuleObject* module = fn->module();
       const DebugObject& debug = fn->debug();
 
+      // skip over stub functions for calling methods from the C++ API
+      if (fn->module() == nullptr)
+        return;
+
       // the built-in core module has no name, we explicitly omit it from stack
       // traces since we don't want to highlight to a user the implementation
       // detail of what part of the core module is written in C and what is Wren
@@ -728,15 +732,18 @@ __complete_call:
 
       // if the fiber is complete, end it
       if (fiber->empty_frame()) {
-        // see if there's another fiber to return to
-        FiberObject* calling_fiber = fiber->caller();
-        fiber->set_caller(nullptr);
-        fiber = calling_fiber;
-        fiber_ = fiber;
-
-        // if not, we are done
-        if (fiber == nullptr)
+        // see if there's another fiber to return to, if not, we are done
+        if (fiber->caller() == nullptr) {
+          // store the final result value at the beginning of the stack so
+          // the C++ API can get it
+          fiber->set_value_safely(0, r);
+          fiber->resize_stack(1);
           return InterpretRet::SUCCESS;
+        }
+        FiberObject* resuming_fiber = fiber->caller();
+        fiber->set_caller(nullptr);
+        fiber = resuming_fiber;
+        fiber_ = resuming_fiber;
 
         // store the result in the resuming fiber
         fiber->set_value(fiber->stack_size() - 1, r);
@@ -744,10 +751,7 @@ __complete_call:
       else {
         // store the result of the block in the first slot, which is where the
         // caller expects it
-        if (fiber->stack_size() <= frame->stack_start)
-          PUSH(r);
-        else
-          fiber->set_value(frame->stack_start, r);
+        fiber->set_value_safely(frame->stack_start, r);
 
         // discard the stack slots for the call frame
         fiber->resize_stack(frame->stack_start + 1);
@@ -1220,13 +1224,22 @@ InterpretRet WrenVM::wren_call(WrenValue* method) {
   ASSERT(fiber_->stack_size() >= fn->arity(),
       "stack must have enough arguments for method");
 
-  fiber_->call_function(*this, fn, fn->arity());
+  // discard any extra temporary slots, we take for granted that the stub
+  // function has exactly one slot for each arguments
+  fiber_->resize_stack(fn->max_slots());
+  fiber_->call_function(*this, fn, 0);
+
   return interpret(fiber_);
 }
 
 WrenValue* WrenVM::capture_value(const Value& value) {
+  PinnedGuard guard{*this};
+  if (value.is_object())
+    guard.set_guard_object(value.as_object());
+
   // make a handle for it
   WrenValue* wrapped_value = new WrenValue(value);
+
   // add it to the front of the linked list of handles
   if (value_handles_ != nullptr)
     value_handles_->prev = wrapped_value;

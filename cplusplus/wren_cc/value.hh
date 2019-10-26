@@ -669,6 +669,8 @@ public:
 
   inline Value* values_at(int i) { return stack_.data() + i; }
   inline const Value* values_at(int i) const { return stack_.data() + i; }
+  inline Value* values_at_beg(void) { return stack_.data(); }
+  inline const Value* values_at_beg(void) const { return stack_.data(); }
   inline Value* values_at_top(void) { return stack_.data() + stack_.size(); }
   inline const Value* values_at_top(void) const { return stack_.data() + stack_.size(); }
   inline void resize_stack(int n) { stack_.resize(n); }
@@ -708,6 +710,13 @@ public:
     Value v = stack_.back();
     stack_.pop_back();
     return v;
+  }
+
+  inline void set_value_safely(int i, const Value& v) {
+    if (i < stack_size())
+      stack_[i] = v;
+    else
+      stack_.push_back(v);
   }
 
   void ensure_stack(WrenVM& vm, int needed);
