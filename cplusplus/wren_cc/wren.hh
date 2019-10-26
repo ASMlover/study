@@ -35,6 +35,7 @@ class WrenVM;
 struct WrenValue;
 
 using WrenForeignFn = std::function<void (WrenVM*)>;
+using WrenFinalizeFn = std::function<void (void*)>;
 
 enum class InterpretRet {
   SUCCESS,
@@ -53,7 +54,7 @@ struct WrenForeignClass {
   // foreign object's memory
   //
   // this may be `nullptr` if the foreign class does not need it finalize
-  WrenForeignFn finalize;
+  WrenFinalizeFn finalize;
 };
 
 // immediately run the garbage collector to free unused memory

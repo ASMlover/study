@@ -44,8 +44,6 @@ WrenVM::WrenVM(void) noexcept {
   core::initialize(*this);
   io::load_library(*this);
 
-  finalizer_fiber_ = FiberObject::make_fiber(*this, nullptr);
-
   // load aux modules
   meta::load_aux_module(*this);
   random::load_aux_module(*this);
@@ -333,7 +331,7 @@ void WrenVM::bind_foreign_class(ClassObject* cls, ModuleObject* module) {
   // symbol itself is always in the symbol table
   symbol = method_names_.ensure("<finalize>");
   if (methods.finalize) {
-    method.set_foreign(methods.finalize);
+    method.set_foreign(Xt::as_type<WrenForeignFn>(methods.finalize));
     cls->bind_method(symbol, method);
   }
 }
@@ -1098,7 +1096,6 @@ void WrenVM::collect(void) {
 
   // the rooted fibers
   gray_object(fiber_);
-  gray_object(finalizer_fiber_);
 
   // the value handles
   for (WrenValue* v = value_handles_; v != nullptr; v = v->next)
@@ -1351,17 +1348,9 @@ void WrenVM::finalize_foreign(ForeignObject* foreign) {
     return;
   ASSERT(method.get_type() == MethodType::FOREIGN, "finalizer should be foreign");
 
-  // pass the constructor arguments to the allocator as well
-  finalizer_fiber_->push(foreign);
-  FiberObject* prev_fiber = fiber_;
-  fiber_ = finalizer_fiber_;
-  api_stack_ = finalizer_fiber_->values_at(0);
-
-  method.foreign()(this);
-
-  fiber_ = prev_fiber;
-  api_stack_ = nullptr;
-  finalizer_fiber_->reset_fiber(nullptr);
+  WrenForeignFn foreign_fn = method.foreign();
+  auto finalizer = foreign_fn.target<void (void*)>();
+  finalizer(foreign->data());
 }
 
 int WrenVM::get_slot_count(void) const {
@@ -1371,8 +1360,6 @@ int WrenVM::get_slot_count(void) const {
 }
 
 void WrenVM::ensure_slots(int num_slots) {
-  ASSERT(fiber_ != finalizer_fiber_, "cannot grow the stack in a finalizer");
-
   // if we donot have a fiber accessible, create one for the API to use
   if (fiber_ == nullptr && api_stack_ == nullptr) {
     fiber_ = FiberObject::make_fiber(*this, nullptr);

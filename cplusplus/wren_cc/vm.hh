@@ -157,12 +157,6 @@ class WrenVM final : private UnCopyable {
   // method calls are dispatched directly by index in this table
   SymbolTable method_names_;
 
-  // a special fiber whose stack is used for communication with foreign
-  // finalizer methods, finalizers run during GC, so we don't want to do any
-  // allocation in order to execute one, so we set up this fiber ahead to time
-  // to ensure it's available
-  FiberObject* finalizer_fiber_{};
-
   void print_stacktrace(FiberObject* fiber);
   void runtime_error(void);
   void method_not_found(ClassObject* cls, int symbol);
