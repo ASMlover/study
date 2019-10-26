@@ -1,0 +1,3 @@
+
+class // expect error
+Foo {}

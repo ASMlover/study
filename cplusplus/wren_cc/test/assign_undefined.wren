@@ -1,0 +1,2 @@
+
+unknown = "value" // expect error
