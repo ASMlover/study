@@ -1,2 +1,0 @@
-
-unknown = "value" // expect error
