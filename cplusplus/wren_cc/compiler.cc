@@ -1153,7 +1153,8 @@ class Compiler : private UnCopyable {
     // been consumed (along with a possibly preceding `foreign` token)
 
     // create a variable to store the class in
-    int slot = declare_named_variable();
+    Variable class_variable(declare_named_variable(),
+        scope_depth_ == -1 ? ScopeType::MODULE : ScopeType::LOCAL);
 
     // make a string constant for the name
     emit_constant(
@@ -1178,7 +1179,7 @@ class Compiler : private UnCopyable {
       num_fields_instruction = emit_bytes(Code::CLASS, 0xff);
 
     // store it in its name
-    define_variable(slot);
+    define_variable(class_variable.index);
 
     // push a local variable scope, static fields in a class body are hoisted
     // out into local variables declared in this scope, methods that use them
@@ -1195,11 +1196,10 @@ class Compiler : private UnCopyable {
     enclosing_class_ = &class_compiler;
 
     consume(TokenKind::TK_LBRACE, "expect `{` after class declaration");
-
     match_line();
 
     while (!match(TokenKind::TK_RBRACE)) {
-      if (!method(slot))
+      if (!method(class_variable))
         break;
 
       // don't require a newline after the last definition
@@ -1588,7 +1588,8 @@ class Compiler : private UnCopyable {
     method_compiler.finish_compiler("");
   }
 
-  void define_method(int class_slot, bool is_static, int method_symbol) {
+  void define_method(
+      const Variable& class_variable, bool is_static, int method_symbol) {
     // loads the enclosing class onto the stack and then binds the function
     // already on the stack as a method on that class
 
@@ -1597,22 +1598,14 @@ class Compiler : private UnCopyable {
     // will be locals above the initial variable slot for the class on the
     // stack, to skip past those, we just load the class each time right
     // before defining a method
-    if (scope_depth_ == 0) {
-      // the class is at the top level (scope depth is 0, not -1 to account
-      // for the static variable scope surrounding the class itself), so load
-      // it from there
-      emit_words(Code::LOAD_MODULE_VAR, class_slot);
-    }
-    else {
-      load_local(class_slot);
-    }
+    load_variable(class_variable);
 
     // define the method
     Code instruction = is_static ? Code::METHOD_STATIC : Code::METHOD_INSTANCE;
     emit_words(instruction, method_symbol);
   }
 
-  bool method(int class_slot) {
+  bool method(const Variable& class_variable) {
     // compiles a method definition inside a class body
     //
     // returns `true` if compiled successfully or `false` if the method
@@ -1657,14 +1650,14 @@ class Compiler : private UnCopyable {
     // define the method for a constructor, this defines the instance
     // initializer method
     int method_symbol = signature_symbol(signature);
-    define_method(class_slot, enclosing_class_->in_static, method_symbol);
+    define_method(class_variable, enclosing_class_->in_static, method_symbol);
     if (signature.type == SignatureType::INITIALIZER) {
       // also define a matching constructor method on the metaclass
       signature.set_type(SignatureType::METHOD);
       int constructor_symbol = signature_symbol(signature);
 
       create_constructor(signature, method_symbol);
-      define_method(class_slot, true, constructor_symbol);
+      define_method(class_variable, true, constructor_symbol);
     }
 
     return true;
