@@ -156,22 +156,6 @@ public:
   }
 };
 
-struct Scope {
-  // the number of previously defined local variables when this scope was
-  // created. used to know how many variables to discard when this scope is
-  // exited
-  int prev_locals{};
-
-  // the scope enclosing this one, or nullptr if this is the top scope in
-  // the function
-  Scope* parent{};
-
-  void set_scope(int _locals_count = 0, Scope* _parent = nullptr) {
-    prev_locals = _locals_count;
-    parent = _parent;
-  }
-};
-
 struct Local {
   str_t name{}; // the name of the local variable
 
@@ -219,6 +203,30 @@ struct Loop {
 
   // the loop enclosing this one or `nullptr` of this is the outermost loop
   Loop* enclosing{};
+};
+
+enum class ScopeType {
+  // describes where a variable is declared
+
+  LOCAL,    // a local variable in the current function
+  UPVALUE,  // a local variable decalred in an enclosing function
+  MODULE,   // a top-level module variable
+};
+
+struct Variable {
+  // the stack slot, upvalue slot or module symbol defining the variable
+  int index{};
+
+  // where the variable is declared
+  ScopeType scope{};
+
+  Variable(void) noexcept {}
+  Variable(int i, ScopeType t) noexcept : index(i), scope(t) {}
+
+  inline void set_variable(int i, ScopeType t) noexcept {
+    index = i;
+    scope = t;
+  }
 };
 
 struct ClassCompiler {
@@ -730,42 +738,35 @@ class Compiler : private UnCopyable {
     return -1;
   }
 
-  int resolve_non_module(const str_t& name, Code& load_instruction) {
-    // lookup [name] in the current scope to see what name it is bound to,
-    // returns the index of the name either in local scope, or the enclosing
-    // function's upvalue list, does not search the module scope, returns -1
-    // if not found
-    //
-    // sets [load_instruction] to the instruction needed to load the variable
-    // will be [Code::LOAD_LOCAL] or [Code::LOAD_UPVALUE]
+  Variable resolve_non_module(const str_t& name) {
+    // lookup [name] in the current scope to see what variable it refers to,
+    // returns the variable either in local scope, or the enclosing function's
+    // upvalue list, does not search the module scope, returns a variable
+    // with -1 if not found
 
-    // look it up in the local scope, look in reverse order so that the
-    // most nested variable is found first and shadows outer ones
-    load_instruction = Code::LOAD_LOCAL;
-    int local = resolve_local(name);
-    if (local != -1)
-      return local;
+    // look it up in the local scopes
+    Variable variable(resolve_local(name), ScopeType::LOCAL);
+    if (variable.index != -1)
+      return variable;
 
-    // if we go here, it's not a local, so lets see if we are closing over
-    // an outer local
-    load_instruction = Code::LOAD_UPVALUE;
-    return find_upvalue(name);
+    // it is not a local, so guess that it is an upvalue
+    variable.set_variable(find_upvalue(name), ScopeType::UPVALUE);
+    return variable;
   }
 
-  int resolve_name(const str_t& name, Code& load_instruction) {
-    // loop up [name] in the current scope to see what name it is bound
-    // to returns the index of the name either in module or local scope,
-    // or the enclosing function's upvalue list. returns -1 if not found.
-    //
-    // sets [load_instruction] to the instruction needed to load the
-    // variable. will be one of [LOAD_LOCAL], [LOAD_UPVALUE] or [LOAD_MODULE_VAR]
+  Variable resolve_name(const str_t& name) {
+    // loop up [name] in the current scope to see what variable it refers
+    // to, returns the variable either in module or local scope or the
+    // enclosing function's upvalue list. returns a variable with index -1
+    // if not found.
 
-    int non_module = resolve_non_module(name, load_instruction);
-    if (non_module != -1)
-      return non_module;
+    Variable variable = resolve_non_module(name);
+    if (variable.index != -1)
+      return variable;
 
-    load_instruction = Code::LOAD_MODULE_VAR;
-    return parser_.get_mod()->find_variable(name);
+    variable.set_variable(
+        parser_.get_mod()->find_variable(name), ScopeType::MODULE);
+    return variable;
   }
 
   inline void load_local(int slot) {
@@ -877,21 +878,29 @@ class Compiler : private UnCopyable {
     consume(TokenKind::TK_RBRACE, "expect `}` after map entries");
   }
 
+  void load_variable(const Variable& variable) {
+    // emits the code to load [variable] onto the stack
+
+    switch (variable.scope) {
+    case ScopeType::LOCAL:
+      load_local(variable.index); break;
+    case ScopeType::UPVALUE:
+      emit_bytes(Code::LOAD_UPVALUE, variable.index); break;
+    case ScopeType::MODULE:
+      emit_words(Code::LOAD_MODULE_VAR, variable.index); break;
+    default: UNREACHABLE();
+    }
+  }
+
   void load_this(void) {
     // loads the receiver of the currently enclosing method. correctly
     // handles functions defined inside methods
 
-    Code load_instruction;
-    int index = resolve_non_module("this", load_instruction);
-    if (load_instruction == Code::LOAD_LOCAL)
-      load_local(index);
-    else
-      emit_bytes(load_instruction, index);
+    load_variable(resolve_non_module("this"));
   }
 
-  void variable_impl(bool allow_assignment, int index, Code load_instruction) {
-    // compiles a read or assignment to a variable at [index]
-    // using [load_instruction]
+  void bare_name(bool allow_assignment, const Variable& variable) {
+    // compiles a read or assignment to [variable]
 
     // if there's an `=` after a bare name, it's a variable assignment
     if (match(TokenKind::TK_EQ)) {
@@ -902,50 +911,47 @@ class Compiler : private UnCopyable {
       expression();
 
       // emit the store instruction
-      switch (load_instruction) {
-      case Code::LOAD_LOCAL: emit_bytes(Code::STORE_LOCAL, index); break;
-      case Code::LOAD_UPVALUE: emit_bytes(Code::STORE_UPVALUE, index); break;
-      case Code::LOAD_MODULE_VAR: emit_words(Code::STORE_MODULE_VAR, index); break;
+      switch (variable.scope) {
+      case ScopeType::LOCAL:
+        emit_bytes(Code::STORE_LOCAL, variable.index); break;
+      case ScopeType::UPVALUE:
+        emit_bytes(Code::STORE_UPVALUE, variable.index); break;
+      case ScopeType::MODULE:
+        emit_words(Code::STORE_MODULE_VAR, variable.index); break;
       default: UNREACHABLE();
       }
+      return;
     }
-    else if (load_instruction == Code::LOAD_MODULE_VAR) {
-      emit_words(load_instruction, index);
-    }
-    else if (load_instruction == Code::LOAD_LOCAL) {
-      load_local(index);
-    }
-    else {
-      emit_bytes(load_instruction, index);
-    }
+
+    // emit the load instruction
+    load_variable(variable);
   }
 
   void static_field(bool allow_assignment) {
-    Code load_instruction = Code::LOAD_LOCAL;
-    int index = 0xff;
-
     Compiler* class_compiler = get_enclosing_class_compiler();
     if (class_compiler == nullptr) {
       error("cannot use a static field outside of a class definition");
-    }
-    else {
-      str_t name = parser_.prev().as_string();
-
-      if (class_compiler->resolve_local(name) == -1) {
-        int symbol = class_compiler->declare_variable();
-
-        // implicitly initialize it to nil
-        class_compiler->emit_opcode(Code::NIL);
-        class_compiler->define_variable(symbol);
-      }
-
-      // it definitely exists now, so resolve it properly, this is different
-      // from the above resolve_local(...) call because we may have already
-      // closed over it as an upvalue
-      index = resolve_name(name, load_instruction);
+      return;
     }
 
-    variable_impl(allow_assignment, index, load_instruction);
+    // look up the name in the scope chain
+    str_t name = parser_.prev().as_string();
+
+    // if this is the first time we've seen this static field, implicitly
+    // define it as a variable in the scope surrounding the class definition
+    if (class_compiler->resolve_local(name) == -1) {
+      int symbol = class_compiler->declare_variable();
+
+      // implicitly initialize it to nil
+      class_compiler->emit_opcode(Code::NIL);
+      class_compiler->define_variable(symbol);
+    }
+
+    // it definitely exists now, so resolve it properly, this is different
+    // from the above resolve_local(...) call because we may have already
+    // closed over it as an upvalue
+    Variable variable = resolve_name(name);
+    bare_name(allow_assignment, variable);
   }
 
   inline bool is_local_name(const str_t& name) const {
@@ -961,10 +967,9 @@ class Compiler : private UnCopyable {
     // look for the name in the scope chain up to the nearest enclosing method
     str_t token_name = parser_.prev().as_string();
 
-    Code load_instruction;
-    int index = resolve_non_module(token_name, load_instruction);
-    if (index != -1) {
-      variable_impl(allow_assignment, index, load_instruction);
+    Variable variable = resolve_non_module(token_name);
+    if (variable.index != -1) {
+      bare_name(allow_assignment, variable);
       return;
     }
 
@@ -977,8 +982,9 @@ class Compiler : private UnCopyable {
     }
 
     // otherwise, look for a global variable with the name
-    int module = parser_.get_mod()->find_variable(token_name);
-    if (module == -1) {
+    variable.set_variable(
+        parser_.get_mod()->find_variable(token_name), ScopeType::MODULE);
+    if (variable.index == -1) {
       if (is_local_name(token_name)) {
         error("undefined variable");
         return;
@@ -986,12 +992,13 @@ class Compiler : private UnCopyable {
 
       // if it's a nonlocal name, implicitly define a module-level variable in
       // the hopes that we get a real definition later
-      module = parser_.get_vm().declare_variable(parser_.get_mod(), token_name);
-      if (module == -2) {
+      variable.index = parser_.get_vm().declare_variable(
+          parser_.get_mod(), token_name);
+      if (variable.index == -2) {
         error("too many module variables defined");
       }
     }
-    variable_impl(allow_assignment, module, Code::LOAD_MODULE_VAR);
+    bare_name(allow_assignment, variable);
   }
 
   void field(bool allow_assignment) {
