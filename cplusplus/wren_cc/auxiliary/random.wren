@@ -47,6 +47,69 @@ foreign class Random {
   int(max) { (float() * max).floor }
   int(min, max) { (float() * (max - min)).floor + min }
 
+  sample(list) { sample(list, 1)[0] }
+  sample(list, count) {
+    if (count > list.len) Fiber.abort("not enough elements to sample")
+
+    // there at (at least) two simple algorithms for choosing a number of
+    // samples from a list without replcement -- where we do not pick the
+    // same element more that one
+    //
+    // the first is faster when the number of samples is small relative to
+    // the size of the collection, in many cases, it avoids scanning the
+    // entire list, in the common case of just wanting one sample, it is a
+    // single random index lookup
+    //
+    // however, its performance degrades badlu as the sample size increases
+    // Vitter's algorithm always scans the entire list, but it's alse always
+    // O(n)
+    //
+    // the cutoff point between the two follows a quadratic curve on the
+    // same size, based on some empirical testing, scaling that by 5 seems
+    // to fit pretty closely and chooses the fastest one for the given
+    // sample and collection size
+
+    if (count * count * 5 < list.len) {
+      // pick random elements and retry if you hit a previously chosen one
+      var picked = {}
+      var result = []
+      for (i in 0...count) {
+        // find an index that we have not already selected
+        var index
+        while (true) {
+          index = int(count)
+          if (!picked.containsKey(index)) break
+        }
+
+        picked[index] = true
+        result.add(list[index])
+      }
+
+      return result
+    } else {
+      // Jeffret Vitter's algorithm R
+
+      // fill the reservoir with the first elements in the list
+      var result = list[0...count]
+
+      // we want to ensure the results are always in random order, so
+      // shuffle them, in cases where the sample size is the entire
+      // collection, this devolves to running Fisher-Yates on a copy of
+      // the list
+      shuffle(result)
+
+      // now walk the rest of the list, for each element, randomly consider
+      // replacing one of the reservoir elements with it, the probability
+      // here works out such that it does this uniformly
+      for (i in count...list.len) {
+        var slot = int(0, i + 1)
+        if (slot < count) result[slot] = list[i]
+      }
+
+      return result
+    }
+  }
+
   shuffle(list) {
     if (list.isEmpty) return
 
