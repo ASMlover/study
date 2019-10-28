@@ -412,7 +412,8 @@ class Compiler : private UnCopyable {
     // of the placeholder
 
     emit_opcode(instruction);
-    return emit_bytes(0xff, 0xff) - 1;
+    emit_byte(0xff);
+    return emit_byte(0xff) - 1;
   }
 
   inline void patch_jump(int offset) {
