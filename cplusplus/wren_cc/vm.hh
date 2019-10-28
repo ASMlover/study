@@ -263,6 +263,7 @@ public:
   void finalize_foreign(ForeignObject* foreign);
 
   int get_slot_count(void) const;
+  WrenType get_slot_type(int slot) const;
   void ensure_slots(int num_slots);
   bool get_slot_bool(int slot) const;
   double get_slot_double(int slot) const;

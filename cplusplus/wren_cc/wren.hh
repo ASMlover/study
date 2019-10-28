@@ -43,6 +43,22 @@ enum class InterpretRet {
   RUNTIME_ERROR,
 };
 
+// the type of an object stored in a slot
+//
+// this is not necessarily the object's `class`, but instead its low level
+// representation type
+enum class WrenType {
+  BOOLEAN,
+  NUMERIC,
+  FOREIGN,
+  LIST,
+  NIL,
+  STRING,
+
+  // the object is of a type that isn't accessible by the C++ API
+  UNKNOWN,
+};
+
 struct WrenForeignClass {
   // the callback invoked when the foreign object is created
   //
@@ -94,6 +110,9 @@ int wrenGetSlotCount(WrenVM& vm);
 //
 // it is an error to call this from a finalizer
 void wrenEnsureSlots(WrenVM& vm, int num_slots);
+
+// gets the type of the object int [slot]
+WrenType wrenGetSlotType(WrenVM& vm, int slot);
 
 // reads a boolean value from [slot]
 //

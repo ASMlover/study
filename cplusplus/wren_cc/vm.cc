@@ -1314,6 +1314,26 @@ void WrenVM::ensure_slots(int num_slots) {
   fiber_->ensure_stack(*this, needed);
 }
 
+WrenType WrenVM::get_slot_type(int slot) const {
+  validate_api_slot(slot);
+
+  const Value& v = api_stack_[slot];
+  if (v.is_boolean())
+    return WrenType::BOOLEAN;
+  if (v.is_numeric())
+    return WrenType::NUMERIC;
+  if (v.is_foreign())
+    return WrenType::FOREIGN;
+  if (v.is_list())
+    return WrenType::LIST;
+  if (v.is_nil())
+    return WrenType::NIL;
+  if (v.is_string())
+    return WrenType::STRING;
+
+  return WrenType::UNKNOWN;
+}
+
 bool WrenVM::get_slot_bool(int slot) const {
   validate_api_slot(slot);
 
@@ -1422,6 +1442,10 @@ void wrenReleaseValue(WrenVM& vm, WrenValue* value) {
 
 int wrenGetSlotCount(WrenVM& vm) {
   return vm.get_slot_count();
+}
+
+WrenType wrenGetSlotType(WrenVM& vm, int slot) {
+  return vm.get_slot_type(slot);
 }
 
 bool wrenGetSlotBool(WrenVM& vm, int slot) {
