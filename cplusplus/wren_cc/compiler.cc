@@ -275,6 +275,10 @@ class Compiler : private UnCopyable {
   // argument
   static constexpr int kMaxConstants = 1 << 16;
 
+  // the maximum distance a Code::JUMP_IF instruction can move the
+  // instruction pointer
+  static constexpr int kMaxJump = 1 << 16;
+
   Parser& parser_;
   Compiler* parent_{};
 
@@ -417,6 +421,8 @@ class Compiler : private UnCopyable {
 
     // -2 to adjust for the bytecode for the jump offset iteself
     int jump = Xt::as_type<int>(bytecode_.size()) - offset - 2;
+    if (jump > kMaxJump)
+      error("too mush code to jump over");
 
     bytecode_[offset] = (jump >> 8) & 0xff;
     bytecode_[offset + 1] = jump & 0xff;
@@ -1125,6 +1131,8 @@ class Compiler : private UnCopyable {
     // ends the current innermost loop, patches up all jumps and breaks now
     // that we know where the end of the loop is
 
+    // we don't check for overflow here since the forward jump over the loop
+    // body will report an error for the same problem
     int loop_offset = Xt::as_type<int>(bytecode_.size()) - loop_->start + 2;
     emit_words(Code::LOOP, loop_offset);
 
