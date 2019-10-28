@@ -325,11 +325,14 @@ void WrenVM::bind_foreign_class(ClassObject* cls, ModuleObject* module) {
   WrenForeignClass methods = bind_foreign_cls_(
       *this, module->name_cstr(), cls->name_cstr());
 
-  Method method = methods.allocate;
-  ASSERT(method.foreign(), "a foreign class must provide an allocate function");
-
+  Method method(MethodType::FOREIGN);
+  // add the symbol even if there is no finalizer so we can ensure that the
+  // symbol itself is always in the symbol table
   int symbol = method_names_.ensure("<allocate>");
-  cls->bind_method(symbol, method);
+  if (methods.allocate) {
+    method.set_foreign(methods.allocate);
+    cls->bind_method(symbol, method);
+  }
 
   // add the symbol even if there is no finalizer so we can ensure that the
   // symbol itself is always in the symbol table
