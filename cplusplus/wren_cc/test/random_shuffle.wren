@@ -26,5 +26,5 @@ for (i in 1..5000) {
 IO.print(histogram.len) // expect: 24
 for (key in histogram.keys) {
   var error = (histogram[key] / (5000 / 24) - 1).abs
-  if (error > 0.2) IO.print("!!! " + error.toString + " !!!")
+  if (error > 0.21) IO.print("!!! " + error.toString + " !!!")
 }
