@@ -129,6 +129,18 @@ class WhereSequence is Sequence {
 
 class String is Sequence {
   bytes { StringByteSequence.new(this) }
+
+  *(count) {
+    if (!(count is Numeric) || !count.isInteger || count < 0) {
+      Fiber.abort("count must be a non negative integer")
+    }
+
+    var result = ""
+    for (i in 0...count) {
+      result = result + this
+    }
+    return result
+  }
 }
 
 class StringByteSequence is Sequence {
@@ -156,6 +168,18 @@ class List is Sequence {
     var result = this[0..-1]
     for (element in other) {
       result.add(element)
+    }
+    return result
+  }
+
+  *(count) {
+    if (!(count is Numeric) || !count.isInteger || count < 0) {
+      Fiber.abort("count must be a non negative integer")
+    }
+
+    var result = []
+    for (i in 0...count) {
+      result.addAll(this)
     }
     return result
   }
