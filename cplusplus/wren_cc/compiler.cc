@@ -1125,7 +1125,7 @@ class Compiler : private UnCopyable {
     // `break` statements can be handled correctly
 
     loop_->body = Xt::as_type<int>(bytecode_.size());
-    block();
+    statement();
   }
 
   void finish_loop(void) {
@@ -1400,13 +1400,17 @@ class Compiler : private UnCopyable {
       var_definition();
     }
     else {
-      block();
+      statement();
     }
   }
 
   void statement(void) {
-    // compiles a statement, there can only appear at the top-level or within
-    // curly blocks, unlike expressions, these do not leave a value on the stack
+    // compiles a simple statement, there can only appear at the top-level or
+    // within curly blocks, simple statements exclude variable binding state-
+    // ments like `var` and `class` which are not allowed directly in places
+    // like the branches of an `if` statement
+    //
+    // unlike expressions, statements do not leave a value on the stack
 
     if (match(TokenKind::KW_BREAK)) {
       if (loop_ == nullptr) {
@@ -1441,14 +1445,14 @@ class Compiler : private UnCopyable {
       int if_jump = emit_jump(Code::JUMP_IF);
 
       // compile the then branch
-      block();
+      statement();
 
       if (match(TokenKind::KW_ELSE)) {
         // jump over the else branch when the if branch is taken
         int else_jump = emit_jump(Code::JUMP);
 
         patch_jump(if_jump);
-        block();
+        statement();
 
         // patch the jump over the else
         patch_jump(else_jump);
@@ -1477,6 +1481,15 @@ class Compiler : private UnCopyable {
       return;
     }
 
+    // block statement
+    if (match(TokenKind::TK_LBRACE)) {
+      push_scope();
+      if (finish_block())
+        emit_opcode(Code::POP); // block was an expression, so discard it
+      pop_scope();
+      return;
+    }
+
     // expression statement
     expression();
     emit_opcode(Code::POP);
@@ -1489,25 +1502,6 @@ class Compiler : private UnCopyable {
   void grouping(bool allow_assignment) {
     expression();
     consume(TokenKind::TK_RPAREN, "expect `)` after expression");
-  }
-
-  void block(void) {
-    // parses a curly block or an expression statement, used in places like
-    // the arms of an if statement where either a single expression or a
-    // curly body is allowd
-
-    if (match(TokenKind::TK_LBRACE)) {
-      push_scope();
-      if (finish_block()){
-        // block was an expression, so discard it
-        emit_opcode(Code::POP);
-      }
-      pop_scope();
-      return;
-    }
-
-    // single statement body
-    statement();
   }
 
   bool finish_block(void) {
