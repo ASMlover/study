@@ -95,8 +95,8 @@ DEF_PRIMITIVE(fiber_abort) {
   return args[1].is_nil();
 }
 
-static bool run_fiber(
-    WrenVM& vm, FiberObject* fiber, Value* args, bool is_call, bool has_value) {
+static bool run_fiber(WrenVM& vm, FiberObject* fiber,
+    Value* args, bool is_call, bool has_value, const char* verb) {
   // transfer execution to [fiber] coming from the current fiber whose stack
   // has [args]
   //
@@ -114,13 +114,13 @@ static bool run_fiber(
   }
 
   if (fiber->empty_frame()) {
-    vm.fiber()->set_error(StringObject::format(vm,
-        "cannot $ a finished fiber", is_call ? "call" : "transfer to"));
+    vm.fiber()->set_error(
+        StringObject::format(vm, "cannot $ a finished fiber", verb));
     return false;
   }
   if (!fiber->error().is_nil()) {
-    vm.fiber()->set_error(StringObject::format(vm,
-        "cannot $ an aborted fiber", is_call ? "call" : "transfer to"));
+    vm.fiber()->set_error(
+        StringObject::format(vm, "cannot $ an aborted fiber", verb));
     return false;
   }
 
@@ -138,11 +138,11 @@ static bool run_fiber(
 }
 
 DEF_PRIMITIVE(fiber_call) {
-  return run_fiber(vm, args[0].as_fiber(), args, true, false);
+  return run_fiber(vm, args[0].as_fiber(), args, true, false, "call");
 }
 
 DEF_PRIMITIVE(fiber_call1) {
-  return run_fiber(vm, args[0].as_fiber(), args, true, true);
+  return run_fiber(vm, args[0].as_fiber(), args, true, true, "call");
 }
 
 DEF_PRIMITIVE(fiber_current) {
@@ -167,36 +167,25 @@ DEF_PRIMITIVE(fiber_suspend) {
 }
 
 DEF_PRIMITIVE(fiber_transfer) {
-  return run_fiber(vm, args[0].as_fiber(), args, false, false);
+  return run_fiber(vm, args[0].as_fiber(), args, false, false, "transfer to");
 }
 
 DEF_PRIMITIVE(fiber_transfer1) {
-  return run_fiber(vm, args[0].as_fiber(), args, false, true);
+  return run_fiber(vm, args[0].as_fiber(), args, false, true, "transfer to");
 }
 
 DEF_PRIMITIVE(fiber_transfer_error) {
-  run_fiber(vm, args[0].as_fiber(), args, false, true);
+  run_fiber(vm, args[0].as_fiber(), args, false, true, "transfer to");
   vm.fiber()->set_error(args[1]);
   return false;
 }
 
 DEF_PRIMITIVE(fiber_try) {
-  FiberObject* current = vm.fiber();
-  FiberObject* tried = args[0].as_fiber();
+  run_fiber(vm, args[0].as_fiber(), args, true, false, "try");
 
-  if (tried->empty_frame())
-    RETURN_ERR("cannot try a finished fiber");
-  if (tried->caller() != nullptr)
-    RETURN_ERR("fiber has already benn called");
-  vm.set_fiber(tried);
-
-  // remeber who ran it
-  vm.fiber()->set_caller(current);
-  vm.fiber()->set_caller_is_trying(true);
-
-  // if the fiber was yielded, make the yield call return nil
-  if (vm.fiber()->stack_size() > 0)
-    vm.fiber()->set_value(vm.fiber()->stack_size() - 1, nullptr);
+  // if we're watching to a valid fiber to try, remember that we're trying it
+  if (vm.fiber()->error().is_nil())
+    vm.fiber()->set_caller_is_trying(true);
 
   return false;
 }
