@@ -443,7 +443,7 @@ InterpretRet WrenVM::interpret(FiberObject* fiber) {
 // local variables
 #define LOAD_FRAME()\
   frame = &fiber->peek_frame();\
-  fn = upwrap_closure(frame->fn);
+  fn = unwrap_closure(frame->fn);
 
 // terminates the current fiber with error string [error], if another calling
 // fiber is willing to catch the error, transfers control to it, otherwise

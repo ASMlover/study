@@ -604,7 +604,7 @@ public:
   static ClosureObject* make_closure(WrenVM& vm, FunctionObject* fn);
 };
 
-inline FunctionObject* upwrap_closure(BaseObject* fn) {
+inline FunctionObject* unwrap_closure(BaseObject* fn) {
   // returns the base FunctionObject backing an ClosureObject, or [fn] if
   // it already is a raw FunctionObject
 
