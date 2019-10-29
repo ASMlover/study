@@ -41,6 +41,10 @@ static bool _primitive_##fn(WrenVM& vm, Value* args)
   vm.fiber()->set_error(StringObject::make_string(vm, msg));\
   return false;\
 } while (false)
+#define RETURN_FERR(fmt, arg) do {\
+  vm.fiber()->set_error(StringObject::format(vm, fmt, arg));\
+  return false;\
+} while (false)
 
 int validate_index(const Value& index, int count);
 bool validate_function(WrenVM& vm, const Value& arg, const str_t& arg_name);

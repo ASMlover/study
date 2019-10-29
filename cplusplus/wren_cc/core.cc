@@ -113,16 +113,10 @@ static bool run_fiber(WrenVM& vm, FiberObject* fiber,
     fiber->set_caller(vm.fiber());
   }
 
-  if (fiber->empty_frame()) {
-    vm.fiber()->set_error(
-        StringObject::format(vm, "cannot $ a finished fiber", verb));
-    return false;
-  }
-  if (!fiber->error().is_nil()) {
-    vm.fiber()->set_error(
-        StringObject::format(vm, "cannot $ an aborted fiber", verb));
-    return false;
-  }
+  if (fiber->empty_frame())
+    RETURN_FERR("cannot $ a finished fiber", verb);
+  if (!fiber->error().is_nil())
+    RETURN_FERR("cannot $ an aborted fiber", verb);
 
   // when the calling fiber resumes, we'll store the result of the call in its
   // stack, if the call has two arguments (the fiber and the value), we only
@@ -289,11 +283,8 @@ DEF_PRIMITIVE(numeric_fromstring) {
   while (*end != '\0' && std::isspace(*end))
     ++end;
 
-  if (errno == ERANGE) {
-    vm.fiber()->set_error(
-        StringObject::make_string(vm, "numeric literal is too large"));
-    return false;
-  }
+  if (errno == ERANGE)
+    RETURN_ERR("numeric literal is too large");
 
   // we must have consumed the entrie string, otherwise, it contains non-number
   // characters and we can't parse it

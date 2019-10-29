@@ -94,9 +94,7 @@ bool validate_numeric(WrenVM& vm, const Value& arg, const str_t& arg_name) {
   if (arg.is_numeric())
     return true;
 
-  vm.fiber()->set_error(
-      StringObject::format(vm, "`$` must be a numeric", arg_name.c_str()));
-  return false;
+  RETURN_FERR("`$` must be a numeric", arg_name.c_str());
 }
 
 bool validate_int_value(WrenVM& vm, double value, const str_t& arg_name) {
@@ -106,9 +104,7 @@ bool validate_int_value(WrenVM& vm, double value, const str_t& arg_name) {
   if (std::trunc(value) == value)
     return true;
 
-  vm.fiber()->set_error(
-      StringObject::format(vm, "`$` must be an integer", arg_name.c_str()));
-  return false;
+  RETURN_FERR("`$` must be an integer", arg_name.c_str());
 }
 
 bool validate_int(WrenVM& vm, const Value& arg, const str_t& arg_name) {
@@ -141,9 +137,7 @@ bool validate_string(WrenVM& vm, const Value& arg, const str_t& arg_name) {
   if (arg.is_string())
     return true;
 
-  vm.fiber()->set_error(
-      StringObject::format(vm, "`$` must be a string", arg_name.c_str()));
-  return false;
+  RETURN_FERR("`$` must be a string", arg_name.c_str());
 }
 
 bool validate_key(WrenVM& vm, const Value& arg) {
@@ -154,9 +148,7 @@ bool validate_key(WrenVM& vm, const Value& arg) {
       arg.is_numeric() || arg.is_range() || arg.is_string())
     return true;
 
-  vm.fiber()->set_error(
-      StringObject::make_string(vm, "key must be a value type"));
-  return false;
+  RETURN_ERR("key must be a value type");
 }
 
 std::tuple<int, int, int> calculate_range(
