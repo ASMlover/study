@@ -42,7 +42,7 @@ enum class Precedence {
   LOWEST,
 
   ASSIGNMENT, // =
-  TERNARY,    // ?:
+  CONDITIONAL,// ?:
   LOGIC_OR,   // ||
   LOGIC_AND,  // &&
   EQUALITY,   // == !=
@@ -574,7 +574,7 @@ class Compiler : private UnCopyable {
     return _rules[Xt::as_type<int>(kind)];
   }
 
-  void parse_precedence(bool allow_assignment, Precedence precedence) {
+  void parse_precedence(Precedence precedence) {
     parser_.advance();
     auto& prefix_fn = get_rule(parser_.prev().kind()).prefix;
     if (!prefix_fn) {
@@ -582,14 +582,23 @@ class Compiler : private UnCopyable {
       return;
     }
 
-    prefix_fn(this, allow_assignment);
+    // track if the precedence of the surrounding expression is low enough to
+    // allow an assignment inside this one, we can not compile an assignment
+    // like a normal expression because it requires us to handle the LHS
+    // specially -- it needs to be an lvalue not an rvalue, so for each of the
+    // kinds of expressions that are valid lvalues -- names, subscripts, fields
+    // and etc -- we pass it whether or not it appears in a context loose
+    // enough to allow `=`, if so, it will parse the `=` itself and handle it
+    // appropriately
+    bool can_assign = precedence <= Precedence::CONDITIONAL;
+    prefix_fn(this, can_assign);
 
     while (precedence <= get_rule(parser_.curr().kind()).precedence) {
       parser_.advance();
 
       auto& infix_fn = get_rule(parser_.prev().kind()).infix;
       if (infix_fn)
-        infix_fn(this, allow_assignment);
+        infix_fn(this, can_assign);
     }
   }
 
@@ -805,16 +814,16 @@ class Compiler : private UnCopyable {
     return c == nullptr ? nullptr : c->enclosing_class_;
   }
 
-  void nil(bool allow_assignment) {
+  void nil(bool can_assign) {
     emit_opcode(Code::NIL);
   }
 
-  void boolean(bool allow_assignment) {
+  void boolean(bool can_assign) {
     emit_opcode(parser_.prev().kind() == TokenKind::KW_TRUE
         ? Code::TRUE : Code::FALSE);
   }
 
-  void literal(bool allow_assignment) {
+  void literal(bool can_assign) {
     const Token& tok = parser_.prev();
     if (tok.kind() == TokenKind::TK_NUMERIC) {
       emit_constant(tok.as_numeric());
@@ -833,7 +842,7 @@ class Compiler : private UnCopyable {
     emit_words(Code::LOAD_MODULE_VAR, symbol);
   }
 
-  void list(bool allow_assignment) {
+  void list(bool can_assign) {
     // instantiate a new list
     load_core_variable("List");
     call_method(0, "new()");
@@ -856,7 +865,7 @@ class Compiler : private UnCopyable {
     consume(TokenKind::TK_RBRACKET, "expect `]` after list elements");
   }
 
-  void map(bool allow_assignment) {
+  void map(bool can_assign) {
     // instantiate a new map
     load_core_variable("Map");
     call_method(0, "new()");
@@ -871,7 +880,7 @@ class Compiler : private UnCopyable {
         break;
 
       // the key
-      parse_precedence(false, Precedence::UNARY);
+      parse_precedence(Precedence::UNARY);
       consume(TokenKind::TK_COLON, "expect `:` after map key");
       ignore_newlines();
 
@@ -906,14 +915,11 @@ class Compiler : private UnCopyable {
     load_variable(resolve_non_module("this"));
   }
 
-  void bare_name(bool allow_assignment, const Variable& variable) {
+  void bare_name(bool can_assign, const Variable& variable) {
     // compiles a read or assignment to [variable]
 
     // if there's an `=` after a bare name, it's a variable assignment
-    if (match(TokenKind::TK_EQ)) {
-      if (!allow_assignment)
-        error("invalid assignment");
-
+    if (can_assign && match(TokenKind::TK_EQ)) {
       // compile the right-hand side
       expression();
 
@@ -934,7 +940,7 @@ class Compiler : private UnCopyable {
     load_variable(variable);
   }
 
-  void static_field(bool allow_assignment) {
+  void static_field(bool can_assign) {
     Compiler* class_compiler = get_enclosing_class_compiler();
     if (class_compiler == nullptr) {
       error("cannot use a static field outside of a class definition");
@@ -958,7 +964,7 @@ class Compiler : private UnCopyable {
     // from the above resolve_local(...) call because we may have already
     // closed over it as an upvalue
     Variable variable = resolve_name(name);
-    bare_name(allow_assignment, variable);
+    bare_name(can_assign, variable);
   }
 
   inline bool is_local_name(const str_t& name) const {
@@ -968,7 +974,7 @@ class Compiler : private UnCopyable {
     return std::islower(name[0]);
   }
 
-  void variable(bool allow_assignment) {
+  void variable(bool can_assign) {
     // compiles a variable name or method call with an implicit receiver
 
     // look for the name in the scope chain up to the nearest enclosing method
@@ -976,7 +982,7 @@ class Compiler : private UnCopyable {
 
     Variable variable = resolve_non_module(token_name);
     if (variable.index != -1) {
-      bare_name(allow_assignment, variable);
+      bare_name(can_assign, variable);
       return;
     }
 
@@ -984,7 +990,7 @@ class Compiler : private UnCopyable {
     // on this
     if (is_local_name(token_name) && get_enclosing_class() != nullptr) {
       load_this();
-      named_call(allow_assignment, Code::CALL_0);
+      named_call(can_assign, Code::CALL_0);
       return;
     }
 
@@ -1005,10 +1011,10 @@ class Compiler : private UnCopyable {
         error("too many module variables defined");
       }
     }
-    bare_name(allow_assignment, variable);
+    bare_name(can_assign, variable);
   }
 
-  void field(bool allow_assignment) {
+  void field(bool can_assign) {
     // initialize it with a fake value so we can keep parsing and minimize
     // the number of cascaded erros
     int field = 0xff;
@@ -1033,10 +1039,7 @@ class Compiler : private UnCopyable {
 
     // if there is an `=` after a filed name, it's an assignment
     bool is_load = true;
-    if (match(TokenKind::TK_EQ)) {
-      if (!allow_assignment)
-        error("invalid assignment");
-
+    if (can_assign && match(TokenKind::TK_EQ)) {
       // compile the right-hand side
       expression();
       is_load = false;
@@ -1171,7 +1174,7 @@ class Compiler : private UnCopyable {
 
     // load the superclass (if there is one)
     if (match(TokenKind::KW_IS)) {
-      parse_precedence(false, Precedence::CALL);
+      parse_precedence(Precedence::CALL);
     }
     else {
       // implicitly inherit from Object
@@ -1512,10 +1515,10 @@ class Compiler : private UnCopyable {
   }
 
   void expression(void) {
-    parse_precedence(true, Precedence::LOWEST);
+    parse_precedence(Precedence::LOWEST);
   }
 
-  void grouping(bool allow_assignment) {
+  void grouping(bool can_assign) {
     expression();
     consume(TokenKind::TK_RPAREN, "expect `)` after expression");
   }
@@ -1682,13 +1685,13 @@ class Compiler : private UnCopyable {
     return true;
   }
 
-  void call(bool allow_assignment) {
+  void call(bool can_assign) {
     ignore_newlines();
     consume(TokenKind::TK_IDENTIFIER, "expect method name after `.`");
-    named_call(allow_assignment, Code::CALL_0);
+    named_call(can_assign, Code::CALL_0);
   }
 
-  void subscript(bool allow_assignment) {
+  void subscript(bool can_assign) {
     // subscript or `array indexing` operator like `foo[index]`
 
     Signature signature("", SignatureType::SUBSCRIPT, 0);
@@ -1697,10 +1700,7 @@ class Compiler : private UnCopyable {
     finish_arguments(signature);
     consume(TokenKind::TK_RBRACKET, "expect `]` after subscript arguments");
 
-    if (match(TokenKind::TK_EQ)) {
-      if (!allow_assignment)
-        error("invalid assignment");
-
+    if (can_assign && match(TokenKind::TK_EQ)) {
       signature.set_type(SignatureType::SUBSCRIPT_SETTER);
 
       // compile the assigned value
@@ -1711,27 +1711,27 @@ class Compiler : private UnCopyable {
     call_signature(Code::CALL_0, signature);
   }
 
-  void and_exp(bool allow_assignment) {
+  void and_exp(bool can_assign) {
     ignore_newlines();
 
     // skip the right argument if the left is false
     int jump = emit_jump(Code::AND);
 
-    parse_precedence(false, Precedence::LOGIC_AND);
+    parse_precedence(Precedence::LOGIC_AND);
     patch_jump(jump);
   }
 
-  void or_exp(bool allow_assignment) {
+  void or_exp(bool can_assign) {
     ignore_newlines();
 
     // skip the right argument if the left if true
     int jump = emit_jump(Code::OR);
 
-    parse_precedence(false, Precedence::LOGIC_OR);
+    parse_precedence(Precedence::LOGIC_OR);
     patch_jump(jump);
   }
 
-  void condition(bool allow_assignment) {
+  void condition(bool can_assign) {
     // ignore newline after `?`
     ignore_newlines();
 
@@ -1739,7 +1739,7 @@ class Compiler : private UnCopyable {
     int if_jump = emit_jump(Code::JUMP_IF);
 
     // compile the then branch
-    parse_precedence(allow_assignment, Precedence::TERNARY);
+    parse_precedence(Precedence::CONDITIONAL);
     consume(TokenKind::TK_COLON,
         "expect `:` after then branch of condition operator");
     ignore_newlines();
@@ -1748,33 +1748,33 @@ class Compiler : private UnCopyable {
     int else_jump = emit_jump(Code::JUMP);
     // compile the else branch
     patch_jump(if_jump);
-    parse_precedence(allow_assignment, Precedence::ASSIGNMENT);
+    parse_precedence(Precedence::ASSIGNMENT);
 
     // patch the jump over the else
     patch_jump(else_jump);
   }
 
-  void infix_oper(bool allow_assignment) {
+  void infix_oper(bool can_assign) {
     auto& rule = get_rule(parser_.prev().kind());
 
     // an infix operator cannot end an expression
     ignore_newlines();
 
     // compile the right hand side
-    parse_precedence(false, rule.precedence + 1);
+    parse_precedence(rule.precedence + 1);
 
     // call the operator method on the left-hand side
     Signature signature(rule.name, SignatureType::METHOD, 1);
     call_signature(Code::CALL_0, signature);
   }
 
-  void unary_oper(bool allow_assignment) {
+  void unary_oper(bool can_assign) {
     auto& rule = get_rule(parser_.prev().kind());
 
     ignore_newlines();
 
     // compile the argument
-    parse_precedence(false, Precedence::UNARY + 1);
+    parse_precedence(Precedence::UNARY + 1);
 
     // call the operator method on the left-hand side
     call_method(0, str_t(1, rule.name[0]));
@@ -2077,16 +2077,14 @@ class Compiler : private UnCopyable {
     call_signature(instruction, called);
   }
 
-  void named_call(bool allow_assignment, Code instruction) {
+  void named_call(bool can_assign, Code instruction) {
     // compiles a call whose name is the previously consumed token, this
     // includes getters, method calls with arguments, and setter calls
 
     // get the token for the method name
     Signature signature = signature_from_token(SignatureType::GETTER);
 
-    if (match(TokenKind::TK_EQ)) {
-      if (!allow_assignment)
-        error("invalid assignment");
+    if (can_assign && match(TokenKind::TK_EQ)) {
       ignore_newlines();
 
       signature.set_type(SignatureType::SETTER);
@@ -2100,7 +2098,7 @@ class Compiler : private UnCopyable {
     }
   }
 
-  void super_exp(bool allow_assignment) {
+  void super_exp(bool can_assign) {
     ClassCompiler* enclosing_class = get_enclosing_class();
     if (enclosing_class == nullptr) {
       error("cannot use `super` outside of a method");
@@ -2111,7 +2109,7 @@ class Compiler : private UnCopyable {
     if (match(TokenKind::TK_DOT)) {
       // compile the superclass call
       consume(TokenKind::TK_IDENTIFIER, "expect method name after `super`");
-      named_call(allow_assignment, Code::SUPER_0);
+      named_call(can_assign, Code::SUPER_0);
     }
     else if (enclosing_class != nullptr) {
       // no explicit name, so use the name of the enclosing method, make sure
@@ -2122,7 +2120,7 @@ class Compiler : private UnCopyable {
     }
   }
 
-  void this_exp(bool allow_assignment) {
+  void this_exp(bool can_assign) {
     if (get_enclosing_class() == nullptr) {
       error("cannot use `this` outside of a method");
       return;
