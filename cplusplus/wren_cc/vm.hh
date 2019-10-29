@@ -170,8 +170,6 @@ class WrenVM final : private UnCopyable {
 
   ModuleObject* get_module(const Value& name) const;
   FiberObject* load_module(const Value& name, const str_t& source_bytes);
-  Value import_module(const Value& name);
-  Value import_variable(const Value& module_name, const Value& variable_name);
   InterpretRet load_into_core(const str_t& source_bytes);
   WrenForeignFn find_foreign_method(const str_t& module_name,
       const str_t& class_name, bool is_static, const str_t& signature);
@@ -242,10 +240,11 @@ public:
   const Value& find_variable(ModuleObject* module, const str_t& name) const;
   void set_api_stack_asref(const Value& value);
   void set_api_stack_asptr(Value* value);
+  Value import_module(const Value& name);
+  Value get_module_variable(const Value& module_name, const Value& variable_name);
 
   void push_root(BaseObject* obj);
   void pop_root(void);
-  Value import_module(const str_t& name);
 
   void collect(void);
   void append_object(BaseObject* obj);

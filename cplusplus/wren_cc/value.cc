@@ -781,7 +781,6 @@ int FunctionObject::get_argc(
   case Code::OR:
   case Code::METHOD_INSTANCE:
   case Code::METHOD_STATIC:
-  case Code::LOAD_MODULE:
     return 2;
 
   case Code::SUPER_0:
@@ -801,7 +800,6 @@ int FunctionObject::get_argc(
   case Code::SUPER_14:
   case Code::SUPER_15:
   case Code::SUPER_16:
-  case Code::IMPORT_VARIABLE:
     return 4;
 
   case Code::CLOSURE:

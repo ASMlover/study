@@ -125,6 +125,65 @@ void WrenVM::set_api_stack_asptr(Value* value) {
   api_stack_ = value;
 }
 
+Value WrenVM::import_module(const Value& name) {
+  // imports the module with [name], a string object
+  //
+  // if the module has already been imported (or is already in the middle of
+  // being imported, in the case of a circular import), return nil, otherwise
+  // returns a new fiber that will execute the module's code, that fiber should
+  // be called before any variables are loaded from the module
+  //
+  // if the module could not be found, set an error in the current fiber
+
+  // if the module is already loaded, we do not need to do anything
+  if (auto val = modules_->get(name); val)
+    return nullptr;
+
+  // load the module's source code from the embedder
+  const str_t source_bytes = load_module_fn_(*this, name.as_cstring());
+  if (source_bytes.empty()) {
+    // could not load the module
+    fiber_->set_error(
+        StringObject::format(*this, "could not load module `@`", name));
+    return nullptr;
+  }
+
+  FiberObject* module_fiber = load_module(name, source_bytes);
+  if (module_fiber == nullptr) {
+    fiber_->set_error(
+        StringObject::format(*this, "could not compile module `@`", name));
+    return nullptr;
+  }
+
+  // return the fiber that executes the module
+  return module_fiber;
+}
+
+Value WrenVM::get_module_variable(
+    const Value& module_name, const Value& variable_name) {
+  // looks up a variable from a previously loaded module
+  //
+  // aborts the current fiber if the module or variable could not be found
+
+  ModuleObject* module = get_module(module_name);
+  if (module == nullptr) {
+    fiber_->set_error(
+        StringObject::format(*this, "module `@` is not loaded", module_name));
+    return nullptr;
+  }
+
+  StringObject* variable = variable_name.as_string();
+  int variable_entry = module->find_variable(variable->cstr());
+  // it's a runtime error if the imported variable does not exist
+  if (variable_entry != -1)
+    return module->get_variable(variable_entry);
+
+  fiber_->set_error(StringObject::format(*this,
+        "could not find a variable named `@` in module `@`",
+        variable, module_name));
+  return nullptr;
+}
+
 void WrenVM::push_root(BaseObject* obj) {
   // mark [obj] as a GC root so that it does not get collected
 
@@ -138,33 +197,6 @@ void WrenVM::pop_root(void) {
 
   ASSERT(temp_roots_.size() > 0, "No temporary roots to release");
   temp_roots_.pop_back();
-}
-
-Value WrenVM::import_module(const str_t& name) {
-  // imports the module with [name]
-  //
-  // if the module has already been imported (or is already in the middle of
-  // being imported, in the case of a circular import), returns true, oterwise
-  // returns a new fiber that will execute the module's code, that fiber should
-  // be called before any variables are loaded from the module
-  //
-  // if the module could not be found, return false
-
-  Value name_val = StringObject::make_string(*this, name);
-  PinnedGuard name_guard(*this, name_val.as_object());
-
-  // if the module is already loaded, we do not need to do anything
-  if (auto val = modules_->get(name_val); !val)
-    return nullptr;
-
-  // load the module's source code from the embedder
-  str_t source_bytes = load_module_fn_(*this, name);
-  if (source_bytes.empty())
-    return StringObject::format(*this, "could not find module `$`", name.c_str());
-
-  FiberObject* module_fiber = load_module(name_val, source_bytes);
-  // return the fiber the executes the module
-  return module_fiber;
 }
 
 void WrenVM::print_stacktrace(FiberObject* fiber) {
@@ -839,43 +871,6 @@ __complete_call:
 
       DISPATCH();
     }
-    CASE_CODE(LOAD_MODULE):
-    {
-      Value result = import_module(fn->get_constant(RDWORD()));
-
-      if (!fiber->error().is_nil())
-        RUNTIME_ERROR();
-
-      // make a slot that the module's fiber can use to store its result in,
-      // it ends up getting discarded, but `Code::RETURN` expects to be able
-      // to place a value there
-      PUSH(nullptr);
-
-      // if it returned a fiber to execute the module body, switch to it
-      if (result.is_fiber()) {
-        // return to this module when that one is done
-        result.as_fiber()->set_caller(fiber);
-
-        fiber = result.as_fiber();
-        fiber_ = fiber;
-        LOAD_FRAME();
-      }
-
-      DISPATCH();
-    }
-    CASE_CODE(IMPORT_VARIABLE):
-    {
-      const Value& module = fn->get_constant(RDWORD());
-      const Value& variable = fn->get_constant(RDWORD());
-
-      Value result = import_variable(module, variable);
-      if (!fiber->error().is_nil())
-        RUNTIME_ERROR();
-
-      PUSH(result);
-
-      DISPATCH();
-    }
     CASE_CODE(END):
     {
       // a END should always preceded by a RETURN. if we get here, the compiler
@@ -962,48 +957,6 @@ FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
 
   // return the fiber that executes the module
   return module_fiber;
-}
-
-Value WrenVM::import_module(const Value& name) {
-  // if the module is already loaded, we do not need to do anything
-  if (auto val = modules_->get(name); val)
-    return nullptr;
-
-  // load the module's source code from the embedder
-  const str_t source_bytes = load_module_fn_(*this, name.as_cstring());
-  if (source_bytes.empty()) {
-    // could not load the module
-    fiber_->set_error(
-        StringObject::format(*this, "could not load module `@`", name));
-    return nullptr;
-  }
-
-  FiberObject* module_fiber = load_module(name, source_bytes);
-  if (module_fiber == nullptr) {
-    fiber_->set_error(
-        StringObject::format(*this, "could not compile module `@`", name));
-    return nullptr;
-  }
-
-  // return the fiber that executes the module
-  return module_fiber;
-}
-
-Value WrenVM::import_variable(
-    const Value& module_name, const Value& variable_name) {
-  ModuleObject* module = get_module(module_name);
-  ASSERT(module != nullptr, "should only look up loaded modules");
-
-  StringObject* variable = variable_name.as_string();
-  int variable_entry = module->find_variable(variable->cstr());
-  // it's a runtime error if the imported variable does not exist
-  if (variable_entry != -1)
-    return module->get_variable(variable_entry);
-
-  fiber_->set_error(StringObject::format(*this,
-        "could not find a variable named `@` in module `@`",
-        variable, module_name));
-  return nullptr;
 }
 
 WrenForeignFn WrenVM::find_foreign_method(const str_t& module_name,

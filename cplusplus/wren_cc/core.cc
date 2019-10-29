@@ -916,6 +916,40 @@ DEF_PRIMITIVE(sys_gc) {
   RETURN_VAL(nullptr);
 }
 
+DEF_PRIMITIVE(sys_getmodvar) {
+  if (!validate_string(vm, args[1], "Module"))
+    return false;
+  if (!validate_string(vm, args[2], "Variable"))
+    return false;
+
+  Value result = vm.get_module_variable(args[1], args[2]);
+  if (!vm.fiber()->error().is_nil())
+    return false;
+
+  RETURN_VAL(result);
+}
+
+DEF_PRIMITIVE(sys_importmod) {
+  Value result = vm.import_module(args[1]);
+  if (!vm.fiber()->error().is_nil())
+    return false;
+
+  // if we get nil, the module is already loaded and there is no work to do
+  if (result.is_nil())
+    RETURN_VAL(nullptr);
+  // otherwise we should get a fiber that executes the module
+  ASSERT(result.is_fiber(), "should get a fiber to execute");
+
+  // we have two slots on the stack for this call, but we only need one for
+  // the return value of the fiber we're calling , discard the other
+  vm.fiber()->pop();
+
+  // return to this module when that one is done
+  result.as_fiber()->set_caller(vm.fiber());
+  vm.set_fiber(result.as_fiber());
+  return false;
+}
+
 static ClassObject* define_class(
     WrenVM& vm, ModuleObject* module, const str_t& name) {
   // creates either the Object or Class class in the core library with [name]
@@ -1122,6 +1156,8 @@ namespace core {
 
     ClassObject* sys_cls = vm.find_variable(core_module, "Sys").as_class();
     vm.set_primitive(sys_cls->cls(), "gc()", _primitive_sys_gc);
+    vm.set_primitive(sys_cls->cls(), "getModuleVariable(_,_)", _primitive_sys_getmodvar);
+    vm.set_primitive(sys_cls->cls(), "importModule(_)", _primitive_sys_importmod);
 
     // while bootstrapping the core types and running the core library, a number
     // string objects have benn created, many of which were instantiated before
