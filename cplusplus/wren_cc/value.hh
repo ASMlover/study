@@ -429,6 +429,7 @@ public:
   inline const str_t& name(void) const { return name_; }
   inline void set_name(const str_t& name) { name_ = name; }
   inline int get_line(int i) const { return source_lines_[i]; }
+  inline void append_line(int i) { source_lines_.push_back(i); }
   inline void set_lines(std::initializer_list<int> lines) { source_lines_ = lines; }
 };
 
@@ -495,8 +496,10 @@ class FunctionObject final : public BaseObject {
       const str_t& debug_name, int* source_lines, int lines_count) noexcept;
 public:
   inline int num_upvalues(void) const { return num_upvalues_; }
-  inline int max_slots(void) const { return max_slots_; }
   inline void set_num_upvalues(int num_upvalues) { num_upvalues_ = num_upvalues; }
+  inline int inc_num_upvalues(void) { return num_upvalues_++; }
+  inline int max_slots(void) const { return max_slots_; }
+  inline void set_max_slots(int max_slots) { max_slots_ = max_slots; }
   inline const u8_t* codes(void) const { return codes_.data(); }
   inline void set_codes(const std::vector<u8_t>& codes) { codes_ = codes; }
   inline const Value* constants(void) const { return constants_.data(); }
@@ -507,6 +510,7 @@ public:
   inline const Value& get_constant(int i) const { return constants_[i]; }
   inline void set_constant(int i, const Value& v) { constants_[i] = v; }
   inline int arity(void) const { return arity_; }
+  inline void set_arity(int arity) { arity_ = arity; }
   inline ModuleObject* module(void) const { return module_; }
   inline DebugObject& debug(void) { return debug_; }
   inline const DebugObject& debug(void) const { return debug_; }
@@ -518,6 +522,10 @@ public:
 
   template <typename T> inline void set_code(int i, T c) {
     codes_[i] = Xt::as_type<u8_t>(c);
+  }
+
+  inline void append_constant(const Value& v) {
+    constants_.push_back(v);
   }
 
   virtual str_t stringify(void) const override;
