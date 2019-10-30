@@ -1662,6 +1662,10 @@ class Compiler : private UnCopyable {
       // define a constant for the signature
       emit_constant(
           StringObject::make_string(parser_.get_vm(), full_signature));
+
+      // we don't need the function we started compiling in the parameter
+      // list any more
+      method_compiler.abort_compiler();
     }
     else {
       consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
@@ -2156,6 +2160,13 @@ public:
     max_slots_ = Xt::as_type<int>(locals_.size());
   }
 
+  inline void abort_compiler(void) {
+    // discards memory owned by [this] and removes it from the stack of
+    // ongoing compilers
+
+    parser_.get_vm().set_compiler(parent_);
+  }
+
   FunctionObject* finish_compiler(const str_t& debug_name) {
     // finishes [compiler], which is compiling a function, method or chunk of
     // top level code. if there is a parent compiler, then this emits code in
@@ -2164,7 +2175,7 @@ public:
     // if we hit an error, donot bother creating the function since it's borked
     // anyway
     if (parser_.had_error()) {
-      parser_.get_vm().set_compiler(parent_);
+      abort_compiler();
       return nullptr;
     }
 
