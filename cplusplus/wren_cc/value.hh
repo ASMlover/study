@@ -423,10 +423,13 @@ class DebugObject final : private UnCopyable {
   // is the line in the source code that generated that instruction
   std::vector<int> source_lines_;
 public:
+  DebugObject(void) noexcept {}
   DebugObject(const str_t& name, int* source_lines, int lines_count) noexcept;
 
   inline const str_t& name(void) const { return name_; }
+  inline void set_name(const str_t& name) { name_ = name; }
   inline int get_line(int i) const { return source_lines_[i]; }
+  inline void set_lines(std::initializer_list<int> lines) { source_lines_ = lines; }
 };
 
 class ModuleObject final : public BaseObject {
@@ -483,6 +486,7 @@ class FunctionObject final : public BaseObject {
   int arity_{};
   DebugObject debug_;
 
+  FunctionObject(ClassObject* cls, ModuleObject* module, int max_slots) noexcept;
   FunctionObject(
       ClassObject* cls, ModuleObject* module,
       int max_slots, int num_upvalues, int arity,
@@ -504,7 +508,13 @@ public:
   inline void set_constant(int i, const Value& v) { constants_[i] = v; }
   inline int arity(void) const { return arity_; }
   inline ModuleObject* module(void) const { return module_; }
+  inline DebugObject& debug(void) { return debug_; }
   inline const DebugObject& debug(void) const { return debug_; }
+  inline void bind_name(const str_t& name) { debug_.set_name(name); }
+
+  template <typename T> inline void append_code(T c) {
+    codes_.push_back(Xt::as_type<u8_t>(c));
+  }
 
   template <typename T> inline void set_code(int i, T c) {
     codes_[i] = Xt::as_type<u8_t>(c);
@@ -514,6 +524,8 @@ public:
   virtual void gc_blacken(WrenVM& vm) override;
 
   static int get_argc(const u8_t* bytecode, const Value* constants, int ip);
+  static FunctionObject* make_function(
+      WrenVM& vm, ModuleObject* module, int max_slots);
   static FunctionObject* make_function(
       WrenVM& vm, ModuleObject* module,
       int max_slots, int num_upvalues, int arity,

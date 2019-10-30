@@ -689,6 +689,13 @@ ModuleObject* ModuleObject::make_module(WrenVM& vm, StringObject* name) {
 }
 
 FunctionObject::FunctionObject(
+    ClassObject* cls, ModuleObject* module, int max_slots) noexcept
+  : BaseObject(ObjType::FUNCTION, cls)
+  , module_(module)
+  , max_slots_(max_slots) {
+}
+
+FunctionObject::FunctionObject(
     ClassObject* cls, ModuleObject* module,
     int max_slots, int num_upvalues, int arity,
     u8_t* codes, int codes_count,
@@ -813,6 +820,13 @@ int FunctionObject::get_argc(
   default: UNREACHABLE();
   }
   return 0;
+}
+
+FunctionObject* FunctionObject::make_function(
+    WrenVM& vm, ModuleObject* module, int max_slots) {
+  auto* o = new FunctionObject(vm.fn_cls(), module, max_slots);
+  vm.append_object(o);
+  return o;
 }
 
 FunctionObject* FunctionObject::make_function(

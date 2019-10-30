@@ -1144,20 +1144,21 @@ WrenValue* WrenVM::make_call_handle(const str_t& signature) {
 
   // create a little stub function that assumes the arguments are on the stack
   // and calls the method
-  u8_t bytecode[5] = {
-    Xt::as_type<u8_t>(Code::CALL_0 + num_params),
-    Xt::as_type<u8_t>((method >> 8) & 0xff),
-    Xt::as_type<u8_t>(method & 0xff),
-    Xt::as_type<u8_t>(Code::RETURN),
-    Xt::as_type<u8_t>(Code::END)
-  };
-  int debug_lines[] = {1, 1, 1, 1, 1};
+  FunctionObject* fn = FunctionObject::make_function(
+      *this, nullptr, num_params + 1);
+  // wrap the function in a handle, do this here so it doesn't get collected
+  // as we fill it in
+  WrenValue* value = capture_value(fn);
 
-  FunctionObject* fn = FunctionObject::make_function(*this, nullptr,
-      num_params + 1, 0, 0, bytecode, 5, nullptr, 0, signature, debug_lines, 5);
+  fn->append_code(Code::CALL_0 + num_params);
+  fn->append_code((method >> 8) & 0xff);
+  fn->append_code(method & 0xff);
+  fn->append_code(Code::RETURN);
+  fn->append_code(Code::END);
+  fn->debug().set_lines({0, 0, 0, 0, 0});
+  fn->bind_name(signature);
 
-  // wrap the function in a handle
-  return capture_value(fn);
+  return value;
 }
 
 InterpretRet WrenVM::wren_call(WrenValue* method) {
