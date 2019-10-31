@@ -577,13 +577,6 @@ InterpretRet WrenVM::interpret(FiberObject* fiber) {
       DISPATCH();
     }
     CASE_CODE(POP): POP(); DISPATCH();
-    CASE_CODE(DUP):
-    {
-      const Value& value = PEEK();
-      PUSH(value);
-
-      DISPATCH();
-    }
 
     {
       // the opercodes for doing method and superclass calls share a lot of

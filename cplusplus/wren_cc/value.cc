@@ -731,7 +731,6 @@ int FunctionObject::get_argc(
   case Code::FALSE:
   case Code::TRUE:
   case Code::POP:
-  case Code::DUP:
   case Code::CLOSE_UPVALUE:
   case Code::RETURN:
   case Code::END:
