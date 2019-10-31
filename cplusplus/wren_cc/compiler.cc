@@ -236,7 +236,8 @@ struct ClassCompiler {
 
   // symbol table for the fields of the class
   SymbolTable fields{};
-  SymbolTable methods{};
+  std::vector<int> static_methods{};
+  std::vector<int> instance_methods{};
 
   // true if the class being compiled is a foreign class
   bool is_foreign{};
@@ -248,6 +249,25 @@ struct ClassCompiler {
   Signature* signature{};
 
   ClassCompiler(void) noexcept {}
+
+  template <typename T>
+  inline int indexof_vector(const std::vector<int>& vec, T v) const {
+    for (sz_t i = 0; i < vec.size(); ++i) {
+      if (vec[i] == v)
+        return Xt::as_type<int>(i);
+    }
+    return -1;
+  }
+
+  inline bool insert_method_symbol(bool is_static, int method_symbol) {
+    auto& methods = is_static ? static_methods : instance_methods;
+    int symbol = indexof_vector(methods, method_symbol);
+    if (symbol == -1) {
+      methods.push_back(method_symbol);
+      return true;
+    }
+    return false;
+  }
 };
 
 // the stack effect of each opcode, the index in the array is the opcode, and
@@ -1628,7 +1648,8 @@ class Compiler final : private UnCopyable {
     // couldn't be parsed
 
     bool is_foreign = match(TokenKind::KW_FOREIGN);
-    enclosing_class_->in_static = match(TokenKind::KW_STATIC);
+    bool is_static = match(TokenKind::KW_STATIC);
+    enclosing_class_->in_static = is_static;
 
     SignatureFn signature_fn = get_rule(parser_.curr().kind()).method;
     parser_.advance();
@@ -1647,21 +1668,11 @@ class Compiler final : private UnCopyable {
 
     // compile the method signature
     signature_fn(&method_compiler, signature);
-    if (enclosing_class_->in_static && signature.type == SignatureType::INITIALIZER)
+    if (is_static && signature.type == SignatureType::INITIALIZER)
       error("a constructor cannot be static");
 
     // include the full signature in debug messages in stack traces
     str_t full_signature = signature_to_string(signature);
-
-    // check for duplicate methods
-    auto& methods = enclosing_class_->methods;
-    int symbol = methods.get(full_signature);
-    if (symbol != -1) {
-      error("already defined method `%s` for class `%s` in module `%s`",
-          full_signature.c_str(),
-          enclosing_class_->name->cstr(), parser_.get_mod()->name_cstr());
-    }
-    methods.add(full_signature);
 
     if (is_foreign) {
       // define a constant for the signature
@@ -1681,7 +1692,7 @@ class Compiler final : private UnCopyable {
     // define the method for a constructor, this defines the instance
     // initializer method
     int method_symbol = signature_symbol(signature);
-    define_method(class_variable, enclosing_class_->in_static, method_symbol);
+    define_method(class_variable, is_static, method_symbol);
     if (signature.type == SignatureType::INITIALIZER) {
       // also define a matching constructor method on the metaclass
       signature.set_type(SignatureType::METHOD);
@@ -1689,6 +1700,14 @@ class Compiler final : private UnCopyable {
 
       create_constructor(signature, method_symbol);
       define_method(class_variable, true, constructor_symbol);
+    }
+
+    // check for duplicate methods, does not matter that it's already been
+    // defined, error will discard bytecode anyway
+    if (!enclosing_class_->insert_method_symbol(is_static, method_symbol)) {
+      error("already defined %s `%s` for class `%s` in module `%s`",
+          is_static ? "static method" : "method", full_signature.c_str(),
+          enclosing_class_->name->cstr(), parser_.get_mod()->name_cstr());
     }
 
     return true;
