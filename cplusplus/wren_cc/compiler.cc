@@ -232,8 +232,11 @@ struct Variable {
 struct ClassCompiler {
   // bookkeeping information for compiling a class definition
 
+  StringObject* name{};
+
   // symbol table for the fields of the class
   SymbolTable fields{};
+  SymbolTable methods{};
 
   // true if the class being compiled is a foreign class
   bool is_foreign{};
@@ -1155,6 +1158,9 @@ class Compiler final : private UnCopyable {
     Variable class_variable(declare_named_variable(),
         scope_depth_ == -1 ? ScopeType::MODULE : ScopeType::LOCAL);
 
+    StringObject* class_name = StringObject::make_string(
+        parser_.get_vm(), parser_.prev().as_string());
+
     // make a string constant for the name
     emit_constant(
         StringObject::make_string(parser_.get_vm(), parser_.prev().as_string()));
@@ -1187,6 +1193,7 @@ class Compiler final : private UnCopyable {
 
     ClassCompiler class_compiler;
     class_compiler.is_foreign = is_foreign;
+    class_compiler.name = class_name;
 
     // set up a symbol table for the class's fields, we'll initially compile
     // them to slots starting at zero. when the method is bound to the close
@@ -1645,6 +1652,17 @@ class Compiler final : private UnCopyable {
 
     // include the full signature in debug messages in stack traces
     str_t full_signature = signature_to_string(signature);
+
+    // check for duplicate methods
+    auto& methods = enclosing_class_->methods;
+    int symbol = methods.get(full_signature);
+    if (symbol != -1) {
+      error("already defined method `%s` for class `%s` in module `%s`",
+          full_signature.c_str(),
+          enclosing_class_->name->cstr(), parser_.get_mod()->name_cstr());
+    }
+    methods.add(full_signature);
+
     if (is_foreign) {
       // define a constant for the signature
       emit_constant(
