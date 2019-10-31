@@ -251,18 +251,17 @@ struct ClassCompiler {
   ClassCompiler(void) noexcept {}
 
   template <typename T>
-  inline int indexof_vector(const std::vector<int>& vec, T v) const {
+  inline bool has_method(const std::vector<T>& vec, T v) const {
     for (sz_t i = 0; i < vec.size(); ++i) {
       if (vec[i] == v)
-        return Xt::as_type<int>(i);
+        return true;
     }
-    return -1;
+    return false;
   }
 
-  inline bool insert_method_symbol(bool is_static, int method_symbol) {
+  inline bool insert_method(bool is_static, int method_symbol) {
     auto& methods = is_static ? static_methods : instance_methods;
-    int symbol = indexof_vector(methods, method_symbol);
-    if (symbol == -1) {
+    if (!has_method(methods, method_symbol)) {
       methods.push_back(method_symbol);
       return true;
     }
@@ -1178,12 +1177,12 @@ class Compiler final : private UnCopyable {
     Variable class_variable(declare_named_variable(),
         scope_depth_ == -1 ? ScopeType::MODULE : ScopeType::LOCAL);
 
+    // create shared class name value
     StringObject* class_name = StringObject::make_string(
         parser_.get_vm(), parser_.prev().as_string());
 
     // make a string constant for the name
-    emit_constant(
-        StringObject::make_string(parser_.get_vm(), parser_.prev().as_string()));
+    emit_constant(class_name);
 
     // load the superclass (if there is one)
     if (match(TokenKind::KW_IS)) {
@@ -1704,10 +1703,10 @@ class Compiler final : private UnCopyable {
 
     // check for duplicate methods, does not matter that it's already been
     // defined, error will discard bytecode anyway
-    if (!enclosing_class_->insert_method_symbol(is_static, method_symbol)) {
-      error("already defined %s `%s` for class `%s` in module `%s`",
-          is_static ? "static method" : "method", full_signature.c_str(),
-          enclosing_class_->name->cstr(), parser_.get_mod()->name_cstr());
+    if (!enclosing_class_->insert_method(is_static, method_symbol)) {
+      error("already defined %s `%s` for class `%s",
+          is_static ? "static method" : "method",
+          full_signature.c_str(), enclosing_class_->name->cstr());
     }
 
     return true;
