@@ -116,7 +116,7 @@ struct GrammerRule {
   const char* name;
 };
 
-class Parser : private UnCopyable {
+class Parser final : private UnCopyable {
   WrenVM& vm_;
   ModuleObject* module_{};
 
@@ -255,7 +255,7 @@ static constexpr int kStackEffects[] = {
 #include "codes_def.hh"
 };
 
-class Compiler : private UnCopyable {
+class Compiler final : private UnCopyable {
   // the maximum number of arguments that can be passed to a method, note
   // that this limtation is hardcoded in other places in th VM, in particular
   // the `CALL_xx` instructions assume a certain maximum number
@@ -280,13 +280,10 @@ class Compiler : private UnCopyable {
   static constexpr int kMaxJump = 1 << 16;
 
   Parser& parser_;
-  Compiler* parent_{};
 
-  // the growable buffer of code that's been compiled so far
-  std::vector<u8_t> bytecode_;
-  // the buffer of source line mappings
-  std::vector<int> debug_source_lines_;
-  std::vector<Value> constants_;
+  // the compiler for the function enclosing this one, or nullptr if it's
+  // the top level
+  Compiler* parent_{};
 
   // the current level of block scope nesting, where zero is no nesting.
   // a -1 here means top-level code is being compiled and thers is no block
@@ -305,28 +302,14 @@ class Compiler : private UnCopyable {
   // not need to double count them here
   int num_slots_{};
 
-  // the maximum number of slots (locals and temporaries) in use at one time
-  // in the function
-  int max_slots_{};
-
   // the current innermost loop being compiled, or `nullptr` if not in a loop
   Loop* loop_{};
 
   // if this is a compiler for a method, keeps track of the class enclosing it
   ClassCompiler* enclosing_class_{};
 
-  // // for the fields of the nearest enclosing class, or nullptr if not
-  // // currently inside a class
-  // SymbolTable* fields_{};
-
-  // // true if the current method being compiled is static, false if it's an
-  // // instance method or we are not compiling a method
-  // bool is_static_method_{};
-
-  // // name of the method this compiler is compiling, or `empty` if this
-  // // compiler is not for a method. note that this is just the bare method
-  // // name and not its full signature
-  // str_t method_name_;
+  // the function being compiled
+  FunctionObject* fn_{};
 
   // the currently in scope local variables
   std::vector<Local> locals_;
@@ -334,10 +317,6 @@ class Compiler : private UnCopyable {
   // the upvalues that this function has captured from outer scopes, the
   // count of them is stored in `fn->num_upvalues()`
   std::vector<CompilerUpvalue> upvalues_;
-  int num_upvalues_{};
-
-  // the number of parameters this method or function expects
-  int num_params_{};
 
   inline SymbolTable& vm_mnames(void) { return parser_.get_vm().mnames(); }
 
@@ -374,9 +353,9 @@ class Compiler : private UnCopyable {
   }
 
   template <typename T> inline int emit_byte(T b) {
-    bytecode_.push_back(Xt::as_type<u8_t>(b));
-    debug_source_lines_.push_back(parser_.prev().lineno());
-    return Xt::as_type<int>(bytecode_.size() - 1);
+    fn_->append_code(b);
+    fn_->debug().append_line(parser_.prev().lineno());
+    return fn_->codes_count() - 1;
   }
 
   template <typename T> inline void emit_opcode(T b) {
@@ -384,8 +363,8 @@ class Compiler : private UnCopyable {
 
     // keep track of the stack's high water mark
     num_slots_ += kStackEffects[Xt::as_type<int>(b)];
-    if (num_slots_ > max_slots_)
-      max_slots_ = num_slots_;
+    if (num_slots_ > fn_->max_slots())
+      fn_->set_max_slots(num_slots_);
   }
 
   template <typename T> inline void emit_u16(T arg) {
@@ -421,21 +400,30 @@ class Compiler : private UnCopyable {
     // instruction with an offset that jumps to the current end of bytecode
 
     // -2 to adjust for the bytecode for the jump offset iteself
-    int jump = Xt::as_type<int>(bytecode_.size()) - offset - 2;
+    int jump = fn_->codes_count() - offset - 2;
     if (jump > kMaxJump)
       error("too mush code to jump over");
 
-    bytecode_[offset] = (jump >> 8) & 0xff;
-    bytecode_[offset + 1] = jump & 0xff;
+    fn_->set_code(offset, (jump >> 8) & 0xff);
+    fn_->set_code(offset + 1, jump & 0xff);
   }
 
   inline int add_constant(const Value& v) {
-    if (constants_.size() < kMaxConstants)
-      constants_.push_back(v);
-    else
-      error("a function may only contain %d unique constants", kMaxConstants);
+    if (parser_.had_error())
+      return -1;
 
-    return Xt::as_type<int>(constants_.size() - 1);
+    if (fn_->constants_count() < kMaxConstants) {
+      PinnedGuard guard(parser_.get_vm());
+      if (v.is_object())
+        guard.set_guard_object(v.as_object());
+
+      fn_->append_constant(v);
+    }
+    else {
+      error("a function may only contain %d unique constants", kMaxConstants);
+    }
+
+    return fn_->constants_count() - 1;
   }
 
   inline void emit_constant(const Value& v) {
@@ -697,7 +685,7 @@ class Compiler : private UnCopyable {
     // list. returns the index of the upvalue
 
     // look for an existing one
-    for (int i = 0; i < num_upvalues_; ++i) {
+    for (int i = 0; i < fn_->num_upvalues(); ++i) {
       auto& upvalue = upvalues_[i];
       if (upvalue.is_local == is_local && upvalue.index == index)
         return i;
@@ -705,7 +693,7 @@ class Compiler : private UnCopyable {
 
     // if got here, need add a new upvalue
     upvalues_.push_back(CompilerUpvalue(is_local, index));
-    return num_upvalues_++;
+    return fn_->inc_num_upvalues();
   }
 
   int find_upvalue(const str_t& name) {
@@ -1110,7 +1098,7 @@ class Compiler : private UnCopyable {
     // so we know what to loop back to at the end of the body
 
     loop->enclosing = loop_;
-    loop->start = Xt::as_type<int>(bytecode_.size() - 1);
+    loop->start = fn_->codes_count() - 1;
     loop->scope_depth = scope_depth_;
     loop_ = loop;
   }
@@ -1127,7 +1115,7 @@ class Compiler : private UnCopyable {
     // compiles the body of the loop and tracks its extent so that contained
     // `break` statements can be handled correctly
 
-    loop_->body = Xt::as_type<int>(bytecode_.size());
+    loop_->body = fn_->codes_count();
     statement();
   }
 
@@ -1137,7 +1125,7 @@ class Compiler : private UnCopyable {
 
     // we don't check for overflow here since the forward jump over the loop
     // body will report an error for the same problem
-    int loop_offset = Xt::as_type<int>(bytecode_.size()) - loop_->start + 2;
+    int loop_offset = fn_->codes_count() - loop_->start + 2;
     emit_words(Code::LOOP, loop_offset);
 
     patch_jump(loop_->exit_jump);
@@ -1145,16 +1133,15 @@ class Compiler : private UnCopyable {
     // find any break placeholder instructions (which will be Code::END in the
     // bytecode) and replace them with real jumps
     int i = loop_->body;
-    while (i < bytecode_.size()) {
-      if (Xt::as_type<Code>(bytecode_[i]) == Code::END) {
-        bytecode_[i] = Xt::as_type<u8_t>(Code::JUMP);
+    while (i < fn_->codes_count()) {
+      if (Xt::as_type<Code>(fn_->get_code(i)) == Code::END) {
+        fn_->set_code(i, Code::JUMP);
         patch_jump(i + 1);
         i += 3;
       }
       else {
         // skip this instruction and its arguments
-        i += 1 + FunctionObject::get_argc(
-            bytecode_.data(), constants_.data(), i);
+        i += 1 + FunctionObject::get_argc(fn_->codes(), fn_->constants(), i);
       }
     }
     loop_ = loop_->enclosing;
@@ -1223,7 +1210,7 @@ class Compiler : private UnCopyable {
 
     // update the class with the number of fields
     if (!is_foreign)
-      bytecode_[num_fields_instruction] = class_compiler.fields.count();
+      fn_->set_code(num_fields_instruction, class_compiler.fields.count());
 
     enclosing_class_ = nullptr;
     pop_scope();
@@ -1665,7 +1652,7 @@ class Compiler : private UnCopyable {
 
       // we don't need the function we started compiling in the parameter
       // list any more
-      method_compiler.abort_compiler();
+      method_compiler.parser_.get_vm().set_compiler(method_compiler.parent_);
     }
     else {
       consume(TokenKind::TK_LBRACE, "expect `{` to begin method body");
@@ -2059,7 +2046,7 @@ class Compiler : private UnCopyable {
         fn_compiler.finish_parameters(fn_signature);
         consume(TokenKind::TK_PIPE, "expect `|` after function parameters");
       }
-      fn_compiler.num_params_ = fn_signature.arity;
+      fn_compiler.fn_->set_arity(fn_signature.arity);
 
       fn_compiler.finish_body(false);
 
@@ -2157,14 +2144,8 @@ public:
     }
 
     num_slots_ = Xt::as_type<int>(locals_.size());
-    max_slots_ = Xt::as_type<int>(locals_.size());
-  }
-
-  inline void abort_compiler(void) {
-    // discards memory owned by [this] and removes it from the stack of
-    // ongoing compilers
-
-    parser_.get_vm().set_compiler(parent_);
+    fn_ = FunctionObject::make_function(
+        parser_.get_vm(), parser_.get_mod(), Xt::as_type<int>(locals_.size()));
   }
 
   FunctionObject* finish_compiler(const str_t& debug_name) {
@@ -2172,10 +2153,9 @@ public:
     // top level code. if there is a parent compiler, then this emits code in
     // the parent compiler to loadd the resulting function
 
-    // if we hit an error, donot bother creating the function since it's borked
-    // anyway
+    // if we hit an error, don't finish the function since it's borked anyway
     if (parser_.had_error()) {
-      abort_compiler();
+      parser_.get_vm().set_compiler(parent_);
       return nullptr;
     }
 
@@ -2183,25 +2163,15 @@ public:
     // returns, we cannot rely on `RETURN` to tell use we are at the end.
     emit_opcode(Code::END);
 
-    // create a function object for the code we just compiled
-    FunctionObject* fn = FunctionObject::make_function(
-        parser_.get_vm(), parser_.get_mod(),
-        max_slots_, num_upvalues_, num_params_,
-        bytecode_.data(), Xt::as_type<int>(bytecode_.size()),
-        constants_.data(), Xt::as_type<int>(constants_.size()),
-        debug_name, debug_source_lines_.data(),
-        Xt::as_type<int>(debug_source_lines_.size()));
-
-    PinnedGuard pinned_fn(parser_.get_vm(), fn);
-
+    fn_->bind_name(debug_name);
     // in the function that contains this one, load the resulting function
     // object.
     if (parent_ != nullptr) {
-      int constant = parent_->add_constant(fn);
+      int constant = parent_->add_constant(fn_);
 
       // if the function has no upvalues, we donot need to create a closure.
       // we can just load and run the function directly
-      if (num_upvalues_ == 0) {
+      if (fn_->num_upvalues() == 0) {
         parent_->emit_words(Code::CONSTANT, constant);
       }
       else {
@@ -2210,7 +2180,7 @@ public:
 
         // emit a arguments for each upvalue to know whether to capture a
         // local or an upvalue
-        for (int i = 0; i < num_upvalues_; ++i) {
+        for (int i = 0; i < fn_->num_upvalues(); ++i) {
           auto& uv = upvalues_[i];
           parent_->emit_bytes(uv.is_local ? 1 : 0, uv.index);
         }
@@ -2220,7 +2190,7 @@ public:
     // pop this compiler off the stack
     parser_.get_vm().set_compiler(parent_);
 
-    return fn;
+    return fn_;
   }
 
   FunctionObject* compile_function(TokenKind end_kind) {
@@ -2261,8 +2231,7 @@ public:
 
     Compiler* c = this;
     while (c != nullptr) {
-      for (auto& v : c->constants_)
-        vm.gray_value(v);
+      vm.gray_object(c->fn_);
       c = c->parent_;
     }
   }
