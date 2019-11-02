@@ -1,7 +1,5 @@
 
 var fn = Function.new {
-  IO.print(foo)
-  IO.print(Bar)
+  IO.print(Foo) // expect error
+  IO.print(Bar) // expect error
 }
-
-// expect error

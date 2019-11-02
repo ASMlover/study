@@ -456,10 +456,11 @@ public:
   inline const Value& get_variable(int i) const { return variables_[i]; }
   inline void set_variable(int i, const Value& val) { variables_[i] = val; }
   inline int find_variable(const str_t& name) const { return variable_names_.get(name); }
+  inline str_t get_variable_name(int i) const { return variable_names_.get_name(i); }
   inline StringObject* name(void) const { return name_; }
   inline const char* name_cstr(void) const { return name_ != nullptr ? name_->cstr() : ""; }
 
-  int declare_variable(const str_t& name);
+  int declare_variable(const str_t& name, int line);
   int define_variable(const str_t& name, const Value& value);
   void iter_variables(std::function<void (int, const Value&, const str_t&)>&& fn);
 

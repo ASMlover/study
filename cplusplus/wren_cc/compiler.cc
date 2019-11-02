@@ -135,7 +135,9 @@ public:
 
   inline const char* module_name_cstr(void) const { return module_->name_cstr(); }
   inline const Token& prev(void) const { return prev_; }
+  inline void set_prev(const Token& tok) { prev_ = tok; }
   inline const Token& curr(void) const { return curr_; }
+  inline void set_curr(const Token& tok) { curr_ = tok; }
   inline bool had_error(void) const { return had_error_; }
   inline void set_error(bool b = true) { had_error_ = b; }
   inline bool print_errors(void) const { return print_errors_; }
@@ -988,7 +990,8 @@ class Compiler final : private UnCopyable {
     // compiles a variable name or method call with an implicit receiver
 
     // look for the name in the scope chain up to the nearest enclosing method
-    str_t token_name = parser_.prev().as_string();
+    const Token& token = parser_.prev();
+    str_t token_name = token.as_string();
 
     Variable variable = resolve_non_module(token_name);
     if (variable.index != -1) {
@@ -1016,7 +1019,7 @@ class Compiler final : private UnCopyable {
       // if it's a nonlocal name, implicitly define a module-level variable in
       // the hopes that we get a real definition later
       variable.index = parser_.get_vm().declare_variable(
-          parser_.get_mod(), token_name);
+          parser_.get_mod(), token_name, token.lineno());
       if (variable.index == -2) {
         error("too many module variables defined");
       }
@@ -2245,10 +2248,17 @@ public:
     emit_opcode(Code::NIL);
     emit_opcode(Code::RETURN);
 
+    // see if there are any implicitly declared module-level variables that
+    // never got an explicit definition, they will have values that are numbers
+    // indicating the line where the variable was fist used
     parser_.get_mod()->iter_variables(
         [this](int i, const Value& val, const str_t& name) {
-          if (val.is_undefined()) {
-            error("variable `%s` is used but not defined", name.c_str());
+          if (val.is_numeric()) {
+            // synthesize a token for the orignal use site
+            auto* mod = parser_.get_mod();
+            parser_.set_prev(Token(TokenKind::TK_IDENTIFIER,
+                  name, Xt::as_type<int>(mod->get_variable(i).as_numeric())));
+            error("variable is used but not defined");
           }
         });
 

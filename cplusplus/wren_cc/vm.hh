@@ -234,7 +234,7 @@ public:
   InterpretRet interpret_in_module(
       const str_t& module, const str_t& source_bytes);
   void set_metaclasses(void);
-  int declare_variable(ModuleObject* module, const str_t& name);
+  int declare_variable(ModuleObject* module, const str_t& name, int line);
   int define_variable(ModuleObject* module, const str_t& name, const Value& value);
   void set_native(ClassObject* cls, const str_t& name, const PrimitiveFn& fn);
   const Value& find_variable(ModuleObject* module, const str_t& name) const;

@@ -623,8 +623,9 @@ DebugObject::DebugObject(
   , source_lines_(source_lines, source_lines + lines_count) {
 }
 
-int ModuleObject::declare_variable(const str_t& name) {
+int ModuleObject::declare_variable(const str_t& name, int line) {
   // adds a new implicitly declared top-level variable named [name] to [module]
+  // based on a use site occurring on [line]
   //
   // does not check to see if a variable with that name is already decalred or
   // defined, returns the symbol for the new variable or -2 if there are too
@@ -633,7 +634,10 @@ int ModuleObject::declare_variable(const str_t& name) {
   if (variables_.size() == MAX_MODULE_VARS)
     return -2;
 
-  variables_.push_back(Value());
+  // implicitly defined variables get a "value" that is the line where the
+  // variable is first used, we'll use that later to report an error on the
+  // right line
+  variables_.push_back(line);
   return variable_names_.add(name);
 }
 
@@ -653,7 +657,9 @@ int ModuleObject::define_variable(const str_t& name, const Value& value) {
     symbol = variable_names_.add(name);
     variables_.push_back(value);
   }
-  else if (variables_[symbol].is_undefined()) {
+  else if (variables_[symbol].is_numeric()) {
+    // an implicitly declared variable's value will always be a number, now
+    // we have a real definition
     variables_[symbol] = value;
   }
   else {

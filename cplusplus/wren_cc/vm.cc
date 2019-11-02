@@ -88,8 +88,9 @@ void WrenVM::set_metaclasses(void) {
   }
 }
 
-int WrenVM::declare_variable(ModuleObject* module, const str_t& name) {
-  return module->declare_variable(name);
+int WrenVM::declare_variable(
+    ModuleObject* module, const str_t& name, int line) {
+  return module->declare_variable(name, line);
 }
 
 int WrenVM::define_variable(
