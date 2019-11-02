@@ -34,8 +34,15 @@ namespace wrencc {
 class WrenVM;
 struct WrenValue;
 
+enum class WrenError {
+  COMPILE, // a syntax or resolution error detected at compile time
+  RUNTIME, // the error message for a runtime error
+  SATCK_TRACE, // one entry of a runtime error's stack trace
+};
+
 using WrenForeignFn = std::function<void (WrenVM*)>;
 using WrenFinalizeFn = std::function<void (void*)>;
+using WrenErrorFn = std::function<void (WrenError, const str_t&, int, const str_t&)>;
 
 enum class InterpretRet {
   SUCCESS,
