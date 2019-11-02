@@ -238,8 +238,11 @@ struct ClassCompiler {
 
   // symbol table for the fields of the class
   SymbolTable fields{};
+
+  // for the methods defined by the class, used to detect duplicate method
+  // definitions
+  std::vector<int> methods{};
   std::vector<int> static_methods{};
-  std::vector<int> instance_methods{};
 
   // true if the class being compiled is a foreign class
   bool is_foreign{};
@@ -252,22 +255,17 @@ struct ClassCompiler {
 
   ClassCompiler(void) noexcept {}
 
-  template <typename T>
-  inline bool has_method(const std::vector<T>& vec, T v) const {
-    for (sz_t i = 0; i < vec.size(); ++i) {
-      if (vec[i] == v)
-        return true;
+  inline bool insert_method(int method_symbol) {
+    bool r{true};
+    auto& m = in_static ? static_methods : methods;
+    for (sz_t i = 0; i < m.size(); ++i) {
+      if (m[i] == method_symbol) {
+        r = false;
+        break;
+      }
     }
-    return false;
-  }
-
-  inline bool insert_method(bool is_static, int method_symbol) {
-    auto& methods = is_static ? static_methods : instance_methods;
-    if (!has_method(methods, method_symbol)) {
-      methods.push_back(method_symbol);
-      return true;
-    }
-    return false;
+    m.push_back(method_symbol);
+    return r;
   }
 };
 
@@ -1643,6 +1641,22 @@ class Compiler final : private UnCopyable {
     emit_words(instruction, method_symbol);
   }
 
+  int declare_method(Signature& signature, const str_t& name) {
+    // declares a method in the enclosing class with [signature]
+    //
+    // reports an error if a method with that signature is alredy declared,
+    // returns the symbol for the method
+
+    int symbol = signature_symbol(signature);
+    if (!enclosing_class_->insert_method(symbol)) {
+      error("class `%s` alredy defines a %smethod `%s`",
+          enclosing_class_->name->cstr(),
+          enclosing_class_->in_static ? "static " : "",
+          name.c_str());
+    }
+    return symbol;
+  }
+
   bool method(const Variable& class_variable) {
     // compiles a method definition inside a class body
     //
@@ -1676,6 +1690,11 @@ class Compiler final : private UnCopyable {
     // include the full signature in debug messages in stack traces
     str_t full_signature = signature_to_string(signature);
 
+    // check for duplicate methods, does not matter that is is already been
+    // defined, error will discard bytecode anyway, check if the method table
+    // already contains this symbol
+    int method_symbol = declare_method(signature, full_signature);
+
     if (is_foreign) {
       // define a constant for the signature
       emit_constant(
@@ -1693,7 +1712,6 @@ class Compiler final : private UnCopyable {
 
     // define the method for a constructor, this defines the instance
     // initializer method
-    int method_symbol = signature_symbol(signature);
     define_method(class_variable, is_static, method_symbol);
     if (signature.type == SignatureType::INITIALIZER) {
       // also define a matching constructor method on the metaclass
@@ -1702,14 +1720,6 @@ class Compiler final : private UnCopyable {
 
       create_constructor(signature, method_symbol);
       define_method(class_variable, true, constructor_symbol);
-    }
-
-    // check for duplicate methods, does not matter that it's already been
-    // defined, error will discard bytecode anyway
-    if (!enclosing_class_->insert_method(is_static, method_symbol)) {
-      error("already defined %s `%s` for class `%s",
-          is_static ? "static method" : "method",
-          full_signature.c_str(), enclosing_class_->name->cstr());
     }
 
     return true;
