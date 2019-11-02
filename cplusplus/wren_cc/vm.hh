@@ -143,6 +143,9 @@ class WrenVM final : private UnCopyable {
   // the function used to laod modules
   LoadModuleFn load_module_fn_{};
 
+  // the function used to report errors
+  WrenErrorFn error_fn_{};
+
   // list of active value handles or nullptr if there are no handles
   WrenValue* value_handles_{};
 
@@ -157,7 +160,7 @@ class WrenVM final : private UnCopyable {
   // method calls are dispatched directly by index in this table
   SymbolTable method_names_;
 
-  void print_stacktrace(FiberObject* fiber);
+  void print_stacktrace(void);
   void runtime_error(void);
   void method_not_found(ClassObject* cls, int symbol);
   bool check_arity(const Value& value, int argc);
@@ -220,6 +223,8 @@ public:
   inline Value* get_api_stack(void) const { return api_stack_; }
   inline void set_load_fn(const LoadModuleFn& fn) { load_module_fn_ = fn; }
   inline void set_load_fn(LoadModuleFn&& fn) { load_module_fn_ = std::move(fn); }
+  inline void set_error_fn(const WrenErrorFn& fn) { error_fn_ = fn; }
+  inline void set_error_fn(WrenErrorFn&& fn) { error_fn_ = std::move(fn); }
   inline BindForeignMethodFn get_foreign_meth(void) const { return bind_foreign_meth_; }
   inline void set_foreign_meth(const BindForeignMethodFn& fn) { bind_foreign_meth_ = fn; }
   inline void set_foreign_meth(BindForeignMethodFn&& fn) { bind_foreign_meth_ = std::move(fn); }

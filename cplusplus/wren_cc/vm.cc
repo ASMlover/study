@@ -200,13 +200,18 @@ void WrenVM::pop_root(void) {
   temp_roots_.pop_back();
 }
 
-void WrenVM::print_stacktrace(FiberObject* fiber) {
-  if (fiber->error().is_string())
-    std::cerr << fiber->error_asstr() << std::endl;
-  else
-    std::cerr << "[error object]" << std::endl;
+void WrenVM::print_stacktrace(void) {
+  // bail if the host doesn't enable printing errors
+  if (!error_fn_)
+    return;
 
-  fiber->riter_frames([](const CallFrame& frame, FunctionObject* fn) {
+  FiberObject* fiber = fiber_;
+  if (fiber->error().is_string())
+    error_fn_(WrenError::RUNTIME, "", -1, fiber->error_asstr());
+  else
+    error_fn_(WrenError::RUNTIME, "", -1, "[error object]");
+
+  fiber->riter_frames([this](const CallFrame& frame, FunctionObject* fn) {
       ModuleObject* module = fn->module();
       const DebugObject& debug = fn->debug();
 
@@ -221,10 +226,7 @@ void WrenVM::print_stacktrace(FiberObject* fiber) {
         return;
 
       int line = debug.get_line(Xt::as_type<int>(frame.ip - fn->codes()) - 1);
-      std::cerr
-        << "[`" << module->name_cstr() << "` LINE: " << line << "] in "
-        << "`" << debug.name() << "`"
-        << std::endl;
+      error_fn_(WrenError::SATCK_TRACE, module->name_cstr(), line, debug.name());
       });
 }
 
@@ -248,7 +250,7 @@ void WrenVM::runtime_error(void) {
   }
 
   // if we got here, nothing caught the error, so show the stack trace
-  print_stacktrace(fiber_);
+  print_stacktrace();
   fiber_ = nullptr;
 }
 

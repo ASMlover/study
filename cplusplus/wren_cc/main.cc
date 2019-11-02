@@ -63,6 +63,25 @@ static std::string read_module(wrencc::WrenVM& vm, const std::string& module) {
   return module_contents;
 }
 
+static void report_error(wrencc::WrenError type,
+    const std::string& module, int line, const std::string& message) {
+  switch (type) {
+  case wrencc::WrenError::COMPILE:
+    std::cerr
+      << "[`" << module << "` LINE: " << line << "] " << message
+      << std::endl;
+    break;
+  case wrencc::WrenError::RUNTIME:
+    std::cerr << message << std::endl;
+    break;
+  case wrencc::WrenError::SATCK_TRACE:
+    std::cerr
+      << "[`" << module << "` LINE: " << line << "] in " << message
+      << std::endl;
+    break;
+  }
+}
+
 static void eval_with_file(const std::string& fname) {
   auto pos = fname.find_last_of('\\');
   if (pos != std::string::npos)
@@ -75,6 +94,7 @@ static void eval_with_file(const std::string& fname) {
 
     wrencc::WrenVM vm;
     vm.set_load_fn(read_module);
+    vm.set_error_fn(report_error);
     vm.interpret(ss.str());
   }
 }
