@@ -208,4 +208,8 @@ void wrenInsertInList(WrenVM& vm, int list_slot, int index, int element_slot);
 void wrenGetVariable(WrenVM& vm,
     const str_t& module, const str_t& name, int to_slot);
 
+// sets the current fiber to be aborted, and uses the value in [slot] as the
+// runtime error object
+void wrenAbortFiber(WrenVM& vm, int slot);
+
 }

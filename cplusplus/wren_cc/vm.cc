@@ -691,6 +691,8 @@ __complete_call:
         } break;
       case MethodType::FOREIGN:
         call_foreign(fiber, method.foreign(), argc);
+        if (!fiber->error().is_nil())
+          RUNTIME_ERROR();
         break;
       case MethodType::BLOCK:
         fiber->call_function(*this, method.closure(), argc);
@@ -1403,6 +1405,11 @@ void WrenVM::get_variable(const str_t& module, const str_t& name, int slot) {
   set_slot(slot, module_obj->get_variable(variable_slot));
 }
 
+void WrenVM::abort_fiber(int slot) {
+  validate_api_slot(slot);
+  fiber_->set_error(api_stack_[slot]);
+}
+
 void wrenCollectGarbage(WrenVM& vm) {
   vm.collect();
 }
@@ -1484,6 +1491,10 @@ void wrenInsertInList(WrenVM& vm, int list_slot, int index, int element_slot) {
 void wrenGetVariable(
     WrenVM& vm, const str_t& module, const str_t& name, int to_slot) {
   vm.get_variable(module, name, to_slot);
+}
+
+void wrenAbortFiber(WrenVM& vm, int slot) {
+  vm.abort_fiber(slot);
 }
 
 }
