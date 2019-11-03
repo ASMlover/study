@@ -1139,11 +1139,21 @@ WrenValue* WrenVM::make_call_handle(const str_t& signature) {
   // when you are done with this handle, it must be released using
   // [wrenReleaseValue]
 
+  ASSERT(!signature.empty(), "signature cannot be empty");
+
   int num_params = 0;
+  // count the number parameters the method expects
   if (signature.back() == ')') {
-    sz_t i = signature.size() - 2;
+    sz_t i = signature.size() - 1;
     for (auto c = signature[i]; i >= 0 && c != '('; c = signature[--i]) {
       if (c == '_')
+        ++num_params;
+    }
+  }
+  // count subscript arguments
+  if (signature[0] == '[') {
+    for (sz_t i = 0; i < signature.size() && signature[i] != ']'; ++i) {
+      if (signature[i] == '_')
         ++num_params;
     }
   }
