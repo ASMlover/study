@@ -53,30 +53,30 @@ namespace meta {
       vm->set_api_stack_asref(fn);
     }
 
-    static WrenForeignFn bind_foreign(WrenVM& vm,
-        const str_t& module, const str_t& class_name,
-        bool is_static, const str_t& signature) {
-      ASSERT(module == "meta", "should be in meta module");
+    inline WrenForeignFn bind_foreign_method(WrenVM& vm,
+        const str_t& class_name, bool is_static, const str_t& signature) {
+      // there is only one foreign method in the meta module
       ASSERT(class_name == "Meta", "should be in Meta class");
       ASSERT(is_static, "should be static");
       ASSERT(signature == "compile(_)", "should be compile method");
 
       return meta_compile;
     }
-
-    inline void load_aux_module(WrenVM& vm) {
-      auto& prev_foreign_meth = vm.get_foreign_meth();
-
-      vm.set_foreign_meth(bind_foreign);
-      vm.interpret_in_module("meta", kLibSource);
-      vm.set_foreign_meth(prev_foreign_meth);
-    }
   }
 
-  void load_aux_module(WrenVM& vm) {
+  const str_t get_source(void) {
 #if AUX_META
-    details::load_aux_module(vm);
+    return kLibSource;
 #endif
+    return "";
+  }
+
+  WrenForeignFn bind_foreign_method(WrenVM& vm,
+      const str_t& class_name, bool is_static, const str_t& signature) {
+#if AUX_META
+    return details::bind_foreign_method(vm, class_name, is_static, signature);
+#endif
+    return nullptr;
   }
 }
 

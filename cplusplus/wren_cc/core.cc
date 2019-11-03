@@ -910,6 +910,9 @@ DEF_PRIMITIVE(sys_getmodvar) {
 }
 
 DEF_PRIMITIVE(sys_importmod) {
+  if (!validate_string(vm, args[1], "Module"))
+    return false;
+
   Value result = vm.import_module(args[1]);
   if (!vm.fiber()->error().is_nil())
     return false;

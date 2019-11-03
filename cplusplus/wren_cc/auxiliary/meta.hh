@@ -33,7 +33,9 @@ namespace wrencc {
 class WrenVM;
 
 namespace meta {
-  void load_aux_module(WrenVM& vm);
+  const str_t get_source(void);
+  WrenForeignFn bind_foreign_method(WrenVM& vm,
+      const str_t& class_name, bool is_static, const str_t& signature);
 }
 
 }

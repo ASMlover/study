@@ -43,10 +43,6 @@ WrenVM::WrenVM(void) noexcept {
 
   core::initialize(*this);
   io::load_library(*this);
-
-  // load aux modules
-  meta::load_aux_module(*this);
-  random::load_aux_module(*this);
 }
 
 WrenVM::~WrenVM(void) {
@@ -140,8 +136,18 @@ Value WrenVM::import_module(const Value& name) {
   if (auto val = modules_->get(name); val)
     return nullptr;
 
-  // load the module's source code from the embedder
-  const str_t source_bytes = load_module_fn_(*this, name.as_cstring());
+  // load the module's source code from the host
+  str_t source_bytes = load_module_fn_(*this, name.as_cstring());
+
+  // if the host didn't provide it, see if it's a built-in optional module
+  if (source_bytes.empty()) {
+    str_t name_string(name.as_cstring());
+    if (name_string == "meta")
+      source_bytes = meta::get_source();
+    if (name_string == "random")
+      source_bytes = random::get_source();
+  }
+
   if (source_bytes.empty()) {
     // could not load the module
     fiber_->set_error(
@@ -354,14 +360,21 @@ void WrenVM::call_foreign(
 }
 
 void WrenVM::bind_foreign_class(ClassObject* cls, ModuleObject* module) {
-  ASSERT(bind_foreign_cls_ != nullptr,
-      "cannot declare foreign classes without a BindForeignClassFn");
+  WrenForeignClass methods{nullptr, nullptr};
 
-  WrenForeignClass methods = bind_foreign_cls_(
-      *this, module->name_cstr(), cls->name_cstr());
+  // check the optional built-in module first so the host can override it
+  str_t module_name = module->name_cstr();
+  str_t class_name = cls->name_cstr();
+  if (bind_foreign_cls_)
+    methods = bind_foreign_cls_(*this, module_name, class_name);
+  // if the host didn't provide it, see if it's a built-in optional module
+  if (!methods.allocate && !methods.finalize) {
+    if (module_name == "random")
+      methods = random::bind_foreign_class(*this, module_name, class_name);
+  }
 
   Method method(MethodType::FOREIGN);
-  // add the symbol even if there is no finalizer so we can ensure that the
+  // add the symbol even if there is no allocator so we can ensure that the
   // symbol itself is always in the symbol table
   int symbol = method_names_.ensure("<allocate>");
   if (methods.allocate) {
@@ -962,19 +975,28 @@ WrenForeignFn WrenVM::find_foreign_method(const str_t& module_name,
   // this will try the host's foreign method binder first, if that falls, it
   // falls back ot handling the built-in modules
 
-  WrenForeignFn fn{};
   // bind foreign methods in the core module
   if (module_name == "") {
-    fn = io::bind_foreign(*this, class_name, signature);
+    auto fn = io::bind_foreign(*this, class_name, signature);
     ASSERT(fn != nullptr, "failed to bind core module foreign method");
     return fn;
   }
 
+  WrenForeignFn method{};
   // for other modules, let the host bind it
-  if (bind_foreign_meth_ == nullptr)
-    return nullptr;
+  if (bind_foreign_meth_ != nullptr) {
+    method = bind_foreign_meth_(*this,
+        module_name, class_name, is_static, signature);
+  }
 
-  return bind_foreign_meth_(*this, module_name, class_name, is_static, signature);
+  // if the host didn't provide it, see if it's an optional one
+  if (!method) {
+    if (module_name == "meta")
+      method = meta::bind_foreign_method(*this, class_name, is_static, signature);
+    if (module_name == "random")
+      method = random::bind_foreign_method(*this, class_name, is_static, signature);
+  }
+  return method;
 }
 
 void WrenVM::bind_method(int i, Code method_type,

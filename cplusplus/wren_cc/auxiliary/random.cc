@@ -104,10 +104,14 @@ namespace random {
       wrenSetSlotDouble(*vm, 0, advance_state(*well));
     }
 
-    WrenForeignFn bind_foreign_method(WrenVM& vm,
-        const str_t& module, const str_t& class_name,
-        bool is_static, const str_t& signature) {
-      ASSERT(module == "random", "should be in random module");
+    inline WrenForeignClass bind_foreign_class(
+        WrenVM& vm, const str_t& module, const str_t& class_name) {
+      ASSERT(class_name == "Random", "should be in Random class");
+      return WrenForeignClass{random_allocate, nullptr};
+    }
+
+    inline WrenForeignFn bind_foreign_method(WrenVM& vm,
+        const str_t& class_name, bool is_static, const str_t& signature) {
       ASSERT(class_name == "Random", "should be in Random class");
 
       if (signature == "<allocate>")
@@ -126,29 +130,29 @@ namespace random {
       ASSERT(false, "unknown method");
       return nullptr;
     }
-
-    WrenForeignClass bind_foreign_class(
-        WrenVM& vm, const str_t& module, const str_t& class_name) {
-      return WrenForeignClass{random_allocate, nullptr};
-    }
-
-    inline void load_aux_module(WrenVM& vm) {
-      auto& prev_foreign_meth = vm.get_foreign_meth();
-      vm.set_foreign_meth(bind_foreign_method);
-      auto& prev_foreign_cls = vm.get_foreign_cls();
-      vm.set_foreign_cls(bind_foreign_class);
-
-      vm.interpret_in_module("random", kLibSource);
-
-      vm.set_foreign_cls(prev_foreign_cls);
-      vm.set_foreign_meth(prev_foreign_meth);
-    }
   }
 
-  void load_aux_module(WrenVM& vm) {
+  const str_t get_source(void) {
 #if AUX_RANDOM
-    details::load_aux_module(vm);
+    return kLibSource;
 #endif
+    return "";
+  }
+
+  WrenForeignClass bind_foreign_class(
+      WrenVM& vm, const str_t& module, const str_t& class_name) {
+#if AUX_RANDOM
+    return details::bind_foreign_class(vm, module, class_name);
+#endif
+    return WrenForeignClass{nullptr, nullptr};
+  }
+
+  WrenForeignFn bind_foreign_method(WrenVM& vm,
+      const str_t& class_name, bool is_static, const str_t& signature) {
+#if AUX_RANDOM
+    return details::bind_foreign_method(vm, class_name, is_static, signature);
+#endif
+    return nullptr;
   }
 }
 
