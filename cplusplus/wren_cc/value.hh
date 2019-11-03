@@ -625,23 +625,13 @@ public:
   static ClosureObject* make_closure(WrenVM& vm, FunctionObject* fn);
 };
 
-inline FunctionObject* unwrap_closure(BaseObject* fn) {
-  // returns the base FunctionObject backing an ClosureObject, or [fn] if
-  // it already is a raw FunctionObject
-
-  switch (fn->type()) {
-  case ObjType::FUNCTION: return Xt::down<FunctionObject>(fn);
-  case ObjType::CLOSURE: return Xt::down<ClosureObject>(fn)->fn();
-  default:
-    ASSERT(false, "function should be an FunctionObject or ClosureObject");
-    break;
-  }
-  return nullptr;
-}
-
 struct CallFrame {
-  const u8_t* ip{}; // pointer to the current instruction in the function's body
-  BaseObject* fn{}; // the function or closure being executed
+  // pointer to the current (really next-to-be-executed) instruction in the
+  // function's bytecode
+  const u8_t* ip{};
+
+  // the closure being exected
+  ClosureObject* closure{};
 
   // index of the first stack slot used by this call frame, this will contain
   // the receiver, followed by the function's parameters, then local variables
@@ -649,8 +639,8 @@ struct CallFrame {
   int stack_start{};
 
   CallFrame(void) noexcept {}
-  CallFrame(const u8_t* _ip, BaseObject* _fn, int _stack_start) noexcept
-    : ip(_ip), fn(_fn), stack_start(_stack_start) {
+  CallFrame(const u8_t* _ip, ClosureObject* _closure, int _stack_start) noexcept
+    : ip(_ip), closure(_closure), stack_start(_stack_start) {
   }
 };
 
@@ -680,7 +670,7 @@ class FiberObject final : public BaseObject {
   // to the caller
   bool caller_is_trying_{};
 
-  FiberObject(ClassObject* cls, BaseObject* fn) noexcept;
+  FiberObject(ClassObject* cls, ClosureObject* closure) noexcept;
   virtual ~FiberObject(void) {}
 public:
   inline void reset(void) {
@@ -741,21 +731,21 @@ public:
   }
 
   void ensure_stack(WrenVM& vm, int needed);
-  void call_function(WrenVM& vm, BaseObject* fn, int argc = 0);
+  void call_function(WrenVM& vm, ClosureObject* closure, int argc = 0);
   UpvalueObject* capture_upvalue(WrenVM& vm, int slot);
   void close_upvalue(void);
   void close_upvalues(int slot);
 
   void riter_frames(
       std::function<void (const CallFrame&, FunctionObject*)>&& visit);
-  void reset_fiber(BaseObject* fn);
+  void reset_fiber(ClosureObject* closure);
 
   virtual str_t stringify(void) const override;
   virtual void gc_blacken(WrenVM& vm) override;
 
-  // creates a new fiber object will invoke [fn], which can be a function
+  // creates a new fiber object will invoke [closure], which can be a function
   // or closure
-  static FiberObject* make_fiber(WrenVM& vm, BaseObject* fn);
+  static FiberObject* make_fiber(WrenVM& vm, ClosureObject* closure);
 };
 
 // the type of a primitive function
@@ -777,7 +767,7 @@ enum class MethodType {
 
 struct Method {
   MethodType type{MethodType::NONE};
-  std::variant<PrimitiveFn, WrenForeignFn, BaseObject*> m_{};
+  std::variant<PrimitiveFn, WrenForeignFn, ClosureObject*> m_{};
 
   inline MethodType get_type(void) const { return type; }
   inline void set_type(MethodType method_type) { type = method_type; }
@@ -785,17 +775,17 @@ struct Method {
   inline void set_primitive(const PrimitiveFn& fn) { m_ = fn; }
   inline const WrenForeignFn& foreign(void) const { return std::get<WrenForeignFn>(m_); }
   inline void set_foreign(const WrenForeignFn& fn) { m_ = fn; }
-  inline BaseObject* fn(void) const { return std::get<BaseObject*>(m_); }
-  inline void set_fn(BaseObject* fn) { m_ = fn; }
+  inline ClosureObject* closure(void) const { return std::get<ClosureObject*>(m_); }
+  inline void set_closure(ClosureObject* closure) { m_ = closure; }
 
   Method(void) noexcept {}
   Method(MethodType t) noexcept : type(t) {}
   Method(const PrimitiveFn& fn) noexcept : type(MethodType::PRIMITIVE), m_(fn) {}
   Method(const WrenForeignFn& fn) noexcept : type(MethodType::FOREIGN), m_(fn) {}
-  Method(BaseObject* fn) noexcept : type(MethodType::BLOCK), m_(fn) {}
+  Method(ClosureObject* closure) noexcept : type(MethodType::BLOCK), m_(closure) {}
   Method(MethodType t, const PrimitiveFn& fn) noexcept : type(t), m_(fn) {}
   Method(MethodType t, const WrenForeignFn& fn) noexcept : type(t), m_(fn) {}
-  Method(MethodType t, BaseObject* fn) noexcept : type(t), m_(fn) {}
+  Method(MethodType t, ClosureObject* closure) noexcept : type(t), m_(closure) {}
 
   inline void assign(const PrimitiveFn& fn) noexcept {
     type = MethodType::PRIMITIVE;
@@ -805,9 +795,9 @@ struct Method {
     type = MethodType::FOREIGN;
     m_ = fn;
   }
-  inline void assign(BaseObject* fn) noexcept {
+  inline void assign(ClosureObject* closure) noexcept {
     type = MethodType::BLOCK;
-    m_ = fn;
+    m_ = closure;
   }
 };
 
@@ -838,13 +828,13 @@ public:
     methods_[i].type = MethodType::FOREIGN;
     methods_[i].set_foreign(fn);
   }
-  inline void set_method(int i, BaseObject* fn) {
+  inline void set_method(int i, ClosureObject* closure) {
     methods_[i].type = MethodType::BLOCK;
-    methods_[i].set_fn(fn);
+    methods_[i].set_closure(closure);
   }
-  inline void set_method(int i, MethodType fn_type, BaseObject* fn) {
+  inline void set_method(int i, MethodType fn_type, ClosureObject* closure) {
     methods_[i].type = fn_type;
-    methods_[i].set_fn(fn);
+    methods_[i].set_closure(closure);
   }
 
   void bind_superclass(ClassObject* superclass);

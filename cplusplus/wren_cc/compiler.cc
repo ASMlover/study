@@ -2218,21 +2218,18 @@ public:
     if (parent_ != nullptr) {
       int constant = parent_->add_constant(fn_);
 
-      // if the function has no upvalues, we donot need to create a closure.
-      // we can just load and run the function directly
-      if (fn_->num_upvalues() == 0) {
-        parent_->emit_words(Code::CONSTANT, constant);
-      }
-      else {
-        // capture the upvalues in the new closure object.
-        parent_->emit_words(Code::CLOSURE, constant);
+      // wrap the function in a closure, we do this even if it has no upvalues
+      // so that the VM can uniformly assume all called objects are closures,
+      // this makes creating a function a litter slower, but makes invoking
+      // them faster, given that functions are invoked more often than they
+      // are created, this is a win
+      parent_->emit_words(Code::CLOSURE, constant);
 
-        // emit a arguments for each upvalue to know whether to capture a
-        // local or an upvalue
-        for (int i = 0; i < fn_->num_upvalues(); ++i) {
-          auto& uv = upvalues_[i];
-          parent_->emit_bytes(uv.is_local ? 1 : 0, uv.index);
-        }
+      // emit a arguments for each upvalue to know whether to capture a
+      // local or an upvalue
+      for (int i = 0; i < fn_->num_upvalues(); ++i) {
+        auto& uv = upvalues_[i];
+        parent_->emit_bytes(uv.is_local ? 1 : 0, uv.index);
       }
     }
 

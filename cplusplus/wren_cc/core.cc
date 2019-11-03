@@ -78,7 +78,7 @@ DEF_PRIMITIVE(fiber_new) {
   if (!validate_function(vm, args[1], "Argument"))
     return false;
 
-  FiberObject* new_fiber = FiberObject::make_fiber(vm, args[1].as_object());
+  FiberObject* new_fiber = FiberObject::make_fiber(vm, args[1].as_closure());
 
   // the compiler expect the first slot of a function to hold the receiver.
   // since a fiber's stack is invoked directly, it does not have one, so
@@ -593,7 +593,7 @@ DEF_PRIMITIVE(fn_new) {
 }
 
 DEF_PRIMITIVE(fn_arity) {
-  RETURN_VAL(args[0].as_function()->arity());
+  RETURN_VAL(args[0].as_closure()->fn()->arity());
 }
 
 DEF_PRIMITIVE(fn_tostring) {

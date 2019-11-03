@@ -275,14 +275,8 @@ bool WrenVM::check_arity(const Value& value, int argc) {
   // if there are not enough arguments, aborts the current fiber and returns
   // `false`
 
-  FunctionObject* fn{};
-  if (value.is_closure()) {
-    fn = value.as_closure()->fn();
-  }
-  else {
-    ASSERT(value.is_function(), "receiver must be a function or closure");
-    fn = value.as_function();
-  }
+  ASSERT(value.is_closure(), "receiver must be a closure");
+  FunctionObject* fn = value.as_closure()->fn();
 
   // we only care about missing arguments, not extras, the `-1` is because argc
   // includes the receiver, the function itself, which we donot want to count
@@ -459,7 +453,7 @@ InterpretRet WrenVM::interpret(FiberObject* fiber) {
 // local variables
 #define LOAD_FRAME()\
   frame = &fiber->peek_frame();\
-  fn = unwrap_closure(frame->fn);
+  fn = frame->closure->fn();
 
 // terminates the current fiber with error string [error], if another calling
 // fiber is willing to catch the error, transfers control to it, otherwise
@@ -524,14 +518,14 @@ InterpretRet WrenVM::interpret(FiberObject* fiber) {
     }
     CASE_CODE(LOAD_UPVALUE):
     {
-      ClosureObject* co = Xt::down<ClosureObject>(frame->fn);
+      ClosureObject* co = frame->closure;
       PUSH(co->get_upvalue(RDBYTE())->value_asref());
 
       DISPATCH();
     }
     CASE_CODE(STORE_UPVALUE):
     {
-      ClosureObject* co = Xt::down<ClosureObject>(frame->fn);
+      ClosureObject* co = frame->closure;
       co->get_upvalue(RDBYTE())->set_value(PEEK());
 
       DISPATCH();
@@ -699,13 +693,13 @@ __complete_call:
         call_foreign(fiber, method.foreign(), argc);
         break;
       case MethodType::BLOCK:
-        fiber->call_function(*this, method.fn(), argc);
+        fiber->call_function(*this, method.closure(), argc);
         LOAD_FRAME();
         break;
       case MethodType::FNCALL:
         if (!check_arity(args[0], argc))
           RUNTIME_ERROR();
-        fiber->call_function(*this, args[0].as_object(), argc);
+        fiber->call_function(*this, args[0].as_closure(), argc);
         LOAD_FRAME();
         break;
       case MethodType::NONE:
@@ -806,17 +800,14 @@ __complete_call:
     }
     CASE_CODE(CLOSURE):
     {
-      FunctionObject* prototype = fn->get_constant(RDWORD()).as_function();
-      ASSERT(prototype->num_upvalues() > 0,
-          "should not create closure for functions that donot need it");
-
       // create the closure and push it on the stack before creating upvalues
       // so that it does not get collected
-      ClosureObject* closure = ClosureObject::make_closure(*this, prototype);
+      FunctionObject* function = fn->get_constant(RDWORD()).as_function();
+      ClosureObject* closure = ClosureObject::make_closure(*this, function);
       PUSH(closure);
 
       // capture upvalues
-      for (int i = 0; i < prototype->num_upvalues(); ++i) {
+      for (int i = 0; i < function->num_upvalues(); ++i) {
         u8_t is_local = RDBYTE();
         u8_t index = RDBYTE();
         if (is_local) {
@@ -826,8 +817,7 @@ __complete_call:
         }
         else {
           // use the same upvalue as the current call frame
-          ClosureObject* co = Xt::down<ClosureObject>(frame->fn);
-          closure->set_upvalue(i, co->get_upvalue(index));
+          closure->set_upvalue(i, frame->closure->get_upvalue(index));
         }
       }
 
@@ -962,7 +952,11 @@ FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
     return nullptr;
 
   PinnedGuard fn_guard(*this, fn);
-  FiberObject* module_fiber = FiberObject::make_fiber(*this, fn);
+
+  ClosureObject* closure = ClosureObject::make_closure(*this, fn);
+  PinnedGuard closure_guard(*this, closure);
+
+  FiberObject* module_fiber = FiberObject::make_fiber(*this, closure);
 
   // return the fiber that executes the module
   return module_fiber;
@@ -1027,12 +1021,9 @@ void WrenVM::bind_method(int i, Code method_type,
     }
   }
   else {
-    FunctionObject* method_fn = method_val.is_function() ?
-      method_val.as_function() : method_val.as_closure()->fn();
-
+    method.assign(method_val.as_closure());
     // patch up the bytecode now that we know the superclass
-    cls->bind_method(method_fn);
-    method.assign(method_fn);
+    cls->bind_method(method.closure()->fn());
   }
 
   cls->bind_method(i, method);
@@ -1164,9 +1155,10 @@ WrenValue* WrenVM::make_call_handle(const str_t& signature) {
   // and calls the method
   FunctionObject* fn = FunctionObject::make_function(
       *this, nullptr, num_params + 1);
-  // wrap the function in a handle, do this here so it doesn't get collected
-  // as we fill it in
+  // wrap the function in a closure and then in a handle, do this here so it
+  // does not get collected as we fill it in
   WrenValue* value = capture_value(fn);
+  value->value = ClosureObject::make_closure(*this, fn);
 
   fn->append_code(Code::CALL_0 + num_params);
   fn->append_code((method >> 8) & 0xff);
@@ -1190,19 +1182,19 @@ InterpretRet WrenVM::wren_call(WrenValue* method) {
   // stack
 
   ASSERT(method != nullptr, "method cannot be nullptr");
-  ASSERT(method->value.is_function(), "method must be a method handle");
+  ASSERT(method->value.is_closure(), "method must be a method handle");
   ASSERT(fiber_ != nullptr, "must set up arguments for call first");
   ASSERT(api_stack_ != nullptr, "must set up arguments for call first");
   ASSERT(fiber_->empty_frame(), "can not call from a foreign method");
 
-  FunctionObject* fn = method->value.as_function();
-  ASSERT(fiber_->stack_size() >= fn->arity(),
+  ClosureObject* closure = method->value.as_closure();
+  ASSERT(fiber_->stack_size() >= closure->fn()->arity(),
       "stack must have enough arguments for method");
 
   // discard any extra temporary slots, we take for granted that the stub
   // function has exactly one slot for each arguments
-  fiber_->resize_stack(fn->max_slots());
-  fiber_->call_function(*this, fn, 0);
+  fiber_->resize_stack(closure->fn()->max_slots());
+  fiber_->call_function(*this, closure, 0);
 
   return interpret(fiber_);
 }

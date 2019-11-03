@@ -922,16 +922,16 @@ ClosureObject* ClosureObject::make_closure(WrenVM& vm, FunctionObject* fn) {
   return o;
 }
 
-FiberObject::FiberObject(ClassObject* cls, BaseObject* fn) noexcept
+FiberObject::FiberObject(ClassObject* cls, ClosureObject* closure) noexcept
   : BaseObject(ObjType::FIBER, cls) {
   // add one slot for the unused implicit receiver slot that the compiler
   // assumes all functions have
-  stack_capacity_ = fn == nullptr
-    ? 1 : Xt::power_of_2ceil(unwrap_closure(fn)->max_slots() + 1);
+  stack_capacity_ = closure == nullptr
+    ? 1 : Xt::power_of_2ceil(closure->fn()->max_slots() + 1);
   stack_.reserve(stack_capacity_);
   frames_.reserve(kFrameCapacity);
 
-  reset_fiber(fn);
+  reset_fiber(closure);
 }
 
 void FiberObject::ensure_stack(WrenVM& vm, int needed) {
@@ -955,16 +955,16 @@ void FiberObject::ensure_stack(WrenVM& vm, int needed) {
   }
 }
 
-void FiberObject::call_function(WrenVM& vm, BaseObject* fn, int argc) {
+void FiberObject::call_function(WrenVM& vm, ClosureObject* closure, int argc) {
   // grow the call frames if needed (use vector auto)
 
   // grow the stack capacity if needed
   int stack_count = Xt::as_type<int>(stack_.size());
-  int needed = stack_count + unwrap_closure(fn)->max_slots();
+  int needed = stack_count + closure->fn()->max_slots();
   ensure_stack(vm, needed);
 
-  const u8_t* ip = unwrap_closure(fn)->codes();
-  frames_.push_back(CallFrame(ip, fn, stack_size() - argc));
+  const u8_t* ip = closure->fn()->codes();
+  frames_.push_back(CallFrame(ip, closure, stack_size() - argc));
 }
 
 UpvalueObject* FiberObject::capture_upvalue(WrenVM& vm, int slot) {
@@ -1027,13 +1027,13 @@ void FiberObject::riter_frames(
     std::function<void (const CallFrame&, FunctionObject*)>&& visit) {
   for (auto it = frames_.rbegin(); it != frames_.rend(); ++it) {
     auto& frame = *it;
-    FunctionObject* fn = unwrap_closure(frame.fn);
+    FunctionObject* fn = frame.closure->fn();
 
     visit(frame, fn);
   }
 }
 
-void FiberObject::reset_fiber(BaseObject* fn) {
+void FiberObject::reset_fiber(ClosureObject* closure) {
   stack_.clear();
   frames_.clear();
 
@@ -1042,10 +1042,10 @@ void FiberObject::reset_fiber(BaseObject* fn) {
   error_ = nullptr;
   caller_is_trying_ = false;
 
-  if (fn != nullptr) {
+  if (closure != nullptr) {
     // initialize the first call frame
-    const u8_t* ip = unwrap_closure(fn)->codes();
-    frames_.push_back(CallFrame(ip, fn, 0));
+    const u8_t* ip = closure->fn()->codes();
+    frames_.push_back(CallFrame(ip, closure, 0));
   }
 }
 
@@ -1058,7 +1058,7 @@ str_t FiberObject::stringify(void) const {
 void FiberObject::gc_blacken(WrenVM& vm) {
   // stack functions
   for (auto& f : frames_)
-    vm.gray_object(f.fn);
+    vm.gray_object(f.closure);
 
   // stack variables
   for (auto& v : stack_)
@@ -1073,8 +1073,8 @@ void FiberObject::gc_blacken(WrenVM& vm) {
   vm.gray_value(error_);
 }
 
-FiberObject* FiberObject::make_fiber(WrenVM& vm, BaseObject* fn) {
-  auto* o = new FiberObject(vm.fiber_cls(), fn);
+FiberObject* FiberObject::make_fiber(WrenVM& vm, ClosureObject* closure) {
+  auto* o = new FiberObject(vm.fiber_cls(), closure);
   vm.append_object(o);
   return o;
 }
@@ -1184,7 +1184,7 @@ void ClassObject::gc_blacken(WrenVM& vm) {
   vm.gray_object(name_);
   for (auto& m : methods_) {
     if (m.type == MethodType::BLOCK)
-      vm.gray_object(m.fn());
+      vm.gray_object(m.closure());
   }
 }
 

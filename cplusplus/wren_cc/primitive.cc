@@ -79,7 +79,7 @@ bool validate_function(WrenVM& vm, const Value& arg, const str_t& arg_name) {
   // validates that the given [arg] is a function, returns true if it is,
   // if not reports an error and returns false
 
-  if (arg.is_function() || arg.is_closure())
+  if (arg.is_closure() || arg.is_closure())
     return true;
 
   vm.fiber()->set_error(
