@@ -52,18 +52,18 @@ struct Pinned {
   Pinned* prev{};
 };
 
-struct WrenValue {
+struct WrenHandle {
   // a handle to a value, basically just linked list of extra GC roots.
   //
   // note that even non-heap-allocated values can be stored here
 
   Value value{};
 
-  WrenValue* prev{};
-  WrenValue* next{};
+  WrenHandle* prev{};
+  WrenHandle* next{};
 
-  WrenValue(const Value& v,
-      WrenValue* p = nullptr, WrenValue* n = nullptr) noexcept
+  WrenHandle(const Value& v,
+      WrenHandle* p = nullptr, WrenHandle* n = nullptr) noexcept
     : value(v), prev(p), next(p) {
   }
 
@@ -147,7 +147,7 @@ class WrenVM final : private UnCopyable {
   WrenErrorFn error_fn_{};
 
   // list of active value handles or nullptr if there are no handles
-  WrenValue* value_handles_{};
+  WrenHandle* handles_{};
 
   // compiler and debugger data:
   //
@@ -260,10 +260,10 @@ public:
   ClassObject* get_class(const Value& val) const;
   InterpretRet interpret(const str_t& source_bytes);
 
-  WrenValue* make_call_handle(const str_t& signature);
-  InterpretRet wren_call(WrenValue* method);
-  WrenValue* capture_value(const Value& value);
-  void release_value(WrenValue* value);
+  WrenHandle* make_call_handle(const str_t& signature);
+  InterpretRet wren_call(WrenHandle* method);
+  WrenHandle* make_handle(const Value& value);
+  void release_handle(WrenHandle* value);
   void finalize_foreign(ForeignObject* foreign);
 
   int get_slot_count(void) const;
@@ -272,7 +272,7 @@ public:
   bool get_slot_bool(int slot) const;
   double get_slot_double(int slot) const;
   const char* get_slot_string(int slot) const;
-  WrenValue* get_slot_value(int slot);
+  WrenHandle* get_slot_hanle(int slot);
   void* get_slot_foreign(int slot) const;
 
   void set_slot(int slot, const Value& value);

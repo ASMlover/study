@@ -32,7 +32,7 @@
 namespace wrencc {
 
 class WrenVM;
-struct WrenValue;
+struct WrenHandle;
 
 enum class WrenError {
   COMPILE, // a syntax or resolution error detected at compile time
@@ -90,8 +90,8 @@ void wrenCollectGarbage(WrenVM& vm);
 // C++ code using [wrenCall]
 //
 // when you are done with this handle, it must be released using
-// [wrenReleaseValue]
-WrenValue* wrenMakeCallHandle(WrenVM& vm, const str_t& signature);
+// [wrenReleaseHandle]
+WrenHandle* wrenMakeCallHandle(WrenVM& vm, const str_t& signature);
 
 // [method] must have been created by a call to [wrenMakeCallHandle], the
 // arguments to the method must be already on the stack, the receiver should
@@ -101,11 +101,11 @@ WrenValue* wrenMakeCallHandle(WrenVM& vm, const str_t& signature);
 //
 // after this returns, you can access the return value from slot 0 on the
 // stack
-InterpretRet wrenCall(WrenVM& vm, WrenValue* method);
+InterpretRet wrenCall(WrenVM& vm, WrenHandle* method);
 
-// releases the reference stored in [value], after calling this, [value] can
-// no longer be used
-void wrenReleaseValue(WrenVM& vm, WrenValue* value);
+// releases the reference stored in [handle], after calling this, [handle]
+// can no longer be used
+void wrenReleaseHandle(WrenVM& vm, WrenHandle* handle);
 
 // returns the number of slots available to the current foreign method
 int wrenGetSlotCount(WrenVM& vm);
@@ -143,8 +143,8 @@ const char* wrenGetSlotString(WrenVM& vm, int slot);
 // creates a handle for the value stored in [slot]
 //
 // this will prevent the object that is referred to from being garbage collected
-// until the handle is released by calling [wrenReleaseValue()]
-WrenValue* wrenGetSlotValue(WrenVM& vm, int slot);
+// until the handle is released by calling [wrenReleaseHandle()]
+WrenHandle* wrenGetSlotHandle(WrenVM& vm, int slot);
 
 // reads a foreign object from [slot] and returns a pointer to the foreign data
 // stored with it
@@ -177,10 +177,10 @@ void wrenSetSlotNil(WrenVM& vm, int slot);
 // memory used by it after this is called.
 void wrenSetSlotString(WrenVM& vm, int slot, const str_t& text);
 
-// stores the value captured in [value] in [slot]
+// stores the value captured in [handle] in [slot]
 //
 // this does not release the handle for the value
-void wrenSetSlotValue(WrenVM& vm, int slot, WrenValue* value);
+void wrenSetSlotHandle(WrenVM& vm, int slot, WrenHandle* handle);
 
 // stores a new empty list in [slot]
 void wrenSetSlotNewList(WrenVM& vm, int slot);

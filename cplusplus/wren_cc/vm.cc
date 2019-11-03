@@ -56,7 +56,7 @@ WrenVM::~WrenVM(void) {
   // tell the user if they didn't free any handles, wo don't want to just free
   // them here because the host app may still have pointers to them that they
   // may try to use. better to tell them about the bug early
-  ASSERT(value_handles_ == nullptr, "all values have not been released");
+  ASSERT(handles_ == nullptr, "all handles have not been released");
 }
 
 InterpretRet WrenVM::interpret_in_module(
@@ -1039,8 +1039,8 @@ void WrenVM::collect(void) {
   gray_object(fiber_);
 
   // the value handles
-  for (WrenValue* v = value_handles_; v != nullptr; v = v->next)
-    gray_value(v->value);
+  for (WrenHandle* h = handles_; h != nullptr; h = h->next)
+    gray_value(h->value);
 
   // any object the compiler is using
   if (compiler_ != nullptr)
@@ -1129,7 +1129,7 @@ void WrenVM::blacken_objects(void) {
   }
 }
 
-WrenValue* WrenVM::make_call_handle(const str_t& signature) {
+WrenHandle* WrenVM::make_call_handle(const str_t& signature) {
   // creates a handle that can be used to invoke a method with [signature] on
   // using a receiver and arguments that are set up on the stack
   //
@@ -1167,7 +1167,7 @@ WrenValue* WrenVM::make_call_handle(const str_t& signature) {
       *this, nullptr, num_params + 1);
   // wrap the function in a closure and then in a handle, do this here so it
   // does not get collected as we fill it in
-  WrenValue* value = capture_value(fn);
+  WrenHandle* value = make_handle(fn);
   value->value = ClosureObject::make_closure(*this, fn);
 
   fn->append_code(Code::CALL_0 + num_params);
@@ -1181,7 +1181,7 @@ WrenValue* WrenVM::make_call_handle(const str_t& signature) {
   return value;
 }
 
-InterpretRet WrenVM::wren_call(WrenValue* method) {
+InterpretRet WrenVM::wren_call(WrenHandle* method) {
   // [method] must have been created by a call to [make_call_handle], the
   // arguments to the method must be already on the stack, the receiver should
   // be in slot 0 with the remaining arguments following it, in order, it is
@@ -1209,40 +1209,42 @@ InterpretRet WrenVM::wren_call(WrenValue* method) {
   return interpret(fiber_);
 }
 
-WrenValue* WrenVM::capture_value(const Value& value) {
+WrenHandle* WrenVM::make_handle(const Value& value) {
+  // creates a new [WrenHandle] for [value]
+
   PinnedGuard guard{*this};
   if (value.is_object())
     guard.set_guard_object(value.as_object());
 
   // make a handle for it
-  WrenValue* wrapped_value = new WrenValue(value);
+  WrenHandle* handle = new WrenHandle(value);
 
   // add it to the front of the linked list of handles
-  if (value_handles_ != nullptr)
-    value_handles_->prev = wrapped_value;
-  wrapped_value->next = value_handles_;
-  value_handles_ = wrapped_value;
+  if (handles_ != nullptr)
+    handles_->prev = handle;
+  handle->next = handles_;
+  handles_ = handle;
 
-  return wrapped_value;
+  return handle;
 }
 
-void WrenVM::release_value(WrenValue* value) {
-  ASSERT(value != nullptr, "value cannot be nullptr");
+void WrenVM::release_handle(WrenHandle* handle) {
+  ASSERT(handle != nullptr, "handle cannot be nullptr");
 
   // update the VM's head pointer if we're releasing the first handle
-  if (value_handles_ == nullptr)
-    value_handles_ = value->next;
+  if (handles_ == handle)
+    handles_ = handle->next;
 
   // unlink it from the list
-  if (value->prev != nullptr)
-    value->prev->next = value->next;
-  if (value->next != nullptr)
-    value->next->prev = value->prev;
+  if (handle->prev != nullptr)
+    handle->prev->next = handle->next;
+  if (handle->next != nullptr)
+    handle->next->prev = handle->prev;
 
   // clear it out, this isn't strictly necessary since we're going to free it
   // but it makes for easier debugging
-  value->clear();
-  delete value;
+  handle->clear();
+  delete handle;
 }
 
 void WrenVM::finalize_foreign(ForeignObject* foreign) {
@@ -1332,10 +1334,10 @@ const char* WrenVM::get_slot_string(int slot) const {
   return api_stack_[slot].as_cstring();
 }
 
-WrenValue* WrenVM::get_slot_value(int slot) {
+WrenHandle* WrenVM::get_slot_hanle(int slot) {
   validate_api_slot(slot);
 
-  return capture_value(api_stack_[slot]);
+  return make_handle(api_stack_[slot]);
 }
 
 void* WrenVM::get_slot_foreign(int slot) const {
@@ -1405,16 +1407,16 @@ void wrenCollectGarbage(WrenVM& vm) {
   vm.collect();
 }
 
-WrenValue* wrenMakeCallHandle(WrenVM& vm, const str_t& signature) {
+WrenHandle* wrenMakeCallHandle(WrenVM& vm, const str_t& signature) {
   return vm.make_call_handle(signature);
 }
 
-InterpretRet wrenCall(WrenVM& vm, WrenValue* method) {
+InterpretRet wrenCall(WrenVM& vm, WrenHandle* method) {
   return vm.wren_call(method);
 }
 
-void wrenReleaseValue(WrenVM& vm, WrenValue* value) {
-  vm.release_value(value);
+void wrenReleaseHandle(WrenVM& vm, WrenHandle* handle) {
+  vm.release_handle(handle);
 }
 
 int wrenGetSlotCount(WrenVM& vm) {
@@ -1437,8 +1439,8 @@ const char* wrenGetSlotString(WrenVM& vm, int slot) {
   return vm.get_slot_string(slot);
 }
 
-WrenValue* wrenGetSlotValue(WrenVM& vm, int slot) {
-  return vm.get_slot_value(slot);
+WrenHandle* wrenGetSlotHandle(WrenVM& vm, int slot) {
+  return vm.get_slot_hanle(slot);
 }
 
 void* wrenGetSlotForeign(WrenVM& vm, int slot) {
@@ -1462,9 +1464,9 @@ void wrenSetSlotString(WrenVM& vm, int slot, const str_t& text) {
   vm.set_slot(slot, StringObject::make_string(vm, text));
 }
 
-void wrenSetSlotValue(WrenVM& vm, int slot, WrenValue* value) {
-  ASSERT(value != nullptr, "value cannot be nullptr");
-  vm.set_slot(slot, value->value);
+void wrenSetSlotHandle(WrenVM& vm, int slot, WrenHandle* handle) {
+  ASSERT(handle != nullptr, "handle cannot be nullptr");
+  vm.set_slot(slot, handle->value);
 }
 
 void wrenSetSlotNewList(WrenVM& vm, int slot) {
