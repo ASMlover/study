@@ -136,8 +136,10 @@ Value WrenVM::import_module(const Value& name) {
   if (auto val = modules_->get(name); val)
     return nullptr;
 
-  // load the module's source code from the host
-  str_t source_bytes = load_module_fn_(*this, name.as_cstring());
+  str_t source_bytes;
+  // let the host try to provide the module
+  if (load_module_fn_)
+    source_bytes = load_module_fn_(*this, name.as_cstring());
 
   // if the host didn't provide it, see if it's a built-in optional module
   if (source_bytes.empty()) {
