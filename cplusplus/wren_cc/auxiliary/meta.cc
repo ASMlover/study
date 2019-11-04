@@ -61,14 +61,39 @@ namespace meta {
       }
     }
 
+    static void meta_get_modvars(WrenVM* vm) {
+      wrenEnsureSlots(*vm, 3);
+
+      auto v = vm->modules()->get(vm->get_api_stack(1));
+      if (!v) {
+        vm->set_api_stack(0, nullptr);
+        return;
+      }
+      Value module_val(*v);
+
+      ModuleObject* module = module_val.as_module();
+      ListObject* names = ListObject::make_list(*vm, module->vars_count());
+      vm->set_api_stack(0, names);
+
+      for (int i = 0; i < names->count(); ++i) {
+        names->set_element(i,
+            StringObject::make_string(*vm, module->get_variable_name(i)));
+      }
+    }
+
     inline WrenForeignFn bind_foreign_method(WrenVM& vm,
         const str_t& class_name, bool is_static, const str_t& signature) {
       // there is only one foreign method in the meta module
       ASSERT(class_name == "Meta", "should be in Meta class");
       ASSERT(is_static, "should be static");
-      ASSERT(signature == "compile(_,_,_)", "should be compile method");
 
-      return meta_compile;
+      if (signature == "compile(_,_,_)")
+        return meta_compile;
+      if (signature == "getModuleVars(_)")
+        return meta_get_modvars;
+
+      ASSERT(false, "unknown method");
+      return nullptr;
     }
   }
 

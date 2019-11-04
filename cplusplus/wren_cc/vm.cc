@@ -1430,6 +1430,10 @@ int wrenGetSlotCount(WrenVM& vm) {
   return vm.get_slot_count();
 }
 
+void wrenEnsureSlots(WrenVM& vm, int num_slots) {
+  vm.ensure_slots(num_slots);
+}
+
 WrenType wrenGetSlotType(WrenVM& vm, int slot) {
   return vm.get_slot_type(slot);
 }

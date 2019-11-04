@@ -3,6 +3,14 @@
 static const str_t kLibSource =
 "\n"
 "class Meta {\n"
+"  static getModuleVariables(module) {\n"
+"    if (!(module is String)) Fiber.abort(\"module name must be a string\")\n"
+"    var result = getModuleVars(module)\n"
+"    if (result != nil) return result\n"
+"\n"
+"    Fiber.abort(\"could not find the module named `\" + module + \"`\")\n"
+"  }\n"
+"\n"
 "  static eval(source_bytes) {\n"
 "    if (!source_bytes is String) Fiber.abort(\"source code must be a string\")\n"
 "\n"
@@ -18,4 +26,5 @@ static const str_t kLibSource =
 "  }\n"
 "\n"
 "  foreign static compile(source, is_expression, print_errors)\n"
+"  foreign static getModuleVars(module)\n"
 "}\n";

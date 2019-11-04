@@ -220,6 +220,9 @@ public:
   inline void set_compiler(Compiler* compiler) { compiler_ = compiler; }
   inline LoadModuleFn get_load_fn(void) const { return load_module_fn_; }
   inline Value* get_api_stack(void) const { return api_stack_; }
+  inline Value& get_api_stack(int i) { return api_stack_[i]; }
+  inline const Value& get_api_stack(int i) const { return api_stack_[i]; }
+  inline void set_api_stack(int i, const Value& v) { api_stack_[i] = v; }
   inline void set_load_fn(const LoadModuleFn& fn) { load_module_fn_ = fn; }
   inline void set_load_fn(LoadModuleFn&& fn) { load_module_fn_ = std::move(fn); }
   inline void set_error_fn(const WrenErrorFn& fn) { error_fn_ = fn; }

@@ -453,6 +453,7 @@ class ModuleObject final : public BaseObject {
   }
 public:
   inline int count(void) const { return Xt::as_type<int>(variables_.size()); }
+  inline int vars_count(void) const { return variable_names_.count(); }
   inline const Value& get_variable(int i) const { return variables_[i]; }
   inline void set_variable(int i, const Value& val) { variables_[i] = val; }
   inline int find_variable(const str_t& name) const { return variable_names_.get(name); }
