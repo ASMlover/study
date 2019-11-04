@@ -39,12 +39,31 @@ union DoubleBits {
   double num;
 };
 
+inline u32_t hash_bits(DoubleBits bits) {
+  u32_t result = bits.b32[0] ^ bits.b32[1];
+
+  // slosh the bits around some, due to the way doubles are represented,
+  // small integers will have most of low bits of the double represented
+  // set to zero, for example, the above result for 5 is 43d00600
+  //
+  // we map that to an entry index by masking off the high bits which means
+  // most small integers would all end up in entry zero, that's bad, to
+  // avoid that, push a bunch of the high bits lower down so they affect
+  // the lower bits too
+  //
+  // the specific mixing function here was pulled from Java's HashMap
+  // implementation
+  result ^= (result >> 20) ^ (result >> 12);
+  result ^= (result >> 7) ^ (result >> 4);
+  return result;
+}
+
 inline u32_t hash_numeric(double num) {
   // generates a hash code for [num]
 
-  DoubleBits data;
-  data.num = num;
-  return data.b32[0] ^ data.b32[1];
+  DoubleBits bits;
+  bits.num = num;
+  return hash_bits(bits);
 }
 
 std::ostream& operator<<(std::ostream& out, const Value& val) {
@@ -122,7 +141,7 @@ u32_t TagValue::hash(void) const {
   // hash the raw bits of the unboxed value
   DoubleBits bits;
   bits.b64 = bits_;
-  return bits.b32[0] ^ bits.b32[1];
+  return hash_bits(bits);
 }
 
 str_t TagValue::stringify(void) const {
