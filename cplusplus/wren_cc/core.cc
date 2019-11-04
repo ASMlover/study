@@ -875,7 +875,7 @@ DEF_PRIMITIVE(map_iterkey) {
 
   const auto& entry = (*map)[index];
   if (entry.first.is_undefined())
-    RETURN_ERR("invalid map iterator value");
+    RETURN_ERR("invalid map iterator");
   RETURN_VAL(entry.first);
 }
 
@@ -887,7 +887,7 @@ DEF_PRIMITIVE(map_itervalue) {
 
   const auto& entry = (*map)[index];
   if (entry.first.is_undefined())
-    RETURN_ERR("invalid map iterator value");
+    RETURN_ERR("invalid map iterator");
   RETURN_VAL(entry.second);
 }
 
@@ -1133,7 +1133,7 @@ namespace core {
     vm.set_primitive(vm.map_cls(), "containsKey(_)", _primitive_map_contains);
     vm.set_primitive(vm.map_cls(), "len", _primitive_map_len);
     vm.set_primitive(vm.map_cls(), "remove(_)", _primitive_map_remove);
-    vm.set_primitive(vm.map_cls(), "iter(_)", _primitive_map_iterate);
+    vm.set_primitive(vm.map_cls(), "iterate(_)", _primitive_map_iterate);
     vm.set_primitive(vm.map_cls(), "keyIterValue(_)", _primitive_map_iterkey);
     vm.set_primitive(vm.map_cls(), "valIterValue(_)", _primitive_map_itervalue);
 

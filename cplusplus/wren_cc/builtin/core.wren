@@ -192,7 +192,7 @@ class MapKeySequence is Sequence {
     _map = map
   }
 
-  iterate(n) { _map.iter(n) }
+  iterate(n) { _map.iterate(n) }
   iterValue(iterator) { _map.keyIterValue(iterator) }
 }
 
@@ -201,11 +201,23 @@ class MapValSequence is Sequence {
     _map = map
   }
 
-  iterate(n) { _map.iter(n) }
+  iterate(n) { _map.iterate(n) }
   iterValue(iterator) { _map.valIterValue(iterator) }
 }
 
-class Map {
+class MapEntry {
+  construct new(key, value) {
+    _key = key
+    _value = value
+  }
+
+  key { _key }
+  value { _value }
+
+  toString { _key.toString + ": " + _value.toString }
+}
+
+class Map is Sequence {
   keys { MapKeySequence.new(this) }
   values { MapValSequence.new(this) }
 
@@ -220,6 +232,10 @@ class Map {
     }
 
     return result + "}"
+  }
+
+  iterValue(iterator) {
+    return MapEntry.new(keyIterValue(iterator), valIterValue(iterator))
   }
 }
 
