@@ -173,7 +173,6 @@ class WrenVM final : private UnCopyable {
 
   ModuleObject* get_module(const Value& name) const;
   FiberObject* load_module(const Value& name, const str_t& source_bytes);
-  InterpretRet load_into_core(const str_t& source_bytes);
   WrenForeignFn find_foreign_method(const str_t& module_name,
       const str_t& class_name, bool is_static, const str_t& signature);
 

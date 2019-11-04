@@ -670,8 +670,8 @@ int ModuleObject::define_variable(const str_t& name, const Value& value) {
 }
 
 void ModuleObject::iter_variables(
-    std::function<void (int, const Value&, const str_t&)>&& fn) {
-  for (int i = 0; i < variables_.size(); ++i)
+    std::function<void (int, const Value&, const str_t&)>&& fn, int offset) {
+  for (int i = offset; i < variables_.size(); ++i)
     fn(i, variables_[i], variable_names_.get_name(i));
 }
 

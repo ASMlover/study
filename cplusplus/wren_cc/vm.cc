@@ -949,7 +949,7 @@ FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
         });
   }
 
-  FunctionObject* fn = compile(*this, module, source_bytes, true);
+  FunctionObject* fn = compile(*this, module, source_bytes, false, true);
   if (fn == nullptr)
     return nullptr;
 

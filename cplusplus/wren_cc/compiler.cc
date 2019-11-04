@@ -1402,6 +1402,7 @@ class Compiler final : private UnCopyable {
 
     // compile the initializer
     if (match(TokenKind::TK_EQ)) {
+      ignore_newlines();
       expression();
     }
     else {
@@ -2239,20 +2240,25 @@ public:
     return fn_;
   }
 
-  FunctionObject* compile_function(TokenKind end_kind) {
+  FunctionObject* compile_function(bool is_expression = false) {
+    int num_existing_variables = parser_.get_mod()->count();
     ignore_newlines();
-    for (;;) {
-      definition();
 
-      // if there is no newline, it must be the end of the block on the same line
-      if (!match_line()) {
-        consume(end_kind, "expect end of file");
-        break;
-      }
-      if (match(end_kind))
-        break;
+    if (is_expression) {
+      expression();
     }
-    emit_opcode(Code::NIL);
+    else {
+      while (!match(TokenKind::TK_EOF)) {
+        definition();
+
+        // if there is no newline, it must be the end of the block on the same line
+        if (!match_line()) {
+          consume(TokenKind::TK_EOF, "expect end of file");
+          break;
+        }
+      }
+      emit_opcode(Code::NIL);
+    }
     emit_opcode(Code::RETURN);
 
     // see if there are any implicitly declared module-level variables that
@@ -2267,15 +2273,9 @@ public:
                   name, Xt::as_type<int>(mod->get_variable(i).as_numeric())));
             error("variable is used but not defined");
           }
-        });
+        }, num_existing_variables);
 
     return finish_compiler("(script)");
-  }
-
-  FunctionObject* compile_function(
-      Parser& p, Compiler* parent, TokenKind end_kind) {
-    Compiler c(p, parent);
-    return c.compile_function(end_kind);
   }
 
   void mark_compiler(WrenVM& vm) {
@@ -2290,8 +2290,8 @@ public:
   }
 };
 
-FunctionObject* compile(WrenVM& vm,
-    ModuleObject* module, const str_t& source_bytes, bool print_errors) {
+FunctionObject* compile(WrenVM& vm, ModuleObject* module,
+    const str_t& source_bytes, bool is_expression, bool print_errors) {
   Lexer lex(source_bytes);
   Parser p(vm, module, lex, print_errors);
 
@@ -2299,7 +2299,7 @@ FunctionObject* compile(WrenVM& vm,
   Compiler c(p, nullptr);
   c.init_compiler(true);
 
-  return c.compile_function(TokenKind::TK_EOF);
+  return c.compile_function(is_expression);
 }
 
 void mark_compiler(WrenVM& vm, Compiler* compiler) {

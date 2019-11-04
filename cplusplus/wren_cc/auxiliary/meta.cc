@@ -43,8 +43,12 @@ namespace meta {
       ClosureObject* caller = vm->fiber()->peek_frame(1).closure;
       ModuleObject* module = caller->fn()->module();
 
+      const char* source_bytes = wrenGetSlotString(*vm, 1);
+      bool is_expression = wrenGetSlotBool(*vm, 2);
+      bool print_errors = wrenGetSlotBool(*vm, 3);
       // compile it
-      FunctionObject* fn = compile(*vm, module, wrenGetSlotString(*vm, 1), false);
+      FunctionObject* fn = compile(*vm,
+          module, source_bytes, is_expression, print_errors);
 
       // return the result, we can not use the public API for this since we
       // have a bare FunctionObject
@@ -62,7 +66,7 @@ namespace meta {
       // there is only one foreign method in the meta module
       ASSERT(class_name == "Meta", "should be in Meta class");
       ASSERT(is_static, "should be static");
-      ASSERT(signature == "compile(_)", "should be compile method");
+      ASSERT(signature == "compile(_,_,_)", "should be compile method");
 
       return meta_compile;
     }

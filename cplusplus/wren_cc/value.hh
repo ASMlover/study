@@ -462,7 +462,8 @@ public:
 
   int declare_variable(const str_t& name, int line);
   int define_variable(const str_t& name, const Value& value);
-  void iter_variables(std::function<void (int, const Value&, const str_t&)>&& fn);
+  void iter_variables(
+      std::function<void (int, const Value&, const str_t&)>&& fn, int offset = 0);
 
   virtual str_t stringify(void) const override;
   virtual void gc_blacken(WrenVM& vm) override;

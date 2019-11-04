@@ -33,7 +33,8 @@ namespace wrencc {
 class Compiler;
 
 FunctionObject* compile(WrenVM& vm,
-    ModuleObject* module, const str_t& source_bytes, bool print_errors = false);
+    ModuleObject* module, const str_t& source_bytes,
+    bool is_expression = false, bool print_errors = false);
 void mark_compiler(WrenVM& vm, Compiler* compiler);
 
 }
