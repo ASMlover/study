@@ -309,8 +309,8 @@ void StringObject::hash_string(void) {
 
 int StringObject::find(StringObject* sub, int start_index) const {
   if (sub->size_ == 0)
-    return 0;
-  if (sub->size_ > (size_ - start_index))
+    return start_index;
+  if (sub->size_ + start_index > size_)
     return -1;
   if (start_index >= size_)
     return -1;
