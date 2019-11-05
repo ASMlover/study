@@ -307,7 +307,7 @@ public:
   inline char operator[](int i) const { return value_[i]; }
   inline char& operator[](int i) { return value_[i]; }
 
-  int find(StringObject* sub) const;
+  int find(StringObject* sub, int start_index = 0) const;
 
   virtual bool is_equal(BaseObject* r) const override;
   virtual str_t stringify(void) const override;

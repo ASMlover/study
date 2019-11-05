@@ -467,7 +467,18 @@ DEF_PRIMITIVE(string_indexof) {
   StringObject* string = args[0].as_string();
   StringObject* search = args[1].as_string();
 
-  RETURN_VAL(string->find(search));
+  RETURN_VAL(string->find(search, 0));
+}
+
+DEF_PRIMITIVE(string_indexof_startindex) {
+  if (!validate_string(vm, args[1], "Argument"))
+    return false;
+
+  StringObject* string = args[0].as_string();
+  StringObject* search = args[1].as_string();
+  int start_index = Xt::as_type<int>(args[2].as_numeric());
+
+  RETURN_VAL(string->find(search, start_index));
 }
 
 DEF_PRIMITIVE(string_iterate) {
@@ -548,7 +559,7 @@ DEF_PRIMITIVE(string_contains) {
 
   StringObject* orig = args[0].as_string();
   StringObject* subs = args[1].as_string();
-  RETURN_VAL(orig->find(subs) != -1);
+  RETURN_VAL(orig->find(subs, 0) != -1);
 }
 
 DEF_PRIMITIVE(string_add) {
@@ -1095,6 +1106,7 @@ namespace core {
     vm.set_primitive(vm.str_cls(), "contains(_)", _primitive_string_contains);
     vm.set_primitive(vm.str_cls(), "endsWith(_)", _primitive_string_endswith);
     vm.set_primitive(vm.str_cls(), "indexOf(_)", _primitive_string_indexof);
+    vm.set_primitive(vm.str_cls(), "indexOf(_,_)", _primitive_string_indexof_startindex);
     vm.set_primitive(vm.str_cls(), "iterate(_)", _primitive_string_iterate);
     vm.set_primitive(vm.str_cls(), "iterByte(_)", _primitive_string_iterbyte);
     vm.set_primitive(vm.str_cls(), "iterValue(_)", _primitive_string_itervalue);

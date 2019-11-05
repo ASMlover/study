@@ -307,13 +307,15 @@ void StringObject::hash_string(void) {
   hash_ = hash;
 }
 
-int StringObject::find(StringObject* sub) const {
+int StringObject::find(StringObject* sub, int start_index) const {
   if (sub->size_ == 0)
     return 0;
-  if (sub->size_ > size_)
+  if (sub->size_ > (size_ - start_index))
+    return -1;
+  if (start_index >= size_)
     return -1;
 
-  char* first_occur = std::strstr(value_, sub->value_);
+  char* first_occur = std::strstr(value_ + start_index, sub->value_);
   return first_occur != nullptr ? Xt::as_type<int>(first_occur - value_) : -1;
 }
 
