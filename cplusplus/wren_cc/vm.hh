@@ -279,6 +279,8 @@ public:
 
   void set_slot(int slot, const Value& value);
   void* set_slot_new_foreign(int slot, int class_slot, sz_t size);
+  int get_list_count(int slot);
+  void get_list_element(int list_slot, int index, int element_slot);
   void insert_into_list(int list_slot, int index, int element_slot);
   void get_variable(const str_t& module, const str_t& name, int slot);
   void abort_fiber(int slot);

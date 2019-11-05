@@ -196,6 +196,13 @@ void wrenSetSlotNewList(WrenVM& vm, int slot);
 // returns a pointer to the foreign object's data
 void* wrenSetSlotNewForeign(WrenVM& vm, int slot, int class_slot, sz_t size);
 
+// returns the number of elements in the list stored in [slot]
+int wrenGetListCount(WrenVM& vm, int slot);
+
+// reads element [index] from the list in [list_slot] and stores it in
+// [element_slot]
+void wrenGetListElement(WrenVM& vm, int list_slot, int index, int element_slot);
+
 // takes the value stored at [element_slot] and inserts it into the list stored
 // at [list_slot] at [index]
 //

@@ -1373,6 +1373,21 @@ void* WrenVM::set_slot_new_foreign(int slot, int class_slot, sz_t size) {
   return foreign->data();
 }
 
+int WrenVM::get_list_count(int slot) {
+  validate_api_slot(slot);
+  ASSERT(api_stack_[slot].is_list(), "slot must hold a list");
+
+  return api_stack_[slot].as_list()->count();
+}
+
+void WrenVM::get_list_element(int list_slot, int index, int element_slot) {
+  validate_api_slot(list_slot);
+  validate_api_slot(element_slot);
+  ASSERT(api_stack_[list_slot].is_list(), "slot must hold a list");
+
+  api_stack_[element_slot] = api_stack_[list_slot].as_list()->get_element(index);
+}
+
 void WrenVM::insert_into_list(int list_slot, int index, int element_slot) {
   validate_api_slot(list_slot);
   validate_api_slot(element_slot);
@@ -1488,6 +1503,14 @@ void wrenSetSlotNewList(WrenVM& vm, int slot) {
 
 void* wrenSetSlotNewForeign(WrenVM& vm, int slot, int class_slot, sz_t size) {
   return vm.set_slot_new_foreign(slot, class_slot, size);
+}
+
+int wrenGetListCount(WrenVM& vm, int slot) {
+  return vm.get_list_count(slot);
+}
+
+void wrenGetListElement(WrenVM& vm, int list_slot, int index, int element_slot) {
+  vm.get_list_element(list_slot, index, element_slot);
 }
 
 void wrenInsertInList(WrenVM& vm, int list_slot, int index, int element_slot) {
