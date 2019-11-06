@@ -1,0 +1,2 @@
+
+IO.print(Numeric.smallest)
