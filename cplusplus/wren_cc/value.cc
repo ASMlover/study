@@ -437,10 +437,11 @@ StringObject* StringObject::format(WrenVM& vm, const char* format, ...) {
   return make_string(vm, text);
 }
 
-ListObject::ListObject(ClassObject* cls, int num_elements) noexcept
+ListObject::ListObject(
+    ClassObject* cls, int num_elements, const Value& v) noexcept
   : BaseObject(ObjType::LIST, cls) {
   if (num_elements > 0)
-    elements_.resize(num_elements, nullptr);
+    elements_.resize(num_elements, v);
 }
 
 str_t ListObject::stringify(void) const {
@@ -465,8 +466,9 @@ void ListObject::gc_blacken(WrenVM& vm) {
     vm.gray_value(e);
 }
 
-ListObject* ListObject::make_list(WrenVM& vm, int num_elements) {
-  auto* o = new ListObject(vm.list_cls(), num_elements);
+ListObject* ListObject::make_list(
+    WrenVM& vm, int num_elements, const Value& v) {
+  auto* o = new ListObject(vm.list_cls(), num_elements, v);
   vm.append_object(o);
   return o;
 }

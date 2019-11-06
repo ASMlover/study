@@ -617,19 +617,11 @@ DEF_PRIMITIVE(list_new) {
   RETURN_VAL(ListObject::make_list(vm, 0));
 }
 
-DEF_PRIMITIVE(list_new_withsize) {
+DEF_PRIMITIVE(list_filled) {
   if (!validate_int(vm, args[1], "Size"))
     return false;
-
-  int size = Xt::as_type<int>(args[1].as_numeric());
-  ListObject* list = ListObject::make_list(vm, size);
-
-  RETURN_VAL(list);
-}
-
-DEF_PRIMITIVE(list_new_withsizedef) {
-  if (!validate_int(vm, args[1], "Size"))
-    return false;
+  if (args[1].as_numeric() < 0)
+    RETURN_ERR("size cannot be negative");
 
   int size = Xt::as_type<int>(args[1].as_numeric());
   ListObject* list = ListObject::make_list(vm, size);
@@ -1139,8 +1131,7 @@ namespace core {
 
     vm.set_list_cls(vm.find_variable(core_module, "List").as_class());
     vm.set_primitive(vm.list_cls()->cls(), "new()", _primitive_list_new);
-    vm.set_primitive(vm.list_cls()->cls(), "new(_)", _primitive_list_new_withsize);
-    vm.set_primitive(vm.list_cls()->cls(), "new(_,_)", _primitive_list_new_withsizedef);
+    vm.set_primitive(vm.list_cls()->cls(), "filled(_,_)", _primitive_list_filled);
     vm.set_primitive(vm.list_cls(), "[_]", _primitive_list_subscript);
     vm.set_primitive(vm.list_cls(), "[_]=(_)", _primitive_list_subscript_setter);
     vm.set_primitive(vm.list_cls(), "add(_)", _primitive_list_add);

@@ -328,7 +328,8 @@ public:
 class ListObject final : public BaseObject {
   std::vector<Value> elements_;
 
-  ListObject(ClassObject* cls, int num_elements = 0) noexcept;
+  ListObject(ClassObject* cls,
+      int num_elements = 0, const Value& v = nullptr) noexcept;
 public:
   inline int count(void) const { return Xt::as_type<int>(elements_.size()); }
   inline const Value* elements(void) const { return elements_.data(); }
@@ -346,7 +347,8 @@ public:
   virtual str_t stringify(void) const override;
   virtual void gc_blacken(WrenVM& vm) override;
 
-  static ListObject* make_list(WrenVM& vm, int num_elements = 0);
+  static ListObject* make_list(WrenVM& vm,
+      int num_elements = 0, const Value& v = nullptr);
 };
 
 class RangeObject final : public BaseObject {
