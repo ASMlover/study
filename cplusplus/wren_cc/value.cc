@@ -740,6 +740,14 @@ FunctionObject::FunctionObject(
   , debug_(debug_name, source_lines, lines_count) {
 }
 
+int FunctionObject::indexof_constant(const Value& v) const {
+  for (sz_t i = 0; i < constants_.size(); ++i) {
+    if (constants_[i] == v)
+      return Xt::as_type<int>(i);
+  }
+  return -1;
+}
+
 str_t FunctionObject::stringify(void) const {
   std::stringstream ss;
   ss << "[fn `" << this << "`]";

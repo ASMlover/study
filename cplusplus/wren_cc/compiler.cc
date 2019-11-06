@@ -434,6 +434,10 @@ class Compiler final : private UnCopyable {
     if (parser_.had_error())
       return -1;
 
+    if (auto i = fn_->indexof_constant(v); i != -1)
+      return i;
+
+    // it's a new constant
     if (fn_->constants_count() < kMaxConstants) {
       PinnedGuard guard(parser_.get_vm());
       if (v.is_object())

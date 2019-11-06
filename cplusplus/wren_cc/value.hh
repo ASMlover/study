@@ -520,6 +520,7 @@ public:
   inline DebugObject& debug(void) { return debug_; }
   inline const DebugObject& debug(void) const { return debug_; }
   inline void bind_name(const str_t& name) { debug_.set_name(name); }
+  int indexof_constant(const Value& v) const;
 
   template <typename T> inline void append_code(T c) {
     codes_.push_back(Xt::as_type<u8_t>(c));
