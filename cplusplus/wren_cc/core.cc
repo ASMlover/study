@@ -258,6 +258,14 @@ DEF_PRIMITIVE(numeric_sign) {
     RETURN_VAL(0);
 }
 
+DEF_PRIMITIVE(numeric_highest) {
+  RETURN_VAL(DBL_MAX);
+}
+
+DEF_PRIMITIVE(numeric_smallest) {
+  RETURN_VAL(DBL_EPSILON);
+}
+
 DEF_PRIMITIVE(numeric_tostring) {
   RETURN_VAL(StringObject::from_numeric(vm, args[0].as_numeric()));
 }
@@ -1072,6 +1080,8 @@ namespace core {
     vm.set_num_cls(vm.find_variable(core_module, "Numeric").as_class());
     vm.set_primitive(vm.num_cls()->cls(), "fromString(_)", _primitive_numeric_fromstring);
     vm.set_primitive(vm.num_cls()->cls(), "pi", _primitive_numeric_pi);
+    vm.set_primitive(vm.num_cls()->cls(), "highest", _primitive_numeric_highest);
+    vm.set_primitive(vm.num_cls()->cls(), "smallest", _primitive_numeric_smallest);
     vm.set_primitive(vm.num_cls(), "+(_)", _primitive_numeric_add);
     vm.set_primitive(vm.num_cls(), "-(_)", _primitive_numeric_sub);
     vm.set_primitive(vm.num_cls(), "*(_)", _primitive_numeric_mul);
