@@ -333,6 +333,8 @@ class Compiler final : private UnCopyable {
   // the function being compiled
   FunctionObject* fn_{};
 
+  MapObject* constants_{};
+
   // the currently in scope local variables
   std::vector<Local> locals_;
 
@@ -434,16 +436,22 @@ class Compiler final : private UnCopyable {
     if (parser_.had_error())
       return -1;
 
-    if (auto i = fn_->indexof_constant(v); i != -1)
-      return i;
+    // see if we already have a constant for the value, if so, reuse it
+    if (constants_ != nullptr) {
+      if (auto existing = constants_->get(v); existing)
+        return Xt::as_type<int>((*existing).as_numeric());
+    }
 
     // it's a new constant
     if (fn_->constants_count() < kMaxConstants) {
       PinnedGuard guard(parser_.get_vm());
       if (v.is_object())
         guard.set_guard_object(v.as_object());
-
       fn_->append_constant(v);
+
+      if (constants_ == nullptr)
+        constants_ = MapObject::make_map(parser_.get_vm());
+      constants_->set(v, fn_->constants_count() - 1);
     }
     else {
       error("a function may only contain %d unique constants", kMaxConstants);
@@ -2289,6 +2297,7 @@ public:
     Compiler* c = this;
     while (c != nullptr) {
       vm.gray_object(c->fn_);
+      vm.gray_object(c->constants_);
       c = c->parent_;
     }
   }

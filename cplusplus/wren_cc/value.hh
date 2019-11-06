@@ -536,6 +536,7 @@ public:
 
   virtual str_t stringify(void) const override;
   virtual void gc_blacken(WrenVM& vm) override;
+  virtual u32_t hash(void) const override;
 
   static int get_argc(const u8_t* bytecode, const Value* constants, int ip);
   static FunctionObject* make_function(

@@ -759,6 +759,15 @@ void FunctionObject::gc_blacken(WrenVM& vm) {
     vm.gray_value(c);
 }
 
+u32_t FunctionObject::hash(void) const {
+  // allow bare (non-closure) functions so that we can use a map to find
+  // existing constants in a function's constant table, this is only used
+  // internally, since user code never sees a non-closure function, they
+  // cannot use them as map keys
+
+  return hash_numeric(arity_) ^ hash_numeric(codes_count());
+}
+
 int FunctionObject::get_argc(
     const u8_t* bytecode, const Value* constants, int ip) {
   // returns the number of arguments to the instruction at [ip] in bytecode
