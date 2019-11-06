@@ -440,7 +440,7 @@ StringObject* StringObject::format(WrenVM& vm, const char* format, ...) {
 ListObject::ListObject(ClassObject* cls, int num_elements) noexcept
   : BaseObject(ObjType::LIST, cls) {
   if (num_elements > 0)
-    elements_.resize(num_elements);
+    elements_.resize(num_elements, nullptr);
 }
 
 str_t ListObject::stringify(void) const {
