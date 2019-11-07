@@ -228,6 +228,10 @@ DEF_PRIMITIVE(numeric_atan2) {
   RETURN_VAL(std::atan2(args[0].as_numeric(), args[1].as_numeric()));
 }
 
+DEF_PRIMITIVE(numeric_pow) {
+  RETURN_VAL(std::pow(args[0].as_numeric(), args[1].as_numeric()));
+}
+
 DEF_PRIMITIVE(numeric_fraction) {
   double dummy;
   RETURN_VAL(std::modf(args[0].as_numeric(), &dummy));
@@ -351,6 +355,7 @@ DEF_NUMERIC_FN(neg, -)
 DEF_NUMERIC_FN(sin, std::sin)
 DEF_NUMERIC_FN(sqrt, std::sqrt)
 DEF_NUMERIC_FN(tan, std::tan)
+DEF_NUMERIC_FN(log, std::log)
 
 DEF_PRIMITIVE(numeric_mod) {
   if (!validate_numeric(vm, args[1], "Right operand"))
@@ -1105,11 +1110,13 @@ namespace core {
     vm.set_primitive(vm.num_cls(), "sin", _primitive_numeric_sin);
     vm.set_primitive(vm.num_cls(), "sqrt", _primitive_numeric_sqrt);
     vm.set_primitive(vm.num_cls(), "tan", _primitive_numeric_tan);
+    vm.set_primitive(vm.num_cls(), "log", _primitive_numeric_log);
     vm.set_primitive(vm.num_cls(), "%(_)", _primitive_numeric_mod);
     vm.set_primitive(vm.num_cls(), "~", _primitive_numeric_bitnot);
     vm.set_primitive(vm.num_cls(), "..(_)", _primitive_numeric_dotdot);
     vm.set_primitive(vm.num_cls(), "...(_)", _primitive_numeric_dotdotdot);
     vm.set_primitive(vm.num_cls(), "atan(_)", _primitive_numeric_atan2);
+    vm.set_primitive(vm.num_cls(), "pow(_)", _primitive_numeric_pow);
     vm.set_primitive(vm.num_cls(), "fraction", _primitive_numeric_fraction);
     vm.set_primitive(vm.num_cls(), "isInfinity", _primitive_numeric_isinfinity);
     vm.set_primitive(vm.num_cls(), "isInteger", _primitive_numeric_isinteger);
