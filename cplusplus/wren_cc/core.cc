@@ -375,9 +375,7 @@ DEF_PRIMITIVE(numeric_ne) {
 
 DEF_PRIMITIVE(numeric_bitnot) {
   // bitwise operators always work on 32-bit unsigned int
-  u64_t wide_val = args[0].as_numeric();
-  u32_t val = wide_val & 0xFFFFFFFF;
-  RETURN_VAL(~val);
+  RETURN_VAL(~Xt::as_type<u32_t>(args[0].as_numeric()));
 }
 
 DEF_PRIMITIVE(numeric_dotdot) {
