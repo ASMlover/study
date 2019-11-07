@@ -260,6 +260,7 @@ void WrenVM::runtime_error(void) {
   // if we got here, nothing caught the error, so show the stack trace
   print_stacktrace();
   fiber_ = nullptr;
+  api_stack_ = nullptr;
 }
 
 void WrenVM::method_not_found(ClassObject* cls, int symbol) {
@@ -429,8 +430,9 @@ void WrenVM::create_foreign(FiberObject* fiber, Value* stack) {
 
   // pass the constructor arguments to the allocator as well
   api_stack_ = stack;
-
   method.foreign()(this);
+
+  api_stack_ = nullptr;
 }
 
 InterpretRet WrenVM::interpret(FiberObject* fiber) {
