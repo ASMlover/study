@@ -398,15 +398,10 @@ StringObject* StringObject::concat_string(
 StringObject* StringObject::from_numeric(WrenVM& vm, double value) {
   // produces a string representation of [value]
 
-  switch (std::fpclassify(value)) {
-  case FP_INFINITE:
-    if (std::signbit(value))
-      return make_string(vm, "-infinity");
-    else
-      return make_string(vm, "infinity");
-  case FP_NAN:
+  if (std::isnan(value))
     return make_string(vm, "nan");
-  }
+  if (std::isinf(value))
+    return make_string(vm, value > 0.0 ? "infinity" : "-infinity");
 
   return make_string(vm, Xt::to_string(value));
 }
