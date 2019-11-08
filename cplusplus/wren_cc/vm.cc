@@ -346,14 +346,16 @@ void WrenVM::validate_api_slot(int slot) const {
 
 void WrenVM::call_foreign(
     FiberObject* fiber, const WrenForeignFn& foreign, int argc) {
-  api_stack_ = fiber->values_at(fiber->stack_size() - argc);
+  Value* old_api_stack = api_stack_;
 
+  api_stack_ = fiber->values_at(fiber->stack_size() - argc);
   foreign(this);
 
   // discard the stack slots for the arguments and temporaries but leave one
   // for the result
   fiber->resize_stack(fiber->stack_size() - (argc - 1));
-  api_stack_ = nullptr;
+
+  api_stack_ = old_api_stack;
 }
 
 void WrenVM::bind_foreign_class(ClassObject* cls, ModuleObject* module) {
@@ -429,10 +431,12 @@ void WrenVM::create_foreign(FiberObject* fiber, Value* stack) {
   ASSERT(method.get_type() == MethodType::FOREIGN, "allocator should be foreign");
 
   // pass the constructor arguments to the allocator as well
+  Value* old_api_stack = api_stack_;
+
   api_stack_ = stack;
   method.foreign()(this);
 
-  api_stack_ = nullptr;
+  api_stack_ = old_api_stack;
 }
 
 InterpretRet WrenVM::interpret(FiberObject* fiber) {
