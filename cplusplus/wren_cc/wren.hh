@@ -219,4 +219,10 @@ void wrenGetVariable(WrenVM& vm,
 // runtime error object
 void wrenAbortFiber(WrenVM& vm, int slot);
 
+// returns the user data associated with the VM
+void* wrenGetUserData(WrenVM& vm);
+
+// sets user data associated with the VM
+void wrenSetUserData(WrenVM& vm, void* user_data);
+
 }

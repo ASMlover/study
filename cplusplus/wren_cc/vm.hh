@@ -160,6 +160,9 @@ class WrenVM final : private UnCopyable {
   // method calls are dispatched directly by index in this table
   SymbolTable method_names_;
 
+  // user defined state data associated with the VM
+  void* user_data_{};
+
   void print_stacktrace(void);
   void runtime_error(void);
   void method_not_found(ClassObject* cls, int symbol);
@@ -237,6 +240,8 @@ public:
       ClassObject* cls, const str_t& name, const PrimitiveFn& fn) {
     set_native(cls, name, fn);
   }
+  inline void* get_user_data(void) const { return user_data_; }
+  inline void set_user_data(void* data) { user_data_ = data; }
 
   InterpretRet interpret_in_module(
       const str_t& module, const str_t& source_bytes);

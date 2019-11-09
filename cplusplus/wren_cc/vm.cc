@@ -1532,4 +1532,12 @@ void wrenAbortFiber(WrenVM& vm, int slot) {
   vm.abort_fiber(slot);
 }
 
+void* wrenGetUserData(WrenVM& vm) {
+  return vm.get_user_data();
+}
+
+void wrenSetUserData(WrenVM& vm, void* user_data) {
+  vm.set_user_data(user_data);
+}
+
 }
