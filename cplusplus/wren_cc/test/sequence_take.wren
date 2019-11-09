@@ -21,5 +21,3 @@ IO.print(test.take(0).isEmpty) // expect: true
 IO.print(test.take(1).toList) // expect: [1]
 
 IO.print(test.take(4).toList) // expect: [1, 2, 3]
-
-IO.print(test.take(-10).isEmpty) // expect: true

@@ -57,9 +57,21 @@ class Sequence {
 
   map(transformation) { MapSequence.new(this, transformation) }
 
-  skip(count) { SkipSequence.new(this, count) }
+  skip(count) {
+    if (!(count is Numeric) || !count.isInteger || count < 0) {
+      Fiber.abort("count must be a non-negative integer")
+    }
 
-  take(count) { TakeSequence.new(this, count) }
+    return SkipSequence.new(this, count)
+  }
+
+  take(count) {
+    if (!(count is Numeric) || !count.isInteger || count < 0) {
+      Fiber.abort("count must be a non-negative integer")
+    }
+
+    return TakeSequence.new(this, count)
+  }
 
   where(predicate) { WhereSequence.new(this, predicate)}
 
@@ -171,9 +183,9 @@ class WhereSequence is Sequence {
 class String is Sequence {
   bytes { StringByteSequence.new(this) }
 
-  split(delim) {
-    if (!(delim is String) || delim.isEmpty) {
-      Fiber.abort("argument must be a non-empty string")
+  split(delimiter) {
+    if (!(delimiter is String) || delimiter.isEmpty) {
+      Fiber.abort("delimiter must be a non-empty string")
     }
 
     var result = []
@@ -181,10 +193,10 @@ class String is Sequence {
     var last = 0
     var index = 0
 
-    var delimSize = delim.byteCount
+    var delimSize = delimiter.byteCount
     var size = byteCount
 
-    while (last < size && (index = indexOf(delim, last)) != -1) {
+    while (last < size && (index = indexOf(delimiter, last)) != -1) {
       result.add(this[last...index])
       last = index + delimSize
     }

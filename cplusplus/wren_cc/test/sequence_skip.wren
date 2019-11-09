@@ -21,5 +21,3 @@ IO.print(test.toList) // expect: [1, 2, 3]
 IO.print(test.skip(1).toList) // expect: [2, 3]
 
 IO.print(test.skip(4).isEmpty) // expect: true
-
-IO.print(test.skip(-10).toList) // expect: [1, 2, 3]
