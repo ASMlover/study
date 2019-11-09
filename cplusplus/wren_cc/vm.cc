@@ -246,12 +246,19 @@ void WrenVM::runtime_error(void) {
 
   ASSERT(!fiber_->error().is_nil(), "should only call this after an error");
 
-  // unhook the caller since we will never resume and return to it
-  FiberObject* caller = fiber_->caller();
-  fiber_->set_caller(nullptr);
+  FiberObject* current_fiber = fiber_;
+  while (current_fiber->caller() != nullptr) {
+    if (current_fiber->caller_is_trying())
+      break;
+
+    FiberObject* temp = current_fiber;
+    current_fiber = temp->caller();
+    temp->set_caller(nullptr);
+  }
+  FiberObject* caller = current_fiber->caller();
 
   // if the caller ran this fiber using `try`, give it the error
-  if (fiber_->caller_is_trying()) {
+  if (current_fiber->caller_is_trying()) {
     // make the caller's try method return the error message
     caller->set_value(caller->stack_size() - 1, fiber_->error());
     fiber_ = caller;

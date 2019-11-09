@@ -105,6 +105,9 @@ static bool run_fiber(WrenVM& vm, FiberObject* fiber,
   // [has_value] is true if a value in [args] is being passed to the new fiber
   // otherwise `nil` is implicitly being passed
 
+  if (!fiber->error().is_nil())
+    RETURN_FERR("cannot $ an aborted fiber", verb);
+
   if (is_call) {
     if (fiber->caller() != nullptr)
       RETURN_ERR("fiber has already been called");
@@ -115,8 +118,6 @@ static bool run_fiber(WrenVM& vm, FiberObject* fiber,
 
   if (fiber->empty_frame())
     RETURN_FERR("cannot $ a finished fiber", verb);
-  if (!fiber->error().is_nil())
-    RETURN_FERR("cannot $ an aborted fiber", verb);
 
   // when the calling fiber resumes, we'll store the result of the call in its
   // stack, if the call has two arguments (the fiber and the value), we only
