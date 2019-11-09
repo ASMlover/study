@@ -240,29 +240,32 @@ void WrenVM::print_stacktrace(void) {
 }
 
 void WrenVM::runtime_error(void) {
-  // handles the current fiber having aborted because of an error, switches
-  // to a new fiber if there is a fiber that will handle the error, oterwise,
-  // tells the VM to stop
+  // handles the current fiber having aborted because of an error
+  //
+  // walks the call chain of fibers, aborting each one until it hits a fiber
+  // that handles the error, if none do, tells the VM to stop
 
   ASSERT(!fiber_->error().is_nil(), "should only call this after an error");
 
   FiberObject* current_fiber = fiber_;
+  Value error = current_fiber->error();
   while (current_fiber->caller() != nullptr) {
-    if (current_fiber->caller_is_trying())
-      break;
+    // every fiber along the call chain gets aborted with the same error
+    current_fiber->set_error(error);
 
-    FiberObject* temp = current_fiber;
-    current_fiber = temp->caller();
-    temp->set_caller(nullptr);
-  }
-  FiberObject* caller = current_fiber->caller();
+    // if the caller ran this fiber using `try`, give it the error and stop
+    if (current_fiber->caller_is_trying()) {
+      // make the caller's try method return the error message
+      int i = current_fiber->caller()->stack_size() - 1;
+      current_fiber->caller()->set_value(i, fiber_->error());
+      fiber_ = current_fiber->caller();
+      return;
+    }
 
-  // if the caller ran this fiber using `try`, give it the error
-  if (current_fiber->caller_is_trying()) {
-    // make the caller's try method return the error message
-    caller->set_value(caller->stack_size() - 1, fiber_->error());
-    fiber_ = caller;
-    return;
+    // otherwise, unhook the caller since we will never resume and return to it
+    FiberObject* caller = current_fiber->caller();
+    current_fiber->set_caller(nullptr);
+    current_fiber = caller;
   }
 
   // if we got here, nothing caught the error, so show the stack trace
