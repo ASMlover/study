@@ -42,7 +42,8 @@ enum class WrenError {
 
 using WrenForeignFn = std::function<void (WrenVM*)>;
 using WrenFinalizeFn = std::function<void (void*)>;
-using WrenErrorFn = std::function<void (WrenError, const str_t&, int, const str_t&)>;
+using WrenErrorFn = std::function<
+    void (WrenVM&, WrenError, const str_t&, int, const str_t&)>;
 
 enum class InterpretRet {
   SUCCESS,

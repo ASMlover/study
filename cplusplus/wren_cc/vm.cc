@@ -215,9 +215,9 @@ void WrenVM::print_stacktrace(void) {
 
   FiberObject* fiber = fiber_;
   if (fiber->error().is_string())
-    error_fn_(WrenError::RUNTIME, "", -1, fiber->error_asstr());
+    error_fn_(*this, WrenError::RUNTIME, "", -1, fiber->error_asstr());
   else
-    error_fn_(WrenError::RUNTIME, "", -1, "[error object]");
+    error_fn_(*this, WrenError::RUNTIME, "", -1, "[error object]");
 
   fiber->riter_frames([this](const CallFrame& frame, FunctionObject* fn) {
       ModuleObject* module = fn->module();
@@ -234,7 +234,8 @@ void WrenVM::print_stacktrace(void) {
         return;
 
       int line = debug.get_line(Xt::as_type<int>(frame.ip - fn->codes()) - 1);
-      error_fn_(WrenError::SATCK_TRACE, module->name_cstr(), line, debug.name());
+      error_fn_(*this,
+          WrenError::SATCK_TRACE, module->name_cstr(), line, debug.name());
       });
 }
 

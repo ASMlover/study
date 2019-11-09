@@ -63,7 +63,7 @@ static std::string read_module(wrencc::WrenVM& vm, const std::string& module) {
   return module_contents;
 }
 
-static void report_error(wrencc::WrenError type,
+static void report_error(wrencc::WrenVM& vm, wrencc::WrenError type,
     const std::string& module, int line, const std::string& message) {
   switch (type) {
   case wrencc::WrenError::COMPILE:
