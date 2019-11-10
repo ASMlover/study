@@ -353,6 +353,7 @@ DEF_NUMERIC_FN(ceil, std::ceil)
 DEF_NUMERIC_FN(cos, std::cos)
 DEF_NUMERIC_FN(floor, std::floor)
 DEF_NUMERIC_FN(neg, -)
+DEF_NUMERIC_FN(round, std::round)
 DEF_NUMERIC_FN(sin, std::sin)
 DEF_NUMERIC_FN(sqrt, std::sqrt)
 DEF_NUMERIC_FN(tan, std::tan)
@@ -1108,6 +1109,7 @@ namespace core {
     vm.set_primitive(vm.num_cls(), "cos", _primitive_numeric_cos);
     vm.set_primitive(vm.num_cls(), "floor", _primitive_numeric_floor);
     vm.set_primitive(vm.num_cls(), "-", _primitive_numeric_neg);
+    vm.set_primitive(vm.num_cls(), "round", _primitive_numeric_round);
     vm.set_primitive(vm.num_cls(), "sin", _primitive_numeric_sin);
     vm.set_primitive(vm.num_cls(), "sqrt", _primitive_numeric_sqrt);
     vm.set_primitive(vm.num_cls(), "tan", _primitive_numeric_tan);
