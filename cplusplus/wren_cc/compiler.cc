@@ -1573,13 +1573,11 @@ class Compiler final : private UnCopyable {
     // compile the definition list
     do {
       definition();
-
-      // if we got into a weird error state, donot get stuck in a loop
-      if (parser_.curr().kind() == TokenKind::TK_EOF)
-        return true;
-
       consume_line("expect newline after statement");
-    } while (!match(TokenKind::TK_RBRACE));
+    } while (parser_.curr().kind() != TokenKind::TK_EOF
+        && parser_.curr().kind() != TokenKind::TK_RBRACE);
+    consume(TokenKind::TK_RBRACE, "expect `}` at end of block");
+
     return false;
   }
 
