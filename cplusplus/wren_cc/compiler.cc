@@ -231,7 +231,7 @@ struct Variable {
   }
 };
 
-struct ClassCompiler {
+struct ClassInfo {
   // bookkeeping information for compiling a class definition
 
   StringObject* name{};
@@ -253,7 +253,7 @@ struct ClassCompiler {
   // the signature of the method being compiled
   Signature* signature{};
 
-  ClassCompiler(void) noexcept {}
+  ClassInfo(void) noexcept {}
 
   inline bool insert_method(int method_symbol) {
     bool r{true};
@@ -328,7 +328,7 @@ class Compiler final : private UnCopyable {
   Loop* loop_{};
 
   // if this is a compiler for a method, keeps track of the class enclosing it
-  ClassCompiler* enclosing_class_{};
+  ClassInfo* enclosing_class_{};
 
   // the function being compiled
   FunctionObject* fn_{};
@@ -828,7 +828,7 @@ class Compiler final : private UnCopyable {
     return nullptr;
   }
 
-  ClassCompiler* get_enclosing_class(void) {
+  ClassInfo* get_enclosing_class(void) {
     // walks the compiler chain to find the nearest class enclosing this one
     // returns nullptr if not currently inside a class definition
 
@@ -1042,7 +1042,7 @@ class Compiler final : private UnCopyable {
     // the number of cascaded erros
     int field = 0xff;
 
-    ClassCompiler* enclosing_class = get_enclosing_class();
+    ClassInfo* enclosing_class = get_enclosing_class();
     if (enclosing_class == nullptr) {
       error("cannot reference a field outside of a class definition");
     }
@@ -1223,15 +1223,15 @@ class Compiler final : private UnCopyable {
     // will have upvalues referencing them
     push_scope();
 
-    ClassCompiler class_compiler;
-    class_compiler.is_foreign = is_foreign;
-    class_compiler.name = class_name;
+    ClassInfo class_info;
+    class_info.is_foreign = is_foreign;
+    class_info.name = class_name;
 
     // set up a symbol table for the class's fields, we'll initially compile
     // them to slots starting at zero. when the method is bound to the close
     // the bytecode will be adjusted by [bind_method] to take inherited fields
     // into account.
-    enclosing_class_ = &class_compiler;
+    enclosing_class_ = &class_info;
 
     consume(TokenKind::TK_LBRACE, "expect `{` after class declaration");
     match_line();
@@ -1249,7 +1249,7 @@ class Compiler final : private UnCopyable {
 
     // update the class with the number of fields
     if (!is_foreign)
-      fn_->set_code(num_fields_instruction, class_compiler.fields.count());
+      fn_->set_code(num_fields_instruction, class_info.fields.count());
 
     enclosing_class_ = nullptr;
     pop_scope();
@@ -2144,7 +2144,7 @@ class Compiler final : private UnCopyable {
   }
 
   void super_exp(bool can_assign) {
-    ClassCompiler* enclosing_class = get_enclosing_class();
+    ClassInfo* enclosing_class = get_enclosing_class();
     if (enclosing_class == nullptr) {
       error("cannot use `super` outside of a method");
     }
