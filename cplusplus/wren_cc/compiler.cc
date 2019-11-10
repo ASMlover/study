@@ -1406,6 +1406,33 @@ class Compiler final : private UnCopyable {
     finish_loop();
   }
 
+  void if_stmt(void) {
+    // compile the condition
+    consume(TokenKind::TK_LPAREN, "expect `(` after keyword `if`");
+    expression();
+    consume(TokenKind::TK_RPAREN, "expect `)` after if condition");
+
+    // jump to the else branch if the condition is false
+    int if_jump = emit_jump(Code::JUMP_IF);
+    // compile the then branch
+    statement();
+
+    // compile the else branch if there is one
+    if (match(TokenKind::KW_ELSE)) {
+      // jump over the else branch when the if branch is taken
+      int else_jump = emit_jump(Code::JUMP);
+      patch_jump(if_jump);
+
+      statement();
+
+      // patch the jump over the else
+      patch_jump(else_jump);
+    }
+    else {
+      patch_jump(if_jump);
+    }
+  }
+
   void var_definition(void) {
     // grab its name, but don't declare it yet, a (local) variable shouldn't
     // be in scope in its own initializer
@@ -1473,43 +1500,14 @@ class Compiler final : private UnCopyable {
       // we will replace these with `JUMP` instructions with appropriate offsets
       // we use `END` here because that cannot occur in the middle of bytecode
       emit_jump(Code::END);
-      return;
     }
-
-    if (match(TokenKind::KW_FOR)) {
+    else if (match(TokenKind::KW_FOR)) {
       for_stmt();
-      return;
     }
-
-    if (match(TokenKind::KW_IF)) {
-      // compile the condition
-      consume(TokenKind::TK_LPAREN, "expect `(` after `if` keyword");
-      expression();
-      consume(TokenKind::TK_RPAREN, "expect `)` after if condition");
-
-      // jump to the else branch if the condition is false
-      int if_jump = emit_jump(Code::JUMP_IF);
-
-      // compile the then branch
-      statement();
-
-      if (match(TokenKind::KW_ELSE)) {
-        // jump over the else branch when the if branch is taken
-        int else_jump = emit_jump(Code::JUMP);
-
-        patch_jump(if_jump);
-        statement();
-
-        // patch the jump over the else
-        patch_jump(else_jump);
-      }
-      else {
-        patch_jump(if_jump);
-      }
-      return;
+    else if (match(TokenKind::KW_IF)) {
+      if_stmt();
     }
-
-    if (match(TokenKind::KW_RETURN)) {
+    else if (match(TokenKind::KW_RETURN)) {
       // compile the return value
       if (parser_.curr().kind() == TokenKind::TK_NL) {
         // impilicity return nil if there is no value
@@ -1519,26 +1517,22 @@ class Compiler final : private UnCopyable {
         expression();
       }
       emit_opcode(Code::RETURN);
-      return;
     }
-
-    if (match(TokenKind::KW_WHILE)) {
+    else if (match(TokenKind::KW_WHILE)) {
       while_stmt();
-      return;
     }
-
-    // block statement
-    if (match(TokenKind::TK_LBRACE)) {
+    else if (match(TokenKind::TK_LBRACE)) {
+      // block statement
       push_scope();
       if (finish_block())
         emit_opcode(Code::POP); // block was an expression, so discard it
       pop_scope();
-      return;
     }
-
-    // expression statement
-    expression();
-    emit_opcode(Code::POP);
+    else {
+      // expression statement
+      expression();
+      emit_opcode(Code::POP);
+    }
   }
 
   void expression(void) {
