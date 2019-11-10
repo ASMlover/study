@@ -978,17 +978,20 @@ void FiberObject::ensure_stack(WrenVM& vm, int needed) {
     const Value* old_stack = stack_.data();
     stack_.reserve(stack_capacity_);
 
-    // if the reallocation moves the stack, then we need to shift every pointer
-    // into the stack to point to its new location
+    // if the reallocation moves the stack, then we need to recalculate
+    // every pointer that points into the old stack to into the same relative
+    // distance in the new stack, we have to be a little careful about how
+    // these are calculated because pointer subtraction is only well-defined
+    // within a single array, hence the slightly redundant-looking arithmetic
+    // below
     const Value* new_stack = stack_.data();
     if (new_stack != old_stack) {
-      sz_t offset = new_stack - old_stack;
+      if (vm.get_api_stack() != nullptr)
+        vm.set_api_stack_asptr(new_stack + (vm.get_api_stack() - old_stack));
+
       // open upvalues
       for (UpvalueObject* uv = open_upvlaues_; uv != nullptr; uv = uv->next())
-        uv->set_value(uv->value() + offset);
-
-      if (vm.get_api_stack() != nullptr)
-        vm.set_api_stack_asptr(vm.get_api_stack() + offset);
+        uv->set_value(new_stack + (uv->value() - old_stack));
     }
   }
 }

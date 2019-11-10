@@ -251,7 +251,7 @@ public:
   void set_native(ClassObject* cls, const str_t& name, const PrimitiveFn& fn);
   const Value& find_variable(ModuleObject* module, const str_t& name) const;
   void set_api_stack_asref(const Value& value);
-  void set_api_stack_asptr(Value* value);
+  void set_api_stack_asptr(const Value* value);
   Value import_module(const Value& name);
   Value get_module_variable(const Value& module_name, const Value& variable_name);
 

@@ -118,8 +118,8 @@ void WrenVM::set_api_stack_asref(const Value& value) {
   *api_stack_ = value;
 }
 
-void WrenVM::set_api_stack_asptr(Value* value) {
-  api_stack_ = value;
+void WrenVM::set_api_stack_asptr(const Value* value) {
+  api_stack_ = const_cast<Value*>(value);
 }
 
 Value WrenVM::import_module(const Value& name) {
