@@ -175,7 +175,8 @@ class WrenVM final : private UnCopyable {
   void create_foreign(FiberObject* fiber, Value* stack);
 
   ModuleObject* get_module(const Value& name) const;
-  FiberObject* load_module(const Value& name, const str_t& source_bytes);
+  FiberObject* compile_in_module(const Value& name,
+      const str_t& source_bytes, bool is_expression, bool print_errors);
   WrenForeignFn find_foreign_method(const str_t& module_name,
       const str_t& class_name, bool is_static, const str_t& signature);
 
@@ -266,6 +267,8 @@ public:
 
   ClassObject* get_class(const Value& val) const;
   InterpretRet interpret(const str_t& source_bytes);
+  FiberObject* compile_source(const str_t& module,
+      const str_t& source_bytes, bool is_expression, bool print_errors = false);
 
   WrenHandle* make_call_handle(const str_t& signature);
   InterpretRet wren_call(WrenHandle* method);

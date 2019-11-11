@@ -61,16 +61,7 @@ WrenVM::~WrenVM(void) {
 
 InterpretRet WrenVM::interpret_in_module(
     const str_t& module, const str_t& source_bytes) {
-  // executes [source_bytes] in the  context of [module]
-
-  PinnedGuard name_guard{*this};
-
-  Value name_val{nullptr};
-  if (!module.empty()) {
-    name_val = StringObject::format(*this, "$", module.c_str());
-    name_guard.set_guard_object(name_val.as_object());
-  }
-  FiberObject* fiber = load_module(name_val, source_bytes);
+  FiberObject* fiber = compile_source(module, source_bytes, false, true);
   if (fiber == nullptr)
     return InterpretRet::COMPILE_ERROR;
 
@@ -157,7 +148,7 @@ Value WrenVM::import_module(const Value& name) {
     return nullptr;
   }
 
-  FiberObject* module_fiber = load_module(name, source_bytes);
+  FiberObject* module_fiber = compile_in_module(name, source_bytes, false, true);
   if (module_fiber == nullptr) {
     fiber_->set_error(
         StringObject::format(*this, "could not compile module `@`", name));
@@ -939,6 +930,28 @@ InterpretRet WrenVM::interpret(const str_t& source_bytes) {
   return interpret_in_module("main", source_bytes);
 }
 
+FiberObject* WrenVM::compile_source(const str_t& module,
+    const str_t& source_bytes, bool is_expression, bool print_errors) {
+  // compile [source_bytes] in the context of [module] and wrap in a fiber
+  // that can execute it
+  //
+  // returns nullptr if a compile error occurred
+
+  PinnedGuard name_guard{*this};
+
+  Value name_val{nullptr};
+  if (!module.empty()) {
+    name_val = StringObject::format(*this, "$", module.c_str());
+    name_guard.set_guard_object(name_val.as_object());
+  }
+  FiberObject* fiber = compile_in_module(
+      name_val, source_bytes, is_expression, print_errors);
+  if (fiber == nullptr && !module.empty())
+    return nullptr;
+
+  return fiber;
+}
+
 ModuleObject* WrenVM::get_module(const Value& name) const {
   // looks up the previously loaded module with  [name]
   //
@@ -949,7 +962,8 @@ ModuleObject* WrenVM::get_module(const Value& name) const {
   return nullptr;
 }
 
-FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
+FiberObject* WrenVM::compile_in_module(const Value& name,
+    const str_t& source_bytes, bool is_expression, bool print_errors) {
   ModuleObject* module = get_module(name);
 
   // see if the module has already been loaded
@@ -968,7 +982,8 @@ FiberObject* WrenVM::load_module(const Value& name, const str_t& source_bytes) {
         });
   }
 
-  FunctionObject* fn = compile(*this, module, source_bytes, false, true);
+  FunctionObject* fn = compile(*this,
+      module, source_bytes, is_expression, print_errors);
   if (fn == nullptr)
     return nullptr;
 

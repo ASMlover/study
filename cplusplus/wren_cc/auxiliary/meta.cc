@@ -36,29 +36,19 @@ namespace wrencc {
 namespace meta {
   namespace details {
     static void meta_compile(WrenVM* vm) {
-      // evaluate the code in the module where the calling function was defined,
-      // that's one stack frame back from the top since the top-most frame is
-      // the helper eval() methid in Meta itself
-
-      ClosureObject* caller = vm->fiber()->peek_frame(1).closure;
-      ModuleObject* module = caller->fn()->module();
-
       const char* source_bytes = wrenGetSlotString(*vm, 1);
       bool is_expression = wrenGetSlotBool(*vm, 2);
       bool print_errors = wrenGetSlotBool(*vm, 3);
       // compile it
-      FunctionObject* fn = compile(*vm,
-          module, source_bytes, is_expression, print_errors);
+      FiberObject* fiber = vm->compile_source(
+          "main", source_bytes, is_expression, print_errors);
 
       // return the result, we can not use the public API for this since we
-      // have a bare FunctionObject
-      if (fn == nullptr) {
+      // have a bare FiberObject
+      if (fiber == nullptr)
         vm->set_api_stack_asref(nullptr);
-      }
-      else {
-        PinnedGuard guard(*vm, fn);
-        vm->set_api_stack_asref(ClosureObject::make_closure(*vm, fn));
-      }
+      else
+        vm->set_api_stack_asref(fiber);
     }
 
     static void meta_get_modvars(WrenVM* vm) {
@@ -87,7 +77,7 @@ namespace meta {
       ASSERT(class_name == "Meta", "should be in Meta class");
       ASSERT(is_static, "should be static");
 
-      if (signature == "compile(_,_,_)")
+      if (signature == "compile_(_,_,_)")
         return meta_compile;
       if (signature == "getModuleVars(_)")
         return meta_get_modvars;

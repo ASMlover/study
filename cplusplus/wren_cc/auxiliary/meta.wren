@@ -11,17 +11,22 @@ class Meta {
   static eval(source_bytes) {
     if (!source_bytes is String) Fiber.abort("source code must be a string")
 
-    var fn = compile(source_bytes, false, false)
-    if (fn == nil) Fiber.abort("could not compile source code")
+    var fiber = compile_(source_bytes, false, false)
+    if (fiber == nil) Fiber.abort("could not compile source code")
 
-    Fiber.new(fn).call()
+    fiber.call()
   }
 
   static compileExpression(source_bytes) {
     if (!(source_bytes is String)) Fiber.abort("source code must be a string")
-    return compile(source_bytes, true, true)
+    return compile_(source_bytes, true, true)
   }
 
-  foreign static compile(source, is_expression, print_errors)
+  static compile(source_bytes) {
+    if (!(source_bytes is String)) Fiber.abort("source code must be a string")
+    return compile_(source_bytes, false, true)
+  }
+
+  foreign static compile_(source, is_expression, print_errors)
   foreign static getModuleVars(module)
 }
