@@ -983,8 +983,6 @@ FiberObject* WrenVM::compile_source(const str_t& module,
   }
   FiberObject* fiber = compile_in_module(
       name_val, source_bytes, is_expression, print_errors);
-  if (fiber == nullptr && !module.empty())
-    return nullptr;
 
   return fiber;
 }
