@@ -1258,15 +1258,14 @@ class Compiler final : private UnCopyable {
   void import(void) {
     // compiles an `import` statement
     //
-    // an import just desugars to calling a few special core methods, given:
+    // an import compiles to a series of instructions, given:
     //
     //    import "foo" for Bar, Baz
     //
-    // we compiles it to:
-    //
-    //    Sys.importModule("foo")
-    //    var Bar = Sys.getModuleVariable("foo", "Bar")
-    //    var Baz = Sys.getModuleVariable("foo", "Baz")
+    // we compile a single `IMPORT_MODULE` "foo" instruction to load the module
+    // itself, then for each imported name, we declare a variable and them emit
+    // a `IMPORT_VARIABLE` instruction to load the variable from the other
+    // module and assign it to the new variable in this one
 
     ignore_newlines();
     consume(TokenKind::TK_STRING, "expect a string after `import`");
@@ -1274,9 +1273,8 @@ class Compiler final : private UnCopyable {
         StringObject::make_string(parser_.get_vm(), parser_.prev().as_string()));
 
     // load the module
-    load_core_variable("Sys");
-    emit_words(Code::CONSTANT, module_constant);
-    call_method(1, "importModule(_)");
+    emit_words(Code::IMPORT_MODULE, module_constant);
+
     // discard the unused result value from calling the module's fiber
     emit_opcode(Code::POP);
 
@@ -1293,10 +1291,8 @@ class Compiler final : private UnCopyable {
       int variable_constant = add_constant(StringObject::make_string(
             parser_.get_vm(), parser_.prev().as_string()));
       // load the variable from the other module
-      load_core_variable("Sys");
-      emit_words(Code::CONSTANT, module_constant);
-      emit_words(Code::CONSTANT, variable_constant);
-      call_method(2, "getModuleVariable(_,_)");
+      emit_words(Code::IMPORT_VARIABLE, module_constant);
+      emit_u16(variable_constant);
 
       // stores the result in the variable here
       define_variable(slot);

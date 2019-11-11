@@ -178,6 +178,19 @@ CODE(METHOD_INSTANCE, -2)
 // identifying the foreign method, otherwise it will be a function or closure
 CODE(METHOD_STATIC, -2)
 
+// import a module whose name is the string stored at [arg] in the constant
+// table
+//
+// pushes nil onto the stack so that the fiber for the imported module can
+// replace that with a dummy value when it returns (fibers always return a
+// value when resuming a caller)
+CODE(IMPORT_MODULE, 1)
+
+// import a variable from a previously-imported module, the module's name is
+// at [arg1] in the constant table and the variable name is at [arg2], pushes
+// the loaded variable onto the stack
+CODE(IMPORT_VARIABLE, 1)
+
 CODE(END, 0)
 
 #undef CODE

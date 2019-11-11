@@ -801,6 +801,7 @@ int FunctionObject::get_argc(
   case Code::LOAD_FIELD:
   case Code::STORE_FIELD:
   case Code::CLASS:
+  case Code::IMPORT_MODULE:
     return 1;
 
     // instructions with two arguments
@@ -831,6 +832,7 @@ int FunctionObject::get_argc(
   case Code::OR:
   case Code::METHOD_INSTANCE:
   case Code::METHOD_STATIC:
+  case Code::IMPORT_VARIABLE:
     return 2;
 
   case Code::SUPER_0:

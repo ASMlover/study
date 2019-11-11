@@ -882,6 +882,43 @@ __complete_call:
 
       DISPATCH();
     }
+    CASE_CODE(IMPORT_MODULE):
+    {
+      const Value& name = fn->get_constant(RDWORD());
+
+      // make a slot on the stack for the module's fiber to place the return
+      // value, it will be popped after this fiber is resumed
+      PUSH(nullptr);
+
+      Value result = import_module(name);
+      if (!fiber->error().is_nil())
+        RUNTIME_ERROR();
+
+      // if we get a fiber, swith to it to execute the module body
+      if (result.is_fiber()) {
+        // return to this module when that one is done
+        result.as_fiber()->set_caller(fiber);
+
+        // switch to the module's fiber
+        fiber = result.as_fiber();
+        fiber_ = fiber;
+        LOAD_FRAME();
+      }
+
+      DISPATCH();
+    }
+    CASE_CODE(IMPORT_VARIABLE):
+    {
+      const Value& module = fn->get_constant(RDWORD());
+      const Value& variable = fn->get_constant(RDWORD());
+
+      Value result = get_module_variable(module, variable);
+      if (!fiber->error().is_nil())
+        RUNTIME_ERROR();
+      PUSH(result);
+
+      DISPATCH();
+    }
     CASE_CODE(END):
     {
       // a END should always preceded by a RETURN. if we get here, the compiler
