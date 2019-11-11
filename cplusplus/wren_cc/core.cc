@@ -78,7 +78,11 @@ DEF_PRIMITIVE(fiber_new) {
   if (!validate_function(vm, args[1], "Argument"))
     return false;
 
-  FiberObject* new_fiber = FiberObject::make_fiber(vm, args[1].as_closure());
+  ClosureObject* closure = args[1].as_closure();
+  if (closure->fn()->arity() > 1)
+    RETURN_ERR("function cannot take more than one parameter");
+
+  FiberObject* new_fiber = FiberObject::make_fiber(vm, closure);
 
   // the compiler expect the first slot of a function to hold the receiver.
   // since a fiber's stack is invoked directly, it does not have one, so
@@ -124,9 +128,18 @@ static bool run_fiber(WrenVM& vm, FiberObject* fiber,
   // need one slot for the result, so discard the other slot now
   if (has_value)
     vm.fiber()->pop();
-  // if the fiber was paused, make yield() or transfer() return the result
-  if (fiber->stack_size() > 0)
+
+  if (fiber->frame_size() == 1 &&
+      fiber->get_frame(0).ip == fiber->get_frame(0).closure->fn()->codes()) {
+    // the fiber is being started for the first time, if its function takes a
+    // parameter, bind an argument to it
+    if (fiber->get_frame(0).closure->fn()->arity() == 1)
+      fiber->push(has_value ? args[1] : nullptr);
+  }
+  else {
+    // the fiber is being resumed, make yield() or transfer() return the result
     fiber->set_value(fiber->stack_size() - 1, has_value ? args[1] : nullptr);
+  }
   vm.set_fiber(fiber);
 
   return false;
