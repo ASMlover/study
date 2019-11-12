@@ -11,10 +11,10 @@ class Meta {
   static eval(source_bytes) {
     if (!source_bytes is String) Fiber.abort("source code must be a string")
 
-    var fiber = compile_(source_bytes, false, false)
-    if (fiber == nil) Fiber.abort("could not compile source code")
+    var closure = compile_(source_bytes, false, false)
+    if (closre == nil) Fiber.abort("could not compile source code")
 
-    fiber.call()
+    closure.call()
   }
 
   static compileExpression(source_bytes) {

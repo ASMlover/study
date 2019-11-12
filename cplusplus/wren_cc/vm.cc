@@ -61,9 +61,15 @@ WrenVM::~WrenVM(void) {
 
 InterpretRet WrenVM::interpret_in_module(
     const str_t& module, const str_t& source_bytes) {
-  FiberObject* fiber = compile_source(module, source_bytes, false, true);
-  if (fiber == nullptr)
+  ClosureObject* closure = compile_source(module, source_bytes, false, true);
+  if (closure == nullptr)
     return InterpretRet::COMPILE_ERROR;
+
+  FiberObject* fiber;
+  {
+    PinnedGuard guard(*this, closure);
+    fiber = FiberObject::make_fiber(*this, closure);
+  }
 
   return interpret(fiber);
 }
@@ -148,15 +154,16 @@ Value WrenVM::import_module(const Value& name) {
     return nullptr;
   }
 
-  FiberObject* module_fiber = compile_in_module(name, source_bytes, false, true);
-  if (module_fiber == nullptr) {
+  ClosureObject* module_closure =
+    compile_in_module(name, source_bytes, false, true);
+  if (module_closure == nullptr) {
     fiber_->set_error(
         StringObject::format(*this, "could not compile module `@`", name));
     return nullptr;
   }
 
   // return the fiber that executes the module
-  return module_fiber;
+  return module_closure;
 }
 
 Value WrenVM::get_module_variable(
@@ -894,14 +901,11 @@ __complete_call:
       if (!fiber->error().is_nil())
         RUNTIME_ERROR();
 
-      // if we get a fiber, swith to it to execute the module body
-      if (result.is_fiber()) {
-        // return to this module when that one is done
-        result.as_fiber()->set_caller(fiber);
+      // if we get a closure, call it to execute the module body
+      if (result.is_closure()) {
+        ClosureObject* closure = result.as_closure();
+        fiber->call_function(*this, closure, 1);
 
-        // switch to the module's fiber
-        fiber = result.as_fiber();
-        fiber_ = fiber;
         LOAD_FRAME();
       }
 
@@ -967,7 +971,7 @@ InterpretRet WrenVM::interpret(const str_t& source_bytes) {
   return interpret_in_module("main", source_bytes);
 }
 
-FiberObject* WrenVM::compile_source(const str_t& module,
+ClosureObject* WrenVM::compile_source(const str_t& module,
     const str_t& source_bytes, bool is_expression, bool print_errors) {
   // compile [source_bytes] in the context of [module] and wrap in a fiber
   // that can execute it
@@ -981,10 +985,10 @@ FiberObject* WrenVM::compile_source(const str_t& module,
     name_val = StringObject::format(*this, "$", module.c_str());
     name_guard.set_guard_object(name_val.as_object());
   }
-  FiberObject* fiber = compile_in_module(
+  ClosureObject* closure = compile_in_module(
       name_val, source_bytes, is_expression, print_errors);
 
-  return fiber;
+  return closure;
 }
 
 ModuleObject* WrenVM::get_module(const Value& name) const {
@@ -997,7 +1001,7 @@ ModuleObject* WrenVM::get_module(const Value& name) const {
   return nullptr;
 }
 
-FiberObject* WrenVM::compile_in_module(const Value& name,
+ClosureObject* WrenVM::compile_in_module(const Value& name,
     const str_t& source_bytes, bool is_expression, bool print_errors) {
   ModuleObject* module = get_module(name);
 
@@ -1023,14 +1027,8 @@ FiberObject* WrenVM::compile_in_module(const Value& name,
     return nullptr;
 
   PinnedGuard fn_guard(*this, fn);
-
   ClosureObject* closure = ClosureObject::make_closure(*this, fn);
-  PinnedGuard closure_guard(*this, closure);
-
-  FiberObject* module_fiber = FiberObject::make_fiber(*this, closure);
-
-  // return the fiber that executes the module
-  return module_fiber;
+  return closure;
 }
 
 WrenForeignFn WrenVM::find_foreign_method(const str_t& module_name,

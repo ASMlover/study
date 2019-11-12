@@ -40,15 +40,15 @@ namespace meta {
       bool is_expression = wrenGetSlotBool(*vm, 2);
       bool print_errors = wrenGetSlotBool(*vm, 3);
       // compile it
-      FiberObject* fiber = vm->compile_source(
+      ClosureObject* closure = vm->compile_source(
           "main", source_bytes, is_expression, print_errors);
 
       // return the result, we can not use the public API for this since we
-      // have a bare FiberObject
-      if (fiber == nullptr)
+      // have a bare ClosureObject
+      if (closure == nullptr)
         vm->set_api_stack_asref(nullptr);
       else
-        vm->set_api_stack_asref(fiber);
+        vm->set_api_stack_asref(closure);
     }
 
     static void meta_get_modvars(WrenVM* vm) {
