@@ -971,7 +971,14 @@ FiberObject::FiberObject(ClassObject* cls, ClosureObject* closure) noexcept
   stack_.reserve(stack_capacity_);
   frames_.reserve(kFrameCapacity);
 
-  reset_fiber(closure);
+  if (closure != nullptr) {
+    // initialize the first call frame
+    const u8_t* ip = closure->fn()->codes();
+    frames_.push_back(CallFrame(ip, closure, 0));
+
+    // the first slot always holds the closure
+    stack_.push_back(closure);
+  }
 }
 
 void FiberObject::ensure_stack(WrenVM& vm, int needed) {
@@ -1073,22 +1080,6 @@ void FiberObject::riter_frames(
     FunctionObject* fn = frame.closure->fn();
 
     visit(frame, fn);
-  }
-}
-
-void FiberObject::reset_fiber(ClosureObject* closure) {
-  stack_.clear();
-  frames_.clear();
-
-  open_upvlaues_ = nullptr;
-  caller_ = nullptr;
-  error_ = nullptr;
-  caller_is_trying_ = false;
-
-  if (closure != nullptr) {
-    // initialize the first call frame
-    const u8_t* ip = closure->fn()->codes();
-    frames_.push_back(CallFrame(ip, closure, 0));
   }
 }
 

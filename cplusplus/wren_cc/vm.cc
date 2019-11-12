@@ -894,16 +894,17 @@ __complete_call:
       const Value& name = fn->get_constant(RDWORD());
 
       // make a slot on the stack for the module's fiber to place the return
-      // value, it will be popped after this fiber is resumed
-      PUSH(nullptr);
+      // value, it will be popped after this fiber is resumed, store the
+      // imported module's closure in the slot in case a GC happens when
+      // invoking the closure
+      PUSH(import_module(name));
 
-      Value result = import_module(name);
       if (!fiber->error().is_nil())
         RUNTIME_ERROR();
 
       // if we get a closure, call it to execute the module body
-      if (result.is_closure()) {
-        ClosureObject* closure = result.as_closure();
+      if (PEEK().is_closure()) {
+        ClosureObject* closure = PEEK().as_closure();
         fiber->call_function(*this, closure, 1);
 
         LOAD_FRAME();

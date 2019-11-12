@@ -82,14 +82,7 @@ DEF_PRIMITIVE(fiber_new) {
   if (closure->fn()->arity() > 1)
     RETURN_ERR("function cannot take more than one parameter");
 
-  FiberObject* new_fiber = FiberObject::make_fiber(vm, closure);
-
-  // the compiler expect the first slot of a function to hold the receiver.
-  // since a fiber's stack is invoked directly, it does not have one, so
-  // put it in here
-  new_fiber->push(nullptr);
-
-  RETURN_VAL(new_fiber);
+  RETURN_VAL(FiberObject::make_fiber(vm, closure));
 }
 
 DEF_PRIMITIVE(fiber_abort) {

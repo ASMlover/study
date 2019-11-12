@@ -1610,7 +1610,7 @@ class Compiler final : private UnCopyable {
     // this creates that method and calls the initializer with [initializer_symbol]
 
     Compiler method_compiler(parser_, this);
-    method_compiler.init_compiler(false);
+    method_compiler.init_compiler(true);
 
     // allocate the instance
     method_compiler.emit_opcode(enclosing_class_->is_foreign
@@ -1681,7 +1681,7 @@ class Compiler final : private UnCopyable {
     enclosing_class_->signature = &signature;
 
     Compiler method_compiler(parser_, this);
-    method_compiler.init_compiler(false);
+    method_compiler.init_compiler(true);
 
     // compile the method signature
     signature_fn(&method_compiler, signature);
@@ -2086,7 +2086,7 @@ class Compiler final : private UnCopyable {
       called.inc_arity();
 
       Compiler fn_compiler(parser_, this);
-      fn_compiler.init_compiler(true);
+      fn_compiler.init_compiler(false);
 
       // make a dummy signature to track the arity
       Signature fn_signature("", SignatureType::METHOD, 0);
@@ -2179,21 +2179,20 @@ public:
     // FIXME: fixed deallocate FunctionObject by GC
   }
 
-  void init_compiler(bool is_func = true) {
+  void init_compiler(bool is_method = true) {
     parser_.get_vm().set_compiler(this);
 
-    if (parent_ == nullptr) {
-      scope_depth_ = -1;
-    }
-    else {
-      if (is_func)
-        locals_.push_back(Local());
-      else
-        locals_.push_back(Local("this"));
-      scope_depth_ = 0;
-    }
-
+    if (is_method)
+      locals_.push_back(Local("this"));
+    else
+      locals_.push_back(Local());
     num_slots_ = Xt::as_type<int>(locals_.size());
+
+    if (parent_ == nullptr)
+      scope_depth_ = -1; // compiling top-level code, so the initial scope is module-level
+    else
+      scope_depth_ = 0; // the initial scope for functions and methods is local scope
+
     fn_ = FunctionObject::make_function(
         parser_.get_vm(), parser_.get_mod(), Xt::as_type<int>(locals_.size()));
   }
@@ -2298,7 +2297,7 @@ FunctionObject* compile(WrenVM& vm, ModuleObject* module,
 
   p.advance();
   Compiler c(p, nullptr);
-  c.init_compiler(true);
+  c.init_compiler(false);
 
   return c.compile_function(is_expression);
 }

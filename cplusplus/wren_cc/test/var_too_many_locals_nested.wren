@@ -1,7 +1,6 @@
 
 {
-  var a00 = "value"
-  var a01 = a00
+  var a01 = "value"
   var a02 = a01
   var a03 = a02
   var a04 = a03

@@ -744,7 +744,6 @@ public:
 
   void riter_frames(
       std::function<void (const CallFrame&, FunctionObject*)>&& visit);
-  void reset_fiber(ClosureObject* closure);
 
   virtual str_t stringify(void) const override;
   virtual void gc_blacken(WrenVM& vm) override;
