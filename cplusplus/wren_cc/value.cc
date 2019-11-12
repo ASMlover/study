@@ -801,7 +801,6 @@ int FunctionObject::get_argc(
   case Code::LOAD_FIELD:
   case Code::STORE_FIELD:
   case Code::CLASS:
-  case Code::IMPORT_MODULE:
     return 1;
 
     // instructions with two arguments
@@ -832,7 +831,7 @@ int FunctionObject::get_argc(
   case Code::OR:
   case Code::METHOD_INSTANCE:
   case Code::METHOD_STATIC:
-  case Code::IMPORT_VARIABLE:
+  case Code::IMPORT_MODULE:
     return 2;
 
   case Code::SUPER_0:
@@ -852,6 +851,7 @@ int FunctionObject::get_argc(
   case Code::SUPER_14:
   case Code::SUPER_15:
   case Code::SUPER_16:
+  case Code::IMPORT_VARIABLE:
     return 4;
 
   case Code::CLOSURE:
@@ -1157,14 +1157,14 @@ void ClassObject::bind_superclass(ClassObject* superclass) {
 void ClassObject::bind_method(FunctionObject* fn) {
   int ip = 0;
   for (;;) {
-    switch (Code c = Xt::as_type<Code>(fn->get_code(ip++))) {
+    switch (Code c = Xt::as_type<Code>(fn->get_code(ip))) {
     case Code::LOAD_FIELD:
     case Code::STORE_FIELD:
     case Code::LOAD_FIELD_THIS:
     case Code::STORE_FIELD_THIS:
       {
         auto num_fields = fn->get_code(ip) + superclass_->num_fields();
-        fn->set_code(ip++, num_fields);
+        fn->set_code(ip + 1, num_fields);
       } break;
     case Code::SUPER_0:
     case Code::SUPER_1:
@@ -1184,26 +1184,22 @@ void ClassObject::bind_method(FunctionObject* fn) {
     case Code::SUPER_15:
     case Code::SUPER_16:
       {
-        // skip over the symbol
-        ip += 2;
-
         // fill in the constant slot with a reference to the superclass
-        int constant = (fn->get_code(ip) << 8) | fn->get_code(ip + 1);
+        int constant = (fn->get_code(ip + 3) << 8) | fn->get_code(ip + 4);
         fn->set_constant(constant, superclass_);
       } break;
     case Code::CLOSURE:
       {
-        int constant = (fn->get_code(ip) << 8) | fn->get_code(ip + 1);
+        int constant = (fn->get_code(ip + 1) << 8) | fn->get_code(ip + 2);
         bind_method(fn->get_constant(constant).as_function());
-        ip += FunctionObject::get_argc(fn->codes(), fn->constants(), ip - 1);
       } break;
-
-    case Code::END: return;
+    case Code::END:
+      return;
     default:
       // other instructions are unaffected, so just skip over them
-      ip += FunctionObject::get_argc(fn->codes(), fn->constants(), ip - 1);
       break;
     }
+    ip += 1 + FunctionObject::get_argc(fn->codes(), fn->constants(), ip);
   }
 }
 
