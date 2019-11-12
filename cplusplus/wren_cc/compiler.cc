@@ -1973,7 +1973,7 @@ class Compiler final : private UnCopyable {
     // [lbracket] and [rbracket]
 
     name.push_back(lbracket);
-    for (int i = 0; i < num_params; ++i) {
+    for (int i = 0; i < num_params && i < MAX_PARAMETERS; ++i) {
       if (i > 0)
         name.push_back(',');
       name.push_back('_');
