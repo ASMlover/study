@@ -38,9 +38,6 @@ int SymbolTable::ensure(const str_t& name) {
 }
 
 int SymbolTable::add(const str_t& name) {
-  // if (get(name) != -1)
-  //   return -1;
-
   symbols_.push_back(name);
   return Xt::as_type<int>(symbols_.size() - 1);
 }
