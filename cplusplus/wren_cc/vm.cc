@@ -83,7 +83,7 @@ void WrenVM::set_metaclasses(void) {
 
 int WrenVM::declare_variable(
     ModuleObject* module, const str_t& name, int line) {
-  return module->declare_variable(name, line);
+  return module->declare_variable(*this, name, line);
 }
 
 int WrenVM::define_variable(
@@ -91,7 +91,7 @@ int WrenVM::define_variable(
   if (value.is_object())
     push_root(value.as_object());
 
-  int symbol = module->define_variable(name, value);
+  int symbol = module->define_variable(*this, name, value);
 
   if (value.is_object())
     pop_root();
@@ -1017,8 +1017,8 @@ ClosureObject* WrenVM::compile_in_module(const Value& name,
     // implicitly import the core module (unless we `are` core)
     ModuleObject* core_module = get_module(nullptr);
     core_module->iter_variables(
-        [&](int i, const Value& val, const str_t& name) {
-          define_variable(module, name, val);
+        [&](int i, const Value& val, StringObject* name) {
+          define_variable(module, name->cstr(), val);
         });
   }
 

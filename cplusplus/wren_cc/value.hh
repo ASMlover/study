@@ -306,6 +306,7 @@ public:
   inline const char* cstr(void) const { return value_; }
   inline char operator[](int i) const { return value_[i]; }
   inline char& operator[](int i) { return value_[i]; }
+  inline bool compare(const str_t& s) const { return s.size() == size_ && s == value_; }
 
   int find(StringObject* sub, int start_index = 0) const;
 
@@ -446,7 +447,7 @@ class ModuleObject final : public BaseObject {
 
   // symbol table for the names of all module variables, indexes here directly
   // correspond to entries in [variables_]
-  SymbolTable variable_names_;
+  std::vector<StringObject*> variable_names_;
 
   StringObject* name_{}; // name of the module
 
@@ -455,18 +456,18 @@ class ModuleObject final : public BaseObject {
   }
 public:
   inline int count(void) const { return Xt::as_type<int>(variables_.size()); }
-  inline int vars_count(void) const { return variable_names_.count(); }
+  inline int vars_count(void) const { return Xt::as_type<int>(variable_names_.size()); }
   inline const Value& get_variable(int i) const { return variables_[i]; }
   inline void set_variable(int i, const Value& val) { variables_[i] = val; }
-  inline int find_variable(const str_t& name) const { return variable_names_.get(name); }
-  inline str_t get_variable_name(int i) const { return variable_names_.get_name(i); }
+  inline StringObject* get_variable_name(int i) const { return variable_names_[i]; }
   inline StringObject* name(void) const { return name_; }
   inline const char* name_cstr(void) const { return name_ != nullptr ? name_->cstr() : ""; }
 
-  int declare_variable(const str_t& name, int line);
-  int define_variable(const str_t& name, const Value& value);
+  int find_variable(const str_t& name) const;
+  int declare_variable(WrenVM& vm, const str_t& name, int line);
+  int define_variable(WrenVM& vm, const str_t& name, const Value& value);
   void iter_variables(
-      std::function<void (int, const Value&, const str_t&)>&& fn, int offset = 0);
+      std::function<void (int, const Value&, StringObject*)>&& fn, int offset = 0);
 
   virtual str_t stringify(void) const override;
   virtual void gc_blacken(WrenVM& vm) override;

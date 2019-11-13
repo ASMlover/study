@@ -644,7 +644,15 @@ DebugObject::DebugObject(
   , source_lines_(source_lines, source_lines + lines_count) {
 }
 
-int ModuleObject::declare_variable(const str_t& name, int line) {
+int ModuleObject::find_variable(const str_t& name) const {
+  for (sz_t i = 0; i < variable_names_.size(); ++i) {
+    if (variable_names_[i]->compare(name))
+      return Xt::as_type<int>(i);
+  }
+  return -1;
+}
+
+int ModuleObject::declare_variable(WrenVM& vm, const str_t& name, int line) {
   // adds a new implicitly declared top-level variable named [name] to [module]
   // based on a use site occurring on [line]
   //
@@ -659,10 +667,12 @@ int ModuleObject::declare_variable(const str_t& name, int line) {
   // variable is first used, we'll use that later to report an error on the
   // right line
   variables_.push_back(line);
-  return variable_names_.add(name);
+  variable_names_.push_back(StringObject::make_string(vm, name));
+  return Xt::as_type<int>(variable_names_.size()) - 1;
 }
 
-int ModuleObject::define_variable(const str_t& name, const Value& value) {
+int ModuleObject::define_variable(
+    WrenVM& vm, const str_t& name, const Value& value) {
   // adds a new top-level variable named [name] to [module]
   //
   // returns the symbol for the new variable, -1 if a variable with the given
@@ -672,10 +682,11 @@ int ModuleObject::define_variable(const str_t& name, const Value& value) {
     return -2;
 
   // see if the variable is already explicitly or implicitly declared
-  int symbol = variable_names_.get(name);
+  int symbol = find_variable(name);
   if (symbol == -1) {
     // brand new variable
-    symbol = variable_names_.add(name);
+    variable_names_.push_back(StringObject::make_string(vm, name));
+    symbol = Xt::as_type<int>(variable_names_.size()) - 1;
     variables_.push_back(value);
   }
   else if (variables_[symbol].is_numeric()) {
@@ -691,9 +702,9 @@ int ModuleObject::define_variable(const str_t& name, const Value& value) {
 }
 
 void ModuleObject::iter_variables(
-    std::function<void (int, const Value&, const str_t&)>&& fn, int offset) {
+    std::function<void (int, const Value&, StringObject*)>&& fn, int offset) {
   for (int i = offset; i < variables_.size(); ++i)
-    fn(i, variables_[i], variable_names_.get_name(i));
+    fn(i, variables_[i], variable_names_[i]);
 }
 
 str_t ModuleObject::stringify(void) const {
@@ -705,6 +716,8 @@ str_t ModuleObject::stringify(void) const {
 void ModuleObject::gc_blacken(WrenVM& vm) {
   for (auto& v : variables_)
     vm.gray_value(v);
+  for (auto& v : variable_names_)
+    vm.gray_object(v);
   vm.gray_object(name_);
 }
 

@@ -65,10 +65,8 @@ namespace meta {
       ListObject* names = ListObject::make_list(*vm, module->vars_count());
       vm->set_api_stack(0, names);
 
-      for (int i = 0; i < names->count(); ++i) {
-        names->set_element(i,
-            StringObject::make_string(*vm, module->get_variable_name(i)));
-      }
+      for (int i = 0; i < names->count(); ++i)
+        names->set_element(i, module->get_variable_name(i));
     }
 
     inline WrenForeignFn bind_foreign_method(WrenVM& vm,

@@ -2264,12 +2264,14 @@ public:
     // never got an explicit definition, they will have values that are numbers
     // indicating the line where the variable was fist used
     parser_.get_mod()->iter_variables(
-        [this](int i, const Value& val, const str_t& name) {
+        [this](int i, const Value& val, StringObject* name) {
           if (val.is_numeric()) {
             // synthesize a token for the orignal use site
             auto* mod = parser_.get_mod();
-            parser_.set_prev(Token(TokenKind::TK_IDENTIFIER,
-                  name, Xt::as_type<int>(mod->get_variable(i).as_numeric())));
+            parser_.set_prev(Token(
+                  TokenKind::TK_IDENTIFIER,
+                  name->cstr(),
+                  Xt::as_type<int>(mod->get_variable(i).as_numeric())));
             error("variable is used but not defined");
           }
         }, num_existing_variables);
