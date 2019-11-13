@@ -321,8 +321,7 @@ int StringObject::find(StringObject* sub, int start_index) const {
 
 bool StringObject::is_equal(BaseObject* r) const {
   auto* o = Xt::down<StringObject>(r);
-  return size_ == o->size_ &&
-    hash_ == o->hash_ && std::memcmp(value_, o->value_, size_) == 0;
+  return compare(o);
 }
 
 str_t StringObject::stringify(void) const {

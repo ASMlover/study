@@ -307,6 +307,10 @@ public:
   inline char operator[](int i) const { return value_[i]; }
   inline char& operator[](int i) { return value_[i]; }
   inline bool compare(const str_t& s) const { return s.size() == size_ && s == value_; }
+  inline bool compare(StringObject* b) const {
+    return this == b || (hash_ == b->hash_ && size_ == b->size_
+        && std::memcmp(value_, b->value_, size_) == 0);
+  }
 
   int find(StringObject* sub, int start_index = 0) const;
 
