@@ -2245,6 +2245,7 @@ public:
 
     if (is_expression) {
       expression();
+      consume(TokenKind::TK_EOF, "expect end of expression");
     }
     else {
       while (!match(TokenKind::TK_EOF)) {
