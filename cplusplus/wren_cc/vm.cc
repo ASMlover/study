@@ -59,21 +59,6 @@ WrenVM::~WrenVM(void) {
   ASSERT(handles_ == nullptr, "all handles have not been released");
 }
 
-InterpretRet WrenVM::interpret_in_module(
-    const str_t& module, const str_t& source_bytes) {
-  ClosureObject* closure = compile_source(module, source_bytes, false, true);
-  if (closure == nullptr)
-    return InterpretRet::COMPILE_ERROR;
-
-  FiberObject* fiber;
-  {
-    PinnedGuard guard(*this, closure);
-    fiber = FiberObject::make_fiber(*this, closure);
-  }
-
-  return interpret(fiber);
-}
-
 void WrenVM::set_metaclasses(void) {
   for (auto* o : objects_) {
     if (o->type() == ObjType::STRING)
@@ -119,7 +104,7 @@ void WrenVM::set_api_stack_asptr(const Value* value) {
   api_stack_ = const_cast<Value*>(value);
 }
 
-Value WrenVM::import_module(const Value& name) {
+Value WrenVM::import_module(const Value& input_name) {
   // imports the module with [name], a string object
   //
   // if the module has already been imported (or is already in the middle of
@@ -129,6 +114,7 @@ Value WrenVM::import_module(const Value& name) {
   //
   // if the module could not be found, set an error in the current fiber
 
+  Value name = resolve_module(input_name);
   // if the module is already loaded, we do not need to do anything
   if (auto val = modules_->get(name); val && !(*val).is_undefined())
     return (*val);
@@ -968,8 +954,18 @@ ClassObject* WrenVM::get_class(const Value& val) const {
   return nullptr;
 }
 
-InterpretRet WrenVM::interpret(const str_t& source_bytes) {
-  return interpret_in_module("main", source_bytes);
+InterpretRet WrenVM::interpret(const str_t& module, const str_t& source_bytes) {
+  ClosureObject* closure = compile_source(module, source_bytes, false, true);
+  if (closure == nullptr)
+    return InterpretRet::COMPILE_ERROR;
+
+  FiberObject* fiber;
+  {
+    PinnedGuard guard(*this, closure);
+    fiber = FiberObject::make_fiber(*this, closure);
+  }
+
+  return interpret(fiber);
 }
 
 ClosureObject* WrenVM::compile_source(const str_t& module,
@@ -1073,6 +1069,32 @@ WrenForeignFn WrenVM::find_foreign_method(const str_t& module_name,
       method = random::bind_foreign_method(*this, class_name, is_static, signature);
   }
   return method;
+}
+
+Value WrenVM::resolve_module(const Value& name) {
+  // let the host resolve an imported module name if it wants to
+
+  if (!res_module_fn_)
+    return name;
+
+  FiberObject* fiber = fiber_;
+  FunctionObject* fn = fiber->peek_frame().closure->fn();
+  StringObject* importer = fn->module()->name();
+
+  str_t resolved = res_module_fn_(*this, importer->cstr(), name.as_cstring());
+  if (resolved.empty()) {
+    fiber_->set_error(StringObject::format(*this,
+          "could not resolve module `@` imported from `$`",
+          name, importer->cstr()));
+    return nullptr;
+  }
+
+  // if they resolved to the extrat same string, we don't need to copy it
+  if (importer->compare(name.as_cstring()))
+    return name;
+
+  // copy the string into a Wren StringObject
+  return StringObject::make_string(*this, resolved);
 }
 
 void WrenVM::bind_method(int i, Code method_type,

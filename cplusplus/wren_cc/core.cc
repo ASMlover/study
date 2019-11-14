@@ -1004,7 +1004,7 @@ namespace core {
     vm.set_primitive(obj_metaclass, "same(_,_)", _primitive_object_same);
 
     // the rest of the classes can now be defined normally
-    vm.interpret_in_module("", kLibSource);
+    vm.interpret("", kLibSource);
 
     vm.set_bool_cls(vm.find_variable(core_module, "Bool").as_class());
     vm.set_primitive(vm.bool_cls(), "toString", _primitive_bool_tostring);

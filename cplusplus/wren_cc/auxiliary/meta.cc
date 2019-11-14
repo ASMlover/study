@@ -39,9 +39,13 @@ namespace meta {
       const char* source_bytes = wrenGetSlotString(*vm, 1);
       bool is_expression = wrenGetSlotBool(*vm, 2);
       bool print_errors = wrenGetSlotBool(*vm, 3);
-      // compile it
+
+      FiberObject* current_fiber = vm->fiber();
+      FunctionObject* fn = current_fiber->peek_frame(1).closure->fn();
+      str_t module_name = fn->module()->name_cstr();
+
       ClosureObject* closure = vm->compile_source(
-          "main", source_bytes, is_expression, print_errors);
+          module_name, source_bytes, is_expression, print_errors);
 
       // return the result, we can not use the public API for this since we
       // have a bare ClosureObject

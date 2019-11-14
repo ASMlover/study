@@ -59,7 +59,7 @@ namespace io {
     }
 
     inline void load_library(WrenVM& vm) {
-      vm.interpret_in_module("", kLibSource);
+      vm.interpret("", kLibSource);
     }
 
     inline WrenForeignFn bind_foreign(WrenVM& vm,

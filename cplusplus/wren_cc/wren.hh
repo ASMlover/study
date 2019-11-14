@@ -44,6 +44,8 @@ using WrenForeignFn = std::function<void (WrenVM*)>;
 using WrenFinalizeFn = std::function<void (void*)>;
 using WrenErrorFn = std::function<
     void (WrenVM&, WrenError, const str_t&, int, const str_t&)>;
+using WrenResolveModuleFn = std::function<
+    str_t (WrenVM& vm, const str_t&, const str_t&)>;
 
 enum class InterpretRet {
   SUCCESS,

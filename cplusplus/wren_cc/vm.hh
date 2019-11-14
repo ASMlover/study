@@ -152,6 +152,9 @@ class WrenVM final : private UnCopyable {
   // the function used to report errors
   WrenErrorFn error_fn_{};
 
+  // the function used to resolve a module name
+  WrenResolveModuleFn res_module_fn_{};
+
   // list of active value handles or nullptr if there are no handles
   WrenHandle* handles_{};
 
@@ -186,6 +189,7 @@ class WrenVM final : private UnCopyable {
       const str_t& source_bytes, bool is_expression, bool print_errors);
   WrenForeignFn find_foreign_method(const str_t& module_name,
       const str_t& class_name, bool is_static, const str_t& signature);
+  Value resolve_module(const Value& name);
 
   void bind_method(int i, Code method_type,
       ModuleObject* module, ClassObject* cls, const Value& method_val);
@@ -238,6 +242,8 @@ public:
   inline void set_load_fn(LoadModuleFn&& fn) { load_module_fn_ = std::move(fn); }
   inline void set_error_fn(const WrenErrorFn& fn) { error_fn_ = fn; }
   inline void set_error_fn(WrenErrorFn&& fn) { error_fn_ = std::move(fn); }
+  inline void set_res_module_fn(const WrenResolveModuleFn& fn) { res_module_fn_ = fn; }
+  inline void set_res_module_fn(WrenResolveModuleFn&& fn) { res_module_fn_ = std::move(fn); }
   inline BindForeignMethodFn get_foreign_meth(void) const { return bind_foreign_meth_; }
   inline void set_foreign_meth(const BindForeignMethodFn& fn) { bind_foreign_meth_ = fn; }
   inline void set_foreign_meth(BindForeignMethodFn&& fn) { bind_foreign_meth_ = std::move(fn); }
@@ -251,8 +257,6 @@ public:
   inline void* get_user_data(void) const { return user_data_; }
   inline void set_user_data(void* data) { user_data_ = data; }
 
-  InterpretRet interpret_in_module(
-      const str_t& module, const str_t& source_bytes);
   void set_metaclasses(void);
   int declare_variable(ModuleObject* module, const str_t& name, int line);
   int define_variable(ModuleObject* module, const str_t& name, const Value& value);
@@ -273,7 +277,7 @@ public:
   void blacken_objects(void);
 
   ClassObject* get_class(const Value& val) const;
-  InterpretRet interpret(const str_t& source_bytes);
+  InterpretRet interpret(const str_t& module, const str_t& source_bytes);
   ClosureObject* compile_source(const str_t& module,
       const str_t& source_bytes, bool is_expression, bool print_errors = false);
 
