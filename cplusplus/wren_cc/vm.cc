@@ -130,8 +130,8 @@ Value WrenVM::import_module(const Value& name) {
   // if the module could not be found, set an error in the current fiber
 
   // if the module is already loaded, we do not need to do anything
-  if (auto val = modules_->get(name); val)
-    return nullptr;
+  if (auto val = modules_->get(name); val && !(*val).is_undefined())
+    return (*val);
 
   str_t source_bytes;
   // let the host try to provide the module
@@ -179,16 +179,7 @@ Value WrenVM::get_module_variable(
     return nullptr;
   }
 
-  StringObject* variable = variable_name.as_string();
-  int variable_entry = module->find_variable(variable->cstr());
-  // it's a runtime error if the imported variable does not exist
-  if (variable_entry != -1)
-    return module->get_variable(variable_entry);
-
-  fiber_->set_error(StringObject::format(*this,
-        "could not find a variable named `@` in module `@`",
-        variable, module_name));
-  return nullptr;
+  return get_module_variable_impl(module, variable_name);
 }
 
 void WrenVM::push_root(BaseObject* obj) {
@@ -889,18 +880,23 @@ __complete_call:
 
       DISPATCH();
     }
+    CASE_CODE(END_MODULE):
+    {
+      last_module_ = fn->module();
+      PUSH(nullptr);
+
+      DISPATCH();
+    }
     CASE_CODE(IMPORT_MODULE):
     {
       const Value& name = fn->get_constant(RDWORD());
-
-      // make a slot on the stack for the module's fiber to place the return
-      // value, it will be popped after this fiber is resumed, store the
-      // imported module's closure in the slot in case a GC happens when
-      // invoking the closure
-      PUSH(import_module(name));
-
+      Value result = import_module(name);
       if (!fiber->error().is_nil())
         RUNTIME_ERROR();
+
+      // make a slot on the stack for the module's fiber to place the return
+      // value, it will be popped after the module body code returns
+      PUSH(nullptr);
 
       // if we get a closure, call it to execute the module body
       if (PEEK().is_closure()) {
@@ -909,15 +905,19 @@ __complete_call:
 
         LOAD_FRAME();
       }
+      else {
+        // the module has already been loaded, remember it so we can import
+        // variables from it if needed
+        last_module_ = result.as_module();
+      }
 
       DISPATCH();
     }
     CASE_CODE(IMPORT_VARIABLE):
     {
-      const Value& module = fn->get_constant(RDWORD());
       const Value& variable = fn->get_constant(RDWORD());
-
-      Value result = get_module_variable(module, variable);
+      ASSERT(last_module_ != nullptr, "should have already imported module");
+      Value result = get_module_variable_impl(last_module_, variable);
       if (!fiber->error().is_nil())
         RUNTIME_ERROR();
       PUSH(result);
@@ -999,6 +999,18 @@ ModuleObject* WrenVM::get_module(const Value& name) const {
 
   if (auto m = modules_->get(name); m)
     return (*m).as_module();
+  return nullptr;
+}
+
+Value WrenVM::get_module_variable_impl(
+    ModuleObject* module, const Value& variable_name) {
+  int variable_entry = module->find_variable(variable_name.as_cstring());
+  if (variable_entry != -1)
+    return module->get_variable(variable_entry);
+
+  fiber_->set_error(StringObject::format(*this,
+        "could not find a variable name `@` in moudle `$`",
+        variable_name, module->name_cstr()));
   return nullptr;
 }
 

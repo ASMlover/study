@@ -1263,9 +1263,13 @@ class Compiler final : private UnCopyable {
     //    import "foo" for Bar, Baz
     //
     // we compile a single `IMPORT_MODULE` "foo" instruction to load the module
-    // itself, then for each imported name, we declare a variable and them emit
-    // a `IMPORT_VARIABLE` instruction to load the variable from the other
-    // module and assign it to the new variable in this one
+    // itself, when that finishes executing the imported module, it leaves the
+    // ModuleObject in VM->last_module_, then for Bar and Baz, we:
+    //
+    // * declare a variable in the current scope with that name
+    // * emit an `IMPORT_VARIABLE` instruction to load the variable's value
+    //   from the other module
+    // * compile the code to store that value in the variable in this scope
 
     ignore_newlines();
     consume(TokenKind::TK_STRING, "expect a string after `import`");
@@ -1275,7 +1279,7 @@ class Compiler final : private UnCopyable {
     // load the module
     emit_words(Code::IMPORT_MODULE, module_constant);
 
-    // discard the unused result value from calling the module's fiber
+    // discard the unused result value from calling the module body's closure
     emit_opcode(Code::POP);
 
     // the for clause is optional
@@ -1291,8 +1295,7 @@ class Compiler final : private UnCopyable {
       int variable_constant = add_constant(StringObject::make_string(
             parser_.get_vm(), parser_.prev().as_string()));
       // load the variable from the other module
-      emit_words(Code::IMPORT_VARIABLE, module_constant);
-      emit_u16(variable_constant);
+      emit_words(Code::IMPORT_VARIABLE, variable_constant);
 
       // stores the result in the variable here
       define_variable(slot);
@@ -2257,7 +2260,7 @@ public:
           break;
         }
       }
-      emit_opcode(Code::NIL);
+      emit_opcode(Code::END_MODULE);
     }
     emit_opcode(Code::RETURN);
 

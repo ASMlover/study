@@ -105,6 +105,12 @@ class WrenVM final : private UnCopyable {
   // ModuleObject for the module
   MapObject* modules_{};
 
+  // the most recently imported module, more specifically, the module whose
+  // code has most recently finished executing
+  //
+  // not treated like a GC root since the module is already in [modules_]
+  ModuleObject* last_module_{};
+
   // how many bytes of object data have been allocated
   sz_t total_allocated_{};
   // the number of total allocated objects that will trigger the next GC
@@ -175,6 +181,7 @@ class WrenVM final : private UnCopyable {
   void create_foreign(FiberObject* fiber, Value* stack);
 
   ModuleObject* get_module(const Value& name) const;
+  Value get_module_variable_impl(ModuleObject* module, const Value& variable_name);
   ClosureObject* compile_in_module(const Value& name,
       const str_t& source_bytes, bool is_expression, bool print_errors);
   WrenForeignFn find_foreign_method(const str_t& module_name,

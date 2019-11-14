@@ -802,6 +802,7 @@ int FunctionObject::get_argc(
   case Code::CONSTRUCT:
   case Code::FOREIGN_CONSTRUCT:
   case Code::FOREIGN_CLASS:
+  case Code::END_MODULE:
     return 0;
 
   case Code::LOAD_LOCAL:

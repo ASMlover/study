@@ -178,6 +178,11 @@ CODE(METHOD_INSTANCE, -2)
 // identifying the foreign method, otherwise it will be a function or closure
 CODE(METHOD_STATIC, -2)
 
+// this is executed at the end of the module's body, pushes nullptr onto the
+// stack as the "return value" of the import statement and stores the module
+// as the most recently imported one
+CODE(END_MODULE, 1)
+
 // import a module whose name is the string stored at [arg] in the constant
 // table
 //
@@ -186,9 +191,9 @@ CODE(METHOD_STATIC, -2)
 // value when resuming a caller)
 CODE(IMPORT_MODULE, 1)
 
-// import a variable from a previously-imported module, the module's name is
-// at [arg1] in the constant table and the variable name is at [arg2], pushes
-// the loaded variable onto the stack
+// import a variable from the most rencently imported module, the name of the
+// variable to import is at [arg] in the constant table, pushes the loaded
+// variable's value
 CODE(IMPORT_VARIABLE, 1)
 
 CODE(END, 0)
