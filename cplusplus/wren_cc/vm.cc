@@ -885,8 +885,8 @@ __complete_call:
       PUSH(nullptr);
 
       // if we get a closure, call it to execute the module body
-      if (PEEK().is_closure()) {
-        ClosureObject* closure = PEEK().as_closure();
+      if (result.is_closure()) {
+        ClosureObject* closure = result.as_closure();
         fiber->call_function(*this, closure, 1);
 
         LOAD_FRAME();
