@@ -692,12 +692,6 @@ __complete_call:
         fiber->call_function(*this, method.closure(), argc);
         LOAD_FRAME();
         break;
-      case MethodType::FNCALL:
-        if (!check_arity(args[0], argc))
-          RUNTIME_ERROR();
-        fiber->call_function(*this, args[0].as_closure(), argc);
-        LOAD_FRAME();
-        break;
       case MethodType::NONE:
         UNREACHABLE();
         break;

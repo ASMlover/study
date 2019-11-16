@@ -770,7 +770,6 @@ enum class MethodType {
   PRIMITIVE,// a primitive method implemented in C that immediatelt returns a Value
   FOREIGN,  // a externally-defined C++ native method
   BLOCK,    // a normal user-defined method
-  FNCALL,   // the special "call(...)" methods on function
 
   NONE,     // no method for the given symbol
 };
