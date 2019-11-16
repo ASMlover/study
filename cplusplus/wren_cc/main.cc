@@ -82,6 +82,40 @@ static void report_error(wrencc::WrenVM& vm, wrencc::WrenError type,
   }
 }
 
+static std::string resolve_module(wrencc::WrenVM& vm,
+    const std::string& importer, const std::string& name) {
+  if (name.size() > 2 &&
+      ((name[0] == '.' && name[1] == '/') ||
+       (name[0] == '.' && name[1] == '.' && name[2] == '/'))) {
+    std::string resolved = "";
+    auto pos = importer.find_last_of('/');
+    if (pos != std::string::npos)
+      resolved = importer.substr(0, pos);
+
+    if (resolved.size() > 0 && resolved.back() != '/')
+      resolved.push_back('/');
+    resolved += name;
+
+    std::size_t off = 0;
+    for (;;) {
+      pos = resolved.find_first_of('/', off);
+      if (pos != std::string::npos) {
+        std::string temp = resolved.substr(off, pos);
+        if (pos == 1 && temp == ".")
+          resolved = resolved.substr(pos + 1);
+        else if (pos == 2 && temp == "..")
+          off += pos + 1;
+      }
+      else {
+        break;
+      }
+    }
+
+    return resolved;
+  }
+  return name;
+}
+
 static void eval_with_file(const std::string& fname) {
   auto pos = fname.find_last_of('\\');
   if (pos != std::string::npos)
@@ -95,6 +129,7 @@ static void eval_with_file(const std::string& fname) {
     wrencc::WrenVM vm;
     vm.set_load_fn(read_module);
     vm.set_error_fn(report_error);
+    vm.set_res_module_fn(resolve_module);
     vm.interpret("main", ss.str());
   }
 }
