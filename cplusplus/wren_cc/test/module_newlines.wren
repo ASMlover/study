@@ -1,9 +1,9 @@
 
 import
 
-"module_newlines_module"
+"./module_newlines_module"
 
-import "module_newlines_module" for
+import "./module_newlines_module" for
 
 A,
 

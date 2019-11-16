@@ -2,7 +2,7 @@
 var fiber = Fiber.new {
   IO.print("fiber 1")
 
-  import "fiber_yield_from_import_module"
+  import "./fiber_yield_from_import_module"
 
   IO.print("fiber 2")
 }

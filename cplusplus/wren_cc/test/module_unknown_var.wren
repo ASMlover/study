@@ -1,2 +1,2 @@
 
-var DoesNotExist = "module_unknown_var_module".import_("DoesNotExist") // expect runtime error
+import "./module_unknown_var_module" for DoesNotExist // expect runtime error

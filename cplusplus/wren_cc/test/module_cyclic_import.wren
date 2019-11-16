@@ -1,5 +1,5 @@
 
-import "module_cyclic_import_a"
+import "./module_cyclic_import_a"
 
 // expect: start a
 // expect: a defined a value

@@ -1,5 +1,5 @@
 
-import "module_implicitly_imports_core_module"
+import "./module_implicitly_imports_core_module"
 
 // expect: Bool
 // expect: Class
