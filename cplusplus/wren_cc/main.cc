@@ -101,9 +101,9 @@ static std::string resolve_module(wrencc::WrenVM& vm,
       pos = resolved.find_first_of('/', off);
       if (pos != std::string::npos) {
         std::string temp = resolved.substr(off, pos);
-        if (pos == 1 && temp == ".")
+        if (temp.size() == 1 && temp == ".")
           resolved = resolved.substr(pos + 1);
-        else if (pos == 2 && temp == "..")
+        else
           off += pos + 1;
       }
       else {
