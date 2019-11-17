@@ -220,7 +220,7 @@ void WrenVM::runtime_error(void) {
   // walks the call chain of fibers, aborting each one until it hits a fiber
   // that handles the error, if none do, tells the VM to stop
 
-  ASSERT(!fiber_->error().is_nil(), "should only call this after an error");
+  ASSERT(fiber_->has_error(), "should only call this after an error");
 
   FiberObject* current_fiber = fiber_;
   Value error = current_fiber->error();
@@ -394,7 +394,7 @@ void WrenVM::create_class(int num_fields, ModuleObject* module) {
   fiber_->pop();
 
   fiber_->set_error(validate_superclass(name, superclass, num_fields));
-  if (!fiber_->error().is_nil())
+  if (fiber_->has_error())
     return;
 
   ClassObject* cls = ClassObject::make_class(
@@ -675,9 +675,9 @@ __complete_call:
 
             // if we do not have a fiber to switch to, stop interpreting
             fiber = fiber_;
-            if (fiber_ == nullptr)
+            if (fiber == nullptr)
               return InterpretRet::SUCCESS;
-            if (!fiber_->error().is_nil())
+            if (fiber->has_error())
               RUNTIME_ERROR();
             LOAD_FRAME();
             break;
@@ -685,7 +685,7 @@ __complete_call:
         } break;
       case MethodType::FOREIGN:
         call_foreign(fiber, method.foreign(), argc);
-        if (!fiber->error().is_nil())
+        if (fiber->has_error())
           RUNTIME_ERROR();
         break;
       case MethodType::BLOCK:
@@ -833,7 +833,7 @@ __complete_call:
     CASE_CODE(CLASS):
     {
       create_class(RDBYTE(), nullptr);
-      if (!fiber->error().is_nil())
+      if (fiber->has_error())
         RUNTIME_ERROR();
 
       DISPATCH();
@@ -841,7 +841,7 @@ __complete_call:
     CASE_CODE(FOREIGN_CLASS):
     {
       create_class(-1, fn->module());
-      if (!fiber->error().is_nil())
+      if (fiber->has_error())
         RUNTIME_ERROR();
 
       DISPATCH();
@@ -853,7 +853,7 @@ __complete_call:
       ClassObject* cls = PEEK().as_class();
       const Value& method = PEEK2();
       bind_method(symbol, c, fn->module(), cls, method);
-      if (!fiber->error().is_nil())
+      if (fiber->has_error())
         RUNTIME_ERROR();
       POP();
       POP();
@@ -871,7 +871,7 @@ __complete_call:
     {
       const Value& name = fn->get_constant(RDWORD());
       Value result = import_module(name);
-      if (!fiber->error().is_nil())
+      if (fiber->has_error())
         RUNTIME_ERROR();
 
       // make a slot on the stack for the module's fiber to place the return
@@ -898,7 +898,7 @@ __complete_call:
       const Value& variable = fn->get_constant(RDWORD());
       ASSERT(last_module_ != nullptr, "should have already imported module");
       Value result = get_module_variable_impl(last_module_, variable);
-      if (!fiber->error().is_nil())
+      if (fiber->has_error())
         RUNTIME_ERROR();
       PUSH(result);
 

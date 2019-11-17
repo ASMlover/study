@@ -102,7 +102,7 @@ static bool run_fiber(WrenVM& vm, FiberObject* fiber,
   // [has_value] is true if a value in [args] is being passed to the new fiber
   // otherwise `nil` is implicitly being passed
 
-  if (!fiber->error().is_nil())
+  if (fiber->has_error())
     RETURN_FERR("cannot $ an aborted fiber", verb);
 
   if (is_call) {
@@ -163,7 +163,7 @@ DEF_PRIMITIVE(fiber_error) {
 
 DEF_PRIMITIVE(fiber_isdone) {
   FiberObject* run_fiber = args[0].as_fiber();
-  RETURN_VAL(run_fiber->empty_frame() || !run_fiber->error().is_nil());
+  RETURN_VAL(run_fiber->empty_frame() || run_fiber->has_error());
 }
 
 DEF_PRIMITIVE(fiber_suspend) {
@@ -192,7 +192,7 @@ DEF_PRIMITIVE(fiber_try) {
   run_fiber(vm, args[0].as_fiber(), args, true, false, "try");
 
   // if we're watching to a valid fiber to try, remember that we're trying it
-  if (vm.fiber()->error().is_nil())
+  if (!vm.fiber()->has_error())
     vm.fiber()->set_state(FiberState::TRY);
 
   return false;

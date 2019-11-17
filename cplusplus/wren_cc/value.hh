@@ -726,6 +726,7 @@ public:
   inline void set_error(const Value& error) { error_ = error; }
   inline FiberState state(void) const { return state_; }
   inline void set_state(FiberState state) { state_ = state; }
+  inline bool has_error(void) const { return !error_.is_nil(); }
 
   inline const Value& peek_value(int distance = 0) const {
     return stack_[stack_.size() - 1 - distance];
