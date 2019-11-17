@@ -229,7 +229,7 @@ void WrenVM::runtime_error(void) {
     current_fiber->set_error(error);
 
     // if the caller ran this fiber using `try`, give it the error and stop
-    if (current_fiber->caller_is_trying()) {
+    if (current_fiber->state() == FiberState::TRY) {
       // make the caller's try method return the error message
       int i = current_fiber->caller()->stack_size() - 1;
       current_fiber->caller()->set_value(i, fiber_->error());
@@ -427,8 +427,7 @@ void WrenVM::create_foreign(FiberObject* fiber, Value* stack) {
 
 InterpretRet WrenVM::interpret(FiberObject* fiber) {
   // the main bytecode interpreter loop, this is where the magic happens, it
-  // is also, as you can imagine, highly performance critical, returns `true`
-  // if the fiber completed without error
+  // is also, as you can imagine, highly performance critical
 
 #define PUSH(v)   fiber->push(v)
 #define POP()     fiber->pop()
@@ -439,6 +438,7 @@ InterpretRet WrenVM::interpret(FiberObject* fiber) {
 
   // remember the current fiber so we can find it if a GC happens
   fiber_ = fiber;
+  fiber->set_state(FiberState::ROOT);
 
   CallFrame* frame{};
   FunctionObject* fn{};

@@ -655,6 +655,24 @@ struct CallFrame {
   }
 };
 
+// tracks how this fiber has been invoked, aside from the ways that can be
+// deleted from the state of other fields in the fiber
+enum class FiberState {
+  // the fiber is being run from another fiber using a call to `try()`
+  TRY,
+
+  // the fiber was directly invoked by `interpret()`, this means it's the
+  // initial fiber used by call to `wren_call()` or `interpret()`
+  ROOT,
+
+  // the fiber is invoked some other way, if [caller] is `nullptr` then the
+  // fiber was invoked using `call()`, if [num_frames] is zero, then the
+  // fiber has finished running and is done, if [num_frames] is one and
+  // that frame's `ip` points to the first byte of code, the fiber has not
+  // been started yet
+  OTHER,
+};
+
 class FiberObject final : public BaseObject {
   static constexpr sz_t kStackCapacity = 1<<10;
   static constexpr sz_t kFrameCapacity = 4;
@@ -676,10 +694,7 @@ class FiberObject final : public BaseObject {
   // error object, otherwise it will be nil
   Value error_{nullptr};
 
-  // this will be true id the caller that called this fiber did so using `try`
-  // in that case, if this fiber fails with an error, the error will be given
-  // to the caller
-  bool caller_is_trying_{};
+  FiberState state_{FiberState::OTHER};
 
   FiberObject(ClassObject* cls, ClosureObject* closure) noexcept;
   virtual ~FiberObject(void) {}
@@ -709,8 +724,8 @@ public:
   inline const Value& error(void) const { return error_; }
   inline const char* error_asstr(void) const { return error_.as_cstring(); }
   inline void set_error(const Value& error) { error_ = error; }
-  inline bool caller_is_trying(void) const { return caller_is_trying_; }
-  inline void set_caller_is_trying(bool b) { caller_is_trying_ = b; }
+  inline FiberState state(void) const { return state_; }
+  inline void set_state(FiberState state) { state_ = state; }
 
   inline const Value& peek_value(int distance = 0) const {
     return stack_[stack_.size() - 1 - distance];
