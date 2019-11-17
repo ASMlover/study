@@ -332,7 +332,7 @@ void WrenVM::validate_api_slot(int slot) const {
 
 void WrenVM::call_foreign(
     FiberObject* fiber, const WrenForeignFn& foreign, int argc) {
-  Value* old_api_stack = api_stack_;
+  ASSERT(api_stack_ == nullptr, "cannot already be in foreign call");
 
   api_stack_ = fiber->values_at(fiber->stack_size() - argc);
   foreign(this);
@@ -341,7 +341,7 @@ void WrenVM::call_foreign(
   // for the result
   fiber->resize_stack(fiber->stack_size() - (argc - 1));
 
-  api_stack_ = old_api_stack;
+  api_stack_ = nullptr;
 }
 
 void WrenVM::bind_foreign_class(ClassObject* cls, ModuleObject* module) {
@@ -417,12 +417,12 @@ void WrenVM::create_foreign(FiberObject* fiber, Value* stack) {
   ASSERT(method.get_type() == MethodType::FOREIGN, "allocator should be foreign");
 
   // pass the constructor arguments to the allocator as well
-  Value* old_api_stack = api_stack_;
+  ASSERT(api_stack_ == nullptr, "cannot already be in foreign call");
 
   api_stack_ = stack;
   method.foreign()(this);
 
-  api_stack_ = old_api_stack;
+  api_stack_ = nullptr;
 }
 
 InterpretRet WrenVM::interpret(FiberObject* fiber) {
@@ -1299,12 +1299,24 @@ InterpretRet WrenVM::wren_call(WrenHandle* method) {
   ASSERT(fiber_->stack_size() >= closure->fn()->arity(),
       "stack must have enough arguments for method");
 
+  // clear the API stack, now that `wren_call()` has control, we no longer
+  // need it, we use this being non-nil to tell if re-entrant calls to
+  // foreign methods are hanppening, so it's important to clear it out now
+  // so that you can call foreign methods from within calls to `wren_call()`
+  api_stack_ = nullptr;
+
   // discard any extra temporary slots, we take for granted that the stub
   // function has exactly one slot for each arguments
   fiber_->resize_stack(closure->fn()->max_slots());
   fiber_->call_function(*this, closure, 0);
+  InterpretRet result = interpret(fiber_);
 
-  return interpret(fiber_);
+  // if the call didn't abort, then set up the API stack to point to the
+  // beginning of the stack so the host can access the call's return value
+  if (fiber_ != nullptr)
+    api_stack_ = fiber_->values_at_beg();
+
+  return result;
 }
 
 WrenHandle* WrenVM::make_handle(const Value& value) {
