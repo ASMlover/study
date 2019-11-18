@@ -457,6 +457,19 @@ DEF_PRIMITIVE(object_type) {
   RETURN_VAL(vm.get_class(args[0]));
 }
 
+DEF_PRIMITIVE(string_frombyte) {
+  if (!validate_int(vm, args[1], "Byte"))
+    return false;
+
+  int byte = args[1].as_integer<int>();
+  if (byte < 0)
+    RETURN_ERR("byte cannot be negative");
+  else if (byte > 0xff)
+    RETURN_ERR("byte cannot be greater than 0xff");
+
+  RETURN_VAL(StringObject::from_byte(vm, Xt::as_type<u8_t>(byte)));
+}
+
 DEF_PRIMITIVE(string_byteat) {
   StringObject* s = args[0].as_string();
   int index = validate_index(vm, args[1], s->size(), "Index");
@@ -1135,6 +1148,7 @@ namespace core {
     vm.set_primitive(vm.num_cls(), "!=(_)", _primitive_numeric_ne);
 
     vm.set_str_cls(vm.find_variable(core_module, "String").as_class());
+    vm.set_primitive(vm.str_cls()->cls(), "fromByte(_)", _primitive_string_frombyte);
     vm.set_primitive(vm.str_cls(), "+(_)", _primitive_string_add);
     vm.set_primitive(vm.str_cls(), "[_]", _primitive_string_subscript);
     vm.set_primitive(vm.str_cls(), "byteAt(_)", _primitive_string_byteat);

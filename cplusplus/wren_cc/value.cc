@@ -405,6 +405,10 @@ StringObject* StringObject::from_numeric(WrenVM& vm, double value) {
   return make_string(vm, Xt::to_string(value));
 }
 
+StringObject* StringObject::from_byte(WrenVM& vm, u8_t value) {
+  return make_string(vm, Xt::as_type<char>(value));
+}
+
 StringObject* StringObject::format(WrenVM& vm, const char* format, ...) {
   // creates a new formatted string from [format] and any additional arguments
   // used in the format string

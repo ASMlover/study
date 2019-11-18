@@ -177,6 +177,10 @@ public:
 
   inline bool is_falsely(void) const { return is_nil() || bits_ == (kQNaN | Tag::FALSE); }
 
+  template <typename Int> inline Int as_integer(void) const {
+    return Xt::as_type<Int>(num_);
+  }
+
   inline bool as_boolean(void) const { return bits_ == (kQNaN | Tag::TRUE); }
   inline double as_numeric(void) const { return num_; }
   inline BaseObject* as_object(void) const { return (BaseObject*)(bits_ & ~(kSignBit | kQNaN)); }
@@ -258,6 +262,10 @@ public:
 
   inline bool is_falsely(void) const { return is_nil() || type_ == ValueType::FALSE; }
 
+  template <typename Int> inline Int as_integer(void) const {
+    return Xt::as_type<Int>(num_);
+  }
+
   inline BaseObject* as_object(void) const { return obj_; }
   inline bool as_boolean(void) const { return type_ == ValueType::TRUE; }
   inline double as_numeric(void) const { return num_; }
@@ -327,6 +335,7 @@ public:
   static StringObject* concat_string(WrenVM& vm, const char* s1, const char* s2);
   static StringObject* concat_string(WrenVM& vm, const str_t& s1, const str_t& s2);
   static StringObject* from_numeric(WrenVM& vm, double value);
+  static StringObject* from_byte(WrenVM& vm, u8_t value);
   static StringObject* format(WrenVM& vm, const char* format, ...);
 };
 
