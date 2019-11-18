@@ -28,6 +28,7 @@
 
 #include <functional>
 #include <optional>
+#include <tuple>
 #include <variant>
 #include <vector>
 #include "common.hh"
@@ -478,7 +479,8 @@ public:
 
   int find_variable(const str_t& name) const;
   int declare_variable(WrenVM& vm, const str_t& name, int line);
-  int define_variable(WrenVM& vm, const str_t& name, const Value& value);
+  std::tuple<int, int> define_variable(
+      WrenVM& vm, const str_t& name, const Value& value);
   void iter_variables(
       std::function<void (int, const Value&, StringObject*)>&& fn, int offset = 0);
 

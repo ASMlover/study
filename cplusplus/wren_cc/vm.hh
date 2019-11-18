@@ -259,7 +259,8 @@ public:
 
   void set_metaclasses(void);
   int declare_variable(ModuleObject* module, const str_t& name, int line);
-  int define_variable(ModuleObject* module, const str_t& name, const Value& value);
+  std::tuple<int, int> define_variable(
+      ModuleObject* module, const str_t& name, const Value& value);
   void set_native(ClassObject* cls, const str_t& name, const PrimitiveFn& fn);
   const Value& find_variable(ModuleObject* module, const str_t& name) const;
   void set_api_stack_asref(const Value& value);

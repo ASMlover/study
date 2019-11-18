@@ -647,12 +647,18 @@ class Compiler final : private UnCopyable {
 
     // top-level module scope
     if (scope_depth_ == -1) {
-      int symbol = parser_.get_vm().define_variable(
+      auto [symbol, line] = parser_.get_vm().define_variable(
           parser_.get_mod(), name, nullptr);
-      if (symbol == -1)
+      if (symbol == -1) {
         error("module variable is already defined");
-      else if (symbol == -2)
+      }
+      else if (symbol == -2) {
         error("too many module variables defined");
+      }
+      else if (symbol == -3) {
+        error("variable `%s` referenced (first use at line: %d)",
+            name.c_str(), line);
+      }
       return symbol;
     }
 
@@ -1021,11 +1027,6 @@ class Compiler final : private UnCopyable {
     variable.set_variable(
         parser_.get_mod()->find_variable(token_name), ScopeType::MODULE);
     if (variable.index == -1) {
-      if (is_local_name(token_name)) {
-        error("undefined variable");
-        return;
-      }
-
       // if it's a nonlocal name, implicitly define a module-level variable in
       // the hopes that we get a real definition later
       variable.index = parser_.get_vm().declare_variable(

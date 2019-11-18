@@ -71,17 +71,17 @@ int WrenVM::declare_variable(
   return module->declare_variable(*this, name, line);
 }
 
-int WrenVM::define_variable(
+std::tuple<int, int> WrenVM::define_variable(
     ModuleObject* module, const str_t& name, const Value& value) {
   if (value.is_object())
     push_root(value.as_object());
 
-  int symbol = module->define_variable(*this, name, value);
+  auto result = module->define_variable(*this, name, value);
 
   if (value.is_object())
     pop_root();
 
-  return symbol;
+  return result;
 }
 
 void WrenVM::set_native(

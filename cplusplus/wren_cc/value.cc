@@ -666,15 +666,19 @@ int ModuleObject::declare_variable(WrenVM& vm, const str_t& name, int line) {
   return Xt::as_type<int>(variable_names_.size()) - 1;
 }
 
-int ModuleObject::define_variable(
+std::tuple<int, int> ModuleObject::define_variable(
     WrenVM& vm, const str_t& name, const Value& value) {
-  // adds a new top-level variable named [name] to [module]
+  // adds a new top-level variable named [name] to [module], and optionally
+  // populates line with the line of the implicit first use (line can be 0)
   //
   // returns the symbol for the new variable, -1 if a variable with the given
   // name is already defined or -2 if there are too many variables defined
+  // returns -3 if this is a top-level lowercase variable (localname) that
+  // was used before being defined
 
+  int line{0};
   if (variables_.size() == MAX_MODULE_VARS)
-    return -2;
+    return std::make_tuple(-2, line);
 
   // see if the variable is already explicitly or implicitly declared
   int symbol = find_variable(name);
@@ -687,13 +691,19 @@ int ModuleObject::define_variable(
   else if (variables_[symbol].is_numeric()) {
     // an implicitly declared variable's value will always be a number, now
     // we have a real definition
+    line = variables_[symbol].as_integer<int>();
     variables_[symbol] = value;
+
+    // if this was a localname we want to error if it was referenced this
+    // definition
+    if (std::islower(name[0]))
+      symbol = -3;
   }
   else {
     symbol = -1;
   }
 
-  return symbol;
+  return std::make_tuple(symbol, line);
 }
 
 void ModuleObject::iter_variables(
