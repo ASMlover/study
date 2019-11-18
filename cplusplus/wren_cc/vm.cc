@@ -827,6 +827,8 @@ __complete_call:
       const Value& cls = fiber->get_value(frame->stack_start);
       ASSERT(cls.is_class(), "`this` should be a class");
       create_foreign(fiber, fiber->values_at(frame->stack_start));
+      if (fiber->has_error())
+        RUNTIME_ERROR();
 
       DISPATCH();
     }

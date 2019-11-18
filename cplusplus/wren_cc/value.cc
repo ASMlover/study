@@ -39,23 +39,17 @@ union DoubleBits {
   double num;
 };
 
-inline u32_t hash_bits(DoubleBits bits) {
-  u32_t result = bits.b32[0] ^ bits.b32[1];
-
-  // slosh the bits around some, due to the way doubles are represented,
-  // small integers will have most of low bits of the double represented
-  // set to zero, for example, the above result for 5 is 43d00600
-  //
-  // we map that to an entry index by masking off the high bits which means
-  // most small integers would all end up in entry zero, that's bad, to
-  // avoid that, push a bunch of the high bits lower down so they affect
-  // the lower bits too
-  //
-  // the specific mixing function here was pulled from Java's HashMap
-  // implementation
-  result ^= (result >> 20) ^ (result >> 12);
-  result ^= (result >> 7) ^ (result >> 4);
-  return result;
+inline u32_t hash_bits(u64_t hash) {
+  // from V8's computeLongHash() whicn in turn cites:
+  // Thomas Wang, Integer Hash Functions
+  // http://www.concentric.net/~Ttwang/tech/inthash.htm
+  hash = ~hash + (hash << 18);
+  hash = hash ^ (hash >> 31);
+  hash = hash * 21;
+  hash = hash ^ (hash >> 11);
+  hash = hash + (hash << 6);
+  hash = hash ^ (hash >> 22);
+  return Xt::as_type<u32_t>(hash & 0x3fffffff);
 }
 
 inline u32_t hash_numeric(double num) {
@@ -63,7 +57,7 @@ inline u32_t hash_numeric(double num) {
 
   DoubleBits bits;
   bits.num = num;
-  return hash_bits(bits);
+  return hash_bits(bits.b64);
 }
 
 std::ostream& operator<<(std::ostream& out, const Value& val) {
@@ -139,9 +133,7 @@ u32_t TagValue::hash(void) const {
     return as_object()->hash();
 
   // hash the raw bits of the unboxed value
-  DoubleBits bits;
-  bits.b64 = bits_;
-  return hash_bits(bits);
+  return hash_bits(bits_);
 }
 
 str_t TagValue::stringify(void) const {
