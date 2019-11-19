@@ -80,6 +80,18 @@ public:
     }
     return -1;
   }
+
+  inline void iter_values(std::function<void (T&)>&& fn) {
+    for (auto& x : datas_)
+      fn(x);
+  }
+
+  inline void iter_values(std::function<void (const T&)>&& fn) {
+    for (auto& x : datas_)
+      fn(x);
+  }
 };
+
+using SymbolTable = DynamicTable<str_t>;
 
 }
