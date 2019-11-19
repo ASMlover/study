@@ -35,19 +35,18 @@ namespace wrencc {
 template <typename T>
 using CompareFn = std::function<bool (const T&, const T&)>;
 
-template <typename T> inline bool compare_fn(const T& x, const T& y) {
-  return x == y;
-}
+template <typename T>
+inline bool __compare(const T& x, const T& y) { return x == y; }
 
-template <typename T, typename Fn = CompareFn<T>>
+template <typename T, typename Function = CompareFn<T>>
 class DynamicTable final : private UnCopyable {
   using Iterator = typename std::vector<T>::iterator;
   using CIterator = typename std::vector<T>::const_iterator;
 
-  Fn cmp_fn_{};
+  Function cmp_fn_{};
   std::vector<T> datas_;
 public:
-  DynamicTable(CompareFn<T>&& cmp_fn = compare_fn<T>) noexcept
+  DynamicTable(Function&& cmp_fn = __compare<T>) noexcept
     : cmp_fn_(std::move(cmp_fn)) {
   }
 
