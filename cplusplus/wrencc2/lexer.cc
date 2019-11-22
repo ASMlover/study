@@ -29,7 +29,146 @@
 namespace wrencc {
 
 Token Lexer::next_token() noexcept {
-  return Token::make_token(TokenKind::TK_ERR, "unexpected charactor");
+  skip_whitespace();
+
+  begpos_ = curpos_;
+  if (is_end())
+    return make_token(TokenKind::TK_EOF);
+
+  char c = advance();
+  if (std::isdigit(c))
+    return make_numeric();
+  if (is_alpha(c))
+    return make_identifier(c);
+
+  switch (c) {
+  case '(': return make_token(TokenKind::TK_LPAREN);
+  case ')': return make_token(TokenKind::TK_RPAREN);
+  case '[': return make_token(TokenKind::TK_LBRACKET);
+  case ']': return make_token(TokenKind::TK_RBRACKET);
+  case '{': return make_token(TokenKind::TK_LBRACE);
+  case '}': return make_token(TokenKind::TK_RBRACE);
+  case ':': return make_token(TokenKind::TK_COLON);
+  case ',': return make_token(TokenKind::TK_COMMA);
+  case '*': return make_token(TokenKind::TK_STAR);
+  case '%': return make_token(TokenKind::TK_PERCENT);
+  case '^': return make_token(TokenKind::TK_CARET);
+  case '+': return make_token(TokenKind::TK_PLUS);
+  case '-': return make_token(TokenKind::TK_MINUS);
+  case '~': return make_token(TokenKind::TK_TILDE);
+  case '?': return make_token(TokenKind::TK_QUESTION);
+
+  case '|':
+    return make_token(match('|') ? TokenKind::TK_PIPEPIPE : TokenKind::TK_PIPE);
+  case '&':
+    return make_token(match('&') ? TokenKind::TK_AMPAMP : TokenKind::TK_AMP);
+  case '=':
+    return make_token(match('=') ? TokenKind::TK_EQEQ : TokenKind::TK_EQ);
+  case '!':
+    return make_token(match('=') ? TokenKind::TK_BANGEQ : TokenKind::TK_BANG);
+
+  case '.':
+    if (match('.')) {
+      return make_token(match('.') ?
+          TokenKind::TK_DOTDOTDOT : TokenKind::TK_DOTDOT);
+    }
+    else {
+      return make_token(TokenKind::TK_DOT);
+    }
+
+  case '<':
+    if (match('<'))
+      return make_token(TokenKind::TK_LTLT);
+    else
+      return make_token(match('=') ? TokenKind::TK_LTEQ : TokenKind::TK_LT);
+  case '>':
+    if (match('>'))
+      return make_token(TokenKind::TK_GTGT);
+    else
+      return make_token(match('=') ? TokenKind::TK_GTEQ : TokenKind::TK_GT);
+
+  case '\n': return make_token(TokenKind::TK_NL, lineno_++);
+  case '"': return make_string();
+  }
+
+  return make_token(TokenKind::TK_ERR, "unexpected charactor");
+}
+
+void Lexer::skip_whitespace() noexcept {
+  for (;;) {
+    char c = peek();
+    switch (c) {
+    case ' ': case '\r': case '\t': advance(); break;
+    case '/':
+      if (peek(1) == '/') {
+        while (!is_end() && peek() != '\n')
+          advance();
+      }
+      else {
+        return;
+      }
+      return;
+    default: return;
+    }
+  }
+}
+
+Token Lexer::make_identifier(char beg_char) noexcept {
+  char cur_char = peek();
+  while (is_alnum(peek()))
+    advance();
+
+  str_t literal = gen_literal(begpos_, curpos_);
+  TokenKind kind = get_keyword_kind(literal.c_str());
+  if (kind == TokenKind::TK_IDENTIFIER && beg_char == '_')
+    kind = cur_char == '_' ? TokenKind::TK_STATIC_FIELD : TokenKind::TK_FIELD;
+
+  return make_token(kind, literal);
+}
+
+Token Lexer::make_numeric() noexcept {
+  while (std::isdigit(peek()))
+    advance();
+  if (peek() == '.' && std::isdigit(peek(1))) {
+    advance();
+    while (std::isdigit(peek()))
+      advance();
+  }
+
+  return make_token(TokenKind::TK_NUMERIC);
+}
+
+Token Lexer::make_string() noexcept {
+  str_t literal;
+  while (!is_end() && peek() != '"') {
+    char c = peek();
+    switch (c) {
+    case '\n': ++lineno_; break;
+    case '\\':
+      switch (peek(1)) {
+      case '"': c = '"'; advance(); break;
+      case '\\': c = '\\'; advance(); break;
+      case '%': c = '%'; advance(); break;
+      case '0': c = '\0'; advance(); break;
+      case 'a': c = '\a'; advance(); break;
+      case 'b': c = '\b'; advance(); break;
+      case 'f': c = '\f'; advance(); break;
+      case 'n': c = '\n'; advance(); break;
+      case 'r': c = '\r'; advance(); break;
+      case 't': c = '\t'; advance(); break;
+      case 'v': c = '\v'; advance(); break;
+      }
+      break;
+    }
+    literal.push_back(c);
+    advance();
+  }
+
+  if (is_end())
+    return make_token(TokenKind::TK_ERR, "unterminated string");
+
+  advance(); // closing "
+  return make_token(TokenKind::TK_STRING, literal);
 }
 
 }

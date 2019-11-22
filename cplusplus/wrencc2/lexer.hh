@@ -69,6 +69,18 @@ class Lexer final : private UnCopyable {
     return true;
   }
 
+  inline Token make_token(TokenKind kind) noexcept {
+    return Token::make_token(kind, gen_literal(begpos_, curpos_), lineno_);
+  }
+
+  inline Token make_token(TokenKind kind, const str_t& literal) noexcept {
+    return Token::make_token(kind, literal, lineno_);
+  }
+
+  inline Token make_token(TokenKind kind, int lineno) noexcept {
+    return Token::make_token(kind, gen_literal(begpos_, curpos_), lineno);
+  }
+
   void skip_whitespace() noexcept;
   Token make_identifier(char beg_char) noexcept;
   Token make_numeric() noexcept;
