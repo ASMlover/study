@@ -37,46 +37,57 @@ const char* BaseObject::as_cstring() noexcept {
 }
 
 ListObject* BaseObject::as_list() noexcept {
+  // TODO:
   return nullptr;
 }
 
 RangeObject* BaseObject::as_range() noexcept {
+  // TODO:
   return nullptr;
 }
 
 MapObject* BaseObject::as_map() noexcept {
+  // TODO:
   return nullptr;
 }
 
 ModuleObject* BaseObject::as_module() noexcept {
+  // TODO:
   return nullptr;
 }
 
 FunctionObject* BaseObject::as_function() noexcept {
+  // TODO:
   return nullptr;
 }
 
 ForeignObject* BaseObject::as_foreign() noexcept {
+  // TODO:
   return nullptr;
 }
 
 UpvalueObject* BaseObject::as_upvalue() noexcept {
+  // TODO:
   return nullptr;
 }
 
 ClosureObject* BaseObject::as_closure() noexcept {
+  // TODO:
   return nullptr;
 }
 
 FiberObject* BaseObject::as_fiber() noexcept {
+  // TODO:
   return nullptr;
 }
 
 ClassObject* BaseObject::as_class() noexcept {
+  // TODO:
   return nullptr;
 }
 
 InstanceObject* BaseObject::as_instance() noexcept {
+  // TODO:
   return nullptr;
 }
 
@@ -181,15 +192,68 @@ int StringObject::find(StringObject* sub, u32_t off) const {
 }
 
 bool StringObject::is_equal(BaseObject* r) const {
-  return false;
+  return compare(r->as_string());
 }
 
 str_t StringObject::stringify() const {
-  return "";
+  return data_ != nullptr ? data_ : "";
 }
 
 u32_t StringObject::hasher() const {
   return hash_;
+}
+
+StringObject* StringObject::create(WrenVM& vm, char c) {
+  // TODO:
+  return nullptr;
+}
+
+StringObject* StringObject::create(WrenVM& vm, const char* s, u32_t n) {
+  // TODO:
+  return nullptr;
+}
+
+StringObject* StringObject::create(WrenVM& vm, const str_t& s) {
+  // TODO:
+  return nullptr;
+}
+
+StringObject* StringObject::concat(
+    WrenVM& vm, StringObject* s1, StringObject* s2) {
+  // TODO:
+  return nullptr;
+}
+
+StringObject* StringObject::concat(WrenVM& vm, const char* s1, const char* s2) {
+  // TODO:
+  return nullptr;
+}
+
+StringObject* StringObject::concat(
+    WrenVM& vm, const str_t& s1, const str_t& s2) {
+  // TODO:
+  return nullptr;
+}
+
+StringObject* StringObject::from_byte(WrenVM& vm, u8_t value) {
+  // TODO:
+  return nullptr;
+}
+
+StringObject* StringObject::from_numeric(WrenVM& vm, double value) {
+  // TODO:
+  return nullptr;
+}
+
+StringObject* StringObject::from_range(
+    WrenVM& vm, StringObject* s, u32_t off, u32_t n, u32_t step) {
+  // TODO:
+  return nullptr;
+}
+
+StringObject* StringObject::format(WrenVM& vm, const char* format, ...) {
+  // TODO:
+  return nullptr;
 }
 
 }
