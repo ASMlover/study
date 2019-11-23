@@ -74,21 +74,46 @@ protected:
 
 namespace Xt {
   template <typename T, typename U>
-  inline T as_type(U x) { return static_cast<T>(x); }
+  inline T as_type(U x) noexcept { return static_cast<T>(x); }
 
   template <typename T, typename U>
-  inline T* cast(U* x) { return static_cast<T*>(x); }
+  inline T* cast(U* x) noexcept { return static_cast<T*>(x); }
 
   template <typename T, typename U>
-  inline T* down(U* x) { return dynamic_cast<T*>(x); }
+  inline T* down(U* x) noexcept { return dynamic_cast<T*>(x); }
 
   template <typename T>
-  inline double do_decimal(T x) { return as_type<double>(x); }
+  inline double do_decimal(T x) noexcept { return as_type<double>(x); }
 
-  inline str_t to_string(double d) {
+  inline str_t to_string(double d) noexcept {
     std::stringstream ss;
     ss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
     return ss.str();
+  }
+
+  union NumericBits {
+    u64_t u64;
+    u32_t u32[2];
+    double num;
+  };
+
+  inline u32_t hash_u64(u64_t hash) noexcept {
+    // from V8's computeLongHash() which in turn cites:
+    // Thomas Wang, Integer Hash Functions
+    // http://www.concentric.net/~Ttwang/tech/inthash.htm
+    hash = ~hash + (hash << 18);
+    hash = hash ^ (hash >> 31);
+    hash = hash * 21;
+    hash = hash ^ (hash >> 11);
+    hash = hash + (hash << 6);
+    hash = hash ^ (hash >> 22);
+    return as_type<u32_t>(hash & 0x3fffffff);
+  }
+
+  inline u32_t hash_numeric(double d) noexcept {
+    NumericBits bits;
+    bits.num = d;
+    return hash_u64(bits.u64);
   }
 }
 
