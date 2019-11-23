@@ -86,13 +86,13 @@ public:
   inline ClassObject* cls() const noexcept { return cls_; }
   inline void set_cls(ClassObject* cls) noexcept { cls_ = cls; }
 
-  virtual bool is_equal(BaseObject* r) const noexcept { return false; }
-  virtual str_t stringify() const noexcept { return "<object>"; }
-  virtual void gc_blacken(WrenVM& vm) noexcept {}
-  virtual void initialize(WrenVM& vm) noexcept {}
-  virtual void finalize(WrenVM& vm) noexcept {}
+  virtual bool is_equal(BaseObject* r) const { return false; }
+  virtual str_t stringify() const { return "<object>"; }
+  virtual void gc_blacken(WrenVM& vm) {}
+  virtual void initialize(WrenVM& vm) {}
+  virtual void finalize(WrenVM& vm) {}
 
-  virtual u32_t hasher() const noexcept {
+  virtual u32_t hasher() const {
     ASSERT(false, "only immutable objects can be hashed");
     return 0;
   }
@@ -174,6 +174,73 @@ public:
   bool is_equal(const ObjValue& r) const noexcept;
   u32_t hasher() const noexcept;
   str_t stringify() const noexcept;
+};
+
+using Value = ObjValue;
+
+inline std::ostream& operator<<(std::ostream& out, const Value& val) {
+  return out << val.stringify();
+}
+
+// a heap-allocated string object
+class StringObject final : public BaseObject {
+  // number of bytes in the string, not including the null terminator
+  u32_t size_{};
+
+  // the hash value of the string's contents
+  u32_t hash_{};
+
+  // string's bytes followed by a null terminator
+  char* data_{};
+
+  StringObject(ClassObject* cls, char c) noexcept;
+  StringObject(ClassObject* cls,
+      const char* s, u32_t n, bool replace_owner = false) noexcept;
+  virtual ~StringObject() noexcept;
+
+  void hash_string();
+public:
+  inline u32_t size() const noexcept { return size_; }
+  inline u32_t length() const noexcept { return size_; }
+  inline bool empty() const noexcept { return size_ == 0; }
+  inline const char* cstr() const noexcept { return data_; }
+  inline char* data() noexcept { return data_; }
+  inline const char* data() const noexcept { return data_; }
+  inline char& operator[](u32_t i) { return data_[i]; }
+  inline const char operator[](u32_t i) const { return data_[i]; }
+  inline char& at(u32_t i) { return data_[i]; }
+  inline const char& at(u32_t i) const { return data_[i]; }
+
+  inline bool compare(StringObject* s) const {
+    return this == s || (hash_ == s->hash_ && size_ == s->size_
+        && std::memcmp(data_, s->data_, size_) == 0);
+  }
+
+  inline bool compare(const str_t& s) const {
+    return size_ == s.size() && std::memcmp(data_, s.data(), size_) == 0;
+  }
+
+  inline bool compare(const char* s, u32_t n) const {
+    return size_ == n && std::memcmp(data_, s, size_) == 0;
+  }
+
+  int find(StringObject* sub, u32_t off = 0) const;
+
+  virtual bool is_equal(BaseObject* r) const override;
+  virtual str_t stringify() const override;
+  virtual u32_t hasher() const override;
+
+  static StringObject* create(WrenVM& vm, char c);
+  static StringObject* create(WrenVM& vm, const char* s, u32_t n);
+  static StringObject* create(WrenVM& vm, const str_t& s);
+  static StringObject* concat(WrenVM& vm, StringObject* s1, StringObject* s2);
+  static StringObject* concat(WrenVM& vm, const char* s1, const char* s2);
+  static StringObject* concat(WrenVM& vm, const str_t& s1, const str_t& s2);
+  static StringObject* from_byte(WrenVM& vm, u8_t value);
+  static StringObject* from_numeric(WrenVM& vm, double value);
+  static StringObject* from_range(
+      WrenVM& vm, StringObject* s, u32_t off, u32_t n, u32_t step);
+  static StringObject* format(WrenVM& vm, const char* format, ...);
 };
 
 }
