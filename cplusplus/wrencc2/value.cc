@@ -28,55 +28,55 @@
 
 namespace wrencc {
 
-StringObject* ObjValue::as_string() const noexcept {
+StringObject* BaseObject::as_string() noexcept {
+  return Xt::down<StringObject>(this);
+}
+
+const char* BaseObject::as_cstring() noexcept {
+  return Xt::down<StringObject>(this)->cstr();
+}
+
+ListObject* BaseObject::as_list() noexcept {
   return nullptr;
 }
 
-const char* ObjValue::as_cstring() const noexcept {
+RangeObject* BaseObject::as_range() noexcept {
   return nullptr;
 }
 
-ListObject* ObjValue::as_list() const noexcept {
+MapObject* BaseObject::as_map() noexcept {
   return nullptr;
 }
 
-RangeObject* ObjValue::as_range() const noexcept {
+ModuleObject* BaseObject::as_module() noexcept {
   return nullptr;
 }
 
-MapObject* ObjValue::as_map() const noexcept {
+FunctionObject* BaseObject::as_function() noexcept {
   return nullptr;
 }
 
-ModuleObject* ObjValue::as_module() const noexcept {
+ForeignObject* BaseObject::as_foreign() noexcept {
   return nullptr;
 }
 
-FunctionObject* ObjValue::as_function() const noexcept {
+UpvalueObject* BaseObject::as_upvalue() noexcept {
   return nullptr;
 }
 
-ForeignObject* ObjValue::as_foreign() const noexcept {
+ClosureObject* BaseObject::as_closure() noexcept {
   return nullptr;
 }
 
-UpvalueObject* ObjValue::as_upvalue() const noexcept {
+FiberObject* BaseObject::as_fiber() noexcept {
   return nullptr;
 }
 
-ClosureObject* ObjValue::as_closure() const noexcept {
+ClassObject* BaseObject::as_class() noexcept {
   return nullptr;
 }
 
-FiberObject* ObjValue::as_fiber() const noexcept {
-  return nullptr;
-}
-
-ClassObject* ObjValue::as_class() const noexcept {
-  return nullptr;
-}
-
-InstanceObject* ObjValue::as_instance() const noexcept {
+InstanceObject* BaseObject::as_instance() noexcept {
   return nullptr;
 }
 

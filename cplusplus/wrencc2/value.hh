@@ -86,6 +86,20 @@ public:
   inline ClassObject* cls() const noexcept { return cls_; }
   inline void set_cls(ClassObject* cls) noexcept { cls_ = cls; }
 
+  StringObject* as_string() noexcept;
+  const char* as_cstring() noexcept;
+  ListObject* as_list() noexcept;
+  RangeObject* as_range() noexcept;
+  MapObject* as_map() noexcept;
+  ModuleObject* as_module() noexcept;
+  FunctionObject* as_function() noexcept;
+  ForeignObject* as_foreign() noexcept;
+  UpvalueObject* as_upvalue() noexcept;
+  ClosureObject* as_closure() noexcept;
+  FiberObject* as_fiber() noexcept;
+  ClassObject* as_class() noexcept;
+  InstanceObject* as_instance() noexcept;
+
   virtual bool is_equal(BaseObject* r) const { return false; }
   virtual str_t stringify() const { return "<object>"; }
   virtual void gc_blacken(WrenVM& vm) {}
@@ -155,20 +169,19 @@ public:
   template <typename Int = int> Int as_integer() const noexcept { return Xt::as_type<Int>(as_.num); }
   inline double as_numeric() const noexcept { return as_.num; }
   inline BaseObject* as_object() const noexcept { return as_.obj; }
-
-  StringObject* as_string() const noexcept;
-  const char* as_cstring() const noexcept;
-  ListObject* as_list() const noexcept;
-  RangeObject* as_range() const noexcept;
-  MapObject* as_map() const noexcept;
-  ModuleObject* as_module() const noexcept;
-  FunctionObject* as_function() const noexcept;
-  ForeignObject* as_foreign() const noexcept;
-  UpvalueObject* as_upvalue() const noexcept;
-  ClosureObject* as_closure() const noexcept;
-  FiberObject* as_fiber() const noexcept;
-  ClassObject* as_class() const noexcept;
-  InstanceObject* as_instance() const noexcept;
+  inline StringObject* as_string() const noexcept { return as_.obj->as_string(); }
+  inline const char* as_cstring() const noexcept { return as_.obj->as_cstring(); }
+  inline ListObject* as_list() const noexcept { return as_.obj->as_list(); }
+  inline RangeObject* as_range() const noexcept { return as_.obj->as_range(); }
+  inline MapObject* as_map() const noexcept { return as_.obj->as_map(); }
+  inline ModuleObject* as_module() const noexcept { return as_.obj->as_module(); }
+  inline FunctionObject* as_function() const noexcept { return as_.obj->as_function(); }
+  inline ForeignObject* as_foreign() const noexcept { return as_.obj->as_foreign(); }
+  inline UpvalueObject* as_upvalue() const noexcept { return as_.obj->as_upvalue(); }
+  inline ClosureObject* as_closure() const noexcept { return as_.obj->as_closure(); }
+  inline FiberObject* as_fiber() const noexcept { return as_.obj->as_fiber(); }
+  inline ClassObject* as_class() const noexcept { return as_.obj->as_class(); }
+  inline InstanceObject* as_instance() const noexcept { return as_.obj->as_instance(); }
 
   bool is_same(const ObjValue& r) const noexcept;
   bool is_equal(const ObjValue& r) const noexcept;
