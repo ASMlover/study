@@ -82,6 +82,9 @@ namespace Xt {
   template <typename T, typename U>
   inline T* down(U* x) { return dynamic_cast<T*>(x); }
 
+  template <typename T>
+  inline double do_decimal(T x) { return as_type<double>(x); }
+
   inline str_t to_string(double d) {
     std::stringstream ss;
     ss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
