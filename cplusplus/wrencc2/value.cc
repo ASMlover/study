@@ -27,4 +27,73 @@
 #include "value.hh"
 
 namespace wrencc {
+
+StringObject* ObjValue::as_string() const noexcept {
+  return nullptr;
+}
+
+const char* ObjValue::as_cstring() const noexcept {
+  return nullptr;
+}
+
+ListObject* ObjValue::as_list() const noexcept {
+  return nullptr;
+}
+
+RangeObject* ObjValue::as_range() const noexcept {
+  return nullptr;
+}
+
+MapObject* ObjValue::as_map() const noexcept {
+  return nullptr;
+}
+
+ModuleObject* ObjValue::as_module() const noexcept {
+  return nullptr;
+}
+
+FunctionObject* ObjValue::as_function() const noexcept {
+  return nullptr;
+}
+
+ForeignObject* ObjValue::as_foreign() const noexcept {
+  return nullptr;
+}
+
+UpvalueObject* ObjValue::as_upvalue() const noexcept {
+  return nullptr;
+}
+
+ClosureObject* ObjValue::as_closure() const noexcept {
+  return nullptr;
+}
+
+FiberObject* ObjValue::as_fiber() const noexcept {
+  return nullptr;
+}
+
+ClassObject* ObjValue::as_class() const noexcept {
+  return nullptr;
+}
+
+InstanceObject* ObjValue::as_instance() const noexcept {
+  return nullptr;
+}
+
+bool ObjValue::is_same(const ObjValue& r) const noexcept {
+  return false;
+}
+
+bool ObjValue::is_equal(const ObjValue& r) const noexcept {
+  return false;
+}
+
+u32_t ObjValue::hasher() const noexcept {
+  return 0;
+}
+
+str_t ObjValue::stringify() const noexcept {
+  return "";
+}
+
 }

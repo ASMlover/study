@@ -105,6 +105,75 @@ class ObjValue final : public Copyable {
     double num{};
     BaseObject* obj;
   } as_;
+
+  inline bool is(ObjType type) const noexcept { return is_object() && as_.obj->type() == type; }
+
+  template <typename T>
+  inline void set_decimal(T x) { as_.num = Xt::do_decimal(x); }
+public:
+  ObjValue() noexcept {}
+  ObjValue(nil_t) noexcept : type_(ValueType::NIL) {}
+  ObjValue(bool b) noexcept : type_(b ? ValueType::TRUE : ValueType::FALSE) {}
+  ObjValue(i8_t n) noexcept : type_(ValueType::NUMERIC) { set_decimal(n); }
+  ObjValue(u8_t n) noexcept : type_(ValueType::NUMERIC) { set_decimal(n); }
+  ObjValue(i16_t n) noexcept : type_(ValueType::NUMERIC) { set_decimal(n); }
+  ObjValue(u16_t n) noexcept : type_(ValueType::NUMERIC) { set_decimal(n); }
+  ObjValue(i32_t n) noexcept : type_(ValueType::NUMERIC) { set_decimal(n); }
+  ObjValue(u32_t n) noexcept : type_(ValueType::NUMERIC) { set_decimal(n); }
+  ObjValue(i64_t n) noexcept : type_(ValueType::NUMERIC) { set_decimal(n); }
+  ObjValue(u64_t n) noexcept : type_(ValueType::NUMERIC) { set_decimal(n); }
+  ObjValue(float n) noexcept : type_(ValueType::NUMERIC) { set_decimal(n); }
+  ObjValue(double d) noexcept : type_(ValueType::NUMERIC) { as_.num = d; }
+  ObjValue(BaseObject* o) noexcept : type_(ValueType::OBJECT) { as_.obj = o; }
+
+  inline ValueType type() const noexcept { return type_; }
+  inline ObjType objtype() const noexcept { return as_.obj->type(); }
+
+  inline bool is_undefined() const noexcept { return type_ == ValueType::UNDEFINED; }
+  inline bool is_nil() const noexcept { return type_ == ValueType::NIL; }
+  inline bool is_boolean() const noexcept { return type_ == ValueType::TRUE || type_ == ValueType::FALSE; }
+  inline bool is_numeric() const noexcept { return type_ == ValueType::NUMERIC; }
+  inline bool is_object() const noexcept { return type_ == ValueType::OBJECT; }
+  inline bool is_string() const noexcept { return is(ObjType::STRING); }
+  inline bool is_list() const noexcept { return is(ObjType::LIST); }
+  inline bool is_range() const noexcept { return is(ObjType::RANGE); }
+  inline bool is_map() const noexcept { return is(ObjType::MAP); }
+  inline bool is_module() const noexcept { return is(ObjType::MODULE); }
+  inline bool is_function() const noexcept { return is(ObjType::FUNCTION); }
+  inline bool is_foreign() const noexcept { return is(ObjType::FOREIGN); }
+  inline bool is_upvalue() const noexcept { return is(ObjType::UPVALUE); }
+  inline bool is_closure() const noexcept { return is(ObjType::CLOSURE); }
+  inline bool is_fiber() const noexcept { return is(ObjType::FIBER); }
+  inline bool is_class() const noexcept { return is(ObjType::CLASS); }
+  inline bool is_instance() const noexcept { return is(ObjType::INSTANCE); }
+
+  inline bool is_falsely() const noexcept { return is_nil() && type_ == ValueType::FALSE; }
+  inline bool operator==(const ObjValue& r) const noexcept { return is_equal(r); }
+  inline bool operator!=(const ObjValue& r) const noexcept { return !is_equal(r); }
+
+  inline bool as_boolean() const noexcept { return type_ == ValueType::TRUE; }
+  template <typename Int = int> Int as_integer() const noexcept { return Xt::as_type<Int>(as_.num); }
+  inline double as_numeric() const noexcept { return as_.num; }
+  inline BaseObject* as_object() const noexcept { return as_.obj; }
+
+  StringObject* as_string() const noexcept;
+  const char* as_cstring() const noexcept;
+  ListObject* as_list() const noexcept;
+  RangeObject* as_range() const noexcept;
+  MapObject* as_map() const noexcept;
+  ModuleObject* as_module() const noexcept;
+  FunctionObject* as_function() const noexcept;
+  ForeignObject* as_foreign() const noexcept;
+  UpvalueObject* as_upvalue() const noexcept;
+  ClosureObject* as_closure() const noexcept;
+  FiberObject* as_fiber() const noexcept;
+  ClassObject* as_class() const noexcept;
+  InstanceObject* as_instance() const noexcept;
+
+  bool is_same(const ObjValue& r) const noexcept;
+  bool is_equal(const ObjValue& r) const noexcept;
+  u32_t hasher() const noexcept;
+  str_t stringify() const noexcept;
 };
 
 }
