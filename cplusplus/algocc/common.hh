@@ -34,7 +34,7 @@
 #include <string_view>
 
 #if defined(_WIN32) || defined(_WIN64) || defined(_WINDOWS_) ||\
-  defined(_MSC_VER) || define(__MINGW32__) || defined(__MINGW64__)
+  defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
 # define ALGOCC_WINDOWS
 #else
 # define ALGOCC_POSIX
