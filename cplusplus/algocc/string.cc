@@ -24,46 +24,76 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include "common.hh"
+#include "string.hh"
 
 namespace algocc {
 
-class String final : public Copyable {
-  sz_t size_{};
-  char* data_{};
+String::String() noexcept {
+}
 
-  void assign(char c, sz_t n) noexcept;
-  void assign(const char* s, sz_t n) noexcept;
-  void swap(String& r) noexcept;
-public:
-  String() noexcept;
-  ~String() noexcept;
-  String(char c) noexcept;
-  String(char c, sz_t n) noexcept;
-  String(const char* s) noexcept;
-  String(const char* s, sz_t n) noexcept;
-  String(const String& s) noexcept;
-  String(String&& s) noexcept;
-  String& operator=(const String& s) noexcept;
-  String& operator=(String&& s) noexcept;
+String::~String() noexcept {
+  if (data_ != nullptr)
+    delete [] data_;
+}
 
-  inline bool empty() const noexcept { return size_ == 0; }
-  inline sz_t size() const noexcept { return size_; }
-  inline const char* cstr() const noexcept { return data_; }
-  inline const char* data() const noexcept { return data_; }
-  inline char at(sz_t i) const { return data_[i]; }
-  inline char operator[](sz_t i) const { return data_[i]; }
+String::String(char c) noexcept {
+  assign(c, 1);
+}
 
-  bool compare(const char* s) const;
-  bool compare(const char* s, sz_t n) const;
-  bool compare(const String& s) const;
+String::String(char c, sz_t n) noexcept {
+  assign(c, n);
+}
 
-  String& append(char c);
-  String slice(sz_t start, sz_t count = 0) const;
-  int find(const String& sub, sz_t start, sz_t count = 0) const;
-  String join(const String& s) const;
-};
+String::String(const char* s) noexcept {
+  if (s != nullptr)
+    assign(s, std::strlen(s));
+}
+
+String::String(const char* s, sz_t n) noexcept {
+  assign(s, n);
+}
+
+String::String(const String& s) noexcept {
+  assign(s.data_, s.size_);
+}
+
+String::String(String&& s) noexcept {
+  s.swap(*this);
+}
+
+String& String::operator=(const String& s) noexcept {
+  if (this != &s)
+    String(s).swap(*this);
+  return *this;
+}
+
+String& String::operator=(String&& s) noexcept {
+  if (this != &s)
+    s.swap(*this);
+  return *this;
+}
+
+void String::assign(char c, sz_t n) noexcept {
+  if (n > 0) {
+    size_ = n;
+    data_ = new char[size_ + 1];
+    std::memset(data_, c, size_);
+    data_[size_] = 0;
+  }
+}
+
+void String::assign(const char* s, sz_t n) noexcept {
+  if (s != nullptr && n > 0) {
+    size_ = n;
+    data_ = new char[size_ + 1];
+    std::memcpy(data_, s, size_);
+    data_[size_] = 0;
+  }
+}
+
+void String::swap(String& r) noexcept {
+  std::swap(size_, r.size_);
+  std::swap(data_, r.data_);
+}
 
 }
