@@ -33,7 +33,7 @@ namespace wrencc {
 class String final : public Copyable {
   static constexpr sz_t kCacheMask = 0x0f;
 
-  sz_t size_;
+  sz_t size_{};
   union {
     char cache_[kCacheMask + 1]{};
     char* data_;
@@ -126,12 +126,114 @@ public:
     return *this;
   }
 
+  inline bool operator==(char c) const noexcept { return compare(c); }
+  inline bool operator!=(char c) const noexcept { return !compare(c); }
+  inline bool operator==(const char* s) const noexcept { return compare(s); }
+  inline bool operator!=(const char* s) const noexcept { return !compare(s); }
+  inline bool operator==(const String& s) const noexcept { return compare(s); }
+  inline bool operator!=(const String& s) const noexcept { return !compare(s); }
+  inline String& operator+=(char c) noexcept { return append(c); }
+  inline String& operator+=(const char* s) noexcept { return append(s); }
+  inline String& operator+=(const String& s) noexcept { return append(s); }
+  inline String operator+(char c) const noexcept { return join(c); }
+  inline String operator+(const char* s) const noexcept { return join(s); }
+  inline String operator+(const String& s) const noexcept { return join(s); }
+
   inline bool empty() const noexcept { return size_ == 0; }
   inline sz_t size() const noexcept { return size_; }
   inline const char* cstr() const noexcept { return __get_data(); }
   inline const char* data() const noexcept { return __get_data(); }
   inline char at(sz_t i) const noexcept { return __get_data()[i]; }
   inline char operator[](sz_t i) const noexcept { return __get_data()[i]; }
+
+  inline bool compare(char c) const noexcept {
+    return size_ == 1 && __get_data()[0] == c;
+  }
+
+  inline bool compare(const char* s, sz_t n) const noexcept {
+    return size_ == n && std::memcmp(__get_data(), s, size_) == 0;
+  }
+
+  inline bool compare(const char* s) const noexcept {
+    return s != nullptr && compare(s, std::strlen(s));
+  }
+
+  inline bool compare(const String& s) const noexcept {
+    return compare(s.data(), s.size());
+  }
+
+  String& append(char c) noexcept {
+    sz_t old_size = size_;
+    sz_t new_size = old_size + 1;
+
+    if (__is_long(new_size)) {
+      char* new_data = new char[new_size + 1];
+      std::memcpy(new_data, __get_data(), old_size);
+
+      destroy();
+      data_ = new_data;
+    }
+    size_ = new_size;
+
+    char* p = __get_data();
+    p[old_size] = c;
+    p[size_] = 0;
+
+    return *this;
+  }
+
+  String& append(const char* s, sz_t n) noexcept {
+    if (s == nullptr || n <= 0)
+      return *this;
+
+    sz_t old_size = size_;
+    sz_t new_size = old_size + n;
+
+    if (__is_long(new_size)) {
+      char* new_data = new char[new_size + 1];
+      std::memcpy(new_data, __get_data(), old_size);
+
+      destroy();
+      data_ = new_data;
+    }
+    size_ = new_size;
+
+    char* p = __get_data();
+    std::memcpy(p + old_size, s, n);
+    p[size_] = 0;
+
+    return *this;
+  }
+
+  String& append(const char* s) noexcept {
+    if (s != nullptr)
+      append(s, std::strlen(s));
+    return *this;
+  }
+
+  String& append(const String& s) noexcept {
+    return append(s.data(), s.size());
+  }
+
+  inline String join(char c) const noexcept {
+    return String(*this).append(c);
+  }
+
+  inline String join(const char* s, sz_t n) const noexcept {
+    return String(*this).append(s, n);
+  }
+
+  inline String join(const char* s) const noexcept {
+    return String(*this).append(s);
+  }
+
+  inline String join(const String& s) const noexcept {
+    return String(*this).append(s);
+  }
 };
+
+std::ostream& operator<<(std::ostream& o, const String& s) {
+  return o << s.cstr();
+}
 
 }
