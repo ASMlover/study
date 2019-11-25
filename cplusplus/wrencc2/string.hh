@@ -99,6 +99,12 @@ public:
       std::swap(cache_, s.cache_);
   }
 
+  String& operator=(char c) noexcept {
+    destroy();
+    fill(c);
+    return *this;
+  }
+
   String& operator=(const char* s) noexcept {
     destroy();
     assign(s);
