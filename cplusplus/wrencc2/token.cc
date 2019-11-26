@@ -38,7 +38,7 @@ static constexpr const char* kNames[] = {
   nullptr,
 };
 
-static const std::unordered_map<str_t, TokenKind> kKeywords = {
+static const std::unordered_map<strv_t, TokenKind> kKeywords = {
 #undef KEYWORD
 #define KEYWORD(k, s) {s, TokenKind::KW_##k},
 #include "kinds_def.hh"
@@ -57,13 +57,13 @@ TokenKind get_keyword_kind(const char* key) {
   return TokenKind::TK_IDENTIFIER;
 }
 
-str_t Token::stringify() const noexcept {
+String Token::stringify() const noexcept {
   std::stringstream ss;
 
   ss << std::left << std::setw(20) << get_token_name(kind_) << ":"
     << std::right << std::setw(24) << literal_ << "|"
     << std::right << std::setw(04) << lineno_;
-  return ss.str();
+  return String(ss.str().data());
 }
 
 }

@@ -118,8 +118,8 @@ Token Lexer::make_identifier(char beg_char) noexcept {
   while (is_alnum(peek()))
     advance();
 
-  str_t literal = gen_literal(begpos_, curpos_);
-  TokenKind kind = get_keyword_kind(literal.c_str());
+  String literal = gen_literal(begpos_, curpos_);
+  TokenKind kind = get_keyword_kind(literal.cstr());
   if (kind == TokenKind::TK_IDENTIFIER && beg_char == '_')
     kind = cur_char == '_' ? TokenKind::TK_STATIC_FIELD : TokenKind::TK_FIELD;
 
@@ -139,7 +139,7 @@ Token Lexer::make_numeric() noexcept {
 }
 
 Token Lexer::make_string() noexcept {
-  str_t literal;
+  String literal;
   while (!is_end() && peek() != '"') {
     char c = peek();
     switch (c) {
@@ -160,7 +160,7 @@ Token Lexer::make_string() noexcept {
       }
       break;
     }
-    literal.push_back(c);
+    literal.append(c);
     advance();
   }
 

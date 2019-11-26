@@ -33,7 +33,7 @@
 namespace wrencc {
 
 class Lexer final : private UnCopyable {
-  const str_t& source_bytes_;
+  const String& source_bytes_;
   sz_t begpos_{};
   sz_t curpos_{};
   int lineno_{1};
@@ -46,8 +46,8 @@ class Lexer final : private UnCopyable {
     return std::isalnum(c) || c == '_';
   }
 
-  inline str_t gen_literal(sz_t begpos, sz_t endpos) const noexcept {
-    return source_bytes_.substr(begpos, endpos - begpos);
+  inline String gen_literal(sz_t begpos, sz_t endpos) const noexcept {
+    return source_bytes_.slice(begpos, endpos - begpos);
   }
 
   inline bool is_end() const noexcept {
@@ -73,7 +73,7 @@ class Lexer final : private UnCopyable {
     return Token::make_token(kind, gen_literal(begpos_, curpos_), lineno_);
   }
 
-  inline Token make_token(TokenKind kind, const str_t& literal) noexcept {
+  inline Token make_token(TokenKind kind, const String& literal) noexcept {
     return Token::make_token(kind, literal, lineno_);
   }
 
@@ -86,7 +86,7 @@ class Lexer final : private UnCopyable {
   Token make_numeric() noexcept;
   Token make_string() noexcept;
 public:
-  Lexer(const str_t& source_bytes) noexcept : source_bytes_(source_bytes) {}
+  Lexer(const String& source_bytes) noexcept : source_bytes_(source_bytes) {}
 
   Token next_token() noexcept;
 };

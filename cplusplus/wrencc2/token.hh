@@ -28,6 +28,7 @@
 
 #include <ostream>
 #include "common.hh"
+#include "string.hh"
 
 namespace wrencc {
 
@@ -48,11 +49,11 @@ TokenKind get_keyword_kind(const char* key);
 
 class Token final : public Copyable {
   TokenKind kind_{TokenKind::TK_ERR};
-  str_t literal_;
+  String literal_{};
   int lineno_{1};
 public:
   Token() noexcept {}
-  Token(TokenKind kind, const str_t& literal, int lineno = 1) noexcept
+  Token(TokenKind kind, const String& literal, int lineno = 1) noexcept
     : kind_(kind), literal_(literal), lineno_(lineno) {
   }
 
@@ -93,18 +94,19 @@ public:
   }
 
   inline TokenKind kind() const noexcept { return kind_; }
-  inline const str_t& literal() const noexcept { return literal_; }
+  inline const String& literal() const noexcept { return literal_; }
   inline int lineno() const noexcept { return lineno_; }
-  inline double as_numeric() const noexcept { return std::atof(literal_.c_str()); }
-  inline str_t as_string() const noexcept { return literal_; }
+  inline double as_numeric() const noexcept { return std::atof(literal_.cstr()); }
+  inline String as_string() const noexcept { return literal_; }
 
-  str_t stringify() const noexcept;
+  String stringify() const noexcept;
 
-  static Token make_token(const str_t& literal) {
+  static Token make_token(const String& literal) {
     return Token(TokenKind::TK_STRING, literal, 0);
   }
 
-  static Token make_token(TokenKind kind, const str_t& literal, int lineno = 1) {
+  static Token make_token(
+      TokenKind kind, const String& literal, int lineno = 1) {
     return Token(kind, literal, lineno);
   }
 };
