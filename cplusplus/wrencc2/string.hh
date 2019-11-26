@@ -165,7 +165,7 @@ public:
   }
 
   inline bool compare(const String& s) const noexcept {
-    return compare(s.data(), s.size());
+    return this == &s || compare(s.data(), s.size());
   }
 
   String& append(char c) noexcept {

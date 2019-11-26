@@ -29,6 +29,7 @@
 #include <functional>
 #include <vector>
 #include "common.hh"
+#include "string.hh"
 
 namespace wrencc {
 
@@ -91,6 +92,6 @@ public:
   }
 };
 
-using SymbolTable = DynamicTable<str_t>;
+using SymbolTable = DynamicTable<String>;
 
 }
