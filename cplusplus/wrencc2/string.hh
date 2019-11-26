@@ -236,6 +236,25 @@ public:
   inline String join(const String& s) const noexcept {
     return String(*this).append(s);
   }
+
+  String slice(sz_t start, sz_t count) const {
+    if (start >= size_ || count == 0)
+      return String();
+
+    if (start + count > size_)
+      count = size_ - start;
+    return String(__get_data() + start, count);
+  }
+
+  int find(const String& sub, int start) const {
+    if (sub.empty())
+      return start;
+    if (start >= size_ || start + sub.size() > size_)
+      return -1;
+
+    const char* found = std::strstr(__get_data() + start, sub.data());
+    return found != nullptr ? Xt::as_type<int>(found - __get_data()) : -1;
+  }
 };
 
 std::ostream& operator<<(std::ostream& o, const String& s) {
