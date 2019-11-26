@@ -257,7 +257,7 @@ public:
   }
 };
 
-std::ostream& operator<<(std::ostream& o, const String& s) {
+inline std::ostream& operator<<(std::ostream& o, const String& s) {
   return o << s.cstr();
 }
 
