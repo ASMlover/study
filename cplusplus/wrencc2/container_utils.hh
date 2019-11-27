@@ -89,4 +89,36 @@ inline char* uninitialized_copy(
   return result + (last - first);
 }
 
+template <typename OutputIterator, typename Size, typename T>
+inline OutputIterator fill_n(
+    OutputIterator first, Size n, const T& v) noexcept {
+  for (; n > 0; --n, ++first)
+    *first = v;
+  return first;
+}
+
+template <typename T>
+class Alloc final : private UnCopyable {
+public:
+  static T* allocate() noexcept {
+    return (T*)std::malloc(sizeof(T));
+  }
+
+  static T* allocate(sz_t n) noexcept {
+    return 0 == n ? 0 : (T*)std::malloc(n * sizeof(T));
+  }
+
+  static void deallocate(T* p) noexcept {
+    std::free(p);
+  }
+
+  static void deallocate(T* p, sz_t /*n*/) noexcept {
+    std::free(p);
+  }
+
+  static T* reallocate(T* p, sz_t new_count) noexcept {
+    return (T*)std::realloc(p, new_count * sizeof(T));
+  }
+};
+
 }
