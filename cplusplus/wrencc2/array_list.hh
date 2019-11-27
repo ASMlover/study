@@ -28,6 +28,7 @@
 
 #include <functional>
 #include "common.hh"
+#include "container_utils.hh"
 
 namespace wrencc {
 
@@ -41,22 +42,19 @@ class ArrayList final : private UnCopyable {
 public:
   ArrayList(sz_t capacity = kDefCapacity) noexcept
     : capacity_(capacity < kDefCapacity ? kDefCapacity : capacity) {
-    data_ = new T[capacity_];
+    data_ = Alloc<T>::allocate(capacity_);
   }
 
   ~ArrayList() noexcept {
     clear();
-
-    if (data_ != nullptr)
-      delete [] data_;
+    Alloc<T>::deallocate(data_);
   }
 
   ArrayList(const T& value, sz_t count) noexcept
     : size_(count)
     , capacity_(count < kDefCapacity ? kDefCapacity : count) {
-    data_ = new T[capacity_];
-    for (sz_t i = 0; i < count; ++i)
-      data_[i] = value;
+    data_ = Alloc<T>::allocate(capacity_);
+    fill_n(data_, count, value);
   }
 
   inline bool empty() const noexcept { return size_ == 0; }
@@ -73,11 +71,7 @@ public:
   inline const T& last() const noexcept { return data_[size_ - 1]; }
 
   void clear() noexcept {
-    for (sz_t i = 0; i < size_; ++i) {
-      auto* p = &data_[i];
-      if (p != nullptr)
-        p->~T();
-    }
+    destroy(data_, data_ + size_);
   }
 
   void resize(sz_t size);
