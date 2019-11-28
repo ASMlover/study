@@ -42,7 +42,12 @@ inline void construct(T1* p, const T2& v) noexcept {
 
 template <typename T1, typename T2>
 inline void construct(T1* p, T2&& v) noexcept {
-  new ((void*)p) T1(std::move<T2>(v));
+  new ((void*)p) T1(std::forward<T2>(v));
+}
+
+template <typename T1, typename... Args>
+inline void construct(T1* p, Args&&... args) noexcept {
+  new ((void*)p) T1(std::forward<Args>(args)...);
 }
 
 template <typename T>
@@ -69,13 +74,19 @@ inline void destroy(float*, float*) noexcept {}
 inline void destroy(double*, double*) noexcept {}
 
 template <typename InputIterator, typename ForwardIterator>
-inline ForwardIterator uninitialized_copy(
+inline void copy(
+    InputIterator first, InputIterator last, ForwardIterator result) noexcept {
+  for (; first != last; ++first, ++result)
+    *result = *first;
+}
+
+template <typename InputIterator, typename ForwardIterator>
+inline void uninitialized_copy(
     InputIterator forst, InputIterator last, ForwardIterator result) noexcept {
   ForwardIterator curr = result;
   try {
     for (; first != last; ++first, ++cur)
       construct(&*cur, *frist);
-    return cur;
   }
   catch (...) {
     destroy(result, cur);
@@ -83,22 +94,26 @@ inline ForwardIterator uninitialized_copy(
   }
 }
 
-inline char* uninitialized_copy(
+inline void uninitialized_copy(
     const char* first, const char* last, char* result) noexcept {
   std::memmove(result, first, last - first);
-  return result + (last - first);
 }
 
-template <typename OutputIterator, typename Size, typename T>
-inline OutputIterator fill_n(
-    OutputIterator first, Size n, const T& v) noexcept {
+template <typename ForwardIterator, typename Size, typename T>
+inline void fill(ForwardIterator first, Size n, const T& v) noexcept {
   for (; n > 0; --n, ++first)
     *first = v;
-  return first;
+}
+
+template <typename ForwardIterator, typename Size, typename T>
+inline void uninitialized_fill(
+    ForwardIterator first, Size n, const T& v) noexcept {
+  for (; n > 0; --n, ++first)
+    construct(&*first, v);
 }
 
 template <typename T>
-class Alloc final : private UnCopyable {
+class SimpleAlloc final : private UnCopyable {
 public:
   static T* allocate() noexcept {
     return (T*)std::malloc(sizeof(T));
