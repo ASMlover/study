@@ -27,9 +27,9 @@
 #pragma once
 
 #include <functional>
-#include <vector>
 #include "common.hh"
 #include "string.hh"
+#include "array_list.hh"
 
 namespace wrencc {
 
@@ -41,11 +41,8 @@ inline bool __compare(const T& x, const T& y) { return x == y; }
 
 template <typename T, typename Function = CompareFn<T>>
 class DynamicTable final : private UnCopyable {
-  using Iterator = typename std::vector<T>::iterator;
-  using CIterator = typename std::vector<T>::const_iterator;
-
   Function cmp_fn_{};
-  std::vector<T> datas_;
+  ArrayList<T> datas_;
 public:
   DynamicTable(Function&& cmp_fn = __compare<T>) noexcept
     : cmp_fn_(std::move(cmp_fn)) {
@@ -57,13 +54,9 @@ public:
   inline const T& operator[](int i) const noexcept { return datas_[i]; }
   inline T& at(int i) noexcept { return datas_[i]; }
   inline const T& at(int i) const noexcept { return datas_[i]; }
-  inline Iterator begin() noexcept { return datas_.begin(); }
-  inline CIterator begin() const noexcept { return datas_.begin(); }
-  inline Iterator end() noexcept { return datas_.end(); }
-  inline CIterator end() const noexcept { return datas_.end(); }
 
   inline int append(const T& x) {
-    datas_.push_back(x);
+    datas_.append(x);
     return count() - 1;
   }
 
@@ -81,15 +74,8 @@ public:
     return -1;
   }
 
-  inline void iter_values(std::function<void (T&)>&& fn) {
-    for (auto& x : datas_)
-      fn(x);
-  }
-
-  inline void iter_values(std::function<void (const T&)>&& fn) {
-    for (auto& x : datas_)
-      fn(x);
-  }
+  template <typename Function>
+  inline void for_each(Function&& fn) { datas_.for_each(fn); }
 };
 
 using SymbolTable = DynamicTable<String>;
