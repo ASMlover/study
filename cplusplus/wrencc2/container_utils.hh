@@ -291,13 +291,13 @@ _IteratorCategory(const _Iterator&) noexcept {
 template <typename _Iterator>
 inline typename IteratorTraits<_Iterator>::DifferenceType*
 _DistanceType(const _Iterator&) noexcept {
-  return Xt::as_type<typename IteratorTraits<_Iterator>::DifferenceType*>(nullptr);
+  return static_cast<typename IteratorTraits<_Iterator>::DifferenceType*>(nullptr);
 }
 
 template <typename _Iterator>
 inline typename IteratorTraits<_Iterator>::ValueType*
 _ValueType(const _Iterator&) noexcept {
-  return Xt::as_type<typename IteratorTraits<_Iterator>::ValueType*>(nullptr);
+  return static_cast<typename IteratorTraits<_Iterator>::ValueType*>(nullptr);
 }
 
 template <typename T, typename Distance>

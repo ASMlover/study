@@ -27,6 +27,8 @@
 #pragma once
 
 #include "common.hh"
+#include "string.hh"
+#include "array_list.hh"
 
 namespace wrencc {
 
@@ -101,7 +103,7 @@ public:
   InstanceObject* as_instance() noexcept;
 
   virtual bool is_equal(BaseObject* r) const { return false; }
-  virtual str_t stringify() const { return "<object>"; }
+  virtual String stringify() const { return "<object>"; }
   virtual void gc_blacken(WrenVM& vm) {}
   virtual void initialize(WrenVM& vm) {}
   virtual void finalize(WrenVM& vm) {}
@@ -186,7 +188,7 @@ public:
   bool is_same(const ObjValue& r) const noexcept;
   bool is_equal(const ObjValue& r) const noexcept;
   u32_t hasher() const noexcept;
-  str_t stringify() const noexcept;
+  String stringify() const noexcept;
 };
 
 using Value = ObjValue;
@@ -198,7 +200,7 @@ inline std::ostream& operator<<(std::ostream& out, const Value& val) {
 // a heap-allocated string object
 class StringObject final : public BaseObject {
   // number of bytes in the string, not including the null terminator
-  u32_t size_{};
+  sz_t size_{};
 
   // the hash value of the string's contents
   u32_t hash_{};
@@ -208,52 +210,58 @@ class StringObject final : public BaseObject {
 
   StringObject(ClassObject* cls, char c) noexcept;
   StringObject(ClassObject* cls,
-      const char* s, u32_t n, bool replace_owner = false) noexcept;
+      const char* s, sz_t n, bool replace_owner = false) noexcept;
   virtual ~StringObject() noexcept;
 
   void hash_string();
 public:
-  inline u32_t size() const noexcept { return size_; }
-  inline u32_t length() const noexcept { return size_; }
+  inline sz_t size() const noexcept { return size_; }
   inline bool empty() const noexcept { return size_ == 0; }
   inline const char* cstr() const noexcept { return data_; }
   inline char* data() noexcept { return data_; }
   inline const char* data() const noexcept { return data_; }
-  inline char& operator[](u32_t i) { return data_[i]; }
-  inline const char operator[](u32_t i) const { return data_[i]; }
-  inline char& at(u32_t i) { return data_[i]; }
-  inline const char& at(u32_t i) const { return data_[i]; }
+  inline char& operator[](sz_t i) { return data_[i]; }
+  inline const char operator[](sz_t i) const { return data_[i]; }
+  inline char& at(sz_t i) { return data_[i]; }
+  inline const char& at(sz_t i) const { return data_[i]; }
 
   inline bool compare(StringObject* s) const {
     return this == s || (hash_ == s->hash_ && size_ == s->size_
         && std::memcmp(data_, s->data_, size_) == 0);
   }
 
-  inline bool compare(const str_t& s) const {
-    return size_ == s.size() && std::memcmp(data_, s.data(), size_) == 0;
+  inline bool compare(const String& s) const {
+    return size_ == s.size() && s.compare(data_, size_);
   }
 
-  inline bool compare(const char* s, u32_t n) const {
+  inline bool compare(const char* s, sz_t n) const {
     return size_ == n && std::memcmp(data_, s, size_) == 0;
   }
 
-  int find(StringObject* sub, u32_t off = 0) const;
+  int find(StringObject* sub, sz_t off = 0) const;
 
   virtual bool is_equal(BaseObject* r) const override;
-  virtual str_t stringify() const override;
+  virtual String stringify() const override;
   virtual u32_t hasher() const override;
 
   static StringObject* create(WrenVM& vm, char c);
-  static StringObject* create(WrenVM& vm, const char* s, u32_t n);
-  static StringObject* create(WrenVM& vm, const str_t& s);
+  static StringObject* create(WrenVM& vm, const char* s, sz_t n);
+  static StringObject* create(WrenVM& vm, const String& s);
   static StringObject* concat(WrenVM& vm, StringObject* s1, StringObject* s2);
   static StringObject* concat(WrenVM& vm, const char* s1, const char* s2);
-  static StringObject* concat(WrenVM& vm, const str_t& s1, const str_t& s2);
+  static StringObject* concat(WrenVM& vm, const String& s1, const String& s2);
   static StringObject* from_byte(WrenVM& vm, u8_t value);
   static StringObject* from_numeric(WrenVM& vm, double value);
   static StringObject* from_range(
-      WrenVM& vm, StringObject* s, u32_t off, u32_t n, u32_t step);
+      WrenVM& vm, StringObject* s, sz_t off, sz_t n, sz_t step);
   static StringObject* format(WrenVM& vm, const char* format, ...);
+};
+
+class ListObject final : public BaseObject {
+  ArrayList<Value> elements_;
+public:
+  inline sz_t size() const noexcept { return elements_.size(); }
+  inline bool empty() const noexcept { return elements_.empty(); }
 };
 
 }

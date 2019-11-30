@@ -37,8 +37,7 @@ const char* BaseObject::as_cstring() noexcept {
 }
 
 ListObject* BaseObject::as_list() noexcept {
-  // TODO:
-  return nullptr;
+  return Xt::down<ListObject>(this);
 }
 
 RangeObject* BaseObject::as_range() noexcept {
@@ -123,12 +122,12 @@ u32_t ObjValue::hasher() const noexcept {
   return 0;
 }
 
-str_t ObjValue::stringify() const noexcept {
+String ObjValue::stringify() const noexcept {
   switch (type_) {
   case ValueType::NIL: return "nil";
   case ValueType::TRUE: return "true";
   case ValueType::FALSE: return "false";
-  case ValueType::NUMERIC: return Xt::to_string(as_.num);
+  case ValueType::NUMERIC: return String::from_decimal(as_.num);
   case ValueType::OBJECT: return as_.obj->stringify();
   default: UNREACHABLE();
   }
@@ -145,7 +144,7 @@ StringObject::StringObject(ClassObject* cls, char c) noexcept
 }
 
 StringObject::StringObject(
-    ClassObject* cls, const char* s, u32_t n, bool replace_owner) noexcept
+    ClassObject* cls, const char* s, sz_t n, bool replace_owner) noexcept
   : BaseObject(ObjType::STRING, cls)
   , size_(n) {
   if (replace_owner) {
@@ -179,9 +178,9 @@ void StringObject::hash_string() {
   hash_ = hash;
 }
 
-int StringObject::find(StringObject* sub, u32_t off) const {
+int StringObject::find(StringObject* sub, sz_t off) const {
   if (sub->size_ == 0)
-    return off;
+    return Xt::as_type<int>(off);
   if (sub->size_ + off > size_)
     return -1;
   if (off >= size_)
@@ -195,7 +194,7 @@ bool StringObject::is_equal(BaseObject* r) const {
   return compare(r->as_string());
 }
 
-str_t StringObject::stringify() const {
+String StringObject::stringify() const {
   return data_ != nullptr ? data_ : "";
 }
 
@@ -208,12 +207,12 @@ StringObject* StringObject::create(WrenVM& vm, char c) {
   return nullptr;
 }
 
-StringObject* StringObject::create(WrenVM& vm, const char* s, u32_t n) {
+StringObject* StringObject::create(WrenVM& vm, const char* s, sz_t n) {
   // TODO:
   return nullptr;
 }
 
-StringObject* StringObject::create(WrenVM& vm, const str_t& s) {
+StringObject* StringObject::create(WrenVM& vm, const String& s) {
   // TODO:
   return nullptr;
 }
@@ -230,7 +229,7 @@ StringObject* StringObject::concat(WrenVM& vm, const char* s1, const char* s2) {
 }
 
 StringObject* StringObject::concat(
-    WrenVM& vm, const str_t& s1, const str_t& s2) {
+    WrenVM& vm, const String& s1, const String& s2) {
   // TODO:
   return nullptr;
 }
@@ -246,7 +245,7 @@ StringObject* StringObject::from_numeric(WrenVM& vm, double value) {
 }
 
 StringObject* StringObject::from_range(
-    WrenVM& vm, StringObject* s, u32_t off, u32_t n, u32_t step) {
+    WrenVM& vm, StringObject* s, sz_t off, sz_t n, sz_t step) {
   // TODO:
   return nullptr;
 }

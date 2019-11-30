@@ -255,6 +255,12 @@ public:
     const char* found = std::strstr(__get_data() + start, sub.data());
     return found != nullptr ? Xt::as_type<int>(found - __get_data()) : -1;
   }
+
+  static String from_decimal(double d) noexcept {
+    std::stringstream ss;
+    ss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
+    return String(ss.str().data());
+  }
 };
 
 inline std::ostream& operator<<(std::ostream& o, const String& s) {
