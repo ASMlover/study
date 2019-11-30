@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <intrin.h>
 #include "common.hh"
 
 namespace wrencc {
@@ -443,7 +444,7 @@ inline void destroy(float*, float*) noexcept {}
 inline void destroy(double*, double*) noexcept {}
 
 template <typename InputIterator, typename OutputIterator>
-inline void _copy(InputIterator first,
+inline void copy(InputIterator first,
     InputIterator last, OutputIterator result, InputIteratorTag) noexcept {
   for (; first != last; ++result, ++first)
     *result = *first;
@@ -451,65 +452,76 @@ inline void _copy(InputIterator first,
 
 template <typename RandomAccessIterator, typename OutputIterator>
 inline void
-_copy(RandomAccessIterator first, RandomAccessIterator last,
+copy(RandomAccessIterator first, RandomAccessIterator last,
     OutputIterator result, RandomAccessIteratorTag) noexcept {
   for (; first != last; ++first, ++last)
     *result = *first;
 }
 
 template <typename T>
-inline void _copy_trivial(const T* first, const T* last, T* result) noexcept {
+inline void copy_trivial(const T* first, const T* last, T* result) noexcept {
   std::memmove(result, first, sizeof(T) * (last - first));
 }
 
 template <typename InputIterator, typename OutputIterator>
-inline void _copy_aux(InputIterator first,
+inline void copy(InputIterator first,
     InputIterator last, OutputIterator result, FalseType) noexcept {
-  _copy(first, last, result, _IteratorCategory(first));
+  copy(first, last, result, _IteratorCategory(first));
 }
 
 template <typename InputIterator, typename OutputIterator>
-inline void _copy_aux(InputIterator first,
+inline void copy(InputIterator first,
     InputIterator last, OutputIterator result, TrueType) noexcept {
-  _copy(first, last, result, _IteratorCategory(first));
+  copy(first, last, result, _IteratorCategory(first));
 }
 
 template <typename T>
-inline void _copy_aux(T* first, T* last, T* result, TrueType) noexcept {
-  _copy_trivial(first, last, result);
+inline void copy(T* first, T* last, T* result, TrueType) noexcept {
+  copy_trivial(first, last, result);
 }
 
 template <typename T>
-inline void _copy_aux(
-    const T* first, const T* last, T* result, TrueType) noexcept {
-  _copy_trivial(first, last, result);
+inline void copy(const T* first, const T* last, T* result, TrueType) noexcept {
+  copy_trivial(first, last, result);
 }
 
 template <typename InputIterator, typename OutputIterator, typename T>
-inline void _copy_aux(InputIterator first,
+inline void copy(InputIterator first,
     InputIterator last, OutputIterator result, T*) noexcept {
   using _Trivial = typename TypeTraits<T>::HasTrivialAssignOperator;
-  _copy_aux(first, last, result, _Trivial());
+  copy(first, last, result, _Trivial());
 }
 
 template <typename InputIterator, typename OutputIterator>
 inline void
 copy(InputIterator first, InputIterator last, OutputIterator result) noexcept {
-  _copy_aux(first, last, result, _ValueType(first));
+  copy(first, last, result, _ValueType(first));
+}
+
+template <typename InputIterator, typename ForwardIterator>
+inline void uninitialized_copy(InputIterator first,
+    InputIterator last, ForwardIterator result, TrueType) noexcept {
+  copy(first, last, result);
+}
+
+template <typename InputIterator, typename ForwardIterator>
+inline void uninitialized_copy(InputIterator first,
+    InputIterator last, ForwardIterator result, FalseType) noexcept {
+  for (; first != last; ++first, ++result)
+    construct(&*result, *first);
+}
+
+template <typename InputIterator, typename ForwardIterator, typename T>
+inline void uninitialized_copy(InputIterator first,
+    InputIterator last, ForwardIterator result, T*) noexcept {
+  using IsPOD = typename TypeTraits<T>::IsPOD;
+  uninitialized_copy(first, last, result, IsPOD());
 }
 
 template <typename InputIterator, typename ForwardIterator>
 inline void uninitialized_copy(
-    InputIterator first, InputIterator last, ForwardIterator result) {
-  ForwardIterator pos = result;
-  try {
-    for (; first != last; ++first, ++pos)
-      construct(&*pos, *first);
-  }
-  catch (...) {
-    destroy(result, pos);
-    throw;
-  }
+    InputIterator first, InputIterator last, ForwardIterator result) noexcept {
+  uninitialized_copy(first, last, result, _ValueType(result));
 }
 
 inline void uninitialized_copy(
@@ -523,16 +535,75 @@ inline void fill(ForwardIterator first, Size n, const T& v) noexcept {
     *first = v;
 }
 
+template <typename Size>
+inline void fill(char* first, Size n, const char* v) noexcept {
+  std::memset(first, (char)v, (sz_t)n);
+}
+
+template <typename Size, typename T>
+inline void fill(i8_t* first, Size n, T v) noexcept {
+  __stosb((u8_t*)first, (u8_t)v, (sz_t)n);
+}
+
+template <typename Size, typename T>
+inline void fill(u8_t* first, Size n, T v) noexcept {
+  __stosb(first, (u8_t)v, (sz_t)n);
+}
+
+template <typename Size, typename T>
+inline void fill(i16_t* first, Size n, T v) noexcept {
+  __stosw((i16_t*)first, (u16_t)v, (sz_t)n);
+}
+
+template <typename Size, typename T>
+inline void fill(u16_t* first, Size n, T v) noexcept {
+  __stosw(first, (u16_t)v, (sz_t)n);
+}
+
+template <typename Size, typename T>
+inline void fill(i32_t* first, Size n, T v) noexcept {
+  __stosd((unsigned long*)first, (unsigned long)v, (sz_t)n);
+}
+
+template <typename Size, typename T>
+inline void fill(u32_t* first, Size n, T v) noexcept {
+  __stosd((unsigned long*)first, (unsigned long)v, (sz_t)n);
+}
+
 template <typename Size, typename T>
 inline void fill(i64_t* first, Size n, T v) noexcept {
   __stosq((u64_t*)first, (u64_t)v, (sz_t)n);
 }
 
+template <typename Size, typename T>
+inline void fill(u64_t* first, Size n, T v) noexcept {
+  __stosq(first, (u64_t)v, (sz_t)n);
+}
+
+template <typename ForwardIterator, typename Size, typename T>
+inline void uninitialized_fill(
+    ForwardIterator first, Size n, const T& v, TrueType) noexcept {
+  fill(first, n, v);
+}
+
+template <typename ForwardIterator, typename Size, typename T>
+inline void uninitialized_fill(
+    ForwardIterator first, Size n, const T& v, FalseType) noexcept {
+  for (; n > 0; --n, ++first)
+    construct(&*first, v);
+}
+
+template <typename ForwardIterator, typename Size, typename T, typename T1>
+inline void uninitialized_fill(
+    ForwardIterator first, Size n, const T& v, T1*) noexcept {
+  using IsPOD = typename TypeTraits<T1>::IsPOD;
+  uninitialized_fill(first, n, v, IsPOD());
+}
+
 template <typename ForwardIterator, typename Size, typename T>
 inline void uninitialized_fill(
     ForwardIterator first, Size n, const T& v) noexcept {
-  for (; n > 0; --n, ++first)
-    construct(&*first, v);
+  uninitialized_fill(first, n, v, _ValueType(first));
 }
 
 template <typename T>
