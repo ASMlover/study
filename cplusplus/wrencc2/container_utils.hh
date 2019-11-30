@@ -30,6 +30,173 @@
 
 namespace wrencc {
 
+struct TrueType {};
+struct FalseType {};
+
+template <typename T> struct TypeTraits {
+  using HasTrivialDefaultConstructor  = FalseType;
+  using HasTrivialCopyConstructor     = FalseType;
+  using HasTrivialAssignOperator      = FalseType;
+  using HasTrivialDestructor          = FalseType;
+  using IsPOD                         = FalseType;
+};
+
+template <> struct TypeTraits<bool> {
+  using HasTrivialDefaultConstructor  = TrueType;
+  using HasTrivialCopyConstructor     = TrueType;
+  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialDestructor          = TrueType;
+  using IsPOD                         = TrueType;
+};
+
+template <> struct TypeTraits<i8_t> {
+  using HasTrivialDefaultConstructor  = TrueType;
+  using HasTrivialCopyConstructor     = TrueType;
+  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialDestructor          = TrueType;
+  using IsPOD                         = TrueType;
+};
+
+template <> struct TypeTraits<u8_t> {
+  using HasTrivialDefaultConstructor  = TrueType;
+  using HasTrivialCopyConstructor     = TrueType;
+  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialDestructor          = TrueType;
+  using IsPOD                         = TrueType;
+};
+
+template <> struct TypeTraits<i16_t> {
+  using HasTrivialDefaultConstructor  = TrueType;
+  using HasTrivialCopyConstructor     = TrueType;
+  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialDestructor          = TrueType;
+  using IsPOD                         = TrueType;
+};
+
+template <> struct TypeTraits<u16_t> {
+  using HasTrivialDefaultConstructor  = TrueType;
+  using HasTrivialCopyConstructor     = TrueType;
+  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialDestructor          = TrueType;
+  using IsPOD                         = TrueType;
+};
+
+template <> struct TypeTraits<i32_t> {
+  using HasTrivialDefaultConstructor  = TrueType;
+  using HasTrivialCopyConstructor     = TrueType;
+  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialDestructor          = TrueType;
+  using IsPOD                         = TrueType;
+};
+
+template <> struct TypeTraits<u32_t> {
+  using HasTrivialDefaultConstructor  = TrueType;
+  using HasTrivialCopyConstructor     = TrueType;
+  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialDestructor          = TrueType;
+  using IsPOD                         = TrueType;
+};
+
+template <> struct TypeTraits<i64_t> {
+  using HasTrivialDefaultConstructor  = TrueType;
+  using HasTrivialCopyConstructor     = TrueType;
+  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialDestructor          = TrueType;
+  using IsPOD                         = TrueType;
+};
+
+template <> struct TypeTraits<u64_t> {
+  using HasTrivialDefaultConstructor  = TrueType;
+  using HasTrivialCopyConstructor     = TrueType;
+  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialDestructor          = TrueType;
+  using IsPOD                         = TrueType;
+};
+
+template <> struct TypeTraits<float> {
+  using HasTrivialDefaultConstructor  = TrueType;
+  using HasTrivialCopyConstructor     = TrueType;
+  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialDestructor          = TrueType;
+  using IsPOD                         = TrueType;
+};
+
+template <> struct TypeTraits<double> {
+  using HasTrivialDefaultConstructor  = TrueType;
+  using HasTrivialCopyConstructor     = TrueType;
+  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialDestructor          = TrueType;
+  using IsPOD                         = TrueType;
+};
+
+template <> struct TypeTraits<long double> {
+  using HasTrivialDefaultConstructor  = TrueType;
+  using HasTrivialCopyConstructor     = TrueType;
+  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialDestructor          = TrueType;
+  using IsPOD                         = TrueType;
+};
+
+template <typename T> struct TypeTraits<T*> {
+  using HasTrivialDefaultConstructor  = TrueType;
+  using HasTrivialCopyConstructor     = TrueType;
+  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialDestructor          = TrueType;
+  using IsPOD                         = TrueType;
+};
+
+template <typename T> struct TypeTraits<const T*> {
+  using HasTrivialDefaultConstructor  = TrueType;
+  using HasTrivialCopyConstructor     = TrueType;
+  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialDestructor          = TrueType;
+  using IsPOD                         = TrueType;
+};
+
+template <> struct TypeTraits<char*> {
+  using HasTrivialDefaultConstructor  = TrueType;
+  using HasTrivialCopyConstructor     = TrueType;
+  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialDestructor          = TrueType;
+  using IsPOD                         = TrueType;
+};
+
+template <> struct TypeTraits<const char*> {
+  using HasTrivialDefaultConstructor  = TrueType;
+  using HasTrivialCopyConstructor     = TrueType;
+  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialDestructor          = TrueType;
+  using IsPOD                         = TrueType;
+};
+
+template <> struct TypeTraits<i8_t*> {
+  using HasTrivialDefaultConstructor  = TrueType;
+  using HasTrivialCopyConstructor     = TrueType;
+  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialDestructor          = TrueType;
+  using IsPOD                         = TrueType;
+};
+
+template <> struct TypeTraits<u8_t*> {
+  using HasTrivialDefaultConstructor  = TrueType;
+  using HasTrivialCopyConstructor     = TrueType;
+  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialDestructor          = TrueType;
+  using IsPOD                         = TrueType;
+};
+
+template <typename T> struct IsInteger { using Integral = FalseType; };
+template <> struct IsInteger<bool> { using Integral = TrueType; };
+template <> struct IsInteger<char> { using Integral = TrueType; };
+template <> struct IsInteger<i8_t> { using Integral = TrueType; };
+template <> struct IsInteger<u8_t> { using Integral = TrueType; };
+template <> struct IsInteger<i16_t> { using Integral = TrueType; };
+template <> struct IsInteger<u16_t> { using Integral = TrueType; };
+template <> struct IsInteger<i32_t> { using Integral = TrueType; };
+template <> struct IsInteger<u32_t> { using Integral = TrueType; };
+template <> struct IsInteger<i64_t> { using Integral = TrueType; };
+template <> struct IsInteger<u64_t> { using Integral = TrueType; };
+
 template <typename T>
 inline void construct(T* p) noexcept {
   new ((void*)p) T();
@@ -82,14 +249,14 @@ inline void copy(
 
 template <typename InputIterator, typename ForwardIterator>
 inline void uninitialized_copy(
-    InputIterator forst, InputIterator last, ForwardIterator result) noexcept {
-  ForwardIterator curr = result;
+    InputIterator first, InputIterator last, ForwardIterator result) {
+  ForwardIterator pos = result;
   try {
-    for (; first != last; ++first, ++cur)
-      construct(&*cur, *frist);
+    for (; first != last; ++first, ++pos)
+      construct(&*pos, *first);
   }
   catch (...) {
-    destroy(result, cur);
+    destroy(result, pos);
     throw;
   }
 }
@@ -103,6 +270,11 @@ template <typename ForwardIterator, typename Size, typename T>
 inline void fill(ForwardIterator first, Size n, const T& v) noexcept {
   for (; n > 0; --n, ++first)
     *first = v;
+}
+
+template <typename Size, typename T>
+inline void fill(i64_t* first, Size n, T v) noexcept {
+  __stosq((u64_t*)first, (u64_t)v, (sz_t)n);
 }
 
 template <typename ForwardIterator, typename Size, typename T>
