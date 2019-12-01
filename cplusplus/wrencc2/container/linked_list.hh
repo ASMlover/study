@@ -124,7 +124,7 @@ public:
 
   T pop_head() {
     NodeType* node = head_;
-    if (head_ = head_->value; head_ == nullptr)
+    if (head_ = head_->next; head_ == nullptr)
       tail_ = nullptr;
     T r = node->value;
     destroy_aux(node);
