@@ -102,8 +102,10 @@ public:
 
   inline bool empty() const noexcept { return size_ == 0; }
   inline sz_t size() const noexcept { return size_; }
-  inline NodeType* get_head() const noexcept { return head_; }
-  inline NodeType* get_tail() const noexcept { return tail_; }
+  inline T& get_head() noexcept { return head_->value; }
+  inline const T& get_head() const noexcept { return head_->value; }
+  inline T& get_tail() noexcept { return tail_->value; }
+  inline const T& get_tail() const noexcept { return tail_->value; }
 
   void clear() {
     while (head_ != nullptr) {
