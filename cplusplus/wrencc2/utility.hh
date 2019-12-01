@@ -28,8 +28,8 @@
 
 #include <functional>
 #include "common.hh"
-#include "string.hh"
-#include "array_list.hh"
+#include "./container/string.hh"
+#include "./container/array_list.hh"
 
 namespace wrencc {
 

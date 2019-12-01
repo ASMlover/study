@@ -28,7 +28,7 @@
 
 #include <ostream>
 #include "common.hh"
-#include "string.hh"
+#include "./container/string.hh"
 
 namespace wrencc {
 

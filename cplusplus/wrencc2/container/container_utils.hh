@@ -27,7 +27,7 @@
 #pragma once
 
 #include <intrin.h>
-#include "common.hh"
+#include "../common.hh"
 
 namespace wrencc {
 

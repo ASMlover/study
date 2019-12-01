@@ -27,7 +27,6 @@
 #pragma once
 
 #include <functional>
-#include "common.hh"
 #include "container_utils.hh"
 
 namespace wrencc {
