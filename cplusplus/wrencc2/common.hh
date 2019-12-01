@@ -42,6 +42,10 @@
 # define WRENCC_ARCH32
 #endif
 
+#if defined(_MSC_VER)
+# define WRENCC_MSVC
+#endif
+
 namespace wrencc {
 
 using nil_t   = std::nullptr_t;

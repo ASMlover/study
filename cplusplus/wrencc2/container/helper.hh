@@ -536,10 +536,11 @@ inline void fill(ForwardIterator first, Size n, const T& v) noexcept {
 }
 
 template <typename Size>
-inline void fill(char* first, Size n, const char* v) noexcept {
+inline void fill(char* first, Size n, const char& v) noexcept {
   std::memset(first, (char)v, (sz_t)n);
 }
 
+#if defined(WRENCC_MSVC)
 template <typename Size, typename T>
 inline void fill(i8_t* first, Size n, T v) noexcept {
   __stosb((u8_t*)first, (u8_t)v, (sz_t)n);
@@ -579,6 +580,89 @@ template <typename Size, typename T>
 inline void fill(u64_t* first, Size n, T v) noexcept {
   __stosq(first, (u64_t)v, (sz_t)n);
 }
+#else
+template <typename Size>
+inline void fill(i8_t* first, Size n, const i8_t& v) noexcept {
+  std::memset(first, v, (sz_t)n);
+}
+
+template <typename Size>
+inline void fill(u8_t* first, Size n, const u8_t& v) noexcept {
+  std::memset(first, v, (sz_t)n);
+}
+
+template <typename Size, typename T>
+inline void fill(i16_t* first, Size n, T v) noexcept {
+  std::uintptr_t count = (std::uintptr_t)n;
+  i16_t value = (i16_t)v;
+
+  __asm__ __volatile__("cld\n\t"
+      "rep stosw\n\t"
+      : "+c" (count), "+D" (first), "=m" (first)
+      : "a" (value)
+      : "cc");
+}
+
+template <typename Size, typename T>
+inline void fill(u16_t* first, Size n, T v) noexcept {
+  std::uintptr_t count = (std::uintptr_t)n;
+  u16_t value = (u16_t)v;
+
+  __asm__ __volatile__("cld\n\t"
+      "rep stosw\n\t"
+      : "+c" (count), "+D" (first), "=m" (first)
+      : "a" (value)
+      : "cc");
+}
+
+template <typename Size, typename T>
+inline void fill(i32_t* first, Size n, T v) noexcept {
+  std::uintptr_t count = (std::uintptr_t)n;
+  i32_t value = (i32_t)v;
+
+  __asm__ __volatile__("cld\n\t"
+      "rep stosl\n\t"
+      : "+c" (count), "+D" (first), "=m" (first)
+      : "a" (value)
+      : "cc");
+}
+
+template <typename Size, typename T>
+inline void fill(u32_t* first, Size n, T v) noexcept {
+  std::uintptr_t count = (std::uintptr_t)n;
+  u32_t value = (u32_t)v;
+
+  __asm__ __volatile__("cld\n\t"
+      "rep stosl\n\t"
+      : "+c" (count), "+D" (first), "=m" (first)
+      : "a" (value)
+      : "cc");
+}
+
+template <typename Size, typename T>
+inline void fill(i64_t* first, Size n, T v) noexcept {
+  std::uintptr_t count = (std::uintptr_t)n;
+  i64_t value = (i64_t)v;
+
+  __asm__ __volatile__("cld\n\t"
+      "rep stosq\n\t"
+      : "+c" (count), "+D" (first), "=m" (first)
+      : "a" (value)
+      : "cc");
+}
+
+template <typename Size, typename T>
+inline void fill(u64_t* first, Size n, T v) noexcept {
+  std::uintptr_t count = (std::uintptr_t)n;
+  u64_t value = (u64_t)v;
+
+  __asm__ __volatile__("cld\n\t"
+      "rep stosq\n\t"
+      : "+c" (count), "+D" (first), "=m" (first)
+      : "a" (value)
+      : "cc");
+}
+#endif
 
 template <typename ForwardIterator, typename Size, typename T>
 inline void uninitialized_fill(
