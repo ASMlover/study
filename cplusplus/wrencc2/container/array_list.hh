@@ -88,10 +88,10 @@ public:
   inline const T& at(sz_t i) const noexcept { return data_[i]; }
   inline T& operator[](sz_t i) noexcept { return data_[i]; }
   inline const T& operator[](sz_t i) const noexcept { return data_[i]; }
-  inline T& first() noexcept { return data_[0]; }
-  inline const T& first() const noexcept { return data_[0]; }
-  inline T& last() noexcept { return data_[size_ - 1]; }
-  inline const T& last() const noexcept { return data_[size_ - 1]; }
+  inline T& get_head() noexcept { return data_[0]; }
+  inline const T& get_head() const noexcept { return data_[0]; }
+  inline T& get_tail() noexcept { return data_[size_ - 1]; }
+  inline const T& get_tail() const noexcept { return data_[size_ - 1]; }
 
   inline void clear() noexcept {
     destroy(data_, data_ + size_);
