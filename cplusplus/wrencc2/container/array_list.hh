@@ -42,6 +42,8 @@ class ArrayList final : private UnCopyable {
   void regrow(sz_t new_capacity = 0) {
     if (new_capacity == 0)
       new_capacity = capacity_ * 3 / 2;
+    if (new_capacity < kDefCapacity)
+      new_capacity = kDefCapacity;
 
     T* new_data = SimpleAlloc<T>::allocate(new_capacity);
     try {
@@ -135,6 +137,15 @@ public:
     return r;
   }
 
+  void clone(ArrayList<T>& result) const {
+    result.clear();
+
+    if (size_ > 0) {
+      result.regrow(size_);
+      result.size_ = size_;
+      uninitialized_copy(data_, data_ + size_, result.data_);
+    }
+  }
 };
 
 }
