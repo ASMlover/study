@@ -41,11 +41,11 @@ inline bool __compare(const T& x, const T& y) { return x == y; }
 
 template <typename T, typename Function = CompareFn<T>>
 class DynamicTable final : private UnCopyable {
-  Function cmp_fn_{};
+  Function compare_{};
   ArrayList<T> datas_;
 public:
-  DynamicTable(Function&& cmp_fn = __compare<T>) noexcept
-    : cmp_fn_(std::move(cmp_fn)) {
+  DynamicTable(Function&& fn = __compare<T>) noexcept
+    : compare_(std::move(fn)) {
   }
 
   inline int count() const noexcept { return Xt::as_type<int>(datas_.size()); }
@@ -68,7 +68,7 @@ public:
 
   inline int find(const T& x) {
     for (int i = 0; i < count(); ++i) {
-      if (cmp_fn_(datas_[i], x))
+      if (compare_(datas_[i], x))
         return i;
     }
     return -1;

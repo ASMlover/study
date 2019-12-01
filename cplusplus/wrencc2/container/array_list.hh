@@ -27,7 +27,7 @@
 #pragma once
 
 #include <functional>
-#include "container_utils.hh"
+#include "helper.hh"
 
 namespace wrencc {
 
@@ -98,7 +98,7 @@ public:
 
   template <typename Function> void for_each(Function&& fn) noexcept {
     for (sz_t i = 0; i < size_; ++i)
-      fn(i, data_[i]);
+      fn(data_[i]);
   }
 
   void resize(sz_t size) {
