@@ -42,23 +42,69 @@ class DoubleList final : private UnCopyable {
   sz_t size_{};
   NodeType* head_{};
 
-  inline void initialize_head_aux() noexcept {
-    head_ = SimpleAlloc<NodeType>::allocate(1);
+  inline void initialize_head() noexcept {
+    head_ = SimpleAlloc<NodeType>::allocate();
     head_->prev = head_;
     head_->next = head_;
   }
 
-  inline void destroy_head_aux() noexcept {
+  inline void destroy_head() noexcept {
     SimpleAlloc<NodeType>::deallocate(head_);
   }
-public:
-  DoubleList() noexcept { initialize_head_aux(); }
-  ~DoubleList() noexcept {
-    // clear
-    destroy_head_aux();
+
+  NodeType* create_aux(const T& value) {
+    NodeType* node = SimpleAlloc<NodeType>::allocate();
+    try {
+      construct(&node->value, value);
+      node->prev = node->prev = nullptr;
+    }
+    catch (...) {
+    }
+    return node;
   }
 
-  inline bool empty() const noexcept { return size_ == 0; }
+  NodeType* create_aux(T&& value) {
+    NodeType* node = SimpleAlloc<NodeType>::allocate();
+    try {
+      construct(&node->value, std::move(value));
+      node->prev = node->prev = nullptr;
+    }
+    catch (...) {
+    }
+    return node;
+  }
+
+  template <typename... Args> NodeType* create_aux(Args&&... args) {
+    NodeType* node = SimpleAlloc<NodeType>::allocate();
+    try {
+      construct(&node->value, std::forward<Args>(args)...);
+      node->prev = node->prev = nullptr;
+    }
+    catch (...) {
+    }
+    return node;
+  }
+
+  void destroy_aux(NodeType* node) {
+    destroy(&node->value);
+    SimpleAlloc<NodeType>::deallocate(node);
+  }
+
+  inline void insert_aux(NodeType* pos, NodeType* new_node) noexcept {
+    new_node->next = pos;
+    new_node->prev = pos->prev;
+    pos->prev->next = new_node;
+    pos->prev = new_node;
+    ++size_;
+  }
+public:
+  DoubleList() noexcept { initialize_head(); }
+  ~DoubleList() noexcept {
+    clear();
+    destroy_head();
+  }
+
+  inline bool empty() const noexcept { return head_->next == head_; }
   inline sz_t size() const noexcept { return size_; }
   inline T& get_head() noexcept { return head_->next->value; }
   inline const T& get_head() const noexcept { return head_->next->value; }
@@ -66,16 +112,31 @@ public:
   inline const T& get_tail() const noexcept { return head_->prev->value; }
 
   void clear() {
+    NodeType* cur = head_->next;
+    while (cur != head_) {
+      NodeType* node = cur;
+      cur = cur->next;
+      destroy(&node->value);
+      SimpleAlloc<NodeType>::deallocate(node);
+    }
+    head_->prev = head_->next = head_;
+    size_ = 0;
   }
 
-  void append(const T& x);
-  void append(T&& x);
-  template <typename... Args> void append(Args&&... args);
+  void append(const T& x) { insert_aux(head_, create_aux(x)); }
+  void append(T&& x) { insert_aux(head_, create_aux(std::move(x))); }
+
+  template <typename... Args> void append(Args&&... args) {
+    insert_aux(head_, create_aux(std::forward<Args>(args)...));
+  }
 
   T pop_head();
   T pop_tail();
 
-  template <typename Function> inline void for_each(Function&& fn) noexcept;
+  template <typename Function> inline void for_each(Function&& fn) noexcept {
+    for (auto* n = head_->next; n != head_; n = n->next)
+      fn(n->value);
+  }
 };
 
 }
