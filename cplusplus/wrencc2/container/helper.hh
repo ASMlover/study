@@ -34,159 +34,44 @@ namespace wrencc {
 struct TrueType {};
 struct FalseType {};
 
-template <typename T> struct TypeTraits {
+template <bool _HasTrivial = false>
+struct HasTrivially {
   using HasTrivialDefaultConstructor  = FalseType;
   using HasTrivialCopyConstructor     = FalseType;
-  using HasTrivialAssignOperator      = FalseType;
+  using HasTrivialMoveConstructor     = FalseType;
   using HasTrivialDestructor          = FalseType;
+  using HasTrivialCopyAssignment      = FalseType;
+  using HasTrivialMoveAssignment      = FalseType;
   using IsPOD                         = FalseType;
 };
 
-template <> struct TypeTraits<bool> {
+template <> struct HasTrivially<true> {
   using HasTrivialDefaultConstructor  = TrueType;
   using HasTrivialCopyConstructor     = TrueType;
-  using HasTrivialAssignOperator      = TrueType;
+  using HasTrivialMoveConstructor     = TrueType;
   using HasTrivialDestructor          = TrueType;
+  using HasTrivialCopyAssignment      = TrueType;
+  using HasTrivialMoveAssignment      = TrueType;
   using IsPOD                         = TrueType;
 };
 
-template <> struct TypeTraits<i8_t> {
-  using HasTrivialDefaultConstructor  = TrueType;
-  using HasTrivialCopyConstructor     = TrueType;
-  using HasTrivialAssignOperator      = TrueType;
-  using HasTrivialDestructor          = TrueType;
-  using IsPOD                         = TrueType;
-};
+template <typename Tp> struct TypeTraits : public HasTrivially<false> {};
+template <> struct TypeTraits<bool> : public HasTrivially<true> {};
+template <> struct TypeTraits<char> : public HasTrivially<true> {};
+template <> struct TypeTraits<i8_t> : public HasTrivially<true> {};
+template <> struct TypeTraits<u8_t> : public HasTrivially<true> {};
+template <> struct TypeTraits<i16_t> : public HasTrivially<true> {};
+template <> struct TypeTraits<u16_t> : public HasTrivially<true> {};
+template <> struct TypeTraits<i32_t> : public HasTrivially<true> {};
+template <> struct TypeTraits<u32_t> : public HasTrivially<true> {};
+template <> struct TypeTraits<i64_t> : public HasTrivially<true> {};
+template <> struct TypeTraits<u64_t> : public HasTrivially<true> {};
+template <> struct TypeTraits<float> : public HasTrivially<true> {};
+template <> struct TypeTraits<double> : public HasTrivially<true> {};
+template <> struct TypeTraits<long double> : public HasTrivially<true> {};
+template <typename Tp> struct TypeTraits<Tp*> : public HasTrivially<true> {};
 
-template <> struct TypeTraits<u8_t> {
-  using HasTrivialDefaultConstructor  = TrueType;
-  using HasTrivialCopyConstructor     = TrueType;
-  using HasTrivialAssignOperator      = TrueType;
-  using HasTrivialDestructor          = TrueType;
-  using IsPOD                         = TrueType;
-};
-
-template <> struct TypeTraits<i16_t> {
-  using HasTrivialDefaultConstructor  = TrueType;
-  using HasTrivialCopyConstructor     = TrueType;
-  using HasTrivialAssignOperator      = TrueType;
-  using HasTrivialDestructor          = TrueType;
-  using IsPOD                         = TrueType;
-};
-
-template <> struct TypeTraits<u16_t> {
-  using HasTrivialDefaultConstructor  = TrueType;
-  using HasTrivialCopyConstructor     = TrueType;
-  using HasTrivialAssignOperator      = TrueType;
-  using HasTrivialDestructor          = TrueType;
-  using IsPOD                         = TrueType;
-};
-
-template <> struct TypeTraits<i32_t> {
-  using HasTrivialDefaultConstructor  = TrueType;
-  using HasTrivialCopyConstructor     = TrueType;
-  using HasTrivialAssignOperator      = TrueType;
-  using HasTrivialDestructor          = TrueType;
-  using IsPOD                         = TrueType;
-};
-
-template <> struct TypeTraits<u32_t> {
-  using HasTrivialDefaultConstructor  = TrueType;
-  using HasTrivialCopyConstructor     = TrueType;
-  using HasTrivialAssignOperator      = TrueType;
-  using HasTrivialDestructor          = TrueType;
-  using IsPOD                         = TrueType;
-};
-
-template <> struct TypeTraits<i64_t> {
-  using HasTrivialDefaultConstructor  = TrueType;
-  using HasTrivialCopyConstructor     = TrueType;
-  using HasTrivialAssignOperator      = TrueType;
-  using HasTrivialDestructor          = TrueType;
-  using IsPOD                         = TrueType;
-};
-
-template <> struct TypeTraits<u64_t> {
-  using HasTrivialDefaultConstructor  = TrueType;
-  using HasTrivialCopyConstructor     = TrueType;
-  using HasTrivialAssignOperator      = TrueType;
-  using HasTrivialDestructor          = TrueType;
-  using IsPOD                         = TrueType;
-};
-
-template <> struct TypeTraits<float> {
-  using HasTrivialDefaultConstructor  = TrueType;
-  using HasTrivialCopyConstructor     = TrueType;
-  using HasTrivialAssignOperator      = TrueType;
-  using HasTrivialDestructor          = TrueType;
-  using IsPOD                         = TrueType;
-};
-
-template <> struct TypeTraits<double> {
-  using HasTrivialDefaultConstructor  = TrueType;
-  using HasTrivialCopyConstructor     = TrueType;
-  using HasTrivialAssignOperator      = TrueType;
-  using HasTrivialDestructor          = TrueType;
-  using IsPOD                         = TrueType;
-};
-
-template <> struct TypeTraits<long double> {
-  using HasTrivialDefaultConstructor  = TrueType;
-  using HasTrivialCopyConstructor     = TrueType;
-  using HasTrivialAssignOperator      = TrueType;
-  using HasTrivialDestructor          = TrueType;
-  using IsPOD                         = TrueType;
-};
-
-template <typename T> struct TypeTraits<T*> {
-  using HasTrivialDefaultConstructor  = TrueType;
-  using HasTrivialCopyConstructor     = TrueType;
-  using HasTrivialAssignOperator      = TrueType;
-  using HasTrivialDestructor          = TrueType;
-  using IsPOD                         = TrueType;
-};
-
-template <typename T> struct TypeTraits<const T*> {
-  using HasTrivialDefaultConstructor  = TrueType;
-  using HasTrivialCopyConstructor     = TrueType;
-  using HasTrivialAssignOperator      = TrueType;
-  using HasTrivialDestructor          = TrueType;
-  using IsPOD                         = TrueType;
-};
-
-template <> struct TypeTraits<char*> {
-  using HasTrivialDefaultConstructor  = TrueType;
-  using HasTrivialCopyConstructor     = TrueType;
-  using HasTrivialAssignOperator      = TrueType;
-  using HasTrivialDestructor          = TrueType;
-  using IsPOD                         = TrueType;
-};
-
-template <> struct TypeTraits<const char*> {
-  using HasTrivialDefaultConstructor  = TrueType;
-  using HasTrivialCopyConstructor     = TrueType;
-  using HasTrivialAssignOperator      = TrueType;
-  using HasTrivialDestructor          = TrueType;
-  using IsPOD                         = TrueType;
-};
-
-template <> struct TypeTraits<i8_t*> {
-  using HasTrivialDefaultConstructor  = TrueType;
-  using HasTrivialCopyConstructor     = TrueType;
-  using HasTrivialAssignOperator      = TrueType;
-  using HasTrivialDestructor          = TrueType;
-  using IsPOD                         = TrueType;
-};
-
-template <> struct TypeTraits<u8_t*> {
-  using HasTrivialDefaultConstructor  = TrueType;
-  using HasTrivialCopyConstructor     = TrueType;
-  using HasTrivialAssignOperator      = TrueType;
-  using HasTrivialDestructor          = TrueType;
-  using IsPOD                         = TrueType;
-};
-
-template <typename T> struct IsInteger { using Integral = FalseType; };
+template <typename Tp> struct IsInteger { using Integral = FalseType; };
 template <> struct IsInteger<bool> { using Integral = TrueType; };
 template <> struct IsInteger<char> { using Integral = TrueType; };
 template <> struct IsInteger<i8_t> { using Integral = TrueType; };
@@ -204,12 +89,16 @@ struct ForwardIteratorTag : public InputIteratorTag {};
 struct BidirectionalIteratorTag : public ForwardIteratorTag {};
 struct RandomAccessIteratorTag : public BidirectionalIteratorTag {};
 
-template <typename T, typename Distance> struct InputIterator {
-  using IteratorCategory  = InputIteratorTag;
-  using ValueType         = T;
-  using DifferenceType    = Distance;
-  using Pointer           = T*;
-  using Reference         = T&;
+template <typename Tp, typename Distance> struct DefaultIter {
+  using ValueType       = Tp;
+  using DifferenceType  = Distance;
+  using Pointer         = Tp*;
+  using Reference       = Tp&;
+};
+
+template <typename Tp, typename Distance>
+struct InputIterator : public DefaultIter<Tp, Distance> {
+  using IteratorCategory = InputIteratorTag;
 };
 
 struct OutputIterator {
@@ -220,38 +109,29 @@ struct OutputIterator {
   using Reference         = void;
 };
 
-template <typename T, typename Distance> struct ForwardIterator {
-  using IteratorCategory  = ForwardIteratorTag;
-  using ValueType         = T;
-  using DifferenceType    = Distance;
-  using Pointer           = T*;
-  using Reference         = T&;
+template <typename Tp, typename Distance>
+struct ForwardIterator : public DefaultIter<Tp, Distance> {
+  using IteratorCategory = ForwardIteratorTag;
 };
 
-template <typename T, typename Distance> struct BidirectionalIterator {
-  using IteratorCategory  = BidirectionalIteratorTag;
-  using ValueType         = T;
-  using DifferenceType    = Distance;
-  using Pointer           = T*;
-  using Reference         = T&;
+template <typename Tp, typename Distance>
+struct BidirectionalIterator : public DefaultIter<Tp, Distance> {
+  using IteratorCategory = BidirectionalIteratorTag;
 };
 
-template <typename T, typename Distance> struct RandomAccessIterator {
-  using IteratorCategory  = RandomAccessIteratorTag;
-  using ValueType         = T;
-  using DifferenceType    = Distance;
-  using Pointer           = T*;
-  using Reference         = T&;
+template <typename Tp, typename Distance>
+struct RandomAccessIterator : public DefaultIter<Tp, Distance> {
+  using IteratorCategory = RandomAccessIteratorTag;
 };
 
 template <typename _Category,
-          typename _T,
+          typename _Tp,
           typename _Distance = std::ptrdiff_t,
-          typename _Pointer = _T*,
-          typename _Reference = _T&>
+          typename _Pointer = _Tp*,
+          typename _Reference = _Tp&>
 struct Iterator {
   using IteratorCategory  = _Category;
-  using ValueType         = _T;
+  using ValueType         = _Tp;
   using DifferenceType    = _Distance;
   using Pointer           = _Pointer;
   using Reference         = _Reference;
@@ -265,127 +145,44 @@ template <typename _Iterator> struct IteratorTraits {
   using Reference         = typename _Iterator::Reference;
 };
 
-template <typename T> struct IteratorTraits<T*> {
+template <typename Tp> struct IteratorTraits<Tp*> {
   using IteratorCategory  = RandomAccessIteratorTag;
-  using ValueType         = T;
+  using ValueType         = Tp;
   using DifferenceType    = std::ptrdiff_t;
-  using Pointer           = T*;
-  using Reference         = T&;
+  using Pointer           = Tp*;
+  using Reference         = Tp&;
 };
 
-template <typename T> struct IteratorTraits<const T*> {
+template <typename Tp> struct IteratorTraits<const Tp*> {
   using IteratorCategory  = RandomAccessIteratorTag;
-  using ValueType         = T;
+  using ValueType         = Tp;
   using DifferenceType    = std::ptrdiff_t;
-  using Pointer           = const T*;
-  using Reference         = const T&;
+  using Pointer           = const Tp*;
+  using Reference         = const Tp&;
 };
 
-template <typename _Iterator>
-inline typename IteratorTraits<_Iterator>::IteratorCategory
-_IteratorCategory(const _Iterator&) noexcept {
-  using _Category = typename IteratorTraits<_Iterator>::IteratorCategory;
+template <typename _Iter>
+inline typename IteratorTraits<_Iter>::IteratorCategory
+__Category(const _Iter&) noexcept {
+  using _Category = typename IteratorTraits<_Iter>::IteratorCategory;
   return _Category();
 }
 
-template <typename _Iterator>
-inline typename IteratorTraits<_Iterator>::DifferenceType*
-_DistanceType(const _Iterator&) noexcept {
-  return static_cast<typename IteratorTraits<_Iterator>::DifferenceType*>(nullptr);
+template <typename _Iter>
+inline typename IteratorTraits<_Iter>::DifferenceType*
+__DistanceType(const _Iter&) noexcept {
+  return static_cast<typename IteratorTraits<_Iter>::DifferenceType*>(nullptr);
 }
 
-template <typename _Iterator>
-inline typename IteratorTraits<_Iterator>::ValueType*
-_ValueType(const _Iterator&) noexcept {
-  return static_cast<typename IteratorTraits<_Iterator>::ValueType*>(nullptr);
+template <typename _Iter>
+inline typename IteratorTraits<_Iter>::ValueType*
+__ValueType(const _Iter&) noexcept {
+  return static_cast<typename IteratorTraits<_Iter>::ValueType*>(nullptr);
 }
 
-template <typename T, typename Distance>
-inline InputIteratorTag
-_IteratorCategory(const InputIterator<T, Distance>&) noexcept {
-  return InputIteratorTag();
-}
-
-inline OutputIteratorTag _IteratorCategory(const OutputIteratorTag&) noexcept {
-  return OutputIteratorTag();
-}
-
-template <typename T, typename Distance>
-inline ForwardIteratorTag
-_IteratorCategory(const ForwardIterator<T, Distance>&) noexcept {
-  return ForwardIteratorTag();
-}
-
-template <typename T, typename Distance>
-inline BidirectionalIteratorTag
-_IteratorCategory(const BidirectionalIterator<T, Distance>&) noexcept {
-  return BidirectionalIteratorTag();
-}
-
-template <typename T, typename Distance>
-inline RandomAccessIteratorTag
-_IteratorCategory(const RandomAccessIterator<T, Distance>&) noexcept {
-  return RandomAccessIteratorTag();
-}
-
-template <typename T>
-inline RandomAccessIteratorTag _IteratorCategory(const T*) noexcept {
-  return RandomAccessIteratorTag();
-}
-
-template <typename T, typename Distance>
-inline Distance* _DistanceType(const InputIterator<T, Distance>&) noexcept {
-  return (Distance*)(nullptr);
-}
-
-template <typename T, typename Distance>
-inline Distance* _DistanceType(const ForwardIterator<T, Distance>&) noexcept {
-  return (Distance*)(nullptr);
-}
-
-template <typename T, typename Distance>
-inline Distance*
-_DistanceType(const BidirectionalIterator<T, Distance>&) noexcept {
-  return (Distance*)(nullptr);
-}
-
-template <typename T, typename Distance>
-inline Distance*
-_DistanceType(const RandomAccessIterator<T, Distance>&) noexcept {
-  return (Distance*)(nullptr);
-}
-
-template <typename T>
-inline std::ptrdiff_t* _DistanceType(const T*) noexcept {
-  return (std::ptrdiff_t*)(nullptr);
-}
-
-template <typename T, typename Distance>
-inline T* _ValueType(const InputIterator<T, Distance>&) noexcept {
-  return (T*)(nullptr);
-}
-
-template <typename T, typename Distance>
-inline T* _ValueType(const ForwardIterator<T, Distance>&) noexcept {
-  return (T*)(nullptr);
-}
-
-template <typename T, typename Distance>
-inline T* _ValueType(const BidirectionalIterator<T, Distance>&) noexcept {
-  return (T*)(nullptr);
-}
-
-template <typename T, typename Distance>
-inline T* _ValueType(const RandomAccessIterator<T, Distance>&) noexcept {
-  return (T*)(nullptr);
-}
-
-template <typename T>
-inline T* _ValueType(const T*) noexcept { return (T*)(nullptr;) }
-
-template <typename T>
-inline void construct(T* p) noexcept {
-  new ((void*)p) T();
+template <typename Tp>
+inline void construct(Tp* p) noexcept {
+  new ((void*)p) Tp();
 }
 
 template <typename T1, typename T2>
@@ -398,39 +195,34 @@ inline void construct(T1* p, T2&& v) noexcept {
   new ((void*)p) T1(std::forward<T2>(v));
 }
 
-template <typename T1, typename... Args>
-inline void construct(T1* p, Args&&... args) noexcept {
-  new ((void*)p) T1(std::forward<Args>(args)...);
+template <typename Tp, typename... Args>
+inline void construct(Tp* p, Args&&... args) noexcept {
+  new ((void*)p) Tp(std::forward<Args>(args)...);
 }
 
-template <typename T>
-inline void destroy(T* p) noexcept {
-  p->~T();
-}
+template <typename Tp> inline void destroy(Tp* p) noexcept { p->~Tp(); }
 
-template <typename ForwardIterator>
-inline void destroy_aux(
-    ForwardIterator first, ForwardIterator last, FalseType) noexcept {
+template <typename ForwardIter>
+inline void destroy(ForwardIter first, ForwardIter last, FalseType) noexcept {
   for (; first != last; ++first)
     destroy(&*first);
 }
 
-template <typename ForwardIterator>
-inline void destroy_aux(
-    ForwardIterator first, ForwardIterator last, TrueType) noexcept {
+template <typename ForwardIter>
+inline void destroy(ForwardIter first, ForwardIter last, TrueType) noexcept {}
+
+template <typename ForwardIter, typename Tp>
+inline void destroy(ForwardIter first, ForwardIter last, Tp*) noexcept {
+  using _Trivial = typename TypeTraits<Tp>::HasTrivialDestructor;
+  destroy(first, last, _Trivial());
 }
 
-template <typename ForwardIterator, typename T>
-inline void destroy(ForwardIterator first, ForwardIterator last, T*) noexcept {
-  using _TrivialDestructor = typename TypeTraits<T>::HasTrivialDestructor;
-  destroy_aux(first, last, _TrivialDestructor());
+template <typename ForwardIter>
+inline void destroy(ForwardIter first, ForwardIter last) noexcept {
+  destroy(first, last, __ValueType(first));
 }
 
-template <typename ForwardIterator>
-inline void destroy(ForwardIterator first, ForwardIterator last) noexcept {
-  destroy(first, last, _ValueType(first));
-}
-
+inline void destroy(bool*, bool*) noexcept {}
 inline void destroy(char*, char*) noexcept {}
 inline void destroy(i8_t*, i8_t*) noexcept {}
 inline void destroy(u8_t*, u8_t*) noexcept {}
@@ -443,85 +235,83 @@ inline void destroy(u64_t*, u64_t*) noexcept {}
 inline void destroy(float*, float*) noexcept {}
 inline void destroy(double*, double*) noexcept {}
 
-template <typename InputIterator, typename OutputIterator>
-inline void copy(InputIterator first,
-    InputIterator last, OutputIterator result, InputIteratorTag) noexcept {
+template <typename InputIter, typename OutputIter>
+inline void copy(InputIter first,
+    InputIter last, OutputIter result, InputIteratorTag) noexcept {
   for (; first != last; ++result, ++first)
     *result = *first;
 }
 
-template <typename RandomAccessIterator, typename OutputIterator>
-inline void
-copy(RandomAccessIterator first, RandomAccessIterator last,
-    OutputIterator result, RandomAccessIteratorTag) noexcept {
+template <typename RandomAccessIter, typename OutputIter>
+inline void copy(RandomAccessIter first,
+    RandomAccessIter last, OutputIter result, RandomAccessIteratorTag) noexcept {
   for (; first != last; ++first, ++last)
     *result = *first;
 }
 
-template <typename T>
-inline void copy_trivial(const T* first, const T* last, T* result) noexcept {
-  std::memmove(result, first, sizeof(T) * (last - first));
+template <typename Tp>
+inline void copy_trivial(const Tp* first, const Tp* last, Tp* result) noexcept {
+  std::memmove(result, first, sizeof(Tp) * (last - first));
 }
 
-template <typename InputIterator, typename OutputIterator>
-inline void copy(InputIterator first,
-    InputIterator last, OutputIterator result, FalseType) noexcept {
-  copy(first, last, result, _IteratorCategory(first));
+template <typename InputIter, typename OutputIter>
+inline void copy(
+    InputIter first, InputIter last, OutputIter result, FalseType) noexcept {
+  copy(first, last, result, __Category(first));
 }
 
-template <typename InputIterator, typename OutputIterator>
-inline void copy(InputIterator first,
-    InputIterator last, OutputIterator result, TrueType) noexcept {
-  copy(first, last, result, _IteratorCategory(first));
+template <typename InputIter, typename OutputIter>
+inline void copy(
+    InputIter first, InputIter last, OutputIter result, TrueType) noexcept {
+  copy(first, last, result, __Category(first));
 }
 
-template <typename T>
-inline void copy(T* first, T* last, T* result, TrueType) noexcept {
+template <typename Tp>
+inline void copy(Tp* first, Tp* last, Tp* result, TrueType) noexcept {
   copy_trivial(first, last, result);
 }
 
-template <typename T>
-inline void copy(const T* first, const T* last, T* result, TrueType) noexcept {
+template <typename Tp>
+inline void copy(const Tp* first, const Tp* last, Tp* result, TrueType) noexcept {
   copy_trivial(first, last, result);
 }
 
-template <typename InputIterator, typename OutputIterator, typename T>
-inline void copy(InputIterator first,
-    InputIterator last, OutputIterator result, T*) noexcept {
-  using _Trivial = typename TypeTraits<T>::HasTrivialAssignOperator;
+template <typename InputIter, typename OutputIter, typename Tp>
+inline void copy(
+    InputIter first, InputIter last, OutputIter result, Tp*) noexcept {
+  using _Trivial = typename TypeTraits<Tp>::HasTrivialCopyAssignment;
   copy(first, last, result, _Trivial());
 }
 
-template <typename InputIterator, typename OutputIterator>
-inline void
-copy(InputIterator first, InputIterator last, OutputIterator result) noexcept {
-  copy(first, last, result, _ValueType(first));
+template <typename InputIter, typename OutputIter>
+inline void copy(InputIter first, InputIter last, OutputIter result) noexcept {
+  copy(first, last, result, __ValueType(first));
 }
 
-template <typename InputIterator, typename ForwardIterator>
-inline void uninitialized_copy(InputIterator first,
-    InputIterator last, ForwardIterator result, TrueType) noexcept {
+template <typename InputIter, typename ForwardIter>
+inline void uninitialized_copy(
+    InputIter first, InputIter last, ForwardIter result, TrueType) noexcept {
   copy(first, last, result);
 }
 
-template <typename InputIterator, typename ForwardIterator>
-inline void uninitialized_copy(InputIterator first,
-    InputIterator last, ForwardIterator result, FalseType) noexcept {
+template <typename InputIter, typename ForwardIter>
+inline void uninitialized_copy(
+    InputIter first, InputIter last, ForwardIter result, FalseType) noexcept {
   for (; first != last; ++first, ++result)
     construct(&*result, *first);
 }
 
-template <typename InputIterator, typename ForwardIterator, typename T>
-inline void uninitialized_copy(InputIterator first,
-    InputIterator last, ForwardIterator result, T*) noexcept {
-  using IsPOD = typename TypeTraits<T>::IsPOD;
+template <typename InputIter, typename ForwardIter, typename Tp>
+inline void uninitialized_copy(
+    InputIter first, InputIter last, ForwardIter result, Tp*) noexcept {
+  using IsPOD = typename TypeTraits<Tp>::IsPOD;
   uninitialized_copy(first, last, result, IsPOD());
 }
 
-template <typename InputIterator, typename ForwardIterator>
+template <typename InputIter, typename ForwardIter>
 inline void uninitialized_copy(
-    InputIterator first, InputIterator last, ForwardIterator result) noexcept {
-  uninitialized_copy(first, last, result, _ValueType(result));
+    InputIter first, InputIter last, ForwardIter result) noexcept {
+  uninitialized_copy(first, last, result, __ValueType(result));
 }
 
 inline void uninitialized_copy(
@@ -529,8 +319,8 @@ inline void uninitialized_copy(
   std::memmove(result, first, last - first);
 }
 
-template <typename ForwardIterator, typename Size, typename T>
-inline void fill(ForwardIterator first, Size n, const T& v) noexcept {
+template <typename ForwardIter, typename Size, typename T>
+inline void fill(ForwardIter first, Size n, const T& v) noexcept {
   for (; n > 0; --n, ++first)
     *first = v;
 }
@@ -664,30 +454,30 @@ inline void fill(u64_t* first, Size n, T v) noexcept {
 }
 #endif
 
-template <typename ForwardIterator, typename Size, typename T>
+template <typename ForwardIter, typename Size, typename T>
 inline void uninitialized_fill(
-    ForwardIterator first, Size n, const T& v, TrueType) noexcept {
+    ForwardIter first, Size n, const T& v, TrueType) noexcept {
   fill(first, n, v);
 }
 
-template <typename ForwardIterator, typename Size, typename T>
+template <typename ForwardIter, typename Size, typename T>
 inline void uninitialized_fill(
-    ForwardIterator first, Size n, const T& v, FalseType) noexcept {
+    ForwardIter first, Size n, const T& v, FalseType) noexcept {
   for (; n > 0; --n, ++first)
     construct(&*first, v);
 }
 
-template <typename ForwardIterator, typename Size, typename T, typename T1>
+template <typename ForwardIter, typename Size, typename T, typename T1>
 inline void uninitialized_fill(
-    ForwardIterator first, Size n, const T& v, T1*) noexcept {
+    ForwardIter first, Size n, const T& v, T1*) noexcept {
   using IsPOD = typename TypeTraits<T1>::IsPOD;
   uninitialized_fill(first, n, v, IsPOD());
 }
 
-template <typename ForwardIterator, typename Size, typename T>
+template <typename ForwardIter, typename Size, typename T>
 inline void uninitialized_fill(
-    ForwardIterator first, Size n, const T& v) noexcept {
-  uninitialized_fill(first, n, v, _ValueType(first));
+    ForwardIter first, Size n, const T& v) noexcept {
+  uninitialized_fill(first, n, v, __ValueType(first));
 }
 
 template <typename T>
