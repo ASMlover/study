@@ -31,8 +31,13 @@
 
 namespace wrencc {
 
+template <typename Tp> struct BaseArrayList : public Copyable {
+  using Iterator      = Tp*;
+  using ConstIterator = Tp*;
+};
+
 template <typename T>
-class ArrayList final : private UnCopyable {
+class ArrayList final : public BaseArrayList<T> {
   static constexpr sz_t kDefCapacity = 0x10;
 
   sz_t size_{};
@@ -79,6 +84,17 @@ public:
     uninitialized_fill(data_, size_, value);
   }
 
+  ArrayList(const ArrayList<T>& r) noexcept
+    : size_(r.size_)
+    , capacity_(r.capacity_) {
+    data_ = SimpleAlloc<T>::allocate(capacity_);
+    uninitialized_copy(r.begin(), r.end(), begin());
+  }
+
+  ArrayList(ArrayList<T>&& r) noexcept {
+    r.swap(*this);
+  }
+
   inline bool empty() const noexcept { return size_ == 0; }
   inline sz_t size() const noexcept { return size_; }
   inline sz_t capacity() const noexcept { return capacity_; }
@@ -88,13 +104,17 @@ public:
   inline const T& at(sz_t i) const noexcept { return data_[i]; }
   inline T& operator[](sz_t i) noexcept { return data_[i]; }
   inline const T& operator[](sz_t i) const noexcept { return data_[i]; }
-  inline T& get_head() noexcept { return data_[0]; }
-  inline const T& get_head() const noexcept { return data_[0]; }
-  inline T& get_tail() noexcept { return data_[size_ - 1]; }
-  inline const T& get_tail() const noexcept { return data_[size_ - 1]; }
+  inline T& get_head() noexcept { return *begin(); }
+  inline const T& get_head() const noexcept { return *begin(); }
+  inline T& get_tail() noexcept { return *(end() - 1); }
+  inline const T& get_tail() const noexcept { return *(end() - 1); }
+  inline Iterator begin() noexcept { return data_; }
+  inline ConstIterator begin() const noexcept { return data_; }
+  inline Iterator end() noexcept { return data_ + size_; }
+  inline ConstIterator end() const noexcept { return data_ + size_; }
 
   inline void clear() noexcept {
-    destroy(data_, data_ + size_);
+    destroy(begin(), end());
     size_ = 0;
   }
 
@@ -103,12 +123,18 @@ public:
       fn(data_[i]);
   }
 
+  void swap(ArrayList<T>& r) noexcept {
+    std::swap(size_, r.size_);
+    std::swap(capacity_, r.capacity_);
+    std::swap(data_, r.data_);
+  }
+
   void resize(sz_t size) {
     if (size > size_) {
       regrow(size * 3 / 2);
     }
     else if (size < size_) {
-      destroy(data_ + size, data_ + size_);
+      destroy(begin() + size, end());
       size_ = size;
     }
   }
@@ -135,16 +161,6 @@ public:
     T r = data_[size_ - 1];
     destroy(&data_[--size_]);
     return r;
-  }
-
-  void clone(ArrayList<T>& result) const {
-    result.clear();
-
-    if (size_ > 0) {
-      result.regrow(size_);
-      result.size_ = size_;
-      uninitialized_copy(data_, data_ + size_, result.data_);
-    }
   }
 };
 
