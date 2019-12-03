@@ -71,6 +71,11 @@ class ArrayList final : public ArrayListTypes<Tp>, public Copyable {
     capacity_ = new_capacity;
     data_ = new_data;
   }
+
+  void destroy_aux() noexcept {
+    clear();
+    SimpleAlloc<ValueType>::deallocate(data_);
+  }
 public:
   ArrayList(sz_t capacity = kDefCapacity) noexcept
     : capacity_(capacity < kDefCapacity ? kDefCapacity : capacity) {
@@ -78,8 +83,7 @@ public:
   }
 
   ~ArrayList() noexcept {
-    clear();
-    SimpleAlloc<ValueType>::deallocate(data_);
+    destroy_aux();
   }
 
   ArrayList(sz_t count, const ValueType& value) noexcept
@@ -102,8 +106,7 @@ public:
 
   inline ArrayList<Tp>& operator=(const ArrayList<Tp>& r) noexcept {
     if (this != &r) {
-      clear();
-      SimpleAlloc<Tp>::deallocate(data_);
+      destroy_aux();
 
       size_ = r.size_;
       capacity = r.capacity_;
@@ -115,8 +118,7 @@ public:
 
   inline ArrayList<Tp>& operator=(ArrayList<Tp>&& r) noexcept {
     if (this != &r) {
-      clear();
-      SimpleAlloc<T>::deallocate(data_);
+      destroy_aux();
 
       r.swap(*this);
     }
