@@ -31,18 +31,23 @@
 
 namespace wrencc {
 
-template <typename Tp> struct BaseArrayList : public Copyable {
-  using Iterator      = Tp*;
-  using ConstIterator = Tp*;
+template <typename Tp> struct ArrayListTypes {
+  using ValueType       = Tp;
+  using Iterator        = Tp*;
+  using ConstIterator   = const Tp*;
+  using Pointer         = Tp*;
+  using ConstPointer    = const Tp*;
+  using Reference       = Tp&;
+  using ConstReference  = const Tp&;
 };
 
-template <typename T>
-class ArrayList final : public BaseArrayList<T> {
+template <typename Tp>
+class ArrayList final : public ArrayListTypes<Tp>, public Copyable {
   static constexpr sz_t kDefCapacity = 0x10;
 
   sz_t size_{};
   sz_t capacity_{kDefCapacity};
-  T* data_{};
+  Pointer data_{};
 
   void regrow(sz_t new_capacity = 0) {
     if (new_capacity == 0)
@@ -50,18 +55,18 @@ class ArrayList final : public BaseArrayList<T> {
     if (new_capacity < kDefCapacity)
       new_capacity = kDefCapacity;
 
-    T* new_data = SimpleAlloc<T>::allocate(new_capacity);
+    Pointer new_data = SimpleAlloc<ValueType>::allocate(new_capacity);
     try {
-      uninitialized_copy(data_, data_ + size_, new_data);
+      uninitialized_copy(begin(), end(), new_data);
     }
     catch (...) {
       destroy(new_data, new_data + size_);
-      SimpleAlloc<T>::deallocate(new_data);
+      SimpleAlloc<ValueType>::deallocate(new_data);
       throw;
     }
 
-    destroy(data_, data_ + size_);
-    SimpleAlloc<T>::deallocate(data_);
+    destroy(begin(), end());
+    SimpleAlloc<ValueType>::deallocate(data_);
 
     capacity_ = new_capacity;
     data_ = new_data;
@@ -69,45 +74,68 @@ class ArrayList final : public BaseArrayList<T> {
 public:
   ArrayList(sz_t capacity = kDefCapacity) noexcept
     : capacity_(capacity < kDefCapacity ? kDefCapacity : capacity) {
-    data_ = SimpleAlloc<T>::allocate(capacity_);
+    data_ = SimpleAlloc<ValueType>::allocate(capacity_);
   }
 
   ~ArrayList() noexcept {
     clear();
-    SimpleAlloc<T>::deallocate(data_);
+    SimpleAlloc<ValueType>::deallocate(data_);
   }
 
-  ArrayList(sz_t count, const T& value) noexcept
+  ArrayList(sz_t count, const ValueType& value) noexcept
     : size_(count)
     , capacity_(count < kDefCapacity ? kDefCapacity : count) {
-    data_ = SimpleAlloc<T>::allocate(capacity_);
-    uninitialized_fill(data_, size_, value);
+    data_ = SimpleAlloc<ValueType>::allocate(capacity_);
+    uninitialized_fill(begin(), size_, value);
   }
 
-  ArrayList(const ArrayList<T>& r) noexcept
+  ArrayList(const ArrayList<Tp>& r) noexcept
     : size_(r.size_)
     , capacity_(r.capacity_) {
-    data_ = SimpleAlloc<T>::allocate(capacity_);
+    data_ = SimpleAlloc<Tp>::allocate(capacity_);
     uninitialized_copy(r.begin(), r.end(), begin());
   }
 
-  ArrayList(ArrayList<T>&& r) noexcept {
+  ArrayList(ArrayList<Tp>&& r) noexcept {
     r.swap(*this);
+  }
+
+  inline ArrayList<Tp>& operator=(const ArrayList<Tp>& r) noexcept {
+    if (this != &r) {
+      clear();
+      SimpleAlloc<Tp>::deallocate(data_);
+
+      size_ = r.size_;
+      capacity = r.capacity_;
+      data_ = SimpleAlloc<Tp>::allocate(capacity_);
+      uninitialized_copy(r.begin(), r.end(), begin());
+    }
+    return *this;
+  }
+
+  inline ArrayList<Tp>& operator=(ArrayList<Tp>&& r) noexcept {
+    if (this != &r) {
+      clear();
+      SimpleAlloc<T>::deallocate(data_);
+
+      r.swap(*this);
+    }
+    return *this;
   }
 
   inline bool empty() const noexcept { return size_ == 0; }
   inline sz_t size() const noexcept { return size_; }
   inline sz_t capacity() const noexcept { return capacity_; }
-  inline T* data() noexcept { return data_; }
-  inline const T* data() const noexcept { return data_; }
-  inline T& at(sz_t i) noexcept { return data_[i]; }
-  inline const T& at(sz_t i) const noexcept { return data_[i]; }
-  inline T& operator[](sz_t i) noexcept { return data_[i]; }
-  inline const T& operator[](sz_t i) const noexcept { return data_[i]; }
-  inline T& get_head() noexcept { return *begin(); }
-  inline const T& get_head() const noexcept { return *begin(); }
-  inline T& get_tail() noexcept { return *(end() - 1); }
-  inline const T& get_tail() const noexcept { return *(end() - 1); }
+  inline Pointer data() noexcept { return data_; }
+  inline ConstPointer data() const noexcept { return data_; }
+  inline Reference at(sz_t i) noexcept { return data_[i]; }
+  inline ConstReference at(sz_t i) const noexcept { return data_[i]; }
+  inline Reference operator[](sz_t i) noexcept { return data_[i]; }
+  inline ConstReference operator[](sz_t i) const noexcept { return data_[i]; }
+  inline Reference get_head() noexcept { return *begin(); }
+  inline ConstReference get_head() const noexcept { return *begin(); }
+  inline Reference get_tail() noexcept { return *(end() - 1); }
+  inline ConstReference get_tail() const noexcept { return *(end() - 1); }
   inline Iterator begin() noexcept { return data_; }
   inline ConstIterator begin() const noexcept { return data_; }
   inline Iterator end() noexcept { return data_ + size_; }
@@ -123,7 +151,7 @@ public:
       fn(data_[i]);
   }
 
-  void swap(ArrayList<T>& r) noexcept {
+  void swap(ArrayList<Tp>& r) noexcept {
     std::swap(size_, r.size_);
     std::swap(capacity_, r.capacity_);
     std::swap(data_, r.data_);
@@ -139,13 +167,13 @@ public:
     }
   }
 
-  void append(const T& x) {
+  void append(const ValueType& x) {
     if (size_ >= capacity_)
       regrow();
     construct(&data_[size_++], x);
   }
 
-  void append(T&& x) {
+  void append(ValueType&& x) {
     if (size_ >= capacity_)
       regrow();
     construct(&data_[size_++], std::move(x));
@@ -157,8 +185,8 @@ public:
     construct(&data_[size_++], std::forward<Args>(args)...);
   }
 
-  T pop() {
-    T r = data_[size_ - 1];
+  ValueType pop() {
+    ValueType r = data_[size_ - 1];
     destroy(&data_[--size_]);
     return r;
   }
