@@ -85,7 +85,7 @@ private:
   NodeType* tail_{};
 
   NodeType* create_aux(const ValueType& value) {
-    NodeType* node = SimpleAlloc<NodeType>::allocate();
+    NodeType* node = Alloc::allocate();
     try {
       construct(&node->value, value);
       node->next = nullptr;
@@ -98,7 +98,7 @@ private:
   }
 
   NodeType* create_aux(ValueType&& value) {
-    NodeType* node = SimpleAlloc<NodeType>::allocate();
+    NodeType* node = Alloc::allocate();
     try {
       construct(&node->value, std::move(value));
       node->next = nullptr;
@@ -111,7 +111,7 @@ private:
   }
 
   template <typename... Args> NodeType* create_aux(Args&&... args) {
-    NodeType* node = SimpleAlloc<NodeType>::allocate();
+    NodeType* node = Alloc::allocate();
     try {
       construct(&node->value, std::forward<Args>(args)...);
       node->next = nullptr;
@@ -204,8 +204,8 @@ public:
   }
 
   template <typename Function> inline void for_each(Function&& fn) noexcept {
-    for (auto* n = head_; n != nullptr; n = n->next)
-      fn(n->value);
+     for (auto i = begin(); i != end(); ++i)
+       fn(*i);
   }
 };
 
