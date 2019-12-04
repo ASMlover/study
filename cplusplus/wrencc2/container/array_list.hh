@@ -31,7 +31,8 @@
 
 namespace wrencc {
 
-template <typename Tp> struct ArrayListTypes {
+template <typename Tp> class ArrayList final : public Copyable {
+public:
   using ValueType = Tp;
   using Iter      = Tp*;
   using ConstIter = const Tp*;
@@ -39,11 +40,9 @@ template <typename Tp> struct ArrayListTypes {
   using ConstPtr  = const Tp*;
   using Ref       = Tp&;
   using ConstRef  = const Tp&;
+private:
   using Alloc     = SimpleAlloc<ValueType>;
-};
 
-template <typename Tp>
-class ArrayList final : public ArrayListTypes<Tp>, public Copyable {
   static constexpr sz_t kDefCapacity = 0x10;
 
   sz_t size_{};
