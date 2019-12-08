@@ -30,6 +30,8 @@
 #include <utility>
 #include "common.hh"
 
+namespace avl1 {
+
 struct AVLNode {
   AVLNode* lchild{};
   AVLNode* rchild{};
@@ -128,8 +130,10 @@ public:
   }
 };
 
+}
+
 void test_avl() {
-  AVLTree avl;
+  avl1::AVLTree avl;
 
   avl.insert(3);
   avl.insert(2);
