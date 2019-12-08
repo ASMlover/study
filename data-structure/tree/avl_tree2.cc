@@ -330,6 +330,7 @@ class AVLTree final : private UnCopyable {
 
 public:
   AVLTree() noexcept { root_._node = nullptr; }
+  ~AVLTree() noexcept { clear(); }
 
   inline bool is_empty() const noexcept { return count_ == 0; }
   inline std::size_t count() const noexcept { return count_; }
@@ -340,6 +341,8 @@ public:
 
   inline int get_head() const noexcept { return begin()->value; }
   inline int get_tail() const noexcept { return end()->value; }
+
+  inline AVLRoot* get_root() { return &root_; }
 
   void append(int value) {
     AVLNode** link = &root_._node;
@@ -396,4 +399,7 @@ void test_avl2() {
   avl.append(9);
 
   std::cout << avl.count() << " -> " << avl.get_head() << " : " << avl.get_tail() << std::endl;
+
+  for (auto* n = avl.begin(); n != nullptr; n = avl.get_root()->get_next(n))
+    std::cout << n->value << std::endl;
 }
